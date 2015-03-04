@@ -18,6 +18,9 @@
 #include "lstring.h"
 
 
+#define MEMERRMSG       "not enough memory"
+
+
 
 void luaS_resize (lua_State *L, int newsize) {
   GCObject **newhash;
@@ -72,13 +75,84 @@ static TString *newlstr (lua_State *L, const char *str, size_t l,
 }
 
 
-TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
-  GCObject *o;
+/*
+** Initialize the string table and the string cache
+*/
+void luaS_init (lua_State *L) {
+  global_State *g = G(L);
+  int i;
+  luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
+  /* pre-create memory-error message */
+  g->memerrmsg = luaS_newliteral(L, MEMERRMSG);
+  luaS_fix(g->memerrmsg);  /* it should never be collected */
+  for (i = 0; i < STRCACHE_SIZE; i++)
+    g->strcache[i] = g->memerrmsg;  /* fill cache with valid strings */
+}
+
+
+// string hash taken from luaJIT
+
+/* Unaligned load of uint32_t. */
+static inline __attribute__((always_inline)) uint32_t getu32(const void* ptr)
+{
+  uint32_t result;
+  memcpy(&result, ptr, 4);
+  return result;
+}
+
+// smol macro to look a little less messy lul
+#define getu8(p) *cast(const uint8_t *, p)
+
+/* Keyed sparse ARX string hash. Constant time. */
+static unsigned hash_sparse(const char *str, size_t len)
+{
+  /* Constants taken from lookup3 hash by Bob Jenkins. */
+  unsigned int a, b, h = cast(unsigned int, len);
+#define rol(x, n) (((x)<<(n)) | ((x)>>(-cast(int, n)&(8*sizeof(x)-1))))
+  if (len >= 4) {  /* Caveat: unaligned access! */
+    a  = getu32(str);
+    h ^= getu32(str+len-4);
+    b  = getu32(str+(len>>1)-2);
+    h ^= b; h -= rol(b, 14);
+    b += getu32(str+(len>>2)-1);
+  } else if (len > 0) {
+    a  = getu8(str);
+    h ^= getu8(str+len-1);
+    b  = getu8(str+(len>>1));
+    h ^= b; h -= rol(b, 14);
+  } else {
+    return 0;
+  }
+  a ^= h; a -= rol(h, 11);
+  b ^= a; b -= rol(a, 25);
+  h ^= b; h -= rol(b, 16);
+#undef rol
+  return h;
+}
+
+#undef getu8
+
+
+static inline __attribute__((always_inline)) unsigned luaS_hash (const char *str, size_t l) {
+#if 0
   unsigned int h = cast(unsigned int, l);  /* seed */
   size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
   size_t l1;
   for (l1=l; l1>=step; l1-=step)  /* compute hash */
     h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
+  return h;
+#else
+  return hash_sparse(str, l);
+#endif
+}
+
+
+/*
+** new string (with explicit length)
+*/
+TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
+  GCObject *o;
+  unsigned int h = luaS_hash(str, l);
   for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
        o != NULL;
        o = o->gch.next) {
@@ -90,6 +164,25 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
     }
   }
   return newlstr(L, str, l, h);  /* not found */
+}
+
+
+/*
+** Create or reuse a zero-terminated string, first checking in the
+** cache (using the string address as a key). The cache can contain
+** only zero-terminated strings, so it is safe to use 'strcmp' to
+** check hits.
+*/
+TString *luaS_new (lua_State *L, const char *str) {
+  unsigned int i = IntPoint(str) % STRCACHE_SIZE;  /* hash */
+  TString **p = &G(L)->strcache[i];
+  if (strcmp(str, getstr(*p)) == 0)  /* hit? */
+    return *p;  /* that it is */
+  else {  /* normal route */
+    TString *s = luaS_newlstr(L, str, strlen(str));
+    *p = s;
+    return s;
+  }
 }
 
 
