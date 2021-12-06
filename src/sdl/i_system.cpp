@@ -203,6 +203,48 @@ static char returnWadPath[256];
 
 static std::thread::id g_main_thread_id;
 
+void I_StoreExJoystick(SDL_GameController *dev)
+{
+	// ExJoystick is a massive hack to avoid needing to completely
+	// rewrite pretty much all of the controller support from scratch...
+
+	// Used in favor of most instances of SDL_GameControllerClose.
+	// If a joystick would've been discarded, then save it in an array,
+	// because we want it have it for the joystick input screen.
+
+	int index = 0;
+
+	if (dev == NULL)
+	{
+		// No joystick?
+		return;
+	}
+
+	index = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(dev));
+
+	if (index >= MAXGAMEPADS || index < 0)
+	{
+		// Not enough space to save this joystick, completely discard.
+		SDL_GameControllerClose(dev);
+		return;
+	}
+
+	if (ExJoystick[index] == dev)
+	{
+		// No need to do anything else.
+		return;
+	}
+
+	if (ExJoystick[index] != NULL)
+	{
+		// Discard joystick in the old slot.
+		SDL_GameControllerClose(ExJoystick[index]);
+	}
+
+	// Keep for safe-keeping.
+	ExJoystick[index] = dev;
+}
+
 /**	\brief	The JoyReset function
 
 	\param	JoySet	Joystick info to reset
@@ -213,7 +255,7 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 {
 	if (JoySet->dev)
 	{
-		SDL_GameControllerClose(JoySet->dev);
+		I_StoreExJoystick(JoySet->dev);
 	}
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
@@ -228,6 +270,7 @@ static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 /**	\brief SDL info about joystick 1
 */
 SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+SDL_GameController *ExJoystick[MAXGAMEPADS];
 
 SDL_bool consolevent = SDL_FALSE;
 SDL_bool framebuffer = SDL_FALSE;
@@ -1479,7 +1522,7 @@ void I_InitJoystick(UINT8 index)
 	if (i == MAXSPLITSCREENPLAYERS)
 	{
 		// Joystick didn't end up being used
-		SDL_GameControllerClose(newcontroller);
+		I_StoreExJoystick(newcontroller);
 	}
 }
 

@@ -642,6 +642,7 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			SDLforceUngrabMouse();
 		}
 		memset(gamekeydown, 0, sizeof(gamekeydown)); // TODO this is a scary memset
+		memset(deviceResponding, false, sizeof (deviceResponding));
 
 		if (MOUSE_MENU)
 		{
@@ -655,7 +656,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 {
 	event_t event;
 
-	event.device = 0; // TODO: properly set a device
+	event.device = 0;
 
 	if (type == SDL_KEYUP)
 	{
@@ -738,7 +739,7 @@ static void Impl_HandleMouseButtonEvent(SDL_MouseButtonEvent evt, Uint32 type)
 	/// \todo inputEvent.button.which
 	if (USE_MOUSEINPUT)
 	{
-		event.device = 0; // TODO: properly set a device
+		event.device = 0;
 
 		if (type == SDL_MOUSEBUTTONUP)
 		{
@@ -772,7 +773,7 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 
 	SDL_memset(&event, 0, sizeof(event_t));
 
-	event.device = 0; // TODO: properly set a device
+	event.device = 0;
 
 	if (evt.y > 0)
 	{
@@ -798,23 +799,12 @@ static void Impl_HandleMouseWheelEvent(SDL_MouseWheelEvent evt)
 static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 {
 	event_t event;
-	SDL_JoystickID joyid[MAXSPLITSCREENPLAYERS];
-	UINT8 i;
 
-	event.device = INT32_MAX;
-	event.data1 = event.data2 = event.data3 = INT32_MAX;
 	event.type = ev_joystick;
 
-	// Determine the Joystick IDs for each current open joystick
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
+	event.data1 = event.data2 = event.data3 = INT32_MAX;
 
-		if (evt.which == joyid[i])
-		{
-			event.device = i;
-		}
-	}
+	event.device = 1 + evt.which;
 
 	if (event.device == INT32_MAX)
 	{
@@ -857,20 +847,8 @@ static void Impl_HandleJoystickHatEvent(SDL_JoyHatEvent evt)
 {
 	event_t event;
 	SDL_JoystickID joyid[MAXSPLITSCREENPLAYERS];
-	UINT8 i;
 
-	event.device = INT32_MAX;
-
-	// Determine the Joystick IDs for each current open joystick
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		joyid[i] = SDL_JoystickInstanceID(JoyInfo[i].dev);
-
-		if (evt.which == joyid[i])
-		{
-			event.device = i;
-		}
-	}
+	event.device = 1 + evt.which;
 
 	if (event.device == INT32_MAX)
 	{
@@ -891,23 +869,11 @@ static void Impl_HandleJoystickHatEvent(SDL_JoyHatEvent evt)
 static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
 {
 	event_t event;
-	SDL_JoystickID joyid[MAXSPLITSCREENPLAYERS];
-	UINT8 i;
 
-	event.device = INT32_MAX;
+	event.device = 1 + evt.which;
+
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
 
-	// Determine the Joystick IDs for each current open joystick
-	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-	{
-		joyid[i] = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(JoyInfo[i].dev));
-
-		if (evt.which == joyid[i])
-		{
-			event.device = i;
-		}
-	}
-	
 	if (evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
 		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN
 		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT
@@ -951,8 +917,6 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 		D_PostEvent(&event);
 	}
 }
-
-
 
 void I_GetEvent(void)
 {
@@ -1093,7 +1057,7 @@ void I_GetEvent(void)
 					}
 
 					if (i == MAXSPLITSCREENPLAYERS)
-						SDL_GameControllerClose(newcontroller);
+						I_StoreExJoystick(newcontroller);
 				}
 				break;
 

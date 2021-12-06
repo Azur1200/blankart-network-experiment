@@ -1941,6 +1941,8 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		renderdeltatics = FRACUNIT;
 		rendertimefrac = FRACUNIT;
 
+		memset(deviceResponding, false, sizeof (deviceResponding));
+
 		if (cl_mode == CL_CONFIRMCONNECT)
 		{
 			D_ProcessEvents(); //needed for menu system to receive inputs
