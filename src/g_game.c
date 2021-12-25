@@ -786,27 +786,49 @@ bound:
 	return false;
 }
 
-static INT32 KeyValue(UINT8 p, INT32 key)
+static INT32 KeyValue(UINT8 p, INT32 key, boolean menu)
 {
+	INT32 deviceID;
+
 	if (key <= 0 || key >= NUMINPUTS)
 	{
 		return 0;
 	}
 
-	return gamekeydown[p][key];
+	if (menu == false)
+	{
+		deviceID = cv_usejoystick[p].value;
+		if (deviceID < 0 || deviceID >= MAXDEVICES)
+		{
+			return 0;
+		}
+
+		return gamekeydown[deviceID][key];
+	}
+	else
+	{
+		// Use keyboard as alternative for P1 menu.
+		return gamekeydown[0][key];
+	}
+
+	return 0;
 }
 
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 {
 	INT32 i;
 	INT32 deadzone = 0;
-	boolean bound = false;
 
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
 #ifdef PARANOIA
 		CONS_Debug(DBG_GAMELOGIC, "G_PlayerInputAnalog: Invalid player ID %d\n", p);
 #endif
+		return 0;
+	}
+
+	if (p > splitscreen)
+	{
 		return 0;
 	}
 
@@ -822,8 +844,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 			continue;
 		}
 
-		value = KeyValue(p, key);
-		bound = true;
+		value = KeyValue(p, key, false);
 
 		if (value >= deadzone)
 		{
@@ -831,7 +852,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 		}
 	}
 
-	if (menu == true && bound == false)
+	if (p == 0 && menu == true)
 	{
 		// We don't want menus to become unnavigable if people unbind
 		// all of their controls, so use the default control scheme in
@@ -847,7 +868,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 				continue;
 			}
 
-			value = KeyValue(p, key);
+			value = KeyValue(p, key, true);
 
 			if (value >= deadzone)
 			{
