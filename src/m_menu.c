@@ -10714,7 +10714,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 				for (found = 0; found < MAXINPUTMAPPING-1; found++)
 					setupcontrols[control][found] = setupcontrols[control][found+1];
 
-			(void)G_CheckDoubleUsage(ch, true);
+			(void)G_CheckDoubleUsage(ch, setupcontrolplayer-1, true);
 			setupcontrols[control][found] = ch;
 		}
 		S_StartSound(NULL, sfx_s221);
