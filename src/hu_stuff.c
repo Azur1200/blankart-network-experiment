@@ -1233,7 +1233,7 @@ boolean HU_Responder(event_t *ev)
 	// (Unless if you're sharing a keyboard, since you probably establish when you start chatting that you have dibs on it...)
 	// (Ahhh, the good ol days when I was a kid who couldn't afford an extra USB controller...)
 
-	if (ev->data1 >= KEY_JOY1)
+	if (ev->data1 >= NUMKEYS)
 	{
 		INT32 i;
 		for (i = 0; i < num_gamecontrols; i++)
@@ -1283,7 +1283,7 @@ boolean HU_Responder(event_t *ev)
 			return true;
 
 		// Ignore non-keyboard keys, except when the talk key is bound
-		if (ev->data1 >= KEY_JOY1
+		if (ev->data1 >= NUMKEYS
 		&& !G_ControlBoundToKey(0, gc_talkkey, ev->data1, false))
 			return false;
 
@@ -1326,7 +1326,7 @@ boolean HU_Responder(event_t *ev)
 		else if (c == KEY_ESCAPE
 			|| ((G_ControlBoundToKey(0, gc_talkkey, c, false)
 			|| G_ControlBoundToKey(0, gc_teamkey, c, false))
-			&& c >= KEY_JOY1)) // If it's not a keyboard key, then the chat button is used as a toggle.
+			&& c >= NUMKEYS)) // If it's not a keyboard key, then the chat button is used as a toggle.
 		{
 			chat_on = false;
 			c_input = 0; // reset input cursor

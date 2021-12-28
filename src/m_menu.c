@@ -2671,7 +2671,7 @@ boolean M_Responder(event_t *ev)
 	}
 
 	// remap to keyboard keys if needed
-	if (deviceplayer == 0 && ch >= KEY_JOY1)
+	if (deviceplayer == 0 && ch >= NUMKEYS)
 	{
 		static INT32 joyremap[][2] = {
 			{ gc_accelerate,  KEY_ENTER      }, // these two first

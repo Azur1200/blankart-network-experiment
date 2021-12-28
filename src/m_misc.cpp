@@ -1614,7 +1614,7 @@ boolean M_ScreenshotResponder(event_t *ev)
 
 	ch = ev->data1;
 
-	if (ch >= KEY_JOY1 && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
+	if (ch >= NUMKEYS && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
 		return false;
 
 	if (ch == KEY_F8 || G_ControlBoundToKey(0, gc_screenshot, ch, false)) // remappable F8
