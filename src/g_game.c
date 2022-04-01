@@ -786,38 +786,14 @@ bound:
 	return false;
 }
 
-static INT32 KeyValue(UINT8 p, INT32 key, boolean menu)
-{
-	INT32 deviceID;
-
-	if (key <= 0 || key >= NUMINPUTS)
-	{
-		return 0;
-	}
-
-	if (menu == false)
-	{
-		deviceID = cv_usejoystick[p].value;
-		if (deviceID < 0 || deviceID >= MAXDEVICES)
-		{
-			return 0;
-		}
-
-		return gamekeydown[deviceID][key];
-	}
-	else
-	{
-		// Use keyboard as alternative for P1 menu.
-		return gamekeydown[0][key];
-	}
-
-	return 0;
-}
-
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 {
+	INT32 deviceID;
 	INT32 i;
 	INT32 deadzone = 0;
+	boolean trydefaults = true;
+	boolean tryingotherID = false;
+	INT32 *controltable = &(gamecontrol[p][gc][0]);
 
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
@@ -829,17 +805,24 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 
 	deadzone = (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
 
+	deviceID = cv_usejoystick[p].value;
+
+retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
-		INT32 key = gamecontrol[p][gc][i];
+		INT32 key = controltable[i];
 		INT32 value = 0;
 
-		if (key <= 0 || key >= NUMINPUTS)
+		// Invalid key number.
+		if (!G_KeyIsAvailable(key, deviceID))
 		{
 			continue;
 		}
 
-		value = KeyValue(p, key, false);
+		// It's possible to access this control right now, so let's disable the default control backup for later.
+		trydefaults = false;
+
+		value = gamekeydown[deviceID][key];
 
 		if (value >= deadzone)
 		{
@@ -847,29 +830,51 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 		}
 	}
 
-	if (p == 0 && menu == true)
+	// If you're on controller, try your keyboard-based binds as an immediate backup.
+	if (p == 0 && deviceID > 0 && !tryingotherID)
 	{
-		// We don't want menus to become unnavigable if people unbind
-		// all of their controls, so use the default control scheme in
-		// this scenario.
+		deviceID = 0;
+		goto retrygetcontrol;
+	}
 
-		for (i = 0; i < MAXINPUTMAPPING; i++)
+	if (menu == false)
+	{
+		return 0;
+	}
+
+	// We don't want menus to become unnavigable if people unbind
+	// all of their controls, so we do several things in this scenario.
+	// First: try other controllers.
+
+	if (!tryingotherID)
+	{
+		deviceID = MAXDEVICES;
+		tryingotherID = true;
+	}
+loweringid:
+	deviceID--;
+	if (deviceID > 0)
+	{
+		for (i = 0; i < cv_splitplayers.value-1; i++)
 		{
-			INT32 key = gamecontroldefault[gc][i];
-			INT32 value = 0;
-
-			if (key <= 0 || key >= NUMINPUTS)
-			{
+			if (deviceID != cv_usejoystick[i].value)
 				continue;
-			}
-
-			value = KeyValue(p, key, true);
-
-			if (value >= deadzone)
-			{
-				return value;
-			}
+			// Controller taken? Try again...
+			goto loweringid;
 		}
+		goto retrygetcontrol;
+	}
+
+	if (trydefaults && G_KeyBindIsNecessary(gc))
+	{
+		// If we still haven't found anything and the keybind is necessary,
+		// try it all again but with default binds.
+		trydefaults = false;
+		controltable = &(gamecontroldefault[gc][0]);
+		tryingotherID = false;
+		deviceID = cv_usejoystick[p].value;
+		goto retrygetcontrol;
+
 	}
 
 	return 0;

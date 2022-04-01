@@ -418,6 +418,51 @@ static const char *gamecontrolname[num_gamecontrols] =
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
 
+// If keybind is necessary to navigate menus, it's on this list.
+boolean G_KeyBindIsNecessary(INT32 gc)
+{
+	switch (gc)
+	{
+		case gc_accelerate:
+		case gc_brake:
+		case gc_aimforward:
+		case gc_aimbackward:
+		case gc_turnleft:
+		case gc_turnright:
+		case gc_systemmenu:
+			return true;
+		default:
+			return false;
+	}
+	return false;
+}
+
+// Returns false if a key is deemed unreachable for this device.
+boolean G_KeyIsAvailable(INT32 key, INT32 deviceID)
+{
+	// Invalid key number.
+	if (key <= 0 || key >= NUMINPUTS)
+	{
+		return false;
+	}
+
+	// Valid controller-specific virtual key, but no controller attached for player.
+	if (key >= KEY_JOY1 && key < JOYINPUTEND && deviceID <= 0)
+	{
+		return false;
+	}
+
+	// Valid mouse-specific virtual key, but no mouse attached for player. TODO HOW TO DETECT ACTIVE MOUSE CONNECTION
+	/*
+	if (key >= KEY_MOUSE1 && key < MOUSEINPUTEND && ????????)
+	{
+		return false;
+	}
+	*/
+
+	return true;
+}
+
 //
 // Detach any keys associated to the given game control
 // - pass the pointer to the gamecontrol table for the player being edited
