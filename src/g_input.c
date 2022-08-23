@@ -84,7 +84,9 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 // converts ev_joystick axis to its corresponding key
 INT32 G_AxisToKey(event_t *ev)
 {
-	return KEY_AXIS1 + ev->data1*2 + (ev->data2 >= 0);
+	return KEY_AXIS1 + (ev->data1 >= JOYANALOGS*2
+	                    ? ev->data1 + JOYANALOGS*2
+	                    : ev->data1*2 + (ev->data2 >= 0));
 }
 
 //
@@ -187,7 +189,7 @@ void G_MapEventsToControls(event_t *ev)
 				break;
 			}
 
-			if (ev->data1 >= JOYAXISSET*2)
+			if (ev->data1 >= JOYAXISSETS*2)
 			{
 #ifdef PARANOIA
 				CONS_Debug(DBG_GAMELOGIC, "Bad joystick axis event %d\n", ev->data1);
@@ -195,7 +197,7 @@ void G_MapEventsToControls(event_t *ev)
 				break;
 			}
 
-			i = ev->data1 * 2;
+			i = ev->data1;
 
 			if (G_GetDevicePlayer(ev->device) == 0)
 			{
@@ -203,17 +205,27 @@ void G_MapEventsToControls(event_t *ev)
 					break;
 			}
 
-			if (ev->data2 < 0)
+			if (i >= 2 * JOYANALOGS)
 			{
-				// Left
-				gamekeydown[ev->device][KEY_AXIS1 + i] = abs(ev->data2);
-				gamekeydown[ev->device][KEY_AXIS1 + i + 1] = 0;
+				// The trigger axes are handled specially.
+				i -= 2 * JOYANALOGS;
+				gamekeydown[ev->device][KEY_AXIS1 + (JOYANALOGS * 4) + i] = max(0, ev->data2);
 			}
 			else
 			{
-				// Right
-				gamekeydown[ev->device][KEY_AXIS1 + i] = 0;
-				gamekeydown[ev->device][KEY_AXIS1 + i + 1] = abs(ev->data2);
+				i *= 2;
+				if (ev->data2 < 0)
+				{
+					// Left
+					gamekeydown[ev->device][KEY_AXIS1 + i] = abs(ev->data2);
+					gamekeydown[ev->device][KEY_AXIS1 + i + 1] = 0;
+				}
+				else
+				{
+					// Right
+					gamekeydown[ev->device][KEY_AXIS1 + i] = 0;
+					gamekeydown[ev->device][KEY_AXIS1 + i + 1] = abs(ev->data2);
+				}
 			}
 
 			break;
@@ -318,76 +330,38 @@ static keyname_t keynames[] =
 	{KEY_MOUSEWHEELUP, "Wheel Up"},
 	{KEY_MOUSEWHEELDOWN, "Wheel Down"},
 
-	{KEY_JOY1+0, "JOY1"},
-	{KEY_JOY1+1, "JOY2"},
-	{KEY_JOY1+2, "JOY3"},
-	{KEY_JOY1+3, "JOY4"},
-	{KEY_JOY1+4, "JOY5"},
-	{KEY_JOY1+5, "JOY6"},
-	{KEY_JOY1+6, "JOY7"},
-	{KEY_JOY1+7, "JOY8"},
-	{KEY_JOY1+8, "JOY9"},
-#if !defined (NOMOREJOYBTN_1S)
-	// we use up to 32 buttons in DirectInput
-	{KEY_JOY1+9, "JOY10"},
-	{KEY_JOY1+10, "JOY11"},
-	{KEY_JOY1+11, "JOY12"},
-	{KEY_JOY1+12, "JOY13"},
-	{KEY_JOY1+13, "JOY14"},
-	{KEY_JOY1+14, "JOY15"},
-	{KEY_JOY1+15, "JOY16"},
-	{KEY_JOY1+16, "JOY17"},
-	{KEY_JOY1+17, "JOY18"},
-	{KEY_JOY1+18, "JOY19"},
-	{KEY_JOY1+19, "JOY20"},
-	{KEY_JOY1+20, "JOY21"},
-	{KEY_JOY1+21, "JOY22"},
-	{KEY_JOY1+22, "JOY23"},
-	{KEY_JOY1+23, "JOY24"},
-	{KEY_JOY1+24, "JOY25"},
-	{KEY_JOY1+25, "JOY26"},
-	{KEY_JOY1+26, "JOY27"},
-	{KEY_JOY1+27, "JOY28"},
-	{KEY_JOY1+28, "JOY29"},
-	{KEY_JOY1+29, "JOY30"},
-	{KEY_JOY1+30, "JOY31"},
-	{KEY_JOY1+31, "JOY32"},
-#endif
+	{KEY_JOY1+0, "A BUTTON"},
+	{KEY_JOY1+1, "B BUTTON"},
+	{KEY_JOY1+2, "X BUTTON"},
+	{KEY_JOY1+3, "Y BUTTON"},
+	{KEY_JOY1+4, "BACK BUTTON"},
+	{KEY_JOY1+5, "GUIDE BUTTON"},
+	{KEY_JOY1+6, "START BUTTON"},
+	{KEY_JOY1+7, "L-STICK CLICK"},
+	{KEY_JOY1+8, "R-STICK CLICK"},
+	{KEY_JOY1+9, "L BUMPER"},
+	{KEY_JOY1+10, "R BUMPER"},
+	{KEY_JOY1+11, "D-PAD UP"},
+	{KEY_JOY1+12, "D-PAD DOWN"},
+	{KEY_JOY1+13, "D-PAD LEFT"},
+	{KEY_JOY1+14, "D-PAD RIGHT"},
+	{KEY_JOY1+15, "MISC. BUTTON"},
+	{KEY_JOY1+16, "PADDLE1 BUTTON"},
+	{KEY_JOY1+17, "PADDLE2 BUTTON"},
+	{KEY_JOY1+18, "PADDLE3 BUTTON"},
+	{KEY_JOY1+19, "PADDLE4 BUTTON"},
+	{KEY_JOY1+20, "TOUCHPAD"},
 
-	// the DOS version uses Allegro's joystick support
-	{KEY_HAT1+0, "HATUP"},
-	{KEY_HAT1+1, "HATDOWN"},
-	{KEY_HAT1+2, "HATLEFT"},
-	{KEY_HAT1+3, "HATRIGHT"},
-	{KEY_HAT1+4, "HATUP2"},
-	{KEY_HAT1+5, "HATDOWN2"},
-	{KEY_HAT1+6, "HATLEFT2"},
-	{KEY_HAT1+7, "HATRIGHT2"},
-	{KEY_HAT1+8, "HATUP3"},
-	{KEY_HAT1+9, "HATDOWN3"},
-	{KEY_HAT1+10, "HATLEFT3"},
-	{KEY_HAT1+11, "HATRIGHT3"},
-	{KEY_HAT1+12, "HATUP4"},
-	{KEY_HAT1+13, "HATDOWN4"},
-	{KEY_HAT1+14, "HATLEFT4"},
-	{KEY_HAT1+15, "HATRIGHT4"},
-
-	{KEY_AXIS1+0, "AXISX-"},
-	{KEY_AXIS1+1, "AXISX+"},
-	{KEY_AXIS1+2, "AXISY-"},
-	{KEY_AXIS1+3, "AXISY+"},
-	{KEY_AXIS1+4, "AXISZ-"},
-	{KEY_AXIS1+5, "AXISZ+"},
-	{KEY_AXIS1+6, "AXISXRUDDER-"},
-	{KEY_AXIS1+7, "AXISXRUDDER+"},
-	{KEY_AXIS1+8, "AXISYRUDDER-"},
-	{KEY_AXIS1+9, "AXISYRUDDER+"},
-	{KEY_AXIS1+10, "AXISZRUDDER-"},
-	{KEY_AXIS1+11, "AXISZRUDDER+"},
-	{KEY_AXIS1+12, "AXISU-"},
-	{KEY_AXIS1+13, "AXISU+"},
-	{KEY_AXIS1+14, "AXISV-"},
-	{KEY_AXIS1+15, "AXISV+"},
+	{KEY_AXIS1+0, "L-STICK LEFT"},
+	{KEY_AXIS1+1, "L-STICK RIGHT"},
+	{KEY_AXIS1+2, "L-STICK UP"},
+	{KEY_AXIS1+3, "L-STICK DOWN"},
+	{KEY_AXIS1+4, "R-STICK LEFT"},
+	{KEY_AXIS1+5, "R-STICK RIGHT"},
+	{KEY_AXIS1+6, "R-STICK UP"},
+	{KEY_AXIS1+7, "R-STICK DOWN"},
+	{KEY_AXIS1+8, "L TRIGGER"},
+	{KEY_AXIS1+9, "R TRIGGER"},
 };
 
 static const char *gamecontrolname[num_gamecontrols] =
@@ -596,10 +570,10 @@ void G_DefineDefaultControls(void)
 	gamecontroldefault[gc_turnright  ][1] = KEY_AXIS1+1; // Left X+
 	gamecontroldefault[gc_accelerate ][1] = KEY_JOY1+0;  // A
 	gamecontroldefault[gc_drift      ][1] = KEY_JOY1+10; // RB
-	gamecontroldefault[gc_drift      ][2] = KEY_AXIS1+11;// RT
+	gamecontroldefault[gc_drift      ][2] = KEY_AXIS1+9; // RT
 	gamecontroldefault[gc_brake      ][1] = KEY_JOY1+1;  // B
 	gamecontroldefault[gc_fire       ][1] = KEY_JOY1+9;  // LB
-	gamecontroldefault[gc_fire       ][2] = KEY_AXIS1+9; // LT
+	gamecontroldefault[gc_fire       ][2] = KEY_AXIS1+8; // LT
 	gamecontroldefault[gc_lookback   ][1] = KEY_JOY1+2;  // X
 
 	gamecontroldefault[gc_pause      ][1] = KEY_JOY1+4;  // Back

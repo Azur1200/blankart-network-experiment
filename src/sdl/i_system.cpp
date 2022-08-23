@@ -1089,7 +1089,7 @@ void I_JoyScale4(void)
 	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[1].value;
 }
 
-// Cheat to get the device index for a joystick handle
+// Cheat to get the device index for a game controller handle
 INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 {
 	SDL_Joystick *joystick = NULL;
@@ -1169,7 +1169,7 @@ void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer)
 */
 void I_ShutdownJoystick(UINT8 index)
 {
-	INT32 i, j;
+	INT32 i;
 	event_t event;
 
 	event.device = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
@@ -1180,23 +1180,13 @@ void I_ShutdownJoystick(UINT8 index)
 	// emulate the up of all joystick buttons
 	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1+i;
+		event.data1 = KEY_JOY1+i;
 		D_PostEvent(&event);
-	}
-
-	// emulate the up of all joystick hats
-	for (i = 0; i < JOYHATS*4; i++)
-	{
-		for (j = 0; j < 4; j++)
-		{
-			event.data1 = KEY_HAT1 + (i * 4) + j;
-			D_PostEvent(&event);
-		}
 	}
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i = 0; i < JOYAXISSET; i++)
+	for (i = 0; i < JOYAXISSETS*2; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
@@ -1232,6 +1222,12 @@ static int joy_open(int playerIndex, int joyIndex)
 		return -1;
 	}
 
+
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	{
+		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		return -1;
+	}
 
 	if (joyIndex <= 0)
 		return -1;
@@ -1281,25 +1277,8 @@ static int joy_open(int playerIndex, int joyIndex)
 		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick%d: %s\n"), playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
 		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
-
-		/*
-		if (joyaxes<2)
-		{
-			I_OutputMsg("Not enought axes?\n");
-			return 0;
-		}
-		*/
-
 		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX;
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
-
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
-
+		JoyInfo[playerIndex].hats = 1;
 		JoyInfo[playerIndex].balls = 0;
 
 		//JoyInfo[playerIndex].bGamepadStyle = !stricmp(SDL_JoystickName(JoyInfo[playerIndex].dev), "pad");
@@ -1346,6 +1325,15 @@ void I_InitJoystick(UINT8 index)
 		}
 	}
 
+
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	{
+		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1)
+		{
+			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
+			return;
+		}
+	}
 
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
@@ -1421,6 +1409,13 @@ static void I_ShutdownInput(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		I_ShutdownJoystick(i);
+
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == SDL_INIT_GAMECONTROLLER)
+	{
+		CONS_Printf("Shutting down gamecontroller system\n");
+		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+		I_OutputMsg("I_Joystick: SDL's Game Controller system has been shutdown\n");
+	}
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{

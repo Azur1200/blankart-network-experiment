@@ -833,55 +833,9 @@ static void Impl_HandleControllerAxisEvent(SDL_ControllerAxisEvent evt)
 	}
 
 	//value
-	event.data2 = SDLJoyAxis(evt.value, 0); // TODO: replace 0 with pid
+	event.data2 = SDLJoyAxis(evt.value, evt.which);
 
 	D_PostEvent(&event);
-}
-
-static void Impl_SendHatEvent(SDL_JoyHatEvent evt, UINT64 hatFlag, UINT8 keyOffset)
-{
-	event_t event;
-
-	event.device = 1 + evt.which;
-	if (event.device == INT32_MAX)
-	{
-		return;
-	}
-
-	event.data1 = KEY_HAT1 + keyOffset;
-
-	if (evt.hat < JOYHATS)
-	{
-		event.data1 += (evt.hat * 4);
-	}
-	else
-	{
-		return;
-	}
-
-	if (evt.value & hatFlag)
-	{
-		event.type = ev_keydown;
-	}
-	else
-	{
-		event.type = ev_keyup;
-	}
-
-	SDLJoyRemap(&event);
-
-	if (event.type != ev_console)
-	{
-		D_PostEvent(&event);
-	}
-}
-
-static void Impl_HandleJoystickHatEvent(SDL_JoyHatEvent evt)
-{
-	Impl_SendHatEvent(evt, SDL_HAT_UP, 0);
-	Impl_SendHatEvent(evt, SDL_HAT_DOWN, 1);
-	Impl_SendHatEvent(evt, SDL_HAT_LEFT, 2);
-	Impl_SendHatEvent(evt, SDL_HAT_RIGHT, 3);
 }
 
 static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint32 type)
@@ -891,15 +845,6 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	event.device = 1 + evt.which;
 
 	event.data1 = event.data2 = event.data3 = INT32_MAX;
-
-	if (evt.button == SDL_CONTROLLER_BUTTON_DPAD_UP
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_DOWN
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_LEFT
-		|| evt.button == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
-	{
-		// dpad buttons are mapped as the hat instead
-		return;
-	}
 
 	if (event.device == INT32_MAX)
 	{
@@ -980,9 +925,6 @@ void I_GetEvent(void)
 			case SDL_CONTROLLERAXISMOTION:
 				Impl_HandleControllerAxisEvent(evt.caxis);
 				break;
-			case SDL_JOYHATMOTION:
-				Impl_HandleJoystickHatEvent(evt.jhat);
-				break;
 			case SDL_CONTROLLERBUTTONUP:
 			case SDL_CONTROLLERBUTTONDOWN:
 				Impl_HandleControllerButtonEvent(evt.cbutton, evt.type);
@@ -997,7 +939,7 @@ void I_GetEvent(void)
 
 					SDL_GameController *newcontroller = SDL_GameControllerOpen(evt.cdevice.which);
 
-					CONS_Debug(DBG_GAMELOGIC, "Joystick device index %d added\n", evt.jdevice.which + 1);
+					CONS_Debug(DBG_GAMELOGIC, "Controller device index %d added\n", evt.cdevice.which + 1);
 
 					////////////////////////////////////////////////////////////
 					// Because SDL's device index is unstable, we're going to cheat here a bit:
