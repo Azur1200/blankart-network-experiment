@@ -116,8 +116,8 @@ extern char logfilename[1024];
 // The string used in the alert that pops up in the event of an update being available.
 // Please change to apply to your modification (we don't want everyone asking where your mod is on SRB2.org!).
 #define UPDATE_ALERT_STRING \
-"A new update is available for SRB2Kart.\n"\
-"Please visit kartkrew.org to download it.\n"\
+"A new update is available for BlanKart.\n"\
+"(or the master server you are using is reporting a bad version)\n"\
 "\n"\
 "You are using version: %s\n"\
 "The newest version is: %s\n"\
