@@ -464,10 +464,9 @@ static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 						     {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
-consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
+consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, gpdifficulty_cons_t, NULL);
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
 consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 

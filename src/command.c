@@ -90,6 +90,15 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 	{KARTSPEED_EXPERT, "Expert"},
 	{0, NULL}
 };
+CV_PossibleValue_t gpdifficulty_cons_t[] = {
+	{KARTSPEED_EASY, "Easy"},
+	{KARTSPEED_NORMAL, "Normal"},
+	{KARTSPEED_HARD, "Hard"},
+	{KARTSPEED_EXPERT, "Expert"},
+	{KARTGP_MASTER, "Master"},
+	{KARTGP_NIGHTMARE, "Nightmare"},
+	{0, NULL}
+};
 
 consvar_t cv_resetnetvars = CVAR_INIT ("resetnetvars", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -2100,6 +2109,15 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 			return;
 		}
 
+		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
+		{
+			if (!stricmp(value, "Hard") || !stricmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
+			{
+				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
+				return;
+			}
+		}
+
 		if (var == &cv_forceskin)
 		{
 			INT32 skin = R_SkinAvailable(value);
@@ -2305,9 +2323,14 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				if (var->PossibleValue[max].value == var->value)
 					currentindice = max;
 
-			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
+			if (var->PossibleValue == kartspeed_cons_t || var->PossibleValue == gpdifficulty_cons_t)
 			{
-				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 5 : 3);
+				if (!M_SecretUnlocked(SECRET_HARDSPEED))
+				{
+					max = KARTSPEED_NORMAL+1;
+					if (var->PossibleValue == kartspeed_cons_t)
+						max++; // Accommodate KARTSPEED_AUTO
+				}
 			}
 #ifdef PARANOIA
 			if (currentindice == -1)
