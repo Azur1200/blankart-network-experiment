@@ -8947,15 +8947,11 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
 
-	//  A 160x100 image of the level as entry MAPxxP
+	//  A 160x100 image of the level
 	if (cv_nextmap.value)
 	{
-		char *mapname = va("%sP", G_BuildMapName(cv_nextmap.value+1));
-		SINT8 length = strlen(mapname);
-		lumpnum = W_CheckNumForName(mapname);
-		if (lumpnum != LUMPERROR && (length < 7))
-			PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-		else
+		PictureOfLevel = mapheaderinfo[cv_nextmap.value+1]->thumbnailPic;
+		if (!PictureOfLevel)
 			PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
 	}
 	else
@@ -9018,12 +9014,8 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		//  A 160x100 image of the level as entry MAPxxP
 		if (i+1)
 		{
-			char *mapname = va("%sP", G_BuildMapName(i+1));
-			SINT8 length = strlen(mapname);
-			lumpnum = W_CheckNumForName(mapname);
-			if (lumpnum != LUMPERROR && (length < 7))
-				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-			else
+			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
+			if (!PictureOfLevel)
 				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
 		}
 		else
@@ -9058,12 +9050,8 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		//  A 160x100 image of the level as entry MAPxxP
 		if (i+1)
 		{
-			char *mapname = va("%sP", G_BuildMapName(i+1));
-			SINT8 length = strlen(mapname);
-			lumpnum = W_CheckNumForName(mapname);
-			if (lumpnum != LUMPERROR && (length < 7))
-				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-			else
+			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
+			if (!PictureOfLevel)
 				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
 		}
 		else

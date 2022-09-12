@@ -3300,7 +3300,6 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 
 static void K_drawKartMinimap(void)
 {
-	INT32 lumpnum;
 	patch_t *AutomapPic, *workingPic;
 	INT32 i = 0;
 	INT32 x, y;
@@ -3323,12 +3322,12 @@ static void K_drawKartMinimap(void)
 	if (stplyr != &players[displayplayers[0]])
 		return;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
+	AutomapPic = mapheaderinfo[gamemap-1]->minimapPic;
 
-	if (lumpnum != -1)
-		AutomapPic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
-	else
+	if (!AutomapPic)
+	{
 		return; // no pic, just get outta here
+	}
 
 	if (r_splitscreen < 2) // 1/2P right aligned
 	{

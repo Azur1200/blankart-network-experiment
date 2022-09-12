@@ -350,6 +350,8 @@ struct mapheader_t
 {
 	char * lumpname;       ///< Lump name can be really long
 	lumpnum_t lumpnum;	  ///< Lump number for the map
+	void * thumbnailPic;   ///< Lump data for the level select thumbnail.
+	void * minimapPic;     ///< Lump data for the minimap graphic.
 	char lvlttl[22];       ///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
 	char subttl[33];       ///< Subtitle for level
 	char zonttl[22];       ///< "ZONE" replacement name

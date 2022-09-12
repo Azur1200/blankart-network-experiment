@@ -397,7 +397,19 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 {
 	const INT16 num = (INT16)(i-1);
 	boolean exists = (mapheaderinfo[gamemap-1]->alreadyExists == true);
-	
+
+	if (mapheaderinfo[num]->thumbnailPic)
+	{
+		Z_Free(mapheaderinfo[num]->thumbnailPic);
+		mapheaderinfo[num]->thumbnailPic = NULL;
+	}
+
+	if (mapheaderinfo[num]->minimapPic)
+	{
+		Z_Free(mapheaderinfo[num]->minimapPic);
+		mapheaderinfo[num]->minimapPic = NULL;
+	}
+
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->selectheading[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
@@ -479,6 +491,8 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		mapheaderinfo[i]->lumpnum = LUMPERROR;
 		mapheaderinfo[i]->lumpname = NULL;
+		mapheaderinfo[i]->thumbnailPic = NULL;
+		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->grades = NULL;
 		nummapheaders++;
@@ -8152,6 +8166,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Map header should always be in place at this point
 	INT32 i, ranspecialwipe = 0;
 	sector_t *ss;
+	virtlump_t *encoreLump = NULL;
 
 	levelloading = true;
 
@@ -8370,8 +8385,26 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
-	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-	W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
+	if (mapheaderinfo[gamemap-1])
+	{
+		if (encoremode)
+		{
+			encoreLump = vres_Find(curmapvirt, "ENCORE");
+		}
+		else
+		{
+			encoreLump = vres_Find(curmapvirt, "TWEAKMAP");
+		}
+	}
+
+	if (encoreLump)
+	{
+		R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette, encoreLump->data, encoreLump->size, false);
+	}
+	else
+	{
+		R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette, NULL, 0, false);
+	}
 	CON_SetupBackColormap();
 
 	// SRB2 determines the sky texture to be used depending on the map header.
@@ -8733,6 +8766,8 @@ UINT8 P_InitMapData(void)
 	UINT8 ret = 0;
 	INT32 i;
 	lumpnum_t maplump;
+	virtres_t *virtmap;
+	virtlump_t *minimap, *thumbnailPic;
 	char *name;
 
 	for (i = 0; i < nummapheaders; ++i)
@@ -8768,6 +8803,23 @@ UINT8 P_InitMapData(void)
 			mapheaderinfo[i]->lumpnum = maplump;
 			if (maplump == wadnamelump)
 				wadnamemap = i+1;
+
+			// Get map thumbnail and minimap
+			virtmap = vres_GetMap(mapheaderinfo[i]->lumpnum);
+			thumbnailPic = vres_Find(virtmap, "PICTURE");
+			minimap = vres_Find(virtmap, "MINIMAP");
+
+			if (thumbnailPic)
+			{
+				mapheaderinfo[i]->thumbnailPic = vres_GetPatch(thumbnailPic, PU_CACHE);
+			}
+
+			if (minimap)
+			{
+				mapheaderinfo[i]->minimapPic = vres_GetPatch(minimap, PU_HUDGFX);
+			}
+
+			vres_Free(virtmap);
 		}
 	}
 
@@ -8799,6 +8851,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	UINT16 numlumps, wadnum;
 	char *name;
 	lumpinfo_t *lumpinfo;
+	virtres_t *virtmap;
+	virtlump_t *minimap, *thumbnailPic;
 
 	// Vars to help us with the position start and amount of each resource type.
 	// Useful for PK3s since they use folders.

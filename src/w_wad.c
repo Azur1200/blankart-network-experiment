@@ -1979,7 +1979,7 @@ void *W_CacheLumpName(const char *name, INT32 tag)
 // Cache a patch into heap memory, convert the patch format as necessary
 //
 
-static void MakePatch(void *lumpdata, size_t size, INT32 tag, void *cache, boolean remap)
+static void *MakePatch(void *lumpdata, size_t size, INT32 tag, void *cache, boolean remap)
 {
 	void *ptr, *dest;
 	size_t len = size;
@@ -1995,9 +1995,10 @@ static void MakePatch(void *lumpdata, size_t size, INT32 tag, void *cache, boole
 		R_DoPaletteRemapPatch(ptr, len);
 
 	dest = Z_Calloc(sizeof(patch_t), tag, cache);
+
 	Patch_Create(ptr, len, dest);
 
-	Z_Free(ptr);
+	return dest;
 }
 
 void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
@@ -2018,6 +2019,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		W_ReadLumpHeaderPwad(wad, lump, lumpdata, 0, 0);
 
 		MakePatch(lumpdata, len, tag, &lumpcache[lump], wadfiles[wad]->compatmode);
+		Z_Free(lumpdata);
 	}
 	else
 		Z_ChangeTag(lumpcache[lump], tag);
@@ -2504,7 +2506,6 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			vlumps[i].name[8] = '\0';
 			vlumps[i].data = Z_Malloc(vlumps[i].size, PU_LEVEL, NULL); // This is memory inefficient, sorry about that.
 			memcpy(vlumps[i].data, wadData + (fileinfo + i)->filepos, vlumps[i].size);
-			vlumps[i].cache = NULL;
 		}
 
 		Z_Free(wadData);
@@ -2536,7 +2537,6 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 			memcpy(vlumps[i].name, W_CheckNameForNum(lumpnum), 8);
 			vlumps[i].name[8] = '\0';
 			vlumps[i].data = W_CacheLumpNum(lumpnum, PU_LEVEL);
-			vlumps[i].cache = NULL;
 		}
 	}
 	vres = Z_Malloc(sizeof(virtres_t), PU_LEVEL, NULL);
@@ -2559,7 +2559,12 @@ void vres_Free(virtres_t* vres)
 	}
 
 	while (vres->numlumps--)
-		Z_Free(vres->vlumps[vres->numlumps].data);
+	{
+		if (vres->vlumps[vres->numlumps].data)
+		{
+			Z_Free(vres->vlumps[vres->numlumps].data);
+		}
+	}
 	Z_Free(vres->vlumps);
 	Z_Free(vres);
 }
@@ -2604,14 +2609,7 @@ void *vres_GetPatch(virtlump_t *vlump, INT32 tag)
 	if (!vlump)
 		return NULL;
 
-	if (!vlump->cache)
-	{
-		MakePatch(vlump->data, vlump->size, tag, &vlump->cache, false);
-	}
-	else
-		Z_ChangeTag(vlump->cache, tag);
-
-	patch = vlump->cache;
+	patch = MakePatch(vlump->data, vlump->size, tag, NULL, false);
 
 #ifdef HWRENDER
 	// Software-only compile cache the data without conversion

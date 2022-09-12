@@ -287,7 +287,7 @@ void R_InitColormaps(void)
 #endif
 }
 
-void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
+void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boolean compat)
 {
 	char colormap[9] = "COLORMAP";
 	lumpnum_t lump;
@@ -325,18 +325,17 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 	}
 
 	// Encore mode.
-	if (newencoremap != LUMPERROR)
+	if (newencoremap)
 	{
 		lighttable_t *colormap_p, *colormap_p2;
 		size_t p, i;
 
 		encoremap = Z_MallocAlign(256 + 10, PU_LEVEL, NULL, 8);
-		W_ReadLump(newencoremap, encoremap);
+		M_Memcpy(encoremap, newencoremap, encoremapsize);
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += COLORMAP_REMAPOFFSET;
 
-		remap = wadfiles[WADFILENUM(newencoremap)]->compatmode;
-		if (remap)
+		if (compat)
 		{
 			UINT8 *copy = malloc(256);
 			memcpy(copy, encoremap, 256);

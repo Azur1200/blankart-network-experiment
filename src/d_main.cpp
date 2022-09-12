@@ -347,7 +347,7 @@ static bool D_Display(void)
 			if (gamestate != GS_LEVEL && rendermode != render_none)
 			{
 				V_SetPaletteLump("PLAYPAL"); // Reset the palette
-				R_ReInitColormaps(0, LUMPERROR);
+				R_ReInitColormaps(0, NULL, 0, false);
 			}
 
 			F_WipeStartScreen();

@@ -1640,8 +1640,6 @@ void Y_StartVote(void)
 
 	for (i = 0; i < 4; i++)
 	{
-		lumpnum_t lumpnum;
-
 		// set up the encore
 		levelinfo[i].encore = (votelevels[i][1] & 0x80);
 		votelevels[i][1] &= ~0x80;
@@ -1684,9 +1682,14 @@ void Y_StartVote(void)
 			levelinfo[i].gts = NULL;
 
 		// set up the pic
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
-		if (lumpnum != LUMPERROR)
-			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_STATIC);
+		patch_t *thumbnailPic = NULL;
+		if (mapheaderinfo[votelevels[i][0]+1])
+		{
+			thumbnailPic = mapheaderinfo[votelevels[i][0]]->thumbnailPic;
+		}
+
+		if (thumbnailPic)
+			levelinfo[i].pic = thumbnailPic;
 		else
 			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_STATIC);
 	}
