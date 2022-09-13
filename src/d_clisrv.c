@@ -1984,7 +1984,6 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			D_QuitNetGame();
 			CL_Reset();
 			D_StartTitle();
-			memset(gamekeydown, 0, NUMKEYS);
 			return false;
 		}
 

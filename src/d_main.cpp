@@ -1053,6 +1053,10 @@ void D_StartTitle(void)
 	paused = false;
 	advancedemo = false;
 	F_InitMenuPresValues();
+
+	// clear cmd building stuff
+	memset(gamekeydown, 0, NUMKEYS);
+
 	F_StartTitleScreen();
 
 	currentMenu = &MainDef; // reset the current menu ID
