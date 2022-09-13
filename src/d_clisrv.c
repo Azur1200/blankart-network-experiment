@@ -1966,6 +1966,10 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 	{
 		I_OsPolling();
 
+		// Needs to be updated here for M_DrawEggaChannel
+		renderdeltatics = FRACUNIT;
+		rendertimefrac = FRACUNIT;
+
 		if (cl_mode == CL_CONFIRMCONNECT)
 		{
 			D_ProcessEvents(); //needed for menu system to receive inputs
