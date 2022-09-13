@@ -1974,13 +1974,17 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			D_ProcessEvents(); //needed for menu system to receive inputs
 		}
-		else
+		else if (netgame)
 		{
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 				G_MapEventsToControls(&events[eventtail]);
+
+			if (gamekeydown[KEY_ESCAPE]
+				|| gamekeydown[KEY_JOY1+1])
+				cl_mode = CL_ABORTED;
 		}
 
-		if ((gamekeydown[KEY_ESCAPE] || gamekeydown[KEY_JOY1+1]) || cl_mode == CL_ABORTED)
+		if (cl_mode == CL_ABORTED)
 		{
 			CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 //				M_StartMessage(M_GetText("Network game synchronization aborted.\n\nPress ESC\n"), NULL, MM_NOTHING);
