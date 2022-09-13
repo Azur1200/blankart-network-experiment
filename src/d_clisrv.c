@@ -2073,6 +2073,7 @@ static void CL_ConnectToServer(void)
 		Y_EndVote();
 
 	DEBFILE(va("waiting %d nodes\n", doomcom->numnodes));
+	M_ClearMenus(true);
 	G_SetGamestate(GS_WAITINGPLAYERS);
 	wipegamestate = GS_WAITINGPLAYERS;
 
