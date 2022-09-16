@@ -64,9 +64,6 @@
 #include "i_system.h"
 #include "md5.h"
 #include "lua_script.h"
-#ifdef SCANTHINGS
-#include "p_setup.h" // P_ScanThings
-#endif
 #include "g_game.h" // G_MapNumber
 
 #include "k_terrain.h"
@@ -308,19 +305,6 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
 			}
 	}
-
-#ifdef SCANTHINGS
-	// Scan maps for emblems 'n shit
-	{
-		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
-		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-		{
-			const char *name = lump_p->name;
-			INT16 mapnum = (INT16)G_MapNumber(name);
-			P_ScanThings(mapnum, wadnum, lump + ML_THINGS);
-		}
-	}
-#endif
 }
 
 static inline boolean CheckCompatFilename(const char *filename)

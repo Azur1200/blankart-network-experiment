@@ -734,7 +734,7 @@ INT32 G_MapNumber(const char * name)
 		}
 	}
 
-	return map + 1;
+	return map;
 }
 
 /** Clips the console player's mouse aiming to the current view.
@@ -3791,7 +3791,7 @@ static void G_DoCompleted(void)
 
 		if (mapheaderinfo[mNextNum])
 		{
-			nextmap = (INT16)(mNextNum-1);
+			nextmap = (INT16)mNextNum;
 		}
 	}
 	else if (grandprixinfo.gp == true)
@@ -3826,7 +3826,7 @@ static void G_DoCompleted(void)
 
 		if (mapheaderinfo[nextNum])
 		{
-			nextmap = (INT16)(nextNum-1);
+			nextmap = (INT16)nextNum;
 			if (marathonmode && nextmap == spmarathon_start-1)
 				nextmap = 1100-1; // No infinite loop for you
 		}
@@ -3862,7 +3862,7 @@ static void G_DoCompleted(void)
 					if (!mapheaderinfo[mNextNum])
 						cm = -1; // guarantee error execution
 					else
-						cm = (INT16)(mNextNum-1);
+						cm = (INT16)mNextNum;
 				}
 				else
 				{
@@ -3871,7 +3871,7 @@ static void G_DoCompleted(void)
 					if (!mapheaderinfo[nextNum])
 						cm = -1; // guarantee error execution
 					else
-						cm = (INT16)(nextNum-1);
+						cm = (INT16)nextNum;
 				}
 
 				if (cm >= NUMMAPS || cm < 0) // out of range (either 1100ish or error)
@@ -5070,7 +5070,7 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	}
 	else
 	{
-		newmapnum = G_MapNumber(mapname);
+		newmapnum = G_MapNumber(mapname)+1;
 
 		if (newmapnum > nummapheaders)
 			return G_FindMap(mapname, realmapnamep, NULL, NULL);
