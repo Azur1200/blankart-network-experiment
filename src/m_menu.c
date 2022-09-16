@@ -5633,7 +5633,7 @@ static void DrawReplayHutReplayInfo(void)
 
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
 		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch)/4;
-		if (patch == blanklvl)
+		if (patch == blanklvl && !mapheaderinfo[demolist[dir_on[menudepthleft]].map])
 			patch = nolvl;
 
 		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
