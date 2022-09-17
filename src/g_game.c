@@ -3514,7 +3514,7 @@ tryagain:
 	{
 		boolean isokmap = true;
 
-		if (!mapheaderinfo[ix])
+		if (!mapheaderinfo[ix] || mapheaderinfo[ix]->lumpnum == LUMPERROR)
 			continue;
 
 		if ((mapheaderinfo[ix]->typeoflevel & tolflags) != tolflags
