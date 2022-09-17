@@ -4535,7 +4535,7 @@ static INT32 M_CountLevelsToShowInList(void)
 {
 	INT32 mapnum, count = 0;
 
-	for (mapnum = 0; mapnum < NUMMAPS; mapnum++)
+	for (mapnum = 0; mapnum < nummapheaders; mapnum++)
 		if (M_CanShowLevelInList(mapnum, -1))
 			count++;
 
@@ -4546,7 +4546,7 @@ static INT32 M_GetFirstLevelInList(void)
 {
 	INT32 mapnum;
 
-	for (mapnum = 0; mapnum < NUMMAPS; mapnum++)
+	for (mapnum = 0; mapnum < nummapheaders; mapnum++)
 		if (M_CanShowLevelInList(mapnum, -1))
 			return mapnum + 1;
 
