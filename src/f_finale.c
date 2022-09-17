@@ -1118,7 +1118,7 @@ static void F_CacheTitleScreen(void)
 
 void F_StartTitleScreen(void)
 {
-	const INT32 titleMapNum = titlemap ? G_MapNumber(titlemap)+1 : 0;
+	INT32 titleMapNum;
 
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 	{
@@ -1129,21 +1129,20 @@ void F_StartTitleScreen(void)
 	else
 		wipegamestate = GS_TITLESCREEN;
 
-	if (titlemap && mapheaderinfo[titleMapNum])
+	if (titlemap
+		&& ((titleMapNum = G_MapNumber(titlemap)) < nummapheaders)
+		&& mapheaderinfo[titleMapNum]
+		&& mapheaderinfo[titleMapNum]->lumpnum != LUMPERROR)
 	{
 		mapthing_t *startpos;
 
-		const INT32 titleMapNum = G_MapNumber(titlemap)+1;
 		gamestate_t prevwipegamestate = wipegamestate;
 		titlemapinaction = TITLEMAP_LOADING;
 		titlemapcameraref = NULL;
-		gamemap = titleMapNum;
+		gamemap = titleMapNum+1;
 
-		if (!mapheaderinfo[gamemap-1])
-			P_AllocMapHeader(gamemap-1);
-
-		maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-		globalweather = mapheaderinfo[gamemap-1]->weather;
+		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
+		globalweather = mapheaderinfo[titleMapNum]->weather;
 
 		G_DoLoadLevel(true);
 		if (!titleMapNum)
