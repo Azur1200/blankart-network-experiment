@@ -986,10 +986,12 @@ void D_StartTitle(void)
 
 		if (server)
 		{
-			if (server)
-			{
-				COM_BufAddText(va("map %s\n", G_BuildMapName(spstage_start)));
-			}
+			INT16 mapnum = G_GetFirstMapOfGametype(gametype)+1;
+
+			if (i > nummapheaders)
+				I_Error("D_StartTitle: No valid map ID found!?");
+
+			COM_BufAddText(va("map %s\n", G_BuildMapName(mapnum)));
 		}
 
 		return;
