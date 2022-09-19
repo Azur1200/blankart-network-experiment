@@ -835,18 +835,18 @@ static void K_SpawnSplashParticles(mobj_t *mo, t_splash_t *s, fixed_t impact)
 		if (numParticles == 1)
 		{
 			// Random angle.
-			pushAngle = P_RandomRange(0, ANGLE_MAX);
+			pushAngle = P_RandomRange(PR_TERRAIN, 0, ANGLE_MAX);
 		}
 
 		if (s->spread > 0)
 		{
-			xOff = P_RandomRange(-s->spread / FRACUNIT, s->spread / FRACUNIT) * FRACUNIT;
-			yOff = P_RandomRange(-s->spread / FRACUNIT, s->spread / FRACUNIT) * FRACUNIT;
+			xOff = P_RandomRange(PR_TERRAIN, -s->spread / FRACUNIT, s->spread / FRACUNIT) * FRACUNIT;
+			yOff = P_RandomRange(PR_TERRAIN, -s->spread / FRACUNIT, s->spread / FRACUNIT) * FRACUNIT;
 		}
 
 		if (s->cone > 0)
 		{
-			pushAngle += P_RandomRange(-s->cone / ANG1, s->cone / ANG1) * ANG1;
+			pushAngle += P_RandomRange(PR_TERRAIN, -s->cone / ANG1, s->cone / ANG1) * ANG1;
 		}
 
 		dust = P_SpawnMobjFromMobj(
@@ -996,20 +996,20 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 	if (((timer / fs->frequency) / 2) & 1)
 	{
 		tireAngle -= ANGLE_45;
-		tireAngle -= P_RandomRange(0, fs->cone / ANG1) * ANG1;
-		pushAngle -= P_RandomRange(0, fs->cone / ANG1) * ANG1;
+		tireAngle -= P_RandomRange(PR_TERRAIN, 0, fs->cone / ANG1) * ANG1;
+		pushAngle -= P_RandomRange(PR_TERRAIN, 0, fs->cone / ANG1) * ANG1;
 	}
 	else
 	{
 		tireAngle += ANGLE_45;
-		tireAngle += P_RandomRange(0, fs->cone / ANG1) * ANG1;
-		pushAngle += P_RandomRange(0, fs->cone / ANG1) * ANG1;
+		tireAngle += P_RandomRange(PR_TERRAIN, 0, fs->cone / ANG1) * ANG1;
+		pushAngle += P_RandomRange(PR_TERRAIN, 0, fs->cone / ANG1) * ANG1;
 	}
 
 	if (fs->spread > 0)
 	{
-		xOff = P_RandomRange(-fs->spread / FRACUNIT, fs->spread / FRACUNIT) * FRACUNIT;
-		yOff = P_RandomRange(-fs->spread / FRACUNIT, fs->spread / FRACUNIT) * FRACUNIT;
+		xOff = P_RandomRange(PR_TERRAIN, -fs->spread / FRACUNIT, fs->spread / FRACUNIT) * FRACUNIT;
+		yOff = P_RandomRange(PR_TERRAIN, -fs->spread / FRACUNIT, fs->spread / FRACUNIT) * FRACUNIT;
 	}
 
 	dust = P_SpawnMobjFromMobj(

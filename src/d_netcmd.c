@@ -56,6 +56,7 @@
 #include "lua_hook.h"
 #include "m_cond.h"
 #include "m_anigif.h"
+#include "st_stuff.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -1183,6 +1184,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_forceskin);
 	CV_RegisterVar(&cv_downloading);
 	CV_RegisterVar(&cv_votemaxrows);
+
+	CV_RegisterVar(&cv_rngpeek);
 
 	K_RegisterKartStuff(); // SRB2kart
 
@@ -4313,7 +4316,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	}
 
 	if (netgame)
-		P_SetRandSeed(READUINT32(*cp));
+		P_ClearRandom(READUINT32(*cp));
 
 	if (!skipprecutscene)
 	{
@@ -4814,7 +4817,9 @@ static void Got_RandomSeed(UINT8 **cp, INT32 playernum)
 	if (playernum != serverplayer) // it's not from the server, wtf?
 		return;
 
-	P_SetRandSeed(seed);
+	// Sal: this seems unused, so this is probably fine?
+	// If it needs specific RNG classes, then it should be easy to add.
+	P_ClearRandom(seed);
 }
 
 /** Clears all players' scores in a netgame.

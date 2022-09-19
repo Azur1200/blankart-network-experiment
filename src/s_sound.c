@@ -2647,7 +2647,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 			{
 				if (truesize > 1)
 				{
-					P_RandomFixed();
+					P_RandomFixed(PR_MUSICSELECT);
 				}
 				// mapmusrng has already been set by the demo; just make sure it's valid
 				if (mapmusrng >= truesize)
@@ -2660,7 +2660,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 
 				if (truesize > 1)
 				{
-					mapmusrng = P_RandomKey(truesize);
+					mapmusrng = P_RandomKey(PR_MUSICSELECT, truesize);
 				}
 				else
 					mapmusrng = 0;

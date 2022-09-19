@@ -6443,7 +6443,14 @@ static INT16 Consistancy(consistancy_t *c)
 	// I give up
 	// Coop desynching enemies is painful
 	if (gamestate == GS_LEVEL)
-		c->seed_checksum += P_GetRandSeed();
+	{
+		for (i = 0; i < PRNUMCLASS; i++)
+		{
+			// We're using a 64-bit integer for seeds, so the sky's pretty much the limit for how much we can add!
+			// (In theory: you'd need 4 billion maxed-out seeds to risk an overflow, for context)
+			c->seed_checksum += P_GetRandSeed(i);
+		}
+	}
 
 #ifdef MOBJCONSISTANCY
 	if (gamestate == GS_LEVEL)

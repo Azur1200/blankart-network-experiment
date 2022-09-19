@@ -417,7 +417,7 @@ void K_RunPaperItemSpawners(void)
 				}
 				else
 				{
-					key = P_RandomKey(spotCount);
+					key = P_RandomKey(PR_ITEM_SPAWNER, spotCount);
 				}
 
 				r = spotMap[key];
@@ -430,7 +430,7 @@ void K_RunPaperItemSpawners(void)
 
 					drop = K_CreatePaperItem(
 						spotList[r]->x, spotList[r]->y, spotList[r]->z + (128 * mapobjectscale * flip),
-						FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
+						FixedAngle(P_RandomRange(PR_ITEM_SPAWNER, 0, 359) * FRACUNIT), flip,
 						0, 0
 					);
 				}

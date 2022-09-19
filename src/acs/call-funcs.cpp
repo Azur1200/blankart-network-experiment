@@ -584,7 +584,7 @@ bool CallFunc_Random(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word
 	low = argV[0];
 	high = argV[1];
 
-	thread->dataStk.push(P_RandomRange(low, high));
+	thread->dataStk.push(P_RandomRange(PR_ACS, low, high));
 	return false;
 }
 

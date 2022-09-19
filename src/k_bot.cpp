@@ -385,7 +385,7 @@ void K_UpdateMatchRaceBots(void)
 
 			if (usableskins > 0)
 			{
-				UINT16 index = P_RandomKey(usableskins);
+				UINT16 index = P_RandomKey(PR_BOTS, usableskins);
 				skinnum = grabskins[index];
 				if (((cv_kartbot_cap.value > 0) && (usableskins+1 >= cv_kartbot_cap.value)) || (usableskins+1 >= cv_maxplayers.value))
 				{

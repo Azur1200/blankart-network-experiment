@@ -64,6 +64,18 @@ consvar_t cv_lessflicker = CVAR_INIT ("lessflicker", "Off", CV_SAVE, CV_OnOff, N
 
 consvar_t cv_stagetitle = CVAR_INIT ("maptitle", "On", CV_SAVE, CV_OnOff, NULL);
 
+#define IMPL_RNGSEED_POSSIBLEVALUE(name) {PR_##name, #name},
+
+static CV_PossibleValue_t rngseed_cons_t[] = {
+	{PR_UNDEFINED, "UNDEFINED"},
+	RNGSEEDS(IMPL_RNGSEED_POSSIBLEVALUE)
+	{0, NULL}
+};
+
+#undef IMPL_RNGSEED_POSSIBLEVALUE
+
+consvar_t cv_rngpeek = CVAR_INIT("rngpeek", "UNDEFINED", CV_SAVE, rngseed_cons_t, NULL);
+
 UINT16 objectsdrawn = 0;
 
 // dumb fade thing for director toggle
@@ -582,13 +594,20 @@ static void ST_drawDebugInfo(void)
 
 	if (cht_debug & DBG_RNG) // randomizer testing
 	{
-		fixed_t peekres = P_RandomPeek();
+		// TODO: this only accounts for the undefined class,
+		// which should be phased out as much as possible anyway.
+		// Figure out some other way to display all of the RNG classes.
+		// yama: Maybe a cvar will do?
+		pr_class_t debug_class = cv_rngpeek.value;
 
-		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init: %08x", P_GetInitSeed()));
-		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed: %08x", P_GetRandSeed()));
-		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
+		fixed_t peekres = P_RandomPeek(debug_class);
 
-		height -= 32;
+		V_DrawRightAlignedString(320, height - 24, V_MONOSPACE, va("Class: %s", cv_rngpeek.string));
+		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init : %08x", P_GetInitSeed(debug_class)));
+		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed : %08x", P_GetRandSeed(debug_class)));
+		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==   : %08x", peekres));
+
+		height -= 40;
 	}
 
 	if (cht_debug & DBG_IMU)
