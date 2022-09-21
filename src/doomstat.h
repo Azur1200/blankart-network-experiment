@@ -453,8 +453,8 @@ struct mapheader_t
 #define LF2_NOTIMEATTACK  (1<<2) ///< Hide this map in Time Attack modes
 #define LF2_VISITNEEDED   (1<<3) ///< Not available in Time Attack modes until you visit the level
 
-extern mapheader_t* mapheaderinfo[NUMMAPS];
-extern INT32 nummapheaders,basenummapheaders;
+extern mapheader_t** mapheaderinfo;
+extern INT32 nummapheaders, basenummapheaders, mapallocsize;
 
 #define MAXMAPLUMPNAME 64 // includes \0, for cleaner savedata
 

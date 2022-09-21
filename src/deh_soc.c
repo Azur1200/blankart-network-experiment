@@ -1079,11 +1079,6 @@ void readlevelheader(MYFILE *f, char * name)
 
 	const INT32 num = G_MapNumber(name);
 
-	if (num >= NUMMAPS)
-	{
-		I_Error("Too many maps!");
-	}
-
 	if (num >= nummapheaders)
 	{
 		P_AllocMapHeader((INT16)(num));
