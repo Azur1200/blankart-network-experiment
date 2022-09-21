@@ -448,6 +448,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	// see p_setup.c - prevents replacing maps in addons with different versions
 	mapheaderinfo[num]->alreadyExists = exists;
 
+	mapheaderinfo[num]->mapvisited = 0;
+	Z_Free(mapheaderinfo[num]->mainrecord);
+	mapheaderinfo[num]->mainrecord = NULL;
+
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
 }
@@ -466,6 +470,7 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->flickies = NULL;
+		mapheaderinfo[i]->mainrecord = NULL;
 		nummapheaders++;
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
@@ -8398,9 +8403,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		R_PrecacheLevel();
 
 	if (!(netgame || multiplayer || demo.playback) && !majormods)
-		mapvisited[gamemap-1] |= MV_VISITED;
+		mapheaderinfo[gamemap-1]->mapvisited |= MV_VISITED;
 	else if (!demo.playback)
-		mapvisited[gamemap-1] |= MV_MP; // you want to record that you've been there this session, but not permanently
+		mapheaderinfo[gamemap-1]->mapvisited |= MV_MP; // you want to record that you've been there this session, but not permanently
 
 	G_AddMapToBuffer(gamemap-1);
 

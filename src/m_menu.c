@@ -4519,7 +4519,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				return false; // map hell
 
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapvisited[mapnum])
+			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapheaderinfo[mapnum]->mapvisited)
 				return false;
 
 			return true;
@@ -7712,13 +7712,13 @@ static void M_DrawLevelStats(void)
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mainrecords[i] || mainrecords[i]->time <= 0)
+		if (!mapheaderinfo[i]->mainrecord || mapheaderinfo[i]->mainrecord->time <= 0)
 		{
 			mapsunfinished++;
 			continue;
 		}
 
-		besttime += mainrecords[i]->time;
+		besttime += mapheaderinfo[i]->mainrecord->time;
 	}
 
 	V_DrawString(20, 70, highlightflags, "Combined time records:");
@@ -7957,10 +7957,10 @@ void M_DrawTimeAttackMenu(void)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
 		tic_t lap = 0, time = 0;
-		if (mainrecords[cv_nextmap.value-1])
+		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord)
 		{
-			lap = mainrecords[cv_nextmap.value-1]->lap;
-			time = mainrecords[cv_nextmap.value-1]->time;
+			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord->lap;
+			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord->time;
 		}
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
@@ -7968,11 +7968,11 @@ void M_DrawTimeAttackMenu(void)
 		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, highlightflags, "BEST LAP:");
-			K_drawKartTimestamp(lap, 19, 86, 0, 2);
+			K_drawKartTimestamp(lap, 19, 86, -1, 2);
 		}
 
 		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
-		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value, 1);
+		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value-1, 1);
 	}
 	/*{
 		char beststr[40];

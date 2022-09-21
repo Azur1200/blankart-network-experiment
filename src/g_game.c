@@ -210,12 +210,6 @@ tic_t totalplaytime;
 UINT32 matchesplayed; // SRB2Kart
 boolean gamedataloaded = false;
 
-// Time attack data for levels
-// These are dynamically allocated for space reasons now
-recorddata_t *mainrecords[NUMMAPS]   = {NULL};
-//nightsdata_t *nightsrecords[NUMMAPS] = {NULL};
-UINT8 mapvisited[NUMMAPS];
-
 // Temporary holding place for nights data for the current map
 //nightsdata_t ntemprecords;
 
@@ -539,21 +533,23 @@ INT32 player_name_changes[MAXPLAYERS];
 // Allocation for time and nights data
 void G_AllocMainRecordData(INT16 i)
 {
-	if (!mainrecords[i])
-		mainrecords[i] = Z_Malloc(sizeof(recorddata_t), PU_STATIC, NULL);
-	memset(mainrecords[i], 0, sizeof(recorddata_t));
+	if (i > nummapheaders || !mapheaderinfo[i])
+		I_Error("G_AllocMainRecordData: Internal map ID %d not found (nummapheaders = %d)\n", i, nummapheaders);
+	if (!mapheaderinfo[i]->mainrecord)
+		mapheaderinfo[i]->mainrecord = Z_Malloc(sizeof(recorddata_t), PU_STATIC, NULL);
+	memset(mapheaderinfo[i]->mainrecord, 0, sizeof(recorddata_t));
 }
 
 // MAKE SURE YOU SAVE DATA BEFORE CALLING THIS
 void G_ClearRecords(void)
 {
 	INT16 i;
-	for (i = 0; i < NUMMAPS; ++i)
+	for (i = 0; i < nummapheaders; ++i)
 	{
-		if (mainrecords[i])
+		if (mapheaderinfo[i]->mainrecord)
 		{
-			Z_Free(mainrecords[i]);
-			mainrecords[i] = NULL;
+			Z_Free(mapheaderinfo[i]->mainrecord);
+			mapheaderinfo[i]->mainrecord = NULL;
 		}
 		/*if (nightsrecords[i])
 		{
@@ -566,20 +562,22 @@ void G_ClearRecords(void)
 // For easy retrieval of records
 tic_t G_GetBestTime(INT16 map)
 {
-	if (!mainrecords[map-1] || mainrecords[map-1]->time <= 0)
+	if (!mapheaderinfo[map] || !mapheaderinfo[map]->mainrecord || mapheaderinfo[map]->mainrecord->time <= 0)
 		return (tic_t)UINT32_MAX;
 
-	return mainrecords[map-1]->time;
+	return mapheaderinfo[map]->mainrecord->time;
 }
+
+// BE RIGHT BACK
 
 // Not needed
 /*
 tic_t G_GetBestLap(INT16 map)
 {
-	if (!mainrecords[map-1] || mainrecords[map-1]->lap <= 0)
+	if (!mapheaderinfo[map] || !mapheaderinfo[map]->mainrecord || mapheaderinfo[map]->mainrecord->lap <= 0)
 		return (tic_t)UINT32_MAX;
 
-	return mainrecords[map-1]->lap;
+	return mapheaderinfo[map]->mainrecord->lap;
 }
 */
 
@@ -595,7 +593,7 @@ static void G_UpdateRecordReplays(void)
 	UINT8 earnedEmblems;
 
 	// Record new best time
-	if (!mainrecords[gamemap-1])
+	if (!mapheaderinfo[gamemap-1]->mainrecord)
 		G_AllocMainRecordData(gamemap-1);
 
 	if (players[consoleplayer].pflags & PF_NOCONTEST)
@@ -603,20 +601,20 @@ static void G_UpdateRecordReplays(void)
 		players[consoleplayer].realtime = UINT32_MAX;
 	}
 
-	if (((mainrecords[gamemap-1]->time == 0) || (players[consoleplayer].realtime < mainrecords[gamemap-1]->time))
+	if (((mapheaderinfo[gamemap-1]->mainrecord->time == 0) || (players[consoleplayer].realtime < mapheaderinfo[gamemap-1]->mainrecord->time))
 		&& (players[consoleplayer].realtime < UINT32_MAX)) // DNF
 	{
-		mainrecords[gamemap-1]->time = players[consoleplayer].realtime;
+		mapheaderinfo[gamemap-1]->mainrecord->time = players[consoleplayer].realtime;
 	}
 
 	if (modeattacking == ATTACKING_TIME)
 	{
-		if ((mainrecords[gamemap-1]->lap == 0) || (bestlap < mainrecords[gamemap-1]->lap))
-			mainrecords[gamemap-1]->lap = bestlap;
+		if ((mapheaderinfo[gamemap-1]->mainrecord->lap == 0) || (bestlap < mapheaderinfo[gamemap-1]->mainrecord->lap))
+			mapheaderinfo[gamemap-1]->mainrecord->lap = bestlap;
 	}
 	else
 	{
-		mainrecords[gamemap-1]->lap = 0;
+		mapheaderinfo[gamemap-1]->mainrecord->lap = 0;
 	}
 
 	// Save demo!
@@ -3759,20 +3757,19 @@ void G_AddMapToBuffer(INT16 map)
 //
 static void G_UpdateVisited(void)
 {
-	boolean spec = G_IsSpecialStage(gamemap);
 	// Update visitation flags?
-	if ((!modifiedgame || savemoddata) // Not modified
-		&& !multiplayer && !demo.playback // SP/RA/NiGHTS mode
-		&& !(spec && stagefailed)) // Not failed the special stage
+	if (/*(!majormods || savemoddata) // Not modified
+		&&*/ !multiplayer && !demo.playback // SP/RA/NiGHTS mode
+		&& !(modeattacking && (players[consoleplayer].pflags & PF_NOCONTEST))) // Not failed
 	{
 		UINT8 earnedEmblems;
 
 		// Update visitation flags
-		mapvisited[gamemap-1] |= MV_BEATEN;
+		mapheaderinfo[gamemap-1]->mapvisited |= MV_BEATEN;
 
 		if (encoremode == true)
 		{
-			mapvisited[gamemap-1] |= MV_ENCORE;
+			mapheaderinfo[gamemap-1]->mapvisited |= MV_ENCORE;
 		}
 
 		if (modeattacking)
@@ -4053,7 +4050,9 @@ static void G_DoCompleted(void)
 	// If the current gametype has no intermission screen set, then don't start it.
 	Y_DetermineIntermissionType();
 
-	if ((skipstats && !modeattacking) || (spec && modeattacking && stagefailed) || (intertype == int_none))
+	if ((skipstats && !modeattacking)
+		|| (modeattacking && (players[consoleplayer].pflags & PF_NOCONTEST))
+		|| (intertype == int_none))
 	{
 		G_UpdateVisited();
 		G_HandleSaveLevel();
@@ -4285,18 +4284,19 @@ void G_LoadGameSettings(void)
 	S_InitRuntimeSounds();
 }
 
+#define GD_VERSIONCHECK 0xBA5ED444
+
 // G_LoadGameData
 // Loads the main data file, which stores information such as emblems found, etc.
 void G_LoadGameData(void)
 {
-	INT32 i, j;
+	UINT32 i, j;
 	UINT8 modded = false;
 	UINT8 rtemp;
 	savebuffer_t save = {0};
 
 	//For records
-	tic_t rectime;
-	tic_t reclap;
+	UINT32 numgamedatamapheaders;
 
 	// Clear things so previously read gamedata doesn't transfer
 	// to new gamedata
@@ -4327,7 +4327,7 @@ void G_LoadGameData(void)
 		return;
 
 	// Version check
-	if (READUINT32(save.p) != 0xFCAFE211)
+	if (READUINT32(save.p) != GD_VERSIONCHECK)
 	{
 		const char *gdfolder = "the SRB2Kart folder";
 		if (strcmp(srb2home,"."))
@@ -4354,11 +4354,6 @@ void G_LoadGameData(void)
 		goto datacorrupt;
 	else if (modded != true && modded != false)
 		goto datacorrupt;
-
-	// TODO put another cipher on these things? meh, I don't care...
-	for (i = 0; i < NUMMAPS; i++)
-		if ((mapvisited[i] = READUINT8(save.p)) > MV_MAX)
-			goto datacorrupt;
 
 	// To save space, use one bit per collected/achieved/unlocked flag
 	for (i = 0; i < MAXEMBLEMS;)
@@ -4393,16 +4388,44 @@ void G_LoadGameData(void)
 	timesBeaten = READUINT32(save.p);
 
 	// Main records
-	for (i = 0; i < NUMMAPS; ++i)
+	numgamedatamapheaders = READUINT32(save.p);
+	if (numgamedatamapheaders >= NEXTMAP_SPECIAL)
+		goto datacorrupt;
+
+	for (i = 0; i < numgamedatamapheaders; i++)
 	{
+		char mapname[MAXMAPLUMPNAME];
+		INT16 mapnum;
+		tic_t rectime;
+		tic_t reclap;
+
+		READSTRINGN(save.p, mapname, sizeof(mapname));
+		mapnum = G_MapNumber(mapname);
+
+		rtemp = READUINT8(save.p);
 		rectime = (tic_t)READUINT32(save.p);
 		reclap  = (tic_t)READUINT32(save.p);
 
-		if (rectime || reclap)
+		if (mapnum < nummapheaders && mapheaderinfo[mapnum])
 		{
-			G_AllocMainRecordData((INT16)i);
-			mainrecords[i]->time = rectime;
-			mainrecords[i]->lap = reclap;
+			// Valid mapheader, time to populate with record data.
+
+			if ((mapheaderinfo[mapnum]->mapvisited = rtemp) & ~MV_MAX)
+				goto datacorrupt;
+
+			if (rectime || reclap)
+			{
+				G_AllocMainRecordData((INT16)i);
+				mapheaderinfo[i]->mainrecord->time = rectime;
+				mapheaderinfo[i]->mainrecord->lap = reclap;
+				CONS_Printf("ID %d, Time = %d, Lap = %d\n", i, rectime/35, reclap/35);
+			}
+		}
+		else
+		{
+			// Since it's not worth declaring the entire gamedata
+			// corrupt over extra maps, we report and move on.
+			CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded", mapname);
 		}
 	}
 
@@ -4439,12 +4462,12 @@ void G_SaveGameData(void)
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
-	length = 4+4+4+(PWRLV_NUMTYPES*2)+1+(NUMMAPS)
+	length = 4+4+4+(PWRLV_NUMTYPES*2)+1
 	+ BIT_ARRAY_SIZE(MAXEMBLEMS)
 	+ BIT_ARRAY_SIZE(MAXEXTRAEMBLEMS)
 	+ BIT_ARRAY_SIZE(MAXUNLOCKABLES)
 	+ BIT_ARRAY_SIZE(MAXCONDITIONSETS)
-	+ 4+(NUMMAPS*9);
+	+ 4+4+(nummapheaders*(MAXMAPLUMPNAME+1+4+4));
 
 	if (P_SaveBufferAlloc(&save, length) == false)
 	{
@@ -4463,22 +4486,18 @@ void G_SaveGameData(void)
 #endif
 
 	// Version test
-	WRITEUINT32(save.p, 0xFCAFE211);
+	WRITEUINT32(save.p, GD_VERSIONCHECK); // 4
 
-	WRITEUINT32(save.p, totalplaytime);
-	WRITEUINT32(save.p, matchesplayed);
+	WRITEUINT32(save.p, totalplaytime); // 4
+	WRITEUINT32(save.p, matchesplayed); // 4
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 		WRITEUINT16(save.p, vspowerlevel[i]);
 
-	WRITEUINT8(save.p, (UINT8)savemoddata);
-
-	// TODO put another cipher on these things? meh, I don't care...
-	for (i = 0; i < NUMMAPS; i++)
-		WRITEUINT8(save.p, (mapvisited[i] & MV_MAX));
+	WRITEUINT8(save.p, (UINT8)savemoddata); // 1
 
 	// To save space, use one bit per collected/achieved/unlocked flag
-	for (i = 0; i < MAXEMBLEMS;)
+	for (i = 0; i < MAXEMBLEMS;) // BIT_ARRAY_SIZE(MAXEMBLEMS)
 	{
 		btemp = 0;
 		for (j = 0; j < 8 && j+i < MAXEMBLEMS; ++j)
@@ -4486,7 +4505,7 @@ void G_SaveGameData(void)
 		WRITEUINT8(save.p, btemp);
 		i += j;
 	}
-	for (i = 0; i < MAXEXTRAEMBLEMS;)
+	for (i = 0; i < MAXEXTRAEMBLEMS;) // BIT_ARRAY_SIZE(MAXEXTRAEMBLEMS)
 	{
 		btemp = 0;
 		for (j = 0; j < 8 && j+i < MAXEXTRAEMBLEMS; ++j)
@@ -4494,7 +4513,7 @@ void G_SaveGameData(void)
 		WRITEUINT8(save.p, btemp);
 		i += j;
 	}
-	for (i = 0; i < MAXUNLOCKABLES;)
+	for (i = 0; i < MAXUNLOCKABLES;) // BIT_ARRAY_SIZE(MAXUNLOCKABLES)
 	{
 		btemp = 0;
 		for (j = 0; j < 8 && j+i < MAXUNLOCKABLES; ++j)
@@ -4502,7 +4521,7 @@ void G_SaveGameData(void)
 		WRITEUINT8(save.p, btemp);
 		i += j;
 	}
-	for (i = 0; i < MAXCONDITIONSETS;)
+	for (i = 0; i < MAXCONDITIONSETS;) // BIT_ARRAY_SIZE(MAXCONDITIONSETS)
 	{
 		btemp = 0;
 		for (j = 0; j < 8 && j+i < MAXCONDITIONSETS; ++j)
@@ -4511,22 +4530,28 @@ void G_SaveGameData(void)
 		i += j;
 	}
 
-	WRITEUINT32(save.p, timesBeaten);
+	WRITEUINT32(save.p, timesBeaten); // 4
 
 	// Main records
-	for (i = 0; i < NUMMAPS; i++)
+	WRITEUINT32(save.p, nummapheaders); // 4
+
+	for (i = 0; i < nummapheaders; i++) // nummapheaders * (MAXMAPLUMPNAME+1+4+4)
 	{
-		if (mainrecords[i])
+		// For figuring out which header to assing it to on load
+		WRITESTRING(save.p, mapheaderinfo[i]->lumpname);
+
+		WRITEUINT8(save.p, (mapheaderinfo[i]->mapvisited & MV_MAX));
+
+		if (mapheaderinfo[i]->mainrecord)
 		{
-			WRITEUINT32(save.p, mainrecords[i]->time);
-			WRITEUINT32(save.p, mainrecords[i]->lap);
+			WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord->time);
+			WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord->lap);
 		}
 		else
 		{
 			WRITEUINT32(save.p, 0);
 			WRITEUINT32(save.p, 0);
 		}
-		WRITEUINT8(save.p, 0); // compat
 	}
 
 	length = save.p - save.buffer;
