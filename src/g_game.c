@@ -4503,7 +4503,7 @@ void G_SaveGameData(void)
 	for (i = 0; i < nummapheaders; i++) // nummapheaders * (MAXMAPLUMPNAME+1+4+4)
 	{
 		// For figuring out which header to assing it to on load
-		WRITESTRING(save.p, mapheaderinfo[i]->lumpname);
+		WRITESTRINGN(save.p, mapheaderinfo[i]->lumpname, MAXMAPLUMPNAME);
 
 		WRITEUINT8(save.p, (mapheaderinfo[i]->mapvisited & MV_MAX));
 

@@ -373,6 +373,8 @@ struct cupheader_t
 extern cupheader_t *kartcupheaders; // Start of cup linked list
 extern UINT16 numkartcupheaders;
 
+#define MAXMAPLUMPNAME 64 // includes \0, for cleaner savedata
+
 /** Map header information.
   */
 struct mapheader_t
@@ -466,8 +468,6 @@ struct mapheader_t
 
 extern mapheader_t** mapheaderinfo;
 extern INT32 nummapheaders, mapallocsize;
-
-#define MAXMAPLUMPNAME 64 // includes \0, for cleaner savedata
 
 // Gametypes
 #define NUMGAMETYPEFREESLOTS 128
