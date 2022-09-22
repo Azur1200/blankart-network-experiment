@@ -393,10 +393,8 @@ static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
   * \param i Map number to clear header for.
   * \sa P_ClearMapHeaderInfo
   */
-static void P_ClearSingleMapHeaderInfo(INT16 i)
+static void P_ClearSingleMapHeaderInfo(INT16 num)
 {
-	const INT16 num = (INT16)(i-1);
-
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
 	mapheaderinfo[num]->zonttl[0] = '\0';
@@ -408,7 +406,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->gravity = DEFAULT_GRAVITY;
 	mapheaderinfo[num]->use_walltransfer = false;
 	mapheaderinfo[num]->keywords[0] = '\0';
-	for (i = 0; i < MAXMUSNAMES; i++)
+	for (int i = 0; i < MAXMUSNAMES; i++)
 		mapheaderinfo[num]->musname[i][0] = 0;
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
@@ -493,7 +491,7 @@ void P_AllocMapHeader(INT16 i)
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
 		if (!mapheaderinfo[i])
-			I_Error("P_AllocMapHeader: Not enough memory to allocate new mapheader");
+			I_Error("P_AllocMapHeader: Not enough memory to allocate new mapheader (ID %d)", i);
 
 		mapheaderinfo[i]->lumpnum = LUMPERROR;
 		mapheaderinfo[i]->lumpname = NULL;
@@ -503,7 +501,7 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->mainrecord = NULL;
 		nummapheaders++;
 	}
-	P_ClearSingleMapHeaderInfo(i + 1);
+	P_ClearSingleMapHeaderInfo(i);
 }
 
 //
