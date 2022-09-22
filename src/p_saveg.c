@@ -4944,7 +4944,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, mapmusrng);
 
 	WRITEUINT32(save->p, leveltime);
-	WRITEUINT32(save->p, ssspheres);
 	WRITEINT16(save->p, lastmap);
 	WRITEUINT16(save->p, bossdisabled);
 	WRITEUINT8(save->p, ringsdisabled);
@@ -4971,7 +4970,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	}
 
 	WRITEUINT32(save->p, token);
-	WRITEINT32(save->p, sstimer);
 	WRITEUINT32(save->p, bluescore);
 	WRITEUINT32(save->p, redscore);
 
@@ -5003,9 +5001,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 
 	WRITEFIXED(save->p, gravity);
 	WRITEFIXED(save->p, mapobjectscale);
-
-	WRITEUINT32(save->p, countdowntimer);
-	WRITEUINT8(save->p, countdowntimeup);
 
 	// SRB2kart
 	WRITEINT32(save->p, numgotboxes);
@@ -5114,7 +5109,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// get the time
 	leveltime = READUINT32(save->p);
-	ssspheres = READUINT32(save->p);
 	lastmap = READINT16(save->p);
 	bossdisabled = READUINT16(save->p);
 	ringsdisabled = READUINT8(save->p);
@@ -5138,7 +5132,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	}
 
 	token = READUINT32(save->p);
-	sstimer = READINT32(save->p);
 	bluescore = READUINT32(save->p);
 	redscore = READUINT32(save->p);
 
@@ -5170,9 +5163,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	
 	gravity = READFIXED(save->p);
 	mapobjectscale = READFIXED(save->p);
-
-	countdowntimer = (tic_t)READUINT32(save->p);
-	countdowntimeup = (boolean)READUINT8(save->p);
 
 	// SRB2kart
 	numgotboxes = READINT32(save->p);

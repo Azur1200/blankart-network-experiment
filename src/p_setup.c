@@ -400,9 +400,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->zonttl[0] = '\0';
 	mapheaderinfo[num]->actnum[0] = '\0';
 	mapheaderinfo[num]->typeoflevel = 0;
-	mapheaderinfo[num]->startrings = 0;
-	mapheaderinfo[num]->sstimer = 90;
-	mapheaderinfo[num]->ssspheres = 1;
 	mapheaderinfo[num]->gravity = DEFAULT_GRAVITY;
 	mapheaderinfo[num]->use_walltransfer = false;
 	mapheaderinfo[num]->keywords[0] = '\0';
@@ -410,7 +407,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 		mapheaderinfo[num]->musname[i][0] = 0;
 	mapheaderinfo[num]->mustrack = 0;
 	mapheaderinfo[num]->muspos = 0;
-	mapheaderinfo[num]->forcecharacter[0] = '\0';
 	mapheaderinfo[num]->musname_size = 0;
 	mapheaderinfo[num]->weather = PRECIP_NONE;
 	snprintf(mapheaderinfo[num]->skytexture, 5, "SKY1");
@@ -418,12 +414,10 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->skybox_scalex = 16;
 	mapheaderinfo[num]->skybox_scaley = 16;
 	mapheaderinfo[num]->skybox_scalez = 16;
-	mapheaderinfo[num]->interscreen[0] = '#';
 	mapheaderinfo[num]->runsoc[0] = '#';
 	mapheaderinfo[num]->scriptname[0] = '#';
 	mapheaderinfo[num]->precutscenenum = 0;
 	mapheaderinfo[num]->cutscenenum = 0;
-	mapheaderinfo[num]->countdown = 0;
 	mapheaderinfo[num]->palette = UINT16_MAX;
 	mapheaderinfo[num]->encorepal = UINT16_MAX;
 	mapheaderinfo[num]->numlaps = NUMLAPS_DEFAULT;
@@ -497,8 +491,9 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->lumpname = NULL;
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
-		mapheaderinfo[i]->flickies = NULL;
+		mapheaderinfo[i]->cup = NULL;
 		mapheaderinfo[i]->mainrecord = NULL;
+		mapheaderinfo[i]->flickies = NULL;
 		nummapheaders++;
 	}
 	P_ClearSingleMapHeaderInfo(i);
@@ -7614,19 +7609,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
 
-	// map time limit
-	if (mapheaderinfo[gamemap-1]->countdown)
-	{
-		countdowntimer = mapheaderinfo[gamemap-1]->countdown * TICRATE;
-	}
-	else
-		countdowntimer = 0;
-	countdowntimeup = false;
-
 	// circuit, race and competition stuff
 	circuitmap = false;
 	numstarposts = 0;
-	ssspheres = 0;
 	numbosswaypoints = 0;
 	if (!reloadinggamestate)
 		timeinmap = 0;
@@ -7780,43 +7765,6 @@ static void P_RunLevelScript(const char *scriptname)
 		COM_BufAddText(va("exec %s\n", scriptname));
 	}
 	COM_BufExecute(); // Run it!
-}
-
-static void P_ForceCharacter(const char *forcecharskin)
-{
-	UINT8 i;
-
-	if (netgame)
-	{
-		char skincmd[33];
-
-		for (i = 0; i <= splitscreen; i++)
-		{
-			const char *num = "";
-
-			if (i > 0)
-				num = va("%d", i+1);
-
-			sprintf(skincmd, "skin%s %s\n", num, forcecharskin);
-			CV_Set(&cv_skin[i], forcecharskin);
-		}
-
-		COM_BufAddText(skincmd);
-	}
-	else
-	{
-		for (i = 0; i <= splitscreen; i++)
-		{
-			SetPlayerSkin(g_localplayers[i], forcecharskin);
-
-			// normal player colors in single player
-			if ((unsigned)cv_playercolor[i].value != skins[players[g_localplayers[i]].skin].prefcolor && !modeattacking)
-			{
-				CV_StealthSetValue(&cv_playercolor[i], skins[players[g_localplayers[i]].skin].prefcolor);
-				players[g_localplayers[i]].skincolor = skins[players[g_localplayers[i]].skin].prefcolor;
-			}
-		}
-	}
 }
 
 static void P_ResetSpawnpoints(void)
@@ -8103,9 +8051,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	for (i = 0; i <= r_splitscreen; i++)
 		postimgtype[i] = postimg_none;
-
-	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0')
-		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
 
 	// Initial height of PointOfView
 	// will be set by player think.
@@ -8768,6 +8713,37 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 
 			vres_Free(virtmap);
+
+			// Now associate it with a cup cache.
+			// (The core assumption is that cups < headers.)
+			if (i >= numexistingmapheaders)
+			{
+				cupheader_t *cup = kartcupheaders;
+				INT32 j;
+				while (cup)
+				{
+					for (j = 0; j < CUPCACHE_MAX; j++)
+					{
+						// Already discovered?
+						if (cup->cachedlevels[j] != NEXTMAP_INVALID)
+							continue;
+
+						if (!cup->levellist[j] || strcasecmp(cup->levellist[j], name) != 0)
+							continue;
+
+						// Only panic about back-reference for non-bonus material.
+						if (j < MAXLEVELLIST || j == CUPCACHE_SPECIAL)
+						{
+							if (mapheaderinfo[i]->cup)
+								I_Error("P_InitMapData: Map %s cannot appear in cups multiple times! (First in %s, now in %s)", name, mapheaderinfo[i]->cup->name, cup->name);
+							mapheaderinfo[i]->cup = cup;
+						}
+
+						cup->cachedlevels[j] = i;
+					}
+					cup = cup->next;
+				}
+			}
 		}
 	}
 
