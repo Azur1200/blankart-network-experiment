@@ -10007,6 +10007,8 @@ void P_RemoveMobj(mobj_t *mobj)
 		}
 	}
 
+	P_SetTarget(&mobj->itnext, NULL);
+
 	P_RemoveThingTID(mobj);
 	P_DeleteMobjStringArgs(mobj);
 	R_RemoveMobjInterpolator(mobj);
