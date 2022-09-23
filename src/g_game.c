@@ -1361,7 +1361,8 @@ void G_DoLoadLevel(boolean resetplayer)
 	{
 		if (gamemap < 1 || gamemap > nummapheaders)
 		{
-			titlemap = 0; // let's not infinite recursion ok
+			Z_Free(titlemap);
+			titlemap = NULL; // let's not infinite recursion ok
 			Command_ExitGame_f();
 			return;
 		}
