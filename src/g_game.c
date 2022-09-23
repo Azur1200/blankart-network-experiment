@@ -150,8 +150,6 @@ tic_t levelstarttic; // gametic at level start
 INT16 lastmap; // last level you were at (returning from special stages)
 tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 
-INT16 spstage_start, spmarathon_start;
-
 char * titlemap = NULL;
 boolean hidetitlepics = false;
 char * bootmap = NULL; //bootmap for loading a map on startup
@@ -3781,7 +3779,7 @@ static void G_HandleSaveLevel(void)
 				cursaveslot = 0;
 			}
 			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || ultimatemode || demo.recording || metalrecording || modeattacking))
-				G_SaveGame((UINT32)cursaveslot, spstage_start);
+				G_SaveGame((UINT32)cursaveslot, 0); // TODO when we readd a campaign one day
 		}
 	}
 	// and doing THIS here means you don't lose your progress if you close the game mid-intermission
@@ -4242,9 +4240,6 @@ void G_EndGame(void)
 // Sets a tad of default info we need.
 void G_LoadGameSettings(void)
 {
-	// defaults
-	spstage_start = spmarathon_start = 1;
-
 	// initialize free sfx slots for skin sounds
 	S_InitRuntimeSounds();
 }
