@@ -73,8 +73,6 @@ typedef off_t off64_t;
 #else
 #define PRIdS "u"
 #endif
-#elif defined (DJGPP)
-#define PRIdS "u"
 #else
 #define PRIdS "zu"
 #endif
@@ -787,8 +785,6 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	char interfacetxt[] =
 #ifdef HAVE_SDL
 	 "SDL";
-#elif defined (_WINDOWS)
-	 "DirectX";
 #else
 	 "Unknown";
 #endif
