@@ -170,7 +170,6 @@ static huddrawlist_h luahuddrawlist_scores;
 //                          HEADS UP INIT
 //======================================================================
 
-#ifndef NONET
 // just after
 static void Command_Say_f(void);
 static void Command_Sayto_f(void);
@@ -178,7 +177,6 @@ static void Command_Sayteam_f(void);
 static void Command_CSay_f(void);
 static void Command_Shout(void);
 static void Got_Saycmd(UINT8 **p, INT32 playernum);
-#endif
 
 void HU_LoadGraphics(void)
 {
@@ -220,14 +218,12 @@ void HU_Init(void)
 {
 	font_t font;
 
-#ifndef NONET
 	COM_AddCommand("say", Command_Say_f);
 	COM_AddCommand("sayto", Command_Sayto_f);
 	COM_AddCommand("sayteam", Command_Sayteam_f);
 	COM_AddCommand("csay", Command_CSay_f);
 	COM_AddCommand("shout", Command_Shout);
 	RegisterNetXCmd(XD_SAY, Got_Saycmd);
-#endif
 
 	// only allocate if not present, to save us a lot of headache
 	if (missingpat == NULL)
@@ -389,7 +385,6 @@ void HU_Start(void)
 //                            EXECUTION
 //======================================================================
 
-#ifndef NONET
 
 // EVERY CHANGE IN THIS SCRIPT IS LOL XD! BY VINCYTM
 
@@ -438,11 +433,9 @@ static void HU_removeChatText_Log(void)
 	}
 	chat_nummsg_log--; // lost 1 msg.
 }
-#endif
 
 void HU_AddChatText(const char *text, boolean playsound)
 {
-#ifndef NONET
 	if (playsound && cv_consolechat.value != 2)	// Don't play the sound if we're using hidden chat.
 		S_StartSound(NULL, sfx_radio);
 	// reguardless of our preferences, put all of this in the chat buffer in case we decide to change from oldchat mid-game.
@@ -464,13 +457,8 @@ void HU_AddChatText(const char *text, boolean playsound)
 		CONS_Printf("%s\n", text);
 	else			// if we aren't, still save the message to log.txt
 		CON_LogMessage(va("%s\n", text));
-#else
-	(void)playsound;
-	CONS_Printf("%s\n", text);
-#endif
 }
 
-#ifndef NONET
 
 /** Runs a say command, sending an ::XD_SAY message.
   * A say command consists of a signed 8-bit integer for the target, an
@@ -997,8 +985,6 @@ static inline boolean HU_keyInChatString(char *s, char ch)
 	return true; // ate the key
 }
 
-#endif
-
 //
 //
 static void HU_TickSongCredits(void)
@@ -1110,8 +1096,6 @@ void HU_Ticker(void)
 	HU_TickSongCredits();
 }
 
-#ifndef NONET
-
 static boolean teamtalk = false;
 static boolean justscrolleddown;
 static boolean justscrolledup;
@@ -1222,7 +1206,6 @@ static void HU_sendChatMessage(void)
 		SendNetXCmd(XD_SAY, buf, 2 + strlen(&buf[2]) + 1);
 	}
 }
-#endif
 
 void HU_clearChatChars(void)
 {
@@ -1263,7 +1246,6 @@ boolean HU_Responder(event_t *ev)
 			return false;
 	}
 
-#ifndef NONET
 	if (!chat_on)
 	{
 		// enter chat mode
@@ -1405,7 +1387,6 @@ boolean HU_Responder(event_t *ev)
 
 		return true;
 	}
-#endif
 
 	return false;
 }
@@ -1413,8 +1394,6 @@ boolean HU_Responder(event_t *ev)
 //======================================================================
 //                         HEADS UP DRAWING
 //======================================================================
-
-#ifndef NONET
 
 // Precompile a wordwrapped string to any given width.
 // This is a muuuch better method than V_WORDWRAP.
@@ -2016,7 +1995,6 @@ static void HU_DrawChat_Old(void)
 	if (hu_tick < 4)
 		V_DrawCharacter(HU_INPUTX + c, y, '_' | cv_constextsize.value |V_NOSCALESTART|t, true);
 }
-#endif
 
 static void HU_DrawCEcho(void)
 {
@@ -2142,7 +2120,6 @@ void HU_Drawer(void)
 	if (cv_vhseffect.value && (paused || (demo.playback && cv_playbackspeed.value > 1)))
 		V_DrawVhsEffect(demo.rewinding);
 
-#ifndef NONET
 	// draw chat string plus cursor
 	if (chat_on)
 	{
@@ -2159,7 +2136,6 @@ void HU_Drawer(void)
 		if (!OLDCHAT && cv_consolechat.value < 2 && netgame) // Don't display minimized chat if you set the mode to Window (Hidden)
 			HU_drawMiniChat(); // draw messages in a cool fashion.
 	}
-#endif
 
 	if (cechotimer)
 		HU_DrawCEcho();
