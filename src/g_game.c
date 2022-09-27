@@ -124,6 +124,7 @@ UINT16 mainwads = 0;
 boolean modifiedgame = false; // Set if homebrew PWAD stuff has been added.
 boolean majormods = false; // Set if Lua/Gameplay SOC/replacement map has been added.
 boolean savemoddata = false;
+boolean usedCheats = false; // Set when a "cheats on" is ever used.
 UINT8 paused;
 UINT8 modeattacking = ATTACKING_NONE;
 boolean imcontinuing = false;
@@ -289,8 +290,6 @@ INT16 scrambleplayers[MAXPLAYERS]; //for CTF team scramble
 INT16 scrambleteams[MAXPLAYERS]; //for CTF team scramble
 INT16 scrambletotal; //for CTF team scramble
 INT16 scramblecount; //for CTF team scramble
-
-INT32 cheats; //for multiplayer cheat commands
 
 // SRB2Kart
 // Cvars that we don't want changed mid-game
@@ -683,8 +682,23 @@ void G_SetGameModified(boolean silent, boolean major)
 		Command_ExitGame_f();
 }
 
-/** Builds an original game map name from a map number.
-  * The complexity is due to MAPA0-MAPZZ.
+// for consistency among messages: this sets cheats as used.
+void G_SetUsedCheats(void)
+{
+	if (usedCheats)
+		return;
+
+	usedCheats = true;
+	CONS_Alert(CONS_NOTICE, M_GetText("Cheats activated -- game must be restarted to save progress.\n"));
+
+	// If in record attack recording, cancel it.
+	if (modeattacking)
+		M_EndModeAttackRun();
+	else if (marathonmode)
+		Command_ExitGame_f();
+}
+
+/** Returns the map lump name for a map number.
   *
   * \param map Map number.
   * \return Pointer to a static buffer containing the desired map name.
@@ -2188,6 +2202,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT32 followitem;
 
 	INT32 pflags;
+	INT32 cheats;
 
 	UINT8 ctfteam;
 
@@ -2282,6 +2297,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	xtralife = players[player].xtralife;
 
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE));
+	cheats = 0;
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -2371,7 +2387,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	// As long as we're not in multiplayer, carry over cheatcodes from map to map
 	if (!(netgame || multiplayer))
-		pflags |= (players[player].pflags & (PF_GODMODE|PF_NOCLIP));
+		cheats = players[player].cheats;
 
 	if (!betweenmaps)
 	{
@@ -2400,6 +2416,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->roundscore = roundscore;
 	p->lives = lives;
 	p->pflags = pflags;
+	p->cheats = cheats;
 	p->ctfteam = ctfteam;
 	p->jointime = jointime;
 	p->splitscreenindex = splitscreenindex;
@@ -3506,7 +3523,7 @@ tryagain:
 
 		if ((mapheaderinfo[ix]->typeoflevel & tolflags) != tolflags
 			|| ix == pprevmap
-			|| (!dedicated && M_MapLocked(ix+1))
+			|| M_MapLocked(ix+1)
 			|| (usehellmaps != (mapheaderinfo[ix]->menuflags & LF2_HIDEINMENU))) // this is bad
 			continue; //isokmap = false;
 
@@ -3627,29 +3644,48 @@ void G_AddMapToBuffer(INT16 map)
 //
 static void G_UpdateVisited(void)
 {
-	boolean spec = G_IsSpecialStage(gamemap);
-	// Update visitation flags?
-	if ((!modifiedgame || savemoddata) // Not modified
-		&& !multiplayer && !demo.playback // SP/RA/NiGHTS mode
-		&& !(spec && stagefailed)) // Not failed the special stage
+	UINT8 i;
+	UINT8 earnedEmblems;
+
+	// No demos.
+	if (demo.playback)
+		return;
+
+	// Check if every local player wiped out.
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 earnedEmblems;
+		if (!playeringame[i]) // Not here.
+			continue;
 
-		// Update visitation flags
-		mapvisited[gamemap-1] |= MV_BEATEN;
+		if (!P_IsLocalPlayer(&players[i])) // Not local.
+			continue;
 
-		if (encoremode == true)
-		{
-			mapvisited[gamemap-1] |= MV_ENCORE;
-		}
+		if (players[i].spectator) // Not playing.
+			continue;
 
-		if (modeattacking)
-			G_UpdateRecordReplays();
-
-		if ((earnedEmblems = M_CompletionEmblems()))
-			CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
+		if (players[i].pflags & PF_NOCONTEST) // Sonic after not surviving.
+			continue;
+		break;
 	}
+
+	if (i == MAXPLAYERS) // Not a single living local soul?
+		return;
+
+	// Update visitation flags
+	mapvisited[gamemap-1] |= MV_BEATEN;
+
+	if (encoremode == true)
+	{
+		mapvisited[gamemap-1] |= MV_ENCORE;
+	}
+
+	if (modeattacking)
+		G_UpdateRecordReplays();
+
+	if ((earnedEmblems = M_CompletionEmblems()))
+		CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
 }
+
 
 static boolean CanSaveLevel(INT32 mapnum)
 {
@@ -3674,14 +3710,16 @@ static void G_HandleSaveLevel(void)
 					remove(liveeventbackup);
 				cursaveslot = 0;
 			}
-			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || ultimatemode || demo.recording || metalrecording || modeattacking))
-				G_SaveGame((UINT32)cursaveslot, spstage_start);
+			else if (!usedCheats && !(netgame || multiplayer || ultimatemode || demo.recording || metalrecording || modeattacking))
+				G_SaveGame((UINT32)cursaveslot, 0); // TODO when we readd a campaign one day
 		}
 	}
 	// and doing THIS here means you don't lose your progress if you close the game mid-intermission
-	else if (!(ultimatemode || netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking)
-		&& (!modifiedgame || savemoddata) && cursaveslot > 0 && CanSaveLevel(lastmap+1))
+	else if (!(ultimatemode || demo.playback || demo.recording || metalrecording || modeattacking)
+		&& cursaveslot > 0 && CanSaveLevel(lastmap+1))
+	{
 		G_SaveGame((UINT32)cursaveslot, lastmap+1); // not nextmap+1 to route around special stages
+	}
 }
 
 //
@@ -4046,7 +4084,7 @@ static void G_DoContinued(void)
 	tokenlist = 0;
 	token = 0;
 
-	if (!(netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking) && (!modifiedgame || savemoddata) && cursaveslot > 0)
+	if (!(netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking) && !usedCheats && cursaveslot > 0)
 		G_SaveGameOver((UINT32)cursaveslot, true);
 
 	// Reset # of lives
@@ -4140,7 +4178,7 @@ void G_LoadGameData(void)
 
 	if (M_CheckParm("-resetdata"))
 		return; // Don't load (essentially, reset).
-		
+
 	length = FIL_ReadFile(va(pandf, srb2home, gamedatafilename), &save.buffer);
 	if (!length) // Aw, no game data. Their loss!
 		return;
@@ -4158,7 +4196,7 @@ void G_LoadGameData(void)
 		save.p = NULL;
 		I_Error("Game data is from another version of SRB2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
-	
+
 	totalplaytime = READUINT32(save.p);
 	matchesplayed = READUINT32(save.p);
 
@@ -4168,7 +4206,7 @@ void G_LoadGameData(void)
 		if (vspowerlevel[i] < PWRLVRECORD_MIN || vspowerlevel[i] > PWRLVRECORD_MAX)
 			goto datacorrupt;
 	}
-	
+
 	modded = READUINT8(save.p);
 
 	// Aha! Someone's been screwing with the save file!
@@ -4290,7 +4328,7 @@ void G_SaveGameData(void)
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 		WRITEUINT16(save.p, vspowerlevel[i]);
 
-	WRITEUINT8(save.p, (UINT8)savemoddata);
+		WRITEUINT8(save.p, (UINT8)savemoddata);
 
 	// TODO put another cipher on these things? meh, I don't care...
 	for (i = 0; i < NUMMAPS; i++)
@@ -4703,7 +4741,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 		players[i].playerstate = PST_REBORN;
 
 		// Clear cheatcodes too, just in case.
-		players[i].pflags &= ~(PF_GODMODE|PF_NOCLIP);
+		players[i].cheats = 0;
 
 		players[i].roundscore = 0;
 

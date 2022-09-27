@@ -2166,7 +2166,7 @@ boolean P_CheckDeathPitCollide(mobj_t *mo)
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
-	if (mo->player && mo->player->pflags & PF_GODMODE)
+	if (mo->player && mo->player->cheats & PC_GODMODE)
 	{
 		return false;
 	}
@@ -3638,7 +3638,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 				player->karthud[khud_timeovercam] = (2*TICRATE)+1;
 			}
 
-			if (!resetcalled && !(player->pflags & PF_NOCLIP || leveltime < introtime) && !P_CheckSight(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
+			if (!resetcalled && !(player->cheats & PC_NOCLIP || leveltime < introtime) && !P_CheckSight(&dummy, player->mo)) // TODO: "P_CheckCameraSight" instead.
 			{
 				P_ResetCamera(player, thiscam);
 			}
@@ -10089,7 +10089,7 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 
 static CV_PossibleValue_t respawnitemtime_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
 consvar_t cv_itemrespawntime = CVAR_INIT ("respawnitemtime", "2", CV_NETVAR|CV_CHEAT, respawnitemtime_cons_t, NULL);
-consvar_t cv_itemrespawn = CVAR_INIT ("respawnitem", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_itemrespawn = CVAR_INIT ("respawnitem", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 static void P_SpawnPrecipitationAt(fixed_t basex, fixed_t basey)
 {
