@@ -2202,7 +2202,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT32 followitem;
 
 	INT32 pflags;
-	INT32 cheats;
 
 	UINT8 ctfteam;
 
@@ -2297,7 +2296,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	xtralife = players[player].xtralife;
 
 	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE));
-	cheats = 0;
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -2385,10 +2383,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		pflags |= (players[player].pflags & (PF_STASIS|PF_ELIMINATED|PF_NOCONTEST|PF_LOSTLIFE|PF_FLIPCAM));
 	}
 
-	// As long as we're not in multiplayer, carry over cheatcodes from map to map
-	if (!(netgame || multiplayer))
-		cheats = players[player].cheats;
-
 	if (!betweenmaps)
 	{
 		// Obliterate follower from existence (if valid memory)
@@ -2416,7 +2410,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->roundscore = roundscore;
 	p->lives = lives;
 	p->pflags = pflags;
-	p->cheats = cheats;
 	p->ctfteam = ctfteam;
 	p->jointime = jointime;
 	p->splitscreenindex = splitscreenindex;
@@ -4739,9 +4732,6 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		players[i].playerstate = PST_REBORN;
-
-		// Clear cheatcodes too, just in case.
-		players[i].cheats = 0;
 
 		players[i].roundscore = 0;
 

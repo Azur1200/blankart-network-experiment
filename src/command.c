@@ -1768,7 +1768,6 @@ void CV_CheatsChanged(void)
 	else
 	{
 		consvar_t *cvar;
-		UINT8 i;
 
 		// Set everything back to default.
 		for (cvar = consvar_vars; cvar; cvar = cvar->next)
@@ -1777,14 +1776,6 @@ void CV_CheatsChanged(void)
 
 		// Reset any other cheat command effects here, as well.
 		cv_debug = 0;
-
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i])
-				continue;
-
-			players[i].cheats = 0;
-		}
 	}
 }
 
