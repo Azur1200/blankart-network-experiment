@@ -609,6 +609,8 @@ void P_RemoveThingTID(mobj_t *mo);
 mobj_t *P_FindMobjFromTID(mtag_t tid, mobj_t *i, mobj_t *activator);
 void P_DeleteMobjStringArgs(mobj_t *mobj);
 
+void P_ResetPlayerCheats(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

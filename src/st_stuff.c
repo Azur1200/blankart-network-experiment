@@ -444,7 +444,7 @@ static void ST_drawDebugInfo(void)
 	if (!stplyr->mo)
 		return;
 
-	if (cv_debug & DBG_BASIC)
+	if (cht_debug & DBG_BASIC)
 	{
 		const fixed_t d = AngleFixed(stplyr->mo->angle);
 		V_DrawRightAlignedString(320, 168, V_MONOSPACE, va("X: %6d", stplyr->mo->x>>FRACBITS));
@@ -455,7 +455,7 @@ static void ST_drawDebugInfo(void)
 		height = 152;
 	}
 
-	if (cv_debug & DBG_DETAILED)
+	if (cht_debug & DBG_DETAILED)
 	{
 		//V_DrawRightAlignedString(320, height - 104, V_MONOSPACE, va("SHIELD: %5x", stplyr->powers[pw_shield]));
 		V_DrawRightAlignedString(320, height - 96,  V_MONOSPACE, va("SCALE: %5d%%", (stplyr->mo->scale*100)/FRACUNIT));
@@ -484,7 +484,7 @@ static void ST_drawDebugInfo(void)
 		height -= 120;
 	}
 
-	if (cv_debug & DBG_RANDOMIZER) // randomizer testing
+	if (cht_debug & DBG_RNG) // randomizer testing
 	{
 		fixed_t peekres = P_RandomPeek();
 		peekres *= 10000;     // Change from fixed point
@@ -497,17 +497,17 @@ static void ST_drawDebugInfo(void)
 		height -= 32;
 	}
 
-	/*if (cv_debug & DBG_MUSIC)
+	/*if (cht_debug & DBG_MUSIC)
 	{
 		ST_drawMusicDebug(&height);
 	}*/
 
-	if (cv_debug & DBG_RENDER)
+	if (cht_debug & DBG_RENDER)
 	{
 		ST_drawRenderDebug(&height);
 	}
 
-	if (cv_debug & DBG_MEMORY)
+	if (cht_debug & DBG_MEMORY)
 		V_DrawRightAlignedString(320, height,     V_MONOSPACE, va("Heap used: %7sKB", sizeu1(Z_TagsUsage(0, INT32_MAX)>>10)));
 }
 

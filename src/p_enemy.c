@@ -8317,7 +8317,7 @@ void A_OrbitNights(mobj_t* actor)
 
 	if (!actor->target)
 	{
-		if (cv_debug && !(actor->target && actor->target->player))
+		if (cht_debug && !(actor->target && actor->target->player))
 			CONS_Printf("ERROR: Powerup has no target!\n");
 		return;
 	}
@@ -8387,7 +8387,7 @@ void A_SetObjectState(mobj_t *actor)
 
 	if ((!locvar2 && !actor->target) || (locvar2 && !actor->tracer))
 	{
-		if (cv_debug)
+		if (cht_debug)
 			CONS_Printf("A_SetObjectState: No target to change state!\n");
 		return;
 	}
@@ -8478,7 +8478,7 @@ void A_KnockBack(mobj_t *actor)
 
 	if (!target)
 	{
-		if(cv_debug)
+		if(cht_debug)
 			CONS_Printf("A_KnockBack: No target!\n");
 		return;
 	}
@@ -8542,7 +8542,7 @@ void A_RingDrain(mobj_t *actor)
 
 	if (!actor->target || !actor->target->player)
 	{
-		if(cv_debug)
+		if(cht_debug)
 			CONS_Printf("A_RingDrain: No player targeted!\n");
 		return;
 	}
@@ -8746,7 +8746,7 @@ void A_Custom3DRotate(mobj_t *actor)
 
 	if (hspeed==0 && vspeed==0)
 	{
-		if (cv_debug)
+		if (cht_debug)
 			CONS_Printf("Error: A_Custom3DRotate: Object has no speed.\n");
 		return;
 	}
@@ -9181,7 +9181,7 @@ void A_SetCustomValue(mobj_t *actor)
 	if (LUA_CallAction(A_SETCUSTOMVALUE, actor))
 		return;
 
-	if (cv_debug)
+	if (cht_debug)
 		CONS_Printf("Init custom value is %d\n", actor->cusval);
 
 	if (locvar1 == 0 && locvar2 == 4)
@@ -9201,7 +9201,7 @@ void A_SetCustomValue(mobj_t *actor)
 	else // replace
 		actor->cusval = locvar1;
 
-	if(cv_debug)
+	if(cht_debug)
 		CONS_Printf("New custom value is %d\n", actor->cusval);
 }
 
@@ -9568,7 +9568,7 @@ void A_SetScale(mobj_t *actor)
 
 	if (locvar1 <= 0)
 	{
-		if(cv_debug)
+		if(cht_debug)
 			CONS_Printf("A_SetScale: Valid scale not specified!\n");
 		return;
 	}
@@ -9582,7 +9582,7 @@ void A_SetScale(mobj_t *actor)
 
 	if (!target)
 	{
-		if(cv_debug)
+		if(cht_debug)
 			CONS_Printf("A_SetScale: No target!\n");
 		return;
 	}
@@ -9623,7 +9623,7 @@ void A_RemoteDamage(mobj_t *actor)
 
 	if (!target)
 	{
-		if(cv_debug)
+		if(cht_debug)
 			CONS_Printf("A_RemoteDamage: No target!\n");
 		return;
 	}
@@ -13232,7 +13232,7 @@ void A_ItemPop(mobj_t *actor)
 
 	if (!(actor->target && actor->target->player))
 	{
-		if (cv_debug && !(actor->target && actor->target->player))
+		if (cht_debug && !(actor->target && actor->target->player))
 			CONS_Printf("ERROR: Powerup has no target!\n");
 		return;
 	}

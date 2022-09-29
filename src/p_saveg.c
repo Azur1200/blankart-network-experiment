@@ -5041,6 +5041,8 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 		WRITEINT16(save->p, task->timer);
 		WRITESTRING(save->p, task->command);
 	}
+
+	WRITEUINT32(save->p, cht_debug);
 }
 
 FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
@@ -5210,6 +5212,8 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 		Schedule_Add(basetime, timer, command);
 	}
+
+	cht_debug = READUINT32(save->p);
 
 	return true;
 }

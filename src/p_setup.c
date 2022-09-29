@@ -8119,7 +8119,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_Initsecnode();
 
 	if (netgame || multiplayer)
-		cv_debug = 0;
+		cht_debug = 0;
 
 	if (metalplayback)
 		G_StopMetalDemo();

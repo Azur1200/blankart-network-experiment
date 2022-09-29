@@ -8905,7 +8905,7 @@ static void M_StartServer(INT32 choice)
 	strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
 
 	// Still need to reset devmode
-	cv_debug = 0;
+	cht_debug = 0;
 
 	if (demo.playback)
 		G_StopDemo();
@@ -11489,7 +11489,7 @@ void M_QuitResponse(INT32 ch)
 
 	if (ch != 'y' && ch != KEY_ENTER)
 		return;
-	if (!(netgame || cv_debug))
+	if (!(netgame || cht_debug))
 	{
 		mrand = M_RandomKey(sizeof(quitsounds)/sizeof(INT32));
 		if (quitsounds[mrand]) S_StartSound(NULL, quitsounds[mrand]);

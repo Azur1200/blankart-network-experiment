@@ -1748,10 +1748,15 @@ void CV_ResetCheatNetVars(void)
 {
 	consvar_t *cvar;
 
-	// Stealthset everything back to default.
+	// Set everything back to default.
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_CHEAT)
-			CV_SetCVar(cvar, cvar->defaultvalue, true);
+			CV_SetCVar(cvar, cvar->defaultvalue, false);
+
+	// Reset any other cheat command effects here, as well.
+	cht_debug = 0;
+
+	P_ResetPlayerCheats();
 }
 
 // Returns true if the variable's current value is its default value

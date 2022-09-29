@@ -38,6 +38,8 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 
+#include "fastcmp.h"
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -125,7 +127,7 @@ static UINT8 cheatf_devmode(void)
 	for (i = 0; i < MAXUNLOCKABLES; i++)
 		unlockables[i].unlocked = true;
 	devparm = true;
-	cv_debug |= 0x8000;
+	cht_debug |= 0x8000;
 
 	// Refresh secrets menu existing.
 	M_ClearMenus(true);
@@ -264,10 +266,10 @@ boolean cht_Responder(event_t *ev)
 }
 
 // Console cheat commands rely on these a lot...
-#define REQUIRE_PANDORA if (!M_SecretUnlocked(SECRET_PANDORA) && !cv_debug)\
+#define REQUIRE_PANDORA if (!M_SecretUnlocked(SECRET_PANDORA) && !cht_debug)\
 { CONS_Printf(M_GetText("You haven't earned this yet.\n")); return; }
 
-#define REQUIRE_DEVMODE if (!cv_debug)\
+#define REQUIRE_DEVMODE if (!cht_debug)\
 { CONS_Printf(M_GetText("DEVMODE must be enabled.\n")); return; }
 
 #define REQUIRE_OBJECTPLACE if (!objectplacing)\
@@ -734,25 +736,85 @@ void Command_Resetemeralds_f(void)
 }
 */
 
+//
+// Devmode
+//
+
+UINT32 cht_debug;
+
+struct debugFlagNames_s const debug_flag_names[] =
+{
+	{"None", DBG_NONE},
+	{"Basic", DBG_BASIC},
+	{"Detailed", DBG_DETAILED},
+	{"Player", DBG_PLAYER},
+	{"Render", DBG_RENDER},
+	{"Renderer", DBG_RENDER}, // alt name
+	{"Polyobj", DBG_POLYOBJ},
+	{"GameLogic", DBG_GAMELOGIC},
+	{"Game", DBG_GAMELOGIC}, // alt name
+	{"Netplay", DBG_NETPLAY},
+	{"Memory", DBG_MEMORY},
+	{"Setup", DBG_SETUP},
+	{"Lua", DBG_LUA},
+	{"RNG", DBG_RNG},
+	{"Randomizer", DBG_RNG}, // alt name
+	{NULL, 0}
+};
+
 void Command_Devmode_f(void)
 {
-#ifndef _DEBUG
-	REQUIRE_SINGLEPLAYER;
-#endif
+	size_t argc = 0;
 
-	if (COM_Argc() > 1)
+	if (client && !IsPlayerAdmin(consoleplayer))
 	{
-		const char *arg = COM_Argv(1);
+		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		return;
+	}
 
-		if (arg[0] && arg[0] == '0' &&
-			arg[1] && arg[1] == 'x') // Use hexadecimal!
-			cv_debug = axtoi(arg+2);
-		else
-			cv_debug = atoi(arg);
+	argc = COM_Argc();
+	if (argc > 1)
+	{
+		UINT32 flags = 0;
+		size_t i;
+
+		for (i = 1; i < argc; i++)
+		{
+			const char *arg = COM_Argv(i);
+			size_t j;
+
+			// Try it as a string
+			for (j = 0; debug_flag_names[j].str; j++)
+			{
+				if (stricmp(arg, debug_flag_names[j].str) == 0)
+				{
+					break;
+				}
+			}
+
+			if (debug_flag_names[j].str)
+			{
+				flags |= debug_flag_names[j].flag;
+				continue;
+			}
+
+			// Try it as a number
+			if (arg[0] && arg[0] == '0' &&
+				arg[1] && arg[1] == 'x') // Use hexadecimal!
+			{
+				flags |= axtoi(arg+2);
+			}
+			else
+			{
+				flags |= atoi(arg);
+			}
+		}
+
+		D_Cheat(consoleplayer, CHEAT_DEVMODE, flags);
 	}
 	else
 	{
-		CONS_Printf(M_GetText("devmode <flags>: enable debugging tools and info, prepend with 0x to use hexadecimal\n"));
+		CONS_Printf(M_GetText("devmode <flags>: Enable debugging info. Prepend with 0x to use hexadecimal\n"));
 		return;
 	}
 

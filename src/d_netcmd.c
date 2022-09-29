@@ -65,11 +65,7 @@
 #include "deh_tables.h"
 #include "m_perfstats.h"
 
-#ifdef NETGAME_DEVMODE
 #define CV_RESTRICT CV_NETVAR
-#else
-#define CV_RESTRICT 0
-#endif
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -156,10 +152,6 @@ static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
 
 static void Schedule_OnChange(void);
-
-#ifdef NETGAME_DEVMODE
-static void Fishcake_OnChange(void);
-#endif
 
 static void Command_Playdemo_f(void);
 static void Command_Timedemo_f(void);
@@ -323,8 +315,6 @@ consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS] = {
 };
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
-
-INT32 cv_debug;
 
 consvar_t cv_usemouse = CVAR_INIT ("use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse);
 
@@ -2057,6 +2047,10 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 		case CHEAT_HURT:
 			COPY(WRITEINT32, INT32);
 			break;
+
+		case CHEAT_DEVMODE:
+			COPY(WRITEUINT32, UINT32);
+			break;
 	}
 
 #undef COPY
@@ -2786,7 +2780,7 @@ static void Command_Map_f(void)
 		return;
 	}
 
-	if (!newresetplayers && !cv_debug)
+	if (!newresetplayers && !cht_debug)
 	{
 		CONS_Printf(M_GetText("DEVMODE must be enabled.\n"));
 		return;
@@ -2903,8 +2897,10 @@ static void Command_Map_f(void)
 		newresetplayers = false; // if not forcing and gametypes is the same
 
 	// don't use a gametype the map doesn't support
-	if (cv_debug || option_force || cv_skipmapcheck.value)
+	if (cht_debug || option_force || cv_skipmapcheck.value)
+	{
 		fromlevelselect = false; // The player wants us to trek on anyway.  Do so.
+	}
 	// G_TOLFlag handles both multiplayer gametype and ignores it for !multiplayer
 	else
 	{
@@ -5059,7 +5055,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 
 static void Gravity_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cv_debug
+	if (!M_SecretUnlocked(SECRET_PANDORA) && !netgame && !cht_debug
 		&& strcmp(cv_gravity.string, cv_gravity.defaultvalue))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
@@ -5294,7 +5290,7 @@ static void Command_Mapmd5_f(void)
 
 static void Command_ExitLevel_f(void)
 {
-	if (!(netgame || multiplayer) && !cv_debug)
+	if (!(netgame || multiplayer) && !cht_debug)
 		CONS_Printf(M_GetText("This only works in a netgame.\n"));
 	else if (!(server || (IsPlayerAdmin(consoleplayer))))
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
@@ -5618,6 +5614,13 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			break;
 		}
 
+		case CHEAT_DEVMODE: {
+			UINT32 flags = READUINT32(*cp);
+			cht_debug = flags;
+			CV_CheaterWarning(targetPlayer, va("devmode %08x", flags));
+			break;
+		}
+
 		case NUMBER_OF_CHEATS:
 			break;
 	}
@@ -5678,7 +5681,7 @@ void Command_ExitGame_f(void)
 	splitscreen = 0;
 	SplitScreen_OnChange();
 
-	cv_debug = 0;
+	cht_debug = 0;
 	emeralds = 0;
 	memset(&luabanks, 0, sizeof(luabanks));
 
@@ -5709,23 +5712,6 @@ void Command_Retry_f(void)
 		G_SetRetryFlag();
 	}
 }
-
-#ifdef NETGAME_DEVMODE
-// Allow the use of devmode in netgames.
-static void Fishcake_OnChange(void)
-{
-	cv_debug = cv_fishcake.value;
-	// consvar_t's get changed to default when registered
-	// so don't make modifiedgame always on!
-	if (cv_debug)
-	{
-		G_SetGameModified(multiplayer, true);
-	}
-
-	else if (cv_debug != cv_fishcake.value)
-		CV_SetValue(&cv_fishcake, cv_debug);
-}
-#endif
 
 /** Reports to the console whether or not the game has been modified.
   *
@@ -6300,7 +6286,7 @@ static void Skin_OnChange(void)
 	if (!Playing())
 		return; // do whatever you want
 
-	if (!(cv_debug || devparm) && !(multiplayer || netgame) // In single player.
+	if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
 		&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
 	{
 		CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin].name);
@@ -6376,7 +6362,7 @@ static void Color_OnChange(void)
 	}
 	else
 	{
-		if (!(cv_debug || devparm) && !(multiplayer || netgame)) // In single player.
+		if (!(cht_debug || devparm) && !(multiplayer || netgame)) // In single player.
 		{
 			CV_StealthSet(&cv_skin[0], skins[players[consoleplayer].skin].name);
 			return;
