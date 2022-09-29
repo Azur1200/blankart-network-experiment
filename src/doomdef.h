@@ -562,10 +562,6 @@ extern int compuncommitted;
 #undef UPDATE_ALERT
 #endif
 
-/// - SRB2Kart options -
-/// Camera always has noclip.
-#define NOCLIPCAM
-
 // p_sight.c
 #define TRAVERSE_MAX 8
 
