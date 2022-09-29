@@ -26,6 +26,8 @@ extern "C" {
 typedef enum {
 	CHEAT_NOCLIP,
 	CHEAT_GOD,
+	CHEAT_RINGS,
+	CHEAT_LIVES,
 	CHEAT_SCALE,
 	CHEAT_FLIP,
 	CHEAT_HURT,

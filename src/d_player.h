@@ -734,9 +734,6 @@ struct player_t
 #endif
 };
 
-// Value for infinite lives
-#define INFLIVES 0x7F
-
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -6759,9 +6759,6 @@ struct int_const_s const INT_CONST[] = {
 	{"PA_DRIFT",PA_DRIFT},
 	{"PA_HURT",PA_HURT},
 
-	// Value for infinite lives
-	{"INFLIVES",INFLIVES},
-
 	// Customisable sounds for Skins, from sounds.h
 	{"SKSSPIN",SKSSPIN},
 	{"SKSPUTPUT",SKSPUTPUT},
