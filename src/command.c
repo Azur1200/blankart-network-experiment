@@ -35,6 +35,9 @@
 #include "lua_script.h"
 #include "d_netfil.h" // findfile
 #include "r_data.h" // Color_cons_t
+#include "r_skins.h"
+#include "m_random.h"
+#include "p_local.h" // P_ResetPlayerCheats
 
 //========
 // protos.

@@ -173,6 +173,7 @@ typedef enum
 	XD_SCHEDULETASK, // 36
 	XD_SCHEDULECLEAR, // 37
 	XD_AUTOMATE,    // 38
+	XD_CHEAT,       // 39
 
 	MAXNETXCMD
 } netxcmd_t;
@@ -270,6 +271,8 @@ typedef enum
 void Automate_Run(automateEvents_t type);
 void Automate_Set(automateEvents_t type, const char *command);
 void Automate_Clear(void);
+
+void D_Cheat(INT32 playernum, INT32 cheat, ...);
 
 // used for the player setup menu
 UINT8 CanChangeSkin(INT32 playernum);
