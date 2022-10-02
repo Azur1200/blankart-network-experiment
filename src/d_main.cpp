@@ -81,6 +81,7 @@
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
+#include "k_specialstage.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -1187,6 +1188,9 @@ void D_StartTitle(void)
 
 	// Reset boss info
 	K_ResetBossInfo();
+
+	// Reset Special Stage
+	K_ResetSpecialStage();
 
 	// empty maptol so mario/etc sounds don't play in sound test when they shouldn't
 	maptol = 0;

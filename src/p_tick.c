@@ -42,6 +42,7 @@
 #include "acs/interface.h"
 #include "k_bot.h" // K_BotTicker
 #include "k_odds.h" // ItemBGone
+#include "k_specialstage.h"
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -960,6 +961,8 @@ void P_Ticker(boolean run)
 		}
 
 		K_BossInfoTicker();
+
+		K_TickSpecialStage();
 
 		if (gametyperules & GTR_WANTED)
 		{

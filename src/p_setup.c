@@ -108,6 +108,7 @@
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
+#include "k_specialstage.h"
 
 #include "blan/b_soc.h"
 

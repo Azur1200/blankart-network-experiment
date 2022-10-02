@@ -65,6 +65,7 @@
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
 #include "k_odds.h"
+#include "k_specialstage.h"
 
 #include "h_timers.h"
 #include "blan/b_soc.h"
@@ -104,7 +105,11 @@ void K_TimerInit(void)
 
 	starttime = introtime = 0;
 
-	if (!bossinfo.boss)
+	if (specialStage.active == true)
+	{
+		K_InitSpecialStage();
+	}
+	else if (bossinfo.boss == false)
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
 		{

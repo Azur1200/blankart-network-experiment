@@ -3798,6 +3798,7 @@ tolinfo_t TYPEOFLEVEL[NUMTOLNAMES] = {
 	{"RACE",TOL_RACE},
 	{"BATTLE",TOL_BATTLE},
 	{"BOSS",TOL_BOSS},
+	{"SPECIAL",TOL_SPECIAL},
 	{"TV",TOL_TV},
 
 	// Compat stuff
