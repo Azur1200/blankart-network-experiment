@@ -997,8 +997,6 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 /** Checks if the level timer is over the timelimit and the round should end,
   * unless you are in overtime. In which case leveltime may stretch out beyond
   * timelimitintics and overtime's status will be checked here each tick.
-  * Verify that the value of ::cv_timelimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_timelimit, P_CheckPointLimit, P_UpdateSpecials
   */
@@ -1006,7 +1004,7 @@ void P_CheckTimeLimit(void)
 {
 	INT32 i, k;
 
-	if (!cv_timelimit.value)
+	if (!timelimitintics)
 		return;
 
 	if (!(multiplayer || netgame))
@@ -1024,7 +1022,7 @@ void P_CheckTimeLimit(void)
 	if (gameaction == ga_completed)
 		return;
 
-	if (cv_overtime.value)
+	if ((grandprixinfo.gp == false) && (cv_overtime.value))
 	{
 		INT32 playerarray[MAXPLAYERS];
 		INT32 tempplayer = 0;
@@ -1100,8 +1098,6 @@ void P_CheckTimeLimit(void)
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.
-  * Verify that the value of ::cv_pointlimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_pointlimit, P_CheckTimeLimit, P_UpdateSpecials
   */

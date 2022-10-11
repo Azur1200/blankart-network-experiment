@@ -5493,6 +5493,7 @@ cleanup:
 void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
 {
 	UINT16 color = SKINCOLOR_NONE;
+	INT32 dogametype;
 
 	paused = false;
 
@@ -5503,8 +5504,17 @@ void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ss
 
 	G_ResetRandMapBuffer();
 
+	if ((modeattacking == ATTACKING_ITEMBREAK) || (bossinfo.boss == true))
+	{
+		dogametype = GT_BATTLE;
+	}
+	else
+	{
+		dogametype = GT_RACE;
+	}
+
 	// this leave the actual game if needed
-	SV_StartSinglePlayerServer();
+	SV_StartSinglePlayerServer(dogametype, false);
 
 	if (splitscreen != ssplayers)
 	{

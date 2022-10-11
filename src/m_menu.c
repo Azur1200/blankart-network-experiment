@@ -6550,8 +6550,7 @@ INT32 MR_StartServer(INT32 choice)
 	if (menustack[0] == MN_MP_SPLITSCREEN) // offline server
 	{
 		paused = false;
-		SV_StartSinglePlayerServer();
-		multiplayer = true; // yeah, SV_StartSinglePlayerServer clobbers this...
+		SV_StartSinglePlayerServer(cv_newgametype.value, false);
 		D_MapChange(cv_nextmap.value, cv_newgametype.value, (cv_kartencore.value == 1), 1, 1, false, false);
 	}
 	else
