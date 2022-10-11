@@ -1612,7 +1612,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 
 	tic_t worktime;
-	boolean dontdraw = false;
+	INT32 jitter = 0;
 	boolean overtime = false;
 	UINT8 *textcolor = 0;
 
@@ -1621,28 +1621,33 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	{
 		splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
-#ifndef TESTOVERTIMEINFREEPLAY
-		if (itembreaker) // capsules override any time limit settings
-			;
-		else
-#endif
 		if (bossinfo.boss == true)
 			;
 		else if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT)) // TODO
-		{			
+		{
+			/*
 			if (drawtime >= (timelimitintics - 5*TICRATE) && ((drawtime*4)/TICRATE) % 2 == 0)
 			{
 				dontdraw = true;
 			}
-
+			*/
 			if (drawtime >= timelimitintics)
 			{
 				overtime = true;
-				// drawtime = 0;
+				jitter = 2;
+				if (drawtime & 2)
+					jitter = -jitter;
+				drawtime = 0;
 			}
 			else
 			{
 				drawtime = timelimitintics - drawtime;
+				if (drawtime < 5*TICRATE)
+				{
+					jitter = 1;
+					if (drawtime & 2)
+						jitter = -jitter;
+				}
 			}
 		}
 	}
@@ -1659,10 +1664,15 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	worktime = drawtime/(60*TICRATE);
 
+	if (drawtime != UINT32_MAX && worktime >= 100)
+	{
+		jitter = (drawtime & 1 ? 1 : -1);
+		worktime = 99;
+		drawtime = (100*(60*TICRATE))-1;
+	}
+
 	if (mode && drawtime == UINT32_MAX)
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
-	else if (dontdraw) // overtime flash
-		;
 	else if (overtime)
 	{
 		if (((drawtime*2)/TICRATE) % 2 == 0)
@@ -1687,53 +1697,30 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			va("OVERTIME!")
 		);
 	}
-	else if (worktime < 100) // 99:99:99 only
+	else
 	{
-		// zero minute
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
-			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
-		}
-		// minutes time       0 __ __
-		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+		// minutes time      00 __ __
+		V_DrawKartString(TX,    TY+3+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+12, TY+3-jitter, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
-		// zero second        _ 0_ __
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
-		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero second        _ 00 __
-		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+		// seconds time       _ 00 __
+		V_DrawKartString(TX+36, TY+3+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+48, TY+3-jitter, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
-		// zero tick          _ __ 0_
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
-		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero tick          _ __ 00
-		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+		// tics               _ __ 00
+		V_DrawKartString(TX+72, TY+3+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartString(TX+84, TY+3-jitter, splitflags, va("%d", worktime%10));
 	}
-	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
 	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
 	{
