@@ -3305,37 +3305,24 @@ static void Command_Map_f(void)
 
 				if (option_skill)
 				{
-					const char *masterstr = "Master";
-					const char *nightmarestr = "NIGHTMARE";
 					const char *skillname = COM_Argv(option_skill + 1);
 					INT32 newskill = -1;
 					INT32 j;
 
-					if (!strcasecmp(masterstr, skillname))
+					for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 					{
-						newskill = KARTGP_MASTER;
-					}
-					else if (!strcasecmp(nightmarestr, skillname))
-					{
-						newskill = KARTGP_NIGHTMARE;
-					}
-					else
-					{
-						for (j = 0; kartspeed_cons_t[j].strvalue; j++)
+						if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, skillname))
 						{
-							if (!strcasecmp(kartspeed_cons_t[j].strvalue, skillname))
-							{
-								newskill = (INT16)kartspeed_cons_t[j].value;
-								break;
-							}
+							newskill = (INT16)gpdifficulty_cons_t[j].value;
+							break;
 						}
+					}
 
-						if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
-						{
-							INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
-							if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
-								newskill = (INT16)num;
-						}
+					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
+					{
+						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
+						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
+							newskill = (INT16)num;
 					}
 
 					if (newskill != -1)
