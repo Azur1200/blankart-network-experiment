@@ -419,6 +419,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_naturalcamera);
+	CV_RegisterVar(&cv_gptest);
 }
 
 //}
@@ -6327,16 +6328,20 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		}
 	}
 
+	if (player->exiting)
+	{
+		if (player->karthud[khud_finish] <= 2*TICRATE)
+			player->karthud[khud_finish]++;
+	}
+	else
+		player->karthud[khud_finish] = 0;
+
 	if ((gametyperules & GTR_BUMPERS) && (player->exiting || player->karmadelay))
 	{
 		if (player->exiting)
 		{
 			if (player->exiting < 6*TICRATE)
 				player->karthud[khud_cardanimation] += ((164-player->karthud[khud_cardanimation])/8)+1;
-			else if (player->exiting == 6*TICRATE)
-				player->karthud[khud_cardanimation] = 0;
-			else if (player->karthud[khud_cardanimation] < 2*TICRATE)
-				player->karthud[khud_cardanimation]++;
 		}
 		else
 		{
@@ -6350,11 +6355,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 			player->karthud[khud_cardanimation] = 164;
 		if (player->karthud[khud_cardanimation] < 0)
 			player->karthud[khud_cardanimation] = 0;
-	}
-	else if ((gametyperules & GTR_CIRCUIT) && player->exiting)
-	{
-		if (player->karthud[khud_cardanimation] < 2*TICRATE)
-			player->karthud[khud_cardanimation]++;
 	}
 	else
 		player->karthud[khud_cardanimation] = 0;

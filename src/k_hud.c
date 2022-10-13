@@ -4657,6 +4657,53 @@ static void K_drawKartMinimap(void)
 	}
 }
 
+static void K_drawKartFinish(void)
+{
+	INT32 timer, minsplitstationary, pnum = 0, splitflags = V_SPLITSCREEN;
+	patch_t **kptodraw;
+
+	{
+		timer = stplyr->karthud[khud_finish];
+		kptodraw = kp_racefinish;
+		minsplitstationary = 2;
+	}
+
+	if (!timer || timer > 2*TICRATE)
+		return;
+
+	if ((timer % (2*5)) / 5) // blink
+		pnum = 1;
+
+	if (r_splitscreen > 0)
+		pnum += (r_splitscreen > 1) ? 2 : 4;
+
+	if (r_splitscreen >= minsplitstationary) // 3/4p, stationary FIN
+	{
+		V_DrawScaledPatch(STCD_X - (SHORT(kptodraw[pnum]->width)/2), STCD_Y - (SHORT(kptodraw[pnum]->height)/2), splitflags, kptodraw[pnum]);
+		return;
+	}
+
+	//else -- 1/2p, scrolling FINISH
+	{
+		INT32 x, xval, ox, interpx;
+
+		x = ((vid.width<<FRACBITS)/vid.dupx);
+		xval = (SHORT(kptodraw[pnum]->width)<<FRACBITS);
+		x = ((TICRATE - timer)*(xval > x ? xval : x))/TICRATE;
+		ox = ((TICRATE - (timer - 1))*(xval > x ? xval : x))/TICRATE;
+
+		interpx = R_InterpolateFixed(ox, x);
+
+		if (r_splitscreen && stplyrnum == 1)
+			interpx = -interpx;
+
+		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (xval>>1),
+			(STCD_Y<<FRACBITS) - (SHORT(kptodraw[pnum]->height)<<(FRACBITS-1)),
+			FRACUNIT,
+			splitflags, kptodraw[pnum], NULL);
+	}
+}
+
 static void K_drawKartStartCountdown(void)
 {
 	INT32 pnum = 0;
@@ -4698,51 +4745,6 @@ static void K_drawKartStartCountdown(void)
 			pnum += 10;
 
 		V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), V_SPLITSCREEN, kp_startcountdown[pnum]);
-	}
-}
-
-static void K_drawKartFinish(void)
-{
-	INT32 pnum = 0, splitflags = V_SPLITSCREEN;
-
-	if (!stplyr->karthud[khud_cardanimation] || stplyr->karthud[khud_cardanimation] >= 2*TICRATE)
-		return;
-
-	if ((stplyr->karthud[khud_cardanimation] % (2*5)) / 5) // blink
-		pnum = 1;
-
-	if (r_splitscreen > 1) // 3/4p, stationary FIN
-	{
-		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
-		return;
-	}
-
-	//else -- 1/2p, scrolling FINISH
-	{
-		INT32 x, xval, ox, interpx, pwidth;
-
-		if (r_splitscreen) // wide splitscreen
-			pnum += 4;
-
-		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (kp_racefinish[pnum]->width)<<FRACBITS;
-
-		pwidth = max(xval, x);
-
-		x = ((TICRATE - stplyr->karthud[khud_cardanimation]) * pwidth) / TICRATE;
-		ox = ((TICRATE - (stplyr->karthud[khud_cardanimation] - 1)) * pwidth) / TICRATE;
-
-
-		interpx = R_InterpolateFixed(ox, x);
-
-		if (r_splitscreen && stplyrnum == 1)
-			interpx = -interpx;
-
-		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
-			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
-			FRACUNIT,
-			splitflags, kp_racefinish[pnum], NULL);
 	}
 }
 
@@ -4806,7 +4808,7 @@ static void K_drawBattleFullscreen(void)
 	{
 		if (stplyrnum == 0)
 			V_DrawFadeScreen(0xFF00, 16);
-		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
+		if (stplyr->exiting <= 6*TICRATE && !stplyr->spectator)
 		{
 			patch_t *p = kp_battlecool;
 
@@ -4817,8 +4819,8 @@ static void K_drawBattleFullscreen(void)
 
 			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, p, NULL);
 		}
-		else
-			K_drawKartFinish();
+
+		K_drawKartFinish();
 	}
 	else if (stplyr->bumper <= 0 && stplyr->karmadelay && comeback && !stplyr->spectator && drawcomebacktimer)
 	{
