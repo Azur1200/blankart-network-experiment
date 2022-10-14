@@ -2891,6 +2891,10 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 	{
 		pencoremode = bossinfo.encore;
 	}
+	else if (specialStage.active == true)
+	{
+		pencoremode = specialStage.encore;
+	}
 	else if (grandprixinfo.gp == true)
 	{
 		pencoremode = grandprixinfo.encore;

@@ -59,6 +59,7 @@
 #include "k_color.h"
 #include "k_grandprix.h"
 #include "k_boss.h"
+#include "k_specialstage.h"
 #include "k_bot.h"
 #include "k_odds.h"
 #include "doomstat.h"
@@ -2837,7 +2838,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		starposttime = 0;
 		prevcheck = 0;
 		nextcheck = 0;
-		xtralife = 0;
 
 		for (i = 0; i < LAP__MAX; i++)
 		{
@@ -4397,20 +4397,104 @@ static INT16 G_GetNextMap(boolean advancemap)
 	}
 	else if (grandprixinfo.gp == true)
 	{
-		if (grandprixinfo.roundnum == 0 || grandprixinfo.cup == NULL) // Single session
+		// G: oh dear, this whole GP block has loads of side effects...
+		// for now, just repeat the same map for "map +"
+		// you're not supposed to use that in GP anyways
+		if (!advancemap || // ...right?
+		    grandprixinfo.roundnum == 0 || grandprixinfo.cup == NULL) // Single session
 		{
 			newmap = curmap; // Same map
 		}
 		else
 		{
-			if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels) // On final map
+			INT32 lastgametype = gametype;
+
+			// If we're in a GP event, don't immediately follow it up with another.
+			// I also suspect this will not work with online GP so I'm gonna prevent it right now.
+			// The server might have to communicate eventmode (alongside other GP data) in XD_MAP later.
+			if (netgame || grandprixinfo.eventmode != GPEVENT_NONE)
+			{
+				grandprixinfo.eventmode = GPEVENT_NONE;
+
+				G_SetGametype(GT_RACE);
+				if (gametype != lastgametype)
+					D_GameTypeChanged(lastgametype);
+
+				specialStage.active = false;
+				bossinfo.boss = false;
+			}
+			// Special stage
+			else if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels)
+			{
+				INT16 totaltotalring = 0;
+
+				for (i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playeringame[i])
+						continue;
+					if (players[i].spectator)
+						continue;
+					if (players[i].bot)
+						continue;
+					totaltotalring += players[i].totalring;
+				}
+
+				if (totaltotalring >= 50)
+				{
+					const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[CUPCACHE_SPECIAL];
+					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
+						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_SPECIAL|TOL_BOSS|TOL_BATTLE))
+					{
+						grandprixinfo.eventmode = GPEVENT_SPECIAL;
+						newmap = cupLevelNum;
+					}
+				}
+			}
+			else if (grandprixinfo.roundnum == (grandprixinfo.cup->numlevels+1)/2) // 3 for a 5-map cup
+			{
+				// todo any other condition?
+				{
+					const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[CUPCACHE_BONUS];
+					if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum]
+						&& mapheaderinfo[cupLevelNum]->typeoflevel & (TOL_BOSS|TOL_BATTLE))
+					{
+						grandprixinfo.eventmode = GPEVENT_BONUS;
+						newmap = cupLevelNum;
+					}
+				}
+			}
+
+			if (grandprixinfo.eventmode != GPEVENT_NONE)
+			{
+				// nextmap is set above
+				const INT32 newtol = mapheaderinfo[newmap]->typeoflevel;
+
+				if (newtol & TOL_SPECIAL)
+				{
+					specialStage.active = true;
+					specialStage.encore = grandprixinfo.encore;
+				}
+				else //(if newtol & (TOL_BATTLE|TOL_BOSS)) -- safe to assume??
+				{
+					G_SetGametype(GT_BATTLE);
+					if (gametype != lastgametype)
+						D_GameTypeChanged(lastgametype);
+					if (newtol & TOL_BOSS)
+					{
+						K_ResetBossInfo();
+						bossinfo.boss = true;
+						bossinfo.encore = grandprixinfo.encore;
+					}
+				}
+			}
+			else if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels) // On final map
 			{
 				newmap = NEXTMAP_CEREMONY; // ceremonymap
 			}
 			else
 			{
 				// Proceed to next map
-				const INT32 cupLevelNum =grandprixinfo.cup->cachedlevels[grandprixinfo.roundnum];
+				const INT32 cupLevelNum = grandprixinfo.cup->cachedlevels[grandprixinfo.roundnum];
 
 				if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum])
 				{

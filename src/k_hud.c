@@ -1642,7 +1642,15 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			else
 			{
 				drawtime = timelimitintics - drawtime;
-				if (drawtime < 5*TICRATE)
+				if (secretextratime)
+					;
+				else if (extratimeintics)
+				{
+					jitter = 2;
+					if (leveltime & 1)
+						jitter = -jitter;
+				}
+				else if (drawtime < 5*TICRATE)
 				{
 					jitter = 1;
 					if (drawtime & 2)

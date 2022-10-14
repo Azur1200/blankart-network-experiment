@@ -493,7 +493,7 @@ void K_BattleInit(UINT8 numPlayers)
 	{
 		if (modeattacking != ATTACKING_ITEMBREAK)
 		{
-			if (!cv_kartitembreaker.value)
+			if (K_CanChangeRules() && !cv_kartitembreaker.value)
 				goto afteritembreaker;
 
 			if (numPlayers > 1)
