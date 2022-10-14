@@ -8646,6 +8646,39 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			continue;
 		}
 
+		// Always check for cup cache reassociations.
+		// (The core assumption is that cups < headers.)
+		{
+			cupheader_t *cup = kartcupheaders;
+			INT32 j;
+
+			mapheaderinfo[i]->cup = NULL;
+
+			while (cup)
+			{
+				for (j = 0; j < CUPCACHE_MAX; j++)
+				{
+					// Already discovered?
+					if (cup->cachedlevels[j] != NEXTMAP_INVALID)
+						continue;
+
+					if (!cup->levellist[j] || strcasecmp(cup->levellist[j], name) != 0)
+						continue;
+
+					// Only panic about back-reference for non-bonus material.
+					if (j < MAXLEVELLIST)
+					{
+						if (mapheaderinfo[i]->cup)
+							I_Error("P_InitMapData: Map %s cannot appear in cups multiple times! (First in %s, now in %s)", name, mapheaderinfo[i]->cup->name, cup->name);
+						mapheaderinfo[i]->cup = cup;
+					}
+
+					cup->cachedlevels[j] = i;
+				}
+				cup = cup->next;
+			}
+		}
+
 		// No change?
 		if (mapheaderinfo[i]->lumpnum == maplump)
 			continue;
@@ -8713,37 +8746,6 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 
 			vres_Free(virtmap);
-
-			// Now associate it with a cup cache.
-			// (The core assumption is that cups < headers.)
-			if (i >= numexistingmapheaders)
-			{
-				cupheader_t *cup = kartcupheaders;
-				INT32 j;
-				while (cup)
-				{
-					for (j = 0; j < CUPCACHE_MAX; j++)
-					{
-						// Already discovered?
-						if (cup->cachedlevels[j] != NEXTMAP_INVALID)
-							continue;
-
-						if (!cup->levellist[j] || strcasecmp(cup->levellist[j], name) != 0)
-							continue;
-
-						// Only panic about back-reference for non-bonus material.
-						if (j < MAXLEVELLIST || j == CUPCACHE_SPECIAL)
-						{
-							if (mapheaderinfo[i]->cup)
-								I_Error("P_InitMapData: Map %s cannot appear in cups multiple times! (First in %s, now in %s)", name, mapheaderinfo[i]->cup->name, cup->name);
-							mapheaderinfo[i]->cup = cup;
-						}
-
-						cup->cachedlevels[j] = i;
-					}
-					cup = cup->next;
-				}
-			}
 		}
 	}
 
