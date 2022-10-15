@@ -6607,7 +6607,9 @@ UINT8 K_RaceLapCount(INT16 mapNum)
 		return 0;
 	}
 
-	if (cv_gptest.value)
+	if ((grandprixinfo.gp == true)
+		&& (grandprixinfo.eventmode == GPEVENT_NONE)
+		&& cv_gptest.value)
 	{
 		// For testing
 		return 1;
