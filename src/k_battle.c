@@ -261,7 +261,7 @@ void K_CheckBumpers(void)
 		winnerscoreadd -= players[i].roundscore;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(true) == false)
 	{
 		if (nobumpers)
 		{
@@ -491,7 +491,7 @@ void K_BattleInit(boolean singleplayercontext)
 {
 	if ((gametyperules & GTR_ITEMBREAKER) && singleplayercontext && !itembreaker && !bossinfo.boss)
 	{
-		if (!(K_CanChangeRules() && !cv_kartitembreaker.value))
+		if (!(K_CanChangeRules(true) && !cv_kartitembreaker.value))
 			itembreaker = true;
 	}
 

@@ -1128,7 +1128,7 @@ void P_CheckPointLimit(void)
 	if (exitcountdown)
 		return;
 
-	if (!K_CanChangeRules())
+	if (!K_CanChangeRules(true))
 		return;
 
 	if (!cv_pointlimit.value)
@@ -1174,7 +1174,7 @@ boolean P_CheckRacers(void)
 {
 	const boolean griefed = (spectateGriefed > 0);
 
-	boolean eliminateLast = (!K_CanChangeRules() && !demo.playback) || (cv_karteliminatelast.value != 0); // temp hack until this is ported properly
+	boolean eliminateLast = (!K_CanChangeRules(true) || (cv_karteliminatelast.value != 0));
 	boolean allHumansDone = true;
 	//boolean allBotsDone = true;
 
@@ -1293,7 +1293,7 @@ boolean P_CheckRacers(void)
 		{
 			tic_t countdown = 30*TICRATE; // 30 seconds left to finish, get going!
 
-			if (K_CanChangeRules() == true)
+			if (K_CanChangeRules(true) == true)
 			{
 				// Custom timer
 				countdown = cv_countdowntime.value * TICRATE;

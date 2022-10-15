@@ -4604,7 +4604,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 			newmap = cm;
 		}
 
-		if (advancemap && K_CanChangeRules())
+		if (advancemap && K_CanChangeRules(true))
 		{
 			switch (cv_advancemap.value)
 			{
@@ -4699,8 +4699,9 @@ static void G_DoCompleted(void)
 		}
 	}
 
+	// See Y_StartIntermission timer handling
+	if ((gametyperules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules(false) || cv_inttime.value > 0))
 	// play some generic music if there's no win/cool/lose music going on (for exitlevel commands)
-	if ((gametyperules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules() || cv_inttime.value > 0))
 	{
 		S_ChangeMusicInternal("racent", true);
 		S_ShowMusicCredit(-30*FRACUNIT, 5*TICRATE, V_SNAPTOTOP);

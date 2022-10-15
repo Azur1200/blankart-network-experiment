@@ -6613,7 +6613,7 @@ UINT8 K_RaceLapCount(INT16 mapNum)
 		return 1;
 	}
 
-	if (cv_numlaps.value == -1 || K_CanChangeRules() == false)
+	if (cv_numlaps.value == -1 || K_CanChangeRules(true) == false)
 	{
 		// Use map default
 		return mapheaderinfo[mapNum]->numlaps;
@@ -11366,7 +11366,7 @@ boolean K_NotFreePlay(void)
 	UINT8 i;
 	UINT8 nump = 0;
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(true) == false)
 	{
 		// Rounds with direction are never FREE PLAY.
 		return true;

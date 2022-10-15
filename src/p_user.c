@@ -1311,7 +1311,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				S_StartSound(player->mo, playerskin->soundsid[S_sfx[sfx_id].skinsound]);
 			}
 
-			if (!K_CanChangeRules() || cv_inttime.value > 0)
+			// See Y_StartIntermission timer handling
+			if (!K_CanChangeRules(false) || cv_inttime.value > 0)
 				P_EndingMusic(player);
 
 			if (P_CheckRacers())

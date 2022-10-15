@@ -4507,7 +4507,7 @@ void Schedule_Run(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -4643,7 +4643,7 @@ void Automate_Run(automateEvents_t type)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -5472,7 +5472,7 @@ UINT32 secretextratime = 0;
   */
 static void TimeLimit_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7299,6 +7299,11 @@ static void Command_ShowTime_f(void)
 // SRB2Kart: On change messages
 static void NumLaps_OnChange(void)
 {
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
 	if (gamestate == GS_LEVEL)
 	{
 		numlaps = K_RaceLapCount(gamemap - 1);
@@ -7327,7 +7332,7 @@ static void NumLaps_OnChange(void)
 
 static void KartFrantic_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7345,7 +7350,7 @@ static void KartFrantic_OnChange(void)
 
 static void KartSpeed_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7370,7 +7375,7 @@ static void KartBattleSpeed_OnChange(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7388,7 +7393,7 @@ static void KartBattleSpeed_OnChange(void)
 
 static void KartEncore_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7398,7 +7403,7 @@ static void KartEncore_OnChange(void)
 
 static void KartComeback_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7421,7 +7426,7 @@ static void KartEliminateLast_OnChange(void)
 
 static void KartRings_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7438,7 +7443,7 @@ static void KartRings_OnChange(void)
 
 static void KartPurpleDrift_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7471,7 +7476,7 @@ static void KartPurpleDrift_OnChange(void)
 
 static void KartStacking_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7504,7 +7509,7 @@ static void KartStacking_OnChange(void)
 
 static void KartChaining_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7537,7 +7542,7 @@ static void KartChaining_OnChange(void)
 
 static void KartSlipdash_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7570,7 +7575,7 @@ static void KartSlipdash_OnChange(void)
 
 static void KartSlopeBoost_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7603,7 +7608,7 @@ static void KartSlopeBoost_OnChange(void)
 
 static void KartDrafting_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7636,7 +7641,7 @@ static void KartDrafting_OnChange(void)
 
 static void KartAirDrop_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7669,7 +7674,7 @@ static void KartAirDrop_OnChange(void)
 
 static void KartItemLitter_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7702,7 +7707,7 @@ static void KartItemLitter_OnChange(void)
 
 static void KartAntiBump_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7726,7 +7731,7 @@ static void KartAntiBump_OnChange(void)
 
 static void KartItemBreaker_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7748,7 +7753,7 @@ static void KartItemBreaker_OnChange(void)
 
 static void KartInvinType_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7766,7 +7771,7 @@ static void KartInvinType_OnChange(void)
 
 static void KartBumpSpark_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
