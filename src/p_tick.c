@@ -753,6 +753,7 @@ void P_Ticker(boolean run)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 			{
 				P_PlayerThink(&players[i]);
+				K_KartPlayerHUDUpdate(&players[i]);
 
 				if (!players[i].spectator)
 					p++;

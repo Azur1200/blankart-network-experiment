@@ -6319,9 +6319,8 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
 
-	if (gametype == GT_RACE)
+	if (gametyperules & GTR_RINGS)
 	{
-
 		if ((K_RingsActive() == true))
 		{
 			if (player->pflags & PF_RINGLOCK)
@@ -7345,8 +7344,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_UpdateTripwire(player);
-
-	K_KartPlayerHUDUpdate(player);
 
 	if (P_IsObjectOnGround(player->mo))
 		player->waterskip = 0;
