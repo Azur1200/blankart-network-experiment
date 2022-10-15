@@ -101,7 +101,9 @@ vector3_t clusterpoint, clusterdtf;
 void K_TimerInit(void)
 {
 	UINT8 i;
-	UINT8 numPlayers = 0;//, numspec = 0;
+	UINT8 numPlayers = 0;
+	boolean singleplayercontext = ((modeattacking != ATTACKING_NONE)
+		|| (grandprixinfo.gp == true && grandprixinfo.eventmode != GPEVENT_NONE));
 
 	starttime = introtime = 0;
 
@@ -111,20 +113,22 @@ void K_TimerInit(void)
 	}
 	else if (bossinfo.boss == false)
 	{
-		for (i = 0; i < MAXPLAYERS; i++)
+		if (!singleplayercontext)
 		{
-			if (!playeringame[i])
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				continue;
+				if (!playeringame[i] || players[i].spectator)
+				{
+					continue;
+				}
+
+				numPlayers++;
 			}
 
-			if (players[i].spectator == true)
+			if (numPlayers < 2)
 			{
-				//numspec++;
-				continue;
+				singleplayercontext = true;
 			}
-
-			numPlayers++;
 		}
 
 		introtime = (108) + 5; // 108 for rotation, + 5 for white fade
@@ -136,13 +140,10 @@ void K_TimerInit(void)
 		}
 	}
 
-	// NOW you can try to setup Item Breaker, if there's not enough players for a match
-	K_BattleInit(numPlayers);
-
 	timelimitintics = extratimeintics = secretextratime = 0;
 	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss)
 	{
-		if (!K_CanChangeRules())
+		if (singleplayercontext)
 		{
 			if (grandprixinfo.gp)
 			{
@@ -161,6 +162,8 @@ void K_TimerInit(void)
 			timelimitintics = cv_timelimit.value * (60*TICRATE);
 		}
 	}
+
+	K_BattleInit(singleplayercontext);
 }
 
 UINT32 K_GetPlayerDontDrawFlag(player_t *player)

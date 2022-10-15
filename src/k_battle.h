@@ -21,7 +21,7 @@ void K_CheckBumpers(void);
 UINT8 K_NumEmeralds(player_t *player);
 void K_RunPaperItemSpawners(void);
 void K_SpawnPlayerBattleBumpers(player_t *p);
-void K_BattleInit(UINT8 numPlayers);
+void K_BattleInit(boolean singleplayercontext);
 void K_RespawnBattleBoxes(void);
 
 #ifdef __cplusplus
