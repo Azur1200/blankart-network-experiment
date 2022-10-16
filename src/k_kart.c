@@ -102,7 +102,7 @@ void K_TimerInit(void)
 {
 	UINT8 i;
 	UINT8 numPlayers = 0;
-	boolean singleplayercontext = ((modeattacking != ATTACKING_NONE)
+	boolean domodeattack = ((modeattacking != ATTACKING_NONE)
 		|| (grandprixinfo.gp == true && grandprixinfo.eventmode != GPEVENT_NONE));
 
 	starttime = introtime = 0;
@@ -113,7 +113,7 @@ void K_TimerInit(void)
 	}
 	else if (bossinfo.boss == false)
 	{
-		if (!singleplayercontext)
+		if (!domodeattack)
 		{
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
@@ -127,7 +127,7 @@ void K_TimerInit(void)
 
 			if (numPlayers < 2)
 			{
-				singleplayercontext = true;
+				domodeattack = true;
 			}
 		}
 
@@ -140,12 +140,14 @@ void K_TimerInit(void)
 		}
 	}
 
-	timelimitintics = extratimeintics = secretextratime = 0;
+	timelimitintics = extratimeintics = secretextratime = 0; // G: restore K_TimerReset?
+	K_BattleInit(domodeattack);
+
 	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss && !modeattacking)
 	{
-		if (singleplayercontext)
+		if (!K_CanChangeRules(true))
 		{
-			if (grandprixinfo.gp)
+			if (itembreaker)
 			{
 				timelimitintics = (20*TICRATE);
 			}
@@ -162,8 +164,6 @@ void K_TimerInit(void)
 			timelimitintics = cv_timelimit.value * (60*TICRATE);
 		}
 	}
-
-	K_BattleInit(singleplayercontext);
 }
 
 UINT32 K_GetPlayerDontDrawFlag(player_t *player)
