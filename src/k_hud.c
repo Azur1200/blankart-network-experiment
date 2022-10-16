@@ -4253,7 +4253,7 @@ static void K_drawKartMinimap(void)
 
 			mobj = players[i].mo;
 
-			if (players[i].mo->health <= 0 && players[i].pflags & PF_NOCONTEST)
+			if (mobj->health <= 0 && (players[i].pflags & PF_NOCONTEST))
 			{
 				workingPic = kp_nocontestminimap;
 
@@ -4271,10 +4271,13 @@ static void K_drawKartMinimap(void)
 				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+
+				if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+					mobj = mobj->tracer;
 			}
 			else
 			{
-				skin = ((skin_t*)players[i].mo->skin)-skins;
+				skin = ((skin_t*)mobj->skin)-skins;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4306,7 +4309,7 @@ static void K_drawKartMinimap(void)
 				}
 #endif
 
-				colorizeplayer = players[i].mo->colorized;
+				colorizeplayer = mobj->colorized;
 
 				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
@@ -4315,10 +4318,10 @@ static void K_drawKartMinimap(void)
 				}
 				else
 				{
-					usecolor = players[i].mo->color;
+					usecolor = mobj->color;
 				}
 
-				if (players[i].mo->color)
+				if (usecolor)
 				{
 					if (colorizeplayer)
 						colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
@@ -4487,7 +4490,7 @@ static void K_drawKartMinimap(void)
 
 		mobj = players[localplayers[i]].mo;
 
-		if (players[localplayers[i]].mo->health <= 0 && players[localplayers[i]].pflags & PF_NOCONTEST)
+		if (mobj->health <= 0 && (players[localplayers[i]].pflags & PF_NOCONTEST))
 		{
 			workingPic = kp_nocontestminimap;
 
@@ -4507,10 +4510,13 @@ static void K_drawKartMinimap(void)
 			colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 
 			nocontest = true;
+
+			if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+				mobj = mobj->tracer;
 		}
 		else
 		{
-			skin = ((skin_t*)players[localplayers[i]].mo->skin)-skins;
+			skin = ((skin_t*)mobj->skin)-skins;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4541,7 +4547,7 @@ static void K_drawKartMinimap(void)
 			}
 #endif
 
-			colorizeplayer = players[localplayers[i]].mo->colorized;
+			colorizeplayer = mobj->colorized;
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
 				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
@@ -4552,10 +4558,10 @@ static void K_drawKartMinimap(void)
 			}
 			else
 			{
-				usecolor = players[localplayers[i]].mo->color;
+				usecolor = mobj->color;
 			}
 
-			if (players[localplayers[i]].mo->color)
+			if (usecolor)
 			{
 				if (colorizeplayer)
 					colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
