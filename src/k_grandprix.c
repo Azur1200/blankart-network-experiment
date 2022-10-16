@@ -768,7 +768,7 @@ boolean K_CanChangeRules(boolean allowdemos)
 		return false;
 	}
 
-	if (modeattacking == true)
+	if (modeattacking != ATTACKING_NONE)
 	{
 		// Don't cheat the rules of Time Trials!
 		return false;
