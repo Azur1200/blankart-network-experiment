@@ -1228,15 +1228,10 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	static char uname[8 + 1];
-	UINT32 hash;
+	UINT32 hash = quickncasehash(name, 8);
 
 	if (!TestValidLump(wad,0))
 		return INT16_MAX;
-
-	strlcpy(uname, name, sizeof uname);
-	strupr(uname);
-	hash = quickncasehash(uname, 8);
 
 	//
 	// scan forward
@@ -1247,7 +1242,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	{
 		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-			if (lump_p->hash == hash && !strncmp(lump_p->name, uname, sizeof(uname) - 1))
+			if (lump_p->hash == hash && !strncasecmp(lump_p->name, name, 8))
 				return i;
 	}
 
@@ -1264,15 +1259,10 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	static char uname[256 + 1];
-	UINT32 hash;
+	UINT32 hash = quickncasehash(name, 8); // Not a mistake, legacy system for short lumpnames
 
 	if (!TestValidLump(wad,0))
 		return INT16_MAX;
-
-	strlcpy(uname, name, sizeof uname);
-	strupr(uname);
-	hash = quickncasehash(uname, 8); // Not a mistake, legacy system for short lumpnames
 
 	//
 	// scan forward
@@ -1286,7 +1276,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		{
 			if (lump_p->hash != hash)
 				continue;
-			if (strcmp(lump_p->longname, uname))
+			if (strcasecmp(lump_p->longname, name))
 				continue;
 			return i;
 		}
@@ -1420,7 +1410,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 	{
 		if (!lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname[8]
 			&& lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumphash == hash
-			&& strncmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
+			&& strncasecmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
 		{
 			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
 			return lumpnumcache[lumpnumcacheindex].lumpnum;
@@ -1470,7 +1460,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	// most recent entries first
 	for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
 	{
-		if (strcmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
+		if (strcasecmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
 		{
 			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
 			return lumpnumcache[lumpnumcacheindex].lumpnum;
