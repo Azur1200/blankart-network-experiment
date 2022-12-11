@@ -25,8 +25,6 @@ extern "C" {
 
 extern consvar_t cv_newspeedometer;
 
-void K_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dupx, INT32 dupy);
-
 struct trackingResult_t
 {
 	fixed_t x, y;
