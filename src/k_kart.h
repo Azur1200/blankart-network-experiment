@@ -184,6 +184,8 @@ boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);
 
+void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
