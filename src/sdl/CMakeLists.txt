@@ -7,7 +7,7 @@ target_sources(SRB2SDL2 PRIVATE
 	i_net.c
 	i_system.cpp
 	i_main.c
-	i_video.c
+	i_video.cpp
 	dosstr.c
 	endtxt.c
 	hwsym_sdl.c
