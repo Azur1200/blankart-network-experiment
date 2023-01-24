@@ -1644,7 +1644,6 @@ void M_MinimapGenerate(void)
 	char *filepath;
 	boolean ret = false;
 	minigen_t *minigen = NULL;
-	INT32 wh = 100;
 	size_t option_scale;
 	INT32 mul = 1;
 
@@ -1682,7 +1681,6 @@ void M_MinimapGenerate(void)
 			return;
 		}
 
-		wh *= mul;
 		filepath = va("%s" PATHSEP "MINIMAP-%d.png", srb2home, mul);
 	}
 	else
@@ -1690,7 +1688,7 @@ void M_MinimapGenerate(void)
 		filepath = va("%s" PATHSEP "MINIMAP.png", srb2home);
 	}
 
-	minigen = AM_MinimapGenerate(wh);
+	minigen = AM_MinimapGenerate(mul);
 
 	if (minigen == NULL || minigen->buf == NULL)
 		goto failure;
