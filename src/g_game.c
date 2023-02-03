@@ -3523,6 +3523,31 @@ tryagain:
 			|| (usehellmaps != (mapheaderinfo[ix]->menuflags & LF2_HIDEINMENU))) // this is bad
 			continue; //isokmap = false;
 
+		if (pprevmap == -2)  // title demo hack
+		{
+			// vres GHOST_%u
+			virtres_t *vRes;
+			virtlump_t *vLump;
+			size_t step = 0;
+			lumpnum_t l;
+
+			vRes = vres_GetMap(mapheaderinfo[ix+1]->lumpnum);
+
+			for (int i = 0; i < 10; i++)
+			{
+				vLump = vres_Find(vRes, va("GHOST_%u",i));
+
+				if (vLump != NULL)
+					break;
+			}
+
+			if (vLump == NULL)
+			{
+				if (((l = W_CheckNumForName(va("%sS01",G_BuildMapName(ix+1)))) == LUMPERROR))
+					continue;
+			}
+		}
+
 		if (!ignorebuffer)
 		{
 			if (extbufsize > 0)
@@ -3554,13 +3579,6 @@ tryagain:
 			}
 
 			if (!isokmap)
-				continue;
-		}
-
-		if (pprevmap == -2) // title demo hack
-		{
-			lumpnum_t l;
-			if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(ix+1)))) == LUMPERROR)
 				continue;
 		}
 
