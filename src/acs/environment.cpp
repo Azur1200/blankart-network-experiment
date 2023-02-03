@@ -300,6 +300,8 @@ void Environment::loadModule(ACSVM::Module *module)
 		{
 			CONS_Debug(DBG_SETUP, "No BEHAVIOR lump found.\n");
 		}
+
+		vres_Free(vRes);
 	}
 	else
 	{
