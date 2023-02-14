@@ -7778,6 +7778,9 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		break;
 	case MT_ITEMCAPSULE_PART:
 		P_ItemCapsulePartThinker(mobj);
+
+		if (P_MobjWasRemoved(mobj))
+			return;
 		break;
 	case MT_SCRIPT_THING:
 	{
@@ -10422,8 +10425,15 @@ void P_MobjThinker(mobj_t *mobj)
 		P_CheckMobjTrigger(mobj, false);
 	}
 
+	I_Assert(!P_MobjWasRemoved(mobj));
+
 	if (mobj->scale != mobj->destscale)
+	{
 		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.
+
+		if (P_MobjWasRemoved(mobj))
+			return;
+	}
 
 	if (mobj->type == MT_GHOST && mobj->fuse > 0) // Not guaranteed to be MF_SCENERY or not MF_SCENERY!
 	{
