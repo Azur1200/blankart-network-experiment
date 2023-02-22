@@ -1395,6 +1395,33 @@ D_ConvertVersionNumbers (void)
 #endif
 }
 
+const char *D_GetFancyBranchName(void)
+{
+	if (!strcmp(compbranch, ""))
+	{
+		// \x8b = aqua highlight
+		return "\x8b" "detached HEAD" "\x80";
+	}
+
+	return compbranch;
+}
+
+static void Command_assert(void)
+{
+#if !defined(NDEBUG) || defined(PARANOIA)
+	CONS_Printf("Yes, assertions are enabled.\n");
+#else
+	CONS_Printf("No, ssertions are NOT enabled.\n");
+#endif
+}
+
+#ifdef DEVELOP
+static void Command_crash(void)
+{
+	I_Error("The game crashed on PURPOSE, because of the 'crash' command. (This is only enabled in DEVELOP builds.)");
+}
+#endif
+
 //
 // D_SRB2Main
 //
@@ -1559,6 +1586,11 @@ void D_SRB2Main(void)
 
 	// Do this up here so that WADs loaded through the command line can use ExecCfg
 	COM_Init();
+
+	COM_AddCommand("assert", Command_assert);
+#ifdef DEVELOP
+	COM_AddCommand("crash", Command_crash);
+#endif
 
 	// add any files specified on the command line with -file wadfile
 	// to the wad list

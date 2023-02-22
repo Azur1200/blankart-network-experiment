@@ -2124,8 +2124,8 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 
 	W_Shutdown();
 
-#if defined (PARANOIA) && defined (__CYGWIN__)
-	*(volatile INT32 *)0 = 4; //Alam: Debug!
+#if defined (PARANOIA) || defined (DEVELOP)
+	*(INT32 *)0 = 4; //Alam: Debug!
 #endif
 
 	exit(-1);
