@@ -215,14 +215,17 @@ static void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		pindex = MAXLIGHTZ - 1;
 	ds_colormap = planezlight[pindex];
 
-	if (currentplane->extra_colormap)
-		ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
-
-	ds_fullbright = colormaps;
-	if (encoremap && !currentplane->noencore)
+	if (!debugrender_highlight)
 	{
-		ds_colormap += COLORMAP_REMAPOFFSET;
-		ds_fullbright += COLORMAP_REMAPOFFSET;
+		if (currentplane->extra_colormap)
+			ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
+
+		ds_fullbright = colormaps;
+		if (encoremap && !currentplane->noencore)
+		{
+			ds_colormap += COLORMAP_REMAPOFFSET;
+			ds_fullbright += COLORMAP_REMAPOFFSET;
+		}
 	}
 
 	ds_y = y;
@@ -631,6 +634,8 @@ static void R_DrawSkyPlane(visplane_t *pl)
 	INT32 x;
 	INT32 angle;
 
+	R_CheckDebugHighlight(SW_HI_SKY);
+
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
 	// (that is, unless we'll need to switch drawers in future for some reason)
 	R_SetColumnFunc(BASEDRAWFUNC, false);
@@ -649,6 +654,7 @@ static void R_DrawSkyPlane(visplane_t *pl)
 		dc_colormap += COLORMAP_REMAPOFFSET;
 		dc_fullbright += COLORMAP_REMAPOFFSET;
 	}
+	dc_lightmap = colormaps;
 	dc_texturemid = skytexturemid;
 	dc_texheight = textureheight[skytexture]
 		>>FRACBITS;
@@ -849,7 +855,8 @@ void R_DrawSinglePlane(visplane_t *pl)
 	INT32 x, stop;
 	ffloor_t *rover;
 	INT32 type, spanfunctype = BASEDRAWFUNC;
-	//debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
+	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
+
 	void (*mapfunc)(INT32, INT32, INT32) = R_MapPlane;
 
 	if (!(pl->minx <= pl->maxx))
@@ -930,9 +937,15 @@ void R_DrawSinglePlane(visplane_t *pl)
 				light = (pl->lightlevel >> LIGHTSEGSHIFT);
 			}
 			else light = (pl->lightlevel >> LIGHTSEGSHIFT);
+
+			debug = SW_HI_FOFPLANES;
 		}
 		else
+		{
 			light = (pl->lightlevel >> LIGHTSEGSHIFT);
+
+			debug = SW_HI_PLANES;
+		}
 
 #ifndef NOWATER
 		if (pl->ripple)
@@ -1106,6 +1119,8 @@ void R_DrawSinglePlane(visplane_t *pl)
 		planezlight = zlight[light];
 	}
 
+
+	R_CheckDebugHighlight(debug);
 
 	// Use the correct span drawer depending on the powers-of-twoness
 	R_SetSpanFunc(spanfunctype, !ds_powersoftwo, ds_brightmap != NULL);
