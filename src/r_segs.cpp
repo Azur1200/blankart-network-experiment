@@ -338,6 +338,8 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 			}
 		}
 
+		lightnum = R_AdjustLightLevel(lightnum);
+
 		if (lightnum < 0)
 			walllights = scalelight[0];
 		else if (lightnum >= LIGHTLEVELS)
@@ -457,12 +459,14 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 						if ((rlight->flags & FOF_NOSHADE))
 							continue;
 
-						if (rlight->lightnum < 0)
+						lightnum = R_AdjustLightLevel(rlight->lightnum);
+
+						if (lightnum < 0)
 							xwalllights = scalelight[0];
-						else if (rlight->lightnum >= LIGHTLEVELS)
+						else if (lightnum >= LIGHTLEVELS)
 							xwalllights = scalelight[LIGHTLEVELS-1];
 						else
-							xwalllights = scalelight[rlight->lightnum];
+							xwalllights = scalelight[lightnum];
 
 						pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
@@ -953,6 +957,8 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		else if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
 
+		lightnum = R_AdjustLightLevel(lightnum);
+
 		if (lightnum < 0)
 			walllights = scalelight[0];
 		else if (lightnum >= LIGHTLEVELS)
@@ -1130,7 +1136,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 					lighteffect = !(dc_lightlist[i].flags & FOF_NOSHADE);
 					if (lighteffect)
 					{
-						lightnum = rlight->lightnum;
+						lightnum = R_AdjustLightLevel(rlight->lightnum);
 
 						if (lightnum < 0)
 							xwalllights = scalelight[0];
@@ -1560,6 +1566,8 @@ static void R_RenderSegLoop (void)
 					;
 				else if (P_ApplyLightOffset(lightnum, curline->frontsector))
 					lightnum += curline->lightOffset;
+
+				lightnum = R_AdjustLightLevel(lightnum);
 
 				if (lightnum < 0)
 					xwalllights = scalelight[0];
@@ -2565,6 +2573,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (P_ApplyLightOffset(lightnum, frontsector))
 			lightnum += curline->lightOffset;
+
+		lightnum = R_AdjustLightLevel(lightnum);
 
 		if (lightnum < 0)
 			walllights = scalelight[0];

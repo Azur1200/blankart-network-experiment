@@ -125,6 +125,13 @@ extern consvar_t cv_fov[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 
+// debugging
+
+INT32 R_AdjustLightLevel(INT32 light);
+
+extern consvar_t
+	cv_debugrender_contrast;
+
 // Called by startup code.
 void R_Init(void);
 
