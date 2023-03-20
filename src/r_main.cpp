@@ -185,6 +185,8 @@ consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons
 
 consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
+consvar_t cv_debugfinishline = CVAR_INIT ("debugfinishline", "Off", CV_CHEAT, CV_OnOff, NULL);
+
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -1743,6 +1745,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_fpscap);
 
 	//CV_RegisterVar(&cv_drawpickups);
+
+	CV_RegisterVar(&cv_debugfinishline);
 
 	// debugging
 
