@@ -641,11 +641,48 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 	}
 }
 
+static void R_RenderMaskedSegLoopDebug(drawseg_t *ds, INT32 x1, INT32 x2, void (*colfunc_2s)(column_t *, column_t *, INT32))
+{
+	column_t *col;
+
+	dc_lightmap = scalelight[LIGHTLEVELS - 1][0]; // max brightness
+
+	// draw the columns
+	for (dc_x = x1; dc_x <= x2; dc_x++)
+	{
+		if (maskedtexturecol[dc_x] != INT16_MAX)
+		{
+			dc_texturemid = ds->maskedtextureheight[dc_x];
+
+			if (R_OverflowTest())
+			{
+				spryscale += rw_scalestep;
+				continue;
+			}
+
+			sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+			dc_iscale = 0xffffffffu / (unsigned)spryscale;
+
+			col = (column_t *)((UINT8 *)R_GetColumn(g_texturenum_dbgline, maskedtexturecol[dc_x]) - 3);
+			colfunc_2s(col, NULL, -1);
+		}
+
+		spryscale += rw_scalestep;
+	}
+}
+
 static INT32 R_GetTwoSidedMidTexture(seg_t *line)
 {
 	INT32 texture;
 
-	texture = line->sidedef->midtexture;
+	if (R_IsDebugLine(line))
+	{
+		texture = g_texturenum_dbgline;
+	}
+	else
+	{
+		texture = line->sidedef->midtexture;
+	}
 
 	return R_GetTextureNum(texture);
 }
@@ -703,6 +740,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 	void (*colfunc_2s)(column_t *, column_t *, INT32);
 	line_t *ldef;
 	const boolean debug = R_IsDebugLine(ds->curline);
+
 	// Calculate light table.
 	// Use different light tables
 	//   for horizontal / vertical / diagonal. Diagonal?
@@ -753,8 +791,16 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-
-	R_RenderMaskedSegLoop(ds, x1, x2, texnum, colfunc_2s);
+	if (debug)
+	{
+		colfunc = R_DrawColumn_Flat_8;
+		r8_flatcolor = R_DebugLineColor(ldef);
+		R_RenderMaskedSegLoopDebug(ds, x1, x2, colfunc_2s);
+	}
+	else
+	{
+		R_RenderMaskedSegLoop(ds, x1, x2, texnum, colfunc_2s);
+	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
 }
@@ -1813,7 +1859,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	vertex_t segleft, segright;
 	fixed_t ceilingfrontslide, floorfrontslide, ceilingbackslide, floorbackslide;
 	static size_t maxdrawsegs = 0;
-	//const INT32 twosidedmidtexture = R_GetTwoSidedMidTexture(curline);
+	const INT32 twosidedmidtexture = R_GetTwoSidedMidTexture(curline);
 	const boolean wantremap = encoremap && !(curline->linedef->flags & ML_TFERLINE);
 
 	maskedtextureheight = NULL;
@@ -2513,7 +2559,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			ds_p->numthicksides = numthicksides = i;
 		}
-		if (sidedef->midtexture > 0 && sidedef->midtexture < numtextures)
+		if (twosidedmidtexture)
 		{
 			// masked midtexture
 			if (!ds_p->thicksidecol)
@@ -2563,6 +2609,17 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 			rw_midtexturemid += sidedef->rowoffset;
 			rw_midtextureback += sidedef->rowoffset;
+
+			if (R_IsDebugLine(curline))
+			{
+				// Line draws at horizon
+				rw_midtexturemid = 0;
+				rw_midtextureback = 0;
+
+				// Ignore slopes
+				rw_midtextureslide = 0;
+				rw_midtexturebackslide = 0;
+			}
 
 			maskedtexture = true;
 		}
@@ -3050,12 +3107,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
 	{
 		ds_p->silhouette |= SIL_TOP;
-		ds_p->tsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MIN: INT32_MAX;
+		ds_p->tsilheight = twosidedmidtexture ? INT32_MIN: INT32_MAX;
 	}
 	if (maskedtexture && !(ds_p->silhouette & SIL_BOTTOM))
 	{
 		ds_p->silhouette |= SIL_BOTTOM;
-		ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX: INT32_MIN;
+		ds_p->bsilheight = twosidedmidtexture ? INT32_MAX: INT32_MIN;
 	}
 	ds_p++;
 }

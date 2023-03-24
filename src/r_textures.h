@@ -117,6 +117,8 @@ lumpnum_t R_GetFlatNumForName(const char *name);
 
 extern INT32 numtextures;
 
+extern INT32 g_texturenum_dbgline;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
