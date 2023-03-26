@@ -63,6 +63,7 @@
 #include "doomstat.h"
 #include "acs/interface.h"
 #include "k_director.h"
+#include "g_party.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -2936,12 +2937,12 @@ void G_DoReborn(INT32 playernum)
 void G_AddPlayer(INT32 playernum, INT32 console)
 {
 	CL_ClearPlayer(playernum);
-	//G_DestroyParty(playernum);
+	G_DestroyParty(playernum);
 
 	playeringame[playernum] = true;
 
 	playerconsole[playernum] = console;
-	//G_BuildLocalSplitscreenParty(playernum);
+	G_BuildLocalSplitscreenParty(playernum);
 
 	player_t *newplayer = &players[playernum];
 

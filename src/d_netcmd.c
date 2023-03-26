@@ -64,6 +64,7 @@
 #include "doomstat.h"
 #include "deh_tables.h"
 #include "m_perfstats.h"
+#include "g_party.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -1492,14 +1493,12 @@ static void ForceAllSkins(INT32 forcedskin)
 }
 
 static const char *
-VaguePartyDescription (int playernum, int *party_sizes, int default_color)
+VaguePartyDescription (int playernum, int size, int default_color)
 {
 	static char party_description
 		[1 + MAXPLAYERNAME + 1 + sizeof " and x others"];
 	const char *name;
-	int size;
 	name = player_names[playernum];
-	size = party_sizes[playernum];
 	/*
 	less than check for the dumb compiler because I KNOW it'll
 	complain about "writing x bytes into an area of y bytes"!!!
@@ -1914,7 +1913,7 @@ static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
 			HU_AddChatText(va(
 						"\x82*You have been invited to join %s.",
 						VaguePartyDescription(
-							playernum, splitscreen_party_size, '\x82')
+							playernum, G_PartySize(playernum), '\x82')
 			), true);
 		}
 	}
@@ -1923,8 +1922,6 @@ static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
 static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 {
 	int invitation;
-	int old_party_size;
-	int views;
 
 	(void)cp;
 
@@ -1940,12 +1937,12 @@ static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 
 	if (invitation >= 0)
 	{
-		if (splitscreen_partied[invitation])
+		if (G_IsPartyLocal(invitation))
 		{
 			HU_AddChatText(va(
 						"\x82*%s joined your party!",
 						VaguePartyDescription(
-							playernum, splitscreen_original_party_size, '\x82')
+							playernum, G_LocalSplitscreenPartySize(playernum), '\x82')
 			), true);
 		}
 		else if (playernum == consoleplayer)
@@ -1953,18 +1950,11 @@ static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 			HU_AddChatText(va(
 						"\x82*You joined %s's party!",
 						VaguePartyDescription(
-							invitation, splitscreen_party_size, '\x82')
+							invitation, G_PartySize(invitation), '\x82')
 			), true);
 		}
 
-		old_party_size = splitscreen_party_size[invitation];
-		views = splitscreen_original_party_size[playernum];
-
-		if (( old_party_size + views ) <= MAXSPLITSCREENPLAYERS)
-		{
-			G_RemovePartyMember(playernum);
-			G_AddPartyMember(invitation, playernum);
-		}
+		G_JoinParty(invitation, playernum);
 
 		splitscreen_invitations[playernum] = -1;
 	}
@@ -2022,21 +2012,16 @@ static void Got_LeaveParty(UINT8 **cp,INT32 playernum)
 
 	splitscreen_invitations[playernum] = -1;
 
-	if (splitscreen_party_size[playernum] >
-			splitscreen_original_party_size[playernum])
+	if (G_IsPartyLocal(playernum) && playernum != consoleplayer)
 	{
-		if (splitscreen_partied[playernum] && playernum != consoleplayer)
-		{
-			HU_AddChatText(va(
-						"\x85*%s left your party.",
-						VaguePartyDescription(
-							playernum, splitscreen_original_party_size, '\x85')
-			), true);
-		}
-
-		G_RemovePartyMember(playernum);
-		G_ResetSplitscreen(playernum);
+		HU_AddChatText(va(
+					"\x85*%s left your party.",
+					VaguePartyDescription(
+						playernum, G_LocalSplitscreenPartySize(playernum), '\x85')
+		), true);
 	}
+
+	G_LeaveParty(playernum);
 }
 
 void D_SendPlayerConfig(UINT8 n)
@@ -2354,8 +2339,7 @@ Command_Invite_f (void)
 				"That player has already been invited to join another party.\n");
 	}
 
-	if (( splitscreen_party_size[consoleplayer] +
-				splitscreen_original_party_size[invitee] ) > MAXSPLITSCREENPLAYERS)
+	if ((G_PartySize(consoleplayer) + G_LocalSplitscreenPartySize(invitee)) > MAXSPLITSCREENPLAYERS)
 	{
 		CONS_Alert(CONS_WARNING,
 				"That player joined with too many "
@@ -2365,7 +2349,7 @@ Command_Invite_f (void)
 	CONS_Printf(
 			"Inviting %s...\n",
 			VaguePartyDescription(
-				invitee, splitscreen_original_party_size, '\x80')
+				invitee, G_LocalSplitscreenPartySize(invitee), '\x80')
 	);
 
 	buffer[0] = invitee;
@@ -2408,7 +2392,7 @@ Command_CancelInvite_f (void)
 	CONS_Printf(
 			"Rescinding invite to %s...\n",
 			VaguePartyDescription(
-				invitee, splitscreen_original_party_size, '\x80')
+				invitee, G_LocalSplitscreenPartySize(invitee), '\x80')
 	);
 
 	buffer[0] = invitee;
