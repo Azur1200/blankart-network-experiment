@@ -52,7 +52,7 @@
 #include "k_kart.h"
 #include "r_fps.h"
 
-#define MINZ (FRACUNIT*4)
+#define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
 
 typedef struct
