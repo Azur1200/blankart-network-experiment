@@ -366,7 +366,12 @@ static INT32 SCR(INT32 r)
 
 // Devmode information
 
-/*static void ST_pushDebugString(INT32 *height, const char *string)
+static void ST_pushRow(INT32 *height)
+{
+	*height -= 4;
+}
+
+static void ST_pushDebugString(INT32 *height, const char *string)
 {
 	V_DrawRightAlignedString(320, *height, V_MONOSPACE, string);
 	*height -= 8;
@@ -418,9 +423,21 @@ static void ST_drawMusicDebug(INT32 *height)
 	}
 
 	ST_pushDebugString(height, va("    Song: %8s", mname));
-}*/
+}
 
-static void ST_drawDebugInfo(void)
+static void ST_drawRenderDebug(INT32 *height)
+{
+	const struct RenderStats *i = &g_renderstats;
+
+	ST_pushDebugString(height, va("     Visplanes: %4s", sizeu1(i->visplanes)));
+	ST_pushDebugString(height, va("      Drawsegs: %4s", sizeu1(i->drawsegs)));
+
+	ST_pushRow(height);
+
+	ST_pushDebugString(height, va("Skybox Portals: %4s", sizeu1(i->skybox_portals)));
+}
+
+void ST_drawDebugInfo(void)
 {
 	INT32 height = 192;
 
@@ -478,6 +495,16 @@ static void ST_drawDebugInfo(void)
 		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  :    .%04d", peekres));
 
 		height -= 32;
+	}
+
+	/*if (cv_debug & DBG_MUSIC)
+	{
+		ST_drawMusicDebug(&height);
+	}*/
+
+	if (cv_debug & DBG_RENDER)
+	{
+		ST_drawRenderDebug(&height);
 	}
 
 	if (cv_debug & DBG_MEMORY)

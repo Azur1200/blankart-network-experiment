@@ -313,5 +313,5 @@ void Portal_AddSkyboxPortals (void)
 		}
 	}
 
-	CONS_Debug(DBG_RENDER, "Skybox portals: %d\n", count);
+	g_renderstats.skybox_portals = count;
 }
