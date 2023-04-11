@@ -8826,7 +8826,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags2 & MF2_DEBRIS)
 		K_MineExplodeThink(mobj);
 
-	if (mobj->type == MT_AMBIENT)
+	if (mobj->flags & MF_AMBIENT)
 	{
 		if (leveltime % mobj->health)
 			return;
@@ -12071,6 +12071,32 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 				mobj->flags2 |= MF2_CLASSICPUSH;
 				break;
 		}
+	}
+
+	if (mobj->flags & MF_SPRING && mobj->info->painchance == 3)
+	{
+		if (mthing->args[0])
+			mobj->flags2 |= MF2_AMBUSH;
+	}
+	if ((mobj->flags & MF_MONITOR) && mobj->info->speed != 0)
+	{
+		switch (mthing->args[1])
+		{
+			case TMMR_SAME:
+			default:
+				break;
+			case TMMR_WEAK:
+				mobj->flags2 |= MF2_AMBUSH;
+				break;
+			case TMMR_STRONG:
+				mobj->flags2 |= MF2_STRONGBOX;
+		}
+	}
+	// Custom ambient sounds
+	if ((mobj->flags & MF_AMBIENT) && mobj->type != MT_AMBIENT)
+	{
+		mobj->threshold = mobj->info->seesound;
+		mobj->health = mobj->info->spawnhealth;
 	}
 
 	return true;
