@@ -125,6 +125,7 @@ struct camera_t
 
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
+	fixed_t pmomz;
 
 	// SRB2Kart: camera pans while drifting
 	fixed_t pan;
