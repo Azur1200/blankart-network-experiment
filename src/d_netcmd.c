@@ -4198,6 +4198,8 @@ static void Command_QueueMap_f(void)
 	if (ischeating && !usingcheats)
 	{
 		CONS_Printf(M_GetText("Cheats must be enabled.\n"));
+		Z_Free(realmapname);
+		Z_Free(mapname);
 		return;
 	}
 
