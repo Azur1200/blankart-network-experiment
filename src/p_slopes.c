@@ -1029,7 +1029,7 @@ fixed_t P_GetWallTransferMomZ(mobj_t *mo, pslope_t *slope)
 	vector3_t slopemom, axis;
 	angle_t ang;
 
-	if (P_CanApplySlopePhysics(mo, mo->standingslope) == false)
+	if (P_CanApplySlopePhysics(mo, slope) == false)
 	{
 		return false;
 	}
