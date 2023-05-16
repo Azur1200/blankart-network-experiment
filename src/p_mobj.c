@@ -6241,22 +6241,6 @@ void P_Attract(mobj_t *source, mobj_t *dest, boolean nightsgrab) // Home in on y
 	}
 }
 
-static void P_NightsItemChase(mobj_t *thing)
-{
-	if (!thing->tracer)
-	{
-		P_SetTarget(&thing->tracer, NULL);
-		thing->flags2 &= ~MF2_NIGHTSPULL;
-		thing->movefactor = 0;
-		return;
-	}
-
-	if (!thing->tracer->player)
-		return;
-
-	P_Attract(thing, thing->tracer, true);
-}
-
 //
 // P_MaceRotate
 // Spins a hnext-chain of objects around its centerpoint, side to side or periodically.
@@ -8175,24 +8159,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
 
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
-		else
-			A_AttractChase(mobj);
+		A_AttractChase(mobj);
 		return false;
 		// Flung items
 	case MT_FLINGRING:
 		if (P_MobjWasRemoved(mobj))
 			return false;
 
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
-		else
-			A_AttractChase(mobj);
-		break;
-	case MT_EMBLEM:
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
+		A_AttractChase(mobj);
 		break;
 	case MT_FLOATINGITEM:
 	{
