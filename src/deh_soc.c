@@ -1109,6 +1109,7 @@ void readlevelheader(MYFILE *f, char * name)
 	if (mapheaderinfo[num]->lumpname == NULL)
 	{
 		mapheaderinfo[num]->lumpname = Z_StrDup(name);
+		mapheaderinfo[num]->lumpnamehash = quickncasehash(mapheaderinfo[num]->lumpname, MAXMAPLUMPNAME);
 	}
 
 	do

@@ -723,9 +723,13 @@ INT32 G_MapNumber(const char * name)
 #endif
 	{
 		INT32 map;
+		UINT32 hash = quickncasehash(name, MAXMAPLUMPNAME);
 
 		for (map = 0; map < nummapheaders; ++map)
 		{
+			if (hash != mapheaderinfo[map]->lumpnamehash)
+				continue;
+
 			if (strcasecmp(mapheaderinfo[map]->lumpname, name) != 0)
 				continue;
 
@@ -4388,7 +4392,7 @@ void G_LoadGameData(void)
 		{
 			// Since it's not worth declaring the entire gamedata
 			// corrupt over extra maps, we report and move on.
-			CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded", mapname);
+			CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded\n", mapname);
 		}
 	}
 
