@@ -11953,3 +11953,35 @@ void A_ReaperThinker(void *thing)
 		}
 	}
 }
+
+// Function: A_SpawnSneakerPanel
+//
+// Description: Spawns a sneaker panel object relative to the location of the actor
+//
+// var1:
+//		var1 >> 16 = x offset
+//		var1 & 65535 = y offset
+// var2:
+//		var2 >> 16 = z
+//		var2 & 65535 = unused
+//
+void A_SpawnSneakerPanel(mobj_t *actor)
+{
+	INT16 x, y, z;
+	mobj_t *mo;
+	INT32 locvar1 = var1;
+	INT32 locvar2 = var2;
+
+	if (LUA_CallAction(A_SPAWNSNEAKERPANEL, actor))
+	{
+		return;
+	}
+
+	x = (INT16)(locvar1 >> 16);
+	y = (INT16)(locvar1 & 65535);
+	z = (INT16)(locvar2 >> 16);
+
+	mo = P_SpawnMobjFromMobj(actor, x << FRACBITS, y << FRACBITS, z << FRACBITS, MT_SNEAKERPANEL);
+	mo->angle = actor->angle;
+	Obj_SneakerPanelSpriteScale(mo);
+}

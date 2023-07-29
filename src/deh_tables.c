@@ -163,9 +163,7 @@ actionpointer_t actionpointers[] =
 #define _(name, upper, ...) {name, "A_"#upper},
 #include "info/actions.h"
 #undef _
-
 	{NULL,                     "NONE"},
-
 	// This NULL entry must be the last in the list
 	{NULL,                   NULL},
 };

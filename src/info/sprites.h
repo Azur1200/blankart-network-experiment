@@ -641,5 +641,13 @@ _(BKAD) // Airdrop Dust
 
 _(TRCK)
 
+// Dash Rings
+_(RAIR)
+// Sneaker Panels
+_(BSTP)
+_(BSTS)
+_(BSTT)
+
+
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later
 _(VIEW)
