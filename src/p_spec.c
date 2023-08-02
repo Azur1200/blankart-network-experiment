@@ -2953,11 +2953,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				// Change the music and apply position/fade operations
 				else
 				{
-					if (!stringargs[0])
-						break;
-
-					strncpy(mapmusname, stringargs[0], 7);
-					mapmusname[6] = 0;
+					if (!stringargs[0] || fastcmp(stringargs[0], "-"))
+						strcpy(mapmusname, "");
+					else
+					{
+						strncpy(mapmusname, stringargs[0], 7);
+						mapmusname[6] = 0;
+					}
 
 					mapmusflags = tracknum & MUSIC_TRACKMASK;
 
