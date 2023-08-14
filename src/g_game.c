@@ -976,8 +976,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	joystickvector2_t joystickvector;
 
 	// you'd BETTER not touch the player while freecamming...
-	player_t *player = fordemocam ? NULL : &players[g_localplayers[forplayer]];
-	camera_t *thiscam = fordemocam ? democam.cam : &camera[forplayer];
+	player_t *player = &players[g_localplayers[forplayer]];
+	camera_t *thiscam = &camera[forplayer];
 	boolean *rd = &resetdown[forplayer];
 	boolean spectating = fordemocam || player->spectator;
 

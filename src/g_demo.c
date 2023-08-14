@@ -3991,11 +3991,6 @@ void G_StopDemo(void)
 	singletics = false;
 
 	demo.freecam = false;
-	// reset democam shit too:
-	democam.cam = NULL;
-	democam.localangle = 0;
-	democam.localaiming = 0;
-	democam.keyboardlook = false;
 
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission(); // cleanup
