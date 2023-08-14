@@ -68,6 +68,10 @@
 #include "discord.h"
 #endif
 
+#ifdef HWRENDER
+#include "hardware/hw_main.h" // for cv_glshearing
+#endif
+
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
 UINT8 ultimatemode = false;
@@ -761,6 +765,31 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 		*aiming = -limitangle;
 
 	return (INT16)((*aiming)>>16);
+}
+
+void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox)
+{
+#ifndef HWRENDER
+	(void)player;
+	(void)skybox;
+#endif
+
+	// clip it in the case we are looking a hardware 90 degrees full aiming
+	// (lmps, network and use F12...)
+	if (rendermode == render_soft
+#ifdef HWRENDER
+		|| (rendermode == render_opengl
+			&& (cv_glshearing.value == 1
+			|| (cv_glshearing.value == 2 && R_IsViewpointThirdPerson(player, skybox))))
+#endif
+		)
+	{
+		G_SoftwareClipAimingPitch(aiming);
+	}
+	else
+	{
+		G_ClipAimingPitch(aiming);
+	}
 }
 
 // returns true if event's axis is within the deadzone for the given player
