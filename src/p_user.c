@@ -2644,6 +2644,7 @@ fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 
 static ticcmd_t cameracmd;
+struct demofreecam_s democam;
 
 // called by m_menu to reinit cam input every time it's toggled
 void P_InitCameraCmd(void)
@@ -2666,10 +2667,18 @@ void P_DemoCameraMovement(camera_t *cam)
 	cam->aiming = G_ClipAimingPitch((INT32 *)&cam->aiming);
 
 	// camera movement:
-	if (cmd->buttons & BT_ACCELERATE)
-		cam->z += 32*mapobjectscale;
-	else if (cmd->buttons & BT_BRAKE)
-		cam->z -= 32*mapobjectscale;
+	if (!democam.button_a_held)
+	{
+		if (cmd->buttons & BT_ACCELERATE)
+			cam->z += 32*mapobjectscale;
+		else if (cmd->buttons & BT_BRAKE)
+			cam->z -= 32*mapobjectscale;
+	}
+
+	if (!(cmd->buttons & BT_ACCELERATE) && democam.button_a_held)
+	{
+		democam.button_a_held--;
+	}
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
 	if (demo.freecam && cmd->buttons & BT_ATTACK)
