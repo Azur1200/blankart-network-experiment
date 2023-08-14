@@ -545,11 +545,6 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			continue;
 		}
 
-		if (i == 0 && democam.soundmobj)
-		{
-			continue;
-		}
-
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -559,7 +554,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 			listenmobj[i] = player->mo;
 		}
 
-		if (origin && origin == listenmobj[i])
+		if (origin && origin == listenmobj[i] && !demo.freecam)
 		{
 			itsUs = true;
 		}
@@ -810,11 +805,6 @@ void S_UpdateSounds(void)
 			continue;
 		}
 
-		if (i == 0 && democam.soundmobj)
-		{
-			continue;
-		}
-
 		if (player->awayviewtics)
 		{
 			listenmobj[i] = player->awayviewmobj;
@@ -881,12 +871,15 @@ void S_UpdateSounds(void)
 				{
 					boolean itsUs = false;
 
-					for (i = r_splitscreen; i >= 0; i--)
+					if (!demo.freecam)
 					{
-						if (c->origin != listenmobj[i])
-							continue;
+						for (i = r_splitscreen; i >= 0; i--)
+						{
+							if (c->origin != listenmobj[i])
+								continue;
 
-						itsUs = true;
+							itsUs = true;
+						}
 					}
 
 					if (itsUs == false)
