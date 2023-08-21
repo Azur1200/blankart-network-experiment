@@ -361,7 +361,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 {
 	INT16 finallight = lightnum;
 
-	if (slope != NULL && P_ApplyLightOffsetFine(lightnum, sector))
+	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
 		finallight += (fof ? -slope->hwLightOffset : slope->hwLightOffset);
 
