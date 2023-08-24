@@ -27,6 +27,7 @@
 #include "../w_wad.h"
 #include "../z_zone.h"
 #include "../p_local.h"
+#include "../k_dialogue.hpp"
 
 #include "environment.hpp"
 #include "thread.hpp"
@@ -201,15 +202,13 @@ Environment::Environment()
 	addFuncDataACS0( 510, addCallFunc(CallFunc_MusicRemap));
 	
 	/*addFuncDataACS0( 511, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 512, addCallFunc(CallFunc_PlaceHolder));
+	addFuncDataACS0( 512, addCallFunc(CallFunc_PlaceHolder));*/
 	
-	addFuncDataACS0( 600, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 601, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 602, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 603, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 604, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 605, addCallFunc(CallFunc_PlaceHolder));
-	*/
+	addFuncDataACS0( 600, addCallFunc(CallFunc_DialogueSetSpeaker));
+	addFuncDataACS0( 601, addCallFunc(CallFunc_DialogueSetCustomSpeaker));
+	addFuncDataACS0( 602, addCallFunc(CallFunc_DialogueNewText));
+	addFuncDataACS0( 603, addCallFunc(CallFunc_DialogueWaitDismiss));
+	addFuncDataACS0( 604, addCallFunc(CallFunc_DialogueWaitText));
 
 	addFuncDataACS0( 700, addCallFunc(CallFunc_Tan));
 	addFuncDataACS0( 701, addCallFunc(CallFunc_Arcsin));
@@ -221,7 +220,6 @@ Environment::Environment()
 	addFuncDataACS0( 707, addCallFunc(CallFunc_Round));
 	addFuncDataACS0( 710, addCallFunc(CallFunc_InvAngle));
 	addFuncDataACS0( 711, addCallFunc(CallFunc_OppositeColor));
-
 }
 
 ACSVM::Thread *Environment::allocThread()
@@ -350,6 +348,20 @@ bool Environment::checkTag(ACSVM::Word type, ACSVM::Word tag)
 			}
 
 			return (camera->tracer == nullptr || P_MobjWasRemoved(camera->tracer) == true);
+		}
+
+		case ACS_TAGTYPE_DIALOGUE:
+		{
+			if (tag == 0) // cheeky reuse
+			{
+				// wait for dismissal
+				return (!g_dialogue.Active());
+			}
+			else
+			{
+				// wait for text to finish
+				return (g_dialogue.TextDone());
+			}
 		}
 	}
 

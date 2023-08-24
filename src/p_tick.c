@@ -48,6 +48,7 @@
 #include "k_items.h" // ItemBGone
 #include "k_specialstage.h"
 #include "k_grandprix.h"
+#include "k_dialogue.h"
 
 #include "radio_finish.h"
 
@@ -1162,6 +1163,11 @@ void P_Ticker(dboolean run)
 	if (run && !levelloading && leveltime && (!dedicated))
 	{
 		RR_ridersFinishTick();
+	}
+
+	if (run)
+	{
+		K_TickDialogue();
 	}
 
 	if (run)

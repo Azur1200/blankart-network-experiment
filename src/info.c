@@ -77,6 +77,7 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 
 	0, // SPR2_SIGN
 	0, // SPR2_XTRA
+	0, // SPR2_TALK
 	0, // SPR2_KART
 };
 

@@ -57,7 +57,7 @@
 #include "v_video.h"
 #include "r_skins.h" // NUMFACES
 #include "k_kart.h"
-
+#include "k_dialogue.h"
 #include "r_fps.h"
 
 // variable to stop mayonaka static from flickering
@@ -990,6 +990,8 @@ static void ST_overlayDrawer(void)
 			}
 		}
 	}
+
+	K_DrawDialogue();
 }
 
 // MayonakaStatic: draw Midnight Channel's TV-like borders

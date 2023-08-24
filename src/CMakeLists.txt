@@ -156,6 +156,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_stats.c
 	k_specialstage.c
 	k_vote.c
+	k_dialogue.cpp
 	h_timers.cpp
 	radio_finish.cpp
 	stun.c

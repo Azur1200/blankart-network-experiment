@@ -116,6 +116,7 @@
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
 #include "k_itemlist.hpp"
+#include "k_dialogue.h"
 #include "g_input.h"
 
 #include "blan/b_soc.h"
@@ -1346,7 +1347,6 @@ static void P_LoadSidedefs(uint8_t *data)
 			case 434: // Custom Power
 			case 442: // Calls P_SetMobjState on mobjs of a given type in the tagged sectors
 			case 443: // Calls a named Lua function
-			case 459: // Control text prompt (named tag)
 			case 461: // Spawns an object on the map based on texture offsets
 			case 463: // Colorizes an object
 			case 475: // ACS_Execute
@@ -6628,26 +6628,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[3] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : 0;
 			lines[i].args[4] = !!(lines[i].flags & ML_NOSKEW);
 			break;
-		case 459: //Control text prompt
-			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
-			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
-				lines[i].args[2] |= TMP_CLOSE;
-			if (lines[i].flags & ML_SKEWTD)
-				lines[i].args[2] |= TMP_RUNPOSTEXEC;
-			if (lines[i].flags & ML_TFERLINE)
-				lines[i].args[2] |= TMP_CALLBYNAME;
-			if (lines[i].flags & ML_NOSKEW)
-				lines[i].args[2] |= TMP_KEEPCONTROLS;
-			if (lines[i].flags & ML_MIDPEG)
-				lines[i].args[2] |= TMP_KEEPREALTIME;
-			/*if (lines[i].flags & ML_NOCLIMB)
-				lines[i].args[2] |= TMP_ALLPLAYERS;
-			if (lines[i].flags & ML_MIDSOLID)
-				lines[i].args[3] |= TMP_FREEZETHINKERS;*/
-			lines[i].args[4] = (lines[i].sidenum[1] != NO_INDEX) ? sides[lines[i].sidenum[1]].textureoffset >> FRACBITS : tag;
-			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
-			break;
+
 		case 460: //Award rings
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;

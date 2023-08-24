@@ -3381,15 +3381,10 @@ dboolean P_ProcessSpecial(activator_t *activator, int16_t special, int32_t *args
 			}
 			break;
 
-		case 437: // Disable Player Controls
+		case 437: // Toggle Player Controls
 			if (mo && mo->player)
 			{
-				uint16_t fractime = (uint16_t)(args[0]);
-				if (fractime < 1)
-					fractime = 1; //instantly wears off upon leaving
-				if (args[1])
-					fractime |= 1<<15; //more crazy &ing, as if music stuff wasn't enough
-				mo->player->nocontrol = fractime;
+				mo->player->nocontrol = ((args[0] != 0) ? UINT16_MAX : 0);
 			}
 			break;
 
@@ -4125,33 +4120,6 @@ dboolean P_ProcessSpecial(activator_t *activator, int16_t special, int32_t *args
 				mo->eflags &= ~MFE_TRACERANGLE;
 				P_SetTarget(&mo->tracer, NULL);
 				mo->lastlook = mo->cvmem = mo->cusval = mo->extravalue1 = 0;
-			}
-			break;
-
-		case 459: // Control Text Prompt
-			// console player only
-			if (mo && mo->player && P_IsLocalPlayer(mo->player))
-			{
-				int32_t promptnum = max(0, args[0] - 1);
-				int32_t pagenum = max(0, args[1] - 1);
-				int32_t postexectag = abs(args[3]);
-
-				dboolean closetextprompt = (args[2] & TMP_CLOSE);
-				//dboolean allplayers = (args[2] & TMP_ALLPLAYERS);
-				dboolean runpostexec = (args[2] & TMP_RUNPOSTEXEC);
-				dboolean blockcontrols = !(args[2] & TMP_KEEPCONTROLS);
-				dboolean freezerealtime = !(args[2] & TMP_KEEPREALTIME);
-				//dboolean freezethinkers = (args[2] & TMP_FREEZETHINKERS);
-				dboolean callbynamedtag = (args[2] & TMP_CALLBYNAME);
-
-				if (closetextprompt)
-					F_EndTextPrompt(false, false);
-				else
-				{
-					if (callbynamedtag && stringargs[0] && stringargs[0][0])
-						F_GetPromptPageByNamedTag(stringargs[0], &promptnum, &pagenum);
-					F_StartTextPrompt(promptnum, pagenum, mo, runpostexec ? postexectag : 0, blockcontrols, freezerealtime);
-				}
 			}
 			break;
 

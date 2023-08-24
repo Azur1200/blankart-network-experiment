@@ -49,6 +49,7 @@
 #include "../r_fps.h"
 #include "../m_misc.h"
 #include "../f_finale.h"
+#include "../k_dialogue.hpp"
 
 #include "call-funcs.hpp"
 
@@ -733,6 +734,46 @@ bool CallFunc_CameraWait(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 		ACSVM::ThreadState::WaitTag,
 		argV[0],
 		ACS_TAGTYPE_CAMERA
+	};
+
+	return true; // Execution interrupted
+}
+
+/*--------------------------------------------------
+	bool CallFunc_DialogueWaitDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+
+		Pauses the thread until the current
+		dialogue box is dismissed.
+--------------------------------------------------*/
+bool CallFunc_DialogueWaitDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	(void)argV;
+	(void)argC;
+
+	thread->state = {
+		ACSVM::ThreadState::WaitTag,
+		0,
+		ACS_TAGTYPE_DIALOGUE
+	};
+
+	return true; // Execution interrupted
+}
+
+/*--------------------------------------------------
+	bool CallFunc_DialogueWaitText(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+
+		Pauses the thread until the current
+		dialogue box finishes rendering its text.
+--------------------------------------------------*/
+bool CallFunc_DialogueWaitText(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	(void)argV;
+	(void)argC;
+
+	thread->state = {
+		ACSVM::ThreadState::WaitTag,
+		1,
+		ACS_TAGTYPE_DIALOGUE
 	};
 
 	return true; // Execution interrupted
@@ -2298,6 +2339,7 @@ bool CallFunc_StopLevelExit(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSV
 	(void)argC;
 
 	exitcountdown = 0;
+
 	return false;
 }
 
@@ -2608,6 +2650,7 @@ bool CallFunc_OppositeColor(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSV
 	}
 
 	thread->dataStk.push(~env->getString( skincolors[invColor].name )->idx);
+
 	return false;
 }
 
