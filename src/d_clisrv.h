@@ -550,7 +550,6 @@ extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
-
 extern UINT32 ourIP;
 extern uint8_t lastReceivedKey[MAXNETNODES][MAXSPLITSCREENPLAYERS][PUBKEYLENGTH];
 extern uint8_t lastSentChallenge[MAXNETNODES][CHALLENGELENGTH];
