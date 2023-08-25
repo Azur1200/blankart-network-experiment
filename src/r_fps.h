@@ -78,6 +78,8 @@ struct interpmobjstate_t {
 	subsector_t *subsector;
 	angle_t angle;
 	fixed_t scale;
+	fixed_t radius;
+	fixed_t height;
 	fixed_t spritexscale;
 	fixed_t spriteyscale;
 	fixed_t spritexoffset;

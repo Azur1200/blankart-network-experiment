@@ -4993,7 +4993,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			R_InterpolateMobjState(caster, R_GetTimeFrac(RTF_LEVEL), &casterinterp);
 
 			groundz = R_GetShadowZ(thing, NULL);
-			floordiff = abs(((thing->eflags & MFE_VERTICALFLIP) ? caster->height : 0) + casterinterp.z - groundz);
+			floordiff = abs(((thing->eflags & MFE_VERTICALFLIP) ? casterinterp.height : 0) + casterinterp.z - groundz);
 
 			shadowheight = FIXED_TO_FLOAT(floordiff);
 			shadowscale = FIXED_TO_FLOAT(FixedMul(FRACUNIT - floordiff/640, casterinterp.scale));
@@ -5357,7 +5357,6 @@ static void HWR_ProjectBoundingBox(mobj_t *thing)
 	gl_vissprite_t *vis;
 	float tr_x, tr_y;
 	float tz;
-	float rad;
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
@@ -5384,15 +5383,13 @@ static void HWR_ProjectBoundingBox(mobj_t *thing)
 	tr_x += gl_viewx;
 	tr_y += gl_viewy;
 
-	rad = FIXED_TO_FLOAT(thing->radius);
-
 	vis = HWR_NewVisSprite();
-	vis->x1 = tr_x - rad;
-	vis->x2 = tr_x + rad;
-	vis->z1 = tr_y - rad;
-	vis->z2 = tr_y + rad;
+	vis->x1 = tr_x - FIXED_TO_FLOAT(interp.radius);
+	vis->x2 = tr_x + FIXED_TO_FLOAT(interp.radius);
+	vis->z1 = tr_y - FIXED_TO_FLOAT(interp.radius);
+	vis->z2 = tr_y + FIXED_TO_FLOAT(interp.radius);
 	vis->gz = FIXED_TO_FLOAT(interp.z);
-	vis->gzt = vis->gz + FIXED_TO_FLOAT(thing->height);
+	vis->gzt = vis->gz + FIXED_TO_FLOAT(interp.height);
 	vis->mobj = thing;
 
 	vis->precip = false;

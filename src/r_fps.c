@@ -288,6 +288,8 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = mobj->scale;
+		out->radius = mobj->radius;
+		out->height = mobj->height;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->drawangle : mobj->angle;
 		out->pitch = mobj->pitch;
@@ -304,11 +306,21 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->x = R_LerpFixed(mobj->old_x, mobj->x, frac);
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
-	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
-	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
+
+	if (mobj->scale == mobj->old_scale) // Tiny optimisation - scale is usually unchanging, so let's skip a lerp, two FixedMuls, and two FixedDivs
+	{
+		out->scale = mobj->scale;
+		out->radius = mobj->radius;
+		out->height = mobj->height;
+	}
+	else
+	{
+		out->scale = R_LerpFixed(mobj->old_scale, mobj->scale, frac);
+		out->radius = FixedMul(mobj->radius, FixedDiv(out->scale, mobj->scale));
+		out->height = FixedMul(mobj->height, FixedDiv(out->scale, mobj->scale));
+	}
 
 	out->subsector = R_PointInSubsector(out->x, out->y);
 
@@ -350,6 +362,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 		out->y = mobj->y;
 		out->z = mobj->z;
 		out->scale = mapobjectscale;
+		out->radius = mobj->radius;
+		out->height = mobj->height;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->angle;
 		out->spritexscale = mobj->spritexscale;
@@ -363,6 +377,8 @@ void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjst
 	out->y = R_LerpFixed(mobj->old_y, mobj->y, frac);
 	out->z = R_LerpFixed(mobj->old_z, mobj->z, frac);
 	out->scale = mapobjectscale;
+	out->radius = mobj->radius;
+	out->height = mobj->height;
 	out->spritexscale = R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 	out->spriteyscale = R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
 	out->spritexoffset = R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
