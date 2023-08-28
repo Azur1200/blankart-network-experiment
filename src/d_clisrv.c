@@ -4510,6 +4510,11 @@ dboolean SV_SpawnServer(void)
 		if (netgame && I_NetOpenSocket)
 		{
 			I_NetOpenSocket();
+
+			if (cv_advertise.value)
+			{
+				RegisterServer();
+			}
 		}
 
 		// non dedicated server just connect to itself
