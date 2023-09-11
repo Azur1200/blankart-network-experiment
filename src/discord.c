@@ -37,7 +37,9 @@
 // length of IP strings
 #define IP_SIZE 21
 
-consvar_t cv_discordrp = CVAR_INIT ("discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, DRPC_UpdatePresence);
+static void Discordrp_OnChange(void);
+
+consvar_t cv_discordrp = CVAR_INIT ("discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, Discordrp_OnChange);
 consvar_t cv_discordstreamer = CVAR_INIT ("discordstreamer", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_discordasks = CVAR_INIT ("discordasks", "Yes", CV_SAVE|CV_CALL, CV_YesNo, DRPC_UpdatePresence);
 
@@ -330,8 +332,34 @@ void DRPC_Init(void)
 	handlers.joinRequest = DRPC_HandleJoinRequest;
 
 	Discord_Initialize(DISCORD_APPID, &handlers, 1, NULL);
-	I_AddExitFunc(Discord_Shutdown);
+	I_AddExitFunc(DRPC_Shutdown);
 	DRPC_UpdatePresence();
+}
+
+void DRPC_Shutdown(void)
+{
+	if (!drpc_init)
+	{
+		CONS_Printf("DiscordRPC never started\n");
+		return;
+	}
+
+	CONS_Printf("Shutting down DiscordRPC\n");
+
+	Discord_Shutdown();
+	drpc_init = false;
+}
+
+static void Discordrp_OnChange(void)
+{
+	if (cv_discordrp.value)
+	{
+		DRPC_UpdatePresence();
+	}
+	else
+	{
+		DRPC_Shutdown();
+	}
 }
 
 /*--------------------------------------------------
