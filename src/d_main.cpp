@@ -202,7 +202,7 @@ void D_ProcessEvents(void)
 				continue;
 		}
 
-		if (demo.savemode == DSM_TITLEENTRY)
+		if (demo.savemode == demovars_s::DSM_TITLEENTRY)
 		{
 			if (G_DemoTitleResponder(ev))
 				continue;
@@ -298,7 +298,7 @@ static void D_Display(void)
 		{
 			for (i = 0; i <= r_splitscreen; ++i)
 			{
-				R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
+				R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + i));
 				R_InterpolateViewRollAngle(rendertimefrac);
 				R_CheckViewMorph(i);
 			}
@@ -972,7 +972,7 @@ void D_StartTitle(void)
 	// In case someone exits out at the same time they start a time attack run,
 	// reset modeattacking
 	modeattacking = ATTACKING_NONE;
-	marathonmode = 0;
+	marathonmode = static_cast<marathonmode_t>(0);
 
 	// Reset GP
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
@@ -1024,7 +1024,7 @@ static void D_AddFile(char **list, const char *file)
 	for (pnumwadfiles = 0; list[pnumwadfiles]; pnumwadfiles++)
 		;
 
-	newfile = malloc(strlen(file) + 1);
+	newfile = static_cast<char*>(malloc(strlen(file) + 1));
 	if (!newfile)
 	{
 		I_Error("No more free memory to AddFile %s",file);
@@ -1169,7 +1169,7 @@ static void IdentifyVersion(void)
 		if (ms == 1) \
 			D_AddFile(startupiwads, musicpath); \
 		else if (ms == 0) \
-			I_Error("File "str" has been modified with non-music/sound lumps"); \
+			I_Error("File " str " has been modified with non-music/sound lumps"); \
 	}
 
 	MUSICTEST(SOUNDSNAME)
@@ -1268,7 +1268,7 @@ void D_SRB2Main(void)
 
 	// default savegame
 	strcpy(savegamename, SAVEGAMENAME"%u.ssg");
-	strcpy(liveeventbackup, "live"SAVEGAMENAME".bkp"); // intentionally not ending with .ssg
+	strcpy(liveeventbackup, "live" SAVEGAMENAME".bkp"); // intentionally not ending with .ssg
 
 	{
 		const char *userhome = D_Home(); //Alam: path to home
@@ -1279,7 +1279,7 @@ void D_SRB2Main(void)
 			I_Error("Please set $HOME to your home directory\n");
 #else
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "d"CONFIGFILENAME);
+				snprintf(configfile, sizeof configfile, "d" CONFIGFILENAME);
 			else
 				snprintf(configfile, sizeof configfile, CONFIGFILENAME);
 #endif
@@ -1290,7 +1290,7 @@ void D_SRB2Main(void)
 #ifdef DEFAULTDIR
 			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
+				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d" CONFIGFILENAME, srb2home);
 			else
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2home);
 
@@ -1740,9 +1740,9 @@ void D_SRB2Main(void)
 
 	// user settings come before "+" parameters.
 	if (dedicated)
-		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartserv.cfg\"\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartserv.cfg\"\n", srb2home));
 	else
-		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartexec.cfg\" -noerror\n", srb2home));
 
 	if (!autostart)
 		M_PushSpecialParameters(); // push all "+" parameters at the command buffer

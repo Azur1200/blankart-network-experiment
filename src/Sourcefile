@@ -1,6 +1,6 @@
 qs22j.c
 string.c
-d_main.c
+d_main.cpp
 d_clisrv.c
 d_net.c
 d_netfil.c
