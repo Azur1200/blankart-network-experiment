@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <vector>
 
-//#include <tracy/tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "command.h"
 #include "doomdef.h"
@@ -963,6 +963,8 @@ static void R_Subsector(size_t num)
 	fixed_t floorcenterz, ceilingcenterz;
 	ffloor_t *rover;
 
+	ZoneScoped;
+
 #ifdef RANGECHECK
 	if (num >= numsubsectors)
 		I_Error("R_Subsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
@@ -1448,6 +1450,8 @@ void R_RenderBSPNode(INT32 bspnum)
 {
 	node_t *bsp;
 	INT32 side;
+
+	ZoneScoped;
 
 	ps_numbspcalls++;
 

@@ -13,7 +13,7 @@
 ///        while maintaining a per column clipping list only.
 ///        Moreover, the sky areas have to be determined.
 
-//#include <tracy/tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "command.h"
 #include "doomdef.h"
@@ -142,6 +142,7 @@ static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
 
 static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
+	ZoneScoped;
 	angle_t angle, planecos, planesin;
 	fixed_t distance = 0, span;
 	size_t pindex;
@@ -223,7 +224,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, IN
 
 static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
-	//ZoneScoped;
+	ZoneScoped;
 
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
@@ -655,7 +656,7 @@ void R_DrawPlanes(void)
 	INT32 i;
 	drawspandata_t ds {0};
 
-	//ZoneScoped;
+	ZoneScoped;
 
 	R_UpdatePlaneRipple(&ds);
 
@@ -680,6 +681,8 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 {
 	INT32 x;
 	drawcolumndata_t dc {0};
+
+	ZoneScoped;
 
 	R_CheckDebugHighlight(SW_HI_SKY);
 
@@ -943,6 +946,8 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 
 	if (!(pl->minx <= pl->maxx))
 		return;
+
+	ZoneScoped;
 
 	// sky flat
 	if (pl->picnum == skyflatnum)

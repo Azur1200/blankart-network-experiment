@@ -11,7 +11,7 @@
 /// \file  r_segs.c
 /// \brief All the clipping: columns, horizontal spans, sky columns
 
-//#include <tracy/tracy/Tracy.hpp>
+#include <tracy/tracy/Tracy.hpp>
 
 #include "command.h"
 #include "doomdef.h"
@@ -1804,6 +1804,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	drawcolumndata_t dc {0};
 
 	//ZoneScoped;
+
+	ZoneScoped;
 
 	maskedtextureheight = NULL;
 	//initialize segleft and segright
