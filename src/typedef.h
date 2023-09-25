@@ -140,7 +140,6 @@ TYPEDEF (bannednode_t);
 
 // i_system.h
 TYPEDEF (JoyFF_t);
-TYPEDEF (CPUInfoFlags);
 
 // i_time.h
 TYPEDEF (timestate_t);
