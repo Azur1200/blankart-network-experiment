@@ -30,6 +30,7 @@
 #include "r_sky.h"
 #include "r_portal.h"
 #include "core/thread_pool.h"
+#include "r_fps.h"
 
 #include "v_video.h"
 #include "w_wad.h"
@@ -942,20 +943,22 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	INT32 type, spanfunctype = BASEDRAWFUNC;
 	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
-	bool highlight = R_PlaneIsHighlighted(pl);
+	INT16 highlight = R_PlaneIsHighlighted(pl);
 
 	if (!(pl->minx <= pl->maxx))
 		return;
 
 	ZoneScoped;
 
+	R_UpdatePlaneRipple(ds);
+
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-		if (highlight)
+		if (highlight != -1)
 		{
 			drawcolumndata_t dc = {};
-			dc.r8_flatcolor = 35; // red
+			dc.r8_flatcolor = highlight;
 			dc.lightmap = colormaps;
 
 			for (dc.x = pl->minx; dc.x <= pl->maxx; ++dc.x)
@@ -981,13 +984,13 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
 		if (pl->polyobj->translucency >= NUMTRANSMAPS)
 			return; // Don't even draw it
-		else if (pl->polyobj->translucency > 0)
-		{
-			spanfunctype = (pl->polyobj->flags & POF_SPLAT) ? SPANDRAWFUNC_TRANSSPLAT : SPANDRAWFUNC_TRANS;
-			ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
-		}
-		else if (pl->polyobj->flags & POF_SPLAT) // Opaque, but allow transparent flat pixels
-			spanfunctype = SPANDRAWFUNC_SPLAT;
+			else if (pl->polyobj->translucency > 0)
+			{
+				spanfunctype = (pl->polyobj->flags & POF_SPLAT) ? SPANDRAWFUNC_TRANSSPLAT : SPANDRAWFUNC_TRANS;
+				ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
+			}
+			else if (pl->polyobj->flags & POF_SPLAT) // Opaque, but allow transparent flat pixels
+				spanfunctype = SPANDRAWFUNC_SPLAT;
 
 		if (pl->polyobj->translucency == 0 || (pl->extra_colormap && (pl->extra_colormap->flags & CMF_FOG)))
 			light = (pl->lightlevel >> LIGHTSEGSHIFT);
@@ -1021,7 +1024,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 
 				// Hacked up support for alpha value in software mode Tails 09-24-2002
 				// ...unhacked by toaster 04-01-2021
-				if (!highlight)
+				if (highlight == -1)
 				{
 					INT32 trans = (10*((256+12) - pl->ffloor->alpha))/255;
 					if (trans >= 10)
@@ -1051,7 +1054,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			debug = SW_HI_PLANES;
 		}
 
-#ifndef NOWATER
+		#ifndef NOWATER
 		if (pl->ripple)
 		{
 			INT32 top, bottom;
@@ -1059,8 +1062,6 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			ds->planeripple.active = true;
 			if (spanfunctype == SPANDRAWFUNC_TRANS)
 			{
-				UINT8 i;
-
 				spanfunctype = SPANDRAWFUNC_WATER;
 
 				// Copy the current scene, ugh
@@ -1073,46 +1074,41 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 					bottom = viewheight;
 
 				// Only copy the part of the screen we need
-				for (i = 0; i <= r_splitscreen; i++)
+				UINT8 i = R_GetViewNumber();
+				INT32 scrx = 0;
+				INT32 scry = top;
+				INT32 offset;
+
+				if (r_splitscreen == 1)
 				{
-					if (viewplayer == &players[displayplayers[i]])
+					if (i & 1)
 					{
-						INT32 scrx = 0;
-						INT32 scry = top;
-						INT32 offset;
-
-						if (r_splitscreen == 1)
-						{
-							if (i & 1)
-							{
-								scry += viewheight;
-							}
-						}
-						else
-						{
-							if (i & 1)
-							{
-								scrx += viewwidth;
-							}
-
-							if (i / 2)
-							{
-								scry += viewheight;
-							}
-						}
-
-						offset = (scry*vid.width) + scrx;
-
-						// No idea if this works
-						VID_BlitLinearScreen(screens[0] + offset,
-							screens[1] + (top*vid.width), // intentionally not +offset
-							viewwidth, bottom-top,
-							vid.width, vid.width);
+						scry += viewheight;
 					}
 				}
+				else
+				{
+					if (i & 1)
+					{
+						scrx += viewwidth;
+					}
+
+					if (i / 2)
+					{
+						scry += viewheight;
+					}
+				}
+
+				offset = (scry*vid.width) + scrx;
+
+				// No idea if this works
+				VID_BlitLinearScreen(screens[0] + offset,
+									 screens[1] + (top*vid.width), // intentionally not +offset
+									 viewwidth, bottom-top,
+						 vid.width, vid.width);
 			}
 		}
-#endif
+		#endif
 	}
 
 	ds->currentplane = pl;
@@ -1134,9 +1130,9 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			ds->source = (UINT8 *)R_GetLevelFlat(ds, levelflat);
 			if (!ds->source)
 				return;
-			// Check if this texture or patch has power-of-two dimensions.
-			if (R_CheckPowersOfTwo(ds))
-				R_CheckFlatLength(ds, ds->flatwidth * ds->flatheight);
+		// Check if this texture or patch has power-of-two dimensions.
+		if (R_CheckPowersOfTwo(ds))
+			R_CheckFlatLength(ds, ds->flatwidth * ds->flatheight);
 	}
 
 	if (type == LEVELFLAT_TEXTURE)
@@ -1228,9 +1224,9 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 		ds->planezlight = zlight[light];
 	}
 
-	if (highlight && R_SetSpanFuncFlat(BASEDRAWFUNC))
+	if (highlight != -1 && R_SetSpanFuncFlat(BASEDRAWFUNC))
 	{
-		ds->r8_flatcolor = 35; // red
+		ds->r8_flatcolor = highlight;
 		ds->flatlighting = colormaps;
 	}
 	else
@@ -1274,7 +1270,15 @@ void R_PlaneBounds(visplane_t *plane)
 	plane->low = low;
 }
 
-boolean R_PlaneIsHighlighted(const visplane_t *pl)
+INT16 R_PlaneIsHighlighted(const visplane_t *pl)
 {
-	return pl->damage == SD_DEATHPIT || pl->damage == SD_INSTAKILL;
+	switch (pl->damage)
+	{
+		case SD_DEATHPIT:
+		case SD_INSTAKILL:
+			return 35; // red
+
+		default:
+			return -1;
+	}
 }

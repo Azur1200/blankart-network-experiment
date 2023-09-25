@@ -828,6 +828,11 @@ boolean R_ThingIsFlashing(mobj_t *thing)
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 {
+	if (!(vis->cut & SC_PRECIP) &&
+			R_ThingIsFlashing(vis->mobj))
+	{
+		return R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolornum_t>(0), GTC_CACHE);
+	}
 	/*
 	else if (R_SpriteIsFlashing(vis)) // Bosses "flash"
 	{
