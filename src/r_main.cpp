@@ -1488,23 +1488,8 @@ static void Mask_Post (maskcount_t* m)
 
 void R_RenderPlayerView(void)
 {
-	player_t * player = &players[displayplayers[viewssnum]];
 	INT32			nummasks	= 1;
 	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
-
-	// if this is display player 1
-	if (cv_homremoval.value && player == &players[displayplayers[0]])
-	{
-		if (cv_homremoval.value == 1)
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // No HOM effect!
-		else //'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 128+(timeinmap&15));
-	}
-	else if (r_splitscreen == 2 && player == &players[displayplayers[2]])
-	{
-		// Draw over the fourth screen so you don't have to stare at a HOM :V
-		V_DrawFill(viewwidth, viewheight, viewwidth, viewheight, 31|V_NOSCALESTART);
-	}
 
 	R_SetupFrame(viewssnum);
 	framecount++;
