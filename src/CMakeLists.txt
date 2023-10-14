@@ -56,6 +56,7 @@ add_subdirectory(blua)
 add_subdirectory(blan)
 add_subdirectory(sdl)
 add_subdirectory(objects)
+add_subdirectory(core)
 add_subdirectory(acs)
 
 # OS macros

@@ -220,6 +220,7 @@ sources+=\
 	$(call List,Sourcefile)\
 	$(call List,blua/Sourcefile)\
 	$(call List,blan/Sourcefile)\
+	$(call List,core/Sourcefile)\
 	$(call List,acs/Sourcefile)\
 	$(call List,acs/ACSVM/Sourcefile)\
 	$(call List,objects/Sourcefile)\
