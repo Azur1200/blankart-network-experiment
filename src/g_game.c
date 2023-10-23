@@ -6500,9 +6500,6 @@ void G_InitNew(UINT8 pencoremode, mapnum_t map, boolean resetplayer, boolean ski
 
 	gamemap = map;
 
-	maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-	globalweather = mapheaderinfo[gamemap-1]->weather;
-
 	// Don't carry over custom music change to another map.
 	mapmusflags |= MUSIC_RELOADRESET;
 
