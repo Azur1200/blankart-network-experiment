@@ -57,6 +57,7 @@ p_loop.c
 p_user.c
 p_slopes.c
 p_sweep.cpp
+p_test.cpp
 tables.c
 r_bsp.c
 r_data.c

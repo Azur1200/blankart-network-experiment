@@ -74,6 +74,8 @@
 #include "discord.h"
 #endif
 
+extern consvar_t cv_showgremlins;
+
 // ------
 // protos
 // ------
@@ -1128,6 +1130,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("skynum", Command_Skynum_f);
 	COM_AddCommand("weather", Command_Weather_f);
 	CV_RegisterVar(&cv_renderhitbox);
+	CV_RegisterVar(&cv_showgremlins);
 
 #ifdef HAVE_DISCORDRPC
 	CV_RegisterVar(&cv_discordrp);

@@ -1635,15 +1635,15 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (LUA_HookMobjMoveBlocked(mo, tm.hitthing, tm.blockingline))
+		if (LUA_HookMobjMoveBlocked(mo, tm.hitthing, result.line))
 		{
 			if (P_MobjWasRemoved(mo))
 				return;
 		}
 		else if (P_MobjWasRemoved(mo))
 			return;
-		
-		P_PushSpecialLine(tm.blockingline, mo);
+
+		P_PushSpecialLine(result.line, mo);
 
 		//{ SRB2kart - Jawz
 		if (mo->type == MT_JAWZ || mo->type == MT_JAWZ_DUD)
