@@ -1,6 +1,7 @@
 // DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2023 by James Robert Roman
+// Copyright (C) 2024 by James Robert Roman
+// Copyright (C) 2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -22,9 +23,9 @@ struct Vec2
 {
 	T x, y;
 
-	Vec2() : x{}, y{} {}
-	Vec2(T x_, T y_) : x(x_), y(y_) {}
-	Vec2(T z) : x(z), y(z) {}
+	constexpr Vec2() : x{}, y{} {}
+	constexpr Vec2(T x_, T y_) : x(x_), y(y_) {}
+	constexpr Vec2(T z) : x(z), y(z) {}
 
 	template <typename U>
 	Vec2(const Vec2<U>& b) : Vec2(b.x, b.y) {}

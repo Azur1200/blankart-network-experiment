@@ -1,6 +1,7 @@
 // DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2023 by James Robert Roman
+// Copyright (C) 2024 by James Robert Roman
+// Copyright (C) 2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -66,7 +67,7 @@ struct Fixed
 	Fixed operator-() const { return -val_; }
 
 #define X(op) \
-	template <typename T> \
+	template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>> \
 	Fixed operator op(const T& b) const { return val_ op b; } \
 	Fixed operator op(const Fixed& b) const \
 	{ \
