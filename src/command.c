@@ -53,11 +53,13 @@ static void COM_CEchoDuration_f(void);
 static void COM_Exec_f(void);
 static void COM_Wait_f(void);
 static void COM_Help_f(void);
+static void COM_Apropos_f(void);
 static void COM_Toggle_f(void);
 static void COM_Add_f(void);
 static void COM_Choose_f(void);
 static void COM_ChooseWeighted_f(void);
 static void COM_Reset_f(void);
+
 
 static void CV_EnforceExecVersion(void);
 
@@ -354,6 +356,7 @@ void COM_Init(void)
 	COM_AddCommand("exec", COM_Exec_f);
 	COM_AddCommand("wait", COM_Wait_f);
 	COM_AddCommand("help", COM_Help_f);
+	COM_AddCommand("apropos", COM_Apropos_f);
 	COM_AddCommand("toggle", COM_Toggle_f);
 	COM_AddCommand("add", COM_Add_f);
 	COM_AddCommand("choose", COM_Choose_f);
@@ -911,7 +914,7 @@ static void COM_Help_f(void)
 			boolean floatmode = false;
 			const char *cvalue = NULL;
 			CONS_Printf("\x82""Variable %s:\n", cvar->name);
-			CONS_Printf(M_GetText("  flags :"));
+			CONS_Printf(M_GetText("  flags: "));
 			if (cvar->flags & CV_SAVE)
 				CONS_Printf("AUTOSAVE ");
 			if (cvar->flags & CV_FLOAT)
@@ -1058,6 +1061,35 @@ static void COM_Help_f(void)
 
 		CONS_Debug(DBG_GAMELOGIC, "\x82Total : %d\n", i);
 	}
+}
+
+static void COM_Apropos_f(void)
+{
+	xcommand_t *cmd;
+	consvar_t *cvar;
+
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf(M_GetText("apropos <text>: Search for cvars and cmds containing text\n"));
+		return;
+	}
+
+	CONS_Printf("\x82""Matching variables:\n");
+	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
+		if (cvar->flags & CV_NOSHOWHELP)
+			continue;
+		if (strstr(cvar->name, COM_Argv(1)) != NULL)
+			CONS_Printf("%s ", cvar->name);
+	}
+
+	CONS_Printf("\x82""\nMatching commands:\n");
+	for (cmd = com_commands; cmd; cmd = cmd->next)
+	{
+		if (strstr(cmd->name, COM_Argv(1)) != NULL)
+			CONS_Printf("%s ", cmd->name);
+	}
+	CONS_Printf("\n");
 }
 
 /** Toggles a console variable. Useful for on/off values.
