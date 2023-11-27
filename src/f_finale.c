@@ -1448,6 +1448,7 @@ void F_StartTitleScreen(void)
 		titlemapinaction = TITLEMAP_LOADING;
 		titlemapcameraref = NULL;
 		gamemap = titleMapNum+1;
+		g_reloadingMap = false;
 
 		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
 		globalweather = mapheaderinfo[titleMapNum]->weather;
@@ -1494,6 +1495,7 @@ void F_StartTitleScreen(void)
 	{
 		titlemapinaction = TITLEMAP_OFF;
 		gamemap = 1; // g_game.c
+		g_reloadingMap = false;
 		CON_ClearHUD();
 	}
 
