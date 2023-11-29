@@ -417,6 +417,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("S_",word,2)) {
 		p = word+2;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, S_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMSTATEFREESLOTS; i++) {
 			if (!FREE_STATES[i])
 				break;
@@ -434,6 +439,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("MT_",word,3)) {
 		p = word+3;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, MT_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMMOBJFREESLOTS; i++) {
 			if (!FREE_MOBJS[i])
 				break;
@@ -451,6 +461,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SPR_",word,4)) {
 		p = word+4;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, SPR_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMSPRITES; i++)
 			if (!sprnames[i][4] && fastncmp(p,sprnames[i],4)) {
 				// updating overridden sprnames is not implemented for soc parser,
