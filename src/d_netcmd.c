@@ -6104,7 +6104,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 		if (gametype >= 0 && gametype < numgametypes)
 			newgt = gametypes[gametype]->name;
 
-		if (oldgt && newgt)
+		if (oldgt && newgt && (lastgametype != gametype))
 			CONS_Printf(M_GetText("Gametype was changed from %s to %s\n"), oldgt, newgt);
 	}
 	// Only do the following as the server, not as remote admin.
