@@ -33,6 +33,7 @@
 #include "k_terrain.h"
 #include "core/memory.h"
 #include "core/thread_pool.h"
+#include "k_terrain.h"
 
 extern "C" consvar_t cv_debugfinishline;
 
@@ -48,8 +49,8 @@ static boolean markceiling;
 
 static boolean maskedtexture;
 static INT32 toptexture, bottomtexture, midtexture;
-static boolean topbrightmapped, bottombrightmapped, midbrightmapped;
-static boolean topremap, bottomremap, midremap;
+static bool topbrightmapped, bottombrightmapped, midbrightmapped;
+static bool topremap, bottomremap, midremap;
 static INT32 numthicksides, numbackffloors;
 
 angle_t rw_normalangle;
@@ -420,7 +421,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 							dc->colormap = rlight->rcolormap;
 							dc->lightmap = xwalllights[pindex];
 							dc->fullbright = colormaps;
-							if (encoremap && !(ldef->flags & ML_TFERLINE))
+							if (remap && !(ldef->flags & ML_TFERLINE))
 							{
 								dc->colormap += COLORMAP_REMAPOFFSET;
 								dc->fullbright += COLORMAP_REMAPOFFSET;
@@ -1335,6 +1336,11 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	R_SetColumnFunc(colfunctype, dc->brightmap != NULL);
 	coldrawfunc_t* colfunccopy = colfunc;
 	drawcolumndata_t dc_copy = *dc;
+	if (remap)
+	{
+		dc_copy.colormap += COLORMAP_REMAPOFFSET;
+		dc_copy.fullbright += COLORMAP_REMAPOFFSET;
+	}
 	colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 
 	if (remap)
@@ -1544,11 +1550,6 @@ static void R_RenderSegLoop (drawcolumndata_t* dc)
 			dc->colormap = walllights[pindex];
 			dc->lightmap = walllights[pindex];
 			dc->fullbright = colormaps;
-			if (encoremap && !(curline->linedef->flags & ML_TFERLINE))
-			{
-				dc->colormap += COLORMAP_REMAPOFFSET;
-				dc->fullbright += COLORMAP_REMAPOFFSET;
-			}
 			dc->x = rw_x;
 			dc->iscale = 0xffffffffu / (unsigned)rw_scale;
 
@@ -1781,7 +1782,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	fixed_t ceilingfrontslide, floorfrontslide, ceilingbackslide, floorbackslide;
 	static size_t maxdrawsegs = 0;
 	const INT32 twosidedmidtexture = R_GetTwoSidedMidTexture(curline);
-	const boolean wantremap = encoremap && !(curline->linedef->flags & ML_TFERLINE);
+	const bool wantremap = encoremap && !(curline->linedef->flags & ML_TFERLINE);
 	drawcolumndata_t dc {0};
 
 	//ZoneScoped;
