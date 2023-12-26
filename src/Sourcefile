@@ -62,7 +62,7 @@ p_test.cpp
 tables.c
 r_bsp.cpp
 r_data.c
-r_draw.c
+r_draw.cpp
 r_fps.c
 r_main.cpp
 r_plane.cpp
