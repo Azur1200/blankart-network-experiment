@@ -1111,7 +1111,7 @@ void G_ConsGhostTic(INT32 playernum)
 void G_GhostTicker(void)
 {
 	demoghost *g,*p;
-	for(g = ghosts, p = NULL; g; g = g->next)
+	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
 		UINT16 ziptic = READUINT8(g->p);
@@ -1138,7 +1138,9 @@ void G_GhostTicker(void)
 			else if (ziptic == DW_RNG)
 				g->p += 4; // RNG seed
 			else
-				I_Error("Ghost is not a record attack ghost DXD"); //@TODO lmao don't blow up like this
+			{
+				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", ziptic); //@TODO lmao don't blow up like this
+			}
 
 			ziptic = READUINT8(g->p);
 		}
@@ -1382,11 +1384,11 @@ skippedghosttic:
 			if (follow)
 				follow->fuse = TICRATE;
 #endif
+			g->done = true;
 			if (p)
+			{
 				p->next = g->next;
-			else
-				ghosts = g->next;
-			Z_Free(g);
+			}
 			continue;
 		}
 

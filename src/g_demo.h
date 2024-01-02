@@ -159,6 +159,8 @@ struct demoghost {
 	UINT8 *buffer, *p, color;
 	UINT8 fadein;
 	UINT16 version;
+	boolean linecrossed;
+	boolean done;
 	mobj_t oldmo, *mo;
 	struct demoghost *next;
 };
