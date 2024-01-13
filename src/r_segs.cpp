@@ -130,6 +130,7 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 	if (dc->yl <= dc->yh && dc->yh < vid.height && dc->yh > 0)
 	{
 		dc->source = (UINT8 *)column + 3;
+		dc->sourcelength = 0;
 		if (brightmap != NULL)
 		{
 			dc->brightmap = (UINT8 *)brightmap + 3;
@@ -137,13 +138,29 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 
 		drawcolumndata_t dc_copy = *dc;
 		coldrawfunc_t* colfunccopy = colfunc;
+
+		// FIXME: do something better to look these up WITHOUT affecting global state...
 		if (R_CheckColumnFunc(BASEDRAWFUNC) == true)
 		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
+			if (brightmap != NULL)
+			{
+				colfunccopy = colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCH];
+			}
+			else
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCH];
+			}
 		}
 		else if (R_CheckColumnFunc(COLDRAWFUNC_FUZZY) == true)
 		{
-			colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+			if (brightmap != NULL)
+			{
+				colfunccopy = colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+			}
+			else
+			{
+				colfunccopy = colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS];
+			}
 		}
 
 		colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
@@ -1333,6 +1350,7 @@ static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t m
 	dc->source = R_GetColumn(texture, texturecolumn);
 	dc->brightmap = (brightmapped ? R_GetBrightmapColumn(texture, texturecolumn) : NULL);
 	dc->texheight = textureheight[texture] >> FRACBITS;
+	dc->sourcelength = 0;
 	R_SetColumnFunc(colfunctype, dc->brightmap != NULL);
 	coldrawfunc_t* colfunccopy = colfunc;
 	drawcolumndata_t dc_copy = *dc;
