@@ -56,6 +56,7 @@ INT64 mytotal = 0;
 //profile stuff ---------------------------------------------------------
 
 extern consvar_t cv_debugrender_visplanes;
+extern consvar_t cv_debugrender_freezebsp;
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
@@ -189,8 +190,6 @@ consvar_t cv_homremoval = CVAR_INIT ("homremoval", "Yes", CV_SAVE, homremoval_co
 consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons_t, NULL);
 
 consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
-
-consvar_t cv_debugfinishline = CVAR_INIT ("debugfinishline", "Off", CV_CHEAT, CV_OnOff, NULL);
 
 void SplitScreen_OnChange(void)
 {
@@ -1480,6 +1479,19 @@ static void Mask_Post (maskcount_t* m)
 // R_RenderView
 // ================
 
+// viewx, viewy, viewangle, all that good stuff must be set
+static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum)
+{
+	Mask_Pre(mask);
+
+	curdrawsegs = ds_p;
+
+	R_RenderFirstBSPNode(cachenum);
+	R_AddPrecipitationSprites();
+
+	Mask_Post(mask);
+}
+
 //                     FAB NOTE FOR WIN32 PORT !! I'm not finished already,
 // but I suspect network may have problems with the video buffer being locked
 // for all duration of rendering, and being released only once at the end..
@@ -1531,9 +1543,7 @@ void R_RenderPlayerView(void)
 
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
-	//R_RenderViewpoint(&masks[nummasks - 1]);
-	R_RenderBSPNode((INT32)numnodes - 1);
-	R_AddPrecipitationSprites();
+	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
 
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
 #ifdef TIMING
@@ -1593,9 +1603,7 @@ void R_RenderPlayerView(void)
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
 
-			//R_RenderViewpoint(&masks[nummasks - 1]);
-			R_RenderBSPNode((INT32)numnodes - 1);
-			Mask_Post(&masks[nummasks - 1]);
+			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
 
 			//portalskipprecipmobjs = false;
 
@@ -1771,6 +1779,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_debugrender_contrast);
 	CV_RegisterVar(&cv_debugrender_spriteclip);
 	CV_RegisterVar(&cv_debugrender_portal);
+	CV_RegisterVar(&cv_debugrender_visplanes);
+	CV_RegisterVar(&cv_debugrender_freezebsp);
 
 	COM_AddCommand("debugrender_highlight", Command_Debugrender_highlight);
 }

@@ -35,6 +35,8 @@ consvar_t cv_debugrender_contrast =
 consvar_t cv_debugrender_spriteclip = CVAR_INIT("debugrender_spriteclip", "Off", CV_CHEAT, CV_OnOff, nullptr);
 consvar_t cv_debugrender_portal = CVAR_INIT("debugrender_portal", "Off", CV_CHEAT, CV_OnOff, nullptr);
 consvar_t cv_debugrender_visplanes = CVAR_INIT("debugrender_visplanes", "Off", CV_CHEAT, CV_OnOff, nullptr);
+consvar_t cv_debugfinishline = CVAR_INIT ("debugfinishline", "Off", CV_CHEAT, CV_OnOff, nullptr);
+consvar_t cv_debugrender_freezebsp = CVAR_INIT ("debugrender_freezebsp", "Off", CV_CHEAT, CV_OnOff, nullptr);
 
 UINT32 debugrender_highlight;
 
