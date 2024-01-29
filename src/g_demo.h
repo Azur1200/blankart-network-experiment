@@ -58,6 +58,7 @@ struct demovars_s {
 
 	boolean freecam;
 
+	const savebuffer_t *buffer; // debug, valid only if recording or playback
 };
 
 extern struct demovars_s demo;

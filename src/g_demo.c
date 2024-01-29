@@ -2013,7 +2013,7 @@ void G_RecordDemo(const char *name)
 	demobuf.p = NULL;
 
 	demo.recording = true;
-	//demo.buffer = &demobuf;
+	demo.buffer = &demobuf;
 
 	/* FIXME: This whole file is in a wretched state. Take a
 	look at G_WriteAllGhostTics and G_WriteDemoTiccmd, they
@@ -2925,6 +2925,7 @@ void G_DoPlayDemo(char *defdemoname)
 	// read demo header
 	gameaction = ga_nothing;
 	demo.playback = true;
+	demo.buffer = &demobuf;
 	if (memcmp(demobuf.p, DEMOHEADER, 12))
 	{
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
