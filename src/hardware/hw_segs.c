@@ -968,7 +968,6 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 	fixed_t high2, highslope2, low2, lowslope2;
 
 	int32_t texnum;
-	line_t * newline = NULL; // Multi-Property FOF
 
 	for (rover = this_sector->ffloors; rover; rover = rover->next)
 	{
@@ -1031,14 +1030,24 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 		if (r2)
 			continue;
 
-		texnum = R_GetTextureNum(sides[rover->master->sidenum[0]].midtexture);
+		const side_t *side = R_GetFFloorSide(gl_curline->linedef, rover, this_sector);
+
+		dboolean do_texture_skew;
+		dboolean dont_peg_bottom;
 
 		if (rover->master->flags & ML_TFERLINE)
 		{
-			size_t linenum = min(gl_curline->linedef-gl_backsector->lines[0], (long int)rover->master->frontsector->linecount);
-			newline = rover->master->frontsector->lines[0] + linenum;
-			texnum = R_GetTextureNum(sides[newline->sidenum[0]].midtexture);
+			const line_t *newline = R_GetFFloorLine(gl_curline->linedef, rover, this_sector);
+			do_texture_skew = newline->flags & ML_SKEWTD;
+			dont_peg_bottom = newline->flags & ML_DONTPEGBOTTOM;
 		}
+		else
+		{
+			do_texture_skew = rover->master->flags & ML_SKEWTD;
+			dont_peg_bottom = gl_curline->linedef->flags & ML_DONTPEGBOTTOM;
+		}
+
+		texnum = R_GetTextureNum(side->midtexture);
 
 		h  = P_GetFFloorTopZAt   (rover, v1x, v1y);
 		hS = P_GetFFloorTopZAt   (rover, v2x, v2y);
@@ -1076,32 +1085,18 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 		}
 		else
 		{
-			fixed_t texturevpeg;
-			dboolean attachtobottom = false;
-			dboolean slopeskew = false; // skew FOF walls with slopes?
-
 			// Wow, how was this missing from OpenGL for so long?
 			// ...Oh well, anyway, Lower Unpegged now changes pegging of FOFs like in software
 			// -- Monster Iestyn 26/06/18
-			if (newline)
-			{
-				texturevpeg = sides[newline->sidenum[0]].rowoffset + sides[newline->sidenum[0]].offsety_mid;
-				attachtobottom = !!(newline->flags & ML_DONTPEGBOTTOM);
-				slopeskew = !!(newline->flags & ML_SKEWTD);
-			}
-			else
-			{
-				texturevpeg = sides[rover->master->sidenum[0]].rowoffset + sides[rover->master->sidenum[0]].offsety_mid;
-				attachtobottom = !!(gl_linedef->flags & ML_DONTPEGBOTTOM);
-				slopeskew = !!(rover->master->flags & ML_SKEWTD);
-			}
+			fixed_t texturevpeg = side->rowoffset + side->offsety_mid;
 
 			grTex = HWR_GetTexture(texnum, noencore);
 
-			if (!slopeskew) // no skewing
+			if (!do_texture_skew) // no skewing
 			{
-				if (attachtobottom)
+				if (dont_peg_bottom)
 					texturevpeg -= *rover->topheight - *rover->bottomheight;
+
 				wallVerts[3].t = ((*rover->topheight - h) + texturevpeg) * grTex->scaleY;
 				wallVerts[2].t = ((*rover->topheight - hS) + texturevpeg) * grTex->scaleY;
 				wallVerts[0].t = ((*rover->topheight - l) + texturevpeg) * grTex->scaleY;
@@ -1109,7 +1104,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 			}
 			else
 			{
-				if (!attachtobottom) // skew by top
+				if (!dont_peg_bottom) // skew by top
 				{
 					wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 					wallVerts[0].t = ((h - l) + texturevpeg) * grTex->scaleY;
