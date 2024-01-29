@@ -11,6 +11,8 @@
 /// \file  r_segs.c
 /// \brief All the clipping: columns, horizontal spans, sky columns
 
+#include <limits>
+
 #include <tracy/tracy/Tracy.hpp>
 
 #include "command.h"
@@ -731,6 +733,38 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 	R_SetColumnFunc(BASEDRAWFUNC, false);
 }
 
+template <typename T>
+static constexpr T saturating_add(T x, T y) noexcept
+{
+	INT64 z;
+	z = static_cast<INT64>(x) + static_cast<INT64>(y);
+	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
+	{
+		z = static_cast<INT64>(std::numeric_limits<T>::max());
+	}
+	else if (z < static_cast<INT64>(std::numeric_limits<T>::min()))
+	{
+		z = static_cast<INT64>(std::numeric_limits<T>::min());
+	}
+	return static_cast<T>(z);
+}
+
+template <typename T>
+static constexpr T saturating_mul(T x, T y) noexcept
+{
+	INT64 z;
+	z = static_cast<INT64>(x) * static_cast<INT64>(y);
+	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
+	{
+		z = static_cast<INT64>(std::numeric_limits<T>::max());
+	}
+	else if (z < static_cast<INT64>(std::numeric_limits<T>::min()))
+	{
+		z = static_cast<INT64>(std::numeric_limits<T>::min());
+	}
+	return static_cast<T>(z);
+}
+
 // Loop through R_DrawMaskedColumn calls
 static void R_DrawRepeatMaskedColumn(drawcolumndata_t* dc, column_t *col, column_t *bm, INT32 baseclip)
 {
@@ -738,10 +772,7 @@ static void R_DrawRepeatMaskedColumn(drawcolumndata_t* dc, column_t *col, column
 	while (sprtopscreen < sprbotscreen)
 	{
 		R_DrawMaskedColumn(dc, col, bm, baseclip);
-		if ((INT64)sprtopscreen + dc->texheight*spryscale > (INT64)INT32_MAX) // prevent overflow
-			sprtopscreen = INT32_MAX;
-		else
-			sprtopscreen += dc->texheight*spryscale;
+		sprtopscreen = saturating_add(sprtopscreen, saturating_mul(dc->texheight, spryscale));
 	}
 }
 
@@ -749,7 +780,7 @@ static void R_DrawRepeatFlippedMaskedColumn(drawcolumndata_t* dc, column_t *col,
 {
 	do {
 		R_DrawFlippedMaskedColumn(dc, col, bm, baseclip);
-		sprtopscreen += dc->texheight*spryscale;
+		sprtopscreen = saturating_add(sprtopscreen, saturating_mul(dc->texheight, spryscale));
 	} while (sprtopscreen < sprbotscreen);
 }
 
