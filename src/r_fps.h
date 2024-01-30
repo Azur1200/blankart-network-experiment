@@ -112,6 +112,7 @@ struct levelinterpolator_t {
 			fixed_t *bakvertices;
 			size_t vertices_size;
 			fixed_t oldcx, oldcy, bakcx, bakcy;
+			angle_t oldangle, bakangle;
 		} polyobj;
 		struct {
 			pslope_t *slope;
