@@ -2175,9 +2175,12 @@ boolean P_ZMovement(mobj_t *mo)
 {
 	fixed_t dist, delta;
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2604,6 +2607,8 @@ boolean P_ZMovement(mobj_t *mo)
 		}
 	}
 
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
+
 	return true;
 }
 
@@ -2697,12 +2702,15 @@ static boolean P_PlayerPolyObjectZMovement(mobj_t *mo)
 void P_PlayerZMovement(mobj_t *mo)
 {
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (!mo->player)
 		return;
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2834,6 +2842,8 @@ void P_PlayerZMovement(mobj_t *mo)
 			P_CheckGravity(mo, true);
 		}
 	}
+
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
 }
 
 boolean P_SceneryZMovement(mobj_t *mo)
@@ -10216,7 +10226,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (udmf)
 	{
 		// Check for continuous sector special actions
-		P_CheckMobjTouchingSectorActions(mobj, true);
+		P_CheckMobjTouchingSectorActions(mobj, true, true);
 	}
 	else
 	{
