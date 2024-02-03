@@ -794,6 +794,10 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 
 boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 {
+	// What the fuck is calling this with stale refs? Whatever, validation's cheap.
+	if (P_MobjWasRemoved(t1) || P_MobjWasRemoved(t2) || !t1->player || !t2->player)
+		return false;
+
 	const boolean flameT1 = ((t1->player->flamestore > 0) && (t1->player->flametimer > 0));
 	const boolean flameT2 = ((t2->player->flamestore > 0) && (t2->player->flametimer > 0));
 	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
