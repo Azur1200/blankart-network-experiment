@@ -2038,11 +2038,17 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			ceilingbackslide = FixedMul(backsector->c_slope->zdelta, FINECOSINE((lineangle-backsector->c_slope->xydirection)>>ANGLETOFINESHIFT));
 	}
 
+	auto get_flat_tex = [](INT32 texnum)
+	{
+		texnum = R_GetTextureNum(texnum);
+		return textures[texnum]->holes ? 0 : texnum; // R_DrawWallColumn cannot render holey textures
+	};
+
 	if (!backsector)
 	{
 		fixed_t texheight;
 		// single sided line
-		midtexture = R_GetTextureNum(sidedef->midtexture);
+		midtexture = get_flat_tex(sidedef->midtexture);
 		midbrightmapped = R_TextureHasBrightmap(midtexture);
 		midremap = wantremap && R_TextureCanRemap(midtexture);
 		texheight = textureheight[midtexture];
@@ -2258,7 +2264,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			fixed_t texheight;
 			// top texture
-			toptexture = R_GetTextureNum(sidedef->toptexture);
+			toptexture = get_flat_tex(sidedef->toptexture);
 			topbrightmapped = R_TextureHasBrightmap(toptexture);
 			topremap = wantremap && R_TextureCanRemap(toptexture);
 			texheight = textureheight[toptexture];
@@ -2287,7 +2293,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if ((!bothfloorssky || !udmf) && (worldlow > worldbottom || worldlowslope > worldbottomslope)) // never draw the top texture if on
 		{
 			// bottom texture
-			bottomtexture = R_GetTextureNum(sidedef->bottomtexture);
+			bottomtexture = get_flat_tex(sidedef->bottomtexture);
 			bottombrightmapped = R_TextureHasBrightmap(bottomtexture);
 			bottomremap = wantremap && R_TextureCanRemap(bottomtexture);
 
