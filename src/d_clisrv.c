@@ -4059,6 +4059,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	UINT8 splitscreenplayer = 0;
 	UINT8 i;
 	player_t *newplayer;
+	uint8_t public_key[PUBKEYLENGTH];
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
@@ -4082,12 +4083,13 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	newplayer->jointime = 0;
 
 	READSTRINGN(*p, player_names[newplayernum], MAXPLAYERNAME);
-	READMEM(*p, players[newplayernum].public_key, PUBKEYLENGTH);
+	READMEM(*p, public_key, PUBKEYLENGTH);
 
 	console = READUINT8(*p);
 	splitscreenplayer = READUINT8(*p);
 
 	G_AddPlayer(newplayernum, console);
+	memcpy(players[newplayernum].public_key, public_key, PUBKEYLENGTH);
 
 	for (i = 0; i < MAXAVAILABILITY; i++)
 	{
