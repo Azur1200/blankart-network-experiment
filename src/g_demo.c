@@ -40,6 +40,7 @@
 #include "lua_hook.h"
 #include "md5.h" // demo checksums
 #include "p_saveg.h" // savebuffer_t
+#include "g_party.h"
 
 // SRB2Kart
 #include "d_netfil.h" // nameonly
