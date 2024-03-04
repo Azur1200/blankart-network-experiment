@@ -128,19 +128,28 @@ static void R_UpdatePlaneRipple(drawspandata_t* ds)
 	ds->planeripple.offset = (leveltime * 140);
 }
 
+static void R_SetSlopePlaneVectors(drawspandata_t* ds, visplane_t *pl, INT32 y, fixed_t xoff, fixed_t yoff);
+
+static bool R_CheckMapPlane(const char* funcname, INT32 y, INT32 x1, INT32 x2)
+{
+	if (x1 == x2)
+		return true;
+
+	if (x1 < x2 && x1 >= 0 && x2 < viewwidth && y >= 0 && y < viewheight)
+		return true;
+
+	CONS_Debug(DBG_RENDER, "%s: x1=%d, x2=%d at y=%d\n", funcname, x1, x2, y);
+	return false;
+}
+
 static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
 	angle_t angle, planecos, planesin;
 	fixed_t distance = 0, span;
 	size_t pindex;
 
-#ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || y > viewheight)
-		I_Error("R_MapPlane: %d, %d at %d", x1, x2, y);
-#endif
-
-	if (x1 >= vid.width)
-		x1 = vid.width - 1;
+	if (!R_CheckMapPlane(__func__, y, x1, x2))
+		return;
 
 	angle = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
 	planecos = FINECOSINE(angle);
@@ -216,13 +225,10 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, IN
 
 static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc)(drawspandata_t*), INT32 y, INT32 x1, INT32 x2, boolean allow_parallel)
 {
-#ifdef RANGECHECK
-	if (x2 < x1 || x1 < 0 || x2 >= viewwidth || y > viewheight)
-		I_Error("R_MapTiltedPlane: %d, %d at %d", x1, x2, y);
-#endif
+	//ZoneScoped;
 
-	if (x1 >= vid.width)
-		x1 = vid.width - 1;
+	if (!R_CheckMapPlane(__func__, y, x1, x2))
+		return;
 
 	// Water ripple effect
 	if (ds->planeripple.active)
