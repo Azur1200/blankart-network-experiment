@@ -136,6 +136,9 @@ struct camera_t
 
 	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
 
+	// Hold up/down to pan the camera vertically
+	SINT8 dpad_y_held;
+
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
 	angle_t old_angle, old_aiming;

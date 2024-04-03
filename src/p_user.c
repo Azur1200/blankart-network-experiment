@@ -3100,6 +3100,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		focusaiming = player->aiming;
 	}
 
+	if (abs(thiscam->dpad_y_held) >= 2*TICRATE)
+	{
+		focusaiming += ANGLE_45 * intsign(thiscam->dpad_y_held) * P_MobjFlip(mo);
+	}
+
 	if (P_CameraThinker(player, thiscam, resetcalled))
 		return true;
 
