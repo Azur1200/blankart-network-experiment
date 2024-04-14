@@ -98,6 +98,8 @@ target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC -DUSE_STUN)
 target_sources(SRB2SDL2 PRIVATE discord.c stun.c)
 
 target_link_libraries(SRB2SDL2 PRIVATE acsvm)
+target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
+target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
 target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
 
 set(SRB2_HAVE_THREADS ON)

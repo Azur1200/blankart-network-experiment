@@ -543,3 +543,5 @@ endif()
 
 
 add_subdirectory(tracy)
+add_subdirectory(tcbrindle_span)
+add_subdirectory(fmt)
