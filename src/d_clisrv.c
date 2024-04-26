@@ -299,7 +299,7 @@ shouldsign_t ShouldSignChallenge(uint8_t *message)
 	memcpy(&claimedIP, message + sizeof(then), sizeof(claimedIP));
 	realIP = I_GetNodeAddressInt(servernode);
 
-	if ((max(now, then) - min(now, then)) > 60*5)
+	if ((max(now, then) - min(now, then)) > 60*15)
 		return SIGN_BADTIME;
 
 	if (realIP != claimedIP && I_IsExternalAddress(&realIP))
@@ -1004,7 +1004,7 @@ static boolean CL_SendJoin(void)
 			}
 			else if (safe == SIGN_BADTIME)
 			{
-				I_Error("External server sent a message with an unusual timestamp.\nCheck your clocks!");
+				I_Error("External server sent a message with an unusual timestamp.\nMake sure your system time is set correctly.");
 			}
 			else
 			{
@@ -5985,7 +5985,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				if (safe == SIGN_BADIP)
 					HandleSigfail("External server sent the wrong IP");
 				else if (safe == SIGN_BADTIME)
-					HandleSigfail("Bad timestamp - check your clocks");
+					HandleSigfail("Bad timestamp - is your time set correctly?");
 				else
 					HandleSigfail("Unknown auth error - contact a developer");
 				break;
