@@ -4412,7 +4412,7 @@ void G_SaveDemo(void)
 				strindex++;
 				dash = false;
 			}
-			else if (!dash)
+			else if (strindex && !dash)
 			{
 				demo_slug[strindex] = '-';
 				strindex++;
@@ -4420,12 +4420,34 @@ void G_SaveDemo(void)
 			}
 		}
 
-		demo_slug[strindex] = 0;
-		if (dash) demo_slug[strindex-1] = 0;
+		if (dash && strindex)
+		{
+			strindex--;
+		}
+		demo_slug[strindex] = '\0';
 
-		writepoint = strstr(strrchr(demoname, *PATHSEP), "-") + 1;
-		demo_slug[128 - (writepoint - demoname) - 4] = 0;
-		sprintf(writepoint, "%s.lmp", demo_slug);
+		if (demo_slug[0] != '\0')
+		{
+			// Slug is valid, write the chosen filename.
+			writepoint = strstr(strrchr(demoname, *PATHSEP), "-") + 1;
+			demo_slug[128 - (writepoint - demoname) - 4] = 0;
+			sprintf(writepoint, "%s.lmp", demo_slug);
+		}
+		else if (demo.titlename[0] == '\0')
+		{
+			// Slug is completely blank? Will crash if we attempt to save
+			// No bailout because empty seems like a good "no thanks" choice
+			if (demobuf.buffer)
+				Z_Free(demobuf.buffer);
+			demobuf.buffer = NULL;
+			demo.recording = false;
+			return;
+		}
+		// If a title that is invalid is provided, the user clearly wanted
+		// to save. But we can't do so at that name, so we only apply the
+		// title INSIDE the file, not in the naked filesystem.
+		// (A hypothetical example is bamboozling bot behaviour causing
+		// a player to write "?????????".) ~toast 010524
 	}
 
 	length = *(UINT32 *)demoinfo_p;
