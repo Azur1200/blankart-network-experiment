@@ -30,11 +30,11 @@ static struct {
 	// Brightmap Floor shader 
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_BRIGHTMAP_FLOOR_FRAGMENT_SHADER},
 
-	// Brightmap Wall shader 
-	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_BRIGHTMAP_WALL_FRAGMENT_SHADER},
-
 	// Wall shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
+
+	// Brightmap Wall shader 
+	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_BRIGHTMAP_WALL_FRAGMENT_SHADER},
 
 	// Sprite shader
 	{GLSL_DEFAULT_VERTEX_SHADER, GLSL_WALL_FRAGMENT_SHADER},
@@ -445,6 +445,7 @@ customshaderxlat_t shaderxlat[] =
 	{"BrightmapWall", SHADER_BRIGHTMAP_WALL},
 	{"Sprite", SHADER_SPRITE},
 	{"Model", SHADER_MODEL},
+	{"ModelLight", SHADER_MODEL_LIGHTING},
 	{"WaterRipple", SHADER_WATER},
 	{"BrightmapWaterRipple", SHADER_BRIGHTMAP_WATER},
 	{"Fog", SHADER_FOG},
