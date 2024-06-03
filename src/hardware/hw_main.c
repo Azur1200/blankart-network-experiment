@@ -545,6 +545,8 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 			shader = SHADER_FOG;
 		else if (PolyFlags & PF_Ripple)
 			shader = SHADER_WATER;
+		else if (levelflat != NULL && levelflat->type == LEVELFLAT_TEXTURE && R_GetTextureBrightmap(levelflat->texture_id) && HWR_ShouldUsePaletteRendering())
+			shader = SHADER_BRIGHTMAP_FLOOR;
 		else
 			shader = SHADER_FLOOR;
 
@@ -736,7 +738,7 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 //
 // HWR_ProjectWall
 //
-static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blendmode, INT32 lightlevel, extracolormap_t *wallcolormap, INT32 texnum)
 {
 	INT32 shader = SHADER_NONE;
 
@@ -744,7 +746,11 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 
 	if (HWR_UseShader())
 	{
-		shader = SHADER_WALL;
+		if (R_GetTextureBrightmap(texnum) && HWR_ShouldUsePaletteRendering())
+			shader = SHADER_BRIGHTMAP_WALL;
+		else
+			shader = SHADER_WALL;
+
 		blendmode |= PF_ColorMapped;
 	}
 
@@ -907,7 +913,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		else if (polyflags & PF_EnvironmentTrans)
 			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false,  HWR_CalcWallLight(lightnum, gl_curline), colormap);
 		else
-			HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap, texnum);
 
 		top = bot;
 		endtop = endbot;
@@ -936,7 +942,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	else if (polyflags & PF_EnvironmentTrans)
 		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
 	else
-		HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap, texnum);
 }
 
 // HWR_DrawSkyWall
@@ -950,7 +956,7 @@ static void HWR_DrawSkyWall(FOutVector *wallVerts, FSurfaceInfo *Surf)
 	wallVerts[0].s = wallVerts[3].s = 0;
 	wallVerts[2].s = wallVerts[1].s = 0;
 	// this no longer sets top/bottom coords, this should be done before caling the function
-	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL);
+	HWR_ProjectWall(wallVerts, Surf, PF_Invisible|PF_NoTexture, 255, NULL, 0);
 	// PF_Invisible so it's not drawn into the colour buffer
 	// PF_NoTexture for no texture
 	// PF_Occlude is set in HWR_ProjectWall to draw into the depth buffer
@@ -1267,7 +1273,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else if (grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gl_toptexture, noencore, polyflags, false, lightnum, colormap);
 			else
-				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap);
+				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap, gl_toptexture);
 		}
 
 		// check BOTTOM TEXTURE
@@ -1331,7 +1337,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else if (grTex->mipmap.flags & TF_TRANSPARENT)
 				HWR_AddTransparentWall(wallVerts, &Surf, gl_bottomtexture, noencore, polyflags, false, lightnum, colormap);
 			else
-				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap);
+				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap, gl_bottomtexture);
 		}
 
 		// Render midtexture if there's one. Determine if it's visible first, though
@@ -1554,7 +1560,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			else if (!(blendmode & PF_Masked))
 				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture,  noencore, blendmode, false, lightnum, colormap);
 			else
-				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
+				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap, gl_midtexture);
 		}
 
 		// Sky culling
@@ -1645,7 +1651,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					if (grTex->mipmap.flags & TF_TRANSPARENT)
 						HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture,  noencore, blendmode, false, lightnum, colormap);
 					else
-						HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
+						HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap, gl_midtexture);
 				}
 			}
 		}
@@ -1853,7 +1859,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						if (blendmode != PF_Masked)
 							HWR_AddTransparentWall(wallVerts, &Surf, texnum, noencore, blendmode, false, lightnum, colormap);
 						else
-							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
+							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap, texnum);
 					}
 				}
 			}
@@ -1979,7 +1985,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						if (blendmode != PF_Masked)
 							HWR_AddTransparentWall(wallVerts, &Surf, texnum, noencore, blendmode, false, lightnum, colormap);
 						else
-							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
+							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap, texnum);
 					}
 				}
 			}
@@ -4230,7 +4236,7 @@ typedef struct
 static wallinfo_t *wallinfo = NULL;
 static size_t numwalls = 0; // a list of transparent walls to be drawn
 
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap, INT32 texnum);
 
 #define MAX_TRANSPARENTWALL 256
 
@@ -4494,7 +4500,7 @@ static void HWR_CreateDrawNodes(void)
 			if (!(sortnode[sortindex[i]].wall->blend & PF_NoTexture))
 				HWR_GetTexture(sortnode[sortindex[i]].wall->texnum, sortnode[sortindex[i]].wall->noencore);
 			HWR_RenderWall(sortnode[sortindex[i]].wall->wallVerts, &sortnode[sortindex[i]].wall->Surf, sortnode[sortindex[i]].wall->blend, sortnode[sortindex[i]].wall->fogwall,
-				sortnode[sortindex[i]].wall->lightlevel, sortnode[sortindex[i]].wall->wallcolormap);
+				sortnode[sortindex[i]].wall->lightlevel, sortnode[sortindex[i]].wall->wallcolormap, sortnode[sortindex[i]].wall->texnum);
 		}
 	}
 
@@ -6494,7 +6500,7 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 	numwalls++;
 }
 
-void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap, INT32 texnum)
 {
 	FBITFIELD blendmode = blend;
 	UINT8 alpha = pSurf->PolyColor.s.alpha; // retain the alpha
@@ -6513,6 +6519,8 @@ void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend,
 	{
 		if (fogwall)
 			shader = SHADER_FOG;
+		else if (R_GetTextureBrightmap(texnum) && HWR_ShouldUsePaletteRendering())
+			shader = SHADER_BRIGHTMAP_WALL;
 		else
 			shader = SHADER_WALL;
 
