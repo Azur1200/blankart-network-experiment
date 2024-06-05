@@ -4789,6 +4789,19 @@ static void K_drawKartNameTags(void)
 
 #define MINIHEADSCALE (FRACUNIT / 2)
 
+position_t K_GetKartObjectPosToMinimapPos(fixed_t objx, fixed_t objy)
+{
+	fixed_t amnumxpos, amnumypos;
+	
+	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+
+	if (encoremode)
+		amnumxpos = -amnumxpos;
+	
+	return (position_t){amnumxpos, amnumypos};
+}
+
 static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, angle_t ang, patch_t *icon, uint8_t *colormap, vector2_t *origin)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
@@ -4798,7 +4811,7 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hud
 	// am xpos & ypos are the icon's starting position. Withouht
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos;
 	int32_t amxpos, amypos;
 	fixed_t scale = FRACUNIT;
 
@@ -4822,14 +4835,10 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hud
 	if (cv_minihead.value)
 		scale = MINIHEADSCALE;
 
-	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+	amnumpos = K_GetKartObjectPosToMinimapPos(objx, objy);
 
-	if (encoremode)
-		amnumxpos = -amnumxpos;
-
-	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-w)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-h)/2)<<FRACBITS);
+	amxpos = amnumpos.x + ((hudx + (minimapinfo.minimap_pic->width-w)/2)<<FRACBITS);
+	amypos = amnumpos.y + ((hudy + (minimapinfo.minimap_pic->height-h)/2)<<FRACBITS);
 
 	if (cv_minihead.value && (!(icon == kp_minimapdot)) && (!origin))
 	{
@@ -4855,18 +4864,14 @@ static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, int32_t hudx,
 	// am xpos & ypos are the icon's starting position. Withouht
 	// it, they wouldn't 'spawn' on the top-right side of the HUD.
 
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos;
 	int32_t amxpos, amypos;
 	fixed_t scale = FRACUNIT;
 
-	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+	amnumpos = K_GetKartObjectPosToMinimapPos(objx, objy);
 
-	if (encoremode)
-		amnumxpos = -amnumxpos;
-
-	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-48)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-24)/2)<<FRACBITS);
+	amxpos = amnumpos.x + ((hudx + (minimapinfo.minimap_pic->width-48)/2)<<FRACBITS);
+	amypos = amnumpos.y + ((hudy + (minimapinfo.minimap_pic->height-24)/2)<<FRACBITS);
 
 	V_DrawRotatedPatch(amxpos, amypos, ang, scale, scale, flags|V_ADD, kp_minimaplight, colormap);
 }
@@ -4895,21 +4900,17 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, int32_t hudx, i
 		return;
 	}
 
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos;
 	int32_t amxpos, amypos;
 	uint16_t skin = 0;
 	uint16_t chatcolor = skincolors[player->mo->color].chatcolor;
 
-	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
-
-	if (encoremode)
-		amnumxpos = -amnumxpos;
+	amnumpos = K_GetKartObjectPosToMinimapPos(objx, objy);
 
 	skin = ((skin_t*)player->mo->skin)->skinnum;
 
-	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-faceprefix[skin][FACE_MINIMAP]->width)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
+	amxpos = amnumpos.x + ((hudx + (minimapinfo.minimap_pic->width-faceprefix[skin][FACE_MINIMAP]->width)/2)<<FRACBITS);
+	amypos = amnumpos.y + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
 
 	const char *player_name = va("%s",player_names[player - players]);
 	V_DrawCenteredSmallStringAtFixed(amxpos + (6*FRACUNIT), amypos - (5*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
@@ -4917,19 +4918,15 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, int32_t hudx, i
 
 static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, uint8_t color, uint8_t intsize)
 {
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos;
 	fixed_t size = intsize * FRACUNIT;
 
-	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+	amnumpos = K_GetKartObjectPosToMinimapPos(objx, objy);
 
-	if (encoremode)
-		amnumxpos = -amnumxpos;
+	amnumpos.x += minimapinfo.minimap_pic->width*FRACUNIT/2;
+	amnumpos.y += minimapinfo.minimap_pic->height*FRACUNIT/2;
 
-	amnumxpos += minimapinfo.minimap_pic->width*FRACUNIT/2;
-	amnumypos += minimapinfo.minimap_pic->height*FRACUNIT/2;
-
-	V_DrawFixedFill((amnumxpos + hudx*FRACUNIT) - (size / 2), (amnumypos + hudy*FRACUNIT) - (size / 2), size, size, flags | color);
+	V_DrawFixedFill((amnumpos.x + hudx*FRACUNIT) - (size / 2), (amnumpos.y + hudy*FRACUNIT) - (size / 2), size, size, flags | color);
 }
 
 static void K_drawKartMinimapWaypoint(waypoint_t *wp, int32_t hudx, int32_t hudy, int32_t flags)
@@ -5000,6 +4997,30 @@ static void K_drawKartMinimapCluster(int32_t hudx, int32_t hudy, int32_t flags)
 	}
 
 	K_drawKartMinimapDot(clusterx, clustery, hudx, hudy, flags, pal, size);
+}
+
+int32_t K_GetMinimapTransFlags(void)
+{
+	int32_t minimaptrans = cv_kartminimap.value;
+	dboolean dofade = (((r_splitscreen < 2)) || (r_splitscreen == 3));
+
+	if (dofade)
+	{
+		// No exit ticker? No point. Return 0.
+		if (!lt_exitticker)
+			return 0;
+
+		const tic_t length = TICRATE/2;
+		minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
+		
+		// If the minimap is fully transparent, just get your 0 back. Bail out with this.
+		if (!minimaptrans)
+			return minimaptrans;
+	}
+
+	minimaptrans = ((10-minimaptrans)<<V_ALPHASHIFT);
+
+	return minimaptrans;
 }
 
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
@@ -5096,36 +5117,19 @@ static void K_drawKartMinimap(void)
 	K_getMinimapDrawinfo(&info);
 	x = info.x;
 	y = info.y;
+
+	minimaptrans = K_GetMinimapTransFlags();
+	if (!minimaptrans) return; // Exit early if it wouldn't draw anyway.
+
 	splitflags = info.flags;
 
-	if (r_splitscreen < 2) // 1/2P right aligned
+	if ((r_splitscreen < 2)||(r_splitscreen == 3)) // 1/2P right aligned
 	{
-		const tic_t length = TICRATE/2;
-
 		if (!lt_exitticker)
 			return;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-
 	}
-	else if (r_splitscreen == 3) // 4P centered
-	{
-		const tic_t length = TICRATE/2;
-
-		if (!lt_exitticker)
-			return;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-	}
-	// 3P lives in the middle of the bottom right player and shouldn't fade in OR slide
-
-	if (!minimaptrans)
-		return;
 
 	colorizeplayer = false;
-
-	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
-
 
 	uint8_t bestplayer = MAXPLAYERS;
 	if (mapnamespace != MNS_SRB2KART)
