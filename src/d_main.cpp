@@ -181,6 +181,8 @@ INT32 eventhead, eventtail;
 
 boolean dedicated = false;
 
+boolean loaded_config = false;
+
 //
 // D_PostEvent
 // Called by the I/O functions when input is detected
@@ -1792,6 +1794,8 @@ void D_SRB2Main(void)
 	wipegamestate = gamestate;
 
 	savedata.lives = 0; // flag this as not-used
+
+	loaded_config = true; // so pallettechange doesent get called 500 times at startup lol
 
 	CON_SetLoadingProgress(LOADED_CONFIG);
 

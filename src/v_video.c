@@ -15,6 +15,7 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
+#include "d_main.h"
 #include "r_local.h"
 #include "p_local.h" // stplyr
 #include "g_game.h" // players
@@ -135,7 +136,7 @@ static boolean InitCube(void)
 	float globalgammamul, globalgammaoffs;
 	boolean doinggamma;
 
-	if (con_startup_loadprogress < LOADED_CONFIG)
+	if (loaded_config == false)
 		return false;
 
 #define diffcons(cv) (cv.value != atoi(cv.defaultvalue))
@@ -491,6 +492,8 @@ void V_SetPaletteLump(const char *pal)
 
 static void CV_palette_OnChange(void)
 {
+	if (loaded_config == false)
+		return;
 	// recalculate Color Cube
 	V_ReloadPalette();
 	V_SetPalette(0);
