@@ -228,7 +228,7 @@ UINT32 P_RandomD(const char *rfile, INT32 rline, pr_class_t pr_class)
 
 /** Provides a random fixed point number. Distribution is uniform.
   *
-  * \return A random fixed point number from [0,1].
+  * \return A random fixed point number from [0,1).
   */
 
 #ifndef DEBUGRANDOM
