@@ -675,11 +675,11 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 
 		hud_running = true; // local hook
 
-		// Catch runaway clipping rectangles.
-		V_ClearClipRect();
-
 		init_hook_call(&hook, 0, res_none);
 		call_mapped_hud(&hook, map);
+
+		// Catch runaway clipping rectangles.
+		V_ClearClipRect();
 
 		hud_running = false;
 	}
