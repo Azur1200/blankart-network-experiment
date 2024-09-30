@@ -37,6 +37,12 @@ extern "C" {
 // Selected map etc.
 // =============================
 
+#define ROUNDQUEUE_MAX 10 // sane max? maybe make dynamically allocated later
+// These two live in gametype field of packets
+#define ROUNDQUEUE_CMD_CLEAR UINT16_MAX
+#define ROUNDQUEUE_CMD_SHOW UINT16_MAX-1
+// The roundqueue itself is resident in g_game.h
+
 // Selected by user.
 extern mapnum_t gamemap;
 extern char mapmusname[7];

@@ -41,9 +41,6 @@ extern tic_t levelstarttic;
 // for modding?
 extern mapnum_t prevmap, nextmap;
 
-#define ROUNDQUEUE_MAX 10 // sane max? maybe make dynamically allocated later
-#define ROUNDQUEUE_CLEAR UINT16_MAX // lives in gametype field of packets
-
 struct roundentry_t
 {
 	UINT16 mapnum;				// Map number at this position
