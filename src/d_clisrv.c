@@ -5808,13 +5808,49 @@ static void PT_ReqMapQueue(int node)
 		CONS_Alert(CONS_ERROR, "Recieved REQMAPQUEUE, but unable to add map beyond %u\n", roundqueue.size);
 
 		// But this one does, because otherwise it's silent failure!
-		// Todo print the map's name, maybe?
 		char rejectmsg[256];
 		strlcpy(rejectmsg, "The server couldn't queue your chosen map.", 256);
 		SendServerNotice(reqmapqueue.source, rejectmsg);
 
 		return;
 	}
+
+	if (reqmapqueue.newmapnum == NEXTMAP_VOTING)
+	{
+		/*UINT8 numPlayers = 0, i;
+		for (i = 0; i < MAXPLAYERS; ++i)
+		{
+			if (!playeringame[i] || players[i].spectator)
+			{
+				continue;
+			}
+
+			extern consvar_t cv_forcebots; // debug
+
+			if (!(gametypes[reqmapqueue.newgametype]->rules & GTR_BOTS) && players[i].bot && !cv_forcebots.value)
+			{
+				// Gametype doesn't support bots
+				continue;
+			}
+
+			numPlayers++;
+		}*/
+
+		reqmapqueue.newmapnum = G_RandMap(G_TOLFlag(reqmapqueue.newgametype), UINT16_MAX, false, 0, false, NULL);
+	}
+
+	if (reqmapqueue.newmapnum >= nummapheaders)
+	{
+		CONS_Alert(CONS_ERROR, "Recieved REQMAPQUEUE, but unable to add map of invalid ID (%u)\n", reqmapqueue.newmapnum);
+
+		char rejectmsg[256];
+		strlcpy(rejectmsg, "The server couldn't queue your chosen map.", 256);
+		SendServerNotice(reqmapqueue.source, rejectmsg);
+
+		return;
+	}
+
+	G_AddMapToBuffer(reqmapqueue.newmapnum);
 
 	UINT8 buf[1+2+1];
 	UINT8 *buf_p = buf;
