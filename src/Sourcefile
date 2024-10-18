@@ -64,6 +64,7 @@ p_user.c
 p_slopes.c
 p_sweep.cpp
 p_test.cpp
+p_deepcopy.cpp
 tables.c
 r_bsp.cpp
 r_data.c

@@ -1123,7 +1123,7 @@ static void P_NetUnArchiveColormaps(savebuffer_t *save)
 #define SD_DIFF3     0x80
 
 // diff3 flags
-#define SD_TAGLIST   0x01
+#define SD__UNUSED   0x01
 #define SD_COLORMAP  0x02
 #define SD_CRUMBLESTATE 0x04
 #define SD_FLOORLIGHT 0x08
@@ -1173,7 +1173,7 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 
 #define LD_FLAG     0x01
 #define LD_SPECIAL  0x02
-#define LD_CLLCOUNT 0x04
+#define LD_TAG      0x04
 #define LD_S1TEXOFF 0x08
 #define LD_S1TOPTEX 0x10
 #define LD_S1BOTTEX 0x20
@@ -1187,7 +1187,7 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 #define LD_S2MIDTEX      0x08
 #define LD_ARGS          0x10
 #define LD_STRINGARGS    0x20
-#define LD_EXECUTORDELAY 0x40
+#define LD__UNUSED       0x40
 #define LD_DIFF3         0x80
 
 // diff3 flags
@@ -1678,7 +1678,7 @@ static void UnArchiveSectors(savebuffer_t *save)
 
 static void ArchiveLines(savebuffer_t *save)
 {
-	size_t i;
+	size_t i, j;
 	const line_t *li = lines;
 	const line_t *spawnli = spawnlines;
 	const side_t *si;
@@ -1695,17 +1695,14 @@ static void ArchiveLines(savebuffer_t *save)
 		if (li->special != spawnli->special)
 			diff |= LD_SPECIAL;
 
-		if (spawnli->special == 321 || spawnli->special == 322) // only reason li->callcount would be non-zero is if either of these are involved
-			diff |= LD_CLLCOUNT;
+		if (!Tag_Compare(&li->tags, &spawnli->tags))
+			diff |= LD_TAG;
 
 		if (!P_LineArgsEqual(li, spawnli))
 			diff2 |= LD_ARGS;
 
 		if (!P_LineStringArgsEqual(li, spawnli))
 			diff2 |= LD_STRINGARGS;
-
-		if (li->executordelay != spawnli->executordelay)
-			diff2 |= LD_EXECUTORDELAY;
 
 		if (li->activation != spawnli->activation)
 			diff3 |= LD_ACTIVATION;
@@ -1756,8 +1753,12 @@ static void ArchiveLines(savebuffer_t *save)
 				WRITEUINT32(save->p, li->flags);
 			if (diff & LD_SPECIAL)
 				WRITEINT16(save->p, li->special);
-			if (diff & LD_CLLCOUNT)
-				WRITEINT16(save->p, li->callcount);
+			if (diff & LD_TAG)
+			{
+				WRITEUINT32(save->p, li->tags.count);
+				for (j = 0; j < li->tags.count; j++)
+					WRITEINT16(save->p, li->tags.tags[j]);
+			}
 
 			si = &sides[li->sidenum[0]];
 			if (diff & LD_S1TEXOFF)
@@ -1803,8 +1804,6 @@ static void ArchiveLines(savebuffer_t *save)
 						WRITECHAR(save->p, li->stringargs[j][k]);
 				}
 			}
-			if (diff2 & LD_EXECUTORDELAY)
-				WRITEINT32(save->p, li->executordelay);
 			if (diff3 & LD_ACTIVATION)
 				WRITEUINT32(save->p, li->activation);
 		}
@@ -1814,7 +1813,7 @@ static void ArchiveLines(savebuffer_t *save)
 
 static void UnArchiveLines(savebuffer_t *save)
 {
-	UINT16 i;
+	UINT16 i, j;
 	line_t *li;
 	side_t *si;
 	UINT8 diff, diff2, diff3;
@@ -1845,8 +1844,28 @@ static void UnArchiveLines(savebuffer_t *save)
 			li->flags = READUINT32(save->p);
 		if (diff & LD_SPECIAL)
 			li->special = READINT16(save->p);
-		if (diff & LD_CLLCOUNT)
-			li->callcount = READINT16(save->p);
+		if (diff & LD_TAG)
+		{
+			size_t ncount = READUINT32(save->p);
+
+			// Remove entries from global lists.
+			for (j = 0; j < lines[i].tags.count; j++)
+				Taggroup_Remove(tags_lines, lines[i].tags.tags[j], i);
+
+			// Reallocate if size differs.
+			if (ncount != lines[i].tags.count)
+			{
+				lines[i].tags.count = ncount;
+				lines[i].tags.tags = (mtag_t*)Z_Realloc(lines[i].tags.tags, ncount*sizeof(mtag_t), PU_LEVEL, NULL);
+			}
+
+			for (j = 0; j < ncount; j++)
+				lines[i].tags.tags[j] = READINT16(save->p);
+
+			// Add new entries.
+			for (j = 0; j < lines[i].tags.count; j++)
+				Taggroup_Add(tags_lines, lines[i].tags.tags[j], i);
+		}
 
 		si = &sides[li->sidenum[0]];
 		if (diff & LD_S1TEXOFF)
@@ -1869,13 +1888,11 @@ static void UnArchiveLines(savebuffer_t *save)
 			si->midtexture = READINT32(save->p);
 		if (diff2 & LD_ARGS)
 		{
-			UINT8 j;
 			for (j = 0; j < NUM_SCRIPT_ARGS; j++)
 				li->args[j] = READINT32(save->p);
 		}
 		if (diff2 & LD_STRINGARGS)
 		{
-			UINT8 j;
 			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
 				size_t len = READINT32(save->p);
@@ -1894,8 +1911,6 @@ static void UnArchiveLines(savebuffer_t *save)
 				li->stringargs[j][len] = '\0';
 			}
 		}
-		if (diff2 & LD_EXECUTORDELAY)
-			li->executordelay = READINT32(save->p);
 		if (diff3 & LD_ACTIVATION)
 			li->activation = READUINT32(save->p);
 
@@ -2254,9 +2269,9 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	// not the default but the most probable
 	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz != 0)
 		diff |= MD_MOM;
-	if (mobj->radius != mobj->info->radius)
+	if (mobj->radius != FixedMul(mapobjectscale, mobj->info->radius))
 		diff |= MD_RADIUS;
-	if (mobj->height != mobj->info->height)
+	if (mobj->height != FixedMul(mapobjectscale, mobj->info->height))
 		diff |= MD_HEIGHT;
 	if (mobj->flags != mobj->info->flags)
 		diff |= MD_FLAGS;
@@ -2301,11 +2316,11 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff |= MD_MOVEFACTOR;
 	if (mobj->fuse)
 		diff |= MD_FUSE;
-	if (mobj->watertop)
+	if (mobj->watertop != INT32_MAX)
 		diff |= MD_WATERTOP;
 	if (mobj->waterbottom)
 		diff |= MD_WATERBOTTOM;
-	if (mobj->scale != FRACUNIT)
+	if (mobj->scale != mapobjectscale)
 		diff |= MD_SCALE;
 	if (mobj->destscale != mobj->scale)
 		diff |= MD_DSCALE;
@@ -3552,6 +3567,21 @@ static inline pslope_t *LoadSlope(UINT32 slopeid)
 	return NULL;
 }
 
+static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
+
+static void CalculateDoomednumToMobjtype(void)
+{
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
+
+	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
+	{
+		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
+		{
+			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
+		}
+	}
+}
+
 static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 {
 	mobj_t *mobj;
@@ -3623,20 +3653,26 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->type = READUINT32(save->p);
 	else
 	{
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mobj->spawnpoint && mobj->spawnpoint->type == mobjinfo[i].doomednum)
-				break;
-		if (i == NUMMOBJTYPES)
+		mobjtype_t new_type = MT_NULL;
+		if (mobj->spawnpoint)
+		{
+			new_type = g_doomednum_to_mobjtype[mobj->spawnpoint->type];
+		}
+
+		if (new_type <= MT_NULL || new_type >= NUMMOBJTYPES)
 		{
 			if (mobj->spawnpoint)
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type %d\n", mobj->spawnpoint->type);
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum %d\n", mobj->spawnpoint->type);
 			else
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum NULL\n");
+
 			I_Error("Netsave corrupted");
 		}
-		mobj->type = i;
+
+		mobj->type = new_type;
 	}
 	mobj->info = &mobjinfo[mobj->type];
+
 	if (diff & MD_POS)
 	{
 		mobj->x = mobj->old_x = READFIXED(save->p);
@@ -3664,11 +3700,11 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff & MD_RADIUS)
 		mobj->radius = READFIXED(save->p);
 	else
-		mobj->radius = mobj->info->radius;
+		mobj->radius = FixedMul(mobj->info->radius, mapobjectscale);
 	if (diff & MD_HEIGHT)
 		mobj->height = READFIXED(save->p);
 	else
-		mobj->height = mobj->info->height;
+		mobj->height = FixedMul(mobj->info->height, mapobjectscale);
 	if (diff & MD_FLAGS)
 		mobj->flags = READUINT32(save->p);
 	else
@@ -3746,12 +3782,14 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->fuse = READINT32(save->p);
 	if (diff & MD_WATERTOP)
 		mobj->watertop = READFIXED(save->p);
+	else
+		mobj->watertop = INT32_MAX;
 	if (diff & MD_WATERBOTTOM)
 		mobj->waterbottom = READFIXED(save->p);
 	if (diff & MD_SCALE)
 		mobj->scale = READFIXED(save->p);
 	else
-		mobj->scale = FRACUNIT;
+		mobj->scale = mapobjectscale;
 	if (diff & MD_DSCALE)
 		mobj->destscale = READFIXED(save->p);
 	else
@@ -4599,6 +4637,10 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
 
+	// Pre-calculate this lookup, because it was wasting
+	// a shit ton of time loading mobj thinkers.
+	CalculateDoomednumToMobjtype();
+
 	// remove all the current thinkers
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
@@ -5367,7 +5409,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 {
 	TracyCZone(__zone, true);
 
-	size_t i;
+	size_t i, j;
 	size_t numTasks;
 
 	const INT16 prevgamemap = gamemap;
@@ -5424,6 +5466,193 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
 			return false;
 		}
+	}
+	else
+	{
+		// Only reload stuff that can we modify in the save states themselves.
+		// This is still orders of magnitude faster than a full level reload.
+		// Considered memcpy, but it's complicated -- save that for local saves.
+
+		sector_t *ss = sectors;
+		sector_t *spawnss = spawnsectors;
+		for (i = 0; i < numsectors; i++, ss++, spawnss++)
+		{
+			ss->floorheight = spawnss->floorheight;
+			ss->ceilingheight = spawnss->ceilingheight;
+			ss->floorpic = spawnss->floorpic;
+			ss->ceilingpic = spawnss->ceilingpic;
+			ss->lightlevel = spawnss->lightlevel;
+			ss->special = spawnss->special;
+			ss->floor_xoffs = spawnss->floor_xoffs;
+			ss->floor_yoffs = spawnss->floor_yoffs;
+			ss->ceiling_xoffs = spawnss->ceiling_xoffs;
+			ss->ceiling_yoffs = spawnss->ceiling_yoffs;
+			ss->floorpic_angle = spawnss->floorpic_angle;
+			ss->ceilingpic_angle = spawnss->ceilingpic_angle;
+
+			if (Tag_Compare(&ss->tags, &spawnss->tags) == false)
+			{
+				if (spawnss->tags.count)
+				{
+					ss->tags.count = spawnss->tags.count;
+					ss->tags.tags =
+						memcpy(
+							Z_Realloc(
+								ss->tags.tags,
+								spawnss->tags.count * sizeof(mtag_t),
+								PU_LEVEL,
+								NULL
+							),
+							spawnss->tags.tags,
+							spawnss->tags.count * sizeof(mtag_t)
+						);
+				}
+				else
+				{
+					ss->tags.count = 0;
+					Z_Free(ss->tags.tags);
+				}
+			}
+
+			ss->extra_colormap = ss->spawn_extra_colormap;
+			ss->crumblestate = CRUMBLE_NONE;
+			ss->floorlightlevel = spawnss->floorlightlevel;
+			ss->floorlightabsolute = spawnss->floorlightabsolute;
+			ss->ceilinglightlevel = spawnss->ceilinglightlevel;
+			ss->ceilinglightabsolute = spawnss->ceilinglightabsolute;
+			ss->flags = spawnss->flags;
+			ss->specialflags = spawnss->specialflags;
+			ss->damagetype = spawnss->damagetype;
+			ss->triggertag = spawnss->triggertag;
+			ss->triggerer = spawnss->triggerer;
+			ss->gravity = spawnss->gravity;
+			ss->action = spawnss->action;
+
+			memcpy(ss->args, spawnss->args, NUM_SCRIPT_ARGS * sizeof(*ss->args));
+
+			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+			{
+				size_t len = 0;
+
+				if (spawnss->stringargs[j])
+				{
+					len = strlen(spawnss->stringargs[j]);
+				}
+
+				if (!len)
+				{
+					Z_Free(ss->stringargs[j]);
+					ss->stringargs[j] = NULL;
+				}
+				else
+				{
+					ss->stringargs[j] = Z_Realloc(ss->stringargs[j], len + 1, PU_LEVEL, NULL);
+					M_Memcpy(ss->stringargs[j], spawnss->stringargs[j], len);
+					ss->stringargs[j][len] = '\0';
+				}
+			}
+
+			ss->activation = spawnss->activation;
+			ss->botController.flags = spawnss->botController.flags;
+			ss->botController.forceAngle = spawnss->botController.forceAngle;
+
+			if (ss->ffloors)
+			{
+				ffloor_t *rover;
+				for (rover = ss->ffloors; rover; rover = rover->next)
+				{
+					rover->fofflags = rover->spawnflags;
+					rover->alpha = rover->spawnalpha;
+				}
+			}
+		}
+
+		line_t *li = lines;
+		line_t *spawnli = spawnlines;
+		side_t *si = NULL;
+		side_t *spawnsi = NULL;
+		for (i = 0; i < numlines; i++, spawnli++, li++)
+		{
+			li->flags = spawnli->flags;
+			li->special = spawnli->special;
+			li->callcount = 0;
+
+			if (Tag_Compare(&li->tags, &spawnli->tags) == false)
+			{
+				if (spawnli->tags.count)
+				{
+					li->tags.count = spawnli->tags.count;
+					li->tags.tags =
+						memcpy(
+							Z_Realloc(
+								li->tags.tags,
+								spawnli->tags.count * sizeof(mtag_t),
+								PU_LEVEL,
+								NULL
+							),
+							spawnli->tags.tags,
+							spawnli->tags.count * sizeof(mtag_t)
+						);
+					
+				}
+				else
+				{
+					li->tags.count = 0;
+					Z_Free(li->tags.tags);
+				}
+			}
+
+			memcpy(li->args, spawnli->args, NUM_SCRIPT_ARGS * sizeof(*li->args));
+
+			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+			{
+				size_t len = 0;
+
+				if (spawnli->stringargs[j])
+				{
+					len = strlen(spawnli->stringargs[j]);
+				}
+
+				if (!len)
+				{
+					Z_Free(li->stringargs[j]);
+					li->stringargs[j] = NULL;
+				}
+				else
+				{
+					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
+					M_Memcpy(li->stringargs[j], spawnli->stringargs[j], len);
+					li->stringargs[j][len] = '\0';
+				}
+			}
+
+			li->executordelay = spawnli->executordelay;
+			li->activation = spawnli->activation;
+
+			if (li->sidenum[0] != 0xffff)
+			{
+				si = &sides[li->sidenum[0]];
+				spawnsi = &spawnsides[li->sidenum[0]];
+
+				si->textureoffset = spawnsi->textureoffset;
+				si->toptexture = spawnsi->toptexture;
+				si->bottomtexture = spawnsi->bottomtexture;
+				si->midtexture = spawnsi->midtexture;
+			}
+
+			if (li->sidenum[1] != 0xffff)
+			{
+				si = &sides[li->sidenum[1]];
+				spawnsi = &spawnsides[li->sidenum[1]];
+
+				si->textureoffset = spawnsi->textureoffset;
+				si->toptexture = spawnsi->toptexture;
+				si->bottomtexture = spawnsi->bottomtexture;
+				si->midtexture = spawnsi->midtexture;
+			}
+		}
+
+		Taglist_InitGlobalTables();
 	}
 
 	// get the time

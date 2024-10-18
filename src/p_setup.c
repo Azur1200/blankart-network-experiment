@@ -106,6 +106,7 @@
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
+#include "p_deepcopy.h"
 
 #include "blan/b_soc.h"
 
@@ -7919,7 +7920,7 @@ static boolean P_LoadMapFromFile(void)
 	TracyCZone(__zone, true);
 
 	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
-	size_t i;
+
 	udmf = textmap != NULL;
 	udmf_version = patch_version = 0;
 
@@ -7950,17 +7951,9 @@ static boolean P_LoadMapFromFile(void)
 			CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
 
 	// Copy relevant map data for NetArchive purposes.
-	spawnsectors = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
-	spawnlines = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
-	spawnsides = Z_Calloc(numsides * sizeof(*sides), PU_LEVEL, NULL);
-
-	memcpy(spawnsectors, sectors, numsectors * sizeof(*sectors));
-	memcpy(spawnlines, lines, numlines * sizeof(*lines));
-	memcpy(spawnsides, sides, numsides * sizeof(*sides));
-
-	for (i = 0; i < numsectors; i++)
-		if (sectors[i].tags.count)
-			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
+	P_DeepCopySectors(&spawnsectors, &sectors, numsectors);
+	P_DeepCopyLines(&spawnlines, &lines, numlines);
+	P_DeepCopySides(&spawnsides, &sides, numsides);
 
 	TracyCZoneEnd(__zone);
 	return true;
