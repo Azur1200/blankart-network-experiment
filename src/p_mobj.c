@@ -3547,50 +3547,50 @@ void P_DestroyRobots(void)
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
 	boolean flipcam = (player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP);
-	postimg_t postimg = postimg_none;
+	UINT16 postimgflags = 0;
 	UINT8 i;
 
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return;
 
-	if (encoremode && !flipcam)
-		postimg = postimg_mirror;
-	else if (!encoremode && flipcam)
-		postimg = postimg_flip;
-	else if (encoremode && flipcam)
-		postimg = postimg_mirrorflip;
-	else if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
+	if (encoremode)
+		postimgflags |= POSTIMG_MIRROR;
+	if (flipcam)
+		postimgflags |= POSTIMG_FLIP;
+
+	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
 		camera_t dummycam;
+
 		dummycam.subsector = player->awayviewmobj->subsector;
 		dummycam.x = player->awayviewmobj->x;
 		dummycam.y = player->awayviewmobj->y;
 		dummycam.z = player->awayviewmobj->z;
 		//dummycam.height = 40*FRACUNIT; // alt view height is 20*FRACUNIT
 		dummycam.height = 0;			 // Why? Remote viewpoint cameras have no height.
+
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(&dummycam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(&dummycam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimg = postimg_water;
-		else if (P_CameraCheckHeat(thiscam))
-			postimg = postimg_heat;
+			postimgflags |= POSTIMG_WATER;
+		if (P_CameraCheckHeat(thiscam))
+			postimgflags |= POSTIMG_HEAT;
 	}
 
-	if (postimg != postimg_none)
+	for (i = 0; i <= splitscreen; i++)
 	{
-		for (i = 0; i <= r_splitscreen; i++)
-		{
-			if (player == &players[displayplayers[i]])
-				postimgtype[i] = postimg;
-		}
+		if (player != &players[displayplayers[i]])
+			continue;
+
+		players[displayplayers[i]].postimgflags = postimgflags;
 	}
 }
 
@@ -3599,13 +3599,18 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 // Process the mobj-ish required functions of the camera
 boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled)
 {
+	// This can happen when joining
+	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
+		return true;
+
 	P_CalcChasePostImg(player, thiscam);
 
 	if (thiscam->momx || thiscam->momy)
 	{
 		if (!P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y + thiscam->momy, thiscam)) // Thanks for the greatly improved camera, Lach -- Sev
-		{ // Never fails for 2D mode.
+		{
 			mobj_t dummy;
+
 			dummy.thinker.function.acp1 = (actionf_p1)P_MobjThinker;
 			dummy.subsector = thiscam->subsector;
 			dummy.x = thiscam->x;

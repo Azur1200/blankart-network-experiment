@@ -131,7 +131,6 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
-postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are in effect
@@ -368,8 +367,7 @@ static void D_RenderLevel(void)
 		{
 			R_ApplyViewMorph(i);
 
-			if (postimgtype[i])
-				V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+			V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
 		}
 	}
 

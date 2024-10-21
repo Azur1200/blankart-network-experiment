@@ -699,9 +699,6 @@ void P_Ticker(boolean run)
 	if (!S_MusicPaused())
 		S_AdjustMusicStackTics();
 
-	for (i = 0; i <= r_splitscreen; i++)
-		postimgtype[i] = postimg_none;
-
 	P_MapStart();
 
 	if (run)

@@ -5663,17 +5663,6 @@ static void HWR_DrawSkyBackground(player_t *player)
 	{
 		FTransform dometransform;
 		const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
-		postimg_t *type = &postimgtype[0];
-		SINT8 i;
-
-		for (i = r_splitscreen; i >= 0; i--)
-		{
-			if (player == &players[displayplayers[i]])
-			{
-				type = &postimgtype[i];
-				break;
-			}
-		}
 
 		memset(&dometransform, 0x00, sizeof(FTransform));
 
@@ -5682,20 +5671,17 @@ static void HWR_DrawSkyBackground(player_t *player)
 		HWR_SetTransformAiming(&dometransform, player, false);
 		dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
-		if (*type == postimg_flip)
+		dometransform.flip = false;
+		if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
 			dometransform.flip = true;
-		else
-			dometransform.flip = false;
 
-		if (*type == postimg_mirror)
+		dometransform.mirror = false;
+		if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
 			dometransform.mirror = true;
-		else
-			dometransform.mirror = false;
-		
-		if (*type == postimg_mirrorflip)
+
+		dometransform.mirrorflip = false;
+		if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
 			dometransform.mirrorflip = true;
-		else
-			dometransform.mirrorflip = false;
 
 		dometransform.scalex = 1;
 		dometransform.scaley = (float)vid.width/vid.height;
@@ -5941,7 +5927,6 @@ static void HWR_ClearClipper(void)
 void HWR_RenderSkyboxView(player_t *player)
 {
 	const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
-	postimg_t *type = &postimgtype[viewssnum];
 
 	{
 		// do we really need to save player (is it not the same)?
@@ -5982,15 +5967,17 @@ void HWR_RenderSkyboxView(player_t *player)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	if (*type == postimg_flip)
+	atransform.flip = false;
+	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
 		atransform.flip = true;
-	else
-		atransform.flip = false;
 
-	if (*type == postimg_mirror)
+	atransform.mirror = false;
+	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
 		atransform.mirror = true;
-	else
-		atransform.mirror = false;
+
+	atransform.mirrorflip = false;
+	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+		atransform.mirrorflip = true;
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
 	atransform.y      = gl_viewy;  // FIXED_TO_FLOAT(viewy)
@@ -6090,7 +6077,6 @@ void HWR_RenderPlayerView(void)
 	player_t * player = &players[displayplayers[viewssnum]];
 
 	const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
-	postimg_t *type = &postimgtype[viewssnum];
 
 	const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
@@ -6166,20 +6152,17 @@ void HWR_RenderPlayerView(void)
 	gl_viewludsin = FIXED_TO_FLOAT(FINECOSINE(gl_aimingangle>>ANGLETOFINESHIFT));
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
-	if (*type == postimg_flip)
+	atransform.flip = false;
+	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
 		atransform.flip = true;
-	else
-		atransform.flip = false;
 
-	if (*type == postimg_mirror)
+	atransform.mirror = false;
+	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
 		atransform.mirror = true;
-	else
-		atransform.mirror = false;
-	
-	if (*type == postimg_mirrorflip)
+
+	atransform.mirrorflip = false;
+	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
-	else
-		atransform.mirrorflip = false;
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
 	atransform.y      = gl_viewy;  // FIXED_TO_FLOAT(viewy)
@@ -6545,19 +6528,7 @@ INT32 HWR_GetTextureUsed(void)
 
 void HWR_DoPostProcessor(player_t *player)
 {
-	postimg_t *type = &postimgtype[0];
-	SINT8 i;
-
 	HWD.pfnUnSetShader();
-
-	for (i = r_splitscreen; i >= 0; i--)
-	{
-		if (player == &players[displayplayers[i]])
-		{
-			type = &postimgtype[i];
-			break;
-		}
-	}
 
 	// Armageddon Blast Flash!
 	// Could this even be considered postprocessor?
@@ -6592,7 +6563,7 @@ void HWR_DoPostProcessor(player_t *player)
 		return;
 
 	// Drunken vision! WooOOooo~
-	if (*type == postimg_water || *type == postimg_heat)
+	if (player->postimgflags & POSTIMG_WATER || player->postimgflags & POSTIMG_HEAT)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -6604,7 +6575,7 @@ void HWR_DoPostProcessor(player_t *player)
 		INT32 FREQUENCY;
 
 		// Modifies the wave.
-		if (*type == postimg_water)
+		if (player->postimgflags & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
 			AMPLITUDE = 40;

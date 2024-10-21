@@ -8441,9 +8441,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_InitLevelSettings(reloadinggamestate);
 
-	for (i = 0; i <= r_splitscreen; i++)
-		postimgtype[i] = postimg_none;
-
 	// Initial height of PointOfView
 	// will be set by player think.
 	players[consoleplayer].viewz = 1;
@@ -8817,11 +8814,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			{
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 			}
-		}
-
-		for (i = 0; i <= r_splitscreen; i++)
-		{
-			postimgtype[i] = postimg_none;
 		}
 		
 		if (marathonmode & MA_INGAME)

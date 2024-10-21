@@ -180,7 +180,6 @@ extern INT32 window_y;
 extern boolean nodrawers;
 extern boolean noblit;
 extern boolean lastdraw;
-extern postimg_t postimgtype[MAXSPLITSCREENPLAYERS];
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 extern INT32 viewwindowx, viewwindowy;
