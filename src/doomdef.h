@@ -482,9 +482,6 @@ extern int compuncommitted;
 ///	Allows gravity changes in netgames, no questions asked.
 //#define NETGAME_GRAVITY
 
-///	Dumps the contents of a network save game upon consistency failure for debugging.
-//#define DUMPCONSISTENCY
-
 ///	Allow loading of savegames between different versions of the game.
 ///	\note	XMOD port.
 ///	    	Most modifications should probably enable this.

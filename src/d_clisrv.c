@@ -1456,25 +1456,20 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	freezetimeout[node] = I_GetTime() + jointimeout + length / 1024; // 1 extra tic for each kilobyte
 }
 
-#ifdef DUMPCONSISTENCY
-#define TMPSAVENAME "badmath.sav"
 static consvar_t cv_dumpconsistency = CVAR_INIT ("dumpconsistency", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL);
 
-static void SV_SavedGame(void)
+static void CL_DumpConsistency(const char *file_name)
 {
 	size_t length;
 	savebuffer_t save = {0};
-	char tmpsave[256];
+	char tmpsave[1024];
 
-	if (!cv_dumpconsistency.value)
-		return;
-
-	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
+	snprintf(tmpsave, sizeof(tmpsave), "%s" PATHSEP "%s", srb2home, file_name);
 
 	// first save it in a malloced buffer
 	if (P_SaveBufferAlloc(&save, NETSAVEGAMESIZE) == false)
 	{
-		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for savegame\n"));
+		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for consistency dump\n"));
 		return;
 	}
 
@@ -1484,20 +1479,17 @@ static void SV_SavedGame(void)
 	if (length > NETSAVEGAMESIZE)
 	{
 		P_SaveBufferFree(&save);
-		I_Error("Savegame buffer overrun");
+		I_Error("Consistency dump buffer overrun");
 	}
 
 	// then save it!
 	if (!FIL_WriteFile(tmpsave, save.buffer, length))
-		CONS_Printf(M_GetText("Didn't save %s for netgame"), tmpsave);
+		CONS_Printf(M_GetText("Didn't save %s for consistency dump"), tmpsave);
 
 	P_SaveBufferFree(&save);
 }
 
-#undef  TMPSAVENAME
-#endif
 #define TMPSAVENAME "$$$.sav"
-
 
 static void CL_LoadReceivedSavegame(boolean reloading)
 {
@@ -1599,8 +1591,12 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 
 static void CL_ReloadReceivedSavegame(void)
 {
-	INT32 i;
+	if (cv_dumpconsistency.value)
+	{
+		CL_DumpConsistency("TEMP.consdump");
+	}
 
+	INT32 i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		LUA_InvalidatePlayer(&players[i]);
@@ -1625,6 +1621,26 @@ static void CL_ReloadReceivedSavegame(void)
 	cl_redownloadinggamestate = false;
 
 	CONS_Printf(M_GetText("Game state reloaded\n"));
+
+	if (cv_dumpconsistency.value)
+	{
+		// This is dumb, but we want the file names
+		// to be pairable together with the server's
+		// version, and gametic being randomly off
+		// is a deal breaker.
+		char dump_name[1024];
+		snprintf(
+			dump_name, sizeof(dump_name),
+			"%s_%u_%s-client.consdump",
+			server_context,
+			gametic,
+			player_names[consoleplayer]
+		);
+		if (FIL_RenameFile("TEMP.consdump", dump_name) == false)
+		{
+			CONS_Alert(CONS_WARNING, "Failed to rename temporary consdump file.\n");
+		}
+	}
 }
 
 static void SendAskInfo(INT32 node)
@@ -3630,9 +3646,6 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 	if (playernode[pnum] == playernode[consoleplayer])
 	{
-#ifdef DUMPCONSISTENCY
-		if (msg == KICK_MSG_CON_FAIL) SV_SavedGame();
-#endif
 		LUA_HookBool(false, HOOK(GameQuit)); //Lua hooks handled differently now
 
 		D_QuitNetGame();
@@ -3877,9 +3890,7 @@ void D_ClientServerInit(void)
 	RegisterNetXCmd(XD_ADDPLAYER, Got_AddPlayer);
 	RegisterNetXCmd(XD_REMOVEPLAYER, Got_RemovePlayer);
 	RegisterNetXCmd(XD_ADDBOT, Got_AddBot);
-#ifdef DUMPCONSISTENCY
 	CV_RegisterVar(&cv_dumpconsistency);
-#endif
 	D_LoadBan(false);
 
 	gametic = 0;
@@ -5550,6 +5561,19 @@ static void PT_CanReceiveGamestate(SINT8 node)
 
 	CONS_Printf(M_GetText("Resending game state to %s...\n"), player_names[nodetoplayer[node]]);
 
+	if (cv_dumpconsistency.value)
+	{
+		char dump_name[1024];
+		snprintf(
+			dump_name, sizeof(dump_name),
+				 "%s_%u_%s-server.consdump",
+		   server_context,
+		   gametic,
+		   player_names[nodetoplayer[node]]
+		);
+		CL_DumpConsistency(dump_name);
+	}
+
 	SV_SendSaveGame(node, true); // Resend a complete game state
 	resendingsavegame[node] = true;
 }
@@ -5691,8 +5715,8 @@ static void PT_WillResendGamestate(SINT8 node)
 {
 	(void)node;
 
-	char tmpsave[256];
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	char tmpsave[1024];
 
 	if (server || cl_redownloadinggamestate)
 		return;
