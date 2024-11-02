@@ -15,6 +15,7 @@
 ///        utility functions, etc.
 ///        Line Tag handling. Line and Sector triggers.
 
+#include "d_think.h"
 #include "dehacked.h"
 #include "doomdef.h"
 #include "doomstat.h"
@@ -1240,7 +1241,9 @@ static void P_AddExecutorDelay(line_t *line, mobj_t *mobj, sector_t *sector)
 		delay = (line->backsector->ceilingheight >> FRACBITS) + (line->backsector->floorheight >> FRACBITS);
 	}
 
-	e = Z_Calloc(sizeof (*e), PU_LEVSPEC, NULL);
+	e = Z_LevelPoolCalloc(sizeof (*e));
+	e->thinker.alloctype = TAT_LEVELPOOL;
+	e->thinker.size = sizeof (*e);
 
 	e->thinker.function = (actionf_p1)T_ExecutorDelay;
 	e->line = line;
@@ -6452,7 +6455,9 @@ static void P_AddFloatThinker(sector_t *sec, UINT16 tag, line_t *sourceline)
 	floatthink_t *floater;
 
 	// create and initialize new thinker
-	floater = Z_Calloc(sizeof (*floater), PU_LEVSPEC, NULL);
+	floater = Z_LevelPoolCalloc(sizeof (*floater));
+	floater->thinker.alloctype = TAT_LEVELPOOL;
+	floater->thinker.size = sizeof (*floater);
 	P_AddThinker(THINK_MAIN, &floater->thinker);
 
 	floater->thinker.function = (actionf_p1)T_FloatSector;
@@ -6483,7 +6488,9 @@ static void P_AddPlaneDisplaceThinker(INT32 type, fixed_t speed, INT32 control, 
 	planedisplace_t *displace;
 
 	// create and initialize new displacement thinker
-	displace = Z_Calloc(sizeof (*displace), PU_LEVSPEC, NULL);
+	displace = Z_LevelPoolCalloc(sizeof (*displace));
+	displace->thinker.alloctype = TAT_LEVELPOOL;
+	displace->thinker.size = sizeof (*displace);
 	P_AddThinker(THINK_MAIN, &displace->thinker);
 
 	displace->thinker.function = (actionf_p1)T_PlaneDisplace;
@@ -6513,7 +6520,9 @@ static void P_AddBlockThinker(sector_t *sec, line_t *sourceline)
 	mariocheck_t *block;
 
 	// create and initialize new elevator thinker
-	block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
+	block = Z_LevelPoolCalloc(sizeof (*block));
+	block->thinker.alloctype = TAT_LEVELPOOL;
+	block->thinker.size = sizeof (*block);
 	P_AddThinker(THINK_MAIN, &block->thinker);
 
 	block->thinker.function = (actionf_p1)T_MarioBlockChecker;
@@ -6538,7 +6547,9 @@ static void P_AddRaiseThinker(sector_t *sec, INT16 tag, fixed_t speed, fixed_t c
 {
 	raise_t *raise;
 
-	raise = Z_Calloc(sizeof (*raise), PU_LEVSPEC, NULL);
+	raise = Z_LevelPoolCalloc(sizeof (*raise));
+	raise->thinker.alloctype = TAT_LEVELPOOL;
+	raise->thinker.size = sizeof (*raise);
 	P_AddThinker(THINK_MAIN, &raise->thinker);
 
 	raise->thinker.function = (actionf_p1)T_RaiseSector;
@@ -6564,7 +6575,9 @@ static void P_AddAirbob(sector_t *sec, INT16 tag, fixed_t dist, boolean raise, b
 	(void)spindash;
 	raise_t *airbob;
 
-	airbob = Z_Calloc(sizeof (*airbob), PU_LEVSPEC, NULL);
+	airbob = Z_LevelPoolCalloc(sizeof (*airbob));
+	airbob->thinker.alloctype = TAT_LEVELPOOL;
+	airbob->thinker.size = sizeof (*airbob);
 	P_AddThinker(THINK_MAIN, &airbob->thinker);
 
 	airbob->thinker.function = (actionf_p1)T_RaiseSector;
@@ -6604,7 +6617,9 @@ static inline void P_AddThwompThinker(sector_t *sec, line_t *sourceline, fixed_t
 		return;
 
 	// create and initialize new elevator thinker
-	thwomp = Z_Calloc(sizeof (*thwomp), PU_LEVSPEC, NULL);
+	thwomp = Z_LevelPoolCalloc(sizeof (*thwomp));
+	thwomp->thinker.alloctype = TAT_LEVELPOOL;
+	thwomp->thinker.size = sizeof (*thwomp);
 	P_AddThinker(THINK_MAIN, &thwomp->thinker);
 
 	thwomp->thinker.function = (actionf_p1)T_ThwompSector;
@@ -6644,7 +6659,9 @@ static inline void P_AddNoEnemiesThinker(line_t *sourceline)
 	noenemies_t *nobaddies;
 
 	// create and initialize new thinker
-	nobaddies = Z_Calloc(sizeof (*nobaddies), PU_LEVSPEC, NULL);
+	nobaddies = Z_LevelPoolCalloc(sizeof (*nobaddies));
+	nobaddies->thinker.alloctype = TAT_LEVELPOOL;
+	nobaddies->thinker.size = sizeof (*nobaddies);
 	P_AddThinker(THINK_MAIN, &nobaddies->thinker);
 
 	nobaddies->thinker.function = (actionf_p1)T_NoEnemiesSector;
@@ -6664,7 +6681,9 @@ static void P_AddEachTimeThinker(line_t *sourceline, boolean triggerOnExit)
 	eachtime_t *eachtime;
 
 	// create and initialize new thinker
-	eachtime = Z_Calloc(sizeof (*eachtime), PU_LEVSPEC, NULL);
+	eachtime = Z_LevelPoolCalloc(sizeof (*eachtime));
+	eachtime->thinker.alloctype = TAT_LEVELPOOL;
+	eachtime->thinker.size = sizeof (*eachtime);
 	P_AddThinker(THINK_MAIN, &eachtime->thinker);
 
 	eachtime->thinker.function = (actionf_p1)T_EachTimeThinker;
@@ -6688,7 +6707,9 @@ static inline void P_AddCameraScanner(sector_t *sourcesec, sector_t *actionsecto
 	CONS_Alert(CONS_WARNING, M_GetText("Detected a camera scanner effect (linedef type 5). This effect is deprecated and will be removed in the future!\n"));
 
 	// create and initialize new elevator thinker
-	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
+	elevator = Z_LevelPoolCalloc(sizeof (*elevator));
+	elevator->thinker.alloctype = TAT_LEVELPOOL;
+	elevator->thinker.size = sizeof (*elevator);
 	P_AddThinker(THINK_MAIN, &elevator->thinker);
 
 	elevator->thinker.function = (actionf_p1)T_CameraScanner;
@@ -6772,7 +6793,9 @@ void T_LaserFlash(void *thinker)
 
 static inline void P_AddLaserThinker(INT16 tag, line_t *line, boolean nobosses)
 {
-	laserthink_t *flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	laserthink_t *flash = Z_LevelPoolCalloc(sizeof (*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof (*flash);
 
 	P_AddThinker(THINK_MAIN, &flash->thinker);
 
@@ -8333,7 +8356,9 @@ static boolean IsSector3DBlock(sector_t* sec)
   */
 static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT32 affectee, INT32 accel, INT32 exclusive)
 {
-	scroll_t *s = Z_Calloc(sizeof *s, PU_LEVSPEC, NULL);
+	scroll_t *s = Z_LevelPoolCalloc(sizeof (*s));
+	s->thinker.alloctype = TAT_LEVELPOOL;
+	s->thinker.size = sizeof (*s);
 	s->thinker.function = (actionf_p1)T_Scroll;
 	s->type = type;
 	s->dx = dx;
@@ -8488,7 +8513,9 @@ static void P_SpawnScrollers(void)
   */
 static void Add_MasterDisappearer(tic_t appeartime, tic_t disappeartime, tic_t offset, INT32 line, INT32 sourceline)
 {
-	disappear_t *d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
+	disappear_t *d = Z_LevelPoolCalloc(sizeof (*d));
+	d->thinker.alloctype = TAT_LEVELPOOL;
+	d->thinker.size = sizeof (*d);
 
 	d->thinker.function = (actionf_p1)T_Disappear;
 	d->appeartime = appeartime;
@@ -8884,7 +8911,9 @@ static void P_AddFakeFloorFader(ffloor_t *rover, size_t sectornum, size_t ffloor
 	if (rover->alpha == max(1, min(256, relative ? rover->alpha + destvalue : destvalue)))
 		return;
 
-	d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
+	d = Z_LevelPoolCalloc(sizeof (*d));
+	d->thinker.alloctype = TAT_LEVELPOOL;
+	d->thinker.size = sizeof (*d);
 
 	d->thinker.function = (actionf_p1)T_Fade;
 	d->rover = rover;
@@ -9038,7 +9067,9 @@ static void Add_ColormapFader(sector_t *sector, extracolormap_t *source_exc, ext
 		return;
 	}
 
-	d = Z_Malloc(sizeof *d, PU_LEVSPEC, NULL);
+	d = Z_LevelPoolCalloc(sizeof (*d));
+	d->thinker.alloctype = TAT_LEVELPOOL;
+	d->thinker.size = sizeof (*d);
 	d->thinker.function = (actionf_p1)T_FadeColormap;
 	d->sector = sector;
 	d->source_exc = source_exc;
@@ -9162,7 +9193,9 @@ void T_FadeColormap(void *thinker)
   */
 static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32 referrer)
 {
-	friction_t *f = Z_Calloc(sizeof *f, PU_LEVSPEC, NULL);
+	friction_t *f = Z_LevelPoolCalloc(sizeof (*f));
+	f->thinker.alloctype = TAT_LEVELPOOL;
+	f->thinker.size = sizeof (*f);
 
 	f->thinker.function = (actionf_p1)T_Friction;
 	f->friction = friction;
@@ -9320,7 +9353,9 @@ static void P_SpawnFriction(void)
   */
 static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, fixed_t z_mag, INT32 affectee, INT32 referrer, INT32 exclusive, INT32 slider)
 {
-	pusher_t *p = Z_Calloc(sizeof *p, PU_LEVSPEC, NULL);
+	pusher_t *p = Z_LevelPoolCalloc(sizeof (*p));
+	p->thinker.alloctype = TAT_LEVELPOOL;
+	p->thinker.size = sizeof (*p);
 
 	p->thinker.function = (actionf_p1)T_Pusher;
 	p->type = type;

@@ -10,7 +10,7 @@ dehacked.c
 deh_soc.c
 deh_lua.c
 deh_tables.c
-z_zone.c
+z_zone.cpp
 f_finale.c
 f_dscredits.cpp
 f_wipe.c
