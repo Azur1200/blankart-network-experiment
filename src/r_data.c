@@ -374,9 +374,6 @@ void R_ClearColormaps(void)
 {
 	// Purged by PU_LEVEL, just overwrite the pointer
 	extra_colormaps = R_CreateDefaultColormap(true);
-#ifdef HWRENDER
-	HWR_ClearLightTables();
-#endif
 }
 
 //
