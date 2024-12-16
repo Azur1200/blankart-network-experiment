@@ -160,7 +160,21 @@ extraemblem_t extraemblems[MAXEXTRAEMBLEMS] =
 };
 
 // Unlockables
-unlockable_t unlockables[MAXUNLOCKABLES];
+// Default Unlockables
+unlockable_t unlockables[MAXUNLOCKABLES] =
+{
+	// Name, Objective, Showing Conditionset, ConditionSet, Unlock Type, Variable, NoCecho, NoChecklist
+	/* 01 */ {"Egg Cup",  "", -1, 1, SECRET_NONE, 0, false, false, 0},
+	/* 02 */ {"Chao Cup", "", -1, 2, SECRET_NONE, 0, false, false, 0},
+	/* 03 */ {"SMK Cup",  "",  2, 3, SECRET_NONE, 0, false, false, 0},
+
+	/* 04 */ {"Hard Game Speed", "", -1, 4, SECRET_HARDSPEED,  0, false, false, 0},
+	/* 05 */ {"Encore Mode",     "",  4, 5, SECRET_ENCORE,     0, false, false, 0},
+	/* 06 */ {"Hell Attack",     "",  6, 6, SECRET_HELLATTACK, 0, false, false, 0},
+
+	/* 07 */ {"Record Attack", "", -1, -1, SECRET_TIMEATTACK, 0, true, true, 0},
+	/* 08 */ {"Capsule Attack", "", -1, -1, SECRET_BREAKTHECAPSULES, 0, true, true, 0},
+};
 
 // Number of emblems and extra emblems
 INT32 numemblems = 110;

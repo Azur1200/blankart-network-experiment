@@ -2061,13 +2061,10 @@ void I_Error(const char *error, ...)
 
 	// Shutdown. Here might be other errors.
 
-	/* Prevent segmentation fault if testers go to Record Attack... */
-#ifndef TESTERS
 	if (demo.recording)
 		G_CheckDemoStatus();
 	if (metalrecording)
 		G_StopMetalRecording(false);
-#endif
 
 	D_QuitNetGame();
 	CL_AbortDownloadResume();

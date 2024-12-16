@@ -78,7 +78,7 @@ static UINT8 cheatf_warp(void)
 	boolean success = false;
 
 	/*if (modifiedgame)
-		return 0;*/
+	 *	return 0;*/
 
 	if (menuactive && currentMenu != &MainDef)
 		return 0; // Only on the main menu!
@@ -257,9 +257,9 @@ boolean cht_Responder(event_t *ev)
 	//ret += cht_CheckCheat(&cheat_ultimate_joy, (char)ch);
 	ret += cht_CheckCheat(&cheat_warp, (char)ch);
 	ret += cht_CheckCheat(&cheat_warp_joy, (char)ch);
-#ifdef DEVELOP
+	#ifdef DEVELOP
 	ret += cht_CheckCheat(&cheat_devmode, (char)ch);
-#endif
+	#endif
 	return (ret != 0);
 }
 

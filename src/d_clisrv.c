@@ -3861,11 +3861,7 @@ boolean Playing(void)
 
 boolean SV_SpawnServer(void)
 {
-#ifdef TESTERS
-	/* Just don't let the testers play. Easy. */
-	I_Error("What do you think you're doing?");
-	return false;
-#else
+	// Screw Testers mode, worst idea ever.
 	boolean result = false;
 	if (demo.playback)
 		G_StopDemo(); // reset engine parameter
@@ -3897,7 +3893,6 @@ boolean SV_SpawnServer(void)
 			result |= SV_AddWaitingPlayers(node, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
 	}
 	return result;
-#endif
 }
 
 void SV_StopServer(void)

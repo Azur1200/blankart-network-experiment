@@ -22,10 +22,6 @@ set(SRB2_CONFIG_YASM OFF CACHE BOOL
 	"Use YASM in place of NASM.")
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 	"Compile a development build of SRB2Kart.")
-set(SRB2_CONFIG_TESTERS OFF CACHE BOOL
-	"Compile a build for testers.")
-set(SRB2_CONFIG_HOSTTESTERS OFF CACHE BOOL
-	"Compile a build to host netgames for testers builds.")
 	
 set(SRB2_CONFIG_SKIP_COMPTIME OFF CACHE BOOL
 	"Skip Comptime rebuild.")
@@ -392,12 +388,6 @@ target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 # Misc. build options from Makefiles
 if(SRB2_CONFIG_DEBUGMODE)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
-endif()
-if(SRB2_CONFIG_TESTERS)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DTESTERS)
-endif()
-if(SRB2_CONFIG_HOSTTESTERS)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DHOSTTESTERS)
 endif()
 if(SRB2_CONFIG_MOBJCONSISTANCY)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)

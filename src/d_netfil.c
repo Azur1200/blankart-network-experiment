@@ -288,16 +288,11 @@ boolean CL_CheckDownloadable(void)
 		}
 
 	// Downloading locally disabled
-#ifndef TESTERS
 	if (!dlstatus && M_CheckParm("-nodownload"))
 		dlstatus = 3;
 
 	if (!dlstatus)
 		return true;
-#else
-	if (!dlstatus)
-		dlstatus = 3;
-#endif
 
 	// not downloadable, put reason in console
 	CONS_Alert(CONS_NOTICE, M_GetText("You need additional files to connect to this server:\n"));
@@ -1320,13 +1315,14 @@ void PT_FileFragment(void)
 	nameonly(filename);
 
 	if (!strcmp(filename, "main.pk3")
-		|| !strcmp(filename, "gfx.pk3")
-		|| !strcmp(filename, "textures.pk3")
+		|| !strcmp(filename, "srb2.srb")
+		|| !strcmp(filename, "gfx.kart")
+		|| !strcmp(filename, "textures.kart")
 		|| !strcmp(filename, "chars.pk3")
-		|| !strcmp(filename, "maps.pk3")
+		|| !strcmp(filename, "maps.kart")
 		|| !strcmp(filename, "patch.pk3")
-		|| !strcmp(filename, "sounds.pk3")
-		|| !strcmp(filename, "music.pk3")
+		|| !strcmp(filename, "sounds.kart")
+		|| !strcmp(filename, "music.kart")
 		)
 	{
 		I_Error("Tried to download \"%s\"", filename);

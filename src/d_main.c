@@ -1132,36 +1132,33 @@ static void IdentifyVersion(void)
 	// if you change the ordering of this or add/remove a file, be sure to update the md5
 	// checking in D_SRB2Main
 
-#if defined (TESTERS) || defined (HOSTTESTERS)
-////
-#define TEXTURESNAME "MISC_TEXTURES.pk3"
-#define MAPSNAME "MISC_MAPS.pk3"
-#define PATCHNAME "MISC_PATCH.pk3"
-#define MUSICNAME "MISC_MUSIC.PK3"
-////
-#else
-////
-#define TEXTURESNAME "textures.pk3"
-#define MAPSNAME "maps.pk3"
+#define SRB2NAME "srb2.srb"
+#define TEXTURESNAME "textures.kart"
+#define MAPSNAME "maps.kart"
 #define PATCHNAME "patch.pk3"
-#define MUSICNAME "music.pk3"
-////
-#endif
-////
-#if !defined (TESTERS) && !defined (HOSTTESTERS)
-	D_AddFile(startupiwads, va(pandf,srb2waddir,"gfx.pk3"));
-#endif
+#define MUSICNAME "music.kart"
+#define FOLLOWERSNAME "followers.pk3"
+#define CHARSNAME "chars.pk3"
+#define GRAPHICSNAME "gfx.kart"
+#define SOUNDSNAME "sounds.kart"
+
+	D_AddFile(startupiwads, va(pandf,srb2waddir,SRB2NAME));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,TEXTURESNAME));
-	D_AddFile(startupiwads, va(pandf,srb2waddir,"chars.pk3"));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPSNAME));
-	D_AddFile(startupiwads, va(pandf,srb2waddir,"followers.pk3"));
+	//D_AddFile(startupiwads, va(pandf,srb2waddir,FOLLOWERSNAME));
 #ifdef USE_PATCH_FILE
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
 #endif
 ////
+#undef SRB2NAME
 #undef TEXTURESNAME
 #undef MAPSNAME
 #undef PATCHNAME
+#undef FOLLOWERSNAME
+#undef CHARSNAME
+#undef GRAPHICSNAME
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 
@@ -1175,11 +1172,13 @@ static void IdentifyVersion(void)
 			I_Error("File "str" has been modified with non-music/sound lumps"); \
 	}
 
-	MUSICTEST("sounds.pk3")
+	MUSICTEST(SOUNDSNAME)
 	MUSICTEST(MUSICNAME)
 
 #undef MUSICNAME
 #undef MUSICTEST
+#undef SOUNDSNAME
+
 
 #endif
 }
@@ -1371,7 +1370,6 @@ void D_SRB2Main(void)
 	// Do this up here so that WADs loaded through the command line can use ExecCfg
 	COM_Init();
 
-#ifndef TESTERS
 	// add any files specified on the command line with -file wadfile
 	// to the wad list
 	if (!((M_GetUrlProtocolArg() || M_CheckParm("-connect")) && !M_CheckParm("-server")))
@@ -1389,7 +1387,6 @@ void D_SRB2Main(void)
 			}
 		}
 	}
-#endif
 
 	// get map from parms
 
@@ -1434,22 +1431,22 @@ void D_SRB2Main(void)
 	// Check MD5s of autoloaded files
 	// Note: Do not add any files that ignore MD5!
 	W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);					// main.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_PK3);			// gfx.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_PK3);		// textures.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);			// gfx.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);		// textures.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_PK3);		// chars.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_PK3);			// maps.pk3 -- 4 - If you touch this, make sure to touch up the majormods stuff below.
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);			// maps.pk3 -- 4 - If you touch this, make sure to touch up the majormods stuff below.
+	//mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_PATCH_PK3);		// patch.pk3
 #endif
 #else
-#if !defined (TESTERS) && !defined (HOSTTESTERS)
-	mainwads++;	// gfx.pk3
-#endif
-	mainwads++;	// textures.pk3
+	mainwads++; // srb2.srb
+	mainwads++;	// gfx.kart
+	mainwads++;	// textures.kart
 	mainwads++;	// chars.pk3
-	mainwads++;	// maps.pk3
-	mainwads++; // followers.pk3
+	mainwads++;	// maps.kart
+	//mainwads++; // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++;	// patch.pk3
 #endif

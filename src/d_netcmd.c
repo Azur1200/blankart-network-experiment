@@ -3832,10 +3832,7 @@ static void Command_Login_f(void)
 
 boolean IsPlayerAdmin(INT32 playernum)
 {
-#if defined (TESTERS) || defined (HOSTTESTERS)
-	(void)playernum;
-	return false;
-#elif defined (DEVELOP)
+#if defined (DEVELOP)
 	return playernum != serverplayer;
 #else
 	INT32 i;
@@ -4336,7 +4333,6 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
   */
 static void Command_Addfile(void)
 {
-#ifndef TESTERS
 	size_t argc = COM_Argc(); // amount of arguments total
 	size_t curarg; // current argument index
 
@@ -4473,7 +4469,6 @@ static void Command_Addfile(void)
 		else
 			SendNetXCmd(XD_ADDFILE, buf, buf_p - buf);
 	}
-#endif/*TESTERS*/
 }
 
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
@@ -4778,11 +4773,7 @@ static void Command_Version_f(void)
 #endif
 
 	// DEVELOP build
-#if defined(TESTERS)
-	CONS_Printf("\x88" "TESTERS " "\x80");
-#elif defined(HOSTTESTERS)
-	CONS_Printf("\x82" "HOSTTESTERS " "\x80");
-#elif defined(DEVELOP)
+#if defined(DEVELOP)
 	CONS_Printf("\x87" "DEVELOP " "\x80");
 #endif
 

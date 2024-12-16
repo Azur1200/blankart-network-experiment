@@ -105,7 +105,7 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
 #define SERVERS_PER_PAGE 11
 
-#if defined (NONET) || defined (TESTERS)
+#if defined (NONET)
 #define NOMENUHOST
 #endif
 
@@ -236,9 +236,7 @@ static char *M_GetConditionString(condition_t cond);
 menu_t SR_MainDef, SR_UnlockChecklistDef;
 
 // Misc. Main Menu
-#ifndef TESTERS
 static void M_SinglePlayerMenu(INT32 choice);
-#endif
 static void M_Options(INT32 choice);
 static void M_Manual(INT32 choice);
 static void M_SelectableClearMenus(INT32 choice);
@@ -278,17 +276,13 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 
 // Multiplayer
 #ifndef NONET
-#ifndef TESTERS
 static void M_StartServerMenu(INT32 choice);
-#endif
 static void M_ConnectMenu(INT32 choice);
 static void M_ConnectMenuModChecks(INT32 choice);
 static void M_Refresh(INT32 choice);
 static void M_Connect(INT32 choice);
 #endif
-#ifndef TESTERS
 static void M_StartOfflineServerMenu(INT32 choice);
-#endif
 static void M_StartServer(INT32 choice);
 static void M_SetupMultiPlayer(INT32 choice);
 static void M_SetupMultiPlayer2(INT32 choice);
@@ -517,11 +511,7 @@ static consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dumm
 static menuitem_t MainMenu[] =
 {
 	{IT_SUBMENU|IT_STRING, NULL, "Extras",      {.submenu = &SR_MainDef},        76},
-#ifdef TESTERS
-	{IT_GRAYEDOUT,         NULL, "1 Player",    {NULL},               84},
-#else
 	{IT_CALL   |IT_STRING, NULL, "1 Player",    {.routine = M_SinglePlayerMenu}, 84},
-#endif
 	{IT_SUBMENU|IT_STRING, NULL, "Multiplayer", {.submenu = &MP_MainDef},        92},
 	{IT_CALL   |IT_STRING, NULL, "Options",     {.routine = M_Options},          100},
 	/* I don't think is useful at all... */
@@ -788,9 +778,7 @@ static menuitem_t SR_PandorasBox[] =
 // Sky Room Custom Unlocks
 static menuitem_t SR_MainMenu[] =
 {
-#ifndef TESTERS
 	{IT_STRING|IT_SUBMENU,                  NULL, "Unlockables", {.submenu = &SR_UnlockChecklistDef}, 100},
-#endif
 	{IT_CALL|IT_STRING|IT_CALL_NOTMODIFIED, NULL, "Statistics",  {.routine = M_Statistics},           108},
 	{IT_CALL|IT_STRING,                     NULL, "Replay Hut",  {.routine = M_ReplayHut},            116},
 	{IT_DISABLED,         NULL, "",   {NULL},                 0}, // Custom1
@@ -1027,11 +1015,7 @@ static menuitem_t MP_MainMenu[] =
 #else
 	{IT_GRAYEDOUT,            NULL, "Internet/LAN...",           {NULL},                     110-24},
 #endif
-#ifdef TESTERS
-	{IT_GRAYEDOUT,            NULL, "Offline...",                {NULL},                     118-24},
-#else
 	{IT_STRING|IT_CALL,       NULL, "Offline...",                {.routine = M_StartOfflineServerMenu}, 118-24},
-#endif
 
 	{IT_HEADER, NULL, "Join a game", {NULL}, 132-24},
 #ifndef NONET
@@ -3191,13 +3175,7 @@ void M_Drawer(void)
 			else
 			{
 // Development -- show revision / branch info
-#if defined(TESTERS)
-				addtext(V_ALLOWLOWERCASE|V_SKYMAP, "Tester client");
-				addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", compdate));
-#elif defined(HOSTTESTERS)
-				addtext(V_ALLOWLOWERCASE|V_REDMAP, "Netgame host for testers");
-				addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", compdate));
-#elif defined(DEVELOP)
+#if defined(DEVELOP)
 				addtext(V_ALLOWLOWERCASE|V_GREENMAP|V_TRANSLUCENT, comprevision);
 				addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, compbranch);
 				V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));		
@@ -3247,11 +3225,7 @@ void M_StartControlPanel(void)
 		//MainMenu[secrets].status = (M_AnySecretUnlocked()) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
 
 		currentMenu = &MainDef;
-#ifdef TESTERS
-		itemOn = multiplr;
-#else
 		itemOn = singleplr;
-#endif
 	}
 	else if (modeattacking)
 	{
@@ -6897,7 +6871,6 @@ static void M_Credits(INT32 choice)
 // SINGLE PLAYER MENU
 // ==================
 
-#ifndef TESTERS
 static void M_SinglePlayerMenu(INT32 choice)
 {
 	(void)choice;
@@ -6910,7 +6883,6 @@ static void M_SinglePlayerMenu(INT32 choice)
 
 	M_SetupNextMenu(&SP_MainDef);
 }
-#endif
 
 /*static void M_LoadGameLevelSelect(INT32 choice)
 {
@@ -9107,7 +9079,6 @@ static void M_MapChange(INT32 choice)
 	M_SetupNextMenu(&MISC_ChangeLevelDef);
 }
 
-#ifndef TESTERS
 static void M_StartOfflineServerMenu(INT32 choice)
 {
 	(void)choice;
@@ -9115,10 +9086,8 @@ static void M_StartOfflineServerMenu(INT32 choice)
 	M_PrepareLevelSelect();
 	M_SetupNextMenu(&MP_OfflineServerDef);
 }
-#endif
 
 #ifndef NONET
-#ifndef TESTERS
 static void M_StartServerMenu(INT32 choice)
 {
 	(void)choice;
@@ -9127,7 +9096,6 @@ static void M_StartServerMenu(INT32 choice)
 	M_SetupNextMenu(&MP_ServerDef);
 
 }
-#endif
 
 // ==============
 // CONNECT VIA IP
@@ -9155,12 +9123,10 @@ Update the maxplayers label...
 		((itemOn == 4) ? highlightflags : 0), "(2-16 players)");
 #endif
 
-#ifndef TESTERS
 	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+MP_MainMenu[5].alphaKey,
 		((itemOn == 5) ? highlightflags : 0),
 		"(2-4 players)"
 		);
-#endif
 
 #ifndef NONET
 	y += MP_MainMenu[8].alphaKey;
