@@ -4996,7 +4996,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	// SRB2kart
 	WRITEINT32(save->p, numgotboxes);
 	WRITEUINT8(save->p, numtargets);
-	WRITEUINT8(save->p, battlecapsules);
+	WRITEUINT8(save->p, itembreaker);
 
 	WRITEUINT8(save->p, gamespeed);
 	WRITEUINT8(save->p, numlaps);
@@ -5167,7 +5167,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	// SRB2kart
 	numgotboxes = READINT32(save->p);
 	numtargets = READUINT8(save->p);
-	battlecapsules = (boolean)READUINT8(save->p);
+	itembreaker = (boolean)READUINT8(save->p);
 
 	gamespeed = READUINT8(save->p);
 	numlaps = READUINT8(save->p);

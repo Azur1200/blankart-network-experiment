@@ -2090,7 +2090,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					return;
 				}
 			}
-			else if (var == &cv_kartspeed)
+			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
 			{
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 4 : 3);
 			}

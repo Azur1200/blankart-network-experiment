@@ -160,7 +160,7 @@ typedef enum
 	LLM_CREATESERVER,
 	LLM_LEVELSELECT,
 	LLM_TIMEATTACK,
-	LLM_BREAKTHECAPSULES,
+	LLM_ITEMBREAKER,
 	LLM_BOSS
 } levellist_mode_t;
 
@@ -260,7 +260,7 @@ static void M_GrandPrixTemp(INT32 choice);
 static void M_StartGrandPrix(INT32 choice);
 static void M_TimeAttack(INT32 choice);
 static boolean M_QuitTimeAttackMenu(void);
-static void M_BreakTheCapsules(INT32 choice);
+static void M_ItemBreaker(INT32 choice);
 static void M_Statistics(INT32 choice);
 static void M_HandleStaffReplay(INT32 choice);
 static void M_ReplayTimeAttack(INT32 choice);
@@ -843,14 +843,14 @@ static menuitem_t SP_MainMenu[] =
 {
 	{IT_STRING|IT_CALL,		NULL, "Grand Prix",			{.routine = M_GrandPrixTemp},	 92},
 	{IT_SECRET,				NULL, "Time Attack",		{.routine = M_TimeAttack},		100},
-	{IT_SECRET,				NULL, "Break the Capsules",	{.routine = M_BreakTheCapsules},	108},
+	{IT_SECRET,				NULL, "Item Breaker",	{.routine = M_ItemBreaker},	108},
 };
 
 enum
 {
 	spgrandprix,
 	sptimeattack,
-	spbreakthecapsules,
+	spitembreaker,
 };
 
 // Single Player Load Game
@@ -1478,18 +1478,19 @@ static menuitem_t OP_GameOptionsMenu[] =
 {
 	{IT_STRING | IT_SUBMENU, NULL, "Random Item Toggles...",	{.submenu = &OP_MonitorToggleDef},	 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Game Speed",					{.cvar = &cv_kartspeed},			 30},
-	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 40},
-	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 50},
+	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				{.cvar = &cv_kartspeed},			 30},
+	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			{.cvar = &cv_kartbattlespeed},		 40},
+	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 50},
+	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 60},
 
-	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 70},
-	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 80},
+	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 80},
+	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 90},
 
-	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			100},
-	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			110},
-	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			120},
+	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			110},
+	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			120},
+	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			130},
 
-	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			140},
+	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			150},
 };
 
 static menuitem_t OP_ServerOptionsMenu[] =
@@ -2147,7 +2148,7 @@ void Nextmap_OnChange(void)
 			active |= 3;
 		}
 
-		if (levellistmode != LLM_BREAKTHECAPSULES) {
+		if (levellistmode != LLM_ITEMBREAKER) {
 			if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, cv_chooseskin.string))) {
 				SP_ReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
 				SP_GuestReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
@@ -4486,12 +4487,12 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 
 			return true;*/
 		case LLM_TIMEATTACK:
-		case LLM_BREAKTHECAPSULES:
+		case LLM_ITEMBREAKER:
 			if (mapheaderinfo[mapnum]->menuflags & LF2_NOTIMEATTACK)
 				return false;
 
 			if ((levellistmode == LLM_TIMEATTACK && !(mapheaderinfo[mapnum]->typeoflevel & TOL_RACE))
-			|| (levellistmode == LLM_BREAKTHECAPSULES && !(mapheaderinfo[mapnum]->typeoflevel & TOL_BATTLE)))
+			|| (levellistmode == LLM_ITEMBREAKER && !(mapheaderinfo[mapnum]->typeoflevel & TOL_BATTLE)))
 				return false;
 
 			if (M_MapLocked(mapnum+1))
@@ -6364,7 +6365,7 @@ static void M_Options(INT32 choice)
 	OP_DataOptionsMenu[3].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
 #endif
 
-	OP_GameOptionsMenu[3].status =
+	OP_GameOptionsMenu[4].status =
 		(M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
 
 	OP_MainDef.prevMenu = currentMenu;
@@ -6878,8 +6879,8 @@ static void M_SinglePlayerMenu(INT32 choice)
 	SP_MainMenu[spgrandprix].status = IT_CALL|IT_STRING;
 	SP_MainMenu[sptimeattack].status =
 		(M_SecretUnlocked(SECRET_TIMEATTACK)) ? IT_CALL|IT_STRING : IT_SECRET;
-	SP_MainMenu[spbreakthecapsules].status =
-		(M_SecretUnlocked(SECRET_BREAKTHECAPSULES)) ? IT_CALL|IT_STRING : IT_SECRET;
+	SP_MainMenu[spitembreaker].status =
+		(M_SecretUnlocked(SECRET_ITEMBREAKER)) ? IT_CALL|IT_STRING : IT_SECRET;
 
 	M_SetupNextMenu(&SP_MainDef);
 }
@@ -7943,7 +7944,7 @@ void M_DrawTimeAttackMenu(void)
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 239);
 
-		if (levellistmode != LLM_BREAKTHECAPSULES)
+		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, highlightflags, "BEST LAP:");
 			K_drawKartTimestamp(lap, 19, 86, 0, 2);
@@ -8063,17 +8064,17 @@ static void M_TimeAttack(INT32 choice)
 }
 
 // Same as above, but sets a different levellistmode. Should probably be merged...
-static void M_BreakTheCapsules(INT32 choice)
+static void M_ItemBreaker(INT32 choice)
 {
 	(void)choice;
 
 	memset(skins_cons_t, 0, sizeof (skins_cons_t));
 
-	levellistmode = LLM_BREAKTHECAPSULES; // Don't be dependent on cv_newgametype
+	levellistmode = LLM_ITEMBREAKER; // Don't be dependent on cv_newgametype
 
 	if (M_CountLevelsToShowInList() == 0)
 	{
-		M_StartMessage(M_GetText("No levels found for Break the Capsules.\n"),NULL,MM_NOTHING);
+		M_StartMessage(M_GetText("No levels found for Item Breaker.\n"),NULL,MM_NOTHING);
 		return;
 	}
 
@@ -8111,7 +8112,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	(void)choice;
 	emeralds = 0;
 	M_ClearMenus(true);
-	modeattacking = (levellistmode == LLM_BREAKTHECAPSULES ? ATTACKING_CAPSULES : ATTACKING_TIME);
+	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 
 	gpath = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s",
 			srb2home, timeattackfolder);
@@ -8162,7 +8163,7 @@ static void M_HandleStaffReplay(INT32 choice)
 			if (l == LUMPERROR)
 				break;
 			M_ClearMenus(true);
-			modeattacking = (levellistmode == LLM_BREAKTHECAPSULES ? ATTACKING_CAPSULES : ATTACKING_TIME);
+			modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 			demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 			G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 			break;
@@ -8183,7 +8184,7 @@ static void M_ReplayTimeAttack(INT32 choice)
 {
 	const char *which;
 	M_ClearMenus(true);
-	modeattacking = (levellistmode == LLM_BREAKTHECAPSULES ? ATTACKING_CAPSULES : ATTACKING_TIME); // set modeattacking before G_DoPlayDemo so the map loader knows
+	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME); // set modeattacking before G_DoPlayDemo so the map loader knows
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
 	if (currentMenu == &SP_ReplayDef)

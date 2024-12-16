@@ -2866,16 +2866,16 @@ bool CallFunc_EncoreMode(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 }
 
 /*--------------------------------------------------
-	bool CallFunc_BreakTheCapsules(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+	bool CallFunc_ItemBreaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 
-		Returns if the map is in Break the Capsules.
+		Returns if the map is in Item Breaker.
 --------------------------------------------------*/
-bool CallFunc_BreakTheCapsules(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+bool CallFunc_ItemBreaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 {
 	(void)argV;
 	(void)argC;
 
-	thread->dataStk.push(battlecapsules);
+	thread->dataStk.push(itembreaker);
 	return false;
 }
 

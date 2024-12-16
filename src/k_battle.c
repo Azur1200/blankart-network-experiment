@@ -23,21 +23,20 @@
 // Battle overtime info
 struct battleovertime battleovertime;
 
-// Capsules mode enabled for this map?
-boolean battlecapsules = false;
+// Item Breaker mode enabled for this map?
+boolean itembreaker = false;
 
 // box respawning in battle mode
 INT32 nummapboxes = 0;
 INT32 numgotboxes = 0;
 
-// Capsule counters
-UINT8 maptargets = 0; // Capsules in map
-UINT8 numtargets = 0; // Capsules busted
+// Item Breaker counters
+UINT8 numtargets = 0; // Itemboxes busted
 
 INT32 K_StartingBumperCount(void)
 {
-	if (battlecapsules)
-		return 1; // always 1 hit in Break the Capsules
+	if (itembreaker)
+		return 1; // always 1 hit in Item Breaker
 
 	return cv_kartbumpers.value;
 }
@@ -142,7 +141,7 @@ void K_CheckBumpers(void)
 	}
 	else if (numingame <= 1)
 	{
-		if (!battlecapsules)
+		if (!itembreaker)
 		{
 			// Reset map to turn on battle capsules
 			D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
@@ -332,7 +331,7 @@ void K_RunPaperItemSpawners(void)
 	const boolean overtime = (battleovertime.enabled >= 10*TICRATE);
 	tic_t interval = 8*TICRATE;
 
-	const boolean canmakeemeralds = true; //(!(battlecapsules || bossinfo.boss));
+	const boolean canmakeemeralds = true; //(!(itembreaker || bossinfo.boss));
 
 	UINT32 emeraldsSpawned = 0;
 	UINT32 firstUnspawnedEmerald = 0;
@@ -343,7 +342,7 @@ void K_RunPaperItemSpawners(void)
 	UINT8 pcount = 0;
 	INT16 i;
 
-	if (battlecapsules || bossinfo.boss)
+	if (itembreaker || bossinfo.boss)
 	{
 		// Gametype uses paper items, but this specific expression doesn't
 		return;
@@ -704,48 +703,6 @@ void K_RunBattleOvertime(void)
 	}
 }
 
-void K_SetupMovingCapsule(mapthing_t *mt, mobj_t *mobj)
-{
-	UINT8 sequence = mt->args[0] - 1;
-	fixed_t speed = (FRACUNIT >> 3) * mt->args[1];
-	boolean backandforth = (mt->args[2] & TMBCF_BACKANDFORTH);
-	boolean reverse = (mt->args[2] & TMBCF_REVERSE);
-	mobj_t *target = NULL;
-
-	// Find the inital target
-	if (reverse)
-	{
-		target = P_GetLastTubeWaypoint(sequence);
-	}
-	else
-	{
-		target = P_GetFirstTubeWaypoint(sequence);
-	}
-
-	if (!target)
-	{
-		CONS_Alert(CONS_WARNING, "No target waypoint found for moving capsule (seq: #%d)\n", sequence);
-		return;
-	}
-
-	P_SetTarget(&mobj->target, target);
-	mobj->lastlook = sequence;
-	mobj->movecount = target->health;
-	mobj->movefactor = speed;
-
-	if (backandforth) {
-		mobj->flags2 |= MF2_AMBUSH;
-	} else {
-		mobj->flags2 &= ~MF2_AMBUSH;
-	}
-
-	if (reverse) {
-		mobj->cvmem = -1;
-	} else {
-		mobj->cvmem = 1;
-	}
-}
-
 void K_SpawnPlayerBattleBumpers(player_t *p)
 {
 	if (!p->mo || p->bumper <= 0)
@@ -780,10 +737,9 @@ void K_BattleInit(void)
 {
 	size_t i;
 
-	if ((gametyperules & GTR_CAPSULES) && !battlecapsules && !bossinfo.boss)
+	if ((gametyperules & GTR_ITEMBREAKER) && !itembreaker && !bossinfo.boss)
 	{
-		mapthing_t *mt;
-		if (modeattacking != ATTACKING_CAPSULES)
+		if (modeattacking != ATTACKING_ITEMBREAK)
 		{
 			UINT8 n = 0;
 
@@ -795,19 +751,12 @@ void K_BattleInit(void)
 			}
 
 			if (n > 1)
-				goto aftercapsules;
+				goto afteritembreaker;
 		}
 
-		mt = mapthings;
-		for (i = 0; i < nummapthings; i++, mt++)
-		{
-			if (mt->type == mobjinfo[MT_BATTLECAPSULE].doomednum)
-				P_SpawnMapThing(mt);
-		}
-
-		battlecapsules = true;
+		itembreaker = true;
 	}
-aftercapsules:
+afteritembreaker:
 
 	if (gametyperules & GTR_BUMPERS)
 	{

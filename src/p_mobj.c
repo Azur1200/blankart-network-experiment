@@ -4974,7 +4974,6 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_LANDMINE:
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
-		case MT_POGOSPRING:
 		case MT_SINK:
 		case MT_DROPTARGET:
 			return true;
@@ -4999,8 +4998,12 @@ boolean P_IsKartItem(INT32 type)
 
 		// Primarily for minimap data, handle with care
 		case MT_SPB:
-		case MT_BATTLECAPSULE:
 			return true;
+
+		case MT_RANDOMITEM:
+			if (itembreaker)
+				return true;
+		// FALLTHRU
 
 		default:
 			return P_IsKartFieldItem(type);
@@ -6289,18 +6292,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_ITEMCAPSULE_PART:
 		P_ItemCapsulePartThinker(mobj);
 		break;
-	case MT_BATTLECAPSULE_PIECE:
-		if (mobj->extravalue2)
-			mobj->frame |= FF_VERTICALFLIP;
-		else
-			mobj->frame &= ~FF_VERTICALFLIP;
-
-		if (mobj->flags2 & MF2_OBJECTFLIP)
-			mobj->eflags |= MFE_VERTICALFLIP;
-
-		if (mobj->tics > 0)
-			mobj->renderflags ^= RF_DONTDRAW;
-		break;
 	case MT_SCRIPT_THING:
 	{
 		if (mobj->spawnpoint->args[2] != 0)
@@ -6537,27 +6528,6 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		{
 			P_RemoveMobj(mobj);
 			return false;
-		}
-		break;
-	case MT_BATTLECAPSULE:
-		if (!(mobj->fuse & 1))
-		{
-			const SINT8 amt = 96;
-			mobj_t *dust;
-			UINT8 i;
-
-			for (i = 0; i < 2; i++)
-			{
-				fixed_t xoffset = P_RandomRange(-amt, amt) * mobj->scale;
-				fixed_t yoffset = P_RandomRange(-amt, amt) * mobj->scale;
-				fixed_t zoffset = P_RandomRange(-(amt >> 1), (amt >> 1)) * mobj->scale;
-
-				dust = P_SpawnMobj(mobj->x + xoffset, mobj->y + yoffset,
-					mobj->z + (mobj->height >> 1) + zoffset, MT_EXPLODE);
-			}
-
-			if (dust && !P_MobjWasRemoved(dust)) // Only do for 1 explosion
-				S_StartSound(dust, sfx_s3k3d);
 		}
 		break;
 	default:
@@ -8431,206 +8401,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			trail->color = mobj->color;
 		}
 		break;
-	case MT_BATTLECAPSULE:
-		{
-			SINT8 realflip = P_MobjFlip(mobj);
-			SINT8 flip = realflip; // Flying capsules needs flipped sprites, but not flipped gravity
-			fixed_t bottom;
-			mobj_t *cur;
-
-			if (mobj->extravalue1)
-			{
-				const INT32 speed = 6*TICRATE; // longer is slower
-				fixed_t sine = FINESINE((((M_TAU_FIXED * speed) * leveltime) >> ANGLETOFINESHIFT) & FINEMASK) * flip;
-
-				// Flying capsules are flipped upside-down, like S3K
-				flip = -flip;
-
-				// ALL CAPSULE MOVEMENT NEEDS TO HAPPEN AFTER THIS & ADD TO MOMENTUM FOR BOBBING TO BE ACCURATE
-				mobj->momz = sine/2;
-			}
-
-			// Moving capsules
-			if (mobj->target && !P_MobjWasRemoved(mobj->target))
-			{
-				fixed_t speed = mobj->movefactor;
-				UINT8 sequence = mobj->lastlook;
-				boolean backandforth = (mobj->flags2 & MF2_AMBUSH);
-				SINT8 direction = mobj->cvmem;
-				mobj_t *next = NULL;
-				fixed_t dist, momx, momy, momz;
-
-				dist = P_AproxDistance(mobj->target->x - mobj->x, mobj->target->y - mobj->y);
-				if (mobj->extravalue1)
-					dist = P_AproxDistance(dist, mobj->target->z - mobj->z);
-				if (dist < 1)
-					dist = 1;
-
-				if (speed <= dist)
-				{
-					momx = FixedMul(FixedDiv(mobj->target->x - mobj->x, dist), speed);
-					momy = FixedMul(FixedDiv(mobj->target->y - mobj->y, dist), speed);
-					if (mobj->extravalue1)
-						momz = mobj->momz + FixedMul(FixedDiv(mobj->target->z - mobj->z, dist), speed);
-
-					mobj->momx = momx;
-					mobj->momy = momy;
-					if (mobj->extravalue1)
-						mobj->momz = momz;
-				}
-				else
-				{
-					speed -= dist;
-
-					P_UnsetThingPosition(mobj);
-					mobj->x = mobj->target->x;
-					mobj->y = mobj->target->y;
-					mobj->z = mobj->target->z;
-					P_SetThingPosition(mobj);
-
-					mobj->floorz = mobj->subsector->sector->floorheight;
-					mobj->ceilingz = mobj->subsector->sector->ceilingheight;
-
-					// Onto the next waypoint!
-					next = (direction < 0) ? P_GetPreviousTubeWaypoint(mobj->target, false) : P_GetNextTubeWaypoint(mobj->target, false);
-
-					// Are we at the end of the waypoint chain?
-					// If so, search again for the first/previous waypoint (depending on settings)
-					if (next == NULL)
-					{
-						if (backandforth)
-						{
-							// Back and forth movement.
-							mobj->cvmem = -mobj->cvmem;
-							direction = mobj->cvmem;
-
-							next = (direction < 0) ? P_GetPreviousTubeWaypoint(mobj->target, false) : P_GetNextTubeWaypoint(mobj->target, false);
-						}
-						else
-						{
-							// Looping circular movement.
-							next = (direction < 0) ? P_GetLastTubeWaypoint(sequence) : P_GetFirstTubeWaypoint(sequence);
-						}
-					}
-
-					if (next && !P_MobjWasRemoved(next))
-					{
-						P_SetTarget(&mobj->target, next);
-						mobj->movecount = next->health;
-
-						dist = P_AproxDistance(mobj->target->x - mobj->x, mobj->target->y - mobj->y);
-						if (mobj->extravalue1)
-							dist = P_AproxDistance(dist, mobj->target->z - mobj->z);
-						if (dist < 1)
-							dist = 1;
-
-						momx = FixedMul(FixedDiv(mobj->target->x - mobj->x, dist), speed);
-						momy = FixedMul(FixedDiv(mobj->target->y - mobj->y, dist), speed);
-						if (mobj->extravalue1)
-							momz = mobj->momz + FixedMul(FixedDiv(mobj->target->z - mobj->z, dist), speed);
-
-						mobj->momx = momx;
-						mobj->momy = momy;
-						if (mobj->extravalue1)
-							mobj->momz = momz;
-					}
-					else
-					{
-						CONS_Alert(CONS_WARNING, "Moving capsule could not find next waypoint! (seq: %d)\n", sequence);
-						P_SetTarget(&mobj->target, NULL);
-					}
-				}
-			}
-
-			if (flip == -1)
-				bottom = mobj->z + mobj->height;
-			else
-				bottom = mobj->z;
-
-			cur = mobj->hnext;
-
-			// Move each piece to the proper position
-			while (cur && !P_MobjWasRemoved(cur))
-			{
-				fixed_t newx = mobj->x;
-				fixed_t newy = mobj->y;
-				fixed_t newz = bottom;
-				statenum_t state = (statenum_t)(cur->state-states);
-
-				cur->scale = mobj->scale;
-				cur->destscale = mobj->destscale;
-				cur->scalespeed = mobj->scalespeed;
-
-				cur->extravalue2 = mobj->extravalue1;
-
-				cur->flags2 = (cur->flags2 & ~MF2_OBJECTFLIP)|(mobj->flags2 & MF2_OBJECTFLIP);
-
-				if (state == S_BATTLECAPSULE_TOP)
-					newz += (80 * mobj->scale * flip);
-				else if (state == S_BATTLECAPSULE_BUTTON)
-					newz += (108 * mobj->scale * flip);
-				else if (state == S_BATTLECAPSULE_SUPPORT
-					|| state == S_BATTLECAPSULE_SUPPORTFLY
-					|| state == S_KARMAWHEEL)
-				{
-					fixed_t offx = mobj->radius;
-					fixed_t offy = mobj->radius;
-
-					if (cur->extravalue1 & 1)
-						offx = -offx;
-
-					if (cur->extravalue1 > 1)
-						offy = -offy;
-
-					newx += offx;
-					newy += offy;
-				}
-				else if (state == S_BATTLECAPSULE_SIDE1
-					|| state == S_BATTLECAPSULE_SIDE2)
-				{
-					fixed_t offset = 48 * mobj->scale;
-					angle_t angle = (ANGLE_45 * cur->extravalue1);
-
-					newx += FixedMul(offset, FINECOSINE(angle >> ANGLETOFINESHIFT));
-					newy += FixedMul(offset, FINESINE(angle >> ANGLETOFINESHIFT));
-					newz += (12 * mobj->scale * flip);
-
-					cur->angle = angle + ANGLE_90;
-				}
-
-				P_MoveOrigin(cur, newx, newy, newz);
-
-				cur = cur->hnext;
-			}
-		}
-		break;
-	case MT_RANDOMITEM:
-		if ((leveltime == starttime) && !(gametyperules & GTR_CIRCUIT) && (mobj->flags2 & MF2_BOSSNOTRAP)) // here on map start?
-		{
-			if (gametyperules & GTR_PAPERITEMS)
-			{
-				if (battlecapsules == true || bossinfo.boss == true)
-				{
-					;
-				}
-				else
-				{
-					mobj_t *paperspawner = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_PAPERITEMSPOT);
-					paperspawner->spawnpoint = mobj->spawnpoint;
-					mobj->spawnpoint->mobj = paperspawner;
-					P_RemoveMobj(mobj);
-					return false;
-				}
-			}
-			// poof into existance
-			P_UnsetThingPosition(mobj);
-			mobj->flags &= ~(MF_NOCLIPTHING|MF_NOBLOCKMAP);
-			mobj->renderflags &= ~RF_DONTDRAW;
-			P_SetThingPosition(mobj);
-			P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_EXPLODE);
-			nummapboxes++;
-		}
-		// FALLTHRU
 	case MT_SPHEREBOX:
 		if (gametype == GT_BATTLE && mobj->threshold == 70)
 		{
@@ -9412,9 +9182,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_BLUESPHERE:
 		case MT_EMERALD:
 		case MT_ITEMCAPSULE:
-		case MT_POGOSPRING:
-			thing->shadowscale = FRACUNIT/2;
-			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
 				thing->shadowscale = FRACUNIT;
@@ -9698,9 +9465,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				mobj->color = BALLOONCOLORS[P_RandomKey(sizeof(BALLOONCOLORS))];
 			}
-			break;
-		case MT_POGOSPRING:
-			P_SetScale(mobj, (mobj->destscale = 3 * mobj->destscale / 2));
 			break;
 		case MT_KART_LEFTOVER:
 			mobj->color = SKINCOLOR_RED;
@@ -10629,50 +10393,6 @@ void P_PrecipitationEffects(void)
 	}
 }
 
-void P_RespawnBattleBoxes(void)
-{
-	thinker_t *th;
-
-	if (!(gametyperules & GTR_BUMPERS))
-		return;
-
-	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-	{
-		mobj_t *box;
-		mobj_t *newmobj;
-
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
-		box = (mobj_t *)th;
-
-		if (box->type != MT_RANDOMITEM
-			|| (box->flags2 & MF2_DONTRESPAWN)
-			|| box->threshold != 68
-			|| box->fuse
-			|| ((tic_t)box->cvmem+1 >= leveltime))
-			continue; // only popped items
-
-		// Respawn from mapthing if you have one!
-		if (box->spawnpoint)
-		{
-			P_SpawnMapThing(box->spawnpoint);
-			newmobj = box->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
-		}
-		else
-		{
-			newmobj = P_SpawnMobj(box->x, box->y, box->z, box->type);
-		}
-
-		// Transfer flags2 (strongbox, objectflip, bossnotrap)
-		newmobj->flags2 = box->flags2;
-		P_RemoveMobj(box); // make sure they disappear
-
-		if (numgotboxes > 0)
-			numgotboxes--; // you've restored a box, remove it from the count
-	}
-}
-
 /** Returns corresponding mobj type from mapthing number.
  * \param mthingtype Mapthing number in question.
  * \return Mobj type; MT_UNKNOWN if nothing found.
@@ -10694,9 +10414,6 @@ void P_RespawnSpecials(void)
 	UINT8 p, pcount = 0;
 	INT32 time = 30*TICRATE; // Respawn things in empty dedicated servers
 	mapthing_t *mthing = NULL;
-
-	if (!(gametyperules & GTR_CIRCUIT) && nummapboxes && (numgotboxes >= (4*nummapboxes/5))) // Battle Mode respawns all boxes in a different way
-		P_RespawnBattleBoxes();
 
 	// wait time depends on player count
 	for (p = 0; p < MAXPLAYERS; p++)
@@ -12264,22 +11981,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	}
 	case MT_RANDOMITEM:
 	{
-		boolean delayed = !(gametyperules & GTR_CIRCUIT);
-		if (leveltime < (delayed ? starttime : 3))
+		if (leveltime < 3)
 		{
 			mobj->flags2 |= MF2_BOSSNOTRAP; // mark as here on map start
-			if (delayed)
-			{
-				P_UnsetThingPosition(mobj);
-				mobj->flags |= (MF_NOCLIPTHING|MF_NOBLOCKMAP);
-				mobj->renderflags |= RF_DONTDRAW;
-				P_SetThingPosition(mobj);
-			}
 		}
-		else
-		{
-			P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_EXPLODE);
-		}
+		nummapboxes++;
 		break;
 	}
 	case MT_ITEMCAPSULE:
@@ -12360,130 +12066,6 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 
 		P_RemoveMobj(mobj); // Don't need this helper obj anymore
 		return false;
-		break;
-	}
-	case MT_BATTLECAPSULE:
-	{
-		sector_t *sec = R_PointInSubsector(mobj->x, mobj->y)->sector;
-		mobj_t *cur, *prev = mobj;
-		fixed_t floorheights[MAXFFLOORS+1];
-		UINT8 numfloors = 0;
-		boolean fly = true;
-		UINT8 i;
-
-		// This floor height stuff is stupid but I couldn't get it to work any other way for whatever reason
-		if (mthing->options & MTF_OBJECTFLIP)
-		{
-			floorheights[numfloors] = P_GetSectorCeilingZAt(sec, mobj->x, mobj->y) - mobj->height;
-		}
-		else
-		{
-			floorheights[numfloors] = P_GetSectorFloorZAt(sec, mobj->x, mobj->y);
-		}
-
-		numfloors++;
-
-		if (sec->ffloors)
-		{
-			ffloor_t *rover;
-			for (rover = sec->ffloors; rover; rover = rover->next)
-			{
-				if ((rover->fofflags & FOF_EXISTS) && (rover->fofflags & FOF_BLOCKOTHERS))
-				{
-					if (mthing->options & MTF_OBJECTFLIP)
-					{
-						floorheights[numfloors] = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y) - mobj->height;
-					}
-					else
-					{
-						floorheights[numfloors] = P_GetFFloorBottomZAt(rover, mobj->x, mobj->y);
-					}
-
-					numfloors++;
-				}
-			}
-		}
-
-		for (i = 0; i < numfloors; i++)
-		{
-			if (mobj->z == floorheights[i])
-			{
-				fly = false;
-				break;
-			}
-		}
-
-		// Flying capsules
-		if (fly)
-		{
-			mobj->flags |= MF_NOGRAVITY;
-			mobj->extravalue1 = 1; // Set extravalue1 for later reference
-		}
-
-		// Moving capsules!
-		if (mthing->args[0] && mthing->args[1])
-		{
-			K_SetupMovingCapsule(mthing, mobj);
-		}
-
-		// NOW FOR ALL OF THE PIECES!!
-		// Init hnext list
-		// Spherical top
-		cur = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_BATTLECAPSULE_PIECE);
-		P_SetMobjState(cur, S_BATTLECAPSULE_TOP);
-
-		P_SetTarget(&cur->target, mobj);
-		P_SetTarget(&cur->hprev, prev);
-		P_SetTarget(&prev->hnext, cur);
-		prev = cur;
-
-		// Tippity-top decorational button
-		cur = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_BATTLECAPSULE_PIECE);
-		P_SetMobjState(cur, S_BATTLECAPSULE_BUTTON);
-
-		P_SetTarget(&cur->target, mobj);
-		P_SetTarget(&cur->hprev, prev);
-		P_SetTarget(&prev->hnext, cur);
-		prev = cur;
-
-		// Supports on the bottom
-		for (i = 0; i < 4; i++)
-		{
-			cur = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_BATTLECAPSULE_PIECE);
-			cur->extravalue1 = i;
-
-			if (mobj->extravalue1) // Flying capsule, moving or not
-				P_SetMobjState(cur, S_BATTLECAPSULE_SUPPORTFLY);
-			else if (mobj->target && !P_MobjWasRemoved(mobj->target)) // Grounded, moving capsule
-				P_SetMobjState(cur, S_KARMAWHEEL);
-			else
-				P_SetMobjState(cur, S_BATTLECAPSULE_SUPPORT); // Grounded, stationary capsule
-
-			P_SetTarget(&cur->target, mobj);
-			P_SetTarget(&cur->hprev, prev);
-			P_SetTarget(&prev->hnext, cur);
-			prev = cur;
-		}
-
-		// Side paneling
-		for (i = 0; i < 8; i++)
-		{
-			cur = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_BATTLECAPSULE_PIECE);
-			cur->extravalue1 = i;
-
-			if (i & 1)
-				P_SetMobjState(cur, S_BATTLECAPSULE_SIDE2);
-			else
-				P_SetMobjState(cur, S_BATTLECAPSULE_SIDE1);
-
-			P_SetTarget(&cur->target, mobj);
-			P_SetTarget(&cur->hprev, prev);
-			P_SetTarget(&prev->hnext, cur);
-			prev = cur;
-		}
-
-		// Increment no. of capsules on the map counter
-		maptargets++;
 		break;
 	}
 	case MT_LOOPCENTERPOINT:

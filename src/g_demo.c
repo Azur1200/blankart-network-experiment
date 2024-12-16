@@ -110,7 +110,7 @@ demoghost *ghosts = NULL;
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
 #define DF_TIMEATTACK   0x02 // This demo is from Time Attack and contains its final completion time & best lap!
-#define DF_BREAKTHECAPSULES 0x04 // This demo is from Break the Capsules and contains its final completion time!
+#define DF_ITEMBREAKER 0x04 // This demo is from Item Breaker and contains its final completion time!
 #define DF_ATTACKMASK   0x06 // This demo is from ??? attack and contains ???
 
 // 0x08 free
@@ -2031,7 +2031,7 @@ void G_BeginRecording(void)
 			WRITEUINT32(demobuf.p,UINT32_MAX); // time
 			WRITEUINT32(demobuf.p,UINT32_MAX); // lap
 			break;
-		case ATTACKING_CAPSULES: // 2
+		case ATTACKING_ITEMBREAK: // 2
 			demotime_p = demobuf.p;
 			WRITEUINT32(demobuf.p,UINT32_MAX); // time
 			break;
@@ -2231,7 +2231,7 @@ void G_SetDemoTime(UINT32 ptime, UINT32 plap)
 		WRITEUINT32(demotime_p, plap);
 		demotime_p = NULL;
 	}
-	else if (demoflags & DF_BREAKTHECAPSULES)
+	else if (demoflags & DF_ITEMBREAKER)
 	{
 		WRITEUINT32(demotime_p, ptime);
 		(void)plap;
@@ -2440,7 +2440,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	p++; // numlaps
 	G_SkipDemoExtraFiles(&p);
 
-	aflags = flags & (DF_TIMEATTACK|DF_BREAKTHECAPSULES);
+	aflags = flags & (DF_TIMEATTACK|DF_ITEMBREAKER);
 	I_Assert(aflags);
 
 	if (flags & DF_TIMEATTACK)
@@ -2912,7 +2912,7 @@ void G_DoPlayDemo(char *defdemoname)
 			hu_demotime = READUINT32(demobuf.p);
 			hu_demolap = READUINT32(demobuf.p);
 			break;
-		case ATTACKING_CAPSULES: // 2
+		case ATTACKING_ITEMBREAK: // 2
 			hu_demotime = READUINT32(demobuf.p);
 			break;
 		default: // 3
@@ -3273,7 +3273,7 @@ void G_AddGhost(char *defdemoname)
 		case ATTACKING_TIME: // 1
 			p += 8; // demo time, lap
 			break;
-		case ATTACKING_CAPSULES: // 2
+		case ATTACKING_ITEMBREAK: // 2
 			p += 4; // demo time
 			break;
 		default: // 3
@@ -3491,7 +3491,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 		case ATTACKING_TIME: // 1
 			p += 8; // demo time, lap
 			break;
-		case ATTACKING_CAPSULES: // 2
+		case ATTACKING_ITEMBREAK: // 2
 			p += 4; // demo time
 			break;
 		default: // 3

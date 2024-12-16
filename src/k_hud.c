@@ -10,6 +10,7 @@
 /// \brief HUD drawing functions exclusive to Kart
 
 #include "k_hud.h"
+#include "info.h"
 #include "k_kart.h"
 #include "k_battle.h"
 #include "k_grandprix.h"
@@ -60,8 +61,6 @@ static patch_t *kp_lapstickernarrow;
 static patch_t *kp_splitlapflag;
 static patch_t *kp_bumpersticker;
 static patch_t *kp_bumperstickerwide;
-static patch_t *kp_capsulesticker;
-static patch_t *kp_capsulestickerwide;
 static patch_t *kp_karmasticker;
 static patch_t *kp_spheresticker;
 static patch_t *kp_splitspheresticker;
@@ -79,7 +78,7 @@ static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_nocontestminimap;
 static patch_t *kp_spbminimap;
-static patch_t *kp_capsuleminimap[2];
+static patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[2];
 static patch_t *kp_ringstickersplit[4];
@@ -192,8 +191,6 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_splitlapflag, "K_SPTLAP");
 	HU_UpdatePatch(&kp_bumpersticker, "K_STBALN");
 	HU_UpdatePatch(&kp_bumperstickerwide, "K_STBALW");
-	HU_UpdatePatch(&kp_capsulesticker, "K_STCAPN");
-	HU_UpdatePatch(&kp_capsulestickerwide, "K_STCAPW");
 	HU_UpdatePatch(&kp_karmasticker, "K_STKARM");
 	HU_UpdatePatch(&kp_spheresticker, "K_STBSMT");
 	HU_UpdatePatch(&kp_splitspheresticker, "K_SPBSMT");
@@ -270,9 +267,8 @@ void K_LoadKartHUDGraphics(void)
 
 	// Special minimap icons
 	HU_UpdatePatch(&kp_nocontestminimap, "MINIDEAD");
-	HU_UpdatePatch(&kp_spbminimap, "SPBMMAP");
-	HU_UpdatePatch(&kp_capsuleminimap[0], "MINICAP1");
-	HU_UpdatePatch(&kp_capsuleminimap[1], "MINICAP2");
+	HU_UpdatePatch(&kp_spbminimap, "K_SPTKRM");
+	HU_UpdatePatch(&kp_itemboxminimap, "K_ITMMM");
 
 	// Rings & Lives
 	HU_UpdatePatch(&kp_ringsticker[0], "RNGBACKA");
@@ -1422,7 +1418,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
 #ifndef TESTOVERTIMEINFREEPLAY
-		if (battlecapsules) // capsules override any time limit settings
+		if (itembreaker) // capsules override any time limit settings
 			;
 		else
 #endif
@@ -2668,11 +2664,11 @@ static void K_drawKartBumpersOrKarma(void)
 		V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
 
-		if (battlecapsules)
+		if (itembreaker)
 		{
 			V_DrawMappedPatch(fx+1, fy-2, V_HUDTRANS|splitflags, kp_rankcapsule, NULL);
 
-			if (numtargets > 9 || maptargets > 9)
+			if (numtargets > 9 || nummapboxes > 9)
 			{
 				UINT8 ln[2];
 				ln[0] = ((numtargets / 10) % 10);
@@ -2681,8 +2677,8 @@ static void K_drawKartBumpersOrKarma(void)
 				V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
 				V_DrawScaledPatch(fx+17, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
 
-				ln[0] = ((maptargets / 10) % 10);
-				ln[1] = (maptargets % 10);
+				ln[0] = ((nummapboxes / 10) % 10);
+				ln[1] = (nummapboxes % 10);
 
 				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
 				V_DrawScaledPatch(fx+31, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
@@ -2690,7 +2686,7 @@ static void K_drawKartBumpersOrKarma(void)
 			else
 			{
 				V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[numtargets % 10]);
-				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[maptargets % 10]);
+				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[nummapboxes % 10]);
 			}
 		}
 		else
@@ -2722,13 +2718,14 @@ static void K_drawKartBumpersOrKarma(void)
 	}
 	else
 	{
-		if (battlecapsules)
+		if (itembreaker)
 		{
-			if (numtargets > 9 && maptargets > 9)
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_capsulestickerwide, NULL);
-			else
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_capsulesticker, NULL);
-			V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", numtargets, maptargets));
+			patch_t *item = W_CachePatchName("RNDMA0", PU_PATCH);
+			UINT8 *itemcolormap = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_CACHE);
+			V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_timesticker, NULL);
+			V_DrawStretchyFixedPatch((29 + item->width/2/4)*FRACUNIT, 193*FRACUNIT, FRACUNIT/2, FRACUNIT/2, V_HUDTRANS|splitflags, item, itemcolormap);
+			V_DrawStretchyFixedPatch((29 + item->width/2/4)*FRACUNIT, 192*FRACUNIT, FRACUNIT/2, FRACUNIT/2, V_HUDTRANS|splitflags, item, NULL);
+			V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", numtargets, nummapboxes));
 		}
 		else
 		{
@@ -3611,12 +3608,22 @@ static void K_drawKartMinimap(void)
 #endif
 				if (mobj->color)
 				{
-					colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->color, GTC_CACHE);
+					colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+				}
+				else
+				{
+					colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_RED, GTC_CACHE);
 				}
 
 				break;
-			case MT_BATTLECAPSULE:
-				workingPic = kp_capsuleminimap[(mobj->extravalue1 != 0 ? 1 : 0)];
+			case MT_RANDOMITEM:
+				if (itembreaker && (mobj->flags2 & MF2_BOSSNOTRAP) && !(mobj->flags2 & MF2_BOSSFLEE))
+				{
+					workingPic = kp_itemboxminimap;
+					colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_YELLOW, GTC_CACHE);
+				}
+				else
+					workingPic = NULL;
 				break;
 			default:
 				break;
@@ -3850,7 +3857,7 @@ static void K_drawBattleFullscreen(void)
 
 			if (K_IsPlayerLosing(stplyr))
 				p = kp_battlelose;
-			else if (stplyr->position == 1 && (!battlecapsules || numtargets >= maptargets))
+			else if (stplyr->position == 1 && (!itembreaker || numtargets >= nummapboxes))
 				p = kp_battlewin;
 
 			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, p, NULL);
@@ -4594,7 +4601,7 @@ void K_drawKartHUD(void)
 				}
 				else if (gametype == GT_BATTLE) // Battle-only (ditto)
 				{
-					if (!freecam && !battlecapsules)
+					if (!freecam && !itembreaker)
 					{
 						K_drawKartEmeralds();
 					}

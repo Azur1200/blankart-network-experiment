@@ -385,7 +385,6 @@ char sprnames[NUMSPRITES + 1][5] =
 	"SSWR", // Red Horizontal Spring
 	"SSWB", // Blue Horizontal Spring
 	"SSWG", // Grey Horizontal Spring
-	"POGS", // Pogo Spring
 	"BSTY", // Yellow Booster
 	"BSTR", // Red Booster
 
@@ -3301,13 +3300,6 @@ state_t states[NUMSTATES] =
 	
 	{SPR_NULL, 0, 1, {A_Pain}, 0, 0, S_INVISIBLE}, // S_INVISSPRING
 
-	// Orange Spring (Pogo)
-	{SPR_POGS, 0, -1, {NULL}, 0, 0, S_NULL},         // S_POGOSPRING1
-	{SPR_POGS, 1, 2, {A_Pain}, 0, 0, S_POGOSPRING3}, // S_POGOSPRING2
-	{SPR_POGS, 1, 2, {A_PlaySeeSound}, 0, 0, S_POGOSPRING3}, // S_POGOSPRING2B
-	{SPR_POGS, 0, 1, {NULL}, 0, 0, S_POGOSPRING4},   // S_POGOSPRING3
-	{SPR_POGS, 2, 4, {NULL}, 0, 0, S_POGOSPRING1},   // S_POGOSPRING4
-
 	// Yellow Diagonal Spring
 	{SPR_YSPR, 0, -1, {NULL}, 0, 0, S_NULL},    // S_YDIAG1
 	{SPR_YSPR, 1, 1, {A_Pain}, 0, 0, S_YDIAG3}, // S_YDIAG2
@@ -5155,13 +5147,6 @@ state_t states[NUMSTATES] =
 	{SPR_OTBU, FF_FULLBRIGHT|2, 1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_BULB2
 	{SPR_OTLS, FF_FULLBRIGHT, 1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_LASER
 	{SPR_OTCP, 0, -1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_CENTER
-
-	{SPR_CAPS, FF_PAPERSPRITE, -1, {NULL}, 0, 0, S_NULL}, // S_BATTLECAPSULE_SIDE1
-	{SPR_CAPS, FF_PAPERSPRITE|1, -1, {NULL}, 0, 0, S_NULL}, // S_BATTLECAPSULE_SIDE2
-	{SPR_CAPS, 2, -1, {NULL}, 0, 0, S_NULL}, // S_BATTLECAPSULE_TOP
-	{SPR_CAPS, 3, -1, {NULL}, 0, 0, S_NULL}, // S_BATTLECAPSULE_BUTTON
-	{SPR_CAPS, 4, -1, {NULL}, 0, 0, S_NULL}, // S_BATTLECAPSULE_SUPPORT
-	{SPR_CAPS, FF_ANIMATE|5, -1, {NULL}, 3, 1, S_NULL}, // S_BATTLECAPSULE_SUPPORTFLY
 
 	{SPR_WAYP, 0, 1, {NULL}, 0, 0, S_NULL}, // S_WAYPOINTORB
 	{SPR_WAYP, 1|FF_FLOORSPRITE, 1, {NULL}, 0, 0, S_NULL}, // S_WAYPOINTSPLAT
@@ -8777,33 +8762,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 		sfx_None,       // activesound
 		MF_SOLID|MF_SPRING, // flags
 		S_INVISSPRING   // raisestate
-	},
-
-	{           // MT_POGOSPRING
-		-1,             // doomednum
-		S_POGOSPRING1,  // spawnstate
-		1000,           // spawnhealth
-		S_POGOSPRING2B, // seestate
-		sfx_eggspr,     // seesound
-		0,              // reactiontime
-		sfx_None,       // attacksound
-		S_NULL,         // painstate
-		SKINCOLOR_SUNSET, // painchance
-		sfx_s3kb1,      // painsound
-		S_NULL,         // meleestate
-		S_NULL,         // missilestate
-		S_NULL,         // deathstate
-		S_NULL,         // xdeathstate
-		sfx_None,       // deathsound
-		0,              // speed
-		48*FRACUNIT,    // radius
-		32*FRACUNIT,    // height
-		0,              // display offset
-		32*FRACUNIT,    // mass
-		0,              // damage
-		sfx_None,       // activesound
-		MF_SOLID|MF_SPRING|MF_NOGRAVITY|MF_DONTENCOREMAP, // flags
-		S_POGOSPRING2   // raisestate
 	},
 
 	{           // MT_YELLOWDIAG
@@ -28333,60 +28291,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 	    0,              // damage
 	    sfx_None,       // activesound
 	    MF_SOLID|MF_DONTENCOREMAP, // flags
-	    S_NULL          // raisestate
-	},
-
-	{           // MT_BATTLECAPSULE
-	    2333,           // doomednum
-	    S_INVISIBLE,    // spawnstate
-	    1,              // spawnhealth
-	    S_NULL,         // seestate
-	    sfx_None,       // seesound
-	    8,              // reactiontime
-	    sfx_None,       // attacksound
-	    S_NULL,         // painstate
-	    0,              // painchance
-	    sfx_None,       // painsound
-	    S_NULL,         // meleestate
-	    S_NULL,         // missilestate
-	    S_INVISIBLE,    // deathstate
-	    S_NULL,         // xdeathstate
-	    sfx_None,       // deathsound
-	    0,              // speed
-	    28<<FRACBITS,   // radius
-	    112<<FRACBITS,  // height
-	    0,              // display offset
-	    100,            // mass
-	    0,              // damage
-	    sfx_None,       // activesound
-	    MF_SOLID|MF_SHOOTABLE|MF_DONTENCOREMAP, // flags
-	    S_NULL          // raisestate
-	},
-
-	{           // MT_BATTLECAPSULE_PIECE
-	    -1,             // doomednum
-	    S_INVISIBLE,    // spawnstate
-	    1000,           // spawnhealth
-	    S_NULL,         // seestate
-	    sfx_None,       // seesound
-	    8,              // reactiontime
-	    sfx_None,       // attacksound
-	    S_NULL,         // painstate
-	    0,              // painchance
-	    sfx_None,       // painsound
-	    S_NULL,         // meleestate
-	    S_NULL,         // missilestate
-	    S_NULL,         // deathstate
-	    S_NULL,         // xdeathstate
-	    sfx_None,       // deathsound
-	    0,              // speed
-	    8<<FRACBITS,    // radius
-	    8<<FRACBITS,    // height
-	    0,              // display offset
-	    100,            // mass
-	    0,              // damage
-	    sfx_None,       // activesound
-	    MF_SCENERY|MF_NOGRAVITY|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOBLOCKMAP|MF_DONTENCOREMAP, // flags
 	    S_NULL          // raisestate
 	},
 

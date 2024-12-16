@@ -89,7 +89,7 @@ void K_TimerInit(void)
 		}
 	}
 
-	// NOW you can try to spawn in the Battle capsules, if there's not enough players for a match
+	// NOW you can try to setup Item Breaker, if there's not enough players for a match
 	K_BattleInit();
 
 	timelimitintics = extratimeintics = secretextratime = 0;
@@ -108,7 +108,7 @@ void K_TimerInit(void)
 		}
 		else
 #ifndef TESTOVERTIMEINFREEPLAY
-			if (!battlecapsules)
+			if (!itembreaker)
 #endif
 		{
 			timelimitintics = cv_timelimit.value * (60*TICRATE);
@@ -212,6 +212,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartcheck);
 	CV_RegisterVar(&cv_kartinvinsfx);
 	CV_RegisterVar(&cv_kartspeed);
+	CV_RegisterVar(&cv_kartbattlespeed);
 	CV_RegisterVar(&cv_kartbumpers);
 	CV_RegisterVar(&cv_kartfrantic);
 	CV_RegisterVar(&cv_kartcomeback);
@@ -255,10 +256,10 @@ boolean K_IsPlayerLosing(player_t *player)
 	INT32 winningpos = 1;
 	UINT8 i, pcount = 0;
 
-	if (battlecapsules && numtargets == 0)
+	if (itembreaker && numtargets == 0)
 		return true; // Didn't even TRY?
 
-	if (battlecapsules || bossinfo.boss)
+	if (itembreaker || bossinfo.boss)
 		return (player->bumper <= 0); // anything short of DNF is COOL
 
 	if (player->position == 1)
@@ -1017,7 +1018,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		}
 		else if (gametype == GT_BATTLE)
 		{
-			if (mashed && (modeattacking || bossinfo.boss || cv_banana.value)) // ANY mashed value? You get a banana.
+			if (mashed && (bossinfo.boss || cv_banana.value) && !itembreaker) // ANY mashed value? You get a banana.
 			{
 				K_KartGetItemResult(player, KITEM_BANANA);
 				player->karthud[khud_itemblinkmode] = 1;
@@ -1030,6 +1031,25 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 				player->karthud[khud_itemblinkmode] = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
+			}
+			else if (itembreaker)
+			{
+				if (mashed)
+				{
+					K_KartGetItemResult(player, KITEM_POGOSPRING);
+					player->karthud[khud_itemblinkmode] = 1;
+					if (P_IsDisplayPlayer(player))
+						S_StartSound(NULL, sfx_itrolm);
+				}
+				else
+				{
+					K_KartGetItemResult(player, KITEM_SNEAKER);
+					player->karthud[khud_itemblinkmode] = 0;
+					if (P_IsDisplayPlayer(player))
+						S_StartSound(NULL, sfx_itrolf);
+
+				}
+
 			}
 			else
 			{
@@ -8848,7 +8868,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							{
 								K_PlayBoostTaunt(player->mo);
 								K_DoPogoSpring(player->mo, 32<<FRACBITS, 2);
-								P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_POGOSPRING);
 								player->pogospring = 1;
 								player->itemamount--;
 							}

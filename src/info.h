@@ -941,7 +941,6 @@ typedef enum sprite
 	SPR_SSWR, // Red Horizontal Spring
 	SPR_SSWB, // Blue Horizontal Spring
 	SPR_SSWG, // Grey Horizontal Spring
-	SPR_POGS, // Pogo Spring
 	SPR_BSTY, // Yellow Booster
 	SPR_BSTR, // Red Booster
 
@@ -3762,13 +3761,6 @@ typedef enum state
 	
 	S_INVISSPRING,
 
-	// Orange Spring (Pogo)
-	S_POGOSPRING1,
-	S_POGOSPRING2,
-	S_POGOSPRING2B,
-	S_POGOSPRING3,
-	S_POGOSPRING4,
-
 	// Yellow Diagonal Spring
 	S_YDIAG1,
 	S_YDIAG2,
@@ -5582,13 +5574,6 @@ typedef enum state
 	S_OVERTIME_LASER,
 	S_OVERTIME_CENTER,
 
-	S_BATTLECAPSULE_SIDE1,
-	S_BATTLECAPSULE_SIDE2,
-	S_BATTLECAPSULE_TOP,
-	S_BATTLECAPSULE_BUTTON,
-	S_BATTLECAPSULE_SUPPORT,
-	S_BATTLECAPSULE_SUPPORTFLY,
-
 	S_WAYPOINTORB,
 	S_WAYPOINTSPLAT,
 	S_EGOORB,
@@ -5794,7 +5779,6 @@ typedef enum mobj_type
 	MT_BLUESPRING,
 	MT_GREYSPRING,
 	MT_INVISSPRING,
-	MT_POGOSPRING,
 	MT_YELLOWDIAG, // Yellow Diagonal Spring
 	MT_REDDIAG, // Red Diagonal Spring
 	MT_BLUEDIAG, // Blue Diagonal Spring
@@ -6690,9 +6674,6 @@ typedef enum mobj_type
 
 	MT_OVERTIME_PARTICLE,
 	MT_OVERTIME_CENTER,
-
-	MT_BATTLECAPSULE,
-	MT_BATTLECAPSULE_PIECE,
 
 	MT_FOLLOWER,
 	MT_FOLLOWERBUBBLE_FRONT,

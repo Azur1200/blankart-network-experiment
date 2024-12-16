@@ -3926,7 +3926,7 @@ void SV_StartSinglePlayerServer(void)
 	netgame = false;
 	multiplayer = false;
 
-	if ((modeattacking == ATTACKING_CAPSULES) || (bossinfo.boss == true))
+	if ((modeattacking == ATTACKING_ITEMBREAK) || (bossinfo.boss == true))
 	{
 		G_SetGametype(GT_BATTLE);
 	}

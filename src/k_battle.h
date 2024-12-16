@@ -15,9 +15,9 @@ extern struct battleovertime
 	fixed_t x, y, z; ///< Position to center on
 } battleovertime;
 
-extern boolean battlecapsules;
+extern boolean itembreaker;
 extern INT32 nummapboxes, numgotboxes; // keep track of spawned battle mode items
-extern UINT8 maptargets, numtargets;
+extern UINT8 numtargets;
 
 INT32 K_StartingBumperCount(void);
 boolean K_IsPlayerWanted(player_t *player);
@@ -31,7 +31,6 @@ void K_DropEmeraldsFromPlayer(player_t *player, UINT32 emeraldType);
 UINT8 K_NumEmeralds(player_t *player);
 void K_RunPaperItemSpawners(void);
 void K_RunBattleOvertime(void);
-void K_SetupMovingCapsule(mapthing_t *mt, mobj_t *mobj);
 void K_SpawnPlayerBattleBumpers(player_t *p);
 void K_BattleInit(void);
 

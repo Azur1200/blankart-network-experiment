@@ -11,6 +11,7 @@
 /// \file  p_setup.c
 /// \brief Do all the WAD I/O, get map description, set up initial state and misc. LUTs
 
+#include "d_netcmd.h"
 #include "doomdef.h"
 #include "d_main.h"
 #include "byteptr.h"
@@ -827,10 +828,6 @@ void P_ScanThings(INT16 mapnum, INT16 wadnum, INT16 lumpnum)
 		{
 			nummapboxes++;
 		}
-		else if (mt->type == mobjinfo[MT_BATTLECAPSULE].doomednum)
-		{
-			maptargets++;
-		}
 		else if (mt->type == mobjinfo[MT_RING].doomednum)
 		{
 			maprings++;
@@ -917,9 +914,6 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			case 2021: // MT_LOOPCENTERPOINT
 				continue; // These were already spawned
 		}
-
-		if (mt->type == mobjinfo[MT_BATTLECAPSULE].doomednum)
-			continue; // This will spawn later
 
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
 			continue;
@@ -7407,20 +7401,6 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[0] = mapthings[i].extrainfo;
 			mapthings[i].args[1] = mapthings[i].angle;
 			break;
-		case 2333: // MT_BATTLECAPSULE
-			mapthings[i].args[0] = mapthings[i].extrainfo;
-			mapthings[i].args[1] = mapthings[i].angle;
-
-			if (mapthings[i].options & MTF_OBJECTSPECIAL)
-			{
-				mapthings[i].args[2] |= TMBCF_REVERSE;
-			}
-
-			if (mapthings[i].options & MTF_AMBUSH)
-			{
-				mapthings[i].args[2] |= TMBCF_BACKANDFORTH;
-			}
-			break;
 		case 3122: // MT_MAYONAKAARROW
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
 				mapthings[i].args[0] = TMMA_WARN;
@@ -7645,8 +7625,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	nummaprings = 0;
 	nummapboxes = numgotboxes = 0;
-	maptargets = numtargets = 0;
-	battlecapsules = false;
+	numtargets = 0;
+	itembreaker = false;
 	
 	if (cv_kartrings.value)
 		ringsdisabled = false;
@@ -7729,16 +7709,21 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	{
 		// Just play it safe and set everything
 		if ((gametyperules & GTR_BUMPERS))
-			gamespeed = KARTSPEED_EASY;
+			gamespeed = KARTSPEED_NORMAL;
 		else
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
-		comeback = true;
+		comeback = false;
 	}
 	else
 	{
 		if ((gametyperules & GTR_BUMPERS))
-			gamespeed = KARTSPEED_EASY;
+		{
+			if (cv_kartbattlespeed.value == KARTSPEED_AUTO)
+				gamespeed = ((speedscramble == -1) ? KARTSPEED_EASY : (UINT8)speedscramble);
+			else
+				gamespeed = (UINT8)cv_kartspeed.value;
+		}
 		else
 		{
 			if (cv_kartspeed.value == KARTSPEED_AUTO)
@@ -7900,7 +7885,7 @@ static void P_LoadRecordGhosts(void)
 	}
 
 	// Best Lap ghost
-	if (modeattacking != ATTACKING_CAPSULES)
+	if (modeattacking != ATTACKING_ITEMBREAK)
 	{
 		if (cv_ghost_bestlap.value)
 		{

@@ -120,7 +120,7 @@ struct unlockable_t
 #define SECRET_LEVELSELECT	 4 // Selectable level select
 
 #define SECRET_TIMEATTACK	 5 // Enables Time Attack on the main menu
-#define SECRET_BREAKTHECAPSULES	6 // Enables Break the Capsules on the main menu
+#define SECRET_ITEMBREAKER	6 // Enables Item Breaker on the main menu
 #define SECRET_SOUNDTEST	 7 // Sound Test
 #define SECRET_CREDITS		 8 // Enables Credits
 

@@ -2789,13 +2789,6 @@ const char *const STATE_LIST[] = { // array length left dynamic for sanity testi
 	// Invis-spring - this is used just for the sproing sound.
 	"S_INVISSPRING",
 
-	// Orange Spring (Pogo)
-	"S_POGOSPRING1",
-	"S_POGOSPRING2",
-	"S_POGOSPRING2B",
-	"S_POGOSPRING3",
-	"S_POGOSPRING4",
-
 	// Yellow Diagonal Spring
 	"S_YDIAG1",
 	"S_YDIAG2",
@@ -4588,13 +4581,6 @@ const char *const STATE_LIST[] = { // array length left dynamic for sanity testi
 	"S_OVERTIME_LASER",
 	"S_OVERTIME_CENTER",
 
-	"S_BATTLECAPSULE_SIDE1",
-	"S_BATTLECAPSULE_SIDE2",
-	"S_BATTLECAPSULE_TOP",
-	"S_BATTLECAPSULE_BUTTON",
-	"S_BATTLECAPSULE_SUPPORT",
-	"S_BATTLECAPSULE_SUPPORTFLY",
-
 	"S_WAYPOINTORB",
 	"S_WAYPOINTSPLAT",
 	"S_EGOORB",
@@ -4780,7 +4766,6 @@ const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity t
 	"MT_BLUESPRING",
 	"MT_GREYSPRING",
 	"MT_INVISSPRING",
-	"MT_POGOSPRING",
 	"MT_YELLOWDIAG", // Yellow Diagonal Spring
 	"MT_REDDIAG", // Red Diagonal Spring
 	"MT_BLUEDIAG", // Blue Diagonal Spring
@@ -5676,9 +5661,6 @@ const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity t
 
 	"MT_OVERTIME_PARTICLE",
 	"MT_OVERTIME_CENTER",
-
-	"MT_BATTLECAPSULE",
-	"MT_BATTLECAPSULE_PIECE",
 
 	"MT_FOLLOWER",
 	"MT_FOLLOWERBUBBLE_FRONT",

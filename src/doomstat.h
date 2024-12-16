@@ -117,7 +117,7 @@ extern boolean metalrecording;
 
 #define ATTACKING_NONE     0
 #define ATTACKING_TIME     1
-#define ATTACKING_CAPSULES 2
+#define ATTACKING_ITEMBREAK 2
 extern UINT8 modeattacking;
 
 // menu demo things
@@ -496,10 +496,10 @@ enum GameTypeRules
 	GTR_BUMPERS				= 1<<3,  // Enables the bumper health system
 	GTR_SPHERES				= 1<<4,  // Replaces rings with blue spheres
 	GTR_PAPERITEMS			= 1<<5,  // Replaces item boxes with paper item spawners
-	GTR_WANTED				= 1<<6,  // unused
+	GTR_WANTED				= 1<<6,  // Enables the wanted anti-camping system
 	GTR_KARMA				= 1<<7,  // Enables the Karma system if you're out of bumpers
 	GTR_ITEMARROWS			= 1<<8,  // Show item box arrows above players
-	GTR_CAPSULES			= 1<<9,  // Enables the wanted anti-camping system
+	GTR_ITEMBREAKER			= 1<<9,  // Enables the use of Item Breaker in this Gamemode
 	GTR_BATTLESTARTS		= 1<<10, // Use Battle Mode start positions.
 
 	GTR_POINTLIMIT			= 1<<11,  // Reaching point limit ends the round

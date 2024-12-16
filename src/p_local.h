@@ -288,7 +288,6 @@ extern tic_t itemrespawntime[ITEMQUESIZE];
 extern size_t iquehead, iquetail;
 extern consvar_t cv_gravity, cv_movebob;
 
-void P_RespawnBattleBoxes(void);
 mobjtype_t P_GetMobjtype(UINT16 mthingtype);
 
 void P_RespawnSpecials(void);

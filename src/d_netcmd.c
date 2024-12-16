@@ -147,6 +147,7 @@ static void SoundTest_OnChange(void);
 
 static void KartFrantic_OnChange(void);
 static void KartSpeed_OnChange(void);
+static void KartBattleSpeed_OnChange(void);
 static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
@@ -397,6 +398,7 @@ consvar_t cv_kartcheck = CVAR_INIT ("kartcheck", "Yes", CV_SAVE, CV_YesNo, NULL)
 static CV_PossibleValue_t kartinvinsfx_cons_t[] = {{0, "Music"}, {1, "SFX"}, {0, NULL}};
 consvar_t cv_kartinvinsfx = CVAR_INIT ("kartinvinsfx", "SFX", CV_SAVE, kartinvinsfx_cons_t, NULL);
 consvar_t cv_kartspeed = CVAR_INIT ("kartspeed", "Auto", CV_NETVAR|CV_CALL|CV_NOINIT, kartspeed_cons_t, KartSpeed_OnChange);
+consvar_t cv_kartbattlespeed = CVAR_INIT ("kartbattlespeed", "Auto", CV_NETVAR|CV_CALL|CV_NOINIT, kartspeed_cons_t, KartBattleSpeed_OnChange);
 static CV_PossibleValue_t kartbumpers_cons_t[] = {{1, "MIN"}, {12, "MAX"}, {0, NULL}};
 consvar_t cv_kartbumpers = CVAR_INIT ("kartbumpers", "3", CV_NETVAR|CV_CHEAT, kartbumpers_cons_t, NULL);
 consvar_t cv_kartfrantic = CVAR_INIT ("kartfrantic", "Off", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_OnOff, KartFrantic_OnChange);
@@ -6428,12 +6430,37 @@ static void KartSpeed_OnChange(void)
 
 	if (leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
 	{
-		CONS_Printf(M_GetText("Game speed has been changed to \"%s\".\n"), cv_kartspeed.string);
+		CONS_Printf(M_GetText("Race speed has been changed to \"%s\".\n"), cv_kartspeed.string);
 		gamespeed = (UINT8)cv_kartspeed.value;
 	}
 	else
 	{
-		CONS_Printf(M_GetText("Game speed will be changed to \"%s\" next round.\n"), cv_kartspeed.string);
+		CONS_Printf(M_GetText("Race speed will be changed to \"%s\" next round.\n"), cv_kartspeed.string);
+	}
+}
+
+static void KartBattleSpeed_OnChange(void)
+{
+	if (!M_SecretUnlocked(SECRET_HARDSPEED) && cv_kartbattlespeed.value == KARTSPEED_HARD)
+	{
+		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
+		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);
+		return;
+	}
+
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime && cv_kartbattlespeed.value != KARTSPEED_AUTO)
+	{
+		CONS_Printf(M_GetText("Battle speed has been changed to \"%s\".\n"), cv_kartbattlespeed.string);
+		gamespeed = (UINT8)cv_kartbattlespeed.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Battle speed will be changed to \"%s\" next round.\n"), cv_kartbattlespeed.string);
 	}
 }
 

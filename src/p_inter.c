@@ -682,7 +682,7 @@ void P_CheckTimeLimit(void)
 	INT32 i;
 
 #ifndef TESTOVERTIMEINFREEPLAY
-	if (battlecapsules) // capsules override any time limit settings
+	if (itembreaker) // Item Breaker overrides any time limit settings
 		return;
 #endif
 
@@ -826,7 +826,7 @@ void P_CheckPointLimit(void)
 	if (!(gametyperules & GTR_POINTLIMIT))
 		return;
 
-	if (battlecapsules)
+	if (itembreaker)
 		return;
 
 	// pointlimit is nonzero, check if it's been reached by this player
@@ -1119,7 +1119,34 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		{
 			P_SetTarget(&target->target, source);
 			//source->player->numboxes++;
-			if (cv_itemrespawn.value && (netgame || multiplayer))
+
+			if (itembreaker)
+			{
+				target->flags2 |= MF2_BOSSFLEE;
+				target->flags2 |= MF2_DONTRESPAWN;
+				K_SpawnBattlePoints(source->player, NULL, 1);
+				// All targets busted!
+				if (++numtargets >= nummapboxes)
+				{
+					boolean givelife = false;
+					for (int i = 0; i < MAXPLAYERS; i++)
+					{
+						if (!playeringame[i] || players[i].spectator)
+							continue;
+						P_DoPlayerExit(&players[i]);
+						if (!grandprixinfo.gp)
+							continue;
+						P_GivePlayerLives(&players[i], 1);
+						givelife = true;
+					}
+
+					if (givelife)
+						S_StartSound(NULL, sfx_cdfm73);
+				}
+
+			}
+
+			if (cv_itemrespawn.value && (netgame || multiplayer) && !itembreaker)
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
 			}
@@ -1470,95 +1497,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 			break;
 		}
-
-		case MT_BATTLECAPSULE:
-			{
-				UINT8 i;
-				mobj_t *cur;
-				angle_t dir = 0;
-
-				target->fuse = 16;
-				target->flags |= MF_NOCLIP|MF_NOCLIPTHING;
-
-				if (inflictor)
-				{
-					dir = R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
-					P_Thrust(target, dir, P_AproxDistance(inflictor->momx, inflictor->momy)/12);
-				}
-				else if (source)
-					dir = R_PointToAngle2(source->x, source->y, target->x, target->y);
-
-				target->momz += 8 * target->scale * P_MobjFlip(target);
-				target->flags &= ~MF_NOGRAVITY;
-
-				cur = target->hnext;
-
-				while (cur && !P_MobjWasRemoved(cur))
-				{
-					// Shoot every piece outward
-					if (!(cur->x == target->x && cur->y == target->y))
-					{
-						P_InstaThrust(cur,
-							R_PointToAngle2(target->x, target->y, cur->x, cur->y),
-							R_PointToDist2(target->x, target->y, cur->x, cur->y) / 12
-						);
-					}
-
-					cur->momz = 8 * target->scale * P_MobjFlip(target);
-
-					cur->flags &= ~MF_NOGRAVITY;
-					cur->tics = TICRATE;
-					cur->frame &= ~FF_ANIMATE; // Stop animating the propellers
-
-					cur = cur->hnext;
-				}
-
-				S_StartSound(target, sfx_mbs60);
-
-				if ((gametyperules & GTR_POINTLIMIT) && (source && source->player))
-				{
-					/*mobj_t * ring;
-					for (i = 0; i < 2; i++)
-					{
-						dir += (ANGLE_MAX/3);
-						ring = P_SpawnMobj(target->x, target->y, target->z, MT_RING);
-						ring->angle = dir;
-						P_InstaThrust(ring, dir, 16*ring->scale);
-						ring->momz = 8 * target->scale * P_MobjFlip(target);
-						P_SetTarget(&ring->tracer, source);
-						source->player->pickuprings++;
-					}*/
-
-					P_AddPlayerScore(source->player, 1);
-					K_SpawnBattlePoints(source->player, NULL, 1);
-				}
-
-				// All targets busted!
-				if (++numtargets >= maptargets)
-				{
-					boolean givelife = false;
-					for (i = 0; i < MAXPLAYERS; i++)
-					{
-						if (!playeringame[i] || players[i].spectator)
-							continue;
-						P_DoPlayerExit(&players[i]);
-						if (!grandprixinfo.gp)
-							continue;
-						P_GivePlayerLives(&players[i], 1);
-						givelife = true;
-					}
-
-					if (givelife)
-						S_StartSound(NULL, sfx_cdfm73);
-				}
-				else if (timelimitintics)
-				{
-					S_StartSound(NULL, sfx_s221);
-					extratimeintics += 10*TICRATE;
-					secretextratime = TICRATE/2;
-				}
-			}
-			break;
 
 		case MT_BATTLEBUMPER:
 			{
