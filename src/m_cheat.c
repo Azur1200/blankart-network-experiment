@@ -751,7 +751,7 @@ void Command_Getallemeralds_f(void)
 	REQUIRE_SINGLEPLAYER;
 	REQUIRE_PANDORA;
 
-	emeralds = EMERALD_ALL;
+	emeralds = ((EMERALD7)*2)-1;
 
 	CONS_Printf(M_GetText("You now have all 7 emeralds.\n"));
 }

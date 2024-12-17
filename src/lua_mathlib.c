@@ -176,7 +176,7 @@ static int lib_getsecspecial(lua_State *L)
 
 static int lib_all7emeralds(lua_State *L)
 {
-	lua_pushboolean(L, ALLCHAOSEMERALDS(luaL_checkinteger(L, 1)));
+	lua_pushboolean(L, ALL7EMERALDS(luaL_checkinteger(L, 1)));
 	return 1;
 }
 

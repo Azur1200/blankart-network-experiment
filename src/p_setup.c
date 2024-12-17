@@ -5688,7 +5688,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[0] = (lines[i].flags & ML_NOTBOUNCY) ? TMT_EACHTIMEENTERANDEXIT : TMT_EACHTIMEENTER;
 			else
 				lines[i].args[0] = TMT_CONTINUOUS;
-			lines[i].args[1] = EMERALD_ALLCHAOS;
+			lines[i].args[1] = ((EMERALD7)*2)-1;
 			lines[i].args[2] = TMF_HASALL;
 			lines[i].special = 337;
 			break;

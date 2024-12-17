@@ -892,7 +892,7 @@ void F_StartGameEvaluation(void)
 	// Just in case they're open ... somehow
 	M_ClearMenus(true);
 
-	goodending = (ALLCHAOSEMERALDS(emeralds));
+	goodending = (ALL7EMERALDS(emeralds));
 
 	gameaction = ga_nothing;
 	paused = false;
@@ -1157,7 +1157,7 @@ static void F_CacheEnding(void)
 	endescp[4] = W_CachePatchName("ENDESCP4", PU_PATCH_LOWPRIORITY);
 
 	// so we only need to check once
-	if ((goodending = ALLCHAOSEMERALDS(emeralds)))
+	if ((goodending = ALL7EMERALDS(emeralds)))
 	{
 		endfwrk[0] = W_CachePatchName("ENDFWRK3", PU_PATCH);
 		endfwrk[1] = W_CachePatchName("ENDFWRK4", PU_PATCH);

@@ -179,93 +179,6 @@ void K_CheckBumpers(void)
 	}
 }
 
-void K_CheckEmeralds(player_t *player)
-{
-	UINT8 i;
-
-	if (!ALLCHAOSEMERALDS(player->emeralds))
-	{
-		return;
-	}
-
-	player->roundscore++; // lol
-
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-		{
-			continue;
-		}
-
-		if (&players[i] == player)
-		{
-			continue;
-		}
-
-		players[i].bumper = 0;
-	}
-
-	K_CheckBumpers();
-}
-
-mobj_t *K_SpawnChaosEmerald(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT32 emeraldType)
-{
-	boolean validEmerald = true;
-	mobj_t *emerald = P_SpawnMobj(x, y, z, MT_EMERALD);
-	mobj_t *overlay;
-
-	P_Thrust(emerald,
-		FixedAngle(P_RandomFixed() * 180) + angle,
-		24 * mapobjectscale);
-
-	emerald->momz = flip * 24 * mapobjectscale;
-	if (emerald->eflags & MFE_UNDERWATER)
-		emerald->momz = (117 * emerald->momz) / 200;
-
-	emerald->threshold = 10;
-
-	switch (emeraldType)
-	{
-		case EMERALD_CHAOS1:
-			emerald->color = SKINCOLOR_PERIDOT;
-			break;
-		case EMERALD_CHAOS2:
-			emerald->color = SKINCOLOR_RED;
-			break;
-		case EMERALD_CHAOS3:
-			emerald->color = SKINCOLOR_BLUE;
-			break;
-		case EMERALD_CHAOS4:
-			emerald->color = SKINCOLOR_YELLOW;
-			break;
-		case EMERALD_CHAOS5:
-			emerald->color = SKINCOLOR_PURPLE;
-			break;
-		case EMERALD_CHAOS6:
-			emerald->color = SKINCOLOR_CYAN;
-			break;
-		case EMERALD_CHAOS7:
-			emerald->color = SKINCOLOR_WHITE;
-			break;
-		default:
-			CONS_Printf("Invalid emerald type %d\n", emeraldType);
-			validEmerald = false;
-			break;
-	}
-
-	if (validEmerald == true)
-	{
-		emerald->extravalue1 = emeraldType;
-	}
-
-	overlay = P_SpawnMobjFromMobj(emerald, 0, 0, 0, MT_OVERLAY);
-	P_SetTarget(&overlay->target, emerald);
-	P_SetMobjState(overlay, S_CHAOSEMERALD_UNDER);
-	overlay->color = emerald->color;
-
-	return emerald;
-}
-
 mobj_t *K_SpawnSphereBox(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 amount)
 {
 	mobj_t *drop = P_SpawnMobj(x, y, z, MT_SPHEREBOX);
@@ -284,25 +197,6 @@ mobj_t *K_SpawnSphereBox(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 f
 	drop->extravalue1 = amount;
 
 	return drop;
-}
-
-void K_DropEmeraldsFromPlayer(player_t *player, UINT32 emeraldType)
-{
-	UINT8 i;
-	SINT8 flip = P_MobjFlip(player->mo);
-
-	for (i = 0; i < 14; i++)
-	{
-		UINT32 emeraldFlag = (1 << i);
-
-		if ((player->emeralds & emeraldFlag) && (emeraldFlag & emeraldType))
-		{
-			mobj_t *emerald = K_SpawnChaosEmerald(player->mo->x, player->mo->y, player->mo->z, player->mo->angle - ANGLE_90, flip, emeraldFlag);
-			P_SetTarget(&emerald->target, player->mo);
-
-			player->emeralds &= ~emeraldFlag;
-		}
-	}
 }
 
 UINT8 K_NumEmeralds(player_t *player)
@@ -328,9 +222,6 @@ void K_RunPaperItemSpawners(void)
 	tic_t interval = 8*TICRATE;
 
 	const boolean canmakeemeralds = true; //(!(itembreaker || bossinfo.boss));
-
-	UINT32 emeraldsSpawned = 0;
-	UINT32 firstUnspawnedEmerald = 0;
 
 	thinker_t *th;
 	mobj_t *mo;
@@ -362,8 +253,6 @@ void K_RunPaperItemSpawners(void)
 			continue;
 		}
 
-		emeraldsSpawned |= players[i].emeralds;
-
 		if ((players[i].exiting > 0 || (players[i].pflags & PF_ELIMINATED))
 			|| ((gametyperules & GTR_BUMPERS) && players[i].bumper <= 0))
 		{
@@ -390,11 +279,6 @@ void K_RunPaperItemSpawners(void)
 
 				mo = (mobj_t *)th;
 
-				if (mo->type == MT_EMERALD)
-				{
-					emeraldsSpawned |= mo->extravalue1;
-				}
-
 				if (mo->type != MT_PAPERITEMSPOT)
 					continue;
 
@@ -409,21 +293,6 @@ void K_RunPaperItemSpawners(void)
 			if (spotCount <= 0)
 			{
 				return;
-			}
-
-			if (canmakeemeralds)
-			{
-				for (i = 0; i < 7; i++)
-				{
-					UINT32 emeraldFlag = (1 << i);
-
-					if (!(emeraldsSpawned & emeraldFlag))
-					{
-						firstUnspawnedEmerald = emeraldFlag;
-						starti = -1;
-						break;
-					}
-				}
 			}
 
 			//CONS_Printf("leveltime = %d ", leveltime);
@@ -456,16 +325,6 @@ void K_RunPaperItemSpawners(void)
 
 				flip = P_MobjFlip(spotList[r]);
 
-				// When -1, we're spawning a Chaos Emerald.
-				if (i == -1)
-				{
-					drop = K_SpawnChaosEmerald(
-						spotList[r]->x, spotList[r]->y, spotList[r]->z + (128 * mapobjectscale * flip),
-						FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
-						firstUnspawnedEmerald
-					);
-				}
-				else
 				{
 					if (gametyperules & GTR_SPHERES)
 					{

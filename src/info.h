@@ -699,8 +699,7 @@ typedef enum sprite
 	SPR_NCHP, // NiGHTS chip
 	SPR_NSTR, // NiGHTS star
 	SPR_EMBM, // Emblem
-	SPR_EMRC, // Chaos Emeralds
-	SPR_ESPK,
+	SPR_CEMG, // Chaos Emeralds
 	SPR_SHRD, // Emerald Hunt
 
 	// Interactive Objects
@@ -2426,17 +2425,13 @@ typedef enum state
 	S_EMBLEM26,
 
 	// Chaos Emeralds
-	S_CHAOSEMERALD1,
-	S_CHAOSEMERALD2,
-	S_CHAOSEMERALD_UNDER,
-
-	S_EMERALDSPARK1,
-	S_EMERALDSPARK2,
-	S_EMERALDSPARK3,
-	S_EMERALDSPARK4,
-	S_EMERALDSPARK5,
-	S_EMERALDSPARK6,
-	S_EMERALDSPARK7,
+	S_CEMG1,
+	S_CEMG2,
+	S_CEMG3,
+	S_CEMG4,
+	S_CEMG5,
+	S_CEMG6,
+	S_CEMG7,
 
 	// Emerald hunt shards
 	S_SHRD1,
@@ -5754,10 +5749,16 @@ typedef enum mobj_type
 	MT_REDFLAG, // Red CTF Flag
 	MT_BLUEFLAG, // Blue CTF Flag
 	MT_EMBLEM,
-	MT_EMERALD,
-	MT_EMERALDSPARK,
+	MT_EMERALD1,
+	MT_EMERALD2,
+	MT_EMERALD3,
+	MT_EMERALD4,
+	MT_EMERALD5,
+	MT_EMERALD6,
+	MT_EMERALD7,
 	MT_EMERHUNT, // Emerald Hunt
 	MT_EMERALDSPAWN, // Emerald spawner w/ delay
+	MT_FLINGEMERALD, // Lost emerald
 
 	// Springs and others
 	MT_FAN,

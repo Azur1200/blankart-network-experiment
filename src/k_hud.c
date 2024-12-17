@@ -96,9 +96,6 @@ static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
 static patch_t *kp_ranknobumpers;
 static patch_t *kp_rankcapsule;
-static patch_t *kp_rankemerald;
-static patch_t *kp_rankemeraldflash;
-static patch_t *kp_rankemeraldback;
 
 static patch_t *kp_battlewin;
 static patch_t *kp_battlecool;
@@ -325,10 +322,6 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_tinybumper[0], "K_BLNA");
 	HU_UpdatePatch(&kp_tinybumper[1], "K_BLNB");
 	HU_UpdatePatch(&kp_ranknobumpers, "K_NOBLNS");
-	HU_UpdatePatch(&kp_rankcapsule, "K_CAPICO");
-	HU_UpdatePatch(&kp_rankemerald, "K_EMERC");
-	HU_UpdatePatch(&kp_rankemeraldflash, "K_EMERW");
-	HU_UpdatePatch(&kp_rankemeraldback, "K_EMERBK");
 
 	// Battle graphics
 	HU_UpdatePatch(&kp_battlewin, "K_BWIN");
@@ -1725,7 +1718,7 @@ static boolean K_drawKartPositionFaces(void)
 	INT32 i, j, ranklines, strank = -1;
 	boolean completed[MAXPLAYERS];
 	INT32 rankplayer[MAXPLAYERS];
-	INT32 bumperx, /*emeraldx,*/ numplayersingame = 0;
+	INT32 bumperx, numplayersingame = 0;
 	UINT8 *colormap;
 
 	ranklines = 0;
@@ -1809,7 +1802,6 @@ static boolean K_drawKartPositionFaces(void)
 		if (!players[rankplayer[i]].mo) continue;
 
 		bumperx = FACE_X+19;
-		//emeraldx = FACE_X+16;
 
 		if (players[rankplayer[i]].mo->color)
 		{
@@ -1834,19 +1826,6 @@ static boolean K_drawKartPositionFaces(void)
 				}
 			}
 		}
-
-		/*for (j = 0; j < 7; j++)
-		{
-			UINT32 emeraldFlag = (1 << j);
-			UINT16 emeraldColor = SKINCOLOR_CHAOSEMERALD1 + j;
-
-			if (players[rankplayer[i]].emeralds & emeraldFlag)
-			{
-				colormap = R_GetTranslationColormap(TC_DEFAULT, emeraldColor, GTC_CACHE);
-				V_DrawMappedPatch(emeraldx, Y+7, V_HUDTRANS|V_SNAPTOLEFT, kp_rankemerald, colormap);
-				emeraldx += 7;
-			}
-		}*/
 
 		if (i == strank)
 			V_DrawScaledPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, kp_facehighlight[(leveltime / 4) % 8]);
@@ -1990,90 +1969,6 @@ static void K_drawBossHealthBar(void)
 
 	// Left wing.
 	V_DrawScaledPatch(startx-i, starty, V_HUDTRANS|V_SNAPTOBOTTOM|V_SNAPTORIGHT, kp_bossbar[0]);
-}
-
-static void K_drawKartEmeralds(void)
-{
-	/*static const INT32 emeraldOffsets[7][3] = {
-		{34, 0, 15},
-		{25, 8, 11},
-		{43, 8, 19},
-		{16, 0,  7},
-		{52, 0, 23},
-		{ 7, 8,  3},
-		{61, 8, 27}
-	};*/
-
-	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SPLITSCREEN;
-	INT32 startx = BASEVIDWIDTH - 77;
-	INT32 starty = BASEVIDHEIGHT - 29;
-	//INT32 i = 0, xindex = 0;
-
-	{
-		if (r_splitscreen)
-		{
-			starty = (starty/2) - 8;
-		}
-		starty -= 8;
-
-		if (r_splitscreen < 2)
-		{
-			startx -= 8;
-			if (r_splitscreen == 1 && stplyr == &players[displayplayers[0]])
-			{
-				starty = 1;
-			}
-			V_DrawScaledPatch(startx, starty, V_HUDTRANS|splitflags, kp_rankemeraldback);
-		}
-		else
-		{
-			//xindex = 2;
-			starty -= 15;
-			if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
-			{
-				startx = LAPS_X;
-				splitflags = V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
-			}
-			else // else, that means we're P2 or P4.
-			{
-				startx = LAPS2_X + 1;
-				splitflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
-			}
-		}
-	}
-
-	/*for (i = 0; i < 7; i++)
-	{
-		UINT32 emeraldFlag = (1 << i);
-		UINT16 emeraldColor = SKINCOLOR_CHAOSEMERALD1 + i;
-
-		if (stplyr->emeralds & emeraldFlag)
-		{
-			boolean whiteFlash = (leveltime & 1);
-			UINT8 *colormap;
-
-			if (i & 1)
-			{
-				whiteFlash = !whiteFlash;
-			}
-
-			colormap = R_GetTranslationColormap(TC_DEFAULT, emeraldColor, GTC_CACHE);
-			V_DrawMappedPatch(
-				startx + emeraldOffsets[i][xindex], starty + emeraldOffsets[i][1],
-				V_HUDTRANS|splitflags,
-				kp_rankemerald, colormap
-			);
-
-			if (whiteFlash == true)
-			{
-				V_DrawScaledPatch(
-					startx + emeraldOffsets[i][xindex], starty + emeraldOffsets[i][1],
-					V_HUDTRANSHALF|splitflags,
-					kp_rankemeraldflash
-				);
-			}
-		}
-	}*/
 }
 
 //
@@ -4581,13 +4476,6 @@ void K_drawKartHUD(void)
 					{
 						// Draw the numerical position
 						K_DrawKartPositionNum(stplyr->position);
-					}
-				}
-				else if (gametype == GT_BATTLE) // Battle-only (ditto)
-				{
-					if (!freecam && !itembreaker)
-					{
-						K_drawKartEmeralds();
 					}
 				}
 			}

@@ -395,16 +395,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				P_DamageMobj(player->mo, special, special->target, 1, DMG_NORMAL);
 			}
 			return;
-		case MT_EMERALD:
-			if (!P_CanPickupItem(player, 0))
-				return;
-
-			if (special->threshold > 0)
-				return;
-
-			player->emeralds |= special->extravalue1;
-			K_CheckEmeralds(player);
-			break;
 		/*
 		case MT_EERIEFOG:
 			special->frame &= ~FF_TRANS80;
@@ -1758,8 +1748,6 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 			break;
 	}
 
-	K_DropEmeraldsFromPlayer(player, player->emeralds);
-
 	player->carry = CR_NONE;
 
 	K_KartResetPlayerColor(player);
@@ -1982,21 +1970,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 					if (damagetype & DMG_STEAL)
 					{
-						// Give them ALL of your emeralds instantly :)
-						source->player->emeralds |= player->emeralds;
-						player->emeralds = 0;
-						K_CheckEmeralds(source->player);
+						K_CheckBumpers();
 					}
 				}
 				else
 				{
 					K_DestroyBumpers(player, takeBumpers);
-				}
-
-				if (!(damagetype & DMG_STEAL))
-				{
-					// Drop all of your emeralds
-					K_DropEmeraldsFromPlayer(player, player->emeralds);
 				}
 			}
 

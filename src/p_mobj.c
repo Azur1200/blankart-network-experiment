@@ -1210,6 +1210,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_FLINGCOIN:
 				case MT_FLINGBLUESPHERE:
 				case MT_FLINGNIGHTSCHIP:
+				case MT_FLINGEMERALD:
 				case MT_BOUNCERING:
 				case MT_RAILRING:
 				case MT_INFINITYRING:
@@ -1246,7 +1247,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_LANDMINE:
 				case MT_DROPTARGET:
 				case MT_SINK:
-				case MT_EMERALD:
 					if (mo->extravalue2 > 0)
 					{
 						gravityadd *= mo->extravalue2;
@@ -2284,20 +2284,6 @@ boolean P_ZMovement(mobj_t *mo)
 			{
 				mo->fuse = 1;
 				return false;
-			}
-			break;
-
-		case MT_EMERALD:
-			if (P_CheckDeathPitCollide(mo))
-			{
-				P_RemoveMobj(mo);
-				return false;
-			}
-
-			if (mo->z <= mo->floorz || mo->z + mo->height >= mo->ceilingz)
-			{
-				// Stop when hitting the floor
-				mo->momx = mo->momy = 0;
 			}
 			break;
 
@@ -7145,27 +7131,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_SPBEXPLOSION:
 		mobj->health--;
 		break;
-	case MT_EMERALD:
-		{
-
-			if (leveltime % 3 == 0)
-			{
-				mobj_t *sparkle = P_SpawnMobjFromMobj(
-					mobj,
-					P_RandomRange(-48, 48) * FRACUNIT,
-					P_RandomRange(-48, 48) * FRACUNIT,
-					P_RandomRange(0, 64) * FRACUNIT,
-					MT_EMERALDSPARK
-				);
-
-				sparkle->color = mobj->color;
-				sparkle->momz += 8 * mobj->scale * P_MobjFlip(mobj);
-			}
-
-			if (mobj->threshold > 0)
-				mobj->threshold--;
-		}
-		break;
 	case MT_BOOSTFLAME:
 		if (!mobj->target || !mobj->target->health)
 		{
@@ -8823,7 +8788,7 @@ void P_MobjThinker(mobj_t *mobj)
 		|| mobj->type == MT_FLINGCOIN
 		|| mobj->type == MT_FLINGBLUESPHERE
 		|| mobj->type == MT_FLINGNIGHTSCHIP
-		|| mobj->type == MT_EMERALD
+		|| mobj->type == MT_FLINGEMERALD
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_LITTLETUMBLEWEED
 		|| mobj->type == MT_CANNONBALLDECOR
@@ -9142,7 +9107,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_FLINGRING:
 		case MT_FLOATINGITEM:
 		case MT_BLUESPHERE:
-		case MT_EMERALD:
 		case MT_ITEMCAPSULE:
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
