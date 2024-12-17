@@ -2234,6 +2234,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	INT32 roulettetype;
 	INT32 growshrinktimer;
 	INT32 bumper;
+	INT32 karmapoints;
+	INT32 wanted;
 	boolean songcredit = false;
 	tic_t spectatorreentry;
 	tic_t grieftime;
@@ -2290,6 +2292,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		itemamount = 0;
 		growshrinktimer = 0;
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
+		karmapoints = 0;
+		wanted = 0;
 		rings = ((gametyperules & GTR_SPHERES) ? 0 : 10);
 		spheres = 0;
 		kickstartaccel = 0;
@@ -2335,6 +2339,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			growshrinktimer = 0;
 
 		bumper = players[player].bumper;
+		karmapoints = players[player].karmapoints;
+		wanted = players[player].wanted;
 		rings = players[player].rings;
 		spheres = players[player].spheres;
 		kickstartaccel = players[player].kickstartaccel;
@@ -2444,7 +2450,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->growshrinktimer = growshrinktimer;
 	p->bumper = bumper;
 	p->karmadelay = comebacktime;
-	p->overtimekarma = 0;
+	p->karmapoints = karmapoints;
+	p->wanted = wanted;
 	p->eggmanblame = -1;
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;

@@ -280,6 +280,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!P_CanPickupItem(player, 1))
 				return;
 
+			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			{
+				if (player->karmamode || player->karmadelay)
+					return;
+				player->karmamode = 1;
+			}
+
 			special->momx = special->momy = special->momz = 0;
 			P_SetTarget(&special->target, toucher);
 			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
@@ -326,6 +333,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->target->player->karmadelay > 0)
 				return;
 
+			if (!special->target->player->karmamode)
 			{
 				mobj_t *boom;
 
@@ -350,6 +358,84 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->target->player->karthud[khud_yougotem] = 2*TICRATE;
 				special->target->player->karmadelay = comebacktime;
 			}
+			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, 1))
+			{
+				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				S_StartSound(poof, special->info->seesound);
+
+				// Karma fireworks
+				for (i = 0; i < 5; i++)
+				{
+					mobj_t *firework = P_SpawnMobj(special->x, special->y, special->z, MT_KARMAFIREWORK);
+					firework->momx = (special->target->momx + toucher->momx) / 2;
+					firework->momy = (special->target->momy + toucher->momy) / 2;
+					firework->momz = (special->target->momz + toucher->momz) / 2;
+					P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(1,8)*special->scale);
+					P_SetObjectMomZ(firework, P_RandomRange(1,8)*special->scale, false);
+					firework->color = special->target->color;
+				}
+
+				special->target->player->karmamode = 0;
+				special->target->player->karmapoints++;
+
+				if (special->target->player->karmapoints >= 2)
+					K_TakeBumpersFromPlayer(special->target->player, player, 1);
+
+				special->target->player->karmadelay = comebacktime;
+
+				player->itemroulette = 1;
+				player->roulettetype = 1;
+			}
+			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
+			{
+				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				UINT8 ptadd = 1; // No WANTED bonus for tricking
+
+				S_StartSound(poof, special->info->seesound);
+
+				if (player->bumper == 1) // If you have only one bumper left, and see if it's a 1v1
+				{
+					INT32 numingame = 0;
+
+					for (i = 0; i < MAXPLAYERS; i++)
+					{
+						if (!playeringame[i] || players[i].spectator || players[i].bumper <= 0)
+							continue;
+						numingame++;
+					}
+
+					if (numingame <= 2) // If so, then an extra karma point so they are 100% certain to switch places; it's annoying to end matches with a fake kill
+						ptadd++;
+				}
+
+				special->target->player->karmamode = 0;
+				special->target->player->karmapoints += ptadd;
+
+				if (ptadd > 1)
+					special->target->player->karthud[khud_yougotem] = 2*TICRATE;
+
+				if (special->target->player->karmapoints >= 2)
+					K_TakeBumpersFromPlayer(special->target->player, player, 1);
+
+				special->target->player->karmadelay = comebacktime;
+
+				K_DropItems(player); //K_StripItems(player);
+				//K_StripOther(player);
+
+				player->itemroulette = 1;
+				player->roulettetype = 2;
+
+				if (special->target->player->eggmanblame >= 0
+					&& special->target->player->eggmanblame < MAXPLAYERS
+					&& playeringame[special->target->player->eggmanblame]
+					&& !players[special->target->player->eggmanblame].spectator)
+					player->eggmanblame = special->target->player->eggmanblame;
+				else
+					player->eggmanblame = -1;
+
+				special->target->player->eggmanblame = -1;
+			}
+
 			return;
 		case MT_SPB:
 			if ((special->target == toucher || special->target == toucher->target) && (special->threshold > 0))
@@ -1882,7 +1968,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (gametyperules & GTR_BUMPERS)
 				{
-					if (player->bumper <= 0 && player->karmadelay)
+					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
 					{
 						// No bumpers & in WAIT, can't be hurt
 						K_DoInstashield(player);
@@ -1923,51 +2009,32 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			// We successfully damaged them! Give 'em some bumpers!
 			if (type != DMG_STING)
 			{
-				UINT8 takeBumpers = 1;
-
-				if (damagetype & DMG_STEAL)
-				{
-					takeBumpers = 2;
-
-					if (type == DMG_KARMA)
-					{
-						takeBumpers = player->bumper;
-					}
-				}
-				else
-				{
-					if (type == DMG_KARMA)
-					{
-						// Take half of their bumpers for karma comeback damage
-						takeBumpers = max(1, player->bumper / 2);
-					}
-				}
 
 				if (source && source != player->mo && source->player)
 				{
 					K_TryHurtSoundExchange(target, source);
-
-					K_BattleAwardHit(source->player, player, inflictor, takeBumpers);
-					K_TakeBumpersFromPlayer(source->player, player, takeBumpers);
-
-					if (type == DMG_KARMA)
-					{
-						// Destroy any remainder bumpers from the player for karma comeback damage
-						K_DestroyBumpers(player, player->bumper);
-					}
-					else
-					{
-						source->player->overtimekarma += 5*TICRATE;
-					}
+					K_BattleAwardHit(source->player, player, inflictor, 1);
 
 					if (damagetype & DMG_STEAL)
 					{
-						K_CheckBumpers();
+						K_TakeBumpersFromPlayer(source->player, player, 1);
 					}
-				}
-				else
-				{
-					K_DestroyBumpers(player, takeBumpers);
+					else if (damage & DMG_KARMA)
+					{
+						source->player->karmapoints++;
+						if (source->player->karmapoints >= 2)
+						{
+							K_TakeBumpersFromPlayer(source->player, player, 1);
+						}
+						else
+						{
+							K_DestroyBumpers(player, 1);
+						}
+					}
+					else
+					{
+						K_DestroyBumpers(player, 1);
+					}
 				}
 			}
 

@@ -2950,12 +2950,6 @@ UINT16 K_GetKartFlashing(player_t *player)
 {
 	UINT16 tics = flashingtics;
 
-	if (gametype == GT_BATTLE)
-	{
-		// TODO: gametyperules
-		return 1;
-	}
-
 	if (player == NULL)
 	{
 		return tics;
@@ -3484,6 +3478,7 @@ void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount)
 		}
 
 		player->bumper++;
+		player->karmapoints = 0;
 		victim->bumper--;
 		tookBumpers++;
 	}
@@ -8275,8 +8270,37 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	{
 		// First, the really specific, finicky items that function without the item being directly in your item slot.
 		{
+			// Karma item dropping
+			if (ATTACK_IS_DOWN && player->karmamode && !player->karmadelay)
+			{
+				mobj_t *newitem;
+
+				if (player->karmamode == 1)
+				{
+					newitem = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RANDOMITEM);
+					newitem->threshold = 69; // selected "randomly".
+				}
+				else
+				{
+					newitem = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM);
+					if (player->eggmanblame >= 0
+						&& player->eggmanblame < MAXPLAYERS
+						&& playeringame[player->eggmanblame]
+						&& !players[player->eggmanblame].spectator
+						&& players[player->eggmanblame].mo)
+						P_SetTarget(&newitem->target, players[player->eggmanblame].mo);
+					player->eggmanblame = -1;
+				}
+
+				newitem->flags2 = (player->mo->flags2 & MF2_OBJECTFLIP);
+				newitem->fuse = 15*TICRATE; // selected randomly.
+
+				player->karmamode = 0;
+				player->karmadelay = comebacktime;
+				S_StartSound(player->mo, sfx_s254);
+			}
 			// Ring boosting
-			if (player->pflags & PF_USERINGS)
+			else if (player->pflags & PF_USERINGS)
 			{
 				if ((cmd->buttons & BT_ATTACK) && !player->ringdelay && player->rings > 0)
 				{

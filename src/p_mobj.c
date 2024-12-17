@@ -7558,12 +7558,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 		break;
-	case MT_KARMAHITBOX:
+		case MT_KARMAHITBOX:
 		{
 			statenum_t state = (mobj->state-states);
 
 			if (!mobj->target || !mobj->target->health || !mobj->target->player || mobj->target->player->spectator
-				|| (gametype == GT_RACE || mobj->target->player->bumper))
+				|| (gametyperules & GTR_CIRCUIT || mobj->target->player->bumper))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -7577,13 +7577,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->color = mobj->target->color;
 			mobj->colorized = true;
 
-			mobj->radius = 24*mobj->target->scale;
+			// Give items an item-sized hitbox
+			if (mobj->target->player->karmamode == 1)
+				mobj->radius = 48*mobj->target->scale;
+			else
+				mobj->radius = 24*mobj->target->scale;
 			mobj->height = 2*mobj->radius;
 
 			if (mobj->target->player->karmadelay > 0)
 			{
-				if (state < S_PLAYERBOMB1 || state > S_PLAYERBOMB20)
-					P_SetMobjState(mobj, S_PLAYERBOMB1);
+				if (state < mobj->info->spawnstate || state > mobj->info->spawnstate+19)
+					P_SetMobjState(mobj, mobj->info->spawnstate);
 				if (mobj->target->player->karmadelay < TICRATE && (leveltime & 1))
 					mobj->renderflags &= ~RF_DONTDRAW;
 				else
@@ -7591,8 +7595,15 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 			else
 			{
-				if (state < S_PLAYERBOMB1 || state > S_PLAYERBOMB20)
-					P_SetMobjState(mobj, S_PLAYERBOMB1);
+				if (!mobj->target->player->karmamode
+					&& (state < mobj->info->spawnstate || state > mobj->info->spawnstate+19))
+					P_SetMobjState(mobj, mobj->info->spawnstate);
+				else if (mobj->target->player->karmamode == 1
+					&& state != mobj->info->seestate)
+					P_SetMobjState(mobj, mobj->info->seestate);
+				else if (mobj->target->player->karmamode == 2
+					&& state != mobj->info->painstate)
+					P_SetMobjState(mobj, mobj->info->painstate);
 
 				if (mobj->target->player->flashing && (leveltime & 1))
 					mobj->renderflags |= RF_DONTDRAW;

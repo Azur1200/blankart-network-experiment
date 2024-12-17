@@ -2584,28 +2584,36 @@ static void K_drawKartBumpersOrKarma(void)
 		}
 		else
 		{
-			INT32 maxbumper = K_StartingBumperCount();
-			V_DrawMappedPatch(fx+1, fy-2, V_HUDTRANS|splitflags, kp_rankbumper, colormap);
-
-			if (stplyr->bumper > 9 || maxbumper > 9)
+			if (stplyr->bumper <= 0)
 			{
-				UINT8 ln[2];
-				ln[0] = (stplyr->bumper / 10 % 10);
-				ln[1] = (stplyr->bumper % 10);
-
-				V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
-				V_DrawScaledPatch(fx+17, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
-
-				ln[0] = ((abs(maxbumper) / 10) % 10);
-				ln[1] = (abs(maxbumper) % 10);
-
-				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
-				V_DrawScaledPatch(fx+31, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
+				V_DrawMappedPatch(fx, fy-1, V_HUDTRANS|splitflags, kp_splitkarmabomb, colormap);
+				V_DrawString(fx+13, fy+1, V_HUDTRANS|splitflags, va("%d/2", stplyr->karmapoints));
 			}
 			else
 			{
-				V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->bumper) % 10]);
-				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(maxbumper) % 10]);
+				INT32 maxbumper = K_StartingBumperCount();
+				V_DrawMappedPatch(fx+1, fy-2, V_HUDTRANS|splitflags, kp_rankbumper, colormap);
+
+				if (stplyr->bumper > 9 || maxbumper > 9)
+				{
+					UINT8 ln[2];
+					ln[0] = (stplyr->bumper / 10 % 10);
+					ln[1] = (stplyr->bumper % 10);
+
+					V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
+					V_DrawScaledPatch(fx+17, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
+
+					ln[0] = ((abs(maxbumper) / 10) % 10);
+					ln[1] = (abs(maxbumper) % 10);
+
+					V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
+					V_DrawScaledPatch(fx+31, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
+				}
+				else
+				{
+					V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->bumper) % 10]);
+					V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(maxbumper) % 10]);
+				}
 			}
 		}
 	}
@@ -2622,17 +2630,22 @@ static void K_drawKartBumpersOrKarma(void)
 		}
 		else
 		{
-			INT32 maxbumper = K_StartingBumperCount();
-
-			if (stplyr->bumper > 9 && maxbumper > 9)
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumperstickerwide, colormap);
+			if (stplyr->bumper <= 0)
+			{
+				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_karmasticker, NULL);
+				V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/2", stplyr->karmapoints));
+			}
 			else
-				V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumpersticker, colormap);
+			{
+				INT32 maxbumper = K_StartingBumperCount();
 
-			if (bossinfo.boss)
+				if (stplyr->bumper > 9 && maxbumper > 9)
+					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumperstickerwide, colormap);
+				else
+					V_DrawMappedPatch(LAPS_X, LAPS_Y, V_HUDTRANS|splitflags, kp_bumpersticker, colormap);
+
 				V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", stplyr->bumper, maxbumper));
-			else // TODO BETTER HUD
-				V_DrawKartString(LAPS_X+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d  %d", stplyr->bumper, maxbumper, stplyr->overtimekarma / TICRATE));
+			}
 		}
 	}
 }

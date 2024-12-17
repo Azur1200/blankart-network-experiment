@@ -233,7 +233,9 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 
 		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)
 		{
-			return true;
+			if (t2->player->karmamode || t2->player->karmadelay)
+				return true;
+			t2->player->karmamode = 2;
 		}
 		else
 		{

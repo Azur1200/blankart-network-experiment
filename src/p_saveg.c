@@ -333,7 +333,9 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].emeralds);
 		WRITEUINT8(save->p, players[i].bumper);
 		WRITEINT16(save->p, players[i].karmadelay);
-		WRITEUINT32(save->p, players[i].overtimekarma);
+		WRITEINT16(save->p, players[i].karmamode);
+		WRITEINT16(save->p, players[i].karmapoints);
+		WRITEINT16(save->p, players[i].wanted);
 		WRITEINT16(save->p, players[i].spheres);
 		WRITEUINT32(save->p, players[i].spheredigestion);
 
@@ -623,7 +625,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].emeralds = READUINT8(save->p);
 		players[i].bumper = READUINT8(save->p);
 		players[i].karmadelay = READINT16(save->p);
-		players[i].overtimekarma = READUINT32(save->p);
+		players[i].karmamode = READINT16(save->p);
+		players[i].karmapoints = READINT16(save->p);
+		players[i].wanted = READINT16(save->p);
 		players[i].spheres = READINT16(save->p);
 		players[i].spheredigestion = READUINT32(save->p);
 
