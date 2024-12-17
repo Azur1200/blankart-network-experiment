@@ -14,7 +14,7 @@ extern UINT8 numtargets;
 
 INT32 K_StartingBumperCount(void);
 boolean K_IsPlayerWanted(player_t *player);
-#define K_CalculateBattleWanted() (void)0 // not nulled out so we know where we need to recalculate some other form of battle mode importance
+void K_CalculateBattleWanted(void);
 void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount);
 void K_CheckBumpers(void);
 UINT8 K_NumEmeralds(player_t *player);

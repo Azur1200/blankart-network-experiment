@@ -40,17 +40,134 @@ INT32 K_StartingBumperCount(void)
 
 boolean K_IsPlayerWanted(player_t *player)
 {
-	UINT8 i = 0, nump = 0, numfirst = 0;
-	for (; i < MAXPLAYERS; i++)
+	UINT8 i;
+
+	if (!(gametyperules & GTR_WANTED))
+		return false;
+
+	for (i = 0; i < 4; i++)
 	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-		nump++;
-		if (players[i].position > 1)
-			continue;
-		numfirst++;
+		if (battlewanted[i] == -1)
+			break;
+		if (player == &players[battlewanted[i]])
+			return true;
 	}
-	return ((numfirst < nump) && !player->spectator && (player->position == 1));
+	return false;
+}
+
+void K_CalculateBattleWanted(void)
+{
+	UINT8 numingame = 0, numwanted = 0;
+	SINT8 camppos[MAXPLAYERS]; // who is the biggest camper
+	UINT8 ties = 0, nextcamppos = 0;
+	UINT8 i, j;
+
+	if (!(gametyperules & GTR_WANTED))
+	{
+		memset(battlewanted, -1, sizeof (battlewanted));
+		return;
+	}
+
+	wantedcalcdelay = wantedfrequency;
+	memset(camppos, -1, sizeof (camppos)); // initialize
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		UINT8 position = 1;
+
+		if (!playeringame[i] || players[i].spectator) // Not playing
+			continue;
+
+		if (players[i].exiting) // We're done, don't calculate.
+			return;
+
+		if (players[i].bumper <= 0) // Not alive, so don't do anything else
+			continue;
+
+		numingame++;
+
+		for (j = 0; j < MAXPLAYERS; j++)
+		{
+			if (!playeringame[j] || players[j].spectator)
+				continue;
+
+			if (players[j].bumper <= 0)
+				continue;
+
+			if (j == i)
+				continue;
+
+			if (K_NumEmeralds(&players[j]) > K_NumEmeralds(&players[i]))
+			{
+				position++;
+			}
+			else if (players[j].bumper > players[i].bumper)
+			{
+				position++;
+			}
+			else if (players[j].roundscore > players[i].roundscore)
+			{
+				position++;
+			}
+			else if (players[j].wanted > players[i].wanted)
+			{
+				position++;
+			}
+		}
+
+		position--; // Make zero based
+
+		while (camppos[position] != -1) // Port priority!
+			position++;
+
+		camppos[position] = i;
+	}
+
+	if (numingame <= 2) // In 1v1s then there's no need for WANTED.
+		numwanted = 0;
+	else
+		numwanted = min(4, 1 + ((numingame-2) / 4));
+
+	for (i = 0; i < 4; i++)
+	{
+		if (i+1 > numwanted) // Not enough players for this slot to be wanted!
+		{
+			battlewanted[i] = -1;
+		}
+		else
+		{
+			// Do not add *any* more people if there's too many times that are tied with others.
+			// This could theoretically happen very easily if people don't hit each other for a while after the start of a match.
+			// (I will be sincerely impressed if more than 2 people tie after people start hitting each other though)
+
+			if (camppos[nextcamppos] == -1 // Out of entries
+				|| ties >= (numwanted-i)) // Already counted ties
+			{
+				battlewanted[i] = -1;
+				continue;
+			}
+
+			if (ties < (numwanted-i))
+			{
+				ties = 0; // Reset
+				for (j = 0; j < 2; j++)
+				{
+					if (camppos[nextcamppos+(j+1)] == -1) // Nothing beyond, cancel
+						break;
+					if (players[camppos[nextcamppos]].wanted == players[camppos[nextcamppos+(j+1)]].wanted)
+						ties++;
+				}
+			}
+
+			if (ties < (numwanted-i)) // Is it still low enough after counting?
+			{
+				battlewanted[i] = camppos[nextcamppos];
+				nextcamppos++;
+			}
+			else
+				battlewanted[i] = -1;
+		}
+	}
 }
 
 void K_SpawnBattlePoints(player_t *source, player_t *victim, UINT8 amount)
@@ -200,8 +317,6 @@ UINT8 K_NumEmeralds(player_t *player)
 void K_RunPaperItemSpawners(void)
 {
 	tic_t interval = 8*TICRATE;
-
-	const boolean canmakeemeralds = true; //(!(itembreaker || bossinfo.boss));
 
 	thinker_t *th;
 	mobj_t *mo;

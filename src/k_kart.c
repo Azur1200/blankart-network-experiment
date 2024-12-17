@@ -3395,8 +3395,8 @@ void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
 			CONS_Printf(M_GetText("%s lost all of their bumpers!\n"), player_names[player-players]);
 		}
 	}
-
-	K_CalculateBattleWanted();
+	if (K_IsPlayerWanted(player))
+		K_CalculateBattleWanted();
 	K_CheckBumpers();
 }
 
@@ -7886,29 +7886,19 @@ void K_KartUpdatePosition(player_t *player)
 			}
 			else
 			{
-				UINT8 myEmeralds = K_NumEmeralds(player);
-				UINT8 yourEmeralds = K_NumEmeralds(&players[i]);
-
-				if (yourEmeralds > myEmeralds)
+				if (player->exiting) // End of match standings
 				{
-					// Emeralds matter above all
-					position++;
-				}
-				else if (yourEmeralds == myEmeralds)
-				{
-					// Bumpers are a tie breaker
-					if (players[i].bumper > player->bumper)
-					{
+					// Only score matters
+					if (players[i].roundscore > player->roundscore)
 						position++;
-					}
-					else if (players[i].bumper == player->bumper)
-					{
-						// Score is the second tier tie breaker
-						if (players[i].roundscore > player->roundscore)
-						{
-							position++;
-						}
-					}
+				}
+				else
+				{
+					// I have less points than but the same bumpers as this player OR
+					// I have less bumpers than this player
+					if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
+						|| (players[i].bumper > player->bumper))
+						position++;
 				}
 			}
 		}

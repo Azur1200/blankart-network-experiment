@@ -502,6 +502,7 @@ struct player_t
 	UINT32 roundscore; // battle score this round
 	UINT8 emeralds;
 	UINT8 bumper;
+	INT32 wanted;
 	INT16 karmadelay;
 	tic_t overtimekarma; // time to live in overtime comeback
 	INT16 spheres;

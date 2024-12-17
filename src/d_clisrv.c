@@ -2555,7 +2555,8 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 		}
 	}
 
-	K_CalculateBattleWanted();
+	if (K_IsPlayerWanted(&players[playernum]))
+		K_CalculateBattleWanted();
 
 	LUA_HookPlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
