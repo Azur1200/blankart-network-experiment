@@ -7147,16 +7147,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		break;
 	case MT_EMERALD:
 		{
-			if (battleovertime.enabled >= 10*TICRATE)
-			{
-				fixed_t distance = R_PointToDist2(mobj->x, mobj->y, battleovertime.x, battleovertime.y);
-
-				if (distance > battleovertime.radius)
-				{
-					// Delete emeralds to let them reappear
-					P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
-				}
-			}
 
 			if (leveltime % 3 == 0)
 			{
@@ -8401,32 +8391,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			trail->color = mobj->color;
 		}
 		break;
-	case MT_SPHEREBOX:
-		if (gametype == GT_BATTLE && mobj->threshold == 70)
-		{
-			if (battleovertime.enabled)
-			{
-				angle_t ang = FixedAngle((leveltime % 360) << FRACBITS);
-				fixed_t z = battleovertime.z;
-				fixed_t dist;
-				mobj_t *ghost;
-
-				/*if (z < mobj->subsector->sector->floorheight)
-					z = mobj->subsector->sector->floorheight;*/
-
-				if (mobj->extravalue1 < 512)
-					mobj->extravalue1++;
-				dist = mobj->extravalue1 * mapobjectscale;
-
-				P_MoveOrigin(mobj, battleovertime.x + P_ReturnThrustX(NULL, ang, dist),
-					battleovertime.y + P_ReturnThrustY(NULL, ang, dist), z);
-
-				ghost = P_SpawnGhostMobj(mobj);
-				ghost->fuse = 4;
-				ghost->frame |= FF_FULLBRIGHT;
-			}
-		}
-		break;
 	default:
 		// check mobj against possible water content, before movement code
 		P_MobjCheckWater(mobj);
@@ -8598,8 +8562,6 @@ static boolean P_FuseThink(mobj_t *mobj)
 
 			// Transfer flags2 (strongbox, objectflip, bossnotrap)
 			newmobj->flags2 = mobj->flags2;
-			if (mobj->threshold == 70)
-				newmobj->threshold = 70;
 		}
 
 		P_RemoveMobj(mobj); // make sure they disappear

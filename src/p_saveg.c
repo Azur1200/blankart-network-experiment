@@ -5009,13 +5009,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	for (i = 0; i < 4; i++)
 		WRITESINT8(save->p, battlewanted[i]);
 
-	// battleovertime_t
-	WRITEUINT16(save->p, battleovertime.enabled);
-	WRITEFIXED(save->p, battleovertime.radius);
-	WRITEFIXED(save->p, battleovertime.x);
-	WRITEFIXED(save->p, battleovertime.y);
-	WRITEFIXED(save->p, battleovertime.z);
-
 	WRITEUINT32(save->p, wantedcalcdelay);
 	WRITEUINT32(save->p, indirectitemcooldown);
 	WRITEUINT32(save->p, mapreset);
@@ -5179,13 +5172,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	for (i = 0; i < 4; i++)
 		battlewanted[i] = READSINT8(save->p);
-
-	// battleovertime_t
-	battleovertime.enabled = READUINT16(save->p);
-	battleovertime.radius = READFIXED(save->p);
-	battleovertime.x = READFIXED(save->p);
-	battleovertime.y = READFIXED(save->p);
-	battleovertime.z = READFIXED(save->p);
 
 	wantedcalcdelay = READUINT32(save->p);
 	indirectitemcooldown = READUINT32(save->p);

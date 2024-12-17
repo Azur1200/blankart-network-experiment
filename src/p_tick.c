@@ -480,9 +480,6 @@ static void P_RunThinkers(void)
 	if (gametyperules & GTR_PAPERITEMS)
 		K_RunPaperItemSpawners();
 
-	if ((gametyperules & GTR_BUMPERS) && battleovertime.enabled)
-		K_RunBattleOvertime();
-
 	ps_acs_time = I_GetPreciseTime();
 	ACS_Tick();
 	ps_acs_time = I_GetPreciseTime() - ps_acs_time;

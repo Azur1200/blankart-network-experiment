@@ -1089,7 +1089,6 @@ sfxinfo_t S_sfx[NUMSFX] =
   {"mkuma",  false,  96,  8, -1, NULL, 0,        -1,  -1, LUMPERROR, "Monokuma"}, // Trigger Happy Havoc Monokuma
   {"toada",  false,  64,  0, -1, NULL, 0,        -1,  -1, LUMPERROR, "/"}, // Arid Sands Toad scream
   {"gemhit", false,  64,  0, -1, NULL, 0,        -1,  -1, LUMPERROR, "/"}, // Opulence gem/coin tumbling
-  {"bhurry", false, 255,  0, -1, NULL, 0,        -1,  -1, LUMPERROR, "Hurry up!"}, // v1.0.2 Battle overtime
   {"bsnipe", false,  96,  8, -1, NULL, 0,        -1,  -1, LUMPERROR, "Sniped"}, // Banana sniping
   {"join",   false,  96,  8, -1, NULL, 0,        -1,  -1, LUMPERROR, ""}, // Player joined server
   {"leave",  false,  96,  8, -1, NULL, 0,        -1,  -1, LUMPERROR, ""}, // Player left server

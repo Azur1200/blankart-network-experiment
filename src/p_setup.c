@@ -7738,7 +7738,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	for (i = 0; i < 4; i++)
 		battlewanted[i] = -1;
 
-	memset(&battleovertime, 0, sizeof(struct battleovertime));
 	speedscramble = encorescramble = -1;
 }
 

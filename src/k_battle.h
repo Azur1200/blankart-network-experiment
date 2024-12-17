@@ -8,13 +8,6 @@
 extern "C" {
 #endif
 
-extern struct battleovertime
-{
-	UINT16 enabled; ///< Has this been initalized yet?
-	fixed_t radius; ///< Radius of kill field
-	fixed_t x, y, z; ///< Position to center on
-} battleovertime;
-
 extern boolean itembreaker;
 extern INT32 nummapboxes, numgotboxes; // keep track of spawned battle mode items
 extern UINT8 numtargets;
@@ -30,7 +23,6 @@ mobj_t *K_SpawnSphereBox(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 f
 void K_DropEmeraldsFromPlayer(player_t *player, UINT32 emeraldType);
 UINT8 K_NumEmeralds(player_t *player);
 void K_RunPaperItemSpawners(void);
-void K_RunBattleOvertime(void);
 void K_SpawnPlayerBattleBumpers(player_t *p);
 void K_BattleInit(void);
 

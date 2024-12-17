@@ -12,6 +12,7 @@
 /// \brief Handling interactions (i.e., collisions)
 
 #include "doomdef.h"
+#include "doomstat.h"
 #include "i_system.h"
 #include "am_map.h"
 #include "g_game.h"
@@ -679,50 +680,16 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
   */
 void P_CheckTimeLimit(void)
 {
-	INT32 i;
+	INT32 i, k;
 
-#ifndef TESTOVERTIMEINFREEPLAY
-	if (itembreaker) // Item Breaker overrides any time limit settings
-		return;
-#endif
-
-	if (!(gametyperules & GTR_TIMELIMIT))
+	if (!cv_timelimit.value)
 		return;
 
-	if (bossinfo.boss == true)
-		return;
-	
-	if (exitcountdown)
+	if (!(multiplayer || netgame))
 		return;
 
-	if (!timelimitintics)
+	if ((gametyperules & GTR_TIMELIMIT))
 		return;
-
-	if (secretextratime)
-	{
-		secretextratime--;
-		timelimitintics++;
-	}
-	else if (extratimeintics)
-	{
-		timelimitintics++;
-		if (leveltime & 1)
-			;
-		else
-		{
-			if (extratimeintics > 20)
-			{
-				extratimeintics -= 20;
-				timelimitintics += 20;
-			}
-			else
-			{
-				timelimitintics += extratimeintics;
-				extratimeintics = 0;
-			}
-			S_StartSound(NULL, sfx_ptally);
-		}
-	}
 
 	if (leveltime < (timelimitintics + starttime))
 		return;
@@ -730,68 +697,69 @@ void P_CheckTimeLimit(void)
 	if (gameaction == ga_completed)
 		return;
 
-	if ((cv_overtime.value) && (gametyperules & GTR_OVERTIME))
+	if (cv_overtime.value)
 	{
-#ifndef TESTOVERTIMEINFREEPLAY
-		boolean foundone = false; // Overtime is used for closing off down to a specific item.
+		INT32 playerarray[MAXPLAYERS];
+		INT32 tempplayer = 0;
+		INT32 spectators = 0;
+		INT32 playercount = 0;
+
+		//Figure out if we have enough participating players to care.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
-				continue;
+			if (players[i].exiting)
+				return;
+			if (playeringame[i] && players[i].spectator)
+				spectators++;
+		}
 
-			if (foundone)
+		if ((D_NumPlayers() - spectators) > 1)
+		{
+			// Play the starpost sfx after the first second of overtime.
+			if (gamestate == GS_LEVEL && (leveltime == (timelimitintics + TICRATE)))
+				S_StartSound(NULL, sfx_strpst);
+
+			// Normal Match
+			if (!G_GametypeHasTeams())
 			{
-#endif
-				// Initiate the kill zone
-				if (!battleovertime.enabled)
+				//Store the nodes of participating players in an array.
+				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					thinker_t *th;
-					mobj_t *center = NULL;
-
-					for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+					if (playeringame[i] && !players[i].spectator)
 					{
-						mobj_t *thismo;
-
-						if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-							continue;
-
-						thismo = (mobj_t *)th;
-
-						if (thismo->type == MT_OVERTIME_CENTER)
-						{
-							center = thismo;
-							break;
-						}
+						playerarray[playercount] = i;
+						playercount++;
 					}
-
-					if (center == NULL || P_MobjWasRemoved(center))
-					{
-						CONS_Alert(CONS_WARNING, "No center point for overtime!\n");
-
-						battleovertime.x = 0;
-						battleovertime.y = 0;
-						battleovertime.z = 0;
-					}
-					else
-					{
-						battleovertime.x = center->x;
-						battleovertime.y = center->y;
-						battleovertime.z = center->z;
-					}
-
-					battleovertime.radius = 4096 * mapobjectscale;
-					battleovertime.enabled = 1;
-
-					S_StartSound(NULL, sfx_kc47);
 				}
 
-				return;
-#ifndef TESTOVERTIMEINFREEPLAY
+				if (playercount > MAXPLAYERS)
+					playercount = MAXPLAYERS;
+
+				//Sort 'em.
+				for (i = 1; i < playercount; i++)
+				{
+					for (k = i; k < playercount; k++)
+					{
+						if (players[playerarray[i-1]].roundscore < players[playerarray[k]].roundscore)
+						{
+							tempplayer = playerarray[i-1];
+							playerarray[i-1] = playerarray[k];
+							playerarray[k] = tempplayer;
+						}
+					}
+				}
+
+				//End the round if the top players aren't tied.
+				if (players[playerarray[0]].roundscore == players[playerarray[1]].roundscore)
+					return;
 			}
 			else
-				foundone = true;
+			{
+				//In team match and CTF, determining a tie is much simpler. =P
+				if (redscore == bluescore)
+					return;
+			}
 		}
-#endif
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)

@@ -20,9 +20,6 @@
 #include "k_grandprix.h" // K_CanChangeRules
 #include "p_spec.h"
 
-// Battle overtime info
-struct battleovertime battleovertime;
-
 // Item Breaker mode enabled for this map?
 boolean itembreaker = false;
 
@@ -328,7 +325,6 @@ UINT8 K_NumEmeralds(player_t *player)
 
 void K_RunPaperItemSpawners(void)
 {
-	const boolean overtime = (battleovertime.enabled >= 10*TICRATE);
 	tic_t interval = 8*TICRATE;
 
 	const boolean canmakeemeralds = true; //(!(itembreaker || bossinfo.boss));
@@ -354,12 +350,6 @@ void K_RunPaperItemSpawners(void)
 		return;
 	}
 
-	if (overtime == true)
-	{
-		// Double frequency of items
-		interval /= 2;
-	}
-
 	if (((leveltime - starttime) % interval) != 0)
 	{
 		return;
@@ -383,65 +373,6 @@ void K_RunPaperItemSpawners(void)
 		pcount++;
 	}
 
-	if (overtime == true)
-	{
-		SINT8 flip = 1;
-
-		// Just find emeralds, no paper spots
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
-
-			mo = (mobj_t *)th;
-
-			if (mo->type == MT_EMERALD)
-			{
-				emeraldsSpawned |= mo->extravalue1;
-			}
-		}
-
-		if (canmakeemeralds)
-		{
-			for (i = 0; i < 7; i++)
-			{
-				UINT32 emeraldFlag = (1 << i);
-
-				if (!(emeraldsSpawned & emeraldFlag))
-				{
-					firstUnspawnedEmerald = emeraldFlag;
-					break;
-				}
-			}
-		}
-
-		if (firstUnspawnedEmerald != 0)
-		{
-			K_SpawnChaosEmerald(
-				battleovertime.x, battleovertime.y, battleovertime.z + (128 * mapobjectscale * flip),
-				FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
-				firstUnspawnedEmerald
-			);
-		}
-		else
-		{
-			K_CreatePaperItem(
-				battleovertime.x, battleovertime.y, battleovertime.z + (128 * mapobjectscale * flip),
-				FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
-				0, 0
-			);
-
-			if (gametyperules & GTR_SPHERES)
-			{
-				K_SpawnSphereBox(
-					battleovertime.x, battleovertime.y, battleovertime.z + (128 * mapobjectscale * flip),
-					FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
-					10
-				);
-			}
-		}
-	}
-	else
 	{
 		if (pcount > 0)
 		{
@@ -571,134 +502,6 @@ void K_RunPaperItemSpawners(void)
 				}
 			}
 			//CONS_Printf("\n");
-		}
-	}
-}
-
-static void K_SpawnOvertimeLaser(fixed_t x, fixed_t y, fixed_t scale)
-{
-	UINT8 i, j;
-
-	for (i = 0; i <= r_splitscreen; i++)
-	{
-		player_t *player = &players[displayplayers[i]];
-		fixed_t zpos;
-		SINT8 flip;
-
-		if (player == NULL || player->mo == NULL || P_MobjWasRemoved(player->mo) == true)
-		{
-			continue;
-		}
-
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-		{
-			zpos = player->mo->z + player->mo->height;
-		}
-		else
-		{
-			zpos = player->mo->z;
-		}
-
-		flip = P_MobjFlip(player->mo);
-
-		for (j = 0; j < 3; j++)
-		{
-			mobj_t *mo = P_SpawnMobj(x, y, zpos, MT_OVERTIME_PARTICLE);
-
-			if (player->mo->eflags & MFE_VERTICALFLIP)
-			{
-				mo->flags2 |= MF2_OBJECTFLIP;
-				mo->eflags |= MFE_VERTICALFLIP;
-			}
-
-			mo->angle = R_PointToAngle2(mo->x, mo->y, battleovertime.x, battleovertime.y) + ANGLE_90;
-			mo->renderflags |= (RF_DONTDRAW & ~(K_GetPlayerDontDrawFlag(player)));
-
-			P_SetScale(mo, scale);
-
-			switch (j)
-			{
-				case 0:
-					P_SetMobjState(mo, S_OVERTIME_BULB1);
-
-					if (leveltime & 1)
-						mo->frame += 1;
-
-					//P_SetScale(mo, mapobjectscale);
-					zpos += 35 * mo->scale * flip;
-					break;
-				case 1:
-					P_SetMobjState(mo, S_OVERTIME_LASER);
-
-					if (leveltime & 1)
-						mo->frame += 3;
-					else
-						mo->frame += (leveltime / 2) % 3;
-
-					//P_SetScale(mo, scale);
-					zpos += 346 * mo->scale * flip;
-
-					if (battleovertime.enabled < 10*TICRATE)
-						mo->renderflags |= RF_TRANS50;
-					break;
-				case 2:
-					P_SetMobjState(mo, S_OVERTIME_BULB2);
-
-					if (leveltime & 1)
-						mo->frame += 1;
-
-					//P_SetScale(mo, mapobjectscale);
-					break;
-				default:
-					I_Error("Bruh moment has occured\n");
-					return;
-			}
-		}
-	}
-}
-
-void K_RunBattleOvertime(void)
-{
-	if (battleovertime.enabled < 10*TICRATE)
-	{
-		battleovertime.enabled++;
-		if (battleovertime.enabled == TICRATE)
-			S_StartSound(NULL, sfx_bhurry);
-		if (battleovertime.enabled == 10*TICRATE)
-			S_StartSound(NULL, sfx_kc40);
-	}
-	else if (battleovertime.radius > 0)
-	{
-		const fixed_t minradius = 768 * mapobjectscale;
-
-		if (battleovertime.radius > minradius)
-			battleovertime.radius -= 2*mapobjectscale;
-		else
-			battleovertime.radius = minradius;
-	}
-
-	if (battleovertime.radius > 0)
-	{
-		const INT32 orbs = 32;
-		const angle_t angoff = ANGLE_MAX / orbs;
-		const UINT8 spriteSpacing = 128;
-
-		fixed_t circumference = FixedMul(M_PI_FIXED, battleovertime.radius * 2);
-		fixed_t scale = max(circumference / spriteSpacing / orbs, mapobjectscale);
-
-		fixed_t size = FixedMul(mobjinfo[MT_OVERTIME_PARTICLE].radius, scale);
-		fixed_t posOffset = max(battleovertime.radius - size, 0);
-
-		INT32 i;
-
-		for (i = 0; i < orbs; i++)
-		{
-			angle_t ang = (i * angoff) + FixedAngle((leveltime * FRACUNIT) / 4);
-
-			fixed_t x = battleovertime.x + P_ReturnThrustX(NULL, ang, posOffset);
-			fixed_t y = battleovertime.y + P_ReturnThrustY(NULL, ang, posOffset);
-
-			K_SpawnOvertimeLaser(x, y, scale);
 		}
 	}
 }

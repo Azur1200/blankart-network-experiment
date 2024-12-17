@@ -162,7 +162,6 @@ static patch_t *kp_lapanim_emblem[2];
 static patch_t *kp_lapanim_hand[3];
 
 static patch_t *kp_yougotem;
-static patch_t *kp_itemminimap;
 
 static patch_t *kp_alagles[10];
 static patch_t *kp_blagles[6];
@@ -554,7 +553,6 @@ void K_LoadKartHUDGraphics(void)
 	}
 
 	HU_UpdatePatch(&kp_yougotem, "YOUGOTEM");
-	HU_UpdatePatch(&kp_itemminimap, "MMAPITEM");
 
 	sprintf(buffer, "ALAGLESx");
 	for (i = 0; i < 10; ++i)
@@ -3469,20 +3467,6 @@ static void K_drawKartMinimap(void)
 	else
 		x -= SHORT(AutomapPic->leftoffset);
 	y -= SHORT(AutomapPic->topoffset);
-
-	// Draw the super item in Battle
-	if (gametype == GT_BATTLE && battleovertime.enabled)
-	{
-		if (battleovertime.enabled >= 10*TICRATE || (battleovertime.enabled & 1))
-		{
-			const INT32 prevsplitflags = splitflags;
-			splitflags &= ~V_HUDTRANSHALF;
-			splitflags |= V_HUDTRANS;
-			colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime), GTC_CACHE);
-			K_drawKartMinimapIcon(battleovertime.x, battleovertime.y, x, y, splitflags, kp_itemminimap, colormap, AutomapPic);
-			splitflags = prevsplitflags;
-		}
-	}
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)

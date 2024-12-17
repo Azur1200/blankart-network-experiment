@@ -730,10 +730,6 @@ char sprnames[NUMSPRITES + 1][5] =
 	"LENS",
 	"GRES",
 
-	"OTBU",
-	"OTLS",
-	"OTCP",
-
 	"WAYP",
 	"EGOO",
 
@@ -5142,11 +5138,6 @@ state_t states[NUMSTATES] =
 	{SPR_LENS, FF_FULLBRIGHT|FF_ADD|FF_TRANS10|FF_ANIMATE,     5, {NULL},  5, 1, S_GAINAX_MID1}, // S_GAINAX_HUGE
 	{SPR_LENS, FF_FULLBRIGHT|FF_ADD|FF_TRANS10|FF_ANIMATE|5,  14, {NULL}, 14, 1, S_GAINAX_MID2}, // S_GAINAX_MID1
 	{SPR_LENS, FF_FULLBRIGHT|FF_ADD|FF_TRANS10|FF_ANIMATE|19, -1, {NULL},  1, 1, S_NULL}, // S_GAINAX_MID2
-
-	{SPR_OTBU, FF_FULLBRIGHT, 1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_BULB1
-	{SPR_OTBU, FF_FULLBRIGHT|2, 1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_BULB2
-	{SPR_OTLS, FF_FULLBRIGHT, 1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_LASER
-	{SPR_OTCP, 0, -1, {NULL}, 0, 0, S_NULL}, // S_OVERTIME_CENTER
 
 	{SPR_WAYP, 0, 1, {NULL}, 0, 0, S_NULL}, // S_WAYPOINTORB
 	{SPR_WAYP, 1|FF_FLOORSPRITE, 1, {NULL}, 0, 0, S_NULL}, // S_WAYPOINTSPLAT
@@ -28237,60 +28228,6 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] =
 	    0,              // damage
 	    sfx_None,       // activesound
 	    MF_NOBLOCKMAP|MF_NOGRAVITY|MF_DONTENCOREMAP, // flags
-	    S_NULL          // raisestate
-	},
-
-	{           // MT_OVERTIME_PARTICLE
-	    -1,             // doomednum
-	    S_NULL,         // spawnstate
-	    1000,           // spawnhealth
-	    S_NULL,         // seestate
-	    sfx_None,       // seesound
-	    8,              // reactiontime
-	    sfx_None,       // attacksound
-	    S_NULL,         // painstate
-	    0,              // painchance
-	    sfx_None,       // painsound
-	    S_NULL,         // meleestate
-	    S_NULL,         // missilestate
-	    S_NULL,         // deathstate
-	    S_NULL,         // xdeathstate
-	    sfx_None,       // deathsound
-	    0,              // speed
-	    16<<FRACBITS,   // radius
-	    24<<FRACBITS,   // height
-	    0,              // display offset
-	    100,            // mass
-	    0,              // damage
-	    sfx_None,       // activesound
-	    MF_NOBLOCKMAP|MF_NOCLIPHEIGHT|MF_NOGRAVITY|MF_SCENERY|MF_DONTENCOREMAP, // flags
-	    S_NULL          // raisestate
-	},
-
-	{           // MT_OVERTIME_CENTER
-	    3775,           // doomednum
-	    S_OVERTIME_CENTER, // spawnstate
-	    1000,           // spawnhealth
-	    S_NULL,         // seestate
-	    sfx_None,       // seesound
-	    8,              // reactiontime
-	    sfx_None,       // attacksound
-	    S_NULL,         // painstate
-	    0,              // painchance
-	    sfx_None,       // painsound
-	    S_NULL,         // meleestate
-	    S_NULL,         // missilestate
-	    S_NULL,         // deathstate
-	    S_NULL,         // xdeathstate
-	    sfx_None,       // deathsound
-	    0,              // speed
-	    12<<FRACBITS,   // radius
-	    72<<FRACBITS,   // height
-	    0,              // display offset
-	    100,            // mass
-	    0,              // damage
-	    sfx_None,       // activesound
-	    MF_SOLID|MF_DONTENCOREMAP, // flags
 	    S_NULL          // raisestate
 	},
 
