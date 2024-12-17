@@ -179,26 +179,6 @@ void K_CheckBumpers(void)
 	}
 }
 
-mobj_t *K_SpawnSphereBox(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 amount)
-{
-	mobj_t *drop = P_SpawnMobj(x, y, z, MT_SPHEREBOX);
-
-	drop->angle = angle;
-	P_Thrust(drop,
-		FixedAngle(P_RandomFixed() * 180) + angle,
-		P_RandomRange(4, 12) * mapobjectscale);
-
-	drop->momz = flip * 12 * mapobjectscale;
-	if (drop->eflags & MFE_UNDERWATER)
-		drop->momz = (117 * drop->momz) / 200;
-
-	drop->flags &= ~(MF_NOGRAVITY|MF_NOCLIPHEIGHT);
-
-	drop->extravalue1 = amount;
-
-	return drop;
-}
-
 UINT8 K_NumEmeralds(player_t *player)
 {
 	UINT8 i;
@@ -326,15 +306,6 @@ void K_RunPaperItemSpawners(void)
 				flip = P_MobjFlip(spotList[r]);
 
 				{
-					if (gametyperules & GTR_SPHERES)
-					{
-						drop = K_SpawnSphereBox(
-							spotList[r]->x, spotList[r]->y, spotList[r]->z + (128 * mapobjectscale * flip),
-								FixedAngle(P_RandomRange(0, 359) * FRACUNIT), flip,
-								10
-						);
-						K_FlipFromObject(drop, spotList[r]);
-					}
 
 					drop = K_CreatePaperItem(
 						spotList[r]->x, spotList[r]->y, spotList[r]->z + (128 * mapobjectscale * flip),

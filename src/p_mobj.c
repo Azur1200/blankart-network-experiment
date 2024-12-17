@@ -9080,7 +9080,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 			thing->shadowscale = 12*FRACUNIT/5;
 			break;
 		case MT_RANDOMITEM:
-		case MT_SPHEREBOX:
 			thing->shadowscale = FRACUNIT/2;
 			thing->whiteshadow = false;
 			break;

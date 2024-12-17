@@ -13212,7 +13212,6 @@ void A_ChangeHeight(mobj_t *actor)
 
 void A_ItemPop(mobj_t *actor)
 {
-	INT32 locvar1 = var1;
 
 	mobj_t *remains;
 	mobjtype_t explode;
@@ -13278,9 +13277,7 @@ void A_ItemPop(mobj_t *actor)
 	if (actor->info->deathsound)
 		S_StartSound(remains, actor->info->deathsound);
 	
-	if (locvar1 == 1)
-		P_GivePlayerSpheres(actor->target->player, actor->extravalue1);
-	else if (locvar1 == 0)
+	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0))
 		actor->target->player->itemroulette = 1;
 
 	remains->flags2 &= ~MF2_AMBUSH;
