@@ -692,7 +692,7 @@ void F_StartCredits(void)
 	S_StopMusic();
 	S_StopSounds();
 
-	S_ChangeMusicInternal("_creds", false);
+	S_ChangeMusicInternal("credit", false);
 	S_ShowMusicCredit();
 
 	finalecount = 0;
@@ -2050,7 +2050,7 @@ void F_TitleScreenTicker(boolean run)
 			if (menupres[MN_MAIN].musname[0])
 				S_ChangeMusic(menupres[MN_MAIN].musname, menupres[MN_MAIN].mustrack, menupres[MN_MAIN].muslooping);
 			else
-				S_ChangeMusicInternal("_title", looptitle);
+				S_ChangeMusicInternal("titles", looptitle);
 		}
 	}
 
