@@ -759,6 +759,9 @@ void P_CheckTimeLimit(void)
 	if (!(gametyperules & GTR_TIMELIMIT))
 		return;
 
+	if (itembreaker)
+		return;
+
 	if (leveltime < (timelimitintics + starttime))
 		return;
 
@@ -788,7 +791,7 @@ void P_CheckTimeLimit(void)
 				S_StartSound(NULL, sfx_strpst);
 
 			// Normal Match
-			if (!G_GametypeHasTeams())
+			if (!(gametyperules & GTR_TEAMS))
 			{
 				//Store the nodes of participating players in an array.
 				for (i = 0; i < MAXPLAYERS; i++)
