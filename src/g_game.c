@@ -2915,6 +2915,7 @@ void G_DoReborn(INT32 playernum)
 			oldmo = player->mo;
 			// Don't leave your carcass stuck 10-billion feet in the ground!
 			P_RemoveMobj(player->mo);
+			P_SetTarget(&player->mo, NULL);
 		}
 
 		G_SpawnPlayer(playernum, starpost);
@@ -4037,7 +4038,7 @@ static void G_DoContinued(void)
 {
 	player_t *pl = &players[consoleplayer];
 	I_Assert(!netgame && !multiplayer);
-	I_Assert(pl->continues > 0);
+	//I_Assert(pl->continues > 0);
 
 	/*if (pl->continues)
 		pl->continues--;*/

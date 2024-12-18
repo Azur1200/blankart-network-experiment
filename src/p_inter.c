@@ -693,12 +693,12 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 				player->grieftime += TICRATE;
 			}
 
-			
+
 		}
 		player->checkskip = 3;
 		return;
 	}
-	
+
 	// Going backwards triggers sound
 	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (numbosswaypoints > 0))
 	{
@@ -718,7 +718,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 
 	if (player->starpostnum >= post->health)
 		return; // Already hit this post
-		
+
 	// Handles Respawning related things on maps wtih starposts
 	{
 		// Save the player's time and position.
@@ -756,7 +756,7 @@ void P_CheckTimeLimit(void)
 	if (!(multiplayer || netgame))
 		return;
 
-	if ((gametyperules & GTR_TIMELIMIT))
+	if (!(gametyperules & GTR_TIMELIMIT))
 		return;
 
 	if (leveltime < (timelimitintics + starttime))
@@ -1796,7 +1796,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 {
 	(void)source;
 	(void)inflictor;
-	
+
 	if (player->respawn)
 	{
 		K_DoInstashield(player);
@@ -1993,7 +1993,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 
 				{
-					
+
 					// Check if we should allow wombo combos (hard hits by default, inverted by the presence of DMG_WOMBO).
 					boolean allowcombo = hardhit;
 
@@ -2007,7 +2007,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (type != DMG_STING)
+			if (type != DMG_STING && (gametyperules & GTR_BUMPERS))
 			{
 
 				if (source && source != player->mo && source->player)
@@ -2036,9 +2036,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 						K_DestroyBumpers(player, 1);
 					}
 				}
+				else
+				{
+					K_DestroyBumpers(player, 1);
+				}
 			}
 
-			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT))
+			if (!((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT)))
 				player->sneakertimer = 0;
 			player->driftboost = 0;
 			player->ringboost = 0;

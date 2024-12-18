@@ -4070,7 +4070,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		P_SetScale(dust, spawner->scale/2);
 		dust->destscale = spawner->scale * 3;
 		dust->scalespeed = spawner->scale/12;
-		dust->target = spawner;
+		P_SetTarget(&dust->target, spawner);
 
 		if (leveltime % 6 == 0)
 			S_StartSound(spawner, sfx_screec);

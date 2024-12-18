@@ -9855,7 +9855,7 @@ tic_t itemrespawntime[ITEMQUESIZE];
 size_t iquehead, iquetail;
 
 #ifdef PARANOIA
-#define SCRAMBLE_REMOVED // Force debug build to crash when Removed mobj is accessed
+//#define SCRAMBLE_REMOVED // Force debug build to crash when Removed mobj is accessed
 #endif
 void P_RemoveMobj(mobj_t *mobj)
 {
@@ -9952,12 +9952,6 @@ void P_RemoveMobj(mobj_t *mobj)
 		}
 	}
 
-	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
-#ifdef SCRAMBLE_REMOVED
-	// Invalidate mobj_t data to cause crashes if accessed!
-	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
-#endif
-
 	P_RemoveThingTID(mobj);
 	P_DeleteMobjStringArgs(mobj);
 	R_RemoveMobjInterpolator(mobj);
@@ -9984,6 +9978,12 @@ void P_RemoveMobj(mobj_t *mobj)
 #ifdef PARANOIA
 	// Saved to avoid being scrambled like below...
 	mobj->thinker.debug_mobjtype = mobj->type;
+#endif
+
+	// DBG: set everything in mobj_t to 0xFF instead of leaving it. debug memory error.
+#ifdef SCRAMBLE_REMOVED
+	// Invalidate mobj_t data to cause crashes if accessed!
+	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
 #endif
 
 }
@@ -10533,7 +10533,9 @@ void P_SpawnPlayer(INT32 playernum)
 		p->flashing = K_GetKartFlashing(p); // Babysitting deterrent
 
 	mobj = P_SpawnMobj(0, 0, 0, MT_PLAYER);
-	(mobj->player = p)->mo = mobj;
+
+	mobj->player = p;
+	P_SetTarget(&p->mo, mobj);
 
 	mobj->angle = mobj->old_angle = 0;
 
