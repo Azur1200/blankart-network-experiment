@@ -2526,10 +2526,10 @@ static void HU_DrawRankings(void)
 			V_DrawCenteredString(64, 8, 0, "LAP COUNT");
 			V_DrawCenteredString(64, 16, hilicol, va("%d", numlaps));
 		}
-
-		V_DrawCenteredString(256, 8, 0, "GAME SPEED");
-		V_DrawCenteredString(256, 16, hilicol, kartspeed_cons_t[1+gamespeed].strvalue);
 	}
+
+	V_DrawCenteredString(256, 8, 0, "GAME SPEED");
+	V_DrawCenteredString(256, 16, hilicol, kartspeed_cons_t[1+gamespeed].strvalue);
 
 	// When you play, you quickly see your score because your name is displayed in white.
 	// When playing back a demo, you quickly see who's the view.

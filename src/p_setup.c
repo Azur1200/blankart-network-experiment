@@ -7689,7 +7689,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	{
 		if ((gametyperules & GTR_BUMPERS))
 		{
-			gamespeed = KARTSPEED_EASY;
+			gamespeed = KARTSPEED_NORMAL;
 		}
 		else
 		{
@@ -7701,7 +7701,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 	else if (bossinfo.boss)
 	{
-		gamespeed = KARTSPEED_EASY;
+		gamespeed = KARTSPEED_NORMAL;
 		franticitems = false;
 		comeback = true;
 	}
@@ -7722,7 +7722,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			if (cv_kartbattlespeed.value == KARTSPEED_AUTO)
 				gamespeed = ((speedscramble == -1) ? KARTSPEED_EASY : (UINT8)speedscramble);
 			else
-				gamespeed = (UINT8)cv_kartspeed.value;
+				gamespeed = (UINT8)cv_kartbattlespeed.value;
 		}
 		else
 		{
