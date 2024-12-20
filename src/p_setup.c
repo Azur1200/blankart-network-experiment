@@ -12,6 +12,7 @@
 /// \brief Do all the WAD I/O, get map description, set up initial state and misc. LUTs
 
 #include "d_netcmd.h"
+#include "doomdata.h"
 #include "doomdef.h"
 #include "d_main.h"
 #include "byteptr.h"
@@ -4824,7 +4825,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 2: //Custom exit
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[1] |= TMEF_SKIPTALLY;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[1] |= TMEF_EMERALDCHECK;
 			break;
 		case 3: //Zoom tube parameters
@@ -5057,8 +5058,8 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			break;
 		case 64: //Appearing/disappearing FOF
-			lines[i].args[0] = (lines[i].flags & ML_BLOCKPLAYERS) ? 0 : tag;
-			lines[i].args[1] = (lines[i].flags & ML_BLOCKPLAYERS) ? tag : Tag_FGet(&lines[i].frontsector->tags);
+			lines[i].args[0] = (lines[i].flags & ML_BLOCKMONSTERS) ? 0 : tag;
+			lines[i].args[1] = (lines[i].flags & ML_BLOCKMONSTERS) ? tag : Tag_FGet(&lines[i].frontsector->tags);
 			lines[i].args[2] = lines[i].dx >> FRACBITS;
 			lines[i].args[3] = lines[i].dy >> FRACBITS;
 			lines[i].args[4] = lines[i].frontsector->floorheight >> FRACBITS;
@@ -5328,9 +5329,9 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[5] = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
 
 			//Flags
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[6] |= TMFR_REVERSE;
-			if (lines[i].flags & ML_NOCLIMB)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[6] |= TMFR_SPINDASH;
 
 			lines[i].special = 190;
@@ -5503,7 +5504,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[2] = TMC_LTE;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] = TMC_GTE;
 			else
 				lines[i].args[2] = TMC_EQUAL;
@@ -5593,7 +5594,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[3] = TMC_LTE;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[3] = TMC_GTE;
 			else
 				lines[i].args[3] = TMC_EQUAL;
@@ -5704,7 +5705,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[2] = TMC_LTE;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] = TMC_GTE;
 			else
 				lines[i].args[2] = TMC_EQUAL;
@@ -5729,7 +5730,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = tag;
 			lines[i].args[2] = (lines[i].special == 403) ? TMP_FLOOR : TMP_CEILING;
 			lines[i].args[3] = P_AproxDistance(lines[i].dx, lines[i].dy) >> FRACBITS;
-			lines[i].args[4] = (lines[i].flags & ML_BLOCKPLAYERS) ? sides[lines[i].sidenum[0]].textureoffset >> FRACBITS : 0;
+			lines[i].args[4] = (lines[i].flags & ML_BLOCKMONSTERS) ? sides[lines[i].sidenum[0]].textureoffset >> FRACBITS : 0;
 			lines[i].args[5] = !!(lines[i].flags & ML_NOCLIMB);
 			lines[i].special = 403;
 			break;
@@ -5762,7 +5763,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[2] = TMT_ADD;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] = TMT_REMOVE;
 			else
 				lines[i].args[2] = TMT_REPLACEFIRST;
@@ -5772,7 +5773,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[2] = TMT_ADD;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] = TMT_REMOVE;
 			else
 				lines[i].args[2] = TMT_REPLACEFIRST;
@@ -5782,7 +5783,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			break;
 		case 412: //Teleporter
 			lines[i].args[0] = tag;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[1] |= TMT_SILENT;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[1] |= TMT_KEEPANGLE;
@@ -5801,7 +5802,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[0] |= TMM_OFFSET;
 			if (lines[i].flags & ML_NOSKEW)
 				lines[i].args[0] |= TMM_FADE;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[0] |= TMM_NORELOAD;
 			if (lines[i].flags & ML_NOTBOUNCY)
 				lines[i].args[0] |= TMM_FORCERESET;
@@ -5844,7 +5845,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 					lines[i].args[0] = TMSS_NOWHERE;
 					lines[i].args[1] = TMSL_EVERYONE;
 				}
-				else if (lines[i].flags & ML_BLOCKPLAYERS)
+				else if (lines[i].flags & ML_BLOCKMONSTERS)
 				{
 					lines[i].args[0] = TMSS_TRIGGERSECTOR;
 					lines[i].args[1] = TMSL_EVERYONE;
@@ -5966,7 +5967,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].stringargs[0] = Z_Malloc(strlen(sides[lines[i].sidenum[0]].text) + 1, PU_LEVEL, NULL);
 				M_Memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
-			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKPLAYERS) // read power from back sidedef
+			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
 			{
 				lines[i].stringargs[1] = Z_Malloc(strlen(sides[lines[i].sidenum[1]].text) + 1, PU_LEVEL, NULL);
 				M_Memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
@@ -6026,7 +6027,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[2] |= TMFR_NORETURN;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] |= TMFR_CHECKFLAG;
 			break;
 		case 447: //Change colormap
@@ -6043,7 +6044,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 448: //Change skybox
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if ((lines[i].flags & (ML_MIDSOLID|ML_BLOCKPLAYERS)) == ML_MIDSOLID) // Solid Midtexture is on but Block Enemies is off?
+			if ((lines[i].flags & (ML_MIDSOLID|ML_BLOCKMONSTERS)) == ML_MIDSOLID) // Solid Midtexture is on but Block Enemies is off?
 			{
 				CONS_Alert(CONS_WARNING,
 					M_GetText("Skybox switch linedef (tag %d) doesn't have anything to do.\nConsider changing the linedef's flag configuration or removing it entirely.\n"),
@@ -6051,9 +6052,9 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].special = 0;
 				break;
 			}
-			else if ((lines[i].flags & (ML_MIDSOLID|ML_BLOCKPLAYERS)) == (ML_MIDSOLID|ML_BLOCKPLAYERS))
+			else if ((lines[i].flags & (ML_MIDSOLID|ML_BLOCKMONSTERS)) == (ML_MIDSOLID|ML_BLOCKMONSTERS))
 				lines[i].args[2] = TMS_CENTERPOINT;
-			else if (lines[i].flags & ML_BLOCKPLAYERS)
+			else if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] = TMS_BOTH;
 			else
 				lines[i].args[2] = TMS_VIEWPOINT;
@@ -6096,7 +6097,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[4] |= TMFT_GHOSTFADE;
 			if (lines[i].flags & ML_NOCLIMB)
 				lines[i].args[4] |= TMFT_DONTDOTRANSLUCENT;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[4] |= TMFT_DONTDOEXISTS;
 			if (lines[i].flags & ML_NOSKEW)
 				lines[i].args[4] |= (TMFT_DONTDOLIGHTING|TMFT_DONTDOCOLORMAP);
@@ -6106,7 +6107,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 454: //Stop fading FOF
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			lines[i].args[2] = !!(lines[i].flags & ML_BLOCKPLAYERS);
+			lines[i].args[2] = !!(lines[i].flags & ML_BLOCKMONSTERS);
 			break;
 		case 455: //Fade colormap
 		{
@@ -6146,7 +6147,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 459: //Control text prompt
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			lines[i].args[1] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_BLOCKMONSTERS)
 				lines[i].args[2] |= TMP_CLOSE;
 			if (lines[i].flags & ML_SKEWTD)
 				lines[i].args[2] |= TMP_RUNPOSTEXEC;
