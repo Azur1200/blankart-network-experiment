@@ -3316,6 +3316,9 @@ void G_AddGhost(char *defdemoname)
 		p++;
 	}
 
+	// Skip mapmusring
+	p++;
+
 	if (*p == DEMOMARKER)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
@@ -3329,7 +3332,7 @@ void G_AddGhost(char *defdemoname)
 	// any invalidating flags?
 	if ((READUINT8(p) & (DEMO_SPECTATOR)) != 0)
 	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot.\n"), pdemoname);
+		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot. (Spectator)\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
 		return;
@@ -3360,7 +3363,7 @@ void G_AddGhost(char *defdemoname)
 
 	if (READUINT8(p) != 0xFF)
 	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot.\n"), pdemoname);
+		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot. (Bad terminator)\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
 		return;
