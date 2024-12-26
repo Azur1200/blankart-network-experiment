@@ -8128,11 +8128,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	if (!cv_autorecord.value)
 		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
 	else
-	{
-		CONS_Printf("%s\n", nameofdemo); // Debug Prints!
 		G_RecordDemo(nameofdemo);
-	}
-
 
 	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
 }
