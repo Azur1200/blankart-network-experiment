@@ -59,7 +59,7 @@ p_slopes.c
 p_sweep.cpp
 p_test.cpp
 tables.c
-r_bsp.c
+r_bsp.cpp
 r_data.c
 r_draw.c
 r_fps.c
