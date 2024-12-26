@@ -13274,8 +13274,8 @@ void A_ItemPop(mobj_t *actor)
 
 	P_SetTarget(&tm.thing, remains);
 
-	if (actor->info->deathsound)
-		S_StartSound(remains, actor->info->deathsound);
+	//if (actor->info->deathsound)
+		//S_StartSound(remains, actor->info->deathsound);
 	
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0))
 		actor->target->player->itemroulette = 1;
