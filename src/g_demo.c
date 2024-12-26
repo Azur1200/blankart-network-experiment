@@ -3316,7 +3316,7 @@ void G_AddGhost(char *defdemoname)
 		p++;
 	}
 
-	// Skip mapmusring
+	// Skip mapmusrng
 	p++;
 
 	if (*p == DEMOMARKER)
@@ -3893,7 +3893,7 @@ void G_SaveDemo(void)
 	md5_buffer((char *)p+16, (demobuf.buffer + length) - (p+16), p);
 #endif
 
-	if (FIL_WriteFile(va(pandf, srb2home, demoname), demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
+	if (FIL_WriteFile(demoname, demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;
 	free(demobuf.buffer);
 	demo.recording = false;

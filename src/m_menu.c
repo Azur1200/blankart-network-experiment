@@ -12,6 +12,7 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "doomstat.h"
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -2106,11 +2107,13 @@ void Nextmap_OnChange(void)
 {
 	char *leveltitle;
 	UINT8 active;
+	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
 
 	// Update the string in the consvar.
 	Z_Free(cv_nextmap.zstring);
 	leveltitle = G_BuildMapTitle(cv_nextmap.value);
 	cv_nextmap.string = cv_nextmap.zstring = leveltitle ? leveltitle : Z_StrDup(G_BuildMapName(cv_nextmap.value));
+
 
 	if (currentMenu == &SP_TimeAttackDef)
 	{
@@ -2142,27 +2145,27 @@ void Nextmap_OnChange(void)
 		SP_GhostMenu[3].status = IT_DISABLED;
 		SP_GhostMenu[4].status = IT_DISABLED;
 
-		if (FIL_FileExists(va("%s-%s-time-best.lmp", gpath, cv_chooseskin.string))) {
+		if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
 			SP_ReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[0].status = IT_WHITESTRING|IT_CALL;
 			active |= 3;
 		}
 
 		if (levellistmode != LLM_ITEMBREAKER) {
-			if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, cv_chooseskin.string))) {
+			if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
 				SP_ReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
 				SP_GuestReplayMenu[1].status = IT_WHITESTRING|IT_CALL;
 				active |= 3;
 			}
 		}
 
-		if (FIL_FileExists(va("%s-%s-last.lmp", gpath, cv_chooseskin.string))) {
+		if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode))) {
 			SP_ReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[2].status = IT_WHITESTRING|IT_CALL;
 			active |= 3;
 		}
 
-		if (FIL_FileExists(va("%s-guest.lmp", gpath)))
+		if (FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
 		{
 			SP_ReplayMenu[3].status = IT_WHITESTRING|IT_CALL;
 			SP_GuestReplayMenu[3].status = IT_WHITESTRING|IT_CALL;
@@ -8107,7 +8110,6 @@ static boolean M_QuitTimeAttackMenu(void)
 static void M_ChooseTimeAttack(INT32 choice)
 {
 	char *gpath;
-	const size_t glen = strlen("media")+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
 	char nameofdemo[256];
 	(void)choice;
 	emeralds = 0;
@@ -8115,19 +8117,22 @@ static void M_ChooseTimeAttack(INT32 choice)
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 
 	gpath = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s",
-			srb2home, timeattackfolder);
+			   srb2home, timeattackfolder);
 	M_MkdirEach(gpath, M_PathParts(gpath) - 3, 0755);
 
-	if ((gpath = malloc(glen)) == NULL)
-		I_Error("Out of memory for replay filepath\n");
+	strcat(gpath, PATHSEP);
+	strcat(gpath, G_BuildMapName(cv_nextmap.value));
 
-	sprintf(gpath,"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", timeattackfolder, G_BuildMapName(cv_nextmap.value));
-	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-last", gpath, cv_chooseskin.string);
+	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-%s-last", gpath, cv_skin[0].string, (modeattacking & ATTACKING_ITEMBREAK) ? "IB" : "RA");
 
 	if (!cv_autorecord.value)
 		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
 	else
+	{
+		CONS_Printf("%s\n", nameofdemo); // Debug Prints!
 		G_RecordDemo(nameofdemo);
+	}
+
 
 	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
 }
@@ -8183,6 +8188,7 @@ static void M_HandleStaffReplay(INT32 choice)
 static void M_ReplayTimeAttack(INT32 choice)
 {
 	const char *which;
+	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
 	M_ClearMenus(true);
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME); // set modeattacking before G_DoPlayDemo so the map loader knows
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
@@ -8202,11 +8208,11 @@ static void M_ReplayTimeAttack(INT32 choice)
 			break;
 		case 3: // guest
 			// srb2/replay/main/map01-guest.lmp
-			G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+			G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 			return;
 		}
 		// srb2/replay/main/map01-sonic-time-best.lmp
-		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, which));
+		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
 	}
 	/*else if (currentMenu == &SP_NightsReplayDef)
 	{
@@ -8234,7 +8240,8 @@ static void M_ReplayTimeAttack(INT32 choice)
 
 static void M_EraseGuest(INT32 choice)
 {
-	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode);
 	(void)choice;
 	if (FIL_FileExists(rguest))
 		remove(rguest);
@@ -8249,10 +8256,11 @@ static void M_EraseGuest(INT32 choice)
 
 static void M_OverwriteGuest(const char *which)
 {
-	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value)));
+	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 	UINT8 *buf;
 	size_t len;
-	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, which), &buf);
+	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode,which), &buf);
 	if (!len) {
 		return;
 	}

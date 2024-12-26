@@ -7868,6 +7868,7 @@ static void P_LoadRecordGhosts(void)
 	// see also m_menu.c's Nextmap_OnChange
 	char *gpath;
 	INT32 i;
+	const char *gamemode = (modeattacking & ATTACKING_ITEMBREAK) ? "IB" : "RA";
 
 	gpath = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap)));
 
@@ -7879,8 +7880,8 @@ static void P_LoadRecordGhosts(void)
 			if (cv_ghost_besttime.value == 1 && players[consoleplayer].skin != i)
 				continue;
 
-			if (FIL_FileExists(va("%s-%s-time-best.lmp", gpath, skins[i].name)))
-				G_AddGhost(va("%s-%s-time-best.lmp", gpath, skins[i].name));
+			if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode)))
+				G_AddGhost(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode));
 		}
 	}
 
@@ -7894,8 +7895,8 @@ static void P_LoadRecordGhosts(void)
 				if (cv_ghost_bestlap.value == 1 && players[consoleplayer].skin != i)
 					continue;
 
-				if (FIL_FileExists(va("%s-%s-lap-best.lmp", gpath, skins[i].name)))
-					G_AddGhost(va("%s-%s-lap-best.lmp", gpath, skins[i].name));
+				if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode)))
+					G_AddGhost(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode));
 			}
 		}
 	}
@@ -7908,13 +7909,13 @@ static void P_LoadRecordGhosts(void)
 			if (cv_ghost_last.value == 1 && players[consoleplayer].skin != i)
 				continue;
 
-			if (FIL_FileExists(va("%s-%s-last.lmp", gpath, skins[i].name)))
-				G_AddGhost(va("%s-%s-last.lmp", gpath, skins[i].name));
+			if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode)))
+				G_AddGhost(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode));
 		}
 	}
 
 	// Guest ghost
-	if (cv_ghost_guest.value && FIL_FileExists(va("%s-guest.lmp", gpath)))
+	if (cv_ghost_guest.value && FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
 		G_AddGhost(va("%s-guest.lmp", gpath));
 
 	// Staff Attack ghosts
