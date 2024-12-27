@@ -897,7 +897,9 @@ static int kartstuff_get(lua_State *L)
 	switch (ks)
 	{
 		case k_sneakertimer:
-			return plr->sneakertimer;
+			lua_pushinteger(L, plr->sneakertimer);
+			CONS_Printf("Pushing plr->sneakertimer as: plr->sneakertimer")
+			return 1;
 
 		default:
 			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
