@@ -52,7 +52,7 @@ INT64 mytotal = 0;
 #endif
 //profile stuff ---------------------------------------------------------
 
-extern "C" consvar_t cv_debugrender_visplanes;
+extern consvar_t cv_debugrender_visplanes;
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
@@ -266,7 +266,7 @@ INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node)
 		   (~mask & (FixedMul(dy, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, dx)));
 }
 
-INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *restrict node)
+INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node)
 {
 	if (!node->dx)
 		return x <= node->x ? node->dy > 0 : node->dy < 0;
@@ -453,10 +453,10 @@ void R_GetRenderBlockMapDimensions(fixed_t drawdist, INT32 *xl, INT32 *xh, INT32
 	const fixed_t vyright = viewy + FixedMul(drawdist, FSIN(right));
 
 	// Try to narrow the search to within only the field of view
-	*xl = (unsigned)(min(viewx, min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*xh = (unsigned)(max(viewx, max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
-	*yl = (unsigned)(min(viewy, min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
-	*yh = (unsigned)(max(viewy, max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*xl = (unsigned)(std::min(viewx, std::min(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*xh = (unsigned)(std::max(viewx, std::max(vxleft, vxright)) - bmaporgx)>>MAPBLOCKSHIFT;
+	*yl = (unsigned)(std::min(viewy, std::min(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
+	*yh = (unsigned)(std::max(viewy, std::max(vyleft, vyright)) - bmaporgy)>>MAPBLOCKSHIFT;
 
 	if (*xh >= bmapwidth)
 		*xh = bmapwidth - 1;
@@ -681,7 +681,7 @@ void R_CheckViewMorph(int s)
 	{
 		if (v->scrmap)
 			free(v->scrmap);
-		v->scrmap = malloc(width * height * sizeof(INT32));
+		v->scrmap = static_cast<INT32*>(malloc(width * height * sizeof(INT32)));
 		v->scrmapsize = width * height;
 	}
 
@@ -710,7 +710,7 @@ void R_CheckViewMorph(int s)
 	}
 #endif
 
-	temp = max(x1, y1)*FRACUNIT;
+	temp = std::max(x1, y1)*FRACUNIT;
 	if (temp < FRACUNIT)
 		temp = FRACUNIT;
 	else
@@ -766,10 +766,10 @@ void R_CheckViewMorph(int s)
 		xb = width-1-xa;
 		yb = height-1-ya;
 
-		v->ceilingclip[xa] = min(v->ceilingclip[xa], ya);
-		v->floorclip[xa] = max(v->floorclip[xa], ya);
-		v->ceilingclip[xb] = min(v->ceilingclip[xb], yb);
-		v->floorclip[xb] = max(v->floorclip[xb], yb);
+		v->ceilingclip[xa] = std::min(v->ceilingclip[xa], ya);
+		v->floorclip[xa] = std::max(v->floorclip[xa], ya);
+		v->ceilingclip[xb] = std::min(v->ceilingclip[xb], yb);
+		v->floorclip[xb] = std::max(v->floorclip[xb], yb);
 		x2 += rollcos;
 		y2 += rollsin;
 	}
@@ -783,10 +783,10 @@ void R_CheckViewMorph(int s)
 		xb = width-1-xa;
 		yb = height-1-ya;
 
-		v->ceilingclip[xa] = min(v->ceilingclip[xa], ya);
-		v->floorclip[xa] = max(v->floorclip[xa], ya);
-		v->ceilingclip[xb] = min(v->ceilingclip[xb], yb);
-		v->floorclip[xb] = max(v->floorclip[xb], yb);
+		v->ceilingclip[xa] = std::min(v->ceilingclip[xa], ya);
+		v->floorclip[xa] = std::max(v->floorclip[xa], ya);
+		v->ceilingclip[xb] = std::min(v->ceilingclip[xb], yb);
+		v->floorclip[xb] = std::max(v->floorclip[xb], yb);
 		x2 -= rollsin;
 		y2 += rollcos;
 	}
@@ -1226,7 +1226,7 @@ void R_SetupFrame(int s)
 	camera_t *thiscam = &camera[s];
 	boolean chasecam = (cv_chasecam[s].value != 0);
 
-	R_SetViewContext(VIEWCONTEXT_PLAYER1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + s));
 
 	if (player->spectator) // no spectator chasecam
 		chasecam = false; // force chasecam off
@@ -1285,7 +1285,7 @@ void R_SkyboxFrame(int s)
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
 
-	R_SetViewContext(VIEWCONTEXT_SKY1 + s);
+	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_SKY1 + s));
 
 	// cut-away view stuff
 	newview->sky = true;
@@ -1483,7 +1483,7 @@ void R_RenderPlayerView(void)
 {
 	player_t * player = &players[displayplayers[viewssnum]];
 	INT32			nummasks	= 1;
-	maskcount_t*	masks		= malloc(sizeof(maskcount_t));
+	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
 
 	// if this is display player 1
 	if (cv_homremoval.value && player == &players[displayplayers[0]])
@@ -1581,7 +1581,7 @@ void R_RenderPlayerView(void)
 
 			validcount++;
 
-			masks = realloc(masks, (++nummasks)*sizeof(maskcount_t));
+			masks = static_cast<maskcount_t*>(realloc(masks, (++nummasks)*sizeof(maskcount_t)));
 
 			Mask_Pre(&masks[nummasks - 1]);
 			curdrawsegs = ds_p;
@@ -1673,8 +1673,8 @@ void R_RenderPlayerView(void)
 
 			for (i = 0; i < width; ++i)
 			{
-				INT32 yl = max(portal->ceilingclip[i] + 1, 0);
-				INT32 yh = min(portal->floorclip[i], viewheight);
+				INT32 yl = std::max(portal->ceilingclip[i] + 1, 0);
+				INT32 yh = std::min(static_cast<INT32>(portal->floorclip[i]), viewheight);
 
 				for (; yl < yh; ++yl)
 				{
