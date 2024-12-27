@@ -206,6 +206,8 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->aiming);
 	else if (fastcmp(field,"drawangle"))
 		lua_pushangle(L, plr->drawangle);
+	else if (fastcmp(field,"kartstuff"))
+		LUA_PushUserdata(L, plr->kartstuff, META_KARTSTUFF);
 	else if (fastcmp(field,"karthud"))
 		LUA_PushUserdata(L, plr->karthud, META_KARTHUD);
 	else if (fastcmp(field,"nocontrol"))
@@ -572,6 +574,8 @@ static int player_set(lua_State *L)
 	else if (fastcmp(field,"score"))
 		plr->score = luaL_checkinteger(L, 3);
 	// SRB2kart
+	else if (fastcmp(field,"kartstuff"))
+		return NOSET;
 	else if (fastcmp(field,"nocontrol"))
 		plr->nocontrol = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"carry"))
@@ -881,6 +885,52 @@ static int player_num(lua_State *L)
 }
 
 // karthud, ks -> karthud[ks]
+static int kartstuff_get(lua_State *L)
+{
+	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	player_t *plr = (player_t*)(kartstuff - offsetof(player_t, kartstuff));
+	kartstufftype_t ks = luaL_checkinteger(L, 2);
+
+	if (ks >= NUMKARTSTUFF)
+		return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+
+	switch (ks)
+	{
+		case k_sneakertimer:
+			return plr->sneakertimer;
+
+		default:
+			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	}
+
+	return 1;
+}
+
+// karthud, ks, value -> karthud[ks] = value
+static int kartstuff_set(lua_State *L)
+{
+	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	kartstufftype_t ks = luaL_checkinteger(L, 2);
+	INT32 i = (INT32)luaL_checkinteger(L, 3);
+
+	if (ks >= NUMKARTSTUFF)
+		return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+	kartstuff[ks] = i;
+	return 0;
+}
+
+// #kartstuff -> NUMKARTSTUFF
+static int kartstuff_len(lua_State *L)
+{
+	lua_pushinteger(L, NUMKARTSTUFF);
+	return 1;
+}
+
+// karthud, ks -> karthud[ks]
 static int karthud_get(lua_State *L)
 {
 	INT32 *karthud = *((INT32 **)luaL_checkudata(L, 1, META_KARTHUD));
@@ -993,6 +1043,17 @@ int LUA_PlayerLib(lua_State *L)
 		lua_setfield(L, -2, "__newindex");
 
 		lua_pushcfunction(L, player_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_KARTSTUFF);
+		lua_pushcfunction(L, kartstuff_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, kartstuff_set);
+		lua_setfield(L, -2, "__newindex");
+
+		lua_pushcfunction(L, kartstuff_len);
 		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 

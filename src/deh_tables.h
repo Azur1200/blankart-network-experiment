@@ -75,6 +75,7 @@ extern const char *const SD_LIST[]; // Sector damagetype
 extern const char *const TO_LIST[]; // Sector triggerer
 extern const char *COLOR_ENUMS[];
 extern const char *const POWERS_LIST[];
+extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
 extern const char *const MENUTYPES_LIST[];
