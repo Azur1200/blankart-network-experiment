@@ -7221,14 +7221,10 @@ static void P_ConvertBinaryThingTypes(void)
 				break;
 			}
 			mapthings[i].angle = AngleFixed(R_PointToAngle2(lines[j].v2->x, lines[j].v2->y, lines[j].v1->x, lines[j].v1->y)) >> FRACBITS;
-			mapthings[i].args[0] = P_AproxDistance(lines[j].dx, lines[j].dy) >> FRACBITS;
+			mapthings[i].args[0] = P_AproxDistance(lines[j].dx, lines[j].dy)/16;
 			mapthings[i].args[1] = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
 			mapthings[i].args[2] = !!(lines[j].flags & ML_NOCLIMB);
-			INT32 id = (sides[lines[j].sidenum[0]].rowoffset >> FRACBITS);
-			// Rather than introduce deh_tables.h as a dependency for literally one
-			// conversion, we just... recreate the string expected to be produced.
-			if (id > 0 && id < 16)
-				P_WriteDuplicateText(va("MT_ROCKCRUMBLE%d", id+1), &mapthings[i].stringargs[0]);
+			mapthings[i].args[3] = (sides[lines[j].sidenum[0]].rowoffset >> FRACBITS); // Rock conversion
 			break;
 		}
 		case 1221: //Minecart saloon door

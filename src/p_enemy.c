@@ -5144,15 +5144,27 @@ void A_RockSpawn(mobj_t *actor)
 	if (LUA_CallAction(A_ROCKSPAWN, actor))
 		return;
 
-	type = actor->stringargs[0] ? get_number(actor->stringargs[0]) : MT_ROCKCRUMBLE1;
+	if (udmf)
+		type = actor->stringargs[0] ? get_number(actor->stringargs[0]) : MT_ROCKCRUMBLE1;
+	else
+		type = MT_ROCKCRUMBLE1 + actor->args[3]; // APPPLES!!!!!!!
 
 	if (type < MT_NULL || type >= NUMMOBJTYPES)
 	{
-		CONS_Debug(DBG_GAMELOGIC, "A_RockSpawn: Invalid mobj type %s!\n", actor->stringargs[0]);
+		CONS_Debug(DBG_GAMELOGIC, "A_RockSpawn: Invalid mobj type %s!\n", udmf ? actor->stringargs[0] : va("%d",actor->args[3]));
 		return;
 	}
 
-	dist = max(actor->args[0] << (FRACBITS - 4), 1);
+	if (udmf)
+		dist = max(actor->args[0] << (FRACBITS - 4), 1);
+	else
+	{
+		dist = actor->args[0];
+
+		if (dist < 1)
+			dist = 1;
+	}
+
 	if (actor->args[2])
 		dist += P_RandomByte() * (FRACUNIT/32); // random oomph
 
