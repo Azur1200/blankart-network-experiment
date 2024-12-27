@@ -3664,6 +3664,15 @@ static void K_drawKartMinimap(void)
 		{
 			angle_t ang = R_InterpolateAngle(mobj->old_angle, mobj->angle);
 
+			if (encoremode)
+				ang = ANGLE_180 - ang;
+
+			if (skin && mobj->color && !mobj->colorized // relevant to redo
+				&& skins[skin].starttranscolor != skins[0].starttranscolor) // redoing would have an affect
+			{
+				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+			}
+
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
