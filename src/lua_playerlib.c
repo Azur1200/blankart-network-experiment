@@ -910,6 +910,7 @@ static int kartstuff_get(lua_State *L)
 static int kartstuff_set(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	player_t *plr = (player_t*)(kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 	INT32 i = (INT32)luaL_checkinteger(L, 3);
 
@@ -919,7 +920,17 @@ static int kartstuff_set(lua_State *L)
 		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter player_t in CMD building code!");
-	kartstuff[ks] = i;
+
+	switch (ks)
+	{
+		case k_sneakertimer:
+			plr->sneakertimer = i;
+			break;
+
+		default:
+			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	}
+
 	return 0;
 }
 

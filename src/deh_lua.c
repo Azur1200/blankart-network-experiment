@@ -513,8 +513,8 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 		if (mathlib) return luaL_error(L, "sfx '%s' could not be found.\n", word);
 		return 0;
 	}
-	else if (!mathlib && fastncmp("k_",word,5)) {
-		p = word+5;
+	else if (!mathlib && fastncmp("k_",word,2)) {
+		p = word+2;
 		for (i = 0; i < NUMKARTSTUFF; i++)
 			if (fasticmp(p, KARTSTUFF_LIST[i])) {
 				lua_pushinteger(L, i);
@@ -522,8 +522,8 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			}
 		return 0;
 	}
-	else if (mathlib && fastncmp("K_",word,5)) { // SOCs are ALL CAPS!
-		p = word+5;
+	else if (mathlib && fastncmp("K_",word,2)) { // SOCs are ALL CAPS!
+		p = word+2;
 		for (i = 0; i < NUMKARTSTUFF; i++)
 			if (fastcmp(p, KARTSTUFF_LIST[i])) {
 				lua_pushinteger(L, i);
