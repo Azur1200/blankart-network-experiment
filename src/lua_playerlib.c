@@ -889,7 +889,7 @@ static int player_num(lua_State *L)
 	return 1;
 }
 
-// karthud, ks -> karthud[ks]
+// ???, ks -> kartstuff[ks]
 static int kartstuff_get(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
@@ -967,7 +967,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->drift);
 			return 1;
 		case k_driftend:
-			lua_pushboolean(L, (plr->pflags & PF_DRIFTEND));
+			lua_pushinteger(L, (plr->pflags & PF_DRIFTEND));
 			return 1;
 		case k_driftcharge:
 			lua_pushinteger(L, plr->driftcharge);
@@ -982,7 +982,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->startboost);
 			return 1;
 		case k_jmp:
-			lua_pushboolean(L, (plr->pflags & PF_DRIFTINPUT));
+			lua_pushinteger(L, (plr->pflags & PF_DRIFTINPUT));
 			return 1;
 		case k_offroad:
 			lua_pushinteger(L, plr->offroad);
@@ -1024,7 +1024,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->aizdriftstrat);
 			return 1;
 		case k_brakedrift:
-			lua_pushboolean(L, (plr->pflags & PF_BRAKEDRIFT));
+			lua_pushinteger(L, (plr->pflags & PF_BRAKEDRIFT));
 			return 1;
 		case k_itemroulette:
 			lua_pushinteger(L, plr->itemroulette);
@@ -1039,7 +1039,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->itemamount);
 			return 1;
 		case k_itemheld:
-			lua_pushboolean(L, (plr->pflags & PF_ITEMOUT));
+			lua_pushinteger(L, (plr->pflags & PF_ITEMOUT));
 			return 1;
 		case k_curshield:
 			lua_pushinteger(L, plr->curshield);
@@ -1069,7 +1069,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->invincibilitytimer);
 			return 1;
 		case k_eggmanheld:
-			lua_pushboolean(L, (plr->pflags & PF_EGGMANOUT));
+			lua_pushinteger(L, (plr->pflags & PF_EGGMANOUT));
 			return 1;
 		case k_eggmanexplode:
 			lua_pushinteger(L, plr->eggmanexplode);
@@ -1124,7 +1124,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->karthud[khud_itemblinkmode]);
 			return 1;
 		case k_getsparks:
-			lua_pushboolean(L, (plr->pflags & PF_GETSPARKS));
+			lua_pushinteger(L, (plr->pflags & PF_GETSPARKS));
 			return 1;
 		case k_jawztargetdelay:
 			lua_pushinteger(L, plr->jawztargetdelay);
@@ -1143,7 +1143,7 @@ static int kartstuff_get(lua_State *L)
 	return 1;
 }
 
-// karthud, ks, value -> karthud[ks] = value
+// kartstuff, ks, value -> plt->??? = value
 static int kartstuff_set(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
