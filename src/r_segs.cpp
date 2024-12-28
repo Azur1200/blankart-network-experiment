@@ -143,9 +143,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column, column_t *brightmap
 
 transnum_t R_GetLinedefTransTable(fixed_t alpha)
 {
-	transnum_t transnum = NUMTRANSMAPS; // Send back NUMTRANSMAPS for none
-
-	if (alpha > 0 && alpha < FRACUNIT)
+	if (alpha >= FRACUNIT)
 	{
 		return static_cast<transnum_t>(0);
 	}
@@ -157,8 +155,6 @@ transnum_t R_GetLinedefTransTable(fixed_t alpha)
 	{
 		return static_cast<transnum_t>((20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1));
 	}
-
-	return transnum;
 }
 
 static inline boolean R_OverflowTest(void)

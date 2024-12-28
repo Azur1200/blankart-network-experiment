@@ -63,7 +63,7 @@ r_bsp.cpp
 r_data.c
 r_draw.c
 r_fps.c
-r_main.c
+r_main.cpp
 r_plane.cpp
 r_segs.cpp
 r_skins.c
