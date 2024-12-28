@@ -1864,6 +1864,51 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	return true;
 }
 
+// Determines what ShouldX Hook's status should be used.
+static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, damage, damagetype);
+	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
+	UINT8 status;
+
+	status = shouldDamage;
+
+	if (shouldSpin > 0 && ((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT) || (damagetype & DMG_STING)))
+		status = shouldSpin;
+	else if (shouldExplode > 0 && ((damagetype & DMG_EXPLODE) || (damagetype & DMG_KARMA)))
+		status = shouldExplode;
+	else if (shouldSquish > 0 && (damagetype & DMG_SQUISH))
+		status = shouldSquish;
+
+	return status;
+}
+
+// Determines what Damage Hook's status should be used.
+static UINT8 P_HookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	UINT8 MobjDamage = LUA_HookMobjDamage(target, inflictor, source, damage, damagetype);
+	UINT8 PlayerSpin = LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
+	UINT8 PlayerExplode = LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
+	UINT8 PlayerSquish = LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
+	UINT8 status;
+
+	status = MobjDamage;
+
+	if (target->type != MT_PLAYER)
+		return status;
+
+	if (PlayerSpin > 0 && ((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT) || (damagetype & DMG_STING)))
+		status = PlayerSpin;
+	else if (PlayerExplode > 0 && ((damagetype & DMG_EXPLODE) || (damagetype & DMG_KARMA)))
+		status = PlayerExplode;
+	else if (PlayerSquish > 0 && (damagetype & DMG_SQUISH))
+		status = PlayerSquish;
+
+	return status;
+}
+
 /** Damages an object, which may or may not be a player.
   * For melee attacks, source and inflictor are the same.
   *
@@ -1881,6 +1926,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
   * \todo Clean up this mess, split into multiple functions.
   * \sa P_KillMobj
   */
+
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
 	player_t *player;
@@ -1902,7 +1948,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+		UINT8 shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -1925,7 +1971,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-		if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype) || P_MobjWasRemoved(target))
+		if (P_HookDamage(target, inflictor, source, damage, damagetype) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -1955,7 +2001,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (!P_KillPlayer(player, inflictor, source, damagetype))
 				return false;
 		}
-		else if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype))
+		else if (P_HookDamage(target, inflictor, source, damage, damagetype))
 		{
 			return true;
 		}

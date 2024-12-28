@@ -197,6 +197,13 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, &plr->oldcmd, META_TICCMD);
 	else if (fastcmp(field,"playerstate"))
 		lua_pushinteger(L, plr->playerstate);
+	else if (fastcmp(field,"health"))
+	{
+		if (plr->mo)
+			lua_pushinteger(L, plr->mo->health);
+		else
+			lua_pushinteger(L, 0);
+	}
 	else if (fastcmp(field,"viewz"))
 		lua_pushfixed(L, plr->viewz);
 	else if (fastcmp(field,"viewheight"))

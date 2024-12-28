@@ -749,10 +749,59 @@ int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT3
 			MOBJ_HOOK(ShouldDamage), res_force);
 }
 
+int LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_NORMAL || damagetype & DMG_WIPEOUT || damagetype & DMG_STING)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+					   MOBJ_HOOK(ShouldSpin), res_force);
+	return 0;
+}
+
+int LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_EXPLODE || damagetype & DMG_KARMA)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+					   MOBJ_HOOK(ShouldExplode), res_force);
+	return 0;
+}
+
+int LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_SQUISH)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+				MOBJ_HOOK(ShouldSquish), res_force);
+	return 0;
+}
+
 int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
 	return damage_hook(target, inflictor, source, damage, damagetype,
-			MOBJ_HOOK(MobjDamage), res_true);
+					   MOBJ_HOOK(MobjDamage), res_true);
+}
+
+int LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_NORMAL || damagetype & DMG_WIPEOUT || damagetype & DMG_STING)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+					   MOBJ_HOOK(PlayerSpin), res_true);
+
+	return 0;
+}
+
+int LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_EXPLODE || damagetype & DMG_KARMA)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+						MOBJ_HOOK(PlayerExplode), res_true);
+	return 0;
+}
+
+int LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	if (damagetype & DMG_SQUISH)
+		return damage_hook(target, inflictor, source, damage, damagetype,
+					   MOBJ_HOOK(PlayerSquish), res_true);
+	return 0;
 }
 
 int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
