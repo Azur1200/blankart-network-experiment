@@ -175,125 +175,22 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 {
 	size_t pindex;
 	column_t *col, *bmCol = NULL;
-	INT32 lightnum, bmnum, i;
+	INT32 lightnum, i;
 	fixed_t height, realbot;
 	lightlist_t *light;
 	r_lightlist_t *rlight;
 	line_t *ldef;
 	sector_t *front, *back;
 	INT32 times, repeats;
-	INT64 overflow_test;
-	INT32 range;
-	transnum_t transtable = NUMTRANSMAPS;
-	patchalphastyle_t blendmode = static_cast<patchalphastyle_t>(0);
-
-	// Calculate light table.
-	// Use different light tables
-	//   for horizontal / vertical / diagonal. Diagonal?
-	// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-	curline = ds->curline;
-
-	if (R_IsDebugLine(curline))
-	{
-		const UINT8 thickness = 4;
-		const UINT8 pal = (leveltime % 70 < 35) ? 0x23 : 0x00;
-
-		const INT32 horizon = ((centeryfrac>>4) + 1 + HEIGHTUNIT - 1) >> HEIGHTBITS;
-		const INT32 y = std::max(0, std::min(horizon, vid.height - thickness));
-
-		UINT8 *p = &topleft[x1 + (y * vid.width)];
-
-		range = std::max(x2 - x1, 0) + 1;
-
-		for (i = 0; i < thickness; ++i)
-		{
-			memset(p, pal, range);
-			p += vid.width;
-		}
-
-		return;
-	}
-
-	if (ds->maskedtexturecol == NULL)
-	{
-		return;
-	}
-
-	frontsector = curline->frontsector;
-	backsector = curline->backsector;
-	texnum = R_GetTextureNum(curline->sidedef->midtexture);
-	bmnum = R_GetTextureBrightmap(texnum);
-	windowbottom = windowtop = sprbotscreen = INT32_MAX;
 	boolean tripwire;
 	boolean brightmapped = R_TextureHasBrightmap(texnum);
 	boolean remap = encoremap && R_TextureCanRemap(texnum);
+	INT32 range;
 
 	ldef = curline->linedef;
 	tripwire = P_IsLineTripWire(ldef);
-	if (!ldef->alpha)
-		return;
 
-	transtable = R_GetLinedefTransTable(ldef->alpha);
-	blendmode = static_cast<patchalphastyle_t>(ldef->blendmode);
-
-	if (transtable == NUMTRANSMAPS
-		|| blendmode == AST_MODULATE
-		|| blendmode == AST_FOG)
-	{
-		transtable = static_cast<transnum_t>(0);
-	}
-
-	if (blendmode == AST_FOG)
-	{
-		R_SetColumnFunc(COLDRAWFUNC_FOG, bmnum != 0);
-		windowtop = frontsector->ceilingheight;
-		windowbottom = frontsector->floorheight;
-	}
-	else if (transtable != NUMTRANSMAPS && (blendmode || transtable))
-	{
-		dc_transmap = R_GetBlendTable(blendmode, transtable);
-		R_SetColumnFunc(COLDRAWFUNC_FUZZY, bmnum != 0);
-	}
-	else
-	{
-		R_SetColumnFunc(BASEDRAWFUNC, bmnum != 0);
-	}
-
-	if (curline->polyseg && curline->polyseg->translucency > 0)
-	{
-		if (curline->polyseg->translucency >= NUMTRANSMAPS)
-			return;
-
-		dc_transmap = R_GetTranslucencyTable(curline->polyseg->translucency);
-		R_SetColumnFunc(COLDRAWFUNC_FUZZY, bmnum != 0);
-	}
-
-	range = std::max(ds->x2-ds->x1, 1);
-	rw_scalestep = ds->scalestep;
-	spryscale = ds->scale1 + (x1 - ds->x1)*rw_scalestep;
-
-	// Texture must be cached before setting colfunc_2s,
-	// otherwise texture[texnum]->holes may be false when it shouldn't be
-	R_CheckTextureCache(texnum);
-	if (bmnum) { R_CheckTextureCache(bmnum); }
-
-	// handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
-	// are not stored per-column with post info in SRB2
-	if (textures[texnum]->holes)
-	{
-		if (textures[texnum]->flip & 2) // vertically flipped?
-		{
-			colfunc_2s = R_DrawFlippedMaskedColumn;
-			lengthcol = textures[texnum]->height;
-		}
-		else
-			colfunc_2s = R_DrawMaskedColumn; // render the usual 2sided single-patch packed texture
-	}
-	else
-	{
-		colfunc_2s = R_Render2sidedMultiPatchColumn; // render multipatch with no holes (no post_t info)
-		lengthcol = textures[texnum]->height;
-	}
+	range = std::max<INT32>(ds->x2-ds->x1, 1);
 
 	// Setup lighting based on the presence/lack-of 3D floors.
 	dc_numlights = 0;
@@ -448,9 +345,7 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 			if (maskedtexturecol[dc_x] != INT16_MAX)
 			{
 				// Check for overflows first
-				overflow_test = (INT64)centeryfrac - (((INT64)dc_texturemid*spryscale)>>FRACBITS);
-				if (overflow_test < 0) overflow_test = -overflow_test;
-				if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL)
+				if (R_OverflowTest())
 				{
 					// Eh, no, go away, don't waste our time
 					if (dc_numlights)
