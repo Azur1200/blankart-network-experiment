@@ -216,6 +216,8 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->drawangle);
 	else if (fastcmp(field,"frameangle"))
 		lua_pushangle(L, plr->drawangle);
+	else if (fastcmp(field,"powers"))
+		LUA_PushUserdata(L, plr->powers, META_POWERS);
 	else if (fastcmp(field,"kartstuff"))
 		LUA_PushUserdata(L, plr->kartstuff, META_KARTSTUFF);
 	else if (fastcmp(field,"karthud"))
@@ -896,6 +898,75 @@ static int player_num(lua_State *L)
 	return 1;
 }
 
+// powers, p -> powers[p]
+static int power_get(lua_State *L)
+{
+	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	powertype_t p = luaL_checkinteger(L, 2);
+	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	if (p >= NUMPOWERS)
+		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
+	switch (p)
+	{
+		case pw_flashing:
+			lua_pushinteger(L, plr->flashing);
+			return 1;
+		case pw_nocontrol:
+			lua_pushinteger(L, plr->nocontrol);
+			return 1;
+		case pw_ingoop:
+			if (plr->mo)
+				lua_pushinteger(L, P_IsObjectInGoop(plr->mo));
+			else
+				lua_pushinteger(L, 0);
+			return 1;
+		default:
+			lua_pushinteger(L, powers[p]);
+			return 1;
+	}
+	return 1;
+}
+
+#define NOSET luaL_error(L, LUA_QL("powertype_t") " field " LUA_QS " should not be set directly.", p)
+// powers, p, value -> powers[p] = value
+static int power_set(lua_State *L)
+{
+	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	powertype_t p = luaL_checkinteger(L, 2);
+	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	UINT16 i = (UINT16)luaL_checkinteger(L, 3);
+	if (p >= NUMPOWERS)
+		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in BuildCMD code!");
+	switch (p)
+	{
+		case pw_flashing:
+			plr->flashing = i;
+			break;
+		case pw_nocontrol:
+			plr->nocontrol = i;
+			break;
+		case pw_ingoop:
+			return NOSET;
+		default:
+			powers[p] = i;
+			break;
+	}
+	return 0;
+}
+#undef NOSET
+
+// #powers -> NUMPOWERS
+static int power_len(lua_State *L)
+{
+	lua_pushinteger(L, NUMPOWERS);
+	return 1;
+}
+
+
 // ???, ks -> kartstuff[ks]
 static int kartstuff_get(lua_State *L)
 {
@@ -1542,6 +1613,17 @@ int LUA_PlayerLib(lua_State *L)
 		lua_setfield(L, -2, "__newindex");
 
 		lua_pushcfunction(L, player_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_POWERS);
+		lua_pushcfunction(L, power_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, power_set);
+		lua_setfield(L, -2, "__newindex");
+
+		lua_pushcfunction(L, power_len);
 		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 

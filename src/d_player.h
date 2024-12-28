@@ -352,6 +352,46 @@ typedef enum
 	NUMKARTSTUFF
 } kartstufftype_t;
 
+// Player powers. (don't edit this comment)
+// What are you gonna do about it :^) - Nep
+typedef enum
+{
+	pw_invulnerability,
+	pw_sneakers,
+	pw_flashing,
+	pw_shield,
+	pw_tailsfly, // tails flying
+	pw_underwater, // underwater timer
+	pw_spacetime, // In space, no one can hear you spin!
+	pw_extralife, // Extra Life timer
+
+	pw_super, // Are you super?
+	pw_gravityboots, // gravity boots
+
+	// Weapon ammunition
+	pw_infinityring,
+	pw_automaticring,
+	pw_bouncering,
+	pw_scatterring,
+	pw_grenadering,
+	pw_explosionring,
+	pw_railring,
+
+	// Power Stones
+	pw_emeralds, // stored like global 'emeralds' variable
+
+	// NiGHTS powerups
+	pw_nights_superloop,
+	pw_nights_helper,
+	pw_nights_linkfreeze,
+
+	//for linedef exec 427
+	pw_nocontrol,
+	pw_ingoop, // In goop
+
+	NUMPOWERS
+} powertype_t;
+
 // QUICKLY GET RING TOTAL, INCLUDING RINGS CURRENTLY IN THE PICKUP ANIMATION
 #define RINGTOTAL(p) (p->rings + p->pickuprings)
 
@@ -491,6 +531,9 @@ struct player_t
 	UINT16 nocontrol; //for linedef exec 427
 	UINT8 carry;
 	UINT16 dye;
+
+	// Power ups. invinc and invis are tic counters.
+	UINT16 powers[NUMPOWERS];
 
 	// SRB2kart stuff
 	INT32 kartstuff[NUMKARTSTUFF];

@@ -6182,6 +6182,41 @@ const char *COLOR_ENUMS[] = {
 	"CSUPER5"		// SKINCOLOR_CSUPER5,
 };
 
+const char *const POWERS_LIST[] = {
+	"INVULNERABILITY",
+	"SNEAKERS",
+	"FLASHING",
+	"SHIELD",
+	"TAILSFLY", // tails flying
+	"UNDERWATER", // underwater timer
+	"SPACETIME", // In space, no one can hear you spin!
+	"EXTRALIFE", // Extra Life timer
+
+	"SUPER", // Are you super?
+	"GRAVITYBOOTS", // gravity boots
+
+	// Weapon ammunition
+	"INFINITYRING",
+	"AUTOMATICRING",
+	"BOUNCERING",
+	"SCATTERRING",
+	"GRENADERING",
+	"EXPLOSIONRING",
+	"RAILRING",
+
+	// Power Stones
+	"EMERALDS", // stored like global 'emeralds' variable
+
+	// NiGHTS powerups
+	"NIGHTS_SUPERLOOP",
+	"NIGHTS_HELPER",
+	"NIGHTS_LINKFREEZE",
+
+	//for linedef exec 427
+	"NOCONTROL",
+	"INGOOP" // In goop
+};
+
 const char *const KARTSTUFF_LIST[] = {
 	"POSITION",
 	"OLDPOSITION",
