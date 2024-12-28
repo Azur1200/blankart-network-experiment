@@ -3346,10 +3346,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		}
 
 		case 443: // Calls a named Lua function
-			if (stringargs[0])
 
+			if (stringargs[0])
 			{
-				LUA_HookSpecialExecute(activator, args, stringargs);
+				if (line && !udmf)
+					LUA_HookLinedefExecute(line, mo, callsec);
+				else
+					LUA_HookSpecialExecute(activator, args, stringargs);
 			}
 			else
 				CONS_Alert(CONS_WARNING, "Linedef %s is missing the hook name of the Lua function to call! (This should be given in stringarg0)\n", sizeu1(line-lines));

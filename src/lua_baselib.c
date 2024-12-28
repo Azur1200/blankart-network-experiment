@@ -1147,6 +1147,16 @@ static int lib_pPlayerZMovement(lua_State *L)
 	return 0;
 }
 
+static int lib_pSpawnShadowMobj(lua_State *L)
+{
+	mobj_t *caster = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	if (!caster)
+		return LUA_ErrInvalid(L, "mobj_t");
+	caster->shadowscale = FRACUNIT;
+	return 0;
+}
+
 // P_USER
 ////////////
 
@@ -1695,7 +1705,12 @@ static int lib_pDamageMobj(lua_State *L)
 	if (!lua_isnone(L, 3) && lua_isuserdata(L, 3))
 		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 	damage = (INT32)luaL_optinteger(L, 4, 1);
-	damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
+	if ((damage == 10000) && lua_isnil(L, 5))
+		damagetype = DMG_TIMEOVER;
+	else
+		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
 	lua_pushboolean(L, P_DamageMobj(target, inflictor, source, damage, damagetype));
 	return 1;
 }
@@ -2046,9 +2061,16 @@ static int lib_pThingOnSpecial3DFloor(lua_State *L)
 static int lib_pSetupLevelSky(lua_State *L)
 {
 	const char *skytexname = luaL_checkstring(L, 1);
+
 	player_t *user = NULL;
 	NOHUD
 	INLEVEL
+
+	if (lua_isnumber(L, 1))
+		skytexname = va("SKY%s",skytexname);
+	else if (lua_isnil(L, 1))
+		skytexname = mapheaderinfo[gamemap-1]->skytexture;
+
 	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2)) // if a player, setup sky for only the player, otherwise setup sky for all players
 		user = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
 	if (!user) // global
@@ -3388,6 +3410,20 @@ static int lib_gTicsToMilliseconds(lua_State *L)
 	return 1;
 }
 
+static int lib_gRaceGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushinteger(L, (gametype == GT_RACE));
+	return 1;
+}
+
+static int lib_gBattleGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushinteger(L, (gametype == GT_BATTLE));
+	return 1;
+}
+
 // K_KART
 ////////////
 
@@ -3954,6 +3990,7 @@ static luaL_Reg lib[] = {
 	{"P_RingZMovement",lib_pRingZMovement},
 	{"P_SceneryZMovement",lib_pSceneryZMovement},
 	{"P_PlayerZMovement",lib_pPlayerZMovement},
+	{"P_SpawnShadowMobj",lib_pSpawnShadowMobj},
 
 	// p_user
 	{"P_AddPlayerScore",lib_pAddPlayerScore},
@@ -4112,6 +4149,8 @@ static luaL_Reg lib[] = {
 	{"G_TicsToCentiseconds",lib_gTicsToCentiseconds},
 	{"G_TicsToMilliseconds",lib_gTicsToMilliseconds},
 	{"getTimeMicros",lib_getTimeMicros},
+	{"G_RaceGametype",lib_gRaceGametype},
+	{"G_BattleGametype",lib_gBattleGametype},
 
 	// k_kart
 	{"K_PlayAttackTaunt", lib_kAttackSound},

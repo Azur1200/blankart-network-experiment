@@ -10,6 +10,7 @@
 /// \file  deh_tables.c
 /// \brief Define DeHackEd tables.
 
+#include "d_player.h"
 #include "doomdef.h" // Constants
 #include "s_sound.h" // Sound constants
 #include "info.h" // Mobj, state, sprite, etc constants
@@ -7096,6 +7097,9 @@ struct int_const_s const INT_CONST[] = {
 	{"KSPIN_WIPEOUT",KSPIN_WIPEOUT},
 	{"KSPIN_STUNG",KSPIN_STUNG},
 	{"KSPIN_EXPLOSION",KSPIN_EXPLOSION},
+
+	// Timeover
+	{"PF_TIMEOVER",PF_NOCONTEST},
 
 	// spottype_t
 	{"SPOT_NONE",SPOT_NONE},
