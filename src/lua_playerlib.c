@@ -1039,7 +1039,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->itemamount);
 			return 1;
 		case k_itemheld:
-			lua_pushinteger(L, (plr->pflags & PF_ITEMOUT));
+			lua_pushboolean(L, (plr->pflags & PF_ITEMOUT));
 			return 1;
 		case k_curshield:
 			lua_pushinteger(L, plr->curshield);
@@ -1160,12 +1160,248 @@ static int kartstuff_set(lua_State *L)
 
 	switch (ks)
 	{
-		case k_sneakertimer:
-			plr->sneakertimer = i;
+		case k_position:
+			plr->position = i;
 			break;
+		case k_oldposition:
+			plr->oldposition = i;
+			break;
+		case k_positiondelay:
+			plr->positiondelay = i;
+			break;
+		case k_prevcheck:
+			plr->prevcheck = i;
+			break;
+		case k_nextcheck:
+			plr->nextcheck = i;
+			break;
+			/*case k_waypoint:
+			 *	lua_pushinteger(L, plr->waypoint);
+			 *	break;*/
+			/*case k_starpostwp:
+			 *	lua_pushinteger(L, plr->starpostwp);
+			 *	break;*/
+			case k_starpostflip:
+				plr->starpostflip = i;
+				break;
+			case k_respawn:
+				plr->respawn = i;
+				break;
+			case k_dropdash:
+				plr->dropdash = i;
+				break;
+			case k_throwdir:
+				plr->throwdir = i;
+				break;
 
-		default:
-			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+			case k_lapanimation:
+				plr->karthud[khud_lapanimation] = i;
+				break;
+			case k_laphand:
+				plr->karthud[khud_laphand] = i;
+				break;
+			case k_cardanimation:
+				plr->karthud[khud_cardanimation] = i;
+				break;
+			case k_voices:
+				plr->karthud[khud_voices] = i;
+				break;
+			case k_tauntvoices:
+				plr->karthud[khud_tauntvoices] = i;
+				break;
+			case k_instashield:
+				plr->instashield = i;
+				break;
+			case k_enginesnd:
+				plr->karthud[khud_enginesnd] = i;
+				break;
+
+			case k_floorboost:
+				plr->floorboost = i;
+				break;
+			case k_spinouttype:
+				plr->spinouttype = i;
+				break;
+			case k_drift:
+				plr->drift = i;
+				break;
+			case k_driftend:
+				if (i > 0)
+					plr->pflags |= PF_DRIFTEND;
+				break;
+			case k_driftcharge:
+				plr->driftcharge  = i;
+				break;
+			case k_driftboost:
+				plr->driftboost = i;
+				break;
+			case k_boostcharge:
+				plr->boostcharge = i;
+				break;
+			case k_startboost:
+				plr->startboost = i;
+				break;
+			/*case k_jmp:
+				plr->pflags |= PF_DRIFTINPUT;
+				return 1;*/
+			case k_offroad:
+				plr->offroad = i;
+				break;
+			case k_pogospring:
+				plr->pogospring = i;
+				break;
+			case k_brakestop:
+				plr->brakestop = i;
+				break;
+			case k_waterskip:
+				plr->waterskip = i;
+				break;
+			case k_dashpadcooldown:
+				plr->dashpadcooldown = i;
+				break;
+			case k_boostpower:
+				plr->boostpower = i;
+				break;
+			case k_speedboost:
+				plr->speedboost = i;
+				break;
+			case k_accelboost:
+				plr->accelboost = i;
+				break;
+			case k_boostangle:
+				plr->boostangle = i;
+				break;
+			case k_boostcam:
+				plr->karthud[khud_boostcam] = i;
+				break;
+			case k_destboostcam:
+				plr->karthud[khud_destboostcam] = i;
+				break;
+			case k_timeovercam:
+				plr->karthud[khud_timeovercam] = i;
+				break;
+			case k_aizdriftstrat:
+				plr->aizdriftstrat = i;
+				break;
+			case k_brakedrift:
+				if (i > 0)
+					plr->pflags |= PF_BRAKEDRIFT;
+				break;
+			case k_itemroulette:
+				plr->itemroulette = i;
+				break;
+			case k_roulettetype:
+				plr->roulettetype = i;
+				break;
+			case k_itemtype:
+				plr->itemtype = i;
+				break;
+			case k_itemamount:
+				plr->itemamount = i;
+				break;
+			case k_itemheld:
+				if (i > 0)
+					plr->pflags |= PF_ITEMOUT;
+				break;
+			case k_curshield:
+				plr->curshield = i;
+				break;
+			case k_hyudorotimer:
+				plr->hyudorotimer = i;
+				break;
+			case k_stealingtimer:
+				plr->stealingtimer = i;
+				break;
+			case k_stolentimer:
+				plr->stolentimer = i;
+				break;
+			case k_sneakertimer:
+				plr->sneakertimer = i;
+				break;
+			case k_growshrinktimer:
+				plr->growshrinktimer = i;
+				break;
+			case k_squishedtimer:
+				plr->squishedtimer = i;
+				break;
+			case k_rocketsneakertimer:
+				plr->rocketsneakertimer = i;
+				break;
+			case k_invincibilitytimer:
+				plr->invincibilitytimer = i;
+				break;
+			case k_eggmanheld:
+				if (i > 0)
+					plr->pflags |= PF_EGGMANOUT;
+				break;
+			case k_eggmanexplode:
+				plr->eggmanexplode = i;
+				break;
+			case k_eggmanblame:
+				plr->eggmanblame = i;
+				break;
+			case k_lastjawztarget:
+				plr->lastjawztarget = i;
+				break;
+			case k_bananadrag:
+				plr->bananadrag = i;
+				break;
+			case k_spinouttimer:
+				plr->spinouttimer = i;
+				break;
+			case k_wipeoutslow:
+				plr->wipeoutslow = i;
+				break;
+			case k_justbumped:
+				plr->justbumped = i;
+				break;;
+			case k_comebacktimer:
+				plr->karmadelay = i;
+				break;
+			case k_sadtimer:
+				plr->sadtimer = i;
+				break;
+
+				// Battle Mode vars
+			case k_bumper:
+				plr->bumper = i;
+				break;
+			case k_comebackpoints:
+				plr->karmapoints = i;
+				break;
+			case k_comebackmode:
+				plr->karmamode = i;
+				break;
+			case k_wanted:
+				plr->wanted = i;
+				break;
+			case k_yougotem:
+				plr->karthud[khud_yougotem] = i;
+				break;
+
+				// v1.0.2+ vars
+			case k_itemblink:
+				plr->karthud[khud_itemblink] = i;
+				break;
+			case k_itemblinkmode:
+				plr->karthud[khud_itemblinkmode] = i;
+				break;
+			case k_getsparks:
+				if (i > 0)
+					plr->pflags |= PF_GETSPARKS;
+				break;
+			case k_jawztargetdelay:
+				plr->jawztargetdelay = i;
+				break;
+			case k_spectatewait:
+				plr->spectatewait = i;
+				break;
+			case k_growcancel:
+				plr->growcancel = i;
+				break;
+
+			default:
+				return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
 	}
 
 	return 0;
