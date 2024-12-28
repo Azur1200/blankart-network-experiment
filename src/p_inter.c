@@ -1872,39 +1872,16 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
 	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
 	UINT8 status;
+	const UINT8 type = (damagetype & DMG_TYPEMASK);
 
 	status = shouldDamage;
 
-	if (shouldSpin > 0 && ((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT) || (damagetype & DMG_STING)))
+	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_STING)))
 		status = shouldSpin;
-	else if (shouldExplode > 0 && ((damagetype & DMG_EXPLODE) || (damagetype & DMG_KARMA)))
+	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
 		status = shouldExplode;
-	else if (shouldSquish > 0 && (damagetype & DMG_SQUISH))
+	else if (shouldSquish > 0 && (type == DMG_SQUISH))
 		status = shouldSquish;
-
-	return status;
-}
-
-// Determines what Damage Hook's status should be used.
-static UINT8 P_HookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
-{
-	UINT8 MobjDamage = LUA_HookMobjDamage(target, inflictor, source, damage, damagetype);
-	UINT8 PlayerSpin = LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
-	UINT8 PlayerExplode = LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
-	UINT8 PlayerSquish = LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
-	UINT8 status;
-
-	status = MobjDamage;
-
-	if (target->type != MT_PLAYER)
-		return status;
-
-	if (PlayerSpin > 0 && ((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT) || (damagetype & DMG_STING)))
-		status = PlayerSpin;
-	else if (PlayerExplode > 0 && ((damagetype & DMG_EXPLODE) || (damagetype & DMG_KARMA)))
-		status = PlayerExplode;
-	else if (PlayerSquish > 0 && (damagetype & DMG_SQUISH))
-		status = PlayerSquish;
 
 	return status;
 }
@@ -1949,6 +1926,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	if (!metalrecording)
 	{
 		UINT8 shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
+		CONS_Printf("ShouldForce: %d\n",shouldForce);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -1971,7 +1949,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (!force && target->flags2 & MF2_FRET) // Currently flashing from being hit
 			return false;
 
-		if (P_HookDamage(target, inflictor, source, damage, damagetype) || P_MobjWasRemoved(target))
+		if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype) || P_MobjWasRemoved(target))
 			return true;
 
 		if (target->health > 1)
@@ -2001,7 +1979,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (!P_KillPlayer(player, inflictor, source, damagetype))
 				return false;
 		}
-		else if (P_HookDamage(target, inflictor, source, damage, damagetype))
+		else if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype))
 		{
 			return true;
 		}
@@ -2103,25 +2081,30 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_STING:
 					K_DebtStingPlayer(player, source);
 					K_KartPainEnergyFling(player);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					ringburst = 0;
 					break;
 				case DMG_EXPLODE:
 				case DMG_KARMA:
 					ringburst = K_ExplodePlayer(player, inflictor, source);
+					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
 				case DMG_SQUISH:
 					K_SquishPlayer(player, inflictor, source);
+					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
 					ringburst = 5;
 					break;
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);
 					K_SpinPlayer(player, inflictor, source, KSPIN_WIPEOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					break;
 			}
 

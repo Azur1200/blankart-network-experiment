@@ -743,6 +743,27 @@ static int damage_hook
 	return hook.status;
 }
 
+static int playerdamage_hook
+(
+	mobj_t *target,
+ mobj_t *inflictor,
+ mobj_t *source,
+ INT32   damage,
+ UINT8   damagetype,
+ int     hook_type,
+ Hook_Callback results_handler
+){
+	Hook_State hook;
+	if (prepare_mobj_hook(&hook, 0, hook_type, target->type))
+	{
+		LUA_PushUserdata(gL, target->player, META_PLAYER);
+		LUA_PushUserdata(gL, inflictor, META_MOBJ);
+		LUA_PushUserdata(gL, source, META_MOBJ);
+		call_hooks(&hook, 1, results_handler);
+	}
+	return hook.status;
+}
+
 int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
 	return damage_hook(target, inflictor, source, damage, damagetype,
@@ -751,26 +772,20 @@ int LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT3
 
 int LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_NORMAL || damagetype & DMG_WIPEOUT || damagetype & DMG_STING)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(ShouldSpin), res_force);
-	return 0;
 }
 
 int LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_EXPLODE || damagetype & DMG_KARMA)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(ShouldExplode), res_force);
-	return 0;
 }
 
 int LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_SQUISH)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 				MOBJ_HOOK(ShouldSquish), res_force);
-	return 0;
 }
 
 int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
@@ -781,27 +796,20 @@ int LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 
 
 int LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_NORMAL || damagetype & DMG_WIPEOUT || damagetype & DMG_STING)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(PlayerSpin), res_true);
-
-	return 0;
 }
 
 int LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_EXPLODE || damagetype & DMG_KARMA)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 						MOBJ_HOOK(PlayerExplode), res_true);
-	return 0;
 }
 
 int LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
-	if (damagetype & DMG_SQUISH)
-		return damage_hook(target, inflictor, source, damage, damagetype,
+		return playerdamage_hook(target, inflictor, source, damage, damagetype,
 					   MOBJ_HOOK(PlayerSquish), res_true);
-	return 0;
 }
 
 int LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype)
