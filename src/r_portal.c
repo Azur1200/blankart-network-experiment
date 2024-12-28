@@ -301,7 +301,7 @@ void Portal_AddSkyboxPortals (void)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
-			if (pl->picnum == skyflatnum)
+			if (pl->picnum == skyflatnum && !pl->damage)
 			{
 				Portal_AddSkybox(pl);
 

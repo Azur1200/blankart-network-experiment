@@ -13,6 +13,9 @@
 
 #include <algorithm>
 
+//#include <tracy/tracy/Tracy.hpp>
+
+#include "command.h"
 #include "doomdef.h"
 #include "g_game.h"
 #include "r_local.h"
@@ -30,6 +33,7 @@
 extern "C" {
 	#include "qs22j.h"
 }
+extern "C" consvar_t cv_debugfinishline;
 
 seg_t *curline;
 side_t *sidedef;
@@ -393,6 +397,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
 {
 	return (
+		!R_IsDebugLine(line) &&
 		!line->polyseg &&
 		back->ceilingpic == front->ceilingpic
 		&& back->floorpic == front->floorpic
@@ -417,7 +422,23 @@ boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back)
 		// Consider colormaps
 		&& back->extra_colormap == front->extra_colormap
 		&& ((!front->ffloors && !back->ffloors)
-		|| Tag_Compare(&front->tags, &back->tags)));
+		|| Tag_Compare(&front->tags, &back->tags))
+		&& (!cv_debugfinishline.value || back->damagetype == front->damagetype));
+}
+
+boolean R_IsDebugLine(seg_t *line)
+{
+	if (cv_debugfinishline.value)
+	{
+		switch (line->linedef->special)
+		{
+			case 2001: // Ring Racers: Finish Line
+			case 2003: // Ring Racers: Respawn Line
+				return true;
+		}
+	}
+
+	return false;
 }
 
 //
@@ -516,12 +537,28 @@ static void R_AddLine(seg_t *line)
 	if (!backsector)
 		goto clipsolid;
 
+	// Finish line debug: make solid walls pitch black. This
+	// contrasts areas that are impossible to traverse next to
+	// finish lines.
+	if (cv_debugfinishline.value && (line->linedef->flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS)))
+	{
+		goto clipsolid;
+	}
+
 	backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
 
 	doorclosed = 0;
 
 	if (udmf)
 	{
+
+		if (!R_IsDebugLine(line) &&
+			!line->polyseg &&
+			!line->sidedef->midtexture
+			&& ((!frontsector->ffloors && !backsector->ffloors)
+			|| Tag_Compare(&frontsector->tags, &backsector->tags)))
+			return; // line is empty, don't even bother
+
 		if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
 			bothceilingssky = true;
 		if (backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum)
@@ -981,6 +1018,11 @@ static void R_Subsector(size_t num)
 		ceilingcolormap = *frontsector->lightlist[light].extra_colormap;
 	}
 
+	auto sector_damage = [](sector_t* s) { return static_cast<sectordamage_t>(s->damagetype); };
+
+	auto floor_damage = [&](sector_t* s) { return s->flags & MSF_FLIPSPECIAL_FLOOR ? sector_damage(s) : SD_NONE; };
+	auto ceiling_damage = [&](sector_t* s) { return s->flags & MSF_FLIPSPECIAL_CEILING ? sector_damage(s) : SD_NONE; };
+
 	sub->sector->extra_colormap = frontsector->extra_colormap;
 
 	if (P_GetSectorFloorZAt(frontsector, viewx, viewy) < viewz
@@ -993,7 +1035,7 @@ static void R_Subsector(size_t num)
 			floorcolormap, NULL, NULL, frontsector->f_slope,
 			R_NoEncore(frontsector, &levelflats[frontsector->floorpic], false),
 			R_IsRipplePlane(frontsector, NULL, false),
-			false, frontsector
+			false, frontsector, floor_damage(frontsector)
 		);
 	}
 	else
@@ -1009,7 +1051,7 @@ static void R_Subsector(size_t num)
 			ceilingcolormap, NULL, NULL, frontsector->c_slope,
 			R_NoEncore(frontsector, &levelflats[frontsector->ceilingpic], true),
 			R_IsRipplePlane(frontsector, NULL, true),
-			true, frontsector
+			true, frontsector, ceiling_damage(frontsector)
 		);
 	}
 	else
@@ -1023,9 +1065,20 @@ static void R_Subsector(size_t num)
 	{
 		fixed_t heightcheck, planecenterz;
 
+		auto fof_damage = [&](auto& f)
+		{
+			sector_t* s = rover->master->frontsector;
+			return rover->fofflags & FOF_BLOCKPLAYER ? f(s) : sector_damage(s);
+		};
+
+		auto fof_top_damage = [&] { return fof_damage(floor_damage); };
+		auto fof_bottom_damage = [&] { return fof_damage(ceiling_damage); };
+
 		for (rover = frontsector->ffloors; rover && numffloors < MAXFFLOORS; rover = rover->next)
 		{
-			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERPLANES))
+			bool visible = rover->fofflags & FOF_RENDERPLANES;
+
+			if (!(rover->fofflags & FOF_EXISTS) || (!cv_debugfinishline.value && !visible))
 				continue;
 
 			if (frontsector->cullheight)
@@ -1048,6 +1101,14 @@ static void R_Subsector(size_t num)
 				&& ((viewz < heightcheck && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES)))
 				|| (viewz > heightcheck && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
+				sectordamage_t damage = fof_bottom_damage();
+
+				if (!damage && !visible)
+				{
+					rover->norender = leveltime; // Tell R_StoreWallRange to skip this
+					continue;
+				}
+
 				light = R_GetPlaneLight(frontsector, planecenterz,
 					viewz < heightcheck);
 
@@ -1057,7 +1118,7 @@ static void R_Subsector(size_t num)
 					*rover->bottomyoffs, *rover->bottomangle, *frontsector->lightlist[light].extra_colormap, rover, NULL, *rover->b_slope,
 					R_NoEncore(rover->master->frontsector, &levelflats[*rover->bottompic], true),
 					R_IsRipplePlane(rover->master->frontsector, rover, true),
-					true, frontsector
+					true, frontsector, damage
 				);
 
 				ffloor[numffloors].slope = *rover->b_slope;
@@ -1083,6 +1144,14 @@ static void R_Subsector(size_t num)
 				&& ((viewz > heightcheck && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES)))
 				|| (viewz < heightcheck && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
+				sectordamage_t damage = fof_top_damage();
+
+				if (!damage && !visible)
+				{
+					rover->norender = leveltime; // Tell R_StoreWallRange to skip this
+					continue;
+				}
+
 				light = R_GetPlaneLight(frontsector, planecenterz, viewz < heightcheck);
 
 				ffloor[numffloors].plane = R_FindPlane(
@@ -1091,7 +1160,7 @@ static void R_Subsector(size_t num)
 					*frontsector->lightlist[light].extra_colormap, rover, NULL, *rover->t_slope,
 					R_NoEncore(rover->master->frontsector, &levelflats[*rover->toppic], false),
 					R_IsRipplePlane(rover->master->frontsector, rover, false),
-					false, frontsector
+					false, frontsector, damage
 				);
 
 				ffloor[numffloors].slope = *rover->t_slope;
@@ -1112,6 +1181,10 @@ static void R_Subsector(size_t num)
 	{
 		polyobj_t *po = sub->polyList;
 		sector_t *polysec;
+
+		auto poly_damage = [&](auto& f) { return polysec->flags & POF_SOLID ? f(polysec) : sector_damage(polysec); };
+		auto poly_top_damage = [&] { return poly_damage(floor_damage); };
+		auto poly_bottom_damage = [&] { return poly_damage(ceiling_damage); };
 
 		while (po)
 		{
@@ -1141,7 +1214,7 @@ static void R_Subsector(size_t num)
 					NULL, // will ffloors be slopable eventually?
 					R_NoEncore(polysec, &levelflats[polysec->floorpic], false),
 					false, /* TODO: wet polyobjects? */
-					true, frontsector
+					true, frontsector, poly_bottom_damage()
 				);
 
 				ffloor[numffloors].height = polysec->floorheight;
@@ -1170,7 +1243,7 @@ static void R_Subsector(size_t num)
 					NULL, // will ffloors be slopable eventually?
 					R_NoEncore(polysec, &levelflats[polysec->ceilingpic], true),
 					false, /* TODO: wet polyobjects? */
-					false, frontsector
+					false, frontsector, poly_top_damage()
 				);
 
 				ffloor[numffloors].polyobj = po;

@@ -11,6 +11,9 @@
 /// \file  r_segs.c
 /// \brief All the clipping: columns, horizontal spans, sky columns
 
+//#include <tracy/tracy/Tracy.hpp>
+
+#include "command.h"
 #include "doomdef.h"
 #include "r_local.h"
 #include "r_sky.h"
@@ -28,6 +31,8 @@
 #include "taglist.h"
 #include "r_draw.h"
 #include "k_terrain.h"
+
+extern "C" consvar_t cv_debugfinishline;
 
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
@@ -138,9 +143,7 @@ static void R_Render2sidedMultiPatchColumn(column_t *column, column_t *brightmap
 
 transnum_t R_GetLinedefTransTable(fixed_t alpha)
 {
-	transnum_t transnum = NUMTRANSMAPS; // Send back NUMTRANSMAPS for none
-
-	if (alpha > 0 && alpha < FRACUNIT)
+	if (alpha >= FRACUNIT)
 	{
 		return static_cast<transnum_t>(0);
 	}
@@ -152,8 +155,6 @@ transnum_t R_GetLinedefTransTable(fixed_t alpha)
 	{
 		return static_cast<transnum_t>((20*(FRACUNIT - alpha - 1) + FRACUNIT) >> (FRACBITS+1));
 	}
-
-	return transnum;
 }
 
 static inline boolean R_OverflowTest(void)
@@ -170,101 +171,22 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 {
 	size_t pindex;
 	column_t *col, *bmCol = NULL;
-	INT32 lightnum, bmnum, i;
+	INT32 lightnum, i;
 	fixed_t height, realbot;
 	lightlist_t *light;
 	r_lightlist_t *rlight;
 	line_t *ldef;
 	sector_t *front, *back;
 	INT32 times, repeats;
-	INT64 overflow_test;
-	INT32 range;
-	transnum_t transtable = NUMTRANSMAPS;
-	patchalphastyle_t blendmode = static_cast<patchalphastyle_t>(0);
-
-	// Calculate light table.
-	// Use different light tables
-	//   for horizontal / vertical / diagonal. Diagonal?
-	// OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-	curline = ds->curline;
-
-	frontsector = curline->frontsector;
-	backsector = curline->backsector;
-	texnum = R_GetTextureNum(curline->sidedef->midtexture);
-	bmnum = R_GetTextureBrightmap(texnum);
-	windowbottom = windowtop = sprbotscreen = INT32_MAX;
 	boolean tripwire;
 	boolean brightmapped = R_TextureHasBrightmap(texnum);
 	boolean remap = encoremap && R_TextureCanRemap(texnum);
+	INT32 range;
 
 	ldef = curline->linedef;
 	tripwire = P_IsLineTripWire(ldef);
-	if (!ldef->alpha)
-		return;
 
-	transtable = R_GetLinedefTransTable(ldef->alpha);
-	blendmode = static_cast<patchalphastyle_t>(ldef->blendmode);
-
-	if (transtable == NUMTRANSMAPS
-		|| blendmode == AST_MODULATE
-		|| blendmode == AST_FOG)
-	{
-		transtable = static_cast<transnum_t>(0);
-	}
-
-	R_CheckDebugHighlight(SW_HI_MIDTEXTURES);
-
-	if (blendmode == AST_FOG)
-	{
-		R_SetColumnFunc(COLDRAWFUNC_FOG, bmnum != 0);
-		windowtop = frontsector->ceilingheight;
-		windowbottom = frontsector->floorheight;
-	}
-	else if (transtable != NUMTRANSMAPS && (blendmode || transtable))
-	{
-		dc_transmap = R_GetBlendTable(blendmode, transtable);
-		R_SetColumnFunc(COLDRAWFUNC_FUZZY, bmnum != 0);
-	}
-	else
-	{
-		R_SetColumnFunc(BASEDRAWFUNC, bmnum != 0);
-	}
-
-	if (curline->polyseg && curline->polyseg->translucency > 0)
-	{
-		if (curline->polyseg->translucency >= NUMTRANSMAPS)
-			return;
-
-		dc_transmap = R_GetTranslucencyTable(curline->polyseg->translucency);
-		R_SetColumnFunc(COLDRAWFUNC_FUZZY, bmnum != 0);
-	}
-
-	range = std::max(ds->x2-ds->x1, 1);
-	rw_scalestep = ds->scalestep;
-	spryscale = ds->scale1 + (x1 - ds->x1)*rw_scalestep;
-
-	// Texture must be cached before setting colfunc_2s,
-	// otherwise texture[texnum]->holes may be false when it shouldn't be
-	R_CheckTextureCache(texnum);
-	if (bmnum) { R_CheckTextureCache(bmnum); }
-
-	// handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
-	// are not stored per-column with post info in SRB2
-	if (textures[texnum]->holes)
-	{
-		if (textures[texnum]->flip & 2) // vertically flipped?
-		{
-			colfunc_2s = R_DrawFlippedMaskedColumn;
-			lengthcol = textures[texnum]->height;
-		}
-		else
-			colfunc_2s = R_DrawMaskedColumn; // render the usual 2sided single-patch packed texture
-	}
-	else
-	{
-		colfunc_2s = R_Render2sidedMultiPatchColumn; // render multipatch with no holes (no post_t info)
-		lengthcol = textures[texnum]->height;
-	}
+	range = std::max<INT32>(ds->x2-ds->x1, 1);
 
 	// Setup lighting based on the presence/lack-of 3D floors.
 	dc_numlights = 0;
@@ -419,9 +341,7 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 			if (maskedtexturecol[dc_x] != INT16_MAX)
 			{
 				// Check for overflows first
-				overflow_test = (INT64)centeryfrac - (((INT64)dc_texturemid*spryscale)>>FRACBITS);
-				if (overflow_test < 0) overflow_test = -overflow_test;
-				if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL)
+				if (R_OverflowTest())
 				{
 					// Eh, no, go away, don't waste our time
 					if (dc_numlights)
@@ -617,16 +537,53 @@ static void R_RenderMaskedSegLoop(drawseg_t *ds, INT32 x1, INT32 x2, INT32 texnu
 	}
 }
 
+static void R_RenderMaskedSegLoopDebug(drawseg_t *ds, INT32 x1, INT32 x2, void (*colfunc_2s)(column_t *, column_t *, INT32))
+{
+	column_t *col;
+
+	dc_lightmap = scalelight[LIGHTLEVELS - 1][0]; // max brightness
+
+	// draw the columns
+	for (dc_x = x1; dc_x <= x2; dc_x++)
+	{
+		if (maskedtexturecol[dc_x] != INT16_MAX)
+		{
+			dc_texturemid = ds->maskedtextureheight[dc_x];
+
+			if (R_OverflowTest())
+			{
+				spryscale += rw_scalestep;
+				continue;
+			}
+
+			sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+			dc_iscale = 0xffffffffu / (unsigned)spryscale;
+
+			col = (column_t *)((UINT8 *)R_GetColumn(g_texturenum_dbgline, maskedtexturecol[dc_x]) - 3);
+			colfunc_2s(col, NULL, -1);
+		}
+
+		spryscale += rw_scalestep;
+	}
+}
+
 static INT32 R_GetTwoSidedMidTexture(seg_t *line)
 {
 	INT32 texture;
 
-	texture = line->sidedef->midtexture;
+	if (R_IsDebugLine(line))
+	{
+		texture = g_texturenum_dbgline;
+	}
+	else
+	{
+		texture = line->sidedef->midtexture;
+	}
 
 	return R_GetTextureNum(texture);
 }
 
-/*static boolean R_CheckBlendMode(const line_t *ldef, boolean brightmapped)
+static boolean R_CheckBlendMode(const line_t *ldef, boolean brightmapped)
 {
 	transnum_t transtable = NUMTRANSMAPS;
 	patchalphastyle_t blendmode = AST_COPY;
@@ -671,13 +628,15 @@ static INT32 R_GetTwoSidedMidTexture(seg_t *line)
 	}
 
 	return true;
-}*/
+}
 
 void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 {
 	INT32 texnum;
 	void (*colfunc_2s)(column_t *, column_t *, INT32);
-	//line_t *ldef;
+	line_t *ldef;
+	const boolean debug = R_IsDebugLine(ds->curline);
+
 	// Calculate light table.
 	// Use different light tables
 	//   for horizontal / vertical / diagonal. Diagonal?
@@ -689,7 +648,14 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 	texnum = R_GetTwoSidedMidTexture(curline);
 	windowbottom = windowtop = sprbotscreen = INT32_MAX;
 
-	//ldef = curline->linedef;
+	ldef = curline->linedef;
+
+	R_CheckDebugHighlight(SW_HI_MIDTEXTURES);
+
+	if (debug == false && R_CheckBlendMode(ldef, R_TextureHasBrightmap(texnum)) == false)
+	{
+		return; // does not render
+	}
 
 	rw_scalestep = ds->scalestep;
 	spryscale = ds->scale1 + (x1 - ds->x1)*rw_scalestep;
@@ -721,8 +687,16 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 	mfloorclip = ds->sprbottomclip;
 	mceilingclip = ds->sprtopclip;
 
-
-	R_RenderMaskedSegLoop(ds, x1, x2, texnum, colfunc_2s);
+	if (debug)
+	{
+		colfunc = R_DrawColumn_Flat_8;
+		r8_flatcolor = R_DebugLineColor(ldef);
+		R_RenderMaskedSegLoopDebug(ds, x1, x2, colfunc_2s);
+	}
+	else
+	{
+		R_RenderMaskedSegLoop(ds, x1, x2, texnum, colfunc_2s);
+	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
 }
@@ -1320,8 +1294,6 @@ static boolean R_FFloorCanClip(visffloor_t *pfloor)
 //  textures.
 // CALLED: CORE LOOPING ROUTINE.
 //
-#define HEIGHTBITS              12
-#define HEIGHTUNIT              (1<<HEIGHTBITS)
 
 
 //profile stuff ---------------------------------------------------------
@@ -1783,7 +1755,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	vertex_t segleft, segright;
 	fixed_t ceilingfrontslide, floorfrontslide, ceilingbackslide, floorbackslide;
 	static size_t maxdrawsegs = 0;
-	//const INT32 twosidedmidtexture = R_GetTwoSidedMidTexture(curline);
+	const INT32 twosidedmidtexture = R_GetTwoSidedMidTexture(curline);
 	const boolean wantremap = encoremap && !(curline->linedef->flags & ML_TFERLINE);
 
 	maskedtextureheight = NULL;
@@ -2172,7 +2144,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| frontsector->extra_colormap != backsector->extra_colormap
 			|| (frontsector->ffloors != backsector->ffloors && !Tag_Compare(&frontsector->tags, &backsector->tags))
 			// Portals block traversal behind them
-			|| g_portal)
+			|| g_portal
+			// Highlighting death pits
+			|| (cv_debugfinishline.value && frontsector->damagetype != backsector->damagetype))
 		{
 			markfloor = true;
 		}
@@ -2207,7 +2181,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| frontsector->extra_colormap != backsector->extra_colormap
 			|| (frontsector->ffloors != backsector->ffloors && !Tag_Compare(&frontsector->tags, &backsector->tags))
 			// Portals block traversal behind them
-			|| g_portal)
+			|| g_portal
+			// Highlighting death pits
+			|| (cv_debugfinishline.value && frontsector->damagetype != backsector->damagetype))
 		{
 				markceiling = true;
 		}
@@ -2483,7 +2459,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 			ds_p->numthicksides = numthicksides = i;
 		}
-		if (sidedef->midtexture > 0 && sidedef->midtexture < numtextures)
+		if (twosidedmidtexture)
 		{
 			// masked midtexture
 			if (!ds_p->thicksidecol)
@@ -2533,6 +2509,17 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 			rw_midtexturemid += sidedef->rowoffset;
 			rw_midtextureback += sidedef->rowoffset;
+
+			if (R_IsDebugLine(curline))
+			{
+				// Line draws at horizon
+				rw_midtexturemid = 0;
+				rw_midtextureback = 0;
+
+				// Ignore slopes
+				rw_midtextureslide = 0;
+				rw_midtexturebackslide = 0;
+			}
 
 			maskedtexture = true;
 		}
@@ -2773,7 +2760,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			{
 				for (rover = backsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
 				{
-					if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERPLANES))
+					if (!(rover->fofflags & FOF_EXISTS) || (!cv_debugfinishline.value && !(rover->fofflags & FOF_RENDERPLANES)))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -2830,7 +2817,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			{
 				for (rover = frontsector->ffloors; rover && i < MAXFFLOORS; rover = rover->next)
 				{
-					if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERPLANES))
+					if (!(rover->fofflags & FOF_EXISTS) || (!cv_debugfinishline.value && !(rover->fofflags & FOF_RENDERPLANES)))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -3020,12 +3007,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	if (maskedtexture && !(ds_p->silhouette & SIL_TOP))
 	{
 		ds_p->silhouette |= SIL_TOP;
-		ds_p->tsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MIN: INT32_MAX;
+		ds_p->tsilheight = twosidedmidtexture ? INT32_MIN: INT32_MAX;
 	}
 	if (maskedtexture && !(ds_p->silhouette & SIL_BOTTOM))
 	{
 		ds_p->silhouette |= SIL_BOTTOM;
-		ds_p->bsilheight = (sidedef->midtexture > 0 && sidedef->midtexture < numtextures) ? INT32_MAX: INT32_MIN;
+		ds_p->bsilheight = twosidedmidtexture ? INT32_MAX: INT32_MIN;
 	}
 	ds_p++;
 }

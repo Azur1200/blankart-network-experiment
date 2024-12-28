@@ -13,6 +13,9 @@
 ///        while maintaining a per column clipping list only.
 ///        Moreover, the sky areas have to be determined.
 
+//#include <tracy/tracy/Tracy.hpp>
+
+#include "command.h"
 #include "doomdef.h"
 #include "console.h"
 #include "m_easing.h" // For Easing_InOutSine, used in R_UpdatePlaneRipple
@@ -31,6 +34,8 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "p_tick.h"
+
+extern "C" consvar_t cv_debugfinishline;
 
 //
 // opening
@@ -210,21 +215,29 @@ static void R_MapPlane(INT32 y, INT32 x1, INT32 x2)
 		ds_bgofs >>= FRACBITS;
 	}
 
-	pindex = distance >> LIGHTZSHIFT;
-	if (pindex >= MAXLIGHTZ)
-		pindex = MAXLIGHTZ - 1;
-	ds_colormap = planezlight[pindex];
-
-	if (!debugrender_highlight)
+	if (ds_flatlighting)
 	{
-		if (currentplane->extra_colormap)
-			ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
+		ds_colormap = ds_flatlighting;
+	}
+	else
+	{
+		pindex = distance >> LIGHTZSHIFT;
+		if (pindex >= MAXLIGHTZ)
+			pindex = MAXLIGHTZ - 1;
 
-		ds_fullbright = colormaps;
-		if (encoremap && !currentplane->noencore)
+		ds_colormap = planezlight[pindex];
+
+		if (!debugrender_highlight)
 		{
-			ds_colormap += COLORMAP_REMAPOFFSET;
-			ds_fullbright += COLORMAP_REMAPOFFSET;
+			if (currentplane->extra_colormap)
+				ds_colormap = currentplane->extra_colormap->colormap + (ds_colormap - colormaps);
+
+			ds_fullbright = colormaps;
+			if (encoremap && !currentplane->noencore)
+			{
+				ds_colormap += COLORMAP_REMAPOFFSET;
+				ds_fullbright += COLORMAP_REMAPOFFSET;
+			}
 		}
 	}
 
@@ -359,10 +372,16 @@ static visplane_t *new_visplane(unsigned hash)
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	fixed_t xoff, fixed_t yoff, angle_t plangle, extracolormap_t *planecolormap,
 	ffloor_t *pfloor, polyobj_t *polyobj, pslope_t *slope, boolean noencore,
-	boolean ripple, boolean reverseLight, const sector_t *lighting_sector)
+	boolean ripple, boolean reverseLight, const sector_t *lighting_sector,
+	sectordamage_t damage)
 {
 	visplane_t *check;
 	unsigned hash;
+
+	if (!cv_debugfinishline.value)
+	{
+		damage = SD_NONE;
+	}
 
 	if (!slope) // Don't mess with this right now if a slope is involved
 	{
@@ -442,7 +461,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 				&& check->plangle == plangle
 				&& check->slope == slope
 				&& check->noencore == noencore
-				&& check->ripple == ripple)
+				&& check->ripple == ripple
+				&& check->damage == damage)
 			{
 				return check;
 			}
@@ -473,6 +493,7 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	check->slope = slope;
 	check->noencore = noencore;
 	check->ripple = ripple;
+	check->damage = damage;
 
 	memset(check->top, 0xff, sizeof (check->top));
 	memset(check->bottom, 0x00, sizeof (check->bottom));
@@ -551,6 +572,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		new_pl->slope = pl->slope;
 		new_pl->noencore = pl->noencore;
 		new_pl->ripple = pl->ripple;
+		new_pl->damage = pl->damage;
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
@@ -858,6 +880,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
 
 	void (*mapfunc)(INT32, INT32, INT32) = R_MapPlane;
+	bool highlight = R_PlaneIsHighlighted(pl);
 
 	if (!(pl->minx <= pl->maxx))
 		return;
@@ -865,7 +888,22 @@ void R_DrawSinglePlane(visplane_t *pl)
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-		R_DrawSkyPlane(pl);
+		if (highlight)
+		{
+			r8_flatcolor = 35; // red
+			dc_lightmap = colormaps;
+
+			for (dc_x = pl->minx; dc_x <= pl->maxx; ++dc_x)
+			{
+				dc_yl = pl->top[dc_x];
+				dc_yh = pl->bottom[dc_x];
+				R_DrawColumn_Flat_8();
+			}
+		}
+		else
+		{
+			R_DrawSkyPlane(pl);
+		}
 		return;
 	}
 
@@ -918,6 +956,7 @@ void R_DrawSinglePlane(visplane_t *pl)
 
 				// Hacked up support for alpha value in software mode Tails 09-24-2002
 				// ...unhacked by toaster 04-01-2021
+				if (!highlight)
 				{
 					INT32 trans = (10*((256+12) - pl->ffloor->alpha))/255;
 					if (trans >= 10)
@@ -1119,11 +1158,20 @@ void R_DrawSinglePlane(visplane_t *pl)
 		planezlight = zlight[light];
 	}
 
+	if (highlight && R_SetSpanFuncFlat(BASEDRAWFUNC))
+	{
+		r8_flatcolor = 35; // red
+		ds_flatlighting = colormaps;
+	}
+	else
+	{
+		R_CheckDebugHighlight(debug);
 
-	R_CheckDebugHighlight(debug);
+		// Use the correct span drawer depending on the powers-of-twoness
+		R_SetSpanFunc(spanfunctype, !ds_powersoftwo, ds_brightmap != NULL);
 
-	// Use the correct span drawer depending on the powers-of-twoness
-	R_SetSpanFunc(spanfunctype, !ds_powersoftwo, ds_brightmap != NULL);
+		ds_flatlighting = NULL;
+	}
 
 	// set the maximum value for unsigned
 	pl->top[pl->maxx+1] = 0xffff;
@@ -1225,4 +1273,9 @@ void R_PlaneBounds(visplane_t *plane)
 	}
 	plane->high = hi;
 	plane->low = low;
+}
+
+boolean R_PlaneIsHighlighted(const visplane_t *pl)
+{
+	return pl->damage == SD_DEATHPIT || pl->damage == SD_INSTAKILL;
 }
