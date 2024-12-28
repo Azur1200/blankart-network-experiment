@@ -255,6 +255,7 @@ typedef enum
 	NUMKARTHUD
 } karthudtype_t;
 
+// Used for lua compat with older kart v1 scripts.
 typedef enum
 {
 	// Basic gameplay things
