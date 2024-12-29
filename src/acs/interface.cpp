@@ -17,7 +17,7 @@
 #include <ostream>
 #include <vector>
 
-#include "span.hpp"
+#include <tcb/span.hpp>
 
 #include "acsvm.hpp"
 
