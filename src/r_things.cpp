@@ -888,6 +888,15 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if ((UINT64)overflow_test&0xFFFFFFFF80000000ULL) return; // ditto
 	}
 
+	// TODO This check should not be necessary. But Papersprites near to the camera will sometimes create invalid values
+	// for the vissprite's startfrac. This happens because they are not depth culled like other sprites.
+	// Someone who is more familiar with papersprites pls check and try to fix <3
+	if (vis->startfrac < 0 || vis->startfrac > (patch->width << FRACBITS))
+	{
+		// never draw vissprites with startfrac out of patch range
+		return;
+	}
+
 	// Prevent an out of bounds error
 	//
 	// FIXME: The following check doesn't account for
@@ -898,7 +907,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	// right now, though.
 	//
 	if (bmpatch && (bmpatch->width != patch->width ||
-				bmpatch->height != patch->height))
+		bmpatch->height != patch->height))
 	{
 		return;
 	}
@@ -915,14 +924,14 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	{
 		R_SetColumnFunc(COLDRAWFUNC_DROPSHADOW, false);
 		dc.transmap = vis->transmap;
-		//dc.shadowcolor = vis->color;
+		dc.shadowcolor = vis->color;
 	}
 	else if (!(vis->cut & SC_PRECIP) &&
-			R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
+		R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
 	{
 		R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
 	}
-	else if (vis->mobj->color && vis->transmap) // Color mapping
+	else if (vis->transmap && dc.translation) // Color mapping
 	{
 		R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
 		dc.transmap = vis->transmap;
@@ -932,9 +941,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
 		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
 	}
-	else if (vis->mobj->color) // translate green skin to another color
-		R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
-	else if (vis->mobj->sprite == SPR_PLAY) // Looks like a player, but doesn't have a color? Get rid of green sonic syndrome.
+	else if (dc.translation) // translate green skin to another color
 		R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
 
 	if (vis->extra_colormap && !(vis->cut & SC_FULLBRIGHT) && !(vis->renderflags & RF_NOCOLORMAPS))
@@ -958,13 +965,14 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	dc.texturemid = vis->texturemid;
-	dc.texheight = 0;
+	dc.texheight = patch->height;
 
 	frac = vis->startfrac;
 	windowtop = windowbottom = sprbotscreen = INT32_MAX;
 
-	if (!(vis->cut & SC_PRECIP) && vis->mobj->skin && ((skin_t *)vis->mobj->skin)->flags & SF_HIRES)
-		this_scale = FixedMul(this_scale, ((skin_t *)vis->mobj->skin)->highresscale);
+	skin_t *myskin = ((skin_t *)vis->mobj->skin);
+	if (!(vis->cut & SC_PRECIP) && (vis->mobj->skin) && myskin->highresscale != FRACUNIT)
+		this_scale = FixedMul(this_scale, myskin->highresscale);
 
 	if (this_scale <= 0)
 		this_scale = 1;
@@ -1048,19 +1056,13 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else if (vis->cut & SC_SHEAR)
 	{
-#ifdef RANGECHECK
 		pwidth = patch->width;
-#endif
 
 		// Vertically sheared sprite
 		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, dc.texturemid -= vis->shear.tan)
 		{
-			texturecolumn = frac>>FRACBITS;
+			texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
 
-#ifdef RANGECHECK
-			if (texturecolumn < 0 || texturecolumn >= pwidth)
-				I_Error("R_DrawSpriteRange: bad texturecolumn at %d from end", vis->x2 - dc.x);
-#endif
 			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 			if (bmpatch)
 				bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
@@ -1071,26 +1073,40 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else
 	{
-#ifdef RANGECHECK
-		pwidth = patch->width;
-#endif
 
-		// Non-paper drawing loop
-		for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
+		#if 0
+		if (vis->x1test && vis->x2test)
 		{
-			texturecolumn = frac>>FRACBITS;
+		INT32 x1test = vis->x1test;
+		INT32 x2test = vis->x2test;
 
-#ifdef RANGECHECK
-			if (texturecolumn < 0 || texturecolumn >= pwidth)
-				I_Error("R_DrawSpriteRange: bad texturecolumn at %d from end", vis->x2 - dc.x);
-#endif
-			column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
+		if (x1test < 0)
+			x1test = 0;
 
-			if (bmpatch)
-				bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
+		if (x2test >= vid.width)
+			x2test = vid.width-1;
 
-			localcolfunc (&dc, column, bmcol, baseclip);
-		}
+		const INT32 t = (vis->startfrac + (vis->xiscale * (x2test - x1test))) >> FRACBITS;
+
+		if (x1test <= x2test && (t < 0 || t >= patch->width))
+		{
+		CONS_Printf("THE GAME WOULD HAVE CRASHED, %d (old) vs %d (new)\n", (x2test - x1test), (vis->x2 - vis->x1));
+	}
+	}
+	#endif
+
+	// Non-paper drawing loop
+	for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale, sprtopscreen += vis->shear.tan)
+	{
+		texturecolumn = std::clamp<fixed_t>(frac >> FRACBITS, 0, patch->width - 1);
+
+		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
+
+		if (bmpatch)
+			bmcol = (column_t *)((UINT8 *)bmpatch->columns + (bmpatch->columnofs[texturecolumn]));
+
+		localcolfunc (&dc, column, bmcol, baseclip);
+	}
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
