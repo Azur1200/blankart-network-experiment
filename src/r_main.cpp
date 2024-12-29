@@ -13,6 +13,8 @@
 ///        utility functions (BSP, geometry, trigonometry).
 ///        See tables.c, too.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -37,6 +39,7 @@
 #include "i_system.h" // I_GetPreciseTime
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
+#include "core/thread_pool.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -238,7 +241,8 @@ void SplitScreen_OnChange(void)
 		}
 	}
 }
-static void Fov_OnChange(void)
+
+void Fov_OnChange(void)
 {
 	R_SetViewSize();
 }
@@ -1056,7 +1060,6 @@ void R_ExecuteSetViewSize(void)
 			Z_Free(ds_sz);
 
 		ds_su = ds_sv = ds_sz = NULL;
-		ds_sup = ds_svp = ds_szp = NULL;
 	}
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1536,8 +1539,13 @@ void R_RenderPlayerView(void)
 #endif
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
+
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
+	//R_RenderViewpoint(&masks[nummasks - 1]);
 	R_RenderBSPNode((INT32)numnodes - 1);
 	R_AddPrecipitationSprites();
+
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
 #ifdef TIMING
 	RDMSR(0x10, &mycount);
@@ -1561,6 +1569,11 @@ void R_RenderPlayerView(void)
 	ps_sw_portaltime = I_GetPreciseTime();
 	if (portal_base && !cv_debugrender_portal.value)
 	{
+		// tp_sema = srb2::g_main_threadpool->end_sema();
+		// srb2::g_main_threadpool->notify_sema(tp_sema);
+		// srb2::g_main_threadpool->wait_sema(tp_sema);
+		// srb2::g_main_threadpool->begin_sema();
+
 		portal_t *portal;
 
 		for(portal = portal_base; portal; portal = portal_base)
@@ -1590,18 +1603,30 @@ void R_RenderPlayerView(void)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
+
+			//R_RenderViewpoint(&masks[nummasks - 1]);
 			R_RenderBSPNode((INT32)numnodes - 1);
 			Mask_Post(&masks[nummasks - 1]);
+
+			//portalskipprecipmobjs = false;
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
 			Portal_Remove(portal);
 		}
+
+		// tp_sema = srb2::g_main_threadpool->end_sema();
+		// srb2::g_main_threadpool->notify_sema(tp_sema);
+		// srb2::g_main_threadpool->wait_sema(tp_sema);
+		// srb2::g_main_threadpool->begin_sema();
 	}
 	ps_sw_portaltime = I_GetPreciseTime() - ps_sw_portaltime;
 
 	ps_sw_planetime = I_GetPreciseTime();
 	R_DrawPlanes();
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 	ps_sw_planetime = I_GetPreciseTime() - ps_sw_planetime;
 
 	// draw mid texture and sprite

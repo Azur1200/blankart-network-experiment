@@ -13,6 +13,7 @@
 /// \brief XMOD's extremely revamped menu system.
 
 #include "doomstat.h"
+#include "screen.h"
 #ifdef __GNUC__
 #include <unistd.h>
 #endif
@@ -1275,9 +1276,11 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		{.cvar = &cv_drawdist},				110},
 	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance", {.cvar = &cv_drawdist_precip},		120},
 	{IT_STRING | IT_CVAR,	NULL,	"Skyboxes",				{.cvar = &cv_skybox},				130},
+	{IT_STRING | IT_CVAR,	NULL,	"Parallel Software",	{.cvar = &cv_parallelsoftware},		140},
+
 
 #ifdef HWRENDER
-	{IT_CALL | IT_STRING,	NULL,	"OpenGL Options...",	{.routine = M_OpenGLOptionsMenu},	150},
+	{IT_CALL | IT_STRING,	NULL,	"OpenGL Options...",	{.routine = M_OpenGLOptionsMenu},	160},
 #endif
 };
 
@@ -1296,8 +1299,9 @@ enum
 	op_video_dd,
 	op_video_wdd,
 	op_video_skybox,
+	op_video_para,
 #ifdef HWRENDER
-	op_video_ogl,
+	op_video_ogl
 #endif
 };
 
@@ -10977,10 +10981,18 @@ static void M_DrawVideoMenu(void)
 #ifdef HWRENDER
 	// Hide some options based on the current render mode
 	if (rendermode == render_opengl)
+	{
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_CALL | IT_STRING;
+		//OP_VideoOptionsMenu[op_video_para].status = IT_DISABLED;
+	}
 	else
 #endif
+	{
+		//OP_VideoOptionsMenu[op_video_para].status = IT_CALL | IT_CVAR;
+#ifdef HWRENDER
 		OP_VideoOptionsMenu[op_video_ogl].status = IT_DISABLED;
+#endif
+	}
 }
 
 static void M_DrawHUDOptions(void)

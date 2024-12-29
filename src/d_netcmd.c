@@ -38,6 +38,7 @@
 #include "m_cheat.h"
 #include "d_clisrv.h"
 #include "d_net.h"
+#include "screen.h"
 #include "v_video.h"
 #include "d_main.h"
 #include "m_random.h"
@@ -1092,6 +1093,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_scr_depth);
 	CV_RegisterVar(&cv_scr_width);
 	CV_RegisterVar(&cv_scr_height);
+	CV_RegisterVar(&cv_parallelsoftware);
 
 	CV_RegisterVar(&cv_director);
 
