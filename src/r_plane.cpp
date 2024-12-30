@@ -32,7 +32,7 @@
 #include "r_portal.h"
 #include "core/thread_pool.h"
 #include "r_fps.h"
-#include "r_debug.hpp"
+//	#include "r_debug.hpp"
 
 #include "v_video.h"
 #include "w_wad.h"

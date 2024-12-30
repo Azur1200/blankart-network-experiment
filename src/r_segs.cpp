@@ -36,7 +36,7 @@
 #include "core/memory.h"
 #include "core/thread_pool.h"
 #include "k_terrain.h"
-#include "r_debug.hpp"
+//#include "r_debug.hpp"
 
 extern "C" consvar_t cv_debugfinishline;
 

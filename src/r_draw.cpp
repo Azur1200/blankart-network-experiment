@@ -150,7 +150,7 @@ float zeroheight;
 #define TT_CACHE_SIZE (MAXSKINS + 9)
 
 #define SKIN_RAMP_LENGTH 16
-#define DEFAULT_STARTTRANSCOLOR 96
+#define DEFAULT_STARTTRANSCOLOR 160
 #define NUM_PALETTE_ENTRIES 256
 
 static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
