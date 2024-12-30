@@ -1,8 +1,9 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2020 by Sonic Team Junior.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -22,6 +23,8 @@
 #include "r_local.h"
 #include "r_state.h"
 #include "r_portal.h" // Add seg portals
+#include "r_fps.h"
+#include "r_main.h"
 
 #include "r_splats.h"
 #include "p_local.h" // camera
@@ -31,11 +34,7 @@
 
 #include "k_terrain.h"
 
-extern "C" {
-	#include "qs22j.h"
-}
-extern "C" consvar_t cv_debugfinishline;
-extern "C" consvar_t cv_debugfinishline, cv_debugrender_freezebsp;
+extern consvar_t cv_debugfinishline, cv_debugrender_freezebsp;
 
 seg_t *curline;
 side_t *sidedef;
@@ -65,16 +64,7 @@ boolean R_NoEncore(sector_t *sector, levelflat_t *flat, boolean ceiling)
 	const boolean invertEncore = (sector->flags & MSF_INVERTENCORE);
 	const terrain_t *terrain = (flat != NULL ? flat->terrain : NULL);
 
-	if ((terrain == NULL) || (terrain->flags & TRF_REMAP)
-		|| (terrain->pogoSpring <= 0
-		&& terrain->speedPad <= 0
-		&& !(terrain->flags & TRF_SNEAKERPANEL)))
-	{
-		return invertEncore;
-	}
-	
-	if ((!(sector->special & (1<<8)) || (sector->special & ((4|8)<<8))) // spring panel
-	&& GETSECSPECIAL(sector->special, 4) != 6) // sneaker panel
+	if ((terrain == NULL) || (terrain->flags & TRF_REMAP))
 	{
 		return invertEncore;
 	}
@@ -143,7 +133,7 @@ void R_CrunchWallSegment(cliprange_t *start, cliprange_t *next)
 
 	// NO MORE CRASHING!
 	if (newend - solidsegs > MAXSEGS)
-		I_Error("R_ClipSolidWallSegment: Solid Segs overflow!\n");
+		I_Error("R_CrunchWallSegment: Solid Segs overflow!\n");
 }
 
 template <ClipType Type>
@@ -293,18 +283,11 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 		mobj_t *viewmobj = viewplayer->mo;
 		INT32 heightsec;
 		boolean underwater;
-		UINT8 i;
+		UINT8 i = R_GetViewNumber();
 
-		for (i = 0; i <= r_splitscreen; i++)
-		{
-			if (viewplayer == &players[displayplayers[i]] && camera[i].chase)
-			{
-				heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
-				break;
-			}
-		}
-
-		if (i > r_splitscreen && viewmobj)
+		if (camera[i].chase)
+			heightsec = R_PointInSubsector(camera[i].x, camera[i].y)->sector->heightsec;
+		else if (i > r_splitscreen && viewmobj)
 			heightsec = R_PointInSubsector(viewmobj->x, viewmobj->y)->sector->heightsec;
 		else
 			return sec;
@@ -439,6 +422,7 @@ boolean R_IsDebugLine(seg_t *line)
 		{
 			case 2001: // Ring Racers: Finish Line
 			case 2003: // Ring Racers: Respawn Line
+			case 2005: // Ring Racers: Dismount flying object Line
 				return true;
 		}
 	}
@@ -554,31 +538,21 @@ static void R_AddLine(seg_t *line)
 
 	doorclosed = 0;
 
-	if (udmf)
-	{
+	if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
+		bothceilingssky = true;
+	if (backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum)
+		bothfloorssky = true;
 
+	if (bothceilingssky && bothfloorssky) // everything's sky? let's save us a bit of time then
+	{
 		if (!R_IsDebugLine(line) &&
 			!line->polyseg &&
 			!line->sidedef->midtexture
 			&& ((!frontsector->ffloors && !backsector->ffloors)
-			|| Tag_Compare(&frontsector->tags, &backsector->tags)))
+				|| Tag_Compare(&frontsector->tags, &backsector->tags)))
 			return; // line is empty, don't even bother
 
-		if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
-			bothceilingssky = true;
-		if (backsector->floorpic == skyflatnum && frontsector->floorpic == skyflatnum)
-			bothfloorssky = true;
-
-		if (bothceilingssky && bothfloorssky) // everything's sky? let's save us a bit of time then
-		{
-			if (!line->polyseg &&
-				!line->sidedef->midtexture
-				&& ((!frontsector->ffloors && !backsector->ffloors)
-					|| Tag_Compare(&frontsector->tags, &backsector->tags)))
-				return; // line is empty, don't even bother
-
-			goto clippass; // treat like wide open window instead
-		}
+		goto clippass; // treat like wide open window instead
 	}
 
 	// Closed door.
@@ -595,35 +569,19 @@ static void R_AddLine(seg_t *line)
 		SLOPEPARAMS( backsector->f_slope,  backf1,  backf2,  backsector->  floorheight)
 		SLOPEPARAMS( backsector->c_slope,  backc1,  backc2,  backsector->ceilingheight)
 #undef SLOPEPARAMS
-
-
-		if (udmf || (!udmf && viewsector != backsector && viewsector != frontsector))
+		// if both ceilings are skies, consider it always "open"
+		// same for floors
+		if (!bothceilingssky && !bothfloorssky)
 		{
-			// if both ceilings are skies, consider it always "open"
-			// same for floors
-			if (!bothceilingssky && !bothfloorssky)
-			{
-				if ((backc1 <= frontf1 && backc2 <= frontf2)
-					|| (backf1 >= frontc1 && backf2 >= frontc2))
-				{
-					goto clipsolid;
-				}
+			doorclosed = (backc1 <= frontf1 && backc2 <= frontf2)
+			|| (backf1 >= frontc1 && backf2 >= frontc2)
+			// Check for automap fix. Store in doorclosed for r_segs.c
+			|| (backc1 <= backf1 && backc2 <= backf2
+				&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
+				&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture));
 
-				// Check for automap fix. Store in doorclosed for r_segs.c
-				if (udmf)
-					// Check for automap fix. Store in doorclosed for r_segs.c
-					doorclosed = (backc1 <= backf1 && backc2 <= backf2
-					&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
-					&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture));
-				else
-					doorclosed = (backc1 <= backf1 && backc2 <= backf2
-					&& ((backc1 >= frontc1 && backc2 >= frontc2) || curline->sidedef->toptexture)
-					&& ((backf1 <= frontf1 && backf2 >= frontf2) || curline->sidedef->bottomtexture)
-					&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
-
-				if (doorclosed)
-					goto clipsolid;
-			}
+			if (doorclosed)
+				goto clipsolid;
 		}
 
 		// Window.
@@ -636,49 +594,37 @@ static void R_AddLine(seg_t *line)
 	}
 	else
 	{
-		if (udmf || (!udmf && viewsector != backsector && viewsector != frontsector))
+		// if both ceilings are skies, consider it always "open"
+		// same for floors
+		if (!bothceilingssky && !bothfloorssky)
 		{
-			// if both ceilings are skies, consider it always "open"
-			// same for floors
-			if (!bothceilingssky && !bothfloorssky)
-			{
-				if (backsector->ceilingheight <= frontsector->floorheight
-					|| backsector->floorheight >= frontsector->ceilingheight)
-				{
-					goto clipsolid;
-				}
+			doorclosed = backsector->ceilingheight <= frontsector->floorheight
+			|| backsector->floorheight >= frontsector->ceilingheight
+			// Check for automap fix. Store in doorclosed for r_segs.c
+			//
+			// This is used to fix the automap bug which
+			// showed lines behind closed doors simply because the door had a dropoff.
+			//
+			// It assumes that Doom has already ruled out a door being closed because
+			// of front-back closure (e.g. front floor is taller than back ceiling).
+			//
+			// if door is closed because back is shut:
+			|| (backsector->ceilingheight <= backsector->floorheight
+				// preserve a kind of transparent door/lift special effect:
+				&& (backsector->ceilingheight >= frontsector->ceilingheight || curline->sidedef->toptexture)
+				&& (backsector->floorheight <= frontsector->floorheight || curline->sidedef->bottomtexture));
 
-				// Check for automap fix. Store in doorclosed for r_segs.c
-				//
-				// This is used to fix the automap bug which
-				// showed lines behind closed doors simply because the door had a dropoff.
-				//
-				// It assumes that Doom has already ruled out a door being closed because
-				// of front-back closure (e.g. front floor is taller than back ceiling).
-				//
-				// if door is closed because back is shut:
-				if (udmf)
-					doorclosed = backsector->ceilingheight <= backsector->floorheight
-					&& (backsector->ceilingheight >= frontsector->ceilingheight || curline->sidedef->toptexture)
-					&& (backsector->floorheight <= frontsector->floorheight || curline->sidedef->bottomtexture); // preserve a kind of transparent door/lift special effect:
-				else
-					doorclosed = (backsector->ceilingheight <= backsector->floorheight
-					&& (backsector->ceilingheight >= frontsector->ceilingheight || curline->sidedef->toptexture)
-					&& (backsector->floorheight <= frontsector->floorheight || curline->sidedef->bottomtexture)
-					&& (backsector->ceilingpic != skyflatnum || frontsector->ceilingpic != skyflatnum));
-
-				if (doorclosed)
-					goto clipsolid;
-			}
-
-			// Window.
-			if (!bothceilingssky) // ceilings are always the "same" when sky
-				if (backsector->ceilingheight != frontsector->ceilingheight)
-					goto clippass;
-			if (!bothfloorssky)	// floors are always the "same" when sky
-				if (backsector->floorheight != frontsector->floorheight)
-					goto clippass;
+			if (doorclosed)
+				goto clipsolid;
 		}
+
+		// Window.
+		if (!bothceilingssky) // ceilings are always the "same" when sky
+			if (backsector->ceilingheight != frontsector->ceilingheight)
+				goto clippass;
+		if (!bothfloorssky)	// floors are always the "same" when sky
+			if (backsector->floorheight != frontsector->floorheight)
+				goto clippass;
 	}
 
 	// Reject empty lines used for triggers and special events.
@@ -834,7 +780,7 @@ void R_SortPolyObjects(subsector_t *sub)
 		// 03/10/06: only bother if there are actually polys to sort
 		if (numpolys >= 2)
 		{
-			qs22j(po_ptrs, numpolys, sizeof(polyobj_t *),
+			qsort(po_ptrs, numpolys, sizeof(polyobj_t *),
 				R_PolyobjCompare);
 		}
 	}
@@ -937,7 +883,7 @@ static void R_AddPolyObjects(subsector_t *sub)
 	// render polyobjects
 	for (i = 0; i < numpolys; ++i)
 	{
-		qs22j(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
+		qsort(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 			R_AddLine(po_ptrs[i]->segs[j]);
 	}
@@ -965,14 +911,12 @@ static void R_Subsector(size_t num)
 
 	ZoneScoped;
 
-#ifdef RANGECHECK
-	if (num >= numsubsectors)
-		I_Error("R_Subsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
-#endif
-
 	// subsectors added at run-time
 	if (num >= numsubsectors)
+	{
+		CONS_Debug(DBG_RENDER, "R_Subsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
 		return;
+	}
 
 	sub = &subsectors[num];
 	frontsector = sub->sector;

@@ -937,21 +937,21 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 	else if (!(vis->cut & SC_PRECIP) &&
 		R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
-	{
-		R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
-	}
-	else if (vis->transmap && dc.translation) // Color mapping
-	{
-		R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
-		dc.transmap = vis->transmap;
-	}
-	else if (vis->transmap)
-	{
-		R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
-		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
-	}
-	else if (dc.translation) // translate green skin to another color
-		R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
+		{
+			R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
+		}
+		else if (vis->transmap && dc.translation) // Color mapping
+		{
+			R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
+			dc.transmap = vis->transmap;
+		}
+		else if (vis->transmap)
+		{
+			R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
+			dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
+		}
+		else if (dc.translation) // translate green skin to another color
+			R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
 
 	if (vis->extra_colormap && !(vis->cut & SC_FULLBRIGHT) && !(vis->renderflags & RF_NOCOLORMAPS))
 	{
@@ -1181,10 +1181,11 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	{
 		texturecolumn = frac>>FRACBITS;
 
-#ifdef RANGECHECK
 		if (texturecolumn < 0 || texturecolumn >= patch->width)
-			I_Error("R_DrawPrecipitationSpriteRange: bad texturecolumn");
-#endif
+		{
+			CONS_Debug(DBG_RENDER, "R_DrawPrecipitationSpriteRange: bad texturecolumn\n");
+			break;
+		}
 
 		column = (column_t *)((UINT8 *)patch->columns + (patch->columnofs[texturecolumn]));
 
@@ -3335,7 +3336,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 	INT32		silhouette;
 	INT32		xclip;
 
-	if (cv_debugrender_spriteclip.value)
+	if (/*(spr->renderflags & RF_ALWAYSONTOP) ||*/ cv_debugrender_spriteclip.value)
 	{
 		for (x = x1; x <= x2; x++)
 		{
@@ -3379,30 +3380,30 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 				if (ds->portalpass > 0 && ds->portalpass <= portalrender)
 					continue; // is a portal
 
-				if (ds->scale1 > ds->scale2)
-				{
-					lowscale = ds->scale2;
-					scale = ds->scale1;
-				}
-				else
-				{
-					lowscale = ds->scale1;
-					scale = ds->scale2;
-				}
+					if (ds->scale1 > ds->scale2)
+					{
+						lowscale = ds->scale2;
+						scale = ds->scale1;
+					}
+					else
+					{
+						lowscale = ds->scale1;
+						scale = ds->scale2;
+					}
 
-				if (scale < spr->sortscale ||
-					(lowscale < spr->sortscale &&
-					 !R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
-				{
-					// masked mid texture?
-					/*
-					if (ds->maskedtexturecol)
-						R_RenderMaskedSegRange (ds, r1, r2);
-					*/
+					if (scale < spr->sortscale ||
+						(lowscale < spr->sortscale &&
+						!R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
+					{
+						// masked mid texture?
+						/*
+						 *				if (ds->maskedtexturecol)
+						 *					R_RenderMaskedSegRange (ds, r1, r2);
+						 */
 
-					// seg is behind sprite
-					continue;
-				}
+						// seg is behind sprite
+						continue;
+					}
 			}
 
 			r1 = ds->x1 < x1 ? x1 : ds->x1;
@@ -3588,7 +3589,7 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			drawsegs_xranges[i].items = static_cast<drawseg_xrange_item_t*>(Z_Realloc(
 				drawsegs_xranges[i].items,
 				drawsegs_xrange_size * sizeof(drawsegs_xranges[i].items[0]),
-				PU_STATIC, NULL
+																					  PU_STATIC, NULL
 			));
 		}
 	}
@@ -3604,15 +3605,15 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			// e6y: ~13% of speed improvement on sunder.wad map10
 			if (ds->x1 < cx)
 			{
-				drawsegs_xranges[1].items[drawsegs_xranges[1].count] = 
-					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
+				drawsegs_xranges[1].items[drawsegs_xranges[1].count] =
+				drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[1].count++;
 			}
 
 			if (ds->x2 >= cx)
 			{
-				drawsegs_xranges[2].items[drawsegs_xranges[2].count] = 
-					drawsegs_xranges[0].items[drawsegs_xranges[0].count];
+				drawsegs_xranges[2].items[drawsegs_xranges[2].count] =
+				drawsegs_xranges[0].items[drawsegs_xranges[0].count];
 				drawsegs_xranges[2].count++;
 			}
 
@@ -3751,10 +3752,11 @@ static void R_DrawMaskedList (drawnode_t* head)
 			R_DoneWithNode(r2);
 			r2 = next;
 		}
-		else if (r2->seg)
+		else if (r2->seg && r2->seg->maskedtexturecol != NULL)
 		{
 			next = r2->prev;
 			R_RenderMaskedSegRange(r2->seg, r2->seg->x1, r2->seg->x2);
+			r2->seg->maskedtexturecol = NULL;
 			R_DoneWithNode(r2);
 			r2 = next;
 		}
@@ -3783,18 +3785,18 @@ static void R_DrawMaskedList (drawnode_t* head)
 				vissprite_t *ds = r2->sprite->linkdraw;
 
 				for (;
-				(ds != NULL && r2->sprite->dispoffset > ds->dispoffset);
+					 (ds != NULL && r2->sprite->dispoffset > ds->dispoffset);
 				ds = ds->next)
-				{
-					R_DrawSprite(ds);
-				}
+					 {
+						 R_DrawSprite(ds);
+					 }
 
-				R_DrawSprite(r2->sprite);
+					 R_DrawSprite(r2->sprite);
 
-				for (; ds != NULL; ds = ds->next)
-				{
-					R_DrawSprite(ds);
-				}
+					 for (; ds != NULL; ds = ds->next)
+					 {
+						 R_DrawSprite(ds);
+					 }
 			}
 
 			R_DoneWithNode(r2);

@@ -1,7 +1,9 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2021 by Sonic Team Junior.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -105,12 +107,10 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		return;
 	}
 
-#ifdef RANGECHECK
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
 	{
 		return;
 	}
-#endif
 
 	if constexpr (Type & DrawColumnType::DC_LIGHTLIST)
 	{
@@ -341,10 +341,8 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 	if (count < 0)
 		return;
 
-#ifdef RANGECHECK
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
 		return;
-#endif
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
@@ -408,10 +406,8 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	if (count < 0) // Zero length, column does not exceed a pixel.
 		return;
 
-#ifdef RANGECHECK
 	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
 		return;
-#endif
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.

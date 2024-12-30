@@ -1,8 +1,9 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2020 by Sonic Team Junior.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -14,6 +15,8 @@
 ///        The other refresh files only know about ccordinates,
 ///        not the architecture of the frame buffer.
 ///        The frame buffer is a linear one, and we need only the base address.
+
+#include <algorithm>
 
 #include "doomdef.h"
 #include "doomstat.h"
@@ -125,6 +128,7 @@ INT32 dc_numlights = 0, dc_maxlights;
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
+
 // Vectors for Software's tilted slope drawers
 floatv3_t *ds_su, *ds_sv, *ds_sz;
 float focallengthf[MAXSPLITSCREENPLAYERS];
@@ -141,7 +145,13 @@ float zeroheight;
 #define RAINBOW_TT_CACHE_INDEX (MAXSKINS + 4)
 #define BLINK_TT_CACHE_INDEX (MAXSKINS + 5)
 #define DASHMODE_TT_CACHE_INDEX (MAXSKINS + 6)
-#define TT_CACHE_SIZE (MAXSKINS + 8)
+#define HITLAG_TT_CACHE_INDEX (MAXSKINS + 7)
+#define INTERMISSION_TT_CACHE_INDEX (MAXSKINS + 8)
+#define TT_CACHE_SIZE (MAXSKINS + 9)
+
+#define SKIN_RAMP_LENGTH 16
+#define DEFAULT_STARTTRANSCOLOR 96
+#define NUM_PALETTE_ENTRIES 256
 
 static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
 UINT8 skincolor_modified[MAXSKINCOLORS];
@@ -301,7 +311,7 @@ void R_GenerateTranslucencyTable(UINT8 *table, RGBA_t* sourcepal, int style, UIN
 	}
 }
 
-#define ClipTransLevel(trans) std::max(std::min((trans), NUMTRANSMAPS-2), 0)
+#define ClipTransLevel(trans) std::clamp<INT32>(trans, 0, NUMTRANSMAPS-2)
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
 {
