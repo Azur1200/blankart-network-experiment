@@ -691,6 +691,12 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 
 	ZoneScoped;
 
+	if (!udmf && !newview->sky)
+	{
+		skyVisible = true;
+		return;
+	}
+
 	R_CheckDebugHighlight(SW_HI_SKY);
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)

@@ -8454,6 +8454,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		memset(&(bossinfo.weakspots), 0, sizeof(weakspot_t)*NUMWEAKSPOTS);
 	}
 
+	// assume the skybox is visible on level load.
+	skyVisible = true;
+	memset(skyVisiblePerPlayer, true, sizeof(skyVisiblePerPlayer));
+
 	if (!fromnetsave)
 	{
 		INT32 buf = gametic % BACKUPTICS;
