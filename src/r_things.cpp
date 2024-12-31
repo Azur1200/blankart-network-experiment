@@ -1537,6 +1537,7 @@ static void R_ProjectDropShadow(
 
 	shadow->transmap = R_GetBlendTable(thing->whiteshadow ? AST_ADD : AST_SUBTRACT, 0);
 	shadow->colormap = colormaps;
+	shadow->color = thing->shadowcolor;
 
 	objectsdrawn++;
 }
