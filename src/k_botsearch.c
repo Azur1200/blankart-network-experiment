@@ -513,7 +513,7 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 			if ((RINGTOTAL(globalsmuggle.botmo->player) < 20 && !(globalsmuggle.botmo->player->pflags & PF_RINGLOCK)
 				&& P_CanPickupItem(globalsmuggle.botmo->player, 0))
 				&& !thing->extravalue1
-				&& (globalsmuggle.botmo->player->itemtype != KITEM_LIGHTNINGSHIELD))
+				&& (globalsmuggle.botmo->player->itemtype != KITEM_THUNDERSHIELD))
 			{
 				K_AddAttackObject(thing, side, (RINGTOTAL(globalsmuggle.botmo->player) < 3) ? 5 : 1);
 			}
@@ -540,10 +540,10 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				{
 					break;
 				}
-				// Lightning Shield
+				// thunder Shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->player->itemtype == KITEM_LIGHTNINGSHIELD,
-					thing->player->itemtype == KITEM_LIGHTNINGSHIELD
+					globalsmuggle.botmo->player->itemtype == KITEM_THUNDERSHIELD,
+					thing->player->itemtype == KITEM_THUNDERSHIELD
 				))
 				{
 					break;

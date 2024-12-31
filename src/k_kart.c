@@ -192,7 +192,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_selfpropelledbomb);
 	CV_RegisterVar(&cv_grow);
 	CV_RegisterVar(&cv_shrink);
-	CV_RegisterVar(&cv_lightningshield);
+	CV_RegisterVar(&cv_thundershield);
 	CV_RegisterVar(&cv_bubbleshield);
 	CV_RegisterVar(&cv_flameshield);
 	CV_RegisterVar(&cv_hyudoro);
@@ -309,7 +309,7 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_selfpropelledbomb,
 	&cv_grow,
 	&cv_shrink,
-	&cv_lightningshield,
+	&cv_thundershield,
 	&cv_bubbleshield,
 	&cv_flameshield,
 	&cv_hyudoro,
@@ -345,7 +345,7 @@ static INT32 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
    /*Self-Propelled Bomb*/ { 0, 0, 0, 0, 0, 2, 4, 0 }, // Self-Propelled Bomb
 				  /*Grow*/ { 0, 0, 0, 1, 2, 3, 0, 0 }, // Grow
 				/*Shrink*/ { 0, 0, 0, 0, 0, 0, 2, 0 }, // Shrink
-	  /*Lightning Shield*/ { 1, 0, 0, 0, 0, 0, 0, 0 }, // Lightning Shield
+	  /*Thunder Shield*/   { 1, 0, 0, 0, 0, 0, 0, 0 }, // Thunder Shield
 		 /*Bubble Shield*/ { 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
 		  /*Flame Shield*/ { 0, 0, 0, 0, 0, 1, 3, 5 }, // Flame Shield
 			   /*Hyudoro*/ { 3, 0, 0, 0, 0, 0, 0, 0 }, // Hyudoro
@@ -378,7 +378,7 @@ static INT32 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
    /*Self-Propelled Bomb*/ { 0, 0 }, // Self-Propelled Bomb
 				  /*Grow*/ { 2, 1 }, // Grow
 				/*Shrink*/ { 0, 0 }, // Shrink
-	  /*Lightning Shield*/ { 4, 0 }, // Lightning Shield
+	  /*Thunder Shield*/   { 4, 0 }, // Thunder Shield
 		 /*Bubble Shield*/ { 1, 0 }, // Bubble Shield
 		  /*Flame Shield*/ { 1, 0 }, // Flame Shield
 			   /*Hyudoro*/ { 2, 0 }, // Hyudoro
@@ -404,7 +404,7 @@ INT32 K_GetShieldFromItem(INT32 item)
 {
 	switch (item)
 	{
-		case KITEM_LIGHTNINGSHIELD: return KSHIELD_LIGHTNING;
+		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
 		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
 		case KITEM_FLAMESHIELD: return KSHIELD_FLAME;
 		default: return KSHIELD_NONE;
@@ -706,7 +706,7 @@ INT32 K_KartGetItemOdds(
 			if (pingame-1 <= pexiting)
 				newodds = 0;
 			break;
-		case KITEM_LIGHTNINGSHIELD:
+		case KITEM_THUNDERSHIELD:
 			cooldownOnStart = true;
 			powerItem = true;
 
@@ -4425,7 +4425,7 @@ void K_PuntMine(mobj_t *origMine, mobj_t *punter)
 // we don't need to have it disjointedly small too...)
 #define THUNDERSPRITE 80
 
-static void K_DoLightningShield(player_t *player)
+static void K_DoThunderShield(player_t *player)
 {
 	mobj_t *mo;
 	int i = 0;
@@ -4434,7 +4434,7 @@ static void K_DoLightningShield(player_t *player)
 	angle_t an;
 
 	S_StartSound(player->mo, sfx_zio3);
-	K_LightningShieldAttack(player->mo, (THUNDERRADIUS + THUNDERSPRITE) * FRACUNIT);
+	K_ThunderShieldAttack(player->mo, (THUNDERRADIUS + THUNDERSPRITE) * FRACUNIT);
 
 	// spawn vertical bolt
 	mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
@@ -4961,9 +4961,9 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 
 	if (shield != KSHIELD_NONE && !keepshields)
 	{
-		if (shield == KSHIELD_LIGHTNING)
+		if (shield == KSHIELD_THUNDER)
 		{
-			K_DoLightningShield(player);
+			K_DoThunderShield(player);
 		}
 
 		player->curshield = KSHIELD_NONE;
@@ -7017,7 +7017,7 @@ void K_KartPlayerAfterThink(player_t *player)
 		player->jawztargetdelay = 0;
 	}
 
-	if (player->itemtype == KITEM_LIGHTNINGSHIELD)
+	if (player->itemtype == KITEM_THUNDERSHIELD)
 	{
 		K_LookForRings(player->mo);
 	}
@@ -8694,23 +8694,23 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								K_PlayPowerGloatSound(player->mo);
 							}
 							break;
-						case KITEM_LIGHTNINGSHIELD:
-							if (player->curshield != KSHIELD_LIGHTNING)
+						case KITEM_THUNDERSHIELD:
+							if (player->curshield != KSHIELD_THUNDER)
 							{
-								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_LIGHTNINGSHIELD);
+								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
 								P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 								P_SetTarget(&shield->target, player->mo);
 								S_StartSound(player->mo, sfx_s3k41);
-								player->curshield = KSHIELD_LIGHTNING;
+								player->curshield = KSHIELD_THUNDER;
 							}
 
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
-								K_DoLightningShield(player);
+								K_DoThunderShield(player);
 								if (player->itemamount > 0)
 								{
 									// Why is this a conditional?
-									// Lightning shield: the only item that allows you to
+									// Thunder shield: the only item that allows you to
 									// activate a mine while you're out of its radius,
 									// the SAME tic it sets your itemamount to 0
 									// ...:dumbestass:

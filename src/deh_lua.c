@@ -337,7 +337,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("ML_", word, 3)) {
 		p = word+3;
-		for (i = 0; i < 16; i++)
+		for (i = 0; i < 20; i++)
 			if (ML_LIST[i] && fastcmp(p, ML_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;

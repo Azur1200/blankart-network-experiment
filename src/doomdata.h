@@ -144,6 +144,11 @@ enum
 	ML_MIDSOLID			= 0x00000200,
 	ML_WRAPMIDTEX		= 0x00000400,
 
+	// Compat for old lua scripts.
+	ML_NOSONIC = 2048,
+	ML_NOTAILS = 4096,
+	ML_NOKNUX = 8192,
+
 	// Apply effect only in netgames
 	ML_NETONLY			= 0x00000800,
 	ML_NETONLY_OLD		= 0x3800, // Combination of old ML_NOSONIC, ML_NOTAILS and ML_NOKNUX

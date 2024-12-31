@@ -127,7 +127,7 @@ static patch_t *kp_ballhog[2];
 static patch_t *kp_selfpropelledbomb[2];
 static patch_t *kp_grow[2];
 static patch_t *kp_shrink[2];
-static patch_t *kp_lightningshield[2];
+static patch_t *kp_thundershield[2];
 static patch_t *kp_bubbleshield[2];
 static patch_t *kp_flameshield[2];
 static patch_t *kp_hyudoro[2];
@@ -368,7 +368,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_selfpropelledbomb[0], "K_ITSPB");
 	HU_UpdatePatch(&kp_grow[0], "K_ITGROW");
 	HU_UpdatePatch(&kp_shrink[0], "K_ITSHRK");
-	HU_UpdatePatch(&kp_lightningshield[0], "K_ITTHNS");
+	HU_UpdatePatch(&kp_thundershield[0], "K_ITTHNS");
 	HU_UpdatePatch(&kp_bubbleshield[0], "K_ITBUBS");
 	HU_UpdatePatch(&kp_flameshield[0], "K_ITFLMS");
 	HU_UpdatePatch(&kp_hyudoro[0], "K_ITHYUD");
@@ -419,7 +419,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_selfpropelledbomb[1], "K_ISSPB");
 	HU_UpdatePatch(&kp_grow[1], "K_ISGROW");
 	HU_UpdatePatch(&kp_shrink[1], "K_ISSHRK");
-	HU_UpdatePatch(&kp_lightningshield[1], "K_ISTHNS");
+	HU_UpdatePatch(&kp_thundershield[1], "K_ISTHNS");
 	HU_UpdatePatch(&kp_bubbleshield[1], "K_ISBUBS");
 	HU_UpdatePatch(&kp_flameshield[1], "K_ISFLMS");
 	HU_UpdatePatch(&kp_hyudoro[1], "K_ISHYUD");
@@ -618,7 +618,7 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 			return (tiny ? "K_ISGROW" : "K_ITGROW");
 		case KITEM_SHRINK:
 			return (tiny ? "K_ISSHRK" : "K_ITSHRK");
-		case KITEM_LIGHTNINGSHIELD:
+		case KITEM_THUNDERSHIELD:
 			return (tiny ? "K_ISTHNS" : "K_ITTHNS");
 		case KITEM_BUBBLESHIELD:
 			return (tiny ? "K_ISBUBS" : "K_ITBUBS");
@@ -1090,8 +1090,8 @@ static void K_drawKartItem(void)
 				localpatch = kp_ballhog[offset];
 				//localcolor = SKINCOLOR_LILAC;
 				break;
-			case 13: // Lightning Shield
-				localpatch = kp_lightningshield[offset];
+			case 13: // Thunder Shield
+				localpatch = kp_thundershield[offset];
 				//localcolor = SKINCOLOR_CYAN;
 				break;
 			case 14: // Super Ring
@@ -1223,8 +1223,8 @@ static void K_drawKartItem(void)
 				case KITEM_SHRINK:
 					localpatch = kp_shrink[offset];
 					break;
-				case KITEM_LIGHTNINGSHIELD:
-					localpatch = kp_lightningshield[offset];
+				case KITEM_THUNDERSHIELD:
+					localpatch = kp_thundershield[offset];
 					localbg = kp_itembg[offset+1];
 					break;
 				case KITEM_BUBBLESHIELD:
@@ -4343,7 +4343,7 @@ static void K_drawDistributionDebugger(void)
 		kp_selfpropelledbomb[1],
 		kp_grow[1],
 		kp_shrink[1],
-		kp_lightningshield[1],
+		kp_thundershield[1],
 		kp_bubbleshield[1],
 		kp_flameshield[1],
 		kp_hyudoro[1],
