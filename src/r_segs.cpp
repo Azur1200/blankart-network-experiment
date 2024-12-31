@@ -2125,29 +2125,35 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
-		if (frontsector->ceilingpic == skyflatnum
-			&& backsector->ceilingpic == skyflatnum)
+		if (udmf)
 		{
-			if (udmf)
-				bothceilingssky = true;
-			else
+			if (frontsector->ceilingpic == skyflatnum
+				&& backsector->ceilingpic == skyflatnum)
+			{
+					bothceilingssky = true;
+			}
+
+			// likewise, but for floors and upper textures
+			if (frontsector->floorpic == skyflatnum
+				&& backsector->floorpic == skyflatnum)
+			{
+				bothfloorssky = true;
+			}
+		}
+		else
+		{
+			if (frontsector->ceilingpic == skyflatnum
+				&& backsector->ceilingpic == skyflatnum)
 			{
 				worldtopslope = worldhighslope =
 				worldtop = worldhigh;
 			}
 		}
 
-		// likewise, but for floors and upper textures
-		if (frontsector->floorpic == skyflatnum
-			&& backsector->floorpic == skyflatnum)
-		{
-			bothfloorssky = true;
-		}
-
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		if (!bothfloorssky || !udmf)
+		if (!bothfloorssky)
 		{
 			if (worldbottomslope > worldlowslope || worldbottom > worldlow)
 			{
@@ -2243,7 +2249,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| backsector->floor_yoffs != frontsector->floor_yoffs
 			|| backsector->floorpic_angle != frontsector->floorpic_angle
 			//SoM: 3/22/2000: Prevents bleeding.
-			|| (frontsector->heightsec != -1 && frontsector->floorpic != skyflatnum)
+			|| (udmf && (frontsector->heightsec != -1 && frontsector->floorpic != skyflatnum))
+			|| (!udmf && frontsector->heightsec != -1)
 			|| backsector->floorlightlevel != frontsector->floorlightlevel
 			|| backsector->floorlightabsolute != frontsector->floorlightabsolute
 			|| backsector->floorlightsec != frontsector->floorlightsec
@@ -2692,7 +2699,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	//  and doesn't need to be marked.
 	if (frontsector->heightsec == -1)
 	{
-		if (frontsector->floorpic != skyflatnum && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz)
+		if ((udmf && frontsector->floorpic != skyflatnum && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz) || (!udmf && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz))
 		{
 			// above view plane
 			markfloor = false;
