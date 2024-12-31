@@ -34,6 +34,10 @@
 
 #include "k_terrain.h"
 
+extern "C" {
+	#include "qs22j.h"
+}
+
 extern consvar_t cv_debugfinishline, cv_debugrender_freezebsp;
 
 seg_t *curline;
@@ -826,8 +830,7 @@ void R_SortPolyObjects(subsector_t *sub)
 		// 03/10/06: only bother if there are actually polys to sort
 		if (numpolys >= 2)
 		{
-			qsort(po_ptrs, numpolys, sizeof(polyobj_t *),
-				R_PolyobjCompare);
+			qs22j(po_ptrs, numpolys, sizeof(polyobj_t *), R_PolyobjCompare);
 		}
 	}
 }
@@ -929,7 +932,7 @@ static void R_AddPolyObjects(subsector_t *sub)
 	// render polyobjects
 	for (i = 0; i < numpolys; ++i)
 	{
-		qsort(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
+		qs22j(po_ptrs[i]->segs, po_ptrs[i]->segCount, sizeof(seg_t *), R_PolysegCompare);
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 			R_AddLine(po_ptrs[i]->segs[j]);
 	}

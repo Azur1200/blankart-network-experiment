@@ -43,6 +43,8 @@
 #include "z_zone.h"
 #include "r_splats.h"
 
+#include "qs22j.h"
+
 #include "hu_stuff.h"
 #include "console.h"
 
@@ -936,7 +938,7 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			P_SpawnMapThing(mt);
 	}
 
-	qsort(loopends, num_loopends, sizeof *loopends,
+	qs22j(loopends, num_loopends, sizeof(*loopends),
 			cmp_loopends);
 
 	for (i = 1; i < num_loopends; ++i)
