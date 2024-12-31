@@ -231,7 +231,7 @@ void R_SetColumnFunc(size_t id, boolean brightmapped)
 
 void R_SetSpanFunc(size_t id, boolean npo2, boolean brightmapped)
 {
-	I_Assert(id < COLDRAWFUNC_MAX);
+	I_Assert(id < SPANDRAWFUNC_MAX);
 
 	if (debugrender_highlight != 0 && R_SetSpanFuncFlat(id))
 	{

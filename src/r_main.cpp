@@ -80,6 +80,8 @@ fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
 UINT8 viewssnum;
 fixed_t viewcos, viewsin;
+boolean skyVisible;
+boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
 sector_t *viewsector;
 player_t *viewplayer;
 mobj_t *r_viewmobj;
@@ -1226,7 +1228,7 @@ static void R_SetupAimingFrame(int s)
 	}
 }
 
-void R_SetupFrame(int s)
+void R_SetupFrame(int s, boolean skybox)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
@@ -1245,7 +1247,7 @@ void R_SetupFrame(int s)
 	else if (!chasecam)
 		thiscam->chase = false;
 
-	newview->sky = false;
+	newview->sky = udmf ? false : !skybox; // force this to false for udmf
 
 	R_SetupAimingFrame(s);
 
@@ -1502,8 +1504,45 @@ void R_RenderPlayerView(void)
 {
 	INT32			nummasks	= 1;
 	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
+	player_t * player = &players[displayplayers[viewssnum]];
+	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+	UINT8 i;
 
-	R_SetupFrame(viewssnum);
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
+
+	if (!udmf)
+	{
+		// load previous saved value of skyVisible for the player
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (player != &players[displayplayers[i]])
+				continue;
+			skyVisible = skyVisiblePerPlayer[i];
+			break;
+		}
+		if (skybox && skyVisible)
+		{
+			R_SkyboxFrame(viewssnum);
+			R_ClearClipSegs();
+			R_ClearDrawSegs();
+			R_ClearPlanes();
+			R_ClearSprites();
+			Mask_Pre(&masks[nummasks - 1]);
+			R_RenderBSPNode((INT32)numnodes - 1);
+			Mask_Post(&masks[nummasks - 1]);
+			R_ClipSprites(drawsegs, NULL);
+			R_DrawPlanes();
+			// hope this crap is right lmao idk how tf multithreading works
+			 tp_sema = srb2::g_main_threadpool->end_sema();
+			 srb2::g_main_threadpool->notify_sema(tp_sema);
+			 srb2::g_main_threadpool->wait_sema(tp_sema);
+			 srb2::g_main_threadpool->begin_sema();
+			R_DrawMasked(masks, nummasks);
+		}
+	}
+	R_SetupFrame(viewssnum, skybox);
+	skyVisible = false;
 	framecount++;
 	validcount++;
 
@@ -1541,8 +1580,6 @@ void R_RenderPlayerView(void)
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
 
-	srb2::ThreadPool::Sema tp_sema;
-	srb2::g_main_threadpool->begin_sema();
 	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
 
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
@@ -1561,7 +1598,7 @@ void R_RenderPlayerView(void)
 
 
 	// Add skybox portals caused by sky visplanes.
-	if (cv_skybox.value && skyboxmo[0])
+	if (udmf && skybox)
 		Portal_AddSkyboxPortals();
 
 	// Portal rendering. Hijacks the BSP traversal.
@@ -1711,6 +1748,19 @@ void R_RenderPlayerView(void)
 			}
 
 			Portal_Remove(portal);
+		}
+	}
+
+	if (!udmf)
+	{
+		// save value to skyVisiblePerPlayer
+		// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (player != &players[displayplayers[i]])
+				continue;
+			skyVisiblePerPlayer[i] = skyVisible;
+			break;
 		}
 	}
 

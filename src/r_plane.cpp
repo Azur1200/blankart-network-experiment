@@ -1,8 +1,9 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2021 by Sonic Team Junior.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -18,10 +19,10 @@
 #include "command.h"
 #include "doomdef.h"
 #include "console.h"
-#include "m_easing.h" // For Easing_InOutSine, used in R_UpdatePlaneRipple
 #include "g_game.h"
 #include "p_setup.h" // levelflats
 #include "p_slopes.h"
+#include "r_fps.h"
 #include "r_data.h"
 #include "r_textures.h"
 #include "r_local.h"
@@ -31,6 +32,7 @@
 #include "r_portal.h"
 #include "core/thread_pool.h"
 #include "r_fps.h"
+//	#include "r_debug.hpp"
 
 #include "v_video.h"
 #include "w_wad.h"
@@ -235,7 +237,10 @@ static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc)(drawspandata_t*
 	{
 		ds->bgofs = R_CalculateRippleOffset(ds, y);
 
-		R_SetTiltedSpan(ds, CLAMP(y, 0, viewheight));
+		R_SetTiltedSpan(ds, std::min(y, std::max(0, viewheight)));
+
+		R_CalculatePlaneRipple(ds, ds->currentplane->viewangle + ds->currentplane->plangle);
+		R_SetSlopePlaneVectors(ds, ds->currentplane, y, (ds->xoffs + ds->planeripple.xfrac), (ds->yoffs + ds->planeripple.yfrac));
 
 		ds->bgofs >>= FRACBITS;
 
@@ -573,6 +578,7 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 
 static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* spanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
+	ZoneScoped;
 	//    Alam: from r_splats's R_RasterizeFloorSplat
 	if (t1 >= vid.height) t1 = vid.height-1;
 	if (b1 >= vid.height) b1 = vid.height-1;
@@ -685,6 +691,12 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 
 	ZoneScoped;
 
+	if (!udmf && !newview->sky)
+	{
+		skyVisible = true;
+		return;
+	}
+
 	R_CheckDebugHighlight(SW_HI_SKY);
 
 	// Reset column drawer function (note: couldn't we just call walldrawerfunc directly?)
@@ -737,8 +749,6 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 				}
 
 				INT32 angle = (pl->viewangle + xtoviewangle[viewssnum][x + i])>>ANGLETOSKYSHIFT;
-				angle -= (skytextureoffset >> FRACBITS);
-
 				dc.iscale = FixedMul(skyscale[viewssnum], FINECOSINE(xtoviewangle[viewssnum][x + i]>>ANGLETOFINESHIFT));
 				dc.x = x + i;
 				dc.source =
@@ -887,11 +897,11 @@ d.z = (v1.x * v2.y) - (v1.y * v2.x)
 void R_SetTiltedSpan(drawspandata_t* ds, INT32 span)
 {
 	if (ds_su == NULL)
-		ds_su = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
+		ds_su = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
 	if (ds_sv == NULL)
-		ds_sv = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
+		ds_sv = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
 	if (ds_sz == NULL)
-		ds_sz = static_cast<floatv3_t*>(Z_Malloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
+		ds_sz = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
 
 	ds->sup = ds_su[span];
 	ds->svp = ds_sv[span];
@@ -1103,9 +1113,9 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 
 				// No idea if this works
 				VID_BlitLinearScreen(screens[0] + offset,
-									 screens[1] + (top*vid.width), // intentionally not +offset
-									 viewwidth, bottom-top,
-						 vid.width, vid.width);
+					screens[1] + (top*vid.width), // intentionally not +offset
+					viewwidth, bottom-top,
+					vid.width, vid.width);
 			}
 		}
 		#endif
@@ -1274,11 +1284,11 @@ INT16 R_PlaneIsHighlighted(const visplane_t *pl)
 {
 	switch (pl->damage)
 	{
-		case SD_DEATHPIT:
-		case SD_INSTAKILL:
-			return 35; // red
+	case SD_DEATHPIT:
+	case SD_INSTAKILL:
+		return 35; // red
 
-		default:
-			return -1;
+	default:
+		return -1;
 	}
 }

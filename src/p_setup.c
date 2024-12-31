@@ -646,10 +646,10 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 		if (( texturenum = R_CheckTextureNumForName(levelflat->name) ) == -1)
 		{
 			// check for REDWALL
-			if (( texturenum = R_CheckTextureNumForName("REDWALL") ) != -1)
+			if (( texturenum = R_CheckTextureNumForName(MISSING_TEXTURE) ) != -1)
 				goto texturefound;
 			// check for REDFLR
-			else if (( flatnum = R_GetFlatNumForName("REDFLR") ) != LUMPERROR)
+			else if (( flatnum = R_GetFlatNumForName(MISSING_TEXTURE) ) != LUMPERROR)
 				goto flatfound;
 			// nevermind
 			levelflat->type = LEVELFLAT_NONE;
@@ -8453,6 +8453,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		bossinfo.titlesound = sfx_typri1;
 		memset(&(bossinfo.weakspots), 0, sizeof(weakspot_t)*NUMWEAKSPOTS);
 	}
+
+	// assume the skybox is visible on level load.
+	skyVisible = true;
+	memset(skyVisiblePerPlayer, true, sizeof(skyVisiblePerPlayer));
 
 	if (!fromnetsave)
 	{
