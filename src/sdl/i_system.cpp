@@ -23,6 +23,8 @@
 /// \file
 /// \brief SRB2 system stuff for SDL
 
+#include <thread>
+
 #ifdef CMAKECONFIG
 #include "../config.h"
 #else
@@ -173,6 +175,8 @@ static char returnWadPath[256];
 #include "../d_net.h"
 #include "../g_game.h"
 #include "../filesrch.h"
+#include "../s_sound.h"
+#include "../core/thread_pool.h"
 #include "endtxt.h"
 #include "sdlmain.h"
 
@@ -196,6 +200,8 @@ static char returnWadPath[256];
 #include "../d_clisrv.h"
 #include "../byteptr.h"
 #endif
+
+static std::thread::id g_main_thread_id;
 
 /**	\brief	The JoyReset function
 
@@ -366,7 +372,7 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dump
 	// on the target system
 	if (!M_CheckParm("-dedicated"))
 		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-			"Dr. Robotnik's Ring Racers "VERSIONSTRING" Error",
+			"SRB2Kart V2 " VERSIONSTRING " Error",
 			finalmessage, NULL);
 
 	// Note that SDL_ShowSimpleMessageBox does *not* require SDL to be
@@ -439,6 +445,15 @@ static void I_ReportSignal(int num, int coredumped)
 FUNCNORETURN static ATTRNORETURN void signal_handler(INT32 num)
 {
 	g_in_exiting_signal_handler = true;
+
+	if (g_main_thread_id != std::this_thread::get_id())
+	{
+		// Do not attempt any sort of recovery if this signal triggers off the main thread
+		signal(num, SIG_DFL);
+		raise(num);
+		exit(-2);
+	}
+
 	D_QuitNetGame(); // Fix server freezes
 	CL_AbortDownloadResume();
 #ifdef UNIXBACKTRACE
@@ -580,8 +595,8 @@ static void I_StartupConsole(void)
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
 
-	consolevent = !M_CheckParm("-noconsole");
-	framebuffer = M_CheckParm("-framebuffer");
+	consolevent = static_cast<SDL_bool>(!M_CheckParm("-noconsole"));
+	framebuffer = static_cast<SDL_bool>(M_CheckParm("-framebuffer"));
 
 	if (framebuffer)
 		consolevent = SDL_FALSE;
@@ -621,7 +636,7 @@ static void I_StartupConsole(void)
 void I_GetConsoleEvents(void)
 {
 	// we use this when sending back commands
-	event_t ev = {0,0,0,0,0};
+	event_t ev = {};
 	char key = 0;
 	ssize_t d;
 
@@ -812,6 +827,8 @@ static inline void I_ShutdownConsole(void){}
 //
 static void I_RegisterSignals (void)
 {
+	g_main_thread_id = std::this_thread::get_id();
+
 #ifdef SIGINT
 	signal(SIGINT , quit_handler);
 #endif
@@ -921,7 +938,7 @@ void I_OutputMsg(const char *fmt, ...)
 					return;
 				}
 
-				ReadConsoleOutputCharacter(co, oldLines, oldLength, coordNextWrite, &bytesWritten);
+				ReadConsoleOutputCharacter(co, (LPSTR)oldLines, oldLength, coordNextWrite, &bytesWritten);
 
 				// Move to where we what to print - which is where we would've been,
 				// had console input not been in the way,
@@ -1035,7 +1052,7 @@ INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 	SDL_Joystick *joystick = NULL;
 
 	joystick = SDL_GameControllerGetJoystick(dev);
-	
+
 	if (joystick)
 	{
 		return SDL_JoystickInstanceID(joystick);
@@ -1155,7 +1172,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 void I_GetJoystickEvents(UINT8 index)
 {
-	static event_t event = {0,0,0,0,0};
+	static event_t event = {};
 	INT32 i = 0;
 	UINT64 joyhats = 0;
 #if 0
@@ -1163,7 +1180,7 @@ void I_GetJoystickEvents(UINT8 index)
 	UINT32 axisx, axisy;
 #endif
 
-	if (!joystick_started[index]) 
+	if (!joystick_started[index])
 		return;
 
 	if (!JoyInfo[index].dev) //I_ShutdownJoystick(index);
@@ -1254,13 +1271,13 @@ void I_GetJoystickEvents(UINT8 index)
 				event.data2 = -1;
 			else if (axisx > (JOYAXISRANGE/2))
 				event.data2 = 1;
-			else 
+			else
 				event.data2 = 0;
 			if (axisy < -(JOYAXISRANGE/2))
 				event.data3 = -1;
 			else if (axisy > (JOYAXISRANGE/2))
 				event.data3 = 1;
-			else 
+			else
 				event.data3 = 0;
 		}
 		else
@@ -1524,7 +1541,10 @@ const char *I_GetJoyName(INT32 joyindex)
 	{
 		tempname = SDL_JoystickNameForIndex(joyindex);
 		if (tempname)
-			strncpy(joyname, tempname, 255);
+		{
+			strncpy(joyname, tempname, 254);
+			joyname[254] = 0;
+		}
 	}
 	return joyname;
 }
@@ -1539,7 +1559,7 @@ const char *I_GetJoyName(INT32 joyindex)
 #define DEG2RAD (0.017453292519943295769236907684883l) // TAU/360 or PI/180
 #define MUMBLEUNIT (64.0f) // FRACUNITS in a Meter
 
-static struct {
+static struct mumble_s {
 #ifdef WINMUMBLE
 	UINT32 uiVersion;
 	DWORD uiTick;
@@ -1572,7 +1592,7 @@ static void I_SetupMumble(void)
 	if (!hMap)
 		return;
 
-	mumble = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble));
+	mumble = static_cast<mumble_s*>(MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(*mumble)));
 	if (!mumble)
 		CloseHandle(hMap);
 #elif defined (HAVE_SHM)
@@ -1585,7 +1605,7 @@ static void I_SetupMumble(void)
 	if(shmfd < 0)
 		return;
 
-	mumble = mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+	mumble = static_cast<mumble_s*>(mmap(NULL, sizeof(*mumble), PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0));
 	if (mumble == MAP_FAILED)
 		mumble = NULL;
 #endif
@@ -1601,7 +1621,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2Kart "VERSIONSTRINGW, 256);
+		wcsncpy(mumble->name, L"SRB2Kart " VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 Kart with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
@@ -1890,16 +1910,18 @@ INT32 I_StartupSystem(void)
 	SDL_version SDLlinked;
 	SDL_VERSION(&SDLcompiled)
 	SDL_GetVersion(&SDLlinked);
-#ifdef HAVE_THREADS
-	I_start_threads();
-	I_AddExitFunc(I_stop_threads);
-#endif
 	I_StartupConsole();
 #ifdef NEWSIGNALHANDLER
 	// This is useful when debugging. It lets GDB attach to
 	// the correct process easily.
 	if (!M_CheckParm("-nofork"))
 		I_Fork();
+#endif
+#ifdef HAVE_THREADS
+	I_start_threads();
+	I_AddExitFunc(I_stop_threads);
+	I_ThreadPoolInit();
+	I_AddExitFunc(I_ThreadPoolShutdown);
 #endif
 	I_RegisterSignals();
 	I_OutputMsg("Compiled for SDL version: %d.%d.%d\n",
@@ -1996,6 +2018,12 @@ void I_Error(const char *error, ...)
 	va_list argptr;
 	char buffer[8192];
 
+	if (std::this_thread::get_id() != g_main_thread_id)
+	{
+		// Do not attempt a graceful shutdown. Errors off the main thread are unresolvable.
+		exit(-2);
+	}
+
 	// recursive error detecting
 	if (shutdowning)
 	{
@@ -2030,7 +2058,7 @@ void I_Error(const char *error, ...)
 			// on the target system
 			if (!M_CheckParm("-dedicated"))
 				SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-					"SRB2Kart "VERSIONSTRING" Recursive Error",
+					"SRB2Kart V2 " VERSIONSTRING " Recursive Error",
 					buffer, NULL);
 
 			W_Shutdown();
@@ -2375,7 +2403,7 @@ const char *I_ClipboardPaste(void)
 */
 static boolean isWadPathOk(const char *path)
 {
-	char *wad3path = malloc(256);
+	char *wad3path = static_cast<char*>(malloc(256));
 
 	if (!wad3path)
 		return false;
@@ -2475,43 +2503,43 @@ static const char *locateWad(void)
 
 	// examine default dirs
 #ifdef DEFAULTWADLOCATION1
-	I_OutputMsg(","DEFAULTWADLOCATION1);
+	I_OutputMsg("," DEFAULTWADLOCATION1);
 	strcpy(returnWadPath, DEFAULTWADLOCATION1);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION2
-	I_OutputMsg(","DEFAULTWADLOCATION2);
+	I_OutputMsg("," DEFAULTWADLOCATION2);
 	strcpy(returnWadPath, DEFAULTWADLOCATION2);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION3
-	I_OutputMsg(","DEFAULTWADLOCATION3);
+	I_OutputMsg("," DEFAULTWADLOCATION3);
 	strcpy(returnWadPath, DEFAULTWADLOCATION3);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION4
-	I_OutputMsg(","DEFAULTWADLOCATION4);
+	I_OutputMsg("," DEFAULTWADLOCATION4);
 	strcpy(returnWadPath, DEFAULTWADLOCATION4);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION5
-	I_OutputMsg(","DEFAULTWADLOCATION5);
+	I_OutputMsg("," DEFAULTWADLOCATION5);
 	strcpy(returnWadPath, DEFAULTWADLOCATION5);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION6
-	I_OutputMsg(","DEFAULTWADLOCATION6);
+	I_OutputMsg("," DEFAULTWADLOCATION6);
 	strcpy(returnWadPath, DEFAULTWADLOCATION6);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
 #endif
 #ifdef DEFAULTWADLOCATION7
-	I_OutputMsg(","DEFAULTWADLOCATION7);
+	I_OutputMsg("," DEFAULTWADLOCATION7);
 	strcpy(returnWadPath, DEFAULTWADLOCATION7);
 	if (isWadPathOk(returnWadPath))
 		return returnWadPath;
@@ -2528,21 +2556,21 @@ static const char *locateWad(void)
 #endif
 #ifdef DEFAULTSEARCHPATH1
 	// find in /usr/local
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH1);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH1);
 	WadPath = searchWad(DEFAULTSEARCHPATH1);
 	if (WadPath)
 		return WadPath;
 #endif
 #ifdef DEFAULTSEARCHPATH2
 	// find in /usr/games
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH2);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH2);
 	WadPath = searchWad(DEFAULTSEARCHPATH2);
 	if (WadPath)
 		return WadPath;
 #endif
 #ifdef DEFAULTSEARCHPATH3
 	// find in ???
-	I_OutputMsg(", in:"DEFAULTSEARCHPATH3);
+	I_OutputMsg(", in:" DEFAULTSEARCHPATH3);
 	WadPath = searchWad(DEFAULTSEARCHPATH3);
 	if (WadPath)
 		return WadPath;
@@ -2586,7 +2614,7 @@ const char *I_LocateWad(void)
 static long get_entry(const char* name, const char* buf)
 {
 	long val;
-	char* hit = strstr(buf, name);
+	const char* hit = strstr(buf, name);
 	if (hit == NULL) {
 		return -1;
 	}
@@ -2721,70 +2749,6 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	if (total)
 		*total = 48<<20;
 	return 48<<20;
-#endif
-}
-
-const CPUInfoFlags *I_CPUInfo(void)
-{
-#if defined (_WIN32)
-	static CPUInfoFlags WIN_CPUInfo;
-	SYSTEM_INFO SI;
-	p_IsProcessorFeaturePresent pfnCPUID;
-	*(void**)&pfnCPUID = FUNCPTRCAST(GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsProcessorFeaturePresent"));
-
-	ZeroMemory(&WIN_CPUInfo,sizeof (WIN_CPUInfo));
-	if (pfnCPUID)
-	{
-		WIN_CPUInfo.FPPE       = pfnCPUID( 0); //PF_FLOATING_POINT_PRECISION_ERRATA
-		WIN_CPUInfo.FPE        = pfnCPUID( 1); //PF_FLOATING_POINT_EMULATED
-		WIN_CPUInfo.cmpxchg    = pfnCPUID( 2); //PF_COMPARE_EXCHANGE_DOUBLE
-		WIN_CPUInfo.MMX        = pfnCPUID( 3); //PF_MMX_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.PPCMM64    = pfnCPUID( 4); //PF_PPC_MOVEMEM_64BIT_OK
-		WIN_CPUInfo.ALPHAbyte  = pfnCPUID( 5); //PF_ALPHA_BYTE_INSTRUCTIONS
-		WIN_CPUInfo.SSE        = pfnCPUID( 6); //PF_XMMI_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.AMD3DNow   = pfnCPUID( 7); //PF_3DNOW_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.RDTSC      = pfnCPUID( 8); //PF_RDTSC_INSTRUCTION_AVAILABLE
-		WIN_CPUInfo.PAE        = pfnCPUID( 9); //PF_PAE_ENABLED
-		WIN_CPUInfo.SSE2       = pfnCPUID(10); //PF_XMMI64_INSTRUCTIONS_AVAILABLE
-		//WIN_CPUInfo.blank    = pfnCPUID(11); //PF_SSE_DAZ_MODE_AVAILABLE
-		WIN_CPUInfo.DEP        = pfnCPUID(12); //PF_NX_ENABLED
-		WIN_CPUInfo.SSE3       = pfnCPUID(13); //PF_SSE3_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.cmpxchg16b = pfnCPUID(14); //PF_COMPARE_EXCHANGE128
-		WIN_CPUInfo.cmp8xchg16 = pfnCPUID(15); //PF_COMPARE64_EXCHANGE128
-		WIN_CPUInfo.PFC        = pfnCPUID(16); //PF_CHANNELS_ENABLED
-	}
-#ifdef HAVE_SDLCPUINFO
-	else
-	{
-		WIN_CPUInfo.RDTSC       = SDL_HasRDTSC();
-		WIN_CPUInfo.MMX         = SDL_HasMMX();
-		WIN_CPUInfo.AMD3DNow    = SDL_Has3DNow();
-		WIN_CPUInfo.SSE         = SDL_HasSSE();
-		WIN_CPUInfo.SSE2        = SDL_HasSSE2();
-		WIN_CPUInfo.AltiVec     = SDL_HasAltiVec();
-	}
-	WIN_CPUInfo.MMXExt      = SDL_FALSE; //SDL_HasMMXExt(); No longer in SDL2
-	WIN_CPUInfo.AMD3DNowExt = SDL_FALSE; //SDL_Has3DNowExt(); No longer in SDL2
-#endif
-	GetSystemInfo(&SI);
-	WIN_CPUInfo.CPUs = SI.dwNumberOfProcessors;
-	WIN_CPUInfo.IA64 = (SI.dwProcessorType == 2200); // PROCESSOR_INTEL_IA64
-	WIN_CPUInfo.AMD64 = (SI.dwProcessorType == 8664); // PROCESSOR_AMD_X8664
-	return &WIN_CPUInfo;
-#elif defined (HAVE_SDLCPUINFO)
-	static CPUInfoFlags SDL_CPUInfo;
-	memset(&SDL_CPUInfo,0,sizeof (CPUInfoFlags));
-	SDL_CPUInfo.RDTSC       = SDL_HasRDTSC();
-	SDL_CPUInfo.MMX         = SDL_HasMMX();
-	SDL_CPUInfo.MMXExt      = SDL_FALSE; //SDL_HasMMXExt(); No longer in SDL2
-	SDL_CPUInfo.AMD3DNow    = SDL_Has3DNow();
-	SDL_CPUInfo.AMD3DNowExt = SDL_FALSE; //SDL_Has3DNowExt(); No longer in SDL2
-	SDL_CPUInfo.SSE         = SDL_HasSSE();
-	SDL_CPUInfo.SSE2        = SDL_HasSSE2();
-	SDL_CPUInfo.AltiVec     = SDL_HasAltiVec();
-	return &SDL_CPUInfo;
-#else
-	return NULL; /// \todo CPUID asm
 #endif
 }
 

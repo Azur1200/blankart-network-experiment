@@ -980,6 +980,13 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
 		{
 			HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, noencoremap);
+
+			if (!noencoremap && encoremap)
+			{
+				grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+				grtex->mipmap.colormap->source = colormaps + COLORMAP_REMAPOFFSET;
+				M_Memcpy(grtex->mipmap.colormap->data, colormaps + COLORMAP_REMAPOFFSET, 256);
+			}
 		}
 
 		// If hardware does not have the texture, then call pfnSetTexture to upload it

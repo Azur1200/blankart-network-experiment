@@ -5,9 +5,9 @@ target_sources(SRB2SDL2 PRIVATE
 	ogl_sdl.c
 	i_threads.c
 	i_net.c
-	i_system.c
+	i_system.cpp
 	i_main.c
-	i_video.c
+	i_video.cpp
 	dosstr.c
 	endtxt.c
 	hwsym_sdl.c

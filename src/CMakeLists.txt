@@ -56,6 +56,7 @@ add_subdirectory(blua)
 add_subdirectory(blan)
 add_subdirectory(sdl)
 add_subdirectory(objects)
+add_subdirectory(core)
 add_subdirectory(acs)
 
 # OS macros
@@ -96,7 +97,8 @@ target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC -DUSE_STUN)
 target_sources(SRB2SDL2 PRIVATE discord.c stun.c)
 
-target_link_libraries(SRB2SDL2 PRIVATE acsvm)
+target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
+target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
 target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
 
 set(SRB2_HAVE_THREADS ON)
@@ -247,6 +249,8 @@ endif()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
 endif()
+
+target_compile_options(SRB2SDL2 PRIVATE -O3)
 
 # Compiler warnings configuration
 target_compile_options(SRB2SDL2 PRIVATE

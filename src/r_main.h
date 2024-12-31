@@ -109,6 +109,15 @@ extern int ps_numsprites;
 extern int ps_numdrawnodes;
 extern int ps_numpolyobjects;
 
+struct RenderStats
+{
+	size_t visplanes;
+	size_t drawsegs;
+	size_t skybox_portals;
+};
+
+extern struct RenderStats g_renderstats;
+
 //
 // REFRESH - the actual rendering functions.
 //
@@ -167,7 +176,7 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SetupFrame(int split);
+void R_SetupFrame(int split, boolean skybox);
 void R_SkyboxFrame(int split);
 
 boolean R_ViewpointHasChasecam(player_t *player);

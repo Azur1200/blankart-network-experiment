@@ -51,8 +51,8 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-void R_DrawMaskedColumn(column_t *column, column_t *brightmap, INT32 baseclip);
-void R_DrawFlippedMaskedColumn(column_t *column, column_t *brightmap, INT32 baseclip);
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip);
+void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip);
 
 // ----------------
 // SPRITE RENDERING
@@ -223,6 +223,7 @@ struct vissprite_t
 	fixed_t spritexoffset, spriteyoffset;
 
 	fixed_t shadowscale;
+	UINT8 color; // palette index
 
 	INT16 clipbot[MAXVIDWIDTH], cliptop[MAXVIDWIDTH];
 

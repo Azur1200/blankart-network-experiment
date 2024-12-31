@@ -13,6 +13,8 @@
 ///        utility functions (BSP, geometry, trigonometry).
 ///        See tables.c, too.
 
+#include <algorithm>
+
 #include "doomdef.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -37,6 +39,7 @@
 #include "i_system.h" // I_GetPreciseTime
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 #include "r_fps.h" // Frame interpolation/uncapped
+#include "core/thread_pool.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -53,6 +56,7 @@ INT64 mytotal = 0;
 //profile stuff ---------------------------------------------------------
 
 extern consvar_t cv_debugrender_visplanes;
+extern consvar_t cv_debugrender_freezebsp;
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048
@@ -76,6 +80,8 @@ fixed_t viewx, viewy, viewz;
 angle_t viewangle, aimingangle, viewroll;
 UINT8 viewssnum;
 fixed_t viewcos, viewsin;
+boolean skyVisible;
+boolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisible for each splitscreen player
 sector_t *viewsector;
 player_t *viewplayer;
 mobj_t *r_viewmobj;
@@ -127,6 +133,8 @@ int ps_numbspcalls = 0;
 int ps_numsprites = 0;
 int ps_numdrawnodes = 0;
 int ps_numpolyobjects = 0;
+
+struct RenderStats g_renderstats;
 
 static CV_PossibleValue_t drawdist_cons_t[] = {
 	/*{256, "256"},*/	{512, "512"},	{768, "768"},
@@ -185,8 +193,6 @@ consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons
 
 consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
-consvar_t cv_debugfinishline = CVAR_INIT ("debugfinishline", "Off", CV_CHEAT, CV_OnOff, NULL);
-
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -238,7 +244,8 @@ void SplitScreen_OnChange(void)
 		}
 	}
 }
-static void Fov_OnChange(void)
+
+void Fov_OnChange(void)
 {
 	R_SetViewSize();
 }
@@ -1056,7 +1063,6 @@ void R_ExecuteSetViewSize(void)
 			Z_Free(ds_sz);
 
 		ds_su = ds_sv = ds_sz = NULL;
-		ds_sup = ds_svp = ds_szp = NULL;
 	}
 
 	memset(scalelight, 0xFF, sizeof(scalelight));
@@ -1222,7 +1228,7 @@ static void R_SetupAimingFrame(int s)
 	}
 }
 
-void R_SetupFrame(int s)
+void R_SetupFrame(int s, boolean skybox)
 {
 	player_t *player = &players[displayplayers[s]];
 	camera_t *thiscam = &camera[s];
@@ -1241,7 +1247,7 @@ void R_SetupFrame(int s)
 	else if (!chasecam)
 		thiscam->chase = false;
 
-	newview->sky = false;
+	newview->sky = udmf ? false : !skybox; // force this to false for udmf
 
 	R_SetupAimingFrame(s);
 
@@ -1475,6 +1481,19 @@ static void Mask_Post (maskcount_t* m)
 // R_RenderView
 // ================
 
+// viewx, viewy, viewangle, all that good stuff must be set
+static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum)
+{
+	Mask_Pre(mask);
+
+	curdrawsegs = ds_p;
+
+	R_RenderFirstBSPNode(cachenum);
+	R_AddPrecipitationSprites();
+
+	Mask_Post(mask);
+}
+
 //                     FAB NOTE FOR WIN32 PORT !! I'm not finished already,
 // but I suspect network may have problems with the video buffer being locked
 // for all duration of rendering, and being released only once at the end..
@@ -1483,27 +1502,51 @@ static void Mask_Post (maskcount_t* m)
 
 void R_RenderPlayerView(void)
 {
-	player_t * player = &players[displayplayers[viewssnum]];
 	INT32			nummasks	= 1;
 	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
+	player_t * player = &players[displayplayers[viewssnum]];
+	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
+	UINT8 i;
 
-	// if this is display player 1
-	if (cv_homremoval.value && player == &players[displayplayers[0]])
-	{
-		if (cv_homremoval.value == 1)
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31); // No HOM effect!
-		else //'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 128+(timeinmap&15));
-	}
-	else if (r_splitscreen == 2 && player == &players[displayplayers[2]])
-	{
-		// Draw over the fourth screen so you don't have to stare at a HOM :V
-		V_DrawFill(viewwidth, viewheight, viewwidth, viewheight, 31|V_NOSCALESTART);
-	}
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
 
-	R_SetupFrame(viewssnum);
+	if (!udmf)
+	{
+		// load previous saved value of skyVisible for the player
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (player != &players[displayplayers[i]])
+				continue;
+			skyVisible = skyVisiblePerPlayer[i];
+			break;
+		}
+		if (skybox && skyVisible)
+		{
+			R_SkyboxFrame(viewssnum);
+			R_ClearClipSegs();
+			R_ClearDrawSegs();
+			R_ClearPlanes();
+			R_ClearSprites();
+			Mask_Pre(&masks[nummasks - 1]);
+			R_RenderBSPNode((INT32)numnodes - 1);
+			Mask_Post(&masks[nummasks - 1]);
+			R_ClipSprites(drawsegs, NULL);
+			R_DrawPlanes();
+			// hope this crap is right lmao idk how tf multithreading works
+			 tp_sema = srb2::g_main_threadpool->end_sema();
+			 srb2::g_main_threadpool->notify_sema(tp_sema);
+			 srb2::g_main_threadpool->wait_sema(tp_sema);
+			 srb2::g_main_threadpool->begin_sema();
+			R_DrawMasked(masks, nummasks);
+		}
+	}
+	R_SetupFrame(viewssnum, skybox);
+	skyVisible = false;
 	framecount++;
 	validcount++;
+
+	memset(&g_renderstats, 0, sizeof g_renderstats);
 
 	// Clear buffers.
 	R_ClearPlanes();
@@ -1536,8 +1579,9 @@ void R_RenderPlayerView(void)
 #endif
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
-	R_RenderBSPNode((INT32)numnodes - 1);
-	R_AddPrecipitationSprites();
+
+	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
 #ifdef TIMING
 	RDMSR(0x10, &mycount);
@@ -1554,13 +1598,18 @@ void R_RenderPlayerView(void)
 
 
 	// Add skybox portals caused by sky visplanes.
-	if (cv_skybox.value && skyboxmo[0])
+	if (udmf && skybox)
 		Portal_AddSkyboxPortals();
 
 	// Portal rendering. Hijacks the BSP traversal.
 	ps_sw_portaltime = I_GetPreciseTime();
 	if (portal_base && !cv_debugrender_portal.value)
 	{
+		// tp_sema = srb2::g_main_threadpool->end_sema();
+		// srb2::g_main_threadpool->notify_sema(tp_sema);
+		// srb2::g_main_threadpool->wait_sema(tp_sema);
+		// srb2::g_main_threadpool->begin_sema();
+
 		portal_t *portal;
 
 		for(portal = portal_base; portal; portal = portal_base)
@@ -1590,18 +1639,28 @@ void R_RenderPlayerView(void)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderBSPNode((INT32)numnodes - 1);
-			Mask_Post(&masks[nummasks - 1]);
+
+			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+
+			//portalskipprecipmobjs = false;
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
 			Portal_Remove(portal);
 		}
+
+		// tp_sema = srb2::g_main_threadpool->end_sema();
+		// srb2::g_main_threadpool->notify_sema(tp_sema);
+		// srb2::g_main_threadpool->wait_sema(tp_sema);
+		// srb2::g_main_threadpool->begin_sema();
 	}
 	ps_sw_portaltime = I_GetPreciseTime() - ps_sw_portaltime;
 
 	ps_sw_planetime = I_GetPreciseTime();
 	R_DrawPlanes();
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 	ps_sw_planetime = I_GetPreciseTime() - ps_sw_planetime;
 
 	// draw mid texture and sprite
@@ -1622,7 +1681,11 @@ void R_RenderPlayerView(void)
 				{
 					if (top > bot)
 						std::swap(top, bot);
-					UINT8* p = &screens[0][x + top * vid.width];
+					if (top < 0)
+						top = 0;
+					if (bot > viewheight-1)
+						bot = viewheight-1;
+					UINT8* p = &topleft[x + top * vid.width];
 					while (top <= bot)
 					{
 						*p = 35;
@@ -1639,7 +1702,7 @@ void R_RenderPlayerView(void)
 				INT32 bottom = pl->bottom[pl->minx];
 				span(pl->minx, top, bottom);
 				span(pl->maxx, pl->top[pl->maxx], pl->bottom[pl->maxx]);
-				for (INT32 x = pl->minx + 1; x < pl->maxx; ++x)
+				for (INT32 x = pl->minx + 1; x < std::min(pl->maxx, viewwidth); ++x)
 				{
 					INT32 new_top = pl->top[x];
 					INT32 new_bottom = pl->bottom[x];
@@ -1673,18 +1736,31 @@ void R_RenderPlayerView(void)
 			INT32 width = (portal->end - portal->start);
 			INT32 i;
 
-			for (i = 0; i < width; ++i)
+			for (i = 0; i < std::min(width, viewwidth); ++i)
 			{
 				INT32 yl = std::max(portal->ceilingclip[i] + 1, 0);
 				INT32 yh = std::min(static_cast<INT32>(portal->floorclip[i]), viewheight);
 
 				for (; yl < yh; ++yl)
 				{
-					screens[0][portal->start + i + (yl * vid.width)] = pal;
+					topleft[portal->start + i + (yl * vid.width)] = pal;
 				}
 			}
 
 			Portal_Remove(portal);
+		}
+	}
+
+	if (!udmf)
+	{
+		// save value to skyVisiblePerPlayer
+		// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
+		for (i = 0; i <= splitscreen; i++)
+		{
+			if (player != &players[displayplayers[i]])
+				continue;
+			skyVisiblePerPlayer[i] = skyVisible;
+			break;
 		}
 	}
 
@@ -1753,6 +1829,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_debugrender_contrast);
 	CV_RegisterVar(&cv_debugrender_spriteclip);
 	CV_RegisterVar(&cv_debugrender_portal);
+	CV_RegisterVar(&cv_debugrender_visplanes);
+	CV_RegisterVar(&cv_debugrender_freezebsp);
 
 	COM_AddCommand("debugrender_highlight", Command_Debugrender_highlight);
 }

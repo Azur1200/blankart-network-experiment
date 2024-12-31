@@ -5283,7 +5283,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		vis->colormap = colormaps;
 
-		if (encoremap && (thing->flags & (MF_SCENERY|MF_NOTHINK)) && !(thing->flags & MF_DONTENCOREMAP))
+		if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
 			vis->colormap += COLORMAP_REMAPOFFSET;
 	}
 
@@ -6100,7 +6100,7 @@ void HWR_RenderPlayerView(void)
 	}
 
 	// note: sets viewangle, viewx, viewy, viewz
-	R_SetupFrame(viewssnum);
+	R_SetupFrame(viewssnum, skybox);
 	framecount++; // timedemo
 
 	// copy view cam position for local use

@@ -140,7 +140,6 @@ TYPEDEF (bannednode_t);
 
 // i_system.h
 TYPEDEF (JoyFF_t);
-TYPEDEF (CPUInfoFlags);
 
 // i_time.h
 TYPEDEF (timestate_t);
@@ -341,9 +340,6 @@ TYPEDEF (msecnode_t);
 TYPEDEF (mprecipsecnode_t);
 TYPEDEF (lightmap_t);
 TYPEDEF (seg_t);
-
-// r_draw.h
-TYPEDEF (floatv3_t);
 
 // r_fps.h
 TYPEDEF (viewvars_t);

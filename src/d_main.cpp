@@ -69,6 +69,7 @@
 #include "filesrch.h" // refreshdirmenu
 #include "g_input.h" // tutorial mode control scheming
 #include "m_perfstats.h"
+#include "core/memory.h"
 
 // SRB2Kart
 #include "k_grandprix.h"
@@ -202,7 +203,7 @@ void D_ProcessEvents(void)
 				continue;
 		}
 
-		if (demo.savemode == DSM_TITLEENTRY)
+		if (demo.savemode == demovars_s::DSM_TITLEENTRY)
 		{
 			if (G_DemoTitleResponder(ev))
 				continue;
@@ -260,8 +261,9 @@ gamestate_t wipegamestate = GS_LEVEL;
 INT16 wipetypepre = -1;
 INT16 wipetypepost = -1;
 
-static void D_Display(void)
+static bool D_Display(void)
 {
+	bool ranwipe = false;
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
@@ -270,7 +272,7 @@ static void D_Display(void)
 	if (!dedicated)
 	{
 		if (nodrawers)
-			return; // for comparative timing/profiling
+			return false; // for comparative timing/profiling
 
 		// Lactozilla: Switching renderers works by checking
 		// if the game has to do it right when the frame
@@ -298,7 +300,7 @@ static void D_Display(void)
 		{
 			for (i = 0; i <= r_splitscreen; ++i)
 			{
-				R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
+				R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + i));
 				R_InterpolateViewRollAngle(rendertimefrac);
 				R_CheckViewMorph(i);
 			}
@@ -339,6 +341,7 @@ static void D_Display(void)
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
 				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK);
+				ranwipe = true;
 			}
 
 			if (gamestate != GS_LEVEL && rendermode != render_none)
@@ -352,6 +355,7 @@ static void D_Display(void)
 		else //dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			ranwipe = true;
 			wipegamestate = gamestate;
 		}
 
@@ -361,7 +365,7 @@ static void D_Display(void)
 		wipetypepre = -1;
 
 	if (dedicated) //bail out after wipe logic
-		return;
+		return false;
 
 	// do buffered drawing
 	switch (gamestate)
@@ -468,6 +472,29 @@ static void D_Display(void)
 				objectsdrawn = 0;
 
 				ps_rendercalltime = I_GetPreciseTime();
+
+				if (rendermode == render_soft)
+				{
+					if (cv_homremoval.value)
+					{
+						if (cv_homremoval.value == 1)
+						{
+							// Clear the software screen buffer to remove HOM
+							memset(screens[0], 31, vid.width * vid.height * vid.bpp);
+						}
+						else
+						{
+							//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+							memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
+						}
+					}
+
+					if (r_splitscreen == 2)
+					{
+						// Draw over the fourth screen so you don't have to stare at a HOM :V
+						V_DrawFill(viewwidth, viewheight, viewwidth, viewheight, 31|V_NOSCALESTART);
+					}
+				}
 
 				for (i = 0; i <= r_splitscreen; i++)
 				{
@@ -627,6 +654,7 @@ static void D_Display(void)
 			F_WipeEndScreen();
 
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+			ranwipe = true;
 		}
 
 		// reset counters so timedemo doesn't count the wipe duration
@@ -682,6 +710,8 @@ static void D_Display(void)
 		I_FinishUpdate(); // page flip or blit buffer
 		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
 	}
+
+	return ranwipe;
 }
 
 // =========================================================================
@@ -698,6 +728,7 @@ void D_SRB2Loop(void)
 
 	boolean interp = false;
 	boolean doDisplay = false;
+	int frameskip = 0;
 
 	if (dedicated)
 		server = true;
@@ -756,11 +787,16 @@ void D_SRB2Loop(void)
 		precise_t enterprecise = I_GetPreciseTime();
 		precise_t finishprecise = enterprecise;
 
+		g_dc = {};
+		Z_Frame_Reset();
+
 		{
 			// Casting the return value of a function is bad practice (apparently)
 			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
 			capbudget = (precise_t) budget;
 		}
+
+		bool ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -856,9 +892,9 @@ void D_SRB2Loop(void)
 			rendertimefrac = FRACUNIT;
 		}
 
-		if (interp || doDisplay)
+		if ((interp || doDisplay) && !frameskip)
 		{
-			D_Display();
+			ranwipe = D_Display();
 		}
 
 		// Only take screenshots after drawing.
@@ -886,6 +922,29 @@ void D_SRB2Loop(void)
 
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
+
+		// Use the time before sleep for frameskip calculations: 
+		// post-sleep time is literally being intentionally wasted
+		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+		deltatics = deltasecs * NEWTICRATE;
+
+		// If time spent this game loop exceeds a single tic,
+		// it's probably because of rendering.
+		//
+		// Skip rendering the next frame, up to a limit of 3
+		// frames before a frame is rendered no matter what.
+		//
+		// Wipes run an inner loop and artificially increase
+		// the measured time.
+		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		{
+			frameskip++;
+		}
+		else
+		{
+			frameskip = 0;
+		}
+
 		if (!singletics)
 		{
 			INT64 elapsed = (INT64)(finishprecise - enterprecise);
@@ -972,7 +1031,7 @@ void D_StartTitle(void)
 	// In case someone exits out at the same time they start a time attack run,
 	// reset modeattacking
 	modeattacking = ATTACKING_NONE;
-	marathonmode = 0;
+	marathonmode = static_cast<marathonmode_t>(0);
 
 	// Reset GP
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
@@ -1024,7 +1083,7 @@ static void D_AddFile(char **list, const char *file)
 	for (pnumwadfiles = 0; list[pnumwadfiles]; pnumwadfiles++)
 		;
 
-	newfile = malloc(strlen(file) + 1);
+	newfile = static_cast<char*>(malloc(strlen(file) + 1));
 	if (!newfile)
 	{
 		I_Error("No more free memory to AddFile %s",file);
@@ -1169,7 +1228,7 @@ static void IdentifyVersion(void)
 		if (ms == 1) \
 			D_AddFile(startupiwads, musicpath); \
 		else if (ms == 0) \
-			I_Error("File "str" has been modified with non-music/sound lumps"); \
+			I_Error("File " str " has been modified with non-music/sound lumps"); \
 	}
 
 	MUSICTEST(SOUNDSNAME)
@@ -1268,7 +1327,7 @@ void D_SRB2Main(void)
 
 	// default savegame
 	strcpy(savegamename, SAVEGAMENAME"%u.ssg");
-	strcpy(liveeventbackup, "live"SAVEGAMENAME".bkp"); // intentionally not ending with .ssg
+	strcpy(liveeventbackup, "live" SAVEGAMENAME".bkp"); // intentionally not ending with .ssg
 
 	{
 		const char *userhome = D_Home(); //Alam: path to home
@@ -1279,7 +1338,7 @@ void D_SRB2Main(void)
 			I_Error("Please set $HOME to your home directory\n");
 #else
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "d"CONFIGFILENAME);
+				snprintf(configfile, sizeof configfile, "d" CONFIGFILENAME);
 			else
 				snprintf(configfile, sizeof configfile, CONFIGFILENAME);
 #endif
@@ -1290,7 +1349,7 @@ void D_SRB2Main(void)
 #ifdef DEFAULTDIR
 			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
+				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d" CONFIGFILENAME, srb2home);
 			else
 				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2home);
 
@@ -1740,9 +1799,9 @@ void D_SRB2Main(void)
 
 	// user settings come before "+" parameters.
 	if (dedicated)
-		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartserv.cfg\"\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartserv.cfg\"\n", srb2home));
 	else
-		COM_ImmedExecute(va("exec \"%s"PATHSEP"kartexec.cfg\" -noerror\n", srb2home));
+		COM_ImmedExecute(va("exec \"%s" PATHSEP "kartexec.cfg\" -noerror\n", srb2home));
 
 	if (!autostart)
 		M_PushSpecialParameters(); // push all "+" parameters at the command buffer

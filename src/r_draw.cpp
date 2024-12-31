@@ -1,19 +1,22 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2020 by Sonic Team Junior.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  r_draw.c
+/// \file  r_draw.cpp
 /// \brief span / column drawer functions, for 8bpp and 16bpp
 ///        All drawing to the view buffer is accomplished in this file.
 ///        The other refresh files only know about ccordinates,
 ///        not the architecture of the frame buffer.
 ///        The frame buffer is a linear one, and we need only the base address.
+
+#include <algorithm>
 
 #include "doomdef.h"
 #include "doomstat.h"
@@ -32,6 +35,30 @@
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
+
+#include <tracy/tracy/Tracy.hpp>
+
+// --------------------------------------------
+// assembly or c drawer routines for 8bpp/16bpp
+// --------------------------------------------
+coldrawfunc_t *colfunc;
+
+coldrawfunc_t *colfuncs[COLDRAWFUNC_MAX];
+coldrawfunc_t *colfuncs_bm[COLDRAWFUNC_MAX];
+
+int colfunctype;
+
+spandrawfunc_t *spanfunc;
+
+spandrawfunc_t *spanfuncs[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfuncs_bm[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfuncs_npo2[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfuncs_bm_npo2[SPANDRAWFUNC_MAX];
+spandrawfunc_t *spanfuncs_flat[SPANDRAWFUNC_MAX];
+
+drawcolumndata_t g_dc;
+drawspandata_t g_ds;
+
 
 // ==========================================================================
 //                     COMMON DATA FOR 8bpp AND 16bpp
@@ -74,17 +101,6 @@ UINT8 r8_flatcolor;
 //                      COLUMN DRAWING CODE STUFF
 // =========================================================================
 
-lighttable_t *dc_colormap;
-lighttable_t *dc_fullbright;
-INT32 dc_x = 0, dc_yl = 0, dc_yh = 0;
-
-fixed_t dc_iscale, dc_texturemid;
-UINT8 dc_hires; // under MSVC boolean is a byte, while on other systems, it a bit,
-               // soo lets make it a byte on all system for the ASM code
-UINT8 *dc_source;
-UINT8 *dc_brightmap;
-UINT8 *dc_lightmap;
-
 // -----------------------
 // translucency stuff here
 // -----------------------
@@ -107,38 +123,16 @@ UINT8 *dc_transmap; // one of the translucency tables
 UINT8 *dc_translation;
 
 struct r_lightlist_t *dc_lightlist = NULL;
-INT32 dc_numlights = 0, dc_maxlights, dc_texheight;
+INT32 dc_numlights = 0, dc_maxlights;
 
 // =========================================================================
 //                      SPAN DRAWING CODE STUFF
 // =========================================================================
 
-INT32 ds_y, ds_x1, ds_x2;
-lighttable_t *ds_colormap;
-lighttable_t *ds_fullbright;
-lighttable_t *ds_translation; // Lactozilla: Sprite splat drawer
-lighttable_t *ds_flatlighting;
-
-fixed_t ds_xfrac, ds_yfrac, ds_xstep, ds_ystep;
-INT32 ds_waterofs, ds_bgofs;
-
-UINT16 ds_flatwidth, ds_flatheight;
-boolean ds_powersoftwo;
-
-UINT8 *ds_source; // points to the start of a flat
-UINT8 *ds_brightmap; // start of brightmap flat
-UINT8 *ds_transmap; // one of the translucency tables
-
 // Vectors for Software's tilted slope drawers
 floatv3_t *ds_su, *ds_sv, *ds_sz;
-floatv3_t *ds_sup, *ds_svp, *ds_szp;
 float focallengthf[MAXSPLITSCREENPLAYERS];
 float zeroheight;
-
-/**	\brief Variable flat sizes
-*/
-
-UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 
 // =========================================================================
 //                   TRANSLATION COLORMAP CODE
@@ -151,7 +145,13 @@ UINT32 nflatxshift, nflatyshift, nflatshiftup, nflatmask;
 #define RAINBOW_TT_CACHE_INDEX (MAXSKINS + 4)
 #define BLINK_TT_CACHE_INDEX (MAXSKINS + 5)
 #define DASHMODE_TT_CACHE_INDEX (MAXSKINS + 6)
-#define TT_CACHE_SIZE (MAXSKINS + 8)
+#define HITLAG_TT_CACHE_INDEX (MAXSKINS + 7)
+#define INTERMISSION_TT_CACHE_INDEX (MAXSKINS + 8)
+#define TT_CACHE_SIZE (MAXSKINS + 9)
+
+#define SKIN_RAMP_LENGTH 16
+#define DEFAULT_STARTTRANSCOLOR 160
+#define NUM_PALETTE_ENTRIES 256
 
 static UINT8 **translationtablecache[TT_CACHE_SIZE] = {NULL};
 UINT8 skincolor_modified[MAXSKINCOLORS];
@@ -194,6 +194,15 @@ CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
 #define TRANSTAB_AMTMUL10 (255.0f / 10.0f)
 
+struct GenerateBlendTables_State
+{
+	RGBA_t *masterPalette;
+	RGBA_t *gammaCorrectedPalette;
+};
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state);
+static void R_GenerateTranslucencyTable(UINT8 *table, RGBA_t* sourcepal, int style, UINT8 blendamt);
+
 static void R_AllocateBlendTables(void)
 {
 	INT32 i;
@@ -202,18 +211,23 @@ static void R_AllocateBlendTables(void)
 	{
 		if (i == blendtab_modulate)
 			continue;
-		blendtables[i] = Z_MallocAlign((NUMTRANSTABLES + 1) * 0x10000, PU_STATIC, NULL, 16);
+		blendtables[i] = static_cast<UINT8 *>(Z_MallocAlign((NUMTRANSTABLES + 1) * 0x10000, PU_STATIC, NULL, 16));
 	}
 
 	// Modulation blending only requires a single table
-	blendtables[blendtab_modulate] = Z_MallocAlign(0x10000, PU_STATIC, NULL, 16);
+	blendtables[blendtab_modulate] = static_cast<UINT8 *>(Z_MallocAlign(0x10000, PU_STATIC, NULL, 16));
 }
 
 #ifdef HAVE_THREADS
 static void R_GenerateBlendTables_Thread(void *userdata)
 {
-	(void)userdata;
-	R_GenerateBlendTables();
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(userdata);
+
+	R_GenerateBlendTables_Core(state);
+
+	free(state->masterPalette);
+	free(state->gammaCorrectedPalette);
+	free(state);
 }
 #endif
 
@@ -224,8 +238,7 @@ void R_InitTranslucencyTables(void)
 	// Load here the transparency lookup tables 'TINTTAB'
 	// NOTE: the TINTTAB resource MUST BE aligned on 64k for the asm
 	// optimised code (in other words, transtables pointer low word is 0)
-	transtables = Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC,
-		NULL, 16);
+	transtables = static_cast<UINT8 *>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
 
 	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
 	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
@@ -238,16 +251,29 @@ void R_InitTranslucencyTables(void)
 	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
 
 	R_AllocateBlendTables();
-
-#ifdef HAVE_THREADS
-	I_spawn_thread("blend-tables",
-			R_GenerateBlendTables_Thread, NULL);
-#else
 	R_GenerateBlendTables();
-#endif
 }
 
 void R_GenerateBlendTables(void)
+{
+#ifdef HAVE_THREADS
+	// Allocate copies for the worker thread since the originals can be freed in the main thread.
+	struct GenerateBlendTables_State *state = static_cast<struct GenerateBlendTables_State *>(malloc(sizeof *state));
+	size_t palsize = 256 * sizeof(RGBA_t);
+
+	state->masterPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pMasterPalette, palsize));
+	state->gammaCorrectedPalette = static_cast<RGBA_t *>(memcpy(malloc(palsize), pGammaCorrectedPalette, palsize));
+
+	I_spawn_thread("blend-tables",
+			R_GenerateBlendTables_Thread, state);
+#else
+	struct GenerateBlendTables_State state = {pMasterPalette, pGammaCorrectedPalette};
+
+	R_GenerateBlendTables_Core(&state);
+#endif
+}
+
+static void R_GenerateBlendTables_Core(struct GenerateBlendTables_State *state)
 {
 	INT32 i;
 
@@ -256,15 +282,15 @@ void R_GenerateBlendTables(void)
 		const size_t offs = (0x10000 * i);
 		const UINT8 alpha = (TRANSTAB_AMTMUL10 * ((float)(10-i)));
 
-		R_GenerateTranslucencyTable(blendtables[blendtab_add] + offs, AST_ADD, alpha);
-		R_GenerateTranslucencyTable(blendtables[blendtab_subtract] + offs, AST_SUBTRACT, alpha);
-		R_GenerateTranslucencyTable(blendtables[blendtab_reversesubtract] + offs, AST_REVERSESUBTRACT, alpha);
+		R_GenerateTranslucencyTable(blendtables[blendtab_add] + offs, state->gammaCorrectedPalette, AST_ADD, alpha);
+		R_GenerateTranslucencyTable(blendtables[blendtab_subtract] + offs, state->masterPalette, AST_SUBTRACT, alpha); // intentionally uses pMasterPalette
+		R_GenerateTranslucencyTable(blendtables[blendtab_reversesubtract] + offs, state->gammaCorrectedPalette, AST_REVERSESUBTRACT, alpha);
 	}
 
-	R_GenerateTranslucencyTable(blendtables[blendtab_modulate], AST_MODULATE, 0);
+	R_GenerateTranslucencyTable(blendtables[blendtab_modulate], state->gammaCorrectedPalette, AST_MODULATE, 0);
 }
 
-void R_GenerateTranslucencyTable(UINT8 *table, int style, UINT8 blendamt)
+void R_GenerateTranslucencyTable(UINT8 *table, RGBA_t* sourcepal, int style, UINT8 blendamt)
 {
 	INT16 bg, fg;
 	RGBA_t backrgba, frontrgba, result;
@@ -274,23 +300,18 @@ void R_GenerateTranslucencyTable(UINT8 *table, int style, UINT8 blendamt)
 
 	for (bg = 0; bg <= 0xFF; bg++)
 	{
-		backrgba = pGammaCorrectedPalette[bg];
+		backrgba = sourcepal[bg];
 		for (fg = 0; fg <= 0xFF; fg++)
 		{
-			frontrgba = pGammaCorrectedPalette[fg];
+			frontrgba = sourcepal[fg];
 
-#if 0 // perfect implementation
-			result.rgba = V_GammaEncode(ASTBlendPixel(backrgba, frontrgba, style, blendamt));
-			table[((fg * 0x100) + bg)] = NearestPaletteColor(result.s.red, result.s.green, result.s.blue, pMasterPalette);
-#else // performance scrabbler
 			result.rgba = ASTBlendPixel(backrgba, frontrgba, style, blendamt);
-			table[((fg * 0x100) + bg)] = NearestPaletteColor(result.s.red, result.s.green, result.s.blue, pGammaCorrectedPalette);
-#endif
+			table[((fg * 0x100) + bg)] = NearestPaletteColor(result.s.red, result.s.green, result.s.blue, sourcepal);
 		}
 	}
 }
 
-#define ClipTransLevel(trans) max(min((trans), NUMTRANSMAPS-2), 0)
+#define ClipTransLevel(trans) std::clamp<INT32>(trans, 0, NUMTRANSMAPS-2)
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
 {
@@ -341,7 +362,7 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolornum_t color, UINT8 flags
 	{
 		// Allocate table for skin if necessary
 		if (!translationtablecache[skintableindex])
-			translationtablecache[skintableindex] = Z_Calloc(MAXSKINCOLORS * sizeof(UINT8**), PU_STATIC, NULL);
+			translationtablecache[skintableindex] = static_cast<UINT8 **>(Z_Calloc(MAXSKINCOLORS * sizeof(UINT8**), PU_STATIC, NULL));
 
 		// Get colormap
 		ret = translationtablecache[skintableindex][color];
@@ -360,7 +381,7 @@ UINT8* R_GetTranslationColormap(INT32 skinnum, skincolornum_t color, UINT8 flags
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8);
+		ret = static_cast<UINT8 *>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
 		K_GenerateKartColormap(ret, skinnum, color); //R_GenerateTranslationColormap(ret, skinnum, color); // SRB2kart
 
 		// Cache the colormap if desired
@@ -402,7 +423,7 @@ UINT16 R_GetColorByName(const char *name)
 UINT16 R_GetSuperColorByName(const char *name)
 {
 	UINT16 i, color = SKINCOLOR_NONE;
-	char *realname = Z_Malloc(MAXCOLORNAME+1, PU_STATIC, NULL);
+	char *realname = static_cast<char *>(Z_Malloc(MAXCOLORNAME+1, PU_STATIC, NULL));
 	snprintf(realname, MAXCOLORNAME+1, "Super %s 1", name);
 	for (i = 1; i < numskincolors; i++)
 		if (!stricmp(skincolors[i].name, realname)) {
@@ -632,17 +653,8 @@ void R_DrawViewBorder(void)
 #endif
 
 // ==========================================================================
-//                   INCLUDE 8bpp DRAWING CODE HERE
+//                   INCLUDE MAIN DRAWERS CODE HERE
 // ==========================================================================
 
-#include "r_draw8.c"
-#include "r_draw8_npo2.c"
-#include "r_draw8_flat.c"
-
-// ==========================================================================
-//                   INCLUDE 16bpp DRAWING CODE HERE
-// ==========================================================================
-
-#ifdef HIGHCOLOR
-#include "r_draw16.c"
-#endif
+#include "r_draw_column.cpp"
+#include "r_draw_span.cpp"
