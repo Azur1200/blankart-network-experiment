@@ -11,6 +11,7 @@
 /// \brief Define DeHackEd tables.
 
 #include "d_player.h"
+#include "d_ticcmd.h"
 #include "doomdef.h" // Constants
 #include "s_sound.h" // Sound constants
 #include "info.h" // Mobj, state, sprite, etc constants
@@ -6960,6 +6961,9 @@ struct int_const_s const INT_CONST[] = {
 	{"BT_DRIFT",BT_DRIFT},
 	{"BT_BRAKE",BT_BRAKE},
 	{"BT_ATTACK",BT_ATTACK},
+	{"BT_FORWARD",BT_FORWARD},
+	{"BT_BACKWARD",BT_BACKWARD},
+	{"BT_LOOKBACK",BT_LOOKBACK},
 	{"BT_CUSTOM1",BT_CUSTOM1}, // Lua customizable
 	{"BT_CUSTOM2",BT_CUSTOM2}, // Lua customizable
 	{"BT_CUSTOM3",BT_CUSTOM3}, // Lua customizable
