@@ -2128,7 +2128,13 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		if (frontsector->ceilingpic == skyflatnum
 			&& backsector->ceilingpic == skyflatnum)
 		{
-			bothceilingssky = true;
+			if (udmf)
+				bothceilingssky = true;
+			else
+			{
+				worldtopslope = worldhighslope =
+				worldtop = worldhigh;
+			}
 		}
 
 		// likewise, but for floors and upper textures
@@ -2141,7 +2147,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		ds_p->sprtopclip = ds_p->sprbottomclip = NULL;
 		ds_p->silhouette = 0;
 
-		if (!bothfloorssky)
+		if (!bothfloorssky || !udmf)
 		{
 			if (worldbottomslope > worldlowslope || worldbottom > worldlow)
 			{
@@ -2177,18 +2183,47 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
-		//SoM: 3/25/2000: This code fixes an automap bug that didn't check
-		// frontsector->ceiling and backsector->floor to see if a door was closed.
-		// Without the following code, sprites get displayed behind closed doors.
-		if (doorclosed)
+		if (udmf)
 		{
-			ds_p->sprbottomclip = negonearray;
-			ds_p->bsilheight = INT32_MAX;
-			ds_p->silhouette |= SIL_BOTTOM;
+			if (!bothceilingssky && !bothfloorssky)
+			{
+				//SoM: 3/25/2000: This code fixes an automap bug that didn't check
+				// frontsector->ceiling and backsector->floor to see if a door was closed.
+				// Without the following code, sprites get displayed behind closed doors.
+				if (doorclosed)
+				{
+					ds_p->sprbottomclip = negonearray;
+					ds_p->bsilheight = INT32_MAX;
+					ds_p->silhouette |= SIL_BOTTOM;
 
-			ds_p->sprtopclip = screenheightarray;
-			ds_p->tsilheight = INT32_MIN;
-			ds_p->silhouette |= SIL_TOP;
+					ds_p->sprtopclip = screenheightarray;
+					ds_p->tsilheight = INT32_MIN;
+					ds_p->silhouette |= SIL_TOP;
+				}
+			}
+		}
+		else
+		{
+			if (viewsector != frontsector && viewsector != backsector)
+			{
+				//SoM: 3/25/2000: This code fixes an automap bug that didn't check
+				// frontsector->ceiling and backsector->floor to see if a door was closed.
+				// Without the following code, sprites get displayed behind closed doors.
+
+				if (doorclosed || (worldhigh <= worldbottom && worldhighslope <= worldbottomslope))
+				{
+					ds_p->sprbottomclip = negonearray;
+					ds_p->bsilheight = INT32_MAX;
+					ds_p->silhouette |= SIL_BOTTOM;
+				}
+
+				if (doorclosed || (worldlow >= worldtop && worldlowslope >= worldtopslope))
+				{
+					ds_p->sprtopclip = screenheightarray;
+					ds_p->tsilheight = INT32_MIN;
+					ds_p->silhouette |= SIL_TOP;
+				}
+			}
 		}
 
 		if (bothfloorssky)
@@ -2264,6 +2299,16 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			// same plane on both sides
 			markceiling = false;
+		}
+
+		if (!udmf)
+		{
+			if ((backsector->ceilingheight <= frontsector->floorheight) ||
+				(backsector->floorheight >= frontsector->ceilingheight))
+			{
+				// closed door
+				markceiling = markfloor = true;
+			}
 		}
 
 		// check TOP TEXTURE
@@ -2359,7 +2404,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if (!(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES)
+					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
 						continue;
 
 					if (rover->norender == leveltime)
@@ -2417,7 +2462,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if (!(rover->fofflags & FOF_ALLSIDES || rover->fofflags & FOF_INVERTSIDES))
+					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
 						continue;
 
 					if (rover->norender == leveltime)
@@ -2477,7 +2522,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if (!(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES)
+					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -2499,7 +2544,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if (!(rover->fofflags & FOF_ALLSIDES || rover->fofflags & FOF_INVERTSIDES))
+					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -2834,7 +2879,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					    ((viewz < planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
@@ -2857,7 +2902,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					    ((viewz > planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
@@ -2891,7 +2936,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					    ((viewz < planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
@@ -2914,7 +2959,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					    ((viewz > planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
