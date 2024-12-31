@@ -3381,30 +3381,30 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 				if (ds->portalpass > 0 && ds->portalpass <= portalrender)
 					continue; // is a portal
 
-					if (ds->scale1 > ds->scale2)
-					{
-						lowscale = ds->scale2;
-						scale = ds->scale1;
-					}
-					else
-					{
-						lowscale = ds->scale1;
-						scale = ds->scale2;
-					}
+				if (ds->scale1 > ds->scale2)
+				{
+					lowscale = ds->scale2;
+					scale = ds->scale1;
+				}
+				else
+				{
+					lowscale = ds->scale1;
+					scale = ds->scale2;
+				}
 
-					if (scale < spr->sortscale ||
-						(lowscale < spr->sortscale &&
-						!R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
-					{
-						// masked mid texture?
-						/*
-						 *				if (ds->maskedtexturecol)
-						 *					R_RenderMaskedSegRange (ds, r1, r2);
-						 */
+				if (scale < spr->sortscale ||
+					(lowscale < spr->sortscale &&
+					!R_PointOnSegSide (spr->gx, spr->gy, ds->curline)))
+				{
+					// masked mid texture?
+					/*
+					*	if (ds->maskedtexturecol)
+					*	R_RenderMaskedSegRange (ds, r1, r2);
+					*/
 
-						// seg is behind sprite
-						continue;
-					}
+					// seg is behind sprite
+					continue;
+				}
 			}
 
 			r1 = ds->x1 < x1 ? x1 : ds->x1;

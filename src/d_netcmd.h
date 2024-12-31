@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+extern consvar_t cv_showgremlins;
+
 // console vars
 extern consvar_t cv_playername[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];

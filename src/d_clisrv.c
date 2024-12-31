@@ -153,7 +153,7 @@ static boolean cl_redownloadinggamestate = false;
 static UINT8 localtextcmd[MAXSPLITSCREENPLAYERS][MAXTEXTCMD];
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
-char connectedservername[MAXSERVERNAME];
+char connectedservername[MAXSERVERNAME+1];
 /// \brief do we accept new players?
 /// \todo WORK!
 boolean acceptnewnode = true;

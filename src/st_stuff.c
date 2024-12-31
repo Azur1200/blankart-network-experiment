@@ -377,7 +377,7 @@ static void ST_pushDebugString(INT32 *height, const char *string)
 	*height -= 8;
 }
 
-static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
+/*static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
 {
 	ST_pushDebugString(height, va("%s%02d:%05.2f", label,
 				ms / 60000, ms % 60000 / 1000.f));
@@ -423,7 +423,7 @@ static void ST_drawMusicDebug(INT32 *height)
 	}
 
 	ST_pushDebugString(height, va("    Song: %8s", mname));
-}
+}*/
 
 static void ST_drawRenderDebug(INT32 *height)
 {
@@ -437,7 +437,7 @@ static void ST_drawRenderDebug(INT32 *height)
 	ST_pushDebugString(height, va("Skybox Portals: %4s", sizeu1(i->skybox_portals)));
 }
 
-void ST_drawDebugInfo(void)
+static void ST_drawDebugInfo(void)
 {
 	INT32 height = 192;
 

@@ -3603,8 +3603,6 @@ papercollision:
 
 static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
-	extern consvar_t cv_showgremlins;
-
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
 

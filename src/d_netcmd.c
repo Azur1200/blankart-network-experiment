@@ -75,8 +75,6 @@
 #include "discord.h"
 #endif
 
-extern consvar_t cv_showgremlins;
-
 // ------
 // protos
 // ------
