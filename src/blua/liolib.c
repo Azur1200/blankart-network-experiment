@@ -206,26 +206,6 @@ static int CheckFileName(lua_State *L, const char *filename)
 	return 0;
 }
 
-static int io_open (lua_State *L) {
-	const char *filename = luaL_checkstring(L, 1);
-	const char *mode = luaL_optstring(L, 2, "r");
-	int checkresult;
-
-	checkresult = CheckFileName(L, filename);
-	if (checkresult)
-		return checkresult;
-
-	luaL_checktype(L, 3, LUA_TFUNCTION);
-
-	if (!(strchr(mode, 'r') || strchr(mode, '+')))
-		luaL_error(L, "open() is only for reading, use openlocal() for writing");
-
-	AddLuaFileTransfer(filename, mode);
-
-	return 0;
-}
-
-
 static int io_openlocal (lua_State *L) {
 	FILE **pf;
 	const char *filename = luaL_checkstring(L, 1);
@@ -255,6 +235,32 @@ static int io_openlocal (lua_State *L) {
 	return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
 }
 
+static int io_open (lua_State *L) {
+	const char *filename = luaL_checkstring(L, 1);
+	const char *mode = luaL_optstring(L, 2, "r");
+	int checkresult;
+
+	checkresult = CheckFileName(L, filename);
+	if (checkresult)
+		return checkresult;
+
+
+	if (lua_isfunction(L,3))
+	{
+		luaL_checktype(L, 3, LUA_TFUNCTION);
+	}
+	else
+	{
+		return io_openlocal(L);
+	}
+
+	if (!(strchr(mode, 'r') || strchr(mode, '+')))
+		luaL_error(L, "open() is only for reading, use openlocal() for writing");
+
+	AddLuaFileTransfer(filename, mode);
+
+	return 0;
+}
 
 void Got_LuaFile(UINT8 **cp, INT32 playernum)
 {
