@@ -2060,16 +2060,21 @@ static int lib_pThingOnSpecial3DFloor(lua_State *L)
 
 static int lib_pSetupLevelSky(lua_State *L)
 {
-	const char *skytexname = luaL_checkstring(L, 1);
+	const char *skytexname;
 
 	player_t *user = NULL;
 	NOHUD
 	INLEVEL
 
 	if (lua_isnumber(L, 1))
+	{
+		skytexname = luaL_checkstring(L, 1);
 		skytexname = va("SKY%s",skytexname);
+	}
 	else if (lua_isnil(L, 1))
 		skytexname = mapheaderinfo[gamemap-1]->skytexture;
+	else
+		skytexname = luaL_checkstring(L, 1);
 
 	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2)) // if a player, setup sky for only the player, otherwise setup sky for all players
 		user = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
