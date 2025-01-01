@@ -4805,6 +4805,12 @@ static void HWR_AddPrecipitationSprites(void)
 		return;
 	}
 
+	// No weather to draw so save some time by skipping blockmap iterations
+	if (curWeather == PRECIP_NONE || curWeather == PRECIP_STORM_NORAIN)
+	{
+		return;
+	}
+
 	R_GetRenderBlockMapDimensions(drawdist, &xl, &xh, &yl, &yh);
 
 	for (bx = xl; bx <= xh; bx++)
