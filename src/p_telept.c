@@ -139,8 +139,8 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 		else
 			thing->player->viewz = thing->z + thing->player->viewheight;
 
-		{// absolute angle position
-		P_SetPlayerAngle(thing->player, angle);}
+		// absolute angle position
+		P_SetPlayerAngle(thing->player, angle);
 
 		// don't run in place after a teleport
 		if (!dontstopmove)
