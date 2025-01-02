@@ -295,7 +295,6 @@ enum actionnum
 	A_MAYONAKAARROW,
 	A_MEMENTOSTPPARTICLES,
 	A_REAPERTHINKER,
-	A_INVINCSPARKLEROTATE,
 	NUMACTIONS
 };
 
@@ -571,7 +570,6 @@ void A_RoamingShadowThinker();
 void A_MayonakaArrow();
 void A_ReaperThinker();
 void A_MementosTPParticles();
-void A_InvincSparkleRotate();
 void A_DeathSpin();
 
 extern boolean actionsoverridden[NUMACTIONS];

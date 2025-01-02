@@ -340,7 +340,6 @@ actionpointer_t actionpointers[] =
 	{{A_MayonakaArrow},          "A_MAYONAKAARROW"},
 	{{A_MementosTPParticles},    "A_MEMENTOSTPPARTICLES"},
 	{{A_ReaperThinker},          "A_REAPERTHINKER"},
-	{{A_InvincSparkleRotate},    "A_INVINCSPARKLEROTATE"},
 
 	{{NULL},                     "NONE"},
 

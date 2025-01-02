@@ -2770,18 +2770,18 @@ static void K_GetKartBoostPower(player_t *player)
 				sneakerspeedboost = max(speedboost, 32768);
 				break;
 		}
-		ADDBOOST(sneakerspeedboost, 8*FRACUNIT); // + ???% top speed, + 800% acceleration, +50% handlin
+		ADDBOOST(sneakerspeedboost, 8*FRACUNIT); // + ???% top speed, + 800% acceleration
 		
 	}
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		ADDBOOST(3*FRACUNIT/8, 3*FRACUNIT); // + 37.5% top speed, + 300% acceleration, +25% handling
+		ADDBOOST(3*FRACUNIT/8, 3*FRACUNIT); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
-		ADDBOOST(FRACUNIT/5, 0); // + 20% top speed, + 0% acceleration, +25% handling
+		ADDBOOST(FRACUNIT/5, 0); // + 20% top speed, + 0% acceleration
 	}
 
 	if (player->flamedash) // Flame Shield dash
@@ -2792,19 +2792,17 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->startboost) // Startup Boost
 	{
-		ADDBOOST(FRACUNIT/4, 6*FRACUNIT); // + 25% top speed, + 300% acceleration, +25% handling
+		ADDBOOST(FRACUNIT/4, 6*FRACUNIT); // + 25% top speed, + 300% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
 	{
-		ADDBOOST(FRACUNIT/4, 4*FRACUNIT); // + 25% top speed, + 400% acceleration, +0% handling
+		ADDBOOST(FRACUNIT/4, 4*FRACUNIT); // + 25% top speed, + 400% acceleration
 	}
 
 	if (player->ringboost) // Ring Boost
 	{
-		// Make rings additive so they aren't useless with other boosts
-		speedboost += FRACUNIT/6; // 15%
-		accelboost = max(4*FRACUNIT, accelboost); // 400%
+		ADDBOOST(FRACUNIT/5, 4*FRACUNIT); // + 20% top speed, + 400% acceleration
 	}
 
 	player->boostpower = boostpower;
