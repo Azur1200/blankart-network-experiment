@@ -125,6 +125,8 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 	if (!P_SetOrigin(thing, x, y, z))
 		return false;
 
+	thing->angle = angle;
+
 	if (!dontstopmove)
 		thing->momx = thing->momy = thing->momz = 0;
 	else // Change speed to match direction
@@ -136,6 +138,9 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 			thing->player->viewz = thing->z + thing->height - thing->player->viewheight;
 		else
 			thing->player->viewz = thing->z + thing->player->viewheight;
+
+		{// absolute angle position
+		P_SetPlayerAngle(thing->player, angle);}
 
 		// don't run in place after a teleport
 		if (!dontstopmove)
@@ -152,9 +157,6 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 		else
 			thing->player->drawangle += (angle - thing->angle);
 
-		// absolute angle position
-		P_SetPlayerAngle(thing->player, angle);
-
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			if (thing == players[displayplayers[i]].mo)
@@ -170,6 +172,8 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle
 				break;
 			}
 		}
+
+		thing->player->boostangle = angle;
 
 		if (flash)
 			P_FlashPal(thing->player, PAL_MIXUP, 10);

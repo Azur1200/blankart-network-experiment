@@ -4730,6 +4730,10 @@ void P_ForceLocalAngle(player_t *player, angle_t angle)
 		if (player == &players[displayplayers[i]])
 		{
 			localangle[i] = angle;
+			if (camera[i].chase)
+				P_ResetCamera(player, &camera[i]);
+
+			R_ResetViewInterpolation(i + 1);
 			break;
 		}
 	}
