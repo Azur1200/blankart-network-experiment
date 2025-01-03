@@ -407,12 +407,6 @@ static bool D_Display(void)
 			}
 			break;
 
-		case GS_ENDING:
-			F_EndingDrawer();
-			HU_Erase();
-			HU_Drawer();
-			break;
-
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
 			HU_Erase();

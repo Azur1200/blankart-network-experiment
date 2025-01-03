@@ -55,7 +55,6 @@ void F_StartGameEvaluation(void);
 void F_GameEvaluationTicker(void);
 
 void F_EndingTicker(void);
-void F_EndingDrawer(void);
 
 void F_CreditTicker(void);
 void F_CreditDrawer(void);
@@ -74,7 +73,6 @@ boolean F_GetPromptHideHud(fixed_t y);
 void F_StartGameEnd(void);
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
-void F_StartEnding(void);
 void F_StartCredits(void);
 
 extern INT32 finalecount;

@@ -1515,7 +1515,7 @@ boolean G_Responder(event_t *ev)
 			return true;
 		}
 	}
-	else if (gamestate == GS_CREDITS || gamestate == GS_ENDING) // todo: keep ending here?
+	else if (gamestate == GS_CREDITS) // todo: keep ending here?
 	{
 		if (HU_Responder(ev))
 		{
@@ -2045,12 +2045,6 @@ void G_Ticker(boolean run)
 		case GS_INTRO:
 			if (run)
 				F_IntroTicker();
-			break;
-
-		case GS_ENDING:
-			if (run)
-				F_EndingTicker();
-			HU_Ticker();
 			break;
 
 		case GS_CUTSCENE:
@@ -3046,10 +3040,6 @@ void G_FinishExitLevel(void)
 		HU_ClearCEcho();
 
 		// Don't save demos immediately here! Let standings write first
-	}
-	else if (gamestate == GS_ENDING)
-	{
-		F_StartCredits();
 	}
 	else if (gamestate == GS_CREDITS)
 	{
@@ -4080,21 +4070,8 @@ void G_EndGame(void)
 	// Only do evaluation and credits in coop games.
 	if (gametyperules & GTR_CAMPAIGN)
 	{
-		if (nextmap == 1103-1) // end game with ending
-		{
-			F_StartEnding();
-			return;
-		}
-		if (nextmap == 1102-1) // end game with credits
-		{
-			F_StartCredits();
-			return;
-		}
-		if (nextmap == 1101-1) // end game with evaluation
-		{
-			F_StartGameEvaluation();
-			return;
-		}
+		F_StartCredits();
+		return;
 	}
 
 	// 1100 or competitive multiplayer, so go back to title screen.
