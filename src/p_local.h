@@ -131,6 +131,9 @@ struct camera_t
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
 	angle_t old_angle, old_aiming;
+
+	// postproccess effects
+	UINT16 postimgflags;
 };
 
 // demo freecam or something before i commit die

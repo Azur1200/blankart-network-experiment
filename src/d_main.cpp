@@ -367,7 +367,7 @@ static void D_RenderLevel(void)
 		{
 			R_ApplyViewMorph(i);
 
-			V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+			V_DoPostProcessor(i, postimgparam[i]);
 		}
 	}
 

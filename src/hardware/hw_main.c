@@ -5657,6 +5657,8 @@ void HWR_BuildSkyDome(void)
 
 static void HWR_DrawSkyBackground(player_t *player)
 {
+	UINT8 viewnum = R_GetViewNumber();
+	camera_t *thiscam = &camera[viewnum];
 	HWD.pfnSetBlend(PF_Translucent|PF_NoDepthTest|PF_Modulated);
 
 	if (cv_glskydome.value)
@@ -5672,15 +5674,15 @@ static void HWR_DrawSkyBackground(player_t *player)
 		dometransform.angley = (float)((viewangle-ANGLE_270)>>ANGLETOFINESHIFT)*(360.0f/(float)FINEANGLES);
 
 		dometransform.flip = false;
-		if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
+		if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
 			dometransform.flip = true;
 
 		dometransform.mirror = false;
-		if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
+		if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
 			dometransform.mirror = true;
 
 		dometransform.mirrorflip = false;
-		if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+		if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
 			dometransform.mirrorflip = true;
 
 		dometransform.scalex = 1;
@@ -5926,6 +5928,8 @@ static void HWR_ClearClipper(void)
 // ==========================================================================
 void HWR_RenderSkyboxView(player_t *player)
 {
+	UINT8 viewnum = R_GetViewNumber();
+	camera_t *thiscam = &camera[viewnum];
 	const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
 
 	{
@@ -5968,15 +5972,15 @@ void HWR_RenderSkyboxView(player_t *player)
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
 	atransform.flip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
 		atransform.flip = true;
 
 	atransform.mirror = false;
-	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
+	if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
 		atransform.mirror = true;
 
 	atransform.mirrorflip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
@@ -6075,6 +6079,8 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll)
 void HWR_RenderPlayerView(void)
 {
 	player_t * player = &players[displayplayers[viewssnum]];
+	UINT8 viewnum = R_GetViewNumber();
+	camera_t *thiscam = &camera[viewnum];
 
 	const float fpov = FIXED_TO_FLOAT(cv_fov[viewssnum].value+player->fovadd);
 
@@ -6153,15 +6159,15 @@ void HWR_RenderPlayerView(void)
 	gl_viewludcos = FIXED_TO_FLOAT(-FINESINE(gl_aimingangle>>ANGLETOFINESHIFT));
 
 	atransform.flip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && !(player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimgflags & POSTIMG_FLIP) && !(thiscam->postimgflags & POSTIMG_MIRROR))
 		atransform.flip = true;
 
 	atransform.mirror = false;
-	if ((player->postimgflags & POSTIMG_MIRROR) && !(player->postimgflags & POSTIMG_FLIP))
+	if ((thiscam->postimgflags & POSTIMG_MIRROR) && !(thiscam->postimgflags & POSTIMG_FLIP))
 		atransform.mirror = true;
 
 	atransform.mirrorflip = false;
-	if ((player->postimgflags & POSTIMG_FLIP) && (player->postimgflags & POSTIMG_MIRROR))
+	if ((thiscam->postimgflags & POSTIMG_FLIP) && (thiscam->postimgflags & POSTIMG_MIRROR))
 		atransform.mirrorflip = true;
 
 	atransform.x      = gl_viewx;  // FIXED_TO_FLOAT(viewx)
@@ -6562,8 +6568,12 @@ void HWR_DoPostProcessor(player_t *player)
 	if (r_splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
 
+	//UINT8 viewnum = R_GetViewNumber(); // see above
+	//camera_t *thiscam = &camera[viewnum];
+	camera_t *thiscam = &camera[0];
+
 	// Drunken vision! WooOOooo~
-	if (player->postimgflags & POSTIMG_WATER || player->postimgflags & POSTIMG_HEAT)
+	if (thiscam->postimgflags & POSTIMG_WATER || thiscam->postimgflags & POSTIMG_HEAT)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
@@ -6575,7 +6585,7 @@ void HWR_DoPostProcessor(player_t *player)
 		INT32 FREQUENCY;
 
 		// Modifies the wave.
-		if (player->postimgflags & POSTIMG_WATER)
+		if (thiscam->postimgflags & POSTIMG_WATER)
 		{
 			WAVELENGTH = 5;
 			AMPLITUDE = 40;

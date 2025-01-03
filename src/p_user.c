@@ -2661,6 +2661,9 @@ void P_DemoCameraMovement(camera_t *cam)
 
 	boolean moving = false;
 
+	if (encoremode)
+		cam->postimgflags |= POSTIMG_MIRROR;
+
 	// first off we need to get button input
 	G_BuildTiccmd(cmd, 1, UINT8_MAX);
 
@@ -3361,27 +3364,71 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return true; // no more player->mo, cannot continue.
 }
 
-// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
-static void P_CalcPostImg(player_t *player)
+static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	sector_t *sector = player->mo->subsector->sector;
-	INT16 typeflag = 0;
-	//INT32 *param;
-	fixed_t pviewheight;
-	size_t i;
+	mtag_t sectag = Tag_FGet(&sector->tags);
 
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		pviewheight = player->mo->z + player->mo->height - player->viewheight;
-	else
-		pviewheight = player->mo->z + player->viewheight;
+	if (Tag_FindLineSpecial(13, sectag))
+		return true;
 
-	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
+	if (sector->ffloors)
 	{
-		sector = player->awayviewmobj->subsector->sector;
-		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->fofflags & FOF_EXISTS))
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			sectag = Tag_FGet(&rover->master->frontsector->tags);
+
+			if (Tag_FindLineSpecial(13, sectag))
+				return true;
+		}
 	}
 
-	/*for (i = 0; i <= (unsigned)r_splitscreen; i++)
+	return false;
+}
+
+static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
+{
+	if (sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
+static void P_CalcPostImg(player_t *player, camera_t *thiscam)
+{
+	sector_t *sector = NULL;
+	INT16 postimgtype = 0;
+	//INT32 *param;
+	fixed_t pviewheight = 0;
+
+	/*for (i = 0; i <= splitscreen; i++)
 	{
 		if (player == &players[displayplayers[i]])
 		{
@@ -3390,96 +3437,55 @@ static void P_CalcPostImg(player_t *player)
 		}
 	}*/
 
-	// see if we are in heat (no, not THAT kind of heat...)
-	for (i = 0; i < sector->tags.count; i++)
+	if (encoremode) // srb2kart
+		postimgtype |= POSTIMG_MIRROR;
+
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
 	{
-		if (Tag_FindLineSpecial(13, sector->tags.tags[i]) != -1)
+		thiscam->postimgflags = postimgtype;
+		return;
+	}
+#endif
+
+	sector = player->mo->subsector->sector;
+
+	if (sector->ffloors)
+	{
+		if (player->mo->eflags & MFE_VERTICALFLIP)
+			pviewheight = player->mo->z + player->mo->height - player->viewheight;
+		else
+			pviewheight = player->mo->z + player->viewheight;
+
+		if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj))
 		{
-			typeflag |= POSTIMG_HEAT;
-			break;
-		}
-		else if (sector->ffloors)
-		{
-			ffloor_t *rover;
-			fixed_t topheight;
-			fixed_t bottomheight;
-			boolean gotres = false;
-
-			for (rover = sector->ffloors; rover; rover = rover->next)
-			{
-				size_t j;
-
-				if (!(rover->fofflags & FOF_EXISTS))
-					continue;
-
-				topheight    = P_GetFFloorTopZAt   (rover, player->mo->x, player->mo->y);
-				bottomheight = P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y);
-
-				if (pviewheight >= topheight || pviewheight <= bottomheight)
-					continue;
-
-				for (j = 0; j < rover->master->frontsector->tags.count; j++)
-				{
-					if (Tag_FindLineSpecial(13, rover->master->frontsector->tags.tags[j]) != -1)
-					{
-						typeflag |= POSTIMG_HEAT;
-						gotres = true;
-						break;
-					}
-				}
-			}
-			if (gotres)
-				break;
+			sector = player->awayviewmobj->subsector->sector;
+			pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
 		}
 	}
 
 	// see if we are in water (water trumps heat)
-	if (sector->ffloors)
-	{
-		ffloor_t *rover;
-		fixed_t topheight;
-		fixed_t bottomheight;
-
-		for (rover = sector->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
-				continue;
-
-			topheight    = P_GetFFloorTopZAt   (rover, player->mo->x, player->mo->y);
-			bottomheight = P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y);
-
-			if (pviewheight >= topheight || pviewheight <= bottomheight)
-				continue;
-
-			typeflag |= POSTIMG_WATER;
-		}
-	}
-
-	if (encoremode) // srb2kart
-		typeflag |= POSTIMG_MIRROR;
-
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		typeflag |= POSTIMG_FLIP;
+	if (P_CameraCheckWaterFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_WATER;
+	// see if we are in heat (no, not THAT kind of heat...)
+	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_HEAT;
 
 	// Motion blur
 	// unused
 	/*if (player->speed > (35<<FRACBITS))
 	{
-		typeflag |= POSTIMG_MOTION;
+		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
 	}*/
 
-	for (i = 0; i <= (unsigned)r_splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = typeflag;
-		break;
-	}
+	thiscam->postimgflags = postimgtype;
 }
 
 void P_DoTimeOver(player_t *player)
@@ -4262,7 +4268,7 @@ void P_PlayerAfterThink(player_t *player)
 		if (!thiscam->chase) // bob view only if looking through the player's eyes
 		{
 			P_CalcHeight(player);
-			P_CalcPostImg(player);
+			P_CalcPostImg(player, thiscam);
 		}
 		else
 		{
