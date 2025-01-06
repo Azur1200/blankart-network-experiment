@@ -219,32 +219,66 @@ static void Polyobj_GetInfo(polyobj_t *po, line_t *line)
 
 	po->translucency = max(min(line->args[2], NUMTRANSMAPS), 0);
 
-	po->flags = POF_SOLID|POF_TESTHEIGHT|POF_RENDERSIDES|POF_RENDERPLANES;
+	if (udmf)
+	{
+		po->flags = POF_SOLID|POF_TESTHEIGHT|POF_RENDERSIDES|POF_RENDERPLANES;
 
-	if (line->args[3] & TMPF_NOINSIDES)
-		po->flags |= POF_ONESIDE;
+		if (line->args[3] & TMPF_NOINSIDES)
+			po->flags |= POF_ONESIDE;
 
-	if (line->args[3] & TMPF_INTANGIBLE)
-		po->flags &= ~POF_SOLID;
+		if (line->args[3] & TMPF_INTANGIBLE)
+			po->flags &= ~POF_SOLID;
 
-	if (line->args[3] & TMPF_PUSHABLESTOP)
-		po->flags |= POF_PUSHABLESTOP;
+		if (line->args[3] & TMPF_PUSHABLESTOP)
+			po->flags |= POF_PUSHABLESTOP;
 
-	if (line->args[3] & TMPF_INVISIBLEPLANES)
-		po->flags &= ~POF_RENDERPLANES;
+		if (line->args[3] & TMPF_INVISIBLEPLANES)
+			po->flags &= ~POF_RENDERPLANES;
 
-	/*if (line->args[3] & TMPF_DONTCLIPPLANES)
-		po->flags &= ~POF_CLIPPLANES;*/
+		/*if (line->args[3] & TMPF_DONTCLIPPLANES)
+		 po->flags &= ~P*OF_CLIPPLANES;*/
 
-	if (line->args[3] & TMPF_SPLAT)
-		po->flags |= POF_SPLAT;
+		if (line->args[3] & TMPF_SPLAT)
+			po->flags |= POF_SPLAT;
 
-	if (line->args[3] & TMPF_EXECUTOR) // Has a linedef executor
-		po->flags |= POF_LDEXEC;
+		if (line->args[3] & TMPF_EXECUTOR) // Has a linedef executor
+			po->flags |= POF_LDEXEC;
 
-	// TODO: support customized damage somehow?
-	if (line->args[3] & TMPF_CRUSH)
-		po->damage = 3;
+		// TODO: support customized damage somehow?
+		if (line->args[3] & TMPF_CRUSH)
+			po->damage = 3;
+	}
+	else
+	{
+		po->flags = POF_SOLID|POF_TESTHEIGHT|POF_RENDERSIDES;
+
+		if (line->args[3] & TMPF_NOINSIDES)
+			po->flags |= POF_ONESIDE;
+
+		if (line->args[3] & TMPF_INTANGIBLE)
+			po->flags &= ~POF_SOLID;
+
+		if (line->args[3] & TMPF_PUSHABLESTOP)
+			po->flags |= POF_PUSHABLESTOP;
+
+		// WHY IS THIS INVERTED AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+		if (line->args[3] & TMPF_INVISIBLEPLANES)
+			po->flags |= POF_RENDERPLANES;
+
+		/*if (line->args[3] & TMPF_DONTCLIPPLANES)
+		 po->flags &= ~*P*OF_CLIPPLANES;*/
+
+		if (line->args[3] & TMPF_SPLAT)
+			po->flags |= POF_SPLAT;
+
+		if (line->args[3] & TMPF_EXECUTOR) // Has a linedef executor
+			po->flags |= POF_LDEXEC;
+
+		// TODO: support customized damage somehow?
+		if (line->args[3] & TMPF_CRUSH)
+			po->damage = 3;
+
+	}
 
 	po->triggertag = line->args[4];
 }
