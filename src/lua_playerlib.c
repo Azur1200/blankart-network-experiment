@@ -376,6 +376,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->glanceDir);
 	else if (fastcmp(field,"roundscore"))
 		plr->roundscore = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"marescore"))
+		plr->roundscore = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"emeralds"))
 		lua_pushinteger(L, plr->emeralds);
 	else if (fastcmp(field,"bumpers"))
@@ -743,6 +745,8 @@ static int player_set(lua_State *L)
 	else if (fastcmp(field,"glanceDir"))
 		plr->glanceDir = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"roundscore"))
+		lua_pushinteger(L, plr->roundscore);
+	else if (fastcmp(field,"marescore"))
 		lua_pushinteger(L, plr->roundscore);
 	else if (fastcmp(field,"emeralds"))
 		plr->emeralds = luaL_checkinteger(L, 3);
