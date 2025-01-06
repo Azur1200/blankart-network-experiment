@@ -7778,6 +7778,21 @@ static UINT32 u32_delta(UINT32 x, UINT32 y)
 }
 
 /*--------------------------------------------------
+ * static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
+ *
+ *	Fudges respawn coordinates to slightly before the waypoint if it would
+ *	be exactly on a line. See K_GetWaypointIsOnLine.
+ - *-------------------------------------------------*/
+static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
+{
+	const angle_t from = R_PointToAngle2(waypoint->mobj->x, waypoint->mobj->y,
+	player->mo->x, player->mo->y) >> ANGLETOFINESHIFT;
+
+	player->starpostx += FixedMul(16, FINECOSINE(from));
+	player->starposty += FixedMul(16, FINESINE(from));
+}
+
+/*--------------------------------------------------
 	static void K_UpdatePlayerWaypoints(player_t *const player)
 
 		Updates the player's waypoints and finish line distance.
@@ -7833,6 +7848,11 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		// Then do x and y
 		player->starpostx = player->mo->x >> FRACBITS;
 		player->starposty = player->mo->y >> FRACBITS;
+
+		if (player->nextwaypoint->onaline)
+		{
+			K_FudgeRespawn(player, player->nextwaypoint);
+		}
 	}
 }
 
