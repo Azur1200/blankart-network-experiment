@@ -2840,6 +2840,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (demo.freecam || player->spectator)
 	{
 		P_DemoCameraMovement(thiscam);
+		P_CalcChasePostImg(player, thiscam);
 		return true;
 	}
 

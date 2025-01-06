@@ -172,6 +172,7 @@ void P_SlideCameraMove(camera_t *thiscam);
 void P_DemoCameraMovement(camera_t *cam);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_InitCameraCmd(void);
+void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
 
