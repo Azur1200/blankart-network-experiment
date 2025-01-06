@@ -22,10 +22,12 @@
 #include "p_mobj.h"
 #include "p_slopes.h"
 #include "p_setup.h"
+#include "r_defs.h"
 #include "r_draw.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "st_stuff.h"
+#include "typedef.h"
 #include "v_video.h"
 #include "z_zone.h"
 #include "m_misc.h"
@@ -7021,6 +7023,325 @@ void K_KartPlayerAfterThink(player_t *player)
 	}
 }
 
+typedef struct respawnresult_s
+{
+	sector_t *cursec;
+	fixed_t bestsectorheight;
+	fixed_t bestfofheight;
+	ffloor_t *bestrover;
+	fixed_t bestpoheight;
+	polyobj_t *bestpo;
+	fixed_t finaldistances[3];
+
+	SINT8 result;
+} respawnresult_t;
+
+static int clostVal(fixed_t arr[], int N, fixed_t K)
+{
+	// Stores the closest
+	// value to K
+	fixed_t res = arr[0];
+
+	// Traverse the array
+	for (int i = 1; i < N; i++)
+	{
+		// If absolute difference
+		// of K and res exceeds
+		// absolute difference of K
+		// and current element
+		if (abs(K - res) > abs(K - arr[i]))
+		{
+			res = arr[i];
+		}
+	}
+
+	// Return the closest
+	// array element
+	return res;
+}
+
+// Decides if respawning at this position is safe, used for nu waypoints.
+static boolean K_SafeRespawnPosition(mobj_t * mo)
+{
+	respawnresult_t result;
+	const boolean flip = (mo->eflags & MFE_VERTICALFLIP) ? true : false;
+	fixed_t mobjx = mo->x;
+	fixed_t mobjy = mo->y;
+	fixed_t mobjz = mo->z;
+
+	result.cursec = R_PointInSubsector(mobjx, mobjy)->sector;
+	result.bestfofheight = INT32_MAX;
+	result.bestpoheight = INT32_MAX;
+
+	if (!result.cursec) // How tf do you do this?????
+		return false;
+
+	if (flip)
+		result.bestsectorheight = P_GetSectorCeilingZAt(result.cursec,mobjx,mobjy);
+	else
+		result.bestsectorheight = P_GetSectorFloorZAt(result.cursec,mobjx,mobjy);
+
+	if (result.cursec->ffloors)
+	{
+		ffloor_t *rover;
+		fixed_t curbest = INT32_MAX;
+		for (rover = result.cursec->ffloors; rover; rover = rover->next)
+		{
+			fixed_t compareheight;
+			fixed_t valuecompare[2];
+			if (!(rover->fofflags & FOF_EXISTS))
+				continue;
+			if (!(rover->fofflags & FOF_SOLID))
+				continue;
+			if (!(rover->fofflags & FOF_BLOCKPLAYER)
+				&& (rover->fofflags & FOF_BLOCKOTHERS))
+				continue;
+
+			if (flip)
+				compareheight = P_GetFFloorBottomZAt(rover,mobjx,mobjy);
+			else
+				compareheight = P_GetFFloorTopZAt(rover,mobjx,mobjy);
+
+			if (curbest == INT32_MAX)
+				curbest = compareheight;
+
+			valuecompare[0] = curbest;
+			valuecompare[1] = compareheight;
+
+			// compareheight is closer then curbest
+			// probably should consider flip
+			{
+				int N = sizeof(valuecompare) / sizeof(valuecompare[0]);
+				fixed_t closetvalue = clostVal(valuecompare, N, mobjz);
+
+				if (closetvalue == valuecompare[1])
+				{
+					curbest = compareheight;
+					result.bestrover = rover;
+				}
+			}
+		}
+		result.bestfofheight = curbest;
+	}
+
+	if (numPolyObjects)
+	{
+		fixed_t curbest = INT32_MAX;
+		INT32 xl, xh, yl, yh, bx, by;
+
+		yh = (unsigned)(mobjy - bmaporgy)>>MAPBLOCKSHIFT;
+		yl = (unsigned)(mobjy - bmaporgy)>>MAPBLOCKSHIFT;
+		xh = (unsigned)(mobjx - bmaporgx)>>MAPBLOCKSHIFT;
+		xl = (unsigned)(mobjx - bmaporgx)>>MAPBLOCKSHIFT;
+
+		BMBOUNDFIX(xl, xh, yl, yh);
+
+		// Check polyobjects and see if bestpoheight need to be altered
+		{
+			validcount++;
+
+			for (by = yl; by <= yh; by++)
+			{
+				for (bx = xl; bx <= xh; bx++)
+				{
+					INT32 offset;
+					polymaplink_t *plink; // haleyjd 02/22/06
+
+					if (bx < 0 || by < 0 || bx >= bmapwidth || by >= bmapheight)
+						continue;
+
+					offset = by*bmapwidth + bx;
+
+					// haleyjd 02/22/06: consider polyobject lines
+					plink = polyblocklinks[offset];
+
+					while (plink)
+					{
+						polyobj_t *po = plink->po;
+
+						if (po->validcount != validcount) // if polyobj hasn't been checked
+						{
+							sector_t *polysec;
+							fixed_t compareheight;
+							fixed_t valuecompare[2];
+
+							po->validcount = validcount;
+
+							if (!P_BBoxInsidePolyobj(po, tm.bbox)
+								|| !(po->flags & POF_SOLID))
+							{
+								plink = (polymaplink_t *)(plink->link.next);
+								continue;
+							}
+
+							if (!(po->flags & POF_CLIPPLANES))
+							{
+								plink = (polymaplink_t *)(plink->link.next);
+								continue;
+							}
+
+							// We're inside it! Yess...
+							polysec = po->lines[0]->backsector;
+
+							if (flip)
+								compareheight = polysec->ceilingheight;
+							else
+								compareheight = polysec->floorheight;
+
+							if (curbest == INT32_MAX)
+								curbest = compareheight;
+
+							valuecompare[0] = curbest;
+							valuecompare[1] = compareheight;
+
+							// compareheight is closer then curbest
+							// probably should consider flip
+							{
+								int N = sizeof(valuecompare) / sizeof(valuecompare[0]);
+								fixed_t closetvalue = clostVal(valuecompare, N, mobjz);
+
+								if (closetvalue == valuecompare[1])
+								{
+									curbest = compareheight;
+									result.bestpo = plink->po;
+								}
+							}
+						}
+
+						plink = (polymaplink_t *)(plink->link.next);
+					}
+				}
+			}
+			result.bestpoheight = curbest;
+		}
+	}
+
+	result.finaldistances[0] = result.bestsectorheight;
+	result.finaldistances[1] = result.bestfofheight;
+	result.finaldistances[2] = result.bestpoheight;
+
+	{
+		int N = sizeof(result.finaldistances) / sizeof(result.finaldistances[0]);
+
+		fixed_t closetvalue = clostVal(result.finaldistances, N, mobjz);
+		if (closetvalue == result.bestfofheight && (result.bestfofheight != INT32_MAX))
+			result.result = 2;
+		else if (closetvalue == result.bestpoheight && (result.bestpoheight != INT32_MAX))
+			result.result = 3;
+		else
+			result.result = 1;
+	}
+
+	// if rover is valid and bestfofheight is closer then bestsectorheight and bestpoheight
+	// probably should consider flip
+	if (result.result == 2)
+	{
+		// Check if rover is bad based on both its terrain, and sector specials.
+		if (result.bestrover)
+		{
+			switch (result.bestrover->master->frontsector->damagetype)
+			{
+				case SD_GENERIC:
+				case SD_DEATHPIT:
+				case SD_INSTAKILL:
+				case SD_LAVA:
+				{
+					//CONS_Printf("Dangerous rover!!!!\n");
+					return false;
+				}
+				default:
+					break;
+			}
+
+			if (result.bestrover->master->frontsector->offroad)
+			{
+				//CONS_Printf("Offroad rover!!!!\n");
+				return false;
+			}
+
+			//CONS_Printf("Rover safe, allow respawn!!!!\n");
+			return true;
+
+		}
+		else
+		{
+			//CONS_Printf("Nep Fucked up, yell at him! NO ROVER IN FOF CHECK\n");
+			return false;
+		}
+
+	}
+	// if po is valid and bestpoheight is closer then bestsectorheight and bestpoheight
+	// probably should consider flip
+	else if (result.result == 3)
+	{
+		// Check if po is bad based on both its terrain, and sector specials.
+		if (result.bestpo)
+		{
+			switch (result.bestpo->lines[0]->backsector->damagetype)
+			{
+				case SD_GENERIC:
+				case SD_DEATHPIT:
+				case SD_INSTAKILL:
+				case SD_LAVA:
+				{
+					//CONS_Printf("Dangerous polyobj!!!!\n");
+					return false;
+				}
+				default:
+					break;
+			}
+
+			if (result.bestpo->lines[0]->backsector->offroad)
+			{
+				//CONS_Printf("Offroad polyobj!!!!\n");
+				return false;
+			}
+
+			//CONS_Printf("Polyobj safe, allow respawn!!!!\n");
+			return true;
+
+		}
+		else
+		{
+			//CONS_Printf("Nep Fucked up, yell at him! NO POLYOBJ IN PO CHECK\n");
+			return false;
+		}
+	}
+	// if everything else is not closest check sector
+	// probably should consider flip
+	else if (result.result == 1)
+	{
+		// Check if sector is bad based on both its terrain, and sector specials.
+
+		switch (result.cursec->damagetype)
+		{
+			case SD_GENERIC:
+			case SD_DEATHPIT:
+			case SD_INSTAKILL:
+			case SD_LAVA:
+			{
+				//CONS_Printf("Dangerous sector!!!!\n");
+				return false;
+			}
+			default:
+				break;
+		}
+
+		if (result.cursec->offroad)
+		{
+			//CONS_Printf("Offroad Sector!!!!\n");
+			return false;
+		}
+
+		//CONS_Printf("Sector safe, allow respawn!!!!\n");
+		return true;
+	}
+
+	CONS_Printf("Nep Fucked up, yell at him! BYPASSED ALL\n");
+	return false; // fallback if I fuck up.
+
+}
+
 /*--------------------------------------------------
 	size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint)
 		See header file for description.
@@ -7231,7 +7552,12 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 			}
 		}
 
-		if (!P_IsObjectOnGround(player->mo) || player->respawn)
+		if (!K_SafeRespawnPosition(player->mo) && (!P_IsObjectOnGround(player->mo)
+			|| player->respawn
+			|| P_CheckDeathPitCollide(player->mo)
+			|| P_InQuicksand(player->mo)
+			|| !player->mo->health)
+		)
 		{
 			updaterespawn = false;
 		}
