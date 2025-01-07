@@ -10988,16 +10988,39 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 	switch (i)
 	{
 		case MT_EMBLEM:
+		{
+
 			if (netgame || multiplayer)
 				return false; // Single player only
 
 			if (modifiedgame && !savemoddata)
 				return false; // No cheating!!
 			break;
+		}
 		case MT_RING:
+		{
 			if (ringsdisabled)
 				return false;
 			break;
+		}
+		case MT_EMERALD1:
+		case MT_EMERALD2:
+		case MT_EMERALD3:
+		case MT_EMERALD4:
+		case MT_EMERALD5:
+		case MT_EMERALD6:
+		case MT_EMERALD7:
+		{
+			if (gametype == GT_RACE || gametype == GT_BATTLE)
+				return false;
+
+			if (metalrecording)
+				return false; // Metal Sonic isn't for collecting emeralds.
+
+			if (emeralds & mobjinfo[i].speed) // You already have this emerald!
+				return false;
+			break;
+		}
 		case MT_ITEMCAPSULE:
 			{
 				boolean isRingCapsule = (mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= NUMKARTITEMS);
