@@ -259,7 +259,7 @@ boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, c
 
 
 /*--------------------------------------------------
-	INT32 ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
+	boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator)
 
 		Runs an ACS script by its string name.
 		Will return the scripts special result
@@ -278,7 +278,7 @@ boolean ACS_ExecuteAlways(const char *name, const INT32 *args, size_t numArgs, c
 		true if we were able to run the script, otherwise false.
 --------------------------------------------------*/
 
-INT32 ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator);
+boolean ACS_ExecuteResult(const char *name, const INT32 *args, size_t numArgs, activator_t *activator);
 
 
 /*--------------------------------------------------
