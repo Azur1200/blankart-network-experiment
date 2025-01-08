@@ -30,7 +30,7 @@
 #endif
 
 #include <time.h>
-#include <cstring>
+#include <string.h>
 
 #include "doomdef.h"
 #include "am_map.h"
