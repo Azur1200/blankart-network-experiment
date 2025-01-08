@@ -3080,8 +3080,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!thiscam->chase && !resetcalled)
 	{
-		focusangle = localangle[num];
-		camrotate = cv_cam_rotate[num].value;
+		focusangle = ((P_IsLocalPlayer(player)) ? localangle[num] : mo->angle);
+		camrotate = ((thiscam == &camera[num]) ? cv_cam_rotate[num].value : 0);
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3112,10 +3112,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = player->cmd.angle << TICCMD_REDUCE;
 		focusaiming = 0;
 	}
-	else
+	else if (P_IsLocalPlayer(player))
 	{
 		focusangle = localangle[num];
 		focusaiming = localaiming[num];
+	}
+	else
+	{
+		focusangle = mo->angle;
+		focusaiming = player->aiming;
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
