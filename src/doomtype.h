@@ -150,8 +150,8 @@ int strlwr(char *n); // from dosstr.c
 #ifdef __cplusplus
 extern "C" {
 #endif
-	size_t strlcat(...)
-	size_t strlcpy(...)
+	size_t strlcat(char *dst, const char *src, size_t siz);
+	size_t strlcpy(char *dst, const char *src, size_t siz);
 #ifdef __cplusplus
 }
 #endif
