@@ -30,6 +30,7 @@
 #endif
 
 #include <time.h>
+#include <cstring>
 
 #include "doomdef.h"
 #include "am_map.h"
@@ -77,7 +78,6 @@
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
-#include <cstring>
 
 #ifdef CMAKECONFIG
 #include "config.h"
