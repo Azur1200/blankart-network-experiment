@@ -147,10 +147,8 @@ int strlwr(char *n); // from dosstr.c
 #include <stddef.h> // for size_t
 
 #ifndef SRB2_HAVE_STRLCPY
-#ifndef __cplusplus
 size_t strlcat(char *dst, const char *src, size_t siz);
 size_t strlcpy(char *dst, const char *src, size_t siz);
-#endif
 #endif
 
 // Macro for use with char foo[FOOSIZE+1] type buffers.
