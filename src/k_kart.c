@@ -8123,9 +8123,9 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 
 	if ((player->sneakertimer == 0)
-	|| (!stplyr->cmd.turning)
+	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
-	|| (stplyr->cmd.turning > 0) != (player->aizdriftstrat > 0))
+	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
 	{
 		if (!player->drift)
 			player->aizdriftstrat = 0;
