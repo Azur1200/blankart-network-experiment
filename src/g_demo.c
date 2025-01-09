@@ -2038,7 +2038,7 @@ void G_BeginRecording(void)
 		if (wadfiles[i]->important)
 	{
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
-		WRITESTRINGN(demobuf.p, filename, 64);
+		WRITESTRINGN(demobuf.p, filename, MAX_WADPATH);
 		WRITEMEM(demobuf.p, wadfiles[i]->md5sum, 16);
 
 		totalfiles++;

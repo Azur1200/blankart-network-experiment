@@ -398,7 +398,10 @@ void readfreeslots(MYFILE *f)
 			// TODO: Out-of-slots warnings/errors.
 			// TODO: Name too long (truncated) warnings.
 			if (fastcmp(type, "SFX"))
+			{
+				CONS_Printf("Sound sfx_%s allocated.\n",word);
 				S_AddSoundFx(word, false, 0, false);
+			}
 			else if (fastcmp(type, "SPR"))
 			{
 				for (i = SPR_FIRSTFREESLOT; i <= SPR_LASTFREESLOT; i++)
@@ -412,6 +415,7 @@ void readfreeslots(MYFILE *f)
 					// Found a free slot!
 					strncpy(sprnames[i],word,4);
 					//sprnames[i][4] = 0;
+					CONS_Printf("Sprite SPR_%s allocated.\n",word);
 					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
 					// Lua needs to update the value in _G if it exists
 					LUA_UpdateSprName(word, i);
@@ -422,6 +426,7 @@ void readfreeslots(MYFILE *f)
 			{
 				for (i = 0; i < NUMSTATEFREESLOTS; i++)
 					if (!FREE_STATES[i]) {
+						CONS_Printf("State S_%s allocated.\n",word);
 						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_STATES[i],word);
 						freeslotusage[0][0]++;
@@ -432,6 +437,7 @@ void readfreeslots(MYFILE *f)
 			{
 				for (i = 0; i < NUMMOBJFREESLOTS; i++)
 					if (!FREE_MOBJS[i]) {
+						CONS_Printf("MobjType MT_%s allocated.\n",word);
 						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_MOBJS[i],word);
 						freeslotusage[1][0]++;
@@ -442,6 +448,7 @@ void readfreeslots(MYFILE *f)
 			{
 				for (i = 0; i < NUMCOLORFREESLOTS; i++)
 					if (!FREE_SKINCOLORS[i]) {
+						CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
 						FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_SKINCOLORS[i],word);
 						M_AddMenuColor(numskincolors++);
