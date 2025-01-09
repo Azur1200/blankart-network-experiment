@@ -1800,12 +1800,6 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	(void)source;
 	(void)inflictor;
 
-	if (player->respawn)
-	{
-		K_DoInstashield(player);
-		return false;
-	}
-
 	if (player->exiting)
 	{
 		player->mo->destscale = 1;
