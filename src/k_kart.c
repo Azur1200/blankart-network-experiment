@@ -6433,7 +6433,7 @@ static void K_TireGreaseEffect(player_t *player)
 	P_SetScale(dust, player->mo->scale/2);
 	dust->destscale = player->mo->scale * 3;
 	dust->scalespeed = player->mo->scale/12;
-	dust->target = player->mo;
+	P_SetTarget(&dust->target, player->mo);
 
 	if (leveltime % 6 == 0)
 		S_StartSound(player->mo, sfx_screec);
