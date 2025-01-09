@@ -6062,8 +6062,8 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 							mobj->tracer->frame = KITEM_BALLHOG;
 							//localcolor = SKINCOLOR_LILAC;
 							break;
-						case 13: // Lightning Shield
-							mobj->tracer->frame = KITEM_LIGHTNINGSHIELD;
+						case 13: // Thunder Shield
+							mobj->tracer->frame = KITEM_THUNDERSHIELD;
 							//localcolor = SKINCOLOR_CYAN;
 							break;
 						case 14: // Super Ring
@@ -7318,11 +7318,11 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 
 		break;
-	case MT_LIGHTNINGSHIELD:
+	case MT_THUNDERSHIELD:
 	{
 		fixed_t destx, desty;
 		if (!mobj->target || !mobj->target->health || !mobj->target->player
-			|| mobj->target->player->curshield != KSHIELD_LIGHTNING)
+			|| mobj->target->player->curshield != KSHIELD_THUNDER)
 		{
 			P_RemoveMobj(mobj);
 			return false;
@@ -7341,7 +7341,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else
 				viewingangle = R_PointToAngle2(mobj->target->x, mobj->target->y, camera[0].x, camera[0].y);
 
-			if (curstate > S_LIGHTNINGSHIELD15 && curstate <= S_LIGHTNINGSHIELD24)
+			if (curstate > S_THUNDERSHIELD15 && curstate <= S_THUNDERSHIELD24)
 				viewingangle += ANGLE_180;
 
 			destx = mobj->target->x + P_ReturnThrustX(mobj->target, viewingangle, mobj->scale>>4);
@@ -9104,7 +9104,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 			thing->shadowscale = 5*FRACUNIT/4;
 			thing->whiteshadow = true;
 			break;
-		case MT_LIGHTNINGSHIELD:
+		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_FLAMESHIELD:

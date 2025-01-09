@@ -136,5 +136,11 @@ int LUA_ThinkerLib(lua_State *L)
 		lua_pushcclosure(L, lib_startIterate, 1);
 		lua_setfield(L, -2, "iterate");
 	lua_setglobal(L, "mobjs");
+
+	lua_createtable(L, 0, 1);
+		lua_pushcfunction(L, lib_iterateThinkers);
+		lua_pushcclosure(L, lib_startIterate, 1);
+		lua_setfield(L, -2, "iterate");
+	lua_setglobal(L, "thinkers");
 	return 0;
 }

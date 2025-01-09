@@ -638,7 +638,7 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
 
-static inline BlockItReturn_t PIT_LightningShieldAttack(mobj_t *thing)
+static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 {
 	if (lightningSource == NULL || P_MobjWasRemoved(lightningSource))
 	{
@@ -694,7 +694,7 @@ static inline BlockItReturn_t PIT_LightningShieldAttack(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-void K_LightningShieldAttack(mobj_t *actor, fixed_t size)
+void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
@@ -711,7 +711,7 @@ void K_LightningShieldAttack(mobj_t *actor, fixed_t size)
 
 	for (by = yl; by <= yh; by++)
 		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_LightningShieldAttack);
+			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)

@@ -11,6 +11,7 @@
 /// \brief Lua SOC library
 
 #include "deh_lua.h"
+#include "deh_tables.h"
 
 // freeslot takes a name (string only!)
 // and allocates it to the appropriate free slot.
@@ -336,7 +337,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("ML_", word, 3)) {
 		p = word+3;
-		for (i = 0; i < 16; i++)
+		for (i = 0; i < 20; i++)
 			if (ML_LIST[i] && fastcmp(p, ML_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;
@@ -527,6 +528,42 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			}
 		if (mathlib) return luaL_error(L, "sfx '%s' could not be found.\n", word);
 		return 0;
+	}
+	else if (!mathlib && fastncmp("pw_",word,3)) {
+		p = word+3;
+		for (i = 0; i < NUMPOWERS; i++)
+			if (fasticmp(p, POWERS_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return 0;
+	}
+	else if (mathlib && fastncmp("PW_",word,3)) { // SOCs are ALL CAPS!
+		p = word+3;
+		for (i = 0; i < NUMPOWERS; i++)
+			if (fastcmp(p, POWERS_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return luaL_error(L, "powers '%s' could not be found.\n", word);
+	}
+	else if (!mathlib && fastncmp("k_",word,2)) {
+		p = word+2;
+		for (i = 0; i < NUMKARTSTUFF; i++)
+			if (fasticmp(p, KARTSTUFF_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return 0;
+	}
+	else if (mathlib && fastncmp("K_",word,2)) { // SOCs are ALL CAPS!
+		p = word+2;
+		for (i = 0; i < NUMKARTSTUFF; i++)
+			if (fastcmp(p, KARTSTUFF_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return luaL_error(L, "kartstuff '%s' could not be found.\n", word);
 	}
 	else if (!mathlib && fastncmp("khud_",word,5)) {
 		p = word+5;

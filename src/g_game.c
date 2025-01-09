@@ -1089,9 +1089,15 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 		// But forward/backward IS used for aiming.
 		if (PlayerInputDown(ssplayer, gc_aimforward))
+		{
+			cmd->buttons |= BT_FORWARD;
 			cmd->throwdir += KART_FULLTURN;
+		}
 		if (PlayerInputDown(ssplayer, gc_aimbackward))
+		{
+			cmd->buttons |= BT_BACKWARD;
 			cmd->throwdir -= KART_FULLTURN;
+		}
 
 		if (analogjoystickmove && joystickvector.yaxis != 0)
 		{

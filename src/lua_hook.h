@@ -41,7 +41,13 @@ automatically.
 	X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
 	X (BossThinker),/* P_GenericBossThinker */\
 	X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
+	X (ShouldSpin),/* P_DamageMobj (Should mobj take spinout damage?) */\
+	X (ShouldExplode),/* P_DamageMobj (Should mobj take explosion damage?) */\
+	X (ShouldSquish),/* P_DamageMobj (Should mobj take squish damage?) */\
 	X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerSpin),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerExplode),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerSquish),/* P_DamageMobj (Mobj actually takes damage!) */\
 	X (MobjDeath),/* P_KillMobj */\
 	X (BossDeath),/* A_BossDeath */\
 	X (MobjRemoved),/* P_RemoveMobj */\
@@ -80,6 +86,7 @@ automatically.
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
+	X (LinedefExecute),\
 	X (ShouldJingleContinue),/* should jingle of the given music continue playing */\
 
 #define HUD_HOOK_LIST(X) \
@@ -133,10 +140,17 @@ void LUA_HookThinkFrame(void);
 int  LUA_HookMobjLineCollide(mobj_t *, line_t *);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
 int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
 int  LUA_HookMobjMoveBlocked(mobj_t *, mobj_t *, line_t *);
 void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs);
+void LUA_HookLinedefExecute(line_t *, mobj_t *, sector_t *);
 int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute);
 int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
 int  LUA_HookMapThingSpawn(mobj_t *, mapthing_t *);

@@ -1858,6 +1858,28 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	return true;
 }
 
+// Determines what ShouldX Hook's status should be used.
+static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, damage, damagetype);
+	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
+	UINT8 status;
+	const UINT8 type = (damagetype & DMG_TYPEMASK);
+
+	status = shouldDamage;
+
+	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_STING)))
+		status = shouldSpin;
+	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
+		status = shouldExplode;
+	else if (shouldSquish > 0 && (type == DMG_SQUISH))
+		status = shouldSquish;
+
+	return status;
+}
+
 /** Damages an object, which may or may not be a player.
   * For melee attacks, source and inflictor are the same.
   *
@@ -1875,6 +1897,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
   * \todo Clean up this mess, split into multiple functions.
   * \sa P_KillMobj
   */
+
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
 	player_t *player;
@@ -1896,7 +1919,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+		UINT8 shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -2051,25 +2074,30 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_STING:
 					K_DebtStingPlayer(player, source);
 					K_KartPainEnergyFling(player);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					ringburst = 0;
 					break;
 				case DMG_EXPLODE:
 				case DMG_KARMA:
 					ringburst = K_ExplodePlayer(player, inflictor, source);
+					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
 				case DMG_SQUISH:
 					K_SquishPlayer(player, inflictor, source);
+					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
 					ringburst = 5;
 					break;
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);
 					K_SpinPlayer(player, inflictor, source, KSPIN_WIPEOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					break;
 			}
 

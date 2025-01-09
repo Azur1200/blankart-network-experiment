@@ -1068,7 +1068,7 @@ static void K_BotItemJawz(player_t *player, ticcmd_t *cmd)
 /*--------------------------------------------------
 	static void K_BotItemLightning(player_t *player, ticcmd_t *cmd)
 
-		Item usage for Lightning Shield.
+		Item usage for Thunder Shield.
 
 	Input Arguments:-
 		player - Bot to do this for.
@@ -1406,7 +1406,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 							K_BotItemDropTarget(player, turnamt, cmd);
 						}
 						break;
-					case KITEM_LIGHTNINGSHIELD:
+					case KITEM_THUNDERSHIELD:
 						K_BotItemLightning(player, cmd);
 						break;
 					case KITEM_BUBBLESHIELD:
