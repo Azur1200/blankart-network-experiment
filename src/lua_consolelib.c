@@ -192,7 +192,7 @@ static int lib_comAddCommand(lua_State *L)
 	strlwr(name);
 
 	luaL_checktype(L, 2, LUA_TFUNCTION);
-	NOHOOK
+	//NOHOOK
 	if (lua_gettop(L) >= 3)
 	{ // For the third argument, only take a boolean or a number.
 		lua_settop(L, 3);
@@ -308,7 +308,7 @@ static int lib_cvRegisterVar(lua_State *L)
 	consvar_t *cvar;
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
-	NOHOOK
+	//NOHOOK
 	cvar = ZZ_Calloc(sizeof(consvar_t));
 	LUA_PushUserdata(L, cvar, META_CVAR);
 
