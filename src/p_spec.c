@@ -5208,6 +5208,7 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
 
 				player->mo->angle = lineangle;
+				player->angleturn = player->mo->angle;
 
 				// SRB2Kart: Scale the speed you get from them!
 				// This is scaled differently from other horizontal speed boosts from stuff like springs, because of how this is used for some ramp jumps.
@@ -5216,14 +5217,14 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 
 				if (!demo.playback)
 				{
-					if (player == &players[consoleplayer])
-						localangle[0] = player->mo->angle;
-					else if (player == &players[displayplayers[1]])
-						localangle[1] = player->mo->angle;
-					else if (player == &players[displayplayers[2]])
-						localangle[2] = player->mo->angle;
-					else if (player == &players[displayplayers[3]])
-						localangle[3] = player->mo->angle;
+					for (SINT8 j = 0; j <= r_splitscreen; j++)
+					{
+						if (player == &players[displayplayers[j]])
+						{
+							localangle[j] = player->mo->angle;
+							break;
+						}
+					}
 				}
 
 				if (!(lines[i].flags & 512))

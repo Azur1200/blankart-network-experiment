@@ -1359,7 +1359,7 @@ static void CL_ReloadReceivedSavegame(void)
 
 	for (i = 0; i <= r_splitscreen; i++)
 	{
-		P_ForceLocalAngle(&players[displayplayers[i]], players[displayplayers[i]].angleturn);
+		P_ForceLocalAngle(&players[displayplayers[i]], players[displayplayers[i]].angleturn, false);
 	}
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -3617,7 +3617,7 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 			DEBFILE("spawning me\n");
 		}
 
-		P_ForceLocalAngle(newplayer, newplayer->angleturn);
+		P_ForceLocalAngle(newplayer, newplayer->angleturn, false);
 
 		D_SendPlayerConfig(splitscreenplayer);
 		addedtogame = true;

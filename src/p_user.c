@@ -1986,7 +1986,6 @@ static void P_UpdatePlayerAngle(player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 	angle_t anglechange = player->angleturn;
 	int i;
-	//UINT8 p = UINT8_MAX;
 
 	// Kart: store the current turn range for later use
 	if (((player->mo && player->speed > 0) // Moving
@@ -4705,7 +4704,7 @@ void P_PlayerAfterThink(player_t *player)
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)
 {
-	P_ForceLocalAngle(player, angle);
+	P_ForceLocalAngle(player, angle, true);
 	player->angleturn = angle;
 }
 
@@ -4724,7 +4723,7 @@ angle_t P_GetLocalAngle(player_t *player)
 	return 0;
 }
 
-void P_ForceLocalAngle(player_t *player, angle_t angle)
+void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
 {
 	UINT8 i;
 
@@ -4735,10 +4734,13 @@ void P_ForceLocalAngle(player_t *player, angle_t angle)
 		if (player == &players[displayplayers[i]])
 		{
 			localangle[i] = angle;
-			if (camera[i].chase)
-				P_ResetCamera(player, &camera[i]);
+			if (!interp)
+			{
+				if (camera[i].chase)
+					P_ResetCamera(player, &camera[i]);
 
-			R_ResetViewInterpolation(i + 1);
+				R_ResetViewInterpolation(i + 1);
+			}
 			break;
 		}
 	}

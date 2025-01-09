@@ -378,12 +378,17 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
 		{
 			object->angle = spring->angle;
+			object->player->angleturn = spring->angle;
 
 			if (!demo.playback)
 			{
-				for (int i = 0; i <= r_splitscreen; i++)
+				for (SINT8 j = 0; j <= r_splitscreen; j++)
 				{
-						localangle[i] = spring->angle;
+					if (object->player == &players[displayplayers[j]])
+					{
+						localangle[j] = spring->angle;
+						break;
+					}
 				}
 			}
 		}
