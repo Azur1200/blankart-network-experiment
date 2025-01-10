@@ -897,7 +897,14 @@ void F_GameEvaluationTicker(void)
 
 	if (finalecount == 5*TICRATE)
 	{
-		if (!usedCheats)
+		if (netgame || multiplayer) // modify this when we finally allow unlocking stuff in 2P
+		{
+			HU_SetCEchoFlags(V_YELLOWMAP);
+			HU_SetCEchoDuration(6);
+			HU_DoCEcho("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Multiplayer games can't unlock extras!");
+			S_StartSound(NULL, sfx_s3k68);
+		}
+		else if (!modifiedgame || savemoddata)
 		{
 			++timesBeaten;
 
@@ -910,7 +917,7 @@ void F_GameEvaluationTicker(void)
 		{
 			HU_SetCEchoFlags(V_YELLOWMAP);
 			HU_SetCEchoDuration(6);
-			HU_DoCEcho("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Cheated games can't unlock extras!");
+			HU_DoCEcho("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\Modified games can't unlock extras!");
 			S_StartSound(NULL, sfx_s3k68);
 		}
 	}

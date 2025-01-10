@@ -126,7 +126,7 @@ extern char logfilename[1024];
 #endif
 
 /* A mod name to further distinguish versions. */
-#define SRB2APPLICATION "RingRacers"
+#define SRB2APPLICATION "SRB2Kart"
 
 //#define DEVELOP // Disable this for release builds to remove excessive cheat commands and enable MD5 checking and stuff, all in one go. :3
 #ifdef DEVELOP
@@ -150,7 +150,7 @@ extern char logfilename[1024];
 #define VERSIONSTRINGW WSTRING (VERSIONSTRING)
 
 /* A custom URL protocol for server links. */
-#define SERVER_URL_PROTOCOL "ringracers://"
+#define SERVER_URL_PROTOCOL "srb2kart://"
 
 // Does this version require an added patch file?
 // Comment or uncomment this as necessary.
@@ -744,6 +744,9 @@ extern int compuncommitted;
 // Disabled code and code under testing
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
+
+///	Allows gravity changes in netgames, no questions asked.
+//#define NETGAME_GRAVITY
 
 ///	Dumps the contents of a network save game upon consistency failure for debugging.
 //#define DUMPCONSISTENCY

@@ -69,7 +69,6 @@ typedef enum
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?
 	PF_GAINAX			= 1<<3,
-
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
 	// 1<<5 free
 	// 1<<6 free
