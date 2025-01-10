@@ -7151,10 +7151,44 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (p)
 			{
-				if (p->sneakertimer > mobj->movecount)
-					P_SetMobjState(mobj, S_BOOSTFLAME);
-				mobj->movecount = p->sneakertimer;
+				if (mobj->extravalue1)
+				{
+					if (p->driftboost > mobj->movecount)
+						P_SetMobjState(mobj, S_DRIFTBOOSTFLAME);
+					mobj->movecount = p->driftboost;
+
+					if (p->driftboost == 0)
+					{
+						P_RemoveMobj(mobj);
+						return false;
+					}
+				}
+				else
+				{
+					if (p->sneakertimer > mobj->movecount)
+						P_SetMobjState(mobj, S_BOOSTFLAME);
+					mobj->movecount = p->sneakertimer;
+				}
 			}
+		}
+
+		if (mobj->extravalue1)
+		{
+
+			if (leveltime % 2 == 1)
+			{
+				mobj->frame |= FF_TRANS60;
+			}
+			else
+			{
+				mobj->frame &= ~FF_TRANS60;
+			}
+
+			if (mobj->extravalue2)
+			{
+				mobj->color = K_RainbowColor(leveltime);
+			}
+
 		}
 
 		if (mobj->state == &states[S_BOOSTSMOKESPAWNER])

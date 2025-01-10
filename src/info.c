@@ -527,6 +527,7 @@ char sprnames[NUMSPRITES + 1][5] =
 	"FAST", // Speed boost trail
 	"DSHR", // Speed boost dust release
 	"BOST", // Sneaker booster flame
+	"DRPO", // Drift booster flame
 	"BOSM", // Sneaker booster smoke
 	"KFRE", // Sneaker fire trail
 	"KINV", // Lighter invincibility sparkle trail
@@ -4125,6 +4126,7 @@ state_t states[NUMSTATES] =
 	{SPR_DSHR, FF_PAPERSPRITE|6, 1, {NULL}, 0, 0, S_NULL}, // S_FASTDUST7
 
 	{SPR_BOST, FF_FULLBRIGHT|FF_ANIMATE, TICRATE, {NULL}, 6, 1, S_BOOSTSMOKESPAWNER}, // S_BOOSTFLAME
+	{SPR_DRPO, FF_FULLBRIGHT|FF_ANIMATE|FF_ADD, TICRATE, {NULL}, 5, 2, S_NULL}, // S_DRIFTBOOSTFLAME
 	{SPR_NULL, 0,                      TICRATE/2, {NULL}, 0, 0, S_NULL}, // S_BOOSTSMOKESPAWNER
 
 	{SPR_BOSM, FF_TRANS50, 3, {NULL}, 0, 0, S_BOOSTSMOKE2}, // S_BOOSTSMOKE1

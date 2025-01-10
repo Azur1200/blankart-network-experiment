@@ -3571,6 +3571,7 @@ const char *const STATE_LIST[] = { // array length left dynamic for sanity testi
 
 	// Sneaker boost effect
 	"S_BOOSTFLAME",
+	"S_DRIFTBOOSTFLAME",
 	"S_BOOSTSMOKESPAWNER",
 	"S_BOOSTSMOKE1",
 	"S_BOOSTSMOKE2",

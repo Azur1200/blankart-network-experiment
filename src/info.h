@@ -1080,6 +1080,7 @@ typedef enum sprite
 	SPR_FAST, // Speed boost trail
 	SPR_DSHR, // Speed boost dust release
 	SPR_BOST, // Sneaker booster flame
+	SPR_DRPO, // Drift booster flame
 	SPR_BOSM, // Sneaker booster smoke
 	SPR_KFRE, // Sneaker fire trail
 	SPR_KINV, // Lighter invincibility sparkle trail
@@ -4534,6 +4535,7 @@ typedef enum state
 
 	// Sneaker boost effect
 	S_BOOSTFLAME,
+	S_DRIFTBOOSTFLAME,
 	S_BOOSTSMOKESPAWNER,
 	S_BOOSTSMOKE1,
 	S_BOOSTSMOKE2,

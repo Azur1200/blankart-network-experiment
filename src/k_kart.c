@@ -7978,6 +7978,31 @@ INT32 K_GetKartDriftSparkValueForStage(player_t *player, UINT8 stage)
 	return (FixedMul(K_GetKartDriftSparkValue(player) * FRACUNIT, mul) / FRACUNIT);
 }
 
+static void K_SpawnDriftEFX(player_t *player,SINT8 level)
+{
+	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
+	P_SetTarget(&overlay->target, player->mo);
+	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
+	K_FlipFromObject(overlay, player->mo);
+	overlay->extravalue1 = 1;
+
+	if (level == 1)
+	{
+		overlay->color = SKINCOLOR_SAPPHIRE;
+		overlay->tics = overlay->tics/2; // Less time for blue drift
+	}
+	else if (level == 2)
+	{
+		overlay->color = SKINCOLOR_KETCHUP;
+	}
+	else if (level == 3)
+	{
+		overlay->extravalue2 = 1;
+		overlay->tics = 5*overlay->tics/2; // More time for rainbow drift
+	}
+
+}
+
 static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
@@ -8009,6 +8034,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		if (player->driftboost < 20)
 			player->driftboost = 20;
 		S_StartSound(player->mo, sfx_s23c);
+		K_SpawnDriftEFX(player, 1);
 		player->driftcharge = 0;
 	}
 	else if ((player->drift != -5 && player->drift != 5)
@@ -8018,6 +8044,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 		if (player->driftboost < 50)
 			player->driftboost = 50;
 		S_StartSound(player->mo, sfx_s23c);
+		S_StartSound(player->mo, sfx_kc5b);
+		K_SpawnDriftEFX(player, 2);
 		player->driftcharge = 0;
 	}
 	else if ((player->drift != -5 && player->drift != 5)
@@ -8026,7 +8054,9 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		if (player->driftboost < 125)
 			player->driftboost = 125;
-		S_StartSound(player->mo, sfx_s23c);
+		S_StartSound(player->mo, sfx_kc5b);
+		S_StartSound(player->mo, sfx_kc3c);
+		K_SpawnDriftEFX(player, 3);
 		player->driftcharge = 0;
 	}
 
