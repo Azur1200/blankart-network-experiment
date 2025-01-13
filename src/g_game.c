@@ -672,13 +672,12 @@ static void G_UpdateRecordReplays(void)
 	G_SaveGameData();
 }
 
-// hack t
+// kinda hacky way to do this, but this sets the game to use a seperate savefile if you have addons loaded
 static void G_SetSaveGameModified(void)
 {
 	size_t filenamelen;
 
 	savemoddata = true;
-	majormods = false; // FIXME: this breaks the menu warning screen from popping up, id still want to use it to mention the diff savefile
 
 	strlcpy(gamedatafilename, "modkartdata.dat", sizeof (gamedatafilename));
 	strlwr(gamedatafilename);
@@ -711,6 +710,7 @@ void G_SetGameModified(boolean silent, boolean major)
 	//savemoddata = false; -- there is literally no reason to do this anymore.
 	majormods = true;
 
+	// should this only be done when you load a "major" gameplay modifieng addon?
 	G_SetSaveGameModified();
 
 	if (!silent)
@@ -4499,16 +4499,6 @@ void G_SaveGameData(void)
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));
 		return;
 	}
-
-#if 0
-	// SRB2Kart: Let players unlock stuff with addons.
-	if (modifiedgame && !savemoddata)
-	{
-		free(save.buffer);
-		save.p = save.buffer = NULL;
-		return;
-	}
-#endif
 
 	// Version test
 	WRITEUINT32(save.p, GD_VERSIONCHECK); // 4
