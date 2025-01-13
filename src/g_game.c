@@ -4369,7 +4369,7 @@ void G_LoadGameData(void)
 	}
 
 	// well no clue but dont think it would like reading garbage from vanilla files
-	K_ReadStats(&save, strcmp(gamedatafilename, "modkartdata.dat") != 0);
+	K_ReadStats(&save, !savemoddata);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 	{
@@ -4509,7 +4509,7 @@ void G_SaveGameData(void)
 	// Version test
 	WRITEUINT32(save.p, GD_VERSIONCHECK); // 4
 
-	K_WriteStats(&save, strcmp(gamedatafilename, "modkartdata.dat") != 0);
+	K_WriteStats(&save, !savemoddata);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 		WRITEUINT16(save.p, vspowerlevel[i]);
