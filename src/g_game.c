@@ -2596,9 +2596,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	
 	if (leveltime > (starttime + (TICRATE/2)) && !p->spectator)
 		p->respawn = 48; // Respawn effect
-
-	if (!demo.playback && p == &players[consoleplayer])
-		kartstats.respawns++;
 }
 
 //
@@ -2987,6 +2984,9 @@ void G_DoReborn(INT32 playernum)
 		G_SpawnPlayer(playernum, starpost);
 		if (oldmo)
 			G_ChangePlayerReferences(oldmo, players[playernum].mo);
+
+		if (!demo.playback && playernum == consoleplayer)
+			kartstats.respawns++;
 	}
 
 	ACS_RunPlayerEnterScript(player);
