@@ -2066,7 +2066,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	auto get_flat_tex = [](INT32 texnum)
 	{
 		texnum = R_GetTextureNum(texnum);
-		if (textures[texnum]->holes)
+		if (udmf && textures[texnum]->holes)
 		{
 			//srb2::r_debug::add_texture_to_frame_list(texnum);
 			// R_DrawWallColumn cannot render holey textures
