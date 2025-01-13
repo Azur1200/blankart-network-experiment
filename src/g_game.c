@@ -4034,8 +4034,12 @@ static void G_DoCompleted(void)
 	if (metalrecording)
 		G_StopMetalRecording(false);
 
+	K_StatRound();
+
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
+
+	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -4079,7 +4083,6 @@ static void G_DoCompleted(void)
 	if (!demo.playback)
 	{
 		nextmap = G_GetNextMap(true);
-		K_StatRound();
 
 		// Remember last map for when you come out of the special stage.
 		if (!spec)
