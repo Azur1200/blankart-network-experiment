@@ -2482,7 +2482,7 @@ void readsound(MYFILE *f, INT32 num)
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-static boolean GoodDataFileName(const char *s)
+/*static boolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -2497,7 +2497,7 @@ static boolean GoodDataFileName(const char *s)
 	if (fasticmp(s, "gamedata.dat")) return false;
 
 	return true;
-}
+}*/
 
 void reademblemdata(MYFILE *f, INT32 num)
 {
@@ -3240,7 +3240,7 @@ void readmaincfg(MYFILE *f)
 				maxXtraLife = (UINT8)get_number(word2);
 			}
 
-			else if (fastcmp(word, "GAMEDATA"))
+			/*else if (fastcmp(word, "GAMEDATA"))
 			{
 				size_t filenamelen;
 
@@ -3272,7 +3272,7 @@ void readmaincfg(MYFILE *f)
 				refreshdirmenu |= REFRESHDIR_GAMEDATA;
 				gamedataadded = true;
 				titlechanged = true;
-			}
+			}*/
 			else if (fastcmp(word, "RESETDATA"))
 			{
 				P_ResetData(value);
