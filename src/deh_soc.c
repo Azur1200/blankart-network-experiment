@@ -656,7 +656,7 @@ void readthing(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readskincolor(MYFILE *f, INT32 num)
+void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
@@ -763,7 +763,7 @@ void readskincolor(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "ACCESSIBLE"))
 			{
-				if (num > FIRSTSUPERCOLOR)
+				if (mainfile || num > FIRSTSUPERCOLOR)
 					skincolors[num].accessible = (boolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else
@@ -2441,6 +2441,10 @@ void readsound(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "VOLUME"))
 			{
 				S_sfx[num].volume = value;
+			}
+			else if (fastcmp(word, "SKINSOUND"))
+			{
+				S_sfx[num].skinsound = get_number(word2);
 			}
 			else if (fastcmp(word, "CAPTION") || fastcmp(word, "DESCRIPTION"))
 			{
