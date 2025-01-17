@@ -82,42 +82,11 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
-state_t states[NUMSTATES] = {
-	{SPR_NULL, 0,  1, {NULL}, 0, 0, S_NULL}
-};
+state_t states[NUMSTATES] = {};
 
-mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
-	{
-		-1,             // doomednum
-		S_NULL,         // spawnstate
-		0,              // spawnhealth
-		S_NULL,         // seestate
-		sfx_None,       // seesound
-		0,              // reactiontime
-		sfx_None,       // attacksound
-		S_NULL,         // painstate
-		0,              // painchance
-		sfx_None,       // painsound
-		S_NULL,         // meleestate
-		S_NULL,         // missilestate
-		S_NULL,         // deathstate
-		S_NULL,         // xdeathstate
-		sfx_None,       // deathsound
-		0,              // speed
-		0,              // radius
-		0,              // height
-		0,              // display offset
-		0,              // mass
-		0,              // damage
-		sfx_None,       // activesound
-		MF_NOBLOCKMAP|MF_NOSECTOR|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY|MF_SCENERY|MF_DONTENCOREMAP, // flags
-		S_NULL          // raisestate
-	}
-};
+mobjinfo_t mobjinfo[NUMMOBJTYPES] = {};
 
-skincolor_t skincolors[MAXSKINCOLORS] = {
-	{"None", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, SKINCOLOR_NONE, 0, 0, false},
-};
+skincolor_t skincolors[MAXSKINCOLORS] = {};
 
 /** Patches the mobjinfo, state, and skincolor tables.
   * Free slots are emptied out and set to initial values.
