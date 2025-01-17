@@ -314,7 +314,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_mobjtype(word2); // find a thing by name
-					if (i < NUMMOBJTYPES && i > 0)
+					if (i < NUMMOBJTYPES && i >= 0)
 					{
 						if (i < (MT_FIRSTFREESLOT+freeslotusage[1][1]))
 						{
@@ -325,7 +325,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 					}
 					else
 					{
-						deh_warning("Thing %d out of range (1 - %d)", i, NUMMOBJTYPES-1);
+						deh_warning("Thing %d out of range (0 - %d)", i, NUMMOBJTYPES-1);
 						ignorelines(f);
 					}
 				}
@@ -333,11 +333,11 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_skincolor(word2); // find a skincolor by name
-					if (i && i < numskincolors)
-						readskincolor(f, i);
+					if (i < numskincolors && i >= 0)
+						readskincolor(f, i, mainfile);
 					else
 					{
-						deh_warning("Skincolor %d out of range (1 - %d)", i, numskincolors-1);
+						deh_warning("Skincolor %d out of range (0 - %d)", i, numskincolors-1);
 						ignorelines(f);
 					}
 				}
@@ -463,11 +463,11 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_sfx(word2); // find a sound by name
-					if (i < NUMSFX && i > 0)
+					if (i < NUMSFX && i >= 0)
 						readsound(f, i);
 					else
 					{
-						deh_warning("Sound %d out of range (1 - %d)", i, NUMSFX-1);
+						deh_warning("Sound %d out of range (0 - %d)", i, NUMSFX-1);
 						ignorelines(f);
 					}
 				}

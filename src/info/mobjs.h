@@ -1,0 +1,1070 @@
+_(NULL)
+_(RAY) // General purpose mobj
+_(UNKNOWN)
+
+_(THOK) // Thok! mobj
+_(SHADOW) // Linkdraw Shadow (for invisible objects)
+_(PLAYER)
+_(KART_LEFTOVER)
+_(KART_TIRE)
+
+// Enemies
+_(BLUECRAWLA) // Crawla (Blue)
+_(REDCRAWLA) // Crawla (Red)
+_(GFZFISH) // SDURF
+_(GOLDBUZZ) // Buzz (Gold)
+_(REDBUZZ) // Buzz (Red)
+_(JETTBOMBER) // Jetty-Syn Bomber
+_(JETTGUNNER) // Jetty-Syn Gunner
+_(CRAWLACOMMANDER) // Crawla Commander
+_(DETON) // Deton
+_(SKIM) // Skim mine dropper
+_(TURRET) // Industrial Turret
+_(POPUPTURRET) // Pop-Up Turret
+_(SPINCUSHION) // Spincushion
+_(CRUSHSTACEAN) // Crushstacean
+_(CRUSHCLAW) // Big meaty claw
+_(CRUSHCHAIN) // Chain
+_(BANPYURA) // Banpyura
+_(BANPSPRING) // Banpyura spring
+_(JETJAW) // Jet Jaw
+_(SNAILER) // Snailer
+_(VULTURE) // BASH
+_(POINTY) // Pointy
+_(POINTYBALL) // Pointy Ball
+_(ROBOHOOD) // Robo-Hood
+_(FACESTABBER) // Castlebot Facestabber
+_(FACESTABBERSPEAR) // Castlebot Facestabber spear aura
+_(EGGGUARD) // Egg Guard
+_(EGGSHIELD) // Egg Guard's shield
+_(GSNAPPER) // Green Snapper
+_(SNAPPER_LEG) // Green Snapper leg
+_(SNAPPER_HEAD) // Green Snapper head
+_(MINUS) // Minus
+_(MINUSDIRT) // Minus dirt
+_(SPRINGSHELL) // Spring Shell
+_(YELLOWSHELL) // Spring Shell (yellow)
+_(UNIDUS) // Unidus
+_(UNIBALL) // Unidus Ball
+_(CANARIVORE) // Canarivore
+_(CANARIVORE_GAS) // Canarivore gas
+_(PYREFLY) // Pyre Fly
+_(PYREFLY_FIRE) // Pyre Fly fire
+_(PTERABYTESPAWNER) // Pterabyte spawner
+_(PTERABYTEWAYPOINT) // Pterabyte waypoint
+_(PTERABYTE) // Pterabyte
+_(DRAGONBOMBER) // Dragonbomber
+_(DRAGONWING) // Dragonbomber wing
+_(DRAGONTAIL) // Dragonbomber tail segment
+_(DRAGONMINE) // Dragonbomber mine
+
+// Generic Boss Items
+_(BOSSEXPLODE)
+_(SONIC3KBOSSEXPLODE)
+_(BOSSFLYPOINT)
+_(EGGTRAP)
+_(BOSS3WAYPOINT)
+_(BOSS9GATHERPOINT)
+_(BOSSJUNK)
+
+// Boss 1
+_(EGGMOBILE)
+_(JETFUME1)
+_(EGGMOBILE_BALL)
+_(EGGMOBILE_TARGET)
+_(EGGMOBILE_FIRE)
+
+// Boss 2
+_(EGGMOBILE2)
+_(EGGMOBILE2_POGO)
+_(GOOP)
+_(GOOPTRAIL)
+
+// Boss 3
+_(EGGMOBILE3)
+_(FAKEMOBILE)
+_(SHOCKWAVE)
+
+// Boss 4
+_(EGGMOBILE4)
+_(EGGMOBILE4_MACE)
+_(JETFLAME)
+_(EGGROBO1)
+_(EGGROBO1JET)
+
+// Boss 5
+_(FANG)
+_(BROKENROBOT)
+_(VWREF)
+_(VWREB)
+_(PROJECTORLIGHT)
+_(FBOMB)
+_(TNTDUST) // also used by barrel
+_(FSGNA)
+_(FSGNB)
+_(FANGWAYPOINT)
+
+// Black Eggman (Boss 7)
+_(BLACKEGGMAN)
+_(BLACKEGGMAN_HELPER)
+_(BLACKEGGMAN_GOOPFIRE)
+_(BLACKEGGMAN_MISSILE)
+
+// New Very-Last-Minute 2.1 Brak Eggman (Cy-Brak-demon)
+_(CYBRAKDEMON)
+_(CYBRAKDEMON_ELECTRIC_BARRIER)
+_(CYBRAKDEMON_MISSILE)
+_(CYBRAKDEMON_FLAMESHOT)
+_(CYBRAKDEMON_FLAMEREST)
+_(CYBRAKDEMON_TARGET_RETICULE)
+_(CYBRAKDEMON_TARGET_DOT)
+_(CYBRAKDEMON_NAPALM_BOMB_LARGE)
+_(CYBRAKDEMON_NAPALM_BOMB_SMALL)
+_(CYBRAKDEMON_NAPALM_FLAMES)
+_(CYBRAKDEMON_VILE_EXPLOSION)
+
+// Metal Sonic (Boss 9)
+_(METALSONIC_RACE)
+_(METALSONIC_BATTLE)
+_(MSSHIELD_FRONT)
+_(MSGATHER)
+
+// Collectible Items
+_(RING)
+_(FLINGRING) // Lost ring
+_(BLUESPHERE) // Blue sphere for special stages
+_(FLINGBLUESPHERE) // Lost blue sphere
+_(BOMBSPHERE)
+_(REDTEAMRING) // Rings collectable by red team.
+_(BLUETEAMRING) // Rings collectable by blue team.
+_(TOKEN) // Special Stage token for special stage
+_(REDFLAG) // Red CTF Flag
+_(BLUEFLAG) // Blue CTF Flag
+_(EMBLEM)
+_(EMERALD1)
+_(EMERALD2)
+_(EMERALD3)
+_(EMERALD4)
+_(EMERALD5)
+_(EMERALD6)
+_(EMERALD7)
+_(EMERHUNT) // Emerald Hunt
+_(EMERALDSPAWN) // Emerald spawner w/ delay
+_(FLINGEMERALD) // Lost emerald
+
+// Springs and others
+_(FAN)
+_(STEAM)
+_(BUMPER)
+_(BALLOON)
+
+_(YELLOWSPRING)
+_(REDSPRING)
+_(BLUESPRING)
+_(GREYSPRING)
+_(INVISSPRING)
+_(YELLOWDIAG) // Yellow Diagonal Spring
+_(REDDIAG) // Red Diagonal Spring
+_(BLUEDIAG) // Blue Diagonal Spring
+_(GREYDIAG) // Grey Diagonal Spring
+_(YELLOWHORIZ) // Yellow Horizontal Spring
+_(REDHORIZ) // Red Horizontal Spring
+_(BLUEHORIZ) // Blue Horizontal Spring
+_(GREYHORIZ) // Grey Horizontal Spring
+
+_(BOOSTERSEG)
+_(BOOSTERROLLER)
+_(YELLOWBOOSTER)
+_(REDBOOSTER)
+
+// Interactive Objects
+_(BUBBLES) // Bubble source
+_(SIGN) // Level end sign
+_(SPIKEBALL) // Spike Ball
+_(SPINFIRE)
+_(SPIKE)
+_(WALLSPIKE)
+_(WALLSPIKEBASE)
+_(STARPOST)
+_(BIGMINE)
+_(BLASTEXECUTOR)
+_(CANNONLAUNCHER)
+
+// Monitor miscellany
+_(BOXSPARKLE)
+
+// Monitor boxes -- regular
+_(RING_BOX)
+_(PITY_BOX)
+_(ATTRACT_BOX)
+_(FORCE_BOX)
+_(ARMAGEDDON_BOX)
+_(WHIRLWIND_BOX)
+_(ELEMENTAL_BOX)
+_(SNEAKERS_BOX)
+_(INVULN_BOX)
+_(1UP_BOX)
+_(EGGMAN_BOX)
+_(MIXUP_BOX)
+_(MYSTERY_BOX)
+_(GRAVITY_BOX)
+_(RECYCLER_BOX)
+_(SCORE1K_BOX)
+_(SCORE10K_BOX)
+_(FLAMEAURA_BOX)
+_(BUBBLEWRAP_BOX)
+_(THUNDERCOIN_BOX)
+
+// Monitor boxes -- repeating (big) boxes
+_(PITY_GOLDBOX)
+_(ATTRACT_GOLDBOX)
+_(FORCE_GOLDBOX)
+_(ARMAGEDDON_GOLDBOX)
+_(WHIRLWIND_GOLDBOX)
+_(ELEMENTAL_GOLDBOX)
+_(SNEAKERS_GOLDBOX)
+_(INVULN_GOLDBOX)
+_(EGGMAN_GOLDBOX)
+_(GRAVITY_GOLDBOX)
+_(FLAMEAURA_GOLDBOX)
+_(BUBBLEWRAP_GOLDBOX)
+_(THUNDERCOIN_GOLDBOX)
+
+// Monitor boxes -- special
+_(RING_REDBOX)
+_(RING_BLUEBOX)
+
+// Monitor icons
+_(RING_ICON)
+_(PITY_ICON)
+_(ATTRACT_ICON)
+_(FORCE_ICON)
+_(ARMAGEDDON_ICON)
+_(WHIRLWIND_ICON)
+_(ELEMENTAL_ICON)
+_(SNEAKERS_ICON)
+_(INVULN_ICON)
+_(1UP_ICON)
+_(EGGMAN_ICON)
+_(MIXUP_ICON)
+_(GRAVITY_ICON)
+_(RECYCLER_ICON)
+_(SCORE1K_ICON)
+_(SCORE10K_ICON)
+_(FLAMEAURA_ICON)
+_(BUBBLEWRAP_ICON)
+_(THUNDERCOIN_ICON)
+
+// Projectiles
+_(ROCKET)
+_(LASER)
+_(TORPEDO)
+_(TORPEDO2) // silent
+_(ENERGYBALL)
+_(MINE) // Skim/Jetty-Syn mine
+_(JETTBULLET) // Jetty-Syn Bullet
+_(TURRETLASER)
+_(CANNONBALL) // Cannonball
+_(CANNONBALLDECOR) // Decorative/still cannonball
+_(ARROW) // Arrow
+_(DEMONFIRE) // Glaregoyle fire
+
+// The letter
+_(LETTER)
+
+// Greenflower Scenery
+_(GFZFLOWER1)
+_(GFZFLOWER2)
+_(GFZFLOWER3)
+
+_(BLUEBERRYBUSH)
+_(BERRYBUSH)
+_(BUSH)
+
+// Trees (both GFZ and misc)
+_(GFZTREE)
+_(GFZBERRYTREE)
+_(GFZCHERRYTREE)
+_(CHECKERTREE)
+_(CHECKERSUNSETTREE)
+_(FHZTREE) // Frozen Hillside
+_(FHZPINKTREE)
+_(POLYGONTREE)
+_(BUSHTREE)
+_(BUSHREDTREE)
+_(SPRINGTREE)
+
+// Techno Hill Scenery
+_(THZFLOWER1)
+_(THZFLOWER2)
+_(THZFLOWER3)
+_(THZTREE) // Steam whistle tree/bush
+_(THZTREEBRANCH) // branch of said tree
+_(ALARM)
+
+// Deep Sea Scenery
+_(GARGOYLE) // Deep Sea Gargoyle
+_(BIGGARGOYLE) // Deep Sea Gargoyle (Big)
+_(SEAWEED) // DSZ Seaweed
+_(WATERDRIP) // Dripping Water source
+_(WATERDROP) // Water drop from dripping water
+_(CORAL1) // Coral
+_(CORAL2)
+_(CORAL3)
+_(CORAL4)
+_(CORAL5)
+_(BLUECRYSTAL) // Blue Crystal
+_(KELP) // Kelp
+_(ANIMALGAETOP) // Animated algae top
+_(ANIMALGAESEG) // Animated algae segment
+_(DSZSTALAGMITE) // Deep Sea 1 Stalagmite
+_(DSZ2STALAGMITE) // Deep Sea 2 Stalagmite
+_(LIGHTBEAM) // DSZ Light beam
+
+// Castle Eggman Scenery
+_(CHAIN) // CEZ Chain
+_(FLAME) // Flame (has corona)
+_(FLAMEPARTICLE)
+_(EGGSTATUE) // Eggman Statue
+_(MACEPOINT) // Mace rotation point
+_(CHAINMACEPOINT) // Combination of chains and maces point
+_(SPRINGBALLPOINT) // Spring ball point
+_(CHAINPOINT) // Mace chain
+_(HIDDEN_SLING) // Spin mace chain (activatable)
+_(FIREBARPOINT) // Firebar
+_(CUSTOMMACEPOINT) // Custom mace
+_(SMALLMACECHAIN) // Small Mace Chain
+_(BIGMACECHAIN) // Big Mace Chain
+_(SMALLMACE) // Small Mace
+_(BIGMACE) // Big Mace
+_(SMALLGRABCHAIN) // Small Grab Chain
+_(BIGGRABCHAIN) // Big Grab Chain
+_(YELLOWSPRINGBALL) // Yellow spring on a ball
+_(REDSPRINGBALL) // Red spring on a ball
+_(SMALLFIREBAR) // Small Firebar
+_(BIGFIREBAR) // Big Firebar
+_(CEZFLOWER) // Flower
+_(CEZPOLE1) // Pole (with red banner)
+_(CEZPOLE2) // Pole (with blue banner)
+_(CEZBANNER1) // Banner (red)
+_(CEZBANNER2) // Banner (blue)
+_(PINETREE) // Pine Tree
+_(CEZBUSH1) // Bush 1
+_(CEZBUSH2) // Bush 2
+_(CANDLE) // Candle
+_(CANDLEPRICKET) // Candle pricket
+_(FLAMEHOLDER) // Flame holder
+_(FIRETORCH) // Fire torch
+_(WAVINGFLAG1) // Waving flag (red)
+_(WAVINGFLAG2) // Waving flag (blue)
+_(WAVINGFLAGSEG1) // Waving flag segment (red)
+_(WAVINGFLAGSEG2) // Waving flag segment (blue)
+_(CRAWLASTATUE) // Crawla statue
+_(FACESTABBERSTATUE) // Facestabber statue
+_(SUSPICIOUSFACESTABBERSTATUE) // :eggthinking:
+_(BRAMBLES) // Brambles
+
+// Arid Canyon Scenery
+_(BIGTUMBLEWEED)
+_(LITTLETUMBLEWEED)
+_(CACTI1) // Tiny Red Flower Cactus
+_(CACTI2) // Small Red Flower Cactus
+_(CACTI3) // Tiny Blue Flower Cactus
+_(CACTI4) // Small Blue Flower Cactus
+_(CACTI5) // Prickly Pear
+_(CACTI6) // Barrel Cactus
+_(CACTI7) // Tall Barrel Cactus
+_(CACTI8) // Armed Cactus
+_(CACTI9) // Ball Cactus
+_(CACTI10) // Tiny Cactus
+_(CACTI11) // Small Cactus
+_(CACTITINYSEG) // Tiny Cactus Segment
+_(CACTISMALLSEG) // Small Cactus Segment
+_(ARIDSIGN_CAUTION) // Caution Sign
+_(ARIDSIGN_CACTI) // Cacti Sign
+_(ARIDSIGN_SHARPTURN) // Sharp Turn Sign
+_(OILLAMP)
+_(TNTBARREL)
+_(PROXIMITYTNT)
+_(DUSTDEVIL)
+_(DUSTLAYER)
+_(ARIDDUST)
+_(MINECART)
+_(MINECARTSEG)
+_(MINECARTSPAWNER)
+_(MINECARTEND)
+_(MINECARTENDSOLID)
+_(MINECARTSIDEMARK)
+_(MINECARTSPARK)
+_(SALOONDOOR)
+_(SALOONDOORCENTER)
+_(TRAINCAMEOSPAWNER)
+_(TRAINSEG)
+_(TRAINDUSTSPAWNER)
+_(TRAINSTEAMSPAWNER)
+_(MINECARTSWITCHPOINT)
+
+// Red Volcano Scenery
+_(FLAMEJET)
+_(VERTICALFLAMEJET)
+_(FLAMEJETFLAME)
+
+_(FJSPINAXISA) // Counter-clockwise
+_(FJSPINAXISB) // Clockwise
+
+_(FLAMEJETFLAMEB) // Blade's flame
+
+_(LAVAFALL)
+_(LAVAFALL_LAVA)
+_(LAVAFALLROCK)
+
+_(ROLLOUTSPAWN)
+_(ROLLOUTROCK)
+
+_(BIGFERNLEAF)
+_(BIGFERN)
+_(JUNGLEPALM)
+_(TORCHFLOWER)
+_(WALLVINE_LONG)
+_(WALLVINE_SHORT)
+
+// Dark City Scenery
+
+// Egg Rock Scenery
+
+// Azure Temple Scenery
+_(GLAREGOYLE)
+_(GLAREGOYLEUP)
+_(GLAREGOYLEDOWN)
+_(GLAREGOYLELONG)
+_(TARGET) // AKA Red Crystal
+_(GREENFLAME)
+_(BLUEGARGOYLE)
+
+// Stalagmites
+_(STALAGMITE0)
+_(STALAGMITE1)
+_(STALAGMITE2)
+_(STALAGMITE3)
+_(STALAGMITE4)
+_(STALAGMITE5)
+_(STALAGMITE6)
+_(STALAGMITE7)
+_(STALAGMITE8)
+_(STALAGMITE9)
+
+// Christmas Scenery
+_(XMASPOLE)
+_(CANDYCANE)
+_(SNOWMAN)    // normal
+_(SNOWMANHAT) // with hat + scarf
+_(LAMPPOST1)  // normal
+_(LAMPPOST2)  // with snow
+_(HANGSTAR)
+_(MISTLETOE)
+// Xmas GFZ bushes
+_(XMASBLUEBERRYBUSH)
+_(XMASBERRYBUSH)
+_(XMASBUSH)
+// FHZ
+_(FHZICE1)
+_(FHZICE2)
+_(ROSY)
+_(CDLHRT)
+
+// Halloween Scenery
+// Pumpkins
+_(JACKO1)
+_(JACKO2)
+_(JACKO3)
+// Dr Seuss Trees
+_(HHZTREE_TOP)
+_(HHZTREE_PART)
+// Misc
+_(HHZSHROOM)
+_(HHZGRASS)
+_(HHZTENTACLE1)
+_(HHZTENTACLE2)
+_(HHZSTALAGMITE_TALL)
+_(HHZSTALAGMITE_SHORT)
+
+// Botanic Serenity scenery
+_(BSZTALLFLOWER_RED)
+_(BSZTALLFLOWER_PURPLE)
+_(BSZTALLFLOWER_BLUE)
+_(BSZTALLFLOWER_CYAN)
+_(BSZTALLFLOWER_YELLOW)
+_(BSZTALLFLOWER_ORANGE)
+_(BSZFLOWER_RED)
+_(BSZFLOWER_PURPLE)
+_(BSZFLOWER_BLUE)
+_(BSZFLOWER_CYAN)
+_(BSZFLOWER_YELLOW)
+_(BSZFLOWER_ORANGE)
+_(BSZSHORTFLOWER_RED)
+_(BSZSHORTFLOWER_PURPLE)
+_(BSZSHORTFLOWER_BLUE)
+_(BSZSHORTFLOWER_CYAN)
+_(BSZSHORTFLOWER_YELLOW)
+_(BSZSHORTFLOWER_ORANGE)
+_(BSZTULIP_RED)
+_(BSZTULIP_PURPLE)
+_(BSZTULIP_BLUE)
+_(BSZTULIP_CYAN)
+_(BSZTULIP_YELLOW)
+_(BSZTULIP_ORANGE)
+_(BSZCLUSTER_RED)
+_(BSZCLUSTER_PURPLE)
+_(BSZCLUSTER_BLUE)
+_(BSZCLUSTER_CYAN)
+_(BSZCLUSTER_YELLOW)
+_(BSZCLUSTER_ORANGE)
+_(BSZBUSH_RED)
+_(BSZBUSH_PURPLE)
+_(BSZBUSH_BLUE)
+_(BSZBUSH_CYAN)
+_(BSZBUSH_YELLOW)
+_(BSZBUSH_ORANGE)
+_(BSZVINE_RED)
+_(BSZVINE_PURPLE)
+_(BSZVINE_BLUE)
+_(BSZVINE_CYAN)
+_(BSZVINE_YELLOW)
+_(BSZVINE_ORANGE)
+_(BSZSHRUB)
+_(BSZCLOVER)
+_(BSZFISH)
+_(BSZSUNFLOWER)
+
+// Misc scenery
+_(DBALL)
+_(EGGSTATUE2)
+
+// Powerup Indicators
+_(ELEMENTAL_ORB) // Elemental shield mobj
+_(ATTRACT_ORB) // Attract shield mobj
+_(FORCE_ORB) // Force shield mobj
+_(ARMAGEDDON_ORB) // Armageddon shield mobj
+_(WHIRLWIND_ORB) // Whirlwind shield mobj
+_(PITY_ORB) // Pity shield mobj
+_(FLAMEAURA_ORB) // Flame shield mobj
+_(BUBBLEWRAP_ORB) // Bubble shield mobj
+_(THUNDERCOIN_ORB) // Thunder shield mobj
+_(THUNDERCOIN_SPARK) // Thunder spark
+_(IVSP) // Invincibility sparkles
+_(SUPERSPARK) // Super Sonic Spark
+
+// Flickies
+_(FLICKY_01) // Bluebird
+_(FLICKY_01_CENTER)
+_(FLICKY_02) // Rabbit
+_(FLICKY_02_CENTER)
+_(FLICKY_03) // Chicken
+_(FLICKY_03_CENTER)
+_(FLICKY_04) // Seal
+_(FLICKY_04_CENTER)
+_(FLICKY_05) // Pig
+_(FLICKY_05_CENTER)
+_(FLICKY_06) // Chipmunk
+_(FLICKY_06_CENTER)
+_(FLICKY_07) // Penguin
+_(FLICKY_07_CENTER)
+_(FLICKY_08) // Fish
+_(FLICKY_08_CENTER)
+_(FLICKY_09) // Ram
+_(FLICKY_09_CENTER)
+_(FLICKY_10) // Puffin
+_(FLICKY_10_CENTER)
+_(FLICKY_11) // Cow
+_(FLICKY_11_CENTER)
+_(FLICKY_12) // Rat
+_(FLICKY_12_CENTER)
+_(FLICKY_13) // Bear
+_(FLICKY_13_CENTER)
+_(FLICKY_14) // Dove
+_(FLICKY_14_CENTER)
+_(FLICKY_15) // Cat
+_(FLICKY_15_CENTER)
+_(FLICKY_16) // Canary
+_(FLICKY_16_CENTER)
+_(SECRETFLICKY_01) // Spider
+_(SECRETFLICKY_01_CENTER)
+_(SECRETFLICKY_02) // Bat
+_(SECRETFLICKY_02_CENTER)
+_(SEED)
+
+// Environmental Effects
+_(RAIN) // Rain
+_(SNOWFLAKE) // Snowflake
+_(BLIZZARDSNOW) // Blizzard Snowball
+_(SPLISH) // Water splish!
+_(LAVASPLISH) // Lava splish!
+_(SMOKE)
+_(SMALLBUBBLE) // small bubble
+_(MEDIUMBUBBLE) // medium bubble
+_(EXTRALARGEBUBBLE) // extra large bubble
+_(WATERZAP)
+_(SPINDUST) // Spindash dust
+_(TFOG)
+_(PARTICLE)
+_(PARTICLEGEN) // For fans, etc.
+
+// Game Indicators
+_(SCORE) // score logo
+_(DROWNNUMBERS) // Drowning Timer
+_(GOTEMERALD) // Chaos Emerald (intangible)
+_(LOCKON) // Target
+_(LOCKONINF) // In-level Target
+_(TAG) // Tag Sign
+_(GOTFLAG) // Got Flag sign
+_(FINISHFLAG) // Finish flag
+
+// Ambient Sounds
+_(AMBIENT)
+
+_(CORK)
+_(LHRT)
+
+// Ring Weapons
+_(REDRING)
+_(BOUNCERING)
+_(RAILRING)
+_(INFINITYRING)
+_(AUTOMATICRING)
+_(EXPLOSIONRING)
+_(SCATTERRING)
+_(GRENADERING)
+
+_(BOUNCEPICKUP)
+_(RAILPICKUP)
+_(AUTOPICKUP)
+_(EXPLODEPICKUP)
+_(SCATTERPICKUP)
+_(GRENADEPICKUP)
+
+_(THROWNBOUNCE)
+_(THROWNINFINITY)
+_(THROWNAUTOMATIC)
+_(THROWNSCATTER)
+_(THROWNEXPLOSION)
+_(THROWNGRENADE)
+
+// Mario-specific stuff
+_(COIN)
+_(FLINGCOIN)
+_(GOOMBA)
+_(BLUEGOOMBA)
+_(FIREFLOWER)
+_(FIREBALL)
+_(FIREBALLTRAIL)
+_(SHELL)
+_(PUMA)
+_(PUMATRAIL)
+_(HAMMER)
+_(KOOPA)
+_(KOOPAFLAME)
+_(AXE)
+_(MARIOBUSH1)
+_(MARIOBUSH2)
+_(TOAD)
+
+// NiGHTS Stuff
+_(AXIS)
+_(AXISTRANSFER)
+_(AXISTRANSFERLINE)
+_(NIGHTSDRONE)
+_(NIGHTSDRONE_MAN)
+_(NIGHTSDRONE_SPARKLING)
+_(NIGHTSDRONE_GOAL)
+_(NIGHTSPARKLE)
+_(NIGHTSLOOPHELPER)
+_(NIGHTSBUMPER) // NiGHTS Bumper
+_(HOOP)
+_(HOOPCOLLIDE) // Collision detection for NiGHTS hoops
+_(HOOPCENTER) // Center of a hoop
+_(NIGHTSCORE)
+_(NIGHTSCHIP) // NiGHTS Chip
+_(FLINGNIGHTSCHIP) // Lost NiGHTS Chip
+_(NIGHTSSTAR) // NiGHTS Star
+_(FLINGNIGHTSSTAR) // Lost NiGHTS Star
+_(NIGHTSSUPERLOOP)
+_(NIGHTSWING)
+_(NIGHTSDRILLREFILL)
+_(NIGHTSHELPER)
+_(NIGHTSEXTRATIME)
+_(NIGHTSLINKFREEZE)
+_(EGGCAPSULE)
+_(IDEYAANCHOR)
+_(NIGHTOPIANHELPER) // the actual helper object that orbits you
+_(PIAN) // decorative singing friend
+_(SHLEEP) // almost-decorative sleeping enemy
+
+// Secret badniks and hazards, shhhh
+_(PENGUINATOR)
+_(POPHAT)
+_(POPSHOT)
+_(POPSHOT_TRAIL)
+
+_(HIVEELEMENTAL)
+_(BUMBLEBORE)
+
+_(BUGGLE)
+
+_(SMASHINGSPIKEBALL)
+_(CACOLANTERN)
+_(CACOSHARD)
+_(CACOFIRE)
+_(SPINBOBERT)
+_(SPINBOBERT_FIRE1)
+_(SPINBOBERT_FIRE2)
+_(HANGSTER)
+
+// Utility Objects
+_(TELEPORTMAN)
+_(ALTVIEWMAN)
+_(CRUMBLEOBJ) // Sound generator for crumbling platform
+_(TUBEWAYPOINT)
+_(PUSH)
+_(GHOST)
+_(OVERLAY)
+_(ANGLEMAN)
+_(POLYANCHOR)
+_(POLYSPAWN)
+
+// Skybox objects
+_(SKYBOX)
+
+// Debris
+_(SPARK) // spark, only used for debugging, actually
+_(EXPLODE) // Robot Explosion
+_(UWEXPLODE) // Underwater Explosion
+_(DUST)
+_(ROCKSPAWNER)
+_(FALLINGROCK)
+_(ROCKCRUMBLE1)
+_(ROCKCRUMBLE2)
+_(ROCKCRUMBLE3)
+_(ROCKCRUMBLE4)
+_(ROCKCRUMBLE5)
+_(ROCKCRUMBLE6)
+_(ROCKCRUMBLE7)
+_(ROCKCRUMBLE8)
+_(ROCKCRUMBLE9)
+_(ROCKCRUMBLE10)
+_(ROCKCRUMBLE11)
+_(ROCKCRUMBLE12)
+_(ROCKCRUMBLE13)
+_(ROCKCRUMBLE14)
+_(ROCKCRUMBLE15)
+_(ROCKCRUMBLE16)
+
+// Level debris
+_(GFZDEBRIS)
+_(BRICKDEBRIS)
+_(WOODDEBRIS)
+_(REDBRICKDEBRIS) // for CEZ3
+_(BLUEBRICKDEBRIS) // for CEZ3
+_(YELLOWBRICKDEBRIS) // for CEZ3
+
+// SRB2kart
+_(RANDOMITEM)
+_(RANDOMITEMPOP)
+_(FLOATINGITEM)
+_(ITEMCAPSULE)
+_(ITEMCAPSULE_PART)
+
+_(SIGNSPARKLE)
+
+_(FASTLINE)
+_(FASTDUST)
+_(BOOSTFLAME)
+_(BOOSTSMOKE)
+_(SNEAKERTRAIL)
+_(AIZDRIFTSTRAT)
+_(SPARKLETRAIL)
+_(INVULNFLASH)
+_(WIPEOUTTRAIL)
+_(DRIFTSPARK)
+_(BRAKEDRIFT)
+_(DRIFTDUST)
+
+_(ROCKETSNEAKER) // Rocket sneakers
+
+_(EGGMANITEM) // Eggman items
+_(EGGMANITEM_SHIELD)
+
+_(BANANA) // Banana Stuff
+_(BANANA_SHIELD)
+
+_(ORBINAUT) // Orbinaut stuff
+_(ORBINAUT_SHIELD)
+
+_(JAWZ) // Jawz stuff
+_(JAWZ_DUD)
+_(JAWZ_SHIELD)
+
+_(PLAYERRETICULE) // Jawz reticule
+
+_(SSMINE) // Mine stuff
+_(SSMINE_SHIELD)
+
+_(SMOLDERING) // New explosion
+_(BOOMEXPLODE)
+_(BOOMPARTICLE)
+
+_(LANDMINE) // Land Mine
+
+_(DROPTARGET) // Drop Target
+_(DROPTARGET_SHIELD)
+
+_(BALLHOG) // Ballhog
+_(BALLHOGBOOM)
+
+_(SPB) // SPB stuff
+_(SPBEXPLOSION)
+
+_(THUNDERSHIELD) // Shields
+_(BUBBLESHIELD)
+_(FLAMESHIELD)
+_(BUBBLESHIELDTRAP)
+
+_(SINK) // Kitchen Sink Stuff
+_(SINK_SHIELD)
+_(SINKTRAIL)
+
+_(BATTLEBUMPER) // Battle Mode bumpers
+_(BATTLEBUMPER_DEBRIS)
+_(BATTLEBUMPER_BLAST)
+
+_(DEZLASER)
+
+_(WAYPOINT)
+_(WAYPOINT_RISER)
+_(WAYPOINT_ANCHOR)
+
+_(BOTHINT)
+
+_(RANDOMAUDIENCE)
+
+_(FLAYM)
+_(DEVIL)
+_(ANGEL)
+_(PALMTREE)
+_(FLAG)
+_(HEDGEHOG)
+_(BUSH1)
+_(TWEE)
+_(HYDRANT)
+
+_(BIGPUMA)
+_(APPLE)
+
+_(DOOD_FLOWER1)
+_(DOOD_FLOWER2)
+_(DOOD_FLOWER3)
+_(DOOD_FLOWER4)
+_(DOOD_BOX)
+_(DOOD_BALLOON)
+_(BIGRING)
+
+_(SNES_DONUTBUSH1)
+_(SNES_DONUTBUSH2)
+_(SNES_DONUTBUSH3)
+
+_(GBA_BOO)
+
+_(BUZZBOMBER)
+_(CHOMPER)
+_(PALMTREE2)
+_(PURPLEFLOWER1)
+_(PURPLEFLOWER2)
+_(YELLOWFLOWER1)
+_(YELLOWFLOWER2)
+_(PLANT2)
+_(PLANT3)
+_(PLANT4)
+
+_(SKULL)
+_(PHANTREE)
+_(FLYINGGARG)
+_(LAMPPOST)
+_(MOSSYTREE)
+
+_(BUMP)
+
+_(FLINGENERGY)
+
+_(ITEMCLASH)
+
+_(FIREDITEM)
+
+_(INSTASHIELDA)
+_(INSTASHIELDB)
+
+_(POWERCLASH) // Grow/Invinc clash VFX
+
+_(PLAYERARROW)
+_(PLAYERWANTED)
+
+_(KARMAHITBOX)
+_(KARMAWHEEL)
+
+_(BATTLEPOINT)
+
+_(FZEROBOOM)
+
+// Various plants
+_(SONICBUSH)
+
+// Marble Zone
+_(MARBLEFLAMEPARTICLE)
+_(MARBLETORCH)
+_(MARBLELIGHT)
+_(MARBLEBURNER)
+
+// CD Special Stage
+_(CDUFO)
+
+// Rusty Rig
+_(RUSTYLAMP_ORANGE)
+_(RUSTYCHAIN)
+
+// Smokin' & Vapin' (Don't try this at home, kids!)
+_(PETSMOKER)
+_(PETSMOKE)
+_(VVVAPE)
+
+// Hill Top Zone
+_(HTZTREE)
+_(HTZBUSH)
+
+// Ports of gardens
+_(SGVINE1)
+_(SGVINE2)
+_(SGVINE3)
+_(PGTREE)
+_(PGFLOWER1)
+_(PGFLOWER2)
+_(PGFLOWER3)
+_(PGBUSH)
+_(DHPILLAR)
+
+// Midnight Channel stuff:
+_(SPOTLIGHT)     // Spotlight Object
+_(RANDOMSHADOW)  // Random static Shadows.
+_(ROAMINGSHADOW) // Roaming Shadows.
+_(MAYONAKAARROW) // Arrow static signs for Mayonaka
+
+// Mementos stuff
+_(REAPERWAYPOINT)
+_(REAPER)
+_(MEMENTOSTP)
+_(MEMENTOSPARTICLE)
+
+_(JACKINTHEBOX)
+
+// Color Drive:
+_(CDMOON)
+_(CDBUSH)
+_(CDTREEA)
+_(CDTREEB)
+
+// Daytona Speedway
+_(DAYTONAPINETREE)
+_(DAYTONAPINETREE_SIDE)
+
+// Egg Zeppelin
+_(EZZPROPELLER)
+_(EZZPROPELLER_BLADE)
+
+// Desert Palace
+_(DP_PALMTREE)
+
+// Aurora Atoll
+_(AAZTREE_HELPER)
+_(AAZTREE_SEG)
+_(AAZTREE_COCONUT)
+_(AAZTREE_LEAF)
+
+// Barren Badlands
+_(BBZDUST)
+_(FROGGER)
+_(FROGTONGUE)
+_(FROGTONGUE_JOINT)
+_(ROBRA)
+_(ROBRA_HEAD)
+_(ROBRA_JOINT)
+_(BLUEROBRA)
+_(BLUEROBRA_HEAD)
+_(BLUEROBRA_JOINT)
+
+// Eerie Grove
+_(EERIEFOG)
+_(EERIEFOGGEN)
+
+// SMK ports
+_(SMK_PIPE)
+_(SMK_MOLESPAWNER)
+_(SMK_MOLE)
+_(SMK_THWOMP)
+_(SMK_SNOWBALL)
+_(SMK_ICEBLOCK)
+_(SMK_ICEBLOCK_SIDE)
+_(SMK_ICEBLOCK_DEBRIS)
+
+// Ezo's maps
+_(BLUEFIRE)
+_(GREENFIRE)
+_(REGALCHEST)
+_(CHIMERASTATUE)
+_(DRAGONSTATUE)
+_(LIZARDMANSTATUE)
+_(PEGASUSSTATUE)
+_(ZELDAFIRE)
+_(GANBARETHING)
+_(GANBAREDUCK)
+_(GANBARETREE)
+_(MONOKUMA)
+_(REDZELDAFIRE)
+_(BOWLINGPIN)
+_(MERRYAMBIENCE)
+_(TWINKLECARTAMBIENCE)
+_(EXPLODINGBARREL)
+_(MERRYHORSE)
+_(ARIDTOAD)
+_(BLUEFRUIT)
+_(ORANGEFRUIT)
+_(REDFRUIT)
+_(PINKFRUIT)
+_(ADVENTURESPIKEA)
+_(ADVENTURESPIKEB)
+_(ADVENTURESPIKEC)
+_(BOOSTPROMPT)
+_(BOOSTOFF)
+_(BOOSTON)
+_(LIZARDMAN)
+_(LIONMAN)
+
+// Opulence
+_(OPULENCE_PALMTREE)
+_(OPULENCE_FERN)
+
+_(TUMBLEGEM)
+_(TUMBLECOIN)
+
+_(KARMAFIREWORK)
+_(GAINAX)
+
+_(FOLLOWER)
+_(FOLLOWERBUBBLE_FRONT)
+_(FOLLOWERBUBBLE_BACK)
+
+_(WATERTRAIL)
+_(WATERTRAILUNDERLAY)
+
+_(PAPERITEMSPOT)
+
+_(LOOPENDPOINT)
+_(LOOPCENTERPOINT)
+
+_(SCRIPT_THING)

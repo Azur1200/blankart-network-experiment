@@ -656,7 +656,7 @@ void readthing(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-void readskincolor(MYFILE *f, INT32 num)
+void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
@@ -763,7 +763,7 @@ void readskincolor(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "ACCESSIBLE"))
 			{
-				if (num > FIRSTSUPERCOLOR)
+				if (mainfile || num > FIRSTSUPERCOLOR)
 					skincolors[num].accessible = (boolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else
@@ -1200,7 +1200,7 @@ void readlevelheader(MYFILE *f, INT32 num)
 						if (fastncmp(tmp, "MT_", 3)) // support for specified mobjtypes...
 						{
 							i = get_mobjtype(tmp);
-							if (!i)
+							if (i == -1)
 							{
 								//deh_warning("Level header %d: unknown flicky mobj type %s\n", num, tmp); -- no need for this line as get_mobjtype complains too
 								continue;
@@ -2322,7 +2322,8 @@ void readframe(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word1, "NEXT"))
 			{
-				states[num].nextstate = get_state(word2);
+				statenum_t state = get_state(word2);
+				states[num].nextstate = state == -1 ? S_NULL : state;
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
@@ -2440,6 +2441,10 @@ void readsound(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "VOLUME"))
 			{
 				S_sfx[num].volume = value;
+			}
+			else if (fastcmp(word, "SKINSOUND"))
+			{
+				S_sfx[num].skinsound = get_number(word2);
 			}
 			else if (fastcmp(word, "CAPTION") || fastcmp(word, "DESCRIPTION"))
 			{
@@ -3750,7 +3755,10 @@ void readfollower(MYFILE *f)
 				else if (fastcmp(word2, "OPPOSITE"))
 					followers[numfollowers].defaultcolor = FOLLOWERCOLOR_OPPOSITE;
 				else
-					followers[numfollowers].defaultcolor = get_skincolor(word2);
+				{
+					skincolornum_t color = get_skincolor(word2);
+					followers[numfollowers].defaultcolor = color == -1 ? SKINCOLOR_GREEN : color;
+				}
 			}
 			else if (fastcmp(word, "SCALE"))
 			{
@@ -3982,7 +3990,8 @@ void readweather(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "TYPE"))
 			{
-				precipprops[num].type = get_mobjtype(word2);
+				mobjtype_t mt = get_mobjtype(word2);
+				precipprops[num].type = mt == -1 ? MT_NULL : mt;
 			}
 			else if (fastcmp(word, "EFFECTS"))
 			{
@@ -4017,7 +4026,7 @@ mobjtype_t get_mobjtype(const char *word)
 		if (fastcmp(word, MOBJTYPE_LIST[i]+3))
 			return i;
 	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
-	return MT_NULL;
+	return -1;
 }
 
 statenum_t get_state(const char *word)
@@ -4037,7 +4046,7 @@ statenum_t get_state(const char *word)
 		if (fastcmp(word, STATE_LIST[i]+2))
 			return i;
 	deh_warning("Couldn't find state named 'S_%s'",word);
-	return S_NULL;
+	return -1;
 }
 
 skincolornum_t get_skincolor(const char *word)
@@ -4057,7 +4066,7 @@ skincolornum_t get_skincolor(const char *word)
 		if (fastcmp(word, COLOR_ENUMS[i]))
 			return i;
 	deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'",word);
-	return SKINCOLOR_GREEN;
+	return -1;
 }
 
 spritenum_t get_sprite(const char *word)
@@ -4101,7 +4110,7 @@ sfxenum_t get_sfx(const char *word)
 		if (S_sfx[i].name && fasticmp(word, S_sfx[i].name))
 			return i;
 	deh_warning("Couldn't find sfx named 'SFX_%s'",word);
-	return sfx_None;
+	return -1;
 }
 
 menutype_t get_menutype(const char *word)

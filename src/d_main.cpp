@@ -1506,6 +1506,9 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
+	// now do it again for the SOC colors in main.pk3!
+	M_InitPlayerSetupColors();
+
 	// Do it before P_InitMapData because PNG patch
 	// conversion sometimes needs the palette
 	V_ReloadPalette();

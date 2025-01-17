@@ -79,7 +79,7 @@ void readsprite2(MYFILE *f, INT32 num);
 #ifdef HWRENDER
 void readlight(MYFILE *f, INT32 num);
 #endif
-void readskincolor(MYFILE *f, INT32 num);
+void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);
 void readPlayer(MYFILE *f, INT32 num);
