@@ -681,7 +681,7 @@ static void G_SetSaveGameModified(void)
 		return;
 
 	// save vanilla data just to be sure
-	G_SaveGameData(true);
+	G_SaveGameData();
 
 	savemoddata = true;
 

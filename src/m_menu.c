@@ -7524,10 +7524,29 @@ static void M_ChoosePlayer(INT32 choice)
 // STATISTICS MENU
 // ===============
 
+static void M_DrawStatsMaps(void);
+static void M_DrawStatsPlaytime(void);
+static void M_DrawStatsExtra(void); // dunno how to name this one
+
 static INT32 statsLocation;
 static INT32 statsMax;
 static INT16 *statsMapList = NULL;
 static INT16 statsMapListLen;
+static UINT8 statsCurrentPage = 0;
+
+typedef struct statpage_s {
+	const char *title;
+	void (*drawer)(void);
+} statpage_t;
+
+static statpage_t statsPages[] = {
+	{ "Level Statistics", M_DrawStatsMaps, },
+	{ "Play Time Statistics", M_DrawStatsPlaytime, },
+	{ "Extra Statistics", M_DrawStatsExtra, },
+};
+
+#define LENSTATSPAGES (sizeof(statsPages)/sizeof(statsPages[0]))
+#define NUMSTATSPAGES (kartstats.vanilla ? 2 : LENSTATSPAGES)
 
 static void M_Statistics(INT32 choice)
 {
@@ -7557,6 +7576,7 @@ static void M_Statistics(INT32 choice)
 	statsMapList[j] = -1;
 	statsMax = j - 11 + numextraemblems;
 	statsLocation = 0;
+	statsCurrentPage = 0;
 
 	if (statsMax < 0)
 		statsMax = 0;
@@ -7564,12 +7584,44 @@ static void M_Statistics(INT32 choice)
 	M_SetupNextMenu(&SP_LevelStatsDef);
 }
 
-static void M_DrawStatsMaps(int location)
+static void M_DrawStatsMaps(void)
 {
-	INT32 y = 88, i = -1;
+	char beststr[40];
+	tic_t besttime = 0;
+	INT32 mapsunfinished = 0;
+
+	int location = statsLocation;
+	INT32 y = 62, i = -1, j;
 	INT16 mnum;
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
+
+	for (j = 0; j < nummapheaders; j++)
+	{
+		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
+			continue;
+
+		if (!mapheaderinfo[j]->mainrecord || mapheaderinfo[j]->mainrecord->time <= 0)
+		{
+			mapsunfinished++;
+			continue;
+		}
+
+		besttime += mapheaderinfo[j]->mainrecord->time;
+	}
+
+	V_DrawString(20, 42, highlightflags, "Combined time records:");
+
+	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsunfinished ? warningflags : 0), beststr);
+
+	if (mapsunfinished)
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, warningflags, va("(%d unfinished)", mapsunfinished));
+	else
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, recommendedflags, "(complete)");
+
+	V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
 
 	if (location)
 		V_DrawCharacter(10, y-(skullAnimCounter/5),
@@ -7659,57 +7711,74 @@ bottomarrow:
 			'\x1B' | highlightflags, false); // down arrow
 }
 
-static void M_DrawLevelStats(void)
+#define DRAWTIMESTAT(y, title, field) { \
+		char timebuf[80]; \
+		V_DrawString(20, (y), highlightflags, title); \
+		tic_t timeval = kartstats.field; \
+		snprintf(timebuf, 80, "%02i:%02i:%02i", G_TicsToHours(timeval), G_TicsToMinutes(timeval, false), G_TicsToSeconds(timeval)); \
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), 0, timebuf); \
+	}
+
+#define DRAWAMOUNTSTAT(y, title, field) { \
+		V_DrawString(20, (y), highlightflags, title); \
+		unsigned amountval = kartstats.field; \
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, (y), 0, va("%u", amountval)); \
+	}
+
+static void M_DrawStatsPlaytime(void)
 {
-	char beststr[40];
-
-	tic_t besttime = 0;
-
-	INT32 i;
-	INT32 mapsunfinished = 0;
-
-	M_DrawMenuTitle();
-
-	V_DrawString(20, 24, highlightflags, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 32, 0, va("%i hours, %i minutes, %i seconds",
+	V_DrawString(20, 42, highlightflags, "Total Play Time:");
+	V_DrawCenteredString(BASEVIDWIDTH/2, 52, 0, va("%i hours, %i minutes, %i seconds",
 	                         G_TicsToHours(kartstats.totalplaytime),
 	                         G_TicsToMinutes(kartstats.totalplaytime, false),
 	                         G_TicsToSeconds(kartstats.totalplaytime)));
-	V_DrawString(20, 42, highlightflags, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, 0, va("%i played", kartstats.matchesplayed));
+	V_DrawString(20, 62, highlightflags, "Total Matches:");
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, 0, va("%i played", kartstats.matchesplayed));
 
-	V_DrawString(20, 52, highlightflags, "Online Power Level:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 52, 0, va("Race: %i", vspowerlevel[PWRLV_RACE]));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 60, 0, va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
+	// Nothing else to draw
+	if (kartstats.vanilla)
+		return;
 
-	for (i = 0; i < nummapheaders; i++)
-	{
-		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
-			continue;
+	DRAWTIMESTAT(82, "RA Play Time:", raplaytime);
+	DRAWTIMESTAT(92, "Online Play Time:", onlineplaytime);
+	DRAWTIMESTAT(102, "Race Play Time:", raceplaytime);
+	DRAWTIMESTAT(112, "Battle Play Time:", battleplaytime);
+}
 
-		if (!mapheaderinfo[i]->mainrecord || mapheaderinfo[i]->mainrecord->time <= 0)
-		{
-			mapsunfinished++;
-			continue;
-		}
+// Note: only available with non-vanilla stats loaded, so it doesn't check for that
+static void M_DrawStatsExtra(void)
+{
+	DRAWTIMESTAT(42, "Time being SPB target:", spbtargettime);
+	DRAWTIMESTAT(52, "Time spent in spinout:", spinouttime);
 
-		besttime += mapheaderinfo[i]->mainrecord->time;
-	}
+	DRAWAMOUNTSTAT(72, "Total wins:", totalwins);
+	DRAWAMOUNTSTAT(82, "Total podium (2nd/3rd place):", totalwins);
 
-	V_DrawString(20, 70, highlightflags, "Combined time records:");
+	DRAWAMOUNTSTAT(102, "Hits landed:", hits);
+	DRAWAMOUNTSTAT(112, "Self-hits landed:", selfhits);
 
-	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 70, (mapsunfinished ? warningflags : 0), beststr);
+	DRAWAMOUNTSTAT(132, "Sinks landed:", sinks);
+	DRAWAMOUNTSTAT(142, "Times hit by sink:", sinked);
 
-	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 78, warningflags, va("(%d unfinished)", mapsunfinished));
-	else
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 78, recommendedflags, "(complete)");
+	DRAWAMOUNTSTAT(162, "Total respawns:", respawns);
+}
 
-	V_DrawString(32, 78, V_ALLOWLOWERCASE, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-	V_DrawSmallScaledPatch(20, 78, 0, W_CachePatchName("GOTITA", PU_STATIC));
+#undef DRAWAMOUNTSTAT
+#undef DRAWTIMESTAT
 
-	M_DrawStatsMaps(statsLocation);
+static void M_DrawLevelStats(void)
+{
+	M_DrawMenuTitle();
+
+	V_DrawCenteredString(BASEVIDWIDTH/2, 28, highlightflags, statsPages[statsCurrentPage].title);
+
+	INT32 w = V_StringWidth(statsPages[statsCurrentPage].title, highlightflags);
+	V_DrawCharacter(BASEVIDWIDTH/2 - w/2 - 10 - (skullAnimCounter/5), 28,
+			'\x1C' | highlightflags, false); // left arrow
+	V_DrawCharacter(BASEVIDWIDTH/2 + w/2 + 2 + (skullAnimCounter/5), 28,
+			'\x1D' | highlightflags, false); // right arrow
+
+	statsPages[statsCurrentPage].drawer();
 }
 
 // Handle statistics.
@@ -7720,23 +7789,46 @@ static void M_HandleLevelStats(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
+			if (statsCurrentPage != 0) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation < statsMax)
 				++statsLocation;
 			break;
 
 		case KEY_UPARROW:
+			if (statsCurrentPage != 0) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			if (statsLocation)
 				--statsLocation;
 			break;
 
+		case KEY_RIGHTARROW:
+			S_StartSound(NULL, sfx_menu1);
+			statsCurrentPage++;
+			if (statsCurrentPage >= NUMSTATSPAGES)
+				statsCurrentPage = 0;
+			break;
+
+		case KEY_LEFTARROW:
+			S_StartSound(NULL, sfx_menu1);
+			if (statsCurrentPage == 0)
+				statsCurrentPage = NUMSTATSPAGES-1;
+			else
+				--statsCurrentPage;
+			break;
+
 		case KEY_PGDN:
+			if (statsCurrentPage != 0) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation += (statsLocation+13 >= statsMax) ? statsMax-statsLocation : 13;
 			break;
 
 		case KEY_PGUP:
+			if (statsCurrentPage != 0) // Must be on level stats page
+				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
 			break;
