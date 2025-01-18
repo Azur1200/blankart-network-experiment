@@ -4339,6 +4339,7 @@ void G_LoadGameData(void)
 	// to new gamedata
 	G_ClearRecords(); // main and nights records
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
+	K_EraseStats(); // stats
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++) // SRB2Kart: online rank system
 		vspowerlevel[i] = PWRLVRECORD_START;
