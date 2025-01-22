@@ -5009,6 +5009,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 
 	WRITEUINT32(save->p, wantedcalcdelay);
 	WRITEUINT32(save->p, indirectitemcooldown);
+	WRITEUINT32(save->p, hyubgone);
 	WRITEUINT32(save->p, mapreset);
 
 	WRITEUINT8(save->p, spectateGriefed);
@@ -5174,6 +5175,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		battlewanted[i] = READSINT8(save->p);
 
 	wantedcalcdelay = READUINT32(save->p);
+	hyubgone = READUINT32(save->p);
 	indirectitemcooldown = READUINT32(save->p);
 	mapreset = READUINT32(save->p);
 

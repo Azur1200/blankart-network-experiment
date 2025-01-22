@@ -425,6 +425,9 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 	if (getitem == KITEM_SPB || getitem == KITEM_SHRINK) // Indirect items
 		indirectitemcooldown = 20*TICRATE;
 
+	if (getitem == KITEM_HYUDORO) // Hyudoro cooldown
+		hyubgone = 20*TICRATE;
+
 	player->botvars.itemdelay = TICRATE;
 	player->botvars.itemconfirm = 0;
 
@@ -654,7 +657,6 @@ INT32 K_KartGetItemOdds(
 		case KITEM_LANDMINE:
 		case KITEM_DROPTARGET:
 		case KITEM_BALLHOG:
-		case KITEM_HYUDORO:
 		case KRITEM_TRIPLESNEAKER:
 		case KRITEM_TRIPLEORBINAUT:
 		case KRITEM_QUADORBINAUT:
@@ -715,6 +717,12 @@ INT32 K_KartGetItemOdds(
 			if (spbplace != -1)
 				newodds = 0;
 			break;
+		case KITEM_HYUDORO:
+			cooldownOnStart = true;
+
+			if (hyubgone > 0)
+				newodds = 0;
+			break;
 		default:
 			break;
 	}
@@ -770,6 +778,181 @@ INT32 K_KartGetItemOdds(
 
 	return newodds;
 }
+
+INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush)
+{
+	INT32 newodds;
+	INT32 i;
+	UINT8 pingame = 0, pexiting = 0;
+	SINT8 first = -1, second = -1;
+	UINT32 secondToFirst = 0;
+	INT32 shieldtype = KSHIELD_NONE;
+
+	boolean powerItem = false;
+	boolean cooldownOnStart = false;
+	boolean indirectItem = false;
+
+	I_Assert(item > KITEM_NONE); // too many off by one scenarioes.
+
+	if (!KartItemCVars[item-1]->value && !modeattacking)
+		return 0;
+
+	if (gametype == GT_BATTLE)
+		newodds = K_KartItemOddsBattle[item-1][pos];
+	else
+		newodds = K_KartItemOddsRace[item-1][pos];
+
+	// Base multiplication to ALL item odds to simulate fractional precision
+	newodds *= 4;
+
+	shieldtype = K_GetShieldFromItem(item);
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+		if (players[i].exiting)
+			pexiting++;
+
+		if (shieldtype != KSHIELD_NONE && shieldtype == K_GetShieldFromItem(players[i].itemtype))
+		{
+			// Don't allow more than one of each shield type at a time
+			return 0;
+		}
+
+		if (players[i].mo && gametype == GT_RACE)
+		{
+			if (players[i].position == 1 && first == -1)
+				first = i;
+			if (players[i].position == 2 && second == -1)
+				second = i;
+		}
+	}
+
+	if (first != -1 && second != -1) // calculate 2nd's distance from 1st, for SPB
+	{
+		secondToFirst = P_AproxDistance(P_AproxDistance(players[first].mo->x - players[second].mo->x,
+														players[first].mo->y - players[second].mo->y),
+														players[first].mo->z - players[second].mo->z) / FRACUNIT;
+		secondToFirst = K_ScaleItemDistance(secondToFirst, pingame, spbrush);
+	}
+
+	switch (item)
+	{
+		case KITEM_ROCKETSNEAKER:
+		case KITEM_JAWZ:
+		case KITEM_BALLHOG:
+		case KITEM_LANDMINE:
+		case KITEM_DROPTARGET:
+		case KRITEM_TRIPLESNEAKER:
+		case KRITEM_TRIPLEBANANA:
+		case KRITEM_TENFOLDBANANA:
+		case KRITEM_TRIPLEORBINAUT:
+		case KRITEM_QUADORBINAUT:
+		case KRITEM_DUALJAWZ:
+			powerItem = true;
+			break;
+		case KITEM_INVINCIBILITY:
+		case KITEM_MINE:
+		case KITEM_GROW:
+		case KITEM_BUBBLESHIELD:
+		case KITEM_FLAMESHIELD:
+			cooldownOnStart = true;
+			powerItem = true;
+			break;
+		case KITEM_SPB:
+			cooldownOnStart = true;
+			indirectItem = true;
+			//powerItem = true;
+
+			if (pexiting > 0)
+			{
+				newodds = 0;
+			}
+			else if (pos != 9) // Force SPB
+			{
+				const INT32 distFromStart = max(0, (INT32)secondToFirst - SPBSTARTDIST);
+				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
+				const fixed_t mulMax = 3*FRACUNIT;
+
+				fixed_t multiplier = (distFromStart * mulMax) / distRange;
+
+				if (multiplier < 0)
+					multiplier = 0;
+
+				if (multiplier > mulMax)
+					multiplier = mulMax;
+
+				newodds = FixedMul(newodds * FRACUNIT, multiplier) / FRACUNIT;
+			}
+			break;
+		case KITEM_SHRINK:
+			cooldownOnStart = true;
+			powerItem = true;
+			indirectItem = true;
+
+			if (pingame-1 <= pexiting)
+				newodds = 0;
+			break;
+		case KITEM_THUNDERSHIELD:
+			cooldownOnStart = true;
+			powerItem = true;
+			break;
+		case KITEM_HYUDORO:
+			cooldownOnStart = true;
+
+			if (hyubgone > 0)
+				newodds = 0;
+			break;
+		default:
+			break;
+	}
+
+	if (newodds == 0)
+	{
+		// Nothing else we want to do with odds matters at this point :p
+		return newodds;
+	}
+
+	if ((indirectItem == true) && (indirectitemcooldown > 0))
+	{
+		// Too many items that act indirectly in a match can feel kind of bad.
+		newodds = 0;
+	}
+	else if ((cooldownOnStart == true) && (leveltime < (30*TICRATE)+starttime))
+	{
+		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
+		newodds = 0;
+	}
+	else if (powerItem == true)
+	{
+		// This item is a "power item". This activates "frantic item" toggle related functionality.
+		fixed_t fracOdds = newodds * FRACUNIT;
+
+		if (franticitems == true)
+		{
+			// First, power items multiply their odds by 2 if frantic items are on; easy-peasy.
+			fracOdds *= 2;
+		}
+
+		fracOdds = FixedMul(fracOdds, FRACUNIT + K_ItemOddsScale(pingame, spbrush));
+
+		if (mashed > 0)
+		{
+			// Lastly, it *divides* it based on your mashed value, so that power items are less likely when you mash.
+			fracOdds = FixedDiv(fracOdds, FRACUNIT + mashed);
+		}
+
+		newodds = fracOdds / FRACUNIT;
+	}
+
+	return newodds;
+}
+
 
 //{ SRB2kart Roulette Code - Distance Based, yes waypoints
 
@@ -864,6 +1047,232 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 	}
 
 #undef SETUPDISTTABLE
+
+	return useodds;
+}
+
+
+
+INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush)
+{
+	SINT8 sortedPlayers[MAXPLAYERS];
+	UINT8 sortLength = 0;
+
+	UINT32 pdis = 0;
+
+	UINT8 disttable[14];
+	UINT8 distlen = 0;
+
+	boolean oddsvalid[8];
+	INT32 useodds = 0;
+
+	INT32 i;
+
+	// Unused now, oops :V
+	(void)bestbumper;
+
+	for (i = 0; i < 8; i++)
+	{
+		INT32 j;
+		boolean available = false;
+
+		if (gametype == GT_BATTLE && i > 1)
+		{
+			oddsvalid[i] = false;
+			break;
+		}
+
+		for (j = 1; j < NUMKARTRESULTS; j++)
+		{
+
+			if (K_KartGetLegacyItemOdds(i, j, mashed, spbrush) > 0)
+			{
+				available = true;
+				break;
+			}
+
+		}
+
+		oddsvalid[i] = available;
+	}
+
+	memset(sortedPlayers, -1, sizeof(sortedPlayers));
+
+	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
+	{
+		// Sort all of the players ahead of you.
+		// Then tally up their distances in a conga line.
+
+		// This will create a much more consistent item
+		// distance algorithm than the "spider web" thing
+		// that it was doing before.
+
+		// Add yourself to the list.
+		// You'll always be the end of the list,
+		// so we can also calculate the length here.
+		sortedPlayers[ player->position - 1 ] = player - players;
+		sortLength = player->position;
+
+		// Will only need to do this if there's goint to be
+		// more than yourself in the list.
+		if (sortLength > 1)
+		{
+			SINT8 firstIndex = -1;
+			SINT8 secondIndex = -1;
+			INT32 startFrom = INT32_MAX;
+
+			// Add all of the other players.
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				INT32 pos = INT32_MAX;
+
+				if (!playeringame[i] || players[i].spectator)
+				{
+					continue;
+				}
+
+				if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
+				{
+					continue;
+				}
+
+				pos = players[i].position;
+
+				if (pos <= 0 || pos > MAXPLAYERS)
+				{
+					// Invalid position.
+					continue;
+				}
+
+				if (pos >= player->position)
+				{
+					// Tied / behind us.
+					// Also handles ourselves, obviously.
+					continue;
+				}
+
+				// Ties are done with port priority, if there are any.
+				if (sortedPlayers[ pos - 1 ] == -1)
+				{
+					sortedPlayers[ pos - 1 ] = i;
+				}
+			}
+
+			// The chance of this list having gaps is improbable,
+			// but not impossible. So we need to spend some extra time
+			// to prevent the gaps from mattering.
+			for (i = 0; i < sortLength-1; i++)
+			{
+				if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+				{
+					// First valid index in the list found.
+					firstIndex = sortedPlayers[i];
+
+					// Start the next loop after this player.
+					startFrom = i + 1;
+					break;
+				}
+			}
+
+			if (firstIndex >= 0 && firstIndex < MAXPLAYERS
+				&& startFrom < sortLength)
+			{
+				// First index is valid, so we can
+				// start comparing the players.
+
+				player_t *firstPlayer = NULL;
+				player_t *secondPlayer = NULL;
+
+				for (i = startFrom; i < sortLength; i++)
+				{
+					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+					{
+						secondIndex = sortedPlayers[i];
+
+						firstPlayer = &players[firstIndex];
+						secondPlayer = &players[secondIndex];
+
+						// Add the distance to the player behind you.
+						pdis += P_AproxDistance(P_AproxDistance(
+									firstPlayer->mo->x - secondPlayer->mo->x,
+									firstPlayer->mo->y - secondPlayer->mo->y),
+									firstPlayer->mo->z - secondPlayer->mo->z) / FRACUNIT;
+
+						// Advance to next index.
+						firstIndex = secondIndex;
+					}
+				}
+			}
+		}
+	}
+
+#define SETUPDISTTABLE(odds, num) \
+	if (oddsvalid[odds]) \
+		for (i = num; i; --i) \
+			disttable[distlen++] = odds;
+
+	if (gametype == GT_BATTLE) // Battle Mode
+	{
+		if (player->roulettetype == 1 && oddsvalid[1] == true)
+		{
+			// 1 is the extreme odds of player-controlled "Karma" items
+			useodds = 1;
+		}
+		else
+		{
+			useodds = 0;
+
+			if (oddsvalid[0] == false && oddsvalid[1] == true)
+			{
+				// try to use karma odds as a fallback
+				useodds = 1;
+			}
+		}
+	}
+	else
+	{
+		SETUPDISTTABLE(0,1);
+		SETUPDISTTABLE(1,1);
+		SETUPDISTTABLE(2,1);
+		SETUPDISTTABLE(3,2);
+		SETUPDISTTABLE(4,2);
+		SETUPDISTTABLE(5,3);
+		SETUPDISTTABLE(6,3);
+		SETUPDISTTABLE(7,1);
+
+		pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
+
+		if (pingame == 1 && oddsvalid[0])
+		{
+			// Record Attack / FREE PLAY
+			useodds = 0;
+		}
+		else if (pdis <= 0)
+		{
+			// 1st place
+			useodds = disttable[0];
+		}
+		else if (pdis > DISTVAR * ((12 * distlen) / 14))
+		{
+			// Back of the pack
+			useodds = disttable[distlen-1];
+		}
+		else
+		{
+			for (i = 1; i < 13; i++)
+			{
+				if (pdis <= (unsigned)(DISTVAR * ((i * distlen) / 14)))
+				{
+					useodds = disttable[((i * distlen) / 14)];
+					break;
+				}
+			}
+		}
+	}
+
+#undef SETUPDISTTABLE
+
+	//CONS_Printf("Got useodds %d. (position: %d, distance: %d)\n", useodds, player->position, pdis);
 
 	return useodds;
 }
@@ -1111,7 +1520,11 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		spawnchance[i] = 0;
 
 	// Split into another function for a debug function below
-	useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
+	// Use a legacy version for maps not using waypoints.
+	if (numbosswaypoints > 0)
+		useodds = K_FindLegacyUseodds(player, mashed, pdis, bestbumper, spbrush);
+	else
+		useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
 
 	for (i = 1; i < NUMKARTRESULTS; i++)
 	{

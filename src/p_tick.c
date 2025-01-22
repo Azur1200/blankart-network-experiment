@@ -848,6 +848,9 @@ void P_Ticker(boolean run)
 		if (indirectitemcooldown > 0)
 			indirectitemcooldown--;
 
+		if (hyubgone > 0)
+			hyubgone--;
+
 		K_BossInfoTicker();
 
 		if ((gametyperules & GTR_BUMPERS))

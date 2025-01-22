@@ -8036,6 +8036,7 @@ static void P_InitGametype(void)
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
+	hyubgone = 0;
 	mapreset = 0;
 
 	thwompsactive = false;

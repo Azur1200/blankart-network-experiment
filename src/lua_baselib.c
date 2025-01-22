@@ -3903,6 +3903,41 @@ static int lib_kDeclareWeakspot(lua_State *L)
 	return 0;
 }
 
+// sets the remaining time before players blow up
+static int lib_kSetRaceCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	racecountdown = c;
+	return 0;
+}
+
+// sets the remaining time before the race ends after everyone finishes
+static int lib_kSetExitCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	exitcountdown = c;
+	return 0;
+}
+
+// Sets the item cooldown before another shrink / SPB can be rolled
+static int lib_kSetIndirectItemCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	indirectitemcooldown = c;
+	return 0;
+}
+
+// Sets the item cooldown before another shrink / SPB can be rolled
+static int lib_kSetHyuCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	hyubgone = c;
+	return 0;
+}
+
 static int lib_getTimeMicros(lua_State *L)
 {
 	lua_pushinteger(L, I_GetPreciseTime() / (I_GetPrecisePrecision() / 1000000));
@@ -4195,6 +4230,10 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
+	{"K_SetExitCountdown",lib_kSetExitCountdown},
+	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
+	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

@@ -363,6 +363,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"gamespeed")) {
 		lua_pushinteger(L, gamespeed);
 		return 1;
+	} else if (fastcmp(word,"hyubgone")) {
+		lua_pushinteger(L, hyubgone);
+		return 1;
 	} else if (fastcmp(word,"encoremode")) {
 		lua_pushboolean(L, encoremode);
 		return 1;

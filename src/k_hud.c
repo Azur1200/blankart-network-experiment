@@ -4407,57 +4407,86 @@ static void K_drawDistributionDebugger(void)
 		pdis = (15 * pdis) / 14;
 	}
 
-	useodds = K_FindUseodds(stplyr, 0, pdis, bestbumper, spbrush);
+	if (numbosswaypoints > 0)
+		useodds = K_FindLegacyUseodds(stplyr, 0, pdis, bestbumper, spbrush);
+	else
+		useodds = K_FindUseodds(stplyr, 0, pdis, bestbumper, spbrush);
 
-	for (i = 1; i < NUMKARTRESULTS; i++)
+	if (pingame == 1)
 	{
-		INT32 itemodds = K_KartGetItemOdds(
-			useodds, i,
-			stplyr->distancetofinish,
-			0,
-			spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
-		);
+		if (stplyr->itemroulette && (stplyr->cmd.buttons & BT_ATTACK) && (cv_superring.value && !ringsdisabled))
+			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, kp_superring[1]);
+		else
+			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, items[1]);
+		V_DrawThinString(x+11, y+31, V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
+	}
+	else
+	{
 
-		if (itemodds <= 0)
-			continue;
-
-		V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, items[i]);
-		V_DrawThinString(x+11, y+31, V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
-
-		// Display amount for multi-items
-		if (i >= NUMKARTITEMS)
+		for (i = 1; i < NUMKARTRESULTS; i++)
 		{
-			INT32 amount;
-			switch (i)
+			INT32 itemodds;
+
+
+
+			if (numbosswaypoints > 0)
+				itemodds = K_KartGetLegacyItemOdds(useodds, i, 0, spbrush);
+			else
+				itemodds = K_KartGetItemOdds(
+					useodds, i,
+					stplyr->distancetofinish,
+					0,
+					spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
+				);
+
+			if (itemodds <= 0)
+				continue;
+
+			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, items[i]);
+			V_DrawThinString(x+11, y+31, V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
+
+			// Display amount for multi-items
+			if (i >= NUMKARTITEMS)
 			{
-				case KRITEM_TENFOLDBANANA:
-					amount = 10;
-					break;
-				case KRITEM_QUADORBINAUT:
-					amount = 4;
-					break;
-				case KRITEM_DUALJAWZ:
-					amount = 2;
-					break;
-				case KRITEM_DUALSNEAKER:
-					amount = 2;
-					break;
-				default:
-					amount = 3;
-					break;
+				INT32 amount;
+				switch (i)
+				{
+					case KRITEM_TENFOLDBANANA:
+						amount = 10;
+						break;
+					case KRITEM_QUADORBINAUT:
+						amount = 4;
+						break;
+					case KRITEM_DUALJAWZ:
+						amount = 2;
+						break;
+					case KRITEM_DUALSNEAKER:
+						amount = 2;
+						break;
+					default:
+						amount = 3;
+						break;
+				}
+				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
 			}
-			V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
-		}
 
-		x += 32;
-		if (x >= 297)
-		{
-			x = -9;
-			y += 32;
+			x += 32;
+			if (x >= 297)
+			{
+				x = -9;
+				y += 32;
+			}
 		}
 	}
 
-	V_DrawString(0, 0, V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
+	if (pingame == 1)
+		V_DrawString(0, 0, V_HUDTRANS|V_SNAPTOTOP, "TA MODE");
+	else
+		V_DrawString(0, 0, V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
+
+	if (numbosswaypoints > 0)
+		V_DrawSmallString(70, 0, V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
+
 }
 
 static void K_drawCheckpointDebugger(void)
