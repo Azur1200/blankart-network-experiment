@@ -2198,7 +2198,7 @@ static void K_drawKartLapsAndRings(void)
 		if (numlaps >= 10)
 		{
 			UINT8 ln[2];
-			ln[0] = ((stplyr->laps / 10) % 10);
+			ln[0] = ((stplyr->laps+1 / 10) % 10);
 			ln[1] = (stplyr->laps % 10);
 
 			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
@@ -2212,7 +2212,7 @@ static void K_drawKartLapsAndRings(void)
 		}
 		else
 		{
-			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps) % 10]);
+			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps+1) % 10]);
 			V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(numlaps) % 10]);
 		}
 
@@ -4365,10 +4365,11 @@ static void K_drawDistributionDebugger(void)
 	UINT32 pdis = 0;
 	INT32 i;
 	INT32 x = -9, y = -9;
+	boolean dontforcespb = false;
 	boolean spbrush = false;
 
-	if (stplyr != &players[displayplayers[0]]) // only for p1
-		return;
+	//if (stplyr != &players[displayplayers[0]]) // only for p1
+		//return;
 
 	// The only code duplication from the Kart, just to avoid the actual item function from calculating pingame twice
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -4376,49 +4377,66 @@ static void K_drawDistributionDebugger(void)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 		pingame++;
+		if (players[i].exiting)
+			dontforcespb = true;
 		if (players[i].bumper > bestbumper)
 			bestbumper = players[i].bumper;
 	}
 
-	// lovely double loop......
-	for (i = 0; i < MAXPLAYERS; i++)
+	if (!(numbosswaypoints > 0))
 	{
-		if (playeringame[i] && !players[i].spectator
-			&& players[i].position == 1)
+		// lovely double loop......
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			// This player is first! Yay!
-			pdis = stplyr->distancetofinish - players[i].distancetofinish;
-			break;
+			if (playeringame[i] && !players[i].spectator
+				&& players[i].position == 1)
+			{
+				// This player is first! Yay!
+				pdis = stplyr->distancetofinish - players[i].distancetofinish;
+				break;
+			}
 		}
 	}
 
 	if (spbplace != -1 && stplyr->position == spbplace+1)
 	{
 		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
-		pdis = (3 * pdis) / 2;
+		if (!(numbosswaypoints > 0))
+			pdis = (3 * pdis) / 2;
 		spbrush = true;
 	}
 
-	pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
 
-	if (stplyr->bot && stplyr->botvars.rival)
+	if (!(numbosswaypoints > 0))
 	{
-		// Rival has better odds :)
-		pdis = (15 * pdis) / 14;
+
+		pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
+
+		if (stplyr->bot && stplyr->botvars.rival)
+		{
+			// Rival has better odds :)
+			pdis = (15 * pdis) / 14;
+		}
 	}
 
 	if (numbosswaypoints > 0)
-		useodds = K_FindLegacyUseodds(stplyr, 0, pdis, bestbumper, spbrush);
+		useodds = K_FindLegacyUseodds(stplyr, 0, pingame, bestbumper, spbrush, dontforcespb);
 	else
 		useodds = K_FindUseodds(stplyr, 0, pdis, bestbumper, spbrush);
 
 	if (pingame == 1)
 	{
 		if (stplyr->itemroulette && (stplyr->cmd.buttons & BT_ATTACK) && (cv_superring.value && !ringsdisabled))
-			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, kp_superring[1]);
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, kp_superring[1]);
 		else
-			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, items[1]);
-		V_DrawThinString(x+11, y+31, V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[1]);
+		V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
+	}
+	else if (useodds == 69)
+	{
+		V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[11]);
+		V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
+
 	}
 	else
 	{
@@ -4442,8 +4460,8 @@ static void K_drawDistributionDebugger(void)
 			if (itemodds <= 0)
 				continue;
 
-			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOTOP, items[i]);
-			V_DrawThinString(x+11, y+31, V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[i]);
+			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
 
 			// Display amount for multi-items
 			if (i >= NUMKARTITEMS)
@@ -4467,7 +4485,7 @@ static void K_drawDistributionDebugger(void)
 						amount = 3;
 						break;
 				}
-				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
+				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
 			}
 
 			x += 32;
@@ -4480,12 +4498,14 @@ static void K_drawDistributionDebugger(void)
 	}
 
 	if (pingame == 1)
-		V_DrawString(0, 0, V_HUDTRANS|V_SNAPTOTOP, "TA MODE");
+		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "TA MODE");
+	else if (useodds == 69)
+		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "FORCED SPB");
 	else
-		V_DrawString(0, 0, V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
+		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
 
 	if (numbosswaypoints > 0)
-		V_DrawSmallString(70, 0, V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
+		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
 
 }
 
