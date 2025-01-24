@@ -1506,6 +1506,8 @@ void D_SRB2Main(void)
 
 #endif //ifndef DEVELOP
 
+	R_InitPaletteRemap();
+
 	// now do it again for the SOC colors in main.pk3!
 	M_InitPlayerSetupColors();
 

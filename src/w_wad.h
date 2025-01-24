@@ -196,6 +196,7 @@ void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag);
 
 boolean W_IsLumpCached(lumpnum_t lump, void *ptr);
 boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
+boolean W_NeedPaletteRemap(void);
 
 void *W_CacheLumpName(const char *name, INT32 tag);
 void *W_CachePatchName(const char *name, INT32 tag);

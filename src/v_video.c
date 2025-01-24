@@ -312,6 +312,9 @@ UINT32 V_GammaCorrect(UINT32 input, double power)
 static void LoadPalette(const char *lumpname)
 {
 	lumpnum_t lumpnum = W_GetNumForName(lumpname);
+	boolean remap = wadfiles[WADFILENUM(lumpnum)]->compatmode;
+	if (remap) // if we're remapping, start with PLAYPAL as a base
+		lumpnum = W_GetNumForName("PLAYPAL");
 	size_t i, palsize = W_LumpLength(lumpnum)/3;
 	UINT8 *pal;
 
@@ -329,26 +332,51 @@ static void LoadPalette(const char *lumpname)
 		pLocalPalette = pMasterPalette;
 	pGammaCorrectedPalette = Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
 
+	// load the new palette (or PLAYPAL if remapping)
 	pal = W_CacheLumpNum(lumpnum, PU_CACHE);
 	for (i = 0; i < palsize; i++)
 	{
-		RGBA_t pGCP;
 		pMasterPalette[i].s.red = *pal++;
 		pMasterPalette[i].s.green = *pal++;
 		pMasterPalette[i].s.blue = *pal++;
 		pMasterPalette[i].s.alpha = 0xFF;
+	}
 
+	RGBA_t *target = NULL;
+	if (remap)
+	{
+		// get the target palette we want
+		lumpnum = W_GetNumForName(lumpname);
+		pal = W_CacheLumpNum(lumpnum, PU_CACHE);
+		palsize = W_LumpLength(lumpnum)/3;
+		target = malloc(sizeof (*target)*palsize);
+		for (i = 0; i < palsize; i++)
+		{
+			target[i].s.red = *pal++;
+			target[i].s.green = *pal++;
+			target[i].s.blue = *pal++;
+			target[i].s.alpha = 0xFF;
+		}
+	}
+
+	for (i = 0; i < palsize; i++)
+	{
+		if (remap) // now map the target palette (2.1) to master palette (2.2)
+			pMasterPalette[i].rgba = target[R_InvPaletteRemap(i)].rgba;
 		pGammaCorrectedPalette[i].rgba = V_GammaDecode(pMasterPalette[i].rgba);
 
 		if (!Cubeapply)
 			continue;
 		
 		// Short hand this so its easier to type
-		pGCP = pGammaCorrectedPalette[i];
+		RGBA_t pGCP = pGammaCorrectedPalette[i];
 
 		V_CubeApply(&pGCP.s.red,&pGCP.s.green,&pGCP.s.blue);
 		pLocalPalette[i].rgba = V_GammaEncode(pGammaCorrectedPalette[i].rgba);
 	}
+
+	if (remap)
+		free(target);
 }
 
 void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)

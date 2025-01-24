@@ -108,6 +108,7 @@ UINT8 r8_flatcolor;
 
 UINT8 *transtables; // translucency tables
 UINT8 *blendtables[NUMBLENDMAPS];
+UINT8 *palremap, *invremap;
 
 /**	\brief R_DrawTransColumn uses this
 */
@@ -346,6 +347,24 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 	if (--alphalevel < 0)
 		return NULL;
 	return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
+}
+
+void R_InitPaletteRemap(void)
+{
+	palremap = static_cast<UINT8 *>(Z_Malloc(256, PU_STATIC, NULL));
+	invremap = static_cast<UINT8 *>(Z_Malloc(256, PU_STATIC, NULL));
+	W_ReadLump(W_GetNumForName("PALREMAP"), palremap);
+	W_ReadLump(W_GetNumForName("INVREMAP"), invremap);
+}
+
+UINT8 R_GetPaletteRemap(UINT8 color)
+{
+	return palremap[color];
+}
+
+UINT8 R_InvPaletteRemap(UINT8 color)
+{
+	return invremap[color];
 }
 
 /**	\brief	Retrieves a translation colormap from the cache.

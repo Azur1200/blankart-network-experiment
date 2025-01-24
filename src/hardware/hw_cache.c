@@ -522,12 +522,18 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 #endif
 #ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
+		{
+			if (W_NeedPaletteRemap())
+				R_DoPaletteRemapFlat(pdata, lumplength);
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
+		}
 		else
 #endif
 		{
 			(void)lumplength;
 			dealloc = false;
+			if (W_NeedPaletteRemap())
+				R_DoPaletteRemapPatch(realpatch, lumplength);
 		}
 
 		HWR_DrawTexturePatchInCache(&grtex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
@@ -877,6 +883,11 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	// the flat raw data needn't be converted with palettized textures
 	W_ReadLump(flatlumpnum, Z_Malloc(W_LumpLength(flatlumpnum),
 		PU_HWRCACHE, &grMipmap->data));
+
+	// palette remapping
+	// have to do this here since the lump isn't cached
+	if (wadfiles[WADFILENUM(flatlumpnum)]->compatmode)
+		R_DoPaletteRemapFlat(grMipmap->data, size);
 
 	flat = grMipmap->data;
 	for (steppy = 0; steppy < size; steppy++)

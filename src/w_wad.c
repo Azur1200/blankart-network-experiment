@@ -1485,6 +1485,18 @@ void zerr(int ret)
 }
 #endif
 
+// only do palette swapping ONCE, when caching the whole patch
+// dumb hack but it works!
+static boolean dopalswap = false;
+
+// returns true if the most recently loaded lump is freshly cached, AND comes from a compatmode file
+boolean W_NeedPaletteRemap(void)
+{
+	boolean r = dopalswap;
+	dopalswap = false;
+	return r;
+}
+
 /** Reads bytes from the head of a lump.
   * Note: If the lump is compressed, the whole thing has to be read anyway.
   *
@@ -1673,11 +1685,15 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 	lumpcache = wadfiles[wad]->lumpcache;
 	if (!lumpcache[lump])
 	{
+		dopalswap = wadfiles[wad]->compatmode;
 		void *ptr = Z_Malloc(W_LumpLengthPwad(wad, lump), tag, &lumpcache[lump]);
 		W_ReadLumpHeaderPwad(wad, lump, ptr, 0, 0);  // read the lump in full
 	}
 	else
+	{
+		dopalswap = false;
 		Z_ChangeTag(lumpcache[lump], tag);
+	}
 
 	return lumpcache[lump];
 }
@@ -1818,6 +1834,10 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		if (Picture_IsLumpPNG((UINT8 *)lumpdata, len))
 			ptr = Picture_PNGConvert((UINT8 *)lumpdata, PICFMT_DOOMPATCH, NULL, NULL, NULL, NULL, len, &len, 0);
 #endif
+
+		// we already know this is a patch, do palette remapping here
+		if (wadfiles[wad]->compatmode)
+			R_DoPaletteRemapPatch(ptr, wadfiles[wad]->lumpinfo[lump].size);
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
 		Patch_Create(ptr, len, dest);

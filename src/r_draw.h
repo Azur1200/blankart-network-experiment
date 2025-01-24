@@ -167,11 +167,16 @@ enum
 
 extern UINT8 *blendtables[NUMBLENDMAPS];
 
+extern UINT8 *palremap, *invremap;
+
 void R_InitTranslucencyTables(void);
 void R_GenerateBlendTables(void);
+void R_InitPaletteRemap(void);
 
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel);
 UINT8 *R_GetBlendTable(int style, INT32 alphalevel);
+UINT8 R_GetPaletteRemap(UINT8 color);
+UINT8 R_InvPaletteRemap(UINT8 color);
 
 // Color ramp modification should force a recache
 extern UINT8 skincolor_modified[];
