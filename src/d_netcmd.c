@@ -4634,6 +4634,8 @@ static void Command_ListWADS_f(void)
 			CONS_Printf("\x82 * %.2d\x80: %s\n", i, tempname);
 		else if (!wadfiles[i]->important)
 			CONS_Printf("\x86   %.2d: %s\n", i, tempname);
+		else if (wadfiles[i]->compatmode)
+			CONS_Printf("\x8a   %.2d: %s\n", i, tempname);
 		else
 			CONS_Printf("   %.2d: %s\n", i, tempname);
 	}

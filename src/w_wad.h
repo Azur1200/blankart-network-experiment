@@ -128,6 +128,7 @@ struct wadfile_t
 	UINT8 md5sum[16];
 
 	boolean important; // also network - !W_VerifyNMUSlumps
+	boolean compatmode; // TODO: network this too!
 };
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word

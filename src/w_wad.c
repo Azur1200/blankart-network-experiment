@@ -291,6 +291,33 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 #endif
 }
 
+static inline boolean CheckCompatFilename(char *filename)
+{
+	// check for a K prefix
+	char *basename = strrchr(filename, *PATHSEP);
+	return toupper(basename ? basename[1] : filename[0]) == 'K';
+}
+
+// try to figure out if a PK3 file needs compatmode enabled (palette remap)
+static inline boolean CheckCompatZip(UINT16 wadnum)
+{
+	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+		return true;
+
+	// assume RR/2.2 for PK3s so basegame assets work
+	return false;
+}
+
+// ditto, but for WADs
+static inline boolean CheckCompatWad(UINT16 wadnum)
+{
+	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+		return true;
+
+	// assume Kart/2.1 for WADs so basegame assets work
+	return true;
+}
+
 /** Compute MD5 message digest for bytes read from STREAM of this filname.
   *
   * The resulting message digest number will be written into the 16 bytes
@@ -867,6 +894,19 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
 		break;
 	case RET_LUA:
 		LUA_LoadLump(numwadfiles - 1, 0, true);
+		break;
+	default:
+		break;
+	}
+
+	// check if compatmode is needed
+	switch (wadfile->type)
+	{
+	case RET_WAD:
+		wadfile->compatmode = CheckCompatWad(numwadfiles - 1);
+		break;
+	case RET_PK3:
+		wadfile->compatmode = CheckCompatZip(numwadfiles - 1);
 		break;
 	default:
 		break;
