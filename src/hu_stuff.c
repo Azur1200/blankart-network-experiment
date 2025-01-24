@@ -793,7 +793,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			{
 				UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
-				if (chatcolor > V_PEACHMAP)
+				if (chatcolor > V_TANMAP)
 				{
 					sprintf(color_prefix, "%c", '\x80');
 				}
@@ -832,7 +832,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		{
 			UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
-			if (chatcolor > V_PEACHMAP)
+			if (chatcolor > V_TANMAP)
 			{
 				sprintf(color_prefix, "%c", '\x80');
 			}

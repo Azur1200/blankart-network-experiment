@@ -613,7 +613,7 @@ static bool D_Display(void)
 	}
 
 	if (demo.rewinding)
-		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
+		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSET);
 
 	// vid size change is now finished if it was on...
 	vid.recalc = 0;

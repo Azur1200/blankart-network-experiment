@@ -121,7 +121,7 @@ void K_GenerateKartColormap(UINT8 *dest_colormap, INT32 skinnum, skincolornum_t 
 		if (skinnum == TC_BOSS)
 			dest_colormap[31] = 0;
 		else if (skinnum == TC_METALSONIC)
-			dest_colormap[239] = 0;
+			dest_colormap[143] = 0;
 
 		return;
 	}
