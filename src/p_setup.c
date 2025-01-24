@@ -8162,13 +8162,13 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			S_StartSound(NULL, sfx_ruby1);
 
 			F_WipeStartScreen();
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 122);
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, ENCOREFADECOLOR);
 
 			F_WipeEndScreen();
 			F_RunWipe(wipedefs[wipe_encore_towhite], false);
 
 			F_WipeStartScreen();
-			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 120);
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, FADECOLOR);
 
 			F_WipeEndScreen();
 			F_RunWipe(wipedefs[wipe_level_final], false);
@@ -8247,7 +8247,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		}
 	}
 
-	levelfadecol = (encoremode && !ranspecialwipe ? 122 : 120);
+	levelfadecol = (encoremode && !ranspecialwipe ? ENCOREFADECOLOR : FADECOLOR);
 
 	// Let's fade to white here
 	// But only if we didn't do the encore startup wipe
