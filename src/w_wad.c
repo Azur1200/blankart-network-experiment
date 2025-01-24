@@ -739,7 +739,7 @@ static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
+UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadcompat_t compat)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -880,7 +880,9 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
 #endif // HWRENDER
 
 	// check if compatmode is needed
-	switch (wadfile->type)
+	if (compat != WC_AUTO)
+		wadfile->compatmode = compat == WC_ON ? true : false;
+	else switch (wadfile->type)
 	{
 	case RET_WAD:
 		wadfile->compatmode = CheckCompatWad(numwadfiles - 1);
@@ -941,7 +943,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, !addons, true);
+		rc = W_InitFile(*filenames, !addons, true, WC_AUTO);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;

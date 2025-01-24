@@ -128,8 +128,15 @@ struct wadfile_t
 	UINT8 md5sum[16];
 
 	boolean important; // also network - !W_VerifyNMUSlumps
-	boolean compatmode; // TODO: network this too!
+	boolean compatmode;
 };
+
+typedef enum wadcompat
+{
+	WC_AUTO, // haha WC
+	WC_ON,
+	WC_OFF,
+} wadcompat_t;
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
 #define LUMPNUM(lumpnum) (UINT16)((lumpnum)&0xFFFF) // lump number for this pwad
@@ -144,7 +151,7 @@ void W_Shutdown(void);
 // Opens a WAD file. Returns the FILE * handle for the file, or NULL if not found or could not be opened
 FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 // Load and add a wadfile to the active wad files, returns numbers of lumps, INT16_MAX on error
-UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup);
+UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadcompat_t compat);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.

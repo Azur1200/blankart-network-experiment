@@ -8583,7 +8583,7 @@ boolean P_RunSOC(const char *socfilename)
 	lumpnum_t lump;
 
 	if (strstr(socfilename, ".soc") != NULL)
-		return P_AddWadFile(socfilename);
+		return P_AddWadFile(socfilename, WC_AUTO);
 
 	lump = W_CheckNumForName(socfilename);
 	if (lump == LUMPERROR)
@@ -8665,11 +8665,11 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
-boolean P_AddWadFile(const char *wadfilename)
+boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 {
 	UINT16 wadnum;
 
-	if ((wadnum = P_PartialAddWadFile(wadfilename)) == UINT16_MAX)
+	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == UINT16_MAX)
 		return false;
 
 	P_MultiSetupWadFiles(true);
@@ -8680,7 +8680,7 @@ boolean P_AddWadFile(const char *wadfilename)
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
 //
-UINT16 P_PartialAddWadFile(const char *wadfilename)
+UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 {
 	size_t i, j, sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 	UINT16 numlumps, wadnum;
@@ -8702,7 +8702,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename)
 //	UINT16 mapPos, mapNum = 0;
 
 	// Init file.
-	if ((numlumps = W_InitFile(wadfilename, false, false)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
 		return UINT16_MAX;

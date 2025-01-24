@@ -4381,9 +4381,24 @@ static void Command_Addfile(void)
 	const char *addedfiles[argc]; // list of filenames already processed
 	size_t numfilesadded = 0; // the amount of filenames processed
 
-	if (argc < 2)
+	size_t docompat = COM_CheckPartialParm("-c");
+	size_t nocompat = COM_CheckPartialParm("-n");
+	wadcompat_t compat = WC_AUTO;
+
+	if (docompat && nocompat)
 	{
-		CONS_Printf(M_GetText("addfile <filename.pk3/wad/lua/soc> [filename2...] [...]: Load add-ons\n"));
+		CONS_Printf(M_GetText("Please specify only one of -c or -n\n"));
+		return;
+	}
+	else if (docompat)
+		compat = WC_ON;
+	else if (nocompat)
+		compat = WC_OFF;
+
+	if (argc < 2 + (docompat || nocompat))
+	{
+		CONS_Printf(M_GetText("addfile [-c|-n] <filename.pk3/wad/lua/soc> [filename2...]: Load add-ons\n"
+		                      "-c forces compatmode, -n disables it.\n"));
 		return;
 	}
 
@@ -4397,6 +4412,9 @@ static void Command_Addfile(void)
 		size_t ii;
 		int musiconly; // W_VerifyNMUSlumps isn't boolean
 		boolean fileadded = false;
+
+		if (curarg == docompat || curarg == nocompat)
+			continue;
 
 		fn = COM_Argv(curarg);
 
@@ -4445,7 +4463,7 @@ static void Command_Addfile(void)
 		// Add file on your client directly if it is trivial, or you aren't in a netgame.
 		if (!(netgame || multiplayer) || musiconly)
 		{
-			P_AddWadFile(fn);
+			P_AddWadFile(fn, compat);
 			addedfiles[numfilesadded++] = fn;
 			continue;
 		}
@@ -4504,6 +4522,8 @@ static void Command_Addfile(void)
 			WRITEMEM(buf_p, md5sum, 16);
 		}
 
+		WRITEUINT8(buf_p, compat);
+
 		addedfiles[numfilesadded++] = fn;
 
 		if (IsPlayerAdmin(consoleplayer) && (!server)) // Request to add file
@@ -4524,6 +4544,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, filename, 240);
 	READMEM(*cp, md5sum, 16);
+	wadcompat_t compat = READUINT8(*cp);
 
 	// Only the server processes this message.
 	if (client)
@@ -4569,7 +4590,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	COM_BufAddText(va("addfile %s\n", filename));
+	COM_BufAddText(va("addfile %s %s\n", compat == WC_ON ? "-c" : (compat == WC_OFF ? "-n" : ""), filename));
 }
 
 static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
@@ -4580,6 +4601,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, filename, 240);
 	READMEM(*cp, md5sum, 16);
+	wadcompat_t compat = READUINT8(*cp);
 
 	if (playernum != serverplayer)
 	{
@@ -4591,7 +4613,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	ncs = findfile(filename,md5sum,true);
 
-	if (ncs != FS_FOUND || !P_AddWadFile(filename))
+	if (ncs != FS_FOUND || !P_AddWadFile(filename, compat))
 	{
 		Command_ExitGame_f();
 		if (ncs == FS_FOUND)
