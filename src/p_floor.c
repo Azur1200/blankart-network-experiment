@@ -1805,7 +1805,7 @@ static floormove_t *CreateFloorThinker(sector_t *sec)
 	}
 
 	dofloor = Z_Calloc(sizeof (*dofloor), PU_LEVSPEC, NULL);
-	P_AddThinker(THINK_MAIN, &dofloor->thinker);
+	P_AddThinker(udmf ? THINK_MAIN : THINK_FLOORS, &dofloor->thinker);
 
 	// make sure another floor thinker won't get started over this one
 	sec->floordata = dofloor;

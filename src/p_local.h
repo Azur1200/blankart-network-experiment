@@ -69,6 +69,7 @@ typedef enum
 	THINK_POLYOBJ,
 	THINK_MAIN,
 	THINK_MOBJ,
+	THINK_FLOORS, // thanks diamond square
 	THINK_DYNSLOPE,
 	
 	// Lists after this may exist but they do not call an
