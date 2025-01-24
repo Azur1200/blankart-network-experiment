@@ -291,6 +291,33 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 #endif
 }
 
+static inline boolean CheckCompatFilename(char *filename)
+{
+	// check for a K prefix
+	char *basename = strrchr(filename, *PATHSEP);
+	return toupper(basename ? basename[1] : filename[0]) == 'K';
+}
+
+// try to figure out if a PK3 file needs compatmode enabled (palette remap)
+static inline boolean CheckCompatZip(UINT16 wadnum)
+{
+	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+		return true;
+
+	// assume RR/2.2 for PK3s so basegame assets work
+	return false;
+}
+
+// ditto, but for WADs
+static inline boolean CheckCompatWad(UINT16 wadnum)
+{
+	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+		return true;
+
+	// assume Kart/2.1 for WADs so basegame assets work
+	return true;
+}
+
 /** Compute MD5 message digest for bytes read from STREAM of this filname.
   *
   * The resulting message digest number will be written into the 16 bytes
@@ -712,7 +739,7 @@ static UINT16 W_InitFileError (const char *filename, boolean exitworthy)
 //
 // Can now load dehacked files (.soc)
 //
-UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
+UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadcompat_t compat)
 {
 	FILE *handle;
 	lumpinfo_t *lumpinfo = NULL;
@@ -852,6 +879,21 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
 	}
 #endif // HWRENDER
 
+	// check if compatmode is needed
+	if (compat != WC_AUTO)
+		wadfile->compatmode = compat == WC_ON ? true : false;
+	else switch (wadfile->type)
+	{
+	case RET_WAD:
+		wadfile->compatmode = CheckCompatWad(numwadfiles - 1);
+		break;
+	case RET_PK3:
+		wadfile->compatmode = CheckCompatZip(numwadfiles - 1);
+		break;
+	default:
+		break;
+	}
+
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
 	{
@@ -901,7 +943,7 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 			G_SetGameModified(true, false);
 
 		//CONS_Debug(DBG_SETUP, "Loading %s\n", *filenames);
-		rc = W_InitFile(*filenames, !addons, true);
+		rc = W_InitFile(*filenames, !addons, true, WC_AUTO);
 		if (rc == INT16_MAX)
 			CONS_Printf(M_GetText("Errors occurred while loading %s; not added.\n"), *filenames);
 		overallrc &= (rc != INT16_MAX) ? 1 : 0;
@@ -1445,6 +1487,18 @@ void zerr(int ret)
 }
 #endif
 
+// only do palette swapping ONCE, when caching the whole patch
+// dumb hack but it works!
+static boolean dopalswap = false;
+
+// returns true if the most recently loaded lump is freshly cached, AND comes from a compatmode file
+boolean W_NeedPaletteRemap(void)
+{
+	boolean r = dopalswap;
+	dopalswap = false;
+	return r;
+}
+
 /** Reads bytes from the head of a lump.
   * Note: If the lump is compressed, the whole thing has to be read anyway.
   *
@@ -1633,11 +1687,15 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 	lumpcache = wadfiles[wad]->lumpcache;
 	if (!lumpcache[lump])
 	{
+		dopalswap = wadfiles[wad]->compatmode;
 		void *ptr = Z_Malloc(W_LumpLengthPwad(wad, lump), tag, &lumpcache[lump]);
 		W_ReadLumpHeaderPwad(wad, lump, ptr, 0, 0);  // read the lump in full
 	}
 	else
+	{
+		dopalswap = false;
 		Z_ChangeTag(lumpcache[lump], tag);
+	}
 
 	return lumpcache[lump];
 }
@@ -1778,6 +1836,10 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		if (Picture_IsLumpPNG((UINT8 *)lumpdata, len))
 			ptr = Picture_PNGConvert((UINT8 *)lumpdata, PICFMT_DOOMPATCH, NULL, NULL, NULL, NULL, len, &len, 0);
 #endif
+
+		// we already know this is a patch, do palette remapping here
+		if (wadfiles[wad]->compatmode)
+			R_DoPaletteRemapPatch(ptr, wadfiles[wad]->lumpinfo[lump].size);
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
 		Patch_Create(ptr, len, dest);

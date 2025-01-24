@@ -295,6 +295,28 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 	return true;
 }
 
+void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size)
+{
+	(void)size;
+	UINT32 *columns = patch->columnofs;
+	for (INT16 i = 0; i < patch->width; i++)
+	{
+		UINT8 *p = (UINT8 *)patch + columns[i];
+		while (*p++ != 0xff) // topdelta
+		{
+			int length = *p++;
+			for (length += 2; length--; p++)
+				*p = R_GetPaletteRemap(*p);
+		}
+	}
+}
+
+void R_DoPaletteRemapFlat(UINT8 *data, size_t size)
+{
+	for (size_t i = 0; i < size; i++, data++)
+		*data = R_GetPaletteRemap(*data);
+}
+
 //
 // R_GenerateTexture
 //
@@ -362,6 +384,9 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		if (texture->type == TEXTURETYPE_FLAT)
 			goto multipatch;
 #endif
+
+		if (W_NeedPaletteRemap())
+			R_DoPaletteRemapPatch(realpatch, lumplength);
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
@@ -458,12 +483,18 @@ UINT8 *R_GenerateTexture(size_t texnum)
 #endif
 #ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
+		{
+			if (W_NeedPaletteRemap())
+				R_DoPaletteRemapFlat(pdata, lumplength);
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
+		}
 		else
 #endif
 		{
 			(void)lumplength;
 			dealloc = false;
+			if (W_NeedPaletteRemap())
+				R_DoPaletteRemapPatch(realpatch, lumplength);
 		}
 
 		x1 = patch->originx;
@@ -893,7 +924,10 @@ UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col)
 
 void *R_GetFlat(lumpnum_t flatlumpnum)
 {
-	return W_CacheLumpNum(flatlumpnum, PU_LEVEL);
+	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
+	if (W_NeedPaletteRemap())
+		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
+	return flat;
 }
 
 //

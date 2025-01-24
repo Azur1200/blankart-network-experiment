@@ -48,6 +48,7 @@ void LUA_ClearExtVars(void);
 void LUA_ClearState(void);
 
 extern INT32 lua_lumploading; // is LUA_LoadLump being called?
+extern boolean lua_compatmode; // compatmode enabled for this lump/hook?
 
 int LUA_GetErrorMessage(lua_State *L);
 int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex);

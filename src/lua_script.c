@@ -150,6 +150,8 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex)
 	return err;
 }
 
+boolean lua_compatmode = false;
+
 // Moved here from lib_getenum.
 int LUA_PushGlobals(lua_State *L, const char *word)
 {
@@ -408,6 +410,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word, "gamestate")) {
 		lua_pushinteger(L, gamestate);
 		return 1;
+	} else if (fastcmp(word, "compatmode")) {
+		lua_pushboolean(L, lua_compatmode);
+		return 1;
 	}
 
 	return 0;
@@ -639,6 +644,8 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults)
 		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
 		name[len] = '\0';
 	}
+
+	lua_compatmode = wadfiles[wad]->compatmode;
 
 	LUA_LoadFile(&f, name, noresults); // actually load file!
 

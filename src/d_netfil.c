@@ -214,6 +214,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		WRITEUINT32(p, wadfiles[i]->filesize);
 		WRITESTRINGN(p, wadfilename, MAX_WADPATH);
 		WRITEMEM(p, wadfiles[i]->md5sum, 16);
+		WRITEUINT8(p, wadfiles[i]->compatmode);
 	}
 	if (netbuffer->packettype == PT_MOREFILESNEEDED)
 		netbuffer->u.filesneededcfg.num = count;
@@ -247,6 +248,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 		fileneeded[i].file = NULL; // The file isn't open yet
 		READSTRINGN(p, fileneeded[i].filename, MAX_WADPATH); // The next bytes are the file name
 		READMEM(p, fileneeded[i].md5sum, 16); // The last 16 bytes are the file checksum
+		fileneeded[i].compatmode = READUINT8(p);
 	}
 }
 
@@ -581,6 +583,10 @@ INT32 CL_CheckFiles(void)
 			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
 				return 2;
 
+			// compatmode has to match too!
+			if (wadfiles[j]->compatmode != fileneeded[i].compatmode)
+				return 2;
+
 			// It's accounted for! let's keep going.
 			CONS_Debug(DBG_NETPLAY, "'%s' accounted for\n", fileneeded[i].filename);
 			fileneeded[i].status = FS_OPEN;
@@ -652,7 +658,7 @@ boolean CL_LoadServerFiles(void)
 			continue; // Already loaded
 		else if (fileneeded[i].status == FS_FOUND)
 		{
-			P_PartialAddWadFile(fileneeded[i].filename);
+			P_PartialAddWadFile(fileneeded[i].filename, fileneeded[i].compatmode ? WC_ON : WC_OFF);
 			G_SetGameModified(true, false);
 			fileneeded[i].status = FS_OPEN;
 			return false;

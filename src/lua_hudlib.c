@@ -838,6 +838,9 @@ static int libd_drawFill(lua_State *L)
 
 	HUDONLY
 
+	if (lua_compatmode)
+		c = (c & ~0xff) | R_GetPaletteRemap(c & 0xff);
+
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
@@ -863,6 +866,9 @@ static int libd_fadeScreen(lua_State *L)
 
 	if (strength > maxstrength)
 		return luaL_error(L, "%s fade strength %d out of range (0 - %d)", ((color & 0xFF00) ? "COLORMAP" : "TRANSMAP"), strength, maxstrength);
+
+	if (lua_compatmode && !(color & 0xFF00))
+		color = R_GetPaletteRemap(color);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h) lua_touserdata(L, -1);

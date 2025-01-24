@@ -613,7 +613,7 @@ static bool D_Display(void)
 	}
 
 	if (demo.rewinding)
-		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
+		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSET);
 
 	// vid size change is now finished if it was on...
 	vid.recalc = 0;
@@ -1137,7 +1137,7 @@ static void ChangeDirForUrlHandler(void)
 
 static boolean AddIWAD(void)
 {
-	char * path = va(pandf,srb2path,"main.pk3");
+	char * path = va(pandf,srb2path,"srb2.srb");
 
 	if (FIL_ReadFileOK(path))
 	{
@@ -1155,7 +1155,7 @@ static void IdentifyVersion(void)
 	const char *srb2waddir = NULL;
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
-	// change to the directory where 'main.pk3' is found
+	// change to the directory where 'srb2.srb' is found
 	srb2waddir = I_LocateWad();
 #endif
 
@@ -1175,7 +1175,7 @@ static void IdentifyVersion(void)
 	// Load the IWAD
 	if (! AddIWAD())
 	{
-		I_Error("main.pk3 not found! Expected in %s\n", srb2waddir);
+		I_Error("srb2.srb not found! Expected in %s\n", srb2waddir);
 	}
 
 	// will be overwritten in case of -cdrom or unix/win home
@@ -1185,7 +1185,7 @@ static void IdentifyVersion(void)
 	// if you change the ordering of this or add/remove a file, be sure to update the md5
 	// checking in D_SRB2Main
 
-#define SRB2NAME "srb2.srb"
+#define MAINNAME "main.pk3"
 #define TEXTURESNAME "textures.kart"
 #define MAPSNAME "maps.kart"
 #define PATCHNAME "patch.pk3"
@@ -1195,7 +1195,7 @@ static void IdentifyVersion(void)
 #define GRAPHICSNAME "gfx.kart"
 #define SOUNDSNAME "sounds.kart"
 
-	D_AddFile(startupiwads, va(pandf,srb2waddir,SRB2NAME));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,TEXTURESNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
@@ -1205,7 +1205,7 @@ static void IdentifyVersion(void)
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
 #endif
 ////
-#undef SRB2NAME
+#undef MAINNAME
 #undef TEXTURESNAME
 #undef MAPSNAME
 #undef PATCHNAME
@@ -1483,8 +1483,8 @@ void D_SRB2Main(void)
 #ifndef DEVELOP
 	// Check MD5s of autoloaded files
 	// Note: Do not add any files that ignore MD5!
-	W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);					// main.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);			// gfx.pk3
+	W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);					// srb2.srb
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);		// textures.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_PK3);		// chars.pk3
@@ -1494,7 +1494,7 @@ void D_SRB2Main(void)
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_PATCH_PK3);		// patch.pk3
 #endif
 #else
-	mainwads++; // srb2.srb
+	mainwads++;	// main.pk3
 	mainwads++;	// gfx.kart
 	mainwads++;	// textures.kart
 	mainwads++;	// chars.pk3
@@ -1505,6 +1505,8 @@ void D_SRB2Main(void)
 #endif
 
 #endif //ifndef DEVELOP
+
+	R_InitPaletteRemap();
 
 	// now do it again for the SOC colors in main.pk3!
 	M_InitPlayerSetupColors();

@@ -18,6 +18,7 @@
 #include "doomstat.h"
 #include "r_defs.h"
 #include "k_terrain.h"
+#include "w_wad.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,12 +111,12 @@ void P_PostLoadLevel(void);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
-boolean P_AddWadFile(const char *wadfilename);
+boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat);
 
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.
-UINT16 P_PartialAddWadFile(const char *wadfilename);
+UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat);
 // Run a single stage of multisetup, or all of them if fullsetup set.
 //   fullsetup true: run everything
 //   otherwise

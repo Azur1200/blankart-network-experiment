@@ -292,6 +292,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 	char colormap[9] = "COLORMAP";
 	lumpnum_t lump;
 	const lumpnum_t basecolormaplump = W_GetNumForName(colormap);
+	boolean remap = false;
 	if (num > 0 && num <= 10000)
 		snprintf(colormap, 8, "CLM%04u", num-1);
 
@@ -301,6 +302,7 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		lump = basecolormaplump;
 	else
 	{
+		remap = wadfiles[WADFILENUM(lump)]->compatmode;
 		if (W_LumpLength(lump) != W_LumpLength(basecolormaplump))
 		{
 			CONS_Alert(CONS_WARNING, "%s lump size does not match COLORMAP, results may be unexpected.\n", colormap);
@@ -308,6 +310,19 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 	}
 
 	W_ReadLumpHeader(lump, colormaps, W_LumpLength(basecolormaplump), 0U);
+
+	if (remap)
+	{
+		lighttable_t *copy = malloc(W_LumpLength(basecolormaplump));
+		memcpy(copy, colormaps, W_LumpLength(basecolormaplump));
+		for (int p = 0; p < LIGHTLEVELS; p++)
+		{
+			for (int i = 0; i < 256; i++)
+				// 2.2 colormap index to 2.1, then 2.1 palette color to 2.2
+				colormaps[p*256 + i] = R_GetPaletteRemap(copy[p*256 + R_InvPaletteRemap(i)]);
+		}
+		free(copy);
+	}
 
 	// Encore mode.
 	if (newencoremap != LUMPERROR)
@@ -319,6 +334,16 @@ void R_ReInitColormaps(UINT16 num, lumpnum_t newencoremap)
 		W_ReadLump(newencoremap, encoremap);
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += COLORMAP_REMAPOFFSET;
+
+		remap = wadfiles[WADFILENUM(newencoremap)]->compatmode;
+		if (remap)
+		{
+			UINT8 *copy = malloc(256);
+			memcpy(copy, encoremap, 256);
+			for (i = 0; i < 256; i++)
+				encoremap[i] = R_GetPaletteRemap(copy[R_InvPaletteRemap(i)]);
+			free(copy);
+		}
 
 		for (p = 0; p < LIGHTLEVELS; p++)
 		{

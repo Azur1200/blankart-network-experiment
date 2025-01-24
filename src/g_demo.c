@@ -1371,7 +1371,7 @@ skippedghosttic:
 				g->mo->color = skin->supercolor;
 			}
 			else
-				g->mo->color = SKINCOLOR_SUPER1;
+				g->mo->color = SKINCOLOR_SUPERGOLD1;
 			g->mo->color += abs( ( (signed)( (unsigned)leveltime >> 1 ) % 9) - 4);
 			break;
 		case GHC_INVINCIBLE: // Mario invincibility (P_CheckInvincibilityTimer)
@@ -2053,6 +2053,7 @@ void G_BeginRecording(void)
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
 		WRITESTRINGN(demobuf.p, filename, MAX_WADPATH);
 		WRITEMEM(demobuf.p, wadfiles[i]->md5sum, 16);
+		WRITEUINT8(demobuf.p, wadfiles[i]->compatmode);
 
 		totalfiles++;
 	}
@@ -2285,6 +2286,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
+	boolean compatmode;
 
 	totalfiles = READUINT8((*pp));
 	for (i = 0; i < totalfiles; ++i)
@@ -2297,6 +2299,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			SKIPSTRING((*pp));
 		}
 		READMEM((*pp), md5sum, 16);
+		compatmode = READUINT8((*pp));
 
 		if (!toomany)
 		{
@@ -2339,7 +2342,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			}
 			else
 			{
-				P_PartialAddWadFile(filename);
+				P_PartialAddWadFile(filename, compatmode ? WC_ON : WC_OFF);
 			}
 		}
 	}
@@ -2385,6 +2388,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 			SKIPSTRING((*pp));
 		}
 		READMEM((*pp), md5sum, 16);
+		(void)READUINT8((*pp)); // compatmode
 
 		if (!toomany)
 		{

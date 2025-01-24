@@ -94,6 +94,8 @@ boolean R_TextureHasBrightmap(INT32 texnum);
 boolean R_TextureCanRemap(INT32 texnum);
 void R_CheckTextureCache(INT32 tex);
 void R_ClearTextureNumCache(boolean btell);
+void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size);
+void R_DoPaletteRemapFlat(UINT8 *data, size_t size);
 
 // Retrieve texture data.
 void *R_GetLevelFlat(drawspandata_t* ds, levelflat_t *levelflat);

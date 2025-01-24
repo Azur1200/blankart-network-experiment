@@ -48,6 +48,7 @@ struct fileneeded_t
 	UINT8 md5sum[16];
 	filestatus_t status; // The value returned by recsearch
 	boolean justdownloaded; // To prevent late fragments from causing an I_Error
+	boolean compatmode;
 
 	// Used only for download
 	FILE *file;
