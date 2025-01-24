@@ -65,6 +65,9 @@ static int   nextid;
 // After a hook errors once, don't print the error again.
 static UINT8 * hooksErrored;
 
+// compat mode for each hook
+static UINT8 * hookCompat;
+
 static int errorRef;
 
 static boolean mobj_hook_available(int hook_type, mobjtype_t mobj_type)
@@ -187,9 +190,16 @@ static void add_hook_ref(lua_State *L, int idx)
 				BIT_ARRAY_SIZE (nextid + 1) * sizeof *hooksErrored,
 				PU_STATIC, &hooksErrored);
 		hooksErrored[nextid >> 3] = 0;
+		Z_Realloc(hookCompat,
+				BIT_ARRAY_SIZE (nextid + 1) * sizeof *hookCompat,
+				PU_STATIC, &hookCompat);
+		hookCompat[nextid >> 3] = 0;
 	}
 
 	Z_Realloc(hookRefs, (nextid + 1) * sizeof *hookRefs, PU_STATIC, &hookRefs);
+
+	if (lua_compatmode)
+		set_bit_array(hookCompat, nextid);
 
 	// set the hook function in the registry.
 	lua_pushvalue(L, idx);
@@ -388,6 +398,7 @@ static void init_hook_call
 static void get_hook(Hook_State *hook, const int *ids, int n)
 {
 	hook->id = ids[n];
+	lua_compatmode = in_bit_array(hookCompat, hook->id);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 
@@ -396,6 +407,7 @@ static void get_hook_from_table(Hook_State *hook, int n)
 	lua_rawgeti(gL, -1, n);
 	hook->id = lua_tonumber(gL, -1);
 	lua_pop(gL, 1);
+	lua_compatmode = in_bit_array(hookCompat, hook->id);
 	lua_getref(gL, hookRefs[hook->id]);
 }
 

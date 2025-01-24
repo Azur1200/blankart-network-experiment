@@ -879,6 +879,19 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
 	}
 #endif // HWRENDER
 
+	// check if compatmode is needed
+	switch (wadfile->type)
+	{
+	case RET_WAD:
+		wadfile->compatmode = CheckCompatWad(numwadfiles - 1);
+		break;
+	case RET_PK3:
+		wadfile->compatmode = CheckCompatZip(numwadfiles - 1);
+		break;
+	default:
+		break;
+	}
+
 	// TODO: HACK ALERT - Load Lua & SOC stuff right here. I feel like this should be out of this place, but... Let's stick with this for now.
 	switch (wadfile->type)
 	{
@@ -894,19 +907,6 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup)
 		break;
 	case RET_LUA:
 		LUA_LoadLump(numwadfiles - 1, 0, true);
-		break;
-	default:
-		break;
-	}
-
-	// check if compatmode is needed
-	switch (wadfile->type)
-	{
-	case RET_WAD:
-		wadfile->compatmode = CheckCompatWad(numwadfiles - 1);
-		break;
-	case RET_PK3:
-		wadfile->compatmode = CheckCompatZip(numwadfiles - 1);
 		break;
 	default:
 		break;
