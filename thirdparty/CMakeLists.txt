@@ -214,8 +214,8 @@ if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 
 	CPMAddPackage(
 		NAME curl
-		VERSION 7.86.0
-		URL "https://github.com/curl/curl/archive/refs/tags/curl-7_86_0.zip"
+		VERSION 8.11.1
+		URL "https://github.com/curl/curl/archive/refs/tags/curl-8_11_1.zip"
 		EXCLUDE_FROM_ALL ON
 		OPTIONS ${internal_curl_options}
 	)
@@ -528,19 +528,9 @@ if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	target_link_libraries(gme PRIVATE ZLIB::ZLIB)
 endif()
 
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
-	CPMAddPackage(
-		NAME DiscordRPC
-		VERSION 3.4.0
-		URL "https://github.com/discord/discord-rpc/archive/refs/tags/v3.4.0.zip"
-		EXCLUDE_FROM_ALL ON
-		OPTIONS
-			"BUILD_EXAMPLES OFF"
-	)
-	target_include_directories(discord-rpc INTERFACE "${DiscordRPC_SOURCE_DIR}/include")
-	add_library(DiscordRPC::DiscordRPC ALIAS discord-rpc)
+if(SRB2_CONFIG_ENABLE_DISCORDRPC)
+	add_subdirectory(discord-rpc)
 endif()
-
 
 add_subdirectory(tracy)
 add_subdirectory(tcbrindle_span)
