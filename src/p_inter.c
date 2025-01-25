@@ -1185,7 +1185,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 			}
 
-			if (cv_itemrespawn.value && (netgame || multiplayer) && !itembreaker)
+			if (cv_itemrespawn.value && modeattacking == ATTACKING_NONE && !itembreaker)
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
 			}
