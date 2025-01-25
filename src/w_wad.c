@@ -298,10 +298,40 @@ static inline boolean CheckCompatFilename(char *filename)
 	return toupper(basename ? basename[1] : filename[0]) == 'K';
 }
 
+static inline boolean CheckCompatSkins(UINT16 wadnum)
+{
+#if 0
+	UINT16 skin = W_CheckNumForNamePwad("S_SKIN", wadnum, 0);
+	if (skin == INT16_MAX)
+		return false;
+
+	// valid kart skins can only have one sprname for all frames
+	const char *firstsprname = W_CheckNameForNumPwad(wadnum, ++skin);
+	int maxframe = 0;
+
+	while (true)
+	{
+		const char *sprname = W_CheckNameForNumPwad(wadnum, ++skin);
+		if (!sprname)
+			break;
+		if (memcmp(sprname, firstsprname, 4))
+			break;
+		maxframe = max(maxframe, sprname[4]);
+	}
+
+	// how many frames does this first sprite name have?
+	// if there's at least 19 frames, this is a valid kart skin,
+	// so we need compatmode to load skins from this file!
+	return (maxframe - 'A') >= 18;
+#else
+	return false;
+#endif
+}
+
 // try to figure out if a PK3 file needs compatmode enabled (palette remap)
 static inline boolean CheckCompatZip(UINT16 wadnum)
 {
-	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum))
 		return true;
 
 	// assume RR/2.2 for PK3s so basegame assets work
@@ -311,7 +341,7 @@ static inline boolean CheckCompatZip(UINT16 wadnum)
 // ditto, but for WADs
 static inline boolean CheckCompatWad(UINT16 wadnum)
 {
-	if (CheckCompatFilename(wadfiles[wadnum]->filename))
+	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum))
 		return true;
 
 	// assume Kart/2.1 for WADs so basegame assets work

@@ -249,6 +249,30 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 		sprtemp[frame].flip &= ~(1<<rotation);
 }
 
+#define NUMFACES 3
+static size_t KART_FACES[NUMFACES] = {
+	offsetof(skin_t, facerank),
+	offsetof(skin_t, facewant),
+	offsetof(skin_t, facemmap),
+};
+
+void R_AddKartFaces(skin_t *skin)
+{
+	memset(sprtemp, 0xff, sizeof(sprtemp));
+	spritedef_t *sd = &skin->sprites[SPR2_XTRA];
+	for (size_t f = 0; f < NUMFACES; f++)
+	{
+		lumpnum_t lumpnum = W_CheckNumForName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
+		if (lumpnum == LUMPERROR)
+			I_Error("R_AddKartFaces: missing patch %s for skin %s", reinterpret_cast<char *>(skin) + KART_FACES[f], skin->name);
+		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps++, f, 0, 0);
+	}
+	sd->numframes = NUMFACES;
+	sd->spriteframes = static_cast<spriteframe_t*>(Z_Realloc(sd->spriteframes, sizeof(spriteframe_t)*NUMFACES, PU_STATIC, NULL));
+	M_Memcpy(sd->spriteframes, sprtemp, sizeof(spriteframe_t)*NUMFACES);
+}
+#undef NUMFACES
+
 // Install a single sprite, given its identifying name (4 chars)
 //
 // (originally part of R_AddSpriteDefs)

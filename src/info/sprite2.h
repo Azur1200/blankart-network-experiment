@@ -22,3 +22,5 @@ _(DEAD) // Dead
 
 _(SIGN) // Finish signpost
 _(XTRA) // Three Faces of Darkness
+
+_(KART) // Extra frames from Kart skins
