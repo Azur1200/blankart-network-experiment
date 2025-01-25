@@ -123,6 +123,7 @@ const char *const MOBJFLAG_LIST[] = {
 	"SPRING",
 	"MONITOR",
 	"NOTHINK",
+	"FIRE",
 	"NOCLIPHEIGHT",
 	"ENEMY",
 	"SCENERY",

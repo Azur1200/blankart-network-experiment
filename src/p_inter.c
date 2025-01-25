@@ -239,6 +239,11 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 		P_DamageMobj(toucher, special, special, 1, DMG_NORMAL);
 		return;
 	}
+	else if (special->flags & MF_FIRE)
+	{
+		P_DamageMobj(toucher, special, special, 1, DMG_NORMAL);
+		return;
+	}
 	else
 	{
 	// We now identify by object type, not sprite! Tails 04-11-2001

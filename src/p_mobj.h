@@ -141,31 +141,32 @@ typedef enum
 	MF_MONITOR          = 1<<17,
 	// Don't run the thinker for this object.
 	MF_NOTHINK          = 1<<18,
+	// Fire object. Doesn't harm if you have fire shield.
+	MF_FIRE             = 1<<19,
 	// Don't adjust z if below or above floorz/ceilingz
-	MF_NOCLIPHEIGHT     = 1<<19,
+	MF_NOCLIPHEIGHT     = 1<<20,
 	// This mobj is an enemy!
-	MF_ENEMY            = 1<<20,
+	MF_ENEMY            = 1<<21,
 	// Scenery (uses scenery thinker).
-	MF_SCENERY          = 1<<21,
+	MF_SCENERY          = 1<<22,
 	// Painful (shit hurts).
-	MF_PAIN             = 1<<22,
+	MF_PAIN             = 1<<23,
 	// This mobj will stick to any surface or solid object it touches.
-	MF_STICKY           = 1<<23,
+	MF_STICKY           = 1<<24,
 	// Object uses terrain effects. (Overlays, footsteps, etc)
-	MF_APPLYTERRAIN     = 1<<24,
+	MF_APPLYTERRAIN     = 1<<25,
 	// for chase camera, don't be blocked by things (partial clipping)
-	MF_NOCLIPTHING      = 1<<25,
+	MF_NOCLIPTHING      = 1<<26,
 	// Missile bounces like a grenade.
-	MF_GRENADEBOUNCE    = 1<<26,
+	MF_GRENADEBOUNCE    = 1<<27,
 	// Run the action thinker on spawn.
-	MF_RUNSPAWNFUNC     = 1<<27,
+	MF_RUNSPAWNFUNC     = 1<<28,
 	// Don't remap in Encore mode. (Not a drawflag so that it's settable by mobjinfo.)
-	MF_DONTENCOREMAP    = 1<<28,
+	MF_DONTENCOREMAP    = 1<<29,
 	// Hitbox extends just as far below as above.
-	MF_PICKUPFROMBELOW  = 1<<29,
+	MF_PICKUPFROMBELOW  = 1<<30,
 	// Bounce off walls and things.
-	MF_BOUNCE   		= 1<<30,
-	//free	 = (INT32)(1U<<31),
+	MF_BOUNCE   		= 1<<31,
 	// no more free slots, next up I suppose we can get rid of shit like MF_BOXICON?
 } mobjflag_t;
 

@@ -612,6 +612,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (tm.thing->player && tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
 			UINT32 damagetype = (tm.thing->info->mass & DMG_TYPEMASK);
+			if (!damagetype && thing->flags & MF_FIRE) // BURN!
+				damagetype = DMG_NORMAL;
 			P_DamageMobj(tm.thing, thing, thing, 1, damagetype);
 		}
 		return BMIT_CONTINUE;
@@ -626,6 +628,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (thing->player && thing->flags & MF_SHOOTABLE && tm.thing->health > 0)
 		{
 			UINT32 damagetype = (tm.thing->info->mass & DMG_TYPEMASK);
+			if (!damagetype && tm.thing->flags & MF_FIRE) // BURN!
+				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, tm.thing, tm.thing, 1, damagetype);
 		}
 		return BMIT_CONTINUE;

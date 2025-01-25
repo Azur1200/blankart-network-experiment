@@ -6349,6 +6349,15 @@ static boolean P_MobjPushableThink(mobj_t *mobj)
 {
 	P_MobjCheckWater(mobj);
 	P_PushableThinker(mobj);
+
+	// Extinguish fire objects in water. (Yes, it's extraordinarily rare to have a pushable flame object, but Brak uses such a case.)
+	if ((mobj->flags & MF_FIRE) && !(mobj->eflags & MFE_TOUCHLAVA)
+		&& (mobj->eflags & (MFE_UNDERWATER | MFE_TOUCHWATER)))
+	{
+		P_KillMobj(mobj, NULL, NULL, 0);
+		return false;
+	}
+
 	return true;
 }
 
@@ -8400,6 +8409,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	default:
 		// check mobj against possible water content, before movement code
 		P_MobjCheckWater(mobj);
+		// Extinguish fire objects in water
+		if ((mobj->flags & MF_FIRE) && !(mobj->eflags & MFE_TOUCHLAVA)
+			&& (mobj->eflags & (MFE_UNDERWATER|MFE_TOUCHWATER)))
+		{
+			P_KillMobj(mobj, NULL, NULL, 0);
+			return false;
+		}
 		break;
 	}
 	return true;
