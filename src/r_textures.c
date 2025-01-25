@@ -300,9 +300,19 @@ void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size)
 	if (!Picture_CheckIfDoomPatch(patch, size))
 		return;
 
+	// thanks to my very own ingenious patch-compression technology,
+	// i now have to make sure i don't accidentally remap a column twice. cool!
+	// yes, it assumes all columns are sequential in the patch,
+	// but it's efficient so who cares
+	UINT8 *last = 0;
+
 	for (INT16 i = 0; i < patch->width; i++)
 	{
 		UINT8 *p = (UINT8 *)patch + patch->columnofs[i];
+		if (p <= last)
+			continue;
+		else
+			last = p;
 		while (*p++ != 0xff) // topdelta
 		{
 			int length = *p++;
