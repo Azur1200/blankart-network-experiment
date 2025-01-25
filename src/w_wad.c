@@ -1839,7 +1839,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 
 		// we already know this is a patch, do palette remapping here
 		if (wadfiles[wad]->compatmode)
-			R_DoPaletteRemapPatch(ptr, wadfiles[wad]->lumpinfo[lump].size);
+			R_DoPaletteRemapPatch(ptr, len);
 
 		dest = Z_Calloc(sizeof(patch_t), tag, &lumpcache[lump]);
 		Patch_Create(ptr, len, dest);

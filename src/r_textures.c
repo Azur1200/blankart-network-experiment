@@ -297,11 +297,12 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 
 void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size)
 {
-	(void)size;
-	UINT32 *columns = patch->columnofs;
+	if (!Picture_CheckIfDoomPatch(patch, size))
+		return;
+
 	for (INT16 i = 0; i < patch->width; i++)
 	{
-		UINT8 *p = (UINT8 *)patch + columns[i];
+		UINT8 *p = (UINT8 *)patch + patch->columnofs[i];
 		while (*p++ != 0xff) // topdelta
 		{
 			int length = *p++;

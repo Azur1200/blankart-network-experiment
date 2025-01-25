@@ -2361,6 +2361,7 @@ static void G_SkipDemoExtraFiles(UINT8 **pp)
 	{
 		SKIPSTRING((*pp));// file name
 		(*pp) += 16;// md5
+		(*pp) += 1; // compatmode
 	}
 }
 
