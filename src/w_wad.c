@@ -921,7 +921,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 		wadfile->compatmode = CheckCompatZip(numwadfiles - 1);
 		break;
 	default:
-		wadfile->compatmode = false;
+		wadfile->compatmode = CheckCompatFilename(filename);
 		break;
 	}
 

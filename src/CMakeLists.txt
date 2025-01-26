@@ -93,10 +93,6 @@ target_link_libraries(SRB2SDL2 PRIVATE ZLIB::ZLIB PNG::PNG CURL::libcurl)
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -D_LARGEFILE64_SOURCE)
 target_sources(SRB2SDL2 PRIVATE apng.c)
 
-target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC -DUSE_STUN)
-target_sources(SRB2SDL2 PRIVATE discord.c stun.c)
-
 target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
 target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
 target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
