@@ -429,6 +429,7 @@ static UINT8 KART_TO_SPR2[][2] = {
 	S('O', DRRN)
 	S('P', DRRN)
 	S('Q', SPIN)
+	S('Q', DEAD)
 	S('R', KART)
 	S('S', SIGN)
 };
@@ -534,6 +535,9 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		}
 
 		R_AddKartFaces(skin);
+
+		skin->flags |= SF_OLDDEATH|SF_NOGIBS;
+
 	}
 
 	if (skin->sprites[0].numframes == 0)
