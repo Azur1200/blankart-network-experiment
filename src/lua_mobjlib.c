@@ -501,6 +501,69 @@ static int mobj_get(lua_State *L)
 	return 1;
 }
 
+#define F(x) case x - 'A':
+static void frame2spr2(mobj_t *mo, UINT32 inframe)
+{
+	UINT8 spr2, outframe = 0;
+	switch (inframe & FF_FRAMEMASK)
+	{
+	F('A') F('B')
+		spr2 = SPR2_STIN;
+		outframe = inframe & 1;
+		break;
+	F('C') F('D')
+		spr2 = SPR2_STIL;
+		outframe = inframe & 1;
+		break;
+	F('E') F('F')
+		spr2 = SPR2_STIR;
+		outframe = inframe & 1;
+		break;
+	F('G')
+		spr2 = SPR2_SLWN;
+		break;
+	F('H')
+		spr2 = SPR2_SLWL;
+		break;
+	F('I')
+		spr2 = SPR2_SLWR;
+		break;
+	F('J')
+		spr2 = SPR2_FSTN;
+		break;
+	F('K')
+		spr2 = SPR2_FSTL;
+		break;
+	F('L')
+		spr2 = SPR2_FSTR;
+		break;
+	F('M') F('N')
+		spr2 = SPR2_DRLN;
+		outframe = inframe & 1;
+		break;
+	F('O') F('P')
+		spr2 = SPR2_DRRN;
+		outframe = inframe & 1;
+		break;
+	F('Q')
+		spr2 = SPR2_SPIN;
+		break;
+	F('R')
+		spr2 = SPR2_KART;
+		break;
+	F('S')
+		spr2 = SPR2_SIGN;
+		break;
+	default:
+		spr2 = SPR2_KART;
+		outframe = inframe - 18; // not 19! frame 0 is squish
+		break;
+	}
+	mo->frame = (inframe & ~FF_FRAMEMASK) | outframe;
+	mo->sprite2 = P_GetSkinSprite2((skin_t *)mo->skin, spr2, mo->player);
+}
+#undef F
+
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
 #define NOSETPOS luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL("P_Move") ", " LUA_QL("P_TryMove") ", or " LUA_QL("P_SetOrigin") ", or " LUA_QL("P_MoveOrigin") " instead.", mobj_opt[field])
 static int mobj_set(lua_State *L)
@@ -559,64 +622,15 @@ static int mobj_set(lua_State *L)
 		mo->rollangle = luaL_checkangle(L, 3);
 		break;
 	case mobj_sprite:
-		mo->sprite = luaL_checkinteger(L, 3);
-		if (mo->sprite == SPR_PLAY)
-			mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIN, mo->player);
+		spritenum_t newsprite = luaL_checkinteger(L, 3);
+		if (lua_compatmode && mo->sprite != SPR_PLAY && newsprite == SPR_PLAY)
+			frame2spr2(mo, mo->frame);
+		mo->sprite = newsprite;
 		break;
 	case mobj_frame:
 		// Check for SPR2
-		if (mo->sprite == SPR_PLAY)
-		{
-			UINT32 frame = (UINT32)luaL_checkinteger(L, 3);
-			switch (frame)
-			{
-				case 0:
-				case 1:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIN, mo->player);
-					break;
-				case 2:
-				case 3:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIL, mo->player);
-					break;
-				case 4:
-				case 5:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIR, mo->player);
-					break;
-				case 6:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWN, mo->player);
-					break;
-				case 7:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWL, mo->player);
-					break;
-				case 8:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWR, mo->player);
-					break;
-				case 9:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTN, mo->player);
-					break;
-				case 10:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTL, mo->player);
-					break;
-				case 11:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTR, mo->player);
-					break;
-				case 12:
-				case 13:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_DRLN, mo->player);
-					break;
-				case 14:
-				case 15:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_DRRN, mo->player);
-					break;
-				case 16:
-				case 17: // squish technically doesnt really exist
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SPIN, mo->player);
-					break;
-				case 18:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SIGN, mo->player);
-					break;
-			}
-		}
+		if (lua_compatmode && mo->sprite == SPR_PLAY)
+			frame2spr2(mo, (UINT32)luaL_checkinteger(L, 3));
 		else
 			mo->frame = (UINT32)luaL_checkinteger(L, 3);
 		break;
