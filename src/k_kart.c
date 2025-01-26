@@ -9301,9 +9301,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT)) // Banana x3 thrown
 							{
+								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_BANANA, -1, 0);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								K_UpdateHnextList(player, false);
 							}
 							break;
@@ -9362,9 +9362,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT)) // Orbinaut x3 thrown
 							{
+								player->itemamount--;
 								K_ThrowKartItem(player, true, MT_ORBINAUT, 1, 0);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								K_UpdateHnextList(player, false);
 							}
 							break;
@@ -9402,12 +9402,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->pflags & PF_ITEMOUT)) // Jawz thrown
 							{
+								player->itemamount--;
 								if (player->throwdir == 1 || player->throwdir == 0)
 									K_ThrowKartItem(player, true, MT_JAWZ, 1, 0);
 								else if (player->throwdir == -1) // Throwing backward gives you a dud that doesn't home in
 									K_ThrowKartItem(player, true, MT_JAWZ_DUD, -1, 0);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								K_UpdateHnextList(player, false);
 							}
 							break;
@@ -9430,9 +9430,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT))
 							{
+								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_SSMINE, 1, 1);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								player->pflags &= ~PF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
@@ -9464,9 +9464,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT))
 							{
+								player->itemamount--;
 								K_ThrowKartItem(player, (player->throwdir > 0), MT_DROPTARGET, -1, 0);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								player->pflags &= ~PF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
@@ -9585,12 +9585,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 									if (player->bubbleblowup > bubbletime*2)
 									{
+										player->itemamount--;
 										K_ThrowKartItem(player, (player->throwdir > 0), MT_BUBBLESHIELDTRAP, -1, 0);
 										K_PlayAttackTaunt(player->mo);
 										player->bubbleblowup = 0;
 										player->bubblecool = 0;
 										player->pflags &= ~PF_HOLDREADY;
-										player->itemamount--;
 									}
 								}
 								else
@@ -9733,9 +9733,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->pflags & PF_ITEMOUT)) // Sink thrown
 							{
+								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_SINK, 1, 2);
 								K_PlayAttackTaunt(player->mo);
-								player->itemamount--;
 								player->pflags &= ~PF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
