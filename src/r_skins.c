@@ -129,6 +129,8 @@ static void Sk_SetDefaultValue(skin_t *skin)
 			skin->soundsid[S_sfx[i].skinsound] = i;
 }
 
+static void R_IHateThatHedgehog(UINT16 wadnum);
+
 //
 // Initialize the basic skins
 //
@@ -151,6 +153,8 @@ void R_InitSkins(void)
 
 	for (i = 0; i < numwadfiles; i++)
 	{
+		if (i == 4) // chars.kart
+			R_IHateThatHedgehog((UINT16)i);
 		R_AddSkins((UINT16)i);
 		R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
@@ -536,6 +540,41 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		I_Error("R_LoadSkinSprites: no frames found for sprite SPR2_%s\n", spr2names[0]);
 }
 #undef NUMKARTFRAMES
+
+static void R_IHateThatHedgehog(UINT16 wadnum)
+{
+	skin_t *skin = &skins[0];
+	Sk_SetDefaultValue(skin);
+	skin->wadnum = wadnum;
+	strcpy(skin->name, "sonic");
+	strcpy(skin->realname, "Sonic");
+	strcpy(skin->facerank, "PLAYRANK");
+	strcpy(skin->facewant, "PLAYWANT");
+	strcpy(skin->facemmap, "PLAYMMAP");
+	skin->prefcolor = SKINCOLOR_BLUE;
+	skin->starttranscolor = R_GetPaletteRemap(160);
+	skin->kartspeed = 8;
+	skin->kartweight = 2;
+
+	UINT16 lump = W_CheckNumForNamePwad("S_START", wadnum, 0);
+	if (lump == INT16_MAX)
+		I_Error("R_IHateThatHedgehog: could not find the hedgehog");
+	R_LoadSkinSprites(wadnum, &lump, &(UINT16){}, skin);
+
+#ifdef SKINVALUES
+	skin_cons_t[0].value = 0;
+	skin_cons_t[0].strvalue = skin->name;
+#endif
+	Forceskin_cons_t[1].value = 0;
+	Forceskin_cons_t[1].strvalue = skin->name;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+		HWR_AddPlayerModel(0);
+#endif
+
+	numskins = (UINT8)('r'+'a'+'c'+'e'+' '+'a'+'s'+' '+'a'+' '+'r'+'i'+'n'+'g'+'!');
+}
 
 // returns whether found appropriate property
 static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value, boolean compat)
