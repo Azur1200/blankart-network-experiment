@@ -3192,6 +3192,38 @@ static fixed_t K_FlameShieldDashVar(INT32 val)
 	return (3*FRACUNIT/4) + (((val * FRACUNIT) / TICRATE) / 2);
 }
 
+static inline fixed_t K_GetProjectileSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 68*mapobjectscale; // Avg Speed is 34
+			break;
+		case 2:
+			return 96*mapobjectscale; // Avg Speed is 48
+			break;
+		default:
+			return 82*mapobjectscale; // Avg Speed is 41
+			break;
+	}
+}
+
+static inline fixed_t K_GetSneakerBoostSpeed(void)
+{
+	switch (gamespeed)
+	{
+		case 0:
+			return 53740+768;
+			break;
+		case 2:
+			return 17294+768;
+			break;
+		default:
+			return 32768;
+			break;
+	}
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -3229,19 +3261,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->sneakertimer) // Sneaker
 	{
-		fixed_t sneakerspeedboost = 0;
-		switch (gamespeed)
-		{
-			case 0:
-				sneakerspeedboost = max(speedboost, 53740+768);
-				break;
-			case 2:
-				sneakerspeedboost = max(speedboost, 17294+768);
-				break;
-			default:
-				sneakerspeedboost = max(speedboost, 32768);
-				break;
-		}
+		fixed_t sneakerspeedboost = K_GetSneakerBoostSpeed();
 		ADDBOOST(sneakerspeedboost, 8*FRACUNIT); // + ???% top speed, + 800% acceleration
 
 	}
@@ -4588,18 +4608,7 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 	}
 	else
 	{
-		switch (gamespeed)
-		{
-			case 0:
-				PROJSPEED = 68*mapobjectscale; // Avg Speed is 34
-				break;
-			case 2:
-				PROJSPEED = 96*mapobjectscale; // Avg Speed is 48
-				break;
-			default:
-				PROJSPEED = 82*mapobjectscale; // Avg Speed is 41
-				break;
-		}
+		PROJSPEED = K_GetProjectileSpeed();
 	}
 
 	if (altthrow)
@@ -4862,18 +4871,7 @@ void K_PuntMine(mobj_t *origMine, mobj_t *punter)
 	if (mine->threshold > 0)
 		return;
 
-	switch (gamespeed)
-	{
-		case 0:
-			spd = 68*mapobjectscale; // Avg Speed is 34
-			break;
-		case 2:
-			spd = 96*mapobjectscale; // Avg Speed is 48
-			break;
-		default:
-			spd = 82*mapobjectscale; // Avg Speed is 41
-			break;
-	}
+	spd = K_GetProjectileSpeed();
 
 	mine->flags |= MF_NOCLIPTHING;
 
@@ -5048,24 +5046,7 @@ static void K_DoHyudoroSteal(player_t *player)
 
 void K_DoSneaker(player_t *player, INT32 type)
 {
-	fixed_t intendedboost;
-
-	switch (gamespeed)
-	{
-		case 0:
-			intendedboost = 53740+768;
-			break;
-		case 2:
-			intendedboost = 17294+768;
-			break;
-		//expert
-		case 3:
-			intendedboost = 14706;
-			break;
-		default:
-			intendedboost = 32768;
-			break;
-	}
+	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
