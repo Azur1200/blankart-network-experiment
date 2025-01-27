@@ -2282,7 +2282,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	totalring = players[player].totalring;
 	xtralife = players[player].xtralife;
 
-	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE));
+	pflags = (players[player].pflags & (PF_WANTSTOJOIN|PF_KICKSTARTACCEL|PF_SHRINKME|PF_SHRINKACTIVE|PF_FLIPCAM));
 
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
@@ -2322,7 +2322,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		itemroulette = (players[player].itemroulette > 0 ? 1 : 0);
 		roulettetype = players[player].roulettetype;
 
-		if (players[player].pflags & PF_ITEMOUT)
+		if (players[player].itemflags & IF_ITEMOUT)
 		{
 			itemtype = 0;
 			itemamount = 0;

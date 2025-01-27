@@ -1255,7 +1255,7 @@ static void K_drawKartItem(void)
 					break;
 			}
 
-			if ((stplyr->pflags & PF_ITEMOUT) && !(leveltime & 1))
+			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
 				localpatch = kp_nodraw;
 		}
 

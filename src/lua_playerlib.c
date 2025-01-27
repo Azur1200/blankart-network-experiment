@@ -1121,7 +1121,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->itemamount);
 			return 1;
 		case k_itemheld:
-			lua_pushinteger(L, (plr->pflags & PF_ITEMOUT));
+			lua_pushinteger(L, (plr->itemflags & IF_ITEMOUT));
 			return 1;
 		case k_curshield:
 			lua_pushinteger(L, plr->curshield);
@@ -1151,7 +1151,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, plr->invincibilitytimer);
 			return 1;
 		case k_eggmanheld:
-			lua_pushinteger(L, (plr->pflags & PF_EGGMANOUT));
+			lua_pushinteger(L, (plr->itemflags & IF_EGGMANOUT));
 			return 1;
 		case k_eggmanexplode:
 			lua_pushinteger(L, plr->eggmanexplode);
@@ -1383,7 +1383,7 @@ static int kartstuff_set(lua_State *L)
 				break;
 			case k_itemheld:
 				if (i > 0)
-					plr->pflags |= PF_ITEMOUT;
+					plr->itemflags |= IF_ITEMOUT;
 				break;
 			case k_curshield:
 				plr->curshield = i;
@@ -1414,7 +1414,7 @@ static int kartstuff_set(lua_State *L)
 				break;
 			case k_eggmanheld:
 				if (i > 0)
-					plr->pflags |= PF_EGGMANOUT;
+					plr->itemflags |= IF_EGGMANOUT;
 				break;
 			case k_eggmanexplode:
 				plr->eggmanexplode = i;

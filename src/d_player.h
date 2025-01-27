@@ -59,6 +59,14 @@ typedef enum
 	PST_REBORN
 } playerstate_t;
 
+typedef enum
+{
+	IF_USERINGS		= 1,	// Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
+	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
+	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
+	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
+} itemflags_t;
+
 //
 // Player internal flags
 //
@@ -85,28 +93,22 @@ typedef enum
 
 	PF_RINGLOCK			= 1<<13, // Prevent picking up rings while SPB is locked on
 
-	// The following four flags are mutually exclusive, although they can also all be off at the same time. If we ever run out of pflags, eventually turn them into a seperate five(+) mode UINT8..?
-	PF_USERINGS			= 1<<14, // Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
-	PF_ITEMOUT			= 1<<15, // Are you holding an item out?
-	PF_EGGMANOUT		= 1<<16, // Eggman mark held, separate from PF_ITEMOUT so it doesn't stop you from getting items
-	PF_HOLDREADY		= 1<<17, // Hold button-style item is ready to activate
+	PF_DRIFTINPUT		= 1<<14, // Drifting!
+	PF_GETSPARKS		= 1<<15, // Can get sparks
+	PF_DRIFTEND			= 1<<16, // Drift has ended, used to adjust character angle after drift
+	PF_BRAKEDRIFT		= 1<<17, // Helper for brake-drift spark spawning
 
-	PF_DRIFTINPUT		= 1<<18, // Drifting!
-	PF_GETSPARKS		= 1<<19, // Can get sparks
-	PF_DRIFTEND			= 1<<20, // Drift has ended, used to adjust character angle after drift
-	PF_BRAKEDRIFT		= 1<<21, // Helper for brake-drift spark spawning
+	PF_AIRFAILSAFE		= 1<<18, // Whenever or not try the air boost
+	PF_UPDATEMYRESPAWN	= 1<<19,
 
-	PF_AIRFAILSAFE		= 1<<22, // Whenever or not try the air boost
-	PF_UPDATEMYRESPAWN	= 1<<23, 
+	PF_FLIPCAM	= 1<<20,
+	//free		= 1<<21,
 
-	PF_FLIPCAM	= 1<<24,
-	//free		= 1<<25,
+	PF_HITFINISHLINE	= 1<<22, // Already hit the finish line this tic
+	PF_WRONGWAY			= 1<<23, // Moving the wrong way with respect to waypoints?
 
-	PF_HITFINISHLINE	= 1<<26, // Already hit the finish line this tic
-	PF_WRONGWAY			= 1<<27, // Moving the wrong way with respect to waypoints?
-
-	PF_SHRINKME			= 1<<28, // "Shrink me" cheat preference
-	PF_SHRINKACTIVE		= 1<<29, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
+	PF_SHRINKME			= 1<<24, // "Shrink me" cheat preference
+	PF_SHRINKACTIVE		= 1<<25, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
 	// up to 1<<31 is free
 } pflags_t;
@@ -726,6 +728,8 @@ struct player_t
 
 	UINT8 kickstartaccel;
 	
+	UINT8 itemflags; 	// holds IF_flags (see itemstate_t)
+
 	fixed_t outrun; // Milky Way road effect
 	UINT8 outruntime; // Used to bypass the speed cap for fall off
 	

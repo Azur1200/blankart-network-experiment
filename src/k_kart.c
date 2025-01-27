@@ -1337,7 +1337,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// I'm returning via the exact opposite, however, to forgo having another bracket embed. Same result either way, I think.
 	// Finally, if you get past this check, now you can actually start calculating what item you get.
 	if ((cmd->buttons & BT_ATTACK) && (player->itemroulette >= roulettestop)
-		&& !(player->pflags & (PF_ITEMOUT|PF_EGGMANOUT|PF_USERINGS)))
+		&& !(player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT|IF_USERINGS)))
 	{
 		// Mashing reduces your chances for the good items
 		mashed = FixedDiv((player->itemroulette)*FRACUNIT, ((TICRATE*3)+roulettestop)*FRACUNIT) - FRACUNIT;
@@ -4990,7 +4990,7 @@ static void K_DoHyudoroSteal(player_t *player)
 			// Has an item
 			&& (players[i].itemtype
 			&& players[i].itemamount
-			&& !(players[i].pflags & PF_ITEMOUT)))
+			&& !(players[i].itemflags & IF_ITEMOUT)))
 		{
 			playerswappable[numplayers] = i;
 			numplayers++;
@@ -5568,11 +5568,11 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 
 	player->bananadrag = 0;
 
-	if (player->pflags & PF_EGGMANOUT)
+	if (player->itemflags & IF_EGGMANOUT)
 	{
-		player->pflags &= ~PF_EGGMANOUT;
+		player->itemflags &= ~IF_EGGMANOUT;
 	}
-	else if ((player->pflags & PF_ITEMOUT)
+	else if ((player->itemflags & IF_ITEMOUT)
 		&& (dropall || (--player->itemamount <= 0)))
 	{
 		player->itemamount = 0;
@@ -5958,9 +5958,9 @@ static void K_MoveHeldObjects(player_t *player)
 	if (!player->mo->hnext)
 	{
 		player->bananadrag = 0;
-		if (player->pflags & PF_EGGMANOUT)
-			player->pflags &= ~PF_EGGMANOUT;
-		else if (player->pflags & PF_ITEMOUT)
+		if (player->itemflags & IF_EGGMANOUT)
+			player->itemflags &= ~IF_EGGMANOUT;
+		else if (player->itemflags & IF_ITEMOUT)
 		{
 			player->itemamount = 0;
 			K_UnsetItemOut(player);
@@ -5974,9 +5974,9 @@ static void K_MoveHeldObjects(player_t *player)
 		// we need this here too because this is done in afterthink - pointers are cleaned up at the START of each tic...
 		P_SetTarget(&player->mo->hnext, NULL);
 		player->bananadrag = 0;
-		if (player->pflags & PF_EGGMANOUT)
-			player->pflags &= ~PF_EGGMANOUT;
-		else if (player->pflags & PF_ITEMOUT)
+		if (player->itemflags & IF_EGGMANOUT)
+			player->itemflags &= ~IF_EGGMANOUT;
+		else if (player->itemflags & IF_EGGMANOUT)
 		{
 			player->itemamount = 0;
 			K_UnsetItemOut(player);
@@ -6986,7 +6986,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	if (player->itemtype == KITEM_NONE)
-		player->pflags &= ~PF_HOLDREADY;
+		player->itemflags &= ~IF_HOLDREADY;
 
 	// DKR style camera for boosting
 	if (player->karthud[khud_boostcam] != 0 || player->karthud[khud_destboostcam] != 0)
@@ -7421,7 +7421,7 @@ void K_KartPlayerAfterThink(player_t *player)
 	K_MoveHeldObjects(player);
 
 	// Jawz reticule (seeking)
-	if (player->itemtype == KITEM_JAWZ && (player->pflags & PF_ITEMOUT))
+	if (player->itemtype == KITEM_JAWZ && (player->itemflags & IF_ITEMOUT))
 	{
 		INT32 lasttarg = player->lastjawztarget;
 		player_t *targ;
@@ -8865,7 +8865,7 @@ void K_StripItems(player_t *player)
 	K_DropKitchenSink(player);
 	player->itemtype = KITEM_NONE;
 	player->itemamount = 0;
-	player->pflags &= ~(PF_ITEMOUT|PF_EGGMANOUT);
+	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT);
 
 	if (!player->itemroulette || player->roulettetype != 2)
 	{
@@ -9040,12 +9040,12 @@ void K_SetTireGrease(player_t *player, tic_t tics)
 
 void K_SetItemOut(player_t *player)
 {
-	player->pflags |= PF_ITEMOUT;
+	player->itemflags |= IF_ITEMOUT;
 }
 
 void K_UnsetItemOut(player_t *player)
 {
-	player->pflags &= ~PF_ITEMOUT;
+	player->itemflags &= ~IF_ITEMOUT;
 	player->bananadrag = 0;
 }
 
@@ -9056,7 +9056,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 {
 	ticcmd_t *cmd = &player->cmd;
 	boolean ATTACK_IS_DOWN = ((cmd->buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
-	boolean HOLDING_ITEM = (player->pflags & (PF_ITEMOUT|PF_EGGMANOUT));
+	boolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
 	boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 
 	if (!player->exiting)
@@ -9086,9 +9086,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
 			|| (player->growshrinktimer > 0)))
-			player->pflags |= PF_USERINGS;
+			player->pflags |= IF_USERINGS;
 		else
-			player->pflags &= ~PF_USERINGS;
+			player->pflags &= ~IF_USERINGS;
 	}
 
 	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && !(player->exiting || mapreset) && leveltime > introtime)
@@ -9125,7 +9125,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				S_StartSound(player->mo, sfx_s254);
 			}
 			// Ring boosting
-			else if (player->pflags & PF_USERINGS)
+			else if (player->itemflags & IF_USERINGS)
 			{
 				if ((cmd->buttons & BT_ATTACK) && !player->ringdelay && player->rings > 0)
 				{
@@ -9149,13 +9149,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						player->eggmanexplode = 1;
 				}
 				// Eggman Monitor throwing
-				else if (player->pflags & PF_EGGMANOUT)
+				else if (player->itemflags & IF_EGGMANOUT)
 				{
 					if (ATTACK_IS_DOWN)
 					{
 						K_ThrowKartItem(player, false, MT_EGGMANITEM, -1, 0);
 						K_PlayAttackTaunt(player->mo);
-						player->pflags &= ~PF_EGGMANOUT;
+						player->itemflags &= ~IF_EGGMANOUT;
 						K_UpdateHnextList(player, true);
 					}
 				}
@@ -9280,7 +9280,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									prev = mo;
 								}
 							}
-							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT)) // Banana x3 thrown
+							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT)) // Banana x3 thrown
 							{
 								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_BANANA, -1, 0);
@@ -9293,7 +9293,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							{
 								mobj_t *mo;
 								player->itemamount--;
-								player->pflags |= PF_EGGMANOUT;
+								player->itemflags |= IF_EGGMANOUT;
 								S_StartSound(player->mo, sfx_s254);
 								mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EGGMANITEM_SHIELD);
 								if (mo)
@@ -9341,7 +9341,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									prev = mo;
 								}
 							}
-							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT)) // Orbinaut x3 thrown
+							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT)) // Orbinaut x3 thrown
 							{
 								player->itemamount--;
 								K_ThrowKartItem(player, true, MT_ORBINAUT, 1, 0);
@@ -9381,7 +9381,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									prev = mo;
 								}
 							}
-							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->pflags & PF_ITEMOUT)) // Jawz thrown
+							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->itemflags & IF_ITEMOUT)) // Jawz thrown
 							{
 								player->itemamount--;
 								if (player->throwdir == 1 || player->throwdir == 0)
@@ -9409,12 +9409,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									P_SetTarget(&player->mo->hnext, mo);
 								}
 							}
-							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT))
+							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT))
 							{
 								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_SSMINE, 1, 1);
 								K_PlayAttackTaunt(player->mo);
-								player->pflags &= ~PF_ITEMOUT;
+								player->itemflags &= ~IF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
 							break;
@@ -9443,12 +9443,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									P_SetTarget(&player->mo->hnext, mo);
 								}
 							}
-							else if (ATTACK_IS_DOWN && (player->pflags & PF_ITEMOUT))
+							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT))
 							{
 								player->itemamount--;
 								K_ThrowKartItem(player, (player->throwdir > 0), MT_DROPTARGET, -1, 0);
 								K_PlayAttackTaunt(player->mo);
-								player->pflags &= ~PF_ITEMOUT;
+								player->itemflags &= ~IF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
 							break;
@@ -9556,7 +9556,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
 							{
-								if ((cmd->buttons & BT_ATTACK) && (player->pflags & PF_HOLDREADY))
+								if ((cmd->buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 								{
 									if (player->bubbleblowup == 0)
 										S_StartSound(player->mo, sfx_s3k75);
@@ -9571,7 +9571,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										K_PlayAttackTaunt(player->mo);
 										player->bubbleblowup = 0;
 										player->bubblecool = 0;
-										player->pflags &= ~PF_HOLDREADY;
+										player->itemflags &= ~IF_HOLDREADY;
 									}
 								}
 								else
@@ -9583,9 +9583,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										player->bubbleblowup--;
 
 									if (player->bubblecool)
-										player->pflags &= ~PF_HOLDREADY;
+										player->itemflags &= ~IF_HOLDREADY;
 									else
-										player->pflags |= PF_HOLDREADY;
+										player->itemflags |= IF_HOLDREADY;
 								}
 							}
 							break;
@@ -9611,7 +9611,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								if (flamemax > 0)
 									flamemax += TICRATE; // leniency period
 
-								if ((cmd->buttons & BT_ATTACK) && (player->pflags & PF_HOLDREADY))
+								if ((cmd->buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 								{
 									// TODO: gametyperules
 									const INT32 incr = gametype == GT_BATTLE ? 4 : 2;
@@ -9642,13 +9642,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 										player->flamemeter = 0;
 										player->flamelength = 0;
-										player->pflags &= ~PF_HOLDREADY;
+										player->itemflags &= ~IF_HOLDREADY;
 										player->itemamount--;
 									}
 								}
 								else
 								{
-									player->pflags |= PF_HOLDREADY;
+									player->itemflags |= IF_HOLDREADY;
 
 									// TODO: gametyperules
 									if (gametype != GT_BATTLE || leveltime % 6 == 0)
@@ -9712,12 +9712,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									P_SetTarget(&player->mo->hnext, mo);
 								}
 							}
-							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->pflags & PF_ITEMOUT)) // Sink thrown
+							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->itemflags & IF_ITEMOUT)) // Sink thrown
 							{
 								player->itemamount--;
 								K_ThrowKartItem(player, false, MT_SINK, 1, 2);
 								K_PlayAttackTaunt(player->mo);
-								player->pflags &= ~PF_ITEMOUT;
+								player->itemflags &= ~IF_ITEMOUT;
 								K_UpdateHnextList(player, true);
 							}
 							break;
@@ -9740,7 +9740,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		// No more!
 		if (!player->itemamount)
 		{
-			player->pflags &= ~PF_ITEMOUT;
+			player->itemflags &= ~IF_ITEMOUT;
 			player->itemtype = KITEM_NONE;
 		}
 

@@ -457,7 +457,7 @@ static boolean K_BotRevealsGenericTrap(player_t *player, INT16 turnamt, boolean 
 --------------------------------------------------*/
 static void K_BotItemGenericTrapShield(player_t *player, ticcmd_t *cmd, INT16 turnamt, boolean mine)
 {
-	if (player->pflags & PF_ITEMOUT)
+	if (player->itemflags & IF_ITEMOUT)
 	{
 		return;
 	}
@@ -482,7 +482,7 @@ static void K_BotItemGenericTrapShield(player_t *player, ticcmd_t *cmd, INT16 tu
 --------------------------------------------------*/
 static void K_BotItemGenericOrbitShield(player_t *player, ticcmd_t *cmd)
 {
-	if (player->pflags & PF_ITEMOUT)
+	if (player->itemflags & IF_ITEMOUT)
 	{
 		return;
 	}
@@ -828,7 +828,7 @@ static boolean K_BotRevealsEggbox(player_t *player)
 --------------------------------------------------*/
 static void K_BotItemEggmanShield(player_t *player, ticcmd_t *cmd)
 {
-	if (player->pflags & PF_EGGMANOUT)
+	if (player->itemflags & IF_EGGMANOUT)
 	{
 		return;
 	}
@@ -1163,7 +1163,7 @@ static void K_BotItemBubble(player_t *player, ticcmd_t *cmd)
 		hold = true;
 	}
 
-	if (hold && (player->pflags & PF_HOLDREADY))
+	if (hold && (player->itemflags & IF_HOLDREADY))
 	{
 		cmd->buttons |= BT_ATTACK;
 	}
@@ -1187,7 +1187,7 @@ static void K_BotItemFlame(player_t *player, ticcmd_t *cmd)
 	{
 		player->botvars.itemconfirm--;
 	}
-	else if (player->pflags & PF_HOLDREADY)
+	else if (player->itemflags & IF_HOLDREADY)
 	{
 		INT32 flamemax = player->flamelength * flameseg;
 
@@ -1280,7 +1280,7 @@ static void K_BotItemRouletteMash(player_t *player, ticcmd_t *cmd)
 --------------------------------------------------*/
 void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 {
-	if (player->pflags & PF_USERINGS)
+	if (player->itemflags & IF_USERINGS)
 	{
 		// Use rings!
 
@@ -1311,7 +1311,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 			{
 				K_BotItemEggmanExplosion(player, cmd);
 			}
-			else if (player->pflags & PF_EGGMANOUT)
+			else if (player->itemflags & IF_EGGMANOUT)
 			{
 				K_BotItemEggman(player, cmd);
 			}
@@ -1349,7 +1349,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						K_BotItemSneaker(player, cmd);
 						break;
 					case KITEM_BANANA:
-						if (!(player->pflags & PF_ITEMOUT))
+						if (!(player->itemflags & IF_ITEMOUT))
 						{
 							K_BotItemGenericTrapShield(player, cmd, turnamt, false);
 						}
@@ -1362,7 +1362,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						K_BotItemEggmanShield(player, cmd);
 						break;
 					case KITEM_ORBINAUT:
-						if (!(player->pflags & PF_ITEMOUT))
+						if (!(player->itemflags & IF_ITEMOUT))
 						{
 							K_BotItemGenericOrbitShield(player, cmd);
 						}
@@ -1374,7 +1374,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						}
 						break;
 					case KITEM_JAWZ:
-						if (!(player->pflags & PF_ITEMOUT))
+						if (!(player->itemflags & IF_ITEMOUT))
 						{
 							K_BotItemGenericOrbitShield(player, cmd);
 						}
@@ -1384,7 +1384,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						}
 						break;
 					case KITEM_MINE:
-						if (!(player->pflags & PF_ITEMOUT))
+						if (!(player->itemflags & IF_ITEMOUT))
 						{
 							K_BotItemGenericTrapShield(player, cmd, turnamt, true);
 						}
@@ -1397,7 +1397,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						K_BotItemLandmine(player, cmd, turnamt);
 						break;
 					case KITEM_DROPTARGET:
-						if (!(player->pflags & PF_ITEMOUT))
+						if (!(player->itemflags & IF_ITEMOUT))
 						{
 							K_BotItemGenericTrapShield(player, cmd, turnamt, false);
 						}

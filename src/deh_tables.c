@@ -225,12 +225,6 @@ const char *const PLAYERFLAG_LIST[] = {
 
 	"RINGLOCK", // Prevent picking up rings while SPB is locked on
 
-	// The following four flags are mutually exclusive, although they can also all be off at the same time. If we ever run out of pflags, eventually turn them into a seperate five(+) mode UINT8..?
-	"USERINGS", // Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
-	"ITEMOUT", // Are you holding an item out?
-	"EGGMANOUT", // Eggman mark held, separate from PF_ITEMOUT so it doesn't stop you from getting items
-	"HOLDREADY", // Hold button-style item is ready to activate
-
 	"DRIFTINPUT", // Drifting!
 	"GETSPARKS", // Can get sparks
 	"DRIFTEND", // Drift has ended, used to adjust character angle after drift
@@ -240,13 +234,22 @@ const char *const PLAYERFLAG_LIST[] = {
 	
 	"UPDATEMYRESPAWN",
 	"FLIPCAM",
-	//free
+	"\x01",
 
 	"HITFINISHLINE", // Already hit the finish line this tic
 	"WRONGWAY", // Moving the wrong way with respect to waypoints?
 
 	"SHRINKME",
 	"SHRINKACTIVE",
+
+	NULL // stop loop here.
+};
+
+const char *const ITEMFLAG_LIST[] = {
+	"USERINGS",
+	"ITEMOUT",
+	"IF_EGGMANOUT",
+	"IF_HOLDREADY",
 
 	NULL // stop loop here.
 };

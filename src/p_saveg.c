@@ -346,6 +346,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEUINT8(save->p, players[i].kickstartaccel);
 
+		WRITEUINT8(save->p, players[i].itemflags);
+
 		// botvars_t
 		WRITEUINT8(save->p, players[i].botvars.difficulty);
 		WRITEUINT8(save->p, players[i].botvars.diffincrease);
@@ -637,6 +639,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].typing_duration = READUINT8(save->p);
 
 		players[i].kickstartaccel = READUINT8(save->p);
+
+		players[i].itemflags = READUINT8(save->p);
 
 		// botvars_t
 		players[i].botvars.difficulty = READUINT8(save->p);
