@@ -9086,9 +9086,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
 			|| (player->growshrinktimer > 0)))
-			player->pflags |= IF_USERINGS;
+			player->itemflags |= IF_USERINGS;
 		else
-			player->pflags &= ~IF_USERINGS;
+			player->itemflags &= ~IF_USERINGS;
 	}
 
 	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && !(player->exiting || mapreset) && leveltime > introtime)
