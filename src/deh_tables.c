@@ -248,8 +248,8 @@ const char *const PLAYERFLAG_LIST[] = {
 const char *const ITEMFLAG_LIST[] = {
 	"USERINGS",
 	"ITEMOUT",
-	"IF_EGGMANOUT",
-	"IF_HOLDREADY",
+	"EGGMANOUT",
+	"HOLDREADY",
 
 	NULL // stop loop here.
 };
