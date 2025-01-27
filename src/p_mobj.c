@@ -6427,6 +6427,11 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		else // Apply gravity to fall downwards.
 		{
 			P_SetObjectMomZ(mobj, -2*FRACUNIT/3, true);
+
+			if (mobj->player && (skins[mobj->player->skin].flags && SF_OLDDEATH))
+			{
+				mobj->player->drawangle -= ANGLE_22h;
+			}
 		}
 		break;
 	case MT_METALSONIC_RACE:

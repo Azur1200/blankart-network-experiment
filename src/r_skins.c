@@ -109,6 +109,9 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	skin->flags = 0;
 
 	strcpy(skin->realname, "Someone");
+	strncpy(skin->facerank, "MISSING", 9);
+	strncpy(skin->facewant, "MISSING", 9);
+	strncpy(skin->facemmap, "MISSING", 9);
 	skin->starttranscolor = 96;
 	skin->prefcolor = SKINCOLOR_GREEN;
 	skin->supercolor = SKINCOLOR_SUPERGOLD1;
@@ -125,6 +128,8 @@ static void Sk_SetDefaultValue(skin_t *skin)
 		if (S_sfx[i].skinsound != -1)
 			skin->soundsid[S_sfx[i].skinsound] = i;
 }
+
+static void R_IHateThatHedgehog(UINT16 wadnum);
 
 //
 // Initialize the basic skins
@@ -148,6 +153,8 @@ void R_InitSkins(void)
 
 	for (i = 0; i < numwadfiles; i++)
 	{
+		if (i == 4) // chars.kart
+			R_IHateThatHedgehog((UINT16)i);
 		R_AddSkins((UINT16)i);
 		R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
@@ -396,6 +403,38 @@ static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 	return INT16_MAX; // not found
 }
 
+#define NUMKARTFRAMES 19
+#define S(f, s) { f - 'A', SPR2_##s },
+static UINT8 KART_TO_SPR2[][2] = {
+	S('A', STIN)
+	S('B', STIN)
+	S('C', STIL)
+	S('D', STIL)
+	S('E', STIR)
+	S('F', STIR)
+	S('J', SLWN)
+	S('G', SLWN)
+	S('K', SLWL)
+	S('H', SLWL)
+	S('L', SLWR)
+	S('I', SLWR)
+	S('A', FSTN)
+	S('J', FSTN)
+	S('C', FSTL)
+	S('K', FSTL)
+	S('E', FSTR)
+	S('L', FSTR)
+	S('M', DRLN)
+	S('N', DRLN)
+	S('O', DRRN)
+	S('P', DRRN)
+	S('Q', SPIN)
+	S('Q', DEAD)
+	S('R', KART)
+	S('S', SIGN)
+};
+#undef S
+
 static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, skin_t *skin)
 {
 	UINT16 newlastlump;
@@ -427,20 +466,126 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		*lastlump = newlastlump; // okay, make the normal sprite set loading end there
 	}*/
 
-	// load all sprite sets we are aware of... for normal stuff.
-	for (sprite2 = 0; sprite2 < free_spr2; sprite2++)
-		R_AddSingleSpriteDef(spr2names[sprite2], &skin->sprites[sprite2], wadnum, *lump, *lastlump);
+	if (!wadfiles[wadnum]->compatmode)
+	{
+		// load all sprite sets we are aware of... for normal stuff.
+		for (sprite2 = 0; sprite2 < free_spr2; sprite2++)
+			R_AddSingleSpriteDef(spr2names[sprite2], &skin->sprites[sprite2], wadnum, *lump, *lastlump);
+	}
+	else
+	{
+		// okay, now we have to get fancy...
+		// first, just dump all the frames in a temporary def
+		size_t i;
+		spritedef_t *sd;
+		spriteframe_t *sf;
+		spritedef_t tmp = {};
+		const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
+		R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
+
+		if (tmp.numframes < NUMKARTFRAMES)
+			I_Error("R_LoadSkinSprites: too few frames for kart skin");
+
+		// now shuffle them around to fit the new SPR2 system
+		// iterate over KART_TO_SPR2, then add any excess frames to SPR2_KART
+#define SPR2COUNT sizeof(KART_TO_SPR2)/sizeof(*KART_TO_SPR2)
+		for (i = 0; i < SPR2COUNT - NUMKARTFRAMES + tmp.numframes; i++)
+		{
+			boolean excess = i >= SPR2COUNT;
+			sf = &tmp.spriteframes[excess ? i - SPR2COUNT + NUMKARTFRAMES : KART_TO_SPR2[i][0]];
+			sd = &skin->sprites[excess ? SPR2_KART : KART_TO_SPR2[i][1]];
+			sd->spriteframes = Z_Realloc(sd->spriteframes, sizeof(*sd->spriteframes) * (sd->numframes+1), PU_STATIC, NULL);
+			sd->spriteframes[sd->numframes++] = *sf;
+		}
+		Z_Free(tmp.spriteframes);
+#undef SPR2COUNT
+
+		// now we have to rotate the drift frames. i hate this.
+		sd = &skin->sprites[SPR2_DRRN];
+		for (i = 0; i < sd->numframes; i++)
+		{
+			sf = &sd->spriteframes[i];
+			if (sf->rotate != SRF_3D)
+				continue;
+			lumpnum_t lastpat = sf->lumppat[7];
+			size_t lastid = sf->lumpid[7];
+			for (int r = 7; r >= 1; r--)
+			{
+				sf->lumppat[r] = sf->lumppat[r-1];
+				sf->lumpid[r] = sf->lumpid[r-1];
+			}
+			sf->lumppat[0] = lastpat;
+			sf->lumpid[0] = lastid;
+		}
+		sd = &skin->sprites[SPR2_DRLN];
+		for (i = 0; i < sd->numframes; i++)
+		{
+			sf = &sd->spriteframes[i];
+			if (sf->rotate != SRF_3D)
+				continue;
+			lumpnum_t firstpat = sf->lumppat[0];
+			size_t firstid = sf->lumpid[0];
+			for (int r = 0; r < 8; r++)
+			{
+				sf->lumppat[r] = sf->lumppat[r+1];
+				sf->lumpid[r] = sf->lumpid[r+1];
+			}
+			sf->lumppat[7] = firstpat;
+			sf->lumpid[7] = firstid;
+		}
+
+		R_AddKartFaces(skin);
+
+		skin->flags |= SF_OLDDEATH|SF_NOGIBS;
+
+	}
 
 	if (skin->sprites[0].numframes == 0)
 		I_Error("R_LoadSkinSprites: no frames found for sprite SPR2_%s\n", spr2names[0]);
 }
+#undef NUMKARTFRAMES
+
+static void R_IHateThatHedgehog(UINT16 wadnum)
+{
+	skin_t *skin = &skins[0];
+	Sk_SetDefaultValue(skin);
+	skin->wadnum = wadnum;
+	strcpy(skin->name, "sonic");
+	strcpy(skin->realname, "Sonic");
+	strcpy(skin->facerank, "PLAYRANK");
+	strcpy(skin->facewant, "PLAYWANT");
+	strcpy(skin->facemmap, "PLAYMMAP");
+	skin->prefcolor = SKINCOLOR_BLUE;
+	skin->starttranscolor = R_GetPaletteRemap(160);
+	skin->kartspeed = 8;
+	skin->kartweight = 2;
+
+	UINT16 lump = W_CheckNumForNamePwad("S_START", wadnum, 0);
+	if (lump == INT16_MAX)
+		I_Error("R_IHateThatHedgehog: could not find the hedgehog");
+	R_LoadSkinSprites(wadnum, &lump, &(UINT16){}, skin);
+
+#ifdef SKINVALUES
+	skin_cons_t[0].value = 0;
+	skin_cons_t[0].strvalue = skin->name;
+#endif
+	Forceskin_cons_t[1].value = 0;
+	Forceskin_cons_t[1].strvalue = skin->name;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+		HWR_AddPlayerModel(0);
+#endif
+
+	numskins = (UINT8)('r'+'a'+'c'+'e'+' '+'a'+'s'+' '+'a'+' '+'r'+'i'+'n'+'g'+'!');
+}
 
 // returns whether found appropriate property
-static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
+static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value, boolean compat)
 {
 	// custom translation table
 	if (!stricmp(stoken, "startcolor"))
-		skin->starttranscolor = atoi(value);
+		skin->starttranscolor = compat ? R_GetPaletteRemap(atoi(value)) : atoi(value);
 
 #define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
 	// character type identification
@@ -491,6 +636,11 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETFLAG(HIRES)
 	GETFLAG(MACHINE)
 #undef GETFLAG
+
+#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strncpy(skin->field, value, 8);
+	GETPATCH(facerank)
+	GETPATCH(facewant)
+	GETPATCH(facemmap)
 
 	else // let's check if it's a sound, otherwise error out
 	{
@@ -667,7 +817,7 @@ void R_AddSkins(UINT16 wadnum)
 					pos++;
 				}
 			}
-			else if (!R_ProcessPatchableFields(skin, stoken, value))
+			else if (!R_ProcessPatchableFields(skin, stoken, value, wadfiles[wadnum]->compatmode))
 				CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 
 next_token:
@@ -822,7 +972,7 @@ void R_PatchSkins(UINT16 wadnum)
 						pos++;
 					}
 				}
-				else if (!R_ProcessPatchableFields(skin, stoken, value))
+				else if (!R_ProcessPatchableFields(skin, stoken, value, wadfiles[wadnum]->compatmode))
 					CONS_Debug(DBG_SETUP, "R_PatchSkins: Unknown keyword '%s' in P_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 			}
 

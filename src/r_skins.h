@@ -42,6 +42,7 @@ struct skin_t
 	skinflags_t flags;
 
 	char realname[SKINNAMESIZE+1]; // Display name for level completion.
+	char facerank[9], facewant[9], facemmap[9]; // Arbitrarily named patch lumps
 
 	// SRB2kart
 	UINT8 kartspeed;

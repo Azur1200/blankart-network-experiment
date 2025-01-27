@@ -1191,7 +1191,7 @@ static void IdentifyVersion(void)
 #define PATCHNAME "patch.pk3"
 #define MUSICNAME "music.kart"
 #define FOLLOWERSNAME "followers.pk3"
-#define CHARSNAME "chars.pk3"
+#define CHARSNAME "chars.kart"
 #define GRAPHICSNAME "gfx.kart"
 #define SOUNDSNAME "sounds.kart"
 
@@ -1487,7 +1487,7 @@ void D_SRB2Main(void)
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);		// textures.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_PK3);		// chars.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_KART);		// chars.kart
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);			// maps.pk3 -- 4 - If you touch this, make sure to touch up the majormods stuff below.
 	//mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
 #ifdef USE_PATCH_FILE
@@ -1497,7 +1497,7 @@ void D_SRB2Main(void)
 	mainwads++;	// main.pk3
 	mainwads++;	// gfx.kart
 	mainwads++;	// textures.kart
-	mainwads++;	// chars.pk3
+	mainwads++;	// chars.kart
 	mainwads++;	// maps.kart
 	//mainwads++; // followers.pk3
 #ifdef USE_PATCH_FILE
