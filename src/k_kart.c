@@ -2602,7 +2602,7 @@ void K_KartMoveAnimation(player_t *player)
 	}
 
 	// Sliptides: drift -> lookback frames
-	if (abs(player->aizdriftturn) >= ANGLE_90)
+	if (abs(player->aizdriftturn) >= ANGLE_90 && !wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode)
 	{
 		destGlanceDir = -(2*intsign(player->aizdriftturn));
 		player->glanceDir = destGlanceDir;

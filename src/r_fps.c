@@ -15,6 +15,7 @@
 #include "r_fps.h"
 
 #include "r_main.h"
+#include "r_skins.h"
 #include "g_game.h"
 #include "i_video.h"
 #include "r_plane.h"
@@ -287,6 +288,9 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		if (mobj->player && mobj->player->aizdriftturn)
 		{
 			addangle += mobj->player->aizdriftturn;
+			if (mobj->skin && wadfiles[((skin_t *)mobj->skin)->wadnum]->compatmode)
+				// don't turn too much in compatmode
+				addangle = (INT32)addangle / 4;
 		}
 		if (mobj->state == &states[S_KART_DRIFT_L]
 			|| mobj->state == &states[S_KART_DRIFT_L_OUT]
