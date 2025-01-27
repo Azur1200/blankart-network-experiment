@@ -2534,16 +2534,16 @@ void A_Boss1Laser(mobj_t *actor)
 	tic_t dur;
 	static const UINT8 LASERCOLORS[] =
 	{
-		SKINCOLOR_SUPERRED3,
-		SKINCOLOR_SUPERRED4,
-		SKINCOLOR_SUPERRED5,
+		SKINCOLOR_KSUPER3,
+		SKINCOLOR_KSUPER4,
+		SKINCOLOR_KSUPER5,
 		SKINCOLOR_KETCHUP,
 		SKINCOLOR_RED,
 		SKINCOLOR_RED,
 		SKINCOLOR_KETCHUP,
-		SKINCOLOR_SUPERRED5,
-		SKINCOLOR_SUPERRED4,
-		SKINCOLOR_SUPERRED3,
+		SKINCOLOR_KSUPER5,
+		SKINCOLOR_KSUPER4,
+		SKINCOLOR_KSUPER3,
 	};
 
 	if (LUA_CallAction(A_BOSS1LASER, actor))
@@ -12706,7 +12706,7 @@ void A_RolloutSpawn(mobj_t *actor)
 
 		if (actor->target->flags2 & MF2_AMBUSH)
 		{
-			actor->target->color = SKINCOLOR_SUPERRUST3;
+			actor->target->color = SKINCOLOR_CSUPER1;
 			actor->target->colorized = true;
 		}
 	}
