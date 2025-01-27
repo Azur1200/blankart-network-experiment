@@ -567,7 +567,7 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				// Has held item shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
 					(thing->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT)),
-					(globalsmuggle.botmo->player->pflags & (IF_ITEMOUT|IF_EGGMANOUT))
+					(globalsmuggle.botmo->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT))
 				))
 				{
 					break;
