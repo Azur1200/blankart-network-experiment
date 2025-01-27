@@ -1,6 +1,7 @@
-// SONIC ROBO BLAST 2 KART
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2020 by James R.
+// Copyright (C) 2024 by James Robert Roman.
+// Copyright (C) 2024 by Kart Krew.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -199,7 +200,7 @@ get_anchor
 
 	for (i = 0; i < list->count; ++i)
 	{
-		if (list->points[i] == v && list->anchors[i]->tid == group)
+		if (list->points[i] == v && list->anchors[i]->args[0] == group)
 		{
 			for (k = 0; k < 3; ++k)
 			{
@@ -500,7 +501,7 @@ static void P_SetupAnchoredSlopes (void) {
 
 			if (plane == 0)
 			{
-				CONS_Alert(CONS_WARNING, "Slope anchor linedef %lu has no planes set.\n", i);
+				CONS_Alert(CONS_WARNING, "Slope anchor linedef %s has no planes set.\n", sizeu1(i));
 				continue;
 			}
 
