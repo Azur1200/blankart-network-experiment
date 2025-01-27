@@ -181,13 +181,11 @@ boolean P_PlayerOrbit(player_t *player)
 
 	// If player slows down by too much, throw them
 	// out of the loop and reset them.
-	// (markedfordeath will kill the player on their
-	// first ground contact!)
 	if (player->speed < player->mo->scale)
 	{
 		P_HaltPlayerOrbit(player);
 		K_PlayPainSound(player->mo, NULL);
-		K_SpinPlayer(player, NULL, NULL, KSPIN_SPINOUT);
+		P_KillMobj(player->mo,NULL,NULL,DMG_INSTAKILL);
 
 		return false;
 	}
