@@ -83,7 +83,7 @@ static patch_t *hud_tv2;
 static patch_t *envelope;
 #endif
 
-static huddrawlist_h luahuddrawlist_game;
+static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 static huddrawlist_h luahuddrawlist_titlecard;
 
 //
@@ -262,7 +262,8 @@ void ST_Init(void)
 
 	ST_LoadGraphics();
 
-	luahuddrawlist_game = LUA_HUD_CreateDrawList();
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		luahuddrawlist_game[i] = LUA_HUD_CreateDrawList();
 	luahuddrawlist_titlecard = LUA_HUD_CreateDrawList();
 }
 
@@ -689,7 +690,7 @@ void ST_preLevelTitleCardDrawer(void)
 // Draw the status bar overlay, customisable: the user chooses which
 // kind of information to overlay
 //
-static void ST_overlayDrawer(void)
+static void ST_overlayDrawer(UINT8 playernum)
 {
 	// hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
@@ -698,10 +699,10 @@ static void ST_overlayDrawer(void)
 
 		if (renderisnewtic)
 		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_game);
-			LUA_HookHUD(luahuddrawlist_game, HUD_HOOK(game));
+			LUA_HUD_ClearDrawList(luahuddrawlist_game[playernum]);
+			LUA_HookHUD(luahuddrawlist_game[playernum], HUD_HOOK(game));
 		}
-		LUA_HUD_DrawList(luahuddrawlist_game);
+		LUA_HUD_DrawList(luahuddrawlist_game[playernum]);
 	}
 
 	if (!hu_showscores) // hide the following if TAB is held
@@ -883,7 +884,7 @@ void ST_Drawer(void)
 			stplyr = &players[displayplayers[i]];
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			R_InterpolateView(rendertimefrac); // to assist with object tracking
-			ST_overlayDrawer();
+			ST_overlayDrawer(i);
 		}
 
 		// draw Midnight Channel's overlay ontop
