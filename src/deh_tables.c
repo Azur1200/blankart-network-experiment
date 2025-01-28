@@ -97,6 +97,12 @@ const char *const STATE_LIST[] = { // array length left dynamic for sanity testi
 #undef _
 };
 
+struct int_const_s const STATE_ALIASES[] = {
+	{ "KART_SPIN", S_KART_SPINOUT },
+	{ "KART_PAIN", S_KART_DEAD },
+	{ NULL, 0 }
+};
+
 const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
 #define _(name, ...) "MT_"#name,
 #include "info/mobjs.h"

@@ -451,6 +451,12 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+		if (lua_compatmode)
+			for (i = 0; STATE_ALIASES[i].n; i++)
+				if (fastcmp(p, STATE_ALIASES[i].n)) {
+					CacheAndPushConstant(L, word, STATE_ALIASES[i].v);
+					return 1;
+				}
 		return luaL_error(L, "state '%s' does not exist.\n", word);
 	}
 	else if (fastncmp("MT_",word,3)) {

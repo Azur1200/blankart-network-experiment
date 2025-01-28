@@ -194,6 +194,51 @@ static const char *const mobj_opt[] = {
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", mobj_opt[field])
 
+#define F(x) x - 'A'
+static UINT32 spr2frame(UINT8 spr2, UINT32 frame)
+{
+	switch (spr2)
+	{
+	case SPR2_STIN:
+	case SPR2_STGL: case SPR2_STGR: case SPR2_STLL: case SPR2_STLR:
+		return F('A') + (frame & 1);
+	case SPR2_STIL:
+		return F('C') + (frame & 1);
+	case SPR2_STIR:
+		return F('E') + (frame & 1);
+	case SPR2_SLWN:
+	case SPR2_SLGL: case SPR2_SLGR: case SPR2_SLLL: case SPR2_SLLR:
+		return frame & 1 ? F('G') : F('J');
+	case SPR2_SLWL:
+		return frame & 1 ? F('H') : F('K');
+	case SPR2_SLWR:
+		return frame & 1 ? F('I') : F('L');
+	case SPR2_FSTN:
+	case SPR2_FSGL: case SPR2_FSGR: case SPR2_FSLL: case SPR2_FSLR:
+		return frame & 1 ? F('J') : F('A');
+	case SPR2_FSTL:
+		return frame & 1 ? F('K') : F('C');
+	case SPR2_FSTR:
+		return frame & 1 ? F('L') : F('E');
+	case SPR2_DRLN: case SPR2_DRLO: case SPR2_DRLI:
+		return F('M') + (frame & 1);
+	case SPR2_DRRN: case SPR2_DRRO: case SPR2_DRRI:
+		return F('O') + (frame & 1);
+	case SPR2_SPIN: case SPR2_DEAD:
+		return F('Q');
+	case SPR2_SIGN:
+		return F('S');
+	case SPR2_KART:
+		if ((frame & FF_FRAMEMASK) == 0)
+			return F('R'); // squish
+		else
+			return F('S') + (frame & FF_FRAMEMASK);
+	default:
+		return F('A'); // idk???
+	}
+}
+#undef F
+
 static int mobj_get(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -249,7 +294,11 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->sprite);
 		break;
 	case mobj_frame:
-		lua_pushinteger(L, mo->frame);
+		UINT32 frame = mo->frame;
+		// translate SPR2 back to frames
+		if (lua_compatmode && mo->sprite == SPR_PLAY)
+			frame = (frame & ~FF_FRAMEMASK) | spr2frame(mo->sprite2, mo->frame);
+		lua_pushinteger(L, frame);
 		break;
 	case mobj_sprite2:
 		lua_pushinteger(L, mo->sprite2);

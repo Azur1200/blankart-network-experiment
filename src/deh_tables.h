@@ -61,6 +61,7 @@ extern const char NIGHTSGRADE_LIST[];
 extern struct flickytypes_s FLICKYTYPES[];
 extern actionpointer_t actionpointers[]; // Array mapping action names to action functions.
 extern const char *const STATE_LIST[];
+extern struct int_const_s const STATE_ALIASES[];
 extern const char *const MOBJTYPE_LIST[];
 extern const char *const MOBJFLAG_LIST[];
 extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
