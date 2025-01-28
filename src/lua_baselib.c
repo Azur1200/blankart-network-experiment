@@ -3374,6 +3374,20 @@ static int lib_gGametypeHasSpectators(lua_State *L)
 	return 1;
 }
 
+static int lib_gBattleGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushboolean(L, (gametype == GT_BATTLE));
+	return 1;
+}
+
+static int lib_gRaceGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushboolean(L, (gametype == GT_RACE));
+	return 1;
+}
+
 static int lib_gTicsToHours(lua_State *L)
 {
 	tic_t rtic = luaL_checkinteger(L, 1);
@@ -3412,20 +3426,6 @@ static int lib_gTicsToMilliseconds(lua_State *L)
 	tic_t rtic = luaL_checkinteger(L, 1);
 	//HUDSAFE
 	lua_pushinteger(L, G_TicsToMilliseconds(rtic));
-	return 1;
-}
-
-static int lib_gRaceGametype(lua_State *L)
-{
-	//HUDSAFE
-	lua_pushinteger(L, (gametype == GT_RACE));
-	return 1;
-}
-
-static int lib_gBattleGametype(lua_State *L)
-{
-	//HUDSAFE
-	lua_pushinteger(L, (gametype == GT_BATTLE));
 	return 1;
 }
 
