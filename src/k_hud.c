@@ -2371,23 +2371,24 @@ static void K_drawKartSpeedometer(void)
 
 	switch (cv_kartspeedometer.value)
 	{
-		case 1: // Sonic Drift 2 style percentage
-		default:
+		case 1: // Kilometers
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale) / FRACUNIT; // 2.172409058
+			labeln = 1;
+			break;
+		case 2: // Miles
+			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale) / FRACUNIT; // 1.349868774
+			labeln = 2;
+			break;
+		case 3: // Fracunits
+			convSpeed = FixedDiv(stplyr->speed, mapobjectscale) / FRACUNIT; // 1.0. duh.
+			labeln = 3;
+			break;
+		case 4: // Sonic Drift 2 style percentage
 			if (stplyr->mo)
 				convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), ORIG_FRICTION))*100)>>FRACBITS;
 			labeln = 0;
 			break;
-		case 2: // Kilometers
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale) / FRACUNIT; // 2.172409058
-			labeln = 1;
-			break;
-		case 3: // Miles
-			convSpeed = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale) / FRACUNIT; // 1.349868774
-			labeln = 2;
-			break;
-		case 4: // Fracunits
-			convSpeed = FixedDiv(stplyr->speed, mapobjectscale) / FRACUNIT; // 1.0. duh.
-			labeln = 3;
+		default:
 			break;
 	}
 
@@ -2406,16 +2407,16 @@ static void K_drawKartSpeedometer(void)
 	{
 		switch (cv_kartspeedometer.value) {
 			case 1:
-				V_DrawKartString(LAPS_X, LAPS_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
-				break;
-			case 2:
 				V_DrawKartString(LAPS_X, LAPS_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
 				break;
-			case 3:
+			case 2:
 				V_DrawKartString(LAPS_X, LAPS_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
 				break;
-			case 4:
+			case 3:
 				V_DrawKartString(LAPS_X, LAPS_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
+				break;
+			case 4:
+				V_DrawKartString(LAPS_X, LAPS_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%4d P", convSpeed));
 				break;
 			default:
 				break;
