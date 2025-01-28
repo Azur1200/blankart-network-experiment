@@ -285,7 +285,20 @@ static int libd_patchExists(lua_State *L)
 static int libd_cachePatch(lua_State *L)
 {
 	HUDONLY
-	LUA_PushUserdata(L, W_CachePatchLongName(luaL_checkstring(L, 1), PU_PATCH), META_PATCH);
+	const char *name = luaL_checkstring(L, 1);
+	void *patch;
+	if (name[0] && name[0] <= NUMFACES)
+	{
+		// skin.facerank has a secret message for us
+		INT32 skin = R_SkinAvailable(name+1);
+		if (skin != -1)
+			patch = faceprefix[skin][(UINT8)name[0]-1];
+		else
+			return luaL_error(L, "Skin %s not found", name+1);
+	}
+	else
+		patch = W_CachePatchLongName(name, PU_PATCH);
+	LUA_PushUserdata(L, patch, META_PATCH);
 	return 1;
 }
 

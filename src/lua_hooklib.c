@@ -212,8 +212,10 @@ static int lib_addHook(lua_State *L)
 	const char * name;
 	int type;
 
+	/* LIMITS ARE MEANT TO BE BROKEN!
 	if (!lua_lumploading)
 		return luaL_error(L, "This function cannot be called from within a hook or coroutine!");
+	*/
 
 	name = luaL_checkstring(L, 1);
 	luaL_checktype(L, 2, LUA_TFUNCTION);

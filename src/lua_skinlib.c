@@ -24,6 +24,9 @@ enum skin {
 	skin_wadnum,
 	skin_flags,
 	skin_realname,
+	skin_facerank,
+	skin_facewant,
+	skin_facemmap,
 	// SRB2kart
 	skin_kartspeed,
 	skin_kartweight,
@@ -44,6 +47,9 @@ static const char *const skin_opt[] = {
 	"wadnum",
 	"flags",
 	"realname",
+	"facerank",
+	"facewant",
+	"facemmap",
 	"kartspeed",
 	"kartweight",
 	"followitem",
@@ -59,6 +65,18 @@ static const char *const skin_opt[] = {
 };
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("skin_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", skin_opt[field])
+
+// absolutely hilarious hack to get these old fields working with SPR2
+// see libd_cachePatch
+#define FACE(f) { \
+	if (!lua_compatmode) \
+		return UNIMPLEMENTED; \
+	char name[SKINNAMESIZE+2]; \
+	name[0] = f+1; \
+	strcpy(name+1, skin->name); \
+	lua_pushstring(L, name); \
+	break; \
+}
 
 static int skin_get(lua_State *L)
 {
@@ -85,6 +103,12 @@ static int skin_get(lua_State *L)
 	case skin_realname:
 		lua_pushstring(L, skin->realname);
 		break;
+	case skin_facerank:
+		FACE(0)
+	case skin_facewant:
+		FACE(1)
+	case skin_facemmap:
+		FACE(2)
 	// SRB2kart
 	case skin_kartspeed:
 		lua_pushinteger(L, skin->kartspeed);
@@ -123,6 +147,8 @@ static int skin_get(lua_State *L)
 	}
 	return 1;
 }
+
+#undef FACE
 
 static int skin_set(lua_State *L)
 {

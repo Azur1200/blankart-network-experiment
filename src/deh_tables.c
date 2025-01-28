@@ -144,7 +144,7 @@ const char *const MOBJFLAG2_LIST[] = {
 	"AXIS",			  // It's a NiGHTS axis! (For faster checking)
 	"\x01",			  // free: 1<<1 (name un-matchable)
 	"DONTRESPAWN",	  // Don't respawn this object!
-	"\x01",			  // free: 1<<3 (name un-matchable)
+	"DONTDRAW",		  // alias for RF_DONTDRAW
 	"AUTOMATIC",	  // Thrown ring has automatic properties
 	"RAILRING",		  // Thrown ring has rail properties
 	"BOUNCERING",	  // Thrown ring has bounce properties
@@ -188,7 +188,20 @@ const char *const MOBJEFLAG_LIST[] = {
 	"APPLYPMOMZ", // Platform movement
 	"TRACERANGLE", // Compute and trigger on mobj angle relative to tracer
 	"JUSTBOUNCEDWALL",
+	"\x01",
 	"SLOPELAUNCHED",
+	"\x01",
+	// eflags is only 16 bits wide...
+	"\x01",
+	"\x01",
+	"\x01",
+	"\x01",
+	// but the RF_DONTDRAW flags are in bits 20-23...
+	"DRAWONLYFORP1",
+	"DRAWONLYFORP2",
+	"DRAWONLYFORP3",
+	"DRAWONLYFORP4",
+	// cheeky!
 	NULL
 };
 
@@ -1335,9 +1348,6 @@ struct int_const_s const INT_CONST[] = {
 	{"KSPIN_WIPEOUT",KSPIN_WIPEOUT},
 	{"KSPIN_STUNG",KSPIN_STUNG},
 	{"KSPIN_EXPLOSION",KSPIN_EXPLOSION},
-
-	// Timeover
-	{"PF_TIMEOVER",PF_NOCONTEST},
 
 	// spottype_t
 	{"SPOT_NONE",SPOT_NONE},

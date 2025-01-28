@@ -2518,6 +2518,11 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushstring(L, header->keywords);
 	else if (fastcmp(field,"musname")) // we create a table here because it saves us from a userdata nightmare
 	{
+		if (lua_compatmode)
+		{
+			lua_pushstring(L, header->musname[0]);
+			return 1;
+		}
 		UINT8 j;
 		lua_createtable(L, header->musname_size, 0);
 		for (j = 0; j < header->musname_size; j++)

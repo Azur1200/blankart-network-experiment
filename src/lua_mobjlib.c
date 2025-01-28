@@ -320,10 +320,16 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->flags);
 		break;
 	case mobj_flags2:
-		lua_pushinteger(L, mo->flags2);
+		UINT32 flags2 = mo->flags2;
+		if (lua_compatmode && (mo->renderflags & RF_DONTDRAW) == RF_DONTDRAW)
+			flags2 |= MF2_DONTDRAW;
+		lua_pushinteger(L, flags2);
 		break;
 	case mobj_eflags:
-		lua_pushinteger(L, mo->eflags);
+		UINT32 eflags = mo->eflags;
+		if (lua_compatmode)
+			eflags |= (~mo->renderflags & RF_DONTDRAW);
+		lua_pushinteger(L, eflags);
 		break;
 	case mobj_renderflags:
 		lua_pushinteger(L, mo->renderflags);
@@ -740,10 +746,21 @@ static int mobj_set(lua_State *L)
 		break;
 	}
 	case mobj_flags2:
-		mo->flags2 = (UINT32)luaL_checkinteger(L, 3);
+		UINT32 flags2 = luaL_checkinteger(L, 3);
+		if (lua_compatmode)
+		{
+			if (flags2 & MF2_DONTDRAW)
+				mo->renderflags |= RF_DONTDRAW;
+			else
+				mo->renderflags &= ~RF_DONTDRAW;
+		}
+		mo->flags2 = flags2;
 		break;
 	case mobj_eflags:
-		mo->eflags = (UINT16)luaL_checkinteger(L, 3);
+		UINT32 eflags = luaL_checkinteger(L, 3);
+		if (lua_compatmode)
+			mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (~eflags & RF_DONTDRAW); // eeeyup.
+		mo->eflags = (UINT16)eflags;
 		break;
 	case mobj_renderflags:
 		mo->renderflags = (UINT32)luaL_checkinteger(L, 3);

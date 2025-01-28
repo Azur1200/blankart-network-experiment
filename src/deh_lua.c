@@ -297,6 +297,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("PF_", word, 3)) {
 		p = word+3;
+		if (lua_compatmode && fastcmp(p, "TIMEOVER"))
+		{
+			CacheAndPushConstant(L, word, ((lua_Integer)PF_NOCONTEST));
+			return 1;
+		}
 		for (i = 0; PLAYERFLAG_LIST[i]; i++)
 			if (fastcmp(p, PLAYERFLAG_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
