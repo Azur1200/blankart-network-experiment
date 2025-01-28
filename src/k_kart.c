@@ -8664,7 +8664,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 	{
 		a = player->aizdriftturn;
 		if (compat)
-			a /= 4; // don't turn too much in compatmode
+			a /= 2; // don't turn too much in compatmode
 	}
 	else if (player->drift != 0)
 	{
