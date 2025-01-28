@@ -233,10 +233,22 @@ void K_InitBrightmapsPwad(INT32 wadNum)
 			break;
 		}
 
-		texNum = R_CheckTextureNumForName(bms->textureName);
+		texNum = R_CheckTextureNumForName(bms->textureName, TEXTURETYPE_TEXTURE);
+
+		if (texNum == -1)
+		{
+			texNum = R_CheckTextureNumForName(bms->textureName, TEXTURETYPE_FLAT);
+		}
+
 		if (texNum != -1)
 		{
-			bmNum = R_CheckTextureNumForName(bms->brightmapName);
+			bmNum = R_CheckTextureNumForName(bms->brightmapName, TEXTURETYPE_TEXTURE);
+
+			if (bmNum == -1)
+			{
+				bmNum = R_CheckTextureNumForName(bms->brightmapName, TEXTURETYPE_FLAT);
+			}
+
 			R_UpdateTextureBrightmap(texNum, (bmNum == -1 ? 0 : bmNum));
 		}
 	}

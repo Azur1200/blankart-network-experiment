@@ -69,7 +69,7 @@ void R_SetupSkyDraw(void)
 	skytexturemid = (textures[skytexture]->height / 2) << FRACBITS;
 	skytextureoffset = 0;
 
-	if (textures[skytexture]->type == TEXTURETYPE_SINGLEPATCH)
+	if (textures[skytexture]->type == TEXTURETYPE_TEXTURE)
 	{
 		// Sal: Allow for sky offsets
 		texpatch_t *const tex_patch = &textures[skytexture]->patches[0];

@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 #define MISSING_TEXTURE "MISSTEX" // Replacement for invalid textures
-						 
+
 // A single patch from a texture definition,
 //  basically a rectangular area within
 //  the texture rectangle.
@@ -42,9 +42,8 @@ struct texpatch_t
 enum
 {
 	TEXTURETYPE_UNKNOWN,
-	TEXTURETYPE_SINGLEPATCH,
-	TEXTURETYPE_COMPOSITE,
-	TEXTURETYPE_FLAT,
+	TEXTURETYPE_TEXTURE,
+	TEXTURETYPE_FLAT
 };
 
 // A texture_t describes a rectangular texture,
@@ -109,8 +108,7 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm);
 
 // Returns the texture number for the texture name.
 INT32 R_TextureNumForName(const char *name);
-INT32 R_CheckTextureNumForName(const char *name);
-INT32 R_CheckFlatNumForName(const char *name);
+INT32 R_CheckTextureNumForName(const char *name, UINT8 type);
 
 extern INT32 numtextures;
 

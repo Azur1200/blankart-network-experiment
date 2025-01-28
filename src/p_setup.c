@@ -586,15 +586,15 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 	levelflat->type = LEVELFLAT_TEXTURE;
 
 	// Look for a flat
-	int texturenum = R_CheckFlatNumForName(levelflat->name);
-	if (texturenum <= 0)
+	int texturenum = R_CheckTextureNumForName(levelflat->name, TEXTURETYPE_FLAT);
+	if (texturenum < 0)
 	{
 		// If we can't find a flat, try looking for a texture!
-		texturenum = R_CheckTextureNumForName(levelflat->name);
-		if (texturenum <= 0)
+		texturenum = R_CheckTextureNumForName(levelflat->name, TEXTURETYPE_TEXTURE);
+		if (texturenum < 0)
 		{
 			// Use "not found" texture
-			texturenum = R_CheckTextureNumForName(MISSING_TEXTURE);
+			texturenum = R_CheckTextureNumForName(MISSING_TEXTURE, TEXTURETYPE_TEXTURE);
 
 			// Give up?
 			if (texturenum <= 0)
