@@ -420,12 +420,27 @@ static int lib_cvRegisterVar(lua_State *L)
 	return 1;
 }
 
+static CV_PossibleValue_t fakenumlaps_cons_t[] = {{1, "MIN"}, {50, "MAX"}, {0, NULL}};
+static consvar_t cv_fakenumlaps = CVAR_INIT("fakenumlaps", "3", CV_NOLUA, fakenumlaps_cons_t, NULL);
+
 // For some reason I couldn't cherry pick this.
 // Credits for this function go to james. All hail birb.		-Lat'
 
 static int lib_cvFindVar(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 1);
+	if (lua_compatmode)
+	{
+		// cv_numlaps -> numlaps (global, not cvar)
+		// cv_basenumlaps -> cv_numlaps
+		if (!strcmp(name, "numlaps"))
+		{
+			LUA_PushUserdata(L, &cv_fakenumlaps, META_CVAR);
+			return 1;
+		}
+		else if (!strcmp(name, "basenumlaps"))
+			name = "numlaps";
+	}
 	LUA_PushUserdata(L, CV_FindVar(name), META_CVAR);
 	return 1;
 }
@@ -537,9 +552,9 @@ static int cvar_get(lua_State *L)
 	else if(fastcmp(field,"flags"))
 		lua_pushinteger(L, cvar->flags);
 	else if(fastcmp(field,"value"))
-		lua_pushinteger(L, cvar->value);
+		lua_pushinteger(L, cvar == &cv_fakenumlaps ? numlaps : cvar->value);
 	else if(fastcmp(field,"string"))
-		lua_pushstring(L, cvar->string);
+		lua_pushstring(L, cvar == &cv_fakenumlaps ? va("%d", numlaps) : cvar->string);
 	else if(fastcmp(field,"changed"))
 		lua_pushboolean(L, cvar->changed);
 	else if (devparm)
