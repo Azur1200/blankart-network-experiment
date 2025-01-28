@@ -10251,7 +10251,7 @@ UINT16 M_GetColorAfter(UINT16 color) {
 }
 
 void M_InitPlayerSetupColors(void) {
-	UINT8 i;
+	UINT16 i;
 	numskincolors = SKINCOLOR_FIRSTFREESLOT;
 	menucolorhead = menucolortail = NULL;
 	for (i=0; i<numskincolors; i++)

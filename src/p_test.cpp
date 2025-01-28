@@ -16,7 +16,7 @@
 
 #include "p_local.h"
 
-consvar_t cv_showgremlins = CVAR_INIT ("renderhitbox", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_showgremlins = CVAR_INIT ("showgremlins", "Off", 0, CV_OnOff, NULL);
 
 namespace
 {
