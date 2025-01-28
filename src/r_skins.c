@@ -114,7 +114,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	strncpy(skin->facemmap, "MISSING", 9);
 	skin->starttranscolor = 96;
 	skin->prefcolor = SKINCOLOR_GREEN;
-	skin->supercolor = SKINCOLOR_SUPERGOLD1;
+	skin->supercolor = SKINCOLOR_SUPER1;
 	skin->prefoppositecolor = 0; // use tables
 
 	skin->kartspeed = 5;
@@ -604,7 +604,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value,
 	else if (!stricmp(stoken, "supercolor"))
 	{
 		UINT16 color = R_GetSuperColorByName(value);
-		skin->supercolor = (color ? color : SKINCOLOR_SUPERGOLD1);
+		skin->supercolor = (color ? color : SKINCOLOR_SUPER1);
 	}
 
 #define GETFLOAT(field) else if (!stricmp(stoken, #field)) skin->field = FLOAT_TO_FIXED(atof(value));
@@ -635,6 +635,8 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value,
 	// 1, true, yes are all valid values
 	GETFLAG(HIRES)
 	GETFLAG(MACHINE)
+	GETFLAG(NOGIBS)
+	GETFLAG(OLDDEATH)
 #undef GETFLAG
 
 #define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strncpy(skin->field, value, 8);
