@@ -279,31 +279,6 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
-	// Yucky hack to make sure these values don't affect drawangle value. Blame lua compat concerns.
-	// v1 had its art assets show a different angle on drift while v2 does not. This recreates that effect without touching drawangle or the art assets
-	// This makes sure that scripts that set drawangle/frameangle to match player angle won't eat the drift frames.
-	angle_t addangle = 0;
-	if (mobj->sprite == SPR_PLAY)
-	{
-		if (mobj->player && mobj->player->aizdriftturn)
-		{
-			addangle += mobj->player->aizdriftturn;
-			if (mobj->skin && wadfiles[((skin_t *)mobj->skin)->wadnum]->compatmode)
-				// don't turn too much in compatmode
-				addangle = (INT32)addangle / 4;
-		}
-		if (mobj->state == &states[S_KART_DRIFT_L]
-			|| mobj->state == &states[S_KART_DRIFT_L_OUT]
-			|| mobj->state == &states[S_KART_DRIFT_L_IN]
-		)
-			addangle += (ANGLE_45 / 5) * 5;
-		else if (mobj->state == &states[S_KART_DRIFT_R]
-			|| mobj->state == &states[S_KART_DRIFT_R_OUT]
-			|| mobj->state == &states[S_KART_DRIFT_R_IN]
-		)
-			addangle += (ANGLE_45 / 5) * -5;
-	}
-	
 	if (frac == FRACUNIT)
 	{
 		out->x = mobj->x;
@@ -311,7 +286,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->z = mobj->z;
 		out->scale = mobj->scale;
 		out->subsector = mobj->subsector;
-		out->angle = mobj->player ? mobj->player->drawangle + addangle : mobj->angle;
+		out->angle = mobj->player ? mobj->player->drawangle : mobj->angle;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
@@ -336,12 +311,10 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	if (mobj->player)
 	{
 		out->angle = mobj->resetinterp ? mobj->player->drawangle : R_LerpAngle(mobj->player->old_drawangle, mobj->player->drawangle, frac);
-		out->angle += addangle;
 	}
 	else
 	{
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
-		out->angle += addangle;
 	}
 }
 

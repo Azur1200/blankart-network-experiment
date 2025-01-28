@@ -8655,6 +8655,24 @@ static void K_KartDrift(player_t *player, boolean onground)
 	else
 		player->pflags &= ~PF_BRAKEDRIFT;
 }
+
+INT32 K_GetDriftAngleOffset(player_t *player)
+{
+	INT32 a = 0;
+	boolean compat = wadfiles[skins[player->skin].wadnum]->compatmode;
+	if (player->aizdriftturn)
+	{
+		a = player->aizdriftturn;
+		if (compat)
+			a /= 4; // don't turn too much in compatmode
+	}
+	else if (player->drift != 0)
+	{
+		a = (ANGLE_45 / 5) * player->drift;
+	}
+	return a;
+}
+
 //
 // K_KartUpdatePosition
 //

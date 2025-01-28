@@ -2185,9 +2185,7 @@ void P_MovePlayer(player_t *player)
 		if (player->pogospring)
 			player->drawangle += ANGLE_22h;
 		else
-		{
-			player->drawangle = player->mo->angle;
-		}
+			player->drawangle = player->mo->angle + K_GetDriftAngleOffset(player);
 
 		player->mo->rollangle = 0;
 	}

@@ -18,6 +18,7 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "d_clisrv.h"
+#include "k_kart.h" // K_GetDriftAngleOffset
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -217,9 +218,7 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->viewrollangle);
 	else if (fastcmp(field,"aiming"))
 		lua_pushangle(L, plr->aiming);
-	else if (fastcmp(field,"drawangle"))
-		lua_pushangle(L, plr->drawangle);
-	else if (fastcmp(field,"frameangle"))
+	else if (fastcmp(field,"drawangle") || (lua_compatmode && fastcmp(field,"frameangle")))
 		lua_pushangle(L, plr->drawangle);
 	else if (fastcmp(field,"powers"))
 		LUA_PushUserdata(L, plr->powers, META_POWERS);
@@ -569,10 +568,14 @@ static int player_set(lua_State *L)
 			}
 		}
 	}
-	else if (fastcmp(field,"drawangle"))
-		plr->drawangle = luaL_checkangle(L, 3);
-	else if (fastcmp(field,"frameangle"))
-		plr->drawangle = luaL_checkangle(L, 3);
+	else if (fastcmp(field,"drawangle") || (lua_compatmode && fastcmp(field,"frameangle")))
+	{
+		angle_t angle = luaL_checkangle(L, 3);
+		if (lua_compatmode && plr->mo && angle == plr->mo->angle)
+			// attempt to fix e.g. acrobasics not accounting for drift when resetting frameangle
+			angle += K_GetDriftAngleOffset(plr);
+		plr->drawangle = angle;
+	}
 	else if (fastcmp(field,"pflags"))
 		plr->pflags = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"panim"))
