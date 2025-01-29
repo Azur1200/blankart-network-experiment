@@ -203,7 +203,7 @@ Environment::Environment()
 	addFuncDataACS0( 312, addCallFunc(CallFunc_ThingCount));
 	addFuncDataACS0( 313, addCallFunc(CallFunc_GrandPrix));
 	
-	addFuncDataACS0( 314, addCallFunc(CallFunc_PlaceHolder));
+	//addFuncDataACS0( 314, addCallFunc(CallFunc_PlaceHolder));
 	
 	addFuncDataACS0( 315, addCallFunc(CallFunc_PlayerBot));
 	addFuncDataACS0( 316, addCallFunc(CallFunc_PositionStart));
