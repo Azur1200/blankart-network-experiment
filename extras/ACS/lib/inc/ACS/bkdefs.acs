@@ -619,7 +619,6 @@ enum
 	MF2_AXIS           = 1,
 	// free: 1<<1
 	MF2_DONTRESPAWN    = 1<<2,
-	MF2_DONTDRAW       = 1<<3,
 	MF2_AUTOMATIC      = 1<<4,
 	MF2_RAILRING       = 1<<5,
 	MF2_BOUNCERING     = 1<<6,
