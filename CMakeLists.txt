@@ -193,7 +193,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in ${CMAKE_CURRENT_BINAR
 
 
 if("${SRB2_SDL2_EXE_NAME}" STREQUAL "")
-	list(APPEND EXE_NAME_PARTS "ringracers")
+	list(APPEND EXE_NAME_PARTS "blankart")
 
 	if(NOT "${SRB2_GIT_BRANCH}" STREQUAL "master")
 		list(APPEND EXE_NAME_PARTS ${SRB2_GIT_BRANCH})
