@@ -589,36 +589,37 @@ enum
 	MF_BOSS             = 1<<7,
 	MF_SPAWNCEILING     = 1<<8,
 	MF_NOGRAVITY        = 1<<9,
-	MF_DRAWFROMFARAWAY  = 1<<10,
+	MF_AMBIENT          = 1<<10,
 	MF_SLIDEME          = 1<<11,
 	MF_NOCLIP           = 1<<12,
 	MF_FLOAT            = 1<<13,
-	MF_SLOPE            = 1<<14,
+	MF_BOXICON          = 1<<14,
 	MF_MISSILE          = 1<<15,
 	MF_SPRING           = 1<<16,
 	MF_MONITOR          = 1<<17,
 	MF_NOTHINK          = 1<<18,
-	MF_NOCLIPHEIGHT     = 1<<19,
-	MF_ENEMY            = 1<<20,
-	MF_SCENERY          = 1<<21,
-	MF_PAIN             = 1<<22,
-	MF_STICKY           = 1<<23,
-	MF_APPLYTERRAIN     = 1<<24,
-	MF_NOCLIPTHING      = 1<<25,
-	MF_GRENADEBOUNCE    = 1<<26,
-	MF_RUNSPAWNFUNC     = 1<<27,
-	MF_DONTENCOREMAP    = 1<<28,
-	MF_PICKUPFROMBELOW  = 1<<29,
-	MF_NOSQUISH         = 1<<30,
-	MF_NOHITLAGFORME    = 1<<31,
+	MF_FIRE             = 1<<19,
+	MF_NOCLIPHEIGHT     = 1<<20,
+	MF_ENEMY            = 1<<21,
+	MF_SCENERY          = 1<<22,
+	MF_PAIN             = 1<<23,
+	MF_STICKY           = 1<<24,
+	MF_APPLYTERRAIN     = 1<<25,
+	MF_NOCLIPTHING      = 1<<26,
+	MF_GRENADEBOUNCE    = 1<<27,
+	MF_RUNSPAWNFUNC     = 1<<28,
+
+	MF_DONTENCOREMAP    = 1<<29,
+	MF_PICKUPFROMBELOW  = 1<<30,
+	MF_BOUNCE   		= 1<<31,
 };
 
 enum
 {
 	MF2_AXIS           = 1,
-
+	// free: 1<<1
 	MF2_DONTRESPAWN    = 1<<2,
-
+	MF2_DONTDRAW       = 1<<3,
 	MF2_AUTOMATIC      = 1<<4,
 	MF2_RAILRING       = 1<<5,
 	MF2_BOUNCERING     = 1<<6,
@@ -634,7 +635,7 @@ enum
 	MF2_JUSTATTACKED   = 1<<16,
 	MF2_FIRING         = 1<<17,
 	MF2_SUPERFIRE      = 1<<18,
-	MF2_ALREADYHIT     = 1<<19,
+	// free: 1<<19
 	MF2_STRONGBOX      = 1<<20,
 	MF2_OBJECTFLIP     = 1<<21,
 	MF2_SKULLFLY       = 1<<22,
@@ -663,9 +664,10 @@ enum
 	MFE_APPLYPMOMZ        = 1<<10,
 	MFE_TRACERANGLE       = 1<<11,
 	MFE_JUSTBOUNCEDWALL   = 1<<12,
-	MFE_DAMAGEHITLAG      = 1<<13,
+	// SRB2Kart: free
+	//      = 1<<13,
 	MFE_SLOPELAUNCHED     = 1<<14,
-	MFE_PAUSED            = 1<<15,
+	// free: to and including 1<<15
 };
 
 enum
@@ -687,15 +689,6 @@ enum
 	BOT_STYLE_NORMAL,
 	BOT_STYLE_STAY,
 	BOT_STYLE__MAX
-};
-
-enum
-{
-	BOT_CONTROLLER_TRICK_NONE,
-	BOT_CONTROLLER_TRICK_LEFT,
-	BOT_CONTROLLER_TRICK_RIGHT,
-	BOT_CONTROLLER_TRICK_UP,
-	BOT_CONTROLLER_TRICK_DOWN
 };
 
 enum
