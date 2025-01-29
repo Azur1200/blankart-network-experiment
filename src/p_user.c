@@ -2228,9 +2228,8 @@ void P_MovePlayer(player_t *player)
 		{
 			const angle_t forwardangle = K_MomentumAngle(player->mo);
 			const fixed_t playerVisualRadius = player->mo->radius + (8 * player->mo->scale);
-			const size_t numFrames = S_WATERTRAIL8 - S_WATERTRAIL1;
-			const statenum_t curOverlayFrame = S_WATERTRAIL1 + (leveltime % numFrames);
-			const statenum_t curUnderlayFrame = S_WATERTRAILUNDERLAY1 + (leveltime % numFrames);
+			const SINT8 numFrames = 5;
+			const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
 			fixed_t x1, x2, y1, y2;
 			mobj_t *water;
 
@@ -2254,7 +2253,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curUnderlayFrame);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
 
 			// overlay
 			water = P_SpawnMobj(x1, y1,
@@ -2265,7 +2265,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curOverlayFrame);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
 
 			// Right
 			// Underlay
@@ -2277,7 +2278,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curUnderlayFrame);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
 
 			// Overlay
 			water = P_SpawnMobj(x2, y2,
@@ -2288,7 +2290,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curOverlayFrame);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
 
 			if (!S_SoundPlaying(player->mo, sfx_s3kdbs))
 			{

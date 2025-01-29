@@ -707,6 +707,7 @@ _(WAYP)
 _(EGOO)
 
 _(WTRL) // Water Trail
+_(WTRU) // Water Trail Underlay
 
 _(GCHA) // follower: generic chao
 _(CHEZ) // follower: cheese
