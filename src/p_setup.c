@@ -143,6 +143,8 @@ boolean stoppedclock;
 boolean levelloading;
 UINT8 levelfadecol;
 
+virtres_t *curmapvirt;
+
 // BLOCKMAP
 // Created from axis aligned bounding box
 // of the map, a rectangular array of
@@ -7530,16 +7532,15 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 
 static boolean P_LoadMapFromFile(void)
 {
-	virtres_t *virt = vres_GetMap(lastloadedmaplumpnum);
-	virtlump_t *textmap = vres_Find(virt, "TEXTMAP");
+	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
 	size_t i;
 	udmf = textmap != NULL;
 	udmf_version = 0;
 
-	if (!P_LoadMapData(virt))
+	if (!P_LoadMapData(curmapvirt))
 		return false;
-	P_LoadMapBSP(virt);
-	P_LoadMapLUT(virt);
+	P_LoadMapBSP(curmapvirt);
+	P_LoadMapLUT(curmapvirt);
 
 	P_LinkMapData();
 
@@ -7564,9 +7565,17 @@ static boolean P_LoadMapFromFile(void)
 		if (sectors[i].tags.count)
 			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
 
-	P_MakeMapMD5(virt, &mapmd5);
+	P_MakeMapMD5(curmapvirt, &mapmd5);
 
-	vres_Free(virt);
+	// We do the following silly
+	// construction because vres_Free
+	// no-sells deletions of pointers
+	// that are == curmapvirt.
+	{
+		virtres_t *temp = curmapvirt;
+		curmapvirt = NULL;
+		vres_Free(temp);
+	}
 	return true;
 }
 
@@ -8318,6 +8327,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (lastloadedmaplumpnum == LUMPERROR)
 		I_Error("Map %s not found.\n", maplumpname);
 
+	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
+
 	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
 		W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
 	CON_SetupBackColormap();
@@ -8405,6 +8416,17 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 		// Initialize ACS scripts
 		ACS_LoadLevelScripts(gamemap-1);
+	}
+
+	// Now safe to free.
+	// We do the following silly
+	// construction because vres_Free
+	// no-sells deletions of pointers
+	// that are == curmapvirt.
+	{
+		virtres_t *temp = curmapvirt;
+		curmapvirt = NULL;
+		vres_Free(temp);
 	}
 
 	if (!reloadinggamestate)

@@ -2339,6 +2339,12 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 	virtlump_t* vlumps = NULL;
 	size_t numlumps = 0;
 
+	if (lastloadedmaplumpnum == lumpnum && curmapvirt != NULL)
+	{
+		// Avoid duplicating all our hard work.
+		return curmapvirt;
+	}
+
 	if (W_IsLumpWad(lumpnum))
 	{
 		// Remember that we're assuming that the WAD will have a specific set of lumps in a specific order.
@@ -2391,6 +2397,12 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
  */
 void vres_Free(virtres_t* vres)
 {
+	if (vres == curmapvirt)
+	{
+		// No-sell multiple references.
+		return;
+	}
+
 	while (vres->numlumps--)
 		Z_Free(vres->vlumps[vres->numlumps].data);
 	Z_Free(vres->vlumps);
