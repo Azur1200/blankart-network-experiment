@@ -7566,16 +7566,6 @@ static boolean P_LoadMapFromFile(void)
 			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
 
 	P_MakeMapMD5(curmapvirt, &mapmd5);
-
-	// We do the following silly
-	// construction because vres_Free
-	// no-sells deletions of pointers
-	// that are == curmapvirt.
-	{
-		virtres_t *temp = curmapvirt;
-		curmapvirt = NULL;
-		vres_Free(temp);
-	}
 	return true;
 }
 
