@@ -863,6 +863,10 @@ void P_SpawnSlopes(const boolean fromsave) {
 
 	// end of jart
 
+	// in kart, copied slopes are created AFTER spawning mapthings
+	if (!udmf)
+		return;
+
 	/// Copies slopes from tagged sectors via line specials.
 	/// \note Doesn't actually copy, but instead they share the same pointers.
 	for (i = 0; i < numlines; i++)

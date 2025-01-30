@@ -7806,6 +7806,9 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 
 	for (i = 0; i < numlines; i++)
 	{
+		if (!udmf && lines[i].special == 720)
+			P_CopySectorSlope(&lines[i]);
+
 		if (P_IsLineDisabled(&lines[i]))
 		{
 			/* remove the special so it can't even be found during the level */
