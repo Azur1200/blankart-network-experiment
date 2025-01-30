@@ -5187,7 +5187,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			//Alpha
 			if (lines[i].special == 141 || lines[i].special == 142 || lines[i].special == 144 || lines[i].special == 145)
 			{
-				if (lines[i].flags & ML_NOCLIMB)
+				if (udmf && lines[i].flags & ML_NOCLIMB)
 					lines[i].args[3] |= TMFA_INSIDES;
 				P_SetBinaryFOFAlpha(&lines[i]);
 

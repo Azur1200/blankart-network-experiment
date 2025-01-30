@@ -12000,6 +12000,13 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		Obj_InitLoopCenter(mobj);
 		break;
 	}
+	case MT_REDDIAG:
+	case MT_YELLOWDIAG:
+	case MT_BLUEDIAG:
+	{
+		if (!udmf)
+			mobj->flags ^= MF_NOGRAVITY;
+	}
 	default:
 		break;
 	}
