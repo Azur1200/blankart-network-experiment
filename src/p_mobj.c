@@ -12003,6 +12003,12 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_REDDIAG:
 	case MT_YELLOWDIAG:
 	case MT_BLUEDIAG:
+	case MT_GREYDIAG:
+	case MT_REDSPRING:
+	case MT_BLUESPRING:
+	case MT_GREYSPRING:
+	case MT_YELLOWSPRING:
+	case MT_INVISSPRING:
 	{
 		if (!udmf)
 			mobj->flags ^= MF_NOGRAVITY;
