@@ -892,7 +892,8 @@ struct int_const_s const INT_CONST[] = {
 	{"EMERALD7",EMERALD7},
 
 	// SKINCOLOR_ doesn't include these..!
-	{"MAXSKINCOLORS",MAXSKINCOLORS},
+	// MAXSKINCOLORS has been made a global for lua usage :)
+	//{"MAXSKINCOLORS",MAXSKINCOLORS},
 	{"FIRSTSUPERCOLOR",FIRSTSUPERCOLOR},
 	{"NUMSUPERCOLORS",NUMSUPERCOLORS},
 

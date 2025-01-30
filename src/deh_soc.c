@@ -4393,6 +4393,12 @@ static fixed_t find_const(const char **rword)
 			return INT_CONST[i].v;
 		}
 
+	if fastcmp(word,"MAXSKINCOLORS")
+	{
+		free(word);
+		return MAXSKINCOLORS;
+	}
+
 	// Not found error.
 	const_warning("constant",word);
 	free(word);
