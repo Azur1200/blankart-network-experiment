@@ -81,13 +81,12 @@ static patch_t *kp_spbminimap;
 static patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[2];
-static patch_t *kp_ringstickersplit[4];
+static patch_t *kp_ringbit[2];
+/*static patch_t *kp_ringstickersplit[4];
 static patch_t *kp_ring[6];
-static patch_t *kp_smallring[6];
+static patch_t *kp_smallring[6];*/
 static patch_t *kp_ringdebtminus;
-static patch_t *kp_ringdebtminussmall;
-static patch_t *kp_ringspblock[16];
-static patch_t *kp_ringspblocksmall[16];
+//static patch_t *kp_ringdebtminussmall;
 
 static patch_t *kp_speedometersticker;
 static patch_t *kp_speedometerlabel[4];
@@ -268,7 +267,9 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_itemboxminimap, "K_ITMMM");
 
 	// Rings & Lives
-	HU_UpdatePatch(&kp_ringsticker[0], "RNGBACKA");
+	HU_UpdatePatch(&kp_ringsticker[0], "K_RNGHD");
+	HU_UpdatePatch(&kp_ringbit[0], "K_RNGH1");
+	/*HU_UpdatePatch(&kp_ringsticker[0], "RNGBACKA");
 	HU_UpdatePatch(&kp_ringsticker[1], "RNGBACKB");
 
 	sprintf(buffer, "K_RINGx");
@@ -276,19 +277,11 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[6] = '0'+(i+1);
 		HU_UpdatePatch(&kp_ring[i], "%s", buffer);
-	}
+	} */
 
-	HU_UpdatePatch(&kp_ringdebtminus, "RDEBTMIN");
+	HU_UpdatePatch(&kp_ringdebtminus, "K_RNGDM");
 
-	sprintf(buffer, "SPBRNGxx");
-	for (i = 0; i < 16; i++)
-	{
-		buffer[6] = '0'+((i+1) / 10);
-		buffer[7] = '0'+((i+1) % 10);
-		HU_UpdatePatch(&kp_ringspblock[i], "%s", buffer);
-	}
-
-	HU_UpdatePatch(&kp_ringstickersplit[0], "SMRNGBGA");
+	/*HU_UpdatePatch(&kp_ringstickersplit[0], "SMRNGBGA");
 	HU_UpdatePatch(&kp_ringstickersplit[1], "SMRNGBGB");
 
 	sprintf(buffer, "K_SRINGx");
@@ -306,7 +299,7 @@ void K_LoadKartHUDGraphics(void)
 		buffer[6] = '0'+((i+1) / 10);
 		buffer[7] = '0'+((i+1) % 10);
 		HU_UpdatePatch(&kp_ringspblocksmall[i], "%s", buffer);
-	}
+	}*/
 
 	// Speedometer
 	HU_UpdatePatch(&kp_speedometersticker, "K_SPDMBG");
@@ -2128,8 +2121,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 static void K_drawKartLapsAndRings(void)
 {
 	const boolean uselives = G_GametypeUsesLives();
-	SINT8 ringanim_realframe = stplyr->karthud[khud_ringframe];
-	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SPLITSCREEN;
+	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
 	UINT8 rn[2];
 	INT32 ringflip = 0;
 	UINT8 *ringmap = NULL;
@@ -2141,7 +2133,7 @@ static void K_drawKartLapsAndRings(void)
 
 	if (!ringsdisabled)
 	{
-	
+
 		if (stplyr->rings <= 0 && (leveltime/5 & 1)) // In debt
 		{
 			ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
@@ -2150,12 +2142,12 @@ static void K_drawKartLapsAndRings(void)
 		else if (stplyr->rings >= 20) // Maxed out
 			ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 
-		if (stplyr->karthud[khud_ringframe] > RINGANIM_FLIPFRAME)
+		/*if (stplyr->karthud[khud_ringframe] > RINGANIM_FLIPFRAME)
 		{
 			ringflip = V_FLIP;
 			ringanim_realframe = RINGANIM_NUMFRAMES-stplyr->karthud[khud_ringframe];
 			ringx += SHORT((r_splitscreen > 1) ? kp_smallring[ringanim_realframe]->width : kp_ring[ringanim_realframe]->width);
-		}
+		}*/
 	}
 
 	if (r_splitscreen > 1)
@@ -2189,8 +2181,8 @@ static void K_drawKartLapsAndRings(void)
 		fr = fx;
 
 		// Laps
-		if (!ringsdisabled)
-			V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);
+		/*if (!ringsdisabled)
+			V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);*/
 
 		V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_splitlapflag);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
@@ -2218,6 +2210,7 @@ static void K_drawKartLapsAndRings(void)
 
 		if (!ringsdisabled)
 		{
+			/*
 			// Rings
 			if (!uselives)
 			{
@@ -2240,6 +2233,7 @@ static void K_drawKartLapsAndRings(void)
 			// SPB ring lock
 			if (stplyr->pflags & PF_RINGLOCK)
 				V_DrawScaledPatch(fr-12, fy-23, V_HUDTRANS|splitflags, kp_ringspblocksmall[stplyr->karthud[khud_ringspblock]]);
+			*/
 		}
 
 		// Lives
@@ -2263,6 +2257,49 @@ static void K_drawKartLapsAndRings(void)
 
 		if (!ringsdisabled)
 		{
+			SINT8 i;
+			V_DrawScaledPatch(LAPS_X, LAPS_Y-14, V_HUDTRANS|splitflags, kp_ringsticker[0]);
+
+			if (stplyr->rings < 0) // Draw the minus for ring debt
+			{
+				V_DrawMappedPatch(LAPS_X-5, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
+				V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+				V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+			}
+			else
+			{
+				V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+				V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+			}
+
+			// Draw the fillbars
+			if (stplyr->rings)
+			{
+				SINT8 ringcount = stplyr->rings;
+				SINT8 barcolors[4] = {66,83,65};
+				boolean indebt = false;
+
+				if (stplyr->rings < 0)
+				{
+					barcolors[0] = 35;
+					barcolors[1] = 33;
+					barcolors[2] = 37;
+					ringcount = -ringcount;
+					indebt = true;
+				}
+				if (!indebt || (indebt && (leveltime/5 & 1)))
+				{
+					for (i = 0; i != ringcount; i++)
+					{
+
+						V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10, 1, 3, barcolors[0]|splitflags);
+						V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9, 1, 2, barcolors[1]|splitflags);
+						V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-6, 1, 1, barcolors[2]|splitflags);
+					}
+				}
+			}
+
+			/*
 			// Rings
 			if (!uselives)
 				V_DrawScaledPatch(LAPS_X, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringsticker[1]);
@@ -2281,11 +2318,8 @@ static void K_drawKartLapsAndRings(void)
 			{
 				V_DrawMappedPatch(LAPS_X+23, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
 				V_DrawMappedPatch(LAPS_X+29, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
-			}
+			}*/
 
-			// SPB ring lock
-			if (stplyr->pflags & PF_RINGLOCK)
-				V_DrawScaledPatch(LAPS_X-5, LAPS_Y-28, V_HUDTRANS|splitflags, kp_ringspblock[stplyr->karthud[khud_ringspblock]]);
 		}
 
 		// Lives
@@ -2557,7 +2591,7 @@ static void K_drawKartBumpersOrKarma(void)
 			}
 		}
 
-		V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);
+		//V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
 
 		if (itembreaker)

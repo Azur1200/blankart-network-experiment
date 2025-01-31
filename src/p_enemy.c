@@ -13199,6 +13199,19 @@ void A_SPBChase(mobj_t *actor)
 				spbplace = actor->tracer->player->position;
 			}
 
+			if (!ringsdisabled) // Spawn rings to make up for the fact first has ring grabbing
+			{
+				if (leveltime % 12 == 0)
+				{
+					mobj_t *specialring = P_SpawnMobj(actor->x, actor->y, actor->z, MT_RING);
+					specialring->colorized = true;
+					specialring->color = SKINCOLOR_RED;
+					P_SetScale(specialring, 3*mapobjectscale/2);
+					specialring->flags |= MF_NOCLIPHEIGHT;
+				}
+
+			}
+
 			dist = P_AproxDistance(P_AproxDistance(actor->x-actor->tracer->x, actor->y-actor->tracer->y), actor->z-actor->tracer->z);
 
 			wspeed = FixedMul(defspeed, FRACUNIT + FixedDiv(dist-range, range));
