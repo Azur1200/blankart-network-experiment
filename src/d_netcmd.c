@@ -429,6 +429,8 @@ consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NET
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
 #define FOREACH( name, n ) { n, #name }

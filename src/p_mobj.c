@@ -7148,13 +7148,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			return false;
 		}
 
-		mobj->angle = mobj->target->angle;
-		P_MoveOrigin(mobj, mobj->target->x + P_ReturnThrustX(mobj, mobj->angle+ANGLE_180, mobj->target->radius),
-			mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z);
-		P_SetScale(mobj, mobj->target->scale);
-
-		mobj->roll = mobj->target->roll;
-		mobj->pitch = mobj->target->pitch;
 
 		{
 			player_t *p = NULL;
@@ -7163,13 +7156,39 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else if (mobj->target->player)
 				p = mobj->target->player;
 
+			mobj->angle = mobj->extravalue1 && p ? p->drawangle : mobj->target->angle;
+			P_MoveOrigin(mobj, mobj->target->x + P_ReturnThrustX(mobj, mobj->angle+ANGLE_180, mobj->target->radius),
+				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z);
+			P_SetScale(mobj, mobj->target->scale);
+
+			mobj->roll = mobj->target->roll;
+			mobj->pitch = mobj->target->pitch;
+
 			if (p)
 			{
 				if (mobj->extravalue1)
 				{
 					if (p->driftboost > mobj->movecount)
+					{
 						P_SetMobjState(mobj, S_DRIFTBOOSTFLAME);
+						if (mobj->extravalue1 == 1)
+							mobj->tics /= 2; // Less time for blue drift
+						else if (mobj->extravalue1 == 3)
+							mobj->tics = 3*mobj->tics/2; // A little longer for purple drift
+						else if (mobj->extravalue1 == 4)
+							mobj->tics *= 2; // More time for rainbow drift
+					}
 					mobj->movecount = p->driftboost;
+
+					if (mobj->extravalue1 == 4)
+						P_SetScale(mobj, max(10, mobj->tics - 3*TICRATE/2)*mobj->scale/10);
+
+					// larger karts need larger flames
+					if (mobj->target->skin && !wadfiles[((skin_t *)mobj->target->skin)->wadnum]->compatmode)
+					{
+						P_SetScale(mobj, 9*mobj->scale/8);
+						mobj->spriteyoffset = -6*FRACUNIT;
+					}
 
 					if (p->driftboost == 0)
 					{
@@ -7198,7 +7217,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->frame &= ~FF_TRANS60;
 			}
 
-			if (mobj->extravalue2)
+			if (mobj->extravalue1 == 4)
 			{
 				mobj->color = K_RainbowColor(leveltime);
 			}

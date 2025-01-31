@@ -249,6 +249,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_newspeedometer);
 
 	CV_RegisterVar(&cv_kartwalltransfer);
+
+	CV_RegisterVar(&cv_kartpurpledrift);
 }
 
 //}
@@ -4192,7 +4194,7 @@ UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 	}
 	else if (charge >= ds*4)
 	{
-		// Stage 3: Rainbow
+		// Stage 4: Rainbow
 		if (charge <= (ds*4)+(32*3))
 		{
 			// transition
@@ -4201,6 +4203,19 @@ UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 		else
 		{
 			color = K_RainbowColor(leveltime);
+		}
+	}
+	else if (cv_kartpurpledrift.value && charge >= ds*3)
+	{
+		// Stage 3: Purple
+		if (charge <= (ds*3)+(32*3))
+		{
+			// transition
+			color = SKINCOLOR_VIOLET;
+		}
+		else
+		{
+			color = SKINCOLOR_PURPLE;
 		}
 	}
 	else if (charge >= ds*2)
@@ -4222,7 +4237,7 @@ UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 		if (charge <= (ds)+(32*3))
 		{
 			// transition
-			color = SKINCOLOR_PURPLE;
+			color = SKINCOLOR_MAGENTA;
 		}
 		else
 		{
@@ -4271,10 +4286,23 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		if (player->driftcharge >= K_GetKartDriftSparkValue(player)*4)
 		{
-			spark->color = (UINT8)(1 + (leveltime % (MAXSKINCOLORS-1)));
-
+			spark->color = 1 + (leveltime % (numskincolors-1));
 
 			if (player->driftcharge <= K_GetKartDriftSparkValue(player)*4+(32*3))
+			{
+				// transition
+				P_SetScale(spark, (spark->destscale = spark->scale*3/2));
+			}
+
+		}
+		else if (cv_kartpurpledrift.value && player->driftcharge >= K_GetKartDriftSparkValue(player)*3)
+		{
+			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*3)+(24*3))
+				spark->color = SKINCOLOR_VIOLET; // transition
+			else
+				spark->color = SKINCOLOR_PURPLE;
+
+			if (player->driftcharge <= K_GetKartDriftSparkValue(player)*3+(32*3))
 			{
 				// transition
 				P_SetScale(spark, (spark->destscale = spark->scale*3/2));
@@ -8435,23 +8463,14 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
 	K_FlipFromObject(overlay, player->mo);
-	overlay->extravalue1 = 1;
+	overlay->extravalue1 = level;
 
 	if (level == 1)
-	{
 		overlay->color = SKINCOLOR_SAPPHIRE;
-		overlay->tics = overlay->tics/2; // Less time for blue drift
-	}
 	else if (level == 2)
-	{
 		overlay->color = SKINCOLOR_KETCHUP;
-	}
 	else if (level == 3)
-	{
-		overlay->extravalue2 = 1;
-		overlay->tics = 5*overlay->tics/2; // More time for rainbow drift
-	}
-
+		overlay->color = SKINCOLOR_PURPLE;
 }
 
 static void K_KartDrift(player_t *player, boolean onground)
@@ -8460,7 +8479,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 	fixed_t driftadditive = 24;
 	INT32 dsone = K_GetKartDriftSparkValue(player);
 	INT32 dstwo = dsone*2;
-	INT32 dsthree = dstwo*2;
+	INT32 dsthree = cv_kartpurpledrift.value ? dsone*3 : dsone*4;
+	INT32 dsfour = dsone*4;
 
 	// Grown players taking yellow spring panels will go below minspeed for one tic,
 	// and will then wrongdrift or have their sparks removed because of this.
@@ -8489,7 +8509,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->driftcharge = 0;
 	}
 	else if ((player->drift != -5 && player->drift != 5)
-		&& player->driftcharge < dsthree
+		&& (player->driftcharge >= dstwo && player->driftcharge < dsthree)
 		&& onground)
 	{
 		if (player->driftboost < 50)
@@ -8500,14 +8520,26 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->driftcharge = 0;
 	}
 	else if ((player->drift != -5 && player->drift != 5)
-		&& player->driftcharge >= dsthree
+		&& player->driftcharge < dsfour
+		&& onground)
+	{
+		if (player->driftboost < 80)
+			player->driftboost = 80;
+		S_StartSound(player->mo, sfx_kc5b);
+		S_StartSound(player->mo, sfx_kc3c);
+		S_StartSound(player->mo, sfx_s3k47);
+		K_SpawnDriftEFX(player, 3);
+		player->driftcharge = 0;
+	}
+	else if ((player->drift != -5 && player->drift != 5)
+		&& player->driftcharge >= dsfour
 		&& onground)
 	{
 		if (player->driftboost < 125)
 			player->driftboost = 125;
 		S_StartSound(player->mo, sfx_kc5b);
-		S_StartSound(player->mo, sfx_kc3c);
-		K_SpawnDriftEFX(player, 3);
+		S_StartSound(player->mo, sfx_kc4d);
+		K_SpawnDriftEFX(player, 4);
 		player->driftcharge = 0;
 	}
 
@@ -8579,7 +8611,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 		// Sound whenever you get a different tier of sparks
 		if ((player->driftcharge < dsone && player->driftcharge+driftadditive >= dsone)
 			|| (player->driftcharge < dstwo && player->driftcharge+driftadditive >= dstwo)
-			|| (player->driftcharge < dsthree && player->driftcharge+driftadditive >= dsthree))
+			|| (player->driftcharge < dsthree && player->driftcharge+driftadditive >= dsthree)
+			|| (player->driftcharge < dsfour && player->driftcharge+driftadditive >= dsfour))
 		{
 			if (P_IsDisplayPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
