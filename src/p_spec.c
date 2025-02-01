@@ -1358,6 +1358,45 @@ static boolean P_CheckPushables(line_t *triggerline, sector_t *caller)
 	}
 }
 
+static boolean P_CheckRaceLapSpecial(line_t *triggerline, player_t *player)
+{
+	UINT8 lap;
+
+	if (player && triggerline->flags & ML_MIDSOLID)
+	{
+		lap = player->laps;
+	}
+	else
+	{
+		lap = P_FindLowestLap();
+
+		if (udmf && lap <= lastLowestLap)
+		{
+			// Need to be able to search for E4 linedefs
+			return false;
+		}
+	}
+
+	// kart laps are zero-based
+	if (lap && !udmf)
+		lap--;
+
+	UINT16 threshold = sides[triggerline->sidenum[0]].textureoffset >> FRACBITS;
+
+	if (triggerline->flags & ML_NOCLIMB) // Need higher than or equal to
+	{
+		return lap >= threshold;
+	}
+	else if (triggerline->flags & ML_BLOCKMONSTERS) // Need lower than or equal to
+	{
+		return lap <= threshold;
+	}
+	else // Need equal to
+	{
+		return lap == threshold;
+	}
+}
+
 boolean P_CanActivateSpecial(INT16 special)
 {
 	switch (special)
@@ -1575,6 +1614,12 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 			break;
 		default:
 			break;
+	}
+
+	if (caller && GETSECSPECIAL(caller->special, 2) == 7) // SRB2Kart: reusing for Race Lap executor
+	{
+		if (!P_CheckRaceLapSpecial(triggerline, actor ? actor->player : NULL))
+			return false;
 	}
 
 	/////////////////////////////////
@@ -1884,16 +1929,11 @@ void P_SwitchWeather(preciptype_t newWeather)
 }
 
 // Passed over the finish line forwards
-static void K_HandleLapIncrement(player_t *player, boolean fromsector)
+static void K_HandleLapIncrement(player_t *player)
 {
 	if (player)
 	{
-		if (fromsector == true || numstarposts > 0) // These already handle their own form of lapvalidation
-		{
-			player->lapvalidation = true;
-		}
-		
-		if (((numbosswaypoints > 0) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)))
+		if (((numbosswaypoints > 0) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
 		{
 			size_t i = 0;
 			UINT8 nump = 0;
@@ -1928,18 +1968,11 @@ static void K_HandleLapIncrement(player_t *player, boolean fromsector)
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
 			
-			if (player->lapvalidation == false)
-			{
-				player->lapvalidation = true;
-			}
-			else
-			{
-				player->laps++;
-			}
+			player->laps++;
 			K_UpdateAllPlayerPositions();
 
 			// Set up lap animation vars
-			if (player->laps > 0)
+			if (player->laps > 1)
 			{
 				if (nump > 1)
 				{
@@ -1964,11 +1997,11 @@ static void K_HandleLapIncrement(player_t *player, boolean fromsector)
 
 			if (P_IsDisplayPlayer(player))
 			{
-				if (player->laps == numlaps-1) // final lap
+				if (player->laps == numlaps) // final lap
 					S_StartSound(NULL, sfx_s3k68);
-				else if ((player->laps > 0) && (player->laps < numlaps-1)) // non-final lap
+				else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
 					S_StartSound(NULL, sfx_s221);
-				else if (player->laps >= numlaps)
+				else if (player->laps > numlaps)
 				{
 					// finished
 					S_StartSound(NULL, sfx_s3k6a);
@@ -1985,7 +2018,7 @@ static void K_HandleLapIncrement(player_t *player, boolean fromsector)
 			}
 
 			// finished race exit setup
-			if (player->laps >= numlaps)
+			if (player->laps > numlaps)
 			{
 				P_DoPlayerExit(player);
 				P_SetupSignExit(player);
@@ -1993,7 +2026,7 @@ static void K_HandleLapIncrement(player_t *player, boolean fromsector)
 
 			if (player->laps > player->latestlap)
 			{
-				if (player->laps > 0)
+				if (player->laps > 1)
 				{
 					// save best lap for record attack
 					if (modeattacking && player == &players[consoleplayer])
@@ -2013,62 +2046,21 @@ static void K_HandleLapIncrement(player_t *player, boolean fromsector)
 				player->latestlap = player->laps;
 			}
 
-			if (player->laps > 0)
+			thwompsactive = true; // Lap 2 effects
+			player->grieftime = 0;
+
+			lowestLap = P_FindLowestLap();
+
+			for (i = 0; i < numlines; i++)
 			{
-				thwompsactive = true; // Lap 2 effects
-				player->grieftime = 0;
-			
-
+				if (lines[i].special == 2002) // Race lap trigger
 				{
-					//UINT8 prevLowest = lowestLap;
-
-					lowestLap = P_FindLowestLap();
-				}
-
-
-				for (i = 0; i < numlines; i++)
-				{
-					if (lines[i].special == 2002) // Race lap trigger
-					{
-						UINT8 lap;
-
-						if (lines[i].flags & ML_MIDSOLID)
-						{
-							lap = player->laps;
-						}
-						else
-						{
-							lap = lowestLap;
-
-							if (lap <= lastLowestLap)
-							{
-								// Need to be able to search for E4 linedefs
-								continue;
-							}
-						}
-
-						if (lines[i].flags & ML_NOCLIMB) // Need higher than or equal to
-						{
-							if (lap < (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-								continue;
-						}
-						else if (lines[i].flags & ML_BLOCKMONSTERS) // Need lower than or equal to
-						{
-							if (lap > (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-								continue;
-						}
-						else // Need equal to
-						{
-							if (lap != (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-								continue;
-						}
-
+					if (P_CheckRaceLapSpecial(&lines[i], player))
 						P_RunTriggerLinedef(&lines[i], player->mo, NULL);
-					}
 				}
-
-				lastLowestLap = lowestLap;
 			}
+
+			lastLowestLap = lowestLap;
 		}
 		else if (player->starpostnum)
 		{
@@ -2084,12 +2076,6 @@ static void K_HandleLapDecrement(player_t *player)
 {
 	if (player)
 	{
-		
-		if (player->laps == 0)
-		{
-			player->lapvalidation = false;
-		}
-		
 		if ((player->starpostnum == 0) && (player->laps > 0))
 		{
 			player->starpostnum = numstarposts;
@@ -4340,7 +4326,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				if (((args[0] & TMCFF_FLIP) && (side == 0))
 					|| (!(args[0] & TMCFF_FLIP) && (side == 1))) // crossed from behind to infront
 				{
-					K_HandleLapIncrement(mo->player,false);
+					K_HandleLapIncrement(mo->player);
 					ACS_RunLapScript(mo, line);
 				}
 				else
@@ -5308,8 +5294,10 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 		{
 			if ((gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 			{
-					K_HandleLapIncrement(player, true);
-					//ACS_RunLapScript(player->mo, line); // Theres no line so what is this supposed to run on.
+					K_HandleLapIncrement(player);
+
+					//ACS_RunLapScript(mo, line);
+					//K_HandleLapIncrement(player);
 					player->pflags |= PF_HITFINISHLINE;
 			}
 			break;

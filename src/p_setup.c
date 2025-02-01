@@ -6714,6 +6714,7 @@ static void P_ConvertBinarySectorTypes(void)
 				sectors[i].triggerer = TO_ALLPLAYERS;
 				break;
 			case 4: //Trigger linedef executor (Anywhere in sector)
+			case 7: //Trigger linedef executor (Race lap) (all the logic is baked into P_RunTriggerLinedef, fun!)
 				sectors[i].triggertag = tag;
 				sectors[i].flags &= ~MSF_TRIGGERLINE_PLANE;
 				sectors[i].triggerer = TO_PLAYER;
