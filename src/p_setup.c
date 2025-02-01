@@ -7240,10 +7240,22 @@ static void P_ConvertBinaryThingTypes(void)
 			break;
 		case 1300: //Flame jet (horizontal)
 		case 1301: //Flame jet (vertical)
-			mapthings[i].args[0] = (mapthings[i].angle >> 13)*TICRATE/2;
-			mapthings[i].args[1] = ((mapthings[i].angle >> 10) & 7)*TICRATE/2;
-			mapthings[i].args[2] = 80 - 5*mapthings[i].extrainfo;
+			mapthings[i].args[0] = mapthings[i].angle >> 13;
+			mapthings[i].args[1] = (mapthings[i].angle >> 10) & 7;
 			mapthings[i].args[3] = !!(mapthings[i].options & MTF_AMBUSH);
+			if (udmf)
+			{
+				mapthings[i].args[0] = mapthings[i].args[0]*TICRATE/2;
+				mapthings[i].args[1] = mapthings[i].args[1]*TICRATE/2;
+				mapthings[i].args[2] = 80 - 5*mapthings[i].extrainfo;
+			}
+			else
+			{
+				// no thanks, i don't need the extra precision
+				mapthings[i].args[0] *= TICRATE/2;
+				mapthings[i].args[1] *= TICRATE/2;
+				mapthings[i].args[2] = mapthings[i].extrainfo;
+			}
 			break;
 		case 1304: //Lavafall
 			mapthings[i].args[0] = mapthings[i].angle;
