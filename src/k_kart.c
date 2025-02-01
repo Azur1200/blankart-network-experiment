@@ -6593,57 +6593,13 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (gametype == GT_RACE)
 	{
-		// 0 is the fast spin animation, set at 30 tics of ring boost or higher!
-		if (player->ringboost >= 30)
-			player->karthud[khud_ringdelay] = 0;
-		else
-			player->karthud[khud_ringdelay] = ((RINGANIM_DELAYMAX+1) * (30 - player->ringboost)) / 30;
-
-		if (player->karthud[khud_ringframe] == 0 && player->karthud[khud_ringdelay] > RINGANIM_DELAYMAX)
-		{
-			player->karthud[khud_ringframe] = 0;
-			player->karthud[khud_ringtics] = 0;
-		}
-		else if ((player->karthud[khud_ringtics]--) <= 0)
-		{
-			if (player->karthud[khud_ringdelay] == 0) // fast spin animation
-			{
-				player->karthud[khud_ringframe] = ((player->karthud[khud_ringframe]+2) % RINGANIM_NUMFRAMES);
-				player->karthud[khud_ringtics] = 0;
-			}
-			else
-			{
-				player->karthud[khud_ringframe] = ((player->karthud[khud_ringframe]+1) % RINGANIM_NUMFRAMES);
-				player->karthud[khud_ringtics] = min(RINGANIM_DELAYMAX, player->karthud[khud_ringdelay])-1;
-			}
-		}
 
 		if (!ringsdisabled)
 		{
 			if (player->pflags & PF_RINGLOCK)
 			{
-				UINT8 normalanim = (leveltime % 14);
-				UINT8 debtanim = 14 + (leveltime % 2);
-
-				if (player->karthud[khud_ringspblock] >= 14) // debt animation
-				{
-					if ((player->rings > 0) // Get out of 0 ring animation
-						&& (normalanim == 3 || normalanim == 10)) // on these transition frames.
-						player->karthud[khud_ringspblock] = normalanim;
-					else
-						player->karthud[khud_ringspblock] = debtanim;
-				}
-				else // normal animation
-				{
-					if ((player->rings <= 0) // Go into 0 ring animation
-						&& (player->karthud[khud_ringspblock] == 1 || player->karthud[khud_ringspblock] == 8)) // on these transition frames.
-						player->karthud[khud_ringspblock] = debtanim;
-					else
-						player->karthud[khud_ringspblock] = normalanim;
-				}
+				player->karthud[khud_ringlock] = true;
 			}
-			else
-				player->karthud[khud_ringspblock] = (leveltime % 14); // reset to normal anim next time
 		}
 	}
 
@@ -9807,9 +9763,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->flamelength = 0;
 			player->flamemeter = 0;
 		}
-
-		if (spbplace == -1 || player->position != spbplace)
-			player->pflags &= ~PF_RINGLOCK; // reset ring lock
 
 		if (player->growshrinktimer <= 0)
 			player->growcancel = -1;

@@ -3973,13 +3973,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					&& (delay <= 0 || !(leveltime % delay)) // Timing
 				)
 				{
-					// Don't award rings while SPB is targetting you
+					// Don't award rings your rings are locked
 					if (mo->player->pflags & PF_RINGLOCK)
 						return false;
 
 					if (delay <= 0 || !(leveltime % delay))
 					{
-						// Don't award rings while SPB is targetting you
+						// Don't award rings while your rings are locked
 						if (mo->player->pflags & PF_RINGLOCK)
 							return false;
 

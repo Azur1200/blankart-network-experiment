@@ -91,7 +91,7 @@ typedef enum
 	PF_NOCONTEST 		= 1<<11, // Did not finish (last place explosion)
 	PF_LOSTLIFE			= 1<<12, // Do not lose life more than once
 
-	PF_RINGLOCK			= 1<<13, // Prevent picking up rings while SPB is locked on
+	PF_RINGLOCK			= 1<<13, // Prevent picking up rings while locked. Mostly for lua use since SPB no longer locks
 
 	PF_DRIFTINPUT		= 1<<14, // Drifting!
 	PF_GETSPARKS		= 1<<15, // Can get sparks
@@ -233,10 +233,7 @@ typedef enum
 	khud_itemblinkmode,	// Type of flashing: 0 = white (normal), 1 = red (mashing), 2 = rainbow (enhanced items)
 
 	// Rings
-	khud_ringframe,		// Ring spin frame
-	khud_ringtics,		// Tics left until next ring frame
-	khud_ringdelay,		// Next frame's tics
-	khud_ringspblock,	// Which frame of the SPB ring lock animation to use
+	khud_ringlock,		// Ring lock
 
 	// Lap finish
 	khud_lapanimation,	// Used to show the lap start wing logo animation
