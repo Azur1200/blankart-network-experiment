@@ -81,7 +81,6 @@ static patch_t *kp_spbminimap;
 static patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[2];
-static patch_t *kp_ringbit[2];
 /*static patch_t *kp_ringstickersplit[4];
 static patch_t *kp_ring[6];
 static patch_t *kp_smallring[6];*/
@@ -268,7 +267,7 @@ void K_LoadKartHUDGraphics(void)
 
 	// Rings & Lives
 	HU_UpdatePatch(&kp_ringsticker[0], "K_RNGHD");
-	HU_UpdatePatch(&kp_ringbit[0], "K_RNGH1");
+	HU_UpdatePatch(&kp_ringsticker[1], "K_RNGHL");
 	/*HU_UpdatePatch(&kp_ringsticker[0], "RNGBACKA");
 	HU_UpdatePatch(&kp_ringsticker[1], "RNGBACKB");
 
@@ -2116,8 +2115,6 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 	}
 }
 
-#define RINGANIM_FLIPFRAME (RINGANIM_NUMFRAMES/2)
-
 static void K_drawKartLapsAndRings(void)
 {
 	const boolean uselives = G_GametypeUsesLives();
@@ -2141,13 +2138,6 @@ static void K_drawKartLapsAndRings(void)
 		}
 		else if (stplyr->rings >= 20) // Maxed out
 			ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
-
-		/*if (stplyr->karthud[khud_ringframe] > RINGANIM_FLIPFRAME)
-		{
-			ringflip = V_FLIP;
-			ringanim_realframe = RINGANIM_NUMFRAMES-stplyr->karthud[khud_ringframe];
-			ringx += SHORT((r_splitscreen > 1) ? kp_smallring[ringanim_realframe]->width : kp_ring[ringanim_realframe]->width);
-		}*/
 	}
 
 	if (r_splitscreen > 1)
@@ -2258,19 +2248,15 @@ static void K_drawKartLapsAndRings(void)
 		if (!ringsdisabled)
 		{
 			SINT8 i;
-			V_DrawScaledPatch(LAPS_X, LAPS_Y-14, V_HUDTRANS|splitflags, kp_ringsticker[0]);
+			V_DrawScaledPatch(LAPS_X, LAPS_Y-14, V_HUDTRANS|splitflags, kp_ringsticker[(stplyr->pflags & PF_RINGLOCK) ? 1 : 0]);
 
 			if (stplyr->rings < 0) // Draw the minus for ring debt
 			{
 				V_DrawMappedPatch(LAPS_X-5, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
-				V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-				V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
 			}
-			else
-			{
-				V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-				V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
-			}
+
+			V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+			V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
 
 			// Draw the fillbars
 			if (stplyr->rings)
@@ -2298,42 +2284,18 @@ static void K_drawKartLapsAndRings(void)
 					}
 				}
 			}
-
-			/*
-			// Rings
-			if (!uselives)
-				V_DrawScaledPatch(LAPS_X, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringsticker[1]);
-			else
-				V_DrawScaledPatch(LAPS_X, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringsticker[0]);
-
-			V_DrawMappedPatch(LAPS_X+ringx+7, LAPS_Y-16, V_HUDTRANS|splitflags|ringflip, kp_ring[ringanim_realframe], (colorring ? ringmap : NULL));
-
-			if (stplyr->rings < 0) // Draw the minus for ring debt
-			{
-				V_DrawMappedPatch(LAPS_X+23, LAPS_Y-11, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
-				V_DrawMappedPatch(LAPS_X+29, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-				V_DrawMappedPatch(LAPS_X+35, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
-			}
-			else
-			{
-				V_DrawMappedPatch(LAPS_X+23, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-				V_DrawMappedPatch(LAPS_X+29, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
-			}*/
-
 		}
 
 		// Lives
 		if (uselives)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
-			V_DrawMappedPatch(LAPS_X+46, LAPS_Y-16, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_RANK], colormap);
+			V_DrawMappedPatch(LAPS_X+59, LAPS_Y-16, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_RANK], colormap);
 			if (stplyr->lives >= 0)
-				V_DrawScaledPatch(LAPS_X+63, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+				V_DrawScaledPatch(LAPS_X+77, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 		}
 	}
 }
-
-#undef RINGANIM_FLIPFRAME
 
 static void K_drawKartAccessibilityIcons(INT32 fx)
 {
