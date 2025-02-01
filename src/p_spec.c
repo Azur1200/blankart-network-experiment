@@ -1358,6 +1358,45 @@ static boolean P_CheckPushables(line_t *triggerline, sector_t *caller)
 	}
 }
 
+static boolean P_CheckRaceLapSpecial(line_t *triggerline, player_t *player)
+{
+	UINT8 lap;
+
+	if (player && triggerline->flags & ML_MIDSOLID)
+	{
+		lap = player->laps;
+	}
+	else
+	{
+		lap = P_FindLowestLap();
+
+		if (udmf && lap <= lastLowestLap)
+		{
+			// Need to be able to search for E4 linedefs
+			return false;
+		}
+	}
+
+	// kart laps are zero-based
+	if (lap && !udmf)
+		lap--;
+
+	UINT16 threshold = sides[triggerline->sidenum[0]].textureoffset >> FRACBITS;
+
+	if (triggerline->flags & ML_NOCLIMB) // Need higher than or equal to
+	{
+		return lap >= threshold;
+	}
+	else if (triggerline->flags & ML_BLOCKMONSTERS) // Need lower than or equal to
+	{
+		return lap <= threshold;
+	}
+	else // Need equal to
+	{
+		return lap == threshold;
+	}
+}
+
 boolean P_CanActivateSpecial(INT16 special)
 {
 	switch (special)
@@ -1575,6 +1614,12 @@ boolean P_RunTriggerLinedef(line_t *triggerline, mobj_t *actor, sector_t *caller
 			break;
 		default:
 			break;
+	}
+
+	if (caller && GETSECSPECIAL(caller->special, 2) == 7) // SRB2Kart: reusing for Race Lap executor
+	{
+		if (!P_CheckRaceLapSpecial(triggerline, actor ? actor->player : NULL))
+			return false;
 	}
 
 	/////////////////////////////////
@@ -2010,40 +2055,8 @@ static void K_HandleLapIncrement(player_t *player)
 			{
 				if (lines[i].special == 2002) // Race lap trigger
 				{
-					UINT8 lap;
-
-					if (lines[i].flags & ML_MIDSOLID)
-					{
-						lap = player->laps;
-					}
-					else
-					{
-						lap = lowestLap;
-
-						if (lap <= lastLowestLap)
-						{
-							// Need to be able to search for E4 linedefs
-							continue;
-						}
-					}
-
-					if (lines[i].flags & ML_NOCLIMB) // Need higher than or equal to
-					{
-						if (lap < (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-							continue;
-					}
-					else if (lines[i].flags & ML_BLOCKMONSTERS) // Need lower than or equal to
-					{
-						if (lap > (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-							continue;
-					}
-					else // Need equal to
-					{
-						if (lap != (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS))
-							continue;
-					}
-
-					P_RunTriggerLinedef(&lines[i], player->mo, NULL);
+					if (P_CheckRaceLapSpecial(&lines[i], player))
+						P_RunTriggerLinedef(&lines[i], player->mo, NULL);
 				}
 			}
 
