@@ -826,17 +826,20 @@ static int player_set(lua_State *L)
 		plr->realtime = (tic_t)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"laps"))
 	{
+		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
 		if (lua_compatmode)
-			plr->laps = max((UINT8)luaL_checkinteger(L, 3) - 1, 0);
+			plr->laps = max(laps - 1, 0);
 		else
-			plr->laps = (UINT8)luaL_checkinteger(L, 3);
+			plr->laps = laps;
 	}
 	else if (fastcmp(field,"latestlap"))
 	{
+		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
+
 		if (lua_compatmode)
-			plr->latestlap = max((UINT8)luaL_checkinteger(L, 3) - 1, 0);
+			plr->latestlap = max(laps - 1, 0);
 		else
-			plr->laps = (UINT8)luaL_checkinteger(L, 3);
+			plr->latestlap = laps;
 	}
 	else if (fastcmp(field,"ctfteam"))
 		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
