@@ -81,11 +81,9 @@ static patch_t *kp_spbminimap;
 static patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[2];
-/*static patch_t *kp_ringstickersplit[4];
-static patch_t *kp_ring[6];
-static patch_t *kp_smallring[6];*/
+static patch_t *kp_ringsplitscreen;
 static patch_t *kp_ringdebtminus;
-//static patch_t *kp_ringdebtminussmall;
+static patch_t *kp_ringdebtminussmall;
 
 static patch_t *kp_speedometersticker;
 static patch_t *kp_speedometerlabel[4];
@@ -268,37 +266,9 @@ void K_LoadKartHUDGraphics(void)
 	// Rings & Lives
 	HU_UpdatePatch(&kp_ringsticker[0], "K_RNGHD");
 	HU_UpdatePatch(&kp_ringsticker[1], "K_RNGHL");
-	/*HU_UpdatePatch(&kp_ringsticker[0], "RNGBACKA");
-	HU_UpdatePatch(&kp_ringsticker[1], "RNGBACKB");
-
-	sprintf(buffer, "K_RINGx");
-	for (i = 0; i < 6; i++)
-	{
-		buffer[6] = '0'+(i+1);
-		HU_UpdatePatch(&kp_ring[i], "%s", buffer);
-	} */
-
+	HU_UpdatePatch(&kp_ringsplitscreen, "K_RNGSS");
 	HU_UpdatePatch(&kp_ringdebtminus, "K_RNGDM");
-
-	/*HU_UpdatePatch(&kp_ringstickersplit[0], "SMRNGBGA");
-	HU_UpdatePatch(&kp_ringstickersplit[1], "SMRNGBGB");
-
-	sprintf(buffer, "K_SRINGx");
-	for (i = 0; i < 6; i++)
-	{
-		buffer[7] = '0'+(i+1);
-		HU_UpdatePatch(&kp_smallring[i], "%s", buffer);
-	}
-
-	HU_UpdatePatch(&kp_ringdebtminussmall, "SRDEBTMN");
-
-	sprintf(buffer, "SPBRGSxx");
-	for (i = 0; i < 16; i++)
-	{
-		buffer[6] = '0'+((i+1) / 10);
-		buffer[7] = '0'+((i+1) % 10);
-		HU_UpdatePatch(&kp_ringspblocksmall[i], "%s", buffer);
-	}*/
+	HU_UpdatePatch(&kp_ringdebtminussmall, "K_RNGSM");
 
 	// Speedometer
 	HU_UpdatePatch(&kp_speedometersticker, "K_SPDMBG");
@@ -2171,9 +2141,6 @@ static void K_drawKartLapsAndRings(void)
 		fr = fx;
 
 		// Laps
-		/*if (!ringsdisabled)
-			V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);*/
-
 		V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_splitlapflag);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
 
@@ -2200,30 +2167,14 @@ static void K_drawKartLapsAndRings(void)
 
 		if (!ringsdisabled)
 		{
-			/*
-			// Rings
-			if (!uselives)
-			{
-				V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[1]->width) - 3) : 0), fy-10, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[1]);
-				if (flipflag)
-					fr += 15;
-			}
-			else
-				V_DrawScaledPatch(fx-2 + (flipflag ? (SHORT(kp_ringstickersplit[0]->width) - 3) : 0), fy-10, V_HUDTRANS|splitflags|flipflag, kp_ringstickersplit[0]);
 
-
-			V_DrawMappedPatch(fr+ringx, fy-13, V_HUDTRANS|splitflags|ringflip, kp_smallring[ringanim_realframe], (colorring ? ringmap : NULL));
+			V_DrawMappedPatch(fr, fy-10, V_HUDTRANS|splitflags|ringflip, kp_ringsplitscreen, (colorring ? ringmap : NULL));
 
 			if (stplyr->rings < 0) // Draw the minus for ring debt
-				V_DrawMappedPatch(fr+7, fy-10, V_HUDTRANS|splitflags, kp_ringdebtminussmall, ringmap);
+				V_DrawMappedPatch(fr+7, fy-8, V_HUDTRANS|splitflags, kp_ringdebtminussmall, ringmap);
 
 			V_DrawMappedPatch(fr+11, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[rn[0]], ringmap);
 			V_DrawMappedPatch(fr+15, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[rn[1]], ringmap);
-
-			// SPB ring lock
-			if (stplyr->pflags & PF_RINGLOCK)
-				V_DrawScaledPatch(fr-12, fy-23, V_HUDTRANS|splitflags, kp_ringspblocksmall[stplyr->karthud[khud_ringspblock]]);
-			*/
 		}
 
 		// Lives
