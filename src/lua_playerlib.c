@@ -828,7 +828,7 @@ static int player_set(lua_State *L)
 	{
 		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
 		if (lua_compatmode)
-			plr->laps = max(laps - 1, 0);
+			plr->laps = max(laps +1, 0);
 		else
 			plr->laps = laps;
 	}
@@ -837,7 +837,7 @@ static int player_set(lua_State *L)
 		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
 
 		if (lua_compatmode)
-			plr->latestlap = max(laps - 1, 0);
+			plr->latestlap = max(laps + 1, 0);
 		else
 			plr->latestlap = laps;
 	}
