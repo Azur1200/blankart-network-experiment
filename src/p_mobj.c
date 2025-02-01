@@ -11980,7 +11980,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		fixed_t top = mobj->z;
 		UINT8 i;
 		UINT8 locnumsegs = abs(mthing->args[0])+2;
-		UINT8 numleaves = max(3, (abs(mthing->args[1])+1 % 6) + 3);
+		UINT8 numleaves = max(3, (abs(mthing->args[1]+1) % 6) + 3);
 		mobj_t *coconut;
 
 		// Spawn tree segments
