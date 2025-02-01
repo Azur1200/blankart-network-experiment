@@ -453,9 +453,19 @@ static int player_get(lua_State *L)
 	else if (fastcmp(field,"realtime"))
 		lua_pushinteger(L, plr->realtime);
 	else if (fastcmp(field,"laps"))
-		lua_pushinteger(L, plr->laps);
+	{
+		if (lua_compatmode)
+			lua_pushinteger(L, max(plr->laps - 1, 0));
+		else
+			lua_pushinteger(L, plr->laps);
+	}
 	else if (fastcmp(field,"latestlap"))
-		lua_pushinteger(L, plr->latestlap);
+	{
+		if (lua_compatmode)
+			lua_pushinteger(L, max(plr->latestlap - 1, 0));
+		else
+			lua_pushinteger(L, plr->latestlap);
+	}
 	else if (fastcmp(field,"ctfteam"))
 		lua_pushinteger(L, plr->ctfteam);
 	else if (fastcmp(field,"checkskip"))
@@ -815,9 +825,19 @@ static int player_set(lua_State *L)
 	else if (fastcmp(field,"realtime"))
 		plr->realtime = (tic_t)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"laps"))
-		plr->laps = (UINT8)luaL_checkinteger(L, 3);
+	{
+		if (lua_compatmode)
+			plr->laps = max((UINT8)luaL_checkinteger(L, 3) - 1, 0);
+		else
+			plr->laps = (UINT8)luaL_checkinteger(L, 3);
+	}
 	else if (fastcmp(field,"latestlap"))
-		plr->latestlap = (UINT8)luaL_checkinteger(L, 3);
+	{
+		if (lua_compatmode)
+			plr->latestlap = max((UINT8)luaL_checkinteger(L, 3) - 1, 0);
+		else
+			plr->laps = (UINT8)luaL_checkinteger(L, 3);
+	}
 	else if (fastcmp(field,"ctfteam"))
 		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"checkskip"))
