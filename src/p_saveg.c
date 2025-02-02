@@ -388,6 +388,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		// Restored NiGHTS stuff
 		WRITEUINT32(save->p, players[i].bumpertime);
+		WRITEINT32(save->p, players[i].linkcount);
+		WRITEUINT32(save->p, players[i].linktimer);
+		WRITEINT32(save->p, players[i].maxlink);
+
 	}
 }
 
@@ -682,7 +686,12 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].loop.camera.pan_accel = READUINT32(save->p);
 		players[i].loop.camera.pan_back = READUINT32(save->p);
 
+
+		// Restored NiGHTS stuff
 		players[i].bumpertime = READUINT32(save->p);
+		players[i].linkcount = READINT32(save->p);
+		players[i].linktimer = READUINT32(save->p);
+		players[i].maxlink = READINT32(save->p);
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}

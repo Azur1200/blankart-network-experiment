@@ -164,6 +164,79 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 	return true;
 }
 
+//
+// P_DoNightsScore
+//
+// When you pick up some items in nights, it displays
+// a score sign, and awards you some drill time.
+//
+void P_DoNightsScore(player_t *player)
+{
+	mobj_t *dummymo;
+
+	if (player->exiting)
+		return; // Don't do any fancy shit for failures.
+
+	dummymo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z+player->mo->height/2, MT_NIGHTSCORE);
+	if (player->bot)
+		player = &players[consoleplayer];
+
+	/*if (G_IsSpecialStage(gamemap)) // Global link count? Maybe not a good idea...
+	{
+		INT32 i;
+		for (i = 0; i < MAXPLAYERS; i++)
+			if (playeringame[i])
+			{
+				if (++players[i].linkcount > players[i].maxlink)
+					players[i].maxlink = players[i].linkcount;
+				players[i].linktimer = 2*TICRATE;
+			}
+	}
+	else // Individual link counts*/
+	{
+		if (++player->linkcount > player->maxlink)
+			player->maxlink = player->linkcount;
+		player->linktimer = 2*TICRATE;
+	}
+
+	if (player->linkcount < 10)
+	{
+		/*if (player->bonustime)
+		{
+			P_AddPlayerScore(player, player->linkcount*20);
+			P_SetMobjState(dummymo, dummymo->info->xdeathstate+player->linkcount-1);
+		}
+		else*/
+		{
+			P_AddPlayerScore(player, player->linkcount*10);
+			P_SetMobjState(dummymo, dummymo->info->spawnstate+player->linkcount-1);
+		}
+	}
+	else
+	{
+		/*if (player->bonustime)
+		{
+			P_AddPlayerScore(player, 200);
+			P_SetMobjState(dummymo, dummymo->info->xdeathstate+9);
+		}
+		else*/
+		{
+			P_AddPlayerScore(player, 100);
+			P_SetMobjState(dummymo, dummymo->info->spawnstate+9);
+		}
+	}
+
+	// Hoops are the only things that should add to your drill meter
+	//player->drillmeter += TICRATE;
+	dummymo->momz = FRACUNIT;
+	dummymo->fuse = 3*TICRATE;
+
+	// What?! NO, don't use the camera! Scale up instead!
+	//P_InstaThrust(dummymo, R_PointToAngle2(dummymo->x, dummymo->y, camera[0].x, camera[0].y), 3*FRACUNIT);
+	dummymo->scalespeed = FRACUNIT/25;
+	dummymo->destscale = 2*FRACUNIT;
+}
+
 /** Takes action based on a ::MF_SPECIAL thing touched by a player.
   * Actually, this just checks a few things (heights, toucher->player, no
   * objectplace, no dead or disappearing things)
@@ -632,6 +705,56 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 		case MT_STARPOST:
 			P_TouchStarPost(special, player, special->args[1]);
+			return;
+		case MT_HOOPCOLLIDE:
+			// This produces a kind of 'domino effect' with the hoop's pieces.
+			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			i = 0;
+			for (; special->type == MT_HOOP; special = special->hnext)
+			{
+				if (!P_MobjWasRemoved(special->target))
+				{
+					special->fuse = 11;
+					special->movedir = i;
+					special->extravalue1 = special->target->extravalue1;
+					special->extravalue2 = special->target->extravalue2;
+					special->target->threshold = 4242;
+				}
+				i++;
+			}
+			// Make the collision detectors disappear.
+			{
+				mobj_t *hnext;
+				for (; special != NULL; special = hnext)
+				{
+					hnext = special->hnext;
+					P_RemoveMobj(special);
+				}
+			}
+
+			P_DoNightsScore(player);
+
+			/*
+			// Hoops are the only things that should add to the drill meter
+			// Also, one tic's worth of drill is too much.
+			if (G_IsSpecialStage(gamemap))
+			{
+				for (i = 0; i < MAXPLAYERS; i++)
+					if (playeringame[i] && players[i].powers[pw_carry] == CR_NIGHTSMODE)
+						players[i].drillmeter += TICRATE/2;
+			}
+			else if (player->bot && player->bot != BOT_MPAI)
+				players[consoleplayer].drillmeter += TICRATE/2;
+			else
+				player->drillmeter += TICRATE/2;*/
+
+			// Play hoop sound -- pick one depending on the current link.
+			if (player->linkcount <= 5)
+				S_StartSound(toucher, sfx_hoop1);
+			else if (player->linkcount <= 10)
+				S_StartSound(toucher, sfx_hoop2);
+			else
+				S_StartSound(toucher, sfx_hoop3);
 			return;
 
 		case MT_BIGTUMBLEWEED:

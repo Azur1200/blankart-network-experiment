@@ -732,6 +732,9 @@ struct player_t
 	sonicloopvars_t loop;
 
 	tic_t bumpertime; // Currently being bounched by MT_NIGHTSBUMPER
+	INT32 linkcount;
+	tic_t linktimer;
+	INT32 maxlink; // maximum link obtained
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

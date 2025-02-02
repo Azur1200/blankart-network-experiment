@@ -4407,6 +4407,12 @@ void P_PlayerThink(player_t *player)
 		//CONS_Printf("player %s wants to join on tic %d\n", player_names[player-players], leveltime);
 	}
 
+	if (player->linktimer /*&& !player->powers[pw_nights_linkfreeze]*/)
+	{
+		if (--player->linktimer <= 0) // Link timer
+			player->linkcount = 0;
+	}
+
 	if (player->mo->reactiontime)
 	{
 		// Reactiontime is used to prevent movement
