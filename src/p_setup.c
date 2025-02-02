@@ -7154,19 +7154,45 @@ static void P_ConvertBinaryThingTypes(void)
 				break;
 			}
 
-			mapthings[i].angle = lines[j].frontsector->ceilingheight >> FRACBITS;
-			mapthings[i].pitch = lines[j].frontsector->floorheight >> FRACBITS;
-			mapthings[i].args[0] = lines[j].dx >> FRACBITS;
-			mapthings[i].args[1] = mapthings[i].extrainfo;
-			mapthings[i].args[3] = lines[j].dy >> FRACBITS;
-			mapthings[i].args[4] = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
-			mapthings[i].args[7] = -sides[lines[j].sidenum[0]].rowoffset >> FRACBITS;
-			if (lines[j].backsector)
+			if (udmf)
 			{
-				mapthings[i].roll = lines[j].backsector->ceilingheight >> FRACBITS;
-				mapthings[i].args[2] = sides[lines[j].sidenum[1]].rowoffset >> FRACBITS;
-				mapthings[i].args[5] = lines[j].backsector->floorheight >> FRACBITS;
-				mapthings[i].args[6] = sides[lines[j].sidenum[1]].textureoffset >> FRACBITS;
+				mapthings[i].angle = lines[j].frontsector->ceilingheight >> FRACBITS;
+				mapthings[i].pitch = lines[j].frontsector->floorheight >> FRACBITS;
+				mapthings[i].args[0] = lines[j].dx >> FRACBITS;
+				mapthings[i].args[1] = mapthings[i].extrainfo;
+				mapthings[i].args[3] = lines[j].dy >> (FRACBITS-4);
+				mapthings[i].args[4] = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
+				mapthings[i].args[7] = -sides[lines[j].sidenum[0]].rowoffset >> FRACBITS;
+				if (lines[j].backsector)
+				{
+					mapthings[i].roll = lines[j].backsector->ceilingheight >> FRACBITS;
+					mapthings[i].args[2] = sides[lines[j].sidenum[1]].rowoffset >> FRACBITS;
+					mapthings[i].args[5] = lines[j].backsector->floorheight >> FRACBITS;
+					mapthings[i].args[6] = sides[lines[j].sidenum[1]].textureoffset >> FRACBITS;
+				}
+			}
+			else
+			{
+				fixed_t xspeed = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
+				fixed_t zspeed = sides[lines[j].sidenum[0]].rowoffset >> FRACBITS;
+				fixed_t startangle = lines[j].frontsector->floorheight >> FRACBITS;
+				fixed_t maxspeed = lines[j].frontsector->ceilingheight >> FRACBITS;
+
+				if (mapthings[i].type == 1105) // swinging mace
+				{
+					mapthings[i].type = 1104;
+					mapthings[i].args[8] |= TMM_SWING|TMM_SILENT;
+					mapthings[i].args[4] = (180 + startangle) % 360;
+					xspeed = 360 - (startangle % 360);
+					zspeed += 90;
+				}
+				else
+					mapthings[i].args[4] = startangle;
+
+				mapthings[i].args[0] = abs(lines[j].dx >> FRACBITS);
+				mapthings[i].args[3] = abs(min(maxspeed, lines[j].dy >> (FRACBITS-4)));
+				mapthings[i].angle = startangle + zspeed;
+				mapthings[i].pitch = startangle + xspeed;
 			}
 			if (mapthings[i].options & MTF_AMBUSH)
 				mapthings[i].args[8] |= TMM_DOUBLESIZE;
