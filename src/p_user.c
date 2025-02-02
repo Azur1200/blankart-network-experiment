@@ -4425,6 +4425,16 @@ void P_PlayerThink(player_t *player)
 	}
 	else
 	{
+		if (player->bumpertime == TICRATE/2 && player->mo->hnext)
+		{
+			// Center player to NiGHTS bumper here because if you try to set player's position in
+			// P_TouchSpecialThing case MT_NIGHTSBUMPER, that position is fudged in the time
+			// between that routine in the previous tic
+			// and reaching here in the current tic
+			P_MoveOrigin(player->mo, player->mo->hnext->x, player->mo->hnext->y
+				, player->mo->hnext->z + FixedMul(player->mo->hnext->height/4, player->mo->hnext->scale));
+			P_SetTarget(&player->mo->hnext, NULL);
+		}
 		// Move around.
 		P_MovePlayer(player);
 	}
@@ -4471,6 +4481,9 @@ void P_PlayerThink(player_t *player)
 
 	// Counters, time dependent power ups.
 	// Time Bonus & Ring Bonus count settings
+
+	if (player->bumpertime)
+		player->bumpertime--;
 
 	// Strength counts up to diminish fade.
 	if (player->flashing && player->flashing < UINT16_MAX &&

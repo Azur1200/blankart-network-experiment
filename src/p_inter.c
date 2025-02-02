@@ -664,6 +664,47 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			Obj_LoopEndpointCollide(special, toucher);
 			return;
 
+		case MT_NIGHTSBUMPER:
+			// Don't trigger if the stage is ended/failed
+			if (player->exiting)
+				return;
+
+			if (player->bumpertime <= (TICRATE/2)-5)
+			{
+				S_StartSound(toucher, special->info->seesound);
+				angle_t fa;
+				fixed_t xspeed, yspeed;
+				const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
+
+				player->bumpertime = TICRATE/2;
+
+				P_UnsetThingPosition(toucher);
+				toucher->x = special->x;
+				toucher->y = special->y;
+				P_SetThingPosition(toucher);
+				toucher->z = special->z+(special->height/4);
+
+				if (special->threshold > 0)
+					fa = (FixedAngle(((special->threshold*30)-1)*FRACUNIT)>>ANGLETOFINESHIFT) & FINEMASK;
+				else
+					fa = 0;
+
+				xspeed = FixedMul(FINECOSINE(fa),speed);
+				yspeed = FixedMul(FINESINE(fa),speed);
+
+				P_InstaThrust(toucher, special->angle, xspeed/10);
+				toucher->momz = yspeed/11;
+
+				toucher->angle = special->angle;
+
+				P_SetPlayerAngle(player, toucher->angle);
+
+				P_ResetPlayer(player);
+
+				P_SetPlayerMobjState(toucher, S_KART_STILL);
+			}
+			return;
+
 		default: // SOC or script pickup
 			P_SetTarget(&special->target, toucher);
 			break;

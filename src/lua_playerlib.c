@@ -513,6 +513,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->griefstrikes);
 	else if (fastcmp(field,"splitscreenindex"))
 		lua_pushinteger(L, plr->splitscreenindex);
+	else if (fastcmp(field,"bumpertime"))
+		lua_pushinteger(L, plr->bumpertime);
 #ifdef HWRENDER
 	else if (fastcmp(field,"fovadd"))
 		lua_pushfixed(L, plr->fovadd);
@@ -896,6 +898,8 @@ static int player_set(lua_State *L)
 		plr->griefstrikes = (UINT8)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"splitscreenindex"))
 		return NOSET;
+	else if (fastcmp(field,"bumpertime"))
+		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
 #ifdef HWRENDER
 	else if (fastcmp(field,"fovadd"))
 		plr->fovadd = luaL_checkfixed(L, 3);

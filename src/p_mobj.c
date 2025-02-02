@@ -11664,6 +11664,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		if (!P_SetupParticleGen(mthing, mobj))
 			return false;
 		break;
+	case MT_NIGHTSBUMPER:
+		// Pitch of the bumper is set in 30 degree increments.
+		mobj->threshold = ((mthing->pitch/30) + 3) % 12;
+		P_SetMobjState(mobj, mobj->info->spawnstate + mobj->threshold);
+		break;
 	case MT_TUBEWAYPOINT:
 	{
 		UINT8 sequence = mthing->args[0];
@@ -12048,6 +12053,23 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	return true;
 }
 
+// TODO: 2.3: Delete (Pre-UDMF backwards compatibility stuff)
+static void P_SetAmbush(mapthing_t *mthing, mobj_t *mobj)
+{
+	if (mobj->type == MT_NIGHTSBUMPER
+		|| mobj->type == MT_AXIS
+		|| mobj->type == MT_AXISTRANSFER
+		|| mobj->type == MT_AXISTRANSFERLINE
+		|| mobj->type == MT_NIGHTSBUMPER
+		|| mobj->type == MT_STARPOST)
+		return;
+
+	if ((mthing->options & MTF_OBJECTSPECIAL) && (mobj->flags & MF_PUSHABLE))
+		return;
+
+	mobj->flags2 |= MF2_AMBUSH;
+}
+
 static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y, fixed_t z, mobjtype_t i)
 {
 	mobj_t *mobj = NULL;
@@ -12144,6 +12166,9 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	}
 
 	mthing->mobj = mobj;
+
+	if (!udmf && (mthing->options & MTF_AMBUSH))
+		P_SetAmbush(mthing, mobj);
 
 	// Generic reverse gravity for individual objects flag.
 	if (mthing->options & MTF_OBJECTFLIP)

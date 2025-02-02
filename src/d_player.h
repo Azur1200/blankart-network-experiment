@@ -731,6 +731,8 @@ struct player_t
 	
 	sonicloopvars_t loop;
 
+	tic_t bumpertime; // Currently being bounched by MT_NIGHTSBUMPER
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif
