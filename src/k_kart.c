@@ -3501,17 +3501,17 @@ SINT8 K_GetForwardMove(player_t *player)
 		return 0;
 	}
 
-	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
-	{
-		forwardmove = 0;
-		if (player->sneakertimer)
-			forwardmove = 50;
-	}
-
 	if (K_KartKickstart(player)) // unlike the brute forward of sneakers, allow for backwards easing here
 	{
 		forwardmove += MAXPLMOVE;
 		if (forwardmove > MAXPLMOVE)
+			forwardmove = MAXPLMOVE;
+	}
+
+	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
+	{
+		forwardmove = 0;
+		if (player->sneakertimer)
 			forwardmove = MAXPLMOVE;
 	}
 
