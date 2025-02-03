@@ -3496,29 +3496,16 @@ SINT8 K_GetForwardMove(player_t *player)
 {
 	SINT8 forwardmove = player->cmd.forwardmove;
 
-	if ((player->exiting || mapreset))
-	{
-		return 0;
-	}
-
-	if ((player->pflags & PF_STASIS) || (player->carry == CR_SLIDING))
-	{
-		return 0;
-	}
-
-	if (player->sneakertimer)
-	{
-		return MAXPLMOVE;
-	}
-
-	if (player->spinouttimer)
-	{
-		return 0;
-	}
-
 	if (leveltime < starttime && !(gametyperules & GTR_FREEROAM))
 	{
 		return 0;
+	}
+
+	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
+	{
+		forwardmove = 0;
+		if (player->sneakertimer)
+			forwardmove = 50;
 	}
 
 	if (K_KartKickstart(player)) // unlike the brute forward of sneakers, allow for backwards easing here

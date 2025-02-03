@@ -1074,6 +1074,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			// JOYAXISRANGE is supposed to be 1023 (divide by 1024)
 			forward += ((axis * MAXPLMOVE) / (JOYAXISRANGE-1));
 		}
+		else if  (player->sneakertimer)
+			forward = MAXPLMOVE;	// 50
 
 		axis = PlayerJoyAxis(ssplayer, AXISBRAKE);
 		if (PlayerInputDown(ssplayer, gc_brake) || (gamepadjoystickmove && axis > 0))
