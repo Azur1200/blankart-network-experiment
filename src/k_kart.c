@@ -5117,24 +5117,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 void K_DoWaterRunPanel(player_t *player)
 {
-	fixed_t intendedboost;
-
-	switch (gamespeed)
-	{
-		case 0:
-			intendedboost = 53740+768;
-			break;
-		case 2:
-			intendedboost = 17294+768;
-			break;
-		//expert
-		case 3:
-			intendedboost = 14706;
-			break;
-		default:
-			intendedboost = 32768;
-			break;
-	}
+	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
