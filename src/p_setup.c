@@ -7160,7 +7160,7 @@ static void P_ConvertBinaryThingTypes(void)
 				mapthings[i].pitch = lines[j].frontsector->floorheight >> FRACBITS;
 				mapthings[i].args[0] = lines[j].dx >> FRACBITS;
 				mapthings[i].args[1] = mapthings[i].extrainfo;
-				mapthings[i].args[3] = lines[j].dy >> (FRACBITS-4);
+				mapthings[i].args[3] = lines[j].dy >> FRACBITS;
 				mapthings[i].args[4] = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
 				mapthings[i].args[7] = -sides[lines[j].sidenum[0]].rowoffset >> FRACBITS;
 				if (lines[j].backsector)
