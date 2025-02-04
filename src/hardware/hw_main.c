@@ -313,6 +313,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	Surface->LightInfo.light_level = light_level;
 	Surface->LightInfo.fade_start = (colormap != NULL) ? colormap->fadestart : 0;
 	Surface->LightInfo.fade_end = (colormap != NULL) ? colormap->fadeend : 31;
+	Surface->LightInfo.newfade = (colormap != NULL) ? !!(colormap->flags & CMF_NEWFADE) : false;
 
 	Surface->LightInfo.directional = (maplighting.directional == true && directional == true);
 }
@@ -3244,6 +3245,7 @@ static void HWR_LinkDrawHackFinish(void)
 	surf.LightInfo.light_level = 0;
 	surf.LightInfo.fade_start = 0;
 	surf.LightInfo.fade_end = 31;
+	surf.LightInfo.newfade = false;
 	for (i = 0; i < linkdrawcount; i++)
 	{
 		// draw sprite shape, only to z-buffer

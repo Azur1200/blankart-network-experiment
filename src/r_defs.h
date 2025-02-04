@@ -61,6 +61,7 @@ typedef UINT8 lighttable_t;
 
 #define CMF_FADEFULLBRIGHTSPRITES  1
 #define CMF_FOG (udmf ? 4 : 1)
+#define CMF_NEWFADE 8
 
 // ExtraColormap type. Use for extra_colormaps from now on.
 struct extracolormap_t

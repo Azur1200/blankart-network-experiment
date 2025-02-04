@@ -637,6 +637,7 @@ extracolormap_t *R_ColormapForName(char *name)
 // data and not the colormap data.
 //
 static double brightChange[256], map[256][3];
+static double deltas[256][3]; // for old fade colormaps
 
 static int RoundUp(double number);
 
@@ -722,22 +723,31 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 			if (map[i][2] > 255.0l)
 				map[i][2] = 255.0l;
 
-			// Get the "best" color.
-			// Our brightest color's value, if we're fading to a darker color,
-			// or our (inverted) darkest color's value, if we're fading to a brighter color.
-			if (cbrightness < cdestbright)
+			if (extra_colormap->flags & CMF_NEWFADE)
 			{
-				cbest = 255.0l - min(r, min(g, b));
-				cdist = 255.0l - max(cdestr, max(cdestg, cdestb));
+				// Get the "best" color.
+				// Our brightest color's value, if we're fading to a darker color,
+				// or our (inverted) darkest color's value, if we're fading to a brighter color.
+				if (cbrightness < cdestbright)
+				{
+					cbest = 255.0l - min(r, min(g, b));
+					cdist = 255.0l - max(cdestr, max(cdestg, cdestb));
+				}
+				else
+				{
+					cbest = max(r, max(g, b));
+					cdist = min(cdestr, min(cdestg, cdestb));
+				}
+
+				// Add/subtract this value during fading.
+				brightChange[i] = (fabs(cbest - cdist) / (double)fadedist) * fmaskamt;
 			}
 			else
 			{
-				cbest = max(r, max(g, b));
-				cdist = min(cdestr, min(cdestg, cdestb));
+				deltas[i][0] = (map[i][0] - cdestr) / (double)fadedist;
+				deltas[i][1] = (map[i][1] - cdestg) / (double)fadedist;
+				deltas[i][2] = (map[i][2] - cdestb) / (double)fadedist;
 			}
-
-			// Add/subtract this value during fading.
-			brightChange[i] = (fabs(cbest - cdist) / (double)fadedist) * fmaskamt;
 		}
 
 		// Now allocate memory for the actual colormap array itself!
@@ -759,27 +769,47 @@ lighttable_t *R_CreateLightTable(extracolormap_t *extra_colormap)
 				if ((UINT32)p < fadestart)
 					continue;
 
-				// Add/subtract towards the destination color.
-				if (fabs(map[i][0] - cdestr) <= brightChange[i])
-					map[i][0] = cdestr;
-				else if (map[i][0] > cdestr)
-					map[i][0] -= brightChange[i];
-				else
-					map[i][0] += brightChange[i];
+				if (extra_colormap->flags & CMF_NEWFADE)
+				{
+					// Add/subtract towards the destination color.
+					if (fabs(map[i][0] - cdestr) <= brightChange[i])
+						map[i][0] = cdestr;
+					else if (map[i][0] > cdestr)
+						map[i][0] -= brightChange[i];
+					else
+						map[i][0] += brightChange[i];
 
-				if (fabs(map[i][1] - cdestg) <= brightChange[i])
-					map[i][1] = cdestg;
-				else if (map[i][1] > cdestg)
-					map[i][1] -= brightChange[i];
-				else
-					map[i][1] += brightChange[i];
+					if (fabs(map[i][1] - cdestg) <= brightChange[i])
+						map[i][1] = cdestg;
+					else if (map[i][1] > cdestg)
+						map[i][1] -= brightChange[i];
+					else
+						map[i][1] += brightChange[i];
 
-				if (fabs(map[i][2] - cdestb) <= brightChange[i])
-					map[i][2] = cdestb;
-				else if (map[i][2] > cdestb)
-					map[i][2] -= brightChange[i];
+					if (fabs(map[i][2] - cdestb) <= brightChange[i])
+						map[i][2] = cdestb;
+					else if (map[i][2] > cdestb)
+						map[i][2] -= brightChange[i];
+					else
+						map[i][2] += brightChange[i];
+				}
 				else
-					map[i][2] += brightChange[i];
+				{
+					if (fabs(map[i][0] - cdestr) > fabs(deltas[i][0]))
+						map[i][0] -= deltas[i][0];
+					else
+						map[i][0] = cdestr;
+
+					if (fabs(map[i][1] - cdestg) > fabs(deltas[i][1]))
+						map[i][1] -= deltas[i][1];
+					else
+						map[i][1] = cdestg;
+
+					if (fabs(map[i][2] - cdestb) > fabs(deltas[i][1])) // typo alert!
+						map[i][2] -= deltas[i][2];
+					else
+						map[i][2] = cdestb;
+				}
 			}
 		}
 
@@ -861,7 +891,7 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 	{
 		if (p2[1])
 		{
-			flags = NUMFROMCHAR(p2[1]);
+			flags = HEX2INT(p2[1]);
 			if (p2[2] && p2[3])
 			{
 				fadestart = NUMFROMCHAR(p2[3]) + (NUMFROMCHAR(p2[2]) * 10);
@@ -920,6 +950,9 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 	}
 #undef ALPHA2INT
 #undef HEX2INT
+
+	if (!(flags & CMF_NEWFADE))
+		cfa = 25; // no fade alpha in kart!
 
 	if (encoremap)
 	{

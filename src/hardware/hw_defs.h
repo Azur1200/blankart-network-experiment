@@ -278,6 +278,7 @@ struct FLightInfo
 	FUINT			light_level;
 	FUINT			fade_start;
 	FUINT			fade_end;
+	boolean			newfade;
 	boolean			directional;
 };
 typedef struct FLightInfo FLightInfo;
