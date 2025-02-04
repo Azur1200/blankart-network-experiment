@@ -2066,12 +2066,12 @@ static int lib_pSetupLevelSky(lua_State *L)
 	NOHUD
 	INLEVEL
 
-	if (lua_isnumber(L, 1))
+	if (lua_isnumber(L, 1) && lua_compatmode)
 	{
 		skytexname = luaL_checkstring(L, 1);
 		skytexname = va("SKY%s",skytexname);
 	}
-	else if (lua_isnil(L, 1))
+	else if (lua_isnil(L, 1) && lua_compatmode)
 		skytexname = mapheaderinfo[gamemap-1]->skytexture;
 	else
 		skytexname = luaL_checkstring(L, 1);

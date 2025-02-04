@@ -249,7 +249,7 @@ static int io_open (lua_State *L) {
 	{
 		luaL_checktype(L, 3, LUA_TFUNCTION);
 	}
-	else
+	else if (lua_compatmode)
 	{
 		return io_openlocal(L);
 	}
