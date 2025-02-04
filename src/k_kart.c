@@ -6920,7 +6920,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 		}
 
-		if (gametype == GT_RACE && player->rings <= 0 && !ringsdisabled) // spawn ring debt indicator
+		/*if (gametype == GT_RACE && player->rings <= 0 && !ringsdisabled) // spawn ring debt indicator
 		{
 			mobj_t *debtflag = P_SpawnMobj(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy,
 				player->mo->z + P_GetMobjZMovement(player->mo) + player->mo->height + (24*player->mo->scale), MT_THOK);
@@ -6938,7 +6938,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			debtflag->fuse = 2;
 
 			debtflag->renderflags = K_GetPlayerDontDrawFlag(player);
-		}
+		}*/
 	}
 
 	if (player->itemtype == KITEM_NONE)
@@ -9674,7 +9674,18 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_SUPERRING:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
-								K_AwardPlayerRings(player, 15, true);
+								SINT8 awardamount = 15;
+
+								if (player->position == 1)
+								{
+									awardamount = 5;
+								}
+								else if(!K_IsPlayerLosing(player))
+								{
+									awardamount = 10;
+								}
+
+								K_AwardPlayerRings(player, awardamount, true);
 								player->itemamount--;
 							}
 							break;

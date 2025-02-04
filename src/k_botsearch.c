@@ -573,13 +573,13 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 					break;
 				}
 				// Ring Sting
-				else if (K_PlayerAttackSteer(thing, side, 20,
+				/*else if (K_PlayerAttackSteer(thing, side, 20,
 					thing->player->rings <= 0,
 					globalsmuggle.botmo->player->rings <= 0
 				))
 				{
 					break;
-				}
+				}*/
 				else
 				{
 					// After ALL of that, we can do standard bumping

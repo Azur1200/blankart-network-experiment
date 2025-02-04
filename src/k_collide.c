@@ -912,7 +912,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		}
 	}
 
-	if (!ringsdisabled) // Ring sting, this is a bit more unique
+	/*if (!ringsdisabled) // Ring sting, this is a bit more unique
 	{
 		t1Condition = (K_GetShieldFromItem(t2->player->itemtype) == KSHIELD_NONE);
 		t2Condition = (K_GetShieldFromItem(t1->player->itemtype) == KSHIELD_NONE);
@@ -940,7 +940,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		}
 
 		return (stungT1 || stungT2);
-	}
+	}*/
 	
 	return false;
 }
