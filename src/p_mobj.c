@@ -3633,7 +3633,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 			dummy.z = thiscam->z;
 			dummy.height = thiscam->height;
 
-			if ((player->pflags & PF_NOCONTEST) && (gametyperules & GTR_CIRCUIT))
+			if (player->pflags & PF_NOCONTEST)
 			{
 				player->karthud[khud_timeovercam] = (2*TICRATE)+1;
 			}
