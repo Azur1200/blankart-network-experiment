@@ -3645,7 +3645,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		// debug
 		mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
 		x->frame = FF_FULLBRIGHT | FF_ADD;
-		//x->renderflags = RF_ALWAYSONTOP;
+		x->renderflags = RF_ALWAYSONTOP;
 		x->color = SKINCOLOR_RED;
 
 		CONS_Printf(
