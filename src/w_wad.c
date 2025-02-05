@@ -289,7 +289,7 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 #endif
 }
 
-static inline boolean CheckCompatFilename(char *filename)
+static inline boolean CheckCompatFilename(const char *filename)
 {
 	// check for a K prefix
 	char *basename = strrchr(filename, *PATHSEP);
@@ -322,6 +322,7 @@ static inline boolean CheckCompatSkins(UINT16 wadnum)
 	// so we need compatmode to load skins from this file!
 	return (maxframe - 'A') >= 18;
 #else
+	(void)wadnum;
 	return false;
 #endif
 }
@@ -1063,7 +1064,7 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 	return W_CheckNameForNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum));
 }
 
-const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
+static const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 {
 	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
 		return NULL;
@@ -1071,7 +1072,7 @@ const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 	return wadfiles[wad]->lumpinfo[lump].fullname;
 }
 
-const char *W_CheckFullNameForNum(lumpnum_t lumpnum)
+static const char *W_CheckFullNameForNum(lumpnum_t lumpnum)
 {
 	return W_CheckFullNameForNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum));
 }
