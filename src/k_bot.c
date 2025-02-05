@@ -449,11 +449,11 @@ static line_t *K_FindBotController(mobj_t *mo)
 	Return:-
 		Distance to add, as an integer.
 --------------------------------------------------*/
-static UINT32 K_BotRubberbandDistance(player_t *player)
+static UINT32 K_BotRubberbandDistance(const player_t *player)
 {
 	const UINT32 spacing = FixedDiv(640 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed)) / FRACUNIT;
 	const UINT8 portpriority = player - players;
-	UINT8 pos = 0;
+	UINT8 pos = 1;
 	UINT8 i;
 
 	if (player->botvars.rival)
@@ -469,21 +469,28 @@ static UINT32 K_BotRubberbandDistance(player_t *player)
 			continue;
 		}
 
-		if (playeringame[i] && players[i].bot)
+		if (!playeringame[i] || players[i].spectator)
 		{
-			// First check difficulty levels, then score, then settle it with port priority!
-			if (player->botvars.difficulty < players[i].botvars.difficulty)
-			{
-				pos += 3;
-			}
-			else if (player->score < players[i].score)
-			{
-				pos += 2;
-			}
-			else if (i < portpriority)
-			{
-				pos += 1;
-			}
+			continue;
+		}
+
+		if (!players[i].bot)
+		{
+			continue;
+		}
+
+		// First check difficulty levels, then score, then settle it with port priority!
+		if (player->botvars.difficulty < players[i].botvars.difficulty)
+		{
+			pos += 3;
+		}
+		else if (player->score < players[i].score)
+		{
+			pos += 2;
+		}
+		else if (i < portpriority)
+		{
+			pos += 1;
 		}
 	}
 
