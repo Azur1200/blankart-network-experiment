@@ -988,13 +988,7 @@ void D_StartTitle(void)
 
 			if (server)
 			{
-				char mapname[6];
-
-				strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
-				strlwr(mapname);
-				mapname[5] = '\0';
-
-				COM_BufAddText(va("map %s\n", mapname));
+				COM_BufAddText(va("map %s\n", G_BuildMapName(spstage_start)));
 			}
 		}
 
@@ -1515,31 +1509,8 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	//
-	// search for maps
-	//
-	for (wadnum = 0; wadnum <= mainwads; wadnum++)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
-
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
-				{
-					mapheaderinfo[num - 1]->alreadyExists = true;
-				}
-			}
-		}
-	}
+	P_InitMapData();
+	basenummapheaders = nummapheaders;
 
 	CON_SetLoadingProgress(LOADED_IWAD);
 
@@ -1614,7 +1585,7 @@ void D_SRB2Main(void)
 					INT16 num;
 					if (name[5] != '\0')
 						continue;
-					num = (INT16)M_MapNumber(name[3], name[4]);
+					num = (INT16)G_MapNumber(name);
 
 					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
 					if (num <= NUMMAPS && mapheaderinfo[num - 1])

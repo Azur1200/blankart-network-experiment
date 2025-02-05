@@ -183,6 +183,8 @@ struct quake quake;
 
 // Map Header Information
 mapheader_t* mapheaderinfo[NUMMAPS] = {NULL};
+INT32 nummapheaders = 0;
+INT32 basenummapheaders = 0;
 
 // Kart cup definitions
 cupheader_t *kartcupheaders = NULL;
@@ -685,18 +687,13 @@ void G_SetGameModified(boolean silent, boolean major)
 }
 
 /** Builds an original game map name from a map number.
-  * The complexity is due to MAPA0-MAPZZ.
   *
   * \param map Map number.
   * \return Pointer to a static buffer containing the desired map name.
-  * \sa M_MapNumber
+  * \sa G_MapNumber
   */
 const char *G_BuildMapName(INT32 map)
 {
-	static char mapname[10] = "MAPXX"; // internal map name (wad resource name)
-
-	I_Assert(map >= 0);
-	I_Assert(map <= NUMMAPS);
 
 	if (map == 0) // hack???
 	{
@@ -709,19 +706,35 @@ const char *G_BuildMapName(INT32 map)
 		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, 0, 0, false, NULL)+1;
 	}
 
-	if (map < 100)
-		sprintf(&mapname[3], "%.2d", map);
+	if (map > 0 && map <= NUMMAPS && mapheaderinfo[map - 1] != NULL)
+	{
+		return mapheaderinfo[map - 1]->lumpname;
+	}
 	else
 	{
-		mapname[3] = (char)('A' + (char)((map - 100) / 36));
-		if ((map - 100) % 36 < 10)
-			mapname[4] = (char)('0' + (char)((map - 100) % 36));
-		else
-			mapname[4] = (char)('A' + (char)((map - 100) % 36) - 10);
-		mapname[5] = '\0';
+		return NULL;
+	}
+}
+
+/** Returns the map number for map lump name.
+  *
+  * \param name Map name;
+  * \return Map number.
+  * \sa G_BuildMapName
+  */
+INT32 G_MapNumber(const char * name)
+{
+	INT32 map;
+
+	for (map = 0; map < nummapheaders; ++map)
+	{
+		if (strcasecmp(mapheaderinfo[map]->lumpname, name) == 0)
+		{
+			break;
+		}
 	}
 
-	return mapname;
+	return map + 1;
 }
 
 /** Clips the console player's mouse aiming to the current view.
@@ -4629,7 +4642,7 @@ cleanup:
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayers[], playeringame[] should be set.
 //
-void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
+void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar, UINT8 ssplayers, boolean FLS)
 {
 	INT32 i;
 	UINT16 color = SKINCOLOR_NONE;
@@ -4661,18 +4674,17 @@ void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar
 		CV_StealthSetValue(&cv_playercolor[0], color);
 	}
 
-	if (mapname)
-	{
-		D_MapChange(M_MapNumber(mapname[3], mapname[4]), gametype, pencoremode, true, 1, false, FLS);
-	}
+	D_MapChange(map, gametype, pencoremode, true, 1, false, FLS);
 }
 
 //
 // This is the map command interpretation something like Command_Map_f
 //
 // called at: map cmd execution, doloadgame, doplaydemo
-void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, boolean skipprecutscene, boolean FLS)
+void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skipprecutscene, boolean FLS)
 {
+	const char * mapname = G_BuildMapName(map);
+
 	INT32 i;
 
 	(void)FLS;
@@ -4723,14 +4735,14 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	// internal game map
 	// well this check is useless because it is done before (d_netcmd.c::command_map_f)
 	// but in case of for demos....
-	if (W_CheckNumForName(mapname) == LUMPERROR)
+	if (W_CheckNumForName(mapheaderinfo[gamemap-1]->lumpname) == LUMPERROR)
 	{
 		I_Error("Internal game map '%s' not found\n", mapname);
 		Command_ExitGame_f();
 		return;
 	}
 
-	gamemap = (INT16)M_MapNumber(mapname[3], mapname[4]); // get xx out of MAPxx
+	gamemap = map;
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
@@ -4758,7 +4770,7 @@ void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer, bool
 	{
 		char *title = G_BuildMapTitle(gamemap);
 
-		CON_LogMessage(va(M_GetText("Map is now \"%s"), G_BuildMapName(gamemap)));
+		CON_LogMessage(va(M_GetText("Map is now \"%s"), mapname));
 		if (title)
 		{
 			CON_LogMessage(va(": %s", title));
@@ -4873,21 +4885,17 @@ INT32 G_FindMap(const char *mapname, char **foundmapnamep,
 
 	mapnamelen = strlen(mapname);
 
-	/* Count available maps; how ugly. */
-	for (i = 0, freqc = 0; i < NUMMAPS; ++i)
-	{
-		if (mapheaderinfo[i])
-			freqc++;
-	}
-
-	freq = ZZ_Calloc(freqc * sizeof (mapsearchfreq_t));
+	freq = ZZ_Calloc(nummapheaders * sizeof (mapsearchfreq_t));
 
 	wanttable = !!( freqp );
 
 	freqc = 0;
-	for (i = 0, mapnum = 1; i < NUMMAPS; ++i, ++mapnum)
-		if (mapheaderinfo[i])
+
+	for (i = 0, mapnum = 1; i < nummapheaders; ++i, ++mapnum)
 	{
+		if (!mapheaderinfo[i] || mapheaderinfo[i]->lumpnum == LUMPERROR)
+			continue;
+
 		if (!( realmapname = G_BuildMapTitle(mapnum) ))
 			continue;
 
@@ -4996,8 +5004,6 @@ void G_FreeMapSearch(mapsearchfreq_t *freq, INT32 freqc)
 
 INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 {
-	boolean usemapcode = false;
-
 	INT32 newmapnum;
 
 	size_t mapnamelen;
@@ -5006,45 +5012,44 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 
 	mapnamelen = strlen(mapname);
 
-	if (mapnamelen == 2)/* maybe two digit code */
+	if (mapnamelen == 1)
 	{
-		if (( newmapnum = M_MapNumber(mapname[0], mapname[1]) ))
-			usemapcode = true;
-	}
-	else if (mapnamelen == 5 && strnicmp(mapname, "MAP", 3) == 0)
-	{
-		if (( newmapnum = M_MapNumber(mapname[3], mapname[4]) ))
-			usemapcode = true;
-	}
-
-	if (!usemapcode)
-	{
-		/* Now detect map number in base 10, which no one asked for. */
-		newmapnum = strtol(mapname, &p, 10);
-		if (*p == '\0')/* we got it */
+		if (mapname[0] == '*') // current map
+			return gamemap;
+		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
 		{
+			newmapnum = mapheaderinfo[gamemap-1]->nextlevel;
 			if (newmapnum < 1 || newmapnum > NUMMAPS)
 			{
-				CONS_Alert(CONS_ERROR, M_GetText("Invalid map number %d.\n"), newmapnum);
+				CONS_Alert(CONS_ERROR, M_GetText("NextLevel (%d) is not a valid map.\n"), newmapnum);
 				return 0;
 			}
-			usemapcode = true;
-		}
-		else
-		{
-			newmapnum = G_FindMap(mapname, realmapnamep, NULL, NULL);
+			else
+				return newmapnum;
 		}
 	}
 
-	if (usemapcode)
+	/* Now detect map number in base 10, which no one asked for. */
+	newmapnum = strtol(mapname, &p, 10);
+
+	if (*p == '\0')/* we got it */
 	{
-		/* we can't check mapheaderinfo for this hahahaha */
-		if (W_CheckNumForName(G_BuildMapName(newmapnum)) == LUMPERROR)
+		if (newmapnum < 1 || newmapnum > nummapheaders)
 			return 0;
 
-		if (realmapnamep)
-			(*realmapnamep) = G_BuildMapTitle(newmapnum);
+		if (!mapheaderinfo[newmapnum-1] || mapheaderinfo[newmapnum-1]->lumpnum == LUMPERROR)
+			return 0;
 	}
+	else
+	{
+		newmapnum = G_MapNumber(mapname);
+
+		if (newmapnum > nummapheaders)
+			return G_FindMap(mapname, realmapnamep, NULL, NULL);
+	}
+
+	if (realmapnamep)
+		(*realmapnamep) = G_BuildMapTitle(newmapnum);
 
 	return newmapnum;
 }

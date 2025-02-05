@@ -114,6 +114,10 @@ void HWR_LoadLevel(void);
 #endif
 boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat);
 
+#define MAPRET_ADDED (1)
+#define MAPRET_CURRENTREPLACED (1<<1)
+UINT8 P_InitMapData(void);
+
 // WARNING: The following functions should be grouped as follows:
 // any amount of PartialAdds followed by MultiSetups until returned true,
 // as soon as possible.

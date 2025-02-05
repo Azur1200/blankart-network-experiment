@@ -93,8 +93,8 @@ void weaponPrefChange4(void);
 #define MAXPLMOVE (50)
 #define SLOWTURNTICS (cv_turnsmooth.value * 3)
 
-// build an internal map name MAPxx from map number
 const char *G_BuildMapName(INT32 map);
+INT32 G_MapNumber(const char *mapname);
 
 void G_ResetAnglePrediction(player_t *player);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
@@ -136,7 +136,7 @@ extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but sig
 void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo);
 void G_DoReborn(INT32 playernum);
 void G_PlayerReborn(INT32 player, boolean betweenmaps);
-void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer,
+void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer,
 	boolean skipprecutscene, boolean FLS);
 char *G_BuildMapTitle(INT32 mapnum);
 
@@ -173,7 +173,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1, but a warp test can start elsewhere
-void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar,
+void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
 

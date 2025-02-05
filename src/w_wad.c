@@ -67,8 +67,7 @@
 #ifdef SCANTHINGS
 #include "p_setup.h" // P_ScanThings
 #endif
-#include "m_misc.h" // M_MapNumber
-#include "g_game.h" // G_SetGameModified
+#include "g_game.h" // G_MapNumber
 
 #include "k_terrain.h"
 
@@ -281,11 +280,8 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
 		{
 			const char *name = lump_p->name;
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P' && name[5]=='\0')
-			{
-				INT16 mapnum = (INT16)M_MapNumber(name[3], name[4]);
-				P_ScanThings(mapnum, wadnum, lump + ML_THINGS);
-			}
+			INT16 mapnum = (INT16)G_MapNumber(name);
+			P_ScanThings(mapnum, wadnum, lump + ML_THINGS);
 		}
 	}
 #endif

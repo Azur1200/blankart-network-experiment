@@ -469,8 +469,10 @@ void P_AllocMapHeader(INT16 i)
 	if (!mapheaderinfo[i])
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
+		mapheaderinfo[i]->lumpname = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->grades = NULL;
+		nummapheaders++;
 	}
 	P_ClearSingleMapHeaderInfo(i + 1);
 }
@@ -8713,6 +8715,51 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 	return lumpinfo;
 }
 
+// Initialising map data...
+UINT8 P_InitMapData(void)
+{
+	UINT8 ret = 0;
+	INT32 i;
+	lumpnum_t maplump;
+	char *name;
+
+	for (i = 0; i < nummapheaders; ++i)
+	{
+		name = mapheaderinfo[i]->lumpname;
+		maplump = W_CheckNumForMap(name);
+
+		// Doesn't exist?
+		if (maplump == INT16_MAX)
+			continue;
+
+		// No change?
+		if (mapheaderinfo[i]->lumpnum == maplump)
+			continue;
+
+		// Okay, it does...
+		{
+			ret |= MAPRET_ADDED;
+
+			if (basenummapheaders)
+			{
+				CONS_Printf("%s\n", name);
+
+				if (mapheaderinfo[i]->lumpnum != LUMPERROR)
+				{
+					G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
+
+					//If you replaced the map you're on, end the level when done.
+					if (i == gamemap - 1)
+						ret |= MAPRET_CURRENTREPLACED;
+				}
+			}
+			mapheaderinfo[i]->lumpnum = maplump;
+		}
+	}
+
+	return ret;
+}
+
 //
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
@@ -8738,7 +8785,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	UINT16 numlumps, wadnum;
 	char *name;
 	lumpinfo_t *lumpinfo;
-	boolean mapsadded = false;
 
 	// Vars to help us with the position start and amount of each resource type.
 	// Useful for PK3s since they use folders.
@@ -8894,41 +8940,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
 	
-	//
-	// search for maps
-	//
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < numlumps; i++, lumpinfo++)
-	{
-		name = lumpinfo->name;
-		if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-		{
-			INT16 num;
-			if (name[5]!='\0')
-				continue;
-			num = (INT16)M_MapNumber(name[3], name[4]);
-
-			// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-			if (num <= NUMMAPS && mapheaderinfo[num-1])
-			{
-				if (mapheaderinfo[num - 1]->alreadyExists != false)
-				{
-					G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-				}
-				mapheaderinfo[num - 1]->alreadyExists = true;
-			}
-
-			if (num == gamemap)
-				partadd_replacescurrentmap = true;
-
-			CONS_Printf("%s\n", name);
-			mapsadded = true;
-		}
-	}
-	
-	if (!mapsadded)
-		CONS_Printf(M_GetText("No maps added\n"));
-	
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;
 	return wadnum;
@@ -8992,9 +9003,16 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 2)
 	{
-		if (partadd_replacescurrentmap && gamestate == GS_LEVEL && (netgame || multiplayer))
+		UINT8 mapsadded = P_InitMapData();
+
+		if (!mapsadded)
+			CONS_Printf(M_GetText("No maps added\n"));
+
+		if ((mapsadded & MAPRET_CURRENTREPLACED)
+			&& (gamestate == GS_LEVEL)
+			&& (netgame || multiplayer))
 		{
-			CONS_Printf(M_GetText("Current map %d replaced, ending the level to ensure consistency.\n"), gamemap);
+			CONS_Printf(M_GetText("Current map %s replaced by added file, ending the level to ensure consistency.\n"), mapheaderinfo[gamemap-1]->lumpname);
 			if (server)
 				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
 		}

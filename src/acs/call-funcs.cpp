@@ -3075,13 +3075,10 @@ bool CallFunc_MapWarp(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Wor
 	{
 		CONS_Alert(CONS_WARNING, "MapWarp level name was not provided.\n");
 	}
-	
-	if (levelName[0] == 'M' && levelName[1] == 'A' && levelName[2] == 'P' && levelName[5]=='\0')
-	{
-		levelName = va("MAP%d",M_MapNumber(levelName[3], levelName[4]));
-	}
 
-	if (nextmap >= NUMMAPS)
+	nextmap = G_MapNumber(levelName);
+
+	if (nextmap == NUMMAPS)
 	{
 		CONS_Alert(CONS_WARNING, "MapWarp level %s is not valid or loaded.\n", levelName);
 		return false;

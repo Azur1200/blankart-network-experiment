@@ -1058,7 +1058,7 @@ static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
 	}
 }
 
-void readlevelheader(MYFILE *f, INT32 num)
+void readlevelheader(MYFILE *f, char * name)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word;
@@ -1066,9 +1066,23 @@ void readlevelheader(MYFILE *f, INT32 num)
 	//char *word3; // Non-uppercase version of word2
 	char *tmp;
 	INT32 i;
+	const INT32 num = G_MapNumber(name);
+
+	if (num > NUMMAPS)
+	{
+		I_Error("Too many maps!");
+	}
+
+	if (mapheaderinfo[num-1])
+		G_SetGameModified(multiplayer, true); // only mark as a major mod if it replaces an already-existing mapheaderinfo
 
 	// Reset all previous map header information
 	P_AllocMapHeader((INT16)(num-1));
+
+	if (mapheaderinfo[num-1]->lumpname == NULL)
+	{
+		mapheaderinfo[num-1]->lumpname = Z_StrDup(name);
+	}
 
 	do
 	{
@@ -1267,12 +1281,8 @@ void readlevelheader(MYFILE *f, INT32 num)
 				else if (fastcmp(word2, "CREDITS"))    i = 1102;
 				else if (fastcmp(word2, "ENDING"))     i = 1103;
 				else
-				// Support using the actual map name,
-				// i.e., Nextlevel = AB, Nextlevel = FZ, etc.
 
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z' && word2[2] == '\0')
-					i = M_MapNumber(word2[0], word2[1]);
+				i = G_MapNumber(word2);
 
 				mapheaderinfo[num-1]->nextlevel = (INT16)i;
 			}
@@ -1283,12 +1293,8 @@ void readlevelheader(MYFILE *f, INT32 num)
 				else if (fastcmp(word2, "CREDITS"))    i = 1102;
 				else if (fastcmp(word2, "ENDING"))     i = 1103;
 				else
-				// Support using the actual map name,
-				// i.e., MarathonNext = AB, MarathonNext = FZ, etc.
 
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z' && word2[2] == '\0')
-					i = M_MapNumber(word2[0], word2[1]);
+				i = G_MapNumber(word2);
 
 				mapheaderinfo[num-1]->marathonnext = (INT16)i;
 			}
@@ -2557,14 +2563,7 @@ void reademblemdata(MYFILE *f, INT32 num)
 				emblemlocations[num-1].tag = (INT16)value;
 			else if (fastcmp(word, "MAPNUM"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-
-				emblemlocations[num-1].level = (INT16)value;
+				emblemlocations[num-1].level = (INT16)G_MapNumber(word2);
 			}
 			else if (fastcmp(word, "SPRITE"))
 			{
@@ -2785,14 +2784,7 @@ void readunlockable(MYFILE *f, INT32 num)
 				}
 				else if (fastcmp(word, "VAR"))
 				{
-					// Support using the actual map name,
-					// i.e., Level AB, Level FZ, etc.
-
-					// Convert to map number
-					if (word2[0] >= 'A' && word2[0] <= 'Z')
-						i = M_MapNumber(word2[0], word2[1]);
-
-					unlockables[num].variable = (INT16)i;
+					unlockables[num].variable = (INT16)G_MapNumber(word2);
 				}
 				else
 					deh_warning("Unlockable %d: unknown word '%s'", num+1, word);
@@ -2872,10 +2864,7 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 		ty = UC_MAPVISITED + offset;
 
 		// Convert to map number if it appears to be one
-		if (params[1][0] >= 'A' && params[1][0] <= 'Z')
-			re = M_MapNumber(params[1][0], params[1][1]);
-		else
-			re = atoi(params[1]);
+		re = G_MapNumber(params[1]);
 
 		if (re < 0 || re >= NUMMAPS)
 		{
@@ -2890,10 +2879,7 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 		re = atoi(params[2]);
 
 		// Convert to map number if it appears to be one
-		if (params[1][0] >= 'A' && params[1][0] <= 'Z')
-			x1 = (INT16)M_MapNumber(params[1][0], params[1][1]);
-		else
-			x1 = (INT16)atoi(params[1]);
+		x1 = (INT16)G_MapNumber(params[1]);
 
 		if (x1 < 0 || x1 >= NUMMAPS)
 		{
@@ -3096,56 +3082,20 @@ void readmaincfg(MYFILE *f)
 
 			else if (fastcmp(word, "SPSTAGE_START"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				spstage_start = spmarathon_start = (INT16)value;
+				spstage_start = (INT16)G_MapNumber(word2);
 			}
 			else if (fastcmp(word, "SPMARATHON_START"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				spmarathon_start = (INT16)value;
+				spmarathon_start = (INT16)G_MapNumber(word2);
 			}
 			else if (fastcmp(word, "SSTAGE_START"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				sstage_start = (INT16)value;
+				sstage_start = (INT16)G_MapNumber(word2);
 				sstage_end = (INT16)(sstage_start+7); // 7 special stages total plus one weirdo
 			}
 			else if (fastcmp(word, "SMPSTAGE_START"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				smpstage_start = (INT16)value;
+				smpstage_start = (INT16)G_MapNumber(word2);
 				smpstage_end = (INT16)(smpstage_start+6); // 7 special stages total
 			}
 			else if (fastcmp(word, "REDTEAM"))
@@ -3230,16 +3180,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "TITLEMAP"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				titlemap = (INT16)value;
+				titlemap = (INT16)G_MapNumber(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "HIDETITLEPICS") || fastcmp(word, "TITLEPICSHIDE"))
@@ -3365,30 +3306,12 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "BOOTMAP"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				bootmap = (INT16)value;
+				bootmap = (INT16)G_MapNumber(word2);
 				//titlechanged = true;
 			}
 			else if (fastcmp(word, "TUTORIALMAP"))
 			{
-				// Support using the actual map name,
-				// i.e., Level AB, Level FZ, etc.
-
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z')
-					value = M_MapNumber(word2[0], word2[1]);
-				else
-					value = get_number(word2);
-
-				tutorialmap = (INT16)value;
+				tutorialmap = (INT16)G_MapNumber(word2);
 			}
 			else
 				deh_warning("Maincfg: unknown word '%s'", word);
@@ -3613,9 +3536,6 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 				do {
 					INT32 map = atoi(tmp);
 
-					if (tmp[0] >= 'A' && tmp[0] <= 'Z' && tmp[2] == '\0')
-						map = M_MapNumber(tmp[0], tmp[1]);
-
 					if (!map)
 						break;
 
@@ -3631,16 +3551,12 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			}
 			else if (fastcmp(word, "BONUSGAME"))
 			{
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z' && word2[2] == '\0')
-					i = M_MapNumber(word2[0], word2[1]);
+				i = (INT16)G_MapNumber(word2);
 				cup->bonusgame = (INT16)i - 1;
 			}
 			else if (fastcmp(word, "SPECIALSTAGE"))
 			{
-				// Convert to map number
-				if (word2[0] >= 'A' && word2[0] <= 'Z' && word2[2] == '\0')
-					i = M_MapNumber(word2[0], word2[1]);
+				i = (INT16)G_MapNumber(word2);
 				cup->specialstage = (INT16)i - 1;
 			}
 			else if (fastcmp(word, "EMERALDNUM"))

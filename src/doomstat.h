@@ -348,7 +348,8 @@ struct mapheader_lighting_t
   */
 struct mapheader_t
 {
-	// The original eight, plus one.
+	char * lumpname;       ///< Lump name can be really long
+	lumpnum_t lumpnum;	  ///< Lump number for the map
 	char lvlttl[22];       ///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
 	char subttl[33];       ///< Subtitle for level
 	char zonttl[22];       ///< "ZONE" replacement name
@@ -449,6 +450,9 @@ struct mapheader_t
 #define LF2_VISITNEEDED   (1<<3) ///< Not available in Time Attack modes until you visit the level
 
 extern mapheader_t* mapheaderinfo[NUMMAPS];
+extern INT32 nummapheaders,basenummapheaders;
+
+#define MAXMAPLUMPNAME 64 // includes \0, for cleaner savedata
 
 // This could support more, but is that a good idea?
 // Keep in mind that it may encourage people making overly long cups just because they "can", and would be a waste of memory.

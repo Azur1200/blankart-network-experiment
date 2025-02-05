@@ -6252,12 +6252,11 @@ static boolean M_ExitPandorasBox(void)
 
 static void M_ChangeLevel(INT32 choice)
 {
-	char mapname[6];
+	char mapname[MAXMAPLUMPNAME-1];
 	(void)choice;
 
 	strlcpy(mapname, G_BuildMapName(cv_nextmap.value), sizeof (mapname));
 	strlwr(mapname);
-	mapname[5] = '\0';
 
 	M_ClearMenus(true);
 	COM_BufAddText(va("map %s -gametype \"%s\"\n", mapname, cv_newgametype.string));
@@ -7837,7 +7836,7 @@ static void M_StartGrandPrix(INT32 choice)
 
 	G_DeferedInitNew(
 		false,
-		G_BuildMapName(grandprixinfo.cup->levellist[0] + 1),
+		grandprixinfo.cup->levellist[0] + 1,
 		(UINT8)(cv_chooseskin.value - 1),
 		(UINT8)(cv_splitplayers.value - 1),
 		false
@@ -8134,7 +8133,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(nameofdemo);
 
-	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
+	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value-1), 0, false);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
