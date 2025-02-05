@@ -23,27 +23,6 @@ extern "C" {
 // Customisable sounds for Skins
 typedef enum
 {
-	SKSSPIN,
-	SKSPUTPUT,
-	SKSPUDPUD,
-	SKSPLPAN1, // Ouchies
-	SKSPLPAN2,
-	SKSPLPAN3,
-	SKSPLPAN4,
-	SKSPLDET1, // Deaths
-	SKSPLDET2,
-	SKSPLDET3,
-	SKSPLDET4,
-	SKSPLVCT1, // Victories
-	SKSPLVCT2,
-	SKSPLVCT3,
-	SKSPLVCT4,
-	SKSTHOK,
-	SKSSPNDSH,
-	SKSZOOM,
-	SKSSKID,
-	SKSGASP,
-	SKSJUMP,
 	// SRB2kart
 	SKSKWIN, // Win quote
 	SKSKLOSE, // Lose quote
@@ -60,7 +39,7 @@ typedef enum
 } skinsound_t;
 
 // free sfx for S_AddSoundFx()
-#define NUMSFXFREESLOTS 1600 // Matches SOC Editor.
+#define NUMSFXFREESLOTS 2500 // Matches SOC Editor.
 #define NUMSKINSFXSLOTS (MAXSKINS*NUMSKINSOUNDS)
 
 //
