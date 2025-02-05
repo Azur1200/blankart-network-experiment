@@ -469,6 +469,7 @@ void P_AllocMapHeader(INT16 i)
 	if (!mapheaderinfo[i])
 	{
 		mapheaderinfo[i] = Z_Malloc(sizeof(mapheader_t), PU_STATIC, NULL);
+		mapheaderinfo[i]->lumpnum = LUMPERROR;
 		mapheaderinfo[i]->lumpname = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->grades = NULL;
