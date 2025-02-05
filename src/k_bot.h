@@ -272,6 +272,23 @@ void K_UpdateBotGameplayVars(player_t *player);
 
 void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt);
 
+/*--------------------------------------------------
+	void K_UpdateBotGameplayVarsItemUsage(player_t *player)
+
+		Updates gamestate affecting botvars, relating to
+		item usage. This must be called for both client
+		and server.
+
+	Input Arguments:-
+		player - Player to whom to update the botvars.
+
+	Return:-
+		N/A
+--------------------------------------------------*/
+
+void K_UpdateBotGameplayVarsItemUsage(player_t *player);
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

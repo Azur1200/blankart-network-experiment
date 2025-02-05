@@ -1051,8 +1051,6 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		player->botvars.controller = botController - lines;
 	}
 
-	player->botvars.rubberband = K_UpdateRubberband(player);
-
 	if (botController != NULL && (botController->args[1] & TMBOT_NOCONTROL))
 	{
 		// Disable bot controls entirely.
@@ -1123,7 +1121,7 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 			// Count up
 			if (player->botvars.turnconfirm < BOTTURNCONFIRM)
 			{
-				player->botvars.turnconfirm++;
+				cmd->bot.turnconfirm++;
 			}
 		}
 		else if (turnamt < 0)
@@ -1131,7 +1129,7 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 			// Count down
 			if (player->botvars.turnconfirm > -BOTTURNCONFIRM)
 			{
-				player->botvars.turnconfirm--;
+				cmd->bot.turnconfirm--;
 			}
 		}
 		else
@@ -1139,11 +1137,11 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 			// Back to neutral
 			if (player->botvars.turnconfirm < 0)
 			{
-				player->botvars.turnconfirm++;
+				cmd->bot.turnconfirm++;
 			}
 			else if (player->botvars.turnconfirm > 0)
 			{
-				player->botvars.turnconfirm--;
+				cmd->bot.turnconfirm--;
 			}
 		}
 
@@ -1186,8 +1184,11 @@ void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd)
 	// Complete override of all ticcmd functionality
 	if (LUA_HookTiccmd(player, cmd, HOOK(BotTiccmd)) == true)
 	{
+		cmd->flags |= TICCMD_BOT;
 		return;
 	}
+
+	cmd->flags |= TICCMD_BOT;
 
 	switch (player->botvars.style)
 	{
@@ -1223,4 +1224,7 @@ void K_UpdateBotGameplayVars(player_t *player)
 
 	player->botvars.controller = botController ? (botController - lines) : UINT16_MAX;
 	player->botvars.rubberband = K_UpdateRubberband(player);
+
+	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
+	K_UpdateBotGameplayVarsItemUsage(player);
 }

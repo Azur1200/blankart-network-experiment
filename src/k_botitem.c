@@ -328,7 +328,7 @@ static boolean K_RivalBotAggression(player_t *bot, player_t *target)
 	Return:-
 		None
 --------------------------------------------------*/
-static void K_ItemConfirmForTarget(player_t *bot, player_t *target, UINT16 amount)
+static void K_ItemConfirmForTarget(player_t *bot, ticcmd_t *cmd, player_t *target, UINT16 amount)
 {
 	if (bot == NULL || target == NULL)
 	{
@@ -338,12 +338,12 @@ static void K_ItemConfirmForTarget(player_t *bot, player_t *target, UINT16 amoun
 	if (K_RivalBotAggression(bot, target) == true)
 	{
 		// Double the rate when you're aggressive.
-		bot->botvars.itemconfirm += amount << 1;
+		cmd->bot.itemconfirm += amount << 1;
 	}
 	else
 	{
 		// Do as normal.
-		bot->botvars.itemconfirm += amount;
+		cmd->bot.itemconfirm += amount;
 	}
 }
 
@@ -369,7 +369,7 @@ static boolean K_BotGenericPressItem(player_t *player, ticcmd_t *cmd, SINT8 dir)
 
 	cmd->throwdir = KART_FULLTURN * dir;
 	cmd->buttons |= BT_ATTACK;
-	player->botvars.itemconfirm = 0;
+	//player->botvars.itemconfirm = 0;
 	return true;
 }
 
@@ -390,7 +390,7 @@ static void K_BotItemGenericTap(player_t *player, ticcmd_t *cmd)
 	if (K_ItemButtonWasDown(player) == false)
 	{
 		cmd->buttons |= BT_ATTACK;
-		player->botvars.itemconfirm = 0;
+		//player->botvars.itemconfirm = 0;
 	}
 }
 
@@ -462,6 +462,8 @@ static void K_BotItemGenericTrapShield(player_t *player, ticcmd_t *cmd, INT16 tu
 		return;
 	}
 
+	cmd->bot.itemconfirm++;
+
 	if (K_BotRevealsGenericTrap(player, turnamt, mine) || (player->botvars.itemconfirm++ > 5*TICRATE))
 	{
 		K_BotGenericPressItem(player, cmd, 0);
@@ -519,12 +521,12 @@ static void K_BotItemSneaker(player_t *player, ticcmd_t *cmd)
 		if (player->sneakertimer == 0 && K_ItemButtonWasDown(player) == false)
 		{
 			cmd->buttons |= BT_ATTACK;
-			player->botvars.itemconfirm = 2*TICRATE;
+			//player->botvars.itemconfirm = 2*TICRATE;
 		}
 	}
 	else
 	{
-		player->botvars.itemconfirm++;
+		cmd->bot.itemconfirm++;
 	}
 }
 
@@ -553,12 +555,12 @@ static void K_BotItemRocketSneaker(player_t *player, ticcmd_t *cmd)
 		if (player->sneakertimer == 0 && K_ItemButtonWasDown(player) == false)
 		{
 			cmd->buttons |= BT_ATTACK;
-			player->botvars.itemconfirm = 0;
+			//player->botvars.itemconfirm = 0;
 		}
 	}
 	else
 	{
-		player->botvars.itemconfirm++;
+		cmd->bot.itemconfirm++;
 	}
 }
 
@@ -582,19 +584,19 @@ static void K_BotItemBanana(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 	boolean tryLookback = false;
 	player_t *target = NULL;
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	target = K_PlayerInCone(player, coneDist, 15, true);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 		throwdir = -1;
 		tryLookback = true;
 	}
 
 	if (abs(turnamt) >= KART_FULLTURN/2)
 	{
-		player->botvars.itemconfirm += player->botvars.difficulty / 2;
+		cmd->bot.itemconfirm += player->botvars.difficulty / 2;
 		throwdir = -1;
 	}
 	else
@@ -603,7 +605,7 @@ static void K_BotItemBanana(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 
 		if (target != NULL)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty * 2);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * 2);
 			throwdir = 1;
 		}
 	}
@@ -639,18 +641,18 @@ static void K_BotItemMine(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 	boolean tryLookback = false;
 	player_t *target = NULL;
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	target = K_PlayerInCone(player, coneDist, 15, true);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 		throwdir = -1;
 	}
 
 	if (abs(turnamt) >= KART_FULLTURN/2)
 	{
-		player->botvars.itemconfirm += player->botvars.difficulty / 2;
+		cmd->bot.itemconfirm += player->botvars.difficulty / 2;
 		throwdir = -1;
 		tryLookback = true;
 	}
@@ -659,14 +661,14 @@ static void K_BotItemMine(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 		target = K_PlayerPredictThrow(player, 0);
 		if (target != NULL)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty * 2);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * 2);
 			throwdir = 0;
 		}
 
 		target = K_PlayerPredictThrow(player, 1);
 		if (target != NULL)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty * 2);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * 2);
 			throwdir = 1;
 		}
 	}
@@ -700,17 +702,18 @@ static void K_BotItemLandmine(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 	const fixed_t coneDist = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
 	player_t *target = NULL;
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	if (abs(turnamt) >= KART_FULLTURN/2)
 	{
-		player->botvars.itemconfirm += player->botvars.difficulty / 2;
+		cmd->bot.itemconfirm += player->botvars.difficulty / 2;
 	}
 
 	target = K_PlayerInCone(player, coneDist, 15, true);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
+
 		cmd->buttons |= BT_LOOKBACK;
 	}
 
@@ -740,19 +743,19 @@ static void K_BotItemEggman(player_t *player, ticcmd_t *cmd)
 	boolean tryLookback = false;
 	player_t *target = NULL;
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	target = K_PlayerPredictThrow(player, 0);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty / 2);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty / 2);
 		throwdir = 1;
 	}
 
 	target = K_PlayerInCone(player, coneDist, 15, true);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 		throwdir = -1;
 		tryLookback = true;
 	}
@@ -833,6 +836,8 @@ static void K_BotItemEggmanShield(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
+	cmd->bot.itemconfirm++;
+
 	if (K_BotRevealsEggbox(player) == true || (player->botvars.itemconfirm++ > 20*TICRATE))
 	{
 		K_BotGenericPressItem(player, cmd, 0);
@@ -890,12 +895,12 @@ static void K_BotItemOrbinaut(player_t *player, ticcmd_t *cmd)
 		snipeMul = 3; // Confirm faster when you'll throw it with a bunch of extra speed!!
 	}
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	target = K_PlayerInCone(player, radius, 15, false);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty * snipeMul);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * snipeMul);
 		throwdir = 1;
 	}
 	else
@@ -904,7 +909,7 @@ static void K_BotItemOrbinaut(player_t *player, ticcmd_t *cmd)
 
 		if (target != NULL)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 			throwdir = -1;
 			tryLookback = true;
 		}
@@ -948,18 +953,18 @@ static void K_BotItemDropTarget(player_t *player, INT16 turnamt, ticcmd_t *cmd)
 		snipeMul = 3; // Confirm faster when you'll throw it with a bunch of extra speed!!
 	}
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	if (abs(turnamt) >= KART_FULLTURN/2)
 	{
-		player->botvars.itemconfirm += player->botvars.difficulty / 2;
+		cmd->bot.itemconfirm += player->botvars.difficulty / 2;
 		throwdir = -1;
 	}
 
 	target = K_PlayerInCone(player, radius, 15, false);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty * snipeMul);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * snipeMul);
 		throwdir = 1;
 	}
 	else
@@ -968,7 +973,7 @@ static void K_BotItemDropTarget(player_t *player, INT16 turnamt, ticcmd_t *cmd)
 
 		if (target != NULL)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 			throwdir = -1;
 			tryLookback = true;
 		}
@@ -1013,12 +1018,12 @@ static void K_BotItemJawz(player_t *player, ticcmd_t *cmd)
 		snipeMul = 3; // Confirm faster when you'll throw it with a bunch of extra speed!!
 	}
 
-	player->botvars.itemconfirm++;
+	cmd->bot.itemconfirm++;
 
 	target = K_PlayerInCone(player, radius, 15, true);
 	if (target != NULL)
 	{
-		K_ItemConfirmForTarget(player, target, player->botvars.difficulty);
+		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
 		throwdir = -1;
 		tryLookback = true;
 	}
@@ -1049,7 +1054,7 @@ static void K_BotItemJawz(player_t *player, ticcmd_t *cmd)
 
 		if (targettedAlready == false)
 		{
-			K_ItemConfirmForTarget(player, target, player->botvars.difficulty * snipeMul);
+			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * snipeMul);
 			throwdir = 1;
 		}
 	}
@@ -1087,7 +1092,7 @@ static void K_BotItemLightning(player_t *player, ticcmd_t *cmd)
 		}
 		else
 		{
-			player->botvars.itemconfirm++;
+			cmd->bot.itemconfirm++;
 		}
 	}
 }
@@ -1112,7 +1117,7 @@ static void K_BotItemBubble(player_t *player, ticcmd_t *cmd)
 	{
 		UINT8 i;
 
-		player->botvars.itemconfirm++;
+		cmd->bot.itemconfirm++;
 
 		if (player->bubblecool <= 0)
 		{
@@ -1185,7 +1190,7 @@ static void K_BotItemFlame(player_t *player, ticcmd_t *cmd)
 {
 	if (player->botvars.itemconfirm > 0)
 	{
-		player->botvars.itemconfirm--;
+		cmd->bot.itemconfirm--;
 	}
 	else if (player->itemflags & IF_HOLDREADY)
 	{
@@ -1197,7 +1202,7 @@ static void K_BotItemFlame(player_t *player, ticcmd_t *cmd)
 		}
 		else
 		{
-			player->botvars.itemconfirm = 3*flamemax/4;
+			//player->botvars.itemconfirm = 3*flamemax/4;
 		}
 	}
 }
@@ -1293,8 +1298,6 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 	{
 		if (player->botvars.itemdelay)
 		{
-			player->botvars.itemdelay--;
-			player->botvars.itemconfirm = 0;
 			return;
 		}
 
@@ -1329,7 +1332,7 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 							K_BotItemGenericTap(player, cmd);
 						}
 
-						player->botvars.itemconfirm = 0;
+						//player->botvars.itemconfirm = 0;
 						break;
 					case KITEM_INVINCIBILITY:
 					case KITEM_SPB:
@@ -1419,4 +1422,26 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 			}
 		}
 	}
+}
+
+/*--------------------------------------------------
+	void K_UpdateBotGameplayVarsItemUsage(player_t *player)
+
+		See header file for description.
+--------------------------------------------------*/
+void K_UpdateBotGameplayVarsItemUsage(player_t *player)
+{
+	if (player->itemflags & IF_USERINGS)
+	{
+		return;
+	}
+
+	if (player->botvars.itemdelay)
+	{
+		player->botvars.itemdelay--;
+		player->botvars.itemconfirm = 0;
+		return;
+	}
+
+	player->botvars.itemconfirm += player->cmd.bot.itemconfirm;
 }
