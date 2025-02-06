@@ -5590,8 +5590,10 @@ static void DrawReplayHutReplayInfo(void)
 
 		//  A 160x100 image of the level as entry MAPxxP
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(demolist[dir_on[menudepthleft]].map)));
-		if (lumpnum != LUMPERROR)
+		char *mapname = va("%sP", G_BuildMapName(cv_nextmap.value+1));
+		SINT8 length = strlen(mapname);
+		lumpnum = W_CheckNumForName(mapname);
+		if (lumpnum != LUMPERROR && (length < 7))
 			patch = W_CachePatchNum(lumpnum, PU_CACHE);
 		else
 			patch = W_CachePatchName("M_NOLVL", PU_CACHE);
@@ -8948,8 +8950,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	//  A 160x100 image of the level as entry MAPxxP
 	if (cv_nextmap.value)
 	{
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(cv_nextmap.value)));
-		if (lumpnum != LUMPERROR)
+		char *mapname = va("%sP", G_BuildMapName(cv_nextmap.value+1));
+		SINT8 length = strlen(mapname);
+		lumpnum = W_CheckNumForName(mapname);
+		if (lumpnum != LUMPERROR && (length < 7))
 			PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
 		else
 			PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
@@ -9014,8 +9018,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		//  A 160x100 image of the level as entry MAPxxP
 		if (i+1)
 		{
-			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(i+1)));
-			if (lumpnum != LUMPERROR)
+			char *mapname = va("%sP", G_BuildMapName(i+1));
+			SINT8 length = strlen(mapname);
+			lumpnum = W_CheckNumForName(mapname);
+			if (lumpnum != LUMPERROR && (length < 7))
 				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
 			else
 				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
@@ -9052,8 +9058,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		//  A 160x100 image of the level as entry MAPxxP
 		if (i+1)
 		{
-			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(i+1)));
-			if (lumpnum != LUMPERROR)
+			char *mapname = va("%sP", G_BuildMapName(i+1));
+			SINT8 length = strlen(mapname);
+			lumpnum = W_CheckNumForName(mapname);
+			if (lumpnum != LUMPERROR && (length < 7))
 				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
 			else
 				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);

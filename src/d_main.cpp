@@ -1244,11 +1244,6 @@ D_ConvertVersionNumbers (void)
 //
 void D_SRB2Main(void)
 {
-	INT32 i;
-	UINT16 wadnum;
-	lumpinfo_t *lumpinfo;
-	char *name;
-
 	INT32 p;
 
 	INT32 pstartmap = 0;
@@ -1569,39 +1564,7 @@ void D_SRB2Main(void)
 		//
 		// search for pwad maps
 		//
-		
-		//
-		// search for maps... again.
-		//
-		for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
-		{
-			lumpinfo = wadfiles[wadnum]->lumpinfo;
-			for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-			{
-				name = lumpinfo->name;
-
-				if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-				{
-					INT16 num;
-					if (name[5] != '\0')
-						continue;
-					num = (INT16)G_MapNumber(name);
-
-					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-					if (num <= NUMMAPS && mapheaderinfo[num - 1])
-					{
-						if (mapheaderinfo[num - 1]->alreadyExists != false)
-						{
-							G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-						}
-
-						mapheaderinfo[num - 1]->alreadyExists = true;
-					}
-
-					CONS_Printf("%s\n", name);
-				}
-			}
-		}
+		P_InitMapData();
 		HU_LoadGraphics();
 	}
 
@@ -1704,33 +1667,41 @@ void D_SRB2Main(void)
 	{
 		const char *word = M_GetNextParm();
 
-		pstartmap = G_FindMapByNameOrCode(word, 0);
-
-		if (! pstartmap)
-			I_Error("Cannot find a map remotely named '%s'\n", word);
+		if (WADNAMECHECK(word))
+		{
+			if (!(pstartmap = wadnamemap))
+				I_Error("Bad '%s' level warp.\n"
+#if defined (_WIN32)
+				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
+#endif
+				, word);
+		}
 		else
 		{
-			if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
-			{
-				G_SetGameModified(true, true);
-
-				// Start up a "minor" grand prix session
-				memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
-
-				grandprixinfo.gamespeed = KARTSPEED_NORMAL;
-				grandprixinfo.encore = false;
-				grandprixinfo.masterbots = false;
-
-				grandprixinfo.gp = true;
-				grandprixinfo.roundnum = 0;
-				grandprixinfo.cup = NULL;
-				grandprixinfo.wonround = false;
-
-				grandprixinfo.initalize = true;
-			}
-
-			autostart = true;
+			if (!(pstartmap = G_FindMapByNameOrCode(word, 0)))
+				I_Error("Cannot find a map remotely named '%s'\n", word);
 		}
+
+		if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
+		{
+			G_SetGameModified(true, true);
+
+			// Start up a "minor" grand prix session
+			memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+
+			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+			grandprixinfo.encore = false;
+			grandprixinfo.masterbots = false;
+
+			grandprixinfo.gp = true;
+			grandprixinfo.roundnum = 0;
+			grandprixinfo.cup = NULL;
+			grandprixinfo.wonround = false;
+
+			grandprixinfo.initalize = true;
+		}
+
+		autostart = true;
 	}
 
 	// Set up splitscreen players before joining!

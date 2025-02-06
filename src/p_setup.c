@@ -332,11 +332,19 @@ boolean P_IsDegeneratedTubeWaypointSequence(UINT8 sequence)
 FUNCNORETURN static ATTRNORETURN void CorruptMapError(const char *msg)
 {
 	// don't use va() because the calling function probably uses it
-	char mapnum[10];
+	char mapname[MAXMAPLUMPNAME];
 
-	sprintf(mapnum, "%hd", gamemap);
+	if (gamemap > 0 && gamemap <= nummapheaders && mapheaderinfo[gamemap-1])
+	{
+		sprintf(mapname, "%s", mapheaderinfo[gamemap-1]->lumpname);
+	}
+	else
+	{
+		sprintf(mapname, "ID %d", gamemap-1);
+	}
+
 	CON_LogMessage("Map ");
-	CON_LogMessage(mapnum);
+	CON_LogMessage(mapname);
 	CON_LogMessage(" is corrupt: ");
 	CON_LogMessage(msg);
 	CON_LogMessage("\n");
@@ -2303,7 +2311,7 @@ typedef struct
 static FILE *P_OpenTextmap(const char *mode, const char *error)
 {
 	FILE *f;
-	char *filepath = va(pandf, srb2home, "TEXTMAP");
+	char *filepath = va("%s" PATHSEP "TEXTMAP.%s.txt", srb2home, mapheaderinfo[gamemap-1]->lumpname);
 
 	f = fopen(filepath, mode);
 	if (!f)
@@ -8355,15 +8363,15 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	}
 
 	// internal game map
-	maplumpname = G_BuildMapName(gamemap);
-	lastloadedmaplumpnum = W_CheckNumForMap(maplumpname);
+	maplumpname = mapheaderinfo[gamemap-1]->lumpname;
+	lastloadedmaplumpnum = mapheaderinfo[gamemap-1]->lumpnum;
 	if (lastloadedmaplumpnum == LUMPERROR)
 		I_Error("Map %s not found.\n", maplumpname);
 
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette,
-		W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
+	W_CheckNumForName(va("%s%c", maplumpname, (encoremode ? 'E' : 'T'))));
 	CON_SetupBackColormap();
 
 	// SRB2 determines the sky texture to be used depending on the map header.
@@ -8716,6 +8724,9 @@ static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, l
 	return lumpinfo;
 }
 
+lumpnum_t wadnamelump = LUMPERROR;
+INT16 wadnamemap = 0; // gamemap based
+
 // Initialising map data...
 UINT8 P_InitMapData(void)
 {
@@ -8755,6 +8766,8 @@ UINT8 P_InitMapData(void)
 				}
 			}
 			mapheaderinfo[i]->lumpnum = maplump;
+			if (maplump == wadnamelump)
+				wadnamemap = i+1;
 		}
 	}
 
