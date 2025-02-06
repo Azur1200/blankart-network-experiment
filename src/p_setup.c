@@ -6858,6 +6858,7 @@ static void P_ConvertBinaryThingTypes(void)
 		{
 		case 102: //SDURF
 		case 1805: //Puma
+		case 2400: // Big Puma
 			mapthings[i].args[0] = mapthings[i].angle;
 			break;
 		case 110: //THZ Turret
