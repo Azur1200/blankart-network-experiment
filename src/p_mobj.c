@@ -12049,6 +12049,25 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		if (mthing->args[1]) // No egg trap for this boss
 			mobj->flags2 |= MF2_BOSSNOTRAP;
 	}
+	if (mobj->flags & MF_PUSHABLE)
+	{
+		switch (mthing->args[0])
+		{
+			case TMP_NORMAL:
+			default:
+				break;
+			case TMP_SLIDE:
+				mobj->flags2 |= MF2_SLIDEPUSH;
+				mobj->flags |= MF_BOUNCE;
+				break;
+			case TMP_IMMOVABLE:
+				mobj->flags &= ~MF_PUSHABLE;
+				break;
+			case TMP_CLASSIC:
+				mobj->flags2 |= MF2_CLASSICPUSH;
+				break;
+		}
+	}
 
 	return true;
 }
