@@ -8167,6 +8167,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	INT32 i, ranspecialwipe = 0;
 	sector_t *ss;
 	virtlump_t *encoreLump = NULL;
+	lumpnum_t oldEncore = LUMPERROR;
 
 	levelloading = true;
 
@@ -8390,16 +8391,29 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (encoremode)
 		{
 			encoreLump = vres_Find(curmapvirt, "ENCORE");
+			if (!encoreLump)
+				oldEncore = W_CheckNumForName(va("%sE", maplumpname));
 		}
 		else
 		{
 			encoreLump = vres_Find(curmapvirt, "TWEAKMAP");
+			if (!encoreLump)
+				oldEncore = W_CheckNumForName(va("%sT", maplumpname));
 		}
 	}
 
 	if (encoreLump)
 	{
 		R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette, encoreLump->data, encoreLump->size, false);
+	}
+	else if (oldEncore != LUMPERROR)
+	{
+		// mildly annoying, but whatever
+		size_t size = W_LumpLength(oldEncore);
+		void *data = malloc(size);
+		W_ReadLump(oldEncore, data);
+		R_ReInitColormaps(mapheaderinfo[gamemap-1]->palette, data, size, wadfiles[WADFILENUM(oldEncore)]->compatmode);
+		free(data);
 	}
 	else
 	{
@@ -8768,6 +8782,7 @@ UINT8 P_InitMapData(void)
 	lumpnum_t maplump;
 	virtres_t *virtmap;
 	virtlump_t *minimap, *thumbnailPic;
+	patch_t *oldPic;
 	char *name;
 
 	for (i = 0; i < nummapheaders; ++i)
@@ -8825,10 +8840,23 @@ UINT8 P_InitMapData(void)
 			{
 				mapheaderinfo[i]->thumbnailPic = vres_GetPatch(thumbnailPic, PU_STATIC);
 			}
+			// okay... try finding them the old-fashioned way
+			else
+			{
+				oldPic = W_CachePatchName(va("%sP", name), PU_STATIC);
+				if (oldPic != missingpat)
+					mapheaderinfo[i]->thumbnailPic = oldPic;
+			}
 
 			if (minimap)
 			{
 				mapheaderinfo[i]->minimapPic = vres_GetPatch(minimap, PU_STATIC);
+			}
+			else
+			{
+				oldPic = W_CachePatchName(va("%sR", name), PU_STATIC);
+				if (oldPic != missingpat)
+					mapheaderinfo[i]->minimapPic = oldPic;
 			}
 
 			vres_Free(virtmap);
@@ -8863,8 +8891,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	UINT16 numlumps, wadnum;
 	char *name;
 	lumpinfo_t *lumpinfo;
-	virtres_t *virtmap;
-	virtlump_t *minimap, *thumbnailPic;
 
 	// Vars to help us with the position start and amount of each resource type.
 	// Useful for PK3s since they use folders.

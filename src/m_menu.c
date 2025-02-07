@@ -8943,14 +8943,13 @@ static void M_StartServer(INT32 choice)
 
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 {
-	lumpnum_t lumpnum;
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
 
 	//  A 160x100 image of the level
 	if (cv_nextmap.value)
 	{
-		PictureOfLevel = mapheaderinfo[cv_nextmap.value+1]->thumbnailPic;
+		PictureOfLevel = mapheaderinfo[cv_nextmap.value-1]->thumbnailPic;
 		if (!PictureOfLevel)
 			PictureOfLevel = blanklvl;
 	}
@@ -9012,9 +9011,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
 		//  A 160x100 image of the level as entry MAPxxP
-		if (i+1)
+		if (i >= 0)
 		{
-			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
+			PictureOfLevel = mapheaderinfo[i]->thumbnailPic;
 			if (!PictureOfLevel)
 				PictureOfLevel = blanklvl;
 		}
@@ -9048,9 +9047,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
 		//  A 160x100 image of the level as entry MAPxxP
-		if (i+1)
+		if (i >= 0)
 		{
-			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
+			PictureOfLevel = mapheaderinfo[i]->thumbnailPic;
 			if (!PictureOfLevel)
 				PictureOfLevel = blanklvl;
 		}
