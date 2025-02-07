@@ -1461,12 +1461,12 @@ void F_TitleScreenTicker(boolean run)
 
 			if (vLump == NULL)
 			{
-				vres_Free(vRes);
 
 				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
 					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
 				else
 				{
+					vres_Free(vRes);
 					return;
 				}
 			}
