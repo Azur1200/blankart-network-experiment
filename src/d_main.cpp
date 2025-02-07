@@ -1794,7 +1794,7 @@ void D_SRB2Main(void)
 	{
 		pstartmap = bootmap;
 
-		if (pstartmap < 1 || pstartmap > NUMMAPS)
+		if (pstartmap < 1 || pstartmap > nummapheaders)
 			I_Error("Cannot warp to map %d (out of range)\n", pstartmap);
 		else
 		{

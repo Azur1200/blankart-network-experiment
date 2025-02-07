@@ -3510,7 +3510,7 @@ tryagain:
 	usehellmaps = (maphell == 0 ? false : (maphell == 2 || M_RandomChance(FRACUNIT/100))); // 1% chance of Hell
 
 	// Find all the maps that are ok and and put them in an array.
-	for (ix = 0; ix < NUMMAPS; ix++)
+	for (ix = 0; ix < nummapheaders; ix++)
 	{
 		boolean isokmap = true;
 
@@ -3528,24 +3528,25 @@ tryagain:
 			// vres GHOST_%u
 			virtres_t *vRes;
 			virtlump_t *vLump;
-			size_t step = 0;
 			lumpnum_t l;
 
 			vRes = vres_GetMap(mapheaderinfo[ix+1]->lumpnum);
 
 			for (int i = 0; i < 10; i++)
 			{
-				vLump = vres_Find(vRes, va("GHOST_%u",i));
+				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix+1]->lumpname,i));
 
 				if (vLump != NULL)
 					break;
 			}
 
-			if (vLump == NULL)
+			if (vLump == NULL && ((l = W_CheckNumForName(va("%sS01",mapheaderinfo[ix+1]->lumpname))) == LUMPERROR))
 			{
-				if (((l = W_CheckNumForName(va("%sS01",G_BuildMapName(ix+1)))) == LUMPERROR))
-					continue;
+				vres_Free(vRes);
+				continue;
 			}
+
+			vres_Free(vRes);
 		}
 
 		if (!ignorebuffer)

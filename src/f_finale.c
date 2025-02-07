@@ -1440,7 +1440,7 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		mapnum = G_RandMap(TOL_RACE|TOL_BATTLE, -2, 2, 0, false, NULL);
+		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, false, NULL);
 		if (mapnum == 0) // gotta have ONE
 		{
 			return;
@@ -1450,6 +1450,28 @@ void F_TitleScreenTicker(boolean run)
 
 		// Setup demo name
 		sprintf(dname, "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);
+
+		{
+			// vres GHOST_%u
+			virtres_t *vRes;
+			virtlump_t *vLump;
+
+			vRes = vres_GetMap(mapheaderinfo[mapnum]->lumpnum);
+			vLump = vres_Find(vRes, dname);
+
+			if (vLump == NULL)
+			{
+				vres_Free(vRes);
+
+				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
+					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
+				else
+				{
+					return;
+				}
+			}
+			vres_Free(vRes);
+		}
 
 loadreplay:
 		demo.title = demo.fromtitle = true;
