@@ -59,6 +59,8 @@ consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save"
 static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
 consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL);
 
+consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
+
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
 tic_t demostarttime; // for comparative timing purposes
@@ -1996,20 +1998,22 @@ void G_WriteMetalTic(mobj_t *metal)
 //
 void G_RecordDemo(const char *name)
 {
+	if (demo.recording)
+		G_CheckDemoStatus();
+
 	INT32 maxsize;
 
 	strcpy(demoname, name);
 	strcat(demoname, ".lmp");
-	//@TODO make a maxdemosize cvar
-	maxsize = 1024*1024*2;
-
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
+	maxsize = 1024 * 1024 * cv_netdemosize.value;
 
 //	if (demobuf.buffer)
-//		P_SaveBufferFree(&demobuf);
+//		Z_Free(demobuf.buffer);
 
+	// FIXME: this file doesn't manage its memory and actually free this when it's done using it
+	Z_Free(demobuf.buffer);
 	P_SaveBufferAlloc(&demobuf, maxsize);
+	Z_SetUser(demobuf.buffer, (void**)&demobuf.buffer);
 	demobuf.p = NULL;
 
 	demo.recording = true;
