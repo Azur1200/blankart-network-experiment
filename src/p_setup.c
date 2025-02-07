@@ -400,13 +400,13 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 
 	if (mapheaderinfo[num]->thumbnailPic)
 	{
-		Z_Free(mapheaderinfo[num]->thumbnailPic);
+		Patch_Free(mapheaderinfo[num]->thumbnailPic);
 		mapheaderinfo[num]->thumbnailPic = NULL;
 	}
 
 	if (mapheaderinfo[num]->minimapPic)
 	{
-		Z_Free(mapheaderinfo[num]->minimapPic);
+		Patch_Free(mapheaderinfo[num]->minimapPic);
 		mapheaderinfo[num]->minimapPic = NULL;
 	}
 
@@ -8809,14 +8809,26 @@ UINT8 P_InitMapData(void)
 			thumbnailPic = vres_Find(virtmap, "PICTURE");
 			minimap = vres_Find(virtmap, "MINIMAP");
 
+			// Clear out existing graphics...
+			if (mapheaderinfo[i]->thumbnailPic)
+			{
+				Patch_Free(mapheaderinfo[i]->thumbnailPic);
+			}
+
+			if (mapheaderinfo[i]->minimapPic)
+			{
+				Patch_Free(mapheaderinfo[i]->minimapPic);
+			}
+
+			// Now apply the new ones!
 			if (thumbnailPic)
 			{
-				mapheaderinfo[i]->thumbnailPic = vres_GetPatch(thumbnailPic, PU_CACHE);
+				mapheaderinfo[i]->thumbnailPic = vres_GetPatch(thumbnailPic, PU_STATIC);
 			}
 
 			if (minimap)
 			{
-				mapheaderinfo[i]->minimapPic = vres_GetPatch(minimap, PU_HUDGFX);
+				mapheaderinfo[i]->minimapPic = vres_GetPatch(minimap, PU_STATIC);
 			}
 
 			vres_Free(virtmap);

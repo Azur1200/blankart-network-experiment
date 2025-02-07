@@ -8952,7 +8952,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	{
 		PictureOfLevel = mapheaderinfo[cv_nextmap.value+1]->thumbnailPic;
 		if (!PictureOfLevel)
-			PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
+			PictureOfLevel = blanklvl;
 	}
 	else
 		PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
@@ -9016,7 +9016,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		{
 			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
 			if (!PictureOfLevel)
-				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
+				PictureOfLevel = blanklvl;
 		}
 		else
 			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
@@ -9052,7 +9052,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		{
 			PictureOfLevel = mapheaderinfo[i+1]->thumbnailPic;
 			if (!PictureOfLevel)
-				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
+				PictureOfLevel = blanklvl;
 		}
 		else
 			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
