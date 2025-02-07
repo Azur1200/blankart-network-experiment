@@ -1149,9 +1149,11 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 				if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
 					continue;
 
+#if 0
 				// Not a .wad?
 				if (!W_IsLumpWad(i | (wad << 16)))
 					continue;
+#endif
 
 				return i;
 			}
