@@ -389,15 +389,15 @@ const char *const SSF_LIST[] = {
 	"NOSTEPDOWN",
 	"WINDCURRENT",
 	"CONVEYOR",
-	"\x01",			  // free (name un-matchable)
+	"SPEEDPAD",
 	"STARPOSTACTIVATOR",
 	"EXIT",
 	"DELETEITEMS",
-	"\x01",			  // free (name un-matchable)
-	"\x01",			  // free (name un-matchable)
-	"\x01",			  // free (name un-matchable)
+	"SNEAKERPANEL" ,
+	"REDPOGOSPRING",
+	"YELLOWPOGOSPRING" ,
 	"FAN",
-	"\x01",			  // free (name un-matchable)
+	"FINISHLINE",
 	"\x01",			  // free (name un-matchable)
 	"ZOOMTUBESTART",
 	"ZOOMTUBEEND",

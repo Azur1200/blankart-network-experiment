@@ -1391,6 +1391,7 @@ static void P_LoadSidedefs(UINT8 *data)
 				break;
 			}
 
+			case 4: // Speed pad parameters
 			case 414: // Play SFX
 			{
 				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
@@ -1882,18 +1883,30 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_DOUBLESTEPUP;
 	else if (fastcmp(param, "nostepdown") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOSTEPDOWN;
+	else if (fastcmp(param, "speedpad") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_SPEEDPAD;
 	else if  ((fastcmp(param, "cheatcheckactivator") || fastcmp(param, "starpostactivator")) && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_STARPOSTACTIVATOR;
 	else if (fastcmp(param, "exit") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_EXIT;
 	else if (fastcmp(param, "deleteitems") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_DELETEITEMS;
+	else if (fastcmp(param, "sneakerpanel") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_SNEAKERPANEL;
+	else if (fastcmp(param, "waterpanel") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_WATERPANEL;
+	else if (fastcmp(param, "redpogospring") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_REDPOGOSPRING;
+	else if (fastcmp(param, "yellowpogospring") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_YELLOWPOGOSPRING;
 	else if (fastcmp(param, "fan") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_FAN;
 	else if (fastcmp(param, "zoomtubestart") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBESTART;
 	else if (fastcmp(param, "zoomtubeend") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_ZOOMTUBEEND;
+	else if (fastcmp(param, "finishline") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_FINISHLINE;
 	else if (fastcmp(param, "friction"))
 		sectors[i].friction = FLOAT_TO_FIXED(atof(val));
 	else if (fastcmp(param, "gravity"))
@@ -1908,6 +1921,17 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 			sectors[i].damagetype = SD_DEATHPIT;
 		if (fastcmp(val, "Instakill"))
 			sectors[i].damagetype = SD_INSTAKILL;
+	}
+	else if (fastcmp(param, "offroad"))
+	{
+		if (fastcmp(val, "Weak"))
+			sectors[i].offroad = FRACUNIT;
+		else if (fastcmp(val, "Normal"))
+			sectors[i].offroad = 2*FRACUNIT;
+		else if (fastcmp(val, "Strong"))
+			sectors[i].offroad = 3*FRACUNIT;
+		else
+			sectors[i].offroad = FLOAT_TO_FIXED(atof(val));
 	}
 	else if (fastcmp(param, "triggertag"))
 		sectors[i].triggertag = atol(val);
@@ -2034,6 +2058,8 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 	}
 	else if (fastcmp(param, "executordelay"))
 		lines[i].executordelay = atol(val);
+	else if (fastcmp(param, "tripwire") && fastcmp("true", val)) // who needs terraindefs amiright :^)
+		lines[i].tripwire = true;
 
 	// Flags
 	else if (fastcmp(param, "blocking") && fastcmp("true", val))
@@ -3005,22 +3031,45 @@ static void P_WriteTextmap(void)
 			fprintf(f, "doublestepup = true;\n");
 		if (wsectors[i].specialflags & SSF_NOSTEPDOWN)
 			fprintf(f, "nostepdown = true;\n");
+		if (wsectors[i].specialflags & SSF_SPEEDPAD)
+			fprintf(f, "speedpad = true;\n");
 		if (wsectors[i].specialflags & SSF_STARPOSTACTIVATOR)
 			fprintf(f, "starpostactivator = true;\n");
 		if (wsectors[i].specialflags & SSF_EXIT)
 			fprintf(f, "exit = true;\n");
 		if (wsectors[i].specialflags & SSF_DELETEITEMS)
 			fprintf(f, "deleteitems = true;\n");
+		if (wsectors[i].specialflags & SSF_SNEAKERPANEL)
+			fprintf(f, "sneakerpanel = true;\n");
+		if (wsectors[i].specialflags & SSF_WATERPANEL)
+			fprintf(f, "waterpanel = true;\n");
+		if (wsectors[i].specialflags & SSF_REDPOGOSPRING)
+			fprintf(f, "redpogospring = true;\n");
+		if (wsectors[i].specialflags & SSF_YELLOWPOGOSPRING)
+			fprintf(f, "yellowpogospring = true;\n");
 		if (wsectors[i].specialflags & SSF_FAN)
 			fprintf(f, "fan = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBESTART)
 			fprintf(f, "zoomtubestart = true;\n");
 		if (wsectors[i].specialflags & SSF_ZOOMTUBEEND)
 			fprintf(f, "zoomtubeend = true;\n");
+		if (wsectors[i].specialflags & SSF_FINISHLINE)
+			fprintf(f, "finishline = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)
 			fprintf(f, "gravity = %f;\n", FIXED_TO_FLOAT(wsectors[i].gravity));
+		if (wsectors[i].offroad != 0)
+		{
+			if (wsectors[i].offroad == FRACUNIT)
+				fprintf(f, "offroad = Weak;\n");
+			else if (wsectors[i].offroad == 2*FRACUNIT)
+				fprintf(f, "offroad = Normal;\n");
+			else if (wsectors[i].offroad == 3*FRACUNIT)
+				fprintf(f, "offroad = Strong;\n");
+			else
+				fprintf(f, "gravity = %f;\n", FIXED_TO_FLOAT(wsectors[i].offroad));
+		}
 		if (wsectors[i].damagetype != SD_NONE)
 		{
 			switch (wsectors[i].damagetype)
@@ -3403,7 +3452,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	sda = &sides[n];
 
 	terrain = K_GetTerrainForTextureNum(sda->midtexture);
-	tripwire = terrain && (terrain->flags & TRF_TRIPWIRE);
+	tripwire = (terrain && (terrain->flags & TRF_TRIPWIRE)) || (ld->tripwire == true);
 
 	if (tripwire)
 	{
@@ -4839,7 +4888,11 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = !!(lines[i].flags & ML_MIDSOLID);
 			break;
 		case 4: //Speed pad parameters
-			//CONS_Alert(CONS_WARNING, "Speed Pad linedef is deprecated. Use the TERRAIN effect!\n");
+			lines[i].args[0] = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y) >> FRACBITS;
+			if (lines[i].flags & ML_MIDSOLID)
+				lines[i].args[1] |= TMSP_NOTELEPORT;
+			if (lines[i].flags & ML_WRAPMIDTEX)
+				lines[i].args[1] |= TMSP_FORCESPIN;
 			break;
 		case 7: //Sector flat alignment
 			lines[i].args[0] = tag;
@@ -6737,10 +6790,14 @@ static void P_ConvertBinarySectorTypes(void)
 
 		switch(GETSECSPECIAL(sectors[i].special, 3))
 		{
-			case 1: //Trick panel
+			case 1: //Spring Panel
+				sectors[i].specialflags |= SSF_REDPOGOSPRING;
+				break;
 			case 3:
+				sectors[i].specialflags |= SSF_YELLOWPOGOSPRING;
 				break;
 			case 5: //Speed pad
+				sectors[i].specialflags |= SSF_SPEEDPAD;
 				break;
 			default:
 				break;
@@ -6758,15 +6815,19 @@ static void P_ConvertBinarySectorTypes(void)
 				sectors[i].specialflags |= SSF_FAN;
 				break;
 			case 6: //Sneaker panel
+				sectors[i].specialflags |= SSF_SNEAKERPANEL;
 				break;
-			case 7: //Destroy items
-				sectors[i].specialflags |= SSF_DELETEITEMS;
+			case 7: // Oil Slik
+				sectors[i].damagetype = SD_GENERIC;
 				break;
 			case 8: //Zoom tube start
 				sectors[i].specialflags |= SSF_ZOOMTUBESTART;
 				break;
 			case 9: //Zoom tube end
 				sectors[i].specialflags |= SSF_ZOOMTUBEEND;
+				break;
+			case 10: // Circuit Finish Line
+				sectors[i].specialflags |= SSF_FINISHLINE;
 				break;
 			default:
 				break;
