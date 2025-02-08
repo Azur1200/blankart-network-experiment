@@ -3767,7 +3767,7 @@ void K_ApplyTripWire(player_t *player, tripwirestate_t state)
 {
 	// We are either softlocked or wildly misbehaving. Stop that!
 	if (state == TRIPSTATE_BLOCKED && player->tripwireReboundDelay && (player->speed > 5 * K_GetKartSpeed(player, false, false)))
-		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_STING);
+		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
 
 	if (state == TRIPSTATE_PASSED)
 	{
