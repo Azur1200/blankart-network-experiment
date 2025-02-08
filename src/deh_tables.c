@@ -394,11 +394,11 @@ const char *const SSF_LIST[] = {
 	"EXIT",
 	"DELETEITEMS",
 	"SNEAKERPANEL" ,
+	"WATERPANEL" ,
 	"REDPOGOSPRING",
 	"YELLOWPOGOSPRING" ,
 	"FAN",
 	"FINISHLINE",
-	"\x01",			  // free (name un-matchable)
 	"ZOOMTUBESTART",
 	"ZOOMTUBEEND",
 	NULL
