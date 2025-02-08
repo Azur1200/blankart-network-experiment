@@ -3145,8 +3145,8 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 
 	if (ld && P_IsLineTripWire(ld))
 	{
-		tmxmove = x * 4;
-		tmymove = y * 4;
+		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
+		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
 	}
 	else
 	{
