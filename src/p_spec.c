@@ -5011,7 +5011,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	}
 }
 
-static void P_ProcessPogoSpring(player_t *player, boolean isTouching, boolean type)
+static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 {
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
 	const fixed_t minspeed = 24*hscale;
@@ -5021,12 +5021,12 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, boolean ty
 	if (!isTouching)
 		return;
 
-	if ((player->speed > maxspeed) && type == 2) // Prevent overshooting jumps
+	if ((player->speed > maxspeed) && type == SSPT_YELLOW) // Prevent overshooting jumps
 		P_InstaThrust(player->mo, pushangle, maxspeed);
 	else if (player->speed < minspeed) // Push forward to prevent getting stuck
 		P_InstaThrust(player->mo, pushangle, minspeed);
 
-	if (type == 2)
+	if (type == SSPT_YELLOW)
 		player->pogospring = 2;
 	else
 		player->pogospring = 1;
@@ -5034,7 +5034,7 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, boolean ty
 	K_DoPogoSpring(player->mo, 0, 1);
 }
 
-static void P_ProcessBoostPanel(player_t *player, boolean isTouching, boolean type)
+static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
 	if (isTouching)
 	{
