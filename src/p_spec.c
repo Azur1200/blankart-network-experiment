@@ -4916,6 +4916,140 @@ static void P_ProcessEggCapsule(player_t *player, sector_t *sector)
 	}
 }
 
+static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *roversector, mtag_t sectag)
+{
+	INT32 lineindex = -1;
+	angle_t lineangle;
+	fixed_t linespeed;
+	fixed_t sfxnum;
+	size_t i;
+
+	if (player->dashpadcooldown != 0)
+		return;
+
+	// Try for lines facing the sector itself, with tag 0.
+	for (i = 0; i < sector->linecount; i++)
+	{
+		line_t *li = sector->lines[i];
+
+		if (li->frontsector != sector)
+			continue;
+
+		if (li->special != 4)
+			continue;
+
+		if (!Tag_Find(&li->tags, 0))
+			continue;
+
+		lineindex = li - lines;
+		break;
+	}
+
+	// Nothing found? Look via tag.
+	if (lineindex == -1)
+		lineindex = Tag_FindLineSpecial(4, sectag);
+
+	if (lineindex == -1)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "ERROR: Speed pad missing line special #4.\n");
+		return;
+	}
+
+	lineangle = R_PointToAngle2(lines[lineindex].v1->x, lines[lineindex].v1->y, lines[lineindex].v2->x, lines[lineindex].v2->y);
+	linespeed = lines[lineindex].args[0] << FRACBITS;
+
+	if (linespeed == 0)
+	{
+		CONS_Debug(DBG_GAMELOGIC, "ERROR: Speed pad (tag %d) at zero speed.\n", sectag);
+		return;
+	}
+
+	player->mo->angle = player->drawangle = lineangle;
+
+	// SRB2Kart: Scale the speed you get from them!
+	// This is scaled differently from other horizontal speed boosts from stuff like springs, because of how this is used for some ramp jumps.
+	if (player->mo->scale > mapobjectscale)
+		linespeed = FixedMul(linespeed, mapobjectscale + (player->mo->scale - mapobjectscale));
+
+	if (!demo.playback)
+		P_SetPlayerAngle(player, player->mo->angle);
+
+	if (!(lines[lineindex].args[1] & TMSP_NOTELEPORT))
+	{
+		P_UnsetThingPosition(player->mo);
+		if (roversector) // make FOF speed pads work
+		{
+			player->mo->x = roversector->soundorg.x;
+			player->mo->y = roversector->soundorg.y;
+		}
+		else
+		{
+			player->mo->x = sector->soundorg.x;
+			player->mo->y = sector->soundorg.y;
+		}
+		P_SetThingPosition(player->mo);
+	}
+
+	P_InstaThrust(player->mo, player->mo->angle, linespeed);
+
+	player->dashpadcooldown = TICRATE/3;
+	player->drift = 0;
+	player->driftcharge = 0;
+	player->pogospring = 0;
+
+	sfxnum = lines[lineindex].stringargs[0] ? get_number(lines[lineindex].stringargs[0]) : sfx_spdpad;
+
+	if (!sfxnum)
+		sfxnum = sfx_spdpad;
+
+	S_StartSound(player->mo, sfxnum);
+	{
+		sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
+		if (cv_kartvoices.value)
+			S_StartSound(player->mo, sfx_kbost1+pick);
+		//K_TauntVoiceTimers(player);
+	}
+}
+
+static void P_ProcessPogoSpring(player_t *player, boolean isTouching, boolean type)
+{
+	const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
+	const fixed_t minspeed = 24*hscale;
+	const fixed_t maxspeed = 28*hscale;
+	angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;
+
+	if (!isTouching)
+		return;
+
+	if ((player->speed > maxspeed) && type == 2) // Prevent overshooting jumps
+		P_InstaThrust(player->mo, pushangle, maxspeed);
+	else if (player->speed < minspeed) // Push forward to prevent getting stuck
+		P_InstaThrust(player->mo, pushangle, minspeed);
+
+	if (type == 2)
+		player->pogospring = 2;
+	else
+		player->pogospring = 1;
+
+	K_DoPogoSpring(player->mo, 0, 1);
+}
+
+static void P_ProcessBoostPanel(player_t *player, boolean isTouching, boolean type)
+{
+	if (isTouching)
+	{
+		if (!player->floorboost)
+			player->floorboost = 3;
+		else
+			player->floorboost = 2;
+
+		if (type == SBPT_WATER)
+			K_DoWaterRunPanel(player);
+		else
+			K_DoSneaker(player, 0);
+	}
+}
+
 static void P_ProcessExitSector(player_t *player, mtag_t sectag)
 {
 	INT32 lineindex;
@@ -5032,6 +5166,8 @@ static boolean P_SectorHasSpecial(sector_t *sec)
 	return false;
 }
 
+
+
 static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t *roversector, boolean isTouching)
 {
 	mtag_t sectag = Tag_FGet(&sector->tags);
@@ -5043,6 +5179,8 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		player->onconveyor = 2;
 	if (sector->specialflags & SSF_CONVEYOR)
 		player->onconveyor = 4;
+	if ((sector->specialflags & SSF_SPEEDPAD) && isTouching)
+		P_ProcessSpeedPad(player, sector, roversector, sectag);
 	if (sector->specialflags & SSF_STARPOSTACTIVATOR)
 	{
 		mobj_t *post = P_GetObjectTypeInSectorNum(MT_STARPOST, sector - sectors);
@@ -5064,10 +5202,26 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 			P_SetPlayerMobjState(player->mo, S_PLAY_FALL);
 		*/
 	}
+	if (sector->specialflags & SSF_SNEAKERPANEL)
+		P_ProcessBoostPanel(player, isTouching, SBPT_SNEAKER);
+	if (sector->specialflags & SSF_WATERPANEL)
+		P_ProcessBoostPanel(player, isTouching, SBPT_WATER);
+	if (sector->specialflags & SSF_REDPOGOSPRING)
+		P_ProcessPogoSpring(player, isTouching, SSPT_RED);
+	if (sector->specialflags & SSF_YELLOWPOGOSPRING)
+		P_ProcessPogoSpring(player, isTouching, SSPT_YELLOW);
 	if (sector->specialflags & SSF_ZOOMTUBESTART)
 		P_ProcessZoomTube(player, sectag, false);
 	if (sector->specialflags & SSF_ZOOMTUBEEND)
 		P_ProcessZoomTube(player, sectag, true);
+	if (sector->specialflags & SSF_FINISHLINE)
+	{
+		if ((gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+		{
+			K_HandleLapIncrement(player);
+			player->pflags |= PF_HITFINISHLINE;
+		}
+	}
 }
 
 static void P_EvaluateDamageType(player_t *player, sector_t *sector, boolean isTouching)
@@ -5131,134 +5285,9 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 			break;
 	}
 
-	switch (GETSECSPECIAL(sector->special, 3))
-	{
-		case 1: // SRB2kart: Spring Panel
-		{
-			if (roversector || isTouching)
-			{
-				const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
-				const fixed_t minspeed = 24*hscale;
-				angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;
-				// if we have no speed for SOME REASON, use the player's angle, otherwise we'd be forcefully thrusted to what I can only assume is angle 0
-
-				if (player->mo->eflags & MFE_SPRUNG)
-					break;
-
-				if (player->speed < minspeed) // Push forward to prevent getting stuck
-					P_InstaThrust(player->mo, pushangle, minspeed);
-
-				player->pogospring = 1;
-				K_DoPogoSpring(player->mo, 0, 1);
-			}
-			break;
-		}
-		case 3: // SRB2kart: Spring Panel (capped speed)
-		{
-			if (roversector || isTouching)
-			{
-				const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
-				const fixed_t minspeed = 24*hscale;
-				const fixed_t maxspeed = 28*hscale;
-				angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;
-				// if we have no speed for SOME REASON, use the player's angle, otherwise we'd be forcefully thrusted to what I can only assume is angle 0
-
-				if (player->mo->eflags & MFE_SPRUNG)
-					break;
-
-				if (player->speed > maxspeed) // Prevent overshooting jumps
-					P_InstaThrust(player->mo, pushangle, maxspeed);
-				else if (player->speed < minspeed) // Push forward to prevent getting stuck
-					P_InstaThrust(player->mo, pushangle, minspeed);
-
-				player->pogospring = 2;
-				K_DoPogoSpring(player->mo, 0, 1);
-			}
-			break;
-		}
-		case 5: // Speed pad w/o spin
-		case 6: // Speed pad w/ spin
-		{
-			int i;
-			if (player->dashpadcooldown != 0)
-				break;
-
-
-			i = P_FindSpecialLineFromTag(4, Tag_FGet(&sector->tags), -1);
-
-			if ((i != -1) && (roversector || isTouching))
-			{
-				angle_t lineangle;
-				fixed_t linespeed;
-
-				lineangle = R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y);
-				linespeed = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
-
-				player->mo->angle = lineangle;
-				player->angleturn = player->mo->angle;
-
-				// SRB2Kart: Scale the speed you get from them!
-				// This is scaled differently from other horizontal speed boosts from stuff like springs, because of how this is used for some ramp jumps.
-				if (player->mo->scale > mapobjectscale)
-					linespeed = FixedMul(linespeed, mapobjectscale + (player->mo->scale - mapobjectscale));
-
-				if (!demo.playback)
-				{
-					for (SINT8 j = 0; j <= r_splitscreen; j++)
-					{
-						if (player == &players[displayplayers[j]])
-						{
-							localangle[j] = player->mo->angle;
-							break;
-						}
-					}
-				}
-
-				if (!(lines[i].flags & 512))
-				{
-					P_UnsetThingPosition(player->mo);
-					if (roversector) // make FOF speed pads work
-					{
-						player->mo->x = roversector->soundorg.x;
-						player->mo->y = roversector->soundorg.y;
-					}
-					else
-					{
-						player->mo->x = sector->soundorg.x;
-						player->mo->y = sector->soundorg.y;
-					}
-					P_SetThingPosition(player->mo);
-				}
-
-				P_InstaThrust(player->mo, player->mo->angle, linespeed);
-
-				player->dashpadcooldown = TICRATE/3;
-				player->drift = 0;
-				player->driftcharge = 0;
-				player->pogospring = 0;
-				S_StartSound(player->mo, sfx_spdpad);
-				{
-					sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
-					if (cv_kartvoices.value)
-						S_StartSound(player->mo, sfx_kbost1+pick);
-					//K_TauntVoiceTimers(player);
-				}
-			}
-			break;
-		}
-	}
-
 	switch (GETSECSPECIAL(sector->special, 4))
 	{
-		case 1: // StarPost Activator
-		{
-			mobj_t *post = P_GetObjectTypeInSectorNum(MT_STARPOST, sector - sectors);
-			if (!post)
-				break;
-			P_TouchStarPost(post, player, false);
-			break;
-		}
-			case 5: // Fan sector
+		case 5: // Fan sector
 		{
 			player->mo->momz += 5*FRACUNIT/4;
 
@@ -5266,37 +5295,6 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				player->mo->momz = 5*FRACUNIT;
 
 			P_ResetPlayer(player);
-			break;
-		}
-		case 6: // SRB2kart 190117 - Sneaker Panel
-		{
-			if (roversector || isTouching)
-			{
-				if (!player->floorboost)
-					player->floorboost = 3;
-				else
-					player->floorboost = 2;
-				K_DoSneaker(player, 0);
-			}
-			break;
-		}
-		case 7: // SRB2kart 190117 - Oil Slick (deprecated)
-			if (roversector || isTouching)
-			{
-				if (player)
-					P_DamageMobj(player->mo, NULL, NULL, 1, DMG_NORMAL);
-			}
-			break;
-		case 10: // Finish Line
-		{
-			if ((gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
-			{
-					K_HandleLapIncrement(player);
-
-					//ACS_RunLapScript(mo, line);
-					//K_HandleLapIncrement(player);
-					player->pflags |= PF_HITFINISHLINE;
-			}
 			break;
 		}
 	}
@@ -5333,7 +5331,7 @@ void P_ProcessSpecialSector(player_t *player, sector_t *sector, sector_t *rovers
 	P_EvaluateDamageType(player, sector, isTouching);
 	P_EvaluateLinedefExecutorTrigger(player, sector, isTouching);
 
-	//if (!udmf)
+	if (!udmf)
 		P_EvaluateOldSectorSpecial(player, sector, roversector, isTouching);
 }
 

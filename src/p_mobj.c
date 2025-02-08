@@ -6819,6 +6819,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_ORBINAUT:
 	{
 		boolean grounded = P_IsObjectOnGround(mobj);
+		sector_t *sec2;
 
 		if (mobj->flags2 & MF2_AMBUSH)
 		{
@@ -6875,7 +6876,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			P_Thrust(mobj, mobj->angle, thrustamount);
 
-			if (P_MobjTouchingSectorSpecial(mobj, 3, 1))
+			sec2 = P_ThingOnSpecial3DFloor(mobj);
+			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
+				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
 
 			if (mobj->threshold > 0)
@@ -6939,9 +6943,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			K_DriftDustHandling(mobj);
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((sec2 && GETSECSPECIAL(sec2->special, 3) == 1)
+			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
-				&& GETSECSPECIAL(mobj->subsector->sector->special, 3) == 1))
+				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
 
 			break;
@@ -6968,9 +6972,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (grounded)
 				{
 					sector_t *sec2 = P_ThingOnSpecial3DFloor(mobj);
-					if ((sec2 && GETSECSPECIAL(sec2->special, 3) == 1)
+					if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 						|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
-						&& GETSECSPECIAL(mobj->subsector->sector->special, 3) == 1))
+						&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 						K_DoPogoSpring(mobj, 0, 1);
 				}
 

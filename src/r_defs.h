@@ -367,16 +367,16 @@ typedef enum
 	SSF_NOSTEPDOWN = 1<<2,
 	SSF_WINDCURRENT = 1<<3,
 	SSF_CONVEYOR = 1<<4,
-	// free: 1<<5,
+	SSF_SPEEDPAD = 1<<5,
 	SSF_STARPOSTACTIVATOR = 1<<6,
 	SSF_EXIT = 1<<7,
 	SSF_DELETEITEMS = 1<<8,
-	// free: 1<<9,
-	// free: 1<<10,
-	// free: 1<<11,
-	SSF_FAN = 1<<12,
-	// free: 1<<13,
-	// free: 1<<14,
+	SSF_SNEAKERPANEL = 1<<9,
+	SSF_WATERPANEL = 1<<10,
+	SSF_REDPOGOSPRING = 1<<11,
+	SSF_YELLOWPOGOSPRING = 1<<12,
+	SSF_FAN = 1<<13,
+	SSF_FINISHLINE = 1<14,
 	SSF_ZOOMTUBESTART = 1<<15,
 	SSF_ZOOMTUBEEND = 1<<16,
 } sectorspecialflags_t;
@@ -447,6 +447,19 @@ typedef enum
 	CRUMBLE_FALL, // Crumble thinker is falling
 	CRUMBLE_RESTORE, // Crumble thinker is about to restore to original position
 } crumblestate_t;
+
+// enums for new SSF flags to prevent magic numbers!
+typedef enum
+{
+	SBPT_SNEAKER,
+	SBPT_WATER,
+} specialboostpaneltype_t;
+
+typedef enum
+{
+	SSPT_RED,
+	SSPT_YELLOW,
+} specialspringpaneltype_t;
 
 //
 // The SECTORS record, at runtime.
