@@ -1153,7 +1153,7 @@ static void P_InitializeLinedef(line_t *ld)
 	ld->validcount = 0;
 	ld->polyobj = NULL;
 
-	ld->tripwire = false;
+	//ld->tripwire = false;
 
 	ld->text = NULL;
 	ld->callcount = 0;
@@ -2058,10 +2058,10 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 	}
 	else if (fastcmp(param, "executordelay"))
 		lines[i].executordelay = atol(val);
-	else if (fastcmp(param, "tripwire") && fastcmp("true", val)) // who needs terraindefs amiright :^)
-		lines[i].tripwire = true;
 
 	// Flags
+	else if (fastcmp(param, "tripwire") && fastcmp("true", val)) // who needs terraindefs amiright :^)
+		lines[i].tripwire = true;
 	else if (fastcmp(param, "blocking") && fastcmp("true", val))
 		lines[i].flags |= ML_IMPASSABLE;
 	else if (fastcmp(param, "blockmonsters") && fastcmp("true", val))
@@ -3445,6 +3445,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	terrain_t *terrain;
 
 	boolean tripwire;
+	boolean terraintripwire;
 
 	n = ld->sidenum[p];
 
@@ -3454,9 +3455,10 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	sda = &sides[n];
 
 	terrain = K_GetTerrainForTextureNum(sda->midtexture);
-	tripwire = (terrain && (terrain->flags & TRF_TRIPWIRE)) || (ld->tripwire == true);
+	terraintripwire = (terrain && (terrain->flags & TRF_TRIPWIRE));
+	tripwire = terraintripwire ? terraintripwire : ld->tripwire;
 
-	if (tripwire)
+	if (terraintripwire)
 	{
 		// copy midtexture to other side
 		n = ld->sidenum[!p];
@@ -3492,8 +3494,9 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 		ld->frontsector = sides[ld->sidenum[0]].sector; //e6y: Can't be -1 here
 		ld->backsector = ld->sidenum[1] != 0xffff ? sides[ld->sidenum[1]].sector : 0;
 
-		// Check for tripwire, if either side matches then
+		// Check for tripwire, if either side matches a terraindef then
 		// copy that (mid)texture to the other side.
+		// NOTE: If you are using the flag instead of terrain you must do the other side yourself.
 		ld->tripwire =
 			P_CheckLineSideTripWire(ld, 0) ||
 			P_CheckLineSideTripWire(ld, 1);
