@@ -2831,6 +2831,8 @@ static void P_WriteTextmap(void)
 			CONS_Alert(CONS_WARNING, M_GetText("Linedef %s has an executor delay. Changes to the delay at runtime will not be reflected in the converted map. Use linedef type 465 for this.\n"), sizeu1(i));
 			fprintf(f, "executordelay = %d;\n", (wlines[i].backsector->ceilingheight >> FRACBITS) + (wlines[i].backsector->floorheight >> FRACBITS));
 		}
+		if (wlines[i].tripwire)
+			fprintf(f, "tripwire = true;\n");
 		if (wlines[i].flags & ML_IMPASSABLE)
 			fprintf(f, "blocking = true;\n");
 		if (wlines[i].flags & ML_BLOCKPLAYERS)
