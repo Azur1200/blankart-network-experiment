@@ -489,8 +489,8 @@ consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_SAVE|CV_NETVAR|CV_
 static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {30, "MAX"}, {0, "None"}, {0, NULL}};
 consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
-static CV_PossibleValue_t numlaps_cons_t[] = {{1, "MIN"}, {MAX_LAPS, "MAX"}, {0, "Map default"}, {0, NULL}};
-consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_SAVE|CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
+static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
+consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
 
 // Point and time limits for every gametype
 INT32 pointlimits[NUMGAMETYPES];
@@ -6679,19 +6679,29 @@ static void Command_ShowTime_f(void)
 // SRB2Kart: On change messages
 static void NumLaps_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (gamestate == GS_LEVEL)
 	{
-		return;
-	}
+		numlaps = K_RaceLapCount(gamemap - 1);
 
-	if (leveltime < starttime)
-	{
-		CONS_Printf(M_GetText("Number of laps have been set to %d.\n"), cv_numlaps.value);
-		numlaps = (UINT8)cv_numlaps.value;
+		if (cv_numlaps.value == -1)
+		{
+			CONS_Printf(M_GetText("Number of laps have been set to %d (map default).\n"), numlaps);
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Number of laps have been set to %d.\n"), numlaps);
+		}
 	}
-	else
+	else if (Playing())
 	{
-		CONS_Printf(M_GetText("Number of laps will be set to %d next round.\n"), cv_numlaps.value);
+		if (cv_numlaps.value == -1)
+		{
+			CONS_Printf(M_GetText("Number of laps will be the map default next round.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Number of laps will be set to %d next round.\n"), cv_numlaps.value);
+		}
 	}
 }
 

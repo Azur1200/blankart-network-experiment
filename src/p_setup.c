@@ -8121,24 +8121,7 @@ static void P_InitGametype(void)
 	if (modeattacking && !demo.playback)
 		P_LoadRecordGhosts();
 
-	numlaps = 0;
-	if (gametyperules & GTR_CIRCUIT)
-	{
-		if (K_CanChangeRules() && cv_numlaps.value
-		&& (!(mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
-		|| (mapheaderinfo[gamemap - 1]->numlaps > cv_numlaps.value)))
-		{
-			numlaps = cv_numlaps.value;
-		}
-		else
-		{
-			numlaps = mapheaderinfo[gamemap - 1]->numlaps;
-		}
-	}
-	else
-	{
-		numlaps = 0;
-	}
+	numlaps = K_RaceLapCount(gamemap - 1);
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
