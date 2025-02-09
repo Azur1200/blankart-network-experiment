@@ -982,10 +982,10 @@ void D_StartTitle(void)
 
 	if (netgame)
 	{
-		if (gametyperules & GTR_CAMPAIGN)
-		{
-			G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
 
+		if (server)
+		{
 			if (server)
 			{
 				COM_BufAddText(va("map %s\n", G_BuildMapName(spstage_start)));
