@@ -95,6 +95,7 @@ automatically.
 	X (title),/* titlescreen */\
 	X (titlecard),\
 	X (intermission),\
+	X (vote),\
 
 /*
 I chose to access the hook enums through a macro as well. This could provide

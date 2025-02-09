@@ -128,6 +128,7 @@ intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
 
 static huddrawlist_h luahuddrawlist_intermission;
+static huddrawlist_h luahuddrawlist_vote;
 
 static void Y_FollowIntermission(void);
 
@@ -1473,6 +1474,13 @@ void Y_VoteDrawer(void)
 	}
 
 	lastvotetic = votetic;
+
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_vote);
+		LUA_HookHUD(luahuddrawlist_vote, HUD_HOOK(vote));
+	}
+	LUA_HUD_DrawList(luahuddrawlist_vote);
 }
 
 //
