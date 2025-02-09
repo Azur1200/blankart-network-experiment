@@ -1,5 +1,5 @@
 ===============================================================================
-Universal Doom Map Format - BlanKart extensions v1.0 - 20.09.2024
+Universal Doom Map Format - BlanKart extensions v1.0 - 08.02.2025
 
 	Copyright (c) 2024 Sally Cochenour.
 	Copyright (c) 2024 Kart Krew Dev.
@@ -289,5 +289,5 @@ Changelog
 RR 1.0: 20.09.2024
 - Initial document created.
 
-BK 1.0: 08.09.2025
+BK 1.0: 08.02.2025
 - Document spec updated to account for BlanKart differnces.
