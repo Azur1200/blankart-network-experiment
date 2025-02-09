@@ -3084,7 +3084,7 @@ const char *Gametype_ConstantNames[NUMGAMETYPES] =
 UINT32 gametypedefaultrules[NUMGAMETYPES] =
 {
 	// Race
-	GTR_CAMPAIGN|GTR_CIRCUIT|GTR_BOTS,
+	GTR_CIRCUIT|GTR_BOTS,
 	// Battle
 	GTR_BUMPERS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT
 };
@@ -3960,7 +3960,7 @@ void G_AfterIntermission(void)
 		return;
 	}
 
-	if ((gametyperules & GTR_CAMPAIGN) && mapheaderinfo[gamemap-1]->cutscenenum && !modeattacking && skipstats <= 1 && (gamecomplete || !(marathonmode & MA_NOCUTSCENES))) // Start a custom cutscene.
+	if (mapheaderinfo[gamemap-1]->cutscenenum && !modeattacking && skipstats <= 1 && (gamecomplete || !(marathonmode & MA_NOCUTSCENES))) // Start a custom cutscene.
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->cutscenenum-1, false, false);
 	else
 	{
@@ -4760,7 +4760,7 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 	automapactive = false;
 	imcontinuing = false;
 
-	if ((gametyperules & GTR_CAMPAIGN) && !skipprecutscene && mapheaderinfo[gamemap-1]->precutscenenum && !modeattacking && !(marathonmode & MA_NOCUTSCENES)) // Start a custom cutscene.
+	if (!skipprecutscene && mapheaderinfo[gamemap-1]->precutscenenum && !modeattacking && !(marathonmode & MA_NOCUTSCENES)) // Start a custom cutscene.
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);
 	else
 	{
