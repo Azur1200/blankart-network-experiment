@@ -6826,6 +6826,24 @@ static void K_RaceStart(player_t *player)
 
 }
 
+UINT8 K_RaceLapCount(INT16 mapNum)
+{
+	if (!(gametyperules & GTR_CIRCUIT))
+	{
+		// Not in Race mode
+		return 0;
+	}
+
+	if (cv_numlaps.value == -1)
+	{
+		// Use map default
+		return mapheaderinfo[mapNum]->numlaps;
+	}
+
+	return cv_numlaps.value;
+}
+
+
 static void K_TireGreaseEffect(player_t *player)
 {
 	const INT16 spawnrange = player->mo->radius>>FRACBITS;
