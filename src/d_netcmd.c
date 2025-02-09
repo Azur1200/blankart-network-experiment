@@ -517,6 +517,8 @@ consvar_t cv_showping = CVAR_INIT ("showping", "Always", CV_SAVE, showping_cons_
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL);
 
+consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "On", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
 // Intermission time Tails 04-19-2002
@@ -815,6 +817,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_showviewpointtext);
 
 	CV_RegisterVar(&cv_schedule);
