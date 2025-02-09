@@ -5563,7 +5563,6 @@ static void M_HandleReplayHutList(INT32 choice)
 #define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
 static void DrawReplayHutReplayInfo(void)
 {
-	lumpnum_t lumpnum;
 	patch_t *patch;
 	UINT8 *colormap;
 	INT32 x, y, w, h;
@@ -5588,15 +5587,11 @@ static void DrawReplayHutReplayInfo(void)
 		// Draw level stuff
 		x = 15; y = 15;
 
-		//  A 160x100 image of the level as entry MAPxxP
+		//  A 160x100 image of the level
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		char *mapname = va("%sP", G_BuildMapName(cv_nextmap.value+1));
-		SINT8 length = strlen(mapname);
-		lumpnum = W_CheckNumForName(mapname);
-		if (lumpnum != LUMPERROR && (length < 7))
-			patch = W_CachePatchNum(lumpnum, PU_CACHE);
-		else
-			patch = W_CachePatchName("M_NOLVL", PU_CACHE);
+		patch = mapheaderinfo[demolist[dir_on[menudepthleft]].map-1]
+		      ? mapheaderinfo[demolist[dir_on[menudepthleft]].map-1]->thumbnailPic
+		      : W_CachePatchName("M_NOLVL", PU_CACHE);
 
 		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
 			V_DrawSmallScaledPatch(x, y, V_SNAPTOTOP, patch);
