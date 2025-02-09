@@ -42,7 +42,7 @@ additional lumps:
 
 	BEHAVIOR = Compiled ACS code.
 	ZNODES = Compiled extended / GL friendly nodes. These are required.
-	PICTURE = A Doom graphic lump, expected to be 320x200. Intended to be a
+	PICTURE = A Doom graphic lump, expected to be 160x100. Intended to be a
 		screenshot of the map itself. This is used by the game for level
 		select menus.
 	MINIMAP = A Doom graphic lump, expected to be 100x100. Intended to be a
