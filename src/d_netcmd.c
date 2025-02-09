@@ -217,6 +217,9 @@ static void Command_ShowTime_f(void);
 
 static void Command_Isgamemodified_f(void);
 static void Command_Cheats_f(void);
+
+static void Command_ListSkins(void);
+
 #ifdef _DEBUG
 static void Command_Togglemodified_f(void);
 static void Command_Archivetest_f(void);
@@ -1130,6 +1133,32 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_discordstreamer);
 	CV_RegisterVar(&cv_discordasks);
 #endif
+
+	COM_AddCommand("listskins", Command_ListSkins);
+
+}
+
+/**
+ * Searches the skins list for a skin of the "realname", if found, changes
+ * the CVAR value to be the "name" of the skin.
+ * \sa cv_skin, Skin_OnChange, Skin2_OnChange
+ * \author karen
+ */
+static void Skin_FindRealNameSkin(consvar_t *cvar)
+{
+	// Not the best way to implements this but it will do.
+
+	int i;
+	const char *value = cvar->string;
+	for (i = 0; i < numskins; i++)
+	{
+		if (strncmp(value, skins[i].realname, sizeof skins[i].realname) == 0)
+		{
+			// Change the cvar to be the value of the name.
+			CV_StealthSet(cvar, skins[i].name);
+			return;
+		}
+	}
 }
 
 /** Checks if a name (as received from another player) is okay.
@@ -6320,6 +6349,8 @@ static void Followercolor4_OnChange(void)
   */
 static void Skin_OnChange(void)
 {
+	Skin_FindRealNameSkin(&cv_skin[0]);
+
 	if (!Playing())
 		return; // do whatever you want
 
@@ -6346,6 +6377,8 @@ static void Skin_OnChange(void)
   */
 static void Skin2_OnChange(void)
 {
+	Skin_FindRealNameSkin(&cv_skin[1]);
+
 	if (!Playing() || !splitscreen)
 		return; // do whatever you want
 
@@ -6360,6 +6393,8 @@ static void Skin2_OnChange(void)
 
 static void Skin3_OnChange(void)
 {
+	Skin_FindRealNameSkin(&cv_skin[2]);
+
 	if (!Playing() || splitscreen < 2)
 		return; // do whatever you want
 
@@ -6374,6 +6409,8 @@ static void Skin3_OnChange(void)
 
 static void Skin4_OnChange(void)
 {
+	Skin_FindRealNameSkin(&cv_skin[3]);
+
 	if (!Playing() || splitscreen < 3)
 		return; // do whatever you want
 
@@ -6383,6 +6420,84 @@ static void Skin4_OnChange(void)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your skin at the moment.\n"));
 		CV_StealthSet(&cv_skin[3], skins[players[g_localplayers[3]].skin].name);
+	}
+}
+
+static void Command_ListSkins(void)
+{
+	int i;
+	int page = 0;
+	int numpages = numskins / 10 + (numskins % 10 ? 1 : 0);
+	int longest_name = 0;
+
+	if (COM_Argc() > 1)
+	{
+		if (sscanf(COM_Argv(1), " %d", &page) == 0)
+		{
+			CONS_Printf("Expected a number.\n");
+			return;
+		}
+		else if (page > numpages)
+		{
+			CONS_Printf("There are only %d pages.\n", numpages);
+			return;
+		}
+		else if (page < 0)
+		{
+			CONS_Printf("Page number cannot be negative.\n");
+			return;
+		}
+		else if (page == 0)
+		{
+			CONS_Printf("There is no 0th page. (What are you a programmer?)\n");
+			return;
+		}
+
+		--page;
+	}
+
+	CONS_Printf("Total %d skins. Page (%d/%d)\n", numskins, page + 1, numpages);
+
+	//  Find the longest name and realname in the skins list. (used for alignment)
+	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
+	{
+		int length;
+		skin_t *skin = &skins[i];
+
+		if ((length = strlen(skin->name)) > longest_name)
+			longest_name = length;
+	}
+
+	for (i = page * 10; i < numskins && i < (page + 1) * 10; i++)
+	{
+		skin_t *skin = &skins[i];
+		UINT16 chatcolor = skincolors[skin->prefcolor].chatcolor;
+		char color_prefix[2];
+
+		if (chatcolor > V_TANMAP)
+		{
+			sprintf(color_prefix, "%c", '\x80');
+		}
+		else
+		{
+			sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+		}
+
+		CONS_Printf(
+			"%s[%-*s]\x80 %s\n",
+			color_prefix,
+			longest_name,
+			skin->name,
+			skin->realname);
+	}
+
+	if (page + 1 != numpages)
+	{
+		CONS_Printf("Use \"listskins %d\" to see the next page.\n", page + 2);
+	}
+	else
+	{
+		CONS_Printf("There are no more pages.\n");
 	}
 }
 
