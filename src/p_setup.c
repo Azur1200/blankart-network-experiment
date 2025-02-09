@@ -2710,7 +2710,7 @@ static void P_WriteTextmap(void)
 		}
 	}
 
-	fprintf(f, "namespace = \"srb2\";\n");
+	fprintf(f, "namespace = \"blankart\";\n");
 	fprintf(f, "version = %d;\n", UDMF_CURRENT_VERSION);
 	for (i = k = 0; i < nummapthings; i++)
 	{
@@ -3064,13 +3064,13 @@ static void P_WriteTextmap(void)
 		if (wsectors[i].offroad != 0)
 		{
 			if (wsectors[i].offroad == FRACUNIT)
-				fprintf(f, "offroad = Weak;\n");
+				fprintf(f, "offroad = \"Weak\";\n");
 			else if (wsectors[i].offroad == 2*FRACUNIT)
-				fprintf(f, "offroad = Normal;\n");
+				fprintf(f, "offroad = \"Normal\";\n");
 			else if (wsectors[i].offroad == 3*FRACUNIT)
-				fprintf(f, "offroad = Strong;\n");
+				fprintf(f, "offroad = \"Strong\";\n");
 			else
-				fprintf(f, "gravity = %f;\n", FIXED_TO_FLOAT(wsectors[i].offroad));
+				fprintf(f, "offroad = %f;\n", FIXED_TO_FLOAT(wsectors[i].offroad));
 		}
 		if (wsectors[i].damagetype != SD_NONE)
 		{
