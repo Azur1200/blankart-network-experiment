@@ -4115,6 +4115,9 @@ static void K_drawChallengerScreen(void)
 
 static void K_drawLapStartAnim(void)
 {
+	if (!cv_showlapemblem.value)
+		return;
+
 	// This is an EVEN MORE insanely complicated animation.
 	const UINT8 t = stplyr->karthud[khud_lapanimation];
 	const UINT8 progress = 80 - t;
