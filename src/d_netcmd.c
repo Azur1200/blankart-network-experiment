@@ -834,6 +834,7 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
+	CV_RegisterVar(&cv_netdemosize);
 
 	CV_RegisterVar(&cv_shoutname);
 	CV_RegisterVar(&cv_shoutcolor);
@@ -3107,6 +3108,10 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
+
+	// clear this demo before recording a new one
+	if (demo.recording && !modeattacking)
+		G_CheckDemoStatus();
 
 	G_InitNew(pencoremode, mapnumber, resetplayer, skipprecutscene, FLS);
 	if (demo.playback && !demo.timing)

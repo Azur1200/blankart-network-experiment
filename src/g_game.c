@@ -4288,6 +4288,13 @@ void G_SaveGameData(void)
 	if (!gamedataloaded)
 		return; // If never loaded (-nodata), don't save
 
+	length = 4+4+4+(PWRLV_NUMTYPES*2)+1+(NUMMAPS)
+	+ BIT_ARRAY_SIZE(MAXEMBLEMS)
+	+ BIT_ARRAY_SIZE(MAXEXTRAEMBLEMS)
+	+ BIT_ARRAY_SIZE(MAXUNLOCKABLES)
+	+ BIT_ARRAY_SIZE(MAXCONDITIONSETS)
+	+ 4+(NUMMAPS*9);
+
 	if (P_SaveBufferAlloc(&save, length) == false)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("No more free memory for saving game data\n"));

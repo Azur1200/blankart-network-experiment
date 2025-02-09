@@ -1998,22 +1998,13 @@ void G_WriteMetalTic(mobj_t *metal)
 //
 void G_RecordDemo(const char *name)
 {
-	if (demo.recording)
-		G_CheckDemoStatus();
-
 	INT32 maxsize;
 
 	strcpy(demoname, name);
 	strcat(demoname, ".lmp");
 	maxsize = 1024 * 1024 * cv_netdemosize.value;
 
-//	if (demobuf.buffer)
-//		Z_Free(demobuf.buffer);
-
-	// FIXME: this file doesn't manage its memory and actually free this when it's done using it
-	Z_Free(demobuf.buffer);
 	P_SaveBufferAlloc(&demobuf, maxsize);
-	Z_SetUser(demobuf.buffer, (void**)&demobuf.buffer);
 	demobuf.p = NULL;
 
 	demo.recording = true;
@@ -2936,7 +2927,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -2956,7 +2947,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -2974,7 +2965,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -3038,7 +3029,7 @@ void G_DoPlayDemo(char *defdemoname)
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 				M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
-			Z_Free(demobuf.buffer);
+			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
 			return;
@@ -3081,7 +3072,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -3100,7 +3091,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -3150,7 +3141,7 @@ void G_DoPlayDemo(char *defdemoname)
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, NULL, MM_NOTHING);
 				Z_Free(pdemoname);
-				Z_Free(demobuf.buffer);
+				P_SaveBufferFree(&demobuf);
 				demo.playback = false;
 				demo.title = false;
 				return;
@@ -3166,7 +3157,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
-			Z_Free(demobuf.buffer);
+			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
 			return;
@@ -3809,7 +3800,7 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(boolean kill)
 		WriteDemoChecksum();
 		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
 	}
-	Z_Free(demobuf.buffer);
+	P_SaveBufferFree(&demobuf);
 	metalrecording = false;
 	if (saved)
 		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
@@ -3877,8 +3868,7 @@ static void G_StopTimingDemo(void)
 // called from stopdemo command, map command, and g_checkdemoStatus.
 void G_StopDemo(void)
 {
-	Z_Free(demobuf.buffer);
-	demobuf.buffer = NULL;
+	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
@@ -3944,6 +3934,8 @@ boolean G_CheckDemoStatus(void)
 		return true;
 	}
 
+	if (demo.recording)
+		P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 	return false;
 }
@@ -4017,7 +4009,7 @@ void G_SaveDemo(void)
 
 	if (FIL_WriteFile(demoname, demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;
-	Z_Free(demobuf.buffer);
+	P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 
 	if (!modeattacking)

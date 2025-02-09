@@ -5449,7 +5449,7 @@ boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump)
 	return true;
 }
 
-boolean P_SaveBufferFromFile(savebuffer_t *save, char const *name)
+size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name)
 {
 	size_t len = 0;
 
@@ -5475,6 +5475,7 @@ static void P_SaveBufferInvalidate(savebuffer_t *save)
 
 void P_SaveBufferFree(savebuffer_t *save)
 {
+	I_Assert(save->buffer != NULL);
 	Z_Free(save->buffer);
 	P_SaveBufferInvalidate(save);
 }
