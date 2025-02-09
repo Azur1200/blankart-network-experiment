@@ -4024,7 +4024,8 @@ static void K_drawInput(void)
 {
 	static INT32 pn = 0;
 	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT);
-	INT32 x = BASEVIDWIDTH - 32, y = BASEVIDHEIGHT-24, offs, col;
+	INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = (BASEVIDHEIGHT - 24)*FRACUNIT;
+	INT32 offs, col;
 	const INT32 accent1 = splitflags | skincolors[stplyr->skincolor].ramp[5];
 	const INT32 accent2 = splitflags | skincolors[stplyr->skincolor].ramp[9];
 	ticcmd_t *cmd = &stplyr->cmd;
@@ -4035,17 +4036,17 @@ static void K_drawInput(void)
 #define drawbutt(xoffs, butt, symb)\
 	if (!stplyr->exiting && (cmd->buttons & butt))\
 	{\
-		offs = 2;\
+		offs = 2*FRACUNIT;\
 		col = accent1;\
 	}\
 	else\
 	{\
 		offs = 0;\
 		col = accent2;\
-		V_DrawFill(x+(xoffs), y+BUTTH, BUTTW-1, 2, splitflags|31);\
+		V_DrawFill((x + xoffs*FRACUNIT)>>FRACBITS, (y + BUTTH*FRACUNIT)>>FRACBITS, BUTTW-1, 2, splitflags|31);\
 	}\
-	V_DrawFill(x+(xoffs), y+offs, BUTTW-1, BUTTH, col);\
-	V_DrawFixedPatch((x+1+(xoffs))<<FRACBITS, (y+offs+1)<<FRACBITS, FRACUNIT, splitflags, fontv[TINY_FONT].font[symb-HU_FONTSTART], NULL)
+	V_DrawFill((x + xoffs*FRACUNIT)>>FRACBITS, (y+offs)>>FRACBITS, BUTTW-1, BUTTH, col);\
+	V_DrawFixedPatch(x + FRACUNIT + xoffs*FRACUNIT, y + offs + FRACUNIT, FRACUNIT, splitflags, fontv[TINY_FONT].font[symb-HU_FONTSTART], NULL)
 
 	drawbutt(-2*BUTTW, BT_ACCELERATE, 'A');
 	drawbutt(  -BUTTW, BT_BRAKE,      'B');
@@ -4057,7 +4058,7 @@ static void K_drawInput(void)
 #undef BUTTW
 #undef BUTTH
 
-	y -= 1;
+	y -= FRACUNIT;
 
 	if (stplyr->exiting || !stplyr->cmd.turning) // no turn
 		target = 0;
@@ -4083,7 +4084,7 @@ static void K_drawInput(void)
 	if (pn < 0)
 	{
 		splitflags |= V_FLIP; // right turn
-		x--;
+		x -= FRACUNIT;
 	}
 
 	target = abs(pn);
@@ -4091,12 +4092,12 @@ static void K_drawInput(void)
 		target = 4;
 
 	if (!stplyr->skincolor)
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
+		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
 	else
 	{
 		UINT8 *colormap;
 		colormap = R_GetTranslationColormap(0, stplyr->skincolor, GTC_CACHE);
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
 	}
 }
 
@@ -4574,7 +4575,7 @@ void K_drawKartHUD(void)
 	{
 		if (demo.title) // Draw title logo instead in demo.titles
 		{
-			INT32 x = BASEVIDWIDTH - 32, y = 128, snapflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
+			INT32 x = (BASEVIDWIDTH - 32), y = 128, snapflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 
 			if (r_splitscreen == 3)
 			{
