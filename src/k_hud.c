@@ -3768,9 +3768,7 @@ static void K_drawBattleFullscreen(void)
 
 	if (r_splitscreen)
 	{
-		if ((r_splitscreen == 1 && stplyr == &players[displayplayers[1]])
-			|| (r_splitscreen > 1 && (stplyr == &players[displayplayers[2]]
-			|| (stplyr == &players[displayplayers[3]] && r_splitscreen > 2))))
+		if ((splitscreen == 1 && stplyrnum == 1) || (splitscreen > 1 && stplyrnum & 2))
 		{
 			y = 232-(stplyr->karthud[khud_cardanimation]/2);
 			splitflags = V_SNAPTOBOTTOM;
@@ -3782,8 +3780,7 @@ static void K_drawBattleFullscreen(void)
 		{
 			scale /= 2;
 
-			if (stplyr == &players[displayplayers[1]]
-				|| (stplyr == &players[displayplayers[3]] && r_splitscreen > 2))
+			if (stplyrnum & 1)
 				x = 3*BASEVIDWIDTH/4;
 			else
 				x = BASEVIDWIDTH/4;
@@ -3792,7 +3789,7 @@ static void K_drawBattleFullscreen(void)
 		{
 			if (stplyr->exiting)
 			{
-				if (stplyr == &players[displayplayers[1]])
+				if (stplyrnum & 1)
 					x = BASEVIDWIDTH-96;
 				else
 					x = 96;
@@ -3804,7 +3801,7 @@ static void K_drawBattleFullscreen(void)
 
 	if (stplyr->exiting)
 	{
-		if (stplyr == &players[displayplayers[0]])
+		if (stplyrnum == 0)
 			V_DrawFadeScreen(0xFF00, 16);
 		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
 		{
@@ -3838,9 +3835,7 @@ static void K_drawBattleFullscreen(void)
 		{
 			if (r_splitscreen > 1)
 				ty = (BASEVIDHEIGHT/4)+33;
-			if ((r_splitscreen == 1 && stplyr == &players[displayplayers[1]])
-				|| (stplyr == &players[displayplayers[2]] && r_splitscreen > 1)
-				|| (stplyr == &players[displayplayers[3]] && r_splitscreen > 2))
+			if ((splitscreen == 1 && stplyrnum == 1) || (splitscreen > 1 && stplyrnum & 2))
 				ty += (BASEVIDHEIGHT/2);
 		}
 		else
