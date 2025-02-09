@@ -60,6 +60,7 @@
 #endif
 
 #include "../doomstat.h"
+#include "../p_setup.h"
 #include "../i_system.h"
 #include "../v_video.h"
 #include "../m_argv.h"
@@ -999,6 +1000,7 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 void I_GetEvent(void)
 {
 	SDL_Event evt;
+	char* dropped_filedir;
 
 	// We only want the first motion event,
 	// otherwise we'll end up catching the warp back to center.
@@ -1186,6 +1188,11 @@ void I_GetEvent(void)
 				// update the menu
 				if (currentMenu == &OP_JoystickSetDef)
 					M_SetupJoystickMenu(0);
+				break;
+			case SDL_DROPFILE:
+				dropped_filedir = evt.drop.file;
+				P_AddWadFile(dropped_filedir);
+				SDL_free(dropped_filedir);    // Free dropped_filedir memory
 				break;
 			case SDL_QUIT:
 				LUA_HookBool(true, HOOK(GameQuit));
