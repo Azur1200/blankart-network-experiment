@@ -2080,6 +2080,7 @@ void VID_StartupOpenGL(void)
 		*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
 		*(void**)&HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
 		*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
+		*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
 		*(void**)&HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
 		*(void**)&HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
 

@@ -102,6 +102,7 @@ void *hwSym(const char *funcName,void *handle)
 	GETFUNC(DoScreenWipe);
 	GETFUNC(DrawIntermissionBG);
 	GETFUNC(MakeScreenTexture);
+	GETFUNC(RenderVhsEffect);
 	GETFUNC(MakeScreenFinalTexture);
 	GETFUNC(DrawScreenFinalTexture);
 
