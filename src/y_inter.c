@@ -1828,6 +1828,9 @@ void Y_StartVote(void)
 
 	voteclient.loaded = true;
 	Automate_Run(AEV_VOTESTART);
+
+	LUA_HUD_DestroyDrawList(luahuddrawlist_vote);
+	luahuddrawlist_vote = LUA_HUD_CreateDrawList();
 }
 
 //
