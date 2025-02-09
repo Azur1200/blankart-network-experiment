@@ -74,6 +74,15 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define R_PointOnSide(x,y,node) udmf ? R_PointOnSideUDMF(x,y,node) : R_PointOnSideKart(x,y,node)
 INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node);
 INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node);
+
+// This is not as accurate
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+{
+	// use cross product to determine side quickly
+	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+}
+
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 #define R_PointToAngle(x, y) R_PointToAngle2(viewx, viewy, x, y)
 angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y);
@@ -85,6 +94,18 @@ angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 subsector_t *R_PointInSubsectorOrNull(fixed_t x, fixed_t y);
+
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 

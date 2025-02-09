@@ -3660,7 +3660,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		}
 	}
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x, thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x, thiscam->y);
 	thiscam->floorz = tm.floorz;
 	thiscam->ceilingz = tm.ceilingz;
 
@@ -10372,12 +10372,12 @@ void P_PrecipitationEffects(void)
 		for (y = yl; y <= yh; y += RADIUSSTEP)
 			for (x = xl; x <= xh; x += RADIUSSTEP)
 			{
-				if (R_PointInSubsector((fixed_t)x, (fixed_t)y)->sector->ceilingpic == skyflatnum) // Found the outdoors!
-				{
-					newdist = S_CalculateSoundDistance(players[g_localplayers[0]].mo->x, players[g_localplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
-					if (newdist < closedist)
-						closedist = newdist;
-				}
+				if (R_PointInSubsectorFast((fixed_t)x, (fixed_t)y)->sector->ceilingpic != skyflatnum) // Found the outdoors!
+					continue;
+
+				newdist = S_CalculateSoundDistance(players[g_localplayers[0]].mo->x, players[g_localplayers[0]].mo->y, 0, (fixed_t)x, (fixed_t)y, 0);
+				if (newdist < closedist)
+					closedist = newdist;
 			}
 #undef RADIUSSTEP
 

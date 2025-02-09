@@ -1427,7 +1427,7 @@ static void R_PortalFrame(portal_t *portal)
 	{
 		portalclipline = NULL;
 		portalcullsector = NULL;
-		viewsector = R_PointInSubsector(viewx, viewy)->sector;
+		viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 	}
 }
 
