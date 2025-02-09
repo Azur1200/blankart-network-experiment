@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 extern boolean usebuffer;
+extern char *luaVoteScreen;
 
 void Y_IntermissionDrawer(void);
 void Y_Ticker(void);

@@ -111,6 +111,19 @@ static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
 
+patch_t *animVoteFramesPatches = NULL;
+// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
+// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
+// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch used in software)
+// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch used in software)
+char animPrefix[] = "INTSC";
+char animWidePrefix[] = "INTSW";
+char *luaVoteScreen = NULL;
+
+INT32 currentAnimFrame = 0;
+static INT32 foundAnimVoteFrames = 0;
+static INT32 foundAnimVoteWideFrames = 0;
+
 intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
 
@@ -152,6 +165,7 @@ typedef struct
 static y_votelvlinfo levelinfo[5];
 static y_voteclient voteclient;
 static INT32 votetic;
+static INT32 lastvotetic;
 static INT32 voteendtic = -1;
 static boolean votenotyetpicked;
 static patch_t *cursor = NULL;
@@ -340,6 +354,53 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		}
 
 		data.numplayers++;
+	}
+}
+
+//
+// Y_AnimatedVoteScreenCheck
+//
+// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
+static void Y_AnimatedVoteScreenCheck(void)
+{
+	char tmpPrefix[] = "INTS";
+	boolean stopSearching = false;
+
+	if (luaVoteScreen)
+		strncpy(tmpPrefix, luaVoteScreen, 4);
+	else
+	{
+		if(gametype == GT_BATTLE)
+			strcpy(tmpPrefix, "BTLS");
+	}
+
+	strncpy(animPrefix, tmpPrefix, 4);
+	animPrefix[4] = 'C';
+	strncpy(animWidePrefix, tmpPrefix, 4);
+	animWidePrefix[4] = 'W';
+
+	foundAnimVoteFrames = 0;
+	foundAnimVoteWideFrames = 0;
+	currentAnimFrame = 0;
+
+	INT32 i = 1;
+	while(!stopSearching)
+	{
+		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
+		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
+
+		if (normalLumpExists || wideLumpExists)
+		{
+			if (normalLumpExists)
+				foundAnimVoteFrames++;
+
+			if (wideLumpExists)
+				foundAnimVoteWideFrames++;
+		}
+		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
+			stopSearching = true;
+
+		i++;
 	}
 }
 
@@ -1085,6 +1146,37 @@ static void Y_UnloadData(void)
 
 // SRB2Kart: Voting!
 
+// Y_DrawAnimatedVoteScreenPatch
+//
+// Draw animated patch based on frame counter on vote screen
+//
+static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+{
+	char tempAnimPrefix[7];
+	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
+	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+
+	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
+	if (widePatch)
+	{
+		if (currentAnimFrame > foundAnimVoteWideFrames-1)
+			currentAnimFrame = 0;
+	}
+	else
+	{
+		if (currentAnimFrame > foundAnimVoteFrames-1)
+			currentAnimFrame = 0;
+	}
+
+	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
+	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+				(vid.height / vid.dupy) - SHORT(background->height),
+				V_SNAPTOTOP|V_SNAPTOLEFT, background);
+
+	if (renderisnewtic && votetic % 2 == 0 && !paused)
+		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+}
+
 //
 // Y_VoteDrawer
 //
@@ -1113,14 +1205,31 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && rendermode == render_soft && vid.width / vid.dupx > 320)
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
-							(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-	else
-		V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-							(vid.height / vid.dupy) - SHORT(bgpatch->height),
-							V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
+	if (widebgpatch && vid.width / vid.dupx > 320) {
+
+		if(foundAnimVoteWideFrames == 0){
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
+								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
+								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
+		} else {
+			// patch_t *currPatch = W_CachePatchName(va("%s%d", animPrefix, currentAnimFrame+1), PU_CACHE);
+			// V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+			// 			(vid.height / vid.dupy) - SHORT(currPatch->height),
+			// 			V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
+			// if(votetic % 4 == 0 && !paused){
+			// 	currentAnimFrame = (currentAnimFrame+1 > foundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1;
+			// }
+			Y_DrawAnimatedVoteScreenPatch(true);
+		}
+	} else {
+		if(foundAnimVoteFrames == 0) {
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
+								(vid.height / vid.dupy) - SHORT(bgpatch->height),
+								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
+		} else {
+			Y_DrawAnimatedVoteScreenPatch(false);
+		}
+	}
 
 	for (i = 0; i < 4; i++) // First, we need to figure out the height of this thing...
 	{
@@ -1362,6 +1471,8 @@ void Y_VoteDrawer(void)
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}
+
+	lastvotetic = votetic;
 }
 
 //
@@ -1630,6 +1741,8 @@ void Y_StartVote(void)
 	if (voteendtic != -1)
 		I_Error("voteendtic is dirty");
 #endif
+
+	Y_AnimatedVoteScreenCheck();
 
 	widebgpatch = W_CachePatchName(((gametype == GT_BATTLE) ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
 	bgpatch = W_CachePatchName(((gametype == GT_BATTLE) ? "BATTLSCR" : "INTERSCR"), PU_STATIC);

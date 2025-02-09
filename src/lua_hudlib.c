@@ -16,6 +16,7 @@
 #include "r_local.h"
 #include "r_fps.h"
 #include "st_stuff.h"
+#include "y_inter.h"
 #include "g_game.h"
 #include "i_video.h" // rendermode
 #include "p_local.h" // camera_t
@@ -1328,6 +1329,40 @@ static int lib_hudenabled(lua_State *L)
 	return 1;
 }
 
+static int lib_hudsetvotebackground(lua_State *L)
+{
+	if (lua_isnoneornil(L, 1))
+	{
+		if (luaVoteScreen)
+		{
+			free(luaVoteScreen);
+		}
+
+		luaVoteScreen = NULL;
+
+		return 0;
+	}
+
+	const char *prefix = luaL_checkstring(L, 1);
+
+	if (strlen(prefix) != 4)
+	{
+		return luaL_argerror(L, 1, "prefix should 4 characters wide");
+	}
+
+	if (!luaVoteScreen)
+	{
+		luaVoteScreen = (char*)malloc(5);
+		luaVoteScreen[4] = 0;
+	}
+
+	strncpy(luaVoteScreen, prefix, 4);
+
+	strupr(luaVoteScreen);
+
+	return 0;
+}
+
 // add a HUD element for rendering
 extern int lib_hudadd(lua_State *L);
 
@@ -1336,6 +1371,7 @@ static luaL_Reg lib_hud[] = {
 	{"disable", lib_huddisable},
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
+	{"setVoteBackground", lib_hudsetvotebackground},
 	{NULL, NULL}
 };
 
