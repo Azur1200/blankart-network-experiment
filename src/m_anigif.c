@@ -511,19 +511,25 @@ static colorlookup_t gif_colorlookup;
 static void GIF_rgbconvert(UINT8 *linear, UINT8 *scr)
 {
 	UINT8 r, g, b;
-	size_t src = 0, dest = 0;
-	size_t size = (vid.width * vid.height * 3);
+	size_t src, dest;
+	int x, y;
 
 	InitColorLUT(&gif_colorlookup, (gif_localcolortable) ? gif_framepalette : gif_headerpalette, true);
 
-	while (src < size)
+	for (x = 0; x < vid.width; x += scrbuf_downscaleamt)
 	{
-		r = (UINT8)linear[src];
-		g = (UINT8)linear[src + 1];
-		b = (UINT8)linear[src + 2];
-		scr[dest] = GetColorLUTDirect(&gif_colorlookup, r, g, b);
-		src += (3 * scrbuf_downscaleamt);
-		dest += scrbuf_downscaleamt;
+		for (y = 0; y < vid.height; y += scrbuf_downscaleamt)
+		{
+			dest = y*vid.width + x;
+			src = dest*3;
+
+			r = (UINT8)linear[src];
+			g = (UINT8)linear[src + 1];
+			b = (UINT8)linear[src + 2];
+			scr[dest] = GetColorLUTDirect(&gif_colorlookup, r, g, b);
+			src += (3 * scrbuf_downscaleamt);
+			dest += scrbuf_downscaleamt;
+		}
 	}
 }
 #endif
@@ -571,7 +577,7 @@ static void GIF_framewrite(void)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
 			GIF_rgbconvert(linear, movie_screen);
-			free(linear);
+			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
 	}
@@ -587,7 +593,7 @@ static void GIF_framewrite(void)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
 			GIF_rgbconvert(linear, screens[0]);
-			free(linear);
+			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
 
