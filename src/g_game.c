@@ -4105,13 +4105,6 @@ void G_EndGame(void)
 	if (demo.recording && (modeattacking || demo.savemode != DSM_NOTSAVING))
 		G_SaveDemo();
 
-	// Only do evaluation and credits in coop games.
-	if (gametyperules & GTR_CAMPAIGN)
-	{
-		F_StartCredits();
-		return;
-	}
-
 	// 1100 or competitive multiplayer, so go back to title screen.
 	D_StartTitle();
 }
