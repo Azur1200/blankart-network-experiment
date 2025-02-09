@@ -83,6 +83,10 @@ static patch_t *hud_tv2;
 static patch_t *envelope;
 #endif
 
+// current player for overlay drawing
+player_t *stplyr;
+UINT8 stplyrnum;
+
 static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 static huddrawlist_h luahuddrawlist_titlecard;
 
@@ -912,6 +916,7 @@ void ST_Drawer(void)
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			stplyr = &players[displayplayers[i]];
+			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			R_InterpolateView(rendertimefrac); // to assist with object tracking
 			ST_overlayDrawer(i);
