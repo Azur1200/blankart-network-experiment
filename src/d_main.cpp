@@ -982,20 +982,17 @@ void D_StartTitle(void)
 
 	if (netgame)
 	{
-		if (gametyperules & GTR_CAMPAIGN)
+		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+
+		if (server)
 		{
-			G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
+			char mapname[6];
 
-			if (server)
-			{
-				char mapname[6];
+			strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
+			strlwr(mapname);
+			mapname[5] = '\0';
 
-				strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
-				strlwr(mapname);
-				mapname[5] = '\0';
-
-				COM_BufAddText(va("map %s\n", mapname));
-			}
+			COM_BufAddText(va("map %s\n", mapname));
 		}
 
 		return;

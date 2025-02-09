@@ -3837,10 +3837,6 @@ static void G_DoCompleted(void)
 			nextmap = cm;
 		}
 
-		// wrap around in race
-		if (nextmap >= 1100-1 && nextmap <= 1102-1 && !(gametyperules & GTR_CAMPAIGN))
-			nextmap = (INT16)(spstage_start-1);
-
 		if (nextmap < 0 || (nextmap >= NUMMAPS && nextmap < 1100-1) || nextmap > 1103-1)
 			I_Error("Followed map %d to invalid map %d\n", prevmap + 1, nextmap + 1);
 
@@ -3850,7 +3846,7 @@ static void G_DoCompleted(void)
 
 	automapactive = false;
 
-	if (!(gametyperules & GTR_CAMPAIGN))
+	if (!(grandprixinfo.gp == true))
 	{
 		if (cv_advancemap.value == 0) // Stay on same map.
 		{

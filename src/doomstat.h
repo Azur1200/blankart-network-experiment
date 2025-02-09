@@ -512,7 +512,7 @@ enum GameTypeRules
 	GTR_TEAMSTARTS			= 1<<16, // Use team-based start positions
 
 	// Grand Prix rules
-	GTR_CAMPAIGN			= 1<<17, // Handles cup-based progression
+	//Free					= 1<<17,
 	GTR_LIVES				= 1<<18, // Lives system, players are forced to spectate during Game Over.
 	GTR_SPECIALBOTS			= 1<<19, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
 	
