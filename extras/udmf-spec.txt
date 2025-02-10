@@ -119,6 +119,13 @@ BlanKart's namespace implements the following additional fields:
 	sidedef
 	{
 		repeatcnt = <integer>;		// Number of times to mid-texture wrap. Default = 0.
+		offsetx_top = <float>;           // X offset for upper texture. Default = 0.0.
+		offsety_top = <float>;           // Y offset for upper texture. Default = 0.0.
+		offsetx_mid = <float>;           // X offset for mid texture. Default = 0.0.
+		offsety_mid = <float>;           // Y offset for mid texture. Default = 0.0.
+		offsetx_bottom = <float>;        // X offset for lower texture. Default = 0.0.
+		offsety_bottom = <float>;        // Y offset for lower texture. Default = 0.0.
+
 	}
 
 	vertex
@@ -293,3 +300,7 @@ RR 1.0: 20.09.2024
 
 BK 1.0: 08.02.2025
 - Document spec updated to account for BlanKart differnces.
+
+BK 1.0: 10.02.25
+- Added offset*_* flags
+- Added flags for nophysics_floor and nophysics_ceiling
