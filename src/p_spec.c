@@ -3172,10 +3172,15 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				scroll_t *scroller;
 				thinker_t *th;
 
-				fixed_t length = R_PointToDist2(line->v2->x, line->v2->y, line->v1->x, line->v1->y);
-				fixed_t speed = args[1] << FRACBITS;
-				fixed_t dx = FixedMul(FixedMul(FixedDiv(line->dx, length), speed) >> SCROLL_SHIFT, CARRYFACTOR);
-				fixed_t dy = FixedMul(FixedMul(FixedDiv(line->dy, length), speed) >> SCROLL_SHIFT, CARRYFACTOR);
+				fixed_t speed;
+				angle_t angle;
+				fixed_t dx;
+				fixed_t dy;
+
+				speed = args[1] << FRACBITS;
+				angle = FixedAngle(args[2] << FRACBITS) >> ANGLETOFINESHIFT;
+				dx = FixedMul(FINECOSINE(angle), speed) >> SCROLL_SHIFT;
+				dy = FixedMul(  FINESINE(angle), speed) >> SCROLL_SHIFT;
 
 				for (th = thlist[THINK_MAIN].next; th != &thlist[THINK_MAIN]; th = th->next)
 				{
@@ -3183,11 +3188,30 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						continue;
 
 					scroller = (scroll_t *)th;
-					if (!Tag_Find(&sectors[scroller->affectee].tags, args[0]))
+
+					const taglist_t* taglist = (scroller->type == sc_side)
+						? &sides[scroller->affectee].line->tags
+						: &sectors[scroller->affectee].tags;
+
+					if (!Tag_Find(taglist, args[0]))
 						continue;
 
-					scroller->dx = dx;
-					scroller->dy = dy;
+					switch (scroller->type)
+					{
+						case sc_carry:
+						case sc_carry_ceiling:
+						{
+							scroller->dx = FixedMul(-dx, CARRYFACTOR);
+							scroller->dy = FixedMul(dy, CARRYFACTOR);
+							break;
+						}
+						default:
+						{
+							scroller->dx = dx;
+							scroller->dy = dy;
+							break;
+						}
+					}
 				}
 			}
 			break;
