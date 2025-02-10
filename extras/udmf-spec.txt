@@ -158,6 +158,8 @@ BlanKart's namespace implements the following additional fields:
 		ceilingplane_c = <float>;		// The plane equation will only be used if all 4 values are given.
 		ceilingplane_d = <float>;
 
+		nophysics_floor    = <bool>;    // Disables floor slope physics if created through a plane equation.
+		nophysics_ceiling  = <bool>;    // Disables ceiling slope physics if created through a plane equation.
 		friction = <float>;				// Sector's friction. Default = 0.90625.
 		gravity = <float>;				// Sector's gravity multiplier. Default = 1.0.
 		offroad = <float>;				// Sector's offroad multiplier. Default = 0.0.

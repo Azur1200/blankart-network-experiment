@@ -379,6 +379,8 @@ typedef enum
 	SSF_FINISHLINE = 1<<14,
 	SSF_ZOOMTUBESTART = 1<<15,
 	SSF_ZOOMTUBEEND = 1<<16,
+	SSF_NOPHYSICSFLOOR = 1<<17,
+	SSF_NOPHYSICSCEILING = 1<<18,
 } sectorspecialflags_t;
 
 typedef enum
