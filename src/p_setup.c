@@ -1154,6 +1154,7 @@ static void P_InitializeLinedef(line_t *ld)
 	ld->polyobj = NULL;
 
 	//ld->tripwire = false;
+	//ld->blockplayers = false;
 
 	ld->text = NULL;
 	ld->callcount = 0;
@@ -1940,6 +1941,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_ZOOMTUBEEND;
 	else if (fastcmp(param, "finishline") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_FINISHLINE;
+	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
 	else if (fastcmp(param, "nophysics_floor") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSFLOOR;
 	else if (fastcmp(param, "nophysics_ceiling") && fastcmp("true", val))
@@ -2111,6 +2114,8 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 	// Flags
 	else if (fastcmp(param, "tripwire") && fastcmp("true", val)) // who needs terraindefs amiright :^)
 		lines[i].tripwire = true;
+	else if (fastcmp(param, "blockplayers") && fastcmp("true", val))
+		lines[i].blockplayers = true;
 	else if (fastcmp(param, "blocking") && fastcmp("true", val))
 		lines[i].flags |= ML_IMPASSABLE;
 	else if (fastcmp(param, "blockmonsters") && fastcmp("true", val))
@@ -2133,8 +2138,8 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 		lines[i].flags |= ML_MIDSOLID;
 	else if (fastcmp(param, "wrapmidtex") && fastcmp("true", val))
 		lines[i].flags |= ML_WRAPMIDTEX;
-	else if (fastcmp(param, "blockplayers") && fastcmp("true", val))
-		lines[i].flags |= ML_BLOCKPLAYERS;
+	else if (fastcmp(param, "effect6") && fastcmp("true", val))
+		lines[i].flags |= ML_EFFECT6;
 	else if (fastcmp(param, "nonet") && fastcmp("true", val))
 		lines[i].flags |= ML_NONET;
 	else if (fastcmp(param, "netonly") && fastcmp("true", val))
@@ -2864,8 +2869,8 @@ static void P_WriteTextmap(void)
 			fprintf(f, "tripwire = true;\n");
 		if (wlines[i].flags & ML_IMPASSABLE)
 			fprintf(f, "blocking = true;\n");
-		if (wlines[i].flags & ML_BLOCKPLAYERS)
-			fprintf(f, "blockplayers = true;\n");
+		if (wlines[i].flags & ML_EFFECT6)
+			fprintf(f, "effect6 = true;\n");
 		if (wlines[i].flags & ML_BLOCKMONSTERS)
 			fprintf(f, "blockmonsters = true;\n");
 		if (wlines[i].flags & ML_TWOSIDED)
@@ -2886,6 +2891,8 @@ static void P_WriteTextmap(void)
 			fprintf(f, "midsolid = true;\n");
 		if (wlines[i].flags & ML_WRAPMIDTEX)
 			fprintf(f, "wrapmidtex = true;\n");
+		if (wlines[i].flags & ML_EFFECT6)
+			fprintf(f, "effect6 = true;\n");
 		if (wlines[i].flags & ML_NONET)
 			fprintf(f, "nonet = true;\n");
 		if (wlines[i].flags & ML_NETONLY)
@@ -3118,6 +3125,8 @@ static void P_WriteTextmap(void)
 			fprintf(f, "zoomtubeend = true;\n");
 		if (wsectors[i].specialflags & SSF_FINISHLINE)
 			fprintf(f, "finishline = true;\n");
+		if (wsectors[i].specialflags & SSF_GRAVITYOVERRIDE)
+			fprintf(f, "gravityoverride = true;\n");
 		if (wsectors[i].friction != ORIG_FRICTION)
 			fprintf(f, "friction = %f;\n", FIXED_TO_FLOAT(wsectors[i].friction));
 		if (wsectors[i].gravity != FRACUNIT)
@@ -4757,7 +4766,7 @@ static void P_LinkMapData(void)
 static void P_AddBinaryMapTagsFromLine(sector_t *sector, line_t *line)
 {
 	Tag_Add(&sector->tags, Tag_FGet(&line->tags));
-	if (line->flags & ML_BLOCKMONSTERS) {
+	if (line->flags & ML_EFFECT6) {
 		if (sides[line->sidenum[0]].textureoffset)
 			Tag_Add(&sector->tags, (INT32)sides[line->sidenum[0]].textureoffset / FRACUNIT);
 		if (sides[line->sidenum[0]].rowoffset)
@@ -4799,7 +4808,7 @@ static void P_AddBinaryMapTags(void)
 		tag = Tag_FGet(&lines[i].frontsector->tags);
 		target_tag = Tag_FGet(&lines[i].tags);
 		memset(offset_tags, 0, sizeof(mtag_t)*4);
-		if (lines[i].flags & ML_BLOCKMONSTERS) {
+		if (lines[i].flags & ML_EFFECT6) {
 			offset_tags[0] = (INT32)sides[lines[i].sidenum[0]].textureoffset / FRACUNIT;
 			offset_tags[1] = (INT32)sides[lines[i].sidenum[0]].rowoffset / FRACUNIT;
 		}
@@ -5022,7 +5031,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[1] = TMP_BOTH;
 			lines[i].flags &= ~(ML_NETONLY|ML_NONET);
 
-			if (lines[i].flags & ML_BLOCKMONSTERS) // Set offset through x and y texture offsets
+			if (lines[i].flags & ML_EFFECT6) // Set offset through x and y texture offsets
 			{
 				angle_t flatangle = InvAngle(R_PointToAngle2(lines[i].v1->x, lines[i].v1->y, lines[i].v2->x, lines[i].v2->y));
 				fixed_t xoffs = sides[lines[i].sidenum[0]].textureoffset;
@@ -5145,7 +5154,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[3] &= ~TMPF_INVISIBLEPLANES;
 			/*if (lines[paramline].flags & ML_WRAPMIDTEX)
 				lines[i].args[3] |= TMPF_DONTCLIPPLANES;*/
-			if (lines[paramline].flags & ML_BLOCKMONSTERS)
+			if (lines[paramline].flags & ML_EFFECT6)
 				lines[i].args[3] |= TMPF_SPLAT;
 			if (lines[paramline].flags & ML_NOCLIMB)
 				lines[i].args[3] |= TMPF_EXECUTOR;
@@ -5289,7 +5298,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[3] |= TMFA_NOPLANES;
 			if (lines[i].special != 100 && (lines[i].special != 104 || !(lines[i].flags & ML_NOCLIMB)))
 				lines[i].args[3] |= TMFA_NOSHADE;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[3] |= TMFA_SPLAT;
 
 			//Tangibility
@@ -5337,7 +5346,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[3] |= TMFW_GOOWATER;
 
 			//Splat rendering?
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[3] |= TMFW_SPLAT;
 
 			lines[i].special = 120;
@@ -5372,7 +5381,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[3] |= TMFA_NOPLANES;
 			if (lines[i].special != 146 && (lines[i].flags & ML_NOCLIMB))
 				lines[i].args[3] |= TMFA_NOSHADE;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[3] |= TMFA_SPLAT;
 
 			//Tangibility
@@ -5448,7 +5457,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[4] |= TMFC_AIRBOB;
 			if (lines[i].special >= 176 && lines[i].special <= 179)
 				lines[i].args[4] |= TMFC_FLOATBOB;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[4] |= TMFC_SPLAT;
 
 			if (lines[i].flags & ML_SKEWTD)
@@ -5485,7 +5494,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[3] |= TMFA_INSIDES;
 			if (lines[i].special != 190 && (lines[i].special <= 193 || lines[i].flags & ML_NOCLIMB))
 				lines[i].args[3] |= TMFA_NOSHADE;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[3] |= TMFA_SPLAT;
 
 			//Tangibility
@@ -5610,7 +5619,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			}
 			if (lines[i].special == 252 && lines[i].flags & ML_NOCLIMB)
 				lines[i].args[4] |= TMFB_ONLYBOTTOM;
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[4] |= TMFB_SPLAT;
 
 			lines[i].special = 254;
@@ -5632,7 +5641,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			if (lines[i].flags & ML_SKEWTD)
 				lines[i].args[3] |= TMFL_NOBOSSES;
 			//Replicate old hack: Translucent FOFs set to full opacity cut cyan pixels
-			if (lines[i].flags & ML_BLOCKMONSTERS || lines[i].args[1] == 256)
+			if (lines[i].flags & ML_EFFECT6 || lines[i].args[1] == 256)
 				lines[i].args[3] |= TMFL_SPLAT;
 
 			break;
@@ -5642,7 +5651,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 
 			lines[i].args[0] = tag;
 			lines[i].args[3] = P_GetFOFFlags(sides[lines[i].sidenum[1]].toptexture);
-			if (lines[i].flags & ML_BLOCKMONSTERS)
+			if (lines[i].flags & ML_EFFECT6)
 				lines[i].args[3] |= FOF_SPLAT;
 			lines[i].args[4] = P_GetFOFBusttype(sides[lines[i].sidenum[1]].toptexture);
 			if (sides[lines[i].sidenum[1]].toptexture & FF_OLD_SHATTERBOTTOM)
@@ -6572,7 +6581,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = tag;
 			lines[i].args[1] = ((lines[i].special % 10) < 3) ? TMP_FLOOR : TMP_CEILING;
 			lines[i].args[2] = ((lines[i].special - 510)/10 + 1) % 3;
-			lines[i].args[3] = R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y) >> FRACBITS;
+			lines[i].args[3] = ((lines[i].flags & ML_EFFECT6) ? sides[lines[i].sidenum[0]].textureoffset : R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y)) >> FRACBITS;
 			lines[i].args[4] = (lines[i].special % 10) % 3;
 			if (lines[i].args[2] != TMS_SCROLLONLY && !(lines[i].flags & ML_NOCLIMB))
 				lines[i].args[4] |= TMST_NONEXCLUSIVE;
@@ -6603,17 +6612,19 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 544: //Current
 		case 545: //Upwards current
 		case 546: //Downwards current
+		{
+			fixed_t strength = (lines[i].flags & ML_EFFECT6) ? sides[lines[i].sidenum[0]].textureoffset : R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y);
 			lines[i].args[0] = tag;
 			switch ((lines[i].special - 541) % 3)
 			{
 				case 0:
-					lines[i].args[1] = R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y) >> FRACBITS;
+					lines[i].args[1] = strength >> FRACBITS;
 					break;
 				case 1:
-					lines[i].args[2] = R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y) >> FRACBITS;
+					lines[i].args[2] = strength >> FRACBITS;
 					break;
 				case 2:
-					lines[i].args[2] = -R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y) >> FRACBITS;
+					lines[i].args[2] = -strength >> FRACBITS;
 					break;
 			}
 			lines[i].args[3] = (lines[i].special >= 544) ? p_current : p_wind;
@@ -6623,6 +6634,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[4] |= TMPF_NONEXCLUSIVE;
 			lines[i].special = 541;
 			break;
+		}
 		case 600: //Floor lighting
 		case 601: //Ceiling lighting
 			lines[i].args[0] = tag;
@@ -6675,7 +6687,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 
 			lines[i].args[1] = tag;
 
-			if (lines[i].flags & ML_BLOCKPLAYERS)
+			if (lines[i].flags & ML_EFFECT6)
 			{
 				UINT8 side = lines[i].special >= 714;
 
@@ -7251,7 +7263,7 @@ static void P_ConvertBinaryThingTypes(void)
 			}
 
 			mapthings[i].args[0] = mapthings[i].angle;
-			mapthings[i].args[1] = P_AproxDistance(line->dx >> FRACBITS, line->dy >> FRACBITS);
+			mapthings[i].args[1] = (line->flags & ML_EFFECT6) ? sides[line->sidenum[0]].textureoffset >> FRACBITS : P_AproxDistance(line->dx >> FRACBITS, line->dy >> FRACBITS);
 			if (mapthings[i].type == 755)
 				mapthings[i].args[1] *= -1;
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)

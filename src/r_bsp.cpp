@@ -533,7 +533,7 @@ static void R_AddLine(seg_t *line)
 	// Finish line debug: make solid walls pitch black. This
 	// contrasts areas that are impossible to traverse next to
 	// finish lines.
-	if (cv_debugfinishline.value && (line->linedef->flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS)))
+	if (cv_debugfinishline.value && (line->linedef->blockplayers || (line->linedef->flags & ML_IMPASSABLE)))
 	{
 		goto clipsolid;
 	}

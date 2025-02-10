@@ -381,6 +381,7 @@ typedef enum
 	SSF_ZOOMTUBEEND = 1<<16,
 	SSF_NOPHYSICSFLOOR = 1<<17,
 	SSF_NOPHYSICSCEILING = 1<<18,
+	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 } sectorspecialflags_t;
 
 typedef enum
@@ -627,6 +628,7 @@ struct line_t
 	polyobj_t *polyobj; // Belongs to a polyobject?
 
 	boolean tripwire;
+	boolean blockplayers;
 
 	char *text; // a concatenation of all front and back texture names, for linedef specials that require a string.
 	INT16 callcount; // no. of calls left before triggering, for the "X calls" linedef specials, defaults to 0

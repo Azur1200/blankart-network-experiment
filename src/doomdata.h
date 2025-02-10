@@ -157,7 +157,7 @@ enum
 	ML_NONET			= 0x00001000,
 
 	// SRB2Kart: Blocks players only; items can be thrown through these.
-	ML_BLOCKPLAYERS		= 0x00002000,
+	ML_EFFECT6		= 0x00002000,
 
 	// Don't bounce off this wall!
 	ML_NOTBOUNCY		= 0x00004000,

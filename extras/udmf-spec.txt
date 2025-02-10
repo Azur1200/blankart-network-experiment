@@ -109,6 +109,7 @@ BlanKart's namespace implements the following additional fields:
 		midpeg = <bool>; // true = invert mid-texture unpegged behavior.
 		midsolid = <bool>; // true = mid-texture has collision.
 		wrapmidtex = <bool>; // true = mid-textures are wrapped.
+		effect6 = <bool>; // Used for compatibility.
 		nonet = <bool>; // true = special is disabled in networked multiplayer games.
 		netonly = <bool>; // true = special is only enabled in networked multiplayer games.
 		notbouncy = <bool>; // true = disable bouncing collision.
@@ -165,6 +166,7 @@ BlanKart's namespace implements the following additional fields:
 		ceilingplane_c = <float>;		// The plane equation will only be used if all 4 values are given.
 		ceilingplane_d = <float>;
 
+		gravityoverride    = <bool>;     // Reverse gravity effect is only applied when an object is in the sector.
 		nophysics_floor    = <bool>;    // Disables floor slope physics if created through a plane equation.
 		nophysics_ceiling  = <bool>;    // Disables ceiling slope physics if created through a plane equation.
 		friction = <float>;				// Sector's friction. Default = 0.90625.
@@ -302,5 +304,7 @@ BK 1.0: 08.02.2025
 - Document spec updated to account for BlanKart differnces.
 
 BK 1.0: 10.02.25
-- Added offset*_* flags
-- Added flags for nophysics_floor and nophysics_ceiling
+- Added offset*_* flags.
+- Added flags for nophysics_floor and nophysics_ceiling.
+- Readded effect6 for compat reasons.
+- Readded gravityoverride.

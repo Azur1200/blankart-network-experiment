@@ -1107,16 +1107,10 @@ static void P_PlayerFlip(mobj_t *mo)
 	// Flip aiming to match!
 }
 
-//
-// P_GetMobjGravity
-//
-// Returns the current gravity
-// value of the object.
-//
 fixed_t P_GetMobjGravity(mobj_t *mo)
 {
 	fixed_t gravityadd = 0;
-	boolean no3dfloorgrav = true; // Custom gravity
+	sector_t *gravsector = NULL; // Custom gravity
 	boolean goopgravity = false;
 	boolean wasflip;
 
@@ -1124,14 +1118,11 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	wasflip = (mo->eflags & MFE_VERTICALFLIP) != 0;
-
-	if (mo->type != MT_SPINFIRE)
-		mo->eflags &= ~MFE_VERTICALFLIP;
+	mo->eflags &= ~MFE_VERTICALFLIP;
 
 	if (mo->subsector->sector->ffloors) // Check for 3D floor gravity too.
 	{
 		ffloor_t *rover;
-		fixed_t gravfactor;
 
 		for (rover = mo->subsector->sector->ffloors; rover; rover = rover->next)
 		{
@@ -1141,27 +1132,24 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 			if ((rover->fofflags & (FOF_SWIMMABLE|FOF_GOOWATER)) == (FOF_SWIMMABLE|FOF_GOOWATER))
 				goopgravity = true;
 
-			gravfactor = P_GetSectorGravityFactor(rover->master->frontsector);
-
-			if (gravfactor == FRACUNIT)
+			if (P_GetSectorGravityFactor(rover->master->frontsector) == FRACUNIT)
 				continue;
 
-			gravityadd = -FixedMul(gravity, gravfactor);
-
-			if ((rover->master->frontsector->flags & MSF_GRAVITYFLIP) && gravityadd > 0)
-				mo->eflags |= MFE_VERTICALFLIP;
-
-			no3dfloorgrav = false;
+			gravsector = rover->master->frontsector;
 			break;
 		}
 	}
 
-	if (no3dfloorgrav)
-	{
-		gravityadd = -FixedMul(gravity, P_GetSectorGravityFactor(mo->subsector->sector));
+	if (!gravsector) // If there is no 3D floor gravity, check sector's gravity
+		gravsector = mo->subsector->sector;
 
-		if ((mo->subsector->sector->flags & MSF_GRAVITYFLIP) && gravityadd > 0)
-			mo->eflags |= MFE_VERTICALFLIP;
+	gravityadd = -FixedMul(gravity, P_GetSectorGravityFactor(gravsector));
+
+	if ((gravsector->flags & MSF_GRAVITYFLIP) && gravityadd > 0)
+	{
+		if (gravsector->specialflags & SSF_GRAVITYOVERRIDE)
+			mo->flags2 &= ~MF2_OBJECTFLIP;
+		mo->eflags |= MFE_VERTICALFLIP;
 	}
 
 	// Less gravity underwater.
@@ -1170,21 +1158,8 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	if (mo->player)
 	{
-		if (mo->flags2 & MF2_OBJECTFLIP)
-		{
-			gravityadd = -gravityadd;
-			mo->eflags ^= MFE_VERTICALFLIP;
-		}
-
 		if (wasflip == !(mo->eflags & MFE_VERTICALFLIP)) // note!! == ! is not equivalent to != here - turns numeric into bool this way
-		{
 			P_PlayerFlip(mo);
-		}
-
-		if (mo->player->pogospring)
-		{
-			gravityadd = (5*gravityadd)/2;
-		}
 	}
 	else
 	{
@@ -1192,15 +1167,10 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 		if (mo->flags2 & MF2_OBJECTFLIP)
 		{
 			mo->eflags |= MFE_VERTICALFLIP;
-
 			if (mo->z + mo->height >= mo->ceilingz)
-			{
 				gravityadd = 0;
-			}
 			else if (gravityadd < 0) // Don't sink, only rise up
-			{
-				gravityadd = -gravityadd;
-			}
+				gravityadd *= -1;
 		}
 		else //Otherwise, sort through the other exceptions.
 		{
@@ -1273,7 +1243,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 
 	// Goop has slower, reversed gravity
 	if (goopgravity)
-		gravityadd = -gravityadd/5;
+		gravityadd = -((gravityadd/5) + (gravityadd/8));
 
 	gravityadd = FixedMul(gravityadd, mo->scale);
 
