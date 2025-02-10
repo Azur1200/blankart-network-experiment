@@ -70,6 +70,8 @@
 
 #include "md5.h" // map MD5
 
+#include "deh_tables.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -1287,17 +1289,25 @@ static void P_WriteDuplicateText(const char *text, char **target)
 	M_Memcpy(*target, text, len);
 }
 
-/*static void P_WriteSkincolor(INT32 constant, char **target)
+static void P_WriteSkincolor(INT32 constant, char **target)
 {
+	const char *color_name;
+
 	if (constant <= SKINCOLOR_NONE
 	|| constant >= (INT32)numskincolors)
 		return;
 
+	if (constant >= SKINCOLOR_FIRSTFREESLOT)
+		color_name = FREE_SKINCOLORS[constant - SKINCOLOR_FIRSTFREESLOT];
+	else
+		color_name = COLOR_ENUMS[constant];
+
 	P_WriteDuplicateText(
-		va("SKINCOLOR_%s", skincolors[constant].name),
+		va("SKINCOLOR_%s", color_name),
 		target
 	);
-}*/
+}
+
 
 static void P_WriteSfx(INT32 constant, char **target)
 {
@@ -7139,9 +7149,7 @@ static void P_ConvertBinaryThingTypes(void)
 		case 462: //Balloon
 			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
 			if (mapthings[i].angle > 0)
-			{
-				mapthings[i].args[1] = (1 + (mapthings[i].angle % (numskincolors-1)));
-			}
+				P_WriteSkincolor(((mapthings[i].angle - 1) % (numskincolors - 1)) + 1, &mapthings[i].stringargs[0]);
 			break;
 		case 500: //Air bubble patch
 			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
