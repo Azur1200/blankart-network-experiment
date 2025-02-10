@@ -856,7 +856,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	{
 		if (!player->checkskip)
 		{
-			S_StartSound(toucher, sfx_lose);
+			S_StartSound(toucher, sfx_s26d);
 			if (netgame && cv_antigrief.value)
 			{
 				player->grieftime += TICRATE;
@@ -872,7 +872,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (numbosswaypoints > 0))
 	{
 		if (!player->checkskip)
-			S_StartSound(toucher, sfx_lose);
+			S_StartSound(toucher, sfx_s26d);
 
 		player->checkskip = 3;
 		return;

@@ -7529,9 +7529,6 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[0] = (mapthings[i].options & MTF_AMBUSH) == MTF_AMBUSH;
 			mapthings[i].args[1] = mapthings[i].angle;
 			break;
-		case 2050: // MT_DUELBOMB
-			mapthings[i].args[1] = !!(mapthings[i].options & MTF_AMBUSH);
-			break;
 		case 1950: // MT_AAZTREE_HELPER
 			mapthings[i].args[0] = mapthings[i].extrainfo;
 			mapthings[i].args[1] = mapthings[i].angle;
