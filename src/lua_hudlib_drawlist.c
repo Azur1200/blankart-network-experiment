@@ -35,6 +35,7 @@ enum drawitem_e {
 	DI_DrawString,
 	DI_FadeScreen,
 	DI_DrawTitleCardString,
+	DI_DrawTitleCardStringBoss,
 	DI_DrawKartString,
 	DI_MAX,
 };
@@ -56,21 +57,17 @@ typedef struct drawitem_s {
 		INT32 align;    // drawString
 		INT32 num;      // drawNum, drawPaddedNum, drawPingNum
 		UINT16 color;   // fadeScreen
+		INT32 timer;    // drawTitleCardString
 	};
 	union {
 		fixed_t vscale; // drawStretched
 		fixed_t h;      // drawFill
 		INT32 digits;   // drawPaddedNum
 		UINT8 strength; // fadeScreen
+		INT32 threshold; // drawTitleCardString
 	};
 	UINT8 *colormap;
 
-	union { // for title cards
-		boolean bossmode;
-		boolean p4;
-		INT32 timer;
-		INT32 threshold;
-	};
 	// pointers (and size_t's) last, for potentially better packing
 	union {
 		patch_t *patch;
@@ -530,12 +527,11 @@ void LUA_HUD_AddDrawTitleCardString(
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
 	item->id = GetItemId();
-	item->type = DI_DrawTitleCardString;
+	item->type = bossmode ? DI_DrawTitleCardStringBoss : DI_DrawTitleCardString;
 	item->x = x;
 	item->y = y;
 	item->flags = flags;
 	item->stroffset = CopyString(list, str);
-	item->bossmode = bossmode;
 	item->timer = timer;
 	item->threshold = threshold;
 }
@@ -688,7 +684,10 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				V_DrawFadeScreen(item->color, item->strength);
 				break;
 			case DI_DrawTitleCardString:
-				V_DrawTitleCardString(LERPS(x), LERPS(y), itemstr, item->flags, item->bossmode, item->timer, item->threshold);
+				V_DrawTitleCardString(LERPS(x), LERPS(y), itemstr, item->flags, false, item->timer, item->threshold);
+				break;
+			case DI_DrawTitleCardStringBoss:
+				V_DrawTitleCardString(LERPS(x), LERPS(y), itemstr, item->flags, true, item->timer, item->threshold);
 				break;
 			case DI_DrawKartString:
 				V_DrawKartString(LERPS(x), LERPS(y), item->flags, itemstr);
