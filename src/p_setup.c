@@ -1267,8 +1267,7 @@ static void P_InitializeSidedef(side_t *sd)
 	sd->colormap_data = NULL;
 }
 
-/* -- Reference implementation
-static void P_WriteConstant(INT32 constant, char **target)
+static void P_WriteConstant(INT32 constant, char **target, const char *desc, UINT32 id)
 {
 	char buffer[12];
 	size_t len;
@@ -1277,7 +1276,7 @@ static void P_WriteConstant(INT32 constant, char **target)
 	len = strlen(buffer) + 1;
 	*target = Z_Malloc(len, PU_LEVEL, NULL);
 	M_Memcpy(*target, buffer, len);
-} */
+}
 
 static void P_WriteDuplicateText(const char *text, char **target)
 {
@@ -7455,10 +7454,16 @@ static void P_ConvertBinaryThingTypes(void)
 				break;
 			}
 			mapthings[i].angle = AngleFixed(R_PointToAngle2(lines[j].v2->x, lines[j].v2->y, lines[j].v1->x, lines[j].v1->y)) >> FRACBITS;
-			mapthings[i].args[0] = P_AproxDistance(lines[j].dx, lines[j].dy)/16;
+			mapthings[i].args[0] = P_AproxDistance(lines[j].dx, lines[j].dy) >> FRACBITS;
 			mapthings[i].args[1] = sides[lines[j].sidenum[0]].textureoffset >> FRACBITS;
 			mapthings[i].args[2] = !!(lines[j].flags & ML_NOCLIMB);
-			mapthings[i].args[3] = (sides[lines[j].sidenum[0]].rowoffset >> FRACBITS); // Rock conversion
+			INT32 id = (sides[lines[j].sidenum[0]].rowoffset >> FRACBITS);
+			// Rather than introduce deh_tables.h as a dependency for literally one
+			// conversion, we just... recreate the string expected to be produced.
+			if (id > 0 && id < 16)
+				P_WriteDuplicateText(va("MT_ROCKCRUMBLE%d", id+1), &mapthings[i].stringargs[0]);
+			else
+				P_WriteConstant(MT_ROCKCRUMBLE1 + id, &mapthings[i].stringargs[0], "Mapthing", i);
 			break;
 		}
 		case 1221: //Minecart saloon door
