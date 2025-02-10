@@ -3932,11 +3932,10 @@ typedef enum {
 } nodetype_t;
 
 // Find out the BSP format.
-static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata)
+static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata, char signature[4 + 1])
 {
 	boolean supported[NUMNODETYPES] = {0};
 	nodetype_t nodetype = NT_UNSUPPORTED;
-	char signature[4 + 1];
 
 	*nodedata = NULL;
 
@@ -3947,7 +3946,7 @@ static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata)
 		if (virtznodes && virtznodes->size)
 		{
 			*nodedata = virtznodes->data;
-			supported[NT_XGLN] = supported[NT_XGL3] = true;
+			supported[NT_XGLN] = supported[NT_XGL2] = supported[NT_XGL3] = true;
 		}
 	}
 	else
@@ -3969,9 +3968,9 @@ static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata)
 			virtssectors = vres_Find(virt, "SSECTORS");
 
 			if (virtssectors && virtssectors->size)
-			{ // Possibly GL nodes: NODES ignored, SSECTORS takes precedence as nodes lump, (It is confusing yeah) and has a signature.
+			{ // Possibly GL nodes: NODES ignored, SSECTORS takes precedence as nodes lump (it is confusing, yeah), and has a signature.
 				*nodedata = virtssectors->data;
-				supported[NT_XGLN] = supported[NT_ZGLN] = supported[NT_XGL3] = true;
+				supported[NT_XGLN] = supported[NT_ZGLN] = supported[NT_XGL2] = supported[NT_XGL3] = true;
 			}
 			else
 			{ // Possibly ZDoom extended nodes: SSECTORS is empty, NODES has a signature.
@@ -3991,19 +3990,42 @@ static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata)
 	}
 
 	M_Memcpy(signature, *nodedata, 4);
-	signature[4] = '\0';
 	(*nodedata) += 4;
 
-	if (!strcmp(signature, "XNOD"))
-		nodetype = NT_XNOD;
-	else if (!strcmp(signature, "ZNOD"))
-		nodetype = NT_ZNOD;
-	else if (!strcmp(signature, "XGLN"))
-		nodetype = NT_XGLN;
-	else if (!strcmp(signature, "ZGLN"))
-		nodetype = NT_ZGLN;
-	else if (!strcmp(signature, "XGL3"))
-		nodetype = NT_XGL3;
+	// Identify node format from its starting signature.
+	if (memcmp(&signature[1], "NOD", 3) == 0) // ZDoom extended nodes
+	{
+		if (signature[0] == 'X')
+		{
+			nodetype = NT_XNOD; // Uncompressed
+		}
+		else if (signature[0] == 'Z')
+		{
+			nodetype = NT_ZNOD; // Compressed
+		}
+	}
+	else if (memcmp(&signature[1], "GL", 2) == 0) // GL nodes
+	{
+		switch (signature[0])
+		{
+		case 'X': // Uncompressed
+			switch (signature[3])
+			{
+			case 'N': nodetype = NT_XGLN; break; // GL nodes
+			case '2': nodetype = NT_XGL2; break; // Version 2 GL nodes
+			case '3': nodetype = NT_XGL3; break; // Version 3 GL nodes
+			}
+			break;
+		case 'Z': // Compressed
+			switch (signature[3])
+			{
+			case 'N': nodetype = NT_ZGLN; break; // GL nodes (compressed)
+			case '2': nodetype = NT_ZGL2; break; // Version 2 GL nodes (compressed)
+			case '3': nodetype = NT_ZGL3; break; // Version 3 GL nodes (compressed)
+			}
+			break;
+		}
+	}
 
 	return supported[nodetype] ? nodetype : NT_UNSUPPORTED;
 }
@@ -4051,7 +4073,7 @@ static boolean P_LoadExtraVertices(UINT8 **data)
 static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype)
 {
 	size_t i, k;
-	INT16 m;
+	size_t m;
 	seg_t *seg;
 
 	// Subsectors
@@ -4073,24 +4095,35 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 		switch (nodetype)
 		{
 		case NT_XGLN:
+		case NT_XGL2:
 		case NT_XGL3:
-			for (m = 0; m < subsectors[i].numlines; m++, k++)
+			for (m = 0; m < (size_t)subsectors[i].numlines; m++, k++)
 			{
 				UINT32 vertexnum = READUINT32((*data));
-				UINT16 linenum;
-
 				if (vertexnum >= numvertexes)
-					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %d has invalid vertex %d!\n", sizeu1(k), m, vertexnum);
+					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid vertex %d!\n", sizeu1(k), sizeu2(m), vertexnum);
 
 				segs[k - 1 + ((m == 0) ? subsectors[i].numlines : 0)].v2 = segs[k].v1 = &vertexes[vertexnum];
 
-				*data += sizeof (UINT32); // partner, can be ignored by software renderer
+				READUINT32((*data)); // partner, can be ignored by software renderer
 
-				linenum = (nodetype == NT_XGL3) ? READUINT32((*data)) : READUINT16((*data));
-				if (linenum != 0xFFFF && linenum >= numlines)
-					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(i), linenum);
-				segs[k].glseg = (linenum == 0xFFFF);
-				segs[k].linedef = (linenum == 0xFFFF) ? NULL : &lines[linenum];
+				if (nodetype != NT_XGLN)
+				{
+					UINT32 linenum = READUINT32((*data));
+					if (linenum != 0xFFFFFFFF && linenum >= numlines)
+						I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(i), linenum);
+					segs[k].glseg = linenum == 0xFFFFFFFF;
+					segs[k].linedef = linenum == 0xFFFFFFFF ? NULL : &lines[linenum];
+				}
+				else
+				{
+					UINT16 linenum = READUINT16((*data));
+					if (linenum != 0xFFFF && linenum >= numlines)
+						I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(i), linenum);
+					segs[k].glseg = linenum == 0xFFFF;
+					segs[k].linedef = linenum == 0xFFFF ? NULL : &lines[linenum];
+				}
+
 				segs[k].side = READUINT8((*data));
 			}
 			while (segs[subsectors[i].firstline].glseg)
@@ -4102,18 +4135,18 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 			break;
 
 		case NT_XNOD:
-			for (m = 0; m < subsectors[i].numlines; m++, k++)
+			for (m = 0; m < (size_t)subsectors[i].numlines; m++, k++)
 			{
 				UINT32 v1num = READUINT32((*data));
 				UINT32 v2num = READUINT32((*data));
 				UINT16 linenum = READUINT16((*data));
 
 				if (v1num >= numvertexes)
-					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %d has invalid v1 %d!\n", sizeu1(k), m, v1num);
+					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid v1 %d!\n", sizeu1(k), sizeu2(m), v1num);
 				if (v2num >= numvertexes)
-					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %d has invalid v2 %d!\n", sizeu1(k), m, v2num);
+					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid v2 %d!\n", sizeu1(k), sizeu2(m), v2num);
 				if (linenum >= numlines)
-					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %d has invalid linedef %d!\n", sizeu1(k), m, linenum);
+					I_Error("P_LoadExtendedSubsectorsAndSegs: Seg %s in subsector %s has invalid linedef %d!\n", sizeu1(k), sizeu2(m), linenum);
 
 				segs[k].v1 = &vertexes[v1num];
 				segs[k].v2 = &vertexes[v2num];
@@ -4141,7 +4174,7 @@ static boolean P_LoadExtendedSubsectorsAndSegs(UINT8 **data, nodetype_t nodetype
 		}
 		seg->length = P_SegLength(seg);
 #ifdef HWRENDER
-		seg->flength = (rendermode == render_opengl) ? P_SegLengthFloat(seg) : 0;
+		seg->flength = P_SegLengthFloat(seg);
 #endif
 	}
 
@@ -4185,8 +4218,9 @@ static void P_LoadExtendedNodes(UINT8 **data, nodetype_t nodetype)
 
 static void P_LoadMapBSP(const virtres_t *virt)
 {
+	char signature[4 + 1];
 	UINT8 *nodedata = NULL;
-	nodetype_t nodetype = P_GetNodetype(virt, &nodedata);
+	nodetype_t nodetype = P_GetNodetype(virt, &nodedata, signature);
 
 	switch (nodetype)
 	{
@@ -4218,6 +4252,7 @@ static void P_LoadMapBSP(const virtres_t *virt)
 	}
 	case NT_XNOD:
 	case NT_XGLN:
+	case NT_XGL2:
 	case NT_XGL3:
 		if (!P_LoadExtraVertices(&nodedata))
 			return;
@@ -4226,10 +4261,14 @@ static void P_LoadMapBSP(const virtres_t *virt)
 		P_LoadExtendedNodes(&nodedata, nodetype);
 		break;
 	default:
-		CONS_Alert(CONS_WARNING, "Unsupported BSP format detected.\n");
-		return;
+		if (isprint(signature[0]) && isprint(signature[1]) && isprint(signature[2]) && isprint(signature[3]))
+		{
+			I_Error("Unsupported BSP format '%s' detected!\n", signature);
+			return;
+		}
+		I_Error("Unknown BSP format detected!\n");
+
 	}
-	return;
 }
 
 // Split from P_LoadBlockMap for convenience
