@@ -4300,8 +4300,10 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			break;
 
 		case 480: // Polyobj_DoorSlide
-		case 481: // Polyobj_DoorSwing
 			PolyDoor(args);
+			break;
+		case 481: // Polyobj_DoorSwing
+			PolyDoorSwing(args);
 			break;
 		case 482: // Polyobj_Move
 			PolyMove(args);
