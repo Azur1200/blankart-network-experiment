@@ -1392,7 +1392,7 @@ static void P_XYFriction(mobj_t *mo, fixed_t oldx, fixed_t oldy)
 	{
 		if (abs(player->rmomx) < FixedMul(STOPSPEED, mo->scale)
 		    && abs(player->rmomy) < FixedMul(STOPSPEED, mo->scale)
-		    && (!(player->cmd.forwardmove && !player->cmd.sidemove))
+		    && (!player->cmd.forwardmove && !player->cmd.sidemove)
 			&& !(player->mo->standingslope && (!(player->mo->standingslope->flags & SL_NOPHYSICS)) && (abs(player->mo->standingslope->zdelta) >= FRACUNIT/2))
 				)
 		{
@@ -1863,7 +1863,7 @@ void P_XYMovement(mobj_t *mo)
 		{
 			// First, compare different slopes
 			angle_t oldangle, newangle;
-			angle_t moveangle = K_MomentumAngle(mo);
+			angle_t moveangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
 
 			oldangle = FixedMul((signed)oldslope->zangle, FINECOSINE((moveangle - oldslope->xydirection) >> ANGLETOFINESHIFT));
 
