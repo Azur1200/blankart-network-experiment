@@ -478,6 +478,21 @@ static int call_mapped(Hook_State *hook, const hook_t *map)
 	return map->numHooks;
 }
 
+static int call_mapped_hud(Hook_State *hook, const hook_t *map)
+{
+	int k;
+
+	for (k = 0; k < map->numHooks; ++k)
+	{
+		hud_interpolate = hud_interpstring = hud_interplatch = false;
+		hud_interpcounter++;
+		get_hook(hook, map->ids, k);
+		call_single_hook(hook);
+	}
+
+	return map->numHooks;
+}
+
 static int call_string_hooks(Hook_State *hook)
 {
 	const stringhook_t *map = &stringHooks[hook->hook_type];
@@ -654,10 +669,11 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 		begin_hook_values(&hook);
 
 		LUA_SetHudHook(hook_type, list);
+		hud_interpcounter = 0;
 
 		hud_running = true; // local hook
 		init_hook_call(&hook, 0, res_none);
-		call_mapped(&hook, map);
+		call_mapped_hud(&hook, map);
 		hud_running = false;
 	}
 }

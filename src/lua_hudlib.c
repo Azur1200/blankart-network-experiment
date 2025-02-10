@@ -1419,10 +1419,6 @@ boolean LUA_HudEnabled(enum hud option)
 void LUA_SetHudHook(int hook, huddrawlist_h list)
 {
 	lua_getref(gL, lib_draw_ref);
-	
-	// Update interpolation
-	hud_interpolate = hud_interpstring = hud_interplatch = false;
-	hud_interpcounter++;
 
 	lua_pushlightuserdata(gL, list);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
