@@ -194,11 +194,11 @@ extern boolean splitscreen_partied[MAXPLAYERS];
 extern INT16 spstage_start, spmarathon_start;
 extern INT16 sstage_start, sstage_end, smpstage_start, smpstage_end;
 
-extern INT16 titlemap;
+extern char * titlemap;
 extern boolean hidetitlepics;
-extern INT16 bootmap; //bootmap for loading a map on startup
+extern char * bootmap; //bootmap for loading a map on startup
 
-extern INT16 tutorialmap; // map to load for tutorial
+extern char * tutorialmap; // map to load for tutorial
 extern boolean tutorialmode; // are we in a tutorial right now?
 extern INT32 tutorialgcs; // which control scheme is loaded?
 
@@ -361,8 +361,8 @@ struct mapheader_t
 
 	UINT32 typeoflevel;					///< Combination of typeoflevel flags.
 
-	INT16 nextlevel;					///< Map number of next level, or 1100-1102 to end.
-	INT16 marathonnext;					///< See nextlevel, but for Marathon mode. Necessary to support hub worlds ala SUGOI.
+	char * nextlevel;					///< Map number of next level, or 1100-1102 to end.
+	char * marathonnext;					///< See nextlevel, but for Marathon mode. Necessary to support hub worlds ala SUGOI.
 
 	char keywords[33];					///< Keywords separated by space to search for. 32 characters.
 
@@ -479,10 +479,10 @@ struct cupheader_t
 	UINT16 id;                     ///< Cup ID
 	char name[15];                 ///< Cup title (14 chars)
 	char icon[9];                  ///< Name of the icon patch
-	INT16 levellist[MAXLEVELLIST]; ///< List of levels that belong to this cup
+	char * levellist[MAXLEVELLIST]; ///< List of levels that belong to this cup
 	UINT8 numlevels;               ///< Number of levels defined in levellist
-	INT16 bonusgame;               ///< Map number to use for bonus game
-	INT16 specialstage;            ///< Map number to use for special stage
+	char * bonusgame;               ///< Map number to use for bonus game
+	char * specialstage;            ///< Map number to use for special stage
 	UINT8 emeraldnum;              ///< ID of Emerald to use for special stage (1-7 for Chaos Emeralds, 8-14 for Super Emeralds, 0 for no emerald)
 	SINT8 unlockrequired;          ///< An unlockable is required to select this cup. -1 for no unlocking required.
 	cupheader_t *next;      ///< Next cup in linked list

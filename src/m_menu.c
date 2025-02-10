@@ -2239,6 +2239,7 @@ static void Dummystaff_OnChange(void)
 
 	dummystaffname[0] = '\0';
 
+	// TODO: Use map header to determine lump name
 	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
 	{
 		CV_StealthSetValue(&cv_dummystaff, 0);
@@ -6614,8 +6615,15 @@ static void M_DrawEmblemHints(void)
 
 	for (i = 0; i < numemblems; i++)
 	{
+		INT32 checkLevel;
+
 		emblem = &emblemlocations[i];
-		if (emblem->level != gamemap || emblem->type != ET_GLOBAL)
+		if (emblem->type != ET_GLOBAL)
+			continue;
+
+		checkLevel = G_MapNumber(emblem->level);
+
+		if (!mapheaderinfo[checkLevel] || gamemap != checkLevel)
 			continue;
 
 		if (emblem->collected)
@@ -7780,6 +7788,7 @@ static void M_GrandPrixTemp(INT32 choice)
 static void M_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup = kartcupheaders;
+	INT32 levelNum;
 
 	(void)choice;
 
@@ -7831,9 +7840,11 @@ static void M_StartGrandPrix(INT32 choice)
 
 	grandprixinfo.initalize = true;
 
+	levelNum = G_MapNumber(grandprixinfo.cup->levellist[0]);
+
 	G_DeferedInitNew(
 		false,
-		grandprixinfo.cup->levellist[0] + 1,
+		levelNum + 1,
 		(UINT8)(cv_chooseskin.value - 1),
 		(UINT8)(cv_splitplayers.value - 1),
 		false

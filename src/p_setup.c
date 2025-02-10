@@ -410,6 +410,18 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 		mapheaderinfo[num]->minimapPic = NULL;
 	}
 
+	if (mapheaderinfo[num]->nextlevel)
+	{
+		Z_Free(mapheaderinfo[num]->nextlevel);
+		mapheaderinfo[num]->nextlevel = NULL;
+	}
+
+	if (mapheaderinfo[num]->marathonnext)
+	{
+		Z_Free(mapheaderinfo[num]->marathonnext);
+		mapheaderinfo[num]->marathonnext = NULL;
+	}
+
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->selectheading[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
@@ -419,8 +431,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 	mapheaderinfo[num]->ltactdiamond[0] = '\0';
 	mapheaderinfo[num]->actnum[0] = '\0';
 	mapheaderinfo[num]->typeoflevel = 0;
-	mapheaderinfo[num]->nextlevel = (INT16)(i + 1);
-	mapheaderinfo[num]->marathonnext = 0;
 	mapheaderinfo[num]->startrings = 0;
 	mapheaderinfo[num]->sstimer = 90;
 	mapheaderinfo[num]->ssspheres = 1;
@@ -493,6 +503,8 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->lumpname = NULL;
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
+		mapheaderinfo[i]->nextlevel = NULL;
+		mapheaderinfo[i]->marathonnext = NULL;
 		mapheaderinfo[i]->flickies = NULL;
 		mapheaderinfo[i]->grades = NULL;
 		nummapheaders++;
@@ -8051,6 +8063,7 @@ static void P_LoadRecordGhosts(void)
 	{
 		lumpnum_t l;
 		UINT8 j = 1;
+		// TODO: Use map header to determine lump name
 		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(gamemap),j))) != LUMPERROR)
 		{
 			G_AddGhost(va("%sS%02u",G_BuildMapName(gamemap),j));

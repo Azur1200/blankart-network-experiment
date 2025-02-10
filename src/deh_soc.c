@@ -148,7 +148,10 @@ void clear_levels(void)
 	// we may as well try to save some memory, right?
 	for (i = 0; i < NUMMAPS; ++i)
 	{
-		if (!mapheaderinfo[i] || i == (tutorialmap-1))
+		if (!mapheaderinfo[i])
+			continue;
+
+		if (strcmp(mapheaderinfo[i]->lumpname, tutorialmap) == 0) // Sal: Is this needed...?
 			continue;
 
 		// Custom map header info
@@ -1061,11 +1064,14 @@ static mapheader_lighting_t *usemaplighting(INT32 mapnum, const char *word)
 void readlevelheader(MYFILE *f, char * name)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+
 	char *word;
 	char *word2;
 	//char *word3; // Non-uppercase version of word2
+
 	char *tmp;
 	INT32 i;
+
 	const INT32 num = G_MapNumber(name);
 
 	if (num > NUMMAPS)
@@ -1254,6 +1260,14 @@ void readlevelheader(MYFILE *f, char * name)
 			}
 
 			// Strings that can be truncated
+			else if (fastcmp(word, "NEXTLEVEL"))
+			{
+				mapheaderinfo[num-1]->nextlevel = Z_StrDup(word2);
+			}
+			else if (fastcmp(word, "MARATHONNEXT"))
+			{
+				mapheaderinfo[num-1]->marathonnext = Z_StrDup(word2);
+			}
 			else if (fastcmp(word, "ZONETITLE"))
 			{
 				deh_strlcpy(mapheaderinfo[num-1]->zonttl, word2,
@@ -1277,30 +1291,6 @@ void readlevelheader(MYFILE *f, char * name)
 					deh_warning("Level header %d: invalid act number %d", num, i);*/
 				deh_strlcpy(mapheaderinfo[num-1]->actnum, word2,
 					sizeof(mapheaderinfo[num-1]->actnum), va("Level header %d: actnum", num));
-			}
-			else if (fastcmp(word, "NEXTLEVEL"))
-			{
-				if      (fastcmp(word2, "TITLE"))      i = 1100;
-				else if (fastcmp(word2, "EVALUATION")) i = 1101;
-				else if (fastcmp(word2, "CREDITS"))    i = 1102;
-				else if (fastcmp(word2, "ENDING"))     i = 1103;
-				else
-
-				i = G_MapNumber(word2);
-
-				mapheaderinfo[num-1]->nextlevel = (INT16)i;
-			}
-			else if (fastcmp(word, "MARATHONNEXT"))
-			{
-				if      (fastcmp(word2, "TITLE"))      i = 1100;
-				else if (fastcmp(word2, "EVALUATION")) i = 1101;
-				else if (fastcmp(word2, "CREDITS"))    i = 1102;
-				else if (fastcmp(word2, "ENDING"))     i = 1103;
-				else
-
-				i = G_MapNumber(word2);
-
-				mapheaderinfo[num-1]->marathonnext = (INT16)i;
 			}
 			else if (fastcmp(word, "TYPEOFLEVEL"))
 			{
@@ -2567,7 +2557,7 @@ void reademblemdata(MYFILE *f, INT32 num)
 				emblemlocations[num-1].tag = (INT16)value;
 			else if (fastcmp(word, "MAPNUM"))
 			{
-				emblemlocations[num-1].level = (INT16)G_MapNumber(word2);
+				emblemlocations[num-1].level = Z_StrDup(word2);
 			}
 			else if (fastcmp(word, "SPRITE"))
 			{
@@ -2788,6 +2778,7 @@ void readunlockable(MYFILE *f, INT32 num)
 				}
 				else if (fastcmp(word, "VAR"))
 				{
+					// TODO: different field for level name string
 					unlockables[num].variable = (INT16)G_MapNumber(word2);
 				}
 				else
@@ -2866,8 +2857,6 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 	{
 		PARAMCHECK(1);
 		ty = UC_MAPVISITED + offset;
-
-		// Convert to map number if it appears to be one
 		re = G_MapNumber(params[1]);
 
 		if (re < 0 || re >= NUMMAPS)
@@ -2881,9 +2870,7 @@ static void readcondition(UINT8 set, UINT32 id, char *word2)
 		PARAMCHECK(2);
 		ty = UC_MAPTIME;
 		re = atoi(params[2]);
-
-		// Convert to map number if it appears to be one
-		x1 = (INT16)G_MapNumber(params[1]);
+		x1 = G_MapNumber(params[1]);
 
 		if (x1 < 0 || x1 >= NUMMAPS)
 		{
@@ -3086,7 +3073,10 @@ void readmaincfg(MYFILE *f)
 
 			else if (fastcmp(word, "SPSTAGE_START"))
 			{
-				spstage_start = (INT16)G_MapNumber(word2);
+				// TODO: Use map name string
+				// Haven't done it because of how special stage ends are handled
+				// Though, we likely won't be using these for Kart anyhow
+				spstage_start = spmarathon_start = (INT16)G_MapNumber(word2);
 			}
 			else if (fastcmp(word, "SPMARATHON_START"))
 			{
@@ -3184,7 +3174,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "TITLEMAP"))
 			{
-				titlemap = (INT16)G_MapNumber(word2);
+				titlemap = Z_StrDup(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "HIDETITLEPICS") || fastcmp(word, "TITLEPICSHIDE"))
@@ -3310,12 +3300,12 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "BOOTMAP"))
 			{
-				bootmap = (INT16)G_MapNumber(word2);
+				bootmap = Z_StrDup(word2);
 				//titlechanged = true;
 			}
 			else if (fastcmp(word, "TUTORIALMAP"))
 			{
-				tutorialmap = (INT16)G_MapNumber(word2);
+				tutorialmap = Z_StrDup(word2);
 			}
 			else
 				deh_warning("Maincfg: unknown word '%s'", word);
@@ -3538,30 +3528,23 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 
 				tmp = strtok(word2,",");
 				do {
-					INT32 map = atoi(tmp);
-
-					if (!map)
-						break;
-
 					if (cup->numlevels >= MAXLEVELLIST)
 					{
 						deh_warning("%s Cup: reached max levellist (%d)\n", cup->name, MAXLEVELLIST);
 						break;
 					}
 
-					cup->levellist[cup->numlevels] = map - 1;
+					cup->levellist[cup->numlevels] = Z_StrDup(word2);
 					cup->numlevels++;
 				} while((tmp = strtok(NULL,",")) != NULL);
 			}
 			else if (fastcmp(word, "BONUSGAME"))
 			{
-				i = (INT16)G_MapNumber(word2);
-				cup->bonusgame = (INT16)i - 1;
+				cup->bonusgame = Z_StrDup(word2);
 			}
 			else if (fastcmp(word, "SPECIALSTAGE"))
 			{
-				i = (INT16)G_MapNumber(word2);
-				cup->specialstage = (INT16)i - 1;
+				cup->specialstage = Z_StrDup(word2);
 			}
 			else if (fastcmp(word, "EMERALDNUM"))
 			{
