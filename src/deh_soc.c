@@ -1496,6 +1496,9 @@ void readlevelheader(MYFILE *f, char * name)
 				else
 					mapheaderinfo[num]->use_walltransfer = false;
 			}
+			 // ignored for compatibility
+			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
+				continue;
 			else
 				deh_warning("Level header %d: unknown word '%s'", num, word);
 		}
