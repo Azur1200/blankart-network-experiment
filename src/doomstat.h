@@ -359,20 +359,30 @@ struct mapheader_lighting_t
   */
 struct mapheader_t
 {
-	char * lumpname;					///< Lump name can be really long
+	char *lumpname;						///< Lump name can be really long
 	lumpnum_t lumpnum;					///< Lump number for the map
 
-	void * thumbnailPic;				///< Lump data for the level select thumbnail.
-	void * minimapPic;					///< Lump data for the minimap graphic.
+	void *thumbnailPic;					///< Lump data for the level select thumbnail.
+	void *minimapPic;					///< Lump data for the minimap graphic.
+
+	UINT8 mapvisited;					///< A set of flags that says what we've done in the map.
+	recorddata_t *mainrecord;			///< Stores best time attack data
 
 	char lvlttl[22];					///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
 	char subttl[33];					///< Subtitle for level
 	char zonttl[22];					///< "ZONE" replacement name
 	char actnum[3];						///< SRB2Kart: Now a 2 character long string.
 
-	UINT32 typeoflevel;					///< Combination of typeoflevel flags.
-
 	char keywords[33];					///< Keywords separated by space to search for. 32 characters.
+
+	SINT8 unlockrequired;				///< Is an unlockable required to play this level? -1 if no.
+	UINT8 levelselect;					///< Is this map available in the level select? If so, which map list is it available in?
+	UINT8 menuflags;					///< LF2_flags: options that affect record attack / nights mode menus
+
+	UINT16 levelflags;					///< LF_flags:  merged booleans into one UINT16 for space, see below
+	UINT32 typeoflevel;					///< Combination of typeoflevel flags.
+	UINT8 numlaps;						///< Number of laps in circuit mode, unless overridden.
+	fixed_t gravity;					///< Map-wide gravity.
 
 	// Music information
 	char musname[MAXMUSNAMES][7];		///< Music tracks to play. First dimension is the track number, second is the music string. "" for no music.
@@ -391,45 +401,31 @@ struct mapheader_t
 	// Extra information.
 	char interscreen[8];				///< 320x200 patch to display at intermission.
 
-	char runsoc[33];					///< SOC to execute at start of level (32 character limit instead of 63)
-	char scriptname[33];				///< Script to use when the map is switched to. (32 character limit instead of 191)
-
-	UINT8 precutscenenum;				///< Cutscene number to play BEFORE a level starts.
-	UINT8 cutscenenum;					///< Cutscene number to use, 0 for none.
-
 	INT16 countdown;					///< Countdown until level end?
-
-	UINT16 palette;						///< PAL lump to use on this map
-	UINT16 encorepal;					///< PAL for encore mode
-
-	UINT8 numlaps;						///< Number of laps in circuit mode, unless overridden.
-
-	SINT8 unlockrequired;				///< Is an unlockable required to play this level? -1 if no.
-	UINT8 levelselect;					///< Is this map available in the level select? If so, which map list is it available in?
-
-	UINT16 levelflags;					///< LF_flags:  merged booleans into one UINT16 for space, see below
-	UINT8 menuflags;					///< LF2_flags: options that affect record attack / nights mode menus
-
-	UINT16 startrings;					///< Number of rings players start with.
-	INT32 sstimer;						///< Timer for special stages.
-	UINT32 ssspheres;					///< Sphere requirement in special stages.
-	fixed_t gravity;					///< Map-wide gravity.
-
-	// Freed animals stuff.
-	UINT8 numFlickies;					///< Internal. For freed flicky support.
-	mobjtype_t *flickies;				///< List of freeable flickies in this level. Allocated dynamically for space reasons. Be careful.
-
-	mapheader_lighting_t lighting;			///< Wall and sprite lighting
-	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
-	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
 
 	// SRB2kart
 	fixed_t mobj_scale;					///< Replacement for TOL_ERZ3
 	fixed_t default_waypoint_radius;	///< 0 is a special value for DEFAULT_WAYPOINT_RADIUS, but scaled with mobjscale
 
-	// Record data (modified liberally, saved to gamedata)
-	UINT8 mapvisited;					///< A set of flags that says what we've done in the map.
-	recorddata_t *mainrecord;			///< Stores best time attack data
+	UINT16 palette;						///< PAL lump to use on this map
+	UINT16 encorepal;					///< PAL for encore mode
+	mapheader_lighting_t lighting;			///< Wall and sprite lighting
+	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
+	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
+
+	UINT16 startrings;					///< Number of rings players start with.
+	INT32 sstimer;						///< Timer for special stages.
+	UINT32 ssspheres;					///< Sphere requirement in special stages.
+
+	// Freed animals stuff.
+	UINT8 numFlickies;					///< Internal. For freed flicky support.
+	mobjtype_t *flickies;				///< List of freeable flickies in this level. Allocated dynamically for space reasons. Be careful.
+
+	char runsoc[33];					///< SOC to execute at start of level (32 character limit instead of 63)
+	char scriptname[33];				///< Script to use when the map is switched to. (32 character limit instead of 191)
+
+	UINT8 precutscenenum;				///< Cutscene number to play BEFORE a level starts.
+	UINT8 cutscenenum;					///< Cutscene number to use, 0 for none.
 
 	// Lua stuff.
 	// (This is not ifdeffed so the map header structure can stay identical, just in case.)
