@@ -396,7 +396,6 @@ static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
 static void P_ClearSingleMapHeaderInfo(INT16 i)
 {
 	const INT16 num = (INT16)(i-1);
-	boolean exists = (mapheaderinfo[gamemap-1]->alreadyExists == true);
 
 	mapheaderinfo[num]->lvlttl[0] = '\0';
 	mapheaderinfo[num]->subttl[0] = '\0';
@@ -444,9 +443,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 i)
 #else // equivalent to "FlickyList = NONE"
 	P_DeleteFlickies(num);
 #endif
-
-	// see p_setup.c - prevents replacing maps in addons with different versions
-	mapheaderinfo[num]->alreadyExists = exists;
 
 	mapheaderinfo[num]->mapvisited = 0;
 	Z_Free(mapheaderinfo[num]->mainrecord);

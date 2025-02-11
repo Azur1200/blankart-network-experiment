@@ -436,7 +436,6 @@ struct mapheader_t
 	UINT8 numCustomOptions;				///< Internal. For Lua custom value support.
 	customoption_t *customopts;			///< Custom options. Allocated dynamically for space reasons. Be careful.
 
-	boolean alreadyExists;				///< will be removed shortly
 	// BlanKart
 	boolean use_walltransfer;			///< Whether to use DRRR style wall transfering or not
 };
