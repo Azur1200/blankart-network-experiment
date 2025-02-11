@@ -67,6 +67,7 @@ fixed_t rw_distance;
 static INT32 rw_x, rw_stopx;
 static angle_t rw_centerangle;
 static fixed_t rw_offset;
+static fixed_t rw_offset_top, rw_offset_mid, rw_offset_bot;
 static fixed_t rw_offset2; // for splats
 static fixed_t rw_scale, rw_scalestep;
 static fixed_t rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
@@ -988,7 +989,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 
 	if (newline)
 	{
-		offsetvalue = sides[newline->sidenum[0]].rowoffset;
+		offsetvalue = sides[newline->sidenum[0]].rowoffset + sides[newline->sidenum[0]].offsety_mid;
 		if (newline->flags & ML_DONTPEGBOTTOM)
 		{
 			skewslope = *pfloor->b_slope; // skew using bottom slope
@@ -1000,7 +1001,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	}
 	else
 	{
-		offsetvalue = sides[pfloor->master->sidenum[0]].rowoffset;
+		offsetvalue = sides[pfloor->master->sidenum[0]].rowoffset + sides[pfloor->master->sidenum[0]].offsety_mid;
 		if (curline->linedef->flags & ML_DONTPEGBOTTOM)
 		{
 			skewslope = *pfloor->b_slope; // skew using bottom slope
@@ -1326,11 +1327,12 @@ UINT32 nombre = 100000;
 
 static void R_DrawWallColumn(drawcolumndata_t* dc, INT32 yl, INT32 yh, fixed_t mid, fixed_t texturecolumn, INT32 texture, boolean brightmapped, boolean remap)
 {
+	INT32 itexturecolumn = texturecolumn >> FRACBITS;
 	dc->yl = yl;
 	dc->yh = yh;
 	dc->texturemid = mid;
-	dc->source = R_GetColumn(texture, texturecolumn);
-	dc->brightmap = (brightmapped ? R_GetBrightmapColumn(texture, texturecolumn) : NULL);
+	dc->source = R_GetColumn(texture, itexturecolumn + (rw_offset_mid>>FRACBITS));
+	dc->brightmap = (brightmapped ? R_GetBrightmapColumn(texture, itexturecolumn + (rw_offset_mid>>FRACBITS)) : NULL);
 	dc->texheight = textureheight[texture] >> FRACBITS;
 	dc->sourcelength = dc->texheight;
 	R_SetColumnFunc(colfunctype, dc->brightmap != NULL);
@@ -1696,7 +1698,7 @@ static void R_RenderSegLoop (drawcolumndata_t* dc)
 		{
 			// save texturecol
 			//  for backdrawing of masked mid texture
-			maskedtexturecol[rw_x] = (INT16)texturecolumn;
+			maskedtexturecol[rw_x] = texturecolumn + rw_offset_mid;
 
 			if (maskedtextureheight != NULL) {
 				maskedtextureheight[rw_x] = (curline->linedef->flags & ML_MIDPEG) ?
@@ -2081,7 +2083,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			rw_midtexturemid = worldtop;
 			rw_midtextureslide = ceilingfrontslide;
 		}
-		rw_midtexturemid += sidedef->rowoffset;
+		rw_midtexturemid += sidedef->rowoffset + sidedef->offsety_mid;
 
 		ds_p->silhouette = SIL_BOTH;
 		ds_p->sprtopclip = screenheightarray;
@@ -2358,8 +2360,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
-		rw_toptexturemid += sidedef->rowoffset;
-		rw_bottomtexturemid += sidedef->rowoffset;
+		rw_toptexturemid += sidedef->rowoffset + sidedef->offsety_top;
+		rw_bottomtexturemid += sidedef->rowoffset + sidedef->offsety_bot;
 
 		R_AllocTextureColumnTables(rw_stopx - start);
 
@@ -2604,8 +2606,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 					rw_midtexturebackslide = ceilingbackslide;
 				}
 			}
-			rw_midtexturemid += sidedef->rowoffset;
-			rw_midtextureback += sidedef->rowoffset;
+			rw_midtexturemid += sidedef->rowoffset + sidedef->offsety_mid;
+			rw_midtextureback += sidedef->rowoffset + sidedef->offsety_mid;
 
 			if (R_IsDebugLine(curline))
 			{
@@ -2654,6 +2656,9 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		/// don't use texture offset for splats
 		rw_offset2 = rw_offset + curline->offset;
 		rw_offset += sidedef->textureoffset + curline->offset;
+		rw_offset_top = sidedef->offsetx_top;
+		rw_offset_mid = sidedef->offsetx_mid;
+		rw_offset_bot = sidedef->offsetx_bot;
 		rw_centerangle = ANGLE_90 + viewangle - rw_normalangle;
 
 		// calculate light table
