@@ -8674,7 +8674,7 @@ lumpnum_t wadnamelump = LUMPERROR;
 INT16 wadnamemap = 0; // gamemap based
 
 // Initialising map data...
-UINT8 P_InitMapData(void)
+UINT8 P_InitMapData(boolean existingmapheaders)
 {
 	UINT8 ret = 0;
 	INT32 i;
@@ -8691,7 +8691,15 @@ UINT8 P_InitMapData(void)
 
 		// Doesn't exist?
 		if (maplump == INT16_MAX)
+		{
+#ifndef DEVELOP
+			if (!existingmapheaders)
+			{
+				I_Error("P_InitMapData: Base map %s has a header but no level\n", name);
+			}
+#endif
 			continue;
+		}
 
 		// No change?
 		if (mapheaderinfo[i]->lumpnum == maplump)
@@ -8701,7 +8709,7 @@ UINT8 P_InitMapData(void)
 		{
 			ret |= MAPRET_ADDED;
 
-			if (basenummapheaders)
+			if (existingmapheaders)
 			{
 				CONS_Printf("%s\n", name);
 
@@ -8714,6 +8722,7 @@ UINT8 P_InitMapData(void)
 						ret |= MAPRET_CURRENTREPLACED;
 				}
 			}
+
 			mapheaderinfo[i]->lumpnum = maplump;
 			if (maplump == wadnamelump)
 				wadnamemap = i+1;
@@ -9008,7 +9017,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 
 	if (partadd_stage == 2)
 	{
-		UINT8 mapsadded = P_InitMapData();
+		UINT8 mapsadded = P_InitMapData(true);
 
 		if (!mapsadded)
 			CONS_Printf(M_GetText("No maps added\n"));

@@ -1506,8 +1506,7 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	P_InitMapData();
-	basenummapheaders = nummapheaders;
+	P_InitMapData(false);
 
 	CON_SetLoadingProgress(LOADED_IWAD);
 
@@ -1566,7 +1565,7 @@ void D_SRB2Main(void)
 		//
 		// search for pwad maps
 		//
-		P_InitMapData();
+		P_InitMapData(true);
 		HU_LoadGraphics();
 	}
 
