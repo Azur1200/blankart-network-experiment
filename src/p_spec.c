@@ -7188,8 +7188,9 @@ void P_SpawnSpecials(boolean fromnetsave)
 				//Cutting options
 				if (ffloorflags & FOF_RENDERALL)
 				{
-					//If translucent or player can enter it, cut inner walls
-					if ((lines[i].args[1] < 255) || (lines[i].args[4] & TMFT_VISIBLEFROMINSIDE))
+					//If inside is visible, cut inner walls
+					if ((lines[i].args[1] < 255) || (lines[i].args[3] & TMFA_SPLAT) || (lines[i].args[4] & TMFT_VISIBLEFROMINSIDE))
+
 						ffloorflags |= FOF_CUTEXTRA|FOF_EXTRA;
 					else
 						ffloorflags |= FOF_CUTLEVEL;
@@ -7247,8 +7248,9 @@ void P_SpawnSpecials(boolean fromnetsave)
 				if (lines[i].args[4] & TMFC_SPLAT)
 					ffloorflags |= FOF_SPLAT;
 
-				//If translucent or player can enter it, cut inner walls
-				if (lines[i].args[1] < 0xff || (lines[i].args[3] & TMFT_VISIBLEFROMINSIDE))
+				//If inside is visible, cut inner walls
+				if ((lines[i].args[1] < 255) || (lines[i].args[3] & TMFA_SPLAT) || (lines[i].args[4] & TMFT_VISIBLEFROMINSIDE))
+
 					ffloorflags |= FOF_CUTEXTRA|FOF_EXTRA;
 				else
 					ffloorflags |= FOF_CUTLEVEL;
@@ -7311,8 +7313,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 				//Cutting options
 				if (ffloorflags & FOF_RENDERALL)
 				{
-					//If translucent or player can enter it, cut inner walls
-					if ((lines[i].args[1] < 255) || (lines[i].args[4] & TMFT_VISIBLEFROMINSIDE))
+					//If inside is visible, cut inner walls
+					if ((lines[i].args[1] < 255) || (lines[i].args[3] & TMFA_SPLAT) || (lines[i].args[4] & TMFT_VISIBLEFROMINSIDE))
 						ffloorflags |= FOF_CUTEXTRA|FOF_EXTRA;
 					else
 						ffloorflags |= FOF_CUTLEVEL;
@@ -8197,6 +8199,17 @@ void T_Scroll(scroll_t *s)
 	} // end of switch
 }
 
+static boolean IsSector3DBlock(sector_t* sec)
+{
+	size_t i;
+	for (i = 0; i < sec->linecount; i++)
+	{
+		if (sec->lines[i]->special >= 100 && sec->lines[i]->special < 300)
+			return true;
+	}
+	return false;
+}
+
 /** Adds a generalized scroller to the thinker list.
   *
   * \param type     The enumerated type of scrolling.
@@ -8223,7 +8236,16 @@ static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT3
 		s->last_height = sectors[control].floorheight + sectors[control].ceilingheight;
 	s->affectee = affectee;
 	if (type == sc_carry || type == sc_carry_ceiling)
+	{
 		sectors[affectee].specialflags |= SSF_CONVEYOR;
+		if (IsSector3DBlock(&sectors[affectee]))
+		{
+			if (type == sc_carry)
+				sectors[affectee].flags |= MSF_FLIPSPECIAL_CEILING;
+			else
+				sectors[affectee].flags |= MSF_FLIPSPECIAL_FLOOR;
+		}
+	}
 	P_AddThinker(THINK_MAIN, &s->thinker);
 
 	// interpolation
