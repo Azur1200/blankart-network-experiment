@@ -1496,6 +1496,7 @@ void R_RenderPlayerView(void)
 			R_SkyboxFrame(viewssnum);
 			R_ClearClipSegs();
 			R_ClearDrawSegs();
+			R_ClearSegTables();
 			R_ClearPlanes();
 			R_ClearSprites();
 			Mask_Pre(&masks[nummasks - 1]);
@@ -1535,6 +1536,7 @@ void R_RenderPlayerView(void)
 		R_ClearClipSegs();
 	}
 	R_ClearDrawSegs();
+	R_ClearSegTables();
 	R_ClearSprites();
 	Portal_InitList();
 

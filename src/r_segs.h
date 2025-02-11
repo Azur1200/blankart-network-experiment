@@ -22,6 +22,7 @@ transnum_t R_GetLinedefTransTable(fixed_t alpha);
 void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2);
 void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pffloor);
 void R_StoreWallRange(INT32 start, INT32 stop);
+void R_ClearSegTables(void);
 
 #ifdef __cplusplus
 } // extern "C"
