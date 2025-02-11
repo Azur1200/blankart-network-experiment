@@ -375,6 +375,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 				dc->texturemid += (textureheight[texnum])*times + textureheight[texnum];
 			else
 				dc->texturemid -= (textureheight[texnum])*times;
+
 			// Check for overflows first
 			if (R_OverflowTest(dc))
 			{
@@ -389,127 +390,17 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					spryscale += rw_scalestep;
 					continue;
 				}
+			}
 
-				// calculate lighting
-				if (dc->numlights)
-				{
-					lighttable_t **xwalllights;
+			// calculate lighting
+			if (dc->numlights)
+			{
+				lighttable_t **xwalllights;
 
-					sprbotscreen = INT32_MAX;
-					sprtopscreen = windowtop = (centeryfrac - FixedMul(dc->texturemid, spryscale));
+				sprbotscreen = INT32_MAX;
+				sprtopscreen = windowtop = (centeryfrac - FixedMul(dc->texturemid, spryscale));
 
-					realbot = windowbottom = FixedMul(textureheight[texnum], spryscale) + sprtopscreen;
-					dc->iscale = 0xffffffffu / (unsigned)spryscale;
-
-					// draw the texture
-					col = (column_t *)((UINT8 *)R_GetColumn(texnum, (maskedtexturecol[dc->x] >> FRACBITS)) - 3);
-
-					if (brightmapped)
-					{
-						bmCol = (column_t *)((UINT8 *)R_GetBrightmapColumn(texnum, (maskedtexturecol[dc->x] >> FRACBITS)) - 3);
-					}
-
-					auto set_light_vars = [&](INT32 i)
-					{
-						rlight = &dc->lightlist[i];
-
-						lightnum = R_AdjustLightLevel(rlight->lightnum);
-
-						if (lightnum < 0)
-							xwalllights = scalelight[0];
-						else if (lightnum >= LIGHTLEVELS)
-							xwalllights = scalelight[LIGHTLEVELS-1];
-						else
-							xwalllights = scalelight[lightnum];
-
-						pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
-
-						if (pindex >= MAXLIGHTSCALE)
-							pindex = MAXLIGHTSCALE - 1;
-
-						if (rlight->extra_colormap)
-							rlight->rcolormap = rlight->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
-						else
-							rlight->rcolormap = xwalllights[pindex];
-					};
-
-					auto set_colormap_below_light = [&]
-					{
-						dc->colormap = rlight->rcolormap;
-						dc->lightmap = xwalllights[pindex];
-						dc->fullbright = colormaps;
-						if (remap && !(ldef->flags & ML_TFERLINE))
-						{
-							dc->colormap += COLORMAP_REMAPOFFSET;
-							dc->fullbright += COLORMAP_REMAPOFFSET;
-						}
-					};
-
-					// Use the base sector's light level above the first FOF.
-					// You can imagine it as the sky casting its light on top of the highest FOF.
-					set_light_vars(0);
-					set_colormap_below_light();
-
-					for (i = 0; i < dc->numlights; i++)
-					{
-						if ((dc->lightlist[i].flags & FOF_NOSHADE))
-							continue;
-
-						set_light_vars(i);
-
-						height = rlight->height;
-						rlight->height += rlight->heightstep;
-
-						if (height <= windowtop)
-						{
-							set_colormap_below_light();
-							continue;
-						}
-
-						windowbottom = height;
-						if (windowbottom >= realbot)
-						{
-							windowbottom = realbot;
-							colfunc_2s(dc, col, bmCol, -1);
-							for (i++; i < dc->numlights; i++)
-							{
-								rlight = &dc->lightlist[i];
-								rlight->height += rlight->heightstep;
-							}
-
-							continue;
-						}
-						colfunc_2s(dc, col, bmCol, -1);
-						windowtop = windowbottom + 1;
-						set_colormap_below_light();
-					}
-					windowbottom = realbot;
-					if (windowtop < windowbottom)
-						colfunc_2s(dc, col, bmCol, -1);
-
-					spryscale += rw_scalestep;
-					continue;
-				}
-
-				// calculate lighting
-				pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
-
-				if (pindex >= MAXLIGHTSCALE)
-					pindex = MAXLIGHTSCALE - 1;
-
-				dc->colormap = walllights[pindex];
-				dc->lightmap = walllights[pindex];
-				dc->fullbright = colormaps;
-				if (remap && !(ldef->flags & ML_TFERLINE))
-				{
-					dc->colormap += COLORMAP_REMAPOFFSET;
-					dc->fullbright += COLORMAP_REMAPOFFSET;
-				}
-
-				if (frontsector->extra_colormap)
-					dc->colormap = frontsector->extra_colormap->colormap + (dc->colormap - colormaps);
-
-				sprtopscreen = centeryfrac - FixedMul(dc->texturemid, spryscale);
+				realbot = windowbottom = FixedMul(textureheight[texnum], spryscale) + sprtopscreen;
 				dc->iscale = 0xffffffffu / (unsigned)spryscale;
 
 				// draw the texture
@@ -520,61 +411,118 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 					bmCol = (column_t *)((UINT8 *)R_GetBrightmapColumn(texnum, (maskedtexturecol[dc->x] >> FRACBITS)) - 3);
 				}
 
-#if 0 // Disabling this allows inside edges to render below the planes, for until the clipping is fixed to work right when POs are near the camera. -Red
-				if (curline->dontrenderme && curline->polyseg && (curline->polyseg->flags & POF_RENDERPLANES))
+				auto set_light_vars = [&](INT32 i)
 				{
-					fixed_t my_topscreen;
-					fixed_t my_bottomscreen;
-					fixed_t my_yl, my_yh;
+					rlight = &dc->lightlist[i];
 
-					my_topscreen = sprtopscreen + spryscale*col->topdelta;
-					my_bottomscreen = sprbotscreen == INT32_MAX ? my_topscreen + spryscale*col->length
-					                                         : sprbotscreen + spryscale*col->length;
+					lightnum = R_AdjustLightLevel(rlight->lightnum);
 
-					my_yl = (my_topscreen+FRACUNIT-1)>>FRACBITS;
-					my_yh = (my_bottomscreen-1)>>FRACBITS;
-	//				CONS_Debug(DBG_RENDER, "my_topscreen: %d\nmy_bottomscreen: %d\nmy_yl: %d\nmy_yh: %d\n", my_topscreen, my_bottomscreen, my_yl, my_yh);
+					if (lightnum < 0)
+						xwalllights = scalelight[0];
+					else if (lightnum >= LIGHTLEVELS)
+						xwalllights = scalelight[LIGHTLEVELS-1];
+					else
+						xwalllights = scalelight[lightnum];
 
-					if (numffloors)
+					pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+
+					if (pindex >= MAXLIGHTSCALE)
+						pindex = MAXLIGHTSCALE - 1;
+
+					if (rlight->extra_colormap)
+						rlight->rcolormap = rlight->extra_colormap->colormap + (xwalllights[pindex] - colormaps);
+					else
+						rlight->rcolormap = xwalllights[pindex];
+				};
+
+				auto set_colormap_below_light = [&]
+				{
+					dc->colormap = rlight->rcolormap;
+					dc->lightmap = xwalllights[pindex];
+					dc->fullbright = colormaps;
+					if (remap && !(ldef->flags & ML_TFERLINE))
 					{
-						INT32 top = my_yl;
-						INT32 bottom = my_yh;
-
-						for (i = 0; i < numffloors; i++)
-						{
-							if (!ffloor[i].polyobj || ffloor[i].polyobj != curline->polyseg)
-								continue;
-
-							if (ffloor[i].height < viewz)
-							{
-								INT32 top_w = ffloor[i].plane->top[dc_x];
-
-	//							CONS_Debug(DBG_RENDER, "Leveltime : %d\n", leveltime);
-	//							CONS_Debug(DBG_RENDER, "Top is %d, top_w is %d\n", top, top_w);
-								if (top_w < top)
-								{
-									ffloor[i].plane->top[dc_x] = (INT16)top;
-									ffloor[i].plane->picnum = 0;
-								}
-	//							CONS_Debug(DBG_RENDER, "top_w is now %d\n", ffloor[i].plane->top[dc_x]);
-							}
-							else if (ffloor[i].height > viewz)
-							{
-								INT32 bottom_w = ffloor[i].plane->bottom[dc_x];
-
-								if (bottom_w > bottom)
-								{
-									ffloor[i].plane->bottom[dc_x] = (INT16)bottom;
-									ffloor[i].plane->picnum = 0;
-								}
-							}
-						}
+						dc->colormap += COLORMAP_REMAPOFFSET;
+						dc->fullbright += COLORMAP_REMAPOFFSET;
 					}
-				}
-				else
-#endif
+				};
+
+				// Use the base sector's light level above the first FOF.
+				// You can imagine it as the sky casting its light on top of the highest FOF.
+				set_light_vars(0);
+				set_colormap_below_light();
+
+				for (i = 0; i < dc->numlights; i++)
+				{
+					if ((dc->lightlist[i].flags & FOF_NOSHADE))
+						continue;
+
+					set_light_vars(i);
+
+					height = rlight->height;
+					rlight->height += rlight->heightstep;
+
+					if (height <= windowtop)
+					{
+						set_colormap_below_light();
+						continue;
+					}
+
+					windowbottom = height;
+					if (windowbottom >= realbot)
+					{
+						windowbottom = realbot;
+						colfunc_2s(dc, col, bmCol, -1);
+						for (i++; i < dc->numlights; i++)
+						{
+							rlight = &dc->lightlist[i];
+							rlight->height += rlight->heightstep;
+						}
+
+						continue;
+					}
 					colfunc_2s(dc, col, bmCol, -1);
+					windowtop = windowbottom + 1;
+					set_colormap_below_light();
+				}
+				windowbottom = realbot;
+				if (windowtop < windowbottom)
+					colfunc_2s(dc, col, bmCol, -1);
+
+				spryscale += rw_scalestep;
+				continue;
 			}
+
+			// calculate lighting
+			pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+
+			if (pindex >= MAXLIGHTSCALE)
+				pindex = MAXLIGHTSCALE - 1;
+
+			dc->colormap = walllights[pindex];
+			dc->lightmap = walllights[pindex];
+			dc->fullbright = colormaps;
+			if (remap && !(ldef->flags & ML_TFERLINE))
+			{
+				dc->colormap += COLORMAP_REMAPOFFSET;
+				dc->fullbright += COLORMAP_REMAPOFFSET;
+			}
+
+			if (frontsector->extra_colormap)
+				dc->colormap = frontsector->extra_colormap->colormap + (dc->colormap - colormaps);
+
+			sprtopscreen = centeryfrac - FixedMul(dc->texturemid, spryscale);
+			dc->iscale = 0xffffffffu / (unsigned)spryscale;
+
+			// draw the texture
+			col = (column_t *)((UINT8 *)R_GetColumn(texnum, (maskedtexturecol[dc->x] >> FRACBITS)) - 3);
+
+			if (brightmapped)
+			{
+				bmCol = (column_t *)((UINT8 *)R_GetBrightmapColumn(texnum, (maskedtexturecol[dc->x] >> FRACBITS)) - 3);
+			}
+			colfunc_2s(dc, col, bmCol, -1);
+
 			spryscale += rw_scalestep;
 		}
 	}
