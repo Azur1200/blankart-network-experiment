@@ -710,19 +710,7 @@ void G_SetGameModified(boolean silent, boolean major)
   */
 const char *G_BuildMapName(INT32 map)
 {
-
-	if (map == 0) // hack???
-	{
-		if (gamestate == GS_TITLESCREEN)
-			map = -1;
-		else if (gamestate == GS_LEVEL)
-			map = gamemap-1;
-		else
-			map = prevmap;
-		map = G_RandMap(G_TOLFlag(cv_newgametype.value), map, 0, 0, false, NULL)+1;
-	}
-
-	if (map > 0 && map <= NUMMAPS && mapheaderinfo[map - 1] != NULL)
+	if (map > 0 && map <= nummapheaders && mapheaderinfo[map - 1] != NULL)
 	{
 		return mapheaderinfo[map - 1]->lumpname;
 	}

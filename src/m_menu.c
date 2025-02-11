@@ -425,7 +425,7 @@ consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesN
 
 static CV_PossibleValue_t map_cons_t[] = {
 	{0,"MIN"},
-	{NUMMAPS, "MAX"},
+	{INT16_MAX, "MAX"}, // TODO: kill nextmap
 	{0, NULL}
 };
 consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange);
@@ -7555,7 +7555,8 @@ static void M_ChoosePlayer(INT32 choice)
 
 static INT32 statsLocation;
 static INT32 statsMax;
-static INT16 statsMapList[NUMMAPS+1];
+static INT16 *statsMapList = NULL;
+static INT16 statsMapListLen;
 
 static void M_Statistics(INT32 choice)
 {
@@ -7563,9 +7564,13 @@ static void M_Statistics(INT32 choice)
 
 	(void)choice;
 
-	memset(statsMapList, 0, sizeof(statsMapList));
+	if (!statsMapList || nummapheaders != statsMapListLen)
+	{
+		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_LEVEL, NULL);
+		statsMapListLen = nummapheaders;
+	}
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i] || mapheaderinfo[i]->lvlttl[0] == '\0')
 			continue;
@@ -7707,7 +7712,7 @@ static void M_DrawLevelStats(void)
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 52, 0, va("Race: %i", vspowerlevel[PWRLV_RACE]));
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 60, 0, va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
@@ -8891,7 +8896,7 @@ static INT32 M_FindFirstMap(INT32 gtype)
 	if (mapheaderinfo[gamemap] && (mapheaderinfo[gamemap]->typeoflevel & gametypetol[gtype]))
 		return gamemap;
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i])
 			continue;
@@ -9013,7 +9018,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		{
 			i--;
 			if (i == -2)
-				i = NUMMAPS-1;
+				i = nummapheaders-1;
 
 			if (i == oldval)
 				return;
@@ -9048,7 +9053,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		do
 		{
 			i++;
-			if (i == NUMMAPS)
+			if (i == nummapheaders)
 				i = -1;
 
 			if (i == oldval)
