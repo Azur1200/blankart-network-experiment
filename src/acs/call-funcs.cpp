@@ -3054,7 +3054,7 @@ bool CallFunc_MapWarp(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Wor
 	const char *levelName = NULL;
 	size_t levelLen = 0;
 
-	UINT16 nextmap = UINT16_MAX;
+	UINT16 nextmap = NEXTMAP_INVALID;
 
 	(void)argC;
 
@@ -3078,7 +3078,7 @@ bool CallFunc_MapWarp(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Wor
 
 	nextmap = G_MapNumber(levelName);
 
-	if (nextmap == UINT16_MAX)
+	if (nextmap == NEXTMAP_INVALID)
 	{
 		CONS_Alert(CONS_WARNING, "MapWarp level %s is not valid or loaded.\n", levelName);
 		return false;

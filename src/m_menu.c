@@ -6282,7 +6282,7 @@ static boolean M_ExitPandorasBox(void)
 static void M_ChangeLevel(INT32 choice)
 {
 	(void)choice;
-	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap : prevmap, 0, 0, false, NULL);
+	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, false, NULL);
 	M_ClearMenus(true);
 	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
 }

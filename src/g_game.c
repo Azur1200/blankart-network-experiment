@@ -3788,27 +3788,28 @@ static void G_HandleSaveLevel(void)
 		G_SaveGame((UINT32)cursaveslot, lastmap+1); // not nextmap+1 to route around special stages
 }
 
-static void G_GetNextMap(void)
+static INT16 G_GetNextMap(boolean advancemap)
 {
 	INT32 i;
+	INT16 newmap, curmap = gamestate == GS_LEVEL ? gamemap-1 : prevmap;
 
 	// go to next level
 	// nextmap is 0-based, unlike gamemap
 	if (nextmapoverride != 0)
 	{
-		nextmap = (INT16)(nextmapoverride-1);
+		newmap = (INT16)(nextmapoverride-1);
 	}
 	else if (grandprixinfo.gp == true)
 	{
 		if (grandprixinfo.roundnum == 0 || grandprixinfo.cup == NULL) // Single session
 		{
-			nextmap = prevmap; // Same map
+			newmap = curmap; // Same map
 		}
 		else
 		{
 			if (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels) // On final map
 			{
-				nextmap = NEXTMAP_CEREMONY; // ceremonymap
+				newmap = NEXTMAP_CEREMONY; // ceremonymap
 			}
 			else
 			{
@@ -3817,11 +3818,11 @@ static void G_GetNextMap(void)
 
 				if (cupLevelNum < nummapheaders && mapheaderinfo[cupLevelNum])
 				{
-					nextmap = cupLevelNum;
+					newmap = cupLevelNum;
 				}
 				else
 				{
-					nextmap = prevmap; // Prevent uninitialised use
+					newmap = curmap; // Prevent uninitialised use
 				}
 
 				grandprixinfo.roundnum++;
@@ -3830,7 +3831,7 @@ static void G_GetNextMap(void)
 	}
 	else if (bossinfo.boss == true)
 	{
-		nextmap = NEXTMAP_TITLE; // temporary
+		newmap = NEXTMAP_TITLE; // temporary
 	}
 	else
 	{
@@ -3858,13 +3859,13 @@ static void G_GetNextMap(void)
 					// Grab the first valid after the map you're on
 					if (gettingresult)
 					{
-						nextmap = cm;
+						newmap = cm;
 						gettingresult = 2;
 						break;
 					}
 
 					// Not the map you're on?
-					if (cm != prevmap)
+					if (cm != curmap)
 					{
 						continue;
 					}
@@ -3888,21 +3889,21 @@ static void G_GetNextMap(void)
 			{
 				if (marathonmode)
 				{
-					nextmap = NEXTMAP_CEREMONY; // ceremonymap
+					newmap = NEXTMAP_CEREMONY; // ceremonymap
 				}
 				else
 				{
-					nextmap = NEXTMAP_TITLE;
+					newmap = NEXTMAP_TITLE;
 				}
 			}
 		}
 		else
 		{
-			i = prevmap;
+			i = curmap;
 			if (++i >= nummapheaders)
 				i = 0;
 
-			while (i != prevmap)
+			while (i != curmap)
 			{
 				if (!mapheaderinfo[i]
 					|| mapheaderinfo[i]->lumpnum == LUMPERROR
@@ -3917,29 +3918,31 @@ static void G_GetNextMap(void)
 				break;
 			}
 
-			nextmap = i;
+			newmap = i;
 		}
 
-		if (!marathonmode)
+		if (advancemap && !marathonmode)
 		{
 			if (cv_advancemap.value == 0) // Stay on same map.
 			{
-				nextmap = prevmap;
+				newmap = curmap;
 			}
 			else if (cv_advancemap.value == 2) // Go to random map.
 			{
-				nextmap = G_RandMap(G_TOLFlag(gametype), prevmap, 0, 0, false, NULL);
+				newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, false, NULL);
 			}
 			else if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
 			{
-				nextmap = G_GetFirstMapOfGametype(gametype);
+				newmap = G_GetFirstMapOfGametype(gametype);
 			}
 		}
 	}
 
 	// We are committed to this map now.
-	if (nextmap == NEXTMAP_INVALID || (nextmap < NEXTMAP_SPECIAL && (nextmap >= nummapheaders || !mapheaderinfo[nextmap] || mapheaderinfo[nextmap]->lumpnum == LUMPERROR)))
-		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", nextmap, nummapheaders);
+	if (newmap == NEXTMAP_INVALID || (newmap < NEXTMAP_SPECIAL && (newmap >= nummapheaders || !mapheaderinfo[newmap] || mapheaderinfo[newmap]->lumpnum == LUMPERROR)))
+		I_Error("G_GetNextMap: Internal map ID %d not found (nummapheaders = %d)\n", newmap, nummapheaders);
+
+	return newmap;
 }
 
 //
@@ -4005,7 +4008,7 @@ static void G_DoCompleted(void)
 
 	if (!demo.playback)
 	{
-		G_GetNextMap();
+		nextmap = G_GetNextMap(true);
 
 		// Remember last map for when you come out of the special stage.
 		if (!spec)
@@ -5151,19 +5154,8 @@ INT32 G_FindMapByNameOrCode(const char *mapname, char **realmapnamep)
 	{
 		if (mapname[0] == '*') // current map
 			return gamemap;
-		/*
-		else if (mapname[0] == '+' && mapheaderinfo[gamemap-1]) // next map
-		{
-			newmapnum = G_MapNumber(mapheaderinfo[gamemap-1]->nextlevel);
-			if (!mapheaderinfo[newmapnum])
-			{
-				CONS_Alert(CONS_ERROR, M_GetText("NextLevel (%d) is not a valid map.\n"), newmapnum);
-				return 0;
-			}
-			else
-				return newmapnum-1;
-		}
-		*/
+		else if (mapname[0] == '+') // next map
+			return G_GetNextMap(false)+1;
 	}
 
 	/* Now detect map number in base 10, which no one asked for. */
