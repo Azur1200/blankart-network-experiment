@@ -447,17 +447,17 @@ P_GetMidtextureTopBottom
 	{
 		if ((linedef->flags & ML_WRAPMIDTEX) && !side->repeatcnt) // "infinite" repeat
 		{
-			texbottom = back->floorheight + side->rowoffset + side->offsety_mid;
-			textop = back->ceilingheight + side->rowoffset + side->offsety_mid;
+			texbottom = back->floorheight + side->rowoffset;
+			textop = back->ceilingheight + side->rowoffset;
 		}
 		else if (linedef->flags & ML_MIDPEG)
 		{
-			texbottom = back->floorheight + side->rowoffset + side->offsety_mid;
+			texbottom = back->floorheight + side->rowoffset;
 			textop = texbottom + texheight*(side->repeatcnt+1);
 		}
 		else
 		{
-			textop = back->ceilingheight + side->rowoffset + side->offsety_mid;
+			textop = back->ceilingheight + side->rowoffset;
 			texbottom = textop - texheight*(side->repeatcnt+1);
 		}
 	}
@@ -466,17 +466,17 @@ P_GetMidtextureTopBottom
 	{
 		if ((linedef->flags & ML_WRAPMIDTEX) && !side->repeatcnt) // "infinite" repeat
 		{
-			texbottom = open->floor + side->rowoffset + side->offsety_mid;
-			textop = open->ceiling + side->rowoffset + side->offsety_mid;
+			texbottom = open->floor + side->rowoffset;
+			textop = open->ceiling + side->rowoffset;
 		}
 		else if (linedef->flags & ML_MIDPEG)
 		{
-			texbottom = open->floor + side->rowoffset + side->offsety_mid;
+			texbottom = open->floor + side->rowoffset;
 			textop = texbottom + texheight*(side->repeatcnt+1);
 		}
 		else
 		{
-			textop = open->ceiling + side->rowoffset + side->offsety_mid;
+			textop = open->ceiling + side->rowoffset;
 			texbottom = textop - texheight*(side->repeatcnt+1);
 		}
 	}
