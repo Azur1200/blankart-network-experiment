@@ -424,11 +424,13 @@ static void Dummystaff_OnChange(void);
 consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL);
 
 static CV_PossibleValue_t map_cons_t[] = {
-	{0,"MIN"},
-	{INT16_MAX, "MAX"}, // TODO: kill nextmap
+	{-1,"MIN"},
+	{NEXTMAP_SPECIAL, "MAX"}, // TODO: kill nextmap (can't do that i'm afraid!)
 	{0, NULL}
 };
 consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange);
+
+static INT16 lastnextmap = 1;
 
 static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL, skins_cons_t, Nextmap_OnChange);
@@ -2110,21 +2112,46 @@ static INT32 M_GetFirstLevelInList(void);
 void Nextmap_OnChange(void)
 {
 	char *leveltitle;
-	UINT8 active;
-	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+
+	// welp, we're stuck with nextmap for the time being. so just make the damn thing work
+	if (cv_nextmap.value != lastnextmap)
+	{
+		boolean increment = cv_nextmap.value > lastnextmap;
+		INT16 oldvalue = cv_nextmap.value - 1;
+		INT16 newvalue = oldvalue;
+		INT32 gt = cv_newgametype.value;
+		while (!M_CanShowLevelInList(newvalue, gt))
+		{
+			if (increment) // Going up!
+			{
+				if (++newvalue == nummapheaders)
+					newvalue = -1;
+			}
+			else // Going down!
+			{
+				if (--newvalue == -2)
+					newvalue = nummapheaders-1;
+			}
+
+			if (newvalue == oldvalue)
+				break; // don't loop forever if there's none of a certain gametype
+		}
+		cv_nextmap.value = lastnextmap = newvalue + 1;
+	}
 
 	// Update the string in the consvar.
 	Z_Free(cv_nextmap.zstring);
-	leveltitle = G_BuildMapTitle(cv_nextmap.value);
-	cv_nextmap.string = cv_nextmap.zstring = leveltitle ? leveltitle : Z_StrDup(G_BuildMapName(cv_nextmap.value));
-
+	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
+	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
 	if (currentMenu == &SP_TimeAttackDef)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
+		const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
 		const size_t glen = strlen(srb2home)+1+strlen("media")+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
 		char *gpath = malloc(glen);
 		INT32 i;
+		UINT8 active = 0;
 
 		if (!gpath)
 			return;
@@ -4463,7 +4490,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 		return (levellistmode == LLM_CREATESERVER);
 
 	// Does the map exist?
-	if (!mapheaderinfo[mapnum])
+	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
 		return false;
 
 	// Does the map have a name?
@@ -6254,14 +6281,10 @@ static boolean M_ExitPandorasBox(void)
 
 static void M_ChangeLevel(INT32 choice)
 {
-	char mapname[MAXMAPLUMPNAME-1];
 	(void)choice;
-
-	strlcpy(mapname, G_BuildMapName(cv_nextmap.value), sizeof (mapname));
-	strlwr(mapname);
-
+	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap : prevmap, 0, 0, false, NULL);
 	M_ClearMenus(true);
-	COM_BufAddText(va("map %s -gametype \"%s\"\n", mapname, cv_newgametype.string));
+	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
 }
 
 static void M_ConfirmSpectate(INT32 choice)
