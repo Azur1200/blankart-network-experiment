@@ -4459,6 +4459,8 @@ static void M_PrepareLevelSelect(void)
 //
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
+	UINT32 tolflag = G_TOLFlag(gt);
+
 	// Random map!
 	if (mapnum == -1)
 		return (levellistmode == LLM_CREATESERVER);
@@ -4471,6 +4473,10 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 	if (!mapheaderinfo[mapnum]->lvlttl[0])
 		return false;
 
+	// Does the map have a LUMP?
+	if (mapheaderinfo[mapnum]->lumpnum == LUMPERROR)
+		return false;
+
 	switch (levellistmode)
 	{
 		case LLM_CREATESERVER:
@@ -4481,10 +4487,11 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (M_MapLocked(mapnum+1))
 				return false; // not unlocked
 
-			if (gt >= 0 && gt < gametypecount && mapheaderinfo[mapnum]->typeoflevel & gametypetol[gt])
-				return true;
+			// Check for TOL
+			if (!(mapheaderinfo[mapnum]->typeoflevel & tolflag))
+				return false;
 
-			return false;
+			return true;
 
 		/*case LLM_LEVELSELECT:
 			if (mapheaderinfo[mapnum]->levelselect != maplistoption)
