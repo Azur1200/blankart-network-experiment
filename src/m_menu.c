@@ -1785,6 +1785,23 @@ INT32 HU_GetHighlightColor(void)
 	return highlightflags;
 }
 
+fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
+{
+	patch_t *patch = NULL;
+	if (mapnum == -1)
+		patch = randomlvl;
+	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+		patch = mapheaderinfo[mapnum]->thumbnailPic;
+
+	if (!patch)
+		patch = blanklvl;
+
+	*out = patch;
+
+	// check width instead of height because haha big winton
+	return patch->width >= 320 ? FRACUNIT/4 : FRACUNIT/2;
+}
+
 // Sky Room
 menu_t SR_PandoraDef =
 {
@@ -5619,19 +5636,18 @@ static void DrawReplayHutReplayInfo(void)
 		// Draw level stuff
 		x = 15; y = 15;
 
-		//  A 160x100 image of the level
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		patch = mapheaderinfo[demolist[dir_on[menudepthleft]].map-1]
-		      ? mapheaderinfo[demolist[dir_on[menudepthleft]].map-1]->thumbnailPic
-		      : W_CachePatchName("M_NOLVL", PU_CACHE);
+		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch);
+		if (patch == blanklvl)
+			patch = nolvl;
 
 		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
-			V_DrawSmallScaledPatch(x, y, V_SNAPTOTOP, patch);
+			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP, patch, NULL);
 		else
 		{
-			w = SHORT(patch->width);
-			h = SHORT(patch->height);
-			V_DrawSmallScaledPatch(x+(w>>1), y, V_SNAPTOTOP|V_FLIP, patch);
+			w = FixedMul(SHORT(patch->width), scale);
+			h = FixedMul(SHORT(patch->height), scale);
+			V_DrawFixedPatch((x+(w>>1))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP|V_FLIP, patch, NULL);
 
 			{
 				static angle_t rubyfloattime = 0;
@@ -8983,19 +8999,10 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 {
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
+	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel);
 
-	//  A 160x100 image of the level
-	if (cv_nextmap.value)
-	{
-		PictureOfLevel = mapheaderinfo[cv_nextmap.value-1]->thumbnailPic;
-		if (!PictureOfLevel)
-			PictureOfLevel = blanklvl;
-	}
-	else
-		PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
-
-	w = SHORT(PictureOfLevel->width)/2;
-	i = SHORT(PictureOfLevel->height)/2;
+	w = FixedMul(SHORT(PictureOfLevel->width), scale);
+	i = FixedMul(SHORT(PictureOfLevel->height), scale);
 	x = BASEVIDWIDTH/2 - w/2;
 	y = currentMenu->y + 130 + 8 - i;
 
@@ -9007,14 +9014,14 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
 
 	if ((cv_kartencore.value != 1) || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
-		V_DrawSmallScaledPatch(x, y, 0, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, PictureOfLevel, NULL);
 	else
 	{
 		/*UINT8 *mappingforencore = NULL;
 		if ((lumpnum = W_CheckNumForName(va("%sE", mapname))) != LUMPERROR)
 			mappingforencore = W_CachePatchNum(lumpnum, PU_CACHE);*/
 
-		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, 0);
+		V_DrawFixedPatch((x+w)<<FRACBITS, y<<FRACBITS, scale, V_FLIP, PictureOfLevel, NULL);
 
 		{
 			static angle_t rubyfloattime = 0;
@@ -9048,19 +9055,11 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		//  A 160x100 image of the level as entry MAPxxP
-		if (i >= 0)
-		{
-			PictureOfLevel = mapheaderinfo[i]->thumbnailPic;
-			if (!PictureOfLevel)
-				PictureOfLevel = blanklvl;
-		}
-		else
-			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/2;
 
 		x -= horizspac + w/2;
 
-		V_DrawTinyScaledPatch(x, y, trans, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, trans, PictureOfLevel, NULL);
 	} while (x > horizspac-dupadjust);
 
 	x = (BASEVIDWIDTH + w)/2 + horizspac;
@@ -9084,17 +9083,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		//  A 160x100 image of the level as entry MAPxxP
-		if (i >= 0)
-		{
-			PictureOfLevel = mapheaderinfo[i]->thumbnailPic;
-			if (!PictureOfLevel)
-				PictureOfLevel = blanklvl;
-		}
-		else
-			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/2;
 
-		V_DrawTinyScaledPatch(x, y, trans, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, trans, PictureOfLevel, NULL);
 
 		x += horizspac + w/2;
 	}

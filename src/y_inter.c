@@ -174,7 +174,6 @@ static patch_t *cursor1 = NULL;
 static patch_t *cursor2 = NULL;
 static patch_t *cursor3 = NULL;
 static patch_t *cursor4 = NULL;
-static patch_t *randomlvl = NULL;
 static patch_t *rubyicon = NULL;
 
 static void Y_UnloadVoteData(void);
@@ -1188,6 +1187,9 @@ void Y_VoteDrawer(void)
 	INT32 i, x, y = 0, height = 0;
 	UINT8 selected[4];
 	fixed_t rubyheight = 0;
+	fixed_t scale;
+	patch_t *pic;
+	INT16 mapnum;
 
 	if (rendermode == render_none)
 		return;
@@ -1256,29 +1258,19 @@ void Y_VoteDrawer(void)
 	for (i = 0; i < 4; i++)
 	{
 		const char *str;
-		patch_t *pic;
 		UINT8 j, color;
 
 		if (i == 3)
 		{
 			str = "RANDOM";
-			pic = randomlvl;
+			mapnum = -1;
 		}
 		else
 		{
 			str = levelinfo[i].str;
-			pic = NULL;
-
-			if (mapheaderinfo[votelevels[i][0]])
-			{
-				pic = mapheaderinfo[votelevels[i][0]]->thumbnailPic;
-			}
-
-			if (!pic)
-			{
-				pic = blanklvl;
-			}
+			mapnum = votelevels[i][0];
 		}
+		scale = M_GetMapThumbnail(mapnum, &pic);
 
 		if (selected[i])
 		{
@@ -1342,10 +1334,10 @@ void Y_VoteDrawer(void)
 			}
 
 			if (!levelinfo[i].encore)
-				V_DrawSmallScaledPatch(BASEVIDWIDTH-100, y, V_SNAPTORIGHT, pic);
+				V_DrawFixedPatch((BASEVIDWIDTH-100)<<FRACBITS, y<<FRACBITS, scale, V_SNAPTORIGHT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, scale, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
@@ -1365,11 +1357,12 @@ void Y_VoteDrawer(void)
 		}
 		else
 		{
+			scale /= 2;
 			if (!levelinfo[i].encore)
-				V_DrawTinyScaledPatch(BASEVIDWIDTH-60, y, V_SNAPTORIGHT, pic);
+				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, y<<FRACBITS, scale, V_SNAPTORIGHT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, FRACUNIT/4, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, scale, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-40)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
@@ -1394,26 +1387,12 @@ void Y_VoteDrawer(void)
 
 		if ((playeringame[i] && !players[i].spectator) && votes[i] != -1)
 		{
-			patch_t *pic;
-
 			if (votes[i] >= 3 && (i != pickedvote || voteendtic == -1))
-			{
-				pic = randomlvl;
-			}
+				mapnum = -1; // randomlvl
 			else
-			{
-				pic = NULL;
+				mapnum = votelevels[votes[i]][0];
 
-				if (mapheaderinfo[votelevels[votes[i]][0]])
-				{
-					pic = mapheaderinfo[votelevels[votes[i]][0]]->thumbnailPic;
-				}
-
-				if (!pic)
-				{
-					pic = blanklvl;
-				}
-			}
+			scale = M_GetMapThumbnail(mapnum, &pic)/2;
 
 			if (!timer && i == voteclient.ranim)
 			{
@@ -1425,10 +1404,10 @@ void Y_VoteDrawer(void)
 			}
 
 			if (!levelinfo[votes[i]].encore)
-				V_DrawTinyScaledPatch(x, y, V_SNAPTOLEFT, pic);
+				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((x+40)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, V_SNAPTOLEFT|V_FLIP, pic, 0);
+				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
 				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, rubyicon, NULL);
 			}
 
@@ -1760,7 +1739,6 @@ void Y_StartVote(void)
 	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
 	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
 	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	randomlvl = W_CachePatchName("RANDOMLV", PU_STATIC);
 	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
 
 	timer = cv_votetime.value*TICRATE;
@@ -1860,7 +1838,6 @@ static void Y_UnloadVoteData(void)
 	UNLOAD(cursor2);
 	UNLOAD(cursor3);
 	UNLOAD(cursor4);
-	UNLOAD(randomlvl);
 	UNLOAD(rubyicon);
 }
 
