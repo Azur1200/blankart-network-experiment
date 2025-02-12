@@ -2049,10 +2049,8 @@ void CON_DrawLoadBar(void)
 
 	barwidth = (BASEVIDWIDTH * con_startup_loadprogress) / LOADED_ALLDONE;
 	V_DrawFill(0, BASEVIDHEIGHT - barheight, barwidth, barheight, 0);
-#ifdef DEVELOP
 	if (con_startup_loadprogress <= LOADED_ALLDONE)
 		V_DrawString(4, BASEVIDHEIGHT - (barheight + 8 + 4), 0, CON_LoadingStrings[con_startup_loadprogress]);
-#endif
 
 	Unlock_state();
 }
