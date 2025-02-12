@@ -22,6 +22,7 @@
 #include "p_local.h" // camera_t
 #include "screen.h" // screen width/height
 #include "m_random.h" // m_random
+#include "m_menu.h" // M_GetMapThumbnail
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -1090,6 +1091,41 @@ static int libd_getStringColormap(lua_State *L)
 	return 0;
 }
 
+static int libd_getMapThumbnail(lua_State *L)
+{
+	INT16 mapnum;
+	patch_t *patch = NULL;
+	HUDONLY
+	if (lua_type(L, 1) == LUA_TNUMBER)
+		mapnum = luaL_checkinteger(L, 1) - 1;
+	else
+		mapnum = G_MapNumber(luaL_checkstring(L, 1));
+
+	fixed_t scale = M_GetMapThumbnail(mapnum, &patch);
+	LUA_PushUserdata(L, patch, META_PATCH);
+	lua_pushfixed(L, scale);
+	return 2;
+}
+
+static int libd_getMapMinimap(lua_State *L)
+{
+	INT16 mapnum;
+	patch_t *patch = NULL;
+	HUDONLY
+	if (lua_type(L, 1) == LUA_TNUMBER)
+		mapnum = luaL_checkinteger(L, 1) - 1;
+	else
+		mapnum = G_MapNumber(luaL_checkstring(L, 1));
+
+	if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+		patch = mapheaderinfo[mapnum]->minimapPic;
+	if (!patch)
+		patch = missingpat;
+
+	LUA_PushUserdata(L, patch, META_PATCH);
+	return 1;
+}
+
 static int libd_width(lua_State *L)
 {
 	HUDONLY
@@ -1257,6 +1293,8 @@ static luaL_Reg lib_draw[] = {
 	{"getSprite2Patch", libd_getSprite2Patch},
 	{"getColormap", libd_getColormap},
 	{"getStringColormap", libd_getStringColormap},
+	{"getMapThumbnail", libd_getMapThumbnail},
+	{"getMapMinimap", libd_getMapMinimap},
 	// drawing
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
