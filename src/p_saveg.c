@@ -4634,6 +4634,13 @@ static inline void P_UnArchivePolyObjects(savebuffer_t *save)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
 }
 
+static mobj_t *RelinkMobj(mobj_t **ptr)
+{
+	UINT32 temp = (UINT32)(size_t)*ptr;
+	*ptr = NULL;
+	return P_SetTarget(ptr, P_FindNewPosition(temp));
+}
+
 static void P_RelinkPointers(void)
 {
 	thinker_t *currentthinker;
@@ -4656,37 +4663,27 @@ static void P_RelinkPointers(void)
 
 		if (mobj->tracer)
 		{
-			temp = (UINT32)(size_t)mobj->tracer;
-			mobj->tracer = NULL;
-			if (!P_SetTarget(&mobj->tracer, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->tracer))
 				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
 		}
 		if (mobj->target)
 		{
-			temp = (UINT32)(size_t)mobj->target;
-			mobj->target = NULL;
-			if (!P_SetTarget(&mobj->target, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->target))
 				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
 		}
 		if (mobj->hnext)
 		{
-			temp = (UINT32)(size_t)mobj->hnext;
-			mobj->hnext = NULL;
-			if (!P_SetTarget(&mobj->hnext, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->hnext))
 				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
 		}
 		if (mobj->hprev)
 		{
-			temp = (UINT32)(size_t)mobj->hprev;
-			mobj->hprev = NULL;
-			if (!P_SetTarget(&mobj->hprev, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->hprev))
 				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
 		}
 		if (mobj->itnext)
 		{
-			temp = (UINT32)(size_t)mobj->itnext;
-			mobj->itnext = NULL;
-			if (!P_SetTarget(&mobj->itnext, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->itnext))
 				CONS_Debug(DBG_GAMELOGIC, "itnext not found on %d\n", mobj->type);
 		}
 		if (mobj->terrain)
@@ -4700,9 +4697,7 @@ static void P_RelinkPointers(void)
 		}
 		if (mobj->terrainOverlay)
 		{
-			temp = (UINT32)(size_t)mobj->terrainOverlay;
-			mobj->terrainOverlay = NULL;
-			if (!P_SetTarget(&mobj->terrainOverlay, P_FindNewPosition(temp)))
+			if (!RelinkMobj(&mobj->terrainOverlay))
 				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
 		}
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -4711,23 +4706,17 @@ static void P_RelinkPointers(void)
 				continue;
 			if ( players[i].awayviewmobj)
 			{
-				temp = (UINT32)(size_t)players[i].awayviewmobj;
-				players[i].awayviewmobj = NULL;
-				if (!P_SetTarget(&players[i].awayviewmobj, P_FindNewPosition(temp)))
+				if (!RelinkMobj(&players[i].awayviewmobj))
 					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on player %d\n", i);
 			}
 			if (players[i].followmobj)
 			{
-				temp = (UINT32)(size_t)players[i].followmobj;
-				players[i].followmobj = NULL;
-				if (!P_SetTarget(&players[i].followmobj, P_FindNewPosition(temp)))
+				if (!RelinkMobj(&players[i].followmobj))
 					CONS_Debug(DBG_GAMELOGIC, "followmobj not found on player %d\n", i);
 			}
 			if (players[i].follower)
 			{
-				temp = (UINT32)(size_t)players[i].follower;
-				players[i].follower = NULL;
-				if (!P_SetTarget(&players[i].follower, P_FindNewPosition(temp)))
+				if (!RelinkMobj(&players[i].follower))
 					CONS_Debug(DBG_GAMELOGIC, "follower not found on player %d\n", i);
 			}
 			if (players[i].currentwaypoint)
