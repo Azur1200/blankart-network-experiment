@@ -57,7 +57,6 @@
 #include "k_boss.h"
 #include "doomstat.h"
 #include "s_sound.h" // sfx_syfail
-#include "filesrch.h" // refreshdirmenu
 
 #ifndef NONET
 // cl loading screen
@@ -6071,7 +6070,6 @@ void NetUpdate(void)
 		I_lock_mutex(&m_menu_mutex);
 #endif
 		M_Ticker();
-		refreshdirmenu = 0;
 #ifdef HAVE_THREADS
 		I_unlock_mutex(m_menu_mutex);
 #endif
