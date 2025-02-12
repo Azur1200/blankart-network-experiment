@@ -3568,13 +3568,13 @@ static void K_drawKartMinimap(void)
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, AutomapPic);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
 
 			// Target reticule
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
 				|| (gametype == GT_BATTLE && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL, AutomapPic);
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL);
 			}
 
 			if (!nocontest)
@@ -3586,8 +3586,7 @@ static void K_drawKartMinimap(void)
 						y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 						splitflags,
 						kp_minimapdot,
-						colormap,
-						AutomapPic
+						colormap
 				);
 			}
 		}

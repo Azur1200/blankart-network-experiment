@@ -1640,7 +1640,7 @@ boolean K_TerrainHasAffect(terrain_t *terrain)
 	return (terrain->friction != 0
 	|| terrain->offroad != 0
 	|| terrain->damageType != -1
-	|| terrain->trickPanel != 0
+//	|| terrain->trickPanel != 0
 	|| terrain->speedPad != 0
 	|| terrain->springStrength != 0
 	|| terrain->flags != 0);
