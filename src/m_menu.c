@@ -5643,8 +5643,8 @@ static void DrawReplayHutReplayInfo(void)
 
 		x += 85;
 
-		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
-			V_DrawString(x, y, V_SNAPTOTOP, G_BuildMapTitle(demolist[dir_on[menudepthleft]].map));
+		if (demolist[dir_on[menudepthleft]].map != NEXTMAP_INVALID)
+			V_DrawString(x, y, V_SNAPTOTOP, G_BuildMapTitle(demolist[dir_on[menudepthleft]].map+1));
 		else
 			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
 

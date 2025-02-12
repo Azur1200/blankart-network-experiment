@@ -2626,6 +2626,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	UINT8 *infobuffer, *info_p, *extrainfo_p;
 	UINT8 version, subversion, pdemoflags;
 	UINT16 pdemoversion, count;
+	char mapname[MAXMAPLUMPNAME];
 
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
@@ -2685,7 +2686,8 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 	info_p += 4; // "PLAY"
-	pdemo->map = READINT16(info_p);
+	READSTRINGN(info_p, mapname, sizeof(mapname));
+	pdemo->map = G_MapNumber(mapname);
 	info_p += 16; // mapmd5
 
 	pdemoflags = READUINT8(info_p);
