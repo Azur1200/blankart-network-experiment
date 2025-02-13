@@ -622,7 +622,6 @@ void Command_Skynum_f(void)
 {
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
 	if (COM_Argc() != 2)
 	{
