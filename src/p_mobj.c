@@ -1997,7 +1997,7 @@ void P_AdjustMobjFloorZ_FFloors(mobj_t *mo, sector_t *sector, UINT8 motype)
 		topheight = P_GetFOFTopZ(mo, sector, rover, mo->x, mo->y, NULL);
 		bottomheight = P_GetFOFBottomZ(mo, sector, rover, mo->x, mo->y, NULL);
 
-		if (mo->player && P_CheckSolidFFloorSurface(mo->player, rover)) // only the player should stand on lava or run on water
+		if (P_CheckSolidFFloorSurface(mo, rover)) // only the player should stand on lava or run on water
 			;
 		else if (motype != 0 && rover->fofflags & FOF_SWIMMABLE) // "scenery" only
 			continue;
@@ -3082,10 +3082,17 @@ boolean P_CanRunOnWater(player_t *player, ffloor_t *rover)
 	return false;
 }
 
-boolean P_CheckSolidFFloorSurface(player_t *player, ffloor_t *rover)
+boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover)
 {
+	if (!mobj->player)
+	{
+		// future proff if we ever decide to allow mobjs
+		// to interact with P_CheckSolidFFloorSurface
+		return false;
+	}
+
 	return P_CheckSolidLava(rover) ||
-		P_CanRunOnWater(player, rover);
+		P_CanRunOnWater(mobj->player, rover);
 }
 
 //

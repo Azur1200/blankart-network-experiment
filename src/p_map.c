@@ -1724,6 +1724,10 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 // tm.ceilingz
 //     the nearest ceiling or thing's bottom over tm.thing
 //
+
+static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
+static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
+
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result)
 {
 	INT32 thingtop = thing->z + thing->height;
@@ -1837,11 +1841,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				continue;
 			}
 
-			if (thing->player && P_CheckSolidFFloorSurface(thing->player, rover))
+			if (P_CheckSolidFFloorSurface(thing, rover))
 				;
 			else if (thing->type == MT_SKIM && (rover->fofflags & FOF_SWIMMABLE))
 				;
-			else if (!((rover->fofflags & FOF_BLOCKPLAYER && thing->player)
+			 else if (!((rover->fofflags & FOF_BLOCKPLAYER && thing->player)
 			    || (rover->fofflags & FOF_BLOCKOTHERS && !thing->player)
 				|| rover->fofflags & FOF_QUICKSAND))
 				continue;
@@ -1988,13 +1992,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	// reset special lines
 	numspechit = 0U;
 
-	if (tm.flags & MF_NOCLIP)
-		return true;
-
 	// Check things first, possibly picking things up.
 
 	// MF_NOCLIPTHING: used by camera to not be blocked by things
-	if (!(thing->flags & MF_NOCLIPTHING))
+	// Respawning things should also be intangible to other things
+	if (!(thing->flags & MF_NOCLIPTHING) /*&& !P_MobjIsReappearing(thing)*/)
 	{
 		for (bx = xl; bx <= xh; bx++)
 		{
@@ -2015,6 +2017,16 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				}
 			}
 		}
+	}
+
+	if (tm.flags & MF_NOCLIP)
+	{
+		// Sal 12/19/2022 -- PIT_CheckThing code will still run
+		// with MF_NOCLIP enabled, but they won't be blocked
+		// regardless of the result. This allows for SPBs and
+		// the UFO to collide.
+		// ...but be careful about removed obj! ~toast 140423
+		return !P_MobjWasRemoved(thing);
 	}
 
 	validcount++;
@@ -2047,9 +2059,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 
 	return blockval;
 }
-
-static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
-static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
 
 // P_CheckPosition optimized for the MT_HOOPCOLLIDE object. This needs to be as fast as possible!
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius)
