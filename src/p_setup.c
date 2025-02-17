@@ -7795,7 +7795,7 @@ static void P_LoadRecordGhosts(void)
 	INT32 i;
 	const char *gamemode = (modeattacking & ATTACKING_ITEMBREAK) ? "IB" : "RA";
 
-	gpath = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap)));
+	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
@@ -7856,7 +7856,7 @@ static void P_LoadRecordGhosts(void)
 		}
 	}
 
-	Z_Free(gpath);
+	free(gpath);
 }
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)

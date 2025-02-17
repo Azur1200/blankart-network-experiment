@@ -581,6 +581,7 @@ static void G_UpdateRecordReplays(void)
 	char *gpath;
 	char lastdemo[256], bestdemo[256];
 	UINT8 earnedEmblems;
+	int parts;
 
 	// Record new best time
 	if (!mapheaderinfo[gamemap-1]->mainrecord)
@@ -613,16 +614,12 @@ static void G_UpdateRecordReplays(void)
 	G_SetDemoTime(players[consoleplayer].realtime, bestlap);
 	G_CheckDemoStatus();
 
-	gpath = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s",
-			srb2home, timeattackfolder);
-	M_MkdirEach(gpath, M_PathParts(gpath) - 3, 0755);
-
-	strcat(gpath, PATHSEP);
-	strcat(gpath, G_BuildMapName(gamemap));
+	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s",
+	        srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	parts = M_PathParts(gpath);
+	M_MkdirEachUntil(gpath, parts - 4, parts - 1, 0755);
 
 	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
-
-	gpath = Z_StrDup(gpath);
 
 	if (FIL_FileExists(lastdemo))
 	{
@@ -655,7 +652,7 @@ static void G_UpdateRecordReplays(void)
 		Z_Free(buf);
 	}
 
-	Z_Free(gpath);
+	free(gpath);
 
 	// Check emblems when level data is updated
 	if ((earnedEmblems = M_CheckLevelEmblems()))

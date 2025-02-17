@@ -2165,15 +2165,9 @@ void Nextmap_OnChange(void)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
 		const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
-		const size_t glen = strlen(srb2home)+1+strlen("media")+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
-		char *gpath = malloc(glen);
+		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
 		INT32 i;
 		UINT8 active = 0;
-
-		if (!gpath)
-			return;
-
-		sprintf(gpath,"%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
 
 		CV_StealthSetValue(&cv_dummystaff, 0);
 
