@@ -539,20 +539,30 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			trimname = strrchr(filename, PATHSEP[0]);
 #if defined (_WIN32)
 			// For Zone Builder support, work around temporary filenames.
-			if (trimname != 0)
+			// They're annoyingly randomised, BUT they follow \Temp\8\8.3...
+			// AND they're always guaranteed to follow the map file, which
+			// should already have a WADNAME in it for us to piggyback off.
+			// EXAMPLE: // \Temp\gj3l7w7n\4f926789.wad
+
+			if (trimname != 0
+				&& wadnamelump != LUMPERROR
+				&& strlen(trimname+1) == 8+1+3)
 			{
 				const char *temp = trimname-1;
 				while (temp >= filename+5 && *temp != PATHSEP[0])
 					temp--;
 
-				if (temp-filename >= 5 && !strncmp(temp-5, PATHSEP"Temp", 5))
+				if (((trimname-1) - temp) == 8
+					&& temp >= filename+5
+					&& !strncmp(temp-5, PATHSEP"Temp", 5))
 				{
-					filename = wadfiles[numwadfiles-1]->filename;
+					filename = wadfiles[
+						((wadnamelump & ~UINT16_MAX) >> 16)
+						]->filename;
 					trimname = strrchr(filename, PATHSEP[0]);
 				}
 			}
 #endif
-
 			// Strip away file address
 			if (trimname != 0)
 				trimname++;
@@ -570,6 +580,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			strncpy(lump_p->longname, trimname, namelen);
 			lump_p->longname[namelen-1] = '\0';
 
+			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, lump_p->longname);
+
 			// Grab the hash from the first part
 			lump_p->hash = quickncasehash(lump_p->longname, 8);
 
@@ -579,16 +591,12 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 		{
 			// Set up true hash
 			lump_p->hash = quickncasehash(lump_p->name, 8);
+
 			// Allocate the lump's long and full name (save on memory).
 			lump_p->longname = lump_p->fullname = Z_Malloc(9 * sizeof(char), PU_STATIC, NULL);
 			strncpy(lump_p->longname, fileinfo->name, 8);
 			lump_p->longname[8] = '\0';
 		}
-
-		// Allocate the lump's full name.
-		lump_p->fullname = Z_Malloc(9 * sizeof(char), PU_STATIC, NULL);
-		strncpy(lump_p->fullname, fileinfo->name, 8);
-		lump_p->fullname[8] = '\0';
 	}
 	free(fileinfov);
 	*nlmp = numlumps;
