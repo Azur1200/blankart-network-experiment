@@ -1354,7 +1354,7 @@ void G_DoLoadLevel(boolean resetplayer)
 	// cleanup
 	if (titlemapinaction == TITLEMAP_LOADING)
 	{
-		if (W_CheckNumForName(G_BuildMapName(gamemap)) == LUMPERROR)
+		if (gamemap < 1 || gamemap > nummapheaders)
 		{
 			titlemap = 0; // let's not infinite recursion ok
 			Command_ExitGame_f();
@@ -3606,7 +3606,7 @@ tryagain:
 					break;
 			}
 
-			if (vLump == NULL && ((l = W_CheckNumForName(va("%sS01",mapheaderinfo[ix+1]->lumpname))) == LUMPERROR))
+			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix+1]->lumpname))) == LUMPERROR))
 			{
 				vres_Free(vRes);
 				continue;

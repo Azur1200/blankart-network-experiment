@@ -793,7 +793,7 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	 "Unknown";
 #endif
 	char rendermodetxt[9];
-	char maptext[8];
+	char maptext[MAXMAPLUMPNAME];
 	char lvlttltext[48];
 	char locationtxt[40];
 	char ctrevision[40];
@@ -814,7 +814,7 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
+		snprintf(maptext, MAXMAPLUMPNAME, "%s", G_BuildMapName(gamemap));
 	else
 		snprintf(maptext, 8, "Unknown");
 

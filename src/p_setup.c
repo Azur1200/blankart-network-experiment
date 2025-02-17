@@ -7849,7 +7849,7 @@ static void P_LoadRecordGhosts(void)
 		lumpnum_t l;
 		UINT8 j = 1;
 		// TODO: Use map header to determine lump name
-		while (j <= 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(gamemap),j))) != LUMPERROR)
+		while (j <= 99 && (l = W_CheckNumForLongName(va("%sS%02u",G_BuildMapName(gamemap),j))) != LUMPERROR)
 		{
 			G_AddGhost(va("%sS%02u",G_BuildMapName(gamemap),j));
 			j++;
@@ -7991,7 +7991,7 @@ static void P_InitGametype(void)
 #else
 		strcpy(ver, VERSIONSTRING);
 #endif
-		sprintf(buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s",
+		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s",
 				srb2home, ver, (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		parts = M_PathParts(buf);
