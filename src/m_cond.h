@@ -80,7 +80,7 @@ struct emblem_t
 {
 	UINT8 type;      ///< Emblem type
 	INT16 tag;       ///< Tag of emblem mapthing
-	INT16 level;     ///< Level on which this emblem can be found.
+	char * level;     ///< Level on which this emblem can be found.
 	UINT8 sprite;    ///< emblem sprite to use, 0 - 25
 	UINT16 color;    ///< skincolor to use
 	INT32 var;       ///< If needed, specifies information on the target amount to achieve (or target skin)

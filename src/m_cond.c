@@ -30,124 +30,7 @@ UINT32 unlocktriggers;
 conditionset_t conditionSets[MAXCONDITIONSETS];
 
 // Default Emblem locations
-emblem_t emblemlocations[MAXEMBLEMS] =
-{
-	// GOLD DEV MEDALS
-	// These values are directly lifted from the Champion ghost, through the power of hex editing!
-	{ET_TIME, 0,  1, 'A', SKINCOLOR_GOLD, 3021, "", 0}, // Green Hills Zone - 1'26"31
-	{ET_TIME, 0,  2, 'A', SKINCOLOR_GOLD, 4466, "", 0}, // Dark Race - 2'07"60
-	{ET_TIME, 0,  3, 'A', SKINCOLOR_GOLD, 4337, "", 0}, // Northern District Zone - 2'03"91
-	{ET_TIME, 0,  4, 'A', SKINCOLOR_GOLD, 3452, "", 0}, // Darkvile Garden Zone - 1'38"62
-	{ET_TIME, 0,  5, 'A', SKINCOLOR_GOLD, 3525, "", 0}, // Daytona Speedway Zone - 1'40"71
-	{ET_TIME, 0,  6, 'A', SKINCOLOR_GOLD, 4047, "", 0}, // Egg Zeppelin Zone - 1'55"62
-	{ET_TIME, 0,  7, 'A', SKINCOLOR_GOLD, 4041, "", 0}, // Sonic Speedway Zone - 1'55"45
-	{ET_TIME, 0,  8, 'A', SKINCOLOR_GOLD, 3281, "", 0}, // Hill Top Zone - 1'33"74
-	{ET_TIME, 0,  9, 'A', SKINCOLOR_GOLD, 4764, "", 0}, // Misty Maze Zone - 2'16"11
-	{ET_TIME, 0, 10, 'A', SKINCOLOR_GOLD, 4378, "", 0}, // Grand Metropolis - 2'05"08
-	{ET_TIME, 0, 11, 'A', SKINCOLOR_GOLD, 3678, "", 0}, // Sunbeam Paradise Zone - 1'45"08
-	{ET_TIME, 0, 12, 'A', SKINCOLOR_GOLD, 3928, "", 0}, // Diamond Square Zone - 1'52"22
-	{ET_TIME, 0, 13, 'A', SKINCOLOR_GOLD, 3846, "", 0}, // Midnight Meadow Zone - 1'49"88
-	{ET_TIME, 0, 14, 'A', SKINCOLOR_GOLD, 3278, "", 0}, // Twinkle Cart - 1'33"65
-	{ET_TIME, 0, 15, 'A', SKINCOLOR_GOLD, 3591, "", 0}, // Pleasure Castle - 1'42"60
-	{ET_TIME, 0, 16, 'A', SKINCOLOR_GOLD, 5187, "", 0}, // Paradise Hill Zone - 2'28"20
-	{ET_TIME, 0, 17, 'A', SKINCOLOR_GOLD, 4976, "", 0}, // Sub-Zero Peak Zone - 2'22"17
-	{ET_TIME, 0, 18, 'A', SKINCOLOR_GOLD, 3696, "", 0}, // Sapphire Coast Zone - 1'45"60
-	{ET_TIME, 0, 19, 'A', SKINCOLOR_GOLD, 4931, "", 0}, // Sand Valley Zone - 2'20"88
-	{ET_TIME, 0, 20, 'A', SKINCOLOR_GOLD, 4220, "", 0}, // Megablock Castle Zone - 2'00"57
-	{ET_TIME, 0, 21, 'A', SKINCOLOR_GOLD, 4053, "", 0}, // Canyon Rush Zone - 1'55"80
-	{ET_TIME, 0, 22, 'A', SKINCOLOR_GOLD, 3613, "", 0}, // Casino Resort Zone - 1'43"22
-	{ET_TIME, 0, 23, 'A', SKINCOLOR_GOLD, 4385, "", 0}, // Silvercloud Island Zone - 2'05"28
-	{ET_TIME, 0, 24, 'A', SKINCOLOR_GOLD, 5321, "", 0}, // Blue Mountain Zone - 2'32"02
-	{ET_TIME, 0, 25, 'A', SKINCOLOR_GOLD, 4476, "", 0}, // Petroleum Refinery Zone - 2'07"88
-	{ET_TIME, 0, 26, 'A', SKINCOLOR_GOLD, 3295, "", 0}, // Desert Palace Zone - 1'34"14
-	{ET_TIME, 0, 27, 'A', SKINCOLOR_GOLD, 4765, "", 0}, // Aurora Atoll Zone - 2'16"14
-	{ET_TIME, 0, 28, 'A', SKINCOLOR_GOLD, 4670, "", 0}, // Barren Badlands Zone - 2'13"42
-	{ET_TIME, 0, 29, 'A', SKINCOLOR_GOLD, 5888, "", 0}, // Red Barrage Area - 2'48"22
-	{ET_TIME, 0, 30, 'A', SKINCOLOR_GOLD, 4047, "", 0}, // Midnight Channel - 1'55"62
-	{ET_TIME, 0, 31, 'A', SKINCOLOR_GOLD, 4944, "", 0}, // Vanilla Hotel Zone - 2'21"25
-	{ET_TIME, 0, 32, 'A', SKINCOLOR_GOLD, 4638, "", 0}, // Toxic Palace Zone - 2'12"51
-	{ET_TIME, 0, 33, 'A', SKINCOLOR_GOLD, 4036, "", 0}, // Ancient Tomb Zone - 1'55"31
-	{ET_TIME, 0, 34, 'A', SKINCOLOR_GOLD, 3595, "", 0}, // Cloud Cradle Zone K - 1'42"71
-	{ET_TIME, 0, 35, 'A', SKINCOLOR_GOLD, 4705, "", 0}, // Volcanic Valley Zone - 2'14"42
-	{ET_TIME, 0, 36, 'A', SKINCOLOR_GOLD, 3314, "", 0}, // Kodachrome Void Zone - 1'34"68
-	{ET_TIME, 0, 37, 'A', SKINCOLOR_GOLD, 3501, "", 0}, // Boiling Bedrock Zone - 1'40"02
-	{ET_TIME, 0, 38, 'A', SKINCOLOR_GOLD, 4920, "", 0}, // Egg Quarters - 2'20"57
-	{ET_TIME, 0, 39, 'A', SKINCOLOR_GOLD, 4318, "", 0}, // Virtual Highway Zone - 2'03"37
-	{ET_TIME, 0, 40, 'A', SKINCOLOR_GOLD, 3550, "", 0}, // Eggman's Nightclub Zone - 1'41"42
-	{ET_TIME, 0, 41, 'A', SKINCOLOR_GOLD, 2572, "", 0}, // KKR Ganbare Dochu 2 - 1'13"48
-	{ET_TIME, 0, 42, 'A', SKINCOLOR_GOLD, 3091, "", 0}, // CK Chao Circuit 1 - 1'28"31
-	{ET_TIME, 0, 43, 'A', SKINCOLOR_GOLD, 3454, "", 0}, // CK Chao Circuit 2 - 1'38"68
-	{ET_TIME, 0, 44, 'A', SKINCOLOR_GOLD, 2958, "", 0}, // CK Cloud Tops 2 - 1'24"51
-	{ET_TIME, 0, 45, 'A', SKINCOLOR_GOLD, 3693, "", 0}, // CK Regal Raceway - 1'45"51
-	{ET_TIME, 0, 46, 'A', SKINCOLOR_GOLD, 3437, "", 0}, // SD2 Balloon Panic - 1'38"20
-	{ET_TIME, 0, 47, 'A', SKINCOLOR_GOLD, 3238, "", 0}, // SM Dimension Heist - 1'32"51
-	{ET_TIME, 0, 48, 'A', SKINCOLOR_GOLD, 3063, "", 0}, // MKSC Sky Garden - 1'27"51
-	{ET_TIME, 0, 49, 'A', SKINCOLOR_GOLD, 2980, "", 0}, // MKDS Peach Gardens - 1'25"14
-	{ET_TIME, 0, 50, 'A', SKINCOLOR_GOLD, 2914, "", 0}, // MKSC Rainbow Road - 1'23"25
-	{ET_TIME, 0, 51, 'A', SKINCOLOR_GOLD, 3003, "", 0}, // SMK Donut Plains 1 - 1'25"80
-	{ET_TIME, 0, 52, 'A', SKINCOLOR_GOLD, 2930, "", 0}, // SMK Mario Circuit 2 - 1'23"71
-	{ET_TIME, 0, 53, 'A', SKINCOLOR_GOLD, 2389, "", 0}, // SMK Ghost Valley 2 - 1'08"25
-	{ET_TIME, 0, 54, 'A', SKINCOLOR_GOLD, 4292, "", 0}, // SMK Bowser Castle 3 - 2'02"62
-	{ET_TIME, 0, 55, 'A', SKINCOLOR_GOLD, 2346, "", 0}, // SMK Vanilla Lake 2 - 1'07"02
-
-	// SILVER NORMAL MEDALS
-	// The general "guideline" of how good we want a player to be at a map.
-	{ET_TIME, 0,  1, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // Green Hills Zone - 1'50"00
-	{ET_TIME, 0,  2, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Dark Race - 2'40"00
-	{ET_TIME, 0,  3, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Northern District Zone - 2'40"00
-	{ET_TIME, 0,  4, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Darkvile Garden Zone - 2'00"00
-	{ET_TIME, 0,  5, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // Daytona Speedway Zone - 2'10"00
-	{ET_TIME, 0,  6, 'B', SKINCOLOR_GREY, 140*TICRATE, "", 0}, // Egg Zeppelin Zone - 2'20"00
-	{ET_TIME, 0,  7, 'B', SKINCOLOR_GREY, 140*TICRATE, "", 0}, // Sonic Speedway Zone - 2'20"00
-	{ET_TIME, 0,  8, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // Hill Top Zone - 1'50"00
-	{ET_TIME, 0,  9, 'B', SKINCOLOR_GREY, 170*TICRATE, "", 0}, // Misty Maze Zone - 2'50"00
-	{ET_TIME, 0, 10, 'B', SKINCOLOR_GREY, 140*TICRATE, "", 0}, // Grand Metropolis - 2'20"00
-	{ET_TIME, 0, 11, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Sunbeam Paradise Zone - 2'00"00
-	{ET_TIME, 0, 12, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // Diamond Square Zone - 2'10"00
-	{ET_TIME, 0, 13, 'B', SKINCOLOR_GREY, 135*TICRATE, "", 0}, // Midnight Meadow Zone - 2'15"00
-	{ET_TIME, 0, 14, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Twinkle Cart - 2'00"00
-	{ET_TIME, 0, 15, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Pleasure Castle - 2'00"00
-	{ET_TIME, 0, 16, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Paradise Hill Zone - 2'40"00
-	{ET_TIME, 0, 17, 'B', SKINCOLOR_GREY, 170*TICRATE, "", 0}, // Sub-Zero Peak Zone - 2'50"00
-	{ET_TIME, 0, 18, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // Sapphire Coast Zone - 2'10"00
-	{ET_TIME, 0, 19, 'B', SKINCOLOR_GREY, 170*TICRATE, "", 0}, // Sand Valley Zone - 2'50"00
-	{ET_TIME, 0, 20, 'B', SKINCOLOR_GREY, 145*TICRATE, "", 0}, // Megablock Castle Zone - 2'25"00
-	{ET_TIME, 0, 21, 'B', SKINCOLOR_GREY, 140*TICRATE, "", 0}, // Canyon Rush Zone - 2'20"00
-	{ET_TIME, 0, 22, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Casino Resort Zone - 2'00"00
-	{ET_TIME, 0, 23, 'B', SKINCOLOR_GREY, 150*TICRATE, "", 0}, // Silvercloud Island Zone - 2'30"00
-	{ET_TIME, 0, 24, 'B', SKINCOLOR_GREY, 170*TICRATE, "", 0}, // Blue Mountain Zone - 2'50"00
-	{ET_TIME, 0, 25, 'B', SKINCOLOR_GREY, 150*TICRATE, "", 0}, // Petroleum Refinery Zone - 2'30"00
-	{ET_TIME, 0, 26, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Desert Palace Zone - 2'00"00
-	{ET_TIME, 0, 27, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Aurora Atoll Zone - 2'40"00
-	{ET_TIME, 0, 28, 'B', SKINCOLOR_GREY, 150*TICRATE, "", 0}, // Barren Badlands Zone - 2'30"00
-	{ET_TIME, 0, 29, 'B', SKINCOLOR_GREY, 170*TICRATE, "", 0}, // Red Barrage Area - 2'50"00
-	{ET_TIME, 0, 30, 'B', SKINCOLOR_GREY, 135*TICRATE, "", 0}, // Midnight Channel - 2'15"00
-	{ET_TIME, 0, 31, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Vanilla Hotel Zone - 2'40"00
-	{ET_TIME, 0, 32, 'B', SKINCOLOR_GREY, 160*TICRATE, "", 0}, // Toxic Palace Zone - 2'40"00
-	{ET_TIME, 0, 33, 'B', SKINCOLOR_GREY, 150*TICRATE, "", 0}, // Ancient Tomb Zone - 2'30"00
-	{ET_TIME, 0, 34, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Cloud Cradle Zone K - 2'00"00
-	{ET_TIME, 0, 35, 'B', SKINCOLOR_GREY, 165*TICRATE, "", 0}, // Volcanic Valley Zone - 2'45"00
-	{ET_TIME, 0, 36, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // Kodachrome Void Zone - 1'50"00
-	{ET_TIME, 0, 37, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // Boiling Bedrock Zone - 2'10"00
-	{ET_TIME, 0, 38, 'B', SKINCOLOR_GREY, 165*TICRATE, "", 0}, // Egg Quarters - 2'45"00
-	{ET_TIME, 0, 39, 'B', SKINCOLOR_GREY, 145*TICRATE, "", 0}, // Virtual Highway Zone - 2'25"00
-	{ET_TIME, 0, 40, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // Eggman's Nightclub Zone - 2'00"00
-	{ET_TIME, 0, 41, 'B', SKINCOLOR_GREY, 100*TICRATE, "", 0}, // KKR Ganbare Dochu 2 - 1'40"00
-	{ET_TIME, 0, 42, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // CK Chao Circuit 1 - 1'50"00
-	{ET_TIME, 0, 43, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // CK Chao Circuit 2 - 2'00"00
-	{ET_TIME, 0, 44, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // CK Cloud Tops 2 - 1'50"00
-	{ET_TIME, 0, 45, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // CK Regal Raceway - 2'10"00
-	{ET_TIME, 0, 46, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // SD2 Balloon Panic - 1'50"00
-	{ET_TIME, 0, 47, 'B', SKINCOLOR_GREY, 130*TICRATE, "", 0}, // SM Dimension Heist - 2'10"00
-	{ET_TIME, 0, 48, 'B', SKINCOLOR_GREY, 110*TICRATE, "", 0}, // MKSC Sky Garden - 1'50"00
-	{ET_TIME, 0, 49, 'B', SKINCOLOR_GREY, 105*TICRATE, "", 0}, // MKDS Peach Gardens - 1'45"00
-	{ET_TIME, 0, 50, 'B', SKINCOLOR_GREY, 120*TICRATE, "", 0}, // MKSC Rainbow Road - 2'00"00
-	{ET_TIME, 0, 51, 'B', SKINCOLOR_GREY, 100*TICRATE, "", 0}, // SMK Donut Plains 1 - 1'40"00
-	{ET_TIME, 0, 52, 'B', SKINCOLOR_GREY, 105*TICRATE, "", 0}, // SMK Mario Circuit 2 - 1'45"00
-	{ET_TIME, 0, 53, 'B', SKINCOLOR_GREY,  90*TICRATE, "", 0}, // SMK Ghost Valley 2 - 1'30"00
-	{ET_TIME, 0, 54, 'B', SKINCOLOR_GREY, 150*TICRATE, "", 0}, // SMK Bowser Castle 3 - 2'30"00
-	{ET_TIME, 0, 55, 'B', SKINCOLOR_GREY,  90*TICRATE, "", 0}  // SMK Vanilla Lake 2 - 1'30"00
-};
+emblem_t emblemlocations[MAXEMBLEMS] = {0};
 
 // Default Extra Emblems
 extraemblem_t extraemblems[MAXEXTRAEMBLEMS] =
@@ -177,7 +60,7 @@ unlockable_t unlockables[MAXUNLOCKABLES] =
 };
 
 // Number of emblems and extra emblems
-INT32 numemblems = 110;
+INT32 numemblems = 0;
 INT32 numextraemblems = 5;
 
 // DEFAULT CONDITION SETS FOR SRB2KART:
@@ -263,7 +146,10 @@ void M_ClearSecrets(void)
 {
 	INT32 i;
 
-	memset(mapvisited, 0, sizeof(mapvisited));
+	for (i = 0; i < nummapheaders; ++i)
+	{
+		mapheaderinfo[i]->mapvisited = 0;
+	}
 
 	for (i = 0; i < MAXEMBLEMS; ++i)
 		emblemlocations[i].collected = false;
@@ -298,11 +184,19 @@ UINT8 M_CheckCondition(condition_t *cn)
 		case UC_OVERALLTIME: // Requires overall time <= x
 			return (M_GotLowEnoughTime(cn->requirement));
 		case UC_MAPVISITED: // Requires map x to be visited
-			return ((mapvisited[cn->requirement - 1] & MV_VISITED) == MV_VISITED);
 		case UC_MAPBEATEN: // Requires map x to be beaten
-			return ((mapvisited[cn->requirement - 1] & MV_BEATEN) == MV_BEATEN);
 		case UC_MAPENCORE: // Requires map x to be beaten in encore
-			return ((mapvisited[cn->requirement - 1] & MV_ENCORE) == MV_ENCORE);
+		{
+			UINT8 mvtype = MV_VISITED;
+			if (cn->type == UC_MAPBEATEN)
+				mvtype = MV_BEATEN;
+			else if (cn->type == UC_MAPENCORE)
+				mvtype = MV_ENCORE;
+
+			return ((cn->requirement < nummapheaders)
+				&& (mapheaderinfo[cn->requirement])
+				&& ((mapheaderinfo[cn->requirement]->mapvisited & mvtype) == mvtype));
+		}
 		case UC_MAPTIME: // Requires time on map <= x
 			return (G_GetBestTime(cn->extrainfo1) <= (unsigned)cn->requirement);
 		case UC_TRIGGER: // requires map trigger set
@@ -467,10 +361,17 @@ UINT8 M_CheckLevelEmblems(void)
 	// Update Score, Time, Rings emblems
 	for (i = 0; i < numemblems; ++i)
 	{
+		INT32 checkLevel;
+
 		if (emblemlocations[i].type < ET_TIME || emblemlocations[i].collected)
 			continue;
 
-		levelnum = emblemlocations[i].level;
+		checkLevel = G_MapNumber(emblemlocations[i].level);
+
+		if (checkLevel >= nummapheaders || !mapheaderinfo[checkLevel])
+			continue;
+
+		levelnum = checkLevel;
 		valToReach = emblemlocations[i].var;
 
 		switch (emblemlocations[i].type)
@@ -500,17 +401,24 @@ UINT8 M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separa
 
 	for (i = 0; i < numemblems; ++i)
 	{
-		if (emblemlocations[i].type != ET_MAP || emblemlocations[i].collected)
+		INT32 checkLevel;
+
+		if (emblemlocations[i].type < ET_TIME || emblemlocations[i].collected)
 			continue;
 
-		levelnum = emblemlocations[i].level;
+		checkLevel = G_MapNumber(emblemlocations[i].level);
+
+		if (checkLevel >= nummapheaders || !mapheaderinfo[checkLevel])
+			continue;
+
+		levelnum = checkLevel;
 		embtype = emblemlocations[i].var;
 		flags = MV_BEATEN;
 
 		if (embtype & ME_ENCORE)
 			flags |= MV_ENCORE;
 
-		res = ((mapvisited[levelnum - 1] & flags) == flags);
+		res = ((mapheaderinfo[levelnum]->mapvisited & flags) == flags);
 
 		emblemlocations[i].collected = res;
 		if (res)
@@ -622,14 +530,14 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 	INT32 curtics = 0;
 	INT32 i;
 
-	for (i = 0; i < NUMMAPS; ++i)
+	for (i = 0; i < nummapheaders; ++i)
 	{
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mainrecords[i] || !mainrecords[i]->time)
+		if (!mapheaderinfo[i]->mainrecord || !mapheaderinfo[i]->mainrecord->time)
 			return false;
-		else if ((curtics += mainrecords[i]->time) > tictime)
+		else if ((curtics += mapheaderinfo[i]->mainrecord->time) > tictime)
 			return false;
 	}
 	return true;
@@ -648,7 +556,7 @@ emblem_t *M_GetLevelEmblems(INT32 mapnum)
 	static INT32 map = -1;
 	static INT32 i = -1;
 
-	if (mapnum > 0)
+	if (mapnum >= 0)
 	{
 		map = mapnum;
 		i = numemblems;
@@ -656,7 +564,12 @@ emblem_t *M_GetLevelEmblems(INT32 mapnum)
 
 	while (--i >= 0)
 	{
-		if (emblemlocations[i].level == map)
+		INT32 checkLevel = G_MapNumber(emblemlocations[i].level);
+
+		if (checkLevel >= nummapheaders || !mapheaderinfo[checkLevel])
+			continue;
+
+		if (checkLevel == map)
 			return &emblemlocations[i];
 	}
 	return NULL;

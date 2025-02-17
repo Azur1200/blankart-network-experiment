@@ -1118,6 +1118,8 @@ static void F_CacheTitleScreen(void)
 
 void F_StartTitleScreen(void)
 {
+	INT32 titleMapNum;
+
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 	{
 		ttuser_count = 0;
@@ -1127,23 +1129,23 @@ void F_StartTitleScreen(void)
 	else
 		wipegamestate = GS_TITLESCREEN;
 
-	if (titlemap)
+	if (titlemap
+		&& ((titleMapNum = G_MapNumber(titlemap)) < nummapheaders)
+		&& mapheaderinfo[titleMapNum]
+		&& mapheaderinfo[titleMapNum]->lumpnum != LUMPERROR)
 	{
 		mapthing_t *startpos;
 
 		gamestate_t prevwipegamestate = wipegamestate;
 		titlemapinaction = TITLEMAP_LOADING;
 		titlemapcameraref = NULL;
-		gamemap = titlemap;
+		gamemap = titleMapNum+1;
 
-		if (!mapheaderinfo[gamemap-1])
-			P_AllocMapHeader(gamemap-1);
-
-		maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-		globalweather = mapheaderinfo[gamemap-1]->weather;
+		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
+		globalweather = mapheaderinfo[titleMapNum]->weather;
 
 		G_DoLoadLevel(true);
-		if (!titlemap)
+		if (!titleMapNum)
 			return;
 
 		players[displayplayers[0]].playerstate = PST_DEAD; // Don't spawn the player in dummy (I'm still a filthy cheater)
@@ -1418,20 +1420,17 @@ void F_TitleScreenTicker(boolean run)
 	// is it time?
 	if (!(--demoIdleLeft))
 	{
-		//static boolean use_netreplay = false;
-
-		char dname[9];
-		lumpnum_t l;
-		const char *mapname;
+		char dname[MAXMAPLUMPNAME+1+8+1];
+		UINT16 mapnum;
 		UINT8 numstaff;
+		static boolean use_netreplay = false;
 
-		//@TODO uncomment this when this goes into vanilla
-		/*if ((use_netreplay = !use_netreplay))*/
+		if ((use_netreplay = !use_netreplay))
 		{
-			numstaff = 1;
-			while ((l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
+			lumpnum_t l = LUMPERROR;
+			numstaff = 0;
+			while (numstaff < 99 && (l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
 				numstaff++;
-			numstaff--;
 
 			if (numstaff)
 			{
@@ -1444,54 +1443,38 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		if ((l = W_CheckNumForName("MAP01S01")) == LUMPERROR) // gotta have ONE
+		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, false, NULL);
+		if (mapnum == 0) // gotta have ONE
 		{
-			F_StartIntro();
 			return;
 		}
 
-		// Replay intro when done cycling through demos
-		/*
-		if (curDemo == numDemos) -- uuuh... we have a LOT of maps AND a big devteam... probably not gonna see a repeat unless you're super unlucky :V
-		{
-			curDemo = 0;
-			F_StartIntro();
-			return;
-		}
-		*/
-
-		mapname = G_BuildMapName(G_RandMap(TOL_RACE, -2, 0, 0, false, NULL)+1);
-
-		numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",mapname,numstaff+1))) != LUMPERROR)
-			numstaff++;
-
-#if 0 // turns out this isn't how we're gonna organise 'em
-		if (numstaff > 1)
-		{
-			if (laststaff && laststaff <= numstaff) // don't do the same staff member twice in a row, even if they're on different maps
-			{
-				numstaff = M_RandomKey(numstaff-1)+1;
-				if (numstaff >= laststaff)
-					numstaff++;
-			}
-			else
-				numstaff = M_RandomKey(numstaff)+1;
-		}
-		laststaff = numstaff;
-#else
 		numstaff = M_RandomKey(numstaff)+1;
-#endif
 
 		// Setup demo name
-		snprintf(dname, 9, "%sS%02u", mapname, numstaff);
+		sprintf(dname, "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);
 
-		/*if ((l = W_CheckNumForName(dname)) == LUMPERROR) -- we KNOW it exists now
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("Demo lump \"%s\" doesn't exist\n"), dname);
-			F_StartIntro();
-			return;
-		}*/
+			// vres GHOST_%u
+			virtres_t *vRes;
+			virtlump_t *vLump;
+
+			vRes = vres_GetMap(mapheaderinfo[mapnum]->lumpnum);
+			vLump = vres_Find(vRes, dname);
+
+			if (vLump == NULL)
+			{
+
+				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
+					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
+				else
+				{
+					vres_Free(vRes);
+					return;
+				}
+			}
+			vres_Free(vRes);
+		}
 
 loadreplay:
 		demo.title = demo.fromtitle = true;
@@ -1628,7 +1611,7 @@ void F_EndCutScene(void)
 			F_StartGameEvaluation();
 		else if (cutnum == introtoplay-1)
 			D_StartTitle();
-		else if (nextmap < 1100-1)
+		else if (nextmap < NEXTMAP_SPECIAL)
 			G_NextLevel();
 		else
 			G_EndGame();

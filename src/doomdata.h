@@ -289,8 +289,6 @@ struct mapthing_t
 
 #define ZSHIFT 4
 
-#define NUMMAPS 1035
-
 /* slope thing types */
 enum
 {

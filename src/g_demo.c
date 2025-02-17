@@ -59,12 +59,14 @@ consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save"
 static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}, {0, NULL}};
 consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL);
 
+consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
+
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
 tic_t demostarttime; // for comparative timing purposes
 
 static char demoname[MAX_WADPATH];
-static savebuffer_t demobuf;
+static savebuffer_t demobuf = {0};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 demoflags;
 boolean demosynced = true; // console warning message
@@ -2000,22 +2002,13 @@ void G_RecordDemo(const char *name)
 
 	strcpy(demoname, name);
 	strcat(demoname, ".lmp");
-	//@TODO make a maxdemosize cvar
-	maxsize = 1024*1024*2;
+	maxsize = 1024 * 1024 * cv_netdemosize.value;
 
-	if (M_CheckParm("-maxdemo") && M_IsNextParm())
-		maxsize = atoi(M_GetNextParm()) * 1024;
-
-//	if (demobuf.buffer)
-//		P_SaveBufferFree(&demobuf);
-
-	demobuf.size = maxsize;
-	demobuf.buffer = (UINT8 *)malloc(maxsize);
+	P_SaveBufferAlloc(&demobuf, maxsize);
 	demobuf.p = NULL;
-	demobuf.end = demobuf.buffer + demobuf.size;
 
 	demo.recording = true;
-	//demo.buffer = &demobuf;
+	demo.buffer = &demobuf;
 
 	/* FIXME: This whole file is in a wretched state. Take a
 	look at G_WriteAllGhostTics and G_WriteDemoTiccmd, they
@@ -2039,10 +2032,8 @@ void G_RecordMetal(void)
 	if (M_CheckParm("-maxdemo") && M_IsNextParm())
 		maxsize = atoi(M_GetNextParm()) * 1024;
 
-	demobuf.size = maxsize;
-	demobuf.buffer = (UINT8 *)malloc(maxsize);
+	P_SaveBufferAlloc(&demobuf, maxsize);
 	demobuf.p = NULL;
-	demobuf.end = demobuf.buffer + demobuf.size;
 
 	metalrecording = true;
 }
@@ -2088,7 +2079,7 @@ void G_BeginRecording(void)
 
 	// game data
 	M_Memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
-	WRITEINT16(demobuf.p,gamemap);
+	WRITESTRINGN(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
 	M_Memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
 
 	WRITEUINT8(demobuf.p, demoflags);
@@ -2531,7 +2522,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	p += 16; // demo checksum
 	I_Assert(!memcmp(p, "PLAY", 4));
 	p += 4; // PLAY
-	p += 2; // gamemap
+	SKIPSTRING(p); // gamemap
 	p += 16; // map md5
 	flags = READUINT8(p); // demoflags
 	p++; // gametype
@@ -2589,7 +2580,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 		Z_Free(buffer);
 		return UINT8_MAX;
 	} p += 4; // "PLAY"
-	p += 2; // gamemap
+	SKIPSTRING(p); // gamemap
 	p += 16; // mapmd5
 	flags = READUINT8(p);
 	p++; // gametype
@@ -2635,6 +2626,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	UINT8 *infobuffer, *info_p, *extrainfo_p;
 	UINT8 version, subversion, pdemoflags;
 	UINT16 pdemoversion, count;
+	char mapname[MAXMAPLUMPNAME];
 
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
@@ -2694,7 +2686,8 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 	info_p += 4; // "PLAY"
-	pdemo->map = READINT16(info_p);
+	READSTRINGN(info_p, mapname, sizeof(mapname));
+	pdemo->map = G_MapNumber(mapname);
 	info_p += 16; // mapmd5
 
 	pdemoflags = READUINT8(info_p);
@@ -2808,7 +2801,7 @@ void G_DoPlayDemo(char *defdemoname)
 {
 	UINT8 i, p;
 	lumpnum_t l;
-	char skin[17],color[MAXCOLORNAME+1],follower[17],*n,*pdemoname;
+	char skin[17],color[MAXCOLORNAME+1],follower[17],mapname[MAXMAPLUMPNAME],*n,*pdemoname;
 	UINT8 version,subversion;
 	UINT32 randseed;
 	char msg[1024];
@@ -2848,7 +2841,7 @@ void G_DoPlayDemo(char *defdemoname)
 		if (FIL_CheckExtension(defdemoname))
 		{
 			//FIL_DefaultExtension(defdemoname, ".lmp");
-			if (!FIL_ReadFile(defdemoname, &demobuf.buffer))
+			if (P_SaveBufferFromFile(&demobuf, defdemoname) == false)
 			{
 				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
 				CONS_Alert(CONS_ERROR, "%s", msg);
@@ -2856,22 +2849,72 @@ void G_DoPlayDemo(char *defdemoname)
 				M_StartMessage(msg, NULL, MM_NOTHING);
 				return;
 			}
-			demobuf.p = demobuf.buffer;
 		}
 		// load demo resource from WAD
-		else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
+		else
 		{
-			snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
-			CONS_Alert(CONS_ERROR, "%s", msg);
-			gameaction = ga_nothing;
-			M_StartMessage(msg, NULL, MM_NOTHING);
-			return;
-		}
-		else // it's an internal demo
-		{
-			demobuf.buffer = demobuf.p = W_CacheLumpNum(l, PU_STATIC);
+			if (n == defdemoname)
+			{
+				// Raw lump.
+				if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
+				{
+					snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
+					CONS_Alert(CONS_ERROR, "%s", msg);
+					Z_Free(pdemoname);
+					gameaction = ga_nothing;
+					M_StartMessage(msg, NULL, MM_NOTHING);
+					return;
+				}
+
+				P_SaveBufferFromLump(&demobuf, l);
+			}
+			else
+			{
+				// vres GHOST_%u
+				virtres_t *vRes;
+				virtlump_t *vLump;
+				UINT16 mapnum;
+				size_t step = 0;
+
+				step = 0;
+				while (defdemoname+step < n-1)
+				{
+					mapname[step] = defdemoname[step];
+					step++;
+				}
+				mapname[step] = '\0';
+
+				mapnum = G_MapNumber(mapname);
+				if (mapnum >= nummapheaders || mapheaderinfo[mapnum]->lumpnum == LUMPERROR)
+				{
+					snprintf(msg, 1024, M_GetText("Failed to read lump '%s (couldn't find map %s)'.\n"), defdemoname, mapname);
+					CONS_Alert(CONS_ERROR, "%s", msg);
+					Z_Free(pdemoname);
+					gameaction = ga_nothing;
+					M_StartMessage(msg, NULL, MM_NOTHING);
+					return;
+				}
+
+				vRes = vres_GetMap(mapheaderinfo[mapnum]->lumpnum);
+				vLump = vres_Find(vRes, pdemoname);
+
+				if (vLump == NULL)
+				{
+					snprintf(msg, 1024, M_GetText("Failed to read lump '%s (couldn't find lump %s in %s)'.\n"), defdemoname, pdemoname, mapname);
+					CONS_Alert(CONS_ERROR, "%s", msg);
+					Z_Free(pdemoname);
+					gameaction = ga_nothing;
+					M_StartMessage(msg, NULL, MM_NOTHING);
+					return;
+				}
+
+				P_SaveBufferAlloc(&demobuf, vLump->size);
+				memcpy(demobuf.buffer, vLump->data, vLump->size);
+
+				vres_Free(vRes);
+			}
 #if defined(SKIPERRORS) && !defined(DEVELOP)
-			skiperrors = true; // SRB2Kart: Don't print warnings for staff ghosts, since they'll inevitably happen when we make bugfixes/changes...
+			skiperrors = true; // RR: Don't print warnings for staff ghosts, since they'll inevitably happen when we make bugfixes/changes...
 #endif
 		}
 	}
@@ -2879,13 +2922,14 @@ void G_DoPlayDemo(char *defdemoname)
 	// read demo header
 	gameaction = ga_nothing;
 	demo.playback = true;
+	demo.buffer = &demobuf;
 	if (memcmp(demobuf.p, DEMOHEADER, 12))
 	{
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -2905,7 +2949,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -2923,14 +2967,15 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
 	}
 
 	demobuf.p += 4; // "PLAY"
-	gamemap = READINT16(demobuf.p);
+	READSTRINGN(demobuf.p, mapname, sizeof(mapname)); // gamemap
+	gamemap = G_MapNumber(mapname)+1;
 	demobuf.p += 16; // mapmd5
 
 	demoflags = READUINT8(demobuf.p);
@@ -2987,7 +3032,7 @@ void G_DoPlayDemo(char *defdemoname)
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 				M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
-			Z_Free(demobuf.buffer);
+			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
 			return;
@@ -3024,13 +3069,13 @@ void G_DoPlayDemo(char *defdemoname)
 	demobuf.p += 4; // Extrainfo location
 
 	// ...*map* not loaded?
-	if (!gamemap || (gamemap > NUMMAPS) || !mapheaderinfo[gamemap-1] || !(mapheaderinfo[gamemap-1]->alreadyExists == true))
+	if (!gamemap || (gamemap > nummapheaders) || !mapheaderinfo[gamemap-1] || mapheaderinfo[gamemap-1]->lumpnum == LUMPERROR)
 	{
 		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -3049,7 +3094,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
-		Z_Free(demobuf.buffer);
+		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
 		return;
@@ -3099,7 +3144,7 @@ void G_DoPlayDemo(char *defdemoname)
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, NULL, MM_NOTHING);
 				Z_Free(pdemoname);
-				Z_Free(demobuf.buffer);
+				P_SaveBufferFree(&demobuf);
 				demo.playback = false;
 				demo.title = false;
 				return;
@@ -3115,7 +3160,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
-			Z_Free(demobuf.buffer);
+			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
 			return;
@@ -3225,7 +3270,7 @@ void G_DoPlayDemo(char *defdemoname)
 	R_ExecuteSetViewSize();
 
 	P_SetRandSeed(randseed);
-	G_InitNew(demoflags & DF_ENCORE, G_BuildMapName(gamemap), true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
+	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -3340,7 +3385,7 @@ void G_AddGhost(char *defdemoname)
 	} p += 4; // "PLAY"
 
 
-	p += 2; // gamemap
+	SKIPSTRING(p); // gamemap
 	p += 16; // mapmd5 (possibly check for consistency?)
 
 	flags = READUINT8(p);
@@ -3468,7 +3513,7 @@ void G_AddGhost(char *defdemoname)
 	ghosts = gh;
 
 	gh->version = ghostversion;
-	mthing = playerstarts[0];
+	mthing = playerstarts[0] ? playerstarts[0] : deathmatchstarts[0]; // todo not correct but out of scope
 	I_Assert(mthing);
 	{ // A bit more complex than P_SpawnPlayer because ghosts aren't solid and won't just push themselves out of the ceiling.
 		fixed_t z,f,c;
@@ -3572,7 +3617,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	}
 
 	p += 4; // "PLAY"
-	p += 2; // gamemap
+	SKIPSTRING(p); // gamemap
 	p += 16; // mapmd5 (possibly check for consistency?)
 
 	flags = READUINT8(p);
@@ -3650,6 +3695,7 @@ void G_DoPlayMetal(void)
 	thinker_t *th;
 
 	// it's an internal demo
+	// TODO: Use map header to determine lump name
 	if ((l = W_CheckNumForName(va("%sMS",G_BuildMapName(gamemap)))) == LUMPERROR)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("No bot recording for this map.\n"));
@@ -3758,7 +3804,7 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(boolean kill)
 		WriteDemoChecksum();
 		saved = FIL_WriteFile(va("%sMS.LMP", G_BuildMapName(gamemap)), demobuf.buffer, demobuf.p - demobuf.buffer); // finally output the file.
 	}
-	free(demobuf.buffer);
+	P_SaveBufferFree(&demobuf);
 	metalrecording = false;
 	if (saved)
 		I_Error("Saved to %sMS.LMP", G_BuildMapName(gamemap));
@@ -3826,8 +3872,7 @@ static void G_StopTimingDemo(void)
 // called from stopdemo command, map command, and g_checkdemoStatus.
 void G_StopDemo(void)
 {
-	Z_Free(demobuf.buffer);
-	demobuf.buffer = NULL;
+	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
@@ -3893,6 +3938,8 @@ boolean G_CheckDemoStatus(void)
 		return true;
 	}
 
+	if (demo.recording)
+		P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 	return false;
 }
@@ -3966,7 +4013,7 @@ void G_SaveDemo(void)
 
 	if (FIL_WriteFile(demoname, demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;
-	free(demobuf.buffer);
+	P_SaveBufferFree(&demobuf);
 	demo.recording = false;
 
 	if (!modeattacking)

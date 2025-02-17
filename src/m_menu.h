@@ -479,6 +479,8 @@ void M_RefreshPauseMenu(void);
 
 INT32 HU_GetHighlightColor(void);
 
+fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out);
+
 // Moviemode menu updating
 void Moviemode_option_Onchange(void);
 

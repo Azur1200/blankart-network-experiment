@@ -28,7 +28,7 @@ extern UINT8 *demo_p;
 // DEMO playback/recording related stuff.
 // ======================================
 
-extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality;
+extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
 
 extern tic_t demostarttime;
 
@@ -58,6 +58,7 @@ struct demovars_s {
 
 	boolean freecam;
 
+	const savebuffer_t *buffer; // debug, valid only if recording or playback
 };
 
 extern struct demovars_s demo;

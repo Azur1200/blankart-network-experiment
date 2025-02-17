@@ -182,32 +182,6 @@ boolean takescreenshot = false; // Take a screenshot this tic
 
 moviemode_t moviemode = MM_OFF;
 
-/** Returns the map number for a map identified by the last two characters in
-  * its name.
-  *
-  * \param first  The first character after MAP.
-  * \param second The second character after MAP.
-  * \return The map number, or 0 if no map corresponds to these characters.
-  * \sa G_BuildMapName
-  */
-INT32 M_MapNumber(char first, char second)
-{
-	if (isdigit(first))
-	{
-		if (isdigit(second))
-			return ((INT32)first - '0') * 10 + ((INT32)second - '0');
-		return 0;
-	}
-
-	if (!isalpha(first))
-		return 0;
-	if (!isalnum(second))
-		return 0;
-
-	return 100 + ((INT32)tolower(first) - 'a') * 36 + (isdigit(second) ? ((INT32)second - '0') :
-		((INT32)tolower(second) - 'a') + 10);
-}
-
 // ==========================================================================
 //                         FILE INPUT / OUTPUT
 // ==========================================================================
@@ -819,7 +793,7 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	 "Unknown";
 #endif
 	char rendermodetxt[9];
-	char maptext[8];
+	char maptext[MAXMAPLUMPNAME];
 	char lvlttltext[48];
 	char locationtxt[40];
 	char ctrevision[40];
@@ -840,7 +814,7 @@ static void M_PNGText(png_structp png_ptr, png_infop png_info_ptr, PNG_CONST png
 	}
 
 	if (gamestate == GS_LEVEL)
-		snprintf(maptext, 8, "%s", G_BuildMapName(gamemap));
+		snprintf(maptext, MAXMAPLUMPNAME, "%s", G_BuildMapName(gamemap));
 	else
 		snprintf(maptext, 8, "Unknown");
 
@@ -1731,6 +1705,32 @@ char *va(const char *format, ...)
 {
 	va_list argptr;
 	static char string[1024];
+
+	va_start(argptr, format);
+	vsprintf(string, format, argptr);
+	va_end(argptr);
+
+	return string;
+}
+
+/** Allocates and returns a string made out of varargs.
+  *
+  * \param format Format string.
+  * \return Pointer to the resulting string.
+  */
+char *xva(const char *format, ...)
+{
+	va_list argptr;
+	char *string;
+
+	va_start(argptr, format);
+	int size = vsnprintf(NULL, 0, format, argptr);
+	if (size < 0)
+		I_Error("xva: can't format string");
+	string = static_cast<char *>(malloc((unsigned)size+1));
+	if (!string)
+		I_Error("xva: out of memory");
+	va_end(argptr);
 
 	va_start(argptr, format);
 	vsprintf(string, format, argptr);

@@ -399,6 +399,8 @@ static CV_PossibleValue_t kartencore_cons_t[] = {{-1, "Auto"}, {0, "Off"}, {1, "
 consvar_t cv_kartencore = CVAR_INIT ("kartencore", "Auto", CV_NETVAR|CV_CALL|CV_NOINIT, kartencore_cons_t, KartEncore_OnChange);
 static CV_PossibleValue_t kartvoterulechanges_cons_t[] = {{0, "Never"}, {1, "Sometimes"}, {2, "Frequent"}, {3, "Always"}, {0, NULL}};
 consvar_t cv_kartvoterulechanges = CVAR_INIT ("kartvoterulechanges", "Frequent", CV_NETVAR, kartvoterulechanges_cons_t, NULL);
+static CV_PossibleValue_t kartgametypepreference_cons_t[] = {{-1, "None"}, {GT_RACE, "Race"}, {GT_BATTLE, "Battle"}, {0, NULL}};
+consvar_t cv_kartgametypepreference = CVAR_INIT ("kartgametypepreference", "None", CV_NETVAR, kartgametypepreference_cons_t, NULL);
 static CV_PossibleValue_t kartspeedometer_cons_t[] = {{0, "Off"}, {1, "Kilometers"}, {2, "Miles"}, {3, "Fracunits"}, {4, "Percentage"}, {0, NULL}};
 consvar_t cv_kartspeedometer = CVAR_INIT ("kartdisplayspeed", "Percentage", CV_SAVE, kartspeedometer_cons_t, NULL); // use tics in display
 static CV_PossibleValue_t kartvoices_cons_t[] = {{0, "Never"}, {1, "Tasteful"}, {2, "Meme"}, {0, NULL}};
@@ -840,6 +842,7 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_recordmultiplayerdemos);
 	CV_RegisterVar(&cv_netdemosyncquality);
+	CV_RegisterVar(&cv_netdemosize);
 
 	CV_RegisterVar(&cv_shoutname);
 	CV_RegisterVar(&cv_shoutcolor);
@@ -1425,7 +1428,7 @@ UINT8 CanChangeSkin(INT32 playernum)
 		return true;
 
 	// Force skin in effect.
-	if ((cv_forceskin.value != -1) || (mapheaderinfo[gamemap-1] && mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0'))
+	if (cv_forceskin.value != -1)
 		return false;
 
 	// Can change skin in intermission and whatnot.
@@ -2603,8 +2606,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 	if (delay != 2)
 	{
 		UINT8 flags = 0;
-		const char *mapname = G_BuildMapName(mapnum);
-		I_Assert(W_CheckNumForName(mapname) != LUMPERROR);
+		//I_Assert(W_CheckNumForName(mapname) != LUMPERROR);
 		buf_p = buf;
 		if (pencoremode)
 			flags |= 1;
@@ -2619,7 +2621,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 		// new gametype value
 		WRITEUINT8(buf_p, newgametype);
 
-		WRITESTRINGN(buf_p, mapname, MAX_WADPATH);
+		WRITEINT16(buf_p, mapnum);
 	}
 
 	if (delay == 1)
@@ -2650,27 +2652,28 @@ void D_SetupVote(void)
 	UINT8 buf[5*2]; // four UINT16 maps (at twice the width of a UINT8), and two gametypes
 	UINT8 *p = buf;
 	INT32 i;
-	UINT8 secondgt = G_SometimesGetDifferentGametype();
+	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
+	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
 	INT16 votebuffer[4] = {-1,-1,-1,0};
 
-	if ((cv_kartencore.value == 1) && (gametyperules & GTR_CIRCUIT))
-		WRITEUINT8(p, (gametype|0x80));
+	if ((cv_kartencore.value == 1) && (gametypedefaultrules[gt] & GTR_CIRCUIT))
+		WRITEUINT8(p, (gt|VOTEMODIFIER_ENCORE));
 	else
-		WRITEUINT8(p, gametype);
+		WRITEUINT8(p, gt);
 	WRITEUINT8(p, secondgt);
-	secondgt &= ~0x80;
+	secondgt &= ~VOTEMODIFIER_ENCORE;
 
 	for (i = 0; i < 4; i++)
 	{
 		UINT16 m;
 		if (i == 2) // sometimes a different gametype
 			m = G_RandMap(G_TOLFlag(secondgt), prevmap, ((secondgt != gametype) ? 2 : 0), 0, true, votebuffer);
-		else if (i >= 3) // unknown-random and force-unknown MAP HELL
-			m = G_RandMap(G_TOLFlag(gametype), prevmap, 0, (i-2), (i < 4), votebuffer);
+		else if (i >= 3) // unknown-random and formerly force-unknown MAP HELL
+			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, (i-2), (i < 4), votebuffer);
 		else
-			m = G_RandMap(G_TOLFlag(gametype), prevmap, 0, 0, true, votebuffer);
+			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, 0, true, votebuffer);
 		if (i < 3)
-			votebuffer[i] = m; // min() is a dumb workaround for gcc 4.4 array-bounds error
+			votebuffer[i] = m;
 		WRITEUINT16(p, m);
 	}
 
@@ -3075,11 +3078,11 @@ static void Command_Map_f(void)
   */
 static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 {
-	char mapname[MAX_WADPATH+1];
 	UINT8 flags;
 	INT32 resetplayer = 1, lastgametype;
 	UINT8 skipprecutscene, FLS;
 	boolean pencoremode;
+	INT16 mapnumber;
 
 	forceresetplayers = deferencoremode = false;
 
@@ -3116,7 +3119,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 
 	FLS = ((flags & (1<<3)) != 0);
 
-	READSTRINGN(*cp, mapname, MAX_WADPATH);
+	mapnumber = READINT16(*cp);
 
 	if (netgame)
 		P_SetRandSeed(READUINT32(*cp));
@@ -3124,7 +3127,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	if (!skipprecutscene)
 	{
 		DEBFILE(va("Warping to %s [resetplayer=%d lastgametype=%d gametype=%d cpnd=%d]\n",
-			mapname, resetplayer, lastgametype, gametype, chmappending));
+			G_BuildMapName(mapnumber), resetplayer, lastgametype, gametype, chmappending));
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
 	}
 
@@ -3140,7 +3143,11 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	demo.savemode = (cv_recordmultiplayerdemos.value == 2) ? DSM_WILLAUTOSAVE : DSM_NOTSAVING;
 	demo.savebutton = 0;
 
-	G_InitNew(pencoremode, mapname, resetplayer, skipprecutscene, FLS);
+	// clear this demo before recording a new one
+	if (demo.recording && !modeattacking)
+		G_CheckDemoStatus();
+
+	G_InitNew(pencoremode, mapnumber, resetplayer, skipprecutscene, FLS);
 	if (demo.playback && !demo.timing)
 		precache = true;
 	if (demo.timing)
@@ -5380,8 +5387,9 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 {
 	INT32 i;
 	UINT8 gt, secondgt;
+	INT16 tempvotelevels[4][2];
 
-	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
+	if (playernum != serverplayer) // admin shouldn't be able to set up vote...
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal vote setup received from %s\n"), player_names[playernum]);
 		if (server)
@@ -5392,14 +5400,43 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 	gt = (UINT8)READUINT8(*cp);
 	secondgt = (UINT8)READUINT8(*cp);
 
-	for (i = 0; i < 4; i++)
+	// Strip illegal Encore flag.
+	if ((gt & VOTEMODIFIER_ENCORE)
+		&& !(gametypedefaultrules[(gt & ~VOTEMODIFIER_ENCORE)] & GTR_CIRCUIT))
 	{
-		votelevels[i][0] = (UINT16)READUINT16(*cp);
-		votelevels[i][1] = gt;
-		if (!mapheaderinfo[votelevels[i][0]])
-			P_AllocMapHeader(votelevels[i][0]);
+		gt &= ~VOTEMODIFIER_ENCORE;
 	}
 
+	for (i = 0; i < 4; i++)
+	{
+		tempvotelevels[i][0] = (UINT16)READUINT16(*cp);
+		tempvotelevels[i][1] = gt;
+		if (tempvotelevels[i][0] < nummapheaders && mapheaderinfo[tempvotelevels[i][0]])
+			continue;
+
+		if (server)
+			I_Error("Got_SetupVotecmd: Internal map ID %d not found (nummapheaders = %d)", tempvotelevels[i][0], nummapheaders);
+		CONS_Alert(CONS_WARNING, M_GetText("Vote setup with bad map ID %d received from %s\n"), tempvotelevels[i][0], player_names[playernum]);
+		return;
+	}
+
+	tempvotelevels[2][1] = secondgt;
+
+	memcpy(votelevels, tempvotelevels, sizeof(votelevels));
+
+	// If third entry has an illelegal Encore flag... (illelegal!?)
+	if ((secondgt & VOTEMODIFIER_ENCORE)
+		&& !(gametypedefaultrules[(secondgt & ~VOTEMODIFIER_ENCORE)] & GTR_CIRCUIT))
+	{
+		secondgt &= ~VOTEMODIFIER_ENCORE;
+		// Apply it to the second entry instead, gametype permitting!
+		if (gametypedefaultrules[gt] & GTR_CIRCUIT)
+		{
+			votelevels[1][1] |= VOTEMODIFIER_ENCORE;
+		}
+	}
+
+	// Finally, set third entry's gametype/Encore status.
 	votelevels[2][1] = secondgt;
 
 	G_SetGamestate(GS_VOTING);
@@ -5817,7 +5854,7 @@ static void Command_Togglemodified_f(void)
 
 static void Command_Archivetest_f(void)
 {
-	savebuffer_t save;
+	savebuffer_t save = {0};
 	UINT32 i, wrote;
 	thinker_t *th;
 	if (gamestate != GS_LEVEL)
@@ -5833,9 +5870,11 @@ static void Command_Archivetest_f(void)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
-	save.size = 1024;
-	save.buffer = save.p = ZZ_Alloc(save.size);
-	save.end = save.buffer + save.size;
+	if (P_SaveBufferAlloc(&save, 1024) == false)
+	{
+		CONS_Printf("Unable to allocate buffer.\n");
+		return;
+	}
 
 	// test archive
 	CONS_Printf("LUA_Archive...\n");
@@ -5853,10 +5892,12 @@ static void Command_Archivetest_f(void)
 	LUA_UnArchive(&save, true);
 	i = READUINT8(save.p);
 	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
+	{
 		CONS_Printf("Savegame corrupted. (write %u, read %u)\n", wrote, (UINT32)(save.p - save.buffer));
+	}
 
 	// free buffer
-	Z_Free(save.buffer);
+	P_SaveBufferFree(&save);
 	CONS_Printf("Done. No crash.\n");
 }
 #endif

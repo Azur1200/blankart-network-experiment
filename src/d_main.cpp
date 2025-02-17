@@ -347,7 +347,7 @@ static bool D_Display(void)
 			if (gamestate != GS_LEVEL && rendermode != render_none)
 			{
 				V_SetPaletteLump("PLAYPAL"); // Reset the palette
-				R_ReInitColormaps(0, LUMPERROR);
+				R_ReInitColormaps(0, NULL, 0, false);
 			}
 
 			F_WipeStartScreen();
@@ -986,13 +986,12 @@ void D_StartTitle(void)
 
 		if (server)
 		{
-			char mapname[6];
+			i = G_GetFirstMapOfGametype(gametype)+1;
 
-			strlcpy(mapname, G_BuildMapName(spstage_start), sizeof (mapname));
-			strlwr(mapname);
-			mapname[5] = '\0';
+			if (i > nummapheaders)
+				I_Error("D_StartTitle: No valid map ID found!?");
 
-			COM_BufAddText(va("map %s\n", mapname));
+			COM_BufAddText(va("map %s\n", G_BuildMapName(i)));
 		}
 
 		return;
@@ -1247,11 +1246,6 @@ D_ConvertVersionNumbers (void)
 //
 void D_SRB2Main(void)
 {
-	INT32 i;
-	UINT16 wadnum;
-	lumpinfo_t *lumpinfo;
-	char *name;
-
 	INT32 p;
 
 	INT32 pstartmap = 0;
@@ -1512,31 +1506,7 @@ void D_SRB2Main(void)
 	// conversion sometimes needs the palette
 	V_ReloadPalette();
 
-	//
-	// search for maps
-	//
-	for (wadnum = 0; wadnum <= mainwads; wadnum++)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-			{
-				INT16 num;
-				if (name[5] != '\0')
-					continue;
-				num = (INT16)M_MapNumber(name[3], name[4]);
-
-				// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-				if (num <= NUMMAPS && mapheaderinfo[num - 1])
-				{
-					mapheaderinfo[num - 1]->alreadyExists = true;
-				}
-			}
-		}
-	}
+	P_InitMapData(false);
 
 	CON_SetLoadingProgress(LOADED_IWAD);
 
@@ -1595,39 +1565,7 @@ void D_SRB2Main(void)
 		//
 		// search for pwad maps
 		//
-		
-		//
-		// search for maps... again.
-		//
-		for (wadnum = mainwads+1; wadnum < numwadfiles; wadnum++)
-		{
-			lumpinfo = wadfiles[wadnum]->lumpinfo;
-			for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lumpinfo++)
-			{
-				name = lumpinfo->name;
-
-				if (name[0] == 'M' && name[1] == 'A' && name[2] == 'P') // Ignore the headers
-				{
-					INT16 num;
-					if (name[5] != '\0')
-						continue;
-					num = (INT16)M_MapNumber(name[3], name[4]);
-
-					// we want to record whether this map exists. if it doesn't have a header, we can assume it's not relephant
-					if (num <= NUMMAPS && mapheaderinfo[num - 1])
-					{
-						if (mapheaderinfo[num - 1]->alreadyExists != false)
-						{
-							G_SetGameModified(multiplayer, true); // oops, double-defined - no record attack privileges for you
-						}
-
-						mapheaderinfo[num - 1]->alreadyExists = true;
-					}
-
-					CONS_Printf("%s\n", name);
-				}
-			}
-		}
+		P_InitMapData(true);
 		HU_LoadGraphics();
 	}
 
@@ -1730,33 +1668,41 @@ void D_SRB2Main(void)
 	{
 		const char *word = M_GetNextParm();
 
-		pstartmap = G_FindMapByNameOrCode(word, 0);
-
-		if (! pstartmap)
-			I_Error("Cannot find a map remotely named '%s'\n", word);
+		if (WADNAMECHECK(word))
+		{
+			if (!(pstartmap = wadnamemap))
+				I_Error("Bad '%s' level warp.\n"
+#if defined (_WIN32)
+				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
+#endif
+				, word);
+		}
 		else
 		{
-			if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
-			{
-				G_SetGameModified(true, true);
-
-				// Start up a "minor" grand prix session
-				memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
-
-				grandprixinfo.gamespeed = KARTSPEED_NORMAL;
-				grandprixinfo.encore = false;
-				grandprixinfo.masterbots = false;
-
-				grandprixinfo.gp = true;
-				grandprixinfo.roundnum = 0;
-				grandprixinfo.cup = NULL;
-				grandprixinfo.wonround = false;
-
-				grandprixinfo.initalize = true;
-			}
-
-			autostart = true;
+			if (!(pstartmap = G_FindMapByNameOrCode(word, 0)))
+				I_Error("Cannot find a map remotely named '%s'\n", word);
 		}
+
+		if (!M_CheckParm("-server") && !M_CheckParm("-dedicated") && !M_CheckParm("-nograndprix"))
+		{
+			G_SetGameModified(true, true);
+
+			// Start up a "minor" grand prix session
+			memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+
+			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+			grandprixinfo.encore = false;
+			grandprixinfo.masterbots = false;
+
+			grandprixinfo.gp = true;
+			grandprixinfo.roundnum = 0;
+			grandprixinfo.cup = NULL;
+			grandprixinfo.wonround = false;
+
+			grandprixinfo.initalize = true;
+		}
+
+		autostart = true;
 	}
 
 	// Set up splitscreen players before joining!
@@ -1847,14 +1793,14 @@ void D_SRB2Main(void)
 	// rei/miru: bootmap (Idea: starts the game on a predefined map)
 	if (bootmap && !(M_CheckParm("-warp") && M_IsNextParm()))
 	{
-		pstartmap = bootmap;
+		pstartmap = G_MapNumber(bootmap)+1;
 
-		if (pstartmap < 1 || pstartmap > NUMMAPS)
-			I_Error("Cannot warp to map %d (out of range)\n", pstartmap);
-		else
+		if (pstartmap > nummapheaders)
 		{
-			autostart = true;
+			I_Error("Cannot warp to map %s (not found)\n", bootmap);
 		}
+
+		autostart = true;
 	}
 
 	if (autostart || netgame)
@@ -1947,14 +1893,11 @@ void D_SRB2Main(void)
 
 		if (server && !M_CheckParm("+map"))
 		{
-			// Prevent warping to nonexistent levels
-			if (W_CheckNumForName(G_BuildMapName(pstartmap)) == LUMPERROR)
-				I_Error("Could not warp to %s (map not found)\n", G_BuildMapName(pstartmap));
 			// Prevent warping to locked levels
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's
 			// lives hell.
-			else if (!dedicated && M_MapLocked(pstartmap))
+			if (!dedicated && M_MapLocked(pstartmap))
 				I_Error("You need to unlock this level before you can warp to it!\n");
 			else
 			{

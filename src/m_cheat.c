@@ -758,6 +758,8 @@ struct debugFlagNames_s const debug_flag_names[] =
 	{"Lua", DBG_LUA},
 	{"RNG", DBG_RNG},
 	{"Randomizer", DBG_RNG}, // alt name
+	{"Demo", DBG_DEMO},
+	{"Replay", DBG_DEMO}, // alt name
 	{NULL, 0}
 };
 

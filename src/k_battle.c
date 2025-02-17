@@ -241,7 +241,7 @@ void K_CheckBumpers(void)
 		winnerscoreadd -= players[i].roundscore;
 	}
 
-	if (bossinfo.boss)
+	if (K_CanChangeRules() == false)
 	{
 		if (nobumpers)
 		{

@@ -4852,8 +4852,8 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
-		P_AllocMapHeader(gamemap-1);
+	if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
+		I_Error("P_UnArchiveSPGame: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
 
 	//lastmapsaved = gamemap;
 	lastmaploaded = gamemap;
@@ -4908,7 +4908,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, mapmusrng);
 
 	WRITEUINT32(save->p, leveltime);
-	WRITEUINT32(save->p, ssspheres);
 	WRITEINT16(save->p, lastmap);
 	WRITEUINT16(save->p, bossdisabled);
 	WRITEUINT8(save->p, ringsdisabled);
@@ -4935,7 +4934,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	}
 
 	WRITEUINT32(save->p, token);
-	WRITEINT32(save->p, sstimer);
 	WRITEUINT32(save->p, bluescore);
 	WRITEUINT32(save->p, redscore);
 
@@ -4967,9 +4965,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 
 	WRITEFIXED(save->p, gravity);
 	WRITEFIXED(save->p, mapobjectscale);
-
-	WRITEUINT32(save->p, countdowntimer);
-	WRITEUINT8(save->p, countdowntimeup);
 
 	// SRB2kart
 	WRITEINT32(save->p, numgotboxes);
@@ -5041,8 +5036,8 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// gamemap changed; we assume that its map header is always valid,
 	// so make it so
-	if(!mapheaderinfo[gamemap-1])
-		P_AllocMapHeader(gamemap-1);
+	if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
+		I_Error("P_NetUnArchiveMisc: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
 
 	// tell the sound code to reset the music since we're skipping what
 	// normally sets this flag
@@ -5078,7 +5073,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	// get the time
 	leveltime = READUINT32(save->p);
-	ssspheres = READUINT32(save->p);
 	lastmap = READINT16(save->p);
 	bossdisabled = READUINT16(save->p);
 	ringsdisabled = READUINT8(save->p);
@@ -5102,7 +5096,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	}
 
 	token = READUINT32(save->p);
-	sstimer = READINT32(save->p);
 	bluescore = READUINT32(save->p);
 	redscore = READUINT32(save->p);
 
@@ -5134,9 +5127,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	
 	gravity = READFIXED(save->p);
 	mapobjectscale = READFIXED(save->p);
-
-	countdowntimer = (tic_t)READUINT32(save->p);
-	countdowntimeup = (boolean)READUINT8(save->p);
 
 	// SRB2kart
 	numgotboxes = READINT32(save->p);
@@ -5314,7 +5304,7 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 		return false;
 
 	// Only do this after confirming savegame is ok
-	G_DeferedInitNew(false, G_BuildMapName(gamemap), savedata.skin, 0, true);
+	G_DeferedInitNew(false, gamemap, savedata.skin, 0, true);
 	COM_BufAddText("dummyconsvar 1\n"); // G_DeferedInitNew doesn't do this
 
 	return true;
@@ -5351,4 +5341,94 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	// This is done in P_NetUnArchiveSpecials now.
 
 	return P_UnArchiveLuabanksAndConsistency(save);
+}
+
+boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user)
+{
+	I_Assert(save->buffer == NULL);
+	save->buffer = (UINT8 *)Z_Malloc(alloc_size, tag, user);
+
+	if (save->buffer == NULL)
+	{
+		return false;
+	}
+
+	save->size = alloc_size;
+	save->p = save->buffer;
+	save->end = save->buffer + save->size;
+
+	return true;
+}
+
+boolean P_SaveBufferFromExisting(savebuffer_t *save, UINT8 *existing_buffer, size_t existing_size)
+{
+	I_Assert(save->buffer == NULL);
+
+	if (existing_buffer == NULL || existing_size == 0)
+	{
+		return false;
+	}
+
+	save->buffer = existing_buffer;
+	save->size = existing_size;
+
+	save->p = save->buffer;
+	save->end = save->buffer + save->size;
+
+	return true;
+}
+
+boolean P_SaveBufferFromLump(savebuffer_t *save, lumpnum_t lump)
+{
+	I_Assert(save->buffer == NULL);
+
+	if (lump == LUMPERROR)
+	{
+		return false;
+	}
+
+	save->buffer = (UINT8 *)W_CacheLumpNum(lump, PU_STATIC);
+
+	if (save->buffer == NULL)
+	{
+		return false;
+	}
+
+	save->size = W_LumpLength(lump);
+
+	save->p = save->buffer;
+	save->end = save->buffer + save->size;
+
+	return true;
+}
+
+size_t P_SaveBufferFromFile(savebuffer_t *save, char const *name)
+{
+	size_t len = 0;
+
+	I_Assert(save->buffer == NULL);
+	len = FIL_ReadFile(name, &save->buffer);
+
+	if (len != 0)
+	{
+		save->size = len;
+
+		save->p = save->buffer;
+		save->end = save->buffer + save->size;
+	}
+
+	return len;
+}
+
+static void P_SaveBufferInvalidate(savebuffer_t *save)
+{
+	save->buffer = save->p = save->end = NULL;
+	save->size = 0;
+}
+
+void P_SaveBufferFree(savebuffer_t *save)
+{
+	I_Assert(save->buffer != NULL);
+	Z_Free(save->buffer);
+	P_SaveBufferInvalidate(save);
 }

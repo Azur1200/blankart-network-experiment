@@ -424,11 +424,13 @@ static void Dummystaff_OnChange(void);
 consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL);
 
 static CV_PossibleValue_t map_cons_t[] = {
-	{0,"MIN"},
-	{NUMMAPS, "MAX"},
+	{-1,"MIN"},
+	{NEXTMAP_SPECIAL, "MAX"}, // TODO: kill nextmap (can't do that i'm afraid!)
 	{0, NULL}
 };
 consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange);
+
+static INT16 lastnextmap = 1;
 
 static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL, skins_cons_t, Nextmap_OnChange);
@@ -1783,6 +1785,23 @@ INT32 HU_GetHighlightColor(void)
 	return highlightflags;
 }
 
+fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
+{
+	patch_t *patch = NULL;
+	if (mapnum == -1)
+		patch = randomlvl;
+	else if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+		patch = mapheaderinfo[mapnum]->thumbnailPic;
+
+	if (!patch)
+		patch = blanklvl;
+
+	*out = patch;
+
+	// check width instead of height because haha big winton
+	return patch->width >= 320 ? FRACUNIT : FRACUNIT*2;
+}
+
 // Sky Room
 menu_t SR_PandoraDef =
 {
@@ -2110,26 +2129,45 @@ static INT32 M_GetFirstLevelInList(void);
 void Nextmap_OnChange(void)
 {
 	char *leveltitle;
-	UINT8 active;
-	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+
+	// welp, we're stuck with nextmap for the time being. so just make the damn thing work
+	if (cv_nextmap.value != lastnextmap)
+	{
+		boolean increment = cv_nextmap.value > lastnextmap;
+		INT16 oldvalue = cv_nextmap.value - 1;
+		INT16 newvalue = oldvalue;
+		INT32 gt = cv_newgametype.value;
+		while (!M_CanShowLevelInList(newvalue, gt))
+		{
+			if (increment) // Going up!
+			{
+				if (++newvalue == nummapheaders)
+					newvalue = -1;
+			}
+			else // Going down!
+			{
+				if (--newvalue == -2)
+					newvalue = nummapheaders-1;
+			}
+
+			if (newvalue == oldvalue)
+				break; // don't loop forever if there's none of a certain gametype
+		}
+		cv_nextmap.value = lastnextmap = newvalue + 1;
+	}
 
 	// Update the string in the consvar.
 	Z_Free(cv_nextmap.zstring);
-	leveltitle = G_BuildMapTitle(cv_nextmap.value);
-	cv_nextmap.string = cv_nextmap.zstring = leveltitle ? leveltitle : Z_StrDup(G_BuildMapName(cv_nextmap.value));
-
+	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
+	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
 	if (currentMenu == &SP_TimeAttackDef)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
-		const size_t glen = strlen(srb2home)+1+strlen("media")+1+strlen("replay")+1+strlen(timeattackfolder)+1+strlen("MAPXX")+1;
-		char *gpath = malloc(glen);
+		const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
 		INT32 i;
-
-		if (!gpath)
-			return;
-
-		sprintf(gpath,"%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+		UINT8 active = 0;
 
 		CV_StealthSetValue(&cv_dummystaff, 0);
 
@@ -2198,9 +2236,6 @@ void Nextmap_OnChange(void)
 			itemOn = tastart;
 		}
 
-		if (mapheaderinfo[cv_nextmap.value-1] && mapheaderinfo[cv_nextmap.value-1]->forcecharacter[0] != '\0')
-			CV_Set(&cv_chooseskin, mapheaderinfo[cv_nextmap.value-1]->forcecharacter);
-
 		free(gpath);
 	}
 }
@@ -2239,7 +2274,8 @@ static void Dummystaff_OnChange(void)
 
 	dummystaffname[0] = '\0';
 
-	if ((l = W_CheckNumForName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
+	// TODO: Use map header to determine lump name
+	if ((l = W_CheckNumForLongName(va("%sS01",G_BuildMapName(cv_nextmap.value)))) == LUMPERROR)
 	{
 		CV_StealthSetValue(&cv_dummystaff, 0);
 		return;
@@ -2248,7 +2284,7 @@ static void Dummystaff_OnChange(void)
 	{
 		char *temp = dummystaffname;
 		UINT8 numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
+		while (numstaff < 99 && (l = W_CheckNumForLongName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),numstaff+1))) != LUMPERROR)
 			numstaff++;
 
 		if (cv_dummystaff.value < 1)
@@ -2256,7 +2292,7 @@ static void Dummystaff_OnChange(void)
 		else if (cv_dummystaff.value > numstaff)
 			CV_StealthSetValue(&cv_dummystaff, 1);
 
-		if ((l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
+		if ((l = W_CheckNumForLongName(va("%sS%02u",G_BuildMapName(cv_nextmap.value), cv_dummystaff.value))) == LUMPERROR)
 			return; // shouldn't happen but might as well check...
 
 		G_UpdateStaffGhostName(l);
@@ -4458,16 +4494,22 @@ static void M_PrepareLevelSelect(void)
 //
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
+	UINT32 tolflag = G_TOLFlag(gt);
+
 	// Random map!
 	if (mapnum == -1)
 		return (levellistmode == LLM_CREATESERVER);
 
 	// Does the map exist?
-	if (!mapheaderinfo[mapnum])
+	if (mapnum < 0 || mapnum >= nummapheaders || !mapheaderinfo[mapnum])
 		return false;
 
 	// Does the map have a name?
 	if (!mapheaderinfo[mapnum]->lvlttl[0])
+		return false;
+
+	// Does the map have a LUMP?
+	if (mapheaderinfo[mapnum]->lumpnum == LUMPERROR)
 		return false;
 
 	switch (levellistmode)
@@ -4480,10 +4522,11 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (M_MapLocked(mapnum+1))
 				return false; // not unlocked
 
-			if (gt >= 0 && gt < gametypecount && mapheaderinfo[mapnum]->typeoflevel & gametypetol[gt])
-				return true;
+			// Check for TOL
+			if (!(mapheaderinfo[mapnum]->typeoflevel & tolflag))
+				return false;
 
-			return false;
+			return true;
 
 		/*case LLM_LEVELSELECT:
 			if (mapheaderinfo[mapnum]->levelselect != maplistoption)
@@ -4511,7 +4554,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				return false; // map hell
 
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapvisited[mapnum])
+			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapheaderinfo[mapnum]->mapvisited)
 				return false;
 
 			return true;
@@ -4534,7 +4577,7 @@ static INT32 M_CountLevelsToShowInList(void)
 {
 	INT32 mapnum, count = 0;
 
-	for (mapnum = 0; mapnum < NUMMAPS; mapnum++)
+	for (mapnum = 0; mapnum < nummapheaders; mapnum++)
 		if (M_CanShowLevelInList(mapnum, -1))
 			count++;
 
@@ -4545,7 +4588,7 @@ static INT32 M_GetFirstLevelInList(void)
 {
 	INT32 mapnum;
 
-	for (mapnum = 0; mapnum < NUMMAPS; mapnum++)
+	for (mapnum = 0; mapnum < nummapheaders; mapnum++)
 		if (M_CanShowLevelInList(mapnum, -1))
 			return mapnum + 1;
 
@@ -5563,7 +5606,6 @@ static void M_HandleReplayHutList(INT32 choice)
 #define SCALEDVIEWHEIGHT (vid.height/vid.dupy)
 static void DrawReplayHutReplayInfo(void)
 {
-	lumpnum_t lumpnum;
 	patch_t *patch;
 	UINT8 *colormap;
 	INT32 x, y, w, h;
@@ -5588,21 +5630,18 @@ static void DrawReplayHutReplayInfo(void)
 		// Draw level stuff
 		x = 15; y = 15;
 
-		//  A 160x100 image of the level as entry MAPxxP
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(demolist[dir_on[menudepthleft]].map)));
-		if (lumpnum != LUMPERROR)
-			patch = W_CachePatchNum(lumpnum, PU_CACHE);
-		else
-			patch = W_CachePatchName("M_NOLVL", PU_CACHE);
+		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch)/4;
+		if (patch == blanklvl)
+			patch = nolvl;
 
 		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
-			V_DrawSmallScaledPatch(x, y, V_SNAPTOTOP, patch);
+			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP, patch, NULL);
 		else
 		{
-			w = SHORT(patch->width);
-			h = SHORT(patch->height);
-			V_DrawSmallScaledPatch(x+(w>>1), y, V_SNAPTOTOP|V_FLIP, patch);
+			w = FixedMul(SHORT(patch->width), scale);
+			h = FixedMul(SHORT(patch->height), scale);
+			V_DrawFixedPatch((x+(w>>1))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOTOP|V_FLIP, patch, NULL);
 
 			{
 				static angle_t rubyfloattime = 0;
@@ -5614,8 +5653,8 @@ static void DrawReplayHutReplayInfo(void)
 
 		x += 85;
 
-		if (mapheaderinfo[demolist[dir_on[menudepthleft]].map-1])
-			V_DrawString(x, y, V_SNAPTOTOP, G_BuildMapTitle(demolist[dir_on[menudepthleft]].map));
+		if (demolist[dir_on[menudepthleft]].map != NEXTMAP_INVALID)
+			V_DrawString(x, y, V_SNAPTOTOP, G_BuildMapTitle(demolist[dir_on[menudepthleft]].map+1));
 		else
 			V_DrawString(x, y, V_SNAPTOTOP|V_ALLOWLOWERCASE|V_TRANSLUCENT, "Level is not loaded.");
 
@@ -6252,15 +6291,10 @@ static boolean M_ExitPandorasBox(void)
 
 static void M_ChangeLevel(INT32 choice)
 {
-	char mapname[6];
 	(void)choice;
-
-	strlcpy(mapname, G_BuildMapName(cv_nextmap.value), sizeof (mapname));
-	strlwr(mapname);
-	mapname[5] = '\0';
-
+	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, false, NULL);
 	M_ClearMenus(true);
-	COM_BufAddText(va("map %s -gametype \"%s\"\n", mapname, cv_newgametype.string));
+	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
 }
 
 static void M_ConfirmSpectate(INT32 choice)
@@ -6618,8 +6652,15 @@ static void M_DrawEmblemHints(void)
 
 	for (i = 0; i < numemblems; i++)
 	{
+		INT32 checkLevel;
+
 		emblem = &emblemlocations[i];
-		if (emblem->level != gamemap || emblem->type != ET_GLOBAL)
+		if (emblem->type != ET_GLOBAL)
+			continue;
+
+		checkLevel = G_MapNumber(emblem->level);
+
+		if (!mapheaderinfo[checkLevel] || gamemap != checkLevel)
 			continue;
 
 		if (emblem->collected)
@@ -7544,7 +7585,8 @@ static void M_ChoosePlayer(INT32 choice)
 
 static INT32 statsLocation;
 static INT32 statsMax;
-static INT16 statsMapList[NUMMAPS+1];
+static INT16 *statsMapList = NULL;
+static INT16 statsMapListLen;
 
 static void M_Statistics(INT32 choice)
 {
@@ -7552,9 +7594,13 @@ static void M_Statistics(INT32 choice)
 
 	(void)choice;
 
-	memset(statsMapList, 0, sizeof(statsMapList));
+	if (!statsMapList || nummapheaders != statsMapListLen)
+	{
+		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_LEVEL, NULL);
+		statsMapListLen = nummapheaders;
+	}
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i] || mapheaderinfo[i]->lvlttl[0] == '\0')
 			continue;
@@ -7696,18 +7742,18 @@ static void M_DrawLevelStats(void)
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 52, 0, va("Race: %i", vspowerlevel[PWRLV_RACE]));
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 60, 0, va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mainrecords[i] || mainrecords[i]->time <= 0)
+		if (!mapheaderinfo[i]->mainrecord || mapheaderinfo[i]->mainrecord->time <= 0)
 		{
 			mapsunfinished++;
 			continue;
 		}
 
-		besttime += mainrecords[i]->time;
+		besttime += mapheaderinfo[i]->mainrecord->time;
 	}
 
 	V_DrawString(20, 70, highlightflags, "Combined time records:");
@@ -7784,6 +7830,7 @@ static void M_GrandPrixTemp(INT32 choice)
 static void M_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup = kartcupheaders;
+	INT32 levelNum;
 
 	(void)choice;
 
@@ -7835,9 +7882,11 @@ static void M_StartGrandPrix(INT32 choice)
 
 	grandprixinfo.initalize = true;
 
+	levelNum = G_MapNumber(grandprixinfo.cup->levellist[0]);
+
 	G_DeferedInitNew(
 		false,
-		G_BuildMapName(grandprixinfo.cup->levellist[0] + 1),
+		levelNum + 1,
 		(UINT8)(cv_chooseskin.value - 1),
 		(UINT8)(cv_splitplayers.value - 1),
 		false
@@ -7943,10 +7992,10 @@ void M_DrawTimeAttackMenu(void)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
 		tic_t lap = 0, time = 0;
-		if (mainrecords[cv_nextmap.value-1])
+		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord)
 		{
-			lap = mainrecords[cv_nextmap.value-1]->lap;
-			time = mainrecords[cv_nextmap.value-1]->time;
+			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord->lap;
+			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord->time;
 		}
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
@@ -7954,11 +8003,11 @@ void M_DrawTimeAttackMenu(void)
 		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, highlightflags, "BEST LAP:");
-			K_drawKartTimestamp(lap, 19, 86, 0, 2);
+			K_drawKartTimestamp(lap, 19, 86, -1, 2);
 		}
 
 		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
-		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value, 1);
+		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value-1, 1);
 	}
 	/*{
 		char beststr[40];
@@ -8134,7 +8183,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(nameofdemo);
 
-	G_DeferedInitNew(false, G_BuildMapName(cv_nextmap.value), (UINT8)(cv_chooseskin.value-1), 0, false);
+	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value-1), 0, false);
 }
 
 static void M_HandleStaffReplay(INT32 choice)
@@ -8877,7 +8926,7 @@ static INT32 M_FindFirstMap(INT32 gtype)
 	if (mapheaderinfo[gamemap] && (mapheaderinfo[gamemap]->typeoflevel & gametypetol[gtype]))
 		return gamemap;
 
-	for (i = 0; i < NUMMAPS; i++)
+	for (i = 0; i < nummapheaders; i++)
 	{
 		if (!mapheaderinfo[i])
 			continue;
@@ -8942,24 +8991,12 @@ static void M_StartServer(INT32 choice)
 
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 {
-	lumpnum_t lumpnum;
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
+	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel)/4;
 
-	//  A 160x100 image of the level as entry MAPxxP
-	if (cv_nextmap.value)
-	{
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(cv_nextmap.value)));
-		if (lumpnum != LUMPERROR)
-			PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-		else
-			PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
-	}
-	else
-		PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
-
-	w = SHORT(PictureOfLevel->width)/2;
-	i = SHORT(PictureOfLevel->height)/2;
+	w = FixedMul(SHORT(PictureOfLevel->width), scale);
+	i = FixedMul(SHORT(PictureOfLevel->height), scale);
 	x = BASEVIDWIDTH/2 - w/2;
 	y = currentMenu->y + 130 + 8 - i;
 
@@ -8971,14 +9008,14 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
 
 	if ((cv_kartencore.value != 1) || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
-		V_DrawSmallScaledPatch(x, y, 0, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, PictureOfLevel, NULL);
 	else
 	{
 		/*UINT8 *mappingforencore = NULL;
 		if ((lumpnum = W_CheckNumForName(va("%sE", mapname))) != LUMPERROR)
 			mappingforencore = W_CachePatchNum(lumpnum, PU_CACHE);*/
 
-		V_DrawFixedPatch((x+w)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP, PictureOfLevel, 0);
+		V_DrawFixedPatch((x+w)<<FRACBITS, y<<FRACBITS, scale, V_FLIP, PictureOfLevel, NULL);
 
 		{
 			static angle_t rubyfloattime = 0;
@@ -9002,7 +9039,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		{
 			i--;
 			if (i == -2)
-				i = NUMMAPS-1;
+				i = nummapheaders-1;
 
 			if (i == oldval)
 				return;
@@ -9012,21 +9049,11 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		//  A 160x100 image of the level as entry MAPxxP
-		if (i+1)
-		{
-			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(i+1)));
-			if (lumpnum != LUMPERROR)
-				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-			else
-				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
-		}
-		else
-			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/8;
 
 		x -= horizspac + w/2;
 
-		V_DrawTinyScaledPatch(x, y, trans, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, trans, PictureOfLevel, NULL);
 	} while (x > horizspac-dupadjust);
 
 	x = (BASEVIDWIDTH + w)/2 + horizspac;
@@ -9039,7 +9066,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 		do
 		{
 			i++;
-			if (i == NUMMAPS)
+			if (i == nummapheaders)
 				i = -1;
 
 			if (i == oldval)
@@ -9050,19 +9077,9 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		//  A 160x100 image of the level as entry MAPxxP
-		if (i+1)
-		{
-			lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(i+1)));
-			if (lumpnum != LUMPERROR)
-				PictureOfLevel = W_CachePatchNum(lumpnum, PU_CACHE);
-			else
-				PictureOfLevel = W_CachePatchName("BLANKLVL", PU_CACHE);
-		}
-		else
-			PictureOfLevel = W_CachePatchName("RANDOMLV", PU_CACHE);
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/8;
 
-		V_DrawTinyScaledPatch(x, y, trans, PictureOfLevel);
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, trans, PictureOfLevel, NULL);
 
 		x += horizspac + w/2;
 	}

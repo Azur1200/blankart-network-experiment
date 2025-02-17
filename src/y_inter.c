@@ -142,7 +142,6 @@ typedef struct
 	char str[62];
 	UINT8 gtc;
 	const char *gts;
-	patch_t *pic;
 	boolean encore;
 } y_votelvlinfo;
 
@@ -175,7 +174,6 @@ static patch_t *cursor1 = NULL;
 static patch_t *cursor2 = NULL;
 static patch_t *cursor3 = NULL;
 static patch_t *cursor4 = NULL;
-static patch_t *randomlvl = NULL;
 static patch_t *rubyicon = NULL;
 
 static void Y_UnloadVoteData(void);
@@ -1036,8 +1034,8 @@ void Y_StartIntermission(void)
 	//if (dedicated) return;
 
 	// This should always exist, but just in case...
-	if (!mapheaderinfo[prevmap])
-		P_AllocMapHeader(prevmap);
+	if (prevmap >= nummapheaders || !mapheaderinfo[prevmap])
+		I_Error("Y_StartIntermission: Internal map ID %d not found (nummapheaders = %d)", prevmap, nummapheaders);
 
 	switch (intertype)
 	{
@@ -1189,6 +1187,9 @@ void Y_VoteDrawer(void)
 	INT32 i, x, y = 0, height = 0;
 	UINT8 selected[4];
 	fixed_t rubyheight = 0;
+	fixed_t scale;
+	patch_t *pic;
+	INT16 mapnum;
 
 	if (rendermode == render_none)
 		return;
@@ -1257,19 +1258,19 @@ void Y_VoteDrawer(void)
 	for (i = 0; i < 4; i++)
 	{
 		const char *str;
-		patch_t *pic;
 		UINT8 j, color;
 
 		if (i == 3)
 		{
 			str = "RANDOM";
-			pic = randomlvl;
+			mapnum = -1;
 		}
 		else
 		{
 			str = levelinfo[i].str;
-			pic = levelinfo[i].pic;
+			mapnum = votelevels[i][0];
 		}
+		scale = M_GetMapThumbnail(mapnum, &pic)/4;
 
 		if (selected[i])
 		{
@@ -1333,10 +1334,10 @@ void Y_VoteDrawer(void)
 			}
 
 			if (!levelinfo[i].encore)
-				V_DrawSmallScaledPatch(BASEVIDWIDTH-100, y, V_SNAPTORIGHT, pic);
+				V_DrawFixedPatch((BASEVIDWIDTH-100)<<FRACBITS, y<<FRACBITS, scale, V_SNAPTORIGHT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, scale, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, ((y+25)<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
@@ -1356,11 +1357,12 @@ void Y_VoteDrawer(void)
 		}
 		else
 		{
+			scale /= 2;
 			if (!levelinfo[i].encore)
-				V_DrawTinyScaledPatch(BASEVIDWIDTH-60, y, V_SNAPTORIGHT, pic);
+				V_DrawFixedPatch((BASEVIDWIDTH-60)<<FRACBITS, y<<FRACBITS, scale, V_SNAPTORIGHT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, FRACUNIT/4, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-20)<<FRACBITS, y<<FRACBITS, scale, V_FLIP|V_SNAPTORIGHT, pic, NULL);
 				V_DrawFixedPatch((BASEVIDWIDTH-40)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
@@ -1385,12 +1387,12 @@ void Y_VoteDrawer(void)
 
 		if ((playeringame[i] && !players[i].spectator) && votes[i] != -1)
 		{
-			patch_t *pic;
-
 			if (votes[i] >= 3 && (i != pickedvote || voteendtic == -1))
-				pic = randomlvl;
+				mapnum = -1; // randomlvl
 			else
-				pic = levelinfo[votes[i]].pic;
+				mapnum = votelevels[votes[i]][0];
+
+			scale = M_GetMapThumbnail(mapnum, &pic)/8;
 
 			if (!timer && i == voteclient.ranim)
 			{
@@ -1402,10 +1404,10 @@ void Y_VoteDrawer(void)
 			}
 
 			if (!levelinfo[votes[i]].encore)
-				V_DrawTinyScaledPatch(x, y, V_SNAPTOLEFT, pic);
+				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((x+40)<<FRACBITS, (y)<<FRACBITS, FRACUNIT/4, V_SNAPTOLEFT|V_FLIP, pic, 0);
+				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
 				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, rubyicon, NULL);
 			}
 
@@ -1719,6 +1721,7 @@ void Y_VoteTicker(void)
 void Y_StartVote(void)
 {
 	INT32 i = 0;
+	boolean battlemode = ((votelevels[0][1] & ~VOTEMODIFIER_ENCORE) == GT_BATTLE); // todo gametyperules
 
 	votetic = -1;
 
@@ -1729,14 +1732,13 @@ void Y_StartVote(void)
 
 	Y_AnimatedVoteScreenCheck();
 
-	widebgpatch = W_CachePatchName(((gametype == GT_BATTLE) ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
-	bgpatch = W_CachePatchName(((gametype == GT_BATTLE) ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
+	widebgpatch = W_CachePatchName((battlemode ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
+	bgpatch = W_CachePatchName((battlemode ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
 	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
 	cursor1 = W_CachePatchName("P1CURSOR", PU_STATIC);
 	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
 	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
 	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	randomlvl = W_CachePatchName("RANDOMLV", PU_STATIC);
 	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
 
 	timer = cv_votetime.value*TICRATE;
@@ -1761,11 +1763,9 @@ void Y_StartVote(void)
 
 	for (i = 0; i < 4; i++)
 	{
-		lumpnum_t lumpnum;
-
 		// set up the encore
-		levelinfo[i].encore = (votelevels[i][1] & 0x80);
-		votelevels[i][1] &= ~0x80;
+		levelinfo[i].encore = (votelevels[i][1] & VOTEMODIFIER_ENCORE);
+		votelevels[i][1] &= ~VOTEMODIFIER_ENCORE;
 
 		// set up the levelstring
 		if (mapheaderinfo[votelevels[i][0]]->levelflags & LF_NOZONE || !mapheaderinfo[votelevels[i][0]]->zonttl[0])
@@ -1803,13 +1803,6 @@ void Y_StartVote(void)
 			levelinfo[i].gts = gametype_cons_t[votelevels[i][1]].strvalue;
 		else
 			levelinfo[i].gts = NULL;
-
-		// set up the pic
-		lumpnum = W_CheckNumForName(va("%sP", G_BuildMapName(votelevels[i][0]+1)));
-		if (lumpnum != LUMPERROR)
-			levelinfo[i].pic = W_CachePatchName(va("%sP", G_BuildMapName(votelevels[i][0]+1)), PU_STATIC);
-		else
-			levelinfo[i].pic = W_CachePatchName("BLANKLVL", PU_STATIC);
 	}
 
 	voteclient.loaded = true;
@@ -1833,8 +1826,6 @@ void Y_EndVote(void)
 //
 static void Y_UnloadVoteData(void)
 {
-	UINT8 i;
-
 	voteclient.loaded = false;
 
 	if (rendermode != render_soft)
@@ -1847,30 +1838,7 @@ static void Y_UnloadVoteData(void)
 	UNLOAD(cursor2);
 	UNLOAD(cursor3);
 	UNLOAD(cursor4);
-	UNLOAD(randomlvl);
 	UNLOAD(rubyicon);
-
-	// to prevent double frees...
-	for (i = 0; i < 4; i++)
-	{
-	// I went to all the trouble of doing this,
-	// but literally nowhere else frees level pics.
-#if 0
-		UINT8 j;
-
-		if (!levelinfo[i].pic)
-			continue;
-
-		for (j = i+1; j < 4; j++)
-		{
-			if (levelinfo[j].pic == levelinfo[i].pic)
-				levelinfo[j].pic = NULL;
-		}
-		UNLOAD(levelinfo[i].pic);
-#else
-		CLEANUP(levelinfo[i].pic);
-#endif
-	}
 }
 
 //

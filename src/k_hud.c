@@ -1454,7 +1454,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	else if ((drawtime/TICRATE) & 1)
 		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
-	if (emblemmap && (modeattacking || (mode == 1)) && !demo.playback) // emblem time!
+	if ((modeattacking || (mode == 1)) && !demo.playback) // emblem time!
 	{
 		INT32 workx = TX + 96, worky = TY+18;
 		SINT8 curemb = 0;
@@ -3300,7 +3300,6 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 
 static void K_drawKartMinimap(void)
 {
-	INT32 lumpnum;
 	patch_t *AutomapPic, *workingPic;
 	INT32 i = 0;
 	INT32 x, y;
@@ -3323,12 +3322,12 @@ static void K_drawKartMinimap(void)
 	if (stplyr != &players[displayplayers[0]])
 		return;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
+	AutomapPic = mapheaderinfo[gamemap-1]->minimapPic;
 
-	if (lumpnum != -1)
-		AutomapPic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
-	else
+	if (!AutomapPic)
+	{
 		return; // no pic, just get outta here
+	}
 
 	if (r_splitscreen < 2) // 1/2P right aligned
 	{

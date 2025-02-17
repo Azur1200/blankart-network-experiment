@@ -621,18 +621,6 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			}
 		return luaL_error(L, "skincolor '%s' could not be found.\n", word);
 	}
-	else if (fastncmp("GRADE_",word,6))
-	{
-		p = word+6;
-		for (i = 0; NIGHTSGRADE_LIST[i]; i++)
-			if (*p == NIGHTSGRADE_LIST[i])
-			{
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
-		if (mathlib) return luaL_error(L, "NiGHTS grade '%s' could not be found.\n", word);
-		return 0;
-	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
 		for (i = 0; i < NUMMENUTYPES; i++)

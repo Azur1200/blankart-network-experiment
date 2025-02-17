@@ -47,7 +47,6 @@
 #ifdef HAVE_VALGRIND
 #include "valgrind.h"
 static boolean Z_calloc = false;
-#include "memcheck.h"
 #endif
 
 #define ZONEID 0xa441d13d
@@ -151,7 +150,7 @@ void Z_Free2(void *ptr, const char *file, INT32 line)
 	if (block->user != NULL)
 		*block->user = NULL;
 
-#ifdef VALGRIND_DESTROY_MEMPOOL
+#ifdef HAVE_VALGRIND
 	VALGRIND_DESTROY_MEMPOOL(block);
 #endif
 	block->prev->next = block->next;
@@ -217,10 +216,6 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
-#ifdef HAVE_VALGRIND
-	Z_calloc = false;
-#endif
-
 	block->next = head.next;
 	block->prev = &head;
 	head.next = block;
@@ -233,8 +228,9 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
 	block->size = sizeof (memblock_t) + size;
 	block->realsize = size;
 
-#ifdef VALGRIND_CREATE_MEMPOOL
+#ifdef HAVE_VALGRIND
 	VALGRIND_CREATE_MEMPOOL(block, size, Z_calloc);
+	Z_calloc = false;
 #endif
 
 	block->id = ZONEID;
@@ -266,7 +262,7 @@ void *Z_Malloc2(size_t size, INT32 tag, void *user, INT32 alignbits,
   */
 void *Z_Calloc2(size_t size, INT32 tag, void *user, INT32 alignbits, const char *file, INT32 line)
 {
-#ifdef VALGRIND_MEMPOOL_ALLOC
+#ifdef HAVE_VALGRIND
 	Z_calloc = true;
 #endif
 	return memset(Z_Malloc2    (size, tag, user, alignbits, file, line), 0, size);
@@ -435,12 +431,11 @@ void Z_CheckHeap(INT32 i)
 		CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
 			blocknumon, block->ownerfile, block->ownerline);
 #endif
-#ifdef VALGRIND_MEMPOOL_EXISTS
-		if (!VALGRIND_MEMPOOL_EXISTS(block))
+#ifdef HAVE_VALGRIND
+		if (RUNNING_ON_VALGRIND && !VALGRIND_MEMPOOL_EXISTS(block))
 		{
 			I_Error("Z_CheckHeap %d: block %u"
 				"(owned by %s:%d)"
-				" should not exist", i, blocknumon,
 				" should not exist", i, blocknumon,
 				block->ownerfile, block->ownerline
 			);
@@ -470,9 +465,6 @@ void Z_CheckHeap(INT32 i)
 				block->ownerfile, block->ownerline
 			);
 		}
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-		VALGRIND_MAKE_MEM_DEFINED(hdr, sizeof *hdr);
-#endif
 		if (block->id != ZONEID)
 		{
 			I_Error("Z_CheckHeap %d: block %u"

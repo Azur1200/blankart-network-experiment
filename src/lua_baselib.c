@@ -34,7 +34,6 @@
 #include "k_hud.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
-#include "m_misc.h" // M_MapNumber
 #include "p_spec.h" // P_StartQuake
 #include "i_system.h" // I_GetPreciseTime, I_GetPrecisePrecision
 
@@ -390,18 +389,18 @@ static int lib_pGetColorAfter(lua_State *L)
 // M_MISC
 //////////////
 
-static int lib_mMapNumber(lua_State *L)
+static int lib_gMapNumber(lua_State *L)
 {
 	const char *arg = luaL_checkstring(L, 1);
-	size_t len = strlen(arg);
-	if (len == 2 || len == 5) {
-		char first = arg[len-2];
-		char second = arg[len-1];
-		lua_pushinteger(L, M_MapNumber(first, second));
-	} else {
-		lua_pushinteger(L, 0);
-	}
-	return 1;
+	INT32 map;
+
+	map = G_MapNumber(arg);
+
+	if (map == INT32_MAX)
+		return 0;
+
+
+	return map;
 }
 
 // M_RANDOM
@@ -3166,12 +3165,12 @@ static int lib_gBuildMapTitle(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
 	char *name;
-	if (map < 1 || map > NUMMAPS)
+	if (map < 1 || map > nummapheaders)
 	{
 		return luaL_error(L,
-				"map number %d out of range (1 - %d)",
+				"map ID %d out of range (1 - %d)",
 				map,
-				NUMMAPS
+				nummapheaders
 		);
 	}
 	name = G_BuildMapTitle(map);
@@ -3968,9 +3967,6 @@ static luaL_Reg lib[] = {
 	{"M_GetColorAfter",lib_pGetColorAfter},
 	{"M_GetColorBefore",lib_pGetColorBefore},
 
-	// m_misc
-	{"M_MapNumber",lib_mMapNumber},
-
 	// m_random
 	{"P_RandomFixed",lib_pRandomFixed},
 	{"P_RandomByte",lib_pRandomByte},
@@ -4173,6 +4169,7 @@ static luaL_Reg lib[] = {
 	// g_game
 	{"G_AddGametype", lib_gAddGametype},
 	{"G_BuildMapName",lib_gBuildMapName},
+	{"G_MapNumber",lib_gMapNumber},
 	{"G_BuildMapTitle",lib_gBuildMapTitle},
 	{"G_FindMap",lib_gFindMap},
 	{"G_FindMapByNameOrCode",lib_gFindMapByNameOrCode},
