@@ -1270,7 +1270,7 @@ void Y_VoteDrawer(void)
 			str = levelinfo[i].str;
 			mapnum = votelevels[i][0];
 		}
-		scale = M_GetMapThumbnail(mapnum, &pic);
+		scale = M_GetMapThumbnail(mapnum, &pic)/4;
 
 		if (selected[i])
 		{
@@ -1392,7 +1392,7 @@ void Y_VoteDrawer(void)
 			else
 				mapnum = votelevels[votes[i]][0];
 
-			scale = M_GetMapThumbnail(mapnum, &pic)/2;
+			scale = M_GetMapThumbnail(mapnum, &pic)/8;
 
 			if (!timer && i == voteclient.ranim)
 			{

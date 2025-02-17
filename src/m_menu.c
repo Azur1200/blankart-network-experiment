@@ -1799,7 +1799,7 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
 	*out = patch;
 
 	// check width instead of height because haha big winton
-	return patch->width >= 320 ? FRACUNIT/4 : FRACUNIT/2;
+	return patch->width >= 320 ? FRACUNIT : FRACUNIT*2;
 }
 
 // Sky Room
@@ -5637,7 +5637,7 @@ static void DrawReplayHutReplayInfo(void)
 		x = 15; y = 15;
 
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
-		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch);
+		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch)/4;
 		if (patch == blanklvl)
 			patch = nolvl;
 
@@ -8999,7 +8999,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 {
 	patch_t *PictureOfLevel;
 	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
-	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel);
+	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel)/4;
 
 	w = FixedMul(SHORT(PictureOfLevel->width), scale);
 	i = FixedMul(SHORT(PictureOfLevel->height), scale);
@@ -9055,7 +9055,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		scale = M_GetMapThumbnail(i, &PictureOfLevel)/2;
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/8;
 
 		x -= horizspac + w/2;
 
@@ -9083,7 +9083,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 
 		} while (!M_CanShowLevelInList(i, cv_newgametype.value));
 
-		scale = M_GetMapThumbnail(i, &PictureOfLevel)/2;
+		scale = M_GetMapThumbnail(i, &PictureOfLevel)/8;
 
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, trans, PictureOfLevel, NULL);
 
