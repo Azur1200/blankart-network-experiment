@@ -5367,24 +5367,30 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// decide which patch to use for sprite relative to player
 	if ((unsigned)thing->sprite >= numsprites)
-#ifdef RANGECHECK
-		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite number %i ",
-		        thing->sprite);
-#else
+	{
+		CONS_Debug(DBG_RENDER, "R_ProjectPrecipitationSprite: invalid sprite number %d\n",
+			thing->sprite);
 		return;
-#endif
+	}
 
 	sprdef = &sprites[thing->sprite];
 
-	if ((size_t)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
-#ifdef RANGECHECK
-		I_Error("HWR_ProjectPrecipitationSprite: invalid sprite frame %i : %i for %s",
-		        thing->sprite, thing->frame, sprnames[thing->sprite]);
+	if ((UINT8)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
+	{
+		CONS_Debug(DBG_RENDER, "R_ProjectPrecipitationSprite: invalid sprite frame %d : %d for %s\n",
+			thing->sprite, thing->frame, sprnames[thing->sprite]);
+		return;
+	}
+
+	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
+
+
+	if (!sprframe)
+#ifdef PARANOIA
+		I_Error("R_ProjectPrecipitationSprite: sprframes NULL for sprite %d\n", thing->sprite);
 #else
 		return;
 #endif
-
-	sprframe = &sprdef->spriteframes[ thing->frame & FF_FRAMEMASK];
 
 	// use single rotation for all views
 	lumpoff = sprframe->lumpid[0];

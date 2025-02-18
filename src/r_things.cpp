@@ -2584,9 +2584,11 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
-#ifdef PARANOIA
 	if (!sprframe)
+#ifdef PARANOIA
 		I_Error("R_ProjectPrecipitationSprite: sprframes NULL for sprite %d\n", thing->sprite);
+#else
+		return;
 #endif
 
 	// use single rotation for all views
