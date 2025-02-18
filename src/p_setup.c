@@ -8365,18 +8365,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	if (mapheaderinfo[gamemap-1])
 	{
-		if (encoremode)
-		{
-			encoreLump = vres_Find(curmapvirt, "ENCORE");
-			if (!encoreLump)
-				oldEncore = W_CheckNumForName(va("%sE", maplumpname));
-		}
-		else
-		{
-			encoreLump = vres_Find(curmapvirt, "TWEAKMAP");
-			if (!encoreLump)
-				oldEncore = W_CheckNumForName(va("%sT", maplumpname));
-		}
+		encoreLump = vres_Find(curmapvirt, encoremode ? "ENCORE" : "TWEAKMAP");
+		if (!encoreLump && strlen(maplumpname) < 8)
+			oldEncore = W_CheckNumForName(va("%s%c", maplumpname, encoremode ? 'E' : 'T'));
 	}
 
 	if (encoreLump)
