@@ -7453,19 +7453,6 @@ void K_KartPlayerAfterThink(player_t *player)
 	}
 }
 
-typedef struct respawnresult_s
-{
-	sector_t *cursec;
-	fixed_t bestsectorheight;
-	fixed_t bestfofheight;
-	ffloor_t *bestrover;
-	fixed_t bestpoheight;
-	polyobj_t *bestpo;
-	fixed_t finaldistances[3];
-
-	SINT8 result;
-} respawnresult_t;
-
 static int clostVal(fixed_t arr[], int N, fixed_t K)
 {
 	// Stores the closest
@@ -7491,7 +7478,7 @@ static int clostVal(fixed_t arr[], int N, fixed_t K)
 }
 
 // Decides if respawning at this position is safe, used for nu waypoints.
-static boolean K_SafeRespawnPosition(mobj_t * mo)
+boolean K_SafeRespawnPosition(mobj_t * mo)
 {
 	respawnresult_t result;
 	const boolean flip = (mo->eflags & MFE_VERTICALFLIP) ? true : false;
@@ -7502,6 +7489,8 @@ static boolean K_SafeRespawnPosition(mobj_t * mo)
 	result.cursec = R_PointInSubsector(mobjx, mobjy)->sector;
 	result.bestfofheight = INT32_MAX;
 	result.bestpoheight = INT32_MAX;
+	result.bestrover = NULL;
+	result.bestpo = NULL;
 
 	if (!result.cursec) // How tf do you do this?????
 		return false;
@@ -7655,16 +7644,16 @@ static boolean K_SafeRespawnPosition(mobj_t * mo)
 
 		fixed_t closetvalue = clostVal(result.finaldistances, N, mobjz);
 		if (closetvalue == result.bestfofheight && (result.bestfofheight != INT32_MAX))
-			result.result = 2;
+			result.result = RESPAWNRS_ROVER;
 		else if (closetvalue == result.bestpoheight && (result.bestpoheight != INT32_MAX))
-			result.result = 3;
+			result.result = RESPAWNRS_PO;
 		else
-			result.result = 1;
+			result.result = RESPAWNRS_SECTOR;
 	}
 
 	// if rover is valid and bestfofheight is closer then bestsectorheight and bestpoheight
 	// probably should consider flip
-	if (result.result == 2)
+	if (result.result == RESPAWNRS_ROVER)
 	{
 		// Check if rover is bad based on both its terrain, and sector specials.
 		if (result.bestrover)
@@ -7702,7 +7691,7 @@ static boolean K_SafeRespawnPosition(mobj_t * mo)
 	}
 	// if po is valid and bestpoheight is closer then bestsectorheight and bestpoheight
 	// probably should consider flip
-	else if (result.result == 3)
+	else if (result.result == RESPAWNRS_PO)
 	{
 		// Check if po is bad based on both its terrain, and sector specials.
 		if (result.bestpo)
@@ -7739,7 +7728,7 @@ static boolean K_SafeRespawnPosition(mobj_t * mo)
 	}
 	// if everything else is not closest check sector
 	// probably should consider flip
-	else if (result.result == 1)
+	else if (result.result == RESPAWNRS_SECTOR)
 	{
 		// Check if sector is bad based on both its terrain, and sector specials.
 

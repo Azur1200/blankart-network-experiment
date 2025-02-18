@@ -3937,6 +3937,17 @@ static int lib_kSetHyuCountdown(lua_State *L)
 	return 0;
 }
 
+// Checks if the floor closet floor under an object would be safe to respawn/land on.
+static int lib_kSafeRespawnPosition(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	//HUDSAFE
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushfixed(L, K_SafeRespawnPosition(mobj));
+	return 1;
+}
+
 static int lib_getTimeMicros(lua_State *L)
 {
 	lua_pushinteger(L, I_GetPreciseTime() / (I_GetPrecisePrecision() / 1000000));
@@ -4231,6 +4242,7 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+	{"K_SafeRespawnPosition", lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 

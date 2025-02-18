@@ -26,6 +26,28 @@ Make sure this matches the actual number of states
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
 
+// Used for respawning checks.
+
+typedef struct respawnresult_s
+{
+	sector_t *cursec;
+	fixed_t bestsectorheight;
+	fixed_t bestfofheight;
+	ffloor_t *bestrover;
+	fixed_t bestpoheight;
+	polyobj_t *bestpo;
+	fixed_t finaldistances[3];
+
+	SINT8 result;
+} respawnresult_t;
+
+typedef enum
+{
+	RESPAWNRS_SECTOR,
+	RESPAWNRS_ROVER,
+	RESPAWNRS_PO,
+} respawnresult_e;
+
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
 void K_RegisterKartStuff(void);
@@ -147,6 +169,8 @@ void K_PlayPowerGloatSound(mobj_t *source);
 
 void K_SetItemOut(player_t *player);
 void K_UnsetItemOut(player_t *player);
+
+boolean K_SafeRespawnPosition(mobj_t * mo);
 
 #ifdef __cplusplus
 } // extern "C"
