@@ -1681,16 +1681,19 @@ void zerr(int ret)
 }
 #endif
 
-// only do palette swapping ONCE, when caching the whole patch
-// dumb hack but it works!
-static boolean dopalswap = false;
-
-// returns true if the most recently loaded lump is freshly cached, AND comes from a compatmode file
-boolean W_NeedPaletteRemap(void)
+// returns true if the given lump is not cached, AND comes from a compatmode file
+boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
 {
-	boolean r = dopalswap;
-	dopalswap = false;
-	return r;
+	if (!wadfiles[wad]->lumpcache[lump] || ignorecache)
+	{
+		return wadfiles[wad]->compatmode;
+	}
+	return false;
+}
+
+boolean W_NeedPaletteRemap(lumpnum_t lump, boolean ignorecache)
+{
+	return W_NeedPaletteRemapPwad(WADFILENUM(lump), LUMPNUM(lump), ignorecache);
 }
 
 /** Reads bytes from the head of a lump.
@@ -1881,15 +1884,11 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 	lumpcache = wadfiles[wad]->lumpcache;
 	if (!lumpcache[lump])
 	{
-		dopalswap = wadfiles[wad]->compatmode;
 		void *ptr = Z_Malloc(W_LumpLengthPwad(wad, lump), tag, &lumpcache[lump]);
 		W_ReadLumpHeaderPwad(wad, lump, ptr, 0, 0);  // read the lump in full
 	}
 	else
-	{
-		dopalswap = false;
 		Z_ChangeTag(lumpcache[lump], tag);
-	}
 
 	return lumpcache[lump];
 }

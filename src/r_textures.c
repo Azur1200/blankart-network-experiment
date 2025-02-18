@@ -355,6 +355,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	UINT16 wadnum;
 	lumpnum_t lumpnum;
 	size_t lumplength;
+	boolean doremap;
 
 	I_Assert(texnum <= (size_t)numtextures);
 	texture = textures[texnum];
@@ -384,6 +385,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			return block;
 		}
 
+		doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
@@ -396,7 +398,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			goto multipatch;
 #endif
 
-		if (W_NeedPaletteRemap())
+		if (doremap)
 			R_DoPaletteRemapPatch(realpatch, lumplength);
 
 		// Check the patch for holes.
@@ -482,6 +484,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 
 		wadnum = patch->wad;
 		lumpnum = patch->lump;
+		doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		realpatch = (softwarepatch_t *)pdata;
@@ -495,16 +498,15 @@ UINT8 *R_GenerateTexture(size_t texnum)
 #ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
 		{
-			if (W_NeedPaletteRemap())
+			if (doremap)
 				R_DoPaletteRemapFlat(pdata, lumplength);
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
 		}
 		else
 #endif
 		{
-			(void)lumplength;
 			dealloc = false;
-			if (W_NeedPaletteRemap())
+			if (doremap)
 				R_DoPaletteRemapPatch(realpatch, lumplength);
 		}
 
@@ -935,8 +937,11 @@ UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col)
 
 void *R_GetFlat(lumpnum_t flatlumpnum)
 {
+	// FIXME: checking this every time a flat is fetched for drawing is stupid...
+	// sadly they are not cached anywhere else so i have no choice
+	boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
 	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
-	if (W_NeedPaletteRemap())
+	if (doremap)
 		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
 	return flat;
 }
