@@ -2566,19 +2566,21 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	yscale = FixedDiv(projectiony[viewssnum], tz);
 
 	// decide which patch to use for sprite relative to player
-#ifdef RANGECHECK
 	if ((unsigned)thing->sprite >= numsprites)
-		I_Error("R_ProjectPrecipitationSprite: invalid sprite number %d ",
+	{
+		CONS_Debug(DBG_RENDER, "R_ProjectPrecipitationSprite: invalid sprite number %d\n",
 			thing->sprite);
-#endif
+		return;
+	}
 
 	sprdef = &sprites[thing->sprite];
 
-#ifdef RANGECHECK
 	if ((UINT8)(thing->frame&FF_FRAMEMASK) >= sprdef->numframes)
-		I_Error("R_ProjectPrecipitationSprite: invalid sprite frame %d : %d for %s",
+	{
+		CONS_Debug(DBG_RENDER, "R_ProjectPrecipitationSprite: invalid sprite frame %d : %d for %s\n",
 			thing->sprite, thing->frame, sprnames[thing->sprite]);
-#endif
+		return;
+	}
 
 	sprframe = &sprdef->spriteframes[thing->frame & FF_FRAMEMASK];
 
