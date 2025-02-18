@@ -1639,8 +1639,8 @@ boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly)
 {
 	if (terrain->friction > 0
 	|| terrain->offroad != 0
-	|| terrain->damageType != -1
-	|| (terrain->flags & TRF_STAIRJANK))
+	|| terrain->damageType != -1)
+	//|| (terrain->flags & TRF_STAIRJANK))
 		return true;
 
 	if (badonly)

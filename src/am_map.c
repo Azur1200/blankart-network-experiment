@@ -1034,7 +1034,7 @@ static void AM_drawWalls(UINT8 pass)
 		}
 		else
 		{
-			if (lines[i].flags & (ML_IMPASSABLE|ML_BLOCKPLAYERS))
+			if (lines[i].flags & (ML_IMPASSABLE|ML_EFFECT6))
 			{
 				if (pass & PASS_SOLID)
 					AM_drawMline(&l, TSWALLCOLORS); // Completely solid course boundary
@@ -1298,7 +1298,7 @@ static inline void AM_drawSpecialThingsOnly(UINT8 colors)
 		{
 			if (t->type == MT_RANDOMITEM
 			|| t->type == MT_PAPERITEMSPOT
-			|| t->type == MT_OVERTIME_CENTER
+			//|| t->type == MT_OVERTIME_CENTER
 			|| t->type == MT_RING
 			|| t->type == MT_BLUESPHERE
 			|| t->type == MT_WAYPOINT
