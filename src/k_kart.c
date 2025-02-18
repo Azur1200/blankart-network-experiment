@@ -7982,7 +7982,7 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 			}
 		}
 
-		if (!K_SafeRespawnPosition(player->mo) && (!P_IsObjectOnGround(player->mo)
+		if ((!P_IsObjectOnGround(player->mo)
 			|| player->respawn
 			|| P_CheckDeathPitCollide(player->mo)
 			|| P_InQuicksand(player->mo)
@@ -8269,15 +8269,33 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		if (!(player->pflags & PF_WRONGWAY))
 			player->grieftime = 0;
 
-		// Set time, z, flip and angle first.
-		player->starposttime = player->realtime;
-		player->starpostz = player->mo->z >> FRACBITS;
-		player->starpostflip = (player->mo->eflags & MFE_VERTICALFLIP) ? true : false;
-		player->starpostangle = player->mo->angle;
+		// Check if respawn is safe. If not then goto next spawnpoint and respawn there.
+		if (K_SafeRespawnPosition(player->mo))
+		{
+			// Set time, z, flip and angle first.
+			player->starposttime = player->realtime;
+			player->starpostz = player->mo->z >> FRACBITS;
+			player->starpostflip = (player->mo->eflags & MFE_VERTICALFLIP) ? true : false;
+			player->starpostangle = player->mo->angle;
 
-		// Then do x and y
-		player->starpostx = player->mo->x >> FRACBITS;
-		player->starposty = player->mo->y >> FRACBITS;
+			// Then do x and y
+			player->starpostx = player->mo->x >> FRACBITS;
+			player->starposty = player->mo->y >> FRACBITS;
+		}
+		else
+		{
+			mobj_t *safewaypoint = player->nextwaypoint->mobj;
+
+			player->starposttime = player->realtime;
+			player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
+			player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+			player->starpostangle = safewaypoint->spawnpoint ? FixedAngle(safewaypoint->spawnpoint->angle * FRACUNIT) : player->mo->angle;
+
+			// Then do x and y
+			player->starpostx = safewaypoint->x >> FRACBITS;
+			player->starposty = safewaypoint->y >> FRACBITS;
+
+		}
 
 		if (player->nextwaypoint->onaline)
 		{
