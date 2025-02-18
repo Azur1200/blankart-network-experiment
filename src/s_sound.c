@@ -261,6 +261,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_samplerate);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_playmusicifunfocused);
+	CV_RegisterVar(&cv_streamersafemusic);
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
 
@@ -1695,6 +1696,11 @@ void S_ShowMusicCredit(void)
 		return;
 
 	if (!def->title)
+	{
+		return;
+	}
+
+	if (def->contentidunsafe && cv_streamersafemusic.value)
 	{
 		return;
 	}
