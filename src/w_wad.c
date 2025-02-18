@@ -1681,12 +1681,19 @@ void zerr(int ret)
 }
 #endif
 
-// returns true if the given lump is not cached, AND comes from a compatmode file
+// returns true if the given lump is not cached, AND comes from a compatmode file (AND isn't special-cased)
 boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
 {
 	if (!wadfiles[wad]->lumpcache[lump] || ignorecache)
 	{
-		return wadfiles[wad]->compatmode;
+		// ugh, palette textures...
+		// never do remapping on them; PaletteTextureHack handles that
+		unsigned num;
+		const char *name = (wadfiles[wad]->lumpinfo + lump)->longname;
+		if (sscanf(name, "~%03u", &num) && num < 256)
+			return false;
+		else
+			return wadfiles[wad]->compatmode;
 	}
 	return false;
 }

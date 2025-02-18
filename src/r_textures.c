@@ -2030,6 +2030,20 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 	Z_Free((void *)texturesText);
 }
 
+static void PaletteTextureHack(const char **name)
+{
+	static char uberhack[5];
+	if (!udmf)
+	{
+		unsigned num;
+		if (sscanf(*name, "~%03u", &num) && num < 256)
+		{
+			snprintf(uberhack, 5, "~%03u", R_GetPaletteRemap(num));
+			*name = uberhack;
+		}
+	}
+}
+
 // Search for flat name.
 lumpnum_t R_GetFlatNumForName(const char *name)
 {
@@ -2037,6 +2051,8 @@ lumpnum_t R_GetFlatNumForName(const char *name)
 	lumpnum_t lump;
 	lumpnum_t start;
 	lumpnum_t end;
+
+	PaletteTextureHack(&name);
 
 	// Scan wad files backwards so patched flats take preference.
 	for (i = numwadfiles - 1; i >= 0; i--)
@@ -2101,6 +2117,8 @@ INT32 R_CheckTextureNumForName(const char *name)
 	// "NoTexture" marker.
 	if (name[0] == '-')
 		return 0;
+
+	PaletteTextureHack(&name);
 
 	hash = quickncasehash(name, 8);
 
