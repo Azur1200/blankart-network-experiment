@@ -6423,13 +6423,13 @@ static void P_ConvertBinaryLinedefTypes(void)
 					lines[i].special = 0;
 					break;
 				}
-				lines[i].args[1] = sides[lines[i].sidenum[1]].textureoffset >> FRACBITS;
-				lines[i].args[2] = sides[lines[i].sidenum[1]].rowoffset >> FRACBITS;
+				lines[i].args[1] = sides[lines[i].sidenum[1]].textureoffset >> (FRACBITS - SCROLL_SHIFT);
+				lines[i].args[2] = sides[lines[i].sidenum[1]].rowoffset >> (FRACBITS - SCROLL_SHIFT);
 			}
 			else
 			{
-				lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
-				lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> FRACBITS;
+				lines[i].args[1] = sides[lines[i].sidenum[0]].textureoffset >> (FRACBITS - SCROLL_SHIFT);
+				lines[i].args[2] = sides[lines[i].sidenum[0]].rowoffset >> (FRACBITS - SCROLL_SHIFT);
 			}
 			lines[i].special = 500;
 			break;
