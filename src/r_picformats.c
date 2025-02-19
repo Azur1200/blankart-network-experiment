@@ -1502,7 +1502,7 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 		else
 			frameChar = sprinfoToken;
 
-		frameFrame = R_Char2Frame(frameChar[0]);
+		frameFrame = R_Char2Frame(frameChar[0], false);
 		Z_Free(sprinfoToken);
 	}
 

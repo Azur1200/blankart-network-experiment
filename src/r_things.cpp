@@ -136,7 +136,7 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
                                 UINT8 rotation,
                                 UINT8 flipped)
 {
-	char cn = R_Frame2Char(frame), cr = R_Rotation2Char(rotation); // for debugging
+	char cn = R_Frame2Char(frame, wadfiles[wad]->compatmode), cr = R_Rotation2Char(rotation); // for debugging
 
 	INT32 r;
 	lumpnum_t lumppat = wad;
@@ -294,6 +294,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	lumpinfo_t *lumpinfo;
 	softwarepatch_t patch;
 	UINT16 numadded = 0;
+	boolean compat = wadfiles[wadnum]->compatmode;
 
 	memset(sprtemp,0xFF, sizeof (sprtemp));
 	maxframe = (size_t)-1;
@@ -328,7 +329,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 			boolean isPNG = false;
 #endif
 
-			frame = R_Char2Frame(lumpinfo[l].name[4]);
+			frame = R_Char2Frame(lumpinfo[l].name[4], compat);
 			rotation = R_Char2Rotation(lumpinfo[l].name[5]);
 
 			if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
@@ -382,7 +383,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 			if (lumpinfo[l].name[6])
 			{
-				frame = R_Char2Frame(lumpinfo[l].name[6]);
+				frame = R_Char2Frame(lumpinfo[l].name[6], compat);
 				rotation = R_Char2Rotation(lumpinfo[l].name[7]);
 
 				if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
@@ -440,7 +441,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		{
 			case SRF_NONE:
 			// no rotations were found for that frame at all
-			I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame));
+			I_Error("R_AddSingleSpriteDef: No patches found for %.4s frame %c", sprname, R_Frame2Char(frame, compat));
 			break;
 
 			case SRF_SINGLE:
@@ -451,7 +452,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 			// we test to see whether the left and right slots are present
 			if ((sprtemp[frame].lumppat[2] == LUMPERROR) || (sprtemp[frame].lumppat[6] == LUMPERROR))
 				I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations (L-R mode)",
-				sprname, R_Frame2Char(frame));
+				sprname, R_Frame2Char(frame, compat));
 			break;
 
 			default:
@@ -462,7 +463,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 				// if it was not loaded the two are LUMPERROR
 				if (sprtemp[frame].lumppat[rotation] == LUMPERROR)
 					I_Error("R_AddSingleSpriteDef: Sprite %.4s frame %c is missing rotations (1-%c mode)",
-					        sprname, R_Frame2Char(frame), ((sprtemp[frame].rotate & SRF_3DGE) ? 'G' : '8'));
+					        sprname, R_Frame2Char(frame, compat), ((sprtemp[frame].rotate & SRF_3DGE) ? 'G' : '8'));
 			break;
 		}
 	}

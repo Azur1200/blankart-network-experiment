@@ -273,33 +273,30 @@ void R_InitDrawNodes(void);
 // as much as possible while also defining all 64 slots in a sane manner
 // 2.1:    [[ ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~   ]]
 // Future: [[ ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@ ]]
-FUNCMATH FUNCINLINE static ATTRINLINE char R_Frame2Char(UINT8 frame)
+FUNCMATH FUNCINLINE static ATTRINLINE char R_Frame2Char(UINT8 frame, boolean compat)
 {
-#if 1 // 2.1 compat
-	return 'A' + frame;
-#else
+	if (compat)
+		return 'A' + frame;
+
 	if (frame < 26) return 'A' + frame;
 	if (frame < 36) return '0' + (frame - 26);
 	if (frame < 62) return 'a' + (frame - 36);
 	if (frame == 62) return '!';
 	if (frame == 63) return '@';
 	return '\xFF';
-#endif
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE UINT8 R_Char2Frame(char cn)
+FUNCMATH FUNCINLINE static ATTRINLINE UINT8 R_Char2Frame(char cn, boolean compat)
 {
-#if 1 // 2.1 compat
-	if (cn == '+') return '\\' - 'A'; // PK3 can't use backslash, so use + instead
-	return cn - 'A';
-#else
+	if (compat)
+		return (cn == '+' ? '\\' : cn) - 'A'; // PK3 can't use backslash, so use + instead
+
 	if (cn >= 'A' && cn <= 'Z') return (cn - 'A');
 	if (cn >= '0' && cn <= '9') return (cn - '0') + 26;
 	if (cn >= 'a' && cn <= 'z') return (cn - 'a') + 36;
 	if (cn == '!') return 62;
 	if (cn == '@') return 63;
 	return 255;
-#endif
 }
 
 // "Left" and "Right" character symbols for additional rotation functionality

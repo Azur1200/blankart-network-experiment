@@ -2364,7 +2364,7 @@ static int lib_rChar2Frame(lua_State *L)
 {
 	const char *p = luaL_checkstring(L, 1);
 	//HUDSAFE
-	lua_pushinteger(L, R_Char2Frame(*p)); // first character only
+	lua_pushinteger(L, R_Char2Frame(*p, lua_compatmode)); // first character only
 	return 1;
 }
 
@@ -2374,7 +2374,7 @@ static int lib_rFrame2Char(lua_State *L)
 	char c[2] = "";
 	//HUDSAFE
 
-	c[0] = R_Frame2Char(ch);
+	c[0] = R_Frame2Char(ch, lua_compatmode);
 	c[1] = 0;
 
 	lua_pushstring(L, c);

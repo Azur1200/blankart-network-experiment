@@ -260,7 +260,7 @@ static UINT8 GetPivotFrame(lua_State *L, int idx)
 	}
 	else
 	{
-		frame = R_Char2Frame(field[0]);
+		frame = R_Char2Frame(field[0], false);
 		if (frame == 255)
 			luaL_error(L, "invalid frame %s", field);
 	}
