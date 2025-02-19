@@ -3196,14 +3196,14 @@ static void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 h
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 
-	amnumxpos = (/*FixedMul(*/objx/*, minimapinfo.zoom) - minimapinfo.offs_x*/);
-	amnumypos = -(/*FixedMul(*/objy/*,, minimapinfo.zoom) - minimapinfo.offs_y*/);
+	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = (amnumxpos / FRACUNIT) /*+ (SHORT(minimapinfo.minimap_pic->width) / 2)*/;
-	amypos = (amnumypos / FRACUNIT) /*+ (SHORT(minimapinfo.minimap_pic->height) / 2)*/;
+	amxpos = (amnumxpos / FRACUNIT) + (SHORT(minimapinfo.minimap_pic->width) / 2);
+	amypos = (amnumypos / FRACUNIT) + (SHORT(minimapinfo.minimap_pic->height) / 2);
 
 	if (flags & V_NOSCALESTART)
 	{
