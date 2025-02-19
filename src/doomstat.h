@@ -46,6 +46,7 @@ extern UINT8 mapmusrng;
 // Use other bits if necessary.
 
 extern UINT32 maptol;
+extern boolean mapcompat;
 
 extern INT32 cursaveslot;
 //extern INT16 lastmapsaved;

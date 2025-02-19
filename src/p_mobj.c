@@ -11094,7 +11094,7 @@ static boolean P_SetupMace(mapthing_t *mthing, mobj_t *mobj, boolean *doangle)
 	mnumspokes = mthing->args[1] + 1;
 	mspokeangle = FixedAngle((360*FRACUNIT)/mnumspokes) >> ANGLETOFINESHIFT;
 	mwidth = max(0, mthing->args[2]);
-	mspeed = abs(mthing->args[3] << (udmf ? 4 : 0));
+	mspeed = abs(mthing->args[3] << (mapcompat ? 0 : 4));
 	mphase = mthing->args[4] % 360;
 	mpinch = mthing->args[5] % 360;
 	mnumnospokes = mthing->args[6];
@@ -12007,7 +12007,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{
-		if (!udmf)
+		if (mapcompat)
 			mobj->flags ^= MF_NOGRAVITY;
 	}
 	default:

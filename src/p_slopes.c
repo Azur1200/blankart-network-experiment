@@ -862,7 +862,7 @@ void P_SpawnSlopes(const boolean fromsave) {
 	// end of jart
 
 	// in kart, copied slopes are created AFTER spawning mapthings
-	if (!udmf)
+	if (mapcompat)
 		return;
 
 	/// Copies slopes from tagged sectors via line specials.

@@ -401,6 +401,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word, "compatmode")) {
 		lua_pushboolean(L, lua_compatmode);
 		return 1;
+	} else if (fastcmp(word, "mapcompat")) {
+		lua_pushboolean(L, mapcompat);
+		return 1;
 	}
 
 	return 0;

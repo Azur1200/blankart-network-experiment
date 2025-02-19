@@ -1412,15 +1412,15 @@ static boolean P_CheckRaceLapSpecial(line_t *triggerline, player_t *player)
 	{
 		lap = P_FindLowestLap();
 
-		if (udmf && lap <= lastLowestLap)
+		if (!mapcompat && lap <= lastLowestLap)
 		{
-			// Need to be able to search for E4 linedefs
+			// Need to be able to search for MIDSOLID linedefs
 			return false;
 		}
 	}
 
 	// kart laps are zero-based
-	if (lap && !udmf)
+	if (lap && mapcompat)
 		lap--;
 
 	UINT16 threshold = sides[triggerline->sidenum[0]].textureoffset >> FRACBITS;
@@ -7853,7 +7853,7 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 
 	for (i = 0; i < numlines; i++)
 	{
-		if (!udmf && lines[i].special == 720)
+		if (mapcompat && lines[i].special == 720)
 			P_CopySectorSlope(&lines[i]);
 
 		if (P_IsLineDisabled(&lines[i]))

@@ -5235,7 +5235,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			//Alpha
 			if (lines[i].special == 141 || lines[i].special == 142 || lines[i].special == 144 || lines[i].special == 145)
 			{
-				if (udmf && lines[i].flags & ML_NOCLIMB)
+				if (!mapcompat && lines[i].flags & ML_NOCLIMB)
 					lines[i].args[3] |= TMFA_INSIDES;
 				P_SetBinaryFOFAlpha(&lines[i]);
 
@@ -7220,7 +7220,7 @@ static void P_ConvertBinaryThingTypes(void)
 				break;
 			}
 
-			if (udmf)
+			if (!mapcompat)
 			{
 				mapthings[i].angle = lines[j].frontsector->ceilingheight >> FRACBITS;
 				mapthings[i].pitch = lines[j].frontsector->floorheight >> FRACBITS;
@@ -7341,7 +7341,7 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[0] = mapthings[i].angle >> 13;
 			mapthings[i].args[1] = (mapthings[i].angle >> 10) & 7;
 			mapthings[i].args[3] = !!(mapthings[i].options & MTF_AMBUSH);
-			if (udmf)
+			if (!mapcompat)
 			{
 				mapthings[i].args[0] = mapthings[i].args[0]*TICRATE/2;
 				mapthings[i].args[1] = mapthings[i].args[1]*TICRATE/2;
@@ -7636,6 +7636,13 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 	}
 
 	M_Memcpy(dest, &resmd5, 16);
+}
+
+static void P_SetMapCompat(void)
+{
+	// choose wisely...
+	mapcompat = vres_Find(curmapvirt, "TEXTMAP") == NULL;
+	//mapcompat = wadfiles[WADFILENUM(mapheaderinfo[gamemap-1]->lumpnum)]->compatmode;
 }
 
 static boolean P_LoadMapFromFile(void)
@@ -8463,6 +8470,9 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		I_Error("Map %s not found.\n", maplumpname);
 
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
+
+	// set this as early as possible, to fix palette texture skyboxes
+	P_SetMapCompat();
 
 	if (mapheaderinfo[gamemap-1])
 	{

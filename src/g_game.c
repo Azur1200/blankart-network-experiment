@@ -92,6 +92,7 @@ UINT8 mapmusrng; // Random selection result
 
 INT16 gamemap = 1;
 UINT32 maptol;
+boolean mapcompat = false;
 
 preciptype_t globalweather = PRECIP_NONE;
 preciptype_t curWeather = PRECIP_NONE;
