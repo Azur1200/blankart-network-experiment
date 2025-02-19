@@ -730,6 +730,7 @@ _(OVERLAY)
 _(ANGLEMAN)
 _(POLYANCHOR)
 _(POLYSPAWN)
+_(MINIMAPBOUND)
 
 // Skybox objects
 _(SKYBOX)
