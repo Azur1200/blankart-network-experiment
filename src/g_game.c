@@ -421,6 +421,14 @@ consvar_t cv_pauseifunfocused = CVAR_INIT ("pauseifunfocused", "Yes", CV_SAVE, C
 // Display song credits
 consvar_t cv_songcredits = CVAR_INIT ("songcredits", "On", CV_SAVE, CV_OnOff, NULL);
 
+// Show "FREE PLAY" when you're alone. :(
+consvar_t cv_showfreeplay = CVAR_INIT ("showfreeplay", "On", CV_SAVE, CV_OnOff, NULL);
+
+// We can disable special tunes!
+static CV_PossibleValue_t powermusic_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "SFX"}, {0, NULL}};
+consvar_t cv_growmusic  = CVAR_INIT ("growmusic", "On", CV_SAVE, powermusic_cons_t, NULL);
+consvar_t cv_supermusic = CVAR_INIT ("supermusic", "On", CV_SAVE, powermusic_cons_t, NULL);
+
 consvar_t cv_invertmouse = CVAR_INIT ("invertmouse", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_invincmusicfade = CVAR_INIT ("invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL);

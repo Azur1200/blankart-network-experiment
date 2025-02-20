@@ -4174,6 +4174,9 @@ void K_drawKartFreePlay(void)
 	if (modeattacking || grandprixinfo.gp || bossinfo.boss || stplyr->spectator)
 		return;
 
+	if (!cv_showfreeplay.value)
+		return;
+
 	if (lt_exitticker < TICRATE/2)
 		return;
 

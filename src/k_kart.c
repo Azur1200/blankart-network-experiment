@@ -6507,28 +6507,17 @@ static void K_UpdateEngineSounds(player_t *player)
 
 	S_StartSoundAtVolume(player->mo, (sfx_krta00 + player->karthud[khud_enginesnd]) + (class * numsnds), volume);
 }
-
 static void K_UpdateInvincibilitySounds(player_t *player)
 {
 	INT32 sfxnum = sfx_None;
+	boolean localplayer = P_IsLocalPlayer(player);
 
-	if (player->mo->health > 0 && !P_IsLocalPlayer(player)) // used to be !P_IsDisplayPlayer(player)
+	if (player->mo->health > 0)
 	{
-		if (cv_kartinvinsfx.value)
-		{
-			if (player->growshrinktimer > 0) // Prioritize Grow
-				sfxnum = sfx_alarmg;
-			else if (player->invincibilitytimer > 0)
-				sfxnum = sfx_alarmi;
-
-		}
-		else
-		{
-			if (player->growshrinktimer > 0)
-				sfxnum = sfx_kgrow;
-			else if (player->invincibilitytimer > 0)
-				sfxnum = sfx_kinvnc;
-		}
+		if (player->growshrinktimer > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
+		else if (player->invincibilitytimer > 0 && (!localplayer || cv_supermusic.value == 2))
+			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
 	}
 
 	if (sfxnum != sfx_None && !S_SoundPlaying(player->mo, sfxnum))

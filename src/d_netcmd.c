@@ -1027,6 +1027,9 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chatnotifications);
 	CV_RegisterVar(&cv_chatbacktint);
 
+	CV_RegisterVar(&cv_growmusic);
+	CV_RegisterVar(&cv_supermusic);
+
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_tutorialprompt);
 	CV_RegisterVar(&cv_showfocuslost);
