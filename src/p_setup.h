@@ -38,6 +38,18 @@ extern UINT8 levelfadecol;
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
 
+typedef enum
+{
+	MNS_UNKNOWN,
+	MNS_SRB2KART,
+	MNS_BLANKART,
+	MNS_RINGRACERS,
+	MNS_SRB2,
+	MNS__MAX,
+} mapnamespace_t;
+
+extern mapnamespace_t mapnamespace;
+
 /* for levelflat type */
 enum
 {
@@ -102,6 +114,7 @@ INT32 P_CheckLevelFlat(const char *flatname);
 extern size_t nummapthings;
 extern mapthing_t *mapthings;
 
+const char *P_MapNamespaceString(mapnamespace_t mns);
 void P_SetupLevelSky(const char *skytexname, boolean global);
 void P_RespawnThings(void);
 boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate);

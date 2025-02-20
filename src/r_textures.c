@@ -2033,7 +2033,7 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 static void PaletteTextureHack(const char **name)
 {
 	static char uberhack[5];
-	if (mapcompat)
+	if (mapnamespace == MNS_SRB2KART)
 	{
 		unsigned num;
 		if (sscanf(*name, "~%03u", &num) && num < 256)

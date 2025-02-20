@@ -124,7 +124,7 @@ unsigned char mapmd5[16];
 
 boolean udmf;
 INT32 udmf_version;
-char *udmf_namespace;
+mapnamespace_t mapnamespace = MNS_UNKNOWN;
 size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
 size_t num_orig_vertexes;
 vertex_t *vertexes;
@@ -1449,34 +1449,9 @@ static boolean TextmapCount(size_t size)
 	numvertexes = 0;
 	numsectors = 0;
 
-	// Look for namespace at the beginning.
-	if (!fastcmp(tkn, "namespace"))
-	{
-		CONS_Alert(CONS_ERROR, "No namespace at beginning of lump!\n");
-		return false;
-	}
+	// skip namespace, it's checked by P_SetMapNamespace
+	M_TokenizerRead(0);
 
-	// Check if namespace is valid and copy it into memory.
-	tkn = M_TokenizerRead(0);
-	if (fastcmp(tkn, "blankart"))
-	{
-		udmf_namespace = "blankart";
-	}
-	else if(fastcmp(tkn, "ringracers"))
-	{
-		udmf_namespace = "ringracers";
-	}
-	else if (fastcmp(tkn, "srb2"))
-	{
-		udmf_namespace = "srb2";
-	}
-	else
-	{
-		udmf_namespace = "unknown";
-		CONS_Alert(CONS_WARNING, "Invalid namespace '%s', only 'srb2' or 'ringracers' or 'srb2kart' or 'blankart' is supported.\n", tkn);
-		return false;
-	}
-	
 	// Check for version
 	tkn = M_TokenizerRead(0);
 	if (fastcmp(tkn, "version"))
@@ -2091,7 +2066,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 		mapthings[i].layer = atol(val);
 	else if (fastncmp(param, "stringarg", 9) && strlen(param) > 9)
 	{
-		if (!strcmp(udmf_namespace,"ringracers") && udmf_version > 0)
+		if (mapnamespace == MNS_RINGRACERS && udmf_version > 0)
 		{
 			size_t argnum = atol(param + 9);
 			if (argnum >= NUM_SCRIPT_STRINGARGS)
@@ -2114,7 +2089,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 	}
 	else if (fastncmp(param, "arg", 3) && strlen(param) > 3)
 	{
-		if (!strcmp(udmf_namespace,"ringracers") && udmf_version > 0)
+		if (mapnamespace == MNS_RINGRACERS && udmf_version > 0)
 		{
 			size_t argnum = atol(param + 3);
 			if (argnum >= NUM_SCRIPT_ARGS)
@@ -5275,7 +5250,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			//Alpha
 			if (lines[i].special == 141 || lines[i].special == 142 || lines[i].special == 144 || lines[i].special == 145)
 			{
-				if (!mapcompat && lines[i].flags & ML_NOCLIMB)
+				if (mapnamespace != MNS_SRB2KART && lines[i].flags & ML_NOCLIMB)
 					lines[i].args[3] |= TMFA_INSIDES;
 				P_SetBinaryFOFAlpha(&lines[i]);
 
@@ -7260,7 +7235,7 @@ static void P_ConvertBinaryThingTypes(void)
 				break;
 			}
 
-			if (!mapcompat)
+			if (mapnamespace != MNS_SRB2KART)
 			{
 				mapthings[i].angle = lines[j].frontsector->ceilingheight >> FRACBITS;
 				mapthings[i].pitch = lines[j].frontsector->floorheight >> FRACBITS;
@@ -7381,7 +7356,7 @@ static void P_ConvertBinaryThingTypes(void)
 			mapthings[i].args[0] = mapthings[i].angle >> 13;
 			mapthings[i].args[1] = (mapthings[i].angle >> 10) & 7;
 			mapthings[i].args[3] = !!(mapthings[i].options & MTF_AMBUSH);
-			if (!mapcompat)
+			if (mapnamespace != MNS_SRB2KART)
 			{
 				mapthings[i].args[0] = mapthings[i].args[0]*TICRATE/2;
 				mapthings[i].args[1] = mapthings[i].args[1]*TICRATE/2;
@@ -7678,11 +7653,63 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 	M_Memcpy(dest, &resmd5, 16);
 }
 
-static void P_SetMapCompat(void)
+static boolean P_SetMapNamespace(void)
 {
-	// choose wisely...
-	mapcompat = vres_Find(curmapvirt, "TEXTMAP") == NULL;
-	//mapcompat = wadfiles[WADFILENUM(mapheaderinfo[gamemap-1]->lumpnum)]->compatmode;
+	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
+	if (textmap != NULL)
+	{
+		M_TokenizerOpen((char *)textmap->data, textmap->size);
+		const char *tkn = M_TokenizerRead(0);
+
+		// Look for namespace at the beginning.
+		if (!fastcmp(tkn, "namespace"))
+		{
+			CONS_Alert(CONS_ERROR, "No namespace at beginning of lump!\n");
+			return false;
+		}
+
+		// Check if namespace is valid and copy it into memory.
+		tkn = M_TokenizerRead(0);
+		if (fastcmp(tkn, "blankart"))
+		{
+			mapnamespace = MNS_BLANKART;
+		}
+		else if(fastcmp(tkn, "ringracers"))
+		{
+			mapnamespace = MNS_RINGRACERS;
+		}
+		else if (fastcmp(tkn, "srb2"))
+		{
+			mapnamespace = MNS_SRB2;
+		}
+		else
+		{
+			CONS_Alert(CONS_WARNING, "Invalid namespace '%s'. Only 'srb2', 'ringracers' and 'blankart' are supported.\n", tkn);
+			return false;
+		}
+
+		M_TokenizerClose();
+	}
+	else
+	{
+		// binary maps are kart only. don't need more than one binary format
+		mapnamespace = MNS_SRB2KART;
+	}
+	return true;
+}
+
+// name that namespace!
+const char *P_MapNamespaceString(mapnamespace_t mns)
+{
+	static const char *names[MNS__MAX] = {
+		[MNS_UNKNOWN] = "unknown",
+		[MNS_SRB2KART] = "srb2kart",
+		[MNS_BLANKART] = "blankart",
+		[MNS_RINGRACERS] = "ringracers",
+		[MNS_SRB2] = "srb2",
+	};
+
+	return names[mns];
 }
 
 static boolean P_LoadMapFromFile(void)
@@ -7691,7 +7718,6 @@ static boolean P_LoadMapFromFile(void)
 	size_t i;
 	udmf = textmap != NULL;
 	udmf_version = 0;
-	udmf_namespace = NULL;
 
 	if (!P_LoadMapData(curmapvirt))
 		return false;
@@ -8513,7 +8539,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	curmapvirt = vres_GetMap(lastloadedmaplumpnum);
 
 	// set this as early as possible, to fix palette texture skyboxes
-	P_SetMapCompat();
+	if (!P_SetMapNamespace())
+		return false;
 
 	if (mapheaderinfo[gamemap-1])
 	{

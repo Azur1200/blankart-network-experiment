@@ -401,8 +401,8 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word, "compatmode")) {
 		lua_pushboolean(L, lua_compatmode);
 		return 1;
-	} else if (fastcmp(word, "mapcompat")) {
-		lua_pushboolean(L, mapcompat);
+	} else if (fastcmp(word, "mapnamespace")) {
+		lua_pushstring(L, P_MapNamespaceString(mapnamespace));
 		return 1;
 	}
 
