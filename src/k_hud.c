@@ -3178,6 +3178,13 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
+	fixed_t scale = FRACUNIT;
+
+	if (!cv_showminimapangle.value && (icon == kp_minimapdot))
+		return;
+
+	if (cv_minihead.value)
+		scale = FRACUNIT / 2;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
@@ -3188,7 +3195,70 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(icon->width))/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(icon->height))/2)<<FRACBITS);
 
-	V_DrawFixedPatch(amxpos, amypos, FRACUNIT, flags, icon, colormap);
+	if (cv_minihead.value && !(icon == kp_minimapdot))
+	{
+		amxpos += 2 * FRACUNIT;
+		amypos += 2 * FRACUNIT;
+	}
+
+	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
+}
+
+static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, player_t *player)
+{
+	// amnum xpos & ypos are the icon's speed around the HUD.
+	// The number being divided by is for how fast it moves.
+	// The higher the number, the slower it moves.
+
+	// am xpos & ypos are the icon's starting position. Withouht
+	// it, they wouldn't 'spawn' on the top-right side of the HUD.
+
+	if (!cv_showminimapnames.value)
+	{
+		return;
+	}
+
+	if (!player)
+	{
+		return;
+	}
+
+	if (!player->mo)
+	{
+		return;
+	}
+
+	fixed_t amnumxpos, amnumypos;
+	INT32 amxpos, amypos;
+	char color_prefix[2];
+	UINT8 skin = 0;
+
+	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+
+	if (encoremode)
+		amnumxpos = -amnumxpos;
+
+	skin = ((skin_t*)players->mo->skin)-skins;
+
+	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(faceprefix[skin][FACE_MINIMAP]->width))/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(faceprefix[skin][FACE_MINIMAP]->height))/2)<<FRACBITS);
+
+	{
+		UINT16 chatcolor = skincolors[player->mo->color].chatcolor;
+		if (chatcolor > V_TANMAP)
+		{
+			sprintf(color_prefix, "%c", '\x80');
+		}
+		else
+		{
+			sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+		}
+	}
+
+
+	const char *player_name = va("%s%s", color_prefix, player_names[player - players]);
+	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
 }
 
 static void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
@@ -3246,7 +3316,7 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
 }
 
-#define ICON_DOT_RADIUS (10)
+#define ICON_DOT_RADIUS cv_minihead.value ? 8 : 10
 
 static void K_drawKartMinimap(void)
 {
@@ -3589,6 +3659,8 @@ static void K_drawKartMinimap(void)
 						colormap
 				);
 			}
+
+			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);
 		}
 	}
 

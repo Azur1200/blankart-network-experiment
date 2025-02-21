@@ -524,6 +524,10 @@ consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, 
 
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "On", CV_SAVE, CV_OnOff, NULL);
 
+consvar_t cv_showminimapnames = CVAR_INIT ("showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_showminimapangle = CVAR_INIT ("showminimapnames", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_minihead = CVAR_INIT ("smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
 // Intermission time Tails 04-19-2002
@@ -822,6 +826,9 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	CV_RegisterVar(&cv_showminimapnames);
+	CV_RegisterVar(&cv_showminimapangle);
+	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_showviewpointtext);
 

@@ -116,6 +116,11 @@ extern consvar_t cv_lagless;
 extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
+
+extern consvar_t cv_showminimapnames;
+extern consvar_t cv_showminimapangle;
+extern consvar_t cv_minihead;
+
 extern consvar_t cv_showlapemblem;
 extern consvar_t cv_showviewpointtext;
 

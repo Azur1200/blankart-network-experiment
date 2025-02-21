@@ -260,6 +260,7 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 #define V_DrawSmallString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT>>1,option,HU_FONT,string)
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string);
+void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 
 // draw a string using the tny_font
