@@ -388,7 +388,7 @@ void P_DeleteFlickies(INT16 i)
 static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
 {
 	lighting->use_custom_light = false;
-	lighting->light_contrast = 16;
+	lighting->light_contrast = 8;
 	lighting->sprite_backlight = 0;
 	lighting->use_light_angle = false;
 	lighting->light_angle = 0;
