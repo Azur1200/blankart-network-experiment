@@ -3316,7 +3316,7 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
 }
 
-#define ICON_DOT_RADIUS cv_minihead.value ? 8 : 10
+#define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
 
 static void K_drawKartMinimap(void)
 {
