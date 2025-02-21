@@ -393,7 +393,14 @@ static int player_get(lua_State *L)
 	else if (fastcmp(field,"spheredigestion"))
 		lua_pushinteger(L, plr->spheredigestion);
 	else if (fastcmp(field,"pflags"))
-		lua_pushinteger(L, plr->pflags);
+	{
+		UINT32 pflags = plr->pflags;
+
+		if (lua_compatmode && (plr->carry & CR_SLIDING) == CR_SLIDING)
+			pflags |= PF_SLIDING;
+
+		lua_pushinteger(L, pflags);
+	}
 	else if (fastcmp(field,"panim"))
 		lua_pushinteger(L, plr->panim);
 	else if (fastcmp(field,"flashcount"))
@@ -589,7 +596,19 @@ static int player_set(lua_State *L)
 		plr->drawangle = angle;
 	}
 	else if (fastcmp(field,"pflags"))
-		plr->pflags = luaL_checkinteger(L, 3);
+	{
+		UINT32 pflags = luaL_checkinteger(L, 3);
+
+		if (lua_compatmode)
+		{
+			if (pflags & PF_SLIDING)
+				plr->carry |= CR_SLIDING;
+			else
+				plr->carry &= ~CR_SLIDING;
+		}
+
+		plr->pflags = pflags;
+	}
 	else if (fastcmp(field,"panim"))
 		plr->panim = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"flashcount"))

@@ -236,47 +236,52 @@ const char *const MAPTHINGFLAG_LIST[4] = {
 };
 
 const char *const PLAYERFLAG_LIST[] = {
-	"GODMODE",
+	"GODMODE",			 // Immortal.
 
-	// free: 1<<1 and 1<<2 (name un-matchable)
 	"\x01",
 	"\x01",
 
 	// Look back VFX has been spawned
 	// TODO: Is there a better way to track this?
 	"GAINAX",
+	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
+	"\x01",
+	"\x01",
 
-	// Accessibility and cheats
-	"KICKSTARTACCEL", // Is accelerate in kickstart mode?
-	"GODMODE",
-	"NOCLIP",
+	"WANTSTOJOIN",		 // Spectator that wants to join
 
-	"WANTSTOJOIN", // Spectator that wants to join
+	"STASIS",			 // Player is not allowed to move
+	"SKIDDOWN",		 // SKIDDOWN
+	"ELIMINATED",		 // Battle-style elimination, no extra penalty
+	"NOCONTEST",		 // Did not finish (last place explosion)
+	"LOSTLIFE",		 // Do not lose life more than once
 
-	"STASIS", // Player is not allowed to move
-	"SKIDDOWN", // SKIDDOWN
-	"ELIMINATED", // Battle-style elimination, no extra penalty
-	"NOCONTEST", // Did not finish (last place explosion)
-	"LOSTLIFE", // Do not lose life more than once
+	"RINGLOCK",		 // Prevent picking up rings while locked. Mostly for lua use since SPB no longer locks
 
-	"RINGLOCK", // Prevent picking up rings while SPB is locked on
+	"DRIFTINPUT",		 // Drifting!
+	"GETSPARKS",		 // Can get sparks
+	"DRIFTEND",		 // Drift has ended, used to adjust character angle after drift
+	"BRAKEDRIFT",		 // Helper for brake-drift spark spawning
 
-	"DRIFTINPUT", // Drifting!
-	"GETSPARKS", // Can get sparks
-	"DRIFTEND", // Drift has ended, used to adjust character angle after drift
-	"BRAKEDRIFT", // Helper for brake-drift spark spawning
-
-	"AIRFAILSAFE", // Whenever or not try the air boost
-	
+	"AIRFAILSAFE",		 // Whenever or not try the air boost
 	"UPDATEMYRESPAWN",
+
 	"FLIPCAM",
 	"\x01",
 
-	"HITFINISHLINE", // Already hit the finish line this tic
-	"WRONGWAY", // Moving the wrong way with respect to waypoints?
+	"HITFINISHLINE",	 // Already hit the finish line this tic
+	"WRONGWAY",      	 // Moving the wrong way with respect to waypoints?
 
-	"SHRINKME",
-	"SHRINKACTIVE",
+	"SHRINKME",		     // "Shrink me" cheat preference
+	"SHRINKACTIVE",	      // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
+
+	"\x01",
+	"\x01",
+	"\x01",
+	"\x01",
+	"\x01",
+
+	"SLIDING",
 
 	NULL // stop loop here.
 };

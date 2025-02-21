@@ -110,7 +110,8 @@ typedef enum
 	PF_SHRINKME			= 1<<24, // "Shrink me" cheat preference
 	PF_SHRINKACTIVE		= 1<<25, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
-	// up to 1<<31 is free
+	// up to 1<<30 is free
+	PF_SLIDING			= 1<<31,
 } pflags_t;
 
 typedef enum
