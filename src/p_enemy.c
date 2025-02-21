@@ -13002,7 +13002,7 @@ void A_ItemPop(mobj_t *actor)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 	
-	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0))
+	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !(itembreaker && numgotboxes >= 3))
 		actor->target->player->itemroulette = 1;
 
 	// Let Ring-less maps in on the rings fun as well!
