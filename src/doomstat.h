@@ -339,6 +339,7 @@ struct customoption_t
 
 struct mapheader_lighting_t
 {
+	boolean use_custom_light;			///< Decides if this should use custom lighting.
 	UINT8 light_contrast;				///< Range of wall lighting. 0 is no lighting.
 	SINT8 sprite_backlight;				///< Subtract from wall lighting for sprites only.
 	boolean use_light_angle;			///< When false, wall lighting is evenly distributed. When true, wall lighting is directional.

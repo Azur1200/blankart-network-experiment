@@ -387,6 +387,7 @@ void P_DeleteFlickies(INT16 i)
 
 static void P_ClearMapHeaderLighting(mapheader_lighting_t *lighting)
 {
+	lighting->use_custom_light = false;
 	lighting->light_contrast = 16;
 	lighting->sprite_backlight = 0;
 	lighting->use_light_angle = false;
@@ -3785,6 +3786,16 @@ boolean P_SectorUsesDirectionalLighting(const sector_t *sector)
 
 boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 {
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (lighting->use_custom_light == false)
+		return (baselightnum < LIGHTLEVELS-1 && baselightnum > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;
@@ -3797,6 +3808,16 @@ boolean P_ApplyLightOffset(UINT8 baselightnum, const sector_t *sector)
 
 boolean P_ApplyLightOffsetFine(UINT8 baselightlevel, const sector_t *sector)
 {
+	mapheader_lighting_t *lighting = &mapheaderinfo[gamemap-1]->lighting;
+
+	if (encoremode && mapheaderinfo[gamemap-1]->use_encore_lighting)
+	{
+		lighting = &mapheaderinfo[gamemap-1]->lighting_encore;
+	}
+
+	if (lighting->use_custom_light == false)
+		return (baselightlevel < LIGHTLEVELS-1 && baselightlevel > 0);
+
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
 		return false;

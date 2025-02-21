@@ -1402,10 +1402,12 @@ void readlevelheader(MYFILE *f, char * name)
 			else if (fastcmp(word, "LIGHTCONTRAST"))
 			{
 				usemaplighting(num, word)->light_contrast = (UINT8)i;
+				usemaplighting(num, word)->use_custom_light = true;
 			}
 			else if (fastcmp(word, "SPRITEBACKLIGHT") || fastcmp(word, "ENCORESPRITEBACKLIGHT"))
 			{
 				usemaplighting(num, word)->sprite_backlight = (SINT8)i;
+				usemaplighting(num, word)->use_custom_light = true;
 			}
 			else if (fastcmp(word, "LIGHTANGLE") || fastcmp(word, "ENCORELIGHTANGLE"))
 			{
@@ -1421,6 +1423,7 @@ void readlevelheader(MYFILE *f, char * name)
 					lighting->use_light_angle = true;
 					lighting->light_angle = FixedAngle(FloatToFixed(atof(word2)));
 				}
+				usemaplighting(num, word)->use_custom_light = true;
 			}
 			// Individual triggers for level flags, for ease of use (and 2.0 compatibility)
 			else if (fastcmp(word, "SCRIPTISFILE"))
