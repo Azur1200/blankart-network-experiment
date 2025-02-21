@@ -7096,9 +7096,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ringboost = 0;
 	else if (player->ringboost)
 	{
-		// If a Super Ring isn't paying out, aggressively reduce
-		// extreme ringboost duration. Less aggressive for accel types, so they
-		// retain more speed for small payouts.
+		// Aggressively reduce extreme ringboost duration.
+		// Less aggressive for accel types.
 
 		UINT8 roller = TICRATE;
 		roller += 4*(8-player->kartspeed);
