@@ -26,6 +26,7 @@
 #include "p_local.h"
 #include "p_slopes.h" // for P_SlopeById and slopelist
 #include "p_polyobj.h" // polyobj_t, PolyObjects
+#include "k_battle.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
@@ -353,6 +354,12 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"gamespeed")) {
 		lua_pushinteger(L, gamespeed);
 		return 1;
+	} else if (fastcmp(word,"itembreaker")) {
+		lua_pushinteger(L, itembreaker);
+		return 1;
+	} else if (fastcmp(word,"battleprisons")) {
+		lua_pushinteger(L, itembreaker);
+		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, hyubgone);
 		return 1;
@@ -466,6 +473,20 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		exitcountdown = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"indirectitemcooldown"))
 		indirectitemcooldown = (tic_t)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"hyubgone"))
+		hyubgone = (tic_t)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"starttime"))
+		starttime = (tic_t)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"introtime"))
+		introtime = (tic_t)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"itembreaker"))
+		itembreaker = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"gamespeed"))
+		gamespeed = (UINT8)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"nummapboxes"))
+		nummapboxes = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"numgotboxes"))
+		numgotboxes = (INT32)luaL_checkinteger(L, 2);
 	else
 		return 0;
 
