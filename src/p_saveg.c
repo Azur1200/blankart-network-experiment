@@ -43,6 +43,8 @@
 #include "k_terrain.h"
 #include "acs/interface.h"
 
+#include <tracy/tracy/TracyC.h>
+
 savedata_t savedata;
 
 // Block UINT32s to attempt to ensure that the correct data is
@@ -90,6 +92,8 @@ static inline void P_UnArchivePlayer(savebuffer_t *save)
 
 static void P_NetArchivePlayers(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, j;
 	UINT16 flags;
 //	size_t q;
@@ -393,10 +397,13 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT32(save->p, players[i].maxlink);
 
 	}
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchivePlayers(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, j;
 	UINT16 flags;
 
@@ -695,6 +702,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}
+	TracyCZoneEnd(__zone);
 }
 
 ///
@@ -796,6 +804,8 @@ static void ClearNetColormaps(void)
 
 static void P_NetArchiveColormaps(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	// We save and then we clean up our colormap mess
 	extracolormap_t *exc, *exc_next;
 	UINT32 i = 0;
@@ -826,10 +836,14 @@ static void P_NetArchiveColormaps(savebuffer_t *save)
 	num_net_colormaps = 0;
 	num_ffloors = 0;
 	net_colormaps = NULL;
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveColormaps(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	// When we reach this point, we already populated our list with
 	// dummy colormaps. Now that we are loading the color data,
 	// set up the dummies.
@@ -928,6 +942,8 @@ static void P_NetUnArchiveColormaps(savebuffer_t *save)
 	num_net_colormaps = 0;
 	num_ffloors = 0;
 	net_colormaps = NULL;
+
+	TracyCZoneEnd(__zone);
 }
 
 ///
@@ -1712,6 +1728,8 @@ static void UnArchiveLines(savebuffer_t *save)
 
 static void P_NetArchiveWorld(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	// initialize colormap vars because paranoia
 	ClearNetColormaps();
 
@@ -1720,10 +1738,14 @@ static void P_NetArchiveWorld(savebuffer_t *save)
 	ArchiveSectors(save);
 	ArchiveLines(save);
 	R_ClearTextureNumCache(false);
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveWorld(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	UINT16 i;
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_WORLD)
@@ -1742,6 +1764,8 @@ static void P_NetUnArchiveWorld(savebuffer_t *save)
 
 	UnArchiveSectors(save);
 	UnArchiveLines(save);
+
+	TracyCZoneEnd(__zone);
 }
 
 //
@@ -2932,6 +2956,8 @@ static void SavePolyfadeThinker(savebuffer_t *save, const thinker_t *th, const U
 
 static void P_NetArchiveThinkers(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	const thinker_t *th;
 	UINT32 i;
 
@@ -3165,10 +3191,13 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 
 		WRITEUINT8(save->p, tc_end);
 	}
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetArchiveWaypoints(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	waypoint_t *waypoint;
 	size_t i;
 	size_t numWaypoints = K_GetNumWaypoints();
@@ -3183,10 +3212,13 @@ static void P_NetArchiveWaypoints(savebuffer_t *save)
 		// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
 		WRITEUINT32(save->p, waypoint->mobj->mobjnum);
 	}
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveWaypoints(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	if (READUINT32(save->p) != ARCHIVEBLOCK_WAYPOINTS)
 		I_Error("Bad $$$.sav at archive block Waypoints!");
 	else {
@@ -3209,10 +3241,13 @@ static void P_NetUnArchiveWaypoints(savebuffer_t *save)
 			}
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetArchiveTubeWaypoints(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
 	INT32 i, j;
 
 	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
@@ -3221,10 +3256,13 @@ static void P_NetArchiveTubeWaypoints(savebuffer_t *save)
 		for (j = 0; j < numtubewaypoints[i]; j++)
 			WRITEUINT32(save->p, tubewaypoints[i][j] ? tubewaypoints[i][j]->mobjnum : 0);
 	}
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveTubeWaypoints(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, j;
 	UINT32 mobjnum;
 
@@ -3237,6 +3275,7 @@ static void P_NetUnArchiveTubeWaypoints(savebuffer_t *save)
 			tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
 	}
+	TracyCZoneEnd(__zone);
 }
 
 // Now save the pointers, tracer and target, but at load time we must
@@ -4294,6 +4333,8 @@ static thinker_t* LoadPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker)
 
 static void P_NetUnArchiveThinkers(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	thinker_t *currentthinker;
 	thinker_t *next;
 	UINT8 tclass;
@@ -4539,6 +4580,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 			delay->caller = P_FindNewPosition(mobjnum);
 		}
 	}
+	TracyCZoneEnd(__zone);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4550,6 +4592,8 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 
 static inline void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 {
+	TracyCZone(__zone, true);
+
 	UINT8 diff = 0;
 	WRITEINT32(save->p, po->id);
 	WRITEANGLE(save->p, po->angle);
@@ -4568,10 +4612,14 @@ static inline void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 		WRITEINT32(save->p, po->flags);
 	if (diff & PD_TRANS)
 		WRITEINT32(save->p, po->translucency);
+
+	TracyCZoneEnd(__zone);
 }
 
 static inline void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 {
+	TracyCZone(__zone, true);
+
 	INT32 id;
 	UINT32 angle;
 	fixed_t x, y;
@@ -4603,10 +4651,14 @@ static inline void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
 
 	// rotate and translate polyobject
 	Polyobj_MoveOnLoad(po, angle, x, y);
+
+	TracyCZoneEnd(__zone);
 }
 
 static inline void P_ArchivePolyObjects(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i;
 
 	WRITEUINT32(save->p, ARCHIVEBLOCK_POBJS);
@@ -4616,10 +4668,14 @@ static inline void P_ArchivePolyObjects(savebuffer_t *save)
 
 	for (i = 0; i < numPolyObjects; ++i)
 		P_ArchivePolyObj(save, &PolyObjects[i]);
+
+	TracyCZoneEnd(__zone);
 }
 
 static inline void P_UnArchivePolyObjects(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, numSavedPolys;
 
 	if (READUINT32(save->p) != ARCHIVEBLOCK_POBJS)
@@ -4632,6 +4688,8 @@ static inline void P_UnArchivePolyObjects(savebuffer_t *save)
 
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save, &PolyObjects[i]);
+
+	TracyCZoneEnd(__zone);
 }
 
 static mobj_t *RelinkMobj(mobj_t **ptr)
@@ -4743,6 +4801,8 @@ static void P_RelinkPointers(void)
 
 static inline void P_NetArchiveSpecials(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	size_t i, z;
 
 	WRITEUINT32(save->p, ARCHIVEBLOCK_SPECIALS);
@@ -4779,10 +4839,13 @@ static inline void P_NetArchiveSpecials(savebuffer_t *save)
 	}
 	else
 		WRITEUINT8(save->p, 0x00);
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveSpecials(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	char skytex[9];
 	size_t i;
 
@@ -4818,6 +4881,8 @@ static void P_NetUnArchiveSpecials(savebuffer_t *save)
 
 	if (READUINT8(save->p) == 0x01) // metal sonic
 		G_LoadMetal(&save->p);
+
+	TracyCZoneEnd(__zone);
 }
 
 // =======================================================================
@@ -4825,6 +4890,8 @@ static void P_NetUnArchiveSpecials(savebuffer_t *save)
 // =======================================================================
 static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
 {
+	TracyCZone(__zone, true);
+
 	//lastmapsaved = mapnum;
 	lastmaploaded = mapnum;
 
@@ -4834,10 +4901,14 @@ static inline void P_ArchiveMisc(savebuffer_t *save, INT16 mapnum)
 	WRITEINT16(save->p, mapnum);
 	WRITEUINT16(save->p, emeralds+357);
 	WRITESTRINGN(save->p, timeattackfolder, sizeof(timeattackfolder));
+
+	TracyCZoneEnd(__zone);
 }
 
 static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 {
+	TracyCZone(__zone, true);
+
 	char testname[sizeof(timeattackfolder)];
 
 	gamemap = READINT16(save->p);
@@ -4875,10 +4946,14 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 
 	memset(playeringame, 0, sizeof(*playeringame));
 	playeringame[consoleplayer] = true;
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 {
+	TracyCZone(__zone, true);
+
 	size_t i;
 
 	WRITEUINT32(save->p, ARCHIVEBLOCK_MISC);
@@ -5019,10 +5094,14 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	}
 
 	WRITEUINT32(save->p, cht_debug);
+
+	TracyCZoneEnd(__zone);
 }
 
 FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
 {
+	TracyCZone(__zone, true);
+
 	size_t i;
 	size_t numTasks;
 
@@ -5187,11 +5266,15 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	cht_debug = READUINT32(save->p);
 
+	TracyCZoneEnd(__zone);
+
 	return true;
 }
 
 static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	UINT8 i, banksinuse = NUM_LUABANKS;
 
 	while (banksinuse && !luabanks[banksinuse-1])
@@ -5206,10 +5289,14 @@ static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
 	}
 
 	WRITEUINT8(save->p, 0x1d); // consistency marker
+
+	TracyCZoneEnd(__zone);
 }
 
 static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	switch (READUINT8(save->p))
 	{
 		case 0xb7: // luabanks marker
@@ -5235,6 +5322,7 @@ static inline boolean P_UnArchiveLuabanksAndConsistency(savebuffer_t *save)
 			return false;
 	}
 
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
@@ -5247,6 +5335,8 @@ void P_SaveGame(savebuffer_t *save, INT16 mapnum)
 
 void P_SaveNetGame(savebuffer_t *save, boolean resending)
 {
+	TracyCZone(__zone, true);
+
 	thinker_t *th;
 	mobj_t *mobj;
 	UINT32 i = 1; // don't start from 0, it'd be confused with a blank pointer otherwise
@@ -5287,6 +5377,8 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	LUA_Archive(save, true);
 
 	P_ArchiveLuabanksAndConsistency(save);
+
+	TracyCZoneEnd(__zone);
 }
 
 boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
@@ -5312,6 +5404,8 @@ boolean P_LoadGame(savebuffer_t *save, INT16 mapoverride)
 
 boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 {
+	TracyCZone(__zone, true);
+
 	CV_LoadNetVars(&save->p);
 	if (!P_NetUnArchiveMisc(save,reloading))
 		return false;
@@ -5340,6 +5434,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	// precipitation when loading a netgame save. Instead, precip has to be spawned here.
 	// This is done in P_NetUnArchiveSpecials now.
 
+	TracyCZoneEnd(__zone);
 	return P_UnArchiveLuabanksAndConsistency(save);
 }
 

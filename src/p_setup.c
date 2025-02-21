@@ -106,6 +106,8 @@
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 
+#include <tracy/tracy/TracyC.h>
+
 // Replay names have time
 #if !defined (UNDER_CE)
 #include <time.h>
@@ -1440,6 +1442,8 @@ static void TextmapStorePos(textmap_block_t *blocks, size_t *count)
 // Determine total amount of map data in TEXTMAP.
 static boolean TextmapCount(size_t size)
 {
+	TracyCZone(__zone, true);
+
 	const char *tkn = M_TokenizerRead(0);
 	UINT8 brackets = 0;
 
@@ -1490,9 +1494,11 @@ static boolean TextmapCount(size_t size)
 	if (brackets)
 	{
 		CONS_Alert(CONS_ERROR, "Unclosed brackets detected in textmap lump.\n");
+		TracyCZoneEnd(__zone);
 		return false;
 	}
 
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
@@ -3188,6 +3194,8 @@ static void P_WriteTextmapWaypoints(void)
   */
 static void P_LoadTextmap(void)
 {
+	TracyCZone(__zone, true);
+
 	UINT32 i;
 
 	vertex_t   *vt;
@@ -3380,6 +3388,8 @@ static void P_LoadTextmap(void)
 
 		TextmapParse(mapthingBlocks.pos[i], i, ParseTextmapThingParameter);
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static fixed_t
@@ -3536,6 +3546,8 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 
 static boolean P_LoadMapData(const virtres_t *virt)
 {
+	TracyCZone(__zone, true);
+
 	virtlump_t *virtvertexes = NULL, *virtsectors = NULL, *virtsidedefs = NULL, *virtlinedefs = NULL, *virtthings = NULL;
 
 	// Count map data.
@@ -3546,6 +3558,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 		if (!TextmapCount(textmap->size))
 		{
 			M_TokenizerClose();
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 	}
@@ -3632,6 +3645,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	// search for animated flats and set up
 	P_SetupLevelFlatAnims();
 
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
@@ -7655,6 +7669,8 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 
 static boolean P_SetMapNamespace(void)
 {
+	TracyCZone(__zone, true);
+
 	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
 	if (textmap != NULL)
 	{
@@ -7685,6 +7701,7 @@ static boolean P_SetMapNamespace(void)
 		else
 		{
 			CONS_Alert(CONS_WARNING, "Invalid namespace '%s'. Only 'srb2', 'ringracers' and 'blankart' are supported.\n", tkn);
+			TracyCZoneEnd(__zone);
 			return false;
 		}
 
@@ -7695,6 +7712,8 @@ static boolean P_SetMapNamespace(void)
 		// binary maps are kart only. don't need more than one binary format
 		mapnamespace = MNS_SRB2KART;
 	}
+
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
@@ -7714,13 +7733,18 @@ const char *P_MapNamespaceString(mapnamespace_t mns)
 
 static boolean P_LoadMapFromFile(void)
 {
+	TracyCZone(__zone, true);
+
 	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
 	size_t i;
 	udmf = textmap != NULL;
 	udmf_version = 0;
 
 	if (!P_LoadMapData(curmapvirt))
+	{
+		TracyCZoneEnd(__zone);
 		return false;
+	}
 	P_LoadMapBSP(curmapvirt);
 	P_LoadMapLUT(curmapvirt);
 
@@ -7748,6 +7772,7 @@ static boolean P_LoadMapFromFile(void)
 			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
 
 	P_MakeMapMD5(curmapvirt, &mapmd5);
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
@@ -8316,6 +8341,8 @@ static void P_InitMinimapInfo(void)
   */
 boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 {
+	TracyCZone(__zone, true);
+
 	// use gamemap to get map number.
 	// 99% of the things already did, so.
 	// Map header should always be in place at this point
@@ -8583,7 +8610,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_InitSlopes(); //Initialize slopes before the map loads.
 
 	if (!P_LoadMapFromFile())
+	{
+		TracyCZoneEnd(__zone);
 		return false;
+	}
 
 	// set up world state
 	// jart: needs to be done here so anchored slopes know the attached list
@@ -8765,11 +8795,13 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		}
 	}
 	
+	TracyCZoneEnd(__zone);
 	return true;
 }
 
 void P_PostLoadLevel(void)
 {
+	TracyCZone(__zone, true);
 	P_MapStart(); // tm.thing can be used starting from this point
 	
 	if (G_GametypeHasSpectators())
@@ -8829,6 +8861,8 @@ void P_PostLoadLevel(void)
 
 	// We're now done loading the level.
 	levelloading = false;
+
+	TracyCZoneEnd(__zone);
 }
 
 

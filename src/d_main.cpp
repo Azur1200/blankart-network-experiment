@@ -78,6 +78,8 @@
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
 
+#include <tracy/tracy/Tracy.hpp>
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else
@@ -268,6 +270,8 @@ static bool D_Display(void)
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
 	UINT8 i;
+
+	ZoneScoped;
 
 	if (!dedicated)
 	{
@@ -834,7 +838,10 @@ void D_SRB2Loop(void)
 				realtics = 1;
 
 			// process tics (but maybe not if realtic == 0)
-			TryRunTics(realtics);
+			{
+				ZoneScopedN("TryRunTics");
+				TryRunTics(realtics);
+			}
 
 			if (lastdraw || singletics || gametic > rendergametic)
 			{

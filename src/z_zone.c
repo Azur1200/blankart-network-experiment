@@ -40,6 +40,8 @@
 #include "m_misc.h" // M_Memcpy
 #include "lua_script.h"
 
+#include <tracy/tracy/TracyC.h>
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h" // For hardware memory info
 #endif
@@ -346,6 +348,7 @@ void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits,
 void Z_FreeTags(INT32 lowtag, INT32 hightag)
 {
 	memblock_t *block, *next;
+	TracyCZone(__zone, true);
 
 	Z_CheckHeap(420);
 	for (block = head.next; block != &head; block = next)
@@ -354,6 +357,7 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 		if (block->tag >= lowtag && block->tag <= hightag)
 			Z_Free(MEMORY(block));
 	}
+	TracyCZoneEnd(__zone);
 }
 
 /** Iterates through all memory for a given set of tags.
@@ -365,6 +369,7 @@ void Z_FreeTags(INT32 lowtag, INT32 hightag)
 void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
 {
 	memblock_t *block, *next;
+	TracyCZone(__zone, true);
 
 	if (!iterfunc)
 		I_Error("Z_IterateTags: no iterator function was given");
@@ -381,6 +386,7 @@ void Z_IterateTags(INT32 lowtag, INT32 hightag, boolean (*iterfunc)(void *))
 				Z_Free(mem);
 		}
 	}
+	TracyCZoneEnd(__zone);
 }
 
 // -----------------
