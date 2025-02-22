@@ -739,7 +739,4 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				continue;
 		}
 	}
-
-	// who are you running from?
-	V_ClearClipRect();
 }
