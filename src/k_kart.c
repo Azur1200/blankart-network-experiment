@@ -8983,56 +8983,97 @@ static void K_AirFailsafe(player_t *player)
 static void K_AdjustPlayerFriction(player_t *player)
 {
 	boolean onground = P_IsObjectOnGround(player->mo);
-	// JugadorXEI: Do *not* calculate friction when a player is pogo'd
-	// because they'll be in the air and friction will not reset!
-	if (onground && !player->pogospring)
+	fixed_t prevfriction = player->mo->friction;
+
+	if (!onground)
 	{
-		// Friction
-		if (!player->offroad)
-		{
-			if (player->speed > 0 && player->cmd.forwardmove == 0 && player->mo->friction == 59392)
-				player->mo->friction += 4608;
-		}
+		// Don't Calculate friction in the air.
+		return;
 
-		if (player->speed > 0 && player->cmd.forwardmove < 0)	// change friction while braking no matter what, otherwise it's not any more effective than just letting go off accel
-			player->mo->friction -= 2048;
+	}
 
-		// Reduce friction after hitting a spring
-		if (player->tiregrease)
-		{
-			player->mo->friction += ((FRACUNIT - FRACUNIT) / 3*TICRATE) * player->tiregrease;
-		}
+	if (player->pogospring)
+	{
+		// JugadorXEI: Do *not* calculate friction when a player is pogo'd
+		// because they'll be in the air and friction will not reset!
+		return;
+	}
 
-		// Karma ice physics
-		if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
-		{
-			player->mo->friction += 1228;
+	// Friction
+	if (!player->offroad)
+	{
+		if (player->speed > 0 && player->cmd.forwardmove == 0 && player->mo->friction == 59392)
+			player->mo->friction += 4608;
+	}
 
-			if (player->mo->friction > FRACUNIT)
-				player->mo->friction = FRACUNIT;
-			if (player->mo->friction < 0)
-				player->mo->friction = 0;
+	if (player->speed > 0 && player->cmd.forwardmove < 0)	// change friction while braking no matter what, otherwise it's not any more effective than just letting go off accel
+		player->mo->friction -= 2048;
 
-			player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
+	// Reduce friction after hitting a spring
+	if (player->tiregrease)
+	{
+		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
+	}
+
+	// Karma ice physics
+	if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
+	{
+		player->mo->friction += 1228;
+
+		if (player->mo->friction > FRACUNIT)
+			player->mo->friction = FRACUNIT;
+		if (player->mo->friction < 0)
+			player->mo->friction = 0;
+
+		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
 
 
-			if (player->mo->movefactor < FRACUNIT)
-				player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
-			else
-				player->mo->movefactor = FRACUNIT; //player->mo->movefactor = ((player->mo->friction - 0xDB34)*(0xA))/0x80;
+		if (player->mo->movefactor < FRACUNIT)
+			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
+		else
+			player->mo->movefactor = FRACUNIT; //player->mo->movefactor = ((player->mo->friction - 0xDB34)*(0xA))/0x80;
 
-			if (player->mo->movefactor < 32)
-				player->mo->movefactor = 32;
-		}
+		if (player->mo->movefactor < 32)
+			player->mo->movefactor = 32;
+	}
 
-		// Wipeout slowdown
-		if (player->speed > 0 && player->spinouttimer && player->wipeoutslow)
-		{
-			if (player->offroad)
-				player->mo->friction -= 4912;
-			if (player->wipeoutslow == 1)
-				player->mo->friction -= 9824;
-		}
+	if (K_PlayerUsesBotMovement(player) == true && (player->dashpadcooldown == 0))
+	{
+		const fixed_t factor = FixedMul(
+			FixedDiv(FRACUNIT - prevfriction, FRACUNIT - ORIG_FRICTION),
+			K_GetKartGameSpeedScalar(gamespeed)
+		);
+		const fixed_t speedPercent = FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), ORIG_FRICTION)) /100;
+		const fixed_t extraFriction = FixedMul(FixedMul(FRACUNIT >> 5, factor), speedPercent);
+
+		// A bit extra friction to help them without drifting.
+		// Remove this line once they can drift.
+		player->mo->friction -= extraFriction;
+
+		if (player->mo->friction > FRACUNIT)
+			player->mo->friction = FRACUNIT;
+		if (player->mo->friction < 0)
+			player->mo->friction = 0;
+
+		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
+
+
+		if (player->mo->movefactor < FRACUNIT)
+			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
+		else
+			player->mo->movefactor = FRACUNIT; //player->mo->movefactor = ((player->mo->friction - 0xDB34)*(0xA))/0x80;
+
+		if (player->mo->movefactor < 32)
+			player->mo->movefactor = 32;
+	}
+
+	// Wipeout slowdown
+	if (player->speed > 0 && player->spinouttimer && player->wipeoutslow)
+	{
+		if (player->offroad)
+			player->mo->friction -= 4912;
+		if (player->wipeoutslow == 1)
+			player->mo->friction -= 9824;
 	}
 }
 
