@@ -264,7 +264,7 @@ consvar_t cv_allowteamchange = CVAR_INIT ("allowteamchange", "Yes", CV_NETVAR, C
 
 #ifdef DEVELOP
 	// change the default value in doomdef.h (so it affects release builds too)
-	consvar_t cv_debugtraversemax = CVAR_INIT ("restrictskinchange", TOSTR2(TRAVERSE_MAX), CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
+	consvar_t cv_debugtraversemax = CVAR_INIT ("debugtraversemax", TOSTR2(TRAVERSE_MAX), CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 #endif
 
 static CV_PossibleValue_t ingamecap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS-1, "MAX"}, {0, NULL}};
