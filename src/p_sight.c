@@ -1,8 +1,10 @@
-// SONIC ROBO BLAST 2
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2000 by DooM Legacy Team.
-// Copyright (C) 1999-2020 by Sonic Team Junior.
+// Copyright (C) 2024 by Sally "TehRealSalt" Cochenour.
+// Copyright (C) 2024 by Kart Krew.
+// Copyright (C) 2020 by Sonic Team Junior.
+// Copyright (C) 2000 by DooM Legacy Team.
+// Copyright (C) 1996 by id Software, Inc.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -37,7 +39,6 @@ typedef struct
 	mobj_t *t1, *t2;
 	boolean alreadyHates;				// For bot traversal, for if the bot is already in a sector it doesn't want to be
 	UINT8 traversed;
-	mobj_t *compareThing;				// Original thing
 } los_t;
 
 typedef boolean (*los_init_t)(mobj_t *, mobj_t *, register los_t *);
@@ -53,7 +54,11 @@ typedef struct
 
 static INT32 sightcounts[2];
 
-#define TRAVERSE_MAX (8)
+#ifdef DEVELOP
+extern consvar_t cv_debugtraversemax;
+#undef TRAVERSE_MAX
+#define TRAVERSE_MAX (cv_debugtraversemax.value)
+#endif
 
 //
 // P_DivlineSide
@@ -470,10 +475,11 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, register los_fu
 	seg_t *seg;
 	INT32 count;
 
-#ifdef RANGECHECK
 	if (num >= numsubsectors)
-		I_Error("P_CrossSubsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
-#endif
+	{
+		CONS_Debug(DBG_RENDER, "P_CrossSubsector: ss %s with numss = %s\n", sizeu1(num), sizeu2(numsubsectors));
+		return true;
+	}
 
 	// haleyjd 02/23/06: this assignment should be after the above check
 	seg = segs + subsectors[num].firstline;
@@ -556,11 +562,6 @@ static boolean P_CrossSubsector(size_t num, register los_t *los, register los_fu
 
 static boolean P_CrossBSPNode(INT32 bspnum, register los_t *los, register los_funcs_t *funcs)
 {
-	if (funcs->validate == NULL)
-	{
-		return false;
-	}
-
 	while (!(bspnum & NF_SUBSECTOR))
 	{
 		register node_t *bsp = nodes + bspnum;

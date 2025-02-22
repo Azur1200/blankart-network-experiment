@@ -65,6 +65,10 @@ extern consvar_t cv_pause;
 extern consvar_t cv_restrictskinchange, cv_allowteamchange, cv_ingamecap, cv_respawntime;
 extern consvar_t cv_spectatorreentry, cv_antigrief;
 
+#ifdef DEVELOP
+	extern consvar_t cv_debugtraversemax;
+#endif
+
 // SRB2kart items
 extern consvar_t cv_superring, cv_sneaker, cv_rocketsneaker, cv_invincibility, cv_banana;
 extern consvar_t cv_eggmanmonitor, cv_orbinaut, cv_jawz, cv_mine, cv_landmine, cv_droptarget;

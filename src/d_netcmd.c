@@ -262,6 +262,11 @@ static consvar_t cv_dummyconsvar = CVAR_INIT ("dummyconsvar", "Off", CV_CALL|CV_
 consvar_t cv_restrictskinchange = CVAR_INIT ("restrictskinchange", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 consvar_t cv_allowteamchange = CVAR_INIT ("allowteamchange", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
+#ifdef DEVELOP
+	// change the default value in doomdef.h (so it affects release builds too)
+	consvar_t cv_debugtraversemax = CVAR_INIT ("restrictskinchange", TOSTR2(TRAVERSE_MAX), CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
+#endif
+
 static CV_PossibleValue_t ingamecap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS-1, "MAX"}, {0, NULL}};
 consvar_t cv_ingamecap = CVAR_INIT ("ingamecap", "0", CV_NETVAR, ingamecap_cons_t, NULL);
 

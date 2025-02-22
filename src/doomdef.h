@@ -281,6 +281,9 @@ enum {
 	LE_PARAMWIDTH      =  -100  // If an object that calls LinedefExecute has a nonzero parameter value, this times the parameter will be subtracted. (Mostly for the purpose of coexisting bosses...)
 };
 
+#define TOSTR(x) #x
+#define TOSTR2(x) TOSTR(x) // expand x first
+
 // Name of local directory for config files and savegames
 #if (((defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON)) && !defined (__CYGWIN__)) && !defined (__APPLE__)
 #define DEFAULTDIR ".srb2kart-v2"
@@ -568,6 +571,9 @@ extern int compuncommitted;
 /// - SRB2Kart options -
 /// Camera always has noclip.
 #define NOCLIPCAM
+
+// p_sight.c
+#define TRAVERSE_MAX 8
 
 /// Other karma comeback modes
 //#define OTHERKARMAMODES
