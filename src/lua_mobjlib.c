@@ -100,7 +100,11 @@ enum mobj_e {
 	mobj_sprxoff,
 	mobj_spryoff,
 	mobj_sprzoff,
-	mobj_dispoffset
+	mobj_dispoffset,
+	mobj_tid,
+	mobj_special,
+	mobj_args,
+	mobj_stringargs
 };
 
 static const char *const mobj_opt[] = {
@@ -182,9 +186,58 @@ static const char *const mobj_opt[] = {
 	"spryoff",
 	"sprzoff",
 	"dispoffset",
+	"tid",
+	"special",
+	"args",
+	"stringargs",
 	NULL};
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", mobj_opt[field])
+
+#define F(x) x - 'A'
+static UINT32 spr2frame(UINT8 spr2, UINT32 frame)
+{
+	switch (spr2)
+	{
+	case SPR2_STIN:
+	case SPR2_STGL: case SPR2_STGR: case SPR2_STLL: case SPR2_STLR:
+		return F('A') + (frame & 1);
+	case SPR2_STIL:
+		return F('C') + (frame & 1);
+	case SPR2_STIR:
+		return F('E') + (frame & 1);
+	case SPR2_SLWN:
+	case SPR2_SLGL: case SPR2_SLGR: case SPR2_SLLL: case SPR2_SLLR:
+		return frame & 1 ? F('G') : F('J');
+	case SPR2_SLWL:
+		return frame & 1 ? F('H') : F('K');
+	case SPR2_SLWR:
+		return frame & 1 ? F('I') : F('L');
+	case SPR2_FSTN:
+	case SPR2_FSGL: case SPR2_FSGR: case SPR2_FSLL: case SPR2_FSLR:
+		return frame & 1 ? F('J') : F('A');
+	case SPR2_FSTL:
+		return frame & 1 ? F('K') : F('C');
+	case SPR2_FSTR:
+		return frame & 1 ? F('L') : F('E');
+	case SPR2_DRLN: case SPR2_DRLO: case SPR2_DRLI:
+		return F('M') + (frame & 1);
+	case SPR2_DRRN: case SPR2_DRRO: case SPR2_DRRI:
+		return F('O') + (frame & 1);
+	case SPR2_SPIN: case SPR2_DEAD:
+		return F('Q');
+	case SPR2_SIGN:
+		return F('S');
+	case SPR2_KART:
+		if ((frame & FF_FRAMEMASK) == 0)
+			return F('R'); // squish
+		else
+			return F('S') + (frame & FF_FRAMEMASK);
+	default:
+		return F('A'); // idk???
+	}
+}
+#undef F
 
 static int mobj_get(lua_State *L)
 {
@@ -241,7 +294,11 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->sprite);
 		break;
 	case mobj_frame:
-		lua_pushinteger(L, mo->frame);
+		UINT32 frame = mo->frame;
+		// translate SPR2 back to frames
+		if (lua_compatmode && mo->sprite == SPR_PLAY)
+			frame = (frame & ~FF_FRAMEMASK) | spr2frame(mo->sprite2, mo->frame);
+		lua_pushinteger(L, frame);
 		break;
 	case mobj_sprite2:
 		lua_pushinteger(L, mo->sprite2);
@@ -312,10 +369,16 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->flags);
 		break;
 	case mobj_flags2:
-		lua_pushinteger(L, mo->flags2);
+		UINT32 flags2 = mo->flags2;
+		if (lua_compatmode && (mo->renderflags & RF_DONTDRAW) == RF_DONTDRAW)
+			flags2 |= MF2_DONTDRAW;
+		lua_pushinteger(L, flags2);
 		break;
 	case mobj_eflags:
-		lua_pushinteger(L, mo->eflags);
+		UINT32 eflags = mo->eflags;
+		if (lua_compatmode)
+			eflags |= (~mo->renderflags & RF_DONTDRAW);
+		lua_pushinteger(L, eflags);
 		break;
 	case mobj_renderflags:
 		lua_pushinteger(L, mo->renderflags);
@@ -463,6 +526,18 @@ static int mobj_get(lua_State *L)
 	case mobj_dispoffset:
 		lua_pushinteger(L, mo->dispoffset);
 		break;
+	case mobj_tid:
+		lua_pushinteger(L, mo->tid);
+		break;
+	case mobj_special:
+		lua_pushinteger(L, mo->special);
+		break;
+	case mobj_args:
+		LUA_PushUserdata(L, mo->args, META_THINGARGS);
+		break;
+	case mobj_stringargs:
+		LUA_PushUserdata(L, mo->stringargs, META_THINGSTRINGARGS);
+		break;
 	default: // extra custom variables in Lua memory
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
@@ -480,6 +555,69 @@ static int mobj_get(lua_State *L)
 	}
 	return 1;
 }
+
+#define F(x) case x - 'A':
+static void frame2spr2(mobj_t *mo, UINT32 inframe)
+{
+	UINT8 spr2, outframe = 0;
+	switch (inframe & FF_FRAMEMASK)
+	{
+	F('A') F('B')
+		spr2 = SPR2_STIN;
+		outframe = inframe & 1;
+		break;
+	F('C') F('D')
+		spr2 = SPR2_STIL;
+		outframe = inframe & 1;
+		break;
+	F('E') F('F')
+		spr2 = SPR2_STIR;
+		outframe = inframe & 1;
+		break;
+	F('G')
+		spr2 = SPR2_SLWN;
+		break;
+	F('H')
+		spr2 = SPR2_SLWL;
+		break;
+	F('I')
+		spr2 = SPR2_SLWR;
+		break;
+	F('J')
+		spr2 = SPR2_FSTN;
+		break;
+	F('K')
+		spr2 = SPR2_FSTL;
+		break;
+	F('L')
+		spr2 = SPR2_FSTR;
+		break;
+	F('M') F('N')
+		spr2 = SPR2_DRLN;
+		outframe = inframe & 1;
+		break;
+	F('O') F('P')
+		spr2 = SPR2_DRRN;
+		outframe = inframe & 1;
+		break;
+	F('Q')
+		spr2 = SPR2_SPIN;
+		break;
+	F('R')
+		spr2 = SPR2_KART;
+		break;
+	F('S')
+		spr2 = SPR2_SIGN;
+		break;
+	default:
+		spr2 = SPR2_KART;
+		outframe = inframe - 18; // not 19! frame 0 is squish
+		break;
+	}
+	mo->frame = (inframe & ~FF_FRAMEMASK) | outframe;
+	mo->sprite2 = P_GetSkinSprite2((skin_t *)mo->skin, spr2, mo->player);
+}
+#undef F
 
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
 #define NOSETPOS luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL("P_Move") ", " LUA_QL("P_TryMove") ", or " LUA_QL("P_SetOrigin") ", or " LUA_QL("P_MoveOrigin") " instead.", mobj_opt[field])
@@ -539,64 +677,15 @@ static int mobj_set(lua_State *L)
 		mo->rollangle = luaL_checkangle(L, 3);
 		break;
 	case mobj_sprite:
-		mo->sprite = luaL_checkinteger(L, 3);
-		if (mo->sprite == SPR_PLAY)
-			mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIN, mo->player);
+		spritenum_t newsprite = luaL_checkinteger(L, 3);
+		if (lua_compatmode && mo->sprite != SPR_PLAY && newsprite == SPR_PLAY)
+			frame2spr2(mo, mo->frame);
+		mo->sprite = newsprite;
 		break;
 	case mobj_frame:
 		// Check for SPR2
-		if (mo->sprite == SPR_PLAY)
-		{
-			UINT32 frame = (UINT32)luaL_checkinteger(L, 3);
-			switch (frame)
-			{
-				case 0:
-				case 1:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIN, mo->player);
-					break;
-				case 2:
-				case 3:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIL, mo->player);
-					break;
-				case 4:
-				case 5:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_STIR, mo->player);
-					break;
-				case 6:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWN, mo->player);
-					break;
-				case 7:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWL, mo->player);
-					break;
-				case 8:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SLWR, mo->player);
-					break;
-				case 9:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTN, mo->player);
-					break;
-				case 10:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTL, mo->player);
-					break;
-				case 11:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_FSTR, mo->player);
-					break;
-				case 12:
-				case 13:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_DRLN, mo->player);
-					break;
-				case 14:
-				case 15:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_DRRN, mo->player);
-					break;
-				case 16:
-				case 17: // squish technically doesnt really exist
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SPIN, mo->player);
-					break;
-				case 18:
-					mo->sprite2 = P_GetSkinSprite2(((skin_t *)mo->skin), SPR2_SIGN, mo->player);
-					break;
-			}
-		}
+		if (lua_compatmode && mo->sprite == SPR_PLAY)
+			frame2spr2(mo, (UINT32)luaL_checkinteger(L, 3));
 		else
 			mo->frame = (UINT32)luaL_checkinteger(L, 3);
 		break;
@@ -706,10 +795,21 @@ static int mobj_set(lua_State *L)
 		break;
 	}
 	case mobj_flags2:
-		mo->flags2 = (UINT32)luaL_checkinteger(L, 3);
+		UINT32 flags2 = luaL_checkinteger(L, 3);
+		if (lua_compatmode)
+		{
+			if (flags2 & MF2_DONTDRAW)
+				mo->renderflags |= RF_DONTDRAW;
+			else
+				mo->renderflags &= ~RF_DONTDRAW;
+		}
+		mo->flags2 = flags2;
 		break;
 	case mobj_eflags:
-		mo->eflags = (UINT16)luaL_checkinteger(L, 3);
+		UINT32 eflags = luaL_checkinteger(L, 3);
+		if (lua_compatmode)
+			mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (~eflags & RF_DONTDRAW); // eeeyup.
+		mo->eflags = (UINT16)eflags;
 		break;
 	case mobj_renderflags:
 		mo->renderflags = (UINT32)luaL_checkinteger(L, 3);
@@ -894,6 +994,16 @@ static int mobj_set(lua_State *L)
 	case mobj_dispoffset:
 		mo->dispoffset = luaL_checkinteger(L, 3);
 		break;
+	case mobj_tid:
+		P_SetThingTID(mo, luaL_checkinteger(L, 3));
+		break;
+	case mobj_special:
+		mo->special = luaL_checkinteger(L, 3);
+		break;
+	case mobj_args:
+		return NOSET;
+	case mobj_stringargs:
+		return NOSET;
 	default:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
@@ -927,16 +1037,16 @@ static int thingargs_get(lua_State *L)
 {
 	INT32 *args = *((INT32**)luaL_checkudata(L, 1, META_THINGARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMMAPTHINGARGS)
+	if (i < 0 || i >= NUM_MAPTHING_ARGS)
 		return luaL_error(L, LUA_QL("mapthing_t.args") " index cannot be %d", i);
 	lua_pushinteger(L, args[i]);
 	return 1;
 }
 
-// #args -> NUMMAPTHINGARGS
+// #args -> NUM_MAPTHING_ARGS
 static int thingargs_len(lua_State* L)
 {
-	lua_pushinteger(L, NUMMAPTHINGARGS);
+	lua_pushinteger(L, NUM_MAPTHING_ARGS);
 	return 1;
 }
 
@@ -945,27 +1055,70 @@ static int thingstringargs_get(lua_State *L)
 {
 	char **stringargs = *((char***)luaL_checkudata(L, 1, META_THINGSTRINGARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMMAPTHINGSTRINGARGS)
+	if (i < 0 || i >= NUM_MAPTHING_STRINGARGS)
 		return luaL_error(L, LUA_QL("mapthing_t.stringargs") " index cannot be %d", i);
 	lua_pushstring(L, stringargs[i]);
 	return 1;
 }
 
-// #stringargs -> NUMMAPTHINGSTRINGARGS
+// #stringargs -> NUM_MAPTHING_STRINGARGS
 static int thingstringargs_len(lua_State *L)
 {
-	lua_pushinteger(L, NUMMAPTHINGSTRINGARGS);
+	lua_pushinteger(L, NUM_MAPTHING_STRINGARGS);
 	return 1;
 }
+
+
+
+enum mapthing_e {
+	mapthing_valid = 0,
+	mapthing_x,
+	mapthing_y,
+	mapthing_angle,
+	mapthing_pitch,
+	mapthing_roll,
+	mapthing_type,
+	mapthing_options,
+	mapthing_scale,
+	mapthing_spritexscale,
+	mapthing_spriteyscale,
+	mapthing_z,
+	mapthing_extrainfo,
+	mapthing_tid,
+	mapthing_args,
+	mapthing_stringargs,
+	mapthing_mobj,
+};
+
+const char *const mapthing_opt[] = {
+	"valid",
+	"x",
+	"y",
+	"angle",
+	"pitch",
+	"roll",
+	"type",
+	"options",
+	"scale",
+	"spritexscale",
+	"spriteyscale",
+	"z",
+	"extrainfo",
+	"tid",
+	"args",
+	"stringargs",
+	"mobj",
+	NULL,
+};
 
 static int mapthing_get(lua_State *L)
 {
 	mapthing_t *mt = *((mapthing_t **)luaL_checkudata(L, 1, META_MAPTHING));
-	const char *field = luaL_checkstring(L, 2);
-	lua_Integer number;
+	enum mapthing_e field = Lua_optoption(L, 2, NULL, mapthing_opt);
+	lua_settop(L, 2);
 
 	if (!mt) {
-		if (fastcmp(field,"valid")) {
+		if (field == mapthing_valid) {
 			lua_pushboolean(L, false);
 			return 1;
 		}
@@ -974,66 +1127,74 @@ static int mapthing_get(lua_State *L)
 		return 0;
 	}
 
-	if (fastcmp(field,"valid")) {
-		lua_pushboolean(L, true);
-		return 1;
-	} else if(fastcmp(field,"x"))
-		number = mt->x;
-	else if(fastcmp(field,"y"))
-		number = mt->y;
-	else if(fastcmp(field,"angle"))
-		number = mt->angle;
-	else if(fastcmp(field,"pitch"))
-		number = mt->pitch;
-	else if(fastcmp(field,"roll"))
-		number = mt->roll;
-	else if(fastcmp(field,"type"))
-		number = mt->type;
-	else if(fastcmp(field,"options"))
-		number = mt->options;
-	else if(fastcmp(field,"scale"))
-		number = mt->scale;
-	else if(fastcmp(field,"spritexscale"))
-		number = mt->spritexscale;
-	else if(fastcmp(field,"spriteyscale"))
-		number = mt->spriteyscale;
-	else if(fastcmp(field,"z"))
-		number = mt->z;
-	else if(fastcmp(field,"extrainfo"))
-		number = mt->extrainfo;
-	else if(fastcmp(field,"tag"))
-		number = Tag_FGet(&mt->tags);
-	else if(fastcmp(field,"taglist"))
+	switch (field)
 	{
-		LUA_PushUserdata(L, &mt->tags, META_TAGLIST);
-		return 1;
+		case mapthing_valid:
+			lua_pushboolean(L, true);
+			break;
+		case mapthing_x:
+			lua_pushinteger(L, mt->x);
+			break;
+		case mapthing_y:
+			lua_pushinteger(L, mt->y);
+			break;
+		case mapthing_angle:
+			lua_pushinteger(L, mt->angle);
+			break;
+		case mapthing_pitch:
+			lua_pushinteger(L, mt->pitch);
+			break;
+		case mapthing_roll:
+			lua_pushinteger(L, mt->roll);
+			break;
+		case mapthing_type:
+			lua_pushinteger(L, mt->type);
+			break;
+		case mapthing_options:
+			lua_pushinteger(L, mt->options);
+			break;
+		case mapthing_scale:
+			lua_pushfixed(L, mt->scale);
+			break;
+		case mapthing_spritexscale:
+			lua_pushfixed(L, mt->spritexscale);
+			break;
+		case mapthing_spriteyscale:
+			lua_pushfixed(L, mt->spriteyscale);
+			break;
+		case mapthing_z:
+			lua_pushinteger(L, mt->z);
+			break;
+		case mapthing_extrainfo:
+			lua_pushinteger(L, mt->extrainfo);
+			break;
+		case mapthing_tid:
+			lua_pushinteger(L, mt->tid);
+			break;
+		case mapthing_args:
+			LUA_PushUserdata(L, mt->args, META_THINGARGS);
+			break;
+		case mapthing_stringargs:
+			LUA_PushUserdata(L, mt->stringargs, META_THINGSTRINGARGS);
+			break;
+		case mapthing_mobj:
+			LUA_PushUserdata(L, mt->mobj, META_MOBJ);
+			break;
+		default:
+			if (devparm)
+				return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
+			else
+				return 0;
 	}
-	else if(fastcmp(field,"args"))
-	{
-		LUA_PushUserdata(L, mt->args, META_THINGARGS);
-		return 1;
-	}
-	else if(fastcmp(field,"stringargs"))
-	{
-		LUA_PushUserdata(L, mt->stringargs, META_THINGSTRINGARGS);
-		return 1;
-	}
-	else if(fastcmp(field,"mobj")) {
-		LUA_PushUserdata(L, mt->mobj, META_MOBJ);
-		return 1;
-	} else if (devparm)
-		return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
-	else
-		return 0;
 
-	lua_pushinteger(L, number);
 	return 1;
 }
 
 static int mapthing_set(lua_State *L)
 {
 	mapthing_t *mt = *((mapthing_t **)luaL_checkudata(L, 1, META_MAPTHING));
-	const char *field = luaL_checkstring(L, 2);
+	enum mapthing_e field = Lua_optoption(L, 2, mapthing_opt[0], mapthing_opt);
+	lua_settop(L, 3);
 
 	if (!mt)
 		return luaL_error(L, "accessed mapthing_t doesn't exist anymore.");
@@ -1043,39 +1204,58 @@ static int mapthing_set(lua_State *L)
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter mapthing_t in CMD building code!");
 
-	if(fastcmp(field,"x"))
-		mt->x = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"y"))
-		mt->y = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"angle"))
-		mt->angle = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"pitch"))
-		mt->pitch = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"roll"))
-		mt->roll = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"type"))
-		mt->type = (UINT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"options"))
-		mt->options = (UINT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"scale"))
-		mt->scale = luaL_checkfixed(L, 3);
-	else if(fastcmp(field,"z"))
-		mt->z = (INT16)luaL_checkinteger(L, 3);
-	else if(fastcmp(field,"extrainfo"))
+	switch (field)
 	{
-		INT32 extrainfo = luaL_checkinteger(L, 3);
-		if (extrainfo & ~15)
-			return luaL_error(L, "mapthing_t extrainfo set %d out of range (%d - %d)", extrainfo, 0, 15);
-		mt->extrainfo = (UINT8)extrainfo;
+		case mapthing_x:
+			mt->x = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_y:
+			mt->y = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_angle:
+			mt->angle = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_pitch:
+			mt->pitch = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_roll:
+			mt->roll = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_type:
+			mt->type = (UINT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_options:
+			mt->options = (UINT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_scale:
+			mt->scale = luaL_checkfixed(L, 3);
+			break;
+		case mapthing_spritexscale:
+			mt->spritexscale = luaL_checkfixed(L, 3);
+			break;
+		case mapthing_spriteyscale:
+			mt->spriteyscale = luaL_checkfixed(L, 3);
+			break;
+		case mapthing_z:
+			mt->z = (INT16)luaL_checkinteger(L, 3);
+			break;
+		case mapthing_extrainfo:
+		{
+			INT32 extrainfo = luaL_checkinteger(L, 3);
+			if (extrainfo & ~15)
+				return luaL_error(L, "mapthing_t extrainfo set %d out of range (%d - %d)", extrainfo, 0, 15);
+			mt->extrainfo = (UINT8)extrainfo;
+			break;
+		}
+		case mapthing_tid:
+			luaL_error(L, LUA_QL("mapthing_t") " field " LUA_QS " should not be set directly.", mapthing_opt[field]);
+			break;
+		case mapthing_mobj:
+			mt->mobj = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+			break;
+		default:
+			return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
 	}
-	else if (fastcmp(field,"tag"))
-		Tag_FSet(&mt->tags, (INT16)luaL_checkinteger(L, 3));
-	else if (fastcmp(field,"taglist"))
-		return LUA_ErrSetDirectly(L, "mapthing_t", "taglist");
-	else if(fastcmp(field,"mobj"))
-		mt->mobj = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
-	else
-		return luaL_error(L, LUA_QL("mapthing_t") " has no field named " LUA_QS, field);
 
 	return 0;
 }
@@ -1118,6 +1298,13 @@ static int lib_getMapthing(lua_State *L)
 		LUA_PushUserdata(L, &mapthings[i], META_MAPTHING);
 		return 1;
 	}
+	
+	if (fastcmp(luaL_checkstring(L, 2),"iterate"))
+	{
+		lua_pushcfunction(L, lib_iterateMapthings);
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -1164,13 +1351,15 @@ int LUA_MobjLib(lua_State *L)
 		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 
-	LUA_PushTaggableObjectArray(L, "mapthings",
-			lib_iterateMapthings,
-			lib_getMapthing,
-			lib_nummapthings,
-			tags_mapthings,
-			&nummapthings, &mapthings,
-			sizeof (mapthing_t), META_MAPTHING);
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getMapthing);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_nummapthings);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "mapthings");
 
 	return 0;
 }

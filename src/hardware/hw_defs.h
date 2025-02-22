@@ -15,6 +15,10 @@
 #include "../doomtype.h"
 #include "../r_defs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ZCLIP_PLANE 4.0f // Used for the actual game drawing
 #define NZCLIP_PLANE 0.9f // Seems to be only used for the HUD and screen textures
 
@@ -36,8 +40,8 @@ typedef unsigned char   FBOOLEAN;
 // ==========================================================================
 
 // byte value for paletted graphics, which represent the transparent color
-#define HWR_PATCHES_CHROMAKEY_COLORINDEX   247
-//#define HWR_CHROMAKEY_EQUIVALENTCOLORINDEX 220
+#define HWR_PATCHES_CHROMAKEY_COLORINDEX   255
+//#define HWR_CHROMAKEY_EQUIVALENTCOLORINDEX 130
 
 // the chroma key color shows on border sprites, set it to black
 #define HWR_PATCHES_CHROMAKEY_COLORVALUE     (0x00000000)    //RGBA format as in grSstWinOpen()
@@ -274,6 +278,7 @@ struct FLightInfo
 	FUINT			light_level;
 	FUINT			fade_start;
 	FUINT			fade_end;
+	boolean			newfade;
 	boolean			directional;
 };
 typedef struct FLightInfo FLightInfo;
@@ -337,5 +342,9 @@ enum hwdfiltermode
 	HWD_SET_TEXTUREFILTER_MIXED2,
 	HWD_SET_TEXTUREFILTER_MIXED3,
 };
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //_HWR_DEFS_

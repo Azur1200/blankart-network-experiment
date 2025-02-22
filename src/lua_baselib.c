@@ -34,7 +34,6 @@
 #include "k_hud.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
-#include "m_misc.h" // M_MapNumber
 #include "p_spec.h" // P_StartQuake
 #include "i_system.h" // I_GetPreciseTime, I_GetPrecisePrecision
 
@@ -390,18 +389,18 @@ static int lib_pGetColorAfter(lua_State *L)
 // M_MISC
 //////////////
 
-static int lib_mMapNumber(lua_State *L)
+static int lib_gMapNumber(lua_State *L)
 {
 	const char *arg = luaL_checkstring(L, 1);
-	size_t len = strlen(arg);
-	if (len == 2 || len == 5) {
-		char first = arg[len-2];
-		char second = arg[len-1];
-		lua_pushinteger(L, M_MapNumber(first, second));
-	} else {
-		lua_pushinteger(L, 0);
-	}
-	return 1;
+	INT32 map;
+
+	map = G_MapNumber(arg);
+
+	if (map == INT32_MAX)
+		return 0;
+
+
+	return map;
 }
 
 // M_RANDOM
@@ -1147,6 +1146,16 @@ static int lib_pPlayerZMovement(lua_State *L)
 	return 0;
 }
 
+static int lib_pSpawnShadowMobj(lua_State *L)
+{
+	mobj_t *caster = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	NOHUD
+	if (!caster)
+		return LUA_ErrInvalid(L, "mobj_t");
+	caster->shadowscale = FRACUNIT;
+	return 0;
+}
+
 // P_USER
 ////////////
 
@@ -1695,7 +1704,12 @@ static int lib_pDamageMobj(lua_State *L)
 	if (!lua_isnone(L, 3) && lua_isuserdata(L, 3))
 		source = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
 	damage = (INT32)luaL_optinteger(L, 4, 1);
-	damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
+	if ((damage == 10000) && lua_isnil(L, 5))
+		damagetype = DMG_TIMEOVER;
+	else
+		damagetype = (UINT8)luaL_optinteger(L, 5, 0);
+
 	lua_pushboolean(L, P_DamageMobj(target, inflictor, source, damage, damagetype));
 	return 1;
 }
@@ -2045,10 +2059,22 @@ static int lib_pThingOnSpecial3DFloor(lua_State *L)
 
 static int lib_pSetupLevelSky(lua_State *L)
 {
-	const char *skytexname = luaL_checkstring(L, 1);
+	const char *skytexname;
+
 	player_t *user = NULL;
 	NOHUD
 	INLEVEL
+
+	if (lua_isnumber(L, 1) && lua_compatmode)
+	{
+		skytexname = luaL_checkstring(L, 1);
+		skytexname = va("SKY%s",skytexname);
+	}
+	else if (lua_isnil(L, 1) && lua_compatmode)
+		skytexname = mapheaderinfo[gamemap-1]->skytexture;
+	else
+		skytexname = luaL_checkstring(L, 1);
+
 	if (!lua_isnone(L, 2) && lua_isuserdata(L, 2)) // if a player, setup sky for only the player, otherwise setup sky for all players
 		user = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
 	if (!user) // global
@@ -2338,7 +2364,7 @@ static int lib_rChar2Frame(lua_State *L)
 {
 	const char *p = luaL_checkstring(L, 1);
 	//HUDSAFE
-	lua_pushinteger(L, R_Char2Frame(*p)); // first character only
+	lua_pushinteger(L, R_Char2Frame(*p, lua_compatmode)); // first character only
 	return 1;
 }
 
@@ -2348,7 +2374,7 @@ static int lib_rFrame2Char(lua_State *L)
 	char c[2] = "";
 	//HUDSAFE
 
-	c[0] = R_Frame2Char(ch);
+	c[0] = R_Frame2Char(ch, lua_compatmode);
 	c[1] = 0;
 
 	lua_pushstring(L, c);
@@ -3139,12 +3165,12 @@ static int lib_gBuildMapTitle(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapTitle");
 	char *name;
-	if (map < 1 || map > NUMMAPS)
+	if (map < 1 || map > nummapheaders)
 	{
 		return luaL_error(L,
-				"map number %d out of range (1 - %d)",
+				"map ID %d out of range (1 - %d)",
 				map,
-				NUMMAPS
+				nummapheaders
 		);
 	}
 	name = G_BuildMapTitle(map);
@@ -3309,7 +3335,8 @@ static int lib_gExitLevel(lua_State *L)
 	// Moved this bit to G_SetCustomExitVars
 	if (n >= 1) // Don't run the reset to defaults option
 		lib_gSetCustomExitVars(L);
-	G_ExitLevel();
+	G_BeginLevelExit();
+	G_FinishExitLevel();
 	return 0;
 }
 
@@ -3343,6 +3370,20 @@ static int lib_gGametypeHasSpectators(lua_State *L)
 	//HUDSAFE
 	INLEVEL
 	lua_pushboolean(L, G_GametypeHasSpectators());
+	return 1;
+}
+
+static int lib_gBattleGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushboolean(L, (gametype == GT_BATTLE));
+	return 1;
+}
+
+static int lib_gRaceGametype(lua_State *L)
+{
+	//HUDSAFE
+	lua_pushboolean(L, (gametype == GT_RACE));
 	return 1;
 }
 
@@ -3861,11 +3902,64 @@ static int lib_kDeclareWeakspot(lua_State *L)
 	return 0;
 }
 
+// sets the remaining time before players blow up
+static int lib_kSetRaceCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	racecountdown = c;
+	return 0;
+}
+
+// sets the remaining time before the race ends after everyone finishes
+static int lib_kSetExitCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	exitcountdown = c;
+	return 0;
+}
+
+// Sets the item cooldown before another shrink / SPB can be rolled
+static int lib_kSetIndirectItemCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	indirectitemcooldown = c;
+	return 0;
+}
+
+// Sets the item cooldown before another shrink / SPB can be rolled
+static int lib_kSetHyuCountdown(lua_State *L)
+{
+	tic_t c = (tic_t)luaL_checkinteger(L, 1);
+	NOHUD
+	hyubgone = c;
+	return 0;
+}
+
+// Checks if the floor closet floor under an object would be safe to respawn/land on.
+static int lib_kSafeRespawnPosition(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	//HUDSAFE
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushfixed(L, K_SafeRespawnPosition(mobj));
+	return 1;
+}
+
 static int lib_getTimeMicros(lua_State *L)
 {
 	lua_pushinteger(L, I_GetPreciseTime() / (I_GetPrecisePrecision() / 1000000));
 	return 1;
 }
+
+static int lib_iGetPreciseTime(lua_State *L)
+{
+	lua_pushinteger(L, I_GetPreciseTime());
+	return 1;
+}
+
 
 static luaL_Reg lib[] = {
 	{"print", lib_print},
@@ -3883,9 +3977,6 @@ static luaL_Reg lib[] = {
 	{"M_MoveColorBefore",lib_pMoveColorBefore},
 	{"M_GetColorAfter",lib_pGetColorAfter},
 	{"M_GetColorBefore",lib_pGetColorBefore},
-
-	// m_misc
-	{"M_MapNumber",lib_mMapNumber},
 
 	// m_random
 	{"P_RandomFixed",lib_pRandomFixed},
@@ -3946,6 +4037,7 @@ static luaL_Reg lib[] = {
 	{"P_RingZMovement",lib_pRingZMovement},
 	{"P_SceneryZMovement",lib_pSceneryZMovement},
 	{"P_PlayerZMovement",lib_pPlayerZMovement},
+	{"P_SpawnShadowMobj",lib_pSpawnShadowMobj},
 
 	// p_user
 	{"P_AddPlayerScore",lib_pAddPlayerScore},
@@ -4088,6 +4180,7 @@ static luaL_Reg lib[] = {
 	// g_game
 	{"G_AddGametype", lib_gAddGametype},
 	{"G_BuildMapName",lib_gBuildMapName},
+	{"G_MapNumber",lib_gMapNumber},
 	{"G_BuildMapTitle",lib_gBuildMapTitle},
 	{"G_FindMap",lib_gFindMap},
 	{"G_FindMapByNameOrCode",lib_gFindMapByNameOrCode},
@@ -4104,6 +4197,8 @@ static luaL_Reg lib[] = {
 	{"G_TicsToCentiseconds",lib_gTicsToCentiseconds},
 	{"G_TicsToMilliseconds",lib_gTicsToMilliseconds},
 	{"getTimeMicros",lib_getTimeMicros},
+	{"G_RaceGametype",lib_gRaceGametype},
+	{"G_BattleGametype",lib_gBattleGametype},
 
 	// k_kart
 	{"K_PlayAttackTaunt", lib_kAttackSound},
@@ -4143,6 +4238,11 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
+	{"K_SetExitCountdown",lib_kSetExitCountdown},
+	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
+	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+	{"K_SafeRespawnPosition", lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
@@ -4150,6 +4250,9 @@ static luaL_Reg lib[] = {
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},
 	{"K_UpdateBossHealthBar", lib_kUpdateBossHealthBar},
 	{"K_DeclareWeakspot", lib_kDeclareWeakspot},
+	
+	// I_System
+	{"I_GetPreciseTime",lib_iGetPreciseTime},
 
 	{NULL, NULL}
 };

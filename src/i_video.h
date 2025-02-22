@@ -16,8 +16,8 @@
 
 #include "doomtype.h"
 
-#ifdef __GNUG__
-#pragma interface
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 typedef enum
@@ -152,5 +152,9 @@ void I_BeginRead(void);
 void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

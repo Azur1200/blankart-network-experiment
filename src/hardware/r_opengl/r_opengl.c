@@ -86,7 +86,7 @@ const GLubyte *gl_extensions = NULL;
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted;-)
 static GLfloat modelMatrix[16];
-static GLfloat projMatrix[16];
+GLfloat projMatrix[16];
 static GLint   viewport[4];
 
 // Sryder:	NextTexAvail is broken for these because palette changes or changes to the texture filter or antialiasing
@@ -591,6 +591,7 @@ typedef enum
 	gluniform_lighting,
 	gluniform_fade_start,
 	gluniform_fade_end,
+	gluniform_newfade,
 	gluniform_light_dir,
 	gluniform_light_contrast,
 	gluniform_light_backlight,
@@ -672,38 +673,43 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 		"float fd = fe - fs;\n" \
 		"darkness = clamp((darkness - fs) * (1.0 / fd), 0.0, 1.0);\n" \
 	"}\n" \
-	"float colorBrightness = sqrt((final_color.r * final_color.r) + (final_color.g * final_color.g) + (final_color.b * final_color.b));\n" \
-	"float fogBrightness = sqrt((fade_color.r * fade_color.r) + (fade_color.g * fade_color.g) + (fade_color.b * fade_color.b));\n" \
-	"float colorIntensity = 0.0;\n" \
-	"if (colorBrightness < fogBrightness) {\n" \
-		"colorIntensity = 1.0 - min(final_color.r, min(final_color.g, final_color.b));\n" \
-		"colorIntensity = abs(colorIntensity - (1.0 - max(fade_color.r, max(fade_color.g, fade_color.b))));\n" \
+	"if (newfade)\n" \
+	"{\n" \
+		"float colorBrightness = sqrt((final_color.r * final_color.r) + (final_color.g * final_color.g) + (final_color.b * final_color.b));\n" \
+		"float fogBrightness = sqrt((fade_color.r * fade_color.r) + (fade_color.g * fade_color.g) + (fade_color.b * fade_color.b));\n" \
+		"float colorIntensity = 0.0;\n" \
+		"if (colorBrightness < fogBrightness) {\n" \
+			"colorIntensity = 1.0 - min(final_color.r, min(final_color.g, final_color.b));\n" \
+			"colorIntensity = abs(colorIntensity - (1.0 - max(fade_color.r, max(fade_color.g, fade_color.b))));\n" \
+		"} else {\n" \
+			"colorIntensity = max(final_color.r, max(final_color.g, final_color.b));\n" \
+			"colorIntensity = abs(colorIntensity - min(fade_color.r, min(fade_color.g, fade_color.b)));\n" \
+		"}\n" \
+		"colorIntensity *= darkness;\n" \
+		"colorIntensity *= fade_color.a * 10.0;\n" \
+		"if (abs(final_color.r - fade_color.r) <= colorIntensity) {\n" \
+			"final_color.r = fade_color.r;\n" \
+		"} else if (final_color.r < fade_color.r) {\n" \
+			"final_color.r += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.r -= colorIntensity;\n" \
+		"}\n" \
+		"if (abs(final_color.g - fade_color.g) <= colorIntensity) {\n" \
+			"final_color.g = fade_color.g;\n" \
+		"} else if (final_color.g < fade_color.g) {\n" \
+			"final_color.g += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.g -= colorIntensity;\n" \
+		"}\n" \
+		"if (abs(final_color.b - fade_color.b) <= colorIntensity) {\n" \
+			"final_color.b = fade_color.b;\n" \
+		"} else if (final_color.b < fade_color.b) {\n" \
+			"final_color.b += colorIntensity;\n" \
+		"} else {\n" \
+			"final_color.b -= colorIntensity;\n" \
+		"}\n" \
 	"} else {\n" \
-		"colorIntensity = max(final_color.r, max(final_color.g, final_color.b));\n" \
-		"colorIntensity = abs(colorIntensity - min(fade_color.r, min(fade_color.g, fade_color.b)));\n" \
-	"}\n" \
-	"colorIntensity *= darkness;\n" \
-	"colorIntensity *= fade_color.a * 10.0;\n" \
-	"if (abs(final_color.r - fade_color.r) <= colorIntensity) {\n" \
-		"final_color.r = fade_color.r;\n" \
-	"} else if (final_color.r < fade_color.r) {\n" \
-		"final_color.r += colorIntensity;\n" \
-	"} else {\n" \
-		"final_color.r -= colorIntensity;\n" \
-	"}\n" \
-	"if (abs(final_color.g - fade_color.g) <= colorIntensity) {\n" \
-		"final_color.g = fade_color.g;\n" \
-	"} else if (final_color.g < fade_color.g) {\n" \
-		"final_color.g += colorIntensity;\n" \
-	"} else {\n" \
-		"final_color.g -= colorIntensity;\n" \
-	"}\n" \
-	"if (abs(final_color.b - fade_color.b) <= colorIntensity) {\n" \
-		"final_color.b = fade_color.b;\n" \
-	"} else if (final_color.b < fade_color.b) {\n" \
-		"final_color.b += colorIntensity;\n" \
-	"} else {\n" \
-		"final_color.b -= colorIntensity;\n" \
+		"final_color = mix(final_color, fade_color, darkness);\n" \
 	"}\n"
 
 // ================
@@ -776,6 +782,7 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
@@ -801,6 +808,7 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 	"uniform vec4 fade_color;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
@@ -833,6 +841,7 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	"uniform float leveltime;\n" \
 	"const float freq = 0.025;\n" \
 	"const float amp = 0.025;\n" \
@@ -869,6 +878,7 @@ static GLRGBAFloat shader_defaultcolor = {1.0f, 1.0f, 1.0f, 1.0f};
 	"uniform float lighting;\n" \
 	"uniform float fade_start;\n" \
 	"uniform float fade_end;\n" \
+	"uniform bool newfade;\n" \
 	GLSL_DOOM_COLORMAP \
 	GLSL_DOOM_LIGHT_EQUATION \
 	"void main(void) {\n" \
@@ -2174,6 +2184,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 			UNIFORM_1(shader->uniforms[gluniform_lighting], Surface->LightInfo.light_level, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_start], Surface->LightInfo.fade_start, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], Surface->LightInfo.fade_end, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_newfade], Surface->LightInfo.newfade, pglUniform1i);
 			directional = Surface->LightInfo.directional;
 		}
 		else
@@ -2181,6 +2192,7 @@ static void Shader_SetUniforms(FSurfaceInfo *Surface, GLRGBAFloat *poly, GLRGBAF
 			UNIFORM_1(shader->uniforms[gluniform_lighting], 255, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_start], 0, pglUniform1f);
 			UNIFORM_1(shader->uniforms[gluniform_fade_end], 31, pglUniform1f);
+			UNIFORM_1(shader->uniforms[gluniform_newfade], false, pglUniform1i);
 		}
 
 		if (directional)
@@ -2297,6 +2309,7 @@ static boolean Shader_CompileProgram(gl_shader_t *shader, GLint i, const GLchar 
 	shader->uniforms[gluniform_lighting] = GETUNI("lighting");
 	shader->uniforms[gluniform_fade_start] = GETUNI("fade_start");
 	shader->uniforms[gluniform_fade_end] = GETUNI("fade_end");
+	shader->uniforms[gluniform_newfade] = GETUNI("newfade");
 	shader->uniforms[gluniform_light_dir] = GETUNI("light_dir");
 	shader->uniforms[gluniform_light_contrast] = GETUNI("light_contrast");
 	shader->uniforms[gluniform_light_backlight] = GETUNI("light_backlight");
@@ -3497,6 +3510,86 @@ EXPORT void HWRAPI(MakeScreenTexture) (void)
 		pglCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texsize, texsize);
 
 	tex_downloaded = screentexture;
+}
+
+EXPORT void HWRAPI(RenderVhsEffect) (INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize)
+{
+	float xfix, yfix;
+	float fix[8];
+	GLubyte color[4] = {255, 255, 255, 255};
+	float i;
+	float screenVerts[12] =
+	{
+		-1.0f, -1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f
+	};
+	// look for power of two that is large enough for the screen
+	while (texsize < screen_width || texsize < screen_height)
+		texsize <<= 1;
+	xfix = 1/((float)(texsize)/((float)((screen_width))));
+	yfix = 1/((float)(texsize)/((float)((screen_height))));
+	// Slight fuzziness
+	MakeScreenTexture();
+	SetBlend(PF_Modulated|PF_Translucent|PF_NoDepthTest);
+	pglBindTexture(GL_TEXTURE_2D, screentexture);
+	for (i = 0; i < 1; i += 2.f/vid.height)
+	{
+		fix[2] = (float)(rand() % 128) / -22000 * xfix;
+		fix[0] = fix[2];
+		fix[6] = fix[0] + xfix;
+		fix[4] = fix[2] + xfix;
+		fix[1] = fix[7] = i*yfix;
+		fix[3] = fix[5] = (i+0.015)*yfix;
+		screenVerts[1] = screenVerts[10] = 2*i - 1.0f;
+		screenVerts[4] = screenVerts[7] = screenVerts[1] + 0.03;
+		pglColor4ubv(color);
+		pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+		pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+		pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
+	// Upward bar
+	MakeScreenTexture();
+	pglBindTexture(GL_TEXTURE_2D, screentexture);
+	color[0] = color[1] = color[2] = 190;
+	color[3] = 250;
+	pglColor4ubv(color);
+	fix[0] = 0.0f;
+	fix[6] = xfix;
+	fix[2] = (float)updistort / screen_width * xfix;
+	fix[4] = fix[2] + fix[6];
+	screenVerts[1] = screenVerts[10] = 2.0f*upbary/screen_height - 1.0f;
+	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/screen_height;
+	fix[1] = fix[7] = (float)upbary/screen_height * yfix;
+	fix[3] = fix[5] = fix[1] + (float)barsize/2/screen_height * yfix;
+	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	fix[1] = fix[7] += (fix[3] - fix[7])*2;
+	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	// Downward bar
+	MakeScreenTexture();
+	pglBindTexture(GL_TEXTURE_2D, screentexture);
+	fix[0] = 0.0f;
+	fix[6] = xfix;
+	fix[2] = (float)downdistort / screen_width * -xfix;
+	fix[4] = fix[2] + fix[6];
+	screenVerts[1] = screenVerts[10] = 2.0f*downbary/screen_height - 1.0f;
+	screenVerts[4] = screenVerts[7] = screenVerts[1] + (float)barsize/screen_height;
+	fix[1] = fix[7] = (float)downbary/screen_height * yfix;
+	fix[3] = fix[5] = fix[1] + (float)barsize/2/screen_height * yfix;
+	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	fix[1] = fix[7] += (fix[3] - fix[7])*2;
+	screenVerts[1] = screenVerts[10] += (screenVerts[4] - screenVerts[1])*2;
+	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
+	pglVertexPointer(3, GL_FLOAT, 0, screenVerts);
+	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 EXPORT void HWRAPI(MakeScreenFinalTexture) (void)

@@ -286,6 +286,9 @@ void T_DynamicSlopeVert (dynvertexplanethink_t* th)
 
 	for (i = 0; i < 3; i++)
 	{
+		if (!th->secs[i])
+			continue;
+
 		if (th->relative & (1 << i))
 			th->vex[i].z = th->origvecheights[i] + (th->secs[i]->floorheight - th->origsecheights[i]);
 		else
@@ -319,16 +322,11 @@ static inline void P_AddDynVertexSlopeThinker (pslope_t* slope, const INT16 tags
 
 	for (i = 0; i < 3; i++) {
 		l = Tag_FindLineSpecial(799, tags[i]);
-		if (l == -1)
-		{
-			Z_Free(th);
-			return;
-		}
-		th->secs[i] = lines[l].frontsector;
+		th->secs[i] = (l == -1) ? NULL : lines[l].frontsector;
 		th->vex[i] = vx[i];
-		th->origsecheights[i] = lines[l].frontsector->floorheight;
+		th->origsecheights[i] = (l == -1) ? 0 : lines[l].frontsector->floorheight;
 		th->origvecheights[i] = vx[i].z;
-		if (lines[l].args[0])
+		if (l != -1 && lines[l].args[0])
 			th->relative |= 1<<i;
 	}
 	P_AddThinker(THINK_DYNSLOPE, &th->thinker);
@@ -630,11 +628,11 @@ static pslope_t *MakeViaMapthings(INT16 tag1, INT16 tag2, INT16 tag3, UINT8 flag
 		if (mt->type != 750) // Haha, I'm hijacking the old Chaos Spawn thingtype for something!
 			continue;
 
-		if (!vertices[0] && Tag_Find(&mt->tags, tag1))
+		if (!vertices[0] && mt->tid == tag1)
 			vertices[0] = mt;
-		else if (!vertices[1] && Tag_Find(&mt->tags, tag2))
+		else if (!vertices[1] && mt->tid == tag2)
 			vertices[1] = mt;
-		else if (!vertices[2] && Tag_Find(&mt->tags, tag3))
+		else if (!vertices[2] && mt->tid == tag3)
 			vertices[2] = mt;
 	}
 
@@ -863,6 +861,10 @@ void P_SpawnSlopes(const boolean fromsave) {
 
 	// end of jart
 
+	// in kart, copied slopes are created AFTER spawning mapthings
+	if (mapnamespace == MNS_SRB2KART)
+		return;
+
 	/// Copies slopes from tagged sectors via line specials.
 	/// \note Doesn't actually copy, but instead they share the same pointers.
 	for (i = 0; i < numlines; i++)
@@ -890,10 +892,11 @@ void P_InitSlopes(void)
 // Returns the height of the sloped plane at (x, y) as a fixed_t
 fixed_t P_GetSlopeZAt(const pslope_t *slope, fixed_t x, fixed_t y)
 {
-	fixed_t dist = FixedMul(x - slope->o.x, slope->d.x) +
-	               FixedMul(y - slope->o.y, slope->d.y);
+	fixed_t dist = FixedMul(x - slope->o.x, slope->d.x) / 2 +
+				FixedMul(y - slope->o.y, slope->d.y) / 2;
 
-	return slope->o.z + FixedMul(dist, slope->zdelta);
+
+	return slope->o.z + FixedMul(dist, slope->zdelta) * 2;
 }
 
 // Like P_GetSlopeZAt but falls back to z if slope is NULL
@@ -1026,7 +1029,7 @@ fixed_t P_GetWallTransferMomZ(mobj_t *mo, pslope_t *slope)
 	vector3_t slopemom, axis;
 	angle_t ang;
 
-	if (P_CanApplySlopePhysics(mo, mo->standingslope) == false)
+	if (P_CanApplySlopePhysics(mo, slope) == false)
 	{
 		return false;
 	}

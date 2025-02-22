@@ -59,6 +59,8 @@ fixed_t *textureheight; // needed for texture pegging
 INT32 *texturetranslation;
 INT32 *texturebrightmaps;
 
+INT32 g_texturenum_dbgline;
+
 // Painfully simple texture id cacheing to make maps load faster. :3
 static struct {
 	char name[9];
@@ -253,7 +255,7 @@ static UINT8 *R_AllocateTextureBlock(size_t blocksize, UINT8 **user)
 {
 	texturememory += blocksize;
 
-	return Z_Malloc(blocksize, PU_CACHE, user);
+	return Z_Malloc(blocksize, PU_LEVEL, user);
 }
 
 static UINT8 *R_AllocateDummyTextureBlock(size_t width, UINT8 **user)
@@ -293,6 +295,39 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 	return true;
 }
 
+void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size)
+{
+	if (!Picture_CheckIfDoomPatch(patch, size))
+		return;
+
+	// thanks to my very own ingenious patch-compression technology,
+	// i now have to make sure i don't accidentally remap a column twice. cool!
+	// yes, it assumes all columns are sequential in the patch,
+	// but it's efficient so who cares
+	UINT8 *last = 0;
+
+	for (INT16 i = 0; i < patch->width; i++)
+	{
+		UINT8 *p = (UINT8 *)patch + patch->columnofs[i];
+		if (p <= last)
+			continue;
+		else
+			last = p;
+		while (*p++ != 0xff) // topdelta
+		{
+			int length = *p++;
+			for (length += 2; length--; p++)
+				*p = R_GetPaletteRemap(*p);
+		}
+	}
+}
+
+void R_DoPaletteRemapFlat(UINT8 *data, size_t size)
+{
+	for (size_t i = 0; i < size; i++, data++)
+		*data = R_GetPaletteRemap(*data);
+}
+
 //
 // R_GenerateTexture
 //
@@ -320,6 +355,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	UINT16 wadnum;
 	lumpnum_t lumpnum;
 	size_t lumplength;
+	boolean doremap;
 
 	I_Assert(texnum <= (size_t)numtextures);
 	texture = textures[texnum];
@@ -349,7 +385,8 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			return block;
 		}
 
-		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+		doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
+		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		realpatch = (softwarepatch_t *)pdata;
 
 #ifndef NO_PNG_LUMPS
@@ -360,6 +397,9 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		if (texture->type == TEXTURETYPE_FLAT)
 			goto multipatch;
 #endif
+
+		if (doremap)
+			R_DoPaletteRemapPatch(realpatch, lumplength);
 
 		// Check the patch for holes.
 		if (texture->width > SHORT(realpatch->width) || texture->height > SHORT(realpatch->height))
@@ -390,7 +430,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			texture->holes = true;
 			texture->flip = patch->flip;
 			blocksize = lumplength;
-			block = Z_Calloc(blocksize, PU_STATIC, // will change tag at end of this function
+			block = Z_Calloc(blocksize, PU_LEVEL, // will change tag at end of this function
 				&texturecache[texnum]);
 			M_Memcpy(block, realpatch, blocksize);
 			texturememory += blocksize;
@@ -421,7 +461,7 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	texture->flip = 0;
 	blocksize = (texture->width * 4) + (texture->width * texture->height);
 	texturememory += blocksize;
-	block = Z_Malloc(blocksize+1, PU_STATIC, &texturecache[texnum]);
+	block = Z_Malloc(blocksize+1, PU_LEVEL, &texturecache[texnum]);
 
 	memset(block, TRANSPARENTPIXEL, blocksize+1); // Transparency hack
 
@@ -444,7 +484,8 @@ UINT8 *R_GenerateTexture(size_t texnum)
 
 		wadnum = patch->wad;
 		lumpnum = patch->lump;
-		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+		doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
+		pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_LEVEL);
 		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		realpatch = (softwarepatch_t *)pdata;
 		dealloc = true;
@@ -456,12 +497,17 @@ UINT8 *R_GenerateTexture(size_t texnum)
 #endif
 #ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
+		{
+			if (doremap)
+				R_DoPaletteRemapFlat(pdata, lumplength);
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
+		}
 		else
 #endif
 		{
-			(void)lumplength;
 			dealloc = false;
+			if (doremap)
+				R_DoPaletteRemapPatch(realpatch, lumplength);
 		}
 
 		x1 = patch->originx;
@@ -513,8 +559,6 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	}
 
 done:
-	// Now that the texture has been built in column cache, it is purgable from zone memory.
-	Z_ChangeTag(block, PU_CACHE);
 	return blocktex;
 }
 
@@ -533,7 +577,7 @@ UINT8 *R_GenerateTextureAsFlat(size_t texnum)
 	if (!texture->flat)
 	{
 		// Well, let's do it now, then.
-		texture->flat = Z_Malloc(size, PU_STATIC, NULL);
+		Z_Malloc(size, PU_LEVEL, &texture->flat);
 
 		// Picture_TextureToFlat handles everything for us.
 		converted = (UINT8 *)Picture_TextureToFlat(texnum);
@@ -658,6 +702,66 @@ static void R_ConvertBrightmapColumn(UINT8 *p, const column_t *tcol, const colum
 	p[-3] = 0xff;
 }
 
+struct rawcheckcolumn_state
+{
+	softwarepatch_t *patch;
+	size_t data_size;
+	boolean error;
+	const char *name;
+};
+
+static void R_InitRawCheckColumn(
+		struct rawcheckcolumn_state *state,
+		softwarepatch_t *patch,
+		size_t size,
+		const char *name
+)
+{
+	state->patch = patch;
+	state->data_size = size;
+	state->error = (patch == NULL);
+	state->name = name;
+}
+
+static void R_CheckRawColumn_Error(struct rawcheckcolumn_state *state, const char *error)
+{
+	if (state->error)
+	{
+		return;
+	}
+
+	CONS_Alert(CONS_WARNING, "%.8s: %s\n", state->name, error);
+
+	state->error = true;
+}
+
+static column_t *R_CheckRawColumn(struct rawcheckcolumn_state *state, INT32 x)
+{
+	static column_t empty = {0xff, 0};
+
+	if (state->error)
+	{
+		return &empty;
+	}
+
+	if (x < SHORT(state->patch->width))
+	{
+		size_t ofs = LONG(state->patch->columnofs[x]);
+
+		if (ofs < state->data_size)
+		{
+			return (column_t*)((UINT8*)state->patch + ofs);
+		}
+		else
+		{
+			R_CheckRawColumn_Error(state, "Patch column offsets go out of bounds."
+					" Make sure the lump is in Doom Graphics format and not a Flat or PNG or anything else.");
+		}
+	}
+
+	return &empty;
+}
+
 // Remember, this function must generate a texture that
 // matches the layout of texnum. It must have the same width
 // and same columns. Only the pixels that overlap are copied
@@ -683,14 +787,20 @@ UINT8 *R_GenerateTextureBrightmap(size_t texnum)
 
 	R_CheckTextureCache(texnum);
 
-	softwarepatch_t *patch = NULL;
-	INT32 bmap_width = 0;
-	column_t empty = {0xff, 0};
+	softwarepatch_t *bmap = NULL;
+	struct rawcheckcolumn_state rchk;
 
 	if (R_TextureHasBrightmap(texnum) && R_CheckTextureLumpLength(bright, 0))
 	{
-		patch = W_CacheLumpNumPwad(bright->patches[0].wad, bright->patches[0].lump, PU_STATIC);
-		bmap_width = SHORT(patch->width);
+		INT32 wad = bright->patches[0].wad;
+		INT32 lump = bright->patches[0].lump;
+
+		bmap = W_CacheLumpNumPwad(wad, lump, PU_STATIC);
+		R_InitRawCheckColumn(&rchk, bmap, W_LumpLengthPwad(wad, lump), bright->name);
+	}
+	else
+	{
+		R_InitRawCheckColumn(&rchk, NULL, 0, bright->name);
 	}
 
 	UINT8 *block;
@@ -707,7 +817,7 @@ UINT8 *R_GenerateTextureBrightmap(size_t texnum)
 		for (x = 0; x < texture->width; ++x)
 		{
 			const column_t *tcol = (column_t*)(R_GetColumn(texnum, x) - 3);
-			const column_t *bcol = x < bmap_width ? (column_t*)((UINT8*)patch + LONG(patch->columnofs[x])) : &empty;
+			const column_t *bcol = R_CheckRawColumn(&rchk, x);
 
 			R_ConvertBrightmapColumn(block + LONG(texturecolumnofs[texnum][x]), tcol, bcol);
 		}
@@ -726,16 +836,16 @@ UINT8 *R_GenerateTextureBrightmap(size_t texnum)
 		for (x = 0; x < texture->width; ++x)
 		{
 			R_DrawColumnInCache(
-					x < bmap_width ? (column_t*)((UINT8*)patch + LONG(patch->columnofs[x])) : &empty,
+					R_CheckRawColumn(&rchk, x),
 					block + LONG(texturecolumnofs[texnum][x]),
 					&origin,
 					texture->height,
-					patch->height
+					SHORT(bmap->height)
 			);
 		}
 	}
 
-	Z_Free(patch);
+	Z_Free(bmap);
 
 	return block;
 }
@@ -827,7 +937,13 @@ UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col)
 
 void *R_GetFlat(lumpnum_t flatlumpnum)
 {
-	return W_CacheLumpNum(flatlumpnum, PU_CACHE);
+	// FIXME: checking this every time a flat is fetched for drawing is stupid...
+	// sadly they are not cached anywhere else so i have no choice
+	boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
+	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
+	if (doremap)
+		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
+	return flat;
 }
 
 //
@@ -835,7 +951,7 @@ void *R_GetFlat(lumpnum_t flatlumpnum)
 //
 // If needed, convert a texture or patch to a flat.
 //
-void *R_GetLevelFlat(levelflat_t *levelflat)
+void *R_GetLevelFlat(drawspandata_t* ds, levelflat_t *levelflat)
 {
 	boolean isleveltexture = (levelflat->type == LEVELFLAT_TEXTURE);
 	texture_t *texture = (isleveltexture ? textures[levelflat->u.texture.num] : NULL);
@@ -848,8 +964,8 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 		if (texture->flat)
 		{
 			flatdata = texture->flat;
-			ds_flatwidth = texture->width;
-			ds_flatheight = texture->height;
+			ds->flatwidth = texture->width;
+			ds->flatheight = texture->height;
 			texturechanged = false;
 		}
 		else
@@ -863,8 +979,8 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 		if (isleveltexture)
 		{
 			levelflat->picture = R_GenerateTextureAsFlat(levelflat->u.texture.num);
-			ds_flatwidth = levelflat->width = texture->width;
-			ds_flatheight = levelflat->height = texture->height;
+			ds->flatwidth = levelflat->width = texture->width;
+			ds->flatheight = levelflat->height = texture->height;
 		}
 		else
 		{
@@ -873,12 +989,12 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 			{
 				INT32 pngwidth, pngheight;
 
-				levelflat->picture = Picture_PNGConvert(W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_CACHE), PICFMT_FLAT, &pngwidth, &pngheight, NULL, NULL, W_LumpLength(levelflat->u.flat.lumpnum), NULL, 0);
+				levelflat->picture = Picture_PNGConvert(W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_LEVEL), PICFMT_FLAT, &pngwidth, &pngheight, NULL, NULL, W_LumpLength(levelflat->u.flat.lumpnum), NULL, 0);
 				levelflat->width = (UINT16)pngwidth;
 				levelflat->height = (UINT16)pngheight;
 
-				ds_flatwidth = levelflat->width;
-				ds_flatheight = levelflat->height;
+				ds->flatwidth = levelflat->width;
+				ds->flatheight = levelflat->height;
 			}
 			else
 #endif
@@ -886,10 +1002,10 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 			{
 				UINT8 *converted;
 				size_t size;
-				softwarepatch_t *patch = W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_CACHE);
+				softwarepatch_t *patch = W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_LEVEL);
 
-				levelflat->width = ds_flatwidth = SHORT(patch->width);
-				levelflat->height = ds_flatheight = SHORT(patch->height);
+				levelflat->width = ds->flatwidth = SHORT(patch->width);
+				levelflat->height = ds->flatheight = SHORT(patch->height);
 
 				levelflat->picture = Z_Malloc(levelflat->width * levelflat->height, PU_LEVEL, NULL);
 				converted = Picture_FlatConvert(PICFMT_DOOMPATCH, patch, PICFMT_FLAT, 0, &size, levelflat->width, levelflat->height, SHORT(patch->topoffset), SHORT(patch->leftoffset), 0);
@@ -900,8 +1016,8 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 	}
 	else
 	{
-		ds_flatwidth = levelflat->width;
-		ds_flatheight = levelflat->height;
+		ds->flatwidth = levelflat->width;
+		ds->flatheight = levelflat->height;
 	}
 
 	levelflat->u.texture.lastnum = levelflat->u.texture.num;
@@ -916,21 +1032,21 @@ void *R_GetLevelFlat(levelflat_t *levelflat)
 //
 // Sets ds_powersoftwo true if the flat's dimensions are powers of two, and returns that.
 //
-boolean R_CheckPowersOfTwo(void)
+boolean R_CheckPowersOfTwo(drawspandata_t* ds)
 {
-	boolean wpow2 = (!(ds_flatwidth & (ds_flatwidth - 1)));
-	boolean hpow2 = (!(ds_flatheight & (ds_flatheight - 1)));
+	boolean wpow2 = (!(ds->flatwidth & (ds->flatwidth - 1)));
+	boolean hpow2 = (!(ds->flatheight & (ds->flatheight - 1)));
 
 	// Initially, the flat isn't powers-of-two-sized.
-	ds_powersoftwo = false;
+	ds->powersoftwo = false;
 
 	// But if the width and height are powers of two,
 	// and are EQUAL, then it's okay :]
-	if ((ds_flatwidth == ds_flatheight) && (wpow2 && hpow2))
-		ds_powersoftwo = true;
+	if ((ds->flatwidth == ds->flatheight) && (wpow2 && hpow2))
+		ds->powersoftwo = true;
 
 	// Just return ds_powersoftwo.
-	return ds_powersoftwo;
+	return ds->powersoftwo;
 }
 
 //
@@ -976,72 +1092,72 @@ size_t R_FlatDimensionsFromLumpSize(size_t size)
 //
 // Determine the flat's dimensions from its lump length.
 //
-void R_CheckFlatLength(size_t size)
+void R_CheckFlatLength(drawspandata_t* ds, size_t size)
 {
 	switch (size)
 	{
 		case 4194304: // 2048x2048 lump
-			nflatmask = 0x3FF800;
-			nflatxshift = 21;
-			nflatyshift = 10;
-			nflatshiftup = 5;
-			ds_flatwidth = ds_flatheight = 2048;
+			ds->nflatmask = 0x3FF800;
+			ds->nflatxshift = 21;
+			ds->nflatyshift = 10;
+			ds->nflatshiftup = 5;
+			ds->flatwidth = ds->flatheight = 2048;
 			break;
 		case 1048576: // 1024x1024 lump
-			nflatmask = 0xFFC00;
-			nflatxshift = 22;
-			nflatyshift = 12;
-			nflatshiftup = 6;
-			ds_flatwidth = ds_flatheight = 1024;
+			ds->nflatmask = 0xFFC00;
+			ds->nflatxshift = 22;
+			ds->nflatyshift = 12;
+			ds->nflatshiftup = 6;
+			ds->flatwidth = ds->flatheight = 1024;
 			break;
 		case 262144:// 512x512 lump
-			nflatmask = 0x3FE00;
-			nflatxshift = 23;
-			nflatyshift = 14;
-			nflatshiftup = 7;
-			ds_flatwidth = ds_flatheight = 512;
+			ds->nflatmask = 0x3FE00;
+			ds->nflatxshift = 23;
+			ds->nflatyshift = 14;
+			ds->nflatshiftup = 7;
+			ds->flatwidth = ds->flatheight = 512;
 			break;
 		case 65536: // 256x256 lump
-			nflatmask = 0xFF00;
-			nflatxshift = 24;
-			nflatyshift = 16;
-			nflatshiftup = 8;
-			ds_flatwidth = ds_flatheight = 256;
+			ds->nflatmask = 0xFF00;
+			ds->nflatxshift = 24;
+			ds->nflatyshift = 16;
+			ds->nflatshiftup = 8;
+			ds->flatwidth = ds->flatheight = 256;
 			break;
 		case 16384: // 128x128 lump
-			nflatmask = 0x3F80;
-			nflatxshift = 25;
-			nflatyshift = 18;
-			nflatshiftup = 9;
-			ds_flatwidth = ds_flatheight = 128;
+			ds->nflatmask = 0x3F80;
+			ds->nflatxshift = 25;
+			ds->nflatyshift = 18;
+			ds->nflatshiftup = 9;
+			ds->flatwidth = ds->flatheight = 128;
 			break;
 		case 1024: // 32x32 lump
-			nflatmask = 0x3E0;
-			nflatxshift = 27;
-			nflatyshift = 22;
-			nflatshiftup = 11;
-			ds_flatwidth = ds_flatheight = 32;
+			ds->nflatmask = 0x3E0;
+			ds->nflatxshift = 27;
+			ds->nflatyshift = 22;
+			ds->nflatshiftup = 11;
+			ds->flatwidth = ds->flatheight = 32;
 			break;
 		case 256: // 16x16 lump
-			nflatmask = 0xF0;
-			nflatxshift = 28;
-			nflatyshift = 24;
-			nflatshiftup = 12;
-			ds_flatwidth = ds_flatheight = 16;
+			ds->nflatmask = 0xF0;
+			ds->nflatxshift = 28;
+			ds->nflatyshift = 24;
+			ds->nflatshiftup = 12;
+			ds->flatwidth = ds->flatheight = 16;
 			break;
 		case 64: // 8x8 lump
-			nflatmask = 0x38;
-			nflatxshift = 29;
-			nflatyshift = 26;
-			nflatshiftup = 13;
-			ds_flatwidth = ds_flatheight = 8;
+			ds->nflatmask = 0x38;
+			ds->nflatxshift = 29;
+			ds->nflatyshift = 26;
+			ds->nflatshiftup = 13;
+			ds->flatwidth = ds->flatheight = 8;
 			break;
 		default: // 64x64 lump
-			nflatmask = 0xFC0;
-			nflatxshift = 26;
-			nflatyshift = 20;
-			nflatshiftup = 10;
-			ds_flatwidth = ds_flatheight = 64;
+			ds->nflatmask = 0xFC0;
+			ds->nflatxshift = 26;
+			ds->nflatyshift = 20;
+			ds->nflatshiftup = 10;
+			ds->flatwidth = ds->flatheight = 64;
 			break;
 	}
 }
@@ -1406,6 +1522,8 @@ static void R_FinishLoadingTextures(INT32 add)
 	if (rendermode == render_opengl)
 		HWR_LoadMapTextures(numtextures);
 #endif
+
+	g_texturenum_dbgline = R_CheckTextureNumForName("DBGLINE");
 }
 
 //
@@ -1912,6 +2030,20 @@ void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *texindex)
 	Z_Free((void *)texturesText);
 }
 
+static void PaletteTextureHack(const char **name)
+{
+	static char uberhack[5];
+	if (mapnamespace == MNS_SRB2KART)
+	{
+		unsigned num;
+		if (sscanf(*name, "~%03u", &num) && num < 256)
+		{
+			snprintf(uberhack, 5, "~%03u", R_GetPaletteRemap(num));
+			*name = uberhack;
+		}
+	}
+}
+
 // Search for flat name.
 lumpnum_t R_GetFlatNumForName(const char *name)
 {
@@ -1919,6 +2051,8 @@ lumpnum_t R_GetFlatNumForName(const char *name)
 	lumpnum_t lump;
 	lumpnum_t start;
 	lumpnum_t end;
+
+	PaletteTextureHack(&name);
 
 	// Scan wad files backwards so patched flats take preference.
 	for (i = numwadfiles - 1; i >= 0; i--)
@@ -1983,6 +2117,8 @@ INT32 R_CheckTextureNumForName(const char *name)
 	// "NoTexture" marker.
 	if (name[0] == '-')
 		return 0;
+
+	PaletteTextureHack(&name);
 
 	hash = quickncasehash(name, 8);
 

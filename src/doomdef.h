@@ -104,7 +104,11 @@
 #include <io.h>
 #endif
 
-//#define NOMD5
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define NOMD5
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -133,10 +137,10 @@ extern char logfilename[1024];
 // VERSIONSTRING_RC is for the resource-definition script used by windows builds
 #else
 #ifdef BETAVERSION
-#define VERSIONSTRING "v"SRB2VERSION" "BETAVERSION
+#define VERSIONSTRING "v" SRB2VERSION " " BETAVERSION
 #define VERSIONSTRING_RC SRB2VERSION " " BETAVERSION "\0"
 #else
-#define VERSIONSTRING "v"SRB2VERSION
+#define VERSIONSTRING "v" SRB2VERSION
 #define VERSIONSTRING_RC SRB2VERSION "\0"
 #endif
 // Hey! If you change this, add 1 to the MODVERSION below!
@@ -213,10 +217,14 @@ extern char logfilename[1024];
 #define MAXCOLORNAME 32
 #define NUMCOLORFREESLOTS UINT16_MAX
 
+// surely nobody's gonna change the palette a second time :Clueless:
+#define FADECOLOR 0 // 120
+#define ENCOREFADECOLOR 209 // 122
+
 // Master Server compatibility ONLY
 #define MSCOMPAT_MAXPLAYERS (32)
 
-typedef struct skincolor_s
+struct skincolor_t
 {
 	char name[MAXCOLORNAME+1];  // Skincolor name
 	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
@@ -224,293 +232,19 @@ typedef struct skincolor_s
 	UINT8 invshade;             // Signpost color shade
 	UINT16 chatcolor;           // Chat color
 	boolean accessible;         // Accessible by the color command + setup menu
-} skincolor_t;
+};
 
 typedef enum
 {
-	SKINCOLOR_NONE = 0,
-	SKINCOLOR_WHITE,
-	SKINCOLOR_SILVER,
-	SKINCOLOR_GREY,
-	SKINCOLOR_NICKEL,
-	SKINCOLOR_BLACK,
-	SKINCOLOR_SKUNK,
-	SKINCOLOR_FAIRY,
-	SKINCOLOR_POPCORN,
-	SKINCOLOR_ARTICHOKE,
-	SKINCOLOR_PIGEON,
-	SKINCOLOR_SEPIA,
-	SKINCOLOR_BEIGE,
-	SKINCOLOR_WALNUT,
-	SKINCOLOR_BROWN,
-	SKINCOLOR_LEATHER,
-	SKINCOLOR_SALMON,
-	
-	FIRSTRAINBOWCOLOR,
-
-	SKINCOLOR_PINK = FIRSTRAINBOWCOLOR,
-	SKINCOLOR_ROSE,
-	SKINCOLOR_BRICK,
-	SKINCOLOR_CINNAMON,
-	SKINCOLOR_RUBY,
-	SKINCOLOR_RASPBERRY,
-	SKINCOLOR_CHERRY,
-	SKINCOLOR_RED,
-	SKINCOLOR_CRIMSON,
-	SKINCOLOR_MAROON,
-	SKINCOLOR_LEMONADE,
-	SKINCOLOR_FLAME,
-	SKINCOLOR_SCARLET,
-	SKINCOLOR_KETCHUP,
-	SKINCOLOR_DAWN,
-	SKINCOLOR_SUNSET,
-	SKINCOLOR_CREAMSICLE,
-	SKINCOLOR_ORANGE,
-	SKINCOLOR_PUMPKIN,
-	SKINCOLOR_ROSEWOOD,
-	SKINCOLOR_BURGUNDY,
-	SKINCOLOR_TANGERINE,
-	SKINCOLOR_PEACH,
-	SKINCOLOR_CARAMEL,
-	SKINCOLOR_CREAM,
-	SKINCOLOR_GOLD,
-	SKINCOLOR_ROYAL,
-	SKINCOLOR_BRONZE,
-	SKINCOLOR_COPPER,
-	SKINCOLOR_QUARRY,
-	SKINCOLOR_YELLOW,
-	SKINCOLOR_MUSTARD,
-	SKINCOLOR_CROCODILE,
-	SKINCOLOR_OLIVE,
-	SKINCOLOR_VOMIT,
-	SKINCOLOR_GARDEN,
-	SKINCOLOR_LIME,
-	SKINCOLOR_HANDHELD,
-	SKINCOLOR_TEA,
-	SKINCOLOR_PISTACHIO,
-	SKINCOLOR_MOSS,
-	SKINCOLOR_CAMOUFLAGE,
-	SKINCOLOR_ROBOHOOD,
-	SKINCOLOR_MINT,
-	SKINCOLOR_GREEN,
-	SKINCOLOR_PINETREE,
-	SKINCOLOR_EMERALD,
-	SKINCOLOR_SWAMP,
-	SKINCOLOR_DREAM,
-	SKINCOLOR_PLAGUE,
-	SKINCOLOR_ALGAE,
-	SKINCOLOR_CARIBBEAN,
-	SKINCOLOR_AZURE,
-	SKINCOLOR_AQUA,
-	SKINCOLOR_TEAL,
-	SKINCOLOR_CYAN,
-	SKINCOLOR_JAWZ, // Oni's torment
-	SKINCOLOR_CERULEAN,
-	SKINCOLOR_NAVY,
-	SKINCOLOR_PLATINUM,
-	SKINCOLOR_SLATE,
-	SKINCOLOR_STEEL,
-	SKINCOLOR_THUNDER,
-	SKINCOLOR_RUST,
-	SKINCOLOR_WRISTWATCH,
-	SKINCOLOR_JET,
-	SKINCOLOR_SAPPHIRE, // sweet mother, i cannot weave - slender aphrodite has overcome me with longing for a girl
-	SKINCOLOR_PERIWINKLE,
-	SKINCOLOR_BLUE,
-	SKINCOLOR_BLUEBERRY,
-	SKINCOLOR_NOVA,
-	SKINCOLOR_PASTEL,
-	SKINCOLOR_MOONSLAM,
-	SKINCOLOR_ULTRAVIOLET,
-	SKINCOLOR_DUSK,
-	SKINCOLOR_BUBBLEGUM,
-	SKINCOLOR_PURPLE,
-	SKINCOLOR_FUCHSIA,
-	SKINCOLOR_TOXIC,
-	SKINCOLOR_MAUVE,
-	SKINCOLOR_LAVENDER,
-	SKINCOLOR_BYZANTIUM,
-	SKINCOLOR_POMEGRANATE,
-	SKINCOLOR_LILAC,
-	SKINCOLOR_BONE, // vanilla colors - shoutouts to Sonic Team Jr. 
-	SKINCOLOR_CARBON,
-	SKINCOLOR_INK,
-	SKINCOLOR_GHOST,
-	SKINCOLOR_MARBLE,
-	SKINCOLOR_BLUEBELL,
-	SKINCOLOR_CHOCOLATE,
-	SKINCOLOR_TAN,
-	SKINCOLOR_PEACHY,
-	SKINCOLOR_QUAIL,
-	SKINCOLOR_LANTERN,
-	SKINCOLOR_APRICOT,
-	SKINCOLOR_SANDY,
-	SKINCOLOR_BANANA,
-	SKINCOLOR_SUNFLOWER,
-	SKINCOLOR_OLIVINE,
-	SKINCOLOR_PERIDOT,
-	SKINCOLOR_APPLE,
-	SKINCOLOR_SEAFOAM,
-	SKINCOLOR_FOREST,
-	SKINCOLOR_TOPAZ,
-	SKINCOLOR_FROST,
-	SKINCOLOR_WAVE,
-	SKINCOLOR_ICY,
-	SKINCOLOR_PEACOCK,
-	SKINCOLOR_VAPOR,
-	SKINCOLOR_GEMSTONE,
-	SKINCOLOR_NEON,
-	SKINCOLOR_PLUM,
-	SKINCOLOR_VIOLET,
-	SKINCOLOR_MAGENTA,
-	SKINCOLOR_THISTLE,
-	SKINCOLOR_DIAMOND, // custom color expansion begins here
-	SKINCOLOR_RAVEN,
-	SKINCOLOR_MUD,
-	SKINCOLOR_EARTHWORM,
-	SKINCOLOR_YOGURT,
-	SKINCOLOR_PEARL,
-	SKINCOLOR_STRAWBERRY,
-	SKINCOLOR_SODA,
-	SKINCOLOR_BLOODCELL,
-	SKINCOLOR_MAHOGANY,
-	SKINCOLOR_FIERY,
-	SKINCOLOR_SPICE,
-	SKINCOLOR_KING,
-	SKINCOLOR_HOTDOG,
-	SKINCOLOR_CARNATION,
-	SKINCOLOR_CANDY,
-	SKINCOLOR_NEBULA,
-	SKINCOLOR_STEAMPUNK,
-	SKINCOLOR_AMBER,
-	SKINCOLOR_CARROT,
-	SKINCOLOR_CHEESE,
-	SKINCOLOR_DUNE,
-	SKINCOLOR_BRASS,
-	SKINCOLOR_CITRINE,
-	SKINCOLOR_LEMON,
-	SKINCOLOR_CASKET,
-	SKINCOLOR_KHAKI,
-	SKINCOLOR_LIGHT,
-	SKINCOLOR_PEPPERMINT,
-	SKINCOLOR_LASER,
-	SKINCOLOR_ASPARAGUS,
-	SKINCOLOR_ARMY,
-	SKINCOLOR_CROW,
-	SKINCOLOR_CHARTEUSE,
-	SKINCOLOR_SLIME,
-	SKINCOLOR_LEAF,
-	SKINCOLOR_JUNGLE,
-	SKINCOLOR_EVERGREEN,
-	SKINCOLOR_TROPIC,
-	SKINCOLOR_IGUANA,
-	SKINCOLOR_SPEARMINT,
-	SKINCOLOR_PATINA,
-	SKINCOLOR_LAKESIDE,
-	SKINCOLOR_ELECTRIC,
-	SKINCOLOR_TURQUOISE,
-	SKINCOLOR_PEGASUS,
-	SKINCOLOR_PLASMA,
-	SKINCOLOR_COMET,
-	SKINCOLOR_LIGHTNING,
-	SKINCOLOR_VACATION,
-	SKINCOLOR_ULTRAMARINE,
-	SKINCOLOR_DEPTHS,
-	SKINCOLOR_DIANNE,
-	SKINCOLOR_EXOTIC,
-	SKINCOLOR_SNOW,
-	SKINCOLOR_MOON,
-	SKINCOLOR_LUNAR,
-	SKINCOLOR_ONYX,
-	SKINCOLOR_LAPIS,
-	SKINCOLOR_ORCA,
-	SKINCOLOR_STORM,
-	SKINCOLOR_MIDNIGHT,
-	SKINCOLOR_COTTONCANDY, // this color was a pain to get right
-	SKINCOLOR_CYBER, // this one too
-	SKINCOLOR_AMETHYST,
-	SKINCOLOR_IRIS,
-	SKINCOLOR_GOTHIC,
-	SKINCOLOR_GRAPE,
-	SKINCOLOR_INDIGO,
-	SKINCOLOR_SAKURA,
-	SKINCOLOR_DISCO,
-	SKINCOLOR_MULBERRY,
-	SKINCOLOR_BOYSENBERRY,
-	SKINCOLOR_MYSTIC,
-	SKINCOLOR_WICKED,
-
-	FIRSTSUPERCOLOR,
-
-	// Super special awesome Super flashing colors!
-	// Super Sonic Yellow
-	SKINCOLOR_SUPER1 = FIRSTSUPERCOLOR,
-	SKINCOLOR_SUPER2,
-	SKINCOLOR_SUPER3,
-	SKINCOLOR_SUPER4,
-	SKINCOLOR_SUPER5,
-
-	// Super Tails Orange
-	SKINCOLOR_TSUPER1,
-	SKINCOLOR_TSUPER2,
-	SKINCOLOR_TSUPER3,
-	SKINCOLOR_TSUPER4,
-	SKINCOLOR_TSUPER5,
-
-	// Super Knuckles Red
-	SKINCOLOR_KSUPER1,
-	SKINCOLOR_KSUPER2,
-	SKINCOLOR_KSUPER3,
-	SKINCOLOR_KSUPER4,
-	SKINCOLOR_KSUPER5,
-
-	// Hyper Sonic Pink
-	SKINCOLOR_PSUPER1,
-	SKINCOLOR_PSUPER2,
-	SKINCOLOR_PSUPER3,
-	SKINCOLOR_PSUPER4,
-	SKINCOLOR_PSUPER5,
-
-	// Hyper Sonic Blue
-	SKINCOLOR_BSUPER1,
-	SKINCOLOR_BSUPER2,
-	SKINCOLOR_BSUPER3,
-	SKINCOLOR_BSUPER4,
-	SKINCOLOR_BSUPER5,
-
-	// Aqua Super
-	SKINCOLOR_ASUPER1,
-	SKINCOLOR_ASUPER2,
-	SKINCOLOR_ASUPER3,
-	SKINCOLOR_ASUPER4,
-	SKINCOLOR_ASUPER5,
-
-	// Hyper Sonic Green
-	SKINCOLOR_GSUPER1,
-	SKINCOLOR_GSUPER2,
-	SKINCOLOR_GSUPER3,
-	SKINCOLOR_GSUPER4,
-	SKINCOLOR_GSUPER5,
-
-	// Hyper Sonic White
-	SKINCOLOR_WSUPER1,
-	SKINCOLOR_WSUPER2,
-	SKINCOLOR_WSUPER3,
-	SKINCOLOR_WSUPER4,
-	SKINCOLOR_WSUPER5,
-
-	// Creamy Super (Shadow?)
-	SKINCOLOR_CSUPER1,
-	SKINCOLOR_CSUPER2,
-	SKINCOLOR_CSUPER3,
-	SKINCOLOR_CSUPER4,
-	SKINCOLOR_CSUPER5,
-
+#define _(name, ...) SKINCOLOR_##name,
+#include "info/skincolors.h"
+#undef _
 	SKINCOLOR_FIRSTFREESLOT,
 	SKINCOLOR_LASTFREESLOT = SKINCOLOR_FIRSTFREESLOT + NUMCOLORFREESLOTS - 1,
-
 	MAXSKINCOLORS,
 
+	FIRSTRAINBOWCOLOR = SKINCOLOR_PINK,
+	FIRSTSUPERCOLOR = SKINCOLOR_SUPER1,
 	NUMSUPERCOLORS = ((SKINCOLOR_FIRSTFREESLOT - FIRSTSUPERCOLOR)/5)
 } skincolornum_t;
 
@@ -587,7 +321,7 @@ typedef enum
 
 void CONS_Printf(const char *fmt, ...) FUNCPRINTF;
 void CONS_Alert(alerttype_t level, const char *fmt, ...) FUNCDEBUG;
-void CONS_Debug(INT32 debugflags, const char *fmt, ...) FUNCDEBUG;
+void CONS_Debug(UINT32 debugflags, const char *fmt, ...) FUNCDEBUG;
 
 // For help debugging functions.
 #define POTENTIALLYUNUSED CONS_Alert(CONS_WARNING, "(%s:%d) Unused code appears to be used.\n", __FILE__, __LINE__)
@@ -608,8 +342,9 @@ extern char liveeventbackup[256];
 #define M_GetText(x) (x)
 #endif
 void M_StartupLocale(void);
-extern void *(*M_Memcpy)(void* dest, const void* src, size_t n) FUNCNONNULL;
+void *M_Memcpy(void* dest, const void* src, size_t n);
 char *va(const char *format, ...) FUNCPRINTF;
+char *xva(const char *format, ...) FUNCPRINTF;
 
 char *M_GetToken(const char *inputString);
 void M_UnGetToken(void);
@@ -620,6 +355,7 @@ void M_TokenizerClose(void);
 const char *M_TokenizerRead(UINT32 i);
 UINT32 M_TokenizerGetEndPos(void);
 void M_TokenizerSetEndPos(UINT32 newPos);
+boolean M_TokenizerJustReadString(void);
 
 char *sizeu1(size_t num);
 char *sizeu2(size_t num);
@@ -631,23 +367,36 @@ char *sizeu5(size_t num);
 extern int    VERSION;
 extern int SUBVERSION;
 extern boolean devparm; // development mode (-debug)
-// d_netcmd.c
-extern INT32 cv_debug;
 
-#define DBG_BASIC       0x0001
-#define DBG_DETAILED    0x0002
-#define DBG_PLAYER      0x0004
-#define DBG_RENDER      0x0008
-#define DBG_NIGHTSBASIC 0x0010
-#define DBG_NIGHTS      0x0020
-#define DBG_POLYOBJ     0x0040
-#define DBG_GAMELOGIC   0x0080
-#define DBG_NETPLAY     0x0100
-#define DBG_MEMORY      0x0200
-#define DBG_SETUP       0x0400
-#define DBG_LUA         0x0800
-#define DBG_RANDOMIZER  0x1000
-#define DBG_VIEWMORPH   0x2000
+// m_cheat.c
+extern UINT32 cht_debug;
+
+typedef enum
+{
+	DBG_NONE			= 0x00000000,
+	DBG_BASIC			= 0x00000001,
+	DBG_DETAILED		= 0x00000002,
+	DBG_PLAYER			= 0x00000004,
+	DBG_RENDER			= 0x00000008,
+	//DBG_NIGHTSBASIC	= 0x00000010, // free
+	//DBG_NIGHTS		= 0x00000020, // free
+	DBG_POLYOBJ			= 0x00000040,
+	DBG_GAMELOGIC		= 0x00000080,
+	DBG_NETPLAY			= 0x00000100,
+	DBG_MEMORY			= 0x00000200,
+	DBG_SETUP			= 0x00000400,
+	DBG_LUA				= 0x00000800,
+	DBG_RNG				= 0x00001000,
+	DBG_DEMO			= 0x00002000,
+} debugFlags_t;
+
+struct debugFlagNames_s
+{
+	const char *str;
+	debugFlags_t flag;
+};
+
+extern struct debugFlagNames_s const debug_flag_names[];
 
 // =======================
 // Misc stuff for later...
@@ -685,11 +434,13 @@ UINT32 quickncasehash (const char *p, size_t n)
 	return x;
 }
 
+#ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #endif
 #ifndef max // Double-Check with WATTCP-32's cdefs.h
 #define max(x, y) (((x) > (y)) ? (x) : (y))
+#endif
 #endif
 
 #ifndef CLAMP
@@ -713,6 +464,7 @@ UINT32 quickncasehash (const char *p, size_t n)
 #endif
 
 // An assert-type mechanism.
+// NOTE: USE SRB2_ASSERT FOR C++ CODE INSTEAD
 #ifdef PARANOIA
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
 #else
@@ -736,9 +488,6 @@ extern int compuncommitted;
 // Disabled code and code under testing
 // None of these that are disabled in the normal build are guaranteed to work perfectly
 // Compile them at your own risk!
-
-///	Allows the use of devmode in multiplayer. AKA "fishcake"
-//#define NETGAME_DEVMODE
 
 ///	Allows gravity changes in netgames, no questions asked.
 //#define NETGAME_GRAVITY
@@ -822,5 +571,9 @@ extern int compuncommitted;
 
 /// Other karma comeback modes
 //#define OTHERKARMAMODES
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __DOOMDEF__

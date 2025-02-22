@@ -12,6 +12,7 @@
 /// \brief Handling interactions (i.e., collisions)
 
 #include "doomdef.h"
+#include "doomstat.h"
 #include "i_system.h"
 #include "am_map.h"
 #include "g_game.h"
@@ -38,6 +39,7 @@
 #include "k_boss.h"
 #include "p_spec.h"
 #include "k_objects.h"
+#include "acs/interface.h"
 
 // CTF player names
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
@@ -151,7 +153,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 			// Item slot already taken up
 			if (player->itemroulette
 				|| (weapon != 3 && player->itemamount)
-				|| (player->pflags & PF_ITEMOUT))
+				|| (player->itemflags & IF_ITEMOUT))
 				return false;
 
 			if (weapon == 3 && K_GetShieldFromItem(player->itemtype) != KSHIELD_NONE)
@@ -160,6 +162,79 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 	}
 
 	return true;
+}
+
+//
+// P_DoNightsScore
+//
+// When you pick up some items in nights, it displays
+// a score sign, and awards you some drill time.
+//
+void P_DoNightsScore(player_t *player)
+{
+	mobj_t *dummymo;
+
+	if (player->exiting)
+		return; // Don't do any fancy shit for failures.
+
+	dummymo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z+player->mo->height/2, MT_NIGHTSCORE);
+	if (player->bot)
+		player = &players[consoleplayer];
+
+	/*if (G_IsSpecialStage(gamemap)) // Global link count? Maybe not a good idea...
+	{
+		INT32 i;
+		for (i = 0; i < MAXPLAYERS; i++)
+			if (playeringame[i])
+			{
+				if (++players[i].linkcount > players[i].maxlink)
+					players[i].maxlink = players[i].linkcount;
+				players[i].linktimer = 2*TICRATE;
+			}
+	}
+	else // Individual link counts*/
+	{
+		if (++player->linkcount > player->maxlink)
+			player->maxlink = player->linkcount;
+		player->linktimer = 2*TICRATE;
+	}
+
+	if (player->linkcount < 10)
+	{
+		/*if (player->bonustime)
+		{
+			P_AddPlayerScore(player, player->linkcount*20);
+			P_SetMobjState(dummymo, dummymo->info->xdeathstate+player->linkcount-1);
+		}
+		else*/
+		{
+			P_AddPlayerScore(player, player->linkcount*10);
+			P_SetMobjState(dummymo, dummymo->info->spawnstate+player->linkcount-1);
+		}
+	}
+	else
+	{
+		/*if (player->bonustime)
+		{
+			P_AddPlayerScore(player, 200);
+			P_SetMobjState(dummymo, dummymo->info->xdeathstate+9);
+		}
+		else*/
+		{
+			P_AddPlayerScore(player, 100);
+			P_SetMobjState(dummymo, dummymo->info->spawnstate+9);
+		}
+	}
+
+	// Hoops are the only things that should add to your drill meter
+	//player->drillmeter += TICRATE;
+	dummymo->momz = FRACUNIT;
+	dummymo->fuse = 3*TICRATE;
+
+	// What?! NO, don't use the camera! Scale up instead!
+	//P_InstaThrust(dummymo, R_PointToAngle2(dummymo->x, dummymo->y, camera[0].x, camera[0].y), 3*FRACUNIT);
+	dummymo->scalespeed = FRACUNIT/25;
+	dummymo->destscale = 2*FRACUNIT;
 }
 
 /** Takes action based on a ::MF_SPECIAL thing touched by a player.
@@ -237,6 +312,11 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 		P_DamageMobj(toucher, special, special, 1, DMG_NORMAL);
 		return;
 	}
+	else if (special->flags & MF_FIRE)
+	{
+		P_DamageMobj(toucher, special, special, 1, DMG_NORMAL);
+		return;
+	}
 	else
 	{
 	// We now identify by object type, not sprite! Tails 04-11-2001
@@ -278,13 +358,12 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (!P_CanPickupItem(player, 1))
 				return;
 
-			special->momx = special->momy = special->momz = 0;
-			P_SetTarget(&special->target, toucher);
-			P_KillMobj(special, toucher, toucher, DMG_NORMAL);
-			break;
-		case MT_SPHEREBOX:
-			if (!P_CanPickupItem(player, 0))
-				return;
+			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
+			{
+				if (player->karmamode || player->karmadelay)
+					return;
+				player->karmamode = 1;
+			}
 
 			special->momx = special->momy = special->momz = 0;
 			P_SetTarget(&special->target, toucher);
@@ -332,6 +411,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->target->player->karmadelay > 0)
 				return;
 
+			if (!special->target->player->karmamode)
 			{
 				mobj_t *boom;
 
@@ -356,6 +436,84 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->target->player->karthud[khud_yougotem] = 2*TICRATE;
 				special->target->player->karmadelay = comebacktime;
 			}
+			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, 1))
+			{
+				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				S_StartSound(poof, special->info->seesound);
+
+				// Karma fireworks
+				for (i = 0; i < 5; i++)
+				{
+					mobj_t *firework = P_SpawnMobj(special->x, special->y, special->z, MT_KARMAFIREWORK);
+					firework->momx = (special->target->momx + toucher->momx) / 2;
+					firework->momy = (special->target->momy + toucher->momy) / 2;
+					firework->momz = (special->target->momz + toucher->momz) / 2;
+					P_Thrust(firework, FixedAngle((72*i)<<FRACBITS), P_RandomRange(1,8)*special->scale);
+					P_SetObjectMomZ(firework, P_RandomRange(1,8)*special->scale, false);
+					firework->color = special->target->color;
+				}
+
+				special->target->player->karmamode = 0;
+				special->target->player->karmapoints++;
+
+				if (special->target->player->karmapoints >= 2)
+					K_TakeBumpersFromPlayer(special->target->player, player, 1);
+
+				special->target->player->karmadelay = comebacktime;
+
+				player->itemroulette = 1;
+				player->roulettetype = 1;
+			}
+			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
+			{
+				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
+				UINT8 ptadd = 1; // No WANTED bonus for tricking
+
+				S_StartSound(poof, special->info->seesound);
+
+				if (player->bumper == 1) // If you have only one bumper left, and see if it's a 1v1
+				{
+					INT32 numingame = 0;
+
+					for (i = 0; i < MAXPLAYERS; i++)
+					{
+						if (!playeringame[i] || players[i].spectator || players[i].bumper <= 0)
+							continue;
+						numingame++;
+					}
+
+					if (numingame <= 2) // If so, then an extra karma point so they are 100% certain to switch places; it's annoying to end matches with a fake kill
+						ptadd++;
+				}
+
+				special->target->player->karmamode = 0;
+				special->target->player->karmapoints += ptadd;
+
+				if (ptadd > 1)
+					special->target->player->karthud[khud_yougotem] = 2*TICRATE;
+
+				if (special->target->player->karmapoints >= 2)
+					K_TakeBumpersFromPlayer(special->target->player, player, 1);
+
+				special->target->player->karmadelay = comebacktime;
+
+				K_DropItems(player); //K_StripItems(player);
+				//K_StripOther(player);
+
+				player->itemroulette = 1;
+				player->roulettetype = 2;
+
+				if (special->target->player->eggmanblame >= 0
+					&& special->target->player->eggmanblame < MAXPLAYERS
+					&& playeringame[special->target->player->eggmanblame]
+					&& !players[special->target->player->eggmanblame].spectator)
+					player->eggmanblame = special->target->player->eggmanblame;
+				else
+					player->eggmanblame = -1;
+
+				special->target->player->eggmanblame = -1;
+			}
+
 			return;
 		case MT_SPB:
 			if ((special->target == toucher || special->target == toucher->target) && (special->threshold > 0))
@@ -393,16 +551,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				P_DamageMobj(player->mo, special, special->target, 1, DMG_NORMAL);
 			}
 			return;
-		case MT_EMERALD:
-			if (!P_CanPickupItem(player, 0))
-				return;
-
-			if (special->threshold > 0)
-				return;
-
-			player->emeralds |= special->extravalue1;
-			K_CheckEmeralds(player);
-			break;
 		/*
 		case MT_EERIEFOG:
 			special->frame &= ~FF_TRANS80;
@@ -556,7 +704,57 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 
 		case MT_STARPOST:
-			P_TouchStarPost(special, player, special->spawnpoint && special->spawnpoint->args[1]);
+			P_TouchStarPost(special, player, special->args[1]);
+			return;
+		case MT_HOOPCOLLIDE:
+			// This produces a kind of 'domino effect' with the hoop's pieces.
+			for (; special->hprev != NULL; special = special->hprev); // Move to the first sprite in the hoop
+			i = 0;
+			for (; special->type == MT_HOOP; special = special->hnext)
+			{
+				if (!P_MobjWasRemoved(special->target))
+				{
+					special->fuse = 11;
+					special->movedir = i;
+					special->extravalue1 = special->target->extravalue1;
+					special->extravalue2 = special->target->extravalue2;
+					special->target->threshold = 4242;
+				}
+				i++;
+			}
+			// Make the collision detectors disappear.
+			{
+				mobj_t *hnext;
+				for (; special != NULL; special = hnext)
+				{
+					hnext = special->hnext;
+					P_RemoveMobj(special);
+				}
+			}
+
+			P_DoNightsScore(player);
+
+			/*
+			// Hoops are the only things that should add to the drill meter
+			// Also, one tic's worth of drill is too much.
+			if (G_IsSpecialStage(gamemap))
+			{
+				for (i = 0; i < MAXPLAYERS; i++)
+					if (playeringame[i] && players[i].powers[pw_carry] == CR_NIGHTSMODE)
+						players[i].drillmeter += TICRATE/2;
+			}
+			else if (player->bot && player->bot != BOT_MPAI)
+				players[consoleplayer].drillmeter += TICRATE/2;
+			else
+				player->drillmeter += TICRATE/2;*/
+
+			// Play hoop sound -- pick one depending on the current link.
+			if (player->linkcount <= 5)
+				S_StartSound(toucher, sfx_hoop1);
+			else if (player->linkcount <= 10)
+				S_StartSound(toucher, sfx_hoop2);
+			else
+				S_StartSound(toucher, sfx_hoop3);
 			return;
 
 		case MT_BIGTUMBLEWEED:
@@ -589,6 +787,47 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			Obj_LoopEndpointCollide(special, toucher);
 			return;
 
+		case MT_NIGHTSBUMPER:
+			// Don't trigger if the stage is ended/failed
+			if (player->exiting)
+				return;
+
+			if (player->bumpertime <= (TICRATE/2)-5)
+			{
+				S_StartSound(toucher, special->info->seesound);
+				angle_t fa;
+				fixed_t xspeed, yspeed;
+				const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
+
+				player->bumpertime = TICRATE/2;
+
+				P_UnsetThingPosition(toucher);
+				toucher->x = special->x;
+				toucher->y = special->y;
+				P_SetThingPosition(toucher);
+				toucher->z = special->z+(special->height/4);
+
+				if (special->threshold > 0)
+					fa = (FixedAngle(((special->threshold*30)-1)*FRACUNIT)>>ANGLETOFINESHIFT) & FINEMASK;
+				else
+					fa = 0;
+
+				xspeed = FixedMul(FINECOSINE(fa),speed);
+				yspeed = FixedMul(FINESINE(fa),speed);
+
+				P_InstaThrust(toucher, special->angle, xspeed/10);
+				toucher->momz = yspeed/11;
+
+				toucher->angle = special->angle;
+
+				P_SetPlayerAngle(player, toucher->angle);
+
+				P_ResetPlayer(player);
+
+				P_SetPlayerMobjState(toucher, S_KART_STILL);
+			}
+			return;
+
 		default: // SOC or script pickup
 			P_SetTarget(&special->target, toucher);
 			break;
@@ -617,23 +856,23 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	{
 		if (!player->checkskip)
 		{
-			S_StartSound(toucher, sfx_lose);
+			S_StartSound(toucher, sfx_s26d);
 			if (netgame && cv_antigrief.value)
 			{
 				player->grieftime += TICRATE;
 			}
 
-			
+
 		}
 		player->checkskip = 3;
 		return;
 	}
-	
+
 	// Going backwards triggers sound
 	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (numbosswaypoints > 0))
 	{
 		if (!player->checkskip)
-			S_StartSound(toucher, sfx_lose);
+			S_StartSound(toucher, sfx_s26d);
 
 		player->checkskip = 3;
 		return;
@@ -648,7 +887,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 
 	if (player->starpostnum >= post->health)
 		return; // Already hit this post
-		
+
 	// Handles Respawning related things on maps wtih starposts
 	{
 		// Save the player's time and position.
@@ -678,50 +917,19 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
   */
 void P_CheckTimeLimit(void)
 {
-	INT32 i;
+	INT32 i, k;
 
-#ifndef TESTOVERTIMEINFREEPLAY
-	if (battlecapsules) // capsules override any time limit settings
+	if (!cv_timelimit.value)
 		return;
-#endif
+
+	if (!(multiplayer || netgame))
+		return;
 
 	if (!(gametyperules & GTR_TIMELIMIT))
 		return;
 
-	if (bossinfo.boss == true)
+	if (itembreaker)
 		return;
-	
-	if (exitcountdown)
-		return;
-
-	if (!timelimitintics)
-		return;
-
-	if (secretextratime)
-	{
-		secretextratime--;
-		timelimitintics++;
-	}
-	else if (extratimeintics)
-	{
-		timelimitintics++;
-		if (leveltime & 1)
-			;
-		else
-		{
-			if (extratimeintics > 20)
-			{
-				extratimeintics -= 20;
-				timelimitintics += 20;
-			}
-			else
-			{
-				timelimitintics += extratimeintics;
-				extratimeintics = 0;
-			}
-			S_StartSound(NULL, sfx_ptally);
-		}
-	}
 
 	if (leveltime < (timelimitintics + starttime))
 		return;
@@ -729,68 +937,69 @@ void P_CheckTimeLimit(void)
 	if (gameaction == ga_completed)
 		return;
 
-	if ((cv_overtime.value) && (gametyperules & GTR_OVERTIME))
+	if (cv_overtime.value)
 	{
-#ifndef TESTOVERTIMEINFREEPLAY
-		boolean foundone = false; // Overtime is used for closing off down to a specific item.
+		INT32 playerarray[MAXPLAYERS];
+		INT32 tempplayer = 0;
+		INT32 spectators = 0;
+		INT32 playercount = 0;
+
+		//Figure out if we have enough participating players to care.
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
-				continue;
+			if (players[i].exiting)
+				return;
+			if (playeringame[i] && players[i].spectator)
+				spectators++;
+		}
 
-			if (foundone)
+		if ((D_NumPlayers() - spectators) > 1)
+		{
+			// Play the starpost sfx after the first second of overtime.
+			if (gamestate == GS_LEVEL && (leveltime == (timelimitintics + TICRATE)))
+				S_StartSound(NULL, sfx_strpst);
+
+			// Normal Match
+			if (!(gametyperules & GTR_TEAMS))
 			{
-#endif
-				// Initiate the kill zone
-				if (!battleovertime.enabled)
+				//Store the nodes of participating players in an array.
+				for (i = 0; i < MAXPLAYERS; i++)
 				{
-					thinker_t *th;
-					mobj_t *center = NULL;
-
-					for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+					if (playeringame[i] && !players[i].spectator)
 					{
-						mobj_t *thismo;
-
-						if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-							continue;
-
-						thismo = (mobj_t *)th;
-
-						if (thismo->type == MT_OVERTIME_CENTER)
-						{
-							center = thismo;
-							break;
-						}
+						playerarray[playercount] = i;
+						playercount++;
 					}
-
-					if (center == NULL || P_MobjWasRemoved(center))
-					{
-						CONS_Alert(CONS_WARNING, "No center point for overtime!\n");
-
-						battleovertime.x = 0;
-						battleovertime.y = 0;
-						battleovertime.z = 0;
-					}
-					else
-					{
-						battleovertime.x = center->x;
-						battleovertime.y = center->y;
-						battleovertime.z = center->z;
-					}
-
-					battleovertime.radius = 4096 * mapobjectscale;
-					battleovertime.enabled = 1;
-
-					S_StartSound(NULL, sfx_kc47);
 				}
 
-				return;
-#ifndef TESTOVERTIMEINFREEPLAY
+				if (playercount > MAXPLAYERS)
+					playercount = MAXPLAYERS;
+
+				//Sort 'em.
+				for (i = 1; i < playercount; i++)
+				{
+					for (k = i; k < playercount; k++)
+					{
+						if (players[playerarray[i-1]].roundscore < players[playerarray[k]].roundscore)
+						{
+							tempplayer = playerarray[i-1];
+							playerarray[i-1] = playerarray[k];
+							playerarray[k] = tempplayer;
+						}
+					}
+				}
+
+				//End the round if the top players aren't tied.
+				if (players[playerarray[0]].roundscore == players[playerarray[1]].roundscore)
+					return;
 			}
 			else
-				foundone = true;
+			{
+				//In team match and CTF, determining a tie is much simpler. =P
+				if (redscore == bluescore)
+					return;
+			}
 		}
-#endif
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -825,7 +1034,7 @@ void P_CheckPointLimit(void)
 	if (!(gametyperules & GTR_POINTLIMIT))
 		return;
 
-	if (battlecapsules)
+	if (itembreaker)
 		return;
 
 	// pointlimit is nonzero, check if it's been reached by this player
@@ -1053,14 +1262,18 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 	if (LUA_HookMobjDeath(target, inflictor, source, damagetype) || P_MobjWasRemoved(target))
 		return;
 
+	P_ActivateThingSpecial(target, source);
+
+	//K_SetHitLagForObjects(target, inflictor, MAXHITLAGTICS, true);
+
 	// SRB2kart
 	// I wish I knew a better way to do this
-	if (target->target && target->target->player && target->target->player->mo)
+	if (!P_MobjWasRemoved(target->target) && target->target->player && !P_MobjWasRemoved(target->target->player->mo))
 	{
-		if ((target->target->player->pflags & PF_EGGMANOUT) && target->type == MT_EGGMANITEM_SHIELD)
-			target->target->player->pflags &= ~PF_EGGMANOUT;
+		if ((target->target->player->itemflags & IF_EGGMANOUT) && target->type == MT_EGGMANITEM_SHIELD)
+			target->target->player->itemflags &= ~IF_EGGMANOUT;
 
-		if (target->target->player->pflags & PF_ITEMOUT)
+		if (target->target->player->itemflags & IF_ITEMOUT)
 		{
 			if ((target->type == MT_BANANA_SHIELD && target->target->player->itemtype == KITEM_BANANA) // trail items
 				|| (target->type == MT_SSMINE_SHIELD && target->target->player->itemtype == KITEM_MINE)
@@ -1088,7 +1301,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 
 			if (!target->target->player->itemamount)
-				target->target->player->pflags &= ~PF_ITEMOUT;
+				target->target->player->itemflags &= ~IF_ITEMOUT;
 
 			if (target->target->hnext == target)
 				P_SetTarget(&target->target->hnext, NULL);
@@ -1114,7 +1327,34 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		{
 			P_SetTarget(&target->target, source);
 			//source->player->numboxes++;
-			if (cv_itemrespawn.value && (netgame || multiplayer))
+
+			if (itembreaker)
+			{
+				target->flags2 |= MF2_BOSSFLEE;
+				target->flags2 |= MF2_DONTRESPAWN;
+				K_SpawnBattlePoints(source->player, NULL, 1);
+				// All targets busted!
+				if (++numtargets >= nummapboxes)
+				{
+					boolean givelife = false;
+					for (int i = 0; i < MAXPLAYERS; i++)
+					{
+						if (!playeringame[i] || players[i].spectator)
+							continue;
+						P_DoPlayerExit(&players[i]);
+						if (!grandprixinfo.gp)
+							continue;
+						P_GivePlayerLives(&players[i], 1);
+						givelife = true;
+					}
+
+					if (givelife)
+						S_StartSound(NULL, sfx_cdfm73);
+				}
+
+			}
+
+			if (cv_itemrespawn.value && modeattacking == ATTACKING_NONE && !itembreaker)
 			{
 				target->fuse = cv_itemrespawntime.value*TICRATE + 2; // Random box generation
 			}
@@ -1158,6 +1398,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			K_CheckBumpers();
 
 		target->player->pogospring = 0;
+
+		ACS_RunPlayerDeathScript(target->player);
 	}
 
 	if (source && target && target->player && source->player)
@@ -1316,77 +1558,84 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				target->fuse = 2*TICRATE; // timer before mobj disappears from view (even if not an actual player)
 				target->momx = target->momy = target->momz = 0;
 
-				angle_t playerFlingAngle;
-				angle_t kartFlingAngle;
-
-				if (source && !P_MobjWasRemoved(source))
+				if (target->player && !(skins[target->player->skin].flags & SF_NOGIBS))
 				{
-					playerFlingAngle = kartFlingAngle = R_PointToAngle2(
-						source->x - source->momx, source->y - source->momy,
-						target->x, target->y
-					);
-				}
-				else
-				{
-					kartFlingAngle = target->angle;
+					angle_t playerFlingAngle;
+					angle_t kartFlingAngle;
 
-					if (P_RandomByte() & 1)
+					if (source && !P_MobjWasRemoved(source))
 					{
-						kartFlingAngle -= ANGLE_45;
+						playerFlingAngle = kartFlingAngle = R_PointToAngle2(
+							source->x - source->momx, source->y - source->momy,
+							target->x, target->y
+						);
 					}
 					else
 					{
-						kartFlingAngle += ANGLE_45;
+						kartFlingAngle = target->angle;
+
+						if (P_RandomByte() & 1)
+						{
+							kartFlingAngle -= ANGLE_45;
+						}
+						else
+						{
+							kartFlingAngle += ANGLE_45;
+						}
+
+						playerFlingAngle = kartFlingAngle + ANGLE_180;
 					}
 
-					playerFlingAngle = kartFlingAngle + ANGLE_180;
-				}
+					// Spawn kart frame
+					mobj_t *kart = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_LEFTOVER);
 
-				// Spawn kart frame
-				mobj_t *kart = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_LEFTOVER);
-
-				if (kart && !P_MobjWasRemoved(kart))
-				{
-					kart->angle = target->angle;
-					kart->color = target->color;
-					kart->extravalue1 = target->player->kartweight;
-					kart->fuse = 2*TICRATE;
-
-					// Copy interp data
-					kart->old_angle = target->old_angle;
-					kart->old_x = target->old_x;
-					kart->old_y = target->old_y;
-					kart->old_z = target->old_z;
-
-					P_InstaThrust(kart, kartFlingAngle, 1 * kart->scale);
-					P_SetObjectMomZ(kart, 10*FRACUNIT, false);
-
-					const fixed_t tireOffset = 32;
-					const angle_t aOffset = ANGLE_22h;
-
-					UINT8 i;
-					angle_t tireAngle;
-					mobj_t *tire;
-
-					// Spawn tires
-					tireAngle = kartFlingAngle - ANGLE_90 - ANGLE_22h;
-					for (i = 0; i < 4; i++)
+					if (kart && !P_MobjWasRemoved(kart))
 					{
-						if (i == 2) tireAngle += ANGLE_90;
+						kart->angle = target->angle;
+						kart->color = target->color;
+						kart->extravalue1 = target->player->kartweight;
+						kart->fuse = 2*TICRATE;
 
-						tire = P_SpawnMobjFromMobj(kart, 0, 0, 0, MT_KART_TIRE);
-						tire->fuse = 2*TICRATE;
+						// Copy interp data
+						kart->old_angle = target->old_angle;
+						kart->old_x = target->old_x;
+						kart->old_y = target->old_y;
+						kart->old_z = target->old_z;
 
-						tire->angle = tireAngle;
-						P_InstaThrust(tire, tireAngle, 3 * tire->scale);
-						P_SetObjectMomZ(tire, 10*FRACUNIT, false);
+						P_InstaThrust(kart, kartFlingAngle, 1 * kart->scale);
+						P_SetObjectMomZ(kart, 10*FRACUNIT, false);
 
-						tireAngle += (aOffset * 2);
+						const angle_t aOffset = ANGLE_22h;
+
+						UINT8 i;
+						angle_t tireAngle;
+						mobj_t *tire;
+
+						// Spawn tires
+						tireAngle = kartFlingAngle - ANGLE_90 - ANGLE_22h;
+						for (i = 0; i < 4; i++)
+						{
+							if (i == 2) tireAngle += ANGLE_90;
+
+							tire = P_SpawnMobjFromMobj(kart, 0, 0, 0, MT_KART_TIRE);
+							tire->fuse = 2*TICRATE;
+
+							tire->angle = tireAngle;
+							P_InstaThrust(tire, tireAngle, 3 * tire->scale);
+							P_SetObjectMomZ(tire, 10*FRACUNIT, false);
+
+							tireAngle += (aOffset * 2);
+						}
 					}
+
+					P_InstaThrust(target, playerFlingAngle, 4 * target->scale);
+					P_SetObjectMomZ(target, 14*FRACUNIT, false);
 				}
 
-				P_InstaThrust(target, playerFlingAngle, 4 * target->scale);
-				P_SetObjectMomZ(target, 14*FRACUNIT, false);
+				if (target->player && (skins[target->player->skin].flags & SF_OLDDEATH))
+				{
+					P_SetObjectMomZ(target, 14*FRACUNIT, false);
+				}
 
 				P_PlayDeathSound(target);
 			}
@@ -1415,11 +1664,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 		case MT_ITEMCAPSULE:
 		{
-			UINT8 i;
-			mobj_t *attacker = inflictor ? inflictor : source;
-			mobj_t *part = target->hnext;
-			angle_t angle = FixedAngle(360*P_RandomFixed());
-			INT16 spacing = (target->radius >> 1) / target->scale;
 
 			// set respawn fuse
 			if (modeattacking) // no respawns
@@ -1469,95 +1713,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			}
 			break;
 		}
-
-		case MT_BATTLECAPSULE:
-			{
-				UINT8 i;
-				mobj_t *cur;
-				angle_t dir = 0;
-
-				target->fuse = 16;
-				target->flags |= MF_NOCLIP|MF_NOCLIPTHING;
-
-				if (inflictor)
-				{
-					dir = R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
-					P_Thrust(target, dir, P_AproxDistance(inflictor->momx, inflictor->momy)/12);
-				}
-				else if (source)
-					dir = R_PointToAngle2(source->x, source->y, target->x, target->y);
-
-				target->momz += 8 * target->scale * P_MobjFlip(target);
-				target->flags &= ~MF_NOGRAVITY;
-
-				cur = target->hnext;
-
-				while (cur && !P_MobjWasRemoved(cur))
-				{
-					// Shoot every piece outward
-					if (!(cur->x == target->x && cur->y == target->y))
-					{
-						P_InstaThrust(cur,
-							R_PointToAngle2(target->x, target->y, cur->x, cur->y),
-							R_PointToDist2(target->x, target->y, cur->x, cur->y) / 12
-						);
-					}
-
-					cur->momz = 8 * target->scale * P_MobjFlip(target);
-
-					cur->flags &= ~MF_NOGRAVITY;
-					cur->tics = TICRATE;
-					cur->frame &= ~FF_ANIMATE; // Stop animating the propellers
-
-					cur = cur->hnext;
-				}
-
-				S_StartSound(target, sfx_mbs60);
-
-				if ((gametyperules & GTR_POINTLIMIT) && (source && source->player))
-				{
-					/*mobj_t * ring;
-					for (i = 0; i < 2; i++)
-					{
-						dir += (ANGLE_MAX/3);
-						ring = P_SpawnMobj(target->x, target->y, target->z, MT_RING);
-						ring->angle = dir;
-						P_InstaThrust(ring, dir, 16*ring->scale);
-						ring->momz = 8 * target->scale * P_MobjFlip(target);
-						P_SetTarget(&ring->tracer, source);
-						source->player->pickuprings++;
-					}*/
-
-					P_AddPlayerScore(source->player, 1);
-					K_SpawnBattlePoints(source->player, NULL, 1);
-				}
-
-				// All targets busted!
-				if (++numtargets >= maptargets)
-				{
-					boolean givelife = false;
-					for (i = 0; i < MAXPLAYERS; i++)
-					{
-						if (!playeringame[i] || players[i].spectator)
-							continue;
-						P_DoPlayerExit(&players[i]);
-						if (!grandprixinfo.gp)
-							continue;
-						P_GivePlayerLives(&players[i], 1);
-						givelife = true;
-					}
-
-					if (givelife)
-						S_StartSound(NULL, sfx_cdfm73);
-				}
-				else if (timelimitintics)
-				{
-					S_StartSound(NULL, sfx_s221);
-					extratimeintics += 10*TICRATE;
-					secretextratime = TICRATE/2;
-				}
-			}
-			break;
 
 		case MT_BATTLEBUMPER:
 			{
@@ -1820,12 +1975,7 @@ static boolean P_PlayerHitsPlayer(mobj_t *target, mobj_t *inflictor, mobj_t *sou
 static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 type)
 {
 	(void)source;
-
-	if (player->respawn)
-	{
-		K_DoInstashield(player);
-		return false;
-	}
+	(void)inflictor;
 
 	if (player->exiting)
 	{
@@ -1849,8 +1999,6 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 			// Everything else REALLY kills
 			break;
 	}
-
-	K_DropEmeraldsFromPlayer(player, player->emeralds);
 
 	player->carry = CR_NONE;
 
@@ -1887,6 +2035,28 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	return true;
 }
 
+// Determines what ShouldX Hook's status should be used.
+static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
+{
+	UINT8 shouldDamage = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSpin = LUA_HookShouldSpin(target, inflictor, source, damage, damagetype);
+	UINT8 shouldExplode = LUA_HookShouldExplode(target, inflictor, source, damage, damagetype);
+	UINT8 shouldSquish = LUA_HookShouldSquish(target, inflictor, source, damage, damagetype);
+	UINT8 status;
+	const UINT8 type = (damagetype & DMG_TYPEMASK);
+
+	status = shouldDamage;
+
+	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_STING)))
+		status = shouldSpin;
+	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
+		status = shouldExplode;
+	else if (shouldSquish > 0 && (type == DMG_SQUISH))
+		status = shouldSquish;
+
+	return status;
+}
+
 /** Damages an object, which may or may not be a player.
   * For melee attacks, source and inflictor are the same.
   *
@@ -1904,6 +2074,7 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
   * \todo Clean up this mess, split into multiple functions.
   * \sa P_KillMobj
   */
+
 boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype)
 {
 	player_t *player;
@@ -1925,7 +2096,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	// Everything above here can't be forced.
 	if (!metalrecording)
 	{
-		UINT8 shouldForce = LUA_HookShouldDamage(target, inflictor, source, damage, damagetype);
+		UINT8 shouldForce = P_ShouldHookDamage(target, inflictor, source, damage, damagetype);
 		if (P_MobjWasRemoved(target))
 			return (shouldForce == 1); // mobj was removed
 		if (shouldForce == 1)
@@ -1994,7 +2165,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				if (gametyperules & GTR_BUMPERS)
 				{
-					if (player->bumper <= 0 && player->karmadelay)
+					if ((player->bumper <= 0 && player->karmadelay) || (player->karmamode == 1))
 					{
 						// No bumpers & in WAIT, can't be hurt
 						K_DoInstashield(player);
@@ -2019,7 +2190,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 
 				{
-					
+
 					// Check if we should allow wombo combos (hard hits by default, inverted by the presence of DMG_WOMBO).
 					boolean allowcombo = hardhit;
 
@@ -2033,66 +2204,42 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (type != DMG_STING)
+			if (type != DMG_STING && (gametyperules & GTR_BUMPERS))
 			{
-				UINT8 takeBumpers = 1;
-
-				if (damagetype & DMG_STEAL)
-				{
-					takeBumpers = 2;
-
-					if (type == DMG_KARMA)
-					{
-						takeBumpers = player->bumper;
-					}
-				}
-				else
-				{
-					if (type == DMG_KARMA)
-					{
-						// Take half of their bumpers for karma comeback damage
-						takeBumpers = max(1, player->bumper / 2);
-					}
-				}
 
 				if (source && source != player->mo && source->player)
 				{
 					K_TryHurtSoundExchange(target, source);
-
-					K_BattleAwardHit(source->player, player, inflictor, takeBumpers);
-					K_TakeBumpersFromPlayer(source->player, player, takeBumpers);
-
-					if (type == DMG_KARMA)
-					{
-						// Destroy any remainder bumpers from the player for karma comeback damage
-						K_DestroyBumpers(player, player->bumper);
-					}
-					else
-					{
-						source->player->overtimekarma += 5*TICRATE;
-					}
+					K_BattleAwardHit(source->player, player, inflictor, 1);
 
 					if (damagetype & DMG_STEAL)
 					{
-						// Give them ALL of your emeralds instantly :)
-						source->player->emeralds |= player->emeralds;
-						player->emeralds = 0;
-						K_CheckEmeralds(source->player);
+						K_TakeBumpersFromPlayer(source->player, player, 1);
+					}
+					else if (damage & DMG_KARMA)
+					{
+						source->player->karmapoints++;
+						if (source->player->karmapoints >= 2)
+						{
+							K_TakeBumpersFromPlayer(source->player, player, 1);
+						}
+						else
+						{
+							K_DestroyBumpers(player, 1);
+						}
+					}
+					else
+					{
+						K_DestroyBumpers(player, 1);
 					}
 				}
 				else
 				{
-					K_DestroyBumpers(player, takeBumpers);
-				}
-
-				if (!(damagetype & DMG_STEAL))
-				{
-					// Drop all of your emeralds
-					K_DropEmeraldsFromPlayer(player, player->emeralds);
+					K_DestroyBumpers(player, 1);
 				}
 			}
 
-			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT))
+			if (!((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT)))
 				player->sneakertimer = 0;
 			player->driftboost = 0;
 			player->ringboost = 0;
@@ -2104,25 +2251,30 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_STING:
 					K_DebtStingPlayer(player, source);
 					K_KartPainEnergyFling(player);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					ringburst = 0;
 					break;
 				case DMG_EXPLODE:
 				case DMG_KARMA:
 					ringburst = K_ExplodePlayer(player, inflictor, source);
+					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
 				case DMG_SQUISH:
 					K_SquishPlayer(player, inflictor, source);
+					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
 					ringburst = 5;
 					break;
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);
 					K_SpinPlayer(player, inflictor, source, KSPIN_WIPEOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					break;
 			}
 
@@ -2263,7 +2415,7 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 		return;
 
 	// Have a shield? You get hit, but don't lose your rings!
-	if (K_GetShieldFromItem(player->itemtype) != KSHIELD_NONE)
+	if (player->curshield != KSHIELD_NONE)
 		return;
 
 	// 20 is the maximum number of rings that can be taken from you at once - half the span of your counter

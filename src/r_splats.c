@@ -30,20 +30,8 @@ static void prepare_rastertab(void);
 
 static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, vissprite_t *vis);
 
-#ifdef USEASM
-void ASMCALL rasterize_segment_tex_asm(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 tv1, INT32 tv2, INT32 tc, INT32 dir);
-#endif
-
 static void rasterize_segment_tex(INT32 x1, INT32 y1, INT32 x2, INT32 y2, INT32 tv1, INT32 tv2, INT32 tc, INT32 dir)
 {
-#ifdef USEASM
-	if (R_ASM)
-	{
-		rasterize_segment_tex_asm(x1, y1, x2, y2, tv1, tv2, tc, dir);
-		return;
-	}
-	else
-#endif
 	{
 		fixed_t xs, xe, count;
 		fixed_t dx0, dx1;
@@ -324,6 +312,7 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 	fixed_t offsetx = 0, offsety = 0;
 	fixed_t planeheight = 0;
 	fixed_t step;
+	drawspandata_t ds = {0};
 
 	int spanfunctype = SPANDRAWFUNC_SPRITE;
 
@@ -387,18 +376,18 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 	// do segment d -> left side of texture
 	RASTERPARAMS(0,3,pSplat->width-1,0,0,1);
 
-	ds_source = (UINT8 *)pSplat->pic;
-	ds_flatwidth = pSplat->width;
-	ds_flatheight = pSplat->height;
+	ds.source = (UINT8 *)pSplat->pic;
+	ds.flatwidth = pSplat->width;
+	ds.flatheight = pSplat->height;
 
-	if (R_CheckPowersOfTwo())
-		R_CheckFlatLength(ds_flatwidth * ds_flatheight);
+	if (R_CheckPowersOfTwo(&ds))
+		R_CheckFlatLength(&ds, ds.flatwidth * ds.flatheight);
 
 	if (pSplat->slope)
 	{
-		R_SetTiltedSpan(0);
-		R_SetScaledSlopePlane(pSplat->slope, vis->viewpoint.x, vis->viewpoint.y, vis->viewpoint.z, pSplat->xscale, pSplat->yscale, -pSplat->verts[0].x, pSplat->verts[0].y, vis->viewpoint.angle, pSplat->angle);
-		R_CalculateSlopeVectors();
+		R_SetTiltedSpan(&ds, 0);
+		R_SetScaledSlopePlane(&ds, pSplat->slope, vis->viewpoint.x, vis->viewpoint.y, vis->viewpoint.z, pSplat->xscale, pSplat->yscale, -pSplat->verts[0].x, pSplat->verts[0].y, vis->viewpoint.angle, pSplat->angle);
+		R_CalculateSlopeVectors(&ds);
 		spanfunctype = SPANDRAWFUNC_TILTEDSPRITE;
 	}
 	else
@@ -413,8 +402,6 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 			angle_t angle = (pSplat->angle >> ANGLETOFINESHIFT);
 			offsetx = FixedMul(a, FINECOSINE(angle)) - FixedMul(b, FINESINE(angle));
 			offsety = -FixedMul(a, FINESINE(angle)) - FixedMul(b, FINECOSINE(angle));
-
-			memset(cachedheight, 0, sizeof(cachedheight));
 		}
 		else
 		{
@@ -423,31 +410,31 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 		}
 	}
 
-	ds_colormap = vis->colormap;
-	ds_fullbright = colormaps;
-	ds_brightmap = NULL;
+	ds.colormap = vis->colormap;
+	ds.fullbright = colormaps;
+	ds.brightmap = NULL;
 
-	ds_translation = R_GetSpriteTranslation(vis);
-	if (ds_translation == NULL)
-		ds_translation = colormaps;
+	ds.translation = R_GetSpriteTranslation(vis);
+	if (ds.translation == NULL)
+		ds.translation = colormaps;
 
 	if (vis->extra_colormap)
 	{
-		if (!ds_colormap)
-			ds_colormap = vis->extra_colormap->colormap;
+		if (!ds.colormap)
+			ds.colormap = vis->extra_colormap->colormap;
 		else
-			ds_colormap = &vis->extra_colormap->colormap[ds_colormap - colormaps];
+			ds.colormap = &vis->extra_colormap->colormap[ds.colormap - colormaps];
 	}
 
 	if (encoremap && !vis->mobj->color && !(vis->mobj->flags & MF_DONTENCOREMAP))
 	{
-		dc_colormap += COLORMAP_REMAPOFFSET;
-		dc_fullbright += COLORMAP_REMAPOFFSET;
+		ds.colormap += COLORMAP_REMAPOFFSET;
+		ds.fullbright += COLORMAP_REMAPOFFSET;
 	}
 
 	if (vis->transmap)
 	{
-		ds_transmap = vis->transmap;
+		ds.transmap = vis->transmap;
 
 		if (pSplat->slope)
 			spanfunctype = SPANDRAWFUNC_TILTEDTRANSSPRITE;
@@ -455,9 +442,9 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 			spanfunctype = SPANDRAWFUNC_TRANSSPRITE;
 	}
 	else
-		ds_transmap = NULL;
+		ds.transmap = NULL;
 
-	R_SetSpanFunc(spanfunctype, !ds_powersoftwo, false);
+	R_SetSpanFunc(spanfunctype, !ds.powersoftwo, false);
 
 	if (maxy >= vid.height)
 		maxy = vid.height-1;
@@ -522,48 +509,32 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 			angle_t planecos = FINECOSINE(angle);
 			angle_t planesin = FINESINE(angle);
 
-			if (planeheight != cachedheight[y])
+			distance = FixedMul(planeheight, yslope[y]);
+			span = abs(centery - y);
+
+			if (span) // Don't divide by zero
 			{
-				cachedheight[y] = planeheight;
-				distance = cacheddistance[y] = FixedMul(planeheight, yslope[y]);
-				span = abs(centery - y);
-
-				if (span) // Don't divide by zero
-				{
-					xstep = FixedMul(planesin, planeheight) / span;
-					ystep = FixedMul(planecos, planeheight) / span;
-				}
-				else
-					xstep = ystep = FRACUNIT;
-
-				cachedxstep[y] = xstep;
-				cachedystep[y] = ystep;
+				xstep = FixedMul(planesin, planeheight) / span;
+				ystep = FixedMul(planecos, planeheight) / span;
 			}
 			else
-			{
-				distance = cacheddistance[y];
-				xstep = cachedxstep[y];
-				ystep = cachedystep[y];
-			}
+				xstep = ystep = FRACUNIT;
 
-			ds_xstep = FixedDiv(xstep, pSplat->xscale);
-			ds_ystep = FixedDiv(ystep, pSplat->yscale);
+			ds.xstep = FixedDiv(xstep, pSplat->xscale);
+			ds.ystep = FixedDiv(ystep, pSplat->yscale);
 
-			ds_xfrac = FixedDiv(offsetx + FixedMul(planecos, distance) + (x1 - centerx) * xstep, pSplat->xscale);
-			ds_yfrac = FixedDiv(offsety - FixedMul(planesin, distance) + (x1 - centerx) * ystep, pSplat->yscale);
+			ds.xfrac = FixedDiv(offsetx + FixedMul(planecos, distance) + (x1 - centerx) * xstep, pSplat->xscale);
+			ds.yfrac = FixedDiv(offsety - FixedMul(planesin, distance) + (x1 - centerx) * ystep, pSplat->yscale);
 		}
 
-		ds_y = y;
-		ds_x1 = x1;
-		ds_x2 = x2;
-		spanfunc();
+		ds.y = y;
+		ds.x1 = x1;
+		ds.x2 = x2;
+		spanfunc(&ds);
 
 		rastertab[y].minx = INT32_MAX;
 		rastertab[y].maxx = INT32_MIN;
 	}
-
-	if (pSplat->angle && !pSplat->slope)
-		memset(cachedheight, 0, sizeof(cachedheight));
 }
 
 static void prepare_rastertab(void)

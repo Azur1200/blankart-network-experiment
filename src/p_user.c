@@ -303,11 +303,15 @@ boolean P_PlayerMoving(INT32 pnum)
 //
 UINT8 P_GetNextEmerald(void)
 {
-	if (gamemap >= sstage_start && gamemap <= sstage_end)
-		return (UINT8)(gamemap - sstage_start);
-	if (gamemap >= smpstage_start || gamemap <= smpstage_end)
-		return (UINT8)(gamemap - smpstage_start);
-	return 0;
+	INT16 mapnum = gamemap-1;
+
+	if (mapnum > nummapheaders || !mapheaderinfo[mapnum])
+		return 0;
+
+	if (!mapheaderinfo[mapnum]->cup || mapheaderinfo[mapnum]->cup->cachedlevels[CUPCACHE_SPECIAL] != mapnum)
+		return 0;
+
+	return mapheaderinfo[mapnum]->cup->emeraldnum;
 }
 
 //
@@ -866,13 +870,13 @@ void P_RestoreMusic(player_t *player)
 		}
 
 		// Item - Grow
-		if (wantedmus == 1)
+		if ((wantedmus == 1) && cv_growmusic.value == 1)
 		{
 			S_ChangeMusicInternal("kgrow", true);
 			S_SetRestoreMusicFadeInCvar(&cv_growmusicfade);
 		}
 		// Item - Invincibility
-		else if (wantedmus == 2)
+		else if ((wantedmus == 2) && cv_supermusic.value == 1)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
@@ -1286,7 +1290,9 @@ void P_DoPlayerExit(player_t *player)
 				P_EndingMusic(player);
 
 			if (P_CheckRacers() && !exitcountdown)
-				exitcountdown = raceexittime+1;
+			{
+				G_BeginLevelExit();
+			}
 		}
 		else if ((gametyperules & GTR_BUMPERS)) // Battle Mode exiting
 		{
@@ -1297,7 +1303,7 @@ void P_DoPlayerExit(player_t *player)
 		else // Accidental death safeguard???
 		{
 			if (!exitcountdown)
-				exitcountdown = raceexittime+2;
+				G_BeginLevelExit();
 		}
 
 		if (grandprixinfo.gp == true)
@@ -1422,8 +1428,9 @@ boolean P_InQuicksand(mobj_t *mo) // Returns true if you are in quicksand
 static boolean P_PlayerCanBust(player_t *player, ffloor_t *rover)
 {
 	// TODO: Make these act like the Lua SA2 boxes.
-	(void)player;
+	// (void)player;
 	(void)rover;
+	(void)player;
 
 	if (!(rover->fofflags & FOF_EXISTS))
 		return false;
@@ -1445,11 +1452,6 @@ static void P_CheckBustableBlocks(player_t *player)
 
 	oldx = player->mo->x;
 	oldy = player->mo->y;
-
-	P_UnsetThingPosition(player->mo);
-	player->mo->x += player->mo->momx;
-	player->mo->y += player->mo->momy;
-	P_SetThingPosition(player->mo);
 
 	for (node = player->mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
@@ -1522,7 +1524,7 @@ static void P_CheckBustableBlocks(player_t *player)
 			//if (metalrecording)
 			//	G_RecordBustup(rover);
 
-			EV_CrumbleChain(NULL, rover); // node->m_sector
+			EV_CrumbleChain(node->m_sector, rover); // node->m_sector
 
 			// Run a linedef executor??
 			if (rover->bustflags & FB_EXECUTOR)
@@ -1531,7 +1533,6 @@ static void P_CheckBustableBlocks(player_t *player)
 			goto bustupdone;
 		}
 	}
-
 bustupdone:
 	P_UnsetThingPosition(player->mo);
 	player->mo->x = oldx;
@@ -1986,11 +1987,9 @@ static void P_UpdatePlayerAngle(player_t *player)
 {
 	INT16 angle_diff, max_left_turn, max_right_turn;
 	boolean add_delta = true;
-	fixed_t currentSpeed = 0;
 	ticcmd_t *cmd = &player->cmd;
 	angle_t anglechange = player->angleturn;
 	int i;
-	UINT8 p = UINT8_MAX;
 
 	// Kart: store the current turn range for later use
 	if (((player->mo && player->speed > 0) // Moving
@@ -2103,9 +2102,6 @@ void P_MovePlayer(player_t *player)
 
 	fixed_t runspd;
 
-	if (countdowntimeup)
-		return;
-
 	cmd = &player->cmd;
 	runspd = 14*player->mo->scale; //srb2kart
 
@@ -2190,9 +2186,7 @@ void P_MovePlayer(player_t *player)
 		if (player->pogospring)
 			player->drawangle += ANGLE_22h;
 		else
-		{
-			player->drawangle = player->mo->angle;
-		}
+			player->drawangle = player->mo->angle + K_GetDriftAngleOffset(player);
 
 		player->mo->rollangle = 0;
 	}
@@ -2235,9 +2229,8 @@ void P_MovePlayer(player_t *player)
 		{
 			const angle_t forwardangle = K_MomentumAngle(player->mo);
 			const fixed_t playerVisualRadius = player->mo->radius + (8 * player->mo->scale);
-			const size_t numFrames = S_WATERTRAIL8 - S_WATERTRAIL1;
-			const statenum_t curOverlayFrame = S_WATERTRAIL1 + (leveltime % numFrames);
-			const statenum_t curUnderlayFrame = S_WATERTRAILUNDERLAY1 + (leveltime % numFrames);
+			const SINT8 numFrames = 5;
+			const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
 			fixed_t x1, x2, y1, y2;
 			mobj_t *water;
 
@@ -2261,7 +2254,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curUnderlayFrame);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
 
 			// overlay
 			water = P_SpawnMobj(x1, y1,
@@ -2272,7 +2266,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curOverlayFrame);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
 
 			// Right
 			// Underlay
@@ -2284,7 +2279,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curUnderlayFrame);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
 
 			// Overlay
 			water = P_SpawnMobj(x2, y2,
@@ -2295,7 +2291,8 @@ void P_MovePlayer(player_t *player)
 			water->momy = player->mo->momy;
 			water->momz = player->mo->momz;
 			P_SetScale(water, trailScale);
-			P_SetMobjState(water, curOverlayFrame);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
 
 			if (!S_SoundPlaying(player->mo, sfx_s3kdbs))
 			{
@@ -2447,9 +2444,6 @@ static void P_DoZoomTube(player_t *player)
 		player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y, player->mo->tracer->x, player->mo->tracer->y);
 		P_SetPlayerAngle(player, player->mo->angle);
 	}
-
-	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
-	player->drawangle -= ANGLE_22h;
 }
 
 #if 0
@@ -2524,7 +2518,7 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 		if (mo->flags & MF_BOSS) //don't OHKO bosses nor players!
 			P_DamageMobj(mo, inflictor, source, 1, DMG_NORMAL|DMG_CANTHURTSELF);
-		else if (mo->type == MT_PLAYER)	// Lightning shield: Combo players.
+		else if (mo->type == MT_PLAYER)	// Thunder shield: Combo players.
 			P_DamageMobj(mo, inflictor, source, 1, DMG_NORMAL|DMG_CANTHURTSELF);
 		else
 			P_DamageMobj(mo, inflictor, source, 1000, DMG_NORMAL|DMG_CANTHURTSELF);
@@ -2589,7 +2583,7 @@ static void P_DeathThink(player_t *player)
 	if (player->deadtimer < INT32_MAX)
 		player->deadtimer++;
 
-	if ((player->pflags & PF_NOCONTEST) && (gametyperules & GTR_CIRCUIT))
+	if ((player->pflags & PF_NOCONTEST))
 	{
 		player->karthud[khud_timeovercam]++;
 
@@ -2796,7 +2790,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam)
 		turnright = turnright || (axis > 0);
 		turnleft = turnleft || (axis < 0);
 	}
-	forward = 0;
+	forward = side = 0;
 
 	cmd->turning = 0;
 
@@ -2948,7 +2942,7 @@ void P_DemoCameraMovement(camera_t *cam)
 	democam.soundmobj = awayviewmobj_hack;
 
 	// update subsector to avoid crashes;
-	cam->subsector = R_PointInSubsector(cam->x, cam->y);
+	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
@@ -2982,7 +2976,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	thiscam->aiming = 0;
 	thiscam->relativex = 0;
 
-	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
+	thiscam->subsector = R_PointInSubsectorFast(thiscam->x,thiscam->y);
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
@@ -3071,7 +3065,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		|| (leveltime < introtime)); // Kart intro cam
 #endif
 
-	if ((player->pflags & PF_NOCONTEST) && (gametyperules & GTR_CIRCUIT)) // 1 for momentum keep, 2 for turnaround
+	if ((player->pflags & PF_NOCONTEST)) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->karthud[khud_timeovercam] > 2*TICRATE ? 2 : 1);
 	else
 		timeover = 0;
@@ -3087,8 +3081,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!thiscam->chase && !resetcalled)
 	{
-		focusangle = localangle[num];
-		camrotate = cv_cam_rotate[num].value;
+		focusangle = ((P_IsLocalPlayer(player)) ? localangle[num] : mo->angle);
+		camrotate = ((thiscam == &camera[num]) ? cv_cam_rotate[num].value : 0);
 
 		if (leveltime < introtime) // Whoooshy camera!
 		{
@@ -3119,10 +3113,15 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = player->cmd.angle << TICCMD_REDUCE;
 		focusaiming = 0;
 	}
-	else
+	else if (P_IsLocalPlayer(player))
 	{
 		focusangle = localangle[num];
 		focusaiming = localaiming[num];
+	}
+	else
+	{
+		focusangle = mo->angle;
+		focusaiming = player->aiming;
 	}
 
 	if (P_CameraThinker(player, thiscam, resetcalled))
@@ -3726,13 +3725,14 @@ boolean P_SpectatorJoinGame(player_t *player)
 	if (player->mo)
 	{
 		P_RemoveMobj(player->mo);
-		player->mo = NULL;
+		P_SetTarget(&player->mo, NULL);
 	}
 	player->spectator = false;
 	player->pflags &= ~PF_WANTSTOJOIN;
 	player->spectatewait = 0;
 	player->ctfteam = changeto;
 	player->playerstate = PST_REBORN;
+	player->enteredGame = true;
 
 	// Reset away view (some code referenced from Got_Teamchange)
 	{
@@ -3920,7 +3920,7 @@ void P_DoTimeOver(player_t *player)
 	P_EndingMusic(player);
 
 	if (!exitcountdown)
-		exitcountdown = 5*TICRATE;
+		G_BeginLevelExit();
 }
 
 // SRB2Kart: These are useful functions, but we aren't using them yet.
@@ -4294,14 +4294,7 @@ void P_PlayerThink(player_t *player)
 
 	if (!player->spectator)
 		P_PlayerInSpecialSector(player);
-	else if (
-#else
-	if (player->spectator &&
 #endif
-		(gametyperules & GTR_LIVES))
-	{
-		/*P_ConsiderAllGone()*/;
-	}
 
 	if (player->playerstate == PST_DEAD)
 	{
@@ -4408,6 +4401,12 @@ void P_PlayerThink(player_t *player)
 		//CONS_Printf("player %s wants to join on tic %d\n", player_names[player-players], leveltime);
 	}
 
+	if (player->linktimer /*&& !player->powers[pw_nights_linkfreeze]*/)
+	{
+		if (--player->linktimer <= 0) // Link timer
+			player->linkcount = 0;
+	}
+
 	if (player->mo->reactiontime)
 	{
 		// Reactiontime is used to prevent movement
@@ -4426,6 +4425,16 @@ void P_PlayerThink(player_t *player)
 	}
 	else
 	{
+		if (player->bumpertime == TICRATE/2 && player->mo->hnext)
+		{
+			// Center player to NiGHTS bumper here because if you try to set player's position in
+			// P_TouchSpecialThing case MT_NIGHTSBUMPER, that position is fudged in the time
+			// between that routine in the previous tic
+			// and reaching here in the current tic
+			P_MoveOrigin(player->mo, player->mo->hnext->x, player->mo->hnext->y
+				, player->mo->hnext->z + FixedMul(player->mo->hnext->height/4, player->mo->hnext->scale));
+			P_SetTarget(&player->mo->hnext, NULL);
+		}
 		// Move around.
 		P_MovePlayer(player);
 	}
@@ -4473,6 +4482,9 @@ void P_PlayerThink(player_t *player)
 	// Counters, time dependent power ups.
 	// Time Bonus & Ring Bonus count settings
 
+	if (player->bumpertime)
+		player->bumpertime--;
+
 	// Strength counts up to diminish fade.
 	if (player->flashing && player->flashing < UINT16_MAX &&
 		(player->spectator || player->flashing < K_GetKartFlashing(player)))
@@ -4493,7 +4505,7 @@ void P_PlayerThink(player_t *player)
 		|| (player->pflags & PF_NOCONTEST) // NO CONTEST explosion
 		|| ((gametyperules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
 	{
-		if (player->flashing > 1 && player->flashing < K_GetKartFlashing(player)
+		if (player->flashing > 0 && player->flashing < K_GetKartFlashing(player)
 			&& (leveltime & 1))
 			player->mo->renderflags |= RF_DONTDRAW;
 		else
@@ -4706,7 +4718,7 @@ void P_PlayerAfterThink(player_t *player)
 
 void P_SetPlayerAngle(player_t *player, angle_t angle)
 {
-	P_ForceLocalAngle(player, angle);
+	P_ForceLocalAngle(player, angle, true);
 	player->angleturn = angle;
 }
 
@@ -4725,7 +4737,7 @@ angle_t P_GetLocalAngle(player_t *player)
 	return 0;
 }
 
-void P_ForceLocalAngle(player_t *player, angle_t angle)
+void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp)
 {
 	UINT8 i;
 
@@ -4736,6 +4748,13 @@ void P_ForceLocalAngle(player_t *player, angle_t angle)
 		if (player == &players[displayplayers[i]])
 		{
 			localangle[i] = angle;
+			if (!interp)
+			{
+				if (camera[i].chase)
+					P_ResetCamera(player, &camera[i]);
+
+				R_ResetViewInterpolation(i + 1);
+			}
 			break;
 		}
 	}
@@ -4744,4 +4763,28 @@ void P_ForceLocalAngle(player_t *player, angle_t angle)
 boolean P_PlayerFullbright(player_t *player)
 {
 	return (player->invincibilitytimer > 0);
+}
+
+void P_ResetPlayerCheats(void)
+{
+	INT32 i;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *player = &players[i];
+		mobj_t *thing = player->mo;
+
+		if (!playeringame[i])
+			continue;
+
+		player->pflags &= ~(PF_GODMODE);
+
+		if (P_MobjWasRemoved(thing))
+			continue;
+
+		thing->flags &= ~(MF_NOCLIP);
+
+		thing->destscale = mapobjectscale;
+		P_SetScale(thing, thing->destscale);
+	}
 }

@@ -22,6 +22,10 @@
 // SRB2Kart
 #include "r_skins.h" // NUMFACES
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // STATUS BAR
 //
@@ -77,6 +81,8 @@ boolean ST_SameTeam(player_t *a, player_t *b);
 
 extern boolean st_overlay; // sb overlay on or off when fullscreen
 extern INT32 st_palette; // 0 is default, any others are special palettes.
+extern player_t *stplyr; // for splitscreen correct palette changes and overlay
+extern UINT8 stplyrnum;
 extern UINT32 st_translucency;
 
 extern lumpnum_t st_borderpatchnum;
@@ -88,5 +94,9 @@ extern UINT16 objectsdrawn;
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;
 extern consvar_t cv_stagetitle;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

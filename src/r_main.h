@@ -18,6 +18,10 @@
 #include "r_data.h"
 #include "r_textures.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // POV related.
 //
@@ -70,6 +74,15 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define R_PointOnSide(x,y,node) udmf ? R_PointOnSideUDMF(x,y,node) : R_PointOnSideKart(x,y,node)
 INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node);
 INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node);
+
+// This is not as accurate
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE INT32 R_PointOnSideFast(fixed_t x, fixed_t y, const node_t *node)
+{
+	// use cross product to determine side quickly
+	return ((INT64)y - node->y) * node->dx - ((INT64)x - node->x) * node->dy > 0;
+}
+
 INT32 R_PointOnSegSide(fixed_t x, fixed_t y, const seg_t *line);
 #define R_PointToAngle(x, y) R_PointToAngle2(viewx, viewy, x, y)
 angle_t R_PointToAnglePlayer(player_t *player, fixed_t x, fixed_t y);
@@ -81,6 +94,18 @@ angle_t R_PointToAngle2(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1);
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 subsector_t *R_PointInSubsectorOrNull(fixed_t x, fixed_t y);
+
+// uses R_PointOnSideFast
+// SHOULD NOT BE USED FOR ANYTHING GAMEPLAY RELATED!!
+FUNCINLINE static ATTRINLINE subsector_t *R_PointInSubsectorFast(fixed_t x, fixed_t y)
+{
+	size_t nodenum = numnodes-1;
+
+	while (!(nodenum & NF_SUBSECTOR))
+		nodenum = nodes[nodenum].children[R_PointOnSideFast(x, y, nodes+nodenum)];
+
+	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
 
 boolean R_DoCulling(line_t *cullheight, line_t *viewcullheight, fixed_t vz, fixed_t bottomh, fixed_t toph);
 
@@ -105,6 +130,15 @@ extern int ps_numsprites;
 extern int ps_numdrawnodes;
 extern int ps_numpolyobjects;
 
+struct RenderStats
+{
+	size_t visplanes;
+	size_t drawsegs;
+	size_t skybox_portals;
+};
+
+extern struct RenderStats g_renderstats;
+
 //
 // REFRESH - the actual rendering functions.
 //
@@ -120,6 +154,34 @@ extern consvar_t cv_drawdist, cv_drawdist_precip;
 extern consvar_t cv_fov[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
+extern consvar_t cv_debugfinishline;
+
+// debugging
+
+typedef enum {
+	SW_HI_PLANES,
+	SW_HI_FOFPLANES,
+	SW_HI_FOFSIDES,
+	SW_HI_MIDTEXTURES,
+	SW_HI_WALLS,
+	SW_HI_THINGS,
+	SW_HI_SKY,
+
+	NUM_SW_HI
+} debugrender_highlight_t;
+
+extern UINT32 debugrender_highlight;
+
+void R_CheckDebugHighlight(debugrender_highlight_t type);
+INT32 R_AdjustLightLevel(INT32 light);
+UINT8 R_DebugLineColor(const line_t *ld);
+
+void Command_Debugrender_highlight(void);
+
+extern consvar_t
+	cv_debugrender_contrast,
+	cv_debugrender_spriteclip,
+	cv_debugrender_portal;
 
 // Called by startup code.
 void R_Init(void);
@@ -135,7 +197,7 @@ void R_SetViewSize(void);
 // do it (sometimes explicitly called)
 void R_ExecuteSetViewSize(void);
 
-void R_SetupFrame(int split);
+void R_SetupFrame(int split, boolean skybox);
 void R_SkyboxFrame(int split);
 
 boolean R_ViewpointHasChasecam(player_t *player);
@@ -146,4 +208,9 @@ void R_RenderPlayerView(void);
 
 // add commands related to engine, at game startup
 void R_RegisterEngineStuff(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

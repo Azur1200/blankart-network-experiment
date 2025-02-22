@@ -10,12 +10,19 @@
 /// \file  lua_hook.h
 /// \brief hooks for Lua scripting
 
+#ifndef __LUA_HOOK_H__
+#define __LUA_HOOK_H__
+
 #include "r_defs.h"
 #include "d_player.h"
 #include "s_sound.h"
 #include "d_event.h"
 
 #include "lua_hudlib_drawlist.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
 Do you know what an 'X Macro' is? Such a macro is called over each element of
@@ -34,7 +41,13 @@ automatically.
 	X (MobjThinker),/* P_MobjThinker, P_SceneryThinker */\
 	X (BossThinker),/* P_GenericBossThinker */\
 	X (ShouldDamage),/* P_DamageMobj (Should mobj take damage?) */\
+	X (ShouldSpin),/* P_DamageMobj (Should mobj take spinout damage?) */\
+	X (ShouldExplode),/* P_DamageMobj (Should mobj take explosion damage?) */\
+	X (ShouldSquish),/* P_DamageMobj (Should mobj take squish damage?) */\
 	X (MobjDamage),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerSpin),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerExplode),/* P_DamageMobj (Mobj actually takes damage!) */\
+	X (PlayerSquish),/* P_DamageMobj (Mobj actually takes damage!) */\
 	X (MobjDeath),/* P_KillMobj */\
 	X (BossDeath),/* A_BossDeath */\
 	X (MobjRemoved),/* P_RemoveMobj */\
@@ -72,6 +85,7 @@ automatically.
 	X (AddonLoaded),\
 
 #define STRING_HOOK_LIST(X) \
+	X (SpecialExecute),\
 	X (LinedefExecute),\
 	X (ShouldJingleContinue),/* should jingle of the given music continue playing */\
 
@@ -81,6 +95,7 @@ automatically.
 	X (title),/* titlescreen */\
 	X (titlecard),\
 	X (intermission),\
+	X (vote),\
 
 /*
 I chose to access the hook enums through a macro as well. This could provide
@@ -126,9 +141,16 @@ void LUA_HookThinkFrame(void);
 int  LUA_HookMobjLineCollide(mobj_t *, line_t *);
 int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher);
 int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookShouldSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerSpin(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerExplode(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
+int  LUA_HookPlayerSquish(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype);
 int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
 int  LUA_HookMobjMoveBlocked(mobj_t *, mobj_t *, line_t *);
+void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs);
 void LUA_HookLinedefExecute(line_t *, mobj_t *, sector_t *);
 int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg, int mute);
 int  LUA_HookHurtMsg(player_t *, mobj_t *inflictor, mobj_t *source, UINT8 damagetype);
@@ -142,3 +164,9 @@ int  LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boole
 int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend);
 int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif // __LUA_HOOK_H__

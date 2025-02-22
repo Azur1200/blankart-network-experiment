@@ -34,7 +34,11 @@ static double tictimer;
 // May be incorrect for other platforms, but we don't currently have a way to
 // query the scheduler granularity. SDL will do what's needed to make this as
 // low as possible though.
+#if defined(_WIN32)
+#define MIN_SLEEP_DURATION_MS 1.6
+#else
 #define MIN_SLEEP_DURATION_MS 2.1
+#endif
 
 tic_t I_GetTime(void)
 {
@@ -113,7 +117,12 @@ void I_SleepDuration(precise_t duration)
 		// hard sleep function.
 		if (sleepvalue > 0 && (dest - cur) > delaygranularity)
 		{
+#if defined(_WIN32)
+			DWORD sleepDuration = (DWORD)min((INT64)(dest - cur), sleepvalue);
+			SleepEx(sleepDuration, TRUE);
+#else
 			I_Sleep(sleepvalue);
+#endif
 		}
 
 		// Otherwise, this is a spinloop.

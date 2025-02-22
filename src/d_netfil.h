@@ -17,6 +17,10 @@
 #include "d_clisrv.h"
 #include "w_wad.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum
 {
 	SF_FILE,
@@ -37,13 +41,14 @@ typedef enum
 	FS_FALLBACK, // HTTP failed
 } filestatus_t;
 
-typedef struct
+struct fileneeded_t
 {
 	UINT8 willsend; // Is the server willing to send it?
 	char filename[MAX_WADPATH];
 	UINT8 md5sum[16];
 	filestatus_t status; // The value returned by recsearch
 	boolean justdownloaded; // To prevent late fragments from causing an I_Error
+	boolean compatmode;
 
 	// Used only for download
 	FILE *file;
@@ -54,11 +59,12 @@ typedef struct
 	UINT32 currentsize;
 	UINT32 totalsize;
 	UINT32 ackresendposition; // Used when resuming downloads
-} fileneeded_t;
+};
 
 extern INT32 fileneedednum;
 extern fileneeded_t fileneeded[MAX_WADFILES];
-extern char downloaddir[512];
+#define DOWNLOADDIR_PART "downloads"
+extern char downloaddir[];
 
 #ifndef NONET
 extern INT32 lastfilenum;
@@ -72,8 +78,6 @@ extern UINT32 totalfilesrequestedsize;
 extern boolean curl_failedwebdownload;
 extern boolean curl_running;
 extern INT32 curl_transfers;
-
-typedef struct HTTP_login HTTP_login;
 
 extern struct HTTP_login
 {
@@ -114,7 +118,7 @@ typedef enum
 	LFTNS_SENT     // The node already has the file
 } luafiletransfernodestatus_t;
 
-typedef struct luafiletransfer_s
+struct luafiletransfer_t
 {
 	char *filename;
 	char *realfilename;
@@ -123,8 +127,8 @@ typedef struct luafiletransfer_s
 	boolean ongoing;
 	luafiletransfernodestatus_t nodestatus[MAXNETNODES];
 	tic_t nodetimeouts[MAXNETNODES];
-	struct luafiletransfer_s *next;
-} luafiletransfer_t;
+	luafiletransfer_t *next;
+};
 
 extern luafiletransfer_t *luafiletransfers;
 extern boolean waitingforluafiletransfer;
@@ -164,6 +168,10 @@ size_t nameonlylength(const char *s);
 void CURLPrepareFile(const char* url, int dfilenum);
 void CURLGetFile(void);
 HTTP_login * CURLGetLogin (const char *url, HTTP_login ***return_prev_next);
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif // __D_NETFIL__

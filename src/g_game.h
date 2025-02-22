@@ -20,10 +20,13 @@
 #include "g_demo.h"
 #include "m_cheat.h" // objectplacing
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern char gamedatafilename[64];
 extern char timeattackfolder[64];
 extern char customversionstring[32];
-#define GAMEDATASIZE (4*8192)
 
 extern char  player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 extern INT32 player_name_changes[MAXPLAYERS];
@@ -36,6 +39,19 @@ extern tic_t levelstarttic;
 
 // for modding?
 extern INT16 prevmap, nextmap;
+
+// see also G_MapNumber
+typedef enum
+{
+	NEXTMAP_RESERVED = INT16_MAX, // so nextmap+1 doesn't roll over -- remove when gamemap is made 0-indexed
+	NEXTMAP_TITLE = INT16_MAX-1,
+	NEXTMAP_EVALUATION = INT16_MAX-2,
+	NEXTMAP_CREDITS = INT16_MAX-3,
+	NEXTMAP_CEREMONY = INT16_MAX-4,
+	NEXTMAP_INVALID = INT16_MAX-5, // Always last (swap with NEXTMAP_RESERVED when removing that)
+	NEXTMAP_SPECIAL = NEXTMAP_INVALID
+} nextmapspecial_t;
+
 extern INT32 gameovertics;
 extern UINT8 ammoremovaltics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
@@ -50,6 +66,8 @@ extern consvar_t cv_tutorialprompt;
 extern consvar_t cv_chatwidth, cv_chatnotifications, cv_chatheight, cv_chattime, cv_consolechat, cv_chatbacktint, cv_chatspamprotection;
 extern consvar_t cv_shoutname, cv_shoutcolor, cv_autoshout;
 extern consvar_t cv_songcredits;
+extern consvar_t cv_showfreeplay;
+extern consvar_t cv_growmusic, cv_supermusic;
 
 extern consvar_t cv_pauseifunfocused;
 
@@ -89,8 +107,8 @@ void weaponPrefChange4(void);
 #define MAXPLMOVE (50)
 #define SLOWTURNTICS (cv_turnsmooth.value * 3)
 
-// build an internal map name MAPxx from map number
 const char *G_BuildMapName(INT32 map);
+INT32 G_MapNumber(const char *mapname);
 
 void G_ResetAnglePrediction(player_t *player);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);
@@ -132,7 +150,7 @@ extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but sig
 void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo);
 void G_DoReborn(INT32 playernum);
 void G_PlayerReborn(INT32 player, boolean betweenmaps);
-void G_InitNew(UINT8 pencoremode, const char *mapname, boolean resetplayer,
+void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer,
 	boolean skipprecutscene, boolean FLS);
 char *G_BuildMapTitle(INT32 mapnum);
 
@@ -142,7 +160,7 @@ struct searchdim
 	UINT8 siz;
 };
 
-typedef struct
+struct mapsearchfreq_t
 {
 	INT16  mapnum;
 	UINT8  matchc;
@@ -150,8 +168,7 @@ typedef struct
 	UINT8  keywhc;
 	struct searchdim *keywhd;/* ...in KEYWORD */
 	UINT8  total;/* total hits */
-}
-mapsearchfreq_t;
+};
 
 INT32 G_FindMap(const char *query, char **foundmapnamep,
 		mapsearchfreq_t **freqp, INT32 *freqc);
@@ -170,7 +187,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1, but a warp test can start elsewhere
-void G_DeferedInitNew(boolean pencoremode, const char *mapname, INT32 pickedchar,
+void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
 
@@ -202,9 +219,11 @@ boolean G_IsSpecialStage(INT32 mapnum);
 boolean G_GametypeUsesLives(void);
 boolean G_GametypeHasTeams(void);
 boolean G_GametypeHasSpectators(void);
-INT16 G_SometimesGetDifferentGametype(void);
+#define VOTEMODIFIER_ENCORE 0x80
+INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype);
 UINT8 G_GetGametypeColor(INT16 gt);
-void G_ExitLevel(void);
+void G_BeginLevelExit(void);
+void G_FinishExitLevel(void);
 void G_NextLevel(void);
 void G_Continue(void);
 void G_UseContinue(void);
@@ -263,8 +282,13 @@ FUNCMATH INT32 G_TicsToMilliseconds(tic_t tics);
 
 // Don't split up TOL handling
 UINT32 G_TOLFlag(INT32 pgametype);
+INT16 G_GetFirstMapOfGametype(UINT8 pgametype);
 
 INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer);
 void G_AddMapToBuffer(INT16 map);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

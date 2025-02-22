@@ -38,6 +38,8 @@
 #include "lua_script.h"
 #include "lua_hook.h"
 
+#include "fastcmp.h"
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -78,7 +80,7 @@ static UINT8 cheatf_warp(void)
 	boolean success = false;
 
 	/*if (modifiedgame)
-		return 0;*/
+	 *	return 0;*/
 
 	if (menuactive && currentMenu != &MainDef)
 		return 0; // Only on the main menu!
@@ -125,7 +127,7 @@ static UINT8 cheatf_devmode(void)
 	for (i = 0; i < MAXUNLOCKABLES; i++)
 		unlockables[i].unlocked = true;
 	devparm = true;
-	cv_debug |= 0x8000;
+	cht_debug |= 0x8000;
 
 	// Refresh secrets menu existing.
 	M_ClearMenus(true);
@@ -257,17 +259,17 @@ boolean cht_Responder(event_t *ev)
 	//ret += cht_CheckCheat(&cheat_ultimate_joy, (char)ch);
 	ret += cht_CheckCheat(&cheat_warp, (char)ch);
 	ret += cht_CheckCheat(&cheat_warp_joy, (char)ch);
-#ifdef DEVELOP
+	#ifdef DEVELOP
 	ret += cht_CheckCheat(&cheat_devmode, (char)ch);
-#endif
+	#endif
 	return (ret != 0);
 }
 
 // Console cheat commands rely on these a lot...
-#define REQUIRE_PANDORA if (!M_SecretUnlocked(SECRET_PANDORA) && !cv_debug)\
+#define REQUIRE_PANDORA if (!M_SecretUnlocked(SECRET_PANDORA) && !cht_debug)\
 { CONS_Printf(M_GetText("You haven't earned this yet.\n")); return; }
 
-#define REQUIRE_DEVMODE if (!cv_debug)\
+#define REQUIRE_DEVMODE if (!cht_debug)\
 { CONS_Printf(M_GetText("DEVMODE must be enabled.\n")); return; }
 
 #define REQUIRE_OBJECTPLACE if (!objectplacing)\
@@ -282,39 +284,16 @@ boolean cht_Responder(event_t *ev)
 // command that can be typed at the console!
 void Command_CheatNoClip_f(void)
 {
-	player_t *plyr;
-
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
-	plyr = &players[consoleplayer];
-
-	if (!plyr->mo || P_MobjWasRemoved(plyr->mo))
-		return;
-
-	plyr->pflags ^= PF_NOCLIP;
-	CONS_Printf(M_GetText("No Clipping %s\n"), plyr->pflags & PF_NOCLIP ? M_GetText("On") : M_GetText("Off"));
-
-	if (plyr->pflags & PF_NOCLIP)
-		plyr->mo->flags |= MF_NOCLIP;
-	else
-		plyr->mo->flags &= ~MF_NOCLIP;
-
-	G_SetGameModified(multiplayer, true);
+	D_Cheat(consoleplayer, CHEAT_NOCLIP);
 }
 
 void Command_CheatGod_f(void)
 {
-	player_t *plyr;
-
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
-	plyr = &players[consoleplayer];
-	plyr->pflags ^= PF_GODMODE;
-	CONS_Printf(M_GetText("Cheese Mode %s\n"), plyr->pflags & PF_GODMODE ? M_GetText("On") : M_GetText("Off"));
-
-	G_SetGameModified(multiplayer, true);
+	D_Cheat(consoleplayer, CHEAT_GOD);
 }
 
 void Command_Scale_f(void)
@@ -324,7 +303,6 @@ void Command_Scale_f(void)
 
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
 	if (scale < FRACUNIT/100 || scale > 100*FRACUNIT) //COM_Argv(1) will return a null string if they did not give a paramater, so...
 	{
@@ -332,29 +310,21 @@ void Command_Scale_f(void)
 		return;
 	}
 
-	if (!players[consoleplayer].mo)
-		return;
-
-	players[consoleplayer].mo->destscale = scale;
-
-	CONS_Printf(M_GetText("Scale set to %s\n"), COM_Argv(1));
+	D_Cheat(consoleplayer, CHEAT_SCALE, scale);
 }
 
 void Command_Gravflip_f(void)
 {
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
-	if (players[consoleplayer].mo)
-		players[consoleplayer].mo->flags2 ^= MF2_OBJECTFLIP;
+	D_Cheat(consoleplayer, CHEAT_FLIP);
 }
 
 void Command_Hurtme_f(void)
 {
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
 	if (COM_Argc() < 2)
 	{
@@ -362,7 +332,7 @@ void Command_Hurtme_f(void)
 		return;
 	}
 
-	P_DamageMobj(players[consoleplayer].mo, NULL, NULL, atoi(COM_Argv(1)), DMG_NORMAL);
+	D_Cheat(consoleplayer, CHEAT_HURT, atoi(COM_Argv(1)));
 }
 
 void Command_RTeleport_f(void)
@@ -652,7 +622,6 @@ void Command_Skynum_f(void)
 {
 	REQUIRE_DEVMODE;
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
 
 	if (COM_Argc() != 2)
 	{
@@ -751,7 +720,7 @@ void Command_Getallemeralds_f(void)
 	REQUIRE_SINGLEPLAYER;
 	REQUIRE_PANDORA;
 
-	emeralds = EMERALD_ALL;
+	emeralds = ((EMERALD7)*2)-1;
 
 	CONS_Printf(M_GetText("You now have all 7 emeralds.\n"));
 }
@@ -766,25 +735,87 @@ void Command_Resetemeralds_f(void)
 }
 */
 
+//
+// Devmode
+//
+
+UINT32 cht_debug;
+
+struct debugFlagNames_s const debug_flag_names[] =
+{
+	{"None", DBG_NONE},
+	{"Basic", DBG_BASIC},
+	{"Detailed", DBG_DETAILED},
+	{"Player", DBG_PLAYER},
+	{"Render", DBG_RENDER},
+	{"Renderer", DBG_RENDER}, // alt name
+	{"Polyobj", DBG_POLYOBJ},
+	{"GameLogic", DBG_GAMELOGIC},
+	{"Game", DBG_GAMELOGIC}, // alt name
+	{"Netplay", DBG_NETPLAY},
+	{"Memory", DBG_MEMORY},
+	{"Setup", DBG_SETUP},
+	{"Lua", DBG_LUA},
+	{"RNG", DBG_RNG},
+	{"Randomizer", DBG_RNG}, // alt name
+	{"Demo", DBG_DEMO},
+	{"Replay", DBG_DEMO}, // alt name
+	{NULL, 0}
+};
+
 void Command_Devmode_f(void)
 {
-#ifndef _DEBUG
-	REQUIRE_SINGLEPLAYER;
-#endif
+	size_t argc = 0;
 
-	if (COM_Argc() > 1)
+	if (client && !IsPlayerAdmin(consoleplayer))
 	{
-		const char *arg = COM_Argv(1);
+		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		return;
+	}
 
-		if (arg[0] && arg[0] == '0' &&
-			arg[1] && arg[1] == 'x') // Use hexadecimal!
-			cv_debug = axtoi(arg+2);
-		else
-			cv_debug = atoi(arg);
+	argc = COM_Argc();
+	if (argc > 1)
+	{
+		UINT32 flags = 0;
+		size_t i;
+
+		for (i = 1; i < argc; i++)
+		{
+			const char *arg = COM_Argv(i);
+			size_t j;
+
+			// Try it as a string
+			for (j = 0; debug_flag_names[j].str; j++)
+			{
+				if (stricmp(arg, debug_flag_names[j].str) == 0)
+				{
+					break;
+				}
+			}
+
+			if (debug_flag_names[j].str)
+			{
+				flags |= debug_flag_names[j].flag;
+				continue;
+			}
+
+			// Try it as a number
+			if (arg[0] && arg[0] == '0' &&
+				arg[1] && arg[1] == 'x') // Use hexadecimal!
+			{
+				flags |= axtoi(arg+2);
+			}
+			else
+			{
+				flags |= atoi(arg);
+			}
+		}
+
+		D_Cheat(consoleplayer, CHEAT_DEVMODE, flags);
 	}
 	else
 	{
-		CONS_Printf(M_GetText("devmode <flags>: enable debugging tools and info, prepend with 0x to use hexadecimal\n"));
+		CONS_Printf(M_GetText("devmode <flags>: Enable debugging info. Prepend with 0x to use hexadecimal\n"));
 		return;
 	}
 
@@ -797,15 +828,7 @@ void Command_Setrings_f(void)
 	REQUIRE_SINGLEPLAYER;
 	REQUIRE_PANDORA;
 
-	if (COM_Argc() > 1)
-	{
-		// P_GivePlayerRings does value clamping
-		players[consoleplayer].rings = 0;
-		P_GivePlayerRings(&players[consoleplayer], atoi(COM_Argv(1)));
-		players[consoleplayer].totalring -= atoi(COM_Argv(1)); //undo totalring addition done in P_GivePlayerRings
-
-		G_SetGameModified(multiplayer, true);
-	}
+	D_Cheat(consoleplayer, CHEAT_RINGS, atoi(COM_Argv(1)));
 }
 
 void Command_Setlives_f(void)
@@ -814,22 +837,7 @@ void Command_Setlives_f(void)
 	REQUIRE_SINGLEPLAYER;
 	REQUIRE_PANDORA;
 
-	if (COM_Argc() > 1)
-	{
-		SINT8 lives = atoi(COM_Argv(1));
-		if (lives == -1)
-		{
-			players[consoleplayer].lives = INFLIVES; // infinity!
-		}
-		else
-		{
-			// P_GivePlayerLives does value clamping
-			players[consoleplayer].lives = 0;
-			P_GivePlayerLives(&players[consoleplayer], atoi(COM_Argv(1)));
-		}
-
-		G_SetGameModified(multiplayer, true);
-	}
+	D_Cheat(consoleplayer, CHEAT_LIVES, atoi(COM_Argv(1)));
 }
 
 //
@@ -877,7 +885,7 @@ static void OP_CycleThings(INT32 amt)
 		} while
 		(mobjinfo[op_currentthing].doomednum == -1
 			|| op_currentthing == MT_NIGHTSDRONE
-			|| mobjinfo[op_currentthing].flags & MF_NOSECTOR
+			|| mobjinfo[op_currentthing].flags & (MF_AMBIENT|MF_NOSECTOR)
 			|| (states[mobjinfo[op_currentthing].spawnstate].sprite == SPR_NULL
 			 && states[mobjinfo[op_currentthing].seestate].sprite == SPR_NULL)
 		);
@@ -981,8 +989,11 @@ static mapthing_t *OP_CreateNewMapThing(player_t *player, UINT16 type, boolean c
 
 	mt->options = (mt->z << ZSHIFT) | (UINT16)cv_opflags.value;
 	mt->scale = player->mo->scale;
-	memset(mt->args, 0, NUMMAPTHINGARGS*sizeof(*mt->args));
-	memset(mt->stringargs, 0x00, NUMMAPTHINGSTRINGARGS*sizeof(*mt->stringargs));
+	memset(mt->args, 0, NUM_MAPTHING_ARGS*sizeof(*mt->args));
+	memset(mt->stringargs, 0x00, NUM_MAPTHING_STRINGARGS*sizeof(*mt->stringargs));
+	mt->special = 0;
+	memset(mt->script_args, 0, NUM_SCRIPT_ARGS*sizeof(*mt->script_args));
+	memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 	mt->pitch = mt->roll = 0;
 	return mt;
 }

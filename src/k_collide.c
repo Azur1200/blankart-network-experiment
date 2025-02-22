@@ -233,7 +233,9 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 
 		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)
 		{
-			return true;
+			if (t2->player->karmamode || t2->player->karmadelay)
+				return true;
+			t2->player->karmamode = 2;
 		}
 		else
 		{
@@ -271,7 +273,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 				if (t1->target->hnext == t1)
 				{
 					P_SetTarget(&t1->target->hnext, NULL);
-					t1->target->player->pflags &= ~PF_EGGMANOUT;
+					t1->target->player->itemflags &= ~IF_EGGMANOUT;
 				}
 			}
 
@@ -636,7 +638,7 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 static mobj_t *lightningSource;
 static fixed_t lightningDist;
 
-static inline BlockItReturn_t PIT_LightningShieldAttack(mobj_t *thing)
+static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 {
 	if (lightningSource == NULL || P_MobjWasRemoved(lightningSource))
 	{
@@ -692,7 +694,7 @@ static inline BlockItReturn_t PIT_LightningShieldAttack(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-void K_LightningShieldAttack(mobj_t *actor, fixed_t size)
+void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 {
 	INT32 bx, by, xl, xh, yl, yh;
 
@@ -709,7 +711,7 @@ void K_LightningShieldAttack(mobj_t *actor, fixed_t size)
 
 	for (by = yl; by <= yh; by++)
 		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_LightningShieldAttack);
+			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
@@ -910,7 +912,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		}
 	}
 
-	if (!ringsdisabled) // Ring sting, this is a bit more unique
+	/*if (!ringsdisabled) // Ring sting, this is a bit more unique
 	{
 		t1Condition = (K_GetShieldFromItem(t2->player->itemtype) == KSHIELD_NONE);
 		t2Condition = (K_GetShieldFromItem(t1->player->itemtype) == KSHIELD_NONE);
@@ -938,7 +940,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		}
 
 		return (stungT1 || stungT2);
-	}
+	}*/
 	
 	return false;
 }

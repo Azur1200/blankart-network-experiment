@@ -1,6 +1,6 @@
 qs22j.c
 string.c
-d_main.c
+d_main.cpp
 d_clisrv.c
 d_net.c
 d_netfil.c
@@ -33,7 +33,8 @@ m_cond.c
 m_easing.c
 m_fixed.c
 m_menu.c
-m_misc.c
+m_memcpy.c
+m_misc.cpp
 m_perfstats.c
 m_random.c
 m_queue.c
@@ -45,6 +46,7 @@ p_inter.c
 p_lights.c
 p_map.c
 p_maputl.c
+p_mapthing.cpp
 p_mobj.c
 p_polyobj.c
 p_saveg.c
@@ -56,18 +58,20 @@ p_tick.c
 p_loop.c
 p_user.c
 p_slopes.c
+p_sweep.cpp
+p_test.cpp
 tables.c
-r_bsp.c
+r_bsp.cpp
 r_data.c
-r_draw.c
+r_draw.cpp
 r_fps.c
-r_main.c
-r_plane.c
-r_segs.c
+r_main.cpp
+r_plane.cpp
+r_segs.cpp
 r_skins.c
 r_sky.c
 r_splats.c
-r_things.c
+r_things.cpp
 r_bbox.c
 r_textures.c
 r_patch.c
@@ -75,6 +79,8 @@ r_patchrotation.c
 r_picformats.c
 r_portal.c
 r_bbox.c
+r_debug.cpp
+r_debug_parser.cpp
 screen.c
 taglist.c
 v_video.c
@@ -122,3 +128,4 @@ k_terrain.c
 k_brightmap.c
 k_director.c
 k_follower.c
+k_mapuser.c

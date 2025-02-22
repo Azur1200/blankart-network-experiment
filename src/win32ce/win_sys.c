@@ -303,7 +303,7 @@ static inline BOOL I_ReadyConsole(HANDLE ci)
 
 static inline VOID I_GetConsoleEvents(VOID)
 {
-	event_t ev = {0,0,0,0};
+	event_t ev = {0,0,0,0,0};
 	HANDLE ci = GetStdHandle(STD_INPUT_HANDLE);
 	HANDLE co = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO CSBI;
@@ -3483,43 +3483,6 @@ char *I_ClipboardPaste(void)
 }
 
 typedef BOOL (WINAPI *MyFunc3) (DWORD);
-
-const CPUInfoFlags *I_CPUInfo(void)
-{
-	static CPUInfoFlags WIN_CPUInfo;
-	static MyFunc3 pfnCPUID = NULL;
-	SYSTEM_INFO SI;
-	HMODULE h = GetModuleHandleA("kernel32.dll");
-
-	if (h)
-		pfnCPUID = (MyFunc3)GetProcAddress(h, "IsProcessorFeaturePresent");
-	ZeroMemory(&WIN_CPUInfo,sizeof (WIN_CPUInfo));
-	if(pfnCPUID)
-	{
-		WIN_CPUInfo.FPPE       = pfnCPUID( 0); //PF_FLOATING_POINT_PRECISION_ERRATA
-		WIN_CPUInfo.FPE        = pfnCPUID( 1); //PF_FLOATING_POINT_EMULATED
-		WIN_CPUInfo.cmpxchg    = pfnCPUID( 2); //PF_COMPARE_EXCHANGE_DOUBLE
-		WIN_CPUInfo.MMX        = pfnCPUID( 3); //PF_MMX_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.PPCMM64    = pfnCPUID( 4); //PF_PPC_MOVEMEM_64BIT_OK
-		WIN_CPUInfo.ALPHAbyte  = pfnCPUID( 5); //PF_ALPHA_BYTE_INSTRUCTIONS
-		WIN_CPUInfo.SSE        = pfnCPUID( 6); //PF_XMMI_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.AMD3DNow   = pfnCPUID( 7); //PF_3DNOW_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.RDTSC      = pfnCPUID( 8); //PF_RDTSC_INSTRUCTION_AVAILABLE
-		WIN_CPUInfo.PAE        = pfnCPUID( 9); //PF_PAE_ENABLED
-		WIN_CPUInfo.SSE2       = pfnCPUID(10); //PF_XMMI64_INSTRUCTIONS_AVAILABLE
-		//WIN_CPUInfo.blank    = pfnCPUID(11); //PF_SSE_DAZ_MODE_AVAILABLE
-		WIN_CPUInfo.DEP        = pfnCPUID(12); //PF_NX_ENABLED
-		WIN_CPUInfo.SSE3       = pfnCPUID(13); //PF_SSE3_INSTRUCTIONS_AVAILABLE
-		WIN_CPUInfo.cmpxchg16b = pfnCPUID(14); //PF_COMPARE_EXCHANGE128
-		WIN_CPUInfo.cmp8xchg16 = pfnCPUID(15); //PF_COMPARE64_EXCHANGE128
-		WIN_CPUInfo.PFC        = pfnCPUID(15); //PF_CHANNELS_ENABLED
-	}
-	GetSystemInfo(&SI);
-	WIN_CPUInfo.CPUs = SI.dwNumberOfProcessors;
-	WIN_CPUInfo.IA64 = (SI.dwProcessorType == 2200); // PROCESSOR_INTEL_IA64
-	WIN_CPUInfo.AMD64 = (SI.dwProcessorType == 8664); // PROCESSOR_AMD_X8664
-	return &WIN_CPUInfo;
-}
 
 UINT64 I_FileSize(const char *filename)
 {

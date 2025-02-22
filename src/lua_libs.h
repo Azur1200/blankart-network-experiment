@@ -9,6 +9,12 @@
 //-----------------------------------------------------------------------------
 /// \file  lua_libs.h
 /// \brief libraries for Lua scripting
+#ifndef __LUA_LIBS_H__
+#define __LUA_LIBS_H__
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern lua_State *gL;
 
@@ -39,7 +45,9 @@ extern lua_State *gL;
 #define META_PLAYER "PLAYER_T*"
 #define META_TICCMD "TICCMD_T*"
 #define META_SKIN "SKIN_T*"
+#define META_POWERS "PLAYER_T*POWERS"
 #define META_KARTHUD "PLAYER_T*KARTHUD"
+#define META_KARTSTUFF "PLAYER_T*KARTSTUFF"
 #define META_RESPAWN "PLAYER_T*RESPAWN"
 #define META_COLLIDE "PLAYER_T*COLLIDE"
 #define META_SOUNDSID "SKIN_T*SOUNDSID"
@@ -116,3 +124,9 @@ int LUA_PolyObjLib(lua_State *L);
 int LUA_BlockmapLib(lua_State *L);
 int LUA_HudLib(lua_State *L);
 int LUA_FollowerLib(lua_State *L);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif // __LUA_LIBS_H__

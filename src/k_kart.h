@@ -10,6 +10,10 @@
 #include "d_player.h" // Need for player_t
 #include "command.h" // Need for player_t
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define KART_FULLTURN 800
 
 /*
@@ -21,6 +25,28 @@ Make sure this matches the actual number of states
 
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
+
+// Used for respawning checks.
+
+typedef struct respawnresult_s
+{
+	sector_t *cursec;
+	fixed_t bestsectorheight;
+	fixed_t bestfofheight;
+	ffloor_t *bestrover;
+	fixed_t bestpoheight;
+	polyobj_t *bestpo;
+	fixed_t finaldistances[3];
+
+	SINT8 result;
+} respawnresult_t;
+
+typedef enum
+{
+	RESPAWNRS_SECTOR,
+	RESPAWNRS_ROVER,
+	RESPAWNRS_PO,
+} respawnresult_e;
 
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
@@ -34,9 +60,11 @@ fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 extern consvar_t *KartItemCVars[NUMKARTRESULTS-1];
 
 UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);
+INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb);
 fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush);
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, UINT32 ourDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival);
+INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
 INT32 K_GetShieldFromItem(INT32 item);
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2);
@@ -53,6 +81,7 @@ void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
 void K_KartPlayerHUDUpdate(player_t *player);
 void K_KartResetPlayerColor(player_t *player);
+UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
@@ -91,6 +120,7 @@ INT32 K_GetKartDriftSparkValue(player_t *player);
 INT32 K_GetKartDriftSparkValueForStage(player_t *player, UINT8 stage);
 void K_SpawnDriftBoostExplosion(player_t *player, int stage);
 void K_SpawnDriftElectricSparks(player_t *player);
+INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateAllPlayerPositions(void);
@@ -107,6 +137,7 @@ fixed_t K_PlayerTripwireSpeedThreshold(player_t *player);
 tripwirepass_t K_TripwirePassConditions(player_t *player);
 boolean K_TripwirePass(player_t *player);
 boolean K_WaterRun(player_t *player);
+void K_SetTireGrease(player_t *player, tic_t tics);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
 fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed);
@@ -122,7 +153,7 @@ fixed_t K_GetNewSpeed(player_t *player);
 fixed_t K_3dKartMovement(player_t *player);
 SINT8 K_Sliptiding(player_t *player);
 void K_MoveKartPlayer(player_t *player, boolean onground);
-void K_CheckSpectateStatus(void);
+void K_CheckSpectateStatus(boolean considermapreset);
 UINT8 K_GetInvincibilityItemFrame(void);
 UINT8 K_GetOrbinautItemFrame(UINT8 count);
 boolean K_IsSPBInGame(void);
@@ -138,6 +169,12 @@ void K_PlayPowerGloatSound(mobj_t *source);
 
 void K_SetItemOut(player_t *player);
 void K_UnsetItemOut(player_t *player);
+
+boolean K_SafeRespawnPosition(mobj_t * mo);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 // =========================================================================
 #endif  // __K_KART__

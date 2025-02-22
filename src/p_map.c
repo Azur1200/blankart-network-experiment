@@ -378,12 +378,17 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		if (horizspeed && object->player->cmd.forwardmove == 0 && object->player->cmd.sidemove == 0)
 		{
 			object->angle = spring->angle;
+			object->player->angleturn = spring->angle;
 
 			if (!demo.playback)
 			{
-				for (int i = 0; i <= r_splitscreen; i++)
+				for (SINT8 j = 0; j <= r_splitscreen; j++)
 				{
-						localangle[i] = spring->angle;
+					if (object->player == &players[displayplayers[j]])
+					{
+						localangle[j] = spring->angle;
+						break;
+					}
 				}
 			}
 		}
@@ -438,7 +443,7 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 			if (spring->state != &states[S_STEAM1]) // Only when it bursts
 				break;
 
-			if (spring->spawnpoint && spring->spawnpoint->args[1])
+			if (spring->args[1])
 			{
 				if (object->eflags & MFE_SPRUNG)
 					break;
@@ -607,6 +612,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (tm.thing->player && tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
 			UINT32 damagetype = (tm.thing->info->mass & DMG_TYPEMASK);
+			if (!damagetype && thing->flags & MF_FIRE) // BURN!
+				damagetype = DMG_NORMAL;
 			P_DamageMobj(tm.thing, thing, thing, 1, damagetype);
 		}
 		return BMIT_CONTINUE;
@@ -621,6 +628,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (thing->player && thing->flags & MF_SHOOTABLE && tm.thing->health > 0)
 		{
 			UINT32 damagetype = (tm.thing->info->mass & DMG_TYPEMASK);
+			if (!damagetype && tm.thing->flags & MF_FIRE) // BURN!
+				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, tm.thing, tm.thing, 1, damagetype);
 		}
 		return BMIT_CONTINUE;
@@ -1409,7 +1418,6 @@ static BlockItReturn_t PIT_CheckCameraLine(line_t *ld)
 	// could be crossed in either order.
 
 	// this line is out of the if so upper and lower textures can be hit by a splat
-	tm.blockingline = ld;
 	if (!ld->backsector) // one sided line
 	{
 		if (P_PointOnLineSide(mapcampointer->x, mapcampointer->y, ld))
@@ -1462,9 +1470,9 @@ boolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing)
 			return true;
 		}
 
-		if (udmf && thing->player)
+		if (thing->player)
 		{
-			return ((ld->flags & ML_BLOCKPLAYERS) == ML_BLOCKPLAYERS);
+			return ld->blockplayers;
 		}
 		else if (thing->flags & (MF_ENEMY|MF_BOSS))
 		{
@@ -1478,6 +1486,22 @@ boolean P_IsLineBlocking(const line_t *ld, const mobj_t *thing)
 boolean P_IsLineTripWire(const line_t *ld)
 {
 	return ld->tripwire;
+}
+
+static boolean P_UsingStepUp(mobj_t *thing)
+{
+	if (thing->flags & MF_NOCLIP)
+	{
+		return false;
+	}
+
+	// orbits have no collision
+	if (thing->player && thing->player->loop.radius)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 //
@@ -1537,14 +1561,20 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	// could be crossed in either order.
 
 	// this line is out of the if so upper and lower textures can be hit by a splat
-	tm.blockingline = ld;
 
 	{
-		UINT8 shouldCollide = LUA_HookMobjLineCollide(tm.thing, tm.blockingline); // checks hook for thing's type
+		UINT8 shouldCollide = LUA_HookMobjLineCollide(tm.thing, ld); // checks hook for thing's type
 		if (P_MobjWasRemoved(tm.thing))
 			return BMIT_CONTINUE; // one of them was removed???
 		if (shouldCollide == 1)
-			return BMIT_ABORT; // force collide
+		{
+			if (tm.sweep)
+			{
+				P_TestLine(ld);
+			}
+			tm.blocking = true; // force collide
+			return BMIT_CONTINUE;
+		}
 		else if (shouldCollide == 2)
 			return BMIT_CONTINUE; // force no collide
 	}
@@ -1553,14 +1583,54 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	{
 		if (P_PointOnLineSide(tm.thing->x, tm.thing->y, ld))
 			return BMIT_CONTINUE; // don't hit the back side
-		return BMIT_ABORT;
+
+		if (tm.sweep)
+		{
+			P_TestLine(ld);
+		}
+		tm.blocking = true;
+		return BMIT_CONTINUE;
 	}
 
 	if (P_IsLineBlocking(ld, tm.thing))
-		return BMIT_ABORT;
+	{
+		if (tm.sweep)
+		{
+			P_TestLine(ld);
+		}
+		tm.blocking = true;
+		return BMIT_CONTINUE;
+	}
 
 	// set openrange, opentop, openbottom
 	P_LineOpening(ld, tm.thing, &open);
+
+	if (tm.sweep && P_UsingStepUp(tm.thing))
+	{
+		// copied from P_TryMove
+		// TODO: refactor this into one place
+		if (open.range < tm.thing->height)
+		{
+			P_TestLine(ld);
+		}
+		else if (tm.maxstep > 0)
+		{
+			if (tm.thing->z < open.floor)
+			{
+				if (open.floorstep > tm.maxstep)
+				{
+					P_TestLine(ld);
+				}
+			}
+			else if (open.ceiling < tm.thing->z + tm.thing->height)
+			{
+				if (open.ceilingstep > tm.maxstep)
+				{
+					P_TestLine(ld);
+				}
+			}
+		}
+	}
 
 	// adjust floor / ceiling heights
 	if (open.ceiling < tm.ceilingz)
@@ -1654,6 +1724,10 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 // tm.ceilingz
 //     the nearest ceiling or thing's bottom over tm.thing
 //
+
+static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
+static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
+
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result)
 {
 	INT32 thingtop = thing->z + thing->height;
@@ -1681,7 +1755,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	tm.bbox[BOXLEFT] = x - tm.thing->radius;
 
 	newsubsec = R_PointInSubsector(x, y);
-	tm.ceilingline = tm.blockingline = NULL;
+	tm.ceilingline = NULL;
+	tm.blocking = false;
 
 	// The base floor / ceiling is from the subsector
 	// that contains the point.
@@ -1766,11 +1841,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				continue;
 			}
 
-			if (thing->player && P_CheckSolidFFloorSurface(thing->player, rover))
+			if (P_CheckSolidFFloorSurface(thing, rover))
 				;
 			else if (thing->type == MT_SKIM && (rover->fofflags & FOF_SWIMMABLE))
 				;
-			else if (!((rover->fofflags & FOF_BLOCKPLAYER && thing->player)
+			 else if (!((rover->fofflags & FOF_BLOCKPLAYER && thing->player)
 			    || (rover->fofflags & FOF_BLOCKOTHERS && !thing->player)
 				|| rover->fofflags & FOF_QUICKSAND))
 				continue;
@@ -1816,6 +1891,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 			}
 		}
 	}
+
+	P_ClearTestLines();
 
 	// The bounding box is extended by MAXRADIUS
 	// because mobj_ts are grouped into mapblocks
@@ -1915,13 +1992,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	// reset special lines
 	numspechit = 0U;
 
-	if (tm.flags & MF_NOCLIP)
-		return true;
-
 	// Check things first, possibly picking things up.
 
 	// MF_NOCLIPTHING: used by camera to not be blocked by things
-	if (!(thing->flags & MF_NOCLIPTHING))
+	// Respawning things should also be intangible to other things
+	if (!(thing->flags & MF_NOCLIPTHING) /*&& !P_MobjIsReappearing(thing)*/)
 	{
 		for (bx = xl; bx <= xh; bx++)
 		{
@@ -1944,6 +2019,16 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 		}
 	}
 
+	if (tm.flags & MF_NOCLIP)
+	{
+		// Sal 12/19/2022 -- PIT_CheckThing code will still run
+		// with MF_NOCLIP enabled, but they won't be blocked
+		// regardless of the result. This allows for SPBs and
+		// the UFO to collide.
+		// ...but be careful about removed obj! ~toast 140423
+		return !P_MobjWasRemoved(thing);
+	}
+
 	validcount++;
 
 	// check lines
@@ -1951,24 +2036,29 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	{
 		for (by = yl; by <= yh; by++)
 		{
-			if (!P_BlockLinesIterator(bx, by, PIT_CheckLine))
-			{
-				blockval = false;
-			}
+			P_BlockLinesIterator(bx, by, PIT_CheckLine);
 		}
+	}
+
+	if (tm.blocking)
+	{
+		blockval = false;
 	}
 
 	if (result != NULL)
 	{
-		result->line = tm.blockingline;
+		result->line = NULL;
 		result->mo = tm.hitthing;
 	}
+	else
+	{
+		P_ClearTestLines();
+	}
+
+	tm.sweep = false;
 
 	return blockval;
 }
-
-static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
-static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
 
 // P_CheckPosition optimized for the MT_HOOPCOLLIDE object. This needs to be as fast as possible!
 void P_CheckHoopPosition(mobj_t *hoopthing, fixed_t x, fixed_t y, fixed_t z, fixed_t radius)
@@ -2011,7 +2101,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	tm.bbox[BOXLEFT] = x - thiscam->radius;
 
 	newsubsec = R_PointInSubsector(x, y);
-	tm.ceilingline = tm.blockingline = NULL;
+	tm.ceilingline = NULL;
 
 	mapcampointer = thiscam;
 
@@ -2391,22 +2481,6 @@ fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY)
 	return maxstep;
 }
 
-static boolean P_UsingStepUp(mobj_t *thing)
-{
-	if (thing->flags & MF_NOCLIP)
-	{
-		return false;
-	}
-
-	// orbits have no collision
-	if (thing->player && thing->player->loop.radius)
-	{
-		return false;
-	}
-
-	return true;
-}
-
 static boolean
 increment_move
 (		mobj_t * thing,
@@ -2459,7 +2533,29 @@ increment_move
 				tryy = y;
 		}
 
-		if (!P_CheckPosition(thing, tryx, tryy, result))
+		if (P_UsingStepUp(thing))
+		{
+			tm.maxstep = P_GetThingStepUp(thing, tryx, tryy);
+		}
+
+		if (result)
+		{
+			tm.sweep = true;
+		}
+
+		boolean move_ok = P_CheckPosition(thing, tryx, tryy, result);
+
+		if (P_MobjWasRemoved(thing))
+		{
+			return false;
+		}
+
+		if (result)
+		{
+			result->line = P_SweepTestLines(thing->x, thing->y, x, y, thing->radius, &result->normal);
+		}
+
+		if (!move_ok)
 		{
 			return false; // solid wall or thing
 		}
@@ -3036,33 +3132,30 @@ static void P_HitSlideLine(line_t *ld)
 //
 // HitBounceLine, for players
 //
-static void P_PlayerHitBounceLine(line_t *ld)
+static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 {
-	INT32 side;
-	angle_t lineangle;
 	fixed_t movelen;
 	fixed_t x, y;
-
-	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
-	lineangle = ld->angle - ANGLE_90;
-
-	if (side == 1)
-		lineangle += ANGLE_180;
-
-	lineangle >>= ANGLETOFINESHIFT;
 
 	movelen = P_AproxDistance(tmxmove, tmymove);
 
 	if (slidemo->player && movelen < (15*mapobjectscale))
 		movelen = (15*mapobjectscale);
 
-	x = FixedMul(movelen, FINECOSINE(lineangle));
-	y = FixedMul(movelen, FINESINE(lineangle));
-
-	if (P_IsLineTripWire(ld))
+	if (!ld)
 	{
-		tmxmove = x * 4;
-		tmymove = y * 4;
+		angle_t th = R_PointToAngle2(0, 0, tmxmove, tmymove);
+		normal->x = -FCOS(th);
+		normal->y = -FSIN(th);
+	}
+
+	x = FixedMul(movelen, normal->x);
+	y = FixedMul(movelen, normal->y);
+
+	if (ld && P_IsLineTripWire(ld))
+	{
+		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
+		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
 	}
 	else
 	{
@@ -3556,8 +3649,23 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	slidemo = mo;
 	bestslideline = result->line;
 
-	if (bestslideline == NULL)
-		return;
+	if (bestslideline == NULL && cv_showgremlins.value)
+	{
+		// debug
+		mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+		x->frame = FF_FULLBRIGHT | FF_ADD;
+		x->renderflags = RF_ALWAYSONTOP;
+		x->color = SKINCOLOR_RED;
+
+		CONS_Printf(
+			"GREMLIN: leveltime=%u x=%f y=%f z=%f angle=%f\n",
+			leveltime,
+			FixedToFloat(mo->x),
+			FixedToFloat(mo->y),
+			FixedToFloat(mo->z),
+			AngleToFloat(R_PointToAngle2(0, 0, oldmomx, oldmomy))
+		);
+	}
 
 	if (mo->eflags & MFE_JUSTBOUNCEDWALL) // Stronger push-out
 	{
@@ -3570,7 +3678,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
 	}
 
-	if (P_IsLineTripWire(bestslideline))
+	if (bestslideline && P_IsLineTripWire(bestslideline))
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
@@ -3588,7 +3696,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		K_SpawnBumpEffect(mo);
 	}
 
-	P_PlayerHitBounceLine(bestslideline);
+	P_PlayerHitBounceLine(bestslideline, &result->normal);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
 	mo->momx = tmxmove;
@@ -3596,7 +3704,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mo->player->cmomx = tmxmove;
 	mo->player->cmomy = tmymove;
 
-	if (!P_IsLineTripWire(bestslideline))
+	if (!bestslideline || !P_IsLineTripWire(bestslideline))
 	{
 		if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL))
 		{
@@ -3648,7 +3756,7 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
 	}
-	else if (mo->type == MT_THROWNGRENADE)
+	else if (mo->type == MT_THROWNGRENADE || mo->type == MT_CYBRAKDEMON_NAPALM_BOMB_LARGE)
 	{
 		// Quickly decay speed as it bounces
 		tmxmove = FixedDiv(mmomx, 2*FRACUNIT);

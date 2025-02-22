@@ -170,6 +170,12 @@ enum side_e {
 	side_valid = 0,
 	side_textureoffset,
 	side_rowoffset,
+	side_offsetx_top,
+	side_offsety_top,
+	side_offsetx_mid,
+	side_offsety_mid,
+	side_offsetx_bot,
+	side_offsety_bot,
 	side_toptexture,
 	side_bottomtexture,
 	side_midtexture,
@@ -184,6 +190,12 @@ static const char *const side_opt[] = {
 	"valid",
 	"textureoffset",
 	"rowoffset",
+	"offsetx_top",
+	"offsety_top",
+	"offsetx_mid",
+	"offsety_mid",
+	"offsetx_bot",
+	"offsety_bot",
 	"toptexture",
 	"bottomtexture",
 	"midtexture",
@@ -377,6 +389,24 @@ static const char *const vector_opt[] = {
 	"x",
 	"y",
 	"z",
+	NULL};
+
+enum activator_e {
+	activator_valid = 0,
+	activator_mo,
+	activator_line,
+	activator_side,
+	activator_sector,
+	activator_po
+};
+
+static const char *const activator_opt[] = {
+	"valid",
+	"mo",
+	"line",
+	"side",
+	"sector",
+	"po",
 	NULL};
 
 static const char *const array_opt[] ={"iterate",NULL};
@@ -587,16 +617,16 @@ static int sectorargs_get(lua_State *L)
 {
 	INT32 *args = *((INT32**)luaL_checkudata(L, 1, META_SECTORARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMSECTORARGS)
+	if (i < 0 || i >= NUM_SCRIPT_ARGS)
 		return luaL_error(L, LUA_QL("sector_t.args") " index cannot be %d", i);
 	lua_pushinteger(L, args[i]);
 	return 1;
 }
 
-// #args -> NUMSECTORARGS
+// #args -> NUM_SCRIPT_ARGS
 static int sectorargs_len(lua_State* L)
 {
-	lua_pushinteger(L, NUMSECTORARGS);
+	lua_pushinteger(L, NUM_SCRIPT_ARGS);
 	return 1;
 }
 
@@ -605,16 +635,16 @@ static int sectorstringargs_get(lua_State *L)
 {
 	char **stringargs = *((char***)luaL_checkudata(L, 1, META_SECTORSTRINGARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMSECTORSTRINGARGS)
-		return luaL_error(L, LUA_QL("line_t.stringargs") " index cannot be %d", i);
+	if (i < 0 || i >= NUM_SCRIPT_STRINGARGS)
+		return luaL_error(L, LUA_QL("sector_t.stringargs") " index cannot be %d", i);
 	lua_pushstring(L, stringargs[i]);
 	return 1;
 }
 
-// #stringargs -> NUMLINESTRINGARGS
+// #stringargs -> NUM_SCRIPT_STRINGARGS
 static int sectorstringargs_len(lua_State *L)
 {
-	lua_pushinteger(L, NUMSECTORSTRINGARGS);
+	lua_pushinteger(L, NUM_SCRIPT_STRINGARGS);
 	return 1;
 }
 
@@ -930,16 +960,16 @@ static int lineargs_get(lua_State *L)
 {
 	INT32 *args = *((INT32**)luaL_checkudata(L, 1, META_LINEARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMLINEARGS)
+	if (i < 0 || i >= NUM_SCRIPT_ARGS)
 		return luaL_error(L, LUA_QL("line_t.args") " index cannot be %d", i);
 	lua_pushinteger(L, args[i]);
 	return 1;
 }
 
-// #args -> NUMLINEARGS
+// #args -> NUM_SCRIPT_ARGS
 static int lineargs_len(lua_State* L)
 {
-	lua_pushinteger(L, NUMLINEARGS);
+	lua_pushinteger(L, NUM_SCRIPT_ARGS);
 	return 1;
 }
 
@@ -948,16 +978,16 @@ static int linestringargs_get(lua_State *L)
 {
 	char **stringargs = *((char***)luaL_checkudata(L, 1, META_LINESTRINGARGS));
 	int i = luaL_checkinteger(L, 2);
-	if (i < 0 || i >= NUMLINESTRINGARGS)
+	if (i < 0 || i >= NUM_SCRIPT_STRINGARGS)
 		return luaL_error(L, LUA_QL("line_t.stringargs") " index cannot be %d", i);
 	lua_pushstring(L, stringargs[i]);
 	return 1;
 }
 
-// #stringargs -> NUMLINESTRINGARGS
+// #stringargs -> NUM_SCRIPT_STRINGARGS
 static int linestringargs_len(lua_State *L)
 {
-	lua_pushinteger(L, NUMLINESTRINGARGS);
+	lua_pushinteger(L, NUM_SCRIPT_STRINGARGS);
 	return 1;
 }
 
@@ -1148,6 +1178,24 @@ static int side_get(lua_State *L)
 	case side_rowoffset:
 		lua_pushfixed(L, side->rowoffset);
 		return 1;
+	case side_offsetx_top:
+		lua_pushfixed(L, side->offsetx_top);
+		return 1;
+	case side_offsety_top:
+		lua_pushfixed(L, side->offsety_top);
+		return 1;
+	case side_offsetx_mid:
+		lua_pushfixed(L, side->offsetx_mid);
+		return 1;
+	case side_offsety_mid:
+		lua_pushfixed(L, side->offsety_mid);
+		return 1;
+	case side_offsetx_bot:
+		lua_pushfixed(L, side->offsetx_bot);
+		return 1;
+	case side_offsety_bot:
+		lua_pushfixed(L, side->offsety_bot);
+		return 1;
 	case side_toptexture:
 		lua_pushinteger(L, side->toptexture);
 		return 1;
@@ -1205,6 +1253,24 @@ static int side_set(lua_State *L)
 		break;
 	case side_rowoffset:
 		side->rowoffset = luaL_checkfixed(L, 3);
+		break;
+	case side_offsetx_top:
+		side->offsetx_top = luaL_checkfixed(L, 3);
+		break;
+	case side_offsety_top:
+		side->offsety_top = luaL_checkfixed(L, 3);
+		break;
+	case side_offsetx_mid:
+		side->offsetx_mid = luaL_checkfixed(L, 3);
+		break;
+	case side_offsety_mid:
+		side->offsety_mid = luaL_checkfixed(L, 3);
+		break;
+	case side_offsetx_bot:
+		side->offsetx_bot = luaL_checkfixed(L, 3);
+		break;
+	case side_offsety_bot:
+		side->offsety_bot = luaL_checkfixed(L, 3);
 		break;
 	case side_toptexture:
 		side->toptexture = luaL_checkinteger(L, 3);
@@ -1980,10 +2046,10 @@ static INT32 P_GetOldFOFFlags(ffloor_t *fflr)
 		result |= FF_OLD_SPINBUST;
 	if (fflr->busttype == BT_STRONG)
 		result |= FF_OLD_STRONGBUST;
-	if (fflr->fofflags & FF_OLD_RIPPLE)
-		result |= FOF_RIPPLE;
-	if (fflr->fofflags & FF_OLD_COLORMAPONLY)
-		result |= FOF_COLORMAPONLY;
+	if (fflr->fofflags & FOF_RIPPLE)
+		result |= FF_OLD_RIPPLE;
+	if (fflr->fofflags & FOF_COLORMAPONLY)
+		result |= FF_OLD_COLORMAPONLY;
 	return result;
 }
 
@@ -2450,8 +2516,8 @@ static int lib_getMapheaderinfo(lua_State *L)
 	lua_remove(L, 1); // dummy userdata table is unused.
 	if (lua_isnumber(L, 1))
 	{
-		size_t i = lua_tointeger(L, 1)-1;
-		if (i >= NUMMAPS)
+		INT32 i = lua_tointeger(L, 1)-1;
+		if (i < 0 || i >= nummapheaders)
 			return 0;
 		LUA_PushUserdata(L, mapheaderinfo[i], META_MAPHEADER);
 		//CONS_Printf(mapheaderinfo[i]->lvlttl);
@@ -2469,7 +2535,7 @@ static int lib_getMapheaderinfo(lua_State *L)
 
 static int lib_nummapheaders(lua_State *L)
 {
-	lua_pushinteger(L, NUMMAPS);
+	lua_pushinteger(L, nummapheaders);
 	return 1;
 }
 
@@ -2481,7 +2547,6 @@ static int mapheaderinfo_get(lua_State *L)
 {
 	mapheader_t *header = *((mapheader_t **)luaL_checkudata(L, 1, META_MAPHEADER));
 	const char *field = luaL_checkstring(L, 2);
-	INT16 i;
 	if (fastcmp(field,"lvlttl"))
 		lua_pushstring(L, header->lvlttl);
 	else if (fastcmp(field,"subttl"))
@@ -2492,20 +2557,21 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushstring(L, header->actnum);
 	else if (fastcmp(field,"typeoflevel"))
 		lua_pushinteger(L, header->typeoflevel);
-	else if (fastcmp(field,"nextlevel"))
-		lua_pushinteger(L, header->nextlevel);
-	else if (fastcmp(field,"marathonnext"))
-		lua_pushinteger(L, header->marathonnext);
 	else if (fastcmp(field,"keywords"))
 		lua_pushstring(L, header->keywords);
 	else if (fastcmp(field,"musname")) // we create a table here because it saves us from a userdata nightmare
 	{
-		UINT8 i;
-		lua_createtable(L, header->musname_size, 0);
-		for (i = 0; i < header->musname_size; i++)
+		if (lua_compatmode)
 		{
-			lua_pushstring(L, header->musname[i]);
-			lua_rawseti(L, -2, 1 + i);
+			lua_pushstring(L, header->musname[0]);
+			return 1;
+		}
+		UINT8 j;
+		lua_createtable(L, header->musname_size, 0);
+		for (j = 0; j < header->musname_size; j++)
+		{
+			lua_pushstring(L, header->musname[j]);
+			lua_rawseti(L, -2, 1 + j);
 		}
 	}
 	else if (fastcmp(field,"mustrack"))
@@ -2514,22 +2580,6 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->muspos);
 	else if (fastcmp(field,"musname_size"))
 		lua_pushinteger(L, header->musname_size);
-	else if (fastcmp(field,"musinterfadeout"))
-		lua_pushinteger(L, header->musinterfadeout);
-	else if (fastcmp(field,"musintername"))
-		lua_pushstring(L, header->musintername);
-	else if (fastcmp(field,"muspostbossname"))
-		lua_pushstring(L, header->muspostbossname);
-	else if (fastcmp(field,"muspostbosstrack"))
-		lua_pushinteger(L, header->muspostbosstrack);
-	else if (fastcmp(field,"muspostbosspos"))
-		lua_pushinteger(L, header->muspostbosspos);
-	else if (fastcmp(field,"muspostbossfadein"))
-		lua_pushinteger(L, header->muspostbossfadein);
-	else if (fastcmp(field,"musforcereset"))
-		lua_pushinteger(L, header->musforcereset);
-	else if (fastcmp(field,"forcecharacter"))
-		lua_pushstring(L, header->forcecharacter);
 	else if (fastcmp(field,"weather"))
 		lua_pushinteger(L, header->weather);
 	else if (fastcmp(field,"skytexture"))
@@ -2540,12 +2590,7 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->skybox_scaley);
 	else if (fastcmp(field,"skybox_scalez"))
 		lua_pushinteger(L, header->skybox_scalez);
-	else if (fastcmp(field,"interscreen")) {
-		for (i = 0; i < 8; i++)
-			if (!header->interscreen[i])
-				break;
-		lua_pushlstring(L, header->interscreen, i);
-	} else if (fastcmp(field,"runsoc"))
+	else if (fastcmp(field,"runsoc"))
 		lua_pushstring(L, header->runsoc);
 	else if (fastcmp(field,"scriptname"))
 		lua_pushstring(L, header->scriptname);
@@ -2553,8 +2598,6 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->precutscenenum);
 	else if (fastcmp(field,"cutscenenum"))
 		lua_pushinteger(L, header->cutscenenum);
-	else if (fastcmp(field,"countdown"))
-		lua_pushinteger(L, header->countdown);
 	else if (fastcmp(field,"palette"))
 		lua_pushinteger(L, header->palette);
 	else if (fastcmp(field,"numlaps"))
@@ -2563,31 +2606,14 @@ static int mapheaderinfo_get(lua_State *L)
 		lua_pushinteger(L, header->unlockrequired);
 	else if (fastcmp(field,"levelselect"))
 		lua_pushinteger(L, header->levelselect);
-	else if (fastcmp(field,"bonustype"))
-		lua_pushinteger(L, header->bonustype);
-	else if (fastcmp(field,"ltzzpatch"))
-		lua_pushstring(L, header->ltzzpatch);
-	else if (fastcmp(field,"ltzztext"))
-		lua_pushstring(L, header->ltzztext);
-	else if (fastcmp(field,"ltactdiamond"))
-		lua_pushstring(L, header->ltactdiamond);
-	else if (fastcmp(field,"maxbonuslives"))
-		lua_pushinteger(L, header->maxbonuslives);
 	else if (fastcmp(field,"levelflags"))
 		lua_pushinteger(L, header->levelflags);
 	else if (fastcmp(field,"menuflags"))
 		lua_pushinteger(L, header->menuflags);
 	else if (fastcmp(field,"mobj_scale"))
 		lua_pushfixed(L, header->mobj_scale);
-	else if (fastcmp(field,"startrings"))
-		lua_pushinteger(L, header->startrings);
-	else if (fastcmp(field, "sstimer"))
-		lua_pushinteger(L, header->sstimer);
-	else if (fastcmp(field, "ssspheres"))
-		lua_pushinteger(L, header->ssspheres);
 	else if (fastcmp(field, "gravity"))
 		lua_pushfixed(L, header->gravity);
-	// TODO add support for reading numGradedMares and grades
 	else {
 		// Read custom vars now
 		// (note: don't include the "LUA." in your lua scripts!)
@@ -2600,6 +2626,59 @@ static int mapheaderinfo_get(lua_State *L)
 			lua_pushnil(L);
 	}
 	return 1;
+}
+
+/////////////////
+// activator_t //
+/////////////////
+
+static int activator_get(lua_State *L)
+{
+	activator_t *activator = *((activator_t **)luaL_checkudata(L, 1, META_ACTIVATOR));
+	enum activator_e field = luaL_checkoption(L, 2, activator_opt[0], activator_opt);
+
+	if (activator == NULL)
+	{
+		if (field == activator_valid)
+		{
+			lua_pushboolean(L, 0);
+			return 1;
+		}
+
+		return luaL_error(L, "accessed activator_t doesn't exist anymore.");
+	}
+
+	switch (field)
+	{
+		case activator_valid:
+			lua_pushboolean(L, 1);
+			return 1;
+
+		case activator_mo:
+			LUA_PushUserdata(L, activator->mo, META_MOBJ);
+			return 1;
+
+		case activator_line:
+			LUA_PushUserdata(L, activator->line, META_LINE);
+			return 1;
+
+		case activator_side:
+			lua_pushinteger(L, activator->side);
+			return 1;
+
+		case activator_sector:
+			LUA_PushUserdata(L, activator->sector, META_SECTOR);
+			return 1;
+
+		case activator_po:
+			LUA_PushUserdata(L, activator->po, META_POLYOBJ);
+			return 1;
+
+		default:
+			break;
+	}
+
+	return 0;
 }
 
 int LUA_MapLib(lua_State *L)
@@ -2762,6 +2841,11 @@ int LUA_MapLib(lua_State *L)
 
 		//lua_pushcfunction(L, mapheaderinfo_num);
 		//lua_setfield(L, -2, "__len");
+	lua_pop(L, 1);
+
+	luaL_newmetatable(L, META_ACTIVATOR);
+		lua_pushcfunction(L, activator_get);
+		lua_setfield(L, -2, "__index");
 	lua_pop(L, 1);
 
 	LUA_PushTaggableObjectArray(L, "sectors",

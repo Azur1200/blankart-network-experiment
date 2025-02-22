@@ -15,6 +15,10 @@
 
 #include "lua_hudlib_drawlist.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum hud {
 	hud_stagetitle = 0,
 	hud_textspectator,
@@ -45,8 +49,20 @@ enum hud {
 
 extern boolean hud_running;
 
+extern boolean hud_interpolate; // interpolation enabled
+extern UINT8 hud_interptag; // current tag
+extern UINT32 hud_interpcounter; // number of HUD hooks ran
+extern boolean hud_interpstring; // string mode
+extern boolean hud_interplatch; // string mode was toggled
+
 boolean LUA_HudEnabled(enum hud option);
 
 void LUA_SetHudHook(int hook, huddrawlist_h list);
+
+void LUA_ClearClipRect(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __LUA_HUD_H__

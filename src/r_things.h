@@ -21,12 +21,17 @@
 #include "r_defs.h"
 #include "r_skins.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // --------------
 // SPRITE LOADING
 // --------------
 
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
+void R_AddKartFaces(skin_t *skin);
 boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16 wadnum, UINT16 startlump, UINT16 endlump);
 
 //faB: find sprites in wadfile, replace existing, add new ones
@@ -47,8 +52,8 @@ extern fixed_t windowtop;
 extern fixed_t windowbottom;
 extern INT32 lengthcol;
 
-void R_DrawMaskedColumn(column_t *column, column_t *brightmap, INT32 baseclip);
-void R_DrawFlippedMaskedColumn(column_t *column, column_t *brightmap, INT32 baseclip);
+void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip);
+void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip);
 
 // ----------------
 // SPRITE RENDERING
@@ -99,13 +104,13 @@ INT32 R_ThingLightLevel(mobj_t *thing);
  * per portal to later group them in separate
  * drawnode lists.
  */
-typedef struct
+struct maskcount_t
 {
 	size_t drawsegs[2];
 	size_t vissprites[2];
 	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
 	sector_t* viewsector;
-} maskcount_t;
+};
 
 void R_DrawMasked(maskcount_t* masks, INT32 nummasks);
 
@@ -149,14 +154,14 @@ typedef enum
 
 // A vissprite_t is a thing that will be drawn during a refresh,
 // i.e. a sprite object that is partly visible.
-typedef struct vissprite_s
+struct vissprite_t
 {
 	// Doubly linked list.
-	struct vissprite_s *prev;
-	struct vissprite_s *next;
+	vissprite_t *prev;
+	vissprite_t *next;
 
 	// Bonus linkdraw pointer.
-	struct vissprite_s *linkdraw;
+	vissprite_t *linkdraw;
 
 	mobj_t *mobj; // for easy access
 
@@ -219,13 +224,14 @@ typedef struct vissprite_s
 	fixed_t spritexoffset, spriteyoffset;
 
 	fixed_t shadowscale;
+	UINT8 color; // palette index
 
 	INT16 clipbot[MAXVIDWIDTH], cliptop[MAXVIDWIDTH];
 
 	INT32 dispoffset; // copy of info->dispoffset, affects ordering but not drawing
 
 	fixed_t floorclip; // Cut off your tires in tall grass
-} vissprite_t;
+};
 
 extern UINT32 visspritecount;
 
@@ -242,7 +248,7 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis);
 
 // A drawnode is something that points to a 3D floor, 3D side, or masked
 // middle texture. This is used for sorting with sprites.
-typedef struct drawnode_s
+struct drawnode_t
 {
 	visplane_t *plane;
 	drawseg_t *seg;
@@ -250,9 +256,9 @@ typedef struct drawnode_s
 	ffloor_t *ffloor;
 	vissprite_t *sprite;
 
-	struct drawnode_s *next;
-	struct drawnode_s *prev;
-} drawnode_t;
+	drawnode_t *next;
+	drawnode_t *prev;
+};
 
 void R_InitDrawNodes(void);
 
@@ -267,33 +273,30 @@ void R_InitDrawNodes(void);
 // as much as possible while also defining all 64 slots in a sane manner
 // 2.1:    [[ ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~   ]]
 // Future: [[ ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@ ]]
-FUNCMATH FUNCINLINE static ATTRINLINE char R_Frame2Char(UINT8 frame)
+FUNCMATH FUNCINLINE static ATTRINLINE char R_Frame2Char(UINT8 frame, boolean compat)
 {
-#if 0 // 2.1 compat
-	return 'A' + frame;
-#else
+	if (compat)
+		return 'A' + frame;
+
 	if (frame < 26) return 'A' + frame;
 	if (frame < 36) return '0' + (frame - 26);
 	if (frame < 62) return 'a' + (frame - 36);
 	if (frame == 62) return '!';
 	if (frame == 63) return '@';
 	return '\xFF';
-#endif
 }
 
-FUNCMATH FUNCINLINE static ATTRINLINE UINT8 R_Char2Frame(char cn)
+FUNCMATH FUNCINLINE static ATTRINLINE UINT8 R_Char2Frame(char cn, boolean compat)
 {
-#if 0 // 2.1 compat
-	if (cn == '+') return '\\' - 'A'; // PK3 can't use backslash, so use + instead
-	return cn - 'A';
-#else
+	if (compat)
+		return (cn == '+' ? '\\' : cn) - 'A'; // PK3 can't use backslash, so use + instead
+
 	if (cn >= 'A' && cn <= 'Z') return (cn - 'A');
 	if (cn >= '0' && cn <= '9') return (cn - '0') + 26;
 	if (cn >= 'a' && cn <= 'z') return (cn - 'a') + 36;
 	if (cn == '!') return 62;
 	if (cn == '@') return 63;
 	return 255;
-#endif
 }
 
 // "Left" and "Right" character symbols for additional rotation functionality
@@ -317,5 +320,9 @@ FUNCMATH FUNCINLINE static ATTRINLINE UINT8 R_Char2Rotation(char cn)
 	if (cn == 'R') return ROT_R;
 	return 255;
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__R_THINGS__

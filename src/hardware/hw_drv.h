@@ -21,6 +21,10 @@
 
 #include "hw_dll.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // ==========================================================================
 //                                                       STANDARD DLL EXPORTS
 // ==========================================================================
@@ -62,6 +66,7 @@ EXPORT void HWRAPI(EndScreenWipe) (void);
 EXPORT void HWRAPI(DoScreenWipe) (void);
 EXPORT void HWRAPI(DrawIntermissionBG) (void);
 EXPORT void HWRAPI(MakeScreenTexture) (void);
+EXPORT void HWRAPI(RenderVhsEffect) (INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 EXPORT void HWRAPI(MakeScreenFinalTexture) (void);
 EXPORT void HWRAPI(DrawScreenFinalTexture) (int width, int height);
 
@@ -117,6 +122,7 @@ struct hwdriver_s
 	DoScreenWipe        pfnDoScreenWipe;
 	DrawIntermissionBG  pfnDrawIntermissionBG;
 	MakeScreenTexture   pfnMakeScreenTexture;
+	RenderVhsEffect     pfnRenderVhsEffect;
 	MakeScreenFinalTexture  pfnMakeScreenFinalTexture;
 	DrawScreenFinalTexture  pfnDrawScreenFinalTexture;
 
@@ -134,5 +140,9 @@ extern struct hwdriver_s hwdriver;
 #define HWD hwdriver
 
 #endif //not defined _CREATE_DLL_
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //__HWR_DRV_H__

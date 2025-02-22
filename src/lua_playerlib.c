@@ -10,6 +10,7 @@
 /// \file  lua_playerlib.c
 /// \brief player object library for Lua scripting
 
+#include "blua/lua.h"
 #include "doomdef.h"
 #include "fastcmp.h"
 #include "p_mobj.h"
@@ -17,6 +18,7 @@
 #include "g_game.h"
 #include "p_local.h"
 #include "d_clisrv.h"
+#include "k_kart.h" // K_GetDriftAngleOffset
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -189,13 +191,25 @@ static int player_get(lua_State *L)
 	else if (fastcmp(field,"name"))
 		lua_pushstring(L, player_names[plr-players]);
 	else if (fastcmp(field,"mo"))
-		LUA_PushUserdata(L, plr->mo, META_MOBJ);
+	{
+		if (lua_compatmode && plr->spectator)
+			lua_pushnil(L); // sigh
+		else
+			LUA_PushUserdata(L, plr->mo, META_MOBJ);
+	}
 	else if (fastcmp(field,"cmd"))
 		LUA_PushUserdata(L, &plr->cmd, META_TICCMD);
 	else if (fastcmp(field,"oldcmd"))
 		LUA_PushUserdata(L, &plr->oldcmd, META_TICCMD);
 	else if (fastcmp(field,"playerstate"))
 		lua_pushinteger(L, plr->playerstate);
+	else if (fastcmp(field,"health"))
+	{
+		if (plr->mo)
+			lua_pushinteger(L, plr->mo->health);
+		else
+			lua_pushinteger(L, 0);
+	}
 	else if (fastcmp(field,"viewz"))
 		lua_pushfixed(L, plr->viewz);
 	else if (fastcmp(field,"viewheight"))
@@ -204,8 +218,12 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->viewrollangle);
 	else if (fastcmp(field,"aiming"))
 		lua_pushangle(L, plr->aiming);
-	else if (fastcmp(field,"drawangle"))
+	else if (fastcmp(field,"drawangle") || (lua_compatmode && fastcmp(field,"frameangle")))
 		lua_pushangle(L, plr->drawangle);
+	else if (fastcmp(field,"powers"))
+		LUA_PushUserdata(L, plr->powers, META_POWERS);
+	else if (fastcmp(field,"kartstuff"))
+		LUA_PushUserdata(L, plr->kartstuff, META_KARTSTUFF);
 	else if (fastcmp(field,"karthud"))
 		LUA_PushUserdata(L, plr->karthud, META_KARTHUD);
 	else if (fastcmp(field,"nocontrol"))
@@ -242,6 +260,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->wipeoutslow);
 	else if (fastcmp(field,"justbumped"))
 		lua_pushinteger(L, plr->justbumped);
+	else if (fastcmp(field,"itemflags"))
+		lua_pushinteger(L, plr->itemflags);
 	else if (fastcmp(field,"drift"))
 		lua_pushinteger(L, plr->drift);
 	else if (fastcmp(field,"driftcharge"))
@@ -362,6 +382,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->glanceDir);
 	else if (fastcmp(field,"roundscore"))
 		plr->roundscore = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"marescore"))
+		plr->roundscore = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"emeralds"))
 		lua_pushinteger(L, plr->emeralds);
 	else if (fastcmp(field,"bumpers"))
@@ -373,7 +395,14 @@ static int player_get(lua_State *L)
 	else if (fastcmp(field,"spheredigestion"))
 		lua_pushinteger(L, plr->spheredigestion);
 	else if (fastcmp(field,"pflags"))
-		lua_pushinteger(L, plr->pflags);
+	{
+		UINT32 pflags = plr->pflags;
+
+		if (lua_compatmode && (plr->carry & CR_SLIDING) == CR_SLIDING)
+			pflags |= PF_SLIDING;
+
+		lua_pushinteger(L, pflags);
+	}
 	else if (fastcmp(field,"panim"))
 		lua_pushinteger(L, plr->panim);
 	else if (fastcmp(field,"flashcount"))
@@ -433,9 +462,19 @@ static int player_get(lua_State *L)
 	else if (fastcmp(field,"realtime"))
 		lua_pushinteger(L, plr->realtime);
 	else if (fastcmp(field,"laps"))
-		lua_pushinteger(L, plr->laps);
+	{
+		if (lua_compatmode)
+			lua_pushinteger(L, max(plr->laps - 1, 0));
+		else
+			lua_pushinteger(L, plr->laps);
+	}
 	else if (fastcmp(field,"latestlap"))
-		lua_pushinteger(L, plr->latestlap);
+	{
+		if (lua_compatmode)
+			lua_pushinteger(L, max(plr->latestlap - 1, 0));
+		else
+			lua_pushinteger(L, plr->latestlap);
+	}
 	else if (fastcmp(field,"ctfteam"))
 		lua_pushinteger(L, plr->ctfteam);
 	else if (fastcmp(field,"checkskip"))
@@ -483,6 +522,8 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->griefstrikes);
 	else if (fastcmp(field,"splitscreenindex"))
 		lua_pushinteger(L, plr->splitscreenindex);
+	else if (fastcmp(field,"bumpertime"))
+		lua_pushinteger(L, plr->bumpertime);
 #ifdef HWRENDER
 	else if (fastcmp(field,"fovadd"))
 		lua_pushfixed(L, plr->fovadd);
@@ -548,10 +589,28 @@ static int player_set(lua_State *L)
 			}
 		}
 	}
-	else if (fastcmp(field,"drawangle"))
-		plr->drawangle = luaL_checkangle(L, 3);
+	else if (fastcmp(field,"drawangle") || (lua_compatmode && fastcmp(field,"frameangle")))
+	{
+		angle_t angle = luaL_checkangle(L, 3);
+		if (lua_compatmode && plr->mo && angle == plr->mo->angle)
+			// attempt to fix e.g. acrobasics not accounting for drift when resetting frameangle
+			angle += K_GetDriftAngleOffset(plr);
+		plr->drawangle = angle;
+	}
 	else if (fastcmp(field,"pflags"))
-		plr->pflags = luaL_checkinteger(L, 3);
+	{
+		UINT32 pflags = luaL_checkinteger(L, 3);
+
+		if (lua_compatmode)
+		{
+			if (pflags & PF_SLIDING)
+				plr->carry |= CR_SLIDING;
+			else
+				plr->carry &= ~CR_SLIDING;
+		}
+
+		plr->pflags = pflags;
+	}
 	else if (fastcmp(field,"panim"))
 		plr->panim = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"flashcount"))
@@ -572,6 +631,8 @@ static int player_set(lua_State *L)
 	else if (fastcmp(field,"score"))
 		plr->score = luaL_checkinteger(L, 3);
 	// SRB2kart
+	else if (fastcmp(field,"kartstuff"))
+		return NOSET;
 	else if (fastcmp(field,"nocontrol"))
 		plr->nocontrol = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"carry"))
@@ -606,6 +667,8 @@ static int player_set(lua_State *L)
 		plr->wipeoutslow = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"justbumped"))
 		plr->justbumped = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"itemflags"))
+		plr->itemflags = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"drift"))
 		plr->drift = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"driftcharge"))
@@ -726,6 +789,8 @@ static int player_set(lua_State *L)
 		plr->glanceDir = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"roundscore"))
 		lua_pushinteger(L, plr->roundscore);
+	else if (fastcmp(field,"marescore"))
+		lua_pushinteger(L, plr->roundscore);
 	else if (fastcmp(field,"emeralds"))
 		plr->emeralds = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"bumpers"))
@@ -785,9 +850,22 @@ static int player_set(lua_State *L)
 	else if (fastcmp(field,"realtime"))
 		plr->realtime = (tic_t)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"laps"))
-		plr->laps = (UINT8)luaL_checkinteger(L, 3);
+	{
+		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
+		if (lua_compatmode)
+			plr->laps = max(laps +1, 0);
+		else
+			plr->laps = laps;
+	}
 	else if (fastcmp(field,"latestlap"))
-		plr->latestlap = (UINT8)luaL_checkinteger(L, 3);
+	{
+		UINT8 laps = (UINT8)luaL_checkinteger(L, 3);
+
+		if (lua_compatmode)
+			plr->latestlap = max(laps + 1, 0);
+		else
+			plr->latestlap = laps;
+	}
 	else if (fastcmp(field,"ctfteam"))
 		plr->ctfteam = (INT32)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"checkskip"))
@@ -843,6 +921,8 @@ static int player_set(lua_State *L)
 		plr->griefstrikes = (UINT8)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"splitscreenindex"))
 		return NOSET;
+	else if (fastcmp(field,"bumpertime"))
+		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
 #ifdef HWRENDER
 	else if (fastcmp(field,"fovadd"))
 		plr->fovadd = luaL_checkfixed(L, 3);
@@ -877,6 +957,600 @@ static int player_num(lua_State *L)
 	if (!plr)
 		return luaL_error(L, "accessed player_t doesn't exist anymore.");
 	lua_pushinteger(L, plr-players);
+	return 1;
+}
+
+// powers, p -> powers[p]
+static int power_get(lua_State *L)
+{
+	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	powertype_t p = luaL_checkinteger(L, 2);
+	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	if (p >= NUMPOWERS)
+		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
+	switch (p)
+	{
+		case pw_flashing:
+			lua_pushinteger(L, plr->flashing);
+			return 1;
+		case pw_nocontrol:
+			lua_pushinteger(L, plr->nocontrol);
+			return 1;
+		case pw_ingoop:
+			if (plr->mo)
+				lua_pushinteger(L, P_IsObjectInGoop(plr->mo));
+			else
+				lua_pushinteger(L, 0);
+			return 1;
+		default:
+			lua_pushinteger(L, powers[p]);
+			return 1;
+	}
+	return 1;
+}
+
+#define NOSET luaL_error(L, LUA_QL("powertype_t") " field " LUA_QS " should not be set directly.", p)
+// powers, p, value -> powers[p] = value
+static int power_set(lua_State *L)
+{
+	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
+	powertype_t p = luaL_checkinteger(L, 2);
+	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	UINT16 i = (UINT16)luaL_checkinteger(L, 3);
+	if (p >= NUMPOWERS)
+		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in BuildCMD code!");
+	switch (p)
+	{
+		case pw_flashing:
+			plr->flashing = i;
+			break;
+		case pw_nocontrol:
+			plr->nocontrol = i;
+			break;
+		case pw_ingoop:
+			return NOSET;
+		default:
+			powers[p] = i;
+			break;
+	}
+	return 0;
+}
+#undef NOSET
+
+// #powers -> NUMPOWERS
+static int power_len(lua_State *L)
+{
+	lua_pushinteger(L, NUMPOWERS);
+	return 1;
+}
+
+
+// ???, ks -> kartstuff[ks]
+static int kartstuff_get(lua_State *L)
+{
+	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	kartstufftype_t ks = luaL_checkinteger(L, 2);
+
+	if (ks >= NUMKARTSTUFF)
+		return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+
+	switch (ks)
+	{
+		case k_position:
+			lua_pushinteger(L, plr->position);
+			return 1;
+		case k_oldposition:
+			lua_pushinteger(L, plr->oldposition);
+			return 1;
+		case k_positiondelay:
+			lua_pushinteger(L, plr->positiondelay);
+			return 1;
+		case k_prevcheck:
+			lua_pushinteger(L, plr->prevcheck);
+			return 1;
+		case k_nextcheck:
+			lua_pushinteger(L, plr->nextcheck);
+			return 1;
+		/*case k_waypoint:
+			lua_pushinteger(L, plr->waypoint);
+			return 1;*/
+		/*case k_starpostwp:
+			lua_pushinteger(L, plr->starpostwp);
+			return 1;*/
+		case k_starpostflip:
+			lua_pushinteger(L, plr->starpostflip);
+			return 1;
+		case k_respawn:
+			lua_pushinteger(L, plr->respawn);
+			return 1;
+		case k_dropdash:
+			lua_pushinteger(L, plr->dropdash);
+			return 1;
+		case k_throwdir:
+			lua_pushinteger(L, plr->throwdir);
+			return 1;
+
+		case k_lapanimation:
+			lua_pushinteger(L, plr->karthud[khud_lapanimation]);
+			return 1;
+		case k_laphand:
+			lua_pushinteger(L, plr->karthud[khud_laphand]);
+			return 1;
+		case k_cardanimation:
+			lua_pushinteger(L, plr->karthud[khud_cardanimation]);
+			return 1;
+		case k_voices:
+			lua_pushinteger(L, plr->karthud[khud_voices]);
+			return 1;
+		case k_tauntvoices:
+			lua_pushinteger(L, plr->karthud[khud_tauntvoices]);
+			return 1;
+		case k_instashield:
+			lua_pushinteger(L, plr->instashield);
+			return 1;
+		case k_enginesnd:
+			lua_pushinteger(L, plr->karthud[khud_enginesnd]);
+			return 1;
+
+		case k_floorboost:
+			lua_pushinteger(L, plr->floorboost);
+			return 1;
+		case k_spinouttype:
+			lua_pushinteger(L, plr->spinouttype);
+			return 1;
+		case k_drift:
+			lua_pushinteger(L, plr->drift);
+			return 1;
+		case k_driftend:
+			lua_pushinteger(L, (plr->pflags & PF_DRIFTEND));
+			return 1;
+		case k_driftcharge:
+			lua_pushinteger(L, plr->driftcharge);
+			return 1;
+		case k_driftboost:
+			lua_pushinteger(L, plr->driftboost);
+			return 1;
+		case k_boostcharge:
+			lua_pushinteger(L, plr->boostcharge);
+			return 1;
+		case k_startboost:
+			lua_pushinteger(L, plr->startboost);
+			return 1;
+		case k_jmp:
+			lua_pushinteger(L, (plr->pflags & PF_DRIFTINPUT));
+			return 1;
+		case k_offroad:
+			lua_pushinteger(L, plr->offroad);
+			return 1;
+		case k_pogospring:
+			lua_pushinteger(L, plr->pogospring);
+			return 1;
+		case k_brakestop:
+			lua_pushinteger(L, plr->brakestop);
+			return 1;
+		case k_waterskip:
+			lua_pushinteger(L, plr->waterskip);
+			return 1;
+		case k_dashpadcooldown:
+			lua_pushinteger(L, plr->dashpadcooldown);
+			return 1;
+		case k_boostpower:
+			lua_pushinteger(L, plr->boostpower);
+			return 1;
+		case k_speedboost:
+			lua_pushinteger(L, plr->speedboost);
+			return 1;
+		case k_accelboost:
+			lua_pushinteger(L, plr->accelboost);
+			return 1;
+		case k_boostangle:
+			lua_pushinteger(L, plr->boostangle);
+			return 1;
+		case k_boostcam:
+			lua_pushinteger(L, plr->karthud[khud_boostcam]);
+			return 1;
+		case k_destboostcam:
+			lua_pushinteger(L, plr->karthud[khud_destboostcam]);
+			return 1;
+		case k_timeovercam:
+			lua_pushinteger(L, plr->karthud[khud_timeovercam]);
+			return 1;
+		case k_aizdriftstrat:
+			lua_pushinteger(L, plr->aizdriftstrat);
+			return 1;
+		case k_brakedrift:
+			lua_pushinteger(L, (plr->pflags & PF_BRAKEDRIFT));
+			return 1;
+		case k_itemroulette:
+			lua_pushinteger(L, plr->itemroulette);
+			return 1;
+		case k_roulettetype:
+			lua_pushinteger(L, plr->roulettetype);
+			return 1;
+		case k_itemtype:
+			lua_pushinteger(L, plr->itemtype);
+			return 1;
+		case k_itemamount:
+			lua_pushinteger(L, plr->itemamount);
+			return 1;
+		case k_itemheld:
+			lua_pushinteger(L, (plr->itemflags & IF_ITEMOUT));
+			return 1;
+		case k_curshield:
+			lua_pushinteger(L, plr->curshield);
+			return 1;
+		case k_hyudorotimer:
+			lua_pushinteger(L, plr->hyudorotimer);
+			return 1;
+		case k_stealingtimer:
+			lua_pushinteger(L, plr->stealingtimer);
+			return 1;
+		case k_stolentimer:
+			lua_pushinteger(L, plr->stolentimer);
+			return 1;
+		case k_sneakertimer:
+			lua_pushinteger(L, plr->sneakertimer);
+			return 1;
+		case k_growshrinktimer:
+			lua_pushinteger(L, plr->growshrinktimer);
+			return 1;
+		case k_squishedtimer:
+			lua_pushinteger(L, plr->squishedtimer);
+			return 1;
+		case k_rocketsneakertimer:
+			lua_pushinteger(L, plr->rocketsneakertimer);
+			return 1;
+		case k_invincibilitytimer:
+			lua_pushinteger(L, plr->invincibilitytimer);
+			return 1;
+		case k_eggmanheld:
+			lua_pushinteger(L, (plr->itemflags & IF_EGGMANOUT));
+			return 1;
+		case k_eggmanexplode:
+			lua_pushinteger(L, plr->eggmanexplode);
+			return 1;
+		case k_eggmanblame:
+			lua_pushinteger(L, plr->eggmanblame);
+			return 1;
+		case k_lastjawztarget:
+			lua_pushinteger(L, plr->lastjawztarget);
+			return 1;
+		case k_bananadrag:
+			lua_pushinteger(L, plr->bananadrag);
+			return 1;
+		case k_spinouttimer:
+			lua_pushinteger(L, plr->spinouttimer);
+			return 1;
+		case k_wipeoutslow:
+			lua_pushinteger(L, plr->wipeoutslow);
+			return 1;
+		case k_justbumped:
+			lua_pushinteger(L, plr->justbumped);
+			return 1;
+		case k_comebacktimer:
+			lua_pushinteger(L, plr->karmadelay);
+			return 1;
+		case k_sadtimer:
+			lua_pushinteger(L, plr->sadtimer);
+			return 1;
+
+		// Battle Mode vars
+		case k_bumper:
+			lua_pushinteger(L, plr->bumper);
+			return 1;
+		case k_comebackpoints:
+			lua_pushinteger(L, plr->karmapoints);
+			return 1;
+		case k_comebackmode:
+			lua_pushinteger(L, plr->karmamode);
+			return 1;
+		case k_wanted:
+			lua_pushinteger(L, plr->wanted);
+			return 1;
+		case k_yougotem:
+			lua_pushinteger(L, plr->karthud[khud_yougotem]);
+			return 1;
+
+		// v1.0.2+ vars
+		case k_itemblink:
+			lua_pushinteger(L, plr->karthud[khud_itemblink]);
+			return 1;
+		case k_itemblinkmode:
+			lua_pushinteger(L, plr->karthud[khud_itemblinkmode]);
+			return 1;
+		case k_getsparks:
+			lua_pushinteger(L, (plr->pflags & PF_GETSPARKS));
+			return 1;
+		case k_jawztargetdelay:
+			lua_pushinteger(L, plr->jawztargetdelay);
+			return 1;
+		case k_spectatewait:
+			lua_pushinteger(L, plr->spectatewait);
+			return 1;
+		case k_growcancel:
+			lua_pushinteger(L, plr->growcancel);
+			return 1;
+
+		default:
+			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	}
+
+	return 1;
+}
+
+// kartstuff, ks, value -> plt->??? = value
+static int kartstuff_set(lua_State *L)
+{
+	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
+	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	kartstufftype_t ks = luaL_checkinteger(L, 2);
+	INT32 i = (INT32)luaL_checkinteger(L, 3);
+
+	if (ks >= NUMKARTSTUFF)
+		return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	switch (ks)
+	{
+		case k_position:
+			plr->position = i;
+			break;
+		case k_oldposition:
+			plr->oldposition = i;
+			break;
+		case k_positiondelay:
+			plr->positiondelay = i;
+			break;
+		case k_prevcheck:
+			plr->prevcheck = i;
+			break;
+		case k_nextcheck:
+			plr->nextcheck = i;
+			break;
+			/*case k_waypoint:
+			 *	lua_pushinteger(L, plr->waypoint);
+			 *	break;*/
+			/*case k_starpostwp:
+			 *	lua_pushinteger(L, plr->starpostwp);
+			 *	break;*/
+			case k_starpostflip:
+				plr->starpostflip = i;
+				break;
+			case k_respawn:
+				plr->respawn = i;
+				break;
+			case k_dropdash:
+				plr->dropdash = i;
+				break;
+			case k_throwdir:
+				plr->throwdir = i;
+				break;
+
+			case k_lapanimation:
+				plr->karthud[khud_lapanimation] = i;
+				break;
+			case k_laphand:
+				plr->karthud[khud_laphand] = i;
+				break;
+			case k_cardanimation:
+				plr->karthud[khud_cardanimation] = i;
+				break;
+			case k_voices:
+				plr->karthud[khud_voices] = i;
+				break;
+			case k_tauntvoices:
+				plr->karthud[khud_tauntvoices] = i;
+				break;
+			case k_instashield:
+				plr->instashield = i;
+				break;
+			case k_enginesnd:
+				plr->karthud[khud_enginesnd] = i;
+				break;
+
+			case k_floorboost:
+				plr->floorboost = i;
+				break;
+			case k_spinouttype:
+				plr->spinouttype = i;
+				break;
+			case k_drift:
+				plr->drift = i;
+				break;
+			case k_driftend:
+				if (i > 0)
+					plr->pflags |= PF_DRIFTEND;
+				break;
+			case k_driftcharge:
+				plr->driftcharge  = i;
+				break;
+			case k_driftboost:
+				plr->driftboost = i;
+				break;
+			case k_boostcharge:
+				plr->boostcharge = i;
+				break;
+			case k_startboost:
+				plr->startboost = i;
+				break;
+			/*case k_jmp:
+				plr->pflags |= PF_DRIFTINPUT;
+				return 1;*/
+			case k_offroad:
+				plr->offroad = i;
+				break;
+			case k_pogospring:
+				plr->pogospring = i;
+				break;
+			case k_brakestop:
+				plr->brakestop = i;
+				break;
+			case k_waterskip:
+				plr->waterskip = i;
+				break;
+			case k_dashpadcooldown:
+				plr->dashpadcooldown = i;
+				break;
+			case k_boostpower:
+				plr->boostpower = i;
+				break;
+			case k_speedboost:
+				plr->speedboost = i;
+				break;
+			case k_accelboost:
+				plr->accelboost = i;
+				break;
+			case k_boostangle:
+				plr->boostangle = i;
+				break;
+			case k_boostcam:
+				plr->karthud[khud_boostcam] = i;
+				break;
+			case k_destboostcam:
+				plr->karthud[khud_destboostcam] = i;
+				break;
+			case k_timeovercam:
+				plr->karthud[khud_timeovercam] = i;
+				break;
+			case k_aizdriftstrat:
+				plr->aizdriftstrat = i;
+				break;
+			case k_brakedrift:
+				if (i > 0)
+					plr->pflags |= PF_BRAKEDRIFT;
+				break;
+			case k_itemroulette:
+				plr->itemroulette = i;
+				break;
+			case k_roulettetype:
+				plr->roulettetype = i;
+				break;
+			case k_itemtype:
+				plr->itemtype = i;
+				break;
+			case k_itemamount:
+				plr->itemamount = i;
+				break;
+			case k_itemheld:
+				if (i > 0)
+					plr->itemflags |= IF_ITEMOUT;
+				break;
+			case k_curshield:
+				plr->curshield = i;
+				break;
+			case k_hyudorotimer:
+				plr->hyudorotimer = i;
+				break;
+			case k_stealingtimer:
+				plr->stealingtimer = i;
+				break;
+			case k_stolentimer:
+				plr->stolentimer = i;
+				break;
+			case k_sneakertimer:
+				plr->sneakertimer = i;
+				break;
+			case k_growshrinktimer:
+				plr->growshrinktimer = i;
+				break;
+			case k_squishedtimer:
+				plr->squishedtimer = i;
+				break;
+			case k_rocketsneakertimer:
+				plr->rocketsneakertimer = i;
+				break;
+			case k_invincibilitytimer:
+				plr->invincibilitytimer = i;
+				break;
+			case k_eggmanheld:
+				if (i > 0)
+					plr->itemflags |= IF_EGGMANOUT;
+				break;
+			case k_eggmanexplode:
+				plr->eggmanexplode = i;
+				break;
+			case k_eggmanblame:
+				plr->eggmanblame = i;
+				break;
+			case k_lastjawztarget:
+				plr->lastjawztarget = i;
+				break;
+			case k_bananadrag:
+				plr->bananadrag = i;
+				break;
+			case k_spinouttimer:
+				plr->spinouttimer = i;
+				break;
+			case k_wipeoutslow:
+				plr->wipeoutslow = i;
+				break;
+			case k_justbumped:
+				plr->justbumped = i;
+				break;;
+			case k_comebacktimer:
+				plr->karmadelay = i;
+				break;
+			case k_sadtimer:
+				plr->sadtimer = i;
+				break;
+
+				// Battle Mode vars
+			case k_bumper:
+				plr->bumper = i;
+				break;
+			case k_comebackpoints:
+				plr->karmapoints = i;
+				break;
+			case k_comebackmode:
+				plr->karmamode = i;
+				break;
+			case k_wanted:
+				plr->wanted = i;
+				break;
+			case k_yougotem:
+				plr->karthud[khud_yougotem] = i;
+				break;
+
+				// v1.0.2+ vars
+			case k_itemblink:
+				plr->karthud[khud_itemblink] = i;
+				break;
+			case k_itemblinkmode:
+				plr->karthud[khud_itemblinkmode] = i;
+				break;
+			case k_getsparks:
+				if (i > 0)
+					plr->pflags |= PF_GETSPARKS;
+				break;
+			case k_jawztargetdelay:
+				plr->jawztargetdelay = i;
+				break;
+			case k_spectatewait:
+				plr->spectatewait = i;
+				break;
+			case k_growcancel:
+				plr->growcancel = i;
+				break;
+
+			default:
+				return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+	}
+
+	return 0;
+}
+
+// #kartstuff -> NUMKARTSTUFF
+static int kartstuff_len(lua_State *L)
+{
+	lua_pushinteger(L, NUMKARTSTUFF);
 	return 1;
 }
 
@@ -931,7 +1605,11 @@ static int ticcmd_get(lua_State *L)
 		lua_pushinteger(L, cmd->sidemove);
 	else if (fastcmp(field,"turning"))
 		lua_pushinteger(L, cmd->turning);
+	else if (fastcmp(field,"driftturn"))
+		lua_pushinteger(L, cmd->turning);
 	else if (fastcmp(field,"angle"))
+		lua_pushinteger(L, cmd->angle);
+	else if (fastcmp(field,"angleturn"))
 		lua_pushinteger(L, cmd->angle);
 	else if (fastcmp(field,"throwdir"))
 		lua_pushinteger(L, cmd->throwdir);
@@ -961,9 +1639,15 @@ static int ticcmd_set(lua_State *L)
 
 	if (fastcmp(field,"forwardmove"))
 		cmd->forwardmove = (SINT8)luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"sidemove"))
+		cmd->sidemove = (SINT8)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"turning"))
 		cmd->turning = (INT16)luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"driftturn"))
+		cmd->turning = (INT16)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"angle"))
+		cmd->angle = (INT16)luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"angleturn"))
 		cmd->angle = (INT16)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"throwdir"))
 		cmd->throwdir = (INT16)luaL_checkinteger(L, 3);
@@ -993,6 +1677,28 @@ int LUA_PlayerLib(lua_State *L)
 		lua_setfield(L, -2, "__newindex");
 
 		lua_pushcfunction(L, player_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_POWERS);
+		lua_pushcfunction(L, power_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, power_set);
+		lua_setfield(L, -2, "__newindex");
+
+		lua_pushcfunction(L, power_len);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_KARTSTUFF);
+		lua_pushcfunction(L, kartstuff_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, kartstuff_set);
+		lua_setfield(L, -2, "__newindex");
+
+		lua_pushcfunction(L, kartstuff_len);
 		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
 

@@ -24,8 +24,6 @@
 extern "C" {
 #endif
 
-typedef struct huddrawlist_s *huddrawlist_h;
-
 // Create a new drawlist. Returns a handle to it.
 huddrawlist_h LUA_HUD_CreateDrawList(void);
 // Clears the draw list.
@@ -121,6 +119,17 @@ void LUA_HUD_AddDrawKartString(
 	fixed_t y,
 	const char *str,
 	INT32 flags
+);
+void LUA_HUD_AddSetClipRect(
+	huddrawlist_h list,
+	fixed_t x,
+	fixed_t y,
+	fixed_t w,
+	fixed_t h,
+	INT32 flags
+);
+void LUA_HUD_AddClearClipRect(
+	huddrawlist_h list
 );
 
 // Draws the given draw list

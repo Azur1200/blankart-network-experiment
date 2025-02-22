@@ -20,6 +20,10 @@
 #include "../d_player.h"
 #include "../r_defs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Startup & Shutdown the hardware mode renderer
 void HWR_Startup(void);
 void HWR_Switch(void);
@@ -63,6 +67,7 @@ void HWR_EndScreenWipe(void);
 void HWR_DrawIntermissionBG(void);
 void HWR_DoWipe(UINT8 wipenum, UINT8 scrnnum);
 void HWR_DoTintedWipe(UINT8 wipenum, UINT8 scrnnum);
+void HWR_RenderVhsEffect(INT16 upbary, INT16 downbary, UINT8 updistort, UINT8 downdistort, UINT8 barsize);
 void HWR_MakeScreenFinalTexture(void);
 void HWR_DrawScreenFinalTexture(int width, int height);
 
@@ -149,5 +154,9 @@ extern boolean gl_maploaded;
 extern boolean gl_maptexturesloaded;
 extern boolean gl_sessioncommandsadded;
 extern boolean gl_shadersavailable;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

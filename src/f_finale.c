@@ -117,18 +117,6 @@ static UINT8 *waitcolormap; // colormap for the spinning character
 static patch_t *ttuser[TTMAX_USER];
 static INT32 ttuser_count = 0;
 
-static boolean goodending;
-static patch_t *endbrdr[2]; // border - blue, white, pink - where have i seen those colours before?
-static patch_t *endbgsp[3]; // nebula, sun, planet
-static patch_t *endegrk[2]; // eggrock - replaced midway through good ending
-static patch_t *endfwrk[3]; // firework - replaced with skin when good ending
-static patch_t *endspkl[3]; // sparkle
-static patch_t *endglow[2]; // glow aura - replaced with black rock's midway through good ending
-static patch_t *endxpld[4]; // mini explosion
-static patch_t *endescp[5]; // escape pod + flame
-static INT32 sparkloffs[3][2]; // eggrock explosions/blackrock sparkles
-static INT32 sparklloop;
-
 //
 // PROMPT STATE
 //
@@ -247,30 +235,31 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
 	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
 
-	w = vid.width / vid.dupx;
+	w = (vid.width / vid.dupx)<<FRACBITS;
 
-	animtimer = ((finalecount*scrollspeed)/16) % SHORT(pat->width);
-	anim2 = SHORT(pat2->width) - (((finalecount*scrollspeed)/16) % SHORT(pat2->width));
+	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
+	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (rendertimefrac * scrollspeed))/16;
+	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (rendertimefrac * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
 	{
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 
-		x = -((INT32)animtimer);
+		x = -animtimer;
 		y = 0;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
-			x += SHORT(pat->width);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT, pat, NULL);
+			x += SHORT(pat->width)<<FRACBITS;
 		}
 
 		x = -anim2;
-		y = BASEVIDHEIGHT - SHORT(pat2->height);
+		y = (BASEVIDHEIGHT - SHORT(pat2->height))<<FRACBITS;
 		while (x < w)
 		{
-			V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
-			x += SHORT(pat2->width);
+			V_DrawFixedPatch(x, y, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTOLEFT, pat2, NULL);
+			x += SHORT(pat2->width)<<FRACBITS;
 		}
 	}
 
@@ -692,7 +681,7 @@ void F_StartCredits(void)
 	S_StopMusic();
 	S_StopSounds();
 
-	S_ChangeMusicInternal("_creds", false);
+	S_ChangeMusicInternal("credit", false);
 	S_ShowMusicCredit();
 
 	finalecount = 0;
@@ -856,7 +845,7 @@ boolean F_CreditResponder(event_t *event)
 		return false;
 	}
 
-	/*if (!(timesBeaten) && !(netgame || multiplayer) && !cv_debug)
+	/*if (!(timesBeaten) && !(netgame || multiplayer) && !cht_debug)
 		return false;*/
 
 	if (key != KEY_ESCAPE && key != KEY_ENTER && key != KEY_BACKSPACE)
@@ -873,182 +862,30 @@ boolean F_CreditResponder(event_t *event)
 //  EVALUATION
 // ============
 
-#define SPARKLLOOPTIME 7 // must be odd
-
 void F_StartGameEvaluation(void)
 {
-	// Credits option in extras menu
-	if (cursaveslot == -1)
+	// Credits option in secrets menu
+	if (cursaveslot == -2)
 	{
-		S_FadeOutStopMusic(2*MUSICRATE);
 		F_StartGameEnd();
 		return;
 	}
-
-	S_FadeOutStopMusic(5*MUSICRATE);
 
 	G_SetGamestate(GS_EVALUATION);
 
 	// Just in case they're open ... somehow
 	M_ClearMenus(true);
 
-	goodending = (ALLCHAOSEMERALDS(emeralds));
-
 	gameaction = ga_nothing;
 	paused = false;
 	CON_ToggleOff();
 
-	finalecount = -1;
-	sparklloop = 0;
+	finalecount = 0;
 }
 
 void F_GameEvaluationDrawer(void)
 {
-	INT32 x, y, i;
-	angle_t fa;
-	INT32 eemeralds_cur;
-	char patchname[7] = "CEMGx0";
-	const char* endingtext;
-
-	if (marathonmode)
-		endingtext = "THANKS FOR THE RUN!";
-	else if (goodending)
-		endingtext = "CONGRATULATIONS!";
-	else
-		endingtext = "TRY AGAIN...";
-
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-
-	// Draw all the good crap here.
-
-	if (finalecount > 0 && useBlackRock)
-	{
-		INT32 scale = FRACUNIT;
-		patch_t *rockpat;
-		UINT8 *colormap[2] = {NULL, NULL};
-		patch_t *glow;
-		INT32 trans = 0;
-
-		x = (((BASEVIDWIDTH-82)/2)+11)<<FRACBITS;
-		y = (((BASEVIDHEIGHT-82)/2)+12)<<FRACBITS;
-
-		if (finalecount < 5)
-		{
-			scale = (finalecount<<(FRACBITS-2));
-			x += (30*(FRACUNIT-scale));
-			y += (30*(FRACUNIT-scale));
-		}
-
-		if (goodending)
-		{
-			rockpat = W_CachePatchName(va("ROID00%.2d", 34 - (finalecount % 35)), PU_PATCH_LOWPRIORITY);
-			glow = W_CachePatchName(va("ENDGLOW%.1d", 2+(finalecount & 1)), PU_PATCH_LOWPRIORITY);
-			x -= FRACUNIT;
-		}
-		else
-		{
-			rockpat = W_CachePatchName("ROID0000", PU_PATCH_LOWPRIORITY);
-			glow = W_CachePatchName(va("ENDGLOW%.1d", (finalecount & 1)), PU_PATCH_LOWPRIORITY);
-		}
-
-		if (finalecount >= 5)
-			trans = (finalecount-5)>>1;
-		if (trans < 10)
-			V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, glow, NULL);
-
-		trans = (15-finalecount);
-		if (trans < 0)
-			trans = -trans;
-
-		if (finalecount < 15)
-			colormap[0] = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
-		V_DrawFixedPatch(x, y, scale, 0, rockpat, colormap[0]);
-		if (trans < 10)
-		{
-			colormap[1] = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_ULTRAMARINE, GTC_CACHE);
-			V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, rockpat, colormap[1]);
-		}
-		if (goodending)
-		{
-			INT32 j = (sparklloop & 1) ? 2 : 3;
-			if (j > (finalecount/SPARKLLOOPTIME))
-				j = (finalecount/SPARKLLOOPTIME);
-			while (j)
-			{
-				if (j > 1 || sparklloop >= 2)
-				{
-					// if j == 0 - alternate between 0 and 1
-					//         1 -                   1 and 2
-					//         2 -                   2 and not rendered
-					V_DrawFixedPatch(x+sparkloffs[j-1][0], y+sparkloffs[j-1][1], FRACUNIT, 0,
-						W_CachePatchName(va("ENDSPKL%.1d", (j - ((sparklloop & 1) ? 0 : 1))), PU_PATCH),
-						R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_ULTRAMARINE, GTC_CACHE));
-				}
-				j--;
-			}
-		}
-		else
-		{
-			patch_t *eggrock = W_CachePatchName("ENDEGRK5", PU_PATCH_LOWPRIORITY);
-			V_DrawFixedPatch(x, y, scale, 0, eggrock, colormap[0]);
-			if (trans < 10)
-				V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, eggrock, colormap[1]);
-			else if (sparklloop)
-				V_DrawFixedPatch(x, y, scale, (10-sparklloop)<<V_ALPHASHIFT,
-					W_CachePatchName("ENDEGRK0", PU_PATCH_LOWPRIORITY), colormap[1]);
-		}
-	}
-
-	eemeralds_cur = (finalecount % 360)<<FRACBITS;
-
-	for (i = 0; i < 7; ++i)
-	{
-		fa = (FixedAngle(eemeralds_cur)>>ANGLETOFINESHIFT) & FINEMASK;
-		x = (BASEVIDWIDTH<<(FRACBITS-1)) + (60*FINECOSINE(fa));
-		y = ((BASEVIDHEIGHT+16)<<(FRACBITS-1)) + (60*FINESINE(fa));
-		eemeralds_cur += (360<<FRACBITS)/7;
-
-		patchname[4] = 'A'+(char)i;
-		V_DrawFixedPatch(x, y, FRACUNIT, ((emeralds & (1<<i)) ? 0 : V_80TRANS), W_CachePatchName(patchname, PU_PATCH_LOWPRIORITY), NULL);
-	}
-
-	V_DrawCreditString((BASEVIDWIDTH - V_CreditStringWidth(endingtext))<<(FRACBITS-1), (BASEVIDHEIGHT-100)<<(FRACBITS-1), 0, endingtext);
-
-#if 0 // the following looks like hot garbage the more unlockables we add, and we now have a lot of unlockables
-	if (finalecount >= 5*TICRATE)
-	{
-		V_DrawString(8, 16, V_YELLOWMAP, "Unlocked:");
-
-		if (!(netgame) && (!modifiedgame || savemoddata))
-		{
-			INT32 startcoord = 32;
-
-			for (i = 0; i < MAXUNLOCKABLES; i++)
-			{
-				if (unlockables[i].conditionset && unlockables[i].conditionset < MAXCONDITIONSETS
-					&& unlockables[i].type && !unlockables[i].nocecho)
-				{
-					if (unlockables[i].unlocked)
-						V_DrawString(8, startcoord, 0, unlockables[i].name);
-					startcoord += 8;
-				}
-			}
-		}
-		else if (netgame)
-			V_DrawString(8, 96, V_YELLOWMAP, "Multiplayer games\ncan't unlock\nextras!");
-		else
-			V_DrawString(8, 96, V_YELLOWMAP, "Modified games\ncan't unlock\nextras!");
-	}
-#endif
-
-	if (marathonmode)
-	{
-		const char *rtatext, *cuttext;
-		rtatext = (marathonmode & MA_INGAME) ? "In-game timer" : "RTA timer";
-		cuttext = (marathonmode & MA_NOCUTSCENES) ? "" : " w/ cutscenes";
-		endingtext = va("%s, %s%s", skins[players[consoleplayer].skin].realname, rtatext, cuttext);
-		V_DrawCenteredString(BASEVIDWIDTH/2, 182, V_SNAPTOBOTTOM|(ultimatemode ? V_REDMAP : V_YELLOWMAP), endingtext);
-	}
+	// This does nothing lololol
 }
 
 void F_GameEvaluationTicker(void)
@@ -1057,36 +894,6 @@ void F_GameEvaluationTicker(void)
 	{
 		F_StartGameEnd();
 		return;
-	}
-
-	if (!useBlackRock)
-		;
-	else if (!goodending)
-	{
-		if (sparklloop)
-			sparklloop--;
-
-		if (finalecount == (5*TICRATE)/2
-			|| finalecount == (7*TICRATE)/2
-			|| finalecount == ((7*TICRATE)/2)+5)
-		{
-			S_StartSound(NULL, sfx_s3k5c);
-			sparklloop = 10;
-		}
-	}
-	else if (++sparklloop == SPARKLLOOPTIME) // time to roll the randomisation again
-	{
-		angle_t workingangle = FixedAngle((M_RandomKey(360))<<FRACBITS)>>ANGLETOFINESHIFT;
-		fixed_t workingradius = M_RandomKey(26);
-
-		sparkloffs[2][0] = sparkloffs[1][0];
-		sparkloffs[2][1] = sparkloffs[1][1];
-		sparkloffs[1][0] = sparkloffs[0][0];
-		sparkloffs[1][1] = sparkloffs[0][1];
-
-		sparkloffs[0][0] = (30<<FRACBITS) + workingradius*FINECOSINE(workingangle);
-		sparkloffs[0][1] = (30<<FRACBITS) + workingradius*FINESINE(workingangle);
-		sparklloop = 0;
 	}
 
 	if (finalecount == 5*TICRATE)
@@ -1116,521 +923,6 @@ void F_GameEvaluationTicker(void)
 		}
 	}
 }
-
-#undef SPARKLLOOPTIME
-
-// ==========
-//   ENDING
-// ==========
-
-#define INFLECTIONPOINT (6*TICRATE)
-#define STOPPINGPOINT (14*TICRATE)
-#define SPARKLLOOPTIME 15 // must be odd
-
-static void F_CacheEnding(void)
-{
-	endbrdr[1] = W_CachePatchName("ENDBRDR1", PU_PATCH_LOWPRIORITY);
-
-	endegrk[0] = W_CachePatchName("ENDEGRK0", PU_PATCH_LOWPRIORITY);
-	endegrk[1] = W_CachePatchName("ENDEGRK1", PU_PATCH_LOWPRIORITY);
-
-	endglow[0] = W_CachePatchName("ENDGLOW0", PU_PATCH_LOWPRIORITY);
-	endglow[1] = W_CachePatchName("ENDGLOW1", PU_PATCH_LOWPRIORITY);
-
-	endbgsp[0] = W_CachePatchName("ENDBGSP0", PU_PATCH_LOWPRIORITY);
-	endbgsp[1] = W_CachePatchName("ENDBGSP1", PU_PATCH_LOWPRIORITY);
-	endbgsp[2] = W_CachePatchName("ENDBGSP2", PU_PATCH_LOWPRIORITY);
-
-	endspkl[0] = W_CachePatchName("ENDSPKL0", PU_PATCH_LOWPRIORITY);
-	endspkl[1] = W_CachePatchName("ENDSPKL1", PU_PATCH_LOWPRIORITY);
-	endspkl[2] = W_CachePatchName("ENDSPKL2", PU_PATCH_LOWPRIORITY);
-
-	endxpld[0] = W_CachePatchName("ENDXPLD0", PU_PATCH_LOWPRIORITY);
-	endxpld[1] = W_CachePatchName("ENDXPLD1", PU_PATCH_LOWPRIORITY);
-	endxpld[2] = W_CachePatchName("ENDXPLD2", PU_PATCH_LOWPRIORITY);
-	endxpld[3] = W_CachePatchName("ENDXPLD3", PU_PATCH_LOWPRIORITY);
-
-	endescp[0] = W_CachePatchName("ENDESCP0", PU_PATCH_LOWPRIORITY);
-	endescp[1] = W_CachePatchName("ENDESCP1", PU_PATCH_LOWPRIORITY);
-	endescp[2] = W_CachePatchName("ENDESCP2", PU_PATCH_LOWPRIORITY);
-	endescp[3] = W_CachePatchName("ENDESCP3", PU_PATCH_LOWPRIORITY);
-	endescp[4] = W_CachePatchName("ENDESCP4", PU_PATCH_LOWPRIORITY);
-
-	// so we only need to check once
-	if ((goodending = ALLCHAOSEMERALDS(emeralds)))
-	{
-		endfwrk[0] = W_CachePatchName("ENDFWRK3", PU_PATCH);
-		endfwrk[1] = W_CachePatchName("ENDFWRK4", PU_PATCH);
-		endfwrk[2] = W_CachePatchName("ENDFWRK5", PU_PATCH);
-
-		endbrdr[0] = W_CachePatchName("ENDBRDR2", PU_PATCH_LOWPRIORITY);
-	}
-	else
-	{
-		// eggman, skin nonspecific
-		endfwrk[0] = W_CachePatchName("ENDFWRK0", PU_PATCH_LOWPRIORITY);
-		endfwrk[1] = W_CachePatchName("ENDFWRK1", PU_PATCH_LOWPRIORITY);
-		endfwrk[2] = W_CachePatchName("ENDFWRK2", PU_PATCH_LOWPRIORITY);
-
-		endbrdr[0] = W_CachePatchName("ENDBRDR0", PU_PATCH_LOWPRIORITY);
-	}
-}
-
-static void F_CacheGoodEnding(void)
-{
-	endegrk[0] = W_CachePatchName("ENDEGRK2", PU_PATCH_LOWPRIORITY);
-	endegrk[1] = W_CachePatchName("ENDEGRK3", PU_PATCH_LOWPRIORITY);
-
-	endglow[0] = W_CachePatchName("ENDGLOW2", PU_PATCH_LOWPRIORITY);
-	endglow[1] = W_CachePatchName("ENDGLOW3", PU_PATCH_LOWPRIORITY);
-
-	endxpld[0] = W_CachePatchName("ENDEGRK4", PU_PATCH_LOWPRIORITY);
-}
-
-void F_StartEnding(void)
-{
-	G_SetGamestate(GS_ENDING);
-	wipetypepost = INT16_MAX;
-
-	// Just in case they're open ... somehow
-	M_ClearMenus(true);
-
-	gameaction = ga_nothing;
-	paused = false;
-	CON_ToggleOff();
-	S_StopMusic(); // todo: placeholder
-	S_StopSounds();
-
-	finalecount = -10; // what? this totally isn't a hack. why are you asking?
-
-	memset(sparkloffs, 0, sizeof(INT32)*3*2);
-	sparklloop = 0;
-
-	F_CacheEnding();
-}
-
-void F_EndingTicker(void)
-{
-	if (++finalecount > STOPPINGPOINT)
-	{
-		F_StartCredits();
-		wipetypepre = INT16_MAX;
-		return;
-	}
-
-	if (finalecount == -8)
-		S_ChangeMusicInternal((goodending ? "_endg" : "_endb"), false);
-
-	if (goodending && finalecount == INFLECTIONPOINT) // time to swap some assets
-		F_CacheGoodEnding();
-
-	if (++sparklloop == SPARKLLOOPTIME) // time to roll the randomisation again
-	{
-		angle_t workingangle = FixedAngle((M_RandomRange(-170, 80))<<FRACBITS)>>ANGLETOFINESHIFT;
-		fixed_t workingradius = M_RandomKey(26);
-
-		sparkloffs[0][0] = (30<<FRACBITS) + workingradius*FINECOSINE(workingangle);
-		sparkloffs[0][1] = (30<<FRACBITS) + workingradius*FINESINE(workingangle);
-
-		sparklloop = 0;
-	}
-}
-
-void F_EndingDrawer(void)
-{
-	INT32 x, y, i, j, parallaxticker;
-	patch_t *rockpat;
-
-	if (!goodending || finalecount < INFLECTIONPOINT)
-		rockpat = W_CachePatchName("ROID0000", PU_PATCH_LOWPRIORITY);
-	else
-		rockpat = W_CachePatchName(va("ROID00%.2d", 34 - ((finalecount - INFLECTIONPOINT) % 35)), PU_PATCH_LOWPRIORITY);
-
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-
-	parallaxticker = finalecount - INFLECTIONPOINT;
-	x = -((parallaxticker*20)<<FRACBITS)/INFLECTIONPOINT;
-	y = ((parallaxticker*7)<<FRACBITS)/INFLECTIONPOINT;
-	i = (((BASEVIDWIDTH-82)/2)+11)<<FRACBITS;
-	j = (((BASEVIDHEIGHT-82)/2)+12)<<FRACBITS;
-
-	if (finalecount <= -10)
-		;
-	else if (finalecount < 0)
-		V_DrawFadeFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0, 0, 10+finalecount);
-	else if (finalecount <= 20)
-	{
-		V_DrawFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0);
-		if (finalecount && finalecount < 20)
-		{
-			INT32 trans = (10-finalecount);
-			if (trans < 0)
-			{
-				trans = -trans;
-				V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, 0, endbrdr[0]);
-			}
-			V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, trans<<V_ALPHASHIFT, endbrdr[1]);
-		}
-		else if (finalecount == 20)
-			V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, 0, endbrdr[0]);
-	}
-	else if (goodending && (parallaxticker == -2 || !parallaxticker))
-	{
-		V_DrawFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0);
-		V_DrawFixedPatch(x+i, y+j, FRACUNIT, 0, endegrk[0],
-			R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_CACHE));
-		//V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, 0, endbrdr[1]);
-	}
-	else if (goodending && parallaxticker == -1)
-	{
-		V_DrawFixedPatch(x+i, y+j, FRACUNIT, 0, rockpat,
-			R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE));
-		V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, 0, endbrdr[1]);
-	}
-	else
-	{
-		boolean doexplosions = false;
-		boolean borderstuff = false;
-		INT32 tweakx = 0, tweaky = 0;
-
-		if (parallaxticker < 75) // f background's supposed to be visible
-		{
-			V_DrawFixedPatch(-(x/10), -(y/10), FRACUNIT, 0, endbgsp[0], NULL); // nebula
-			V_DrawFixedPatch(-(x/5),  -(y/5),  FRACUNIT, 0, endbgsp[1], NULL); // sun
-			V_DrawFixedPatch(     0,  -(y/2),  FRACUNIT, 0, endbgsp[2], NULL); // planet
-
-			// player's escape pod
-			V_DrawFixedPatch((200<<FRACBITS)+(finalecount<<(FRACBITS-2)),
-				(100<<FRACBITS)+(finalecount<<(FRACBITS-2)),
-				FRACUNIT, 0, endescp[4], NULL);
-			if (parallaxticker > -19)
-			{
-				INT32 trans = (-parallaxticker)>>1;
-				if (trans < 0)
-					trans = 0;
-				V_DrawFixedPatch((200<<FRACBITS)+(finalecount<<(FRACBITS-2)),
-					(100<<FRACBITS)+(finalecount<<(FRACBITS-2)),
-					FRACUNIT, trans<<V_ALPHASHIFT, endescp[(finalecount/2)&3], NULL);
-			}
-
-			if (goodending && parallaxticker > 0) // gunchedrock
-			{
-				INT32 scale = FRACUNIT + ((parallaxticker-10)<<7);
-				INT32 trans = parallaxticker>>2;
-				UINT8 *colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JET, GTC_CACHE);
-
-				if (parallaxticker < 10)
-				{
-					tweakx = parallaxticker<<FRACBITS;
-					tweaky = ((7*parallaxticker)<<(FRACBITS-2))/5;
-				}
-				else
-				{
-					tweakx = 10<<FRACBITS;
-					tweaky = 7<<(FRACBITS-1);
-				}
-				i += tweakx;
-				j -= tweaky;
-
-				x <<= 1;
-				y <<= 1;
-
-				// center detritrus
-				V_DrawFixedPatch(i-x, j-y, FRACUNIT, 0, endegrk[0], colormap);
-				if (trans < 10)
-					V_DrawFixedPatch(i-x, j-y, FRACUNIT, trans<<V_ALPHASHIFT, endegrk[0], NULL);
-
-				 // ring detritrus
-				V_DrawFixedPatch((30*(FRACUNIT-scale))+i-(2*x), (30*(FRACUNIT-scale))+j-(2*y) - ((7<<FRACBITS)/2), scale, 0, endegrk[1], colormap);
-				if (trans < 10)
-					V_DrawFixedPatch((30*(FRACUNIT-scale))+i-(2*x), (30*(FRACUNIT-scale))+j-(2*y), scale, trans<<V_ALPHASHIFT, endegrk[1], NULL);
-
-				scale += ((parallaxticker-10)<<7);
-
-				 // shard detritrus
-				V_DrawFixedPatch((30*(FRACUNIT-scale))+i-(x/2), (30*(FRACUNIT-scale))+j-(y/2) - ((7<<FRACBITS)/2), scale, 0, endxpld[0], colormap);
-				if (trans < 10)
-					V_DrawFixedPatch((30*(FRACUNIT-scale))+i-(x/2), (30*(FRACUNIT-scale))+j-(y/2), scale, trans<<V_ALPHASHIFT, endxpld[0], NULL);
-			}
-		}
-		else if (goodending)
-		{
-			tweakx = 10<<FRACBITS;
-			tweaky = 7<<(FRACBITS-1);
-			i += tweakx;
-			j += tweaky;
-			x <<= 1;
-			y <<= 1;
-		}
-
-		if (goodending && parallaxticker > 0)
-		{
-			i -= (3+(tweakx<<1));
-			j += tweaky<<2;
-		}
-
-		if (parallaxticker <= 70) // eggrock/blackrock
-		{
-			INT32 trans;
-			fixed_t scale = FRACUNIT;
-			UINT8 *colormap[2] = {NULL, NULL};
-
-			x += i;
-			y += j;
-
-			if (parallaxticker > 66)
-			{
-				scale = ((70 - parallaxticker)<<(FRACBITS-2));
-				x += (30*(FRACUNIT-scale));
-				y += (30*(FRACUNIT-scale));
-			}
-			else if ((parallaxticker > 60) || (goodending && parallaxticker > 0))
-				;
-			else
-			{
-				doexplosions = true;
-				if (!sparklloop)
-				{
-					x += ((sparkloffs[0][0] < 30<<FRACBITS) ? FRACUNIT : -FRACUNIT);
-					y += ((sparkloffs[0][1] < 30<<FRACBITS) ? FRACUNIT : -FRACUNIT);
-				}
-			}
-
-			if (goodending && finalecount > INFLECTIONPOINT)
-				parallaxticker -= 40;
-
-			if ((-parallaxticker/4) < 5)
-			{
-				trans = (-parallaxticker/4) + 5;
-				if (trans < 0)
-					trans = 0;
-				V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, endglow[(finalecount & 1) ? 0 : 1], NULL);
-			}
-
-			if (goodending && finalecount > INFLECTIONPOINT)
-			{
-				if (finalecount < INFLECTIONPOINT+10)
-					V_DrawFadeFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0, 0, INFLECTIONPOINT+10-finalecount);
-				parallaxticker -= 30;
-			}
-
-			if ((parallaxticker/2) > -15)
-				colormap[0] = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
-			V_DrawFixedPatch(x, y, scale, 0, rockpat, colormap[0]);
-			if ((parallaxticker/2) > -25)
-			{
-				trans = (parallaxticker/2) + 15;
-				if (trans < 0)
-					trans = -trans;
-				if (trans < 10)
-					V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, rockpat,
-						R_GetTranslationColormap(TC_BLINK, SKINCOLOR_ULTRAMARINE, GTC_CACHE));
-			}
-
-			if (goodending && finalecount > INFLECTIONPOINT)
-			{
-				if (finalecount < INFLECTIONPOINT+10)
-					V_DrawFixedPatch(x, y, scale, (finalecount-INFLECTIONPOINT)<<V_ALPHASHIFT, rockpat,
-						R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_CACHE));
-			}
-			else
-			{
-				if ((-parallaxticker/2) < -5)
-					colormap[1] = R_GetTranslationColormap(TC_ALLWHITE, 0, GTC_CACHE);
-
-				V_DrawFixedPatch(x, y, scale, 0, endegrk[0], colormap[1]);
-
-				if ((-parallaxticker/2) < 5)
-				{
-					trans = (-parallaxticker/2) + 5;
-					if (trans < 0)
-						trans = -trans;
-					if (trans < 10)
-						V_DrawFixedPatch(x, y, scale, trans<<V_ALPHASHIFT, endegrk[1], NULL);
-				}
-			}
-		}
-		else // firework
-		{
-			fixed_t scale = FRACUNIT;
-			INT32 frame;
-			UINT8 *colormap = NULL;
-			parallaxticker -= 70;
-			x += ((BASEVIDWIDTH-3)<<(FRACBITS-1)) - tweakx;
-			y += (BASEVIDHEIGHT<<(FRACBITS-1)) + tweaky;
-			borderstuff = true;
-
-			if (parallaxticker < 5)
-			{
-				scale = (parallaxticker<<FRACBITS)/4;
-				V_DrawFadeFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0, 31, parallaxticker*2);
-			}
-			else
-				scale += (parallaxticker-4)<<5;
-
-			if (goodending)
-				colormap = R_GetTranslationColormap(players[consoleplayer].skin, players[consoleplayer].skincolor, GTC_CACHE);
-
-			if ((frame = ((parallaxticker & 1) ? 1 : 0) + (parallaxticker/TICRATE)) < 3)
-				V_DrawFixedPatch(x, y, scale, 0, endfwrk[frame], colormap);
-		}
-
-		// explosions
-		if (sparklloop >= 3 && doexplosions)
-		{
-			INT32 boomtime = parallaxticker - sparklloop;
-
-			x = ((((BASEVIDWIDTH-82)/2)+11)<<FRACBITS) - ((boomtime*20)<<FRACBITS)/INFLECTIONPOINT;
-			y = ((((BASEVIDHEIGHT-82)/2)+12)<<FRACBITS) + ((boomtime*7)<<FRACBITS)/INFLECTIONPOINT;
-
-			V_DrawFixedPatch(x + sparkloffs[0][0], y + sparkloffs[0][1],
-				FRACUNIT, 0, endxpld[sparklloop/4], NULL);
-		}
-
-		// initial fade
-		if (finalecount < 30)
-			V_DrawFadeFill(24, 24, BASEVIDWIDTH-48, BASEVIDHEIGHT-48, 0, 0, 30-finalecount);
-
-		// border - only emeralds can exist outside it
-		{
-			INT32 trans = 0;
-			if (borderstuff)
-				trans = (10*parallaxticker)/(3*TICRATE);
-			if (trans < 10)
-				V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, trans<<V_ALPHASHIFT, endbrdr[0]);
-			if (borderstuff && parallaxticker < 11)
-				V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, (parallaxticker-1)<<V_ALPHASHIFT, endbrdr[1]);
-			else if (goodending && finalecount > INFLECTIONPOINT && finalecount < INFLECTIONPOINT+10)
-				V_DrawScaledPatch(BASEVIDWIDTH/2, BASEVIDHEIGHT/2, (finalecount-INFLECTIONPOINT)<<V_ALPHASHIFT, endbrdr[1]);
-		}
-
-		// emeralds and emerald accessories
-		if (goodending && finalecount >= TICRATE && finalecount < INFLECTIONPOINT)
-		{
-			INT32 workingtime = finalecount - TICRATE;
-			fixed_t radius = ((vid.width/vid.dupx)*(INFLECTIONPOINT - TICRATE - workingtime))/(INFLECTIONPOINT - TICRATE);
-			angle_t fa;
-			INT32 eemeralds_cur[4];
-			char patchname[7] = "CEMGx0";
-
-			radius <<= FRACBITS;
-
-			for (i = 0; i < 4; ++i)
-			{
-				if (i == 1)
-					workingtime -= sparklloop;
-				else if (i)
-					workingtime -= SPARKLLOOPTIME;
-				eemeralds_cur[i] = (workingtime % 360)<<FRACBITS;
-			}
-
-			// sparkles
-			for (i = 0; i < 7; ++i)
-			{
-				UINT8* colormap;
-				skincolornum_t col = SKINCOLOR_GREEN;
-				switch (i)
-				{
-					case 1:
-						col = SKINCOLOR_MAGENTA;
-						break;
-					case 2:
-						col = SKINCOLOR_BLUE;
-						break;
-					case 3:
-						col = SKINCOLOR_CYAN;
-						break;
-					case 4:
-						col = SKINCOLOR_ORANGE;
-						break;
-					case 5:
-						col = SKINCOLOR_RED;
-						break;
-					case 6:
-						col = SKINCOLOR_GREY;
-					default:
-					case 0:
-						break;
-				}
-
-				colormap = R_GetTranslationColormap(TC_DEFAULT, col, GTC_CACHE);
-
-				j = (sparklloop & 1) ? 2 : 3;
-				while (j)
-				{
-					fa = (FixedAngle(eemeralds_cur[j])>>ANGLETOFINESHIFT) & FINEMASK;
-					x =  (BASEVIDWIDTH<<(FRACBITS-1)) + FixedMul(FINECOSINE(fa),radius);
-					y = (BASEVIDHEIGHT<<(FRACBITS-1)) + FixedMul(FINESINE(fa),radius);
-					eemeralds_cur[j] += (360<<FRACBITS)/7;
-
-					// if j == 0 - alternate between 0 and 1
-					//         1 -                   1 and 2
-					//         2 -                   2 and not rendered
-					V_DrawFixedPatch(x, y, FRACUNIT, 0, endspkl[(j - ((sparklloop & 1) ? 0 : 1))], colormap);
-
-					j--;
-				}
-			}
-
-			// ...then emeralds themselves
-			for (i = 0; i < 7; ++i)
-			{
-				fa = (FixedAngle(eemeralds_cur[0])>>ANGLETOFINESHIFT) & FINEMASK;
-				x = (BASEVIDWIDTH<<(FRACBITS-1)) + FixedMul(FINECOSINE(fa),radius);
-				y = ((BASEVIDHEIGHT+16)<<(FRACBITS-1)) + FixedMul(FINESINE(fa),radius);
-				eemeralds_cur[0] += (360<<FRACBITS)/7;
-
-				patchname[4] = 'A'+(char)i;
-				V_DrawFixedPatch(x, y, FRACUNIT, 0, W_CachePatchName(patchname, PU_PATCH_LOWPRIORITY), NULL);
-			}
-		} // if (goodending...
-	} // (finalecount > 20)
-
-	// look, i make an ending for you last-minute, the least you could do is let me have this
-	if (cv_soundtest.value == 413)
-	{
-		INT32 trans = 0;
-		boolean donttouch = false;
-		const char *str;
-		if (goodending)
-			str = va("[S] %s: Engage.", skins[players[consoleplayer].skin].realname);
-		else
-			str = "[S] Eggman: Abscond.";
-
-		if (finalecount < 10)
-			trans = (10-finalecount)/2;
-		else if (finalecount > STOPPINGPOINT - 20)
-		{
-			trans = 10 + (finalecount - STOPPINGPOINT)/2;
-			donttouch = true;
-		}
-
-		if (trans < 10)
-		{
-			//colset(linkmap,  164, 165, 169); -- the ideal purple colour to represent a clicked in-game link, but not worth it just for a soundtest-controlled secret
-			V_DrawCenteredString(BASEVIDWIDTH/2, 8, V_ALLOWLOWERCASE|(trans<<V_ALPHASHIFT), str);
-			V_DrawCharacter(32, BASEVIDHEIGHT-16, '>'|(trans<<V_ALPHASHIFT), false);
-			V_DrawString(40, ((finalecount == STOPPINGPOINT-(20+TICRATE)) ? 1 : 0)+BASEVIDHEIGHT-16, ((timesBeaten || finalecount >= STOPPINGPOINT-TICRATE) ? V_PURPLEMAP : V_BLUEMAP)|(trans<<V_ALPHASHIFT), " [S] ===>");
-		}
-
-		if (finalecount > STOPPINGPOINT-(20+(2*TICRATE)))
-		{
-			INT32 trans2 = abs((5*FINECOSINE((FixedAngle((finalecount*5)<<FRACBITS)>>ANGLETOFINESHIFT & FINEMASK)))>>FRACBITS)+2;
-			if (!donttouch)
-			{
-				trans = 10 + (STOPPINGPOINT-(20+(2*TICRATE))) - finalecount;
-				if (trans > trans2)
-					trans2 = trans;
-			}
-			else
-				trans2 += 2*trans;
-			if (trans2 < 10)
-				V_DrawCharacter(26, BASEVIDHEIGHT-33, '\x1C'|(trans2<<V_ALPHASHIFT), false);
-		}
-	}
-}
-
-#undef SPARKLLOOPTIME
 
 // ==========
 //  GAME END
@@ -1826,6 +1118,8 @@ static void F_CacheTitleScreen(void)
 
 void F_StartTitleScreen(void)
 {
+	INT32 titleMapNum;
+
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)
 	{
 		ttuser_count = 0;
@@ -1835,23 +1129,23 @@ void F_StartTitleScreen(void)
 	else
 		wipegamestate = GS_TITLESCREEN;
 
-	if (titlemap)
+	if (titlemap
+		&& ((titleMapNum = G_MapNumber(titlemap)) < nummapheaders)
+		&& mapheaderinfo[titleMapNum]
+		&& mapheaderinfo[titleMapNum]->lumpnum != LUMPERROR)
 	{
 		mapthing_t *startpos;
 
 		gamestate_t prevwipegamestate = wipegamestate;
 		titlemapinaction = TITLEMAP_LOADING;
 		titlemapcameraref = NULL;
-		gamemap = titlemap;
+		gamemap = titleMapNum+1;
 
-		if (!mapheaderinfo[gamemap-1])
-			P_AllocMapHeader(gamemap-1);
-
-		maptol = mapheaderinfo[gamemap-1]->typeoflevel;
-		globalweather = mapheaderinfo[gamemap-1]->weather;
+		maptol = mapheaderinfo[titleMapNum]->typeoflevel;
+		globalweather = mapheaderinfo[titleMapNum]->weather;
 
 		G_DoLoadLevel(true);
-		if (!titlemap)
+		if (!titleMapNum)
 			return;
 
 		players[displayplayers[0]].playerstate = PST_DEAD; // Don't spawn the player in dummy (I'm still a filthy cheater)
@@ -1952,7 +1246,7 @@ void F_TitleScreenDrawer(void)
 				if (finalecount >= 20)
 					V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 				else if (finalecount >= 10)
-					V_DrawSciencePatch((84<<FRACBITS) - FixedDiv(180<<FRACBITS, 10<<FRACBITS)*(20-finalecount), (87<<FRACBITS), 0, ttkart, FRACUNIT/2);
+					V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - rendertimefrac), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 			}
 			else if (finalecount < 52)
 			{
@@ -1968,8 +1262,8 @@ void F_TitleScreenDrawer(void)
 
 				F_TitleBGScroll(5);
 
-				V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(finalecount%70, 70)), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + FixedMul(40<<FRACBITS, FixedDiv(finalecount%70, 70)), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + rendertimefrac, 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + rendertimefrac, 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 				if (transval)
 					V_DrawFadeScreen(0, 10 - transval);
@@ -2050,7 +1344,7 @@ void F_TitleScreenTicker(boolean run)
 			if (menupres[MN_MAIN].musname[0])
 				S_ChangeMusic(menupres[MN_MAIN].musname, menupres[MN_MAIN].mustrack, menupres[MN_MAIN].muslooping);
 			else
-				S_ChangeMusicInternal("_title", looptitle);
+				S_ChangeMusicInternal("titles", looptitle);
 		}
 	}
 
@@ -2126,20 +1420,17 @@ void F_TitleScreenTicker(boolean run)
 	// is it time?
 	if (!(--demoIdleLeft))
 	{
-		//static boolean use_netreplay = false;
-
-		char dname[9];
-		lumpnum_t l;
-		const char *mapname;
+		char dname[MAXMAPLUMPNAME+1+8+1];
+		UINT16 mapnum;
 		UINT8 numstaff;
+		static boolean use_netreplay = false;
 
-		//@TODO uncomment this when this goes into vanilla
-		/*if ((use_netreplay = !use_netreplay))*/
+		if ((use_netreplay = !use_netreplay))
 		{
-			numstaff = 1;
-			while ((l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
+			lumpnum_t l = LUMPERROR;
+			numstaff = 0;
+			while (numstaff < 99 && (l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
 				numstaff++;
-			numstaff--;
 
 			if (numstaff)
 			{
@@ -2152,54 +1443,38 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		if ((l = W_CheckNumForName("MAP01S01")) == LUMPERROR) // gotta have ONE
+		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, false, NULL);
+		if (mapnum == 0) // gotta have ONE
 		{
-			F_StartIntro();
 			return;
 		}
 
-		// Replay intro when done cycling through demos
-		/*
-		if (curDemo == numDemos) -- uuuh... we have a LOT of maps AND a big devteam... probably not gonna see a repeat unless you're super unlucky :V
-		{
-			curDemo = 0;
-			F_StartIntro();
-			return;
-		}
-		*/
-
-		mapname = G_BuildMapName(G_RandMap(TOL_RACE, -2, 0, 0, false, NULL)+1);
-
-		numstaff = 1;
-		while (numstaff < 99 && (l = W_CheckNumForName(va("%sS%02u",mapname,numstaff+1))) != LUMPERROR)
-			numstaff++;
-
-#if 0 // turns out this isn't how we're gonna organise 'em
-		if (numstaff > 1)
-		{
-			if (laststaff && laststaff <= numstaff) // don't do the same staff member twice in a row, even if they're on different maps
-			{
-				numstaff = M_RandomKey(numstaff-1)+1;
-				if (numstaff >= laststaff)
-					numstaff++;
-			}
-			else
-				numstaff = M_RandomKey(numstaff)+1;
-		}
-		laststaff = numstaff;
-#else
 		numstaff = M_RandomKey(numstaff)+1;
-#endif
 
 		// Setup demo name
-		snprintf(dname, 9, "%sS%02u", mapname, numstaff);
+		sprintf(dname, "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);
 
-		/*if ((l = W_CheckNumForName(dname)) == LUMPERROR) -- we KNOW it exists now
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("Demo lump \"%s\" doesn't exist\n"), dname);
-			F_StartIntro();
-			return;
-		}*/
+			// vres GHOST_%u
+			virtres_t *vRes;
+			virtlump_t *vLump;
+
+			vRes = vres_GetMap(mapheaderinfo[mapnum]->lumpnum);
+			vLump = vres_Find(vRes, dname);
+
+			if (vLump == NULL)
+			{
+
+				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
+					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
+				else
+				{
+					vres_Free(vRes);
+					return;
+				}
+			}
+			vres_Free(vRes);
+		}
 
 loadreplay:
 		demo.title = demo.fromtitle = true;
@@ -2336,7 +1611,7 @@ void F_EndCutScene(void)
 			F_StartGameEvaluation();
 		else if (cutnum == introtoplay-1)
 			D_StartTitle();
-		else if (nextmap < 1100-1)
+		else if (nextmap < NEXTMAP_SPECIAL)
 			G_NextLevel();
 		else
 			G_EndGame();

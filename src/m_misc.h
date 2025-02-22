@@ -21,6 +21,10 @@
 #include "d_event.h" // Screenshot responder
 #include "command.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	MM_OFF = 0,
 	MM_APNG,
@@ -41,8 +45,6 @@ void M_StopMovie(void);
 
 // the file where game vars and settings are saved
 #define CONFIGFILENAME "kartconfig.cfg"
-
-INT32 M_MapNumber(char first, char second);
 
 boolean FIL_WriteFile(char const *name, const void *source, size_t length);
 size_t FIL_ReadFileTag(char const *name, UINT8 **buffer, INT32 tag);
@@ -67,6 +69,8 @@ extern boolean takescreenshot;
 void M_ScreenShot(void);
 void M_DoScreenShot(void);
 boolean M_ScreenshotResponder(event_t *ev);
+
+void M_MinimapGenerate(void);
 
 void Command_SaveConfig_f(void);
 void Command_LoadConfig_f(void);
@@ -94,8 +98,6 @@ TMatrix *RotateZMatrix(angle_t rad);
 // s1 = s2+s3+s1 (1024 lenghtmax)
 void strcatbf(char *s1, const char *s2, const char *s3);
 
-void M_SetupMemcpy(void);
-
 const char *M_FileError(FILE *handle);
 
 int     M_PathParts      (const char *path);
@@ -122,5 +124,9 @@ FUNCMATH UINT8 M_CountBits(UINT32 num, UINT8 size);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

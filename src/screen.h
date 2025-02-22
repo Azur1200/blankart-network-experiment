@@ -23,6 +23,10 @@
 #define DNWH void * // unused in DOS version
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // quickhack for V_Init()... to be cleaned up
 #ifdef NOPOSTPROCESSING
 #define NUMSCREENS 2
@@ -45,7 +49,7 @@
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
 
 // global video state
-typedef struct viddef_s
+struct viddef_t
 {
 	INT32 modenum; // vidmode num indexes videomodes list
 
@@ -74,7 +78,7 @@ typedef struct viddef_s
 	INT32/*fixed_t*/ fmeddupx, fmeddupy;
 	INT32 glstate;
 #endif
-} viddef_t;
+};
 
 enum
 {
@@ -84,16 +88,16 @@ enum
 };
 
 // internal additional info for vesa modes only
-typedef struct
+struct vesa_extra_t
 {
 	INT32 vesamode; // vesa mode number plus LINEAR_MODE bit
 	void *plinearmem; // linear address of start of frame buffer
-} vesa_extra_t;
+};
 // a video modes from the video modes list,
 // note: video mode 0 is always standard VGA320x200.
-typedef struct vmode_s
+struct vmode_t
 {
-	struct vmode_s *pnext;
+	vmode_t *pnext;
 	char *name;
 	UINT32 width, height;
 	UINT32 rowbytes; // bytes per scanline
@@ -102,88 +106,15 @@ typedef struct vmode_s
 	INT32 numpages;
 	vesa_extra_t *pextradata; // vesa mode extra data
 #ifdef _WIN32
-	INT32 (WINAPI *setmode)(viddef_t *lvid, struct vmode_s *pcurrentmode);
+	INT32 (WINAPI *setmode)(viddef_t *lvid, vmode_t *pcurrentmode);
 #else
-	INT32 (*setmode)(viddef_t *lvid, struct vmode_s *pcurrentmode);
+	INT32 (*setmode)(viddef_t *lvid, vmode_t *pcurrentmode);
 #endif
 	INT32 misc; // misc for display driver (r_opengl.dll etc)
-} vmode_t;
+};
 
 #define NUMSPECIALMODES  4
 extern vmode_t specialmodes[NUMSPECIALMODES];
-
-// ---------------------------------------------
-// color mode dependent drawer function pointers
-// ---------------------------------------------
-
-#define USE_COL_SPAN_ASM 0
-
-#define BASEDRAWFUNC 0
-
-enum
-{
-	COLDRAWFUNC_BASE = BASEDRAWFUNC,
-	COLDRAWFUNC_FUZZY,
-	COLDRAWFUNC_TRANS,
-	COLDRAWFUNC_SHADE,
-	COLDRAWFUNC_SHADOWED,
-	COLDRAWFUNC_TRANSTRANS,
-	COLDRAWFUNC_TWOSMULTIPATCH,
-	COLDRAWFUNC_TWOSMULTIPATCHTRANS,
-	COLDRAWFUNC_FOG,
-	COLDRAWFUNC_DROPSHADOW,
-
-	COLDRAWFUNC_MAX
-};
-
-extern void (*colfunc)(void);
-extern void (*colfuncs[COLDRAWFUNC_MAX])(void);
-#ifdef USE_COL_SPAN_ASM
-extern void (*colfuncs_asm[COLDRAWFUNC_MAX])(void);
-#endif
-extern int colfunctype;
-
-enum
-{
-	SPANDRAWFUNC_BASE = BASEDRAWFUNC,
-	SPANDRAWFUNC_TRANS,
-	SPANDRAWFUNC_TILTED,
-	SPANDRAWFUNC_TILTEDTRANS,
-
-	SPANDRAWFUNC_SPLAT,
-	SPANDRAWFUNC_TRANSSPLAT,
-	SPANDRAWFUNC_TILTEDSPLAT,
-
-	SPANDRAWFUNC_SPRITE,
-	SPANDRAWFUNC_TRANSSPRITE,
-	SPANDRAWFUNC_TILTEDSPRITE,
-	SPANDRAWFUNC_TILTEDTRANSSPRITE,
-
-	SPANDRAWFUNC_WATER,
-	SPANDRAWFUNC_TILTEDWATER,
-
-	SPANDRAWFUNC_FOG,
-
-	SPANDRAWFUNC_MAX
-};
-
-extern void (*spanfunc)(void);
-extern void (*spanfuncs[SPANDRAWFUNC_MAX])(void);
-extern void (*spanfuncs_npo2[SPANDRAWFUNC_MAX])(void);
-#ifdef USE_COL_SPAN_ASM
-extern void (*spanfuncs_asm[SPANDRAWFUNC_MAX])(void);
-#endif
-
-// -----
-// CPUID
-// -----
-extern boolean R_ASM;
-extern boolean R_486;
-extern boolean R_586;
-extern boolean R_MMX;
-extern boolean R_3DNow;
-extern boolean R_MMXExt;
-extern boolean R_SSE2;
 
 // ----------------
 // screen variables
@@ -203,6 +134,7 @@ extern UINT8 *scr_borderpatch; // patch used to fill the view borders
 
 extern consvar_t cv_scr_width, cv_scr_height, cv_scr_depth, cv_renderview, cv_renderer, cv_renderhitbox, cv_fullscreen;
 extern consvar_t cv_vhseffect, cv_shittyscreen;
+extern consvar_t cv_parallelsoftware;
 
 // wait for page flipping to end or not
 extern consvar_t cv_vidwait;
@@ -220,6 +152,7 @@ void SCR_SetDrawFuncs(void);
 // Set current column / span drawers
 void R_SetColumnFunc(size_t id, boolean brightmapped);
 void R_SetSpanFunc(size_t id, boolean npo2, boolean brightmapped);
+boolean R_SetSpanFuncFlat(size_t id); // flat color
 
 // Compare current column drawer
 boolean R_CheckColumnFunc(size_t id);
@@ -243,4 +176,9 @@ void SCR_ClosedCaptions(void);
 void SCR_DisplayLocalPing(void);
 void SCR_DisplayMarathonInfo(void);
 #undef DNWH
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif //__SCREEN_H__

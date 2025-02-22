@@ -260,7 +260,7 @@ static UINT8 GetPivotFrame(lua_State *L, int idx)
 	}
 	else
 	{
-		frame = R_Char2Frame(field[0]);
+		frame = R_Char2Frame(field[0], false);
 		if (frame == 255)
 			luaL_error(L, "invalid frame %s", field);
 	}
@@ -539,8 +539,6 @@ static int pivotlist_get(lua_State *L)
 	spriteinfo_t *sprinfo = *((spriteinfo_t **)luaL_checkudata(L, 1, META_PIVOTLIST));
 	UINT8 frame = GetPivotFrame(L, 2);
 
-	I_Assert(framepivot != NULL);
-
 	// bypass LUA_PushUserdata
 	container = lua_newuserdata(L, sizeof *container);
 	container->sprinfo = sprinfo;
@@ -564,8 +562,6 @@ static int pivotlist_set(lua_State *L)
 		return luaL_error(L, "Do not alter spriteframepivot_t in HUD rendering code!");
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter spriteframepivot_t in CMD building code!");
-
-	I_Assert(pivotlist != NULL);
 
 	frame = GetPivotFrame(L, 2);
 

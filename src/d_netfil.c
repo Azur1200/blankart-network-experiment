@@ -65,7 +65,7 @@ static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid
 
 #ifdef HAVE_CURL
 size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 #endif
 
 // Sender structure
@@ -103,7 +103,6 @@ static filetran_t transfer[MAXNETNODES];
 INT32 fileneedednum; // Number of files needed to join the server
 fileneeded_t fileneeded[MAX_WADFILES]; // List of needed files
 static tic_t lasttimeackpacketsent = 0;
-char downloaddir[512] = "DOWNLOAD";
 
 // For resuming failed downloads
 typedef struct
@@ -130,8 +129,8 @@ static CURL *http_handle;
 static CURLM *multi_handle;
 boolean curl_running = false;
 boolean curl_failedwebdownload = false;
-static double curl_dlnow;
-static double curl_dltotal;
+static curl_off_t curl_dlnow;
+static curl_off_t curl_dltotal;
 static time_t curl_starttime;
 INT32 curl_transfers = 0;
 static int curl_runninghandles = 0;
@@ -215,6 +214,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		WRITEUINT32(p, wadfiles[i]->filesize);
 		WRITESTRINGN(p, wadfilename, MAX_WADPATH);
 		WRITEMEM(p, wadfiles[i]->md5sum, 16);
+		WRITEUINT8(p, wadfiles[i]->compatmode);
 	}
 	if (netbuffer->packettype == PT_MOREFILESNEEDED)
 		netbuffer->u.filesneededcfg.num = count;
@@ -248,6 +248,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 		fileneeded[i].file = NULL; // The file isn't open yet
 		READSTRINGN(p, fileneeded[i].filename, MAX_WADPATH); // The next bytes are the file name
 		READMEM(p, fileneeded[i].md5sum, 16); // The last 16 bytes are the file checksum
+		fileneeded[i].compatmode = READUINT8(p);
 	}
 }
 
@@ -289,16 +290,11 @@ boolean CL_CheckDownloadable(void)
 		}
 
 	// Downloading locally disabled
-#ifndef TESTERS
 	if (!dlstatus && M_CheckParm("-nodownload"))
 		dlstatus = 3;
 
 	if (!dlstatus)
 		return true;
-#else
-	if (!dlstatus)
-		dlstatus = 3;
-#endif
 
 	// not downloadable, put reason in console
 	CONS_Alert(CONS_NOTICE, M_GetText("You need additional files to connect to this server:\n"));
@@ -362,6 +358,9 @@ void CL_AbortDownloadResume(void)
 	pauseddownload = NULL;
 }
 
+// The following was written and, against all odds, works.
+#define MORELEGACYDOWNLOADER
+
 /** Sends requests for files in the ::fileneeded table with a status of
   * ::FS_NOTFOUND.
   *
@@ -374,42 +373,135 @@ boolean CL_SendFileRequest(void)
 	char *p;
 	INT32 i;
 	INT64 totalfreespaceneeded = 0, availablefreespace;
+	INT32 skippedafile = -1;
+#ifdef MORELEGACYDOWNLOADER
+	boolean firstloop = true;
+#endif
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
-		I_Error("Attempted to download files in -nodownload mode");
+	{
+		CONS_Printf("Direct download - Attempted to download files in -nodownload mode");
+		return false;
+	}
+#endif
 
 	for (i = 0; i < fileneedednum; i++)
+	{
+#ifdef PARANOIA
 		if (fileneeded[i].status != FS_FOUND && fileneeded[i].status != FS_OPEN
 			&& (fileneeded[i].willsend == 0 || fileneeded[i].willsend == 2))
 		{
-			I_Error("Attempted to download files that were not sendable");
+			CONS_Printf("Direct download - attempted to download files that were not sendable\n");
+			return false;
 		}
+#endif
+		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
+		{
+			// Error check for the first time around.
+			totalfreespaceneeded += fileneeded[i].totalsize;
+		}
+	}
+
+	I_GetDiskFreeSpace(&availablefreespace);
+	if (totalfreespaceneeded > availablefreespace)
+	{
+		CONS_Printf("Direct download -\n"
+			" To play on this server you must download %s KB,\n"
+			" but you have only %s KB free space on this drive\n",
+			sizeu1((size_t)(totalfreespaceneeded>>10)), sizeu2((size_t)(availablefreespace>>10)));
+		return false;
+	}
+
+#ifdef MORELEGACYDOWNLOADER
+tryagain:
+	skippedafile = -1;
+#endif
+
+#ifdef VERBOSEREQUESTFILE
+	CONS_Printf("Preparing packet\n");
 #endif
 
 	netbuffer->packettype = PT_REQUESTFILE;
 	p = (char *)netbuffer->u.textcmd;
+
 	for (i = 0; i < fileneedednum; i++)
+	{
 		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
 		{
-			totalfreespaceneeded += fileneeded[i].totalsize;
+			// Pre-prepare.
+			size_t checklen;
 			nameonly(fileneeded[i].filename);
+
+			// Figure out if we'd overrun our buffer.
+			checklen = strlen(fileneeded[i].filename)+2; // plus the fileid (and terminator, in case this is last)
+			if ((UINT8 *)(p + checklen) >= netbuffer->u.textcmd + MAXTEXTCMD)
+			{
+				skippedafile = i;
+				// we might have a shorter file that can fit in the remaining space, and file ID permits out-of-order data
+				continue;
+			}
+
+			// Now write.
 			WRITEUINT8(p, i); // fileid
 			WRITESTRINGN(p, fileneeded[i].filename, MAX_WADPATH);
+
+#ifdef VERBOSEREQUESTFILE
+			CONS_Printf(" file \"%s\" (id %d)\n", i, fileneeded[i].filename);
+#endif
+
 			// put it in download dir
 			strcatbf(fileneeded[i].filename, downloaddir, "/");
 			fileneeded[i].status = FS_REQUESTED;
 		}
-	WRITEUINT8(p, 0xFF);
-	I_GetDiskFreeSpace(&availablefreespace);
-	if (totalfreespaceneeded > availablefreespace)
-		I_Error("To play on this server you must download %s KB,\n"
-			"but you have only %s KB free space on this drive\n",
-			sizeu1((size_t)(totalfreespaceneeded>>10)), sizeu2((size_t)(availablefreespace>>10)));
+	}
 
-	// prepare to download
-	I_mkdir(downloaddir, 0755);
-	return HSendPacket(servernode, true, 0, p - (char *)netbuffer->u.textcmd);
+#ifdef MORELEGACYDOWNLOADER
+	if (firstloop)
+#else
+	// If we're not trying extralong legacy download requests, gotta bail.
+	if (skippedafile != -1)
+	{
+		CONS_Printf("Direct download - missing files are as follows:\n");
+		for (i = 0; i < fileneedednum; i++)
+		{
+			if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK || fileneeded[i].status == FS_REQUESTED)) // FS_REQUESTED added
+				CONS_Printf(" %s\n", fileneeded[i].filename);
+		}
+		return false;
+	}
+#endif
+		I_mkdir(downloaddir, 0755);
+
+#ifdef PARANOIA
+	// Couldn't fit a single one in?
+	if (p == (char *)netbuffer->u.textcmd)
+	{
+		CONS_Printf("Direct download - fileneeded name for %s (fileneeded[%d]) too long??\n", (skippedafile != -1 ? fileneeded[skippedafile].filename : NULL), skippedafile);
+		return false;
+	}
+#endif
+
+	WRITEUINT8(p, 0xFF); // terminator
+	if (!HSendPacket(servernode, true, 0, p - (char *)netbuffer->u.textcmd))
+	{
+		CONS_Printf("Direct download - unable to send packet.\n");
+		return false;
+	}
+
+#ifdef MORELEGACYDOWNLOADER
+	if (skippedafile != -1)
+	{
+		firstloop = false;
+		goto tryagain;
+	}
+#endif
+
+#ifdef VERBOSEREQUESTFILE
+	CONS_Printf("Returning true\n");
+#endif
+
+	return true;
 }
 
 // get request filepak and put it on the send queue
@@ -419,16 +511,18 @@ boolean PT_RequestFile(INT32 node)
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
-	while (p < netbuffer->u.textcmd + MAXTEXTCMD-1) // Don't allow hacked client to overflow
+	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
 		id = READUINT8(p);
 		if (id == 0xFF)
 			break;
 		READSTRINGN(p, wad, MAX_WADPATH);
-		if (!AddFileToSendQueue(node, wad, id))
+		if (p >= netbuffer->u.textcmd + MAXTEXTCMD || !AddFileToSendQueue(node, wad, id))
 		{
+			if (cv_noticedownload.value)
+				CONS_Printf("Bad PT_REQUESTFILE from node %d!\n", node);
 			SV_AbortSendFiles(node);
-			return false; // don't read the rest of the files
+			return false; // don't read any more
 		}
 	}
 	return true; // no problems with any files
@@ -487,6 +581,10 @@ INT32 CL_CheckFiles(void)
 
 			// For the sake of speed, only bother with a md5 check
 			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+				return 2;
+
+			// compatmode has to match too!
+			if (wadfiles[j]->compatmode != fileneeded[i].compatmode)
 				return 2;
 
 			// It's accounted for! let's keep going.
@@ -560,7 +658,7 @@ boolean CL_LoadServerFiles(void)
 			continue; // Already loaded
 		else if (fileneeded[i].status == FS_FOUND)
 		{
-			P_PartialAddWadFile(fileneeded[i].filename);
+			P_PartialAddWadFile(fileneeded[i].filename, fileneeded[i].compatmode ? WC_ON : WC_OFF);
 			G_SetGameModified(true, false);
 			fileneeded[i].status = FS_OPEN;
 			return false;
@@ -604,7 +702,7 @@ void AddLuaFileTransfer(const char *filename, const char *mode)
 		prevnext = &((*prevnext)->next);
 
 	// Allocate file transfer information and append it to the transfer list
-	filetransfer = malloc(sizeof(luafiletransfer_t));
+	filetransfer = calloc(1, sizeof(luafiletransfer_t));
 	if (!filetransfer)
 		I_Error("AddLuaFileTransfer: Out of memory\n");
 	*prevnext = filetransfer;
@@ -806,7 +904,7 @@ static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid
 	char wadfilename[MAX_WADPATH];
 
 	if (cv_noticedownload.value)
-		CONS_Printf("Sending file \"%s\" to node %d (%s)\n", filename, node, I_GetNodeAddress(node));
+		CONS_Printf("Sending file \"%s\" (id %d) to node %d (%s)\n", filename, fileid, node, I_GetNodeAddress(node));
 
 	// Find the last file in the list and set a pointer to its "next" field
 	q = &transfer[node].txlist;
@@ -980,7 +1078,7 @@ static void SV_EndFileSend(INT32 node)
 	{
 		case SF_FILE: // It's a file, close it and free its filename
 			if (cv_noticedownload.value)
-				CONS_Printf("Ending file transfer for node %d\n", node);
+				CONS_Printf("Ending file transfer (id %d) for node %d\n", p->fileid, node);
 			if (transfer[node].currentfile)
 				fclose(transfer[node].currentfile);
 			free(p->id.filename);
@@ -1321,13 +1419,14 @@ void PT_FileFragment(void)
 	nameonly(filename);
 
 	if (!strcmp(filename, "main.pk3")
-		|| !strcmp(filename, "gfx.pk3")
-		|| !strcmp(filename, "textures.pk3")
-		|| !strcmp(filename, "chars.pk3")
-		|| !strcmp(filename, "maps.pk3")
+		|| !strcmp(filename, "srb2.srb")
+		|| !strcmp(filename, "gfx.kart")
+		|| !strcmp(filename, "textures.kart")
+		|| !strcmp(filename, "chars.kart")
+		|| !strcmp(filename, "maps.kart")
 		|| !strcmp(filename, "patch.pk3")
-		|| !strcmp(filename, "sounds.pk3")
-		|| !strcmp(filename, "music.pk3")
+		|| !strcmp(filename, "sounds.kart")
+		|| !strcmp(filename, "music.kart")
 		)
 	{
 		I_Error("Tried to download \"%s\"", filename);
@@ -1677,7 +1776,7 @@ size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
     return written;
 }
 
-int curlprogress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
 	(void)clientp;
 	(void)ultotal;
@@ -1716,7 +1815,11 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_easy_setopt(http_handle, CURLOPT_URL, va("%s/%s", url, curl_realname));
 
 		// Only allow HTTP and HTTPS
-		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS);
+#if LIBCURL_VERSION_MAJOR > 7 || (LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 85)
+		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS_STR, "http,https");
+#else
+		curl_easy_setopt(http_handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP|CURLPROTO_HTTPS); // deprecated in 7.85.0
+#endif
 
 		curl_easy_setopt(http_handle, CURLOPT_USERAGENT, va("SRB2Kart/v%d.%d", VERSION, SUBVERSION)); // Set user agent as some servers won't accept invalid user agents.
 
@@ -1740,7 +1843,7 @@ void CURLPrepareFile(const char* url, int dfilenum)
 		curl_easy_setopt(http_handle, CURLOPT_WRITEDATA, curl_curfile->file);
 		curl_easy_setopt(http_handle, CURLOPT_WRITEFUNCTION, curlwrite_data);
 		curl_easy_setopt(http_handle, CURLOPT_NOPROGRESS, 0L);
-		curl_easy_setopt(http_handle, CURLOPT_PROGRESSFUNCTION, curlprogress_callback);
+		curl_easy_setopt(http_handle, CURLOPT_XFERINFOFUNCTION, curlprogress_callback);
 
 		curl_curfile->status = FS_DOWNLOADING;
 		lastfilenum = dfilenum;
@@ -1762,6 +1865,7 @@ void CURLGetFile(void)
 	int msgs_left; /* how many messages are left */
 	const char *easy_handle_error;
 	long response_code = 0;
+	static char *filename;
 
     if (curl_runninghandles)
     {
@@ -1786,6 +1890,8 @@ void CURLGetFile(void)
 		{
 			e = m->easy_handle;
 			easyres = m->data.result;
+			filename = Z_StrDup(curl_realname);
+			nameonly(filename);
 			if (easyres != CURLE_OK)
 			{
 				if (easyres == CURLE_HTTP_RETURNED_ERROR)
@@ -1798,21 +1904,30 @@ void CURLGetFile(void)
 				curl_failedwebdownload = true;
 				fclose(curl_curfile->file);
 				remove(curl_curfile->filename);
-				curl_curfile->file = NULL;
-				//nameonly(curl_curfile->filename);
-				nameonly(curl_realname);
-				CONS_Printf(M_GetText("Failed to download %s (%s)\n"), curl_realname, easy_handle_error);
+				CONS_Printf(M_GetText("Failed to download %s (%s)\n"), filename, easy_handle_error);
 			}
 			else
 			{
-				nameonly(curl_realname);
-				CONS_Printf(M_GetText("Finished downloading %s\n"), curl_realname);
-				downloadcompletednum++;
-				downloadcompletedsize += curl_curfile->totalsize;
-				curl_curfile->status = FS_FOUND;
 				fclose(curl_curfile->file);
+
+				if (checkfilemd5(curl_curfile->filename, curl_curfile->md5sum) == FS_MD5SUMBAD)
+				{
+					CONS_Alert(CONS_ERROR, M_GetText("HTTP Download of %s finished but is corrupt or has been modified\n"), filename);
+					curl_curfile->status = FS_FALLBACK;
+					curl_failedwebdownload = true;
+				}
+				else
+				{
+					CONS_Printf(M_GetText("Finished HTTP download of %s\n"), filename);
+					downloadcompletednum++;
+					downloadcompletedsize += curl_curfile->totalsize;
+					curl_curfile->status = FS_FOUND;
+				}
 			}
 
+
+			Z_Free(filename);
+			curl_curfile->file = NULL;
 			curl_running = false;
 			curl_transfers--;
 			curl_multi_remove_handle(multi_handle, e);

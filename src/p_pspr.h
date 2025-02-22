@@ -31,8 +31,8 @@
 // and the Frame Sequence table.
 #include "info.h"
 
-#ifdef __GNUG__
-#pragma interface
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 /// \brief Frame flags: only the frame number - 0 to 256 (Frames from 0 to 63, Sprite2 number uses 0 to 127 plus FF_SPR2SUPER)
@@ -121,5 +121,9 @@ typedef enum
 	tr_trans90,
 	NUMTRANSMAPS,
 } transnum_t;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

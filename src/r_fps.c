@@ -15,6 +15,7 @@
 #include "r_fps.h"
 
 #include "r_main.h"
+#include "r_skins.h"
 #include "g_game.h"
 #include "i_video.h"
 #include "r_plane.h"
@@ -183,7 +184,7 @@ void R_InterpolateView(fixed_t frac)
 	viewcos = FINECOSINE(viewangle>>ANGLETOFINESHIFT);
 
 	viewplayer = newview->player;
-	viewsector = R_PointInSubsector(viewx, viewy)->sector;
+	viewsector = R_PointInSubsectorFast(viewx, viewy)->sector;
 
 	R_SetupFreelook(newview->player, newview->sky);
 }
@@ -214,6 +215,14 @@ void R_ResetViewInterpolation(UINT8 p)
 	{
 		oldview_invalid[p - 1]++;
 	}
+}
+
+void R_RelativeTeleportViewInterpolation(UINT8 p, fixed_t xdiff, fixed_t ydiff, fixed_t zdiff, angle_t angdiff)
+{
+	pview_old[p].x += xdiff;
+	pview_old[p].y += ydiff;
+	pview_old[p].z += zdiff;
+	pview_old[p].angle += angdiff;
 }
 
 void R_SetViewContext(enum viewcontext_e _viewcontext)
@@ -270,22 +279,6 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
-	// Yucky hack to make sure these values don't affect drawangle value. Blame lua compat concerns.
-	// v1 had its art assets show a different angle on drift while v2 does not. This recreates that effect without touching drawangle or the art assets
-	// This makes sure that scripts that set drawangle/frameangle to match player angle won't eat the drift frames.
-	angle_t addangle = 0;
-	if (mobj->player)
-	{
-		if (mobj->player->aizdriftturn)
-		{
-			addangle += mobj->player->aizdriftturn;
-		}
-		else if (mobj->player->drift != 0)
-		{
-			addangle += (ANGLE_45 / 5) * mobj->player->drift;
-		}
-	}
-	
 	if (frac == FRACUNIT)
 	{
 		out->x = mobj->x;
@@ -293,7 +286,7 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->z = mobj->z;
 		out->scale = mobj->scale;
 		out->subsector = mobj->subsector;
-		out->angle = mobj->player ? mobj->player->drawangle + addangle : mobj->angle;
+		out->angle = mobj->player ? mobj->player->drawangle : mobj->angle;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
@@ -318,7 +311,6 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	if (mobj->player)
 	{
 		out->angle = mobj->resetinterp ? mobj->player->drawangle : R_LerpAngle(mobj->player->old_drawangle, mobj->player->drawangle, frac);
-		out->angle += addangle;
 	}
 	else
 	{
@@ -369,13 +361,12 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 		{
 			levelinterpolators_size *= 2;
 		}
-		
-		levelinterpolators = Z_ReallocAlign(
+
+		levelinterpolators = Z_Realloc(
 			(void*) levelinterpolators,
 			sizeof(levelinterpolator_t*) * levelinterpolators_size,
 			PU_LEVEL,
-			NULL,
-			sizeof(levelinterpolator_t*) * 8
+			NULL
 		);
 	}
 
@@ -385,11 +376,8 @@ static void AddInterpolator(levelinterpolator_t* interpolator)
 
 static levelinterpolator_t *CreateInterpolator(levelinterpolator_type_e type, thinker_t *thinker)
 {
-	levelinterpolator_t *ret = (levelinterpolator_t*) Z_CallocAlign(
-		sizeof(levelinterpolator_t),
-		PU_LEVEL,
-		NULL,
-		sizeof(levelinterpolator_t) * 8
+	levelinterpolator_t *ret = (levelinterpolator_t*) Z_Calloc(
+		sizeof(levelinterpolator_t), PU_LEVEL, NULL
 	);
 
 	ret->type = type;
@@ -446,8 +434,8 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 	interp->polyobj.polyobj = polyobj;
 	interp->polyobj.vertices_size = polyobj->numVertices;
 
-	interp->polyobj.oldvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
-	interp->polyobj.bakvertices = Z_CallocAlign(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL, 32);
+	interp->polyobj.oldvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
+	interp->polyobj.bakvertices = Z_Calloc(sizeof(fixed_t) * 2 * polyobj->numVertices, PU_LEVEL, NULL);
 	for (size_t i = 0; i < polyobj->numVertices; i++)
 	{
 		interp->polyobj.oldvertices[i * 2    ] = interp->polyobj.bakvertices[i * 2    ] = polyobj->vertices[i]->x;
@@ -456,6 +444,7 @@ void R_CreateInterpolator_Polyobj(thinker_t *thinker, polyobj_t *polyobj)
 
 	interp->polyobj.oldcx = interp->polyobj.bakcx = polyobj->centerPt.x;
 	interp->polyobj.oldcy = interp->polyobj.bakcy = polyobj->centerPt.y;
+	interp->polyobj.oldangle = interp->polyobj.bakangle = polyobj->angle;
 }
 
 void R_CreateInterpolator_DynSlope(thinker_t *thinker, pslope_t *slope)
@@ -477,6 +466,15 @@ void R_InitializeLevelInterpolators(void)
 	levelinterpolators_len = 0;
 	levelinterpolators_size = 0;
 	levelinterpolators = NULL;
+}
+
+static void RecalculatePolyobjectSegAngles(polyobj_t *polyobj)
+{
+	for (size_t i = 0; i < polyobj->segCount; i++)
+	{
+		seg_t *seg = polyobj->segs[i];
+		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+	}
 }
 
 static void UpdateLevelInterpolatorState(levelinterpolator_t *interp)
@@ -509,10 +507,13 @@ static void UpdateLevelInterpolatorState(levelinterpolator_t *interp)
 			interp->polyobj.bakvertices[i * 2    ] = interp->polyobj.polyobj->vertices[i]->x;
 			interp->polyobj.bakvertices[i * 2 + 1] = interp->polyobj.polyobj->vertices[i]->y;
 		}
+		RecalculatePolyobjectSegAngles(interp->polyobj.polyobj);
 		interp->polyobj.oldcx = interp->polyobj.bakcx;
 		interp->polyobj.oldcy = interp->polyobj.bakcy;
+		interp->polyobj.oldangle = interp->polyobj.bakangle;
 		interp->polyobj.bakcx = interp->polyobj.polyobj->centerPt.x;
 		interp->polyobj.bakcy = interp->polyobj.polyobj->centerPt.y;
+		interp->polyobj.bakangle = interp->polyobj.polyobj->angle;
 		break;
 	case LVLINTERP_DynSlope:
 		FV3_Copy(&interp->dynslope.oldo, &interp->dynslope.bako);
@@ -598,8 +599,10 @@ void R_ApplyLevelInterpolators(fixed_t frac)
 				interp->polyobj.polyobj->vertices[ii]->x = R_LerpFixed(interp->polyobj.oldvertices[ii * 2    ], interp->polyobj.bakvertices[ii * 2    ], frac);
 				interp->polyobj.polyobj->vertices[ii]->y = R_LerpFixed(interp->polyobj.oldvertices[ii * 2 + 1], interp->polyobj.bakvertices[ii * 2 + 1], frac);
 			}
+			RecalculatePolyobjectSegAngles(interp->polyobj.polyobj);
 			interp->polyobj.polyobj->centerPt.x = R_LerpFixed(interp->polyobj.oldcx, interp->polyobj.bakcx, frac);
 			interp->polyobj.polyobj->centerPt.y = R_LerpFixed(interp->polyobj.oldcy, interp->polyobj.bakcy, frac);
+			interp->polyobj.polyobj->angle = R_LerpAngle(interp->polyobj.oldangle, interp->polyobj.bakangle, frac);
 			break;
 		case LVLINTERP_DynSlope:
 			R_LerpVector3(&interp->dynslope.oldo, &interp->dynslope.bako, frac, &interp->dynslope.slope->o);
@@ -617,7 +620,7 @@ void R_RestoreLevelInterpolators(void)
 	for (i = 0; i < levelinterpolators_len; i++)
 	{
 		levelinterpolator_t *interp = levelinterpolators[i];
-		
+
 		switch (interp->type)
 		{
 		case LVLINTERP_SectorPlane:
@@ -653,8 +656,10 @@ void R_RestoreLevelInterpolators(void)
 				interp->polyobj.polyobj->vertices[ii]->x = interp->polyobj.bakvertices[ii * 2    ];
 				interp->polyobj.polyobj->vertices[ii]->y = interp->polyobj.bakvertices[ii * 2 + 1];
 			}
+			RecalculatePolyobjectSegAngles(interp->polyobj.polyobj);
 			interp->polyobj.polyobj->centerPt.x = interp->polyobj.bakcx;
 			interp->polyobj.polyobj->centerPt.y = interp->polyobj.bakcy;
+			interp->polyobj.polyobj->angle = interp->polyobj.bakangle;
 			break;
 		case LVLINTERP_DynSlope:
 			FV3_Copy(&interp->dynslope.slope->o, &interp->dynslope.bako);
@@ -672,7 +677,7 @@ void R_DestroyLevelInterpolators(thinker_t *thinker)
 	for (i = 0; i < levelinterpolators_len; i++)
 	{
 		levelinterpolator_t *interp = levelinterpolators[i];
-		
+
 		if (interp->thinker == thinker)
 		{
 			// Swap the tail of the level interpolators to this spot
@@ -704,12 +709,11 @@ void R_AddMobjInterpolator(mobj_t *mobj)
 			interpolated_mobjs_capacity *= 2;
 		}
 
-		interpolated_mobjs = Z_ReallocAlign(
+		interpolated_mobjs = Z_Realloc(
 			interpolated_mobjs,
 			sizeof(mobj_t *) * interpolated_mobjs_capacity,
 			PU_LEVEL,
-			NULL,
-			64
+			NULL
 		);
 	}
 

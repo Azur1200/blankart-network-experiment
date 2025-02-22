@@ -1,0 +1,310 @@
+===============================================================================
+Universal Doom Map Format - BlanKart extensions v1.0 - 08.02.2025
+
+	Copyright (c) 2024 Sally Cochenour.
+	Copyright (c) 2024 Kart Krew Dev.
+	Copyright (c) 2025 NepDisk.
+
+	Permission is granted to copy, distribute and/or modify this document
+	under the terms of the GNU Free Documentation License, Version 1.2
+	or any later version published by the Free Software Foundation;
+	with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+
+===============================================================================
+
+This document serves to only specify changes that "BlanKart"
+makes to the base UDMF specification.
+
+This document is based on the original from Ring Racers with extensions to account for BlanKart's differences.
+
+=======================================
+I. Grammar / Syntax
+=======================================
+
+No changes were made.
+
+=======================================
+II. Implementation Semantics
+=======================================
+
+------------------------------------
+II.A : Storage and Retrieval of Data
+------------------------------------
+
+No changes were made.
+
+-----------------------------------
+II.B : Storage Within Archive Files
+-----------------------------------
+
+Between the TEXTMAP and ENDMAP lumps, BlanKart supports the following
+additional lumps:
+
+	BEHAVIOR = Compiled ACS code.
+	ZNODES = Compiled extended / GL friendly nodes. These are required.
+	PICTURE = A Doom graphic lump, expected to be 320x240 or 160x100. Intended to be a
+		screenshot of the map itself. This is used by the game for level
+		select menus.
+	MINIMAP = A Doom graphic lump, expected to be 100x100. Intended to be a
+		an overview of the map. This is used by the game for the minimap
+		on-screen HUD.
+	ENCORE = A Doom flat lump, expected to be 16x16. Describes a color remap
+		palette to use in Encore Mode.
+	TWEAKMAP = A Doom flat lump, expected to be 16x16. Describes a color remap
+		palette to use outside of Encore Mode.
+
+Any lumps not listed or specified in the original document will be ignored by
+the game. In particular, the "SCRIPTS" lump is considered to be ACS source
+code, and is guaranteed to be ignored by the engine.
+
+--------------------------------
+II.C : Implementation Dependence
+--------------------------------
+
+BlanKart does not aspire for Doom backwards compatibility, thus it does not
+support any of the namespaces in the original document, and only implements
+its own: "blankart". It also supports "srb2", "srb2kart", "blankart" or "ringracers" namespaces as well.
+Any maps not using the mentioned namespaces are considered unsupported.
+
+=======================================
+III. Standardized Fields
+=======================================
+
+BlanKart's namespace implements the following additional fields:
+
+	version = <integer>;	// Specifies the map format version.
+							// This is used for resolving backwards compatibility issues.
+
+							// Note that this doesn't map directly to specification version;
+							// it means behavior of an already existing field or action special
+							// was changed.
+
+							// 0 / default - RR indev
+							// 1 - RR v2.0, RR spec v1.0
+							// 2 - RR v2.4, RR spec v1.0
+							// 3 - BlanKart indev, BK spec v1.0
+
+	linedef
+	{
+		moreids = <string>; // Additional IDs, specified as a space separated list of numbers (e.g. "2 666 1003 4505")
+
+		arg5 = <integer>; // Argument 5. Default = 0.
+		arg6 = <integer>; // Argument 6. Default = 0.
+		arg7 = <integer>; // Argument 7. Default = 0.
+		arg8 = <integer>; // Argument 8. Default = 0.
+		arg9 = <integer>; // Argument 9. Default = 0.
+
+		stringarg0 = <string>; // String argument 0. This replaces usage of 'arg0' when specified.
+		stringarg1 = <string>; // String argument 1. This replaces usage of 'arg1' when specified.
+
+		alpha = <float>;		// Transparency value of the mid-textures. Default = 1.0.
+		renderstyle = <string>;	// The rendering mode to use for the mid-textures.
+								// Can be "translucent", "add", "subtract", "reversesubtract", "modulate", or "fog".
+								// Default = "translucent".
+
+		// The following flags default to false.
+		blockplayers = <bool>; // true = line blocks players.
+		skewtd = <bool>; // true = upper and lower textures are skewed to match slopes.
+		noskew = <bool>; // true = mid-textures are not skewed to match slopes.
+		midpeg = <bool>; // true = invert mid-texture unpegged behavior.
+		midsolid = <bool>; // true = mid-texture has collision.
+		wrapmidtex = <bool>; // true = mid-textures are wrapped.
+		effect6 = <bool>; // Used for compatibility.
+		nonet = <bool>; // true = special is disabled in networked multiplayer games.
+		netonly = <bool>; // true = special is only enabled in networked multiplayer games.
+		notbouncy = <bool>; // true = disable bouncing collision.
+		transfer = <bool>; // true = use FOF transfer properties effect.
+		tripwire = <bool>; // true = mark linedef as tripwire line.
+	}
+
+	sidedef
+	{
+		repeatcnt = <integer>;		// Number of times to mid-texture wrap. Default = 0.
+		offsetx_top = <float>;           // X offset for upper texture. Default = 0.0.
+		offsety_top = <float>;           // Y offset for upper texture. Default = 0.0.
+		offsetx_mid = <float>;           // X offset for mid texture. Default = 0.0.
+		offsety_mid = <float>;           // Y offset for mid texture. Default = 0.0.
+		offsetx_bottom = <float>;        // X offset for lower texture. Default = 0.0.
+		offsety_bottom = <float>;        // Y offset for lower texture. Default = 0.0.
+
+	}
+
+	vertex
+	{
+		zfloor = <float>;			// The floor height at this vertex, for vertex slopes.
+		zceiling = <float>;			// The ceiling height at this vertex, for vertex slopes
+	}
+
+	sector
+	{
+		lightfloor = <integer>;			// The floor's light level. Default is 0.
+		lightceiling = <integer>;		// The ceiling's light level. Default is 0.
+
+		lightfloorabsolute = <bool>;	// true = 'lightfloor' is an absolute value. Default is
+										// relative to the owning sector's light level.
+		lightceilingabsolute = <bool>;	// true = 'lightceiling' is an absolute value. Default is
+										// relative to the owning sector's light level.
+
+		moreids = <string>; // Additional IDs, specified as a space separated list of numbers (e.g. "2 666 1003 4505")
+
+		xpanningfloor = <float>;		// X texture offset of floor texture, Default = 0.0.
+		ypanningfloor = <float>;		// Y texture offset of floor texture, Default = 0.0.
+
+		xpanningceiling = <float>;		// X texture offset of ceiling texture, Default = 0.0.
+		ypanningceiling = <float>;		// Y texture offset of ceiling texture, Default = 0.0.
+
+		rotationfloor = <float>;		// Rotation of floor texture in degrees, Default = 0.0.
+		rotationceiling = <float>;		// Rotation of ceiling texture in degrees, Default = 0.0.
+
+		floorplane_a = <float>;			// Define the plane equation for the sector's floor. Default is a horizontal plane at 'heightfloor'.
+		floorplane_b = <float>;			// 'heightfloor' will still be used to calculate texture alignment.
+		floorplane_c = <float>;			// The plane equation will only be used if all 4 values are given.
+		floorplane_d = <float>;
+
+		ceilingplane_a = <float>;		// Define the plane equation for the sector's ceiling. Default is a horizontal plane at 'heightceiling'.
+		ceilingplane_b = <float>;		// 'heightceiling' will still be used to calculate texture alignment.
+		ceilingplane_c = <float>;		// The plane equation will only be used if all 4 values are given.
+		ceilingplane_d = <float>;
+
+		gravityoverride    = <bool>;     // Reverse gravity effect is only applied when an object is in the sector.
+		nophysics_floor    = <bool>;    // Disables floor slope physics if created through a plane equation.
+		nophysics_ceiling  = <bool>;    // Disables ceiling slope physics if created through a plane equation.
+		friction = <float>;				// Sector's friction. Default = 0.90625.
+		gravity = <float>;				// Sector's gravity multiplier. Default = 1.0.
+		offroad = <float>;				// Sector's offroad multiplier. Default = 0.0.
+		damagetype = <string>;			// Damage inflicted by the sector.
+										// Can be "None", "Generic", "Lava", "DeathPit", "Instakill", or "Stumble".
+										// Default = "None".
+
+		action = <integer>;				// Sector action, same as line special. Default = 0.
+		arg0 = <integer>;				// Argument 0. Default = 0.
+		arg1 = <integer>;				// Argument 1. Default = 0.
+		arg2 = <integer>;				// Argument 2. Default = 0.
+		arg3 = <integer>;				// Argument 3. Default = 0.
+		arg4 = <integer>;				// Argument 4. Default = 0.
+		arg5 = <integer>;				// Argument 5. Default = 0.
+		arg6 = <integer>;				// Argument 6. Default = 0.
+		arg7 = <integer>;				// Argument 7. Default = 0.
+		arg8 = <integer>;				// Argument 8. Default = 0.
+		arg9 = <integer>;				// Argument 9. Default = 0.
+		stringarg0 = <integer>;			// String argument 0. This replaces usage of 'arg0' when specified.
+		stringarg1 = <integer>;			// String argument 1. This replaces usage of 'arg1' when specified.
+
+		lightcolor = <integer>;			// Sector's light color as RRGGBB value. Default = 0x000000.
+		lightalpha = <integer>;			// Sector's light color alpha value. Default = 25.
+		fadecolor = <integer>;			// Sector's fog color as RRGGBB value. Default = 0x000000.
+		fadealpha = <integer>;			// Sector's fog color alpha value. Default = 25.
+		fadestart = <integer>;			// Sector's fog start distance. Default = 0.
+		fadeend = <integer>;			// Sector's fog end distance. Default = 31.
+
+		// The following flags default to false.
+		colormapfog = <bool>;				// true = render transparent planes at light level instead of fullbright.
+		colormapfadesprites = <bool>;		// true = fog color affects fullbright sprites.
+		colormapprotected = <bool>;			// true = colormap cannot be changed at run-time.
+
+		flipspecial_nofloor = <bool>;		// true = plane touch specials aren't ran when on the floor.
+		flipspecial_ceiling = <bool>;		// true = plane touch specials are ran when on the ceiling.
+		triggerspecial_touch = <bool>;		// true = specials are ran when touching edges of sector.
+		triggerspecial_headbump = <bool>;	// true = plane touch specials are ran when touching the opposite plane than gravity.
+		invertprecip = <bool>;				// true = precipitation spawning rules are inverted..
+		gravityflip = <bool>;				// true = flip gravity of objects in this sector.
+		heatwave = <bool>;					// true = add heat wave screen effect.
+		ripple_floor = <bool>;				// true = add ripple effect to floor.
+		ripple_ceiling = <bool>;			// true = add ripple effect to ceiling.
+		invertencore = <bool>;				// true = encore remap rules are inverted.
+		flatlighting = <bool>;				// true = directional lighting is forced off.
+		forcedirectionallighting = <bool>;	// true = directional lighting is forced on.
+		nostepup = <bool>;					// true = objects can't step up.
+		doublestepup = <bool>;				// true = objects have increased step up.
+		nostepdown = <bool>;				// true = objects can't step down.
+		cheatcheckactivator = <bool>;		// true = players activate cheat checks when in this sector.
+		exit = <bool>;						// true = players finish match when entering sector.
+		deleteitems = <bool>;				// true = items instantly explode when entering sector.
+		fan = <bool>;						// true = players are propelled upwards in this sector.
+		zoomtubestart = <bool>;				// true = sector is start of a zoom tube.
+		zoomtubeend = <bool>;				// true = sector is end of a zoom tube.
+
+		speedpad = <bool>; // true = players are launched forward by this sector.
+		finishline = <bool>l // true = players gain a lap or finish the race in this sector. Used for legacy support.
+		sneakerpanel = <bool>; // true = players are speed boosted forward by this sector.
+		waterpanel = <bool>; // true = players are speed boosted forward by this sector and are able to drive on water.
+		redpogospring = <bool>; // true = players are bounced into the air by this sector.
+		yellowpogospring = <bool>; // true = players are bounced into the air and then speedcapped by this sector.
+
+		repeatspecial = <bool>;				// true = repeatable action.
+		continuousspecial = <bool>;			// true = action is executed every game tick.
+		playerenter = <bool>;				// true = player activates when entering.
+		playerfloor = <bool>;				// true = player activates when touching floor.
+		playerceiling = <bool>;				// true = player activates when touching ceiling.
+		monsterenter = <bool>;				// true = enemy activates when entering.
+		monsterfloor = <bool>;				// true = enemy activates when touching floor.
+		monsterceiling = <bool>;			// true = enemy activates when touching ceiling.
+		missileenter = <bool>;				// true = items / projectiles activate when entering.
+		missilefloor = <bool>;				// true = items / projectiles activate when touching floor.
+		missileceiling = <bool>;			// true = items / projectiles activate when touching ceiling.
+	}
+
+	thing
+	{
+		pitch = <integer>; 		// Pitch of thing in degrees. Default = 0 (horizontal).
+		roll = <integer>; 		// Pitch of thing in degrees. Default = 0 (horizontal).
+
+		scalex = <float>;		// Vertical visual scale on thing. Default = 1.0.
+		scaley = <float>;		// Horizontal visual scale on thing. Default = 1.0.
+		scale = <float>;		// Vertical and horizontal visual scale on thing. Default = 1.0.
+
+		mobjscale = <float>;	// Physical scale on thing. Default = 1.0.
+
+		foflayer = <integer>;	// Which FOF is treated as the base floor/ceiling.
+								// This changes what 'height' is relative to.
+								// Default = 0, for no FOF.
+
+		// These arguments modify object behavior on a per-type basis.
+		arg0 = <integer>;				// Argument 0. Default = 0.
+		arg1 = <integer>;				// Argument 1. Default = 0.
+		arg2 = <integer>;				// Argument 2. Default = 0.
+		arg3 = <integer>;				// Argument 3. Default = 0.
+		arg4 = <integer>;				// Argument 4. Default = 0.
+		arg5 = <integer>;				// Argument 5. Default = 0.
+		arg6 = <integer>;				// Argument 6. Default = 0.
+		arg7 = <integer>;				// Argument 7. Default = 0.
+		arg8 = <integer>;				// Argument 8. Default = 0.
+		arg9 = <integer>;				// Argument 9. Default = 0.
+
+		stringarg0 = <string>; // String argument 0. This replaces usage of 'arg0' when specified.
+		stringarg1 = <string>; // String argument 1. This replaces usage of 'arg1' when specified.
+
+
+		// Action special arguments.
+		scriptarg0 = <integer>;			// Argument 0. Default = 0.
+		scriptarg1 = <integer>;			// Argument 1. Default = 0.
+		scriptarg2 = <integer>;			// Argument 2. Default = 0.
+		scriptarg3 = <integer>;			// Argument 3. Default = 0.
+		scriptarg4 = <integer>;			// Argument 4. Default = 0.
+		scriptarg5 = <integer>;			// Argument 5. Default = 0.
+		scriptarg6 = <integer>;			// Argument 6. Default = 0.
+		scriptarg7 = <integer>;			// Argument 7. Default = 0.
+		scriptarg8 = <integer>;			// Argument 8. Default = 0.
+		scriptarg9 = <integer>;			// Argument 9. Default = 0.
+		scriptstringarg0 = <integer>;	// String argument 0. This replaces usage of 'scriptarg0' when specified.
+		scriptstringarg1 = <integer>;	// String argument 1. This replaces usage of 'scriptarg1' when specified.
+
+		// Following flags default to false.
+		flip = <bool>;			// true = object has reversed gravity
+	}
+
+=======================================
+Changelog
+=======================================
+
+RR 1.0: 20.09.2024
+- Initial document created.
+
+BK 1.0: 08.02.2025
+- Document spec updated to account for BlanKart differnces.
+
+BK 1.0: 10.02.25
+- Added offset*_* flags.
+- Added flags for nophysics_floor and nophysics_ceiling.
+- Readded effect6 for compat reasons.
+- Readded gravityoverride.

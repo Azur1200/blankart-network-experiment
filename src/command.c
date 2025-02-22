@@ -35,6 +35,9 @@
 #include "lua_script.h"
 #include "d_netfil.h" // findfile
 #include "r_data.h" // Color_cons_t
+#include "r_skins.h"
+#include "m_random.h"
+#include "p_local.h" // P_ResetPlayerCheats
 
 //========
 // protos.
@@ -698,7 +701,7 @@ static void COM_ExecuteString(char *ptext)
 	// check cvars
 	// Hurdler: added at Ebola's request ;)
 	// (don't flood the console in software mode with bad gl_xxx command)
-	if (!CV_Command() && con_destlines)
+	if (!CV_Command() && (con_destlines || dedicated))
 		CONS_Printf(M_GetText("Unknown command '%s'\n"), COM_Argv(0));
 }
 
@@ -711,10 +714,44 @@ static void COM_ExecuteString(char *ptext)
 static void COM_Alias_f(void)
 {
 	cmdalias_t *a;
+	const char *alias_format = "\x87%-8s:\x80 %s\n";
+	int argc = COM_Argc();
 
-	if (COM_Argc() < 3)
+	if (argc == 2)
 	{
+		const char *begin = COM_Argv(1);
+		size_t szBegin = strlen(begin);
+
+		/* Display all aliases that start with `begin`. */
+		CONS_Printf(M_GetText("All aliases that start with \x87'%s'\x80 are:\n"), begin);
+
+		int count = 0;
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			if (strncmp(begin, head->name, szBegin) == 0)
+			{
+				CONS_Printf(alias_format, head->name, head->value);
+				count++;
+			}
+		}
+
+		if (count == 0)
+		{
+			CONS_Printf(M_GetText("There are none.\n"));
+		}
+
+		return;
+	}
+	else if (argc < 3)
+	{
+		/* Display alias subtext, show all aliases. */
 		CONS_Printf(M_GetText("alias <name> <command>: create a shortcut command that executes other command(s)\n"));
+
+		for (cmdalias_t *head = com_alias; head->next != NULL; head = head->next)
+		{
+			CONS_Printf(alias_format, head->name, head->value);
+		}
+
 		return;
 	}
 
@@ -1745,10 +1782,15 @@ void CV_ResetCheatNetVars(void)
 {
 	consvar_t *cvar;
 
-	// Stealthset everything back to default.
+	// Set everything back to default.
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_CHEAT)
-			CV_SetCVar(cvar, cvar->defaultvalue, true);
+			CV_SetCVar(cvar, cvar->defaultvalue, false);
+
+	// Reset any other cheat command effects here, as well.
+	cht_debug = 0;
+
+	P_ResetPlayerCheats();
 }
 
 // Returns true if the variable's current value is its default value
@@ -1950,42 +1992,9 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 	if (var->PossibleValue)
 	{
-		if (var == &cv_nextmap)
-		{
-			// Special case for the nextmap variable, used only directly from the menu
-			INT32 oldvalue = var->value - 1, gt;
-			gt = cv_newgametype.value;
-			{
-				newvalue = var->value - 1;
-				do
-				{
-					if(increment > 0) // Going up!
-					{
-						if (++newvalue == NUMMAPS)
-							newvalue = -1;
-					}
-					else // Going down!
-					{
-						if (--newvalue == -2)
-							newvalue = NUMMAPS-1;
-					}
-
-					if (newvalue == oldvalue)
-						break; // don't loop forever if there's none of a certain gametype
-
-					if(!mapheaderinfo[newvalue])
-						continue; // Don't allocate the header.  That just makes memory usage skyrocket.
-
-				} while (!M_CanShowLevelInList(newvalue, gt));
-
-				var->value = newvalue + 1;
-				var->func();
-				return;
-			}
-		}
 #define MINVAL 0
 #define MAXVAL 1
-		else if (var->PossibleValue[MINVAL].strvalue && !strcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
+		if (var->PossibleValue[MINVAL].strvalue && !strcmp(var->PossibleValue[MINVAL].strvalue, "MIN"))
 		{
 #ifdef PARANOIA
 			if (!var->PossibleValue[MAXVAL].strvalue)
@@ -2090,7 +2099,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 					return;
 				}
 			}
-			else if (var == &cv_kartspeed)
+			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
 			{
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 4 : 3);
 			}

@@ -17,6 +17,12 @@
 
 #include "command.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern consvar_t cv_showgremlins;
+
 // console vars
 extern consvar_t cv_playername[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
@@ -63,7 +69,7 @@ extern consvar_t cv_spectatorreentry, cv_antigrief;
 extern consvar_t cv_superring, cv_sneaker, cv_rocketsneaker, cv_invincibility, cv_banana;
 extern consvar_t cv_eggmanmonitor, cv_orbinaut, cv_jawz, cv_mine, cv_landmine, cv_droptarget;
 extern consvar_t cv_ballhog, cv_selfpropelledbomb, cv_grow, cv_shrink;
-extern consvar_t cv_lightningshield, cv_bubbleshield, cv_flameshield;
+extern consvar_t cv_thundershield, cv_bubbleshield, cv_flameshield;
 extern consvar_t cv_hyudoro, cv_pogospring, cv_kitchensink;
 
 extern consvar_t cv_dualsneaker, cv_triplesneaker, cv_triplebanana, cv_decabanana;
@@ -72,12 +78,13 @@ extern consvar_t cv_tripleorbinaut, cv_quadorbinaut, cv_dualjawz;
 extern consvar_t cv_kartminimap;
 extern consvar_t cv_kartcheck;
 extern consvar_t cv_kartinvinsfx;
-extern consvar_t cv_kartspeed;
+extern consvar_t cv_kartspeed, cv_kartbattlespeed;
 extern consvar_t cv_kartbumpers;
 extern consvar_t cv_kartfrantic;
 extern consvar_t cv_kartcomeback;
 extern consvar_t cv_kartencore;
 extern consvar_t cv_kartvoterulechanges;
+extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
 extern consvar_t cv_kartbot;
@@ -85,6 +92,7 @@ extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartwalltransfer;
+extern consvar_t cv_kartpurpledrift;
 
 extern consvar_t cv_votetime;
 
@@ -108,6 +116,12 @@ extern consvar_t cv_lagless;
 extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
+
+extern consvar_t cv_showminimapnames;
+extern consvar_t cv_showminimapangle;
+extern consvar_t cv_minihead;
+
+extern consvar_t cv_showlapemblem;
 extern consvar_t cv_showviewpointtext;
 
 extern consvar_t cv_skipmapcheck;
@@ -167,6 +181,7 @@ typedef enum
 	XD_SCHEDULETASK, // 36
 	XD_SCHEDULECLEAR, // 37
 	XD_AUTOMATE,    // 38
+	XD_CHEAT,       // 39
 
 	MAXNETXCMD
 } netxcmd_t;
@@ -184,22 +199,22 @@ extern const char *netxcmdnames[MAXNETXCMD - 1];
 //Packet composition for Command_TeamChange_f() ServerTeamChange, etc.
 //bitwise structs make packing bits a little easier, but byte alignment harder?
 //todo: decide whether to make the other netcommands conform, or just get rid of this experiment.
-typedef struct {
+struct changeteam_packet_t {
 	UINT32 playernum    : 5;  // value 0 to 31
 	UINT32 newteam      : 5;  // value 0 to 31
 	UINT32 verification : 1;  // value 0 to 1
 	UINT32 autobalance  : 1;  // value 0 to 1
 	UINT32 scrambled    : 1;  // value 0 to 1
-} ATTRPACK changeteam_packet_t;
+} ATTRPACK;
 
 #ifdef _MSC_VER
 #pragma warning(default : 4214)
 #endif
 
-typedef struct {
+struct changeteam_value_t {
 	UINT16 l; // liitle endian
 	UINT16 b; // big enian
-} ATTRPACK changeteam_value_t;
+} ATTRPACK;
 
 //Since we do not want other files/modules to know about this data buffer we union it here with a Short Int.
 //Other files/modules will hand the INT16 back to us and we will decode it here.
@@ -237,12 +252,12 @@ void RemoveAdminPlayer(INT32 playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
 
-typedef struct
+struct scheduleTask_t
 {
 	UINT16 basetime;
 	UINT16 timer;
 	char *command;
-} scheduleTask_t;
+};
 
 extern scheduleTask_t **schedule;
 extern size_t schedule_size;
@@ -265,7 +280,13 @@ void Automate_Run(automateEvents_t type);
 void Automate_Set(automateEvents_t type, const char *command);
 void Automate_Clear(void);
 
+void D_Cheat(INT32 playernum, INT32 cheat, ...);
+
 // used for the player setup menu
 UINT8 CanChangeSkin(INT32 playernum);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

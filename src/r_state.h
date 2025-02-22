@@ -19,8 +19,8 @@
 #include "r_data.h"
 #include "doomstat.h" // MAXSPLITSCREENPLAYERS
 
-#ifdef __GNUG__
-#pragma interface
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 //
@@ -28,13 +28,13 @@
 //
 
 // needed for pre rendering (fracs)
-typedef struct
+struct sprcache_t
 {
 	fixed_t width;
 	fixed_t offset;
 	fixed_t topoffset;
 	fixed_t height;
-} sprcache_t;
+};
 
 extern sprcache_t *spritecachedinfo;
 
@@ -63,7 +63,7 @@ extern size_t numspritelumps, max_spritelumps;
 //
 // Lookup tables for map data.
 //
-#define UDMF_CURRENT_VERSION (2)
+#define UDMF_CURRENT_VERSION (3)
 extern boolean udmf;
 extern INT32 udmf_version;
 
@@ -120,5 +120,9 @@ extern angle_t rw_normalangle;
 
 // angle to line origin
 extern angle_t rw_angle1;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

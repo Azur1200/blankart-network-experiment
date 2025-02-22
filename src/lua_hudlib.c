@@ -16,11 +16,13 @@
 #include "r_local.h"
 #include "r_fps.h"
 #include "st_stuff.h"
+#include "y_inter.h"
 #include "g_game.h"
 #include "i_video.h" // rendermode
 #include "p_local.h" // camera_t
 #include "screen.h" // screen width/height
 #include "m_random.h" // m_random
+#include "m_menu.h" // M_GetMapThumbnail
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -34,9 +36,18 @@
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;
+
+boolean hud_interpolate = false;
+UINT8 hud_interptag = 0;
+UINT32 hud_interpcounter = 0;
+boolean hud_interpstring = false;
+boolean hud_interplatch = false;
+
 static UINT8 hud_enabled[(hud_MAX/8)+1];
 
 static UINT8 camnum = 1;
+
+static boolean cliprectenabled;
 
 // must match enum hud in lua_hud.h
 static const char *const hud_disable_options[] = {
@@ -285,7 +296,20 @@ static int libd_patchExists(lua_State *L)
 static int libd_cachePatch(lua_State *L)
 {
 	HUDONLY
-	LUA_PushUserdata(L, W_CachePatchLongName(luaL_checkstring(L, 1), PU_PATCH), META_PATCH);
+	const char *name = luaL_checkstring(L, 1);
+	void *patch;
+	if (name[0] && name[0] <= NUMFACES)
+	{
+		// skin.facerank has a secret message for us
+		INT32 skin = R_SkinAvailable(name+1);
+		if (skin != -1)
+			patch = faceprefix[skin][(UINT8)name[0]-1];
+		else
+			return luaL_error(L, "Skin %s not found", name+1);
+	}
+	else
+		patch = W_CachePatchLongName(name, PU_PATCH);
+	LUA_PushUserdata(L, patch, META_PATCH);
 	return 1;
 }
 
@@ -584,8 +608,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	huddrawlist_h list;
 
 	// variables used to replicate k_kart's mmap drawer:
-	INT32 lumpnum;
-	patch_t *AutomapPic;
 	INT32 mx, my;
 	INT32 splitflags, minimaptrans;
 
@@ -596,12 +618,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 
-	node_t *bsp = &nodes[numnodes-1];
-	fixed_t maxx, minx, maxy, miny;
-
-	fixed_t mapwidth, mapheight;
-	fixed_t xoffset, yoffset;
-	fixed_t xscale, yscale, zoom;
 	fixed_t patchw, patchh;
 
 	HUDONLY	// only run this function in hud hooks
@@ -670,65 +686,25 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (stplyr != &players[displayplayers[0]])
 		return 0;
 
-	lumpnum = W_CheckNumForName(va("%sR", G_BuildMapName(gamemap)));
-
-	if (lumpnum != -1)
-		AutomapPic = W_CachePatchName(va("%sR", G_BuildMapName(gamemap)), PU_HUDGFX);
-	else
+	if (minimapinfo.minimap_pic == NULL)
+	{
 		return 0; // no pic, just get outta here
+	}
 
-	mx = MM_X - (AutomapPic->width/2);
-	my = MM_Y - (AutomapPic->height/2);
+	mx = MM_X - (minimapinfo.minimap_pic->width/2);
+	my = MM_Y - (minimapinfo.minimap_pic->height/2);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		mx += SHORT(AutomapPic->leftoffset);
+		mx += SHORT(minimapinfo.minimap_pic->leftoffset);
 	else
-		mx -= SHORT(AutomapPic->leftoffset);
-	my -= SHORT(AutomapPic->topoffset);
+		mx -= SHORT(minimapinfo.minimap_pic->leftoffset);
+	my -= SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
 
-	// get map boundaries using nodes
-	maxx = maxy = INT32_MAX;
-	minx = miny = INT32_MIN;
-	minx = bsp->bbox[0][BOXLEFT];
-	maxx = bsp->bbox[0][BOXRIGHT];
-	miny = bsp->bbox[0][BOXBOTTOM];
-	maxy = bsp->bbox[0][BOXTOP];
-
-	if (bsp->bbox[1][BOXLEFT] < minx)
-		minx = bsp->bbox[1][BOXLEFT];
-	if (bsp->bbox[1][BOXRIGHT] > maxx)
-		maxx = bsp->bbox[1][BOXRIGHT];
-	if (bsp->bbox[1][BOXBOTTOM] < miny)
-		miny = bsp->bbox[1][BOXBOTTOM];
-	if (bsp->bbox[1][BOXTOP] > maxy)
-		maxy = bsp->bbox[1][BOXTOP];
-
-	// You might be wondering why these are being bitshift here
-	// it's because mapwidth and height would otherwise overflow for maps larger than half the size possible...
-	// map boundaries and sizes will ALWAYS be whole numbers thankfully
-	// later calculations take into consideration that these are actually not in terms of FRACUNIT though
-	minx >>= FRACBITS;
-	maxx >>= FRACBITS;
-	miny >>= FRACBITS;
-	maxy >>= FRACBITS;
-
-	// these are our final map boundaries:
-	mapwidth = maxx - minx;
-	mapheight = maxy - miny;
-
-	// These should always be small enough to be bitshift back right now
-	xoffset = (minx + mapwidth/2)<<FRACBITS;
-	yoffset = (miny + mapheight/2)<<FRACBITS;
-
-	xscale = FixedDiv(AutomapPic->width, mapwidth);
-	yscale = FixedDiv(AutomapPic->height, mapheight);
-	zoom = FixedMul(min(xscale, yscale), FRACUNIT-FRACUNIT/20);
-
-	amnumxpos = (FixedMul(x, zoom) - FixedMul(xoffset, zoom));
-	amnumypos = -(FixedMul(y, zoom) - FixedMul(yoffset, zoom));
+	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
@@ -740,13 +716,16 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (centered)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
 
-	amxpos = amnumxpos + ((mx + AutomapPic->width/2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((my + AutomapPic->height/2)<<FRACBITS) - patchh;
+	amxpos = amnumxpos + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
+	amypos = amnumypos + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
+
+	if (cv_minihead.value)
+		scale /= 2;
 
 	if (LUA_HUD_IsDrawListValid(list))
 		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
@@ -838,6 +817,9 @@ static int libd_drawFill(lua_State *L)
 
 	HUDONLY
 
+	if (lua_compatmode)
+		c = (c & ~0xff) | R_GetPaletteRemap(c & 0xff);
+
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h) lua_touserdata(L, -1);
 	lua_pop(L, 1);
@@ -863,6 +845,9 @@ static int libd_fadeScreen(lua_State *L)
 
 	if (strength > maxstrength)
 		return luaL_error(L, "%s fade strength %d out of range (0 - %d)", ((color & 0xFF00) ? "COLORMAP" : "TRANSMAP"), strength, maxstrength);
+
+	if (lua_compatmode && !(color & 0xFF00))
+		color = R_GetPaletteRemap(color);
 
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h) lua_touserdata(L, -1);
@@ -989,6 +974,47 @@ static int libd_drawKartString(lua_State *L)
 	return 0;
 }
 
+static int libd_setClipRect(lua_State *L)
+{
+	fixed_t x = luaL_checkinteger(L, 1);
+	fixed_t y = luaL_checkinteger(L, 2);
+	fixed_t w = luaL_checkinteger(L, 3);
+	fixed_t h = luaL_checkinteger(L, 4);
+	INT32 flags = luaL_optinteger(L, 5, 0);
+	huddrawlist_h list;
+
+	flags &= ~V_PARAMMASK; // Don't let crashes happen.
+
+	HUDONLY
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+	cliprectenabled = true;
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddSetClipRect(list, x, y, w, h, flags);
+	else
+		V_SetClipRect(x, y, w, h, flags);
+	return 0;
+}
+
+static int libd_clearClipRect(lua_State *L)
+{
+	huddrawlist_h list;
+
+	HUDONLY
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+	cliprectenabled = false;
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddClearClipRect(list);
+	else
+		V_ClearClipRect();
+	return 0;
+}
+
 static int libd_titleCardStringWidth(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);
@@ -1062,6 +1088,41 @@ static int libd_getStringColormap(lua_State *L)
 		return 1;
 	}
 	return 0;
+}
+
+static int libd_getMapThumbnail(lua_State *L)
+{
+	INT16 mapnum;
+	patch_t *patch = NULL;
+	HUDONLY
+	if (lua_type(L, 1) == LUA_TNUMBER)
+		mapnum = luaL_checkinteger(L, 1) - 1;
+	else
+		mapnum = G_MapNumber(luaL_checkstring(L, 1));
+
+	fixed_t scale = M_GetMapThumbnail(mapnum, &patch);
+	LUA_PushUserdata(L, patch, META_PATCH);
+	lua_pushfixed(L, scale);
+	return 2;
+}
+
+static int libd_getMapMinimap(lua_State *L)
+{
+	INT16 mapnum;
+	patch_t *patch = NULL;
+	HUDONLY
+	if (lua_type(L, 1) == LUA_TNUMBER)
+		mapnum = luaL_checkinteger(L, 1) - 1;
+	else
+		mapnum = G_MapNumber(luaL_checkstring(L, 1));
+
+	if (mapnum >= 0 && mapnum < nummapheaders && mapheaderinfo[mapnum])
+		patch = mapheaderinfo[mapnum]->minimapPic;
+	if (!patch)
+		patch = missingpat;
+
+	LUA_PushUserdata(L, patch, META_PATCH);
+	return 1;
 }
 
 static int libd_width(lua_State *L)
@@ -1191,6 +1252,38 @@ static int libd_getDeltaTime(lua_State *L)
 	return 1;
 }
 
+static int libd_interpolate(lua_State *L)
+{
+	HUDONLY
+
+	// do type checking even if interpolation is disabled
+	boolean newinterpolate;
+	UINT8 newtag;
+
+	if (lua_isnumber(L, 1))
+	{
+		newinterpolate = true;
+		newtag = luaL_checkinteger(L, 1);
+	}
+	else
+	{
+		newinterpolate = luaL_checkboolean(L, 1);
+		newtag = 0;
+	}
+
+	hud_interpolate = newinterpolate;
+	hud_interptag = newtag;
+
+	return 0;
+}
+
+static int libd_interpLatch(lua_State *L)
+{
+	HUDONLY
+	hud_interpstring = hud_interplatch = luaL_checkboolean(L, 1);
+	return 0;
+}
+
 static luaL_Reg lib_draw[] = {
 	// cache
 	{"patchExists", libd_patchExists},
@@ -1199,6 +1292,8 @@ static luaL_Reg lib_draw[] = {
 	{"getSprite2Patch", libd_getSprite2Patch},
 	{"getColormap", libd_getColormap},
 	{"getStringColormap", libd_getStringColormap},
+	{"getMapThumbnail", libd_getMapThumbnail},
+	{"getMapMinimap", libd_getMapMinimap},
 	// drawing
 	{"draw", libd_draw},
 	{"drawScaled", libd_drawScaled},
@@ -1211,6 +1306,8 @@ static luaL_Reg lib_draw[] = {
 	{"drawString", libd_drawString},
 	{"drawTitleCardString", libd_drawTitleCardString},
 	{"drawKartString", libd_drawKartString},
+	{"setClipRect", libd_setClipRect},
+	{"clearClipRect", libd_clearClipRect},
 	// misc
 	{"stringWidth", libd_stringWidth},
 	{"titleCardStringWidth", libd_titleCardStringWidth},
@@ -1231,6 +1328,9 @@ static luaL_Reg lib_draw[] = {
 	{"drawOnMinimap", libd_drawOnMinimap},
 	{"userTransFlag", libd_getusertransflag},
 	{"getDeltaTime", libd_getDeltaTime},
+	// interpolation
+	{"interpolate", libd_interpolate},
+	{"interpLatch", libd_interpLatch},
 	{NULL, NULL}
 };
 
@@ -1268,6 +1368,40 @@ static int lib_hudenabled(lua_State *L)
 	return 1;
 }
 
+static int lib_hudsetvotebackground(lua_State *L)
+{
+	if (lua_isnoneornil(L, 1))
+	{
+		if (luaVoteScreen)
+		{
+			free(luaVoteScreen);
+		}
+
+		luaVoteScreen = NULL;
+
+		return 0;
+	}
+
+	const char *prefix = luaL_checkstring(L, 1);
+
+	if (strlen(prefix) != 4)
+	{
+		return luaL_argerror(L, 1, "prefix should 4 characters wide");
+	}
+
+	if (!luaVoteScreen)
+	{
+		luaVoteScreen = (char*)malloc(5);
+		luaVoteScreen[4] = 0;
+	}
+
+	strncpy(luaVoteScreen, prefix, 4);
+
+	strupr(luaVoteScreen);
+
+	return 0;
+}
+
 // add a HUD element for rendering
 extern int lib_hudadd(lua_State *L);
 
@@ -1276,6 +1410,7 @@ static luaL_Reg lib_hud[] = {
 	{"disable", lib_huddisable},
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
+	{"setVoteBackground", lib_hudsetvotebackground},
 	{NULL, NULL}
 };
 
@@ -1327,6 +1462,8 @@ void LUA_SetHudHook(int hook, huddrawlist_h list)
 	lua_pushlightuserdata(gL, list);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 
+	cliprectenabled = false;
+
 	switch (hook)
 	{
 		case HUD_HOOK(game):
@@ -1344,4 +1481,14 @@ void LUA_SetHudHook(int hook, huddrawlist_h list)
 			lua_pushinteger(gL, (lt_endtime + TICRATE));
 			break;
 	}
+}
+
+void LUA_ClearClipRect(void)
+{
+	// V_ClearClipRect is not enough: we need to insert a clearClipRect
+	// into the drawlist to protect both hardcode and other HUD hooks.
+	// thankfully the below function takes zero Lua arguments :^)
+	if (cliprectenabled)
+		libd_clearClipRect(gL);
+	//cliprectenabled = false;
 }

@@ -6,7 +6,7 @@ passthru_opts+=\
 	NONET NO_IPV6 NOHW NOMD5 NOPOSTPROCESSING\
 	MOBJCONSISTANCY PACKETDROP ZDEBUG\
 	HAVE_MINIUPNPC\
-	HAVE_DISCORDRPC TESTERS HOSTTESTERS DEVELOP
+	HAVE_DISCORDRPC DEVELOP
 
 # build with debugging information
 ifdef DEBUGMODE
@@ -41,7 +41,7 @@ $(eval $(call Configure,PNG,$(PNG_CONFIG) \
 	$(if $(PNG_STATIC),--static),,--ldflags))
 endif
 ifdef LINUX
-opts+=-D_LARGFILE64_SOURCE
+opts+=-D_LARGEFILE64_SOURCE
 endif
 opts+=-DHAVE_PNG
 sources+=apng.c

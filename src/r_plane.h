@@ -14,8 +14,13 @@
 #ifndef __R_PLANE__
 #define __R_PLANE__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "screen.h" // needs MAXVIDWIDTH/MAXVIDHEIGHT
 #include "r_data.h"
+#include "r_defs.h"
 #include "r_textures.h"
 #include "p_polyobj.h"
 
@@ -28,9 +33,9 @@
 // Now what is a visplane, anyway?
 // Simple: kinda floor/ceiling polygon optimised for SRB2 rendering.
 //
-typedef struct visplane_s
+struct visplane_t
 {
-	struct visplane_s *next;
+	visplane_t *next;
 
 	fixed_t height;
 	fixed_t viewx, viewy, viewz;
@@ -50,32 +55,26 @@ typedef struct visplane_s
 
 	fixed_t xoffs, yoffs; // Scrolling flats.
 
-	struct ffloor_s *ffloor;
+	ffloor_t *ffloor;
 	polyobj_t *polyobj;
 	pslope_t *slope;
 
 	boolean noencore;
 	boolean ripple;
-} visplane_t;
+	sectordamage_t damage;
+};
 
 extern visplane_t *visplanes[MAXVISPLANES];
 extern visplane_t *floorplane;
 extern visplane_t *ceilingplane;
 
 // Visplane related.
-extern INT16 *lastopening, *openings;
-extern size_t maxopenings;
 
 extern INT16 floorclip[MAXVIDWIDTH], ceilingclip[MAXVIDWIDTH];
 extern fixed_t frontscale[MAXVIDWIDTH];
 extern fixed_t yslopetab[MAXSPLITSCREENPLAYERS][MAXVIDHEIGHT*16];
-extern fixed_t cachedheight[MAXVIDHEIGHT];
-extern fixed_t cacheddistance[MAXVIDHEIGHT];
-extern fixed_t cachedxstep[MAXVIDHEIGHT];
-extern fixed_t cachedystep[MAXVIDHEIGHT];
 
 extern fixed_t *yslope;
-extern lighttable_t **planezlight;
 
 void R_InitPlanes(void);
 void R_ClearPlanes(void);
@@ -84,27 +83,29 @@ void R_ClearFFloorClips (void);
 void R_DrawPlanes(void);
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel, fixed_t xoff, fixed_t yoff, angle_t plangle,
 	extracolormap_t *planecolormap, ffloor_t *ffloor, polyobj_t *polyobj, pslope_t *slope, boolean noencore,
-	boolean ripple, boolean reverseLight, const sector_t *lighting_sector);
+	boolean ripple, boolean reverseLight, const sector_t *lighting_sector, sectordamage_t damage);
 visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop);
 void R_PlaneBounds(visplane_t *plane);
 
 size_t R_FlatDimensionsFromLumpSize(size_t size);
-void R_CheckFlatLength(size_t size);
-boolean R_CheckPowersOfTwo(void);
+void R_CheckFlatLength(drawspandata_t* ds, size_t size);
+boolean R_CheckPowersOfTwo(drawspandata_t* ds);
 
 // Draws a single visplane.
-void R_DrawSinglePlane(visplane_t *pl);
+void R_DrawSinglePlane(drawspandata_t* ds, visplane_t *pl, boolean allow_parallel);
 
 // Calculates the slope vectors needed for tilted span drawing.
-void R_SetSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle);
-void R_SetScaledSlopePlane(pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xs, fixed_t ys, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle);
-void R_CalculateSlopeVectors(void);
+void R_SetSlopePlane(drawspandata_t* ds, pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle);
+void R_SetScaledSlopePlane(drawspandata_t* ds, pslope_t *slope, fixed_t xpos, fixed_t ypos, fixed_t zpos, fixed_t xs, fixed_t ys, fixed_t xoff, fixed_t yoff, angle_t angle, angle_t plangle);
+void R_CalculateSlopeVectors(drawspandata_t* ds);
 
 // Sets the slope vector pointers for the current tilted span.
-void R_SetTiltedSpan(INT32 span);
+void R_SetTiltedSpan(drawspandata_t* ds, INT32 span);
 
-typedef struct planemgr_s
+INT16 R_PlaneIsHighlighted(const visplane_t *pl);
+
+struct visffloor_t
 {
 	visplane_t *plane;
 	fixed_t height;
@@ -119,14 +120,17 @@ typedef struct planemgr_s
 	fixed_t f_pos_slope;
 	fixed_t b_pos_slope;
 
-	struct pslope_s *slope;
+	pslope_t *slope;
 
-	struct ffloor_s *ffloor;
+	ffloor_t *ffloor;
 	polyobj_t *polyobj;
-} visffloor_t;
+};
 
 extern visffloor_t ffloor[MAXFFLOORS];
 extern INT32 numffloors;
 
-void Portal_AddSkyboxPortals (void);
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

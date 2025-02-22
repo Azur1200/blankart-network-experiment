@@ -261,6 +261,7 @@ void S_RegisterSoundStuff(void)
 	CV_RegisterVar(&cv_samplerate);
 	CV_RegisterVar(&cv_playsoundifunfocused);
 	CV_RegisterVar(&cv_playmusicifunfocused);
+	CV_RegisterVar(&cv_streamersafemusic);
 	CV_RegisterVar(&cv_gamesounds);
 	CV_RegisterVar(&cv_gamedigimusic);
 
@@ -1100,7 +1101,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 	{
 		fixed_t x, y, yl, yh, xl, xh, newdist;
 
-		if (R_PointInSubsector(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
+		if (R_PointInSubsectorFast(listensource.x, listensource.y)->sector->ceilingpic == skyflatnum)
 			approx_dist = 0;
 		else
 		{
@@ -1113,7 +1114,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 			for (y = yl; y <= yh; y += FRACUNIT*64)
 				for (x = xl; x <= xh; x += FRACUNIT*64)
 				{
-					if (R_PointInSubsector(x, y)->sector->ceilingpic == skyflatnum)
+					if (R_PointInSubsectorFast(x, y)->sector->ceilingpic == skyflatnum)
 					{
 						// Found the outdoors!
 						newdist = S_CalculateSoundDistance(listensource.x, listensource.y, 0, x, y, 0);
@@ -1699,6 +1700,11 @@ void S_ShowMusicCredit(void)
 		return;
 	}
 
+	if (def->contentidunsafe && cv_streamersafemusic.value)
+	{
+		return;
+	}
+
 	work = va("\x1F %s", def->title);
 	worklen = strlen(work);
 	if (worklen <= len)
@@ -2195,7 +2201,7 @@ static void S_UnloadMusic(void)
 }
 
 /* Don't Play content id unsafe music pls */
-static boolean S_CheckMusicIsSafe()
+static boolean S_CheckMusicIsSafe(void)
 {
 	if (cv_streamersafemusic.value)
 	{
@@ -2537,7 +2543,7 @@ void S_InitLevelMusic(boolean fromnetsave)
 			{
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
 				{
-					UINT32 random = P_RandomFixed();
+					P_RandomFixed();
 				}
 				// mapmusrng has already been set by the demo; just make sure it's valid
 				if (mapmusrng >= mapheaderinfo[gamemap-1]->musname_size)

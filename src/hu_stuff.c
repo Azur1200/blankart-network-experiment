@@ -98,6 +98,9 @@ static char hu_tick;
 //-------------------------------------------
 
 patch_t *missingpat;
+patch_t *blanklvl;
+patch_t *randomlvl;
+patch_t *nolvl;
 
 // song credits
 static patch_t *songcreditbg;
@@ -185,6 +188,10 @@ void HU_LoadGraphics(void)
 		return;
 
 	Font_Load();
+
+	HU_UpdatePatch(&blanklvl, "BLANKLVL");
+	HU_UpdatePatch(&randomlvl, "RANDOMLV");
+	HU_UpdatePatch(&nolvl, "M_NOLVL");
 
 	HU_UpdatePatch(&songcreditbg, "K_SONGCR");
 
@@ -793,7 +800,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			{
 				UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
-				if (chatcolor > V_PEACHMAP)
+				if (chatcolor > V_TANMAP)
 				{
 					sprintf(color_prefix, "%c", '\x80');
 				}
@@ -832,7 +839,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		{
 			UINT16 chatcolor = skincolors[players[playernum].skincolor].chatcolor;
 
-			if (chatcolor > V_PEACHMAP)
+			if (chatcolor > V_TANMAP)
 			{
 				sprintf(color_prefix, "%c", '\x80');
 			}
@@ -2160,7 +2167,7 @@ void HU_Drawer(void)
 	if (!( Playing() || demo.playback )
 	 || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE
 	 || gamestate == GS_CREDITS      || gamestate == GS_EVALUATION
-	 || gamestate == GS_ENDING       || gamestate == GS_GAMEEND
+	 || gamestate == GS_GAMEEND
 	 || gamestate == GS_VOTING || gamestate == GS_WAITINGPLAYERS) // SRB2kart
 		return;
 
@@ -2526,10 +2533,10 @@ static void HU_DrawRankings(void)
 			V_DrawCenteredString(64, 8, 0, "LAP COUNT");
 			V_DrawCenteredString(64, 16, hilicol, va("%d", numlaps));
 		}
-
-		V_DrawCenteredString(256, 8, 0, "GAME SPEED");
-		V_DrawCenteredString(256, 16, hilicol, kartspeed_cons_t[1+gamespeed].strvalue);
 	}
+
+	V_DrawCenteredString(256, 8, 0, "GAME SPEED");
+	V_DrawCenteredString(256, 16, hilicol, kartspeed_cons_t[1+gamespeed].strvalue);
 
 	// When you play, you quickly see your score because your name is displayed in white.
 	// When playing back a demo, you quickly see who's the view.

@@ -11,6 +11,7 @@
 /// \brief Lua SOC library
 
 #include "deh_lua.h"
+#include "deh_tables.h"
 
 // freeslot takes a name (string only!)
 // and allocates it to the appropriate free slot.
@@ -296,12 +297,32 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("PF_", word, 3)) {
 		p = word+3;
+		if (lua_compatmode && fastcmp(p, "TIMEOVER"))
+		{
+			CacheAndPushConstant(L, word, ((lua_Integer)PF_NOCONTEST));
+			return 1;
+		}
+		if (lua_compatmode && fastcmp(p, "FORCESTRAFE"))
+		{
+			CacheAndPushConstant(L, word, ((lua_Integer)0));
+			return 1;
+		}
 		for (i = 0; PLAYERFLAG_LIST[i]; i++)
 			if (fastcmp(p, PLAYERFLAG_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;
 			}
 		if (mathlib) return luaL_error(L, "playerflag '%s' could not be found.\n", word);
+		return 0;
+	}
+	else if (fastncmp("IF_", word, 3)) {
+		p = word+3;
+		for (i = 0; ITEMFLAG_LIST[i]; i++)
+			if (fastcmp(p, ITEMFLAG_LIST[i])) {
+				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
+				return 1;
+			}
+		if (mathlib) return luaL_error(L, "itemflag '%s' could not be found.\n", word);
 		return 0;
 	}
 	else if (fastncmp("GT_", word, 3)) {
@@ -336,7 +357,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("ML_", word, 3)) {
 		p = word+3;
-		for (i = 0; i < 16; i++)
+		for (i = 0; i < 20; i++)
 			if (ML_LIST[i] && fastcmp(p, ML_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;
@@ -417,6 +438,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("S_",word,2)) {
 		p = word+2;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, S_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMSTATEFREESLOTS; i++) {
 			if (!FREE_STATES[i])
 				break;
@@ -430,10 +456,21 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+		if (lua_compatmode)
+			for (i = 0; STATE_ALIASES[i].n; i++)
+				if (fastcmp(p, STATE_ALIASES[i].n)) {
+					CacheAndPushConstant(L, word, STATE_ALIASES[i].v);
+					return 1;
+				}
 		return luaL_error(L, "state '%s' does not exist.\n", word);
 	}
 	else if (fastncmp("MT_",word,3)) {
 		p = word+3;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, MT_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMMOBJFREESLOTS; i++) {
 			if (!FREE_MOBJS[i])
 				break;
@@ -451,6 +488,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SPR_",word,4)) {
 		p = word+4;
+		if (fastcmp(p, "FIRSTFREESLOT"))
+		{
+			lua_pushinteger(L, SPR_FIRSTFREESLOT);
+			return 1;
+		}
 		for (i = 0; i < NUMSPRITES; i++)
 			if (!sprnames[i][4] && fastncmp(p,sprnames[i],4)) {
 				// updating overridden sprnames is not implemented for soc parser,
@@ -513,6 +555,42 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 		if (mathlib) return luaL_error(L, "sfx '%s' could not be found.\n", word);
 		return 0;
 	}
+	else if (!mathlib && fastncmp("pw_",word,3)) {
+		p = word+3;
+		for (i = 0; i < NUMPOWERS; i++)
+			if (fasticmp(p, POWERS_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return 0;
+	}
+	else if (mathlib && fastncmp("PW_",word,3)) { // SOCs are ALL CAPS!
+		p = word+3;
+		for (i = 0; i < NUMPOWERS; i++)
+			if (fastcmp(p, POWERS_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return luaL_error(L, "powers '%s' could not be found.\n", word);
+	}
+	else if (!mathlib && fastncmp("k_",word,2)) {
+		p = word+2;
+		for (i = 0; i < NUMKARTSTUFF; i++)
+			if (fasticmp(p, KARTSTUFF_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return 0;
+	}
+	else if (mathlib && fastncmp("K_",word,2)) { // SOCs are ALL CAPS!
+		p = word+2;
+		for (i = 0; i < NUMKARTSTUFF; i++)
+			if (fastcmp(p, KARTSTUFF_LIST[i])) {
+				lua_pushinteger(L, i);
+				return 1;
+			}
+		return luaL_error(L, "kartstuff '%s' could not be found.\n", word);
+	}
 	else if (!mathlib && fastncmp("khud_",word,5)) {
 		p = word+5;
 		for (i = 0; i < NUMKARTHUD; i++)
@@ -547,18 +625,6 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				return 1;
 			}
 		return luaL_error(L, "skincolor '%s' could not be found.\n", word);
-	}
-	else if (fastncmp("GRADE_",word,6))
-	{
-		p = word+6;
-		for (i = 0; NIGHTSGRADE_LIST[i]; i++)
-			if (*p == NIGHTSGRADE_LIST[i])
-			{
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
-		if (mathlib) return luaL_error(L, "NiGHTS grade '%s' could not be found.\n", word);
-		return 0;
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;

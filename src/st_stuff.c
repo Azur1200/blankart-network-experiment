@@ -83,7 +83,11 @@ static patch_t *hud_tv2;
 static patch_t *envelope;
 #endif
 
-static huddrawlist_h luahuddrawlist_game;
+// current player for overlay drawing
+player_t *stplyr;
+UINT8 stplyrnum;
+
+static huddrawlist_h luahuddrawlist_game[MAXSPLITSCREENPLAYERS];
 static huddrawlist_h luahuddrawlist_titlecard;
 
 //
@@ -262,7 +266,8 @@ void ST_Init(void)
 
 	ST_LoadGraphics();
 
-	luahuddrawlist_game = LUA_HUD_CreateDrawList();
+	for (int i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+		luahuddrawlist_game[i] = LUA_HUD_CreateDrawList();
 	luahuddrawlist_titlecard = LUA_HUD_CreateDrawList();
 }
 
@@ -366,13 +371,18 @@ static INT32 SCR(INT32 r)
 
 // Devmode information
 
+static void ST_pushRow(INT32 *height)
+{
+	*height -= 4;
+}
+
 static void ST_pushDebugString(INT32 *height, const char *string)
 {
 	V_DrawRightAlignedString(320, *height, V_MONOSPACE, string);
 	*height -= 8;
 }
 
-static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
+/*static void ST_pushDebugTimeMS(INT32 *height, const char *label, UINT32 ms)
 {
 	ST_pushDebugString(height, va("%s%02d:%05.2f", label,
 				ms / 60000, ms % 60000 / 1000.f));
@@ -418,6 +428,43 @@ static void ST_drawMusicDebug(INT32 *height)
 	}
 
 	ST_pushDebugString(height, va("    Song: %8s", mname));
+}*/
+
+static void ST_drawRenderDebug(INT32 *height)
+{
+	const struct RenderStats *i = &g_renderstats;
+
+	ST_pushDebugString(height, va("     Visplanes: %4s", sizeu1(i->visplanes)));
+	ST_pushDebugString(height, va("      Drawsegs: %4s", sizeu1(i->drawsegs)));
+
+	ST_pushRow(height);
+
+	ST_pushDebugString(height, va("Skybox Portals: %4s", sizeu1(i->skybox_portals)));
+}
+
+static void ST_drawDemoDebug(INT32 *height)
+{
+	if (!demo.recording && !demo.playback)
+		return;
+
+	size_t needle = demo.buffer->p - demo.buffer->buffer;
+	size_t size = demo.buffer->size;
+	double percent = (double)needle / size * 100.0;
+	double avg = (double)needle / leveltime;
+
+	ST_pushDebugString(height, va("%s/%s bytes", sizeu1(needle), sizeu2(size)));
+	ST_pushDebugString(height, va(
+			"%.2f/%.2f MB %5.2f%%",
+			needle / (1024.0 * 1024.0),
+			size / (1024.0 * 1024.0),
+			percent
+	));
+	ST_pushDebugString(height, va(
+			"%.2f KB/s (ETA %.2f minutes)",
+			avg * TICRATE / 1024.0,
+			(size - needle) / (avg * TICRATE * 60.0)
+	));
+	ST_pushDebugString(height, va("Demo (%s)", demo.recording ? "recording" : "playback"));
 }
 
 static void ST_drawDebugInfo(void)
@@ -427,7 +474,7 @@ static void ST_drawDebugInfo(void)
 	if (!stplyr->mo)
 		return;
 
-	if (cv_debug & DBG_BASIC)
+	if (cht_debug & DBG_BASIC)
 	{
 		const fixed_t d = AngleFixed(stplyr->mo->angle);
 		V_DrawRightAlignedString(320, 168, V_MONOSPACE, va("X: %6d", stplyr->mo->x>>FRACBITS));
@@ -438,7 +485,7 @@ static void ST_drawDebugInfo(void)
 		height = 152;
 	}
 
-	if (cv_debug & DBG_DETAILED)
+	if (cht_debug & DBG_DETAILED)
 	{
 		//V_DrawRightAlignedString(320, height - 104, V_MONOSPACE, va("SHIELD: %5x", stplyr->powers[pw_shield]));
 		V_DrawRightAlignedString(320, height - 96,  V_MONOSPACE, va("SCALE: %5d%%", (stplyr->mo->scale*100)/FRACUNIT));
@@ -467,7 +514,7 @@ static void ST_drawDebugInfo(void)
 		height -= 120;
 	}
 
-	if (cv_debug & DBG_RANDOMIZER) // randomizer testing
+	if (cht_debug & DBG_RNG) // randomizer testing
 	{
 		fixed_t peekres = P_RandomPeek();
 		peekres *= 10000;     // Change from fixed point
@@ -480,7 +527,22 @@ static void ST_drawDebugInfo(void)
 		height -= 32;
 	}
 
-	if (cv_debug & DBG_MEMORY)
+	/*if (cht_debug & DBG_MUSIC)
+	{
+		ST_drawMusicDebug(&height);
+	}*/
+
+	if (cht_debug & DBG_RENDER)
+	{
+		ST_drawRenderDebug(&height);
+	}
+
+	if (cht_debug & DBG_DEMO)
+	{
+		ST_drawDemoDebug(&height);
+	}
+
+	if (cht_debug & DBG_MEMORY)
 		V_DrawRightAlignedString(320, height,     V_MONOSPACE, va("Heap used: %7sKB", sizeu1(Z_TagsUsage(0, INT32_MAX)>>10)));
 }
 
@@ -494,8 +556,8 @@ tic_t lt_exitticker = 0, lt_endtime = 0;
 //
 static void ST_cacheLevelTitle(void)
 {
-	UINT8 i;
-	char buf[9];
+	//UINT8 i;
+	//char buf[9];
 
 }
 
@@ -534,7 +596,7 @@ void ST_preDrawTitleCard(void)
 void ST_runTitleCard(void)
 {
 	boolean run = !(paused || P_AutoPause());
-	boolean gp = (marathonmode || (grandprixinfo.gp && grandprixinfo.roundnum));
+	//boolean gp = (marathonmode || (grandprixinfo.gp && grandprixinfo.roundnum));
 
 	if (!G_IsTitleCardAvailable())
 		return;
@@ -671,10 +733,10 @@ static void ST_overlayDrawer(void)
 
 		if (renderisnewtic)
 		{
-			LUA_HUD_ClearDrawList(luahuddrawlist_game);
-			LUA_HookHUD(luahuddrawlist_game, HUD_HOOK(game));
+			LUA_HUD_ClearDrawList(luahuddrawlist_game[stplyrnum]);
+			LUA_HookHUD(luahuddrawlist_game[stplyrnum], HUD_HOOK(game));
 		}
-		LUA_HUD_DrawList(luahuddrawlist_game);
+		LUA_HUD_DrawList(luahuddrawlist_game[stplyrnum]);
 	}
 
 	if (!hu_showscores) // hide the following if TAB is held
@@ -854,6 +916,7 @@ void ST_Drawer(void)
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			stplyr = &players[displayplayers[i]];
+			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
 			R_InterpolateView(rendertimefrac); // to assist with object tracking
 			ST_overlayDrawer();
@@ -868,9 +931,9 @@ void ST_Drawer(void)
 	if (timeinmap < 15)
 	{
 		if (timeinmap <= 5)
-			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,120); // Pure white on first few frames, to hide SRB2's awful level load artifacts
+			V_DrawFill(0,0,BASEVIDWIDTH,BASEVIDHEIGHT,FADECOLOR); // Pure white on first few frames, to hide SRB2's awful level load artifacts
 		else
-			V_DrawFadeScreen(120, 15-timeinmap); // Then gradually fade out from there
+			V_DrawFadeScreen(FADECOLOR, 15-timeinmap); // Then gradually fade out from there
 	}
 
 	if (stagetitle)

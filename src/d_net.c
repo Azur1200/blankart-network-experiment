@@ -200,9 +200,9 @@ typedef struct
 	UINT8 nextacknum;
 
 	UINT8 flags;
-} node_t;
+} netnode_t;
 
-static node_t nodes[MAXNETNODES];
+static netnode_t nodes[MAXNETNODES];
 #define NODETIMEOUT 14
 
 #ifndef NONET
@@ -227,7 +227,7 @@ FUNCMATH static INT32 cmpack(UINT8 a, UINT8 b)
   */
 static boolean GetFreeAcknum(UINT8 *freeack, boolean lowtimer)
 {
-	node_t *node = &nodes[doomcom->remotenode];
+	netnode_t *node = &nodes[doomcom->remotenode];
 	INT32 i, numfreeslot = 0;
 
 	if (cmpack((UINT8)((node->remotefirstack + MAXACKTOSEND) % 256), node->nextacknum) < 0)
@@ -334,7 +334,7 @@ static boolean Processackpak(void)
 {
 	INT32 i;
 	boolean goodpacket = true;
-	node_t *node = &nodes[doomcom->remotenode];
+	netnode_t *node = &nodes[doomcom->remotenode];
 
 	// Received an ack return, so remove the ack in the list
 	if (netbuffer->ackreturn && cmpack(node->remotefirstack, netbuffer->ackreturn) < 0)
@@ -509,7 +509,7 @@ void Net_AckTicker(void)
 	for (i = 0; i < MAXACKPACKETS; i++)
 	{
 		const INT32 nodei = ackpak[i].destinationnode;
-		node_t *node = &nodes[nodei];
+		netnode_t *node = &nodes[nodei];
 		if (ackpak[i].acknum && ackpak[i].senttime + NODETIMEOUT < I_GetTime())
 		{
 			if (ackpak[i].resentnum > 20 && (node->flags & NF_CLOSE))
@@ -640,7 +640,7 @@ void Net_WaitAllAckReceived(UINT32 timeout)
 #endif
 }
 
-static void InitNode(node_t *node)
+static void InitNode(netnode_t *node)
 {
 	node->acktosend_head = node->acktosend_tail = 0;
 	node->firstacktosend = 0;
@@ -924,9 +924,9 @@ static void DebugPrintpacket(const char *header)
 				netbuffer->u.servercfg.modifiedgame);
 			break;
 		case PT_SERVERINFO:
-			fprintf(debugfile, "    '%s' player %d/%d, map %s, filenum %d, time %u \n",
+			fprintf(debugfile, "    '%s' player %d/%d, filenum %d, time %u \n",
 				netbuffer->u.serverinfo.servername, netbuffer->u.serverinfo.numberofplayer,
-				netbuffer->u.serverinfo.maxplayer, netbuffer->u.serverinfo.mapname,
+				netbuffer->u.serverinfo.maxplayer,
 				netbuffer->u.serverinfo.fileneedednum,
 				(UINT32)LONG(netbuffer->u.serverinfo.time));
 			fprintfstringnewline((char *)netbuffer->u.serverinfo.fileneeded,

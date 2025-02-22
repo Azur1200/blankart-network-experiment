@@ -1,1 +1,1 @@
-target_sourcefile(c)
+target_sourcefile(cpp)

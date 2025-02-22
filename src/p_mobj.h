@@ -28,6 +28,10 @@
 // Needs precompiled tables/data structures.
 #include "info.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // NOTES: mobj_t
 //
@@ -118,7 +122,7 @@ typedef enum
 	// Don't apply gravity (every tic); object will float, keeping current height
 	//  or changing it actively.
 	MF_NOGRAVITY        = 1<<9,
-	// This object is an ambient sound. Obsolete, but keep this around for backwards compatibility.
+	// This object is an ambient sound.
 	MF_AMBIENT          = 1<<10,
 	// Slide this object when it hits a wall.
 	MF_SLIDEME          = 1<<11,
@@ -137,31 +141,32 @@ typedef enum
 	MF_MONITOR          = 1<<17,
 	// Don't run the thinker for this object.
 	MF_NOTHINK          = 1<<18,
+	// Fire object. Doesn't harm if you have fire shield.
+	MF_FIRE             = 1<<19,
 	// Don't adjust z if below or above floorz/ceilingz
-	MF_NOCLIPHEIGHT     = 1<<19,
+	MF_NOCLIPHEIGHT     = 1<<20,
 	// This mobj is an enemy!
-	MF_ENEMY            = 1<<20,
+	MF_ENEMY            = 1<<21,
 	// Scenery (uses scenery thinker).
-	MF_SCENERY          = 1<<21,
+	MF_SCENERY          = 1<<22,
 	// Painful (shit hurts).
-	MF_PAIN             = 1<<22,
+	MF_PAIN             = 1<<23,
 	// This mobj will stick to any surface or solid object it touches.
-	MF_STICKY           = 1<<23,
+	MF_STICKY           = 1<<24,
 	// Object uses terrain effects. (Overlays, footsteps, etc)
-	MF_APPLYTERRAIN     = 1<<24,
+	MF_APPLYTERRAIN     = 1<<25,
 	// for chase camera, don't be blocked by things (partial clipping)
-	MF_NOCLIPTHING      = 1<<25,
+	MF_NOCLIPTHING      = 1<<26,
 	// Missile bounces like a grenade.
-	MF_GRENADEBOUNCE    = 1<<26,
+	MF_GRENADEBOUNCE    = 1<<27,
 	// Run the action thinker on spawn.
-	MF_RUNSPAWNFUNC     = 1<<27,
+	MF_RUNSPAWNFUNC     = 1<<28,
 	// Don't remap in Encore mode. (Not a drawflag so that it's settable by mobjinfo.)
-	MF_DONTENCOREMAP    = 1<<28,
+	MF_DONTENCOREMAP    = 1<<29,
 	// Hitbox extends just as far below as above.
-	MF_PICKUPFROMBELOW  = 1<<29,
+	MF_PICKUPFROMBELOW  = 1<<30,
 	// Bounce off walls and things.
-	MF_BOUNCE   		= 1<<30,
-	//free	 = (INT32)(1U<<31),
+	MF_BOUNCE   		= 1<<31,
 	// no more free slots, next up I suppose we can get rid of shit like MF_BOXICON?
 } mobjflag_t;
 
@@ -170,7 +175,7 @@ typedef enum
 	MF2_AXIS           = 1,     // It's a NiGHTS axis! (For faster checking)
 	// free: 1<<1
 	MF2_DONTRESPAWN    = 1<<2,  // Don't respawn this object!
-	// free: 1<<3
+	MF2_DONTDRAW       = 1<<3,  // DO NOT USE: for lua compatibility only
 	MF2_AUTOMATIC      = 1<<4,  // Thrown ring has automatic properties
 	MF2_RAILRING       = 1<<5,  // Thrown ring has rail properties
 	MF2_BOUNCERING     = 1<<6,  // Thrown ring has bounce properties
@@ -269,7 +274,7 @@ typedef enum {
 } precipflag_t;
 
 // Map Object definition.
-typedef struct mobj_s
+struct mobj_t
 {
 	// List: thinker links.
 	thinker_t thinker;
@@ -284,8 +289,8 @@ typedef struct mobj_s
 
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
-	struct mobj_s *bnext;
-	struct mobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
+	mobj_t *bnext;
+	mobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -302,18 +307,19 @@ typedef struct mobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
-	struct pslope_s *floorspriteslope; // The slope that the floorsprite is rotated by
+	
+	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
-	struct msecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
+	msecnode_t *touching_sectorlist; // a linked list of sectors where this object appears
 
-	struct subsector_s *subsector; // Subsector the mobj resides in.
+	subsector_t *subsector; // Subsector the mobj resides in.
 
 	// The closest interval over all contacted sectors (or things).
 	fixed_t floorz; // Nearest floor below.
 	fixed_t ceilingz; // Nearest ceiling above.
-	struct ffloor_s *floorrover; // FOF referred by floorz
-	struct ffloor_s *ceilingrover; // FOF referred by ceilingz
+	ffloor_t *floorrover; // FOF referred by floorz
+	ffloor_t *ceilingrover; // FOF referred by ceilingz
 	fixed_t floordrop;
 	fixed_t ceilingdrop;
 
@@ -332,8 +338,8 @@ typedef struct mobj_s
 	UINT16 eflags; // extra flags
 
 	mtag_t tid;
-	struct mobj_s *tid_next;
-	struct mobj_s **tid_prev; // killough 8/11/98: change to ptr-to-ptr
+	mobj_t *tid_next;
+	mobj_t **tid_prev; // killough 8/11/98: change to ptr-to-ptr
 
 	void *skin; // overrides 'sprite' when non-NULL (for player bodies to 'remember' the skin)
 	// Player and mobj sprites in multiplayer modes are modified
@@ -341,15 +347,15 @@ typedef struct mobj_s
 	UINT16 color; // This replaces MF_TRANSLATION. Use 0 for default (no translation).
 
 	// More list: links in sector (if needed)
-	struct mobj_s *snext;
-	struct mobj_s **sprev; // killough 8/11/98: change to ptr-to-ptr
+	mobj_t *snext;
+	mobj_t **sprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// Additional pointers for NiGHTS hoops
-	struct mobj_s *hnext;
-	struct mobj_s *hprev;
+	mobj_t *hnext;
+	mobj_t *hprev;
 
 	// One last pointer for kart item lists
-	struct mobj_s *itnext;
+	mobj_t *itnext;
 
 	INT32 health; // for player this is rings + 1 -- no it isn't, not any more!!
 
@@ -357,7 +363,7 @@ typedef struct mobj_s
 	angle_t movedir; // dirtype_t 0-7; also used by Deton for up/down angle
 	INT32 movecount; // when 0, select a new dir
 
-	struct mobj_s *target; // Thing being chased/attacked (or NULL), and originator for missiles.
+	mobj_t *target; // Thing being chased/attacked (or NULL), and originator for missiles.
 
 	INT32 reactiontime; // If not 0, don't attack yet.
 
@@ -365,13 +371,13 @@ typedef struct mobj_s
 
 	// Additional info record for player avatars only.
 	// Only valid if type == MT_PLAYER
-	struct player_s *player;
+	player_t *player;
 
 	INT32 lastlook; // Player number last looked for.
 
 	mapthing_t *spawnpoint; // Used for CTF flags, objectplace, and a handful other applications.
 
-	struct mobj_s *tracer; // Thing being chased/attacked for tracers.
+	mobj_t *tracer; // Thing being chased/attacked for tracers.
 
 	fixed_t friction;
 	fixed_t movefactor;
@@ -398,7 +404,7 @@ typedef struct mobj_s
 	INT32 cusval;
 	INT32 cvmem;
 
-	struct pslope_s *standingslope; // The slope that the object is standing on (shouldn't need synced in savegames, right?)
+	pslope_t *standingslope; // The slope that the object is standing on (shouldn't need synced in savegames, right?)
 
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap
@@ -406,16 +412,24 @@ typedef struct mobj_s
 
 	fixed_t shadowscale; // If this object casts a shadow, and the size relative to radius
 	boolean whiteshadow; // Use white shadow, set to true by default for fullbright objects
+	UINT8 shadowcolor; // Palette index to use for rendering the shadow
 
 	fixed_t sprxoff, spryoff, sprzoff; // Sprite offsets in real space, does NOT affect position or collision
 
-	struct terrain_s *terrain; // Terrain definition of the floor this object last hit. NULL when in the air.
-	struct mobj_s *terrainOverlay; // Overlay sprite object for terrain
+	terrain_t *terrain; // Terrain definition of the floor this object last hit. NULL when in the air.
+	mobj_t *terrainOverlay; // Overlay sprite object for terrain
 
 	INT32 dispoffset;
 
+	INT32 args[NUM_MAPTHING_ARGS];
+	char *stringargs[NUM_MAPTHING_STRINGARGS];
+
+	INT16 special;
+	INT32 script_args[NUM_SCRIPT_ARGS];
+	char *script_stringargs[NUM_SCRIPT_STRINGARGS];
+
 	// WARNING: New fields must be added separately to savegame and Lua.
-} mobj_t;
+};
 
 //
 // For precipitation
@@ -424,7 +438,7 @@ typedef struct mobj_s
 // so please keep the start of the
 // structure the same.
 //
-typedef struct precipmobj_s
+struct precipmobj_t
 {
 	// List: thinker links.
 	thinker_t thinker;
@@ -432,7 +446,7 @@ typedef struct precipmobj_s
 	// Info for drawing: position.
 	fixed_t x, y, z;
 	// --- Please make sure you keep the fields up to this
-	// --- point in sync with degenmobj_t.\
+	// --- point in sync with degenmobj_t.
 
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
@@ -442,8 +456,8 @@ typedef struct precipmobj_s
 
 	// Links in blocks (if needed).
 	// The blockmap is only used by precip to render.
-	struct precipmobj_s *bnext;
-	struct precipmobj_s **bprev; // killough 8/11/98: change to ptr-to-ptr
+	precipmobj_t *bnext;
+	precipmobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -460,18 +474,18 @@ typedef struct precipmobj_s
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
 	fixed_t old_spritexoffset, old_spriteyoffset;
-	struct pslope_s *floorspriteslope; // The slope that the floorsprite is rotated by
+	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
-	struct mprecipsecnode_s *touching_sectorlist; // a linked list of sectors where this object appears
+	mprecipsecnode_t *touching_sectorlist; // a linked list of sectors where this object appears
 
-	struct subsector_s *subsector; // Subsector the mobj resides in.
+	subsector_t *subsector; // Subsector the mobj resides in.
 
 	// The closest interval over all contacted sectors (or things).
 	fixed_t floorz; // Nearest floor below.
 	fixed_t ceilingz; // Nearest ceiling above.
-	struct ffloor_s *floorrover; // FOF referred by floorz
-	struct ffloor_s *ceilingrover; // FOF referred by ceilingz
+	ffloor_t *floorrover; // FOF referred by floorz
+	ffloor_t *ceilingrover; // FOF referred by ceilingz
 	fixed_t floordrop;
 	fixed_t ceilingdrop;
 
@@ -488,15 +502,15 @@ typedef struct precipmobj_s
 	UINT32 flags; // flags from mobjinfo tables
 	
 	tic_t lastThink;
-} precipmobj_t;
+};
 
-typedef struct actioncache_s
+struct actioncache_t
 {
-	struct actioncache_s *next;
-	struct actioncache_s *prev;
-	struct mobj_s *mobj;
+	actioncache_t *next;
+	actioncache_t *prev;
+	mobj_t *mobj;
 	INT32 statenum;
-} actioncache_t;
+};
 
 extern actioncache_t actioncachehead;
 
@@ -564,4 +578,9 @@ extern INT32 numbosswaypoints;
 extern boolean ringsdisabled;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

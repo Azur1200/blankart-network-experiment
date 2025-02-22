@@ -14,8 +14,10 @@
 #ifndef __R_BSP__
 #define __R_BSP__
 
-#ifdef __GNUG__
-#pragma interface
+#include "typedef.h"
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 extern seg_t *curline;
@@ -23,7 +25,7 @@ extern side_t *sidedef;
 extern line_t *linedef;
 extern sector_t *frontsector;
 extern sector_t *backsector;
-extern boolean portalline; // is curline a portal seg?
+extern portal_t *g_portal; // is curline a portal seg?
 
 // drawsegs are allocated on the fly... see r_segs.c
 
@@ -33,12 +35,14 @@ extern drawseg_t *curdrawsegs;
 extern drawseg_t *drawsegs;
 extern drawseg_t *ds_p;
 extern INT32 doorclosed;
+extern boolean g_walloffscreen;
 
 // BSP?
 void R_ClearClipSegs(void);
 void R_PortalClearClipSegs(INT32 start, INT32 end);
 void R_ClearDrawSegs(void);
 void R_RenderBSPNode(INT32 bspnum);
+void R_RenderFirstBSPNode(size_t cachenum);
 
 // determines when a given sector shouldn't abide by the encoremap's palette.
 // no longer a static since this is used for encore in hw_main.c as well now:
@@ -55,7 +59,13 @@ extern polyobj_t **po_ptrs; // temp ptr array to sort polyobject pointers
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec, INT32 *floorlightlevel,
 	INT32 *ceilinglightlevel, boolean back);
 boolean R_IsEmptyLine(seg_t *line, sector_t *front, sector_t *back);
+boolean R_IsDebugLine(seg_t *line);
 
 INT32 R_GetPlaneLight(sector_t *sector, fixed_t planeheight, boolean underside);
 void R_Prep3DFloors(sector_t *sector);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif

@@ -37,7 +37,9 @@
 // length of IP strings
 #define IP_SIZE 21
 
-consvar_t cv_discordrp = CVAR_INIT ("discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, DRPC_UpdatePresence);
+static void Discordrp_OnChange(void);
+
+consvar_t cv_discordrp = CVAR_INIT ("discordrp", "On", CV_SAVE|CV_CALL, CV_OnOff, Discordrp_OnChange);
 consvar_t cv_discordstreamer = CVAR_INIT ("discordstreamer", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_discordasks = CVAR_INIT ("discordasks", "Yes", CV_SAVE|CV_CALL, CV_YesNo, DRPC_UpdatePresence);
 
@@ -46,6 +48,8 @@ struct discordInfo_s discordInfo;
 discordRequest_t *discordRequestList = NULL;
 
 static char self_ip[IP_SIZE];
+
+boolean drpc_init = false;
 
 /*--------------------------------------------------
 	static char *DRPC_XORIPString(const char *input)
@@ -315,6 +319,9 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 --------------------------------------------------*/
 void DRPC_Init(void)
 {
+	if (drpc_init || !cv_discordrp.value) return;
+
+	drpc_init = true;
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
 
@@ -325,8 +332,34 @@ void DRPC_Init(void)
 	handlers.joinRequest = DRPC_HandleJoinRequest;
 
 	Discord_Initialize(DISCORD_APPID, &handlers, 1, NULL);
-	I_AddExitFunc(Discord_Shutdown);
+	I_AddExitFunc(DRPC_Shutdown);
 	DRPC_UpdatePresence();
+}
+
+void DRPC_Shutdown(void)
+{
+	if (!drpc_init)
+	{
+		CONS_Printf("DiscordRPC never started\n");
+		return;
+	}
+
+	CONS_Printf("Shutting down DiscordRPC\n");
+
+	Discord_Shutdown();
+	drpc_init = false;
+}
+
+static void Discordrp_OnChange(void)
+{
+	if (cv_discordrp.value)
+	{
+		DRPC_UpdatePresence();
+	}
+	else
+	{
+		DRPC_Shutdown();
+	}
 }
 
 /*--------------------------------------------------
@@ -403,9 +436,12 @@ static void DRPC_EmptyRequests(void)
 --------------------------------------------------*/
 void DRPC_UpdatePresence(void)
 {
+	if (!cv_discordrp.value) return;
+
+	if (!drpc_init) DRPC_Init();
+
 	char detailstr[48+1];
 
-	char mapimg[8+1];
 	char mapname[5+21+21+2+1];
 
 	char charimg[4+SKINNAMESIZE+1];
@@ -498,7 +534,7 @@ void DRPC_UpdatePresence(void)
 		{
 			snprintf(detailstr, 48, "%s%s%s",
 				gametype_cons_t[gametype].strvalue,
-				(gametype == GT_RACE) ? va(" | %s", kartspeed_cons_t[gamespeed].strvalue) : "",
+				va(" | %s", kartspeed_cons_t[gamespeed].strvalue),
 				(encoremode == true) ? " | Encore" : ""
 			);
 			discordPresence.details = detailstr;
@@ -508,14 +544,7 @@ void DRPC_UpdatePresence(void)
 	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION) // Map info
 		&& !(demo.playback && demo.title))
 	{
-		if ((gamemap >= 1 && gamemap <= 60) // supported race maps
-			|| (gamemap >= 136 && gamemap <= 164)) // supported battle maps
-		{
-			snprintf(mapimg, 8, "%s", G_BuildMapName(gamemap));
-			strlwr(mapimg);
-			discordPresence.largeImageKey = mapimg; // Map image
-		}
-		else if (mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU)
+		if (mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU)
 		{
 			// Hell map, use the method that got you here :P
 			discordPresence.largeImageKey = "miscdice";
@@ -534,7 +563,9 @@ void DRPC_UpdatePresence(void)
 		else
 		{
 			// Map name on tool tip
-			snprintf(mapname, 48, "Map: %s", G_BuildMapTitle(gamemap));
+			char *title = G_BuildMapTitle(gamemap);
+			snprintf(mapname, 48, "Map: %s", title);
+			Z_Free(title);
 			discordPresence.largeImageText = mapname;
 		}
 

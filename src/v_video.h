@@ -21,6 +21,10 @@
 // SRB2Kart
 #include "hu_stuff.h" // fonts
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // VIDEO
 //
@@ -45,12 +49,12 @@ void V_Recalc(void);
 // Color look-up table
 #define CLUTINDEX(r, g, b) (((r) >> 3) << 11) | (((g) >> 2) << 5) | ((b) >> 3)
 
-typedef struct
+struct colorlookup_t
 {
 	boolean init;
 	RGBA_t palette[256];
 	UINT16 table[0xFFFF];
-} colorlookup_t;
+};
 
 void InitColorLUT(colorlookup_t *lut, RGBA_t *palette, boolean makecolors);
 UINT8 GetColorLUT(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b);
@@ -81,11 +85,14 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_GetColor(color) (pLocalPalette[color&0xFF])
 #define V_GetMasterColor(color) (pMasterPalette[color&0xFF])
 
-// Bottom 8 bits are used for parameter (screen or character)
+// Bottom 8 bits are used for parameter (character)
 #define V_PARAMMASK          0x000000FF
 
-// strings/characters only
-#define V_STRINGDANCE        0x00000002
+// Bottom bit is used for screen (patches)
+#define V_SCREENMASK          0x0000000F
+
+#define V_STRINGDANCE        0x00000002 // (strings/characters only) funny undertale
+#define V_VFLIP              0x00000010 // (patches only) Vertical flip
 
 // flags hacked in scrn (not supported by all functions (see src))
 // patch scaling uses bits 9 and 10
@@ -115,11 +122,11 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_SKYMAP             0x00008000
 #define V_LAVENDERMAP        0x00009000
 #define V_GOLDMAP            0x0000A000
-#define V_TEAMAP             0x0000B000
-#define V_STEELMAP           0x0000C000
+#define V_AQUAMAP            0x0000B000
+#define V_MAGENTAMAP         0x0000C000
 #define V_PINKMAP            0x0000D000
 #define V_BROWNMAP           0x0000E000
-#define V_PEACHMAP           0x0000F000
+#define V_TANMAP             0x0000F000
 
 // use bits 17-20 for alpha transparency
 #define V_ALPHASHIFT         16
@@ -163,6 +170,19 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 
 #define V_NOSCALESTART       0x40000000 // don't scale x, y, start coords
 #define V_SPLITSCREEN        0x80000000 // Add half of screen width or height automatically depending on player number
+
+void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dupx, INT32 dupy);
+
+struct cliprect_t
+{
+	fixed_t left, right, top, bottom;
+	INT32 flags;
+	boolean enabled;
+};
+
+const cliprect_t *V_GetClipRect(void);
+void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags);
+void V_ClearClipRect(void);
 
 // defines for old functions
 #define V_DrawPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s|V_NOSCALESTART|V_NOSCALEPATCH, p, NULL)
@@ -256,6 +276,7 @@ void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string
 #define V_DrawSmallString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT>>1,option,HU_FONT,string)
 void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *string);
+void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 
 // draw a string using the tny_font
@@ -314,5 +335,9 @@ void V_DrawPatchFill(patch_t *pat);
 
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
 	size_t destrowbytes);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

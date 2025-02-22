@@ -19,6 +19,26 @@
 #include "p_mobj.h"
 #include "command.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+	CHEAT_NOCLIP,
+	CHEAT_GOD,
+	CHEAT_RINGS,
+	CHEAT_LIVES,
+	CHEAT_SCALE,
+	CHEAT_FLIP,
+	CHEAT_HURT,
+	CHEAT_DEVMODE,
+
+	NUMBER_OF_CHEATS
+} cheat_t;
+
+//
+// Cheat sequences
+//
 boolean cht_Responder(event_t *ev);
 void cht_Init(void);
 
@@ -61,6 +81,10 @@ void Command_CauseCfail_f(void);
 #endif
 #ifdef LUA_ALLOW_BYTECODE
 void Command_Dumplua_f(void);
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif

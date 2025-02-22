@@ -477,7 +477,7 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 	grtex->mipmap.height = (UINT16)texture->height;
 	grtex->mipmap.format = textureformat;
 
-	if (encoremap && R_TextureCanRemap(texnum))
+	if (!noencoremap && encoremap)
 		colormap += COLORMAP_REMAPOFFSET;
 
 	grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
@@ -511,6 +511,7 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 	for (i = 0, patch = texture->patches; i < texture->patchcount; i++, patch++)
 	{
 		boolean dealloc = true;
+		boolean doremap = W_NeedPaletteRemapPwad(patch->wad, patch->lump, false);
 		size_t lumplength = W_LumpLengthPwad(patch->wad, patch->lump);
 		pdata = W_CacheLumpNumPwad(patch->wad, patch->lump, PU_CACHE);
 		realpatch = (softwarepatch_t *)pdata;
@@ -522,12 +523,17 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 #endif
 #ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
+		{
+			if (doremap)
+				R_DoPaletteRemapFlat(pdata, lumplength);
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
+		}
 		else
 #endif
 		{
-			(void)lumplength;
 			dealloc = false;
+			if (doremap)
+				R_DoPaletteRemapPatch(realpatch, lumplength);
 		}
 
 		HWR_DrawTexturePatchInCache(&grtex->mipmap, blockwidth, blockheight, texture, patch, realpatch);
@@ -838,6 +844,7 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	UINT8 *flat;
 	size_t steppy;
 	size_t size, pflatsize;
+	boolean doremap;
 
 
 	// setup the texture info
@@ -874,9 +881,14 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 	grMipmap->width  = (UINT16)pflatsize;
 	grMipmap->height = (UINT16)pflatsize;
 
+	doremap = W_NeedPaletteRemap(flatlumpnum, true);
+
 	// the flat raw data needn't be converted with palettized textures
 	W_ReadLump(flatlumpnum, Z_Malloc(W_LumpLength(flatlumpnum),
 		PU_HWRCACHE, &grMipmap->data));
+
+	if (doremap)
+		R_DoPaletteRemapFlat(grMipmap->data, size);
 
 	flat = grMipmap->data;
 	for (steppy = 0; steppy < size; steppy++)
@@ -980,6 +992,13 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
 		{
 			HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, noencoremap);
+
+			if (!noencoremap && encoremap)
+			{
+				grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+				grtex->mipmap.colormap->source = colormaps + COLORMAP_REMAPOFFSET;
+				M_Memcpy(grtex->mipmap.colormap->data, colormaps + COLORMAP_REMAPOFFSET, 256);
+			}
 		}
 
 		// If hardware does not have the texture, then call pfnSetTexture to upload it

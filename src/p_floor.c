@@ -627,7 +627,6 @@ void T_BounceCheese(bouncecheese_t *bouncer)
 	if (bouncer->sector->crumblestate == CRUMBLE_RESTORE || bouncer->sector->crumblestate == CRUMBLE_WAIT
 		|| bouncer->sector->crumblestate == CRUMBLE_ACTIVATED) // Oops! Crumbler says to remove yourself!
 	{
-		bouncer->sector->crumblestate = CRUMBLE_WAIT;
 		bouncer->sector->ceilingdata = NULL;
 		bouncer->sector->ceilspeed = 0;
 		bouncer->sector->floordata = NULL;
@@ -1806,7 +1805,7 @@ static floormove_t *CreateFloorThinker(sector_t *sec)
 	}
 
 	dofloor = Z_Calloc(sizeof (*dofloor), PU_LEVSPEC, NULL);
-	P_AddThinker(THINK_MAIN, &dofloor->thinker);
+	P_AddThinker(mapnamespace == MNS_SRB2KART ? THINK_FLOORS : THINK_MAIN, &dofloor->thinker);
 
 	// make sure another floor thinker won't get started over this one
 	sec->floordata = dofloor;
@@ -2199,11 +2198,10 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 		}
 	}
 
-#undef controlsec
-
-	// soundorg z height never gets set normally, so MEH.
-	sec->soundorg.z = sec->floorheight;
+	sec->soundorg.z = (controlsec->floorheight + controlsec->ceilingheight)/2;
 	S_StartSound(&sec->soundorg, mobjinfo[type].activesound);
+
+#undef controlsec
 
 	// Find the outermost vertexes in the subsector
 	for (i = 0; i < sec->linecount; i++)
@@ -2243,7 +2241,6 @@ void EV_CrumbleChain(sector_t *sec, ffloor_t *rover)
 			if (R_PointInSubsector(a, b)->sector == sec)
 			{
 				mobj_t *spawned = NULL;
-
 				if (*rover->t_slope)
 					topz = P_GetSlopeZAt(*rover->t_slope, a, b) - (spacing>>1);
 				if (*rover->b_slope)

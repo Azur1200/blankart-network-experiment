@@ -45,6 +45,10 @@
 #include "dehacked.h"
 #include "doomdef.h" // HWRENDER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Crazy word-reading stuff
 /// \todo Put these in a seperate file or something.
 mobjtype_t get_mobjtype(const char *word);
@@ -69,13 +73,13 @@ void readhuditem(MYFILE *f, INT32 num);
 void readmenu(MYFILE *f, INT32 num);
 void readtextprompt(MYFILE *f, INT32 num);
 void readcutscene(MYFILE *f, INT32 num);
-void readlevelheader(MYFILE *f, INT32 num);
+void readlevelheader(MYFILE *f, char * name);
 void readgametype(MYFILE *f, char *gtname);
 void readsprite2(MYFILE *f, INT32 num);
 #ifdef HWRENDER
 void readlight(MYFILE *f, INT32 num);
 #endif
-void readskincolor(MYFILE *f, INT32 num);
+void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);
 void readPlayer(MYFILE *f, INT32 num);
@@ -86,5 +90,9 @@ void readcupheader(MYFILE *f, cupheader_t *cup);
 void readfollower(MYFILE *f);
 preciptype_t get_precip(const char *word);
 void readweather(MYFILE *f, INT32 num);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

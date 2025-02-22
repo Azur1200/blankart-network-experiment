@@ -29,38 +29,12 @@ line_t *portalclipline;
 sector_t *portalcullsector;
 INT32 portalclipstart, portalclipend;
 
-boolean portalline; // is curline a portal seg?
+portal_t *g_portal; // is curline a portal seg?
 
 void Portal_InitList (void)
 {
 	portalrender = 0;
 	portal_base = portal_cap = NULL;
-}
-
-/** Store the clipping window for a portal in its given range.
- *
- * The window is copied from the current window at the time
- * the function is called, so it is useful for converting one-sided
- * lines into portals.
- */
-void Portal_ClipRange (portal_t* portal)
-{
-	INT32 start	= portal->start;
-	INT32 end	= portal->end;
-	INT16 *ceil		= portal->ceilingclip;
-	INT16 *floor	= portal->floorclip;
-	fixed_t *scale	= portal->frontscale;
-
-	INT32 i;
-	for (i = 0; i < end-start; i++)
-	{
-		*ceil = ceilingclip[start+i];
-		ceil++;
-		*floor = floorclip[start+i];
-		floor++;
-		*scale = frontscale[start+i];
-		scale++;
-	}
 }
 
 /** Apply the clipping window from a portal.
@@ -184,9 +158,7 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 
 	portal->clipline = line2;
 
-	Portal_ClipRange(portal);
-
-	portalline = true; // this tells R_StoreWallRange that curline is a portal seg
+	g_portal = portal; // this tells R_StoreWallRange that curline is a portal seg
 }
 
 /** Store the clipping window for a portal using a visplane.
@@ -275,16 +247,6 @@ void Portal_AddSkybox (const visplane_t* plane)
 	portal->viewz = skyboxmo[0]->z;
 	portal->viewangle = viewangle + skyboxmo[0]->angle;
 
-    if (!udmf)
-    {
-        if (skyboxmo[0]->spawnpoint)
-            portal->viewz = ((fixed_t)skyboxmo[0]->spawnpoint->angle)<<FRACBITS;
-        else
-            portal->viewz = 0;
-    }
-    else
-        portal->viewz = skyboxmo[0]->z; // 26/04/17: use actual Z position instead of spawnpoint angle!
-
 	mh = mapheaderinfo[gamemap-1];
 
 	// If a relative viewpoint exists, offset the viewpoint.
@@ -329,7 +291,7 @@ void Portal_AddSkyboxPortals (void)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
-			if (pl->picnum == skyflatnum)
+			if (pl->picnum == skyflatnum && !pl->damage)
 			{
 				Portal_AddSkybox(pl);
 
@@ -341,5 +303,5 @@ void Portal_AddSkyboxPortals (void)
 		}
 	}
 
-	CONS_Debug(DBG_RENDER, "Skybox portals: %d\n", count);
+	g_renderstats.skybox_portals = count;
 }
