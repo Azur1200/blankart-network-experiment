@@ -3302,6 +3302,12 @@ static void K_GetKartBoostPower(player_t *player)
 		ADDBOOST(FRACUNIT/5, 4*FRACUNIT); // + 20% top speed, + 400% acceleration
 	}
 
+	// This should always remain the last boost stack before tethering
+	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
+	{
+		ADDBOOST(player->botvars.rubberband - FRACUNIT, 0);
+	}
+
 	player->boostpower = boostpower;
 
 	// value smoothing

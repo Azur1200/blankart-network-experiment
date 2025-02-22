@@ -3591,24 +3591,13 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	node = (UINT8)READUINT8(*p);
 	newplayernum = (UINT8)READUINT8(*p);
 
-	CONS_Debug(DBG_NETPLAY, "addplayer: %d %d\n", node, newplayernum);
-
-	{
-		// Clear player before joining, lest some things get set incorrectly
-		CL_ClearPlayer(newplayernum);
-
-		playeringame[newplayernum] = true;
-		G_AddPlayer(newplayernum);
-
-		if (newplayernum+1 > doomcom->numslots)
-			doomcom->numslots = (INT16)(newplayernum+1);
-	}
-
 	newplayer = &players[newplayernum];
 
 	newplayer->jointime = 0;
 
 	READSTRINGN(*p, player_names[newplayernum], MAXPLAYERNAME);
+
+	G_AddPlayer(newplayernum, console);
 
 	console = (UINT8)READUINT8(*p);
 	splitscreenplayer = (UINT8)READUINT8(*p);

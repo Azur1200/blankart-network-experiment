@@ -247,7 +247,7 @@ void G_AddPartyMember (INT32 party_member, INT32 new_party_member);
 void G_RemovePartyMember (INT32 party_member);
 void G_ResetSplitscreen (INT32 playernum);
 
-void G_AddPlayer(INT32 playernum);
+void G_AddPlayer(INT32 playernum, INT32 console);
 
 void G_SetExitGameFlag(void);
 void G_ClearExitGameFlag(void);

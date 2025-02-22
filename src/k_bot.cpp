@@ -106,7 +106,7 @@ void K_SetBot(UINT8 newplayernum, UINT8 skinnum, UINT8 difficulty, botStyle_e st
 {
 	CONS_Debug(DBG_NETPLAY, "addbot: %d\n", newplayernum);
 
-	G_AddPlayer(newplayernum);
+	G_AddPlayer(newplayernum, newplayernum);
 
 	if (newplayernum+1 > doomcom->numslots)
 		doomcom->numslots = (INT16)(newplayernum+1);
@@ -325,7 +325,7 @@ void K_UpdateMatchRaceBots(void)
 				grabskins[index] = grabskins[--usableskins];
 			}
 
-			if (!K_AddBot(0, difficulty, BOT_STYLE_NORMAL, &newplayernum))
+			if (!K_AddBot(skinnum, difficulty, BOT_STYLE_NORMAL, &newplayernum))
 			{
 				// Not enough player slots to add the bot, break the loop.
 				break;

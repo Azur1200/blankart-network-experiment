@@ -2960,10 +2960,21 @@ void G_DoReborn(INT32 playernum)
 	ACS_RunPlayerEnterScript(player);
 }
 
-void G_AddPlayer(INT32 playernum)
+void G_AddPlayer(INT32 playernum, INT32 console)
 {
-	player_t *p = &players[playernum];
-	p->playerstate = PST_REBORN;
+	CL_ClearPlayer(playernum);
+	//G_DestroyParty(playernum);
+
+	playeringame[playernum] = true;
+
+	playerconsole[playernum] = console;
+	//G_BuildLocalSplitscreenParty(playernum);
+
+	player_t *newplayer = &players[playernum];
+
+	newplayer->playerstate = PST_REBORN;
+	newplayer->jointime = 0;
+
 	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_FOLLOWER; // Set everything
 }
 
