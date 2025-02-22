@@ -203,6 +203,7 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	}
 }
 
+/*
 static void CalcStringCoords(drawitem_t *item, const char *string)
 {
 	if (!(item->flags & V_NOSCALESTART))
@@ -309,6 +310,7 @@ static void CalcFillCoords(drawitem_t *item)
 		item->y = y;
 	}
 }
+*/
 
 #define INTERP_LATCH 1
 #define INTERP_STRING 2
@@ -510,6 +512,8 @@ void LUA_HUD_AddFadeScreen(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
+	// nothing to interpolate here
+	item->id = 0;
 	item->type = DI_FadeScreen;
 	item->color = color;
 	item->strength = strength;
@@ -568,6 +572,7 @@ void LUA_HUD_AddSetClipRect(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
+	item->id = GetItemId();
 	item->type = DI_SetClipRect;
 	item->x = x;
 	item->y = y;
@@ -582,6 +587,7 @@ void LUA_HUD_AddClearClipRect(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
+	item->id = 0;
 	item->type = DI_ClearClipRect;
 }
 
@@ -723,7 +729,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				V_DrawKartString(LERPS(x), LERPS(y), item->flags, itemstr);
 				break;
 			case DI_SetClipRect:
-				V_SetClipRect(item->x, item->y, item->w, item->h, item->flags);
+				V_SetClipRect(LERPS(x), LERPS(y), LERP(w), LERP(h), item->flags);
 				break;
 			case DI_ClearClipRect:
 				V_ClearClipRect();
@@ -733,4 +739,7 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				continue;
 		}
 	}
+
+	// who are you running from?
+	V_ClearClipRect();
 }
