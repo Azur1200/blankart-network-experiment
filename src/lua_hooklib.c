@@ -27,6 +27,8 @@
 #include "d_netcmd.h" // for cv_perfstats
 #include "i_system.h" // I_GetPreciseTime
 
+#include "v_video.h" // V_ClearClipRect
+
 /* =========================================================================
                                   ABSTRACTION
    ========================================================================= */
@@ -486,8 +488,12 @@ static int call_mapped_hud(Hook_State *hook, const hook_t *map)
 	{
 		hud_interpolate = hud_interpstring = hud_interplatch = false;
 		hud_interpcounter++;
+
 		get_hook(hook, map->ids, k);
 		call_single_hook(hook);
+
+		// Catch runaway clipping rectangles.
+		LUA_ClearClipRect();
 	}
 
 	return map->numHooks;
@@ -672,8 +678,10 @@ void LUA_HookHUD(huddrawlist_h list, int hook_type)
 		hud_interpcounter = 0;
 
 		hud_running = true; // local hook
+
 		init_hook_call(&hook, 0, res_none);
 		call_mapped_hud(&hook, map);
+
 		hud_running = false;
 	}
 }

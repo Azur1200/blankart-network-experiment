@@ -59,6 +59,8 @@ boolean LUA_HudEnabled(enum hud option);
 
 void LUA_SetHudHook(int hook, huddrawlist_h list);
 
+void LUA_ClearClipRect(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
