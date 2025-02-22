@@ -2779,7 +2779,10 @@ boolean K_SetupWaypointList(void)
 
 	if (!waypointcap)
 	{
-		CONS_Alert(CONS_ERROR, "No waypoints in map.\n");
+		if (numbosswaypoints == 0)
+		{
+			CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
+		}
 	}
 	else
 	{
@@ -2796,7 +2799,10 @@ boolean K_SetupWaypointList(void)
 
 			if (firstwaypoint == NULL)
 			{
-				CONS_Alert(CONS_ERROR, "No waypoints in map.\n");
+				if (numbosswaypoints == 0)
+				{
+					CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
+				}
 			}
 			else
 			{
