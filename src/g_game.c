@@ -5205,6 +5205,21 @@ void G_SetGamestate(gamestate_t newstate)
 #endif
 }
 
+boolean G_GamestateUsesLevel(void)
+{
+	switch (gamestate)
+	{
+		case GS_TITLESCREEN:
+			return titlemapinaction;
+
+		case GS_LEVEL:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 /* These functions handle the exitgame flag. Before, when the user
    chose to end a game, it happened immediately, which could cause
    crashes if the game was in the middle of something. Now, a flag

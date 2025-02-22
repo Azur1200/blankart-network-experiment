@@ -268,6 +268,8 @@ void G_SetGameModified(boolean silent, boolean major);
 
 void G_SetGamestate(gamestate_t newstate);
 
+boolean G_GamestateUsesLevel(void);
+
 // Gamedata record shit
 void G_AllocMainRecordData(INT16 i);
 void G_ClearRecords(void);

@@ -360,6 +360,14 @@ typedef enum
 	MSF_DIRECTIONLIGHTING       =  1<<14,
 } sectorflags_t;
 
+// Per-sector bot controller override
+struct botcontroller_t
+{
+	//UINT8 trick;
+	UINT32 flags;
+	angle_t forceAngle;
+};
+
 typedef enum
 {
 	SSF_NOSTEPUP = 1,
@@ -567,6 +575,9 @@ struct sector_t
 
 	// colormap structure
 	extracolormap_t *spawn_extra_colormap;
+
+	// Ring Racers bots
+	botcontroller_t botController;
 
 	// Action specials
 	INT16 action;
