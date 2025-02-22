@@ -302,6 +302,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			CacheAndPushConstant(L, word, ((lua_Integer)PF_NOCONTEST));
 			return 1;
 		}
+		if (lua_compatmode && fastcmp(p, "FORCESTRAFE"))
+		{
+			CacheAndPushConstant(L, word, ((lua_Integer)0));
+			return 1;
+		}
 		for (i = 0; PLAYERFLAG_LIST[i]; i++)
 			if (fastcmp(p, PLAYERFLAG_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));

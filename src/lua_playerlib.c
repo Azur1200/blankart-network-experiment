@@ -1639,6 +1639,8 @@ static int ticcmd_set(lua_State *L)
 
 	if (fastcmp(field,"forwardmove"))
 		cmd->forwardmove = (SINT8)luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"sidemove"))
+		cmd->sidemove = (SINT8)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"turning"))
 		cmd->turning = (INT16)luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"driftturn"))
