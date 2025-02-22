@@ -52,6 +52,8 @@ add_custom_target(_SRB2_reconf ALL
 )
 add_dependencies(SRB2SDL2 _SRB2_reconf)
 
+
+
 add_subdirectory(blua)
 add_subdirectory(blan)
 add_subdirectory(sdl)
