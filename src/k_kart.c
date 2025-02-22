@@ -7589,7 +7589,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 
 							po->validcount = validcount;
 
-							if (!P_BBoxInsidePolyobj(po, tm.bbox)
+							if (!P_BBoxInsidePolyobj(po, g_tm.bbox)
 								|| !(po->flags & POF_SOLID))
 							{
 								plink = (polymaplink_t *)(plink->link.next);

@@ -269,10 +269,10 @@ boolean P_Move(mobj_t *actor, fixed_t speed)
 
 	if (!P_TryMove(actor, tryx, tryy, false, NULL))
 	{
-		if (actor->flags & MF_FLOAT && tm.floatok)
+		if (actor->flags & MF_FLOAT && g_tm.floatok)
 		{
 			// must adjust height
-			if (actor->z < tm.floorz)
+			if (actor->z < g_tm.floorz)
 				actor->z += FixedMul(FLOATSPEED, actor->scale);
 			else
 				actor->z -= FixedMul(FLOATSPEED, actor->scale);
@@ -10312,13 +10312,13 @@ void A_FlickyCenter(mobj_t *actor)
 		{
 			actor->extravalue2 = 1;
 		 	P_SetOrigin(actor, actor->target->x, actor->target->y, actor->target->z);
-			P_SetTarget(&tm.thing, NULL);
+			P_SetTarget(&g_tm.thing, NULL);
 		}
 		else if(actor->extravalue2)
 		{
 			actor->extravalue2 = 0;
 			P_SetOrigin(actor, originx, originy, originz);
-			P_SetTarget(&tm.thing, NULL);
+			P_SetTarget(&g_tm.thing, NULL);
 		}
 	}
 }
@@ -12997,7 +12997,7 @@ void A_ItemPop(mobj_t *actor)
 	remains->skin = NULL;
 	remains->spawnpoint = actor->spawnpoint;
 
-	P_SetTarget(&tm.thing, remains);
+	P_SetTarget(&g_tm.thing, remains);
 
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
