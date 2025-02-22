@@ -9070,21 +9070,9 @@ void T_Friction(friction_t *f)
 
 	sec = sectors + f->affectee;
 
-	// Get FOF control sector   (was "Make sure the sector type hasn't changed")
+	// Get FOF control sector
 	if (f->roverfriction)
-	//{
 		referrer = sectors + f->referrer;
-
-	/*	if (!(GETSECSPECIAL(referrer->special, 3) == 1
-			|| GETSECSPECIAL(referrer->special, 3) == 3))
-			return;
-	}
-	else
-	{
-		if (!(GETSECSPECIAL(sec->special, 3) == 1
-			|| GETSECSPECIAL(sec->special, 3) == 3))
-			return;
-	}*/
 
 	// Assign the friction value to players on the floor, non-floating,
 	// and clipped. Normally the object's friction value is kept at
@@ -9162,7 +9150,7 @@ static void P_SpawnFriction(void)
 			movefactor = 19*movefactor - 18*FRACUNIT;
 		else
 			movefactor = FRACUNIT;
-		
+
 		// killough 8/28/98: prevent odd situations
 		if (movefactor < 32)
 			movefactor = 32;
