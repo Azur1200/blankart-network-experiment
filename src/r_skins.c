@@ -473,7 +473,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		size_t i;
 		spritedef_t *sd;
 		spriteframe_t *sf;
-		spritedef_t tmp = {};
+		spritedef_t tmp = {0};
 		const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
 		R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
 
@@ -557,7 +557,7 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	UINT16 lump = W_CheckNumForNamePwad("S_START", wadnum, 0);
 	if (lump == INT16_MAX)
 		I_Error("R_IHateThatHedgehog: could not find the hedgehog");
-	R_LoadSkinSprites(wadnum, &lump, &(UINT16){}, skin);
+	R_LoadSkinSprites(wadnum, &lump, &(UINT16){0}, skin);
 
 #ifdef SKINVALUES
 	skin_cons_t[0].value = 0;

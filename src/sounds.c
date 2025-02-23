@@ -53,6 +53,8 @@ sfxinfo_t S_sfx[NUMSFX] =
 
   // skin sounds free slots to add sounds at run time (Boris HACK!!!)
   // initialized to NULL
+
+  0
 };
 
 static char soundnames[NUMSFX][7] = {

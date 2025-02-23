@@ -83,11 +83,11 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 };
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
-state_t states[NUMSTATES] = {};
+state_t states[NUMSTATES] = {0};
 
-mobjinfo_t mobjinfo[NUMMOBJTYPES] = {};
+mobjinfo_t mobjinfo[NUMMOBJTYPES] = {0};
 
-skincolor_t skincolors[MAXSKINCOLORS] = {};
+skincolor_t skincolors[MAXSKINCOLORS] = {0};
 
 /** Patches the mobjinfo, state, and skincolor tables.
   * Free slots are emptied out and set to initial values.

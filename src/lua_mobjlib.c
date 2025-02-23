@@ -294,12 +294,14 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->sprite);
 		break;
 	case mobj_frame:
+	{
 		UINT32 frame = mo->frame;
 		// translate SPR2 back to frames
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
 			frame = (frame & ~FF_FRAMEMASK) | spr2frame(mo->sprite2, mo->frame);
 		lua_pushinteger(L, frame);
 		break;
+	}
 	case mobj_sprite2:
 		lua_pushinteger(L, mo->sprite2);
 		break;
@@ -369,17 +371,21 @@ static int mobj_get(lua_State *L)
 		lua_pushinteger(L, mo->flags);
 		break;
 	case mobj_flags2:
+	{
 		UINT32 flags2 = mo->flags2;
 		if (lua_compatmode && (mo->renderflags & RF_DONTDRAW) == RF_DONTDRAW)
 			flags2 |= MF2_DONTDRAW;
 		lua_pushinteger(L, flags2);
 		break;
+	}
 	case mobj_eflags:
-		UINT32 eflags = mo->eflags;
+	{
+		UINT32 eflags = mo->eflags; // yes, not UINT16
 		if (lua_compatmode)
 			eflags |= (~mo->renderflags & RF_DONTDRAW);
 		lua_pushinteger(L, eflags);
 		break;
+	}
 	case mobj_renderflags:
 		lua_pushinteger(L, mo->renderflags);
 		break;
@@ -677,11 +683,13 @@ static int mobj_set(lua_State *L)
 		mo->rollangle = luaL_checkangle(L, 3);
 		break;
 	case mobj_sprite:
+	{
 		spritenum_t newsprite = luaL_checkinteger(L, 3);
 		if (lua_compatmode && mo->sprite != SPR_PLAY && newsprite == SPR_PLAY)
 			frame2spr2(mo, mo->frame);
 		mo->sprite = newsprite;
 		break;
+	}
 	case mobj_frame:
 		// Check for SPR2
 		if (lua_compatmode && mo->sprite == SPR_PLAY)
@@ -795,6 +803,7 @@ static int mobj_set(lua_State *L)
 		break;
 	}
 	case mobj_flags2:
+	{
 		UINT32 flags2 = luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 		{
@@ -805,12 +814,15 @@ static int mobj_set(lua_State *L)
 		}
 		mo->flags2 = flags2;
 		break;
+	}
 	case mobj_eflags:
+	{
 		UINT32 eflags = luaL_checkinteger(L, 3);
 		if (lua_compatmode)
 			mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (~eflags & RF_DONTDRAW); // eeeyup.
 		mo->eflags = (UINT16)eflags;
 		break;
+	}
 	case mobj_renderflags:
 		mo->renderflags = (UINT32)luaL_checkinteger(L, 3);
 		break;

@@ -308,6 +308,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 
 		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,9.1.0>:
 			-Wno-error=address-of-packed-member
+			-Wc11-c2x-compat
 		>
 	>
 
