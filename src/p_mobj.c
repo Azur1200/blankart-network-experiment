@@ -10416,15 +10416,6 @@ void P_RespawnSpecials(void)
 		time = 5*TICRATE;
 	else
 #endif
-	if (gametyperules & GTR_SPHERES)
-	{
-		if (pcount > 2)
-			time -= (5*TICRATE) * (pcount-2);
-
-		if (time < 5*TICRATE)
-			time = 5*TICRATE;
-	}
-	else
 	{
 		if (pcount == 1) // No respawn when alone
 		{
@@ -10959,7 +10950,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 		}
 		case MT_RING:
 		{
-			if (ringsdisabled)
+			if ((K_RingsActive() == false) )
 				return false;
 			break;
 		}
@@ -10985,8 +10976,8 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 			{
 				boolean isRingCapsule = (mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= NUMKARTITEMS);
 
-				// don't spawn ring capsules in GTR_SPHERES gametypes
-				if (isRingCapsule && (gametyperules & GTR_SPHERES))
+				// don't spawn ring capsules in ringless gametypes
+				if (isRingCapsule && !(gametyperules & GTR_RINGS))
 					return false;
 
 				// in record attack, only spawn ring capsules
@@ -11017,9 +11008,6 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 static mobjtype_t P_GetMobjtypeSubstitute(mapthing_t *mthing, mobjtype_t i)
 {
 	(void)mthing;
-
-	if ((i == MT_RING) && (gametyperules & GTR_SPHERES))
-		return MT_BLUESPHERE;
 
 	if ((i == MT_RANDOMITEM) && (gametyperules & (GTR_PAPERITEMS|GTR_CIRCUIT)) == (GTR_PAPERITEMS|GTR_CIRCUIT) && !bossinfo.boss)
 		return MT_PAPERITEMSPOT;

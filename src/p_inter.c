@@ -170,7 +170,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 // When you pick up some items in nights, it displays
 // a score sign, and awards you some drill time.
 //
-void P_DoNightsScore(player_t *player)
+static void P_DoNightsScore(player_t *player)
 {
 	mobj_t *dummymo;
 
@@ -678,13 +678,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			player->pickuprings++;
 
 			return;
-
-		case MT_BLUESPHERE:
-			if (!(P_CanPickupItem(player, 0)))
-				return;
-
-			P_GivePlayerSpheres(player, 1);
-			break;
 
 		// Secret emblem thingy
 		case MT_EMBLEM:
@@ -2047,7 +2040,7 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 
 	status = shouldDamage;
 
-	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_STING)))
+	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT)))
 		status = shouldSpin;
 	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
 		status = shouldExplode;
@@ -2204,12 +2197,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (type != DMG_STING && (gametyperules & GTR_BUMPERS))
+			if (gametyperules & GTR_BUMPERS)
 			{
 
 				if (source && source != player->mo && source->player)
 				{
-					K_TryHurtSoundExchange(target, source);
 					K_BattleAwardHit(source->player, player, inflictor, 1);
 
 					if (damagetype & DMG_STEAL)
@@ -2239,6 +2231,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 			}
 
+			K_TryHurtSoundExchange(target, source);
+
 			if (!((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT)))
 				player->sneakertimer = 0;
 			player->driftboost = 0;
@@ -2248,12 +2242,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 			switch (type)
 			{
-				case DMG_STING:
-					K_DebtStingPlayer(player, source);
-					K_KartPainEnergyFling(player);
-					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
-					ringburst = 0;
-					break;
 				case DMG_EXPLODE:
 				case DMG_KARMA:
 					ringburst = K_ExplodePlayer(player, inflictor, source);
@@ -2278,10 +2266,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					break;
 			}
 
-			if (type != DMG_STING)
-			{
-				player->flashing = K_GetKartFlashing(player);
-			}
+			player->flashing = K_GetKartFlashing(player);
 
 			P_PlayRinglossSound(target);
 
@@ -2406,8 +2391,8 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 	INT32 i;
 	angle_t fa;
 
-	// Rings shouldn't be in Battle!
-	if (gametyperules & GTR_SPHERES)
+	// Rings need to be enabled!
+	if ((K_RingsActive() == false) )
 		return;
 
 	// Better safe than sorry.

@@ -496,11 +496,8 @@ INT32 P_GivePlayerRings(player_t *player, INT32 num_rings)
 
 	if (!player->mo)
 		return 0;
-
-	if ((gametyperules & GTR_BUMPERS)) // No rings in Battle Mode
-		return 0;
 	
-	if (ringsdisabled) // No rings in when turned off
+	if ((K_RingsActive() == false)) // No rings when turned off
 		return 0;
 
 	test = player->rings + num_rings;
@@ -512,26 +509,6 @@ INT32 P_GivePlayerRings(player_t *player, INT32 num_rings)
 	player->rings += num_rings;
 
 	return num_rings;
-}
-
-INT32 P_GivePlayerSpheres(player_t *player, INT32 num_spheres)
-{
-	num_spheres += player->spheres;
-
-	// Not alive
-	if ((gametyperules & GTR_BUMPERS) && (player->bumper <= 0))
-		return 0;
-
-	if (num_spheres > 40) // Reached the cap, don't waste 'em!
-		num_spheres = 40;
-	else if (num_spheres < 0)
-		num_spheres = 0;
-
-	num_spheres -= player->spheres;
-
-	player->spheres += num_spheres;
-
-	return num_spheres;
 }
 
 //
@@ -691,7 +668,7 @@ boolean P_EvaluateMusicStatus(UINT16 status, const char *musname)
 
 void P_PlayRinglossSound(mobj_t *source)
 {
-	if (ringsdisabled)
+	if ((K_RingsActive() == false))
 		return;
 	
 	if (source->player && K_GetShieldFromItem(source->player->itemtype) != KSHIELD_NONE)

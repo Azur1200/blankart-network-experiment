@@ -2260,7 +2260,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 botdifficulty;
 
 	INT16 rings;
-	INT16 spheres;
 	angle_t playerangleturn;
 
 	UINT8 botdiffincrease;
@@ -2335,8 +2334,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
-		rings = ((gametyperules & GTR_SPHERES) ? 0 : 10);
-		spheres = 0;
+		rings = 10;
 		kickstartaccel = 0;
 		nocontrol = 0;
 		laps = 0;
@@ -2382,7 +2380,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = players[player].karmapoints;
 		wanted = players[player].wanted;
 		rings = players[player].rings;
-		spheres = players[player].spheres;
 		kickstartaccel = players[player].kickstartaccel;
 		
 		nocontrol = players[player].nocontrol;
@@ -2471,7 +2468,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->bot = bot;
 	p->botvars.difficulty = botdifficulty;
 	p->rings = rings;
-	p->spheres = spheres;
 	p->botvars.diffincrease = botdiffincrease;
 	p->botvars.rival = botrival;
 	p->xtralife = xtralife;
@@ -3105,9 +3101,9 @@ const char *Gametype_ConstantNames[NUMGAMETYPES] =
 UINT32 gametypedefaultrules[NUMGAMETYPES] =
 {
 	// Race
-	GTR_CIRCUIT|GTR_BOTS,
+	GTR_CIRCUIT|GTR_BOTS|GTR_RINGS,
 	// Battle
-	GTR_BUMPERS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT
+	GTR_BUMPERS|GTR_RINGS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT
 };
 
 //

@@ -172,6 +172,8 @@ void K_UnsetItemOut(player_t *player);
 
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
+boolean K_RingsActive(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -494,10 +494,10 @@ enum GameTypeRules
 	// Race rules
 	GTR_CIRCUIT				= 1,     // Enables the finish line, laps, and the waypoint system.
 	GTR_BOTS				= 1<<2,  // Allows bots in this gametype. Combine with BotTiccmd hooks to make bots support your gametype.
+	GTR_RINGS				= 1<<3,  // Allow Rings in this gametype.
 
 	// Battle gametype rules
-	GTR_BUMPERS				= 1<<3,  // Enables the bumper health system
-	GTR_SPHERES				= 1<<4,  // Replaces rings with blue spheres
+	GTR_BUMPERS				= 1<<4,  // Enables the bumper health system
 	GTR_PAPERITEMS			= 1<<5,  // Replaces item boxes with paper item spawners
 	GTR_WANTED				= 1<<6,  // Enables the wanted anti-camping system
 	GTR_KARMA				= 1<<7,  // Enables the Karma system if you're out of bumpers

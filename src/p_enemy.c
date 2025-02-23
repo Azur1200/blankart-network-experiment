@@ -3662,10 +3662,7 @@ void A_AttractChase(mobj_t *actor)
 			// Set attraction flag
 			actor->cusval = 1;
 
-			if (
-				(actor->tracer->player && actor->tracer->health
-				&& (gametyperules & GTR_SPHERES))
-					|| (actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
+			if ((actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
 					&& RINGTOTAL(actor->tracer->player) < 20
 					&& !(actor->tracer->player->pflags & PF_RINGLOCK))
 				//&& P_CheckSight(actor, actor->tracer)
@@ -13006,7 +13003,7 @@ void A_ItemPop(mobj_t *actor)
 		actor->target->player->itemroulette = 1;
 
 	// Let Ring-less maps in on the rings fun as well!
-	if (!ringsdisabled)
+	if ((K_RingsActive() == true) )
 	{
 		SINT8 awardamount = 10;
 		if (actor->target->player->position == 1)
@@ -13203,7 +13200,7 @@ void A_SPBChase(mobj_t *actor)
 				spbplace = actor->tracer->player->position;
 			}
 
-			if (!ringsdisabled) // Spawn rings to make up for the fact first has ring grabbing
+			if ((K_RingsActive() == true) ) // Spawn rings to make up for the fact first has ring grabbing
 			{
 				if (leveltime % 10 == 0)
 				{

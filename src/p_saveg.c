@@ -339,8 +339,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT16(save->p, players[i].karmamode);
 		WRITEINT16(save->p, players[i].karmapoints);
 		WRITEINT16(save->p, players[i].wanted);
-		WRITEINT16(save->p, players[i].spheres);
-		WRITEUINT32(save->p, players[i].spheredigestion);
 
 		WRITESINT8(save->p, players[i].glanceDir);
 
@@ -642,8 +640,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].karmamode = READINT16(save->p);
 		players[i].karmapoints = READINT16(save->p);
 		players[i].wanted = READINT16(save->p);
-		players[i].spheres = READINT16(save->p);
-		players[i].spheredigestion = READUINT32(save->p);
 
 		players[i].glanceDir = READSINT8(save->p);
 
@@ -4985,7 +4981,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT32(save->p, leveltime);
 	WRITEINT16(save->p, lastmap);
 	WRITEUINT16(save->p, bossdisabled);
-	WRITEUINT8(save->p, ringsdisabled);
+	WRITEUINT8(save->p, ringsactive);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -5154,7 +5150,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	leveltime = READUINT32(save->p);
 	lastmap = READINT16(save->p);
 	bossdisabled = READUINT16(save->p);
-	ringsdisabled = READUINT8(save->p);
+	ringsactive = READUINT8(save->p);
 
 	for (i = 0; i < 4; i++)
 	{

@@ -191,7 +191,6 @@ void P_RestoreMusic(player_t *player);
 boolean P_EndingMusic(player_t *player);
 mobj_t *P_SpawnGhostMobj(mobj_t *mobj);
 INT32 P_GivePlayerRings(player_t *player, INT32 num_rings);
-INT32 P_GivePlayerSpheres(player_t *player, INT32 num_spheres);
 void P_GivePlayerLives(player_t *player, INT32 numlives);
 UINT8 P_GetNextEmerald(void);
 void P_GiveEmerald(boolean spawnObj);
@@ -552,7 +551,7 @@ struct BasicFF_t
 #define DMG_WIPEOUT 0x01 // Normal, but with extra flashy effects
 #define DMG_EXPLODE 0x02
 #define DMG_SQUISH  0x03
-#define DMG_STING   0x04
+//#define free   0x04
 #define DMG_KARMA   0x05 // Karma Bomb explosion -- works like DMG_EXPLODE, but steals half of their bumpers & deletes the rest
 //// Death types - cannot be combined with damage types
 #define DMG_INSTAKILL  0x80

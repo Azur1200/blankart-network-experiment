@@ -93,6 +93,9 @@ extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartwalltransfer;
 extern consvar_t cv_kartpurpledrift;
+extern consvar_t cv_kartbumpspark;
+
+extern consvar_t cv_kartbumpspring;
 
 extern consvar_t cv_votetime;
 

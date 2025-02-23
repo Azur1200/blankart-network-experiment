@@ -1344,10 +1344,10 @@ static boolean P_CheckPlayerRings(line_t *triggerline, mobj_t *actor)
 			if (!playeringame[i] || players[i].spectator)
 				continue;
 
-			if (!players[i].mo || ((gametyperules & GTR_SPHERES) ? players[i].spheres : players[i].rings) <= 0)
+			if (!players[i].mo || players[i].rings <= 0)
 				continue;
 
-			rings += (gametyperules & GTR_SPHERES) ? players[i].spheres : players[i].rings;
+			rings += players[i].rings;
 		}
 	}
 	else
@@ -1355,7 +1355,7 @@ static boolean P_CheckPlayerRings(line_t *triggerline, mobj_t *actor)
 		if (!(actor && actor->player))
 			return false; // no player to count rings from here, sorry
 
-		rings = (gametyperules & GTR_SPHERES) ? actor->player->spheres : actor->player->rings;
+		rings = actor->player->rings;
 	}
 
 	switch (triggerline->args[2])

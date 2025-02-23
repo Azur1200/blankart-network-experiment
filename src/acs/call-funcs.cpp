@@ -1358,9 +1358,7 @@ bool CallFunc_PlayerRings(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM:
 		&& (info->mo != NULL && P_MobjWasRemoved(info->mo) == false)
 		&& (info->mo->player != NULL))
 	{
-		rings = (gametyperules & GTR_SPHERES)
-			? info->mo->player->spheres
-			: info->mo->player->rings;
+		rings = info->mo->player->rings;
 	}
 
 	thread->dataStk.push(rings);
