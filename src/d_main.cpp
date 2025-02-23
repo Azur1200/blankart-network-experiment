@@ -1201,11 +1201,11 @@ static void IdentifyVersion(void)
 #define GRAPHICSNAME "gfx.kart"
 #define SOUNDSNAME "sounds.kart"
 
-	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,TEXTURESNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPSNAME));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
 	//D_AddFile(startupiwads, va(pandf,srb2waddir,FOLLOWERSNAME));
 #ifdef USE_PATCH_FILE
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
@@ -1484,22 +1484,22 @@ void D_SRB2Main(void)
 #ifndef DEVELOP
 	// Check MD5s of autoloaded files
 	// Note: Do not add any files that ignore MD5!
-	W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);					// srb2.srb
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
+	W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);						// srb2.srb
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);		// textures.pk3
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);	// textures.pk3
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_KART);		// chars.kart
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);			// maps.pk3 -- 4 - If you touch this, make sure to touch up the majormods stuff below.
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);		// maps.kart
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
 	//mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_PATCH_PK3);		// patch.pk3
 #endif
 #else
-	mainwads++;	// main.pk3
 	mainwads++;	// gfx.kart
 	mainwads++;	// textures.kart
 	mainwads++;	// chars.kart
 	mainwads++;	// maps.kart
+	mainwads++;	// main.pk3
 	//mainwads++; // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++;	// patch.pk3

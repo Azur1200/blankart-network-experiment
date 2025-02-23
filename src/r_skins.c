@@ -153,7 +153,7 @@ void R_InitSkins(void)
 
 	for (i = 0; i < numwadfiles; i++)
 	{
-		if (i == 4) // chars.kart
+		if (i == 3) // chars.kart
 			R_IHateThatHedgehog((UINT16)i);
 		R_AddSkins((UINT16)i);
 		R_PatchSkins((UINT16)i);

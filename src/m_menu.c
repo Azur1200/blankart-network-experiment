@@ -1576,7 +1576,7 @@ static menuitem_t OP_AdvServerOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",        &cv_kartcomeback,     66},
 };*/
 
-#define ITEMTOGGLEBOTTOMRIGHT
+//#define ITEMTOGGLEBOTTOMRIGHT
 
 static menuitem_t OP_MonitorToggleMenu[] =
 {
@@ -1609,6 +1609,7 @@ static menuitem_t OP_MonitorToggleMenu[] =
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Pogo Springs",		 	{.routine = M_HandleMonitorToggles}, KITEM_POGOSPRING},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Super Rings",			{.routine = M_HandleMonitorToggles}, KITEM_SUPERRING},
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "Kitchen Sinks",			{.routine = M_HandleMonitorToggles}, KITEM_KITCHENSINK},
+	{IT_KEYHANDLER | IT_NOTHING, NULL, "Drop Target",			{.routine = M_HandleMonitorToggles}, KITEM_DROPTARGET},
 #ifdef ITEMTOGGLEBOTTOMRIGHT
 	{IT_KEYHANDLER | IT_NOTHING, NULL, "---",					{.routine = M_HandleMonitorToggles}, 255},
 #endif
@@ -11387,7 +11388,7 @@ static void M_HandleMonitorToggles(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			column--;
 			if (column < 0)
-				column = width-1;
+				column = width;
 			if (((column*height)+row) >= currentMenu->numitems)
 				column--;
 			next = max(((column*height)+row), 0);

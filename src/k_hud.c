@@ -588,6 +588,8 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 			return (tiny ? "K_ISPOGO" : "K_ITPOGO");
 		case KITEM_SUPERRING:
 			return (tiny ? "K_ISRING" : "K_ITRING");
+		case KITEM_DROPTARGET:
+			return (tiny ? "K_ISDTRG" : "K_ITDTRG");
 		case KITEM_KITCHENSINK:
 			return (tiny ? "K_ISSINK" : "K_ITSINK");
 		case KRITEM_TRIPLEORBINAUT:
