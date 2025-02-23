@@ -37,6 +37,8 @@ enum drawitem_e {
 	DI_DrawTitleCardString,
 	DI_DrawTitleCardStringBoss,
 	DI_DrawKartString,
+	DI_SetClipRect,
+	DI_ClearClipRect,
 	DI_MAX,
 };
 
@@ -201,6 +203,7 @@ static size_t CopyString(huddrawlist_h list, const char* str)
 	}
 }
 
+/*
 static void CalcStringCoords(drawitem_t *item, const char *string)
 {
 	if (!(item->flags & V_NOSCALESTART))
@@ -307,6 +310,7 @@ static void CalcFillCoords(drawitem_t *item)
 		item->y = y;
 	}
 }
+*/
 
 #define INTERP_LATCH 1
 #define INTERP_STRING 2
@@ -508,6 +512,8 @@ void LUA_HUD_AddFadeScreen(
 {
 	size_t i = AllocateDrawItem(list);
 	drawitem_t *item = &list->items[i];
+	// nothing to interpolate here
+	item->id = 0;
 	item->type = DI_FadeScreen;
 	item->color = color;
 	item->strength = strength;
@@ -553,6 +559,36 @@ void LUA_HUD_AddDrawKartString(
 	item->stroffset = CopyString(list, str);
 	item->flags = flags;
 	// CalcStringCoords(item, str);
+}
+
+void LUA_HUD_AddSetClipRect(
+	huddrawlist_h list,
+	fixed_t x,
+	fixed_t y,
+	fixed_t w,
+	fixed_t h,
+	INT32 flags
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->id = GetItemId();
+	item->type = DI_SetClipRect;
+	item->x = x;
+	item->y = y;
+	item->w = w;
+	item->h = h;
+	item->flags = flags;
+}
+
+void LUA_HUD_AddClearClipRect(
+	huddrawlist_h list
+)
+{
+	size_t i = AllocateDrawItem(list);
+	drawitem_t *item = &list->items[i];
+	item->id = 0;
+	item->type = DI_ClearClipRect;
 }
 
 void LUA_HUD_DrawList(huddrawlist_h list)
@@ -691,6 +727,12 @@ void LUA_HUD_DrawList(huddrawlist_h list)
 				break;
 			case DI_DrawKartString:
 				V_DrawKartString(LERPS(x), LERPS(y), item->flags, itemstr);
+				break;
+			case DI_SetClipRect:
+				V_SetClipRect(LERPS(x), LERPS(y), LERP(w), LERP(h), item->flags);
+				break;
+			case DI_ClearClipRect:
+				V_ClearClipRect();
 				break;
 			default:
 				I_Error("can't draw draw list item: invalid draw list item type");

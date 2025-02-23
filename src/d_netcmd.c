@@ -433,13 +433,17 @@ consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NUL
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CHEAT|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
 // Toggles for new features
-consvar_t cv_kartrings = CVAR_INIT ("kartrings", "Off", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_OnOff, KartRings_OnChange);
+consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 
 consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+
+consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+
+consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
@@ -6874,13 +6878,13 @@ static void KartRings_OnChange(void)
 		return;
 	}
 
-	if (ringsdisabled)
+	if (cv_kartrings.value)
 	{
-		CONS_Printf(M_GetText("Rings will be turned %s Next Round .\n"), cv_kartrings.string);
+		CONS_Printf(M_GetText("Rings will be turned \"On\" Next Round.\n"));
 	}
 	else
 	{
-		CONS_Printf(M_GetText("Rings will be turned %s Next Round .\n"), cv_kartrings.string);
+		CONS_Printf(M_GetText("Rings will be turned \"Off\" Next Round.\n"));
 	}
 }
 

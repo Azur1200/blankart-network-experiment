@@ -85,11 +85,14 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 #define V_GetColor(color) (pLocalPalette[color&0xFF])
 #define V_GetMasterColor(color) (pMasterPalette[color&0xFF])
 
-// Bottom 8 bits are used for parameter (screen or character)
+// Bottom 8 bits are used for parameter (character)
 #define V_PARAMMASK          0x000000FF
 
-// strings/characters only
-#define V_STRINGDANCE        0x00000002
+// Bottom bit is used for screen (patches)
+#define V_SCREENMASK          0x0000000F
+
+#define V_STRINGDANCE        0x00000002 // (strings/characters only) funny undertale
+#define V_VFLIP              0x00000010 // (patches only) Vertical flip
 
 // flags hacked in scrn (not supported by all functions (see src))
 // patch scaling uses bits 9 and 10
@@ -167,6 +170,19 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue);
 
 #define V_NOSCALESTART       0x40000000 // don't scale x, y, start coords
 #define V_SPLITSCREEN        0x80000000 // Add half of screen width or height automatically depending on player number
+
+void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dupx, INT32 dupy);
+
+struct cliprect_t
+{
+	fixed_t left, right, top, bottom;
+	INT32 flags;
+	boolean enabled;
+};
+
+const cliprect_t *V_GetClipRect(void);
+void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags);
+void V_ClearClipRect(void);
 
 // defines for old functions
 #define V_DrawPatch(x,y,s,p) V_DrawFixedPatch((x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, s|V_NOSCALESTART|V_NOSCALEPATCH, p, NULL)

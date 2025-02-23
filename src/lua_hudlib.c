@@ -47,6 +47,8 @@ static UINT8 hud_enabled[(hud_MAX/8)+1];
 
 static UINT8 camnum = 1;
 
+static boolean cliprectenabled;
+
 // must match enum hud in lua_hud.h
 static const char *const hud_disable_options[] = {
 	"stagetitle",
@@ -972,6 +974,47 @@ static int libd_drawKartString(lua_State *L)
 	return 0;
 }
 
+static int libd_setClipRect(lua_State *L)
+{
+	fixed_t x = luaL_checkinteger(L, 1);
+	fixed_t y = luaL_checkinteger(L, 2);
+	fixed_t w = luaL_checkinteger(L, 3);
+	fixed_t h = luaL_checkinteger(L, 4);
+	INT32 flags = luaL_optinteger(L, 5, 0);
+	huddrawlist_h list;
+
+	flags &= ~V_PARAMMASK; // Don't let crashes happen.
+
+	HUDONLY
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+	cliprectenabled = true;
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddSetClipRect(list, x, y, w, h, flags);
+	else
+		V_SetClipRect(x, y, w, h, flags);
+	return 0;
+}
+
+static int libd_clearClipRect(lua_State *L)
+{
+	huddrawlist_h list;
+
+	HUDONLY
+	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
+	list = (huddrawlist_h) lua_touserdata(L, -1);
+	lua_pop(L, 1);
+	cliprectenabled = false;
+
+	if (LUA_HUD_IsDrawListValid(list))
+		LUA_HUD_AddClearClipRect(list);
+	else
+		V_ClearClipRect();
+	return 0;
+}
+
 static int libd_titleCardStringWidth(lua_State *L)
 {
 	const char *str = luaL_checkstring(L, 1);
@@ -1263,6 +1306,8 @@ static luaL_Reg lib_draw[] = {
 	{"drawString", libd_drawString},
 	{"drawTitleCardString", libd_drawTitleCardString},
 	{"drawKartString", libd_drawKartString},
+	{"setClipRect", libd_setClipRect},
+	{"clearClipRect", libd_clearClipRect},
 	// misc
 	{"stringWidth", libd_stringWidth},
 	{"titleCardStringWidth", libd_titleCardStringWidth},
@@ -1417,6 +1462,8 @@ void LUA_SetHudHook(int hook, huddrawlist_h list)
 	lua_pushlightuserdata(gL, list);
 	lua_setfield(gL, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 
+	cliprectenabled = false;
+
 	switch (hook)
 	{
 		case HUD_HOOK(game):
@@ -1434,4 +1481,14 @@ void LUA_SetHudHook(int hook, huddrawlist_h list)
 			lua_pushinteger(gL, (lt_endtime + TICRATE));
 			break;
 	}
+}
+
+void LUA_ClearClipRect(void)
+{
+	// V_ClearClipRect is not enough: we need to insert a clearClipRect
+	// into the drawlist to protect both hardcode and other HUD hooks.
+	// thankfully the below function takes zero Lua arguments :^)
+	if (cliprectenabled)
+		libd_clearClipRect(gL);
+	//cliprectenabled = false;
 }

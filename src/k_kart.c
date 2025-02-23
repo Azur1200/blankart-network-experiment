@@ -254,6 +254,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartwalltransfer);
 
 	CV_RegisterVar(&cv_kartpurpledrift);
+
+	CV_RegisterVar(&cv_kartbumpspark);
+
+	CV_RegisterVar(&cv_kartbumpspring);
 }
 
 //}
@@ -651,7 +655,7 @@ INT32 K_KartGetItemOdds(
 		case KITEM_SUPERRING:
 			notNearEnd = true;
 
-			if (ringsdisabled) // No rings rolled if rings are turned off.
+			if ((K_RingsActive() == false)) // No rings rolled if rings are turned off.
 			{
 				newodds = 0;
 			}
@@ -1429,7 +1433,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		if (gametype == GT_RACE)
 		{
-			if (mashed && (modeattacking || (cv_superring.value && !ringsdisabled))) // ANY mashed value? You get rings.
+			if (mashed && (modeattacking || (cv_superring.value && (K_RingsActive() == true)))) // ANY mashed value? You get rings.
 			{
 				K_KartGetItemResult(player, KITEM_SUPERRING);
 				player->karthud[khud_itemblinkmode] = 1;
@@ -1502,7 +1506,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 4:
 	// Being in ring debt occasionally forces Super Ring on you if you mashed
-	if (!(gametyperules & GTR_SPHERES || ringsdisabled) && mashed && player->rings < 0 && cv_superring.value)
+	if ((K_RingsActive() == true) && mashed && player->rings < 0 && cv_superring.value)
 	{
 		INT32 debtamount = min(20, abs(player->rings));
 		if (P_RandomChance((debtamount*FRACUNIT)/20))
@@ -3044,7 +3048,6 @@ void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker)
 	// In a perfect world we could move this here, but there's
 	// a few niche situations where we want a pain sound from
 	// the victim, but no confirm sound from the attacker.
-	// (ex: DMG_STING)
 
 	//K_PlayPainSound(victim, attacker);
 
@@ -3396,12 +3399,6 @@ fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberb
 	k_speed += kartspeed*3; // 153 - 177
 
 	finalspeed = FixedMul(FixedMul(k_speed<<14, g_cc), player->mo->scale);
-
-	if (player->spheres > 0)
-	{
-		fixed_t sphereAdd = (FRACUNIT/60); // 66% at max
-		finalspeed = FixedMul(finalspeed, FRACUNIT + (sphereAdd * player->spheres));
-	}
 
 	if (K_PlayerUsesBotMovement(player))
 	{
@@ -6563,7 +6560,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (gametype == GT_RACE)
 	{
 
-		if (!ringsdisabled)
+		if ((K_RingsActive() == true))
 		{
 			if (player->pflags & PF_RINGLOCK)
 			{
@@ -6935,7 +6932,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 		}
 
-		/*if (gametype == GT_RACE && player->rings <= 0 && !ringsdisabled) // spawn ring debt indicator
+		/*if (gametype == GT_RACE && player->rings <= 0 && (K_RingsActive() == true)) // spawn ring debt indicator
 		{
 			mobj_t *debtflag = P_SpawnMobj(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy,
 				player->mo->z + P_GetMobjZMovement(player->mo) + player->mo->height + (24*player->mo->scale), MT_THOK);
@@ -7011,7 +7008,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 
-	if (ringsdisabled)
+	if ((K_RingsActive() == false))
 	{
 		player->rings = 0;
 	}
@@ -7022,59 +7019,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		else if (player->rings < -20)
 			player->rings = -20;
 	}
-
-	if (player->spheres > 40)
-		player->spheres = 40;
-	// where's the < 0 check? see below the following block!
-
-	if ((gametyperules & GTR_BUMPERS) && (player->bumper <= 0))
-	{
-		// Deplete 1 every tic when removed from the game.
-		player->spheres--;
-		player->spheredigestion = 0;
-	}
-	else
-	{
-		tic_t spheredigestion = TICRATE; // Base rate of 1 every second when playing.
-		tic_t digestionpower = ((10 - player->kartspeed) + (10 - player->kartweight))-1; // 1 to 17
-
-		// currently 0-34
-		digestionpower = ((player->spheres*digestionpower)/20);
-
-		if (digestionpower >= spheredigestion)
-		{
-			spheredigestion = 1;
-		}
-		else
-		{
-			spheredigestion -= digestionpower;
-		}
-
-		if ((player->spheres > 0) && (player->spheredigestion > 0))
-		{
-			// If you got a massive boost in spheres, catch up digestion as necessary.
-			if (spheredigestion < player->spheredigestion)
-			{
-				player->spheredigestion = (spheredigestion + player->spheredigestion)/2;
-			}
-
-			player->spheredigestion--;
-
-			if (player->spheredigestion == 0)
-			{
-				player->spheres--;
-				player->spheredigestion = spheredigestion;
-			}
-		}
-		else
-		{
-			player->spheredigestion = spheredigestion;
-		}
-	}
-
-	// where's the > 40 check? see above the previous block!
-	if (player->spheres < 0)
-		player->spheres = 0;
 
 	if (comeback == false || !(gametyperules & GTR_KARMA) || (player->pflags & PF_ELIMINATED))
 	{
@@ -9141,7 +9085,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	if (!(cmd->buttons & BT_ATTACK))
 	{
 		if (player->itemtype == KITEM_NONE
-			&& NO_HYUDORO && !ringsdisabled && !(HOLDING_ITEM
+			&& NO_HYUDORO && (K_RingsActive() == true) && !(HOLDING_ITEM
 			|| player->itemamount
 			|| player->itemroulette
 			|| player->rocketsneakertimer
@@ -10163,6 +10107,23 @@ boolean K_IsSPBInGame(void)
 	}
 
 	return false;
+}
+
+boolean K_RingsActive(void)
+{
+	if (!(gametyperules & GTR_RINGS))
+	{
+		// No Rings in this gametype.
+		return false;
+	}
+
+	if (!ringsactive)
+	{
+		// Rings aren't enabled.
+		return false;
+	}
+
+	return true;
 }
 
 //}

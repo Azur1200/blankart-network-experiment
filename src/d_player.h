@@ -649,8 +649,6 @@ struct player_t
 	INT16 karmadelay;
 	INT16 karmamode;
 	INT16 karmapoints;
-	INT16 spheres;
-	tic_t spheredigestion;
 
 	SINT8 glanceDir; // Direction the player is trying to look backwards in
 
