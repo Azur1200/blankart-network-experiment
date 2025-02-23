@@ -7428,9 +7428,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->renderflags &= ~RF_GHOSTLYMASK;
 			scale += (blow * (3*scale)) / bubbletime;
 
-			mobj->frame = (states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1);
+			mobj->frame = CLAMP(states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1, states[S_BUBBLESHIELDBLOWUP].frame, states[S_BUBBLESHIELDBLOWUP].frame + 3);
 			if ((mobj->target->player->bubbleblowup > bubbletime) && (leveltime & 1))
-				mobj->frame = (states[S_BUBBLESHIELDBLOWUP].frame + 5);
+			{
+				mobj->color = SKINCOLOR_WHITE;
+				mobj->colorized = true;
+			}
+			else
+			{
+				mobj->color = SKINCOLOR_BLUE;
+				mobj->colorized = false;
+			}
 
 			if (mobj->extravalue1 < 4 && mobj->extravalue2 < blow && !mobj->cvmem && (leveltime & 1)) // Growing
 			{

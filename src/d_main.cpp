@@ -1485,10 +1485,15 @@ void D_SRB2Main(void)
 	// Check MD5s of autoloaded files
 	// Note: Do not add any files that ignore MD5!
 	W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);						// srb2.srb
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.pk3
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);	// textures.pk3
+	wadfiles[mainwads]->compatmode = true;
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.kart
+	wadfiles[mainwads]->compatmode = true;
+	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);	// textures.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_KART);		// chars.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);		// maps.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
 	//mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
 #ifdef USE_PATCH_FILE
@@ -1496,9 +1501,13 @@ void D_SRB2Main(void)
 #endif
 #else
 	mainwads++;	// gfx.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++;	// textures.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++;	// chars.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++;	// maps.kart
+	wadfiles[mainwads]->compatmode = true;
 	mainwads++;	// main.pk3
 	//mainwads++; // followers.pk3
 #ifdef USE_PATCH_FILE

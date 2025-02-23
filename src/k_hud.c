@@ -107,13 +107,13 @@ static patch_t *kp_itemmulsticker[2];
 static patch_t *kp_itemx;
 
 static patch_t *kp_superring[2];
-static patch_t *kp_sneaker[2];
+static patch_t *kp_sneaker[4];
 static patch_t *kp_rocketsneaker[2];
 static patch_t *kp_invincibility[13];
-static patch_t *kp_banana[2];
+static patch_t *kp_banana[5];
 static patch_t *kp_eggman[2];
 static patch_t *kp_orbinaut[5];
-static patch_t *kp_jawz[2];
+static patch_t *kp_jawz[3];
 static patch_t *kp_mine[2];
 static patch_t *kp_landmine[2];
 static patch_t *kp_droptarget[2];
@@ -302,6 +302,8 @@ void K_LoadKartHUDGraphics(void)
 
 	HU_UpdatePatch(&kp_superring[0], "K_ITRING");
 	HU_UpdatePatch(&kp_sneaker[0], "K_ITSHOE");
+	HU_UpdatePatch(&kp_sneaker[1], "K_ITSHO2");
+	HU_UpdatePatch(&kp_sneaker[2], "K_ITSHO3");
 	HU_UpdatePatch(&kp_rocketsneaker[0], "K_ITRSHE");
 
 	sprintf(buffer, "K_ITINVx");
@@ -311,6 +313,9 @@ void K_LoadKartHUDGraphics(void)
 		HU_UpdatePatch(&kp_invincibility[i], "%s", buffer);
 	}
 	HU_UpdatePatch(&kp_banana[0], "K_ITBANA");
+	HU_UpdatePatch(&kp_banana[1], "K_ITBAN2");
+	HU_UpdatePatch(&kp_banana[2], "K_ITBAN3");
+	HU_UpdatePatch(&kp_banana[3], "K_ITBAN4");
 	HU_UpdatePatch(&kp_eggman[0], "K_ITEGGM");
 	sprintf(buffer, "K_ITORBx");
 	for (i = 0; i < 4; i++)
@@ -319,6 +324,7 @@ void K_LoadKartHUDGraphics(void)
 		HU_UpdatePatch(&kp_orbinaut[i], "%s", buffer);
 	}
 	HU_UpdatePatch(&kp_jawz[0], "K_ITJAWZ");
+	HU_UpdatePatch(&kp_jawz[1], "K_ITJAW2");
 	HU_UpdatePatch(&kp_mine[0], "K_ITMINE");
 	HU_UpdatePatch(&kp_landmine[0], "K_ITLNDM");
 	HU_UpdatePatch(&kp_droptarget[0], "K_ITDTRG");
@@ -358,7 +364,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_itemmulsticker[1], "K_ISMUL");
 
 	HU_UpdatePatch(&kp_superring[1], "K_ISRING");
-	HU_UpdatePatch(&kp_sneaker[1], "K_ISSHOE");
+	HU_UpdatePatch(&kp_sneaker[3], "K_ISSHOE");
 	HU_UpdatePatch(&kp_rocketsneaker[1], "K_ISRSHE");
 	sprintf(buffer, "K_ISINVx");
 	for (i = 0; i < 6; i++)
@@ -366,10 +372,10 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '1'+i;
 		HU_UpdatePatch(&kp_invincibility[i+7], "%s", buffer);
 	}
-	HU_UpdatePatch(&kp_banana[1], "K_ISBANA");
+	HU_UpdatePatch(&kp_banana[4], "K_ISBANA");
 	HU_UpdatePatch(&kp_eggman[1], "K_ISEGGM");
 	HU_UpdatePatch(&kp_orbinaut[4], "K_ISORBN");
-	HU_UpdatePatch(&kp_jawz[1], "K_ISJAWZ");
+	HU_UpdatePatch(&kp_jawz[2], "K_ISJAWZ");
 	HU_UpdatePatch(&kp_mine[1], "K_ISMINE");
 	HU_UpdatePatch(&kp_landmine[1], "K_ISLNDM");
 	HU_UpdatePatch(&kp_droptarget[1], "K_ISDTRG");
@@ -546,23 +552,18 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 	switch (item)
 	{
 		case KITEM_SNEAKER:
-		case KRITEM_DUALSNEAKER:
-		case KRITEM_TRIPLESNEAKER:
 			return (tiny ? "K_ISSHOE" : "K_ITSHOE");
 		case KITEM_ROCKETSNEAKER:
 			return (tiny ? "K_ISRSHE" : "K_ITRSHE");
 		case KITEM_INVINCIBILITY:
 			return (tiny ? "K_ISINV1" : "K_ITINV1");
 		case KITEM_BANANA:
-		case KRITEM_TRIPLEBANANA:
-		case KRITEM_TENFOLDBANANA:
 			return (tiny ? "K_ISBANA" : "K_ITBANA");
 		case KITEM_EGGMAN:
 			return (tiny ? "K_ISEGGM" : "K_ITEGGM");
 		case KITEM_ORBINAUT:
 			return (tiny ? "K_ISORBN" : "K_ITORB1");
 		case KITEM_JAWZ:
-		case KRITEM_DUALJAWZ:
 			return (tiny ? "K_ISJAWZ" : "K_ITJAWZ");
 		case KITEM_MINE:
 			return (tiny ? "K_ISMINE" : "K_ITMINE");
@@ -592,8 +593,18 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 			return (tiny ? "K_ISDTRG" : "K_ITDTRG");
 		case KITEM_KITCHENSINK:
 			return (tiny ? "K_ISSINK" : "K_ITSINK");
+		case KRITEM_DUALSNEAKER:
+			return (tiny ? "K_ISSHOE" : "K_ITSHO2");
+		case KRITEM_TRIPLESNEAKER:
+			return (tiny ? "K_ISSHOE" : "K_ITSHO3");
 		case KRITEM_TRIPLEORBINAUT:
 			return (tiny ? "K_ISORBN" : "K_ITORB3");
+		case KRITEM_DUALJAWZ:
+			return (tiny ? "K_ISJAWZ" : "K_ITJAW2");
+		case KRITEM_TRIPLEBANANA:
+			return (tiny ? "K_ISBANA" : "K_ITBAN3");
+		case KRITEM_TENFOLDBANANA:
+			return (tiny ? "K_ISBANA" : "K_ITBAN4");
 		case KRITEM_QUADORBINAUT:
 			return (tiny ? "K_ISORBN" : "K_ITORB4");
 		default:
@@ -871,7 +882,7 @@ static void K_drawKartItem(void)
 	patch_t *localbg = ((offset) ? kp_itembg[2] : kp_itembg[0]);
 	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
-	const INT32 numberdisplaymin = ((!offset && stplyr->itemtype == KITEM_ORBINAUT) ? 5 : 2);
+	INT32 numberdisplaymin = 2;
 	INT32 itembar = 0;
 	INT32 maxl = 0; // itembar's normal highest value
 	const INT32 barlength = (r_splitscreen > 1 ? 12 : 26);
@@ -889,11 +900,11 @@ static void K_drawKartItem(void)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
-				localpatch = kp_sneaker[offset];
+				localpatch = kp_sneaker[2+offset];
 				//localcolor = SKINCOLOR_RASPBERRY;
 				break;
 			case 1: // Banana
-				localpatch = kp_banana[offset];
+				localpatch = kp_banana[3+offset];
 				//localcolor = SKINCOLOR_YELLOW;
 				break;
 			case 2: // Orbinaut
@@ -1030,7 +1041,9 @@ static void K_drawKartItem(void)
 			switch(stplyr->itemtype)
 			{
 				case KITEM_SNEAKER:
-					localpatch = kp_sneaker[offset];
+					localpatch = kp_sneaker[(offset ? 3 : min(stplyr->itemamount-1, 2))];
+					numberdisplaymin = 4;
+					numberdisplaymin = offset ? 2 : 4;
 					break;
 				case KITEM_ROCKETSNEAKER:
 					localpatch = kp_rocketsneaker[offset];
@@ -1040,16 +1053,20 @@ static void K_drawKartItem(void)
 					localbg = kp_itembg[offset+1];
 					break;
 				case KITEM_BANANA:
-					localpatch = kp_banana[offset];
+					localpatch = kp_banana[(offset ? 4 : min(stplyr->itemamount-1, 3))];
+					numberdisplaymin = offset ? 2 : 5;
 					break;
 				case KITEM_EGGMAN:
 					localpatch = kp_eggman[offset];
 					break;
 				case KITEM_ORBINAUT:
 					localpatch = kp_orbinaut[(offset ? 4 : min(stplyr->itemamount-1, 3))];
+					numberdisplaymin = offset ? 2 : 5;
 					break;
 				case KITEM_JAWZ:
-					localpatch = kp_jawz[offset];
+					localpatch = kp_jawz[(offset ? 2 : min(stplyr->itemamount-1, 1))];
+					numberdisplaymin = 3;
+					numberdisplaymin = offset ? 2 : 3;
 					break;
 				case KITEM_MINE:
 					localpatch = kp_mine[offset];
@@ -4128,13 +4145,13 @@ static void K_drawDistributionDebugger(void)
 {
 	patch_t *items[NUMKARTRESULTS] = {
 		kp_sadface[1],
-		kp_sneaker[1],
+		kp_sneaker[3],
 		kp_rocketsneaker[1],
 		kp_invincibility[7],
-		kp_banana[1],
+		kp_banana[4],
 		kp_eggman[1],
 		kp_orbinaut[4],
-		kp_jawz[1],
+		kp_jawz[2],
 		kp_mine[1],
 		kp_landmine[1],
 		kp_ballhog[1],
@@ -4150,13 +4167,13 @@ static void K_drawDistributionDebugger(void)
 		kp_kitchensink[1],
 		kp_droptarget[1],
 
-		kp_sneaker[1],
-		kp_sneaker[1],
-		kp_banana[1],
-		kp_banana[1],
+		kp_sneaker[3],
+		kp_sneaker[3],
+		kp_banana[4],
+		kp_banana[4],
 		kp_orbinaut[4],
 		kp_orbinaut[4],
-		kp_jawz[1]
+		kp_jawz[2]
 	};
 	UINT8 useodds = 0;
 	UINT8 pingame = 0, bestbumper = 0;

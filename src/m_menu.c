@@ -11326,14 +11326,6 @@ static void M_DrawMonitorToggles(void)
 
 			switch (currentMenu->menuitems[itemOn].alphaKey)
 			{
-				case KRITEM_DUALSNEAKER:
-				case KRITEM_DUALJAWZ:
-					drawnum = 2;
-					break;
-				case KRITEM_TRIPLESNEAKER:
-				case KRITEM_TRIPLEBANANA:
-					drawnum = 3;
-					break;
 				case KRITEM_TENFOLDBANANA:
 					drawnum = 10;
 					break;

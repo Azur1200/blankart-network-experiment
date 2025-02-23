@@ -364,8 +364,7 @@ static inline boolean CheckCompatWad(UINT16 wadnum)
 	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum))
 		return true;
 
-	// assume Kart/2.1 for WADs so basegame assets work
-	return true;
+	return false;
 }
 
 /** Compute MD5 message digest for bytes read from STREAM of this filname.
