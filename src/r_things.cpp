@@ -249,6 +249,15 @@ static void R_InstallSpriteLump(UINT16 wad,            // graphics patch
 		sprtemp[frame].flip &= ~(1<<rotation);
 }
 
+static void R_IncrementSpriteLumps(void)
+{
+	if (++numspritelumps >= max_spritelumps)
+	{
+		max_spritelumps *= 2;
+		Z_Realloc(spritecachedinfo, max_spritelumps*sizeof(*spritecachedinfo), PU_STATIC, &spritecachedinfo);
+	}
+}
+
 #define NUMFACES 3
 static size_t KART_FACES[NUMFACES] = {
 	offsetof(skin_t, facerank),
@@ -265,7 +274,8 @@ void R_AddKartFaces(skin_t *skin)
 		lumpnum_t lumpnum = W_CheckNumForName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
 		if (lumpnum == LUMPERROR)
 			I_Error("R_AddKartFaces: missing patch %s for skin %s", reinterpret_cast<char *>(skin) + KART_FACES[f], skin->name);
-		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps++, f, 0, 0);
+		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps, f, 0, 0);
+		R_IncrementSpriteLumps();
 	}
 	sd->numframes = NUMFACES;
 	sd->spriteframes = static_cast<spriteframe_t*>(Z_Realloc(sd->spriteframes, sizeof(spriteframe_t)*NUMFACES, PU_STATIC, NULL));
@@ -394,11 +404,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 				R_InstallSpriteLump(wadnum, l, numspritelumps, frame, rotation, 1);
 			}
 
-			if (++numspritelumps >= max_spritelumps)
-			{
-				max_spritelumps *= 2;
-				Z_Realloc(spritecachedinfo, max_spritelumps*sizeof(*spritecachedinfo), PU_STATIC, &spritecachedinfo);
-			}
+			R_IncrementSpriteLumps();
 
 			++numadded;
 		}
