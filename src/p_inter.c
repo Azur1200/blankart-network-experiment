@@ -378,10 +378,6 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 			switch (special->threshold)
 			{
-				case KITEM_SPB:
-					if (K_IsSPBInGame()) // don't spawn a second SPB
-						return;
-					break;
 				case KITEM_SUPERRING:
 					if (player->pflags & PF_RINGLOCK) // no cheaty rings
 						return;
