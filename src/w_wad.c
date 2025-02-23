@@ -314,7 +314,17 @@ static inline boolean CheckCompatFilename(const char *filename)
 {
 	// check for a K prefix
 	char *basename = strrchr(filename, *PATHSEP);
-	return toupper(basename ? basename[1] : filename[0]) == 'K';
+	return (toupper(basename ? basename[1] : filename[0]) == 'K');
+}
+
+static inline boolean CheckCompatExtension(const char *filename)
+{
+	char *basename = strrchr(filename, '.');
+
+	if (!stricmp(basename+1, "KART"))
+		return true;
+
+	return false;
 }
 
 static inline boolean CheckCompatSkins(UINT16 wadnum)
@@ -361,7 +371,8 @@ static inline boolean CheckCompatZip(UINT16 wadnum)
 // ditto, but for WADs
 static inline boolean CheckCompatWad(UINT16 wadnum)
 {
-	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum))
+	if (CheckCompatFilename(wadfiles[wadnum]->filename) || CheckCompatSkins(wadnum)
+		|| CheckCompatExtension(wadfiles[wadnum]->filename))
 		return true;
 
 	return false;
