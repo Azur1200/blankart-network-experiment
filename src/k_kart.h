@@ -90,7 +90,6 @@ void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
-void K_DebtStingPlayer(player_t *player, mobj_t *source);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);
