@@ -835,8 +835,6 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	boolean t1Condition = false;
 	boolean t2Condition = false;
-	boolean stungT1 = false;
-	boolean stungT2 = false;
 
 	t1Condition = (t1->player->invincibilitytimer > 0);
 	t2Condition = (t2->player->invincibilitytimer > 0);

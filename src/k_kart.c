@@ -3815,23 +3815,6 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 	return ringburst;
 }
 
-// This kind of wipeout happens with no rings -- doesn't remove a bumper, has no invulnerability, and is much shorter.
-void K_DebtStingPlayer(player_t *player, mobj_t *source)
-{
-	INT32 length = TICRATE;
-
-	if (source->player)
-	{
-		length += (4 * (source->player->kartweight - player->kartweight));
-	}
-
-	player->spinouttype = KSPIN_STUNG;
-	player->spinouttimer = length;
-	player->wipeoutslow = min(length-1, wipeoutslowtime+1);
-
-	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
-}
-
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
 {
 	if (!(gametyperules & GTR_BUMPERS))
