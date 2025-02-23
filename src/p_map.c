@@ -1165,19 +1165,35 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE;
 			}
 
-			// The bump has to happen last
-			if (P_IsObjectOnGround(thing) && tm.thing->momz < 0 && tm.thing->player->pogospring)
 			{
-				P_DamageMobj(thing, tm.thing, tm.thing, 1, DMG_WIPEOUT|DMG_STEAL);
-			}
-			else if (P_IsObjectOnGround(tm.thing) && thing->momz < 0 && thing->player->pogospring)
-			{
-				P_DamageMobj(tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
+				// The bump has to happen last
+				mobj_t *mo1 = tm.thing;
+				mobj_t *mo2 = thing;
+				boolean zbounce = false;
+
+				if (P_IsObjectOnGround(thing) && tm.thing->momz < 0)
+				{
+					zbounce = true;
+					mo1 = thing;
+					mo2 = tm.thing;
+
+					if (tm.thing->player->pogospring)
+						P_DamageMobj(thing, tm.thing, tm.thing, 1, DMG_WIPEOUT|DMG_STEAL);
+				}
+				else if (P_IsObjectOnGround(tm.thing) && thing->momz < 0)
+				{
+					zbounce = true;
+
+					if (thing->player->pogospring)
+						P_DamageMobj(tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
+				}
+
+				if (K_KartBouncing(mo1, mo2, zbounce, false))
+				{
+					K_PvPTouchDamage(mo1, mo2);
+				}
 			}
 
-			K_PvPTouchDamage(tm.thing, thing);
-			K_KartBouncing(tm.thing, thing);
-			
 			return BMIT_CONTINUE;
 		}
 		else if (thing->type == MT_BLUEROBRA_HEAD || thing->type == MT_BLUEROBRA_JOINT)
@@ -1202,7 +1218,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			}
 			else
 			{
-				K_KartSolidBounce(tm.thing, thing);
+				K_KartBouncing(tm.thing, thing, false, true);
 				return BMIT_CONTINUE;
 			}
 		}
@@ -1224,7 +1240,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // kill
 			}
 
-			K_KartSolidBounce(tm.thing, thing);
+			K_KartBouncing(tm.thing, thing, false, true);
 			return BMIT_CONTINUE;
 		}
 		else if (thing->type == MT_SMK_THWOMP)
@@ -1264,11 +1280,25 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				P_DamageMobj(tm.thing, thing, thing, 1, DMG_SQUISH);
 			else
 			{
-				if ((K_KartSolidBounce(tm.thing, thing) == true) && (thing->flags2 & MF2_AMBUSH))
-				{
+				if (thing->flags2 & MF2_AMBUSH)
 					P_DamageMobj(tm.thing, thing, thing, 1, DMG_WIPEOUT);
-				}
+				K_KartBouncing(tm.thing, thing, false, true);
 			}
+
+			return BMIT_CONTINUE;
+		}
+		else if (thing->type == MT_KART_LEFTOVER)
+		{
+			// see if it went over / under
+			if (tm.thing->z > thing->z + thing->height)
+				return BMIT_CONTINUE; // overhead
+			if (tm.thing->z + tm.thing->height < thing->z)
+				return BMIT_CONTINUE; // underneath
+
+			if (P_IsObjectOnGround(thing) && tm.thing->momz < 0)
+				K_KartBouncing(tm.thing, thing, true, false);
+			else
+				K_KartBouncing(tm.thing, thing, false, false);
 
 			return BMIT_CONTINUE;
 		}
@@ -1280,7 +1310,11 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (tm.thing->z + tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			K_KartSolidBounce(tm.thing, thing);
+			if (P_IsObjectOnGround(thing) && tm.thing->momz < 0)
+				K_KartBouncing(tm.thing, thing, true, true);
+			else
+				K_KartBouncing(tm.thing, thing, false, true);
+
 			return BMIT_CONTINUE;
 		}
 	}

@@ -68,7 +68,7 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		{
 			// Player Damage
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_WIPEOUT);
-			K_KartBouncing(t2, t1);
+			K_KartBouncing(t2, t1, false, false);
 			S_StartSound(t2, sfx_s3k7b);
 		}
 
@@ -542,7 +542,7 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 		angle_t t2angle = R_PointToAngle2(t2->momx, t2->momy, 0, 0);
 		angle_t t2deflect;
 		fixed_t t1speed, t2speed;
-		K_KartBouncing(t1, t2);
+		K_KartBouncing(t1, t2, false, false);
 		t1speed = FixedHypot(t1->momx, t1->momy);
 		t2speed = FixedHypot(t2->momx, t2->momy);
 
@@ -796,7 +796,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->player || t2->type == MT_FALLINGROCK)
-		K_KartBouncing(t2, t1);
+		K_KartBouncing(t2, t1, false, false);
 	return true;
 }
 
@@ -824,7 +824,7 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 		return true;
 	*/
 
-	K_KartBouncing(t1, t2);
+	K_KartBouncing(t2, t1, false, true);
 	return false;
 }
 

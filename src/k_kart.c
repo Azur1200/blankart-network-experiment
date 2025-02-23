@@ -1697,143 +1697,16 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 	return weight;
 }
 
-static void K_SpawnBumpForObjs(mobj_t *mobj1, mobj_t *mobj2)
+boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
-	mobj_t *fx = P_SpawnMobj(
-		mobj1->x/2 + mobj2->x/2,
-		mobj1->y/2 + mobj2->y/2,
-		mobj1->z/2 + mobj2->z/2,
-		MT_BUMP
-	);
-	fixed_t avgScale = (mobj1->scale + mobj2->scale) / 2;
-
-	if (mobj1->eflags & MFE_VERTICALFLIP)
-	{
-		fx->eflags |= MFE_VERTICALFLIP;
-	}
-	else
-	{
-		fx->eflags &= ~MFE_VERTICALFLIP;
-	}
-
-	P_SetScale(fx, (fx->destscale = avgScale));
-
-	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD)
-	|| (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
-	{
-		S_StartSound(mobj1, sfx_s3k44);
-	}
-	else if (mobj1->type == MT_DROPTARGET || mobj1->type == MT_DROPTARGET_SHIELD) // no need to check the other way around
-	{
-		// Sound handled in K_DropTargetCollide
-		// S_StartSound(mobj2, sfx_s258);
-		fx->colorized = true;
-		fx->color = mobj1->color;
-	}
-	else
-	{
-		S_StartSound(mobj1, sfx_s3k49);
-	}
-}
-
-static void K_PlayerJustBumped(player_t *player)
-{
-	mobj_t *playerMobj = NULL;
-
-	if (player == NULL)
-	{
-		return;
-	}
-
-	playerMobj = player->mo;
-
-	if (playerMobj == NULL || P_MobjWasRemoved(playerMobj))
-	{
-		return;
-	}
-
-	if (abs(player->rmomx) < playerMobj->scale && abs(player->rmomy) < playerMobj->scale)
-	{
-		// Because this is done during collision now, rmomx and rmomy need to be recalculated
-		// so that friction doesn't immediately decide to stop the player if they're at a standstill
-		player->rmomx = playerMobj->momx - player->cmomx;
-		player->rmomy = playerMobj->momy - player->cmomy;
-	}
-
-	player->justbumped = bumptime;
-
-	if (player->spinouttimer)
-	{
-		player->wipeoutslow = wipeoutslowtime+1;
-		player->spinouttimer = max(wipeoutslowtime+1, player->spinouttimer);
-		//player->spinouttype = KSPIN_WIPEOUT; // Enforce type
-	}
-}
-
-static fixed_t K_GetBounceForce(mobj_t *mobj1, mobj_t *mobj2, fixed_t distx, fixed_t disty)
-{
-	const fixed_t forceMul = (4 * FRACUNIT) / 10; // Multiply by this value to make it feel like old bumps.
-
+	mobj_t *fx;
 	fixed_t momdifx, momdify;
-	fixed_t dot;
-	fixed_t force = 0;
-
-	momdifx = mobj1->momx - mobj2->momx;
-	momdify = mobj1->momy - mobj2->momy;
-
-	if (distx == 0 && disty == 0)
-	{
-		// if there's no distance between the 2, they're directly on top of each other, don't run this
-		return 0;
-	}
-
-	{ // Normalize distance to the sum of the two objects' radii, since in a perfect world that would be the distance at the point of collision...
-		fixed_t dist = P_AproxDistance(distx, disty);
-		fixed_t nx, ny;
-
-		dist = dist ? dist : 1;
-
-		nx = FixedDiv(distx, dist);
-		ny = FixedDiv(disty, dist);
-
-		distx = FixedMul(mobj1->radius + mobj2->radius, nx);
-		disty = FixedMul(mobj1->radius + mobj2->radius, ny);
-
-		if (momdifx == 0 && momdify == 0)
-		{
-			// If there's no momentum difference, they're moving at exactly the same rate. Pretend they moved into each other.
-			momdifx = -nx;
-			momdify = -ny;
-		}
-	}
-
-	dot = FixedMul(momdifx, distx) + FixedMul(momdify, disty);
-
-	if (dot >= 0)
-	{
-		// They're moving away from each other
-		return 0;
-	}
-
-	// Return the push force!
-	force = FixedDiv(dot, FixedMul(distx, distx) + FixedMul(disty, disty));
-
-	return FixedMul(force, forceMul);
-}
-
-boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2)
-{
-	const fixed_t minBump = 25*mapobjectscale;
-	mobj_t *goombaBounce = NULL;
-	fixed_t distx, disty, dist;
-	fixed_t force;
+	fixed_t distx, disty;
+	fixed_t dot, force;
 	fixed_t mass1, mass2;
 
-	if ((!mobj1 || P_MobjWasRemoved(mobj1))
-	|| (!mobj2 || P_MobjWasRemoved(mobj2)))
-	{
+	if (!mobj1 || !mobj2)
 		return false;
-	}
 
 	// Don't bump when you're being reborn
 	if ((mobj1->player && mobj1->player->playerstate != PST_LIVE)
@@ -1883,144 +1756,132 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2)
 		return false;
 	}
 
-	// Adds the OTHER object's momentum times a bunch, for the best chance of getting the correct direction
-	distx = (mobj1->x + mobj2->momx) - (mobj2->x + mobj1->momx);
-	disty = (mobj1->y + mobj2->momy) - (mobj2->y + mobj1->momy);
+	mass1 = K_GetMobjWeight(mobj1, mobj2);
 
-	force = K_GetBounceForce(mobj1, mobj2, distx, disty);
+	if (solid == true && mass1 > 0)
+		mass2 = mass1;
+	else
+		mass2 = K_GetMobjWeight(mobj2, mobj1);
 
-	if (force == 0)
+	momdifx = mobj1->momx - mobj2->momx;
+	momdify = mobj1->momy - mobj2->momy;
+
+	// Adds the OTHER player's momentum times a bunch, for the best chance of getting the correct direction
+	distx = (mobj1->x + mobj2->momx*3) - (mobj2->x + mobj1->momx*3);
+	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
+
+	if (distx == 0 && disty == 0)
 	{
+		// if there's no distance between the 2, they're directly on top of each other, don't run this
 		return false;
 	}
 
-	mass1 = K_GetMobjWeight(mobj1, mobj2);
-	mass2 = K_GetMobjWeight(mobj2, mobj1);
+	{ // Normalize distance to the sum of the two objects' radii, since in a perfect world that would be the distance at the point of collision...
+		fixed_t dist = P_AproxDistance(distx, disty);
+		fixed_t nx, ny;
 
-	if ((P_IsObjectOnGround(mobj1) && mobj2->momz < 0) // Grounded
-		|| (mass2 == 0 && mass1 > 0)) // The other party is immovable
-	{
-		goombaBounce = mobj2;
-	}
-	else if ((P_IsObjectOnGround(mobj2) && mobj1->momz < 0) // Grounded
-		|| (mass1 == 0 && mass2 > 0)) // The other party is immovable
-	{
-		goombaBounce = mobj1;
-	}
+		dist = dist ? dist : 1;
 
-	if (goombaBounce != NULL)
-	{
-		// Perform a Goomba Bounce by reversing your z momentum.
-		goombaBounce->momz = -goombaBounce->momz;
-	}
-	else
-	{
-		// Trade z momentum values.
-		fixed_t newz = mobj1->momz;
-		mobj1->momz = mobj2->momz;
-		mobj2->momz = newz;
-	}
+		nx = FixedDiv(distx, dist);
+		ny = FixedDiv(disty, dist);
 
-	// Multiply by force
-	distx = FixedMul(force, distx);
-	disty = FixedMul(force, disty);
-	dist = FixedHypot(distx, disty);
+		distx = FixedMul(mobj1->radius+mobj2->radius, nx);
+		disty = FixedMul(mobj1->radius+mobj2->radius, ny);
+
+		if (momdifx == 0 && momdify == 0)
+		{
+			// If there's no momentum difference, they're moving at exactly the same rate. Pretend they moved into each other.
+			momdifx = -nx;
+			momdify = -ny;
+		}
+	}
 
 	// if the speed difference is less than this let's assume they're going proportionately faster from each other
-	if (dist < minBump)
+	if (P_AproxDistance(momdifx, momdify) < (25*mapobjectscale))
 	{
-		fixed_t normalisedx = FixedDiv(distx, dist);
-		fixed_t normalisedy = FixedDiv(disty, dist);
+		fixed_t momdiflength = P_AproxDistance(momdifx, momdify);
+		fixed_t normalisedx = FixedDiv(momdifx, momdiflength);
+		fixed_t normalisedy = FixedDiv(momdify, momdiflength);
+		momdifx = FixedMul((25*mapobjectscale), normalisedx);
+		momdify = FixedMul((25*mapobjectscale), normalisedy);
+	}
 
-		distx = FixedMul(minBump, normalisedx);
-		disty = FixedMul(minBump, normalisedy);
+	dot = FixedMul(momdifx, distx) + FixedMul(momdify, disty);
+
+	if (dot >= 0)
+	{
+		// They're moving away from each other
+		return false;
+	}
+
+	force = FixedDiv(dot, FixedMul(distx, distx)+FixedMul(disty, disty));
+
+	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
+		mobj1->momz = -mobj1->momz;
+	else
+	{
+		fixed_t newz = mobj1->momz;
+		if (mass2 > 0)
+			mobj1->momz = mobj2->momz;
+		if (mass1 > 0 && solid == false)
+			mobj2->momz = newz;
 	}
 
 	if (mass2 > 0)
 	{
-		mobj1->momx = mobj1->momx - FixedMul(FixedDiv(2*mass2, mass1 + mass2), distx);
-		mobj1->momy = mobj1->momy - FixedMul(FixedDiv(2*mass2, mass1 + mass2), disty);
+		mobj1->momx = mobj1->momx - FixedMul(FixedMul(FixedDiv(2*mass2, mass1 + mass2), force), distx);
+		mobj1->momy = mobj1->momy - FixedMul(FixedMul(FixedDiv(2*mass2, mass1 + mass2), force), disty);
 	}
 
-	if (mass1 > 0)
+	if (mass1 > 0 && solid == false)
 	{
-		mobj2->momx = mobj2->momx - FixedMul(FixedDiv(2*mass1, mass1 + mass2), -distx);
-		mobj2->momy = mobj2->momy - FixedMul(FixedDiv(2*mass1, mass1 + mass2), -disty);
+		mobj2->momx = mobj2->momx - FixedMul(FixedMul(FixedDiv(2*mass1, mass1 + mass2), force), -distx);
+		mobj2->momy = mobj2->momy - FixedMul(FixedMul(FixedDiv(2*mass1, mass1 + mass2), force), -disty);
 	}
 
-	K_SpawnBumpForObjs(mobj1, mobj2);
+	// Do the bump fx when we've CONFIRMED we can bump.
+	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD) || (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
+		S_StartSound(mobj1, sfx_s3k44);
+	else
+		S_StartSound(mobj1, sfx_s3k49);
 
-	K_PlayerJustBumped(mobj1->player);
-	K_PlayerJustBumped(mobj2->player);
+	fx = P_SpawnMobj(mobj1->x/2 + mobj2->x/2, mobj1->y/2 + mobj2->y/2, mobj1->z/2 + mobj2->z/2, MT_BUMP);
+	if (mobj1->eflags & MFE_VERTICALFLIP)
+		fx->eflags |= MFE_VERTICALFLIP;
+	else
+		fx->eflags &= ~MFE_VERTICALFLIP;
+	P_SetScale(fx, mobj1->scale);
 
-	return true;
-}
-
-// K_KartBouncing, but simplified to act like P_BouncePlayerMove
-boolean K_KartSolidBounce(mobj_t *bounceMobj, mobj_t *solidMobj)
-{
-	const fixed_t minBump = 25*mapobjectscale;
-	fixed_t distx, disty, dist;
-	fixed_t force;
-
-	if ((!bounceMobj || P_MobjWasRemoved(bounceMobj))
-	|| (!solidMobj || P_MobjWasRemoved(solidMobj)))
+	// Because this is done during collision now, rmomx and rmomy need to be recalculated
+	// so that friction doesn't immediately decide to stop the player if they're at a standstill
+	// Also set justbumped here
+	if (mobj1->player)
 	{
-		return false;
+		mobj1->player->rmomx = mobj1->momx - mobj1->player->cmomx;
+		mobj1->player->rmomy = mobj1->momy - mobj1->player->cmomy;
+		mobj1->player->justbumped = bumptime;
+
+		if (mobj1->player->spinouttimer)
+		{
+			mobj1->player->wipeoutslow = wipeoutslowtime+1;
+			mobj1->player->spinouttimer = max(wipeoutslowtime+1, mobj1->player->spinouttimer);
+			//mobj1->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
+		}
 	}
 
-	// Don't bump when you're being reborn
-	if (bounceMobj->player && bounceMobj->player->playerstate != PST_LIVE)
-		return false;
-
-	if (bounceMobj->player && bounceMobj->player->respawn)
-		return false;
-
-	// Don't bump if you've recently bumped
-	if (bounceMobj->player && bounceMobj->player->justbumped)
+	if (mobj2->player)
 	{
-		bounceMobj->player->justbumped = bumptime;
-		return false;
+		mobj2->player->rmomx = mobj2->momx - mobj2->player->cmomx;
+		mobj2->player->rmomy = mobj2->momy - mobj2->player->cmomy;
+		mobj2->player->justbumped = bumptime;
+
+		if (mobj2->player->spinouttimer)
+		{
+			mobj2->player->wipeoutslow = wipeoutslowtime+1;
+			mobj2->player->spinouttimer = max(wipeoutslowtime+1, mobj2->player->spinouttimer);
+			//mobj2->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
+		}
 	}
-
-	// Adds the OTHER object's momentum times a bunch, for the best chance of getting the correct direction
-	{
-		distx = (bounceMobj->x + solidMobj->momx) - (solidMobj->x + bounceMobj->momx);
-		disty = (bounceMobj->y + solidMobj->momy) - (solidMobj->y + bounceMobj->momy);
-	}
-
-	force = K_GetBounceForce(bounceMobj, solidMobj, distx, disty);
-
-	if (force == 0)
-	{
-		return false;
-	}
-
-	// Multiply by force
-	distx = FixedMul(force, distx);
-	disty = FixedMul(force, disty);
-	dist = FixedHypot(distx, disty);
-
-	{
-		// Normalize to the desired push value.
-		fixed_t normalisedx = FixedDiv(distx, dist);
-		fixed_t normalisedy = FixedDiv(disty, dist);
-		fixed_t bounceSpeed;
-
-		bounceSpeed = FixedHypot(bounceMobj->momx, bounceMobj->momy);
-		bounceSpeed = FixedMul(bounceSpeed, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
-		bounceSpeed += minBump;
-
-		distx = FixedMul(bounceSpeed, normalisedx);
-		disty = FixedMul(bounceSpeed, normalisedy);
-	}
-
-	bounceMobj->momx = bounceMobj->momx - distx;
-	bounceMobj->momy = bounceMobj->momy - disty;
-	bounceMobj->momz = -bounceMobj->momz;
-
-	K_SpawnBumpForObjs(bounceMobj, solidMobj);
-	K_PlayerJustBumped(bounceMobj->player);
 
 	return true;
 }
