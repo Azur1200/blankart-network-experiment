@@ -2264,6 +2264,9 @@ static void K_drawRingMeter(void)
 		if (gametype == GT_BATTLE)
 			ringoffsety -= 4;
 
+		if (itembreaker)
+			ringoffsety -= 2;
+
 		V_DrawScaledPatch(LAPS_X, LAPS_Y-14 + ringoffsety, V_HUDTRANS|splitflags, kp_ringsticker[(stplyr->pflags & PF_RINGLOCK) ? 1 : 0]);
 
 		if (stplyr->rings < 0) // Draw the minus for ring debt
