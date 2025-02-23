@@ -148,15 +148,16 @@ void R_InitSkins(void)
 	}
 #endif
 
-	// no default skin!
-	numskins = 0;
+	// yes default skin!
+	numskins = 1;
 
 	for (i = 0; i < numwadfiles; i++)
 	{
 		if (i == 3) // chars.kart
 			R_IHateThatHedgehog((UINT16)i);
 		R_AddSkins((UINT16)i);
-		R_PatchSkins((UINT16)i);
+		if (!wadfiles[i]->compatmode)
+			R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
 	}
 	ST_ReloadSkinFaceGraphics();
@@ -460,7 +461,9 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		*lastlump = newlastlump; // okay, make the normal sprite set loading end there
 	}*/
 
-	if (!wadfiles[wadnum]->compatmode)
+	boolean sonic = !strcmp(skin->name, "sonic") && wadnum == 5; // main.pk3
+
+	if (!wadfiles[wadnum]->compatmode && !sonic)
 	{
 		// load all sprite sets we are aware of... for normal stuff.
 		for (sprite2 = 0; sprite2 < free_spr2; sprite2++)
@@ -471,11 +474,13 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		// okay, now we have to get fancy...
 		// first, just dump all the frames in a temporary def
 		size_t i;
-		spritedef_t *sd;
+		spritedef_t *sd, tmp = sonic ? sprites[SPR_PLAY] : (spritedef_t){0};
 		spriteframe_t *sf;
-		spritedef_t tmp = {0};
-		const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
-		R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
+		if (!sonic)
+		{
+			const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
+			R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
+		}
 
 		if (tmp.numframes < NUMKARTFRAMES)
 			I_Error("R_LoadSkinSprites: too few frames for kart skin");
@@ -491,7 +496,8 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			sd->spriteframes = Z_Realloc(sd->spriteframes, sizeof(*sd->spriteframes) * (sd->numframes+1), PU_STATIC, NULL);
 			sd->spriteframes[sd->numframes++] = *sf;
 		}
-		Z_Free(tmp.spriteframes);
+		if (!sonic)
+			Z_Free(tmp.spriteframes);
 #undef SPR2COUNT
 
 		// now we have to rotate the drift frames. i hate this.
@@ -545,19 +551,6 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	Sk_SetDefaultValue(skin);
 	skin->wadnum = wadnum;
 	strcpy(skin->name, "sonic");
-	strcpy(skin->realname, "Sonic");
-	strcpy(skin->facerank, "PLAYRANK");
-	strcpy(skin->facewant, "PLAYWANT");
-	strcpy(skin->facemmap, "PLAYMMAP");
-	skin->prefcolor = SKINCOLOR_BLUE;
-	skin->starttranscolor = R_GetPaletteRemap(160);
-	skin->kartspeed = 8;
-	skin->kartweight = 2;
-
-	UINT16 lump = W_CheckNumForNamePwad("S_START", wadnum, 0);
-	if (lump == INT16_MAX)
-		I_Error("R_IHateThatHedgehog: could not find the hedgehog");
-	R_LoadSkinSprites(wadnum, &lump, &(UINT16){0}, skin);
 
 #ifdef SKINVALUES
 	skin_cons_t[0].value = 0;
@@ -570,13 +563,13 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 	if (rendermode == render_opengl)
 		HWR_AddPlayerModel(0);
 #endif
-
-	numskins = (UINT8)('r'+'a'+'c'+'e'+' '+'a'+'s'+' '+'a'+' '+'r'+'i'+'n'+'g'+'!');
 }
 
 // returns whether found appropriate property
-static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value, boolean compat)
+static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 {
+	boolean compat = wadfiles[skin->wadnum]->compatmode;
+
 	// custom translation table
 	if (!stricmp(stoken, "startcolor"))
 		skin->starttranscolor = compat ? R_GetPaletteRemap(atoi(value)) : atoi(value);
@@ -637,6 +630,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value,
 	GETPATCH(facerank)
 	GETPATCH(facewant)
 	GETPATCH(facemmap)
+#undef GETPATCH
 
 	else // let's check if it's a sound, otherwise error out
 	{
@@ -813,7 +807,7 @@ void R_AddSkins(UINT16 wadnum)
 					pos++;
 				}
 			}
-			else if (!R_ProcessPatchableFields(skin, stoken, value, wadfiles[wadnum]->compatmode))
+			else if (!R_ProcessPatchableFields(skin, stoken, value))
 				CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 
 next_token:
@@ -968,7 +962,7 @@ void R_PatchSkins(UINT16 wadnum)
 						pos++;
 					}
 				}
-				else if (!R_ProcessPatchableFields(skin, stoken, value, wadfiles[wadnum]->compatmode))
+				else if (!R_ProcessPatchableFields(skin, stoken, value))
 					CONS_Debug(DBG_SETUP, "R_PatchSkins: Unknown keyword '%s' in P_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 			}
 
