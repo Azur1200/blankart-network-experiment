@@ -2197,10 +2197,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (gametyperules & GTR_BUMPERS)
+			if (source && source != player->mo && source->player)
 			{
-
-				if (source && source != player->mo && source->player)
+				if (gametyperules & GTR_BUMPERS)
 				{
 					K_BattleAwardHit(source->player, player, inflictor, 1);
 
@@ -2225,13 +2224,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 						K_DestroyBumpers(player, 1);
 					}
 				}
-				else
-				{
-					K_DestroyBumpers(player, 1);
-				}
-			}
 
-			K_TryHurtSoundExchange(target, source);
+				K_TryHurtSoundExchange(target, source);
+			}
 
 			if (!((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT)))
 				player->sneakertimer = 0;
