@@ -2056,7 +2056,7 @@ static void K_drawKartLaps(void)
 		}
 		else
 		{
-			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps+1) % 10]);
+			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps) % 10]);
 			V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(numlaps) % 10]);
 		}
 
