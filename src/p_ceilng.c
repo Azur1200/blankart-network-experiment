@@ -244,7 +244,7 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 	// This function is deprecated.
 	// Use any of the following functions directly, instead.
 	
-	if (!udmf)
+	if (mapnamespace == MNS_SRB2KART)
 	{
 		return EV_DoCeilingOLD(tag,line,type);
 	}
