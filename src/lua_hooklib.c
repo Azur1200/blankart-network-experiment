@@ -791,6 +791,8 @@ static int playerdamage_hook
  int     hook_type,
  Hook_Callback results_handler
 ){
+	(void)damage;
+	(void)damagetype;
 	Hook_State hook;
 	if (prepare_mobj_hook(&hook, 0, hook_type, target->type))
 	{

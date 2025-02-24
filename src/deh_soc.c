@@ -2333,7 +2333,7 @@ void readframe(MYFILE *f, INT32 num)
 			else if (fastcmp(word1, "NEXT"))
 			{
 				statenum_t state = get_state(word2);
-				states[num].nextstate = state == -1 ? S_NULL : state;
+				states[num].nextstate = state == (statenum_t)-1 ? S_NULL : state;
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
@@ -3660,7 +3660,7 @@ void readfollower(MYFILE *f)
 				else
 				{
 					skincolornum_t color = get_skincolor(word2);
-					followers[numfollowers].defaultcolor = color == -1 ? SKINCOLOR_GREEN : color;
+					followers[numfollowers].defaultcolor = color == (skincolornum_t)-1 ? SKINCOLOR_GREEN : color;
 				}
 			}
 			else if (fastcmp(word, "SCALE"))
@@ -3894,7 +3894,7 @@ void readweather(MYFILE *f, INT32 num)
 			if (fastcmp(word, "TYPE"))
 			{
 				mobjtype_t mt = get_mobjtype(word2);
-				precipprops[num].type = mt == -1 ? MT_NULL : mt;
+				precipprops[num].type = mt == (mobjtype_t)-1 ? MT_NULL : mt;
 			}
 			else if (fastcmp(word, "EFFECTS"))
 			{

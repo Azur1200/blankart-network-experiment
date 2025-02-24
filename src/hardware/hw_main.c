@@ -6121,6 +6121,20 @@ void HWR_RenderPlayerView(void)
 	// set window position
 	HWR_ShiftViewPort();
 
+	if (r_splitscreen == 2 && player == &players[displayplayers[2]]) // No black void please.
+	{
+		// V_DrawPatchFill, but for the fourth screen only
+		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
+
+		for (x = vid.width>>1; x < vid.width; x += pw)
+		{
+			for (y = vid.height>>1; y < vid.height; y += ph)
+				HWR_DrawStretchyFixedPatch(gpatch, (x)<<FRACBITS, (y)<<FRACBITS, FRACUNIT, FRACUNIT, V_NOSCALESTART, NULL);
+		}
+	}
+
 	gl_viewx = FIXED_TO_FLOAT(dup_viewx);
 	gl_viewy = FIXED_TO_FLOAT(dup_viewy);
 	gl_viewz = FIXED_TO_FLOAT(dup_viewz);

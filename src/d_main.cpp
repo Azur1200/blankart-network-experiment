@@ -490,10 +490,18 @@ static bool D_Display(void)
 						}
 					}
 
-					if (r_splitscreen == 2)
+					if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 					{
-						// Draw over the fourth screen so you don't have to stare at a HOM :V
-						V_DrawFill(viewwidth, viewheight, viewwidth, viewheight, 31|V_NOSCALESTART);
+						// V_DrawPatchFill, but for the fourth screen only
+						patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
+						INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+						INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+						for (x = vid.width>>1; x < vid.width; x += pw)
+						{
+							for (y = vid.height>>1; y < vid.height; y += ph)
+								V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+						}
 					}
 				}
 
@@ -603,20 +611,14 @@ static bool D_Display(void)
 	// draw pause pic
 	if (paused && cv_showhud.value && !demo.playback)
 	{
-#if 0
 		INT32 py;
 		patch_t *patch;
 		if (automapactive)
 			py = 4;
 		else
 			py = viewwindowy + 4;
-		patch = W_CachePatchName("M_PAUSE", PU_PATCH);
+		patch = static_cast<patch_t*>(W_CachePatchName("M_PAUSE", PU_PATCH));
 		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, 0, patch);
-#else
-		INT32 y = ((automapactive) ? (32) : (BASEVIDHEIGHT/2));
-		M_DrawTextBox((BASEVIDWIDTH/2) - (60), y - (16), 13, 2);
-		V_DrawCenteredString(BASEVIDWIDTH/2, y - (4), V_YELLOWMAP, "Game Paused");
-#endif
 	}
 
 	if (demo.rewinding)
