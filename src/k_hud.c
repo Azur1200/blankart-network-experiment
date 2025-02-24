@@ -900,11 +900,11 @@ static void K_drawKartItem(void)
 		{
 			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
 			case 0: // Sneaker
-				localpatch = kp_sneaker[2+offset];
+				localpatch = kp_sneaker[offset ? 3: 0];
 				//localcolor = SKINCOLOR_RASPBERRY;
 				break;
 			case 1: // Banana
-				localpatch = kp_banana[3+offset];
+				localpatch = kp_banana[offset ? 4: 0];
 				//localcolor = SKINCOLOR_YELLOW;
 				break;
 			case 2: // Orbinaut
@@ -928,7 +928,7 @@ static void K_drawKartItem(void)
 				//localcolor = SKINCOLOR_TANGERINE;
 				break;
 			case 7: // Jawz
-				localpatch = kp_jawz[offset];
+				localpatch = kp_jawz[offset ? 2: 0];
 				//localcolor = SKINCOLOR_JAWZ;
 				break;
 			case 8: // Self-Propelled Bomb
@@ -955,23 +955,31 @@ static void K_drawKartItem(void)
 				localpatch = kp_thundershield[offset];
 				//localcolor = SKINCOLOR_CYAN;
 				break;
-			case 14: // Super Ring
+			case 14: // Flame Shield
+				localpatch = kp_flameshield[offset];
+				//localcolor = SKINCOLOR_FLAME;
+				break;
+			case 15: // Bubble Shield
+				localpatch = kp_bubbleshield[offset];
+				//localcolor = SKINCOLOR_BLUE;
+				break;
+			case 16: // Super Ring
 				localpatch = kp_superring[offset];
 				//localcolor = SKINCOLOR_GOLD;
 				break;
-			case 15: // Land Mine
+			case 17: // Land Mine
 				localpatch = kp_landmine[offset];
 				//localcolor = SKINCOLOR_JET;
 				break;
-			case 16: // Drop Target
+			case 18: // Drop Target
 				localpatch = kp_droptarget[offset];
 				//localcolor = SKINCOLOR_LIME;
 				break;
-			/*case 17: // Pogo Spring
+			/*case 19: // Pogo Spring
 				localpatch = kp_pogospring[offset];
 				localcolor = SKINCOLOR_TANGERINE;
 				break;
-			case 18: // Kitchen Sink
+			case 20: // Kitchen Sink
 				localpatch = kp_kitchensink[offset];
 				localcolor = SKINCOLOR_STEEL;
 				break;*/
