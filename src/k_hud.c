@@ -2726,12 +2726,50 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 	}
 
 	// Lat: 10/06/2020: colormap can be NULL on the frame you join a game, just arbitrarily use palette indexes 31 and 0 instead of whatever the colormap would give us instead to avoid crashes.
-	V_DrawFill(barx, bary, barw, (3 * vid.dupy), (colormap ? colormap[31] : 31)|V_NOSCALESTART);
-	V_DrawFill(barx, bary + vid.dupy, barw, vid.dupy, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
-	// END DRAWFILL DUMBNESS
+
 
 	// Draw the stem
-	V_DrawFixedPatch(x, y, FRACUNIT, 0, kp_nametagstem, colormap);
+	{
+		fixed_t stemx;
+		fixed_t stemy;
+		int j;
+		boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
+		boolean flipped;
+
+		if (flipcam)
+			flipped = (p->mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
+		else
+			flipped = p->mo->eflags & MFE_VERTICALFLIP;
+		stemx = (x * vid.dupx) / FRACUNIT;
+		stemy = (y * vid.dupy) / FRACUNIT;
+
+		// Center it if necessary
+		if (vid.width != BASEVIDWIDTH * vid.dupx)
+		{
+			stemx += (vid.width - (BASEVIDWIDTH * vid.dupx)) / 2;
+		}
+
+		if (vid.height != BASEVIDHEIGHT * vid.dupy)
+		{
+			stemy += (vid.height - (BASEVIDHEIGHT * vid.dupy)) / 2;
+		}
+
+		for	(j = 0; j < 4; j++)
+		{
+			stemy -= vid.dupy*4;
+			V_DrawFill(stemx, stemy, vid.dupy*3, vid.dupy*4, (colormap ? colormap[31] : 31)|V_NOSCALESTART);
+			V_DrawFill(stemx+vid.dupx, stemy + vid.dupy, vid.dupy, vid.dupy*4, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
+			stemx += vid.dupx;
+		}
+
+		V_DrawFill(barx, bary, barw, (3 * vid.dupy), (colormap ? colormap[31] : 31)|V_NOSCALESTART);
+		V_DrawFill(barx, bary + vid.dupy, barw, vid.dupy, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
+		V_DrawFill(stemx+vid.dupx, stemy+vid.dupy, barw - vid.dupx*3, vid.dupy, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
+	}
+	//V_DrawFixedPatch(x, y, FRACUNIT, 0, kp_nametagstem, colormap);
+	// END DRAWFILL DUMBNESS
+
+
 
 	// Draw the name itself
 	V_DrawThinStringAtFixed(x + (5*FRACUNIT), y - (26*FRACUNIT), V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
