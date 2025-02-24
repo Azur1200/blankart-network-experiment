@@ -12181,7 +12181,7 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 
 	mthing->mobj = mobj;
 
-	if (!udmf && (mthing->options & MTF_AMBUSH))
+	if ((mapnamespace == MNS_SRB2KART) && (mthing->options & MTF_AMBUSH))
 		P_SetAmbush(mthing, mobj);
 
 	// Generic reverse gravity for individual objects flag.

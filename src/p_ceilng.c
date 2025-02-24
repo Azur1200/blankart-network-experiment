@@ -745,7 +745,7 @@ INT32 EV_DoCrush(mtag_t tag, line_t *line, ceiling_e type)
 
 	fixed_t speed = line->args[2] << (FRACBITS - 2);
 	
-	if (!udmf)
+	if (mapnamespace == MNS_SRB2KART)
 	{
 		return EV_DoCrushOLD(tag,line,type);
 	}
