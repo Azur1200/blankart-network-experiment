@@ -1,0 +1,7 @@
+This document is here to help users when they are trying to convert their own Ring Racers (or at the very least mapped in HVR) maps to BlanKart.
+
+Although BlanKart and RingRacers are both very similar UDMF based formats there are still some differences.
+
+ARGS:
+
+Things and Mapthings read their args from "arg" and "stringarg" instead of "thingarg" and "thingstringarg" like in Ring Racers. Due to this args for scripts are now stored under scriptarg and scriptstringarg instead. BlanKart still supports "thingarg" and "thingstringarg" but scriptargs will still have to be moved unless using the ringracers namespace.
