@@ -21,6 +21,7 @@
 #include "r_skins.h" // numskins
 #include "r_draw.h" // R_GetColorByName
 #include "k_pwrlv.h"
+#include "k_stats.h"
 
 // Map triggers for linedef executors
 // 32 triggers, one bit each
@@ -174,9 +175,9 @@ UINT8 M_CheckCondition(condition_t *cn)
 	switch (cn->type)
 	{
 		case UC_PLAYTIME: // Requires total playing time >= x
-			return (totalplaytime >= (unsigned)cn->requirement);
+			return (kartstats.totalplaytime >= (unsigned)cn->requirement);
 		case UC_MATCHESPLAYED: // Requires any level completed >= x times
-			return (matchesplayed >= (unsigned)cn->requirement);
+			return (kartstats.matchesplayed >= (unsigned)cn->requirement);
 		case UC_POWERLEVEL: // Requires power level >= x on a certain gametype
 			return (vspowerlevel[cn->extrainfo1] >= (unsigned)cn->requirement);
 		case UC_GAMECLEAR: // Requires game beaten >= x times

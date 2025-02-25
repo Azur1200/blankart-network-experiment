@@ -25,7 +25,7 @@
 #include "r_sky.h"
 #include "s_sound.h"
 #include "w_wad.h"
-
+#include "k_stats.h"
 #include "k_kart.h" // SRB2kart 011617
 #include "k_collide.h"
 #include "hu_stuff.h" // SRB2kart

@@ -2482,7 +2482,7 @@ void readsound(MYFILE *f, INT32 num)
  * \sa readmaincfg()
  * \author Graue <graue@oceanbase.org>
  */
-static boolean GoodDataFileName(const char *s)
+/*static boolean GoodDataFileName(const char *s)
 {
 	const char *p;
 	const char *tail = ".dat";
@@ -2497,7 +2497,7 @@ static boolean GoodDataFileName(const char *s)
 	if (fasticmp(s, "gamedata.dat")) return false;
 
 	return true;
-}
+}*/
 
 void reademblemdata(MYFILE *f, INT32 num)
 {
@@ -3242,7 +3242,8 @@ void readmaincfg(MYFILE *f)
 
 			else if (fastcmp(word, "GAMEDATA"))
 			{
-				size_t filenamelen;
+				// just ignore it but dont throw a warning
+				/*size_t filenamelen;
 
 				// Check the data filename so that mods
 				// can't write arbitrary files.
@@ -3271,7 +3272,7 @@ void readmaincfg(MYFILE *f)
 
 				refreshdirmenu |= REFRESHDIR_GAMEDATA;
 				gamedataadded = true;
-				titlechanged = true;
+				titlechanged = true;*/
 			}
 			else if (fastcmp(word, "RESETDATA"))
 			{
