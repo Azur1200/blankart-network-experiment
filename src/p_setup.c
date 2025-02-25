@@ -6850,8 +6850,16 @@ static void P_ConvertBinarySectorTypes(void)
 			case 1: //Spring Panel
 				sectors[i].specialflags |= SSF_REDPOGOSPRING;
 				break;
+			case 2: //Wind/Current
+				if (mapnamespace == MNS_SRB2KART)
+					sectors[i].specialflags |= SSF_WINDCURRENT;
+				break;
 			case 3:
 				sectors[i].specialflags |= SSF_YELLOWPOGOSPRING;
+				break;
+			case 4: //Conveyor
+				if (mapnamespace == MNS_SRB2KART)
+					sectors[i].specialflags |= SSF_CONVEYOR;
 				break;
 			case 5: //Speed pad
 				sectors[i].specialflags |= SSF_SPEEDPAD;

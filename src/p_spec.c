@@ -8228,7 +8228,8 @@ static void Add_Scroller(INT32 type, fixed_t dx, fixed_t dy, INT32 control, INT3
 	s->affectee = affectee;
 	if (type == sc_carry || type == sc_carry_ceiling)
 	{
-		sectors[affectee].specialflags |= SSF_CONVEYOR;
+		if (mapnamespace != MNS_SRB2KART)
+			sectors[affectee].specialflags |= SSF_CONVEYOR;
 		if (IsSector3DBlock(&sectors[affectee]))
 		{
 			if (type == sc_carry)
@@ -9197,12 +9198,14 @@ static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, fixed_t 
 	{
 		p->roverpusher = true;
 		p->referrer = referrer;
-		sectors[referrer].specialflags |= SSF_WINDCURRENT;
+		if (mapnamespace != MNS_SRB2KART)
+			sectors[referrer].specialflags |= SSF_WINDCURRENT;
 	}
 	else
 	{
 		p->roverpusher = false;
-		sectors[affectee].specialflags |= SSF_WINDCURRENT;
+		if (mapnamespace != MNS_SRB2KART)
+			sectors[affectee].specialflags |= SSF_WINDCURRENT;
 	}
 
 	p->affectee = affectee;
