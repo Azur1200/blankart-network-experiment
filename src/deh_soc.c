@@ -3240,9 +3240,10 @@ void readmaincfg(MYFILE *f)
 				maxXtraLife = (UINT8)get_number(word2);
 			}
 
-			/*else if (fastcmp(word, "GAMEDATA"))
+			else if (fastcmp(word, "GAMEDATA"))
 			{
-				size_t filenamelen;
+				// just ignore it but dont throw a warning
+				/*size_t filenamelen;
 
 				// Check the data filename so that mods
 				// can't write arbitrary files.
@@ -3271,8 +3272,8 @@ void readmaincfg(MYFILE *f)
 
 				refreshdirmenu |= REFRESHDIR_GAMEDATA;
 				gamedataadded = true;
-				titlechanged = true;
-			}*/
+				titlechanged = true;*/
+			}
 			else if (fastcmp(word, "RESETDATA"))
 			{
 				P_ResetData(value);
