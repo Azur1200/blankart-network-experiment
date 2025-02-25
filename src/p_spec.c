@@ -5352,20 +5352,6 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				P_ProcessEggCapsule(player, sector);
 			break;
 	}
-
-	switch (GETSECSPECIAL(sector->special, 4))
-	{
-		case 5: // Fan sector
-		{
-			player->mo->momz += 5*FRACUNIT/4;
-
-			if (player->mo->momz > 5*FRACUNIT)
-				player->mo->momz = 5*FRACUNIT;
-
-			P_ResetPlayer(player);
-			break;
-		}
-	}
 }
 
 /** Applies a sector special to a player.
@@ -9235,7 +9221,11 @@ void T_Pusher(pusher_t *p)
 
 	sec = sectors + p->affectee;
 	if (p->roverpusher)
+	{
 		referrer = sectors + p->referrer;
+		if (mapnamespace == MNS_SRB2KART && !(referrer->specialflags & SSF_WINDCURRENT))
+			return;
+	}
 
 	// For constant pushers (wind/current) there are 3 situations:
 	//
