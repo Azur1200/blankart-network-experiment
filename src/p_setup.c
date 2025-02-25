@@ -7308,7 +7308,7 @@ static void P_ConvertBinaryThingTypes(void)
 					mapthings[i].args[4] = startangle;
 
 				mapthings[i].args[0] = abs(lines[j].dx >> FRACBITS);
-				mapthings[i].args[3] = abs(min(maxspeed, lines[j].dy >> (FRACBITS-4)));
+				mapthings[i].args[3] = min(maxspeed, abs(lines[j].dy >> (FRACBITS-4)));
 				mapthings[i].angle = startangle + zspeed;
 				mapthings[i].pitch = startangle + xspeed;
 			}
