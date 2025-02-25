@@ -7735,14 +7735,18 @@ static void M_DrawStatsPlaytime(void)
 	V_DrawString(20, 62, highlightflags, "Total Matches:");
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 62, 0, va("%i played", kartstats.matchesplayed));
 
+	V_DrawString(20, 82, highlightflags, "Online Power Level:");
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 92, 0, va("Race: %i", vspowerlevel[PWRLV_RACE]));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 102, 0, va("Battle: %i", vspowerlevel[PWRLV_BATTLE]));
+
 	// Nothing else to draw
 	if (kartstats.vanilla)
 		return;
 
-	DRAWTIMESTAT(82, "RA Play Time:", raplaytime);
-	DRAWTIMESTAT(92, "Online Play Time:", onlineplaytime);
-	DRAWTIMESTAT(102, "Race Play Time:", raceplaytime);
-	DRAWTIMESTAT(112, "Battle Play Time:", battleplaytime);
+	DRAWTIMESTAT(122, "RA Play Time:", raplaytime);
+	DRAWTIMESTAT(132, "Online Play Time:", onlineplaytime);
+	DRAWTIMESTAT(142, "Race Play Time:", raceplaytime);
+	DRAWTIMESTAT(152, "Battle Play Time:", battleplaytime);
 }
 
 // Note: only available with non-vanilla stats loaded, so it doesn't check for that
