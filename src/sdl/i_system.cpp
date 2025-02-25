@@ -1984,9 +1984,7 @@ void I_Quit(void)
 	SDLforceUngrabMouse();
 	quiting = SDL_FALSE;
 	M_SaveConfig(NULL); //save game config, cvars..
-#ifndef NONET
 	D_SaveBan(); // save the ban list
-#endif
 
 	// Make sure you lose points for ALT-F4
 	if (Playing())
@@ -2118,9 +2116,7 @@ void I_Error(const char *error, ...)
 	// ---
 
 	M_SaveConfig(NULL); // save game config, cvars..
-#ifndef NONET
 	D_SaveBan(); // save the ban list
-#endif
 	G_SaveGameData(); // Tails 12-08-2002
 
 	// Shutdown. Here might be other errors.

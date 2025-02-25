@@ -612,6 +612,40 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 	}
 }
 
+static patch_t *K_GetCachedItemPatch(INT32 item, UINT8 offset)
+{
+	patch_t **kp[1 + NUMKARTITEMS] = {
+		kp_sadface,
+		NULL,
+		kp_sneaker,
+		kp_rocketsneaker,
+		kp_invincibility,
+		kp_banana,
+		kp_eggman,
+		kp_orbinaut,
+		kp_jawz,
+		kp_mine,
+		kp_ballhog,
+		kp_selfpropelledbomb,
+		kp_grow,
+		kp_shrink,
+		kp_thundershield,
+		kp_hyudoro,
+		kp_pogospring,
+		kp_kitchensink,
+		kp_superring,
+		kp_landmine,
+		kp_bubbleshield,
+		kp_flameshield,
+		kp_droptarget,
+	};
+
+	if (item == KITEM_SAD || (item > KITEM_NONE && item < NUMKARTITEMS))
+		return kp[item - KITEM_SAD][offset];
+	else
+		return NULL;
+}
+
 //}
 
 INT32 ITEM_X, ITEM_Y;	// Item Window
@@ -893,98 +927,30 @@ static void K_drawKartItem(void)
 
 	if (stplyr->itemroulette)
 	{
+		const INT32 item = K_GetRollingRouletteItem(stplyr);
+
 		if (stplyr->skincolor)
 			localcolor = stplyr->skincolor;
 
-		switch((stplyr->itemroulette % (16*3)) / 3)
+		switch (item)
 		{
-			// Each case is handled in threes, to give three frames of in-game time to see the item on the roulette
-			case 0: // Sneaker
+			case KITEM_SNEAKER:
 				localpatch = kp_sneaker[offset ? 3: 0];
-				//localcolor = SKINCOLOR_RASPBERRY;
 				break;
-			case 1: // Banana
+			case KITEM_BANANA:
 				localpatch = kp_banana[offset ? 4: 0];
-				//localcolor = SKINCOLOR_YELLOW;
 				break;
-			case 2: // Orbinaut
+			case KITEM_ORBINAUT:
 				localpatch = kp_orbinaut[3+offset];
-				//localcolor = SKINCOLOR_STEEL;
 				break;
-			case 3: // Mine
-				localpatch = kp_mine[offset];
-				//localcolor = SKINCOLOR_JET;
-				break;
-			case 4: // Grow
-				localpatch = kp_grow[offset];
-				//localcolor = SKINCOLOR_TEAL;
-				break;
-			case 5: // Hyudoro
-				localpatch = kp_hyudoro[offset];
-				//localcolor = SKINCOLOR_STEEL;
-				break;
-			case 6: // Rocket Sneaker
-				localpatch = kp_rocketsneaker[offset];
-				//localcolor = SKINCOLOR_TANGERINE;
-				break;
-			case 7: // Jawz
+			case KITEM_JAWZ:
 				localpatch = kp_jawz[offset ? 2: 0];
-				//localcolor = SKINCOLOR_JAWZ;
 				break;
-			case 8: // Self-Propelled Bomb
-				localpatch = kp_selfpropelledbomb[offset];
-				//localcolor = SKINCOLOR_JET;
-				break;
-			case 9: // Shrink
-				localpatch = kp_shrink[offset];
-				//localcolor = SKINCOLOR_ORANGE;
-				break;
-			case 10: // Invincibility
+			case KITEM_INVINCIBILITY:
 				localpatch = localinv;
-				//localcolor = SKINCOLOR_GREY;
 				break;
-			case 11: // Eggman Monitor
-				localpatch = kp_eggman[offset];
-				//localcolor = SKINCOLOR_ROSE;
-				break;
-			case 12: // Ballhog
-				localpatch = kp_ballhog[offset];
-				//localcolor = SKINCOLOR_LILAC;
-				break;
-			case 13: // Thunder Shield
-				localpatch = kp_thundershield[offset];
-				//localcolor = SKINCOLOR_CYAN;
-				break;
-			case 14: // Flame Shield
-				localpatch = kp_flameshield[offset];
-				//localcolor = SKINCOLOR_FLAME;
-				break;
-			case 15: // Bubble Shield
-				localpatch = kp_bubbleshield[offset];
-				//localcolor = SKINCOLOR_BLUE;
-				break;
-			case 16: // Super Ring
-				localpatch = kp_superring[offset];
-				//localcolor = SKINCOLOR_GOLD;
-				break;
-			case 17: // Land Mine
-				localpatch = kp_landmine[offset];
-				//localcolor = SKINCOLOR_JET;
-				break;
-			case 18: // Drop Target
-				localpatch = kp_droptarget[offset];
-				//localcolor = SKINCOLOR_LIME;
-				break;
-			/*case 19: // Pogo Spring
-				localpatch = kp_pogospring[offset];
-				localcolor = SKINCOLOR_TANGERINE;
-				break;
-			case 20: // Kitchen Sink
-				localpatch = kp_kitchensink[offset];
-				localcolor = SKINCOLOR_STEEL;
-				break;*/
 			default:
-				break;
+				localpatch = K_GetCachedItemPatch(item, offset);
 		}
 	}
 	else
@@ -1053,9 +1019,6 @@ static void K_drawKartItem(void)
 					numberdisplaymin = 4;
 					numberdisplaymin = offset ? 2 : 4;
 					break;
-				case KITEM_ROCKETSNEAKER:
-					localpatch = kp_rocketsneaker[offset];
-					break;
 				case KITEM_INVINCIBILITY:
 					localpatch = localinv;
 					localbg = kp_itembg[offset+1];
@@ -1063,9 +1026,6 @@ static void K_drawKartItem(void)
 				case KITEM_BANANA:
 					localpatch = kp_banana[(offset ? 4 : min(stplyr->itemamount-1, 3))];
 					numberdisplaymin = offset ? 2 : 5;
-					break;
-				case KITEM_EGGMAN:
-					localpatch = kp_eggman[offset];
 					break;
 				case KITEM_ORBINAUT:
 					localpatch = kp_orbinaut[(offset ? 4 : min(stplyr->itemamount-1, 3))];
@@ -1076,57 +1036,18 @@ static void K_drawKartItem(void)
 					numberdisplaymin = 3;
 					numberdisplaymin = offset ? 2 : 3;
 					break;
-				case KITEM_MINE:
-					localpatch = kp_mine[offset];
-					break;
-				case KITEM_LANDMINE:
-					localpatch = kp_landmine[offset];
-					break;
-				case KITEM_DROPTARGET:
-					localpatch = kp_droptarget[offset];
-					break;
-				case KITEM_BALLHOG:
-					localpatch = kp_ballhog[offset];
-					break;
 				case KITEM_SPB:
-					localpatch = kp_selfpropelledbomb[offset];
-					localbg = kp_itembg[offset+1];
-					break;
-				case KITEM_GROW:
-					localpatch = kp_grow[offset];
-					break;
-				case KITEM_SHRINK:
-					localpatch = kp_shrink[offset];
-					break;
 				case KITEM_THUNDERSHIELD:
-					localpatch = kp_thundershield[offset];
-					localbg = kp_itembg[offset+1];
-					break;
 				case KITEM_BUBBLESHIELD:
-					localpatch = kp_bubbleshield[offset];
-					localbg = kp_itembg[offset+1];
-					break;
 				case KITEM_FLAMESHIELD:
-					localpatch = kp_flameshield[offset];
 					localbg = kp_itembg[offset+1];
-					break;
-				case KITEM_HYUDORO:
-					localpatch = kp_hyudoro[offset];
-					break;
-				case KITEM_POGOSPRING:
-					localpatch = kp_pogospring[offset];
-					break;
-				case KITEM_SUPERRING:
-					localpatch = kp_superring[offset];
-					break;
-				case KITEM_KITCHENSINK:
-					localpatch = kp_kitchensink[offset];
-					break;
-				case KITEM_SAD:
-					localpatch = kp_sadface[offset];
-					break;
+					/*FALLTHRU*/
+
 				default:
-					localpatch = kp_nodraw; // diagnose underflows
+					localpatch = K_GetCachedItemPatch(stplyr->itemtype, offset);
+
+					if (localpatch == NULL)
+						localpatch = kp_nodraw; // diagnose underflows
 					break;
 			}
 

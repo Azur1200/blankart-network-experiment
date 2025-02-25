@@ -1361,7 +1361,8 @@ void G_DoLoadLevel(boolean resetplayer)
 	{
 		if (gamemap < 1 || gamemap > nummapheaders)
 		{
-			titlemap = 0; // let's not infinite recursion ok
+			Z_Free(titlemap);
+			titlemap = NULL; // let's not infinite recursion ok
 			Command_ExitGame_f();
 			return;
 		}
@@ -3737,27 +3738,46 @@ void G_AddMapToBuffer(INT16 map)
 //
 static void G_UpdateVisited(void)
 {
-	// Update visitation flags?
-	if (/*(!majormods || savemoddata) // Not modified
-		&&*/ !multiplayer && !demo.playback // SP/RA/NiGHTS mode
-		&& !(modeattacking && (players[consoleplayer].pflags & PF_NOCONTEST))) // Not failed
+	UINT8 i;
+	UINT8 earnedEmblems;
+
+	// No demos.
+	if (demo.playback)
+		return;
+
+	// Check if every local player wiped out.
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		UINT8 earnedEmblems;
+		if (!playeringame[i]) // Not here.
+			continue;
 
-		// Update visitation flags
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_BEATEN;
+		if (!P_IsLocalPlayer(&players[i])) // Not local.
+			continue;
 
-		if (encoremode == true)
-		{
-			mapheaderinfo[gamemap-1]->mapvisited |= MV_ENCORE;
-		}
+		if (players[i].spectator) // Not playing.
+			continue;
 
-		if (modeattacking)
-			G_UpdateRecordReplays();
-
-		if ((earnedEmblems = M_CompletionEmblems()))
-			CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
+		if (players[i].pflags & PF_NOCONTEST) // Sonic after not surviving.
+			continue;
+		break;
 	}
+
+	if (i == MAXPLAYERS) // Not a single living local soul?
+		return;
+
+	// Update visitation flags
+	mapheaderinfo[gamemap-1]->mapvisited |= MV_BEATEN;
+
+	if (encoremode == true)
+	{
+		mapheaderinfo[gamemap-1]->mapvisited |= MV_ENCORE;
+	}
+
+	if (modeattacking)
+		G_UpdateRecordReplays();
+
+	if ((earnedEmblems = M_CompletionEmblems()))
+		CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
 }
 
 static boolean CanSaveLevel(INT32 mapnum)
@@ -3841,15 +3861,23 @@ static INT16 G_GetNextMap(boolean advancemap)
 	else
 	{
 		UINT32 tolflag = G_TOLFlag(gametype);
+		register INT16 cm;
 
 		if (grandprixinfo.gp == true)
 		{
-			register INT16 cm;
 			cupheader_t *cup = mapheaderinfo[gamemap-1]->cup;
 			UINT8 gettingresult = 0;
 
 			while (cup)
 			{
+				// Not unlocked? Grab the next result afterwards
+				if (!marathonmode && cup->unlockrequired != -1 && !unlockables[cup->unlockrequired].unlocked)
+				{
+					cup = cup->next;
+					gettingresult = 1;
+					continue;
+				}
+
 				for (i = 0; i < cup->numlevels; i++)
 				{
 					cm = cup->cachedlevels[i];
@@ -3858,7 +3886,8 @@ static INT16 G_GetNextMap(boolean advancemap)
 					if (cm >= nummapheaders
 						|| !mapheaderinfo[cm]
 						|| mapheaderinfo[cm]->lumpnum == LUMPERROR
-						|| !(mapheaderinfo[cm]->typeoflevel & tolflag))
+						|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
+						|| (!marathonmode && M_MapLocked(cm+1)))
 						continue;
 
 					// Grab the first valid after the map you're on
@@ -3904,26 +3933,27 @@ static INT16 G_GetNextMap(boolean advancemap)
 		}
 		else
 		{
-			i = curmap;
-			if (++i >= nummapheaders)
-				i = 0;
+			cm = curmap;
+			if (++cm >= nummapheaders)
+				cm = 0;
 
-			while (i != curmap)
+			while (cm != curmap)
 			{
-				if (!mapheaderinfo[i]
-					|| mapheaderinfo[i]->lumpnum == LUMPERROR
-					|| !(mapheaderinfo[i]->typeoflevel & tolflag)
-					|| (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU))
+				if (!mapheaderinfo[cm]
+					|| mapheaderinfo[cm]->lumpnum == LUMPERROR
+					|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
+					|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU)
+					|| M_MapLocked(cm+1))
 				{
-					if (++i >= nummapheaders)
-						i = 0;
+					if (++cm >= nummapheaders)
+						cm = 0;
 					continue;
 				}
 
 				break;
 			}
 
-			newmap = i;
+			newmap = cm;
 		}
 
 		if (advancemap && !marathonmode)

@@ -15,7 +15,7 @@
 
 #include <time.h>
 
-#if defined (_WIN32) || defined (__DJGPP__)
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
 #else
@@ -29,10 +29,6 @@
 #include <limits.h>
 #elif defined (_WIN32)
 #include <sys/utime.h>
-#endif
-#ifdef __DJGPP__
-#include <dir.h>
-#include <utime.h>
 #endif
 
 #ifdef HAVE_CURL
@@ -115,14 +111,12 @@ typedef struct
 } pauseddownload_t;
 static pauseddownload_t *pauseddownload = NULL;
 
-#ifndef NONET
 // for cl loading screen
 INT32 lastfilenum = -1;
 INT32 downloadcompletednum = 0;
 UINT32 downloadcompletedsize = 0;
 INT32 totalfilesrequestednum = 0;
 UINT32 totalfilesrequestedsize = 0;
-#endif
 
 #ifdef HAVE_CURL
 static CURL *http_handle;
@@ -254,9 +248,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 
 void CL_PrepareDownloadSaveGame(const char *tmpsave)
 {
-#ifndef NONET
 	lastfilenum = -1;
-#endif
 
 	fileneedednum = 1;
 	fileneeded[0].status = FS_REQUESTED;
@@ -1534,10 +1526,8 @@ void PT_FileFragment(void)
 					HSendPacket(servernode, true, 0, 0);
 				}
 
-#ifndef NONET
 				downloadcompletednum++;
 				downloadcompletedsize += file->totalsize;
-#endif
 			}
 		}
 		else // Already received
@@ -1571,9 +1561,7 @@ void PT_FileFragment(void)
 		I_Error("Received a file not requested (file id: %d, file status: %s)\n", filenum, s);
 	}
 
-#ifndef NONET
 	lastfilenum = filenum;
-#endif
 }
 
 /** \brief Checks if a node is downloading a file

@@ -66,13 +66,11 @@ extern fileneeded_t fileneeded[MAX_WADFILES];
 #define DOWNLOADDIR_PART "downloads"
 extern char downloaddir[];
 
-#ifndef NONET
 extern INT32 lastfilenum;
 extern INT32 downloadcompletednum;
 extern UINT32 downloadcompletedsize;
 extern INT32 totalfilesrequestednum;
 extern UINT32 totalfilesrequestedsize;
-#endif
 
 #ifdef HAVE_CURL
 extern boolean curl_failedwebdownload;
