@@ -1000,6 +1000,12 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
+		else if (stplyr->curshield == KSHIELD_BUBBLE)
+		{
+			localpatch = kp_bubbleshield[offset];
+			itembar = 2 - stplyr->bubblepop;
+			maxl = 2;
+		}
 		else if (stplyr->sadtimer > 0)
 		{
 			if (leveltime & 2)

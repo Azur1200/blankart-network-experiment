@@ -5302,9 +5302,17 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 
 	if (shield != KSHIELD_NONE && !keepshields)
 	{
-		if (shield == KSHIELD_THUNDER)
+		switch (shield)
 		{
-			K_DoThunderShield(player);
+			case KSHIELD_THUNDER:
+				K_DoThunderShield(player);
+				break;
+			case KSHIELD_BUBBLE:
+				S_StartSound(player->mo, sfx_s3k4b);
+				break;
+			case KSHIELD_FLAME:
+				S_StartSound(player->mo, sfx_s3k37);
+				break;
 		}
 
 		player->curshield = KSHIELD_NONE;
@@ -9528,7 +9536,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 									if (player->flamedash == 0)
 									{
-										S_StartSound(player->mo, sfx_s3k43);
+										S_StartSound(player->mo, sfx_s3k48);
 										K_PlayBoostTaunt(player->mo);
 									}
 
@@ -9547,8 +9555,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									{
 										P_Thrust(
 											player->mo, player->mo->angle,
-											FixedMul((50*player->mo->scale), K_GetKartGameSpeedScalar(gamespeed))
+											FixedMul((25*player->mo->scale), K_GetKartGameSpeedScalar(gamespeed))
 										);
+
+										S_StartSound(player->mo, sfx_s3k47);
 
 										player->flamemeter = 0;
 										player->flamelength = 0;

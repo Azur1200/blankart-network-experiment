@@ -734,6 +734,20 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 		// Player Damage
 		P_DamageMobj(t2, ((t1->type == MT_BUBBLESHIELD) ? t1->target : t1), t1, 1, DMG_NORMAL);
+
+		if (t1->target->player)
+		{
+			player_t *player = t1->target->player;
+
+			player->bubblepop++;
+
+			if (player->bubblepop > 1)
+			{
+				K_DropHnextList(player, false);
+				player->bubblepop = 0;
+			}
+		}
+
 		S_StartSound(t1, sfx_s3k44);
 	}
 	else
@@ -753,7 +767,21 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 			}
 			if (t2->type == MT_JAWZ)
 				P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-			t2->threshold = 10;
+
+			if (t1->target->player)
+			{
+				player_t *player = t1->target->player;
+
+				player->bubblepop++;
+
+				if (player->bubblepop > 1)
+				{
+					K_DropHnextList(player, false);
+					player->bubblepop = 0;
+				}
+			}
+
+			t2->threshold = 20;
 			S_StartSound(t1, sfx_s3k44);
 		}
 	}

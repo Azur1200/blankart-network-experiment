@@ -610,6 +610,7 @@ struct player_t
 	UINT8 curshield;	// see kartshields_t
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
+	UINT8 bubblepop;	// Bubble Shield usage count
 	UINT16 flamedash;	// Flame Shield dash power
 	UINT16 flamemeter;	// Flame Shield dash meter left
 	UINT8 flamelength;	// Flame Shield dash meter, number of segments

@@ -8182,7 +8182,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momz = 0;
 			mobj->destscale = ((5*mobj->tracer->scale)>>2) + (mobj->tracer->scale>>3);
 
-			mobj->tracer->momz = (8*mobj->tracer->scale) * P_MobjFlip(mobj->tracer);
+			mobj->tracer->momz = (5*mobj->tracer->scale) * P_MobjFlip(mobj->tracer);
 
 			mobj->tracer->momx = (31*mobj->tracer->momx)/32;
 			mobj->tracer->momy = (31*mobj->tracer->momy)/32;
@@ -8213,14 +8213,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->tracer->y + P_ReturnThrustY(NULL, mobj->tracer->angle+ANGLE_90, (mobj->cvmem)<<FRACBITS),
 				mobj->tracer->z - (4*mobj->tracer->scale) + (P_RandomRange(-abs(mobj->cvmem), abs(mobj->cvmem))<<FRACBITS));
 
-			if (mobj->movecount > 4*TICRATE)
+			if (mobj->movecount > 5*TICRATE)
 			{
 				S_StartSound(mobj->tracer, sfx_s3k77);
 				mobj->tracer->flags &= ~MF_NOGRAVITY;
 				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
+				player->respawn = 1;
+
 				break;
 			}
 
+			// Uses cmd.turning over steering intentionally.
 			if (abs(player->cmd.turning) > 100)
 			{
 				INT32 lastsign = 0;
@@ -8232,7 +8235,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if ((player->cmd.turning > 0 && lastsign < 0)
 					|| (player->cmd.turning < 0 && lastsign > 0))
 				{
-					mobj->movecount += (TICRATE/2);
+					mobj->movecount += (TICRATE/4);
 					mobj->cvmem = 8*lastsign;
 					S_StartSound(mobj, sfx_s3k7a);
 				}
