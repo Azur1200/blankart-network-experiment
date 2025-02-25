@@ -557,9 +557,6 @@ struct tolinfo_t
 extern tolinfo_t TYPEOFLEVEL[NUMTOLNAMES];
 extern UINT32 lastcustomtol;
 
-extern tic_t totalplaytime;
-extern UINT32 matchesplayed;
-
 extern UINT8 stagefailed;
 
 // Emeralds stored as bits to throw savegame hackers off.

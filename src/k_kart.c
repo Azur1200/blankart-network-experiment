@@ -38,6 +38,8 @@
 #include "m_cheat.h"	// objectplacing
 #include "p_spec.h"
 
+
+#include "k_stats.h"
 #include "k_waypoint.h"
 #include "k_bot.h"
 #include "k_hud.h"
@@ -3620,6 +3622,7 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 		S_StartSound(player->mo, sfx_slip);
 	}
 
+	K_StatPlayerHit(player, source ? source->player : NULL);
 	player->spinouttimer = (3*TICRATE/2)+2;
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }

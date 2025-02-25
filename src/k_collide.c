@@ -2,6 +2,7 @@
 /// \brief SRB2Kart item collision hooks
 
 #include "k_collide.h"
+#include "k_stats.h"
 #include "doomstat.h"
 #include "doomtype.h"
 #include "p_mobj.h"
@@ -799,6 +800,8 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 	{
 		if (t2->player->flashing > 0)
 			return true;
+
+		K_StatPlayerSink(t1->player, P_MobjWasRemoved(t2->target) ? NULL : t2->target->player);
 
 		S_StartSound(NULL, sfx_cgot); //let all players hear it.
 

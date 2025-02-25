@@ -22,6 +22,7 @@
 #include "m_random.h"
 #include "lua_script.h"
 #include "lua_hook.h"
+#include "k_stats.h"
 #include "m_perfstats.h"
 #include "i_system.h" // I_GetPreciseTime
 #include "i_video.h"
@@ -746,8 +747,7 @@ void P_Ticker(boolean run)
 	}
 
 	// Keep track of how long they've been playing!
-	if (!demo.playback) // Don't increment if a demo is playing.
-		totalplaytime++;
+	K_StatTicker();
 
 	// formality so kitemcap gets updated properly each frame.
 	P_RunKartItems();

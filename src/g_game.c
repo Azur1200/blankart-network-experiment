@@ -53,6 +53,7 @@
 
 // SRB2kart
 #include "k_kart.h"
+#include "k_stats.h" // SRB2kart
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_color.h"
@@ -196,8 +197,6 @@ UINT32 tokenlist; // List of tokens collected
 boolean gottoken; // Did you get a token? Used for end of act
 INT32 tokenbits; // Used for setting token bits
 
-tic_t totalplaytime;
-UINT32 matchesplayed; // SRB2Kart
 boolean gamedataloaded = false;
 
 // Temporary holding place for nights data for the current map
@@ -2198,7 +2197,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	{
 		if (legitimateexit && !demo.playback && !mapreset) // (yes you're allowed to unlock stuff this way when the game is modified)
 		{
-			matchesplayed++;
+			kartstats.matchesplayed++;
 			if (M_UpdateUnlockablesAndExtraEmblems())
 				S_StartSound(NULL, sfx_ncitem);
 			G_SaveGameData();
@@ -4044,6 +4043,7 @@ static void G_DoCompleted(void)
 	if (!demo.playback)
 	{
 		nextmap = G_GetNextMap(true);
+		K_StatRound();
 
 		// Remember last map for when you come out of the special stage.
 		if (!spec)
@@ -4301,9 +4301,6 @@ void G_LoadGameData(void)
 	G_ClearRecords(); // main and nights records
 	M_ClearSecrets(); // emblems, unlocks, maps visited, etc
 
-	totalplaytime = 0; // total play time (separate from all)
-	matchesplayed = 0; // SRB2Kart: matches played & finished
-
 	for (i = 0; i < PWRLV_NUMTYPES; i++) // SRB2Kart: online rank system
 		vspowerlevel[i] = PWRLVRECORD_START;
 
@@ -4334,9 +4331,8 @@ void G_LoadGameData(void)
 		P_SaveBufferFree(&save);
 		I_Error("Game data is not for SRB2Kart v2.\nDelete %s(maybe in %s) and try again.", gamedatafilename, gdfolder);
 	}
-	
-	totalplaytime = READUINT32(save.p);
-	matchesplayed = READUINT32(save.p);
+
+	K_ReadStats(&save, true);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 	{
@@ -4486,8 +4482,7 @@ void G_SaveGameData(void)
 	// Version test
 	WRITEUINT32(save.p, GD_VERSIONCHECK); // 4
 
-	WRITEUINT32(save.p, totalplaytime); // 4
-	WRITEUINT32(save.p, matchesplayed); // 4
+	K_WriteStats(&save, true);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 		WRITEUINT16(save.p, vspowerlevel[i]);

@@ -64,6 +64,7 @@
 #include "k_hud.h" // SRB2kart
 #include "k_kart.h" // KartItemCVars
 #include "k_pwrlv.h"
+#include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
 #include "k_color.h"
 #include "k_grandprix.h"
@@ -7682,12 +7683,11 @@ static void M_DrawLevelStats(void)
 
 	V_DrawString(20, 24, highlightflags, "Total Play Time:");
 	V_DrawCenteredString(BASEVIDWIDTH/2, 32, 0, va("%i hours, %i minutes, %i seconds",
-	                         G_TicsToHours(totalplaytime),
-	                         G_TicsToMinutes(totalplaytime, false),
-	                         G_TicsToSeconds(totalplaytime)));
-
+	                         G_TicsToHours(kartstats.totalplaytime),
+	                         G_TicsToMinutes(kartstats.totalplaytime, false),
+	                         G_TicsToSeconds(kartstats.totalplaytime)));
 	V_DrawString(20, 42, highlightflags, "Total Matches:");
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, 0, va("%i played", matchesplayed));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, 0, va("%i played", kartstats.matchesplayed));
 
 	V_DrawString(20, 52, highlightflags, "Online Power Level:");
 	V_DrawRightAlignedString(BASEVIDWIDTH-16, 52, 0, va("Race: %i", vspowerlevel[PWRLV_RACE]));
@@ -10249,8 +10249,7 @@ static void M_EraseDataResponse(INT32 ch)
 	if (erasecontext == 2)
 	{
 		// SRB2Kart: This actually needs to be done FIRST, so that you don't immediately regain playtime/matches secrets
-		totalplaytime = 0;
-		matchesplayed = 0;
+		K_EraseStats();
 		for (i = 0; i < PWRLV_NUMTYPES; i++)
 			vspowerlevel[i] = PWRLVRECORD_START;
 		F_StartIntro();
