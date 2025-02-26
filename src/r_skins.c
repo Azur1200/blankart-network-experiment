@@ -516,6 +516,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			}
 			sf->lumppat[0] = lastpat;
 			sf->lumpid[0] = lastid;
+			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x80) >> 7) | ((sf->flip & 0x7f) << 1);
 		}
 		sd = &skin->sprites[SPR2_DRLN];
 		for (i = 0; i < sd->numframes; i++)
@@ -532,6 +533,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			}
 			sf->lumppat[7] = firstpat;
 			sf->lumpid[7] = firstid;
+			sf->flip = (sf->flip & 0xff00) | ((sf->flip & 0x01) << 7) | ((sf->flip & 0xfe) >> 1);
 		}
 
 		R_AddKartFaces(skin);
