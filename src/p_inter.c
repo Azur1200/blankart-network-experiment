@@ -116,9 +116,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 		return false;
 
 	if ((gametyperules & GTR_BUMPERS) // No bumpers in Match
-#ifndef OTHERKARMAMODES
 	&& !weapon
-#endif
 	&& player->bumper <= 0)
 		return false;
 

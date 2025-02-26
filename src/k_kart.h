@@ -48,6 +48,17 @@ typedef enum
 	RESPAWNRS_PO,
 } respawnresult_e;
 
+#define MAXRINGVOLUME 255
+#define MAXRINGTRANSPARENCY 255
+#define MINRINGVOLUME 100
+#define MINRINGTRANSPARENCY 100
+#define RINGVOLUMECOLLECTPENALTY 3
+#define RINGTRANSPARENCYCOLLECTPENALTY 0
+#define RINGVOLUMEUSEPENALTY 15
+#define RINGTRANSPARENCYUSEPENALTY 15
+#define RINGVOLUMEREGEN 1
+#define RINGTRANSPARENCYREGEN 3
+
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
 void K_RegisterKartStuff(void);
@@ -85,7 +96,7 @@ UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
-void K_AwardPlayerRings(player_t *player, INT32 rings, boolean overload);
+void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
 void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);

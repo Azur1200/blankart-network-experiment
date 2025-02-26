@@ -2518,6 +2518,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->eggmanblame = -1;
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
+
+	p->ringvolume = 255;
+	p->ringtransparency = 255;
 	
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;

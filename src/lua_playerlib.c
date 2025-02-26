@@ -330,12 +330,20 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->ringboost);
 	else if (fastcmp(field,"superring"))
 		lua_pushinteger(L, plr->superring);
+	else if (fastcmp(field,"nextringaward"))
+		lua_pushinteger(L, plr->nextringaward);
+	else if (fastcmp(field,"ringvolume"))
+		lua_pushinteger(L, plr->ringvolume);
+	else if (fastcmp(field,"ringtransparency"))
+		lua_pushinteger(L, plr->ringtransparency);
 	else if (fastcmp(field,"curshield"))
 		lua_pushinteger(L, plr->curshield);
 	else if (fastcmp(field,"bubblecool"))
 		lua_pushinteger(L, plr->bubblecool);
 	else if (fastcmp(field,"bubbleblowup"))
 		lua_pushinteger(L, plr->bubbleblowup);
+	else if (fastcmp(field,"bubblepop"))
+		lua_pushinteger(L, plr->bubblepop);
 	else if (fastcmp(field,"flamedash"))
 		lua_pushinteger(L, plr->flamedash);
 	else if (fastcmp(field,"flamemeter"))
@@ -733,12 +741,20 @@ static int player_set(lua_State *L)
 		plr->ringboost = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"superring"))
 		plr->superring = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"nextringaward"))
+		plr->nextringaward = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"ringvolume"))
+		plr->ringvolume = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"ringtransparency"))
+		plr->ringtransparency = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"curshield"))
 		plr->curshield = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"bubblecool"))
 		plr->bubblecool = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"bubbleblowup"))
 		plr->bubbleblowup = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"bubblepop"))
+		plr->bubblepop = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"flamedash"))
 		plr->flamedash = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"flamemeter"))

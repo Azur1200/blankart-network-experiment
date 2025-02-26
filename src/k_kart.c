@@ -3510,21 +3510,25 @@ angle_t K_MomentumAngle(mobj_t *mo)
 	}
 }
 
-void K_AwardPlayerRings(player_t *player, INT32 rings, boolean overload)
+void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload)
 {
 	UINT16 superring;
 
 	if (!overload)
 	{
 		INT32 totalrings =
-			RINGTOTAL(player) + (player->superring / 3);
+			RINGTOTAL(player) + (player->superring);
 
 		/* capped at 20 rings */
 		if ((totalrings + rings) > 20)
+		{
+			if (totalrings >= 20)
+				return; // woah dont let that go negative buster
 			rings = (20 - totalrings);
+		}
 	}
 
-	superring = player->superring + (rings * 3);
+	superring = player->superring + rings;
 
 	/* check if not overflow */
 	if (superring > player->superring)
@@ -6997,17 +7001,24 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->superring)
 	{
-		if (player->superring % 3 == 0)
+		player->nextringaward++;
+		UINT8 ringrate = 3 - min(2, player->superring / 20); // Used to consume fat stacks of cash faster.
+		if (player->nextringaward >= ringrate)
 		{
 			mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
 			ring->extravalue1 = 1; // Ring collect animation timer
 			ring->angle = player->mo->angle; // animation angle
 			P_SetTarget(&ring->target, player->mo); // toucher for thinker
 			player->pickuprings++;
-			if (player->superring <= 3)
+			if (player->superring == 1)
 				ring->cvmem = 1; // play caching when collected
+			player->nextringaward = 0;
+			player->superring--;
 		}
-		player->superring--;
+	}
+	else
+	{
+		player->nextringaward = 99; // Next time we need to award superring, spawn the first one instantly.
 	}
 
 	// Start at lap 1 when using old checkpoint system just to be safe.
@@ -7020,6 +7031,21 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->hyudorotimer)
 		player->hyudorotimer--;
+
+	if (player->ringvolume < MINRINGVOLUME)
+		player->ringvolume = MINRINGVOLUME;
+	else if (MAXRINGVOLUME - player->ringvolume < RINGVOLUMEREGEN)
+		player->ringvolume = MAXRINGVOLUME;
+	else
+		player->ringvolume += RINGVOLUMEREGEN;
+
+	// :D
+	if (player->ringtransparency < MINRINGTRANSPARENCY)
+		player->ringtransparency = MINRINGTRANSPARENCY;
+	else if (MAXRINGTRANSPARENCY - player->ringtransparency < RINGTRANSPARENCYREGEN)
+		player->ringtransparency = MAXRINGTRANSPARENCY;
+	else
+		player->ringtransparency += RINGTRANSPARENCYREGEN;
 
 	if (player->sadtimer)
 		player->sadtimer--;
@@ -9025,6 +9051,20 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				{
 					mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
 					P_SetMobjState(ring, S_FASTRING1);
+
+					if (P_IsDisplayPlayer(player))
+					{
+						UINT8 startfade = 220;
+						UINT8 transfactor = 10 * (min(startfade, player->ringtransparency)) / startfade;
+						if (transfactor < 10)
+						{
+							transfactor = max(transfactor, 4);
+							ring->renderflags |= ((10-transfactor) << RF_TRANSSHIFT);
+							ring->renderflags |= RF_ADD;
+						}
+					}
+					player->ringtransparency -= RINGTRANSPARENCYUSEPENALTY;
+
 					ring->extravalue1 = 1; // Ring use animation timer
 					ring->extravalue2 = 1; // Ring use animation flag
 					ring->shadowscale = 0;

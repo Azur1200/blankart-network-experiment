@@ -562,9 +562,6 @@ extern int compuncommitted;
 /// Camera always has noclip.
 #define NOCLIPCAM
 
-/// Other karma comeback modes
-//#define OTHERKARMAMODES
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
