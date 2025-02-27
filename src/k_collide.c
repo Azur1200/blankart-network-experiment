@@ -752,6 +752,10 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 			player_t *player = t1->target->player;
 
 			player->bubblepop++;
+			player->bubblecool = 15*4;
+			player->itemflags &= ~IF_HOLDREADY;
+			t1->extravalue1 = 4;
+			t1->cvmem = 1;
 
 			if (player->bubblepop > 1)
 			{
@@ -784,6 +788,10 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 				player_t *player = t1->target->player;
 
 				player->bubblepop++;
+				player->bubblecool = 15*4;
+				player->itemflags &= ~IF_HOLDREADY;
+				t1->extravalue1 = 4;
+				t1->cvmem = 1;
 
 				if (player->bubblepop > 1)
 				{
