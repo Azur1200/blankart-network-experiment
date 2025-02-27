@@ -1003,6 +1003,13 @@ static void K_drawKartItem(void)
 		else if (stplyr->curshield == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
+
+			if ((stplyr->bubbleblowup > bubbletime) && (leveltime & 1))
+			{
+				colormode = TC_BLINK;
+				localcolor = SKINCOLOR_WHITE;
+			}
+
 			itembar = 2 - stplyr->bubblepop;
 			maxl = 2;
 		}
