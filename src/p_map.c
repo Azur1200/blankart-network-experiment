@@ -1124,6 +1124,18 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_ABORT;
 	}
 
+	// Damage other players when possible.
+	// Handle before bumpcode to prevent lower weights from getting affected.
+	if (g_tm.thing->player && thing->player
+	// Make sure they aren't able to damage you ANYWHERE along the Z axis, you have to be TOUCHING the person.
+		&& !(thing->z + thing->height < g_tm.thing->z || thing->z > g_tm.thing->z + g_tm.thing->height))
+	{
+		mobj_t *mo1 = g_tm.thing;
+		mobj_t *mo2 = thing;
+
+		K_PvPTouchDamage(mo1, mo2);
+	}
+
 	if (thing->player)
 	{
 		if (g_tm.thing->type == MT_FAN || g_tm.thing->type == MT_STEAM)
@@ -1153,7 +1165,10 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
-			if (thing->player->hyudorotimer || g_tm.thing->player->hyudorotimer)
+			if (thing->player->squishedtimer || thing->player->hyudorotimer
+				|| thing->player->justbumped || thing->scale > g_tm.thing->scale + (mapobjectscale/8)
+				|| g_tm.thing->player->squishedtimer || g_tm.thing->player->hyudorotimer
+				|| g_tm.thing->player->justbumped || g_tm.thing->scale > thing->scale + (mapobjectscale/8))
 			{
 				return BMIT_CONTINUE;
 			}
@@ -1188,10 +1203,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 						P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 
-				if (K_KartBouncing(mo1, mo2, zbounce, false))
-				{
-					K_PvPTouchDamage(mo1, mo2);
-				}
+				K_KartBouncing(mo1, mo2, zbounce, false);
 			}
 
 			return BMIT_CONTINUE;
