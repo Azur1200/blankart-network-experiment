@@ -745,7 +745,6 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 			if (player->bubblepop > 1)
 			{
 				K_DropHnextList(player, false);
-				player->bubblepop = 0;
 			}
 		}
 
@@ -778,7 +777,6 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 				if (player->bubblepop > 1)
 				{
 					K_DropHnextList(player, false);
-					player->bubblepop = 0;
 				}
 			}
 
