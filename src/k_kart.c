@@ -9892,7 +9892,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 		return;
 
 	// DON'T allow if you've hit the in-game player cap
-	if (cv_maxplayers.value && numhumans >= cv_maxplayers.value)
+	if (cv_ingamecap.value && numhumans >= cv_ingamecap.value)
 		return;
 
 	// Get the number of players in game, and the players to be de-spectated.
