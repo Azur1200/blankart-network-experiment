@@ -1,13 +1,13 @@
-// SONIC ROBO BLAST 2 KART
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2018-2020 by Sean "Sryder" Ryder
-// Copyright (C) 2018-2020 by Kart Krew
+// Copyright (C) 2024 by Sean "Sryder" Ryder
+// Copyright (C) 2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  k_waypoint.c
+/// \file  k_waypoint.cpp
 /// \brief Waypoint handling from the relevant mobjs
 ///        Setup and interfacing with waypoints for the main game
 
@@ -20,6 +20,13 @@
 #include "z_zone.h"
 #include "g_game.h"
 #include "p_slopes.h"
+
+#include "cxxutil.hpp"
+
+#include <algorithm>
+#include <vector>
+
+#include <fmt/format.h>
 
 // The number of sparkles per waypoint connection in the waypoint visualisation
 static const UINT32 SPARKLES_PER_CONNECTION = 16U;
@@ -350,7 +357,6 @@ static void K_CompareOverlappingWaypoint
 	const boolean huntbackwards = false;
 	boolean pathfindsuccess = false;
 	path_t pathtofinish = {0};
-	Z_Free(pathtofinish.array);
 
 	if (K_GetWaypointIsShortcut(*bestwaypoint) == false
 		&& K_GetWaypointIsShortcut(checkwaypoint) == true)
@@ -369,6 +375,8 @@ static void K_CompareOverlappingWaypoint
 			*bestwaypoint = checkwaypoint;
 			*bestfindist = pathtofinish.totaldist;
 		}
+
+		Z_Free(pathtofinish.array);
 	}
 }
 
@@ -391,7 +399,7 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 		fixed_t    checkdist      = INT32_MAX;
 		fixed_t    bestfindist    = INT32_MAX;
 
-		void sort_waypoint (waypoint_t *const checkwaypoint)
+		auto sort_waypoint = [&](waypoint_t *const checkwaypoint)
 		{
 			if (!K_GetWaypointIsEnabled(checkwaypoint))
 			{
@@ -1853,7 +1861,7 @@ static waypoint_t *K_SearchWaypointGraph(
 	I_Assert(conditionalfunc != NULL);
 	I_Assert(firstwaypoint != NULL);
 
-	visitedarray = Z_Calloc(numwaypoints * sizeof(boolean), PU_STATIC, NULL);
+	visitedarray = static_cast<boolean*>(Z_Calloc(numwaypoints * sizeof(boolean), PU_STATIC, NULL));
 	foundwaypoint = K_TraverseWaypoints(firstwaypoint, conditionalfunc, condition, visitedarray);
 	Z_Free(visitedarray);
 
@@ -1975,6 +1983,8 @@ static UINT32 K_SetupCircuitLength(void)
 	if ((mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE)
 	{
 		path_t bestsprintpath = {0};
+		auto sprint_finally = srb2::finally([&bestsprintpath]() { Z_Free(bestsprintpath.array); });
+
 		const boolean useshortcuts = false;
 		const boolean huntbackwards = true;
 		const UINT32 traveldist = UINT32_MAX - UINT16_MAX; // Go as far back as possible. Not exactly UINT32_MAX to avoid possible overflow.
@@ -1991,8 +2001,6 @@ static UINT32 K_SetupCircuitLength(void)
 		{
 			startingwaypoint = (waypoint_t *)bestsprintpath.array[ bestsprintpath.numnodes - 1 ].nodedata;
 		}
-		Z_Free(bestsprintpath.array);
-		
 	}
 	else
 	{
@@ -2000,6 +2008,8 @@ static UINT32 K_SetupCircuitLength(void)
 		waypoint_t    fakefinishline  = *finishline;
 
 		path_t        bestcircuitpath = {0};
+		auto circuit_finally = srb2::finally([&bestcircuitpath]() { Z_Free(bestcircuitpath.array); });
+
 		const boolean useshortcuts    = false;
 		const boolean huntbackwards   = false;
 
@@ -2013,7 +2023,6 @@ static UINT32 K_SetupCircuitLength(void)
 			// this instead would be the most ideal
 			startingwaypoint = finishline->nextwaypoints[0];
 		}
-		Z_Free(bestcircuitpath.array);
 	}
 
 	return circuitlength;
@@ -2039,16 +2048,18 @@ static void K_AddPrevToWaypoint(waypoint_t *const waypoint, waypoint_t *const pr
 	I_Assert(prevwaypoint != NULL);
 
 	waypoint->numprevwaypoints++;
-	waypoint->prevwaypoints =
-		Z_Realloc(waypoint->prevwaypoints, waypoint->numprevwaypoints * sizeof(waypoint_t *), PU_LEVEL, NULL);
+	waypoint->prevwaypoints = static_cast<waypoint_t**>(
+		Z_Realloc(waypoint->prevwaypoints, waypoint->numprevwaypoints * sizeof(waypoint_t *), PU_LEVEL, NULL)
+	);
 
 	if (!waypoint->prevwaypoints)
 	{
 		I_Error("K_AddPrevToWaypoint: Failed to reallocate memory for previous waypoints.");
 	}
 
-	waypoint->prevwaypointdistances =
-		Z_Realloc(waypoint->prevwaypointdistances, waypoint->numprevwaypoints * sizeof(fixed_t), PU_LEVEL, NULL);
+	waypoint->prevwaypointdistances = static_cast<UINT32*>(
+		Z_Realloc(waypoint->prevwaypointdistances, waypoint->numprevwaypoints * sizeof(fixed_t), PU_LEVEL, NULL)
+	);
 
 	if (!waypoint->prevwaypointdistances)
 	{
@@ -2104,14 +2115,16 @@ static waypoint_t *K_MakeWaypoint(mobj_t *const mobj)
 	if (madewaypoint->numnextwaypoints != 0)
 	{
 		// Allocate memory to hold enough pointers to all of the next waypoints
-		madewaypoint->nextwaypoints =
-			Z_Calloc(madewaypoint->numnextwaypoints * sizeof(waypoint_t *), PU_LEVEL, NULL);
+		madewaypoint->nextwaypoints = static_cast<waypoint_t**>(
+			Z_Calloc(madewaypoint->numnextwaypoints * sizeof(waypoint_t *), PU_LEVEL, NULL)
+		);
 		if (madewaypoint->nextwaypoints == NULL)
 		{
 			I_Error("K_MakeWaypoint: Out of Memory allocating next waypoints.");
 		}
-		madewaypoint->nextwaypointdistances =
-			Z_Calloc(madewaypoint->numnextwaypoints * sizeof(fixed_t), PU_LEVEL, NULL);
+		madewaypoint->nextwaypointdistances = static_cast<UINT32*>(
+			Z_Calloc(madewaypoint->numnextwaypoints * sizeof(fixed_t), PU_LEVEL, NULL)
+		);
 		if (madewaypoint->nextwaypointdistances == NULL)
 		{
 			I_Error("K_MakeWaypoint: Out of Memory allocating next waypoint distances.");
@@ -2262,7 +2275,7 @@ static boolean K_AllocateWaypointHeap(void)
 	{
 		// Allocate space in the heap for every mobj, it's possible some mobjs aren't linked up and not all of the
 		// heap allocated will be used, but it's a fairly reasonable assumption that this isn't going to be awful
-		waypointheap = Z_Calloc(numwaypointmobjs * sizeof(waypoint_t), PU_LEVEL, NULL);
+		waypointheap = static_cast<waypoint_t*>(Z_Calloc(numwaypointmobjs * sizeof(waypoint_t), PU_LEVEL, NULL));
 
 		if (waypointheap == NULL)
 		{
@@ -2299,6 +2312,460 @@ static void K_FreeWaypoints(void)
 	K_ClearWaypoints();
 }
 
+namespace
+{
+
+/*--------------------------------------------------
+	BlockItReturn_t K_TrackWaypointNearOffroad(line_t *line)
+
+		Blockmap iteration function to check in an extra radius
+		around a waypoint to find any solid walls around it.
+--------------------------------------------------*/
+static fixed_t g_track_wp_x = INT32_MAX;
+static fixed_t g_track_wp_y = INT32_MAX;
+static fixed_t g_track_wp_radius = INT32_MAX;
+
+static BlockItReturn_t K_TrackWaypointNearOffroad(line_t *line)
+{
+	fixed_t dist = INT32_MAX;
+	vertex_t v = {0};
+
+	P_ClosestPointOnLine(
+		g_track_wp_x, g_track_wp_y,
+		line,
+		&v
+	);
+
+	dist = R_PointToDist2(
+		g_track_wp_x, g_track_wp_y,
+		v.x, v.y
+	);
+
+	const fixed_t buffer = FixedMul(mobjinfo[MT_PLAYER].radius * 2, mapobjectscale) * 3;
+	dist -= buffer;
+
+	if (dist <= 0) // line gets crossed
+	{
+		if (((line->flags & (ML_TWOSIDED|ML_IMPASSABLE|ML_MIDSOLID)) == ML_TWOSIDED) && !line->blockplayers)
+		{
+			// double-sided, and no blocking flags -- it's not a wall
+			const INT32 side = P_PointOnLineSide(g_track_wp_x, g_track_wp_y, line);
+			const sector_t *sec = side ? line->frontsector : line->backsector;
+
+			if (sec != nullptr && (sec->damagetype == SD_DEATHPIT || sec->damagetype == SD_INSTAKILL))
+			{
+				// force kill sectors to be more complex
+				return BMIT_STOP;
+			}
+		}
+		else
+		{
+			// actually is a wall
+			return BMIT_ABORT;
+		}
+	}
+
+	// not crossed, or not a wall
+	return BMIT_CONTINUE;
+}
+
+/*--------------------------------------------------
+	boolean K_SneakerPanelOverlap(struct sneakerpanel &panelA, struct sneakerpanel &panelB)
+
+		Returns whenever or not a sneaker panel sector / thing overlap
+--------------------------------------------------*/
+struct complexity_sneaker_s
+{
+	fixed_t bbox[4];
+	//std::vector<sector_t *> sectors;
+	//std::vector<mapthing_t *> things;
+
+	complexity_sneaker_s(sector_t *sec)
+	{
+		M_ClearBox(bbox);
+
+		for (size_t i = 0; i < sec->linecount; i++)
+		{
+			line_t *const ld = sec->lines[i];
+
+			M_AddToBox(bbox, ld->bbox[BOXRIGHT], ld->bbox[BOXTOP]);
+			M_AddToBox(bbox, ld->bbox[BOXLEFT], ld->bbox[BOXBOTTOM]);
+		}
+	}
+
+	/*complexity_sneaker_s(mapthing_t *mt)
+	{
+		M_ClearBox(bbox);
+
+		fixed_t x = mt->x << FRACBITS;
+		fixed_t y = mt->y << FRACBITS;
+		fixed_t radius = FixedMul(FixedMul(mobjinfo[MT_SNEAKERPANEL].radius, mt->scale), mapobjectscale);
+
+		M_AddToBox(bbox, x - radius, y - radius);
+		M_AddToBox(bbox, x + radius, y + radius);
+	}*/
+};
+
+static boolean K_SneakerPanelOverlap(complexity_sneaker_s &panelA, complexity_sneaker_s &panelB)
+{
+	const fixed_t overlap_extra = 528 * mapobjectscale; // merge ones this close together
+
+	const fixed_t a_width_half = (panelA.bbox[BOXRIGHT] - panelA.bbox[BOXLEFT]) / 2;
+	const fixed_t a_height_half = (panelA.bbox[BOXTOP] - panelA.bbox[BOXBOTTOM]) / 2;
+	const fixed_t a_x = panelA.bbox[BOXLEFT] + a_width_half;
+	const fixed_t a_y = panelA.bbox[BOXBOTTOM] + a_height_half;
+
+	const fixed_t b_width_half = (panelB.bbox[BOXRIGHT] - panelB.bbox[BOXLEFT]) / 2;
+	const fixed_t b_height_half = (panelB.bbox[BOXTOP] - panelB.bbox[BOXBOTTOM]) / 2;
+	const fixed_t b_x = panelB.bbox[BOXLEFT] + b_width_half;
+	const fixed_t b_y = panelB.bbox[BOXBOTTOM] + b_height_half;
+
+	const fixed_t dx = b_x - a_x;
+	const fixed_t px = (b_width_half - a_width_half) - abs(dx);
+	if (px <= -overlap_extra)
+	{
+		return false;
+	}
+
+	const fixed_t dy = b_y - a_y;
+	const fixed_t py = (b_height_half - a_height_half) - abs(dy);
+	if (py <= -overlap_extra)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/*--------------------------------------------------
+	INT32 K_CalculateTrackComplexity(void)
+
+		Sets the value of trackcomplexity. This value accumulates all of the
+		turn angle deltas to get an idea of how complicated the map is.
+--------------------------------------------------*/
+static INT32 K_CalculateTrackComplexity(void)
+{
+	const boolean huntbackwards = false;
+	const boolean useshortcuts = false;
+
+	boolean pathfindsuccess = false;
+	path_t path = {0};
+
+	trackcomplexity = BASE_TRACK_COMPLEXITY;
+
+	if (startingwaypoint == NULL || finishline == NULL)
+	{
+		return trackcomplexity;
+	}
+
+	pathfindsuccess = K_PathfindToWaypoint(
+		startingwaypoint, finishline,
+		&path,
+		useshortcuts, huntbackwards
+	);
+
+	if (pathfindsuccess == true)
+	{
+		auto path_finally = srb2::finally([&path]() { Z_Free(path.array); });
+
+		for (size_t i = 1; i < path.numnodes-1; i++)
+		{
+			waypoint_t *const start = (waypoint_t *)path.array[ i - 1 ].nodedata;
+			waypoint_t *const mid = (waypoint_t *)path.array[ i ].nodedata;
+			waypoint_t *const end = (waypoint_t *)path.array[ i + 1 ].nodedata;
+
+			const INT32 turn_id = K_GetWaypointID(mid);
+
+			// would it be better to just check mid?
+			if (K_GetWaypointIsSpawnpoint(start) == false
+				|| K_GetWaypointIsSpawnpoint(mid) == false
+				|| K_GetWaypointIsSpawnpoint(end) == false)
+			{
+				CONS_Debug(DBG_SETUP, "%s", fmt::format("TURN [{}]: skipped\n", turn_id).c_str());
+				continue;
+			}
+
+			const fixed_t start_mid_dist = R_PointToDist2(
+				start->mobj->x, start->mobj->y,
+				mid->mobj->x, mid->mobj->y
+			);
+			const fixed_t mid_end_dist = R_PointToDist2(
+				mid->mobj->x, mid->mobj->y,
+				end->mobj->x, end->mobj->y
+			);
+
+			const angle_t start_mid_angle = R_PointToAngle2(
+				start->mobj->x, start->mobj->y,
+				mid->mobj->x, mid->mobj->y
+			);
+			const angle_t mid_end_angle = R_PointToAngle2(
+				mid->mobj->x, mid->mobj->y,
+				end->mobj->x, end->mobj->y
+			);
+
+			const angle_t start_mid_pitch = R_PointToAngle2(
+				0, start->mobj->z,
+				start_mid_dist, mid->mobj->z
+			);
+			const angle_t mid_end_pitch = R_PointToAngle2(
+				0, mid->mobj->z,
+				mid_end_dist, end->mobj->z
+			);
+
+			const fixed_t avg_radius = (start->mobj->radius + mid->mobj->radius + end->mobj->radius) / 3;
+			const fixed_t base_scale = DEFAULT_WAYPOINT_RADIUS * mapobjectscale;
+
+			// Reduce complexity with wider turns.
+			fixed_t radius_factor = FixedDiv(
+				base_scale,
+				std::max<fixed_t>(
+					1,
+					avg_radius
+				)
+			);
+			radius_factor = FRACUNIT + ((radius_factor - FRACUNIT) / 2); // reduce how much it's worth
+
+			// Reduce complexity with wider spaced waypoints.
+			fixed_t dist_factor = FixedDiv(
+				base_scale,
+				std::max<fixed_t>(
+					1,
+					start_mid_dist + mid_end_dist
+				)
+			);
+
+			fixed_t wall_factor = FRACUNIT;
+
+			constexpr fixed_t minimum_turn = 10 * FRACUNIT; // If the delta is lower than this, it's practically a straight-away.
+			fixed_t delta = AngleFixed(
+				AngleDelta(
+					start_mid_angle,
+					mid_end_angle
+				)
+			) - minimum_turn;
+
+			if (delta < 0)
+			{
+				dist_factor = FixedDiv(FRACUNIT, std::max<fixed_t>(1, dist_factor));
+				radius_factor = FixedDiv(FRACUNIT, std::max<fixed_t>(1, radius_factor));
+			}
+			else
+			{
+				// Weight turns hard enough
+				delta = FixedMul(delta, delta);
+
+				// Reduce turn complexity in walled maps.
+				wall_factor = FRACUNIT;
+
+				g_track_wp_x = mid->mobj->x;
+				g_track_wp_y = mid->mobj->y;
+				g_track_wp_radius = mid->mobj->radius;
+
+				const fixed_t searchRadius = /*g_track_wp_radius +*/ MAXRADIUS;
+				INT32 xl, xh, yl, yh;
+				INT32 bx, by;
+
+				const fixed_t c = FixedMul(g_track_wp_radius, FINECOSINE((start_mid_angle + ANGLE_90) >> ANGLETOFINESHIFT));
+				const fixed_t s = FixedMul(g_track_wp_radius,   FINESINE((start_mid_angle + ANGLE_90) >> ANGLETOFINESHIFT));
+
+				validcount++; // used to make sure we only process a line once
+
+				xl = (unsigned)((g_track_wp_x + c - searchRadius) - bmaporgx)>>MAPBLOCKSHIFT;
+				xh = (unsigned)((g_track_wp_x + c + searchRadius) - bmaporgx)>>MAPBLOCKSHIFT;
+				yl = (unsigned)((g_track_wp_y + s - searchRadius) - bmaporgy)>>MAPBLOCKSHIFT;
+				yh = (unsigned)((g_track_wp_y + s + searchRadius) - bmaporgy)>>MAPBLOCKSHIFT;
+
+				BMBOUNDFIX(xl, xh, yl, yh);
+
+				for (bx = xl; bx <= xh; bx++)
+				{
+					for (by = yl; by <= yh; by++)
+					{
+						if (P_BlockLinesIterator(bx, by, K_TrackWaypointNearOffroad) == false)
+						{
+							wall_factor /= 4;
+							bx = xh + 1;
+							by = yh + 1;
+						}
+					}
+				}
+
+				validcount++; // used to make sure we only process a line once
+
+				xl = (unsigned)((g_track_wp_x - c - searchRadius) - bmaporgx)>>MAPBLOCKSHIFT;
+				xh = (unsigned)((g_track_wp_x - c + searchRadius) - bmaporgx)>>MAPBLOCKSHIFT;
+				yl = (unsigned)((g_track_wp_y - s - searchRadius) - bmaporgy)>>MAPBLOCKSHIFT;
+				yh = (unsigned)((g_track_wp_y - s + searchRadius) - bmaporgy)>>MAPBLOCKSHIFT;
+
+				BMBOUNDFIX(xl, xh, yl, yh);
+
+				for (bx = xl; bx <= xh; bx++)
+				{
+					for (by = yl; by <= yh; by++)
+					{
+						if (P_BlockLinesIterator(bx, by, K_TrackWaypointNearOffroad) == false)
+						{
+							wall_factor /= 4;
+							bx = xh + 1;
+							by = yh + 1;
+						}
+					}
+				}
+			}
+
+			fixed_t pitch_delta = AngleFixed(
+				AngleDelta(
+					start_mid_pitch,
+					mid_end_pitch
+				)
+			);
+
+			constexpr fixed_t minimum_drop = 30 * FRACUNIT; // If the delta is lower than this, it's probably just a slope.
+			if (pitch_delta > minimum_drop)
+			{
+				// bonus complexity for drop-off / ramp
+				constexpr fixed_t drop_factor = 10 * FRACUNIT;
+				const fixed_t drop_off_mul = FRACUNIT + FixedDiv(pitch_delta - minimum_drop, drop_factor);
+				delta += FixedMul(pitch_delta, drop_off_mul);
+			}
+
+			delta = FixedMul(delta, FixedMul(FixedMul(dist_factor, radius_factor), wall_factor));
+
+			std::string msg = fmt::format(
+				"TURN [{}]: r: {:.2f}, d: {:.2f}, w: {:.2f}, r*d*w: {:.2f}, DELTA: {}\n",
+				turn_id,
+				FixedToFloat(radius_factor),
+				FixedToFloat(dist_factor),
+				FixedToFloat(wall_factor),
+				FixedToFloat(FixedMul(FixedMul(dist_factor, radius_factor), wall_factor)),
+				(delta / FRACUNIT)
+			);
+			CONS_Debug(DBG_SETUP, "%s", msg.c_str());
+			trackcomplexity += (delta / FRACUNIT);
+		}
+
+		std::vector<complexity_sneaker_s> sneaker_panels;
+
+		for (size_t i = 0; i < numsectors; i++)
+		{
+			sector_t *const sec = &sectors[i];
+			if (sec->linecount == 0)
+			{
+				continue;
+			}
+
+			terrain_t *terrain_f = K_GetTerrainForFlatNum(sec->floorpic);
+			terrain_t *terrain_c = K_GetTerrainForFlatNum(sec->ceilingpic);
+
+			if ((terrain_f != nullptr && (terrain_f->flags & (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL)) == (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL))
+				|| (terrain_c != nullptr && (terrain_c->flags & (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL)) == (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL)))
+			{
+				complexity_sneaker_s new_panel(sec);
+				boolean create_new = true;
+
+				for (size_t j = 0; j < sec->linecount; j++)
+				{
+					line_t *const ld = sec->lines[j];
+
+					M_AddToBox(new_panel.bbox, ld->bbox[BOXRIGHT], ld->bbox[BOXTOP]);
+					M_AddToBox(new_panel.bbox, ld->bbox[BOXLEFT], ld->bbox[BOXBOTTOM]);
+				}
+
+				for (auto &panel : sneaker_panels)
+				{
+					if (K_SneakerPanelOverlap(new_panel, panel) == true)
+					{
+						// merge together
+						M_AddToBox(panel.bbox, new_panel.bbox[BOXRIGHT], new_panel.bbox[BOXTOP]);
+						M_AddToBox(panel.bbox, new_panel.bbox[BOXLEFT], new_panel.bbox[BOXBOTTOM]);
+						//panel.sectors.push_back(sec);
+						create_new = false;
+						break;
+					}
+				}
+
+				if (create_new == true)
+				{
+					//new_panel.sectors.push_back(sec);
+					sneaker_panels.push_back(new_panel);
+				}
+			}
+
+			if ((sec->specialflags & SSF_SNEAKERPANEL) || (sec->specialflags & SSF_WATERPANEL))
+			{
+				complexity_sneaker_s new_panel(sec);
+				boolean create_new = true;
+
+				for (size_t j = 0; j < sec->linecount; j++)
+				{
+					line_t *const ld = sec->lines[j];
+
+					M_AddToBox(new_panel.bbox, ld->bbox[BOXRIGHT], ld->bbox[BOXTOP]);
+					M_AddToBox(new_panel.bbox, ld->bbox[BOXLEFT], ld->bbox[BOXBOTTOM]);
+				}
+
+				for (auto &panel : sneaker_panels)
+				{
+					if (K_SneakerPanelOverlap(new_panel, panel) == true)
+					{
+						// merge together
+						M_AddToBox(panel.bbox, new_panel.bbox[BOXRIGHT], new_panel.bbox[BOXTOP]);
+						M_AddToBox(panel.bbox, new_panel.bbox[BOXLEFT], new_panel.bbox[BOXBOTTOM]);
+						//panel.sectors.push_back(sec);
+						create_new = false;
+						break;
+					}
+				}
+
+				if (create_new == true)
+				{
+					//new_panel.sectors.push_back(sec);
+					sneaker_panels.push_back(new_panel);
+				}
+			}
+		}
+
+
+		/*for (size_t i = 0; i < nummapthings; i++)
+		{
+			mapthing_t *const mt = &mapthings[i];
+			if (mt->type != mobjinfo[MT_SNEAKERPANEL].doomednum)
+			{
+				continue;
+			}
+
+			complexity_sneaker_s new_panel(mt);
+			boolean create_new = true;
+
+			for (auto &panel : sneaker_panels)
+			{
+				if (K_SneakerPanelOverlap(new_panel, panel) == true)
+				{
+					// merge together
+					M_AddToBox(panel.bbox, new_panel.bbox[BOXRIGHT], new_panel.bbox[BOXTOP]);
+					M_AddToBox(panel.bbox, new_panel.bbox[BOXLEFT], new_panel.bbox[BOXBOTTOM]);
+					create_new = false;
+					break;
+				}
+			}
+
+			if (create_new == true)
+			{
+				sneaker_panels.push_back(new_panel);
+			}
+		}*/
+
+		CONS_Debug(DBG_SETUP, "%s", fmt::format("Num sneaker panel sets: {}\n", sneaker_panels.size()).c_str());
+		trackcomplexity -= sneaker_panels.size() * 1250;
+
+		CONS_Debug(DBG_SETUP, " ** MAP COMPLEXITY: %d\n", trackcomplexity);
+	}
+
+	return trackcomplexity;
+}
+
+}; // namespace
+
 /*--------------------------------------------------
 	boolean K_SetupWaypointList(void)
 
@@ -2314,7 +2781,7 @@ boolean K_SetupWaypointList(void)
 	{
 		if (numbosswaypoints == 0)
 		{
-			CONS_Alert(CONS_ERROR, "No waypoints or checkpoints in map.\n");
+			CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
 		}
 	}
 	else
@@ -2334,7 +2801,7 @@ boolean K_SetupWaypointList(void)
 			{
 				if (numbosswaypoints == 0)
 				{
-					CONS_Alert(CONS_ERROR, "No waypoints or checkpoints in map.\n");
+					CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
 				}
 			}
 			else
@@ -2353,10 +2820,10 @@ boolean K_SetupWaypointList(void)
 					CONS_Alert(CONS_ERROR, "Circuit track waypoints do not form a circuit.\n");
 				}
 
-				/*if (startingwaypoint != NULL)
+				if (startingwaypoint != NULL)
 				{
 					K_CalculateTrackComplexity();
-				}*/
+				}
 
 				setupsuccessful = true;
 			}

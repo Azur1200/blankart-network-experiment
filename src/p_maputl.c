@@ -315,8 +315,8 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 	}
 	else
 	{
-		frontfloor   = P_CameraGetFloorZ  (mapcampointer, front, tm.x, tm.y, linedef);
-		frontceiling = P_CameraGetCeilingZ(mapcampointer, front, tm.x, tm.y, linedef);
+		frontfloor   = P_CameraGetFloorZ  (mapcampointer, front, g_tm.x, g_tm.y, linedef);
+		frontceiling = P_CameraGetCeilingZ(mapcampointer, front, g_tm.x, g_tm.y, linedef);
 	}
 
 	if (back->camsec >= 0)
@@ -333,8 +333,8 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 	}
 	else
 	{
-		backfloor = P_CameraGetFloorZ(mapcampointer, back, tm.x, tm.y, linedef);
-		backceiling = P_CameraGetCeilingZ(mapcampointer, back, tm.x, tm.y, linedef);
+		backfloor = P_CameraGetFloorZ(mapcampointer, back, g_tm.x, g_tm.y, linedef);
+		backceiling = P_CameraGetCeilingZ(mapcampointer, back, g_tm.x, g_tm.y, linedef);
 	}
 
 	thingtop = mapcampointer->z + mapcampointer->height;
@@ -375,8 +375,8 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 				if (!(rover->fofflags & FOF_BLOCKOTHERS) || !(rover->fofflags & FOF_RENDERALL) || !(rover->fofflags & FOF_EXISTS) )
 					continue;
 
-				topheight = P_CameraGetFOFTopZ(mapcampointer, front, rover, tm.x, tm.y, linedef);
-				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, front, rover, tm.x, tm.y, linedef);
+				topheight = P_CameraGetFOFTopZ(mapcampointer, front, rover, g_tm.x, g_tm.y, linedef);
+				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, front, rover, g_tm.x, g_tm.y, linedef);
 
 				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
 				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
@@ -399,8 +399,8 @@ void P_CameraLineOpening(line_t *linedef, opening_t *open)
 				if (!(rover->fofflags & FOF_BLOCKOTHERS) || !(rover->fofflags & FOF_RENDERALL) || !(rover->fofflags & FOF_EXISTS) )
 					continue;
 
-				topheight = P_CameraGetFOFTopZ(mapcampointer, back, rover, tm.x, tm.y, linedef);
-				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, back, rover, tm.x, tm.y, linedef);
+				topheight = P_CameraGetFOFTopZ(mapcampointer, back, rover, g_tm.x, g_tm.y, linedef);
+				bottomheight = P_CameraGetFOFBottomZ(mapcampointer, back, rover, g_tm.x, g_tm.y, linedef);
 
 				delta1 = abs(mapcampointer->z - (bottomheight + ((topheight - bottomheight)/2)));
 				delta2 = abs(thingtop - (bottomheight + ((topheight - bottomheight)/2)));
@@ -539,7 +539,7 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 		return;
 	}
 
-	P_ClosestPointOnLine(tm.x, tm.y, linedef, &cross);
+	P_ClosestPointOnLine(g_tm.x, g_tm.y, linedef, &cross);
 
 	// Treat polyobjects kind of like 3D Floors
 	if (linedef->polyobj && (linedef->polyobj->flags & POF_TESTHEIGHT))
@@ -567,8 +567,8 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 		fixed_t          height[2];
 		const sector_t * sector[2] = { front, back };
 
-		height[FRONT] = P_GetCeilingZ(mobj, front, tm.x, tm.y, linedef);
-		height[BACK]  = P_GetCeilingZ(mobj, back,  tm.x, tm.y, linedef);
+		height[FRONT] = P_GetCeilingZ(mobj, front, g_tm.x, g_tm.y, linedef);
+		height[BACK]  = P_GetCeilingZ(mobj, back,  g_tm.x, g_tm.y, linedef);
 
 		hi = ( height[0] < height[1] );
 		lo = ! hi;
@@ -587,8 +587,8 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 			open->ceilingdrop = ( topedge[hi] - topedge[lo] );
 		}
 
-		height[FRONT] = P_GetFloorZ(mobj, front, tm.x, tm.y, linedef);
-		height[BACK]  = P_GetFloorZ(mobj, back,  tm.x, tm.y, linedef);
+		height[FRONT] = P_GetFloorZ(mobj, front, g_tm.x, g_tm.y, linedef);
+		height[BACK]  = P_GetFloorZ(mobj, back,  g_tm.x, g_tm.y, linedef);
 
 		hi = ( height[0] < height[1] );
 		lo = ! hi;
@@ -777,8 +777,8 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 					}
 					else
 					{
-						topheight = P_GetFOFTopZ(mobj, front, rover, tm.x, tm.y, linedef);
-						bottomheight = P_GetFOFBottomZ(mobj, front, rover, tm.x, tm.y, linedef);
+						topheight = P_GetFOFTopZ(mobj, front, rover, g_tm.x, g_tm.y, linedef);
+						bottomheight = P_GetFOFBottomZ(mobj, front, rover, g_tm.x, g_tm.y, linedef);
 					}
 
 					switch (open->fofType)
@@ -869,8 +869,8 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 					}
 					else
 					{
-						topheight = P_GetFOFTopZ(mobj, back, rover, tm.x, tm.y, linedef);
-						bottomheight = P_GetFOFBottomZ(mobj, back, rover, tm.x, tm.y, linedef);
+						topheight = P_GetFOFTopZ(mobj, back, rover, g_tm.x, g_tm.y, linedef);
+						bottomheight = P_GetFOFBottomZ(mobj, back, rover, g_tm.x, g_tm.y, linedef);
 					}
 
 					switch (open->fofType)
@@ -1834,16 +1834,16 @@ boolean P_RadiusLinesCheck(fixed_t radius, fixed_t x, fixed_t y,
 	INT32 xl, xh, yl, yh;
 	INT32 bx, by;
 
-	tm.bbox[BOXTOP] = y + radius;
-	tm.bbox[BOXBOTTOM] = y - radius;
-	tm.bbox[BOXRIGHT] = x + radius;
-	tm.bbox[BOXLEFT] = x - radius;
+	g_tm.bbox[BOXTOP] = y + radius;
+	g_tm.bbox[BOXBOTTOM] = y - radius;
+	g_tm.bbox[BOXRIGHT] = x + radius;
+	g_tm.bbox[BOXLEFT] = x - radius;
 
 	// check lines
-	xl = (unsigned)(tm.bbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(tm.bbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(tm.bbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(tm.bbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(g_tm.bbox[BOXLEFT] - bmaporgx)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(g_tm.bbox[BOXRIGHT] - bmaporgx)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(g_tm.bbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+	yh = (unsigned)(g_tm.bbox[BOXTOP] - bmaporgy)>>MAPBLOCKSHIFT;
 
 	for (bx = xl; bx <= xh; bx++)
 		for (by = yl; by <= yh; by++)

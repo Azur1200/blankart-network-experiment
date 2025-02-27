@@ -80,6 +80,21 @@ INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers);
 
 UINT8 K_BotDefaultSkin(void);
 
+/*--------------------------------------------------
+	UINT8 K_GetGPPlayerCount(UINT8 humans)
+
+		Counts the number of total players,
+		including humans and bots, to put into
+		a GP session.
+
+	Input Arguments:-
+		humans - Number of human players.
+
+	Return:-
+		Number of both human players and CPU.
+--------------------------------------------------*/
+
+UINT8 K_GetGPPlayerCount(UINT8 humans);
 
 /*--------------------------------------------------
 	void K_InitGrandPrixBots(void);

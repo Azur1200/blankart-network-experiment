@@ -942,6 +942,8 @@ static void P_InitializeSector(sector_t *ss)
 	ss->spawn_lightlevel = ss->lightlevel;
 
 	ss->spawn_extra_colormap = NULL;
+
+	memset(&ss->botController, 0, sizeof(ss->botController));
 }
 
 static void P_LoadSectors(UINT8 *data)
@@ -8634,7 +8636,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_ResetTubeWaypoints();
 	
-	P_MapStart(); // tm.thing can be used starting from this point
+	P_MapStart(); // g_tm.thing can be used starting from this point
 
 	// init anything that P_SpawnSlopes/P_LoadThings needs to know
 	P_InitSpecials();
@@ -8749,7 +8751,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	G_AddMapToBuffer(gamemap-1);
 
-	P_MapEnd(); // tm.thing is no longer needed from this point onwards
+	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
 	// Took me 3 hours to figure out why my progression kept on getting overwritten with the titlemap...
 	if (!titlemapinaction)
@@ -8834,7 +8836,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 void P_PostLoadLevel(void)
 {
 	TracyCZone(__zone, true);
-	P_MapStart(); // tm.thing can be used starting from this point
+	P_MapStart(); // g_tm.thing can be used starting from this point
 	
 	if (G_GametypeHasSpectators())
 	{

@@ -1,7 +1,7 @@
-// SONIC ROBO BLAST 2 KART
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2018-2020 by Sean "Sryder" Ryder
-// Copyright (C) 2018-2020 by Kart Krew
+// Copyright (C) 2024 by Sean "Sryder" Ryder
+// Copyright (C) 2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -156,7 +156,9 @@ INT32 K_GetWaypointNextID(waypoint_t *waypoint);
 	Return:-
 		The waypoint ID, -1 if there is no waypoint or mobj.
 --------------------------------------------------*/
+
 INT32 K_GetWaypointID(waypoint_t *waypoint);
+
 
 /*--------------------------------------------------
 	waypoint_t *K_GetWaypointFromID(INT32 waypointID)
@@ -172,6 +174,7 @@ INT32 K_GetWaypointID(waypoint_t *waypoint);
 
 waypoint_t *K_GetWaypointFromID(INT32 waypointID);
 
+
 /*--------------------------------------------------
 	UINT32 K_GetCircuitLength(void)
 
@@ -182,6 +185,7 @@ waypoint_t *K_GetWaypointFromID(INT32 waypointID);
 	Return:-
 		The circuit length.
 --------------------------------------------------*/
+
 UINT32 K_GetCircuitLength(void);
 
 

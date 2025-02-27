@@ -812,7 +812,8 @@ static int sector_set(lua_State *L)
 		return luaL_error(L, "sector_t has no field named " LUA_QS ".", lua_tostring(L, 2));
 	case sector_floorheight: { // floorheight
 		boolean flag;
-		tm_t ptm = tm;
+		tm_t ptm = g_tm;
+
 		fixed_t lastpos = sector->floorheight;
 		sector->floorheight = luaL_checkfixed(L, 3);
 		flag = P_CheckSector(sector, true);
@@ -826,7 +827,8 @@ static int sector_set(lua_State *L)
 	}
 	case sector_ceilingheight: { // ceilingheight
 		boolean flag;
-		tm_t ptm = tm;
+		tm_t ptm = g_tm;
+
 		fixed_t lastpos = sector->ceilingheight;
 		sector->ceilingheight = luaL_checkfixed(L, 3);
 		flag = P_CheckSector(sector, true);
@@ -2264,7 +2266,8 @@ static int ffloor_set(lua_State *L)
 	case ffloor_topheight: { // topheight
 		boolean flag;
 		fixed_t lastpos = *ffloor->topheight;
-		tm_t ptm = tm;
+		tm_t ptm = g_tm;
+
 		sector_t *sector = &sectors[ffloor->secnum];
 		sector->ceilingheight = luaL_checkfixed(L, 3);
 		flag = P_CheckSector(sector, true);
@@ -2285,7 +2288,8 @@ static int ffloor_set(lua_State *L)
 	case ffloor_bottomheight: { // bottomheight
 		boolean flag;
 		fixed_t lastpos = *ffloor->bottomheight;
-		tm_t ptm = tm;
+		tm_t ptm = g_tm;
+
 		sector_t *sector = &sectors[ffloor->secnum];
 		sector->floorheight = luaL_checkfixed(L, 3);
 		flag = P_CheckSector(sector, true);

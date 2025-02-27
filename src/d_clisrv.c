@@ -3543,19 +3543,6 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	node = (UINT8)READUINT8(*p);
 	newplayernum = (UINT8)READUINT8(*p);
 
-	CONS_Debug(DBG_NETPLAY, "addplayer: %d %d\n", node, newplayernum);
-
-	{
-		// Clear player before joining, lest some things get set incorrectly
-		CL_ClearPlayer(newplayernum);
-
-		playeringame[newplayernum] = true;
-		G_AddPlayer(newplayernum);
-
-		if (newplayernum+1 > doomcom->numslots)
-			doomcom->numslots = (INT16)(newplayernum+1);
-	}
-
 	newplayer = &players[newplayernum];
 
 	newplayer->jointime = 0;
@@ -3564,6 +3551,8 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	console = (UINT8)READUINT8(*p);
 	splitscreenplayer = (UINT8)READUINT8(*p);
+
+	G_AddPlayer(newplayernum, console);
 
 	// the server is creating my player
 	if (node == mynode)
@@ -3685,34 +3674,7 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	difficulty = READUINT8(*p);
 	style = READUINT8(*p);
 
-	CONS_Debug(DBG_NETPLAY, "addbot: %d\n", newplayernum);
-
-	// Clear player before joining, lest some things get set incorrectly
-	CL_ClearPlayer(newplayernum);
-
-	playeringame[newplayernum] = true;
-	G_AddPlayer(newplayernum);
-	if (newplayernum+1 > doomcom->numslots)
-		doomcom->numslots = (INT16)(newplayernum+1);
-
-	playernode[newplayernum] = servernode;
-
-	players[newplayernum].splitscreenindex = 0;
-	players[newplayernum].bot = true;
-	players[newplayernum].botvars.difficulty = difficulty;
-	players[newplayernum].botvars.style = style;
-	players[newplayernum].lives = 9;
-
-	players[newplayernum].skincolor = skins[skinnum].prefcolor;
-	sprintf(player_names[newplayernum], "%s", skins[skinnum].realname);
-	SetPlayerSkinByNum(newplayernum, skinnum);
-
-	if (netgame)
-	{
-		HU_AddChatText(va("\x82*Bot %d has been added to the game", newplayernum+1), false);
-	}
-
-	LUA_HookInt(newplayernum, HOOK(PlayerJoin));
+	K_SetBot(newplayernum, skinnum, difficulty, style);
 }
 
 static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *name2, const char *name3, const char *name4)
@@ -3809,6 +3771,85 @@ static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *na
 	}
 
 	return newplayer;
+}
+
+/*--------------------------------------------------
+	boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+
+		See header file for description.
+--------------------------------------------------*/
+boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+{
+	UINT8 newplayernum = *p;
+
+	// search for a free playernum
+	// we can't use playeringame since it is not updated here
+	for (; newplayernum < MAXPLAYERS; newplayernum++)
+	{
+		UINT8 n;
+
+		for (n = 0; n < MAXNETNODES; n++)
+		{
+			if (nodetoplayer[n] == newplayernum
+			|| nodetoplayer2[n] == newplayernum
+			|| nodetoplayer3[n] == newplayernum
+			|| nodetoplayer4[n] == newplayernum)
+				break;
+		}
+
+		if (n == MAXNETNODES)
+			break;
+	}
+
+	for (; newplayernum < MAXPLAYERS; newplayernum++)
+	{
+		if (playeringame[newplayernum] == false)
+		{
+			// free player slot
+			break;
+		}
+	}
+
+	if (newplayernum >= MAXPLAYERS)
+	{
+		// nothing is free
+		*p = MAXPLAYERS;
+		return false;
+	}
+
+	if (server)
+	{
+		UINT8 buf[4];
+		UINT8 *buf_p = buf;
+
+		WRITEUINT8(buf_p, newplayernum);
+
+		if (skin > numskins)
+		{
+			skin = numskins;
+		}
+
+		WRITEUINT8(buf_p, skin);
+
+		if (difficulty < 1)
+		{
+			difficulty = 1;
+		}
+		else if (difficulty > MAXBOTDIFFICULTY)
+		{
+			difficulty = MAXBOTDIFFICULTY;
+		}
+
+		WRITEUINT8(buf_p, difficulty);
+		WRITEUINT8(buf_p, style);
+
+		SendNetXCmd(XD_ADDBOT, buf, buf_p - buf);
+		DEBFILE(va("Server added bot %d\n", newplayernum));
+	}
+
+	// use the next free slot (we can't put playeringame[newplayernum] = true here)
+	*p = newplayernum+1;
+	return true;
 }
 
 void CL_AddSplitscreenPlayer(void)

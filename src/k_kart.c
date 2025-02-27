@@ -3235,6 +3235,12 @@ static void K_GetKartBoostPower(player_t *player)
 		ADDBOOST(FRACUNIT/5, 4*FRACUNIT); // + 20% top speed, + 400% acceleration
 	}
 
+	// This should always remain the last boost stack before tethering
+	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
+	{
+		ADDBOOST(player->botvars.rubberband - FRACUNIT, 0);
+	}
+
 	player->boostpower = boostpower;
 
 	// value smoothing
@@ -3327,7 +3333,8 @@ fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberb
 	if (K_PlayerUsesBotMovement(player))
 	{
 		// Increase bot speed by 1-10% depending on difficulty
-		fixed_t add = (player->botvars.difficulty * (FRACUNIT/10)) / DIFFICULTBOT;
+		const fixed_t modifier = K_BotMapModifier();
+		fixed_t add = ((player->botvars.difficulty-1) * FixedMul(FRACUNIT / 10, modifier)) / (DIFFICULTBOT-1);
 		finalspeed = FixedMul(finalspeed, FRACUNIT + add);
 
 		if (player->bot && player->botvars.rival)
@@ -7475,7 +7482,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 
 							po->validcount = validcount;
 
-							if (!P_BBoxInsidePolyobj(po, tm.bbox)
+							if (!P_BBoxInsidePolyobj(po, g_tm.bbox)
 								|| !(po->flags & POF_SOLID))
 							{
 								plink = (polymaplink_t *)(plink->link.next);
@@ -8904,7 +8911,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	// Reduce friction after hitting a spring
 	if (player->tiregrease)
 	{
-		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
+		player->mo->friction += ((FRACUNIT - FRACUNIT) / greasetics) * player->tiregrease;
 	}
 
 	// Karma ice physics
@@ -8942,13 +8949,20 @@ static void K_AdjustPlayerFriction(player_t *player)
 		// Remove this line once they can drift.
 		player->mo->friction -= extraFriction;
 
+		// Bots gain more traction as they rubberband.
+		const fixed_t traction_value = FixedMul(player->botvars.rubberband, max(FRACUNIT, K_BotMapModifier()));
+		if (traction_value > FRACUNIT)
+		{
+			const fixed_t traction_mul = traction_value - FRACUNIT;
+			player->mo->friction -= FixedMul(extraFriction, traction_mul);
+		}
+
 		if (player->mo->friction > FRACUNIT)
 			player->mo->friction = FRACUNIT;
 		if (player->mo->friction < 0)
 			player->mo->friction = 0;
 
 		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
-
 
 		if (player->mo->movefactor < FRACUNIT)
 			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;

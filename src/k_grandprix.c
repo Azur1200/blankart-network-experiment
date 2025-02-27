@@ -102,7 +102,7 @@ INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers)
 --------------------------------------------------*/
 UINT8 K_BotDefaultSkin(void)
 {
-	const char *defaultbotskinname = "eggrobo";
+	const char *defaultbotskinname = "eggman";
 	INT32 defaultbotskin = R_SkinAvailable(defaultbotskinname);
 
 	if (defaultbotskin == -1)
@@ -112,6 +112,21 @@ UINT8 K_BotDefaultSkin(void)
 	}
 
 	return (UINT8)defaultbotskin;
+}
+
+/*--------------------------------------------------
+	UINT8 K_GetGPPlayerCount(UINT8 humans)
+
+		See header file for description.
+--------------------------------------------------*/
+UINT8 K_GetGPPlayerCount(UINT8 humans)
+{
+	// 1P -> 8 total
+	// 2P -> 8 total
+	// 3P -> 12 total
+	// 4P -> 16 total
+
+	return max(min(humans * 4, MAXPLAYERS), 8);
 }
 
 /*--------------------------------------------------
@@ -132,7 +147,7 @@ void K_InitGrandPrixBots(void)
 	UINT8 numplayers = 0;
 	UINT8 competitors[MAXSPLITSCREENPLAYERS];
 
-	UINT8 usableskins;
+	UINT8 usableskins, skincount = numskins;
 	UINT8 grabskins[MAXSKINS+1];
 
 	UINT8 botskinlist[MAXPLAYERS];
@@ -145,7 +160,7 @@ void K_InitGrandPrixBots(void)
 	memset(botskinlist, defaultbotskin, sizeof (botskinlist));
 
 	// Init usable bot skins list
-	for (usableskins = 0; usableskins < numskins; usableskins++)
+	for (usableskins = 0; usableskins < skincount; usableskins++)
 	{
 		grabskins[usableskins] = usableskins;
 	}
@@ -185,6 +200,13 @@ void K_InitGrandPrixBots(void)
 	{
 		if (playeringame[i])
 		{
+			if (players[i].bot == true)
+			{
+				// Remove existing bots.
+				CL_RemovePlayer(i, KR_LEAVE);
+				continue;
+			}
+
 			if (numplayers < MAXSPLITSCREENPLAYERS && !players[i].spectator)
 			{
 				competitors[numplayers] = i;
@@ -193,27 +215,13 @@ void K_InitGrandPrixBots(void)
 			}
 			else
 			{
-				players[i].spectator = true; // force spectate for all other players, if they happen to exist?
+				P_SetPlayerSpectator(i); // force spectate for all other players, if they happen to exist?
 			}
 		}
 	}
 
-	if (numplayers > 2)
-	{
-		// Add 3 bots per player beyond 2P
-		playercount += (numplayers-2) * 3;
-	}
-
-	if (numbosswaypoints > 0 && !waypointcap)
-	{
-		CONS_Alert(CONS_ERROR, "Bots do not work on maps using the legacy checkpoint system.\nPlease consider using waypoints instead if bot support is desired!\n");
-		wantedbots = 0;
-	}
-	else
-	{
-	
-		wantedbots = playercount - numplayers;
-	}
+	playercount = K_GetGPPlayerCount(numplayers);
+	wantedbots = playercount - numplayers;
 
 	// Create rival list
 	if (numplayers > 0)
@@ -223,8 +231,10 @@ void K_InitGrandPrixBots(void)
 			for (j = 0; j < numplayers; j++)
 			{
 				player_t *p = &players[competitors[j]];
-				char *rivalname = skins[p->skin].rivals[i];
-				INT32 rivalnum = R_SkinAvailable(rivalname);
+
+				INT32 rivalnum;
+				const char *rivalname = skins[p->skin].rivals[i];
+				rivalnum = R_SkinAvailable(rivalname);
 
 				// Intentionally referenced before (currently dummied out) unlock check. Such a tease!
 				if (rivalnum != -1 && grabskins[(UINT8)rivalnum] != MAXSKINS)
@@ -239,12 +249,16 @@ void K_InitGrandPrixBots(void)
 	// Rearrange usable bot skins list to prevent gaps for randomised selection
 	for (i = 0; i < usableskins; i++)
 	{
-		if (!(grabskins[i] == MAXSKINS /*|| K_SkinLocked(grabskins[i])*/))
+		if (!(grabskins[i] == MAXSKINS || !R_SkinUsable(-1, grabskins[i])))
+		{
 			continue;
-		while (usableskins > i && (grabskins[usableskins] == MAXSKINS /*|| K_SkinLocked(grabskins[i])*/))
+		}
+
+		while (usableskins > i && (grabskins[usableskins] == MAXSKINS || !R_SkinUsable(-1, grabskins[usableskins])))
 		{
 			usableskins--;
 		}
+
 		grabskins[i] = grabskins[usableskins];
 		grabskins[usableskins] = MAXSKINS;
 	}
@@ -258,7 +272,7 @@ void K_InitGrandPrixBots(void)
 
 			if (usableskins > 0)
 			{
-				UINT8 index = M_RandomKey(usableskins);
+				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
 				grabskins[index] = grabskins[--usableskins];
 			}

@@ -1,14 +1,18 @@
-// SONIC ROBO BLAST 2 KART
+// DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2018-2020 by Sally "TehRealSalt" Cochenour
-// Copyright (C) 2018-2020 by Kart Krew
+// Copyright (C) 2024 by Sally "TehRealSalt" Cochenour
+// Copyright (C) 2024 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
 // See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
-/// \file  k_botsearch.c
+/// \file  k_botsearch.cpp
 /// \brief Bot blockmap search functions
+
+#include <algorithm>
+
+#include <tracy/tracy/Tracy.hpp>
 
 #include "doomdef.h"
 #include "d_player.h"
@@ -28,28 +32,7 @@
 #include "r_things.h" // numskins
 #include "p_slopes.h" // P_GetZAt
 #include "m_perfstats.h"
-
-struct globalsmuggle
-{
-	mobj_t *botmo;
-	botprediction_t *predict;
-	fixed_t distancetocheck;
-
-	INT64 gotoAvgX[2], gotoAvgY[2];
-	UINT32 gotoObjs[2];
-
-	INT64 avoidAvgX[2], avoidAvgY[2];
-	UINT32 avoidObjs[2];
-
-	fixed_t annoyscore;
-	mobj_t *annoymo;
-
-	fixed_t closestlinedist;
-
-	fixed_t eggboxx, eggboxy;
-	UINT8 randomitems;
-	UINT8 eggboxes;
-} globalsmuggle;
+#include "k_objects.h"
 
 /*--------------------------------------------------
 	static BlockItReturn_t K_FindEggboxes(mobj_t *thing)
@@ -63,6 +46,14 @@ struct globalsmuggle
 	Return:-
 		BlockItReturn_t enum, see its definition for more information.
 --------------------------------------------------*/
+static struct eggboxSearch_s
+{
+	fixed_t distancetocheck;
+	fixed_t eggboxx, eggboxy;
+	UINT8 randomitems;
+	UINT8 eggboxes;
+} g_eggboxSearch;
+
 static BlockItReturn_t K_FindEggboxes(mobj_t *thing)
 {
 	fixed_t dist;
@@ -77,20 +68,20 @@ static BlockItReturn_t K_FindEggboxes(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
-	dist = P_AproxDistance(thing->x - globalsmuggle.eggboxx, thing->y - globalsmuggle.eggboxy);
+	dist = P_AproxDistance(thing->x - g_eggboxSearch.eggboxx, thing->y - g_eggboxSearch.eggboxy);
 
-	if (dist > globalsmuggle.distancetocheck)
+	if (dist > g_eggboxSearch.distancetocheck)
 	{
 		return BMIT_CONTINUE;
 	}
 
 	if (thing->type == MT_RANDOMITEM)
 	{
-		globalsmuggle.randomitems++;
+		g_eggboxSearch.randomitems++;
 	}
 	else
 	{
-		globalsmuggle.eggboxes++;
+		g_eggboxSearch.eggboxes++;
 	}
 
 	return BMIT_CONTINUE;
@@ -103,18 +94,20 @@ static BlockItReturn_t K_FindEggboxes(mobj_t *thing)
 --------------------------------------------------*/
 UINT8 K_EggboxStealth(fixed_t x, fixed_t y)
 {
+	ZoneScoped;
+
 	INT32 xl, xh, yl, yh, bx, by;
 
-	globalsmuggle.eggboxx = x;
-	globalsmuggle.eggboxy = y;
-	globalsmuggle.distancetocheck = (mapobjectscale * 256);
-	globalsmuggle.randomitems = 0;
-	globalsmuggle.eggboxes = 0;
+	g_eggboxSearch.eggboxx = x;
+	g_eggboxSearch.eggboxy = y;
+	g_eggboxSearch.distancetocheck = (mapobjectscale * 256);
+	g_eggboxSearch.randomitems = 0;
+	g_eggboxSearch.eggboxes = 0;
 
-	xl = (unsigned)(globalsmuggle.eggboxx - globalsmuggle.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(globalsmuggle.eggboxx + globalsmuggle.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(globalsmuggle.eggboxy - globalsmuggle.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(globalsmuggle.eggboxy + globalsmuggle.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(g_eggboxSearch.eggboxx - g_eggboxSearch.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(g_eggboxSearch.eggboxx + g_eggboxSearch.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(g_eggboxSearch.eggboxy - g_eggboxSearch.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
+	yh = (unsigned)(g_eggboxSearch.eggboxy + g_eggboxSearch.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
@@ -126,11 +119,11 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y)
 		}
 	}
 
-	return (globalsmuggle.randomitems * (globalsmuggle.eggboxes + 1));
+	return (g_eggboxSearch.randomitems * (g_eggboxSearch.eggboxes + 1));
 }
 
 /*--------------------------------------------------
-	static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec)
+	static boolean K_BotHatesThisSectorsSpecial(const player_t *player, sector_t *sec)
 
 		Tells us if a bot will play more careful around
 		this sector's special type.
@@ -175,7 +168,7 @@ static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, con
 }
 
 /*--------------------------------------------------
-	boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y)
+	boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
 
 		See header file for description.
 --------------------------------------------------*/
@@ -269,6 +262,19 @@ boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t
 	Return:-
 		None
 --------------------------------------------------*/
+static struct nudgeSearch_s
+{
+	mobj_t *botmo;
+	angle_t angle;
+	fixed_t distancetocheck;
+
+	INT64 gotoAvgX[2], gotoAvgY[2];
+	UINT32 gotoObjs[2];
+
+	INT64 avoidAvgX[2], avoidAvgY[2];
+	UINT32 avoidObjs[2];
+} g_nudgeSearch;
+
 static void K_AddAttackObject(mobj_t *thing, UINT8 side, UINT8 weight)
 {
 	fixed_t x, y;
@@ -284,7 +290,7 @@ static void K_AddAttackObject(mobj_t *thing, UINT8 side, UINT8 weight)
 
 	x = thing->x;
 	y = thing->y;
-	a = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, x, y);
+	a = R_PointToAngle2(g_nudgeSearch.botmo->x, g_nudgeSearch.botmo->y, x, y);
 
 	dir = a + (side ? -ANGLE_90 : ANGLE_90);
 	x += FixedMul(thing->radius, FINECOSINE(dir >> ANGLETOFINESHIFT));
@@ -295,9 +301,9 @@ static void K_AddAttackObject(mobj_t *thing, UINT8 side, UINT8 weight)
 
 	for (i = 0; i < weight; i++)
 	{
-		globalsmuggle.gotoAvgX[side] += x;
-		globalsmuggle.gotoAvgY[side] += y;
-		globalsmuggle.gotoObjs[side]++;
+		g_nudgeSearch.gotoAvgX[side] += x;
+		g_nudgeSearch.gotoAvgY[side] += y;
+		g_nudgeSearch.gotoObjs[side]++;
 	}
 }
 
@@ -329,7 +335,7 @@ static void K_AddDodgeObject(mobj_t *thing, UINT8 side, UINT8 weight)
 
 	x = thing->x;
 	y = thing->y;
-	a = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, x, y);
+	a = R_PointToAngle2(g_nudgeSearch.botmo->x, g_nudgeSearch.botmo->y, x, y);
 
 	dir = a + (side ? -ANGLE_90 : ANGLE_90);
 	x += FixedMul(thing->radius, FINECOSINE(dir >> ANGLETOFINESHIFT));
@@ -340,9 +346,9 @@ static void K_AddDodgeObject(mobj_t *thing, UINT8 side, UINT8 weight)
 
 	for (i = 0; i < weight; i++)
 	{
-		globalsmuggle.avoidAvgX[side] += x;
-		globalsmuggle.avoidAvgY[side] += y;
-		globalsmuggle.avoidObjs[side]++;
+		g_nudgeSearch.avoidAvgX[side] += x;
+		g_nudgeSearch.avoidAvgY[side] += y;
+		g_nudgeSearch.avoidObjs[side]++;
 	}
 }
 
@@ -392,12 +398,13 @@ static boolean K_PlayerAttackSteer(mobj_t *thing, UINT8 side, UINT8 weight, bool
 --------------------------------------------------*/
 static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 {
+	ZoneScoped;
+
 	INT16 angledelta, anglediff;
-	fixed_t fulldist;
-	angle_t destangle, angle, predictangle;
+	angle_t destangle, angle;
 	UINT8 side = 0;
 
-	if (!globalsmuggle.botmo || P_MobjWasRemoved(globalsmuggle.botmo) || !globalsmuggle.botmo->player)
+	if (!g_nudgeSearch.botmo || P_MobjWasRemoved(g_nudgeSearch.botmo) || !g_nudgeSearch.botmo->player)
 	{
 		return BMIT_ABORT;
 	}
@@ -407,32 +414,36 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
-	if (globalsmuggle.botmo == thing)
+	if (g_nudgeSearch.botmo == thing)
 	{
 		return BMIT_CONTINUE;
 	}
 
-	fulldist = R_PointToDist2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, thing->x, thing->y) - thing->radius;
+	const fixed_t xDelta = abs(g_nudgeSearch.botmo->x - thing->x);
+	const fixed_t yDelta = abs(g_nudgeSearch.botmo->y - thing->y);
+	const fixed_t fullDist = (FixedMul(xDelta, xDelta) + FixedMul(yDelta, yDelta)) - FixedMul(thing->radius, thing->radius);
 
-	if (fulldist > globalsmuggle.distancetocheck)
+	if (fullDist > g_nudgeSearch.distancetocheck)
 	{
 		return BMIT_CONTINUE;
 	}
 
-	if (P_CheckSight(globalsmuggle.botmo, thing) == false)
+#if 0
+	// this is very expensive to do, and probably not worth it.
+	if (P_CheckSight(g_nudgeSearch.botmo, thing) == false)
 	{
 		return BMIT_CONTINUE;
 	}
+#endif
 
-	predictangle = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, globalsmuggle.predict->x, globalsmuggle.predict->y);
-	destangle = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, thing->x, thing->y);
-	angle = (predictangle - destangle);
+	destangle = R_PointToAngle2(g_nudgeSearch.botmo->x, g_nudgeSearch.botmo->y, thing->x, thing->y);
+	angle = (g_nudgeSearch.angle - destangle);
 
 	if (angle < ANGLE_180)
 	{
 		angledelta = AngleFixed(angle)>>FRACBITS;
 	}
-	else 
+	else
 	{
 		angledelta = 360-(AngleFixed(angle)>>FRACBITS);
 		side = 1;
@@ -448,7 +459,6 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 		case MT_ORBINAUT:
 		case MT_ORBINAUT_SHIELD:
 		case MT_JAWZ:
-		case MT_JAWZ_DUD:
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
@@ -466,9 +476,9 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				break;
 			}
 
-			if (P_CanPickupItem(globalsmuggle.botmo->player, 1))
+			if (P_CanPickupItem(g_nudgeSearch.botmo->player, 1))
 			{
-				K_AddAttackObject(thing, side, 10);
+				K_AddAttackObject(thing, side,  20);
 			}
 			break;
 		case MT_EGGMANITEM:
@@ -477,18 +487,18 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				break;
 			}
 
-			if (P_CanPickupItem(globalsmuggle.botmo->player, 1)) // Can pick up an actual item
+			if (P_CanPickupItem(g_nudgeSearch.botmo->player, 1)) // Can pick up an actual item
 			{
 				const UINT8 stealth = K_EggboxStealth(thing->x, thing->y);
-				const UINT8 requiredstealth = (globalsmuggle.botmo->player->botvars.difficulty * globalsmuggle.botmo->player->botvars.difficulty);
+				const UINT8 requiredstealth = (g_nudgeSearch.botmo->player->botvars.difficulty * g_nudgeSearch.botmo->player->botvars.difficulty);
 
 				if (stealth >= requiredstealth)
 				{
-					K_AddAttackObject(thing, side, 10);
+					K_AddAttackObject(thing, side, 20);
 				}
 				else
 				{
-					K_AddDodgeObject(thing, side, 10);
+					K_AddDodgeObject(thing, side, 20);
 				}
 			}
 			break;
@@ -498,7 +508,7 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				break;
 			}
 
-			if (P_CanPickupItem(globalsmuggle.botmo->player, 3))
+			if (P_CanPickupItem(g_nudgeSearch.botmo->player, 3))
 			{
 				K_AddAttackObject(thing, side, 20);
 			}
@@ -510,40 +520,39 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				break;
 			}
 
-			if ((RINGTOTAL(globalsmuggle.botmo->player) < 20 && !(globalsmuggle.botmo->player->pflags & PF_RINGLOCK)
-				&& P_CanPickupItem(globalsmuggle.botmo->player, 0))
+			if ((RINGTOTAL(g_nudgeSearch.botmo->player) < 20 && !(g_nudgeSearch.botmo->player->pflags & PF_RINGLOCK)
+				&& P_CanPickupItem(g_nudgeSearch.botmo->player, 0))
 				&& !thing->extravalue1
-				&& (globalsmuggle.botmo->player->itemtype != KITEM_THUNDERSHIELD))
+				&& (g_nudgeSearch.botmo->player->itemtype != KITEM_THUNDERSHIELD))
 			{
-				K_AddAttackObject(thing, side, (RINGTOTAL(globalsmuggle.botmo->player) < 3) ? 5 : 1);
+				K_AddAttackObject(thing, side, (RINGTOTAL(g_nudgeSearch.botmo->player) < 3) ? 5 : 1);
 			}
 			break;
 		case MT_PLAYER:
 			if (thing->player
 				&& !thing->player->spectator
 				&& !thing->player->hyudorotimer
-				&& !globalsmuggle.botmo->player->hyudorotimer)
+				&& !g_nudgeSearch.botmo->player->hyudorotimer)
 			{
 				// There REALLY ought to be a better way to handle this logic, right?!
 				// Squishing
 				if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->scale > thing->scale + (mapobjectscale/8),
-					thing->scale > globalsmuggle.botmo->scale + (mapobjectscale/8)
-				))
+					g_nudgeSearch.botmo->scale > thing->scale,
+					thing->scale > g_nudgeSearch.botmo->scale))
 				{
 					break;
 				}
 				// Invincibility
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->player->invincibilitytimer,
+					g_nudgeSearch.botmo->player->invincibilitytimer,
 					thing->player->invincibilitytimer
 				))
 				{
 					break;
 				}
-				// thunder Shield
+				// Thunder Shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->player->itemtype == KITEM_THUNDERSHIELD,
+					g_nudgeSearch.botmo->player->itemtype == KITEM_THUNDERSHIELD,
 					thing->player->itemtype == KITEM_THUNDERSHIELD
 				))
 				{
@@ -551,7 +560,7 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				}
 				// Bubble Shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->player->itemtype == KITEM_BUBBLESHIELD,
+					g_nudgeSearch.botmo->player->itemtype == KITEM_BUBBLESHIELD,
 					thing->player->itemtype == KITEM_BUBBLESHIELD
 				))
 				{
@@ -559,7 +568,7 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				}
 				// Flame Shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					globalsmuggle.botmo->player->itemtype == KITEM_FLAMESHIELD,
+					g_nudgeSearch.botmo->player->itemtype == KITEM_FLAMESHIELD,
 					thing->player->itemtype == KITEM_FLAMESHIELD
 				))
 				{
@@ -568,24 +577,24 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				// Has held item shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
 					(thing->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT)),
-					(globalsmuggle.botmo->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT))
+					(g_nudgeSearch.botmo->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT))
 				))
 				{
 					break;
 				}
 				// Ring Sting
-				/*else if (K_PlayerAttackSteer(thing, side, 20,
+				else if (K_PlayerAttackSteer(thing, side, 20,
 					thing->player->rings <= 0,
-					globalsmuggle.botmo->player->rings <= 0
+					g_nudgeSearch.botmo->player->rings <= 0
 				))
 				{
 					break;
-				}*/
+				}
 				else
 				{
 					// After ALL of that, we can do standard bumping
-					fixed_t ourweight = K_GetMobjWeight(globalsmuggle.botmo, thing);
-					fixed_t theirweight = K_GetMobjWeight(thing, globalsmuggle.botmo);
+					fixed_t ourweight = K_GetMobjWeight(g_nudgeSearch.botmo, thing);
+					fixed_t theirweight = K_GetMobjWeight(thing, g_nudgeSearch.botmo);
 					fixed_t weightdiff = 0;
 
 					if (anglediff >= 90)
@@ -644,17 +653,20 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 }
 
 /*--------------------------------------------------
-	void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
+	void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
+void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
 {
+	ZoneScoped;
+
 	const precise_t time = I_GetPreciseTime();
 
 	INT32 xl, xh, yl, yh, bx, by;
 
 	fixed_t distToPredict = 0;
+	fixed_t radToPredict = 0;
 	angle_t angleToPredict = 0;
 
 	fixed_t avgX = 0, avgY = 0;
@@ -677,31 +689,32 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 	distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
 	angleToPredict = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
 
-	globalsmuggle.distancetocheck = distToPredict >> 1;
+	radToPredict = distToPredict >> 1;
+	g_nudgeSearch.distancetocheck = FixedMul(radToPredict, radToPredict);
 
-	baseNudge = predict->radius * 2;
-	maxNudge = distToPredict;
+	baseNudge = predict->baseRadius >> 3;
+	maxNudge = predict->baseRadius - baseNudge;
 
-	globalsmuggle.botmo = player->mo;
-	globalsmuggle.predict = predict;
+	g_nudgeSearch.botmo = player->mo;
+	g_nudgeSearch.angle = angleToPredict;
 
 	// silly variable reuse
-	avgX = globalsmuggle.botmo->x + FixedMul(globalsmuggle.distancetocheck, FINECOSINE(angleToPredict >> ANGLETOFINESHIFT));
-	avgY = globalsmuggle.botmo->y + FixedMul(globalsmuggle.distancetocheck, FINESINE(angleToPredict >> ANGLETOFINESHIFT));
+	avgX = g_nudgeSearch.botmo->x + FixedMul(radToPredict, FINECOSINE(angleToPredict >> ANGLETOFINESHIFT));
+	avgY = g_nudgeSearch.botmo->y + FixedMul(radToPredict, FINESINE(angleToPredict >> ANGLETOFINESHIFT));
 
 	for (i = 0; i < 2; i++)
 	{
-		globalsmuggle.gotoAvgX[i] = globalsmuggle.gotoAvgY[i] = 0;
-		globalsmuggle.gotoObjs[i] = 0;
+		g_nudgeSearch.gotoAvgX[i] = g_nudgeSearch.gotoAvgY[i] = 0;
+		g_nudgeSearch.gotoObjs[i] = 0;
 
-		globalsmuggle.avoidAvgX[i] = globalsmuggle.avoidAvgY[i] = 0;
-		globalsmuggle.avoidObjs[i] = 0;
+		g_nudgeSearch.avoidAvgX[i] = g_nudgeSearch.avoidAvgY[i] = 0;
+		g_nudgeSearch.avoidObjs[i] = 0;
 	}
 
-	xl = (unsigned)(avgX - (globalsmuggle.distancetocheck + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(avgX + (globalsmuggle.distancetocheck + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(avgY - (globalsmuggle.distancetocheck + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(avgY + (globalsmuggle.distancetocheck + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(avgX - (radToPredict + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(avgX + (radToPredict + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(avgY - (radToPredict + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
+	yh = (unsigned)(avgY + (radToPredict + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
@@ -714,9 +727,9 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 	}
 
 	// Handle dodge characters
-	if (globalsmuggle.avoidObjs[1] > 0 || globalsmuggle.avoidObjs[0] > 0)
+	if (g_nudgeSearch.avoidObjs[1] > 0 || g_nudgeSearch.avoidObjs[0] > 0)
 	{
-		if (globalsmuggle.avoidObjs[1] > globalsmuggle.avoidObjs[0])
+		if (g_nudgeSearch.avoidObjs[1] > g_nudgeSearch.avoidObjs[0])
 		{
 			gotoSide = 1;
 		}
@@ -725,8 +738,8 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 			gotoSide = 0;
 		}
 
-		avgX = (globalsmuggle.avoidAvgX[gotoSide] / globalsmuggle.avoidObjs[gotoSide]) * mapobjectscale;
-		avgY = (globalsmuggle.avoidAvgY[gotoSide] / globalsmuggle.avoidObjs[gotoSide]) * mapobjectscale;
+		avgX = (g_nudgeSearch.avoidAvgX[gotoSide] / g_nudgeSearch.avoidObjs[gotoSide]) * mapobjectscale;
+		avgY = (g_nudgeSearch.avoidAvgY[gotoSide] / g_nudgeSearch.avoidObjs[gotoSide]) * mapobjectscale;
 
 		avgDist = R_PointToDist2(
 			avgX, avgY,
@@ -734,9 +747,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 		);
 
 		// High handling characters dodge better
-		nudgeDist = ((9 - globalsmuggle.botmo->player->kartweight) + 1) * baseNudge;
-
-		maxNudge = max(distToPredict - predict->radius, predict->radius);
+		nudgeDist = ((9 - g_nudgeSearch.botmo->player->kartweight) + 1) * baseNudge;
 		if (nudgeDist > maxNudge)
 		{
 			nudgeDist = maxNudge;
@@ -750,6 +761,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 
 		predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
 		predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+		predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
 
 		distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
 
@@ -770,7 +782,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 		// We don't want to pick contradictory sides, so keep the old side otherwise,
 		// even if there's more to grab on the other side.
 
-		if (globalsmuggle.gotoObjs[1] > globalsmuggle.gotoObjs[0])
+		if (g_nudgeSearch.gotoObjs[1] > g_nudgeSearch.gotoObjs[0])
 		{
 			gotoSide = 1;
 		}
@@ -781,7 +793,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 	}
 
 	// Check if our side is invalid, if so, don't do the code below.
-	if (gotoSide != -1 && globalsmuggle.gotoObjs[gotoSide] == 0)
+	if (gotoSide != -1 && g_nudgeSearch.gotoObjs[gotoSide] == 0)
 	{
 		// Do not use a side
 		gotoSide = -1;
@@ -789,8 +801,8 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 
 	if (gotoSide != -1)
 	{
-		avgX = (globalsmuggle.gotoAvgX[gotoSide] / globalsmuggle.gotoObjs[gotoSide]) * mapobjectscale;
-		avgY = (globalsmuggle.gotoAvgY[gotoSide] / globalsmuggle.gotoObjs[gotoSide]) * mapobjectscale;
+		avgX = (g_nudgeSearch.gotoAvgX[gotoSide] / g_nudgeSearch.gotoObjs[gotoSide]) * mapobjectscale;
+		avgY = (g_nudgeSearch.gotoAvgY[gotoSide] / g_nudgeSearch.gotoObjs[gotoSide]) * mapobjectscale;
 
 		avgDist = R_PointToDist2(
 			predict->x, predict->y,
@@ -798,9 +810,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 		);
 
 		// Acceleration characters are more aggressive
-		nudgeDist = ((9 - globalsmuggle.botmo->player->kartspeed) + 1) * baseNudge;
-
-		maxNudge = max(distToPredict - predict->radius, predict->radius);
+		nudgeDist = ((9 - g_nudgeSearch.botmo->player->kartspeed) + 1) * baseNudge;
 		if (nudgeDist > maxNudge)
 		{
 			nudgeDist = maxNudge;
@@ -810,6 +820,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 		{
 			predict->x = avgX;
 			predict->y = avgY;
+			predict->radius = baseNudge;
 		}
 		else
 		{
@@ -821,6 +832,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 
 			predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
 			predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+			predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
 
 			//distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
 		}
@@ -841,6 +853,15 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player)
 	Return:-
 		BlockItReturn_t enum, see its definition for more information.
 --------------------------------------------------*/
+static struct bullySearch_s
+{
+	mobj_t *botmo;
+	fixed_t distancetocheck;
+
+	fixed_t annoyscore;
+	mobj_t *annoymo;
+} g_bullySearch;
+
 static BlockItReturn_t K_FindPlayersToBully(mobj_t *thing)
 {
 	INT16 anglediff;
@@ -848,7 +869,7 @@ static BlockItReturn_t K_FindPlayersToBully(mobj_t *thing)
 	fixed_t ourweight, theirweight, weightdiff;
 	angle_t ourangle, destangle, angle;
 
-	if (!globalsmuggle.botmo || P_MobjWasRemoved(globalsmuggle.botmo) || !globalsmuggle.botmo->player)
+	if (!g_bullySearch.botmo || P_MobjWasRemoved(g_bullySearch.botmo) || !g_bullySearch.botmo->player)
 	{
 		return BMIT_ABORT;
 	}
@@ -863,40 +884,40 @@ static BlockItReturn_t K_FindPlayersToBully(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
-	if (globalsmuggle.botmo == thing)
+	if (g_bullySearch.botmo == thing)
 	{
 		return BMIT_CONTINUE;
 	}
 
-	fulldist = R_PointToDist2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, thing->x, thing->y) - thing->radius;
+	fulldist = R_PointToDist2(g_bullySearch.botmo->x, g_bullySearch.botmo->y, thing->x, thing->y) - thing->radius;
 
-	if (fulldist > globalsmuggle.distancetocheck)
+	if (fulldist > g_bullySearch.distancetocheck)
 	{
 		return BMIT_CONTINUE;
 	}
 
-	if (P_CheckSight(globalsmuggle.botmo, thing) == false)
+	if (P_CheckSight(g_bullySearch.botmo, thing) == false)
 	{
 		return BMIT_CONTINUE;
 	}
 
-	ourangle = globalsmuggle.botmo->angle;
-	destangle = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, thing->x, thing->y);
+	ourangle = g_bullySearch.botmo->angle;
+	destangle = R_PointToAngle2(g_bullySearch.botmo->x, g_bullySearch.botmo->y, thing->x, thing->y);
 	angle = (ourangle - destangle);
 
 	if (angle < ANGLE_180)
 	{
 		anglediff = AngleFixed(angle)>>FRACBITS;
 	}
-	else 
+	else
 	{
 		anglediff = 360-(AngleFixed(angle)>>FRACBITS);
 	}
 
 	anglediff = abs(anglediff);
 
-	ourweight = K_GetMobjWeight(globalsmuggle.botmo, thing);
-	theirweight = K_GetMobjWeight(thing, globalsmuggle.botmo);
+	ourweight = K_GetMobjWeight(g_bullySearch.botmo, thing);
+	theirweight = K_GetMobjWeight(thing, g_bullySearch.botmo);
 	weightdiff = 0;
 
 	if (anglediff >= 90)
@@ -908,37 +929,39 @@ static BlockItReturn_t K_FindPlayersToBully(mobj_t *thing)
 		weightdiff = ourweight - theirweight;
 	}
 
-	if (weightdiff > mapobjectscale && weightdiff > globalsmuggle.annoyscore)
+	if (weightdiff > mapobjectscale && weightdiff > g_bullySearch.annoyscore)
 	{
-		globalsmuggle.annoyscore = weightdiff;
-		globalsmuggle.annoymo = thing;
+		g_bullySearch.annoyscore = weightdiff;
+		g_bullySearch.annoymo = thing;
 	}
 
 	return BMIT_CONTINUE;
 }
 
 /*--------------------------------------------------
-	INT32 K_PositionBully(player_t *player)
+	INT32 K_PositionBully(const player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-INT32 K_PositionBully(player_t *player)
+INT32 K_PositionBully(const player_t *player)
 {
+	ZoneScoped;
+
 	INT32 xl, xh, yl, yh, bx, by;
 
 	angle_t ourangle, destangle, angle;
 	INT16 anglediff;
 
-	globalsmuggle.botmo = player->mo;
-	globalsmuggle.distancetocheck = 1024*player->mo->scale;
+	g_bullySearch.botmo = player->mo;
+	g_bullySearch.distancetocheck = 1024*player->mo->scale;
 
-	globalsmuggle.annoymo = NULL;
-	globalsmuggle.annoyscore = 0;
+	g_bullySearch.annoymo = NULL;
+	g_bullySearch.annoyscore = 0;
 
-	xl = (unsigned)(globalsmuggle.botmo->x - globalsmuggle.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(globalsmuggle.botmo->x + globalsmuggle.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(globalsmuggle.botmo->y - globalsmuggle.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(globalsmuggle.botmo->y + globalsmuggle.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(g_bullySearch.botmo->x - g_bullySearch.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(g_bullySearch.botmo->x + g_bullySearch.distancetocheck - bmaporgx)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(g_bullySearch.botmo->y - g_bullySearch.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
+	yh = (unsigned)(g_bullySearch.botmo->y + g_bullySearch.distancetocheck - bmaporgy)>>MAPBLOCKSHIFT;
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
@@ -950,25 +973,25 @@ INT32 K_PositionBully(player_t *player)
 		}
 	}
 
-	if (globalsmuggle.annoymo == NULL)
+	if (g_bullySearch.annoymo == NULL)
 	{
 		return INT32_MAX;
 	}
 
-	ourangle = globalsmuggle.botmo->angle;
-	destangle = R_PointToAngle2(globalsmuggle.botmo->x, globalsmuggle.botmo->y, globalsmuggle.annoymo->x, globalsmuggle.annoymo->y);
+	ourangle = g_bullySearch.botmo->angle;
+	destangle = R_PointToAngle2(g_bullySearch.botmo->x, g_bullySearch.botmo->y, g_bullySearch.annoymo->x, g_bullySearch.annoymo->y);
 	angle = (ourangle - destangle);
 
 	if (angle < ANGLE_180)
 	{
 		anglediff = AngleFixed(angle)>>FRACBITS;
 	}
-	else 
+	else
 	{
 		anglediff = 360-(AngleFixed(angle)>>FRACBITS);
 	}
 
-	if (anglediff < 30)
+	if (abs(anglediff) < 30)
 		return 0;
 
 	if (anglediff < 0)

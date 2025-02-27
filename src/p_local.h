@@ -404,12 +404,12 @@ struct tm_t
 	fixed_t precipbbox[4];
 
 	// If "floatok" true, move would be ok
-	// if within "tm.floorz - tm.ceilingz".
+	// if within "g_tm.floorz - g_tm.ceilingz".
 	boolean floatok;
 
 	fixed_t floorz, ceilingz;
 	fixed_t dropoffz, drpoffceilz; // drop-off floor/ceiling heights
-	mobj_t *floorthing; // the thing corresponding to tm.floorz or NULL if tm.floorz is from a sector
+	mobj_t *floorthing; // the thing corresponding to g_tm.floorz or NULL if g_tm.floorz is from a sector
 	mobj_t *hitthing; // the solid thing you bumped into (for collisions)
 	ffloor_t *floorrover, *ceilingrover;
 	pslope_t *floorslope, *ceilingslope;
@@ -428,11 +428,11 @@ struct tm_t
 	// lines
 	boolean sweep;
 
-	// sweep: max step up at tm.x, tm.y
+	// sweep: max step up at g_tm.x, g_tm.y
 	fixed_t maxstep;
 };
 
-extern tm_t tm;
+extern tm_t g_tm;
 
 void P_RestoreTMStruct(tm_t tmrestore);
 

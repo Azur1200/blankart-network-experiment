@@ -262,6 +262,11 @@ static consvar_t cv_dummyconsvar = CVAR_INIT ("dummyconsvar", "Off", CV_CALL|CV_
 consvar_t cv_restrictskinchange = CVAR_INIT ("restrictskinchange", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
 consvar_t cv_allowteamchange = CVAR_INIT ("allowteamchange", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
+#ifdef DEVELOP
+	// change the default value in doomdef.h (so it affects release builds too)
+	consvar_t cv_debugtraversemax = CVAR_INIT ("debugtraversemax", TOSTR2(TRAVERSE_MAX), CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
+#endif
+
 static CV_PossibleValue_t ingamecap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS-1, "MAX"}, {0, NULL}};
 consvar_t cv_ingamecap = CVAR_INIT ("ingamecap", "0", CV_NETVAR, ingamecap_cons_t, NULL);
 
@@ -3652,6 +3657,40 @@ static void Command_ServerTeamChange_f(void)
 	SendNetXCmd(XD_TEAMCHANGE, &usvalue, sizeof(usvalue));
 }
 
+void P_SetPlayerSpectator(INT32 playernum)
+{
+	//Make sure you're in the right gametype.
+	if (!G_GametypeHasTeams() && !G_GametypeHasSpectators())
+		return;
+
+	// Don't duplicate efforts.
+	if (players[playernum].spectator)
+		return;
+
+	players[playernum].spectator = true;
+	players[playernum].pflags &= ~PF_WANTSTOJOIN;
+
+	players[playernum].playerstate = PST_REBORN;
+
+	/*if (cv_spectatormusic.value && (players[displayplayers[0]].spectator == true) && !r_splitscreen)
+	{
+		if (P_UseContinuousLevelMusic())
+		{
+			if (!stricmp(Music_Song("level_nosync"), cv_spectatormusiclump.string))
+			{
+				//  Do not reset music if it is the same
+				Music_BatchExempt("level_nosync");
+			}
+			Music_Remap("level_nosync", cv_spectatormusiclump.string);
+		}
+		else
+		{
+			Music_Remap("level", cv_spectatormusiclump.string);
+		}
+	}*/
+
+}
+
 //todo: This and the other teamchange functions are getting too long and messy. Needs cleaning.
 static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 {
@@ -3739,7 +3778,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 		{
 			players[playernum].playerstate = PST_REBORN;
 		}
-		
+
 	}
 	else
 		wasspectator = true;
@@ -3832,7 +3871,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	if (players[playernum].spectator)
 	{
 		players[playernum].spectatorreentry = (cv_spectatorreentry.value * TICRATE);
-		
+
 		if (gametyperules & GTR_BUMPERS) // SRB2kart
 		{
 			players[playernum].roundscore = 0;

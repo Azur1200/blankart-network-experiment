@@ -336,7 +336,7 @@ void G_ReadDemoExtraData(void)
 				{
 					CL_ClearPlayer(p);
 					playeringame[p] = true;
-					G_AddPlayer(p);
+					G_AddPlayer(p, p);
 					players[p].spectator = true;
 					//CONS_Printf("player %s is joining server on tic %d\n", player_names[p], leveltime);
 				}

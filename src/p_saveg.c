@@ -995,6 +995,7 @@ static void P_NetUnArchiveColormaps(savebuffer_t *save)
 
 //diff5 flags
 #define SD_ACTIVATION 0x01
+#define SD_BOTCONTROLLER 0x02
 
 static boolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
@@ -1230,6 +1231,12 @@ static void ArchiveSectors(savebuffer_t *save)
 			diff4 |= SD_STRINGARGS;
 		if (ss->activation != spawnss->activation)
 			diff5 |= SD_ACTIVATION;
+		if (/*ss->botController.trick != spawnss->botController.trick
+			||*/ss->botController.flags != spawnss->botController.flags
+			|| ss->botController.forceAngle != spawnss->botController.forceAngle)
+		{
+			diff5 |= SD_BOTCONTROLLER;
+		}
 
 		if (ss->ffloors && CheckFFloorDiff(ss))
 			diff |= SD_FFLOORS;
@@ -1342,6 +1349,13 @@ static void ArchiveSectors(savebuffer_t *save)
 			}
 			if (diff5 & SD_ACTIVATION)
 				WRITEUINT32(save->p, ss->activation);
+
+			if (diff5 & SD_BOTCONTROLLER)
+			{
+				//WRITEUINT8(save->p, ss->botController.trick);
+				WRITEUINT32(save->p, ss->botController.flags);
+				WRITEANGLE(save->p, ss->botController.forceAngle);
+			}
 
 			if (diff & SD_FFLOORS)
 				ArchiveFFloors(save, ss);
@@ -1498,6 +1512,13 @@ static void UnArchiveSectors(savebuffer_t *save)
 		}
 		if (diff5 & SD_ACTIVATION)
 			sectors[i].activation = READUINT32(save->p);
+
+		if (diff5 & SD_BOTCONTROLLER)
+		{
+			//sectors[i].botController.trick = READUINT8(save->p);
+			sectors[i].botController.flags = READUINT32(save->p);
+			sectors[i].botController.forceAngle = READANGLE(save->p);
+		}
 
 		if (diff & SD_FFLOORS)
 			UnArchiveFFloors(save, &sectors[i]);

@@ -200,7 +200,7 @@ boolean P_BBoxInsidePolyobj(polyobj_t *po, fixed_t *bbox)
 	{
 		if (P_BoxOnLineSide(bbox, po->lines[i]) == 0)
 			return false;
-		if (tm.sweep)
+		if (g_tm.sweep)
 		{
 			P_TestLine(po->lines[i]);
 		}
@@ -801,7 +801,7 @@ static void Polyobj_removeFromBlockmap(polyobj_t *po)
 // Movement functions
 
 // A version of Lee's routine from p_maputl.c that accepts an mobj pointer
-// argument instead of using tm.thing. Returns true if the line isn't contacted
+// argument instead of using g_tm.thing. Returns true if the line isn't contacted
 // and false otherwise.
 static inline boolean Polyobj_untouched(line_t *ld, mobj_t *mo)
 {
@@ -845,10 +845,10 @@ static void Polyobj_pushThing(polyobj_t *po, line_t *line, mobj_t *mo)
 	if (po->damage && (mo->flags & MF_SHOOTABLE))
 	{
 		P_CheckPosition(mo, mo->x + momx, mo->y + momy, NULL);
-		mo->floorz = tm.floorz;
-		mo->ceilingz = tm.ceilingz;
-		mo->floorrover = tm.floorrover;
-		mo->ceilingrover = tm.ceilingrover;
+		mo->floorz = g_tm.floorz;
+		mo->ceilingz = g_tm.ceilingz;
+		mo->floorrover = g_tm.floorrover;
+		mo->ceilingrover = g_tm.ceilingrover;
 	}
 }
 

@@ -2431,6 +2431,20 @@ mobj_t* P_FindObjectTypeFromTag(mobjtype_t type, mtag_t tag)
 	}
 }
 
+static void K_UpdateBotControllers(INT32 *args)
+{
+	INT32 secnum;
+
+	TAG_ITER_SECTORS(args[0], secnum)
+	{
+		sector_t *const sec = sectors + secnum;
+
+		//sec->botController.trick = args[1];
+		sec->botController.flags = args[2];
+		sec->botController.forceAngle = FixedAngle(args[3] * FRACUNIT);
+	}
+}
+
 /** Processes the line special triggered by an object.
   *
   * \param line Line with the special command on it.
@@ -4425,6 +4439,12 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			}
 		}
 		break;
+
+		case 2004: // Bot Controller.
+		{
+			K_UpdateBotControllers(args);
+			break;
+		}
 
 		default:
 			break;
@@ -7690,6 +7710,10 @@ void P_SpawnSpecials(boolean fromnetsave)
 					}
 					sectors[s].extra_colormap = sectors[s].spawn_extra_colormap = exc;
 				}
+				break;
+
+			case 2004: // Bot Controller.
+				K_UpdateBotControllers(lines[i].args);
 				break;
 
 			default:
