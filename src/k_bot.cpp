@@ -217,13 +217,13 @@ void K_UpdateMatchRaceBots(void)
 	else
 	{
 		difficulty = cv_kartbot.value;
-		/*if (netgame)
-		{
-			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_maxconnections.value));
-		}*/
-		if (cv_maxplayers.value > 0)
+		if (netgame)
 		{
 			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_maxplayers.value));
+		}
+		if (cv_maxplayers.value > 0)
+		{
+			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_ingamecap.value));
 		}
 	}
 
@@ -322,7 +322,10 @@ void K_UpdateMatchRaceBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				grabskins[index] = grabskins[--usableskins];
+				if (usableskins > cv_ingamecap.value)
+				{
+					grabskins[index] = grabskins[--usableskins];
+				}
 			}
 
 			if (!K_AddBot(skinnum, difficulty, BOT_STYLE_NORMAL, &newplayernum))
