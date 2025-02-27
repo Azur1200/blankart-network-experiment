@@ -346,6 +346,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITESINT8(save->p, players[i].glanceDir);
 
+		WRITEUINT16(save->p, players[i].breathTimer);
+
 		WRITEUINT8(save->p, players[i].typing_timer);
 		WRITEUINT8(save->p, players[i].typing_duration);
 
@@ -650,6 +652,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].wanted = READINT16(save->p);
 
 		players[i].glanceDir = READSINT8(save->p);
+
+		players[i].breathTimer = READUINT16(save->p);
 
 		players[i].typing_timer = READUINT8(save->p);
 		players[i].typing_duration = READUINT8(save->p);

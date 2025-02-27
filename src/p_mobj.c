@@ -3212,11 +3212,18 @@ void P_MobjCheckWater(mobj_t *mobj)
 	if (!!(mobj->eflags & MFE_UNDERWATER) == wasinwater)
 		return;
 
-	/*if (p && !p->waterskip &&
-			p->curshield != KSHIELD_BUBBLE && wasinwater)
+	if (wasinwater && p != NULL)
 	{
-		S_StartSound(mobj, sfx_s3k38);
-	}*/
+		if (p->curshield != KSHIELD_BUBBLE
+			&& mobj->player->waterskip == 0
+			&& p->breathTimer > 15*TICRATE)
+		{
+			// Play the gasp sound
+			S_StartSound(mobj, sfx_s3k38);
+		}
+
+		p->breathTimer = 0;
+	}
 
 	if ((p) // Players
 	 || (mobj->flags & MF_PUSHABLE) // Pushables
