@@ -274,7 +274,7 @@ void K_InitGrandPrixBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (usableskins > K_GetGPPlayerCount(1))
+				if (usableskins >= K_GetGPPlayerCount(1))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}
@@ -654,7 +654,7 @@ void K_RetireBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (usableskins > K_GetGPPlayerCount(1))
+				if (usableskins >= K_GetGPPlayerCount(1))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}

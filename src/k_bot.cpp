@@ -322,7 +322,7 @@ void K_UpdateMatchRaceBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (((cv_ingamecap.value > 0) && (usableskins > cv_ingamecap.value)) || (usableskins > cv_maxplayers.value))
+				if (((cv_ingamecap.value > 0) && (usableskins >= cv_ingamecap.value)) || (usableskins >= cv_maxplayers.value))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}
