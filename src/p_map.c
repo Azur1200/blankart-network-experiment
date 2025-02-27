@@ -687,7 +687,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		return BMIT_CONTINUE;
 
 	// Bubble Shield reflect
-	if (((thing->type == MT_BUBBLESHIELD && thing->target->player && thing->target->player->bubbleblowup)
+	if (((thing->type == MT_BUBBLESHIELD && !P_MobjWasRemoved(thing->target) && thing->target->player && thing->target->player->bubbleblowup)
 		|| (thing->player && thing->player->bubbleblowup))
 		&& (g_tm.thing->type == MT_ORBINAUT || g_tm.thing->type == MT_JAWZ || g_tm.thing->type == MT_JAWZ_DUD
 		|| g_tm.thing->type == MT_BANANA || g_tm.thing->type == MT_EGGMANITEM || g_tm.thing->type == MT_BALLHOG
@@ -702,7 +702,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 		return K_BubbleShieldCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
-	else if (((g_tm.thing->type == MT_BUBBLESHIELD && g_tm.thing->target->player && g_tm.thing->target->player->bubbleblowup)
+	else if (((g_tm.thing->type == MT_BUBBLESHIELD && !P_MobjWasRemoved(g_tm.thing->target) &&  g_tm.thing->target->player && g_tm.thing->target->player->bubbleblowup)
 		|| (g_tm.thing->player && g_tm.thing->player->bubbleblowup))
 		&& (thing->type == MT_ORBINAUT || thing->type == MT_JAWZ || thing->type == MT_JAWZ_DUD
 		|| thing->type == MT_BANANA || thing->type == MT_EGGMANITEM || thing->type == MT_BALLHOG
