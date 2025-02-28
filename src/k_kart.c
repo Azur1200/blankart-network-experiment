@@ -5375,6 +5375,7 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 				break;
 			case KSHIELD_FLAME:
 				S_StartSound(player->mo, sfx_s3k47);
+				player->flametimer = 0;
 				break;
 		}
 
@@ -7017,12 +7018,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->sneakertimer--;
 	}
 
-	if (player->flamedash)
-		player->flamedash--;
-	
-	if (player->flamestore)
-		player->flamestore--;
-
 	if (player->sneakertimer && player->wipeoutslow > 0 && player->wipeoutslow < wipeoutslowtime+1)
 		player->wipeoutslow = wipeoutslowtime+1;
 
@@ -7173,6 +7168,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->bubblecool = 0;
 		player->bubblepop = 0;
 	}
+
+	if (player->flamedash)
+		player->flamedash--;
+
+	if (player->flamestore)
+		player->flamestore--;
 
 	if (player->flametimer > 0)
 	{
@@ -9207,6 +9208,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (player->flametimer <= 0)
 							{
+								player->flametimer = 0;
 								S_StartSound(player->mo, sfx_s3k47);
 								K_DropHnextList(player, false);
 							}
