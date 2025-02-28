@@ -669,7 +669,7 @@ void P_PlayRinglossSound(mobj_t *source)
 	if ((K_RingsActive() == false))
 		return;
 	
-	if (source->player && K_GetShieldFromItem(source->player->itemtype) != KSHIELD_NONE)
+	if (source->player && K_GetShieldFromPlayer(source->player) != KSHIELD_NONE)
 		S_StartSound(source, sfx_s1a3); // Shield hit (no ring loss)
 	else if (source->player && source->player->rings <= 0)
 		S_StartSound(source, sfx_s1a6); // Ring debt (lessened ring loss)
@@ -2287,7 +2287,7 @@ void P_MovePlayer(player_t *player)
 	////////////////////////////
 
 	// SRB2kart - Drifting smoke and fire
-	if ((player->sneakertimer || player->flamedash)
+	if ((player->sneakertimer || player->flamestore)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 

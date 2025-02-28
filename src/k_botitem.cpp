@@ -1305,23 +1305,25 @@ static void K_BotItemFlame(const player_t *player, ticcmd_t *cmd)
 {
 	ZoneScoped;
 
-	if (player->botvars.itemconfirm > 0)
+	if (P_IsObjectOnGround(player->mo) == false)
 	{
-		cmd->bot.itemconfirm--;
+		// Don't use while mid-air.
+		return;
 	}
-	else if (player->itemflags & IF_HOLDREADY)
-	{
-		INT32 flamemax = player->flamelength;
 
-		if (player->flamemeter < flamemax || flamemax == 0)
+	if (player->botvars.itemconfirm > TICRATE)
+	{
+		if (player->flametimer > 0)
 		{
 			cmd->buttons |= BT_ATTACK;
-		}
-		else
-		{
-			//player->botvars.itemconfirm = 3*flamemax/4;
+			cmd->bot.itemconfirm = 0;
 		}
 	}
+	else
+	{
+		cmd->bot.itemconfirm++;
+	}
+
 }
 
 /*--------------------------------------------------
@@ -1454,6 +1456,10 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 			{
 				K_BotItemRocketSneaker(player, cmd);
 			}
+			else if (player->flametimer > 0)
+			{
+				K_BotItemFlame(player, cmd);
+			}
 			else
 			{
 				switch (player->itemtype)
@@ -1475,6 +1481,12 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						break;
 					case KITEM_ROCKETSNEAKER:
 						if (player->rocketsneakertimer <= 0)
+						{
+							K_BotItemGenericTap(player, cmd);
+						}
+						break;
+				case KITEM_FLAMESHIELD:
+						if (player->flametimer <= 0)
 						{
 							K_BotItemGenericTap(player, cmd);
 						}
@@ -1547,9 +1559,6 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						break;
 					case KITEM_BUBBLESHIELD:
 						K_BotItemBubble(player, cmd);
-						break;
-					case KITEM_FLAMESHIELD:
-						K_BotItemFlame(player, cmd);
 						break;
 				}
 			}
@@ -1625,9 +1634,9 @@ void K_UpdateBotGameplayVarsItemUsage(player_t *player)
 						if (player->botvars.itemconfirm == 0
 							&& (player->itemflags & IF_HOLDREADY) == IF_HOLDREADY)
 						{
-							INT32 flamemax = player->flamelength;
+							INT32 flamemax = player->flametimer;
 
-							if (player->flamemeter < flamemax || flamemax == 0)
+							if (player->flamestore < flamemax || flamemax == 0)
 							{
 								;
 							}
