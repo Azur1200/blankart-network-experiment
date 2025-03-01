@@ -326,6 +326,8 @@ consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff,
 
 consvar_t cv_usemouse = CVAR_INIT ("use_mouse", "Off", CV_SAVE|CV_CALL,usemouse_cons_t, I_StartupMouse);
 
+consvar_t cv_laglesscam = CVAR_INIT ("laglesscamera", "Off", CV_SAVE,CV_OnOff, NULL);
+
 consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("use_gamepad", "1", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick1),
 	CVAR_INIT ("use_gamepad2", "2", CV_SAVE|CV_CALL, usejoystick_cons_t, I_InitJoystick2),
@@ -1121,9 +1123,11 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_resume);
 	CV_RegisterVar(&cv_perfstats);
 
+	CV_RegisterVar(&cv_laglesscam);
+
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
-	//COM_AddCommand("writethings", Command_Writethings_f);
+	// //COM_AddCommand("writethings", Command_Writethings_f);
 	CV_RegisterVar(&cv_speed);
 	CV_RegisterVar(&cv_opflags);
 	CV_RegisterVar(&cv_ophoopflags);

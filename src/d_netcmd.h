@@ -35,6 +35,7 @@ extern consvar_t cv_splitplayers;
 
 extern consvar_t cv_seenames;
 extern consvar_t cv_usemouse;
+extern consvar_t cv_laglesscam;
 extern consvar_t cv_usejoystick[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS];
 #ifdef LJOYSTICK
