@@ -2481,32 +2481,47 @@ void CL_ClearPlayer(INT32 playernum)
 {
 	int i;
 
-	if (gamestate == GS_LEVEL)
+	// Handle mobj_t pointers.
+	if (G_GamestateUsesLevel() == true)
 	{
-		if (players[playernum].mo)
+		if (players[playernum].follower)
 		{
-			P_RemoveMobj(players[playernum].mo);
-			P_SetTarget(&players[playernum].mo, NULL);
+			//K_RemoveFollower(&players[playernum]);
 		}
-		
-		P_SetTarget(&players[playernum].awayviewmobj, NULL);
-		P_SetTarget(&players[playernum].followmobj, NULL);
+
+#define PlayerPointerRemove(field) \
+		if (P_MobjWasRemoved(field) == false) \
+		{ \
+			P_RemoveMobj(field); \
+			P_SetTarget(&field, NULL); \
+		}
+
+		// These are mostly subservient to the player, and may not clean themselves up.
+		PlayerPointerRemove(players[playernum].mo);
+		PlayerPointerRemove(players[playernum].followmobj);
+
+#undef PlayerPointerRemove
+
 	}
-		// Handle parties.
-		for (i = 0; i < MAXPLAYERS; ++i)
-		{
-			if (splitscreen_invitations[i] == playernum)
-				splitscreen_invitations[i] = -1;
-		}
 
-		splitscreen_party_size[playernum] = 0;
-		splitscreen_original_party_size[playernum] = 0;
+	// Handle parties.
+	for (i = 0; i < MAXPLAYERS; ++i)
+	{
+		if (splitscreen_invitations[i] == playernum)
+			splitscreen_invitations[i] = -1;
+	}
+	splitscreen_invitations[playernum] = -1;
 
-		// Wipe the struct.
-		memset(&players[playernum], 0, sizeof (player_t));
+	playerconsole[playernum] = playernum;
 
-		// Handle post-cleanup.
-		RemoveAdminPlayer(playernum); // don't stay admin after you're gone
+	// Wipe the struct.
+	memset(&players[playernum], 0, sizeof (player_t));
+
+	// Handle values which should not be initialised to 0.
+	players[playernum].followerskin = -1; // don't have a ghost follower
+
+	// Handle post-cleanup.
+	RemoveAdminPlayer(playernum); // don't stay admin after you're gone
 }
 
 //
@@ -3542,6 +3557,9 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	node = (UINT8)READUINT8(*p);
 	newplayernum = (UINT8)READUINT8(*p);
+
+	if (newplayernum+1 > doomcom->numslots)
+		doomcom->numslots = (INT16)(newplayernum+1);
 
 	newplayer = &players[newplayernum];
 
