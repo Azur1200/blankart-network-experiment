@@ -3605,7 +3605,6 @@ void A_AttractChase(mobj_t *actor)
 			if (actor->extravalue1 >= 16)
 			{
 				if (!P_GivePlayerRings(actor->target->player, 1)) // returns 0 if addition failed
-				{
 					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
 
 				if (actor->cvmem) // caching
