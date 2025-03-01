@@ -269,7 +269,7 @@ boolean K_IsPlayerLosing(player_t *player)
 	INT32 winningpos = 1;
 	UINT8 i, pcount = 0;
 
-	if (itembreaker && numtargets == 0)
+	if (itembreaker && numgotboxes == 0)
 		return true; // Didn't even TRY?
 
 	if (itembreaker || bossinfo.boss)
@@ -1533,25 +1533,6 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 				player->karthud[khud_itemblinkmode] = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
-			}
-			else if (itembreaker)
-			{
-				if (mashed)
-				{
-					K_KartGetItemResult(player, KITEM_POGOSPRING);
-					player->karthud[khud_itemblinkmode] = 1;
-					if (P_IsDisplayPlayer(player))
-						S_StartSound(NULL, sfx_itrolm);
-				}
-				else
-				{
-					K_KartGetItemResult(player, KITEM_SNEAKER);
-					player->karthud[khud_itemblinkmode] = 0;
-					if (P_IsDisplayPlayer(player))
-						S_StartSound(NULL, sfx_itrolf);
-
-				}
-
 			}
 			else
 			{

@@ -13004,8 +13004,19 @@ void A_ItemPop(mobj_t *actor)
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
 	
-	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !(itembreaker && numgotboxes >= 3))
+	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
+	{
 		actor->target->player->itemroulette = 1;
+	}
+	else if (itembreaker)
+	{
+		if (numgotboxes < 3)
+		{
+			actor->target->player->itemtype = KITEM_POGOSPRING;
+			actor->target->player->itemamount += 1;
+		}
+
+	}
 
 	// Let Ring-less maps in on the rings fun as well!
 	if ((K_RingsActive() == true) )

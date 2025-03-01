@@ -355,7 +355,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->flags &= ~MF_SPECIAL;
 			return;
 		case MT_RANDOMITEM:
-			if (!P_CanPickupItem(player, 1))
+			if (!itembreaker && !P_CanPickupItem(player, 1))
 				return;
 
 			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
