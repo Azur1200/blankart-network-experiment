@@ -8234,6 +8234,12 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 		ringPower += (player->botvars.difficulty * ringPower) / DIFFICULTBOT;
 	}
 
+	if (player->kartspeed == 9 && player->kartweight == 9)
+	{
+		// Give the poor fuck an extra tic of ring duration so he isn't constantly dropping speed.
+		ringPower += 1;
+	}
+
 	return ringPower;
 }
 
