@@ -4289,9 +4289,19 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// SRB2kart 010217
-	if (leveltime < introtime)
+	if (!(gametyperules & GTR_FREEROAM))
 	{
-		player->nocontrol = 2;
+		if (leveltime < starttime)
+		{
+			player->nocontrol = 2;
+		}
+	}
+	else
+	{
+		if (leveltime < introtime)
+		{
+			player->nocontrol = 2;
+		}
 	}
 
 	// Synchronizes the "real" amount of time spent in the level.

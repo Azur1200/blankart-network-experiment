@@ -3444,11 +3444,6 @@ SINT8 K_GetForwardMove(player_t *player)
 {
 	SINT8 forwardmove = player->cmd.forwardmove;
 
-	if (leveltime < starttime && !(gametyperules & GTR_FREEROAM))
-	{
-		return 0;
-	}
-
 	if (K_KartKickstart(player)) // unlike the brute forward of sneakers, allow for backwards easing here
 	{
 		forwardmove += MAXPLMOVE;
