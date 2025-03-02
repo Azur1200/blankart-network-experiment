@@ -831,8 +831,10 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 
 	if (gametyperules & GTR_BATTLEODDS)
 		newodds = K_KartItemOddsBattle[item-1][pos];
-	else
+	else if (gametyperules & GTR_RACEODDS)
 		newodds = K_KartItemOddsRace[item-1][pos];
+	else
+		newodds = 0;
 
 	// Base multiplication to ALL item odds to simulate fractional precision
 	newodds *= 4;
