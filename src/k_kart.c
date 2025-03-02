@@ -7008,10 +7008,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->driftboost)
 		player->driftboost--;
 
-	if (player->startboost > 0 && onground == true)
-	{
+	if (player->startboost > 0)
 		player->startboost--;
-	}
 
 	if (player->invincibilitytimer)
 		player->invincibilitytimer--;
