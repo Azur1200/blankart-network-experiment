@@ -4926,9 +4926,6 @@ static void K_DoHyudoroSteal(player_t *player)
 	boolean sink = P_RandomChance(FRACUNIT/64);
 	INT32 hyu = hyudorotime;
 
-	if (gametype == GT_RACE)
-		hyu *= 2; // double in race
-
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playeringame[i] && players[i].mo && players[i].mo->health > 0 && players[i].playerstate == PST_LIVE
