@@ -5254,7 +5254,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		P_SetScale(overlay, player->mo->scale);
 	}
 
-	player->invincibilitytimer += time;
+	player->invincibilitytimer = time;
 
 	if (P_IsLocalPlayer(player) == true)
 	{
