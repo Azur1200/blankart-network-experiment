@@ -206,12 +206,14 @@ void G_SaveGameOver(UINT32 slot, boolean modifylives);
 
 extern UINT32 gametypedefaultrules[NUMGAMETYPES];
 extern UINT32 gametypetol[NUMGAMETYPES];
+extern INT32 gametypecolor[NUMGAMETYPES];
 extern INT16 gametyperankings[NUMGAMETYPES];
 
 void G_SetGametype(INT16 gametype);
 INT16 G_AddGametype(UINT32 rules);
 void G_AddGametypeConstant(INT16 gtype, const char *newgtconst);
 void G_UpdateGametypeSelections(void);
+void G_SetGametypeColor(INT16 gtype,INT32 color);
 void G_AddTOL(UINT32 newtol, const char *tolname);
 void G_AddGametypeTOL(INT16 gtype, UINT32 newtol);
 INT32 G_GetGametypeByName(const char *gametypestr);

@@ -4475,7 +4475,7 @@ void K_drawKartHUD(void)
 	}
 
 	// Race overlays
-	if (gametype == GT_RACE && !freecam)
+	if ((gametyperules & GTR_CIRCUIT) && !freecam)
 	{
 		if (stplyr->exiting)
 			K_drawKartFinish();

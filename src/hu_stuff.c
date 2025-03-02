@@ -2465,7 +2465,12 @@ static void HU_DrawRankings(void)
 	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-		hilicol = ((gametype == GT_RACE) ? V_SKYMAP : V_REDMAP);
+	{
+		if (gametypecolor[gametype])
+			hilicol = gametypecolor[gametype];
+		else
+			hilicol = V_YELLOWMAP;
+	}
 
 	// draw the current gametype in the lower right
 	if (modeattacking)

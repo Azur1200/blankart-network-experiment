@@ -608,15 +608,19 @@ INT32 K_KartGetItemOdds(
 	*/
 	(void)bot;
 
-	if (gametype == GT_BATTLE)
+	if (gametyperules & GTR_BATTLEODDS)
 	{
 		I_Assert(pos < 2); // DO NOT allow positions past the bounds of the table
 		newodds = K_KartItemOddsBattle[item-1][pos];
 	}
-	else
+	else if (gametyperules & GTR_RACEODDS)
 	{
 		I_Assert(pos < 8); // Ditto
 		newodds = K_KartItemOddsRace[item-1][pos];
+	}
+	else
+	{
+		newodds = 0;
 	}
 
 	// Base multiplication to ALL item odds to simulate fractional precision
@@ -825,7 +829,7 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 	if (!KartItemCVars[item-1]->value && !modeattacking)
 		return 0;
 
-	if (gametype == GT_BATTLE)
+	if (gametyperules & GTR_BATTLEODDS)
 		newodds = K_KartItemOddsBattle[item-1][pos];
 	else
 		newodds = K_KartItemOddsRace[item-1][pos];
@@ -1000,7 +1004,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 		UINT8 j;
 		boolean available = false;
 
-		if (gametype == GT_BATTLE && i > 1)
+		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
 		{
 			oddsvalid[i] = false;
 			break;
@@ -1028,7 +1032,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 		for (i = num; i; --i) \
 			disttable[distlen++] = odds;
 
-	if (gametype == GT_BATTLE) // Battle Mode
+	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
 	{
 		if (player->roulettetype == 1 && oddsvalid[1] == true)
 		{
@@ -1046,7 +1050,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 			}
 		}
 	}
-	else
+	else if (gametyperules & GTR_RACEODDS)
 	{
 		SETUPDISTTABLE(0,1);
 		SETUPDISTTABLE(1,1);
@@ -1104,7 +1108,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		INT32 j;
 		boolean available = false;
 
-		if (gametype == GT_BATTLE && i > 1)
+		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
 		{
 			oddsvalid[i] = false;
 			break;
@@ -1239,7 +1243,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		for (i = num; i; --i) \
 			disttable[distlen++] = odds;
 
-	if (gametype == GT_BATTLE) // Battle Mode
+	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
 	{
 		if (player->roulettetype == 1 && oddsvalid[1] == true)
 		{
@@ -1331,7 +1335,7 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 
 		roulette_size = 0;
 
-		if (gametype == GT_BATTLE)
+		if (gametyperules & GTR_BATTLEODDS)
 		{
 			odds_row = K_KartItemOddsBattle[0];
 			odds_row_size = sizeof K_KartItemOddsBattle[0];
@@ -1495,12 +1499,28 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	}
 
 	// SPECIAL CASE No. 3:
-	// Record Attack / alone mashing behavior
-	if (modeattacking || pingame == 1)
+	// This Gametype never specified an odds type. Roll something random please!
+	if (!(gametyperules & GTR_RACEODDS) && !(gametyperules & GTR_BATTLEODDS))
 	{
-		if (gametype == GT_RACE)
+		SINT8 itemroll = P_RandomRange(KITEM_SNEAKER, NUMKARTITEMS - 1);
+
+		K_KartGetItemResult(player, itemroll);
+		player->karthud[khud_itemblink] = TICRATE;
+		player->karthud[khud_itemblinkmode] = 0;
+		player->itemroulette = 0;
+		player->roulettetype = 0;
+		if (P_IsDisplayPlayer(player))
+			S_StartSound(NULL, sfx_itrolf);
+		return;
+	}
+
+	// SPECIAL CASE No. 4:
+	// Record Attack / alone mashing behavior
+	if ((modeattacking || pingame == 1) && ((gametyperules & GTR_RACEODDS) || (gametyperules & GTR_BATTLEODDS)))
+	{
+		if ((gametyperules & GTR_RACEODDS))
 		{
-			if (mashed && (modeattacking || (cv_superring.value && (K_RingsActive() == true)))) // ANY mashed value? You get rings.
+			if (mashed && ((K_RingsActive() == true) && (modeattacking || cv_superring.value))) // ANY mashed value? You get rings.
 			{
 				K_KartGetItemResult(player, KITEM_SUPERRING);
 				player->karthud[khud_itemblinkmode] = 1;
@@ -1518,7 +1538,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					S_StartSound(NULL, sfx_itrolf);
 			}
 		}
-		else if (gametype == GT_BATTLE)
+		else if (gametyperules & GTR_BATTLEODDS)
 		{
 			if (mashed && (bossinfo.boss || cv_banana.value) && !itembreaker) // ANY mashed value? You get a banana.
 			{
@@ -1534,16 +1554,6 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
-			else
-			{
-				if (modeattacking || cv_tripleorbinaut.value) // Waited patiently? You get Orbinaut x3!
-					K_KartGetItemResult(player, KRITEM_TRIPLEORBINAUT);
-				else  // Default to sad if nothing's enabled...
-					K_KartGetItemResult(player, KITEM_SAD);
-				player->karthud[khud_itemblinkmode] = 0;
-				if (P_IsDisplayPlayer(player))
-					S_StartSound(NULL, sfx_itrolf);
-			}
 		}
 
 		player->karthud[khud_itemblink] = TICRATE;
@@ -1552,7 +1562,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	// SPECIAL CASE No. 4:
+	// SPECIAL CASE No. 5:
 	// Being in ring debt occasionally forces Super Ring on you if you mashed
 	if ((K_RingsActive() == true) && mashed && player->rings < 0 && cv_superring.value)
 	{
@@ -1572,7 +1582,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	if (!(numbosswaypoints > 0))
 	{
-		// SPECIAL CASE No. 5:
+		// SPECIAL CASE No. 6:
 		// Force SPB onto 2nd if they get too far behind
 		if ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > SPBFORCEDIST
 			&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
@@ -6523,7 +6533,7 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		if (player->karthud[khud_cardanimation] < 0)
 			player->karthud[khud_cardanimation] = 0;
 	}
-	else if (gametype == GT_RACE && player->exiting)
+	else if ((gametyperules & GTR_CIRCUIT) && player->exiting)
 	{
 		if (player->karthud[khud_cardanimation] < 2*TICRATE)
 			player->karthud[khud_cardanimation]++;
@@ -9763,9 +9773,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		if (player->hyudorotimer > 0)
 		{
 			INT32 hyu = hyudorotime;
-
-			if (gametype == GT_RACE)
-				hyu *= 2; // double in race
 
 			if (leveltime & 1)
 			{

@@ -556,7 +556,12 @@ void Y_IntermissionDrawer(void)
 	else if (modeattacking)
 		hilicol = V_ORANGEMAP;
 	else
-		hilicol = ((intertype == int_race) ? V_SKYMAP : V_REDMAP);
+	{
+		if (gametypecolor[gametype])
+			hilicol = gametypecolor[gametype];
+		else
+			hilicol = V_YELLOWMAP;
+	}
 
 	if (sorttic != -1 && intertic > sorttic)
 	{
@@ -1444,10 +1449,13 @@ void Y_VoteDrawer(void)
 		INT32 hilicol, tickdown = (timer+1)/TICRATE;
 		if (cons_menuhighlight.value)
 			hilicol = cons_menuhighlight.value;
-		else if (gametype == GT_RACE)
-			hilicol = V_SKYMAP;
-		else //if (gametype == GT_BATTLE)
-			hilicol = V_REDMAP;
+		else
+		{
+			if (gametypecolor[gametype])
+				hilicol = gametypecolor[gametype];
+			else
+				hilicol = V_YELLOWMAP;
+		}
 		V_DrawCenteredString(BASEVIDWIDTH/2, 188, hilicol,
 			va("Vote ends in %d", tickdown));
 	}

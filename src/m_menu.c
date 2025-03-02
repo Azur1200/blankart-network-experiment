@@ -1728,13 +1728,19 @@ inline static void M_GetGametypeColor(void)
 
 	if (gt == GT_BATTLE || levellistmode == LLM_BOSS)
 	{
-		highlightflags = V_REDMAP;
+		highlightflags = gametypecolor[gt];
 		warningflags = V_ORANGEMAP;
 		return;
 	}
 	if (gt == GT_RACE)
 	{
-		highlightflags = V_SKYMAP;
+		highlightflags = gametypecolor[gt];
+		return;
+	}
+
+	if (gametypecolor[gt])
+	{
+		highlightflags = gametypecolor[gt];
 		return;
 	}
 

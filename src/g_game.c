@@ -3150,9 +3150,9 @@ const char *Gametype_ConstantNames[NUMGAMETYPES] =
 UINT32 gametypedefaultrules[NUMGAMETYPES] =
 {
 	// Race
-	GTR_CIRCUIT|GTR_BOTS|GTR_RINGS,
+	GTR_CIRCUIT|GTR_BOTS|GTR_RINGS|GTR_ENCORE|GTR_RACEODDS,
 	// Battle
-	GTR_BUMPERS|GTR_RINGS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT
+	GTR_BUMPERS|GTR_RINGS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT|GTR_BATTLEODDS
 };
 
 //
@@ -3276,6 +3276,12 @@ void G_UpdateGametypeSelections(void)
 	gametype_cons_t[NUMGAMETYPES].value = 0;
 	gametype_cons_t[NUMGAMETYPES].strvalue = NULL;
 }
+
+INT32 gametypecolor[NUMGAMETYPES] =
+{
+	V_SKYMAP,
+	V_REDMAP,
+};
 
 // Gametype rankings
 INT16 gametyperankings[NUMGAMETYPES] =
@@ -3513,13 +3519,10 @@ UINT8 G_GetGametypeColor(INT16 gt)
 	|| gamestate == GS_TIMEATTACK)
 		return orangemap[0];
 
-	if (gt == GT_BATTLE)
-		return redmap[0];
+	if (gametypecolor[gt])
+		return *V_GetStringColormap(gametypecolor[gt]);
 
-	if (gt == GT_RACE)
-		return skymap[0];
-
-	return 255; // FALLBACK
+	return yellowmap[0]; // FALLBACK
 }
 
 /** Get the typeoflevel flag needed to indicate support of a gametype.

@@ -36,6 +36,7 @@
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
 #include "i_system.h" // I_GetPreciseTime, I_GetPrecisePrecision
+#include "v_video.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -3049,6 +3050,7 @@ static int lib_gAddGametype(lua_State *L)
 	INT32 newgtpointlimit = 0;
 	INT32 newgttimelimit = 0;
 	INT16 newgtrankingstype = -1;
+	INT32 newgtcolor = V_YELLOWMAP;
 	int newgtinttype = 0;
 
 	luaL_checktype(L, 1, LUA_TTABLE);
@@ -3108,6 +3110,14 @@ static int lib_gAddGametype(lua_State *L)
 			if (!lua_isnumber(L, 3))
 				TYPEERROR("defaulttimelimit", LUA_TNUMBER)
 			newgttimelimit = (INT32)lua_tointeger(L, 3);
+		} else if (i == 9 || (k && fasticmp(k, "menucolor"))) {
+			if (!lua_isnumber(L, 3))
+				TYPEERROR("menucolor", LUA_TNUMBER)
+			{
+				INT32 color = (INT32)lua_tointeger(L, 3);
+				// Mask out other flags so they aren't passed into menu code.
+				newgtcolor = color & V_CHARCOLORMASK; // V_
+			}
 		}
 		lua_pop(L, 1);
 	}
@@ -3133,6 +3143,7 @@ static int lib_gAddGametype(lua_State *L)
 	intermissiontypes[newgtidx] = newgtinttype;
 	pointlimits[newgtidx] = newgtpointlimit;
 	timelimits[newgtidx] = newgttimelimit;
+	gametypecolor[newgtidx] = newgtcolor;
 
 	// Write the new gametype name.
 	Gametype_Names[newgtidx] = gtname;

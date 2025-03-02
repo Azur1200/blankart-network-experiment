@@ -3134,7 +3134,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 	else if (gametype != lastgametype)
 		D_GameTypeChanged(lastgametype); // emulate consvar_t behavior for gametype
 
-	if (!(gametyperules & GTR_CIRCUIT) && !bossinfo.boss)
+	if (!(gametyperules & GTR_ENCORE) && !bossinfo.boss)
 		pencoremode = false;
 
 	skipprecutscene = ((flags & (1<<2)) != 0);

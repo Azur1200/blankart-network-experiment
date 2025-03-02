@@ -2564,9 +2564,13 @@ void S_InitLevelMusic(boolean fromnetsave)
 
 	S_StopMusic(); // Starting ambience should always be restarted, if playing.
 
-	if (leveltime < (starttime + (TICRATE/2))) // SRB2Kart
+	if (!(gametyperules & GTR_FREEROAM) && leveltime < (starttime + (TICRATE/2))) // SRB2Kart
 	{
 		S_ChangeMusicEx((encoremode ? "estart" : "kstart"), 0, false, mapmusposition, 0, 0);
+	}
+	else if (!(gametyperules & GTR_FREEROAM) && leveltime < (starttime + (TICRATE/2)))
+	{
+		S_ChangeMusicEx(mapmusname, 0, false, mapmusposition, 0, 0);
 	}
 
 	S_ResetMusicStack();

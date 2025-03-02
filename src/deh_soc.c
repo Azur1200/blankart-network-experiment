@@ -35,6 +35,7 @@
 #include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
+#include "v_video.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_light.h"
@@ -925,6 +926,7 @@ void readgametype(MYFILE *f, char *gtname)
 	INT32 newgtpointlimit = 0;
 	INT32 newgttimelimit = 0;
 	INT16 newgtrankingstype = -1;
+	INT32 newgtcolor = V_YELLOWMAP;
 	int newgtinttype = 0;
 	char gtconst[MAXLINELEN];
 
@@ -1008,6 +1010,13 @@ void readgametype(MYFILE *f, char *gtname)
 					newgttol = tol;
 				}
 			}
+			// Menu Color
+			else if (fastcmp(word, "MENUCOLOR"))
+			{
+				INT32 color = (INT32)get_number(word2);
+				// Mask out other flags so they aren't passed into menu code.
+				newgtcolor = color & V_CHARCOLORMASK; // V_
+			}
 			// The SOC probably provided gametype rules as words,
 			// instead of using the RULES keyword.
 			// Like for example "NOSPECTATORSPAWN = TRUE".
@@ -1051,6 +1060,7 @@ void readgametype(MYFILE *f, char *gtname)
 	intermissiontypes[newgtidx] = newgtinttype;
 	pointlimits[newgtidx] = newgtpointlimit;
 	timelimits[newgtidx] = newgttimelimit;
+	gametypecolor[newgtidx] = newgtcolor;
 
 	// Write the new gametype name.
 	Gametype_Names[newgtidx] = Z_StrDup((const char *)gtname);

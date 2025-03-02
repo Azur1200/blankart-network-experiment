@@ -28,6 +28,7 @@
 #include "i_video.h"
 #include "r_fps.h"
 #include "r_main.h"
+#include "f_finale.h"
 
 // Object place
 #include "m_cheat.h"
@@ -775,7 +776,7 @@ void P_Ticker(boolean run)
 		// Plays the music after the starting countdown.
 		else
 		{
-			if (!(gametyperules & GTR_FREEROAM))
+			if (!(gametyperules & GTR_FREEROAM)  && !(titlemapinaction == TITLEMAP_RUNNING))
 			{
 				if (leveltime == starttime-(3*TICRATE))
 				{
@@ -791,7 +792,7 @@ void P_Ticker(boolean run)
 				}
 			}
 			
-			if (leveltime < starttime) // SRB2Kart
+			if (!(gametyperules & GTR_FREEROAM) && leveltime < starttime) // SRB2Kart
 				S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 			else if (leveltime == starttime) // The GO! sound stops the level start ambience
 				S_StopMusic();
