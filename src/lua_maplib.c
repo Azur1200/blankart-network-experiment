@@ -18,6 +18,7 @@
 #include "p_slopes.h"
 #include "p_polyobj.h"
 #include "r_main.h"
+#include "g_game.h" // G_KartMapToNative
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -2521,6 +2522,8 @@ static int lib_getMapheaderinfo(lua_State *L)
 	if (lua_isnumber(L, 1))
 	{
 		INT32 i = lua_tointeger(L, 1)-1;
+		if (lua_compatmode)
+			i = G_KartMapToNative(i);
 		if (i < 0 || i >= nummapheaders)
 			return 0;
 		LUA_PushUserdata(L, mapheaderinfo[i], META_MAPHEADER);
@@ -2539,7 +2542,7 @@ static int lib_getMapheaderinfo(lua_State *L)
 
 static int lib_nummapheaders(lua_State *L)
 {
-	lua_pushinteger(L, nummapheaders);
+	lua_pushinteger(L, lua_compatmode ? NUMMAPS : nummapheaders);
 	return 1;
 }
 

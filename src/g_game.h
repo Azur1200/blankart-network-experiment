@@ -52,6 +52,9 @@ typedef enum
 	NEXTMAP_SPECIAL = NEXTMAP_INVALID
 } nextmapspecial_t;
 
+extern INT16 kartmap2native[NEXTMAP_SPECIAL], nativemap2kart[NEXTMAP_SPECIAL];
+extern INT16 nextexnum;
+
 extern INT32 gameovertics;
 extern UINT8 ammoremovaltics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
@@ -109,6 +112,8 @@ void weaponPrefChange4(void);
 
 const char *G_BuildMapName(INT32 map);
 INT32 G_MapNumber(const char *mapname);
+INT16 G_KartMapToNative(INT16 mapnum);
+INT16 G_NativeMapToKart(INT16 mapnum);
 
 void G_ResetAnglePrediction(player_t *player);
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer);

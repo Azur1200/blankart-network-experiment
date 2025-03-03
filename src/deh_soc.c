@@ -1101,6 +1101,22 @@ void readlevelheader(MYFILE *f, char * name)
 	char *tmp;
 	INT32 i;
 
+	// convert old map names to MAPxx
+	INT32 exnum = atoi(name);
+	if (exnum > 0 && exnum <= NUMMAPS)
+	{
+		if (exnum < 100)
+			name = va("MAP%02d", exnum);
+		else
+			// one liner extended names :^)
+			name = va("MAP%c%c", 'A' + (exnum - 100)/36, ((exnum - 100) % 36 < 10 ? '0' : 'A'-10) + (exnum - 100) % 36);
+	}
+	else if (strlen(name) == 2 && isalpha(name[0]) && isalnum(name[1]))
+	{
+		exnum = (name[0] - 'A')*36 + (isalpha(name[1]) ? name[1] - 'A'+10 : name[1] - '0') + 100;
+		name = va("MAP%s", name);
+	}
+
 	INT32 num = G_MapNumber(name);
 
 	if (num >= nummapheaders)
@@ -1111,6 +1127,23 @@ void readlevelheader(MYFILE *f, char * name)
 	{
 		// only mark as a major mod if it replaces an already-existing mapheaderinfo
 		G_SetGameModified(multiplayer, true);
+	}
+
+	// compatmode map number system:
+	// 0-1034 correspond to MAP01-MAPZZ,
+	// longname maps are appended starting at NUMMAPS
+	if (exnum)
+	{
+		exnum--;
+		kartmap2native[exnum] = num;
+		nativemap2kart[num] = exnum;
+	}
+	else
+	{
+		kartmap2native[nextexnum] = num;
+		nativemap2kart[num] = nextexnum;
+		if (++nextexnum >= NEXTMAP_SPECIAL)
+			I_Error("Ran out of compatibility map slots");
 	}
 
 	if (mapheaderinfo[num]->lumpname == NULL)

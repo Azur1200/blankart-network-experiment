@@ -296,6 +296,8 @@ enum
 	CEILING_SLOPE_THING = 778,
 };
 
+#define NUMMAPS 1035 // only for compatmode
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

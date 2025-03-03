@@ -3183,7 +3183,7 @@ static int lib_gBuildMapName(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
 	//HUDSAFE
-	lua_pushstring(L, G_BuildMapName(map));
+	lua_pushstring(L, G_BuildMapName(lua_compatmode ? G_KartMapToNative(map-1)+1 : map));
 	return 1;
 }
 
@@ -3349,6 +3349,8 @@ static int lib_gSetCustomExitVars(lua_State *L)
 	{
 		nextmapoverride = (INT16)luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
+		if (lua_compatmode && nextmapoverride)
+			nextmapoverride = G_KartMapToNative(nextmapoverride-1)+1;
 	}
 
 	return 0;
@@ -3371,7 +3373,7 @@ static int lib_gIsSpecialStage(lua_State *L)
 	INT32 mapnum = luaL_optinteger(L, 1, gamemap);
 	//HUDSAFE
 	INLEVEL
-	lua_pushboolean(L, G_IsSpecialStage(mapnum));
+	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum-1)+1 : mapnum));
 	return 1;
 }
 

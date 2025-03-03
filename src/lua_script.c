@@ -157,7 +157,7 @@ boolean lua_compatmode = false;
 int LUA_PushGlobals(lua_State *L, const char *word)
 {
 	if (fastcmp(word,"gamemap")) {
-		lua_pushinteger(L, gamemap);
+		lua_pushinteger(L, lua_compatmode ? G_NativeMapToKart(gamemap-1)+1 : gamemap);
 		return 1;
 	} else if (fastcmp(word,"udmf")) {
 		lua_pushboolean(L, udmf);
