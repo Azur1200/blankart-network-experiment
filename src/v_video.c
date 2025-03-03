@@ -788,11 +788,11 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		blendmode++; // realign to constants
 	if ((alphalevel = ((scrn & V_ALPHAMASK) >> V_ALPHASHIFT)))
 	{
-		if (alphalevel == 10) // V_HUDTRANSHALF
+		if (alphalevel == 13) // V_HUDTRANSHALF
 			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 11) // V_HUDTRANS
+		else if (alphalevel == 14) // V_HUDTRANS
 			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 12) // V_HUDTRANSDOUBLE
+		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
 			alphalevel = hudplusalpha[st_translucency];
 
 		if (alphalevel >= 10) // Still inelegible to render?
@@ -1065,11 +1065,11 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	v_translevel = NULL;
 	if (alphalevel || blendmode)
 	{
-		if (alphalevel == 10) // V_HUDTRANSHALF
+		if (alphalevel == 13) // V_HUDTRANSHALF
 			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 11) // V_HUDTRANS
+		else if (alphalevel == 14) // V_HUDTRANS
 			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 12) // V_HUDTRANSDOUBLE
+		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
 			alphalevel = hudplusalpha[st_translucency];
 
 		if (alphalevel >= 10)
@@ -1211,11 +1211,11 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 
 	if ((alphalevel = ((c & V_ALPHAMASK) >> V_ALPHASHIFT)))
 	{
-		if (alphalevel == 10) // V_HUDTRANSHALF
+		if (alphalevel == 13) // V_HUDTRANSHALF
 			alphalevel = hudminusalpha[st_translucency];
-		else if (alphalevel == 11) // V_HUDTRANS
+		else if (alphalevel == 14) // V_HUDTRANS
 			alphalevel = 10 - st_translucency;
-		else if (alphalevel == 12) // V_HUDTRANSDOUBLE
+		else if (alphalevel == 15) // V_HUDTRANSDOUBLE
 			alphalevel = hudplusalpha[st_translucency];
 
 		if (alphalevel >= 10) // Still inelegible to render?
