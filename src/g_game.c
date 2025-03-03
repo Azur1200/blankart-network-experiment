@@ -5003,7 +5003,7 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 		F_StartCustomCutscene(mapheaderinfo[gamemap-1]->precutscenenum-1, true, resetplayer);
 	else
 	{
-		LUA_HookInt(gamemap, HOOK(MapChange));
+		LUA_HookGamemap(HOOK(MapChange));
 		G_DoLoadLevel(resetplayer);
 	}
 

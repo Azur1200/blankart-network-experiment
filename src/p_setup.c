@@ -8879,7 +8879,7 @@ void P_PostLoadLevel(void)
 	}
 	
 	ACS_RunLevelStartScripts();
-	LUA_HookInt(gamemap, HOOK(MapLoad));
+	LUA_HookGamemap(HOOK(MapLoad));
 	
 	UINT8 i;
 	for (i = 0; i < MAXPLAYERS; i++)

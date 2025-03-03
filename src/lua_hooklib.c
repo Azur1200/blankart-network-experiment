@@ -501,6 +501,20 @@ static int call_mapped_hud(Hook_State *hook, const hook_t *map)
 	return map->numHooks;
 }
 
+static int call_mapped_gamemap(Hook_State *hook, const hook_t *map)
+{
+	int k;
+
+	for (k = 0; k < map->numHooks; ++k)
+	{
+		get_hook(hook, map->ids, k);
+		lua_pushvalue(gL, hook->top - !lua_compatmode);
+		call_single_hook_no_copy(hook);
+	}
+
+	return map->numHooks;
+}
+
 static int call_string_hooks(Hook_State *hook)
 {
 	const stringhook_t *map = &stringHooks[hook->hook_type];
@@ -624,6 +638,20 @@ void LUA_HookInt(INT32 number, int hook_type)
 	{
 		lua_pushinteger(gL, number);
 		call_hooks(&hook, 0, res_none);
+	}
+}
+
+void LUA_HookGamemap(int hook_type)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, 0, hook_type))
+	{
+		lua_pushinteger(gL, gamemap);
+		lua_pushinteger(gL, G_NativeMapToKart(gamemap-1)+1);
+		init_hook_call(&hook, 0, res_none);
+		hook.values = 1;
+		call_mapped_gamemap(&hook, &hookIds[hook.hook_type]);
+		lua_settop(gL, 0);
 	}
 }
 

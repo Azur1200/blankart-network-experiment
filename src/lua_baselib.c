@@ -3164,7 +3164,7 @@ static int lib_gAddGametype(lua_State *L)
 static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 {
 	if (ISINLEVEL)
-		return luaL_optinteger(L, idx, gamemap);
+		return luaL_optinteger(L, idx, lua_compatmode ? G_NativeMapToKart(gamemap-1)+1 : gamemap);
 	else
 	{
 		if (lua_isnoneornil(L, idx))
@@ -3370,7 +3370,7 @@ static int lib_gExitLevel(lua_State *L)
 
 static int lib_gIsSpecialStage(lua_State *L)
 {
-	INT32 mapnum = luaL_optinteger(L, 1, gamemap);
+	INT32 mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
 	//HUDSAFE
 	INLEVEL
 	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum-1)+1 : mapnum));
