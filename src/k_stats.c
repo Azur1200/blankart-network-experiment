@@ -28,10 +28,10 @@ void K_StatTicker(void)
 	{
 		player_t *p = &players[consoleplayer];
 
-		if (p->kartstuff[k_position] == spbplace)
+		if (p->position == spbplace)
 			kartstats.spbtargettime++;
 
-		if (max(p->kartstuff[k_spinouttimer], p->kartstuff[k_wipeoutslow]) > 0)
+		if (max(p->spinouttimer, p->wipeoutslow) > 0)
 			kartstats.spinouttime++;
 	}
 }
@@ -76,9 +76,9 @@ void K_StatRound(void)
 
 	if (numplayers > 1 && !players[consoleplayer].spectator)
 	{
-		if (players[consoleplayer].kartstuff[k_position] == 1)
+		if (players[consoleplayer].position == 1)
 			kartstats.totalwins++;
-		else if (players[consoleplayer].kartstuff[k_position] <= 3) // Should this check if there are more than 3 players in game?
+		else if (players[consoleplayer].position <= 3) // Should this check if there are more than 3 players in game?
 			kartstats.totalpodium++;
 	}
 }
