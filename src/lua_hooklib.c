@@ -263,8 +263,10 @@ int LUA_HookLib(lua_State *L)
 int lib_hudadd(lua_State *L);/* yeah compiler */
 int lib_hudadd(lua_State *L)
 {
+	/*
 	if (!lua_lumploading)
 		return luaL_error(L, "This function cannot be called from within a hook or coroutine!");
+	*/
 
 	luaL_checktype(L, 1, LUA_TFUNCTION);
 
