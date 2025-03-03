@@ -1190,6 +1190,10 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (analogjoystickmove && joystickvector.yaxis != 0)
 		{
 			cmd->throwdir -= (joystickvector.yaxis * KART_FULLTURN) >> 10;
+			if (joystickvector.yaxis < 0)
+				cmd->buttons |= BT_FORWARD;
+			else if (joystickvector.yaxis > 0)
+				cmd->buttons |= BT_BACKWARD;
 		}
 	}
 
