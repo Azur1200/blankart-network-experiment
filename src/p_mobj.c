@@ -10836,7 +10836,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 		case MT_EMERALD6:
 		case MT_EMERALD7:
 		{
-			if (gametype == GT_RACE || gametype == GT_BATTLE)
+			if (gametype == GT_RACE || gametype == GT_BATTLE) // they don't spawn in kart so I guess i'll do this?
 				return false;
 
 			if (metalrecording)
@@ -10850,8 +10850,8 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 			{
 				boolean isRingCapsule = (mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= NUMKARTITEMS);
 
-				// don't spawn ring capsules in ringless gametypes
-				if (isRingCapsule && !(gametyperules & GTR_RINGS))
+				// don't spawn ring capsules in with rings off.
+				if (isRingCapsule && (K_RingsActive() ==  false))
 					return false;
 
 				// in record attack, only spawn ring capsules
@@ -10861,14 +10861,29 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 					return false;
 			}
 			break;
+		case MT_COIN:
+			{
+				if (gametype == GT_RACE || gametype == GT_BATTLE) // they don't spawn in kart so I guess i'll do this?
+					return false;
+
+				break;
+			}
+		case MT_NIGHTSWING:
+			{
+				if (gametype == GT_RACE || gametype == GT_BATTLE) // they don't spawn in kart so I guess i'll do this?
+					return false;
+				break;
+			}
+
 		default:
 			break;
 	}
 
 	// No bosses outside of a combat situation.
 	// (just in case we want boss arenas to do double duty as battle maps)
-	if (!bossinfo.boss && (mobjinfo[i].flags & MF_BOSS))
-		return false;
+	// TODO: Look at this latter. Kart maps use stuff like brak eggman.
+	//if (!bossinfo.boss && (mobjinfo[i].flags & MF_BOSS))
+		//return false;
 
 	if (metalrecording) // Metal Sonic can't use these things.
 	{
