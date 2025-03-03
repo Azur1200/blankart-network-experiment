@@ -340,7 +340,6 @@ boolean precache = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
-// initialized to -1 in G_LoadGameSettings
 INT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};
 INT16 nextexnum = NUMMAPS;
 
@@ -796,17 +795,17 @@ INT32 G_MapNumber(const char * name)
 // convert kart map number to native map number
 INT16 G_KartMapToNative(INT16 mapnum)
 {
-	if (mapnum >= 0 && mapnum < NEXTMAP_SPECIAL)
-		return kartmap2native[mapnum];
-	return -1;
+	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
+		return kartmap2native[mapnum-1]+1;
+	return 0;
 }
 
 // convert native map number to kart
 INT16 G_NativeMapToKart(INT16 mapnum)
 {
-	if (mapnum >= 0 && mapnum < NEXTMAP_SPECIAL)
-		return nativemap2kart[mapnum];
-	return -1;
+	if (mapnum > 0 && mapnum < NEXTMAP_SPECIAL)
+		return nativemap2kart[mapnum-1]+1;
+	return 0;
 }
 
 /** Clips the console player's mouse aiming to the current view.
@@ -4359,9 +4358,6 @@ void G_LoadGameSettings(void)
 {
 	// initialize free sfx slots for skin sounds
 	S_InitRuntimeSounds();
-
-	for (size_t i = 0; i < NEXTMAP_SPECIAL; i++)
-		kartmap2native[i] = nativemap2kart[i] = -1;
 }
 
 #define GD_VERSIONCHECK 0xBA5ED444

@@ -2521,10 +2521,10 @@ static int lib_getMapheaderinfo(lua_State *L)
 	lua_remove(L, 1); // dummy userdata table is unused.
 	if (lua_isnumber(L, 1))
 	{
-		INT32 i = lua_tointeger(L, 1)-1;
+		INT32 i = lua_tointeger(L, 1);
 		if (lua_compatmode)
 			i = G_KartMapToNative(i);
-		if (i < 0 || i >= nummapheaders)
+		if (--i < 0 || i >= nummapheaders)
 			return 0;
 		LUA_PushUserdata(L, mapheaderinfo[i], META_MAPHEADER);
 		//CONS_Printf(mapheaderinfo[i]->lvlttl);

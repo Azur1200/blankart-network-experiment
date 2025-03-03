@@ -1132,19 +1132,14 @@ void readlevelheader(MYFILE *f, char * name)
 	// compatmode map number system:
 	// 0-1034 correspond to MAP01-MAPZZ,
 	// longname maps are appended starting at NUMMAPS
-	if (exnum)
+	if (!exnum)
 	{
-		exnum--;
-		kartmap2native[exnum] = num;
-		nativemap2kart[num] = exnum;
-	}
-	else
-	{
-		kartmap2native[nextexnum] = num;
-		nativemap2kart[num] = nextexnum;
-		if (++nextexnum >= NEXTMAP_SPECIAL)
+		exnum = ++nextexnum;
+		if (exnum >= NEXTMAP_SPECIAL)
 			I_Error("Ran out of compatibility map slots");
 	}
+	kartmap2native[exnum-1] = num;
+	nativemap2kart[num] = exnum-1;
 
 	if (mapheaderinfo[num]->lumpname == NULL)
 	{

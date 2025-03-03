@@ -3164,7 +3164,7 @@ static int lib_gAddGametype(lua_State *L)
 static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 {
 	if (ISINLEVEL)
-		return luaL_optinteger(L, idx, lua_compatmode ? G_NativeMapToKart(gamemap-1)+1 : gamemap);
+		return luaL_optinteger(L, idx, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
 	else
 	{
 		if (lua_isnoneornil(L, idx))
@@ -3183,7 +3183,7 @@ static int lib_gBuildMapName(lua_State *L)
 {
 	INT32 map = Lcheckmapnumber(L, 1, "G_BuildMapName");
 	//HUDSAFE
-	lua_pushstring(L, G_BuildMapName(lua_compatmode ? G_KartMapToNative(map-1)+1 : map));
+	lua_pushstring(L, G_BuildMapName(lua_compatmode ? G_KartMapToNative(map) : map));
 	return 1;
 }
 
@@ -3350,7 +3350,7 @@ static int lib_gSetCustomExitVars(lua_State *L)
 		nextmapoverride = (INT16)luaL_optinteger(L, 1, 0);
 		skipstats = (INT16)luaL_optinteger(L, 2, 0);
 		if (lua_compatmode && nextmapoverride)
-			nextmapoverride = G_KartMapToNative(nextmapoverride-1)+1;
+			nextmapoverride = G_KartMapToNative(nextmapoverride);
 	}
 
 	return 0;
@@ -3373,7 +3373,7 @@ static int lib_gIsSpecialStage(lua_State *L)
 	INT32 mapnum = Lcheckmapnumber(L, 1, "G_IsSpecialStage");
 	//HUDSAFE
 	INLEVEL
-	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum-1)+1 : mapnum));
+	lua_pushboolean(L, G_IsSpecialStage(lua_compatmode ? G_KartMapToNative(mapnum) : mapnum));
 	return 1;
 }
 
