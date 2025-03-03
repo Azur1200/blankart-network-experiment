@@ -2038,6 +2038,9 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	// reset special lines
 	numspechit = 0U;
 
+	if (g_tm.flags & MF_NOCLIP)
+		return true;
+
 	// Check things first, possibly picking things up.
 
 	// MF_NOCLIPTHING: used by camera to not be blocked by things
@@ -2063,16 +2066,6 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				}
 			}
 		}
-	}
-
-	if (g_tm.flags & MF_NOCLIP)
-	{
-		// Sal 12/19/2022 -- PIT_CheckThing code will still run
-		// with MF_NOCLIP enabled, but they won't be blocked
-		// regardless of the result. This allows for SPBs and
-		// the UFO to collide.
-		// ...but be careful about removed obj! ~toast 140423
-		return !P_MobjWasRemoved(thing);
 	}
 
 	validcount++;
