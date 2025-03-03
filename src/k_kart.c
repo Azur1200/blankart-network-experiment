@@ -2052,8 +2052,17 @@ static void K_UpdateOffroad(player_t *player)
 	// If you are in offroad, a timer starts.
 	if (offroadstrength)
 	{
-		if (player->offroad < offroadstrength)
-			player->offroad += offroadstrength / TICRATE;
+		if (player->offroad == 0)
+			player->offroad = (TICRATE/2);
+
+		if (player->offroad > 0)
+		{
+			fixed_t offroad;
+
+			offroad = offroadstrength / (TICRATE/2);
+
+			player->offroad += offroad;
+		}
 
 		if (player->offroad > offroadstrength)
 			player->offroad = offroadstrength;
