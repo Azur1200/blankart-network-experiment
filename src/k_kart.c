@@ -8879,11 +8879,13 @@ SINT8 K_Sliptiding(player_t *player)
 
 static void K_AirFailsafe(player_t *player)
 {
-	const fixed_t maxSpeed = 6*player->mo->scale;
+	const fixed_t maxSpeed = 1*player->mo->scale;
 	const fixed_t thrustSpeed = 6*player->mo->scale; // 10*player->mo->scale
 
 	if (player->speed > maxSpeed // Above the max speed that you're allowed to use this technique.
-		|| player->respawn) // Respawning, you don't need this AND drop dash :V
+		|| player->respawn // Respawning, you don't need this AND drop dash :V
+		|| player->carry // Don't do in automated sections.
+		|| P_PlayerInPain(player)) // Don't assist people hit by mines.
 	{
 		player->pflags &= ~PF_AIRFAILSAFE;
 		return;
