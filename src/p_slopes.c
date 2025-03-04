@@ -1095,6 +1095,7 @@ void P_HandleSlopeLanding(mobj_t *thing, pslope_t *slope)
 void P_ButteredSlope(mobj_t *mo)
 {
 	fixed_t thrust;
+	boolean spinning = false; // i assume PF_SPINNING is never set in kart. if i'm wrong, change this
 
 	if (!mo->standingslope)
 		return;
@@ -1106,7 +1107,7 @@ void P_ButteredSlope(mobj_t *mo)
 		return; // don't slide down slopes if you can't touch them or you're not affected by gravity
 
 	if (mo->player) {
-		if (abs(mo->standingslope->zdelta) < FRACUNIT/4)
+		if (abs(mo->standingslope->zdelta) < FRACUNIT/4 && !spinning)
 			return; // Don't slide on non-steep slopes unless spinning
 
 		if (abs(mo->standingslope->zdelta) < FRACUNIT/2 && !(mo->player->rmomx || mo->player->rmomy))
@@ -1115,7 +1116,7 @@ void P_ButteredSlope(mobj_t *mo)
 
 	thrust = FINESINE(mo->standingslope->zangle>>ANGLETOFINESHIFT) * 15 / 16 * (mo->eflags & MFE_VERTICALFLIP ? 1 : -1);
 
-	if (mo->player) {
+	if (mo->player && spinning) {
 		fixed_t mult = 0;
 		if (mo->momx || mo->momy) {
 			angle_t angle = R_PointToAngle2(0, 0, mo->momx, mo->momy) - mo->standingslope->xydirection;
