@@ -5044,7 +5044,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	}
 
 	lineangle = R_PointToAngle2(lines[lineindex].v1->x, lines[lineindex].v1->y, lines[lineindex].v2->x, lines[lineindex].v2->y);
-	linespeed = lines[lineindex].args[0] << FRACBITS;
+	linespeed = lines[lineindex].args[0];
 
 	if (linespeed == 0)
 	{

@@ -4936,7 +4936,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = !!(lines[i].flags & ML_MIDSOLID);
 			break;
 		case 4: //Speed pad parameters
-			lines[i].args[0] = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y) >> FRACBITS;
+			lines[i].args[0] = P_AproxDistance(lines[i].v2->x-lines[i].v1->x, lines[i].v2->y-lines[i].v1->y);
 			if (lines[i].flags & ML_MIDSOLID)
 				lines[i].args[1] |= TMSP_NOTELEPORT;
 			if (lines[i].flags & ML_WRAPMIDTEX)
