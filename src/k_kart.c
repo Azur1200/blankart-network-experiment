@@ -3244,11 +3244,6 @@ static void K_GetKartBoostPower(player_t *player)
 		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
 		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
 		
-		if (player->drift)
-		{
-			accel += FRACUNIT/2 + FRACUNIT*2;
-		}
-		
 		ADDBOOST(boost, accel);
 	}
 
