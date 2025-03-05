@@ -4870,6 +4870,9 @@ void A_RockSpawn(mobj_t *actor)
 	if (LUA_CallAction(A_ROCKSPAWN, actor))
 		return;
 
+	if (mapnamespace == MNS_SRB2KART && !actor->args[1])
+		return;
+
 	type = actor->stringargs[0] ? get_number(actor->stringargs[0]) : MT_ROCKCRUMBLE1;
 
 	if (type < MT_NULL || type >= NUMMOBJTYPES)
