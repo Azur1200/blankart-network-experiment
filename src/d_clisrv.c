@@ -1950,8 +1950,8 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 				G_MapEventsToControls(&events[eventtail]);
 
-			if (gamekeydown[KEY_ESCAPE]
-				|| gamekeydown[KEY_JOY1+1])
+			if (gamekeydown[0][KEY_ESCAPE]
+				|| gamekeydown[0][KEY_JOY1+1])
 				cl_mode = CL_ABORTED;
 		}
 

@@ -480,7 +480,7 @@ void Command_LoadConfig_f(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		G_CopyControls(gamecontrol[i], gamecontroldefault[i][gcs_kart], NULL, 0);
+		G_CopyControls(gamecontrol[i], gamecontroldefault, NULL, 0);
 	}
 
 	// temporarily reset execversion to default
@@ -534,7 +534,7 @@ void M_FirstLoadConfig(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		G_CopyControls(gamecontrol[i], gamecontroldefault[i][gcs_kart], NULL, 0);
+		G_CopyControls(gamecontrol[i], gamecontroldefault, NULL, 0);
 	}
 
 	// register execversion here before we load any configs
@@ -636,15 +636,7 @@ void M_SaveConfig(const char *filename)
 
 	if (!dedicated)
 	{
-		if (tutorialmode && tutorialgcs)
-		{
-			// using gcs_custom as temp storage
-			G_SaveKeySetting(f, gamecontroldefault[0][gcs_custom], gamecontrol[1], gamecontrol[2], gamecontrol[3]);
-		}
-		else
-		{
-			G_SaveKeySetting(f, gamecontrol[0], gamecontrol[1], gamecontrol[2], gamecontrol[3]);
-		}
+		G_SaveKeySetting(f, gamecontrol[0], gamecontrol[1], gamecontrol[2], gamecontrol[3]);
 	}
 
 	fclose(f);

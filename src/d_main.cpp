@@ -1046,7 +1046,7 @@ void D_StartTitle(void)
 	F_InitMenuPresValues();
 
 	// clear cmd building stuff
-	memset(gamekeydown, 0, NUMKEYS);
+	memset(gamekeydown, 0, sizeof(gamekeydown));
 
 	F_StartTitleScreen();
 
@@ -1057,15 +1057,6 @@ void D_StartTitle(void)
 		V_SetPaletteLump("PLAYPAL");
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
-	/*
-	if (tutorialmode && tutorialgcs)
-	{
-		G_CopyControls(gamecontrol[0], gamecontroldefault[0][gcs_custom], gcl_full, num_gcl_full); // using gcs_custom as temp storage
-		M_StartMessage("Do you want to \x82save the recommended \x82movement controls?\x80\n\nPress 'Y' or 'Enter' to confirm\nPress 'N' or any key to keep \nyour current controls",
-			M_TutorialSaveControlResponse, MM_YESNO);
-	}
-	*/
-
 	tutorialmode = false;
 }
 

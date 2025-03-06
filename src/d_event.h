@@ -29,9 +29,6 @@ typedef enum
 	ev_console,
 	ev_mouse,
 	ev_joystick,
-	ev_joystick2,
-	ev_joystick3,
-	ev_joystick4,
 } evtype_t;
 
 // Event structure.

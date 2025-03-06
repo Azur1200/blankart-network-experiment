@@ -178,7 +178,7 @@ static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t followertimer = 0;		// Used for smooth follower floating
 
 static  UINT8 setupcontrolplayer;
-static  INT32   (*setupcontrols)[2];  // pointer to the gamecontrols of the player being edited
+static  INT32   (*setupcontrols)[MAXINPUTMAPPING];  // pointer to the gamecontrols of the player being edited
 
 // shhh... what am I doing... nooooo!
 static INT32 vidm_testingmode = 0;
@@ -288,7 +288,6 @@ static void M_SetupMultiHandler(INT32 choice);
 // Controls
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef;
-menu_t OP_Joystick1Def, OP_Joystick2Def, OP_Joystick3Def, OP_Joystick4Def;
 static void M_VideoModeMenu(INT32 choice);
 static void M_Setup1PControlsMenu(INT32 choice);
 static void M_Setup2PControlsMenu(INT32 choice);
@@ -393,6 +392,9 @@ static void M_HandleConnectIP(INT32 choice);
 static void M_HandleSetupMultiPlayer(INT32 choice);
 static void M_HandleVideoMode(INT32 choice);
 static void M_HandleMonitorToggles(INT32 choice);
+
+// uhhhhhh hack?
+static void M_ChangecontrolResponse(event_t *ev);
 
 // Consvar onchange functions
 static void Newgametype_OnChange(void);
@@ -1098,8 +1100,10 @@ static menuitem_t OP_ControlsMenu[] =
 
 static menuitem_t OP_AllControlsMenu[] =
 {
-	{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", {.submenu = &OP_Joystick1Def}, 0},
-	{IT_CALL|IT_STRING, NULL, "Reset to defaults", {.routine = M_ResetControls}, 8},
+	//{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", {.submenu = &OP_Joystick1Def}, 0},
+	{IT_CALL|IT_STRING, NULL, "Select Gamepad...", {.routine = M_Setup1PJoystickMenu}, 0},
+	{IT_CVAR|IT_STRING, NULL, "Deadzone"         , {.cvar = &cv_deadzone[0]},          8},
+	{IT_CALL|IT_STRING, NULL, "Reset to defaults", {.routine = M_ResetControls},       16},
 	//{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_HEADER, NULL, "Gameplay Controls", {NULL}, 0},
 	{IT_SPACE, NULL, NULL, {NULL}, 0},
@@ -1136,62 +1140,6 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Custom Action 1",       {.routine = M_ChangeControl}, gc_custom1    },
 	{IT_CONTROL, NULL, "Custom Action 2",       {.routine = M_ChangeControl}, gc_custom2    },
 	{IT_CONTROL, NULL, "Custom Action 3",       {.routine = M_ChangeControl}, gc_custom3    },
-};
-
-static menuitem_t OP_Joystick1Menu[] =
-{
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , {.routine = M_Setup1PJoystickMenu}, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , {.cvar = &cv_aimaxis[0]}       , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , {.cvar = &cv_turnaxis[0]}      , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , {.cvar = &cv_moveaxis[0]}      , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , {.cvar = &cv_brakeaxis[0]}     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , {.cvar = &cv_driftaxis[0]}     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , {.cvar = &cv_fireaxis[0]}      , 80},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward" 	  , {.cvar = &cv_lookbackaxis[0]}  , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , {.cvar = &cv_lookaxis[0]}      , 100},
-	{IT_STRING | IT_CVAR,  NULL, "Deadzone"      	  , {.cvar = &cv_deadzone[0]}      , 110},
-};
-
-static menuitem_t OP_Joystick2Menu[] =
-{
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , {.routine = M_Setup2PJoystickMenu}, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , {.cvar = &cv_aimaxis[1]}       , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , {.cvar = &cv_turnaxis[1]}      , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , {.cvar = &cv_moveaxis[1]}      , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , {.cvar = &cv_brakeaxis[1]}     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , {.cvar = &cv_driftaxis[1]}     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , {.cvar = &cv_fireaxis[1]}      , 80},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward" 	  , {.cvar = &cv_lookbackaxis[0]}  , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , {.cvar = &cv_lookaxis[1]}      , 100},
-	{IT_STRING | IT_CVAR,  NULL, "Deadzone"      	  , {.cvar = &cv_deadzone[1]}      , 110},
-};
-
-static menuitem_t OP_Joystick3Menu[] =
-{
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , {.routine = M_Setup3PJoystickMenu}, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , {.cvar = &cv_aimaxis[2]}       , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , {.cvar = &cv_turnaxis[2]}      , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , {.cvar = &cv_moveaxis[2]}      , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , {.cvar = &cv_brakeaxis[2]}     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , {.cvar = &cv_driftaxis[2]}     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , {.cvar = &cv_fireaxis[2]}      , 80},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward" 	  , {.cvar = &cv_lookbackaxis[0]}  , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , {.cvar = &cv_lookaxis[2]}      , 100},
-	{IT_STRING | IT_CVAR,  NULL, "Deadzone"      	  , {.cvar = &cv_deadzone[2]}      , 110},
-};
-
-static menuitem_t OP_Joystick4Menu[] =
-{
-	{IT_STRING | IT_CALL,  NULL, "Select Gamepad..."  , {.routine = M_Setup4PJoystickMenu}, 10},
-	{IT_STRING | IT_CVAR,  NULL, "Aim Forward/Back"   , {.cvar = &cv_aimaxis[3]}       , 30},
-	{IT_STRING | IT_CVAR,  NULL, "Turn Left/Right"    , {.cvar = &cv_turnaxis[3]}      , 40},
-	{IT_STRING | IT_CVAR,  NULL, "Accelerate"         , {.cvar = &cv_moveaxis[3]}      , 50},
-	{IT_STRING | IT_CVAR,  NULL, "Brake"              , {.cvar = &cv_brakeaxis[3]}     , 60},
-	{IT_STRING | IT_CVAR,  NULL, "Drift"              , {.cvar = &cv_driftaxis[3]}     , 70},
-	{IT_STRING | IT_CVAR,  NULL, "Use Item"           , {.cvar = &cv_fireaxis[3]}      , 80},
-	{IT_STRING | IT_CVAR,  NULL, "Look Backward" 	  , {.cvar = &cv_lookbackaxis[0]}  , 90},
-	{IT_STRING | IT_CVAR,  NULL, "Spec. Look Up/Down" , {.cvar = &cv_lookaxis[3]}      , 100},
-	{IT_STRING | IT_CVAR,  NULL, "Deadzone"      	  , {.cvar = &cv_deadzone[3]}      , 110},
 };
 
 static menuitem_t OP_JoystickSetMenu[] =
@@ -1966,16 +1914,12 @@ menu_t OP_MainDef =
 
 menu_t OP_ControlsDef = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
 menu_t OP_AllControlsDef = CONTROLMENUSTYLE(MN_NONE, OP_AllControlsMenu, &OP_ControlsDef);
-menu_t OP_Joystick1Def = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_Joystick1Menu, &OP_AllControlsDef, 60, 30);
-menu_t OP_Joystick2Def = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_Joystick2Menu, &OP_AllControlsDef, 60, 30);
-menu_t OP_Joystick3Def = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_Joystick3Menu, &OP_AllControlsDef, 60, 30);
-menu_t OP_Joystick4Def = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_Joystick4Menu, &OP_AllControlsDef, 60, 30);
 menu_t OP_JoystickSetDef =
 {
 	MN_NONE,
 	"M_CONTRO",
 	sizeof (OP_JoystickSetMenu)/sizeof (menuitem_t),
-	&OP_Joystick1Def,
+	&OP_AllControlsDef,
 	OP_JoystickSetMenu,
 	M_DrawJoystick,
 	50, 40,
@@ -2531,8 +2475,7 @@ boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
 //	INT32 i;
-	static tic_t joywait = 0, joywaitaccel = 0, mousewait = 0;
-	static INT32 pjoyx = 0, pjoyy = 0, pjoyaccel = 0;
+	static tic_t mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
 	void (*routine)(INT32 choice); // for some casting problem
@@ -2560,15 +2503,9 @@ boolean M_Responder(event_t *ev)
 		switch (ch)
 		{
 			case KEY_MOUSE1:
-				//case KEY_JOY1:
-				//case KEY_JOY1 + 2:
 				ch = KEY_ENTER;
 				break;
-				/*case KEY_JOY1 + 3: // Brake can function as 'n' for message boxes now.
-					ch = 'n';
-					break;*/
 			case KEY_MOUSE1 + 1:
-				//case KEY_JOY1 + 1:
 				ch = KEY_BACKSPACE;
 				break;
 			case KEY_HAT1:
@@ -2583,83 +2520,30 @@ boolean M_Responder(event_t *ev)
 			case KEY_HAT1 + 3:
 				ch = KEY_RIGHTARROW;
 				break;
+			default:
+				break;
 		}
 	}
 	else if (menuactive)
 	{
-		tic_t thistime = I_GetTime();
-		if (ev->type == ev_joystick)
+		if (ev->type == ev_joystick && ev->device == 0)
 		{
-			const INT32 jdeadzone = ((JOYAXISRANGE-1) * cv_deadzone[0].value) >> FRACBITS;
-			
-			INT32 accelaxis = abs(cv_moveaxis->value);
-			if (ev->data1 == 0)
+			const INT32 jdeadzone = (JOYAXISRANGE * cv_deadzone[0].value) / FRACUNIT;
+			static INT32 lastjoy[JOYAXISSET*2] = {0};
+
+			if (abs(ev->data2) <= jdeadzone)
 			{
-				if (ev->data3 != INT32_MAX)
-				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data3) > jdeadzone)
-					{
-						if (joywait < thistime
-							&& (pjoyy == 0 || (ev->data3 < 0) != (pjoyy < 0))) // no previous direction OR change direction
-						{
-							ch = (ev->data3 < 0) ? KEY_UPARROW : KEY_DOWNARROW;
-							joywait = thistime + NEWTICRATE/7;
-						}
-						pjoyy = ev->data3;
-
-					}
-					else
-						pjoyy = 0;
-				}
-
-			
-				if (ev->data2 != INT32_MAX && joywait < thistime)
-				{
-					if (Joystick[0].bGamepadStyle || abs(ev->data2) > jdeadzone)
-					{
-						if (joywait < thistime
-							&& (pjoyx == 0 || (ev->data2 < 0) != (pjoyx < 0))) // no previous direction OR change direction
-						{
-							ch = (ev->data2 < 0) ? KEY_LEFTARROW : KEY_RIGHTARROW;
-							joywait = thistime + NEWTICRATE/7;
-						}
-						pjoyx = ev->data2;
-					}
-					else
-						pjoyx = 0;
-				}
+				lastjoy[ev->data1] = 0;
+				return false;
 			}
-			else if (!(accelaxis > JOYAXISSET*2 || accelaxis == 0))
-			{
-				// The following borrows heavily from Joy1Axis.
-				const boolean xmode = (accelaxis%2);
-				INT32 retaxis = 0;
-				if (!xmode)
-					accelaxis--;
-				accelaxis /= 2;
-				if (ev->data1 == accelaxis)
-				{
-					const INT32 jacceldeadzone = xmode ? jdeadzone : jdeadzone;
-					retaxis = xmode ? ev->data2 : ev->data3;
-					if (retaxis != INT32_MAX)
-					{
-						if (cv_moveaxis[0].value < 0)
-							retaxis = -retaxis;
 
-						if (Joystick[0].bGamepadStyle || retaxis > jacceldeadzone)
-						{
-							if (joywaitaccel < thistime && retaxis > pjoyaccel) // only on upwards event
-							{
-								ch = KEY_ENTER;
-								joywaitaccel = thistime + NEWTICRATE/3;
-							}
-							pjoyaccel = retaxis;
-						}
-						else
-							pjoyaccel = 0;
-					}
-				}
-			}
+			// no previous direction OR change direction
+			if (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0))
+				ch = KEY_AXIS1 + ev->data1*2 + (ev->data2 >= 0);
+			else
+				ch = 0;
+
+			lastjoy[ev->data1] = ev->data2;
 		}
 		else if (ev->type == ev_mouse && mousewait < I_GetTime())
 		{
@@ -2693,12 +2577,34 @@ boolean M_Responder(event_t *ev)
 		}
 	}
 
+	// remap to keyboard keys if needed
+	if (ch >= KEY_JOY1)
+	{
+		static INT32 joyremap[][2] = {
+			{ gc_systemmenu,  KEY_ESCAPE     },
+			{ gc_aimforward,  KEY_UPARROW    },
+			{ gc_aimbackward, KEY_DOWNARROW  },
+			{ gc_turnleft,    KEY_LEFTARROW  },
+			{ gc_turnright,   KEY_RIGHTARROW },
+			{ gc_brake,       KEY_ESCAPE     },
+			{ gc_accelerate,  KEY_ENTER      },
+		};
+
+		INT32 gc = G_GetControlForKey(0, ch, true);
+		if (gc != gc_null && !(gc == gc_brake && !menuactive)) // don't open the menu with brake!
+		{
+			for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
+			{
+				if (gc != joyremap[r][0])
+					continue;
+				ch = joyremap[r][1];
+				break;
+			}
+		}
+	}
+
 	if (ch == -1)
 		return false;
-	else if (ch == gamecontrol[0][gc_systemmenu][0] || ch == gamecontrol[0][gc_systemmenu][1]) // allow remappable ESC key
-		ch = KEY_ESCAPE;
-	else if ((ch == gamecontrol[0][gc_accelerate][0] || ch == gamecontrol[0][gc_accelerate][1])  && ch >= KEY_MOUSE1)
-		ch = KEY_ENTER;
 
 	// F-Keys
 	if (!menuactive)
@@ -2775,9 +2681,6 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	if ((ch == gamecontrol[0][gc_brake][0] || ch == gamecontrol[0][gc_brake][1]) && ch >= KEY_MOUSE1) // do this here, otherwise brake opens the menu mid-game
-		ch = KEY_ESCAPE;
-
 	routine = currentMenu->menuitems[itemOn].itemaction.routine;
 
 	// Handle menuitems which need a specific key handling
@@ -2805,13 +2708,12 @@ boolean M_Responder(event_t *ev)
 		}
 		else
 		{
-			// dirty hack: for customising controls, I want only buttons/keys, not moves
-			if (ev->type == ev_mouse
-				|| ev->type == ev_joystick
-				|| ev->type == ev_joystick2
-				|| ev->type == ev_joystick3
-				|| ev->type == ev_joystick4)
+			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
+			if (ev->type == ev_mouse || (ev->type == ev_joystick && currentMenu->menuitems[itemOn].itemaction.eventhandler != M_ChangecontrolResponse))
+			{
 				return true;
+			}
+
 			if (routine)
 			{
 				currentMenu->menuitems[itemOn].itemaction.eventhandler(ev);
@@ -10449,28 +10351,24 @@ void M_SetupJoystickMenu(INT32 choice)
 static void M_Setup1PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 1;
-	OP_JoystickSetDef.prevMenu = &OP_Joystick1Def;
 	M_SetupJoystickMenu(choice);
 }
 
 static void M_Setup2PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 2;
-	OP_JoystickSetDef.prevMenu = &OP_Joystick2Def;
 	M_SetupJoystickMenu(choice);
 }
 
 static void M_Setup3PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 3;
-	OP_JoystickSetDef.prevMenu = &OP_Joystick3Def;
 	M_SetupJoystickMenu(choice);
 }
 
 static void M_Setup4PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 4;
-	OP_JoystickSetDef.prevMenu = &OP_Joystick4Def;
 	M_SetupJoystickMenu(choice);
 }
 
@@ -10526,7 +10424,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction.submenu = &OP_Joystick1Def;
+	OP_AllControlsMenu[0].itemaction.routine = M_Setup1PJoystickMenu;
 
 	// Unhide P1-only controls
 	OP_AllControlsMenu[16].status = IT_CONTROL; // Chat
@@ -10558,7 +10456,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction.submenu = &OP_Joystick2Def;
+	OP_AllControlsMenu[0].itemaction.routine = M_Setup2PJoystickMenu;
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10590,7 +10488,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction.submenu = &OP_Joystick3Def;
+	OP_AllControlsMenu[0].itemaction.routine = M_Setup3PJoystickMenu;
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10622,7 +10520,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	OP_AllControlsMenu[0].itemaction.submenu = &OP_Joystick4Def;
+	OP_AllControlsMenu[0].itemaction.routine = M_Setup4PJoystickMenu;
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10651,9 +10549,9 @@ static void M_Setup4PControlsMenu(INT32 choice)
 // Draws the Customise Controls menu
 static void M_DrawControl(void)
 {
-	char tmp[50];
+	char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
 	INT32 x, y, i, max, cursory = 0, iter;
-	INT32 keys[2];
+	INT32 key;
 
 	x = currentMenu->x;
 	y = currentMenu->y;
@@ -10724,26 +10622,21 @@ static void M_DrawControl(void)
 		if (currentMenu->menuitems[i].status == IT_CONTROL)
 		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0), currentMenu->menuitems[i].text);
-			keys[0] = setupcontrols[currentMenu->menuitems[i].alphaKey][0];
-			keys[1] = setupcontrols[currentMenu->menuitems[i].alphaKey][1];
 
 			tmp[0] ='\0';
-			if (keys[0] == KEY_NULL && keys[1] == KEY_NULL)
+			for (iter = 0; iter < MAXINPUTMAPPING; iter++)
 			{
+				key = setupcontrols[currentMenu->menuitems[i].alphaKey][iter];
+				if (key != KEY_NULL)
+				{
+					if (tmp[0] != '\0')
+						strcat(tmp, ", ");
+					strcat(tmp, G_KeynumToString(key));
+				}
+			}
+			if (tmp[0] == '\0')
 				strcpy(tmp, "---");
-			}
-			else
-			{
-				if (keys[0] != KEY_NULL)
-					strcat (tmp, G_KeynumToString (keys[0]));
 
-				if (keys[0] != KEY_NULL && keys[1] != KEY_NULL)
-					strcat(tmp,", ");
-
-				if (keys[1] != KEY_NULL)
-					strcat (tmp, G_KeynumToString (keys[1]));
-
-			}
 			V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
 		}
 		/*else if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
@@ -10751,7 +10644,11 @@ static void M_DrawControl(void)
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
 			V_DrawString(19, y+6, highlightflags, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
+		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0), currentMenu->menuitems[i].text);
+			if (currentMenu->menuitems[i].status & IT_CVAR)
+				V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags, currentMenu->menuitems[i].itemaction.cvar->string);
+		}
 
 		y += SMALLLINEHEIGHT;
 	}
@@ -10771,68 +10668,46 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        found;
 	INT32        ch = ev->data1;
 
+	if (ev->type == ev_joystick)
+		ch = ev->data1*2 + KEY_AXIS1 + (ev->data2 > 0);
+
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)
 	{
-
-		switch (ev->type)
-		{
-			// ignore mouse/joy movements, just get buttons
-			case ev_mouse:
-			case ev_joystick:
-			case ev_joystick2:
-			case ev_joystick3:
-			case ev_joystick4:
-				ch = KEY_NULL;      // no key
-			break;
-
-			// keypad arrows are converted for the menu in cursor arrows
-			// so use the event instead of ch
-			case ev_keydown:
-				ch = ev->data1;
-			break;
-
-			default:
-			break;
-		}
+		// keypad arrows are converted for the menu in cursor arrows
+		// so use the event instead of ch
+		if (ev->type == ev_keydown)
+			ch = ev->data1;
 
 		control = controltochange;
 
 		// check if we already entered this key
-		found = -1;
-		if (setupcontrols[control][0] ==ch)
-			found = 0;
-		else if (setupcontrols[control][1] ==ch)
-			found = 1;
+		for (found = MAXINPUTMAPPING-1; found >= 0; found--)
+			if (setupcontrols[control][found] == ch)
+				break;
+
 		if (found >= 0)
 		{
 			// replace mouse and joy clicks by double clicks
+			/*
 			if (ch >= KEY_MOUSE1 && ch <= KEY_MOUSE1+MOUSEBUTTONS)
 				setupcontrols[control][found] = ch-KEY_MOUSE1+KEY_DBLMOUSE1;
 			else if (ch >= KEY_JOY1 && ch <= KEY_JOY1+JOYBUTTONS)
 				setupcontrols[control][found] = ch-KEY_JOY1+KEY_DBLJOY1;
-			else if (ch >= KEY_2MOUSE1 && ch <= KEY_2MOUSE1+MOUSEBUTTONS)
-				setupcontrols[control][found] = ch-KEY_2MOUSE1+KEY_DBL2MOUSE1;
-			else if (ch >= KEY_2JOY1 && ch <= KEY_2JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_2JOY1+KEY_DBL2JOY1;
-			else if (ch >= KEY_3JOY1 && ch <= KEY_3JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_3JOY1+KEY_DBL3JOY1;
-			else if (ch >= KEY_4JOY1 && ch <= KEY_4JOY1+JOYBUTTONS)
-				setupcontrols[control][found] = ch-KEY_4JOY1+KEY_DBL4JOY1;
+			*/
 		}
 		else
 		{
-			// check if change key1 or key2, or replace the two by the new
-			found = 0;
-			if (setupcontrols[control][0] == KEY_NULL)
-				found++;
-			if (setupcontrols[control][1] == KEY_NULL)
-				found++;
-			if (found == 2)
-			{
-				found = 0;
-				setupcontrols[control][1] = KEY_NULL;  //replace key 1,clear key2
-			}
+			// find an empty slot for this key
+			for (found = 0; found < MAXINPUTMAPPING; found++)
+				if (setupcontrols[control][found] == KEY_NULL)
+					break;
+
+			// no slots? shift down the other keys to make room (last one out)
+			if (found == MAXINPUTMAPPING)
+				for (found = 0; found < MAXINPUTMAPPING-1; found++)
+					setupcontrols[control][found] = setupcontrols[control][found+1];
+
 			(void)G_CheckDoubleUsage(ch, true);
 			setupcontrols[control][found] = ch;
 		}
@@ -10892,17 +10767,10 @@ static void M_ResetControlsResponse(INT32 ch)
 	}
 
 	// Setup original defaults
-	G_CopyControls(gamecontrol[p], gamecontroldefault[p][gcs_kart], NULL, 0);
+	G_CopyControls(gamecontrol[p], gamecontroldefault, NULL, 0);
 
 	// Setup gamepad option defaults (yucky)
 	CV_StealthSet(&cv_usejoystick[p], cv_usejoystick[p].defaultvalue);
-	CV_StealthSet(&cv_turnaxis[p], cv_turnaxis[p].defaultvalue);
-	CV_StealthSet(&cv_moveaxis[p], cv_moveaxis[p].defaultvalue);
-	CV_StealthSet(&cv_brakeaxis[p], cv_brakeaxis[p].defaultvalue);
-	CV_StealthSet(&cv_aimaxis[p], cv_aimaxis[p].defaultvalue);
-	CV_StealthSet(&cv_lookaxis[p], cv_lookaxis[p].defaultvalue);
-	CV_StealthSet(&cv_fireaxis[p], cv_fireaxis[p].defaultvalue);
-	CV_StealthSet(&cv_driftaxis[p], cv_driftaxis[p].defaultvalue);
 
 	S_StartSound(NULL, sfx_s224);
 }
