@@ -122,7 +122,7 @@ extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but sig
 
 INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu);
 boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean menu);
-INT32 G_GetControlForKey(UINT8 p, INT32 key, boolean menu);
+boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu);
 
 //
 // GAME

@@ -2595,13 +2595,14 @@ boolean M_Responder(event_t *ev)
 			{ gc_accelerate,  KEY_ENTER      },
 		};
 
-		INT32 gc = G_GetControlForKey(0, ch, true);
-		if (gc != gc_null && !(gc == gc_brake && !menuactive)) // don't open the menu with brake!
+		for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
 		{
-			for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
+			INT32 gc = joyremap[r][0];
+			if (gc == gc_brake && !menuactive)
+				continue; // don't open the menu with brake!
+
+			if (G_ControlBoundToKey(0, gc, ch, true))
 			{
-				if (gc != joyremap[r][0])
-					continue;
 				ch = joyremap[r][1];
 				break;
 			}
@@ -9706,7 +9707,7 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 	INT32 prev_setupm_fakeskin;
 	boolean  exitmenu = false;  // exit to previous menu and send name change
 
-	if ((choice == gamecontrol[0][gc_fire][0] || choice == gamecontrol[0][gc_fire][1]) && itemOn == 2)
+	if (G_ControlBoundToKey(0, gc_fire, choice, false) && itemOn == 2)
 		choice = KEY_BACKSPACE; // Hack to allow resetting prefcolor on controllers
 
 	switch (choice)

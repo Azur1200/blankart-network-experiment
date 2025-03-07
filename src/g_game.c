@@ -763,30 +763,27 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	return (INT16)((*aiming)>>16);
 }
 
-// returns the first gamecontrol that matches the given key
-// used by menu code (that boolean is kinda pointless...)
-INT32 G_GetControlForKey(UINT8 p, INT32 key, boolean menu)
+// check if the given key is bound to the given gamecontrol
+// if menu is true, also check defaults if the gamecontrol has no binds
+boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu)
 {
-	INT32 i, gc;
-	for (gc = 0; gc < num_gamecontrols; gc++)
+	INT32 i;
+	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
+
+	if (menu)
 	{
-		INT32 (*map)[][MAXINPUTMAPPING] = &gamecontrol[p];
-
-		// if this control isn't bound, switch to defaults
-		if (menu)
-		{
-			for (i = 0; i < MAXINPUTMAPPING; i++)
-				if ((*map)[gc][i])
-					goto bound;
-			map = &gamecontroldefault;
-		}
-	bound:
-
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if ((*map)[gc][i] == key)
-				return gc;
+			if ((*map)[i])
+				goto bound;
+		map = &gamecontroldefault[gc];
 	}
-	return gc_null;
+bound:
+
+	for (i = 0; i < MAXINPUTMAPPING; i++)
+		if ((*map)[i] == key)
+			return true;
+
+	return false;
 }
 
 static INT32 KeyValue(UINT8 p, INT32 key)
@@ -1563,7 +1560,7 @@ boolean G_Responder(event_t *ev)
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& (ev->data1 == KEY_F12 || ev->data1 == gamecontrol[0][gc_viewpoint][0] || ev->data1 == gamecontrol[0][gc_viewpoint][1]))
+		&& (ev->data1 == KEY_F12 || G_ControlBoundToKey(0, gc_viewpoint, ev->data1, false)))
 	{
 		if (!demo.playback && (r_splitscreen))
 			g_localplayers[0] = consoleplayer;
@@ -1581,17 +1578,17 @@ boolean G_Responder(event_t *ev)
 
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback && !demo.freecam)
 	{
-		if (ev->data1 == gamecontrol[1][gc_viewpoint][0] || ev->data1 == gamecontrol[1][gc_viewpoint][1])
+		if (G_ControlBoundToKey(1, gc_viewpoint, ev->data1, false))
 		{
 			G_AdjustView(2, 1, true);
 			return true;
 		}
-		else if (ev->data1 == gamecontrol[2][gc_viewpoint][0] || ev->data1 == gamecontrol[2][gc_viewpoint][1])
+		else if (G_ControlBoundToKey(2, gc_viewpoint, ev->data1, false))
 		{
 			G_AdjustView(3, 1, true);
 			return true;
 		}
-		else if (ev->data1 == gamecontrol[3][gc_viewpoint][0] || ev->data1 == gamecontrol[3][gc_viewpoint][1])
+		else if (G_ControlBoundToKey(3, gc_viewpoint, ev->data1, false))
 		{
 			G_AdjustView(4, 1, true);
 			return true;
@@ -1599,8 +1596,7 @@ boolean G_Responder(event_t *ev)
 
 		// Allow pausing
 		if (
-			ev->data1 == gamecontrol[0][gc_pause][0]
-			|| ev->data1 == gamecontrol[0][gc_pause][1]
+			G_ControlBoundToKey(0, gc_pause, ev->data1, false)
 			|| ev->data1 == KEY_PAUSE
 		)
 		{
@@ -1635,8 +1631,7 @@ boolean G_Responder(event_t *ev)
 	switch (ev->type)
 	{
 		case ev_keydown:
-			if (ev->data1 == gamecontrol[0][gc_pause][0]
-				|| ev->data1 == gamecontrol[0][gc_pause][1]
+			if (G_ControlBoundToKey(0, gc_pause, ev->data1, false)
 				|| ev->data1 == KEY_PAUSE)
 			{
 				if (modeattacking && !demo.playback && (gamestate == GS_LEVEL))
@@ -1669,8 +1664,7 @@ boolean G_Responder(event_t *ev)
 
 			for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 			{
-				if (ev->data1 == gamecontrol[i][gc_camtoggle][0]
-					|| ev->data1 == gamecontrol[i][gc_camtoggle][1])
+				if (G_ControlBoundToKey(i, gc_camtoggle, ev->data1, false))
 				{
 					if (!camtoggledelay[i])
 					{

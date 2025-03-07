@@ -940,7 +940,7 @@ boolean CON_Responder(event_t *ev)
 	// let go keyup events, don't eat them
 	if (ev->type != ev_keydown && ev->type != ev_console)
 	{
-		if (ev->data1 == gamecontrol[0][gc_console][0] || ev->data1 == gamecontrol[0][gc_console][1])
+		if (G_ControlBoundToKey(0, gc_console, ev->data1, false))
 			consdown = false;
 		return false;
 	}
@@ -953,12 +953,12 @@ boolean CON_Responder(event_t *ev)
 		if (modeattacking || metalrecording || marathonmode)
 			return false;
 
-		if (ev->data1 >= KEY_MOUSE1) // See also: HUD_Responder
+		if (ev->data1 >= KEY_JOY1) // See also: HUD_Responder
 		{
 			INT32 i;
 			for (i = 0; i < num_gamecontrols; i++)
 			{
-				if (gamecontrol[0][i][0] == ev->data1 || gamecontrol[0][i][1] == ev->data1)
+				if (G_ControlBoundToKey(0, i, ev->data1, false))
 					break;
 			}
 
@@ -966,7 +966,7 @@ boolean CON_Responder(event_t *ev)
 				return false;
 		}
 
-		if (key == gamecontrol[0][gc_console][0] || key == gamecontrol[0][gc_console][1])
+		if (G_ControlBoundToKey(0, gc_console, key, false))
 		{
 			if (consdown) // ignore repeat
 				return true;
