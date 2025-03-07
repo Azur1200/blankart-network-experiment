@@ -7410,9 +7410,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->extravalue2 = mobj->target->player->bubbleblowup;
 		P_SetScale(mobj, (mobj->destscale = scale));
 
-		mobj->flags &= ~(MF_NOCLIPTHING);
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
-		mobj->flags |= MF_NOCLIPTHING;
 		break;
 	}
 	case MT_FLAMESHIELD:
