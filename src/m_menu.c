@@ -2475,7 +2475,7 @@ boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
 //	INT32 i;
-	static tic_t mousewait = 0;
+	static tic_t joywait = 0, mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
 	void (*routine)(INT32 choice); // for some casting problem
@@ -2534,12 +2534,17 @@ boolean M_Responder(event_t *ev)
 			if (abs(ev->data2) <= jdeadzone)
 			{
 				lastjoy[ev->data1] = 0;
-				return false;
+				return true;
 			}
 
+			tic_t thistime = I_GetTime();
+
 			// no previous direction OR change direction
-			if (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0))
+			if (joywait < thistime && (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0)))
+			{
 				ch = KEY_AXIS1 + ev->data1*2 + (ev->data2 >= 0);
+				joywait = thistime + NEWTICRATE/7;
+			}
 			else
 				ch = 0;
 
