@@ -1751,6 +1751,7 @@ static void P_3dMovement(player_t *player)
 	angle_t dangle; // replaces old quadrants bits
 	fixed_t oldMagnitude, newMagnitude;
 	vector3_t totalthrust;
+	UINT16 buttons = K_GetKartButtons(player);
 
 	totalthrust.x = totalthrust.y = 0; // I forget if this is needed
 	totalthrust.z = FRACUNIT*P_MobjFlip(player->mo)/3; // A bit of extra push-back on slopes
@@ -1846,7 +1847,7 @@ static void P_3dMovement(player_t *player)
 		if (player->mo->movefactor != FRACUNIT) // Friction-scaled acceleration...
 			movepushforward = FixedMul(movepushforward, player->mo->movefactor);
 
-		if (cmd->buttons & BT_BRAKE && (player->cmd.forwardmove == 0)) // SRB2kart - braking isn't instant
+		if (buttons & BT_BRAKE && (player->cmd.forwardmove == 0)) // SRB2kart - braking isn't instant
 			movepushforward /= 64;
 
 		if (player->cmd.forwardmove > 0)

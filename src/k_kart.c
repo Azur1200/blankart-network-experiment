@@ -2429,8 +2429,7 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 */
 static void K_RespawnChecker(player_t *player)
 {
-	ticcmd_t *cmd = &player->cmd;
-
+	UINT16 buttons = K_GetKartButtons(player);
 	if (player->spectator)
 		return;
 
@@ -2490,7 +2489,7 @@ static void K_RespawnChecker(player_t *player)
 			// Sal: The old behavior was stupid and prone to accidental usage.
 			// Let's rip off Mania instead, and turn this into a Drop Dash!
 
-			if (cmd->buttons & BT_ACCELERATE)
+			if (buttons & BT_ACCELERATE)
 				player->dropdash++;
 			else
 				player->dropdash = 0;
@@ -2506,7 +2505,7 @@ static void K_RespawnChecker(player_t *player)
 		}
 		else
 		{
-			if ((cmd->buttons & BT_ACCELERATE) && (player->dropdash >= TICRATE/4))
+			if ((buttons & BT_ACCELERATE) && (player->dropdash >= TICRATE/4))
 			{
 				S_StartSound(player->mo, sfx_s23c);
 				player->startboost = 50;
@@ -8390,6 +8389,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	INT32 dstwo = dsone*2;
 	INT32 dsthree = cv_kartpurpledrift.value ? dsone*3 : dsone*4;
 	INT32 dsfour = dsone*4;
+	UINT16 buttons = K_GetKartButtons(player);
 
 	// Grown players taking yellow spring panels will go below minspeed for one tic,
 	// and will then wrongdrift or have their sparks removed because of this.
@@ -8586,8 +8586,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 
 	if (player->drift
-		&& ((player->cmd.buttons & BT_BRAKE)
-		|| !(player->cmd.buttons & BT_ACCELERATE))
+		&& ((buttons & BT_BRAKE)
+		|| !(buttons & BT_ACCELERATE))
 		&& P_IsObjectOnGround(player->mo))
 	{
 		if (!(player->pflags & PF_BRAKEDRIFT))
@@ -9034,8 +9034,8 @@ void K_UnsetItemOut(player_t *player)
 //
 void K_MoveKartPlayer(player_t *player, boolean onground)
 {
-	ticcmd_t *cmd = &player->cmd;
-	boolean ATTACK_IS_DOWN = ((cmd->buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
+	UINT16 buttons = K_GetKartButtons(player);
+	boolean ATTACK_IS_DOWN = ((buttons & BT_ATTACK) && !(player->oldcmd.buttons & BT_ATTACK));
 	boolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
 	boolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 
@@ -9057,7 +9057,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		player->positiondelay--;
 
 	// Prevent ring misfire
-	if (!(cmd->buttons & BT_ATTACK))
+	if (!(buttons & BT_ATTACK))
 	{
 		if (player->itemtype == KITEM_NONE
 			&& NO_HYUDORO && (K_RingsActive() == true) && !(HOLDING_ITEM
@@ -9108,7 +9108,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			// Ring boosting
 			else if (player->itemflags & IF_USERINGS)
 			{
-				if ((cmd->buttons & BT_ATTACK) && !player->ringdelay && player->rings > 0)
+				if ((buttons & BT_ATTACK) && !player->ringdelay && player->rings > 0)
 				{
 					mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
 					P_SetMobjState(ring, S_FASTRING1);
@@ -9182,7 +9182,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->itemflags |= IF_HOLDREADY;
 						}
 
-						if ((cmd->buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY) && onground)
+						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY) && onground)
 						{
 							// TODO: gametyperules
 							const SINT8 incr = gametype == GT_BATTLE ? 3 : 2;
@@ -9221,7 +9221,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				{
 					if (player->growcancel >= 0)
 					{
-						if (cmd->buttons & BT_ATTACK)
+						if (buttons & BT_ATTACK)
 						{
 							player->growcancel++;
 							if (player->growcancel > 26)
@@ -9232,7 +9232,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 					}
 					else
 					{
-						if ((cmd->buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
+						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
 							player->growcancel = -1;
 						else
 							player->growcancel = 0;
@@ -9621,7 +9621,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
 							{
-								if ((cmd->buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
+								if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 								{
 									if (player->bubbleblowup == 0)
 										S_StartSound(player->mo, sfx_s3k75);

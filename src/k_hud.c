@@ -3835,13 +3835,12 @@ static void K_drawInput(void)
 	INT32 offs, col;
 	const INT32 accent1 = splitflags | skincolors[stplyr->skincolor].ramp[5];
 	const INT32 accent2 = splitflags | skincolors[stplyr->skincolor].ramp[9];
-	ticcmd_t *cmd = &stplyr->cmd;
 
 #define BUTTW 8
 #define BUTTH 11
 
 #define drawbutt(xoffs, butt, symb)\
-	if (!stplyr->exiting && (cmd->buttons & butt))\
+	if (!stplyr->exiting && (K_GetKartButtons(stplyr) & butt))\
 	{\
 		offs = 2*FRACUNIT;\
 		col = accent1;\
