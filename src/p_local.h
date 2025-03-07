@@ -165,6 +165,8 @@ void P_DemoCameraMovement(camera_t *cam);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_InitCameraCmd(void);
 
+boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
+
 boolean P_PlayerInPain(player_t *player);
 void P_ResetPlayer(player_t *player);
 boolean P_PlayerCanDamage(player_t *player, mobj_t *thing);

@@ -1751,6 +1751,7 @@ static void P_3dMovement(player_t *player)
 	angle_t dangle; // replaces old quadrants bits
 	fixed_t oldMagnitude, newMagnitude;
 	vector3_t totalthrust;
+	UINT16 buttons = K_GetKartButtons(player);
 
 	totalthrust.x = totalthrust.y = 0; // I forget if this is needed
 	totalthrust.z = FRACUNIT*P_MobjFlip(player->mo)/3; // A bit of extra push-back on slopes
@@ -1846,7 +1847,7 @@ static void P_3dMovement(player_t *player)
 		if (player->mo->movefactor != FRACUNIT) // Friction-scaled acceleration...
 			movepushforward = FixedMul(movepushforward, player->mo->movefactor);
 
-		if (cmd->buttons & BT_BRAKE && (player->cmd.forwardmove == 0)) // SRB2kart - braking isn't instant
+		if (buttons & BT_BRAKE && (player->cmd.forwardmove == 0)) // SRB2kart - braking isn't instant
 			movepushforward /= 64;
 
 		if (player->cmd.forwardmove > 0)
@@ -1951,6 +1952,26 @@ static void P_3dMovement(player_t *player)
 	}
 }
 
+boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
+{
+	if (player->spectator || objectplacing) // Spectators come first.
+		return true;
+
+	if (!(gametyperules & GTR_FREEROAM) && !(leveltime > starttime)) // You can't move yet.
+		return false;
+
+	if ((cmd->buttons & BT_ACCELERATE) && (cmd->buttons & BT_BRAKE)) // You are rubberburn turning.
+		return true;
+
+	if (player->respawn) // You are Respawning.
+		return true;
+
+	if (player->mo && player->speed == 0) // You need to be moving.
+		return false;
+
+	return true;
+}
+
 //
 // P_UpdatePlayerAngle
 //
@@ -1965,11 +1986,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 	int i;
 
 	// Kart: store the current turn range for later use
-	if (((player->mo && player->speed > 0) // Moving
-		|| (leveltime > starttime && (cmd->buttons & BT_ACCELERATE && cmd->buttons & BT_BRAKE)) // Rubber-burn turn
-		|| (player->respawn) // Respawning
-		|| (player->spectator || objectplacing)) // Not a physical player
-		)
+	if (P_CanPlayerTurn(player, cmd))
 	{
 		player->lturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, KART_FULLTURN)+1;
 		player->rturn_max[leveltime%MAXPREDICTTICS] = K_GetKartTurnValue(player, -KART_FULLTURN)-1;
@@ -2040,7 +2057,7 @@ static void P_SpectatorMovement(player_t *player)
 {
 	ticcmd_t *cmd = &player->cmd;
 
-	P_UpdatePlayerAngle(player);
+	player->mo->angle = cmd->angle<<16;
 
 	ticruned++;
 	if (!(cmd->flags & TICCMD_RECEIVED))
