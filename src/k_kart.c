@@ -7891,7 +7891,23 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 								continue;
 							}
 
-							bestwaypoint = waypoint->prevwaypoints[i];
+							if ((waypoint->nextwaypoints != NULL) && (waypoint->numnextwaypoints > 0U))
+							{
+								for (size_t j = 0U; j < waypoint->numnextwaypoints; j++)
+								{
+									if (!K_GetWaypointIsEnabled(waypoint->nextwaypoints[j]))
+									{
+										continue;
+									}
+
+									if (waypoint->nextwaypoints[j] == waypoint)\
+									{
+										continue;
+									}
+
+									bestwaypoint = waypoint->nextwaypoints[j];
+								}
+							}
 
 							nextbestdelta = angledelta;
 							nextbestmomdelta = momdelta;
@@ -8207,12 +8223,14 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		}
 		else
 		{
+			mobj_t *currentwaypoint = player->currentwaypoint->mobj;
 			mobj_t *safewaypoint = player->nextwaypoint->mobj;
+			angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
 
 			player->starposttime = player->realtime;
 			player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
 			player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-			player->starpostangle = safewaypoint->spawnpoint ? FixedAngle(safewaypoint->spawnpoint->angle * FRACUNIT) : player->mo->angle;
+			player->starpostangle = respawnangle;
 
 			// Then do x and y
 			player->starpostx = safewaypoint->x >> FRACBITS;
