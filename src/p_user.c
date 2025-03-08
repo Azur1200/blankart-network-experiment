@@ -1954,20 +1954,31 @@ static void P_3dMovement(player_t *player)
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 {
-	if (player->spectator || objectplacing) // Spectators come first.
+	if (player->spectator || objectplacing)
+	{
+		// Spectators come first.
 		return true;
+	}
 
-	if (!(gametyperules & GTR_FREEROAM) && !(leveltime > starttime)) // You can't move yet.
+	if (((gametyperules & GTR_FREEROAM) || (leveltime > starttime))
+		&& (cmd->buttons & BT_ACCELERATE)
+		&& (cmd->buttons & BT_BRAKE))
+	{
+		// You are rubberburn turning.
+		return true;
+	}
+
+	if (player->respawn)
+	{
+		// You are Respawning.
+		return true;
+	}
+
+	if (player->mo && player->speed == 0)
+	{
+		// You need to be moving.
 		return false;
-
-	if ((cmd->buttons & BT_ACCELERATE) && (cmd->buttons & BT_BRAKE)) // You are rubberburn turning.
-		return true;
-
-	if (player->respawn) // You are Respawning.
-		return true;
-
-	if (player->mo && player->speed == 0) // You need to be moving.
-		return false;
+	}
 
 	return true;
 }
