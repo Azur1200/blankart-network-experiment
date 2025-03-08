@@ -7900,7 +7900,7 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 										continue;
 									}
 
-									if (waypoint->nextwaypoints[j] == waypoint)\
+									if (waypoint->nextwaypoints[j] == waypoint)
 									{
 										continue;
 									}
