@@ -1536,6 +1536,7 @@ void F_TitleScreenTicker(boolean run)
 				S_ChangeMusic(menupres[MN_MAIN].musname, menupres[MN_MAIN].mustrack, menupres[MN_MAIN].muslooping);
 			else
 				S_ChangeMusicInternal("titles", looptitle);
+			S_StartSound(NULL, sfx_s23c);
 		}
 	}
 
