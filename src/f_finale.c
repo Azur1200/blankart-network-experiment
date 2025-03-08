@@ -716,8 +716,6 @@ static struct {
 #undef CREDITS_LEFT
 #undef CREDITS_RIGHT
 
-static const UINT8 credits_numpics = sizeof(credits_pics)/sizeof(credits_pics[0]) - 1;
-
 void F_StartCredits(void)
 {
 	G_SetGamestate(GS_CREDITS);
@@ -759,7 +757,7 @@ void F_CreditDrawer(void)
 	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
 
 	// Draw pictures
-	for (i = 0; credits_numpics; i++)
+	for (i = 0; credits_pics[i].patch; i++)
 	{
 		UINT8 *colormap = NULL;
 		fixed_t sc = FRACUNIT>>1;
