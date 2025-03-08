@@ -1082,8 +1082,8 @@ static menuitem_t OP_MainMenu[] =
 	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		{.submenu = &OP_DataOptionsDef},			100},
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	{.routine = M_Manual},					120},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			{.routine = M_Credits},					130},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			{.routine = M_BlanCredits},					140},
+	{IT_CALL|IT_STRING,			NULL, "Play Kart Credits",			{.routine = M_Credits},					130},
+	{IT_CALL|IT_STRING,			NULL, "Play BlanKart Credits",			{.routine = M_BlanCredits},					140},
 };
 
 static menuitem_t OP_ControlsMenu[] =
