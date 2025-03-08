@@ -271,7 +271,7 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 // =============
 //  INTRO SCENE
 // =============
-#define NUMINTROSCENES 1
+#define NUMINTROSCENES 2
 INT32 intro_scenenum = 0;
 INT32 intro_curtime = 0;
 
@@ -279,7 +279,8 @@ const char *introtext[NUMINTROSCENES];
 
 static tic_t introscenetime[NUMINTROSCENES] =
 {
-	 4*TICRATE,	// KART KR(eW
+	 2*TICRATE,	// KART KR(eW
+	 3*TICRATE, // Stuff :)
 };
 
 // custom intros
@@ -338,6 +339,12 @@ static void F_IntroDrawScene(void)
 		highres = true;
 	}
 
+	if (intro_scenenum == 1)
+	{
+		background = W_CachePatchName("BLANKART", PU_CACHE);
+		highres = false;
+	}
+
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 
 	if (background)
@@ -372,10 +379,6 @@ void F_IntroTicker(void)
 
 	timetonext--;
 
-	if (intro_scenenum == 0)
-	{
-		if (timetonext <= 0)
-		{
 #if 0 // The necessary apparatus for constructing more elaborate intros...
 			intro_scenenum++;
 			F_NewCutscene(introtext[intro_scenenum]);
@@ -383,6 +386,42 @@ void F_IntroTicker(void)
 			wipegamestate = -1;
 			animtimer = stoptimer = 0;
 #endif
+
+	if (intro_scenenum == 0)
+	{
+		if (timetonext <= 0)
+		{
+			if (rendermode != render_none)
+			{
+				F_WipeStartScreen();
+				F_WipeColorFill(31);
+				F_WipeEndScreen();
+				F_RunWipe(99, true);
+			}
+
+			intro_scenenum++;
+			F_NewCutscene(introtext[intro_scenenum]);
+			timetonext = introscenetime[intro_scenenum];
+			wipegamestate = -1;
+			animtimer = stoptimer = 0;
+		}
+
+		if (finalecount == 16)
+			S_StartSound(NULL, sfx_vroom);
+		else if (finalecount == 47)
+		{
+			// Need to use M_Random otherwise it always uses the same sound
+			INT32 rskin = M_RandomKey(numskins);
+			UINT8 rtaunt = M_RandomKey(2);
+			sfxenum_t rsound = skins[rskin].soundsid[SKSKBST1+rtaunt];
+			S_StartSound(NULL, rsound);
+		}
+	}
+
+	if (intro_scenenum == 1)
+	{
+		if (timetonext <= 0)
+		{
 			if (rendermode != render_none)
 			{
 				F_WipeStartScreen();
@@ -395,7 +434,7 @@ void F_IntroTicker(void)
 			{
 				tic_t nowtime, quittime, lasttime;
 				nowtime = lasttime = I_GetTime();
-				quittime = nowtime + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds
+				quittime = nowtime + NEWTICRATE; // Shortened the quit time, used to be 2 seconds
 				while (quittime > nowtime)
 				{
 					while (!((nowtime = I_GetTime()) - lasttime))
@@ -424,14 +463,10 @@ void F_IntroTicker(void)
 			D_StartTitle();
 			return;
 		}
-		if (finalecount == 8)
-			S_StartSound(NULL, sfx_vroom);
-		else if (finalecount == 47)
+		if (finalecount == 80)
 		{
-			// Need to use M_Random otherwise it always uses the same sound
-			INT32 rskin = M_RandomKey(numskins);
-			UINT8 rtaunt = M_RandomKey(2);
-			sfxenum_t rsound = skins[rskin].soundsid[SKSKBST1+rtaunt];
+			sfxenum_t rsound = skins[1].soundsid[SKSKWIN];
+			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}
 	}
@@ -516,17 +551,36 @@ static const char *credits[] = {
 	"\1Lead Programming",
 	"Sally \"TehRealSalt\" Cochenour",
 	"Vivian \"toaster\" Grannell",
+	"Ronald \"Eidolon\" Kinard",
+	"James Robert Roman",
 	"Sean \"Sryder\" Ryder",
 	"Ehab \"wolfs\" Saeed",
 	"\"ZarroTsu\"",
 	"",
 	"\1Support Programming",
-	"Colette \"fickleheart\" Bordelon",
-	"James R.",
+	"\"Lach\"",
 	"\"Lat\'\"",
+	"AJ \"Tyron\" Martinez",
 	"\"Monster Iestyn\"",
-	"\"Shuffle\"",
 	"\"SteelT\"",
+	"",
+	"\1External Programming",
+	"Alam Ed Arias",
+	"\"alphaRexJames\"",
+	"\"Ashnal\"",
+	"\"filpAM\"",
+	"\"FlykeSpice\"",
+	"\"Hannu Hanhi\"",
+	"\"himie\"",
+	"\"JugadorXEI\"",
+	"\"Kimberly\"",
+	"\"Lighto97\"",
+	"\"Lonsfor\"",
+	"\"mazmazz\"",
+	"\"minenice\"",
+	"\"Shuffle\"",
+	"\"Snu\"",
+	"\"X.organic\"",
 	"",
 	"\1Lead Artists",
 	"Desmond \"Blade\" DesJardins",
@@ -534,25 +588,25 @@ static const char *credits[] = {
 	"",
 	"\1Support Artists",
 	"Sally \"TehRealSalt\" Cochenour",
+	"\"Chengi\"",
+	"\"Chrispy\"",
 	"Sherman \"CoatRack\" DesJardins",
 	"\"DrTapeworm\"",
 	"Jesse \"Jeck Jims\" Emerick",
 	"Wesley \"Charyb\" Gillebaard",
+	"\"Nev3r\"",
 	"Vivian \"toaster\" Grannell",
 	"James \"SeventhSentinel\" Hall",
 	"\"Lat\'\"",
+	"\"rairai104n\"",
 	"\"Tyrannosaur Chao\"",
 	"\"ZarroTsu\"",
 	"",
 	"\1External Artists",
 	"\"1-Up Mason\"",
-	"\"Chengi\"",
-	"\"Chrispy\"",
 	"\"DirkTheHusky\"",
 	"\"LJSTAR\"",
 	"\"MotorRoach\"",
-	"\"Nev3r\"",
-	"\"rairai104n\"",
 	"\"Ritz\"",
 	"\"Rob\"",
 	"\"SmithyGNC\"",
@@ -569,7 +623,7 @@ static const char *credits[] = {
 	"\"VAdaPEGA\"",
 	"\"VelocitOni\"",
 	"",
-	"\1Music",
+	"\1Original Music",
 	"\"DrTapeworm\"",
 	"Wesley \"Charyb\" Gillebaard",
 	"James \"SeventhSentinel\" Hall",
@@ -587,7 +641,6 @@ static const char *credits[] = {
 	"\"DrTapeworm\"",
 	"Paul \"Boinciel\" Clempson",
 	"Sherman \"CoatRack\" DesJardins",
-	"Colette \"fickleheart\" Bordelon",
 	"Vivian \"toaster\" Grannell",
 	"\"Gunla\"",
 	"James \"SeventhSentinel\" Hall",
@@ -597,16 +650,19 @@ static const char *credits[] = {
 	"Sean \"Sryder\" Ryder",
 	"\"Ryuspark\"",
 	"\"Simsmagic\"",
+	"Ivo Solarin",
 	"\"SP47\"",
 	"\"TG\"",
 	"\"Victor Rush Turbo\"",
 	"\"ZarroTsu\"",
 	"",
 	"\1Testing",
+	"RKH License holders",
+	"The KCS",
 	"\"CyberIF\"",
 	"\"Dani\"",
 	"Karol \"Fooruman\" D""\x1E""browski", // Dąbrowski, <Sryder> accents in srb2 :ytho:
-	"\"VirtAnderson\"",
+	"\"Virt\"",
 	"",
 	"\1Special Thanks",
 	"SEGA",
@@ -621,8 +677,8 @@ static const char *credits[] = {
 	"\"Tyler52\"",
 	"",
 	"",
-	"\1Thank you       ",
-	"\1for playing!       ",
+	"\1Thank you",
+	"\1for playing!",
 	NULL
 };
 
@@ -635,31 +691,31 @@ static struct {
 	UINT8 colorize;
 } credits_pics[] = {
 	// We don't have time to be fancy, let's just colorize some item sprites :V
-	{224, 80+(200* 1), "K_ITJAWZ", SKINCOLOR_CREAMSICLE},
-	{224, 80+(200* 2), "K_ITSPB",  SKINCOLOR_GARDEN},
-	{224, 80+(200* 3), "K_ITBANA", SKINCOLOR_LILAC},
-	{224, 80+(200* 4), "K_ITHYUD", SKINCOLOR_DREAM},
-	{224, 80+(200* 5), "K_ITBHOG", SKINCOLOR_TANGERINE},
-	{224, 80+(200* 6), "K_ITSHRK", SKINCOLOR_JAWZ},
-	{224, 80+(200* 7), "K_ITSHOE", SKINCOLOR_MINT},
-	{224, 80+(200* 8), "K_ITGROW", SKINCOLOR_RUBY},
-	{224, 80+(200* 9), "K_ITPOGO", SKINCOLOR_SAPPHIRE},
-	{224, 80+(200*10), "K_ITRSHE", SKINCOLOR_YELLOW},
-	{224, 80+(200*11), "K_ITORB4", SKINCOLOR_DUSK},
-	{224, 80+(200*12), "K_ITEGGM", SKINCOLOR_GREEN},
-	{224, 80+(200*13), "K_ITMINE", SKINCOLOR_BRONZE},
-	{224, 80+(200*14), "K_ITTHNS", SKINCOLOR_RASPBERRY},
-	{224, 80+(200*15), "K_ITINV1", SKINCOLOR_GREY},
+	{224, 80+(216* 1), "K_ITJAWZ", SKINCOLOR_CREAMSICLE},
+	{224, 80+(216* 2), "K_ITSPB",  SKINCOLOR_GARDEN},
+	{224, 80+(216* 3), "K_ITBANA", SKINCOLOR_LILAC},
+	{224, 80+(216* 4), "K_ITHYUD", SKINCOLOR_DREAM},
+	{224, 80+(216* 5), "K_ITBHOG", SKINCOLOR_TANGERINE},
+	{224, 80+(216* 6), "K_ITSHRK", SKINCOLOR_JAWZ},
+	{224, 80+(216* 7), "K_ITSHOE", SKINCOLOR_MINT},
+	{224, 80+(216* 8), "K_ITGROW", SKINCOLOR_RUBY},
+	{224, 80+(216* 9), "K_ITPOGO", SKINCOLOR_SAPPHIRE},
+	{224, 80+(216*10), "K_ITRSHE", SKINCOLOR_YELLOW},
+	{224, 80+(216*11), "K_ITORB4", SKINCOLOR_DUSK},
+	{224, 80+(216*12), "K_ITEGGM", SKINCOLOR_GREEN},
+	{224, 80+(216*13), "K_ITMINE", SKINCOLOR_BRONZE},
+	{224, 80+(216*14), "K_ITTHNS", SKINCOLOR_RASPBERRY},
+	{224, 80+(216*15), "K_ITINV1", SKINCOLOR_GREY},
 	// This Tyler52 gag is troublesome
 	// Alignment should be ((spaces+1 * 100) + (headers+1 * 38) + (lines * 15))
-	// Current max image spacing: (200*17)
-	{112, (15*100)+(17*38)+(88*15), "TYLER52", SKINCOLOR_NONE}
+	// Current max image spacing: (216*17)
+	{112, (16*100)+(19*38)+(103*15), "TYLER52", SKINCOLOR_NONE},
+	{0, 0, NULL, SKINCOLOR_NONE}
 };
 
 #undef CREDITS_LEFT
 #undef CREDITS_RIGHT
 
-static UINT32 credits_height = 0;
 static const UINT8 credits_numpics = sizeof(credits_pics)/sizeof(credits_pics[0]) - 1;
 
 void F_StartCredits(void)
@@ -692,9 +748,9 @@ void F_StartCredits(void)
 void F_CreditDrawer(void)
 {
 	UINT16 i;
-	fixed_t y = (80<<FRACBITS) - (animtimer<<FRACBITS>>1);
+	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
-	//V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
+	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
 	// Draw background
 	V_DrawSciencePatch(0, 0 - FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE)), V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
@@ -703,7 +759,7 @@ void F_CreditDrawer(void)
 	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
 
 	// Draw pictures
-	for (i = 0; i < credits_numpics; i++)
+	for (i = 0; credits_numpics; i++)
 	{
 		UINT8 *colormap = NULL;
 		fixed_t sc = FRACUNIT>>1;
@@ -717,6 +773,9 @@ void F_CreditDrawer(void)
 		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_CACHE), colormap);
 	}
 
+	// Dim the background
+	//V_DrawFadeScreen();
+
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
 	{
@@ -729,11 +788,6 @@ void F_CreditDrawer(void)
 			if (y>>FRACBITS > -20)
 				V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
 			y += 30<<FRACBITS;
-			break;
-		case 2:
-			if (y>>FRACBITS > -10)
-				V_DrawStringAtFixed((BASEVIDWIDTH-V_StringWidth(&credits[i][1], V_ALLOWLOWERCASE|V_YELLOWMAP))<<FRACBITS>>1, y, V_ALLOWLOWERCASE|V_YELLOWMAP, &credits[i][1]);
-			y += 12<<FRACBITS;
 			break;
 		default:
 			if (y>>FRACBITS > -10)
@@ -750,22 +804,7 @@ void F_CreditTicker(void)
 {
 	// "Simulate" the drawing of the credits so that dedicated mode doesn't get stuck
 	UINT16 i;
-	fixed_t y = (80<<FRACBITS) - (animtimer<<FRACBITS>>1);
-
-	// Calculate credits height to display art properly
-	if (credits_height == 0)
-	{
-		for (i = 0; credits[i]; i++)
-		{
-			switch(credits[i][0])
-			{
-				case 0: credits_height += 80; break;
-				case 1: credits_height += 30; break;
-				default: credits_height += 12; break;
-			}
-		}
-		credits_height = 131*credits_height/80; // account for scroll speeds. This is a guess now, so you may need to update this if you change the credits length.
-	}
+	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
 	// Draw credits text on top
 	for (i = 0; credits[i]; i++)
@@ -856,6 +895,158 @@ boolean F_CreditResponder(event_t *event)
 
 	keypressed = true;
 	return true;
+}
+
+// ============
+//  BLANCREDITS
+// ============
+
+static const char *blancredits[] = {
+	"\1BlanKart",
+	"\1Credits",
+	"",
+	"\1Lead Programming",
+	"\"NepDisk\"",
+	"\"GenericHeroGuy\"",
+	"\"Alug\"",
+	"\"Indev\"",
+	"",
+	"\1Support Programming",
+	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"",
+	"\1External Programming",
+	"\"xyzzy\"",
+	"\"SuperJustinBros\"",
+	"",
+	"\1Ring Racers Programming",
+	"Kart Krew Dev",
+	"",
+	"\1New Graphics Creation",
+	"\"Spee\"",
+	"\"Jin\"",
+	"\"NepDisk\"",
+	"",
+	"\1Special Thanks",
+	"\"Sunflower\" aka \"AnimeSonic\"",
+	"Sunflower's Garden",
+	"The Moe Mansion and Birdhouse Team",
+	"",
+	"",
+	"\1Thank you",
+	"\1for playing!",
+
+	NULL,
+};
+
+void F_BlanStartCredits(void)
+{
+	G_SetGamestate(GS_BLANCREDITS);
+
+	// Just in case they're open ... somehow
+	M_ClearMenus(true);
+
+	gameaction = ga_nothing;
+	paused = false;
+	CON_ToggleOff();
+	S_StopMusic();
+	S_StopSounds();
+
+	S_ChangeMusicInternal("KMAP04", true);
+	S_ShowMusicCredit();
+
+	finalecount = 0;
+	animtimer = 0;
+	timetonext = 2*TICRATE;
+}
+
+static void F_DrawDiagCubes(void)
+{
+	INT32 j;
+	for (j = -4; j < 5; j++)
+	{
+		//Up Cubes
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
+
+		//Down Cubes
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+320+20, ((credbgtimer % 128)+1)-(32*j)+168, 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+288+20, ((credbgtimer % 128)+1)-(32*j)+168, 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+288+20, ((credbgtimer % 128)+1)-(32*j)+136, 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+	}
+}
+
+void F_BlanCreditDrawer(void)
+{
+	UINT8 i;
+	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
+	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
+
+	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
+	V_DrawFillConsoleMap(0,0,vid.width, vid.height,0);
+
+	// Draw credits text on top
+	for (i = 0; blancredits[i]; i++)
+	{
+		switch(blancredits[i][0])
+		{
+		case 0:
+			y += 80<<FRACBITS;
+			break;
+		case 1:
+			if (y>>FRACBITS > -20)
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, 0, &blancredits[i][1]);
+			y += 20<<FRACBITS;
+			break;
+		default:
+			if (y>>FRACBITS > -10)
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, V_ALLOWLOWERCASE, blancredits[i]);
+			y += 12<<FRACBITS;
+			break;
+		}
+		F_DrawDiagCubes();
+
+		if (((y>>FRACBITS) * vid.dupy) > vid.height)
+			break;
+	}
+}
+
+void F_BlanCreditTicker(void)
+{
+	// "Simulate" the drawing of the credits so that dedicated mode doesn't get stuck
+	UINT16 i;
+	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
+
+	// Draw credits text on top
+	for (i = 0; blancredits[i]; i++)
+	{
+		switch(blancredits[i][0])
+		{
+			case 0: y += 80<<FRACBITS; break;
+			case 1: y += 20<<FRACBITS; break;
+			default: y += 12<<FRACBITS; break;
+		}
+		if (FixedMul(y,vid.dupy) > vid.height)
+			break;
+	}
+
+	// Do this here rather than in the drawer you doofus! (this is why dedicated mode broke at credits)
+	if (!blancredits[i] && y <= 120<<FRACBITS && !finalecount)
+	{
+		timetonext = 5*TICRATE+1;
+		finalecount = 5*TICRATE;
+	}
+
+	if (timetonext)
+		timetonext--;
+	else
+		animtimer++;
+
+	credbgtimer++;
+
+	if (finalecount && --finalecount == 0)
+		F_StartGameEvaluation();
 }
 
 // ============

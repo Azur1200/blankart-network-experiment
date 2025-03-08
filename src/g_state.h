@@ -43,7 +43,10 @@ typedef enum
 
 	// Not fadable
 	GS_DEDICATEDSERVER, // new state for dedicated server
-	GS_WAITINGPLAYERS   // waiting for players in a net game
+	GS_WAITINGPLAYERS,   // waiting for players in a net game
+
+	// New
+	GS_BLANCREDITS,		// BlanKart: Credits for BlanKart
 } gamestate_t;
 
 typedef enum

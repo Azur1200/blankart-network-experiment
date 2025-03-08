@@ -2539,6 +2539,12 @@ void V_DrawRightAlignedThinStringAtFixed(fixed_t x, fixed_t y, INT32 option, con
 	V_DrawThinStringAtFixed(x, y, option, string);
 }
 
+void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string)
+{
+	x -= (V_StringWidth(string, option) / 2) * FRACUNIT;
+	V_DrawStringAtFixed(x, y, option, string);
+}
+
 // Draws a number using the PING font thingy.
 // TODO: Merge number drawing functions into one with "font name" selection.
 

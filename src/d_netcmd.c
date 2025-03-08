@@ -5412,7 +5412,7 @@ static void Command_ExitLevel_f(void)
 		CONS_Printf(M_GetText("This only works in a netgame.\n"));
 	else if (!(server || (IsPlayerAdmin(consoleplayer))))
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
-	else if (( gamestate != GS_LEVEL && gamestate != GS_CREDITS ) || demo.playback)
+	else if (( gamestate != GS_LEVEL && gamestate != GS_CREDITS && gamestate != GS_BLANCREDITS ) || demo.playback)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 	else
 		SendNetXCmd(XD_EXITLEVEL, NULL, 0);

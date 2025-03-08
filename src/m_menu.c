@@ -225,6 +225,7 @@ static void M_GetAllEmeralds(INT32 choice);
 static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
+static void M_BlanCredits(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -1082,6 +1083,7 @@ static menuitem_t OP_MainMenu[] =
 
 	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	{.routine = M_Manual},					120},
 	{IT_CALL|IT_STRING,			NULL, "Play Credits",			{.routine = M_Credits},					130},
+	{IT_CALL|IT_STRING,			NULL, "Play Credits",			{.routine = M_BlanCredits},					140},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -2539,7 +2541,9 @@ boolean M_Responder(event_t *ev)
 
 	if (dedicated || (demo.playback && demo.title)
 	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
-	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
+	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
+	|| gamestate == GS_BLANCREDITS
+	)
 		return false;
 		
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
@@ -6844,6 +6848,14 @@ static void M_Credits(INT32 choice)
 	cursaveslot = -2;
 	M_ClearMenus(true);
 	F_StartCredits();
+}
+
+static void M_BlanCredits(INT32 choice)
+{
+	(void)choice;
+	cursaveslot = -2;
+	M_ClearMenus(true);
+	F_BlanStartCredits();
 }
 
 /*static void M_CustomLevelSelect(INT32 choice)
