@@ -943,6 +943,12 @@ void F_BlanStartCredits(void)
 	// Just in case they're open ... somehow
 	M_ClearMenus(true);
 
+	if (creditscutscene)
+	{
+		F_StartCustomCutscene(creditscutscene - 1, false, false);
+		return;
+	}
+
 	gameaction = ga_nothing;
 	paused = false;
 	CON_ToggleOff();
