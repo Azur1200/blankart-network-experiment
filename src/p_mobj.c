@@ -6323,27 +6323,6 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_PLAYER:
 		/// \todo Have the player's dead body completely finish its animation even if they've already respawned.
 
-		if (mobj->player)
-		{
-			// Set players next respawn point to the next waypoint
-			// If they die while still in respawn state for extra safety.
-			if (mobj->player->nextwaypoint && mobj->player->respawn > 0)
-			{
-				mobj_t *currentwaypoint = mobj->player->currentwaypoint->mobj;
-				mobj_t *safewaypoint = mobj->player->nextwaypoint->mobj;
-				angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
-
-				mobj->player->starposttime = mobj->player->realtime;
-				mobj->player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
-				mobj->player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-				mobj->player->starpostangle = respawnangle;
-
-				// Then do x and y
-				mobj->player->starpostx = safewaypoint->x >> FRACBITS;
-				mobj->player->starposty = safewaypoint->y >> FRACBITS;
-			}
-		}
-
 		if (!mobj->fuse)
 		{ // Go away.
 		  /// \todo Actually go ahead and remove mobj completely, and fix any bugs and crashes doing this creates. Chasecam should stop moving, and F12 should never return to it.

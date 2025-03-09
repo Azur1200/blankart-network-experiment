@@ -2597,6 +2597,24 @@ static void P_DeathThink(player_t *player)
 	else
 		player->karthud[khud_timeovercam] = 0;
 
+	// Set players next respawn point to the next waypoint
+	// If they die while still in respawn state for extra safety.
+	if (player->nextwaypoint && player->respawn > 0)
+	{
+		mobj_t *currentwaypoint = player->currentwaypoint->mobj;
+		mobj_t *safewaypoint = player->nextwaypoint->mobj;
+		angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+
+		player->starposttime = player->realtime;
+		player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
+		player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+		player->starpostangle = respawnangle;
+
+		// Then do x and y
+		player->starpostx = safewaypoint->x >> FRACBITS;
+		player->starposty = safewaypoint->y >> FRACBITS;
+	}
+
 	K_KartPlayerHUDUpdate(player);
 
 	if (player->pflags & PF_NOCONTEST)
