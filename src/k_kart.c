@@ -7906,6 +7906,7 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 									}
 
 									bestwaypoint = waypoint->nextwaypoints[j];
+									break;
 								}
 							}
 
