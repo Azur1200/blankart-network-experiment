@@ -2071,7 +2071,7 @@ void G_Ticker(boolean run)
 				}
 			}
 
-			D_MapChange(gamemap, gametype, (cv_kartencore.value == 1), false, 1, false, false);
+			D_MapChange(gamemap, gametype, encoremode, false, 1, false, false);
 		}
 
 		for (i = 0; i < MAXPLAYERS; i++)
