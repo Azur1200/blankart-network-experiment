@@ -10116,9 +10116,9 @@ UINT8 K_GetInvincibilityItemFrame(void)
 	return ((leveltime % (7*3)) / 3);
 }
 
-UINT8 K_GetOrbinautItemFrame(UINT8 count)
+UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max)
 {
-	return min(count - 1, 3);
+	return min(count - 1, max);
 }
 
 boolean K_IsSPBInGame(void)
@@ -10174,9 +10174,21 @@ void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
 {
 	switch (itemType)
 	{
+		case KITEM_SNEAKER:
+			part->sprite = SPR_ITSN;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 2);
+			break;
 		case KITEM_ORBINAUT:
 			part->sprite = SPR_ITMO;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetOrbinautItemFrame(itemCount);
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
+			break;
+		case KITEM_BANANA:
+			part->sprite = SPR_ITBA;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
+			break;
+		case KITEM_JAWZ:
+			part->sprite = SPR_ITJA;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 1);
 			break;
 		case KITEM_INVINCIBILITY:
 			part->sprite = SPR_ITMI;

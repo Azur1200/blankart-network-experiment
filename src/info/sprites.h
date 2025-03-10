@@ -568,9 +568,12 @@ _(ISTB) // instashield layer B
 _(PWCL) // Invinc/grow clash VFX
 
 _(ARRO) // player arrows
-_(ITEM)
-_(ITMO)
-_(ITMI)
+_(ITEM) // base item
+_(ITMO) // Multi-Orbinaut
+_(ITMI) // Invincibility
+_(ITSN) // Multi-Sneaker
+_(ITBA) // Multi-Banana
+_(ITJA) // Multi-Jawz
 _(ITMN)
 _(WANT)
 

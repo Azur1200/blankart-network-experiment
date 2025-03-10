@@ -4151,8 +4151,20 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	{
 		switch (itemType)
 		{
+			case KITEM_SNEAKER:
+				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 2))
+					count = mobj->movecount;
+				break;
 			case KITEM_ORBINAUT: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetOrbinautItemFrame(mobj->movecount))
+				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
+					count = mobj->movecount;
+				break;
+			case KITEM_BANANA: // only display the number when the sprite no longer changes
+				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
+					count = mobj->movecount;
+				break;
+			case KITEM_JAWZ: // only display the number when the sprite no longer changes
+				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 1))
 					count = mobj->movecount;
 				break;
 			case KITEM_SUPERRING: // always display the number, and multiply it by 5
@@ -6048,25 +6060,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				{
 					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
 
-					switch (mobj->target->player->itemtype)
-					{
-						case KITEM_ORBINAUT:
-							mobj->tracer->sprite = SPR_ITMO;
-							mobj->tracer->frame = FF_FULLBRIGHT|K_GetOrbinautItemFrame(mobj->target->player->itemamount);
-							break;
-						case KITEM_INVINCIBILITY:
-							mobj->tracer->sprite = SPR_ITMI;
-							mobj->tracer->frame = FF_FULLBRIGHT|K_GetInvincibilityItemFrame();
-							break;
-						case KITEM_SAD:
-							mobj->tracer->sprite = SPR_ITEM;
-							mobj->tracer->frame = FF_FULLBRIGHT;
-							break;
-						default:
-							mobj->tracer->sprite = SPR_ITEM;
-							mobj->tracer->frame = FF_FULLBRIGHT|(mobj->target->player->itemtype);
-							break;
-					}
+					K_UpdateMobjItemOverlay(mobj->tracer, mobj->target->player->itemtype,mobj->target->player->itemamount);
 
 					if (mobj->target->player->itemflags & IF_ITEMOUT)
 					{

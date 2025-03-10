@@ -169,7 +169,7 @@ SINT8 K_Sliptiding(player_t *player);
 void K_MoveKartPlayer(player_t *player, boolean onground);
 void K_CheckSpectateStatus(boolean considermapreset);
 UINT8 K_GetInvincibilityItemFrame(void);
-UINT8 K_GetOrbinautItemFrame(UINT8 count);
+UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max);
 boolean K_IsSPBInGame(void);
 
 // sound stuff for lua
