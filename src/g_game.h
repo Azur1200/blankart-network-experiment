@@ -96,7 +96,6 @@ void weaponPrefChange3(void);
 void weaponPrefChange4(void);
 
 // mouseaiming (looking up/down with the mouse or keyboard)
-#define KB_LOOKSPEED (1<<9)
 #define MAXPLMOVE (50)
 #define SLOWTURNTICS (cv_turnsmooth.value * 3)
 

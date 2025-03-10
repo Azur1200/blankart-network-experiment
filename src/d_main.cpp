@@ -187,6 +187,10 @@ void D_ProcessEvents(void)
 
 	boolean eaten;
 
+	// i have to reset this somewhere or else your camera just glides away!
+	for (size_t i = 0; i < 4; i++)
+		gamekeydown[0][KEY_MOUSEMOVE + i] = 0;
+
 	memset(deviceResponding, false, sizeof (deviceResponding));
 	for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
 	{

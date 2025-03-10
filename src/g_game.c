@@ -986,7 +986,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	const INT32 baseturnspeed = 1;
 
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
-	static boolean keyboard_look[MAXSPLITSCREENPLAYERS]; // true if lookup/down using keyboard
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
 	INT32 forward, side, tspeed;
@@ -996,7 +995,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	// you'd BETTER not touch the player while freecamming...
 	player_t *player = fordemocam ? NULL : &players[g_localplayers[forplayer]];
 	camera_t *thiscam = fordemocam ? democam.cam : &camera[forplayer];
-	boolean *kbl = &keyboard_look[forplayer];
 	boolean *rd = &resetdown[forplayer];
 	boolean spectating = fordemocam || player->spectator;
 
@@ -1170,42 +1168,14 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			 && (!thiscam->chase)) //because chasecam's not inverted
 			 ? -1 : 1; // set to -1 or 1 to multiply
 
-		// mouse look stuff (mouse look is not the same as mouse aim)
-		/*
-		if (mouseaiming && spectating)
-		{
-			*kbl = false;
-
-			// looking up/down
-			cmd->aiming += (mlooky<<3)*player_invert*screen_invert;
-		}
-		*/
-
-		// TODO: cmd->aiming does nothing for some reason, kinda hard to test
 		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false) - G_PlayerInputAnalog(forplayer, gc_lookdown, false);
 
+		// either i allow mouse binds in controls... or i just hardcode it :^)
+		INT32 mousey = gamekeydown[0][KEY_MOUSEMOVE+1] - gamekeydown[0][KEY_MOUSEMOVE+0];
+		axis += mousey * 8*2;
+
 		if (axis != 0 && spectating)
-			cmd->aiming += axis * screen_invert;
-
-		// spring back if not using keyboard neither mouselookin'
-		/*
-		if (*kbl == false && !lookaxis && !mouseaiming)
-			cmd->aiming = 0;
-
-		if (spectating)
-		{
-			if (PlayerInputDown(ssplayer, gc_lookup) || (gamepadjoystickmove && axis < 0))
-			{
-				cmd->aiming += KB_LOOKSPEED * screen_invert;
-				*kbl = true;
-			}
-			else if (PlayerInputDown(ssplayer, gc_lookdown) || (gamepadjoystickmove && axis > 0))
-			{
-				cmd->aiming -= KB_LOOKSPEED * screen_invert;
-				*kbl = true;
-			}
-		}
-		*/
+			cmd->aiming += axis/2 * screen_invert; // divide by 2 to match KB_LOOKSPEED
 
 		if (G_PlayerInputDown(forplayer, gc_centerview, false)) // // No need to put a spectator limit on this one though :V
 			cmd->aiming = 0;
