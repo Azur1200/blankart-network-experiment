@@ -911,6 +911,7 @@ static const char *blancredits[] = {
 	"",
 	"\1Support Programming",
 	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"\"WumboSpasm\"",
 	"",
 	"\1External Programming",
 	"\"xyzzy\"",
