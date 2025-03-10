@@ -1836,8 +1836,6 @@ static void P_3dMovement(player_t *player)
 	// Do not let the player control movement if not onground.
 	// SRB2Kart: pogo spring and speed bumps are supposed to control like you're on the ground
 	onground = (P_IsObjectOnGround(player->mo) || (player->pogospring));
-	
-	player->aiming = cmd->aiming<<FRACBITS;
 
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
@@ -1987,6 +1985,31 @@ boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 	return true;
 }
 
+static void P_UpdatePlayerAiming(player_t *player)
+{
+	ticcmd_t *cmd = &player->cmd;
+	int i;
+
+	if (!cv_allowmlook.value || player->spectator == false)
+	{
+		player->aiming = 0;
+	}
+	else
+	{
+		player->aiming += (cmd->aiming << TICCMD_REDUCE);
+		player->aiming = G_ClipAimingPitch((INT32*) &player->aiming);
+	}
+
+	for (i = 0; i <= r_splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			localaiming[i] = player->aiming;
+			break;
+		}
+	}
+}
+
 //
 // P_UpdatePlayerAngle
 //
@@ -1998,7 +2021,6 @@ static void P_UpdatePlayerAngle(player_t *player)
 	boolean add_delta = true;
 	ticcmd_t *cmd = &player->cmd;
 	angle_t anglechange = player->angleturn;
-	int i;
 
 	// Kart: store the current turn range for later use
 	if (P_CanPlayerTurn(player, cmd))
@@ -2046,14 +2068,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 	player->angleturn = anglechange;
 	player->mo->angle = player->angleturn;
 
-	for (i = 0; i <= r_splitscreen; i++)
-	{
-		if (player == &players[displayplayers[i]])
-		{
-			localaiming[i] = player->aiming;
-			break;
-		}
-	}
+	P_UpdatePlayerAiming(player);
 }
 
 static void P_UpdateBotAngle(player_t* player)
@@ -2073,6 +2088,7 @@ static void P_SpectatorMovement(player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 
 	player->mo->angle = cmd->angle<<16;
+	P_UpdatePlayerAiming(player);
 
 	ticruned++;
 	if (!(cmd->flags & TICCMD_RECEIVED))
@@ -2856,7 +2872,7 @@ static ticcmd_t *P_CameraCmd(camera_t *cam)
 	kbl = false;
 
 	// looking up/down
-	cmd->aiming += (mlooky<<19)*player_invert*screen_invert;
+	cmd->aiming += (mlooky<<3)*player_invert*screen_invert;
 
 	axis = PlayerJoyAxis(1, AXISLOOK);
 

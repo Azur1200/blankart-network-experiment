@@ -1240,12 +1240,12 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			*kbl = false;
 
 			// looking up/down
-			cmd->aiming += (mlooky<<19)*player_invert*screen_invert;
+			cmd->aiming += (mlooky<<3)*player_invert*screen_invert;
 		}
 
 		axis = PlayerJoyAxis(ssplayer, AXISLOOK);
 		if (analogjoystickmove && axis != 0 && lookaxis && player->spectator)
-			cmd->aiming += (axis<<16) * screen_invert;
+			cmd->aiming += axis * screen_invert;
 
 		// spring back if not using keyboard neither mouselookin'
 		if (*kbl == false && !lookaxis && !mouseaiming)
