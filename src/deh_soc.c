@@ -1408,6 +1408,8 @@ void readlevelheader(MYFILE *f, char * name)
 				mapheaderinfo[num]->encorepal = (UINT16)i;
 			else if (fastcmp(word, "NUMLAPS"))
 				mapheaderinfo[num]->numlaps = (UINT8)i;
+			else if (fastcmp(word, "LAPSPERSECTION"))
+				mapheaderinfo[num]->lapspersection = max((UINT8)i, 1u);
 			else if (fastcmp(word, "UNLOCKABLE"))
 			{
 				if (i >= 0 && i <= MAXUNLOCKABLES) // 0 for no unlock required, anything else requires something

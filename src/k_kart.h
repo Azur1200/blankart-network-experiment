@@ -26,6 +26,9 @@ Make sure this matches the actual number of states
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
 
+#define AUTORESPAWN_TIME (10 * TICRATE)
+#define AUTORESPAWN_THRESHOLD (7 * TICRATE)
+
 // Used for respawning checks.
 
 typedef struct respawnresult_s

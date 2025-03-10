@@ -102,7 +102,7 @@ typedef enum
 	PF_UPDATEMYRESPAWN	= 1<<19,
 
 	PF_FLIPCAM	= 1<<20,
-	//free		= 1<<21,
+	PF_TRUSTWAYPOINTS	= 1<<21, // Do not activate lap cheat prevention next time finish line distance is updated
 
 	PF_HITFINISHLINE	= 1<<22, // Already hit the finish line this tic
 	PF_WRONGWAY			= 1<<23, // Moving the wrong way with respect to waypoints?
@@ -548,6 +548,7 @@ struct player_t
 	UINT32 distancetofinishprev;
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
+	UINT16 bigwaypointgap;
 	tic_t airtime; 			// Keep track of how long you've been in the air
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
 
@@ -656,6 +657,9 @@ struct player_t
 	SINT8 glanceDir; // Direction the player is trying to look backwards in
 
 	UINT16 breathTimer; // Holding your breath underwater
+
+	UINT8 lastsafelap;
+	UINT8 lastsafestarpost;
 
 	//
 

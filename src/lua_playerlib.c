@@ -388,6 +388,12 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->confirmVictimDelay);
 	else if (fastcmp(field,"glanceDir"))
 		lua_pushinteger(L, plr->glanceDir);
+	else if (fastcmp(field,"breathTimer"))
+		lua_pushinteger(L, plr->breathTimer);
+	else if (fastcmp(field,"lastsafelap"))
+		lua_pushinteger(L, plr->lastsafelap);
+	else if (fastcmp(field,"laststarpost"))
+		lua_pushinteger(L, plr->lastsafestarpost);
 	else if (fastcmp(field,"roundscore"))
 		plr->roundscore = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"marescore"))
@@ -799,6 +805,12 @@ static int player_set(lua_State *L)
 		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"glanceDir"))
 		plr->glanceDir = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"breathTimer"))
+		plr->breathTimer = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"lastsafelap"))
+		plr->lastsafelap = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"lastsafestarpost"))
+		plr->lastsafestarpost = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"roundscore"))
 		lua_pushinteger(L, plr->roundscore);
 	else if (fastcmp(field,"marescore"))

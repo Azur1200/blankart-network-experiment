@@ -267,7 +267,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"UPDATEMYRESPAWN",
 
 	"FLIPCAM",
-	"\x01",
+	"TRUSTWAYPOINTS",
 
 	"HITFINISHLINE",	 // Already hit the finish line this tic
 	"WRONGWAY",      	 // Moving the wrong way with respect to waypoints?

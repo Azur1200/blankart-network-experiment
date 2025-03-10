@@ -2359,6 +2359,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT16 nocontrol;
 	INT32 kickstartaccel;
 	boolean enteredGame;
+	UINT8 lastsafelap;
+	UINT8 lastsafestarpost;
+	UINT16 bigwaypointgap;
 
 	score = players[player].score;
 	lives = players[player].lives;
@@ -2412,6 +2415,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		wanted = 0;
 		rings = 10;
 		kickstartaccel = 0;
+		lastsafelap = 0;
+		lastsafestarpost = 0;
+		bigwaypointgap = 0;
 		nocontrol = 0;
 		laps = 0;
 		latestlap = 0;
@@ -2479,6 +2485,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		prevcheck = players[player].nextcheck;
 
 		pflags |= (players[player].pflags & (PF_STASIS|PF_ELIMINATED|PF_NOCONTEST|PF_LOSTLIFE|PF_FLIPCAM));
+
+		lastsafelap = players[player].lastsafelap;
+		lastsafestarpost = players[player].lastsafestarpost;
+		bigwaypointgap = players[player].bigwaypointgap;
 	}
 
 	if (!betweenmaps)
@@ -2513,6 +2523,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->splitscreenindex = splitscreenindex;
 	p->spectator = spectator;
 	p->angleturn = playerangleturn;
+	p->lastsafelap = lastsafelap;
+	p->lastsafestarpost = lastsafestarpost;
+	p->bigwaypointgap = bigwaypointgap;
 
 	// save player config truth reborn
 	p->skincolor = skincolor;
