@@ -763,6 +763,12 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	return (INT16)((*aiming)>>16);
 }
 
+// returns true if event's axis is within the deadzone for the given player
+boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
+{
+	return abs(ev->data2) <= (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
+}
+
 // check if the given key is bound to the given gamecontrol
 // if menu is true, also check defaults if the gamecontrol has no binds
 boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu)
@@ -770,10 +776,13 @@ boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu)
 	INT32 i;
 	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
 
+	if (key <= 0 || key >= NUMINPUTS)
+		return false;
+
 	if (menu)
 	{
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if ((*map)[i])
+			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value))
 				goto bound;
 		map = &gamecontroldefault[gc];
 	}
@@ -831,7 +840,7 @@ retrygetcontrol:
 	}
 
 	// If you're on controller, try your keyboard-based binds as an immediate backup.
-	if (p == 0 && deviceID > 0 && !tryingotherID)
+	if (deviceID > 0 && !tryingotherID)
 	{
 		deviceID = 0;
 		goto retrygetcontrol;

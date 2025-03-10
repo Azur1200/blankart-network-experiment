@@ -121,6 +121,8 @@ extern const INT32 gcl_full[num_gcl_full];
 
 INT32 G_GetDevicePlayer(INT32 deviceID);
 
+INT32 G_AxisToKey(event_t *ev);
+
 // remaps the input event to a game control.
 void G_MapEventsToControls(event_t *ev);
 

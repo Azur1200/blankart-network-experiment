@@ -2479,6 +2479,7 @@ boolean M_Responder(event_t *ev)
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
 	void (*routine)(INT32 choice); // for some casting problem
+	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
 	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
@@ -2526,15 +2527,14 @@ boolean M_Responder(event_t *ev)
 	}
 	else if (menuactive)
 	{
-		if (ev->type == ev_joystick && ev->device == 0)
+		if (ev->type == ev_joystick && deviceplayer == 0)
 		{
-			const INT32 jdeadzone = (JOYAXISRANGE * cv_deadzone[0].value) / FRACUNIT;
 			static INT32 lastjoy[JOYAXISSET*2] = {0};
 
-			if (abs(ev->data2) <= jdeadzone)
+			if (G_AxisInDeadzone(deviceplayer, ev))
 			{
 				lastjoy[ev->data1] = 0;
-				return true;
+				return false;
 			}
 
 			tic_t thistime = I_GetTime();
@@ -2542,13 +2542,21 @@ boolean M_Responder(event_t *ev)
 			// no previous direction OR change direction
 			if (joywait < thistime && (lastjoy[ev->data1] == 0 || (ev->data2 < 0) != (lastjoy[ev->data1] < 0)))
 			{
-				ch = KEY_AXIS1 + ev->data1*2 + (ev->data2 >= 0);
+				ch = G_AxisToKey(ev);
 				joywait = thistime + NEWTICRATE/7;
 			}
 			else
 				ch = 0;
 
 			lastjoy[ev->data1] = ev->data2;
+		}
+		// pass through other joysticks
+		else if (ev->type == ev_joystick)
+		{
+			if (!G_AxisInDeadzone(deviceplayer, ev))
+				ch = 0;
+			else
+				return false;
 		}
 		else if (ev->type == ev_mouse && mousewait < I_GetTime())
 		{
@@ -2583,16 +2591,16 @@ boolean M_Responder(event_t *ev)
 	}
 
 	// remap to keyboard keys if needed
-	if (ch >= KEY_JOY1)
+	if (deviceplayer == 0 && ch >= KEY_JOY1)
 	{
 		static INT32 joyremap[][2] = {
+			{ gc_accelerate,  KEY_ENTER      }, // these two first
+			{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
 			{ gc_systemmenu,  KEY_ESCAPE     },
 			{ gc_aimforward,  KEY_UPARROW    },
 			{ gc_aimbackward, KEY_DOWNARROW  },
 			{ gc_turnleft,    KEY_LEFTARROW  },
 			{ gc_turnright,   KEY_RIGHTARROW },
-			{ gc_brake,       KEY_ESCAPE     },
-			{ gc_accelerate,  KEY_ENTER      },
 		};
 
 		for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
@@ -10675,7 +10683,12 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        ch = ev->data1;
 
 	if (ev->type == ev_joystick)
-		ch = ev->data1*2 + KEY_AXIS1 + (ev->data2 > 0);
+	{
+		if (!G_AxisInDeadzone(setupcontrolplayer-1, ev))
+			ch = G_AxisToKey(ev);
+		else
+			return;
+	}
 
 	// ESCAPE cancels; dummy out PAUSE
 	if (ch != KEY_ESCAPE && ch != KEY_PAUSE)

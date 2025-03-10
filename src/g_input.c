@@ -81,6 +81,12 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 	return -1;
 }
 
+// converts ev_joystick axis to its corresponding key
+INT32 G_AxisToKey(event_t *ev)
+{
+	return KEY_AXIS1 + ev->data1*2 + (ev->data2 >= 0);
+}
+
 //
 // Remaps the inputs to game controls.
 //
@@ -191,7 +197,7 @@ void G_MapEventsToControls(event_t *ev)
 
 			i = ev->data1 * 2;
 
-			if (ev->device == 0)
+			if (G_GetDevicePlayer(ev->device) == 0)
 			{
 				if (CON_Ready() || chat_on)
 					break;
@@ -442,6 +448,12 @@ boolean G_KeyIsAvailable(INT32 key, INT32 deviceID)
 {
 	// Invalid key number.
 	if (key <= 0 || key >= NUMINPUTS)
+	{
+		return false;
+	}
+
+	// Valid keyboard-specific virtual key, but no keyboard attached for player.
+	if (key < NUMKEYS && deviceID > 0)
 	{
 		return false;
 	}
