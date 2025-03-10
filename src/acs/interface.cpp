@@ -293,11 +293,11 @@ void ACS_RunPlayerFinishScript(player_t *player)
 }
 
 /*--------------------------------------------------
-	void ACS_RunPositionScript(void)
+	void ACS_RunRaceStartScript(void)
 
 		See header file for description.
 --------------------------------------------------*/
-void ACS_RunPositionScript(void)
+void ACS_RunRaceStartScript(void)
 {
 	Environment *env = &ACSEnv;
 
@@ -305,7 +305,7 @@ void ACS_RunPositionScript(void)
 	ACSVM::HubScope *const hub = global->getHubScope(0);
 	ACSVM::MapScope *const map = hub->getMapScope(0);
 
-	map->scriptStartType(ACS_ST_POSITION, {});
+	map->scriptStartType(ACS_ST_RACESTART, {});
 }
 
 /*--------------------------------------------------
@@ -322,29 +322,6 @@ void ACS_RunOvertimeScript(void)
 	ACSVM::MapScope *const map = hub->getMapScope(0);
 
 	map->scriptStartType(ACS_ST_OVERTIME, {});
-}
-
-/*--------------------------------------------------
-	void ACS_RunEmeraldScript(mobj_t *mo)
-
-		See header file for description.
---------------------------------------------------*/
-void ACS_RunEmeraldScript(mobj_t *mo)
-{
-	Environment *env = &ACSEnv;
-
-	ACSVM::GlobalScope *const global = env->getGlobalScope(0);
-	ACSVM::HubScope *const hub = global->getHubScope(0);
-	ACSVM::MapScope *const map = hub->getMapScope(0);
-
-	ACSVM::MapScope::ScriptStartInfo scriptInfo;
-	ThreadInfo info;
-
-	P_SetTarget(&info.mo, mo);
-
-	scriptInfo.info = &info;
-
-	map->scriptStartTypeForced(ACS_ST_EMERALD, scriptInfo);
 }
 
 /*--------------------------------------------------

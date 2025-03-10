@@ -820,7 +820,7 @@ void P_Ticker(boolean run)
 
 		if (starttime > introtime && leveltime == starttime)
 		{
-			ACS_RunPositionScript();
+			ACS_RunRaceStartScript();
 		}
 
 		if (timelimitintics > 0 && leveltime == (timelimitintics + starttime + 1))
