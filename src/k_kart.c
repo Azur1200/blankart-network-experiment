@@ -362,11 +362,11 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 			   /*Hyudoro*/ { 0, 0, 0, 1, 2, 1, 0, 0 }, // Hyudoro
 		   /*Pogo Spring*/ { 0, 0, 0, 0, 0, 0, 0, 0 }, // Pogo Spring
 		  /*Kitchen Sink*/ { 0, 0, 0, 0, 0, 0, 0, 0 }, // Kitchen Sink
-		    /*Super Ring*/ { 2, 1, 1, 0, 0, 0, 0, 0 }, // Super Ring
+		    /*Super Ring*/ { 1, 2, 2, 0, 0, 0, 0, 0 }, // Super Ring
 			 /*Land Mine*/ { 3, 0, 0, 0, 0, 0, 0, 0 }, // Land Mine
 		 /*Bubble Shield*/ { 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
-		  /*Flame Shield*/ { 0, 0, 0, 0, 0, 1, 3, 5 }, // Flame Shield
-		   /*Drop Target*/ { 2, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
+		  /*Flame Shield*/ { 0, 0, 0, 0, 0, 2, 4, 5 }, // Flame Shield
+		   /*Drop Target*/ { 1, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
 			/*Sneaker x2*/ { 0, 0, 2, 2, 2, 0, 0, 0 }, // Sneaker x2
 			/*Sneaker x3*/ { 0, 0, 0, 1, 6,10, 5, 0 }, // Sneaker x3
 			 /*Banana x3*/ { 0, 1, 1, 0, 0, 0, 0, 0 }, // Banana x3
