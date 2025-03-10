@@ -52,6 +52,7 @@
 #include "k_bot.h"
 #include "k_color.h"
 #include "k_follower.h"
+#include "k_grandprix.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -124,10 +125,12 @@ demoghost *ghosts = NULL;
 #define DF_ATTACKSHIFT  1
 #define DF_ENCORE       0x40
 #define DF_MULTIPLAYER  0x80 // This demo was recorded in multiplayer mode!
+#define DF_GRANDPRIX    0x0100
 
 #define DEMO_SPECTATOR	0x01
 #define DEMO_KICKSTART	0x02
 #define DEMO_SHRINKME	0x04
+#define DEMO_BOT		0x08
 
 // For demos
 #define ZT_FWD		0x0001
@@ -255,13 +258,73 @@ void G_ReadDemoExtraData(void)
 	{
 		extradata = READUINT8(demobuf.p);
 
-		if (extradata & DXD_RESPAWN)
+		if (extradata & DXD_JOINDATA)
 		{
-			if (players[p].mo)
+			if (!playeringame[p])
 			{
-				// Is this how this should work..?
-				P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
+				G_AddPlayer(p, p);
 			}
+
+			players[p].bot = !!(READUINT8(demobuf.p));
+			if (players[p].bot)
+			{
+				players[p].botvars.difficulty = READUINT8(demobuf.p);
+				players[p].botvars.diffincrease = READUINT8(demobuf.p); // needed to avoid having to duplicate logic
+				players[p].botvars.rival = (boolean)READUINT8(demobuf.p);
+			}
+		}
+		if (extradata & DXD_PLAYSTATE)
+		{
+			i = READUINT8(demobuf.p);
+
+			switch (i) {
+			case DXD_PST_PLAYING:
+				if (players[p].spectator == true)
+				{
+					if (players[p].bot)
+					{
+						players[p].spectator = false;
+					}
+					else
+					{
+						players[p].pflags |= PF_WANTSTOJOIN;
+					}
+				}
+				//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
+				break;
+
+			case DXD_PST_SPECTATING:
+				if (players[p].spectator)
+				{
+					players[p].pflags &= ~PF_WANTSTOJOIN;
+				}
+				else
+				{
+					if (players[p].mo)
+					{
+						P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_SPECTATOR);
+					}
+					P_SetPlayerSpectator(p);
+				}
+
+				break;
+
+			case DXD_PST_LEFT:
+				CL_RemovePlayer(p, 0);
+				break;
+			}
+
+			G_ResetViews();
+
+			// maybe these are necessary?
+			K_CheckBumpers();
+			P_CheckRacers();
+		}
+		if (extradata & DXD_NAME)
+		{
+			// Name
+			M_Memcpy(player_names[p],demobuf.p,16);
+			demobuf.p += 16;
 		}
 		if (extradata & DXD_SKIN)
 		{
@@ -295,12 +358,6 @@ void G_ReadDemoExtraData(void)
 					break;
 				}
 		}
-		if (extradata & DXD_NAME)
-		{
-			// Name
-			M_Memcpy(player_names[p],demobuf.p,16);
-			demobuf.p += 16;
-		}
 		if (extradata & DXD_FOLLOWER)
 		{
 			// Set our follower
@@ -320,47 +377,13 @@ void G_ReadDemoExtraData(void)
 					}
 			}
 		}
-		if (extradata & DXD_PLAYSTATE)
+		if (extradata & DXD_RESPAWN)
 		{
-			i = READUINT8(demobuf.p);
-
-			switch (i) {
-			case DXD_PST_PLAYING:
-				players[p].pflags |= PF_WANTSTOJOIN; // fuck you
-				//CONS_Printf("player %s is despectating on tic %d\n", player_names[p], leveltime);
-				break;
-
-			case DXD_PST_SPECTATING:
-				players[p].pflags &= ~PF_WANTSTOJOIN; // double-fuck you
-				if (!playeringame[p])
-				{
-					CL_ClearPlayer(p);
-					playeringame[p] = true;
-					G_AddPlayer(p, p);
-					players[p].spectator = true;
-					//CONS_Printf("player %s is joining server on tic %d\n", player_names[p], leveltime);
-				}
-				else
-				{
-					//CONS_Printf("player %s is spectating on tic %d\n", player_names[p], leveltime);
-					players[p].spectator = true;
-					if (players[p].mo)
-						P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
-					else
-						players[p].playerstate = PST_REBORN;
-				}
-				break;
-
-			case DXD_PST_LEFT:
-				CL_RemovePlayer(p, 0);
-				break;
+			if (players[p].mo)
+			{
+				// Is this how this should work..?
+				P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
 			}
-
-			G_ResetViews();
-
-			// maybe these are necessary?
-			K_CheckBumpers();
-			P_CheckRacers();
 		}
 		if (extradata & DXD_WEAPONPREF)
 		{
@@ -413,7 +436,44 @@ void G_WriteDemoExtraData(void)
 			WRITEUINT8(demobuf.p, i);
 			WRITEUINT8(demobuf.p, demo_extradata[i]);
 
-			//if (demo_extradata[i] & DXD_RESPAWN) has no extra data
+			if (demo_extradata[i] & DXD_JOINDATA)
+			{
+				WRITEUINT8(demobuf.p, (UINT8)players[i].bot);
+				if (players[i].bot)
+				{
+					WRITEUINT8(demobuf.p, players[i].botvars.difficulty);
+					WRITEUINT8(demobuf.p, players[i].botvars.diffincrease); // needed to avoid having to duplicate logic
+					WRITEUINT8(demobuf.p, (UINT8)players[i].botvars.rival);
+				}
+			}
+			if (demo_extradata[i] & DXD_PLAYSTATE)
+			{
+				UINT8 pst = DXD_PST_PLAYING;
+
+				demo_writerng = 1;
+
+				if (!playeringame[i])
+				{
+					pst = DXD_PST_LEFT;
+				}
+				else if (
+					players[i].spectator &&
+					!(players[i].pflags & PF_WANTSTOJOIN) // <= fuck you specifically
+				)
+				{
+					pst = DXD_PST_SPECTATING;
+				}
+
+				WRITEUINT8(demobuf.p, pst);
+			}
+			if (demo_extradata[i] & DXD_NAME)
+			{
+				// Name
+				memset(name, 0, 16);
+				strncpy(name, player_names[i], 16);
+				M_Memcpy(demobuf.p,name,16);
+				demobuf.p += 16;
+			}
 			if (demo_extradata[i] & DXD_SKIN)
 			{
 				// Skin
@@ -431,14 +491,6 @@ void G_WriteDemoExtraData(void)
 				// Color
 				memset(name, 0, 16);
 				strncpy(name, skincolors[players[i].skincolor].name, 16);
-				M_Memcpy(demobuf.p,name,16);
-				demobuf.p += 16;
-			}
-			if (demo_extradata[i] & DXD_NAME)
-			{
-				// Name
-				memset(name, 0, 16);
-				strncpy(name, player_names[i], 16);
 				M_Memcpy(demobuf.p,name,16);
 				demobuf.p += 16;
 			}
@@ -460,19 +512,7 @@ void G_WriteDemoExtraData(void)
 				demobuf.p += 16;
 
 			}
-			if (demo_extradata[i] & DXD_PLAYSTATE)
-			{
-				demo_writerng = 1;
-				if (!playeringame[i])
-					WRITEUINT8(demobuf.p, DXD_PST_LEFT);
-				else if (
-					players[i].spectator &&
-					!(players[i].pflags & PF_WANTSTOJOIN) // <= fuck you specifically
-				)
-					WRITEUINT8(demobuf.p, DXD_PST_SPECTATING);
-				else
-					WRITEUINT8(demobuf.p, DXD_PST_PLAYING);
-			}
+			//if (demo_extradata[i] & DXD_RESPAWN) has no extra data
 			if (demo_extradata[i] & DXD_WEAPONPREF)
 			{
 				WeaponPref_Save(&demobuf.p, i);
@@ -1164,23 +1204,27 @@ void G_GhostTicker(void)
 		UINT16 ziptic = READUINT8(g->p);
 		UINT8 xziptic = 0;
 
+		if (g->done)
+		{
+			continue;
+		}
+
 		while (ziptic != DW_END) // Get rid of extradata stuff
 		{
 			if (ziptic < MAXPLAYERS)
 			{
+#ifdef DEVELOP
 				UINT8 playerid = ziptic;
+#endif
 				// We want to skip *any* player extradata because some demos have extradata for bogus players,
 				// but if there is tic data later for those players *then* we'll consider it invalid.
 
 				ziptic = READUINT8(g->p);
-				if (ziptic & DXD_SKIN)
-					g->p += 18; // We _could_ read this info, but it shouldn't change anything in record attack...
-				if (ziptic & DXD_COLOR)
-					g->p += 16; // Same tbh
-				if (ziptic & DXD_NAME)
-					g->p += 16; // yea
-				if (ziptic & DXD_FOLLOWER)
-					g->p += 32; // ok (32 because there's both the skin and the colour)
+				if (ziptic & DXD_JOINDATA)
+				{
+					if (READUINT8(g->p) != 0)
+						I_Error("Ghost is not a record attack ghost (bot JOINDATA)");
+				}
 				if (ziptic & DXD_PLAYSTATE)
 				{
 					UINT8 playstate = READUINT8(g->p);
@@ -1192,6 +1236,14 @@ void G_GhostTicker(void)
 						;
 					}
 				}
+				if (ziptic & DXD_NAME)
+					g->p += 16; // yea
+				if (ziptic & DXD_SKIN)
+					g->p += 16; // We _could_ read this info, but it shouldn't change anything in record attack...
+				if (ziptic & DXD_COLOR)
+					g->p += 16; // Same tbh
+				if (ziptic & DXD_FOLLOWER)
+					g->p += 32; // ok (32 because there's both the skin and the colour)
 				if (ziptic & DXD_WEAPONPREF)
 					g->p++; // ditto
 			}
@@ -2129,6 +2181,13 @@ void G_BeginRecording(void)
 
 	// Save netvar data
 	CV_SaveDemoVars(&demobuf.p);
+
+	if ((demoflags & DF_GRANDPRIX))
+	{
+		WRITEUINT8(demobuf.p, grandprixinfo.gamespeed);
+		WRITEUINT8(demobuf.p, grandprixinfo.masterbots == true);
+		WRITEUINT8(demobuf.p, grandprixinfo.eventmode);
+	}
 	
 	// Save "mapmusrng" used for altmusic selection
 	WRITEUINT8(demobuf.p, mapmusrng);
@@ -2152,7 +2211,16 @@ void G_BeginRecording(void)
 				i |= DEMO_KICKSTART;
 			if (player->pflags & PF_SHRINKME)
 				i |= DEMO_SHRINKME;
+			if (player->bot == true)
+				i |= DEMO_BOT;
 			WRITEUINT8(demobuf.p, i);
+
+			if (i & DEMO_BOT)
+			{
+				WRITEUINT8(demobuf.p, player->botvars.difficulty);
+				WRITEUINT8(demobuf.p, player->botvars.diffincrease); // needed to avoid having to duplicate logic
+				WRITEUINT8(demobuf.p, (UINT8)player->botvars.rival);
+			}
 
 			// Name
 			memset(name, 0, 16);
@@ -2806,7 +2874,7 @@ void G_DoPlayDemo(char *defdemoname)
 	UINT32 randseed;
 	char msg[1024];
 
-	boolean spectator;
+	boolean spectator, bot;
 	UINT8 slots[MAXPLAYERS], kartspeed[MAXPLAYERS], kartweight[MAXPLAYERS], numslots = 0;
 
 #if defined(SKIPERRORS) && !defined(DEVELOP)
@@ -3083,6 +3151,15 @@ void G_DoPlayDemo(char *defdemoname)
 
 	// net var data
 	CV_LoadDemoVars(&demobuf.p);
+
+	memset(&grandprixinfo, 0, sizeof grandprixinfo);
+	if ((demoflags & DF_GRANDPRIX))
+	{
+		grandprixinfo.gp = true;
+		grandprixinfo.gamespeed = READUINT8(demobuf.p);
+		grandprixinfo.masterbots = READUINT8(demobuf.p) != 0;
+		grandprixinfo.eventmode = READUINT8(demobuf.p);
+	}
 	
 	// Load "mapmusrng" used for altmusic selection
 	mapmusrng = READUINT8(demobuf.p);
@@ -3135,12 +3212,13 @@ void G_DoPlayDemo(char *defdemoname)
 		UINT8 flags = READUINT8(demobuf.p);
 
 		spectator = !!(flags & DEMO_SPECTATOR);
+		bot = !!(flags & DEMO_BOT);
 
-		if (spectator == true)
+		if ((spectator || bot))
 		{
 			if (modeattacking)
 			{
-				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with spectators, and is thus invalid.\n"), pdemoname);
+				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with %s, and is thus invalid.\n"), pdemoname, (bot ? "bots" : "spectators"));
 				CONS_Alert(CONS_ERROR, "%s", msg);
 				M_StartMessage(msg, NULL, MM_NOTHING);
 				Z_Free(pdemoname);
@@ -3183,6 +3261,13 @@ void G_DoPlayDemo(char *defdemoname)
 			players[p].pflags &= ~PF_SHRINKME;
 
 		K_UpdateShrinkCheat(&players[p]);
+
+		if ((players[p].bot = bot) == true)
+		{
+			players[p].botvars.difficulty = READUINT8(demobuf.p);
+			players[p].botvars.diffincrease = READUINT8(demobuf.p); // needed to avoid having to duplicate logic
+			players[p].botvars.rival = (boolean)READUINT8(demobuf.p);
+		}
 
 		// Name
 		M_Memcpy(player_names[p],demobuf.p,16);
@@ -3435,6 +3520,11 @@ void G_AddGhost(char *defdemoname)
 		p++;
 	}
 
+	if ((flags & DF_GRANDPRIX))
+	{
+		p += 3;
+	}
+
 	// Skip mapmusrng
 	p++;
 
@@ -3449,9 +3539,10 @@ void G_AddGhost(char *defdemoname)
 	p++; // player number - doesn't really need to be checked, TODO maybe support adding multiple players' ghosts at once
 
 	// any invalidating flags?
-	if ((READUINT8(p) & (DEMO_SPECTATOR)) != 0)
+	i = READUINT8(p);
+	if ((i & (DEMO_SPECTATOR|DEMO_BOT)) != 0)
 	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot. (Spectator)\n"), pdemoname);
+		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot (spectator/bot)\n"), defdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
 		return;
@@ -3656,8 +3747,15 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 		p++; // stealth
 	}
 
+	if ((flags & DF_GRANDPRIX))
+	{
+		p += 3;
+	}
+
 	// Assert first player is in and then read name
 	if (READUINT8(p) != 0)
+		goto fail;
+	if (READUINT8(p) & (DEMO_SPECTATOR|DEMO_BOT))
 		goto fail;
 	M_Memcpy(dummystaffname, p,16);
 	dummystaffname[16] = '\0';

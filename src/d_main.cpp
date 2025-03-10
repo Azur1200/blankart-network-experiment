@@ -437,6 +437,12 @@ static bool D_Display(void)
 			HU_Drawer();
 			break;
 
+		case GS_BLANCREDITS:
+			F_BlanCreditDrawer();
+			HU_Erase();
+			HU_Drawer();
+			break;
+
 		case GS_WAITINGPLAYERS:
 			// The clientconnect drawer is independent...
 			if (netgame)

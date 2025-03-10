@@ -1970,11 +1970,23 @@ void P_SwitchWeather(preciptype_t newWeather)
 		P_SpawnPrecipitation();
 }
 
+static boolean K_IgnoreFinishLine(player_t *player)
+{
+	// If potential lap cheating has been detected, do not
+	// interact with the finish line at all.
+	if (player->bigwaypointgap)
+		return true;
+
+	return false;
+}
+
 // Passed over the finish line forwards
 static void K_HandleLapIncrement(player_t *player)
 {
 	if (player)
 	{
+		if (K_IgnoreFinishLine(player))
+			return;
 		if (((numbosswaypoints > 0) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
 		{
 			size_t i = 0;
@@ -1992,6 +2004,9 @@ static void K_HandleLapIncrement(player_t *player)
 
 			player->starposttime = player->realtime;
 			player->starpostnum = 0;
+			player->lastsafestarpost = 0;
+			player->laps++;
+
 			
 			if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
 			{
@@ -2010,7 +2025,8 @@ static void K_HandleLapIncrement(player_t *player)
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
 			
-			player->laps++;
+			if (!cv_kartdebuglap.value && player->laps == 1)
+					player->pflags |= PF_TRUSTWAYPOINTS;
 			K_UpdateAllPlayerPositions();
 
 			// Set up lap animation vars

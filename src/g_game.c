@@ -1177,7 +1177,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			*kbl = false;
 
 			// looking up/down
-			cmd->aiming += (mlooky<<19)*player_invert*screen_invert;
+			cmd->aiming += (mlooky<<3)*player_invert*screen_invert;
 		}
 		*/
 
@@ -1185,7 +1185,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		INT32 axis = G_PlayerInputAnalog(forplayer, gc_lookup, false) - G_PlayerInputAnalog(forplayer, gc_lookdown, false);
 
 		if (axis != 0 && spectating)
-			cmd->aiming += (axis<<16) * screen_invert;
+			cmd->aiming += axis * screen_invert;
 
 		// spring back if not using keyboard neither mouselookin'
 		/*
@@ -1553,6 +1553,24 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 	else if (gamestate == GS_CREDITS) // todo: keep ending here?
+	{
+		if (HU_Responder(ev))
+		{
+			hu_keystrokes = true;
+			return true; // chat ate the event
+		}
+
+		if (F_CreditResponder(ev))
+		{
+			// Skip credits for everyone
+			if (! netgame)
+				F_StartGameEvaluation();
+			else if (server || IsPlayerAdmin(consoleplayer))
+				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
+			return true;
+		}
+	}
+	else if (gamestate == GS_BLANCREDITS)
 	{
 		if (HU_Responder(ev))
 		{
@@ -1978,7 +1996,7 @@ void G_Ticker(boolean run)
 				}
 			}
 
-			D_MapChange(gamemap, gametype, (cv_kartencore.value == 1), false, 1, false, false);
+			D_MapChange(gamemap, gametype, encoremode, false, 1, false, false);
 		}
 
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -2095,6 +2113,12 @@ void G_Ticker(boolean run)
 		case GS_CREDITS:
 			if (run)
 				F_CreditTicker();
+			HU_Ticker();
+			break;
+
+		case GS_BLANCREDITS:
+			if (run)
+				F_BlanCreditTicker();
 			HU_Ticker();
 			break;
 
@@ -2260,6 +2284,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT16 nocontrol;
 	INT32 kickstartaccel;
 	boolean enteredGame;
+	UINT8 lastsafelap;
+	UINT8 lastsafestarpost;
+	UINT16 bigwaypointgap;
 
 	score = players[player].score;
 	lives = players[player].lives;
@@ -2313,6 +2340,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		wanted = 0;
 		rings = 10;
 		kickstartaccel = 0;
+		lastsafelap = 0;
+		lastsafestarpost = 0;
+		bigwaypointgap = 0;
 		nocontrol = 0;
 		laps = 0;
 		latestlap = 0;
@@ -2380,6 +2410,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		prevcheck = players[player].nextcheck;
 
 		pflags |= (players[player].pflags & (PF_STASIS|PF_ELIMINATED|PF_NOCONTEST|PF_LOSTLIFE|PF_FLIPCAM));
+
+		lastsafelap = players[player].lastsafelap;
+		lastsafestarpost = players[player].lastsafestarpost;
+		bigwaypointgap = players[player].bigwaypointgap;
 	}
 
 	if (!betweenmaps)
@@ -2414,6 +2448,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->splitscreenindex = splitscreenindex;
 	p->spectator = spectator;
 	p->angleturn = playerangleturn;
+	p->lastsafelap = lastsafelap;
+	p->lastsafestarpost = lastsafestarpost;
+	p->bigwaypointgap = bigwaypointgap;
 
 	// save player config truth reborn
 	p->skincolor = skincolor;
@@ -3071,7 +3108,7 @@ void G_FinishExitLevel(void)
 
 		// Don't save demos immediately here! Let standings write first
 	}
-	else if (gamestate == GS_CREDITS)
+	else if (gamestate == GS_CREDITS || gamestate == GS_BLANCREDITS)
 	{
 		F_StartGameEvaluation();
 	}

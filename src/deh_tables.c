@@ -267,7 +267,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"UPDATEMYRESPAWN",
 
 	"FLIPCAM",
-	"\x01",
+	"TRUSTWAYPOINTS",
 
 	"HITFINISHLINE",	 // Already hit the finish line this tic
 	"WRONGWAY",      	 // Moving the wrong way with respect to waypoints?
@@ -1315,6 +1315,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_CUTSCENE",GS_CUTSCENE},
 	{"GS_DEDICATEDSERVER",GS_DEDICATEDSERVER},
 	{"GS_WAITINGPLAYERS",GS_WAITINGPLAYERS},
+	{"GS_BLANCREDITS",GS_BLANCREDITS},
 
 	// SRB2Kart
 	// kartitems_t

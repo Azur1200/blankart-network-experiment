@@ -61,6 +61,8 @@
 #include "k_color.h"
 #include "k_follower.h"
 
+#include "acs/interface.h"
+
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
 #endif
@@ -1324,6 +1326,8 @@ void P_DoPlayerExit(player_t *player)
 
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
+
+	ACS_RunPlayerFinishScript(player);
 }
 
 //
@@ -1832,8 +1836,6 @@ static void P_3dMovement(player_t *player)
 	// Do not let the player control movement if not onground.
 	// SRB2Kart: pogo spring and speed bumps are supposed to control like you're on the ground
 	onground = (P_IsObjectOnGround(player->mo) || (player->pogospring));
-	
-	player->aiming = cmd->aiming<<FRACBITS;
 
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
@@ -1954,22 +1956,58 @@ static void P_3dMovement(player_t *player)
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
 {
-	if (player->spectator || objectplacing) // Spectators come first.
+	if (player->spectator || objectplacing)
+	{
+		// Spectators come first.
 		return true;
+	}
 
-	if (!(gametyperules & GTR_FREEROAM) && !(leveltime > starttime)) // You can't move yet.
+	if (((gametyperules & GTR_FREEROAM) || (leveltime > starttime))
+		&& (cmd->buttons & BT_ACCELERATE)
+		&& (cmd->buttons & BT_BRAKE))
+	{
+		// You are rubberburn turning.
+		return true;
+	}
+
+	if (player->respawn)
+	{
+		// You are Respawning.
+		return true;
+	}
+
+	if (player->mo && player->speed == 0)
+	{
+		// You need to be moving.
 		return false;
-
-	if ((cmd->buttons & BT_ACCELERATE) && (cmd->buttons & BT_BRAKE)) // You are rubberburn turning.
-		return true;
-
-	if (player->respawn) // You are Respawning.
-		return true;
-
-	if (player->mo && player->speed == 0) // You need to be moving.
-		return false;
+	}
 
 	return true;
+}
+
+static void P_UpdatePlayerAiming(player_t *player)
+{
+	ticcmd_t *cmd = &player->cmd;
+	int i;
+
+	if (!cv_allowmlook.value || player->spectator == false)
+	{
+		player->aiming = 0;
+	}
+	else
+	{
+		player->aiming += (cmd->aiming << TICCMD_REDUCE);
+		player->aiming = G_ClipAimingPitch((INT32*) &player->aiming);
+	}
+
+	for (i = 0; i <= r_splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			localaiming[i] = player->aiming;
+			break;
+		}
+	}
 }
 
 //
@@ -1983,7 +2021,6 @@ static void P_UpdatePlayerAngle(player_t *player)
 	boolean add_delta = true;
 	ticcmd_t *cmd = &player->cmd;
 	angle_t anglechange = player->angleturn;
-	int i;
 
 	// Kart: store the current turn range for later use
 	if (P_CanPlayerTurn(player, cmd))
@@ -2031,14 +2068,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 	player->angleturn = anglechange;
 	player->mo->angle = player->angleturn;
 
-	for (i = 0; i <= r_splitscreen; i++)
-	{
-		if (player == &players[displayplayers[i]])
-		{
-			localaiming[i] = player->aiming;
-			break;
-		}
-	}
+	P_UpdatePlayerAiming(player);
 }
 
 static void P_UpdateBotAngle(player_t* player)
@@ -2058,6 +2088,7 @@ static void P_SpectatorMovement(player_t *player)
 	ticcmd_t *cmd = &player->cmd;
 
 	player->mo->angle = cmd->angle<<16;
+	P_UpdatePlayerAiming(player);
 
 	ticruned++;
 	if (!(cmd->flags & TICCMD_RECEIVED))
@@ -2585,6 +2616,24 @@ static void P_DeathThink(player_t *player)
 	}
 	else
 		player->karthud[khud_timeovercam] = 0;
+
+	// Set players next respawn point to the next waypoint
+	// If they die while still in respawn state for extra safety.
+	if (player->nextwaypoint && player->respawn > 0)
+	{
+		mobj_t *currentwaypoint = player->currentwaypoint->mobj;
+		mobj_t *safewaypoint = player->nextwaypoint->mobj;
+		angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+
+		player->starposttime = player->realtime;
+		player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
+		player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+		player->starpostangle = respawnangle;
+
+		// Then do x and y
+		player->starpostx = safewaypoint->x >> FRACBITS;
+		player->starposty = safewaypoint->y >> FRACBITS;
+	}
 
 	K_KartPlayerHUDUpdate(player);
 

@@ -717,17 +717,6 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t1->type == MT_PLAYER)
-	{
-		// Bubble Shield already has a hitbox, and it gets
-		// teleported every tic so the Bubble itself will
-		// always make contact with other objects.
-		//
-		// Therefore, we don't need a second, smaller hitbox
-		// on the player.
-		return true;
-	}
-
 	if (t2->type == MT_PLAYER)
 	{
 		// Counter desyncs
@@ -745,7 +734,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 			return true;
 
 		// Player Damage
-		P_DamageMobj(t2, t1->target, t1, 1, DMG_NORMAL);
+		P_DamageMobj(t2, ((t1->type == MT_BUBBLESHIELD) ? t1->target : t1), t1, 1, DMG_NORMAL);
 
 		if (t1->target->player)
 		{

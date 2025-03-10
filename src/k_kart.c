@@ -238,6 +238,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
+	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbotpredict);
 
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
@@ -7025,6 +7026,18 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->checkskip)
 		player->checkskip--;
 
+	if (player->bigwaypointgap && (player->bigwaypointgap > AUTORESPAWN_THRESHOLD || !P_PlayerInPain(player)))
+	{
+		player->bigwaypointgap--;
+		if (!player->bigwaypointgap)
+			P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+		else if (player->bigwaypointgap == AUTORESPAWN_THRESHOLD)
+		{
+			S_StartSound(player->mo, sfx_s26d);
+			CONS_Printf("You are going the wrong way! You will automatically respawn in 7 seconds.\n");
+		}
+	}
+
 	if (player->growshrinktimer != 0)
 	{
 		if (player->growshrinktimer > 0)
@@ -7891,7 +7904,24 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 								continue;
 							}
 
-							bestwaypoint = waypoint->prevwaypoints[i];
+							if ((waypoint->nextwaypoints != NULL) && (waypoint->numnextwaypoints > 0U))
+							{
+								for (size_t j = 0U; j < waypoint->numnextwaypoints; j++)
+								{
+									if (!K_GetWaypointIsEnabled(waypoint->nextwaypoints[j]))
+									{
+										continue;
+									}
+
+									if (waypoint->nextwaypoints[j] == waypoint)
+									{
+										continue;
+									}
+
+									bestwaypoint = waypoint->nextwaypoints[j];
+									break;
+								}
+							}
 
 							nextbestdelta = angledelta;
 							nextbestmomdelta = momdelta;
@@ -8117,7 +8147,7 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 				const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
 				if ((mapheader->levelflags & LF_SECTIONRACE) == 0U)
 				{
-					const UINT8 numfulllapsleft = ((UINT8)numlaps - player->laps);
+					const UINT8 numfulllapsleft = ((UINT8)numlaps - player->laps) / mapheader->lapspersection;
 					player->distancetofinish += numfulllapsleft * K_GetCircuitLength();
 				}
 			}
@@ -8166,24 +8196,59 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	boolean updaterespawn = K_SetPlayerNextWaypoint(player);
 
 	// Update prev value (used for grief prevention code)
-	K_UpdateDistanceFromFinishLine(player);
 	player->distancetofinishprev = player->distancetofinish;
+	K_UpdateDistanceFromFinishLine(player);
 
 	// Respawning should be a full reset.
 	UINT32 delta = u32_delta(player->distancetofinish, player->distancetofinishprev);
-	if (!player->respawn && delta > distance_threshold)
+	if (delta > distance_threshold &&
+		!player->respawn && // Respawning should be a full reset.
+		old_currentwaypoint != NULL && // So should touching the first waypoint ever.
+		player->laps != 0 && // POSITION rooms may have unorthodox waypoints to guide bots.
+		!(player->pflags & PF_TRUSTWAYPOINTS)) // Special exception.
 	{
-		CONS_Debug(DBG_GAMELOGIC, "Player %s: waypoint ID %d too far away (%u > %u)\n",
-			sizeu1(player - players), K_GetWaypointID(player->nextwaypoint), delta, distance_threshold);
+#define debug_args "Player %s: waypoint ID %d too far away (%u > %u)\n", \
+		sizeu1(player - players), K_GetWaypointID(player->nextwaypoint), delta, distance_threshold
+		if (cv_kartdebuglap.value)
+			CONS_Printf(debug_args);
+		else
+			CONS_Debug(DBG_GAMELOGIC, debug_args);
+#undef debug_args
 
-		// Distance jump is too great, keep the old waypoints and recalculate distance.
-		player->currentwaypoint = old_currentwaypoint;
-		player->nextwaypoint = old_nextwaypoint;
-		player->distancetofinish = player->distancetofinishprev;
+		if (!cv_kartdebuglap.value)
+		{
+			// Distance jump is too great, keep the old waypoints and old distance.
+			player->currentwaypoint = old_currentwaypoint;
+			player->nextwaypoint = old_nextwaypoint;
+			player->distancetofinish = player->distancetofinishprev;
+
+			// Start the auto respawn timer when the distance jumps.
+			if (!player->bigwaypointgap)
+			{
+				player->bigwaypointgap = AUTORESPAWN_TIME;
+			}
+		}
+	}
+	else
+	{
+		// Reset the auto respawn timer if distance changes are back to normal.
+		if (player->bigwaypointgap && player->bigwaypointgap <= AUTORESPAWN_THRESHOLD + 1)
+		{
+			player->bigwaypointgap = 0;
+
+			// While the player was in the "bigwaypointgap" state, laps did not change from crossing finish lines.
+			// So reset the lap back to normal, in case they were able to get behind the line.
+			player->laps = player->lastsafelap;
+			if (numbosswaypoints == 0)
+			{
+				player->starpostnum = player->lastsafestarpost;
+			}
+		}
 	}
 
 	// Respawn point should only be updated when we're going to a nextwaypoint
 	if ((updaterespawn) &&
+	(player->bigwaypointgap == 0) &&
 	(!player->respawn) &&
 	(player->nextwaypoint != old_nextwaypoint) &&
 	(K_GetWaypointIsSpawnpoint(player->nextwaypoint)) &&
@@ -8191,6 +8256,9 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	{
 		if (!(player->pflags & PF_WRONGWAY))
 			player->grieftime = 0;
+
+		player->lastsafelap = player->laps;
+		player->lastsafestarpost = player->starpostnum;
 
 		// Check if respawn is safe. If not then goto next spawnpoint and respawn there.
 		if (K_SafeRespawnPosition(player->mo))
@@ -8207,12 +8275,14 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		}
 		else
 		{
+			mobj_t *currentwaypoint = player->currentwaypoint->mobj;
 			mobj_t *safewaypoint = player->nextwaypoint->mobj;
+			angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
 
 			player->starposttime = player->realtime;
 			player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
 			player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-			player->starpostangle = safewaypoint->spawnpoint ? FixedAngle(safewaypoint->spawnpoint->angle * FRACUNIT) : player->mo->angle;
+			player->starpostangle = respawnangle;
 
 			// Then do x and y
 			player->starpostx = safewaypoint->x >> FRACBITS;
@@ -8225,6 +8295,8 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			K_FudgeRespawn(player, player->nextwaypoint);
 		}
 	}
+
+	player->pflags &= ~PF_TRUSTWAYPOINTS; // clear special exception
 }
 
 INT32 K_GetKartRingPower(player_t *player, boolean boosted)
@@ -8798,6 +8870,16 @@ void K_UpdateAllPlayerPositions(void)
 		if (!playeringame[i] || player->spectator || !player->mo || P_MobjWasRemoved(player->mo))
 		{
 			continue;
+		}
+
+		if (player->respawn > 0 && player->lastsafelap != player->laps)
+		{
+			player->laps = player->lastsafelap;
+
+			if (numbosswaypoints == 0)
+			{
+				player->starpostnum = player->lastsafestarpost;
+			}
 		}
 
 		K_UpdatePlayerWaypoints(player);
@@ -10034,9 +10116,9 @@ UINT8 K_GetInvincibilityItemFrame(void)
 	return ((leveltime % (7*3)) / 3);
 }
 
-UINT8 K_GetOrbinautItemFrame(UINT8 count)
+UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max)
 {
-	return min(count - 1, 3);
+	return min(count - 1, max);
 }
 
 boolean K_IsSPBInGame(void)
@@ -10092,9 +10174,21 @@ void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
 {
 	switch (itemType)
 	{
+		case KITEM_SNEAKER:
+			part->sprite = SPR_ITSN;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 2);
+			break;
 		case KITEM_ORBINAUT:
 			part->sprite = SPR_ITMO;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetOrbinautItemFrame(itemCount);
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
+			break;
+		case KITEM_BANANA:
+			part->sprite = SPR_ITBA;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
+			break;
+		case KITEM_JAWZ:
+			part->sprite = SPR_ITJA;
+			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 1);
 			break;
 		case KITEM_INVINCIBILITY:
 			part->sprite = SPR_ITMI;

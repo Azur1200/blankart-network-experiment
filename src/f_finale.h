@@ -59,6 +59,9 @@ void F_EndingTicker(void);
 void F_CreditTicker(void);
 void F_CreditDrawer(void);
 
+void F_BlanCreditTicker(void);
+void F_BlanCreditDrawer(void);
+
 void F_StartCustomCutscene(INT32 cutscenenum, boolean precutscene, boolean resetplayer);
 void F_CutsceneDrawer(void);
 void F_EndCutScene(void);
@@ -74,6 +77,7 @@ void F_StartGameEnd(void);
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
 void F_StartCredits(void);
+void F_BlanStartCredits(void);
 
 extern INT32 finalecount;
 extern INT32 titlescrollxspeed;

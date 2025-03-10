@@ -281,6 +281,9 @@ void V_DrawCenteredSmallString(INT32 x, INT32 y, INT32 option, const char *strin
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
 void V_DrawRightAlignedSmallString(INT32 x, INT32 y, INT32 option, const char *string);
 
+// Draw a centered string.
+void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, INT32 option, const char *string);
+
 // draw a string using the tny_font
 #define V_DrawThinString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT,option,TINY_FONT,string)

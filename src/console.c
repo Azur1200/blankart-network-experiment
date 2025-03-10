@@ -1890,7 +1890,7 @@ void CON_Drawer(void)
 
 	if (con_curlines > 0)
 		CON_DrawConsole();
-	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS
+	else if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_CUTSCENE || gamestate == GS_CREDITS || gamestate == GS_BLANCREDITS
 		|| gamestate == GS_VOTING || gamestate == GS_EVALUATION || gamestate == GS_WAITINGPLAYERS)
 		CON_DrawHudlines();
 

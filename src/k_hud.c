@@ -4299,6 +4299,11 @@ static void K_DrawWaypointDebugger(void)
 	if (stplyr != &players[displayplayers[0]]) // only for p1
 		return;
 
+	if (stplyr->bigwaypointgap)
+	{
+		V_DrawString(8, 146, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
+	}
+
 	V_DrawString(8, 156, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
 	V_DrawString(8, 166, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
 	V_DrawString(8, 176, 0, va("Finishline Distance: %d", stplyr->distancetofinish));

@@ -665,13 +665,6 @@ void P_Ticker(boolean run)
 			players[i].jointime++;
 		}
 
-	if (run)
-	{
-		// Update old view state BEFORE ticking so resetting
-		// the old interpolation state from game logic works.
-		R_UpdateViewInterpolation();
-	}
-
 	if (objectplacing)
 	{
 		if (OP_FreezeObjectplace())
@@ -776,30 +769,33 @@ void P_Ticker(boolean run)
 		// Plays the music after the starting countdown.
 		else
 		{
-			if (!(gametyperules & GTR_FREEROAM)  && !(titlemapinaction == TITLEMAP_RUNNING))
+			if (!(titlemapinaction == TITLEMAP_RUNNING))
 			{
-				if (leveltime == starttime-(3*TICRATE))
+				if (!(gametyperules & GTR_FREEROAM))
 				{
-					S_StartSound(NULL, sfx_s3ka7); // 3,
+					if (leveltime == starttime-(3*TICRATE))
+					{
+						S_StartSound(NULL, sfx_s3ka7); // 3,
+					}
+					else if ((leveltime == starttime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
+					{
+						S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+					}
+					else if (leveltime == starttime)
+					{
+						S_StartSound(NULL, sfx_s3kad); // GO!
+					}
 				}
-				else if ((leveltime == starttime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
-				{
-					S_StartSound(NULL, sfx_s3ka7); // 2, 1,
-				}
-				else if (leveltime == starttime)
-				{
-					S_StartSound(NULL, sfx_s3kad); // GO!
-				}
-			}
 			
-			if (!(gametyperules & GTR_FREEROAM) && leveltime < starttime) // SRB2Kart
-				S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-			else if (leveltime == starttime) // The GO! sound stops the level start ambience
-				S_StopMusic();
-			else if (leveltime == starttime + (TICRATE/2)) // Plays the music after the starting countdown.
-			{
-				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-				S_ShowMusicCredit();
+				if (!(gametyperules & GTR_FREEROAM) && leveltime < starttime) // SRB2Kart
+					S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+				else if (leveltime == starttime) // The GO! sound stops the level start ambience
+					S_StopMusic();
+				else if (leveltime == starttime + (TICRATE/2)) // Plays the music after the starting countdown.
+				{
+					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+					S_ShowMusicCredit();
+				}
 			}
 			
 		}
@@ -824,7 +820,7 @@ void P_Ticker(boolean run)
 
 		if (starttime > introtime && leveltime == starttime)
 		{
-			ACS_RunPositionScript();
+			ACS_RunRaceStartScript();
 		}
 
 		if (timelimitintics > 0 && leveltime == (timelimitintics + starttime + 1))

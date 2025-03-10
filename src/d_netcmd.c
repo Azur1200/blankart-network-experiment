@@ -469,6 +469,7 @@ consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", 
 consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
 static CV_PossibleValue_t kartdebugwaypoint_cons_t[] = {{0, "Off"}, {1, "Forwards"}, {2, "Backwards"}, {0, NULL}};
 consvar_t cv_kartdebugwaypoints = CVAR_INIT ("kartdebugwaypoints", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugwaypoint_cons_t, NULL);
+consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugwaypoint_cons_t, NULL);
 consvar_t cv_kartdebugbotpredict = CVAR_INIT ("kartdebugbotpredict", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", CV_NOSHOWHELP, CV_OnOff, NULL);
@@ -5399,7 +5400,7 @@ static void Command_ExitLevel_f(void)
 		CONS_Printf(M_GetText("This only works in a netgame.\n"));
 	else if (!(server || (IsPlayerAdmin(consoleplayer))))
 		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
-	else if (( gamestate != GS_LEVEL && gamestate != GS_CREDITS ) || demo.playback)
+	else if (( gamestate != GS_LEVEL && gamestate != GS_CREDITS && gamestate != GS_BLANCREDITS ) || demo.playback)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 	else
 		SendNetXCmd(XD_EXITLEVEL, NULL, 0);

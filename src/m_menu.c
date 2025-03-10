@@ -225,6 +225,7 @@ static void M_GetAllEmeralds(INT32 choice);
 static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
+static void M_BlanCredits(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -302,6 +303,10 @@ static void M_Setup4PJoystickMenu(INT32 choice);
 static void M_AssignJoystick(INT32 choice);
 static void M_ChangeControl(INT32 choice);
 static void M_ResetControls(INT32 choice);
+
+//camera options menu
+menu_t OP_CamOptionsDef;
+menu_t OP_Player1CamOptionsDef, OP_Player2CamOptionsDef, OP_Player3CamOptionsDef, OP_Player4CamOptionsDef;
 
 // Video & Sound
 menu_t OP_VideoOptionsDef, OP_VideoModeDef;
@@ -1071,19 +1076,85 @@ enum
 // Prefix: OP_
 static menuitem_t OP_MainMenu[] =
 {
-	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		{.submenu = &OP_ControlsDef},			 10},
+	{IT_SUBMENU|IT_STRING,		NULL, "Control Setup...",		{.submenu = &OP_ControlsDef},			10},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		{.submenu = &OP_VideoOptionsDef},		 30},
-	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		{.submenu = &OP_SoundOptionsDef},		 40},
+	{IT_SUBMENU|IT_STRING,		NULL, "Video Options...",		{.submenu = &OP_VideoOptionsDef},		30},
+	{IT_SUBMENU|IT_STRING,		NULL, "Sound Options...",		{.submenu = &OP_SoundOptionsDef},		40},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			{.submenu = &OP_HUDOptionsDef},			 60},
-	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	{.submenu = &OP_GameOptionsDef},			 70},
-	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		{.submenu = &OP_ServerOptionsDef},		 80},
+	{IT_SUBMENU|IT_STRING,		NULL, "HUD Options...",			{.submenu = &OP_HUDOptionsDef},			60},
+	{IT_SUBMENU|IT_STRING,		NULL, "Camera Options...",		{.submenu = &OP_CamOptionsDef},			70},
+	{IT_SUBMENU|IT_STRING,		NULL, "Gameplay Options...",	{.submenu = &OP_GameOptionsDef},		80},
+	{IT_SUBMENU|IT_STRING,		NULL, "Server Options...",		{.submenu = &OP_ServerOptionsDef},		90},
 
-	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		{.submenu = &OP_DataOptionsDef},			100},
+	{IT_SUBMENU|IT_STRING,		NULL, "Data Options...",		{.submenu = &OP_DataOptionsDef},		110},
 
-	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	{.routine = M_Manual},					120},
-	{IT_CALL|IT_STRING,			NULL, "Play Credits",			{.routine = M_Credits},					130},
+	{IT_CALL|IT_STRING,			NULL, "Tricks & Secrets (F1)",	{.routine = M_Manual},					130},
+	{IT_CALL|IT_STRING,			NULL, "Play Kart Credits",			{.routine = M_Credits},				140},
+	{IT_CALL|IT_STRING,			NULL, "Play BlanKart Credits",			{.routine = M_BlanCredits},		150},
+};
+
+static menuitem_t OP_CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Camera Options", {NULL}, 0},
+
+	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 20},
+
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	{.submenu = &OP_Player1CamOptionsDef},	 40},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	{.submenu = &OP_Player2CamOptionsDef},	 50},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	{.submenu = &OP_Player3CamOptionsDef},	 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	{.submenu = &OP_Player4CamOptionsDef},	 70},
+};
+
+static menuitem_t OP_Player1CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 1 Camera Options", {NULL}, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[0]},		30},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[0]},		40},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Height",   			{.cvar = &cv_cam_height[0]},	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			{.cvar = &cv_cam_speed[0]},		60},
+	//{IT_STRING | IT_CVAR, NULL,					"Camera Rotation Speed",   	{.cvar = &cv_cam_rotspeed[0]},		70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	{.cvar = &cv_chasecam[0]},		85},
+};
+
+static menuitem_t OP_Player2CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 2 Camera Options", {NULL}, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[1]},		30},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[1]},		40},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Height",   			{.cvar = &cv_cam_height[1]},	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			{.cvar = &cv_cam_speed[1]},		60},
+	//{IT_STRING | IT_CVAR, NULL,					"Camera Rotation Speed",   	{.cvar = &cv_cam_rotspeed[0]},		70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	{.cvar = &cv_chasecam[1]},		85},
+};
+
+static menuitem_t OP_Player3CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 3 Camera Options", {NULL}, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[2]},		30},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[2]},		40},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Height",   			{.cvar = &cv_cam_height[2]},	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			{.cvar = &cv_cam_speed[2]},		60},
+	//{IT_STRING | IT_CVAR, NULL,					"Camera Rotation Speed",   	{.cvar = &cv_cam_rotspeed[0]},		70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	{.cvar = &cv_chasecam[2]},		85},
+};
+
+static menuitem_t OP_Player4CamOptionsMenu[] =
+{
+	{IT_HEADER, NULL, "Player 4 Camera Options", {NULL}, 0},
+
+	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[3]},		30},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[3]},		40},
+	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Height",   			{.cvar = &cv_cam_height[3]},	50},
+	{IT_STRING | IT_CVAR, NULL,						"Camera Speed",   			{.cvar = &cv_cam_speed[3]},		60},
+	//{IT_STRING | IT_CVAR, NULL,					"Camera Rotation Speed",   	{.cvar = &cv_cam_rotspeed[0]},		70},
+
+	{IT_STRING | IT_CVAR, NULL,						"Third Person Camera",   	{.cvar = &cv_chasecam[3]},		85},
 };
 
 static menuitem_t OP_ControlsMenu[] =
@@ -1990,6 +2061,12 @@ menu_t OP_HUDOptionsDef =
 	NULL
 };
 
+menu_t OP_CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_CamOptionsMenu, &OP_MainDef, 30, 30);
+menu_t OP_Player1CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player1CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player2CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player2CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player3CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
+
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
@@ -2364,33 +2441,23 @@ static void M_ChangeCvar(INT32 choice)
 
 	choice = (choice<<1) - 1;
 
-	if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
-	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
-	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD))
+	if (cv->flags & CV_FLOAT)
 	{
-		if (cv == &cv_digmusicvolume || cv == &cv_soundvolume)
+		if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
+			||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
+			||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD)
+			|| !(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
 		{
-			choice *= 5;
+			char s[20];
+			float n = FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f);
+			sprintf(s,"%ld%s",(long)n,M_Ftrim(n));
+			CV_Set(cv,s);
 		}
-
-		CV_SetValue(cv,cv->value+choice);
-	}
-	else if (cv->flags & CV_FLOAT)
-	{
-		char s[20];
-		sprintf(s,"%f",FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f));
-		CV_Set(cv,s);
+		else
+			CV_SetValue(cv,FIXED_TO_FLOAT(cv->value)+(choice));
 	}
 	else
-	{
-		if (cv == &cv_nettimeout || cv == &cv_jointimeout)
-			choice *= (TICRATE/7);
-		else if (cv == &cv_maxsend)
-			choice *= 512;
-		else if (cv == &cv_maxping)
-			choice *= 50;
 		CV_AddValue(cv,choice);
-	}
 }
 
 static boolean M_ChangeStringCvar(INT32 choice)
@@ -2494,7 +2561,9 @@ boolean M_Responder(event_t *ev)
 
 	if (dedicated || (demo.playback && demo.title)
 	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
-	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION)
+	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
+	|| gamestate == GS_BLANCREDITS
+	)
 		return false;
 		
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
@@ -6270,9 +6339,10 @@ static void M_Options(INT32 choice)
 	(void)choice;
 
 	// if the player is not admin or server, disable gameplay & server options
-	OP_MainMenu[4].status = OP_MainMenu[5].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
+	OP_MainMenu[5].status = (Playing() && !(server || IsPlayerAdmin(consoleplayer))) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU);
 
-	OP_MainMenu[8].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
+	OP_MainMenu[9].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
+	OP_MainMenu[10].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_CALL); // Play credits
 
 #ifdef HAVE_DISCORDRPC
 	OP_DataOptionsMenu[4].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
@@ -6771,6 +6841,14 @@ static void M_Credits(INT32 choice)
 	cursaveslot = -2;
 	M_ClearMenus(true);
 	F_StartCredits();
+}
+
+static void M_BlanCredits(INT32 choice)
+{
+	(void)choice;
+	cursaveslot = -2;
+	M_ClearMenus(true);
+	F_BlanStartCredits();
 }
 
 /*static void M_CustomLevelSelect(INT32 choice)

@@ -138,6 +138,20 @@ void ACS_RunPlayerDeathScript(player_t *player);
 
 void ACS_RunPlayerEnterScript(player_t *player);
 
+/*--------------------------------------------------
+	void ACS_RunPlayerFinishScript(player_t *player);
+
+		Runs the map's special script for a player
+		finishing (P_DoPlayerExit).
+
+	Input Arguments:-
+		player: The player to run the script for.
+
+	Return:-
+		None
+--------------------------------------------------*/
+
+void ACS_RunPlayerFinishScript(player_t *player);
 
 /*--------------------------------------------------
 	void ACS_RunLapScript(mobj_t *mo, line_t *line);
@@ -157,13 +171,13 @@ void ACS_RunLapScript(mobj_t *mo, line_t *line);
 
 
 /*--------------------------------------------------
-	void ACS_RunPositionScript(void);
+	void ACS_RunRaceStartScript(void);
 
 		Runs the map's special script for when the level
 		goes past the POSITION period.
 --------------------------------------------------*/
 
-void ACS_RunPositionScript(void);
+void ACS_RunRaceStartScript(void);
 
 
 /*--------------------------------------------------
@@ -174,16 +188,6 @@ void ACS_RunPositionScript(void);
 --------------------------------------------------*/
 
 void ACS_RunOvertimeScript(void);
-
-
-/*--------------------------------------------------
-	void ACS_RunEmeraldScript(mobj_t *mo);
-
-		Runs the map's special script for when the
-		Special Stage Chaos Emerald is collected.
---------------------------------------------------*/
-
-void ACS_RunEmeraldScript(mobj_t *mo);
 
 
 /*--------------------------------------------------

@@ -144,15 +144,10 @@ void ACS_LoadLevelScripts(size_t mapID)
 
 	// Insert BEHAVIOR lump into the list.
 	{
-		
-		static const char *maplumpname;
-		
-		maplumpname = G_BuildMapName(gamemap);
-		
 		ACSVM::ModuleName name = ACSVM::ModuleName(
-			env->getString( maplumpname ),
+			env->getString( mapheaderinfo[mapID]->lumpname ),
 			nullptr,
-			W_CheckNumForMap(maplumpname)
+			mapheaderinfo[mapID]->lumpnum
 		);
 
 		modules.push_back(env->getModule(name));
@@ -275,11 +270,11 @@ void ACS_RunLapScript(mobj_t *mo, line_t *line)
 }
 
 /*--------------------------------------------------
-	void ACS_RunPositionScript(void)
+	void ACS_RunPlayerFinishScript(player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-void ACS_RunPositionScript(void)
+void ACS_RunPlayerFinishScript(player_t *player)
 {
 	Environment *env = &ACSEnv;
 
@@ -287,7 +282,30 @@ void ACS_RunPositionScript(void)
 	ACSVM::HubScope *const hub = global->getHubScope(0);
 	ACSVM::MapScope *const map = hub->getMapScope(0);
 
-	map->scriptStartType(ACS_ST_POSITION, {});
+	ACSVM::MapScope::ScriptStartInfo scriptInfo;
+	ThreadInfo info;
+
+	P_SetTarget(&info.mo, player->mo);
+
+	scriptInfo.info = &info;
+
+	map->scriptStartTypeForced(ACS_ST_FINISH, scriptInfo);
+}
+
+/*--------------------------------------------------
+	void ACS_RunRaceStartScript(void)
+
+		See header file for description.
+--------------------------------------------------*/
+void ACS_RunRaceStartScript(void)
+{
+	Environment *env = &ACSEnv;
+
+	ACSVM::GlobalScope *const global = env->getGlobalScope(0);
+	ACSVM::HubScope *const hub = global->getHubScope(0);
+	ACSVM::MapScope *const map = hub->getMapScope(0);
+
+	map->scriptStartType(ACS_ST_RACESTART, {});
 }
 
 /*--------------------------------------------------
@@ -304,29 +322,6 @@ void ACS_RunOvertimeScript(void)
 	ACSVM::MapScope *const map = hub->getMapScope(0);
 
 	map->scriptStartType(ACS_ST_OVERTIME, {});
-}
-
-/*--------------------------------------------------
-	void ACS_RunEmeraldScript(mobj_t *mo)
-
-		See header file for description.
---------------------------------------------------*/
-void ACS_RunEmeraldScript(mobj_t *mo)
-{
-	Environment *env = &ACSEnv;
-
-	ACSVM::GlobalScope *const global = env->getGlobalScope(0);
-	ACSVM::HubScope *const hub = global->getHubScope(0);
-	ACSVM::MapScope *const map = hub->getMapScope(0);
-
-	ACSVM::MapScope::ScriptStartInfo scriptInfo;
-	ThreadInfo info;
-
-	P_SetTarget(&info.mo, mo);
-
-	scriptInfo.info = &info;
-
-	map->scriptStartTypeForced(ACS_ST_EMERALD, scriptInfo);
 }
 
 /*--------------------------------------------------

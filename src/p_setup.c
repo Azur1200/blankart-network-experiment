@@ -427,6 +427,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->palette = UINT16_MAX;
 	mapheaderinfo[num]->encorepal = UINT16_MAX;
 	mapheaderinfo[num]->numlaps = NUMLAPS_DEFAULT;
+	mapheaderinfo[num]->lapspersection = 1;
 	mapheaderinfo[num]->unlockrequired = -1;
 	mapheaderinfo[num]->levelselect = 0;
 	mapheaderinfo[num]->levelflags = 0;
@@ -7726,7 +7727,7 @@ static boolean P_SetMapNamespace(void)
 		else if(fastcmp(tkn, "ringracers"))
 		{
 			mapnamespace = MNS_RINGRACERS;
-			CONS_Alert(CONS_WARNING, "Ring Racers Map deteced. BlanKart has basic support for Ring Racers maps but does not fully support them. Consider converting your map to BlanKart format, consult documentation for help.\n");
+			CONS_Alert(CONS_WARNING, "Ring Racers Map detected. BlanKart has basic support for Ring Racers maps but does not fully support them. Consider converting your map to BlanKart format, consult documentation for help.\n");
 		}
 		else if (fastcmp(tkn, "srb2"))
 		{

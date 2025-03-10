@@ -246,6 +246,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].distancetofinishprev);
 		WRITEUINT32(save->p, K_GetWaypointHeapIndex(players[i].currentwaypoint));
 		WRITEUINT32(save->p, K_GetWaypointHeapIndex(players[i].nextwaypoint));
+		WRITEUINT16(save->p, players[i].bigwaypointgap);
 		WRITEUINT32(save->p, players[i].airtime);
 		WRITEUINT8(save->p, players[i].startboost);
 
@@ -347,6 +348,9 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].glanceDir);
 
 		WRITEUINT16(save->p, players[i].breathTimer);
+
+		WRITEUINT8(save->p, players[i].lastsafelap);
+		WRITEUINT8(save->p, players[i].lastsafestarpost);
 
 		WRITEUINT8(save->p, players[i].typing_timer);
 		WRITEUINT8(save->p, players[i].typing_duration);
@@ -552,7 +556,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].distancetofinish = READUINT32(save->p);
 		players[i].distancetofinishprev = READUINT32(save->p);
 		players[i].currentwaypoint = (waypoint_t *)(size_t)READUINT32(save->p);
+
 		players[i].nextwaypoint = (waypoint_t *)(size_t)READUINT32(save->p);
+		players[i].bigwaypointgap = READUINT16(save->p);
 		players[i].airtime = READUINT32(save->p);
 		players[i].startboost = READUINT8(save->p);
 
@@ -654,6 +660,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].glanceDir = READSINT8(save->p);
 
 		players[i].breathTimer = READUINT16(save->p);
+
+		players[i].lastsafelap = READUINT8(save->p);
+		players[i].lastsafestarpost = READUINT8(save->p);
 
 		players[i].typing_timer = READUINT8(save->p);
 		players[i].typing_duration = READUINT8(save->p);

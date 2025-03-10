@@ -38,11 +38,10 @@ enum acs_scriptType_e
 	ACS_ST_DEATH		=  3, // DEATH: Runs when a player dies.
 	ACS_ST_ENTER		=  4, // ENTER: Runs when a player enters the game; both on start of the level, and when un-spectating.
 	ACS_ST_LAP			=  5, // LAP: Runs when a player's lap increases from crossing the finish line.
-	ACS_ST_POSITION		=  6, // POSITION: Runs when the POSITION period ends.
-	ACS_ST_OVERTIME		=  7, // OVERTIME: Runs when Overtime starts in timed game modes.
-	ACS_ST_UFO			=  8, // UFO: Runs when the UFO Catcher is destroyed in a Special Stage.
-	ACS_ST_EMERALD		=  9, // EMERALD: Runs when the Chaos Emerald is collected in a Special Stage.
-	ACS_ST_GAMEOVER		= 10, // GAMEOVER: Runs when the level ends due to a losing condition and no player has an extra life.
+	ACS_ST_RACESTART	=  6, // RACESTART: Runs when the RACE starts.
+	ACS_ST_OVERTIME		=  8, // OVERTIME: Runs when Overtime starts in timed game modes.
+	ACS_ST_GAMEOVER		= 9, // GAMEOVER: Runs when the level ends due to a losing condition and no player has an extra life.
+	ACS_ST_FINISH		= 10, // FINISH: Runs when a player finishes
 };
 
 //

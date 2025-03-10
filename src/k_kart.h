@@ -26,6 +26,9 @@ Make sure this matches the actual number of states
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
 
+#define AUTORESPAWN_TIME (10 * TICRATE)
+#define AUTORESPAWN_THRESHOLD (7 * TICRATE)
+
 // Used for respawning checks.
 
 typedef struct respawnresult_s
@@ -166,7 +169,7 @@ SINT8 K_Sliptiding(player_t *player);
 void K_MoveKartPlayer(player_t *player, boolean onground);
 void K_CheckSpectateStatus(boolean considermapreset);
 UINT8 K_GetInvincibilityItemFrame(void);
-UINT8 K_GetOrbinautItemFrame(UINT8 count);
+UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max);
 boolean K_IsSPBInGame(void);
 
 // sound stuff for lua
