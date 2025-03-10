@@ -849,7 +849,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	(void)snaptopost;
 
 	// Player must have touched all previous starposts
-	if ((post->health - player->starpostnum > 1) && (numbosswaypoints == 0))
+	if ((post->health - player->starpostnum > 1) && (!K_UsingLegacyCheckpoints()))
 	{
 		if (!player->checkskip)
 		{
@@ -866,7 +866,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	}
 
 	// Going backwards triggers sound
-	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (numbosswaypoints > 0))
+	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (K_UsingLegacyCheckpoints()))
 	{
 		if (!player->checkskip)
 			S_StartSound(toucher, sfx_s26d);

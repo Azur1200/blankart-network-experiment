@@ -4143,7 +4143,7 @@ static void K_drawDistributionDebugger(void)
 			bestbumper = players[i].bumper;
 	}
 
-	if (!(numbosswaypoints > 0))
+	if (!(K_UsingLegacyCheckpoints()))
 	{
 		// lovely double loop......
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -4161,13 +4161,13 @@ static void K_drawDistributionDebugger(void)
 	if (spbplace != -1 && stplyr->position == spbplace+1)
 	{
 		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
-		if (!(numbosswaypoints > 0))
+		if (!(K_UsingLegacyCheckpoints()))
 			pdis = (3 * pdis) / 2;
 		spbrush = true;
 	}
 
 
-	if (!(numbosswaypoints > 0))
+	if (!(K_UsingLegacyCheckpoints()))
 	{
 
 		pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
@@ -4179,7 +4179,7 @@ static void K_drawDistributionDebugger(void)
 		}
 	}
 
-	if (numbosswaypoints > 0)
+	if (K_UsingLegacyCheckpoints())
 		useodds = K_FindLegacyUseodds(stplyr, 0, pingame, bestbumper, spbrush, dontforcespb);
 	else
 		useodds = K_FindUseodds(stplyr, 0, pdis, bestbumper, spbrush);
@@ -4207,7 +4207,7 @@ static void K_drawDistributionDebugger(void)
 
 
 
-			if (numbosswaypoints > 0)
+			if (K_UsingLegacyCheckpoints())
 				itemodds = K_KartGetLegacyItemOdds(useodds, i, 0, spbrush);
 			else
 				itemodds = K_KartGetItemOdds(
@@ -4264,7 +4264,7 @@ static void K_drawDistributionDebugger(void)
 	else
 		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
 
-	if (numbosswaypoints > 0)
+	if (K_UsingLegacyCheckpoints())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
 
 }
@@ -4274,7 +4274,7 @@ static void K_drawCheckpointDebugger(void)
 	if (stplyr != &players[displayplayers[0]]) // only for p1
 		return;
 
-	if (numbosswaypoints > 0)
+	if (K_UsingLegacyCheckpoints())
 	{
 		if (stplyr->starpostnum >= (numstarposts - (numstarposts/2)))
 			V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Can finish)", stplyr->starpostnum, numstarposts));

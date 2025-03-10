@@ -1987,7 +1987,7 @@ static void K_HandleLapIncrement(player_t *player)
 	{
 		if (K_IgnoreFinishLine(player))
 			return;
-		if (((numbosswaypoints > 0) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
+		if (((K_UsingLegacyCheckpoints()) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
 		{
 			size_t i = 0;
 			UINT8 nump = 0;
