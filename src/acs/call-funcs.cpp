@@ -3189,7 +3189,7 @@ bool CallFunc_ExitLevel(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 /*--------------------------------------------------
 	bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 
-		Play a tune. If it's already playing, restart from the
+		Play a song. If it's already playing, restart from the
 		beginning.
 --------------------------------------------------*/
 bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
@@ -3204,7 +3204,7 @@ bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 		return false;
 	}
 	
-	S_ChangeMusicEx(map->getString(argV[0])->str, 0, false, mapmusposition, 0, 0);
+	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, mapmusposition, 0, 0);
 
 	return false;
 }
@@ -3232,22 +3232,22 @@ bool CallFunc_MusicStopAll(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM
 /*--------------------------------------------------
 	bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 
-		Change the actual song lump that a tune will play.
+		Change the song while keeping the same music posititon.
 --------------------------------------------------*/
 bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 {
 	ACSVM::MapScope *map = thread->scopeMap;
+	UINT32 lastmapmusposition = mapmusposition;
 
-	// 0: str tune - id for the tune to play
-	// 1: str song - lump name for the song to map to
-	// 2: [bool foractivator] - only do this if the activator is a player and is being viewed
+	// 0: str song - lump name for the song to map to
+	// 1: [bool foractivator] - only do this if the activator is a player and is being viewed
 
-	if (argC > 2 && argV[2] && !ACS_ActivatorIsLocal(thread))
+	if (argC > 1 && argV[1] && !ACS_ActivatorIsLocal(thread))
 	{
 		return false;
 	}
 	
-	S_ChangeMusicEx(map->getString(argV[1])->str, 0, false, mapmusposition, 0, 0);
+	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, lastmapmusposition, 0, 0);
 
 	return false;
 }
