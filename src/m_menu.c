@@ -1093,7 +1093,7 @@ static menuitem_t OP_MainMenu[] =
 
 static menuitem_t OP_CamOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Camera Options", NULL, 0},
+	{IT_HEADER, NULL, "Camera Options", {NULL}, 0},
 
 	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 20},
 
@@ -1105,7 +1105,7 @@ static menuitem_t OP_CamOptionsMenu[] =
 
 static menuitem_t OP_Player1CamOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Player 1 Camera Options", NULL, 0},
+	{IT_HEADER, NULL, "Player 1 Camera Options", {NULL}, 0},
 
 	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[0]},		30},
 	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[0]},		40},
@@ -1118,7 +1118,7 @@ static menuitem_t OP_Player1CamOptionsMenu[] =
 
 static menuitem_t OP_Player2CamOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Player 2 Camera Options", NULL, 0},
+	{IT_HEADER, NULL, "Player 2 Camera Options", {NULL}, 0},
 
 	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[1]},		30},
 	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[1]},		40},
@@ -1131,7 +1131,7 @@ static menuitem_t OP_Player2CamOptionsMenu[] =
 
 static menuitem_t OP_Player3CamOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Player 3 Camera Options", NULL, 0},
+	{IT_HEADER, NULL, "Player 3 Camera Options", {NULL}, 0},
 
 	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[2]},		30},
 	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[2]},		40},
@@ -1144,7 +1144,7 @@ static menuitem_t OP_Player3CamOptionsMenu[] =
 
 static menuitem_t OP_Player4CamOptionsMenu[] =
 {
-	{IT_HEADER, NULL, "Player 4 Camera Options", NULL, 0},
+	{IT_HEADER, NULL, "Player 4 Camera Options", {NULL}, 0},
 
 	{IT_STRING | IT_CVAR, NULL,						"Flipcam",   				{.cvar = &cv_flipcam[3]},		30},
 	{IT_STRING | IT_CVAR | IT_CV_INTEGERSTEP, NULL,"Camera Distance",   		{.cvar = &cv_cam_dist[3]},		40},
