@@ -61,6 +61,8 @@
 #include "k_color.h"
 #include "k_follower.h"
 
+#include "acs/interface.h"
+
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
 #endif
@@ -1324,6 +1326,8 @@ void P_DoPlayerExit(player_t *player)
 
 	if (player == &players[consoleplayer])
 		demo.savebutton = leveltime;
+
+	ACS_RunPlayerFinishScript(player);
 }
 
 //
