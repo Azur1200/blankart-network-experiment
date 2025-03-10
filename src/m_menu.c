@@ -166,7 +166,7 @@ typedef enum
 levellist_mode_t levellistmode = LLM_CREATESERVER;
 UINT8 maplistoption = 0;
 
-static char joystickInfo[8][29];
+static char joystickInfo[MAXGAMEPADS][29];
 static UINT32 serverlistpage;
 
 //static saveinfo_t savegameinfo[MAXSAVEGAMES]; // Extra info about the save games.
@@ -1098,13 +1098,12 @@ static menuitem_t OP_ControlsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Digital turn easing", {.cvar = &cv_turnsmooth}, 70},
 };
 
+// NOTE: max 16 characters for control name!
 static menuitem_t OP_AllControlsMenu[] =
 {
-	//{IT_SUBMENU|IT_STRING, NULL, "Gamepad Options...", {.submenu = &OP_Joystick1Def}, 0},
 	{IT_CALL|IT_STRING, NULL, "Select Gamepad...", {.routine = M_Setup1PJoystickMenu}, 0},
 	{IT_CVAR|IT_STRING, NULL, "Deadzone"         , {.cvar = &cv_deadzone[0]},          8},
 	{IT_CALL|IT_STRING, NULL, "Reset to defaults", {.routine = M_ResetControls},       16},
-	//{IT_SPACE, NULL, NULL, NULL, 0},
 	{IT_HEADER, NULL, "Gameplay Controls", {NULL}, 0},
 	{IT_SPACE, NULL, NULL, {NULL}, 0},
 	{IT_CONTROL, NULL, "Accelerate",            {.routine = M_ChangeControl}, gc_accelerate },
@@ -1123,12 +1122,12 @@ static menuitem_t OP_AllControlsMenu[] =
 	{IT_CONTROL, NULL, "Show Rankings",         {.routine = M_ChangeControl}, gc_scores     },
 	{IT_CONTROL, NULL, "Change Viewpoint",      {.routine = M_ChangeControl}, gc_viewpoint  },
 	{IT_CONTROL, NULL, "Reset Camera",          {.routine = M_ChangeControl}, gc_camreset   },
-	{IT_CONTROL, NULL, "Toggle First-Person",   {.routine = M_ChangeControl}, gc_camtoggle  },
+	{IT_CONTROL, NULL, "Toggle Chasecam",       {.routine = M_ChangeControl}, gc_camtoggle  },
 	{IT_CONTROL, NULL, "Pause",                 {.routine = M_ChangeControl}, gc_pause      },
 	{IT_CONTROL, NULL, "Screenshot",            {.routine = M_ChangeControl}, gc_screenshot },
-	{IT_CONTROL, NULL, "Toggle GIF Recording",  {.routine = M_ChangeControl}, gc_recordgif  },
-	{IT_CONTROL, NULL, "Open/Close Menu (ESC)", {.routine = M_ChangeControl}, gc_systemmenu },
-	{IT_CONTROL, NULL, "Developer Console",     {.routine = M_ChangeControl}, gc_console    },
+	{IT_CONTROL, NULL, "Record GIF",            {.routine = M_ChangeControl}, gc_recordgif  },
+	{IT_CONTROL, NULL, "Open/Close Menu",       {.routine = M_ChangeControl}, gc_systemmenu },
+	{IT_CONTROL, NULL, "Open Console",          {.routine = M_ChangeControl}, gc_console    },
 	{IT_HEADER, NULL, "Spectator Controls", {NULL}, 0},
 	{IT_SPACE, NULL, NULL, {NULL}, 0},
 	{IT_CONTROL, NULL, "Become Spectator",      {.routine = M_ChangeControl}, gc_spectate   },
@@ -1144,7 +1143,7 @@ static menuitem_t OP_AllControlsMenu[] =
 
 static menuitem_t OP_JoystickSetMenu[] =
 {
-	{IT_CALL | IT_NOTHING, "None", NULL, {.routine = M_AssignJoystick}, LINEHEIGHT+5},
+	{IT_CALL | IT_NOTHING, ":chonkbuncle:", NULL, {.routine = M_AssignJoystick}, LINEHEIGHT+5},
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*2)+5},
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*3)+5},
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*4)+5},
@@ -1152,6 +1151,7 @@ static menuitem_t OP_JoystickSetMenu[] =
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*6)+5},
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*7)+5},
 	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*8)+5},
+	{IT_CALL | IT_NOTHING, "", NULL, {.routine = M_AssignJoystick}, (LINEHEIGHT*9)+5},
 };
 
 /*
@@ -1913,7 +1913,18 @@ menu_t OP_MainDef =
 };
 
 menu_t OP_ControlsDef = DEFAULTMENUSTYLE(MN_NONE, "M_CONTRO", OP_ControlsMenu, &OP_MainDef, 60, 30);
-menu_t OP_AllControlsDef = CONTROLMENUSTYLE(MN_NONE, OP_AllControlsMenu, &OP_ControlsDef);
+menu_t OP_AllControlsDef =
+{
+	MN_NONE,
+	"M_CONTRO",
+	sizeof (OP_AllControlsMenu)/sizeof (menuitem_t),
+	&OP_ControlsDef,
+	OP_AllControlsMenu,
+	M_DrawControl,
+	20, 40,
+	0,
+	NULL
+};
 menu_t OP_JoystickSetDef =
 {
 	MN_NONE,
@@ -10307,7 +10318,7 @@ static void M_DrawJoystick(void)
 
 	M_DrawGenericMenu();
 
-	for (i = 0; i < 8; i++)
+	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
 		M_DrawTextBox(OP_JoystickSetDef.x-8, OP_JoystickSetDef.y+LINEHEIGHT*i-12, 28, 1);
 		//M_DrawSaveLoadBorder(OP_JoystickSetDef.x, OP_JoystickSetDef.y+LINEHEIGHT*i);
@@ -10335,7 +10346,7 @@ void M_SetupJoystickMenu(INT32 choice)
 
 	strcpy(joystickInfo[i], "None");
 
-	for (i = 1; i < 8; i++)
+	for (i = 1; i <= MAXGAMEPADS; i++)
 	{
 		if (i <= n && (I_GetJoyName(i)) != NULL)
 			strncpy(joystickInfo[i], I_GetJoyName(i), 28);
@@ -10439,6 +10450,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 
 	// Set proper gamepad options
 	OP_AllControlsMenu[0].itemaction.routine = M_Setup1PJoystickMenu;
+	OP_AllControlsMenu[1].itemaction.cvar = &cv_deadzone[0];
 
 	// Unhide P1-only controls
 	OP_AllControlsMenu[16].status = IT_CONTROL; // Chat
@@ -10471,6 +10483,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 
 	// Set proper gamepad options
 	OP_AllControlsMenu[0].itemaction.routine = M_Setup2PJoystickMenu;
+	OP_AllControlsMenu[1].itemaction.cvar = &cv_deadzone[1];
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10503,6 +10516,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 
 	// Set proper gamepad options
 	OP_AllControlsMenu[0].itemaction.routine = M_Setup3PJoystickMenu;
+	OP_AllControlsMenu[1].itemaction.cvar = &cv_deadzone[2];
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10535,6 +10549,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 
 	// Set proper gamepad options
 	OP_AllControlsMenu[0].itemaction.routine = M_Setup4PJoystickMenu;
+	OP_AllControlsMenu[1].itemaction.cvar = &cv_deadzone[3];
 
 	// Hide P1-only controls
 	OP_AllControlsMenu[16].status = IT_GRAYEDOUT2; // Chat
@@ -10564,7 +10579,7 @@ static void M_Setup4PControlsMenu(INT32 choice)
 static void M_DrawControl(void)
 {
 	char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
-	INT32 x, y, i, max, cursory = 0, iter;
+	INT32 x, y, w, i, max, cursory = 0, iter;
 	INT32 key;
 
 	x = currentMenu->x;
@@ -10651,23 +10666,44 @@ static void M_DrawControl(void)
 			if (tmp[0] == '\0')
 				strcpy(tmp, "---");
 
-			V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
+			w = V_StringWidth(tmp, highlightflags);
+			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+				(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
 		}
 		/*else if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
 			V_DrawString(x, y, V_TRANSLUCENT, currentMenu->menuitems[i].text);*/
 		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
-			V_DrawString(19, y+6, highlightflags, currentMenu->menuitems[i].text);
+			V_DrawString(13, y+6, highlightflags, currentMenu->menuitems[i].text);
 		else if (currentMenu->menuitems[i].status & IT_STRING)
 		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0), currentMenu->menuitems[i].text);
 			if (currentMenu->menuitems[i].status & IT_CVAR)
+			{
 				V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, highlightflags, currentMenu->menuitems[i].itemaction.cvar->string);
+				if (i == itemOn)
+				{
+					w = V_StringWidth(currentMenu->menuitems[i].itemaction.cvar->string, highlightflags);
+					V_DrawCharacter(BASEVIDWIDTH - currentMenu->x - 10 - w - (skullAnimCounter/5), y,
+						'\x1C' | highlightflags, false); // left arrow
+					V_DrawCharacter(BASEVIDWIDTH - currentMenu->x + 2 + (skullAnimCounter/5), y,
+						'\x1D' | highlightflags, false); // right arrow
+				}
+			}
+			else if (i == 0) // gamepad select
+			{
+				INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
+				const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+				if (!name) name = "?";
+				w = V_StringWidth(name, highlightflags);
+				(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+					(BASEVIDWIDTH-currentMenu->x, y, highlightflags, name);
+			}
 		}
 
 		y += SMALLLINEHEIGHT;
 	}
 
-	V_DrawScaledPatch(currentMenu->x - 20, cursory, 0,
+	V_DrawScaledPatch(currentMenu->x - 18, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
 }
 
@@ -10681,6 +10717,9 @@ static void M_ChangecontrolResponse(event_t *ev)
 	INT32        control;
 	INT32        found;
 	INT32        ch = ev->data1;
+
+	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
+		return;
 
 	if (ev->type == ev_joystick)
 	{

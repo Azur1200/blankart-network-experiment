@@ -567,19 +567,6 @@ void M_FreePlayerSetupColors(void);
 	NULL\
 }
 
-#define CONTROLMENUSTYLE(id, source, prev)\
-{\
-	id,\
-	"M_CONTRO",\
-	sizeof (source)/sizeof (menuitem_t),\
-	prev,\
-	source,\
-	M_DrawControl,\
-	26, 40,\
-	0,\
-	NULL\
-}
-
 #define IMAGEDEF(source)\
 {\
 	MN_SPECIAL,\
