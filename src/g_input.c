@@ -84,9 +84,9 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 // converts ev_joystick axis to its corresponding key
 INT32 G_AxisToKey(event_t *ev)
 {
-	return KEY_AXIS1 + (ev->data1 >= JOYANALOGS*2
-	                    ? ev->data1 + JOYANALOGS*2
-	                    : ev->data1*2 + (ev->data2 >= 0));
+	return KEY_AXIS1 + (ev->data1 >= JOYANALOGS
+	                    ? ev->data1 + JOYANALOGS // triggers
+	                    : ev->data1*2 + (ev->data2 >= 0)); // analog sticks
 }
 
 //
@@ -189,7 +189,7 @@ void G_MapEventsToControls(event_t *ev)
 				break;
 			}
 
-			if (ev->data1 >= JOYAXISSETS*2)
+			if (ev->data1 >= JOYAXISES)
 			{
 #ifdef PARANOIA
 				CONS_Debug(DBG_GAMELOGIC, "Bad joystick axis event %d\n", ev->data1);
@@ -197,36 +197,20 @@ void G_MapEventsToControls(event_t *ev)
 				break;
 			}
 
-			i = ev->data1;
-
 			if (G_GetDevicePlayer(ev->device) == 0)
 			{
 				if (CON_Ready() || chat_on)
 					break;
 			}
 
-			if (i >= 2 * JOYANALOGS)
+			i = G_AxisToKey(ev);
+			if (ev->data1 < JOYANALOGS)
 			{
-				// The trigger axes are handled specially.
-				i -= 2 * JOYANALOGS;
-				gamekeydown[ev->device][KEY_AXIS1 + (JOYANALOGS * 4) + i] = max(0, ev->data2);
+				// analog stick axes have a negative and positive keydown
+				i -= ev->data2 >= 0;
+				gamekeydown[ev->device][i++] = max(0, -ev->data2);
 			}
-			else
-			{
-				i *= 2;
-				if (ev->data2 < 0)
-				{
-					// Left
-					gamekeydown[ev->device][KEY_AXIS1 + i] = abs(ev->data2);
-					gamekeydown[ev->device][KEY_AXIS1 + i + 1] = 0;
-				}
-				else
-				{
-					// Right
-					gamekeydown[ev->device][KEY_AXIS1 + i] = 0;
-					gamekeydown[ev->device][KEY_AXIS1 + i + 1] = abs(ev->data2);
-				}
-			}
+			gamekeydown[ev->device][i] = max(0, ev->data2);
 
 			break;
 

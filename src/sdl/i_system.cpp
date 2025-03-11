@@ -1186,7 +1186,7 @@ void I_ShutdownJoystick(UINT8 index)
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i = 0; i < JOYAXISSETS*2; i++)
+	for (i = 0; i < JOYAXISES; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);

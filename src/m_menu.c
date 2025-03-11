@@ -2609,7 +2609,7 @@ boolean M_Responder(event_t *ev)
 	{
 		if (ev->type == ev_joystick && deviceplayer == 0)
 		{
-			static INT32 lastjoy[JOYAXISSETS*2] = {0};
+			static INT32 lastjoy[JOYAXISES] = {0};
 
 			if (G_AxisInDeadzone(deviceplayer, ev))
 			{

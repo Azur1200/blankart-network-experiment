@@ -29,10 +29,10 @@ extern "C" {
 #define MOUSEBUTTONS 8
 
 #define JOYBUTTONS   21 // 21 buttons, to match SDL_GameControllerButton
-#define JOYANALOGS   2 // 2 sets of analog stick axes, with positive and negative each
-#define JOYTRIGGERS  1 // 1 set of trigger axes, positive only
-#define JOYAXISSETS (JOYANALOGS + JOYTRIGGERS)
-#define JOYAXES ((4 * JOYANALOGS) + (2 * JOYTRIGGERS))
+#define JOYANALOGS   4 // 4 analog stick axes (2 sticks * 2 axes)
+#define JOYTRIGGERS  2 // 2 trigger axes, positive only
+#define JOYAXISES   (JOYANALOGS + JOYTRIGGERS)
+#define JOYAXISKEYS ((2 * JOYANALOGS) + JOYTRIGGERS)
 
 #define MAXINPUTMAPPING 4
 
@@ -44,7 +44,7 @@ typedef enum
 	KEY_JOY1 = NUMKEYS,
 	KEY_HAT1 = KEY_JOY1 + 11, // macro for SDL_CONTROLLER_BUTTON_DPAD_UP
 	KEY_AXIS1 = KEY_JOY1 + JOYBUTTONS,
-	JOYINPUTEND = KEY_AXIS1 + JOYAXES,
+	JOYINPUTEND = KEY_AXIS1 + JOYAXISKEYS,
 
 	KEY_MOUSE1 = JOYINPUTEND,
 	KEY_MOUSEMOVE = KEY_MOUSE1 + MOUSEBUTTONS,
