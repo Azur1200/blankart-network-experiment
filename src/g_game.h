@@ -95,9 +95,7 @@ void weaponPrefChange2(void);
 void weaponPrefChange3(void);
 void weaponPrefChange4(void);
 
-// mouseaiming (looking up/down with the mouse or keyboard)
 #define MAXPLMOVE (50)
-#define SLOWTURNTICS (cv_turnsmooth.value * 3)
 
 const char *G_BuildMapName(INT32 map);
 INT32 G_MapNumber(const char *mapname);

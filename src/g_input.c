@@ -443,6 +443,8 @@ boolean G_KeyBindIsNecessary(INT32 gc)
 	return false;
 }
 
+boolean inputcheckdigital = false;
+
 // Returns false if a key is deemed unreachable for this device.
 boolean G_KeyIsAvailable(INT32 key, INT32 deviceID)
 {
@@ -471,6 +473,12 @@ boolean G_KeyIsAvailable(INT32 key, INT32 deviceID)
 		return false;
 	}
 	*/
+
+	// this is ugly as fuck, but it's also better than copy-pasting half of G_PlayerInputAnalog just for turn smoothing
+	if (inputcheckdigital && key >= KEY_AXIS1 && key < JOYINPUTEND)
+	{
+		return false;
+	}
 
 	return true;
 }

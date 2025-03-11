@@ -977,18 +977,15 @@ static void G_DoAnglePrediction(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, p
 	cmd->angle = (INT16)(localangle[ssplayer-1] >> TICCMD_REDUCE);
 }
 
-static fixed_t angleturn[3] = {KART_FULLTURN/2, KART_FULLTURN, KART_FULLTURN/4}; // + slow turn
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 {
 	const boolean fordemocam = ssplayer == UINT8_MAX;
 	const UINT8 forplayer = fordemocam ? 0 : ssplayer-1;
 
-	const INT32 baseturnspeed = 1;
-
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
-	INT32 forward, side, tspeed;
+	INT32 forward, side;
 
 	joystickvector2_t joystickvector;
 
@@ -1049,16 +1046,23 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	forward = side = 0;
 
 	// use two stage accelerative turning
-	// on the keyboard and joystick
+	// on the keyboard and (NOT!) joystick
 	if (joystickvector.xaxis != 0)
+	{
 		turnheld[forplayer] += realtics;
+		if (turnheld[forplayer] < cv_turnsmooth.value * 3)
+		{
+			boolean digital;
+			inputcheckdigital = true;
+			digital = G_PlayerInputDown(forplayer, gc_turnleft, false) || G_PlayerInputDown(forplayer, gc_turnright, false);
+			inputcheckdigital = false;
+
+			if (digital)
+				joystickvector.xaxis /= cv_turnsmooth.value * 2;
+		}
+	}
 	else
 		turnheld[forplayer] = 0;
-
-	if (turnheld[forplayer] < SLOWTURNTICS)
-		tspeed = cv_turnsmooth.value == 2 ? 2 : 0; // slow turn
-	else
-		tspeed = baseturnspeed;
 
 	cmd->turning = 0;
 
