@@ -1950,12 +1950,21 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		}
 		else if (netgame)
 		{
+			event_t *ev;
+			INT32 key;
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
-				G_MapEventsToControls(&events[eventtail]);
+			{
+				ev = &events[eventtail];
+				if (ev->type == ev_joystick && G_GetDevicePlayer(ev->device) == 0 && !G_AxisInDeadzone(0, ev))
+					key = G_AxisToKey(ev);
+				else if (ev->type == ev_keydown)
+					key = ev->data1;
+				else
+					continue;
 
-			if (gamekeydown[0][KEY_ESCAPE]
-				|| G_PlayerInputDown(0, gc_brake, true))
-				cl_mode = CL_ABORTED;
+				if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
+					cl_mode = CL_ABORTED;
+			}
 		}
 
 		if (cl_mode == CL_ABORTED)

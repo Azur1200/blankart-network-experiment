@@ -134,9 +134,7 @@ const char *G_KeynumToString(INT32 keynum);
 INT32 G_KeyStringtoNum(const char *keystr);
 
 boolean G_KeyBindIsNecessary(INT32 gc);
-boolean G_KeyIsAvailable(INT32 key, INT32 deviceID);
-
-extern boolean inputcheckdigital;
+boolean G_KeyIsAvailable(INT32 key, INT32 deviceID, boolean digital);
 
 // detach any keys associated to the given game control
 void G_ClearControlKeys(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 control);

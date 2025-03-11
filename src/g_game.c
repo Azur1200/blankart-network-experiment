@@ -770,8 +770,8 @@ boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 }
 
 // check if the given key is bound to the given gamecontrol
-// if menu is true, also check defaults if the gamecontrol has no binds
-boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu)
+// if defaults is true, also check default controls if the gamecontrol has no binds
+boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults)
 {
 	INT32 i;
 	INT32 (*map)[MAXINPUTMAPPING] = &gamecontrol[p][gc];
@@ -779,10 +779,10 @@ boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu)
 	if (key <= 0 || key >= NUMINPUTS)
 		return false;
 
-	if (menu)
+	if (defaults)
 	{
 		for (i = 0; i < MAXINPUTMAPPING; i++)
-			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value))
+			if (G_KeyIsAvailable((*map)[i], cv_usejoystick[p].value, false))
 				goto bound;
 		map = &gamecontroldefault[gc];
 	}
@@ -795,14 +795,11 @@ bound:
 	return false;
 }
 
-INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
+INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
 {
 	INT32 deviceID;
 	INT32 i;
 	INT32 deadzone = 0;
-	boolean trydefaults = true;
-	boolean tryingotherID = false;
-	INT32 *controltable = &(gamecontrol[p][gc][0]);
 
 	if (p >= MAXSPLITSCREENPLAYERS)
 	{
@@ -819,17 +816,14 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu)
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
-		INT32 key = controltable[i];
+		INT32 key = gamecontrol[p][gc][i];
 		INT32 value = 0;
 
 		// Invalid key number.
-		if (!G_KeyIsAvailable(key, deviceID))
+		if (!G_KeyIsAvailable(key, deviceID, digital))
 		{
 			continue;
 		}
-
-		// It's possible to access this control right now, so let's disable the default control backup for later.
-		trydefaults = false;
 
 		value = gamekeydown[deviceID][key];
 
@@ -840,58 +834,18 @@ retrygetcontrol:
 	}
 
 	// If you're on controller, try your keyboard-based binds as an immediate backup.
-	if (deviceID > 0 && !tryingotherID)
+	if (deviceID > 0)
 	{
 		deviceID = 0;
 		goto retrygetcontrol;
 	}
 
-	if (menu == false)
-	{
-		return 0;
-	}
-
-	// We don't want menus to become unnavigable if people unbind
-	// all of their controls, so we do several things in this scenario.
-	// First: try other controllers.
-
-	if (!tryingotherID)
-	{
-		deviceID = MAXDEVICES;
-		tryingotherID = true;
-	}
-loweringid:
-	deviceID--;
-	if (deviceID > 0)
-	{
-		for (i = 0; i < cv_splitplayers.value-1; i++)
-		{
-			if (deviceID != cv_usejoystick[i].value)
-				continue;
-			// Controller taken? Try again...
-			goto loweringid;
-		}
-		goto retrygetcontrol;
-	}
-
-	if (trydefaults && G_KeyBindIsNecessary(gc))
-	{
-		// If we still haven't found anything and the keybind is necessary,
-		// try it all again but with default binds.
-		trydefaults = false;
-		controltable = &(gamecontroldefault[gc][0]);
-		tryingotherID = false;
-		deviceID = cv_usejoystick[p].value;
-		goto retrygetcontrol;
-
-	}
-
 	return 0;
 }
 
-boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean menu)
+boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital)
 {
-	return (G_PlayerInputAnalog(p, gc, menu) != 0);
+	return (G_PlayerInputAnalog(p, gc, digital) != 0);
 }
 
 // Take a magnitude of two axes, and adjust it to take out the deadzone
@@ -1050,15 +1004,16 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (joystickvector.xaxis != 0)
 	{
 		turnheld[forplayer] += realtics;
+
 		if (turnheld[forplayer] < cv_turnsmooth.value * 3)
 		{
-			boolean digital;
-			inputcheckdigital = true;
-			digital = G_PlayerInputDown(forplayer, gc_turnleft, false) || G_PlayerInputDown(forplayer, gc_turnright, false);
-			inputcheckdigital = false;
-
-			if (digital)
+			// check turn input again, but this time digital only
+			// if it's false, an analog stick is inputting the turn; no smoothing!
+			if (G_PlayerInputDown(forplayer, gc_turnleft, true) || G_PlayerInputDown(forplayer, gc_turnright, true))
+			{
+				I_Assert(cv_turnsmooth.value);
 				joystickvector.xaxis /= cv_turnsmooth.value * 2;
+			}
 		}
 	}
 	else

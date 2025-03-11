@@ -117,9 +117,9 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming);
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
 
-INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean menu);
-boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean menu);
-boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean menu);
+INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital);
+boolean G_PlayerInputDown(UINT8 p, INT32 gc, boolean digital);
+boolean G_ControlBoundToKey(UINT8 p, INT32 gc, INT32 key, boolean defaults);
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev);
 
 //
