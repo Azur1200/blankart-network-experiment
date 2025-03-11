@@ -939,7 +939,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	static INT32 turnheld[MAXSPLITSCREENPLAYERS]; // for accelerative turning
 	static boolean resetdown[MAXSPLITSCREENPLAYERS]; // don't cam reset every frame
 
-	INT32 forward, side;
+	INT32 forward, side, tspeed;
 
 	joystickvector2_t joystickvector;
 
@@ -998,6 +998,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	}
 
 	forward = side = 0;
+	tspeed = joystickvector.xaxis;
 
 	// use two stage accelerative turning
 	// on the keyboard and (NOT!) joystick
@@ -1012,7 +1013,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 			if (G_PlayerInputDown(forplayer, gc_turnleft, true) || G_PlayerInputDown(forplayer, gc_turnright, true))
 			{
 				I_Assert(cv_turnsmooth.value);
-				joystickvector.xaxis /= cv_turnsmooth.value * 2;
+				tspeed /= cv_turnsmooth.value * 2;
 			}
 		}
 	}
@@ -1023,7 +1024,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 	if (joystickvector.xaxis != 0)
 	{
-		cmd->turning -= (joystickvector.xaxis * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
 	}
 
