@@ -2160,7 +2160,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else
 		{
 			const UINT8 type = (damagetype & DMG_TYPEMASK);
-			const boolean hardhit = (type == DMG_EXPLODE || type == DMG_KARMA); // This damage type can do evil stuff like ALWAYS combo
+			const boolean explosioncombo = (type == DMG_EXPLODE); // This damage type can do evil stuff like ALWAYS combo
 			INT16 ringburst = 5;
 
 			// Check if the player is allowed to be damaged!
@@ -2196,9 +2196,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				{
 
 					// Check if we should allow explosion combos.
-					boolean allowcombo = hardhit;
-
-					if ((allowcombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
+					if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 					{
 						// Post-hit invincibility
 						K_DoInstashield(player);
@@ -2284,7 +2282,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 			K_PlayPainSound(target, source);
 
-			if ((hardhit == true) || (cv_kartdebughuddrop.value && !modeattacking))
+			if ((explosioncombo == true) || (cv_kartdebughuddrop.value && !modeattacking))
 			{
 				K_DropItems(player);
 			}
