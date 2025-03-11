@@ -533,6 +533,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					return;
 				}
 
+				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
+				{
+					//player->flashing = 0;
+					K_DropHnextList(player, false);
+					K_StripItems(player);
+				}
+
 				S_StopSound(special); // Don't continue playing the gurgle or the siren
 
 				spbexplode = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_SPBEXPLOSION);
@@ -2158,7 +2165,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
-			if (!force && !(inflictor && inflictor->type == MT_SPBEXPLOSION && inflictor->extravalue1 == 1))
+			if (!force)
 			{
 				if (gametyperules & GTR_BUMPERS)
 				{
@@ -2188,7 +2195,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 				{
 
-					// Check if we should allow wombo combos (hard hits by default, inverted by the presence of DMG_WOMBO).
+					// Check if we should allow explosion combos.
 					boolean allowcombo = hardhit;
 
 					if ((allowcombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
