@@ -529,9 +529,6 @@ void M_FirstLoadConfig(void)
 		CONS_Printf(M_GetText("config file: %s\n"), configfile);
 	}
 
-	// load default control
-	G_DefineDefaultControls();
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		G_CopyControls(gamecontrol[i], gamecontroldefault, NULL, 0);

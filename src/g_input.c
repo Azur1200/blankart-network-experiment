@@ -39,9 +39,36 @@ consvar_t cv_turnsmooth = CVAR_INIT ("turnsmoothing", "Slow", CV_SAVE, turnsmoot
 INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
 boolean deviceResponding[MAXDEVICES]; 
 
-// two key codes (or virtual key) per game control
+// several key codes (or virtual key) per game control
 INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
-INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING]; // default control storage
+
+INT32 gamecontroldefault[num_gamecontrols][MAXINPUTMAPPING] = {
+	[gc_aimforward ] = {KEY_UPARROW,    KEY_AXIS1+2             }, // Left Y-
+	[gc_aimbackward] = {KEY_DOWNARROW,  KEY_AXIS1+3             }, // Left Y+
+	[gc_turnleft   ] = {KEY_LEFTARROW,  KEY_AXIS1+0             }, // Left X-
+	[gc_turnright  ] = {KEY_RIGHTARROW, KEY_AXIS1+1             }, // Left X+
+	[gc_accelerate ] = {'a',            KEY_JOY1+0              }, // A
+	[gc_drift      ] = {'s',            KEY_JOY1+10, KEY_AXIS1+9}, // RB, RT
+	[gc_brake      ] = {'d',            KEY_JOY1+1              }, // B
+	[gc_fire       ] = {KEY_SPACE,      KEY_JOY1+9,  KEY_AXIS1+8}, // LB, LT
+	[gc_lookback   ] = {KEY_LSHIFT,     KEY_JOY1+2              }, // X
+
+	[gc_pause      ] = {KEY_PAUSE,      KEY_JOY1+4 }, // Back
+	[gc_systemmenu ] = {                KEY_JOY1+6 }, // Start
+	[gc_console    ] = {KEY_CONSOLE                },
+	[gc_screenshot ] = {KEY_F8                     },
+	[gc_recordgif  ] = {KEY_F9                     },
+	[gc_viewpoint  ] = {KEY_F12,        KEY_JOY1+3 }, // Y
+	[gc_talkkey    ] = {'t',            KEY_HAT1+1 }, // D-Pad Down
+	//[gc_teamkey    ] = {'y'                        },
+	[gc_scores     ] = {KEY_TAB,        KEY_HAT1+0 }, // D-Pad Up
+	[gc_spectate   ] = {'\''                       },
+	[gc_lookup     ] = {KEY_PGUP,       KEY_AXIS1+6}, // Right Y-
+	[gc_lookdown   ] = {KEY_PGDN,       KEY_AXIS1+7}, // Right Y+
+	[gc_centerview ] = {KEY_END                    },
+	[gc_camreset   ] = {KEY_HOME                   },
+	[gc_camtoggle  ] = {KEY_BACKSPACE              },
+};
 
 // lists of GC codes for selective operation
 /*
@@ -515,54 +542,6 @@ INT32 G_KeyStringtoNum(const char *keystr)
 			return keynames[j].keynum;
 
 	return 0;
-}
-
-void G_DefineDefaultControls(void)
-{
-	// Keyboard controls
-	gamecontroldefault[gc_aimforward ][0] = KEY_UPARROW;
-	gamecontroldefault[gc_aimbackward][0] = KEY_DOWNARROW;
-	gamecontroldefault[gc_turnleft   ][0] = KEY_LEFTARROW;
-	gamecontroldefault[gc_turnright  ][0] = KEY_RIGHTARROW;
-	gamecontroldefault[gc_accelerate ][0] = 'a';
-	gamecontroldefault[gc_drift      ][0] = 's';
-	gamecontroldefault[gc_brake      ][0] = 'd';
-	gamecontroldefault[gc_fire       ][0] = KEY_SPACE;
-	gamecontroldefault[gc_lookback   ][0] = KEY_LSHIFT;
-
-	gamecontroldefault[gc_pause      ][0] = KEY_PAUSE;
-	gamecontroldefault[gc_console    ][0] = KEY_CONSOLE;
-	gamecontroldefault[gc_screenshot ][0] = KEY_F8;
-	gamecontroldefault[gc_recordgif  ][0] = KEY_F9;
-	gamecontroldefault[gc_viewpoint  ][0] = KEY_F12;
-	gamecontroldefault[gc_talkkey    ][0] = 't';
-	//gamecontroldefault[gc_teamkey    ][0] = 'y';
-	gamecontroldefault[gc_scores     ][0] = KEY_TAB;
-	gamecontroldefault[gc_spectate   ][0] = '\'';
-	gamecontroldefault[gc_lookup     ][0] = KEY_PGUP;
-	gamecontroldefault[gc_lookdown   ][0] = KEY_PGDN;
-	gamecontroldefault[gc_centerview ][0] = KEY_END;
-	gamecontroldefault[gc_camreset   ][0] = KEY_HOME;
-	gamecontroldefault[gc_camtoggle  ][0] = KEY_BACKSPACE;
-
-	// Gamepad controls
-	gamecontroldefault[gc_aimforward ][1] = KEY_AXIS1+2; // Left Y-
-	gamecontroldefault[gc_aimbackward][1] = KEY_AXIS1+3; // Left Y+
-	gamecontroldefault[gc_turnleft   ][1] = KEY_AXIS1+0; // Left X-
-	gamecontroldefault[gc_turnright  ][1] = KEY_AXIS1+1; // Left X+
-	gamecontroldefault[gc_accelerate ][1] = KEY_JOY1+0;  // A
-	gamecontroldefault[gc_drift      ][1] = KEY_JOY1+10; // RB
-	gamecontroldefault[gc_drift      ][2] = KEY_AXIS1+9; // RT
-	gamecontroldefault[gc_brake      ][1] = KEY_JOY1+1;  // B
-	gamecontroldefault[gc_fire       ][1] = KEY_JOY1+9;  // LB
-	gamecontroldefault[gc_fire       ][2] = KEY_AXIS1+8; // LT
-	gamecontroldefault[gc_lookback   ][1] = KEY_JOY1+2;  // X
-
-	gamecontroldefault[gc_pause      ][1] = KEY_JOY1+4;  // Back
-	gamecontroldefault[gc_viewpoint  ][1] = KEY_JOY1+3;  // Y
-	gamecontroldefault[gc_systemmenu ][1] = KEY_JOY1+6;  // Start
-	gamecontroldefault[gc_talkkey    ][1] = KEY_HAT1+1;  // D-Pad Down
-	gamecontroldefault[gc_scores     ][1] = KEY_HAT1+0;  // D-Pad Up
 }
 
 void G_CopyControls(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gclist, INT32 gclen)
