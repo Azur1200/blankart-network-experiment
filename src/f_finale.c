@@ -956,7 +956,7 @@ void F_BlanStartCredits(void)
 	S_StopMusic();
 	S_StopSounds();
 
-	S_ChangeMusicInternal("KMAP04", true);
+	S_ChangeMusicInternal("BLANCD", true);
 	S_ShowMusicCredit();
 
 	finalecount = 0;

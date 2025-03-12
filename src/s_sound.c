@@ -33,6 +33,7 @@
 #include "lua_hook.h" // MusicChange hook
 #include "k_boss.h" // bossinfo
 #include "byteptr.h"
+#include "v_video.h"
 
 #ifdef HW3SOUND
 // 3D Sound Interface
@@ -1535,7 +1536,8 @@ ReadMusicDefFields
 			}
 			else if (!stricmp(stoken, "usage"))
 			{
-				// This does absolutely nothing, just a way to ignore this
+				Z_Free(def->usage);
+				def->usage = Z_StrDup(textline);
 			}
 			else
 			{
@@ -1630,6 +1632,7 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 		if (df->legacy && df->source)
 		{
 			df->source = replacechar(df->source, '_', ' ');
+			df->usage = replacechar(df->usage, '_', ' ');
 			df->title = Z_StrDup(df->source);
 			memset(df->source, 0, strlen(df->source));
 			df->source = NULL;
@@ -1662,7 +1665,9 @@ void S_InitMusicDefs(void)
 {
 	UINT16 i;
 	for (i = 0; i < numwadfiles; i++)
+	{
 		S_LoadMusicDefs(i);
+	}
 }
 
 //
@@ -1678,6 +1683,7 @@ void S_ShowMusicCredit(void)
 	char credittext[128] = "";
 	char *work = NULL;
 	size_t len = 128, worklen;
+	INT32 widthused = (3*BASEVIDWIDTH/4) - 7, workwidth;
 
 	if (!cv_songcredits.value || demo.rewinding)
 		return;
@@ -1713,20 +1719,27 @@ void S_ShowMusicCredit(void)
 			}
 		}
 
-#define MUSICCREDITAPPEND(field)\
+		widthused -= V_ThinStringWidth(credittext, 0);
+
+#define MUSICCREDITAPPEND(field, force)\
 		if (field)\
 		{\
 			work = va(" - %s", field);\
 			worklen = strlen(work);\
 			if (worklen <= len)\
 			{\
-				strncat(credittext, work, len);\
-				len -= worklen;\
+				workwidth = V_ThinStringWidth(work, 0);\
+				if (force || widthused >= workwidth)\
+				{\
+					strncat(credittext, work, len);\
+					len -= worklen;\
+					widthused -= workwidth;\
+				}\
 			}\
 		}
 
-		MUSICCREDITAPPEND(def->author);
-		MUSICCREDITAPPEND(def->source);
+		MUSICCREDITAPPEND(def->author, true);
+		MUSICCREDITAPPEND(def->source, false);
 
 #undef MUSICCREDITAPPEND
 	}
@@ -1740,6 +1753,41 @@ void S_ShowMusicCredit(void)
 	cursongcredit.anim = 5*TICRATE;
 	cursongcredit.x = cursongcredit.old_x = 0;
 	cursongcredit.trans = NUMTRANSMAPS;
+}
+
+musicdef_t **soundtestdefs = NULL;
+INT32 numsoundtestdefs = 0;
+
+//
+// S_PrepareSoundTest
+//
+// Prepare sound test. What am I, your butler?
+//
+boolean S_PrepareSoundTest(void)
+{
+	musicdef_t *def;
+	INT32 pos = numsoundtestdefs = 0;
+
+	for (def = musicdefstart; def; def = def->next)
+	{
+		numsoundtestdefs++;
+	}
+
+	if (!numsoundtestdefs)
+		return false;
+
+	if (soundtestdefs)
+		Z_Free(soundtestdefs);
+
+	if (!(soundtestdefs = Z_Malloc(numsoundtestdefs*sizeof(musicdef_t *), PU_STATIC, NULL)))
+		I_Error("S_PrepareSoundTest(): could not allocate soundtestdefs.");
+
+	for (def = musicdefstart; def; def = def->next)
+	{
+		soundtestdefs[pos++] = def;
+	}
+
+	return true;
 }
 
 /// ------------------------
