@@ -1536,7 +1536,7 @@ boolean G_Responder(event_t *ev)
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& (ev->data1 == KEY_F12 || G_ControlBoundToKey(0, gc_viewpoint, ev->data1, false)))
+		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, true))
 	{
 		if (!demo.playback && (r_splitscreen))
 			g_localplayers[0] = consoleplayer;
@@ -1571,10 +1571,7 @@ boolean G_Responder(event_t *ev)
 		}
 
 		// Allow pausing
-		if (
-			G_ControlBoundToKey(0, gc_pause, ev->data1, false)
-			|| ev->data1 == KEY_PAUSE
-		)
+		if (G_ControlBoundToKey(0, gc_pause, ev->data1, true))
 		{
 			paused = !paused;
 
@@ -1607,8 +1604,7 @@ boolean G_Responder(event_t *ev)
 	switch (ev->type)
 	{
 		case ev_keydown:
-			if (G_ControlBoundToKey(0, gc_pause, ev->data1, false)
-				|| ev->data1 == KEY_PAUSE)
+			if (G_ControlBoundToKey(0, gc_pause, ev->data1, true))
 			{
 				if (modeattacking && !demo.playback && (gamestate == GS_LEVEL))
 				{

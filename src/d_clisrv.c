@@ -1505,7 +1505,7 @@ static void M_ConfirmConnect(event_t *ev)
 {
 	if (ev->type == ev_keydown)
 	{
-		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || G_ControlBoundToKey(0, gc_accelerate, ev->data1, false))
+		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || (ev->device != 0 && G_ControlBoundToKey(0, gc_accelerate, ev->data1, true)))
 		{
 			if (totalfilesrequestednum > 0)
 			{
@@ -1532,7 +1532,7 @@ static void M_ConfirmConnect(event_t *ev)
 
 			M_ClearMenus(true);
 		}
-		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, ev->data1, false))
+		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
 		{
 			cl_mode = CL_ABORTED;
 			M_ClearMenus(true);

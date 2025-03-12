@@ -1617,9 +1617,9 @@ boolean M_ScreenshotResponder(event_t *ev)
 	if (ch >= NUMKEYS && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
 		return false;
 
-	if (ch == KEY_F8 || G_ControlBoundToKey(0, gc_screenshot, ch, false)) // remappable F8
+	if (G_ControlBoundToKey(0, gc_screenshot, ch, true))
 		M_ScreenShot();
-	else if (ch == KEY_F9 || G_ControlBoundToKey(0, gc_recordgif, ch, false)) // remappable F9
+	else if (G_ControlBoundToKey(0, gc_recordgif, ch, true))
 		((moviemode) ? M_StopMovie : M_StartMovie)();
 	else
 		return false;
