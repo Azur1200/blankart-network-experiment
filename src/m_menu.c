@@ -1095,12 +1095,13 @@ static menuitem_t OP_CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Camera Options", {NULL}, 0},
 
-	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 20},
+	{IT_STRING | IT_CVAR, 		NULL, "Camera Tiling",   			{.cvar = &cv_tilting}, 			 	 	 20},
+	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 30},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	{.submenu = &OP_Player1CamOptionsDef},	 40},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	{.submenu = &OP_Player2CamOptionsDef},	 50},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	{.submenu = &OP_Player3CamOptionsDef},	 60},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	{.submenu = &OP_Player4CamOptionsDef},	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	{.submenu = &OP_Player1CamOptionsDef},	 50},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	{.submenu = &OP_Player2CamOptionsDef},	 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	{.submenu = &OP_Player3CamOptionsDef},	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	{.submenu = &OP_Player4CamOptionsDef},	 80},
 };
 
 static menuitem_t OP_Player1CamOptionsMenu[] =
