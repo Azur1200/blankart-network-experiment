@@ -2676,6 +2676,7 @@ boolean M_Responder(event_t *ev)
 		static INT32 joyremap[][2] = {
 			{ gc_accelerate,  KEY_ENTER      }, // these two first
 			{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
+			{ gc_fire,        KEY_BACKSPACE  },
 			{ gc_systemmenu,  KEY_ESCAPE     },
 			{ gc_aimforward,  KEY_UPARROW    },
 			{ gc_aimbackward, KEY_DOWNARROW  },
@@ -9803,9 +9804,6 @@ static void M_HandleSetupMultiPlayer(INT32 choice)
 	size_t   l;
 	INT32 prev_setupm_fakeskin;
 	boolean  exitmenu = false;  // exit to previous menu and send name change
-
-	if (G_ControlBoundToKey(0, gc_fire, choice, false) && itemOn == 2)
-		choice = KEY_BACKSPACE; // Hack to allow resetting prefcolor on controllers
 
 	switch (choice)
 	{
