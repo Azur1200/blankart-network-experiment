@@ -25,6 +25,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "d_main.h"
+#include "d_netfil.h"
 #include "r_sky.h" // skyflatnum
 #include "p_local.h" // camera info
 #include "fastcmp.h"
@@ -1664,8 +1665,17 @@ void S_LoadMusicDefs(UINT16 wad)
 void S_InitMusicDefs(void)
 {
 	UINT16 i;
+
+	char *tempname;
 	for (i = 0; i < numwadfiles; i++)
 	{
+		nameonly(tempname = va("%s", wadfiles[i]->filename));
+		if (wadfiles[i]->filename && !stricmp(tempname, "music.kart"))
+		{
+			// Awful hack but what can you do?
+			continue;
+		}
+
 		S_LoadMusicDefs(i);
 	}
 }
@@ -1738,10 +1748,10 @@ void S_ShowMusicCredit(void)
 			}\
 		}
 
-		MUSICCREDITAPPEND(def->author, true);
-		MUSICCREDITAPPEND(def->source, false);
+		MUSICCREDITAPPEND(def->author, false);
+		MUSICCREDITAPPEND(def->source, true);
 
-#undef MUSICCREDITAPPEND
+//#undef MUSICCREDITAPPEND
 	}
 
 	if (credittext[0] == '\0')
