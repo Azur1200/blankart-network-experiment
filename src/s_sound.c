@@ -1748,8 +1748,8 @@ void S_ShowMusicCredit(void)
 			}\
 		}
 
-		MUSICCREDITAPPEND(def->author, false);
-		MUSICCREDITAPPEND(def->source, true);
+		MUSICCREDITAPPEND(def->author, true);
+		MUSICCREDITAPPEND(def->source, false);
 
 //#undef MUSICCREDITAPPEND
 	}
