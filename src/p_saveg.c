@@ -3735,6 +3735,10 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->terrain = NULL;
 	}
 
+	// Reset some non-synch values
+	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
+
 	// set sprev, snext, bprev, bnext, subsector
 	P_SetThingPosition(mobj);
 

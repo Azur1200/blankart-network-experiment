@@ -4105,6 +4105,21 @@ Quaketilt (player_t *player)
 	return moma;
 }
 
+static angle_t P_GetCameraPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
+{
+	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, mobj->x, mobj->y);
+
+	fixed_t pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
+	fixed_t rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
+
+	angle_t sloperolll = mobj->slopepitch;
+	angle_t slopepitch = mobj->sloperoll;
+
+	angle_t rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
+
+	return rollOrPitch;
+}
+
 static void
 DoABarrelRoll (player_t *player)
 {
@@ -4129,7 +4144,7 @@ DoABarrelRoll (player_t *player)
 		return;
 	}
 
-	slope = InvAngle(R_GetPitchRollAngle(player->mo, player));
+	slope = InvAngle(P_GetCameraPitchRollAngle(player->mo, player));
 
 	if (AbsAngle(slope) < ANGLE_11hh)
 	{

@@ -28,7 +28,16 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 	fixed_t pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
 	fixed_t rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
 
-	angle_t rollOrPitch = FixedMul(mobj->pitch, pitchMul) + FixedMul(mobj->roll, rollMul);
+	angle_t sloperolll = mobj->slopepitch;
+	angle_t slopepitch = mobj->sloperoll;
+
+	if (!cv_sloperoll.value)
+	{
+		sloperolll = 0;
+		slopepitch = 0;
+	}
+
+	angle_t rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
 
 	return rollOrPitch;
 }
