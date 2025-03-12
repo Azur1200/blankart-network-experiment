@@ -3979,6 +3979,21 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		mobj->bakexpiv = mobj->bakeypiv = mobj->bakezpiv = 0;
 	}
 
+	if (diff3 & MD3_BAKEDOFFSET)
+	{
+		mobj->bakexoff = READFIXED(save->p);
+		mobj->bakeyoff = READFIXED(save->p);
+		mobj->bakezoff = READFIXED(save->p);
+		mobj->bakexpiv = READFIXED(save->p);
+		mobj->bakeypiv = READFIXED(save->p);
+		mobj->bakezpiv = READFIXED(save->p);
+	}
+	else
+	{
+		mobj->bakexoff = mobj->bakeyoff = mobj->bakezoff = 0;
+		mobj->bakexpiv = mobj->bakeypiv = mobj->bakezpiv = 0;
+	}
+
 	// Reset some non-synch values
 	mobj->sloperoll = 0;
 	mobj->slopepitch = 0;

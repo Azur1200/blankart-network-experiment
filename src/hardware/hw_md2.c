@@ -1806,7 +1806,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				// x offset
 				xx = FIXED_TO_FLOAT(FixedMul(FixedMul(
 											FixedMul(xoffs,spr->mobj->spritexscale),
-											hflipmul),
+											hflipmul), 
 											FINECOSINE(pitchR >> ANGLETOFINESHIFT)
 											));
 				xy = FIXED_TO_FLOAT(FixedMul(FixedMul(
@@ -1818,7 +1818,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 				// y offset
 				yx = FIXED_TO_FLOAT(FixedMul(FixedMul(
 											FixedMul(yoffs,spr->mobj->spritexscale),
-											hflipmul),
+											hflipmul), 
 											FINECOSINE(rollR >> ANGLETOFINESHIFT)
 											));
 

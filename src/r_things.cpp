@@ -857,7 +857,7 @@ boolean R_ThingIsFlashing(mobj_t *thing)
 boolean R_ThingIsUsingBakedOffsets(mobj_t* thing)
 {
 	return ((thing->bakexoff) || (thing->bakeyoff) || (thing->bakezoff) ||
-	(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv));
+			(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv));
 }
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
@@ -1940,7 +1940,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (R_ThingIsUsingBakedOffsets(thing))
 	{
 		R_RotateSpriteOffsetsByPitchRoll(thing,
-			vflip, hflip, &visoffs);
+										 vflip,
+										 hflip,
+										 &visoffs);
 	}
 #endif
 
@@ -1948,7 +1950,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		spr_offset = interp.spritexoffset;
 #ifdef ROTSPRITE
-		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),	mapobjectscale));
+		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
+																mapobjectscale));
 #else
 		spr_topoffset = interp.spriteyoffset;
 #endif
@@ -1963,7 +1966,8 @@ static void R_ProjectSprite(mobj_t *thing)
 		spr_offset += (interp.spritexoffset) * flipoffset;
 #ifdef ROTSPRITE
 		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
-		mapobjectscale)) * flipoffset;
+															mapobjectscale))
+																* flipoffset;
 #else
 		spr_topoffset += interp.spriteyoffset * flipoffset;
 #endif

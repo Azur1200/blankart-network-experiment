@@ -54,6 +54,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	mobj_t* mobj,
 	boolean vflip,
 	boolean hflip,
+	interpmobjstate_t *interp,
 	vector2_t* out);
 #endif
 
