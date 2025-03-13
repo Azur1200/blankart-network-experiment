@@ -325,7 +325,7 @@ menu_t OP_DataOptionsDef, OP_ScreenshotOptionsDef, OP_EraseDataDef;
 menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
-menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
+menu_t OP_GameOptionsDef, OP_BlanKartGameOptionsDef, OP_ServerOptionsDef;
 menu_t OP_AdvServerOptionsDef;
 //menu_t OP_NetgameOptionsDef, OP_GametypeOptionsDef;
 menu_t OP_MonitorToggleDef;
@@ -1533,19 +1533,28 @@ static menuitem_t OP_GameOptionsMenu[] =
 {
 	{IT_STRING | IT_SUBMENU, NULL, "Random Item Toggles...",	{.submenu = &OP_MonitorToggleDef},	 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				{.cvar = &cv_kartspeed},			 30},
-	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			{.cvar = &cv_kartbattlespeed},		 40},
-	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 50},
-	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 60},
+	{IT_STRING | IT_SUBMENU, NULL, "BlanKart Gameplay...",		{.submenu = &OP_BlanKartGameOptionsDef},	 30},
 
-	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 80},
-	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 90},
+	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				{.cvar = &cv_kartspeed},			 40},
+	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			{.cvar = &cv_kartbattlespeed},		 50},
+	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 60},
+	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 70},
 
-	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			110},
-	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			120},
-	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			130},
+	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 90},
+	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 100},
 
-	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			150},
+	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			120},
+	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			130},
+	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			140},
+
+	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			160},
+};
+
+static menuitem_t OP_BlanKartGameOptionsMenu[] =
+{
+	{IT_STRING | IT_CVAR, NULL, "Rings",						{.cvar = &cv_kartrings},			 10},
+	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 20},
+
 };
 
 static menuitem_t OP_ServerOptionsMenu[] =
@@ -2138,6 +2147,7 @@ menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player4CamOp
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
+menu_t OP_BlanKartGameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_BlanKartGameOptionsMenu, &OP_GameOptionsDef, 30, 30);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 30);
 menu_t OP_AdvServerOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30);
 
@@ -6449,7 +6459,7 @@ static void M_Options(INT32 choice)
 	OP_DataOptionsMenu[3].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
 #endif
 
-	OP_GameOptionsMenu[4].status =
+	OP_GameOptionsMenu[5].status =
 		(M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
 
 	OP_MainDef.prevMenu = currentMenu;
