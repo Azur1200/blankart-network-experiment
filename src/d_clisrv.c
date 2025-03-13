@@ -1505,7 +1505,7 @@ static void M_ConfirmConnect(event_t *ev)
 {
 	if (ev->type == ev_keydown)
 	{
-		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || ev->data1 == gamecontrol[0][gc_accelerate][0] || ev->data1 == gamecontrol[0][gc_accelerate][1])
+		if (ev->data1 == ' ' || ev->data1 == 'y' || ev->data1 == KEY_ENTER || (ev->device != 0 && G_ControlBoundToKey(0, gc_accelerate, ev->data1, true)))
 		{
 			if (totalfilesrequestednum > 0)
 			{
@@ -1532,7 +1532,7 @@ static void M_ConfirmConnect(event_t *ev)
 
 			M_ClearMenus(true);
 		}
-		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE|| ev->data1 == gamecontrol[0][gc_brake][0] || ev->data1 == gamecontrol[0][gc_brake][1])
+		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
 		{
 			cl_mode = CL_ABORTED;
 			M_ClearMenus(true);
@@ -1942,18 +1942,29 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		renderdeltatics = FRACUNIT;
 		rendertimefrac = FRACUNIT;
 
+		memset(deviceResponding, false, sizeof (deviceResponding));
+
 		if (cl_mode == CL_CONFIRMCONNECT)
 		{
 			D_ProcessEvents(); //needed for menu system to receive inputs
 		}
 		else if (netgame)
 		{
+			event_t *ev;
+			INT32 key;
 			for (; eventtail != eventhead; eventtail = (eventtail+1) & (MAXEVENTS-1))
-				G_MapEventsToControls(&events[eventtail]);
+			{
+				ev = &events[eventtail];
+				if (ev->type == ev_joystick && G_GetDevicePlayer(ev->device) == 0 && !G_AxisInDeadzone(0, ev))
+					key = G_AxisToKey(ev);
+				else if (ev->type == ev_keydown)
+					key = ev->data1;
+				else
+					continue;
 
-			if (gamekeydown[KEY_ESCAPE]
-				|| gamekeydown[KEY_JOY1+1])
-				cl_mode = CL_ABORTED;
+				if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
+					cl_mode = CL_ABORTED;
+			}
 		}
 
 		if (cl_mode == CL_ABORTED)

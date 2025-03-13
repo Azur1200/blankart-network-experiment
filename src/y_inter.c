@@ -41,7 +41,7 @@
 #include "lua_hudlib_drawlist.h"
 
 #include "m_random.h" // M_RandomKey
-#include "g_input.h" // PlayerInputDown
+#include "g_input.h" // G_PlayerInputDown
 #include "k_battle.h"
 #include "k_boss.h"
 #include "k_pwrlv.h"
@@ -831,9 +831,7 @@ void Y_Ticker(void)
 
 	if (demo.recording)
 	{
-		INT32 axis = PlayerJoyAxis(AXISLOOKBACK, 1);
-
-		if (demo.savemode == DSM_NOTSAVING && (PlayerInputDown(1, gc_lookback) || (cv_usejoystick->value && axis > 0)))
+		if (demo.savemode == DSM_NOTSAVING && G_PlayerInputDown(0, gc_lookback, false))
 			demo.savemode = DSM_TITLEENTRY;
 
 		if (demo.savemode == DSM_WILLSAVE || demo.savemode == DSM_WILLAUTOSAVE)
@@ -1646,13 +1644,13 @@ void Y_VoteTicker(void)
 						&& !voteclient.playerinfo[i].delay
 						&& pickedvote == -1 && votes[p] == -1)
 				{
-					if (PlayerInputDown(i+1, gc_aimforward) || PlayerJoyAxis(i+1, AXISAIM) < 0)
+					if (G_PlayerInputDown(i, gc_aimforward, false))
 					{
 						voteclient.playerinfo[i].selection--;
 						pressed = true;
 					}
 
-					if ((PlayerInputDown(i+1, gc_aimbackward) || PlayerJoyAxis(i+1, AXISAIM) > 0) && !pressed)
+					if (G_PlayerInputDown(i, gc_aimbackward, false) && pressed == false)
 					{
 						voteclient.playerinfo[i].selection++;
 						pressed = true;
@@ -1663,7 +1661,7 @@ void Y_VoteTicker(void)
 					if (voteclient.playerinfo[i].selection > 3)
 						voteclient.playerinfo[i].selection = 0;
 
-					if ((PlayerInputDown(i+1, gc_accelerate) || PlayerJoyAxis(i+1, AXISMOVE) > 0) && !pressed)
+					if (G_PlayerInputDown(i, gc_accelerate, false) && pressed == false)
 					{
 						D_ModifyClientVote(consoleplayer, voteclient.playerinfo[i].selection, i);
 						pressed = true;

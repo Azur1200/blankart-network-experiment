@@ -203,6 +203,48 @@ static char returnWadPath[256];
 
 static std::thread::id g_main_thread_id;
 
+void I_StoreExJoystick(SDL_GameController *dev)
+{
+	// ExJoystick is a massive hack to avoid needing to completely
+	// rewrite pretty much all of the controller support from scratch...
+
+	// Used in favor of most instances of SDL_GameControllerClose.
+	// If a joystick would've been discarded, then save it in an array,
+	// because we want it have it for the joystick input screen.
+
+	int index = 0;
+
+	if (dev == NULL)
+	{
+		// No joystick?
+		return;
+	}
+
+	index = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(dev));
+
+	if (index >= MAXGAMEPADS || index < 0)
+	{
+		// Not enough space to save this joystick, completely discard.
+		SDL_GameControllerClose(dev);
+		return;
+	}
+
+	if (ExJoystick[index] == dev)
+	{
+		// No need to do anything else.
+		return;
+	}
+
+	if (ExJoystick[index] != NULL)
+	{
+		// Discard joystick in the old slot.
+		SDL_GameControllerClose(ExJoystick[index]);
+	}
+
+	// Keep for safe-keeping.
+	ExJoystick[index] = dev;
+}
+
 /**	\brief	The JoyReset function
 
 	\param	JoySet	Joystick info to reset
@@ -213,7 +255,7 @@ static void JoyReset(SDLJoyInfo_t *JoySet)
 {
 	if (JoySet->dev)
 	{
-		SDL_GameControllerClose(JoySet->dev);
+		I_StoreExJoystick(JoySet->dev);
 	}
 	JoySet->dev = NULL;
 	JoySet->oldjoy = -1;
@@ -228,6 +270,7 @@ static INT32 joystick_started[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 /**	\brief SDL info about joystick 1
 */
 SDLJoyInfo_t JoyInfo[MAXSPLITSCREENPLAYERS];
+SDL_GameController *ExJoystick[MAXGAMEPADS];
 
 SDL_bool consolevent = SDL_FALSE;
 SDL_bool framebuffer = SDL_FALSE;
@@ -1046,7 +1089,7 @@ void I_JoyScale4(void)
 	JoyInfo[3].scale = Joystick[3].bGamepadStyle?1:cv_joyscale[1].value;
 }
 
-// Cheat to get the device index for a joystick handle
+// Cheat to get the device index for a game controller handle
 INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 {
 	SDL_Joystick *joystick = NULL;
@@ -1121,14 +1164,6 @@ void I_UpdateJoystickDeviceIndices(UINT8 excludePlayer)
 	}
 }
 
-/**	\brief Joystick buttons states
-*/
-static UINT64 lastjoybuttons[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
-/**	\brief Joystick hats state
-*/
-static UINT64 lastjoyhats[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
-
 /**	\brief	Shuts down joystick
 	\return void
 */
@@ -1136,29 +1171,22 @@ void I_ShutdownJoystick(UINT8 index)
 {
 	INT32 i;
 	event_t event;
-	event.type=ev_keyup;
+
+	event.device = I_GetJoystickDeviceIndex(JoyInfo[index].dev);
+	event.type = ev_keyup;
 	event.data2 = 0;
 	event.data3 = 0;
 
-	lastjoybuttons[index] = lastjoyhats[index] = 0;
-
 	// emulate the up of all joystick buttons
-	for (i=0;i<JOYBUTTONS;i++)
+	for (i = 0; i < JOYBUTTONS; i++)
 	{
-		event.data1=KEY_JOY1+i;
-		D_PostEvent(&event);
-	}
-
-	// emulate the up of all joystick hats
-	for (i=0;i<JOYHATS*4;i++)
-	{
-		event.data1=KEY_HAT1+i;
+		event.data1 = KEY_JOY1+i;
 		D_PostEvent(&event);
 	}
 
 	// reset joystick position
 	event.type = ev_joystick;
-	for (i=0;i<JOYAXISSET; i++)
+	for (i = 0; i < JOYAXISES; i++)
 	{
 		event.data1 = i;
 		D_PostEvent(&event);
@@ -1168,136 +1196,6 @@ void I_ShutdownJoystick(UINT8 index)
 	JoyReset(&JoyInfo[index]);
 
 	// don't shut down the subsystem here, because hotplugging
-}
-
-void I_GetJoystickEvents(UINT8 index)
-{
-	static event_t event = {};
-	INT32 i = 0;
-	UINT64 joyhats = 0;
-#if 0
-	UINT64 joybuttons = 0;
-	UINT32 axisx, axisy;
-#endif
-
-	if (!joystick_started[index])
-		return;
-
-	if (!JoyInfo[index].dev) //I_ShutdownJoystick(index);
-		return;
-
-#if 0
-	//faB: look for as much buttons as g_input code supports,
-	//  we don't use the others
-	for (i = JoyInfo[index].buttons - 1; i >= 0; i--)
-	{
-		joybuttons <<= 1;
-		if (SDL_JoystickGetButton(JoyInfo[index].dev,i))
-			joybuttons |= 1;
-	}
-
-	if (joybuttons != lastjoybuttons[index])
-	{
-		INT64 j = 1; // keep only bits that changed since last time
-		INT64 newbuttons = joybuttons ^ lastjoybuttons[index];
-		lastjoybuttons[index] = joybuttons;
-
-		for (i = 0; i < JOYBUTTONS; i++, j <<= 1)
-		{
-			if (newbuttons & j) // button changed state?
-			{
-				if (joybuttons & j)
-					event.type = ev_keydown;
-				else
-					event.type = ev_keyup;
-				event.data1 = KEY_JOY1 + i;
-				D_PostEvent(&event);
-			}
-		}
-	}
-#endif
-
-
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_UP);
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_DOWN) << 1;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_LEFT) << 2;
-	joyhats |= SDL_GameControllerGetButton(JoyInfo[index].dev, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) << 3;
-
-
-	if (joyhats != lastjoyhats[index])
-	{
-		INT64 j = 1; // keep only bits that changed since last time
-		INT64 newhats = joyhats ^ lastjoyhats[index];
-		lastjoyhats[index] = joyhats;
-
-		for (i = 0; i < JOYHATS*4; i++, j <<= 1)
-		{
-			if (newhats & j) // hat changed state?
-			{
-				if (joyhats & j)
-					event.type = ev_keydown;
-				else
-					event.type = ev_keyup;
-				event.data1 = KEY_HAT1 + i;
-				D_PostEvent(&event);
-			}
-		}
-	}
-
-#if 0
-	// send joystick axis positions
-	event.type = ev_joystick;
-
-	for (i = JOYAXISSET - 1; i >= 0; i--)
-	{
-		event.data1 = i;
-		if (i*2 + 1 <= JoyInfo[index].axises)
-			axisx = SDL_JoystickGetAxis(JoyInfo[index].dev, i*2 + 0);
-		else axisx = 0;
-		if (i*2 + 2 <= JoyInfo[index].axises)
-			axisy = SDL_JoystickGetAxis(JoyInfo[index].dev, i*2 + 1);
-		else axisy = 0;
-
-
-		// -32768 to 32767
-		axisx = axisx/32;
-		axisy = axisy/32;
-
-
-		if (Joystick[index].bGamepadStyle)
-		{
-			// gamepad control type, on or off, live or die
-			if (axisx < -(JOYAXISRANGE/2))
-				event.data2 = -1;
-			else if (axisx > (JOYAXISRANGE/2))
-				event.data2 = 1;
-			else
-				event.data2 = 0;
-			if (axisy < -(JOYAXISRANGE/2))
-				event.data3 = -1;
-			else if (axisy > (JOYAXISRANGE/2))
-				event.data3 = 1;
-			else
-				event.data3 = 0;
-		}
-		else
-		{
-
-			axisx = JoyInfo[index].scale?((axisx/JoyInfo[index].scale)*JoyInfo[index].scale):axisx;
-			axisy = JoyInfo[index].scale?((axisy/JoyInfo[index].scale)*JoyInfo[index].scale):axisy;
-
-#ifdef SDL_JDEADZONE
-			if (-SDL_JDEADZONE <= axisx && axisx <= SDL_JDEADZONE) axisx = 0;
-			if (-SDL_JDEADZONE <= axisy && axisy <= SDL_JDEADZONE) axisy = 0;
-#endif
-
-			// analog control style , just send the raw data
-			event.data2 = axisx; // x axis
-			event.data3 = axisy; // y axis
-		}
-		D_PostEvent(&event);
-	}
-#endif
 }
 
 /**	\brief	Open joystick handle
@@ -1324,6 +1222,12 @@ static int joy_open(int playerIndex, int joyIndex)
 		return -1;
 	}
 
+
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	{
+		CONS_Printf(M_GetText("Game Controller subsystem not started\n"));
+		return -1;
+	}
 
 	if (joyIndex <= 0)
 		return -1;
@@ -1373,25 +1277,8 @@ static int joy_open(int playerIndex, int joyIndex)
 		CONS_Debug(DBG_GAMELOGIC, M_GetText("Joystick%d: %s\n"), playerIndex+1, SDL_GameControllerName(JoyInfo[playerIndex].dev));
 
 		JoyInfo[playerIndex].axises = SDL_CONTROLLER_AXIS_MAX;
-		if (JoyInfo[playerIndex].axises > JOYAXISSET*2)
-			JoyInfo[playerIndex].axises = JOYAXISSET*2;
-
-		/*
-		if (joyaxes<2)
-		{
-			I_OutputMsg("Not enought axes?\n");
-			return 0;
-		}
-		*/
-
 		JoyInfo[playerIndex].buttons = SDL_CONTROLLER_BUTTON_MAX;
-		if (JoyInfo[playerIndex].buttons > JOYBUTTONS)
-			JoyInfo[playerIndex].buttons = JOYBUTTONS;
-
-		JoyInfo[playerIndex].hats = 4;
-		if (JoyInfo[playerIndex].hats > JOYHATS)
-			JoyInfo[playerIndex].hats = JOYHATS;
-
+		JoyInfo[playerIndex].hats = 1;
 		JoyInfo[playerIndex].balls = 0;
 
 		//JoyInfo[playerIndex].bGamepadStyle = !stricmp(SDL_JoystickName(JoyInfo[playerIndex].dev), "pad");
@@ -1439,6 +1326,15 @@ void I_InitJoystick(UINT8 index)
 	}
 
 
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == 0)
+	{
+		if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1)
+		{
+			CONS_Printf(M_GetText("Couldn't initialize gamepads: %s\n"), SDL_GetError());
+			return;
+		}
+	}
+
 	if (cv_usejoystick[index].value)
 		newcontroller = SDL_GameControllerOpen(cv_usejoystick[index].value-1);
 
@@ -1479,7 +1375,7 @@ void I_InitJoystick(UINT8 index)
 	if (i == MAXSPLITSCREENPLAYERS)
 	{
 		// Joystick didn't end up being used
-		SDL_GameControllerClose(newcontroller);
+		I_StoreExJoystick(newcontroller);
 	}
 }
 
@@ -1513,6 +1409,13 @@ static void I_ShutdownInput(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		I_ShutdownJoystick(i);
+
+	if (SDL_WasInit(SDL_INIT_GAMECONTROLLER) == SDL_INIT_GAMECONTROLLER)
+	{
+		CONS_Printf("Shutting down gamecontroller system\n");
+		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+		I_OutputMsg("I_Joystick: SDL's Game Controller system has been shutdown\n");
+	}
 
 	if (SDL_WasInit(SDL_INIT_JOYSTICK) == SDL_INIT_JOYSTICK)
 	{
