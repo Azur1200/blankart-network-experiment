@@ -1297,6 +1297,7 @@ void P_SetPitchRollFromSlope(mobj_t *mo, pslope_t *slope)
 	{
 		mo->slopepitch = mo->sloperoll = 0;
 	}
+	mo->pitch = mo->roll = 0;
 }
 
 //
