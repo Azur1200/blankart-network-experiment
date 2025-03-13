@@ -6937,7 +6937,7 @@ static void M_DrawMusicTest(void)
 
 		if (curplaying)
 		{
-			if (!curplaying->usage && !curplaying->usage[0])
+			if (!curplaying->usage || !curplaying->usage[0])
 				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", &curplaying->name[0][0]));
 			else {
 				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", &curplaying->name[0][0], curplaying->usage));

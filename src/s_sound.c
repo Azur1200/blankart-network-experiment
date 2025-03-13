@@ -1633,10 +1633,14 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 		if (df->legacy && df->source)
 		{
 			df->source = replacechar(df->source, '_', ' ');
-			df->usage = replacechar(df->usage, '_', ' ');
 			df->title = Z_StrDup(df->source);
 			memset(df->source, 0, strlen(df->source));
 			df->source = NULL;
+		}
+
+		if (df->legacy && df->usage)
+		{
+			df->usage = replacechar(df->usage, '_', ' ');
 		}
 	}
 
