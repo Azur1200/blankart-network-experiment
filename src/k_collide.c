@@ -809,6 +809,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 
 		K_StatPlayerSink(t1->player, P_MobjWasRemoved(t2->target) ? NULL : t2->target->player);
 
+		S_StartSound(NULL, sfx_bsnipe); //let all players hear it.
 		S_StartSound(NULL, sfx_cgot); //let all players hear it.
 
 		HU_SetCEchoFlags(0);
@@ -816,6 +817,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 		HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[t2->player-players]));
 		I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[t2->player-players]);
 
+		P_PlayerRingBurst(t2->player, t2->player->rings);
 		P_DamageMobj(t2, t1, t1->target, 1, DMG_INSTAKILL);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}

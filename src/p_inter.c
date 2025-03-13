@@ -2161,7 +2161,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			const UINT8 type = (damagetype & DMG_TYPEMASK);
 			const boolean explosioncombo = (type == DMG_EXPLODE); // This damage type can do evil stuff like ALWAYS combo
-			INT16 ringburst = 5;
 
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
@@ -2241,21 +2240,75 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				player->sneakertimer = 0;
 			player->driftboost = 0;
 			player->bubblepop = 0;
+			player->flametimer = 0;
+			//player->flamestore = 0
+			//player->flamedash = 0;
 			player->ringboost = 0;
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
+
+			INT16 ringburst = 3;
+
+			// Handle ringloss based on hittype.
+			if (inflictor)
+			{
+				switch(inflictor->type)
+				{
+					case MT_BANANA:
+						if (inflictor->health > 1)
+						{
+							// Sniped!
+							ringburst = 10;
+						}
+						else
+					// FALLTHRU
+					case MT_BALLHOG:
+					case MT_BANANA_SHIELD:
+						ringburst = 3;
+						break;
+
+					case MT_ORBINAUT:
+					case MT_ORBINAUT_SHIELD:
+					case MT_JAWZ:
+					case MT_JAWZ_DUD:
+					case MT_JAWZ_SHIELD:
+						ringburst = 5;
+						break;
+
+					case MT_PLAYER:
+						if (inflictor->player)
+						{
+							if (inflictor->player->invincibilitytimer)
+							{
+								// Hit by invincibility
+								ringburst = 5;
+							}
+						}
+						break;
+
+					default:
+						ringburst = 3;
+						break;
+				}
+
+			}
 
 			switch (type)
 			{
 				case DMG_EXPLODE:
 				case DMG_KARMA:
+					// 10 on SPB hit, 5 on normal explosion
 					ringburst = K_ExplodePlayer(player, inflictor, source);
 					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
 				case DMG_SQUISH:
+					if (inflictor)
+					{
+						// Squished by player or object
+						ringburst = 5;
+					}
 					K_SquishPlayer(player, inflictor, source);
 					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
-					ringburst = 5;
 					break;
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
@@ -2422,6 +2475,6 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 
 	for (i = 0; i < num_fling_rings; i++)
 	{
-		P_FlingBurst(player, fa, MT_FLINGRING, 60*TICRATE, FRACUNIT, i);
+		P_FlingBurst(player, fa, MT_FLINGRING, 20*TICRATE, FRACUNIT, i);
 	}
 }

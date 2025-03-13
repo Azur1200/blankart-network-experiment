@@ -3746,7 +3746,7 @@ void K_ApplyTripWire(player_t *player, tripwirestate_t state)
 
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A bit of a hack, we just throw the player up higher here and extend their spinout timer
 {
-	INT32 ringburst = 10;
+	INT32 ringburst = 5;
 
 	(void)source;
 
@@ -3766,7 +3766,7 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 		{
 			player->spinouttimer = ((5*player->spinouttimer)/2)+1;
 			player->mo->momz *= 2;
-			ringburst = 20;
+			ringburst = 10;
 		}
 	}
 
@@ -5363,7 +5363,6 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 				break;
 			case KSHIELD_FLAME:
 				S_StartSound(player->mo, sfx_s3k47);
-				player->flametimer = 0;
 				break;
 		}
 
