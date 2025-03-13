@@ -3974,7 +3974,21 @@ static int lib_kSafeRespawnPosition(lua_State *L)
 	//HUDSAFE
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
-	lua_pushfixed(L, K_SafeRespawnPosition(mobj));
+	lua_pushboolean(L, K_SafeRespawnPosition(mobj));
+	return 1;
+}
+
+// Checks if Rings are applicable.
+static int lib_kRingsActive(lua_State *L)
+{
+	lua_pushboolean(L, K_RingsActive());
+	return 1;
+}
+
+// Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
+static int lib_kUsingLegacyCheckpoints(lua_State *L)
+{
+	lua_pushboolean(L, K_UsingLegacyCheckpoints());
 	return 1;
 }
 
@@ -4275,6 +4289,9 @@ static luaL_Reg lib[] = {
 	{"K_SafeRespawnPosition", lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
+
+	{"K_RingsActive",lib_kRingsActive},
+	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},

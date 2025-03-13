@@ -533,6 +533,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 					return;
 				}
 
+				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
+				{
+					//player->flashing = 0;
+					K_DropHnextList(player, false);
+					K_StripItems(player);
+				}
+
 				S_StopSound(special); // Don't continue playing the gurgle or the siren
 
 				spbexplode = P_SpawnMobj(toucher->x, toucher->y, toucher->z, MT_SPBEXPLOSION);
@@ -849,7 +856,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	(void)snaptopost;
 
 	// Player must have touched all previous starposts
-	if ((post->health - player->starpostnum > 1) && (numbosswaypoints == 0))
+	if ((post->health - player->starpostnum > 1) && (!K_UsingLegacyCheckpoints()))
 	{
 		if (!player->checkskip)
 		{
@@ -866,7 +873,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	}
 
 	// Going backwards triggers sound
-	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (numbosswaypoints > 0))
+	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (K_UsingLegacyCheckpoints()))
 	{
 		if (!player->checkskip)
 			S_StartSound(toucher, sfx_s26d);
@@ -2153,12 +2160,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else
 		{
 			const UINT8 type = (damagetype & DMG_TYPEMASK);
-			const boolean hardhit = (type == DMG_EXPLODE || type == DMG_KARMA); // This damage type can do evil stuff like ALWAYS combo
+			const boolean explosioncombo = (type == DMG_EXPLODE); // This damage type can do evil stuff like ALWAYS combo
 			INT16 ringburst = 5;
 
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
-			if (!force && !(inflictor && inflictor->type == MT_SPBEXPLOSION && inflictor->extravalue1 == 1))
+			if (!force)
 			{
 				if (gametyperules & GTR_BUMPERS)
 				{
@@ -2188,10 +2195,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 				{
 
-					// Check if we should allow wombo combos (hard hits by default, inverted by the presence of DMG_WOMBO).
-					boolean allowcombo = hardhit;
-
-					if ((allowcombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
+					// Check if we should allow explosion combos.
+					if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 					{
 						// Post-hit invincibility
 						K_DoInstashield(player);
@@ -2277,7 +2282,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 			K_PlayPainSound(target, source);
 
-			if ((hardhit == true) || (cv_kartdebughuddrop.value && !modeattacking))
+			if ((explosioncombo == true) || (cv_kartdebughuddrop.value && !modeattacking))
 			{
 				K_DropItems(player);
 			}

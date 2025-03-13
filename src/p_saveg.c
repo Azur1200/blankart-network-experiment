@@ -266,8 +266,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT32(save->p, players[i].aizdrifttilt);
 		WRITEINT32(save->p, players[i].aizdriftturn);
 
-		WRITEINT32(save->p, players[i].underwatertilt);
-
 		WRITEFIXED(save->p, players[i].offroad);
 		WRITEFIXED(save->p, players[i].tiregrease);
 		WRITEUINT8(save->p, players[i].pogospring);
@@ -577,8 +575,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].aizdriftstrat = READSINT8(save->p);
 		players[i].aizdrifttilt = READINT32(save->p);
 		players[i].aizdriftturn = READINT32(save->p);
-
-		players[i].underwatertilt = READINT32(save->p);
 
 		players[i].offroad = READFIXED(save->p);
 		players[i].tiregrease = READFIXED(save->p);
@@ -3734,6 +3730,10 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	{
 		mobj->terrain = NULL;
 	}
+
+	// Reset some non-synch values
+	mobj->sloperoll = 0;
+	mobj->slopepitch = 0;
 
 	// set sprev, snext, bprev, bnext, subsector
 	P_SetThingPosition(mobj);

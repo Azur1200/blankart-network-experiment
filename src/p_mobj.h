@@ -294,6 +294,7 @@ struct mobj_t
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
+	angle_t slopepitch, sloperoll;
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
@@ -461,6 +462,7 @@ struct precipmobj_t
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
+	angle_t slopepitch, sloperoll;
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;

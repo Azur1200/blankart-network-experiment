@@ -32,7 +32,7 @@ consvar_t cv_mousesens2 = CVAR_INIT ("mousesens2", "20", CV_SAVE, mousesens_cons
 consvar_t cv_mouseysens = CVAR_INIT ("mouseysens", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_mouseysens2 = CVAR_INIT ("mouseysens2", "20", CV_SAVE, mousesens_cons_t, NULL);
 consvar_t cv_controlperkey = CVAR_INIT ("controlperkey", "One", CV_SAVE, onecontrolperkey_cons_t, NULL);
-consvar_t cv_turnsmooth = CVAR_INIT ("turnsmoothing", "Slow", CV_SAVE, turnsmooth_cons_t, NULL);
+consvar_t cv_turnsmooth = CVAR_INIT ("turnsmoothing", "Off", CV_SAVE, turnsmooth_cons_t, NULL);
 
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed

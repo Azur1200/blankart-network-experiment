@@ -1987,7 +1987,7 @@ static void K_HandleLapIncrement(player_t *player)
 	{
 		if (K_IgnoreFinishLine(player))
 			return;
-		if (((numbosswaypoints > 0) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
+		if (((K_UsingLegacyCheckpoints()) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
 		{
 			size_t i = 0;
 			UINT8 nump = 0;
@@ -3374,7 +3374,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				INT32 trigid = args[0];
 
 				if (trigid < 0 || trigid > 31) // limited by 32 bit variable
-					CONS_Debug(DBG_GAMELOGIC, "Unlockable trigger (sidedef %hu): bad trigger ID %d\n", line->sidenum[0], trigid);
+					CONS_Debug(DBG_GAMELOGIC, "Unlockable trigger: bad trigger ID %d\n", trigid);
 				else
 				{
 					unlocktriggers |= 1 << trigid;
@@ -3389,7 +3389,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			}
 
 			// Execute one time only
-			line->special = 0;
+			activator = NULL;
 			break;
 
 		case 442: // Calls P_SetMobjState on mobjs of a given type in the tagged sectors
@@ -4119,10 +4119,10 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				if (mobj)
 				{
 					mobj->angle = FixedAngle(args[3] << FRACBITS);
-					CONS_Debug(DBG_GAMELOGIC, "Linedef Type %d - Spawn Object: %d spawned at (%d, %d, %d)\n", line->special, mobj->type, mobj->x>>FRACBITS, mobj->y>>FRACBITS, mobj->z>>FRACBITS); //TODO: Convert mobj->type to a string somehow.
+					CONS_Debug(DBG_GAMELOGIC, "Linedef Type %d - Spawn Object: %d spawned at (%d, %d, %d)\n", special, mobj->type, mobj->x>>FRACBITS, mobj->y>>FRACBITS, mobj->z>>FRACBITS); //TODO: Convert mobj->type to a string somehow.
 				}
 				else
-					CONS_Alert(CONS_ERROR,"Linedef Type %d - Spawn Object: Object did not spawn!\n", line->special);
+					CONS_Alert(CONS_ERROR,"Linedef Type %d - Spawn Object: Object did not spawn!\n", special);
 			}
 			break;
 

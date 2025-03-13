@@ -184,6 +184,7 @@ struct musicdef_t
 	char *author;
 	char *source;
 	char *composers;
+	char *usage;
 	int volume;
 	boolean contentidunsafe;
 	boolean legacy;
@@ -200,13 +201,18 @@ extern struct cursongcredit
 	fixed_t old_x;
 } cursongcredit;
 
+extern musicdef_t soundtestsfx;
 extern musicdef_t *musicdefstart;
+extern musicdef_t **soundtestdefs;
+extern INT32 numsoundtestdefs;
+extern UINT8 soundtestpage;
 extern int musicdef_volume;
 
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
 musicdef_t *S_FindMusicDef(const char *name, UINT8 *i);
 void S_ShowMusicCredit(void);
+boolean S_PrepareSoundTest(void);
 
 //
 // Music Seeking

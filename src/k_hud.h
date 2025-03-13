@@ -25,6 +25,8 @@ extern "C" {
 
 extern consvar_t cv_newspeedometer;
 
+extern consvar_t cv_showinput;
+
 struct trackingResult_t
 {
 	fixed_t x, y;

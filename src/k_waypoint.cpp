@@ -20,6 +20,7 @@
 #include "z_zone.h"
 #include "g_game.h"
 #include "p_slopes.h"
+#include "k_kart.h"
 
 #include "cxxutil.hpp"
 
@@ -2779,7 +2780,7 @@ boolean K_SetupWaypointList(void)
 
 	if (!waypointcap)
 	{
-		if (numbosswaypoints == 0)
+		if (!K_UsingLegacyCheckpoints())
 		{
 			CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
 		}
@@ -2799,7 +2800,7 @@ boolean K_SetupWaypointList(void)
 
 			if (firstwaypoint == NULL)
 			{
-				if (numbosswaypoints == 0)
+				if (!K_UsingLegacyCheckpoints())
 				{
 					CONS_Alert(CONS_ERROR, "No waypoints or legacy checkpoints in map.\n");
 				}

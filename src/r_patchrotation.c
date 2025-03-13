@@ -28,7 +28,16 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 	fixed_t pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
 	fixed_t rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
 
-	angle_t rollOrPitch = FixedMul(mobj->pitch, pitchMul) + FixedMul(mobj->roll, rollMul);
+	angle_t sloperolll = mobj->slopepitch;
+	angle_t slopepitch = mobj->sloperoll;
+
+	if (!cv_sloperoll.value || (mobj->player && (mobj->player->pogospring > 0)))
+	{
+		sloperolll = 0;
+		slopepitch = 0;
+	}
+
+	angle_t rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
 
 	return rollOrPitch;
 }
@@ -42,11 +51,7 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 
 	angle_t rollAngle = 0;
 
-	if (player->mo->eflags & MFE_UNDERWATER)
-	{
-		rollAngle -= player->underwatertilt;
-	}
-	else if (sliptideLift)
+	if (sliptideLift)
 	{
 		/* (from side) tilt downward if turning
 		   toward camera, upward if away. */
@@ -54,6 +59,12 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 			FixedMul(sliptideLift, FINESINE(AbsAngle(angleDelta) >> ANGLETOFINESHIFT)) +
 			FixedMul(sliptideLift, FINECOSINE(angleDelta >> ANGLETOFINESHIFT));
 	}
+
+	if (player->pogospring)
+	{
+		rollAngle = 0;
+	}
+
 
 	return rollAngle;
 }

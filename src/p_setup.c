@@ -8689,7 +8689,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 			if ((K_SetupWaypointList() == false))
 			{
-				if (numbosswaypoints == 0)
+				if (!K_UsingLegacyCheckpoints())
 				{
 					CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
 				}

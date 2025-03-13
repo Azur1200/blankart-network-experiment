@@ -226,6 +226,7 @@ static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
 static void M_Credits(INT32 choice);
 static void M_BlanCredits(INT32 choice);
+static void M_MusicTest(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -323,7 +324,7 @@ menu_t OP_DataOptionsDef, OP_ScreenshotOptionsDef, OP_EraseDataDef;
 menu_t OP_DiscordOptionsDef;
 #endif
 menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
-menu_t OP_GameOptionsDef, OP_ServerOptionsDef;
+menu_t OP_GameOptionsDef, OP_BlanKartGameOptionsDef, OP_ServerOptionsDef;
 menu_t OP_AdvServerOptionsDef;
 //menu_t OP_NetgameOptionsDef, OP_GametypeOptionsDef;
 menu_t OP_MonitorToggleDef;
@@ -364,6 +365,7 @@ static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
 static void M_DrawSkyRoom(void);
 static void M_DrawChecklist(void);
+static void M_DrawMusicTest(void);
 static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
@@ -390,6 +392,7 @@ static boolean M_ExitPandorasBox(void);
 static boolean M_QuitMultiPlayerMenu(void);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
+static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
@@ -821,6 +824,10 @@ static menuitem_t SR_UnlockChecklistMenu[] =
 	{IT_SUBMENU | IT_STRING,         NULL, "NEXT", {.submenu = &MainDef}, 192},
 };
 
+static menuitem_t SR_MusicTestMenu[] =
+{
+	{IT_KEYHANDLER | IT_STRING, NULL, "", {.routine = M_HandleMusicTest}, 0},
+};
 static menuitem_t SR_EmblemHintMenu[] =
 {
 	{IT_STRING|IT_CVAR,         NULL, "Medal Radar",  {.cvar = &cv_itemfinder}, 10},
@@ -1097,12 +1104,13 @@ static menuitem_t OP_CamOptionsMenu[] =
 {
 	{IT_HEADER, NULL, "Camera Options", {NULL}, 0},
 
-	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 20},
+	{IT_STRING | IT_CVAR, 		NULL, "Camera Tiling",   			{.cvar = &cv_tilting}, 			 	 	 20},
+	{IT_STRING | IT_CVAR, 		NULL, "Lagless Camera",   			{.cvar = &cv_laglesscam}, 			 	 30},
 
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	{.submenu = &OP_Player1CamOptionsDef},	 40},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	{.submenu = &OP_Player2CamOptionsDef},	 50},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	{.submenu = &OP_Player3CamOptionsDef},	 60},
-	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	{.submenu = &OP_Player4CamOptionsDef},	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 1 Camera options...",	{.submenu = &OP_Player1CamOptionsDef},	 50},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 2 Camera options...",	{.submenu = &OP_Player2CamOptionsDef},	 60},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 3 Camera options...",	{.submenu = &OP_Player3CamOptionsDef},	 70},
+	{IT_STRING | IT_SUBMENU,	NULL, "Player 4 Camera options...",	{.submenu = &OP_Player4CamOptionsDef},	 80},
 };
 
 static menuitem_t OP_Player1CamOptionsMenu[] =
@@ -1336,9 +1344,10 @@ static menuitem_t OP_SoundOptionsMenu[] =
 	{IT_STRING|IT_CVAR,			NULL, "Powerup Warning",		{.cvar = &cv_kartinvinsfx},		 95},
 
 	{IT_KEYHANDLER|IT_STRING,	NULL, "Sound Test",				{.routine = M_HandleSoundTest},		110},
+	{IT_STRING|IT_CALL,			NULL, "Music Test",				{.routine = M_MusicTest},			120},
 
-	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", {.cvar = &cv_playmusicifunfocused}, 125},
-	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", {.cvar = &cv_playsoundifunfocused}, 135},
+	{IT_STRING|IT_CVAR,        NULL, "Play Music While Unfocused", {.cvar = &cv_playmusicifunfocused}, 135},
+	{IT_STRING|IT_CVAR,        NULL, "Play SFX While Unfocused", {.cvar = &cv_playsoundifunfocused}, 145},
 };
 
 static menuitem_t OP_DataOptionsMenu[] =
@@ -1472,19 +1481,28 @@ static menuitem_t OP_GameOptionsMenu[] =
 {
 	{IT_STRING | IT_SUBMENU, NULL, "Random Item Toggles...",	{.submenu = &OP_MonitorToggleDef},	 10},
 
-	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				{.cvar = &cv_kartspeed},			 30},
-	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			{.cvar = &cv_kartbattlespeed},		 40},
-	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 50},
-	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 60},
+	{IT_STRING | IT_SUBMENU, NULL, "BlanKart Gameplay...",		{.submenu = &OP_BlanKartGameOptionsDef},	 30},
 
-	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 80},
-	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 90},
+	{IT_STRING | IT_CVAR, NULL, "Race Game Speed",				{.cvar = &cv_kartspeed},			 40},
+	{IT_STRING | IT_CVAR, NULL, "Battle Game Speed",			{.cvar = &cv_kartbattlespeed},		 50},
+	{IT_STRING | IT_CVAR, NULL, "Frantic Items",				{.cvar = &cv_kartfrantic},			 60},
+	{IT_SECRET,           NULL, "Encore Mode",					{.cvar = &cv_kartencore},			 70},
 
-	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			110},
-	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			120},
-	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			130},
+	{IT_STRING | IT_CVAR, NULL, "Number of Laps",				{.cvar = &cv_numlaps},				 90},
+	{IT_STRING | IT_CVAR, NULL, "Exit Countdown Timer",			{.cvar = &cv_countdowntime},		 100},
 
-	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			150},
+	{IT_STRING | IT_CVAR, NULL, "Time Limit",					{.cvar = &cv_timelimit},			120},
+	{IT_STRING | IT_CVAR, NULL, "Starting Bumpers",				{.cvar = &cv_kartbumpers},			130},
+	{IT_STRING | IT_CVAR, NULL, "Karma Comeback",				{.cvar = &cv_kartcomeback},			140},
+
+	{IT_STRING | IT_CVAR, NULL, "Track Power Levels",			{.cvar = &cv_kartusepwrlv},			160},
+};
+
+static menuitem_t OP_BlanKartGameOptionsMenu[] =
+{
+	{IT_STRING | IT_CVAR, NULL, "Rings",						{.cvar = &cv_kartrings},			 10},
+	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 20},
+
 };
 
 static menuitem_t OP_ServerOptionsMenu[] =
@@ -1819,6 +1837,20 @@ menu_t SR_UnlockChecklistDef =
 	0,
 	NULL
 };
+
+menu_t SR_MusicTestDef =
+{
+	MN_NONE,
+	NULL,
+	sizeof (SR_MusicTestMenu)/sizeof (menuitem_t),
+	&OP_SoundOptionsDef,
+	SR_MusicTestMenu,
+	M_DrawMusicTest,
+	60, 150,
+	0,
+	NULL
+};
+
 menu_t SR_EmblemHintDef =
 {
 	MN_NONE,
@@ -2070,6 +2102,7 @@ menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player4CamOp
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
+menu_t OP_BlanKartGameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_BlanKartGameOptionsMenu, &OP_GameOptionsDef, 30, 30);
 menu_t OP_ServerOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_SERVER", OP_ServerOptionsMenu, &OP_MainDef, 24, 30);
 menu_t OP_AdvServerOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_SERVER", OP_AdvServerOptionsMenu, &OP_ServerOptionsDef, 24, 30);
 
@@ -2441,12 +2474,15 @@ static void M_ChangeCvar(INT32 choice)
 
 	choice = (choice<<1) - 1;
 
-	if (cv->flags & CV_FLOAT)
+	if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
+	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
+	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD))
 	{
-		if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
-			||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
-			||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD)
-			|| !(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
+		CV_SetValue(cv,cv->value+choice);
+	}
+	else if (cv->flags & CV_FLOAT)
+	{
+		if (!(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
 		{
 			char s[20];
 			float n = FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f);
@@ -6351,7 +6387,7 @@ static void M_Options(INT32 choice)
 	OP_DataOptionsMenu[3].status = (Playing()) ? (IT_GRAYEDOUT) : (IT_STRING|IT_SUBMENU); // Erase data
 #endif
 
-	OP_GameOptionsMenu[4].status =
+	OP_GameOptionsMenu[5].status =
 		(M_SecretUnlocked(SECRET_ENCORE)) ? (IT_CVAR|IT_STRING) : IT_SECRET; // cv_kartencore
 
 	OP_MainDef.prevMenu = currentMenu;
@@ -6726,6 +6762,338 @@ static void M_HandleSoundTest(INT32 choice)
 	}
 	if (exitmenu)
 	{
+		if (currentMenu->prevMenu)
+			M_SetupNextMenu(currentMenu->prevMenu);
+		else
+			M_ClearMenus(true);
+	}
+}
+
+static musicdef_t *curplaying = NULL;
+static INT32 st_sel = 0;
+static tic_t st_time = 0;
+static size_t st_namescroll = 0;
+static size_t st_namescrollstate = 0;
+//static patch_t* st_radio[9];
+//static patch_t* st_launchpad[4];
+
+static void M_MusicTest(INT32 choice)
+{
+	//INT32 ul = skyRoomMenuTranslations[choice-1];
+	//UINT8 i;
+	//char buf[8];
+	(void)choice;
+
+	if (!S_PrepareSoundTest())
+	{
+		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
+		return;
+	}
+
+	curplaying = NULL;
+	st_time = 0;
+
+	st_sel = 0;
+
+	M_SetupNextMenu(&SR_MusicTestDef);
+}
+
+static void M_DrawMusicTest(void)
+{
+	INT32 x, y, i;
+
+	// let's handle the ticker first. ideally we'd tick this somewhere else, BUT...
+	if (curplaying)
+	{
+		{
+			fixed_t work;
+
+			work = st_time;
+
+			if (st_time >= (FRACUNIT << (FRACBITS - 2))) // prevent overflow jump - takes about 15 minutes of loop on the same song to reach
+					st_time = work;
+
+			st_time += renderdeltatics;
+		}
+	}
+
+	x = 90<<FRACBITS;
+	y = (BASEVIDHEIGHT-32)<<FRACBITS;
+
+	y = (BASEVIDWIDTH-(vid.width/vid.dupx))/2;
+
+	V_DrawFill(y-1, 20, vid.width/vid.dupx+1, 24, 159);
+	{
+		static fixed_t st_scroll = -FRACUNIT;
+		const char* titl;
+
+		x = 16;
+		V_DrawString(x, 10, 0, "NOW PLAYING:");
+		if (curplaying)
+		{
+			if (curplaying->title && curplaying->title[0])
+				titl = va("%s - ", curplaying->title);
+			else if (curplaying->title && curplaying->source[0])
+				titl = va("%s - ", curplaying->source);
+			else
+				titl = va("%s - ", "What did you do.......");
+		}
+		else
+			titl = "NONE - ";
+
+		i = V_LevelNameWidth(titl);
+
+		st_scroll += renderdeltatics;
+
+		while (st_scroll >= (i << FRACBITS))
+			st_scroll -= i << FRACBITS;
+
+		x -= st_scroll >> FRACBITS;
+
+		while (x < BASEVIDWIDTH-y)
+			x += i;
+		while (x > y)
+		{
+			x -= i;
+			V_DrawLevelTitle(x, 24, 0, titl);
+		}
+
+		if (curplaying && curplaying->author && curplaying->composers && curplaying->composers[0] && curplaying->author[0])
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, va ("%s, %s",curplaying->author, curplaying->composers));
+		else if (curplaying && curplaying->author && curplaying->author[0])
+			V_DrawRightAlignedThinString(BASEVIDWIDTH-16, 46, V_ALLOWLOWERCASE, curplaying->author);
+
+		if (curplaying)
+		{
+			if (!curplaying->usage && !curplaying->usage[0])
+				V_DrawString(vid.dupx, vid.height - 10*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s", &curplaying->name[0][0]));
+			else {
+				V_DrawSmallString(vid.dupx, vid.height - 5*vid.dupy, V_NOSCALESTART|V_ALLOWLOWERCASE, va("%.6s - %.255s\n", &curplaying->name[0][0], curplaying->usage));
+			}
+		}
+	}
+
+	V_DrawFill(20, 60, 280, 128, 159);
+
+	{
+		INT32 t, b, q, m = 128;
+
+		if (numsoundtestdefs <= 8)
+		{
+			t = 0;
+			b = numsoundtestdefs - 1;
+			i = 0;
+		}
+		else
+		{
+			q = m;
+			m = (5*m)/numsoundtestdefs;
+			if (st_sel < 3)
+			{
+				t = 0;
+				b = 7;
+				i = 0;
+			}
+			else if (st_sel >= numsoundtestdefs-4)
+			{
+				t = numsoundtestdefs - 8;
+				b = numsoundtestdefs - 1;
+				i = q-m;
+			}
+			else
+			{
+				t = st_sel - 3;
+				b = st_sel + 4;
+				i = (t * (q-m))/(numsoundtestdefs - 8);
+			}
+		}
+
+		V_DrawFill(20+280-1, 60 + i, 1, m, 0);
+
+		if (t != 0)
+			V_DrawString(20+280+4, 60+4 - (skullAnimCounter/5), V_YELLOWMAP, "\x1A");
+
+		if (b != numsoundtestdefs - 1)
+			V_DrawString(20+280+4, 60+128-12 + (skullAnimCounter/5), V_YELLOWMAP, "\x1B");
+
+		x = 24;
+		y = 64;
+
+		if (renderisnewtic) ++st_namescroll;
+
+		while (t <= b)
+		{
+			if (t == st_sel)
+				V_DrawFill(20, y-4, 280-1, 16, 157);
+
+			{
+				const size_t MAXLENGTH = 34;
+				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
+				size_t nameoffset = 0;
+				size_t namelength = soundtestdefs[t]->source ? strlen(soundtestdefs[t]->source) : 0;
+				if (soundtestdefs[t]->title && (soundtestdefs[t]->title[0]))
+					namelength = strlen(soundtestdefs[t]->title);
+
+				char buf[MAXLENGTH+1];
+
+				if (t == st_sel && namelength > MAXLENGTH)
+				{
+					switch (st_namescrollstate)
+					{
+						case 0:
+						{
+							// Scroll forward
+							nameoffset = (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH + 1);
+
+							if (nameoffset == namelength - MAXLENGTH)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 1:
+						{
+							nameoffset = namelength - MAXLENGTH;
+
+							// Show name end for 1 second, then start scrolling back
+							if (st_namescroll == TICRATE)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 2:
+						{
+							// Scroll back
+							nameoffset = (namelength - MAXLENGTH - 1) - (st_namescroll/SCROLLSPEED) % (namelength - MAXLENGTH);
+
+							if (nameoffset == 0)
+							{
+								st_namescroll = 0;
+								st_namescrollstate++;
+							}
+						}
+						break;
+
+						case 3:
+						{
+							nameoffset = 0;
+
+							// Show name beginning for 1 second, then start scrolling forward again
+							if (st_namescroll == TICRATE)
+							{
+								st_namescroll = 0;
+								st_namescrollstate = 0;
+							}
+						}
+						break;
+					}
+				}
+
+				if (soundtestdefs[t]->title && soundtestdefs[t]->title[0])
+					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
+				else if (soundtestdefs[t]->source && soundtestdefs[t]->source[0])
+					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
+				else
+					strncpy(buf, "How tf did you get here?", MAXLENGTH);
+				buf[MAXLENGTH] = 0;
+
+				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
+				if (curplaying == soundtestdefs[t])
+				{
+					V_DrawFill(20+280-9, y-4, 8, 16, 150);
+				}
+			}
+			t++;
+			y += 16;
+		}
+	}
+}
+
+static void M_HandleMusicTest(INT32 choice)
+{
+	boolean exitmenu = false; // exit to previous menu
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			if (st_sel++ >= numsoundtestdefs-1)
+				st_sel = 0;
+			{
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_UPARROW:
+			if (!st_sel--)
+				st_sel = numsoundtestdefs-1;
+			{
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_PGDN:
+			if (st_sel < numsoundtestdefs-1)
+			{
+				st_sel += 3;
+				if (st_sel >= numsoundtestdefs-1)
+					st_sel = numsoundtestdefs-1;
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_PGUP:
+			if (st_sel)
+			{
+				st_sel -= 3;
+				if (st_sel < 0)
+					st_sel = 0;
+				S_StartSound(NULL, sfx_menu1);
+			}
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+		case KEY_BACKSPACE:
+			if (curplaying)
+			{
+				S_StopSounds();
+				S_StopMusic();
+				curplaying = NULL;
+				st_time = 0;
+				S_StartSound(NULL, sfx_skid);
+			}
+			break;
+		case KEY_ESCAPE:
+			exitmenu = true;
+			st_namescroll = 0;
+			st_namescrollstate = 0;
+			break;
+
+		case KEY_RIGHTARROW:
+		case KEY_LEFTARROW:
+		case KEY_ENTER:
+			S_StopSounds();
+			S_StopMusic();
+			st_time = 0;
+			curplaying = soundtestdefs[st_sel];
+			S_ChangeMusicInternal(&curplaying->name[0][0], true);
+			break;
+
+		default:
+			break;
+	}
+	if (exitmenu)
+	{
+		Z_Free(soundtestdefs);
+		soundtestdefs = NULL;
+
 		if (currentMenu->prevMenu)
 			M_SetupNextMenu(currentMenu->prevMenu);
 		else

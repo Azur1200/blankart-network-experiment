@@ -253,6 +253,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrings);
 
 	CV_RegisterVar(&cv_newspeedometer);
+	CV_RegisterVar(&cv_showinput);
 
 	CV_RegisterVar(&cv_kartwalltransfer);
 
@@ -362,11 +363,11 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 			   /*Hyudoro*/ { 0, 0, 0, 1, 2, 1, 0, 0 }, // Hyudoro
 		   /*Pogo Spring*/ { 0, 0, 0, 0, 0, 0, 0, 0 }, // Pogo Spring
 		  /*Kitchen Sink*/ { 0, 0, 0, 0, 0, 0, 0, 0 }, // Kitchen Sink
-		    /*Super Ring*/ { 2, 1, 1, 0, 0, 0, 0, 0 }, // Super Ring
+		    /*Super Ring*/ { 1, 2, 2, 0, 0, 0, 0, 0 }, // Super Ring
 			 /*Land Mine*/ { 3, 0, 0, 0, 0, 0, 0, 0 }, // Land Mine
 		 /*Bubble Shield*/ { 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
-		  /*Flame Shield*/ { 0, 0, 0, 0, 0, 1, 3, 5 }, // Flame Shield
-		   /*Drop Target*/ { 2, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
+		  /*Flame Shield*/ { 0, 0, 0, 0, 0, 2, 4, 5 }, // Flame Shield
+		   /*Drop Target*/ { 1, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
 			/*Sneaker x2*/ { 0, 0, 2, 2, 2, 0, 0, 0 }, // Sneaker x2
 			/*Sneaker x3*/ { 0, 0, 0, 1, 6,10, 5, 0 }, // Sneaker x3
 			 /*Banana x3*/ { 0, 1, 1, 0, 0, 0, 0, 0 }, // Banana x3
@@ -1428,7 +1429,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	else if (!(player->itemroulette >= (TICRATE*3)))
 		return;
 
-	if (!(numbosswaypoints > 0))
+	if (!(K_UsingLegacyCheckpoints()))
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -1455,12 +1456,12 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		if (spbplace != -1 && player->position == spbplace+1)
 		{
 			// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
-			if (!(numbosswaypoints > 0))
+			if (!(K_UsingLegacyCheckpoints()))
 				pdis = (3 * pdis) / 2;
 			spbrush = true;
 		}
 
-	if (!(numbosswaypoints > 0))
+	if (!(K_UsingLegacyCheckpoints()))
 	{
 		pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
 
@@ -1583,7 +1584,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (!(numbosswaypoints > 0))
+	if (!(K_UsingLegacyCheckpoints()))
 	{
 		// SPECIAL CASE No. 6:
 		// Force SPB onto 2nd if they get too far behind
@@ -1609,7 +1610,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// Split into another function for a debug function below
 	// Use a legacy version for maps not using waypoints.
-	if (numbosswaypoints > 0)
+	if (K_UsingLegacyCheckpoints())
 		useodds = K_FindLegacyUseodds(player, mashed, pingame, bestbumper, spbrush, dontforcespb);
 	else
 		useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
@@ -1628,7 +1629,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	for (i = 1; i < NUMKARTRESULTS; i++)
 	{
-		if (numbosswaypoints > 0)
+		if (K_UsingLegacyCheckpoints())
 		{
 			spawnchance[i] = (totalspawnchance += K_KartGetLegacyItemOdds(useodds, i, mashed, spbrush));
 
@@ -7073,7 +7074,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	// Start at lap 1 when using old checkpoint system just to be safe.
-	if ((numbosswaypoints > 0) && (player->laps == 0) && (numlaps > 0))
+	if ((K_UsingLegacyCheckpoints()) && (player->laps == 0) && (numlaps > 0))
 		player->laps = 1;
 
 	if (player->stealingtimer == 0 && player->stolentimer == 0
@@ -8238,9 +8239,9 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 
 			// While the player was in the "bigwaypointgap" state, laps did not change from crossing finish lines.
 			// So reset the lap back to normal, in case they were able to get behind the line.
-			player->laps = player->lastsafelap;
-			if (numbosswaypoints == 0)
+			if (!K_UsingLegacyCheckpoints())
 			{
+				player->laps = player->lastsafelap;
 				player->starpostnum = player->lastsafestarpost;
 			}
 		}
@@ -8874,10 +8875,9 @@ void K_UpdateAllPlayerPositions(void)
 
 		if (player->respawn > 0 && player->lastsafelap != player->laps)
 		{
-			player->laps = player->lastsafelap;
-
-			if (numbosswaypoints == 0)
+			if (!K_UsingLegacyCheckpoints())
 			{
+				player->laps = player->lastsafelap;
 				player->starpostnum = player->lastsafestarpost;
 			}
 		}
@@ -8890,7 +8890,7 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
-			if (numbosswaypoints > 0)
+			if (K_UsingLegacyCheckpoints())
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
@@ -10168,6 +10168,17 @@ boolean K_RingsActive(void)
 	}
 
 	return true;
+}
+
+boolean K_UsingLegacyCheckpoints(void)
+{
+	if (numbosswaypoints > 0)
+	{
+		// We are using Kart V1 waypoints!
+		return true;
+	}
+
+	return false;
 }
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
