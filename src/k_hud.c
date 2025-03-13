@@ -50,6 +50,8 @@ static CV_PossibleValue_t speedo_cons_t[]= {
 	{0, NULL}};
 consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL);
 
+consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, CV_OnOff, NULL);
+
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
 
@@ -1357,6 +1359,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	INT32 fx = 0, fy = 0, fflags = 0;
+	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
 	INT32 addOrSub = V_ADD;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
@@ -1373,17 +1376,15 @@ static void K_DrawKartPositionNum(INT32 num)
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (r_splitscreen)
-	{
+	if (r_splitscreen || (cv_showinput.value && !r_splitscreen))
 		scale /= 2;
-	}
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
 
 	// pain and suffering defined below
 	if (!r_splitscreen)
 	{
-		fx = POSI_X;
+		fx = POSI_X + xoffs;
 		fy = BASEVIDHEIGHT - 8;
 		fflags = V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SPLITSCREEN;
 	}
@@ -3830,7 +3831,7 @@ static void K_drawKartFirstPerson(void)
 static void K_drawInput(void)
 {
 	static INT32 pn = 0;
-	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+	INT32 target = 0, splitflags = (V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SLIDEIN);
 	INT32 x = (BASEVIDWIDTH - 32)*FRACUNIT, y = (BASEVIDHEIGHT - 24)*FRACUNIT;
 	INT32 offs, col;
 	const INT32 accent1 = splitflags | skincolors[stplyr->skincolor].ramp[5];
@@ -4449,7 +4450,7 @@ void K_drawKartHUD(void)
 				K_drawRingMeter();
 			}
 
-			if (modeattacking && !bossinfo.boss)
+			if (cv_showinput.value || (modeattacking && !bossinfo.boss))
 			{
 				// Draw the input UI
 				if (LUA_HudEnabled(hud_position))

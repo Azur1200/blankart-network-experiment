@@ -253,6 +253,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrings);
 
 	CV_RegisterVar(&cv_newspeedometer);
+	CV_RegisterVar(&cv_showinput);
 
 	CV_RegisterVar(&cv_kartwalltransfer);
 
