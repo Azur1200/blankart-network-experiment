@@ -9032,20 +9032,21 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			{
 				for (j = 0; j < CUPCACHE_MAX; j++)
 				{
+					// No level in this slot?
+					if (!cup->levellist[j])
+						continue;
+
 					// Already discovered?
 					if (cup->cachedlevels[j] != NEXTMAP_INVALID)
 						continue;
 
-					if (!cup->levellist[j] || strcasecmp(cup->levellist[j], name) != 0)
+					// Not your name?
+					if (strcasecmp(cup->levellist[j], name) != 0)
 						continue;
 
-					// Only panic about back-reference for non-bonus material.
-					if (j < MAXLEVELLIST)
-					{
-						if (mapheaderinfo[i]->cup)
-							I_Error("P_InitMapData: Map %s cannot appear in cups multiple times! (First in %s, now in %s)", name, mapheaderinfo[i]->cup->name, cup->name);
+					// Have a map recognise the first cup it's a part of.
+					if (!mapheaderinfo[i]->cup)
 						mapheaderinfo[i]->cup = cup;
-					}
 
 					cup->cachedlevels[j] = i;
 				}
