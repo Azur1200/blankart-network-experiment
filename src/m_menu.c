@@ -10901,7 +10901,7 @@ static void M_ResetControlsResponse(INT32 ch)
 	}
 
 	// Setup original defaults
-	G_CopyControls(gamecontrol[p], gamecontroldefault, NULL, 0);
+	G_ResetControls(p);
 
 	// Setup gamepad option defaults (yucky)
 	CV_StealthSet(&cv_usejoystick[p], cv_usejoystick[p].defaultvalue);

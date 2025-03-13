@@ -544,17 +544,18 @@ INT32 G_KeyStringtoNum(const char *keystr)
 	return 0;
 }
 
-void G_CopyControls(INT32 (*setupcontrols)[MAXINPUTMAPPING], INT32 (*fromcontrols)[MAXINPUTMAPPING], const INT32 *gclist, INT32 gclen)
+void G_ResetControls(UINT8 p)
 {
-	INT32 i, j, gc;
+	INT32 i, j, k;
 
-	for (i = 0; i < (gclist && gclen ? gclen : num_gamecontrols); i++)
+	for (i = 0; i < num_gamecontrols; i++)
 	{
-		gc = (gclist && gclen) ? gclist[i] : i;
-
-		for (j = 0; j < MAXINPUTMAPPING; j++)
+		for (j = k = 0; j < MAXINPUTMAPPING; j++)
 		{
-			setupcontrols[gc][j] = fromcontrols[gc][j];
+			INT32 key = gamecontroldefault[i][j];
+			gamecontrol[p][i][j] = 0;
+			if (p == 0 || key >= NUMKEYS) // keyboard is for P1 only
+				gamecontrol[p][i][k++] = key;
 		}
 	}
 }
@@ -727,6 +728,10 @@ static void setcontrol(UINT8 player)
 			break;
 		}
 	}
+
+	// clear out binds that weren't set
+	while (++i < MAXINPUTMAPPING)
+		gamecontrol[player][numctrl][i] = 0;
 }
 
 void Command_Setcontrol_f(void)

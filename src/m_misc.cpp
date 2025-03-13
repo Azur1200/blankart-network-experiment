@@ -480,7 +480,7 @@ void Command_LoadConfig_f(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		G_CopyControls(gamecontrol[i], gamecontroldefault, NULL, 0);
+		G_ResetControls(i);
 	}
 
 	// temporarily reset execversion to default
@@ -531,7 +531,7 @@ void M_FirstLoadConfig(void)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		G_CopyControls(gamecontrol[i], gamecontroldefault, NULL, 0);
+		G_ResetControls(i);
 	}
 
 	// register execversion here before we load any configs
