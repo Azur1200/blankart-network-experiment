@@ -1759,25 +1759,6 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 	return weight;
 }
 
-static boolean K_JustBumpedException(mobj_t *mobj)
-{
-	switch (mobj->type)
-	{
-		case MT_WALLSPIKE:
-			return true;
-		default:
-			break;
-	}
-
-	if (mobj->flags & MF_PUSHABLE)
-		return true;
-
-	if (!mobj->player && mobj->flags & MF_SOLID)
-		return true;
-
-	return false;
-}
-
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
 	mobj_t *fx;
@@ -1825,13 +1806,13 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 
 	// Don't bump if you've recently bumped
-	if (mobj1->player && mobj1->player->justbumped && !K_JustBumpedException(mobj2))
+	if (mobj1->player && mobj1->player->justbumped)
 	{
 		mobj1->player->justbumped = bumptime;
 		return false;
 	}
 
-	if (mobj2->player && mobj2->player->justbumped && !K_JustBumpedException(mobj1))
+	if (mobj2->player && mobj2->player->justbumped)
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
