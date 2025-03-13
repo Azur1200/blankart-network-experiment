@@ -3643,7 +3643,7 @@ void A_AttractChase(mobj_t *actor)
 			actor->threshold--;
 
 		// Rings flicker before disappearing
-		if (actor->fuse && actor->fuse < 5*TICRATE && (leveltime & 1))
+		if (actor->fuse && actor->fuse < 2*TICRATE && (leveltime & 1))
 			actor->renderflags |= RF_DONTDRAW;
 		else
 			actor->renderflags &= ~RF_DONTDRAW;
