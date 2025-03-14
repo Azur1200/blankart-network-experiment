@@ -13450,8 +13450,13 @@ void A_SSMineExplode(mobj_t *actor)
 	if (actor->flags2 & MF2_DEBRIS)
 		return;
 
-	K_SpawnMineExplosion(actor, (actor->target && actor->target->player) ? actor->target->player->skincolor : SKINCOLOR_KETCHUP);
 	K_MineExplodeAttack(actor, (3*actor->info->painchance)>>1, (boolean)locvar1);
+
+	skincolornum_t color = SKINCOLOR_KETCHUP;
+	if (!P_MobjWasRemoved(actor->target) && actor->target->player)
+		color = actor->target->player->skincolor;
+
+	K_SpawnMineExplosion(actor, color);
 }
 
 void A_LandMineExplode(mobj_t *actor)
