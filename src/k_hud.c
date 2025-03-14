@@ -50,7 +50,9 @@ static CV_PossibleValue_t speedo_cons_t[]= {
 	{0, NULL}};
 consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL);
 
-consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, CV_OnOff, NULL);
+static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {0, NULL}};
+
+consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL);
 
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
@@ -1359,7 +1361,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	INT32 fx = 0, fy = 0, fflags = 0;
-	INT32 xoffs = (cv_showinput.value) ? -48 : 0;
+	INT32 xoffs = (cv_showinput.value > 0) ? -48 : 0;
 	INT32 addOrSub = V_ADD;
 	boolean flipdraw = false;	// flip the order we draw it in for MORE splitscreen bs. fun.
 	boolean flipvdraw = false;	// used only for 2p splitscreen so overtaking doesn't make 1P's position fly off the screen.
@@ -1376,7 +1378,7 @@ static void K_DrawKartPositionNum(INT32 num)
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
-	if (r_splitscreen || (cv_showinput.value && !r_splitscreen))
+	if (r_splitscreen || ((cv_showinput.value > 0) && !r_splitscreen))
 		scale /= 2;
 
 	W = FixedMul(W<<FRACBITS, scale)>>FRACBITS;
@@ -3841,7 +3843,7 @@ static void K_drawInput(void)
 #define BUTTH 11
 
 #define drawbutt(xoffs, butt, symb)\
-	if (!stplyr->exiting && (K_GetKartButtons(stplyr) & butt))\
+	if ((K_GetKartButtons(stplyr) & butt))\
 	{\
 		offs = 2*FRACUNIT;\
 		col = accent1;\
@@ -3867,44 +3869,79 @@ static void K_drawInput(void)
 
 	y -= FRACUNIT;
 
-	if (stplyr->exiting || !stplyr->cmd.turning) // no turn
-		target = 0;
-	else // turning of multiple strengths!
+	if (cv_showinput.value == 2)
 	{
-		target = ((abs(stplyr->cmd.turning) - 1)/125)+1;
-		if (target > 4)
-			target = 4;
-		if (stplyr->cmd.turning < 0)
-			target = -target;
+		INT32 joyx, joyxoffs, joyy, joyyoffs, joyflags;
+		joyxoffs = -8, joyyoffs = -24;
+		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
+		joyflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM;
+
+		// O backing
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, joyflags|accent2);
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, joyflags|splitflags|31);
+
+		if (stplyr->cmd.turning || stplyr->cmd.throwdir)
+		{
+			INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
+			// joystick hole
+			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, joyflags|accent1);
+			// joystick top and back
+			V_DrawFill(joyx+joyxoffs+3-turning/80,
+				joyy+joyyoffs+2-stplyr->cmd.throwdir/80,
+				10, 10, joyflags|31);
+			V_DrawFill(joyx+joyxoffs+3-turning/64,
+				joyy+joyyoffs+1-stplyr->cmd.throwdir/64,
+				10, 10, joyflags|accent1);
+		}
+		else
+		{
+			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, joyflags|accent2);
+			V_DrawFill(joyx+joyxoffs+3,
+				joyy+joyyoffs+1,
+				10, 10,joyflags|accent1);
+		}
 	}
-
-	if (pn != target)
-	{
-		if (abs(pn - target) == 1)
-			pn = target;
-		else if (pn < target)
-			pn += 2;
-		else //if (pn > target)
-			pn -= 2;
-	}
-
-	if (pn < 0)
-	{
-		splitflags |= V_FLIP; // right turn
-		x -= FRACUNIT;
-	}
-
-	target = abs(pn);
-	if (target > 4)
-		target = 4;
-
-	if (!stplyr->skincolor)
-		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
 	else
 	{
-		UINT8 *colormap;
-		colormap = R_GetTranslationColormap(0, stplyr->skincolor, GTC_CACHE);
-		V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+		if (!stplyr->cmd.turning) // no turn
+			target = 0;
+		else // turning of multiple strengths!
+		{
+			target = ((abs(stplyr->cmd.turning) - 1)/125)+1;
+			if (target > 4)
+				target = 4;
+			if (stplyr->cmd.turning < 0)
+				target = -target;
+		}
+
+		if (pn != target)
+		{
+			if (abs(pn - target) == 1)
+				pn = target;
+			else if (pn < target)
+				pn += 2;
+			else //if (pn > target)
+				pn -= 2;
+		}
+
+		if (pn < 0)
+		{
+			splitflags |= V_FLIP; // right turn
+			x -= FRACUNIT;
+		}
+
+		target = abs(pn);
+		if (target > 4)
+			target = 4;
+
+		if (!stplyr->skincolor)
+			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], NULL);
+		else
+		{
+			UINT8 *colormap;
+			colormap = R_GetTranslationColormap(0, stplyr->skincolor, GTC_CACHE);
+			V_DrawFixedPatch(x, y, FRACUNIT, splitflags, kp_inputwheel[target], colormap);
+		}
 	}
 }
 
@@ -4450,7 +4487,7 @@ void K_drawKartHUD(void)
 				K_drawRingMeter();
 			}
 
-			if (cv_showinput.value || (modeattacking && !bossinfo.boss))
+			if ((cv_showinput.value > 0) || (modeattacking && !bossinfo.boss))
 			{
 				// Draw the input UI
 				if (LUA_HudEnabled(hud_position))
