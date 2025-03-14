@@ -323,7 +323,7 @@ menu_t OP_DataOptionsDef, OP_ScreenshotOptionsDef, OP_EraseDataDef;
 #ifdef HAVE_DISCORDRPC
 menu_t OP_DiscordOptionsDef;
 #endif
-menu_t OP_HUDOptionsDef, OP_ChatOptionsDef;
+menu_t OP_HUDOptionsDef, OP_ChatOptionsDef, OP_GameHudOptionsDef;
 menu_t OP_GameOptionsDef, OP_BlanKartGameOptionsDef, OP_ServerOptionsDef;
 menu_t OP_AdvServerOptionsDef;
 //menu_t OP_NetgameOptionsDef, OP_GametypeOptionsDef;
@@ -1444,19 +1444,15 @@ static menuitem_t OP_HUDOptionsMenu[] =
 	                      NULL, "HUD Visibility",			{.cvar = &cv_translucenthud},		 30},
 
 	{IT_STRING | IT_SUBMENU, NULL, "Online HUD options...", {.submenu = &OP_ChatOptionsDef}, 	 	 45},
-	{IT_STRING | IT_CVAR, NULL, "Background Glass",			{.cvar = &cons_backcolor},		 55},
+	{IT_STRING | IT_SUBMENU, NULL, "Game HUD options...", {.submenu = &OP_GameHudOptionsDef}, 	 	 55},
+	{IT_STRING | IT_CVAR, NULL, "Background Glass",			{.cvar = &cons_backcolor},		 65},
 
-	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
-						  NULL, "Minimap Visibility",		{.cvar = &cv_kartminimap},		 70},
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		{.cvar = &cv_kartspeedometer},	 80},
-	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			{.cvar = &cv_kartcheck},			 90},
+	{IT_STRING | IT_CVAR, NULL,	"Menu Highlights",			{.cvar = &cons_menuhighlight},     80},
+	// highlight info - (GOOD HIGHLIGHT, WARNING HIGHLIGHT) - 80 (see M_DrawHUDOptions)
 
-	{IT_STRING | IT_CVAR, NULL,	"Menu Highlights",			{.cvar = &cons_menuhighlight},     105},
-	// highlight info - (GOOD HIGHLIGHT, WARNING HIGHLIGHT) - 105 (see M_DrawHUDOptions)
+	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		{.cvar = &cv_constextsize},		105},
 
-	{IT_STRING | IT_CVAR, NULL,	"Console Text Size",		{.cvar = &cv_constextsize},		130},
-
-	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  {.cvar = &cv_showfocuslost},   145},
+	{IT_STRING | IT_CVAR, NULL,   "Show \"FOCUS LOST\"",  {.cvar = &cv_showfocuslost},   115},
 };
 
 // Ok it's still called chatoptions but we'll put ping display in here to be clean
@@ -1475,6 +1471,16 @@ static menuitem_t OP_ChatOptionsMenu[] =
 	{IT_STRING | IT_CVAR, NULL, "Spam Protection",			{.cvar = &cv_chatspamprotection},	70},
 
 	{IT_STRING | IT_CVAR, NULL, "Local ping display",		{.cvar = &cv_showping},			90},	// shows ping next to framerate if we want to.
+};
+
+static menuitem_t OP_GameHudOptionsMenu[] =
+{
+	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
+						  NULL, "Minimap Visibility",		{.cvar = &cv_kartminimap},		 10},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		{.cvar = &cv_kartspeedometer},	 25},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		{.cvar = &cv_newspeedometer},	 35},
+	{IT_STRING | IT_CVAR, NULL, "Input Display",			{.cvar = &cv_showinput},		 45},
+	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			{.cvar = &cv_kartcheck},		 55},
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
@@ -1502,6 +1508,8 @@ static menuitem_t OP_BlanKartGameOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Rings",						{.cvar = &cv_kartrings},			 10},
 	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 20},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spark",					{.cvar = &cv_kartbumpspark},		 30},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spring",					{.cvar = &cv_kartbumpspring},		 40},
 
 };
 
@@ -2100,6 +2108,7 @@ menu_t OP_Player3CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player3CamOp
 menu_t OP_Player4CamOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_Player4CamOptionsMenu, &OP_CamOptionsDef, 30, 30);
 
 menu_t OP_ChatOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_HUD", OP_ChatOptionsMenu, &OP_HUDOptionsDef, 30, 30);
+menu_t OP_GameHudOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_HUD", OP_GameHudOptionsMenu, &OP_HUDOptionsDef, 30, 30);
 
 menu_t OP_GameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_GameOptionsMenu, &OP_MainDef, 30, 30);
 menu_t OP_BlanKartGameOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_GAME", OP_BlanKartGameOptionsMenu, &OP_GameOptionsDef, 30, 30);
@@ -11407,7 +11416,7 @@ static void M_DrawHUDOptions(void)
 	const char *str1 = " Warning highlight";
 	const char *str2 = ",";
 	const char *str3 = "Good highlight";
-	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 115;
+	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 90;
 	INT32 w0 = V_StringWidth(str0, 0), w1 = V_StringWidth(str1, 0), w2 = V_StringWidth(str2, 0), w3 = V_StringWidth(str3, 0);
 
 	M_DrawGenericMenu();
