@@ -3871,34 +3871,33 @@ static void K_drawInput(void)
 
 	if (cv_showinput.value == 2)
 	{
-		INT32 joyx, joyxoffs, joyy, joyyoffs, joyflags;
+		INT32 joyx, joyxoffs, joyy, joyyoffs;
 		joyxoffs = -8, joyyoffs = -24;
 		joyx = x>>FRACBITS, joyy = y>>FRACBITS;
-		joyflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
 		// O backing
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, joyflags|accent2);
-		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, joyflags|splitflags|31);
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs-1, 16, 16, splitflags|accent2);
+		V_DrawFill(joyx+joyxoffs, joyy+joyyoffs+15, 16, 1, splitflags|splitflags|31);
 
 		if (stplyr->cmd.turning || stplyr->cmd.throwdir)
 		{
 			INT16 turning = encoremode ? -stplyr->cmd.turning : stplyr->cmd.turning;
 			// joystick hole
-			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, joyflags|accent1);
+			V_DrawFill(joyx+joyxoffs+5, joyy+joyyoffs+4, 6, 6, splitflags|accent1);
 			// joystick top and back
 			V_DrawFill(joyx+joyxoffs+3-turning/80,
 				joyy+joyyoffs+2-stplyr->cmd.throwdir/80,
-				10, 10, joyflags|31);
+				10, 10, splitflags|31);
 			V_DrawFill(joyx+joyxoffs+3-turning/64,
 				joyy+joyyoffs+1-stplyr->cmd.throwdir/64,
-				10, 10, joyflags|accent1);
+				10, 10, splitflags|accent1);
 		}
 		else
 		{
-			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, joyflags|accent2);
+			V_DrawFill(joyx+joyxoffs+3, joyy+joyyoffs+11, 10, 1, splitflags|accent2);
 			V_DrawFill(joyx+joyxoffs+3,
 				joyy+joyyoffs+1,
-				10, 10,joyflags|accent1);
+				10, 10,splitflags|accent1);
 		}
 	}
 	else

@@ -8844,25 +8844,29 @@ void K_KartLegacyUpdatePosition(player_t *player)
 void K_UpdateAllPlayerPositions(void)
 {
 	INT32 i;
-	// First loop: Ensure all players' distance to the finish line are all accurate
-	for (i = 0; i < MAXPLAYERS; i++)
+
+	if (!K_UsingLegacyCheckpoints())
 	{
-		player_t *player = &players[i];
-		if (!playeringame[i] || player->spectator || !player->mo || P_MobjWasRemoved(player->mo))
+		// First loop: Ensure all players' distance to the finish line are all accurate
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			continue;
-		}
-
-		if (player->respawn > 0 && player->lastsafelap != player->laps)
-		{
-			if (!K_UsingLegacyCheckpoints())
+			player_t *player = &players[i];
+			if (!playeringame[i] || player->spectator || !player->mo || P_MobjWasRemoved(player->mo))
 			{
-				player->laps = player->lastsafelap;
-				player->starpostnum = player->lastsafestarpost;
+				continue;
 			}
-		}
 
-		K_UpdatePlayerWaypoints(player);
+			if (player->respawn > 0 && player->lastsafelap != player->laps)
+			{
+				if (!K_UsingLegacyCheckpoints())
+				{
+					player->laps = player->lastsafelap;
+					player->starpostnum = player->lastsafestarpost;
+				}
+			}
+
+			K_UpdatePlayerWaypoints(player);
+		}
 	}
 
 	// Second loop: Ensure all player positions reflect everyone's distances
