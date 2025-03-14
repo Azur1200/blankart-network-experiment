@@ -6831,12 +6831,12 @@ static void M_DrawMusicTest(void)
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
 		if (curplaying)
 		{
-			if (curplaying->title && curplaying->title[0])
+			if (curplaying->source && curplaying->source[0] && curplaying->title && curplaying->title[0])
+				titl = va("%s - %s - ", curplaying->title, curplaying->source);
+			else if (curplaying->title && curplaying->title[0])
 				titl = va("%s - ", curplaying->title);
-			else if (curplaying->title && curplaying->source[0])
-				titl = va("%s - ", curplaying->source);
 			else
-				titl = va("%s - ", "What did you do.......");
+				titl = va("%s - ", "No Title - ");
 		}
 		else
 			titl = "NONE - ";
@@ -6930,9 +6930,9 @@ static void M_DrawMusicTest(void)
 				const size_t MAXLENGTH = 34;
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
 				size_t nameoffset = 0;
-				size_t namelength = soundtestdefs[t]->source ? strlen(soundtestdefs[t]->source) : 0;
-				if (soundtestdefs[t]->title && (soundtestdefs[t]->title[0]))
-					namelength = strlen(soundtestdefs[t]->title);
+				size_t namelength = soundtestdefs[t]->title ? strlen(soundtestdefs[t]->title) : 8; // "No Title"
+				if (soundtestdefs[t]->source && (soundtestdefs[t]->source[0]))
+					namelength = strlen(va("%s - %s ", soundtestdefs[t]->title, soundtestdefs[t]->source));
 
 				char buf[MAXLENGTH+1];
 
@@ -6994,12 +6994,13 @@ static void M_DrawMusicTest(void)
 					}
 				}
 
-				if (soundtestdefs[t]->title && soundtestdefs[t]->title[0])
+				if (soundtestdefs[t]->title && soundtestdefs[t]->title[0]
+					&& soundtestdefs[t]->source && soundtestdefs[t]->source[0])
+					strncpy(buf, va("%s - %s",soundtestdefs[t]->title, soundtestdefs[t]->source) + nameoffset, MAXLENGTH);
+				else if (soundtestdefs[t]->title && soundtestdefs[t]->title[0])
 					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
-				else if (soundtestdefs[t]->source && soundtestdefs[t]->source[0])
-					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
 				else
-					strncpy(buf, "How tf did you get here?", MAXLENGTH);
+					strncpy(buf, "No Title or Source", MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
