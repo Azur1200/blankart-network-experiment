@@ -7367,10 +7367,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						(mobj->target->y - mobj->target->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
 						(mobj->target->z - mobj->target->momz), MT_THOK);
 
+					wave->colorized = true;
+					wave->color = SKINCOLOR_BLUE;
 					wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
 					P_SetScale(wave, (wave->destscale = ws));
 
-					P_SetMobjState(wave, S_BUBBLESHIELDWAVE1);
+					P_SetMobjState(wave, S_SPLISH1);
 
 					wave->momx = mobj->target->momx;
 					wave->momy = mobj->target->momy;
@@ -8243,10 +8245,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 							mobj->y + FixedMul(mobj->radius, FINESINE(aoff>>ANGLETOFINESHIFT)),
 							mobj->z, MT_THOK);
 
+						wave->colorized = true;
+						wave->color = SKINCOLOR_PERIWINKLE;
 						wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
 						P_SetScale(wave, (wave->destscale = mobj->scale/2));
 
-						P_SetMobjState(wave, S_BUBBLESHIELDWAVE1);
+						P_SetMobjState(wave, S_SPLISH1);
 						if (leveltime & 1)
 							wave->tics++;
 
