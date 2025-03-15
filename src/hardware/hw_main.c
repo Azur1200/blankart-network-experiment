@@ -6367,13 +6367,14 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glsolvetjoin);
 
 	CV_RegisterVar(&cv_glbatching);
+
+	CV_RegisterVar(&cv_glanisotropicmode);
 }
 
 void HWR_AddSessionCommands(void)
 {
 	if (gl_sessioncommandsadded)
 		return;
-	CV_RegisterVar(&cv_glanisotropicmode);
 	gl_sessioncommandsadded = true;
 }
 

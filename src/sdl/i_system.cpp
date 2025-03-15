@@ -2688,6 +2688,6 @@ UINT32 I_GetFreeMem(UINT32 *total)
 }
 
 // note CPUAFFINITY code used to reside here
-void I_RegisterSysCommands(void) {}
+//void I_RegisterSysCommands(void) {}
 
 #endif // HAVE_SDL

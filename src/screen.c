@@ -349,9 +349,6 @@ void SCR_Startup(void)
 	V_Init();
 	V_Recalc();
 
-	CV_RegisterVar(&cv_ticrate);
-	CV_RegisterVar(&cv_constextsize);
-
 	V_SetPalette(0);
 }
 

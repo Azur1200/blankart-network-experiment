@@ -1624,7 +1624,19 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 	const char *overridestr = valstr;
 
-	if (CV_CompleteValue(var, &overridestr, &overrideval))
+	if (mainwads == 0 && var->PossibleValue == Color_cons_t)
+	{
+		override = true;
+		if (!strcmp(valstr, "Blue"))
+			overrideval = SKINCOLOR_BLUE;
+		else if (!strcmp(valstr, "Orange"))
+			overrideval = SKINCOLOR_ORANGE;
+		else if (!strcmp(valstr, "Red"))
+			overrideval = SKINCOLOR_RED;
+		else
+			I_Error("Sorry, you need to add %s to the list of skincolors in Setvalue", valstr);
+	}
+	else if (CV_CompleteValue(var, &overridestr, &overrideval))
 	{
 		if (overridestr)
 		{

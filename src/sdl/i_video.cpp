@@ -1779,6 +1779,20 @@ static void Impl_VideoSetupBuffer(void)
 	}
 }
 
+void I_RegisterSysCommands(void)
+{
+	if (dedicated || graphics_started)
+		return;
+
+	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand ("vid_info", VID_Command_Info_f);
+	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar (&cv_vidwait);
+	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
+}
+
 void I_StartupGraphics(void)
 {
 	if (dedicated)
@@ -1789,13 +1803,6 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_info", VID_Command_Info_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
-	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = static_cast<SDL_bool>(M_CheckParm("-nomouse"));
 	disable_fullscreen = M_CheckParm("-win") ? SDL_TRUE : SDL_FALSE;
 

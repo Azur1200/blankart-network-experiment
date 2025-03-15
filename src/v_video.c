@@ -54,34 +54,34 @@ consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, CV_YesNo, NULL);
 static void CV_palette_OnChange(void);
 
 static CV_PossibleValue_t gamma_cons_t[] = {{-15, "MIN"}, {5, "MAX"}, {0, NULL}};
-consvar_t cv_globalgamma = CVAR_INIT ("gamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_globalgamma = CVAR_INIT ("gamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
 
 static CV_PossibleValue_t saturation_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
-consvar_t cv_globalsaturation = CVAR_INIT ("saturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_globalsaturation = CVAR_INIT ("saturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
 
 #define huecoloursteps 4
 
 static CV_PossibleValue_t hue_cons_t[] = {{0, "MIN"}, {(huecoloursteps*6)-1, "MAX"}, {0, NULL}};
-consvar_t cv_rhue = CVAR_INIT ("rhue",  "0", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
-consvar_t cv_yhue = CVAR_INIT ("yhue",  "4", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
-consvar_t cv_ghue = CVAR_INIT ("ghue",  "8", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
-consvar_t cv_chue = CVAR_INIT ("chue", "12", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
-consvar_t cv_bhue = CVAR_INIT ("bhue", "16", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
-consvar_t cv_mhue = CVAR_INIT ("mhue", "20", CV_SAVE|CV_CALL, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_rhue = CVAR_INIT ("rhue",  "0", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_yhue = CVAR_INIT ("yhue",  "4", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_ghue = CVAR_INIT ("ghue",  "8", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_chue = CVAR_INIT ("chue", "12", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_bhue = CVAR_INIT ("bhue", "16", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
+consvar_t cv_mhue = CVAR_INIT ("mhue", "20", CV_SAVE|CV_CALL|CV_NOINIT, hue_cons_t, CV_palette_OnChange);
 
-consvar_t cv_rgamma = CVAR_INIT ("rgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_ygamma = CVAR_INIT ("ygamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_ggamma = CVAR_INIT ("ggamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_cgamma = CVAR_INIT ("cgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_bgamma = CVAR_INIT ("bgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
-consvar_t cv_mgamma = CVAR_INIT ("mgamma", "0", CV_SAVE|CV_CALL, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_rgamma = CVAR_INIT ("rgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_ygamma = CVAR_INIT ("ygamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_ggamma = CVAR_INIT ("ggamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_cgamma = CVAR_INIT ("cgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_bgamma = CVAR_INIT ("bgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
+consvar_t cv_mgamma = CVAR_INIT ("mgamma", "0", CV_SAVE|CV_CALL|CV_NOINIT, gamma_cons_t, CV_palette_OnChange);
 
-consvar_t cv_rsaturation = CVAR_INIT ("rsaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
-consvar_t cv_ysaturation = CVAR_INIT ("ysaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
-consvar_t cv_gsaturation = CVAR_INIT ("gsaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
-consvar_t cv_csaturation = CVAR_INIT ("csaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
-consvar_t cv_bsaturation = CVAR_INIT ("bsaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
-consvar_t cv_msaturation = CVAR_INIT ("msaturation", "10", CV_SAVE|CV_CALL, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_rsaturation = CVAR_INIT ("rsaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_ysaturation = CVAR_INIT ("ysaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_gsaturation = CVAR_INIT ("gsaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_csaturation = CVAR_INIT ("csaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_bsaturation = CVAR_INIT ("bsaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
+consvar_t cv_msaturation = CVAR_INIT ("msaturation", "10", CV_SAVE|CV_CALL|CV_NOINIT, saturation_cons_t, CV_palette_OnChange);
 
 static CV_PossibleValue_t constextsize_cons_t[] = {
 	{V_NOSCALEPATCH, "Small"}, {V_SMALLSCALEPATCH, "Medium"}, {V_MEDSCALEPATCH, "Large"}, {0, "Huge"},

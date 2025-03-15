@@ -1472,6 +1472,26 @@ void D_SRB2Main(void)
 	// Have to be done here before files are loaded
 	M_InitCharacterTables();
 
+	D_RegisterServerCommands();
+	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
+	R_RegisterEngineStuff();
+	S_RegisterSoundStuff();
+	CON_Register();
+	if (!dedicated)
+	{
+		CV_RegisterVar(&cv_ticrate);
+		CV_RegisterVar(&cv_constextsize);
+	}
+
+	I_RegisterSysCommands();
+
+#ifdef HWRENDER
+	// Lactozilla: Add every hardware mode CVAR and CCMD.
+	// Has to be done before the configuration file loads,
+	// ~~but after the OpenGL library loads.~~ G: no lol
+	HWR_AddCommands();
+#endif
+
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 	W_InitMultipleFiles(startupiwads, false);
@@ -1535,13 +1555,6 @@ void D_SRB2Main(void)
 	CONS_Printf("I_StartupGraphics()...\n");
 	I_StartupGraphics();
 
-#ifdef HWRENDER
-	// Lactozilla: Add every hardware mode CVAR and CCMD.
-	// Has to be done before the configuration file loads,
-	// but after the OpenGL library loads.
-	HWR_AddCommands();
-#endif
-
 	//--------------------------------------------------------- CONSOLE
 	// setup loading screen
 	SCR_Startup();
@@ -1561,13 +1574,6 @@ void D_SRB2Main(void)
 
 	timelimits[GT_BATTLE] = 2;
 
-	D_RegisterServerCommands();
-	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
-	R_RegisterEngineStuff();
-	S_RegisterSoundStuff();
-
-	I_RegisterSysCommands();
-	
 	CON_SetLoadingProgress(LOADED_HUINIT);
 	
 	CONS_Printf("W_InitMultipleFiles(): Adding external PWADs.\n");
