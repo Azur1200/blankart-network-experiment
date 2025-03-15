@@ -38,6 +38,8 @@ enum hud {
 	hud_battlecomebacktimer,	// comeback timer in battlefullscreen. separated for ease of use.
 	hud_wanted,
 	hud_speedometer,
+	hud_rings,
+	hud_lives,
 	hud_freeplay,
 	hud_rankings,		// Tab rankings
 

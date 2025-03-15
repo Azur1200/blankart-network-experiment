@@ -1865,7 +1865,7 @@ static void K_drawKartLaps(void)
 		}
 
 		// Lives
-		if (uselives)
+		if (LUA_HudEnabled(hud_lives) && uselives)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, stplyr->skincolor, GTC_CACHE);
 			V_DrawMappedPatch(fr+21, fy-13, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_MINIMAP], colormap);
@@ -2060,7 +2060,6 @@ static void K_drawKartSpeedometer(void)
 static void K_drawRingMeter(void)
 {
 	UINT8 rn[2];
-	INT32 ringflip = 0;
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
@@ -2105,7 +2104,7 @@ static void K_drawRingMeter(void)
 
 		fr = fx;
 
-		V_DrawMappedPatch(fr, fy-10, V_HUDTRANS|splitflags|ringflip, kp_ringsplitscreen, (colorring ? ringmap : NULL));
+		V_DrawMappedPatch(fr, fy-10, V_HUDTRANS|splitflags, kp_ringsplitscreen, (colorring ? ringmap : NULL));
 
 		if (stplyr->rings < 0) // Draw the minus for ring debt
 			V_DrawMappedPatch(fr+7, fy-8, V_HUDTRANS|splitflags, kp_ringdebtminussmall, ringmap);
@@ -2482,34 +2481,16 @@ static boolean K_ShowPlayerNametag(player_t *p)
 static void K_DrawLocalTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 id)
 {
 	UINT16 chatcolor = skincolors[p->skincolor].chatcolor;
-	char color_prefix[2];
 	char letters[4] = {'A', 'B', 'C', 'D'};
-	if (chatcolor > V_TANMAP)
-	{
-		sprintf(color_prefix, "%c", '\x80');
-	}
-	else
-	{
-		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
-	}
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN, va("%s%c\nv", color_prefix, letters[id]));
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, va("%c\nv", letters[id]));
 }
 
 static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 {
 	UINT16 chatcolor = skincolors[SKINCOLOR_ORANGE].chatcolor;
-	char color_prefix[2];
-	if (chatcolor > V_TANMAP)
-	{
-		sprintf(color_prefix, "%c", '\x80');
-	}
-	else
-	{
-		sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
-	}
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN, va("%sRival\nv", color_prefix));
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\nv");
 }
 
 static const char *K_StringTypingDot(player_t *p)
@@ -2588,13 +2569,13 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 		fixed_t stemx;
 		fixed_t stemy;
 		int j;
-		boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
+		/*boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
 		boolean flipped;
 
 		if (flipcam)
 			flipped = (p->mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
 		else
-			flipped = p->mo->eflags & MFE_VERTICALFLIP;
+			flipped = p->mo->eflags & MFE_VERTICALFLIP;*/
 		stemx = (x * vid.dupx) / FRACUNIT;
 		stemy = (y * vid.dupy) / FRACUNIT;
 
@@ -2980,8 +2961,8 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
-	char color_prefix[2];
 	UINT8 skin = 0;
+	UINT16 chatcolor = skincolors[player->mo->color].chatcolor;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
@@ -2994,21 +2975,8 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(faceprefix[skin][FACE_MINIMAP]->width))/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(faceprefix[skin][FACE_MINIMAP]->height))/2)<<FRACBITS);
 
-	{
-		UINT16 chatcolor = skincolors[player->mo->color].chatcolor;
-		if (chatcolor > V_TANMAP)
-		{
-			sprintf(color_prefix, "%c", '\x80');
-		}
-		else
-		{
-			sprintf(color_prefix, "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
-		}
-	}
-
-
-	const char *player_name = va("%s%s", color_prefix, player_names[player - players]);
-	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags, player_name);
+	const char *player_name = va("%s",player_names[player - players]);
+	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
 }
 
 static void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
@@ -3237,6 +3205,12 @@ static void K_drawKartMinimap(void)
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+
+				if (mobj->player)
+				{
+					// Draw the Nametag
+					K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, &players[i]);
+				}
 
 				// Target reticule
 				if ((gametype == GT_RACE && players[i].position == spbplace)
@@ -4433,7 +4407,7 @@ void K_drawKartHUD(void)
 				K_drawKartAccessibilityIcons(0);
 			}
 
-			if (K_RingsActive() == true)
+			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
 			{
 				K_drawRingMeter();
 			}
