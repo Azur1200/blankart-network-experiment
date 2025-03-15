@@ -203,6 +203,9 @@ static void M_HandleServerPage(INT32 choice);
 void M_SetWaitingMode(int mode);
 int  M_GetWaitingMode(void);
 
+// a single freeslot menu for testing
+menu_t FreeslotTest;
+
 // the haxor message menu
 menu_t MessageDef;
 
@@ -359,7 +362,6 @@ static void M_PlaybackQuit(INT32 choice);
 static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the button from being extremely fucked
 
 // Drawing functions
-static void M_DrawGenericMenu(void);
 static void M_DrawGenericBackgroundMenu(void);
 static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
@@ -409,6 +411,33 @@ static void Newgametype_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 //static void Dummymares_OnChange(void);
 static void Dummystaff_OnChange(void);
+
+// temporary measure until menu_t and menupres_t are merged (hopefully)
+menu_t *menunum2menudef[NUMMENUTYPES] = {
+	[MN_OP_CAMERA] = &OP_CamOptionsDef,
+	[MN_OP_P1CAMERA] = &OP_Player1CamOptionsDef,
+	[MN_OP_P2CAMERA] = &OP_Player2CamOptionsDef,
+	[MN_OP_P3CAMERA] = &OP_Player3CamOptionsDef,
+	[MN_OP_P4CAMERA] = &OP_Player4CamOptionsDef,
+
+	[MN_OP_MAIN] = &OP_MainDef,
+	[MN_OP_CHANGECONTROLS] = &OP_ControlsDef,
+	[MN_OP_VIDEO] = &OP_VideoOptionsDef,
+	[MN_OP_OPENGL] = &OP_OpenGLOptionsDef,
+	[MN_OP_SOUND] = &OP_SoundOptionsDef,
+	[MN_OP_CHAT] = &OP_ChatOptionsDef,
+	[MN_OP_HUD] = &OP_HUDOptionsDef,
+	[MN_OP_GAME] = &OP_GameOptionsDef,
+	[MN_OP_BLANKARTGAME] = &OP_BlanKartGameOptionsDef,
+	[MN_OP_SERVER] = &OP_ServerOptionsDef,
+	[MN_OP_ADVANCEDSERVER] = &OP_AdvServerOptionsDef,
+	[MN_OP_MONITORTOGGLE] = &OP_MonitorToggleDef,
+	[MN_OP_DATA] = &OP_DataOptionsDef,
+	[MN_OP_ERASEDATA] = &OP_EraseDataDef,
+	[MN_MISC_REPLAY] = &MISC_ReplayOptionsDef,
+
+	[MN_FIRSTFREESLOT] = &FreeslotTest,
+};
 
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
@@ -3003,7 +3032,10 @@ boolean M_Responder(event_t *ev)
 						break;
 					case IT_SUBMENU:
 						currentMenu->lastOn = itemOn;
-						M_SetupNextMenu((menu_t *)currentMenu->menuitems[itemOn].itemaction.submenu);
+						if ((menu_t *)(currentMenu->menuitems[itemOn].itemaction.submenu)->menuitems == NULL)
+							CONS_Alert(CONS_WARNING, "Submenu is empty!\n");
+						else
+							M_SetupNextMenu((menu_t *)currentMenu->menuitems[itemOn].itemaction.submenu);
 						break;
 				}
 			}
@@ -3919,7 +3951,7 @@ static void M_DrawMenuTitle(void)
 	}
 }
 
-static void M_DrawGenericMenu(void)
+void M_DrawGenericMenu(void)
 {
 	INT32 x, y, w, i, cursory = 0;
 

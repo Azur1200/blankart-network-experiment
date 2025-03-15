@@ -16,6 +16,7 @@
 #include "doomdef.h" // Constants
 #include "d_think.h" // actionf_t
 #include "info.h" // Mobj, state, sprite, etc constants
+#include "m_menu.h" // NUMMENUFREESLOTS
 #include "lua_script.h"
 
 #ifdef __cplusplus
@@ -27,6 +28,7 @@ extern "C" {
 extern char *FREE_STATES[NUMSTATEFREESLOTS];
 extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
 extern char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+extern char *FREE_MENUS[NUMMENUFREESLOTS];
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 #define initfreeslots() {\

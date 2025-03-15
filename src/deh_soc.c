@@ -534,6 +534,16 @@ void readfreeslots(MYFILE *f)
 				} else
 					deh_warning("Ran out of free PRECIP slots!\n");
 			}
+			else if (fastcmp(type, "MN"))
+			{
+				for (i = 0; i < NUMMENUFREESLOTS; i++)
+					if (!FREE_MENUS[i]) {
+						CONS_Printf("Menu MN_%s allocated.\n",word);
+						FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
+						strcpy(FREE_MENUS[i],word);
+						break;
+					}
+			}
 			else
 				deh_warning("Freeslots: unknown enum class '%s' for '%s_%s'", type, type, word);
 		}
@@ -2135,6 +2145,150 @@ void readtextprompt(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
+static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+
+	menuitem_t *menuitem = menudef->menuitems + menudef->numitems;
+	(void)itemname; // menuitem->itemname = Z_StrDup(itemname);
+	boolean actionset = false;
+	boolean textset = false;
+
+	// taking quite possibly the only opportunity i'll ever get
+	// to avoid three tabs of indentation...
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp)
+			*(tmp-1) = '\0';
+		else
+			break;
+		strupr(word);
+
+		// Now get the part after
+		word2 = tmp += 2;
+		//strupr(word2);
+
+		if (fastcmp(word, "PATCH"))
+		{
+			menuitem->patch = Z_StrDup(word2);
+		}
+		else if (fastncmp(word, "TEXT", 4))
+		{
+			UINT16 flags = IT_STRING;
+			if (fastcmp(word+4, "HEADER"))
+				flags = IT_HEADER;
+			else if (fastcmp(word+4, "SECRET"))
+				flags = IT_SECRET;
+			else if (word[4])
+			{
+				deh_warning("MenuItem %s: unknown word '%s'", "", word);
+				continue;
+			}
+
+			if (textset)
+			{
+				deh_warning("MenuItem %s: text already set!", "");
+				continue;
+			}
+			textset = true;
+			menuitem->status |= flags;
+			menuitem->text = Z_StrDup(word2);
+		}
+		else if (fastncmp(word, "CVAR", 4))
+		{
+			UINT16 flags = IT_CVAR;
+			if (fastcmp(word+4, "SLIDER"))
+				flags |= IT_CV_SLIDER;
+			else if (fastcmp(word+4, "STRING"))
+				flags |= IT_CV_STRING;
+			else if (fastcmp(word+4, "INTEGER"))
+				flags |= IT_CV_INTEGERSTEP;
+			else if (word[4])
+			{
+				deh_warning("MenuItem %s: unknown word '%s'", "", word);
+				continue;
+			}
+
+			if (actionset)
+			{
+				deh_warning("MenuItem %s: action already set!", "");
+				continue;
+			}
+			consvar_t *cvar = CV_FindVar(word2);
+			if (!cvar)
+			{
+				deh_warning("MenuItem %s: unable to find cvar '%s'", "", word2);
+				continue;
+			}
+			actionset = true;
+			menuitem->status |= flags;
+			menuitem->itemaction.cvar = cvar;
+		}
+		else if (fastcmp(word, "SUBMENU"))
+		{
+			if (actionset)
+			{
+				deh_warning("MenuItem %s: action already set!", "");
+				continue;
+			}
+			menutype_t mn = get_menutype(word2);
+			if (mn == MN_NONE)
+			{
+				deh_warning("MenuItem %s: unknown menu '%s'", "", word2);
+				continue;
+			}
+			actionset = true;
+			menuitem->status |= IT_SUBMENU;
+			menuitem->itemaction.submenu = menunum2menudef[mn];
+		}
+		else if (fastcmp(word, "CALL") || fastcmp(word, "KEYHANDLER"))
+		{
+			if (actionset)
+			{
+				deh_warning("MenuItem %s: action already set!", "");
+				continue;
+			}
+			void (*routine)(INT32 choice) = NULL; // TODO
+			if (!routine)
+			{
+				deh_warning("MenuItem %s: unknown call routine '%s'", "", word2);
+				continue;
+			}
+			actionset = true;
+			menuitem->status |= word[0] == 'C' ? IT_CALL : IT_KEYHANDLER;
+			menuitem->itemaction.routine = routine;
+		}
+		else if (fastcmp(word, "ALPHAKEY") || fastcmp(word, "Y"))
+		{
+			menuitem->alphaKey = atoi(word2);
+		}
+		else
+			deh_warning("MenuItem %s: unknown word '%s'", "", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
+
+	Z_Free(s);
+}
+
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2142,6 +2296,20 @@ void readmenu(MYFILE *f, INT32 num)
 	char *word2;
 	char *tmp;
 	INT32 value;
+	boolean space = false;
+
+	menu_t *menudef = menunum2menudef[num];
+	if (menudef == NULL)
+	{
+		deh_warning("No def for menu %d, that is certainly strange...", num);
+		return;
+	}
+
+	//menuactive = false;
+
+	memset(menudef, 0, sizeof(menu_t));
+	menudef->menuid = num;
+	menudef->drawroutine = M_DrawGenericMenu;
 
 	do
 	{
@@ -2161,12 +2329,21 @@ void readmenu(MYFILE *f, INT32 num)
 			if (s == tmp)
 				continue; // Skip comment lines, but don't break.
 
+			space = false;
+
 			// Get the part before the " = "
 			tmp = strchr(s, '=');
 			if (tmp)
 				*(tmp-1) = '\0';
 			else
-				break;
+			{
+				space = true;
+				tmp = strchr(s, ' ');
+				if (tmp)
+					*tmp-- = '\0'; // decrement after, so word2 is correct
+				else
+					break;
+			}
 			strupr(word);
 
 			// Now get the part after
@@ -2174,6 +2351,19 @@ void readmenu(MYFILE *f, INT32 num)
 			strupr(word2);
 
 			value = atoi(word2); // used for numerical settings
+
+			if (space)
+			{
+				if (fastcmp(word, "MENUITEM"))
+				{
+					menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
+					readmenuitem(f, menudef, word2);
+					menudef->numitems++;
+				}
+				else
+					deh_warning("Menu %d: unknown word '%s'", num, word);
+				continue;
+			}
 
 			if (fastcmp(word, "BACKGROUNDNAME"))
 			{
@@ -2315,6 +2505,45 @@ void readmenu(MYFILE *f, INT32 num)
 				menupres[num].exitwipe = get_number(word2);
 				titlechanged = true;
 			}
+			// MENUDEF STARTS HERE
+			else if (fastcmp(word, "MENUTITLEPIC") || fastcmp(word, "TITLEPIC"))
+			{
+				menudef->menutitlepic = Z_StrDup(word2);
+			}
+			else if (fastcmp(word, "PREVMENU"))
+			{
+				value = get_menutype(word2);
+				if (value == MN_NONE)
+				{
+					deh_warning("Menu %d: unknown previous menu '%s'", num, word2);
+					continue;
+				}
+				menudef->prevMenu = menunum2menudef[value];
+			}
+			else if (fastcmp(word, "DRAWROUTINE"))
+			{
+				{
+					deh_warning("Menu %d: unknown draw routine '%s'", num, word2);
+					continue;
+				}
+			}
+			else if (fastcmp(word, "X"))
+			{
+				menudef->x = value;
+			}
+			else if (fastcmp(word, "Y"))
+			{
+				menudef->y = value;
+			}
+			else if (fastcmp(word, "QUITROUTINE"))
+			{
+				{
+					deh_warning("Menu %d: unknown quit routine '%s'", num, word2);
+					continue;
+				}
+			}
+			else
+				deh_warning("Menu %d: unknown word '%s'", num, word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
 
@@ -4061,7 +4290,13 @@ menutype_t get_menutype(const char *word)
 		return atoi(word);
 	if (fastncmp("MN_",word,3))
 		word += 3; // take off the MN_
-	for (i = 0; i < NUMMENUTYPES; i++)
+	for (i = 0; i < NUMMENUFREESLOTS; i++) {
+		if (!FREE_MENUS[i])
+			break;
+		if (fastcmp(word, FREE_MENUS[i]))
+			return MN_FIRSTFREESLOT+i;
+	}
+	for (i = 0; i < MN_FIRSTFREESLOT; i++)
 		if (fastcmp(word, MENUTYPES_LIST[i]))
 			return i;
 	deh_warning("Couldn't find menutype named 'MN_%s'",word);

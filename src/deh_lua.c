@@ -197,6 +197,21 @@ static inline int lib_freeslot(lua_State *L)
 					CONS_Alert(CONS_WARNING, "Ran out of free PRECIP slots!\n");
 			}
 		}
+		else if (fastcmp(type, "MN"))
+		{
+			menutype_t i;
+			for (i = 0; i < NUMMENUFREESLOTS; i++)
+				if (!FREE_MENUS[i]) {
+					CONS_Printf("Menu MN_%s allocated.\n",word);
+					FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
+					strcpy(FREE_MENUS[i],word);
+					lua_pushinteger(L, MN_FIRSTFREESLOT + i);
+					r++;
+					break;
+				}
+			if (i == NUMMENUFREESLOTS)
+				CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
+		}
 		Z_Free(s);
 		lua_remove(L, 1);
 		continue;
@@ -633,7 +648,15 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
-		for (i = 0; i < NUMMENUTYPES; i++)
+		for (i = 0; i < NUMMENUFREESLOTS; i++) {
+			if (!FREE_MENUS[i])
+				break;
+			if (fastcmp(p, FREE_MENUS[i])) {
+				CacheAndPushConstant(L, word, MN_FIRSTFREESLOT+i);
+				return 1;
+			}
+		}
+		for (i = 0; i < MN_FIRSTFREESLOT; i++)
 			if (fastcmp(p, MENUTYPES_LIST[i])) {
 				CacheAndPushConstant(L, word, i);
 				return 1;

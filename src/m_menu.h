@@ -138,12 +138,29 @@ typedef enum
 	// MN_MAPAUSE,
 	// MN_HELP,
 
+	// SRB2Kart
+	MN_OP_HUD,
+	MN_OP_CHAT,
+	MN_OP_GAME,
+	MN_OP_BLANKARTGAME,
+	MN_OP_ADVANCEDSERVER,
+	MN_OP_CAMERA,
+	MN_OP_P3CAMERA,
+	MN_OP_P4CAMERA,
+	MN_MISC_REPLAY,
+
 	MN_SPECIAL,
+
+	MN_FIRSTFREESLOT,
+	MN_LASTFREESLOT,
 	NUMMENUTYPES,
-} menutype_t; // up to 63; MN_SPECIAL = 53
+} menutype_t; // up to 63
+#define NUMMENUFREESLOTS (NUMMENUTYPES - MN_FIRSTFREESLOT)
 #define MTREE2(a,b) (a | (b<<MENUBITS))
 #define MTREE3(a,b,c) MTREE2(a, MTREE2(b,c))
 #define MTREE4(a,b,c,d) MTREE2(a, MTREE3(b,c,d))
+
+extern menu_t *menunum2menudef[NUMMENUTYPES];
 
 typedef struct
 {
@@ -354,6 +371,8 @@ struct menu_t
 
 void M_SetupNextMenu(menu_t *menudef);
 void M_ClearMenus(boolean callexitmenufunc);
+
+void M_DrawGenericMenu(void);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

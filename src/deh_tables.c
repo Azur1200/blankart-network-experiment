@@ -33,6 +33,7 @@
 char *FREE_STATES[NUMSTATEFREESLOTS];
 char *FREE_MOBJS[NUMMOBJFREESLOTS];
 char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+char *FREE_MENUS[NUMMENUFREESLOTS];
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 struct flickytypes_s FLICKYTYPES[] = {
@@ -615,6 +616,8 @@ const char *const MENUTYPES_LIST[] = {
 	"SP_NIGHTS_REPLAY",
 	"SP_NIGHTS_GHOST",
 
+	"SP_MARATHON",
+
 	// Multiplayer
 	"MP_MAIN",
 	"MP_SPLITSCREEN", // SplitServer
@@ -680,6 +683,17 @@ const char *const MENUTYPES_LIST[] = {
 
 	// "MAPAUSE",
 	// "HELP",
+
+	// SRB2Kart
+	"OP_HUD",
+	"OP_CHAT",
+	"OP_GAME",
+	"OP_BLANKARTGAME",
+	"OP_ADVANCEDSERVER",
+	"OP_CAMERA",
+	"OP_P3CAMERA",
+	"OP_P4CAMERA",
+	"MISC_REPLAY",
 
 	"SPECIAL"
 };
