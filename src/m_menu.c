@@ -310,7 +310,7 @@ menu_t OP_CamOptionsDef;
 menu_t OP_Player1CamOptionsDef, OP_Player2CamOptionsDef, OP_Player3CamOptionsDef, OP_Player4CamOptionsDef;
 
 // Video & Sound
-menu_t OP_VideoOptionsDef, OP_VideoModeDef;
+menu_t OP_VideoOptionsDef, OP_VideoModeDef, OP_VisualOptionsDef;
 #ifdef HWRENDER
 static void M_OpenGLOptionsMenu(INT32 choice);
 menu_t OP_OpenGLOptionsDef;
@@ -1268,13 +1268,12 @@ static menuitem_t OP_VideoOptionsMenu[] =
 	{IT_STRING | IT_CVAR,	NULL,	"Vertical Sync",		{.cvar = &cv_vidwait},				 70},
 	{IT_STRING | IT_CVAR,	NULL,	"FPS Cap",				{.cvar = &cv_fpscap},				 80},
 	
-	{IT_STRING | IT_CVAR,	NULL,	"VHS Effect",			{.cvar = &cv_vhseffect},			 100},
+	{IT_STRING | IT_SUBMENU,NULL,	"Visual Effects...",	{.submenu = &OP_VisualOptionsDef},	 100},
 
 	{IT_STRING | IT_CVAR,	NULL,	"Draw Distance",		{.cvar = &cv_drawdist},				110},
 	{IT_STRING | IT_CVAR,	NULL,	"Weather Draw Distance", {.cvar = &cv_drawdist_precip},		120},
 	{IT_STRING | IT_CVAR,	NULL,	"Skyboxes",				{.cvar = &cv_skybox},				130},
 	{IT_STRING | IT_CVAR,	NULL,	"Parallel Software",	{.cvar = &cv_parallelsoftware},		140},
-
 
 #ifdef HWRENDER
 	{IT_CALL | IT_STRING,	NULL,	"OpenGL Options...",	{.routine = M_OpenGLOptionsMenu},	160},
@@ -1292,7 +1291,7 @@ enum
 	op_vide_showfps,
 	op_video_vsync,
 	op_video_fps,
-	op_video_vhs,
+	op_video_vis,
 	op_video_dd,
 	op_video_wdd,
 	op_video_skybox,
@@ -1300,6 +1299,13 @@ enum
 #ifdef HWRENDER
 	op_video_ogl
 #endif
+};
+
+static menuitem_t OP_VisualOptionsMenu[] =
+{
+	{IT_STRING | IT_CVAR,	NULL,	"VHS Effect",	{.cvar = &cv_vhseffect},		 10},
+	{IT_STRING | IT_CVAR,	NULL,	"Player Slope Tilt",	{.cvar = &cv_sloperoll}, 20},
+
 };
 
 static menuitem_t OP_VideoModeMenu[] =
@@ -1477,10 +1483,14 @@ static menuitem_t OP_GameHudOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR | IT_CV_SLIDER,
 						  NULL, "Minimap Visibility",		{.cvar = &cv_kartminimap},		 10},
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		{.cvar = &cv_kartspeedometer},	 25},
-	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		{.cvar = &cv_newspeedometer},	 35},
-	{IT_STRING | IT_CVAR, NULL, "Input Display",			{.cvar = &cv_showinput},		 45},
-	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			{.cvar = &cv_kartcheck},		 55},
+	{IT_STRING | IT_CVAR, NULL, "Small Minimap Players",	{.cvar = &cv_minihead},	 		 25},
+	{IT_STRING | IT_CVAR, NULL, "Minimap Nametags",			{.cvar = &cv_showminimapnames},	 35},
+	{IT_STRING | IT_CVAR, NULL, "Minimap Angle",			{.cvar = &cv_showminimapangle},	 45},
+	{IT_STRING | IT_CVAR, NULL, "Nametags",					{.cvar = &cv_seenames},	 		 55},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Display",		{.cvar = &cv_kartspeedometer},	 65},
+	{IT_STRING | IT_CVAR, NULL, "Speedometer Style",		{.cvar = &cv_newspeedometer},	 75},
+	{IT_STRING | IT_CVAR, NULL, "Input Display",			{.cvar = &cv_showinput},		 85},
+	{IT_STRING | IT_CVAR, NULL, "Show \"CHECK\"",			{.cvar = &cv_kartcheck},		 95},
 };
 
 static menuitem_t OP_GameOptionsMenu[] =
@@ -2057,7 +2067,7 @@ menu_t OP_VideoOptionsDef =
 	&OP_MainDef,
 	OP_VideoOptionsMenu,
 	M_DrawVideoMenu,
-	30, 30,
+	30, 15,
 	0,
 	NULL
 };
@@ -2074,6 +2084,8 @@ menu_t OP_VideoModeDef =
 	0,
 	NULL
 };
+
+menu_t OP_VisualOptionsDef = DEFAULTMENUSTYLE(MN_NONE, "M_Video", OP_VisualOptionsMenu, &OP_VideoOptionsDef, 60, 30);
 
 menu_t OP_SoundOptionsDef =
 {
