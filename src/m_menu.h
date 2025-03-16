@@ -148,6 +148,7 @@ typedef enum
 	MN_OP_P3CAMERA,
 	MN_OP_P4CAMERA,
 	MN_MISC_REPLAY,
+	MN_MP_OFFLINESERVER,
 
 	MN_SPECIAL,
 
@@ -372,7 +373,41 @@ struct menu_t
 void M_SetupNextMenu(menu_t *menudef);
 void M_ClearMenus(boolean callexitmenufunc);
 
+void M_SetupMultiHandler(INT32 choice);
+void M_HandleSetupMultiPlayer(INT32 choice);
+void M_QuitMultiPlayerMenu(INT32 choice);
+void M_StartServerMenu(INT32 choice);
+void M_StartOfflineServerMenu(INT32 choice);
+void M_StartServer(INT32 choice);
+void M_ConnectMenuModChecks(INT32 choice);
+void M_HandleConnectIP(INT32 choice);
+void M_CancelConnect(INT32 choice);
+void M_Setup1PControlsMenu(INT32 choice);
+void M_Setup2PControlsMenu(INT32 choice);
+void M_Setup3PControlsMenu(INT32 choice);
+void M_Setup4PControlsMenu(INT32 choice);
+void M_VideoModeMenu(INT32 choice);
+#ifdef HWRENDER
+void M_OpenGLOptionsMenu(INT32 choice);
+#endif
+void M_HandleVideoMode(INT32 ch);
+void M_HandleSoundTest(INT32 choice);
+void M_MusicTest(INT32 choice);
+void M_ScreenshotOptions(INT32 choice);
+void M_AddonsOptions(INT32 choice);
+void M_EraseData(INT32 choice);
+void M_Manual(INT32 choice);
+void M_Credits(INT32 choice);
+void M_BlanCredits(INT32 choice);
+
 void M_DrawGenericMenu(void);
+void M_DrawMPMainMenu(void);
+void M_DrawSetupMultiPlayerMenu(void);
+void M_DrawServerMenu(void);
+void M_DrawVideoMenu(void);
+void M_DrawVideoMode(void);
+void M_DrawSkyRoom(void);
+void M_DrawHUDOptions(void);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

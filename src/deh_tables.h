@@ -53,6 +53,16 @@ struct actionpointer_t
 	const char *name; ///< Name of the action in ALL CAPS.
 };
 
+struct menu_routine_s {
+	const char *name;
+	void (*routine)(INT32);
+};
+
+struct menu_drawer_s {
+	const char *name;
+	void (*drawer)(void);
+};
+
 struct int_const_s {
 	const char *n;
 	// has to be able to hold both fixed_t and angle_t, so drastic measure!!
@@ -82,6 +92,8 @@ extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
 extern const char *const MENUTYPES_LIST[];
+extern struct menu_routine_s const MENU_ROUTINES[];
+extern struct menu_drawer_s const MENU_DRAWERS[];
 
 extern struct int_const_s const INT_CONST[];
 

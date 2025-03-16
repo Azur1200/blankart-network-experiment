@@ -694,8 +694,51 @@ const char *const MENUTYPES_LIST[] = {
 	"OP_P3CAMERA",
 	"OP_P4CAMERA",
 	"MISC_REPLAY",
+	"MP_OFFLINESERVER",
 
 	"SPECIAL"
+};
+
+struct menu_routine_s const MENU_ROUTINES[] = {
+	{ "SETUPMULTIHANDLER", &M_SetupMultiHandler },
+	{ "HANDLESETUPMULTIPLAYER", &M_HandleSetupMultiPlayer },
+	{ "QUITMULTIPLAYERMENU", &M_QuitMultiPlayerMenu },
+	{ "STARTSERVERMENU", &M_StartServerMenu },
+	{ "STARTOFFLINESERVERMENU", &M_StartOfflineServerMenu },
+	{ "STARTSERVER", &M_StartServer },
+	{ "CONNECTMENUMODCHECKS", &M_ConnectMenuModChecks },
+	{ "HANDLECONNECTIP", &M_HandleConnectIP },
+	{ "CANCELCONNECT", &M_CancelConnect },
+	{ "SETUP1PCONTROLSMENU", &M_Setup1PControlsMenu },
+	{ "SETUP2PCONTROLSMENU", &M_Setup2PControlsMenu },
+	{ "SETUP3PCONTROLSMENU", &M_Setup3PControlsMenu },
+	{ "SETUP4PCONTROLSMENU", &M_Setup4PControlsMenu },
+	{ "VIDEOMODEMENU", &M_VideoModeMenu },
+#ifdef HWRENDER
+	{ "OPENGLOPTIONSMENU", &M_OpenGLOptionsMenu },
+#endif
+	{ "HANDLEVIDEOMODE", &M_HandleVideoMode },
+	{ "HANDLESOUNDTEST", &M_HandleSoundTest },
+	{ "MUSICTEST", &M_MusicTest },
+	{ "SCREENSHOTOPTIONS", &M_ScreenshotOptions },
+	{ "ADDONSOPTIONS", &M_AddonsOptions },
+	{ "ERASEDATA", &M_EraseData },
+	{ "MANUAL", &M_Manual },
+	{ "CREDITS", &M_Credits },
+	{ "BLANCREDITS", &M_BlanCredits },
+	{ NULL, NULL }
+};
+
+struct menu_drawer_s const MENU_DRAWERS[] = {
+	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
+	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
+	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
+	{ "DRAWSERVERMENU", &M_DrawServerMenu },
+	{ "DRAWVIDEOMENU", &M_DrawVideoMenu },
+	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
+	{ "DRAWSKYROOM", &M_DrawSkyRoom },
+	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
+	{ NULL, NULL }
 };
 
 struct int_const_s const INT_CONST[] = {

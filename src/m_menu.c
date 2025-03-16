@@ -227,9 +227,6 @@ FUNCNORETURN static ATTRNORETURN void M_UltimateCheat(INT32 choice);
 static void M_GetAllEmeralds(INT32 choice);
 static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
-static void M_Credits(INT32 choice);
-static void M_BlanCredits(INT32 choice);
-static void M_MusicTest(INT32 choice);
 static void M_PandorasBox(INT32 choice);
 static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
@@ -238,7 +235,6 @@ menu_t SR_MainDef, SR_UnlockChecklistDef;
 // Misc. Main Menu
 static void M_SinglePlayerMenu(INT32 choice);
 static void M_Options(INT32 choice);
-static void M_Manual(INT32 choice);
 static void M_SelectableClearMenus(INT32 choice);
 static void M_Retry(INT32 choice);
 static void M_EndGame(INT32 choice);
@@ -275,29 +271,19 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 //static menu_t SP_NightsAttackDef, SP_NightsReplayDef, SP_NightsGuestReplayDef, SP_NightsGhostDef;
 
 // Multiplayer
-static void M_StartServerMenu(INT32 choice);
 static void M_ConnectMenu(INT32 choice);
-static void M_ConnectMenuModChecks(INT32 choice);
 static void M_Refresh(INT32 choice);
 static void M_Connect(INT32 choice);
-static void M_StartOfflineServerMenu(INT32 choice);
-static void M_StartServer(INT32 choice);
 static void M_SetupMultiPlayer(INT32 choice);
 static void M_SetupMultiPlayer2(INT32 choice);
 static void M_SetupMultiPlayer3(INT32 choice);
 static void M_SetupMultiPlayer4(INT32 choice);
-static void M_SetupMultiHandler(INT32 choice);
 
 // Options
 // Split into multiple parts due to size
 // Controls
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef;
-static void M_VideoModeMenu(INT32 choice);
-static void M_Setup1PControlsMenu(INT32 choice);
-static void M_Setup2PControlsMenu(INT32 choice);
-static void M_Setup3PControlsMenu(INT32 choice);
-static void M_Setup4PControlsMenu(INT32 choice);
 
 static void M_Setup1PJoystickMenu(INT32 choice);
 static void M_Setup2PJoystickMenu(INT32 choice);
@@ -315,7 +301,6 @@ menu_t OP_Player1CamOptionsDef, OP_Player2CamOptionsDef, OP_Player3CamOptionsDef
 // Video & Sound
 menu_t OP_VideoOptionsDef, OP_VideoModeDef;
 #ifdef HWRENDER
-static void M_OpenGLOptionsMenu(INT32 choice);
 menu_t OP_OpenGLOptionsDef;
 #endif
 menu_t OP_SoundOptionsDef;
@@ -331,11 +316,8 @@ menu_t OP_GameOptionsDef, OP_BlanKartGameOptionsDef, OP_ServerOptionsDef;
 menu_t OP_AdvServerOptionsDef;
 //menu_t OP_NetgameOptionsDef, OP_GametypeOptionsDef;
 menu_t OP_MonitorToggleDef;
-static void M_ScreenshotOptions(INT32 choice);
-static void M_EraseData(INT32 choice);
 
 static void M_Addons(INT32 choice);
-static void M_AddonsOptions(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
 #define numaddonsshown 4
@@ -365,13 +347,11 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 static void M_DrawGenericBackgroundMenu(void);
 static void M_DrawCenteredMenu(void);
 static void M_DrawAddons(void);
-static void M_DrawSkyRoom(void);
 static void M_DrawChecklist(void);
 static void M_DrawMusicTest(void);
 static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
-static void M_DrawServerMenu(void);
 static void M_DrawImageDef(void);
 //static void M_DrawLoad(void);
 static void M_DrawLevelStats(void);
@@ -379,28 +359,17 @@ static void M_DrawTimeAttackMenu(void);
 //static void M_DrawNightsAttackMenu(void);
 //static void M_DrawSetupChoosePlayerMenu(void);
 static void M_DrawControl(void);
-static void M_DrawVideoMenu(void);
-static void M_DrawHUDOptions(void);
-static void M_DrawVideoMode(void);
 static void M_DrawMonitorToggles(void);
-static void M_DrawMPMainMenu(void);
 static void M_DrawConnectMenu(void);
 static void M_DrawJoystick(void);
-static void M_DrawSetupMultiPlayerMenu(void);
 
 // Handling functions
-static void M_CancelConnect(INT32 choice);
 static void M_ExitPandorasBox(INT32 choice);
-static void M_QuitMultiPlayerMenu(INT32 choice);
 static void M_HandleAddons(INT32 choice);
-static void M_HandleSoundTest(INT32 choice);
 static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
 static void M_HandleLevelStats(INT32 choice);
-static void M_HandleConnectIP(INT32 choice);
-static void M_HandleSetupMultiPlayer(INT32 choice);
-static void M_HandleVideoMode(INT32 choice);
 static void M_HandleMonitorToggles(INT32 choice);
 
 // uhhhhhh hack?
@@ -413,6 +382,7 @@ static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
 // temporary measure until menu_t and menupres_t are merged (hopefully)
+menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef;
 menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_CAMERA] = &OP_CamOptionsDef,
 	[MN_OP_P1CAMERA] = &OP_Player1CamOptionsDef,
@@ -423,6 +393,7 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_MAIN] = &OP_MainDef,
 	[MN_OP_CHANGECONTROLS] = &OP_ControlsDef,
 	[MN_OP_VIDEO] = &OP_VideoOptionsDef,
+	[MN_OP_VIDEOMODE] = &OP_VideoModeDef,
 	[MN_OP_OPENGL] = &OP_OpenGLOptionsDef,
 	[MN_OP_SOUND] = &OP_SoundOptionsDef,
 	[MN_OP_CHAT] = &OP_ChatOptionsDef,
@@ -433,8 +404,17 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_ADVANCEDSERVER] = &OP_AdvServerOptionsDef,
 	[MN_OP_MONITORTOGGLE] = &OP_MonitorToggleDef,
 	[MN_OP_DATA] = &OP_DataOptionsDef,
+	[MN_OP_ADDONS] = &OP_AddonsOptionsDef,
+	[MN_OP_SCREENSHOTS] = &OP_ScreenshotOptionsDef,
 	[MN_OP_ERASEDATA] = &OP_EraseDataDef,
 	[MN_MISC_REPLAY] = &MISC_ReplayOptionsDef,
+
+	[MN_MP_MAIN] = &MP_MainDef,
+	[MN_MP_PLAYERSETUP] = &MP_PlayerSetupDef,
+	[MN_MP_SERVER] = &MP_ServerDef,
+	[MN_MP_OFFLINESERVER] = &MP_OfflineServerDef,
+
+	[MN_MAIN] = &MainDef,
 
 	[MN_FIRSTFREESLOT] = &FreeslotTest,
 };
@@ -2152,7 +2132,7 @@ menu_t OP_MonitorToggleDef =
 };
 
 #ifdef HWRENDER
-static void M_OpenGLOptionsMenu(INT32 choice)
+void M_OpenGLOptionsMenu(INT32 choice)
 {
 	(void)choice;
 
@@ -4873,7 +4853,7 @@ static void M_HandleImageDef(INT32 choice)
 // MISC MAIN MENU OPTIONS
 // ======================
 
-static void M_AddonsOptions(INT32 choice)
+void M_AddonsOptions(INT32 choice)
 {
 	(void)choice;
 	Addons_option_Onchange();
@@ -6424,7 +6404,7 @@ static void M_Options(INT32 choice)
 	M_SetupNextMenu(&OP_MainDef);
 }
 
-static void M_Manual(INT32 choice)
+void M_Manual(INT32 choice)
 {
 	(void)choice;
 
@@ -6702,7 +6682,7 @@ static void M_DrawEmblemHints(void)
 	M_DrawGenericMenu();
 }
 
-static void M_DrawSkyRoom(void)
+void M_DrawSkyRoom(void)
 {
 	INT32 i, y = 0;
 	INT32 lengthstring = 0;
@@ -6757,7 +6737,7 @@ static void M_DrawSkyRoom(void)
 	}
 }
 
-static void M_HandleSoundTest(INT32 choice)
+void M_HandleSoundTest(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -6807,7 +6787,7 @@ static size_t st_namescrollstate = 0;
 //static patch_t* st_radio[9];
 //static patch_t* st_launchpad[4];
 
-static void M_MusicTest(INT32 choice)
+void M_MusicTest(INT32 choice)
 {
 	//INT32 ul = skyRoomMenuTranslations[choice-1];
 	//UINT8 i;
@@ -7234,7 +7214,7 @@ static void M_NewGame(void)
 	M_SetupChoosePlayer(0);
 }*/
 
-static void M_Credits(INT32 choice)
+void M_Credits(INT32 choice)
 {
 	(void)choice;
 	cursaveslot = -2;
@@ -7242,7 +7222,7 @@ static void M_Credits(INT32 choice)
 	F_StartCredits();
 }
 
-static void M_BlanCredits(INT32 choice)
+void M_BlanCredits(INT32 choice)
 {
 	(void)choice;
 	cursaveslot = -2;
@@ -9336,7 +9316,7 @@ static void M_ConnectMenu(INT32 choice)
 #endif/*defined (MASTERSERVER) && defined (HAVE_THREADS)*/
 }
 
-static void M_ConnectMenuModChecks(INT32 choice)
+void M_ConnectMenuModChecks(INT32 choice)
 {
 	(void)choice;
 	// okay never mind we want to COMMUNICATE to the player pre-emptively instead of letting them try and then get confused when it doesn't work
@@ -9379,7 +9359,7 @@ static INT32 M_FindFirstMap(INT32 gtype)
 	return 1;
 }
 
-static void M_StartServer(INT32 choice)
+void M_StartServer(INT32 choice)
 {
 	UINT8 ssplayers = cv_splitplayers.value-1;
 
@@ -9527,7 +9507,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 #undef horizspac
 }
 
-static void M_DrawServerMenu(void)
+void M_DrawServerMenu(void)
 {
 	M_DrawLevelSelectOnly(false, false);
 	M_DrawGenericMenu();
@@ -9546,7 +9526,7 @@ static void M_MapChange(INT32 choice)
 	M_SetupNextMenu(&MISC_ChangeLevelDef);
 }
 
-static void M_StartOfflineServerMenu(INT32 choice)
+void M_StartOfflineServerMenu(INT32 choice)
 {
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
@@ -9554,7 +9534,7 @@ static void M_StartOfflineServerMenu(INT32 choice)
 	M_SetupNextMenu(&MP_OfflineServerDef);
 }
 
-static void M_StartServerMenu(INT32 choice)
+void M_StartServerMenu(INT32 choice)
 {
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
@@ -9572,7 +9552,7 @@ static UINT8 setupm_pselect = 1;
 
 // Draw the funky Connect IP menu. Tails 11-19-2002
 // So much work for such a little thing!
-static void M_DrawMPMainMenu(void)
+void M_DrawMPMainMenu(void)
 {
 	INT32 x = currentMenu->x;
 	INT32 y = currentMenu->y;
@@ -9655,7 +9635,7 @@ static void Splitplayers_OnChange(void)
 		setupm_pselect = 1;
 }
 
-static void M_SetupMultiHandler(INT32 choice)
+void M_SetupMultiHandler(INT32 choice)
 {
 	boolean exitmenu = false;  // exit to previous menu and send name change
 
@@ -9750,7 +9730,7 @@ static void M_ConnectIP(INT32 choice)
 }
 
 // Tails 11-19-2002
-static void M_HandleConnectIP(INT32 choice)
+void M_HandleConnectIP(INT32 choice)
 {
 	size_t l;
 	boolean exitmenu = false;  // exit to previous menu and send name change
@@ -9853,7 +9833,7 @@ static INT32      setupm_fakeskin;
 static menucolor_t *setupm_fakecolor;
 static INT32	  setupm_fakefollower;	// -1 is for none, our followers start at 0
 
-static void M_DrawSetupMultiPlayerMenu(void)
+void M_DrawSetupMultiPlayerMenu(void)
 {
 	INT32 mx, my, st, flags = 0;
 	spritedef_t *sprdef;
@@ -10198,7 +10178,7 @@ static void M_GetFollowerState(void)
 }
 
 // Handle 1P/2P MP Setup
-static void M_HandleSetupMultiPlayer(INT32 choice)
+void M_HandleSetupMultiPlayer(INT32 choice)
 {
 	size_t   l;
 	INT32 prev_setupm_fakeskin;
@@ -10754,7 +10734,7 @@ static void M_EraseDataResponse(INT32 ch)
 	M_ClearMenus(true);
 }
 
-static void M_EraseData(INT32 choice)
+void M_EraseData(INT32 choice)
 {
 	const char *eschoice, *esstr = M_GetText("Are you sure you want to erase\n%s?\n\n(Press 'Y' to confirm)\n");
 
@@ -10770,7 +10750,7 @@ static void M_EraseData(INT32 choice)
 	M_StartMessage(va(esstr, eschoice), FUNCPTRCAST(M_EraseDataResponse), MM_YESNO);
 }
 
-static void M_ScreenshotOptions(INT32 choice)
+void M_ScreenshotOptions(INT32 choice)
 {
 	(void)choice;
 	Screenshot_option_Onchange();
@@ -10916,7 +10896,7 @@ static void M_AssignJoystick(INT32 choice)
 // CONTROLS MENU
 // =============
 
-static void M_Setup1PControlsMenu(INT32 choice)
+void M_Setup1PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 1;
@@ -10949,7 +10929,7 @@ static void M_Setup1PControlsMenu(INT32 choice)
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
 
-static void M_Setup2PControlsMenu(INT32 choice)
+void M_Setup2PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 2;
@@ -10982,7 +10962,7 @@ static void M_Setup2PControlsMenu(INT32 choice)
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
 
-static void M_Setup3PControlsMenu(INT32 choice)
+void M_Setup3PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 3;
@@ -11015,7 +10995,7 @@ static void M_Setup3PControlsMenu(INT32 choice)
 	M_SetupNextMenu(&OP_AllControlsDef);
 }
 
-static void M_Setup4PControlsMenu(INT32 choice)
+void M_Setup4PControlsMenu(INT32 choice)
 {
 	(void)choice;
 	setupcontrolplayer = 4;
@@ -11333,7 +11313,7 @@ static void M_ResetControls(INT32 choice)
 
 static modedesc_t modedescs[MAXMODEDESCS];
 
-static void M_VideoModeMenu(INT32 choice)
+void M_VideoModeMenu(INT32 choice)
 {
 	INT32 i, j, vdup, nummodes;
 	UINT32 width, height;
@@ -11406,7 +11386,7 @@ static void M_VideoModeMenu(INT32 choice)
 	M_SetupNextMenu(&OP_VideoModeDef);
 }
 
-static void M_DrawVideoMenu(void)
+void M_DrawVideoMenu(void)
 {
 	M_DrawGenericMenu();
 
@@ -11431,7 +11411,7 @@ static void M_DrawVideoMenu(void)
 	}
 }
 
-static void M_DrawHUDOptions(void)
+void M_DrawHUDOptions(void)
 {
 	const char *str0 = ")";
 	const char *str1 = " Warning highlight";
@@ -11454,7 +11434,7 @@ static void M_DrawHUDOptions(void)
 }
 
 // Draw the video modes list, a-la-Quake
-static void M_DrawVideoMode(void)
+void M_DrawVideoMode(void)
 {
 	INT32 i, j, row, col;
 
@@ -11526,7 +11506,7 @@ static void M_DrawVideoMode(void)
 }
 
 // special menuitem key handler for video mode list
-static void M_HandleVideoMode(INT32 ch)
+void M_HandleVideoMode(INT32 ch)
 {
 	if (vidm_testingmode > 0) switch (ch)
 	{

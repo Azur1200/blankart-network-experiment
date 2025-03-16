@@ -2145,6 +2145,13 @@ void readtextprompt(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
+// super secret menu cvars... :shushing_face:
+static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
+	{ "NEXTMAP", &cv_nextmap },
+	{ "NEWGAMETYPE", &cv_newgametype },
+	{ NULL, NULL }
+};
+
 static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2198,6 +2205,8 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				flags = IT_HEADER;
 			else if (fastcmp(word+4, "SECRET"))
 				flags = IT_SECRET;
+			else if (fastcmp(word+4, "WHITE"))
+				flags = IT_WHITESTRING;
 			else if (word[4])
 			{
 				deh_warning("MenuItem %s: unknown word '%s'", "", word);
@@ -2235,6 +2244,13 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			}
 			consvar_t *cvar = CV_FindVar(word2);
 			if (!cvar)
+				for (size_t i = 0; HIDDENVARS[i].name; i++)
+					if (fasticmp(word2, HIDDENVARS[i].name))
+					{
+						cvar = HIDDENVARS[i].var;
+						break;
+					}
+			if (!cvar)
 			{
 				deh_warning("MenuItem %s: unable to find cvar '%s'", "", word2);
 				continue;
@@ -2267,7 +2283,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				deh_warning("MenuItem %s: action already set!", "");
 				continue;
 			}
-			void (*routine)(INT32 choice) = NULL; // TODO
+			void (*routine)(INT32) = get_menuroutine(word2);
 			if (!routine)
 			{
 				deh_warning("MenuItem %s: unknown call routine '%s'", "", word2);
@@ -2279,7 +2295,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 		}
 		else if (fastcmp(word, "ALPHAKEY") || fastcmp(word, "Y"))
 		{
-			menuitem->alphaKey = atoi(word2);
+			menuitem->alphaKey = get_number(word2);
 		}
 		else
 			deh_warning("MenuItem %s: unknown word '%s'", "", word);
@@ -2522,10 +2538,13 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
 			{
+				void (*drawer)(void) = get_menudrawer(word2);
+				if (drawer == NULL)
 				{
 					deh_warning("Menu %d: unknown draw routine '%s'", num, word2);
 					continue;
 				}
+				menudef->drawroutine = drawer;
 			}
 			else if (fastcmp(word, "X"))
 			{
@@ -2537,10 +2556,13 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "QUITROUTINE"))
 			{
+				void (*routine)(INT32) = get_menuroutine(word2);
+				if (!routine)
 				{
 					deh_warning("Menu %d: unknown quit routine '%s'", num, word2);
 					continue;
 				}
+				menudef->quitroutine = routine;
 			}
 			else
 				deh_warning("Menu %d: unknown word '%s'", num, word);
@@ -4301,6 +4323,30 @@ menutype_t get_menutype(const char *word)
 			return i;
 	deh_warning("Couldn't find menutype named 'MN_%s'",word);
 	return MN_NONE;
+}
+
+void (*get_menuroutine(const char *word))(INT32)
+{ // Returns the value of MR_ enumerations
+	size_t i;
+	if (fastncmp("MR_",word,3))
+		word += 3; // take off the MR_
+	for (i = 0; MENU_ROUTINES[i].name; i++)
+		if (fasticmp(word, MENU_ROUTINES[i].name))
+			return MENU_ROUTINES[i].routine;
+	deh_warning("Couldn't find menu routine named 'MR_%s'",word);
+	return NULL;
+}
+
+void (*get_menudrawer(const char *word))(void)
+{ // Returns the value of MD_ enumerations
+	size_t i;
+	if (fastncmp("MD_",word,3))
+		word += 3; // take off the MD_
+	for (i = 0; MENU_DRAWERS[i].name; i++)
+		if (fasticmp(word, MENU_DRAWERS[i].name))
+			return MENU_DRAWERS[i].drawer;
+	deh_warning("Couldn't find menu drawer named 'MD_%s'",word);
+	return NULL;
 }
 
 /*static INT16 get_gametype(const char *word)
