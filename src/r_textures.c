@@ -2158,7 +2158,12 @@ INT32 R_TextureNumForName(const char *name)
 		static INT32 redwall = -2;
 		CONS_Debug(DBG_SETUP, "WARNING: R_TextureNumForName: %.8s not found\n", name);
 		if (redwall == -2)
+		{
 			redwall = R_CheckTextureNumForName(MISSING_TEXTURE);
+			if (redwall <= 256)
+				// see P_SetBinaryFOFAlpha
+				I_Error(MISSING_TEXTURE " resolved to ID <= 256. Shit's fucked man");
+		}
 		if (redwall != -1)
 			return redwall;
 		return 1;
