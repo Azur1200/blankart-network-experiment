@@ -359,14 +359,14 @@ struct menuitem_t
 struct menu_t
 {
 	UINT32         menuid;             // ID to encode menu type and hierarchy
-	const char    *menutitlepic;
+	const char    *headerpic;
 	INT16          numitems;           // # of menu items
 	menu_t *prevMenu;           // previous menu
 	menuitem_t    *menuitems;          // menu items
 	void         (*drawroutine)(void); // draw routine
 	INT16          x, y;               // x, y of menu
 	INT16          lastOn;             // last item user was on in menu
-	boolean      (*quitroutine)(void); // called before quit a menu return true if we can
+	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
 
 void M_SetupNextMenu(menu_t *menudef);

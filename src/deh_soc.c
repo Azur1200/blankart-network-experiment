@@ -2506,9 +2506,9 @@ void readmenu(MYFILE *f, INT32 num)
 				titlechanged = true;
 			}
 			// MENUDEF STARTS HERE
-			else if (fastcmp(word, "MENUTITLEPIC") || fastcmp(word, "TITLEPIC"))
+			else if (fastcmp(word, "HEADERPIC"))
 			{
-				menudef->menutitlepic = Z_StrDup(word2);
+				menudef->headerpic = Z_StrDup(word2);
 			}
 			else if (fastcmp(word, "PREVMENU"))
 			{

@@ -259,7 +259,7 @@ menu_t MISC_ScrambleTeamDef, MISC_ChangeTeamDef, MISC_ChangeSpectateDef;
 static void M_GrandPrixTemp(INT32 choice);
 static void M_StartGrandPrix(INT32 choice);
 static void M_TimeAttack(INT32 choice);
-static boolean M_QuitTimeAttackMenu(void);
+static void M_QuitTimeAttackMenu(INT32 choice);
 static void M_ItemBreaker(INT32 choice);
 static void M_Statistics(INT32 choice);
 static void M_HandleStaffReplay(INT32 choice);
@@ -346,7 +346,7 @@ menu_t MISC_ReplayOptionsDef;
 static void M_HandleReplayHutList(INT32 choice);
 static void M_DrawReplayHut(void);
 static void M_DrawReplayStartMenu(void);
-static boolean M_QuitReplayHut(void);
+static void M_QuitReplayHut(INT32 choice);
 static void M_HutStartReplay(INT32 choice);
 
 static void M_DrawPlaybackMenu(void);
@@ -389,9 +389,9 @@ static void M_DrawJoystick(void);
 static void M_DrawSetupMultiPlayerMenu(void);
 
 // Handling functions
-static boolean M_CancelConnect(void);
-static boolean M_ExitPandorasBox(void);
-static boolean M_QuitMultiPlayerMenu(void);
+static void M_CancelConnect(INT32 choice);
+static void M_ExitPandorasBox(INT32 choice);
+static void M_QuitMultiPlayerMenu(INT32 choice);
 static void M_HandleAddons(INT32 choice);
 static void M_HandleSoundTest(INT32 choice);
 static void M_HandleMusicTest(INT32 choice);
@@ -3467,8 +3467,8 @@ void M_ClearMenus(boolean callexitmenufunc)
 	if (!menuactive)
 		return;
 
-	if (currentMenu->quitroutine && callexitmenufunc && !currentMenu->quitroutine())
-		return; // we can't quit this menu (also used to set parameter from the menu)
+	if (currentMenu->quitroutine && callexitmenufunc)
+		currentMenu->quitroutine(0);
 
 #ifndef DC // Save the config file. I'm sick of crashing the game later and losing all my changes!
 	COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
@@ -3487,12 +3487,10 @@ void M_SetupNextMenu(menu_t *menudef)
 {
 	INT16 i;
 
-	if (currentMenu->quitroutine)
-	{
-		// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
-		if (currentMenu != menudef && !currentMenu->quitroutine())
-			return; // we can't quit this menu (also used to set parameter from the menu)
-	}
+	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
+	if (currentMenu != menudef && currentMenu->quitroutine)
+		currentMenu->quitroutine(0);
+
 	currentMenu = menudef;
 	itemOn = currentMenu->lastOn;
 
@@ -3920,9 +3918,9 @@ static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
 
 static void M_DrawMenuTitle(void)
 {
-	if (currentMenu->menutitlepic)
+	if (currentMenu->headerpic)
 	{
-		patch_t *p = W_CachePatchName(currentMenu->menutitlepic, PU_CACHE);
+		patch_t *p = W_CachePatchName(currentMenu->headerpic, PU_CACHE);
 
 		if (p->height > 24) // title is larger than normal
 		{
@@ -5520,7 +5518,7 @@ static void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_ESCAPE:
-		M_QuitReplayHut();
+		M_QuitReplayHut(0);
 		break;
 
 	case KEY_ENTER:
@@ -5541,7 +5539,7 @@ static void M_HandleReplayHutList(INT32 choice)
 
 						if (!preparefilemenu(true, true))
 						{
-							M_QuitReplayHut();
+							M_QuitReplayHut(0);
 							return;
 						}
 					}
@@ -5564,7 +5562,7 @@ static void M_HandleReplayHutList(INT32 choice)
 				menupath[menupathindex[++menudepthleft]] = 0;
 				if (!preparefilemenu(false, true))
 				{
-					M_QuitReplayHut();
+					M_QuitReplayHut(0);
 					return;
 				}
 				PrepReplayList();
@@ -5988,8 +5986,10 @@ static void M_DrawReplayStartMenu(void)
 	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
-static boolean M_QuitReplayHut(void)
+static void M_QuitReplayHut(INT32 choice)
 {
+	(void)choice;
+
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	menuactive = false;
 	D_StartTitle();
@@ -5999,8 +5999,6 @@ static boolean M_QuitReplayHut(void)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
-
-	return true;
 }
 
 static void M_HutStartReplay(INT32 choice)
@@ -6292,13 +6290,13 @@ static void M_PandorasBox(INT32 choice)
 	M_SetupNextMenu(&SR_PandoraDef);
 }
 
-static boolean M_ExitPandorasBox(void)
+static void M_ExitPandorasBox(INT32 choice)
 {
+	(void)choice;
 	if (cv_dummyrings.value != players[consoleplayer].rings)
 		COM_ImmedExecute(va("setrings %d", cv_dummyrings.value));
 	if (cv_dummylives.value != players[consoleplayer].lives)
 		COM_ImmedExecute(va("setlives %d", cv_dummylives.value));
-	return true;
 }
 
 static void M_ChangeLevel(INT32 choice)
@@ -8600,11 +8598,12 @@ static void M_ItemBreaker(INT32 choice)
 	S_ChangeMusicInternal("racent", true);
 }
 
-static boolean M_QuitTimeAttackMenu(void)
+static void M_QuitTimeAttackMenu(INT32 choice)
 {
+	(void)choice;
+
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", cv_chooseskin.string));
-	return true;
 }
 
 // Player has selected the "START" from the time attack screen
@@ -9176,10 +9175,10 @@ static void M_DrawConnectMenu(void)
 	}
 }
 
-static boolean M_CancelConnect(void)
+void M_CancelConnect(INT32 choice)
 {
+	(void)choice;
 	D_CloseConnection();
-	return true;
 }
 
 // Ascending order, not descending.
@@ -10531,8 +10530,9 @@ static void M_SetupMultiPlayer4(INT32 choice)
 	M_SetupNextMenu(&MP_PlayerSetupDef);
 }
 
-static boolean M_QuitMultiPlayerMenu(void)
+void M_QuitMultiPlayerMenu(INT32 choice)
 {
+	(void)choice;
 	size_t l;
 	const char *followername = setupm_fakefollower == -1 ?
 		"None" : followers[setupm_fakefollower].skinname;
@@ -10549,7 +10549,6 @@ static boolean M_QuitMultiPlayerMenu(void)
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor->color));
 	COM_BufAddText (va("%s %s\n",setupm_cvfollower->name,followername));
-	return true;
 }
 
 void M_AddMenuColor(UINT16 color) {
