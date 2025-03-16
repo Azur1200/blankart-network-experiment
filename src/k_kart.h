@@ -29,6 +29,8 @@ Make sure this matches the actual number of states
 #define AUTORESPAWN_TIME (10 * TICRATE)
 #define AUTORESPAWN_THRESHOLD (7 * TICRATE)
 
+#define FLAMESTOREMAX TICRATE*2
+
 // Used for respawning checks.
 
 typedef struct respawnresult_s

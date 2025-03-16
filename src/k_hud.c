@@ -847,6 +847,8 @@ static void K_drawKartItem(void)
 	INT32 numberdisplaymin = 2;
 	INT32 itembar = 0;
 	INT32 maxl = 0; // itembar's normal highest value
+	INT32 flamebar = 0;
+	INT32 flamemaxl = 0; // flamebar's normal highest value
 	const INT32 barlength = (r_splitscreen > 1 ? 12 : 26);
 	UINT16 localcolor = SKINCOLOR_NONE;
 	SINT8 colormode = TC_RAINBOW;
@@ -919,7 +921,15 @@ static void K_drawKartItem(void)
 		{
 			itembar = stplyr->flametimer;
 			maxl = (itemtime*3) - barlength;
+			flamebar = stplyr->flamestore;
+			flamemaxl = FLAMESTOREMAX;
 			localbg = kp_itembg[offset+1];
+
+			if ((stplyr->flamestore >= FLAMESTOREMAX-1) && (leveltime & 1))
+			{
+				colormode = TC_BLINK;
+				localcolor = SKINCOLOR_WHITE;
+			}
 
 			if (leveltime & 1)
 				localpatch = kp_flameshield[offset];
@@ -1096,6 +1106,26 @@ static void K_drawKartItem(void)
 			if (height == 2)
 				V_DrawFill(fx+x+2, fy+y+2, length-2, 1, 8|fflags); // the dulled underside
 			V_DrawFill(fx+x+2, fy+y+1, length-2, 1, 0|fflags); // the shine
+		}
+	}
+
+	if (flamebar)
+	{
+		const INT32 fill = ((flamebar*barlength)/flamemaxl);
+		const INT32 length = min(barlength, fill);
+		const INT32 height = (offset ? 1 : 2);
+		const INT32 x = (offset ? 17 : 11), y = (offset ? 27 : 35);
+
+		V_DrawScaledPatch(fx+x, fy+y-8, V_HUDTRANS|fflags, kp_itemtimer[offset]);
+		// The left dark "AA" edge
+		V_DrawFill(fx+x+1, fy+y+1-8, (length == 2 ? 2 : 1), height, 55|fflags);
+		// The bar itself
+		if (length > 2)
+		{
+			V_DrawFill(fx+x+length, fy+y+1-8, 1, height, 55|fflags); // the right one
+			if (height == 2)
+				V_DrawFill(fx+x+2, fy+y+2-8, length-2, 1, 36|fflags); // the dulled underside
+			V_DrawFill(fx+x+2, fy+y+1-8, length-2, 1, 51|fflags); // the shine
 		}
 	}
 
