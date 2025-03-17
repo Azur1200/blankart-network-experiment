@@ -362,37 +362,12 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("ML_", word, 3)) {
 		p = word+3;
-		for (i = 0; i < 20; i++)
-			if (ML_LIST[i] && fastcmp(p, ML_LIST[i])) {
+		const char *const *list = lua_compatmode ? ML_LIST_KART : ML_LIST;
+		for (i = 0; list[i]; i++)
+			if (fastcmp(p, list[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;
 			}
-		// Aliases
-		if (fastcmp(p, "EFFECT1"))
-		{
-			lua_pushinteger(L, (lua_Integer)ML_SKEWTD);
-			return 1;
-		}
-		if (fastcmp(p, "EFFECT2"))
-		{
-			lua_pushinteger(L, (lua_Integer)ML_NOSKEW);
-			return 1;
-		}
-		if (fastcmp(p, "EFFECT3"))
-		{
-			lua_pushinteger(L, (lua_Integer)ML_MIDPEG);
-			return 1;
-		}
-		if (fastcmp(p, "EFFECT4"))
-		{
-			lua_pushinteger(L, (lua_Integer)ML_MIDSOLID);
-			return 1;
-		}
-		if (fastcmp(p, "EFFECT5"))
-		{
-			lua_pushinteger(L, (lua_Integer)ML_WRAPMIDTEX);
-			return 1;
-		}
 		if (mathlib) return luaL_error(L, "linedef flag '%s' could not be found.\n", word);
 		return 0;
 	}

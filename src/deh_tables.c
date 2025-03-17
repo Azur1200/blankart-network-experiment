@@ -336,14 +336,31 @@ const char *const ML_LIST[] = {
 	"MIDPEG",
 	"MIDSOLID",
 	"WRAPMIDTEX",
+	"NETONLY",
+	"NONET",
+	"EFFECT6",
+	"NOTBOUNCY",
+	"TFERLINE",
+	NULL
+};
+
+// Linedef flags for Kart
+const char *const ML_LIST_KART[] = {
+	"IMPASSIBLE",
+	"BLOCKMONSTERS",
+	"TWOSIDED",
+	"DONTPEGTOP",
+	"DONTPEGBOTTOM",
+	"EFFECT1",
+	"NOCLIMB",
+	"EFFECT2",
+	"EFFECT3",
+	"EFFECT4",
+	"EFFECT5",
 	"NOSONIC",
 	"NOTAILS",
 	"NOKNUX",
-	"NETONLY",
-	"NETONLY_OLD",
-	"NONET",
-	"BLOCKMONSTERS",
-	"NOTBOUNCY",
+	"BOUNCY",
 	"TFERLINE",
 	NULL
 };
