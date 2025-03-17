@@ -8591,9 +8591,6 @@ void P_MobjThinker(mobj_t *mobj)
 		P_CheckMobjTrigger(mobj, false);
 	}
 
-	// Sector flag MSF_TRIGGERLINE_MOBJ allows ANY mobj to trigger a linedef exec
-	P_CheckMobjTrigger(mobj, false);
-
 	if (mobj->scale != mobj->destscale)
 		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.
 
