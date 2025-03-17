@@ -623,7 +623,6 @@ struct player_t
 
 	UINT16 sneakertimer;	// Duration of a Sneaker Boost (from Sneakers or level boosters)
 	UINT8 floorboost;		// (0 to 3) - Prevents Sneaker sounds for a brief duration when triggered by a floor panel
-	boolean waterrun; 		// Tracks condition of water run
 
 	UINT8 boostcharge; 		// Charge during race start
 	

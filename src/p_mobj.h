@@ -203,7 +203,7 @@ typedef enum
 	MF2_LINKDRAW       = 1<<28, // Draw vissprite of mobj immediately before/after tracer's vissprite (dependent on dispoffset and position)
 	MF2_SHIELD         = 1<<29, // Thinker calls P_AddShield/P_ShieldLook (must be partnered with MF_SCENERY to use)
 	MF2_SPLAT          = 1<<30, // Renders as a splat
-	// free: to and including 1<<31
+	MF2_WATERRUN	   = 1<<31, // Mobj is able to run on Water!
 } mobjflag2_t;
 
 typedef enum

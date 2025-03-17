@@ -2467,17 +2467,8 @@ BlockItReturn_t PIT_PushableMoved(mobj_t *thing)
 static boolean P_WaterRunning(mobj_t *thing)
 {
 	ffloor_t *rover = thing->floorrover;
-
-	if (thing->player)
-	{
-		return rover && (rover->fofflags & FOF_SWIMMABLE) &&
-		P_IsObjectOnGround(thing) && thing->player->waterrun;
-	}
-	else
-	{
-		// Maybe move waterrun bool to mobj_t someday..?
-		return false;
-	}
+	return rover && (rover->fofflags & FOF_SWIMMABLE) &&
+		P_IsObjectOnGround(thing) && (thing->flags2 & MF2_WATERRUN);
 }
 
 static boolean P_WaterStepUp(mobj_t *thing)

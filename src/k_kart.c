@@ -417,12 +417,12 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 
 INT32 K_GetShieldFromPlayer(player_t *player)
 {
-	
+
 	if (player->flametimer > 0)
 	{
 		return KSHIELD_FLAME;
 	}
-	
+
 	switch (player->itemtype)
 	{
 		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
@@ -3118,11 +3118,145 @@ boolean K_TripwirePass(player_t *player)
 	return (player->tripwirePass != TRIPWIRE_NONE);
 }
 
-boolean K_WaterRun(player_t *player)
+boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
 {
-	if (player->waterrun)
-		return true;
+	switch (item->type)
+	{
+		case MT_ORBINAUT:
+		case MT_JAWZ:
+		case MT_JAWZ_DUD:
+		case MT_DROPTARGET:
+		case MT_BANANA_SHIELD:
+		case MT_DROPTARGET_SHIELD:
+		case MT_SSMINE_SHIELD:
+			return true;
+			break;
+		default:
+			return false;
+			break;
+	}
 	return false;
+}
+
+boolean K_WaterRun(mobj_t *mobj)
+{
+	// Let dragged items waterrun with the player for free.
+	switch (mobj->type)
+	{
+		case MT_BANANA_SHIELD:
+		case MT_DROPTARGET_SHIELD:
+		case MT_SSMINE_SHIELD:
+			if (mobj->target && (mobj->target->flags2 & MF2_WATERRUN))
+				return true;
+			break;
+		default:
+			break;
+	}
+
+	if (mobj->flags2 & MF2_WATERRUN)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void K_SpawnWaterTrail(mobj_t *mobj)
+{
+	fixed_t topspeed = mobj->player ? K_GetKartSpeed(mobj->player, false, false) : K_GetKartSpeedFromStat(5);
+	fixed_t runspd = 14*mobj->scale; //srb2kart
+	runspd = FixedMul(runspd, mobj->movefactor);
+	fixed_t trailScale;
+
+	if (topspeed > runspd)
+	{
+		if (mobj->player)
+		{
+			trailScale = FixedMul(FixedDiv(mobj->player->speed - runspd, topspeed - runspd), mapobjectscale);
+		}
+		else
+		{
+			trailScale = FixedMul(FixedDiv(R_PointToDist2(0, 0, mobj->momx, mobj->momy) - runspd, topspeed - runspd), mapobjectscale);
+		}
+	}
+	else
+		trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
+
+	if (trailScale > 0)
+	{
+		const angle_t forwardangle = K_MomentumAngle(mobj);
+		const fixed_t visualradius = mobj->radius + (8 * mobj->scale);
+		const SINT8 numFrames = 5;
+		const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
+		fixed_t x1, x2, y1, y2;
+		mobj_t *water;
+
+		x1 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, visualradius);
+		y1 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, visualradius);
+		x1 = x1 + P_ReturnThrustX(mobj, forwardangle, visualradius);
+		y1 = y1 + P_ReturnThrustY(mobj, forwardangle, visualradius);
+
+		x2 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, visualradius);
+		y2 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, visualradius);
+		x2 = x2 + P_ReturnThrustX(mobj, forwardangle, visualradius);
+		y2 = y2 + P_ReturnThrustY(mobj, forwardangle, visualradius);
+
+		// Left
+		// underlay
+		water = P_SpawnMobj(x1, y1,
+			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+		water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
+		water->destscale = trailScale;
+		water->momx = mobj->momx;
+		water->momy = mobj->momy;
+		water->momz = mobj->momz;
+		P_SetScale(water, trailScale);
+		P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+		water->frame = curFrame|FF_ADD|FF_TRANS40;
+
+		// overlay
+		water = P_SpawnMobj(x1, y1,
+			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+		water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
+		water->destscale = trailScale;
+		water->momx = mobj->momx;
+		water->momy = mobj->momy;
+		water->momz = mobj->momz;
+		P_SetScale(water, trailScale);
+		P_SetMobjState(water, S_WATERTRAILS);
+		water->frame = curFrame;
+
+		// Right
+		// Underlay
+		water = P_SpawnMobj(x2, y2,
+			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+		water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
+		water->destscale = trailScale;
+		water->momx = mobj->momx;
+		water->momy = mobj->momy;
+		water->momz = mobj->momz;
+		P_SetScale(water, trailScale);
+		P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+		water->frame = curFrame|FF_ADD|FF_TRANS40;
+
+		// Overlay
+		water = P_SpawnMobj(x2, y2,
+			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+		water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
+		water->destscale = trailScale;
+		water->momx = mobj->momx;
+		water->momy = mobj->momy;
+		water->momz = mobj->momz;
+		P_SetScale(water, trailScale);
+		P_SetMobjState(water, S_WATERTRAILS);
+		water->frame = curFrame;
+
+		if (!S_SoundPlaying(mobj, sfx_s3kdbs))
+		{
+			const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
+			S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
+		}
+	}
 }
 
 static fixed_t K_FlameShieldDashVar(INT32 val)
@@ -3214,7 +3348,7 @@ static void K_GetKartBoostPower(player_t *player)
 	{
 		ADDBOOST(FRACUNIT/5, 0); // + 20% top speed, + 0% acceleration
 	}
-	
+
 	if (player->flamestore) // Flame Shield dash
 	{
 		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
@@ -3222,10 +3356,10 @@ static void K_GetKartBoostPower(player_t *player)
 		fixed_t boost = 0;
 		fixed_t val = 52428; // Rim idea: diminish starts around 1.2x sneaker speed and plateaus around 1.4-1.5x
 		fixed_t accel = 3*FRACUNIT;
-		
+
 		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
 		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
-		
+
 		ADDBOOST(boost, accel);
 	}
 
@@ -4014,6 +4148,15 @@ static mobj_t *K_SpawnKartMissile(mobj_t *source, mobjtype_t type, angle_t an, I
 	th = P_SpawnMobj(x, y, z, type);
 
 	th->flags2 |= flags2;
+
+	if (source->flags2 & MF2_WATERRUN)
+	{
+		// Allow certain items to run on water as well!
+		if (K_ItemMobjAllowedtoWaterRun(th))
+		{
+			th->flags2 |= MF2_WATERRUN;
+		}
+	}
 
 	th->threshold = 10;
 
@@ -5064,7 +5207,7 @@ void K_DoWaterRunPanel(player_t *player)
 	}
 
 	player->sneakertimer = TICRATE*2;
-	player->waterrun = true;
+	player->mo->flags2 |= MF2_WATERRUN;
 
 	// set angle for spun out players:
 	player->boostangle = player->mo->angle;
@@ -6993,7 +7136,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->floorboost--;
 
 	if (player->sneakertimer == 0)
-		player->waterrun = false;
+	{
+		// No more waterrunning for you pal!
+		player->mo->flags2 &= ~MF2_WATERRUN;
+	}
 
 	if (player->driftboost)
 		player->driftboost--;
@@ -8375,7 +8521,7 @@ INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 
 	if (player->invincibilitytimer || player->sneakertimer || player->growshrinktimer > 0)
 		turnvalue = FixedMul(turnvalue, FixedDiv(5*FRACUNIT, 4*FRACUNIT));
-	
+
 	if (player->flamedash && player->flamestore) // Reduce turning
 	{
 		fixed_t dashval = ((player->flamedash<<FRACBITS) / TICRATE) / 40; // 1 second = -2.5% handling
@@ -9722,7 +9868,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_FLAMESHIELD:
-							
+
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && player->flametimer == 0)
 							{
 								player->itemamount--;
