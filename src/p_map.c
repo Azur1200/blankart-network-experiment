@@ -2467,15 +2467,22 @@ BlockItReturn_t PIT_PushableMoved(mobj_t *thing)
 static boolean P_WaterRunning(mobj_t *thing)
 {
 	ffloor_t *rover = thing->floorrover;
-	return rover && (rover->fofflags & FOF_SWIMMABLE) &&
-		P_IsObjectOnGround(thing);
+
+	if (thing->player)
+	{
+		return rover && (rover->fofflags & FOF_SWIMMABLE) &&
+		P_IsObjectOnGround(thing) && thing->player->waterrun;
+	}
+	else
+	{
+		// Maybe move waterrun bool to mobj_t someday..?
+		return false;
+	}
 }
 
 static boolean P_WaterStepUp(mobj_t *thing)
 {
-	player_t *player = thing->player;
-	return (player && player->waterskip) ||
-		P_WaterRunning(thing);
+	return P_WaterRunning(thing);
 }
 
 fixed_t P_BaseStepUp(void)
