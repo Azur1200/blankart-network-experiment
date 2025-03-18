@@ -2083,6 +2083,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 {
 	player_t *player;
 	boolean force = false;
+	boolean spbpop = false;
 
 	if (objectplacing)
 		return false;
@@ -2096,6 +2097,16 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 	if (source && source->player && source->player->spectator)
 		return false;
+
+	switch (target->type)
+	{
+		case MT_SPB:
+			spbpop = (damagetype & DMG_TYPEMASK) == DMG_VOLTAGE;
+			break;
+
+		default:
+			break;
+	}
 
 	// Everything above here can't be forced.
 	if (!metalrecording)
@@ -2111,8 +2122,11 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 	if (!force)
 	{
-		if (!(target->flags & MF_SHOOTABLE))
-			return false; // shouldn't happen...
+		if (!spbpop)
+		{
+			if (!(target->flags & MF_SHOOTABLE))
+				return false; // shouldn't happen...
+		}
 	}
 
 	if (target->flags2 & MF2_SKULLFLY)
@@ -2317,6 +2331,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
 					break;
+				case DMG_VOLTAGE:
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);

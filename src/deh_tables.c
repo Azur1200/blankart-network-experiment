@@ -952,9 +952,10 @@ struct int_const_s const INT_CONST[] = {
 	// for P_DamageMobj
 	//// Damage types
 	{"DMG_NORMAL",DMG_NORMAL},
-	{"DMG_SQUISH",DMG_SQUISH},
 	{"DMG_WIPEOUT",DMG_WIPEOUT},
 	{"DMG_EXPLODE",DMG_EXPLODE},
+	{"DMG_SQUISH",DMG_SQUISH},
+	{"DMG_VOLTAGE",DMG_VOLTAGE},
 	{"DMG_KARMA",DMG_KARMA},
 	//// Death types
 	{"DMG_INSTAKILL",DMG_INSTAKILL},

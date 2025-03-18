@@ -665,10 +665,13 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
-	if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+	if (thing->type != MT_SPB)
 	{
-		// Not shootable
-		return BMIT_CONTINUE;
+		if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+		{
+			// Not shootable
+			return BMIT_CONTINUE;
+		}
 	}
 
 	if (thing->player && thing->player->spectator)
@@ -691,7 +694,7 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 	}
 #endif
 
-	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_NORMAL|DMG_CANTHURTSELF);
+	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
 	return BMIT_CONTINUE;
 }
 
