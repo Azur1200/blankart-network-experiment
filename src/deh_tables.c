@@ -674,14 +674,14 @@ const char *const MENUTYPES_LIST[] = {
 
 	// MISC
 	// "MESSAGE",
-	// "SPAUSE",
+	"SPAUSE",
 
-	// "MPAUSE",
-	// "SCRAMBLETEAM",
-	// "CHANGETEAM",
-	// "CHANGELEVEL",
+	"MPAUSE",
+	"SCRAMBLETEAM",
+	"CHANGETEAM",
+	"CHANGELEVEL",
 
-	// "MAPAUSE",
+	"MAPAUSE",
 	// "HELP",
 
 	// SRB2Kart
@@ -697,6 +697,8 @@ const char *const MENUTYPES_LIST[] = {
 	"MP_OFFLINESERVER",
 	"SP_GRANDPRIX",
 	"MISC_REPLAYHUT",
+	"MISC_DISCORDREQUESTS",
+	"CHANGESPECTATE",
 
 	"SPECIAL"
 };
@@ -747,12 +749,35 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CREDITS", &M_Credits },
 	{ "BLANCREDITS", &M_BlanCredits },
 	{ "HANDLEADDONS", &M_HandleAddons },
+	{ "SELECTABLECLEARMENUS", &M_SelectableClearMenus },
+	{ "MODEATTACKRETRY", &M_ModeAttackRetry },
+	{ "MODEATTACKENDGAME", &M_ModeAttackEndGame },
+	{ "PANDORASBOX", &M_PandorasBox },
+	{ "EMBLEMHINTS", &M_EmblemHints },
+	{ "RETRY", &M_Retry },
+	{ "ENDGAME", &M_EndGame },
+	{ "MAPCHANGE", &M_MapChange },
+	{ "SETUPMULTIPLAYER", &M_SetupMultiPlayer },
+	{ "SETUPMULTIPLAYER2", &M_SetupMultiPlayer2 },
+	{ "SETUPMULTIPLAYER3", &M_SetupMultiPlayer3 },
+	{ "SETUPMULTIPLAYER4", &M_SetupMultiPlayer4 },
+	{ "CONFIRMSPECTATE", &M_ConfirmSpectate },
+	{ "CONFIRMENTERGAME", &M_ConfirmEnterGame },
+	{ "EXITPANDORASBOX", &M_ExitPandorasBox },
+	{ "GETALLEMERALDS", &M_GetAllEmeralds },
+	{ "DESTROYROBOTS", &M_DestroyRobots },
+	{ "ULTIMATECHEAT", &M_UltimateCheat },
+	{ "CONFIRMTEAMSCRAMBLE", &M_ConfirmTeamScramble },
+	{ "CONFIRMTEAMCHANGE", &M_ConfirmTeamChange },
+	{ "CONFIRMSPECTATECHANGE", &M_ConfirmSpectateChange },
+	{ "CHANGELEVEL", &M_ChangeLevel },
 	{ NULL, NULL }
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
 	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
+	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },
 	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
 	{ "DRAWREPLAYHUT", &M_DrawReplayHut },
@@ -765,6 +790,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWSKYROOM", &M_DrawSkyRoom },
 	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
 	{ "DRAWADDONS", &M_DrawAddons },
+	{ "DRAWEMBLEMHINTS", &M_DrawEmblemHints },
 	{ NULL, NULL }
 };
 

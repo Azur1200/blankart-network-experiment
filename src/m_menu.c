@@ -222,27 +222,12 @@ menu_t SPauseDef;
 // Sky Room
 //static void M_CustomLevelSelect(INT32 choice);
 //static void M_CustomWarp(INT32 choice);
-FUNCNORETURN static ATTRNORETURN void M_UltimateCheat(INT32 choice);
 //static void M_LoadGameLevelSelect(INT32 choice);
-static void M_GetAllEmeralds(INT32 choice);
-static void M_DestroyRobots(INT32 choice);
 //static void M_LevelSelectWarp(INT32 choice);
-static void M_PandorasBox(INT32 choice);
-static void M_EmblemHints(INT32 choice);
 static char *M_GetConditionString(condition_t cond);
 menu_t SR_MainDef, SR_UnlockChecklistDef;
 
 // Misc. Main Menu
-static void M_SelectableClearMenus(INT32 choice);
-static void M_Retry(INT32 choice);
-static void M_EndGame(INT32 choice);
-static void M_MapChange(INT32 choice);
-static void M_ChangeLevel(INT32 choice);
-static void M_ConfirmSpectate(INT32 choice);
-static void M_ConfirmEnterGame(INT32 choice);
-static void M_ConfirmTeamScramble(INT32 choice);
-static void M_ConfirmTeamChange(INT32 choice);
-static void M_ConfirmSpectateChange(INT32 choice);
 //static void M_SecretsMenu(INT32 choice);
 //static void M_SetupChoosePlayer(INT32 choice);
 menu_t SP_MainDef, MP_MainDef, OP_MainDef;
@@ -250,7 +235,6 @@ menu_t MISC_ScrambleTeamDef, MISC_ChangeTeamDef, MISC_ChangeSpectateDef;
 
 // Single Player
 //static void M_ChooseNightsAttack(INT32 choice);
-static void M_ModeAttackEndGame(INT32 choice);
 //static void M_ChoosePlayer(INT32 choice);
 menu_t SP_LevelStatsDef;
 static menu_t SP_GrandPrixTempDef;
@@ -261,10 +245,6 @@ static menu_t SP_TimeAttackDef, SP_ReplayDef, SP_GuestReplayDef, SP_GhostDef;
 static void M_ConnectMenu(INT32 choice);
 static void M_Refresh(INT32 choice);
 static void M_Connect(INT32 choice);
-static void M_SetupMultiPlayer(INT32 choice);
-static void M_SetupMultiPlayer2(INT32 choice);
-static void M_SetupMultiPlayer3(INT32 choice);
-static void M_SetupMultiPlayer4(INT32 choice);
 
 // Options
 // Split into multiple parts due to size
@@ -329,8 +309,6 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 // Drawing functions
 static void M_DrawGenericBackgroundMenu(void);
 static void M_DrawMusicTest(void);
-static void M_DrawEmblemHints(void);
-static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
 static void M_DrawImageDef(void);
 //static void M_DrawLoad(void);
@@ -342,7 +320,6 @@ static void M_DrawConnectMenu(void);
 static void M_DrawJoystick(void);
 
 // Handling functions
-static void M_ExitPandorasBox(INT32 choice);
 static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
@@ -358,7 +335,7 @@ static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
 // temporary measure until menu_t and menupres_t are merged (hopefully)
-menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef, MISC_AddonsDef;
+menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef, MISC_AddonsDef, MPauseDef, MAPauseDef, SR_EmblemHintDef, SR_PandoraDef, MISC_ChangeLevelDef;
 menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_CAMERA] = &OP_CamOptionsDef,
 	[MN_OP_P1CAMERA] = &OP_Player1CamOptionsDef,
@@ -401,8 +378,18 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_SR_UNLOCKCHECKLIST] = &SR_UnlockChecklistDef,
 	[MN_SP_LEVELSTATS] = &SP_LevelStatsDef,
 	[MN_MISC_REPLAYHUT] = &MISC_ReplayHutDef,
+	[MN_SR_EMBLEMHINT] = &SR_EmblemHintDef,
+	[MN_SR_PANDORA] = &SR_PandoraDef,
 
 	[MN_AD_MAIN] = &MISC_AddonsDef,
+
+	[MN_SPAUSE] = &SPauseDef,
+	[MN_MPAUSE] = &MPauseDef,
+	[MN_SCRAMBLETEAM] = &MISC_ScrambleTeamDef,
+	[MN_CHANGETEAM] = &MISC_ChangeTeamDef,
+	[MN_MAPAUSE] = &MAPauseDef,
+	[MN_CHANGESPECTATE] = &MISC_ChangeSpectateDef,
+	[MN_CHANGELEVEL] = &MISC_ChangeLevelDef,
 
 	[MN_MAIN] = &MainDef,
 
@@ -477,12 +464,12 @@ static CV_PossibleValue_t liveslimit_cons_t[] = {{-1, "MIN"}, {9, "MAX"}, {0, NU
 };*/
 static CV_PossibleValue_t dummystaff_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
-static consvar_t cv_dummymenuplayer = CVAR_INIT ("dummymenuplayer", "P1", CV_HIDEN|CV_CALL, dummymenuplayer_cons_t, Dummymenuplayer_OnChange);
-static consvar_t cv_dummyteam = CVAR_INIT ("dummyteam", "Spectator", CV_HIDEN, dummyteam_cons_t, NULL);
-static consvar_t cv_dummyspectate = CVAR_INIT ("dummyspectate", "Spectator", CV_HIDEN, dummyspectate_cons_t, NULL);
-static consvar_t cv_dummyscramble = CVAR_INIT ("dummyscramble", "Random", CV_HIDEN, dummyscramble_cons_t, NULL);
-static consvar_t cv_dummyrings = CVAR_INIT ("dummyrings", "0", CV_HIDEN, ringlimit_cons_t, NULL);
-static consvar_t cv_dummylives = CVAR_INIT ("dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL);
+consvar_t cv_dummymenuplayer = CVAR_INIT ("dummymenuplayer", "P1", CV_HIDEN|CV_CALL, dummymenuplayer_cons_t, Dummymenuplayer_OnChange);
+consvar_t cv_dummyteam = CVAR_INIT ("dummyteam", "Spectator", CV_HIDEN, dummyteam_cons_t, NULL);
+consvar_t cv_dummyspectate = CVAR_INIT ("dummyspectate", "Spectator", CV_HIDEN, dummyspectate_cons_t, NULL);
+consvar_t cv_dummyscramble = CVAR_INIT ("dummyscramble", "Random", CV_HIDEN, dummyscramble_cons_t, NULL);
+consvar_t cv_dummyrings = CVAR_INIT ("dummyrings", "0", CV_HIDEN, ringlimit_cons_t, NULL);
+consvar_t cv_dummylives = CVAR_INIT ("dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL);
 static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{0, "Easy"}, {1, "Normal"}, {2, "Hard"}, {3, "Master"}, {0, NULL}};
@@ -4067,7 +4054,7 @@ static void M_DrawGenericBackgroundMenu(void)
 	M_DrawGenericMenu();
 }
 
-static void M_DrawPauseMenu(void)
+void M_DrawPauseMenu(void)
 {
 #if 0
 	if (!netgame && !multiplayer && (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
@@ -6252,7 +6239,7 @@ static void M_PlaybackQuit(INT32 choice)
 		D_StartTitle();
 }
 
-static void M_PandorasBox(INT32 choice)
+void M_PandorasBox(INT32 choice)
 {
 	(void)choice;
 	CV_StealthSetValue(&cv_dummyrings, players[consoleplayer].rings);
@@ -6260,7 +6247,7 @@ static void M_PandorasBox(INT32 choice)
 	M_SetupNextMenu(&SR_PandoraDef);
 }
 
-static void M_ExitPandorasBox(INT32 choice)
+void M_ExitPandorasBox(INT32 choice)
 {
 	(void)choice;
 	if (cv_dummyrings.value != players[consoleplayer].rings)
@@ -6269,7 +6256,7 @@ static void M_ExitPandorasBox(INT32 choice)
 		COM_ImmedExecute(va("setlives %d", cv_dummylives.value));
 }
 
-static void M_ChangeLevel(INT32 choice)
+void M_ChangeLevel(INT32 choice)
 {
 	(void)choice;
 	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, false, NULL);
@@ -6277,7 +6264,7 @@ static void M_ChangeLevel(INT32 choice)
 	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
 }
 
-static void M_ConfirmSpectate(INT32 choice)
+void M_ConfirmSpectate(INT32 choice)
 {
 	(void)choice;
 	// We allow switching to spectator even if team changing is not allowed
@@ -6285,7 +6272,7 @@ static void M_ConfirmSpectate(INT32 choice)
 	COM_ImmedExecute("changeteam spectator");
 }
 
-static void M_ConfirmEnterGame(INT32 choice)
+void M_ConfirmEnterGame(INT32 choice)
 {
 	(void)choice;
 	if (!cv_allowteamchange.value)
@@ -6297,7 +6284,7 @@ static void M_ConfirmEnterGame(INT32 choice)
 	COM_ImmedExecute("changeteam playing");
 }
 
-static void M_ConfirmTeamScramble(INT32 choice)
+void M_ConfirmTeamScramble(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
@@ -6305,7 +6292,7 @@ static void M_ConfirmTeamScramble(INT32 choice)
 	COM_ImmedExecute(va("teamscramble %d", cv_dummyscramble.value+1));
 }
 
-static void M_ConfirmTeamChange(INT32 choice)
+void M_ConfirmTeamChange(INT32 choice)
 {
 	(void)choice;
 
@@ -6338,7 +6325,7 @@ static void M_ConfirmTeamChange(INT32 choice)
 	}
 }
 
-static void M_ConfirmSpectateChange(INT32 choice)
+void M_ConfirmSpectateChange(INT32 choice)
 {
 	(void)choice;
 
@@ -6414,13 +6401,13 @@ static void M_RetryResponse(INT32 ch)
 	G_SetRetryFlag();
 }
 
-static void M_Retry(INT32 choice)
+void M_Retry(INT32 choice)
 {
 	(void)choice;
 	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),FUNCPTRCAST(M_RetryResponse),MM_YESNO);
 }
 
-static void M_SelectableClearMenus(INT32 choice)
+void M_SelectableClearMenus(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
@@ -6444,13 +6431,13 @@ void M_RefreshPauseMenu(void)
 // CHEATS
 // ======
 
-static void M_UltimateCheat(INT32 choice)
+ATTRNORETURN void FUNCNORETURN M_UltimateCheat(INT32 choice)
 {
 	(void)choice;
 	I_Quit();
 }
 
-static void M_GetAllEmeralds(INT32 choice)
+void M_GetAllEmeralds(INT32 choice)
 {
 	(void)choice;
 
@@ -6471,7 +6458,7 @@ static void M_DestroyRobotsResponse(INT32 ch)
 	G_SetGameModified(multiplayer, true);
 }
 
-static void M_DestroyRobots(INT32 choice)
+void M_DestroyRobots(INT32 choice)
 {
 	(void)choice;
 
@@ -6616,7 +6603,7 @@ void M_DrawChecklist(void)
 #undef NUMCHECKLIST
 
 #define NUMHINTS 5
-static void M_EmblemHints(INT32 choice)
+void M_EmblemHints(INT32 choice)
 {
 	(void)choice;
 	SR_EmblemHintMenu[0].status = (M_SecretUnlocked(SECRET_ITEMFINDER)) ? (IT_CVAR|IT_STRING) : (IT_SECRET);
@@ -6624,7 +6611,7 @@ static void M_EmblemHints(INT32 choice)
 	itemOn = 1; // always start on back.
 }
 
-static void M_DrawEmblemHints(void)
+void M_DrawEmblemHints(void)
 {
 	INT32 i, j = 0;
 	UINT32 collected = 0;
@@ -8809,7 +8796,7 @@ void M_ModeAttackRetry(INT32 choice)
 		M_ChooseTimeAttack(0);
 }
 
-static void M_ModeAttackEndGame(INT32 choice)
+void M_ModeAttackEndGame(INT32 choice)
 {
 	(void)choice;
 	G_CheckDemoStatus(); // Cancel recording
@@ -8845,7 +8832,7 @@ static void M_ExitGameResponse(INT32 ch)
 	M_ClearMenus(true);
 }
 
-static void M_EndGame(INT32 choice)
+void M_EndGame(INT32 choice)
 {
 	(void)choice;
 	if (demo.playback)
@@ -9503,7 +9490,7 @@ void M_DrawServerMenu(void)
 	M_DrawGenericMenu();
 }
 
-static void M_MapChange(INT32 choice)
+void M_MapChange(INT32 choice)
 {
 	(void)choice;
 
@@ -10324,7 +10311,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 }
 
 // start the multiplayer setup menu
-static void M_SetupMultiPlayer(INT32 choice)
+void M_SetupMultiPlayer(INT32 choice)
 {
 	(void)choice;
 
@@ -10369,7 +10356,7 @@ static void M_SetupMultiPlayer(INT32 choice)
 }
 
 // start the multiplayer setup menu, for secondary player (splitscreen mode)
-static void M_SetupMultiPlayer2(INT32 choice)
+void M_SetupMultiPlayer2(INT32 choice)
 {
 	(void)choice;
 
@@ -10413,7 +10400,7 @@ static void M_SetupMultiPlayer2(INT32 choice)
 }
 
 // start the multiplayer setup menu, for third player (splitscreen mode)
-static void M_SetupMultiPlayer3(INT32 choice)
+void M_SetupMultiPlayer3(INT32 choice)
 {
 	(void)choice;
 
@@ -10457,7 +10444,7 @@ static void M_SetupMultiPlayer3(INT32 choice)
 }
 
 // start the multiplayer setup menu, for third player (splitscreen mode)
-static void M_SetupMultiPlayer4(INT32 choice)
+void M_SetupMultiPlayer4(INT32 choice)
 {
 	(void)choice;
 

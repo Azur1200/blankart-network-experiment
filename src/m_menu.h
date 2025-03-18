@@ -128,14 +128,14 @@ typedef enum
 
 	// MISC
 	// MN_MESSAGE,
-	// MN_SPAUSE,
+	MN_SPAUSE,
 
-	// MN_MPAUSE,
-	// MN_SCRAMBLETEAM,
-	// MN_CHANGETEAM,
-	// MN_CHANGELEVEL,
+	MN_MPAUSE,
+	MN_SCRAMBLETEAM,
+	MN_CHANGETEAM,
+	MN_CHANGELEVEL,
 
-	// MN_MAPAUSE,
+	MN_MAPAUSE,
 	// MN_HELP,
 
 	// SRB2Kart
@@ -151,6 +151,8 @@ typedef enum
 	MN_MP_OFFLINESERVER,
 	MN_SP_GRANDPRIX,
 	MN_MISC_REPLAYHUT,
+	MN_MISC_DISCORDREQUESTS,
+	MN_CHANGESPECTATE,
 
 	MN_SPECIAL,
 
@@ -419,9 +421,31 @@ void M_Manual(INT32 choice);
 void M_Credits(INT32 choice);
 void M_BlanCredits(INT32 choice);
 void M_HandleAddons(INT32 choice);
+void M_SelectableClearMenus(INT32 choice);
+void M_ModeAttackEndGame(INT32 choice);
+void M_PandorasBox(INT32 choice);
+void M_EmblemHints(INT32 choice);
+void M_Retry(INT32 choice);
+void M_EndGame(INT32 choice);
+void M_MapChange(INT32 choice);
+void M_SetupMultiPlayer(INT32 choice);
+void M_SetupMultiPlayer2(INT32 choice);
+void M_SetupMultiPlayer3(INT32 choice);
+void M_SetupMultiPlayer4(INT32 choice);
+void M_ConfirmSpectate(INT32 choice);
+void M_ConfirmEnterGame(INT32 choice);
+void M_ExitPandorasBox(INT32 choice);
+void M_GetAllEmeralds(INT32 choice);
+void M_DestroyRobots(INT32 choice);
+ATTRNORETURN void FUNCNORETURN M_UltimateCheat(INT32 choice);
+void M_ConfirmTeamScramble(INT32 choice);
+void M_ConfirmTeamChange(INT32 choice);
+void M_ConfirmSpectateChange(INT32 choice);
+void M_ChangeLevel(INT32 choice);
 
 void M_DrawGenericMenu(void);
 void M_DrawCenteredMenu(void);
+void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
 void M_DrawLevelStats(void);
 void M_DrawReplayHut(void);
@@ -434,6 +458,7 @@ void M_DrawVideoMode(void);
 void M_DrawSkyRoom(void);
 void M_DrawHUDOptions(void);
 void M_DrawAddons(void);
+void M_DrawEmblemHints(void);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
@@ -521,6 +546,8 @@ extern description_t description[MAXSKINS];
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
+extern consvar_t cv_dummyrings, cv_dummylives;
+extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
