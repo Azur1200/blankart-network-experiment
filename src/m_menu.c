@@ -233,8 +233,6 @@ static char *M_GetConditionString(condition_t cond);
 menu_t SR_MainDef, SR_UnlockChecklistDef;
 
 // Misc. Main Menu
-static void M_SinglePlayerMenu(INT32 choice);
-static void M_Options(INT32 choice);
 static void M_SelectableClearMenus(INT32 choice);
 static void M_Retry(INT32 choice);
 static void M_EndGame(INT32 choice);
@@ -247,23 +245,12 @@ static void M_ConfirmTeamChange(INT32 choice);
 static void M_ConfirmSpectateChange(INT32 choice);
 //static void M_SecretsMenu(INT32 choice);
 //static void M_SetupChoosePlayer(INT32 choice);
-static void M_QuitSRB2(INT32 choice);
 menu_t SP_MainDef, MP_MainDef, OP_MainDef;
 menu_t MISC_ScrambleTeamDef, MISC_ChangeTeamDef, MISC_ChangeSpectateDef;
 
 // Single Player
-static void M_GrandPrixTemp(INT32 choice);
-static void M_StartGrandPrix(INT32 choice);
-static void M_TimeAttack(INT32 choice);
-static void M_QuitTimeAttackMenu(INT32 choice);
-static void M_ItemBreaker(INT32 choice);
-static void M_Statistics(INT32 choice);
-static void M_HandleStaffReplay(INT32 choice);
-static void M_ReplayTimeAttack(INT32 choice);
-static void M_ChooseTimeAttack(INT32 choice);
 //static void M_ChooseNightsAttack(INT32 choice);
 static void M_ModeAttackEndGame(INT32 choice);
-static void M_SetGuestReplay(INT32 choice);
 //static void M_ChoosePlayer(INT32 choice);
 menu_t SP_LevelStatsDef;
 static menu_t SP_GrandPrixTempDef;
@@ -317,7 +304,6 @@ menu_t OP_AdvServerOptionsDef;
 //menu_t OP_NetgameOptionsDef, OP_GametypeOptionsDef;
 menu_t OP_MonitorToggleDef;
 
-static void M_Addons(INT32 choice);
 static patch_t *addonsp[NUM_EXT+5];
 
 #define numaddonsshown 4
@@ -325,10 +311,7 @@ static patch_t *addonsp[NUM_EXT+5];
 // Replay hut
 menu_t MISC_ReplayHutDef;
 menu_t MISC_ReplayOptionsDef;
-static void M_HandleReplayHutList(INT32 choice);
-static void M_DrawReplayHut(void);
 static void M_DrawReplayStartMenu(void);
-static void M_QuitReplayHut(INT32 choice);
 static void M_HutStartReplay(INT32 choice);
 
 static void M_DrawPlaybackMenu(void);
@@ -345,17 +328,12 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 
 // Drawing functions
 static void M_DrawGenericBackgroundMenu(void);
-static void M_DrawCenteredMenu(void);
-static void M_DrawAddons(void);
-static void M_DrawChecklist(void);
 static void M_DrawMusicTest(void);
 static void M_DrawEmblemHints(void);
 static void M_DrawPauseMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
 static void M_DrawImageDef(void);
 //static void M_DrawLoad(void);
-static void M_DrawLevelStats(void);
-static void M_DrawTimeAttackMenu(void);
 //static void M_DrawNightsAttackMenu(void);
 //static void M_DrawSetupChoosePlayerMenu(void);
 static void M_DrawControl(void);
@@ -365,11 +343,9 @@ static void M_DrawJoystick(void);
 
 // Handling functions
 static void M_ExitPandorasBox(INT32 choice);
-static void M_HandleAddons(INT32 choice);
 static void M_HandleMusicTest(INT32 choice);
 static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
-static void M_HandleLevelStats(INT32 choice);
 static void M_HandleMonitorToggles(INT32 choice);
 
 // uhhhhhh hack?
@@ -382,7 +358,7 @@ static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
 // temporary measure until menu_t and menupres_t are merged (hopefully)
-menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef;
+menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef, MISC_AddonsDef;
 menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_CAMERA] = &OP_CamOptionsDef,
 	[MN_OP_P1CAMERA] = &OP_Player1CamOptionsDef,
@@ -407,12 +383,26 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_ADDONS] = &OP_AddonsOptionsDef,
 	[MN_OP_SCREENSHOTS] = &OP_ScreenshotOptionsDef,
 	[MN_OP_ERASEDATA] = &OP_EraseDataDef,
-	[MN_MISC_REPLAY] = &MISC_ReplayOptionsDef,
+	[MN_MISC_REPLAYOPTIONS] = &MISC_ReplayOptionsDef,
 
 	[MN_MP_MAIN] = &MP_MainDef,
 	[MN_MP_PLAYERSETUP] = &MP_PlayerSetupDef,
 	[MN_MP_SERVER] = &MP_ServerDef,
 	[MN_MP_OFFLINESERVER] = &MP_OfflineServerDef,
+
+	[MN_SP_MAIN] = &SP_MainDef,
+	[MN_SP_GRANDPRIX] = &SP_GrandPrixTempDef,
+	[MN_SP_TIMEATTACK] = &SP_TimeAttackDef,
+	[MN_SP_GUESTREPLAY] = &SP_GuestReplayDef,
+	[MN_SP_REPLAY] = &SP_ReplayDef,
+	[MN_SP_GHOST] = &SP_GhostDef,
+
+	[MN_SR_MAIN] = &SR_MainDef,
+	[MN_SR_UNLOCKCHECKLIST] = &SR_UnlockChecklistDef,
+	[MN_SP_LEVELSTATS] = &SP_LevelStatsDef,
+	[MN_MISC_REPLAYHUT] = &MISC_ReplayHutDef,
+
+	[MN_AD_MAIN] = &MISC_AddonsDef,
 
 	[MN_MAIN] = &MainDef,
 
@@ -498,9 +488,9 @@ static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL,
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{0, "Easy"}, {1, "Normal"}, {2, "Hard"}, {3, "Master"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
-static consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
-static consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
-static consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
+consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
+consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
+consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 
 // ==========================================================================
 // ORGANIZATION START.
@@ -4252,7 +4242,7 @@ static void M_DrawPauseMenu(void)
 	M_DrawGenericMenu();
 }
 
-static void M_DrawCenteredMenu(void)
+void M_DrawCenteredMenu(void)
 {
 	INT32 x, y, i, cursory = 0;
 
@@ -4864,7 +4854,7 @@ void M_AddonsOptions(INT32 choice)
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
 #define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
 
-static void M_Addons(INT32 choice)
+void M_Addons(INT32 choice)
 {
 	const char *pathname = ".";
 
@@ -5071,7 +5061,7 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
-static void M_DrawAddons(void)
+void M_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
@@ -5257,7 +5247,7 @@ static boolean M_ChangeStringAddons(INT32 choice)
 }
 #undef len
 
-static void M_HandleAddons(INT32 choice)
+void M_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -5471,7 +5461,7 @@ void M_ReplayHut(INT32 choice)
 	S_ChangeMusicInternal("replst", true);
 }
 
-static void M_HandleReplayHutList(INT32 choice)
+void M_HandleReplayHutList(INT32 choice)
 {
 	switch (choice)
 	{
@@ -5710,7 +5700,7 @@ static void DrawReplayHutReplayInfo(void)
 	}
 }
 
-static void M_DrawReplayHut(void)
+void M_DrawReplayHut(void)
 {
 	INT32 x, y, cursory = 0;
 	INT16 i;
@@ -5966,7 +5956,7 @@ static void M_DrawReplayStartMenu(void)
 	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
-static void M_QuitReplayHut(INT32 choice)
+void M_QuitReplayHut(INT32 choice)
 {
 	(void)choice;
 
@@ -6381,7 +6371,7 @@ static void M_ConfirmSpectateChange(INT32 choice)
 	}
 }
 
-static void M_Options(INT32 choice)
+void M_Options(INT32 choice)
 {
 	(void)choice;
 
@@ -6563,7 +6553,7 @@ static char *M_GetConditionString(condition_t cond)
 }
 
 #define NUMCHECKLIST 23
-static void M_DrawChecklist(void)
+void M_DrawChecklist(void)
 {
 	UINT32 i, line = 0, c;
 	INT32 lastid;
@@ -7251,7 +7241,7 @@ void M_BlanCredits(INT32 choice)
 // SINGLE PLAYER MENU
 // ==================
 
-static void M_SinglePlayerMenu(INT32 choice)
+void M_SinglePlayerMenu(INT32 choice)
 {
 	(void)choice;
 
@@ -7938,7 +7928,7 @@ static statpage_t statsPages[] = {
 #define LENSTATSPAGES (sizeof(statsPages)/sizeof(statsPages[0]))
 #define NUMSTATSPAGES (kartstats.vanilla ? 2 : LENSTATSPAGES)
 
-static void M_Statistics(INT32 choice)
+void M_Statistics(INT32 choice)
 {
 	INT16 i, j = 0;
 
@@ -8160,7 +8150,7 @@ static void M_DrawStatsExtra(void)
 #undef DRAWAMOUNTSTAT
 #undef DRAWTIMESTAT
 
-static void M_DrawLevelStats(void)
+void M_DrawLevelStats(void)
 {
 	M_DrawMenuTitle();
 
@@ -8176,7 +8166,7 @@ static void M_DrawLevelStats(void)
 }
 
 // Handle statistics.
-static void M_HandleLevelStats(INT32 choice)
+void M_HandleLevelStats(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -8240,7 +8230,7 @@ static void M_HandleLevelStats(INT32 choice)
 	}
 }
 
-static void M_GrandPrixTemp(INT32 choice)
+void M_GrandPrixTemp(INT32 choice)
 {
 	(void)choice;
 	if (!M_PrepareCupList())
@@ -8253,7 +8243,7 @@ static void M_GrandPrixTemp(INT32 choice)
 }
 
 // Start Grand Prix!
-static void M_StartGrandPrix(INT32 choice)
+void M_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup = kartcupheaders;
 	INT32 levelNum;
@@ -8513,7 +8503,7 @@ void M_DrawTimeAttackMenu(void)
 }
 
 // Going to Time Attack menu...
-static void M_TimeAttack(INT32 choice)
+void M_TimeAttack(INT32 choice)
 {
 	(void)choice;
 
@@ -8546,7 +8536,7 @@ static void M_TimeAttack(INT32 choice)
 }
 
 // Same as above, but sets a different levellistmode. Should probably be merged...
-static void M_ItemBreaker(INT32 choice)
+void M_ItemBreaker(INT32 choice)
 {
 	(void)choice;
 
@@ -8578,7 +8568,7 @@ static void M_ItemBreaker(INT32 choice)
 	S_ChangeMusicInternal("racent", true);
 }
 
-static void M_QuitTimeAttackMenu(INT32 choice)
+void M_QuitTimeAttackMenu(INT32 choice)
 {
 	(void)choice;
 
@@ -8587,7 +8577,7 @@ static void M_QuitTimeAttackMenu(INT32 choice)
 }
 
 // Player has selected the "START" from the time attack screen
-static void M_ChooseTimeAttack(INT32 choice)
+void M_ChooseTimeAttack(INT32 choice)
 {
 	char *gpath;
 	char nameofdemo[256];
@@ -8613,7 +8603,7 @@ static void M_ChooseTimeAttack(INT32 choice)
 	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value-1), 0, false);
 }
 
-static void M_HandleStaffReplay(INT32 choice)
+void M_HandleStaffReplay(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
@@ -8661,7 +8651,7 @@ static void M_HandleStaffReplay(INT32 choice)
 }
 
 // Player has selected the "REPLAY" from the time attack screen
-static void M_ReplayTimeAttack(INT32 choice)
+void M_ReplayTimeAttack(INT32 choice)
 {
 	const char *which;
 	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
@@ -8786,7 +8776,7 @@ static void M_OverwriteGuest_Last(INT32 choice)
 	M_OverwriteGuest("last");
 }
 
-static void M_SetGuestReplay(INT32 choice)
+void M_SetGuestReplay(INT32 choice)
 {
 	void (*which)(INT32);
 	switch(choice)
@@ -11916,7 +11906,7 @@ void M_QuitResponse(INT32 ch)
 	I_Quit();
 }
 
-static void M_QuitSRB2(INT32 choice)
+void M_QuitSRB2(INT32 choice)
 {
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.

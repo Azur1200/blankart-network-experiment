@@ -2147,6 +2147,10 @@ void readtextprompt(MYFILE *f, INT32 num)
 
 // super secret menu cvars... :shushing_face:
 static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
+	{ "CHOOSESKIN", &cv_chooseskin },
+	{ "DUMMYGPDIFFICULTY", &cv_dummygpdifficulty },
+	{ "DUMMYGPENCORE", &cv_dummygpencore },
+	{ "DUMMYGPCUP", &cv_dummygpcup },
 	{ "NEXTMAP", &cv_nextmap },
 	{ "NEWGAMETYPE", &cv_newgametype },
 	{ NULL, NULL }
@@ -2207,6 +2211,8 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				flags = IT_SECRET;
 			else if (fastcmp(word+4, "WHITE"))
 				flags = IT_WHITESTRING;
+			else if (fastcmp(word+4, "DISABLED"))
+				flags = IT_DISABLED;
 			else if (word[4])
 			{
 				deh_warning("MenuItem %s: unknown word '%s'", "", word);
@@ -2276,8 +2282,23 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			menuitem->status |= IT_SUBMENU;
 			menuitem->itemaction.submenu = menunum2menudef[mn];
 		}
-		else if (fastcmp(word, "CALL") || fastcmp(word, "KEYHANDLER"))
+		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER"))
 		{
+			UINT16 flags;
+			if (word[0] == 'C')
+			{
+				flags = IT_CALL;
+				if (fastcmp(word+4, "NOTMODIFIED"))
+					flags |= IT_CALL_NOTMODIFIED;
+				else if (word[4])
+				{
+					deh_warning("MenuItem %s: unknown word '%s'", "", word);
+					continue;
+				}
+			}
+			else
+				flags = IT_KEYHANDLER;
+
 			if (actionset)
 			{
 				deh_warning("MenuItem %s: action already set!", "");
@@ -2290,7 +2311,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				continue;
 			}
 			actionset = true;
-			menuitem->status |= word[0] == 'C' ? IT_CALL : IT_KEYHANDLER;
+			menuitem->status |= flags;
 			menuitem->itemaction.routine = routine;
 		}
 		else if (fastcmp(word, "ALPHAKEY") || fastcmp(word, "Y"))
@@ -2301,6 +2322,10 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			deh_warning("MenuItem %s: unknown word '%s'", "", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
+
+	// text pointer cannot be null
+	if (!textset)
+		menuitem->text = "";
 
 	Z_Free(s);
 }

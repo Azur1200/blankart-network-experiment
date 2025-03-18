@@ -693,13 +693,33 @@ const char *const MENUTYPES_LIST[] = {
 	"OP_CAMERA",
 	"OP_P3CAMERA",
 	"OP_P4CAMERA",
-	"MISC_REPLAY",
+	"MISC_REPLAYOPTIONS",
 	"MP_OFFLINESERVER",
+	"SP_GRANDPRIX",
+	"MISC_REPLAYHUT",
 
 	"SPECIAL"
 };
 
 struct menu_routine_s const MENU_ROUTINES[] = {
+	{ "SINGLEPLAYERMENU", &M_SinglePlayerMenu },
+	{ "OPTIONS", &M_Options },
+	{ "ADDONS", &M_Addons },
+	{ "QUITSRB2", &M_QuitSRB2 },
+	{ "STATISTICS", &M_Statistics },
+	{ "HANDLELEVELSTATS", &M_HandleLevelStats },
+	{ "REPLAYHUT", &M_ReplayHut },
+	{ "QUITREPLAYHUT", &M_QuitReplayHut },
+	{ "HANDLEREPLAYHUTLIST", &M_HandleReplayHutList },
+	{ "GRANDPRIXTEMP", &M_GrandPrixTemp },
+	{ "TIMEATTACK", &M_TimeAttack },
+	{ "ITEMBREAKER", &M_ItemBreaker },
+	{ "STARTGRANDPRIX", &M_StartGrandPrix },
+	{ "QUITTIMEATTACKMENU", &M_QuitTimeAttackMenu },
+	{ "CHOOSETIMEATTACK", &M_ChooseTimeAttack },
+	{ "SETGUESTREPLAY", &M_SetGuestReplay },
+	{ "REPLAYTIMEATTACK", &M_ReplayTimeAttack },
+	{ "HANDLESTAFFREPLAY", &M_HandleStaffReplay },
 	{ "SETUPMULTIHANDLER", &M_SetupMultiHandler },
 	{ "HANDLESETUPMULTIPLAYER", &M_HandleSetupMultiPlayer },
 	{ "QUITMULTIPLAYERMENU", &M_QuitMultiPlayerMenu },
@@ -726,11 +746,17 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "MANUAL", &M_Manual },
 	{ "CREDITS", &M_Credits },
 	{ "BLANCREDITS", &M_BlanCredits },
+	{ "HANDLEADDONS", &M_HandleAddons },
 	{ NULL, NULL }
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
+	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
+	{ "DRAWCHECKLIST", &M_DrawChecklist },
+	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
+	{ "DRAWREPLAYHUT", &M_DrawReplayHut },
+	{ "DRAWTIMEATTACKMENU", &M_DrawTimeAttackMenu },
 	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
 	{ "DRAWSERVERMENU", &M_DrawServerMenu },
@@ -738,6 +764,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
 	{ "DRAWSKYROOM", &M_DrawSkyRoom },
 	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
+	{ "DRAWADDONS", &M_DrawAddons },
 	{ NULL, NULL }
 };
 

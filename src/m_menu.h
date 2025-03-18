@@ -147,8 +147,10 @@ typedef enum
 	MN_OP_CAMERA,
 	MN_OP_P3CAMERA,
 	MN_OP_P4CAMERA,
-	MN_MISC_REPLAY,
+	MN_MISC_REPLAYOPTIONS,
 	MN_MP_OFFLINESERVER,
+	MN_SP_GRANDPRIX,
+	MN_MISC_REPLAYHUT,
 
 	MN_SPECIAL,
 
@@ -373,6 +375,23 @@ struct menu_t
 void M_SetupNextMenu(menu_t *menudef);
 void M_ClearMenus(boolean callexitmenufunc);
 
+void M_SinglePlayerMenu(INT32 choice);
+void M_Options(INT32 choice);
+void M_Addons(INT32 choice);
+void M_QuitSRB2(INT32 choice);
+void M_Statistics(INT32 choice);
+void M_HandleLevelStats(INT32 choice);
+void M_QuitReplayHut(INT32 choice);
+void M_HandleReplayHutList(INT32 choice);
+void M_GrandPrixTemp(INT32 choice);
+void M_TimeAttack(INT32 choice);
+void M_ItemBreaker(INT32 choice);
+void M_StartGrandPrix(INT32 choice);
+void M_QuitTimeAttackMenu(INT32 choice);
+void M_ChooseTimeAttack(INT32 choice);
+void M_SetGuestReplay(INT32 choice);
+void M_ReplayTimeAttack(INT32 choice);
+void M_HandleStaffReplay(INT32 choice);
 void M_SetupMultiHandler(INT32 choice);
 void M_HandleSetupMultiPlayer(INT32 choice);
 void M_QuitMultiPlayerMenu(INT32 choice);
@@ -399,8 +418,14 @@ void M_EraseData(INT32 choice);
 void M_Manual(INT32 choice);
 void M_Credits(INT32 choice);
 void M_BlanCredits(INT32 choice);
+void M_HandleAddons(INT32 choice);
 
 void M_DrawGenericMenu(void);
+void M_DrawCenteredMenu(void);
+void M_DrawChecklist(void);
+void M_DrawLevelStats(void);
+void M_DrawReplayHut(void);
+void M_DrawTimeAttackMenu(void);
 void M_DrawMPMainMenu(void);
 void M_DrawSetupMultiPlayerMenu(void);
 void M_DrawServerMenu(void);
@@ -408,6 +433,7 @@ void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
 void M_DrawSkyRoom(void);
 void M_DrawHUDOptions(void);
+void M_DrawAddons(void);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
@@ -494,6 +520,7 @@ extern description_t description[MAXSKINS];
 
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
+extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
