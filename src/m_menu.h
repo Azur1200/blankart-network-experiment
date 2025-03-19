@@ -136,7 +136,7 @@ typedef enum
 	MN_CHANGELEVEL,
 
 	MN_MAPAUSE,
-	// MN_HELP,
+	MN_HELP,
 
 	// SRB2Kart
 	MN_OP_HUD,
@@ -153,6 +153,9 @@ typedef enum
 	MN_MISC_REPLAYHUT,
 	MN_MISC_DISCORDREQUESTS,
 	MN_CHANGESPECTATE,
+	MN_MISC_REPLAYSTART,
+	MN_PLAYBACK,
+	MN_OP_CONTROLSETUP,
 
 	MN_SPECIAL,
 
@@ -442,6 +445,25 @@ void M_ConfirmTeamScramble(INT32 choice);
 void M_ConfirmTeamChange(INT32 choice);
 void M_ConfirmSpectateChange(INT32 choice);
 void M_ChangeLevel(INT32 choice);
+void M_HutStartReplay(INT32 choice);
+void M_PlaybackRewind(INT32 choice);
+void M_PlaybackPause(INT32 choice);
+void M_PlaybackFastForward(INT32 choice);
+void M_PlaybackAdvance(INT32 choice);
+void M_PlaybackSetViews(INT32 choice);
+void M_PlaybackAdjustView(INT32 choice);
+void M_PlaybackToggleFreecam(INT32 choice);
+void M_PlaybackQuit(INT32 choice);
+void M_HandleImageDef(INT32 choice);
+void M_HandleMusicTest(INT32 choice);
+void M_Setup1PJoystickMenu(INT32 choice);
+void M_Setup2PJoystickMenu(INT32 choice);
+void M_Setup3PJoystickMenu(INT32 choice);
+void M_Setup4PJoystickMenu(INT32 choice);
+void M_ResetControls(INT32 choice);
+void M_ChangeControl(INT32 choice);
+void M_AssignJoystick(INT32 choice);
+void M_HandleMonitorToggles(INT32 choice);
 
 void M_DrawGenericMenu(void);
 void M_DrawCenteredMenu(void);
@@ -459,6 +481,13 @@ void M_DrawSkyRoom(void);
 void M_DrawHUDOptions(void);
 void M_DrawAddons(void);
 void M_DrawEmblemHints(void);
+void M_DrawReplayStartMenu(void);
+void M_DrawPlaybackMenu(void);
+void M_DrawImageDef(void);
+void M_DrawMusicTest(void);
+void M_DrawControl(void);
+void M_DrawJoystick(void);
+void M_DrawMonitorToggles(void);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);

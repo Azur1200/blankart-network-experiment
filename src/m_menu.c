@@ -252,15 +252,6 @@ static void M_Connect(INT32 choice);
 menu_t OP_ControlsDef, OP_AllControlsDef;
 menu_t OP_MouseOptionsDef;
 
-static void M_Setup1PJoystickMenu(INT32 choice);
-static void M_Setup2PJoystickMenu(INT32 choice);
-static void M_Setup3PJoystickMenu(INT32 choice);
-static void M_Setup4PJoystickMenu(INT32 choice);
-
-static void M_AssignJoystick(INT32 choice);
-static void M_ChangeControl(INT32 choice);
-static void M_ResetControls(INT32 choice);
-
 //camera options menu
 menu_t OP_CamOptionsDef;
 menu_t OP_Player1CamOptionsDef, OP_Player2CamOptionsDef, OP_Player3CamOptionsDef, OP_Player4CamOptionsDef;
@@ -291,39 +282,19 @@ static patch_t *addonsp[NUM_EXT+5];
 // Replay hut
 menu_t MISC_ReplayHutDef;
 menu_t MISC_ReplayOptionsDef;
-static void M_DrawReplayStartMenu(void);
-static void M_HutStartReplay(INT32 choice);
-
-static void M_DrawPlaybackMenu(void);
-static void M_PlaybackRewind(INT32 choice);
-static void M_PlaybackPause(INT32 choice);
-static void M_PlaybackFastForward(INT32 choice);
-static void M_PlaybackAdvance(INT32 choice);
-static void M_PlaybackSetViews(INT32 choice);
-static void M_PlaybackAdjustView(INT32 choice);
-static void M_PlaybackToggleFreecam(INT32 choice);
-static void M_PlaybackQuit(INT32 choice);
 
 static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the button from being extremely fucked
 
 // Drawing functions
 static void M_DrawGenericBackgroundMenu(void);
-static void M_DrawMusicTest(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
-static void M_DrawImageDef(void);
 //static void M_DrawLoad(void);
 //static void M_DrawNightsAttackMenu(void);
 //static void M_DrawSetupChoosePlayerMenu(void);
-static void M_DrawControl(void);
-static void M_DrawMonitorToggles(void);
 static void M_DrawConnectMenu(void);
-static void M_DrawJoystick(void);
 
 // Handling functions
-static void M_HandleMusicTest(INT32 choice);
-static void M_HandleImageDef(INT32 choice);
 //static void M_HandleLoadSave(INT32 choice);
-static void M_HandleMonitorToggles(INT32 choice);
 
 // uhhhhhh hack?
 static void M_ChangecontrolResponse(event_t *ev);
@@ -335,7 +306,7 @@ static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
 // temporary measure until menu_t and menupres_t are merged (hopefully)
-menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef, MISC_AddonsDef, MPauseDef, MAPauseDef, SR_EmblemHintDef, SR_PandoraDef, MISC_ChangeLevelDef;
+menu_t MP_PlayerSetupDef, MP_ServerDef, MP_OfflineServerDef, OP_AddonsOptionsDef, MISC_AddonsDef, MPauseDef, MAPauseDef, SR_EmblemHintDef, SR_PandoraDef, MISC_ChangeLevelDef, MISC_ReplayStartDef, PlaybackMenuDef, MISC_HelpDef, SR_MusicTestDef, OP_JoystickSetDef;
 menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_CAMERA] = &OP_CamOptionsDef,
 	[MN_OP_P1CAMERA] = &OP_Player1CamOptionsDef,
@@ -344,7 +315,7 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_P4CAMERA] = &OP_Player4CamOptionsDef,
 
 	[MN_OP_MAIN] = &OP_MainDef,
-	[MN_OP_CHANGECONTROLS] = &OP_ControlsDef,
+	[MN_OP_CONTROLSETUP] = &OP_ControlsDef,
 	[MN_OP_VIDEO] = &OP_VideoOptionsDef,
 	[MN_OP_VIDEOMODE] = &OP_VideoModeDef,
 	[MN_OP_OPENGL] = &OP_OpenGLOptionsDef,
@@ -390,6 +361,14 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_MAPAUSE] = &MAPauseDef,
 	[MN_CHANGESPECTATE] = &MISC_ChangeSpectateDef,
 	[MN_CHANGELEVEL] = &MISC_ChangeLevelDef,
+
+	// who even cares how i sort this shit anymore
+	[MN_MISC_REPLAYSTART] = &MISC_ReplayStartDef,
+	[MN_PLAYBACK] = &PlaybackMenuDef,
+	[MN_HELP] = &MISC_HelpDef,
+	[MN_SR_SOUNDTEST] = &SR_MusicTestDef,
+	[MN_OP_CHANGECONTROLS] = &OP_AllControlsDef,
+	[MN_OP_JOYSTICKSET] = &OP_JoystickSetDef,
 
 	[MN_MAIN] = &MainDef,
 
@@ -4762,7 +4741,7 @@ static void M_StopMessage(INT32 choice)
 // Draw an Image Def.  Aka, Help images.
 // Defines what image is used in (menuitem_t)->text.
 // You can even put multiple images in one menu!
-static void M_DrawImageDef(void)
+void M_DrawImageDef(void)
 {
 	patch_t *patch = W_CachePatchName(currentMenu->menuitems[itemOn].text,PU_CACHE);
 	if (patch->width <= BASEVIDWIDTH)
@@ -4790,7 +4769,7 @@ static void M_DrawImageDef(void)
 
 // Handles the ImageDefs.  Just a specialized function that
 // uses left and right movement.
-static void M_HandleImageDef(INT32 choice)
+void M_HandleImageDef(INT32 choice)
 {
 	boolean exitmenu = false;
 
@@ -5833,7 +5812,7 @@ void M_DrawReplayHut(void)
 	}
 }
 
-static void M_DrawReplayStartMenu(void)
+void M_DrawReplayStartMenu(void)
 {
 	const char *warning;
 	UINT8 i;
@@ -5958,7 +5937,7 @@ void M_QuitReplayHut(INT32 choice)
 	demo.inreplayhut = false;
 }
 
-static void M_HutStartReplay(INT32 choice)
+void M_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
@@ -5974,7 +5953,7 @@ void M_SetPlaybackMenuPointer(void)
 	itemOn = playback_pause;
 }
 
-static void M_DrawPlaybackMenu(void)
+void M_DrawPlaybackMenu(void)
 {
 	INT16 i;
 	patch_t *icon;
@@ -6105,7 +6084,7 @@ static void M_DrawPlaybackMenu(void)
 	}
 }
 
-static void M_PlaybackRewind(INT32 choice)
+void M_PlaybackRewind(INT32 choice)
 {
 	static tic_t lastconfirmtime;
 
@@ -6131,7 +6110,7 @@ static void M_PlaybackRewind(INT32 choice)
 	CV_SetValue(&cv_playbackspeed, 1);
 }
 
-static void M_PlaybackPause(INT32 choice)
+void M_PlaybackPause(INT32 choice)
 {
 	(void)choice;
 
@@ -6151,7 +6130,7 @@ static void M_PlaybackPause(INT32 choice)
 	CV_SetValue(&cv_playbackspeed, 1);
 }
 
-static void M_PlaybackFastForward(INT32 choice)
+void M_PlaybackFastForward(INT32 choice)
 {
 	(void)choice;
 
@@ -6164,7 +6143,7 @@ static void M_PlaybackFastForward(INT32 choice)
 	CV_SetValue(&cv_playbackspeed, cv_playbackspeed.value == 1 ? 4 : 1);
 }
 
-static void M_PlaybackAdvance(INT32 choice)
+void M_PlaybackAdvance(INT32 choice)
 {
 	(void)choice;
 
@@ -6174,7 +6153,7 @@ static void M_PlaybackAdvance(INT32 choice)
 }
 
 
-static void M_PlaybackSetViews(INT32 choice)
+void M_PlaybackSetViews(INT32 choice)
 {
 
 	if (demo.freecam)
@@ -6192,13 +6171,13 @@ static void M_PlaybackSetViews(INT32 choice)
 	}
 }
 
-static void M_PlaybackAdjustView(INT32 choice)
+void M_PlaybackAdjustView(INT32 choice)
 {
 	G_AdjustView(itemOn - playback_viewcount, (choice > 0) ? 1 : -1, true);
 }
 
 // this one's rather tricky
-static void M_PlaybackToggleFreecam(INT32 choice)
+void M_PlaybackToggleFreecam(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
@@ -6223,7 +6202,7 @@ static void M_PlaybackToggleFreecam(INT32 choice)
 }
 
 
-static void M_PlaybackQuit(INT32 choice)
+void M_PlaybackQuit(INT32 choice)
 {
 	(void)choice;
 	G_StopDemo();
@@ -6785,7 +6764,7 @@ void M_MusicTest(INT32 choice)
 	M_SetupNextMenu(&SR_MusicTestDef);
 }
 
-static void M_DrawMusicTest(void)
+void M_DrawMusicTest(void)
 {
 	INT32 x, y, i;
 
@@ -7001,7 +6980,7 @@ static void M_DrawMusicTest(void)
 	}
 }
 
-static void M_HandleMusicTest(INT32 choice)
+void M_HandleMusicTest(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -10743,7 +10722,7 @@ void M_ScreenshotOptions(INT32 choice)
 // Start the controls menu, setting it up for either the console player,
 // or the secondary splitscreen player
 
-static void M_DrawJoystick(void)
+void M_DrawJoystick(void)
 {
 	INT32 i;
 	INT32 compareval;
@@ -10805,31 +10784,31 @@ void M_SetupJoystickMenu(INT32 choice)
 	M_SetupNextMenu(&OP_JoystickSetDef);
 }
 
-static void M_Setup1PJoystickMenu(INT32 choice)
+void M_Setup1PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 1;
 	M_SetupJoystickMenu(choice);
 }
 
-static void M_Setup2PJoystickMenu(INT32 choice)
+void M_Setup2PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 2;
 	M_SetupJoystickMenu(choice);
 }
 
-static void M_Setup3PJoystickMenu(INT32 choice)
+void M_Setup3PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 3;
 	M_SetupJoystickMenu(choice);
 }
 
-static void M_Setup4PJoystickMenu(INT32 choice)
+void M_Setup4PJoystickMenu(INT32 choice)
 {
 	setupcontrolplayer = 4;
 	M_SetupJoystickMenu(choice);
 }
 
-static void M_AssignJoystick(INT32 choice)
+void M_AssignJoystick(INT32 choice)
 {
 	const UINT8 p = setupcontrolplayer-1;
 
@@ -11008,7 +10987,7 @@ void M_Setup4PControlsMenu(INT32 choice)
 #define controlheight 18
 
 // Draws the Customise Controls menu
-static void M_DrawControl(void)
+void M_DrawControl(void)
 {
 	char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
 	INT32 x, y, w, i, max, cursory = 0, iter;
@@ -11228,7 +11207,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	M_StopMessage(0);
 }
 
-static void M_ChangeControl(INT32 choice)
+void M_ChangeControl(INT32 choice)
 {
 	// This buffer assumes a 35-character message (per below) plus a max control name limit of 32 chars (per controltochangetext)
 	// If you change the below message, then change the size of this buffer!
@@ -11265,7 +11244,7 @@ static void M_ResetControlsResponse(INT32 ch)
 	S_StartSound(NULL, sfx_s224);
 }
 
-static void M_ResetControls(INT32 choice)
+void M_ResetControls(INT32 choice)
 {
 	(void)choice;
 	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), FUNCPTRCAST(M_ResetControlsResponse), MM_YESNO);
@@ -11561,7 +11540,7 @@ void M_HandleVideoMode(INT32 ch)
 
 static tic_t shitsfree = 0;
 
-static void M_DrawMonitorToggles(void)
+void M_DrawMonitorToggles(void)
 {
 	const INT32 edges = 4;
 	const INT32 height = 4;
@@ -11732,7 +11711,7 @@ static void M_DrawMonitorToggles(void)
 	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, highlightflags, va("* %s *", currentMenu->menuitems[itemOn].text));
 }
 
-static void M_HandleMonitorToggles(INT32 choice)
+void M_HandleMonitorToggles(INT32 choice)
 {
 	const INT32 width = 6, height = 4;
 	INT32 column = itemOn/height, row = itemOn%height;

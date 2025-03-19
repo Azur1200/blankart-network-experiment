@@ -682,7 +682,7 @@ const char *const MENUTYPES_LIST[] = {
 	"CHANGELEVEL",
 
 	"MAPAUSE",
-	// "HELP",
+	"HELP",
 
 	// SRB2Kart
 	"OP_HUD",
@@ -699,6 +699,9 @@ const char *const MENUTYPES_LIST[] = {
 	"MISC_REPLAYHUT",
 	"MISC_DISCORDREQUESTS",
 	"CHANGESPECTATE",
+	"MISC_REPLAYSTART",
+	"PLAYBACK",
+	"OP_CONTROLSETUP",
 
 	"SPECIAL"
 };
@@ -771,6 +774,25 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CONFIRMTEAMCHANGE", &M_ConfirmTeamChange },
 	{ "CONFIRMSPECTATECHANGE", &M_ConfirmSpectateChange },
 	{ "CHANGELEVEL", &M_ChangeLevel },
+	{ "HUTSTARTREPLAY", &M_HutStartReplay },
+	{ "PLAYBACKREWIND", &M_PlaybackRewind },
+	{ "PLAYBACKPAUSE", &M_PlaybackPause },
+	{ "PLAYBACKFASTFORWARD", &M_PlaybackFastForward },
+	{ "PLAYBACKADVANCE", &M_PlaybackAdvance },
+	{ "PLAYBACKSETVIEWS", &M_PlaybackSetViews },
+	{ "PLAYBACKADJUSTVIEW", &M_PlaybackAdjustView },
+	{ "PLAYBACKTOGGLEFREECAM", &M_PlaybackToggleFreecam },
+	{ "PLAYBACKQUIT", &M_PlaybackQuit },
+	{ "HANDLEIMAGEDEF", &M_HandleImageDef },
+	{ "HANDLEMUSICTEST", &M_HandleMusicTest },
+	{ "SETUP1PJOYSTICKMENU", &M_Setup1PJoystickMenu },
+	{ "SETUP2PJOYSTICKMENU", &M_Setup2PJoystickMenu },
+	{ "SETUP3PJOYSTICKMENU", &M_Setup3PJoystickMenu },
+	{ "SETUP4PJOYSTICKMENU", &M_Setup4PJoystickMenu },
+	{ "RESETCONTROLS", &M_ResetControls },
+	{ "CHANGECONTROL", &M_ChangeControl },
+	{ "ASSIGNJOYSTICK", &M_AssignJoystick },
+	{ "HANDLEMONITORTOGGLES", &M_HandleMonitorToggles },
 	{ NULL, NULL }
 };
 
@@ -791,6 +813,13 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
 	{ "DRAWADDONS", &M_DrawAddons },
 	{ "DRAWEMBLEMHINTS", &M_DrawEmblemHints },
+	{ "DRAWREPLAYSTARTMENU", &M_DrawReplayStartMenu },
+	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },
+	{ "DRAWIMAGEDEF", &M_DrawImageDef },
+	{ "DRAWMUSICTEST", &M_DrawMusicTest },
+	{ "DRAWCONTROL", &M_DrawControl },
+	{ "DRAWJOYSTICK", &M_DrawJoystick },
+	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
 	{ NULL, NULL }
 };
 

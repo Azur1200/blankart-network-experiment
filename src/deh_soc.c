@@ -2219,6 +2219,8 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				flags = IT_WHITESTRING;
 			else if (fastcmp(word+4, "DISABLED"))
 				flags = IT_DISABLED;
+			else if (fastcmp(word+4, "2"))
+				flags = IT_STRING2;
 			else if (word[4])
 			{
 				deh_warning("MenuItem %s: unknown word '%s'", "", word);
@@ -2288,7 +2290,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			menuitem->status |= IT_SUBMENU;
 			menuitem->itemaction.submenu = menunum2menudef[mn];
 		}
-		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER"))
+		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
 		{
 			UINT16 flags;
 			if (word[0] == 'C')
@@ -2302,8 +2304,12 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 					continue;
 				}
 			}
-			else
+			else if (word[0] == 'K')
 				flags = IT_KEYHANDLER;
+			else if (word[0] == 'A')
+				flags = IT_ARROWS;
+			else
+				I_Error("bruh"); // i should probably just make "CALL" the stem for all of these
 
 			if (actionset)
 			{
