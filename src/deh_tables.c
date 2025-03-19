@@ -27,6 +27,7 @@
 #include "r_data.h" // patchalphastyle_t
 #include "k_boss.h" // spottype_t (for lua)
 #include "k_follower.h" // followermode_t (for lua)
+#include "g_input.h" // Game controls (for lua)
 
 #include "deh_tables.h"
 
@@ -1456,6 +1457,41 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_WAITINGPLAYERS",GS_WAITINGPLAYERS},
 	{"GS_BLANCREDITS",GS_BLANCREDITS},
 
+	// Game controls
+	{"GC_NULL",gc_null},
+	{"GC_AIMFORWARD",gc_aimforward},
+	{"GC_AIMBACKWARD",gc_aimbackward},
+	{"GC_TURNLEFT",gc_turnleft},
+	{"GC_TURNRIGHT",gc_turnright},
+	{"GC_ACCELERATE",gc_accelerate},
+	{"GC_DRIFT",gc_drift},
+	{"GC_BRAKE",gc_brake},
+	{"GC_FIRE",gc_fire},
+	{"GC_LOOKBACK",gc_lookback},
+	{"GC_CAMRESET",gc_camreset},
+	{"GC_CAMTOGGLE",gc_camtoggle},
+	{"GC_SPECTATE",gc_spectate},
+	{"GC_LOOKUP",gc_lookup},
+	{"GC_LOOKDOWN",gc_lookdown},
+	{"GC_CENTERVIEW",gc_centerview},
+	{"GC_TALKKEY",gc_talkkey},
+	{"GC_TEAMKEY",gc_teamkey},
+	{"GC_SCORES",gc_scores},
+	{"GC_CONSOLE",gc_console},
+	{"GC_PAUSE",gc_pause},
+	{"GC_SYSTEMMENU",gc_systemmenu},
+	{"GC_SCREENSHOT",gc_screenshot},
+	{"GC_RECORDGIF",gc_recordgif},
+	{"GC_VIEWPOINT",gc_viewpoint},
+	{"GC_CUSTOM1",gc_custom1},
+	{"GC_CUSTOM2",gc_custom2},
+	{"GC_CUSTOM3",gc_custom3},
+	{"NUM_GAMECONTROLS",num_gamecontrols},
+
+	// screen.h constants
+	{"BASEVIDWIDTH", BASEVIDWIDTH},
+	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
+
 	// SRB2Kart
 	// kartitems_t
 #define FOREACH( name, n ) { TOSTR (KITEM_ ## name), KITEM_ ## name }
@@ -1512,10 +1548,6 @@ struct int_const_s const INT_CONST[] = {
 	{"KARTSPEED_EASY", KARTSPEED_EASY},
 	{"KARTSPEED_NORMAL", KARTSPEED_NORMAL},
 	{"KARTSPEED_HARD", KARTSPEED_HARD},
-	
-	// screen.h constants
-	{"BASEVIDWIDTH", BASEVIDWIDTH},
-	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
 
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1}, // This is to trick kart luas that look for this since its already here.
