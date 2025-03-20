@@ -2145,6 +2145,15 @@ void readtextprompt(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
+static menu_t *allocmenu(INT32 num)
+{
+	if (num < 0 || num >= NUMMENUTYPES)
+		I_Error("Tried to allocate out-of-range menu number");
+	if (menunum2menudef[num] == NULL)
+		menunum2menudef[num] = Z_Malloc(sizeof(menu_t), PU_STATIC, NULL);
+	return menunum2menudef[num];
+}
+
 // super secret menu cvars... :shushing_face:
 static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "CHOOSESKIN", &cv_chooseskin },
@@ -2294,7 +2303,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			}
 			actionset = true;
 			menuitem->status |= IT_SUBMENU;
-			menuitem->itemaction.submenu = menunum2menudef[mn];
+			menuitem->itemaction.submenu = allocmenu(mn);
 		}
 		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
 		{
@@ -2359,12 +2368,7 @@ void readmenu(MYFILE *f, INT32 num)
 	INT32 value;
 	boolean space = false;
 
-	menu_t *menudef = menunum2menudef[num];
-	if (menudef == NULL)
-	{
-		deh_warning("No def for menu %d, that is certainly strange...", num);
-		return;
-	}
+	menu_t *menudef = allocmenu(num);
 
 	//menuactive = false;
 
@@ -2579,7 +2583,7 @@ void readmenu(MYFILE *f, INT32 num)
 					deh_warning("Menu %d: unknown previous menu '%s'", num, word2);
 					continue;
 				}
-				menudef->prevMenu = menunum2menudef[value];
+				menudef->prevMenu = allocmenu(value);
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
 			{

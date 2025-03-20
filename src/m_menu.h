@@ -505,7 +505,6 @@ extern I_mutex m_menu_mutex;
 extern menu_t *currentMenu;
 
 extern menu_t MainDef;
-extern menu_t SP_LoadDef;
 
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);
@@ -654,71 +653,6 @@ void M_FreePlayerSetupColors(void);
 	source,\
 	M_DrawGenericMenu,\
 	x, y,\
-	0,\
-	NULL\
-}
-
-#define DEFAULTSCROLLMENUSTYLE(id, header, source, prev, x, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawGenericScrollMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
-
-#define PAUSEMENUSTYLE(source, x, y)\
-{\
-	MN_SPECIAL,\
-	NULL,\
-	sizeof(source)/sizeof(menuitem_t),\
-	NULL,\
-	source,\
-	M_DrawPauseMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
-
-#define CENTERMENUSTYLE(id, header, source, prev, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawCenteredMenu,\
-	BASEVIDWIDTH/2, y,\
-	0,\
-	NULL\
-}
-
-#define MAPICONMENUSTYLE(header, source, prev)\
-{\
-	MN_NONE,\
-	header,\
-	sizeof (source)/sizeof (menuitem_t),\
-	prev,\
-	source,\
-	M_DrawServerMenu,\
-	24,40,\
-	0,\
-	NULL\
-}
-
-#define IMAGEDEF(source)\
-{\
-	MN_SPECIAL,\
-	NULL,\
-	sizeof (source)/sizeof (menuitem_t),\
-	NULL,\
-	source,\
-	M_DrawImageDef,\
-	0, 0,\
 	0,\
 	NULL\
 }
