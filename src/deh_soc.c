@@ -2170,9 +2170,15 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 	char *tmp;
 
 	menuitem_t *menuitem = menudef->menuitems + menudef->numitems;
-	(void)itemname; // menuitem->itemname = Z_StrDup(itemname);
 	boolean actionset = false;
 	boolean textset = false;
+
+	if (strlen(itemname) > 6)
+	{
+		deh_warning("MenuItem %s: name too long (max 6 characters)", itemname);
+		goto toolong;
+	}
+	strncpy(menuitem->itemname, itemname, 6);
 
 	// taking quite possibly the only opportunity i'll ever get
 	// to avoid three tabs of indentation...
@@ -2334,6 +2340,8 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 			deh_warning("MenuItem %s: unknown word '%s'", "", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
+
+toolong:
 
 	// text pointer cannot be null
 	if (!textset)

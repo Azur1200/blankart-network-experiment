@@ -362,7 +362,13 @@ struct menuitem_t
 
 	// hotkey in menu or y of the item
 	UINT16 alphaKey;
+
+	// an identifier to replace hardcoded indices
+	char itemname[6];
 };
+
+// so i don't have to put magic numbers everywhere
+#define ITNAMECMP(s1, s2) !strncmp(s1, s2, 6)
 
 struct menu_t
 {
