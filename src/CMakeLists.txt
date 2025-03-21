@@ -99,6 +99,13 @@ target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
 target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
 target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
 
+target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_STUN)
+if(SRB2_CONFIG_ENABLE_DISCORDRPC)
+	target_link_libraries(SRB2SDL2 PRIVATE DiscordRPC::DiscordRPC)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_DISCORDRPC)
+	target_sources(SRB2SDL2 PRIVATE discord.c)
+endif()
+
 set(SRB2_HAVE_THREADS ON)
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
 
