@@ -665,10 +665,13 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 		return BMIT_CONTINUE;
 	}
 
-	if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+	if (thing->type != MT_SPB)
 	{
-		// Not shootable
-		return BMIT_CONTINUE;
+		if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+		{
+			// Not shootable
+			return BMIT_CONTINUE;
+		}
 	}
 
 	if (thing->player && thing->player->spectator)
@@ -691,7 +694,7 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 	}
 #endif
 
-	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_NORMAL|DMG_CANTHURTSELF);
+	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
 	return BMIT_CONTINUE;
 }
 
@@ -715,82 +718,103 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
-boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
+static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 {
-	if (t2->type == MT_PLAYER)
+	if (!player)
 	{
-		// Counter desyncs
-		/*mobj_t *oldthing = thing;
-		mobj_t *oldg_tm.thing = g_tm.thing;
+		// Bad reference passed.
+		return;
+	}
 
-		P_Thrust(g_tm.thing, R_PointToAngle2(thing->x, thing->y, g_tm.thing->x, g_tm.thing->y), 4*thing->scale);
+	if (!bubble || P_MobjWasRemoved(bubble) )
+	{
+		// Bad/Stale reference passed.
+		return;
+	}
 
-		thing = oldthing;
-		P_SetTarget(&g_tm.thing, oldg_tm.thing);*/
+	player->bubblepop++;
+	player->bubblecool = 15*4;
+	player->itemflags &= ~IF_HOLDREADY;
+	bubble->extravalue1 = 4;
+	bubble->cvmem = 1;
 
-		if (P_PlayerInPain(t2->player)
-			|| t2->player->flashing || t2->player->hyudorotimer
-			|| t2->player->justbumped || t2->scale > t1->scale + (mapobjectscale/8))
-			return true;
+	if (player->bubblepop > 1)
+	{
+		K_DropHnextList(player, false);
+	}
+}
 
-		// Player Damage
-		P_DamageMobj(t2, ((t1->type == MT_BUBBLESHIELD) ? t1->target : t1), t1, 1, DMG_NORMAL);
+boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
+{
+	mobj_t *owner = t1->player ? t1 : t1->target;
 
-		if (t1->target->player)
+	if (t2->target != owner || !t2->threshold || t2->type == MT_DROPTARGET)
+	{
+		if (!t2->momx && !t2->momy)
 		{
-			player_t *player = t1->target->player;
-
-			player->bubblepop++;
-			player->bubblecool = 15*4;
-			player->itemflags &= ~IF_HOLDREADY;
-			t1->extravalue1 = 4;
-			t1->cvmem = 1;
-
-			if (player->bubblepop > 1)
-			{
-				K_DropHnextList(player, false);
-			}
+			t2->momz += (24*t2->scale) * P_MobjFlip(t2);
 		}
-
+		else
+		{
+			t2->momx = -6*t2->momx;
+			t2->momy = -6*t2->momy;
+			t2->momz = -6*t2->momz;
+			t2->angle += ANGLE_180;
+		}
+		if (t2->type == MT_JAWZ)
+			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
+		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
+		t2->threshold = 10;
 		S_StartSound(t1, sfx_s3k44);
 	}
-	else
+
+	return true;
+}
+
+boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
+{
+	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ
+		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
+		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
+		|| t2->type == MT_DROPTARGET
+		|| t2->type == MT_KART_LEFTOVER
+		|| (t2->type == MT_PLAYER && t1->target != t2));
+}
+
+boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
+{
+	if (t1->type == MT_PLAYER)
+		return true;
+
+	if (t1->target == t2)
+		return true;
+
+	if (t2->type == MT_PLAYER)
+	{
+		// Player Damage
+		if (K_KartBouncing(t2, t1->target, false, true))
+		{
+			P_DamageMobj(t2, t1->target, t1, 1, DMG_NORMAL);
+			K_BubbleShieldCollideDrain(t1->target->player, t1);
+			S_StartSound(t2, sfx_s3k44);
+		}
+
+		return true;
+	}
+
+	if (K_BubbleShieldCanReflect(t1, t2))
 	{
 		if (!t2->threshold)
 		{
-			if (!t2->momx && !t2->momy)
-			{
-				t2->momz += (24*t2->scale) * P_MobjFlip(t2);
-			}
-			else
-			{
-				t2->momx = -4*t2->momx;
-				t2->momy = -4*t2->momy;
-				t2->momz = -4*t2->momz;
-				t2->angle += ANGLE_180;
-			}
-			if (t2->type == MT_JAWZ)
-				P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-
-			if (t1->target->player)
-			{
-				player_t *player = t1->target->player;
-
-				player->bubblepop++;
-				player->bubblecool = 15*4;
-				player->itemflags &= ~IF_HOLDREADY;
-				t1->extravalue1 = 4;
-				t1->cvmem = 1;
-
-				if (player->bubblepop > 1)
-				{
-					K_DropHnextList(player, false);
-				}
-			}
-
-			t2->threshold = 20;
-			S_StartSound(t1, sfx_s3k44);
+			// Drain my stuff please.
+			K_BubbleShieldCollideDrain(t1->target->player, t1);
 		}
+		return K_BubbleShieldReflect(t1, t2);
+	}
+
+	if (t2->flags & MF_SHOOTABLE)
+	{
+		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
 	}
 
 	// no interaction

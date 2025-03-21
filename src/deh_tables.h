@@ -82,6 +82,7 @@ extern const char *const PLAYERFLAG_LIST[];
 extern const char *const ITEMFLAG_LIST[];
 extern const char *const GAMETYPERULE_LIST[];
 extern const char *const ML_LIST[]; // Linedef flags
+extern const char *const ML_LIST_KART[]; // Linedef flags for Kart
 extern const char *const MSF_LIST[]; // Sector flags
 extern const char *const SSF_LIST[]; // Sector special flags
 extern const char *const SD_LIST[]; // Sector damagetype

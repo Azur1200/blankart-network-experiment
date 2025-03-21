@@ -64,6 +64,7 @@ enum
 	X   (TALLNUM),
 	X (NIGHTSNUM),
 	X   (PINGNUM),
+	X   (OPPRNK),
 };
 #undef  X
 

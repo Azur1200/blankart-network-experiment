@@ -649,6 +649,7 @@ enum
 	MF2_LINKDRAW       = 1<<28,
 	MF2_SHIELD         = 1<<29,
 	MF2_SPLAT          = 1<<30,
+	MF2_WATERRUN	   = 1<<31,
 };
 
 enum

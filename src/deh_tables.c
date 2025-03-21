@@ -196,6 +196,7 @@ const char *const MOBJFLAG2_LIST[] = {
 	"AMBUSH",         // Alternate behaviour typically set by MTF_AMBUSH
 	"LINKDRAW",       // Draw vissprite of mobj immediately before/after tracer's vissprite (dependent on dispoffset and position)
 	"SHIELD",         // Thinker calls P_AddShield/P_ShieldLook (must be partnered with MF_SCENERY to use)
+	"WATERRUN",		  // Mobj is able to run on Water!
 	NULL
 };
 
@@ -337,14 +338,31 @@ const char *const ML_LIST[] = {
 	"MIDPEG",
 	"MIDSOLID",
 	"WRAPMIDTEX",
+	"NETONLY",
+	"NONET",
+	"EFFECT6",
+	"NOTBOUNCY",
+	"TFERLINE",
+	NULL
+};
+
+// Linedef flags for Kart
+const char *const ML_LIST_KART[] = {
+	"IMPASSIBLE",
+	"BLOCKMONSTERS",
+	"TWOSIDED",
+	"DONTPEGTOP",
+	"DONTPEGBOTTOM",
+	"EFFECT1",
+	"NOCLIMB",
+	"EFFECT2",
+	"EFFECT3",
+	"EFFECT4",
+	"EFFECT5",
 	"NOSONIC",
 	"NOTAILS",
 	"NOKNUX",
-	"NETONLY",
-	"NETONLY_OLD",
-	"NONET",
-	"BLOCKMONSTERS",
-	"NOTBOUNCY",
+	"BOUNCY",
 	"TFERLINE",
 	NULL
 };
@@ -1074,9 +1092,10 @@ struct int_const_s const INT_CONST[] = {
 	// for P_DamageMobj
 	//// Damage types
 	{"DMG_NORMAL",DMG_NORMAL},
-	{"DMG_SQUISH",DMG_SQUISH},
 	{"DMG_WIPEOUT",DMG_WIPEOUT},
 	{"DMG_EXPLODE",DMG_EXPLODE},
+	{"DMG_SQUISH",DMG_SQUISH},
+	{"DMG_VOLTAGE",DMG_VOLTAGE},
 	{"DMG_KARMA",DMG_KARMA},
 	//// Death types
 	{"DMG_INSTAKILL",DMG_INSTAKILL},

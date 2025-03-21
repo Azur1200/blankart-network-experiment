@@ -2310,12 +2310,31 @@ Ping_gfx_color (int lag)
 		return SKINCOLOR_MAGENTA;
 }
 
+static const UINT8 *
+Ping_gfx_colormap (UINT32 lag, boolean gentleman)
+{
+	const UINT8 *colormap = NULL;
+
+	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
+
+	if (servermaxping && lag > servermaxping && hu_tick < 4)
+	{
+		// flash ping red if too high
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+	}
+	else if (gentleman)
+	{
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
+	}
+
+	return colormap;
+}
+
 //
 // HU_drawPing
 //
 void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean offline)
 {
-	UINT8 *colormap = NULL;
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
 	boolean drawlocal = (offline && cv_mindelay.value && lag <= (tic_t)cv_mindelay.value);
@@ -2331,25 +2350,14 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean offline)
 	if (measureid == 1)
 		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
 
-	if (drawlocal)
-		V_DrawScaledPatch(x+2, y, flags, pinglocal[0]);
-	else
-		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
-
-	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
-
-	if (servermaxping && lag > servermaxping && hu_tick < 4)
-	{
-		// flash ping red if too high
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_WHITE, GTC_CACHE);
-	}
+	V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
 	if (cv_pingmeasurement.value)
 	{
 		lag = (INT32)(lag * (1000.00f / TICRATE));
 	}
 
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, colormap);
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, Ping_gfx_colormap(lag,drawlocal));
 
 	if (measureid == 0)
 		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
@@ -2360,6 +2368,9 @@ HU_drawMiniPing (INT32 x, INT32 y, UINT32 lag, INT32 flags)
 {
 	patch_t *patch;
 	INT32 w = BASEVIDWIDTH;
+
+	// draw new graphics later.
+	return;
 
 	if (r_splitscreen > 1)
 	{

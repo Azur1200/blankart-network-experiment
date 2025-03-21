@@ -1093,7 +1093,7 @@ void T_ThwompSector(thwomp_t *thwomp)
 	INT32 secnum;
 	fixed_t speed;
 
-	if (thwompsactive == false)
+	if (mapnamespace == MNS_RINGRACERS && thwompsactive == false)
 	{
 		// Ring Racers: Rest until Lap 2
 		return;

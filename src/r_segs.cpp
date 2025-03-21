@@ -2400,7 +2400,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+					if (rover->fofflags & FOF_INVERTSIDES && (mapnamespace == MNS_SRB2KART || !(rover->fofflags & FOF_ALLSIDES)))
 						continue;
 
 					if (rover->norender == leveltime)
@@ -2458,7 +2458,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+					if (!(rover->fofflags & FOF_ALLSIDES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTSIDES)))
 						continue;
 
 					if (rover->norender == leveltime)
@@ -2518,7 +2518,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+					if (rover->fofflags & FOF_INVERTSIDES && (mapnamespace == MNS_SRB2KART || !(rover->fofflags & FOF_ALLSIDES)))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -2540,7 +2540,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 				{
 					if (!(rover->fofflags & FOF_RENDERSIDES) || !(rover->fofflags & FOF_EXISTS))
 						continue;
-					if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+					if (!(rover->fofflags & FOF_ALLSIDES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTSIDES)))
 						continue;
 					if (rover->norender == leveltime)
 						continue;
@@ -2878,8 +2878,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
-					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
+					    ((viewz < planevistest && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTPLANES)))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2901,8 +2901,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
-					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
+					    ((viewz > planevistest && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTPLANES)))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2935,8 +2935,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz < planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
-					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
+					    ((viewz < planevistest && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					     (viewz > planevistest && (rover->fofflags & FOF_BOTHPLANES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTPLANES)))))
 					{
 						//ffloor[i].slope = *rover->b_slope;
 						ffloor[i].b_pos = roverleft;
@@ -2958,8 +2958,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 					if ((roverleft>>4 <= worldhigh || roverright>>4 <= worldhighslope) &&
 					    (roverleft>>4 >= worldlow || roverright>>4 >= worldlowslope) &&
-					    ((viewz > planevistest && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
-					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
+					    ((viewz > planevistest && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+					     (viewz < planevistest && (rover->fofflags & FOF_BOTHPLANES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTPLANES)))))
 					{
 						//ffloor[i].slope = *rover->t_slope;
 						ffloor[i].b_pos = roverleft;

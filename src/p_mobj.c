@@ -2997,11 +2997,11 @@ boolean P_SceneryZMovement(mobj_t *mo)
 //
 // P_CanRunOnWater
 //
-// Returns true if player can water run on a 3D floor
+// Returns true if mobj can water run on a 3D floor
 //
-boolean P_CanRunOnWater(player_t *player, ffloor_t *rover)
+boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover)
 {
-	const boolean flip = (player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flip = (mobj->eflags & MFE_VERTICALFLIP);
 	fixed_t surfaceheight = INT32_MAX;
 	fixed_t playerbottom = INT32_MAX;
 	fixed_t surfDiff = INT32_MAX;
@@ -3024,28 +3024,29 @@ boolean P_CanRunOnWater(player_t *player, ffloor_t *rover)
 		return false;
 	}
 
-	if (player->carry != CR_NONE) // Special carry state.
+	if (mobj->player && mobj->player->carry != CR_NONE) // Special carry state.
 	{
 		// No good player state.
 		return false;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
+	if (P_IsObjectOnGround(mobj) == false && !K_ItemMobjAllowedtoWaterRun(mobj))
 	{
 		// Don't allow jumping onto water to start a water run.
+		// (Unless you are some specfic item mobjs!)
 		// (Already water running still counts as being on the ground.)
 		return false;
 	}
 
-	if (K_WaterRun(player) == false)
+	if (K_WaterRun(mobj) == false)
 	{
 		// Basic conditions for enabling water run.
 		return false;
 	}
 
-	if (player->mo->standingslope != NULL)
+	if (mobj->standingslope != NULL)
 	{
-		ourZAng = player->mo->standingslope->zangle;
+		ourZAng = mobj->standingslope->zangle;
 	}
  
 	waterSlope = (flip ? *rover->b_slope : *rover->t_slope);
@@ -3060,10 +3061,10 @@ boolean P_CanRunOnWater(player_t *player, ffloor_t *rover)
 		return false;
 	}
  
-	surfaceheight = flip ? P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y) : P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y);
-	playerbottom = flip ? (player->mo->z + player->mo->height) : player->mo->z;
+	surfaceheight = flip ? P_GetFFloorBottomZAt(rover, mobj->x, mobj->y) : P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+	playerbottom = flip ? (mobj->z + mobj->height) : mobj->z;
  
-	doifit = flip ? (surfaceheight - player->mo->floorz >= player->mo->height) : (player->mo->ceilingz - surfaceheight >= player->mo->height);
+	doifit = flip ? (surfaceheight - mobj->floorz >= mobj->height) : (mobj->ceilingz - surfaceheight >= mobj->height);
  
 	if (!doifit)
 	{
@@ -3071,7 +3072,7 @@ boolean P_CanRunOnWater(player_t *player, ffloor_t *rover)
 		return false;
 	}
 
-	maxStep = P_GetThingStepUp(player->mo, player->mo->x, player->mo->y);
+	maxStep = P_GetThingStepUp(mobj, mobj->x, mobj->y);
 
 	surfDiff = flip ? (surfaceheight - playerbottom) : (playerbottom - surfaceheight);
 	if (surfDiff <= maxStep && surfDiff >= 0)
@@ -3087,13 +3088,12 @@ boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover)
 {
 	if (!mobj->player)
 	{
-		// future proff if we ever decide to allow mobjs
-		// to interact with P_CheckSolidFFloorSurface
-		return false;
+		// They can run on water now!
+		return P_CanRunOnWater(mobj, rover);
 	}
 
 	return P_CheckSolidLava(rover) ||
-		P_CanRunOnWater(mobj->player, rover);
+		P_CanRunOnWater(mobj, rover);
 }
 
 //
@@ -6730,6 +6730,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->movecount = 2;
 				mobj->frame++;
 			}
+			mobj->flags2 &= ~MF2_WATERRUN;
 		}
 		else
 		{
@@ -6767,6 +6768,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 
 			P_Thrust(mobj, mobj->angle, thrustamount);
+
+			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			{
+				// Not moving fast enough to water run.
+				mobj->flags2 &= ~MF2_WATERRUN;
+			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
 			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
@@ -6834,6 +6841,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			K_DriftDustHandling(mobj);
 
+			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			{
+				// Not moving fast enough to water run.
+				mobj->flags2 &= ~MF2_WATERRUN;
+			}
+
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
 			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
@@ -6854,6 +6867,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					S_StartSound(mobj, mobj->info->deathsound);
 					mobj->flags &= ~MF_NOCLIPTHING;
 				}
+				mobj->flags2 &= ~MF2_WATERRUN;
 			}
 			else
 			{
@@ -6868,6 +6882,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 						&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 						K_DoPogoSpring(mobj, 0, 1);
+				}
+
+				if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+				{
+					// Not moving fast enough to water run.
+					mobj->flags2 &= ~MF2_WATERRUN;
 				}
 
 				if (mobj->threshold > 0)
@@ -7030,6 +7050,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 
 		mobj->renderflags = (mobj->renderflags|RF_FULLBRIGHT) ^ RF_FULLDARK; // the difference between semi and fullbright
+
+		if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+		{
+			// Not moving fast enough to water run.
+			mobj->flags2 &= ~MF2_WATERRUN;
+		}
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
@@ -7291,6 +7317,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 		P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
 
+		mobj->pitch = mobj->target->pitch;
+		mobj->roll = mobj->target->roll;
+
+		mobj->slopepitch = mobj->target->slopepitch;
+		mobj->sloperoll = mobj->target->sloperoll;
+
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
 	}
@@ -7361,10 +7393,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						(mobj->target->y - mobj->target->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
 						(mobj->target->z - mobj->target->momz), MT_THOK);
 
+					wave->colorized = true;
+					wave->color = SKINCOLOR_BLUE;
 					wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
 					P_SetScale(wave, (wave->destscale = ws));
 
-					P_SetMobjState(wave, S_BUBBLESHIELDWAVE1);
+					P_SetMobjState(wave, S_SPLISH1);
 
 					wave->momx = mobj->target->momx;
 					wave->momy = mobj->target->momy;
@@ -7406,6 +7440,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->extravalue2 = mobj->target->player->bubbleblowup;
 		P_SetScale(mobj, (mobj->destscale = scale));
 
+		mobj->pitch = mobj->target->pitch;
+		mobj->roll = mobj->target->roll;
+
+		mobj->slopepitch = mobj->target->slopepitch;
+		mobj->sloperoll = mobj->target->sloperoll;
+
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
 	}
@@ -7432,6 +7472,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 					P_SetMobjState(mobj, S_FLAMESHIELD1);
 				mobj->renderflags &= ~RF_DONTDRAW;
 			}
+
+			mobj->pitch = mobj->target->pitch;
+			mobj->roll = mobj->target->roll;
+
+			mobj->slopepitch = mobj->target->slopepitch;
+			mobj->sloperoll = mobj->target->sloperoll;
+
 			P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 			mobj->angle = mobj->target->angle;
 			break;
@@ -8224,10 +8271,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 							mobj->y + FixedMul(mobj->radius, FINESINE(aoff>>ANGLETOFINESHIFT)),
 							mobj->z, MT_THOK);
 
+						wave->colorized = true;
+						wave->color = SKINCOLOR_PERIWINKLE;
 						wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
 						P_SetScale(wave, (wave->destscale = mobj->scale/2));
 
-						P_SetMobjState(wave, S_BUBBLESHIELDWAVE1);
+						P_SetMobjState(wave, S_SPLISH1);
 						if (leveltime & 1)
 							wave->tics++;
 
@@ -8541,9 +8590,6 @@ void P_MobjThinker(mobj_t *mobj)
 		// Sector flag MSF_TRIGGERLINE_MOBJ allows ANY mobj to trigger a linedef exec
 		P_CheckMobjTrigger(mobj, false);
 	}
-
-	// Sector flag MSF_TRIGGERLINE_MOBJ allows ANY mobj to trigger a linedef exec
-	P_CheckMobjTrigger(mobj, false);
 
 	if (mobj->scale != mobj->destscale)
 		P_MobjScaleThink(mobj); // Slowly scale up/down to reach your destscale.

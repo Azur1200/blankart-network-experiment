@@ -362,7 +362,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 void P_Attract(mobj_t *source, mobj_t *enemy, boolean nightsgrab);
 mobj_t *P_GetClosestAxis(mobj_t *source);
 
-boolean P_CanRunOnWater(player_t *player, ffloor_t *rover);
+boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover);
 boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover);
 
 void P_MaceRotate(mobj_t *center, INT32 baserot, INT32 baseprevrot);
@@ -559,7 +559,7 @@ struct BasicFF_t
 #define DMG_WIPEOUT 0x01 // Normal, but with extra flashy effects
 #define DMG_EXPLODE 0x02
 #define DMG_SQUISH  0x03
-//#define free   0x04
+#define DMG_VOLTAGE 0x04 // Normal but for killing the spb
 #define DMG_KARMA   0x05 // Karma Bomb explosion -- works like DMG_EXPLODE, but steals half of their bumpers & deletes the rest
 //// Death types - cannot be combined with damage types
 #define DMG_INSTAKILL  0x80

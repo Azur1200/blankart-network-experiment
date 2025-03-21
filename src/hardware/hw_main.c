@@ -1817,7 +1817,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERSIDES))
 					continue;
-				if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+				if (rover->fofflags & FOF_INVERTSIDES && (mapnamespace == MNS_SRB2KART || !(rover->fofflags & FOF_ALLSIDES)))
 					continue;
 
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
@@ -1977,7 +1977,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERSIDES))
 					continue;
-				if ((udmf && !(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES) || (!udmf && rover->fofflags & FOF_INVERTSIDES))
+				if (!(rover->fofflags & FOF_ALLSIDES || (mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_INVERTSIDES)))
 					continue;
 
 				SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
@@ -2902,7 +2902,7 @@ static void HWR_Subsector(size_t num)
 
 			if (centerHeight <= locCeilingHeight &&
 			    centerHeight >= locFloorHeight &&
-			    ((dup_viewz < cullHeight && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+			    ((dup_viewz < cullHeight && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 			     (dup_viewz > cullHeight && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
 				if (rover->fofflags & FOF_FOG)
@@ -2950,7 +2950,7 @@ static void HWR_Subsector(size_t num)
 
 			if (centerHeight >= locFloorHeight &&
 			    centerHeight <= locCeilingHeight &&
-			    ((dup_viewz > cullHeight && ((udmf && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
+			    ((dup_viewz > cullHeight && ((mapnamespace != MNS_SRB2KART && rover->fofflags & FOF_BOTHPLANES) || !(rover->fofflags & FOF_INVERTPLANES))) ||
 			     (dup_viewz < cullHeight && (rover->fofflags & FOF_BOTHPLANES || rover->fofflags & FOF_INVERTPLANES))))
 			{
 				if (rover->fofflags & FOF_FOG)

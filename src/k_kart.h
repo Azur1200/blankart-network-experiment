@@ -29,6 +29,8 @@ Make sure this matches the actual number of states
 #define AUTORESPAWN_TIME (10 * TICRATE)
 #define AUTORESPAWN_THRESHOLD (7 * TICRATE)
 
+#define FLAMESTOREMAX TICRATE*2
+
 // Used for respawning checks.
 
 typedef struct respawnresult_s
@@ -150,7 +152,9 @@ boolean K_SlopeResistance(player_t *player);
 fixed_t K_PlayerTripwireSpeedThreshold(player_t *player);
 tripwirepass_t K_TripwirePassConditions(player_t *player);
 boolean K_TripwirePass(player_t *player);
-boolean K_WaterRun(player_t *player);
+boolean K_WaterRun(mobj_t *mobj);
+void K_SpawnWaterTrail(mobj_t *mobj);
+boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);

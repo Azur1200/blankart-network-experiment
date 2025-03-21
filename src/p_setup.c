@@ -4813,7 +4813,17 @@ static line_t *P_FindPointPushLine(taglist_t *list)
 
 static void P_SetBinaryFOFAlpha(line_t *line)
 {
-	if (sides[line->sidenum[0]].toptexture > 0)
+	// fun fact: in Kart, transparent FOFs with a missing top texture have their toptexture set to 1,
+	// because that's the ID of REDWALL. this makes the FOF invisible.
+	// in BlanKart, toptexture is set to 7478, which is a nonsensical alpha value that makes the FOF opaque.
+	// so now we have to check for MISSTEX and set alpha to 1 in that case!
+	// have fun with the time bomb in R_TextureNumForName :^)
+	if (mapnamespace == MNS_SRB2KART && sides[line->sidenum[0]].toptexture == R_TextureNumForName(MISSING_TEXTURE))
+	{
+		line->args[1] = 1;
+		line->args[2] = TMB_TRANSLUCENT;
+	}
+	else if (sides[line->sidenum[0]].toptexture > 0)
 	{
 		line->args[1] = sides[line->sidenum[0]].toptexture;
 

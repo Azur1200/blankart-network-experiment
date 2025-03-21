@@ -5076,12 +5076,12 @@ void M_DrawMusicTest(void)
 		V_DrawString(x, 10, 0, "NOW PLAYING:");
 		if (curplaying)
 		{
-			if (curplaying->title && curplaying->title[0])
+			if (curplaying->source && curplaying->source[0] && curplaying->title && curplaying->title[0])
+				titl = va("%s - %s - ", curplaying->title, curplaying->source);
+			else if (curplaying->title && curplaying->title[0])
 				titl = va("%s - ", curplaying->title);
-			else if (curplaying->title && curplaying->source[0])
-				titl = va("%s - ", curplaying->source);
 			else
-				titl = va("%s - ", "What did you do.......");
+				titl = va("%s - ", "No Title - ");
 		}
 		else
 			titl = "NONE - ";
@@ -5175,9 +5175,9 @@ void M_DrawMusicTest(void)
 				const size_t MAXLENGTH = 34;
 				const tic_t SCROLLSPEED = TICRATE/5; // Number of tics for name being scrolled by 1 letter
 				size_t nameoffset = 0;
-				size_t namelength = soundtestdefs[t]->source ? strlen(soundtestdefs[t]->source) : 0;
-				if (soundtestdefs[t]->title && (soundtestdefs[t]->title[0]))
-					namelength = strlen(soundtestdefs[t]->title);
+				size_t namelength = soundtestdefs[t]->title ? strlen(soundtestdefs[t]->title) : 8; // "No Title"
+				if (soundtestdefs[t]->source && (soundtestdefs[t]->source[0]))
+					namelength = strlen(va("%s - %s ", soundtestdefs[t]->title, soundtestdefs[t]->source));
 
 				char buf[MAXLENGTH+1];
 
@@ -5239,12 +5239,13 @@ void M_DrawMusicTest(void)
 					}
 				}
 
-				if (soundtestdefs[t]->title && soundtestdefs[t]->title[0])
+				if (soundtestdefs[t]->title && soundtestdefs[t]->title[0]
+					&& soundtestdefs[t]->source && soundtestdefs[t]->source[0])
+					strncpy(buf, va("%s - %s",soundtestdefs[t]->title, soundtestdefs[t]->source) + nameoffset, MAXLENGTH);
+				else if (soundtestdefs[t]->title && soundtestdefs[t]->title[0])
 					strncpy(buf, soundtestdefs[t]->title + nameoffset, MAXLENGTH);
-				else if (soundtestdefs[t]->source && soundtestdefs[t]->source[0])
-					strncpy(buf, soundtestdefs[t]->source + nameoffset, MAXLENGTH);
 				else
-					strncpy(buf, "How tf did you get here?", MAXLENGTH);
+					strncpy(buf, "No Title or Source", MAXLENGTH);
 				buf[MAXLENGTH] = 0;
 
 				V_DrawString(x, y, (t == st_sel ? V_YELLOWMAP : 0)|V_ALLOWLOWERCASE|V_MONOSPACE, buf);
@@ -8813,7 +8814,7 @@ void M_DrawHUDOptions(void)
 	const char *str1 = " Warning highlight";
 	const char *str2 = ",";
 	const char *str3 = "Good highlight";
-	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 115;
+	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 90;
 	INT32 w0 = V_StringWidth(str0, 0), w1 = V_StringWidth(str1, 0), w2 = V_StringWidth(str2, 0), w3 = V_StringWidth(str3, 0);
 
 	M_DrawGenericMenu();
