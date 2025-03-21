@@ -315,7 +315,7 @@ static INT16 M_GetMenuIndexByName(menutype_t type, const char *name)
 	return -1;
 }
 
-static menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name)
+menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name)
 {
 	INT16 i = M_GetMenuIndexByName(type, name);
 	return i >= 0 ? &menunum2menudef[type]->menuitems[i] : NULL;

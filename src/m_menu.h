@@ -387,6 +387,7 @@ struct menu_t
 
 void M_SetupNextMenu(menu_t *menudef);
 void M_ClearMenus(boolean callexitmenufunc);
+menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name);
 
 void M_SinglePlayerMenu(INT32 choice);
 void M_Options(INT32 choice);

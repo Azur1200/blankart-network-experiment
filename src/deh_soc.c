@@ -2149,9 +2149,16 @@ static menu_t *allocmenu(INT32 num)
 {
 	if (num < 0 || num >= NUMMENUTYPES)
 		I_Error("Tried to allocate out-of-range menu number");
-	if (menunum2menudef[num] == NULL)
-		menunum2menudef[num] = Z_Malloc(sizeof(menu_t), PU_STATIC, NULL);
-	return menunum2menudef[num];
+
+	menu_t *menu = menunum2menudef[num];
+	if (menu == NULL)
+	{
+		menunum2menudef[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
+		menu->menuid = num;
+	}
+	if (menu->drawroutine == NULL)
+		menu->drawroutine = M_DrawGenericMenu;
+	return menu;
 }
 
 // super secret menu cvars... :shushing_face:
@@ -2171,23 +2178,16 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
-static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
+static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
 	char *word2;
 	char *tmp;
 
-	menuitem_t *menuitem = menudef->menuitems + menudef->numitems;
+	UINT16 status = 0;
 	boolean actionset = false;
 	boolean textset = false;
-
-	if (strlen(itemname) > 6)
-	{
-		deh_warning("MenuItem %s: name too long (max 6 characters)", itemname);
-		goto toolong;
-	}
-	strncpy(menuitem->itemname, itemname, 6);
 
 	// taking quite possibly the only opportunity i'll ever get
 	// to avoid three tabs of indentation...
@@ -2248,7 +2248,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				continue;
 			}
 			textset = true;
-			menuitem->status |= flags;
+			status |= flags;
 			menuitem->text = Z_StrDup(word2);
 		}
 		else if (fastncmp(word, "CVAR", 4))
@@ -2285,7 +2285,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				continue;
 			}
 			actionset = true;
-			menuitem->status |= flags;
+			status |= flags;
 			menuitem->itemaction.cvar = cvar;
 		}
 		else if (fastcmp(word, "SUBMENU"))
@@ -2302,7 +2302,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				continue;
 			}
 			actionset = true;
-			menuitem->status |= IT_SUBMENU;
+			status |= IT_SUBMENU;
 			menuitem->itemaction.submenu = allocmenu(mn);
 		}
 		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
@@ -2338,7 +2338,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 				continue;
 			}
 			actionset = true;
-			menuitem->status |= flags;
+			status |= flags;
 			menuitem->itemaction.routine = routine;
 		}
 		else if (fastcmp(word, "ALPHAKEY") || fastcmp(word, "Y"))
@@ -2350,12 +2350,7 @@ static void readmenuitem(MYFILE *f, menu_t *menudef, char *itemname)
 	}
 	while (!myfeof(f)); // finish when the line is empty
 
-toolong:
-
-	// text pointer cannot be null
-	if (!textset)
-		menuitem->text = "";
-
+	menuitem->status = status;
 	Z_Free(s);
 }
 
@@ -2369,12 +2364,6 @@ void readmenu(MYFILE *f, INT32 num)
 	boolean space = false;
 
 	menu_t *menudef = allocmenu(num);
-
-	//menuactive = false;
-
-	memset(menudef, 0, sizeof(menu_t));
-	menudef->menuid = num;
-	menudef->drawroutine = M_DrawGenericMenu;
 
 	do
 	{
@@ -2421,9 +2410,20 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				if (fastcmp(word, "MENUITEM"))
 				{
-					menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
-					readmenuitem(f, menudef, word2);
-					menudef->numitems++;
+					if (strlen(word2) > 6)
+					{
+						deh_warning("Menu %d: item name %s is too long (max 6 characters)", num, word2);
+						continue;
+					}
+					menuitem_t *item = word2[0] == '.' ? NULL : M_GetMenuItemByName(num, word2);
+					if (item == NULL)
+					{
+						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
+						item = menudef->menuitems + menudef->numitems++;
+						strncpy(item->itemname, word2, 6);
+						item->text = "";
+					}
+					readmenuitem(f, item);
 				}
 				else
 					deh_warning("Menu %d: unknown word '%s'", num, word);
