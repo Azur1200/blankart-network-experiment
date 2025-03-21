@@ -721,6 +721,8 @@ const char *const MENUTYPES_LIST[] = {
 	"MISC_REPLAYSTART",
 	"PLAYBACK",
 	"OP_CONTROLSETUP",
+	"OP_GAMEHUD",
+	"OP_VISUAL",
 
 	"SPECIAL"
 };

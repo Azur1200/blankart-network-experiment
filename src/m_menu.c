@@ -2489,7 +2489,7 @@ void M_DrawPauseMenu(void)
 		if ((leveltime % freq) >= freq/2)
 		{
 			V_DrawFixedPatch(204 * FRACUNIT,
-				(currentMenu->y + (M_GetItemY(MN_MPAUSE, "DISCRQ") - 1) * FRACUNIT,
+				(currentMenu->y + M_GetItemY(MN_MPAUSE, "DISCRQ") - 1) * FRACUNIT,
 				FRACUNIT,
 				0,
 				W_CachePatchName("K_REQUE2", PU_CACHE),
