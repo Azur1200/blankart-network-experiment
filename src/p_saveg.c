@@ -5022,6 +5022,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEINT16(save->p, lastmap);
 	WRITEUINT16(save->p, bossdisabled);
 	WRITEUINT8(save->p, ringsactive);
+	WRITEUINT8(save->p, stackingactive);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -5191,6 +5192,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	lastmap = READINT16(save->p);
 	bossdisabled = READUINT16(save->p);
 	ringsactive = READUINT8(save->p);
+	stackingactive = READUINT8(save->p);
 
 	for (i = 0; i < 4; i++)
 	{

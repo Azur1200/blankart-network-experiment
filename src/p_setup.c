@@ -143,6 +143,7 @@ side_t *spawnsides;
 INT32 numstarposts;
 INT32 numbosswaypoints;
 boolean ringsactive;
+boolean stackingactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -7882,6 +7883,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		ringsactive = true;
 	else
 		ringsactive = false;
+
+	if (cv_kartstacking.value)
+		stackingactive = true;
+	else
+		stackingactive = false;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;

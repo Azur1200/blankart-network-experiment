@@ -251,6 +251,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_lessflicker);
 
 	CV_RegisterVar(&cv_kartrings);
+	CV_RegisterVar(&cv_kartstacking);
 
 	CV_RegisterVar(&cv_newspeedometer);
 	CV_RegisterVar(&cv_showinput);
@@ -3297,11 +3298,26 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 	}
 }
 
+// Precalculated constants for stacked boost diminishing
+// *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
+#define CALC_ARG_OFFSET 32*FRACUNIT/100
+#define CALC_RET_OFFSET FixedSqrt(CALC_ARG_OFFSET)
+#define MAXVANILLABOOST 3*FRACUNIT/8
+#define SPEEDBOOSTDROPOFF FloatToFixed(0.01)
+#define SPEEDBOOSTDROPOFF_BRAKE FloatToFixed(0.05)
+
+static fixed_t diminish(fixed_t speedboost)
+{
+	return FixedSqrt(speedboost + CALC_ARG_OFFSET) - CALC_RET_OFFSET;
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
 	fixed_t boostpower = FRACUNIT;
-	fixed_t speedboost = 0, accelboost = 0;
+	fixed_t nonstack_speedboost = 0, speedboost = 0, accelboost = 0;
+	INT32 numboosts = 0;
+	fixed_t prevspeedboost = player->speedboost ? player->speedboost : 0;
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
 	{
@@ -3327,26 +3343,40 @@ static void K_GetKartBoostPower(player_t *player)
 			S_StartSound(player->mo, sfx_cdfm70);
 	}
 
-#define ADDBOOST(s,a) { \
-	speedboost = max(speedboost,s); \
-	accelboost = max(accelboost,a); \
+#define ADDBOOST(s,a,st) { \
+	if (stackingactive) \
+	{ \
+		if (st) \
+		{ \
+			numboosts++; \
+			speedboost += s; \
+		} \
+		else \
+			nonstack_speedboost = max(speedboost,s); \
+		accelboost = max(accelboost,a); \
+	} \
+	else \
+	{ \
+		speedboost = max(speedboost,s); \
+		accelboost = max(accelboost,a); \
+	} \
 }
 
 	if (player->sneakertimer) // Sneaker
 	{
 		fixed_t sneakerspeedboost = K_GetSneakerBoostSpeed();
-		ADDBOOST(sneakerspeedboost, 8*FRACUNIT); // + ???% top speed, + 800% acceleration
+		ADDBOOST(sneakerspeedboost, 8*FRACUNIT, true); // + ???% top speed, + 800% acceleration
 
 	}
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		ADDBOOST(3*FRACUNIT/8, 3*FRACUNIT); // + 37.5% top speed, + 300% acceleration
+		ADDBOOST(3*FRACUNIT/8, 3*FRACUNIT, false); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
-		ADDBOOST(FRACUNIT/5, 0); // + 20% top speed, + 0% acceleration
+		ADDBOOST(FRACUNIT/5, 0, false); // + 20% top speed, + 0% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
@@ -3360,43 +3390,77 @@ static void K_GetKartBoostPower(player_t *player)
 		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
 		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
 
-		ADDBOOST(boost, accel);
+		ADDBOOST(boost, accel, false);
 	}
 
 	if (player->startboost) // Startup Boost
 	{
-		ADDBOOST(FRACUNIT/4, 6*FRACUNIT); // + 25% top speed, + 300% acceleration
+		ADDBOOST(FRACUNIT/4, 6*FRACUNIT, true); // + 25% top speed, + 300% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
 	{
-		ADDBOOST(FRACUNIT/4, 4*FRACUNIT); // + 25% top speed, + 400% acceleration
+		ADDBOOST(FRACUNIT/4, 4*FRACUNIT, true); // + 25% top speed, + 400% acceleration
 	}
 
 	if (player->ringboost) // Ring Boost
 	{
-		ADDBOOST(FRACUNIT/5, 4*FRACUNIT); // + 20% top speed, + 400% acceleration
+		ADDBOOST(FRACUNIT/5, 4*FRACUNIT, true); // + 20% top speed, + 400% acceleration
 	}
 
-	// This should always remain the last boost stack before tethering
+	// This should always remain the last boost
 	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
-		ADDBOOST(player->botvars.rubberband - FRACUNIT, 0);
+		ADDBOOST(player->botvars.rubberband - FRACUNIT, 0, false);
 	}
 
 	player->boostpower = boostpower;
 
-	// value smoothing
-	if (speedboost > player->speedboost)
+	if (stackingactive)
 	{
-		player->speedboost = speedboost;
+		// Combine nonstack and stacking boosts here.
+		speedboost = max(nonstack_speedboost ? nonstack_speedboost : 0, diminish(speedboost));
+	}
+
+	// value smoothing
+	if (stackingactive)
+	{
+		 // value smoothing
+		if (player->offroad && K_ApplyOffroad(player))
+		{
+			player->speedboost = max(speedboost, player->speedboost)/2;
+			player->accelboost = max(accelboost, player->accelboost)/2;
+		}
+		else if (speedboost >= prevspeedboost)
+		{
+			player->speedboost = max(player->speedboost, speedboost);
+			player->accelboost = max(accelboost, player->accelboost);
+		}
+		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
+		{
+			player->speedboost = max(prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
+			player->accelboost = max(accelboost, player->accelboost);
+		}
+		else
+		{
+			player->speedboost = max(prevspeedboost - SPEEDBOOSTDROPOFF, player->speedboost);
+			player->accelboost = max(accelboost, player->accelboost);
+		}
 	}
 	else
 	{
-		player->speedboost += (speedboost - player->speedboost) / (TICRATE/2);
+		if (speedboost > player->speedboost)
+		{
+			player->speedboost = speedboost;
+		}
+		else
+		{
+			player->speedboost += (speedboost - player->speedboost) / (TICRATE/2);
+		}
 	}
 
 	player->accelboost = accelboost;
+	player->numboosts = numboosts;
 }
 
 // Returns value based on being Grown or Shrunk otherwise returns FRACUNIT
@@ -5177,6 +5241,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 	}
 
 	player->sneakertimer = sneakertime;
+	player->numsneakers++;
 
 	// set angle for spun out players:
 	player->boostangle = player->mo->angle;
@@ -5207,6 +5272,7 @@ void K_DoWaterRunPanel(player_t *player)
 	}
 
 	player->sneakertimer = TICRATE*2;
+	player->numsneakers++;
 	player->mo->flags2 |= MF2_WATERRUN;
 
 	// set angle for spun out players:

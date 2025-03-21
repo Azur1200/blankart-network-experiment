@@ -150,6 +150,7 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
+static void KartStacking_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -430,20 +431,21 @@ static CV_PossibleValue_t kartbot_cons_t[] = {
 };
 consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NULL);
 
-consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CHEAT|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
+consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
 // Toggles for new features
-consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
-consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_YesNo, NULL);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
@@ -6900,6 +6902,23 @@ static void KartRings_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Rings will be turned \"Off\" Next Round.\n"));
+	}
+}
+
+static void KartStacking_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (cv_kartstacking.value)
+	{
+		CONS_Printf(M_GetText("Boost Stacking will be turned \"On\" Next Round.\n"));
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Boost Stacking will be turned \"Off\" Next Round.\n"));
 	}
 }
 
