@@ -106,7 +106,6 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #define SMALLLINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
-#define SERVERS_PER_PAGE 11
 
 typedef enum
 {
@@ -188,8 +187,6 @@ static INT32 vidm_column_size;
 
 static void M_StopMessage(INT32 choice);
 
-static void M_HandleServerPage(INT32 choice);
-
 // Prototyping is fun, innit?
 // ==========================================================================
 // NEEDED FUNCTION PROTOTYPES GO HERE
@@ -211,13 +208,6 @@ static char *M_GetConditionString(condition_t cond);
 
 // Multiplayer
 static void M_ConnectMenu(INT32 choice);
-static void M_Refresh(INT32 choice);
-static void M_Connect(INT32 choice);
-
-//Misc
-#ifdef HAVE_DISCORDRPC
-menu_t OP_DiscordOptionsDef;
-#endif
 
 static patch_t *addonsp[NUM_EXT+5];
 
@@ -229,7 +219,6 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 // Drawing functions
 static void M_DrawGenericBackgroundMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
-static void M_DrawConnectMenu(void);
 
 // uhhhhhh hack?
 static void M_ChangecontrolResponse(event_t *ev);
@@ -248,7 +237,7 @@ SR_MusicTestDef = {0}, SP_MainDef = {0}, SP_LevelStatsDef = {0}, SP_GrandPrixTem
 MISC_ReplayStartDef = {0}, SP_ReplayDef = {0}, MP_OfflineServerDef = {0},
 MISC_ChangeLevelDef = {0}, MP_ServerDef = {0}, MP_PlayerSetupDef = {0},
 OP_ScreenshotOptionsDef = {0}, OP_AllControlsDef = {0}, OP_VideoModeDef = {0},
-OP_DataOptionsDef = {0};
+OP_DataOptionsDef = {0}, MP_ConnectDef = {0};
 menu_t MainDef = {0}, OP_JoystickSetDef = {0};
 menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_OP_MAIN] = &OP_MainDef,
@@ -288,6 +277,7 @@ menu_t *menunum2menudef[NUMMENUTYPES] = {
 	[MN_SR_SOUNDTEST] = &SR_MusicTestDef,
 	[MN_OP_CHANGECONTROLS] = &OP_AllControlsDef,
 	[MN_OP_JOYSTICKSET] = &OP_JoystickSetDef,
+	[MN_MP_CONNECT] = &MP_ConnectDef,
 
 	[MN_MAIN] = &MainDef,
 
@@ -413,6 +403,15 @@ static INT16 M_MenuItemRange(menutype_t type, const char *name1, const char *nam
 	return index1;
 }
 
+// bruh...
+static UINT32 M_ServersPerPage(void)
+{
+	INT32 spp = M_GetMenuIndexByName(MN_MP_CONNECT, "LASLIN") - M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN") + 1;
+	if (spp < 1 || spp >= MAXSERVERLIST)
+		I_Error("Broken server connection menu");
+	return (UINT32)spp;
+}
+
 // ==========================================================================
 // CONSOLE VARIABLES AND THEIR POSSIBLE VALUES GO HERE.
 // ==========================================================================
@@ -424,12 +423,12 @@ static CV_PossibleValue_t map_cons_t[] = {
 	{NEXTMAP_SPECIAL, "MAX"}, // TODO: kill nextmap (can't do that i'm afraid!)
 	{0, NULL}
 };
-consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL, map_cons_t, Nextmap_OnChange);
+consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL|CV_NOINIT, map_cons_t, Nextmap_OnChange);
 
 static INT16 lastnextmap = 1;
 
 static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
-consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL, skins_cons_t, Nextmap_OnChange);
+consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
@@ -494,33 +493,6 @@ consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnO
 consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 
 static tic_t playback_last_menu_interaction_leveltime = 0;
-
-static menuitem_t MP_ConnectMenu[] =
-{
-	{IT_STRING | IT_CVAR,       NULL, "Sort By",  {.cvar = &cv_serversort},      4},
-	{IT_STRING | IT_KEYHANDLER, NULL, "Page",     {.routine = M_HandleServerPage}, 12},
-	{IT_STRING | IT_CALL,       NULL, "Refresh",  {.routine = M_Refresh},          20},
-
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          36},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          48},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          60},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          72},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          84},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},          96},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},         108},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},         120},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},         132},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},         144},
-	{IT_STRING | IT_SPACE, NULL, "",              {.routine = M_Connect},         156},
-};
-
-enum
-{
-	mp_connect_sort,
-	mp_connect_page,
-	mp_connect_refresh,
-	FIRSTSERVERLINE
-};
 
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
@@ -622,20 +594,6 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
 	// check width instead of height because haha big winton
 	return patch->width >= 320 ? FRACUNIT : FRACUNIT*2;
 }
-
-// Multiplayer
-menu_t MP_ConnectDef =
-{
-	MN_NONE,
-	"M_MULTI",
-	sizeof (MP_ConnectMenu)/sizeof (menuitem_t),
-	&MP_MainDef,
-	MP_ConnectMenu,
-	M_DrawConnectMenu,
-	27,24,
-	0,
-	M_CancelConnect
-};
 
 // Options
 #ifdef HWRENDER
@@ -2673,9 +2631,18 @@ static boolean M_PrepareCupList(void)
 	return true;
 }
 
+static boolean nextmapinit = false;
+
 // Call before showing any level-select menus
 static void M_PrepareLevelSelect(void)
 {
+	if (!nextmapinit)
+	{
+		// nextmap needs CV_NOINIT because it's registered before IWADs
+		// we have to init here, or else you'll see "1" on the level select...
+		Nextmap_OnChange();
+		nextmapinit = true;
+	}
 	if (levellistmode != LLM_CREATESERVER)
 		CV_SetValue(&cv_nextmap, M_GetFirstLevelInList());
 	else
@@ -6350,9 +6317,7 @@ Fetch_servers_thread (int *id)
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
-static UINT32 localservercount;
-
-static void M_HandleServerPage(INT32 choice)
+void M_HandleServerPage(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -6374,7 +6339,7 @@ static void M_HandleServerPage(INT32 choice)
 		case KEY_ENTER:
 		case KEY_RIGHTARROW:
 			S_StartSound(NULL, sfx_menu1);
-			if ((serverlistpage + 1) * SERVERS_PER_PAGE < serverlistcount)
+			if ((serverlistpage + 1) * M_ServersPerPage() < serverlistcount)
 				serverlistpage++;
 			break;
 		case KEY_LEFTARROW:
@@ -6395,15 +6360,16 @@ static void M_HandleServerPage(INT32 choice)
 	}
 }
 
-static void M_Connect(INT32 choice)
+void M_Connect(INT32 choice)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-FIRSTSERVERLINE + serverlistpage * SERVERS_PER_PAGE].node));
+	INT16 firstserverline = M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN");
+	COM_BufAddText(va("connect node %d\n", serverlist[choice-firstserverline + serverlistpage * M_ServersPerPage()].node));
 }
 
-static void M_Refresh(INT32 choice)
+void M_Refresh(INT32 choice)
 {
 	(void)choice;
 
@@ -6430,23 +6396,26 @@ static void M_Refresh(INT32 choice)
 #endif/*MASTERSERVER*/
 }
 
-static void M_DrawConnectMenu(void)
+void M_DrawConnectMenu(void)
 {
 	UINT16 i;
 	//const char *gt = "Unknown";
 	//const char *spd = "";
 	const char *pwr = "----";
-	INT32 numPages = (serverlistcount+(SERVERS_PER_PAGE-1))/SERVERS_PER_PAGE;
+	INT16 firstserverline = M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN");
+	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
+	INT32 numPages = (serverlistcount+(serversperpage-1))/serversperpage;
 	int waiting;
+	menu_t *conmenu = menunum2menudef[MN_MP_CONNECT]; // meh, whatever
 
-	for (i = FIRSTSERVERLINE; i < min(localservercount, SERVERS_PER_PAGE)+FIRSTSERVERLINE; i++)
-		MP_ConnectMenu[i].status = IT_STRING | IT_SPACE;
+	for (i = firstserverline; i < firstserverline+serversperpage; i++)
+		conmenu->menuitems[i].status = IT_STRING | IT_SPACE;
 
 	if (!numPages)
 		numPages = 1;
 
 	// Page num
-	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + MP_ConnectMenu[mp_connect_page].alphaKey,
+	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_MP_CONNECT, "PAGE"),
 	                         highlightflags, va("%u of %d", serverlistpage+1, numPages));
 
 	// Horizontal line!
@@ -6455,11 +6424,11 @@ static void M_DrawConnectMenu(void)
 	if (serverlistcount <= 0)
 		V_DrawString(currentMenu->x,currentMenu->y+SERVERHEADERHEIGHT, 0, "No servers found");
 	else
-	for (i = 0; i < min(serverlistcount - serverlistpage * SERVERS_PER_PAGE, SERVERS_PER_PAGE); i++)
+	for (i = 0; i < min(serverlistcount - serverlistpage * serversperpage, serversperpage); i++)
 	{
-		INT32 slindex = i + serverlistpage * SERVERS_PER_PAGE;
+		INT32 slindex = i + serverlistpage * serversperpage;
 		UINT32 globalflags = ((serverlist[slindex].info.numberofplayer >= serverlist[slindex].info.maxplayer) ? V_TRANSLUCENT : 0)
-			|((itemOn == FIRSTSERVERLINE+i) ? highlightflags : 0)|V_ALLOWLOWERCASE;
+			|((itemOn == firstserverline+i) ? highlightflags : 0)|V_ALLOWLOWERCASE;
 
 		V_DrawString(currentMenu->x, S_LINEY(i), globalflags, serverlist[slindex].info.servername);
 
@@ -6493,10 +6462,8 @@ static void M_DrawConnectMenu(void)
 		if (serverlist[slindex].info.cheatsenabled)
 			V_DrawSmallString(currentMenu->x+265, S_LINEY(i)+8, globalflags, "\x83" "Cheats");
 
-		MP_ConnectMenu[i+FIRSTSERVERLINE].status = IT_STRING | IT_CALL;
+		conmenu->menuitems[i+firstserverline].status = IT_STRING | IT_CALL;
 	}
-
-	localservercount = serverlistcount;
 
 	M_DrawGenericMenu();
 

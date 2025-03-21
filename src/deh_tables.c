@@ -763,6 +763,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "SETUP2PCONTROLSMENU", &M_Setup2PControlsMenu },
 	{ "SETUP3PCONTROLSMENU", &M_Setup3PControlsMenu },
 	{ "SETUP4PCONTROLSMENU", &M_Setup4PControlsMenu },
+	{ "HANDLESERVERPAGE", &M_HandleServerPage },
+	{ "REFRESH", &M_Refresh },
+	{ "CONNECT", &M_Connect },
 	{ "VIDEOMODEMENU", &M_VideoModeMenu },
 #ifdef HWRENDER
 	{ "OPENGLOPTIONSMENU", &M_OpenGLOptionsMenu },
@@ -848,6 +851,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWCONTROL", &M_DrawControl },
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
+	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
 #endif

@@ -1477,6 +1477,7 @@ void D_SRB2Main(void)
 	R_RegisterEngineStuff();
 	S_RegisterSoundStuff();
 	CON_Register();
+	M_Init();
 	if (!dedicated)
 	{
 		CV_RegisterVar(&cv_ticrate);
@@ -1599,8 +1600,6 @@ void D_SRB2Main(void)
 
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
-
-	M_Init();
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen

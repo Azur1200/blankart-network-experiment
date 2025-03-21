@@ -423,6 +423,9 @@ void M_Setup1PControlsMenu(INT32 choice);
 void M_Setup2PControlsMenu(INT32 choice);
 void M_Setup3PControlsMenu(INT32 choice);
 void M_Setup4PControlsMenu(INT32 choice);
+void M_HandleServerPage(INT32 choice);
+void M_Refresh(INT32 choice);
+void M_Connect(INT32 choice);
 void M_VideoModeMenu(INT32 choice);
 #ifdef HWRENDER
 void M_OpenGLOptionsMenu(INT32 choice);
@@ -491,6 +494,7 @@ void M_DrawTimeAttackMenu(void);
 void M_DrawMPMainMenu(void);
 void M_DrawSetupMultiPlayerMenu(void);
 void M_DrawServerMenu(void);
+void M_DrawConnectMenu(void);
 void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
 void M_DrawSkyRoom(void);
