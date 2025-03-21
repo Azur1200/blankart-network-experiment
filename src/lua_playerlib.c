@@ -310,6 +310,10 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->tripwireReboundDelay);
 	else if (fastcmp(field,"itemroulette"))
 		lua_pushinteger(L, plr->itemroulette);
+	else if (fastcmp(field,"itemblink"))
+		lua_pushinteger(L, plr->itemblink);
+	else if (fastcmp(field,"itemblinkmode"))
+		lua_pushinteger(L, plr->itemblinkmode);
 	else if (fastcmp(field,"roulettetype"))
 		lua_pushinteger(L, plr->roulettetype);
 	else if (fastcmp(field,"itemtype"))
@@ -725,6 +729,10 @@ static int player_set(lua_State *L)
 		plr->tripwireReboundDelay = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"itemroulette"))
 		plr->itemroulette = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"itemblink"))
+		plr->itemblink = luaL_checkinteger(L, 3);
+	else if (fastcmp(field,"itemblinkmode"))
+		plr->itemblinkmode = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"roulettetype"))
 		plr->roulettetype = luaL_checkinteger(L, 3);
 	else if (fastcmp(field,"itemtype"))
@@ -1274,10 +1282,10 @@ static int kartstuff_get(lua_State *L)
 
 		// v1.0.2+ vars
 		case k_itemblink:
-			lua_pushinteger(L, plr->karthud[khud_itemblink]);
+			lua_pushinteger(L, plr->itemblink);
 			return 1;
 		case k_itemblinkmode:
-			lua_pushinteger(L, plr->karthud[khud_itemblinkmode]);
+			lua_pushinteger(L, plr->itemblinkmode);
 			return 1;
 		case k_getsparks:
 			lua_pushinteger(L, (plr->pflags & PF_GETSPARKS));
@@ -1537,10 +1545,10 @@ static int kartstuff_set(lua_State *L)
 
 				// v1.0.2+ vars
 			case k_itemblink:
-				plr->karthud[khud_itemblink] = i;
+				plr->itemblink = i;
 				break;
 			case k_itemblinkmode:
-				plr->karthud[khud_itemblinkmode] = i;
+				plr->itemblinkmode = i;
 				break;
 			case k_getsparks:
 				if (i > 0)

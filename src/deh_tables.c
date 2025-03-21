@@ -554,8 +554,6 @@ const char *const KARTSTUFF_LIST[] = {
 };
 
 const char *const KARTHUD_LIST[] = {
-	"ITEMBLINK",
-	"ITEMBLINKMODE",
 
 	"RINGFRAME",
 	"RINGTICS",

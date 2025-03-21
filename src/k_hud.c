@@ -1017,11 +1017,11 @@ static void K_drawKartItem(void)
 				localpatch = kp_nodraw;
 		}
 
-		if (stplyr->karthud[khud_itemblink] && (leveltime & 1))
+		if (stplyr->itemblink && (leveltime & 1))
 		{
 			colormode = TC_BLINK;
 
-			switch (stplyr->karthud[khud_itemblinkmode])
+			switch (stplyr->itemblinkmode)
 			{
 				case 2:
 					localcolor = K_RainbowColor(leveltime);

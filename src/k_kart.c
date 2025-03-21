@@ -1478,8 +1478,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (player->roulettetype == 2)
 	{
 		player->eggmanexplode = 4*TICRATE;
-		//player->karthud[khud_itemblink] = TICRATE;
-		//player->karthud[khud_itemblinkmode] = 1;
+		//player->itemblink = TICRATE;
+		//player->itemblinkmode = 1;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player) && !demo.freecam)
@@ -1493,8 +1493,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		K_KartGetItemResult(player, cv_kartdebugitem.value);
 		player->itemamount = cv_kartdebugamount.value;
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 2;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 2;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player) && !demo.freecam)
@@ -1509,8 +1509,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		SINT8 itemroll = P_RandomRange(KITEM_SNEAKER, NUMKARTITEMS - 1);
 
 		K_KartGetItemResult(player, itemroll);
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 0;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 0;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player))
@@ -1527,7 +1527,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && ((K_RingsActive() == true) && (modeattacking || cv_superring.value))) // ANY mashed value? You get rings.
 			{
 				K_KartGetItemResult(player, KITEM_SUPERRING);
-				player->karthud[khud_itemblinkmode] = 1;
+				player->itemblinkmode = 1;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
@@ -1537,7 +1537,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					K_KartGetItemResult(player, KITEM_SNEAKER);
 				else  // Default to sad if nothing's enabled...
 					K_KartGetItemResult(player, KITEM_SAD);
-				player->karthud[khud_itemblinkmode] = 0;
+				player->itemblinkmode = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
@@ -1547,20 +1547,20 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && (bossinfo.boss || cv_banana.value) && !itembreaker) // ANY mashed value? You get a banana.
 			{
 				K_KartGetItemResult(player, KITEM_BANANA);
-				player->karthud[khud_itemblinkmode] = 1;
+				player->itemblinkmode = 1;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
 			else if (bossinfo.boss)
 			{
 				K_KartGetItemResult(player, KITEM_ORBINAUT);
-				player->karthud[khud_itemblinkmode] = 0;
+				player->itemblinkmode = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
 		}
 
-		player->karthud[khud_itemblink] = TICRATE;
+		player->itemblink = TICRATE;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		return;
@@ -1574,8 +1574,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		if (P_RandomChance((debtamount*FRACUNIT)/20))
 		{
 			K_KartGetItemResult(player, KITEM_SUPERRING);
-			player->karthud[khud_itemblink] = TICRATE;
-			player->karthud[khud_itemblinkmode] = 1;
+			player->itemblink = TICRATE;
+			player->itemblinkmode = 1;
 			player->itemroulette = 0;
 			player->roulettetype = 0;
 			if (P_IsDisplayPlayer(player))
@@ -1593,8 +1593,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			&& cv_selfpropelledbomb.value)
 		{
 			K_KartGetItemResult(player, KITEM_SPB);
-			player->karthud[khud_itemblink] = TICRATE;
-			player->karthud[khud_itemblinkmode] = 2;
+			player->itemblink = TICRATE;
+			player->itemblinkmode = 2;
 			player->itemroulette = 0;
 			player->roulettetype = 0;
 			if (P_IsDisplayPlayer(player))
@@ -1618,8 +1618,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (useodds == 69)
 	{
 		K_KartGetItemResult(player, KITEM_SPB);
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 2;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 2;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player))
@@ -1662,8 +1662,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (P_IsDisplayPlayer(player) && !demo.freecam)
 		S_StartSound(NULL, ((player->roulettetype == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
-	player->karthud[khud_itemblink] = TICRATE;
-	player->karthud[khud_itemblinkmode] = ((player->roulettetype == 1) ? 2 : (mashed ? 1 : 0));
+	player->itemblink = TICRATE;
+	player->itemblinkmode = ((player->roulettetype == 1) ? 2 : (mashed ? 1 : 0));
 
 	player->itemroulette = 0; // Since we're done, clear the roulette number
 	player->roulettetype = 0; // This too
@@ -5072,7 +5072,8 @@ static void K_DoHyudoroSteal(player_t *player)
 			// Has an item
 			&& (players[i].itemtype
 			&& players[i].itemamount
-			&& !(players[i].itemflags & IF_ITEMOUT)))
+			&& !(players[i].itemflags & IF_ITEMOUT)
+			&& !players[i].itemblink))
 		{
 			playerswappable[numplayers] = i;
 			numplayers++;
@@ -6619,12 +6620,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
 
-	if (player->karthud[khud_itemblink] && player->karthud[khud_itemblink]-- <= 0)
-	{
-		player->karthud[khud_itemblinkmode] = 0;
-		player->karthud[khud_itemblink] = 0;
-	}
-
 	if (gametype == GT_RACE)
 	{
 
@@ -7245,6 +7240,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->tiregrease > 0)
 		player->tiregrease--;;
+
+	if (player->itemblink && player->itemblink-- <= 0)
+	{
+		player->itemblinkmode = 0;
+		player->itemblink = 0;
+	}
 
 	K_UpdateTripwire(player);
 

@@ -1708,8 +1708,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					else
 						player->itemamount = max(1, target->movecount);
 				}
-				player->karthud[khud_itemblink] = TICRATE;
-				player->karthud[khud_itemblinkmode] = 0;
+				player->itemblink = TICRATE;
+				player->itemblinkmode = 0;
 				player->itemroulette = 0;
 				player->roulettetype = 0;
 				if (P_IsDisplayPlayer(player))
