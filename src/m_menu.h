@@ -151,13 +151,17 @@ typedef enum
 	MN_MP_OFFLINESERVER,
 	MN_SP_GRANDPRIX,
 	MN_MISC_REPLAYHUT,
-	MN_MISC_DISCORDREQUESTS,
 	MN_CHANGESPECTATE,
 	MN_MISC_REPLAYSTART,
 	MN_PLAYBACK,
 	MN_OP_CONTROLSETUP,
 	MN_OP_GAMEHUD,
 	MN_OP_VISUAL,
+
+#ifdef HAVE_DISCORDRPC
+	MN_OP_DISCORD,
+	MN_MISC_DISCORDREQUESTS,
+#endif
 
 	MN_SPECIAL,
 
@@ -473,6 +477,9 @@ void M_ResetControls(INT32 choice);
 void M_ChangeControl(INT32 choice);
 void M_AssignJoystick(INT32 choice);
 void M_HandleMonitorToggles(INT32 choice);
+#ifdef HAVE_DISCORDRPC
+void M_HandleDiscordRequests(INT32 choice);
+#endif
 
 void M_DrawGenericMenu(void);
 void M_DrawCenteredMenu(void);
@@ -497,6 +504,9 @@ void M_DrawMusicTest(void);
 void M_DrawControl(void);
 void M_DrawJoystick(void);
 void M_DrawMonitorToggles(void);
+#ifdef HAVE_DISCORDRPC
+void M_DrawDiscordRequests(void);
+#endif
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
@@ -645,20 +655,6 @@ UINT16 M_GetColorBefore(UINT16 color);
 UINT16 M_GetColorAfter(UINT16 color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
-
-// These defines make it a little easier to make menus
-#define DEFAULTMENUSTYLE(id, header, source, prev, x, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawGenericMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
 
 #ifdef __cplusplus
 } // extern "C"

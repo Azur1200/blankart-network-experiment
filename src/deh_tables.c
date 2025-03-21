@@ -716,13 +716,17 @@ const char *const MENUTYPES_LIST[] = {
 	"MP_OFFLINESERVER",
 	"SP_GRANDPRIX",
 	"MISC_REPLAYHUT",
-	"MISC_DISCORDREQUESTS",
 	"CHANGESPECTATE",
 	"MISC_REPLAYSTART",
 	"PLAYBACK",
 	"OP_CONTROLSETUP",
 	"OP_GAMEHUD",
 	"OP_VISUAL",
+
+#ifdef HAVE_DISCORDRPC
+	"OP_DISCORD",
+	"MISC_DISCORDREQUESTS",
+#endif
 
 	"SPECIAL"
 };
@@ -814,6 +818,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CHANGECONTROL", &M_ChangeControl },
 	{ "ASSIGNJOYSTICK", &M_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &M_HandleMonitorToggles },
+#ifdef HAVE_DISCORDRPC
+	{ "HANDLEDISCORDREQUESTS", &M_HandleDiscordRequests },
+#endif
 	{ NULL, NULL }
 };
 
@@ -841,6 +848,9 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWCONTROL", &M_DrawControl },
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
+#ifdef HAVE_DISCORDRPC
+	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
+#endif
 	{ NULL, NULL }
 };
 

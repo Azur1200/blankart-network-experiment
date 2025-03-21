@@ -204,12 +204,6 @@ menu_t FreeslotTest;
 // the haxor message menu
 menu_t MessageDef;
 
-#ifdef HAVE_DISCORDRPC
-menu_t MISC_DiscordRequestsDef;
-static void M_HandleDiscordRequests(INT32 choice);
-static void M_DrawDiscordRequests(void);
-#endif
-
 #define lsheadingheight 16
 
 // Sky Room
@@ -499,13 +493,6 @@ consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HI
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
 consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 
-#ifdef HAVE_DISCORDRPC
-static menuitem_t MISC_DiscordRequestsMenu[] =
-{
-	{IT_KEYHANDLER|IT_NOTHING, NULL, "", {.routine = M_HandleDiscordRequests}, 0},
-};
-#endif
-
 static tic_t playback_last_menu_interaction_leveltime = 0;
 
 static menuitem_t MP_ConnectMenu[] =
@@ -535,36 +522,9 @@ enum
 	FIRSTSERVERLINE
 };
 
-#ifdef HAVE_DISCORDRPC
-static menuitem_t OP_DiscordOptionsMenu[] =
-{
-	{IT_STRING | IT_CVAR,		NULL, "Rich Presence",			{.cvar = &cv_discordrp},			 10},
-
-	{IT_HEADER,					NULL, "Rich Presence Settings",	{NULL},					 30},
-	{IT_STRING | IT_CVAR,		NULL, "Streamer Mode",			{.cvar = &cv_discordstreamer},	 40},
-
-	{IT_STRING | IT_CVAR,		NULL, "Allow Ask To Join",		{.cvar = &cv_discordasks},		 60},
-	{IT_STRING | IT_CVAR,		NULL, "Allow Invites",			{.cvar = &cv_discordinvites},		 70},
-};
-#endif
-
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
 // ==========================================================================
-
-#ifdef HAVE_DISCORDRPC
-menu_t MISC_DiscordRequestsDef = {
-	MN_NONE,
-	NULL,
-	sizeof (MISC_DiscordRequestsMenu)/sizeof (menuitem_t),
-	&MPauseDef,
-	MISC_DiscordRequestsMenu,
-	M_DrawDiscordRequests,
-	0, 0,
-	0,
-	NULL
-};
-#endif
 
 //
 // M_GetGametypeColor
@@ -688,10 +648,6 @@ void M_OpenGLOptionsMenu(INT32 choice)
 	else
 		M_StartMessage(M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING);
 }
-#endif
-
-#ifdef HAVE_DISCORDRPC
-menu_t OP_DiscordOptionsDef = DEFAULTMENUSTYLE(MN_NONE, NULL, OP_DiscordOptionsMenu, &OP_DataOptionsDef, 30, 30);
 #endif
 
 // ==========================================================================
@@ -9326,7 +9282,7 @@ static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
 static boolean confirmAccept = false;
 
-static void M_HandleDiscordRequests(INT32 choice)
+void M_HandleDiscordRequests(INT32 choice)
 {
 	if (confirmDelay > 0)
 		return;
@@ -9382,7 +9338,7 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
 }
 
-static void M_DrawDiscordRequests(void)
+void M_DrawDiscordRequests(void)
 {
 	discordRequest_t *curRequest = discordRequestList;
 	UINT8 *colormap;
