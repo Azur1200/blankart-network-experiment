@@ -3963,7 +3963,10 @@ static void G_StopTimingDemo(void)
 
 	if (restorecv_vidwait != cv_vidwait.value)
 		CV_SetValue(&cv_vidwait, restorecv_vidwait);
-	D_AdvanceDemo();
+	if (timedemo_quit)
+		COM_ImmedExecute("quit");
+	else
+		D_StartTitle();
 }
 
 // reset engine variable set for the demos
@@ -4021,10 +4024,12 @@ boolean G_CheckDemoStatus(void)
 		{
 			G_StopDemo();
 
-			if (modeattacking)
+			if (timedemo_quit)
+				COM_ImmedExecute("quit");
+			else if (modeattacking)
 				M_EndModeAttackRun();
 			else
-				D_AdvanceDemo();
+				D_StartTitle();
 		}
 
 		return true;

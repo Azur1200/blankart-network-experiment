@@ -20,9 +20,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-extern boolean advancedemo;
-
 
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
@@ -39,7 +36,6 @@ void D_SRB2Loop(void) FUNCNORETURN;
 // D_SRB2Main()
 // Not a globally visible function, just included for source reference,
 // calls all startup code, parses command line options.
-// If not overrided by user input, calls D_AdvanceDemo.
 //
 void D_SRB2Main(void);
 
@@ -56,7 +52,6 @@ const char *D_Home(void);
 //
 // BASE LEVEL
 //
-void D_AdvanceDemo(void);
 void D_StartTitle(void);
 
 #ifdef __cplusplus

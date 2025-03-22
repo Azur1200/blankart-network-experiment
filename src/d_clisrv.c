@@ -5601,14 +5601,6 @@ boolean TryRunTics(tic_t realtics)
 
 	if (ticking)
 	{
-		if (advancedemo)
-		{
-			if (timedemo_quit)
-				COM_ImmedExecute("quit");
-			else
-				D_StartTitle();
-		}
-		else
 		{
 			boolean tickInterp = true;
 

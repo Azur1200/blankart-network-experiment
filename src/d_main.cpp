@@ -130,7 +130,6 @@ INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 boolean sound_disabled = false;
 boolean digital_disabled = false;
 
-boolean advancedemo;
 #ifdef DEBUGFILE
 INT32 debugload = 0;
 #endif
@@ -972,15 +971,6 @@ void D_SRB2Loop(void)
 	}
 }
 
-//
-// D_AdvanceDemo
-// Called after each demo or intro demosequence finishes
-//
-void D_AdvanceDemo(void)
-{
-	advancedemo = true;
-}
-
 // =========================================================================
 // D_SRB2Main
 // =========================================================================
@@ -1053,7 +1043,6 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
-	advancedemo = false;
 	F_InitMenuPresValues();
 
 	// clear cmd building stuff
