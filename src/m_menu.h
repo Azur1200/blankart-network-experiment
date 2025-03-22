@@ -345,6 +345,8 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
+#define ITEMNAMELEN 6
+
 typedef union
 {
 	menutype_t submenu;      // IT_SUBMENU
@@ -358,6 +360,8 @@ typedef union
 //
 struct menuitem_t
 {
+	char itemname[ITEMNAMELEN];
+
 	// show IT_xxx
 	UINT16 status;
 
@@ -368,13 +372,7 @@ struct menuitem_t
 
 	// hotkey in menu or y of the item
 	UINT16 alphaKey;
-
-	// an identifier to replace hardcoded indices
-	char itemname[6];
 };
-
-// so i don't have to put magic numbers everywhere
-#define ITNAMECMP(s1, s2) !strncmp(s1, s2, 6)
 
 struct menu_t
 {
@@ -392,7 +390,8 @@ struct menu_t
 void M_SetupNextMenu(menutype_t menu);
 void M_SetCurrentMenu(menutype_t menu);
 void M_ClearMenus(boolean callexitmenufunc);
-menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name);
+menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
+menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
 
 void M_SinglePlayerMenu(INT32 choice);
 void M_Options(INT32 choice);

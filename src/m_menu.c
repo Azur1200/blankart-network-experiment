@@ -227,119 +227,52 @@ static void Newgametype_OnChange(void);
 static void Dummymenuplayer_OnChange(void);
 static void Dummystaff_OnChange(void);
 
-// a wide array of functions for interacting with menu items
-// should probably trim these a bit...
-
-static INT16 M_GetMenuIndexByName(menutype_t type, const char *name)
+// menus now use short names rather than hardcoded indices to identify menuitems
+menuitem_t *M_CheckMenuItem(menutype_t type, const char *name)
 {
 	INT16 i;
 	menu_t *menu = menudefs[type];
 	I_Assert(menu);
 
 	for (i = 0; i < menu->numitems; i++)
-		if (!strncmp(menu->menuitems[i].itemname, name, 6))
-			return i;
-	return -1;
+		if (!strncmp(menu->menuitems[i].itemname, name, ITEMNAMELEN))
+			return &menu->menuitems[i];
+	return NULL;
 }
 
-menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name)
+menuitem_t *M_GetMenuItem(menutype_t type, const char *name)
 {
-	INT16 i = M_GetMenuIndexByName(type, name);
-	return i >= 0 ? &menudefs[type]->menuitems[i] : NULL;
-}
-
-static void M_GetMenuItemNameByIndex(menutype_t type, INT16 index, char out[6])
-{
-	menu_t *menu = menudefs[type];
-	I_Assert(menu);
-	strncpy(out, menu->menuitems[index].itemname, 6);
-}
-
-static boolean M_IsItemOn(menutype_t type, const char *name)
-{
-	INT16 index = M_GetMenuIndexByName(type, name);
-	if (index < 0)
-		I_Error("Menu %d has no item %s", type, name);
-	return itemOn == index;
-}
-
-static void M_SetItemOn(menutype_t type, const char *name)
-{
-	INT16 index = M_GetMenuIndexByName(type, name);
-	if (index < 0)
-		I_Error("Menu %d has no item %s", type, name);
-	itemOn = index;
-}
-
-static void M_SetItemStatus(menutype_t type, const char *name, UINT16 flags)
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
+	menuitem_t *item = M_CheckMenuItem(type, name);
 	if (!item)
 		I_Error("Menu %d has no item %s", type, name);
-	item->status = flags;
+	return item;
 }
 
-static UINT16 M_GetItemStatus(menutype_t type, const char *name)
+static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 {
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	return item->status;
+	return M_GetMenuItem(type, name) - menudefs[type]->menuitems;
 }
 
-static void M_SetItemRoutine(menutype_t type, const char *name, void (*routine)(INT32 choice))
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	item->itemaction.routine = routine;
-}
-
-static void M_SetItemCvar(menutype_t type, const char *name, consvar_t *cvar)
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	item->itemaction.cvar = cvar;
-}
-
-static void M_SetItemKey(menutype_t type, const char *name, UINT16 key)
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	item->alphaKey = key;
-}
+// an array of macros for getting/setting menuitem properties
+#define M_IsItemOn(t, n)                (itemOn == M_GetMenuIndex(t, n))
+#define M_SetItemOn(t, n)               (itemOn = M_GetMenuIndex(t, n))
+#define M_SetItemStatus(t, n, v)        (M_GetMenuItem(t, n)->status = v)
+#define M_GetItemStatus(t, n)           (M_GetMenuItem(t, n)->status)
+#define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->itemaction.routine = v)
+#define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->itemaction.cvar = v)
+#define M_SetItemKey(t, n, v)           (M_GetMenuItem(t, n)->alphaKey = v)
 #define M_SetItemY M_SetItemKey
 #define M_SetItemX M_SetItemKey // 2D menus wen
-
-static UINT16 M_GetItemKey(menutype_t type, const char *name)
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	return item->alphaKey;
-}
+#define M_GetItemKey(t, n)              (M_GetMenuItem(t, n)->alphaKey)
 #define M_GetItemY M_GetItemKey
-
-static void M_AdjustItemY(menutype_t type, const char *name, INT16 amount)
-{
-	menuitem_t *item = M_GetMenuItemByName(type, name);
-	if (!item)
-		I_Error("Menu %d has no item %s", type, name);
-	item->alphaKey += amount;
-}
+#define M_AdjustItemY(t, n, v)          (M_GetMenuItem(t, n)->alphaKey += v)
 
 // ensure there are numitems menuitems between name1 and name2
 // then return the index of name1
 static INT16 M_MenuItemRange(menutype_t type, const char *name1, const char *name2, INT16 numitems)
 {
-	INT16 index1 = M_GetMenuIndexByName(type, name1);
-	if (index1 < 0)
-		I_Error("Menu %d has no item %s", type, name1);
-	INT16 index2 = M_GetMenuIndexByName(type, name2);
-	if (index2 < 0)
-		I_Error("Menu %d has no item %s", type, name2);
+	INT16 index1 = M_GetMenuIndex(type, name1);
+	INT16 index2 = M_GetMenuIndex(type, name2);
 	INT16 range = index2 - index1 + 1;
 	if (range != numitems)
 		I_Error("Menu %d should have %d items between %s and %s inclusive, but %d were found", type, numitems, name1, name2, range);
@@ -349,7 +282,7 @@ static INT16 M_MenuItemRange(menutype_t type, const char *name1, const char *nam
 // bruh...
 static UINT32 M_ServersPerPage(void)
 {
-	INT32 spp = M_GetMenuIndexByName(MN_MP_CONNECT, "LASLIN") - M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN") + 1;
+	INT32 spp = M_GetMenuIndex(MN_MP_CONNECT, "LASLIN") - M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN") + 1;
 	if (spp < 1 || spp >= MAXSERVERLIST)
 		I_Error("Broken server connection menu");
 	return (UINT32)spp;
@@ -4199,8 +4132,6 @@ void M_DrawPlaybackMenu(void)
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
 		UINT8 *inactivemap = NULL;
-		char nameon[6];
-		M_GetMenuItemNameByIndex(MN_PLAYBACK, i, nameon);
 
 		INT16 splitnum = i - view1index;
 		if (splitnum >= 0 && splitnum < 4)
@@ -4227,7 +4158,7 @@ void M_DrawPlaybackMenu(void)
 		else
 			icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
 
-		if ((ITNAMECMP(nameon, "FASTFW") && cv_playbackspeed.value > 1) || (ITNAMECMP(nameon, "REWIND") && demo.rewinding))
+		if ((i == M_GetMenuIndex(MN_PLAYBACK, "FASTFW") && cv_playbackspeed.value > 1) || (i == M_GetMenuIndex(MN_PLAYBACK, "REWIND") && demo.rewinding))
 			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].alphaKey, currentMenu->y, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
 		else
 			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].alphaKey, currentMenu->y, transmap|V_SNAPTOTOP, icon, (i == itemOn) ? activemap : inactivemap);
@@ -4243,15 +4174,15 @@ void M_DrawPlaybackMenu(void)
 			{
 				char *str = NULL;
 
-				if (!(ITNAMECMP(nameon, "NUMVIE") && r_splitscreen == 3))
+				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE") && r_splitscreen == 3))
 					V_DrawCharacter(BASEVIDWIDTH/2 - 4, currentMenu->y + 28 - (skullAnimCounter/5),
 						'\x1A' | transmap|V_SNAPTOTOP|highlightflags, false); // up arrow
 
-				if (!(ITNAMECMP(nameon, "NUMVIE") && r_splitscreen == 0))
+				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE") && r_splitscreen == 0))
 					V_DrawCharacter(BASEVIDWIDTH/2 - 4, currentMenu->y + 48 + (skullAnimCounter/5),
 						'\x1B' | transmap|V_SNAPTOTOP|highlightflags, false); // down arrow
 
-				if (ITNAMECMP(nameon, "NUMVIE"))
+				if (i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE"))
 					str = va("%d", r_splitscreen+1);
 				else if (splitnum >= 0 && splitnum < 4)
 					str = player_names[displayplayers[splitnum]]; // 0 to 3
@@ -5250,25 +5181,6 @@ void M_SinglePlayerMenu(INT32 choice)
 	M_SetItemStatus(MN_SP_MAIN, "IT", M_SecretUnlocked(SECRET_ITEMBREAKER) ? IT_CALL|IT_STRING : IT_SECRET);
 	M_SetupNextMenu(MN_SP_MAIN);
 }
-
-
-// ==============
-/* ignore the garbage, i'm just trying to keep git happy
-// ==============
-
-
-{
-
-	{
-	}
-
-
-
-
-
-
-
-}*/
 
 // ===============
 // STATISTICS MENU
@@ -6313,7 +6225,7 @@ void M_Connect(INT32 choice)
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
-	INT16 firstserverline = M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN");
+	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN");
 	COM_BufAddText(va("connect node %d\n", serverlist[choice-firstserverline + serverlistpage * M_ServersPerPage()].node));
 }
 
@@ -6350,7 +6262,7 @@ void M_DrawConnectMenu(void)
 	//const char *gt = "Unknown";
 	//const char *spd = "";
 	const char *pwr = "----";
-	INT16 firstserverline = M_GetMenuIndexByName(MN_MP_CONNECT, "FIRLIN");
+	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
 	INT32 numPages = (serverlistcount+(serversperpage-1))/serversperpage;
 	int waiting;

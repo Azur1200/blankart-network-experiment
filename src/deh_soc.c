@@ -2411,17 +2411,17 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				if (fastcmp(word, "MENUITEM"))
 				{
-					if (strlen(word2) > 6)
+					if (strlen(word2) > ITEMNAMELEN)
 					{
-						deh_warning("Menu %d: item name %s is too long (max 6 characters)", num, word2);
+						deh_warning("Menu %d: item name %s is too long (max %d characters)", num, word2, ITEMNAMELEN);
 						continue;
 					}
-					menuitem_t *item = word2[0] == '.' ? NULL : M_GetMenuItemByName(num, word2);
+					menuitem_t *item = word2[0] == '.' ? NULL : M_CheckMenuItem(num, word2);
 					if (item == NULL)
 					{
 						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
 						item = menudef->menuitems + menudef->numitems++;
-						strncpy(item->itemname, word2, 6);
+						strncpy(item->itemname, word2, ITEMNAMELEN);
 						item->text = "";
 					}
 					readmenuitem(f, item);
