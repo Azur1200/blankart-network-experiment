@@ -150,6 +150,7 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
+static void KartItemBreaker_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -434,6 +435,8 @@ consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVA
 
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+
+consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
@@ -6900,6 +6903,23 @@ static void KartRings_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Rings will be turned \"Off\" Next Round.\n"));
+	}
+}
+
+static void KartItemBreaker_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (cv_kartitembreaker.value)
+	{
+		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"On\" Next Round.\n"));
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"Off\" Next Round.\n"));
 	}
 }
 

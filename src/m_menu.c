@@ -1517,9 +1517,10 @@ static menuitem_t OP_GameOptionsMenu[] =
 static menuitem_t OP_BlanKartGameOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Rings",						{.cvar = &cv_kartrings},			 10},
-	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 20},
-	{IT_STRING | IT_CVAR, NULL, "Bump Spark",					{.cvar = &cv_kartbumpspark},		 30},
-	{IT_STRING | IT_CVAR, NULL, "Bump Spring",					{.cvar = &cv_kartbumpspring},		 40},
+	{IT_STRING | IT_CVAR, NULL, "Item Breaker",					{.cvar = &cv_kartitembreaker},		 20},
+	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 30},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spark",					{.cvar = &cv_kartbumpspark},		 40},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spring",					{.cvar = &cv_kartbumpspring},		 50},
 
 };
 
