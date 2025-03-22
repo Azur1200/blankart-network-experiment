@@ -2147,7 +2147,7 @@ void G_BeginRecording(void)
 		if (wadfiles[i]->important)
 	{
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
-		WRITESTRINGN(demobuf.p, filename, MAX_WADPATH);
+		WRITESTRINGL(demobuf.p, filename, MAX_WADPATH);
 		WRITEMEM(demobuf.p, wadfiles[i]->md5sum, 16);
 		WRITEUINT8(demobuf.p, wadfiles[i]->compatmode);
 
