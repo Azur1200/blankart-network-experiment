@@ -82,7 +82,7 @@ static UINT8 cheatf_warp(void)
 	/*if (modifiedgame)
 	 *	return 0;*/
 
-	if (menuactive && currentMenu != &MainDef)
+	if (menuactive && activeMenuId != MN_MAIN)
 		return 0; // Only on the main menu!
 
 	// Temporarily unlock EVERYTHING.
@@ -117,7 +117,7 @@ static UINT8 cheatf_devmode(void)
 	if (modifiedgame)
 		return 0;
 
-	if (menuactive && currentMenu != &MainDef)
+	if (menuactive && activeMenuId != MN_MAIN)
 		return 0; // Only on the main menu!
 
 	S_StartSound(0, sfx_itemup);

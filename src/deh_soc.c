@@ -2150,10 +2150,10 @@ static menu_t *allocmenu(INT32 num)
 	if (num < 0 || num >= NUMMENUTYPES)
 		I_Error("Tried to allocate out-of-range menu number");
 
-	menu_t *menu = menunum2menudef[num];
+	menu_t *menu = menudefs[num];
 	if (menu == NULL)
 	{
-		menunum2menudef[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
+		menudefs[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
 		menu->menuid = num;
 	}
 	if (menu->drawroutine == NULL)
@@ -2303,7 +2303,8 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			}
 			actionset = true;
 			status |= IT_SUBMENU;
-			menuitem->itemaction.submenu = allocmenu(mn);
+			allocmenu(mn);
+			menuitem->itemaction.submenu = mn;
 		}
 		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
 		{
@@ -2583,7 +2584,8 @@ void readmenu(MYFILE *f, INT32 num)
 					deh_warning("Menu %d: unknown previous menu '%s'", num, word2);
 					continue;
 				}
-				menudef->prevMenu = allocmenu(value);
+				allocmenu(value);
+				menudef->prevMenu = value;
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
 			{

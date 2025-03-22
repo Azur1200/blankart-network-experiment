@@ -1062,7 +1062,7 @@ void D_StartTitle(void)
 
 	F_StartTitleScreen();
 
-	currentMenu = &MainDef; // reset the current menu ID
+	M_SetCurrentMenu(MN_MAIN); // reset the current menu ID
 
 	// Reset the palette
 	if (rendermode != render_none)

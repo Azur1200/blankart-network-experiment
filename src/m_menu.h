@@ -174,7 +174,7 @@ typedef enum
 #define MTREE3(a,b,c) MTREE2(a, MTREE2(b,c))
 #define MTREE4(a,b,c,d) MTREE2(a, MTREE3(b,c,d))
 
-extern menu_t *menunum2menudef[NUMMENUTYPES];
+extern menu_t *menudefs[NUMMENUTYPES];
 
 typedef struct
 {
@@ -347,7 +347,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 typedef union
 {
-	menu_t *submenu;      // IT_SUBMENU
+	menutype_t submenu;      // IT_SUBMENU
 	consvar_t *cvar;             // IT_CVAR
 	void (*routine)(INT32 choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
 	void (*eventhandler)(event_t *ev); // MM_EVENTHANDLER
@@ -381,7 +381,7 @@ struct menu_t
 	UINT32         menuid;             // ID to encode menu type and hierarchy
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
-	menu_t *prevMenu;           // previous menu
+	menutype_t     prevMenu;           // previous menu
 	menuitem_t    *menuitems;          // menu items
 	void         (*drawroutine)(void); // draw routine
 	INT16          x, y;               // x, y of menu
@@ -389,7 +389,8 @@ struct menu_t
 	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
 
-void M_SetupNextMenu(menu_t *menudef);
+void M_SetupNextMenu(menutype_t menu);
+void M_SetCurrentMenu(menutype_t menu);
 void M_ClearMenus(boolean callexitmenufunc);
 menuitem_t *M_GetMenuItemByName(menutype_t type, const char *name);
 
@@ -519,13 +520,8 @@ boolean M_MouseNeeded(void);
 extern I_mutex m_menu_mutex;
 #endif
 
-extern menu_t *currentMenu;
-
-extern menu_t MainDef;
-
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);
-extern menu_t OP_JoystickSetDef;
 
 // Stuff for customizing the player select screen
 typedef struct

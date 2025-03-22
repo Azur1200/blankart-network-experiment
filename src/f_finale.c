@@ -1169,7 +1169,7 @@ void F_InitMenuPresValues(void)
 {
 	menuanimtimer = 0;
 	prevMenuId = 0;
-	activeMenuId = MainDef.menuid;
+	activeMenuId = MN_MAIN;
 
 	// Set defaults for presentation values
 	strncpy(curbgname, "TITLESKY", 9);

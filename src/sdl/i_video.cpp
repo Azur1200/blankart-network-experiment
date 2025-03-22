@@ -1005,7 +1005,7 @@ void I_GetEvent(void)
 						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 					// update the menu
-					if (currentMenu == &OP_JoystickSetDef)
+					if (activeMenuId == MN_OP_JOYSTICKSET)
 						M_SetupJoystickMenu(0);
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -1065,7 +1065,7 @@ void I_GetEvent(void)
 					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 				// update the menu
-				if (currentMenu == &OP_JoystickSetDef)
+				if (activeMenuId == MN_OP_JOYSTICKSET)
 					M_SetupJoystickMenu(0);
 				break;
 			case SDL_DROPFILE:
