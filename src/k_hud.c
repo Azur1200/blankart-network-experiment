@@ -3000,7 +3000,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	skin = ((skin_t*)players->mo->skin)-skins;
+	skin = ((skin_t*)player->mo->skin)-skins;
 
 	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(faceprefix[skin][FACE_MINIMAP]->width))/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(faceprefix[skin][FACE_MINIMAP]->height))/2)<<FRACBITS);
