@@ -131,6 +131,7 @@ player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
 INT32 K_GetKartRingPower(player_t *player, boolean boosted);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y);
+void K_SetRespawnAtNextWaypoint(player_t * player);
 INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue);
 INT32 K_GetKartDriftSparkValue(player_t *player);
 INT32 K_GetKartDriftSparkValueForStage(player_t *player, UINT8 stage);

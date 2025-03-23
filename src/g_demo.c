@@ -147,6 +147,7 @@ demoghost *ghosts = NULL;
 
 #define ZT_BOT_TURN			0x0001
 #define ZT_BOT_ITEM			0x0002
+#define ZT_BOT_RESPAWN		0x0004
 
 #define DEMOMARKER 0x80 // demobuf.end
 
@@ -579,6 +580,8 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 			oldcmd[playernum].bot.turnconfirm = READSINT8(demobuf.p);
 		if (botziptic & ZT_BOT_ITEM)
 			oldcmd[playernum].bot.itemconfirm = READSINT8(demobuf.p);
+		if (botziptic & ZT_BOT_RESPAWN)
+			oldcmd[playernum].bot.itemconfirm = READUINT32(demobuf.p);
 	}
 
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
@@ -693,6 +696,13 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 			WRITESINT8(demobuf.p, cmd->bot.itemconfirm);
 			oldcmd[playernum].bot.itemconfirm = cmd->bot.itemconfirm;
 			botziptic |= ZT_BOT_ITEM;
+		}
+
+		if (cmd->bot.respawnconfirm != oldcmd[playernum].bot.respawnconfirm)
+		{
+			WRITESINT8(demobuf.p, cmd->bot.respawnconfirm);
+			oldcmd[playernum].bot.respawnconfirm = cmd->bot.respawnconfirm;
+			botziptic |= ZT_BOT_RESPAWN;
 		}
 
 		WRITEUINT16(botziptic_p, botziptic);

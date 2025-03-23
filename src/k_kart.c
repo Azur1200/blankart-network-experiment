@@ -8304,6 +8304,60 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
+void K_SetRespawnAtNextWaypoint(player_t * player)
+{
+	mobj_t *currentwaypoint = player->currentwaypoint->mobj;
+	mobj_t *safewaypoint = player->nextwaypoint->mobj;
+	angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+
+	// Safety :P
+	if (!safewaypoint || !currentwaypoint)
+	{
+		// Better safe then sorry.
+		return;
+	}
+
+	player->pflags |= PF_TRUSTWAYPOINTS;
+	player->starposttime = player->realtime;
+	player->starpostz = (safewaypoint->spawnpoint->z + 15) >> FRACBITS;
+	player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+	player->starpostangle = respawnangle;
+
+	// Then do x and y
+	player->starpostx = safewaypoint->x >> FRACBITS;
+	player->starposty = safewaypoint->y >> FRACBITS;
+}
+
+static boolean K_MobjIsOnLine(mobj_t *const mobj)
+{
+	const fixed_t x = mobj->x;
+	const fixed_t y = mobj->y;
+
+	line_t *line = P_FindNearestLine(x, y,
+			mobj->subsector->sector, -1);
+
+	vertex_t point;
+
+	if (line != NULL)
+	{
+		P_ClosestPointOnLine(x, y, line, &point);
+
+		if (x == point.x && y == point.y)
+			return true;
+	}
+
+	return false;
+}
+
+static void K_MobjFudgeRespawn(player_t *player, const mobj_t *const mobj)
+{
+	const angle_t from = R_PointToAngle2(mobj->x, mobj->y,
+	player->mo->x, player->mo->y) >> ANGLETOFINESHIFT;
+
+	player->starpostx += FixedMul(25, FINECOSINE(from));
+	player->starposty += FixedMul(25, FINESINE(from));
+}
+
 /*--------------------------------------------------
 	static void K_UpdatePlayerWaypoints(player_t *const player)
 
@@ -8401,22 +8455,16 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			// Then do x and y
 			player->starpostx = player->mo->x >> FRACBITS;
 			player->starposty = player->mo->y >> FRACBITS;
+
+			if (K_MobjIsOnLine(player->mo))
+			{
+				K_MobjFudgeRespawn(player, player->mo);
+			}
 		}
 		else
 		{
-			mobj_t *currentwaypoint = player->currentwaypoint->mobj;
-			mobj_t *safewaypoint = player->nextwaypoint->mobj;
-			angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
-
-			player->starposttime = player->realtime;
-			player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
-			player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-			player->starpostangle = respawnangle;
-
-			// Then do x and y
-			player->starpostx = safewaypoint->x >> FRACBITS;
-			player->starposty = safewaypoint->y >> FRACBITS;
-
+			// Now a clean function! Neat, eh?
+			K_SetRespawnAtNextWaypoint(player);
 		}
 
 		if (player->nextwaypoint->onaline)

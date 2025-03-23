@@ -1262,6 +1262,8 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		if (dest[i].flags & TICCMD_BOT)
 		{
 			dest[i].bot.itemconfirm = src[i].bot.itemconfirm;
+			dest[i].bot.turnconfirm = src[i].bot.turnconfirm;
+			dest[i].bot.respawnconfirm = src[i].bot.respawnconfirm;
 		}
 	}
 	return dest;

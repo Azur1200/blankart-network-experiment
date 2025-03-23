@@ -425,6 +425,7 @@ struct botvars_t
 	tic_t itemconfirm; // When high enough, they will use their item
 
 	SINT8 turnconfirm; // Confirm turn direction
+	UINT32 respawnconfirm; // Confirm when respawn is needed.
 
 };
 

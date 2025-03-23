@@ -367,6 +367,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].botvars.itemdelay);
 		WRITEUINT32(save->p, players[i].botvars.itemconfirm);
 		WRITESINT8(save->p, players[i].botvars.turnconfirm);
+		WRITEUINT32(save->p, players[i].botvars.respawnconfirm);
 		
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -678,6 +679,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.itemdelay = READUINT32(save->p);
 		players[i].botvars.itemconfirm = READUINT32(save->p);
 		players[i].botvars.turnconfirm = READSINT8(save->p);
+		players[i].botvars.respawnconfirm = READUINT32(save->p);
 		
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);
