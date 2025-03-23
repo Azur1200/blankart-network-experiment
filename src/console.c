@@ -254,7 +254,7 @@ static void CONS_Bind_f(void)
 		CONS_Printf("\x82%s", M_GetText("Bind table :\n"));
 		na = 0;
 		for (key = 0; key < NUMINPUTS; key++)
-			if (!menuactive && bindtable[key])
+			if (!menustack[0] && bindtable[key])
 			{
 				CONS_Printf("%s : \"%s\"\n", G_KeynumToString(key), bindtable[key]);
 				na = 1;
@@ -978,7 +978,7 @@ boolean CON_Responder(event_t *ev)
 		// check other keys only if console prompt is active
 		if (!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
 		{
-			if (! menuactive && bindtable[key])
+			if (!menustack[0] && bindtable[key])
 			{
 				COM_BufAddText(bindtable[key]);
 				COM_BufAddText("\n");

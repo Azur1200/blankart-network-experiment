@@ -19,6 +19,7 @@
 #include "d_net.h"
 #include "console.h"
 #include "i_joy.h" // JOYAXISRANGE
+#include "m_menu.h" // menustack
 
 #define MAXMOUSESENSITIVITY 100 // sensitivity steps
 
@@ -176,7 +177,7 @@ void G_MapEventsToControls(event_t *ev)
 			break;
 
 		case ev_mouse: // buttons are virtual keys
-			if (menuactive)
+			if (menustack[0])
 			{
 				break;
 			}
@@ -211,7 +212,7 @@ void G_MapEventsToControls(event_t *ev)
 			break;
 
 		case ev_joystick: // buttons are virtual keys
-			if (menuactive)
+			if (menustack[0])
 			{
 				break;
 			}

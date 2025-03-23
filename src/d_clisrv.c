@@ -575,7 +575,7 @@ static inline void CL_DrawConnectionStatus(void)
 	INT32 ccstime = I_GetTime();
 
 	// Draw background fade
-	if (!menuactive) // menu already draws its own fade
+	if (!menustack[0]) // menu already draws its own fade
 		V_DrawFadeScreen(0xFF00, 16); // force default
 
 	if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_LOADFILES && cl_mode != CL_CHECKFILES

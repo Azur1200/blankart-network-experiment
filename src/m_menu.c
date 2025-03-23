@@ -147,7 +147,6 @@ const char *quitmsg[NUM_QUITMESSAGES];
 // Stuff for customizing the player select screen Tails 09-22-2003
 description_t description[MAXSKINS];
 
-boolean menuactive = false;
 boolean fromlevelselect = false;
 
 typedef enum
@@ -168,6 +167,7 @@ static UINT32 serverlistpage;
 INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 menu_t *menudefs[NUMMENUTYPES] = {NULL}; // pointers to all menudefs
+menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
@@ -286,14 +286,6 @@ static UINT32 M_ServersPerPage(void)
 	if (spp < 1 || spp >= MAXSERVERLIST)
 		I_Error("Broken server connection menu");
 	return (UINT32)spp;
-}
-
-// set the current menu, but without doing everything that M_SetupNextMenu does
-// is this even necessary...?
-void M_SetCurrentMenu(menutype_t num)
-{
-	currentMenu = menudefs[num];
-	activeMenuId = num;
 }
 
 // ==========================================================================
@@ -486,7 +478,7 @@ void M_OpenGLOptionsMenu(INT32 choice)
 	(void)choice;
 
 	if (rendermode == render_opengl)
-		M_SetupNextMenu(MN_OP_OPENGL);
+		M_EnterMenu(MN_OP_OPENGL, true);
 	else
 		M_StartMessage(M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING);
 }
@@ -537,7 +529,7 @@ void Nextmap_OnChange(void)
 	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
 	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
-	if (activeMenuId == MN_SP_TIMEATTACK)
+	if (menustack[0] == MN_SP_TIMEATTACK)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
 		const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
@@ -666,7 +658,7 @@ static void Dummystaff_OnChange(void)
 // Newgametype.  Used for gametype changes.
 static void Newgametype_OnChange(void)
 {
-	if (menuactive && cv_nextmap.value)
+	if (menustack[0] && cv_nextmap.value)
 	{
 		INT32 gt = cv_newgametype.value;
 
@@ -726,10 +718,6 @@ void Moviemode_option_Onchange(void)
 // =========================================================================
 // MENU PRESENTATION PARAMETER HANDLING (BACKGROUNDS)
 // =========================================================================
-
-// menu IDs are equal to current/prevMenu in most cases, except MN_SPECIAL when we don't want to operate on Message, Pause, etc.
-UINT32 prevMenuId = 0;
-UINT32 activeMenuId = 0;
 
 menupres_t menupres[NUMMENUTYPES];
 
@@ -971,7 +959,7 @@ boolean M_Responder(event_t *ev)
 				break;
 		}
 	}
-	else if (menuactive)
+	else if (menustack[0])
 	{
 		if (ev->type == ev_joystick && deviceplayer == 0)
 		{
@@ -1053,7 +1041,7 @@ boolean M_Responder(event_t *ev)
 		for (size_t r = 0; r < sizeof(joyremap)/sizeof(*joyremap); r++)
 		{
 			INT32 gc = joyremap[r][0];
-			if (gc == gc_brake && !menuactive)
+			if (gc == gc_brake && !menustack[0])
 				continue; // don't open the menu with brake!
 
 			if (G_ControlBoundToKey(0, gc, ch, true))
@@ -1068,7 +1056,7 @@ boolean M_Responder(event_t *ev)
 		return false;
 
 	// F-Keys
-	if (!menuactive)
+	if (!menustack[0])
 	{
 		noFurtherInput = true;
 
@@ -1090,7 +1078,7 @@ boolean M_Responder(event_t *ev)
 					return true;
 				M_StartControlPanel();
 				M_Options(0);
-				M_SetCurrentMenu(MN_OP_SOUND);
+				M_EnterMenu(MN_OP_SOUND, true);
 				itemOn = 0;
 				return true;
 
@@ -1100,6 +1088,7 @@ boolean M_Responder(event_t *ev)
 					return true;
 				M_StartControlPanel();
 				M_Options(0);
+				M_EnterMenu(MN_OP_VIDEO, true);
 				M_VideoModeMenu(0);
 				return true;
 #endif
@@ -1112,7 +1101,6 @@ boolean M_Responder(event_t *ev)
 					return true;
 				M_StartControlPanel();
 				M_Options(0);
-				M_SetupNextMenu(MN_OP_MAIN);
 				return true;
 
 			// Screenshots on F8 now handled elsewhere
@@ -1200,7 +1188,7 @@ boolean M_Responder(event_t *ev)
 			routine = M_ChangeCvar;
 	}
 
-	if (activeMenuId == MN_PLAYBACK && !con_destlines)
+	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
 		playback_last_menu_interaction_leveltime = leveltime;
 		// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
@@ -1281,7 +1269,7 @@ boolean M_Responder(event_t *ev)
 			if (routine && ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
 				|| (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR))
 			{
-				if (activeMenuId != MN_OP_SOUND || itemOn > 3)
+				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
 				routine(0);
 			}
@@ -1291,7 +1279,7 @@ boolean M_Responder(event_t *ev)
 			if (routine && ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
 				|| (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR))
 			{
-				if (activeMenuId != MN_OP_SOUND || itemOn > 3)
+				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
 				routine(1);
 			}
@@ -1301,7 +1289,7 @@ boolean M_Responder(event_t *ev)
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
 
-			if (activeMenuId == MN_PLAYBACK)
+			if (menustack[0] == MN_PLAYBACK)
 			{
 				boolean held = (boolean)playback_enterheld;
 				if (held)
@@ -1323,7 +1311,7 @@ boolean M_Responder(event_t *ev)
 						break;
 					case IT_SUBMENU:
 						currentMenu->lastOn = itemOn;
-						M_SetupNextMenu(currentMenu->menuitems[itemOn].itemaction.submenu);
+						M_EnterMenu(currentMenu->menuitems[itemOn].itemaction.submenu, true);
 						break;
 				}
 			}
@@ -1333,7 +1321,12 @@ boolean M_Responder(event_t *ev)
 		//case KEY_JOY1 + 2:
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
-			if (currentMenu->prevMenu)
+			if (menustack[0] == MN_SP_TIMEATTACK)
+			{
+				// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
+				D_StartTitle();
+			}
+			else
 			{
 				//If we entered the game search menu, but didn't enter a game,
 				//make sure the game doesn't still think we're in a netgame.
@@ -1342,18 +1335,8 @@ boolean M_Responder(event_t *ev)
 					netgame = false;
 					multiplayer = false;
 				}
-
-				if (activeMenuId == MN_SP_TIMEATTACK)
-				{
-					// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-					menuactive = false;
-					D_StartTitle();
-				}
-				else
-					M_SetupNextMenu(currentMenu->prevMenu);
+				M_ExitMenu();
 			}
-			else
-				M_ClearMenus(true);
 
 			return true;
 
@@ -1377,7 +1360,7 @@ boolean M_Responder(event_t *ev)
 					|| cv == &cv_newgametype)
 					return true;
 
-				if (activeMenuId != MN_OP_SOUND || itemOn > 3)
+				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
 				routine(-1);
 				return true;
@@ -1491,13 +1474,10 @@ boolean M_DemoResponder(event_t *ev)
 //
 void M_Drawer(void)
 {
-	if (currentMenu == &MessageDef)
-		menuactive = true;
-
-	if (menuactive)
+	if (menustack[0])
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (!WipeInAction && activeMenuId != MN_PLAYBACK) // Replay playback has its own background
+		if (!WipeInAction && menustack[0] != MN_PLAYBACK) // Replay playback has its own background
 			V_DrawFadeScreen(0xFF00, 16);
 
 		if (currentMenu->drawroutine)
@@ -1506,7 +1486,7 @@ void M_Drawer(void)
 			currentMenu->drawroutine(); // call current menu Draw routine
 		}
 		
-		if (activeMenuId == MN_MAIN)
+		if (menustack[0] == MN_MAIN)
 		{
 			INT32 texty = vid.height - 10*vid.dupy;
 #define addtext(f, str) {\
@@ -1552,27 +1532,25 @@ void M_Drawer(void)
 void M_StartControlPanel(void)
 {
 	// intro might call this repeatedly
-	if (menuactive)
+	if (menustack[0])
 	{
 		CON_ToggleOff(); // move away console
 		return;
 	}
 
-	menuactive = true;
-
 	if (demo.playback)
 	{
-		M_SetCurrentMenu(MN_PLAYBACK);
+		M_EnterMenu(MN_PLAYBACK, true);
 		playback_last_menu_interaction_leveltime = leveltime;
 	}
 	else if (!Playing())
 	{
-		M_SetCurrentMenu(MN_MAIN);
+		M_EnterMenu(MN_MAIN, true);
 		M_SetItemOn(MN_MAIN, "SINGLE");
 	}
 	else if (modeattacking)
 	{
-		M_SetCurrentMenu(MN_MAPAUSE);
+		M_EnterMenu(MN_MAPAUSE, true);
 		M_SetItemOn(MN_MAPAUSE, "CONTIN");
 	}
 	else if (!(netgame || multiplayer)) // Single Player
@@ -1590,7 +1568,7 @@ void M_StartControlPanel(void)
 
 		M_SetItemStatus(MN_SPAUSE, "EMBLEM", M_SecretUnlocked(SECRET_EMBLEMHINTS) ? IT_STRING|IT_CALL : IT_DISABLED);
 
-		M_SetCurrentMenu(MN_SPAUSE);
+		M_EnterMenu(MN_SPAUSE, true);
 		M_SetItemOn(MN_SPAUSE, "CONTIN");
 	}
 	else // multiplayer
@@ -1704,7 +1682,7 @@ void M_StartControlPanel(void)
 		}
 #endif
 
-		M_SetCurrentMenu(MN_MPAUSE);
+		M_EnterMenu(MN_MPAUSE, true);
 		M_SetItemOn(MN_MPAUSE, "CONTIN");
 	}
 
@@ -1721,36 +1699,33 @@ void M_EndModeAttackRun(void)
 //
 void M_ClearMenus(boolean callexitmenufunc)
 {
-	if (!menuactive)
-		return;
-
-	if (currentMenu->quitroutine && callexitmenufunc)
+	if (currentMenu && currentMenu->quitroutine && callexitmenufunc)
 		currentMenu->quitroutine(0);
 
 #ifndef DC // Save the config file. I'm sick of crashing the game later and losing all my changes!
-	COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
+	if (menustack[0])
+		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
 #endif //Alam: But not on the Dreamcast's VMUs
 
-	if (currentMenu == &MessageDef) // Oh sod off!
-		M_SetCurrentMenu(MN_MAIN); // Not like it matters
-	menuactive = false;
+	memset(menustack, 0, sizeof(menustack));
+	currentMenu = NULL;
 	hidetitlemap = false;
 }
 
 //
 // M_SetupNextMenu
 //
-void M_SetupNextMenu(menutype_t menunum)
+static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 {
 	INT16 i;
 	menu_t *menudef = menudefs[menunum];
+	I_Assert(menudef);
 
 	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
-	if (currentMenu != menudef && currentMenu->quitroutine)
+	if (callexit && currentMenu && currentMenu != menudef && currentMenu->quitroutine)
 		currentMenu->quitroutine(0);
 
 	currentMenu = menudef;
-	activeMenuId = menunum;
 	itemOn = currentMenu->lastOn;
 
 	// in case of...
@@ -1772,6 +1747,34 @@ void M_SetupNextMenu(menutype_t menunum)
 	}
 
 	hidetitlemap = false;
+}
+
+// pop the active menu from the stack
+void M_ExitMenu(void)
+{
+	size_t i;
+
+	for (i = 0; i < NUMMENULEVELS-1; i++)
+		menustack[i] = menustack[i+1];
+	menustack[NUMMENULEVELS-1] = MN_NONE;
+
+	if (menustack[0])
+		M_SetupNextMenu(menustack[0], true);
+	else
+		M_ClearMenus(true);
+}
+
+// push a new menu to the stack
+void M_EnterMenu(menutype_t menunum, boolean callexit)
+{
+	size_t i = NUMMENULEVELS-1;
+	if (menustack[i])
+		CONS_Alert(CONS_WARNING, "Max menu depth (%d) exceeded!\n", NUMMENULEVELS);
+
+	do menustack[i] = menustack[i-1]; while (--i); // one-line do-while loop... that's something :^)
+	menustack[0] = menunum;
+
+	M_SetupNextMenu(menunum, callexit);
 }
 
 // Guess I'll put this here, idk
@@ -1796,7 +1799,7 @@ void M_Ticker(void)
 
 	followertimer++;
 
-	if (activeMenuId == MN_PLAYBACK)
+	if (menustack[0] == MN_PLAYBACK)
 	{
 		if (playback_enterheld > 0)
 			playback_enterheld--;
@@ -2276,7 +2279,7 @@ void M_DrawPauseMenu(void)
 {
 #ifdef HAVE_DISCORDRPC
 	// kind of hackily baked in here
-	if (activeMenuId == MN_MPAUSE && discordRequestList != NULL)
+	if (menustack[0] == MN_MPAUSE && discordRequestList != NULL)
 	{
 		const tic_t freq = TICRATE/2;
 
@@ -2648,10 +2651,8 @@ static menuitem_t MessageMenu[] = {0};
 
 menu_t MessageDef =
 {
-	MN_NONE,            // id
 	NULL,               // title
 	1,                  // # of menu items
-	MN_NONE,            // previous menu       (TO HACK)
 	MessageMenu,        // menuitem_t ->
 	M_DrawMessageMenu,  // drawing routine ->
 	0, 0,               // x, y                (TO HACK)
@@ -2704,11 +2705,6 @@ void M_StartMessage(const char *string, void *routine,
 
 	M_StartControlPanel(); // can't put menuactive to true
 
-	if (currentMenu == &MessageDef) // Prevent recursion
-		MessageDef.prevMenu = demo.playback ? MN_PLAYBACK : MN_MAIN;
-	else
-		MessageDef.prevMenu = activeMenuId;
-
 	MessageDef.menuitems[0].text     = message;
 	MessageDef.menuitems[0].alphaKey = (UINT8)itemtype;
 	if (!routine && itemtype != MM_NOTHING) itemtype = MM_NOTHING;
@@ -2753,9 +2749,7 @@ void M_StartMessage(const char *string, void *routine,
 
 	MessageDef.lastOn = (INT16)((strlines<<8)+max);
 
-	//M_SetupNextMenu();
 	currentMenu = &MessageDef;
-	activeMenuId = MN_NONE;
 	itemOn = 0;
 }
 
@@ -2828,8 +2822,10 @@ static void M_DrawMessageMenu(void)
 static void M_StopMessage(INT32 choice)
 {
 	(void)choice;
-	if (menuactive)
-		M_SetupNextMenu(MessageDef.prevMenu);
+	if (menustack[0])
+		M_SetupNextMenu(menustack[0], true);
+	else
+		M_ClearMenus(true);
 }
 
 // =========
@@ -2895,12 +2891,7 @@ void M_HandleImageDef(INT32 choice)
 	}
 
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // ======================
@@ -2912,7 +2903,7 @@ void M_AddonsOptions(INT32 choice)
 	(void)choice;
 	Addons_option_Onchange();
 
-	M_SetupNextMenu(MN_OP_ADDONS);
+	M_EnterMenu(MN_OP_ADDONS, true);
 }
 
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
@@ -2980,8 +2971,7 @@ void M_Addons(INT32 choice)
 	addonsp[NUM_EXT+3] = W_CachePatchName("M_FSRCH", PU_STATIC);
 	addonsp[NUM_EXT+4] = W_CachePatchName("M_FSAVE", PU_STATIC);
 
-	menudefs[MN_AD_MAIN]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_AD_MAIN);
+	M_EnterMenu(MN_AD_MAIN, true);
 }
 
 #define width 4
@@ -3051,7 +3041,7 @@ static char *M_AddonsHeaderPath(void)
 }
 
 #define UNEXIST S_StartSound(NULL, sfx_s26d);\
-		M_SetupNextMenu(menudefs[MN_AD_MAIN]->prevMenu);\
+		M_ExitMenu();\
 		M_StartMessage(va("\x82%s\x80\nThis folder no longer exists!\nAborting to main menu.\n\n(Press a key)\n", M_AddonsHeaderPath()),NULL,MM_NOTHING)
 
 #define CLEARNAME Z_Free(refreshdirname);\
@@ -3448,10 +3438,7 @@ void M_HandleAddons(INT32 choice)
 		// Secret menu!
 		//MainMenu[secrets].status = (M_AnySecretUnlocked()) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
 
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
+		M_ExitMenu();
 	}
 }
 
@@ -3514,8 +3501,8 @@ void M_ReplayHut(INT32 choice)
 
 	PrepReplayList();
 
-	menuactive = true;
-	M_SetupNextMenu(MN_MISC_REPLAYHUT);
+	M_ClearMenus(true);
+	M_EnterMenu(MN_MISC_REPLAYHUT, true);
 	G_SetGamestate(GS_TIMEATTACK);
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
@@ -3602,9 +3589,8 @@ void M_HandleReplayHutList(INT32 choice)
 				PrepReplayList();
 				break;
 			default:
-				// We can't just use M_SetupNextMenu because that'll run ReplayDef's quitroutine and boot us back to the title screen!
 				currentMenu->lastOn = itemOn;
-				M_SetCurrentMenu(MN_MISC_REPLAYSTART);
+				M_EnterMenu(MN_MISC_REPLAYSTART, false); // ReplayDef's quit routine would boot us back to the title screen
 
 				replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
 
@@ -4025,7 +4011,6 @@ void M_QuitReplayHut(INT32 choice)
 	(void)choice;
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-	menuactive = false;
 	D_StartTitle();
 
 	if (demolist)
@@ -4335,7 +4320,7 @@ void M_PandorasBox(INT32 choice)
 	(void)choice;
 	CV_StealthSetValue(&cv_dummyrings, players[consoleplayer].rings);
 	CV_StealthSetValue(&cv_dummylives, players[consoleplayer].lives);
-	M_SetupNextMenu(MN_SR_PANDORA);
+	M_EnterMenu(MN_SR_PANDORA, true);
 }
 
 void M_ExitPandorasBox(INT32 choice)
@@ -4464,16 +4449,13 @@ void M_Options(INT32 choice)
 
 	M_SetItemStatus(MN_OP_GAME, "ENCORE", M_SecretUnlocked(SECRET_ENCORE) ? IT_CVAR|IT_STRING : IT_SECRET);
 
-	menudefs[MN_OP_MAIN]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_OP_MAIN);
+	M_EnterMenu(MN_OP_MAIN, true);
 }
 
 void M_Manual(INT32 choice)
 {
 	(void)choice;
-
-	menudefs[MN_HELP]->prevMenu = choice == INT32_MAX ? MN_NONE : activeMenuId;
-	M_SetupNextMenu(MN_HELP);
+	M_EnterMenu(MN_HELP, true);
 }
 
 static void M_RetryResponse(INT32 ch)
@@ -4669,7 +4651,7 @@ void M_EmblemHints(INT32 choice)
 {
 	(void)choice;
 	M_SetItemStatus(MN_SR_EMBLEMHINT, "RADAR", M_SecretUnlocked(SECRET_ITEMFINDER) ? IT_CVAR|IT_STRING : IT_SECRET);
-	M_SetupNextMenu(MN_SR_EMBLEMHINT);
+	M_EnterMenu(MN_SR_EMBLEMHINT, true);
 	M_SetItemOn(MN_SR_EMBLEMHINT, "BACK"); // always start on back.
 }
 
@@ -4728,7 +4710,7 @@ void M_DrawSkyRoom(void)
 
 	M_DrawGenericMenu();
 
-	if (activeMenuId == MN_OP_SOUND)
+	if (menustack[0] == MN_OP_SOUND)
 	{
 		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
 			currentMenu->y+M_GetItemY(MN_OP_SOUND, "SNDENA"),
@@ -4810,12 +4792,7 @@ void M_HandleSoundTest(INT32 choice)
 			break;
 	}
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 static musicdef_t *curplaying = NULL;
@@ -4842,7 +4819,7 @@ void M_MusicTest(INT32 choice)
 
 	st_sel = 0;
 
-	M_SetupNextMenu(MN_SR_SOUNDTEST);
+	M_EnterMenu(MN_SR_SOUNDTEST, true);
 }
 
 void M_DrawMusicTest(void)
@@ -5142,10 +5119,7 @@ void M_HandleMusicTest(INT32 choice)
 		Z_Free(soundtestdefs);
 		soundtestdefs = NULL;
 
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
+		M_ExitMenu();
 	}
 }
 
@@ -5179,7 +5153,7 @@ void M_SinglePlayerMenu(INT32 choice)
 	M_SetItemStatus(MN_SP_MAIN, "GP", IT_CALL|IT_STRING);
 	M_SetItemStatus(MN_SP_MAIN, "TA", M_SecretUnlocked(SECRET_TIMEATTACK) ? IT_CALL|IT_STRING : IT_SECRET);
 	M_SetItemStatus(MN_SP_MAIN, "IT", M_SecretUnlocked(SECRET_ITEMBREAKER) ? IT_CALL|IT_STRING : IT_SECRET);
-	M_SetupNextMenu(MN_SP_MAIN);
+	M_EnterMenu(MN_SP_MAIN, true);
 }
 
 // ===============
@@ -5243,7 +5217,7 @@ void M_Statistics(INT32 choice)
 	if (statsMax < 0)
 		statsMax = 0;
 
-	M_SetupNextMenu(MN_SP_LEVELSTATS);
+	M_EnterMenu(MN_SP_LEVELSTATS, true);
 }
 
 static void M_DrawStatsMaps(void)
@@ -5504,12 +5478,7 @@ void M_HandleLevelStats(INT32 choice)
 			break;
 	}
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 void M_GrandPrixTemp(INT32 choice)
@@ -5521,7 +5490,7 @@ void M_GrandPrixTemp(INT32 choice)
 		return;
 	}
 	M_PatchSkinNameTable();
-	M_SetupNextMenu(MN_SP_GRANDPRIX);
+	M_EnterMenu(MN_SP_GRANDPRIX, true);
 }
 
 // Start Grand Prix!
@@ -5606,7 +5575,7 @@ void M_DrawTimeAttackMenu(void)
 	V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
 
 	M_DrawMenuTitle();
-	if (activeMenuId == MN_SP_TIMEATTACK)
+	if (menustack[0] == MN_SP_TIMEATTACK)
 		M_DrawLevelSelectOnly(true, false);
 
 	// draw menu (everything else goes on top of it)
@@ -5649,7 +5618,7 @@ void M_DrawTimeAttackMenu(void)
 				INT32 soffset = 40, strw = V_StringWidth(str, 0);
 
 				// hack to keep the menu from overlapping the level icon
-				if (activeMenuId != MN_SP_TIMEATTACK || cv == &cv_nextmap)
+				if (menustack[0] != MN_SP_TIMEATTACK || cv == &cv_nextmap)
 					soffset = 0;
 
 				// Should see nothing but strings
@@ -5711,7 +5680,7 @@ void M_DrawTimeAttackMenu(void)
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
 	// TODO: this whole thing needs to go
 	menu_t *tamenu = menudefs[MN_SP_TIMEATTACK];
-	if (activeMenuId != MN_SP_TIMEATTACK)
+	if (menustack[0] != MN_SP_TIMEATTACK)
 	{
 		consvar_t *ncv;
 		INT16 first = M_MenuItemRange(MN_SP_TIMEATTACK, "NAME", "LEVEL", 4);
@@ -5761,7 +5730,8 @@ void M_TimeAttack(INT32 choice)
 	M_PatchSkinNameTable();
 
 	M_PrepareLevelSelect();
-	M_SetupNextMenu(MN_SP_TIMEATTACK);
+	M_ClearMenus(true);
+	M_EnterMenu(MN_SP_TIMEATTACK, true);
 
 	G_SetGamestate(GS_TIMEATTACK);
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
@@ -5794,7 +5764,8 @@ void M_ItemBreaker(INT32 choice)
 	M_PatchSkinNameTable();
 
 	M_PrepareLevelSelect();
-	M_SetupNextMenu(MN_SP_TIMEATTACK);
+	M_ClearMenus(true);
+	M_EnterMenu(MN_SP_TIMEATTACK, true);
 
 	G_SetGamestate(GS_TIMEATTACK);
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
@@ -5883,12 +5854,7 @@ void M_HandleStaffReplay(INT32 choice)
 			break;
 	}
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // Player has selected the "REPLAY" from the time attack screen
@@ -5900,27 +5866,24 @@ void M_ReplayTimeAttack(INT32 choice)
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME); // set modeattacking before G_DoPlayDemo so the map loader knows
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
-	if (activeMenuId == MN_SP_REPLAY)
-	{
-		switch(choice) {
-		default:
-		case 0: // best time
-			which = "time-best";
-			break;
-		case 1: // best lap
-			which = "lap-best";
-			break;
-		case 2: // last
-			which = "last";
-			break;
-		case 3: // guest
-			// srb2/replay/main/map01-guest.lmp
-			G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
-			return;
-		}
-		// srb2/replay/main/map01-sonic-time-best.lmp
-		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
+	switch(choice) {
+	default:
+	case 0: // best time
+		which = "time-best";
+		break;
+	case 1: // best lap
+		which = "lap-best";
+		break;
+	case 2: // last
+		which = "last";
+		break;
+	case 3: // guest
+		// srb2/replay/main/map01-guest.lmp
+		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+		return;
 	}
+	// srb2/replay/main/map01-sonic-time-best.lmp
+	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
 }
 
 static void M_EraseGuest(INT32 choice)
@@ -5930,7 +5893,7 @@ static void M_EraseGuest(INT32 choice)
 	(void)choice;
 	if (FIL_FileExists(rguest))
 		remove(rguest);
-	M_SetupNextMenu(MN_SP_TIMEATTACK);
+	M_ExitMenu();
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
@@ -5952,7 +5915,7 @@ static void M_OverwriteGuest(const char *which)
 	}
 	FIL_WriteFile(rguest, buf, len);
 	Z_Free(rguest);
-	M_SetupNextMenu(MN_SP_TIMEATTACK);
+	M_ExitMenu();
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
@@ -6020,9 +5983,11 @@ void M_ModeAttackEndGame(INT32 choice)
 	M_StartControlPanel();
 
 	if (modeattacking)
-		M_SetCurrentMenu(MN_SP_TIMEATTACK);
+	{
+		M_ClearMenus(true);
+		M_EnterMenu(MN_SP_TIMEATTACK, true);
+	}
 
-	itemOn = currentMenu->lastOn;
 	G_SetGamestate(GS_TIMEATTACK);
 	modeattacking = ATTACKING_NONE;
 	S_ChangeMusicInternal("racent", true);
@@ -6212,12 +6177,7 @@ void M_HandleServerPage(INT32 choice)
 			break;
 	}
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 void M_Connect(INT32 choice)
@@ -6473,7 +6433,7 @@ static void M_ConnectMenu(INT32 choice)
 
 	// first page of servers
 	serverlistpage = 0;
-	M_SetupNextMenu(MN_MP_CONNECT);
+	M_EnterMenu(MN_MP_CONNECT, true);
 	itemOn = 0;
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
@@ -6555,7 +6515,7 @@ void M_StartServer(INT32 choice)
 
 	(void)choice;
 
-	if (activeMenuId == MN_MP_OFFLINESERVER)
+	if (menustack[0] == MN_MP_OFFLINESERVER)
 		netgame = false;
 	else
 		netgame = true;
@@ -6584,7 +6544,7 @@ void M_StartServer(INT32 choice)
 		SplitScreen_OnChange();
 	}
 
-	if (activeMenuId == MN_MP_OFFLINESERVER) // offline server
+	if (menustack[0] == MN_MP_OFFLINESERVER) // offline server
 	{
 		paused = false;
 		SV_StartSinglePlayerServer();
@@ -6713,7 +6673,7 @@ void M_MapChange(INT32 choice)
 	CV_SetValue(&cv_nextmap, gamemap);
 
 	M_PrepareLevelSelect();
-	M_SetupNextMenu(MN_CHANGELEVEL);
+	M_EnterMenu(MN_CHANGELEVEL, true);
 }
 
 void M_StartOfflineServerMenu(INT32 choice)
@@ -6721,7 +6681,7 @@ void M_StartOfflineServerMenu(INT32 choice)
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
-	M_SetupNextMenu(MN_MP_OFFLINESERVER);
+	M_EnterMenu(MN_MP_OFFLINESERVER, true);
 }
 
 void M_StartServerMenu(INT32 choice)
@@ -6729,8 +6689,7 @@ void M_StartServerMenu(INT32 choice)
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
-	M_SetupNextMenu(MN_MP_SERVER);
-
+	M_EnterMenu(MN_MP_SERVER, true);
 }
 
 // ==============
@@ -6887,12 +6846,7 @@ void M_SetupMultiHandler(INT32 choice)
 	}
 
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // Tails 11-19-2002
@@ -6987,12 +6941,7 @@ void M_HandleConnectIP(INT32 choice)
 	}
 
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // ========================
@@ -7515,12 +7464,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 	}
 
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu (currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // start the multiplayer setup menu
@@ -7564,8 +7508,7 @@ void M_SetupMultiPlayer(INT32 choice)
 	else
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER|IT_STRING);
 
-	menudefs[MN_MP_PLAYERSETUP]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_MP_PLAYERSETUP);
+	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
 
 // start the multiplayer setup menu, for secondary player (splitscreen mode)
@@ -7608,8 +7551,7 @@ void M_SetupMultiPlayer2(INT32 choice)
 	else
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
 
-	menudefs[MN_MP_PLAYERSETUP]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_MP_PLAYERSETUP);
+	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
 
 // start the multiplayer setup menu, for third player (splitscreen mode)
@@ -7652,8 +7594,7 @@ void M_SetupMultiPlayer3(INT32 choice)
 	else
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
 
-	menudefs[MN_MP_PLAYERSETUP]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_MP_PLAYERSETUP);
+	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
 
 // start the multiplayer setup menu, for third player (splitscreen mode)
@@ -7696,8 +7637,7 @@ void M_SetupMultiPlayer4(INT32 choice)
 	else
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
 
-	menudefs[MN_MP_PLAYERSETUP]->prevMenu = activeMenuId;
-	M_SetupNextMenu(MN_MP_PLAYERSETUP);
+	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
 
 void M_QuitMultiPlayerMenu(INT32 choice)
@@ -7946,7 +7886,7 @@ void M_ScreenshotOptions(INT32 choice)
 	Screenshot_option_Onchange();
 	Moviemode_mode_Onchange();
 
-	M_SetupNextMenu(MN_OP_SCREENSHOTS);
+	M_EnterMenu(MN_OP_SCREENSHOTS, true);
 }
 
 // =============
@@ -8014,7 +7954,7 @@ void M_SetupJoystickMenu(INT32 choice)
 #endif
 	}
 
-	M_SetupNextMenu(MN_OP_JOYSTICKSET);
+	M_EnterMenu(MN_OP_JOYSTICKSET, true);
 }
 
 void M_Setup1PJoystickMenu(INT32 choice)
@@ -8115,7 +8055,7 @@ void M_Setup1PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_CONTROL); // Center View
 	*/
 
-	M_SetupNextMenu(MN_OP_CHANGECONTROLS);
+	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
 }
 
 void M_Setup2PControlsMenu(INT32 choice)
@@ -8148,7 +8088,7 @@ void M_Setup2PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
 	*/
 
-	M_SetupNextMenu(MN_OP_CHANGECONTROLS);
+	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
 }
 
 void M_Setup3PControlsMenu(INT32 choice)
@@ -8181,7 +8121,7 @@ void M_Setup3PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
 	*/
 
-	M_SetupNextMenu(MN_OP_CHANGECONTROLS);
+	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
 }
 
 void M_Setup4PControlsMenu(INT32 choice)
@@ -8214,7 +8154,7 @@ void M_Setup4PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
 	*/
 
-	M_SetupNextMenu(MN_OP_CHANGECONTROLS);
+	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
 }
 
 #define controlheight 18
@@ -8419,7 +8359,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 	{
 		// This buffer assumes a 125-character message plus a 32-character control name (per controltochangetext buffer size)
 		static char tmp[158];
-		menutype_t prev = currentMenu->prevMenu;
 
 		if (controltochange == gc_pause)
 			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nyou may select another key. \n\nHit another key for\n%s\nESC for Cancel"),
@@ -8429,7 +8368,6 @@ static void M_ChangecontrolResponse(event_t *ev)
 				controltochangetext);
 
 		M_StartMessage(tmp, FUNCPTRCAST(M_ChangecontrolResponse), MM_EVENTHANDLER);
-		currentMenu->prevMenu = prev;
 
 		S_StartSound(NULL, sfx_s3k42);
 		return;
@@ -8563,7 +8501,7 @@ void M_VideoModeMenu(INT32 choice)
 
 	vidm_column_size = (vidm_nummodes+2) / 3;
 
-	M_SetupNextMenu(MN_OP_VIDEOMODE);
+	M_EnterMenu(MN_OP_VIDEOMODE, true);
 }
 
 void M_DrawVideoMenu(void)
@@ -8747,10 +8685,7 @@ void M_HandleVideoMode(INT32 ch)
 			break;
 
 		case KEY_ESCAPE: // this one same as M_Responder
-			if (currentMenu->prevMenu)
-				M_SetupNextMenu(currentMenu->prevMenu);
-			else
-				M_ClearMenus(true);
+			M_ExitMenu();
 			break;
 
 		default:
@@ -9025,12 +8960,7 @@ void M_HandleMonitorToggles(INT32 choice)
 	}
 
 	if (exitmenu)
-	{
-		if (currentMenu->prevMenu)
-			M_SetupNextMenu(currentMenu->prevMenu);
-		else
-			M_ClearMenus(true);
-	}
+		M_ExitMenu();
 }
 
 // =========
@@ -9247,14 +9177,9 @@ void M_DrawDiscordRequests(void)
 			// No other requests
 			M_SetItemStatus(MN_MPAUSE, "DISCRQ", IT_GRAYEDOUT);
 
-			if (currentMenu->prevMenu)
-			{
-				M_SetupNextMenu(currentMenu->prevMenu);
-				if (activeMenuId == MN_MPAUSE)
-					M_SetItemOn(MN_MPAUSE, "CONTIN");
-			}
-			else
-				M_ClearMenus(true);
+			M_ExitMenu();
+			if (menustack[0] == MN_MPAUSE)
+				M_SetItemOn(MN_MPAUSE, "CONTIN");
 
 			return;
 		}

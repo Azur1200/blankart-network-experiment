@@ -1651,12 +1651,10 @@ void G_ConfirmRewind(tic_t rewindtime)
 {
 	SINT8 i;
 	tic_t j;
-	boolean oldmenuactive = menuactive, oldsounddisabled = sound_disabled;
+	boolean oldsounddisabled = sound_disabled;
 
 	INT32 olddp1 = displayplayers[0], olddp2 = displayplayers[1], olddp3 = displayplayers[2], olddp4 = displayplayers[3];
 	UINT8 oldss = splitscreen;
-
-	menuactive = false; // Prevent loops
 
 	CV_StealthSetValue(&cv_renderview, 0);
 
@@ -1693,7 +1691,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 	}
 
 	demo.rewinding = false;
-	menuactive = oldmenuactive; // Bring the menu back up
 	sound_disabled = oldsounddisabled; // Re-enable SFX
 
 	wipegamestate = gamestate; // No fading back in!

@@ -2154,10 +2154,9 @@ static menu_t *allocmenu(INT32 num)
 	if (menu == NULL)
 	{
 		menudefs[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
-		menu->menuid = num;
-	}
-	if (menu->drawroutine == NULL)
 		menu->drawroutine = M_DrawGenericMenu;
+	}
+
 	return menu;
 }
 
@@ -2575,17 +2574,6 @@ void readmenu(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "HEADERPIC"))
 			{
 				menudef->headerpic = Z_StrDup(word2);
-			}
-			else if (fastcmp(word, "PREVMENU"))
-			{
-				value = get_menutype(word2);
-				if (value == MN_NONE)
-				{
-					deh_warning("Menu %d: unknown previous menu '%s'", num, word2);
-					continue;
-				}
-				allocmenu(value);
-				menudef->prevMenu = value;
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
 			{

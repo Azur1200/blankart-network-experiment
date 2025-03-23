@@ -1062,8 +1062,6 @@ void D_StartTitle(void)
 
 	F_StartTitleScreen();
 
-	M_SetCurrentMenu(MN_MAIN); // reset the current menu ID
-
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");

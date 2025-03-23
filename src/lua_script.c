@@ -196,7 +196,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushboolean(L, modifiedgame && !savemoddata);
 		return 1;
 	} else if (fastcmp(word,"menuactive")) {
-		lua_pushboolean(L, menuactive);
+		lua_pushboolean(L, menustack[0]);
 		return 1;
 	} else if (fastcmp(word,"paused")) {
 		lua_pushboolean(L, paused);

@@ -1611,7 +1611,7 @@ boolean M_ScreenshotResponder(event_t *ev)
 
 	ch = ev->data1;
 
-	if (ch >= NUMKEYS && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
+	if (ch >= NUMKEYS && menustack[0]) // If it's not a keyboard key, then don't allow it in the menus!
 		return false;
 
 	if (G_ControlBoundToKey(0, gc_screenshot, ch, true))

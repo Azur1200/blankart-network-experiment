@@ -858,7 +858,7 @@ void ST_AskToJoinEnvelope(void)
 {
 	const tic_t freq = TICRATE/2;
 
-	if (menuactive)
+	if (menustack[0])
 		return;
 
 	if ((leveltime % freq) < freq/2)

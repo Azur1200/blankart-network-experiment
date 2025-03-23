@@ -34,10 +34,8 @@ extern "C" {
 // MENUS
 //
 
-// If menu hierarchies go deeper, change this up to 5.
-// Zero-based, inclusive.
-#define NUMMENULEVELS 3
-#define MENUBITS 6
+// max size of menu stack
+#define NUMMENULEVELS 8
 
 // Menu IDs sectioned by numeric places to signify hierarchy
 /**
@@ -170,11 +168,9 @@ typedef enum
 	NUMMENUTYPES,
 } menutype_t; // up to 63
 #define NUMMENUFREESLOTS (NUMMENUTYPES - MN_FIRSTFREESLOT)
-#define MTREE2(a,b) (a | (b<<MENUBITS))
-#define MTREE3(a,b,c) MTREE2(a, MTREE2(b,c))
-#define MTREE4(a,b,c,d) MTREE2(a, MTREE3(b,c,d))
 
 extern menu_t *menudefs[NUMMENUTYPES];
+extern menutype_t menustack[NUMMENULEVELS];
 
 typedef struct
 {
@@ -209,8 +205,6 @@ typedef struct
 } menupres_t;
 
 extern menupres_t menupres[NUMMENUTYPES];
-extern UINT32 prevMenuId;
-extern UINT32 activeMenuId;
 
 void M_InitMenuPresTables(void);
 //UINT8 M_GetYoungestChildMenu(void);
@@ -376,10 +370,8 @@ struct menuitem_t
 
 struct menu_t
 {
-	UINT32         menuid;             // ID to encode menu type and hierarchy
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
-	menutype_t     prevMenu;           // previous menu
 	menuitem_t    *menuitems;          // menu items
 	void         (*drawroutine)(void); // draw routine
 	INT16          x, y;               // x, y of menu
@@ -387,8 +379,8 @@ struct menu_t
 	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
 
-void M_SetupNextMenu(menutype_t menu);
-void M_SetCurrentMenu(menutype_t menu);
+void M_EnterMenu(menutype_t menu, boolean callexit);
+void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
 menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
