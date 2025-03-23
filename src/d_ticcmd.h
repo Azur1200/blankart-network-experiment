@@ -78,7 +78,7 @@ struct ticcmd_t
 	{
 		SINT8 turnconfirm;
 		SINT8 itemconfirm;
-		UINT8 respawnconfirm;
+		SINT8 respawnconfirm;
 	} bot;
 } ATTRPACK;
 

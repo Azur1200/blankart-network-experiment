@@ -581,7 +581,7 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		if (botziptic & ZT_BOT_ITEM)
 			oldcmd[playernum].bot.itemconfirm = READSINT8(demobuf.p);
 		if (botziptic & ZT_BOT_RESPAWN)
-			oldcmd[playernum].bot.itemconfirm = READUINT32(demobuf.p);
+			oldcmd[playernum].bot.respawnconfirm = READSINT8(demobuf.p);
 	}
 
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
