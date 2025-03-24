@@ -4443,6 +4443,8 @@ void M_Options(INT32 choice)
 
 	M_SetItemStatus(MN_OP_GAME, "ENCORE", M_SecretUnlocked(SECRET_ENCORE) ? IT_CVAR|IT_STRING : IT_SECRET);
 
+	M_SetItemStatus(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM]->numitems ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+
 	M_EnterMenu(MN_OP_MAIN, true);
 }
 

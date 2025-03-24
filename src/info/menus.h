@@ -59,6 +59,8 @@ _(OP_ERASEDATA)
 _(OP_DISCORD)
 #endif
 
+_(OP_CUSTOM)
+
 // Extras
 _(SR_MAIN)
 _(SP_LEVELSTATS)
