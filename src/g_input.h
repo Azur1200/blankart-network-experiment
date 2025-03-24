@@ -85,6 +85,7 @@ typedef enum
 	gc_custom1, // Lua scriptable
 	gc_custom2, // Lua scriptable
 	gc_custom3, // Lua scriptable
+	gc_respawn,
 	num_gamecontrols
 } gamecontrols_e;
 

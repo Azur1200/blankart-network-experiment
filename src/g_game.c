@@ -1450,6 +1450,8 @@ boolean G_IsTitleCardAvailable(void)
 INT32 pausedelay = 0;
 boolean pausebreakkey = false;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS];
+static INT32 spectatedelay[MAXSPLITSCREENPLAYERS];
+static INT32 respawndelay[MAXSPLITSCREENPLAYERS];
 
 //
 // G_Responder
@@ -1676,6 +1678,40 @@ boolean G_Responder(event_t *ev)
 					{
 						camtoggledelay[i] = NEWTICRATE / 7;
 						CV_SetValue(&cv_chasecam[i], cv_chasecam[i].value ? 0 : 1);
+					}
+				}
+
+				if (G_ControlBoundToKey(i, gc_spectate, ev->data1, false))
+				{
+					if (!spectatedelay[i])
+					{
+						char *commandname = va("changeteam");
+
+						if (i > 0)
+						{
+							// Add one for command names.
+							commandname = va("changeteam%d", i+1);
+						}
+
+						spectatedelay[i] = NEWTICRATE / 7;
+						COM_ImmedExecute(va("%s spectator", commandname));
+					}
+				}
+
+				if (G_ControlBoundToKey(i, gc_respawn, ev->data1, false))
+				{
+					if (!respawndelay[i])
+					{
+						char *commandname = va("respawn");
+
+						if (i > 0)
+						{
+							// Add one for command names.
+							commandname = va("respawn%d", i+1);
+						}
+
+						respawndelay[i] = NEWTICRATE / 4;
+						COM_ImmedExecute(commandname);
 					}
 				}
 			}
@@ -2157,6 +2193,10 @@ void G_Ticker(boolean run)
 		{
 			if (camtoggledelay[i])
 				camtoggledelay[i]--;
+			if (spectatedelay[i])
+				spectatedelay[i]--;
+			if (respawndelay[i])
+				respawndelay[i]--;
 		}
 
 		if (gametic % NAMECHANGERATE == 0)

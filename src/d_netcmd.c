@@ -179,7 +179,11 @@ static void Command_ListWADS_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
+
 static void Command_Respawn(void);
+static void Command_Respawn2(void);
+static void Command_Respawn3(void);
+static void Command_Respawn4(void);
 
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
@@ -740,7 +744,11 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
+
 	COM_AddCommand("respawn", Command_Respawn);
+	COM_AddCommand("respawn2", Command_Respawn2);
+	COM_AddCommand("respawn3", Command_Respawn3);
+	COM_AddCommand("respawn4", Command_Respawn4);
 
 	COM_AddCommand("gametype", Command_ShowGametype_f);
 	COM_AddCommand("version", Command_Version_f);
@@ -3317,12 +3325,10 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 }
 
 // Command for stuck characters in netgames, griefing, etc.
-static void Command_Respawn(void)
+static void HandleRespawnCommand(UINT8 localplayer)
 {
 	UINT8 buf[4];
 	UINT8 *cp = buf;
-
-
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
 	{
@@ -3330,21 +3336,47 @@ static void Command_Respawn(void)
 		return;
 	}
 
-	if (players[consoleplayer].mo && !P_IsObjectOnGround(players[consoleplayer].mo)) // KART: Nice try, but no, you won't be cheesing spb anymore.
+	if (players[g_localplayers[localplayer]].mo && !P_IsObjectOnGround(players[g_localplayers[localplayer]].mo)) // KART: Nice try, but no, you won't be cheesing spb anymore.
 	{
 		CONS_Printf(M_GetText("You must be on the floor to use this.\n"));
 		return;
 	}
 
-	// todo: this probably isnt necessary anymore with v2
-	if (players[consoleplayer].mo && (P_PlayerInPain(&players[consoleplayer]) || spbplace == players[consoleplayer].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
+	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
 	{
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
 	}
 
-	WRITEINT32(cp, consoleplayer);
-	SendNetXCmd(XD_RESPAWN, &buf, 4);
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to respawn.\n"));
+		return;
+	}
+
+	WRITEINT32(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
+}
+
+// Command for stuck characters in netgames, griefing, etc.
+static void Command_Respawn(void)
+{
+	HandleRespawnCommand(0);
+}
+
+static void Command_Respawn2(void)
+{
+	HandleRespawnCommand(1);
+}
+
+static void Command_Respawn3(void)
+{
+	HandleRespawnCommand(2);
+}
+
+static void Command_Respawn4(void)
+{
+	HandleRespawnCommand(3);
 }
 
 static void Got_Respawn(UINT8 **cp, INT32 playernum)
@@ -3366,7 +3398,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 		if (!P_IsObjectOnGround(players[respawnplayer].mo))
 			return;
 
-		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1,DMG_INSTAKILL);
+		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1, DMG_INSTAKILL);
 		demo_extradata[playernum] |= DXD_RESPAWN;
 	}
 }

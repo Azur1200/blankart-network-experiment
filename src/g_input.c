@@ -405,6 +405,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom1",
 	"custom2",
 	"custom3",
+	"respawn",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))
@@ -681,7 +682,7 @@ static void setcontrol(UINT8 player)
 	namectrl = COM_Argv(1);
 
 	for (numctrl = 0;
-		numctrl < num_gamecontrols && stricmp(namectrl, gamecontrolname[numctrl]);
+		numctrl < num_gamecontrols && gamecontrolname[numctrl] && stricmp(namectrl, gamecontrolname[numctrl]);
 		numctrl++)
 	{ ; }
 

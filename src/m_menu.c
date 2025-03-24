@@ -1200,6 +1200,7 @@ static menuitem_t OP_AllControlsMenu[] =
 	//{IT_CONTROL, NULL, "Team Chat",             M_ChangeControl, gc_teamkey    },
 	{IT_CONTROL, NULL, "Show Rankings",         {.routine = M_ChangeControl}, gc_scores     },
 	{IT_CONTROL, NULL, "Change Viewpoint",      {.routine = M_ChangeControl}, gc_viewpoint  },
+	{IT_CONTROL, NULL, "Respawn",      			{.routine = M_ChangeControl}, gc_respawn    },
 	{IT_CONTROL, NULL, "Reset Camera",          {.routine = M_ChangeControl}, gc_camreset   },
 	{IT_CONTROL, NULL, "Toggle Chasecam",       {.routine = M_ChangeControl}, gc_camtoggle  },
 	{IT_CONTROL, NULL, "Pause",                 {.routine = M_ChangeControl}, gc_pause      },
