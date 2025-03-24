@@ -1479,34 +1479,6 @@ void M_Drawer(void)
 			M_GetGametypeColor();
 			currentMenu->drawroutine(); // call current menu Draw routine
 		}
-		
-		if (menustack[0] == MN_MAIN)
-		{
-			INT32 texty = vid.height - 10*vid.dupy;
-#define addtext(f, str) {\
-	V_DrawThinString(vid.dupx, texty, V_NOSCALESTART|f, str);\
-	texty -= 10*vid.dupy;\
-}
-			if (customversionstring[0] != '\0')
-			{
-				addtext(V_ALLOWLOWERCASE, customversionstring);
-				addtext(0, "Mod version:");
-			}
-			else
-			{
-// Development -- show revision / branch info
-#if defined(DEVELOP)
-				addtext(V_ALLOWLOWERCASE|V_GREENMAP|V_TRANSLUCENT, comprevision);
-				addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, compbranch);
-				V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));		
-#else // Regular build
-				addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
-#endif
-				if (compuncommitted)
-					addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
-			}
-#undef addtext
-		}
 	}
 
 	// focus lost notification goes on top of everything, even the former everything
@@ -2416,6 +2388,34 @@ void M_DrawCenteredMenu(void)
 		V_DrawScaledPatch(x - V_StringWidth(currentMenu->menuitems[itemOn].text, 0)/2 - 24, cursory, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
 		V_DrawCenteredString(x, cursory, highlightflags, currentMenu->menuitems[itemOn].text);
+	}
+
+	if (menustack[0] == MN_MAIN)
+	{
+		INT32 texty = vid.height - 10*vid.dupy;
+#define addtext(f, str) {\
+V_DrawThinString(vid.dupx, texty, V_NOSCALESTART|f, str);\
+texty -= 10*vid.dupy;\
+}
+		if (customversionstring[0] != '\0')
+		{
+			addtext(V_ALLOWLOWERCASE, customversionstring);
+			addtext(0, "Mod version:");
+		}
+		else
+		{
+// Development -- show revision / branch info
+#if defined(DEVELOP)
+			addtext(V_ALLOWLOWERCASE|V_GREENMAP|V_TRANSLUCENT, comprevision);
+			addtext(V_ALLOWLOWERCASE|V_YELLOWMAP|V_TRANSLUCENT, compbranch);
+			V_DrawThinString(0, 0, V_ALLOWLOWERCASE|V_ORANGEMAP|V_TRANSLUCENT|V_SNAPTOTOP, va("%s", complast));
+#else // Regular build
+			addtext(V_ALLOWLOWERCASE|V_TRANSLUCENT, va("%s", VERSIONSTRING));
+#endif
+			if (compuncommitted)
+				addtext(V_REDMAP|V_STRINGDANCE|V_TRANSLUCENT, "! UNCOMMITTED CHANGES !");
+		}
+#undef addtext
 	}
 }
 
