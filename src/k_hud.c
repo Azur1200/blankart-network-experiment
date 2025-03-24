@@ -2167,14 +2167,15 @@ static void K_drawRingMeter(void)
 		if (stplyr->rings)
 		{
 			SINT8 ringcount = stplyr->rings;
-			SINT8 barcolors[4] = {66,83,65};
+			UINT8 barcolors[5] = {66,83,114,65};
 			boolean indebt = false;
 
 			if (stplyr->rings < 0)
 			{
 				barcolors[0] = 35;
 				barcolors[1] = 33;
-				barcolors[2] = 37;
+				barcolors[2] = 32;
+				barcolors[3] = 37;
 				ringcount = -ringcount;
 				indebt = true;
 			}
@@ -2185,7 +2186,8 @@ static void K_drawRingMeter(void)
 
 					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10 + ringoffsety, 1, 3, barcolors[0]|splitflags);
 					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9 + ringoffsety, 1, 2, barcolors[1]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-6 + ringoffsety, 1, 1, barcolors[2]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-7 + ringoffsety, 1, 1, barcolors[2]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-6 + ringoffsety, 1, 1, barcolors[3]|splitflags);
 				}
 			}
 		}
