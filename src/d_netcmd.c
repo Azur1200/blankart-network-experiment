@@ -2269,13 +2269,6 @@ static void Command_SetViews_f(void)
 	UINT8 splits;
 	UINT8 newsplits;
 
-	if (!( demo.playback && multiplayer ))
-	{
-		CONS_Alert(CONS_NOTICE,
-				"You must be viewing a multiplayer replay to use this.\n");
-		return;
-	}
-
 	if (COM_Argc() != 2)
 	{
 		CONS_Printf("setviews <views>: set the number of split screens\n");
@@ -2286,12 +2279,33 @@ static void Command_SetViews_f(void)
 
 	newsplits = atoi(COM_Argv(1));
 	newsplits = min(max(newsplits, 1), 4);
-	if (newsplits > splits)
+
+	if (newsplits > splits && demo.playback && multiplayer)
+	{
 		G_AdjustView(newsplits, 0, true);
+	}
 	else
 	{
-		r_splitscreen = newsplits-1;
-		R_ExecuteSetViewSize();
+		// Even if the splits go beyond the real number of
+		// splitscreen players, displayplayers was filled
+		// with duplicates of P1 (see Got_AddPlayer).
+		if (demo.playback)
+		{
+			G_SyncDemoParty(consoleplayer, newsplits-1);
+		}
+		else
+		{
+			r_splitscreen = newsplits-1;
+			R_ExecuteSetViewSize();
+		}
+
+		// If promoting (outside of replays), make sure the
+		// camera is in the correct position.
+		UINT8 i;
+		for (i = splits + 1; i <= newsplits; ++i)
+		{
+			G_FixCamera(i);
+		}
 	}
 }
 
@@ -2308,7 +2322,7 @@ Command_Invite_f (void)
 		return;
 	}
 
-	if (r_splitscreen >= MAXSPLITSCREENPLAYERS)
+	if (G_PartySize(consoleplayer) >= MAXSPLITSCREENPLAYERS)
 	{
 		CONS_Alert(CONS_WARNING, "Your party is full!\n");
 		return;
@@ -2327,9 +2341,9 @@ Command_Invite_f (void)
 		return;
 	}
 
-	if (invitee == consoleplayer)
+	if (G_IsPartyLocal(invitee))
 	{
-		CONS_Alert(CONS_WARNING, "You cannot invite yourself! Bruh!\n");
+		CONS_Alert(CONS_WARNING, "That player is already a member of your party.\n");
 		return;
 	}
 
@@ -2337,6 +2351,7 @@ Command_Invite_f (void)
 	{
 		CONS_Alert(CONS_WARNING,
 				"That player has already been invited to join another party.\n");
+		return;
 	}
 
 	if ((G_PartySize(consoleplayer) + G_LocalSplitscreenPartySize(invitee)) > MAXSPLITSCREENPLAYERS)
@@ -2344,6 +2359,7 @@ Command_Invite_f (void)
 		CONS_Alert(CONS_WARNING,
 				"That player joined with too many "
 				"splitscreen players for your party.\n");
+		return;
 	}
 
 	CONS_Printf(
@@ -2387,6 +2403,7 @@ Command_CancelInvite_f (void)
 	{
 		CONS_Alert(CONS_WARNING,
 				"You have not invited this player!\n");
+		return;
 	}
 
 	CONS_Printf(
@@ -2432,7 +2449,7 @@ Command_RejectInvite_f (void)
 static void
 Command_LeaveParty_f (void)
 {
-	if (r_splitscreen > splitscreen)
+	if (G_PartySize(consoleplayer) > G_LocalSplitscreenPartySize(consoleplayer))
 	{
 		CONS_Printf("\x85Leaving party...\n");
 
@@ -3647,24 +3664,6 @@ void P_SetPlayerSpectator(INT32 playernum)
 	players[playernum].pflags &= ~PF_WANTSTOJOIN;
 
 	players[playernum].playerstate = PST_REBORN;
-
-	/*if (cv_spectatormusic.value && (players[displayplayers[0]].spectator == true) && !r_splitscreen)
-	{
-		if (P_UseContinuousLevelMusic())
-		{
-			if (!stricmp(Music_Song("level_nosync"), cv_spectatormusiclump.string))
-			{
-				//  Do not reset music if it is the same
-				Music_BatchExempt("level_nosync");
-			}
-			Music_Remap("level_nosync", cv_spectatormusiclump.string);
-		}
-		else
-		{
-			Music_Remap("level", cv_spectatormusiclump.string);
-		}
-	}*/
-
 }
 
 //todo: This and the other teamchange functions are getting too long and messy. Needs cleaning.
@@ -3742,24 +3741,19 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 	//Safety first!
 	// (not respawning spectators here...)
-	if (!players[playernum].spectator)
+	wasspectator = (players[playernum].spectator == true);
+
+	if (!wasspectator)
 	{
-		if (players[playernum].mo)
+		if (gamestate == GS_LEVEL && players[playernum].mo)
 		{
-			P_DamageMobj(players[playernum].mo, NULL, NULL, 1,
-				(NetPacket.packet.newteam ? DMG_INSTAKILL : DMG_SPECTATOR));
-		}
-		//else
-		if (!NetPacket.packet.newteam)
-		{
-			players[playernum].playerstate = PST_REBORN;
+			// The following will call P_SetPlayerSpectator if successful
+			P_DamageMobj(players[playernum].mo, NULL, NULL, 1, DMG_SPECTATOR);
 		}
 
+		//...but because the above could return early under some contexts, we try again here
+		P_SetPlayerSpectator(playernum);
 	}
-	else
-		wasspectator = true;
-
-	players[playernum].pflags &= ~PF_WANTSTOJOIN;
 
 	//Now that we've done our error checking and killed the player
 	//if necessary, put the player on the correct team/status.
@@ -3808,22 +3802,6 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	}
 	else if (NetPacket.packet.newteam == 0 && !wasspectator)
 		HU_AddChatText(va("\x82*%s became a spectator.", player_names[playernum]), false); // "entered the game" text was moved to P_SpectatorJoinGame
-
-	// Reset away view (some code referenced from P_SpectatorJoinGame)
-	{
-		UINT8 i = 0;
-		INT32 *localplayertable = (splitscreen_partied[consoleplayer] ? splitscreen_party[consoleplayer] : g_localplayers);
-
-		for (i = 0; i < r_splitscreen; i++)
-		{
-			if (localplayertable[i] == playernum)
-			{
-				LUA_HookViewpointSwitch(players+playernum, players+playernum, true);
-				displayplayers[i] = playernum;
-				break;
-			}
-		}
-	}
 
 	/*if (G_GametypeHasTeams())
 	{

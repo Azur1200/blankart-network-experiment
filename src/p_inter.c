@@ -1981,6 +1981,11 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	(void)source;
 	(void)inflictor;
 
+	if (type == DMG_SPECTATOR && (G_GametypeHasTeams() || G_GametypeHasSpectators()))
+	{
+		P_SetPlayerSpectator(player-players);
+	}
+
 	if (player->exiting)
 	{
 		player->mo->destscale = 1;

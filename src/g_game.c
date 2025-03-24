@@ -1805,19 +1805,12 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 	return total;
 }
 
-//
-// G_ResetView
-// Correct a viewpoint to playernum or the next available, wraps forward.
-// Also promotes splitscreen up to available viewable players.
-// An out of range playernum is corrected.
-//
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 {
 	UINT8 splits;
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -1843,33 +1836,70 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	/* Check if anyone is available to view. */
 	if (( playernum = G_FindView(playernum, viewnum, onlyactive, playernum < olddisplayplayer) ) == -1)
-		return;
+	{
+		if (G_PartySize(consoleplayer) < viewnum)
+		{
+			return;
+		}
+
+		/* Fall back on true self */
+		playernum = G_PartyMember(consoleplayer, viewnum - 1);
+	}
+
+	// Call ViewpointSwitch hooks here.
+	// The viewpoint was forcibly changed.
+	LUA_HookViewpointSwitch(&players[g_localplayers[viewnum - 1]], &players[playernum], true);
 
 	/* Focus our target view first so that we don't take its player. */
 	(*displayplayerp) = playernum;
-	if ((*displayplayerp) != olddisplayplayer)
-	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-		R_ResetViewInterpolation(viewnum);
-	}
-
+	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
 	if (viewnum > splits)
 	{
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
+		for (viewd = splits+1; viewd <= viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
+			G_FixCamera(viewd);
+		}
+	}
+	else
+	{
+		if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
 		}
 	}
 
-	if (viewnum == 1 && demo.playback)
-		consoleplayer = displayplayers[0];
+	if (demo.playback)
+	{
+		if (viewnum == 1)
+			consoleplayer = displayplayers[0];
+
+		G_SyncDemoParty(olddisplayplayer, r_splitscreen);
+	}
+
+	// change statusbar also if playing back demo
+	if (demo.quitafterplaying)
+		ST_changeDemoView();
+}
+
+//
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+	R_ResetViewInterpolation(view);
 }
 
 //
@@ -2949,7 +2979,7 @@ void G_AddPlayer(INT32 playernum, INT32 console)
 	newplayer->playerstate = PST_REBORN;
 	newplayer->jointime = 0;
 
-	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_FOLLOWER; // Set everything
+	demo_extradata[playernum] |= DXD_ADDPLAYER; // Set everything
 }
 
 void G_BeginLevelExit(void)

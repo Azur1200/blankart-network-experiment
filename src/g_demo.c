@@ -53,6 +53,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "g_party.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -4185,4 +4186,34 @@ boolean G_DemoTitleResponder(event_t *ev)
 	}
 
 	return true;
+}
+
+void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen)
+{
+	int r_splitscreen_copy = r_splitscreen;
+	INT32 displayplayers_copy[MAXSPLITSCREENPLAYERS];
+	memcpy(displayplayers_copy, displayplayers, sizeof displayplayers);
+
+	// If we switch away from someone's view, that player
+	// should be removed from the party.
+	// However, it is valid to have the player on multiple
+	// viewports.
+
+	// Remove this player
+	G_LeaveParty(rem);
+
+	// And reset the rest of the party
+	for (int i = 0; i <= r_splitscreen_copy; ++i)
+		G_LeaveParty(displayplayers_copy[i]);
+
+	// Restore the party, without the removed player, and
+	// with the order matching displayplayers
+	for (int i = 0; i <= newsplitscreen; ++i)
+		G_JoinParty(consoleplayer, displayplayers_copy[i]);
+
+	// memcpy displayplayers back to preserve duplicates
+	// (G_JoinParty will not create duplicates itself)
+	r_splitscreen = newsplitscreen;
+	memcpy(displayplayers, displayplayers_copy, sizeof displayplayers);
+	R_ExecuteSetViewSize();
 }
