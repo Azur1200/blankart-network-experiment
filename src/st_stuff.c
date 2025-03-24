@@ -918,10 +918,7 @@ void ST_Drawer(void)
 			stplyr = &players[displayplayers[i]];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
-
-			// HACK: This can possibly crash the game in R_IsViewpointThirdPerson during first two tics if the player object doesn't exist.
-			if (stplyr->mo)
-				R_InterpolateView(rendertimefrac); // to assist with object tracking
+			R_InterpolateView(rendertimefrac); // to assist with object tracking
 			ST_overlayDrawer();
 		}
 
