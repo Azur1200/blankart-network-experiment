@@ -950,15 +950,17 @@ angle_t localangle[MAXSPLITSCREENPLAYERS];
 // This brings back the camera prediction that was lost.
 static void G_DoAnglePrediction(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, player_t *player)
 {
+	UINT8 viewnum = G_PartyPosition(g_localplayers[ssplayer-1]);
+
 	if (player->mo)
 		cmd->angle = K_GetKartTurnValue(player, cmd->turning);
 	
 	cmd->angle *= realtics;
 
 	if (P_CanPlayerTurn(player, cmd))
-		localangle[ssplayer-1] += (cmd->angle<<TICCMD_REDUCE);
+		localangle[viewnum] += (cmd->angle<<TICCMD_REDUCE);
 
-	cmd->angle = (INT16)(localangle[ssplayer-1] >> TICCMD_REDUCE);
+	cmd->angle = (INT16)(localangle[viewnum] >> TICCMD_REDUCE);
 }
 
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)

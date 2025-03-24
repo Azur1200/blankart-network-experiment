@@ -2913,7 +2913,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = player->cmd.angle << TICCMD_REDUCE;
 		focusaiming = 0;
 	}
-	else if (P_IsLocalPlayer(player))
+	else if (P_IsMachineLocalPlayer(player))
 	{
 		focusangle = localangle[num];
 		focusaiming = localaiming[num];

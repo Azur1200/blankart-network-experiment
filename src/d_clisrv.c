@@ -3619,9 +3619,6 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 	players[newplayernum].splitscreenindex = splitscreenplayer;
 	players[newplayernum].bot = false;
 
-	playerconsole[newplayernum] = console;
-	G_BuildLocalSplitscreenParty(newplayernum);
-
 	if (netgame)
 	{
 		char joinmsg[256];
