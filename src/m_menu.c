@@ -755,12 +755,6 @@ void M_InitMenuPresTables(void)
 		}
 		if (i == MN_SP_TIMEATTACK)
 			strncpy(menupres[i].musname, "_recat", 7);
-		else if (i == MN_SP_NIGHTSATTACK)
-			strncpy(menupres[i].musname, "_nitat", 7);
-		else if (i == MN_SP_MARATHON)
-			strncpy(menupres[i].musname, "spec8", 6);
-		else if (i == MN_SP_PLAYER || i == MN_SR_PLAYER)
-			strncpy(menupres[i].musname, "_chsel", 7);
 		else if (i == MN_SR_SOUNDTEST)
 		{
 			*menupres[i].musname = '\0';
@@ -6515,7 +6509,7 @@ void M_StartServer(INT32 choice)
 
 	(void)choice;
 
-	if (menustack[0] == MN_MP_OFFLINESERVER)
+	if (menustack[0] == MN_MP_SPLITSCREEN)
 		netgame = false;
 	else
 		netgame = true;
@@ -6544,7 +6538,7 @@ void M_StartServer(INT32 choice)
 		SplitScreen_OnChange();
 	}
 
-	if (menustack[0] == MN_MP_OFFLINESERVER) // offline server
+	if (menustack[0] == MN_MP_SPLITSCREEN) // offline server
 	{
 		paused = false;
 		SV_StartSinglePlayerServer();
@@ -6681,7 +6675,7 @@ void M_StartOfflineServerMenu(INT32 choice)
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
-	M_EnterMenu(MN_MP_OFFLINESERVER, true);
+	M_EnterMenu(MN_MP_SPLITSCREEN, true);
 }
 
 void M_StartServerMenu(INT32 choice)

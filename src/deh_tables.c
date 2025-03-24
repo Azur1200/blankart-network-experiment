@@ -617,57 +617,32 @@ const char *const MENUTYPES_LIST[] = {
 	// Single Player
 	"SP_MAIN",
 
-	"SP_LOAD",
-	"SP_PLAYER",
-
-	"SP_LEVELSELECT",
 	"SP_LEVELSTATS",
 
 	"SP_TIMEATTACK",
-	"SP_TIMEATTACK_LEVELSELECT",
 	"SP_GUESTREPLAY",
 	"SP_REPLAY",
 	"SP_GHOST",
-
-	"SP_NIGHTSATTACK",
-	"SP_NIGHTS_LEVELSELECT",
-	"SP_NIGHTS_GUESTREPLAY",
-	"SP_NIGHTS_REPLAY",
-	"SP_NIGHTS_GHOST",
-
-	"SP_MARATHON",
 
 	// Multiplayer
 	"MP_MAIN",
 	"MP_SPLITSCREEN", // SplitServer
 	"MP_SERVER",
 	"MP_CONNECT",
-	"MP_ROOM",
 	"MP_PLAYERSETUP", // MP_PlayerSetupDef shared with SPLITSCREEN if #defined NONET
-	"MP_SERVER_OPTIONS",
 
 	// Options
 	"OP_MAIN",
 
-	"OP_P1CONTROLS",
 	"OP_CHANGECONTROLS", // OP_ChangeControlsDef shared with P2
-	"OP_P1MOUSE",
-	"OP_P1JOYSTICK",
 	"OP_JOYSTICKSET", // OP_JoystickSetDef shared with P2
 	"OP_P1CAMERA",
 
-	"OP_P2CONTROLS",
-	"OP_P2MOUSE",
-	"OP_P2JOYSTICK",
 	"OP_P2CAMERA",
-
-	"OP_PLAYSTYLE",
 
 	"OP_VIDEO",
 	"OP_VIDEOMODE",
-	"OP_COLOR",
 	"OP_OPENGL",
-	"OP_OPENGL_LIGHTING",
 
 	"OP_SOUND",
 
@@ -682,10 +657,8 @@ const char *const MENUTYPES_LIST[] = {
 	// Extras
 	"SR_MAIN",
 	"SR_PANDORA",
-	"SR_LEVELSELECT",
 	"SR_UNLOCKCHECKLIST",
 	"SR_EMBLEMHINT",
-	"SR_PLAYER",
 	"SR_SOUNDTEST",
 
 	// Addons (Part of MISC, but let's make it our own)
@@ -713,7 +686,6 @@ const char *const MENUTYPES_LIST[] = {
 	"OP_P3CAMERA",
 	"OP_P4CAMERA",
 	"MISC_REPLAYOPTIONS",
-	"MP_OFFLINESERVER",
 	"SP_GRANDPRIX",
 	"MISC_REPLAYHUT",
 	"CHANGESPECTATE",
@@ -727,8 +699,6 @@ const char *const MENUTYPES_LIST[] = {
 	"OP_DISCORD",
 	"MISC_DISCORDREQUESTS",
 #endif
-
-	"SPECIAL"
 };
 
 struct menu_routine_s const MENU_ROUTINES[] = {
