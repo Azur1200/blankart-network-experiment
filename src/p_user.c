@@ -1829,7 +1829,7 @@ static void P_3dMovement(player_t *player)
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
 	{
-		movepushforward = K_3dKartMovement(player);
+		movepushforward = K_3dKartMovement(player, onground);
 
 		// allow very small movement while in air for gameplay
 		if (!onground)
