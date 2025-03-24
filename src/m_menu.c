@@ -7004,7 +7004,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 	// draw skin string
 	st = V_StringWidth(skins[setupm_fakeskin].realname, 0);
 	V_DrawString(BASEVIDWIDTH - mx - st, my + 16,
-	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
+	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "SKIN") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
 	             skins[setupm_fakeskin].realname);
 	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
 	{
@@ -7448,7 +7448,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 	}
 
 	// check color
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOW") && !skincolors[setupm_fakecolor->color].accessible) {
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR") && !skincolors[setupm_fakecolor->color].accessible) {
 		if (choice == KEY_LEFTARROW)
 			while (!skincolors[setupm_fakecolor->color].accessible)
 				setupm_fakecolor = setupm_fakecolor->prev;
@@ -7498,9 +7498,9 @@ void M_SetupMultiPlayer(INT32 choice)
 
 	// disable skin changes if we can't actually change skins
 	if (!CanChangeSkin(consoleplayer))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_GRAYEDOUT);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
 	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER|IT_STRING);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER|IT_STRING);
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
@@ -7541,9 +7541,9 @@ void M_SetupMultiPlayer2(INT32 choice)
 
 	// disable skin changes if we can't actually change skins
 	if (splitscreen && !CanChangeSkin(g_localplayers[1]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_GRAYEDOUT);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
 	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
@@ -7584,9 +7584,9 @@ void M_SetupMultiPlayer3(INT32 choice)
 
 	// disable skin changes if we can't actually change skins
 	if (splitscreen > 1 && !CanChangeSkin(g_localplayers[2]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_GRAYEDOUT);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
 	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
@@ -7627,9 +7627,9 @@ void M_SetupMultiPlayer4(INT32 choice)
 
 	// disable skin changes if we can't actually change skins
 	if (splitscreen > 2 && !CanChangeSkin(g_localplayers[3]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_GRAYEDOUT);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
 	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW", IT_KEYHANDLER | IT_STRING);
+		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
