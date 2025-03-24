@@ -2093,17 +2093,18 @@ static void K_drawRingMeter(void)
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
+	SINT8 ringcount = stplyr->rings;
 
-	rn[0] = ((abs(stplyr->rings) / 10) % 10);
-	rn[1] = (abs(stplyr->rings) % 10);
+	rn[0] = ((abs(ringcount) / 10) % 10);
+	rn[1] = (abs(ringcount) % 10);
 
 
-	if (stplyr->rings <= 0 && (leveltime/5 & 1)) // In debt
+	if (ringcount <= 0 && (leveltime/5 & 1)) // In debt
 	{
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
 		colorring = true;
 	}
-	else if (stplyr->rings >= 20) // Maxed out
+	else if (ringcount >= 20) // Maxed out
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 
 	if (r_splitscreen > 1)
@@ -2136,7 +2137,7 @@ static void K_drawRingMeter(void)
 
 		V_DrawMappedPatch(fr, fy-10, V_HUDTRANS|splitflags, kp_ringsplitscreen, (colorring ? ringmap : NULL));
 
-		if (stplyr->rings < 0) // Draw the minus for ring debt
+		if (ringcount < 0) // Draw the minus for ring debt
 			V_DrawMappedPatch(fr+7, fy-8, V_HUDTRANS|splitflags, kp_ringdebtminussmall, ringmap);
 
 		V_DrawMappedPatch(fr+11, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[rn[0]], ringmap);
@@ -2160,34 +2161,46 @@ static void K_drawRingMeter(void)
 			V_DrawMappedPatch(LAPS_X-5, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
 		}
 
-		V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-		V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+		if (stplyr->rings < 0)
+		{
+			// Invert the ring count
+			ringcount = -ringcount;
+		}
+
+		if (rn[1] == 1 && ringcount == 11)
+			V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+		else
+			V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+
+		if (rn[1] == 1 && ringcount == 11)
+			V_DrawMappedPatch(LAPS_X+7, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+		else
+			V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
 
 		// Draw the fillbars
 		if (stplyr->rings)
 		{
-			SINT8 ringcount = stplyr->rings;
-			UINT8 barcolors[5] = {66,83,114,65};
+			UINT8 barcolors[5] = {66,72,2,68};
 			boolean indebt = false;
 
 			if (stplyr->rings < 0)
 			{
-				barcolors[0] = 35;
-				barcolors[1] = 33;
+				barcolors[0] = 38;
+				barcolors[1] = 36;
 				barcolors[2] = 32;
-				barcolors[3] = 37;
-				ringcount = -ringcount;
+				barcolors[3] = 40;
 				indebt = true;
 			}
+
 			if (!indebt || (indebt && (leveltime/5 & 1)))
 			{
 				for (i = 0; i != ringcount; i++)
 				{
 
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10 + ringoffsety, 1, 3, barcolors[0]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9 + ringoffsety, 1, 2, barcolors[1]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-7 + ringoffsety, 1, 1, barcolors[2]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-6 + ringoffsety, 1, 1, barcolors[3]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10 + ringoffsety, 1, 1, barcolors[0]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9 + ringoffsety, 1, 4, barcolors[1]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-8 + ringoffsety, 1, 1, barcolors[2]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-7 + ringoffsety, 1, 1, barcolors[3]|splitflags);
 				}
 			}
 		}
