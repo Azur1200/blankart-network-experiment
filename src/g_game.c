@@ -1805,6 +1805,12 @@ INT32 G_CountPlayersPotentiallyViewable(boolean active)
 	return total;
 }
 
+//
+// G_ResetView
+// Correct a viewpoint to playernum or the next available, wraps forward.
+// Also promotes splitscreen up to available viewable players.
+// An out of range playernum is corrected.
+//
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 {
 	UINT8 splits;
