@@ -610,95 +610,9 @@ const char *const HUDITEMS_LIST[] = {
 };
 
 const char *const MENUTYPES_LIST[] = {
-	"NONE",
-
-	"MAIN",
-
-	// Single Player
-	"SP_MAIN",
-
-	"SP_LEVELSTATS",
-
-	"SP_TIMEATTACK",
-	"SP_GUESTREPLAY",
-	"SP_REPLAY",
-	"SP_GHOST",
-
-	// Multiplayer
-	"MP_MAIN",
-	"MP_SPLITSCREEN", // SplitServer
-	"MP_SERVER",
-	"MP_CONNECT",
-	"MP_PLAYERSETUP", // MP_PlayerSetupDef shared with SPLITSCREEN if #defined NONET
-
-	// Options
-	"OP_MAIN",
-
-	"OP_CHANGECONTROLS", // OP_ChangeControlsDef shared with P2
-	"OP_JOYSTICKSET", // OP_JoystickSetDef shared with P2
-	"OP_P1CAMERA",
-
-	"OP_P2CAMERA",
-
-	"OP_VIDEO",
-	"OP_VIDEOMODE",
-	"OP_OPENGL",
-
-	"OP_SOUND",
-
-	"OP_SERVER",
-	"OP_MONITORTOGGLE",
-
-	"OP_DATA",
-	"OP_ADDONS",
-	"OP_SCREENSHOTS",
-	"OP_ERASEDATA",
-
-	// Extras
-	"SR_MAIN",
-	"SR_PANDORA",
-	"SR_UNLOCKCHECKLIST",
-	"SR_EMBLEMHINT",
-	"SR_SOUNDTEST",
-
-	// Addons (Part of MISC, but let's make it our own)
-	"AD_MAIN",
-
-	// MISC
-	// "MESSAGE",
-	"SPAUSE",
-
-	"MPAUSE",
-	"SCRAMBLETEAM",
-	"CHANGETEAM",
-	"CHANGELEVEL",
-
-	"MAPAUSE",
-	"HELP",
-
-	// SRB2Kart
-	"OP_HUD",
-	"OP_CHAT",
-	"OP_GAME",
-	"OP_BLANKARTGAME",
-	"OP_ADVANCEDSERVER",
-	"OP_CAMERA",
-	"OP_P3CAMERA",
-	"OP_P4CAMERA",
-	"MISC_REPLAYOPTIONS",
-	"SP_GRANDPRIX",
-	"MISC_REPLAYHUT",
-	"CHANGESPECTATE",
-	"MISC_REPLAYSTART",
-	"PLAYBACK",
-	"OP_CONTROLSETUP",
-	"OP_GAMEHUD",
-	"OP_VISUAL",
-
-#ifdef HAVE_DISCORDRPC
-	"OP_DISCORD",
-	"MISC_DISCORDREQUESTS",
-#endif
+#define _(name, ...) #name,
+#include "info/menus.h"
+#undef _
 };
 
 struct menu_routine_s const MENU_ROUTINES[] = {
