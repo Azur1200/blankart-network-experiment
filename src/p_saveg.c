@@ -319,6 +319,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEUINT16(save->p, players[i].sneakertimer);
 		WRITEUINT8(save->p, players[i].floorboost);
+		WRITEUINT16(save->p, players[i].chaintimer);
 		
 		WRITEUINT8(save->p, players[i].boostcharge);
 
@@ -631,6 +632,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].sneakertimer = READUINT16(save->p);
 		players[i].floorboost = READUINT8(save->p);
+		players[i].chaintimer = READUINT16(save->p);
 		
 		players[i].boostcharge = READUINT8(save->p);
 
@@ -5084,6 +5086,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT16(save->p, bossdisabled);
 	WRITEUINT8(save->p, ringsactive);
 	WRITEUINT8(save->p, stackingactive);
+	WRITEUINT8(save->p, chainingactive);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -5254,6 +5257,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	bossdisabled = READUINT16(save->p);
 	ringsactive = READUINT8(save->p);
 	stackingactive = READUINT8(save->p);
+	chainingactive = READUINT8(save->p);
 
 	for (i = 0; i < 4; i++)
 	{

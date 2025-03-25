@@ -360,6 +360,15 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"battleprisons")) {
 		lua_pushinteger(L, itembreaker);
 		return 1;
+	} else if (fastcmp(word,"ringsactive")) {
+		lua_pushinteger(L, ringsactive);
+		return 1;
+	} else if (fastcmp(word,"stackingactive")) {
+		lua_pushinteger(L, stackingactive);
+		return 1;
+	} else if (fastcmp(word,"chainingactive")) {
+		lua_pushinteger(L, chainingactive);
+		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, hyubgone);
 		return 1;
@@ -481,6 +490,12 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		introtime = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"itembreaker"))
 		itembreaker = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"battleprisons"))
+		itembreaker = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"chainingactive"))
+		stackingactive = (boolean)luaL_checkinteger(L, 2);
+	else if (fastcmp(word,"chainingactive"))
+		chainingactive = (boolean)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"gamespeed"))
 		gamespeed = (UINT8)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"nummapboxes"))

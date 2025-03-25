@@ -194,6 +194,8 @@ void K_UnsetItemOut(player_t *player);
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);
+boolean K_StackingActive(void);
+boolean K_ChainingActive(void);
 boolean K_UsingLegacyCheckpoints(void);
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);

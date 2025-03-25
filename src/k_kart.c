@@ -254,6 +254,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartrings);
 	CV_RegisterVar(&cv_kartstacking);
+	CV_RegisterVar(&cv_kartchaining);
 	CV_RegisterVar(&cv_kartitembreaker);
 
 	CV_RegisterVar(&cv_newspeedometer);
@@ -7007,6 +7008,101 @@ static void K_TireGreaseEffect(player_t *player)
 		S_StartSound(player->mo, sfx_screec);
 }
 
+boolean K_BoostChain(player_t *player, INT32 timer)
+{
+	if (!chainingactive)
+	{
+		// You can't chain why bother?
+		return false;
+	}
+
+	if (timer > player->chaintimer)
+	{
+		// Just what I needed! - Toad
+		player->chaintimer = timer;
+	}
+
+	if (player->chaintimer)
+	{
+		// You can continue chaining!
+		return true;
+	}
+
+	// Aw shucks, time to drop the chain....
+	return false;
+}
+
+INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement)
+{
+	if (K_BoostChain(player, timer))
+	{
+		// Its time to chain.
+		return max(1, timer - deincrement);
+	}
+
+	// Continue to drain the timer as normal.
+	return timer - deincrement;
+}
+
+// Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
+static INT32 ticinversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
+{
+    return (TICRATE / kartspeed) + (TICRATE / CLAMP(kartweight, 1, 5)) + grade;
+}
+
+// Get the maximum required stacks needed for the ringnerf based on kartspeed and kartweight
+static INT32 statrangemap(UINT8 kartspeed, UINT8 kartweight)
+{
+	INT32 scaledsw = (9 - kartspeed) + (9 - kartweight);
+
+    fixed_t scaled_input = (scaledsw)*FRACUNIT/16;
+
+    // Scale the result to be within range [2, 4]
+    fixed_t result = 4*FRACUNIT - (FixedMul(scaled_input, 2*FRACUNIT));
+
+    // Stay within range please!
+    if (result < 2*FRACUNIT)
+		result = 2*FRACUNIT;
+    if (result > 4*FRACUNIT)
+		result = 4*FRACUNIT;
+
+	result = result >> FRACBITS;
+
+    return result;
+}
+
+static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
+{
+	// Aggressively reduce extreme ringboost duration.
+	// Less aggressive for accel types.
+	UINT8 roller = TICRATE;
+	UINT16 finalringtimer;
+	roller += 4*(8-player->kartspeed);
+
+	finalringtimer = max((player->ringboost / roller), 1);
+
+	if (chainnerf)
+	{
+		UINT8 requiredgrade = statrangemap(player->kartspeed, player->kartweight);
+
+		if (player->numboosts >= requiredgrade)
+		{
+			INT32 insum = ticinversesum(player->kartspeed, player->kartweight, player->numboosts);
+			INT32 subring = (player->ringboost*2)/insum;
+
+			if (player->kartspeed == 1)
+			{
+				// fuck off chao you aren't chaining an entire race.
+				subring = (player->ringboost*4)/insum;
+			}
+
+			finalringtimer -= subring;
+		}
+	}
+
+	player->ringboost = K_ChainOrDeincrementTime(player, player->ringboost, finalringtimer);
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -7196,18 +7292,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ringboost = 0;
 	else if (player->ringboost)
 	{
-		// Aggressively reduce extreme ringboost duration.
-		// Less aggressive for accel types.
-
-		UINT8 roller = TICRATE;
-		roller += 4*(8-player->kartspeed);
-
-		player->ringboost -= max((player->ringboost / roller), 1);
+		K_HandleRingDeincrement(player, chainingactive);
 	}
 
 	if (player->sneakertimer)
 	{
-		player->sneakertimer--;
+		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1);
+
 		if (player->sneakertimer <= 0)
 		{
 			player->mo->flags2 &= ~MF2_WATERRUN;
@@ -7222,10 +7313,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->floorboost--;
 
 	if (player->driftboost)
-		player->driftboost--;
+		player->driftboost = K_ChainOrDeincrementTime(player, player->driftboost, 1);
 
 	if (player->startboost > 0)
-		player->startboost--;
+		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1);
 
 	if (player->invincibilitytimer)
 		player->invincibilitytimer--;
@@ -7324,7 +7415,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->outruntime--;
 
 	if (player->tiregrease > 0)
-		player->tiregrease--;;
+		player->tiregrease--;
+
+	if (player->chaintimer)
+		player->chaintimer--;
 
 	if (player->itemblink && player->itemblink-- <= 0)
 	{
@@ -10432,6 +10526,28 @@ boolean K_RingsActive(void)
 	}
 
 	return true;
+}
+
+boolean K_StackingActive(void)
+{
+	if (stackingactive)
+	{
+		// Booststacking is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_ChainingActive(void)
+{
+	if (chainingactive)
+	{
+		// Boostchaining is enabled!
+		return true;
+	}
+
+	return false;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

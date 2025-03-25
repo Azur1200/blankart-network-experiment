@@ -97,6 +97,7 @@ extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartstacking;
+extern consvar_t cv_kartchaining;
 extern consvar_t cv_kartitembreaker;
 extern consvar_t cv_kartwalltransfer;
 extern consvar_t cv_kartpurpledrift;

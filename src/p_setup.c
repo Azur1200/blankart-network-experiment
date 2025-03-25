@@ -144,6 +144,7 @@ INT32 numstarposts;
 INT32 numbosswaypoints;
 boolean ringsactive;
 boolean stackingactive;
+boolean chainingactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -7888,6 +7889,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		stackingactive = true;
 	else
 		stackingactive = false;
+
+	if (cv_kartchaining.value)
+		chainingactive = true;
+	else
+		chainingactive = false;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;

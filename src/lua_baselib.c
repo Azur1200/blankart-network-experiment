@@ -3985,6 +3985,20 @@ static int lib_kRingsActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Stacking is active.
+static int lib_kStackingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_StackingActive());
+	return 1;
+}
+
+// Checks if Chaining is active.
+static int lib_kChainingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_ChainingActive());
+	return 1;
+}
+
 // Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
 static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
@@ -4317,6 +4331,8 @@ static luaL_Reg lib[] = {
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
 	{"K_RingsActive",lib_kRingsActive},
+	{"K_StackingActive",lib_kStackingActive},
+	{"K_ChainingActive",lib_kChainingActive},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
