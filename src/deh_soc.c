@@ -2361,7 +2361,6 @@ void readmenu(MYFILE *f, INT32 num)
 	char *word2;
 	char *tmp;
 	INT32 value;
-	boolean space = false;
 
 	menu_t *menudef = allocmenu(num);
 
@@ -2383,44 +2382,37 @@ void readmenu(MYFILE *f, INT32 num)
 			if (s == tmp)
 				continue; // Skip comment lines, but don't break.
 
-			space = false;
-
 			// Get the part before the " = "
 			tmp = strchr(s, '=');
 			if (tmp)
 				*(tmp-1) = '\0';
 			else
 			{
-				space = true;
-				tmp = strchr(s, ' ');
-				if (tmp)
-					*tmp-- = '\0'; // decrement after, so word2 is correct
-				else
-					break;
-			}
-			strupr(word);
+				// ...or get the word after the space. yay special syntax!
+				word2 = strchr(s, ' ');
+				if (word2)
+				{
+					*word2++ = '\0';
+					if (*word2 == '\0' || *word2 == ' ') // trailing space(s) after MenuItem doesn't count
+						word2 = NULL;
+					else
+						strupr(word2);
+				}
+				strupr(word);
 
-			// Now get the part after
-			word2 = (tmp += 2);
-			strupr(word2);
-
-			value = atoi(word2); // used for numerical settings
-
-			if (space)
-			{
 				if (fastcmp(word, "MENUITEM"))
 				{
-					if (strlen(word2) > ITEMNAMELEN)
+					if (word2 && strlen(word2) > ITEMNAMELEN)
 					{
 						deh_warning("Menu %d: item name %s is too long (max %d characters)", num, word2, ITEMNAMELEN);
 						continue;
 					}
-					menuitem_t *item = word2[0] == '.' ? NULL : M_CheckMenuItem(num, word2);
+					menuitem_t *item = word2 ? M_CheckMenuItem(num, word2) : NULL;
 					if (item == NULL)
 					{
 						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
 						item = menudef->menuitems + menudef->numitems++;
-						strncpy(item->itemname, word2, ITEMNAMELEN);
+						strncpy(item->itemname, word2 ? word2 : "", ITEMNAMELEN);
 						item->text = "";
 					}
 					readmenuitem(f, item);
@@ -2429,6 +2421,13 @@ void readmenu(MYFILE *f, INT32 num)
 					deh_warning("Menu %d: unknown word '%s'", num, word);
 				continue;
 			}
+			strupr(word);
+
+			// Now get the part after
+			word2 = (tmp += 2);
+			strupr(word2);
+
+			value = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "BACKGROUNDNAME"))
 			{

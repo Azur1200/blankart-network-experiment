@@ -471,6 +471,9 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				}
 				else if (fastcmp(word, "MENU"))
 				{
+					if (dedicated)
+						continue; // dedis don't need menus, silly!
+
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
 					if (i >= 1 && i < NUMMENUTYPES)
