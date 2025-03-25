@@ -5273,7 +5273,11 @@ void K_DoSneaker(player_t *player, INT32 type)
 	}
 
 	player->sneakertimer = sneakertime;
-	player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+
+	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+	{
+		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+	}
 
 	// set angle for spun out players:
 	player->boostangle = player->mo->angle;
@@ -5294,7 +5298,12 @@ void K_DoWaterRunPanel(player_t *player)
 	K_SneakerPanelEffect(player, 0);
 
 	player->sneakertimer = TICRATE*2;
-	player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+
+	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+	{
+		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+	}
+
 	player->mo->flags2 |= MF2_WATERRUN;
 
 	// set angle for spun out players:
@@ -7034,14 +7043,16 @@ boolean K_BoostChain(player_t *player, INT32 timer)
 
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement)
 {
+	timer -= deincrement;
+
 	if (K_BoostChain(player, timer))
 	{
 		// Its time to chain.
-		return max(1, timer - deincrement);
+		return max(1, timer);
 	}
 
 	// Continue to drain the timer as normal.
-	return timer - deincrement;
+	return timer;
 }
 
 // Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
@@ -7096,11 +7107,11 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 				subring = (player->ringboost*4)/insum;
 			}
 
-			finalringtimer -= subring;
+			finalringtimer += subring;
 		}
 	}
 
-	player->ringboost = K_ChainOrDeincrementTime(player, player->ringboost, finalringtimer);
+	player->ringboost = max(0, K_ChainOrDeincrementTime(player, player->ringboost, finalringtimer));
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c

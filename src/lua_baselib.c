@@ -4032,6 +4032,31 @@ static int lib_kClearBoost(lua_State *L)
 	return 0;
 }
 
+static int lib_kBoostChain(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INT32 timer = luaL_checkinteger(L, 2);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, K_BoostChain(player, timer));
+	return 1;
+}
+
+static int lib_kChainOrDeincrementTime(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INT32 timer = luaL_checkinteger(L, 2);
+	INT32 deincrement = luaL_checkinteger(L, 3);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_ChainOrDeincrementTime(player, timer, deincrement));
+	return 1;
+}
+
 static int lib_getTimeMicros(lua_State *L)
 {
 	lua_pushinteger(L, I_GetPreciseTime() / (I_GetPrecisePrecision() / 1000000));
@@ -4336,6 +4361,9 @@ static luaL_Reg lib[] = {
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
+	{"K_BoostChain",lib_kBoostChain},
+	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
+
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},
