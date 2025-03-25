@@ -42,7 +42,8 @@
 #endif
 #include "i_net.h" // doomcom
 
-//extern "C" consvar_t cv_forcebots;
+consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 /*--------------------------------------------------
 	void K_SetNameForBot(UINT8 playerNum, UINT8 skinnum)
@@ -206,7 +207,7 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if ((gametyperules & GTR_BOTS) == 0 /*&& !cv_forcebots.value*/)
+	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
@@ -1313,10 +1314,8 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 	}
 
 	// Defanging bots for testing.
-	#ifdef DEVELOP
-		if (!cv_botcontrol.value)
-			return;
-	#endif
+	if (!cv_botcontrol.value)
+		return;
 
 	// Actual gameplay behaviors below this block!
 	const botcontroller_t *botController = K_GetBotController(player->mo);
