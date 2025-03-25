@@ -21,6 +21,17 @@
 extern "C" {
 #endif
 
+// Store file nameres here for future reference else where.
+#define MAINNAME "main.pk3"
+#define SRB2NAME "srb2.srb"
+#define TEXTURESNAME "textures.kart"
+#define MAPSNAME "maps.kart"
+#define PATCHNAME "patch.pk3"
+#define MUSICNAME "music.kart"
+#define CHARSNAME "chars.kart"
+#define GRAPHICSNAME "gfx.kart"
+#define SOUNDSNAME "sounds.kart"
+
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
 
