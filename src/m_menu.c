@@ -273,18 +273,6 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_GetItemY M_GetItemKey
 #define M_AdjustItemY(t, n, v)          (M_GetMenuItem(t, n)->alphaKey += v)
 
-// ensure there are numitems menuitems between name1 and name2
-// then return the index of name1
-static INT16 M_MenuItemRange(menutype_t type, const char *name1, const char *name2, INT16 numitems)
-{
-	INT16 index1 = M_GetMenuIndex(type, name1);
-	INT16 index2 = M_GetMenuIndex(type, name2);
-	INT16 range = index2 - index1 + 1;
-	if (range != numitems)
-		I_Error("Menu %d should have %d items between %s and %s inclusive, but %d were found", type, numitems, name1, name2, range);
-	return index1;
-}
-
 // bruh...
 static UINT32 M_ServersPerPage(void)
 {
@@ -3974,7 +3962,6 @@ void M_SetPlaybackMenuPointer(void)
 void M_DrawPlaybackMenu(void)
 {
 	INT16 i;
-	INT16 view1index = M_MenuItemRange(MN_PLAYBACK, "VIEW1", "VIEW4", 4);
 	patch_t *icon;
 	UINT8 *activemap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GOLD, GTC_MENUCACHE);
 	UINT32 transmap = max(0, (INT32)(leveltime - playback_last_menu_interaction_leveltime - 4*TICRATE)) / 5;
@@ -3982,9 +3969,6 @@ void M_DrawPlaybackMenu(void)
 
 	if (leveltime - playback_last_menu_interaction_leveltime >= 6*TICRATE)
 		playback_last_menu_interaction_leveltime = leveltime - 6*TICRATE;
-
-	INT16 rewindix = M_MenuItemRange(MN_PLAYBACK, "REWIND", "FASTFW", 3);
-	INT16 backix = M_MenuItemRange(MN_PLAYBACK, "REWFRA", "ADVFRA", 3);
 
 	// Toggle items
 	if (paused && !demo.rewinding)
@@ -3996,12 +3980,12 @@ void M_DrawPlaybackMenu(void)
 		M_SetItemStatus(MN_PLAYBACK, "ADVFRA", IT_CALL|IT_STRING);
 		M_SetItemStatus(MN_PLAYBACK, "REWFRA", IT_CALL|IT_STRING);
 
-		if (itemOn >= rewindix && itemOn <= rewindix+2)
-		{
-			i = itemOn - rewindix;
+		if (M_IsItemOn(MN_PLAYBACK, "REWIND"))
 			M_SetItemOn(MN_PLAYBACK, "REWFRA");
-			itemOn += i;
-		}
+		else if (M_IsItemOn(MN_PLAYBACK, "PAUSE"))
+			M_SetItemOn(MN_PLAYBACK, "RESUME");
+		else if (M_IsItemOn(MN_PLAYBACK, "FASTFW"))
+			M_SetItemOn(MN_PLAYBACK, "ADVFRA");
 	}
 	else
 	{
@@ -4012,12 +3996,12 @@ void M_DrawPlaybackMenu(void)
 		M_SetItemStatus(MN_PLAYBACK, "ADVFRA", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "REWFRA", IT_DISABLED);
 
-		if (itemOn >= backix && itemOn <= backix+2)
-		{
-			i = itemOn - backix;
+		if (M_IsItemOn(MN_PLAYBACK, "REWFRA"))
 			M_SetItemOn(MN_PLAYBACK, "REWIND");
-			itemOn += i;
-		}
+		else if (M_IsItemOn(MN_PLAYBACK, "RESUME"))
+			M_SetItemOn(MN_PLAYBACK, "PAUSE");
+		else if (M_IsItemOn(MN_PLAYBACK, "ADVFRA"))
+			M_SetItemOn(MN_PLAYBACK, "FASTFW");
 	}
 
 	if (modeattacking)
@@ -4053,7 +4037,11 @@ void M_DrawPlaybackMenu(void)
 	{
 		UINT8 *inactivemap = NULL;
 
-		INT16 splitnum = i - view1index;
+		INT16 splitnum = i == M_GetMenuIndex(MN_PLAYBACK, "VIEW1") ? 0 :
+		                 i == M_GetMenuIndex(MN_PLAYBACK, "VIEW2") ? 1 :
+		                 i == M_GetMenuIndex(MN_PLAYBACK, "VIEW3") ? 2 :
+		                 i == M_GetMenuIndex(MN_PLAYBACK, "VIEW4") ? 3 : -1;
+
 		if (splitnum >= 0 && splitnum < 4)
 		{
 			if (modeattacking) continue;
@@ -4204,8 +4192,13 @@ void M_PlaybackSetViews(INT32 choice)
 
 void M_PlaybackAdjustView(INT32 choice)
 {
-	INT16 viewix = M_MenuItemRange(MN_PLAYBACK, "VIEW1", "VIEW4", 4);
-	G_AdjustView((itemOn - viewix)+1, (choice > 0) ? 1 : -1, true);
+	INT16 splitnum = M_IsItemOn(MN_PLAYBACK, "VIEW1") ? 1 :
+	                 M_IsItemOn(MN_PLAYBACK, "VIEW2") ? 2 :
+	                 M_IsItemOn(MN_PLAYBACK, "VIEW3") ? 3 :
+	                 M_IsItemOn(MN_PLAYBACK, "VIEW4") ? 4 : -1;
+
+	if (splitnum >= 1 && splitnum <= 4)
+		G_AdjustView(splitnum, (choice > 0) ? 1 : -1, true);
 }
 
 // this one's rather tricky
@@ -5504,6 +5497,32 @@ void M_StartGrandPrix(INT32 choice)
 // MODE ATTACK
 // ===========
 
+// draw stuff "in the background" for time attack
+static void M_DrawTimeAttackBackground(menuitem_t *item)
+{
+	INT16 x = currentMenu->x;
+	INT16 y = currentMenu->y+item->alphaKey;
+	consvar_t *ncv = item->itemaction.cvar;
+	V_DrawString(x, y, V_TRANSLUCENT, item->text);
+	if (item->status & IT_CV_STRING)
+	{
+		M_DrawTextBox(x + 32, y - 8, MAXPLAYERNAME, 1);
+		V_DrawString(x + 40, y, V_TRANSLUCENT|V_ALLOWLOWERCASE, ncv->string);
+	}
+	else
+	{
+		const char *str = ((ncv == &cv_chooseskin) ? skins[cv_chooseskin.value-1].realname : ncv->string);
+		INT32 soffset = 40, strw = V_StringWidth(str, 0);
+
+		// hack to keep the menu from overlapping the level icon
+		if (ncv == &cv_nextmap)
+			soffset = 0;
+
+		// Should see nothing but strings
+		V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT, str);
+	}
+}
+
 // Drawing function for Time Attack
 void M_DrawTimeAttackMenu(void)
 {
@@ -5616,37 +5635,12 @@ void M_DrawTimeAttackMenu(void)
 	}
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
-	// TODO: this whole thing needs to go
-	menu_t *tamenu = menudefs[MN_SP_TIMEATTACK];
 	if (menustack[0] != MN_SP_TIMEATTACK)
 	{
-		consvar_t *ncv;
-		INT16 first = M_MenuItemRange(MN_SP_TIMEATTACK, "NAME", "LEVEL", 4);
-		menuitem_t *taitems = tamenu->menuitems;
-
-		for (i = first; i < first+4; ++i)
-		{
-			y = currentMenu->y+taitems[i].alphaKey;
-			V_DrawString(x, y, V_TRANSLUCENT, taitems[i].text);
-			ncv = taitems[i].itemaction.cvar;
-			if (taitems[i].status & IT_CV_STRING)
-			{
-				M_DrawTextBox(x + 32, y - 8, MAXPLAYERNAME, 1);
-				V_DrawString(x + 40, y, V_TRANSLUCENT|V_ALLOWLOWERCASE, ncv->string);
-			}
-			else
-			{
-				const char *str = ((ncv == &cv_chooseskin) ? skins[cv_chooseskin.value-1].realname : ncv->string);
-				INT32 soffset = 40, strw = V_StringWidth(str, 0);
-
-				// hack to keep the menu from overlapping the level icon
-				if (ncv == &cv_nextmap)
-					soffset = 0;
-
-				// Should see nothing but strings
-				V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, highlightflags|V_TRANSLUCENT, str);
-			}
-		}
+		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "NAME"));
+		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "SKIN"));
+		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "COLOR"));
+		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "LEVEL"));
 	}
 }
 
