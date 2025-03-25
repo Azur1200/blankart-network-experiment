@@ -452,6 +452,13 @@ struct sonicloopvars_t
 	sonicloopcamvars_t camera;
 };
 
+struct boostinfo_t {
+  fixed_t stackspeedboost;
+  fixed_t nonstackspeedboost;
+  fixed_t accelboost;
+  UINT8 grade;
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -579,10 +586,11 @@ struct player_t
 	
 	fixed_t boostpower;		// Base boost value, for offroad
 	fixed_t speedboost;		// Boost value smoothing for max speed
-	INT32 numsneakers;		// Number of stacked sneakers
-	INT32 numboosts;		// Number of Boosts stacking this frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
+	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
+	UINT8 numsneakers;		// Number of stacked sneakers
+	UINT8 numboosts;		// Number of Boosts stacking this frame
 
 	UINT8 tripwireState; // see tripwirestate_t
 	UINT8 tripwirePass; // see tripwirepass_t

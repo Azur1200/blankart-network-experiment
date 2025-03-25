@@ -31,6 +31,8 @@ Make sure this matches the actual number of states
 
 #define FLAMESTOREMAX TICRATE*2
 
+#define MAXSNEAKERSTACK 3
+
 // Used for respawning checks.
 
 typedef struct respawnresult_s
@@ -195,6 +197,9 @@ boolean K_RingsActive(void);
 boolean K_UsingLegacyCheckpoints(void);
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
+
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
+void K_ClearBoost(player_t *player);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -3958,7 +3958,7 @@ static int lib_kSetIndirectItemCountdown(lua_State *L)
 	return 0;
 }
 
-// Sets the item cooldown before another shrink / SPB can be rolled
+// Sets the item cooldown before another hyudoro can be rolled
 static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
@@ -3990,6 +3990,32 @@ static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
 	lua_pushboolean(L, K_UsingLegacyCheckpoints());
 	return 1;
+}
+
+static int lib_kDoBoost(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t speedboost = luaL_checkfixed(L, 2);
+	fixed_t accelboost = luaL_checkfixed(L, 3);
+	boolean stacking = lua_optboolean(L, 4);
+	boolean visible = lua_isnoneornil(L, 5) ? true : luaL_checkboolean(L, 5);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_DoBoost(player, speedboost, accelboost, stacking, visible);
+	return 0;
+}
+
+static int lib_kClearBoost(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_ClearBoost(player);
+	return 0;
 }
 
 static int lib_getTimeMicros(lua_State *L)
@@ -4286,12 +4312,14 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
-	{"K_SafeRespawnPosition", lib_kSafeRespawnPosition},
+	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
 	{"K_RingsActive",lib_kRingsActive},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
+	{"K_DoBoost",lib_kDoBoost},
+	{"K_ClearBoost",lib_kClearBoost},
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},

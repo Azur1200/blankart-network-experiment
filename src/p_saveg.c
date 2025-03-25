@@ -272,6 +272,14 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEFIXED(save->p, players[i].speedboost);
 		WRITEFIXED(save->p, players[i].accelboost);
 		WRITEANGLE(save->p, players[i].boostangle);
+		WRITEUINT8(save->p, players[i].numsneakers);
+		WRITEUINT8(save->p, players[i].numboosts);
+
+		// boostinfo_t
+		WRITEFIXED(save->p, players[i].boostinfo.stackspeedboost);
+		WRITEFIXED(save->p, players[i].boostinfo.nonstackspeedboost);
+		WRITEFIXED(save->p, players[i].boostinfo.accelboost);
+		WRITEUINT8(save->p, players[i].boostinfo.grade);
 
 		WRITEUINT8(save->p, players[i].tripwireState);
 		WRITEUINT8(save->p, players[i].tripwirePass);
@@ -576,6 +584,14 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].speedboost = READFIXED(save->p);
 		players[i].accelboost = READFIXED(save->p);
 		players[i].boostangle = READANGLE(save->p);
+		players[i].numsneakers = READUINT8(save->p);
+		players[i].numboosts = READUINT8(save->p);
+
+		// boostinfo_t
+		players[i].boostinfo.stackspeedboost = READFIXED(save->p);
+		players[i].boostinfo.nonstackspeedboost = READFIXED(save->p);
+		players[i].boostinfo.accelboost = READFIXED(save->p);
+		players[i].boostinfo.grade = READUINT8(save->p);
 
 		players[i].tripwireState = READUINT8(save->p);
 		players[i].tripwirePass = READUINT8(save->p);
