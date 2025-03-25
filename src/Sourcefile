@@ -92,7 +92,6 @@ mserv.c
 http-mserv.c
 i_tcp.c
 lzf.c
-vid_copy.s
 lua_script.c
 lua_baselib.c
 lua_mathlib.c

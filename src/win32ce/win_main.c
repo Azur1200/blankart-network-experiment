@@ -426,16 +426,7 @@ static VOID     GetArgcArgv (LPSTR cmdline)
 
 static inline VOID MakeCodeWritable(VOID)
 {
-#ifdef USEASM
-	// Disable write-protection of code segment
-	DWORD OldRights;
-	BYTE *pBaseOfImage = (BYTE *)GetModuleHandle(NULL);
-	IMAGE_OPTIONAL_HEADER *pHeader = (IMAGE_OPTIONAL_HEADER *)
-		(pBaseOfImage + ((IMAGE_DOS_HEADER*)pBaseOfImage)->e_lfanew +
-		sizeof (IMAGE_NT_SIGNATURE) + sizeof (IMAGE_FILE_HEADER));
-	if (!VirtualProtect(pBaseOfImage+pHeader->BaseOfCode,pHeader->SizeOfCode,PAGE_EXECUTE_READWRITE,&OldRights))
-		I_Error("Could not make code writable\n");
-#endif
+	;
 }
 
 

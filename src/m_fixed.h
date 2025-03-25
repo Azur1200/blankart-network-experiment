@@ -168,7 +168,6 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 	#define __USE_C_FIXEDDIV__ // no 64b asm div in MIPS land
 #elif defined (__GNUC__) && defined (__sh__) && 0 // DC: SH4 CPU
 #elif defined (__GNUC__) && defined (__m68k__) && 0 // DEAD: Motorola 6800 CPU
-#elif defined (_MSC_VER) && defined(USEASM) && FRACBITS == 16
 	// Microsoft Visual C++ (no asm inline)
 	fixed_t __cdecl FixedMul(fixed_t a, fixed_t b);
 	fixed_t __cdecl FixedDiv2(fixed_t a, fixed_t b);
