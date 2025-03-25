@@ -218,6 +218,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define MAXSTRINGLENGTH 32
 
 #define ITEMNAMELEN 6
+#define ITEMNAMEFMT "%.6s"
 
 typedef union
 {

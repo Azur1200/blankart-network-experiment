@@ -2177,6 +2177,8 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
+#define WARN(str, ...) deh_warning("MenuItem " ITEMNAMEFMT ": " str, menuitem->itemname, __VA_ARGS__)
+#define WARN0(str) deh_warning("MenuItem " ITEMNAMEFMT ": " str, menuitem->itemname)
 static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2237,13 +2239,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				flags = IT_STRING2;
 			else if (word[4])
 			{
-				deh_warning("MenuItem %s: unknown word '%s'", "", word);
+				WARN("unknown word '%s'", word);
 				continue;
 			}
 
 			if (textset)
 			{
-				deh_warning("MenuItem %s: text already set!", "");
+				WARN0("text already set!");
 				continue;
 			}
 			textset = true;
@@ -2261,13 +2263,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				flags |= IT_CV_INTEGERSTEP;
 			else if (word[4])
 			{
-				deh_warning("MenuItem %s: unknown word '%s'", "", word);
+				WARN("unknown word '%s'", word);
 				continue;
 			}
 
 			if (actionset)
 			{
-				deh_warning("MenuItem %s: action already set!", "");
+				WARN0("action already set!");
 				continue;
 			}
 			consvar_t *cvar = CV_FindVar(word2);
@@ -2280,7 +2282,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 					}
 			if (!cvar)
 			{
-				deh_warning("MenuItem %s: unable to find cvar '%s'", "", word2);
+				WARN("unable to find cvar '%s'", word2);
 				continue;
 			}
 			actionset = true;
@@ -2291,13 +2293,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			if (actionset)
 			{
-				deh_warning("MenuItem %s: action already set!", "");
+				WARN0("action already set!");
 				continue;
 			}
 			menutype_t mn = get_menutype(word2);
 			if (mn == MN_NONE)
 			{
-				deh_warning("MenuItem %s: unknown menu '%s'", "", word2);
+				WARN("unknown menu '%s'", word2);
 				continue;
 			}
 			actionset = true;
@@ -2315,7 +2317,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 					flags |= IT_CALL_NOTMODIFIED;
 				else if (word[4])
 				{
-					deh_warning("MenuItem %s: unknown word '%s'", "", word);
+					WARN("unknown word '%s'", word);
 					continue;
 				}
 			}
@@ -2328,13 +2330,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 
 			if (actionset)
 			{
-				deh_warning("MenuItem %s: action already set!", "");
+				WARN0("action already set!");
 				continue;
 			}
 			void (*routine)(INT32) = get_menuroutine(word2);
 			if (!routine)
 			{
-				deh_warning("MenuItem %s: unknown call routine '%s'", "", word2);
+				WARN("unknown call routine '%s'", word2);
 				continue;
 			}
 			actionset = true;
@@ -2346,14 +2348,17 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			menuitem->alphaKey = get_number(word2);
 		}
 		else
-			deh_warning("MenuItem %s: unknown word '%s'", "", word);
+			WARN("unknown word '%s'", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
 
 	menuitem->status = status;
 	Z_Free(s);
 }
+#undef WARN
+#undef WARN0
 
+#define WARN(str, ...) deh_warning("Menu %s: " str, num < MN_FIRSTFREESLOT ? MENUTYPES_LIST[num] : FREE_MENUS[num - MN_FIRSTFREESLOT], __VA_ARGS__)
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2404,7 +2409,7 @@ void readmenu(MYFILE *f, INT32 num)
 				{
 					if (word2 && strlen(word2) > ITEMNAMELEN)
 					{
-						deh_warning("Menu %d: item name %s is too long (max %d characters)", num, word2, ITEMNAMELEN);
+						WARN("item name %s is too long (max %d characters)", word2, ITEMNAMELEN);
 						continue;
 					}
 					menuitem_t *item = word2 ? M_CheckMenuItem(num, word2) : NULL;
@@ -2418,7 +2423,7 @@ void readmenu(MYFILE *f, INT32 num)
 					readmenuitem(f, item);
 				}
 				else
-					deh_warning("Menu %d: unknown word '%s'", num, word);
+					WARN("unknown word '%s'", word);
 				continue;
 			}
 			strupr(word);
@@ -2579,7 +2584,7 @@ void readmenu(MYFILE *f, INT32 num)
 				void (*drawer)(void) = get_menudrawer(word2);
 				if (drawer == NULL)
 				{
-					deh_warning("Menu %d: unknown draw routine '%s'", num, word2);
+					WARN("unknown draw routine '%s'", word2);
 					continue;
 				}
 				menudef->drawroutine = drawer;
@@ -2597,18 +2602,19 @@ void readmenu(MYFILE *f, INT32 num)
 				void (*routine)(INT32) = get_menuroutine(word2);
 				if (!routine)
 				{
-					deh_warning("Menu %d: unknown quit routine '%s'", num, word2);
+					WARN("unknown quit routine '%s'", word2);
 					continue;
 				}
 				menudef->quitroutine = routine;
 			}
 			else
-				deh_warning("Menu %d: unknown word '%s'", num, word);
+				WARN("unknown word '%s'", word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
 
 	Z_Free(s);
 }
+#undef WARN
 
 void readframe(MYFILE *f, INT32 num)
 {
