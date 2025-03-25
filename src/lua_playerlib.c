@@ -1000,12 +1000,6 @@ static int power_get(lua_State *L)
 		case pw_nocontrol:
 			lua_pushinteger(L, plr->nocontrol);
 			return 1;
-		case pw_ingoop:
-			if (plr->mo)
-				lua_pushinteger(L, P_IsObjectInGoop(plr->mo));
-			else
-				lua_pushinteger(L, 0);
-			return 1;
 		default:
 			lua_pushinteger(L, powers[p]);
 			return 1;
@@ -1035,8 +1029,6 @@ static int power_set(lua_State *L)
 		case pw_nocontrol:
 			plr->nocontrol = i;
 			break;
-		case pw_ingoop:
-			return NOSET;
 		default:
 			powers[p] = i;
 			break;
@@ -1120,7 +1112,6 @@ static int kartstuff_get(lua_State *L)
 		case k_enginesnd:
 			lua_pushinteger(L, plr->karthud[khud_enginesnd]);
 			return 1;
-
 		case k_floorboost:
 			lua_pushinteger(L, plr->floorboost);
 			return 1;
@@ -1299,9 +1290,9 @@ static int kartstuff_get(lua_State *L)
 		case k_growcancel:
 			lua_pushinteger(L, plr->growcancel);
 			return 1;
-
 		default:
-			return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+			lua_pushinteger(L, kartstuff[ks]);
+			return 1;
 	}
 
 	return 1;
@@ -1563,9 +1554,9 @@ static int kartstuff_set(lua_State *L)
 			case k_growcancel:
 				plr->growcancel = i;
 				break;
-
 			default:
-				return luaL_error(L, LUA_QL("kartstufftype_t") " cannot be %u", ks);
+				kartstuff[ks] = i;
+				break;
 	}
 
 	return 0;
