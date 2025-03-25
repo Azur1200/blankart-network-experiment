@@ -173,10 +173,15 @@ static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t followertimer = 0;		// Used for smooth follower floating
 
-static struct {
+static struct
+{
 	boolean active;
 	const char *text;
-	void (*routine)();
+	union
+	{
+		void (*routine)(INT32 choice); // MM_YESNO
+		void (*handler)(event_t *ev);  // MM_EVENTHANDLER
+	};
 	menumessagetype_t messagetype;
 	INT16 x, y;
 	INT16 numlines;
@@ -1065,8 +1070,8 @@ boolean M_Responder(event_t *ev)
 		else
 		{
 			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-			if (messagebox.routine && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.routine != M_ChangecontrolResponse)))
-				messagebox.routine(ev);
+			if (messagebox.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.handler != M_ChangecontrolResponse)))
+				messagebox.handler(ev);
 		}
 		return true;
 	}
@@ -2623,7 +2628,7 @@ static INT32 M_GetFirstLevelInList(void)
 // ==================================================
 // MESSAGE BOX (aka: a hacked, cobbled together menu)
 // ==================================================
-void M_StartMessage(const char *string, void (*routine)(),
+void M_StartMessage2(const char *string, void (*routine)(void),
 	menumessagetype_t itemtype)
 {
 	size_t max = 0, start = 0, i, strlines;
@@ -2669,7 +2674,10 @@ void M_StartMessage(const char *string, void (*routine)(),
 
 	messagebox.text = message;
 	messagebox.messagetype = itemtype;
-	messagebox.routine = routine;
+	if (itemtype == MM_EVENTHANDLER)
+		messagebox.handler = (void (*)(event_t *))routine;
+	else
+		messagebox.routine = (void (*)(INT32))routine;
 
 	//added : 06-02-98: now draw a textbox around the message
 	// compute lenght max and the numbers of lines

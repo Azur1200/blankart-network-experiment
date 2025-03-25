@@ -139,7 +139,9 @@ typedef enum
 	MM_EVENTHANDLER // the same of above but without 'y' or 'n' restriction
 	                // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
-void M_StartMessage(const char *string, void (*routine)(), menumessagetype_t itemtype);
+
+#define M_StartMessage(string, routine, itemtype) M_StartMessage2(string, (void (*)(void))routine, itemtype)
+void M_StartMessage2(const char *string, void (*routine)(void), menumessagetype_t itemtype);
 
 typedef enum
 {
