@@ -1661,6 +1661,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
+	messagebox.active = false;
 	hidetitlemap = false;
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
