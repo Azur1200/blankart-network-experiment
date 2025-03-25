@@ -120,9 +120,6 @@ void M_InitCharacterTables(void);
 // does nothing if menu is already up.
 void M_StartControlPanel(void);
 
-// Called upon end of a mode attack run
-void M_EndModeAttackRun(void);
-
 // Called on new server add, or other reasons
 void M_SortServerList(void);
 

@@ -1315,22 +1315,15 @@ boolean M_Responder(event_t *ev)
 		//case KEY_JOY1 + 2:
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
-			if (menustack[0] == MN_SP_TIMEATTACK)
+
+			//If we entered the game search menu, but didn't enter a game,
+			//make sure the game doesn't still think we're in a netgame.
+			if (!Playing() && netgame && multiplayer)
 			{
-				// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-				D_StartTitle();
+				netgame = false;
+				multiplayer = false;
 			}
-			else
-			{
-				//If we entered the game search menu, but didn't enter a game,
-				//make sure the game doesn't still think we're in a netgame.
-				if (!Playing() && netgame && multiplayer)
-				{
-					netgame = false;
-					multiplayer = false;
-				}
-				M_ExitMenu();
-			}
+			M_ExitMenu();
 
 			return true;
 
@@ -1655,11 +1648,6 @@ void M_StartControlPanel(void)
 	CON_ToggleOff(); // move away console
 }
 
-void M_EndModeAttackRun(void)
-{
-	M_ModeAttackEndGame(0);
-}
-
 //
 // M_ClearMenus
 //
@@ -1676,6 +1664,10 @@ void M_ClearMenus(boolean callexitmenufunc)
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
 	hidetitlemap = false;
+
+	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
+	if (gamestate == GS_TIMEATTACK)
+		D_StartTitle();
 }
 
 //
@@ -4004,8 +3996,7 @@ void M_QuitReplayHut(INT32 choice)
 {
 	(void)choice;
 
-	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-	D_StartTitle();
+	M_ClearMenus(false);
 
 	if (demolist)
 		Z_Free(demolist);
@@ -4302,11 +4293,14 @@ void M_PlaybackQuit(INT32 choice)
 		M_ReplayHut(choice);
 	else if (modeattacking)
 	{
-		M_EndModeAttackRun();
+		M_ModeAttackEndGame(0);
 		S_ChangeMusicInternal("racent", true);
 	}
 	else
+	{
+		M_ClearMenus(true);
 		D_StartTitle();
+	}
 }
 
 void M_PandorasBox(INT32 choice)
@@ -5842,7 +5836,6 @@ void M_HandleStaffReplay(INT32 choice)
 			if (l == LUMPERROR)
 				break;
 			M_ClearMenus(true);
-			modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 			demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 			G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 			break;
@@ -5859,7 +5852,6 @@ void M_ReplayTimeAttack(INT32 choice)
 	const char *which;
 	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
 	M_ClearMenus(true);
-	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME); // set modeattacking before G_DoPlayDemo so the map loader knows
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
 	switch(choice) {
@@ -5976,13 +5968,8 @@ void M_ModeAttackEndGame(INT32 choice)
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING)
 		Command_ExitGame_f();
 
-	M_StartControlPanel();
-
-	if (modeattacking)
-	{
-		M_ClearMenus(true);
-		M_EnterMenu(MN_SP_TIMEATTACK, true);
-	}
+	M_ClearMenus(true);
+	M_EnterMenu(MN_SP_TIMEATTACK, true);
 
 	G_SetGamestate(GS_TIMEATTACK);
 	modeattacking = ATTACKING_NONE;

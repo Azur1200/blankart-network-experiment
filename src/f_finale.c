@@ -1168,7 +1168,6 @@ void F_GameEndTicker(void)
 void F_InitMenuPresValues(void)
 {
 	menuanimtimer = 0;
-	M_ClearMenus(false); // TODO maybe call exit funcs here? but that triggers an infinite loop in replay hut...
 
 	// Set defaults for presentation values
 	strncpy(curbgname, "TITLESKY", 9);
