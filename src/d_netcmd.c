@@ -5844,6 +5844,12 @@ void Command_ExitGame_f(void)
 {
 	INT32 i;
 
+	if (dedicated)
+	{
+		CONS_Printf("This command cannot be used on dedicated server\n");
+		return;
+	}
+
 	LUA_HookBool(false, HOOK(GameQuit));
 
 	D_QuitNetGame();
