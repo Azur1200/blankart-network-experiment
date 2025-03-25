@@ -173,6 +173,16 @@ static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
 static tic_t followertimer = 0;		// Used for smooth follower floating
 
+static struct {
+	boolean active;
+	const char *text;
+	void (*routine)();
+	menumessagetype_t messagetype;
+	INT16 x, y;
+	INT16 numlines;
+	INT16 maxlength;
+} messagebox;
+
 static  UINT8 setupcontrolplayer;
 static  INT32   (*setupcontrols)[MAXINPUTMAPPING];  // pointer to the gamecontrols of the player being edited
 
@@ -183,12 +193,6 @@ static INT32 vidm_selected = 0;
 static INT32 vidm_nummodes;
 static INT32 vidm_column_size;
 
-//
-// PROTOTYPES
-//
-
-static void M_StopMessage(INT32 choice);
-
 // Prototyping is fun, innit?
 // ==========================================================================
 // NEEDED FUNCTION PROTOTYPES GO HERE
@@ -196,9 +200,6 @@ static void M_StopMessage(INT32 choice);
 
 void M_SetWaitingMode(int mode);
 int  M_GetWaitingMode(void);
-
-// the haxor message menu
-menu_t MessageDef;
 
 #define lsheadingheight 16
 
@@ -216,7 +217,7 @@ static patch_t *addonsp[NUM_EXT+5];
 static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the button from being extremely fucked
 
 // Drawing functions
-static void M_DrawGenericBackgroundMenu(void);
+static void M_DrawMessageMenu(void);
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
 
 // uhhhhhh hack?
@@ -1049,6 +1050,27 @@ boolean M_Responder(event_t *ev)
 	if (ch == -1)
 		return false;
 
+	if (messagebox.active)
+	{
+		if (messagebox.messagetype != MM_EVENTHANDLER)
+		{
+			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
+			{
+				if (messagebox.routine)
+					messagebox.routine(ch);
+				messagebox.active = false;
+				noFurtherInput = true;
+			}
+		}
+		else
+		{
+			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
+			if (messagebox.routine && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.routine != M_ChangecontrolResponse)))
+				messagebox.routine(ev);
+		}
+		return true;
+	}
+
 	// F-Keys
 	if (!menustack[0])
 	{
@@ -1133,36 +1155,6 @@ boolean M_Responder(event_t *ev)
 			ch = shiftxform[ch];
 		routine(ch);
 		return true;
-	}
-
-	if (currentMenu->menuitems[itemOn].status == IT_MSGHANDLER)
-	{
-		if (currentMenu->menuitems[itemOn].alphaKey != MM_EVENTHANDLER)
-		{
-			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
-			{
-				if (routine)
-					routine(ch);
-				M_StopMessage(0);
-				noFurtherInput = true;
-				return true;
-			}
-			return true;
-		}
-		else
-		{
-			// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-			if (ev->type == ev_mouse || (ev->type == ev_joystick && currentMenu->menuitems[itemOn].itemaction.eventhandler != M_ChangecontrolResponse))
-			{
-				return true;
-			}
-
-			if (routine)
-			{
-				currentMenu->menuitems[itemOn].itemaction.eventhandler(ev);
-			}
-			return true;
-		}
 	}
 
 	// BP: one of the more big hack i have never made
@@ -1461,17 +1453,23 @@ boolean M_DemoResponder(event_t *ev)
 //
 void M_Drawer(void)
 {
-	if (menustack[0])
+	if (menustack[0] || messagebox.active)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (!WipeInAction && menustack[0] != MN_PLAYBACK) // Replay playback has its own background
+		if (gamestate == GS_TIMEATTACK)
+			V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
+		else if (!WipeInAction && menustack[0] != MN_PLAYBACK) // Replay playback has its own background
 			V_DrawFadeScreen(0xFF00, 16);
+	}
 
-		if (currentMenu->drawroutine)
-		{
-			M_GetGametypeColor();
-			currentMenu->drawroutine(); // call current menu Draw routine
-		}
+	if (messagebox.active)
+	{
+		M_DrawMessageMenu();
+	}
+	else if (currentMenu && currentMenu->drawroutine)
+	{
+		M_GetGametypeColor();
+		currentMenu->drawroutine(); // call current menu Draw routine
 	}
 
 	// focus lost notification goes on top of everything, even the former everything
@@ -2227,12 +2225,6 @@ void M_DrawGenericMenu(void)
 	}
 }
 
-static void M_DrawGenericBackgroundMenu(void)
-{
-	V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-	M_DrawGenericMenu();
-}
-
 void M_DrawPauseMenu(void)
 {
 #ifdef HAVE_DISCORDRPC
@@ -2630,24 +2622,7 @@ static INT32 M_GetFirstLevelInList(void)
 // ==================================================
 // MESSAGE BOX (aka: a hacked, cobbled together menu)
 // ==================================================
-static void M_DrawMessageMenu(void);
-
-// Because this is just a hack-ish 'menu', I'm not putting this with the others
-static menuitem_t MessageMenu[] = {0};
-
-menu_t MessageDef =
-{
-	NULL,               // title
-	1,                  // # of menu items
-	MessageMenu,        // menuitem_t ->
-	M_DrawMessageMenu,  // drawing routine ->
-	0, 0,               // x, y                (TO HACK)
-	0,                  // lastOn, flags       (TO HACK)
-	NULL
-};
-
-
-void M_StartMessage(const char *string, void *routine,
+void M_StartMessage(const char *string, void (*routine)(),
 	menumessagetype_t itemtype)
 {
 	size_t max = 0, start = 0, i, strlines;
@@ -2691,24 +2666,10 @@ void M_StartMessage(const char *string, void *routine,
 
 	M_StartControlPanel(); // can't put menuactive to true
 
-	MessageDef.menuitems[0].text     = message;
-	MessageDef.menuitems[0].alphaKey = (UINT8)itemtype;
-	if (!routine && itemtype != MM_NOTHING) itemtype = MM_NOTHING;
-	switch (itemtype)
-	{
-		case MM_NOTHING:
-			MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-			MessageDef.menuitems[0].itemaction.routine = M_StopMessage;
-			break;
-		case MM_YESNO:
-			MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-			*(void**)&MessageDef.menuitems[0].itemaction.routine = routine;
-			break;
-		case MM_EVENTHANDLER:
-			MessageDef.menuitems[0].status     = IT_MSGHANDLER;
-			*(void**)&MessageDef.menuitems[0].itemaction.eventhandler = routine;
-			break;
-	}
+	messagebox.text = message;
+	messagebox.messagetype = itemtype;
+	messagebox.routine = routine;
+
 	//added : 06-02-98: now draw a textbox around the message
 	// compute lenght max and the numbers of lines
 	for (strlines = 0; *(message+start); strlines++)
@@ -2730,34 +2691,25 @@ void M_StartMessage(const char *string, void *routine,
 			start += i;
 	}
 
-	MessageDef.x = (INT16)((BASEVIDWIDTH  - 8*max-16)/2);
-	MessageDef.y = (INT16)((BASEVIDHEIGHT - M_StringHeight(message))/2);
+	messagebox.x = (BASEVIDWIDTH  - 8*max-16)/2;
+	messagebox.y = (BASEVIDHEIGHT - M_StringHeight(message))/2;
 
-	MessageDef.lastOn = (INT16)((strlines<<8)+max);
+	messagebox.numlines = strlines;
+	messagebox.maxlength = max;
 
-	currentMenu = &MessageDef;
-	itemOn = 0;
+	messagebox.active = true;
 }
 
 #define MAXMSGLINELEN 256
 
 static void M_DrawMessageMenu(void)
 {
-	INT32 y = currentMenu->y;
+	INT32 y = messagebox.y;
 	size_t i, start = 0;
-	INT16 max;
 	char string[MAXMSGLINELEN];
-	INT32 mlines;
-	const char *msg = currentMenu->menuitems[0].text;
+	const char *msg = messagebox.text;
 
-	mlines = currentMenu->lastOn>>8;
-	max = (INT16)((UINT8)(currentMenu->lastOn & 0xFF)*8);
-
-	// hack: draw RA background in RA menus
-	if (gamestate == GS_TIMEATTACK)
-		V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-
-	M_DrawTextBox(currentMenu->x, y - 8, (max+7)>>3, mlines);
+	M_DrawTextBox(messagebox.x, y - 8, messagebox.maxlength, messagebox.numlines);
 
 	while (*(msg+start))
 	{
@@ -2802,16 +2754,6 @@ static void M_DrawMessageMenu(void)
 		V_DrawString((BASEVIDWIDTH - V_StringWidth(string, 0))/2,y,V_ALLOWLOWERCASE,string);
 		y += 8; //SHORT(hu_font[0]->height);
 	}
-}
-
-// default message handler
-static void M_StopMessage(INT32 choice)
-{
-	(void)choice;
-	if (menustack[0])
-		M_SetupNextMenu(menustack[0], true);
-	else
-		M_ClearMenus(true);
 }
 
 // =========
@@ -3037,11 +2979,12 @@ static boolean prevmajormods = false;
 
 static void M_AddonsClearName(INT32 choice)
 {
+	(void)choice;
 	if (!majormods || prevmajormods)
 	{
 		CLEARNAME;
 	}
-	M_StopMessage(choice);
+	messagebox.active = false;
 }
 
 // returns whether to do message draw
@@ -3090,7 +3033,7 @@ static boolean M_AddonsRefresh(void)
 
 		if (message)
 		{
-			M_StartMessage(message, FUNCPTRCAST(M_AddonsClearName), MM_EVENTHANDLER);
+			M_StartMessage(message, M_AddonsClearName, MM_EVENTHANDLER);
 			return true;
 		}
 
@@ -3387,7 +3330,7 @@ void M_HandleAddons(INT32 choice)
 							}
 							break;
 						case EXT_TXT:
-							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), FUNCPTRCAST(M_AddonExec) ,MM_YESNO);
+							M_StartMessage(va("%c%s\x80\nThis file may not be a console script.\nAttempt to run anyways? \n\n(Press 'Y' to confirm)\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), dirmenu[dir_on[menudepthleft]]+DIR_STRING), M_AddonExec ,MM_YESNO);
 							break;
 						case EXT_CFG:
 							M_AddonExec(KEY_ENTER);
@@ -3745,8 +3688,6 @@ void M_DrawReplayHut(void)
 
 	static UINT16 replayhutmenuy = 0;
 
-	V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-
 	if (cv_vhseffect.value)
 		V_DrawVhsEffect(false);
 
@@ -3887,7 +3828,7 @@ void M_DrawReplayStartMenu(void)
 	const char *warning;
 	UINT8 i;
 
-	M_DrawGenericBackgroundMenu();
+	M_DrawGenericMenu();
 
 #define STARTY 62-(replayScrollTitle>>1)
 	// Draw rankings beyond first
@@ -4463,7 +4404,7 @@ static void M_RetryResponse(INT32 ch)
 void M_Retry(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),FUNCPTRCAST(M_RetryResponse),MM_YESNO);
+	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
 }
 
 void M_SelectableClearMenus(INT32 choice)
@@ -4521,7 +4462,7 @@ void M_DestroyRobots(INT32 choice)
 {
 	(void)choice;
 
-	M_StartMessage(M_GetText("Do you want to destroy all\nrobots in the current level?\n\n(Press 'Y' to confirm)\n"), FUNCPTRCAST(M_DestroyRobotsResponse), MM_YESNO);
+	M_StartMessage(M_GetText("Do you want to destroy all\nrobots in the current level?\n\n(Press 'Y' to confirm)\n"), M_DestroyRobotsResponse, MM_YESNO);
 }
 
 // ========
@@ -5562,8 +5503,6 @@ void M_DrawTimeAttackMenu(void)
 
 	//S_ChangeMusicInternal("racent", true); // Eww, but needed for when user hits escape during demo playback
 
-	V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-
 	M_DrawMenuTitle();
 	if (menustack[0] == MN_SP_TIMEATTACK)
 		M_DrawLevelSelectOnly(true, false);
@@ -5898,7 +5837,7 @@ static void M_OverwriteGuest(const char *which)
 		return;
 	}
 	if (FIL_FileExists(rguest)) {
-		M_StopMessage(0);
+		messagebox.active = false;
 		remove(rguest);
 	}
 	FIL_WriteFile(rguest, buf, len);
@@ -5943,11 +5882,11 @@ void M_SetGuestReplay(INT32 choice)
 		break;
 	case 3: // guest
 	default:
-		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), FUNCPTRCAST(M_EraseGuest), MM_YESNO);
+		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), M_EraseGuest, MM_YESNO);
 		return;
 	}
 	if (FIL_FileExists(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value))))
-		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), FUNCPTRCAST(which), MM_YESNO);
+		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
 	else
 		which(0);
 }
@@ -6002,7 +5941,7 @@ void M_EndGame(INT32 choice)
 	if (!Playing())
 		return;
 
-	M_StartMessage(M_GetText("Are you sure you want to end the game?\n\n(Press 'Y' to confirm)\n"), FUNCPTRCAST(M_ExitGameResponse), MM_YESNO);
+	M_StartMessage(M_GetText("Are you sure you want to end the game?\n\n(Press 'Y' to confirm)\n"), M_ExitGameResponse, MM_YESNO);
 }
 
 //===========================================================================
@@ -6456,7 +6395,7 @@ void M_ConnectMenuModChecks(INT32 choice)
 
 	if (modifiedgame)
 	{
-		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"), FUNCPTRCAST(M_ConnectMenu), MM_EVENTHANDLER);
+		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"), M_ConnectMenu, MM_EVENTHANDLER);
 		return;
 	}
 
@@ -7860,7 +7799,7 @@ void M_EraseData(INT32 choice)
 	else
 		eschoice = M_GetText("ALL game data");
 
-	M_StartMessage(va(esstr, eschoice), FUNCPTRCAST(M_EraseDataResponse), MM_YESNO);
+	M_StartMessage(va(esstr, eschoice), M_EraseDataResponse, MM_YESNO);
 }
 
 void M_ScreenshotOptions(INT32 choice)
@@ -8350,7 +8289,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 			sprintf(tmp, M_GetText("The \x82Pause Key \x80is enabled, but \nit is not configurable. \n\nHit another key for\n%s\nESC for Cancel"),
 				controltochangetext);
 
-		M_StartMessage(tmp, FUNCPTRCAST(M_ChangecontrolResponse), MM_EVENTHANDLER);
+		M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 
 		S_StartSound(NULL, sfx_s3k42);
 		return;
@@ -8358,7 +8297,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	else
 		S_StartSound(NULL, sfx_s224);
 
-	M_StopMessage(0);
+	messagebox.active = false;
 }
 
 void M_ChangeControl(INT32 choice)
@@ -8372,7 +8311,7 @@ void M_ChangeControl(INT32 choice)
 		currentMenu->menuitems[choice].text);
 	strlcpy(controltochangetext, currentMenu->menuitems[choice].text, 33);
 
-	M_StartMessage(tmp, FUNCPTRCAST(M_ChangecontrolResponse), MM_EVENTHANDLER);
+	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 }
 
 static void M_ResetControlsResponse(INT32 ch)
@@ -8401,7 +8340,7 @@ static void M_ResetControlsResponse(INT32 ch)
 void M_ResetControls(INT32 choice)
 {
 	(void)choice;
-	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), FUNCPTRCAST(M_ResetControlsResponse), MM_YESNO);
+	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), M_ResetControlsResponse, MM_YESNO);
 }
 
 // ===============
@@ -9014,7 +8953,7 @@ void M_QuitSRB2(INT32 choice)
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
-	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], FUNCPTRCAST(M_QuitResponse), MM_YESNO);
+	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
 }
 
 #ifdef HAVE_DISCORDRPC

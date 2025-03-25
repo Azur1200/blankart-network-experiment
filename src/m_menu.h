@@ -139,7 +139,7 @@ typedef enum
 	MM_EVENTHANDLER // the same of above but without 'y' or 'n' restriction
 	                // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
-void M_StartMessage(const char *string, void *routine, menumessagetype_t itemtype);
+void M_StartMessage(const char *string, void (*routine)(), menumessagetype_t itemtype);
 
 typedef enum
 {
@@ -168,7 +168,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_SUBMENU           6     // go to sub menu
 #define IT_CVAR              8     // handle as a cvar
 #define IT_PAIR             11     // no handling, define both sides of text
-#define IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message)
 
 #define IT_DISPLAY   (48+64+128)    // 16+32+64+128
 #define IT_NOTHING            0     // space
@@ -225,7 +224,6 @@ typedef union
 	menutype_t submenu;      // IT_SUBMENU
 	consvar_t *cvar;             // IT_CVAR
 	void (*routine)(INT32 choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
-	void (*eventhandler)(event_t *ev); // MM_EVENTHANDLER
 } itemaction_t;
 
 //
