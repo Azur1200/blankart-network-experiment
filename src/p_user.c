@@ -60,6 +60,7 @@
 #include "k_terrain.h" // K_SpawnSplashForMobj
 #include "k_color.h"
 #include "k_follower.h"
+#include "g_party.h"
 
 #include "acs/interface.h"
 
@@ -717,7 +718,7 @@ boolean P_EndingMusic(player_t *player)
 
 	if (r_splitscreen)
 	{
-		INT32 *localplayertable = (splitscreen_partied[consoleplayer] ? splitscreen_party[consoleplayer] : g_localplayers);
+		const UINT8 *localplayertable = G_PartyArray(consoleplayer);
 
 		if (!((players[localplayertable[0]].exiting || (players[localplayertable[0]].pflags & PF_NOCONTEST))
 			|| (players[localplayertable[1]].exiting || (players[localplayertable[1]].pflags & PF_NOCONTEST))
@@ -816,7 +817,7 @@ void P_RestoreMusic(player_t *player)
 		if (r_splitscreen)
 		{
 			INT32 bestlocaltimer = 1;
-			INT32 *localplayertable = (splitscreen_partied[consoleplayer] ? splitscreen_party[consoleplayer] : g_localplayers);
+			const UINT8 *localplayertable = G_PartyArray(consoleplayer);
 
 #define setbests(p) \
 	if (players[p].playerstate == PST_LIVE) \
@@ -1107,8 +1108,6 @@ boolean P_IsMachineLocalPlayer(player_t *player)
 //
 boolean P_IsLocalPlayer(player_t *player)
 {
-	UINT8 i;
-
 	if (player == NULL)
 	{
 		return false;
@@ -1118,18 +1117,8 @@ boolean P_IsLocalPlayer(player_t *player)
 	if (demo.playback)
 		return false;
 
-	// parties - treat everyone as if it's couch co-op
-	if (splitscreen_partied[consoleplayer])
-	{
-		for (i = 0; i < splitscreen_party_size[consoleplayer]; i++)
-		{
-			if (splitscreen_party[consoleplayer][i] == (player-players))
-				return true;
-		}
-		return false;
-	}
-
-	return P_IsMachineLocalPlayer(player);
+	// handles both online parties and local players (no need to call P_IsMachineLocalPlayer here)
+	return G_IsPartyLocal(player-players);
 }
 
 //
@@ -1840,7 +1829,7 @@ static void P_3dMovement(player_t *player)
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
 	{
-		movepushforward = K_3dKartMovement(player);
+		movepushforward = K_3dKartMovement(player, onground);
 
 		// allow very small movement while in air for gameplay
 		if (!onground)
@@ -2539,18 +2528,8 @@ static void P_DeathThink(player_t *player)
 	// If they die while still in respawn state for extra safety.
 	if (player->nextwaypoint && player->respawn > 0)
 	{
-		mobj_t *currentwaypoint = player->currentwaypoint->mobj;
-		mobj_t *safewaypoint = player->nextwaypoint->mobj;
-		angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
-
-		player->starposttime = player->realtime;
-		player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
-		player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-		player->starpostangle = respawnangle;
-
-		// Then do x and y
-		player->starpostx = safewaypoint->x >> FRACBITS;
-		player->starposty = safewaypoint->y >> FRACBITS;
+		// Now a clean function! Neat, eh?
+		K_SetRespawnAtNextWaypoint(player);
 	}
 
 	K_KartPlayerHUDUpdate(player);
@@ -2934,7 +2913,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			focusangle = player->cmd.angle << TICCMD_REDUCE;
 		focusaiming = 0;
 	}
-	else if (P_IsLocalPlayer(player))
+	else if (P_IsMachineLocalPlayer(player))
 	{
 		focusangle = localangle[num];
 		focusaiming = localaiming[num];
@@ -3558,7 +3537,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 	// Reset away view (some code referenced from Got_Teamchange)
 	{
 		UINT8 i = 0;
-		INT32 *localplayertable = (splitscreen_partied[consoleplayer] ? splitscreen_party[consoleplayer] : g_localplayers);
+		const UINT8 *localplayertable = G_PartyArray(consoleplayer);
 
 		for (i = 0; i < r_splitscreen; i++)
 		{

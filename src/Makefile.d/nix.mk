@@ -5,10 +5,6 @@
 opts+=-DUNIXCOMMON -DLUA_USE_POSIX
 libs+=-lm
 
-ifndef nasm_format
-nasm_format:=elf -DLINUX
-endif
-
 ifndef NOHW
 opts+=-I/usr/X11R6/include
 libs+=-L/usr/X11R6/lib
@@ -31,7 +27,6 @@ endif
 # FIXME: UNTESTED
 #ifdef SOLARIS
 #NOIPX=1
-#NOASM=1
 #opts+=-I/usr/local/include -I/opt/sfw/include \
 #		-DSOLARIS -DINADDR_NONE=INADDR_ANY -DBSD_COMP
 #libs+=-L/opt/sfw/lib -lsocket -lnsl

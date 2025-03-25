@@ -38,6 +38,7 @@
 #include "r_things.h"
 #include "r_fps.h"
 #include "m_random.h"
+#include "g_party.h"
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
@@ -1017,11 +1018,11 @@ static void K_drawKartItem(void)
 				localpatch = kp_nodraw;
 		}
 
-		if (stplyr->karthud[khud_itemblink] && (leveltime & 1))
+		if (stplyr->itemblink && (leveltime & 1))
 		{
 			colormode = TC_BLINK;
 
-			switch (stplyr->karthud[khud_itemblinkmode])
+			switch (stplyr->itemblinkmode)
 			{
 				case 2:
 					localcolor = K_RainbowColor(leveltime);
@@ -2093,17 +2094,18 @@ static void K_drawRingMeter(void)
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
+	SINT8 ringcount = stplyr->rings;
 
-	rn[0] = ((abs(stplyr->rings) / 10) % 10);
-	rn[1] = (abs(stplyr->rings) % 10);
+	rn[0] = ((abs(ringcount) / 10) % 10);
+	rn[1] = (abs(ringcount) % 10);
 
 
-	if (stplyr->rings <= 0 && (leveltime/5 & 1)) // In debt
+	if (ringcount <= 0 && (leveltime/5 & 1)) // In debt
 	{
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
 		colorring = true;
 	}
-	else if (stplyr->rings >= 20) // Maxed out
+	else if (ringcount >= 20) // Maxed out
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 
 	if (r_splitscreen > 1)
@@ -2136,7 +2138,7 @@ static void K_drawRingMeter(void)
 
 		V_DrawMappedPatch(fr, fy-10, V_HUDTRANS|splitflags, kp_ringsplitscreen, (colorring ? ringmap : NULL));
 
-		if (stplyr->rings < 0) // Draw the minus for ring debt
+		if (ringcount < 0) // Draw the minus for ring debt
 			V_DrawMappedPatch(fr+7, fy-8, V_HUDTRANS|splitflags, kp_ringdebtminussmall, ringmap);
 
 		V_DrawMappedPatch(fr+11, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[rn[0]], ringmap);
@@ -2160,32 +2162,46 @@ static void K_drawRingMeter(void)
 			V_DrawMappedPatch(LAPS_X-5, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
 		}
 
-		V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
-		V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+		if (stplyr->rings < 0)
+		{
+			// Invert the ring count
+			ringcount = -ringcount;
+		}
+
+		if (rn[1] == 1 && ringcount == 11)
+			V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+		else
+			V_DrawMappedPatch(LAPS_X+2, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
+
+		if (rn[1] == 1 && ringcount == 11)
+			V_DrawMappedPatch(LAPS_X+7, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
+		else
+			V_DrawMappedPatch(LAPS_X+8, LAPS_Y-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[1]], ringmap);
 
 		// Draw the fillbars
 		if (stplyr->rings)
 		{
-			SINT8 ringcount = stplyr->rings;
-			SINT8 barcolors[4] = {66,83,65};
+			UINT8 barcolors[5] = {66,72,2,68};
 			boolean indebt = false;
 
 			if (stplyr->rings < 0)
 			{
-				barcolors[0] = 35;
-				barcolors[1] = 33;
-				barcolors[2] = 37;
-				ringcount = -ringcount;
+				barcolors[0] = 38;
+				barcolors[1] = 36;
+				barcolors[2] = 32;
+				barcolors[3] = 40;
 				indebt = true;
 			}
+
 			if (!indebt || (indebt && (leveltime/5 & 1)))
 			{
 				for (i = 0; i != ringcount; i++)
 				{
 
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10 + ringoffsety, 1, 3, barcolors[0]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9 + ringoffsety, 1, 2, barcolors[1]|splitflags);
-					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-6 + ringoffsety, 1, 1, barcolors[2]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-10 + ringoffsety, 1, 1, barcolors[0]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-9 + ringoffsety, 1, 4, barcolors[1]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-8 + ringoffsety, 1, 1, barcolors[2]|splitflags);
+					V_DrawFill(LAPS_X+17+(2*i), LAPS_Y-7 + ringoffsety, 1, 1, barcolors[3]|splitflags);
 				}
 			}
 		}
@@ -2697,6 +2713,31 @@ static void K_drawKartNameTags(void)
 		return;
 	}
 
+	// Crop within splitscreen bounds
+	switch (r_splitscreen)
+	{
+		case 1:
+			V_SetClipRect(
+				0,
+				cnum == 1 ? (BASEVIDHEIGHT / 2) * FRACUNIT : 0,
+				BASEVIDWIDTH * FRACUNIT,
+				(BASEVIDHEIGHT / 2) * FRACUNIT,
+				0
+			);
+			break;
+
+		case 2:
+		case 3:
+			V_SetClipRect(
+				cnum & 1 ? (BASEVIDWIDTH / 2) * FRACUNIT : 0,
+				cnum > 1 ? (BASEVIDHEIGHT / 2) * FRACUNIT : 0,
+				(BASEVIDWIDTH / 2) * FRACUNIT,
+				(BASEVIDHEIGHT / 2) * FRACUNIT,
+				0
+			);
+			break;
+	}
+
 	c.x = viewx;
 	c.y = viewy;
 	c.z = viewz;
@@ -2926,6 +2967,8 @@ static void K_drawKartNameTags(void)
 			}
 		}
 	}
+
+	V_ClearClipRect();
 }
 
 static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
@@ -3000,7 +3043,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	skin = ((skin_t*)players->mo->skin)-skins;
+	skin = ((skin_t*)player->mo->skin)-skins;
 
 	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(faceprefix[skin][FACE_MINIMAP]->width))/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(faceprefix[skin][FACE_MINIMAP]->height))/2)<<FRACBITS);
@@ -3347,7 +3390,7 @@ static void K_drawKartMinimap(void)
 		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
 
-		if ((players[i].hyudorotimer > 0) && (leveltime & 1))
+		if ((players[localplayers[i]].hyudorotimer > 0) && (leveltime & 1))
 			continue;
 
 		mobj = players[localplayers[i]].mo;

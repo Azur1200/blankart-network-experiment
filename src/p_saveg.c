@@ -42,6 +42,7 @@
 #include "k_pwrlv.h"
 #include "k_terrain.h"
 #include "acs/interface.h"
+#include "g_party.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -51,6 +52,7 @@ savedata_t savedata;
 // being sent and received
 #define ARCHIVEBLOCK_MISC     0x7FEEDEED
 #define ARCHIVEBLOCK_PLAYERS  0x7F448008
+#define ARCHIVEBLOCK_PARTIES  0x7F87AF0C
 #define ARCHIVEBLOCK_WORLD    0x7F8C08C0
 #define ARCHIVEBLOCK_POBJS    0x7F928546
 #define ARCHIVEBLOCK_THINKERS 0x7F37037C
@@ -121,14 +123,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEUINT8(save->p, playerconsole[i]);
 		WRITEINT32(save->p, splitscreen_invitations[i]);
-		WRITEINT32(save->p, splitscreen_party_size[i]);
-		WRITEINT32(save->p, splitscreen_original_party_size[i]);
-
-		for (j = 0; j < MAXSPLITSCREENPLAYERS; ++j)
-		{
-			WRITEINT32(save->p, splitscreen_party[i][j]);
-			WRITEINT32(save->p, splitscreen_original_party[i][j]);
-		}
 
 		WRITEANGLE(save->p, players[i].angleturn);
 		WRITEANGLE(save->p, players[i].aiming);
@@ -285,6 +279,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].tripwireReboundDelay);
 
 		WRITEUINT16(save->p, players[i].itemroulette);
+		WRITEUINT16(save->p, players[i].itemblink);
+		WRITEUINT16(save->p, players[i].itemblinkmode);
 		WRITEUINT8(save->p, players[i].roulettetype);
 
 		WRITESINT8(save->p, players[i].itemtype);
@@ -365,6 +361,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].botvars.itemdelay);
 		WRITEUINT32(save->p, players[i].botvars.itemconfirm);
 		WRITESINT8(save->p, players[i].botvars.turnconfirm);
+		WRITEUINT32(save->p, players[i].botvars.respawnconfirm);
 		
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -437,14 +434,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		playerconsole[i] = READUINT8(save->p);
 		splitscreen_invitations[i] = READINT32(save->p);
-		splitscreen_party_size[i] = READINT32(save->p);
-		splitscreen_original_party_size[i] = READINT32(save->p);
-
-		for (j = 0; j < MAXSPLITSCREENPLAYERS; ++j)
-		{
-			splitscreen_party[i][j] = READINT32(save->p);
-			splitscreen_original_party[i][j] = READINT32(save->p);
-		}
 
 		players[i].angleturn = READANGLE(save->p);
 		players[i].aiming = READANGLE(save->p);
@@ -594,6 +583,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].tripwireReboundDelay = READUINT8(save->p);
 
 		players[i].itemroulette = READUINT16(save->p);
+		players[i].itemblink = READUINT16(save->p);
+		players[i].itemblinkmode = READUINT16(save->p);
 		players[i].roulettetype = READUINT8(save->p);
 
 		players[i].itemtype = READSINT8(save->p);
@@ -674,6 +665,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.itemdelay = READUINT32(save->p);
 		players[i].botvars.itemconfirm = READUINT32(save->p);
 		players[i].botvars.turnconfirm = READSINT8(save->p);
+		players[i].botvars.respawnconfirm = READUINT32(save->p);
 		
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);
@@ -714,6 +706,59 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}
 	TracyCZoneEnd(__zone);
+}
+
+static void P_NetArchiveParties(savebuffer_t *save)
+{
+	INT32 i, k;
+	UINT8 partySize;
+
+	WRITEUINT32(save->p, ARCHIVEBLOCK_PARTIES);
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		partySize = G_PartySize(i);
+
+		WRITEUINT8(save->p, partySize);
+
+		for (k = 0; k < partySize; ++k)
+		{
+			WRITEUINT8(save->p, G_PartyMember(i, k));
+		}
+	}
+}
+
+static void P_NetUnArchiveParties(savebuffer_t *save)
+{
+	INT32 i, k;
+	UINT8 partySize;
+
+	if (READUINT32(save->p) != ARCHIVEBLOCK_PARTIES)
+		I_Error("Bad $$$.sav at archive block Parties");
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		G_BuildLocalSplitscreenParty(i);
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		partySize = READUINT8(save->p);
+
+		for (k = 0; k < partySize; ++k)
+		{
+			G_JoinParty(i, READUINT8(save->p));
+		}
+	}
 }
 
 ///
@@ -5400,6 +5445,8 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	}
 
 	P_NetArchivePlayers(save);
+	P_NetArchiveParties(save);
+
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetArchiveWorld(save);
@@ -5448,6 +5495,8 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	if (!P_NetUnArchiveMisc(save,reloading))
 		return false;
 	P_NetUnArchivePlayers(save);
+	P_NetUnArchiveParties(save);
+
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetUnArchiveWorld(save);

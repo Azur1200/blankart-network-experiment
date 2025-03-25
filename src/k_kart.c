@@ -252,6 +252,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartrings);
 	CV_RegisterVar(&cv_kartstacking);
+	CV_RegisterVar(&cv_kartitembreaker);
 
 	CV_RegisterVar(&cv_newspeedometer);
 	CV_RegisterVar(&cv_showinput);
@@ -1479,8 +1480,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (player->roulettetype == 2)
 	{
 		player->eggmanexplode = 4*TICRATE;
-		//player->karthud[khud_itemblink] = TICRATE;
-		//player->karthud[khud_itemblinkmode] = 1;
+		//player->itemblink = TICRATE;
+		//player->itemblinkmode = 1;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player) && !demo.freecam)
@@ -1494,8 +1495,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		K_KartGetItemResult(player, cv_kartdebugitem.value);
 		player->itemamount = cv_kartdebugamount.value;
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 2;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 2;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player) && !demo.freecam)
@@ -1510,8 +1511,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		SINT8 itemroll = P_RandomRange(KITEM_SNEAKER, NUMKARTITEMS - 1);
 
 		K_KartGetItemResult(player, itemroll);
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 0;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 0;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player))
@@ -1528,7 +1529,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && ((K_RingsActive() == true) && (modeattacking || cv_superring.value))) // ANY mashed value? You get rings.
 			{
 				K_KartGetItemResult(player, KITEM_SUPERRING);
-				player->karthud[khud_itemblinkmode] = 1;
+				player->itemblinkmode = 1;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
@@ -1538,7 +1539,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					K_KartGetItemResult(player, KITEM_SNEAKER);
 				else  // Default to sad if nothing's enabled...
 					K_KartGetItemResult(player, KITEM_SAD);
-				player->karthud[khud_itemblinkmode] = 0;
+				player->itemblinkmode = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
@@ -1548,20 +1549,20 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && (bossinfo.boss || cv_banana.value) && !itembreaker) // ANY mashed value? You get a banana.
 			{
 				K_KartGetItemResult(player, KITEM_BANANA);
-				player->karthud[khud_itemblinkmode] = 1;
+				player->itemblinkmode = 1;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
 			else if (bossinfo.boss)
 			{
 				K_KartGetItemResult(player, KITEM_ORBINAUT);
-				player->karthud[khud_itemblinkmode] = 0;
+				player->itemblinkmode = 0;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
 		}
 
-		player->karthud[khud_itemblink] = TICRATE;
+		player->itemblink = TICRATE;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		return;
@@ -1575,8 +1576,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		if (P_RandomChance((debtamount*FRACUNIT)/20))
 		{
 			K_KartGetItemResult(player, KITEM_SUPERRING);
-			player->karthud[khud_itemblink] = TICRATE;
-			player->karthud[khud_itemblinkmode] = 1;
+			player->itemblink = TICRATE;
+			player->itemblinkmode = 1;
 			player->itemroulette = 0;
 			player->roulettetype = 0;
 			if (P_IsDisplayPlayer(player))
@@ -1594,8 +1595,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			&& cv_selfpropelledbomb.value)
 		{
 			K_KartGetItemResult(player, KITEM_SPB);
-			player->karthud[khud_itemblink] = TICRATE;
-			player->karthud[khud_itemblinkmode] = 2;
+			player->itemblink = TICRATE;
+			player->itemblinkmode = 2;
 			player->itemroulette = 0;
 			player->roulettetype = 0;
 			if (P_IsDisplayPlayer(player))
@@ -1619,8 +1620,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (useodds == 69)
 	{
 		K_KartGetItemResult(player, KITEM_SPB);
-		player->karthud[khud_itemblink] = TICRATE;
-		player->karthud[khud_itemblinkmode] = 2;
+		player->itemblink = TICRATE;
+		player->itemblinkmode = 2;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player))
@@ -1663,8 +1664,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (P_IsDisplayPlayer(player) && !demo.freecam)
 		S_StartSound(NULL, ((player->roulettetype == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
-	player->karthud[khud_itemblink] = TICRATE;
-	player->karthud[khud_itemblinkmode] = ((player->roulettetype == 1) ? 2 : (mashed ? 1 : 0));
+	player->itemblink = TICRATE;
+	player->itemblinkmode = ((player->roulettetype == 1) ? 2 : (mashed ? 1 : 0));
 
 	player->itemroulette = 0; // Since we're done, clear the roulette number
 	player->roulettetype = 0; // This too
@@ -3661,9 +3662,6 @@ fixed_t K_GetNewSpeed(player_t *player)
 	const fixed_t p_speed = K_GetKartSpeed(player, true, true);
 	fixed_t p_accel = K_GetKartAccel(player);
 	fixed_t newspeed, oldspeed, finalspeed;
-	boolean onground = (P_IsObjectOnGround(player->mo) || (player->pogospring));
-
-	if (!onground) return 0; // If the player isn't on the ground, there is no change in speed
 
 	if (K_PlayerUsesBotMovement(player) == true && player->botvars.rubberband > 0)
 	{
@@ -3698,11 +3696,12 @@ fixed_t K_GetNewSpeed(player_t *player)
 	return finalspeed;
 }
 
-fixed_t K_3dKartMovement(player_t *player)
+fixed_t K_3dKartMovement(player_t *player, boolean onground)
 {
 	fixed_t finalspeed = K_GetNewSpeed(player);
-
 	SINT8 forwardmove = K_GetForwardMove(player);
+
+	if (!onground) return 0; // If the player isn't on the ground, there is no change in speed
 
 	// forwardmove is:
 	//  50 while accelerating,
@@ -5136,7 +5135,8 @@ static void K_DoHyudoroSteal(player_t *player)
 			// Has an item
 			&& (players[i].itemtype
 			&& players[i].itemamount
-			&& !(players[i].itemflags & IF_ITEMOUT)))
+			&& !(players[i].itemflags & IF_ITEMOUT)
+			&& !players[i].itemblink))
 		{
 			playerswappable[numplayers] = i;
 			numplayers++;
@@ -6685,12 +6685,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
 
-	if (player->karthud[khud_itemblink] && player->karthud[khud_itemblink]-- <= 0)
-	{
-		player->karthud[khud_itemblinkmode] = 0;
-		player->karthud[khud_itemblink] = 0;
-	}
-
 	if (gametype == GT_RACE)
 	{
 
@@ -7311,6 +7305,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->tiregrease > 0)
 		player->tiregrease--;;
+
+	if (player->itemblink && player->itemblink-- <= 0)
+	{
+		player->itemblinkmode = 0;
+		player->itemblink = 0;
+	}
 
 	K_UpdateTripwire(player);
 
@@ -8368,6 +8368,60 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 	player->starposty += FixedMul(16, FINESINE(from));
 }
 
+void K_SetRespawnAtNextWaypoint(player_t * player)
+{
+	mobj_t *currentwaypoint = player->currentwaypoint->mobj;
+	mobj_t *safewaypoint = player->nextwaypoint->mobj;
+	angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+
+	// Safety :P
+	if (!safewaypoint || !currentwaypoint)
+	{
+		// Better safe then sorry.
+		return;
+	}
+
+	player->pflags |= PF_TRUSTWAYPOINTS;
+	player->starposttime = player->realtime;
+	player->starpostz = (safewaypoint->spawnpoint->z + 15) >> FRACBITS;
+	player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+	player->starpostangle = respawnangle;
+
+	// Then do x and y
+	player->starpostx = safewaypoint->x >> FRACBITS;
+	player->starposty = safewaypoint->y >> FRACBITS;
+}
+
+static boolean K_MobjIsOnLine(mobj_t *const mobj)
+{
+	const fixed_t x = mobj->x;
+	const fixed_t y = mobj->y;
+
+	line_t *line = P_FindNearestLine(x, y,
+			mobj->subsector->sector, -1);
+
+	vertex_t point;
+
+	if (line != NULL)
+	{
+		P_ClosestPointOnLine(x, y, line, &point);
+
+		if (x == point.x && y == point.y)
+			return true;
+	}
+
+	return false;
+}
+
+static void K_MobjFudgeRespawn(player_t *player, const mobj_t *const mobj)
+{
+	const angle_t from = R_PointToAngle2(mobj->x, mobj->y,
+	player->mo->x, player->mo->y) >> ANGLETOFINESHIFT;
+
+	player->starpostx += FixedMul(25, FINECOSINE(from));
+	player->starposty += FixedMul(25, FINESINE(from));
+}
+
 /*--------------------------------------------------
 	static void K_UpdatePlayerWaypoints(player_t *const player)
 
@@ -8465,22 +8519,16 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			// Then do x and y
 			player->starpostx = player->mo->x >> FRACBITS;
 			player->starposty = player->mo->y >> FRACBITS;
+
+			if (K_MobjIsOnLine(player->mo))
+			{
+				K_MobjFudgeRespawn(player, player->mo);
+			}
 		}
 		else
 		{
-			mobj_t *currentwaypoint = player->currentwaypoint->mobj;
-			mobj_t *safewaypoint = player->nextwaypoint->mobj;
-			angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
-
-			player->starposttime = player->realtime;
-			player->starpostz = safewaypoint->spawnpoint->z >> FRACBITS;
-			player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-			player->starpostangle = respawnangle;
-
-			// Then do x and y
-			player->starpostx = safewaypoint->x >> FRACBITS;
-			player->starposty = safewaypoint->y >> FRACBITS;
-
+			// Now a clean function! Neat, eh?
+			K_SetRespawnAtNextWaypoint(player);
 		}
 
 		if (player->nextwaypoint->onaline)

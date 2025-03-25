@@ -1410,15 +1410,15 @@ void PT_FileFragment(void)
 	filename = va("%s", file->filename);
 	nameonly(filename);
 
-	if (!strcmp(filename, "main.pk3")
-		|| !strcmp(filename, "srb2.srb")
-		|| !strcmp(filename, "gfx.kart")
-		|| !strcmp(filename, "textures.kart")
-		|| !strcmp(filename, "chars.kart")
-		|| !strcmp(filename, "maps.kart")
-		|| !strcmp(filename, "patch.pk3")
-		|| !strcmp(filename, "sounds.kart")
-		|| !strcmp(filename, "music.kart")
+	if (!strcmp(filename, MAINNAME)
+		|| !strcmp(filename, SRB2NAME)
+		|| !strcmp(filename, GRAPHICSNAME)
+		|| !strcmp(filename, TEXTURESNAME)
+		|| !strcmp(filename, CHARSNAME)
+		|| !strcmp(filename, MAPSNAME)
+		|| !strcmp(filename, PATCHNAME)
+		|| !strcmp(filename, SOUNDSNAME)
+		|| !strcmp(filename, MUSICNAME)
 		)
 	{
 		I_Error("Tried to download \"%s\"", filename);

@@ -113,6 +113,7 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n);
 // clip the console player aiming to the view
 INT32 G_ClipAimingPitch(INT32 *aiming);
 INT16 G_SoftwareClipAimingPitch(INT32 *aiming);
+void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox);
 
 extern angle_t localangle[MAXSPLITSCREENPLAYERS];
 extern INT32 localaiming[MAXSPLITSCREENPLAYERS]; // should be an angle_t but signed
@@ -219,13 +220,10 @@ boolean G_CanView(INT32 playernum, UINT8 viewnum, boolean onlyactive);
 INT32 G_FindView(INT32 startview, UINT8 viewnum, boolean onlyactive, boolean reverse);
 INT32 G_CountPlayersPotentiallyViewable(boolean active);
 
+void G_FixCamera(UINT8 view);
 void G_ResetViews(void);
 void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive);
 void G_AdjustView(UINT8 viewnum, INT32 offset, boolean onlyactive);
-
-void G_AddPartyMember (INT32 party_member, INT32 new_party_member);
-void G_RemovePartyMember (INT32 party_member);
-void G_ResetSplitscreen (INT32 playernum);
 
 void G_AddPlayer(INT32 playernum, INT32 console);
 

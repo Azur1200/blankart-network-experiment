@@ -80,6 +80,17 @@
 
 #include <tracy/tracy/Tracy.hpp>
 
+// Put hashes here to get them out of header hell.
+#define ASSET_HASH_MAIN_PK3     "b635b78a127d116d22772c10ffd323f2"
+#define ASSET_HASH_SRB2_SRB     "c1b9577687f8a795104aef4600720ea7"
+#define ASSET_HASH_GFX_KART       "06f86ee16136eb8a7043b15001797034"
+#define ASSET_HASH_TEXTURES_KART  "abb53d56aba47c3a8cb0f764da1c8b80"
+#define ASSET_HASH_CHARS_KART     "e2c428347dde52858a3dacd29fc5b964"
+#define ASSET_HASH_MAPS_KART      "d051e55141ba736582228c456953cd98"
+#ifdef USE_PATCH_FILE
+#define ASSET_HASH_PATCH_PK3     "00000000000000000000000000000000"
+#endif
+
 #ifdef CMAKECONFIG
 #include "config.h"
 #else
@@ -130,7 +141,6 @@ INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 boolean sound_disabled = false;
 boolean digital_disabled = false;
 
-boolean advancedemo;
 #ifdef DEBUGFILE
 INT32 debugload = 0;
 #endif
@@ -972,15 +982,6 @@ void D_SRB2Loop(void)
 	}
 }
 
-//
-// D_AdvanceDemo
-// Called after each demo or intro demosequence finishes
-//
-void D_AdvanceDemo(void)
-{
-	advancedemo = true;
-}
-
 // =========================================================================
 // D_SRB2Main
 // =========================================================================
@@ -1053,7 +1054,6 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
-	advancedemo = false;
 	F_InitMenuPresValues();
 
 	// clear cmd building stuff
@@ -1143,7 +1143,7 @@ static void ChangeDirForUrlHandler(void)
 
 static boolean AddIWAD(void)
 {
-	char * path = va(pandf,srb2path,"srb2.srb");
+	char * path = va(pandf,srb2path, SRB2NAME);
 
 	if (FIL_ReadFileOK(path))
 	{
@@ -1181,7 +1181,7 @@ static void IdentifyVersion(void)
 	// Load the IWAD
 	if (! AddIWAD())
 	{
-		I_Error("srb2.srb not found! Expected in %s\n", srb2waddir);
+		I_Error("%s not found! Expected in %s\n", SRB2NAME, srb2waddir);
 	}
 
 	// will be overwritten in case of -cdrom or unix/win home
@@ -1191,33 +1191,15 @@ static void IdentifyVersion(void)
 	// if you change the ordering of this or add/remove a file, be sure to update the md5
 	// checking in D_SRB2Main
 
-#define MAINNAME "main.pk3"
-#define TEXTURESNAME "textures.kart"
-#define MAPSNAME "maps.kart"
-#define PATCHNAME "patch.pk3"
-#define MUSICNAME "music.kart"
-#define FOLLOWERSNAME "followers.pk3"
-#define CHARSNAME "chars.kart"
-#define GRAPHICSNAME "gfx.kart"
-#define SOUNDSNAME "sounds.kart"
-
 	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,TEXTURESNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
-	//D_AddFile(startupiwads, va(pandf,srb2waddir,FOLLOWERSNAME));
 #ifdef USE_PATCH_FILE
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
 #endif
 ////
-#undef MAINNAME
-#undef TEXTURESNAME
-#undef MAPSNAME
-#undef PATCHNAME
-#undef FOLLOWERSNAME
-#undef CHARSNAME
-#undef GRAPHICSNAME
 
 #if !defined (HAVE_SDL) || defined (HAVE_MIXER)
 
@@ -1234,10 +1216,7 @@ static void IdentifyVersion(void)
 	MUSICTEST(SOUNDSNAME)
 	MUSICTEST(MUSICNAME)
 
-#undef MUSICNAME
 #undef MUSICTEST
-#undef SOUNDSNAME
-
 
 #endif
 }
@@ -1493,7 +1472,6 @@ void D_SRB2Main(void)
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);		// maps.kart
 	wadfiles[mainwads]->compatmode = true;
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
-	//mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_FOLLOWERS_PK3);  // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_PATCH_PK3);		// patch.pk3
 #endif
@@ -1507,7 +1485,6 @@ void D_SRB2Main(void)
 	mainwads++;	// maps.kart
 	wadfiles[mainwads]->compatmode = true;
 	mainwads++;	// main.pk3
-	//mainwads++; // followers.pk3
 #ifdef USE_PATCH_FILE
 	mainwads++;	// patch.pk3
 #endif

@@ -123,6 +123,9 @@ extern UINT8 demo_writerng;
 #define DXD_COLOR		0x10 // color changed
 #define DXD_FOLLOWER	0x20 // follower was changed
 #define DXD_RESPAWN		0x40  // "respawn" command in console
+
+#define DXD_ADDPLAYER (DXD_JOINDATA|DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_FOLLOWER)
+
 #define DXD_WEAPONPREF	0x80 // netsynced playsim settings were changed
 
 #define DXD_PST_PLAYING    0x01
@@ -196,6 +199,8 @@ void G_DeferedPlayDemo(const char *demo);
 void G_SaveDemo(void);
 
 boolean G_DemoTitleResponder(event_t *ev);
+
+void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen);
 
 #ifdef __cplusplus
 } // extern "C"

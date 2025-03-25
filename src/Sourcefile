@@ -15,7 +15,7 @@ f_wipe.c
 g_demo.c
 g_game.c
 g_input.c
-g_splitscreen.c
+g_party.cpp
 am_map.c
 command.c
 console.c
@@ -92,7 +92,6 @@ mserv.c
 http-mserv.c
 i_tcp.c
 lzf.c
-vid_copy.s
 lua_script.c
 lua_baselib.c
 lua_mathlib.c

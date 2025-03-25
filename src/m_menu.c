@@ -1200,6 +1200,7 @@ static menuitem_t OP_AllControlsMenu[] =
 	//{IT_CONTROL, NULL, "Team Chat",             M_ChangeControl, gc_teamkey    },
 	{IT_CONTROL, NULL, "Show Rankings",         {.routine = M_ChangeControl}, gc_scores     },
 	{IT_CONTROL, NULL, "Change Viewpoint",      {.routine = M_ChangeControl}, gc_viewpoint  },
+	{IT_CONTROL, NULL, "Respawn",      			{.routine = M_ChangeControl}, gc_respawn    },
 	{IT_CONTROL, NULL, "Reset Camera",          {.routine = M_ChangeControl}, gc_camreset   },
 	{IT_CONTROL, NULL, "Toggle Chasecam",       {.routine = M_ChangeControl}, gc_camtoggle  },
 	{IT_CONTROL, NULL, "Pause",                 {.routine = M_ChangeControl}, gc_pause      },
@@ -1517,9 +1518,10 @@ static menuitem_t OP_GameOptionsMenu[] =
 static menuitem_t OP_BlanKartGameOptionsMenu[] =
 {
 	{IT_STRING | IT_CVAR, NULL, "Rings",						{.cvar = &cv_kartrings},			 10},
-	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 20},
-	{IT_STRING | IT_CVAR, NULL, "Bump Spark",					{.cvar = &cv_kartbumpspark},		 30},
-	{IT_STRING | IT_CVAR, NULL, "Bump Spring",					{.cvar = &cv_kartbumpspring},		 40},
+	{IT_STRING | IT_CVAR, NULL, "Item Breaker",					{.cvar = &cv_kartitembreaker},		 20},
+	{IT_STRING | IT_CVAR, NULL, "Purple Drift",					{.cvar = &cv_kartpurpledrift},		 30},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spark",					{.cvar = &cv_kartbumpspark},		 40},
+	{IT_STRING | IT_CVAR, NULL, "Bump Spring",					{.cvar = &cv_kartbumpspring},		 50},
 
 };
 
@@ -6207,12 +6209,10 @@ static void M_PlaybackAdvance(INT32 choice)
 	paused = true;
 }
 
-
 static void M_PlaybackSetViews(INT32 choice)
 {
-
 	if (demo.freecam)
-		return;	// not here.
+		return; // not here.
 
 	if (choice > 0)
 	{
@@ -6221,8 +6221,14 @@ static void M_PlaybackSetViews(INT32 choice)
 	}
 	else if (r_splitscreen)
 	{
-		r_splitscreen--;
-		R_ExecuteSetViewSize();
+		if (choice == 0)
+		{
+			G_SyncDemoParty(displayplayers[r_splitscreen], r_splitscreen - 1);
+		}
+		else
+		{
+			G_SyncDemoParty(consoleplayer, 0);
+		}
 	}
 }
 

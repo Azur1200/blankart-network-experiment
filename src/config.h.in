@@ -9,23 +9,6 @@
  * variables, so you can insert them here too.
  */
 
-/* Manually defined asset hashes
- * Last updated 2019 / 01 / 18 - Kart v1.0.2 - Main assets
- * Last updated 2020 / 08 / 30 - Kart v1.3 - patch.kart
- * updated 2025 - BlanKart Indev -
- */
-
-#define ASSET_HASH_MAIN_PK3     "daf9a1a67b5e465c13789e96a09f7171"
-#define ASSET_HASH_SRB2_SRB     "c1b9577687f8a795104aef4600720ea7"
-#define ASSET_HASH_GFX_KART       "06f86ee16136eb8a7043b15001797034"
-#define ASSET_HASH_TEXTURES_KART  "abb53d56aba47c3a8cb0f764da1c8b80"
-#define ASSET_HASH_CHARS_KART     "e2c428347dde52858a3dacd29fc5b964"
-#define ASSET_HASH_MAPS_KART      "d051e55141ba736582228c456953cd98"
-#define ASSET_HASH_FOLLOWERS_PK3 "00000000000000000000000000000000"
-#ifdef USE_PATCH_FILE
-#define ASSET_HASH_PATCH_PK3     "00000000000000000000000000000000"
-#endif
-
 #ifdef CMAKECONFIG
 
 #define SRB2_COMP_REVISION       "${SRB2_COMP_REVISION}"
