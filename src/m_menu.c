@@ -416,7 +416,7 @@ inline static void M_GetGametypeColor(void)
 		return;
 	}
 
-	if (currentMenu->drawroutine == M_DrawServerMenu)
+	if (currentMenu && currentMenu->drawroutine == M_DrawServerMenu)
 		gt = cv_newgametype.value;
 	else if (!Playing())
 	{
