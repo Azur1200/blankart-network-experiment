@@ -7003,6 +7003,7 @@ static void K_RaceStart(player_t *player)
 				player->startboost = 0;
 				K_DoSneaker(player, 0);
 				player->sneakertimer = 70; // PERFECT BOOST!!
+				player->realsneakertimer = 70;
 
 				if (!player->floorboost || player->floorboost == 3) // Let everyone hear this one
 					S_StartSound(player->mo, sfx_s25f);
