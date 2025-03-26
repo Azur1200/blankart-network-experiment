@@ -1054,6 +1054,9 @@ _(kdtrg1)
 _(kdtrg2)
 _(kdtrg3)
 
+// Chaining Sound
+_(bstchn)
+
 // Shout message sound effect
 _(sysmsg)
 

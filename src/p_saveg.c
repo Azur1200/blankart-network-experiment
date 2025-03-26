@@ -318,6 +318,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].stealingtimer);
 
 		WRITEUINT16(save->p, players[i].sneakertimer);
+		WRITEUINT16(save->p, players[i].realsneakertimer);
 		WRITEUINT8(save->p, players[i].floorboost);
 		WRITEUINT16(save->p, players[i].chaintimer);
 		
@@ -631,6 +632,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].stealingtimer = READSINT8(save->p);
 
 		players[i].sneakertimer = READUINT16(save->p);
+		players[i].realsneakertimer = READUINT16(save->p);
 		players[i].floorboost = READUINT8(save->p);
 		players[i].chaintimer = READUINT16(save->p);
 		

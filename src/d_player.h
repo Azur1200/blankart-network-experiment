@@ -632,6 +632,7 @@ struct player_t
 	SINT8 stolentimer;		// you are being stolen from
 
 	UINT16 sneakertimer;	// Duration of a Sneaker Boost (from Sneakers or level boosters)
+	UINT16 realsneakertimer;// Duration of a Sneaker Boosts acutal time that doesn't get chained.(used for chainoffroad and tripwires)
 	UINT8 floorboost;		// (0 to 3) - Prevents Sneaker sounds for a brief duration when triggered by a floor panel
 	UINT16 chaintimer;		// Stores current chain timer length.
 

@@ -4036,11 +4036,12 @@ static int lib_kBoostChain(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	INT32 timer = luaL_checkinteger(L, 2);
+	INT32 chainsound = lua_optboolean(L, 3);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	lua_pushboolean(L, K_BoostChain(player, timer));
+	lua_pushboolean(L, K_BoostChain(player, timer, chainsound));
 	return 1;
 }
 
@@ -4049,11 +4050,12 @@ static int lib_kChainOrDeincrementTime(lua_State *L)
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	INT32 timer = luaL_checkinteger(L, 2);
 	INT32 deincrement = luaL_checkinteger(L, 3);
+	INT32 chainsound = lua_optboolean(L, 4);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	lua_pushinteger(L, K_ChainOrDeincrementTime(player, timer, deincrement));
+	lua_pushinteger(L, K_ChainOrDeincrementTime(player, timer, deincrement, chainsound));
 	return 1;
 }
 

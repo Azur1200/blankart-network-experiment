@@ -263,6 +263,7 @@ enum player_e
 	player_stealingtimer,
 	player_stolentimer,
 	player_sneakertimer,
+	player_realsneakertimer,
 	player_floorboost,
 	player_chaintimer,
 	player_growshrinktimer,
@@ -436,6 +437,7 @@ static const char *const player_opt[] = {
 	"stealingtimer",
 	"stolentimer",
 	"sneakertimer",
+	"realsneakertimer",
 	"floorboost",
 	"chaintimer",
 	"growshrinktimer",
@@ -808,6 +810,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_sneakertimer:
 		lua_pushinteger(L, plr->sneakertimer);
+		break;
+	case player_realsneakertimer:
+		lua_pushinteger(L, plr->realsneakertimer);
 		break;
 	case player_floorboost:
 		lua_pushinteger(L, plr->floorboost);
@@ -1402,6 +1407,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_sneakertimer:
 		plr->sneakertimer = luaL_checkinteger(L, 3);
+		break;
+	case player_realsneakertimer:
+		plr->realsneakertimer = luaL_checkinteger(L, 3);
 		break;
 	case player_floorboost:
 		plr->floorboost = luaL_checkinteger(L, 3);

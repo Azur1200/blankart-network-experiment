@@ -7070,7 +7070,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			return false;
 		}
 
-
 		{
 			player_t *p = NULL;
 			if (mobj->target->target && mobj->target->target->player)
@@ -7080,7 +7079,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			mobj->angle = mobj->extravalue1 && p ? p->drawangle : mobj->target->angle;
 			P_MoveOrigin(mobj, mobj->target->x + P_ReturnThrustX(mobj, mobj->angle+ANGLE_180, mobj->target->radius),
-				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z);
+				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z+5*mapobjectscale);
 			K_FlipFromObject(mobj, mobj->target);
 			P_SetScale(mobj, mobj->target->scale);
 
@@ -7124,6 +7123,38 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				}
 				else
 				{
+                    if (stackingactive && cv_kartstacking_colorflame.value)
+					{
+						switch(p->numsneakers)
+						{
+							case 0:
+							case 1:
+								mobj->colorized = false;
+								break;
+							case 2:
+								mobj->colorized = true;
+								mobj->color = SKINCOLOR_BLUEBERRY;
+								break;
+							case 3:
+								mobj->colorized = true;
+								mobj->color = SKINCOLOR_PURPLE;
+								break;
+							case 4:
+								mobj->colorized = true;
+								mobj->color = SKINCOLOR_MOONSLAM;
+								break;
+							case 5:
+								mobj->colorized = true;
+								mobj->color = SKINCOLOR_WHITE;
+								break;
+							default:
+								mobj->colorized = true;
+								mobj->color = SKINCOLOR_WHITE;
+								break;
+
+						}
+					}
+
 					if (p->sneakertimer > mobj->movecount)
 						P_SetMobjState(mobj, S_BOOSTFLAME);
 					mobj->movecount = p->sneakertimer;
