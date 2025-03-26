@@ -3958,7 +3958,7 @@ static int lib_kSetIndirectItemCountdown(lua_State *L)
 	return 0;
 }
 
-// Sets the item cooldown before another shrink / SPB can be rolled
+// Sets the item cooldown before another hyudoro can be rolled
 static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
@@ -3985,10 +3985,77 @@ static int lib_kRingsActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Stacking is active.
+static int lib_kStackingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_StackingActive());
+	return 1;
+}
+
+// Checks if Chaining is active.
+static int lib_kChainingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_ChainingActive());
+	return 1;
+}
+
 // Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
 static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
 	lua_pushboolean(L, K_UsingLegacyCheckpoints());
+	return 1;
+}
+
+static int lib_kDoBoost(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	fixed_t speedboost = luaL_checkfixed(L, 2);
+	fixed_t accelboost = luaL_checkfixed(L, 3);
+	boolean stacking = lua_optboolean(L, 4);
+	boolean visible = lua_isnoneornil(L, 5) ? true : luaL_checkboolean(L, 5);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_DoBoost(player, speedboost, accelboost, stacking, visible);
+	return 0;
+}
+
+static int lib_kClearBoost(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_ClearBoost(player);
+	return 0;
+}
+
+static int lib_kBoostChain(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INT32 timer = luaL_checkinteger(L, 2);
+	INT32 chainsound = lua_optboolean(L, 3);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, K_BoostChain(player, timer, chainsound));
+	return 1;
+}
+
+static int lib_kChainOrDeincrementTime(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INT32 timer = luaL_checkinteger(L, 2);
+	INT32 deincrement = luaL_checkinteger(L, 3);
+	INT32 chainsound = lua_optboolean(L, 4);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_ChainOrDeincrementTime(player, timer, deincrement, chainsound));
 	return 1;
 }
 
@@ -4286,12 +4353,19 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
-	{"K_SafeRespawnPosition", lib_kSafeRespawnPosition},
+	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
 	{"K_RingsActive",lib_kRingsActive},
+	{"K_StackingActive",lib_kStackingActive},
+	{"K_ChainingActive",lib_kChainingActive},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
+	{"K_DoBoost",lib_kDoBoost},
+	{"K_ClearBoost",lib_kClearBoost},
+	{"K_BoostChain",lib_kBoostChain},
+	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
+
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},

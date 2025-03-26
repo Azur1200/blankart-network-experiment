@@ -578,6 +578,8 @@ extern UINT16 emeraldspawndelay;
 extern INT32 numstarposts;
 extern INT32 numbosswaypoints;
 extern boolean ringsactive;
+extern boolean stackingactive;
+extern boolean chainingactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

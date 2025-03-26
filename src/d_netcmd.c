@@ -151,6 +151,8 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
+static void KartStacking_OnChange(void);
+static void KartChaining_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 
 static void Schedule_OnChange(void);
@@ -436,22 +438,57 @@ static CV_PossibleValue_t kartbot_cons_t[] = {
 };
 consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NULL);
 
-consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CHEAT|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
+consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
 // Toggles for new features
-consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+
+// Stacking related
+consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
+consvar_t cv_kartstacking_calc_arg_offset = CVAR_INIT ("kartstacking_calcargoffset", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+// Vanilla Stacking boosts.
+consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT, CV_Natural, NULL);
+
+consvar_t cv_kartstacking_invincibility_speedboost = CVAR_INIT ("vanillaboost_invincibility_speedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_accelboost = CVAR_INIT ("vanillaboost_invincibility_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.80", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
+consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
 
 consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
-consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
+consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_YesNo, NULL);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
@@ -6941,13 +6978,79 @@ static void KartRings_OnChange(void)
 		return;
 	}
 
-	if (cv_kartrings.value)
+	if (!K_RingsActive() && cv_kartrings.value)
 	{
 		CONS_Printf(M_GetText("Rings will be turned \"On\" Next Round.\n"));
 	}
-	else
+	else if (K_RingsActive() && !cv_kartrings.value)
 	{
 		CONS_Printf(M_GetText("Rings will be turned \"Off\" Next Round.\n"));
+	}
+}
+
+static void KartStacking_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!stackingactive && cv_kartstacking.value)
+	{
+		if (leveltime < starttime)
+		{
+			stackingactive = true;
+			CONS_Printf(M_GetText("Boost Stacking has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Boost Stacking will be turned \"On\" next round.\n"));
+		}
+	}
+	else if (stackingactive && !cv_kartstacking.value)
+	{
+		if (leveltime < starttime)
+		{
+			stackingactive = false;
+			CONS_Printf(M_GetText("Boost Stacking has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Boost Stacking will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartChaining_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!chainingactive && cv_kartchaining.value)
+	{
+		if (leveltime < starttime)
+		{
+			chainingactive = true;
+			CONS_Printf(M_GetText("Boost Chaining has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Boost Chaining will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (chainingactive && !cv_kartstacking.value)
+	{
+		if (leveltime < starttime)
+		{
+			chainingactive = false;
+			CONS_Printf(M_GetText("Boost Chaining has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Boost Chaining will be turned \"Off\" next round.\n"));
+		}
 	}
 }
 
@@ -6958,11 +7061,16 @@ static void KartItemBreaker_OnChange(void)
 		return;
 	}
 
-	if (cv_kartitembreaker.value)
+	if (!multiplayer)
+	{
+		return;
+	}
+
+	if (!itembreaker && cv_kartitembreaker.value)
 	{
 		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"On\" Next Round.\n"));
 	}
-	else
+	else if (itembreaker && !cv_kartitembreaker.value)
 	{
 		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"Off\" Next Round.\n"));
 	}

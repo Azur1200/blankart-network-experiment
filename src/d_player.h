@@ -452,6 +452,13 @@ struct sonicloopvars_t
 	sonicloopcamvars_t camera;
 };
 
+struct boostinfo_t {
+  fixed_t stackspeedboost;
+  fixed_t nonstackspeedboost;
+  fixed_t accelboost;
+  UINT8 grade;
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -581,6 +588,9 @@ struct player_t
 	fixed_t speedboost;		// Boost value smoothing for max speed
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
+	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
+	UINT8 numsneakers;		// Number of stacked sneakers
+	UINT8 numboosts;		// Number of Boosts stacking this frame
 
 	UINT8 tripwireState; // see tripwirestate_t
 	UINT8 tripwirePass; // see tripwirepass_t
@@ -622,7 +632,9 @@ struct player_t
 	SINT8 stolentimer;		// you are being stolen from
 
 	UINT16 sneakertimer;	// Duration of a Sneaker Boost (from Sneakers or level boosters)
+	UINT16 realsneakertimer;// Duration of a Sneaker Boosts acutal time that doesn't get chained.(used for chainoffroad and tripwires)
 	UINT8 floorboost;		// (0 to 3) - Prevents Sneaker sounds for a brief duration when triggered by a floor panel
+	UINT16 chaintimer;		// Stores current chain timer length.
 
 	UINT8 boostcharge; 		// Charge during race start
 	

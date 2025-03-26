@@ -229,6 +229,9 @@ enum player_e
 	player_speedboost,
 	player_accelboost,
 	player_boostangle,
+	player_boostinfo,
+	player_numsneakers,
+	player_numboosts,
 	player_tripwireState,
 	player_tripwirePass,
 	player_tripwireLeniency,
@@ -260,7 +263,9 @@ enum player_e
 	player_stealingtimer,
 	player_stolentimer,
 	player_sneakertimer,
+	player_realsneakertimer,
 	player_floorboost,
+	player_chaintimer,
 	player_growshrinktimer,
 	player_growcancel,
 	player_squishedtimer,
@@ -398,6 +403,9 @@ static const char *const player_opt[] = {
 	"speedboost",
 	"accelboost",
 	"boostangle",
+	"boostinfo",
+	"numsneakers",
+	"numboosts",
 	"tripwireState",
 	"tripwirePass",
 	"tripwireLeniency",
@@ -429,7 +437,9 @@ static const char *const player_opt[] = {
 	"stealingtimer",
 	"stolentimer",
 	"sneakertimer",
+	"realsneakertimer",
 	"floorboost",
+	"chaintimer",
 	"growshrinktimer",
 	"growcancel",
 	"squishedtimer",
@@ -699,6 +709,15 @@ static int player_get(lua_State *L)
 	case player_boostangle:
 		lua_pushangle(L, plr->boostangle);
 		break;
+	case player_boostinfo:
+		luaL_error(L, "Don't directly read boostinfo. Use speedboost, accelboost and numboosts instead,\n");
+		break;
+	case player_numsneakers:
+		lua_pushinteger(L, plr->numsneakers);
+		break;
+	case player_numboosts:
+		lua_pushinteger(L, plr->numboosts);
+		break;
 	case player_tripwireState:
 		lua_pushinteger(L, plr->tripwireState);
 		break;
@@ -792,8 +811,14 @@ static int player_get(lua_State *L)
 	case player_sneakertimer:
 		lua_pushinteger(L, plr->sneakertimer);
 		break;
+	case player_realsneakertimer:
+		lua_pushinteger(L, plr->realsneakertimer);
+		break;
 	case player_floorboost:
 		lua_pushinteger(L, plr->floorboost);
+		break;
+	case player_chaintimer:
+		lua_pushinteger(L, plr->chaintimer);
 		break;
 	case player_growshrinktimer:
 		lua_pushinteger(L, plr->growshrinktimer);
@@ -1281,6 +1306,15 @@ static int player_set(lua_State *L)
 	case player_boostangle:
 		plr->boostangle = luaL_checkangle(L, 3);
 		break;
+	case player_boostinfo:
+		NOSET;
+		break;
+	case player_numsneakers:
+		plr->numsneakers = luaL_checkinteger(L, 3);
+		break;
+	case player_numboosts:
+		plr->numboosts = luaL_checkinteger(L, 3);
+		break;
 	case player_tripwireState:
 		plr->tripwireState = luaL_checkinteger(L, 3);
 		break;
@@ -1374,8 +1408,14 @@ static int player_set(lua_State *L)
 	case player_sneakertimer:
 		plr->sneakertimer = luaL_checkinteger(L, 3);
 		break;
+	case player_realsneakertimer:
+		plr->realsneakertimer = luaL_checkinteger(L, 3);
+		break;
 	case player_floorboost:
 		plr->floorboost = luaL_checkinteger(L, 3);
+		break;
+	case player_chaintimer:
+		plr->chaintimer = luaL_checkinteger(L, 3);
 		break;
 	case player_growshrinktimer:
 		plr->growshrinktimer = luaL_checkinteger(L, 3);

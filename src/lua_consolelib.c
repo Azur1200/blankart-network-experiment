@@ -590,6 +590,8 @@ int LUA_ConsoleLib(lua_State *L)
 	lua_setglobal(L, "CV_YesNo");
 	lua_pushlightuserdata(L, CV_Unsigned);
 	lua_setglobal(L, "CV_Unsigned");
+	lua_pushlightuserdata(L, CV_Signed);
+	lua_setglobal(L, "CV_Signed");
 	lua_pushlightuserdata(L, CV_Natural);
 	lua_setglobal(L, "CV_Natural");
 

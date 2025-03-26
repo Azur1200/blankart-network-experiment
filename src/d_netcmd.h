@@ -96,6 +96,40 @@ extern consvar_t cv_kartbot;
 extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
+
+extern consvar_t cv_kartstacking;
+extern consvar_t cv_kartstacking_calc_arg_offset;
+extern consvar_t cv_kartstacking_maxvanillaboost;
+extern consvar_t cv_kartstacking_speedboostdropoff;
+extern consvar_t cv_kartstacking_speedboostdropoff_brake;
+
+extern consvar_t cv_kartstacking_sneaker_easyspeedboost;
+extern consvar_t cv_kartstacking_sneaker_normalspeedboost;
+extern consvar_t cv_kartstacking_sneaker_hardspeedboost;
+extern consvar_t cv_kartstacking_sneaker_accelboost;
+extern consvar_t cv_kartstacking_sneaker_maxgrade;
+
+extern consvar_t cv_kartstacking_invincibility_speedboost;
+extern consvar_t cv_kartstacking_invincibility_accelboost;
+
+extern consvar_t cv_kartstacking_flame_speedval;
+extern consvar_t cv_kartstacking_flame_accelboost;
+
+extern consvar_t cv_kartstacking_grow_speedboost;
+extern consvar_t cv_kartstacking_grow_accelboost;
+
+extern consvar_t cv_kartstacking_start_speedboost;
+extern consvar_t cv_kartstacking_start_accelboost;
+
+extern consvar_t cv_kartstacking_drift_speedboost;
+extern consvar_t cv_kartstacking_drift_accelboost;
+
+extern consvar_t cv_kartstacking_ring_speedboost;
+extern consvar_t cv_kartstacking_ring_accelboost;
+
+extern consvar_t cv_kartchaining;
+extern consvar_t cv_kartchainingoffroad;
+
 extern consvar_t cv_kartitembreaker;
 extern consvar_t cv_kartwalltransfer;
 extern consvar_t cv_kartpurpledrift;

@@ -14,6 +14,12 @@
 extern "C" {
 #endif
 
+extern consvar_t cv_kartstacking_colorflame;
+extern consvar_t cv_kartstacking_sneakerstacksound;
+extern consvar_t cv_kartchainingsound;
+extern consvar_t cv_kartdriftsounds;
+extern consvar_t cv_kartdriftefx;
+
 #define KART_FULLTURN 800
 
 /*
@@ -30,6 +36,35 @@ Make sure this matches the actual number of states
 #define AUTORESPAWN_THRESHOLD (7 * TICRATE)
 
 #define FLAMESTOREMAX TICRATE*2
+
+// Precalculated constants for stacked boost diminishing
+// *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
+#define CALC_ARG_OFFSET cv_kartstacking_calc_arg_offset.value
+#define CALC_RET_OFFSET FixedSqrt(CALC_ARG_OFFSET)
+#define MAXVANILLABOOST cv_kartstacking_maxvanillaboost.value
+#define SPEEDBOOSTDROPOFF cv_kartstacking_speedboostdropoff.value
+#define SPEEDBOOSTDROPOFF_BRAKE cv_kartstacking_speedboostdropoff_brake.value
+
+// Vanilla Boosts
+#define EASYSNEAKERSPEEDBOOST cv_kartstacking_sneaker_easyspeedboost.value
+#define NORMALSNEAKERSPEEDBOOST cv_kartstacking_sneaker_normalspeedboost.value
+#define HARDSNEAKERSPEEDBOOST cv_kartstacking_sneaker_hardspeedboost.value
+#define SNEAKERACCELBOOST cv_kartstacking_sneaker_accelboost.value
+#define MAXSNEAKERSTACK cv_kartstacking_sneaker_maxgrade.value
+#define INVINSPEEDBOOST cv_kartstacking_invincibility_speedboost.value
+#define INVINACCELBOOST cv_kartstacking_invincibility_accelboost.value
+#define GROWSPEEDBOOST cv_kartstacking_grow_speedboost.value
+#define GROWACCELBOOST cv_kartstacking_grow_accelboost.value
+#define FLAMESPEEDVAL cv_kartstacking_flame_speedval.value
+#define FLAMEACCELBOOST cv_kartstacking_flame_accelboost.value
+#define STARTSPEEDBOOST cv_kartstacking_start_speedboost.value
+#define STARTACCELBOOST cv_kartstacking_start_accelboost.value
+#define DRIFTSPEEDBOOST cv_kartstacking_drift_speedboost.value
+#define DRIFTACCELBOOST cv_kartstacking_drift_accelboost.value
+#define RINGSPEEDBOOST cv_kartstacking_ring_speedboost.value
+#define RINGACCELBOOST cv_kartstacking_ring_accelboost.value
+
+#define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
 // Used for respawning checks.
 
@@ -192,9 +227,16 @@ void K_UnsetItemOut(player_t *player);
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);
+boolean K_StackingActive(void);
+boolean K_ChainingActive(void);
+boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
+INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
+
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
+void K_ClearBoost(player_t *player);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -49,6 +49,12 @@
 #include "k_follower.h"
 #include "k_grandprix.h"
 
+consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", 0, CV_OnOff, NULL);
+consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerstacksound", "On", 0, CV_OnOff, NULL);
+consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", 0, CV_OnOff, NULL);
+consvar_t cv_kartdriftsounds = CVAR_INIT ("kartdriftsounds", "On", 0, CV_OnOff, NULL);
+consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", 0, CV_OnOff, NULL);
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -253,6 +259,44 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_lessflicker);
 
 	CV_RegisterVar(&cv_kartrings);
+
+	// Stacking
+	CV_RegisterVar(&cv_kartstacking);
+	CV_RegisterVar(&cv_kartstacking_calc_arg_offset);
+	CV_RegisterVar(&cv_kartstacking_speedboostdropoff);
+	CV_RegisterVar(&cv_kartstacking_speedboostdropoff_brake);
+	CV_RegisterVar(&cv_kartstacking_colorflame);
+	CV_RegisterVar(&cv_kartstacking_sneakerstacksound);
+
+	// Vanilla Boosts
+	CV_RegisterVar(&cv_kartstacking_sneaker_easyspeedboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_normalspeedboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_hardspeedboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_accelboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
+
+	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+
+	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
+	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
+
+	CV_RegisterVar(&cv_kartstacking_flame_speedval);
+	CV_RegisterVar(&cv_kartstacking_flame_accelboost);
+
+	CV_RegisterVar(&cv_kartstacking_start_speedboost);
+	CV_RegisterVar(&cv_kartstacking_start_accelboost);
+
+	CV_RegisterVar(&cv_kartstacking_drift_speedboost);
+	CV_RegisterVar(&cv_kartstacking_drift_accelboost);
+
+	CV_RegisterVar(&cv_kartstacking_ring_speedboost);
+	CV_RegisterVar(&cv_kartstacking_ring_accelboost);
+
+	CV_RegisterVar(&cv_kartchaining);
+	CV_RegisterVar(&cv_kartchainingoffroad);
+	CV_RegisterVar(&cv_kartchainingsound);
+
 	CV_RegisterVar(&cv_kartitembreaker);
 
 	CV_RegisterVar(&cv_newspeedometer);
@@ -265,6 +309,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbumpspark);
 
 	CV_RegisterVar(&cv_kartbumpspring);
+
+	CV_RegisterVar(&cv_kartdriftsounds);
+
+	CV_RegisterVar(&cv_kartdriftefx);
 }
 
 //}
@@ -2299,6 +2347,17 @@ void K_SpawnInvincibilitySpeedLines(mobj_t *mo)
 		fast->destscale = 6*((mo->player->invincibilitytimer/TICRATE)*FRACUNIT)/8;
 }
 
+static void K_SpawnStackingEffect(player_t *player)
+{
+	// Thanks to 1ndev for code used for booststack->scale and boosttack->frame! (taken and modified from BoostStack)
+	mobj_t  *booststack = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTSTACK);
+	P_SetTarget(&booststack->target, player->mo);
+	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,4)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
+
+	booststack->angle = player->mo->angle + ANGLE_90;
+	booststack->color = player->mo->color;
+}
+
 void K_SpawnBumpEffect(mobj_t *mo)
 {
 	mobj_t *fx = P_SpawnMobj(mo->x, mo->y, mo->z, MT_BUMP);
@@ -3057,7 +3116,9 @@ void K_MomentumToFacing(player_t *player)
 
 boolean K_ApplyOffroad(player_t *player)
 {
-	if (player->invincibilitytimer || player->hyudorotimer || player->sneakertimer)
+	boolean sneakertimer = CANTCHAINOFFROAD ? (player->sneakertimer && player->realsneakertimer) : player->sneakertimer;
+
+	if (player->invincibilitytimer || player->hyudorotimer || sneakertimer)
 		return false;
 	return true;
 }
@@ -3097,7 +3158,7 @@ tripwirepass_t K_TripwirePassConditions(player_t *player)
 {
 	if (
 			player->invincibilitytimer ||
-			player->sneakertimer
+			(player->sneakertimer && player->realsneakertimer)
 		)
 		return TRIPWIRE_BLASTER;
 
@@ -3289,22 +3350,54 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 	switch (gamespeed)
 	{
 		case 0:
-			return 53740+768;
+			return EASYSNEAKERSPEEDBOOST;
 			break;
 		case 2:
-			return 17294+768;
+			return HARDSNEAKERSPEEDBOOST;
 			break;
 		default:
-			return 32768;
+			return NORMALSNEAKERSPEEDBOOST;
 			break;
 	}
+}
+
+static fixed_t diminish(fixed_t speedboost)
+{
+	return FixedSqrt(speedboost + CALC_ARG_OFFSET) - CALC_RET_OFFSET;
+}
+
+void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible)
+{
+	if (stack && stackingactive)
+	{
+		player->boostinfo.stackspeedboost += speedboost;
+	}
+
+	player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, speedboost);
+	player->boostinfo.accelboost = max(player->boostinfo.accelboost, accelboost);
+
+	if (visible)
+	{
+		player->boostinfo.grade = CLAMP(player->boostinfo.grade+1, 0, stackingactive ? UINT8_MAX : 1);
+	}
+}
+
+void K_ClearBoost(player_t *player)
+{
+	player->boostinfo.stackspeedboost = 0;
+	player->boostinfo.nonstackspeedboost = 0;
+	player->boostinfo.accelboost = 0;
+	player->boostinfo.grade = 0;
 }
 
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
 	fixed_t boostpower = FRACUNIT;
-	fixed_t speedboost = 0, accelboost = 0;
+	fixed_t finalspeedboost = 0;
+	fixed_t finalaccelboost = 0;
+	UINT8 finalgrade = 0;
+	fixed_t prevspeedboost = player->speedboost;
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
 	{
@@ -3330,26 +3423,26 @@ static void K_GetKartBoostPower(player_t *player)
 			S_StartSound(player->mo, sfx_cdfm70);
 	}
 
-#define ADDBOOST(s,a) { \
-	speedboost = max(speedboost,s); \
-	accelboost = max(accelboost,a); \
-}
-
 	if (player->sneakertimer) // Sneaker
 	{
+		UINT8 i;
 		fixed_t sneakerspeedboost = K_GetSneakerBoostSpeed();
-		ADDBOOST(sneakerspeedboost, 8*FRACUNIT); // + ???% top speed, + 800% acceleration
+		UINT8 numsneakers = player->numsneakers ? player->numsneakers : 1;
 
+		for (i = 0; i < numsneakers; i++)
+		{
+			K_DoBoost(player, sneakerspeedboost, SNEAKERACCELBOOST, true, true); // + ???% top speed, + 800% acceleration
+		}
 	}
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		ADDBOOST(3*FRACUNIT/8, 3*FRACUNIT); // + 37.5% top speed, + 300% acceleration
+		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, false, false); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
-		ADDBOOST(FRACUNIT/5, 0); // + 20% top speed, + 0% acceleration
+		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, false, false); // + 20% top speed, + 0% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
@@ -3357,49 +3450,81 @@ static void K_GetKartBoostPower(player_t *player)
 		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
 		fixed_t intermediate = 0;
 		fixed_t boost = 0;
-		fixed_t val = 52428; // Rim idea: diminish starts around 1.2x sneaker speed and plateaus around 1.4-1.5x
-		fixed_t accel = 3*FRACUNIT;
+		fixed_t val = FLAMESPEEDVAL; // Rim idea: diminish starts around 1.2x sneaker speed and plateaus around 1.4-1.5x
 
 		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
 		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
 
-		ADDBOOST(boost, accel);
+		K_DoBoost(player, boost, FLAMEACCELBOOST, false, false);
 	}
 
 	if (player->startboost) // Startup Boost
 	{
-		ADDBOOST(FRACUNIT/4, 6*FRACUNIT); // + 25% top speed, + 300% acceleration
+		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, true, true); // + 25% top speed, + 600% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
 	{
-		ADDBOOST(FRACUNIT/4, 4*FRACUNIT); // + 25% top speed, + 400% acceleration
+		K_DoBoost(player, DRIFTSPEEDBOOST, DRIFTACCELBOOST, true, true); // + 25% top speed, + 400% acceleration
 	}
 
 	if (player->ringboost) // Ring Boost
 	{
-		ADDBOOST(FRACUNIT/5, 4*FRACUNIT); // + 20% top speed, + 400% acceleration
+		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, true, true); // + 20% top speed, + 400% acceleration
 	}
 
-	// This should always remain the last boost stack before tethering
+	// This should always remain the last boost
 	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
-		ADDBOOST(player->botvars.rubberband - FRACUNIT, 0);
+		K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
 	}
 
 	player->boostpower = boostpower;
 
+	// Combine nonstack and stacking boosts here.
+	finalspeedboost = max(player->boostinfo.nonstackspeedboost, diminish(player->boostinfo.stackspeedboost));
+	finalaccelboost = player->boostinfo.accelboost;
+	finalgrade = player->boostinfo.grade;
+
 	// value smoothing
-	if (speedboost > player->speedboost)
+	if (stackingactive)
 	{
-		player->speedboost = speedboost;
+		if (player->offroad && K_ApplyOffroad(player))
+		{
+			player->speedboost = max(finalspeedboost, player->speedboost)/2;
+			player->accelboost = max(finalaccelboost, player->accelboost)/2;
+		}
+		else if (finalspeedboost >= prevspeedboost)
+		{
+			player->speedboost = max(player->speedboost, finalspeedboost);
+			player->accelboost = max(finalaccelboost, player->accelboost);
+		}
+		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
+		{
+			player->speedboost = max(prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
+			player->accelboost = max(finalaccelboost, player->accelboost);
+		}
+		else
+		{
+			player->speedboost = prevspeedboost - SPEEDBOOSTDROPOFF;
+			player->accelboost = max(finalaccelboost, player->accelboost);
+		}
 	}
 	else
 	{
-		player->speedboost += (speedboost - player->speedboost) / (TICRATE/2);
+		if (finalspeedboost > player->speedboost)
+		{
+			player->speedboost = finalspeedboost;
+		}
+		else
+		{
+			player->speedboost += (finalspeedboost - player->speedboost) / (TICRATE/2);
+		}
 	}
 
-	player->accelboost = accelboost;
+	player->accelboost = finalaccelboost;
+	player->numboosts = finalgrade;
+	K_ClearBoost(player);
 }
 
 // Returns value based on being Grown or Shrunk otherwise returns FRACUNIT
@@ -5128,22 +5253,27 @@ static void K_DoHyudoroSteal(player_t *player)
 	}
 }
 
-void K_DoSneaker(player_t *player, INT32 type)
+// Handle these else where to reduce code duplication between panels and sneakers
+static void K_SneakerPanelStackSound(player_t *player)
 {
-	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
+	const sfxenum_t normalsfx = sfx_cdfm01;
+	const sfxenum_t smallsfx = sfx_cdfm40;
+	sfxenum_t sfx = normalsfx;
 
-	if (player->floorboost == 0 || player->floorboost == 3)
+	if ((player->numsneakers > 0) && stackingactive)
 	{
-		S_StopSoundByID(player->mo, sfx_cdfm01);
-		S_StartSound(player->mo, sfx_cdfm01);
-
-		K_SpawnDashDustRelease(player);
-		if (intendedboost > player->speedboost)
-			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
-
+		// Use a less annoying sound when stacking sneakers.
+		sfx = smallsfx;
 	}
 
-	if (player->sneakertimer == 0)
+	S_StopSoundByID(player->mo, normalsfx);
+	S_StopSoundByID(player->mo, smallsfx);
+	S_StartSound(player->mo, sfx);
+}
+
+static void K_SneakerPanelEffect(player_t *player, INT32 type)
+{
+	if (!player->sneakertimer)
 	{
 		if (type == 2)
 		{
@@ -5172,6 +5302,22 @@ void K_DoSneaker(player_t *player, INT32 type)
 			K_FlipFromObject(overlay, player->mo);
 		}
 	}
+}
+
+void K_DoSneaker(player_t *player, INT32 type)
+{
+	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
+
+	if (player->floorboost == 0 || player->floorboost == 3)
+	{
+		K_SneakerPanelStackSound(player);
+		K_SpawnDashDustRelease(player);
+		if (intendedboost > player->speedboost)
+			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
+
+	}
+
+	K_SneakerPanelEffect(player, type);
 
 	if (type != 0)
 	{
@@ -5179,6 +5325,12 @@ void K_DoSneaker(player_t *player, INT32 type)
 	}
 
 	player->sneakertimer = sneakertime;
+	player->realsneakertimer = sneakertime;
+
+	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+	{
+		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+	}
 
 	// set angle for spun out players:
 	player->boostangle = player->mo->angle;
@@ -5190,25 +5342,22 @@ void K_DoWaterRunPanel(player_t *player)
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
-		S_StopSoundByID(player->mo, sfx_cdfm01);
-		S_StopSoundByID(player->mo, sfx_kc3c);
-		S_StartSound(player->mo, sfx_cdfm01);
-		S_StartSound(player->mo, sfx_kc3c);
-
+		K_SneakerPanelStackSound(player);
 		K_SpawnDashDustRelease(player);
 		if (intendedboost > player->speedboost)
 			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
 	}
 
-	if (player->sneakertimer == 0)
-	{
-		mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
-		P_SetTarget(&overlay->target, player->mo);
-		P_SetScale(overlay, (overlay->destscale = player->mo->scale));
-		K_FlipFromObject(overlay, player->mo);
-	}
+	K_SneakerPanelEffect(player, 0);
 
 	player->sneakertimer = TICRATE*2;
+	player->realsneakertimer = TICRATE*2;
+
+	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
+	{
+		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
+	}
+
 	player->mo->flags2 |= MF2_WATERRUN;
 
 	// set angle for spun out players:
@@ -6854,6 +7003,7 @@ static void K_RaceStart(player_t *player)
 				player->startboost = 0;
 				K_DoSneaker(player, 0);
 				player->sneakertimer = 70; // PERFECT BOOST!!
+				player->realsneakertimer = 70;
 
 				if (!player->floorboost || player->floorboost == 3) // Let everyone hear this one
 					S_StartSound(player->mo, sfx_s25f);
@@ -6922,6 +7072,118 @@ static void K_TireGreaseEffect(player_t *player)
 		S_StartSound(player->mo, sfx_screec);
 }
 
+boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound)
+{
+	if (!chainingactive)
+	{
+		// You can't chain why bother?
+		return false;
+	}
+
+	if (timer > player->chaintimer)
+	{
+		// Just what I needed! - Toad
+		if (cv_kartchainingsound.value && chainsound && player->chaintimer && player->sneakertimer)
+		{
+			if (player->mo)
+			{
+				// Chain Sound!
+				S_StartSound(player->mo, sfx_bstchn);
+			}
+		}
+
+		player->chaintimer = timer;
+	}
+
+	if (player->chaintimer)
+	{
+		// You can continue chaining!
+		return true;
+	}
+
+	// Aw shucks, time to drop the chain....
+	return false;
+}
+
+INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound)
+{
+	timer -= deincrement;
+
+	if (K_BoostChain(player, timer, chainsound))
+	{
+		// Its time to chain.
+		return max(1, timer);
+	}
+
+	// Continue to drain the timer as normal.
+	return timer;
+}
+
+// Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
+static INT32 ticinversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
+{
+    return (TICRATE / kartspeed) + (TICRATE / CLAMP(kartweight, 1, 5)) + grade;
+}
+
+// Get the maximum required stacks needed for the ringnerf based on kartspeed and kartweight
+static INT32 statrangemap(UINT8 kartspeed, UINT8 kartweight)
+{
+	INT32 scaledsw = (9 - kartspeed) + (9 - kartweight);
+
+    fixed_t scaled_input = (scaledsw)*FRACUNIT/16;
+
+    // Scale the result to be within range [2, 4]
+    fixed_t result = 4*FRACUNIT - (FixedMul(scaled_input, 2*FRACUNIT));
+
+    // Stay within range please!
+    if (result < 2*FRACUNIT)
+		result = 2*FRACUNIT;
+    if (result > 4*FRACUNIT)
+		result = 4*FRACUNIT;
+
+	result = result >> FRACBITS;
+
+    return result;
+}
+
+static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
+{
+	// Aggressively reduce extreme ringboost duration.
+	// Less aggressive for accel types.
+	UINT8 roller = TICRATE;
+	UINT16 finalringtimer;
+	roller += 4*(8-player->kartspeed);
+
+	finalringtimer = max((player->ringboost / roller), 1);
+
+	if (chainnerf)
+	{
+		UINT8 requiredgrade = statrangemap(player->kartspeed, player->kartweight);
+
+		if (player->numboosts >= requiredgrade)
+		{
+			INT32 insum = ticinversesum(player->kartspeed, player->kartweight, player->numboosts);
+			INT32 subring = (player->ringboost*2)/insum;
+
+			if (player->kartspeed == 1)
+			{
+				// fuck off chao you aren't chaining an entire race.
+				subring = (player->ringboost*4)/insum;
+			}
+
+			finalringtimer += subring;
+		}
+
+		if (player->ringboost - finalringtimer > player->chaintimer)
+		{
+			// Cap this to prevent displacement between chaintimer and ringtimer.
+			player->chaintimer = min(player->ringboost, (TICRATE - TICRATE/4));
+		}
+	}
+
+	player->ringboost = max(player->chaintimer ? 1: 0, player->ringboost - finalringtimer);
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -6931,8 +7193,6 @@ static void K_TireGreaseEffect(player_t *player)
 */
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 {
-	const boolean onground = P_IsObjectOnGround(player->mo);
-
 	/* reset sprite offsets :) */
 	player->mo->sprxoff = 0;
 	player->mo->spryoff = 0;
@@ -6996,25 +7256,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 		}
 
-		/*if (gametype == GT_RACE && player->rings <= 0 && (K_RingsActive() == true)) // spawn ring debt indicator
+		// Stacking Effect
+		if (stackingactive && player->numboosts > 1)
 		{
-			mobj_t *debtflag = P_SpawnMobj(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy,
-				player->mo->z + P_GetMobjZMovement(player->mo) + player->mo->height + (24*player->mo->scale), MT_THOK);
-
-			P_SetMobjState(debtflag, S_RINGDEBT);
-			P_SetScale(debtflag, (debtflag->destscale = player->mo->scale));
-
-			K_MatchGenericExtraFlags(debtflag, player->mo);
-			debtflag->frame += (leveltime % 4);
-
-			if ((leveltime/12) & 1)
-				debtflag->frame += 4;
-
-			debtflag->color = player->skincolor;
-			debtflag->fuse = 2;
-
-			debtflag->renderflags = K_GetPlayerDontDrawFlag(player);
-		}*/
+			K_SpawnStackingEffect(player);
+		}
 	}
 
 	if (player->itemtype == KITEM_NONE)
@@ -7111,19 +7357,22 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ringboost = 0;
 	else if (player->ringboost)
 	{
-		// Aggressively reduce extreme ringboost duration.
-		// Less aggressive for accel types.
-
-		UINT8 roller = TICRATE;
-		roller += 4*(8-player->kartspeed);
-
-		player->ringboost -= max((player->ringboost / roller), 1);
+		K_HandleRingDeincrement(player, chainingactive);
 	}
 
 	if (player->sneakertimer)
 	{
-		player->sneakertimer--;
+		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
+
+		if (player->sneakertimer <= 0)
+		{
+			player->mo->flags2 &= ~MF2_WATERRUN;
+			player->numsneakers = 0;
+		}
 	}
+
+	if (player->realsneakertimer)
+		player->realsneakertimer--;
 
 	if (player->sneakertimer && player->wipeoutslow > 0 && player->wipeoutslow < wipeoutslowtime+1)
 		player->wipeoutslow = wipeoutslowtime+1;
@@ -7131,17 +7380,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->floorboost > 0)
 		player->floorboost--;
 
-	if (player->sneakertimer == 0)
-	{
-		// No more waterrunning for you pal!
-		player->mo->flags2 &= ~MF2_WATERRUN;
-	}
-
 	if (player->driftboost)
-		player->driftboost--;
+		player->driftboost = K_ChainOrDeincrementTime(player, player->driftboost, 1, true);
 
 	if (player->startboost > 0)
-		player->startboost--;
+		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1, false);
 
 	if (player->invincibilitytimer)
 		player->invincibilitytimer--;
@@ -7240,7 +7483,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->outruntime--;
 
 	if (player->tiregrease > 0)
-		player->tiregrease--;;
+		player->tiregrease--;
+
+	if (player->chaintimer)
+		player->chaintimer--;
 
 	if (player->itemblink && player->itemblink-- <= 0)
 	{
@@ -8616,7 +8862,14 @@ INT32 K_GetKartDriftSparkValueForStage(player_t *player, UINT8 stage)
 
 static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 {
+	if (!cv_kartdriftefx.value)
+	{
+		// Not wanted sorry!
+		return;
+	}
+
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
+	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
 	K_FlipFromObject(overlay, player->mo);
@@ -8672,8 +8925,11 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		if (player->driftboost < 50)
 			player->driftboost = 50;
+
+		if (cv_kartdriftsounds.value)
+			S_StartSound(player->mo, sfx_kc5b);
 		S_StartSound(player->mo, sfx_s23c);
-		S_StartSound(player->mo, sfx_kc5b);
+
 		K_SpawnDriftEFX(player, 2);
 		player->driftcharge = 0;
 	}
@@ -8683,9 +8939,16 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		if (player->driftboost < 80)
 			player->driftboost = 80;
-		S_StartSound(player->mo, sfx_kc5b);
-		S_StartSound(player->mo, sfx_kc3c);
-		S_StartSound(player->mo, sfx_s3k47);
+		if (cv_kartdriftsounds.value)
+		{
+			S_StartSound(player->mo, sfx_kc5b);
+			S_StartSound(player->mo, sfx_kc3c);
+			S_StartSound(player->mo, sfx_s3k47);
+		}
+		else
+		{
+			S_StartSound(player->mo, sfx_s23c);
+		}
 		K_SpawnDriftEFX(player, 3);
 		player->driftcharge = 0;
 	}
@@ -8695,8 +8958,16 @@ static void K_KartDrift(player_t *player, boolean onground)
 	{
 		if (player->driftboost < 125)
 			player->driftboost = 125;
-		S_StartSound(player->mo, sfx_kc5b);
-		S_StartSound(player->mo, sfx_kc4d);
+		if (cv_kartdriftsounds.value)
+		{
+			S_StartSound(player->mo, sfx_kc5b);
+			S_StartSound(player->mo, sfx_kc4d);
+		}
+		else
+		{
+			S_StartSound(player->mo, sfx_s23c);
+		}
+
 		K_SpawnDriftEFX(player, 4);
 		player->driftcharge = 0;
 	}
@@ -10348,6 +10619,28 @@ boolean K_RingsActive(void)
 	}
 
 	return true;
+}
+
+boolean K_StackingActive(void)
+{
+	if (stackingactive)
+	{
+		// Booststacking is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_ChainingActive(void)
+{
+	if (chainingactive)
+	{
+		// Boostchaining is enabled!
+		return true;
+	}
+
+	return false;
 }
 
 boolean K_UsingLegacyCheckpoints(void)
