@@ -1403,6 +1403,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_CUSTOM1",gc_custom1},
 	{"GC_CUSTOM2",gc_custom2},
 	{"GC_CUSTOM3",gc_custom3},
+	{"GC_RESPAWN",gc_respawn},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants
