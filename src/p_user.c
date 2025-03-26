@@ -49,6 +49,7 @@
 #include "m_cheat.h"
 // Thok camera snap (ctrl-f "chalupa")
 #include "g_input.h"
+#include "m_menu.h" // menustack
 
 // SRB2kart
 #include "m_cond.h" // M_UpdateUnlockablesAndExtraEmblems
@@ -192,7 +193,7 @@ boolean P_AutoPause(void)
 	if (netgame || modeattacking || gamestate == GS_TITLESCREEN)
 		return false;
 
-	return ((menuactive && !demo.playback) || ( window_notinfocus && cv_pauseifunfocused.value ));
+	return ((menustack[0] && !demo.playback) || ( window_notinfocus && cv_pauseifunfocused.value ));
 }
 
 //

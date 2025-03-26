@@ -1663,12 +1663,10 @@ void G_ConfirmRewind(tic_t rewindtime)
 {
 	SINT8 i;
 	tic_t j;
-	boolean oldmenuactive = menuactive, oldsounddisabled = sound_disabled;
+	boolean oldsounddisabled = sound_disabled;
 
 	INT32 olddp1 = displayplayers[0], olddp2 = displayplayers[1], olddp3 = displayplayers[2], olddp4 = displayplayers[3];
 	UINT8 oldss = splitscreen;
-
-	menuactive = false; // Prevent loops
 
 	CV_StealthSetValue(&cv_renderview, 0);
 
@@ -1705,7 +1703,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 	}
 
 	demo.rewinding = false;
-	menuactive = oldmenuactive; // Bring the menu back up
 	sound_disabled = oldsounddisabled; // Re-enable SFX
 
 	wipegamestate = gamestate; // No fading back in!
@@ -3007,11 +3004,11 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
+		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
 	}
 	demobuf.p += 12; // DEMOHEADER
@@ -3027,11 +3024,11 @@ void G_DoPlayDemo(char *defdemoname)
 	default:
 		snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
+		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
 	}
 
@@ -3045,11 +3042,11 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
+		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
 	}
 
@@ -3109,12 +3106,12 @@ void G_DoPlayDemo(char *defdemoname)
 			}
 
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-				M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
 			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
+			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
+				M_StartMessage(msg, NULL, MM_NOTHING);
 			return;
 		}
 	}
@@ -3153,11 +3150,11 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
+		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
 	}
 
@@ -3181,11 +3178,11 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
-		M_StartMessage(msg, NULL, MM_NOTHING);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
 		demo.playback = false;
 		demo.title = false;
+		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
 	}
 
@@ -3232,11 +3229,11 @@ void G_DoPlayDemo(char *defdemoname)
 			{
 				snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with %s, and is thus invalid.\n"), pdemoname, (bot ? "bots" : "spectators"));
 				CONS_Alert(CONS_ERROR, "%s", msg);
-				M_StartMessage(msg, NULL, MM_NOTHING);
 				Z_Free(pdemoname);
 				P_SaveBufferFree(&demobuf);
 				demo.playback = false;
 				demo.title = false;
+				M_StartMessage(msg, NULL, MM_NOTHING);
 				return;
 			}
 		}
@@ -3248,11 +3245,11 @@ void G_DoPlayDemo(char *defdemoname)
 		{
 			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with multiple players, and is thus invalid.\n"), pdemoname);
 			CONS_Alert(CONS_ERROR, "%s", msg);
-			M_StartMessage(msg, NULL, MM_NOTHING);
 			Z_Free(pdemoname);
 			P_SaveBufferFree(&demobuf);
 			demo.playback = false;
 			demo.title = false;
+			M_StartMessage(msg, NULL, MM_NOTHING);
 			return;
 		}
 
@@ -4039,7 +4036,7 @@ boolean G_CheckDemoStatus(void)
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
 			else if (modeattacking)
-				M_EndModeAttackRun();
+				M_ModeAttackEndGame(0);
 			else
 				D_StartTitle();
 		}

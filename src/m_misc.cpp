@@ -109,13 +109,13 @@ typedef off_t off64_t;
 #endif
 
 static CV_PossibleValue_t screenshot_cons_t[] = {{0, "Default"}, {1, "HOME"}, {2, "SRB2"}, {3, "CUSTOM"}, {0, NULL}};
-consvar_t cv_screenshot_option = CVAR_INIT ("screenshot_option", "Default", CV_SAVE|CV_CALL, screenshot_cons_t, Screenshot_option_Onchange);
+consvar_t cv_screenshot_option = CVAR_INIT ("screenshot_option", "Default", CV_SAVE|CV_CALL|CV_NOINIT, screenshot_cons_t, Screenshot_option_Onchange);
 consvar_t cv_screenshot_folder = CVAR_INIT ("screenshot_folder", "", CV_SAVE, NULL, NULL);
 
 consvar_t cv_screenshot_colorprofile = CVAR_INIT ("screenshot_colorprofile", "Yes", CV_SAVE, CV_YesNo, NULL);
 
 static CV_PossibleValue_t moviemode_cons_t[] = {{MM_GIF, "GIF"}, {MM_APNG, "aPNG"}, {MM_SCREENSHOT, "Screenshots"}, {0, NULL}};
-consvar_t cv_moviemode = CVAR_INIT ("moviemode_mode", "GIF", CV_SAVE|CV_CALL, moviemode_cons_t, Moviemode_mode_Onchange);
+consvar_t cv_moviemode = CVAR_INIT ("moviemode_mode", "GIF", CV_SAVE|CV_CALL|CV_NOINIT, moviemode_cons_t, Moviemode_mode_Onchange);
 
 consvar_t cv_movie_option = CVAR_INIT ("movie_option", "Default", CV_SAVE|CV_CALL, screenshot_cons_t, Moviemode_option_Onchange);
 consvar_t cv_movie_folder = CVAR_INIT ("movie_folder", "", CV_SAVE, NULL, NULL);
@@ -1611,7 +1611,7 @@ boolean M_ScreenshotResponder(event_t *ev)
 
 	ch = ev->data1;
 
-	if (ch >= NUMKEYS && menuactive) // If it's not a keyboard key, then don't allow it in the menus!
+	if (ch >= NUMKEYS && menustack[0]) // If it's not a keyboard key, then don't allow it in the menus!
 		return false;
 
 	if (G_ControlBoundToKey(0, gc_screenshot, ch, true))

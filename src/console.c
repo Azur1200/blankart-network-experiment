@@ -153,7 +153,7 @@ static CV_PossibleValue_t backcolor_cons_t[] = {{0, "White"}, 		{1, "Black"},		{
 												{15,"Periwinkle"},	{16,"Blue"},		{17,"Purple"},
 												{18,"Lavender"},
 												{0, NULL}};
-consvar_t cons_backcolor = CVAR_INIT ("con_backcolor", "Black", CV_CALL|CV_SAVE, backcolor_cons_t, CONS_backcolor_Change);
+consvar_t cons_backcolor = CVAR_INIT ("con_backcolor", "Black", CV_CALL|CV_NOINIT|CV_SAVE, backcolor_cons_t, CONS_backcolor_Change);
 
 static CV_PossibleValue_t menuhighlight_cons_t[] =
 {
@@ -254,7 +254,7 @@ static void CONS_Bind_f(void)
 		CONS_Printf("\x82%s", M_GetText("Bind table :\n"));
 		na = 0;
 		for (key = 0; key < NUMINPUTS; key++)
-			if (!menuactive && bindtable[key])
+			if (!menustack[0] && bindtable[key])
 			{
 				CONS_Printf("%s : \"%s\"\n", G_KeynumToString(key), bindtable[key]);
 				na = 1;
@@ -461,38 +461,38 @@ void CON_Init(void)
 	con_destlines = vid.height;
 	con_curlines = vid.height;
 
-	Unlock_state();
-
 	if (!dedicated)
 	{
-		Lock_state();
 
 		con_started = true;
 		con_startup = true;
 		consoletoggle = false;
-
-		Unlock_state();
-
-		CV_RegisterVar(&cons_msgtimeout);
-		CV_RegisterVar(&cons_hudlines);
-		CV_RegisterVar(&cons_speed);
-		CV_RegisterVar(&cons_height);
-		CV_RegisterVar(&cons_backpic);
-		CV_RegisterVar(&cons_backcolor);
-		CV_RegisterVar(&cons_menuhighlight);
-		COM_AddCommand("bind", CONS_Bind_f);
 	}
 	else
 	{
-		Lock_state();
-
 		con_started = true;
 		con_startup = false;
 		consoletoggle = true;
-
-		Unlock_state();
 	}
+
+	Unlock_state();
 }
+
+void CON_Register(void)
+{
+	if (dedicated)
+		return;
+
+	CV_RegisterVar(&cons_msgtimeout);
+	CV_RegisterVar(&cons_hudlines);
+	CV_RegisterVar(&cons_speed);
+	CV_RegisterVar(&cons_height);
+	CV_RegisterVar(&cons_backpic);
+	CV_RegisterVar(&cons_backcolor);
+	CV_RegisterVar(&cons_menuhighlight);
+	COM_AddCommand("bind", CONS_Bind_f);
+}
+
 // Console input initialization
 //
 static void CON_InputInit(void)
@@ -978,7 +978,7 @@ boolean CON_Responder(event_t *ev)
 		// check other keys only if console prompt is active
 		if (!consoleready && key < NUMINPUTS) // metzgermeister: boundary check!!
 		{
-			if (! menuactive && bindtable[key])
+			if (!menustack[0] && bindtable[key])
 			{
 				COM_BufAddText(bindtable[key]);
 				COM_BufAddText("\n");

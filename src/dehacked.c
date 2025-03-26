@@ -234,6 +234,15 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				readfollower(f);
 				continue;
 			}
+			// sigh... menu hack
+			else if (fastcmp(word, "DISCORDONLY"))
+			{
+#ifdef HAVE_DISCORDRPC
+				continue;
+#else
+				break;
+#endif
+			}
 
 			word2 = strtok(NULL, " ");
 			if (word2) {
@@ -462,6 +471,9 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				}
 				else if (fastcmp(word, "MENU"))
 				{
+					if (dedicated)
+						continue; // dedis don't need menus, silly!
+
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
 					if (i >= 1 && i < NUMMENUTYPES)
@@ -650,13 +662,13 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	{
 		if (introchanged)
 		{
-			menuactive = false;
+			M_ClearMenus(true);
 			I_UpdateMouseGrab();
 			COM_BufAddText("playintro");
 		}
 		else if (titlechanged)
 		{
-			menuactive = false;
+			M_ClearMenus(true);
 			I_UpdateMouseGrab();
 			COM_BufAddText("exitgame"); // Command_ExitGame_f() but delayed
 		}

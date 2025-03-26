@@ -312,6 +312,20 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 	Z_Free(removeRequest);
 }
 
+#ifdef _DEBUG
+static boolean comregistered = false;
+static void COM_DiscordTest_f(void)
+{
+	DiscordUser test = {
+		.username = "Jeffma Balls",
+		.discriminator = "6942",
+		.userId = "69420694206942069",
+		.avatar = NULL, // doesn't matter
+	};
+	DRPC_HandleJoinRequest(&test);
+}
+#endif
+
 /*--------------------------------------------------
 	void DRPC_Init(void)
 
@@ -334,6 +348,14 @@ void DRPC_Init(void)
 	Discord_Initialize(DISCORD_APPID, &handlers, 1, NULL);
 	I_AddExitFunc(DRPC_Shutdown);
 	DRPC_UpdatePresence();
+
+#ifdef _DEBUG
+	if (!comregistered)
+	{
+		COM_AddCommand("discordtest", COM_DiscordTest_f);
+		comregistered = true;
+	}
+#endif
 }
 
 void DRPC_Shutdown(void)

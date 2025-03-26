@@ -1171,8 +1171,6 @@ void F_GameEndTicker(void)
 void F_InitMenuPresValues(void)
 {
 	menuanimtimer = 0;
-	prevMenuId = 0;
-	activeMenuId = MainDef.menuid;
 
 	// Set defaults for presentation values
 	strncpy(curbgname, "TITLESKY", 9);
@@ -1614,7 +1612,7 @@ void F_TitleScreenTicker(boolean run)
 	}
 
 	// Hold up for a bit if menu or console active
-	if (menuactive || CON_Ready())
+	if (menustack[0] || CON_Ready())
 	{
 		demoIdleLeft = demoIdleTime;
 		return;

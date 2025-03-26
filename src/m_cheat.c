@@ -62,7 +62,7 @@ typedef struct
 // Cheat responders
 /*static UINT8 cheatf_ultimate(void)
 {
-	if (menuactive && (currentMenu != &MainDef && currentMenu != &SP_LoadDef))
+	if (menustack[0] != MN_MAIN && menustack[0] != MN_SP_LOAD))
 		return 0; // Only on the main menu, or the save select!
 
 	BwehHehHe();
@@ -82,7 +82,7 @@ static UINT8 cheatf_warp(void)
 	/*if (modifiedgame)
 	 *	return 0;*/
 
-	if (menuactive && currentMenu != &MainDef)
+	if (menustack[0] != MN_MAIN)
 		return 0; // Only on the main menu!
 
 	// Temporarily unlock EVERYTHING.
@@ -117,7 +117,7 @@ static UINT8 cheatf_devmode(void)
 	if (modifiedgame)
 		return 0;
 
-	if (menuactive && currentMenu != &MainDef)
+	if (menustack[0] != MN_MAIN)
 		return 0; // Only on the main menu!
 
 	S_StartSound(0, sfx_itemup);

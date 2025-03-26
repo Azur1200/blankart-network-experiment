@@ -27,12 +27,14 @@
 #include "r_data.h" // patchalphastyle_t
 #include "k_boss.h" // spottype_t (for lua)
 #include "k_follower.h" // followermode_t (for lua)
+#include "g_input.h" // Game controls (for lua)
 
 #include "deh_tables.h"
 
 char *FREE_STATES[NUMSTATEFREESLOTS];
 char *FREE_MOBJS[NUMMOBJFREESLOTS];
 char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+char *FREE_MENUS[NUMMENUFREESLOTS];
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 struct flickytypes_s FLICKYTYPES[] = {
@@ -606,98 +608,136 @@ const char *const HUDITEMS_LIST[] = {
 };
 
 const char *const MENUTYPES_LIST[] = {
-	"NONE",
+#define _(name, ...) #name,
+#include "info/menus.h"
+#undef _
+};
 
-	"MAIN",
+struct menu_routine_s const MENU_ROUTINES[] = {
+	{ "SINGLEPLAYERMENU", &M_SinglePlayerMenu },
+	{ "OPTIONS", &M_Options },
+	{ "ADDONS", &M_Addons },
+	{ "QUITSRB2", &M_QuitSRB2 },
+	{ "STATISTICS", &M_Statistics },
+	{ "HANDLELEVELSTATS", &M_HandleLevelStats },
+	{ "REPLAYHUT", &M_ReplayHut },
+	{ "QUITREPLAYHUT", &M_QuitReplayHut },
+	{ "HANDLEREPLAYHUTLIST", &M_HandleReplayHutList },
+	{ "GRANDPRIXTEMP", &M_GrandPrixTemp },
+	{ "TIMEATTACK", &M_TimeAttack },
+	{ "ITEMBREAKER", &M_ItemBreaker },
+	{ "STARTGRANDPRIX", &M_StartGrandPrix },
+	{ "QUITTIMEATTACKMENU", &M_QuitTimeAttackMenu },
+	{ "CHOOSETIMEATTACK", &M_ChooseTimeAttack },
+	{ "SETGUESTREPLAY", &M_SetGuestReplay },
+	{ "REPLAYTIMEATTACK", &M_ReplayTimeAttack },
+	{ "HANDLESTAFFREPLAY", &M_HandleStaffReplay },
+	{ "SETUPMULTIHANDLER", &M_SetupMultiHandler },
+	{ "HANDLESETUPMULTIPLAYER", &M_HandleSetupMultiPlayer },
+	{ "QUITMULTIPLAYERMENU", &M_QuitMultiPlayerMenu },
+	{ "STARTSERVERMENU", &M_StartServerMenu },
+	{ "STARTOFFLINESERVERMENU", &M_StartOfflineServerMenu },
+	{ "STARTSERVER", &M_StartServer },
+	{ "CONNECTMENUMODCHECKS", &M_ConnectMenuModChecks },
+	{ "HANDLECONNECTIP", &M_HandleConnectIP },
+	{ "CANCELCONNECT", &M_CancelConnect },
+	{ "SETUP1PCONTROLSMENU", &M_Setup1PControlsMenu },
+	{ "SETUP2PCONTROLSMENU", &M_Setup2PControlsMenu },
+	{ "SETUP3PCONTROLSMENU", &M_Setup3PControlsMenu },
+	{ "SETUP4PCONTROLSMENU", &M_Setup4PControlsMenu },
+	{ "HANDLESERVERPAGE", &M_HandleServerPage },
+	{ "REFRESH", &M_Refresh },
+	{ "CONNECT", &M_Connect },
+	{ "VIDEOMODEMENU", &M_VideoModeMenu },
+#ifdef HWRENDER
+	{ "OPENGLOPTIONSMENU", &M_OpenGLOptionsMenu },
+#endif
+	{ "HANDLEVIDEOMODE", &M_HandleVideoMode },
+	{ "HANDLESOUNDTEST", &M_HandleSoundTest },
+	{ "MUSICTEST", &M_MusicTest },
+	{ "SCREENSHOTOPTIONS", &M_ScreenshotOptions },
+	{ "ADDONSOPTIONS", &M_AddonsOptions },
+	{ "ERASEDATA", &M_EraseData },
+	{ "MANUAL", &M_Manual },
+	{ "CREDITS", &M_Credits },
+	{ "BLANCREDITS", &M_BlanCredits },
+	{ "HANDLEADDONS", &M_HandleAddons },
+	{ "SELECTABLECLEARMENUS", &M_SelectableClearMenus },
+	{ "MODEATTACKRETRY", &M_ModeAttackRetry },
+	{ "MODEATTACKENDGAME", &M_ModeAttackEndGame },
+	{ "PANDORASBOX", &M_PandorasBox },
+	{ "EMBLEMHINTS", &M_EmblemHints },
+	{ "RETRY", &M_Retry },
+	{ "ENDGAME", &M_EndGame },
+	{ "MAPCHANGE", &M_MapChange },
+	{ "SETUPMULTIPLAYER", &M_SetupMultiPlayer },
+	{ "SETUPMULTIPLAYER2", &M_SetupMultiPlayer2 },
+	{ "SETUPMULTIPLAYER3", &M_SetupMultiPlayer3 },
+	{ "SETUPMULTIPLAYER4", &M_SetupMultiPlayer4 },
+	{ "CONFIRMSPECTATE", &M_ConfirmSpectate },
+	{ "CONFIRMENTERGAME", &M_ConfirmEnterGame },
+	{ "EXITPANDORASBOX", &M_ExitPandorasBox },
+	{ "GETALLEMERALDS", &M_GetAllEmeralds },
+	{ "DESTROYROBOTS", &M_DestroyRobots },
+	{ "ULTIMATECHEAT", &M_UltimateCheat },
+	{ "CONFIRMTEAMSCRAMBLE", &M_ConfirmTeamScramble },
+	{ "CONFIRMTEAMCHANGE", &M_ConfirmTeamChange },
+	{ "CONFIRMSPECTATECHANGE", &M_ConfirmSpectateChange },
+	{ "CHANGELEVEL", &M_ChangeLevel },
+	{ "HUTSTARTREPLAY", &M_HutStartReplay },
+	{ "PLAYBACKREWIND", &M_PlaybackRewind },
+	{ "PLAYBACKPAUSE", &M_PlaybackPause },
+	{ "PLAYBACKFASTFORWARD", &M_PlaybackFastForward },
+	{ "PLAYBACKADVANCE", &M_PlaybackAdvance },
+	{ "PLAYBACKSETVIEWS", &M_PlaybackSetViews },
+	{ "PLAYBACKADJUSTVIEW", &M_PlaybackAdjustView },
+	{ "PLAYBACKTOGGLEFREECAM", &M_PlaybackToggleFreecam },
+	{ "PLAYBACKQUIT", &M_PlaybackQuit },
+	{ "HANDLEIMAGEDEF", &M_HandleImageDef },
+	{ "HANDLEMUSICTEST", &M_HandleMusicTest },
+	{ "SETUP1PJOYSTICKMENU", &M_Setup1PJoystickMenu },
+	{ "SETUP2PJOYSTICKMENU", &M_Setup2PJoystickMenu },
+	{ "SETUP3PJOYSTICKMENU", &M_Setup3PJoystickMenu },
+	{ "SETUP4PJOYSTICKMENU", &M_Setup4PJoystickMenu },
+	{ "RESETCONTROLS", &M_ResetControls },
+	{ "CHANGECONTROL", &M_ChangeControl },
+	{ "ASSIGNJOYSTICK", &M_AssignJoystick },
+	{ "HANDLEMONITORTOGGLES", &M_HandleMonitorToggles },
+#ifdef HAVE_DISCORDRPC
+	{ "HANDLEDISCORDREQUESTS", &M_HandleDiscordRequests },
+#endif
+	{ NULL, NULL }
+};
 
-	// Single Player
-	"SP_MAIN",
-
-	"SP_LOAD",
-	"SP_PLAYER",
-
-	"SP_LEVELSELECT",
-	"SP_LEVELSTATS",
-
-	"SP_TIMEATTACK",
-	"SP_TIMEATTACK_LEVELSELECT",
-	"SP_GUESTREPLAY",
-	"SP_REPLAY",
-	"SP_GHOST",
-
-	"SP_NIGHTSATTACK",
-	"SP_NIGHTS_LEVELSELECT",
-	"SP_NIGHTS_GUESTREPLAY",
-	"SP_NIGHTS_REPLAY",
-	"SP_NIGHTS_GHOST",
-
-	// Multiplayer
-	"MP_MAIN",
-	"MP_SPLITSCREEN", // SplitServer
-	"MP_SERVER",
-	"MP_CONNECT",
-	"MP_ROOM",
-	"MP_PLAYERSETUP", // MP_PlayerSetupDef shared with SPLITSCREEN if #defined NONET
-	"MP_SERVER_OPTIONS",
-
-	// Options
-	"OP_MAIN",
-
-	"OP_P1CONTROLS",
-	"OP_CHANGECONTROLS", // OP_ChangeControlsDef shared with P2
-	"OP_P1MOUSE",
-	"OP_P1JOYSTICK",
-	"OP_JOYSTICKSET", // OP_JoystickSetDef shared with P2
-	"OP_P1CAMERA",
-
-	"OP_P2CONTROLS",
-	"OP_P2MOUSE",
-	"OP_P2JOYSTICK",
-	"OP_P2CAMERA",
-
-	"OP_PLAYSTYLE",
-
-	"OP_VIDEO",
-	"OP_VIDEOMODE",
-	"OP_COLOR",
-	"OP_OPENGL",
-	"OP_OPENGL_LIGHTING",
-
-	"OP_SOUND",
-
-	"OP_SERVER",
-	"OP_MONITORTOGGLE",
-
-	"OP_DATA",
-	"OP_ADDONS",
-	"OP_SCREENSHOTS",
-	"OP_ERASEDATA",
-
-	// Extras
-	"SR_MAIN",
-	"SR_PANDORA",
-	"SR_LEVELSELECT",
-	"SR_UNLOCKCHECKLIST",
-	"SR_EMBLEMHINT",
-	"SR_PLAYER",
-	"SR_SOUNDTEST",
-
-	// Addons (Part of MISC, but let's make it our own)
-	"AD_MAIN",
-
-	// MISC
-	// "MESSAGE",
-	// "SPAUSE",
-
-	// "MPAUSE",
-	// "SCRAMBLETEAM",
-	// "CHANGETEAM",
-	// "CHANGELEVEL",
-
-	// "MAPAUSE",
-	// "HELP",
-
-	"SPECIAL"
+struct menu_drawer_s const MENU_DRAWERS[] = {
+	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
+	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
+	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
+	{ "DRAWCHECKLIST", &M_DrawChecklist },
+	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
+	{ "DRAWREPLAYHUT", &M_DrawReplayHut },
+	{ "DRAWTIMEATTACKMENU", &M_DrawTimeAttackMenu },
+	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
+	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
+	{ "DRAWSERVERMENU", &M_DrawServerMenu },
+	{ "DRAWVIDEOMENU", &M_DrawVideoMenu },
+	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
+	{ "DRAWSKYROOM", &M_DrawSkyRoom },
+	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
+	{ "DRAWADDONS", &M_DrawAddons },
+	{ "DRAWEMBLEMHINTS", &M_DrawEmblemHints },
+	{ "DRAWREPLAYSTARTMENU", &M_DrawReplayStartMenu },
+	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },
+	{ "DRAWIMAGEDEF", &M_DrawImageDef },
+	{ "DRAWMUSICTEST", &M_DrawMusicTest },
+	{ "DRAWCONTROL", &M_DrawControl },
+	{ "DRAWJOYSTICK", &M_DrawJoystick },
+	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
+	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
+#ifdef HAVE_DISCORDRPC
+	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
+#endif
+	{ NULL, NULL }
 };
 
 struct int_const_s const INT_CONST[] = {
@@ -1334,6 +1374,42 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_WAITINGPLAYERS",GS_WAITINGPLAYERS},
 	{"GS_BLANCREDITS",GS_BLANCREDITS},
 
+	// Game controls
+	{"GC_NULL",gc_null},
+	{"GC_AIMFORWARD",gc_aimforward},
+	{"GC_AIMBACKWARD",gc_aimbackward},
+	{"GC_TURNLEFT",gc_turnleft},
+	{"GC_TURNRIGHT",gc_turnright},
+	{"GC_ACCELERATE",gc_accelerate},
+	{"GC_DRIFT",gc_drift},
+	{"GC_BRAKE",gc_brake},
+	{"GC_FIRE",gc_fire},
+	{"GC_LOOKBACK",gc_lookback},
+	{"GC_CAMRESET",gc_camreset},
+	{"GC_CAMTOGGLE",gc_camtoggle},
+	{"GC_SPECTATE",gc_spectate},
+	{"GC_LOOKUP",gc_lookup},
+	{"GC_LOOKDOWN",gc_lookdown},
+	{"GC_CENTERVIEW",gc_centerview},
+	{"GC_TALKKEY",gc_talkkey},
+	{"GC_TEAMKEY",gc_teamkey},
+	{"GC_SCORES",gc_scores},
+	{"GC_CONSOLE",gc_console},
+	{"GC_PAUSE",gc_pause},
+	{"GC_SYSTEMMENU",gc_systemmenu},
+	{"GC_SCREENSHOT",gc_screenshot},
+	{"GC_RECORDGIF",gc_recordgif},
+	{"GC_VIEWPOINT",gc_viewpoint},
+	{"GC_CUSTOM1",gc_custom1},
+	{"GC_CUSTOM2",gc_custom2},
+	{"GC_CUSTOM3",gc_custom3},
+	{"GC_RESPAWN",gc_respawn},
+	{"NUM_GAMECONTROLS",num_gamecontrols},
+
+	// screen.h constants
+	{"BASEVIDWIDTH", BASEVIDWIDTH},
+	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
+
 	// SRB2Kart
 	// kartitems_t
 #define FOREACH( name, n ) { TOSTR (KITEM_ ## name), KITEM_ ## name }
@@ -1390,10 +1466,6 @@ struct int_const_s const INT_CONST[] = {
 	{"KARTSPEED_EASY", KARTSPEED_EASY},
 	{"KARTSPEED_NORMAL", KARTSPEED_NORMAL},
 	{"KARTSPEED_HARD", KARTSPEED_HARD},
-	
-	// screen.h constants
-	{"BASEVIDWIDTH", BASEVIDWIDTH},
-	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
 
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1}, // This is to trick kart luas that look for this since its already here.

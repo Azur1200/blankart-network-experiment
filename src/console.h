@@ -22,6 +22,7 @@ extern "C" {
 #endif
 
 void CON_Init(void);
+void CON_Register(void);
 
 boolean CON_Responder(event_t *ev);
 

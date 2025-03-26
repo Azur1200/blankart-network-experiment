@@ -16,6 +16,7 @@
 #include "doomdef.h" // Constants
 #include "d_think.h" // actionf_t
 #include "info.h" // Mobj, state, sprite, etc constants
+#include "m_menu.h" // NUMMENUFREESLOTS
 #include "lua_script.h"
 
 #ifdef __cplusplus
@@ -27,6 +28,7 @@ extern "C" {
 extern char *FREE_STATES[NUMSTATEFREESLOTS];
 extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
 extern char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+extern char *FREE_MENUS[NUMMENUFREESLOTS];
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 #define initfreeslots() {\
@@ -49,6 +51,16 @@ struct actionpointer_t
 {
 	actionf_t action; ///< Function pointer corresponding to the actual action.
 	const char *name; ///< Name of the action in ALL CAPS.
+};
+
+struct menu_routine_s {
+	const char *name;
+	void (*routine)(INT32);
+};
+
+struct menu_drawer_s {
+	const char *name;
+	void (*drawer)(void);
 };
 
 struct int_const_s {
@@ -81,6 +93,8 @@ extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
 extern const char *const MENUTYPES_LIST[];
+extern struct menu_routine_s const MENU_ROUTINES[];
+extern struct menu_drawer_s const MENU_DRAWERS[];
 
 extern struct int_const_s const INT_CONST[];
 

@@ -121,7 +121,7 @@ static SDL_bool disable_fullscreen = SDL_FALSE;
 #define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?0:cv_fullscreen.value
 static SDL_bool disable_mouse = SDL_FALSE;
 #define USE_MOUSEINPUT (!disable_mouse && cv_usemouse.value && havefocus)
-#define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menuactive && !USE_FULLSCREEN)
+#define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menustack[0] && !USE_FULLSCREEN)
 #define MOUSEBUTTONS_MAX MOUSEBUTTONS
 
 // first entry in the modelist which is not bigger than MAXVIDWIDTHxMAXVIDHEIGHT
@@ -386,7 +386,7 @@ static boolean IgnoreMouse(void)
 {
 	if (cv_alwaysgrabmouse.value)
 		return false;
-	if (menuactive)
+	if (menustack[0])
 		return !M_MouseNeeded();
 	if (paused || con_destlines || chat_on)
 		return true;
@@ -1005,7 +1005,7 @@ void I_GetEvent(void)
 						CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 					// update the menu
-					if (currentMenu == &OP_JoystickSetDef)
+					if (menustack[0] == MN_OP_JOYSTICKSET)
 						M_SetupJoystickMenu(0);
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
@@ -1065,7 +1065,7 @@ void I_GetEvent(void)
 					CONS_Debug(DBG_GAMELOGIC, "Joystick%d device index: %d\n", i+1, JoyInfo[i].oldjoy);
 
 				// update the menu
-				if (currentMenu == &OP_JoystickSetDef)
+				if (menustack[0] == MN_OP_JOYSTICKSET)
 					M_SetupJoystickMenu(0);
 				break;
 			case SDL_DROPFILE:
@@ -1779,6 +1779,20 @@ static void Impl_VideoSetupBuffer(void)
 	}
 }
 
+void I_RegisterSysCommands(void)
+{
+	if (dedicated || graphics_started)
+		return;
+
+	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand ("vid_info", VID_Command_Info_f);
+	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar (&cv_vidwait);
+	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
+}
+
 void I_StartupGraphics(void)
 {
 	if (dedicated)
@@ -1789,13 +1803,6 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_info", VID_Command_Info_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
-	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = static_cast<SDL_bool>(M_CheckParm("-nomouse"));
 	disable_fullscreen = M_CheckParm("-win") ? SDL_TRUE : SDL_FALSE;
 

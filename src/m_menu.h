@@ -34,116 +34,24 @@ extern "C" {
 // MENUS
 //
 
-// If menu hierarchies go deeper, change this up to 5.
-// Zero-based, inclusive.
-#define NUMMENULEVELS 3
-#define MENUBITS 6
+// max size of menu stack
+#define NUMMENULEVELS 8
 
 // Menu IDs sectioned by numeric places to signify hierarchy
-/**
- * IF YOU MODIFY THIS, MODIFY MENUTYPES_LIST[] IN dehacked.c TO MATCH.
- */
 typedef enum
 {
-	MN_NONE,
+#define _(name, ...) MN_##name,
+#include "info/menus.h"
+#undef _
 
-	MN_MAIN,
-
-	// Single Player
-	MN_SP_MAIN,
-
-	MN_SP_LOAD,
-	MN_SP_PLAYER,
-
-	MN_SP_LEVELSELECT,
-	MN_SP_LEVELSTATS,
-
-	MN_SP_TIMEATTACK,
-	MN_SP_TIMEATTACK_LEVELSELECT,
-	MN_SP_GUESTREPLAY,
-	MN_SP_REPLAY,
-	MN_SP_GHOST,
-
-	MN_SP_NIGHTSATTACK,
-	MN_SP_NIGHTS_LEVELSELECT,
-	MN_SP_NIGHTS_GUESTREPLAY,
-	MN_SP_NIGHTS_REPLAY,
-	MN_SP_NIGHTS_GHOST,
-
-	MN_SP_MARATHON,
-
-	// Multiplayer
-	MN_MP_MAIN,
-	MN_MP_SPLITSCREEN, // SplitServer
-	MN_MP_SERVER,
-	MN_MP_CONNECT,
-	MN_MP_ROOM,
-	MN_MP_PLAYERSETUP, // MP_PlayerSetupDef shared with SPLITSCREEN if #defined NONET
-	MN_MP_SERVER_OPTIONS,
-
-	// Options
-	MN_OP_MAIN,
-
-	MN_OP_P1CONTROLS,
-	MN_OP_CHANGECONTROLS, // OP_ChangeControlsDef shared with P2
-	MN_OP_P1MOUSE,
-	MN_OP_P1JOYSTICK,
-	MN_OP_JOYSTICKSET, // OP_JoystickSetDef shared with P2
-	MN_OP_P1CAMERA,
-
-	MN_OP_P2CONTROLS,
-	MN_OP_P2MOUSE,
-	MN_OP_P2JOYSTICK,
-	MN_OP_P2CAMERA,
-
-	MN_OP_PLAYSTYLE,
-
-	MN_OP_VIDEO,
-	MN_OP_VIDEOMODE,
-	MN_OP_COLOR,
-	MN_OP_OPENGL,
-	MN_OP_OPENGL_LIGHTING,
-
-	MN_OP_SOUND,
-
-	MN_OP_SERVER,
-	MN_OP_MONITORTOGGLE,
-
-	MN_OP_DATA,
-	MN_OP_ADDONS,
-	MN_OP_SCREENSHOTS,
-	MN_OP_ERASEDATA,
-
-	// Extras
-	MN_SR_MAIN,
-	MN_SR_PANDORA,
-	MN_SR_LEVELSELECT,
-	MN_SR_UNLOCKCHECKLIST,
-	MN_SR_EMBLEMHINT,
-	MN_SR_PLAYER,
-	MN_SR_SOUNDTEST,
-
-	// Addons (Part of MISC, but let's make it our own)
-	MN_AD_MAIN,
-
-	// MISC
-	// MN_MESSAGE,
-	// MN_SPAUSE,
-
-	// MN_MPAUSE,
-	// MN_SCRAMBLETEAM,
-	// MN_CHANGETEAM,
-	// MN_CHANGELEVEL,
-
-	// MN_MAPAUSE,
-	// MN_HELP,
-
-	MN_SPECIAL,
+	MN_FIRSTFREESLOT,
+	MN_LASTFREESLOT = MN_FIRSTFREESLOT + 128,
 	NUMMENUTYPES,
-} menutype_t; // up to 63; MN_SPECIAL = 53
-#define MTREE2(a,b) (a | (b<<MENUBITS))
-#define MTREE3(a,b,c) MTREE2(a, MTREE2(b,c))
-#define MTREE4(a,b,c,d) MTREE2(a, MTREE3(b,c,d))
+} menutype_t;
+#define NUMMENUFREESLOTS (NUMMENUTYPES - MN_FIRSTFREESLOT)
+
+extern menu_t *menudefs[NUMMENUTYPES];
+extern menutype_t menustack[NUMMENULEVELS];
 
 typedef struct
 {
@@ -178,8 +86,6 @@ typedef struct
 } menupres_t;
 
 extern menupres_t menupres[NUMMENUTYPES];
-extern UINT32 prevMenuId;
-extern UINT32 activeMenuId;
 
 void M_InitMenuPresTables(void);
 //UINT8 M_GetYoungestChildMenu(void);
@@ -214,9 +120,6 @@ void M_InitCharacterTables(void);
 // does nothing if menu is already up.
 void M_StartControlPanel(void);
 
-// Called upon end of a mode attack run
-void M_EndModeAttackRun(void);
-
 // Called on new server add, or other reasons
 void M_SortServerList(void);
 
@@ -236,7 +139,9 @@ typedef enum
 	MM_EVENTHANDLER // the same of above but without 'y' or 'n' restriction
 	                // and routine is void routine(event_t *) (ex: set control)
 } menumessagetype_t;
-void M_StartMessage(const char *string, void *routine, menumessagetype_t itemtype);
+
+#define M_StartMessage(string, routine, itemtype) M_StartMessage2(string, (void (*)(void))routine, itemtype)
+void M_StartMessage2(const char *string, void (*routine)(void), menumessagetype_t itemtype);
 
 typedef enum
 {
@@ -265,7 +170,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_SUBMENU           6     // go to sub menu
 #define IT_CVAR              8     // handle as a cvar
 #define IT_PAIR             11     // no handling, define both sides of text
-#define IT_MSGHANDLER       12     // same as key but with event and sometime can handle y/n key (special for message)
 
 #define IT_DISPLAY   (48+64+128)    // 16+32+64+128
 #define IT_NOTHING            0     // space
@@ -314,12 +218,14 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
+#define ITEMNAMELEN 6
+#define ITEMNAMEFMT "%.6s"
+
 typedef union
 {
-	menu_t *submenu;      // IT_SUBMENU
+	menutype_t submenu;      // IT_SUBMENU
 	consvar_t *cvar;             // IT_CVAR
 	void (*routine)(INT32 choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
-	void (*eventhandler)(event_t *ev); // MM_EVENTHANDLER
 } itemaction_t;
 
 //
@@ -327,6 +233,8 @@ typedef union
 //
 struct menuitem_t
 {
+	char itemname[ITEMNAMELEN];
+
 	// show IT_xxx
 	UINT16 status;
 
@@ -341,19 +249,139 @@ struct menuitem_t
 
 struct menu_t
 {
-	UINT32         menuid;             // ID to encode menu type and hierarchy
-	const char    *menutitlepic;
+	const char    *headerpic;
 	INT16          numitems;           // # of menu items
-	menu_t *prevMenu;           // previous menu
 	menuitem_t    *menuitems;          // menu items
 	void         (*drawroutine)(void); // draw routine
 	INT16          x, y;               // x, y of menu
 	INT16          lastOn;             // last item user was on in menu
-	boolean      (*quitroutine)(void); // called before quit a menu return true if we can
+	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
 
-void M_SetupNextMenu(menu_t *menudef);
+void M_EnterMenu(menutype_t menu, boolean callexit);
+void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
+menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
+menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
+
+void M_SinglePlayerMenu(INT32 choice);
+void M_Options(INT32 choice);
+void M_Addons(INT32 choice);
+void M_QuitSRB2(INT32 choice);
+void M_Statistics(INT32 choice);
+void M_HandleLevelStats(INT32 choice);
+void M_QuitReplayHut(INT32 choice);
+void M_HandleReplayHutList(INT32 choice);
+void M_GrandPrixTemp(INT32 choice);
+void M_TimeAttack(INT32 choice);
+void M_ItemBreaker(INT32 choice);
+void M_StartGrandPrix(INT32 choice);
+void M_QuitTimeAttackMenu(INT32 choice);
+void M_ChooseTimeAttack(INT32 choice);
+void M_SetGuestReplay(INT32 choice);
+void M_ReplayTimeAttack(INT32 choice);
+void M_HandleStaffReplay(INT32 choice);
+void M_SetupMultiHandler(INT32 choice);
+void M_HandleSetupMultiPlayer(INT32 choice);
+void M_QuitMultiPlayerMenu(INT32 choice);
+void M_StartServerMenu(INT32 choice);
+void M_StartOfflineServerMenu(INT32 choice);
+void M_StartServer(INT32 choice);
+void M_ConnectMenuModChecks(INT32 choice);
+void M_HandleConnectIP(INT32 choice);
+void M_CancelConnect(INT32 choice);
+void M_Setup1PControlsMenu(INT32 choice);
+void M_Setup2PControlsMenu(INT32 choice);
+void M_Setup3PControlsMenu(INT32 choice);
+void M_Setup4PControlsMenu(INT32 choice);
+void M_HandleServerPage(INT32 choice);
+void M_Refresh(INT32 choice);
+void M_Connect(INT32 choice);
+void M_VideoModeMenu(INT32 choice);
+#ifdef HWRENDER
+void M_OpenGLOptionsMenu(INT32 choice);
+#endif
+void M_HandleVideoMode(INT32 ch);
+void M_HandleSoundTest(INT32 choice);
+void M_MusicTest(INT32 choice);
+void M_ScreenshotOptions(INT32 choice);
+void M_AddonsOptions(INT32 choice);
+void M_EraseData(INT32 choice);
+void M_Manual(INT32 choice);
+void M_Credits(INT32 choice);
+void M_BlanCredits(INT32 choice);
+void M_HandleAddons(INT32 choice);
+void M_SelectableClearMenus(INT32 choice);
+void M_ModeAttackEndGame(INT32 choice);
+void M_PandorasBox(INT32 choice);
+void M_EmblemHints(INT32 choice);
+void M_Retry(INT32 choice);
+void M_EndGame(INT32 choice);
+void M_MapChange(INT32 choice);
+void M_SetupMultiPlayer(INT32 choice);
+void M_SetupMultiPlayer2(INT32 choice);
+void M_SetupMultiPlayer3(INT32 choice);
+void M_SetupMultiPlayer4(INT32 choice);
+void M_ConfirmSpectate(INT32 choice);
+void M_ConfirmEnterGame(INT32 choice);
+void M_ExitPandorasBox(INT32 choice);
+void M_GetAllEmeralds(INT32 choice);
+void M_DestroyRobots(INT32 choice);
+ATTRNORETURN void FUNCNORETURN M_UltimateCheat(INT32 choice);
+void M_ConfirmTeamScramble(INT32 choice);
+void M_ConfirmTeamChange(INT32 choice);
+void M_ConfirmSpectateChange(INT32 choice);
+void M_ChangeLevel(INT32 choice);
+void M_HutStartReplay(INT32 choice);
+void M_PlaybackRewind(INT32 choice);
+void M_PlaybackPause(INT32 choice);
+void M_PlaybackFastForward(INT32 choice);
+void M_PlaybackAdvance(INT32 choice);
+void M_PlaybackSetViews(INT32 choice);
+void M_PlaybackAdjustView(INT32 choice);
+void M_PlaybackToggleFreecam(INT32 choice);
+void M_PlaybackQuit(INT32 choice);
+void M_HandleImageDef(INT32 choice);
+void M_HandleMusicTest(INT32 choice);
+void M_Setup1PJoystickMenu(INT32 choice);
+void M_Setup2PJoystickMenu(INT32 choice);
+void M_Setup3PJoystickMenu(INT32 choice);
+void M_Setup4PJoystickMenu(INT32 choice);
+void M_ResetControls(INT32 choice);
+void M_ChangeControl(INT32 choice);
+void M_AssignJoystick(INT32 choice);
+void M_HandleMonitorToggles(INT32 choice);
+#ifdef HAVE_DISCORDRPC
+void M_HandleDiscordRequests(INT32 choice);
+#endif
+
+void M_DrawGenericMenu(void);
+void M_DrawCenteredMenu(void);
+void M_DrawPauseMenu(void);
+void M_DrawChecklist(void);
+void M_DrawLevelStats(void);
+void M_DrawReplayHut(void);
+void M_DrawTimeAttackMenu(void);
+void M_DrawMPMainMenu(void);
+void M_DrawSetupMultiPlayerMenu(void);
+void M_DrawServerMenu(void);
+void M_DrawConnectMenu(void);
+void M_DrawVideoMenu(void);
+void M_DrawVideoMode(void);
+void M_DrawSkyRoom(void);
+void M_DrawHUDOptions(void);
+void M_DrawAddons(void);
+void M_DrawEmblemHints(void);
+void M_DrawReplayStartMenu(void);
+void M_DrawPlaybackMenu(void);
+void M_DrawImageDef(void);
+void M_DrawMusicTest(void);
+void M_DrawControl(void);
+void M_DrawJoystick(void);
+void M_DrawMonitorToggles(void);
+#ifdef HAVE_DISCORDRPC
+void M_DrawDiscordRequests(void);
+#endif
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
@@ -362,14 +390,8 @@ boolean M_MouseNeeded(void);
 extern I_mutex m_menu_mutex;
 #endif
 
-extern menu_t *currentMenu;
-
-extern menu_t MainDef;
-extern menu_t SP_LoadDef;
-
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);
-extern menu_t OP_JoystickSetDef;
 
 // Stuff for customizing the player select screen
 typedef struct
@@ -440,6 +462,9 @@ extern description_t description[MAXSKINS];
 
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
+extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
+extern consvar_t cv_dummyrings, cv_dummylives;
+extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
@@ -500,85 +525,6 @@ UINT16 M_GetColorBefore(UINT16 color);
 UINT16 M_GetColorAfter(UINT16 color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
-
-// These defines make it a little easier to make menus
-#define DEFAULTMENUSTYLE(id, header, source, prev, x, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawGenericMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
-
-#define DEFAULTSCROLLMENUSTYLE(id, header, source, prev, x, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawGenericScrollMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
-
-#define PAUSEMENUSTYLE(source, x, y)\
-{\
-	MN_SPECIAL,\
-	NULL,\
-	sizeof(source)/sizeof(menuitem_t),\
-	NULL,\
-	source,\
-	M_DrawPauseMenu,\
-	x, y,\
-	0,\
-	NULL\
-}
-
-#define CENTERMENUSTYLE(id, header, source, prev, y)\
-{\
-	id,\
-	header,\
-	sizeof(source)/sizeof(menuitem_t),\
-	prev,\
-	source,\
-	M_DrawCenteredMenu,\
-	BASEVIDWIDTH/2, y,\
-	0,\
-	NULL\
-}
-
-#define MAPICONMENUSTYLE(header, source, prev)\
-{\
-	MN_NONE,\
-	header,\
-	sizeof (source)/sizeof (menuitem_t),\
-	prev,\
-	source,\
-	M_DrawServerMenu,\
-	24,40,\
-	0,\
-	NULL\
-}
-
-#define IMAGEDEF(source)\
-{\
-	MN_SPECIAL,\
-	NULL,\
-	sizeof (source)/sizeof (menuitem_t),\
-	NULL,\
-	source,\
-	M_DrawImageDef,\
-	0, 0,\
-	0,\
-	NULL\
-}
 
 #ifdef __cplusplus
 } // extern "C"

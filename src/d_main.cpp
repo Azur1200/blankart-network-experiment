@@ -1062,8 +1062,6 @@ void D_StartTitle(void)
 
 	F_StartTitleScreen();
 
-	currentMenu = &MainDef; // reset the current menu ID
-
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
@@ -1451,6 +1449,27 @@ void D_SRB2Main(void)
 	// Have to be done here before files are loaded
 	M_InitCharacterTables();
 
+	D_RegisterServerCommands();
+	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
+	R_RegisterEngineStuff();
+	S_RegisterSoundStuff();
+	CON_Register();
+	M_Init();
+	if (!dedicated)
+	{
+		CV_RegisterVar(&cv_ticrate);
+		CV_RegisterVar(&cv_constextsize);
+	}
+
+	I_RegisterSysCommands();
+
+#ifdef HWRENDER
+	// Lactozilla: Add every hardware mode CVAR and CCMD.
+	// Has to be done before the configuration file loads,
+	// ~~but after the OpenGL library loads.~~ G: no lol
+	HWR_AddCommands();
+#endif
+
 	// load wad, including the main wad file
 	CONS_Printf("W_InitMultipleFiles(): Adding IWAD and main PWADs.\n");
 	W_InitMultipleFiles(startupiwads, false);
@@ -1512,13 +1531,6 @@ void D_SRB2Main(void)
 	CONS_Printf("I_StartupGraphics()...\n");
 	I_StartupGraphics();
 
-#ifdef HWRENDER
-	// Lactozilla: Add every hardware mode CVAR and CCMD.
-	// Has to be done before the configuration file loads,
-	// but after the OpenGL library loads.
-	HWR_AddCommands();
-#endif
-
 	//--------------------------------------------------------- CONSOLE
 	// setup loading screen
 	SCR_Startup();
@@ -1538,13 +1550,6 @@ void D_SRB2Main(void)
 
 	timelimits[GT_BATTLE] = 2;
 
-	D_RegisterServerCommands();
-	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
-	R_RegisterEngineStuff();
-	S_RegisterSoundStuff();
-
-	I_RegisterSysCommands();
-	
 	CON_SetLoadingProgress(LOADED_HUINIT);
 	
 	CONS_Printf("W_InitMultipleFiles(): Adding external PWADs.\n");
@@ -1570,8 +1575,6 @@ void D_SRB2Main(void)
 
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
-
-	M_Init();
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
