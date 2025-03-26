@@ -262,6 +262,121 @@ void D_ProcessEvents(void)
 	}
 }
 
+static void D_RenderLevel(void)
+{
+	UINT8 i;
+
+	R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+
+	viewwindowy = 0;
+	viewwindowx = 0;
+
+	topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
+	objectsdrawn = 0;
+
+	ps_rendercalltime = I_GetPreciseTime();
+
+	if (rendermode == render_soft)
+	{
+		if (cv_homremoval.value)
+		{
+			if (cv_homremoval.value == 1)
+			{
+				// Clear the software screen buffer to remove HOM
+				memset(screens[0], 31, vid.width * vid.height * vid.bpp);
+			}
+			else
+			{
+				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
+				memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
+			}
+		}
+
+		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
+		{
+			// V_DrawPatchFill, but for the fourth screen only
+			patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
+			INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
+			INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
+
+			for (x = vid.width>>1; x < vid.width; x += pw)
+			{
+				for (y = vid.height>>1; y < vid.height; y += ph)
+					V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
+			}
+		}
+	}
+
+	for (i = 0; i <= r_splitscreen; i++)
+	{
+		if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
+		{
+			viewssnum = i;
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				HWR_RenderPlayerView();
+			else
+#endif
+			if (rendermode != render_none)
+			{
+				if (i > 0) // Splitscreen-specific
+				{
+					switch (i)
+					{
+						case 1:
+							if (r_splitscreen > 1)
+							{
+								viewwindowx = viewwidth;
+								viewwindowy = 0;
+							}
+							else
+							{
+								viewwindowx = 0;
+								viewwindowy = viewheight;
+							}
+							M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
+							break;
+						case 2:
+							viewwindowx = 0;
+							viewwindowy = viewheight;
+							M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
+							break;
+						case 3:
+							viewwindowx = viewwidth;
+							viewwindowy = viewheight;
+							M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
+						default:
+							break;
+					}
+
+
+					topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
+				}
+
+				R_RenderPlayerView();
+
+				if (i > 0)
+					M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
+			}
+		}
+	}
+
+	if (rendermode == render_soft)
+	{
+		for (i = 0; i <= r_splitscreen; i++)
+		{
+			R_ApplyViewMorph(i);
+
+			if (postimgtype[i])
+				V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
+		}
+	}
+
+	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
+	R_RestoreLevelInterpolators();
+}
+
 //
 // D_Display
 // draw current display, possibly wiping it from the previous
@@ -385,6 +500,18 @@ static bool D_Display(void)
 	// Catch runaway clipping rectangles.
 	V_ClearClipRect();
 
+	// intermission background
+	if (lastdraw)
+	{
+		if (rendermode == render_soft && !automapactive && !dedicated && cv_renderview.value)
+		{
+			D_RenderLevel();
+			Y_ConsiderScreenBuffer();
+			usebuffer = true;
+		}
+		lastdraw = false;
+	}
+
 	// do buffered drawing
 	switch (gamestate)
 	{
@@ -480,128 +607,7 @@ static bool D_Display(void)
 		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
 			if (!automapactive && !dedicated && cv_renderview.value)
-			{
-				R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
-
-				viewwindowy = 0;
-				viewwindowx = 0;
-
-				topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-				objectsdrawn = 0;
-
-				ps_rendercalltime = I_GetPreciseTime();
-
-				if (rendermode == render_soft)
-				{
-					if (cv_homremoval.value)
-					{
-						if (cv_homremoval.value == 1)
-						{
-							// Clear the software screen buffer to remove HOM
-							memset(screens[0], 31, vid.width * vid.height * vid.bpp);
-						}
-						else
-						{
-							//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-							memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
-						}
-					}
-
-					if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
-					{
-						// V_DrawPatchFill, but for the fourth screen only
-						patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
-						INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
-						INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
-
-						for (x = vid.width>>1; x < vid.width; x += pw)
-						{
-							for (y = vid.height>>1; y < vid.height; y += ph)
-								V_DrawScaledPatch(x, y, V_NOSCALESTART, pat);
-						}
-					}
-				}
-
-				for (i = 0; i <= r_splitscreen; i++)
-				{
-					if (players[displayplayers[i]].mo || players[displayplayers[i]].playerstate == PST_DEAD)
-					{
-						viewssnum = i;
-
-#ifdef HWRENDER
-						if (rendermode == render_opengl)
-							HWR_RenderPlayerView();
-						else
-#endif
-						if (rendermode != render_none)
-						{
-							if (i > 0) // Splitscreen-specific
-							{
-								switch (i)
-								{
-									case 1:
-										if (r_splitscreen > 1)
-										{
-											viewwindowx = viewwidth;
-											viewwindowy = 0;
-										}
-										else
-										{
-											viewwindowx = 0;
-											viewwindowy = viewheight;
-										}
-										M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
-										break;
-									case 2:
-										viewwindowx = 0;
-										viewwindowy = viewheight;
-										M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
-										break;
-									case 3:
-										viewwindowx = viewwidth;
-										viewwindowy = viewheight;
-										M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
-									default:
-										break;
-								}
-
-
-								topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
-							}
-
-							R_RenderPlayerView();
-
-							if (i > 0)
-								M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
-						}
-					}
-				}
-
-				if (rendermode == render_soft)
-				{
-					for (i = 0; i <= r_splitscreen; i++)
-					{
-						R_ApplyViewMorph(i);
-
-						if (postimgtype[i])
-							V_DoPostProcessor(i, postimgtype[i], postimgparam[i]);
-					}
-				}
-
-				ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
-				R_RestoreLevelInterpolators();
-			}
-
-			if (lastdraw)
-			{
-				if (rendermode == render_soft)
-				{
-					VID_BlitLinearScreen(screens[0], screens[1], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
-					Y_ConsiderScreenBuffer();
-					usebuffer = true;
-				}
-				lastdraw = false;
-			}
+				D_RenderLevel();
 
 			ps_uitime = I_GetPreciseTime();
 

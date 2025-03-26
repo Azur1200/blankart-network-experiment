@@ -408,12 +408,10 @@ static void Y_AnimatedVoteScreenCheck(void)
 // Y_ConsiderScreenBuffer
 //
 // Can we copy the current screen to a buffer?
+// G: Yes we can, because now D_Display forces a redraw for the sake of the intermission background
 //
 void Y_ConsiderScreenBuffer(void)
 {
-	if (gameaction != ga_completed)
-		return;
-
 	if (y_buffer == NULL)
 		y_buffer = Z_Calloc(sizeof(y_buffer_t), PU_STATIC, NULL);
 	else
@@ -424,7 +422,7 @@ void Y_ConsiderScreenBuffer(void)
 	y_buffer->source_bpp = vid.bpp;
 	y_buffer->source_rowbytes = vid.rowbytes;
 	y_buffer->source_picture = ZZ_Alloc(y_buffer->source_width*vid.bpp * y_buffer->source_height);
-	VID_BlitLinearScreen(screens[1], y_buffer->source_picture, vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+	VID_BlitLinearScreen(screens[0], y_buffer->source_picture, vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
 
 	// Make the rescaled screen buffer
 	Y_RescaleScreenBuffer();
@@ -510,7 +508,7 @@ void Y_IntermissionDrawer(void)
 		{
 			// no y_buffer
 			if (y_buffer == NULL)
-				VID_BlitLinearScreen(screens[1], screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+				V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
 			else
 			{
 				// Maybe the resolution changed?
