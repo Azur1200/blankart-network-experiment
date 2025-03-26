@@ -7109,9 +7109,15 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 
 			finalringtimer += subring;
 		}
+
+		if (player->ringboost - finalringtimer > player->chaintimer)
+		{
+			// Cap this to prevent displacement between chaintimer and ringtimer.
+			player->chaintimer = min(player->ringboost, (TICRATE - TICRATE/4));
+		}
 	}
 
-	player->ringboost = max(0, K_ChainOrDeincrementTime(player, player->ringboost, finalringtimer));
+	player->ringboost = max(player->chaintimer ? 1: 0, player->ringboost - finalringtimer);
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c

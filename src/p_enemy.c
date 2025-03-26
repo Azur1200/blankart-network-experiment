@@ -3583,6 +3583,9 @@ void A_AttractChase(mobj_t *actor)
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
+				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
+					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
+
 				actor->target->player->ringvolume -= RINGVOLUMEUSEPENALTY;
 
 				P_KillMobj(actor, actor->target, actor->target, DMG_NORMAL);
@@ -3606,6 +3609,9 @@ void A_AttractChase(mobj_t *actor)
 			{
 				if (!P_GivePlayerRings(actor->target->player, 1)) // returns 0 if addition failed
 					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
+
+				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
+					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
 
 				if (actor->cvmem) // caching
 					S_StartSound(actor->target, sfx_s1c5);
