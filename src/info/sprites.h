@@ -715,6 +715,8 @@ _(WTRU) // Water Trail Underlay
 _(GCHA) // follower: generic chao
 _(CHEZ) // follower: cheese
 
+_(BSSS) // Stacking effect
+
 _(TRCK)
 
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later

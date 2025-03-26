@@ -2301,6 +2301,17 @@ void K_SpawnInvincibilitySpeedLines(mobj_t *mo)
 		fast->destscale = 6*((mo->player->invincibilitytimer/TICRATE)*FRACUNIT)/8;
 }
 
+static void K_SpawnStackingEffect(player_t *player)
+{
+	// Thanks to 1ndev for code used for booststack->scale and boosttack->frame! (taken and modified from BoostStack)
+	mobj_t  *booststack = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTSTACK);
+	P_SetTarget(&booststack->target, player->mo);
+	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,4)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
+
+	booststack->angle = player->mo->angle + ANGLE_90;
+	booststack->color = player->mo->color;
+}
+
 void K_SpawnBumpEffect(mobj_t *mo)
 {
 	mobj_t *fx = P_SpawnMobj(mo->x, mo->y, mo->z, MT_BUMP);
@@ -7194,25 +7205,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			}
 		}
 
-		/*if (gametype == GT_RACE && player->rings <= 0 && (K_RingsActive() == true)) // spawn ring debt indicator
+		// Stacking Effect
+		if (stackingactive && player->numboosts > 1)
 		{
-			mobj_t *debtflag = P_SpawnMobj(player->mo->x + player->mo->momx, player->mo->y + player->mo->momy,
-				player->mo->z + P_GetMobjZMovement(player->mo) + player->mo->height + (24*player->mo->scale), MT_THOK);
-
-			P_SetMobjState(debtflag, S_RINGDEBT);
-			P_SetScale(debtflag, (debtflag->destscale = player->mo->scale));
-
-			K_MatchGenericExtraFlags(debtflag, player->mo);
-			debtflag->frame += (leveltime % 4);
-
-			if ((leveltime/12) & 1)
-				debtflag->frame += 4;
-
-			debtflag->color = player->skincolor;
-			debtflag->fuse = 2;
-
-			debtflag->renderflags = K_GetPlayerDontDrawFlag(player);
-		}*/
+			K_SpawnStackingEffect(player);
+		}
 	}
 
 	if (player->itemtype == KITEM_NONE)
@@ -8812,6 +8809,7 @@ INT32 K_GetKartDriftSparkValueForStage(player_t *player, UINT8 stage)
 static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 {
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
+	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
 	K_FlipFromObject(overlay, player->mo);

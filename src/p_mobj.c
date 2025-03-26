@@ -7081,10 +7081,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->angle = mobj->extravalue1 && p ? p->drawangle : mobj->target->angle;
 			P_MoveOrigin(mobj, mobj->target->x + P_ReturnThrustX(mobj, mobj->angle+ANGLE_180, mobj->target->radius),
 				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z);
+			K_FlipFromObject(mobj, mobj->target);
 			P_SetScale(mobj, mobj->target->scale);
 
 			mobj->roll = mobj->target->roll;
 			mobj->pitch = mobj->target->pitch;
+
+			mobj->sloperoll = mobj->target->sloperoll;
+			mobj->slopepitch = mobj->target->slopepitch;
 
 			if (p)
 			{
@@ -7129,7 +7133,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->extravalue1)
 		{
-
 			if (leveltime % 2 == 1)
 			{
 				mobj->frame |= FF_TRANS60;
@@ -7143,7 +7146,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			{
 				mobj->color = K_RainbowColor(leveltime);
 			}
-
 		}
 
 		if (mobj->state == &states[S_BOOSTSMOKESPAWNER])
@@ -7307,6 +7309,28 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 
 		break;
+	case MT_BOOSTSTACK:
+	{
+		if (!mobj->target || P_MobjWasRemoved(mobj->target) || !mobj->target->health || (mobj->target->player && !mobj->target->player->numboosts))
+		{
+			P_RemoveMobj(mobj);
+			return false;
+		}
+
+		mobj->roll = mobj->target->roll;
+		mobj->pitch = mobj->target->pitch;
+
+		mobj->sloperoll = mobj->target->sloperoll;
+		mobj->slopepitch = mobj->target->slopepitch;
+
+		// Thx Indev! (taken and modified from BoostStack)
+		P_MoveOrigin(mobj, mobj->target->x + FixedMul(cos(mobj->target->angle), FixedMul(30*FRACUNIT, mapobjectscale)), mobj->target->y + FixedMul(sin(mobj->target->angle), FixedMul(30*FRACUNIT, mapobjectscale)), mobj->target->z);
+		K_FlipFromObject(mobj, mobj->target);
+
+		// Leveltime based animation
+		mobj->frame = states[S_BOOSTSTACK].frame + (leveltime / 3) % 5;
+		break;
+	}
 	case MT_THUNDERSHIELD:
 	{
 		if (!mobj->target || !mobj->target->health || !mobj->target->player
