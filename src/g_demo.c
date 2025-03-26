@@ -40,6 +40,7 @@
 #include "lua_hook.h"
 #include "md5.h" // demo checksums
 #include "p_saveg.h" // savebuffer_t
+#include "g_party.h"
 
 // SRB2Kart
 #include "d_netfil.h" // nameonly
@@ -53,6 +54,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "g_party.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -147,6 +149,7 @@ demoghost *ghosts = NULL;
 
 #define ZT_BOT_TURN			0x0001
 #define ZT_BOT_ITEM			0x0002
+#define ZT_BOT_RESPAWN		0x0004
 
 #define DEMOMARKER 0x80 // demobuf.end
 
@@ -579,6 +582,8 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 			oldcmd[playernum].bot.turnconfirm = READSINT8(demobuf.p);
 		if (botziptic & ZT_BOT_ITEM)
 			oldcmd[playernum].bot.itemconfirm = READSINT8(demobuf.p);
+		if (botziptic & ZT_BOT_RESPAWN)
+			oldcmd[playernum].bot.respawnconfirm = READSINT8(demobuf.p);
 	}
 
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
@@ -693,6 +698,13 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 			WRITESINT8(demobuf.p, cmd->bot.itemconfirm);
 			oldcmd[playernum].bot.itemconfirm = cmd->bot.itemconfirm;
 			botziptic |= ZT_BOT_ITEM;
+		}
+
+		if (cmd->bot.respawnconfirm != oldcmd[playernum].bot.respawnconfirm)
+		{
+			WRITESINT8(demobuf.p, cmd->bot.respawnconfirm);
+			oldcmd[playernum].bot.respawnconfirm = cmd->bot.respawnconfirm;
+			botziptic |= ZT_BOT_RESPAWN;
 		}
 
 		WRITEUINT16(botziptic_p, botziptic);
@@ -2144,7 +2156,7 @@ void G_BeginRecording(void)
 		if (wadfiles[i]->important)
 	{
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
-		WRITESTRINGN(demobuf.p, filename, MAX_WADPATH);
+		WRITESTRINGL(demobuf.p, filename, MAX_WADPATH);
 		WRITEMEM(demobuf.p, wadfiles[i]->md5sum, 16);
 		WRITEUINT8(demobuf.p, wadfiles[i]->compatmode);
 
@@ -3960,7 +3972,10 @@ static void G_StopTimingDemo(void)
 
 	if (restorecv_vidwait != cv_vidwait.value)
 		CV_SetValue(&cv_vidwait, restorecv_vidwait);
-	D_AdvanceDemo();
+	if (timedemo_quit)
+		COM_ImmedExecute("quit");
+	else
+		D_StartTitle();
 }
 
 // reset engine variable set for the demos
@@ -4018,10 +4033,12 @@ boolean G_CheckDemoStatus(void)
 		{
 			G_StopDemo();
 
-			if (modeattacking)
+			if (timedemo_quit)
+				COM_ImmedExecute("quit");
+			else if (modeattacking)
 				M_ModeAttackEndGame(0);
 			else
-				D_AdvanceDemo();
+				D_StartTitle();
 		}
 
 		return true;
@@ -4167,4 +4184,34 @@ boolean G_DemoTitleResponder(event_t *ev)
 	}
 
 	return true;
+}
+
+void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen)
+{
+	int r_splitscreen_copy = r_splitscreen;
+	INT32 displayplayers_copy[MAXSPLITSCREENPLAYERS];
+	memcpy(displayplayers_copy, displayplayers, sizeof displayplayers);
+
+	// If we switch away from someone's view, that player
+	// should be removed from the party.
+	// However, it is valid to have the player on multiple
+	// viewports.
+
+	// Remove this player
+	G_LeaveParty(rem);
+
+	// And reset the rest of the party
+	for (int i = 0; i <= r_splitscreen_copy; ++i)
+		G_LeaveParty(displayplayers_copy[i]);
+
+	// Restore the party, without the removed player, and
+	// with the order matching displayplayers
+	for (int i = 0; i <= newsplitscreen; ++i)
+		G_JoinParty(consoleplayer, displayplayers_copy[i]);
+
+	// memcpy displayplayers back to preserve duplicates
+	// (G_JoinParty will not create duplicates itself)
+	r_splitscreen = newsplitscreen;
+	memcpy(displayplayers, displayplayers_copy, sizeof displayplayers);
+	R_ExecuteSetViewSize();
 }

@@ -45,10 +45,6 @@
 // SRB2Kart
 #include "r_fps.h" // R_GetFramerateCap
 
-#if defined (USEASM) && !defined (NORUSEASM)//&& (!defined (_MSC_VER) || (_MSC_VER <= 1200))
-#define RUSEASM //MSC.NET can't patch itself
-#endif
-
 // ------------------
 // global video state
 // ------------------

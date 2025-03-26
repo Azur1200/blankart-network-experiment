@@ -173,7 +173,7 @@ typedef enum
 typedef enum
 {
 	MF2_AXIS           = 1,     // It's a NiGHTS axis! (For faster checking)
-	// free: 1<<1
+	MF2_SHADOW         = 1<<3,  // DO NOT USE: for lua compatibility only
 	MF2_DONTRESPAWN    = 1<<2,  // Don't respawn this object!
 	MF2_DONTDRAW       = 1<<3,  // DO NOT USE: for lua compatibility only
 	MF2_AUTOMATIC      = 1<<4,  // Thrown ring has automatic properties

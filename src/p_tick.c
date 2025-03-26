@@ -905,15 +905,17 @@ void P_Ticker(boolean run)
 		}
 	}
 
-	K_UpdateDirector();
-
-	// Always move the camera.
-	P_RunChaseCameras();
-
-	LUA_HOOK(PostThinkFrame);
+	if (gamestate == GS_LEVEL)
+	{
+		// Move the camera during levels.
+		K_UpdateDirector();
+		P_RunChaseCameras();
+	}
 
 	if (run)
 	{
+		LUA_HOOK(PostThinkFrame);
+
 		R_UpdateLevelInterpolators();
 
 		// Hack: ensure newview is assigned every tic.

@@ -58,6 +58,8 @@
 #include "doomstat.h"
 #include "s_sound.h" // sfx_syfail
 #include "r_fps.h"
+#include "m_cond.h" // netUnlocked
+#include "g_party.h"
 
 // cl loading screen
 #include "v_video.h"
@@ -2525,6 +2527,7 @@ void CL_ClearPlayer(INT32 playernum)
 	splitscreen_invitations[playernum] = -1;
 
 	playerconsole[playernum] = playernum;
+	G_DestroyParty(playernum);
 
 	// Wipe the struct.
 	memset(&players[playernum], 0, sizeof (player_t));
@@ -2575,7 +2578,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 		displayplayers[0] = consoleplayer;
 	}
 
-	G_RemovePartyMember(playernum);
+	G_LeaveParty(playernum);
 
 	// Reset player data
 	CL_ClearPlayer(playernum);
@@ -3436,9 +3439,9 @@ void SV_ResetServer(void)
 	Schedule_Clear();
 	Automate_Clear();
 	K_ClearClientPowerLevels();
+	G_ObliterateParties();
 
 	memset(splitscreen_invitations, -1, sizeof splitscreen_invitations);
-	memset(splitscreen_partied, 0, sizeof splitscreen_partied);
 	memset(player_name_changes, 0, sizeof player_name_changes);
 
 	mynode = 0;
@@ -3525,6 +3528,7 @@ void D_QuitNetGame(void)
 	Schedule_Clear();
 	Automate_Clear();
 	K_ClearClientPowerLevels();
+	G_ObliterateParties();
 
 	DEBFILE("===========================================================================\n"
 	        "                         Log finish\n"
@@ -3603,7 +3607,6 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 				displayplayers[i] = newplayernum;
 				g_localplayers[i] = newplayernum;
 			}
-			splitscreen_partied[newplayernum] = true;
 			DEBFILE("spawning me\n");
 		}
 
@@ -3615,12 +3618,6 @@ static void Got_AddPlayer(UINT8 **p, INT32 playernum)
 
 	players[newplayernum].splitscreenindex = splitscreenplayer;
 	players[newplayernum].bot = false;
-
-	playerconsole[newplayernum] = console;
-	splitscreen_original_party_size[console] =
-		++splitscreen_party_size[console];
-	splitscreen_original_party[console][splitscreenplayer] =
-		splitscreen_party[console][splitscreenplayer] = newplayernum;
 
 	if (netgame)
 	{
@@ -5601,14 +5598,6 @@ boolean TryRunTics(tic_t realtics)
 
 	if (ticking)
 	{
-		if (advancedemo)
-		{
-			if (timedemo_quit)
-				COM_ImmedExecute("quit");
-			else
-				D_StartTitle();
-		}
-		else
 		{
 			boolean tickInterp = true;
 

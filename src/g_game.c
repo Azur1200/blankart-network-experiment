@@ -63,9 +63,14 @@
 #include "doomstat.h"
 #include "acs/interface.h"
 #include "k_director.h"
+#include "g_party.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
+#endif
+
+#ifdef HWRENDER
+#include "hardware/hw_main.h" // for cv_glshearing
 #endif
 
 gameaction_t gameaction;
@@ -763,6 +768,31 @@ INT16 G_SoftwareClipAimingPitch(INT32 *aiming)
 	return (INT16)((*aiming)>>16);
 }
 
+void G_FinalClipAimingPitch(INT32 *aiming, player_t *player, boolean skybox)
+{
+#ifndef HWRENDER
+	(void)player;
+	(void)skybox;
+#endif
+
+	// clip it in the case we are looking a hardware 90 degrees full aiming
+	// (lmps, network and use F12...)
+	if (rendermode == render_soft
+#ifdef HWRENDER
+		|| (rendermode == render_opengl
+			&& (cv_glshearing.value == 1
+			|| (cv_glshearing.value == 2 && R_IsViewpointThirdPerson(player, skybox))))
+#endif
+		)
+	{
+		G_SoftwareClipAimingPitch(aiming);
+	}
+	else
+	{
+		G_ClipAimingPitch(aiming);
+	}
+}
+
 // returns true if event's axis is within the deadzone for the given player
 boolean G_AxisInDeadzone(UINT8 p, event_t *ev)
 {
@@ -920,15 +950,17 @@ angle_t localangle[MAXSPLITSCREENPLAYERS];
 // This brings back the camera prediction that was lost.
 static void G_DoAnglePrediction(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, player_t *player)
 {
+	UINT8 viewnum = G_PartyPosition(g_localplayers[ssplayer-1]);
+
 	if (player->mo)
 		cmd->angle = K_GetKartTurnValue(player, cmd->turning);
 	
 	cmd->angle *= realtics;
 
 	if (P_CanPlayerTurn(player, cmd))
-		localangle[ssplayer-1] += (cmd->angle<<TICCMD_REDUCE);
+		localangle[viewnum] += (cmd->angle<<TICCMD_REDUCE);
 
-	cmd->angle = (INT16)(localangle[ssplayer-1] >> TICCMD_REDUCE);
+	cmd->angle = (INT16)(localangle[viewnum] >> TICCMD_REDUCE);
 }
 
 void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
@@ -1233,6 +1265,8 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		if (dest[i].flags & TICCMD_BOT)
 		{
 			dest[i].bot.itemconfirm = src[i].bot.itemconfirm;
+			dest[i].bot.turnconfirm = src[i].bot.turnconfirm;
+			dest[i].bot.respawnconfirm = src[i].bot.respawnconfirm;
 		}
 	}
 	return dest;
@@ -1416,6 +1450,8 @@ boolean G_IsTitleCardAvailable(void)
 INT32 pausedelay = 0;
 boolean pausebreakkey = false;
 static INT32 camtoggledelay[MAXSPLITSCREENPLAYERS];
+static INT32 spectatedelay[MAXSPLITSCREENPLAYERS];
+static INT32 respawndelay[MAXSPLITSCREENPLAYERS];
 
 //
 // G_Responder
@@ -1644,6 +1680,40 @@ boolean G_Responder(event_t *ev)
 						CV_SetValue(&cv_chasecam[i], cv_chasecam[i].value ? 0 : 1);
 					}
 				}
+
+				if (G_ControlBoundToKey(i, gc_spectate, ev->data1, false))
+				{
+					if (!spectatedelay[i])
+					{
+						char *commandname = va("changeteam");
+
+						if (i > 0)
+						{
+							// Add one for command names.
+							commandname = va("changeteam%d", i+1);
+						}
+
+						spectatedelay[i] = NEWTICRATE / 7;
+						COM_ImmedExecute(va("%s spectator", commandname));
+					}
+				}
+
+				if (G_ControlBoundToKey(i, gc_respawn, ev->data1, false))
+				{
+					if (!respawndelay[i])
+					{
+						char *commandname = va("respawn");
+
+						if (i > 0)
+						{
+							// Add one for command names.
+							commandname = va("respawn%d", i+1);
+						}
+
+						respawndelay[i] = NEWTICRATE / 4;
+						COM_ImmedExecute(commandname);
+					}
+				}
 			}
 
 			return true;
@@ -1785,7 +1855,6 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 	UINT8 viewd;
 
 	INT32    *displayplayerp;
-	camera_t *camerap;
 
 	INT32 olddisplayplayer;
 	INT32 playersviewable;
@@ -1811,33 +1880,70 @@ void G_ResetView(UINT8 viewnum, INT32 playernum, boolean onlyactive)
 
 	/* Check if anyone is available to view. */
 	if (( playernum = G_FindView(playernum, viewnum, onlyactive, playernum < olddisplayplayer) ) == -1)
-		return;
+	{
+		if (G_PartySize(consoleplayer) < viewnum)
+		{
+			return;
+		}
+
+		/* Fall back on true self */
+		playernum = G_PartyMember(consoleplayer, viewnum - 1);
+	}
+
+	// Call ViewpointSwitch hooks here.
+	// The viewpoint was forcibly changed.
+	LUA_HookViewpointSwitch(&players[g_localplayers[viewnum - 1]], &players[playernum], true);
 
 	/* Focus our target view first so that we don't take its player. */
 	(*displayplayerp) = playernum;
-	if ((*displayplayerp) != olddisplayplayer)
-	{
-		camerap = &camera[viewnum-1];
-		P_ResetCamera(&players[(*displayplayerp)], camerap);
 
-		R_ResetViewInterpolation(viewnum);
-	}
-
+	/* If a viewpoint changes, reset the camera to clear uninitialized memory. */
 	if (viewnum > splits)
 	{
-		for (viewd = splits+1; viewd < viewnum; ++viewd)
+		for (viewd = splits+1; viewd <= viewnum; ++viewd)
 		{
-			displayplayerp = (&displayplayers[viewd-1]);
-			camerap = &camera[viewd];
-
-			(*displayplayerp) = G_FindView(0, viewd, onlyactive, false);
-
-			P_ResetCamera(&players[(*displayplayerp)], camerap);
+			G_FixCamera(viewd);
+		}
+	}
+	else
+	{
+		if ((*displayplayerp) != olddisplayplayer)
+		{
+			G_FixCamera(viewnum);
 		}
 	}
 
-	if (viewnum == 1 && demo.playback)
-		consoleplayer = displayplayers[0];
+	if (demo.playback)
+	{
+		if (viewnum == 1)
+			consoleplayer = displayplayers[0];
+
+		G_SyncDemoParty(olddisplayplayer, r_splitscreen);
+	}
+
+	// change statusbar also if playing back demo
+	if (demo.quitafterplaying)
+		ST_changeDemoView();
+}
+
+//
+// G_FixCamera
+// Reset camera position, angle and interpolation on a view
+// after changing state.
+//
+void G_FixCamera(UINT8 view)
+{
+	player_t *player = &players[displayplayers[view - 1]];
+
+	// The order of displayplayers can change, which would
+	// invalidate localangle.
+	localangle[view - 1] = player->angleturn;
+
+	P_ResetCamera(player, &camera[view - 1]);
+
+	// Make sure the viewport doesn't interpolate at all into
+	// its new position -- just snap instantly into place.
+	R_ResetViewInterpolation(view);
 }
 
 //
@@ -2087,6 +2193,10 @@ void G_Ticker(boolean run)
 		{
 			if (camtoggledelay[i])
 				camtoggledelay[i]--;
+			if (spectatedelay[i])
+				spectatedelay[i]--;
+			if (respawndelay[i])
+				respawndelay[i]--;
 		}
 
 		if (gametic % NAMECHANGERATE == 0)
@@ -2905,19 +3015,19 @@ void G_DoReborn(INT32 playernum)
 void G_AddPlayer(INT32 playernum, INT32 console)
 {
 	CL_ClearPlayer(playernum);
-	//G_DestroyParty(playernum);
+	G_DestroyParty(playernum);
 
 	playeringame[playernum] = true;
 
 	playerconsole[playernum] = console;
-	//G_BuildLocalSplitscreenParty(playernum);
+	G_BuildLocalSplitscreenParty(playernum);
 
 	player_t *newplayer = &players[playernum];
 
 	newplayer->playerstate = PST_REBORN;
 	newplayer->jointime = 0;
 
-	demo_extradata[playernum] |= DXD_PLAYSTATE|DXD_COLOR|DXD_NAME|DXD_SKIN|DXD_FOLLOWER; // Set everything
+	demo_extradata[playernum] |= DXD_ADDPLAYER; // Set everything
 }
 
 void G_BeginLevelExit(void)

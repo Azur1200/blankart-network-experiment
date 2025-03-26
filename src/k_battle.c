@@ -491,6 +491,9 @@ void K_BattleInit(void)
 		{
 			UINT8 n = 0;
 
+			if (!cv_kartitembreaker.value)
+				goto afteritembreaker;
+
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (!playeringame[i] || players[i].spectator)

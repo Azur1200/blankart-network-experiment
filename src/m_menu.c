@@ -4171,12 +4171,10 @@ void M_PlaybackAdvance(INT32 choice)
 	paused = true;
 }
 
-
 void M_PlaybackSetViews(INT32 choice)
 {
-
 	if (demo.freecam)
-		return;	// not here.
+		return; // not here.
 
 	if (choice > 0)
 	{
@@ -4185,8 +4183,14 @@ void M_PlaybackSetViews(INT32 choice)
 	}
 	else if (r_splitscreen)
 	{
-		r_splitscreen--;
-		R_ExecuteSetViewSize();
+		if (choice == 0)
+		{
+			G_SyncDemoParty(displayplayers[r_splitscreen], r_splitscreen - 1);
+		}
+		else
+		{
+			G_SyncDemoParty(consoleplayer, 0);
+		}
 	}
 }
 

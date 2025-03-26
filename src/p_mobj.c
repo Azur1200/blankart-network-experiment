@@ -12317,7 +12317,9 @@ static void P_SpawnItemRow(mapthing_t *mthing, mobjtype_t *itemtypes, UINT8 numi
 
 		loopanchor->spawnpoint = NULL;
 		
-		Obj_LinkLoopAnchor(loopanchor, loopcenter, mthing->args[0]);
+		if (!P_MobjWasRemoved(loopanchor))
+			Obj_LinkLoopAnchor(loopanchor, loopcenter, mthing->args[0]);
+
 	}
 
 	for (r = 0; r < numitems; r++)

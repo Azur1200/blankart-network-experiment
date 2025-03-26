@@ -42,7 +42,8 @@
 #endif
 #include "i_net.h" // doomcom
 
-//extern "C" consvar_t cv_forcebots;
+consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 /*--------------------------------------------------
 	void K_SetNameForBot(UINT8 playerNum, UINT8 skinnum)
@@ -206,7 +207,7 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if ((gametyperules & GTR_BOTS) == 0 /*&& !cv_forcebots.value*/)
+	else if ((gametyperules & GTR_BOTS) == 0 && !cv_forcebots.value)
 	{
 		difficulty = 0;
 	}
@@ -1313,10 +1314,8 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 	}
 
 	// Defanging bots for testing.
-	#ifdef DEVELOP
-		if (!cv_botcontrol.value)
-			return;
-	#endif
+	if (!cv_botcontrol.value)
+		return;
 
 	// Actual gameplay behaviors below this block!
 	const botcontroller_t *botController = K_GetBotController(player->mo);
@@ -1327,6 +1326,25 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
+	if (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM)
+	{
+		// We want to respawn. Simply hold brake and stop here!
+		cmd->buttons &= ~BT_ACCELERATE|BT_DRIFT|BT_ATTACK;
+		if (player->speed > 0)
+		{
+			cmd->buttons |= (BT_BRAKE);
+		}
+
+		if ((player->speed < 10*FRACUNIT))
+		{
+			cmd->bot.respawnconfirm = 1;
+		}
+		return;
+	}
+	else
+	{
+		cmd->bot.respawnconfirm = 0;
+	}
 	destangle = player->mo->angle;
 
 	boolean forcedDir = false;
@@ -1488,6 +1506,38 @@ void K_BuildBotTiccmd(
 	}
 }
 
+static void K_IncrementBotRespawn(player_t *player, UINT32 *respawn, const UINT32 respawnmax)
+{
+	const fixed_t requireDist = (12*player->mo->scale) / FRACUNIT;
+	INT32 progress = player->distancetofinishprev - player->distancetofinish;
+	boolean exceptions = (
+		(leveltime < starttime)
+		|| player->flashing != 0
+		|| player->spinouttimer != 0
+		|| player->airtime > 3*TICRATE/2
+		|| (player->justbumped > 0 && player->justbumped < bumptime-1)
+	);
+
+	if (!exceptions && (progress < requireDist))
+	{
+		if (*respawn < respawnmax)
+		{
+			// Making no progress, start counting against you.
+			*respawn = *respawn + 1;
+			if (progress < -requireDist && *respawn < respawnmax)
+			{
+				// Making NEGATIVE progress? Start counting even harder.
+				*respawn = *respawn + 1;
+			}
+		}
+	}
+	else if (*respawn > 0)
+	{
+		// Playing normally.
+		*respawn = *respawn - 1;
+	}
+}
+
 /*--------------------------------------------------
 	void K_UpdateBotGameplayVars(player_t *player);
 
@@ -1504,6 +1554,20 @@ void K_UpdateBotGameplayVars(player_t *player)
 	player->botvars.rubberband = K_UpdateRubberband(player);
 
 	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
+
+	// Is a bot not making any progress? Kill it and respawn at next waypoint.
+	K_IncrementBotRespawn(player, &player->botvars.respawnconfirm, BOTRESPAWNCONFIRM);
+
+	if ((player->cmd.bot.respawnconfirm > 0) && (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM))
+	{
+		// Now a clean function! Neat, eh?
+		K_SetRespawnAtNextWaypoint(player);
+
+		// WHAT ARE YOU DOING??? RACE ALREADY!
+		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
+
+		player->botvars.respawnconfirm = 0;
+	}
 
 	K_UpdateBotGameplayVarsItemUsage(player);
 }

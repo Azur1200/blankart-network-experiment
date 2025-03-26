@@ -439,6 +439,12 @@ P_GetMidtextureTopBottom
 	// Get the midtexture's height
 	texheight = textures[texnum]->height << FRACBITS;
 
+	if (g_tm.sweep)
+	{
+		// Sweep Midtexture lines to prevent issues with some midtextures.
+		P_TestLine(linedef);
+	}
+
 	// Set texbottom and textop to the Z coordinates of the texture's boundaries
 #if 0
 	// don't remove this code unless solid midtextures

@@ -167,7 +167,7 @@ const char *const MOBJFLAG_LIST[] = {
 // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
 const char *const MOBJFLAG2_LIST[] = {
 	"AXIS",			  // It's a NiGHTS axis! (For faster checking)
-	"\x01",			  // free: 1<<1 (name un-matchable)
+	"SHADOW",		  // alias for RF_GHOSTLY
 	"DONTRESPAWN",	  // Don't respawn this object!
 	"DONTDRAW",		  // alias for RF_DONTDRAW
 	"AUTOMATIC",	  // Thrown ring has automatic properties
@@ -556,8 +556,6 @@ const char *const KARTSTUFF_LIST[] = {
 };
 
 const char *const KARTHUD_LIST[] = {
-	"ITEMBLINK",
-	"ITEMBLINKMODE",
 
 	"RINGFRAME",
 	"RINGTICS",

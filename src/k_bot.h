@@ -22,9 +22,8 @@
 extern "C" {
 #endif
 
-#ifdef DEVELOP
-	extern consvar_t cv_botcontrol;
-#endif
+extern consvar_t cv_forcebots;
+extern consvar_t cv_botcontrol;
 
 // Maximum value of botvars.difficulty
 #define MAXBOTDIFFICULTY (13)
@@ -40,7 +39,7 @@ extern "C" {
 #define BOTSPINDASHCONFIRM (4*TICRATE)
 
 // How many tics without being able to make progress before we'll let you respawn.
-#define BOTRESPAWNCONFIRM (5*TICRATE)
+#define BOTRESPAWNCONFIRM (4*TICRATE)
 
 // How long it takes for a Lv.1 bot to decide to pick an item.
 #define BOT_ITEM_DECISION_TIME (2*TICRATE)

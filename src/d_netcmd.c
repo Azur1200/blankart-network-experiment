@@ -64,6 +64,7 @@
 #include "doomstat.h"
 #include "deh_tables.h"
 #include "m_perfstats.h"
+#include "g_party.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -150,6 +151,7 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
+static void KartItemBreaker_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -177,7 +179,11 @@ static void Command_ListWADS_f(void);
 static void Command_ListDoomednums_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
+
 static void Command_Respawn(void);
+static void Command_Respawn2(void);
+static void Command_Respawn3(void);
+static void Command_Respawn4(void);
 
 static void Command_Version_f(void);
 #ifdef UPDATE_ALERT
@@ -434,6 +440,8 @@ consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVA
 
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+
+consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
@@ -736,7 +744,11 @@ void D_RegisterServerCommands(void)
 
 	COM_AddCommand("runsoc", Command_RunSOC);
 	COM_AddCommand("pause", Command_Pause);
+
 	COM_AddCommand("respawn", Command_Respawn);
+	COM_AddCommand("respawn2", Command_Respawn2);
+	COM_AddCommand("respawn3", Command_Respawn3);
+	COM_AddCommand("respawn4", Command_Respawn4);
 
 	COM_AddCommand("gametype", Command_ShowGametype_f);
 	COM_AddCommand("version", Command_Version_f);
@@ -1489,14 +1501,12 @@ static void ForceAllSkins(INT32 forcedskin)
 }
 
 static const char *
-VaguePartyDescription (int playernum, int *party_sizes, int default_color)
+VaguePartyDescription (int playernum, int size, int default_color)
 {
 	static char party_description
 		[1 + MAXPLAYERNAME + 1 + sizeof " and x others"];
 	const char *name;
-	int size;
 	name = player_names[playernum];
-	size = party_sizes[playernum];
 	/*
 	less than check for the dumb compiler because I KNOW it'll
 	complain about "writing x bytes into an area of y bytes"!!!
@@ -1911,7 +1921,7 @@ static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
 			HU_AddChatText(va(
 						"\x82*You have been invited to join %s.",
 						VaguePartyDescription(
-							playernum, splitscreen_party_size, '\x82')
+							playernum, G_PartySize(playernum), '\x82')
 			), true);
 		}
 	}
@@ -1920,8 +1930,6 @@ static void Got_PartyInvite(UINT8 **cp,INT32 playernum)
 static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 {
 	int invitation;
-	int old_party_size;
-	int views;
 
 	(void)cp;
 
@@ -1937,12 +1945,12 @@ static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 
 	if (invitation >= 0)
 	{
-		if (splitscreen_partied[invitation])
+		if (G_IsPartyLocal(invitation))
 		{
 			HU_AddChatText(va(
 						"\x82*%s joined your party!",
 						VaguePartyDescription(
-							playernum, splitscreen_original_party_size, '\x82')
+							playernum, G_LocalSplitscreenPartySize(playernum), '\x82')
 			), true);
 		}
 		else if (playernum == consoleplayer)
@@ -1950,18 +1958,11 @@ static void Got_AcceptPartyInvite(UINT8 **cp,INT32 playernum)
 			HU_AddChatText(va(
 						"\x82*You joined %s's party!",
 						VaguePartyDescription(
-							invitation, splitscreen_party_size, '\x82')
+							invitation, G_PartySize(invitation), '\x82')
 			), true);
 		}
 
-		old_party_size = splitscreen_party_size[invitation];
-		views = splitscreen_original_party_size[playernum];
-
-		if (( old_party_size + views ) <= MAXSPLITSCREENPLAYERS)
-		{
-			G_RemovePartyMember(playernum);
-			G_AddPartyMember(invitation, playernum);
-		}
+		G_JoinParty(invitation, playernum);
 
 		splitscreen_invitations[playernum] = -1;
 	}
@@ -2019,21 +2020,16 @@ static void Got_LeaveParty(UINT8 **cp,INT32 playernum)
 
 	splitscreen_invitations[playernum] = -1;
 
-	if (splitscreen_party_size[playernum] >
-			splitscreen_original_party_size[playernum])
+	if (G_IsPartyLocal(playernum) && playernum != consoleplayer)
 	{
-		if (splitscreen_partied[playernum] && playernum != consoleplayer)
-		{
-			HU_AddChatText(va(
-						"\x85*%s left your party.",
-						VaguePartyDescription(
-							playernum, splitscreen_original_party_size, '\x85')
-			), true);
-		}
-
-		G_RemovePartyMember(playernum);
-		G_ResetSplitscreen(playernum);
+		HU_AddChatText(va(
+					"\x85*%s left your party.",
+					VaguePartyDescription(
+						playernum, G_LocalSplitscreenPartySize(playernum), '\x85')
+		), true);
 	}
+
+	G_LeaveParty(playernum);
 }
 
 void D_SendPlayerConfig(UINT8 n)
@@ -2281,13 +2277,6 @@ static void Command_SetViews_f(void)
 	UINT8 splits;
 	UINT8 newsplits;
 
-	if (!( demo.playback && multiplayer ))
-	{
-		CONS_Alert(CONS_NOTICE,
-				"You must be viewing a multiplayer replay to use this.\n");
-		return;
-	}
-
 	if (COM_Argc() != 2)
 	{
 		CONS_Printf("setviews <views>: set the number of split screens\n");
@@ -2298,12 +2287,33 @@ static void Command_SetViews_f(void)
 
 	newsplits = atoi(COM_Argv(1));
 	newsplits = min(max(newsplits, 1), 4);
-	if (newsplits > splits)
+
+	if (newsplits > splits && demo.playback && multiplayer)
+	{
 		G_AdjustView(newsplits, 0, true);
+	}
 	else
 	{
-		r_splitscreen = newsplits-1;
-		R_ExecuteSetViewSize();
+		// Even if the splits go beyond the real number of
+		// splitscreen players, displayplayers was filled
+		// with duplicates of P1 (see Got_AddPlayer).
+		if (demo.playback)
+		{
+			G_SyncDemoParty(consoleplayer, newsplits-1);
+		}
+		else
+		{
+			r_splitscreen = newsplits-1;
+			R_ExecuteSetViewSize();
+		}
+
+		// If promoting (outside of replays), make sure the
+		// camera is in the correct position.
+		UINT8 i;
+		for (i = splits + 1; i <= newsplits; ++i)
+		{
+			G_FixCamera(i);
+		}
 	}
 }
 
@@ -2320,7 +2330,7 @@ Command_Invite_f (void)
 		return;
 	}
 
-	if (r_splitscreen >= MAXSPLITSCREENPLAYERS)
+	if (G_PartySize(consoleplayer) >= MAXSPLITSCREENPLAYERS)
 	{
 		CONS_Alert(CONS_WARNING, "Your party is full!\n");
 		return;
@@ -2339,9 +2349,9 @@ Command_Invite_f (void)
 		return;
 	}
 
-	if (invitee == consoleplayer)
+	if (G_IsPartyLocal(invitee))
 	{
-		CONS_Alert(CONS_WARNING, "You cannot invite yourself! Bruh!\n");
+		CONS_Alert(CONS_WARNING, "That player is already a member of your party.\n");
 		return;
 	}
 
@@ -2349,20 +2359,21 @@ Command_Invite_f (void)
 	{
 		CONS_Alert(CONS_WARNING,
 				"That player has already been invited to join another party.\n");
+		return;
 	}
 
-	if (( splitscreen_party_size[consoleplayer] +
-				splitscreen_original_party_size[invitee] ) > MAXSPLITSCREENPLAYERS)
+	if ((G_PartySize(consoleplayer) + G_LocalSplitscreenPartySize(invitee)) > MAXSPLITSCREENPLAYERS)
 	{
 		CONS_Alert(CONS_WARNING,
 				"That player joined with too many "
 				"splitscreen players for your party.\n");
+		return;
 	}
 
 	CONS_Printf(
 			"Inviting %s...\n",
 			VaguePartyDescription(
-				invitee, splitscreen_original_party_size, '\x80')
+				invitee, G_LocalSplitscreenPartySize(invitee), '\x80')
 	);
 
 	buffer[0] = invitee;
@@ -2400,12 +2411,13 @@ Command_CancelInvite_f (void)
 	{
 		CONS_Alert(CONS_WARNING,
 				"You have not invited this player!\n");
+		return;
 	}
 
 	CONS_Printf(
 			"Rescinding invite to %s...\n",
 			VaguePartyDescription(
-				invitee, splitscreen_original_party_size, '\x80')
+				invitee, G_LocalSplitscreenPartySize(invitee), '\x80')
 	);
 
 	buffer[0] = invitee;
@@ -2445,7 +2457,7 @@ Command_RejectInvite_f (void)
 static void
 Command_LeaveParty_f (void)
 {
-	if (r_splitscreen > splitscreen)
+	if (G_PartySize(consoleplayer) > G_LocalSplitscreenPartySize(consoleplayer))
 	{
 		CONS_Printf("\x85Leaving party...\n");
 
@@ -3313,12 +3325,10 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 }
 
 // Command for stuck characters in netgames, griefing, etc.
-static void Command_Respawn(void)
+static void HandleRespawnCommand(UINT8 localplayer)
 {
 	UINT8 buf[4];
 	UINT8 *cp = buf;
-
-
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
 	{
@@ -3326,21 +3336,47 @@ static void Command_Respawn(void)
 		return;
 	}
 
-	if (players[consoleplayer].mo && !P_IsObjectOnGround(players[consoleplayer].mo)) // KART: Nice try, but no, you won't be cheesing spb anymore.
+	if (players[g_localplayers[localplayer]].mo && !P_IsObjectOnGround(players[g_localplayers[localplayer]].mo)) // KART: Nice try, but no, you won't be cheesing spb anymore.
 	{
 		CONS_Printf(M_GetText("You must be on the floor to use this.\n"));
 		return;
 	}
 
-	// todo: this probably isnt necessary anymore with v2
-	if (players[consoleplayer].mo && (P_PlayerInPain(&players[consoleplayer]) || spbplace == players[consoleplayer].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
+	if (players[g_localplayers[localplayer]].mo && (P_PlayerInPain(&players[g_localplayers[localplayer]]) || spbplace == players[g_localplayers[localplayer]].position)) // KART: Nice try, but no, you won't be cheesing spb anymore (x2)
 	{
 		CONS_Printf(M_GetText("Nice try.\n"));
 		return;
 	}
 
-	WRITEINT32(cp, consoleplayer);
-	SendNetXCmd(XD_RESPAWN, &buf, 4);
+	if (localplayer != 0 && !g_localplayers[localplayer])
+	{
+		CONS_Printf(M_GetText("There is no player to respawn.\n"));
+		return;
+	}
+
+	WRITEINT32(cp, g_localplayers[localplayer]);
+	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
+}
+
+// Command for stuck characters in netgames, griefing, etc.
+static void Command_Respawn(void)
+{
+	HandleRespawnCommand(0);
+}
+
+static void Command_Respawn2(void)
+{
+	HandleRespawnCommand(1);
+}
+
+static void Command_Respawn3(void)
+{
+	HandleRespawnCommand(2);
+}
+
+static void Command_Respawn4(void)
+{
+	HandleRespawnCommand(3);
 }
 
 static void Got_Respawn(UINT8 **cp, INT32 playernum)
@@ -3362,7 +3398,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 		if (!P_IsObjectOnGround(players[respawnplayer].mo))
 			return;
 
-		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1,DMG_INSTAKILL);
+		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1, DMG_INSTAKILL);
 		demo_extradata[playernum] |= DXD_RESPAWN;
 	}
 }
@@ -3660,24 +3696,6 @@ void P_SetPlayerSpectator(INT32 playernum)
 	players[playernum].pflags &= ~PF_WANTSTOJOIN;
 
 	players[playernum].playerstate = PST_REBORN;
-
-	/*if (cv_spectatormusic.value && (players[displayplayers[0]].spectator == true) && !r_splitscreen)
-	{
-		if (P_UseContinuousLevelMusic())
-		{
-			if (!stricmp(Music_Song("level_nosync"), cv_spectatormusiclump.string))
-			{
-				//  Do not reset music if it is the same
-				Music_BatchExempt("level_nosync");
-			}
-			Music_Remap("level_nosync", cv_spectatormusiclump.string);
-		}
-		else
-		{
-			Music_Remap("level", cv_spectatormusiclump.string);
-		}
-	}*/
-
 }
 
 //todo: This and the other teamchange functions are getting too long and messy. Needs cleaning.
@@ -3755,24 +3773,19 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 	//Safety first!
 	// (not respawning spectators here...)
-	if (!players[playernum].spectator)
+	wasspectator = (players[playernum].spectator == true);
+
+	if (!wasspectator)
 	{
-		if (players[playernum].mo)
+		if (gamestate == GS_LEVEL && players[playernum].mo)
 		{
-			P_DamageMobj(players[playernum].mo, NULL, NULL, 1,
-				(NetPacket.packet.newteam ? DMG_INSTAKILL : DMG_SPECTATOR));
-		}
-		//else
-		if (!NetPacket.packet.newteam)
-		{
-			players[playernum].playerstate = PST_REBORN;
+			// The following will call P_SetPlayerSpectator if successful
+			P_DamageMobj(players[playernum].mo, NULL, NULL, 1, DMG_SPECTATOR);
 		}
 
+		//...but because the above could return early under some contexts, we try again here
+		P_SetPlayerSpectator(playernum);
 	}
-	else
-		wasspectator = true;
-
-	players[playernum].pflags &= ~PF_WANTSTOJOIN;
 
 	//Now that we've done our error checking and killed the player
 	//if necessary, put the player on the correct team/status.
@@ -3821,22 +3834,6 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	}
 	else if (NetPacket.packet.newteam == 0 && !wasspectator)
 		HU_AddChatText(va("\x82*%s became a spectator.", player_names[playernum]), false); // "entered the game" text was moved to P_SpectatorJoinGame
-
-	// Reset away view (some code referenced from P_SpectatorJoinGame)
-	{
-		UINT8 i = 0;
-		INT32 *localplayertable = (splitscreen_partied[consoleplayer] ? splitscreen_party[consoleplayer] : g_localplayers);
-
-		for (i = 0; i < r_splitscreen; i++)
-		{
-			if (localplayertable[i] == playernum)
-			{
-				LUA_HookViewpointSwitch(players+playernum, players+playernum, true);
-				displayplayers[i] = playernum;
-				break;
-			}
-		}
-	}
 
 	/*if (G_GametypeHasTeams())
 	{
@@ -4907,11 +4904,6 @@ static void Command_Version_f(void)
 	else // 16-bit? 128-bit?
 		CONS_Printf("Bits Unknown ");
 
-	// No ASM?
-#ifdef NOASM
-	CONS_Printf("\x85" "NOASM " "\x80");
-#endif
-
 	// Debug build
 #ifdef _DEBUG
 	CONS_Printf("\x85" "DEBUG " "\x80");
@@ -5759,35 +5751,85 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 	}
 }
 
+static const char *displayplayer_compose_col(int playernum)
+{
+	return va("\x84(%d) \x83%s\x80", playernum, player_names[playernum]);
+}
+
+static int displayplayer_col_len(const char *text)
+{
+	int n = strlen(text);
+	int k = n;
+	int i;
+	for (i = 0; i < n; ++i)
+	{
+		if (!isprint(text[i]))
+			k--;
+	}
+	return k;
+}
+
+static void displayplayer_calc_col(int *col, const char *text)
+{
+	if (text && text[0] != ' ')
+	{
+		int n = displayplayer_col_len(text);
+		if (*col < n)
+			*col = n;
+	}
+}
+
+static void displayplayer_print_col(int *col, const char *text)
+{
+	if (text)
+	{
+		if (*col)
+		{
+			int n = *col - displayplayer_col_len(text);
+			CONS_Printf("%s%*s ", text, n, "");
+		}
+	}
+	else
+		CONS_Printf("\n");
+}
+
+static void displayplayer_iter_table(int table[5], void(*col_cb)(int*,const char*))
+{
+	int i;
+
+	col_cb(&table[0], "");
+	for (i = 0; i < 4; ++i)
+		col_cb(&table[1 + i], va(" %d", i));
+	col_cb(NULL, NULL);
+
+	col_cb(&table[0], "g_local");
+	for (i = 0; i <= splitscreen; ++i)
+		col_cb(&table[1 + i], displayplayer_compose_col(g_localplayers[i]));
+	col_cb(NULL, NULL);
+
+	col_cb(&table[0], "display");
+	for (i = 0; i <= r_splitscreen; ++i)
+		col_cb(&table[1 + i], displayplayer_compose_col(displayplayers[i]));
+	col_cb(NULL, NULL);
+
+	col_cb(&table[0], "local party");
+	for (i = 0; i < G_LocalSplitscreenPartySize(consoleplayer); ++i)
+		col_cb(&table[1 + i], displayplayer_compose_col(G_LocalSplitscreenPartyMember(consoleplayer, i)));
+	col_cb(NULL, NULL);
+
+	col_cb(&table[0], "final party");
+	for (i = 0; i < G_PartySize(consoleplayer); ++i)
+		col_cb(&table[1 + i], displayplayer_compose_col(G_PartyMember(consoleplayer, i)));
+	col_cb(NULL, NULL);
+}
+
 /** Prints the number of displayplayers[0].
-  *
-  * \todo Possibly remove this; it was useful for debugging at one point.
   */
 static void Command_Displayplayer_f(void)
 {
-	int playernum;
-	int i;
-	for (i = 0; i <= splitscreen; ++i)
-	{
-		playernum = g_localplayers[i];
-		CONS_Printf(
-				"local   player %d: \x84(%d) \x83%s\x80\n",
-				i,
-				playernum,
-				player_names[playernum]
-		);
-	}
-	CONS_Printf("\x83----------------------------------------\x80\n");
-	for (i = 0; i <= r_splitscreen; ++i)
-	{
-		playernum = displayplayers[i];
-		CONS_Printf(
-				"display player %d: \x84(%d) \x83%s\x80\n",
-				i,
-				playernum,
-				player_names[playernum]
-		);
-	}
+	int table[5] = {0};
+	displayplayer_iter_table(table, displayplayer_calc_col);
+	displayplayer_iter_table(table, displayplayer_print_col);
 }
 
 /** Quits a game and returns to the title screen.
@@ -5796,6 +5838,12 @@ static void Command_Displayplayer_f(void)
 void Command_ExitGame_f(void)
 {
 	INT32 i;
+
+	if (dedicated)
+	{
+		CONS_Printf("This command cannot be used on dedicated server\n");
+		return;
+	}
 
 	LUA_HookBool(false, HOOK(GameQuit));
 
@@ -6900,6 +6948,23 @@ static void KartRings_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Rings will be turned \"Off\" Next Round.\n"));
+	}
+}
+
+static void KartItemBreaker_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (cv_kartitembreaker.value)
+	{
+		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"On\" Next Round.\n"));
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"Off\" Next Round.\n"));
 	}
 }
 

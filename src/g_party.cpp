@@ -1,6 +1,7 @@
 // DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) 2023 by James Robert Roman
+// Copyright (C) 2025 by James Robert Roman
+// Copyright (C) 2025 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -19,7 +20,7 @@
 #include "d_clisrv.h" // playerconsole
 #include "doomdef.h" // MAXPLAYERS
 #include "doomstat.h" // consoleplayer
-#include "g_game.h" // localangle
+#include "g_game.h" // G_FixCamera
 #include "g_party.h"
 #include "g_state.h"
 #include "p_local.h"
@@ -101,7 +102,7 @@ public:
 	bool local() const
 	{
 		// consoleplayer is not valid yet.
-		if (!addedtogame)
+		if (!addedtogame && !demo.playback)
 		{
 			return false;
 		}
@@ -128,28 +129,15 @@ public:
 			return;
 		}
 
-		// Rendering stuff is not valid outside of levels.
-		if (!G_GamestateUsesLevel())
-		{
-			return;
-		}
-
 		for (std::size_t i = 0; i < size(); ++i)
 		{
-			const playernum_t player = at(i);
+			displayplayers[i] = at(i);
 
-			displayplayers[i] = player;
-
-			// The order of displayplayers can change, which
-			// would make localangle invalid now.
-			localangle[i] = players[player].angleturn;
-
-			P_ResetCamera(&players[player], &camera[i]);
-
-			// Make sure the viewport doesn't interpolate at
-			// all into its new position -- just snap
-			// instantly into place.
-			R_ResetViewInterpolation(1 + i);
+			// Camera is not valid outside of levels.
+			if (G_GamestateUsesLevel())
+			{
+				G_FixCamera(1 + i);
+			}
 		}
 
 		r_splitscreen = size() - 1;
@@ -185,6 +173,11 @@ public:
 	// splitscreen player, all lookups will use the
 	// consoleplayer.
 	Party& operator [](Party::Console console) { return pool_[console]; }
+
+	// Clears a single player's local party. This method
+	// accesses the playernum directly, instead of the
+	// consoleplayer.
+	void reset(playernum_t player) { pool_[player] = {}; }
 
 protected:
 	std::array<Party, MAXPLAYERS> pool_;
@@ -271,7 +264,7 @@ void G_ObliterateParties(void)
 
 void G_DestroyParty(UINT8 player)
 {
-	local_party[player] = {};
+	local_party.reset(player);
 	final_party[player] = {};
 }
 
@@ -323,4 +316,18 @@ UINT8 G_PartyPosition(UINT8 player)
 	const Party& party = final_party[player];
 
 	return party.find(player) - party.begin();
+}
+
+UINT8 G_LocalSplitscreenPartyPosition(UINT8 player)
+{
+	const Party& party = local_party[player];
+
+	return party.find(player) - party.begin();
+}
+
+UINT8 G_LocalSplitscreenPartyMember(UINT8 player, UINT8 index)
+{
+	SRB2_ASSERT(index < local_party[player].size());
+
+	return local_party[player][index];
 }

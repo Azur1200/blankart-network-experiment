@@ -4061,6 +4061,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 		case 460: // Award rings
 			{
+
 				INT16 rings = args[0];
 				INT32 delay = args[1];
 				if (
@@ -4069,13 +4070,9 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					&& (delay <= 0 || !(leveltime % delay)) // Timing
 				)
 				{
-					// Don't award rings your rings are locked
-					if (mo->player->pflags & PF_RINGLOCK)
-						return false;
-
-					if (delay <= 0 || !(leveltime % delay))
+					if (rings > 0)
 					{
-						// Don't award rings while your rings are locked
+						// Don't award rings while your rings are locked.
 						if (mo->player->pflags & PF_RINGLOCK)
 							return false;
 
@@ -4084,11 +4081,19 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 					}
 					else
 					{
+						// args[2]: cap rings to -20 instead of 0
+						SINT8 baseline = (args[2] ? -20 : 0);
+
 						// Don't push you below baseline
-						if (mo->player->rings < 0)
+						if (mo->player->rings <= baseline)
 							return false;
 
-						mo->player->rings--;
+						rings = -(rings);
+
+						if (rings > (mo->player->rings - baseline))
+							rings = (mo->player->rings - baseline);
+
+						mo->player->rings -= rings;
 						S_StartSound(mo, sfx_antiri);
 					}
 				}
