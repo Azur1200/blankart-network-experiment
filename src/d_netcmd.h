@@ -80,18 +80,18 @@ extern consvar_t
 	cv_orbinaut,
 	cv_jawz,
 	cv_mine,
-	cv_landmine,
 	cv_ballhog,
 	cv_selfpropelledbomb,
 	cv_grow,
 	cv_shrink,
 	cv_thundershield,
-	cv_bubbleshield,
-	cv_flameshield,
 	cv_hyudoro,
 	cv_pogospring,
-	cv_superring,
 	cv_kitchensink,
+	cv_superring,
+	cv_landmine,
+	cv_bubbleshield,
+	cv_flameshield,
 	cv_droptarget;
 
 extern consvar_t
