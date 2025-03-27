@@ -367,7 +367,6 @@ consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 #endif
 
 // SRB2kart
-consvar_t cv_superring = 			CVAR_INIT ("superring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_sneaker = 				CVAR_INIT ("sneaker", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_rocketsneaker = 		CVAR_INIT ("rocketsneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_invincibility = 		CVAR_INIT ("invincibility", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -376,18 +375,19 @@ consvar_t cv_eggmanmonitor = 		CVAR_INIT ("eggmanmonitor", 	"On", CV_NETVAR|CV_C
 consvar_t cv_orbinaut = 			CVAR_INIT ("orbinaut", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_jawz = 				CVAR_INIT ("jawz", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_mine = 				CVAR_INIT ("mine", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_landmine = 			CVAR_INIT ("landmine", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_droptarget = 			CVAR_INIT ("droptarget", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_selfpropelledbomb =	CVAR_INIT ("selfpropelledbomb", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_grow = 				CVAR_INIT ("grow", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_shrink = 				CVAR_INIT ("shrink", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_thundershield = 		CVAR_INIT ("thundershield", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_hyudoro = 				CVAR_INIT ("hyudoro", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_pogospring = 			CVAR_INIT ("pogospring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kitchensink = 			CVAR_INIT ("kitchensink", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_superring = 			CVAR_INIT ("superring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_landmine = 			CVAR_INIT ("landmine", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_droptarget = 			CVAR_INIT ("droptarget", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_dualsneaker = 			CVAR_INIT ("dualsneaker", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -2114,6 +2114,12 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 
 	switch (cheat)
 	{
+		case CHEAT_SAVECHECKPOINT:
+			COPY(WRITEFIXED, fixed_t); // x
+			COPY(WRITEFIXED, fixed_t); // y
+			COPY(WRITEFIXED, fixed_t); // z
+			break;
+
 		case CHEAT_RINGS:
 		case CHEAT_LIVES:
 			// If you're confused why 'int' instead of
@@ -2127,6 +2133,12 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 
 		case CHEAT_HURT:
 			COPY(WRITEINT32, INT32);
+			break;
+
+		case CHEAT_RELATIVE_TELEPORT:
+			COPY(WRITEFIXED, fixed_t);
+			COPY(WRITEFIXED, fixed_t);
+			COPY(WRITEFIXED, fixed_t);
 			break;
 
 		case CHEAT_DEVMODE:
@@ -5713,6 +5725,20 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			break;
 		}
 
+		case CHEAT_SAVECHECKPOINT: {
+			fixed_t x = READFIXED(*cp);
+			fixed_t y = READFIXED(*cp);
+			fixed_t z = READFIXED(*cp);
+
+			player->starpostx = x>>FRACBITS;
+			player->starposty = y>>FRACBITS;
+			player->starpostz = z>>FRACBITS;
+
+			CV_CheaterWarning(targetPlayer, va("temporary checkpoint created at %d, %d, %d",
+						x / FRACUNIT, y / FRACUNIT, z / FRACUNIT));
+			break;
+		}
+
 		case CHEAT_RINGS: {
 			SINT8 rings = READSINT8(*cp);
 
@@ -5773,6 +5799,39 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 
 			CV_CheaterWarning(targetPlayer, va("%d damage to me", damage));
+			break;
+		}
+
+		case CHEAT_RELATIVE_TELEPORT: {
+			fixed_t x = READFIXED(*cp);
+			fixed_t y = READFIXED(*cp);
+			fixed_t z = READFIXED(*cp);
+
+			float f[3] = {
+				FIXED_TO_FLOAT(x),
+				FIXED_TO_FLOAT(y),
+				FIXED_TO_FLOAT(z),
+			};
+			char t[3][9];
+
+			if (!P_MobjWasRemoved(player->mo))
+			{
+				P_MapStart();
+				P_SetOrigin(player->mo,
+						player->mo->x + x,
+						player->mo->y + y,
+						player->mo->z + z);
+				P_MapEnd();
+
+				S_StartSound(player->mo, sfx_mixup);
+			}
+
+			strlcpy(t[0], M_Ftrim(f[0]), sizeof t[0]);
+			strlcpy(t[1], M_Ftrim(f[1]), sizeof t[1]);
+			strlcpy(t[2], M_Ftrim(f[2]), sizeof t[2]);
+
+			CV_CheaterWarning(targetPlayer, va("relative teleport by %d%s, %d%s, %d%s",
+						(int)f[0], t[0], (int)f[1], t[1], (int)f[2], t[2]));
 			break;
 		}
 
