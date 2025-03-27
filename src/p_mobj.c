@@ -7079,7 +7079,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			mobj->angle = mobj->extravalue1 && p ? p->drawangle : mobj->target->angle;
 			P_MoveOrigin(mobj, mobj->target->x + P_ReturnThrustX(mobj, mobj->angle+ANGLE_180, mobj->target->radius),
-				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z+5*mapobjectscale);
+				mobj->target->y + P_ReturnThrustY(mobj, mobj->angle+ANGLE_180, mobj->target->radius), mobj->target->z);
 			K_FlipFromObject(mobj, mobj->target);
 			P_SetScale(mobj, mobj->target->scale);
 
