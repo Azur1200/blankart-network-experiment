@@ -2255,8 +2255,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				K_TryHurtSoundExchange(target, source);
 			}
 
-			if (!((damagetype & DMG_NORMAL) || (damagetype & DMG_WIPEOUT)))
+			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE))
+			{
 				player->sneakertimer = 0;
+				player->mo->flags2 &= ~MF2_WATERRUN;
+
+			}
 			player->driftboost = 0;
 			player->bubblepop = 0;
 			player->flametimer = 0;
