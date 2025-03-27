@@ -3551,11 +3551,13 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		baseWallVerts[0].t = baseWallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
 	}
 
-	// Let dispoffset work first since this adjust each vertex
-	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
-	
 	// push it toward the camera to mitigate floor-clipping sprites
+	if (!R_ThingIsPaperSprite(spr->mobj)) // but not for papersprites
 	{
+		// Let dispoffset work first since this adjust each vertex
+		HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
+
+		// push it toward the camera to mitigate floor-clipping sprites
 		float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
 		float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
 		for (i = 0; i < 4; i++)
@@ -4006,22 +4008,35 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		wallVerts[0].t = wallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
 	}
 
-	if (!splat)
+	float sprdist = 0.0f, distfact = 0.0f;
+	size_t i;
+
+	if (!splat && !R_ThingIsPaperSprite(spr->mobj))
 	{
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
-		
+
 		// push it toward the camera to mitigate floor-clipping sprites
+		sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 -gl_viewy)+ (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
+		distfact = ((2.0f* spr->dispoffset) + 20.0f) / sprdist;
+		for (i = 0; i < 4; i++)
 		{
-			float sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy) + (spr->gzt - gl_viewz)*(spr->gzt - gl_viewz));
-			float distfact = ((2.0f*spr->dispoffset) + 20.0f) / sprdist;
-			size_t i;
-			for (i = 0; i < 4; i++)
-			{
-				wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
-				wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
-				wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
-			}
+			wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
+			wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
+			wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
+		}
+	}
+	else if (R_ThingIsFloorSprite(spr->mobj))
+	{
+		sprdist = sqrtf((spr->x1 - gl_viewx)*(spr->x1 - gl_viewx) + (spr->z1 - gl_viewy)*(spr->z1 - gl_viewy));
+		distfact = (2.0f + 20.0f) / sprdist;
+
+		// pull splats out of the floor
+		for (i = 0; i < 4; i++)
+		{
+			wallVerts[i].x += (gl_viewx - wallVerts[i].x)*distfact;
+			wallVerts[i].z += (gl_viewy - wallVerts[i].z)*distfact;
+			wallVerts[i].y += (gl_viewz - wallVerts[i].y)*distfact;
 		}
 	}
 
