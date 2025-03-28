@@ -932,16 +932,20 @@ boolean M_Responder(event_t *ev)
 				ch = KEY_BACKSPACE;
 				break;
 			case KEY_HAT1:
-				ch = KEY_UPARROW;
+				if (deviceplayer == 0)
+					ch = KEY_UPARROW;
 				break;
 			case KEY_HAT1 + 1:
-				ch = KEY_DOWNARROW;
+				if (deviceplayer == 0)
+					ch = KEY_DOWNARROW;
 				break;
 			case KEY_HAT1 + 2:
-				ch = KEY_LEFTARROW;
+				if (deviceplayer == 0)
+					ch = KEY_LEFTARROW;
 				break;
 			case KEY_HAT1 + 3:
-				ch = KEY_RIGHTARROW;
+				if (deviceplayer == 0)
+					ch = KEY_RIGHTARROW;
 				break;
 			default:
 				break;
