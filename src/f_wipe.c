@@ -83,7 +83,7 @@ UINT8 wipedefs[NUMWIPEDEFS] = {
 //                        SCREEN WIPE PACKAGE
 //--------------------------------------------------------------------------
 
-boolean WipeInAction = false;
+UINT8 WipeInAction = 0;
 boolean WipeStageTitle = false;
 
 #ifndef NOWIPE

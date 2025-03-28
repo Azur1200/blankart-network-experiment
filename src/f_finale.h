@@ -142,7 +142,7 @@ void F_MenuPresTicker(boolean run);
 // WIPE
 //
 
-extern boolean WipeInAction;
+extern UINT8 WipeInAction;
 extern boolean WipeStageTitle;
 
 // Don't know where else to place this constant

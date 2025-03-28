@@ -197,7 +197,7 @@ void D_ProcessEvents(void)
 {
 	event_t *ev;
 
-	boolean eaten;
+	boolean eaten = false;
 
 	// i have to reset this somewhere or else your camera just glides away!
 	for (size_t i = 0; i < 4; i++)
@@ -225,15 +225,16 @@ void D_ProcessEvents(void)
 		}
 
 		// Menu input
-#ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
-#endif
+		if (WipeInAction < 2)
 		{
-			eaten = M_Responder(ev);
-		}
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+			I_lock_mutex(&m_menu_mutex);
 #endif
+			eaten = M_Responder(ev);
+#ifdef HAVE_THREADS
+			I_unlock_mutex(m_menu_mutex);
+#endif
+		}
 
 		if (eaten)
 			continue; // menu ate the event
@@ -849,7 +850,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
 		drawMenu = true;
 
-	WipeInAction = true;
+	WipeInAction = 1 + !drawMenu;
 
 	// lastwipetic should either be 0 or the tic we last wiped
 	// on for fade-to-black
@@ -909,7 +910,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 		lastwipetic = nowtime;
 	}
 
-	WipeInAction = false;
+	WipeInAction = 0;
 }
 
 // =========================================================================
