@@ -4977,7 +4977,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				fixed_t yoffs = sides[lines[i].sidenum[0]].rowoffset;
 
 				//If no tag is given, apply to front sector
-				if (lines[i].args[0] == 0)
+				if (mapnamespace != MNS_SRB2KART && lines[i].args[0] == 0)
 					P_ApplyFlatAlignment(lines[i].frontsector, flatangle, xoffs, yoffs, lines[i].args[1] != TMP_CEILING, lines[i].args[1] != TMP_FLOOR);
 				else
 				{

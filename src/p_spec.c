@@ -7004,7 +7004,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 				fixed_t yoffs = lines[i].v1->y;
 
 				//If no tag is given, apply to front sector
-				if (lines[i].args[0] == 0)
+				// unless this is kart, in which case congrats, you've aligned every sector without a tag!
+				if (mapnamespace != MNS_SRB2KART && lines[i].args[0] == 0)
 					P_ApplyFlatAlignment(lines[i].frontsector, flatangle, xoffs, yoffs, lines[i].args[1] != TMP_CEILING, lines[i].args[1] != TMP_FLOOR);
 				else
 				{
