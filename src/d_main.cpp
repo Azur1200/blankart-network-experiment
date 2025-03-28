@@ -674,7 +674,7 @@ static bool D_Display(void)
 		{
 			F_WipeEndScreen();
 
-			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK);
 			ranwipe = true;
 		}
 
