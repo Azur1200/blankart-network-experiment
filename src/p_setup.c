@@ -8637,8 +8637,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// This is handled BEFORE sounds are stopped.
 	else if (encoremode && !prevencoremode && !demo.rewinding)
 	{
-		tic_t locstarttime, endtime, nowtime;
-
 		if (rendermode != render_none)
 		{
 			S_StopMusic(); // er, about that...
@@ -8663,25 +8661,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			F_RunWipe(wipedefs[wipe_level_final], false);
 		}
 
-		locstarttime = nowtime = lastwipetic;
-		endtime = locstarttime + (3*TICRATE)/2;
-
 		// Hold on white for extra effect.
-		while (nowtime < endtime)
-		{
-			// wait loop
-			while (!((nowtime = I_GetTime()) - lastwipetic))
-			{
-				I_Sleep(cv_sleep.value);
-				I_UpdateTime(cv_timescale.value);
-			}
-			lastwipetic = nowtime;
-			if (moviemode) // make sure we save frames for the white hold too
-				M_SaveFrame();
-
-			// Keep the network alive
-			NetKeepAlive();
-		}
+		D_WipeLoop(WIPELOOP_ENCORE, 0, false);
 
 		ranspecialwipe = 1;
 	}

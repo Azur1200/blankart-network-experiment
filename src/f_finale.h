@@ -145,12 +145,12 @@ void F_MenuPresTicker(boolean run);
 extern boolean WipeInAction;
 extern boolean WipeStageTitle;
 
-extern INT32 lastwipetic;
-
 // Don't know where else to place this constant
 // But this file seems appropriate
 #define PRELEVELTIME TICRATE // frames in tics
 
+fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum);
+void F_DoWipe(fademask_t *fademask);
 void F_WipeStartScreen(void);
 void F_WipeEndScreen(void);
 void F_RunWipe(UINT8 wipetype, boolean drawMenu);

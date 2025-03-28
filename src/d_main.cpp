@@ -132,6 +132,8 @@ boolean devparm = false; // started game with -devparm
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
 
+static INT32 lastwipetic = 0;
+
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 // These variables are in effect
@@ -734,6 +736,178 @@ static bool D_Display(void)
 	return ranwipe;
 }
 
+static void D_WipeTick(boolean menu)
+{
+	I_OsPolling();
+	D_ProcessEvents();
+
+	// Update the network so we don't cause timeouts
+	NetKeepAlive();
+
+	HU_Ticker();
+	if (menu)
+	{
+#ifdef HAVE_THREADS
+		I_lock_mutex(&m_menu_mutex);
+#endif
+		M_Ticker();
+#ifdef HAVE_THREADS
+		I_unlock_mutex(m_menu_mutex);
+#endif
+	}
+	CON_Ticker();
+}
+
+static void D_WipeDraw(boolean menu)
+{
+	if (rendermode == render_none)
+		return;
+
+	I_UpdateNoBlit();
+
+	HU_Erase();
+	HU_Drawer();
+	if (menu)
+	{
+#ifdef HAVE_THREADS
+		I_lock_mutex(&m_menu_mutex);
+#endif
+		M_Drawer();
+#ifdef HAVE_THREADS
+		I_unlock_mutex(m_menu_mutex);
+#endif
+	}
+	CON_Drawer();
+
+	I_FinishUpdate(); // page flip or blit buffer
+}
+
+static double D_EndFrame(precise_t enterprecise, int *frameskip)
+{
+	// Fully completed frame made.
+	precise_t finishprecise = I_GetPreciseTime();
+
+	// Use the time before sleep for frameskip calculations:
+	// post-sleep time is literally being intentionally wasted
+	double deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	double deltatics = deltasecs * NEWTICRATE;
+
+	// If time spent this game loop exceeds a single tic,
+	// it's probably because of rendering.
+	//
+	// Skip rendering the next frame, up to a limit of 3
+	// frames before a frame is rendered no matter what.
+	if (frameskip)
+	{
+		if (*frameskip < 3 && deltatics > 1.0)
+			*frameskip += 1;
+		else
+			*frameskip = 0;
+	}
+
+	if (!singletics)
+	{
+		precise_t elapsed = finishprecise - enterprecise;
+
+		// capbudget is the minimum precise_t duration of a single loop iteration
+		precise_t capbudget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
+
+		// in the case of "match refresh rate" + vsync, don't sleep at all
+		const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
+
+		if (elapsed > 0 && capbudget > elapsed && !vsync_with_match_refresh)
+		{
+			I_SleepDuration(capbudget - (finishprecise - enterprecise));
+		}
+	}
+
+	// Capture the time once more to get the real delta time.
+	finishprecise = I_GetPreciseTime();
+	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	return deltasecs * NEWTICRATE;
+}
+
+static INT32 endtimes[] = {
+	[WIPELOOP_RUNWIPE] = UINT8_MAX,
+	[WIPELOOP_TITLECARD] = PRELEVELTIME*NEWTICRATERATIO,
+	[WIPELOOP_ENCORE] = 3*TICRATE/2,
+	[WIPELOOP_TITLEBLACK] = NEWTICRATE, // Shortened the quit time, used to be 2 seconds
+};
+
+// one single function for all the extra main loops in this god-forsaken codebase
+// should make it easier to fold these back into D_SRB2Loop at some point...
+void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
+{
+	tic_t nowtime, endtime;
+	UINT8 wipeframe = 0;
+	fademask_t *fmask;
+	double delta = 0.0;
+
+	nowtime = lastwipetic = I_GetTime();
+	endtime = nowtime + endtimes[type];
+
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
+		drawMenu = true;
+
+	// lastwipetic should either be 0 or the tic we last wiped
+	// on for fade-to-black
+	while (nowtime < endtime)
+	{
+		precise_t enterprecise = I_GetPreciseTime();
+		I_UpdateTime(cv_timescale.value);
+
+		nowtime = I_GetTime();
+
+		// wait loop
+		if (nowtime - lastwipetic)
+		{
+			renderisnewtic = true;
+			wipeframe++;
+			D_WipeTick(drawMenu);
+			if (type == WIPELOOP_TITLECARD)
+				ST_runTitleCard();
+		}
+		else
+			renderisnewtic = false;
+
+		// draw loop
+		rendertimefrac = g_time.timefrac;
+		renderdeltatics = FLOAT_TO_FIXED(delta);
+
+#ifndef NOWIPE
+		if (type == WIPELOOP_RUNWIPE)
+		{
+			// get fademask first so we can tell if it exists or not
+			fmask = F_GetFadeMask(wipetype, wipeframe);
+			if (!fmask)
+				break;
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				HWR_DoWipe(wipetype, wipeframe); // send in the wipe type and wipeframe because we need to cache the graphic
+			else
+#endif
+			if (rendermode != render_none) //this allows F_RunWipe to be called in dedicated servers
+				F_DoWipe(fmask);
+		}
+#endif
+
+		if (type == WIPELOOP_TITLECARD)
+			ST_preLevelTitleCardDrawer();
+
+		D_WipeDraw(drawMenu);
+
+		// Only take screenshots after drawing.
+		if (moviemode)
+			M_SaveFrame();
+		if (takescreenshot)
+			M_DoScreenShot();
+
+		delta = D_EndFrame(enterprecise, NULL);
+		lastwipetic = nowtime;
+	}
+}
+
 // =========================================================================
 // D_SRB2Loop
 // =========================================================================
@@ -744,7 +918,6 @@ void D_SRB2Loop(void)
 {
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
-	double deltasecs = 0.0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -797,19 +970,10 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		// capbudget is the minimum precise_t duration of a single loop iteration
-		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
-		precise_t finishprecise = enterprecise;
 
 		g_dc = {};
 		Z_Frame_Reset();
-
-		{
-			// Casting the return value of a function is bad practice (apparently)
-			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
-			capbudget = (precise_t) budget;
-		}
 
 		bool ranwipe = false;
 
@@ -965,47 +1129,11 @@ void D_SRB2Loop(void)
 		}
 #endif
 
-		// Fully completed frame made.
-		finishprecise = I_GetPreciseTime();
-
-		// Use the time before sleep for frameskip calculations:
-		// post-sleep time is literally being intentionally wasted
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
-
-		// If time spent this game loop exceeds a single tic,
-		// it's probably because of rendering.
-		//
-		// Skip rendering the next frame, up to a limit of 3
-		// frames before a frame is rendered no matter what.
-		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
-		{
-			frameskip++;
-		}
-		else
-		{
+		if (ranwipe)
 			frameskip = 0;
-		}
-
-		if (!singletics)
-		{
-			INT64 elapsed = (INT64)(finishprecise - enterprecise);
-
-			// in the case of "match refresh rate" + vsync, don't sleep at all
-			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
-
-			if (elapsed > 0 && (INT64)capbudget > elapsed && !vsync_with_match_refresh)
-			{
-				I_SleepDuration(capbudget - (finishprecise - enterprecise));
-			}
-		}
-		// Capture the time once more to get the real delta time.
-		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
+		deltatics = D_EndFrame(enterprecise, !ranwipe ? &frameskip : NULL);
 	}
 }
 

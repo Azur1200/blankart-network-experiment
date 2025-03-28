@@ -121,6 +121,9 @@ TYPEDEF (cupheader_t);
 TYPEDEF (exitcondition_t);
 TYPEDEF (mapheader_lighting_t);
 
+// f_finale.h
+TYPEDEF (fademask_t);
+
 // font.h
 TYPEDEF (font_t);
 
