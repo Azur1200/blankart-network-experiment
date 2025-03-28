@@ -849,6 +849,8 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
 		drawMenu = true;
 
+	WipeInAction = true;
+
 	// lastwipetic should either be 0 or the tic we last wiped
 	// on for fade-to-black
 	while (nowtime < endtime)
@@ -906,6 +908,8 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 		delta = D_EndFrame(enterprecise, NULL);
 		lastwipetic = nowtime;
 	}
+
+	WipeInAction = false;
 }
 
 // =========================================================================

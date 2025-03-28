@@ -1083,6 +1083,9 @@ void HU_Ticker(void)
 		}
 	}
 
+	if (WipeInAction)
+		return;
+
 	if (cechotimer)
 		cechotimer--;
 
@@ -2135,6 +2138,9 @@ void HU_Drawer(void)
 		if (!OLDCHAT && cv_consolechat.value < 2 && netgame) // Don't display minimized chat if you set the mode to Window (Hidden)
 			HU_drawMiniChat(); // draw messages in a cool fashion.
 	}
+
+	if (WipeInAction)
+		return;
 
 	if (cechotimer)
 		HU_DrawCEcho();

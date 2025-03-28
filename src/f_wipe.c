@@ -362,12 +362,9 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	paldiv = FixedDiv(257<<FRACBITS, 11<<FRACBITS);
 
 	// Init the wipe
-	WipeInAction = true;
 	wipe_scr = screens[0];
 
 	D_WipeLoop(WIPELOOP_RUNWIPE, wipetype, drawMenu);
-
-	WipeInAction = false;
 #endif
 }
 
