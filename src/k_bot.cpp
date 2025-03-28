@@ -1333,11 +1333,12 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		if (player->speed > 0)
 		{
 			cmd->buttons |= (BT_BRAKE);
+			cmd->bot.respawnconfirm++;
 		}
 
 		if ((player->speed < 10*FRACUNIT))
 		{
-			cmd->bot.respawnconfirm = 1;
+			cmd->bot.respawnconfirm = TICRATE;
 		}
 		return;
 	}
@@ -1558,7 +1559,7 @@ void K_UpdateBotGameplayVars(player_t *player)
 	// Is a bot not making any progress? Kill it and respawn at next waypoint.
 	K_IncrementBotRespawn(player, &player->botvars.respawnconfirm, BOTRESPAWNCONFIRM);
 
-	if ((player->cmd.bot.respawnconfirm > 0) && (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM))
+	if ((player->cmd.bot.respawnconfirm >= TICRATE) && (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM))
 	{
 		// Now a clean function! Neat, eh?
 		K_SetRespawnAtNextWaypoint(player);
