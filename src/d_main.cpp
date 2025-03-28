@@ -892,7 +892,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 		}
 #endif
 
-		if (type == WIPELOOP_TITLECARD)
+		if (rendermode != render_none && type == WIPELOOP_TITLECARD)
 			ST_preLevelTitleCardDrawer();
 
 		D_WipeDraw(drawMenu);

@@ -9012,12 +9012,14 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		levelloading = false;
 	}
 
-	if (rendermode != render_none && reloadinggamestate == false)
+	if (reloadinggamestate == false)
 	{
-
-		R_ResetViewInterpolation(0);
-		R_ResetViewInterpolation(0);
-		R_UpdateMobjInterpolators();
+		if (rendermode != render_none)
+		{
+			R_ResetViewInterpolation(0);
+			R_ResetViewInterpolation(0);
+			R_UpdateMobjInterpolators();
+		}
 
 		// Title card!
 		G_StartTitleCard();
@@ -9026,6 +9028,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (WipeStageTitle && ranspecialwipe != 2 && fromnetsave == false)
 		{
 			G_PreLevelTitleCard();
+
+			// don't do a fade-in if we ran the title card, it trips up dedis!
+			// normal clients never see the fade-in, and it causes a very brief lag spike
+			wipegamestate = gamestate;
 		}
 	}
 
