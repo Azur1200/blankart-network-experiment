@@ -1133,7 +1133,7 @@ void readlevelheader(MYFILE *f, char * name)
 	{
 		P_AllocMapHeader((INT16)(num = nummapheaders));
 	}
-	else if (f->wad > mainwads)
+	else if (f->wad >= NUMMAINWADS)
 	{
 		// only mark as a major mod if it replaces an already-existing mapheaderinfo
 		G_SetGameModified(multiplayer, true);

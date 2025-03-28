@@ -158,13 +158,13 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 #ifdef DEVELOP
 	i = 0;
 #else
-	i = mainwads + 1;
+	i = NUMMAINWADS;
 #endif
 
 	for (; i < numwadfiles; i++) //mainwads+1, otherwise we start on the first mainwad
 	{
 		// If it has only music/sound lumps, don't put it in the list
-		if (i > mainwads && !wadfiles[i]->important)
+		if (i >= NUMMAINWADS && !wadfiles[i]->important)
 			continue;
 
 		if (firstfile)
@@ -190,7 +190,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 
 		/* don't send mainwads!! */
 #ifdef DEVELOP
-		if (i <= mainwads)
+		if (i < NUMMAINWADS)
 			filestatus += (2 << 4);
 #endif
 
@@ -555,7 +555,7 @@ INT32 CL_CheckFiles(void)
 #ifdef DEVELOP
 		j = 0;
 #else
-		j = mainwads + 1;
+		j = NUMMAINWADS;
 #endif
 		for (i = 0; i < fileneedednum || j < numwadfiles;)
 		{
@@ -605,7 +605,7 @@ INT32 CL_CheckFiles(void)
 #ifdef DEVELOP
 		j = 0;
 #else
-		j = mainwads + 1;
+		j = NUMMAINWADS;
 #endif
 		for (; wadfiles[j]; j++)
 		{

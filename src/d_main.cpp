@@ -1482,40 +1482,29 @@ void D_SRB2Main(void)
 	W_InitMultipleFiles(startupiwads, false);
 	D_CleanFile(startupiwads);
 
-	mainwads = 0;
-
 #ifndef DEVELOP
 	// Check MD5s of autoloaded files
 	// Note: Do not add any files that ignore MD5!
-	W_VerifyFileMD5(mainwads, ASSET_HASH_SRB2_SRB);						// srb2.srb
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_GFX_KART);			// gfx.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_TEXTURES_KART);	// textures.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_CHARS_KART);		// chars.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAPS_KART);		// maps.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_MAIN_PK3);			// main.pk3
+	W_VerifyFileMD5(MAINWAD_SRB2, ASSET_HASH_SRB2_SRB);
+	W_VerifyFileMD5(MAINWAD_GFX, ASSET_HASH_GFX_KART);
+	W_VerifyFileMD5(MAINWAD_TEXTURES, ASSET_HASH_TEXTURES_KART);
+	W_VerifyFileMD5(MAINWAD_CHARS, ASSET_HASH_CHARS_KART);
+	W_VerifyFileMD5(MAINWAD_MAPS, ASSET_HASH_MAPS_KART);
+	W_VerifyFileMD5(MAINWAD_MAIN, ASSET_HASH_MAIN_PK3);
 #ifdef USE_PATCH_FILE
-	mainwads++; W_VerifyFileMD5(mainwads, ASSET_HASH_PATCH_PK3);		// patch.pk3
+	W_VerifyFileMD5(MAINWAD_PATCH, ASSET_HASH_PATCH_PK3);
 #endif
-#else
-	mainwads++;	// gfx.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++;	// textures.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++;	// chars.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++;	// maps.kart
-	wadfiles[mainwads]->compatmode = true;
-	mainwads++;	// main.pk3
-#ifdef USE_PATCH_FILE
-	mainwads++;	// patch.pk3
-#endif
-
 #endif //ifndef DEVELOP
+
+	wadfiles[MAINWAD_SRB2]->compatmode = true;
+	wadfiles[MAINWAD_GFX]->compatmode = true;
+	wadfiles[MAINWAD_TEXTURES]->compatmode = true;
+	wadfiles[MAINWAD_CHARS]->compatmode = true;
+	wadfiles[MAINWAD_MAPS]->compatmode = true;
+	wadfiles[MAINWAD_MAIN]->compatmode = false;
+#ifdef USE_PATCH_FILE
+	wadfiles[MAINWAD_PATCH]->compatmode = false;
+#endif
 
 	R_InitPaletteRemap();
 
@@ -1558,7 +1547,10 @@ void D_SRB2Main(void)
 	timelimits[GT_BATTLE] = 2;
 
 	CON_SetLoadingProgress(LOADED_HUINIT);
-	
+
+	if (modifiedgame)
+		I_Error("modifiedgame set during startup!");
+
 	CONS_Printf("W_InitMultipleFiles(): Adding external PWADs.\n");
 	
 	// HACK: Refer to https://git.do.srb2.org/KartKrew/RingRacers/-/merge_requests/29#note_61574

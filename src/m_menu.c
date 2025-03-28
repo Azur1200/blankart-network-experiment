@@ -3064,13 +3064,13 @@ void M_DrawAddons(void)
 	else
 		V_DrawCenteredString(BASEVIDWIDTH/2, 5, 0, (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1));
 
-	if (numwadfiles <= mainwads+1)
+	if (numwadfiles <= NUMMAINWADS)
 		y = 0;
 	else if (numwadfiles >= MAX_WADFILES)
 		y = FRACUNIT;
 	else
 	{
-		y = FixedDiv(((ssize_t)(numwadfiles) - (ssize_t)(mainwads+1))<<FRACBITS, ((ssize_t)MAX_WADFILES - (ssize_t)(mainwads+1))<<FRACBITS);
+		y = FixedDiv(((ssize_t)(numwadfiles) - (ssize_t)(NUMMAINWADS))<<FRACBITS, ((ssize_t)MAX_WADFILES - (ssize_t)(NUMMAINWADS))<<FRACBITS);
 		if (y > FRACUNIT) // happens because of how we're shrinkin' it a little
 			y = FRACUNIT;
 	}

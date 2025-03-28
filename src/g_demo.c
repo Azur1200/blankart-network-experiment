@@ -2149,7 +2149,7 @@ void G_BeginRecording(void)
 	demobuf.p += 1;
 
 	totalfiles = 0;
-	for (i = mainwads; ++i < numwadfiles; )
+	for (i = NUMMAINWADS-1; ++i < numwadfiles; )
 		if (wadfiles[i]->important)
 	{
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
@@ -2516,7 +2516,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 
 			for (j = 0; j < numwadfiles; ++j)
 			{
-				if (wadfiles[j]->important && j > mainwads)
+				if (wadfiles[j]->important && j >= NUMMAINWADS)
 					nmusfilecount++;
 				else
 					continue;
@@ -2552,7 +2552,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 	nmusfilecount = 0;
 
 	for (j = 0; j < numwadfiles; ++j)
-		if (wadfiles[j]->important && j > mainwads)
+		if (wadfiles[j]->important && j >= NUMMAINWADS)
 			nmusfilecount++;
 
 	if (!error && filesloaded < nmusfilecount)

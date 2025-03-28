@@ -127,7 +127,6 @@ struct recorddata_t
 // Set if homebrew PWAD stuff has been added.
 extern boolean modifiedgame;
 extern boolean majormods;
-extern UINT16 mainwads;
 extern boolean savemoddata; // This mod saves time/emblem data.
 extern boolean imcontinuing; // Temporary flag while continuing
 extern boolean metalrecording;

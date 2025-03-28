@@ -1625,7 +1625,7 @@ static void Setvalue(consvar_t *var, const char *valstr, boolean stealth)
 
 	const char *overridestr = valstr;
 
-	if (mainwads == 0 && var->PossibleValue == Color_cons_t)
+	if (numwadfiles == 0 && var->PossibleValue == Color_cons_t)
 	{
 		override = true;
 		if (!strcmp(valstr, "Blue"))

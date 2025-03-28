@@ -32,6 +32,20 @@ extern "C" {
 #define GRAPHICSNAME "gfx.kart"
 #define SOUNDSNAME "sounds.kart"
 
+typedef enum
+{
+	MAINWAD_SRB2,
+	MAINWAD_GFX,
+	MAINWAD_TEXTURES,
+	MAINWAD_CHARS,
+	MAINWAD_MAPS,
+	MAINWAD_MAIN,
+#ifdef USE_PATCH_FILE
+	MAINWAD_PATCH,
+#endif
+	NUMMAINWADS
+} mainwad_t;
+
 // make sure not to write back the config until it's been correctly loaded
 extern tic_t rendergametic;
 

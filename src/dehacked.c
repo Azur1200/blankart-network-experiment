@@ -325,7 +325,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						i = get_mobjtype(word2); // find a thing by name
 					if (i < NUMMOBJTYPES && i >= 0)
 					{
-						if (i < (MT_FIRSTFREESLOT+freeslotusage[1][1]))
+						if (!mainfile && i < (MT_FIRSTFREESLOT+freeslotusage[1][1]))
 						{
 							G_SetGameModified(multiplayer, true); // Only a major mod if editing stuff that isn't your own!
 						}
@@ -444,7 +444,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						i = get_state(word2); // find a state by name
 					if (i < NUMSTATES && i >= 0)
 					{
-						if (i < (S_FIRSTFREESLOT+freeslotusage[0][1]))
+						if (!mainfile && i < (S_FIRSTFREESLOT+freeslotusage[0][1]))
 						{
 							G_SetGameModified(multiplayer, true); // Only a major mod if editing stuff that isn't your own!
 						}
@@ -529,7 +529,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 						while (cup)
 						{
-							if (hash == cup->namehash && fastcmp(cup->name, word2))
+							if (!mainfile && hash == cup->namehash && fastcmp(cup->name, word2))
 							{
 								// Only a major mod if editing stuff that isn't your own!
 								G_SetGameModified(multiplayer, true);

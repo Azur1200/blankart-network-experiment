@@ -27,6 +27,7 @@
 #include "p_local.h"
 #include "dehacked.h" // get_number (for thok)
 #include "m_cond.h"
+#include "d_main.h" // MAINWAD_CHARS
 #if 0
 #include "k_kart.h" // K_KartResetPlayerColor
 #endif
@@ -153,7 +154,7 @@ void R_InitSkins(void)
 
 	for (i = 0; i < numwadfiles; i++)
 	{
-		if (i == 3) // chars.kart
+		if (i == MAINWAD_CHARS)
 			R_IHateThatHedgehog((UINT16)i);
 		R_AddSkins((UINT16)i);
 		if (!wadfiles[i]->compatmode)

@@ -1667,7 +1667,7 @@ void S_InitMusicDefs(void)
 	for (i = 0; i < numwadfiles; i++)
 	{
 		nameonly(tempname = va("%s", wadfiles[i]->filename));
-		if (wadfiles[i]->filename && !stricmp(tempname, "music.kart"))
+		if (wadfiles[i]->filename && !stricmp(tempname, MUSICNAME))
 		{
 			// Awful hack but what can you do?
 			continue;
