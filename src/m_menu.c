@@ -1469,7 +1469,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F4: // Sound Volume
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1478,7 +1478,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F5: // Video Mode
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1490,7 +1490,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F7: // Options
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1744,7 +1744,7 @@ void M_Drawer(void)
 void M_StartControlPanel(void)
 {
 	// intro might call this repeatedly
-	if (menustack[0])
+	if (menustack[0] || WipeInAction)
 	{
 		CON_ToggleOff(); // move away console
 		return;
