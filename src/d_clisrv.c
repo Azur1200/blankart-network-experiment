@@ -2527,7 +2527,6 @@ void CL_ClearPlayer(INT32 playernum)
 	splitscreen_invitations[playernum] = -1;
 
 	playerconsole[playernum] = playernum;
-	G_DestroyParty(playernum);
 
 	// Wipe the struct.
 	memset(&players[playernum], 0, sizeof (player_t));
@@ -2569,15 +2568,6 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 
 	LUA_HookPlayerQuit(&players[playernum], reason); // Lua hook for player quitting
 
-	// don't look through someone's view who isn't there
-	if (playernum == displayplayers[0] && !demo.playback)
-	{
-		// Call ViewpointSwitch hooks here.
-		// The viewpoint was forcibly changed.
-		LUA_HookViewpointSwitch(&players[consoleplayer], &players[consoleplayer], true);
-		displayplayers[0] = consoleplayer;
-	}
-
 	G_LeaveParty(playernum);
 
 	// Reset player data
@@ -2596,6 +2586,9 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 	player_name_changes[playernum] = 0;
 
 	LUA_InvalidatePlayer(&players[playernum]);
+
+	// don't look through someone's view who isn't there
+	G_ResetViews();
 
 	K_CheckBumpers();
 	P_CheckRacers();

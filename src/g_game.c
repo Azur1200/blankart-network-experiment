@@ -1981,8 +1981,8 @@ void G_ResetViews(void)
 	/* Demote splits */
 	if (playersviewable < splits)
 	{
-		splits = playersviewable;
-		r_splitscreen = max(splits-1, 0);
+		splits = max(playersviewable, G_PartySize(consoleplayer)); // don't delete local players
+		r_splitscreen = splits - 1;
 		R_ExecuteSetViewSize();
 	}
 
@@ -2011,25 +2011,69 @@ void G_Ticker(boolean run)
 		marathontime++;
 
 	P_MapStart();
-	// do player reborns if needed
-	if (gamestate == GS_LEVEL)
-	{
-		boolean changed = false;
-		// Or, alternatively, retry.
-		if (G_GetRetryFlag())
-		{
-			G_ClearRetryFlag();
 
+	if (gamestate == GS_LEVEL && G_GetRetryFlag())
+	{
+		if (demo.playback == true)
+		{
+			// Stop playback!!
+			G_ClearRetryFlag();
+			// G_CheckDemoStatus() called here fails an I_Assert in g_party.cpp Console()!?
+			// I'm sure there's a completely logical explanation and an elegant solution
+			// where we can defer some sort of state change. However I'm tired, I've been
+			// looking after my niece, my arm hurts a bit when using mouse/keyboard, and
+			// we are ALMOST DONE. So I'm going to bodge this for the sake of release.
+			// The minimal set of calls to dump you back to the menu as soon as possible
+			// will have to do, so that everybody can have fun racing as rings. ~toast 050424
+			G_StopDemo();
+			Command_ExitGame_f();
+		}
+		else
+		{
+			// Or, alternatively, retry.
 			for (i = 0; i < MAXPLAYERS; i++)
 			{
 				if (playeringame[i])
 				{
-					K_PlayerLoseLife(&players[i]);
+					if (players[i].bot == true
+						&& grandprixinfo.gp == true
+						&& grandprixinfo.masterbots == false)
+					{
+						UINT8 bot_level_decrease = 3;
+
+						if (grandprixinfo.gamespeed == KARTSPEED_EASY)
+						{
+							bot_level_decrease++;
+						}
+						else if (grandprixinfo.gamespeed == KARTSPEED_HARD)
+						{
+							bot_level_decrease--;
+						}
+
+						if (players[i].botvars.difficulty <= bot_level_decrease)
+						{
+							players[i].botvars.difficulty = 1;
+						}
+						else
+						{
+							players[i].botvars.difficulty -= bot_level_decrease;
+						}
+					}
+					else
+					{
+						K_PlayerLoseLife(&players[i]);
+					}
 				}
 			}
 
 			D_MapChange(gamemap, gametype, encoremode, false, 1, false, false);
 		}
+	}
+
+	// do player reborns if needed
+	if (G_GamestateUsesLevel() == true)
+	{
+		boolean changed = false;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -2039,12 +2083,13 @@ void G_Ticker(boolean run)
 				changed = true;
 			}
 		}
-		
+
 		if (changed == true)
 		{
 			K_UpdateAllPlayerPositions();
 		}
 	}
+
 	P_MapEnd();
 
 	// do things to change the game state

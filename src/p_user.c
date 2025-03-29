@@ -3328,19 +3328,10 @@ boolean P_SpectatorJoinGame(player_t *player)
 	player->enteredGame = true;
 
 	// Reset away view (some code referenced from Got_Teamchange)
+	if (G_IsPartyLocal(player - players))
 	{
-		UINT8 i = 0;
-		const UINT8 *localplayertable = G_PartyArray(consoleplayer);
-
-		for (i = 0; i < r_splitscreen; i++)
-		{
-			if (localplayertable[i] == (player-players))
-			{
-				LUA_HookViewpointSwitch(player, player, true);
-				displayplayers[i] = (player-players);
-				break;
-			}
-		}
+		LUA_HookViewpointSwitch(player, player, true);
+		displayplayers[G_PartyPosition(player - players)] = (player-players);
 	}
 
 	// a surprise tool that will help us later...
