@@ -2661,9 +2661,6 @@ void P_DemoCameraMovement(camera_t *cam)
 
 	boolean moving = false;
 
-	if (encoremode)
-		cam->postimgflags |= POSTIMG_MIRROR;
-
 	// first off we need to get button input
 	G_BuildTiccmd(cmd, 1, UINT8_MAX);
 
