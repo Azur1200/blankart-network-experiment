@@ -1445,6 +1445,7 @@ boolean P_CanActivateSpecial(INT16 special)
 	{
 		case 2001: // Finish line
 		case 2003: // Respawn line
+		case 2004: // Bot controller
 		{
 			return true;
 		}
