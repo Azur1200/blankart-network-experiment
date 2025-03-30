@@ -310,6 +310,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartbumpspring);
 
+	CV_RegisterVar(&cv_kartslipdash);
+
 	CV_RegisterVar(&cv_kartdriftsounds);
 
 	CV_RegisterVar(&cv_kartdriftefx);
@@ -9075,7 +9077,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		else
 			player->aizdriftstrat = ((player->drift > 0) ? 1 : -1);
 	}
-	else if (player->aizdriftstrat && !player->drift)
+	else if (K_Sliptiding(player))
 	{
 		K_SpawnAIZDust(player);
 
@@ -9116,6 +9118,79 @@ static void K_KartDrift(player_t *player, boolean onground)
 	}
 	else
 		player->pflags &= ~PF_BRAKEDRIFT;
+}
+
+static void K_KartSlipdash(player_t *player, boolean onground)
+{
+	boolean snaked = player->slipdashdir && player->aizdriftstrat && player->slipdashdir != player->aizdriftstrat;
+	if (!cv_kartslipdash.value || player->spinouttimer)
+	{
+		player->slipdashcharge = 0;
+		player->slipdashdir = 0;
+	}
+	else if ((K_Sliptiding(player) || player->aizdriftturn) && !snaked)
+	{
+		if (!player->slipdashdir) // anti-snaking
+			player->slipdashdir = player->aizdriftstrat;
+
+		if (onground && !player->drift)
+		{
+			fixed_t turn = max(0, player->cmd.turning * player->aizdriftstrat);
+			turn = FINETANGENT((turn*(ANGLE_45/KART_FULLTURN) + ANGLE_90) >> ANGLETOFINESHIFT);
+			player->slipdashcharge = min(player->slipdashcharge + turn/50, FRACUNIT);
+
+			if (!(leveltime % 5))
+				S_StartSoundAtVolume(player->mo, sfx_cdfm17, 133 + turn/555);
+		}
+	}
+	else if (player->slipdashcharge && onground)
+	{
+		INT32 i;
+		boolean driftbonus = player->driftcharge && !snaked;
+
+		if (snaked)
+			player->slipdashcharge /= 4;
+
+		S_StopSoundByID(player->mo, sfx_cdfm17);
+		S_StartSoundAtVolume(player->mo, player->slipdashcharge > FRACUNIT/3 ? sfx_cdfm62 : sfx_s23c, driftbonus ? 200 : 255);
+		P_Thrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, false, false), 2*player->slipdashcharge/3));
+
+		for (i = -1; i <= 1; i += 2)
+		{
+			mobj_t *strat = P_SpawnMobjFromMobj(player->mo,
+				P_ReturnThrustX(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
+				P_ReturnThrustY(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
+				0, MT_AIZDRIFTSTRAT
+			);
+			strat->angle = player->mo->angle + ANGLE_67h*i;
+			P_SetScale(strat, FixedMul(player->slipdashcharge + FRACUNIT/4, mapobjectscale));
+			strat->destscale = strat->scale;
+			strat->momx = P_ReturnThrustX(NULL, player->mo->angle, -8*mapobjectscale);
+			strat->momy = P_ReturnThrustY(NULL, player->mo->angle, -8*mapobjectscale);
+		}
+
+		if (driftbonus)
+		{
+			INT32 dsv = K_GetKartDriftSparkValue(player);
+			player->driftcharge = min(player->driftcharge + FixedMul(player->slipdashcharge, dsv), dsv-1);
+			S_StartSound(player->mo, sfx_s3k45);
+		}
+
+		player->slipdashcharge = 0;
+		player->slipdashdir = 0;
+	}
+	else
+		player->slipdashdir = 0;
+
+	if (player->slipdashcharge)
+	{
+		mobj_t *spark = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_DRIFTSPARK);
+		spark->color = SKINCOLOR_GREEN;
+		spark->angle = player->mo->angle + player->aizdriftstrat*ANGLE_45;
+		P_SetScale(spark, FixedMul(player->slipdashcharge + 2*FRACUNIT/3, mapobjectscale));
+		spark->destscale = 0;
+		spark->scalespeed = mapobjectscale/4;
+	}
 }
 
 INT32 K_GetDriftAngleOffset(player_t *player)
@@ -10347,6 +10422,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 	K_AdjustPlayerFriction(player);
 
 	K_KartDrift(player, onground);
+
+	K_KartSlipdash(player, onground);
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.

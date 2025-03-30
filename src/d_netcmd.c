@@ -490,6 +490,8 @@ consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_Yes
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_YesNo, NULL);
 
+consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR, CV_YesNo, NULL);
+
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
 #define FOREACH( name, n ) { n, #name }
