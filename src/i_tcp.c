@@ -20,7 +20,7 @@
 #endif
 
 #ifndef NO_IPV6
-	#define HAVE_IPV6
+#define HAVE_IPV6
 #endif
 
 #ifdef _WIN32
