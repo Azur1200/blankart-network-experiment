@@ -153,6 +153,7 @@ static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
 static void KartStacking_OnChange(void);
 static void KartChaining_OnChange(void);
+static void KartSlipdash_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 
 static void Schedule_OnChange(void);
@@ -478,7 +479,7 @@ consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelb
 consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CHEAT|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
+consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
 
 consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
@@ -489,6 +490,8 @@ consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV
 consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_YesNo, NULL);
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_YesNo, NULL);
+
+consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
@@ -7109,6 +7112,39 @@ static void KartChaining_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Boost Chaining will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartSlipdash_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!slipdashactive && cv_kartslipdash.value)
+	{
+		if (leveltime < starttime)
+		{
+			slipdashactive = true;
+			CONS_Printf(M_GetText("Slipdashing has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Slipdashing will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (slipdashactive && !cv_kartslipdash.value)
+	{
+		if (leveltime < starttime)
+		{
+			slipdashactive = false;
+			CONS_Printf(M_GetText("Slipdashing has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Slipdashing will be turned \"Off\" next round.\n"));
 		}
 	}
 }

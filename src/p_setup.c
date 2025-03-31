@@ -145,6 +145,7 @@ INT32 numbosswaypoints;
 boolean ringsactive = false;
 boolean stackingactive = false;
 boolean chainingactive = false;
+boolean slipdashactive = false;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -7879,21 +7880,23 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	nummapboxes = numgotboxes = 0;
 	numtargets = 0;
 	itembreaker = false;
+	ringsactive = false;
+	stackingactive = false;
+	chainingactive = false;
+	slipdashactive = false;
+
 	
 	if (cv_kartrings.value)
 		ringsactive = true;
-	else
-		ringsactive = false;
 
 	if (cv_kartstacking.value)
 		stackingactive = true;
-	else
-		stackingactive = false;
 
 	if (cv_kartchaining.value)
 		chainingactive = true;
-	else
-		chainingactive = false;
+
+	if (cv_kartslipdash.value)
+		slipdashactive = true;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;

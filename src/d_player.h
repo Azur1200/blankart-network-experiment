@@ -577,6 +577,8 @@ struct player_t
 	SINT8 aizdriftstrat;	// (-1 to 1) - Let go of your drift while boosting? Helper for the SICK STRATZ (sliptiding!) you have just unlocked
 	INT32 aizdrifttilt;
 	INT32 aizdriftturn;
+	fixed_t slipdashcharge;	// charge up a dash with a sliptide!
+	SINT8 slipdashdir;		// no snaking allowed :^)
 
 	fixed_t offroad;		// In Super Mario Kart, going offroad has lee-way of about 1 second before you start losing speed
 	UINT8 pogospring;		// Pogo spring bounce effect

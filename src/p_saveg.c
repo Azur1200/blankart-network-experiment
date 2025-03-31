@@ -259,6 +259,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].aizdriftstrat);
 		WRITEINT32(save->p, players[i].aizdrifttilt);
 		WRITEINT32(save->p, players[i].aizdriftturn);
+		WRITEFIXED(save->p, players[i].slipdashcharge);
+		WRITESINT8(save->p, players[i].slipdashdir);
 
 		WRITEFIXED(save->p, players[i].offroad);
 		WRITEFIXED(save->p, players[i].tiregrease);
@@ -573,6 +575,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].aizdriftstrat = READSINT8(save->p);
 		players[i].aizdrifttilt = READINT32(save->p);
 		players[i].aizdriftturn = READINT32(save->p);
+		players[i].slipdashcharge = READFIXED(save->p);
+		players[i].slipdashdir = READSINT8(save->p);
 
 		players[i].offroad = READFIXED(save->p);
 		players[i].tiregrease = READFIXED(save->p);

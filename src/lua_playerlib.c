@@ -222,6 +222,8 @@ enum player_e
 	player_aizdriftstrat,
 	player_aizdrifttilt,
 	player_aizdriftturn,
+	player_slipdashcharge,
+	player_slipdashdir,
 	player_offroad,
 	player_pogospring,
 	player_brakestop,
@@ -398,6 +400,8 @@ static const char *const player_opt[] = {
 	"aizdriftstrat",
 	"aizdrifttilt",
 	"aizdriftturn",
+	"slipdashcharge",
+	"slipdashdir",
 	"offroad",
 	"pogospring",
 	"brakestop",
@@ -691,6 +695,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_aizdriftturn:
 		lua_pushinteger(L, plr->aizdriftturn);
+		break;
+	case player_slipdashcharge:
+		lua_pushfixed(L, plr->slipdashcharge);
+		break;
+	case player_slipdashdir:
+		lua_pushinteger(L, plr->slipdashdir);
 		break;
 	case player_offroad:
 		lua_pushinteger(L, plr->offroad);
@@ -1294,6 +1304,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_aizdriftturn:
 		plr->aizdriftturn = luaL_checkinteger(L, 3);
+		break;
+	case player_slipdashcharge:
+		plr->slipdashcharge = luaL_checkfixed(L, 3);
+		break;
+	case player_slipdashdir:
+		plr->slipdashdir = luaL_checkinteger(L, 3);
 		break;
 	case player_offroad:
 		plr->offroad = luaL_checkinteger(L, 3);
