@@ -10726,6 +10726,17 @@ boolean K_ChainingActive(void)
 	return false;
 }
 
+boolean K_SlipdashActive(void)
+{
+	if (slipdashactive)
+	{
+		// Slipdash is enabled!
+		return true;
+	}
+
+	return false;
+}
+
 boolean K_UsingLegacyCheckpoints(void)
 {
 	if (numbosswaypoints > 0)
