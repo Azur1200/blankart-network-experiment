@@ -8818,7 +8818,7 @@ INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
 
-	if (cv_kartslipdash.value && K_Sliptiding(player)) // slight handling boost based on weight
+	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
 	if (player->invincibilitytimer || player->sneakertimer || player->growshrinktimer > 0)
@@ -9127,7 +9127,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 static void K_KartSlipdash(player_t *player, boolean onground)
 {
 	boolean snaked = player->slipdashdir && player->aizdriftstrat && player->slipdashdir != player->aizdriftstrat;
-	if (!cv_kartslipdash.value || P_PlayerInPain(player))
+	if (!K_SlipdashActive() || P_PlayerInPain(player))
 	{
 		player->slipdashcharge = 0;
 		player->slipdashdir = 0;
