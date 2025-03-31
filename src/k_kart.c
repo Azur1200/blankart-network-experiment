@@ -8817,6 +8817,9 @@ INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
 
+	if (cv_kartslipdash.value && K_Sliptiding(player)) // slight handling boost based on weight
+		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
+
 	if (player->invincibilitytimer || player->sneakertimer || player->growshrinktimer > 0)
 		turnvalue = FixedMul(turnvalue, FixedDiv(5*FRACUNIT, 4*FRACUNIT));
 
@@ -9166,8 +9169,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 			strat->angle = player->mo->angle + ANGLE_67h*i;
 			P_SetScale(strat, FixedMul(player->slipdashcharge + FRACUNIT/4, mapobjectscale));
 			strat->destscale = strat->scale;
-			strat->momx = P_ReturnThrustX(NULL, player->mo->angle, -8*mapobjectscale);
-			strat->momy = P_ReturnThrustY(NULL, player->mo->angle, -8*mapobjectscale);
+			P_InstaThrust(strat, strat->angle, -8*mapobjectscale);
 		}
 
 		if (driftbonus)
@@ -9183,14 +9185,17 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	else
 		player->slipdashdir = 0;
 
-	if (player->slipdashcharge)
+	if (player->slipdashcharge && leveltime & 1)
 	{
-		mobj_t *spark = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_DRIFTSPARK);
+		mobj_t *spark = P_SpawnMobjFromMobj(player->mo, 0, 0, -4*mapobjectscale, MT_DRIFTSPARK);
 		spark->color = SKINCOLOR_GREEN;
 		spark->angle = player->mo->angle + player->aizdriftstrat*ANGLE_45;
 		P_SetScale(spark, FixedMul(player->slipdashcharge + 2*FRACUNIT/3, mapobjectscale));
 		spark->destscale = 0;
 		spark->scalespeed = mapobjectscale/4;
+		P_InstaThrust(spark, player->mo->angle, player->speed/2);
+		spark->momz = player->mo->z - player->mo->old_z;
+		spark->z += spark->momz;
 	}
 }
 
