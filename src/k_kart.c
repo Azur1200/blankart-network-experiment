@@ -9154,7 +9154,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 		S_StopSoundByID(player->mo, sfx_cdfm17);
 		S_StartSoundAtVolume(player->mo, player->slipdashcharge > FRACUNIT/3 ? sfx_cdfm62 : sfx_s23c, driftbonus ? 200 : 255);
 		P_Thrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, false, false), 2*player->slipdashcharge/3));
-		K_DoBoost(player, 2*player->slipdashcharge/3, 0, false, false);
+		K_DoBoost(player, (2*player->slipdashcharge/3)/2, 0, false, false);
 
 		for (i = -1; i <= 1; i += 2)
 		{
