@@ -254,6 +254,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcolorize);
 	CV_RegisterVar(&cv_kartdebugdirector);
 
+	// HUD cvars
+	K_RegisterKartHUDStuff();
+
 	CV_RegisterVar(&cv_stagetitle);
 
 	CV_RegisterVar(&cv_lessflicker);
@@ -298,9 +301,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartchainingsound);
 
 	CV_RegisterVar(&cv_kartitembreaker);
-
-	CV_RegisterVar(&cv_newspeedometer);
-	CV_RegisterVar(&cv_showinput);
 
 	CV_RegisterVar(&cv_kartwalltransfer);
 

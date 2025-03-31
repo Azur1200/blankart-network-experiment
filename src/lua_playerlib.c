@@ -210,6 +210,8 @@ enum player_e
 	player_wipeoutslow,
 	player_justbumped,
 	player_itemflags,
+	player_outrun,
+	player_outruntime,
 	player_drift,
 	player_driftcharge,
 	player_driftboost,
@@ -386,6 +388,8 @@ static const char *const player_opt[] = {
 	"wipeoutslow",
 	"justbumped",
 	"itemflags",
+	"outrun",
+	"outruntime",
 	"drift",
 	"driftcharge",
 	"driftboost",
@@ -655,6 +659,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemflags:
 		lua_pushinteger(L, plr->itemflags);
+		break;
+	case player_outrun:
+		lua_pushinteger(L, plr->outrun);
+		break;
+	case player_outruntime:
+		lua_pushinteger(L, plr->outruntime);
 		break;
 	case player_drift:
 		lua_pushinteger(L, plr->drift);
@@ -1258,6 +1268,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemflags:
 		plr->itemflags = luaL_checkinteger(L, 3);
+		break;
+	case player_outrun:
+		plr->outrun = luaL_checkinteger(L, 3);
+		break;
+	case player_outruntime:
+		plr->outruntime = luaL_checkinteger(L, 3);
 		break;
 	case player_drift:
 		plr->drift = luaL_checkinteger(L, 3);
