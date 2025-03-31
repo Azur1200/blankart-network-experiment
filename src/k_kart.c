@@ -9123,7 +9123,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 static void K_KartSlipdash(player_t *player, boolean onground)
 {
 	boolean snaked = player->slipdashdir && player->aizdriftstrat && player->slipdashdir != player->aizdriftstrat;
-	if (!cv_kartslipdash.value || player->spinouttimer)
+	if (!cv_kartslipdash.value || P_PlayerInPain(player))
 	{
 		player->slipdashcharge = 0;
 		player->slipdashdir = 0;
@@ -9137,7 +9137,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 		{
 			fixed_t turn = max(0, player->cmd.turning * player->aizdriftstrat);
 			turn = FINETANGENT((turn*(ANGLE_45/KART_FULLTURN) + ANGLE_90) >> ANGLETOFINESHIFT);
-			player->slipdashcharge = min(player->slipdashcharge + turn/50, FRACUNIT);
+			player->slipdashcharge = min(player->slipdashcharge + turn/45, FRACUNIT);
 
 			if (!(leveltime % 5))
 				S_StartSoundAtVolume(player->mo, sfx_cdfm17, 133 + turn/555);
@@ -9154,6 +9154,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 		S_StopSoundByID(player->mo, sfx_cdfm17);
 		S_StartSoundAtVolume(player->mo, player->slipdashcharge > FRACUNIT/3 ? sfx_cdfm62 : sfx_s23c, driftbonus ? 200 : 255);
 		P_Thrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, false, false), 2*player->slipdashcharge/3));
+		K_DoBoost(player, 2*player->slipdashcharge/3, 0, false, false);
 
 		for (i = -1; i <= 1; i += 2)
 		{
