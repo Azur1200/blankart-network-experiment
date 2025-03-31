@@ -3520,9 +3520,10 @@ static void K_GetKartBoostPower(player_t *player)
 		{
 			player->speedboost += (finalspeedboost - player->speedboost) / (TICRATE/2);
 		}
+
+		player->accelboost = finalaccelboost;
 	}
 
-	player->accelboost = finalaccelboost;
 	player->numboosts = finalgrade;
 	K_ClearBoost(player);
 }
