@@ -3256,7 +3256,7 @@ void G_DoPlayDemo(char *defdemoname)
 		if (!playeringame[displayplayers[0]] || players[displayplayers[0]].spectator)
 			displayplayers[0] = consoleplayer = serverplayer = p;
 
-		playeringame[p] = true;
+		G_AddPlayer(p, p);
 		players[p].spectator = spectator;
 
 		if (flags & DEMO_KICKSTART)
