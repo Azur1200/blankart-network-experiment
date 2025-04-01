@@ -4219,7 +4219,6 @@ void M_PlaybackToggleFreecam(INT32 choice)
 	splitscreen = 0;
 	R_ExecuteSetViewSize();
 
-	P_InitCameraCmd();	// init camera controls
 	UINT8 i;
 	for (i = 0; i <= r_splitscreen; ++i)
 	{

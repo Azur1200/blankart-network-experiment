@@ -2643,24 +2643,16 @@ fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 
-static ticcmd_t cameracmd;
-
-// called by m_menu to reinit cam input every time it's toggled
-void P_InitCameraCmd(void)
+void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 {
-	memset(&cameracmd, 0, sizeof(ticcmd_t));	// initialize cmd
-}
-
-void P_DemoCameraMovement(camera_t *cam)
-{
-	ticcmd_t *cmd = &cameracmd;;
+	ticcmd_t *cmd;
 	angle_t thrustangle;
 	player_t *lastp;
 
 	boolean moving = false;
 
 	// first off we need to get button input
-	G_BuildTiccmd(cmd, 1, UINT8_MAX);
+	cmd = D_LocalTiccmd(num);
 
 	if (cmd->aiming != 0)
 	{
@@ -2843,16 +2835,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
 
-	if (thiscam->freecam || player->spectator)
-	{
-		P_DemoCameraMovement(thiscam);
-		P_CalcChasePostImg(player, thiscam);
-		return true;
-	}
-
-	if (paused || P_AutoPause())
-		return true;
-
 	if (thiscam == &camera[1]) // Camera 2
 	{
 		num = 1;
@@ -2869,6 +2851,16 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		num = 0;
 	}
+
+	if (thiscam->freecam || player->spectator)
+	{
+		P_DemoCameraMovement(thiscam, num);
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
+	if (paused || P_AutoPause())
+		return true;
 
 	mo = player->mo;
 
