@@ -3494,22 +3494,22 @@ static void K_GetKartBoostPower(player_t *player)
 		if (player->offroad && K_ApplyOffroad(player))
 		{
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
-			player->accelboost = max(finalaccelboost, player->accelboost)/2;
+			player->accelboost = finalaccelboost/2;
 		}
 		else if (finalspeedboost >= prevspeedboost)
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
-			player->accelboost = max(finalaccelboost, player->accelboost);
+			player->accelboost = finalaccelboost;
 		}
 		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
 		{
 			player->speedboost = max(prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
-			player->accelboost = max(finalaccelboost, player->accelboost);
+			player->accelboost = finalaccelboost;
 		}
 		else
 		{
 			player->speedboost = prevspeedboost - SPEEDBOOSTDROPOFF;
-			player->accelboost = max(finalaccelboost, player->accelboost);
+			player->accelboost = finalaccelboost;
 		}
 	}
 	else
