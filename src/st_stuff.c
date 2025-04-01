@@ -726,6 +726,8 @@ void ST_preLevelTitleCardDrawer(void)
 //
 static void ST_overlayDrawer(void)
 {
+	const UINT8 viewnum = R_GetViewNumber();
+
 	// hu_showscores = auto hide score/time/rings when tab rankings are shown
 	if (!(hu_showscores && (netgame || multiplayer)))
 	{
@@ -743,7 +745,7 @@ static void ST_overlayDrawer(void)
 	{
 		if (cv_showviewpointtext.value)
 		{
-			if (!demo.title && !P_IsLocalPlayer(stplyr) && !demo.freecam)
+			if (!demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam)
 			{
 				if (!r_splitscreen)
 				{

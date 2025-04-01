@@ -1588,7 +1588,7 @@ boolean G_Responder(event_t *ev)
 		}
 	}
 
-	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback && !demo.freecam)
+	if (gamestate == GS_LEVEL && ev->type == ev_keydown && multiplayer && demo.playback)
 	{
 		if (G_ControlBoundToKey(1, gc_viewpoint, ev->data1, false))
 		{

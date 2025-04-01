@@ -4220,17 +4220,12 @@ void M_PlaybackToggleFreecam(INT32 choice)
 	R_ExecuteSetViewSize();
 
 	P_InitCameraCmd();	// init camera controls
-	if (!demo.freecam)	// toggle on
+	UINT8 i;
+	for (i = 0; i <= r_splitscreen; ++i)
 	{
-		demo.freecam = true;
-		democam.button_a_held = 2;
-	}
-	else	// toggle off
-	{
-		demo.freecam = false;
+		P_ToggleDemoCamera(i);
 	}
 }
-
 
 void M_PlaybackQuit(INT32 choice)
 {

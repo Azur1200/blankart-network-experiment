@@ -914,13 +914,13 @@ void R_ApplyViewMorph(int s)
 			width*vid.bpp, height, width*vid.bpp, vid.width);
 }
 
-angle_t R_ViewRollAngle(const player_t *player)
+angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
 {
 	angle_t roll = player->viewrollangle;
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator && !demo.freecam)
+		if (!player->spectator && !camera[viewnum].freecam)
 		{
 			roll += player->tilt;
 		}
@@ -1203,13 +1203,14 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
+	const UINT8 viewnum = R_GetViewNumber();
 	newview->player = player;
 
 	newview->x += quake.x;
 	newview->y += quake.y;
 	newview->z += quake.z;
 
-	newview->roll = R_ViewRollAngle(player);
+	newview->roll = R_ViewRollAngle(player, viewnum);
 
 	if (subsector)
 		newview->sector = subsector->sector;

@@ -2617,7 +2617,7 @@ static boolean K_ShowPlayerNametag(player_t *p)
 		return false;
 	}
 
-	if (demo.playback == true && demo.freecam == true)
+	if (demo.playback == true && camera[R_GetViewNumber()].freecam == true)
 	{
 		return true;
 	}
@@ -3046,7 +3046,7 @@ static void K_drawKartNameTags(void)
 
 			if (result.onScreen == true)
 			{
-				if (!(demo.playback == true && demo.freecam == true))
+				if (!(demo.playback == true && camera[cnum].freecam == true))
 				{
 					for (j = 0; j <= r_splitscreen; j++)
 					{
@@ -4493,7 +4493,8 @@ void K_drawKartHUD(void)
 {
 	boolean islonesome = false;
 	boolean battlefullscreen = false;
-	boolean freecam = demo.freecam;	//disable some hud elements w/ freecam
+	UINT8 viewnum = R_GetViewNumber();
+	boolean freecam = camera[viewnum].freecam;	//disable some hud elements w/ freecam
 	UINT8 i;
 
 	// Define the X and Y for each drawn object
@@ -4568,7 +4569,7 @@ void K_drawKartHUD(void)
 		islonesome = K_drawKartPositionFaces();
 	}
 
-	if (!stplyr->spectator && !demo.freecam) // Bottom of the screen elements, don't need in spectate mode
+	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
 	{
 		if (demo.title) // Draw title logo instead in demo.titles
 		{

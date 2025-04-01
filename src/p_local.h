@@ -95,6 +95,8 @@ void P_UnlinkThinker(thinker_t *thinker);
 struct camera_t
 {
 	boolean chase;
+	boolean freecam;
+
 	angle_t aiming;
 
 	// Things used by FS cameras.
@@ -128,6 +130,11 @@ struct camera_t
 	// SRB2Kart: camera pitches on slopes
 	angle_t pitch;
 
+	// Freecam: A button was held since entering from menu, so don't move camera
+	UINT8 button_a_held;
+
+	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
+
 	// Interpolation data
 	fixed_t old_x, old_y, old_z;
 	angle_t old_angle, old_aiming;
@@ -135,15 +142,6 @@ struct camera_t
 	// postproccess effects
 	UINT8 postimgflags;
 };
-
-// demo freecam or something before i commit die
-struct demofreecam_s {
-
-	UINT8 button_a_held;	// A button was held since entering from menu, so don't move camera
-	boolean reset_aiming;	// camera aiming needs to be reset from chase camera
-};
-
-extern struct demofreecam_s democam;
 
 // post process types
 enum
@@ -170,6 +168,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
 void P_SlideCameraMove(camera_t *thiscam);
 void P_DemoCameraMovement(camera_t *cam);
+void P_ToggleDemoCamera(UINT8 viewnum);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
 void P_InitCameraCmd(void);
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
