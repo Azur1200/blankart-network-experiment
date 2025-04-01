@@ -259,6 +259,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].aizdriftstrat);
 		WRITEINT32(save->p, players[i].aizdrifttilt);
 		WRITEINT32(save->p, players[i].aizdriftturn);
+		WRITEFIXED(save->p, players[i].slipdashcharge);
+		WRITESINT8(save->p, players[i].slipdashdir);
 
 		WRITEFIXED(save->p, players[i].offroad);
 		WRITEFIXED(save->p, players[i].tiregrease);
@@ -573,6 +575,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].aizdriftstrat = READSINT8(save->p);
 		players[i].aizdrifttilt = READINT32(save->p);
 		players[i].aizdriftturn = READINT32(save->p);
+		players[i].slipdashcharge = READFIXED(save->p);
+		players[i].slipdashdir = READSINT8(save->p);
 
 		players[i].offroad = READFIXED(save->p);
 		players[i].tiregrease = READFIXED(save->p);
@@ -1335,6 +1339,8 @@ static void ArchiveSectors(savebuffer_t *save)
 				WRITEUINT8(save->p, diff3);
 			if (diff3 & SD_DIFF4)
 				WRITEUINT8(save->p, diff4);
+			if (diff4 & SD_DIFF5)
+				WRITEUINT8(save->p, diff5);
 			if (diff & SD_FLOORHT)
 				WRITEFIXED(save->p, ss->floorheight);
 			if (diff & SD_CEILHT)
@@ -5089,6 +5095,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, ringsactive);
 	WRITEUINT8(save->p, stackingactive);
 	WRITEUINT8(save->p, chainingactive);
+	WRITEUINT8(save->p, slipdashactive);
 
 	for (i = 0; i < 4; i++)
 	{
@@ -5260,6 +5267,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	ringsactive = READUINT8(save->p);
 	stackingactive = READUINT8(save->p);
 	chainingactive = READUINT8(save->p);
+	slipdashactive = READUINT8(save->p);
 
 	for (i = 0; i < 4; i++)
 	{

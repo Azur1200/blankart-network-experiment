@@ -229,6 +229,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo);
 boolean K_RingsActive(void);
 boolean K_StackingActive(void);
 boolean K_ChainingActive(void);
+boolean K_SlipdashActive(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);

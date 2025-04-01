@@ -34,9 +34,12 @@ struct trackingResult_t
 	boolean onScreen;
 };
 
+void K_RegisterKartHUDStuff(void);
+
 void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean reverse);
 
 const char *K_GetItemPatch(UINT8 item, boolean tiny);
+UINT8 K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);
