@@ -89,6 +89,7 @@ mobj_t *r_viewmobj;
 int r_splitscreen;
 
 fixed_t rendertimefrac;
+fixed_t rendertimefrac_unpaused;
 fixed_t renderdeltatics;
 boolean renderisnewtic;
 
@@ -913,13 +914,13 @@ void R_ApplyViewMorph(int s)
 			width*vid.bpp, height, width*vid.bpp, vid.width);
 }
 
-angle_t R_ViewRollAngle(const player_t *player)
+angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
 {
 	angle_t roll = player->viewrollangle;
 
 	if (cv_tilting.value)
 	{
-		if (!player->spectator)
+		if (!player->spectator && !camera[viewnum].freecam)
 		{
 			roll += player->tilt;
 		}
@@ -1202,20 +1203,21 @@ R_SetupCommonFrame
 (		player_t * player,
 		subsector_t * subsector)
 {
+	const UINT8 viewnum = R_GetViewNumber();
 	newview->player = player;
 
 	newview->x += quake.x;
 	newview->y += quake.y;
 	newview->z += quake.z;
 
-	newview->roll = R_ViewRollAngle(player);
+	newview->roll = R_ViewRollAngle(player, viewnum);
 
 	if (subsector)
 		newview->sector = subsector->sector;
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(rendertimefrac);
+	R_InterpolateView(rendertimefrac_unpaused);
 }
 
 static void R_SetupAimingFrame(int s)
@@ -1253,8 +1255,12 @@ void R_SetupFrame(int s, boolean skybox)
 
 	R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + s));
 
-	if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
+	if (player->spectator)
+	{
+		// Free flying spectator uses demo freecam. This
+		// requires chasecam to be enabled.
+		chasecam = true;
+	}
 
 	if (chasecam && (thiscam && !thiscam->chase))
 	{
@@ -1280,7 +1286,7 @@ void R_SetupFrame(int s, boolean skybox)
 
 		R_SetupCommonFrame(player, r_viewmobj->subsector);
 	}
-	else if (!player->spectator && chasecam)
+	else if (chasecam)
 	// use outside cam view
 	{
 		r_viewmobj = NULL;
@@ -1426,10 +1432,8 @@ boolean R_ViewpointHasChasecam(player_t *player)
 		}
 	}
 
-	if (player->playerstate == PST_DEAD || gamestate == GS_TITLESCREEN || tutorialmode)
+	if (player->playerstate == PST_DEAD || gamestate == GS_TITLESCREEN || tutorialmode || player->spectator)
 		chasecam = true; // force chasecam on
-	else if (player->spectator) // no spectator chasecam
-		chasecam = false; // force chasecam off
 
 	return chasecam;
 }
@@ -1448,7 +1452,7 @@ boolean R_IsViewpointThirdPerson(player_t *player, boolean skybox)
 	if (player->awayviewtics || skybox)
 		return chasecam;
 	// use outside cam view
-	else if (!player->spectator && chasecam)
+	else if (chasecam)
 		return true;
 
 	// use the player's eyes view

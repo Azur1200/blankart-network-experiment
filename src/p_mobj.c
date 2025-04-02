@@ -3546,18 +3546,25 @@ void P_DestroyRobots(void)
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	boolean flipcam = (player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP);
-	UINT16 postimgflags = 0;
-	UINT8 i;
+	const boolean flipcam = (player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP);
+	UINT8 postimgtype = 0;
 
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return;
 
 	if (encoremode)
-		postimgflags |= POSTIMG_MIRROR;
+		postimgtype |= POSTIMG_MIRROR;
 	if (flipcam)
-		postimgflags |= POSTIMG_FLIP;
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
+	{
+		thiscam->postimgflags = postimgtype;
+		return;
+	}
+#endif
 
 	if (player->awayviewtics && player->awayviewmobj && !P_MobjWasRemoved(player->awayviewmobj)) // Camera must obviously exist
 	{
@@ -3572,26 +3579,20 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 
 		// Are we in water?
 		if (P_CameraCheckWater(&dummycam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(&dummycam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(&dummycam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 	else
 	{
 		// Are we in water?
 		if (P_CameraCheckWater(thiscam))
-			postimgflags |= POSTIMG_WATER;
-		if (P_CameraCheckHeat(thiscam))
-			postimgflags |= POSTIMG_HEAT;
+			postimgtype |= POSTIMG_WATER;
+		else if (P_CameraCheckHeat(thiscam))
+			postimgtype |= POSTIMG_HEAT;
 	}
 
-	for (i = 0; i <= splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = postimgflags;
-	}
+	thiscam->postimgflags = postimgtype;
 }
 
 // P_CameraThinker
@@ -10648,12 +10649,15 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	p->drawangle = mobj->angle;
 
-	for (i = 0; i <= r_splitscreen; i++)
+	if (p->spectator == false)
 	{
-		if (camera[i].chase)
+		for (i = 0; i <= r_splitscreen; i++)
 		{
-			if (displayplayers[i] == playernum)
-				P_ResetCamera(p, &camera[i]);
+			if (camera[i].chase)
+			{
+				if (displayplayers[i] == playernum)
+					P_ResetCamera(p, &camera[i]);
+			}
 		}
 	}
 

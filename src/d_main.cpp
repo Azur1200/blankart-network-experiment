@@ -367,7 +367,7 @@ static void D_RenderLevel(void)
 		{
 			R_ApplyViewMorph(i);
 
-			V_DoPostProcessor(i, &players[displayplayers[i]], postimgparam[i]);
+			V_DoPostProcessor(i, postimgparam[i]);
 		}
 	}
 
@@ -907,11 +907,14 @@ void D_SRB2Loop(void)
 			{
 				rendertimefrac = FRACUNIT;
 			}
+
+			rendertimefrac_unpaused = g_time.timefrac;
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
 			rendertimefrac = FRACUNIT;
+			rendertimefrac_unpaused = FRACUNIT;
 		}
 
 		if ((interp || doDisplay) && !frameskip)

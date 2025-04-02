@@ -1709,9 +1709,6 @@ void G_ConfirmRewind(tic_t rewindtime)
 
 	COM_BufInsertText("renderview on\n");
 
-	if (demo.freecam)
-		return;	// don't touch from there
-
 	splitscreen = oldss;
 	displayplayers[0] = olddp1;
 	displayplayers[1] = olddp2;
@@ -3212,6 +3209,7 @@ void G_DoPlayDemo(char *defdemoname)
 	consoleplayer = 0;
 	memset(playeringame,0,sizeof(playeringame));
 	memset(displayplayers,0,sizeof(displayplayers));
+	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
 	p = READUINT8(demobuf.p);
@@ -3990,13 +3988,13 @@ void G_StopDemo(void)
 	demo.timing = false;
 	singletics = false;
 
-	demo.freecam = false;
-	// reset democam shit too:
-	democam.cam = NULL;
-	democam.soundmobj = NULL;
-	democam.localangle = 0;
-	democam.localaiming = 0;
-	democam.keyboardlook = false;
+	{
+		UINT8 i;
+		for (i = 0; i < MAXSPLITSCREENPLAYERS; ++i)
+		{
+			camera[i].freecam = false;
+		}
+	}
 
 	if (gamestate == GS_INTERMISSION)
 		Y_EndIntermission(); // cleanup

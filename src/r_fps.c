@@ -23,6 +23,7 @@
 #include "r_state.h"
 #include "z_zone.h"
 #include "console.h" // con_startup_loadprogress
+#include "i_time.h"
 
 static CV_PossibleValue_t fpscap_cons_t[] = {
 #ifdef DEVELOP
@@ -73,6 +74,7 @@ static viewvars_t skyview_old[MAXSPLITSCREENPLAYERS];
 static viewvars_t skyview_new[MAXSPLITSCREENPLAYERS];
 
 static viewvars_t *oldview = &pview_old[0];
+static tic_t last_view_update;
 static int oldview_invalid[MAXSPLITSCREENPLAYERS] = {0, 0, 0, 0};
 viewvars_t *newview = &pview_new[0];
 
@@ -180,21 +182,27 @@ void R_UpdateViewInterpolation(void)
 		skyview_old[i] = skyview_new[i];
 		if (oldview_invalid[i] > 0) oldview_invalid[i]--;
 	}
+
+	last_view_update = I_GetTime();
 }
 
 void R_ResetViewInterpolation(UINT8 p)
 {
+	// Wait an extra tic if the interpolation state hasn't
+	// updated yet.
+	int t = last_view_update == I_GetTime() ? 1 : 2;
+
 	if (p == 0)
 	{
 		UINT8 i;
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
-			oldview_invalid[i]++;
+			oldview_invalid[i] = t;
 		}
 	}
 	else
 	{
-		oldview_invalid[p - 1]++;
+		oldview_invalid[p - 1] = t;
 	}
 }
 

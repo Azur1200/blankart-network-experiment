@@ -690,9 +690,8 @@ void P_Ticker(boolean run)
 				timeinmap = (timeinmap-1) & ~3;
 			G_PreviewRewind(leveltime);
 		}
-		else if (demo.freecam && democam.cam)	// special case: allow freecam to MOVE during pause!
-			P_DemoCameraMovement(democam.cam);
-		S_SetStackAdjustmentStart();
+		else
+			P_RunChaseCameras();	// special case: allow freecam to MOVE during pause!
 		return;
 	}
 

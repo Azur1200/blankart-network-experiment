@@ -1139,6 +1139,15 @@ boolean P_IsDisplayPlayer(player_t *player)
 
 	for (i = 0; i <= r_splitscreen; i++) // DON'T skip P1
 	{
+		if (camera[i].freecam)
+		{
+			// Freecam still techically has a player in
+			// displayplayers. But since the camera is
+			// detached, it would be weird if sounds were
+			// heard from that player's perspective.
+			continue;
+		}
+
 		if (player == &players[displayplayers[i]])
 			return true;
 	}
@@ -2069,42 +2078,6 @@ static void P_UpdateBotAngle(player_t* player)
 }
 
 //
-// P_SpectatorMovement
-//
-// Control for spectators in multiplayer
-//
-static void P_SpectatorMovement(player_t *player)
-{
-	ticcmd_t *cmd = &player->cmd;
-
-	player->mo->angle = cmd->angle<<16;
-	P_UpdatePlayerAiming(player);
-
-	ticruned++;
-	if (!(cmd->flags & TICCMD_RECEIVED))
-		ticmiss++;
-
-	if (cmd->buttons & BT_ACCELERATE)
-		player->mo->z += 32*mapobjectscale;
-	else if (cmd->buttons & BT_BRAKE)
-		player->mo->z -= 32*mapobjectscale;
-
-	if (player->mo->z > player->mo->ceilingz - player->mo->height)
-		player->mo->z = player->mo->ceilingz - player->mo->height;
-	if (player->mo->z < player->mo->floorz)
-		player->mo->z = player->mo->floorz;
-
-	player->mo->momx = player->mo->momy = player->mo->momz = 0;
-	if (cmd->forwardmove != 0)
-	{
-		P_Thrust(player->mo, player->mo->angle, cmd->forwardmove*mapobjectscale);
-
-		// Quake-style flying spectators :D
-		player->mo->momz += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(player->aiming));
-	}
-}
-
-//
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
 {
@@ -2130,7 +2103,6 @@ void P_MovePlayer(player_t *player)
 	if (player->spectator)
 	{
 		player->mo->eflags &= ~MFE_VERTICALFLIP; // deflip...
-		P_SpectatorMovement(player);
 		return;
 	}
 
@@ -2671,53 +2643,84 @@ fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_rotate[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 
-static ticcmd_t cameracmd;
-
-struct demofreecam_s democam;
-
-// called by m_menu to reinit cam input every time it's toggled
-void P_InitCameraCmd(void)
+void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 {
-	memset(&cameracmd, 0, sizeof(ticcmd_t));	// initialize cmd
-}
-
-void P_DemoCameraMovement(camera_t *cam)
-{
-	ticcmd_t *cmd = &cameracmd;;
+	ticcmd_t *cmd;
 	angle_t thrustangle;
-	mobj_t *awayviewmobj_hack;
 	player_t *lastp;
 
-	// update democam stuff with what we got here:
-	democam.cam = cam;
-	democam.localangle = cam->angle;
-	democam.localaiming = cam->aiming;
+	boolean moving = false;
 
 	// first off we need to get button input
-	G_BuildTiccmd(cmd, 1, UINT8_MAX);
+	cmd = D_LocalTiccmd(num);
 
-	cam->aiming += cmd->aiming << TICCMD_REDUCE;
+	if (cmd->aiming != 0)
+	{
+		cam->aiming += cmd->aiming << TICCMD_REDUCE;
+
+		cam->reset_aiming = false;
+	}
+
 	cam->angle += cmd->turning << TICCMD_REDUCE;
 
-	democam.localangle += cmd->turning << TICCMD_REDUCE;
-	democam.localaiming += cmd->aiming << TICCMD_REDUCE;
-
-	cam->aiming = G_ClipAimingPitch((INT32 *)&cam->aiming);
-	democam.localaiming = G_ClipAimingPitch((INT32 *)&democam.localaiming);
-
 	// camera movement:
-	if (cmd->buttons & BT_ACCELERATE)
-		cam->z += 32*mapobjectscale;
-	else if (cmd->buttons & BT_BRAKE)
-		cam->z -= 32*mapobjectscale;
+	if (!cam->button_a_held)
+	{
+		if (cmd->buttons & BT_ACCELERATE)
+		{
+			cam->z += 32*mapobjectscale;
+			moving = true;
+		}
+		else if (cmd->buttons & BT_BRAKE)
+		{
+			cam->z -= 32*mapobjectscale;
+			moving = true;
+		}
+	}
+
+	if (!(cmd->buttons & (BT_ACCELERATE | BT_DRIFT)) && cam->button_a_held)
+	{
+		cam->button_a_held--;
+	}
 
 	// if you hold item, you will lock on to displayplayer. (The last player you were ""f12-ing"")
-	if (cmd->buttons & BT_ATTACK)
+	if (cam->freecam && cmd->buttons & BT_ATTACK)
 	{
 		lastp = &players[displayplayers[0]];	// Fun fact, I was trying displayplayers[0]->mo as if it was Lua like an absolute idiot.
 		cam->angle = R_PointToAngle2(cam->x, cam->y, lastp->mo->x, lastp->mo->y);
 		cam->aiming = R_PointToAngle2(0, cam->z, R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y), lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
+
+		cam->reset_aiming = false;
 	}
+
+	if (cmd->forwardmove != 0)
+	{
+		moving = true;
+	}
+
+	// After switching to democam, the vertical angle of
+	// chasecam is inherited. This is intentional because it
+	// creates a smooth transition. However, moving
+	// forward/back will have a slope. So, as long as democam
+	// controls haven't been used to alter the vertical angle,
+	// slowly reset it to flat.
+	if ((cam->reset_aiming && moving) || ((cmd->buttons & BT_DRIFT) && !cam->button_a_held))
+	{
+		INT32 aiming = cam->aiming;
+		INT32 smooth = FixedMul(ANGLE_11hh / 4, FCOS(cam->aiming));
+
+		if (abs(smooth) < abs(aiming))
+		{
+			cam->aiming -= smooth * intsign(aiming);
+		}
+		else
+		{
+			cam->aiming = 0;
+			cam->reset_aiming = false; // completely smoothed out
+		}
+	}
+
+	G_FinalClipAimingPitch((INT32 *)&cam->aiming, NULL, false);
 
 	cam->momx = cam->momy = cam->momz = 0;
 
@@ -2727,23 +2730,35 @@ void P_DemoCameraMovement(camera_t *cam)
 
 		cam->x += FixedMul(cmd->forwardmove*mapobjectscale, FINECOSINE(thrustangle));
 		cam->y += FixedMul(cmd->forwardmove*mapobjectscale, FINESINE(thrustangle));
-		cam->z += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(cam->aiming));
+
+		if (!cam->reset_aiming)
+		{
+			cam->z += FixedMul(cmd->forwardmove*mapobjectscale, AIMINGTOSLOPE(cam->aiming));
+		}
 		// momentums are useless here, directly add to the coordinates
 
 		// this.......... doesn't actually check for floors and walls and whatnot but the function to do that is a pure mess so fuck that.
 		// besides freecam going inside walls sounds pretty cool on paper.
 	}
 
-	// awayviewmobj hack; this is to prevent us from hearing sounds from the player's perspective
-
-	awayviewmobj_hack = P_SpawnMobj(cam->x, cam->y, cam->z, MT_THOK);
-	awayviewmobj_hack->tics = 2;
-	awayviewmobj_hack->renderflags |= RF_DONTDRAW;
-
-	democam.soundmobj = awayviewmobj_hack;
-
 	// update subsector to avoid crashes;
 	cam->subsector = R_PointInSubsectorFast(cam->x, cam->y);
+}
+
+void P_ToggleDemoCamera(UINT8 viewnum)
+{
+	camera_t *cam = &camera[viewnum];
+
+	if (!cam->freecam)	// toggle on
+	{
+		cam->freecam = true;
+		cam->button_a_held = 2;
+		cam->reset_aiming = true;
+	}
+	else	// toggle off
+	{
+		cam->freecam = false;
+	}
 }
 
 void P_ResetCamera(player_t *player, camera_t *thiscam)
@@ -2751,7 +2766,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 	tic_t tries = 0;
 	fixed_t x, y, z;
 
-	if (demo.freecam)
+	if (thiscam->freecam)
 		return;	// do not reset the camera there.
 
 	if (!player->mo)
@@ -2812,8 +2827,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	thiscam->old_angle = thiscam->angle;
 	thiscam->old_aiming = thiscam->aiming;
 
-	democam.soundmobj = NULL;	// reset this each frame, we don't want the game crashing for stupid reasons now do we
-
 	// We probably shouldn't move the camera if there is no player or player mobj somehow
 	if (!player || !player->mo)
 		return true;
@@ -2821,12 +2834,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	// This can happen when joining
 	if (thiscam->subsector == NULL || thiscam->subsector->sector == NULL)
 		return true;
-
-	if (demo.freecam)
-	{
-		P_DemoCameraMovement(thiscam);
-		return true;
-	}
 
 	if (thiscam == &camera[1]) // Camera 2
 	{
@@ -2844,6 +2851,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	{
 		num = 0;
 	}
+
+	if (thiscam->freecam || player->spectator)
+	{
+		UINT8 camnum = G_PartyPosition(g_localplayers[num]);
+		P_DemoCameraMovement(thiscam, camnum);
+		P_CalcChasePostImg(player, thiscam);
+		return true;
+	}
+
+	if (paused || P_AutoPause())
+		return true;
 
 	mo = player->mo;
 
@@ -3346,14 +3364,94 @@ boolean P_SpectatorJoinGame(player_t *player)
 	return true; // no more player->mo, cannot continue.
 }
 
-// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
-static void P_CalcPostImg(player_t *player)
+static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	sector_t *sector = player->mo->subsector->sector;
-	INT16 typeflag = 0;
+	mtag_t sectag = Tag_FGet(&sector->tags);
+
+	if (Tag_FindLineSpecial(13, sectag))
+		return true;
+
+	if (sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->fofflags & FOF_EXISTS))
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			sectag = Tag_FGet(&rover->master->frontsector->tags);
+
+			if (Tag_FindLineSpecial(13, sectag))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
+{
+	if (sector->ffloors)
+	{
+		ffloor_t *rover;
+
+		for (rover = sector->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
+				continue;
+
+			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
+				continue;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// the below is first person only, if you're curious. check out P_CalcChasePostImg in p_mobj.c for chasecam
+static void P_CalcPostImg(player_t *player, camera_t *thiscam)
+{
+	sector_t *sector = NULL;
+	UINT8 postimgtype = 0;
 	//INT32 *param;
-	fixed_t pviewheight;
-	size_t i;
+	fixed_t pviewheight = 0;
+
+	/*for (i = 0; i <= splitscreen; i++)
+	{
+		if (player == &players[displayplayers[i]])
+		{
+			param = &postimgparam[i];
+			break;
+		}
+	}*/
+
+	if (encoremode) // srb2kart
+		postimgtype |= POSTIMG_MIRROR;
+
+	if (player->mo->eflags & MFE_VERTICALFLIP)
+		postimgtype |= POSTIMG_FLIP;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && splitscreen)
+	{
+		thiscam->postimgflags = postimgtype;
+		return;
+	}
+#endif
+
+	sector = player->mo->subsector->sector;
 
 	if (player->mo->eflags & MFE_VERTICALFLIP)
 		pviewheight = player->mo->z + player->mo->height - player->viewheight;
@@ -3366,105 +3464,25 @@ static void P_CalcPostImg(player_t *player)
 		pviewheight = player->awayviewmobj->z + 20*FRACUNIT;
 	}
 
-	/*for (i = 0; i <= (unsigned)r_splitscreen; i++)
-	{
-		if (player == &players[displayplayers[i]])
-		{
-			param = &postimgparam[i];
-			break;
-		}
-	}*/
-
-	// see if we are in heat (no, not THAT kind of heat...)
-	for (i = 0; i < sector->tags.count; i++)
-	{
-		if (Tag_FindLineSpecial(13, sector->tags.tags[i]) != -1)
-		{
-			typeflag |= POSTIMG_HEAT;
-			break;
-		}
-		else if (sector->ffloors)
-		{
-			ffloor_t *rover;
-			fixed_t topheight;
-			fixed_t bottomheight;
-			boolean gotres = false;
-
-			for (rover = sector->ffloors; rover; rover = rover->next)
-			{
-				size_t j;
-
-				if (!(rover->fofflags & FOF_EXISTS))
-					continue;
-
-				topheight    = P_GetFFloorTopZAt   (rover, player->mo->x, player->mo->y);
-				bottomheight = P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y);
-
-				if (pviewheight >= topheight || pviewheight <= bottomheight)
-					continue;
-
-				for (j = 0; j < rover->master->frontsector->tags.count; j++)
-				{
-					if (Tag_FindLineSpecial(13, rover->master->frontsector->tags.tags[j]) != -1)
-					{
-						typeflag |= POSTIMG_HEAT;
-						gotres = true;
-						break;
-					}
-				}
-			}
-			if (gotres)
-				break;
-		}
-	}
-
 	// see if we are in water (water trumps heat)
-	if (sector->ffloors)
-	{
-		ffloor_t *rover;
-		fixed_t topheight;
-		fixed_t bottomheight;
-
-		for (rover = sector->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
-				continue;
-
-			topheight    = P_GetFFloorTopZAt   (rover, player->mo->x, player->mo->y);
-			bottomheight = P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y);
-
-			if (pviewheight >= topheight || pviewheight <= bottomheight)
-				continue;
-
-			typeflag |= POSTIMG_WATER;
-		}
-	}
-
-	if (encoremode) // srb2kart
-		typeflag |= POSTIMG_MIRROR;
-
-	if (player->mo->eflags & MFE_VERTICALFLIP)
-		typeflag |= POSTIMG_FLIP;
+	if (P_CameraCheckWaterFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_WATER;
+	// see if we are in heat (no, not THAT kind of heat...)
+	else if (P_CameraCheckHeatFirstperson(player, sector, pviewheight))
+		postimgtype |= POSTIMG_HEAT;
 
 	// Motion blur
 	// unused
 	/*if (player->speed > (35<<FRACBITS))
 	{
-		typeflag |= POSTIMG_MOTION;
+		postimgtype |= POSTIMG_MOTION;
 		*param = (player->speed - 32)/4;
 
 		if (*param > 5)
 			*param = 5;
 	}*/
 
-	for (i = 0; i <= (unsigned)r_splitscreen; i++)
-	{
-		if (player != &players[displayplayers[i]])
-			continue;
-
-		players[displayplayers[i]].postimgflags = typeflag;
-		break;
-	}
+	thiscam->postimgflags = postimgtype;
 }
 
 void P_DoTimeOver(player_t *player)
@@ -4247,7 +4265,7 @@ void P_PlayerAfterThink(player_t *player)
 		if (!thiscam->chase) // bob view only if looking through the player's eyes
 		{
 			P_CalcHeight(player);
-			P_CalcPostImg(player);
+			P_CalcPostImg(player, thiscam);
 		}
 		else
 		{

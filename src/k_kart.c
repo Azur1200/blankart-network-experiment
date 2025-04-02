@@ -1457,7 +1457,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		dontforcespb = true;
 
 	// This makes the roulette produce the random noises.
-	if ((player->itemroulette % 3) == 1 && P_IsDisplayPlayer(player) && !demo.freecam)
+	if ((player->itemroulette % 3) == 1 && P_IsDisplayPlayer(player))
 	{
 #define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->itemroulette / 3) % 8))
 		for (i = 0; i <= r_splitscreen; i++)
@@ -1535,7 +1535,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		//player->itemblinkmode = 1;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrole);
 		return;
 	}
@@ -1550,7 +1550,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->itemblinkmode = 2;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
-		if (P_IsDisplayPlayer(player) && !demo.freecam)
+		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_dbgsal);
 		return;
 	}
@@ -1712,7 +1712,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		player->itemamount = 1;
 	}
 
-	if (P_IsDisplayPlayer(player) && !demo.freecam)
+	if (P_IsDisplayPlayer(player))
 		S_StartSound(NULL, ((player->roulettetype == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
 	player->itemblink = TICRATE;
