@@ -2854,7 +2854,8 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (thiscam->freecam || player->spectator)
 	{
-		P_DemoCameraMovement(thiscam, num);
+		UINT8 camnum = G_PartyPosition(g_localplayers[num]);
+		P_DemoCameraMovement(thiscam, camnum);
 		P_CalcChasePostImg(player, thiscam);
 		return true;
 	}
