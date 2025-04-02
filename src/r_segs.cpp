@@ -2295,7 +2295,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			markceiling = false;
 		}
 
-		if (mapnamespace != MNS_SRB2KART)
+		if (mapnamespace == MNS_SRB2KART)
 		{
 			if ((backsector->ceilingheight <= frontsector->floorheight) ||
 				(backsector->floorheight >= frontsector->ceilingheight))
