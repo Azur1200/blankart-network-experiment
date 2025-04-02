@@ -685,7 +685,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 
 	ZoneScoped;
 
-	if (!udmf && !newview->sky)
+	if (mapnamespace == MNS_SRB2KART && !newview->sky)
 	{
 		skyVisible = true;
 		return;

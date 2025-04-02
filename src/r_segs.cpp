@@ -2053,7 +2053,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	auto get_flat_tex = [](INT32 texnum)
 	{
 		texnum = R_GetTextureNum(texnum);
-		if (udmf && textures[texnum]->holes)
+		if (mapnamespace != MNS_SRB2KART && textures[texnum]->holes) // this is fucking horrible and causes spelunky to draw garbo but quite a few maps rely on this broken behaviour see Northern District Zone (:
 		{
 			//srb2::r_debug::add_texture_to_frame_list(texnum);
 			// R_DrawWallColumn cannot render holey textures
@@ -2112,12 +2112,12 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		// hack to allow height changes in outdoor areas
 		// This is what gets rid of the upper textures if there should be sky
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			if (frontsector->ceilingpic == skyflatnum
 				&& backsector->ceilingpic == skyflatnum)
 			{
-					bothceilingssky = true;
+				bothceilingssky = true;
 			}
 
 			// likewise, but for floors and upper textures
@@ -2176,7 +2176,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			}
 		}
 
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			if (!bothceilingssky && !bothfloorssky)
 			{
@@ -2236,8 +2236,8 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| backsector->floor_yoffs != frontsector->floor_yoffs
 			|| backsector->floorpic_angle != frontsector->floorpic_angle
 			//SoM: 3/22/2000: Prevents bleeding.
-			|| (udmf && (frontsector->heightsec != -1 && frontsector->floorpic != skyflatnum))
-			|| (!udmf && frontsector->heightsec != -1)
+			|| (mapnamespace != MNS_SRB2KART && (frontsector->heightsec != -1 && frontsector->floorpic != skyflatnum))
+			|| (mapnamespace == MNS_SRB2KART && frontsector->heightsec != -1)
 			|| backsector->floorlightlevel != frontsector->floorlightlevel
 			|| backsector->floorlightabsolute != frontsector->floorlightabsolute
 			|| backsector->floorlightsec != frontsector->floorlightsec
@@ -2295,7 +2295,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			markceiling = false;
 		}
 
-		if (!udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			if ((backsector->ceilingheight <= frontsector->floorheight) ||
 				(backsector->floorheight >= frontsector->ceilingheight))
@@ -2691,7 +2691,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	//  and doesn't need to be marked.
 	if (frontsector->heightsec == -1)
 	{
-		if ((udmf && frontsector->floorpic != skyflatnum && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz) || (!udmf && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz))
+		if ((mapnamespace != MNS_SRB2KART && frontsector->floorpic != skyflatnum && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz) || (mapnamespace == MNS_SRB2KART && P_GetSectorFloorZAt(frontsector, viewx, viewy) >= viewz))
 		{
 			// above view plane
 			markfloor = false;

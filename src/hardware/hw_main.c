@@ -1174,7 +1174,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		SLOPEPARAMS(gl_backsector->c_slope, worldhigh, worldhighslope, gl_backsector->ceilingheight)
 		SLOPEPARAMS(gl_backsector->f_slope, worldlow,  worldlowslope,  gl_backsector->floorheight)
 
-		if (!udmf)
+		if (mapnamespace == MNS_SRB2KART)
 		{
 			if (!gl_curline->polyseg) // Don't do it for polyobjects
 			{
@@ -1255,7 +1255,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		if (gl_frontsector->ceilingpic == skyflatnum
 			&& gl_backsector->ceilingpic  == skyflatnum)
 		{
-			if (udmf)
+			if (mapnamespace != MNS_SRB2KART)
 				bothceilingssky = true;
 			else
 			{
@@ -1264,7 +1264,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			}
 		}
 
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			// likewise, but for floors and upper textures
 			if (gl_frontsector->floorpic == skyflatnum
@@ -1569,7 +1569,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// TODO: Actually use the surface's flags so that I don't have to do this
 			FUINT blendmode = Surf.PolyFlags;
 
-			if (udmf) // lug: idk if we should even keep this? seems like it doesent do anything since udmf maps still had issues which this did not fix
+			if (mapnamespace != MNS_SRB2KART)
 			{
 				// Correct to account for slopes
 				fixed_t midtextureslant;
@@ -1661,7 +1661,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		// No longer so much a mess as before!
 		// It now is a mess again, thx kart!
 		// see above!
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			if (!gl_curline->polyseg) // Don't do it for polyobjects
 			{
@@ -1749,7 +1749,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				}
 			}
 		}
-		else if (!udmf)
+		else if (mapnamespace == MNS_SRB2KART)
 		{
 			//Set textures properly on single sided walls that are sloped
 			wallVerts[3].y = FIXED_TO_FLOAT(worldtop);
@@ -2104,7 +2104,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 
 	boolean bothceilingssky = false, bothfloorssky = false;
 
-	if (udmf)
+	if (mapnamespace != MNS_SRB2KART)
 	{
 		if (abacksector->ceilingpic == skyflatnum && afrontsector->ceilingpic == skyflatnum)
 			bothceilingssky = true;
@@ -2157,9 +2157,9 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 
 	// properly render skies (consider door "open" if both ceilings are sky)
 	// same for floors
-	// lug: but only on udmf maps :chaosleep:
+	// lug: but only on kart maps :chaosleep:
 	// kart does some funky crap on its binary maps and thus using this code breaks many maps visually and generally makes performance really bad
-	if (udmf)
+	if (mapnamespace != MNS_SRB2KART)
 	{
 		if (!bothceilingssky && !bothfloorssky)
 		{
@@ -2348,7 +2348,7 @@ static void HWR_AddLine(seg_t * line)
 
 		gl_backsector = R_FakeFlat(gl_backsector, &tempsec, NULL, NULL, true);
 
-		if (udmf) // same here, thisll most likely break kart maps
+		if (mapnamespace != MNS_SRB2KART) // same here, thisll most likely break kart maps
 		{
 			if (gl_backsector->ceilingpic == skyflatnum && gl_frontsector->ceilingpic == skyflatnum)
 				bothceilingssky = true;
@@ -4460,7 +4460,7 @@ void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boo
 
 	planeinfo[numplanes].isceiling = isceiling;
 	planeinfo[numplanes].fixedheight = fixedheight;
-	planeinfo[numplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || !udmf) ? lightlevel : 255;
+	planeinfo[numplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || mapnamespace == MNS_SRB2KART) ? lightlevel : 255;
 	planeinfo[numplanes].levelflat = levelflat;
 	planeinfo[numplanes].xsub = xsub;
 	planeinfo[numplanes].alpha = alpha;
@@ -4491,7 +4491,7 @@ void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polyse
 
 	polyplaneinfo[numpolyplanes].isceiling = isceiling;
 	polyplaneinfo[numpolyplanes].fixedheight = fixedheight;
-	polyplaneinfo[numpolyplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || !udmf) ? lightlevel : 255;
+	polyplaneinfo[numpolyplanes].lightlevel = ((planecolormap && (planecolormap->flags & CMF_FOG)) || mapnamespace == MNS_SRB2KART) ? lightlevel : 255;
 	polyplaneinfo[numpolyplanes].levelflat = levelflat;
 	polyplaneinfo[numpolyplanes].polysector = polysector;
 	polyplaneinfo[numpolyplanes].alpha = alpha;

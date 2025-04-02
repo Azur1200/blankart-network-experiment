@@ -71,7 +71,7 @@ extern lighttable_t *zlight[LIGHTLEVELS][MAXLIGHTZ];
 #define NUMCOLORMAPS 32
 
 // Utility functions.
-#define R_PointOnSide(x,y,node) udmf ? R_PointOnSideUDMF(x,y,node) : R_PointOnSideKart(x,y,node)
+#define R_PointOnSide(x,y,node) (mapnamespace != MNS_SRB2KART) ? R_PointOnSideUDMF(x,y,node) : R_PointOnSideKart(x,y,node) // maybe a function pointer would be more appropiate?
 INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node);
 INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node);
 

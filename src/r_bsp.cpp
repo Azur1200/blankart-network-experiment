@@ -542,7 +542,7 @@ static void R_AddLine(seg_t *line)
 
 	doorclosed = 0;
 
-	if (udmf)
+	if (mapnamespace != MNS_SRB2KART)
 	{
 		if (backsector->ceilingpic == skyflatnum && frontsector->ceilingpic == skyflatnum)
 			bothceilingssky = true;
@@ -577,7 +577,7 @@ static void R_AddLine(seg_t *line)
 		SLOPEPARAMS( backsector->c_slope,  backc1,  backc2,  backsector->ceilingheight)
 #undef SLOPEPARAMS
 
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			// if both ceilings are skies, consider it always "open"
 			// same for floors
@@ -633,7 +633,7 @@ static void R_AddLine(seg_t *line)
 		// of front-back closure (e.g. front floor is taller than back ceiling).
 		//
 		// if door is closed because back is shut:
-		if (udmf)
+		if (mapnamespace != MNS_SRB2KART)
 		{
 			if (!bothceilingssky && !bothfloorssky)
 			{

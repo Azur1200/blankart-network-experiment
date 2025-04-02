@@ -1264,7 +1264,7 @@ void R_SetupFrame(int s, boolean skybox)
 	else if (!chasecam)
 		thiscam->chase = false;
 
-	newview->sky = udmf ? false : !skybox; // force this to false for udmf
+	newview->sky = (mapnamespace != MNS_SRB2KART) ? false : !skybox; // force this to false for non kart maps
 
 	R_SetupAimingFrame(s);
 
@@ -1329,12 +1329,10 @@ void R_SkyboxFrame(int s)
 
 	newview->x = r_viewmobj->x;
 	newview->y = r_viewmobj->y;
-	if (!udmf)
+
+	if (mapnamespace == MNS_SRB2KART)
     {
-		if (r_viewmobj->spawnpoint)
-			newview->z = ((fixed_t)r_viewmobj->spawnpoint->angle)<<FRACBITS;
-		else
-			newview->z = 0;
+		newview->z = (r_viewmobj->spawnpoint) ? (((fixed_t)r_viewmobj->spawnpoint->angle)<<FRACBITS) : 0;
     }
 	else
 		newview->z = r_viewmobj->z; // 26/04/17: use actual Z position instead of spawnpoint angle!
@@ -1534,7 +1532,8 @@ void R_RenderPlayerView(void)
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 
-	if (!udmf)
+	// using sky portals on kart maps usually results in very bad performance
+	if (mapnamespace == MNS_SRB2KART)
 	{
 		// load previous saved value of skyVisible for the player
 		for (i = 0; i <= splitscreen; i++)
@@ -1557,11 +1556,11 @@ void R_RenderPlayerView(void)
 			Mask_Post(&masks[nummasks - 1]);
 			R_ClipSprites(drawsegs, NULL);
 			R_DrawPlanes();
-			// hope this crap is right lmao idk how tf multithreading works
-			 tp_sema = srb2::g_main_threadpool->end_sema();
-			 srb2::g_main_threadpool->notify_sema(tp_sema);
-			 srb2::g_main_threadpool->wait_sema(tp_sema);
-			 srb2::g_main_threadpool->begin_sema();
+			// well sometimes synchronization is off and may result in some visual glitching, oh well
+			tp_sema = srb2::g_main_threadpool->end_sema();
+			srb2::g_main_threadpool->notify_sema(tp_sema);
+			srb2::g_main_threadpool->wait_sema(tp_sema);
+			srb2::g_main_threadpool->begin_sema();
 			R_DrawMasked(masks, nummasks);
 		}
 	}
@@ -1621,9 +1620,8 @@ void R_RenderPlayerView(void)
 	R_ClipSprites(drawsegs, NULL);
 	ps_sw_spritecliptime = I_GetPreciseTime() - ps_sw_spritecliptime;
 
-
 	// Add skybox portals caused by sky visplanes.
-	if (udmf && skybox)
+	if (mapnamespace != MNS_SRB2KART && skybox)
 		Portal_AddSkyboxPortals();
 
 	// Portal rendering. Hijacks the BSP traversal.
@@ -1756,7 +1754,7 @@ void R_RenderPlayerView(void)
 		const UINT8 pal = 0x23; // red
 		portal_t *portal;
 
-		for(portal = portal_base; portal; portal = portal_base)
+		for (portal = portal_base; portal; portal = portal_base)
 		{
 			INT32 width = (portal->end - portal->start);
 			INT32 i;
@@ -1776,7 +1774,7 @@ void R_RenderPlayerView(void)
 		}
 	}
 
-	if (!udmf)
+	if (mapnamespace == MNS_SRB2KART)
 	{
 		// save value to skyVisiblePerPlayer
 		// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
