@@ -492,6 +492,23 @@ _(BRIY)
 _(GWLG)
 _(GWLR)
 
+// SRB1 Badniks
+_(SRBA)
+_(SRBB)
+_(SRBC)
+_(SRBD)
+_(SRBE)
+_(SRBF)
+_(SRBG)
+_(SRBH)
+_(SRBI)
+_(SRBJ)
+_(SRBK)
+_(SRBL)
+_(SRBM)
+_(SRBN)
+_(SRBO)
+
 // SRB2Kart
 _(RNDM) // Random Item Box
 _(RPOP) // Random Item Box Pop
