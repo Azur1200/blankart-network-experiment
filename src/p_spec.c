@@ -2528,7 +2528,18 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						CONS_Debug(DBG_GAMELOGIC, "Special type 400 Executor: No frontsector to copy planes from!\n");
 						return false;
 					}
-					copySector = line->frontsector;
+					if (mapnamespace == MNS_SRB2KART)
+					{
+						if (line->args[2] != TMP_CEILING)
+							EV_DoFloor(line->args[1], line, instantMoveFloorByFrontSector);
+						if (line->args[2] != TMP_FLOOR)
+							EV_DoCeiling(line->args[1], line, instantMoveCeilingByFrontSector);
+						break;
+					}
+					else
+					{
+						copySector = line->frontsector;
+					}
 				}
 				else
 				{
