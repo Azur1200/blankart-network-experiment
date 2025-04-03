@@ -81,7 +81,7 @@
 #include <tracy/tracy/Tracy.hpp>
 
 // Put hashes here to get them out of header hell.
-#define ASSET_HASH_MAIN_PK3     "d5bb52bbee2bd86ea9c66a6445f9af4a"
+#define ASSET_HASH_MAIN_PK3     "91b06902a9fbb1871f0217c756910e22"
 #define ASSET_HASH_SRB2_SRB     "c1b9577687f8a795104aef4600720ea7"
 #define ASSET_HASH_GFX_KART       "06f86ee16136eb8a7043b15001797034"
 #define ASSET_HASH_TEXTURES_KART  "abb53d56aba47c3a8cb0f764da1c8b80"
