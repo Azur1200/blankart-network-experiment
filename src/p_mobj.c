@@ -1081,7 +1081,7 @@ static void P_PlayerFlip(mobj_t *mo)
 {
 	if (!mo->player)
 		return;
-	
+
 	if (mo->player->pflags & PF_FLIPCAM)
 	{
 		UINT8 i;
@@ -1701,7 +1701,7 @@ void P_XYMovement(mobj_t *mo)
 			//if (player || mo->flags & MF_SLIDEME|MF_PUSHABLE)
 			if (walltransferok)
 			{ // try to slide along it
-				
+
 				pslope_t *transferslope = NULL;
 				fixed_t transfermomz = 0;
 				// Wall transfer part 1.
@@ -1740,7 +1740,7 @@ void P_XYMovement(mobj_t *mo)
 					}
 				}
 			}
-				
+
 			if (walltransfered == false)
 			{
 				if (player)
@@ -1866,9 +1866,9 @@ void P_XYMovement(mobj_t *mo)
 				FIXED_TO_FLOAT(AngleFixed(oldangle-newangle))
 			);
 			*/
-		
+
 		}
-		else if (predictedz-mo->z > abs(slopemom.z/2) 
+		else if (predictedz-mo->z > abs(slopemom.z/2)
 		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true // Now check if we were supposed to stick to this slope
 		&& ((!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
 		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz)))) // Always do this for old demos
@@ -3048,24 +3048,24 @@ boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover)
 	{
 		ourZAng = mobj->standingslope->zangle;
 	}
- 
+
 	waterSlope = (flip ? *rover->b_slope : *rover->t_slope);
 	if (waterSlope != NULL)
 	{
 		waterZAng = waterSlope->zangle;
 	}
- 
+
 	if (ourZAng != waterZAng)
 	{
 		// The surface slopes are different.
 		return false;
 	}
- 
+
 	surfaceheight = flip ? P_GetFFloorBottomZAt(rover, mobj->x, mobj->y) : P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
 	playerbottom = flip ? (mobj->z + mobj->height) : mobj->z;
- 
+
 	doifit = flip ? (surfaceheight - mobj->floorz >= mobj->height) : (mobj->ceilingz - surfaceheight >= mobj->height);
- 
+
 	if (!doifit)
 	{
 		// Player can't fit in this space.
@@ -3080,7 +3080,7 @@ boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover)
 		// We start water run IF we can step-down!
 		return true;
 	}
- 
+
 	return false;
 }
 
@@ -3938,7 +3938,7 @@ void P_NullPrecipThinker(precipmobj_t *mobj)
 boolean P_PrecipThinker(precipmobj_t *mobj)
 {
 	boolean flip = (mobj->precipflags & PCF_FLIP);
-	
+
 	if (mobj->lastThink == leveltime)
 		return true; // already thinked this tick
 
@@ -4008,7 +4008,7 @@ boolean P_PrecipThinker(precipmobj_t *mobj)
 			R_ResetPrecipitationMobjInterpolationState(mobj);
 		}
 	}
-	
+
 	return true;
 }
 
@@ -4133,7 +4133,7 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 
 	if (itemType < 1 || itemType >= NUMKARTITEMS)
 		itemType = KITEM_SAD;
-	
+
 	part = mobj;
 	while (!P_MobjWasRemoved(part->hnext))
 	{
@@ -5384,7 +5384,7 @@ static boolean P_ParticleGenSceneryThink(mobj_t *mobj)
 {
 	if (!udmf)
 		return false;
-	
+
 	if (!mobj->lastlook)
 		return false;
 
@@ -9157,7 +9157,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	if (type == MT_NULL)
 	{
-#if 0		
+#if 0
 #ifdef PARANOIA
 		I_Error("Tried to spawn MT_NULL\n");
 #endif
@@ -10513,7 +10513,7 @@ void P_SpawnPlayer(INT32 playernum)
 			// yes even in splitscreen mode
 			p->spectator = true;
 			p->spectatorreentry = 0; //(cv_spectatorreentry.value * TICRATE);
-			
+
 			if (playernum&1) p->skincolor = skincolor_redteam;
 			else             p->skincolor = skincolor_blueteam;
 
@@ -10587,7 +10587,7 @@ void P_SpawnPlayer(INT32 playernum)
 	P_FlashPal(p, 0, 0); // Resets
 
 	p->grieftime = 0;
-	
+
 	if (gametyperules & GTR_BUMPERS)
 	{
 		mobj_t *overheadarrow = P_SpawnMobj(mobj->x, mobj->y, mobj->z + mobj->height + 16*FRACUNIT, MT_PLAYERARROW);
@@ -10684,7 +10684,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 		x = mthing->x << FRACBITS;
 		y = mthing->y << FRACBITS;
 		angle = FixedAngle(mthing->angle*FRACUNIT);
-		
+
 		p->starpostx = mthing->x >> FRACBITS;
 		p->starposty = mthing->y >> FRACBITS;
 		p->starpostangle = FixedAngle(mthing->angle*FRACUNIT);
@@ -12341,7 +12341,7 @@ static void P_SpawnItemRow(mapthing_t *mthing, mobjtype_t *itemtypes, UINT8 numi
 	angle_t fineangle = (angle >> ANGLETOFINESHIFT) & FINEMASK;
 
 	boolean isloopend = (mthing->type == mobjinfo[MT_LOOPENDPOINT].doomednum);
-	mobj_t *loopanchor;
+	mobj_t *loopanchor = NULL;
 
 	boolean inclusive = isloopend;
 
@@ -12361,6 +12361,7 @@ static void P_SpawnItemRow(mapthing_t *mthing, mobjtype_t *itemtypes, UINT8 numi
 			itemtypes[r] = P_GetMobjtypeSubstitute(&dummything, itemtypes[r]);
 		}
 	}
+
 	z = P_GetMobjSpawnHeight(itemtypes[0], x, y, z, 0, mthing->layer, mthing->options & MTF_OBJECTFLIP, mthing->scale);
 
 	if (isloopend)
@@ -12382,10 +12383,9 @@ static void P_SpawnItemRow(mapthing_t *mthing, mobjtype_t *itemtypes, UINT8 numi
 		}
 
 		loopanchor->spawnpoint = NULL;
-		
+
 		if (!P_MobjWasRemoved(loopanchor))
 			Obj_LinkLoopAnchor(loopanchor, loopcenter, mthing->args[0]);
-
 	}
 
 	for (r = 0; r < numitems; r++)
