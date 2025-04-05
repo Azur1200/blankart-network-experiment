@@ -102,13 +102,14 @@ typedef enum
 	PF_UPDATEMYRESPAWN	= 1<<19,
 
 	PF_FLIPCAM	= 1<<20,
+
 	PF_TRUSTWAYPOINTS	= 1<<21, // Do not activate lap cheat prevention next time finish line distance is updated
+	PF_FREEZEWAYPOINTS	= 1<<22, // Skip the next waypoint/finish line distance update
+	PF_HITFINISHLINE	= 1<<23, // Already hit the finish line this tic
+	PF_WRONGWAY			= 1<<24, // Moving the wrong way with respect to waypoints?
 
-	PF_HITFINISHLINE	= 1<<22, // Already hit the finish line this tic
-	PF_WRONGWAY			= 1<<23, // Moving the wrong way with respect to waypoints?
-
-	PF_SHRINKME			= 1<<24, // "Shrink me" cheat preference
-	PF_SHRINKACTIVE		= 1<<25, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
+	PF_SHRINKME			= 1<<25, // "Shrink me" cheat preference
+	PF_SHRINKACTIVE		= 1<<26, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
 	// up to 1<<30 is free
 	PF_SLIDING			= 1<<31,

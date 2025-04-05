@@ -7403,7 +7403,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		else if (player->bigwaypointgap == AUTORESPAWN_THRESHOLD)
 		{
 			S_StartSound(player->mo, sfx_s26d);
-			CONS_Printf("You are going the wrong way! You will automatically respawn in 7 seconds.\n");
+			if (player == &players[consoleplayer])
+			{
+				// Alert them.
+				CONS_Printf("You are going the wrong way! You will automatically respawn in 7 seconds.\n");
+			}
 		}
 	}
 
@@ -7977,7 +7981,6 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 	}
 
 	// if rover is valid and bestfofheight is closer then bestsectorheight and bestpoheight
-	// probably should consider flip
 	if (result.result == RESPAWNRS_ROVER)
 	{
 		// Check if rover is bad based on both its terrain, and sector specials.
@@ -8015,7 +8018,6 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 
 	}
 	// if po is valid and bestpoheight is closer then bestsectorheight and bestpoheight
-	// probably should consider flip
 	else if (result.result == RESPAWNRS_PO)
 	{
 		// Check if po is bad based on both its terrain, and sector specials.
@@ -8052,7 +8054,6 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 		}
 	}
 	// if everything else is not closest check sector
-	// probably should consider flip
 	else if (result.result == RESPAWNRS_SECTOR)
 	{
 		// Check if sector is bad based on both its terrain, and sector specials.
@@ -8136,7 +8137,12 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 		waypoint_t *waypoint     = K_GetBestWaypointForMobj(player->mo, player->currentwaypoint);
 
 		// Our current waypoint.
-		player->currentwaypoint = bestwaypoint = waypoint;
+		bestwaypoint = waypoint;
+
+		if (bestwaypoint != NULL)
+		{
+			player->currentwaypoint = bestwaypoint;
+		}
 
 		// check the waypoint's location in relation to the player
 		// If it's generally in front, it's fine, otherwise, use the best next/previous waypoint.
@@ -8150,9 +8156,6 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 				R_PointToAngle2(player->mo->x, player->mo->y, waypoint->mobj->x, waypoint->mobj->y);
 			angle_t angledelta      = ANGLE_180;
 			angle_t momdelta        = ANGLE_180;
-
-			// Remove WRONG WAY flag.
-			player->pflags &= ~PF_WRONGWAY;
 
 			angledelta = playerangle - angletowaypoint;
 			if (angledelta > ANGLE_180)
@@ -8175,6 +8178,7 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 			{
 				angle_t nextbestdelta = ANGLE_90;
 				angle_t nextbestmomdelta = ANGLE_90;
+				angle_t nextbestanydelta = ANGLE_MAX;
 				size_t i = 0U;
 
 				if ((waypoint->nextwaypoints != NULL) && (waypoint->numnextwaypoints > 0U))
@@ -8216,8 +8220,19 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 							momdelta = InvAngle(momdelta);
 						}
 
-						if (angledelta < nextbestdelta || momdelta < nextbestmomdelta)
+						if (angledelta < nextbestanydelta || momdelta < nextbestanydelta)
 						{
+							nextbestanydelta = min(angledelta, momdelta);
+
+							if (nextbestanydelta >= ANGLE_90)
+								continue;
+
+							// Wanted to use a next waypoint, so remove WRONG WAY flag.
+							// Done here instead of when set, because of finish line
+							// hacks meaning we might not actually use this one, but
+							// we still want to acknowledge we're facing the right way.
+							player->pflags &= ~PF_WRONGWAY;
+
 							if (waypoint->nextwaypoints[i] != finishline) // Allow finish line.
 							{
 								if (P_TraceWaypointTraversal(player->mo, waypoint->nextwaypoints[i]->mobj) == false)
@@ -8300,6 +8315,10 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 									break;
 								}
 							}
+							else
+							{
+								bestwaypoint = waypoint->prevwaypoints[i];
+							}
 
 							nextbestdelta = angledelta;
 							nextbestmomdelta = momdelta;
@@ -8313,15 +8332,18 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 			}
 		}
 
-		if ((!P_IsObjectOnGround(player->mo)
-			|| player->respawn
-			|| P_CheckDeathPitCollide(player->mo)
-			|| P_InQuicksand(player->mo)
-			|| !player->mo->health)
-		)
+		if (!P_IsObjectOnGround(player->mo))
 		{
 			updaterespawn = false;
 		}
+
+		 if (player->respawn
+			|| P_CheckDeathPitCollide(player->mo)
+			|| P_InQuicksand(player->mo)
+			|| !player->mo->health)
+		 {
+			 updaterespawn = false;
+		 }
 
 		if (player->pflags & PF_UPDATEMYRESPAWN)
 		{
@@ -8339,6 +8361,7 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 
 	return updaterespawn;
 }
+
 
 /*--------------------------------------------------
 	static void K_UpdateDistanceFromFinishLine(player_t *const player)
@@ -8620,6 +8643,12 @@ static void K_MobjFudgeRespawn(player_t *player, const mobj_t *const mobj)
 --------------------------------------------------*/
 static void K_UpdatePlayerWaypoints(player_t *const player)
 {
+	if (player->pflags & PF_FREEZEWAYPOINTS)
+	{
+		player->pflags &= ~PF_FREEZEWAYPOINTS;
+		return;
+	}
+
 	const UINT32 distance_threshold = FixedMul(32768, mapobjectscale);
 
 	waypoint_t *const old_currentwaypoint = player->currentwaypoint;
@@ -8631,7 +8660,6 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	player->distancetofinishprev = player->distancetofinish;
 	K_UpdateDistanceFromFinishLine(player);
 
-	// Respawning should be a full reset.
 	UINT32 delta = u32_delta(player->distancetofinish, player->distancetofinishprev);
 	if (delta > distance_threshold &&
 		!player->respawn && // Respawning should be a full reset.
@@ -8647,7 +8675,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			CONS_Debug(DBG_GAMELOGIC, debug_args);
 #undef debug_args
 
-		if (!cv_kartdebuglap.value)
+		if (!cv_kartdebuglap.value && !player->exiting)
 		{
 			// Distance jump is too great, keep the old waypoints and old distance.
 			player->currentwaypoint = old_currentwaypoint;
@@ -8670,11 +8698,8 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 
 			// While the player was in the "bigwaypointgap" state, laps did not change from crossing finish lines.
 			// So reset the lap back to normal, in case they were able to get behind the line.
-			if (!K_UsingLegacyCheckpoints())
-			{
-				player->laps = player->lastsafelap;
-				player->starpostnum = player->lastsafestarpost;
-			}
+			player->laps = player->lastsafelap;
+			player->starpostnum = player->lastsafestarpost;
 		}
 	}
 
@@ -9234,37 +9259,30 @@ void K_KartUpdatePosition(player_t *player)
 		return;
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (!playeringame[i] || players[i].spectator || !players[i].mo)
-			continue;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator || !players[i].mo)
+				continue;
 
-		if (gametyperules & GTR_CIRCUIT)
-		{
-			if (player->exiting) // End of match standings
+			if (gametyperules & GTR_CIRCUIT)
 			{
-				// Only time matters
-				if (players[i].realtime < player->realtime)
-					position++;
-			}
-			else
-			{
-				// I'm a lap behind this player OR
-				// My distance to the finish line is higher, so I'm behind
-				if ((players[i].laps > player->laps)
-					|| (players[i].distancetofinish < player->distancetofinish))
+				if (player->exiting) // End of match standings
 				{
-					position++;
+					// Only time matters
+					if (players[i].realtime < player->realtime)
+						position++;
 				}
-			}
-		}
-		else
-		{
-			if (player->exiting) // End of match standings
-			{
-				// Only score matters
-				if (players[i].roundscore > player->roundscore)
-					position++;
+				else
+				{
+					// I'm a lap behind this player OR
+					// My distance to the finish line is higher, so I'm behind
+					if ((players[i].laps > player->laps)
+						|| (players[i].distancetofinish < player->distancetofinish))
+					{
+						position++;
+					}
+				}
 			}
 			else
 			{
@@ -9276,11 +9294,20 @@ void K_KartUpdatePosition(player_t *player)
 				}
 				else
 				{
-					// I have less points than but the same bumpers as this player OR
-					// I have less bumpers than this player
-					if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
-						|| (players[i].bumper > player->bumper))
-						position++;
+					if (player->exiting) // End of match standings
+					{
+						// Only score matters
+						if (players[i].roundscore > player->roundscore)
+							position++;
+					}
+					else
+					{
+						// I have less points than but the same bumpers as this player OR
+						// I have less bumpers than this player
+						if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
+							|| (players[i].bumper > player->bumper))
+							position++;
+					}
 				}
 			}
 		}
@@ -9289,8 +9316,10 @@ void K_KartUpdatePosition(player_t *player)
 	if (leveltime < starttime || oldposition == 0)
 		oldposition = position;
 
-	if (oldposition != position) // Changed places?
+	if (position != oldposition) // Changed places?
+	{
 		player->positiondelay = 10; // Position number growth
+	}
 
 	player->position = position;
 }
@@ -9407,11 +9436,8 @@ void K_UpdateAllPlayerPositions(void)
 
 			if (player->respawn > 0 && player->lastsafelap != player->laps)
 			{
-				if (!K_UsingLegacyCheckpoints())
-				{
-					player->laps = player->lastsafelap;
-					player->starpostnum = player->lastsafestarpost;
-				}
+				player->laps = player->lastsafelap;
+				player->starpostnum = player->lastsafestarpost;
 			}
 
 			K_UpdatePlayerWaypoints(player);
@@ -9423,7 +9449,7 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
-			if (K_UsingLegacyCheckpoints())
+			if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
