@@ -741,191 +741,6 @@ static void P_SharpDust(mobj_t *actor, mobjtype_t type, angle_t ang)
 	P_SetObjectMomZ(dust, P_RandomRange(1, 4)<<FRACBITS, false);
 }
 
-static void P_FaceStabFlume(mobj_t *actor)
-{
-	mobj_t *flume;
-	if (leveltime & 1)
-		return;
-
-	flume = P_SpawnMobjFromMobj(actor,
-		-P_ReturnThrustX(actor, actor->angle, actor->radius),
-		-P_ReturnThrustY(actor, actor->angle, actor->radius),
-		actor->height/3,
-		MT_PARTICLE);
-	flume->destscale = actor->scale*3;
-	P_SetScale(flume, flume->destscale);
-	P_SetTarget(&flume->target, actor);
-	flume->sprite = SPR_JETF;
-	flume->frame = FF_FULLBRIGHT;
-	flume->tics = 2;
-}
-
-// Function: A_FaceStabRev
-//
-// Description: Facestabber rev action
-//
-// var1 = effective duration
-// var2 = effective nextstate
-//
-void A_FaceStabRev(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-
-	if (LUA_CallAction(A_FACESTABREV, actor))
-		return;
-
-	if (!actor->target)
-	{
-		P_SetMobjState(actor, actor->info->spawnstate);
-		return;
-	}
-
-	actor->extravalue1 = 0;
-
-	if (!actor->reactiontime)
-	{
-		actor->reactiontime = locvar1;
-		S_StartSound(actor, actor->info->activesound);
-	}
-	else
-	{
-		if ((--actor->reactiontime) == 0)
-		{
-			S_StartSound(actor, actor->info->attacksound);
-			P_SetMobjState(actor, locvar2);
-		}
-		else
-		{
-			P_TryMove(actor, actor->x - P_ReturnThrustX(actor, actor->angle, 2<<FRACBITS), actor->y - P_ReturnThrustY(actor, actor->angle, 2<<FRACBITS), false, NULL);
-			P_FaceStabFlume(actor);
-		}
-	}
-}
-
-// Function: A_FaceStabHurl
-//
-// Description: Facestabber hurl action
-//
-// var1 = homing strength (recommended strength between 0-8)
-// var2 = effective nextstate
-//
-void A_FaceStabHurl(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-
-	if (LUA_CallAction(A_FACESTABHURL, actor))
-		return;
-
-	if (actor->target)
-	{
-		angle_t visang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
-		// Calculate new direction.
-		angle_t dirang = actor->angle;
-		angle_t diffang = visang - dirang;
-
-		if (locvar1) // Allow homing?
-		{
-			if (diffang > ANGLE_180)
-			{
-				angle_t workang = locvar1*(InvAngle(diffang)>>5);
-				diffang += InvAngle(workang);
-			}
-			else
-				diffang += (locvar1*(diffang>>5));
-		}
-		diffang += ANGLE_45;
-
-		// Check the sight cone.
-		if (diffang < ANGLE_90)
-		{
-			actor->angle = dirang;
-			if (++actor->extravalue2 < 4)
-				actor->extravalue2 = 4;
-			else if (actor->extravalue2 > 26)
-				actor->extravalue2 = 26;
-
-			if (P_TryMove(actor,
-				actor->x + P_ReturnThrustX(actor, dirang, actor->extravalue2<<FRACBITS),
-				actor->y + P_ReturnThrustY(actor, dirang, actor->extravalue2<<FRACBITS),
-				false, NULL))
-			{
-				// Do the spear damage.
-#define NUMSTEPS 3
-#define NUMGRADS 5
-#define MAXVAL (NUMSTEPS*NUMGRADS)
-				SINT8 step = (++actor->extravalue1);
-				fixed_t basesize = FRACUNIT/MAXVAL;
-				mobj_t *hwork = actor;
-				INT32 dist = 113;
-				fixed_t xo = P_ReturnThrustX(actor, actor->angle, dist*basesize);
-				fixed_t yo = P_ReturnThrustY(actor, actor->angle, dist*basesize);
-
-				while (step > 0)
-				{
-					if (!hwork->hnext)
-						P_SetTarget(&hwork->hnext, P_SpawnMobjFromMobj(actor, 0, 0, 0, MT_FACESTABBERSPEAR));
-					hwork = hwork->hnext;
-					hwork->angle = actor->angle + ANGLE_90;
-					hwork->destscale = FixedSqrt(step*basesize);
-					P_SetScale(hwork, hwork->destscale);
-					hwork->fuse = 2;
-					P_MoveOrigin(hwork, actor->x + xo*(15-step), actor->y + yo*(15-step), actor->z + (actor->height - hwork->height)/2 + (P_MobjFlip(actor)*(8<<FRACBITS)));
-					step -= NUMGRADS;
-				}
-
-				if (actor->extravalue1 >= MAXVAL)
-					actor->extravalue1 -= NUMGRADS;
-
-				if ((step % 5) == 0)
-					P_SharpDust(actor, MT_SPINDUST, actor->angle);
-
-				P_FaceStabFlume(actor);
-				return;
-#undef MAXVAL
-#undef NUMGRADS
-#undef NUMSTEPS
-			}
-		}
-	}
-
-	P_SetMobjState(actor, locvar2);
-	actor->reactiontime = actor->info->reactiontime;
-}
-
-// Function: A_FaceStabMiss
-//
-// Description: Facestabber miss action
-//
-// var1 = unused
-// var2 = effective nextstate
-//
-void A_FaceStabMiss(mobj_t *actor)
-{
-	INT32 locvar2 = var2;
-
-	if (LUA_CallAction(A_FACESTABMISS, actor))
-		return;
-
-	if (++actor->extravalue1 >= 3)
-	{
-		actor->extravalue2 -= 2;
-		actor->extravalue1 = 0;
-		S_StartSound(actor, sfx_s3k47);
-		P_SharpDust(actor, MT_SPINDUST, actor->angle);
-	}
-
-	if (actor->extravalue2 <= 0 || !P_TryMove(actor,
-		actor->x + P_ReturnThrustX(actor, actor->angle, actor->extravalue2<<FRACBITS),
-		actor->y + P_ReturnThrustY(actor, actor->angle, actor->extravalue2<<FRACBITS),
-		false, NULL))
-	{
-		actor->extravalue2 = 0;
-		P_SetMobjState(actor, locvar2);
-	}
-}
-
 // Function: A_StatueBurst
 //
 // Description: For suspicious statues only...
@@ -1173,60 +988,6 @@ void A_CheckBuddy(mobj_t *actor)
 		P_RemoveMobj(actor);
 }
 
-// Helper function for the Robo Hood.
-// Don't ask me how it works. Nev3r made it with dark majyks.
-static void P_ParabolicMove(mobj_t *actor, fixed_t x, fixed_t y, fixed_t z, fixed_t speed)
-{
-	fixed_t dh;
-
-	x -= actor->x;
-	y -= actor->y;
-	z -= actor->z;
-
-	dh = P_AproxDistance(x, y);
-
-	actor->momx = FixedMul(FixedDiv(x, dh), speed);
-	actor->momy = FixedMul(FixedDiv(y, dh), speed);
-
-	if (!gravity)
-		return;
-
-	dh = FixedDiv(FixedMul(dh, gravity), speed);
-	actor->momz = (dh>>1) + FixedDiv(z, dh<<1);
-}
-
-// Function: A_HoodFire
-//
-// Description: Firing Robo-Hood
-//
-// var1 = object type to fire
-// var2 = unused
-//
-void A_HoodFire(mobj_t *actor)
-{
-	mobj_t *arrow;
-	INT32 locvar1 = var1;
-
-	if (LUA_CallAction(A_HOODFIRE, actor))
-		return;
-
-	// Check target first.
-	if (!actor->target)
-	{
-		actor->reactiontime = actor->info->reactiontime;
-		P_SetMobjState(actor, actor->info->spawnstate);
-		return;
-	}
-
-	A_FaceTarget(actor);
-
-	if (!(arrow = P_SpawnMissile(actor, actor->target, (mobjtype_t)locvar1)))
-		return;
-
-	// Set a parabolic trajectory for the arrow.
-	P_ParabolicMove(arrow, actor->target->x, actor->target->y, actor->target->z, arrow->info->speed);
-}
-
 // Function: A_HoodThink
 //
 // Description: Thinker for Robo-Hood
@@ -1236,108 +997,94 @@ void A_HoodFire(mobj_t *actor)
 //
 void A_HoodThink(mobj_t *actor)
 {
-	fixed_t dx, dy, dz, dm;
-	boolean checksight;
-
 	if (LUA_CallAction(A_HOODTHINK, actor))
 		return;
 
-	// Check target first.
+	// Currently in the air...
+	if (!(actor->eflags & MFE_VERTICALFLIP) && actor->z > actor->floorz)
+	{
+		if (actor->momz > 0)
+			P_SetMobjStateNF(actor, actor->info->xdeathstate); // Rising
+		else
+			P_SetMobjStateNF(actor, actor->info->raisestate); // Falling
+
+		return;
+	}
+	else if ((actor->eflags & MFE_VERTICALFLIP) && actor->z + actor->height < actor->ceilingz)
+	{
+		if (actor->momz < 0)
+			P_SetMobjStateNF(actor, actor->info->xdeathstate); // Rising
+		else
+			P_SetMobjStateNF(actor, actor->info->raisestate); // Falling
+
+		return;
+	}
+
+	if (actor->state == &states[actor->info->xdeathstate]
+		|| actor->state == &states[actor->info->raisestate])
+		P_SetMobjStateNF(actor, actor->info->seestate);
+
 	if (!actor->target)
 	{
-		actor->reactiontime = actor->info->reactiontime;
 		P_SetMobjState(actor, actor->info->spawnstate);
 		return;
 	}
 
-	dx = (actor->target->x - actor->x), dy = (actor->target->y - actor->y), dz = (actor->target->z - actor->z);
-	dm = P_AproxDistance(dx, dy);
-	// Target dangerously close to robohood, retreat then.
-	if ((dm < 256<<FRACBITS) && (abs(dz) < 128<<FRACBITS))
-	{
-		S_StartSound(actor, actor->info->attacksound);
-		P_SetMobjState(actor, actor->info->raisestate);
-		return;
-	}
+	A_FaceTarget(actor); // Aiming... aiming...
 
-	// If target on sight, look at it.
-	if ((checksight = P_CheckSight(actor, actor->target)))
-	{
-		angle_t dang = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
-		if (actor->angle >= ANGLE_180)
-		{
-			actor->angle = InvAngle(actor->angle)>>1;
-			actor->angle = InvAngle(actor->angle);
-		}
-		else
-			actor->angle >>= 1;
-
-		if (dang >= ANGLE_180)
-		{
-			dang = InvAngle(dang)>>1;
-			dang = InvAngle(dang);
-		}
-		else
-			dang >>= 1;
-
-		actor->angle += dang;
-	}
-
-	// Check whether to do anything.
-	if ((--actor->reactiontime) <= 0)
-	{
-		actor->reactiontime = actor->info->reactiontime;
-
-		// If way too far, don't shoot.
-		if ((dm < (3072<<FRACBITS)) && checksight)
-		{
-			P_SetMobjState(actor, actor->info->missilestate);
-			return;
-		}
-	}
-}
-
-// Function: A_HoodFall
-//
-// Description: Falling Robo-Hood
-//
-// var1 = unused
-// var2 = unused
-//
-void A_HoodFall(mobj_t *actor)
-{
-	if (LUA_CallAction(A_HOODFALL, actor))
+	if (--actor->reactiontime > 0)
 		return;
 
-	if (!P_IsObjectOnGround(actor))
-		return;
+	// Shoot, if not too close (cheap shots are lame)
+	if ((P_AproxDistance(actor->x-actor->target->x, actor->y-actor->target->y) > FixedMul(192*FRACUNIT, actor->scale))
+	|| (actor->spawnpoint && (actor->spawnpoint->options & MTF_AMBUSH))) // If you can't jump, might as well shoot regardless of distance!
+		P_SetMobjState(actor, actor->info->missilestate);
+	else if (!(actor->spawnpoint && (actor->spawnpoint->options & MTF_AMBUSH)))// But we WILL jump!
+		P_SetMobjState(actor, actor->info->painstate);
 
-	actor->momx = actor->momy = 0;
 	actor->reactiontime = actor->info->reactiontime;
-	P_SetMobjState(actor, actor->info->seestate);
 }
 
-// Function: A_ArrowBonks
+// Function: A_ArrowCheck
 //
-// Description: Arrow momentum setting on collision
+// Description: Checks arrow direction and adjusts sprite accordingly
 //
 // var1 = unused
 // var2 = unused
 //
-void A_ArrowBonks(mobj_t *actor)
+void A_ArrowCheck(mobj_t *actor)
 {
-	if (LUA_CallAction(A_ARROWBONKS, actor))
+	fixed_t x,y,z;
+	angle_t angle;
+	fixed_t dist;
+
+	if (LUA_CallAction(A_ARROWCHECK, actor))
 		return;
 
-	if (((actor->eflags & MFE_VERTICALFLIP) && actor->z + actor->height >= actor->ceilingz)
-		|| (!(actor->eflags & MFE_VERTICALFLIP) && actor->z <= actor->floorz))
-		actor->angle += ANGLE_180;
+	// Movement vector
+	x = actor->momx;
+	y = actor->momy;
+	z = actor->momz;
 
-	P_SetObjectMomZ(actor, 8*actor->scale, false);
-	P_InstaThrust(actor, actor->angle, -6*actor->scale);
+	// Calculate the angle of movement.
+	/*
+	       Z
+	     / |
+	   /   |
+	 /     |
+	0------dist(X,Y)
+	*/
 
-	actor->flags = (actor->flags|MF_NOCLIPHEIGHT) & ~MF_NOGRAVITY;
-	actor->z += P_MobjFlip(actor);
+	dist = P_AproxDistance(x, y);
+
+	angle = R_PointToAngle2(0, 0, dist, z);
+
+	if (angle > ANG20 && angle <= ANGLE_180)
+		P_SetMobjStateNF(actor, actor->info->raisestate);
+	else if (angle < ANG340 && angle > ANGLE_180)
+		P_SetMobjStateNF(actor, actor->info->xdeathstate);
+	else
+		P_SetMobjStateNF(actor, actor->info->spawnstate);
 }
 
 // Function: A_SnailerThink
@@ -1837,229 +1584,6 @@ void A_VultureCheck(mobj_t *actor)
 		actor->angle -= ANGLE_180; // turn around
 		P_SetMobjState(actor, actor->info->spawnstate);
 	}
-}
-
-static void P_VultureHoverParticle(mobj_t *actor)
-{
-	fixed_t fdist = actor->z - P_FloorzAtPos(actor->x, actor->y, actor->z, actor->height);
-
-	if (fdist < 128*FRACUNIT)
-	{
-		mobj_t *dust;
-		UINT8 i;
-		angle_t angle = (leveltime % 2)*ANGLE_45/2;
-
-		for (i = 0; i <= 7; i++)
-		{
-			angle_t fa = (angle >> ANGLETOFINESHIFT) & FINEMASK;
-			fixed_t px = actor->x + FixedMul(fdist + 64*FRACUNIT, FINECOSINE(fa));
-			fixed_t py = actor->y + FixedMul(fdist + 64*FRACUNIT, FINESINE(fa));
-			fixed_t pz = P_FloorzAtPos(px, py, actor->z, actor->height);
-
-			dust = P_SpawnMobj(px, py, pz, MT_ARIDDUST);
-			P_SetMobjState(dust, (statenum_t)(dust->state - states + P_RandomRange(0, 2)));
-			P_Thrust(dust, angle, FixedDiv(12*FRACUNIT, max(FRACUNIT, fdist/2)));
-			dust->momx += actor->momx;
-			dust->momy += actor->momy;
-			angle += ANGLE_45;
-		}
-	}
-}
-
-// Function: A_VultureHover
-//
-// Description: Vulture hovering and checking whether to attack.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_VultureHover(mobj_t *actor)
-{
-	fixed_t targetz;
-	fixed_t distdif;
-	fixed_t memz = actor->z;
-	SINT8 i;
-
-	if (LUA_CallAction(A_VULTUREHOVER, actor))
-		return;
-
-	if (!actor->target || P_MobjWasRemoved(actor->target))
-	{
-		P_SetMobjState(actor, actor->info->spawnstate);
-		return;
-	}
-
-	actor->flags |= MF_NOGRAVITY;
-
-	actor->momx -= actor->momx/24;
-	actor->momy -= actor->momy/24;
-
-	P_VultureHoverParticle(actor);
-
-	A_FaceTarget(actor);
-	targetz = actor->target->z + actor->target->height / 2;
-	for (i = -1; i <= 1; i++)
-	{
-		actor->z = targetz - i * 128 * FRACUNIT;
-		if (P_CheckSight(actor, actor->target))
-		{
-			targetz -= i * 128 * FRACUNIT;
-			break;
-		}
-	}
-	actor->z = memz;
-
-	distdif = (actor->z + actor->height/2) - targetz;
-
-	if (abs(actor->momz*16) > abs(distdif))
-		actor->momz -= actor->momz/16;
-	else if (distdif < 0)
-		actor->momz = min(actor->momz+FRACUNIT/8, actor->info->speed*FRACUNIT);
-	else
-		actor->momz = max(actor->momz-FRACUNIT/8, -actor->info->speed*FRACUNIT);
-
-	if (abs(distdif) < 128*FRACUNIT && abs(actor->momz) < FRACUNIT && P_CheckSight(actor, actor->target))
-	{
-		P_SetMobjState(actor, actor->info->missilestate);
-		actor->momx = 0;
-		actor->momy = 0;
-		actor->momz = 0;
-		actor->extravalue1 = 0;
-	}
-}
-
-// Function: A_VultureBlast
-//
-// Description: Vulture spawning a dust cloud.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_VultureBlast(mobj_t *actor)
-{
-	mobj_t *dust;
-	UINT8 i;
-	angle_t faa;
-	fixed_t faacos, faasin;
-
-	if (LUA_CallAction(A_VULTUREBLAST, actor))
-		return;
-
-	S_StartSound(actor, actor->info->attacksound);
-
-	faa = (actor->angle >> ANGLETOFINESHIFT) & FINEMASK;
-	faacos = FINECOSINE(faa);
-	faasin = FINESINE(faa);
-
-	for (i = 0; i <= 7; i++)
-	{
-		angle_t fa = ((i*(angle_t)ANGLE_45) >> ANGLETOFINESHIFT) & FINEMASK;
-		dust = P_SpawnMobj(actor->x + 48*FixedMul(FINECOSINE(fa), -faasin), actor->y + 48*FixedMul(FINECOSINE(fa), faacos), actor->z + actor->height/2 + 48*FINESINE(fa), MT_PARTICLE);
-
-		P_SetScale(dust, 4*FRACUNIT);
-		dust->destscale = FRACUNIT;
-		dust->scalespeed = 4*FRACUNIT/TICRATE;
-		dust->fuse = TICRATE;
-		dust->momx = FixedMul(FINECOSINE(fa), -faasin)*3;
-		dust->momy = FixedMul(FINECOSINE(fa), faacos)*3;
-		dust->momz = FINESINE(fa)*6;
-	}
-}
-
-// Function: A_VultureFly
-//
-// Description: Vulture charging towards target.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_VultureFly(mobj_t *actor)
-{
-	fixed_t speedmax = 18*FRACUNIT;
-	angle_t angledif;
-	fixed_t dx, dy, dz, dxy, dm;
-	mobj_t *dust;
-	fixed_t momm;
-
-	if (LUA_CallAction(A_VULTUREFLY, actor))
-		return;
-
-	if (!actor->target || P_MobjWasRemoved(actor->target))
-	{
-		P_SetMobjState(actor, actor->info->spawnstate);
-		return;
-	}
-
-	angledif = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) - actor->angle;
-	dx = actor->target->x - actor->x;
-	dy = actor->target->y - actor->y;
-	dz = actor->target->z - actor->z;
-	dxy = FixedHypot(dx, dy);
-
-	if (leveltime % 4 == 0)
-		S_StartSound(actor, actor->info->activesound);
-
-	if (angledif > ANGLE_180)
-		angledif = InvAngle(angledif);
-
-	// Tweak the target height according to the position.
-	if (angledif < ANGLE_45) // Centered?
-	{
-		actor->reactiontime = actor->info->reactiontime;
-		if (dxy > 768*FRACUNIT)
-			dz = max(P_FloorzAtPos(actor->target->x, actor->target->y, actor->target->z, 0) - actor->z + min(dxy/8, 128*FRACUNIT), dz);
-	}
-	else
-	{
-		actor->reactiontime--;
-
-		if (angledif < ANGLE_90)
-			dz = max(P_FloorzAtPos(actor->target->x, actor->target->y, actor->target->z, 0) - actor->z + min(dxy/2, 192*FRACUNIT), dz);
-		else
-			dz = max(P_FloorzAtPos(actor->target->x, actor->target->y, actor->target->z, 0) - actor->z + 232*FRACUNIT, dz);
-	}
-
-	dm = FixedHypot(dz, dxy);
-
-	P_VultureHoverParticle(actor);
-
-	dust = P_SpawnMobj(actor->x + P_RandomFixed() - FRACUNIT/2, actor->y + P_RandomFixed() - FRACUNIT/2, actor->z + actor->height/2 + P_RandomFixed() - FRACUNIT/2, MT_PARTICLE);
-	P_SetScale(dust, 2*FRACUNIT);
-	dust->destscale = FRACUNIT/3;
-	dust->scalespeed = FRACUNIT/40;
-	dust->fuse = TICRATE*2;
-
-	actor->momx += FixedDiv(dx, dm)*2;
-	actor->momy += FixedDiv(dy, dm)*2;
-	actor->momz += FixedDiv(dz, dm)*2;
-
-	momm = FixedHypot(actor->momz, FixedHypot(actor->momx, actor->momy));
-
-	if (momm > speedmax/2 && actor->reactiontime == 0)
-	{
-		P_SetMobjState(actor, actor->info->seestate);
-		return;
-	}
-
-	//Hits a wall hard?
-	if (actor->extravalue1 - momm > 15*FRACUNIT)
-	{
-		actor->flags &= ~MF_NOGRAVITY;
-		P_SetMobjState(actor, actor->info->painstate);
-		S_StopSound(actor);
-		S_StartSound(actor, actor->info->painsound);
-		return;
-	}
-	actor->extravalue1 = momm;
-
-	if (momm > speedmax)
-	{
-		actor->momx = FixedMul(FixedDiv(actor->momx, momm), speedmax);
-		actor->momy = FixedMul(FixedDiv(actor->momy, momm), speedmax);
-		actor->momz = FixedMul(FixedDiv(actor->momz, momm), speedmax);
-	}
-
-	actor->angle = R_PointToAngle2(0, 0, actor->momx, actor->momy);
 }
 
 // Function: A_SkimChase
@@ -6355,86 +5879,47 @@ void A_GuardChase(mobj_t *actor)
 	if (actor->reactiontime)
 		actor->reactiontime--;
 
-	if (actor->threshold != 42) // In formation...
+	if ((!actor->tracer || !actor->tracer->health) && actor->threshold != 42)
 	{
-		fixed_t speed;
-
-		if (!actor->tracer || !actor->tracer->health)
-		{
-			P_SetTarget(&actor->tracer, NULL);
-			actor->threshold = 42;
-			P_SetMobjState(actor, actor->info->painstate);
-			actor->flags |= MF_SPECIAL|MF_SHOOTABLE;
-			return;
-		}
-
-		speed = actor->extravalue1*actor->scale;
-
-		if (actor->flags2 & MF2_AMBUSH)
-			speed <<= 1;
-
-		if (speed
-		&& !P_TryMove(actor,
-			actor->x + P_ReturnThrustX(actor, actor->angle, speed),
-			actor->y + P_ReturnThrustY(actor, actor->angle, speed),
-			false, NULL)
-		&& speed > 0) // can't be the same check as previous so that P_TryMove gets to happen.
-		{
-			INT32 direction = actor->args[0];
-
-			switch (direction)
-			{
-				case TMGD_BACK:
-				default:
-					actor->angle += ANGLE_180;
-					break;
-				case TMGD_RIGHT:
-					actor->angle -= ANGLE_90;
-					break;
-				case TMGD_LEFT:
-					actor->angle += ANGLE_90;
-					break;
-			}
-		}
-
-		if (actor->extravalue1 < actor->info->speed)
-			actor->extravalue1++;
+		P_SetTarget(&actor->tracer, NULL);
+		actor->threshold = 42;
+		P_SetMobjState(actor, actor->info->painstate);
+		actor->flags |= MF_SPECIAL|MF_SHOOTABLE;
+		return;
 	}
-	else // Break ranks!
+
+	// turn towards movement direction if not there yet
+	if (actor->movedir < NUMDIRS)
 	{
-		// turn towards movement direction if not there yet
-		if (actor->movedir < NUMDIRS)
-		{
-			actor->angle &= (7<<29);
-			delta = actor->angle - (actor->movedir << 29);
+		actor->angle &= (7<<29);
+		delta = actor->angle - (actor->movedir << 29);
 
-			if (delta > 0)
-				actor->angle -= ANGLE_45;
-			else if (delta < 0)
-				actor->angle += ANGLE_45;
-		}
+		if (delta > 0)
+			actor->angle -= ANGLE_45;
+		else if (delta < 0)
+			actor->angle += ANGLE_45;
+	}
 
-		if (!actor->target || !(actor->target->flags & MF_SHOOTABLE))
-		{
-			// look for a new target
-			if (P_LookForPlayers(actor, true, false, 0))
-				return; // got a new target
-
-			P_SetMobjStateNF(actor, actor->info->spawnstate);
-			return;
-		}
-
-		// possibly choose another target
-		if (multiplayer && (actor->target->health <= 0 || !P_CheckSight(actor, actor->target))
-			&& P_LookForPlayers(actor, true, false, 0))
+	if (!actor->target || !(actor->target->flags & MF_SHOOTABLE))
+	{
+		// look for a new target
+		if (P_LookForPlayers(actor, true, false, 0))
 			return; // got a new target
 
-		// chase towards player
-		if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_AMBUSH) ? actor->info->speed * 2 : actor->info->speed))
-		{
-			P_NewChaseDir(actor);
-			actor->movecount += 5; // Increase tics before change in direction allowed.
-		}
+		P_SetMobjStateNF(actor, actor->info->spawnstate);
+		return;
+	}
+
+	// possibly choose another target
+	if (multiplayer && (actor->target->health <= 0 || !P_CheckSight(actor, actor->target))
+		&& P_LookForPlayers(actor, true, false, 0))
+		return; // got a new target
+
+	// chase towards player
+	if (--actor->movecount < 0 || !P_Move(actor, (actor->flags2 & MF2_AMBUSH) ? actor->info->speed * 2 : actor->info->speed))
+	{
+		P_NewChaseDir(actor);
+		actor->movecount += 5; // Increase tics before change in direction allowed.
 	}
 
 	// Now that we've moved, its time for our shield to move!
@@ -11915,243 +11400,6 @@ void A_Boss5BombExplode(mobj_t *actor)
 	quake.radius = 20*actor->radius;
 }
 
-// stuff used by A_TNTExplode
-static mobj_t *barrel;
-static fixed_t exploderadius;
-static fixed_t explodethrust;
-
-static BlockItReturn_t PIT_TNTExplode(mobj_t *nearby)
-{
-	fixed_t dx, dy, dz;
-	fixed_t dm;
-
-	if (nearby == barrel)
-		return BMIT_CONTINUE;
-
-	dx = nearby->x - barrel->x;
-	dy = nearby->y - barrel->y;
-	dz = nearby->z - barrel->z + (nearby->height - barrel->height/2)/2;
-	dm = P_AproxDistance(P_AproxDistance(dx, dy), dz);
-
-	if (dm >= exploderadius || !P_CheckSight(barrel, nearby)) // out of range or not visible
-		return BMIT_CONTINUE;
-
-	if (barrel->type == nearby->type) // nearby is also a barrel
-	{
-		if (nearby->state == &states[nearby->info->spawnstate])
-		{
-			if (barrel->info->attacksound)
-				S_StartSound(nearby, barrel->info->attacksound);
-			nearby->momx = FixedMul(FixedDiv(dx, dm), explodethrust);
-			nearby->momy = FixedMul(FixedDiv(dy, dm), explodethrust);
-			nearby->momz = FixedMul(FixedDiv(dz, dm), explodethrust);
-			P_UnsetThingPosition(nearby);
-			if (sector_list)
-			{
-				P_DelSeclist(sector_list);
-				sector_list = NULL;
-			}
-			nearby->flags = MF_NOBLOCKMAP|MF_MISSILE;
-			P_SetThingPosition(nearby);
-			P_SetMobjState(nearby, nearby->info->missilestate);
-		}
-	}
-	else
-	{
-		if (barrel->target == nearby)
-		{
-			mobj_t *tar = barrel->target; // temporarily store barrel's target
-			P_SetTarget(&barrel->target, NULL);
-			P_DamageMobj(nearby, barrel, NULL, 1, DMG_NORMAL);
-			if (!P_MobjWasRemoved(barrel))
-				P_SetTarget(&barrel->target, tar);
-		}
-		else
-		{
-			P_DamageMobj(nearby,
-				(barrel->target) ? barrel->target : barrel,
-				(barrel->target) ? barrel->target : barrel,
-				1, DMG_NORMAL);
-		}
-	}
-
-	return BMIT_CONTINUE;
-}
-
-// Function: A_TNTExplode
-//
-// Description: Creates a TNT explosion. Used by TNT barrels and the like.
-//
-// var1 = Thing type to spawn as dust.
-// var2 = unused
-//
-void A_TNTExplode(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 x, y;
-	INT32 xl, xh, yl, yh;
-	static mappoint_t epicenter = {0,0,0};
-
-	if (LUA_CallAction(A_TNTEXPLODE, actor))
-		return;
-
-	if (actor->tracer)
-	{
-		P_SetTarget(&actor->tracer->tracer, NULL);
-		P_SetTarget(&actor->tracer, NULL);
-	}
-
-	P_UnsetThingPosition(actor);
-	if (sector_list)
-	{
-		P_DelSeclist(sector_list);
-		sector_list = NULL;
-	}
-	actor->flags = MF_NOCLIP|MF_NOGRAVITY|MF_NOBLOCKMAP;
-	P_SetThingPosition(actor);
-	actor->flags2 = MF2_EXPLOSION;
-	if (actor->info->deathsound)
-		S_StartSound(actor, actor->info->deathsound);
-
-	explodethrust = 32*FRACUNIT;
-	exploderadius = 256*FRACUNIT;
-
-	xl = (unsigned)(actor->x - exploderadius - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(actor->x + exploderadius - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(actor->y - exploderadius - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (unsigned)(actor->y + exploderadius - bmaporgy)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX(xl, xh, yl, yh);
-
-	barrel = actor;
-
-	for (x = xl; x <= xh; x++)
-		for (y = yl; y <= yh; y++)
-			P_BlockThingsIterator(x, y, PIT_TNTExplode);
-
-	// cause a quake -- P_StartQuake does not exist yet
-	epicenter.x = actor->x;
-	epicenter.y = actor->y;
-	epicenter.z = actor->z;
-	quake.intensity = 9*FRACUNIT;
-	quake.time = TICRATE/6;
-	quake.epicenter = &epicenter;
-	quake.radius = 512*FRACUNIT;
-
-	if (locvar1)
-	{
-		P_DustRing(locvar1, 4, actor->x, actor->y, actor->z+actor->height, 64, 0, FRACUNIT, actor->scale);
-		P_DustRing(locvar1, 6, actor->x, actor->y, actor->z+actor->height/2, 96, FRACUNIT, FRACUNIT, actor->scale);
-	}
-
-	actor->destscale *= 4;
-}
-
-// Function: A_DebrisRandom
-//
-// Description: Randomizes debris frame and movement.
-//
-// var1 = Frame range.
-// var2 = unused
-//
-void A_DebrisRandom(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-
-	if (LUA_CallAction(A_DEBRISRANDOM, actor))
-		return;
-
-	actor->frame |= P_RandomRange(0, locvar1);
-	var1 = 0;
-	var2 = 359;
-	A_ChangeAngleAbsolute(actor);
-	P_Thrust(actor, actor->angle, FRACUNIT * 2);
-}
-
-static mobj_t *P_TrainSeg(mobj_t *src, fixed_t x, fixed_t y, fixed_t z, angle_t ang, spritenum_t spr, UINT32 frame)
-{
-	mobj_t *s = P_SpawnMobj(x, y, z, MT_TRAINSEG);
-	s->fuse = 16*TICRATE;
-	s->sprite = spr;
-	s->frame = frame|FF_PAPERSPRITE;
-	s->angle = ang;
-	P_Thrust(s, src->angle, 7*FRACUNIT);
-	return s;
-}
-
-// Function: A_TrainCameo
-//
-// Description: Sets up train cameo locomotive.
-//
-// var1 = Train width.
-// var2 = Train length.
-//
-void A_TrainCameo(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	fixed_t x = actor->x;
-	fixed_t y = actor->y;
-	fixed_t z = actor->z;
-	angle_t ang = actor->angle;
-	mobj_t *m;
-	spritenum_t spr = SPR_TRAE;
-	fixed_t span = locvar1*FRACUNIT;
-	fixed_t len = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_TRAINCAMEO, actor))
-		return;
-
-	//Spawn sides.
-	P_TrainSeg(actor, x, y + span, z, ang, spr, 0);
-	P_TrainSeg(actor, x, y - span, z, ang, spr, 0);
-
-	//Center.
-	P_TrainSeg(actor, x, y, z, ang, spr, 1);
-
-	//Front and back.
-	P_TrainSeg(actor, x + len, y, z, ang + ANGLE_90, spr, 2);
-	P_TrainSeg(actor, x - len, y, z, ang + ANGLE_90, spr, 2);
-
-	//Smoke spawner.
-	m = P_TrainSeg(actor, x - (20 * FRACUNIT), y, z + (30 * FRACUNIT), ang + ANGLE_90, spr, 0);
-	P_SetMobjState(m, S_TRAINPUFFMAKER);
-}
-
-// Function: A_TrainCameo2
-//
-// Description: Sets up train cameo wagon.
-//
-// var1 = Train width.
-// var2 = Train length.
-//
-void A_TrainCameo2(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	fixed_t x = actor->x;
-	fixed_t y = actor->y;
-	fixed_t z = actor->z;
-	angle_t ang = actor->angle;
-	spritenum_t spr = SPR_TRAI;
-	fixed_t span = locvar1*FRACUNIT;
-	fixed_t len = locvar2*FRACUNIT;
-
-	if (LUA_CallAction(A_TRAINCAMEO2, actor))
-		return;
-
-	//Spawn sides.
-	P_TrainSeg(actor, x, y + span, z, ang, spr, 0);
-	P_TrainSeg(actor, x, y - span, z, ang, spr, 0);
-
-	//Center.
-	P_TrainSeg(actor, x, y, z, ang, spr, 1);
-
-	//Front and back.
-	P_TrainSeg(actor, x + len, y, z, ang + ANGLE_90, spr, 2);
-	P_TrainSeg(actor, x - len, y, z, ang + ANGLE_90, spr, 2);
-}
-
 // Function: A_CanarivoreGas
 //
 // Description: Releases gas clouds. Used by the Canarivore.
@@ -12418,83 +11666,6 @@ void A_SnapperThinker(mobj_t *actor)
 	}
 
 	P_SnapperLegPlace(actor);
-}
-
-// Function: A_SaloonDoorSpawn
-//
-// Description: Spawns a saloon door.
-//
-// var1 = mobjtype for sides
-// var2 = distance sides should be placed apart
-//
-void A_SaloonDoorSpawn(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-	angle_t ang = actor->angle;
-	angle_t fa = (ang >> ANGLETOFINESHIFT) & FINEMASK;
-	fixed_t c = FINECOSINE(fa)*locvar2;
-	fixed_t s = FINESINE(fa)*locvar2;
-	mobj_t *door;
-	mobjflag2_t ambush = (actor->flags2 & MF2_AMBUSH);
-
-	if (LUA_CallAction(A_SALOONDOORSPAWN, actor))
-		return;
-
-	if (!locvar1)
-		return;
-
-	// One door...
-	if (!(door = P_SpawnMobjFromMobj(actor, c, s, 0, locvar1))) return;
-	door->angle = ang + ANGLE_180;
-	door->extravalue1 = AngleFixed(door->angle); // Origin angle
-	door->extravalue2 = 0; // Angular speed
-	P_SetTarget(&door->tracer, actor); // Origin door
-	door->flags2 |= ambush; // Can be opened by normal players?
-
-	// ...two door!
-	if (!(door = P_SpawnMobjFromMobj(actor, -c, -s, 0, locvar1))) return;
-	door->angle = ang;
-	door->extravalue1 = AngleFixed(door->angle); // Origin angle
-	door->extravalue2 = 0; // Angular speed
-	P_SetTarget(&door->tracer, actor); // Origin door
-	door->flags2 |= ambush; // Can be opened by normal players?
-}
-
-// Function: A_MinecartSparkThink
-//
-// Description: Thinker for the minecart spark.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_MinecartSparkThink(mobj_t *actor)
-{
-	fixed_t dx = actor->momx;
-	fixed_t dy = actor->momy;
-	fixed_t dz, dm;
-	UINT8 i;
-
-	if (LUA_CallAction(A_MINECARTSPARKTHINK, actor))
-		return;
-
-	if (actor->momz == 0 && P_IsObjectOnGround(actor))
-		actor->momz = P_RandomRange(2, 4)*FRACUNIT;
-
-	dz = actor->momz;
-	dm = FixedHypot(FixedHypot(dx, dy), dz);
-	dx = FixedDiv(dx, dm);
-	dy = FixedDiv(dy, dm);
-	dz = FixedDiv(dz, dm);
-
-	for (i = 1; i <= 8; i++)
-	{
-		mobj_t *trail = P_SpawnMobj(actor->x - dx*i, actor->y - dy*i, actor->z - dz*i, MT_PARTICLE);
-		trail->tics = 2;
-		trail->sprite = actor->sprite;
-		P_SetScale(trail, trail->scale/4);
-		trail->destscale = trail->scale;
-	}
 }
 
 // Function: A_ModuloToState

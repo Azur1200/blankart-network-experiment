@@ -2328,9 +2328,9 @@ boolean P_ZMovement(mobj_t *mo)
 
 	if (!mo->player && P_CheckDeathPitCollide(mo))
 	{
-		if (mo->flags & MF_ENEMY || mo->flags & MF_BOSS || mo->type == MT_MINECART)
+		if (mo->flags & MF_ENEMY || mo->flags & MF_BOSS)
 		{
-			// Kill enemies, bosses and minecarts that fall into death pits.
+			// Kill enemies and bosses.
 			if (mo->health)
 			{
 				P_KillMobj(mo, NULL, NULL, DMG_NORMAL);
@@ -8487,7 +8487,7 @@ for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) s
 
 static boolean P_FuseThink(mobj_t *mobj)
 {
-	if (mobj->type == MT_SNAPPER_HEAD || mobj->type == MT_SNAPPER_LEG || mobj->type == MT_MINECARTSEG)
+	if (mobj->type == MT_SNAPPER_HEAD || mobj->type == MT_SNAPPER_LEG)
 		mobj->renderflags ^= RF_DONTDRAW;
 
 	if (mobj->fuse <= TICRATE && (mobj->type == MT_RANDOMITEM || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK))
@@ -9492,21 +9492,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_FBOMB:
 			mobj->flags2 |= MF2_EXPLOSION;
 			break;
-		case MT_OILLAMP:
-			{
-				mobj_t* overlay = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
-				P_SetTarget(&overlay->target, mobj);
-				P_SetMobjState(overlay, S_OILLAMPFLARE);
-				break;
-			}
-		case MT_TNTBARREL:
-			mobj->momx = 1; //stack hack
-			mobj->flags2 |= MF2_INVERTAIMABLE;
-			break;
-		case MT_MINECARTEND:
-			P_SetTarget(&mobj->tracer, P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_MINECARTENDSOLID));
-			mobj->tracer->angle = mobj->angle + ANGLE_90;
-			break;
 		case MT_TORCHFLOWER:
 			{
 				mobj_t *fire = P_SpawnMobjFromMobj(mobj, 0, 0, 46*FRACUNIT, MT_FLAME);
@@ -9617,7 +9602,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_RUSTYLAMP_ORANGE:
 			P_SpawnMobj(mobj->x, mobj->y, mobj->z + (69*mobj->scale), MT_MARBLELIGHT);
 			break;
-		case MT_DAYTONAPINETREE:
+		case MT_PINETREE:
 		{
 			angle_t diff = FixedAngle((360/mobj->info->mass)*FRACUNIT);
 			UINT8 i;
@@ -9626,7 +9611,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			{
 				angle_t ang = i * diff;
 				mobj_t *side = P_SpawnMobj(mobj->x + FINECOSINE((ang>>ANGLETOFINESHIFT) & FINEMASK),
-					mobj->y + FINESINE((ang>>ANGLETOFINESHIFT) & FINEMASK), mobj->z, MT_DAYTONAPINETREE_SIDE);
+					mobj->y + FINESINE((ang>>ANGLETOFINESHIFT) & FINEMASK), mobj->z, MT_PINETREE_SIDE);
 				side->angle = ang;
 				side->target = mobj;
 				side->threshold = i;

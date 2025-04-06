@@ -101,7 +101,7 @@
 extern "C" {
 #endif
 
-//#define NOMD5
+#define NOMD5
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK

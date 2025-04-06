@@ -761,6 +761,40 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				S_StartSound(toucher, sfx_hoop3);
 			return;
 
+		case MT_EGGSHIELD:
+			{
+				fixed_t touchx, touchy, touchspeed;
+				angle_t angle;
+
+				if (P_AproxDistance(toucher->x-special->x, toucher->y-special->y) >
+					P_AproxDistance((toucher->x-toucher->momx)-special->x, (toucher->y-toucher->momy)-special->y))
+				{
+					touchx = toucher->x + toucher->momx;
+					touchy = toucher->y + toucher->momy;
+				}
+				else
+				{
+					touchx = toucher->x;
+					touchy = toucher->y;
+				}
+
+				angle = R_PointToAngle2(special->x, special->y, touchx, touchy) - special->angle;
+				touchspeed = P_AproxDistance(toucher->momx, toucher->momy);
+
+				// Blocked by the shield?
+				if (!(angle > ANGLE_90 && angle < ANGLE_270))
+				{
+					toucher->momx = P_ReturnThrustX(special, special->angle, touchspeed);
+					toucher->momy = P_ReturnThrustY(special, special->angle, touchspeed);
+					toucher->momz = -toucher->momz;
+
+					// Play a bounce sound?
+					S_StartSound(toucher, special->info->painsound);
+					return;
+				}
+			}
+			return;
+
 		case MT_BIGTUMBLEWEED:
 		case MT_LITTLETUMBLEWEED:
 			if (toucher->momx || toucher->momy)
@@ -1547,13 +1581,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		case MT_EGGTRAP:
 			// Time for birdies! Yaaaaaaaay!
 			target->fuse = TICRATE;
-			break;
-
-		case MT_MINECART:
-			A_Scream(target);
-			target->momx = target->momy = target->momz = 0;
-			if (target->target && target->target->health)
-				P_KillMobj(target->target, target, source, DMG_NORMAL);
 			break;
 
 		case MT_PLAYER:

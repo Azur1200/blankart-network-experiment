@@ -34,7 +34,6 @@ _(POINTY) // Pointy
 _(POINTYBALL) // Pointy Ball
 _(ROBOHOOD) // Robo-Hood
 _(FACESTABBER) // Castlebot Facestabber
-_(FACESTABBERSPEAR) // Castlebot Facestabber spear aura
 _(EGGGUARD) // Egg Guard
 _(EGGSHIELD) // Egg Guard's shield
 _(GSNAPPER) // Green Snapper
@@ -348,7 +347,6 @@ _(CEZPOLE1) // Pole (with red banner)
 _(CEZPOLE2) // Pole (with blue banner)
 _(CEZBANNER1) // Banner (red)
 _(CEZBANNER2) // Banner (blue)
-_(PINETREE) // Pine Tree
 _(CEZBUSH1) // Bush 1
 _(CEZBUSH2) // Bush 2
 _(CANDLE) // Candle
@@ -367,42 +365,10 @@ _(BRAMBLES) // Brambles
 // Arid Canyon Scenery
 _(BIGTUMBLEWEED)
 _(LITTLETUMBLEWEED)
-_(CACTI1) // Tiny Red Flower Cactus
-_(CACTI2) // Small Red Flower Cactus
-_(CACTI3) // Tiny Blue Flower Cactus
-_(CACTI4) // Small Blue Flower Cactus
-_(CACTI5) // Prickly Pear
-_(CACTI6) // Barrel Cactus
-_(CACTI7) // Tall Barrel Cactus
-_(CACTI8) // Armed Cactus
-_(CACTI9) // Ball Cactus
-_(CACTI10) // Tiny Cactus
-_(CACTI11) // Small Cactus
-_(CACTITINYSEG) // Tiny Cactus Segment
-_(CACTISMALLSEG) // Small Cactus Segment
-_(ARIDSIGN_CAUTION) // Caution Sign
-_(ARIDSIGN_CACTI) // Cacti Sign
-_(ARIDSIGN_SHARPTURN) // Sharp Turn Sign
-_(OILLAMP)
-_(TNTBARREL)
-_(PROXIMITYTNT)
-_(DUSTDEVIL)
-_(DUSTLAYER)
-_(ARIDDUST)
-_(MINECART)
-_(MINECARTSEG)
-_(MINECARTSPAWNER)
-_(MINECARTEND)
-_(MINECARTENDSOLID)
-_(MINECARTSIDEMARK)
-_(MINECARTSPARK)
-_(SALOONDOOR)
-_(SALOONDOORCENTER)
-_(TRAINCAMEOSPAWNER)
-_(TRAINSEG)
-_(TRAINDUSTSPAWNER)
-_(TRAINSTEAMSPAWNER)
-_(MINECARTSWITCHPOINT)
+_(CACTI1)
+_(CACTI2)
+_(CACTI3)
+_(CACTI4)
 
 // Red Volcano Scenery
 _(FLAMEJET)
@@ -991,8 +957,8 @@ _(CDTREEA)
 _(CDTREEB)
 
 // Daytona Speedway
-_(DAYTONAPINETREE)
-_(DAYTONAPINETREE_SIDE)
+_(PINETREE)
+_(PINETREE_SIDE)
 
 // Egg Zeppelin
 _(EZZPROPELLER)

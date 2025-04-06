@@ -239,21 +239,6 @@ _(CABR) // Brambles
 _(BTBL) // Big tumbleweed
 _(STBL) // Small tumbleweed
 _(CACT) // Cacti
-_(WWSG) // Caution Sign
-_(WWS2) // Cacti Sign
-_(WWS3) // Sharp Turn Sign
-_(OILL) // Oil lamp
-_(OILF) // Oil lamp flare
-_(BARR) // TNT barrel
-_(REMT) // TNT proximity shell
-_(TAZD) // Dust devil
-_(ADST) // Arid dust
-_(MCRT) // Minecart
-_(MCSP) // Minecart spark
-_(SALD) // Saloon door
-_(TRAE) // Train cameo locomotive
-_(TRAI) // Train cameo wagon
-_(STEA) // Train steam
 
 // Red Volcano Scenery
 _(FLME) // Flame jet

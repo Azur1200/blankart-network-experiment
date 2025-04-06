@@ -5047,9 +5047,6 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = !!(lines[i].flags & ML_SKEWTD);
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
-		case 16: //Minecart parameters
-			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
-			break;
 		case 20: //PolyObject first line
 		{
 			INT32 check = -1;
@@ -7406,12 +7403,6 @@ static void P_ConvertBinaryThingTypes(void)
 				P_WriteConstant(MT_ROCKCRUMBLE1 + id, &mapthings[i].stringargs[0], "Mapthing", i);
 			break;
 		}
-		case 1221: //Minecart saloon door
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
-			break;
-		case 1229: //Minecart switch point
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
-			break;
 		case 1300: //Flame jet (horizontal)
 		case 1301: //Flame jet (vertical)
 			mapthings[i].args[0] = mapthings[i].angle >> 13;
