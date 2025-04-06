@@ -411,7 +411,7 @@ void P_RemoveThinker(thinker_t *thinker)
 
 mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 #ifdef PARANOIA
-, const char *source_file, int source_line
+		, const char *source_file, int source_line
 #endif
 )
 {
@@ -419,31 +419,31 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 	{
 		(*mop)->thinker.references--;
 
-		#ifdef PARANOIA
+#ifdef PARANOIA
 		if ((*mop)->thinker.references < 0)
 		{
 			CONS_Printf(
-				"PARANOIA/P_SetTarget: %p %s %s references=%d, references go negative! (%s:%d)\n",
-						(void*)*mop,
-						MobjTypeName(*mop),
-						MobjThinkerName(*mop),
-						(*mop)->thinker.references,
-						source_file,
-			   source_line
+					"PARANOIA/P_SetTarget: %p %s %s references=%d, references go negative! (%s:%d)\n",
+					(void*)*mop,
+					MobjTypeName(*mop),
+					MobjThinkerName(*mop),
+					(*mop)->thinker.references,
+					source_file,
+					source_line
 			);
 		}
 
 		(*mop)->thinker.debug_time = leveltime;
-		#endif
+#endif
 	}
 
 	if (targ != NULL) // Set new target and if non-NULL, increase its counter
 	{
 		targ->thinker.references++;
 
-		#ifdef PARANOIA
+#ifdef PARANOIA
 		targ->thinker.debug_time = leveltime;
-		#endif
+#endif
 	}
 
 	*mop = targ;

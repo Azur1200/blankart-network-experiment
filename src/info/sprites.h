@@ -480,6 +480,9 @@ _(ROIN)
 _(ROIO)
 _(ROIP)
 
+// Needed for some krat luas....
+_(BBAL)
+
 // Level debris
 _(GFZD) // GFZ debris
 _(BRIC) // Bricks
