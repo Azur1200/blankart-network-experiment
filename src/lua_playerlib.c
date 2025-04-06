@@ -1142,6 +1142,10 @@ static int player_set(lua_State *L)
 	case player_playerstate:
 		plr->playerstate = luaL_checkinteger(L, 3);
 		break;
+	case player_health:
+		if (plr->mo)
+			plr->mo->health = luaL_checkinteger(L, 3);
+		break;
 	case player_viewz:
 		plr->viewz = luaL_checkfixed(L, 3);
 		break;
