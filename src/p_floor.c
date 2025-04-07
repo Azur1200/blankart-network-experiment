@@ -182,7 +182,7 @@ void T_MoveFloor(floormove_t *movefloor)
 		const fixed_t origspeed = FixedDiv(movefloor->origspeed,(ELEVATORSPEED/2));
 		fixed_t fs;
 		fixed_t bs;
-		
+
 		if (udmf)
 		{
 			fs = abs(movefloor->sector->floorheight - movefloor->crushHeight);
@@ -193,7 +193,7 @@ void T_MoveFloor(floormove_t *movefloor)
 			fs = abs(movefloor->sector->floorheight - lines[movefloor->sourceline].frontsector->floorheight);
 			bs = abs(movefloor->sector->floorheight - lines[movefloor->sourceline].backsector->floorheight);
 		}
-		
+
 		if (fs < bs)
 			movefloor->speed = FixedDiv(fs,25*FRACUNIT) + FRACUNIT/4;
 		else
@@ -243,7 +243,7 @@ void T_MoveFloor(floormove_t *movefloor)
 						movefloor->origspeed = lines[movefloor->sourceline].args[2] << (FRACBITS - 2); // forward again, use args[2]
 					}
 				}
-				
+
 				if (movefloor->type == bounceFloorCrush)
 					movefloor->speed = movefloor->origspeed;
 				movefloor->direction = (movefloor->floordestheight < movefloor->sector->floorheight) ? -1 : 1;
@@ -257,7 +257,7 @@ void T_MoveFloor(floormove_t *movefloor)
 						movefloor->floordestheight = movefloor->crushHeight;
 					else
 						movefloor->floordestheight = lines[movefloor->sourceline].frontsector->floorheight;
-					
+
 					movefloor->direction = -1;
 					if (udmf)
 						movefloor->speed = movefloor->returnSpeed;
@@ -1595,13 +1595,12 @@ void EV_DoFloor(mtag_t tag, line_t *line, floor_e floortype)
 {
 	// This function is deprecated.
 	// Use any of the following functions directly, instead.
-	
+
 	if (mapnamespace == MNS_SRB2KART)
 	{
 		EV_DoFloorOLD(tag, line, floortype);
 		return;
 	}
-	
 
 	switch (floortype)
 	{
@@ -1723,7 +1722,7 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 					dofloor->direction = -1; // down
 
 				// If flag is set, change floor texture after moving
-				dofloor->texture = line->args[2] ? line->frontsector->floorpic : -1;
+				dofloor->texture = line->args[3] ? line->frontsector->floorpic : -1;
 				break;
 
 			case moveFloorByFrontSector:
