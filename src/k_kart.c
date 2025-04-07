@@ -54,6 +54,8 @@ consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerst
 consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", 0, CV_OnOff, NULL);
 consvar_t cv_kartdriftsounds = CVAR_INIT ("kartdriftsounds", "On", 0, CV_OnOff, NULL);
 consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", 0, CV_OnOff, NULL);
+static CV_PossibleValue_t driftsparkpulse_cons_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
+consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_FLOAT, driftsparkpulse_cons_t, NULL);
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -313,8 +315,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartslipdash);
 
 	CV_RegisterVar(&cv_kartdriftsounds);
-
 	CV_RegisterVar(&cv_kartdriftefx);
+	CV_RegisterVar(&cv_driftsparkpulse);
 }
 
 //}
@@ -4434,6 +4436,8 @@ UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 	return color;
 }
 
+#define DRIFTSPARKGROWTICS 8
+
 static void K_SpawnDriftSparks(player_t *player)
 {
 	fixed_t newx;
@@ -4456,6 +4460,7 @@ static void K_SpawnDriftSparks(player_t *player)
 
 	for (i = 0; i < 2; i++)
 	{
+		fixed_t driftExtraScale = 0;
 		newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
 		spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
@@ -4463,8 +4468,10 @@ static void K_SpawnDriftSparks(player_t *player)
 		P_SetTarget(&spark->target, player->mo);
 		spark->angle = travelangle-(ANGLE_45/5)*player->drift;
 
-		spark->destscale = player->mo->scale;
-		P_SetScale(spark, player->mo->scale);
+		// scale increase while driftspark level gained timer is running
+		driftExtraScale = FixedDiv(player->driftsparkGrowTimer, DRIFTSPARKGROWTICS);
+		spark->destscale = FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value));
+		P_SetScale(spark, FixedMul(player->mo->scale, FRACUNIT + FixedMul(driftExtraScale, cv_driftsparkpulse.value)));
 
 		spark->momx = player->mo->momx/2;
 		spark->momy = player->mo->momy/2;
@@ -4474,12 +4481,6 @@ static void K_SpawnDriftSparks(player_t *player)
 		{
 			spark->color = 1 + (leveltime % (numskincolors-1));
 
-			if (player->driftcharge <= K_GetKartDriftSparkValue(player)*4+(32*3))
-			{
-				// transition
-				P_SetScale(spark, (spark->destscale = spark->scale*3/2));
-			}
-
 		}
 		else if (cv_kartpurpledrift.value && player->driftcharge >= K_GetKartDriftSparkValue(player)*3)
 		{
@@ -4487,13 +4488,6 @@ static void K_SpawnDriftSparks(player_t *player)
 				spark->color = SKINCOLOR_VIOLET; // transition
 			else
 				spark->color = SKINCOLOR_PURPLE;
-
-			if (player->driftcharge <= K_GetKartDriftSparkValue(player)*3+(32*3))
-			{
-				// transition
-				P_SetScale(spark, (spark->destscale = spark->scale*3/2));
-			}
-
 		}
 		else if (player->driftcharge >= K_GetKartDriftSparkValue(player)*2)
 		{
@@ -4501,24 +4495,10 @@ static void K_SpawnDriftSparks(player_t *player)
 				spark->color = SKINCOLOR_RASPBERRY; // transition
 			else
 				spark->color = SKINCOLOR_KETCHUP;
-
-			if (player->driftcharge <= K_GetKartDriftSparkValue(player)*2+(32*3))
-			{
-				// transition
-				P_SetScale(spark, (spark->destscale = spark->scale*3/2));
-			}
-
 		}
 		else
 		{
 			spark->color = SKINCOLOR_SAPPHIRE;
-
-
-			if (player->driftcharge <= K_GetKartDriftSparkValue(player)+(32*3))
-			{
-				// transition
-				P_SetScale(spark, (spark->destscale = spark->scale*2));
-			}
 		}
 
 		if ((player->drift > 0 && player->cmd.turning > 0) // Inward drifts
@@ -9076,6 +9056,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 		{
 			if (P_IsDisplayPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+
+			player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
 		}
 
 		player->driftcharge += driftadditive;
@@ -9088,6 +9070,9 @@ static void K_KartDrift(player_t *player, boolean onground)
 		if (player->driftcharge >= dsone)
 			K_SpawnDriftSparks(player);
 	}
+
+	if (player->driftsparkGrowTimer)
+		player->driftsparkGrowTimer--;
 
 	// Stop drifting
 	if (P_PlayerInPain(player) || player->speed < minspeed)
