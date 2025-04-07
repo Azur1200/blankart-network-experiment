@@ -5657,9 +5657,8 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_ROCKCRUMBLE16:
 	case MT_WOODDEBRIS:
 	case MT_BRICKDEBRIS:
-	case MT_BROKENROBOT:
 		if (mobj->z <= P_FloorzAtPos(mobj->x, mobj->y, mobj->z, mobj->height)
-			&& mobj->state != &states[mobj->info->deathstate])
+        && mobj->state != &states[mobj->info->deathstate])
 		{
 			P_SetMobjState(mobj, mobj->info->deathstate);
 			return;
@@ -5668,10 +5667,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_PARTICLEGEN:
 		if (!P_ParticleGenSceneryThink(mobj))
 			return;
-		break;
-	case MT_FSGNA:
-		if (mobj->movedir)
-			mobj->angle += mobj->movedir;
 		break;
 	case MT_ORBINAUT_SHIELD: // Kart orbit/trail items
 	case MT_JAWZ_SHIELD:
@@ -6230,16 +6225,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		}
 
 		break;
-	}
-	case MT_VWREF:
-	case MT_VWREB:
-	{
-		INT32 strength;
-		++mobj->movedir;
-		mobj->frame &= ~FF_TRANSMASK;
-		strength = min(mobj->fuse, (INT32)mobj->movedir)*3;
-		if (strength < 10)
-			mobj->frame |= ((10 - strength) << (FF_TRANSSHIFT));
 	}
 	/* FALLTHRU */
 	default:
@@ -8450,9 +8435,6 @@ for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) s
 
 static boolean P_FuseThink(mobj_t *mobj)
 {
-	if (mobj->type == MT_SNAPPER_HEAD || mobj->type == MT_SNAPPER_LEG)
-		mobj->renderflags ^= RF_DONTDRAW;
-
 	if (mobj->fuse <= TICRATE && (mobj->type == MT_RANDOMITEM || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK))
 		mobj->renderflags ^= RF_DONTDRAW;
 
@@ -9302,24 +9284,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				}
 			}
 			break;
-		case MT_CRUSHSTACEAN:
-			{
-				mobj_t *bigmeatyclaw = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_CRUSHCLAW);
-				bigmeatyclaw->angle = mobj->angle + ((mobj->flags2 & MF2_AMBUSH) ? ANGLE_90 : ANGLE_270);
-				P_SetTarget(&mobj->tracer, bigmeatyclaw);
-				P_SetTarget(&bigmeatyclaw->tracer, mobj);
-				mobj->reactiontime >>= 1;
-			}
-			break;
-		case MT_BANPYURA:
-			{
-				mobj_t *bigmeatyclaw = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_BANPSPRING);
-				bigmeatyclaw->angle = mobj->angle + ((mobj->flags2 & MF2_AMBUSH) ? ANGLE_90 : ANGLE_270);
-				P_SetTarget(&mobj->tracer, bigmeatyclaw);
-				P_SetTarget(&bigmeatyclaw->tracer, mobj);
-				mobj->reactiontime >>= 1;
-			}
-			break;
 		case MT_BIGMINE:
 			mobj->extravalue1 = FixedHypot(mobj->x, mobj->y)>>FRACBITS;
 			break;
@@ -9391,14 +9355,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			mobj->color = skins[5].prefcolor;
 			sc = 5;
 			break;
-		case MT_FANG:
-			sc = 4;
-			break;
 		case MT_CORK:
 			mobj->flags2 |= MF2_SUPERFIRE;
-			break;
-		case MT_FBOMB:
-			mobj->flags2 |= MF2_EXPLOSION;
 			break;
 		// SRB2Kart
 		case MT_ITEMCAPSULE:

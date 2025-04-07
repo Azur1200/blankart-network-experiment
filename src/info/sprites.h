@@ -24,30 +24,19 @@ _(SKIM) // Skim mine dropper
 _(TRET) // Industrial Turret
 _(TURR) // Pop-Up Turret
 _(SHRP) // Sharp
-//_(CRAB) // Crushstacean
-_(CR2B) // Banpyura
-_(CSPR) // Banpyura spring
 _(JJAW) // Jet Jaw
 _(SNLR) // Snailer
 _(VLTR) // BASH
 _(PNTY) // Pointy
 _(ARCH) // Robo-Hood
 _(CBFS) // Castlebot Facestabber
-_(STAB) // Castlebot Facestabber spear aura
 _(SPSH) // Egg Guard
 _(ESHI) // Egg Guard's shield
 _(GSNP) // Green Snapper
-_(GSNL) // Green Snapper leg
-_(GSNH) // Green Snapper head
 _(MNUS) // Minus
 _(MNUD) // Minus dirt
 _(SSHL) // Spring Shell
 _(UNID) // Unidus
-_(CANA) // Canarivore
-_(CANG) // Canarivore gas
-_(PYRE) // Pyre Fly
-_(PTER) // Pterabyte
-_(DRAB) // Dragonbomber
 
 // Generic Boss Items
 _(JETF) // Boss jet fumes
@@ -588,7 +577,7 @@ _(CDMO)
 _(CDBU)
 
 // Daytona Speedway
-_(DPIN)
+_(PINE)
 
 // Egg Zeppelin
 _(PPLR)

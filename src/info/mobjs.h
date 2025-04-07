@@ -21,12 +21,7 @@ _(DETON) // Deton
 _(SKIM) // Skim mine dropper
 _(TURRET) // Industrial Turret
 _(POPUPTURRET) // Pop-Up Turret
-_(SPINCUSHION) // Spincushion
-_(CRUSHSTACEAN) // Crushstacean
-_(CRUSHCLAW) // Big meaty claw
-_(CRUSHCHAIN) // Chain
-_(BANPYURA) // Banpyura
-_(BANPSPRING) // Banpyura spring
+_(SHARP) // SHARP
 _(JETJAW) // Jet Jaw
 _(SNAILER) // Snailer
 _(VULTURE) // BASH
@@ -37,8 +32,6 @@ _(FACESTABBER) // Castlebot Facestabber
 _(EGGGUARD) // Egg Guard
 _(EGGSHIELD) // Egg Guard's shield
 _(GSNAPPER) // Green Snapper
-_(SNAPPER_LEG) // Green Snapper leg
-_(SNAPPER_HEAD) // Green Snapper head
 _(MINUS) // Minus
 _(MINUSDIRT) // Minus dirt
 _(SPRINGSHELL) // Spring Shell
@@ -79,18 +72,6 @@ _(EGGMOBILE4_MACE)
 _(JETFLAME)
 _(EGGROBO1)
 _(EGGROBO1JET)
-
-// Boss 5
-_(FANG)
-_(BROKENROBOT)
-_(VWREF)
-_(VWREB)
-_(PROJECTORLIGHT)
-_(FBOMB)
-_(TNTDUST) // also used by barrel
-_(FSGNA)
-_(FSGNB)
-_(FANGWAYPOINT)
 
 // Black Eggman (Boss 7)
 _(BLACKEGGMAN)

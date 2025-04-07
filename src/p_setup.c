@@ -7022,13 +7022,6 @@ static void P_ConvertBinaryThingTypes(void)
 		case 203: //Egg Colosseum
 			mapthings[i].args[5] = LE_BOSS4DROP + mapthings[i].extrainfo * LE_PARAMWIDTH;
 			break;
-		case 204: //Fang
-			mapthings[i].args[4] = LE_BOSS4DROP + mapthings[i].extrainfo*LE_PARAMWIDTH;
-			if (mapthings[i].options & MTF_EXTRA)
-				mapthings[i].args[5] |= TMF_GRAYSCALE;
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[5] |= TMF_SKIPINTRO;
-			break;
 		case 206: //Brak Eggman (Old)
 			mapthings[i].args[5] = LE_BRAKPLATFORM + mapthings[i].extrainfo*LE_PARAMWIDTH;
 			break;
@@ -7049,9 +7042,6 @@ static void P_ConvertBinaryThingTypes(void)
 		case 292: //Boss waypoint
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].options & 7;
-			break;
-		case 294: //Fang waypoint
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
 			break;
 		case 300: //Ring
 		case 301: //Bounce ring
