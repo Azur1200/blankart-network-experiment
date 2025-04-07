@@ -7929,6 +7929,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		if (grandprixinfo.gp == false && bossinfo.boss == false)
 			players[i].lives = 3;
 
+		players[i].driftsparkGrowTimer = 0;
+
 		G_PlayerReborn(i, true);
 		K_UpdateShrinkCheat(&players[i]);
 	}
