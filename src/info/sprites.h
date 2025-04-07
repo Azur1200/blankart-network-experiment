@@ -174,9 +174,6 @@ _(CBLL) // Cannonball
 _(AROW) // Arrow
 _(CFIR) // Colored fire of various sorts
 
-// The letter
-_(LETR)
-
 // Greenflower Scenery
 _(FWR1)
 _(FWR2) // GFZ Sunflower
@@ -184,33 +181,19 @@ _(FWR3) // GFZ budding flower
 _(FWR4)
 _(BUS1) // GFZ Bush w/ berries
 _(BUS2) // GFZ Bush w/o berries
-_(BUS3) // GFZ Bush w/ BLUE berries
-// Trees (both GFZ and misc)
-_(TRE1) // GFZ
-_(TRE2) // Checker
-_(TRE3) // Frozen Hillside
-_(TRE4) // Polygon
-_(TRE5) // Bush tree
-_(TRE6) // Spring tree
 
 // Techno Hill Scenery
-_(THZP) // THZ1 Steam Flower
-_(FWR5) // THZ1 Spin flower (red)
-_(FWR6) // THZ1 Spin flower (yellow)
-_(THZT) // Steam Whistle tree/bush
+_(THZP) // Techno Hill Zone Plant
 _(ALRM) // THZ2 Alarm
 
 // Deep Sea Scenery
 _(GARG) // Deep Sea Gargoyle
 _(SEWE) // Deep Sea Seaweed
 _(DRIP) // Dripping water
-_(CORL) // Coral
+_(CRL1) // Coral 1
+_(CRL2) // Coral 2
+_(CRL3) // Coral 3
 _(BCRY) // Blue Crystal
-_(KELP) // Kelp
-_(ALGA) // Animated algae top
-_(ALGB) // Animated algae segment
-_(DSTG) // DSZ Stalagmites
-_(LIBE) // DSZ Light beam
 
 // Castle Eggman Scenery
 _(CHAN) // CEZ Chain
@@ -224,16 +207,6 @@ _(YSPB) // Yellow spring on a ball
 _(RSPB) // Red spring on a ball
 _(SFBR) // Small Firebar
 _(BFBR) // Big Firebar
-_(BANR) // Banner/pole
-_(PINE) // Pine Tree
-_(CEZB) // Bush
-_(CNDL) // Candle/pricket
-_(FLMH) // Flame holder
-_(CTRC) // Fire torch
-_(CFLG) // Waving flag/segment
-_(CSTA) // Crawla statue
-_(CBBS) // Facestabber statue
-_(CABR) // Brambles
 
 // Arid Canyon Scenery
 _(BTBL) // Big tumbleweed
@@ -243,10 +216,6 @@ _(CACT) // Cacti
 // Red Volcano Scenery
 _(FLME) // Flame jet
 _(DFLM) // Blade's flame
-_(LFAL) // Lavafall
-_(JPLA) // Jungle palm
-_(TFLO) // Torch flower
-_(WVIN) // Wall vines
 
 // Dark City Scenery
 
@@ -261,13 +230,6 @@ _(XMS5) // Hanging Star
 _(XMS6) // Mistletoe
 _(FHZI) // FHZ Ice
 _(ROSY)
-
-// Halloween Scenery
-_(PUMK) // Pumpkins
-_(HHPL) // Dr Seuss Trees
-_(SHRM) // Mushroom
-_(HHZM) // Misc
-
 // Azure Temple Scenery
 _(BGAR) // ATZ Gargoyles
 _(RCRY) // ATZ Red Crystal (Target)
@@ -423,21 +385,6 @@ _(CAPS) // Capsule thingy for NiGHTS
 _(IDYA) // Ideya
 _(NTPN) // Nightopian
 _(SHLP) // Shleep
-
-// Secret badniks and hazards, shhhh
-_(PENG)
-_(POPH)
-_(HIVE)
-_(BUMB)
-_(BBUZ)
-_(FMCE)
-_(HMCE)
-_(CACO)
-_(BAL2)
-_(SBOB)
-_(SBFL)
-_(SBSK)
-_(HBAT)
 
 // Debris
 _(SPRK) // Sparkle

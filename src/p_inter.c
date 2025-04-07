@@ -1456,19 +1456,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			target->fuse = target->info->damage;
 			break;
 
-		case MT_BUGGLE:
-			if (inflictor && inflictor->player // did a player kill you? Spawn relative to the player so they're bound to get it
-			&& P_AproxDistance(inflictor->x - target->x, inflictor->y - target->y) <= inflictor->radius + target->radius + FixedMul(8*FRACUNIT, inflictor->scale) // close enough?
-			&& inflictor->z <= target->z + target->height + FixedMul(8*FRACUNIT, inflictor->scale)
-			&& inflictor->z + inflictor->height >= target->z - FixedMul(8*FRACUNIT, inflictor->scale))
-				mo = P_SpawnMobj(inflictor->x + inflictor->momx, inflictor->y + inflictor->momy, inflictor->z + (inflictor->height / 2) + inflictor->momz, MT_EXTRALARGEBUBBLE);
-			else
-				mo = P_SpawnMobj(target->x, target->y, target->z, MT_EXTRALARGEBUBBLE);
-			mo->destscale = target->scale;
-			P_SetScale(mo, mo->destscale);
-			P_SetMobjState(mo, mo->info->raisestate);
-			break;
-
 		case MT_YELLOWSHELL:
 			P_SpawnMobjFromMobj(target, 0, 0, 0, MT_YELLOWSPRING);
 			break;
@@ -1505,17 +1492,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			P_InstaThrust(target, target->angle, 3*target->scale);
 			target->flags = (target->flags|MF_NOCLIPHEIGHT) & ~MF_NOGRAVITY;
 			break;
-
-		case MT_DRAGONBOMBER:
-			{
-				mobj_t *segment = target;
-				while (segment->tracer != NULL)
-				{
-					P_KillMobj(segment->tracer, NULL, NULL, DMG_NORMAL);
-					segment = segment->tracer;
-				}
-				break;
-			}
 
 		case MT_EGGMOBILE3:
 			{
@@ -1569,13 +1545,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		case MT_BLASTEXECUTOR:
 			if (target->spawnpoint)
 				P_LinedefExecute(target->spawnpoint->angle, (source ? source : inflictor), target->subsector->sector);
-			break;
-
-		case MT_SPINBOBERT:
-			if (target->hnext)
-				P_KillMobj(target->hnext, inflictor, source, damagetype);
-			if (target->hprev)
-				P_KillMobj(target->hprev, inflictor, source, damagetype);
 			break;
 
 		case MT_EGGTRAP:

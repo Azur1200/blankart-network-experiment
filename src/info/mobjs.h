@@ -45,17 +45,6 @@ _(SPRINGSHELL) // Spring Shell
 _(YELLOWSHELL) // Spring Shell (yellow)
 _(UNIDUS) // Unidus
 _(UNIBALL) // Unidus Ball
-_(CANARIVORE) // Canarivore
-_(CANARIVORE_GAS) // Canarivore gas
-_(PYREFLY) // Pyre Fly
-_(PYREFLY_FIRE) // Pyre Fly fire
-_(PTERABYTESPAWNER) // Pterabyte spawner
-_(PTERABYTEWAYPOINT) // Pterabyte waypoint
-_(PTERABYTE) // Pterabyte
-_(DRAGONBOMBER) // Dragonbomber
-_(DRAGONWING) // Dragonbomber wing
-_(DRAGONTAIL) // Dragonbomber tail segment
-_(DRAGONMINE) // Dragonbomber mine
 
 // Generic Boss Items
 _(BOSSEXPLODE)
@@ -268,62 +257,30 @@ _(CANNONBALLDECOR) // Decorative/still cannonball
 _(ARROW) // Arrow
 _(DEMONFIRE) // Glaregoyle fire
 
-// The letter
-_(LETTER)
-
 // Greenflower Scenery
 _(GFZFLOWER1)
 _(GFZFLOWER2)
 _(GFZFLOWER3)
-
-_(BLUEBERRYBUSH)
 _(BERRYBUSH)
 _(BUSH)
 
-// Trees (both GFZ and misc)
-_(GFZTREE)
-_(GFZBERRYTREE)
-_(GFZCHERRYTREE)
-_(CHECKERTREE)
-_(CHECKERSUNSETTREE)
-_(FHZTREE) // Frozen Hillside
-_(FHZPINKTREE)
-_(POLYGONTREE)
-_(BUSHTREE)
-_(BUSHREDTREE)
-_(SPRINGTREE)
-
 // Techno Hill Scenery
-_(THZFLOWER1)
-_(THZFLOWER2)
-_(THZFLOWER3)
-_(THZTREE) // Steam whistle tree/bush
-_(THZTREEBRANCH) // branch of said tree
+_(THZPLANT) // THZ Plant
 _(ALARM)
 
 // Deep Sea Scenery
 _(GARGOYLE) // Deep Sea Gargoyle
-_(BIGGARGOYLE) // Deep Sea Gargoyle (Big)
 _(SEAWEED) // DSZ Seaweed
 _(WATERDRIP) // Dripping Water source
 _(WATERDROP) // Water drop from dripping water
-_(CORAL1) // Coral
-_(CORAL2)
-_(CORAL3)
-_(CORAL4)
-_(CORAL5)
+_(CORAL1) // Coral 1
+_(CORAL2) // Coral 2
+_(CORAL3) // Coral 3
 _(BLUECRYSTAL) // Blue Crystal
-_(KELP) // Kelp
-_(ANIMALGAETOP) // Animated algae top
-_(ANIMALGAESEG) // Animated algae segment
-_(DSZSTALAGMITE) // Deep Sea 1 Stalagmite
-_(DSZ2STALAGMITE) // Deep Sea 2 Stalagmite
-_(LIGHTBEAM) // DSZ Light beam
 
 // Castle Eggman Scenery
 _(CHAIN) // CEZ Chain
-_(FLAME) // Flame (has corona)
-_(FLAMEPARTICLE)
+_(FLAME) // Flame
 _(EGGSTATUE) // Eggman Statue
 _(MACEPOINT) // Mace rotation point
 _(CHAINMACEPOINT) // Combination of chains and maces point
@@ -343,24 +300,6 @@ _(REDSPRINGBALL) // Red spring on a ball
 _(SMALLFIREBAR) // Small Firebar
 _(BIGFIREBAR) // Big Firebar
 _(CEZFLOWER) // Flower
-_(CEZPOLE1) // Pole (with red banner)
-_(CEZPOLE2) // Pole (with blue banner)
-_(CEZBANNER1) // Banner (red)
-_(CEZBANNER2) // Banner (blue)
-_(CEZBUSH1) // Bush 1
-_(CEZBUSH2) // Bush 2
-_(CANDLE) // Candle
-_(CANDLEPRICKET) // Candle pricket
-_(FLAMEHOLDER) // Flame holder
-_(FIRETORCH) // Fire torch
-_(WAVINGFLAG1) // Waving flag (red)
-_(WAVINGFLAG2) // Waving flag (blue)
-_(WAVINGFLAGSEG1) // Waving flag segment (red)
-_(WAVINGFLAGSEG2) // Waving flag segment (blue)
-_(CRAWLASTATUE) // Crawla statue
-_(FACESTABBERSTATUE) // Facestabber statue
-_(SUSPICIOUSFACESTABBERSTATUE) // :eggthinking:
-_(BRAMBLES) // Brambles
 
 // Arid Canyon Scenery
 _(BIGTUMBLEWEED)
@@ -379,20 +318,6 @@ _(FJSPINAXISA) // Counter-clockwise
 _(FJSPINAXISB) // Clockwise
 
 _(FLAMEJETFLAMEB) // Blade's flame
-
-_(LAVAFALL)
-_(LAVAFALL_LAVA)
-_(LAVAFALLROCK)
-
-_(ROLLOUTSPAWN)
-_(ROLLOUTROCK)
-
-_(BIGFERNLEAF)
-_(BIGFERN)
-_(JUNGLEPALM)
-_(TORCHFLOWER)
-_(WALLVINE_LONG)
-_(WALLVINE_SHORT)
 
 // Dark City Scenery
 
@@ -432,27 +357,6 @@ _(MISTLETOE)
 _(XMASBLUEBERRYBUSH)
 _(XMASBERRYBUSH)
 _(XMASBUSH)
-// FHZ
-_(FHZICE1)
-_(FHZICE2)
-_(ROSY)
-_(CDLHRT)
-
-// Halloween Scenery
-// Pumpkins
-_(JACKO1)
-_(JACKO2)
-_(JACKO3)
-// Dr Seuss Trees
-_(HHZTREE_TOP)
-_(HHZTREE_PART)
-// Misc
-_(HHZSHROOM)
-_(HHZGRASS)
-_(HHZTENTACLE1)
-_(HHZTENTACLE2)
-_(HHZSTALAGMITE_TALL)
-_(HHZSTALAGMITE_SHORT)
 
 // Botanic Serenity scenery
 _(BSZTALLFLOWER_RED)
@@ -664,26 +568,6 @@ _(IDEYAANCHOR)
 _(NIGHTOPIANHELPER) // the actual helper object that orbits you
 _(PIAN) // decorative singing friend
 _(SHLEEP) // almost-decorative sleeping enemy
-
-// Secret badniks and hazards, shhhh
-_(PENGUINATOR)
-_(POPHAT)
-_(POPSHOT)
-_(POPSHOT_TRAIL)
-
-_(HIVEELEMENTAL)
-_(BUMBLEBORE)
-
-_(BUGGLE)
-
-_(SMASHINGSPIKEBALL)
-_(CACOLANTERN)
-_(CACOSHARD)
-_(CACOFIRE)
-_(SPINBOBERT)
-_(SPINBOBERT_FIRE1)
-_(SPINBOBERT_FIRE2)
-_(HANGSTER)
 
 // Utility Objects
 _(TELEPORTMAN)

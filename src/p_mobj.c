@@ -1906,7 +1906,7 @@ void P_XYMovement(mobj_t *mo)
 	if (mo->flags & MF_NOCLIPHEIGHT)
 		return; // no frictions for objects that can pass through floors
 
-	if (mo->flags & MF_MISSILE || mo->flags2 & MF2_SKULLFLY || mo->type == MT_SHELL || mo->type == MT_VULTURE || mo->type == MT_PENGUINATOR)
+	if (mo->flags & MF_MISSILE || mo->flags2 & MF2_SKULLFLY || mo->type == MT_SHELL || mo->type == MT_VULTURE)
 		return; // no friction for missiles ever
 
 	if ((mo->type == MT_BIGTUMBLEWEED || mo->type == MT_LITTLETUMBLEWEED)
@@ -6558,43 +6558,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->tracer->z += mobj->height;
 		}
 		break;
-	case MT_WAVINGFLAG1:
-	case MT_WAVINGFLAG2:
-	{
-		fixed_t base = (leveltime << (FRACBITS + 1));
-		mobj_t *seg = mobj->tracer, *prev = mobj;
-		mobj->movedir = mobj->angle
-			+ ((((FINESINE((FixedAngle(base << 1) >> ANGLETOFINESHIFT) & FINEMASK)
-				+ FINESINE((FixedAngle(base << 4) >> ANGLETOFINESHIFT) & FINEMASK)) >> 1)
-				+ FINESINE((FixedAngle(base*9) >> ANGLETOFINESHIFT) & FINEMASK)
-				+ FINECOSINE(((FixedAngle(base*9)) >> ANGLETOFINESHIFT) & FINEMASK)) << 12); //*2^12
-		while (seg)
-		{
-			seg->movedir = seg->angle;
-			seg->angle = prev->movedir;
-			P_UnsetThingPosition(seg);
-			seg->x = prev->x + P_ReturnThrustX(prev, prev->angle, prev->radius);
-			seg->y = prev->y + P_ReturnThrustY(prev, prev->angle, prev->radius);
-			seg->z = prev->z + prev->height - (seg->scale >> 1);
-			P_SetThingPosition(seg);
-			prev = seg;
-			seg = seg->tracer;
-		}
-	}
-	break;
-	case MT_SMASHINGSPIKEBALL:
-		mobj->momx = mobj->momy = 0;
-		if (mobj->state - states == S_SMASHSPIKE_FALL && P_IsObjectOnGround(mobj))
-		{
-			P_SetMobjState(mobj, S_SMASHSPIKE_STOMP1);
-			S_StartSound(mobj, sfx_spsmsh);
-		}
-		else if (mobj->state - states == S_SMASHSPIKE_RISE2 && P_MobjFlip(mobj)*(mobj->z - mobj->movecount) >= 0)
-		{
-			mobj->momz = 0;
-			P_SetMobjState(mobj, S_SMASHSPIKE_FLOAT);
-		}
-		break;
 	case MT_PLAYER:
 		if (mobj->player)
 			P_PlayerMobjThinker(mobj);
@@ -8513,27 +8476,6 @@ static boolean P_FuseThink(mobj_t *mobj)
 		P_SetMobjState(mobj, mobj->state->nextstate);
 		mobj->fuse = mobj->args[0];
 		break;
-	case MT_LAVAFALL:
-		if (mobj->state - states == S_LAVAFALL_DORMANT)
-		{
-			mobj->fuse = 30;
-			P_SetMobjState(mobj, S_LAVAFALL_TELL);
-			S_StartSound(mobj, mobj->info->seesound);
-		}
-		else if (mobj->state - states == S_LAVAFALL_TELL)
-		{
-			mobj->fuse = 40;
-			P_SetMobjState(mobj, S_LAVAFALL_SHOOT);
-			S_StopSound(mobj);
-			S_StartSound(mobj, mobj->info->attacksound);
-		}
-		else
-		{
-			mobj->fuse = 30;
-			P_SetMobjState(mobj, S_LAVAFALL_DORMANT);
-			S_StopSound(mobj);
-		}
-		return false;
 	case MT_RANDOMITEM:
 		if (mobj->flags2 & MF2_DONTRESPAWN)
 		{
@@ -9381,20 +9323,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_BIGMINE:
 			mobj->extravalue1 = FixedHypot(mobj->x, mobj->y)>>FRACBITS;
 			break;
-		case MT_WAVINGFLAG1:
-		case MT_WAVINGFLAG2:
-			{
-				mobj_t *prev = mobj, *cur;
-				UINT8 i;
-				for (i = 0; i <= 16; i++) // probably should be < but staying authentic to the Lua version
-				{
-					cur = P_SpawnMobjFromMobj(mobj, 0, 0, 0, ((mobj->type == MT_WAVINGFLAG1) ? MT_WAVINGFLAGSEG1 : MT_WAVINGFLAGSEG2));;
-					P_SetTarget(&prev->tracer, cur);
-					cur->extravalue1 = i;
-					prev = cur;
-				}
-			}
-			break;
 		case MT_EGGMOBILE2:
 			// Special condition for the 2nd boss.
 			mobj->watertop = mobj->info->speed;
@@ -9428,23 +9356,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_EGGROBO1:
 			mobj->movecount = P_RandomKey(13);
 			mobj->color = FIRSTRAINBOWCOLOR + P_RandomKey(FIRSTSUPERCOLOR - FIRSTRAINBOWCOLOR);
-			break;
-		case MT_HIVEELEMENTAL:
-			mobj->extravalue1 = 5;
-			break;
-		case MT_SMASHINGSPIKEBALL:
-			mobj->movecount = mobj->z;
-			break;
-		case MT_SPINBOBERT:
-			{
-				mobj_t *fire;
-				fire = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_SPINBOBERT_FIRE1);
-				P_SetTarget(&fire->target, mobj);
-				P_SetTarget(&mobj->hnext, fire);
-				fire = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_SPINBOBERT_FIRE2);
-				P_SetTarget(&fire->target, mobj);
-				P_SetTarget(&mobj->hprev, fire);
-			}
 			break;
 		case MT_REDRING: // Make MT_REDRING red by default
 			mobj->color = skincolor_redring;
@@ -9483,25 +9394,11 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_FANG:
 			sc = 4;
 			break;
-		case MT_ROSY:
-			sc = 3;
-			break;
 		case MT_CORK:
 			mobj->flags2 |= MF2_SUPERFIRE;
 			break;
 		case MT_FBOMB:
 			mobj->flags2 |= MF2_EXPLOSION;
-			break;
-		case MT_TORCHFLOWER:
-			{
-				mobj_t *fire = P_SpawnMobjFromMobj(mobj, 0, 0, 46*FRACUNIT, MT_FLAME);
-				P_SetTarget(&mobj->target, fire);
-				break;
-			}
-		case MT_PYREFLY:
-			mobj->extravalue1 = (FixedHypot(mobj->x, mobj->y)/FRACUNIT) % 360;
-			mobj->extravalue2 = 0;
-			mobj->fuse = 100;
 			break;
 		// SRB2Kart
 		case MT_ITEMCAPSULE:
@@ -11552,35 +11449,6 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 			P_SetTarget(&mobj->tracer, corona);
 		}
 		break;
-	case MT_FLAMEHOLDER:
-		if (!(mthing->args[0] & TMFH_NOFLAME)) // Spawn the fire
-		{
-			mobj_t *flame = P_SpawnMobjFromMobj(mobj, 0, 0, mobj->height, MT_FLAME);
-			P_SetTarget(&flame->target, mobj);
-			flame->flags2 |= MF2_BOSSNOTRAP;
-			if (mthing->args[0] & TMFH_CORONA)
-			{
-				mobj_t *corona = P_MakeSoftwareCorona(flame, 20);
-				P_SetScale(corona, (corona->destscale = flame->scale*3));
-				P_SetTarget(&flame->tracer, corona);
-			}
-		}
-		break;
-	case MT_CANDLE:
-	case MT_CANDLEPRICKET:
-		if (mthing->args[0])
-			P_MakeSoftwareCorona(mobj, ((mobj->type == MT_CANDLE) ? 42 : 176));
-		break;
-	case MT_JACKO1:
-	case MT_JACKO2:
-	case MT_JACKO3:
-		if (!(mthing->args[0])) // take the torch out of the crafting recipe
-		{
-			mobj_t *overlay = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_OVERLAY);
-			P_SetTarget(&overlay->target, mobj);
-			P_SetMobjState(overlay, mobj->info->raisestate);
-		}
-		break;
 	case MT_WATERDRIP:
 		mobj->tics = 3*TICRATE + mthing->args[0];
 		break;
@@ -11619,67 +11487,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		P_AddTubeWaypoint(sequence, id, mobj);
 		break;
 	}
-	case MT_DSZSTALAGMITE:
-	case MT_DSZ2STALAGMITE:
-	case MT_KELP:
-		if (mthing->args[0]) { // make mobj twice as big as normal
-			P_SetScale(mobj, 2*mobj->scale); // not 2*FRACUNIT in case of something like the old ERZ3 mode
-			mobj->destscale = mobj->scale;
-		}
-		break;
-	case MT_THZTREE:
-	{ // Spawn the branches
-		angle_t mobjangle = FixedAngle((mthing->angle % 113) << FRACBITS);
-		P_SpawnMobjFromMobj(mobj, FRACUNIT, 0, 0, MT_THZTREEBRANCH)->angle = mobjangle + ANGLE_22h;
-		P_SpawnMobjFromMobj(mobj, 0, FRACUNIT, 0, MT_THZTREEBRANCH)->angle = mobjangle + ANGLE_157h;
-		P_SpawnMobjFromMobj(mobj, -FRACUNIT, 0, 0, MT_THZTREEBRANCH)->angle = mobjangle + ANGLE_270;
-	}
 	break;
-	case MT_CEZPOLE1:
-	case MT_CEZPOLE2:
-	{ // Spawn the banner
-		angle_t mobjangle = FixedAngle(mthing->angle << FRACBITS);
-		P_SpawnMobjFromMobj(mobj,
-			P_ReturnThrustX(mobj, mobjangle, 4 << FRACBITS),
-			P_ReturnThrustY(mobj, mobjangle, 4 << FRACBITS),
-			0, ((mobj->type == MT_CEZPOLE1) ? MT_CEZBANNER1 : MT_CEZBANNER2))->angle = mobjangle + ANGLE_90;
-	}
-	break;
-	case MT_HHZTREE_TOP:
-	{ // Spawn the branches
-		angle_t mobjangle = FixedAngle(mthing->angle << FRACBITS) & (ANGLE_90 - 1);
-		mobj_t* leaf;
-#define doleaf(x, y) \
-			leaf = P_SpawnMobjFromMobj(mobj, x, y, 0, MT_HHZTREE_PART);\
-			leaf->angle = mobjangle;\
-			P_SetMobjState(leaf, leaf->info->seestate);\
-			mobjangle += ANGLE_90
-		doleaf(FRACUNIT, 0);
-		doleaf(0, FRACUNIT);
-		doleaf(-FRACUNIT, 0);
-		doleaf(0, -FRACUNIT);
-#undef doleaf
-	}
-	break;
-	case MT_SMASHINGSPIKEBALL:
-		if (mthing->args[0] > 0)
-			mobj->tics += mthing->args[0];
-		break;
-	case MT_BIGFERN:
-	{
-		angle_t angle = FixedAngle(mthing->angle << FRACBITS);
-		UINT8 j;
-		for (j = 0; j < 8; j++)
-		{
-			angle_t fa = (angle >> ANGLETOFINESHIFT) & FINEMASK;
-			fixed_t xoffs = FINECOSINE(fa);
-			fixed_t yoffs = FINESINE(fa);
-			mobj_t* leaf = P_SpawnMobjFromMobj(mobj, xoffs, yoffs, 0, MT_BIGFERNLEAF);
-			leaf->angle = angle;
-			angle += ANGLE_45;
-		}
-		break;
-	}
 	case MT_REDBOOSTER:
 	case MT_YELLOWBOOSTER:
 		if (!P_SetupBooster(mthing, mobj, mobj->type == MT_REDBOOSTER))
