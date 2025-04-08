@@ -2227,6 +2227,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 				K_TryHurtSoundExchange(target, source);
 			}
+			else if (source && source == player->mo && source->player)
+			{
+				K_DestroyBumpers(player, 1);
+			}
 
 			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE))
 			{

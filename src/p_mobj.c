@@ -5726,117 +5726,6 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		}
 		break;
 	case MT_BATTLEBUMPER:
-		if (mobj->health <= 0)
-		{
-			mobj->fuse--;
-
-			if (!S_SoundPlaying(mobj, sfx_cdfm71))
-			{
-				S_StartSound(mobj, sfx_cdfm71);
-			}
-
-			if (mobj->fuse <= 0)
-			{
-				statenum_t curState = (mobj->state - states);
-
-				if (curState == S_BATTLEBUMPER1)
-				{
-					P_SetMobjState(mobj, S_BATTLEBUMPER_EXCRYSTALA1);
-
-					if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
-					{
-						P_SetMobjState(mobj->tracer, S_BATTLEBUMPER_EXSHELLA1);
-					}
-
-					mobj->shadowscale *= 2;
-					mobj->fuse = 12;
-				}
-				else if (curState >= S_BATTLEBUMPER_EXCRYSTALA1 && curState <= S_BATTLEBUMPER_EXCRYSTALA4)
-				{
-					P_SetMobjState(mobj, S_BATTLEBUMPER_EXCRYSTALB1);
-
-					if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
-					{
-						P_SetMobjState(mobj->tracer, S_BATTLEBUMPER_EXSHELLB1);
-					}
-
-					mobj->shadowscale *= 2;
-					mobj->fuse = 24;
-					break;
-				}
-				else if (curState >= S_BATTLEBUMPER_EXCRYSTALB1 && curState <= S_BATTLEBUMPER_EXCRYSTALB4)
-				{
-					P_SetMobjState(mobj, S_BATTLEBUMPER_EXCRYSTALC1);
-
-					if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
-					{
-						P_SetMobjState(mobj->tracer, S_BATTLEBUMPER_EXSHELLC1);
-					}
-
-					mobj->shadowscale *= 2;
-					mobj->fuse = 32;
-					break;
-				}
-				else
-				{
-					const INT16 spacing = 64;
-					UINT8 i;
-
-					for (i = 0; i < 10; i++)
-					{
-						mobj_t *debris = P_SpawnMobjFromMobj(
-							mobj,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							MT_BATTLEBUMPER_DEBRIS
-						);
-
-						P_SetScale(debris, (debris->destscale *= 2));
-						debris->color = mobj->color;
-
-						debris->momz = -debris->scale * P_MobjFlip(debris);
-					}
-
-					for (i = 0; i < 2; i++)
-					{
-						mobj_t *blast = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_BATTLEBUMPER_BLAST);
-
-						blast->angle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy) + ANGLE_45;
-						if (i & 1)
-						{
-							blast->angle += ANGLE_90;
-							S_StartSound(blast, sfx_cdfm64);
-						}
-						blast->angle = blast->angle;
-
-						blast->destscale *= 4;
-					}
-
-					for (i = 0; i < 10; i++)
-					{
-						mobj_t *puff = P_SpawnMobjFromMobj(
-							mobj,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							P_RandomRange(-spacing, spacing) * FRACUNIT,
-							MT_DUST
-						);
-
-						P_SetScale(puff, (puff->destscale *= 5));
-						puff->momz = puff->scale * P_MobjFlip(puff);
-
-						P_Thrust(puff, R_PointToAngle2(mobj->x, mobj->y, puff->x, puff->y), puff->scale);
-					}
-
-					P_RemoveMobj(mobj);
-					return;
-				}
-			}
-
-			break;
-		}
-
 		if (mobj->target && !P_MobjWasRemoved(mobj->target) && mobj->target->player
 			&& mobj->target->health > 0 && !mobj->target->player->spectator)
 		{
@@ -5908,27 +5797,22 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 				P_SetThingPosition(mobj);
 			}
 
+			// Was this so hard?
 			if (mobj->target->player->bumper <= mobj->threshold)
 			{
-				// Do bumper destruction
-				P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
-				break;
+				P_RemoveMobj(mobj);
+				return;
 			}
 		}
-		else
+		else if ((mobj->health > 0
+			&& (!mobj->target || !mobj->target->player || !mobj->target->player->mo || mobj->target->health <= 0 || mobj->target->player->spectator))
+			|| (mobj->health <= 0 && P_IsObjectOnGround(mobj))
+			|| P_CheckDeathPitCollide(mobj)) // When in death state
 		{
-			// Sliently remove
 			P_RemoveMobj(mobj);
 			return;
 		}
 
-		break;
-
-	case MT_BATTLEBUMPER_DEBRIS:
-		if (mobj->state == states + S_BATTLEBUMPER_EXDEBRIS2)
-		{
-			mobj->renderflags ^= RF_DONTDRAW;
-		}
 		break;
 
 	// see also K_drawKartItem in k_hud.c

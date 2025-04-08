@@ -7865,7 +7865,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	stackingactive = false;
 	chainingactive = false;
 	slipdashactive = false;
-
 	
 	if (cv_kartrings.value)
 		ringsactive = true;

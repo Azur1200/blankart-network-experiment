@@ -584,20 +584,6 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 		ghost->destscale = 15*ghost->destscale/2;
 		ghost->fuse = 10;
 		ghost->scalespeed = (ghost->destscale - ghost->scale)/ghost->fuse;
-
-		for (i = 0; i < 2; i++)
-		{
-			mobj_t *blast = P_SpawnMobjFromMobj(t1, 0, 0, FixedDiv(t1->height, t1->scale), MT_BATTLEBUMPER_BLAST);
-			P_SetScale(blast, 5*blast->scale/2);
-
-			blast->angle = R_PointToAngle2(0, 0, t1->momx, t1->momy) + ANGLE_45;
-			if (i & 1)
-			{
-				blast->angle += ANGLE_90;
-			}
-
-			blast->destscale *= 10;
-		}
 	}
 
 	t1->flags |= MF_SHOOTABLE;

@@ -255,7 +255,7 @@ void K_CheckBumpers(void)
 	}
 	else if (numingame <= 1)
 	{
-		if (!itembreaker)
+		if (!itembreaker && cv_kartitembreaker.value)
 		{
 			// Reset map to turn on battle capsules
 			D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
