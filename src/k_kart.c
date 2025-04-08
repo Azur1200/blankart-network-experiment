@@ -9199,12 +9199,12 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 	if (player->slipdashcharge && leveltime & 1)
 	{
 		mobj_t *spark = P_SpawnMobjFromMobj(player->mo, 0, 0, -4*mapobjectscale, MT_DRIFTSPARK);
+		P_SetMobjState(spark, S_SLIPSPARK1);
 		spark->color = SKINCOLOR_GREEN;
-		spark->angle = player->mo->angle + player->aizdriftstrat*ANGLE_45;
-		P_SetScale(spark, FixedMul(player->slipdashcharge + 2*FRACUNIT/3, mapobjectscale));
-		spark->destscale = 0;
-		spark->scalespeed = mapobjectscale/4;
-		P_InstaThrust(spark, player->mo->angle, player->speed/2);
+		spark->angle = player->mo->angle - player->aizdriftstrat*ANGLE_90;
+		P_SetScale(spark, FixedMul(5*player->slipdashcharge/4 + FRACUNIT/3, mapobjectscale));
+		spark->destscale = spark->scale;
+		P_InstaThrust(spark, player->mo->angle, 2*player->speed/3);
 		spark->momz = player->mo->z - player->mo->old_z;
 		spark->z += spark->momz;
 	}
