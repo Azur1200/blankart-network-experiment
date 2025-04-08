@@ -3208,6 +3208,18 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 				//bot->flags2 = (bot->flags2 & ~MF2_OBJECTFLIP) | (mo->flags2 & MF2_OBJECTFLIP);
 			break;
 
+		case 434: // Custom Power
+			if (mo && mo->player)
+			{
+				powertype_t power = line->stringargs[0] ? get_number(line->stringargs[0]) : 0;
+				INT32 value = line->stringargs[1] ? get_number(line->stringargs[1]) : 0;
+				if (value == -1) // 'Infinite'
+					value = UINT16_MAX;
+
+				mo->player->powers[power] = value;
+			}
+			break;
+
 		case 435: // Change scroller direction
 			{
 				scroll_t *scroller;

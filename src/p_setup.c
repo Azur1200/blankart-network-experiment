@@ -6078,20 +6078,21 @@ static void P_ConvertBinaryLinedefTypes(void)
 		case 433: //Enable/disable gravity flip
 			lines[i].args[0] = !!(lines[i].flags & ML_NOCLIMB);
 			break;
-		/*case 434: //Award power-up
+		case 434: //Award power-up
 			if (sides[lines[i].sidenum[0]].text)
 			{
 				lines[i].stringargs[0] = Z_Malloc(strlen(sides[lines[i].sidenum[0]].text) + 1, PU_LEVEL, NULL);
 				M_Memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
+
 			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
 			{
 				lines[i].stringargs[1] = Z_Malloc(strlen(sides[lines[i].sidenum[1]].text) + 1, PU_LEVEL, NULL);
 				M_Memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
 			}
 			else
-				P_WriteConstant((lines[i].flags & ML_NOCLIMB) ? -1 : (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS), &lines[i].stringargs[1]);
-			break;*/
+				P_WriteConstant((lines[i].flags & ML_NOCLIMB) ? -1 : (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS), &lines[i].stringargs[1], "Powers", i);
+			break;
 		case 435: //Change plane scroller direction
 			lines[i].args[0] = tag;
 			lines[i].args[1] = R_PointToDist2(lines[i].v2->x, lines[i].v2->y, lines[i].v1->x, lines[i].v1->y) >> FRACBITS;
