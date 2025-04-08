@@ -2008,7 +2008,7 @@ static void K_HandleLapIncrement(player_t *player)
 			player->lastsafestarpost = 0;
 			player->laps++;
 
-			
+
 			if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
 			{
 				// SRB2Kart 281118
@@ -2025,7 +2025,7 @@ static void K_HandleLapIncrement(player_t *player)
 				// Reset starposts (checkpoints) info
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
-			
+
 			if (!cv_kartdebuglap.value && player->laps == 1)
 					player->pflags |= PF_TRUSTWAYPOINTS;
 			K_UpdateAllPlayerPositions();
@@ -2282,8 +2282,8 @@ void P_PushSpecialLine(line_t *line, mobj_t *thing)
 		// Invalid mobj.
 		return;
 	}
-	
-	
+
+
 	if (line == NULL)
 	{
 		// Invalid line.
@@ -2528,6 +2528,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						CONS_Debug(DBG_GAMELOGIC, "Special type 400 Executor: No frontsector to copy planes from!\n");
 						return false;
 					}
+
 					if (mapnamespace == MNS_SRB2KART)
 					{
 						if (line->args[2] != TMP_CEILING)
@@ -2536,10 +2537,8 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 							EV_DoCeiling(line->args[1], line, instantMoveCeilingByFrontSector);
 						break;
 					}
-					else
-					{
-						copySector = line->frontsector;
-					}
+
+					copySector = line->frontsector;
 				}
 				else
 				{
@@ -5235,7 +5234,6 @@ static void P_ProcessZoomTube(player_t *player, mtag_t sectag, boolean end)
 	{
 		speed = abs(lines[lineindex].args[0])/8;
 		sequence = abs(lines[lineindex].args[1])>>FRACBITS;
-		
 	}
 	else
 	{
@@ -5244,7 +5242,6 @@ static void P_ProcessZoomTube(player_t *player, mtag_t sectag, boolean end)
 	}
 	if (end)
 		speed *= -1;
-	
 
 	if (speed == 0)
 	{
@@ -7651,7 +7648,7 @@ void P_SpawnSpecials(boolean fromnetsave)
 				if (lines[i].args[0] > TMXT_EACHTIMEMASK) // Each time
 					P_AddEachTimeThinker(&lines[i], lines[i].args[0] == TMXT_EACHTIMEENTERANDEXIT);
 				break;
-				
+
 			// Record attack only linedef exec
 			case 323:
 				if (!modeattacking)

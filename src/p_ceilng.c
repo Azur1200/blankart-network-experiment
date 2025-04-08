@@ -49,7 +49,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 		const fixed_t origspeed = FixedDiv(ceiling->origspeed, (ELEVATORSPEED/2));
 		fixed_t fs;
 		fixed_t bs;
-		
+
 		if (udmf)
 		{
 			fs = abs(ceiling->sector->ceilingheight - ceiling->crushHeight);
@@ -60,7 +60,7 @@ void T_MoveCeiling(ceiling_t *ceiling)
 			fs = abs(ceiling->sector->ceilingheight - lines[ceiling->sourceline].frontsector->ceilingheight);
 			bs = abs(ceiling->sector->ceilingheight - lines[ceiling->sourceline].backsector->ceilingheight);
 		}
-		
+
 		if (fs < bs)
 			ceiling->speed = FixedDiv(fs, 25*FRACUNIT) + FRACUNIT/4;
 		else
@@ -243,7 +243,7 @@ INT32 EV_DoCeiling(mtag_t tag, line_t *line, ceiling_e type)
 {
 	// This function is deprecated.
 	// Use any of the following functions directly, instead.
-	
+
 	if (mapnamespace == MNS_SRB2KART)
 	{
 		return EV_DoCeilingOLD(tag,line,type);
@@ -365,11 +365,21 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 				// chained linedef executing ability
 				// only set it on ONE of the moving sectors (the smallest numbered)
 				// only set it if there isn't also a floor mover
-				if (line->args[3] && line->args[1] == 1)
-					ceiling->tag = firstone ? (INT16)line->args[3] : 0;
+				//if (line->args[3] && line->args[1] == 1)
+					//ceiling->tag = firstone ? (INT16)line->args[3] : 0;
 
-				// flat changing ability
-				ceiling->texture = line->args[4] ? line->frontsector->ceilingpic : -1;
+				// chained linedef executing ability
+				// only set it on ONE of the moving sectors (the smallest numbered)
+				// and front side x offset must be positive
+				if (line->args[4])
+				{
+					ceiling->texture = firstone ? line->args[4] - 32769 : -1;
+				}
+				else if (line->args[3]) // flat changing ability
+					ceiling->texture = line->frontsector->ceilingpic;
+				else
+					ceiling->texture = -1;
+
 				break;
 
 			// More linedef executor junk
@@ -744,7 +754,7 @@ INT32 EV_DoCrush(mtag_t tag, line_t *line, ceiling_e type)
 	// Use any of the following functions directly, instead.
 
 	fixed_t speed = line->args[2] << (FRACBITS - 2);
-	
+
 	if (mapnamespace == MNS_SRB2KART)
 	{
 		return EV_DoCrushOLD(tag,line,type);

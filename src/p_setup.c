@@ -7865,7 +7865,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	stackingactive = false;
 	chainingactive = false;
 	slipdashactive = false;
-	
+
 	if (cv_kartrings.value)
 		ringsactive = true;
 
@@ -7917,7 +7917,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	racecountdown = exitcountdown = exitfadestarted = 0;
 	curlap = bestlap = 0; // SRB2Kart
-	
+
 	g_exit.losing = false;
 	g_exit.retry = false;
 
@@ -8189,7 +8189,7 @@ static void P_InitPlayers(void)
 			continue;
 
 		players[i].spectatorreentry = 0; // SRB2Kart 1.4
-		
+
 		players[i].mo = NULL;
 
 		if (!(gametyperules & GTR_CIRCUIT))
@@ -8229,7 +8229,7 @@ static void P_InitGametype(void)
 	thwompsactive = false;
 	lastLowestLap = 0;
 	spbplace = -1;
-	
+
 	startedInFreePlay = false;
 	{
 		UINT8 nump = 0;
@@ -8464,7 +8464,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			F_RunWipe(wipedefs[wipe_encore_towhite], false);
 			F_RunWipe(wipedefs[wipe_level_final], false);
 		}
-		
+
 		locstarttime = nowtime = lastwipetic;
 		endtime = locstarttime + (3*TICRATE)/2;
 
@@ -8642,7 +8642,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_ResetSpawnpoints();
 
 	P_ResetTubeWaypoints();
-	
+
 	P_MapStart(); // g_tm.thing can be used starting from this point
 
 	// init anything that P_SpawnSlopes/P_LoadThings needs to know
@@ -8743,7 +8743,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		memset(localaiming, 0, sizeof(localaiming));
 		K_InitDirector();
 	}
-	
+
 	// Remove the loading shit from the screen
 	if (rendermode != render_none && !titlemapinaction && !reloadinggamestate)
 		F_WipeColorFill(levelfadecol);
@@ -8802,7 +8802,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 				G_CopyTiccmd(&players[i].cmd, &netcmds[buf][i], 1);
 			}
 		}
-		
+
 		if (marathonmode & MA_INGAME)
 		{
 			marathonmode |= MA_INIT;
@@ -8830,7 +8830,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			G_PreLevelTitleCard();
 		}
 	}
-	
+
 	TracyCZoneEnd(__zone);
 	return true;
 }
@@ -8839,12 +8839,12 @@ void P_PostLoadLevel(void)
 {
 	TracyCZone(__zone, true);
 	P_MapStart(); // g_tm.thing can be used starting from this point
-	
+
 	if (G_GametypeHasSpectators())
 	{
 		K_CheckSpectateStatus(false);
 	}
-	
+
 	if (demo.playback)
 		;
 	else if (grandprixinfo.gp == true)
@@ -8865,11 +8865,11 @@ void P_PostLoadLevel(void)
 		// We're in a Match Race, use simplistic randomized bots.
 		K_UpdateMatchRaceBots();
 	}
-	
+
 	K_TimerInit();
 
 	P_InitPlayers();
-	
+
 	nextmapoverride = 0;
 	skipstats = 0;
 
@@ -8879,10 +8879,10 @@ void P_PostLoadLevel(void)
 	{
 		marathonmode &= ~MA_INIT;
 	}
-	
+
 	ACS_RunLevelStartScripts();
 	LUA_HookGamemap(HOOK(MapLoad));
-	
+
 	UINT8 i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -8892,7 +8892,7 @@ void P_PostLoadLevel(void)
 			continue;
 		ACS_RunPlayerEnterScript(&players[i]);
 	}
-	
+
 	P_MapEnd();
 
 	// We're now done loading the level.
@@ -9287,11 +9287,11 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 
 	// Reload BRIGHT
 	K_InitBrightmapsPwad(wadnum);
-	
+
 	// Reload TERRAIN
 	if (K_InitTerrainPwad(wadnum))
 		partadd_terrainloaded = true;
-		
+
 	//
 	// look for skins
 	//
@@ -9307,7 +9307,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	// extra sprite/skin data
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
-	
+
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;
 	return wadnum;
@@ -9348,11 +9348,11 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	{
 		// Reload all textures, unconditionally for better or worse.
 		//R_LoadTextures();
-		
+
 		// Prevent savefile cheating
 		if (cursaveslot >= 0)
 			cursaveslot = -1;
-		
+
 		// Reload ANIMATED / ANIMDEFS
 		P_InitPicAnims();
 
@@ -9384,7 +9384,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 			if (server)
 				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
 		}
-		
+
 		if (partadd_terrainloaded && gamestate == GS_LEVEL)
 		{
 			CONS_Printf(M_GetText("Terrain Definition reloaded, ending the level to ensure consistency.\n"));
@@ -9395,7 +9395,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 	}
 
 	I_Assert(!fullsetup || partadd_stage < 0);
-	
+
 	if (partadd_stage < 0)
 	{
 		partadd_important = false;
@@ -9404,7 +9404,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		partadd_earliestfile = UINT16_MAX;
 		return true;
 	}
-		
+
 	partadd_stage++;
 	return false;
 }
