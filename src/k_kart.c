@@ -7644,7 +7644,7 @@ void K_KartResetPlayerColor(player_t *player)
 		}
 	}
 
-	if (player->invincibilitytimer) // You're gonna kiiiiill
+	if (player->invincibilitytimer || player->powers[pw_invulnerability]) // You're gonna kiiiiill
 	{
 		boolean skip = false;
 

@@ -1683,11 +1683,11 @@ static void P_CheckQuicksand(player_t *player)
 //
 static void P_CheckInvincibilityTimer(player_t *player)
 {
-	if (!player->invincibilitytimer)
+	if (!player->powers[pw_invulnerability] && !player->invincibilitytimer)
 		return;
 
 	// Resume normal music stuff.
-	if (player->invincibilitytimer == 1)
+	if (player->invincibilitytimer == 1 || player->powers[pw_invulnerability] == 1)
 	{
 		//K_KartResetPlayerColor(player); -- this gets called every tic anyways
 		G_GhostAddColor((INT32) (player - players), GHC_NORMAL);
@@ -4078,7 +4078,7 @@ void P_PlayerThink(player_t *player)
 	P_CheckInvincibilityTimer(player); // Spawn Invincibility Sparkles
 	
 	// "Blur" a bit when you have speed shoes and are going fast enough
-	if ((player->driftboost || player->sneakertimer || player->startboost || player->ringboost) && !player->invincibilitytimer // SRB2kart
+	if ((player->powers[pw_super] || player->powers[pw_sneakers] || player->driftboost || player->sneakertimer || player->startboost || player->ringboost) && !player->invincibilitytimer // SRB2kart
 		&& (player->speed + abs(player->mo->momz)) > FixedMul(20*FRACUNIT,player->mo->scale))
 	{
 		UINT8 i;
@@ -4110,7 +4110,13 @@ void P_PlayerThink(player_t *player)
 	if (player->bumpertime)
 		player->bumpertime--;
 
-	// Strength counts up to diminish fade.
+	// Strength counts up to diminish fade
+	if (player->powers[pw_sneakers] && player->powers[pw_sneakers] < UINT16_MAX)
+		player->powers[pw_sneakers]--;
+
+	if (player->powers[pw_invulnerability] && player->powers[pw_invulnerability] < UINT16_MAX)
+		player->powers[pw_invulnerability]--;
+
 	if (player->flashing && player->flashing < UINT16_MAX &&
 		(player->spectator || player->flashing < K_GetKartFlashing(player)))
 		player->flashing--;
