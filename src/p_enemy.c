@@ -505,6 +505,55 @@ boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed
 	//return false;
 }
 
+void P_HomingAttack(mobj_t *source, mobj_t *enemy) // Home in on your target
+{
+	fixed_t dist;
+	fixed_t ns = 0;
+
+	if (!enemy)
+		return;
+
+	if (!(enemy->health))
+		return;
+
+	// change angle
+	source->angle = R_PointToAngle2(source->x, source->y, enemy->x, enemy->y);
+	if (source->player)
+	{
+		for (SINT8 j = 0; j <= r_splitscreen; j++)
+		{
+			if (source->player == &players[displayplayers[j]])
+			{
+				localangle[j] = source->angle;
+				break;
+			}
+		}
+	}
+
+	// change slope
+	dist = P_AproxDistance(P_AproxDistance(enemy->x - source->x, enemy->y - source->y),
+		enemy->z - source->z);
+
+	if (dist < 1)
+		dist = 1;
+
+	if (source->type == MT_DETON && enemy->player) // For Deton Chase (Unused)
+		ns = FixedDiv(FixedMul(K_GetKartSpeed(enemy->player, false, true), enemy->scale), FixedDiv(20*FRACUNIT,17*FRACUNIT));
+	else if (source->type != MT_PLAYER)
+	{
+		if (source->threshold == 32000)
+			ns = FixedMul(source->info->speed/2, source->scale);
+		else
+			ns = FixedMul(source->info->speed, source->scale);
+	}
+	else if (source->player)
+		ns = FixedDiv(FixedMul(K_GetKartSpeed(source->player, false, true), source->scale), 3*FRACUNIT/2);
+
+	source->momx = FixedMul(FixedDiv(enemy->x - source->x, dist), ns);
+	source->momy = FixedMul(FixedDiv(enemy->y - source->y, dist), ns);
+	source->momz = FixedMul(FixedDiv(enemy->z - source->z, dist), ns);
+}
+
 //
 // ACTION ROUTINES
 //
@@ -2628,6 +2677,102 @@ void A_Fall(mobj_t *actor)
 		actor->extravalue2 = locvar1;
 }
 
+// Function: A_MonitorPop
+//
+// Description: Used by monitors when they explode.
+//
+// var1 = unused
+// var2 = unused
+//
+void A_MonitorPop(mobj_t *actor)
+{
+	mobj_t *remains;
+	mobjtype_t explode;
+	mobjtype_t item = 0;
+	//mobjtype_t newbox;
+
+	if (LUA_CallAction(A_MONITORPOP, actor))
+		return;
+
+	// de-solidify
+	actor->health = 0;
+	P_UnsetThingPosition(actor);
+	actor->flags &= ~MF_SOLID;
+	actor->flags |= MF_NOCLIP;
+	P_SetThingPosition(actor);
+
+	// Monitor explosion
+	explode = mobjinfo[actor->info->speed].mass;
+	remains = P_SpawnMobj(actor->x, actor->y,
+		((actor->eflags & MFE_VERTICALFLIP) ? (actor->z + 3*(actor->height/4) - FixedMul(mobjinfo[explode].height, actor->scale)) : (actor->z + actor->height/4)), explode);
+	if (actor->eflags & MFE_VERTICALFLIP)
+	{
+		remains->eflags |= MFE_VERTICALFLIP;
+		remains->flags2 |= MF2_OBJECTFLIP;
+	}
+	remains->destscale = actor->destscale;
+	P_SetScale(remains, actor->scale);
+
+	remains = P_SpawnMobj(actor->x, actor->y,
+		((actor->eflags & MFE_VERTICALFLIP) ? (actor->z + actor->height - FixedMul(mobjinfo[actor->info->speed].height, actor->scale)) : actor->z),
+		actor->info->speed);
+	remains->type = actor->type; // Transfer type information
+	P_UnsetThingPosition(remains);
+	if (sector_list)
+	{
+		P_DelSeclist(sector_list);
+		sector_list = NULL;
+	}
+	P_SetThingPosition(remains);
+	remains->destscale = actor->destscale;
+	P_SetScale(remains, actor->scale);
+	remains->flags = actor->flags; // Transfer flags
+	remains->flags2 = actor->flags2; // Transfer flags2
+	remains->fuse = actor->fuse; // Transfer respawn timer
+	remains->threshold = 68;
+	remains->skin = NULL;
+
+	P_SetTarget(&g_tm.thing, remains);
+
+	if (actor->info->deathsound)
+		S_StartSound(remains, actor->info->deathsound);
+
+	switch (actor->type)
+	{
+		default:
+			item = actor->info->damage;
+			break;
+	}
+
+	if (item != 0)
+	{
+		mobj_t *newmobj;
+
+		if (actor->eflags & MFE_VERTICALFLIP)
+		{
+			newmobj = P_SpawnMobj(actor->x, actor->y, actor->z + actor->height - FixedMul(13*FRACUNIT + mobjinfo[item].height, actor->scale), item);
+			newmobj->eflags |= MFE_VERTICALFLIP;
+		}
+		else
+			newmobj = P_SpawnMobj(actor->x, actor->y, actor->z + FixedMul(13*FRACUNIT, actor->scale), item);
+
+		newmobj->destscale = actor->destscale;
+		P_SetScale(newmobj, actor->scale);
+		P_SetTarget(&newmobj->target, actor->target); // Transfer target
+		if (item == MT_1UPICO && newmobj->target->player)
+		{
+			if (actor->tracer) // Remove the old lives icon.
+				P_RemoveMobj(actor->tracer);
+
+			newmobj->frame -= 2; // No lives icon for this player, use the default.
+		}
+	}
+	else
+		CONS_Debug(DBG_GAMELOGIC, "Powerup item not defined in 'damage' field for A_MonitorPop\n");
+
+	P_RemoveMobj(actor);
+}
+
 // Function: A_Explode
 //
 // Description: Explodes an object, doing damage to any objects nearby. The target is used as the cause of the explosion. Damage value is used as explosion range.
@@ -3738,114 +3883,55 @@ void A_ShootBullet(mobj_t *actor)
 		S_StartSound(actor, actor->info->attacksound);
 }
 
-static mobj_t *minus;
-
-static BlockItReturn_t PIT_MinusCarry(mobj_t *thing)
-{
-	if (minus->tracer)
-		return BMIT_CONTINUE;
-
-	if (minus->type == thing->type)
-		return BMIT_CONTINUE;
-
-	if (!(thing->flags & (MF_PUSHABLE|MF_ENEMY)))
-		return BMIT_CONTINUE;
-
-	if (P_AproxDistance(minus->x - thing->x, minus->y - thing->y) >= minus->radius*3)
-		return BMIT_CONTINUE;
-
-	if (abs(thing->z - minus->z) > minus->height)
-		return BMIT_CONTINUE;
-
-	P_SetTarget(&minus->tracer, thing);
-
-	return BMIT_CONTINUE;
-}
-
 // Function: A_MinusDigging
 //
 // Description: Minus digging in the ground.
 //
-// var1 = If 1, play digging sound.
+// var1 = unused
 // var2 = unused
 //
 void A_MinusDigging(mobj_t *actor)
 {
-	INT32 locvar1 = var1;
-	INT32 rad = 32;
-	angle_t fa = (actor->angle >> ANGLETOFINESHIFT) & FINEMASK;
-	fixed_t dis = actor->info->speed*4;
-	fixed_t x = FINECOSINE(fa)*dis + actor->x + FRACUNIT*P_RandomRange(-rad, rad);
-	fixed_t y = FINESINE(fa)*dis + actor->y + FRACUNIT*P_RandomRange(-rad, rad);
-	fixed_t mz = (actor->eflags & MFE_VERTICALFLIP) ? actor->ceilingz : actor->floorz;
-	mobj_t *par;
-
 	if (LUA_CallAction(A_MINUSDIGGING, actor))
 		return;
 
+	actor->flags &= ~MF_SPECIAL;
+	actor->flags &= ~MF_SHOOTABLE;
+
 	if (!actor->target)
 	{
-		P_SetMobjState(actor, actor->info->spawnstate);
+		A_Look(actor);
 		return;
 	}
 
-	par = P_SpawnMobj(actor->x, actor->y, mz, MT_MINUSDIRT);
-	if (actor->eflags & MFE_VERTICALFLIP)
-		par->eflags |= MFE_VERTICALFLIP;
-	P_TryMove(par, x, y, false, NULL);
-
-	// If close enough, prepare to attack
-	if (P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y) < actor->radius*2)
+	if (actor->reactiontime)
 	{
-		P_SetMobjState(actor, actor->info->meleestate);
-		P_TryMove(actor, actor->target->x, actor->target->y, false, NULL);
-		S_StartSound(actor, actor->info->attacksound);
-
-		// Spawn growing dirt pile.
-		par = P_SpawnMobj(actor->x, actor->y, mz, MT_MINUSDIRT);
-		P_SetMobjState(par, actor->info->raisestate);
-		P_SetScale(par, actor->scale*2);
-		if (actor->eflags & MFE_VERTICALFLIP)
-			par->eflags |= MFE_VERTICALFLIP;
+		actor->reactiontime--;
 		return;
 	}
 
-	// Play digging sound
-	if (locvar1 == 1)
-		A_PlayActiveSound(actor);
+	// Dirt trail
+	P_SpawnGhostMobj(actor);
 
-	// Move
+	actor->flags |= MF_NOCLIPTHING;
 	var1 = 3;
 	A_Chase(actor);
+	actor->flags &= ~MF_NOCLIPTHING;
 
-	// Carry over shit, maybe
-	if (P_MobjWasRemoved(actor->tracer) || !actor->tracer->health)
-		P_SetTarget(&actor->tracer, NULL);
+	// Play digging sound
+	if (!(leveltime & 15))
+		S_StartSound(actor, actor->info->activesound);
 
-	if (!actor->tracer)
-	{
-		fixed_t radius = 3*actor->radius;
-		fixed_t yh = (unsigned)(actor->y + radius - bmaporgy) >> MAPBLOCKSHIFT;
-		fixed_t yl = (unsigned)(actor->y - radius - bmaporgy) >> MAPBLOCKSHIFT;
-		fixed_t xh = (unsigned)(actor->x + radius - bmaporgx) >> MAPBLOCKSHIFT;
-		fixed_t xl = (unsigned)(actor->x - radius - bmaporgx) >> MAPBLOCKSHIFT;
-		fixed_t bx, by;
+	// If we're close enough to our target, pop out of the ground
+	if (P_AproxDistance(actor->target->x-actor->x, actor->target->y-actor->y) < actor->radius
+		&& abs(actor->target->z - actor->z) < actor->height)
+		P_SetMobjState(actor, actor->info->missilestate);
 
-		BMBOUNDFIX(xl, xh, yl, yh);
-
-		minus = actor;
-
-		for (bx = xl; bx <= xh; bx++)
-			for (by = yl; by <= yh; by++)
-				P_BlockThingsIterator(bx, by, PIT_MinusCarry);
-	}
+	// Snap to ground
+	if (actor->eflags & MFE_VERTICALFLIP)
+		actor->z = actor->ceilingz - actor->height;
 	else
-	{
-		if (P_TryMove(actor->tracer, actor->x, actor->y, false, NULL))
-			actor->tracer->z = mz;
-		else
-			P_SetTarget(&actor->tracer, NULL);
-	}
+		actor->z = actor->floorz;
 }
 
 // Function: A_MinusPopup
@@ -3857,65 +3943,44 @@ void A_MinusDigging(mobj_t *actor)
 //
 void A_MinusPopup(mobj_t *actor)
 {
-	INT32 num = 6;
-	angle_t ani = FixedAngle(FRACUNIT*360/num);
-	INT32 i;
 
 	if (LUA_CallAction(A_MINUSPOPUP, actor))
 		return;
 
-	if (actor->eflags & MFE_VERTICALFLIP)
-		actor->momz = -10*FRACUNIT;
-	else
-		actor->momz = 10*FRACUNIT;
+	P_SetObjectMomZ(actor, 10*FRACUNIT, false);
 
-	S_StartSound(actor, sfx_s3k82);
-	for (i = 1; i <= num; i++)
-	{
-		mobj_t *rock = P_SpawnMobjFromMobj(actor, 0, 0, actor->height/4, MT_ROCKCRUMBLE1);
-		P_Thrust(rock, ani*i, FRACUNIT);
-		P_SetObjectMomZ(rock, 3*FRACUNIT, false);
-		P_SetScale(rock, rock->scale/3);
-	}
-	P_RadiusAttack(actor, actor, 2*actor->radius, 0, true);
-	if (actor->tracer)
-		P_DamageMobj(actor->tracer, actor, actor, 1, DMG_NORMAL);
+	actor->flags |= MF_SPECIAL;
+	actor->flags |= MF_SHOOTABLE;
 
-	actor->flags = (actor->flags & ~MF_NOCLIPTHING)|MF_SPECIAL|MF_SHOOTABLE;
+	// Sound for busting out of the ground.
+	S_StartSound(actor, actor->info->attacksound);
 }
 
 // Function: A_MinusCheck
 //
 // Description: If the minus hits the floor, dig back into the ground.
 //
-// var1 = State to switch to (if 0, use seestate).
-// var2 = If not 0, spawn debris when hitting the floor.
+// var1 = unused
+// var2 = unused
 //
 void A_MinusCheck(mobj_t *actor)
 {
-	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
-
 	if (LUA_CallAction(A_MINUSCHECK, actor))
 		return;
 
-	if (((actor->eflags & MFE_VERTICALFLIP) && actor->z + actor->height >= actor->ceilingz) || (!(actor->eflags & MFE_VERTICALFLIP) && actor->z <= actor->floorz))
+	if ((!(actor->eflags & MFE_VERTICALFLIP) && actor->z <= actor->floorz)
+	|| ((actor->eflags & MFE_VERTICALFLIP) && actor->z + actor->height >= actor->ceilingz))
 	{
-		P_SetMobjState(actor, locvar1 ? (statenum_t)locvar1 : actor->info->seestate);
-		actor->flags = actor->info->flags;
-		if (locvar2)
-		{
-			INT32 i, num = 6;
-			angle_t ani = FixedAngle(FRACUNIT*360/num);
-			for (i = 1; i <= num; i++)
-			{
-				mobj_t *rock = P_SpawnMobjFromMobj(actor, 0, 0, actor->height/4, MT_ROCKCRUMBLE1);
-				P_Thrust(rock, ani*i, FRACUNIT);
-				P_SetObjectMomZ(rock, 3*FRACUNIT, false);
-				P_SetScale(rock, rock->scale/3);
-			}
-		}
+		actor->flags &= ~MF_SPECIAL;
+		actor->flags &= ~MF_SHOOTABLE;
+		actor->reactiontime = TICRATE;
+		P_SetMobjState(actor, actor->info->seestate);
+		return;
 	}
+
+	// 'Falling' animation
+	if (P_MobjFlip(actor)*actor->momz < 0 && actor->state < &states[actor->info->meleestate])
+		P_SetMobjState(actor, actor->info->meleestate);
 }
 
 // Function: A_ChickenCheck
@@ -11515,7 +11580,7 @@ void A_MementosTPParticles(mobj_t *actor)
 		particle->frame = 0;
 		particle->color = ((i%2) ? (SKINCOLOR_RED) : (SKINCOLOR_BLACK));
 		particle->destscale = 1;
-		//P_HomingAttack(particle, actor); // Really now, Lat...
+		P_HomingAttack(particle, actor); // Really now, Lat...
 	}
 
 	// Although this is mostly used to spawn particles, we will also save the OTHER teleport inside actor->target. That way teleporting doesn't require a thinker iteration.

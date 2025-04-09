@@ -689,6 +689,23 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			player->pickuprings++;
 
 			return;
+		// Special Stage Token
+		case MT_EMMY:
+			if (player->bot)
+				return;
+			tokenlist += special->health;
+
+			if (ALL7EMERALDS(emeralds)) // Got all 7
+			{
+				P_GivePlayerRings(player, 50);
+				nummaprings += 50; // no cheating towards Perfect!
+			}
+			else
+				token++;
+
+			if (special->tracer) // token BG
+				P_RemoveMobj(special->tracer);
+			break;
 
 		// Secret emblem thingy
 		case MT_EMBLEM:
@@ -823,6 +840,15 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 		case MT_LOOPENDPOINT:
 			Obj_LoopEndpointCollide(special, toucher);
+			return;
+
+		case MT_BIGMINE:
+		case MT_BIGAIRMINE:
+			// Spawn explosion!
+			P_SpawnMobj(special->x, special->y, special->z, special->info->mass);
+			P_RadiusAttack(special, special, special->info->damage, DMG_NORMAL, true);
+			S_StartSound(special, special->info->deathsound);
+			P_SetMobjState(special, special->info->deathstate);
 			return;
 
 		case MT_NIGHTSBUMPER:

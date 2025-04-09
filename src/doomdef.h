@@ -492,10 +492,6 @@ extern int compuncommitted;
 ///	Dumps the contents of a network save game upon consistency failure for debugging.
 //#define DUMPCONSISTENCY
 
-///	Who put weights on my recycler?  ... Inuyasha did.
-///	\note	XMOD port.
-//#define WEIGHTEDRECYCLER
-
 ///	Allow loading of savegames between different versions of the game.
 ///	\note	XMOD port.
 ///	    	Most modifications should probably enable this.

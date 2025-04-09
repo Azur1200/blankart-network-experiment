@@ -1,3 +1,4 @@
+_(A_MonitorPop,             MONITORPOP)
 _(A_Explode,                EXPLODE)
 _(A_Pain,                   PAIN)
 _(A_Fall,                   FALL)

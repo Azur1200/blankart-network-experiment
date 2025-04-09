@@ -6406,6 +6406,61 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 		P_MobjCheckWater(mobj);
 		break;
+	case MT_AQUABUZZ:
+	case MT_BIGAIRMINE:
+		{
+			if (mobj->tracer && mobj->tracer->player && mobj->tracer->health > 0
+				&& P_AproxDistance(P_AproxDistance(mobj->tracer->x - mobj->x, mobj->tracer->y - mobj->y), mobj->tracer->z - mobj->z) <= mobj->radius * 16)
+			{
+				// Home in on the target.
+				P_HomingAttack(mobj, mobj->tracer);
+
+				if (mobj->z < mobj->floorz)
+					mobj->z = mobj->floorz;
+
+				if (leveltime % mobj->info->painchance == 0)
+					S_StartSound(mobj, mobj->info->activesound);
+			}
+			else
+			{
+				// Try to find a player
+				P_LookForPlayers(mobj, true, true, mobj->radius * 16);
+				mobj->momx >>= 1;
+				mobj->momy >>= 1;
+				mobj->momz >>= 1;
+			}
+		}
+		break;
+	case MT_BIGMINE:
+		{
+			if (mobj->tracer && mobj->tracer->player && mobj->tracer->health > 0
+				&& P_AproxDistance(P_AproxDistance(mobj->tracer->x - mobj->x, mobj->tracer->y - mobj->y), mobj->tracer->z - mobj->z) <= mobj->radius * 16)
+			{
+				P_MobjCheckWater(mobj);
+
+				// Home in on the target.
+				P_HomingAttack(mobj, mobj->tracer);
+
+				// Don't let it go out of water
+				if (mobj->z + mobj->height > mobj->watertop)
+					mobj->z = mobj->watertop - mobj->height;
+
+				if (mobj->z < mobj->floorz)
+					mobj->z = mobj->floorz;
+
+				if (leveltime % mobj->info->painchance == 0)
+					S_StartSound(mobj, mobj->info->activesound);
+			}
+			else
+			{
+				// Try to find a player
+				P_LookForPlayers(mobj, true, true, mobj->radius * 16);
+				mobj->momx >>= 1;
+				mobj->momy >>= 1;
+				mobj->momz >>= 1;
+			}
+		}
+		break;
 	case MT_FLAME:
 		if (mobj->flags2 & MF2_BOSSNOTRAP)
 		{
@@ -8288,21 +8343,21 @@ static void P_MonitorFuseThink(mobj_t *mobj)
 
 		// This define should make it a lot easier to organize and change monitor weights
 #define SETMONITORCHANCES(type, strongboxamt, weakboxamt) \
-for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) spawnchance[numchoices++] = type
+	for (i = ((mobj->flags2 & MF2_STRONGBOX) ? strongboxamt : weakboxamt); i; --i) spawnchance[numchoices++] = type
 
-					//                Type             SRM WRM
-		SETMONITORCHANCES(MT_SNEAKERS_BOX, 0, 10); // Super Sneakers
-		SETMONITORCHANCES(MT_INVULN_BOX, 2, 0); // Invincibility
-		SETMONITORCHANCES(MT_WHIRLWIND_BOX, 3, 8); // Whirlwind Shield
-		SETMONITORCHANCES(MT_ELEMENTAL_BOX, 3, 8); // Elemental Shield
-		SETMONITORCHANCES(MT_ATTRACT_BOX, 2, 0); // Attraction Shield
-		SETMONITORCHANCES(MT_FORCE_BOX, 3, 3); // Force Shield
-		SETMONITORCHANCES(MT_ARMAGEDDON_BOX, 2, 0); // Armageddon Shield
-		SETMONITORCHANCES(MT_MIXUP_BOX, 0, 1); // Teleporters
-		SETMONITORCHANCES(MT_RECYCLER_BOX, 0, 1); // Recycler
-		SETMONITORCHANCES(MT_1UP_BOX, 1, 1); // 1-Up
-		// =======================================
-		//                Total             16  32
+		//                Type            SRM WRM
+		SETMONITORCHANCES(MT_SNEAKERTV,     0, 10); // Super Sneakers
+		SETMONITORCHANCES(MT_INV,           2,  0); // Invincibility
+		SETMONITORCHANCES(MT_WHITETV,       3,  8); // Whirlwind Shield
+		SETMONITORCHANCES(MT_GREENTV,       3,  8); // Elemental Shield
+		SETMONITORCHANCES(MT_YELLOWTV,      2,  0); // Attraction Shield
+		SETMONITORCHANCES(MT_BLUETV,        3,  3); // Force Shield
+		SETMONITORCHANCES(MT_BLACKTV,       2,  0); // Armageddon Shield
+		SETMONITORCHANCES(MT_MIXUPBOX,      0,  1); // Teleporters
+		SETMONITORCHANCES(MT_RECYCLETV,     0,  1); // Recycler
+		SETMONITORCHANCES(MT_PRUP,          1,  1); // 1-Up
+		// ======================================
+		//                Total            16  32
 
 #undef SETMONITORCHANCES
 
@@ -10556,6 +10611,7 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	case MT_EMBLEM:
 	case MT_RING:
 	case MT_BLUESPHERE:
+	case MT_EMMY:
 		offset += mthing->args[0] ? 0 : 24*FRACUNIT;
 		break;
 
@@ -11614,6 +11670,35 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	{
 		Obj_InitLoopCenter(mobj);
 		break;
+	}
+	case MT_EMMY:
+	{
+		if (mthing->options & MTF_OBJECTSPECIAL) // Mario Block version
+			mobj->flags &= ~(MF_NOGRAVITY|MF_NOCLIPHEIGHT);
+		else
+		{
+			fixed_t zheight = mobj->z;
+			mobj_t *tokenobj;
+
+			if (mthing->options & MTF_OBJECTFLIP)
+				zheight += mobj->height-FixedMul(mobjinfo[MT_TOKEN].height, mobj->scale); // align with emmy properly!
+
+			tokenobj = P_SpawnMobj(mobj->x, mobj->y, zheight, MT_TOKEN);
+			P_SetTarget(&mobj->tracer, tokenobj);
+			tokenobj->destscale = mobj->scale;
+			P_SetScale(tokenobj, mobj->scale);
+			if (mthing->options & MTF_OBJECTFLIP) // flip token to match emmy
+			{
+				tokenobj->eflags |= MFE_VERTICALFLIP;
+				tokenobj->flags2 |= MF2_OBJECTFLIP;
+			}
+		}
+
+		// We advanced tokenbits earlier due to the return check.
+		// Subtract 1 here for the correct value.
+		mobj->health = 1 << (tokenbits - 1);
+		break;
+
 	}
 	case MT_REDDIAG:
 	case MT_YELLOWDIAG:

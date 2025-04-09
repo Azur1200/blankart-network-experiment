@@ -34,7 +34,6 @@ _(SPSH) // Egg Guard
 _(ESHI) // Egg Guard's shield
 _(GSNP) // Green Snapper
 _(MNUS) // Minus
-_(MNUD) // Minus dirt
 _(SSHL) // Spring Shell
 _(UNID) // Unidus
 
@@ -98,6 +97,7 @@ _(MSCB)
 // Collectible Items
 _(RING)
 _(TRNG) // Team Rings
+_(EMMY) // Special Stage Token
 _(TOKE) // Special Stage Token
 _(RFLG) // Red CTF Flag
 _(BFLG) // Blue CTF Flag
@@ -122,33 +122,27 @@ _(BMNE) // Big floating mine
 _(PUMI) // Rollout Rock
 
 // Monitor Boxes
-_(MSTV) // MiSc TV sprites
-_(XLTV) // eXtra Large TV sprites
+_(SRBX)
+_(RRBX)
+_(BRBX)
+_(SHTV)
+_(PINV)
+_(YLTV)
+_(BLTV) // Force shield
+_(BKTV) // Bomb shield TV
+_(WHTV) // Jump shield TV
+_(GRTV) // Pity shield TV
+_(ELTV) // Elemental shield TV
+_(EGGB) // Eggman box
+_(MIXU) // Player mixing monitor
+_(RECY) // Recycler (power mixing) monitor
+_(QUES) // Random monitor
+_(GBTV) // Gravity boots TV
+_(PRUP) // 1up
+_(PTTV) // Score TVs
 
-_(TRRI) // Red team:  10 RIngs
-_(TBRI) // Blue team: 10 RIngs
-
-_(TVRI) // 10 RIng
-_(TVPI) // PIty shield
-_(TVAT) // ATtraction shield
-_(TVFO) // FOrce shield
-_(TVAR) // ARmageddon shield
-_(TVWW) // WhirlWind shield
-_(TVEL) // ELemental shield
-_(TVSS) // Super Sneakers
-_(TVIV) // InVincibility
-_(TV1U) // 1Up
-_(TV1P) // 1uP (textless)
-_(TVEG) // EGgman
-_(TVMX) // MiXup
-_(TVMY) // MYstery
-_(TVGV) // GraVity boots
-_(TVRC) // ReCycler
-_(TV1K) // 1,000 points  (1 K)
-_(TVTK) // 10,000 points (Ten K)
-_(TVFL) // FLame shield
-_(TVBB) // BuBble shield
-_(TVZP) // Thunder shield (ZaP)
+// Monitor Miscellany
+_(MTEX) // Exploding monitor
 
 // Projectiles
 _(MISL)
@@ -220,7 +214,6 @@ _(XMS6) // Mistletoe
 _(FHZI) // FHZ Ice
 _(ROSY)
 // Azure Temple Scenery
-_(BGAR) // ATZ Gargoyles
 _(RCRY) // ATZ Red Crystal (Target)
 _(CFLM) // Green torch flame
 
