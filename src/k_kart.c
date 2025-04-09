@@ -270,6 +270,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_calc_arg_offset);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff_brake);
+	CV_RegisterVar(&cv_kartstacking_accelstack);
 	CV_RegisterVar(&cv_kartstacking_colorflame);
 	CV_RegisterVar(&cv_kartstacking_sneakerstacksound);
 
@@ -279,24 +280,31 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_hardspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_accelboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
+	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
 	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
+	CV_RegisterVar(&cv_kartstacking_grow_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_flame_speedval);
 	CV_RegisterVar(&cv_kartstacking_flame_accelboost);
+	CV_RegisterVar(&cv_kartstacking_flame_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_start_speedboost);
 	CV_RegisterVar(&cv_kartstacking_start_accelboost);
+	CV_RegisterVar(&cv_kartstacking_start_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_drift_speedboost);
 	CV_RegisterVar(&cv_kartstacking_drift_accelboost);
+	CV_RegisterVar(&cv_kartstacking_drift_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_ring_speedboost);
 	CV_RegisterVar(&cv_kartstacking_ring_accelboost);
+	CV_RegisterVar(&cv_kartstacking_ring_stackable);
 
 	CV_RegisterVar(&cv_kartchaining);
 	CV_RegisterVar(&cv_kartchainingoffroad);
@@ -3378,7 +3386,15 @@ void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean
 	}
 
 	player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, speedboost);
-	player->boostinfo.accelboost = max(player->boostinfo.accelboost, accelboost);
+
+	if (cv_kartstacking_accelstack.value)
+	{
+		player->boostinfo.accelboost += accelboost;
+	}
+	else
+	{
+		player->boostinfo.accelboost = max(player->boostinfo.accelboost, accelboost);
+	}
 
 	if (visible)
 	{
@@ -3435,18 +3451,18 @@ static void K_GetKartBoostPower(player_t *player)
 
 		for (i = 0; i < numsneakers; i++)
 		{
-			K_DoBoost(player, sneakerspeedboost, SNEAKERACCELBOOST, true, true); // + ???% top speed, + 800% acceleration
+			K_DoBoost(player, sneakerspeedboost, SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
 		}
 	}
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, false, false); // + 37.5% top speed, + 300% acceleration
+		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
-		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, false, false); // + 20% top speed, + 0% acceleration
+		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, GROWSTACKABLE, GROWSTACKABLE); // + 20% top speed, + 0% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
@@ -3459,22 +3475,22 @@ static void K_GetKartBoostPower(player_t *player)
 		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
 		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
 
-		K_DoBoost(player, boost, FLAMEACCELBOOST, false, false);
+		K_DoBoost(player, boost, FLAMEACCELBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
 	}
 
 	if (player->startboost) // Startup Boost
 	{
-		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, true, true); // + 25% top speed, + 600% acceleration
+		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, STARTSTACKABLE, STARTSTACKABLE); // + 25% top speed, + 600% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
 	{
-		K_DoBoost(player, DRIFTSPEEDBOOST, DRIFTACCELBOOST, true, true); // + 25% top speed, + 400% acceleration
+		K_DoBoost(player, DRIFTSPEEDBOOST, DRIFTACCELBOOST, DRIFTSTACKABLE, DRIFTSTACKABLE); // + 25% top speed, + 400% acceleration
 	}
 
 	if (player->ringboost) // Ring Boost
 	{
-		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, true, true); // + 20% top speed, + 400% acceleration
+		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
 	}
 
 	// This should always remain the last boost
