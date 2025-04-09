@@ -479,6 +479,13 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+
+		if (lua_compatmode)
+			for (i = 0; MOBJ_ALIASES[i].n; i++)
+				if (fastcmp(p, MOBJ_ALIASES[i].n)) {
+					CacheAndPushConstant(L, word, MOBJ_ALIASES[i].v);
+					return 1;
+				}
 		return luaL_error(L, "mobjtype '%s' does not exist.\n", word);
 	}
 	else if (fastncmp("SPR_",word,4)) {

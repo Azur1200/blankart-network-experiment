@@ -292,7 +292,6 @@ _(BSTR) // Red Booster
 // Environmental Effects
 _(RAIN) // Rain
 _(SNO1) // Snowflake
-_(SNO2) // Blizzard Snowball
 _(SPLH) // Water Splish
 _(LSPL) // Lava Splish
 _(SPLA) // Water Splash

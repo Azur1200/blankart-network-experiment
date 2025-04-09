@@ -128,6 +128,16 @@ const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity t
 #undef _
 };
 
+struct int_const_s const MOBJ_ALIASES[] = {
+	{"BIRD",    	MT_FLICKY_01},
+	{"BUNNY" ,   	MT_FLICKY_02},
+	{"MOUSE" , 	MT_FLICKY_12},
+	{"CHICKEN" , 	MT_FLICKY_03},
+	{"REDBIRD",	MT_FLICKY_10},
+	{"COW", MT_FLICKY_11},
+	{ NULL, 0 }
+};
+
 const char *const MOBJFLAG_LIST[] = {
 	"SPECIAL",
 	"SOLID",
@@ -944,13 +954,13 @@ struct int_const_s const INT_CONST[] = {
 	{"PRECIP_NONE",PRECIP_NONE},
 	{"PRECIP_RAIN",PRECIP_RAIN},
 	{"PRECIP_SNOW",PRECIP_SNOW},
-	{"PRECIP_BLIZZARD",PRECIP_BLIZZARD},
 	{"PRECIP_STORM",PRECIP_STORM},
 	{"PRECIP_STORM_NORAIN",PRECIP_STORM_NORAIN},
 	{"PRECIP_STORM_NOSTRIKES",PRECIP_STORM_NOSTRIKES},
 
 	// Carrying
 	{"CR_NONE",CR_NONE},
+	{"CR_SLIDING",CR_SLIDING},
 	{"CR_ZOOMTUBE",CR_ZOOMTUBE},
 
 	// Character flags (skinflags_t)

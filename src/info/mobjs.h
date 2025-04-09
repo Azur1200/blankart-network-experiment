@@ -426,7 +426,6 @@ _(SEED)
 // Environmental Effects
 _(RAIN) // Rain
 _(SNOWFLAKE) // Snowflake
-_(BLIZZARDSNOW) // Blizzard Snowball
 _(SPLISH) // Water splish!
 _(LAVASPLISH) // Lava splish!
 _(SMOKE)
@@ -568,14 +567,6 @@ _(ROCKCRUMBLE13)
 _(ROCKCRUMBLE14)
 _(ROCKCRUMBLE15)
 _(ROCKCRUMBLE16)
-
-// Level debris
-_(GFZDEBRIS)
-_(BRICKDEBRIS)
-_(WOODDEBRIS)
-_(REDBRICKDEBRIS) // for CEZ3
-_(BLUEBRICKDEBRIS) // for CEZ3
-_(YELLOWBRICKDEBRIS) // for CEZ3
 
 // SRB1 Badniks
 _(SRB1_CRAWLA)
