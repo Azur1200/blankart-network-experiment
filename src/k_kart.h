@@ -51,18 +51,25 @@ Make sure this matches the actual number of states
 #define HARDSNEAKERSPEEDBOOST cv_kartstacking_sneaker_hardspeedboost.value
 #define SNEAKERACCELBOOST cv_kartstacking_sneaker_accelboost.value
 #define MAXSNEAKERSTACK cv_kartstacking_sneaker_maxgrade.value
+#define SNEAKERSTACKABLE cv_kartstacking_sneaker_stackable.value
 #define INVINSPEEDBOOST cv_kartstacking_invincibility_speedboost.value
 #define INVINACCELBOOST cv_kartstacking_invincibility_accelboost.value
+#define INVINSTACKABLE cv_kartstacking_invincibility_stackable.value
 #define GROWSPEEDBOOST cv_kartstacking_grow_speedboost.value
 #define GROWACCELBOOST cv_kartstacking_grow_accelboost.value
+#define GROWSTACKABLE cv_kartstacking_grow_stackable.value
 #define FLAMESPEEDVAL cv_kartstacking_flame_speedval.value
 #define FLAMEACCELBOOST cv_kartstacking_flame_accelboost.value
+#define FLAMESTACKABLE cv_kartstacking_flame_stackable.value
 #define STARTSPEEDBOOST cv_kartstacking_start_speedboost.value
 #define STARTACCELBOOST cv_kartstacking_start_accelboost.value
+#define STARTSTACKABLE cv_kartstacking_start_stackable.value
 #define DRIFTSPEEDBOOST cv_kartstacking_drift_speedboost.value
 #define DRIFTACCELBOOST cv_kartstacking_drift_accelboost.value
+#define DRIFTSTACKABLE cv_kartstacking_drift_stackable.value
 #define RINGSPEEDBOOST cv_kartstacking_ring_speedboost.value
 #define RINGACCELBOOST cv_kartstacking_ring_accelboost.value
+#define RINGSTACKABLE cv_kartstacking_ring_stackable.value
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
