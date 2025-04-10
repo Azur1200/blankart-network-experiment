@@ -151,6 +151,7 @@ static void KartEncore_OnChange(void);
 static void KartComeback_OnChange(void);
 static void KartEliminateLast_OnChange(void);
 static void KartRings_OnChange(void);
+static void KartPurpleDrift_OnChange(void);
 static void KartStacking_OnChange(void);
 static void KartChaining_OnChange(void);
 static void KartSlipdash_OnChange(void);
@@ -494,7 +495,7 @@ consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NET
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, NULL);
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, KartPurpleDrift_OnChange);
 
 consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_YesNo, NULL);
 
@@ -7059,6 +7060,39 @@ static void KartRings_OnChange(void)
 	}
 }
 
+static void KartPurpleDrift_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!purpledriftactive && cv_kartpurpledrift.value)
+	{
+		if (leveltime < starttime)
+		{
+			purpledriftactive = true;
+			CONS_Printf(M_GetText("4-tier drifting has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("4-tier drifting will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (purpledriftactive && !cv_kartpurpledrift.value)
+	{
+		if (leveltime < starttime)
+		{
+			purpledriftactive = false;
+			CONS_Printf(M_GetText("4-tier drifting has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("4-tier drifting will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
 static void KartStacking_OnChange(void)
 {
 	if (K_CanChangeRules() == false)
@@ -7066,7 +7100,7 @@ static void KartStacking_OnChange(void)
 		return;
 	}
 
-	if (!stackingactive && cv_kartstacking.value)
+	if (!K_StackingActive() && cv_kartstacking.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7078,7 +7112,7 @@ static void KartStacking_OnChange(void)
 			CONS_Printf(M_GetText("Boost Stacking will be turned \"On\" next round.\n"));
 		}
 	}
-	else if (stackingactive && !cv_kartstacking.value)
+	else if (K_StackingActive() && !cv_kartstacking.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7099,7 +7133,7 @@ static void KartChaining_OnChange(void)
 		return;
 	}
 
-	if (!chainingactive && cv_kartchaining.value)
+	if (!K_ChainingActive() && cv_kartchaining.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7111,7 +7145,7 @@ static void KartChaining_OnChange(void)
 			CONS_Printf(M_GetText("Boost Chaining will be turned \"On\" Next Round.\n"));
 		}
 	}
-	else if (chainingactive && !cv_kartstacking.value)
+	else if (K_ChainingActive() && !cv_kartstacking.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7132,7 +7166,7 @@ static void KartSlipdash_OnChange(void)
 		return;
 	}
 
-	if (!slipdashactive && cv_kartslipdash.value)
+	if (!K_SlipdashActive() && cv_kartslipdash.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7144,7 +7178,7 @@ static void KartSlipdash_OnChange(void)
 			CONS_Printf(M_GetText("Slipdashing will be turned \"On\" Next Round.\n"));
 		}
 	}
-	else if (slipdashactive && !cv_kartslipdash.value)
+	else if (K_SlipdashActive() && !cv_kartslipdash.value)
 	{
 		if (leveltime < starttime)
 		{

@@ -10732,6 +10732,17 @@ boolean K_RingsActive(void)
 	return true;
 }
 
+boolean K_PurpleDriftActive(void)
+{
+	if (purpledriftactive)
+	{
+		// Purpledrift is enabled!
+		return true;
+	}
+
+	return false;
+}
+
 boolean K_StackingActive(void)
 {
 	if (stackingactive)

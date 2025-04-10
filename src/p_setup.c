@@ -142,10 +142,11 @@ line_t *spawnlines;
 side_t *spawnsides;
 INT32 numstarposts;
 INT32 numbosswaypoints;
-boolean ringsactive = false;
-boolean stackingactive = false;
-boolean chainingactive = false;
-boolean slipdashactive = false;
+boolean ringsactive;
+boolean stackingactive;
+boolean chainingactive;
+boolean slipdashactive;
+boolean purpledriftactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -7866,9 +7867,13 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	stackingactive = false;
 	chainingactive = false;
 	slipdashactive = false;
+	purpledriftactive = false;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
+
+	if (cv_kartslipdash.value)
+		purpledriftactive = true;
 
 	if (cv_kartstacking.value)
 		stackingactive = true;
@@ -7952,6 +7957,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
+		ringsactive = cv_dummyattackingrings.value;
+		purpledriftactive = cv_dummyattackingpurpledrift.value;
+		stackingactive = cv_dummyattackingstacking.value;
+		chainingactive = cv_dummyattackingchaining.value;
+		slipdashactive = cv_dummyattackingslipdash.value;
 	}
 	else
 	{
@@ -8068,7 +8078,7 @@ static void P_LoadRecordGhosts(void)
 	// see also m_menu.c's Nextmap_OnChange
 	char *gpath;
 	INT32 i;
-	const char *gamemode = (modeattacking & ATTACKING_ITEMBREAK) ? "IB" : "RA";
+	char *gamemode = M_AppendGametypeAndModName();
 
 	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
 
@@ -8132,6 +8142,7 @@ static void P_LoadRecordGhosts(void)
 	}
 
 	free(gpath);
+	Z_Free(gamemode);
 }
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)
