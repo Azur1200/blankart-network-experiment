@@ -125,7 +125,6 @@ _(FLINGEMERALD) // Lost emerald
 // Springs and others
 _(FAN)
 _(STEAM)
-_(BUMPER)
 _(BALLOON)
 
 _(YELLOWSPRING)
@@ -141,11 +140,6 @@ _(YELLOWHORIZ) // Yellow Horizontal Spring
 _(REDHORIZ) // Red Horizontal Spring
 _(BLUEHORIZ) // Blue Horizontal Spring
 _(GREYHORIZ) // Grey Horizontal Spring
-
-_(BOOSTERSEG)
-_(BOOSTERROLLER)
-_(YELLOWBOOSTER)
-_(REDBOOSTER)
 
 // Interactive Objects
 _(BUBBLES) // Bubble source

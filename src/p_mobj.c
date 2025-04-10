@@ -11179,47 +11179,6 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static boolean P_SetupBooster(mapthing_t* mthing, mobj_t* mobj, boolean strong)
-{
-	angle_t angle = FixedAngle(mthing->angle << FRACBITS);
-	fixed_t x1 = FINECOSINE((angle >> ANGLETOFINESHIFT) & FINEMASK);
-	fixed_t y1 = FINESINE((angle >> ANGLETOFINESHIFT) & FINEMASK);
-	fixed_t x2 = FINECOSINE(((angle + ANGLE_90) >> ANGLETOFINESHIFT) & FINEMASK);
-	fixed_t y2 = FINESINE(((angle + ANGLE_90) >> ANGLETOFINESHIFT) & FINEMASK);
-	statenum_t facestate = strong ? S_REDBOOSTERSEG_FACE : S_YELLOWBOOSTERSEG_FACE;
-	statenum_t leftstate = strong ? S_REDBOOSTERSEG_LEFT : S_YELLOWBOOSTERSEG_LEFT;
-	statenum_t rightstate = strong ? S_REDBOOSTERSEG_RIGHT : S_YELLOWBOOSTERSEG_RIGHT;
-	statenum_t rollerstate = strong ? S_REDBOOSTERROLLER : S_YELLOWBOOSTERROLLER;
-
-	mobj_t *seg = P_SpawnMobjFromMobj(mobj, 26*x1, 26*y1, 0, MT_BOOSTERSEG);
-	seg->angle = angle - ANGLE_90;
-	P_SetMobjState(seg, facestate);
-	seg = P_SpawnMobjFromMobj(mobj, -26*x1, -26*y1, 0, MT_BOOSTERSEG);
-	seg->angle = angle + ANGLE_90;
-	P_SetMobjState(seg, facestate);
-	seg = P_SpawnMobjFromMobj(mobj, 21*x2, 21*y2, 0, MT_BOOSTERSEG);
-	seg->angle = angle;
-	P_SetMobjState(seg, leftstate);
-	seg = P_SpawnMobjFromMobj(mobj, -21*x2, -21*y2, 0, MT_BOOSTERSEG);
-	seg->angle = angle;
-	P_SetMobjState(seg, rightstate);
-
-	seg = P_SpawnMobjFromMobj(mobj, 13*(x1 + x2), 13*(y1 + y2), 0, MT_BOOSTERROLLER);
-	seg->angle = angle;
-	P_SetMobjState(seg, rollerstate);
-	seg = P_SpawnMobjFromMobj(mobj, 13*(x1 - x2), 13*(y1 - y2), 0, MT_BOOSTERROLLER);
-	seg->angle = angle;
-	P_SetMobjState(seg, rollerstate);
-	seg = P_SpawnMobjFromMobj(mobj, -13*(x1 + x2), -13*(y1 + y2), 0, MT_BOOSTERROLLER);
-	seg->angle = angle;
-	P_SetMobjState(seg, rollerstate);
-	seg = P_SpawnMobjFromMobj(mobj, -13*(x1 - x2), -13*(y1 - y2), 0, MT_BOOSTERROLLER);
-	seg->angle = angle;
-	P_SetMobjState(seg, rollerstate);
-
-	return true;
-}
-
 static void P_SnapToFinishLine(mobj_t *mobj)
 {
 	line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
@@ -11380,11 +11339,6 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 	}
 	break;
-	case MT_REDBOOSTER:
-	case MT_YELLOWBOOSTER:
-		if (!P_SetupBooster(mthing, mobj, mobj->type == MT_REDBOOSTER))
-			return false;
-		break;
 	case MT_AXIS:
 		// Inverted if args[3] is set
 		if (mthing->args[3])
