@@ -355,6 +355,12 @@ consvar_t cv_dummyrings = CVAR_INIT ("dummyrings", "0", CV_HIDEN, ringlimit_cons
 consvar_t cv_dummylives = CVAR_INIT ("dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL);
 static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
+consvar_t cv_dummyattackingrings = CVAR_INIT ("dummyattackingrings", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingstacking = CVAR_INIT ("dummyattackingstacking", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{0, "Easy"}, {1, "Normal"}, {2, "Hard"}, {3, "Master"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
@@ -487,6 +493,41 @@ void M_OpenGLOptionsMenu(INT32 choice)
 static INT32 M_FindFirstMap(INT32 gtype);
 static INT32 M_GetFirstLevelInList(void);
 
+#define ADD(cv, str) \
+if (cv.value) \
+{ \
+  len += 3; \
+  new_str = Z_Realloc(new_str, len, PU_STATIC, NULL); \
+  strcat(new_str, str); \
+}
+
+char *M_AppendGametypeAndModName(void)
+{
+	UINT8 len = 3;
+	char *new_str;
+
+	new_str = Z_Malloc(4, PU_STATIC, NULL);
+
+	if ((!Playing() && (levellistmode == LLM_ITEMBREAKER)) || (modeattacking & ATTACKING_ITEMBREAK))
+	{
+		strcpy(new_str, "IB-");
+	}
+	else
+	{
+		strcpy(new_str, "RA-");
+	}
+
+	ADD(cv_dummyattackingrings, "RN-")
+	ADD(cv_dummyattackingstacking, "ST-")
+	ADD(cv_dummyattackingchaining, "CH-")
+	ADD(cv_dummyattackingslipdash, "SD-")
+	ADD(cv_dummyattackingpurpledrift, "PD-")
+
+	new_str[len-1] = '\0';
+
+	return new_str;
+}
+
 // Nextmap.  Used for Time Attack.
 void Nextmap_OnChange(void)
 {
@@ -523,10 +564,10 @@ void Nextmap_OnChange(void)
 	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
 	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
-	if (menustack[0] == MN_SP_TIMEATTACK)
+	if (menustack[0] == MN_SP_TIMEATTACK || menustack[0] == MN_SP_MODS)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
-		const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+		char *gamemode = M_AppendGametypeAndModName();
 		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
 		UINT8 active = 0;
 
@@ -600,6 +641,7 @@ void Nextmap_OnChange(void)
 		}
 
 		free(gpath);
+		Z_Free(gamemode);
 	}
 }
 
@@ -1806,6 +1848,12 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyrings);
 	CV_RegisterVar(&cv_dummylives);
 	CV_RegisterVar(&cv_dummystaff);
+
+	CV_RegisterVar(&cv_dummyattackingrings);
+	CV_RegisterVar(&cv_dummyattackingstacking);
+	CV_RegisterVar(&cv_dummyattackingchaining);
+	CV_RegisterVar(&cv_dummyattackingslipdash);
+	CV_RegisterVar(&cv_dummyattackingpurpledrift);
 
 	CV_RegisterVar(&cv_dummygpdifficulty);
 	CV_RegisterVar(&cv_dummygpencore);
@@ -5723,6 +5771,7 @@ void M_QuitTimeAttackMenu(INT32 choice)
 void M_ChooseTimeAttack(INT32 choice)
 {
 	char *gpath;
+	char *gamemode = M_AppendGametypeAndModName();
 	char nameofdemo[256];
 	(void)choice;
 	emeralds = 0;
@@ -5736,7 +5785,9 @@ void M_ChooseTimeAttack(INT32 choice)
 	strcat(gpath, PATHSEP);
 	strcat(gpath, G_BuildMapName(cv_nextmap.value));
 
-	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-%s-last", gpath, cv_skin[0].string, (modeattacking & ATTACKING_ITEMBREAK) ? "IB" : "RA");
+	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-%s-last", gpath, cv_skin[0].string, gamemode);
+
+	Z_Free(gamemode);
 
 	if (!cv_autorecord.value)
 		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
@@ -5791,7 +5842,7 @@ void M_HandleStaffReplay(INT32 choice)
 void M_ReplayTimeAttack(INT32 choice)
 {
 	const char *which;
-	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+	const char *gamemode = M_AppendGametypeAndModName();
 	M_ClearMenus(true);
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
@@ -5817,7 +5868,7 @@ void M_ReplayTimeAttack(INT32 choice)
 
 static void M_EraseGuest(INT32 choice)
 {
-	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+	const char *gamemode = M_AppendGametypeAndModName();
 	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode);
 	(void)choice;
 	if (FIL_FileExists(rguest))
@@ -5830,7 +5881,7 @@ static void M_EraseGuest(INT32 choice)
 
 static void M_OverwriteGuest(const char *which)
 {
-	const char *gamemode = (levellistmode == LLM_ITEMBREAKER) ? "IB" : "RA";
+	const char *gamemode = M_AppendGametypeAndModName();
 	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 	UINT8 *buf;
 	size_t len;

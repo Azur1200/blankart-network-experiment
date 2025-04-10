@@ -465,6 +465,8 @@ extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern consvar_t cv_dummyrings, cv_dummylives;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
+extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
+extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];
@@ -486,6 +488,9 @@ void M_ForceSaveSlotSelected(INT32 sslot);
 void M_CheatActivationResponder(INT32 ch);
 
 void M_ModeAttackRetry(INT32 choice);
+
+// File name appender for RA gametype+mod reading.
+char *M_AppendGametypeAndModName(void);
 
 // Level select updating
 void Nextmap_OnChange(void);

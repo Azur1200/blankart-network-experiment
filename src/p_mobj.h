@@ -581,6 +581,7 @@ extern boolean ringsactive;
 extern boolean stackingactive;
 extern boolean chainingactive;
 extern boolean slipdashactive;
+extern boolean purpledriftactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

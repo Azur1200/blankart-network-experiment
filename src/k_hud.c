@@ -2658,20 +2658,9 @@ static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 
 static const char *K_StringTypingDot(player_t *p)
 {
-	if (p->typing_duration > 47)
-	{
-		return "...";
-	}
-	else if (p->typing_duration > 31)
-	{
-		return "..";
-	}
-	else if (p->typing_duration > 15)
-	{
-		return ".";
-	}
-	else
-		return "";
+	const char *dots = "...";
+
+	return dots + CLAMP(3 - p->typing_duration/16, 0, 3);
 }
 
 static void K_DrawTypingNotifier(fixed_t x, fixed_t y, player_t *p)

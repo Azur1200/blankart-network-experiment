@@ -3985,6 +3985,13 @@ static int lib_kRingsActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Purple Drift is active.
+static int lib_kPurpleDriftActive(lua_State *L)
+{
+	lua_pushboolean(L, K_PurpleDriftActive());
+	return 1;
+}
+
 // Checks if Stacking is active.
 static int lib_kStackingActive(lua_State *L)
 {
@@ -4365,6 +4372,7 @@ static luaL_Reg lib[] = {
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
 
 	{"K_RingsActive",lib_kRingsActive},
+	{"K_PurpleDriftActive",lib_kPurpleDriftActive},
 	{"K_StackingActive",lib_kStackingActive},
 	{"K_ChainingActive",lib_kChainingActive},
 	{"K_SlipdashActive",lib_kSlipdashActive},

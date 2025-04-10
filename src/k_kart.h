@@ -234,6 +234,7 @@ void K_UnsetItemOut(player_t *player);
 boolean K_SafeRespawnPosition(mobj_t * mo);
 
 boolean K_RingsActive(void);
+boolean K_PurpleDriftActive(void);
 boolean K_StackingActive(void);
 boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
