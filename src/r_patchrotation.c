@@ -23,13 +23,24 @@ fixed_t rollsinang[ROTANGLES];
 
 angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 {
-	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, mobj->x, mobj->y);
-
-	fixed_t pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
-	fixed_t rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
-
+	angle_t viewingAngle, rollOrPitch;
 	angle_t sloperolll = mobj->slopepitch;
 	angle_t slopepitch = mobj->sloperoll;
+	fixed_t pitchMul, rollMul;
+
+	if (mobj->player)
+	{
+		// We are the player, use camera for air tilting.
+		viewingAngle = R_PointToAnglePlayer(viewPlayer, mobj->x, mobj->y);
+	}
+	else
+	{
+		// Regular Mobjs don't air tilt.
+		viewingAngle = mobj->angle;
+	}
+
+	pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
+	rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
 
 	if (!cv_sloperoll.value || (mobj->player && (mobj->player->pogospring > 0)))
 	{
@@ -37,7 +48,7 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 		slopepitch = 0;
 	}
 
-	angle_t rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
+	rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
 
 	return rollOrPitch;
 }
@@ -64,7 +75,6 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 	{
 		rollAngle = 0;
 	}
-
 
 	return rollAngle;
 }

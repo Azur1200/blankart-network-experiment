@@ -3387,7 +3387,7 @@ void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean
 
 	player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, speedboost);
 
-	if (cv_kartstacking_accelstack.value)
+	if (cv_kartstacking_accelstack.value && stackingactive)
 	{
 		player->boostinfo.accelboost += accelboost;
 	}

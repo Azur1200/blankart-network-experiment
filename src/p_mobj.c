@@ -1733,10 +1733,6 @@ void P_XYMovement(mobj_t *mo)
 						mo->momz = transfermomz;
 						mo->standingslope = NULL;
 						mo->terrain = NULL;
-						P_SetPitchRoll(mo, ANGLE_90,
-								transferslope->xydirection
-								+ (transferslope->zangle
-									& ANGLE_180));
 					}
 				}
 			}
