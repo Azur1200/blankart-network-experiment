@@ -3668,15 +3668,26 @@ Quaketilt (player_t *player)
 
 static angle_t P_GetCameraPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 {
-	angle_t viewingAngle = R_PointToAnglePlayer(viewPlayer, mobj->x, mobj->y);
-
-	fixed_t pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
-	fixed_t rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
-
+	angle_t viewingAngle, rollOrPitch;
 	angle_t sloperolll = mobj->slopepitch;
 	angle_t slopepitch = mobj->sloperoll;
+	fixed_t pitchMul, rollMul;
 
-	angle_t rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
+	if (mobj->player && cv_sloperoll.value)
+	{
+		// We are the player, use camera for air tilting.
+		viewingAngle = R_PointToAnglePlayer(viewPlayer, mobj->x, mobj->y);
+	}
+	else
+	{
+		// Regular Mobjs don't air tilt.
+		viewingAngle = mobj->angle;
+	}
+
+	pitchMul = -FINESINE(viewingAngle >> ANGLETOFINESHIFT);
+	rollMul = FINECOSINE(viewingAngle >> ANGLETOFINESHIFT);
+
+	rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
 
 	return rollOrPitch;
 }
