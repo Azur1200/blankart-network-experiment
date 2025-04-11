@@ -4409,7 +4409,7 @@ UINT16 K_DriftSparkColor(player_t *player, INT32 charge)
 			color = K_RainbowColor(leveltime);
 		}
 	}
-	else if (cv_kartpurpledrift.value && charge >= ds*3)
+	else if (K_PurpleDriftActive() && charge >= ds*3)
 	{
 		// Stage 3: Purple
 		if (charge <= (ds*3)+(32*3))
@@ -4498,7 +4498,7 @@ static void K_SpawnDriftSparks(player_t *player)
 			spark->color = 1 + (leveltime % (numskincolors-1));
 
 		}
-		else if (cv_kartpurpledrift.value && player->driftcharge >= K_GetKartDriftSparkValue(player)*3)
+		else if (K_PurpleDriftActive() && player->driftcharge >= K_GetKartDriftSparkValue(player)*3)
 		{
 			if (player->driftcharge <= (K_GetKartDriftSparkValue(player)*3)+(24*3))
 				spark->color = SKINCOLOR_VIOLET; // transition
@@ -8916,7 +8916,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	fixed_t driftadditive = 24;
 	INT32 dsone = K_GetKartDriftSparkValue(player);
 	INT32 dstwo = dsone*2;
-	INT32 dsthree = cv_kartpurpledrift.value ? dsone*3 : dsone*4;
+	INT32 dsthree = K_PurpleDriftActive() ? dsone*3 : dsone*4;
 	INT32 dsfour = dsone*4;
 	UINT16 buttons = K_GetKartButtons(player);
 

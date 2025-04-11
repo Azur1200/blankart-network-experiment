@@ -7067,7 +7067,7 @@ static void KartPurpleDrift_OnChange(void)
 		return;
 	}
 
-	if (!purpledriftactive && cv_kartpurpledrift.value)
+	if (!K_PurpleDriftActive() && cv_kartpurpledrift.value)
 	{
 		if (leveltime < starttime)
 		{
@@ -7079,7 +7079,7 @@ static void KartPurpleDrift_OnChange(void)
 			CONS_Printf(M_GetText("4-tier drifting will be turned \"On\" Next Round.\n"));
 		}
 	}
-	else if (purpledriftactive && !cv_kartpurpledrift.value)
+	else if (K_PurpleDriftActive() && !cv_kartpurpledrift.value)
 	{
 		if (leveltime < starttime)
 		{
