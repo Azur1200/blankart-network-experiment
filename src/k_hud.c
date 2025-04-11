@@ -2658,7 +2658,7 @@ static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 
 static const char *K_StringTypingDot(player_t *p)
 {
-	const char *dots = "...";
+	static const char *dots = "...";
 
 	return dots + CLAMP(3 - p->typing_duration/16, 0, 3);
 }
