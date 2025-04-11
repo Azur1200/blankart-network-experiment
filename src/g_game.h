@@ -249,9 +249,11 @@ void G_SetGamestate(gamestate_t newstate);
 boolean G_GamestateUsesLevel(void);
 
 // Gamedata record shit
+#define MAXMAPRECORDS 25
 void G_AllocMainRecordData(INT16 i);
 void G_ClearRecords(void);
 
+boolean K_EmblemsEnabled(void);
 tic_t G_GetBestTime(INT16 map);
 
 FUNCMATH INT32 G_TicsToHours(tic_t tics);

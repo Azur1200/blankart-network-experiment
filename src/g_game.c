@@ -503,6 +503,26 @@ tic_t G_GetBestLap(INT16 map)
 }
 */
 
+boolean K_EmblemsEnabled(void)
+{
+	if (cv_dummyattackingrings.value)
+		return false;
+
+	if (cv_dummyattackingstacking.value)
+		return false;
+
+	if (cv_dummyattackingchaining.value)
+		return false;
+
+	if (cv_dummyattackingslipdash.value)
+		return false;
+
+	if (cv_dummyattackingpurpledrift.value)
+		return false;
+
+	return true;
+}
+
 //
 // G_UpdateRecordReplays
 //
@@ -3881,8 +3901,9 @@ static void G_UpdateVisited(void)
 	if (modeattacking)
 		G_UpdateRecordReplays();
 
-	if ((earnedEmblems = M_CompletionEmblems()))
-		CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
+	// Unseal when we add more emblems
+	//if ((earnedEmblems = M_CompletionEmblems()))
+		//CONS_Printf(M_GetText("\x82" "Earned %hu emblem%s for level completion.\n"), (UINT16)earnedEmblems, earnedEmblems > 1 ? "s" : "");
 }
 
 static boolean CanSaveLevel(INT32 mapnum)
