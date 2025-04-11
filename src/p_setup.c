@@ -7891,7 +7891,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartrings.value)
 		ringsactive = true;
 
-	if (cv_kartslipdash.value)
+	if (cv_kartpurpledrift.value)
 		purpledriftactive = true;
 
 	if (cv_kartstacking.value)
