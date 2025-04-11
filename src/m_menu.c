@@ -355,11 +355,11 @@ consvar_t cv_dummyrings = CVAR_INIT ("dummyrings", "0", CV_HIDEN, ringlimit_cons
 consvar_t cv_dummylives = CVAR_INIT ("dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL);
 static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
-consvar_t cv_dummyattackingrings = CVAR_INIT ("dummyattackingrings", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
-consvar_t cv_dummyattackingstacking = CVAR_INIT ("dummyattackingstacking", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
-consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
-consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
-consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_NOSHOWHELP|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingrings = CVAR_INIT ("dummyattackingrings", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingstacking = CVAR_INIT ("dummyattackingstacking", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{0, "Easy"}, {1, "Normal"}, {2, "Hard"}, {3, "Master"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
@@ -503,7 +503,7 @@ if (cv.value) \
 
 char *M_AppendGametypeAndModName(void)
 {
-	UINT8 len = 3;
+	UINT8 len = 4;
 	char *new_str;
 
 	new_str = Z_Malloc(4, PU_STATIC, NULL);
@@ -5842,7 +5842,7 @@ void M_HandleStaffReplay(INT32 choice)
 void M_ReplayTimeAttack(INT32 choice)
 {
 	const char *which;
-	const char *gamemode = M_AppendGametypeAndModName();
+	char *gamemode = M_AppendGametypeAndModName();
 	M_ClearMenus(true);
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
@@ -5864,11 +5864,12 @@ void M_ReplayTimeAttack(INT32 choice)
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
 	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
+	Z_Free(gamemode);
 }
 
 static void M_EraseGuest(INT32 choice)
 {
-	const char *gamemode = M_AppendGametypeAndModName();
+	char *gamemode = M_AppendGametypeAndModName();
 	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode);
 	(void)choice;
 	if (FIL_FileExists(rguest))
@@ -5877,11 +5878,12 @@ static void M_EraseGuest(INT32 choice)
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
+	Z_Free(gamemode);
 }
 
 static void M_OverwriteGuest(const char *which)
 {
-	const char *gamemode = M_AppendGametypeAndModName();
+	char *gamemode = M_AppendGametypeAndModName();
 	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 	UINT8 *buf;
 	size_t len;
@@ -5899,6 +5901,7 @@ static void M_OverwriteGuest(const char *which)
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
+	Z_Free(gamemode);
 }
 
 static void M_OverwriteGuest_Time(INT32 choice)
