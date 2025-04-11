@@ -359,6 +359,9 @@ UINT8 M_CheckLevelEmblems(void)
 	UINT8 res;
 	UINT8 somethingUnlocked = 0;
 
+	if (!K_EmblemsEnabled())
+		return false;
+
 	// Update Score, Time, Rings emblems
 	for (i = 0; i < numemblems; ++i)
 	{
@@ -391,7 +394,8 @@ UINT8 M_CheckLevelEmblems(void)
 	return somethingUnlocked;
 }
 
-UINT8 M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separate print when awarding emblems and it's sorta different enough.
+// Unseal when we add more emblems
+/*UINT8 M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separate print when awarding emblems and it's sorta different enough.
 {
 	INT32 i;
 	INT32 embtype;
@@ -426,7 +430,7 @@ UINT8 M_CompletionEmblems(void) // Bah! Duplication sucks, but it's for a separa
 			++somethingUnlocked;
 	}
 	return somethingUnlocked;
-}
+}*/
 
 // -------------------
 // Quick unlock checks

@@ -164,7 +164,7 @@ UINT8 M_CheckCondition(condition_t *cn);
 UINT8 M_UpdateUnlockablesAndExtraEmblems(void);
 void M_SilentUpdateUnlockablesAndEmblems(void);
 UINT8 M_CheckLevelEmblems(void);
-UINT8 M_CompletionEmblems(void);
+//UINT8 M_CompletionEmblems(void);
 
 // Checking unlockable status
 UINT8 M_AnySecretUnlocked(void);
