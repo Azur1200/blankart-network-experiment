@@ -1795,6 +1795,8 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_laglesscam);
 
+	CV_RegisterVar(&cv_demodateformat);
+
 	// ingame object placing
 	COM_AddCommand("objectplace", Command_ObjectPlace_f);
 	// //COM_AddCommand("writethings", Command_Writethings_f);

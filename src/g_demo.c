@@ -76,6 +76,9 @@ consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE
 consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
 consvar_t cv_resyncdemo = CVAR_INIT("democonsistency", "On", 0, CV_OnOff, NULL);
 
+static CV_PossibleValue_t demodateformat_cons_t[] = {{0, "Automatic"}, {1, "EU"}, {2, "US"}, {0, NULL}};
+consvar_t cv_demodateformat = CVAR_INIT("netdemo_dateformat", "Automatic", CV_SAVE, demodateformat_cons_t, NULL);
+
 static int32_t ReplaySave(int32_t choice)
 {
 	(void)choice;
@@ -3631,10 +3634,12 @@ gotcreationtime:
 	const char *format;
 
 	// US ppl are special (:
-	if (strstr(setlocale(LC_TIME, NULL), "en_US"))
+	if (cv_demodateformat.value == 2)
 		format = "%m.%d.%Y";
-	else
+	else if (cv_demodateformat.value == 1)
 		format = "%d.%m.%Y";
+	else
+		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
 
 	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
 

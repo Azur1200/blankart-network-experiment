@@ -37,6 +37,7 @@ typedef enum {
 
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
 extern consvar_t cv_resyncdemo;
+extern consvar_t cv_demodateformat;
 extern consvar_t cv_dummyreplaysave;
 extern menuitem_t replaysave;
 
