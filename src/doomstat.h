@@ -116,6 +116,7 @@ struct recorddata_t
 	//UINT32 score; ///< Score when the level was finished.
 	//UINT16 rings; ///< Rings when the level was finished.
 };
+#define MAXMAPRECORDS 4
 
 // mapvisited is now a set of flags that says what we've done in the map.
 #define MV_VISITED (1)
@@ -368,80 +369,80 @@ extern UINT16 numkartcupheaders;
 struct mapheader_t
 {
 	// Core game information, not user-modifiable directly
-	char *lumpname;						///< Lump name can be really long
-	UINT32 lumpnamehash;				///< quickncasehash(->lumpname, MAXMAPLUMPNAME)
-	lumpnum_t lumpnum;					///< Lump number for the map, used by vres_GetMap
+	char *lumpname;								///< Lump name can be really long
+	UINT32 lumpnamehash;						///< quickncasehash(->lumpname, MAXMAPLUMPNAME)
+	lumpnum_t lumpnum;							///< Lump number for the map, used by vres_GetMap
 
-	void *thumbnailPic;					///< Lump data for the level select thumbnail.
-	void *minimapPic;					///< Lump data for the minimap graphic.
+	void *thumbnailPic;							///< Lump data for the level select thumbnail.
+	void *minimapPic;							///< Lump data for the minimap graphic.
 
-	UINT8 mapvisited;					///< A set of flags that says what we've done in the map.
-	recorddata_t *mainrecord[3];		///< Stores best time attack data
+	UINT8 mapvisited;							///< A set of flags that says what we've done in the map.
+	recorddata_t *mainrecord[MAXMAPRECORDS];	///< Stores best time attack data
 
-	cupheader_t *cup;					///< Cached cup
+	cupheader_t *cup;							///< Cached cup
 
 	// Titlecard information
-	char lvlttl[22];					///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
-	char subttl[33];					///< Subtitle for level
-	char zonttl[22];					///< "ZONE" replacement name
-	char actnum[3];						///< SRB2Kart: Now a 2 character long string.
+	char lvlttl[22];							///< Level name without "Zone". (21 character limit instead of 32, 21 characters can display on screen max anyway)
+	char subttl[33];							///< Subtitle for level
+	char zonttl[22];							///< "ZONE" replacement name
+	char actnum[3];								///< SRB2Kart: Now a 2 character long string.
 
 	// Selection metadata
-	char keywords[33];					///< Keywords separated by space to search for. 32 characters.
+	char keywords[33];							///< Keywords separated by space to search for. 32 characters.
 
-	SINT8 unlockrequired;				///< Is an unlockable required to play this level? -1 if no.
-	UINT8 levelselect;					///< Is this map available in the level select? If so, which map list is it available in?
-	UINT8 menuflags;					///< LF2_flags: options that affect record attack menus
+	SINT8 unlockrequired;						///< Is an unlockable required to play this level? -1 if no.
+	UINT8 levelselect;							///< Is this map available in the level select? If so, which map list is it available in?
+	UINT8 menuflags;							///< LF2_flags: options that affect record attack menus
 
 	// Operational metadata
-	UINT16 levelflags;					///< LF_flags:  merged booleans into one UINT16 for space, see below
-	UINT32 typeoflevel;					///< Combination of typeoflevel flags.
-	UINT8 numlaps;						///< Number of laps in circuit mode, unless overridden.
-	UINT8 lapspersection;				///< Number of laps per section in hybrid section-circuit maps.
-	fixed_t gravity;					///< Map-wide gravity.
+	UINT16 levelflags;							///< LF_flags:  merged booleans into one UINT16 for space, see below
+	UINT32 typeoflevel;							///< Combination of typeoflevel flags.
+	UINT8 numlaps;								///< Number of laps in circuit mode, unless overridden.
+	UINT8 lapspersection;						///< Number of laps per section in hybrid section-circuit maps.
+	fixed_t gravity;							///< Map-wide gravity.
 
 	// Music information
-	char musname[MAXMUSNAMES][7];		///< Music tracks to play. First dimension is the track number, second is the music string. "" for no music.
-	UINT16 mustrack;					///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	UINT32 muspos;						///< Music position to jump to.
-	UINT8 musname_size;					///< Number of music tracks defined
+	char musname[MAXMUSNAMES][7];				///< Music tracks to play. First dimension is the track number, second is the music string. "" for no music.
+	UINT16 mustrack;							///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
+	UINT32 muspos;								///< Music position to jump to.
+	UINT8 musname_size;							///< Number of music tracks defined
 
 	// Sky information
-	UINT8 weather;						///< See preciptype_t
-	char skytexture[9];					///< Sky texture to use.
-	INT16 skybox_scalex;				///< Skybox X axis scale. (0 = no movement, 1 = 1:1 movement, 16 = 16:1 slow movement, -4 = 1:4 fast movement, etc.)
-	INT16 skybox_scaley;				///< Skybox Y axis scale.
-	INT16 skybox_scalez;				///< Skybox Z axis scale.
+	UINT8 weather;								///< See preciptype_t
+	char skytexture[9];							///< Sky texture to use.
+	INT16 skybox_scalex;						///< Skybox X axis scale. (0 = no movement, 1 = 1:1 movement, 16 = 16:1 slow movement, -4 = 1:4 fast movement, etc.)
+	INT16 skybox_scaley;						///< Skybox Y axis scale.
+	INT16 skybox_scalez;						///< Skybox Z axis scale.
 
 	// Distance information
-	fixed_t mobj_scale;					///< Defines the size all object calculations are relative to
-	fixed_t default_waypoint_radius;	///< 0 is a special value for DEFAULT_WAYPOINT_RADIUS, but scaled with mobjscale
+	fixed_t mobj_scale;							///< Defines the size all object calculations are relative to
+	fixed_t default_waypoint_radius;			///< 0 is a special value for DEFAULT_WAYPOINT_RADIUS, but scaled with mobjscale
 
 	// Visual information
-	UINT16 palette;						///< PAL lump to use on this map
-	UINT16 encorepal;					///< PAL for encore mode
-	mapheader_lighting_t lighting;			///< Wall and sprite lighting
-	mapheader_lighting_t lighting_encore;	///< Alternative lighting for Encore mode
-	boolean use_encore_lighting;			///< Whether to use separate Encore lighting
+	UINT16 palette;								///< PAL lump to use on this map
+	UINT16 encorepal;							///< PAL for encore mode
+	mapheader_lighting_t lighting;				///< Wall and sprite lighting
+	mapheader_lighting_t lighting_encore;		///< Alternative lighting for Encore mode
+	boolean use_encore_lighting;				///< Whether to use separate Encore lighting
 
 	// Freed animal information
-	UINT8 numFlickies;					///< Internal. For freed flicky support.
-	mobjtype_t *flickies;				///< List of freeable flickies in this level. Allocated dynamically for space reasons. Be careful.
+	UINT8 numFlickies;							///< Internal. For freed flicky support.
+	mobjtype_t *flickies;						///< List of freeable flickies in this level. Allocated dynamically for space reasons. Be careful.
 
 	// Script information
-	char runsoc[33];					///< SOC to execute at start of level (32 character limit instead of 63)
-	char scriptname[33];				///< Script to use when the map is switched to. (32 character limit instead of 191)
+	char runsoc[33];							///< SOC to execute at start of level (32 character limit instead of 63)
+	char scriptname[33];						///< Script to use when the map is switched to. (32 character limit instead of 191)
 
 	// Cutscene information
-	UINT8 precutscenenum;				///< Cutscene number to play BEFORE a level starts.
-	UINT8 cutscenenum;					///< Cutscene number to use, 0 for none.
+	UINT8 precutscenenum;						///< Cutscene number to play BEFORE a level starts.
+	UINT8 cutscenenum;							///< Cutscene number to use, 0 for none.
 
 	// Lua information
-	UINT8 numCustomOptions;				///< Internal. For Lua custom value support.
-	customoption_t *customopts;			///< Custom options. Allocated dynamically for space reasons. Be careful.
+	UINT8 numCustomOptions;						///< Internal. For Lua custom value support.
+	customoption_t *customopts;					///< Custom options. Allocated dynamically for space reasons. Be careful.
 
 	// BlanKart
-	boolean use_walltransfer;			///< Whether to use DRRR style wall transfering or not
+	boolean use_walltransfer;					///< Whether to use DRRR style wall transfering or not
 };
 
 

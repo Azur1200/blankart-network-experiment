@@ -542,8 +542,6 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (preset == -1)
-			return false;
 		if (!mapheaderinfo[i]->mainrecord[preset] || !mapheaderinfo[i]->mainrecord[preset]->time)
 			return false;
 		else if ((curtics += mapheaderinfo[i]->mainrecord[preset]->time) > tictime)

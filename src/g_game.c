@@ -471,16 +471,14 @@ SINT8 G_RecordPresetIndex(void)
 	if (rings && stacking && chaining && slipdash && purpledrift)
 		return 2;
 
-	return -1;
+	return 3;
 }
 
 // Allocation for time and nights data
-void G_AllocMainRecordData(INT16 i)
+void G_AllocMainRecordData(INT16 i, SINT8 preset)
 {
-	SINT8 preset = G_RecordPresetIndex();
-
-	if (preset == -1)
-		return;
+	if (preset < 0 || preset >= MAXMAPRECORDS)
+		I_Error("G_AllocMainRecordData: Tried allocating invalid record index (%d)", preset);
 
 	if (i > nummapheaders || !mapheaderinfo[i])
 		I_Error("G_AllocMainRecordData: Internal map ID %d not found (nummapheaders = %d)\n", i, nummapheaders);
@@ -493,17 +491,17 @@ void G_AllocMainRecordData(INT16 i)
 void G_ClearRecords(void)
 {
 	INT16 i;
-	SINT8 preset = G_RecordPresetIndex();
-
-	if (preset == -1)
-		return;
+	SINT8 k;
 
 	for (i = 0; i < nummapheaders; ++i)
 	{
-		if (mapheaderinfo[i]->mainrecord[preset])
+		for (k = 0; k < MAXMAPRECORDS; k++)
 		{
-			Z_Free(mapheaderinfo[i]->mainrecord[preset]);
-			mapheaderinfo[i]->mainrecord[preset] = NULL;
+			if (mapheaderinfo[i]->mainrecord[k])
+			{
+				Z_Free(mapheaderinfo[i]->mainrecord[k]);
+				mapheaderinfo[i]->mainrecord[k] = NULL;
+			}
 		}
 	}
 }
@@ -513,7 +511,7 @@ tic_t G_GetBestTime(INT16 map)
 {
 	SINT8 preset = G_RecordPresetIndex();
 
-	if (!mapheaderinfo[map] || preset == -1 || !mapheaderinfo[map]->mainrecord[preset] || mapheaderinfo[map]->mainrecord[preset]->time <= 0)
+	if (!mapheaderinfo[map] || !mapheaderinfo[map]->mainrecord[preset] || mapheaderinfo[map]->mainrecord[preset]->time <= 0)
 		return (tic_t)UINT32_MAX;
 
 	return mapheaderinfo[map]->mainrecord[preset]->time;
@@ -547,17 +545,15 @@ boolean K_EmblemsEnabled(void)
 static void G_UpdateRecordReplays(void)
 {
 	char *gpath;
+	char *gamemode = M_AppendGametypeAndModName();
 	char lastdemo[256], bestdemo[256];
 	UINT8 earnedEmblems;
 	int parts;
 	SINT8 preset = G_RecordPresetIndex();
 
-	if (preset == -1)
-		return;
-
 	// Record new best time
 	if (!mapheaderinfo[gamemap-1]->mainrecord[preset])
-		G_AllocMainRecordData(gamemap-1);
+		G_AllocMainRecordData(gamemap-1, preset);
 
 	if (players[consoleplayer].pflags & PF_NOCONTEST)
 	{
@@ -591,14 +587,14 @@ static void G_UpdateRecordReplays(void)
 	parts = M_PathParts(gpath);
 	M_MkdirEachUntil(gpath, parts - 4, parts - 1, 0755);
 
-	snprintf(lastdemo, 255, "%s-%s-last.lmp", gpath, cv_chooseskin.string);
+	snprintf(lastdemo, 255, "%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-time-best.lmp", gpath, cv_chooseskin.string);
+		snprintf(bestdemo, 255, "%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -609,7 +605,7 @@ static void G_UpdateRecordReplays(void)
 
 		if (modeattacking == ATTACKING_TIME)
 		{
-			snprintf(bestdemo, 255, "%s-%s-lap-best.lmp", gpath, cv_chooseskin.string);
+			snprintf(bestdemo, 255, "%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode);
 			if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 			{ // Better lap time, save this demo.
 				if (FIL_FileExists(bestdemo))
@@ -625,6 +621,7 @@ static void G_UpdateRecordReplays(void)
 	}
 
 	free(gpath);
+	free(gamemode);
 
 	// Check emblems when level data is updated
 	if ((earnedEmblems = M_CheckLevelEmblems()))
@@ -3884,7 +3881,7 @@ void G_AddMapToBuffer(INT16 map)
 static void G_UpdateVisited(void)
 {
 	UINT8 i;
-	UINT8 earnedEmblems;
+	//UINT8 earnedEmblems;
 
 	// No demos.
 	if (demo.playback)
@@ -4564,7 +4561,7 @@ void G_LoadGameData(void)
 
 				if (rectime || reclap)
 				{
-					G_AllocMainRecordData((INT16)i);
+					G_AllocMainRecordData((INT16)i, k);
 					mapheaderinfo[i]->mainrecord[k]->time = rectime;
 					mapheaderinfo[i]->mainrecord[k]->lap = reclap;
 					CONS_Printf("Map Record %d, ID %d, Time = %d, Lap = %d\n", k, i, rectime/35, reclap/35);
