@@ -453,56 +453,71 @@ consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
 char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
 INT32 player_name_changes[MAXPLAYERS];
 
+// What record should preset should we use?
+SINT8 G_RecordPresetIndex(void)
+{
+	boolean rings = cv_dummyattackingrings.value;
+	boolean stacking = cv_dummyattackingstacking.value;
+	boolean chaining = cv_dummyattackingchaining.value;
+	boolean slipdash = cv_dummyattackingslipdash.value;
+	boolean purpledrift = cv_dummyattackingpurpledrift.value;
+
+	if (!rings && !stacking && !chaining && !slipdash && !purpledrift)
+		return 0;
+
+	if (stacking && chaining && !rings && !slipdash && !purpledrift)
+		return 1;
+
+	if (rings && stacking && chaining && slipdash && purpledrift)
+		return 2;
+
+	return -1;
+}
+
 // Allocation for time and nights data
 void G_AllocMainRecordData(INT16 i)
 {
+	SINT8 preset = G_RecordPresetIndex();
+
+	if (preset == -1)
+		return;
+
 	if (i > nummapheaders || !mapheaderinfo[i])
 		I_Error("G_AllocMainRecordData: Internal map ID %d not found (nummapheaders = %d)\n", i, nummapheaders);
-	if (!mapheaderinfo[i]->mainrecord)
-		mapheaderinfo[i]->mainrecord = Z_Malloc(sizeof(recorddata_t), PU_STATIC, NULL);
-	memset(mapheaderinfo[i]->mainrecord, 0, sizeof(recorddata_t));
+	if (!mapheaderinfo[i]->mainrecord[preset])
+		mapheaderinfo[i]->mainrecord[preset] = Z_Malloc(sizeof(recorddata_t), PU_STATIC, NULL);
+	memset(mapheaderinfo[i]->mainrecord[preset], 0, sizeof(recorddata_t));
 }
 
 // MAKE SURE YOU SAVE DATA BEFORE CALLING THIS
 void G_ClearRecords(void)
 {
 	INT16 i;
+	SINT8 preset = G_RecordPresetIndex();
+
+	if (preset == -1)
+		return;
+
 	for (i = 0; i < nummapheaders; ++i)
 	{
-		if (mapheaderinfo[i]->mainrecord)
+		if (mapheaderinfo[i]->mainrecord[preset])
 		{
-			Z_Free(mapheaderinfo[i]->mainrecord);
-			mapheaderinfo[i]->mainrecord = NULL;
+			Z_Free(mapheaderinfo[i]->mainrecord[preset]);
+			mapheaderinfo[i]->mainrecord[preset] = NULL;
 		}
-		/*if (nightsrecords[i])
-		{
-			Z_Free(nightsrecords[i]);
-			nightsrecords[i] = NULL;
-		}*/
 	}
 }
 
 // For easy retrieval of records
 tic_t G_GetBestTime(INT16 map)
 {
-	if (!mapheaderinfo[map] || !mapheaderinfo[map]->mainrecord || mapheaderinfo[map]->mainrecord->time <= 0)
+	SINT8 preset = G_RecordPresetIndex();
+
+	if (!mapheaderinfo[map] || preset == -1 || !mapheaderinfo[map]->mainrecord[preset] || mapheaderinfo[map]->mainrecord[preset]->time <= 0)
 		return (tic_t)UINT32_MAX;
 
-	return mapheaderinfo[map]->mainrecord->time;
+	return mapheaderinfo[map]->mainrecord[preset]->time;
 }
-
-// BE RIGHT BACK
-
-// Not needed
-/*
-tic_t G_GetBestLap(INT16 map)
-{
-	if (!mapheaderinfo[map] || !mapheaderinfo[map]->mainrecord || mapheaderinfo[map]->mainrecord->lap <= 0)
-		return (tic_t)UINT32_MAX;
-
-	return mapheaderinfo[map]->mainrecord->lap;
-}
-*/
 
 boolean K_EmblemsEnabled(void)
 {
@@ -535,9 +550,13 @@ static void G_UpdateRecordReplays(void)
 	char lastdemo[256], bestdemo[256];
 	UINT8 earnedEmblems;
 	int parts;
+	SINT8 preset = G_RecordPresetIndex();
+
+	if (preset == -1)
+		return;
 
 	// Record new best time
-	if (!mapheaderinfo[gamemap-1]->mainrecord)
+	if (!mapheaderinfo[gamemap-1]->mainrecord[preset])
 		G_AllocMainRecordData(gamemap-1);
 
 	if (players[consoleplayer].pflags & PF_NOCONTEST)
@@ -545,20 +564,20 @@ static void G_UpdateRecordReplays(void)
 		players[consoleplayer].realtime = UINT32_MAX;
 	}
 
-	if (((mapheaderinfo[gamemap-1]->mainrecord->time == 0) || (players[consoleplayer].realtime < mapheaderinfo[gamemap-1]->mainrecord->time))
+	if (((mapheaderinfo[gamemap-1]->mainrecord[preset]->time == 0) || (players[consoleplayer].realtime < mapheaderinfo[gamemap-1]->mainrecord[preset]->time))
 		&& (players[consoleplayer].realtime < UINT32_MAX)) // DNF
 	{
-		mapheaderinfo[gamemap-1]->mainrecord->time = players[consoleplayer].realtime;
+		mapheaderinfo[gamemap-1]->mainrecord[preset]->time = players[consoleplayer].realtime;
 	}
 
 	if (modeattacking == ATTACKING_TIME)
 	{
-		if ((mapheaderinfo[gamemap-1]->mainrecord->lap == 0) || (bestlap < mapheaderinfo[gamemap-1]->mainrecord->lap))
-			mapheaderinfo[gamemap-1]->mainrecord->lap = bestlap;
+		if ((mapheaderinfo[gamemap-1]->mainrecord[preset]->lap == 0) || (bestlap < mapheaderinfo[gamemap-1]->mainrecord[preset]->lap))
+			mapheaderinfo[gamemap-1]->mainrecord[preset]->lap = bestlap;
 	}
 	else
 	{
-		mapheaderinfo[gamemap-1]->mainrecord->lap = 0;
+		mapheaderinfo[gamemap-1]->mainrecord[preset]->lap = 0;
 	}
 
 	// Save demo!
@@ -4530,29 +4549,33 @@ void G_LoadGameData(void)
 		mapnum = G_MapNumber(mapname);
 
 		rtemp = READUINT8(save.p);
-		rectime = (tic_t)READUINT32(save.p);
-		reclap  = (tic_t)READUINT32(save.p);
 
-		if (mapnum < nummapheaders && mapheaderinfo[mapnum])
+		for (SINT8 k = 0; k < MAXMAPRECORDS; k++)
 		{
-			// Valid mapheader, time to populate with record data.
+			rectime = (tic_t)READUINT32(save.p);
+			reclap  = (tic_t)READUINT32(save.p);
 
-			if ((mapheaderinfo[mapnum]->mapvisited = rtemp) & ~MV_MAX)
-				goto datacorrupt;
-
-			if (rectime || reclap)
+			if (mapnum < nummapheaders && mapheaderinfo[mapnum])
 			{
-				G_AllocMainRecordData((INT16)i);
-				mapheaderinfo[i]->mainrecord->time = rectime;
-				mapheaderinfo[i]->mainrecord->lap = reclap;
-				CONS_Printf("ID %d, Time = %d, Lap = %d\n", i, rectime/35, reclap/35);
+				// Valid mapheader, time to populate with record data.
+
+				if ((mapheaderinfo[mapnum]->mapvisited = rtemp) & ~MV_MAX)
+					goto datacorrupt;
+
+				if (rectime || reclap)
+				{
+					G_AllocMainRecordData((INT16)i);
+					mapheaderinfo[i]->mainrecord[k]->time = rectime;
+					mapheaderinfo[i]->mainrecord[k]->lap = reclap;
+					CONS_Printf("Map Record %d, ID %d, Time = %d, Lap = %d\n", k, i, rectime/35, reclap/35);
+				}
 			}
-		}
-		else
-		{
-			// Since it's not worth declaring the entire gamedata
-			// corrupt over extra maps, we report and move on.
-			//CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded\n", mapname);
+			else
+			{
+				// Since it's not worth declaring the entire gamedata
+				// corrupt over extra maps, we report and move on.
+				//CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded\n", mapname);
+			}
 		}
 	}
 
@@ -4658,15 +4681,18 @@ void G_SaveGameData(void)
 
 		WRITEUINT8(save.p, (mapheaderinfo[i]->mapvisited & MV_MAX));
 
-		if (mapheaderinfo[i]->mainrecord)
+		for (SINT8 k = 0; k < MAXMAPRECORDS; k++)
 		{
-			WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord->time);
-			WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord->lap);
-		}
-		else
-		{
-			WRITEUINT32(save.p, 0);
-			WRITEUINT32(save.p, 0);
+			if (mapheaderinfo[i]->mainrecord[k])
+			{
+				WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord[k]->time);
+				WRITEUINT32(save.p, mapheaderinfo[i]->mainrecord[k]->lap);
+			}
+			else
+			{
+				WRITEUINT32(save.p, 0);
+				WRITEUINT32(save.p, 0);
+			}
 		}
 	}
 

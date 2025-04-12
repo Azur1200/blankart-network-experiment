@@ -376,7 +376,7 @@ struct mapheader_t
 	void *minimapPic;					///< Lump data for the minimap graphic.
 
 	UINT8 mapvisited;					///< A set of flags that says what we've done in the map.
-	recorddata_t *mainrecord;			///< Stores best time attack data
+	recorddata_t *mainrecord[3];		///< Stores best time attack data
 
 	cupheader_t *cup;					///< Cached cup
 
