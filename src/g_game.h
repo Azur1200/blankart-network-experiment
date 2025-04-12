@@ -249,8 +249,8 @@ void G_SetGamestate(gamestate_t newstate);
 boolean G_GamestateUsesLevel(void);
 
 // Gamedata record shit
-#define MAXMAPRECORDS 25
-void G_AllocMainRecordData(INT16 i);
+SINT8 G_RecordPresetIndex(void);
+void G_AllocMainRecordData(INT16 i, SINT8 preset);
 void G_ClearRecords(void);
 
 boolean K_EmblemsEnabled(void);

@@ -448,8 +448,11 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 #endif
 
 	mapheaderinfo[num]->mapvisited = 0;
-	Z_Free(mapheaderinfo[num]->mainrecord);
-	mapheaderinfo[num]->mainrecord = NULL;
+	for (int j = 0; j < MAXMAPRECORDS; j++)
+	{
+		Z_Free(mapheaderinfo[num]->mainrecord[j]);
+		mapheaderinfo[num]->mainrecord[j] = NULL;
+	}
 
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
@@ -503,7 +506,10 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
-		mapheaderinfo[i]->mainrecord = NULL;
+		for (int j = 0; j < MAXMAPRECORDS; j++)
+		{
+			mapheaderinfo[i]->mainrecord[j] = NULL;
+		}
 		mapheaderinfo[i]->flickies = NULL;
 		nummapheaders++;
 	}

@@ -538,12 +538,13 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 
 	for (i = 0; i < nummapheaders; ++i)
 	{
+		SINT8 preset = G_RecordPresetIndex();
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mapheaderinfo[i]->mainrecord || !mapheaderinfo[i]->mainrecord->time)
+		if (!mapheaderinfo[i]->mainrecord[preset] || !mapheaderinfo[i]->mainrecord[preset]->time)
 			return false;
-		else if ((curtics += mapheaderinfo[i]->mainrecord->time) > tictime)
+		else if ((curtics += mapheaderinfo[i]->mainrecord[preset]->time) > tictime)
 			return false;
 	}
 	return true;

@@ -5211,19 +5211,20 @@ static void M_DrawStatsMaps(void)
 	INT16 mnum;
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
+	SINT8 preset = G_RecordPresetIndex();
 
 	for (j = 0; j < nummapheaders; j++)
 	{
 		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mapheaderinfo[j]->mainrecord || mapheaderinfo[j]->mainrecord->time <= 0)
+		if (!mapheaderinfo[j]->mainrecord[preset] || mapheaderinfo[j]->mainrecord[preset]->time <= 0)
 		{
 			mapsunfinished++;
 			continue;
 		}
 
-		besttime += mapheaderinfo[j]->mainrecord->time;
+		besttime += mapheaderinfo[j]->mainrecord[preset]->time;
 	}
 
 	V_DrawString(20, 42, highlightflags, "Combined time records:");
@@ -5575,6 +5576,7 @@ void M_DrawTimeAttackMenu(void)
 {
 	INT32 i, x, y, cursory = 0;
 	UINT16 dispstatus;
+	SINT8 preset = G_RecordPresetIndex();
 
 	//S_ChangeMusicInternal("racent", true); // Eww, but needed for when user hits escape during demo playback
 
@@ -5663,10 +5665,10 @@ void M_DrawTimeAttackMenu(void)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
 		tic_t lap = 0, time = 0;
-		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord)
+		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset])
 		{
-			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord->lap;
-			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord->time;
+			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->lap;
+			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->time;
 		}
 
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
@@ -5679,6 +5681,29 @@ void M_DrawTimeAttackMenu(void)
 
 		V_DrawRightAlignedString(292, 80, highlightflags, "BEST TIME:");
 		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value-1, 1);
+	}
+
+	// Draw current RA preset mode.
+	{
+		const char *mode = "Unkown mode";
+		if (preset == 0)
+		{
+			mode = "SRB2Kart Mode";
+		}
+		else if (preset == 1)
+		{
+			mode = "Tech Mode";
+		}
+		else if (preset == 2)
+		{
+			mode = "BlanKart Mode";
+		}
+		else if (preset == 3)
+		{
+			mode = "Custom Mode";
+		}
+
+		V_DrawString(50, 104, V_6WIDTHSPACE, mode);
 	}
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
@@ -5836,6 +5861,39 @@ void M_HandleStaffReplay(INT32 choice)
 	}
 	if (exitmenu)
 		M_ExitMenu();
+}
+
+void M_SRB2KartPreset(INT32 choice)
+{
+	(void)choice;
+
+	CV_Set(&cv_dummyattackingrings, "Off");
+	CV_Set(&cv_dummyattackingstacking, "Off");
+	CV_Set(&cv_dummyattackingchaining, "Off");
+	CV_Set(&cv_dummyattackingslipdash, "Off");
+	CV_Set(&cv_dummyattackingpurpledrift, "Off");
+}
+
+void M_TechPreset(INT32 choice)
+{
+	(void)choice;
+
+	CV_Set(&cv_dummyattackingrings, "Off");
+	CV_Set(&cv_dummyattackingstacking, "On");
+	CV_Set(&cv_dummyattackingchaining, "On");
+	CV_Set(&cv_dummyattackingslipdash,"Off");
+	CV_Set(&cv_dummyattackingpurpledrift, "Off");
+}
+
+void M_BlanKartPreset(INT32 choice)
+{
+	(void)choice;
+
+	CV_Set(&cv_dummyattackingrings, "On");
+	CV_Set(&cv_dummyattackingstacking, "On");
+	CV_Set(&cv_dummyattackingchaining, "On");
+	CV_Set(&cv_dummyattackingslipdash, "On");
+	CV_Set(&cv_dummyattackingpurpledrift, "On");
 }
 
 // Player has selected the "REPLAY" from the time attack screen
