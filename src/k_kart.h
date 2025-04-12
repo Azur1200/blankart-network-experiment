@@ -39,37 +39,37 @@ Make sure this matches the actual number of states
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
-#define CALC_ARG_OFFSET cv_kartstacking_calc_arg_offset.value
+#define CALC_ARG_OFFSET K_RAGuard(cv_kartstacking_calc_arg_offset, RAG_FLOAT)
 #define CALC_RET_OFFSET FixedSqrt(CALC_ARG_OFFSET)
-#define MAXVANILLABOOST cv_kartstacking_maxvanillaboost.value
-#define SPEEDBOOSTDROPOFF cv_kartstacking_speedboostdropoff.value
-#define SPEEDBOOSTDROPOFF_BRAKE cv_kartstacking_speedboostdropoff_brake.value
+#define MAXVANILLABOOST K_RAGuard(cv_kartstacking_maxvanillaboost, RAG_FLOAT)
+#define SPEEDBOOSTDROPOFF K_RAGuard(cv_kartstacking_speedboostdropoff, RAG_FLOAT)
+#define SPEEDBOOSTDROPOFF_BRAKE K_RAGuard(cv_kartstacking_speedboostdropoff_brake, RAG_FLOAT)
 
 // Vanilla Boosts
-#define EASYSNEAKERSPEEDBOOST cv_kartstacking_sneaker_easyspeedboost.value
-#define NORMALSNEAKERSPEEDBOOST cv_kartstacking_sneaker_normalspeedboost.value
-#define HARDSNEAKERSPEEDBOOST cv_kartstacking_sneaker_hardspeedboost.value
-#define SNEAKERACCELBOOST cv_kartstacking_sneaker_accelboost.value
-#define MAXSNEAKERSTACK cv_kartstacking_sneaker_maxgrade.value
-#define SNEAKERSTACKABLE cv_kartstacking_sneaker_stackable.value
-#define INVINSPEEDBOOST cv_kartstacking_invincibility_speedboost.value
-#define INVINACCELBOOST cv_kartstacking_invincibility_accelboost.value
-#define INVINSTACKABLE cv_kartstacking_invincibility_stackable.value
-#define GROWSPEEDBOOST cv_kartstacking_grow_speedboost.value
-#define GROWACCELBOOST cv_kartstacking_grow_accelboost.value
-#define GROWSTACKABLE cv_kartstacking_grow_stackable.value
-#define FLAMESPEEDVAL cv_kartstacking_flame_speedval.value
-#define FLAMEACCELBOOST cv_kartstacking_flame_accelboost.value
-#define FLAMESTACKABLE cv_kartstacking_flame_stackable.value
-#define STARTSPEEDBOOST cv_kartstacking_start_speedboost.value
-#define STARTACCELBOOST cv_kartstacking_start_accelboost.value
-#define STARTSTACKABLE cv_kartstacking_start_stackable.value
-#define DRIFTSPEEDBOOST cv_kartstacking_drift_speedboost.value
-#define DRIFTACCELBOOST cv_kartstacking_drift_accelboost.value
-#define DRIFTSTACKABLE cv_kartstacking_drift_stackable.value
-#define RINGSPEEDBOOST cv_kartstacking_ring_speedboost.value
-#define RINGACCELBOOST cv_kartstacking_ring_accelboost.value
-#define RINGSTACKABLE cv_kartstacking_ring_stackable.value
+#define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost, RAG_FLOAT)
+#define NORMALSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_normalspeedboost, RAG_FLOAT)
+#define HARDSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_hardspeedboost, RAG_FLOAT)
+#define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost, RAG_FLOAT)
+#define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade, RAG_INT)
+#define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable, RAG_INT)
+#define INVINSPEEDBOOST K_RAGuard(cv_kartstacking_invincibility_speedboost, RAG_FLOAT)
+#define INVINACCELBOOST K_RAGuard(cv_kartstacking_invincibility_accelboost, RAG_FLOAT)
+#define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable, RAG_INT)
+#define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost, RAG_FLOAT)
+#define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost, RAG_FLOAT)
+#define GROWSTACKABLE K_RAGuard(cv_kartstacking_grow_stackable, RAG_INT)
+#define FLAMESPEEDVAL K_RAGuard(cv_kartstacking_flame_speedval, RAG_FLOAT)
+#define FLAMEACCELBOOST K_RAGuard(cv_kartstacking_flame_accelboost, RAG_FLOAT)
+#define FLAMESTACKABLE K_RAGuard(cv_kartstacking_flame_stackable, RAG_INT)
+#define STARTSPEEDBOOST K_RAGuard(cv_kartstacking_start_speedboost, RAG_FLOAT)
+#define STARTACCELBOOST K_RAGuard(cv_kartstacking_start_accelboost, RAG_FLOAT)
+#define STARTSTACKABLE K_RAGuard(cv_kartstacking_start_stackable, RAG_INT)
+#define DRIFTSPEEDBOOST K_RAGuard(cv_kartstacking_drift_speedboost, RAG_FLOAT)
+#define DRIFTACCELBOOST K_RAGuard(cv_kartstacking_drift_accelboost, RAG_FLOAT)
+#define DRIFTSTACKABLE K_RAGuard(cv_kartstacking_drift_stackable, RAG_INT)
+#define RINGSPEEDBOOST K_RAGuard(cv_kartstacking_ring_speedboost, RAG_FLOAT)
+#define RINGACCELBOOST K_RAGuard(cv_kartstacking_ring_accelboost, RAG_FLOAT)
+#define RINGSTACKABLE K_RAGuard(cv_kartstacking_ring_stackable, RAG_INT)
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
@@ -105,6 +105,15 @@ typedef enum
 #define RINGTRANSPARENCYUSEPENALTY 15
 #define RINGVOLUMEREGEN 1
 #define RINGTRANSPARENCYREGEN 3
+
+
+typedef enum
+{
+	RAG_INT,
+	RAG_FLOAT,
+} raguard_e;
+
+INT32 K_RAGuard(consvar_t cvar, SINT8 mode);
 
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
@@ -191,7 +200,6 @@ void K_StripItems(player_t *player);
 void K_StripOther(player_t *player);
 void K_MomentumToFacing(player_t *player);
 boolean K_ApplyOffroad(player_t *player);
-boolean K_SlopeResistance(player_t *player);
 fixed_t K_PlayerTripwireSpeedThreshold(player_t *player);
 tripwirepass_t K_TripwirePassConditions(player_t *player);
 boolean K_TripwirePass(player_t *player);

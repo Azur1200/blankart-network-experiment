@@ -3128,18 +3128,14 @@ void K_MomentumToFacing(player_t *player)
 
 boolean K_ApplyOffroad(player_t *player)
 {
-	boolean sneakertimer = CANTCHAINOFFROAD ? (player->sneakertimer && player->realsneakertimer) : player->sneakertimer;
+	boolean sneakertimer = CANTCHAINOFFROAD ? (player->sneakertimer && player->realsneakertimer) : player->sneakertimer > 0;
+
+	if (modeattacking != ATTACKING_NONE)
+		sneakertimer = player->sneakertimer > 0;
 
 	if (player->invincibilitytimer || player->hyudorotimer || sneakertimer)
 		return false;
 	return true;
-}
-
-boolean K_SlopeResistance(player_t *player)
-{
-	if (player->invincibilitytimer || player->sneakertimer || player->flamestore)
-		return true;
-	return false;
 }
 
 fixed_t K_PlayerTripwireSpeedThreshold(player_t *player)
@@ -3192,6 +3188,26 @@ tripwirepass_t K_TripwirePassConditions(player_t *player)
 boolean K_TripwirePass(player_t *player)
 {
 	return (player->tripwirePass != TRIPWIRE_NONE);
+}
+
+// Safe guard cvars to prevent cheating in RA.
+INT32 K_RAGuard(consvar_t cvar, SINT8 mode)
+{
+	if (modeattacking != ATTACKING_NONE)
+	{
+		if (mode == RAG_INT)
+		{
+			// This is a int, just use atoi the value normally.
+			return atoi(cvar.defaultvalue);
+		}
+		else if (mode == RAG_FLOAT)
+		{
+			// This is a float, atof the value and run it through FloatToFixed
+			return FloatToFixed(atof(cvar.defaultvalue));
+		}
+	}
+
+	return cvar.value;
 }
 
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
