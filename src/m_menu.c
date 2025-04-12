@@ -5218,7 +5218,7 @@ static void M_DrawStatsMaps(void)
 		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mapheaderinfo[j]->mainrecord[preset] || mapheaderinfo[j]->mainrecord[preset]->time <= 0)
+		if (preset == -1 || !mapheaderinfo[j]->mainrecord[preset] || mapheaderinfo[j]->mainrecord[preset]->time <= 0)
 		{
 			mapsunfinished++;
 			continue;
@@ -5665,7 +5665,7 @@ void M_DrawTimeAttackMenu(void)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
 		tic_t lap = 0, time = 0;
-		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset])
+		if (preset != -1 && mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset])
 		{
 			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->lap;
 			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->time;
