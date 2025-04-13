@@ -7147,7 +7147,7 @@ static void KartChaining_OnChange(void)
 			CONS_Printf(M_GetText("Boost Chaining will be turned \"On\" Next Round.\n"));
 		}
 	}
-	else if (K_ChainingActive() && !cv_kartstacking.value)
+	else if (K_ChainingActive() && !cv_kartchaining.value)
 	{
 		if (leveltime < starttime)
 		{
