@@ -1066,8 +1066,7 @@ static int libd_getColormap(lua_State *L)
 				return luaL_error(L, "skin number %d is out of range (>%d)", skinnum, MAXSKINS-1);
 			else if (skinnum < 0 && skinnum > TC_DEFAULT)
 			{
-				// Why clamp you wonder? Using OG v1's trick causes a sigsev :p
-				skinnum = CLAMP(skinnum, 0, TC_DEFAULT);
+				skinnum = TC_DEFAULT;
 			}
 		}
 		else
