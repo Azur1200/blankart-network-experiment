@@ -10143,6 +10143,9 @@ static boolean P_FuseThink(mobj_t *mobj)
 			P_RemoveMobj(mobj);
 			return false;
 		}
+	case MT_NIGHTSCORE:
+		P_RemoveMobj(mobj);
+		return false;
 	case MT_PLAYER:
 		break; // don't remove
 	default:
