@@ -1077,6 +1077,28 @@ void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative)
 }
 
 //
+// P_GetPlayerHeight
+//
+// Returns the height
+// of the player.
+//
+fixed_t P_GetPlayerHeight(player_t *player)
+{
+	return FixedMul(player->mo->info->height, player->mo->scale);
+}
+
+//
+// P_GetPlayerSpinHeight
+//
+// Returns the 'spin height'
+// of the player.
+//
+fixed_t P_GetPlayerSpinHeight(player_t *player)
+{
+	return FixedMul(FixedMul(player->mo->info->height, player->mo->scale),2*FRACUNIT/3);
+}
+
+//
 // P_IsMachineLocalPlayer
 //
 // Returns true if player is

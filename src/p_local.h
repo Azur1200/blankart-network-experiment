@@ -178,6 +178,8 @@ boolean P_PlayerInPain(player_t *player);
 void P_ResetPlayer(player_t *player);
 boolean P_PlayerCanDamage(player_t *player, mobj_t *thing);
 
+fixed_t P_GetPlayerHeight(player_t *player);
+fixed_t P_GetPlayerSpinHeight(player_t *player);
 boolean P_IsLocalPlayer(player_t *player);
 boolean P_IsMachineLocalPlayer(player_t *player);
 boolean P_IsDisplayPlayer(player_t *player);

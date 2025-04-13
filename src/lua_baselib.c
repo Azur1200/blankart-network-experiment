@@ -1168,6 +1168,26 @@ static int lib_pSpawnShadowMobj(lua_State *L)
 // P_USER
 ////////////
 
+static int lib_pGetPlayerHeight(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushfixed(L, P_GetPlayerHeight(player));
+	return 1;
+}
+
+static int lib_pGetPlayerSpinHeight(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushfixed(L, P_GetPlayerSpinHeight(player));
+	return 1;
+}
+
 static int lib_pAddPlayerScore(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -4165,6 +4185,8 @@ static luaL_Reg lib[] = {
 	{"P_SpawnShadowMobj",lib_pSpawnShadowMobj},
 
 	// p_user
+	{"P_GetPlayerHeight",lib_pGetPlayerHeight},
+	{"P_GetPlayerSpinHeight",lib_pGetPlayerSpinHeight},
 	{"P_AddPlayerScore",lib_pAddPlayerScore},
 	{"P_PlayerInPain",lib_pPlayerInPain},
 	{"P_ResetPlayer",lib_pResetPlayer},
