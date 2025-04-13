@@ -58,18 +58,9 @@ _(SHCK) // Boss 3 Shockwave
 // Boss 4 (Castle Eggman)
 _(EGGP)
 _(EFIR) // Boss 4 jet flame
-_(EGR1) // Boss 4 Spectator Eggrobo
 
 // Boss 5 (Arid Canyon)
-_(FANG) // replaces EGGQ
-_(BRKN)
-_(WHAT)
-_(VWRE)
-_(PROJ) // projector light
-_(FBOM)
-_(FSGN)
-_(BARX) // bomb explosion (also used by barrel)
-_(BARD) // bomb dust (also used by barrel)
+_(EGGQ)
 
 // Boss 6 (Red Volcano)
 _(EGGR)

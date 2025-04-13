@@ -113,13 +113,6 @@ typedef enum
 
 typedef enum
 {
-	TMED_NONE  = 0,
-	TMED_RIGHT = 1,
-	TMED_LEFT  = 2,
-} textmapeggrobodirection_t;
-
-typedef enum
-{
 	TMMR_SAME   = 0,
 	TMMR_WEAK   = 1,
 	TMMR_STRONG = 2,

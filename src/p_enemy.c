@@ -2094,29 +2094,23 @@ void A_Boss7FireMissiles(mobj_t *actor)
 //		3 - Boss 1 Middle
 //		>=3 - Generic middle
 //
+// Function: A_Boss1Laser
+//
+// Description: Shoot an object at your target ala Bosses:
+//
+// var1 = object # to shoot
+// var2:
+//		0 - Boss 1 Left side
+//		1 - Boss 1 Right side
+//
 void A_Boss1Laser(mobj_t *actor)
 {
 	fixed_t x, y, z, floorz, speed;
 	INT32 locvar1 = var1;
-	INT32 locvar2 = (var2 & 65535);
-	INT32 upperend = (var2>>16);
+	INT32 locvar2 = var2;
 	INT32 i;
 	angle_t angle;
 	mobj_t *point;
-	tic_t dur;
-	static const UINT8 LASERCOLORS[] =
-	{
-		SKINCOLOR_KSUPER3,
-		SKINCOLOR_KSUPER4,
-		SKINCOLOR_KSUPER5,
-		SKINCOLOR_KETCHUP,
-		SKINCOLOR_RED,
-		SKINCOLOR_RED,
-		SKINCOLOR_KETCHUP,
-		SKINCOLOR_KSUPER5,
-		SKINCOLOR_KSUPER4,
-		SKINCOLOR_KSUPER3,
-	};
 
 	if (LUA_CallAction(A_BOSS1LASER, actor))
 		return;
@@ -2124,47 +2118,23 @@ void A_Boss1Laser(mobj_t *actor)
 	if (!actor->target)
 		return;
 
-	if (actor->state->tics > 1)
-		dur = actor->tics;
-	else
-	{
-		if ((upperend & 1) && (actor->extravalue2 > 1))
-			actor->extravalue2--;
-
-		dur = actor->extravalue2;
-	}
-
 	switch (locvar2)
 	{
 		case 0:
-			x = actor->x + P_ReturnThrustX(actor, actor->angle+ANGLE_90, FixedMul(44*FRACUNIT, actor->scale));
-			y = actor->y + P_ReturnThrustY(actor, actor->angle+ANGLE_90, FixedMul(44*FRACUNIT, actor->scale));
+			x = actor->x + P_ReturnThrustX(actor, actor->angle+ANGLE_90, FixedMul(43*FRACUNIT, actor->scale));
+			y = actor->y + P_ReturnThrustY(actor, actor->angle+ANGLE_90, FixedMul(43*FRACUNIT, actor->scale));
 			if (actor->eflags & MFE_VERTICALFLIP)
 				z = actor->z + actor->height - FixedMul(56*FRACUNIT, actor->scale) - mobjinfo[locvar1].height;
 			else
 				z = actor->z + FixedMul(56*FRACUNIT, actor->scale);
 			break;
 		case 1:
-			x = actor->x + P_ReturnThrustX(actor, actor->angle-ANGLE_90, FixedMul(44*FRACUNIT, actor->scale));
-			y = actor->y + P_ReturnThrustY(actor, actor->angle-ANGLE_90, FixedMul(44*FRACUNIT, actor->scale));
+			x = actor->x + P_ReturnThrustX(actor, actor->angle-ANGLE_90, FixedMul(43*FRACUNIT, actor->scale));
+			y = actor->y + P_ReturnThrustY(actor, actor->angle-ANGLE_90, FixedMul(43*FRACUNIT, actor->scale));
 			if (actor->eflags & MFE_VERTICALFLIP)
 				z = actor->z + actor->height - FixedMul(56*FRACUNIT, actor->scale) - mobjinfo[locvar1].height;
 			else
 				z = actor->z + FixedMul(56*FRACUNIT, actor->scale);
-			break;
-		case 2:
-			var1 = locvar1; var2 = 3; // Fire middle laser
-			A_Boss1Laser(actor);
-			var1 = locvar1; var2 = 0; // Fire left laser
-			A_Boss1Laser(actor);
-			var1 = locvar1; var2 = 1; // Fire right laser
-			A_Boss1Laser(actor);
-			return;
-			break;
-		case 3:
-			x = actor->x + P_ReturnThrustX(actor, actor->angle, FixedMul(42*FRACUNIT, actor->scale));
-			y = actor->y + P_ReturnThrustY(actor, actor->angle, FixedMul(42*FRACUNIT, actor->scale));
-			z = actor->z + actor->height/2;
 			break;
 		default:
 			x = actor->x;
@@ -2173,25 +2143,30 @@ void A_Boss1Laser(mobj_t *actor)
 			break;
 	}
 
-	if (!(actor->flags2 & MF2_FIRING) && dur > 1)
+	if (!(actor->flags2 & MF2_FIRING))
 	{
 		actor->angle = R_PointToAngle2(x, y, actor->target->x, actor->target->y);
 		if (mobjinfo[locvar1].seesound)
 			S_StartSound(actor, mobjinfo[locvar1].seesound);
-
-		point = P_SpawnMobj(x + P_ReturnThrustX(actor, actor->angle, actor->radius), y + P_ReturnThrustY(actor, actor->angle, actor->radius), actor->z - actor->height / 2, MT_EGGMOBILE_TARGET);
-		point->angle = actor->angle;
-		point->fuse = dur+1;
-		P_SetTarget(&point->target, actor->target);
-		P_SetTarget(&actor->target, point);
+		if (!(actor->spawnpoint && actor->spawnpoint->options & MTF_AMBUSH))
+		{
+			point = P_SpawnMobj(x + P_ReturnThrustX(actor, actor->angle, actor->radius), y + P_ReturnThrustY(actor, actor->angle, actor->radius), actor->z - actor->height / 2, MT_EGGMOBILE_TARGET);
+			point->fuse = actor->tics+1;
+			P_SetTarget(&point->target, actor->target);
+			P_SetTarget(&actor->target, point);
+		}
 	}
+	else if (actor->target && !(actor->spawnpoint && actor->spawnpoint->options & MTF_AMBUSH))
+		actor->angle = R_PointToAngle2(x, y, actor->target->x, actor->target->y);
 
-	angle = R_PointToAngle2(z + (mobjinfo[locvar1].height>>1), 0, actor->target->z, R_PointToDist2(x, y, actor->target->x, actor->target->y));
-
+	if (actor->spawnpoint && actor->spawnpoint->options & MTF_AMBUSH)
+		angle = FixedAngle(FixedDiv(actor->tics*160*FRACUNIT, actor->state->tics*FRACUNIT) + 10*FRACUNIT);
+	else
+		angle = R_PointToAngle2(z + (mobjinfo[locvar1].height>>1), 0, actor->target->z, R_PointToDist2(x, y, actor->target->x, actor->target->y));
 	point = P_SpawnMobj(x, y, z, locvar1);
 	P_SetTarget(&point->target, actor);
 	point->angle = actor->angle;
-	speed = point->radius;
+	speed = point->radius*2;
 	point->momz = FixedMul(FINECOSINE(angle>>ANGLETOFINESHIFT), speed);
 	point->momx = FixedMul(FINESINE(angle>>ANGLETOFINESHIFT), FixedMul(FINECOSINE(point->angle>>ANGLETOFINESHIFT), speed));
 	point->momy = FixedMul(FINESINE(angle>>ANGLETOFINESHIFT), FixedMul(FINESINE(point->angle>>ANGLETOFINESHIFT), speed));
@@ -2200,72 +2175,26 @@ void A_Boss1Laser(mobj_t *actor)
 	{
 		mobj_t *mo = P_SpawnMobj(point->x, point->y, point->z, point->type);
 		mo->angle = point->angle;
-		mo->color = LASERCOLORS[((UINT8)(i + 3*dur) >> 2) % sizeof(LASERCOLORS)]; // codeing
 		P_UnsetThingPosition(mo);
-		mo->flags = MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY|MF_SCENERY;
+		mo->flags = MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY|MF_SCENERY;
 		P_SetThingPosition(mo);
-
-		if (dur & 1 && mo->info->missilestate)
-		{
-			P_SetMobjState(mo, mo->info->missilestate);
-			if (mo->info->meleestate)
-			{
-				mobj_t *mo2 = P_SpawnMobjFromMobj(mo, 0, 0, 0, MT_PARTICLE);
-				mo2->flags2 |= MF2_LINKDRAW;
-				P_SetTarget(&mo2->tracer, actor);
-				P_SetMobjState(mo2, mo->info->meleestate);
-			}
-		}
-
-		if (dur == 1)
-			P_SpawnGhostMobj(mo);
 
 		x = point->x, y = point->y, z = point->z;
 		if (P_RailThinker(point))
 			break;
 	}
 
-	x += point->momx;
-	y += point->momy;
 	floorz = P_FloorzAtPos(x, y, z, mobjinfo[MT_EGGMOBILE_FIRE].height);
-	if (z - floorz < mobjinfo[MT_EGGMOBILE_FIRE].height>>1 && dur & 1)
+	if (z - floorz < mobjinfo[MT_EGGMOBILE_FIRE].height>>1)
 	{
-		point = P_SpawnMobj(x, y, floorz, MT_EGGMOBILE_FIRE);
-		point->angle = actor->angle;
-		point->destscale = actor->scale;
-		P_SetScale(point, point->destscale);
+		point = P_SpawnMobj(x, y, floorz+1, MT_EGGMOBILE_FIRE);
 		P_SetTarget(&point->target, actor);
-		P_MobjCheckWater(point);
-		if (point->eflags & (MFE_UNDERWATER|MFE_TOUCHWATER))
-		{
-			for (i = 0; i < 2; i++)
-			{
-				UINT8 size = 3;
-				mobj_t *steam = P_SpawnMobj(x, y, point->watertop - size*mobjinfo[MT_DUST].height, MT_DUST);
-				P_SetScale(steam, size*actor->scale);
-				P_SetObjectMomZ(steam, FRACUNIT + 2*P_RandomFixed(), true);
-				P_InstaThrust(steam, FixedAngle(P_RandomKey(360)*FRACUNIT), 2*P_RandomFixed());
-				if (point->info->painsound)
-					S_StartSound(steam, point->info->painsound);
-			}
-		}
-		else
-		{
-			fixed_t distx = P_ReturnThrustX(point, point->angle, point->radius);
-			fixed_t disty = P_ReturnThrustY(point, point->angle, point->radius);
-			if (P_TryMove(point, point->x + distx, point->y + disty, false, NULL) // prevents the sprite from clipping into the wall or dangling off ledges
-				&& P_TryMove(point, point->x - 2*distx, point->y - 2*disty, false, NULL)
-				&& P_TryMove(point, point->x + distx, point->y + disty, false, NULL))
-			{
-				if (point->info->seesound)
-					S_StartSound(point, point->info->seesound);
-			}
-			else
-				P_RemoveMobj(point);
-		}
+		point->destscale = 3*FRACUNIT;
+		point->scalespeed = FRACUNIT>>2;
+		point->fuse = TICRATE;
 	}
 
-	if (dur > 1)
+	if (actor->tics > 1)
 		actor->flags2 |= MF2_FIRING;
 	else
 		actor->flags2 &= ~MF2_FIRING;
@@ -2278,16 +2207,11 @@ void A_Boss1Laser(mobj_t *actor)
 // var1:
 //		0 - accelerative focus with friction
 //		1 - steady focus with fixed movement speed
-//      anything else - don't move
-// var2:
-//		0 - don't trace target, just move forwards
-//      & 1 - change horizontal angle
-//      & 2 - change vertical angle
+// var2 = unused
 //
 void A_FocusTarget(mobj_t *actor)
 {
 	INT32 locvar1 = var1;
-	INT32 locvar2 = var2;
 
 	if (LUA_CallAction(A_FOCUSTARGET, actor))
 		return;
@@ -2295,9 +2219,9 @@ void A_FocusTarget(mobj_t *actor)
 	if (actor->target)
 	{
 		fixed_t speed = FixedMul(actor->info->speed, actor->scale);
-		fixed_t dist = (locvar2 ? R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) : speed+1);
-		angle_t hangle = ((locvar2 & 1) ? R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y) : actor->angle);
-		angle_t vangle = ((locvar2 & 2) ? R_PointToAngle2(actor->z , 0, actor->target->z + (actor->target->height>>1), dist) : ANGLE_90);
+		fixed_t dist = R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y);
+		angle_t vangle = R_PointToAngle2(actor->z , 0, actor->target->z + (actor->target->height>>1), dist);
+		angle_t hangle = R_PointToAngle2(actor->x, actor->y, actor->target->x, actor->target->y);
 		switch(locvar1)
 		{
 		case 0:
@@ -6143,7 +6067,9 @@ void A_Boss3TakeDamage(mobj_t *actor)
 		return;
 
 	actor->movecount = var1;
-	actor->movefactor = -512*FRACUNIT;
+
+	if (actor->target && actor->target->spawnpoint)
+		actor->threshold = actor->target->spawnpoint->extrainfo;
 }
 
 // Function: A_Boss3Path
@@ -6178,28 +6104,24 @@ void A_Boss3Path(mobj_t *actor)
 	}
 	else if (actor->threshold >= 0) // Traveling mode
 	{
-		fixed_t dist = 0;
+		thinker_t *th;
+		mobj_t *mo2;
+		fixed_t dist, dist2;
 		fixed_t speed;
 
-		if (!(actor->flags2 & MF2_STRONGBOX))
+		P_SetTarget(&actor->target, NULL);
+
+		// scan the thinkers
+		// to find a point that matches
+		// the number
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			mobj_t *mo2;
-			INT32 i;
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
 
-			P_SetTarget(&actor->target, NULL);
-
-			// Find waypoint
-			TAG_ITER_THINGS(actor->cusval, i)
+			mo2 = (mobj_t *)th;
+			if (mo2->type == MT_BOSS3WAYPOINT && mo2->spawnpoint && mo2->spawnpoint->angle == actor->threshold)
 			{
-				mo2 = mapthings[i].mobj;
-
-				if (!mo2)
-					continue;
-				if (mo2->type != MT_BOSS3WAYPOINT)
-					continue;
-				if (mapthings[i].args[0] != actor->threshold)
-					continue;
-
 				P_SetTarget(&actor->target, mo2);
 				break;
 			}
@@ -6207,9 +6129,14 @@ void A_Boss3Path(mobj_t *actor)
 
 		if (!actor->target) // Should NEVER happen
 		{
-			CONS_Debug(DBG_GAMELOGIC, "Error: Boss 3 Dummy was unable to find specified waypoint: %d, %d\n", actor->threshold, actor->cusval);
+			CONS_Debug(DBG_GAMELOGIC, "Error: Boss 3 Dummy was unable to find specified waypoint: %d\n", actor->threshold);
 			return;
 		}
+
+		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z - actor->z);
+
+		if (dist < 1)
+			dist = 1;
 
 		if (actor->tracer && ((actor->tracer->movedir)
 		|| (actor->tracer->health <= actor->tracer->info->damage)))
@@ -6217,107 +6144,52 @@ void A_Boss3Path(mobj_t *actor)
 		else
 			speed = actor->info->speed;
 
-		if (actor->target->x == actor->x && actor->target->y == actor->y)
-		{
-			dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x, actor->target->y - actor->y), actor->target->z + actor->movefactor - actor->z);
+		actor->momx = FixedMul(FixedDiv(actor->target->x - actor->x, dist), speed);
+		actor->momy = FixedMul(FixedDiv(actor->target->y - actor->y, dist), speed);
+		actor->momz = FixedMul(FixedDiv(actor->target->z - actor->z, dist), speed);
 
-			if (dist < 1)
-				dist = 1;
+		if (actor->momx != 0 || actor->momy != 0)
+			actor->angle = R_PointToAngle2(0, 0, actor->momx, actor->momy);
 
-			actor->momx = FixedMul(FixedDiv(actor->target->x - actor->x, dist), speed);
-			actor->momy = FixedMul(FixedDiv(actor->target->y - actor->y, dist), speed);
-			actor->momz = FixedMul(FixedDiv(actor->target->z + actor->movefactor - actor->z, dist), speed);
+		dist2 = P_AproxDistance(P_AproxDistance(actor->target->x - (actor->x + actor->momx), actor->target->y - (actor->y + actor->momy)), actor->target->z - (actor->z + actor->momz));
 
-			if (actor->momx != 0 || actor->momy != 0)
-				actor->angle = R_PointToAngle2(0, 0, actor->momx, actor->momy);
-		}
+		if (dist2 < 1)
+			dist2 = 1;
 
-		if (dist <= speed)
+		if ((dist >> FRACBITS) <= (dist2 >> FRACBITS))
 		{
 			// If further away, set XYZ of mobj to waypoint location
 			P_UnsetThingPosition(actor);
 			actor->x = actor->target->x;
 			actor->y = actor->target->y;
-			actor->z = actor->target->z + actor->movefactor;
+			actor->z = actor->target->z;
 			actor->momx = actor->momy = actor->momz = 0;
 			P_SetThingPosition(actor);
 
-			if (!actor->movefactor) // firing mode
-			{
-				actor->movecount |= 2;
-				actor->movefactor = -512*FRACUNIT;
-				actor->flags2 &= ~MF2_STRONGBOX;
-			}
-			else if (!(actor->flags2 & MF2_STRONGBOX)) // just spawned or going down
-			{
-				actor->flags2 |= MF2_STRONGBOX;
-				actor->movefactor = -512*FRACUNIT;
-			}
-			else if (!(actor->flags2 & MF2_AMBUSH)) // just shifted tube
-			{
-				actor->flags2 |= MF2_AMBUSH;
-				actor->movefactor = 0;
-			}
-			else // just hit the bottom of your tube
+			if (actor->threshold == 0)
 			{
 				P_RemoveMobj(actor); // Cycle completed. Dummy removed.
 				return;
 			}
-		}
-	}
-}
 
-// Function: A_Boss3ShockThink
-//
-// Description: Inserts new interstitial shockwave objects when the space between others spreads too much.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_Boss3ShockThink(mobj_t *actor)
-{
-	if (LUA_CallAction(A_BOSS3SHOCKTHINK, actor))
-		return;
+			// Set to next waypoint in sequence
+			if (actor->target->spawnpoint)
+			{
+				// From the center point, choose one of the five paths
+				if (actor->target->spawnpoint->angle == 0)
+				{
+					P_RemoveMobj(actor); // Cycle completed. Dummy removed.
+					return;
+				}
+				else
+					actor->threshold = actor->target->spawnpoint->extrainfo;
 
-	if (actor->momx || actor->momy)
-		actor->angle = R_PointToAngle2(0, 0, actor->momx, actor->momy) + ANGLE_90;
-
-	if (actor->hnext && !P_MobjWasRemoved(actor->hnext))
-	{
-		mobj_t *snext = actor->hnext;
-		mobj_t *snew;
-		fixed_t x0, y0, x1, y1;
-
-		// Break the link if movements are too different
-		if (R_PointToDist2(0, 0, snext->momx - actor->momx, snext->momy - actor->momy) > 12*actor->scale)
-		{
-			P_SetTarget(&actor->hnext, NULL);
-			return;
-		}
-
-		// Check distance between shockwave objects to determine whether interstitial ones should be spawned
-		x0 = actor->x;
-		y0 = actor->y;
-		x1 = snext->x;
-		y1 = snext->y;
-		if (R_PointToDist2(0, 0, x1 - x0, y1 - y0) > 2*actor->radius)
-		{
-			snew = P_SpawnMobj((x0 >> 1) + (x1 >> 1),
-				(y0 >> 1) + (y1 >> 1),
-				(actor->z >> 1) + (snext->z >> 1), actor->type);
-			snew->momx = (actor->momx + snext->momx) >> 1;
-			snew->momy = (actor->momy + snext->momy) >> 1;
-			snew->momz = (actor->momz + snext->momz) >> 1; // is this really needed?
-			snew->angle = (actor->angle + snext->angle) >> 1;
-			P_SetTarget(&snew->target, actor->target);
-			snew->fuse = actor->fuse;
-
-			P_SetScale(snew, actor->scale);
-			snew->destscale = actor->destscale;
-			snew->scalespeed = actor->scalespeed;
-
-			P_SetTarget(&actor->hnext, snew);
-			P_SetTarget(&snew->hnext, snext);
+				// If the deaf flag is set, go into firing mode
+				if (actor->target->spawnpoint->options & MTF_AMBUSH)
+					actor->movecount |= 2;
+			}
+			else // This should never happen, as well
+				CONS_Debug(DBG_GAMELOGIC, "Error: Boss 3 Dummy waypoint has no spawnpoint associated with it.\n");
 		}
 	}
 }
@@ -7167,7 +7039,7 @@ void A_SetObjectFlags2(mobj_t *actor)
 //
 // var1:
 //		0 - Triple jet fume pattern
-//		1 - Unused (formerly Boss 3's propeller)
+//		1 - Boss 3's propeller
 //		2 - Metal Sonic jet fume
 //		3 - Boss 4 jet flame
 // var2 = unused
@@ -7226,12 +7098,12 @@ void A_BossJetFume(mobj_t *actor)
 
 		P_SetTarget(&actor->tracer, filler);
 	}
-	/*else if (locvar1 == 1) // Boss 3 propeller
+	else if (locvar1 == 1) // Boss 3 propeller
 	{
 		fixed_t jetx, jety, jetz;
 
-		jetx = actor->x + P_ReturnThrustX(actor, actor->angle, -60*actor->scale);
-		jety = actor->y + P_ReturnThrustY(actor, actor->angle, -60*actor->scale);
+		jetx = actor->x + P_ReturnThrustX(actor, actor->angle, -FixedMul(60*FRACUNIT, actor->scale));
+		jety = actor->y + P_ReturnThrustY(actor, actor->angle, -FixedMul(60*FRACUNIT, actor->scale));
 		if (actor->eflags & MFE_VERTICALFLIP)
 			jetz = actor->z + actor->height - FixedMul(17*FRACUNIT + mobjinfo[MT_PROPELLER].height, actor->scale);
 		else
@@ -7246,18 +7118,17 @@ void A_BossJetFume(mobj_t *actor)
 		filler->angle = actor->angle - ANGLE_180;
 
 		P_SetTarget(&actor->tracer, filler);
-	}*/
+	}
 	else if (locvar1 == 2) // Metal Sonic jet fumes
 	{
 		filler = P_SpawnMobj(actor->x, actor->y, actor->z, MT_JETFUME1);
 		P_SetTarget(&filler->target, actor);
 		filler->fuse = 59;
 		P_SetTarget(&actor->tracer, filler);
-		P_SetScale(filler, (filler->destscale = actor->scale/3));
+		filler->destscale = actor->scale/2;
+		P_SetScale(filler, filler->destscale);
 		if (actor->eflags & MFE_VERTICALFLIP)
 			filler->flags2 |= MF2_OBJECTFLIP;
-		filler->color = SKINCOLOR_CYAN;
-		filler->colorized = true;
 	}
 	else if (locvar1 == 3) // Boss 4 jet flame
 	{
@@ -7265,7 +7136,7 @@ void A_BossJetFume(mobj_t *actor)
 		if (actor->eflags & MFE_VERTICALFLIP)
 			jetz = actor->z + actor->height + FixedMul(50*FRACUNIT - mobjinfo[MT_JETFLAME].height, actor->scale);
 		else
-			jetz = actor->z - 50*actor->scale;
+			jetz = actor->z - FixedMul(50*FRACUNIT, actor->scale);
 		filler = P_SpawnMobj(actor->x, actor->y, jetz, MT_JETFLAME);
 		P_SetTarget(&filler->target, actor);
 		// Boss 4 already uses its tracer for other things
@@ -7273,30 +7144,6 @@ void A_BossJetFume(mobj_t *actor)
 		P_SetScale(filler, filler->destscale);
 		if (actor->eflags & MFE_VERTICALFLIP)
 			filler->flags2 |= MF2_OBJECTFLIP;
-	}
-	else if (locvar1 == 4) // Boss 4 Spectator Eggrobo jet flame
-	{
-		fixed_t jetx, jety, jetz, movefactor = 12;
-
-		jetz = actor->z;
-		if (actor->eflags & MFE_VERTICALFLIP)
-			jetz += (actor->height - FixedMul(mobjinfo[MT_EGGROBO1JET].height, actor->scale));
-
-		while (true)
-		{
-			jetx = actor->x + P_ReturnThrustX(actor, actor->angle+ANGLE_90, movefactor*actor->scale) - P_ReturnThrustX(actor, actor->angle, 19*actor->scale);
-			jety = actor->y + P_ReturnThrustY(actor, actor->angle+ANGLE_90, movefactor*actor->scale) - P_ReturnThrustY(actor, actor->angle, 19*actor->scale);
-			filler = P_SpawnMobj(jetx, jety, jetz, MT_EGGROBO1JET);
-			filler->movefactor = movefactor;
-			P_SetTarget(&filler->target, actor);
-			filler->destscale = actor->scale;
-			P_SetScale(filler, filler->destscale);
-			if (actor->eflags & MFE_VERTICALFLIP)
-				filler->flags2 |= MF2_OBJECTFLIP;
-			if (movefactor <= 0)
-				break;
-			movefactor = -movefactor;
-		}
 	}
 }
 

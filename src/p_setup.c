@@ -7355,24 +7355,11 @@ static void P_ConvertBinaryThingTypes(void)
 			}
 			break;
 		}
-		case 1101: //Torch
-		case 1119: //Candle
-		case 1120: //Candle pricket
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_EXTRA);
-			break;
 		case 1121: //Flame holder
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
 				mapthings[i].args[0] |= TMFH_NOFLAME;
 			if (mapthings[i].options & MTF_EXTRA)
 				mapthings[i].args[0] |= TMFH_CORONA;
-			break;
-		case 1127: //Spectator EggRobo
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] = TMED_LEFT;
-			else if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] = TMED_RIGHT;
-			else
-				mapthings[i].args[0] = TMED_NONE;
 			break;
 		case 1200: //Tumbleweed (Big)
 		case 1201: //Tumbleweed (Small)
