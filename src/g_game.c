@@ -2818,15 +2818,29 @@ mapthing_t *G_FindBattleStart(INT32 playernum)
 
 	if (numdmstarts)
 	{
-		for (j = 0; j < 64; j++)
+		if (modeattacking == ATTACKING_ITEMBREAK)
 		{
-			i = P_RandomKey(numdmstarts);
-			if (G_CheckSpot(playernum, deathmatchstarts[i]))
-				return deathmatchstarts[i];
+			if (G_CheckSpot(playernum, deathmatchstarts[0]))
+				return deathmatchstarts[0];
+
+			if (doprints)
+				CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Deathmatch starts for Item Breaker!\n"));
+
+			return NULL;
 		}
-		if (doprints)
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Deathmatch starts!\n"));
-		return NULL;
+		else
+		{
+
+			for (j = 0; j < 64; j++)
+			{
+				i = P_RandomKey(numdmstarts);
+				if (G_CheckSpot(playernum, deathmatchstarts[i]))
+					return deathmatchstarts[i];
+			}
+			if (doprints)
+				CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Deathmatch starts!\n"));
+			return NULL;
+		}
 	}
 
 	if ((gametyperules & GTR_BATTLESTARTS) && doprints)
@@ -2923,8 +2937,11 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		return NULL;
 	}
 
-	if (doprints)
-		CONS_Alert(CONS_WARNING, M_GetText("No Race starts in this map!\n"));
+	if (modeattacking != ATTACKING_ITEMBREAK)
+	{
+		if (doprints)
+			CONS_Alert(CONS_WARNING, M_GetText("No Race starts in this map!\n"));
+	}
 	return NULL;
 }
 
