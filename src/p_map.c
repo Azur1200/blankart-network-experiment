@@ -3710,13 +3710,13 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 	
-	if (!cv_kartbumpspark.value)
+	if (!cv_kartbumpspark.value || modeattacking != ATTACKING_NONE)
 	{
 		mo->player->drift = 0;
 		mo->player->driftcharge = 0;
 	}
 
-	if (!cv_kartbumpspring.value)
+	if (!cv_kartbumpspring.value || modeattacking != ATTACKING_NONE)
 	{
 		mo->player->pogospring = 0;
 	}

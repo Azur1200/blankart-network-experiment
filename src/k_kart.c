@@ -1621,6 +1621,13 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
+			else if (itembreaker)
+			{
+				K_KartGetItemResult(player, KITEM_SNEAKER);
+				player->itemblinkmode = 1;
+				if (P_IsDisplayPlayer(player))
+					S_StartSound(NULL, sfx_itrolm);
+			}
 		}
 
 		player->itemblink = TICRATE;
