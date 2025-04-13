@@ -578,7 +578,6 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 
 	{
 		mobj_t *ghost = P_SpawnGhostMobj(t1);
-		UINT8 i;
 
 		P_SetScale(ghost, 3*ghost->destscale/2);
 		ghost->destscale = 15*ghost->destscale/2;

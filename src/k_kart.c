@@ -49,11 +49,11 @@
 #include "k_follower.h"
 #include "k_grandprix.h"
 
-consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", 0, CV_OnOff, NULL);
-consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerstacksound", "On", 0, CV_OnOff, NULL);
-consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", 0, CV_OnOff, NULL);
-consvar_t cv_kartdriftsounds = CVAR_INIT ("kartdriftsounds", "On", 0, CV_OnOff, NULL);
-consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", 0, CV_OnOff, NULL);
+consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerstacksound", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_kartdriftsounds = CVAR_INIT ("kartdriftsounds", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", CV_SAVE, CV_OnOff, NULL);
 static CV_PossibleValue_t driftsparkpulse_cons_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_FLOAT, driftsparkpulse_cons_t, NULL);
 
@@ -3198,19 +3198,30 @@ boolean K_TripwirePass(player_t *player)
 }
 
 // Safe guard cvars to prevent cheating in RA.
-INT32 K_RAGuard(consvar_t cvar, SINT8 mode)
+INT32 K_RAGuard(consvar_t cvar)
 {
 	if (modeattacking != ATTACKING_NONE)
 	{
-		if (mode == RAG_INT)
-		{
-			// This is a int, just use atoi the value normally.
-			return atoi(cvar.defaultvalue);
-		}
-		else if (mode == RAG_FLOAT)
+		if (cvar.flags & CV_FLOAT)
 		{
 			// This is a float, atof the value and run it through FloatToFixed
 			return FloatToFixed(atof(cvar.defaultvalue));
+		}
+		else
+		{
+			// Handle string bools first.
+			if (!strcmp(cvar.defaultvalue, "On") || !strcmp(cvar.defaultvalue, "Yes"))
+			{
+				return true;
+			}
+
+			if (!strcmp(cvar.defaultvalue, "Off") || !strcmp(cvar.defaultvalue, "No"))
+			{
+				return false;
+			}
+
+			// This is a int, just use atoi the value normally.
+			return atoi(cvar.defaultvalue);
 		}
 	}
 
