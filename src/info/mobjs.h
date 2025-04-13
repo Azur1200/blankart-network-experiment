@@ -297,16 +297,11 @@ _(STALAGMITE9)
 // Christmas Scenery
 _(XMASPOLE)
 _(CANDYCANE)
-_(SNOWMAN)    // normal
-_(SNOWMANHAT) // with hat + scarf
-_(LAMPPOST1)  // normal
-_(LAMPPOST2)  // with snow
+_(SNOWMAN)
+_(SNOWMANHAT)
+_(LAMPPOST1)
+_(LAMPPOST2)
 _(HANGSTAR)
-_(MISTLETOE)
-// Xmas GFZ bushes
-_(XMASBLUEBERRYBUSH)
-_(XMASBERRYBUSH)
-_(XMASBUSH)
 
 // Botanic Serenity scenery
 _(BSZTALLFLOWER_RED)

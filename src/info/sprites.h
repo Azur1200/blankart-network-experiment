@@ -202,8 +202,7 @@ _(XMS3) // Snowman
 _(XMS4) // Lamppost
 _(XMS5) // Hanging Star
 _(XMS6) // Mistletoe
-_(FHZI) // FHZ Ice
-_(ROSY)
+
 // Azure Temple Scenery
 _(RCRY) // ATZ Red Crystal (Target)
 _(CFLM) // Green torch flame
