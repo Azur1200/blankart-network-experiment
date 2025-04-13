@@ -564,7 +564,7 @@ void Nextmap_OnChange(void)
 	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
 	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
-	if (menustack[0] == MN_SP_TIMEATTACK || menustack[0] == MN_SP_MODS)
+	if (menustack[0] == MN_SP_TIMEATTACK || menustack[0] == MN_SP_MODS || menustack[0] == MN_SP_PRES)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
 		char *gamemode = M_AppendGametypeAndModName();

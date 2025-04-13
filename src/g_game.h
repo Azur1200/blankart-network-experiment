@@ -249,6 +249,13 @@ void G_SetGamestate(gamestate_t newstate);
 boolean G_GamestateUsesLevel(void);
 
 // Gamedata record shit
+typedef enum
+{
+	RP_KART = 0,
+	RP_TECH,
+	RP_BLAN,
+	RP_CUST,
+} recordpreset_e;
 SINT8 G_RecordPresetIndex(void);
 void G_AllocMainRecordData(INT16 i, SINT8 preset);
 void G_ClearRecords(void);

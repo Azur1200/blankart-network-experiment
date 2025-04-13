@@ -463,15 +463,15 @@ SINT8 G_RecordPresetIndex(void)
 	boolean purpledrift = cv_dummyattackingpurpledrift.value;
 
 	if (!rings && !stacking && !chaining && !slipdash && !purpledrift)
-		return 0;
+		return RP_KART;
 
 	if (stacking && chaining && !rings && !slipdash && !purpledrift)
-		return 1;
+		return RP_TECH;
 
 	if (rings && stacking && chaining && slipdash && purpledrift)
-		return 2;
+		return RP_BLAN;
 
-	return 3;
+	return RP_CUST;
 }
 
 // Allocation for time and nights data
@@ -621,7 +621,7 @@ static void G_UpdateRecordReplays(void)
 	}
 
 	free(gpath);
-	free(gamemode);
+	Z_Free(gamemode);
 
 	// Check emblems when level data is updated
 	if ((earnedEmblems = M_CheckLevelEmblems()))
