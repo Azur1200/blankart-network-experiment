@@ -584,7 +584,7 @@ boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
 		ghost->fuse = 10;
 		ghost->scalespeed = (ghost->destscale - ghost->scale)/ghost->fuse;
 
-		for (i = 0; i < 2; i++)
+		for (SINT8 i = 0; i < 2; i++)
 		{
 			mobj_t *blast = P_SpawnMobjFromMobj(t1, 0, 0, FixedDiv(t1->height, t1->scale), MT_BATTLEBUMPER_BLAST);
 			P_SetScale(blast, 5*blast->scale/2);
