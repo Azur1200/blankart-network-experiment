@@ -4836,8 +4836,16 @@ static sector_t *P_CheckPlayer3DFloorTrigger(player_t *player, sector_t *sector,
 
 	for (rover = sector->ffloors; rover; rover = rover->next)
 	{
-		if (!rover->master->frontsector->triggertag)
-			continue;
+		if (mapnamespace != MNS_SRB2KART)
+		{
+			if (!rover->master->frontsector->triggertag)
+				continue;
+		}
+		else
+		{
+			if (GETSECSPECIAL(rover->master->frontsector->special, 2) < 1 || GETSECSPECIAL(rover->master->frontsector->special, 2) > 8)
+				continue;
+		}
 
 		if (rover->master->frontsector->triggerer == TO_MOBJ)
 			continue;
