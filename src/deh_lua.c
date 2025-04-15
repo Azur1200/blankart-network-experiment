@@ -353,11 +353,6 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("TOL_", word, 4)) {
 		p = word+4;
-		if (lua_compatmode && fastcmp(p, "MATCH"))
-		{
-			CacheAndPushConstant(L, word, ((lua_Integer)TOL_BATTLE));
-			return 1;
-		}
 		for (i = 0; TYPEOFLEVEL[i].name; i++)
 			if (fastcmp(p, TYPEOFLEVEL[i].name)) {
 				CacheAndPushConstant(L, word, TYPEOFLEVEL[i].flag);

@@ -529,12 +529,20 @@ enum TypeOfLevel
 	TOL_BATTLE	= 0x0002, ///< Battle
 	TOL_BOSS	= 0x0004, ///< Boss (variant of battle, but forbidden)
 
+	// Compat
+	TOL_COMPAT1	= 0x0008, ///< For compat. Handles all the unused kart v1 types.
+	TOL_COMPAT2	= 0x0010, ///< ^
+	TOL_COMPAT3	= 0x0020, ///< ^
+	TOL_COMPAT4	= 0x0040, ///< ^
+	TOL_COMPAT5	= 0x0080, ///< ^
+	TOL_COMPAT6	= 0x0100, ///< ^
+
 	// Modifiers
-	TOL_TV		= 0x0100 ///< Midnight Channel specific: draw TV like overlay on HUD
+	TOL_TV		= 0x0200 ///< Midnight Channel specific: draw TV like overlay on HUD
 };
 
 #define MAXTOL             (1<<31)
-#define NUMBASETOLNAMES    (4)
+#define NUMBASETOLNAMES    (10)
 #define NUMTOLNAMES        (NUMBASETOLNAMES + NUMGAMETYPEFREESLOTS)
 
 struct tolinfo_t
