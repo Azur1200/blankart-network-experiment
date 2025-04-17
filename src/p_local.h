@@ -399,6 +399,8 @@ boolean P_CheckMissileRange(mobj_t *actor);
 void P_NewChaseDir(mobj_t *actor);
 boolean P_LookForPlayers(mobj_t *actor, boolean allaround, boolean tracer, fixed_t dist);
 
+void P_HomingAttack(mobj_t *source, mobj_t *enemy);
+
 mobj_t *P_InternalFlickySpawn(mobj_t *actor, mobjtype_t flickytype, fixed_t momz, boolean lookforplayers, SINT8 moveforward);
 void P_InternalFlickySetColor(mobj_t *actor, UINT8 color);
 #define P_IsFlickyCenter(type) (type > MT_FLICKY_01 && type < MT_SEED && (type - MT_FLICKY_01) % 2 ? 1 : 0)
@@ -577,7 +579,7 @@ struct BasicFF_t
 #define DMG_SPECTATOR  0x83
 #define DMG_TIMEOVER   0x84
 // Masks
-//free		 0x10 // Flag - setting this flag allows objects to damage you if you're already in spinout. The effect is reversed on objects with MF_MISSILE (setting it prevents them from comboing in spinout)
+//free		 0x10
 #define DMG_STEAL        0x20 // Flag - can steal bumpers, will only deal damage to players, and will not deal damage outside Battle Mode.
 #define DMG_CANTHURTSELF 0x40 // Flag - cannot hurt your self or your team
 #define DMG_DEATHMASK    DMG_INSTAKILL // if bit 7 is set, this is a death type instead of a damage type

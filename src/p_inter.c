@@ -689,6 +689,23 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			player->pickuprings++;
 
 			return;
+		// Special Stage Token
+		case MT_EMMY:
+			if (player->bot)
+				return;
+			tokenlist += special->health;
+
+			if (ALL7EMERALDS(emeralds)) // Got all 7
+			{
+				P_GivePlayerRings(player, 50);
+				nummaprings += 50; // no cheating towards Perfect!
+			}
+			else
+				token++;
+
+			if (special->tracer) // token BG
+				P_RemoveMobj(special->tracer);
+			break;
 
 		// Secret emblem thingy
 		case MT_EMBLEM:
@@ -761,6 +778,40 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				S_StartSound(toucher, sfx_hoop3);
 			return;
 
+		case MT_EGGSHIELD:
+			{
+				fixed_t touchx, touchy, touchspeed;
+				angle_t angle;
+
+				if (P_AproxDistance(toucher->x-special->x, toucher->y-special->y) >
+					P_AproxDistance((toucher->x-toucher->momx)-special->x, (toucher->y-toucher->momy)-special->y))
+				{
+					touchx = toucher->x + toucher->momx;
+					touchy = toucher->y + toucher->momy;
+				}
+				else
+				{
+					touchx = toucher->x;
+					touchy = toucher->y;
+				}
+
+				angle = R_PointToAngle2(special->x, special->y, touchx, touchy) - special->angle;
+				touchspeed = P_AproxDistance(toucher->momx, toucher->momy);
+
+				// Blocked by the shield?
+				if (!(angle > ANGLE_90 && angle < ANGLE_270))
+				{
+					toucher->momx = P_ReturnThrustX(special, special->angle, touchspeed);
+					toucher->momy = P_ReturnThrustY(special, special->angle, touchspeed);
+					toucher->momz = -toucher->momz;
+
+					// Play a bounce sound?
+					S_StartSound(toucher, special->info->painsound);
+					return;
+				}
+			}
+			return;
+
 		case MT_BIGTUMBLEWEED:
 		case MT_LITTLETUMBLEWEED:
 			if (toucher->momx || toucher->momy)
@@ -789,6 +840,15 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 		case MT_LOOPENDPOINT:
 			Obj_LoopEndpointCollide(special, toucher);
+			return;
+
+		case MT_BIGMINE:
+		case MT_BIGAIRMINE:
+			// Spawn explosion!
+			P_SpawnMobj(special->x, special->y, special->z, special->info->mass);
+			P_RadiusAttack(special, special, special->info->damage, DMG_NORMAL, true);
+			S_StartSound(special, special->info->deathsound);
+			P_SetMobjState(special, special->info->deathstate);
 			return;
 
 		case MT_NIGHTSBUMPER:
@@ -1422,19 +1482,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			target->fuse = target->info->damage;
 			break;
 
-		case MT_BUGGLE:
-			if (inflictor && inflictor->player // did a player kill you? Spawn relative to the player so they're bound to get it
-			&& P_AproxDistance(inflictor->x - target->x, inflictor->y - target->y) <= inflictor->radius + target->radius + FixedMul(8*FRACUNIT, inflictor->scale) // close enough?
-			&& inflictor->z <= target->z + target->height + FixedMul(8*FRACUNIT, inflictor->scale)
-			&& inflictor->z + inflictor->height >= target->z - FixedMul(8*FRACUNIT, inflictor->scale))
-				mo = P_SpawnMobj(inflictor->x + inflictor->momx, inflictor->y + inflictor->momy, inflictor->z + (inflictor->height / 2) + inflictor->momz, MT_EXTRALARGEBUBBLE);
-			else
-				mo = P_SpawnMobj(target->x, target->y, target->z, MT_EXTRALARGEBUBBLE);
-			mo->destscale = target->scale;
-			P_SetScale(mo, mo->destscale);
-			P_SetMobjState(mo, mo->info->raisestate);
-			break;
-
 		case MT_YELLOWSHELL:
 			P_SpawnMobjFromMobj(target, 0, 0, 0, MT_YELLOWSPRING);
 			break;
@@ -1443,49 +1490,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			target->momx = target->momy = target->momz = 0;
 			break;
 
-		case MT_CRUSHSTACEAN:
-			if (target->tracer)
-			{
-				mobj_t *chain = target->tracer->target, *chainnext;
-				while (chain)
-				{
-					chainnext = chain->target;
-					P_RemoveMobj(chain);
-					chain = chainnext;
-				}
-				S_StopSound(target->tracer);
-				P_KillMobj(target->tracer, inflictor, source, damagetype);
-			}
-			break;
-
-		case MT_BANPYURA:
-			if (target->tracer)
-			{
-				S_StopSound(target->tracer);
-				P_KillMobj(target->tracer, inflictor, source, damagetype);
-			}
-			break;
-
 		case MT_EGGSHIELD:
 			P_SetObjectMomZ(target, 4*target->scale, false);
 			P_InstaThrust(target, target->angle, 3*target->scale);
 			target->flags = (target->flags|MF_NOCLIPHEIGHT) & ~MF_NOGRAVITY;
 			break;
 
-		case MT_DRAGONBOMBER:
-			{
-				mobj_t *segment = target;
-				while (segment->tracer != NULL)
-				{
-					P_KillMobj(segment->tracer, NULL, NULL, DMG_NORMAL);
-					segment = segment->tracer;
-				}
-				break;
-			}
-
 		case MT_EGGMOBILE3:
 			{
-				mobj_t *mo2;
 				thinker_t *th;
 				UINT32 i = 0; // to check how many clones we've removed
 
@@ -1501,20 +1513,10 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					if (mo->tracer != target)
 						continue;
 
-					P_KillMobj(mo, inflictor, source, damagetype);
-					mo->destscale = mo->scale/8;
-					mo->scalespeed = (mo->scale - mo->destscale)/(2*TICRATE);
-					mo->momz = mo->info->speed;
-					mo->angle = FixedAngle((P_RandomKey(36)*10)<<FRACBITS);
-
-					mo2 = P_SpawnMobjFromMobj(mo, 0, 0, 0, MT_BOSSJUNK);
-					mo2->angle = mo->angle;
-					P_SetMobjState(mo2, S_BOSSSEBH2);
+					P_RemoveMobj(mo);
 
 					if (++i == 2) // we've already removed 2 of these, let's stop now
 						break;
-					else
-						S_StartSound(mo, mo->info->deathsound); // done once to prevent sound stacking
 				}
 			}
 			break;
@@ -1537,23 +1539,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				P_LinedefExecute(target->spawnpoint->angle, (source ? source : inflictor), target->subsector->sector);
 			break;
 
-		case MT_SPINBOBERT:
-			if (target->hnext)
-				P_KillMobj(target->hnext, inflictor, source, damagetype);
-			if (target->hprev)
-				P_KillMobj(target->hprev, inflictor, source, damagetype);
-			break;
-
 		case MT_EGGTRAP:
 			// Time for birdies! Yaaaaaaaay!
 			target->fuse = TICRATE;
-			break;
-
-		case MT_MINECART:
-			A_Scream(target);
-			target->momx = target->momy = target->momz = 0;
-			if (target->target && target->target->health)
-				P_KillMobj(target->target, target, source, DMG_NORMAL);
 			break;
 
 		case MT_PLAYER:
@@ -2253,6 +2241,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 
 				K_TryHurtSoundExchange(target, source);
+			}
+			else
+			{
+				K_DestroyBumpers(player, 1);
 			}
 
 			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE))

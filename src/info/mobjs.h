@@ -14,6 +14,7 @@ _(REDCRAWLA) // Crawla (Red)
 _(GFZFISH) // SDURF
 _(GOLDBUZZ) // Buzz (Gold)
 _(REDBUZZ) // Buzz (Red)
+_(AQUABUZZ)
 _(JETTBOMBER) // Jetty-Syn Bomber
 _(JETTGUNNER) // Jetty-Syn Gunner
 _(CRAWLACOMMANDER) // Crawla Commander
@@ -21,12 +22,7 @@ _(DETON) // Deton
 _(SKIM) // Skim mine dropper
 _(TURRET) // Industrial Turret
 _(POPUPTURRET) // Pop-Up Turret
-_(SPINCUSHION) // Spincushion
-_(CRUSHSTACEAN) // Crushstacean
-_(CRUSHCLAW) // Big meaty claw
-_(CRUSHCHAIN) // Chain
-_(BANPYURA) // Banpyura
-_(BANPSPRING) // Banpyura spring
+_(SHARP) // SHARP
 _(JETJAW) // Jet Jaw
 _(SNAILER) // Snailer
 _(VULTURE) // BASH
@@ -34,29 +30,14 @@ _(POINTY) // Pointy
 _(POINTYBALL) // Pointy Ball
 _(ROBOHOOD) // Robo-Hood
 _(FACESTABBER) // Castlebot Facestabber
-_(FACESTABBERSPEAR) // Castlebot Facestabber spear aura
 _(EGGGUARD) // Egg Guard
 _(EGGSHIELD) // Egg Guard's shield
 _(GSNAPPER) // Green Snapper
-_(SNAPPER_LEG) // Green Snapper leg
-_(SNAPPER_HEAD) // Green Snapper head
 _(MINUS) // Minus
-_(MINUSDIRT) // Minus dirt
 _(SPRINGSHELL) // Spring Shell
 _(YELLOWSHELL) // Spring Shell (yellow)
 _(UNIDUS) // Unidus
 _(UNIBALL) // Unidus Ball
-_(CANARIVORE) // Canarivore
-_(CANARIVORE_GAS) // Canarivore gas
-_(PYREFLY) // Pyre Fly
-_(PYREFLY_FIRE) // Pyre Fly fire
-_(PTERABYTESPAWNER) // Pterabyte spawner
-_(PTERABYTEWAYPOINT) // Pterabyte waypoint
-_(PTERABYTE) // Pterabyte
-_(DRAGONBOMBER) // Dragonbomber
-_(DRAGONWING) // Dragonbomber wing
-_(DRAGONTAIL) // Dragonbomber tail segment
-_(DRAGONMINE) // Dragonbomber mine
 
 // Generic Boss Items
 _(BOSSEXPLODE)
@@ -65,7 +46,6 @@ _(BOSSFLYPOINT)
 _(EGGTRAP)
 _(BOSS3WAYPOINT)
 _(BOSS9GATHERPOINT)
-_(BOSSJUNK)
 
 // Boss 1
 _(EGGMOBILE)
@@ -78,31 +58,16 @@ _(EGGMOBILE_FIRE)
 _(EGGMOBILE2)
 _(EGGMOBILE2_POGO)
 _(GOOP)
-_(GOOPTRAIL)
 
 // Boss 3
 _(EGGMOBILE3)
+_(PROPELLER)
 _(FAKEMOBILE)
-_(SHOCKWAVE)
 
 // Boss 4
 _(EGGMOBILE4)
 _(EGGMOBILE4_MACE)
 _(JETFLAME)
-_(EGGROBO1)
-_(EGGROBO1JET)
-
-// Boss 5
-_(FANG)
-_(BROKENROBOT)
-_(VWREF)
-_(VWREB)
-_(PROJECTORLIGHT)
-_(FBOMB)
-_(TNTDUST) // also used by barrel
-_(FSGNA)
-_(FSGNB)
-_(FANGWAYPOINT)
 
 // Black Eggman (Boss 7)
 _(BLACKEGGMAN)
@@ -137,6 +102,7 @@ _(FLINGBLUESPHERE) // Lost blue sphere
 _(BOMBSPHERE)
 _(REDTEAMRING) // Rings collectable by red team.
 _(BLUETEAMRING) // Rings collectable by blue team.
+_(EMMY) // Special Stage token for special stage
 _(TOKEN) // Special Stage token for special stage
 _(REDFLAG) // Red CTF Flag
 _(BLUEFLAG) // Blue CTF Flag
@@ -155,7 +121,6 @@ _(FLINGEMERALD) // Lost emerald
 // Springs and others
 _(FAN)
 _(STEAM)
-_(BUMPER)
 _(BALLOON)
 
 _(YELLOWSPRING)
@@ -172,11 +137,6 @@ _(REDHORIZ) // Red Horizontal Spring
 _(BLUEHORIZ) // Blue Horizontal Spring
 _(GREYHORIZ) // Grey Horizontal Spring
 
-_(BOOSTERSEG)
-_(BOOSTERROLLER)
-_(YELLOWBOOSTER)
-_(REDBOOSTER)
-
 // Interactive Objects
 _(BUBBLES) // Bubble source
 _(SIGN) // Level end sign
@@ -187,73 +147,51 @@ _(WALLSPIKE)
 _(WALLSPIKEBASE)
 _(STARPOST)
 _(BIGMINE)
+_(BIGAIRMINE)
 _(BLASTEXECUTOR)
 _(CANNONLAUNCHER)
 
+// Monitor Boxes
+_(SUPERRINGBOX)
+_(REDRINGBOX)
+_(BLUERINGBOX)
+_(SNEAKERTV)
+_(INV)
+_(PRUP) // 1up Box
+_(YELLOWTV)
+_(BLUETV)
+_(BLACKTV) // Bomb shield TV
+_(WHITETV) // Jump shield TV
+_(GREENTV)
+_(PITYTV) // Pity Shield TV
+_(EGGMANBOX)
+_(MIXUPBOX)
+_(RECYCLETV)
+_(RECYCLEICO)
+_(QUESTIONBOX)
+_(GRAVITYBOX)
+_(SCORETVSMALL)
+_(SCORETVLARGE)
+
 // Monitor miscellany
-_(BOXSPARKLE)
-
-// Monitor boxes -- regular
-_(RING_BOX)
-_(PITY_BOX)
-_(ATTRACT_BOX)
-_(FORCE_BOX)
-_(ARMAGEDDON_BOX)
-_(WHIRLWIND_BOX)
-_(ELEMENTAL_BOX)
-_(SNEAKERS_BOX)
-_(INVULN_BOX)
-_(1UP_BOX)
-_(EGGMAN_BOX)
-_(MIXUP_BOX)
-_(MYSTERY_BOX)
-_(GRAVITY_BOX)
-_(RECYCLER_BOX)
-_(SCORE1K_BOX)
-_(SCORE10K_BOX)
-_(FLAMEAURA_BOX)
-_(BUBBLEWRAP_BOX)
-_(THUNDERCOIN_BOX)
-
-// Monitor boxes -- repeating (big) boxes
-_(PITY_GOLDBOX)
-_(ATTRACT_GOLDBOX)
-_(FORCE_GOLDBOX)
-_(ARMAGEDDON_GOLDBOX)
-_(WHIRLWIND_GOLDBOX)
-_(ELEMENTAL_GOLDBOX)
-_(SNEAKERS_GOLDBOX)
-_(INVULN_GOLDBOX)
-_(EGGMAN_GOLDBOX)
-_(GRAVITY_GOLDBOX)
-_(FLAMEAURA_GOLDBOX)
-_(BUBBLEWRAP_GOLDBOX)
-_(THUNDERCOIN_GOLDBOX)
-
-// Monitor boxes -- special
-_(RING_REDBOX)
-_(RING_BLUEBOX)
-
-// Monitor icons
-_(RING_ICON)
-_(PITY_ICON)
-_(ATTRACT_ICON)
-_(FORCE_ICON)
-_(ARMAGEDDON_ICON)
-_(WHIRLWIND_ICON)
-_(ELEMENTAL_ICON)
-_(SNEAKERS_ICON)
-_(INVULN_ICON)
-_(1UP_ICON)
-_(EGGMAN_ICON)
-_(MIXUP_ICON)
-_(GRAVITY_ICON)
-_(RECYCLER_ICON)
-_(SCORE1K_ICON)
-_(SCORE10K_ICON)
-_(FLAMEAURA_ICON)
-_(BUBBLEWRAP_ICON)
-_(THUNDERCOIN_ICON)
+_(MONITOREXPLOSION)
+_(REDMONITOREXPLOSION)
+_(BLUEMONITOREXPLOSION)
+_(RINGICO)
+_(SHOESICO)
+_(INVCICO)
+_(1UPICO)
+_(YSHIELDICO)
+_(BSHIELDICO)
+_(KSHIELDICO)
+_(WSHIELDICO)
+_(GSHIELDICO)
+_(PITYSHIELDICO)
+_(EGGMANICO)
+_(MIXUPICO)
+_(GRAVITYICO)
+_(SCOREICOSMALL)
+_(SCOREICOLARGE)
 
 // Projectiles
 _(ROCKET)
@@ -269,62 +207,30 @@ _(CANNONBALLDECOR) // Decorative/still cannonball
 _(ARROW) // Arrow
 _(DEMONFIRE) // Glaregoyle fire
 
-// The letter
-_(LETTER)
-
 // Greenflower Scenery
 _(GFZFLOWER1)
 _(GFZFLOWER2)
 _(GFZFLOWER3)
-
-_(BLUEBERRYBUSH)
 _(BERRYBUSH)
 _(BUSH)
 
-// Trees (both GFZ and misc)
-_(GFZTREE)
-_(GFZBERRYTREE)
-_(GFZCHERRYTREE)
-_(CHECKERTREE)
-_(CHECKERSUNSETTREE)
-_(FHZTREE) // Frozen Hillside
-_(FHZPINKTREE)
-_(POLYGONTREE)
-_(BUSHTREE)
-_(BUSHREDTREE)
-_(SPRINGTREE)
-
 // Techno Hill Scenery
-_(THZFLOWER1)
-_(THZFLOWER2)
-_(THZFLOWER3)
-_(THZTREE) // Steam whistle tree/bush
-_(THZTREEBRANCH) // branch of said tree
+_(THZPLANT) // THZ Plant
 _(ALARM)
 
 // Deep Sea Scenery
 _(GARGOYLE) // Deep Sea Gargoyle
-_(BIGGARGOYLE) // Deep Sea Gargoyle (Big)
 _(SEAWEED) // DSZ Seaweed
 _(WATERDRIP) // Dripping Water source
 _(WATERDROP) // Water drop from dripping water
-_(CORAL1) // Coral
-_(CORAL2)
-_(CORAL3)
-_(CORAL4)
-_(CORAL5)
+_(CORAL1) // Coral 1
+_(CORAL2) // Coral 2
+_(CORAL3) // Coral 3
 _(BLUECRYSTAL) // Blue Crystal
-_(KELP) // Kelp
-_(ANIMALGAETOP) // Animated algae top
-_(ANIMALGAESEG) // Animated algae segment
-_(DSZSTALAGMITE) // Deep Sea 1 Stalagmite
-_(DSZ2STALAGMITE) // Deep Sea 2 Stalagmite
-_(LIGHTBEAM) // DSZ Light beam
 
 // Castle Eggman Scenery
 _(CHAIN) // CEZ Chain
-_(FLAME) // Flame (has corona)
-_(FLAMEPARTICLE)
+_(FLAME) // Flame
 _(EGGSTATUE) // Eggman Statue
 _(MACEPOINT) // Mace rotation point
 _(CHAINMACEPOINT) // Combination of chains and maces point
@@ -344,65 +250,14 @@ _(REDSPRINGBALL) // Red spring on a ball
 _(SMALLFIREBAR) // Small Firebar
 _(BIGFIREBAR) // Big Firebar
 _(CEZFLOWER) // Flower
-_(CEZPOLE1) // Pole (with red banner)
-_(CEZPOLE2) // Pole (with blue banner)
-_(CEZBANNER1) // Banner (red)
-_(CEZBANNER2) // Banner (blue)
-_(PINETREE) // Pine Tree
-_(CEZBUSH1) // Bush 1
-_(CEZBUSH2) // Bush 2
-_(CANDLE) // Candle
-_(CANDLEPRICKET) // Candle pricket
-_(FLAMEHOLDER) // Flame holder
-_(FIRETORCH) // Fire torch
-_(WAVINGFLAG1) // Waving flag (red)
-_(WAVINGFLAG2) // Waving flag (blue)
-_(WAVINGFLAGSEG1) // Waving flag segment (red)
-_(WAVINGFLAGSEG2) // Waving flag segment (blue)
-_(CRAWLASTATUE) // Crawla statue
-_(FACESTABBERSTATUE) // Facestabber statue
-_(SUSPICIOUSFACESTABBERSTATUE) // :eggthinking:
-_(BRAMBLES) // Brambles
 
 // Arid Canyon Scenery
 _(BIGTUMBLEWEED)
 _(LITTLETUMBLEWEED)
-_(CACTI1) // Tiny Red Flower Cactus
-_(CACTI2) // Small Red Flower Cactus
-_(CACTI3) // Tiny Blue Flower Cactus
-_(CACTI4) // Small Blue Flower Cactus
-_(CACTI5) // Prickly Pear
-_(CACTI6) // Barrel Cactus
-_(CACTI7) // Tall Barrel Cactus
-_(CACTI8) // Armed Cactus
-_(CACTI9) // Ball Cactus
-_(CACTI10) // Tiny Cactus
-_(CACTI11) // Small Cactus
-_(CACTITINYSEG) // Tiny Cactus Segment
-_(CACTISMALLSEG) // Small Cactus Segment
-_(ARIDSIGN_CAUTION) // Caution Sign
-_(ARIDSIGN_CACTI) // Cacti Sign
-_(ARIDSIGN_SHARPTURN) // Sharp Turn Sign
-_(OILLAMP)
-_(TNTBARREL)
-_(PROXIMITYTNT)
-_(DUSTDEVIL)
-_(DUSTLAYER)
-_(ARIDDUST)
-_(MINECART)
-_(MINECARTSEG)
-_(MINECARTSPAWNER)
-_(MINECARTEND)
-_(MINECARTENDSOLID)
-_(MINECARTSIDEMARK)
-_(MINECARTSPARK)
-_(SALOONDOOR)
-_(SALOONDOORCENTER)
-_(TRAINCAMEOSPAWNER)
-_(TRAINSEG)
-_(TRAINDUSTSPAWNER)
-_(TRAINSTEAMSPAWNER)
-_(MINECARTSWITCHPOINT)
+_(CACTI1)
+_(CACTI2)
+_(CACTI3)
+_(CACTI4)
 
 // Red Volcano Scenery
 _(FLAMEJET)
@@ -414,29 +269,15 @@ _(FJSPINAXISB) // Clockwise
 
 _(FLAMEJETFLAMEB) // Blade's flame
 
-_(LAVAFALL)
-_(LAVAFALL_LAVA)
-_(LAVAFALLROCK)
-
-_(ROLLOUTSPAWN)
-_(ROLLOUTROCK)
-
-_(BIGFERNLEAF)
-_(BIGFERN)
-_(JUNGLEPALM)
-_(TORCHFLOWER)
-_(WALLVINE_LONG)
-_(WALLVINE_SHORT)
-
 // Dark City Scenery
 
 // Egg Rock Scenery
 
 // Azure Temple Scenery
-_(GLAREGOYLE)
-_(GLAREGOYLEUP)
-_(GLAREGOYLEDOWN)
-_(GLAREGOYLELONG)
+_(TRAPGOYLE)
+_(TRAPGOYLEUP)
+_(TRAPGOYLEDOWN)
+_(TRAPGOYLELONG)
 _(TARGET) // AKA Red Crystal
 _(GREENFLAME)
 _(BLUEGARGOYLE)
@@ -456,37 +297,11 @@ _(STALAGMITE9)
 // Christmas Scenery
 _(XMASPOLE)
 _(CANDYCANE)
-_(SNOWMAN)    // normal
-_(SNOWMANHAT) // with hat + scarf
-_(LAMPPOST1)  // normal
-_(LAMPPOST2)  // with snow
+_(SNOWMAN)
+_(SNOWMANHAT)
+_(LAMPPOST1)
+_(LAMPPOST2)
 _(HANGSTAR)
-_(MISTLETOE)
-// Xmas GFZ bushes
-_(XMASBLUEBERRYBUSH)
-_(XMASBERRYBUSH)
-_(XMASBUSH)
-// FHZ
-_(FHZICE1)
-_(FHZICE2)
-_(ROSY)
-_(CDLHRT)
-
-// Halloween Scenery
-// Pumpkins
-_(JACKO1)
-_(JACKO2)
-_(JACKO3)
-// Dr Seuss Trees
-_(HHZTREE_TOP)
-_(HHZTREE_PART)
-// Misc
-_(HHZSHROOM)
-_(HHZGRASS)
-_(HHZTENTACLE1)
-_(HHZTENTACLE2)
-_(HHZSTALAGMITE_TALL)
-_(HHZSTALAGMITE_SHORT)
 
 // Botanic Serenity scenery
 _(BSZTALLFLOWER_RED)
@@ -596,7 +411,6 @@ _(SEED)
 // Environmental Effects
 _(RAIN) // Rain
 _(SNOWFLAKE) // Snowflake
-_(BLIZZARDSNOW) // Blizzard Snowball
 _(SPLISH) // Water splish!
 _(LAVASPLISH) // Lava splish!
 _(SMOKE)
@@ -656,10 +470,8 @@ _(GOOMBA)
 _(BLUEGOOMBA)
 _(FIREFLOWER)
 _(FIREBALL)
-_(FIREBALLTRAIL)
 _(SHELL)
 _(PUMA)
-_(PUMATRAIL)
 _(HAMMER)
 _(KOOPA)
 _(KOOPAFLAME)
@@ -698,26 +510,6 @@ _(IDEYAANCHOR)
 _(NIGHTOPIANHELPER) // the actual helper object that orbits you
 _(PIAN) // decorative singing friend
 _(SHLEEP) // almost-decorative sleeping enemy
-
-// Secret badniks and hazards, shhhh
-_(PENGUINATOR)
-_(POPHAT)
-_(POPSHOT)
-_(POPSHOT_TRAIL)
-
-_(HIVEELEMENTAL)
-_(BUMBLEBORE)
-
-_(BUGGLE)
-
-_(SMASHINGSPIKEBALL)
-_(CACOLANTERN)
-_(CACOSHARD)
-_(CACOFIRE)
-_(SPINBOBERT)
-_(SPINBOBERT_FIRE1)
-_(SPINBOBERT_FIRE2)
-_(HANGSTER)
 
 // Utility Objects
 _(TELEPORTMAN)
@@ -758,14 +550,6 @@ _(ROCKCRUMBLE13)
 _(ROCKCRUMBLE14)
 _(ROCKCRUMBLE15)
 _(ROCKCRUMBLE16)
-
-// Level debris
-_(GFZDEBRIS)
-_(BRICKDEBRIS)
-_(WOODDEBRIS)
-_(REDBRICKDEBRIS) // for CEZ3
-_(BLUEBRICKDEBRIS) // for CEZ3
-_(YELLOWBRICKDEBRIS) // for CEZ3
 
 // SRB1 Badniks
 _(SRB1_CRAWLA)
@@ -854,8 +638,6 @@ _(SINK_SHIELD)
 _(SINKTRAIL)
 
 _(BATTLEBUMPER) // Battle Mode bumpers
-_(BATTLEBUMPER_DEBRIS)
-_(BATTLEBUMPER_BLAST)
 
 _(DEZLASER)
 
@@ -991,8 +773,8 @@ _(CDTREEA)
 _(CDTREEB)
 
 // Daytona Speedway
-_(DAYTONAPINETREE)
-_(DAYTONAPINETREE_SIDE)
+_(PINETREE)
+_(PINETREE_SIDE)
 
 // Egg Zeppelin
 _(EZZPROPELLER)

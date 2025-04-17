@@ -24,30 +24,18 @@ _(SKIM) // Skim mine dropper
 _(TRET) // Industrial Turret
 _(TURR) // Pop-Up Turret
 _(SHRP) // Sharp
-//_(CRAB) // Crushstacean
-_(CR2B) // Banpyura
-_(CSPR) // Banpyura spring
 _(JJAW) // Jet Jaw
 _(SNLR) // Snailer
 _(VLTR) // BASH
 _(PNTY) // Pointy
 _(ARCH) // Robo-Hood
 _(CBFS) // Castlebot Facestabber
-_(STAB) // Castlebot Facestabber spear aura
 _(SPSH) // Egg Guard
 _(ESHI) // Egg Guard's shield
 _(GSNP) // Green Snapper
-_(GSNL) // Green Snapper leg
-_(GSNH) // Green Snapper head
 _(MNUS) // Minus
-_(MNUD) // Minus dirt
 _(SSHL) // Spring Shell
 _(UNID) // Unidus
-_(CANA) // Canarivore
-_(CANG) // Canarivore gas
-_(PYRE) // Pyre Fly
-_(PTER) // Pterabyte
-_(DRAB) // Dragonbomber
 
 // Generic Boss Items
 _(JETF) // Boss jet fumes
@@ -70,18 +58,9 @@ _(SHCK) // Boss 3 Shockwave
 // Boss 4 (Castle Eggman)
 _(EGGP)
 _(EFIR) // Boss 4 jet flame
-_(EGR1) // Boss 4 Spectator Eggrobo
 
 // Boss 5 (Arid Canyon)
-_(FANG) // replaces EGGQ
-_(BRKN)
-_(WHAT)
-_(VWRE)
-_(PROJ) // projector light
-_(FBOM)
-_(FSGN)
-_(BARX) // bomb explosion (also used by barrel)
-_(BARD) // bomb dust (also used by barrel)
+_(EGGQ)
 
 // Boss 6 (Red Volcano)
 _(EGGR)
@@ -109,6 +88,7 @@ _(MSCB)
 // Collectible Items
 _(RING)
 _(TRNG) // Team Rings
+_(EMMY) // Special Stage Token
 _(TOKE) // Special Stage Token
 _(RFLG) // Red CTF Flag
 _(BFLG) // Blue CTF Flag
@@ -133,33 +113,27 @@ _(BMNE) // Big floating mine
 _(PUMI) // Rollout Rock
 
 // Monitor Boxes
-_(MSTV) // MiSc TV sprites
-_(XLTV) // eXtra Large TV sprites
+_(SRBX)
+_(RRBX)
+_(BRBX)
+_(SHTV)
+_(PINV)
+_(YLTV)
+_(BLTV) // Force shield
+_(BKTV) // Bomb shield TV
+_(WHTV) // Jump shield TV
+_(GRTV) // Pity shield TV
+_(ELTV) // Elemental shield TV
+_(EGGB) // Eggman box
+_(MIXU) // Player mixing monitor
+_(RECY) // Recycler (power mixing) monitor
+_(QUES) // Random monitor
+_(GBTV) // Gravity boots TV
+_(PRUP) // 1up
+_(PTTV) // Score TVs
 
-_(TRRI) // Red team:  10 RIngs
-_(TBRI) // Blue team: 10 RIngs
-
-_(TVRI) // 10 RIng
-_(TVPI) // PIty shield
-_(TVAT) // ATtraction shield
-_(TVFO) // FOrce shield
-_(TVAR) // ARmageddon shield
-_(TVWW) // WhirlWind shield
-_(TVEL) // ELemental shield
-_(TVSS) // Super Sneakers
-_(TVIV) // InVincibility
-_(TV1U) // 1Up
-_(TV1P) // 1uP (textless)
-_(TVEG) // EGgman
-_(TVMX) // MiXup
-_(TVMY) // MYstery
-_(TVGV) // GraVity boots
-_(TVRC) // ReCycler
-_(TV1K) // 1,000 points  (1 K)
-_(TVTK) // 10,000 points (Ten K)
-_(TVFL) // FLame shield
-_(TVBB) // BuBble shield
-_(TVZP) // Thunder shield (ZaP)
+// Monitor Miscellany
+_(MTEX) // Exploding monitor
 
 // Projectiles
 _(MISL)
@@ -174,9 +148,6 @@ _(CBLL) // Cannonball
 _(AROW) // Arrow
 _(CFIR) // Colored fire of various sorts
 
-// The letter
-_(LETR)
-
 // Greenflower Scenery
 _(FWR1)
 _(FWR2) // GFZ Sunflower
@@ -184,33 +155,19 @@ _(FWR3) // GFZ budding flower
 _(FWR4)
 _(BUS1) // GFZ Bush w/ berries
 _(BUS2) // GFZ Bush w/o berries
-_(BUS3) // GFZ Bush w/ BLUE berries
-// Trees (both GFZ and misc)
-_(TRE1) // GFZ
-_(TRE2) // Checker
-_(TRE3) // Frozen Hillside
-_(TRE4) // Polygon
-_(TRE5) // Bush tree
-_(TRE6) // Spring tree
 
 // Techno Hill Scenery
-_(THZP) // THZ1 Steam Flower
-_(FWR5) // THZ1 Spin flower (red)
-_(FWR6) // THZ1 Spin flower (yellow)
-_(THZT) // Steam Whistle tree/bush
+_(THZP) // Techno Hill Zone Plant
 _(ALRM) // THZ2 Alarm
 
 // Deep Sea Scenery
 _(GARG) // Deep Sea Gargoyle
 _(SEWE) // Deep Sea Seaweed
 _(DRIP) // Dripping water
-_(CORL) // Coral
+_(CRL1) // Coral 1
+_(CRL2) // Coral 2
+_(CRL3) // Coral 3
 _(BCRY) // Blue Crystal
-_(KELP) // Kelp
-_(ALGA) // Animated algae top
-_(ALGB) // Animated algae segment
-_(DSTG) // DSZ Stalagmites
-_(LIBE) // DSZ Light beam
 
 // Castle Eggman Scenery
 _(CHAN) // CEZ Chain
@@ -224,44 +181,15 @@ _(YSPB) // Yellow spring on a ball
 _(RSPB) // Red spring on a ball
 _(SFBR) // Small Firebar
 _(BFBR) // Big Firebar
-_(BANR) // Banner/pole
-_(PINE) // Pine Tree
-_(CEZB) // Bush
-_(CNDL) // Candle/pricket
-_(FLMH) // Flame holder
-_(CTRC) // Fire torch
-_(CFLG) // Waving flag/segment
-_(CSTA) // Crawla statue
-_(CBBS) // Facestabber statue
-_(CABR) // Brambles
 
 // Arid Canyon Scenery
 _(BTBL) // Big tumbleweed
 _(STBL) // Small tumbleweed
 _(CACT) // Cacti
-_(WWSG) // Caution Sign
-_(WWS2) // Cacti Sign
-_(WWS3) // Sharp Turn Sign
-_(OILL) // Oil lamp
-_(OILF) // Oil lamp flare
-_(BARR) // TNT barrel
-_(REMT) // TNT proximity shell
-_(TAZD) // Dust devil
-_(ADST) // Arid dust
-_(MCRT) // Minecart
-_(MCSP) // Minecart spark
-_(SALD) // Saloon door
-_(TRAE) // Train cameo locomotive
-_(TRAI) // Train cameo wagon
-_(STEA) // Train steam
 
 // Red Volcano Scenery
 _(FLME) // Flame jet
 _(DFLM) // Blade's flame
-_(LFAL) // Lavafall
-_(JPLA) // Jungle palm
-_(TFLO) // Torch flower
-_(WVIN) // Wall vines
 
 // Dark City Scenery
 
@@ -274,17 +202,8 @@ _(XMS3) // Snowman
 _(XMS4) // Lamppost
 _(XMS5) // Hanging Star
 _(XMS6) // Mistletoe
-_(FHZI) // FHZ Ice
-_(ROSY)
-
-// Halloween Scenery
-_(PUMK) // Pumpkins
-_(HHPL) // Dr Seuss Trees
-_(SHRM) // Mushroom
-_(HHZM) // Misc
 
 // Azure Temple Scenery
-_(BGAR) // ATZ Gargoyles
 _(RCRY) // ATZ Red Crystal (Target)
 _(CFLM) // Green torch flame
 
@@ -363,7 +282,6 @@ _(BSTR) // Red Booster
 // Environmental Effects
 _(RAIN) // Rain
 _(SNO1) // Snowflake
-_(SNO2) // Blizzard Snowball
 _(SPLH) // Water Splish
 _(LSPL) // Lava Splish
 _(SPLA) // Water Splash
@@ -438,21 +356,6 @@ _(CAPS) // Capsule thingy for NiGHTS
 _(IDYA) // Ideya
 _(NTPN) // Nightopian
 _(SHLP) // Shleep
-
-// Secret badniks and hazards, shhhh
-_(PENG)
-_(POPH)
-_(HIVE)
-_(BUMB)
-_(BBUZ)
-_(FMCE)
-_(HMCE)
-_(CACO)
-_(BAL2)
-_(SBOB)
-_(SBFL)
-_(SBSK)
-_(HBAT)
 
 // Debris
 _(SPRK) // Sparkle
@@ -656,7 +559,7 @@ _(CDMO)
 _(CDBU)
 
 // Daytona Speedway
-_(DPIN)
+_(PINE)
 
 // Egg Zeppelin
 _(PPLR)

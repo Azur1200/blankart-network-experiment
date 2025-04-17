@@ -5054,9 +5054,6 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[2] = !!(lines[i].flags & ML_SKEWTD);
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			break;
-		case 16: //Minecart parameters
-			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
-			break;
 		case 20: //PolyObject first line
 		{
 			INT32 check = -1;
@@ -7033,13 +7030,6 @@ static void P_ConvertBinaryThingTypes(void)
 		case 203: //Egg Colosseum
 			mapthings[i].args[5] = LE_BOSS4DROP + mapthings[i].extrainfo * LE_PARAMWIDTH;
 			break;
-		case 204: //Fang
-			mapthings[i].args[4] = LE_BOSS4DROP + mapthings[i].extrainfo*LE_PARAMWIDTH;
-			if (mapthings[i].options & MTF_EXTRA)
-				mapthings[i].args[5] |= TMF_GRAYSCALE;
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[5] |= TMF_SKIPINTRO;
-			break;
 		case 206: //Brak Eggman (Old)
 			mapthings[i].args[5] = LE_BRAKPLATFORM + mapthings[i].extrainfo*LE_PARAMWIDTH;
 			break;
@@ -7060,9 +7050,6 @@ static void P_ConvertBinaryThingTypes(void)
 		case 292: //Boss waypoint
 			mapthings[i].args[0] = mapthings[i].angle;
 			mapthings[i].args[1] = mapthings[i].options & 7;
-			break;
-		case 294: //Fang waypoint
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
 			break;
 		case 300: //Ring
 		case 301: //Bounce ring
@@ -7368,24 +7355,11 @@ static void P_ConvertBinaryThingTypes(void)
 			}
 			break;
 		}
-		case 1101: //Torch
-		case 1119: //Candle
-		case 1120: //Candle pricket
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_EXTRA);
-			break;
 		case 1121: //Flame holder
 			if (mapthings[i].options & MTF_OBJECTSPECIAL)
 				mapthings[i].args[0] |= TMFH_NOFLAME;
 			if (mapthings[i].options & MTF_EXTRA)
 				mapthings[i].args[0] |= TMFH_CORONA;
-			break;
-		case 1127: //Spectator EggRobo
-			if (mapthings[i].options & MTF_AMBUSH)
-				mapthings[i].args[0] = TMED_LEFT;
-			else if (mapthings[i].options & MTF_OBJECTSPECIAL)
-				mapthings[i].args[0] = TMED_RIGHT;
-			else
-				mapthings[i].args[0] = TMED_NONE;
 			break;
 		case 1200: //Tumbleweed (Big)
 		case 1201: //Tumbleweed (Small)
@@ -7414,12 +7388,6 @@ static void P_ConvertBinaryThingTypes(void)
 				P_WriteConstant(MT_ROCKCRUMBLE1 + id, &mapthings[i].stringargs[0], "Mapthing", i);
 			break;
 		}
-		case 1221: //Minecart saloon door
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
-			break;
-		case 1229: //Minecart switch point
-			mapthings[i].args[0] = !!(mapthings[i].options & MTF_AMBUSH);
-			break;
 		case 1300: //Flame jet (horizontal)
 		case 1301: //Flame jet (vertical)
 			mapthings[i].args[0] = mapthings[i].angle >> 13;

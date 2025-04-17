@@ -74,6 +74,7 @@ extern actionpointer_t actionpointers[]; // Array mapping action names to action
 extern const char *const STATE_LIST[];
 extern struct int_const_s const STATE_ALIASES[];
 extern const char *const MOBJTYPE_LIST[];
+extern struct int_const_s const MOBJ_ALIASES[];
 extern const char *const MOBJFLAG_LIST[];
 extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
 extern const char *const MOBJEFLAG_LIST[];

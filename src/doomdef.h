@@ -101,7 +101,7 @@
 extern "C" {
 #endif
 
-//#define NOMD5
+#define NOMD5
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -491,10 +491,6 @@ extern int compuncommitted;
 
 ///	Dumps the contents of a network save game upon consistency failure for debugging.
 //#define DUMPCONSISTENCY
-
-///	Who put weights on my recycler?  ... Inuyasha did.
-///	\note	XMOD port.
-//#define WEIGHTEDRECYCLER
 
 ///	Allow loading of savegames between different versions of the game.
 ///	\note	XMOD port.
