@@ -11,7 +11,27 @@
 
 ## Compiling
 
-See [SRB2 Wiki/Source code compiling](http://wiki.srb2.org/wiki/Source_code_compiling). The compiling process for SRB2Kart is largely identical to SRB2.
+Linux:
+```
+git clone https://codeberg.org/NepDisk/blankart.git
+cd blankart
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+```
+
+Windows MSYS2:
+```
+git clone https://codeberg.org/NepDisk/blankart.git
+cd blankart
+mkdir build
+cd build
+cmake -G "MSYS Makefiles" ..
+./_deps/sdl2_mixer-src/external/download.sh
+cmake -G "MSYS Makefiles" ..
+make -j$(nproc)
+```
 
 ## Disclaimer
 Kart Krew is in no way affiliated with SEGA or Sonic Team. We do not claim ownership of any of SEGA's intellectual property used in SRB2.
