@@ -236,6 +236,8 @@ static const struct {
 	{META_OVERLAY,      "t_overlay_t"},
 	{META_TERRAIN,      "terrain_t"},
 	
+	{META_SONICLOOPVARS,	"sonicloopvars_t"},
+	{META_SONICLOOPCAMVARS,	"sonicloopcamvars_t"},
 	{NULL,              NULL}
 };
 
