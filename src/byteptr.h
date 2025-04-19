@@ -1,4 +1,4 @@
-// DR. ROBOTNIK'S RING RACERS
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2024 by Kart Krew.
 // Copyright (C) 2020 by Sonic Team Junior.

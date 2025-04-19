@@ -1,4 +1,4 @@
-// DR. ROBOTNIK'S RING RACERS
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2018-2022 by "Lat'"
 // Copyright (C) 2018-2022 by Kart Krew

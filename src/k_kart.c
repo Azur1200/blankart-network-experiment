@@ -1,8 +1,22 @@
-// SONIC ROBO BLAST 2 KART ~ ZarroTsu
+// BLANKART
+//-----------------------------------------------------------------------------
+// Copyright (C) 2025 by NepDisk.
+// Copyright (C) 2025 by Kart Krew.
+// Copyright (C) 2018 by ZarroTsu.
+//
+// This program is free software distributed under the
+// terms of the GNU General Public License, version 2.
+// See the 'LICENSE' file for more details.
 //-----------------------------------------------------------------------------
 /// \file  k_kart.c
 /// \brief SRB2kart general.
 ///        All of the SRB2kart-unique stuff.
+
+// TODO: Break this up into more files.
+// Files dedicated only for "general miscellanea"
+// are straight-up bad coding practice.
+// It's better to have niche files that are
+// too short than one file that's too massive.
 
 #include "k_kart.h"
 #include "d_netcmd.h"
@@ -8327,28 +8341,8 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 								continue;
 							}
 
-							if ((waypoint->nextwaypoints != NULL) && (waypoint->numnextwaypoints > 0U))
-							{
-								for (size_t j = 0U; j < waypoint->numnextwaypoints; j++)
-								{
-									if (!K_GetWaypointIsEnabled(waypoint->nextwaypoints[j]))
-									{
-										continue;
-									}
 
-									if (waypoint->nextwaypoints[j] == waypoint)
-									{
-										continue;
-									}
-
-									bestwaypoint = waypoint->nextwaypoints[j];
-									break;
-								}
-							}
-							else
-							{
-								bestwaypoint = waypoint->prevwaypoints[i];
-							}
+							bestwaypoint = waypoint->prevwaypoints[i];
 
 							nextbestdelta = angledelta;
 							nextbestmomdelta = momdelta;

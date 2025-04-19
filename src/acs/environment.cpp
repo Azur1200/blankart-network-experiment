@@ -1,4 +1,4 @@
-// DR. ROBOTNIK'S RING RACERS
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2016 by James Haley, David Hill, et al. (Team Eternity)
 // Copyright (C) 2022 by Sally "TehRealSalt" Cochenour

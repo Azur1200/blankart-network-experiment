@@ -1,4 +1,4 @@
-// DR. ROBOTNIK'S RING RACERS
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2021 by Sally "TehRealSalt" Cochenour
 // Copyright (C) 2021 by Kart Krew

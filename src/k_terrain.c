@@ -1,4 +1,4 @@
-// DR. ROBOTNIK'S RING RACERS
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2021 by ZDoom + GZDoom teams, and contributors
 // Copyright (C) 2021 by Sally "TehRealSalt" Cochenour
