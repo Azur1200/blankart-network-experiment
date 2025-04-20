@@ -179,6 +179,10 @@ static INT32 windowedModes[MAXWINMODES][2] =
 	{ 320, 200}, // 1.60,1.00
 };
 
+#define CUSTOMMODENUM 9999
+static INT32 custom_width = 0;
+static INT32 custom_height = 0;
+
 static void Impl_VideoSetupSDLBuffer(void);
 static void Impl_VideoSetupBuffer(void);
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
@@ -1388,6 +1392,16 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 			return i;
 		}
 	}
+	// did not find mode from list, make custom resolution if the values somewhat make sense
+	// opengl mode does not mind about max resolution defined in screen.h
+	// if not using opengl, check against the maximum as well
+	if ((w >= BASEVIDWIDTH && h >= BASEVIDHEIGHT) &&
+		(rendermode != render_none || (w <= MAXVIDWIDTH && h <= MAXVIDHEIGHT)))
+	{
+		custom_width = w;
+		custom_height = h;
+		return CUSTOMMODENUM;
+	}
 	return -1;
 #if 0
 	INT32 matchMode = -1, i;
@@ -1664,14 +1678,36 @@ INT32 VID_SetMode(INT32 modeNum)
 	vid.recalc = 1;
 	vid.bpp = 1;
 
-	if (modeNum < 0)
-		modeNum = 0;
-	if (modeNum >= MAXWINMODES)
-		modeNum = MAXWINMODES-1;
-
-	vid.width = windowedModes[modeNum][0];
-	vid.height = windowedModes[modeNum][1];
-	vid.modenum = modeNum;
+	if (modeNum >= 0 && modeNum < MAXWINMODES)
+	{
+		vid.width = windowedModes[modeNum][0];
+		vid.height = windowedModes[modeNum][1];
+		vid.modenum = modeNum;
+	}
+	else if (modeNum == CUSTOMMODENUM && custom_width && custom_height)
+	{
+		// at this point these values are assumed to be okay
+		vid.width = custom_width;
+		vid.height = custom_height;
+		vid.modenum = modeNum;
+	}
+	else
+	{
+		// just set the desktop resolution as a fallback
+		SDL_DisplayMode mode;
+		SDL_GetWindowDisplayMode(window, &mode);
+		if (mode.w >= 2048)
+		{
+			vid.width = 1920;
+			vid.height = 1200;
+		}
+		else
+		{
+			vid.width = mode.w;
+			vid.height = mode.h;
+		}
+		vid.modenum = -1;
+	}
 
 	src_rect.w = vid.width;
 	src_rect.h = vid.height;
