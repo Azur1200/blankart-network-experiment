@@ -39,6 +39,7 @@
 #include "r_fps.h"
 #include "m_random.h"
 #include "g_party.h"
+#include "h_timers.h"
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
@@ -4657,6 +4658,8 @@ void K_drawKartHUD(void)
 		else if (stplyr->karthud[khud_lapanimation] && !r_splitscreen)
 			K_drawLapStartAnim();
 	}
+
+	K_DisplayItemTimers();
 
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;

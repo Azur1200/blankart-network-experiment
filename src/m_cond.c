@@ -20,6 +20,7 @@
 #include "g_game.h" // record info
 #include "r_skins.h" // numskins
 #include "r_draw.h" // R_GetColorByName
+#include "k_kart.h"
 #include "k_pwrlv.h"
 #include "k_stats.h"
 

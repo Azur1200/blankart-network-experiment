@@ -1879,6 +1879,11 @@ INT32 V_DanceYOffset(INT32 counter)
 	return abs(step - (duration / 2)) - (duration / 4);
 }
 
+static boolean V_CharacterValid(font_t *font, int c)
+{
+	return (c >= 0 && c < font->size && font->font[c] != NULL);
+}
+
 // Writes a single character (draw WHITE if bit 7 set)
 //
 void V_DrawCharacter(INT32 x, INT32 y, INT32 c, boolean lowercaseallowed)
@@ -2217,34 +2222,146 @@ static inline fixed_t BunchedCharacterDim(
 	return 0;
 }
 
-void V_DrawStringScaled(
+typedef struct
+{
+	fixed_t    chw;
+	fixed_t spacew;
+	fixed_t    lfh;
+	fixed_t (*dim_fn)(fixed_t,fixed_t,INT32,INT32,fixed_t *);
+} fontspec_t;
+
+static void V_GetFontSpecification(int fontno, INT32 flags, fontspec_t *result)
+{
+	/*
+	Hardcoded until a better system can be implemented
+	for determining how fonts space.
+	*/
+
+	// All other properties are guaranteed to be set
+	result->chw = 0;
+
+	const INT32 spacing = ( flags & V_SPACINGMASK );
+
+	switch (fontno)
+	{
+		default:
+		case HU_FONT:
+			result->spacew = 4;
+			switch (spacing)
+			{
+				case V_MONOSPACE:
+					result->spacew = 8;
+					/* FALLTHRU */
+				case V_OLDSPACING:
+					result->chw    = 8;
+					break;
+				case V_6WIDTHSPACE:
+					result->spacew = 6;
+			}
+			break;
+		case TINY_FONT:
+			result->spacew = 2;
+			switch (spacing)
+			{
+				case V_MONOSPACE:
+					result->spacew = 5;
+					/* FALLTHRU */
+				case V_OLDSPACING:
+					result->chw    = 5;
+					break;
+				// Out of video flags, so we're reusing this for alternate charwidth instead
+				/*case V_6WIDTHSPACE:
+				  spacewidth = 3;*/
+			}
+			break;
+		case KART_FONT:
+			result->spacew = 12;
+			switch (spacing)
+			{
+				case V_MONOSPACE:
+					result->spacew = 12;
+					/* FALLTHRU */
+				case V_OLDSPACING:
+					result->chw    = 12;
+					break;
+				case V_6WIDTHSPACE:
+					result->spacew = 6;
+			}
+			break;
+		case LT_FONT:
+			result->spacew = 12;
+			break;
+		case CRED_FONT:
+			result->spacew = 16;
+			break;
+	}
+	switch (fontno)
+	{
+		default:
+		case HU_FONT:
+		case TINY_FONT:
+		case KART_FONT:
+			result->lfh = 12;
+			break;
+		case LT_FONT:
+		case CRED_FONT:
+			result->lfh    = 12;
+			break;
+	}
+
+	switch (fontno)
+	{
+		case TINY_FONT:
+		{
+			if (result->chw)
+				result->dim_fn = FixedCharacterDim;
+			else
+			{
+				/* Reuse this flag for the alternate bunched-up spacing. */
+				if (( flags & V_6WIDTHSPACE ))
+					result->dim_fn = BunchedCharacterDim;
+				else
+					result->dim_fn = VariableCharacterDim;
+			}
+			break;
+		}
+		default:
+		{
+			if (result->chw)
+				result->dim_fn = CenteredCharacterDim;
+			else
+				result->dim_fn = VariableCharacterDim;
+			break;
+		}
+	}
+}
+
+void V_DrawStringScaledEx(
 		fixed_t    x,
 		fixed_t    y,
 		fixed_t      scale,
+		fixed_t     vscale,
 		fixed_t spacescale,
 		fixed_t    lfscale,
 		INT32      flags,
+		const UINT8 *colormap,
 		int        fontno,
 		const char *s)
 {
-	fixed_t    chw;
 	INT32     hchw;/* half-width for centering */
-	fixed_t spacew;
-	fixed_t    lfh;
 
 	INT32     dupx;
+	INT32     dupy;
 
 	fixed_t  right;
 	fixed_t    bot;
-
-	fixed_t (*dim_fn)(fixed_t,fixed_t,INT32,INT32,fixed_t *);
 
 	font_t   *font;
 
 	boolean uppercase;
 	boolean notcolored;
+	boolean vflip;
 
-	const UINT8 *colormap = NULL;
 	boolean   dance;
 	boolean nodanceoverride;
 	INT32     dancecounter;
@@ -2254,7 +2371,6 @@ void V_DrawStringScaled(
 	fixed_t cxoff, cyoff;
 	fixed_t cw;
 
-	INT32     spacing;
 	fixed_t   left;
 
 	int c;
@@ -2265,126 +2381,59 @@ void V_DrawStringScaled(
 	dance           = (flags & V_STRINGDANCE) != 0;
 	nodanceoverride = !dance;
 	dancecounter    = 0;
+	vflip = (flags & V_VFLIP) != 0;
 
 	/* Some of these flags get overloaded in this function so
 	   don't pass them on. */
 	flags &= ~(V_PARAMMASK);
+
+	if (vflip) flags |= V_VFLIP;
 
 	if (colormap == NULL)
 	{
 		colormap   =  V_GetStringColormap(( flags & V_CHARCOLORMASK ));
 	}
 
-	colormap   =  V_GetStringColormap(( flags & V_CHARCOLORMASK ));
 	notcolored = !colormap;
 
 	font       = &fontv[fontno];
 
-	chw        = 0;
+	fontspec_t fontspec;
 
-	spacing = ( flags & V_SPACINGMASK );
+	V_GetFontSpecification(fontno, flags, &fontspec);
 
-	/*
-	Hardcoded until a better system can be implemented
-	for determining how fonts space.
-	*/
-	switch (fontno)
-	{
-		default:
-		case HU_FONT:
-			spacew = 4;
-			switch (spacing)
-			{
-				case V_MONOSPACE:
-					spacew = 8;
-					/* FALLTHRU */
-				case V_OLDSPACING:
-					chw    = 8;
-					break;
-				case V_6WIDTHSPACE:
-					spacew = 6;
-			}
-			break;
-		case TINY_FONT:
-			spacew = 2;
-			switch (spacing)
-			{
-				case V_MONOSPACE:
-					spacew = 5;
-					/* FALLTHRU */
-				case V_OLDSPACING:
-					chw    = 5;
-					break;
-				// Out of video flags, so we're reusing this for alternate charwidth instead
-				/*case V_6WIDTHSPACE:
-				  spacewidth = 3;*/
-			}
-			break;
-		case KART_FONT:
-			spacew = 12;
-			switch (spacing)
-			{
-				case V_MONOSPACE:
-					spacew = 12;
-					/* FALLTHRU */
-				case V_OLDSPACING:
-					chw    = 12;
-					break;
-				case V_6WIDTHSPACE:
-					spacew = 6;
-			}
-			break;
-		case LT_FONT:
-			spacew = 12;
-			break;
-		case CRED_FONT:
-			spacew = 16;
-			break;
-	}
-	switch (fontno)
-	{
-		default:
-		case HU_FONT:
-		case TINY_FONT:
-		case KART_FONT:
-			lfh = 12;
-			break;
-		case LT_FONT:
-		case CRED_FONT:
-			lfh    = 12;
-			break;
-	}
+	hchw     = fontspec.chw >> 1;
 
-	hchw     = chw >> 1;
-
-	chw    <<= FRACBITS;
-	spacew <<= FRACBITS;
-	lfh    <<= FRACBITS;
+	fontspec.chw    <<= FRACBITS;
+	fontspec.spacew <<= FRACBITS;
+	fontspec.lfh    <<= FRACBITS;
 
 #define Mul( id, scale ) ( id = FixedMul (scale, id) )
-	Mul    (chw,      scale);
-	Mul (spacew,      scale);
-	Mul    (lfh,      scale);
+	Mul    (fontspec.chw,      scale);
+	Mul (fontspec.spacew,      scale);
+	Mul    (fontspec.lfh,      scale);
 
-	Mul (spacew, spacescale);
-	Mul    (lfh,    lfscale);
+	Mul (fontspec.spacew, spacescale);
+	Mul    (fontspec.lfh,    lfscale);
 #undef  Mul
 
 	if (( flags & V_NOSCALESTART ))
 	{
 		dupx      = vid.dupx;
+		dupy      = vid.dupy;
 
 		hchw     *=     dupx;
 
-		chw      *=     dupx;
-		spacew   *=     dupx;
-		lfh      *= vid.dupy;
+		fontspec.chw      *=     dupx;
+		fontspec.spacew   *=     dupx;
+		fontspec.lfh      *=     dupy;
 
 		right     = vid.width;
 	}
 	else
 	{
 		dupx      = 1;
+		dupy      = 1;
 
 		right     = ( vid.width / vid.dupx );
 		if (!( flags & V_SNAPTOLEFT ))
@@ -2397,27 +2446,6 @@ void V_DrawStringScaled(
 	right      <<=               FRACBITS;
 	bot          = vid.height << FRACBITS;
 
-	if (fontno == TINY_FONT)
-	{
-		if (chw)
-			dim_fn = FixedCharacterDim;
-		else
-		{
-			/* Reuse this flag for the alternate bunched-up spacing. */
-			if (( flags & V_6WIDTHSPACE ))
-				dim_fn = BunchedCharacterDim;
-			else
-				dim_fn = VariableCharacterDim;
-		}
-	}
-	else
-	{
-		if (chw)
-			dim_fn = CenteredCharacterDim;
-		else
-			dim_fn = VariableCharacterDim;
-	}
-
 	cx = x;
 	cy = y;
 	cyoff = 0;
@@ -2427,13 +2455,13 @@ void V_DrawStringScaled(
 		switch (c)
 		{
 			case '\n':
-				cy += lfh;
+				cy += fontspec.lfh;
 				if (cy >= bot)
 					return;
 				cx  =   x;
 				break;
 			default:
-				if (( c & 0x80 ))
+				if (( c & 0xF0 ) == 0x80)
 				{
 					if (notcolored)
 					{
@@ -2453,25 +2481,328 @@ void V_DrawStringScaled(
 				else if (cx < right)
 				{
 					if (uppercase)
+					{
 						c = toupper(c);
+					}
+					else if (V_CharacterValid(font, c - font->start) == false)
+					{
+						// Try the other case if it doesn't exist
+						if (c >= 'A' && c <= 'Z')
+						{
+							c = tolower(c);
+						}
+						else if (c >= 'a' && c <= 'z')
+						{
+							c = toupper(c);
+						}
+					}
+
 
 					if (dance)
+					{
 						cyoff = V_DanceYOffset(dancecounter) * FRACUNIT;
+					}
 
 					c -= font->start;
-					if (c >= 0 && c < font->size && font->font[c])
+					if (V_CharacterValid(font, c) == true)
 					{
+						// Remove offsets from patch
+						fixed_t patchxofs = SHORT (font->font[c]->leftoffset) * dupx * scale;
 						cw = SHORT (font->font[c]->width) * dupx;
-						cxoff = (*dim_fn)(scale, chw, hchw, dupx, &cw);
-						V_DrawFixedPatch(cx + cxoff, cy + cyoff, scale,
+						cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dupx, &cw);
+						V_DrawStretchyFixedPatch(cx + cxoff + patchxofs, cy + cyoff, scale, vscale,
 								flags, font->font[c], colormap);
 						cx += cw;
 					}
 					else
-						cx += spacew;
+					{
+						cx += fontspec.spacew;
+					}
 				}
 		}
 	}
+}
+
+fixed_t V_StringScaledWidth(
+		fixed_t      scale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		INT32      flags,
+		int        fontno,
+		const char *s)
+{
+	INT32     hchw;/* half-width for centering */
+
+	INT32     dupx;
+
+	font_t   *font;
+
+	boolean uppercase;
+
+	fixed_t cx;
+	fixed_t right;
+
+	fixed_t cw;
+
+	int c;
+
+	fixed_t fullwidth = 0;
+
+	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
+
+	font       = &fontv[fontno];
+
+	fontspec_t fontspec;
+
+	V_GetFontSpecification(fontno, flags, &fontspec);
+
+	hchw     = fontspec.chw >> 1;
+
+	fontspec.chw    <<= FRACBITS;
+	fontspec.spacew <<= FRACBITS;
+
+#define Mul( id, scale ) ( id = FixedMul (scale, id) )
+	Mul    (fontspec.chw,      scale);
+	Mul (fontspec.spacew,      scale);
+	Mul    (fontspec.lfh,      scale);
+
+	Mul (fontspec.spacew, spacescale);
+	Mul    (fontspec.lfh,    lfscale);
+#undef  Mul
+
+	if (( flags & V_NOSCALESTART ))
+	{
+		dupx      = vid.dupx;
+
+		hchw     *=     dupx;
+
+		fontspec.chw      *=     dupx;
+		fontspec.spacew   *=     dupx;
+		fontspec.lfh      *= vid.dupy;
+	}
+	else
+	{
+		dupx      = 1;
+	}
+
+	cx = 0;
+	right = 0;
+
+	for (; ( c = *s ); ++s)
+	{
+		switch (c)
+		{
+			case '\n':
+				cx  =   0;
+				break;
+			default:
+				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+					continue;
+
+				if (uppercase)
+				{
+					c = toupper(c);
+				}
+				else if (V_CharacterValid(font, c - font->start) == false)
+				{
+					// Try the other case if it doesn't exist
+					if (c >= 'A' && c <= 'Z')
+					{
+						c = tolower(c);
+					}
+					else if (c >= 'a' && c <= 'z')
+					{
+						c = toupper(c);
+					}
+				}
+
+				c -= font->start;
+				if (V_CharacterValid(font, c) == true)
+				{
+					cw = SHORT (font->font[c]->width) * dupx;
+
+					// How bunched dims work is by incrementing cx slightly less than a full character width.
+					// This causes the next character to be drawn overlapping the previous.
+					// We need to count the full width to get the rightmost edge of the string though.
+					right = cx + (cw * scale);
+
+					(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dupx, &cw);
+					cx += cw;
+				}
+				else
+					cx += fontspec.spacew;
+		}
+
+		fullwidth = max(right, max(cx, fullwidth));
+	}
+
+	return fullwidth;
+}
+
+// Modify a string to wordwrap at any given width.
+char * V_ScaledWordWrap(
+		fixed_t          w,
+		fixed_t      scale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		INT32      flags,
+		int        fontno,
+		const char *s)
+{
+	INT32     hchw;/* half-width for centering */
+
+	INT32     dupx;
+
+	font_t   *font;
+
+	boolean uppercase;
+
+	fixed_t cx;
+	fixed_t right;
+
+	fixed_t cw;
+
+	int c;
+
+	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
+
+	font       = &fontv[fontno];
+
+	fontspec_t fontspec;
+
+	V_GetFontSpecification(fontno, flags, &fontspec);
+
+	hchw     = fontspec.chw >> 1;
+
+	fontspec.chw    <<= FRACBITS;
+	fontspec.spacew <<= FRACBITS;
+
+#define Mul( id, scale ) ( id = FixedMul (scale, id) )
+	Mul    (fontspec.chw,      scale);
+	Mul (fontspec.spacew,      scale);
+	Mul    (fontspec.lfh,      scale);
+
+	Mul (fontspec.spacew, spacescale);
+	Mul    (fontspec.lfh,    lfscale);
+#undef  Mul
+
+	if (( flags & V_NOSCALESTART ))
+	{
+		dupx      = vid.dupx;
+
+		hchw     *=     dupx;
+
+		fontspec.chw      *=     dupx;
+		fontspec.spacew   *=     dupx;
+		fontspec.lfh      *= vid.dupy;
+	}
+	else
+	{
+		dupx      = 1;
+	}
+
+	cx = 0;
+	right = 0;
+
+	size_t reader = 0, writer = 0, startwriter = 0;
+	fixed_t cxatstart = 0;
+
+	size_t len = strlen(s) + 1;
+	size_t potentialnewlines = 8;
+	size_t sparenewlines = potentialnewlines;
+
+	char *newstring = Z_Malloc(len + sparenewlines, PU_STATIC, NULL);
+
+	for (; ( c = s[reader] ); ++reader, ++writer)
+	{
+		newstring[writer] = s[reader];
+
+		right = 0;
+
+		switch (c)
+		{
+			case '\n':
+				cx  =   0;
+				cxatstart = 0;
+				startwriter = 0;
+				break;
+			default:
+				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+					;
+				else
+				{
+					if (uppercase)
+					{
+						c = toupper(c);
+					}
+					else if (V_CharacterValid(font, c - font->start) == false)
+					{
+						// Try the other case if it doesn't exist
+						if (c >= 'A' && c <= 'Z')
+						{
+							c = tolower(c);
+						}
+						else if (c >= 'a' && c <= 'z')
+						{
+							c = toupper(c);
+						}
+					}
+
+					c -= font->start;
+					if (V_CharacterValid(font, c) == true)
+					{
+						cw = SHORT (font->font[c]->width) * dupx;
+
+						// How bunched dims work is by incrementing cx slightly less than a full character width.
+						// This causes the next character to be drawn overlapping the previous.
+						// We need to count the full width to get the rightmost edge of the string though.
+						right = cx + (cw * scale);
+
+						(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dupx, &cw);
+						cx += cw;
+					}
+					else
+					{
+						cx += fontspec.spacew;
+						cxatstart = cx;
+						startwriter = writer;
+					}
+				}
+		}
+
+		// Start trying to wrap if presumed length exceeds the space we have on-screen.
+		if (right && right > w)
+		{
+			if (startwriter != 0)
+			{
+				newstring[startwriter] = '\n';
+				cx -= cxatstart;
+				cxatstart = 0;
+				startwriter = 0;
+			}
+			else
+			{
+				if (sparenewlines == 0)
+				{
+					sparenewlines = (potentialnewlines *= 2);
+					newstring = Z_Realloc(newstring, len + sparenewlines, PU_STATIC, NULL);
+				}
+
+				sparenewlines--;
+				len++;
+
+				newstring[writer++] = '\n'; // Over-write previous
+				cx = cw; // Valid value in the only case right is currently set
+				newstring[writer] = s[reader]; // Re-add
+			}
+		}
+	}
+
+	newstring[writer] = '\0';
+
+	return newstring;
 }
 //
 

@@ -248,6 +248,8 @@ void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
 void K_ClearBoost(player_t *player);
 
+boolean K_NotFreePlay(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
