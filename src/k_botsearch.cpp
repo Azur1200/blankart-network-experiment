@@ -34,6 +34,8 @@
 #include "m_perfstats.h"
 #include "k_objects.h"
 
+#include "blan/b_soc.h"
+
 /*--------------------------------------------------
 	static BlockItReturn_t K_FindEggboxes(mobj_t *thing)
 
@@ -139,7 +141,7 @@ static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, con
 {
 	terrain_t *terrain = K_GetTerrainForFlatNum(flip ? sec->ceilingpic : sec->floorpic);
 
-	if (terrain != NULL)
+	if (terrain != NULL && B_UseTerrainDef())
 	{
 		if (terrain->damageType != SD_NONE)
 		{

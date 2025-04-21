@@ -1543,6 +1543,13 @@ void readlevelheader(MYFILE *f, char * name)
 				else
 					mapheaderinfo[num]->use_walltransfer = false;
 			}
+			else if (fastcmp(word, "TERRAIN") || fastcmp(word, "TERRAINDEF"))
+			{
+				if (i || word2[0] == 'T' || word2[0] == 'Y')
+					mapheaderinfo[num]->use_terrain = true;
+				else
+					mapheaderinfo[num]->use_terrain = false;
+			}
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
 				continue;

@@ -3173,7 +3173,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		}
 	}
 
-	if (mobj->terrain != NULL)
+	if (mobj->terrain != NULL && B_UseTerrainDef())
 	{
 		if (mobj->terrain->flags & TRF_LIQUID)
 		{
@@ -8351,7 +8351,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
@@ -8423,7 +8423,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
@@ -8453,7 +8453,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (grounded)
 				{
 					sector_t *sec2 = P_ThingOnSpecial3DFloor(mobj);
-					if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+					if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 						|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 						&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 						K_DoPogoSpring(mobj, 0, 1);

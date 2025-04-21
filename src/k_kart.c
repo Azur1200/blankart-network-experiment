@@ -63,6 +63,8 @@
 #include "k_follower.h"
 #include "k_grandprix.h"
 
+#include "blan/b_soc.h"
+
 consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerstacksound", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", CV_SAVE, CV_OnOff, NULL);
@@ -2107,7 +2109,7 @@ static void K_UpdateOffroad(player_t *player)
 	fixed_t offroadstrength = 0;
 
 	// TODO: Make this use actual special touch code.
-	if (terrain != NULL && terrain->offroad > 0)
+	if (terrain != NULL && terrain->offroad > 0 && B_UseTerrainDef())
 	{
 		offroadstrength = (terrain->offroad << FRACBITS);
 	}
@@ -3811,7 +3813,7 @@ fixed_t K_GetNewSpeed(player_t *player)
 		fixed_t minspeed = 24*hscale;
 		fixed_t maxspeed = 28*hscale;
 
-		if (player->mo->terrain)
+		if (player->mo->terrain && B_UseTerrainDef())
 		{
 			minspeed = player->mo->terrain->pogoSpringMin*hscale;
 			maxspeed = player->mo->terrain->pogoSpringMax*hscale;

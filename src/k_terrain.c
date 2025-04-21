@@ -31,6 +31,8 @@
 
 #include "k_kart.h" // on the chopping block...
 
+#include "blan/b_soc.h"
+
 static t_splash_t *splashDefs = NULL;
 static size_t numSplashDefs = 0;
 
@@ -564,6 +566,12 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 	if (mo->terrain == NULL)
 	{
 		// No terrain type.
+		return;
+	}
+
+	if (!B_UseTerrainDef())
+	{
+		// Terrain has been disabled for this map.
 		return;
 	}
 
@@ -1637,17 +1645,18 @@ static void K_TerrainDefaults(terrain_t *terrain)
 
 boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly)
 {
+	if (!B_UseTerrainDef())
+		return false;
+
 	if (terrain->friction > 0
 	|| terrain->offroad != 0
 	|| terrain->damageType != -1)
-	//|| (terrain->flags & TRF_STAIRJANK))
 		return true;
 
 	if (badonly)
 		return false;
 
 	return (terrain->friction != 0
-	//|| terrain->trickPanel != 0
 	|| terrain->speedPad != 0
 	|| terrain->springStrength != 0
 	|| terrain->flags != 0);

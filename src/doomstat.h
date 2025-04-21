@@ -441,7 +441,8 @@ struct mapheader_t
 	customoption_t *customopts;					///< Custom options. Allocated dynamically for space reasons. Be careful.
 
 	// BlanKart
-	boolean use_walltransfer;					///< Whether to use DRRR style wall transfering or not
+	boolean use_walltransfer;					///< Whether to use RR style wall transfering or not
+	boolean use_terrain;						///< Whether to use gameplay affecting Terrain effects or not (leaves visuals alone)
 };
 
 

@@ -106,6 +106,8 @@
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 
+#include "blan/b_soc.h"
+
 #include <tracy/tracy/TracyC.h>
 
 // Replay names have time
@@ -412,6 +414,7 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->typeoflevel = 0;
 	mapheaderinfo[num]->gravity = DEFAULT_GRAVITY;
 	mapheaderinfo[num]->use_walltransfer = false;
+	mapheaderinfo[num]->use_terrain = false;
 	mapheaderinfo[num]->keywords[0] = '\0';
 	for (int i = 0; i < MAXMUSNAMES; i++)
 		mapheaderinfo[num]->musname[i][0] = 0;
@@ -3450,7 +3453,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	sda = &sides[n];
 
 	terrain = K_GetTerrainForTextureNum(sda->midtexture);
-	terraintripwire = (terrain && (terrain->flags & TRF_TRIPWIRE));
+	terraintripwire = (B_UseTerrainDef() && terrain && (terrain->flags & TRF_TRIPWIRE));
 	tripwire = terraintripwire ? terraintripwire : ld->tripwire;
 
 	if (terraintripwire)
