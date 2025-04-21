@@ -603,6 +603,7 @@ struct player_t
 	UINT8 tripwireReboundDelay; // When failing Tripwire, brieftly lock out speed-based tripwire pass (anti-cheese)
 
 	UINT16 itemroulette;	// Used for the roulette when deciding what item to give you (was "pw_kartitem")
+	UINT16 previtemroulette;	// Used determining when to give rings after hitting item boxes
 	UINT16 itemblink;				// Item flashing after roulette, serves as a mashing indicator. Also prevents item from being stolen.
 	UINT16 itemblinkmode;			// Type of flashing: 0 = white (normal), 1 = red (mashing), 2 = rainbow (enhanced items)
 	UINT8 roulettetype;		// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)

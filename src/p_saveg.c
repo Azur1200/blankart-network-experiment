@@ -289,6 +289,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].tripwireReboundDelay);
 
 		WRITEUINT16(save->p, players[i].itemroulette);
+		WRITEUINT16(save->p, players[i].previtemroulette);
 		WRITEUINT16(save->p, players[i].itemblink);
 		WRITEUINT16(save->p, players[i].itemblinkmode);
 		WRITEUINT8(save->p, players[i].roulettetype);
@@ -605,6 +606,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].tripwireReboundDelay = READUINT8(save->p);
 
 		players[i].itemroulette = READUINT16(save->p);
+		players[i].previtemroulette = READUINT16(save->p);
 		players[i].itemblink = READUINT16(save->p);
 		players[i].itemblinkmode = READUINT16(save->p);
 		players[i].roulettetype = READUINT8(save->p);

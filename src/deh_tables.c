@@ -28,6 +28,7 @@
 #include "k_boss.h" // spottype_t (for lua)
 #include "k_follower.h" // followermode_t (for lua)
 #include "g_input.h" // Game controls (for lua)
+#include "k_kart.h" // awardscaledrings_t
 
 #include "deh_tables.h"
 
@@ -1484,6 +1485,21 @@ struct int_const_s const INT_CONST[] = {
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1}, // This is to trick kart luas that look for this since its already here.
 	{"FEATURE_VOTEHUD",1},
+
+	// tripwirestate_t
+	{"TRIPSTATE_NONE", TRIPSTATE_NONE},
+	{"TRIPSTATE_PASSED", TRIPSTATE_PASSED},
+	{"TRIPSTATE_BLOCKED", TRIPSTATE_BLOCKED},
+
+	// tripwirepass_t
+	{"TRIPWIRE_NONE", TRIPWIRE_NONE},
+	{"TRIPWIRE_IGNORE", TRIPWIRE_IGNORE},
+	{"TRIPWIRE_BOOST", TRIPWIRE_BOOST},
+	{"TRIPWIRE_BLASTER", TRIPWIRE_BLASTER},
+
+	// awardscaledrings_t
+	{"ASR_ITEMBOX", ASR_ITEMBOX},
+	{"ASR_SUPERRING", ASR_SUPERRING},
 
 	{NULL,0}
 };

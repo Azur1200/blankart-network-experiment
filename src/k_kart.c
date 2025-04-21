@@ -1599,7 +1599,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 4:
 	// Record Attack / alone mashing behavior
-	if ((modeattacking || pingame == 1) && ((gametyperules & GTR_RACEODDS) || (gametyperules & GTR_BATTLEODDS)))
+	if ((modeattacking || pingame == 1)
+		&& ((gametyperules & GTR_RACEODDS)
+		|| ((gametyperules & GTR_BATTLEODDS) && (itembreaker || bossinfo.boss))))
 	{
 		if ((gametyperules & GTR_RACEODDS))
 		{
@@ -7233,6 +7235,37 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 	player->ringboost = max(0, player->ringboost - finalringtimer);
 }
 
+// Handles the gaining of rings in a scaled way based on player position
+void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
+{
+	if (!player)
+	{
+		// There is no player here, don't award rings.
+		return;
+	}
+
+	if ((mode == ASR_ITEMBOX) && (K_RingsActive() == false))
+	{
+		// Rings aren't enabled
+		// (and this isn't a super ring)
+		// don't award rings.
+		return;
+	}
+
+	// Let Ring-less maps in on the rings fun as well!
+	SINT8 awardamount = (mode == ASR_SUPERRING) ? 15 : 10;
+	if (player->position == ASR_SUPERRING)
+	{
+		awardamount = (mode == ASR_SUPERRING) ? 5 : 3;
+	}
+	else if(!K_IsPlayerLosing(player))
+	{
+		awardamount = (mode == ASR_SUPERRING) ? 10 : 5;
+	}
+
+	K_AwardPlayerRings(player, awardamount, (mode == ASR_SUPERRING) ? true : false);
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -7634,6 +7667,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	// Roulette Code
 	K_KartItemRoulette(player, cmd);
+
+	// Gain rings when roulette starts.
+	if (player->itemroulette > 0 && player->previtemroulette == 0)
+	{
+		K_AwardScaledPlayerRings(player, ASR_ITEMBOX);
+	}
+
+	// set prev state for roulette gain effects
+	player->previtemroulette = player->itemroulette;
 
 	// Handle invincibility sfx
 	K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
@@ -10366,19 +10408,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_SUPERRING:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
-								SINT8 awardamount = 15;
-
 								player->itemamount--;
-								if (player->position == 1)
-								{
-									awardamount = 5;
-								}
-								else if(!K_IsPlayerLosing(player))
-								{
-									awardamount = 10;
-								}
-
-								K_AwardPlayerRings(player, awardamount, true);
+								K_AwardScaledPlayerRings(player, ASR_SUPERRING);
 								player->botvars.itemconfirm = 0;
 							}
 							break;

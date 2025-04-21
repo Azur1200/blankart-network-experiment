@@ -10698,22 +10698,6 @@ void A_ItemPop(mobj_t *actor)
 
 	}
 
-	// Let Ring-less maps in on the rings fun as well!
-	if ((K_RingsActive() == true) )
-	{
-		SINT8 awardamount = 10;
-		if (actor->target->player->position == 1)
-		{
-			awardamount = 3;
-		}
-		else if(!K_IsPlayerLosing(actor->target->player))
-		{
-			awardamount = 5;
-		}
-
-		K_AwardPlayerRings(actor->target->player, awardamount, false);
-	}
-
 	remains->flags2 &= ~MF2_AMBUSH;
 
 	// Here at mapload in battle?

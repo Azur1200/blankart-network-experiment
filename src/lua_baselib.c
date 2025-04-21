@@ -4094,6 +4094,107 @@ static int lib_kChainOrDeincrementTime(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetNewSpeed(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetNewSpeed(player));
+	return 1;
+}
+
+static int lib_k3dKartMovement(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	boolean onground = lua_optboolean(L, 2);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_3dKartMovement(player, onground));
+	return 1;
+}
+
+static int lib_kMomentumAngle(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	//HUDSAFE
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+	lua_pushinteger(L, K_MomentumAngle(mo));
+	return 1;
+}
+
+static int lib_kGetKartSpeedFromStat(lua_State *L)
+{
+	UINT16 kartspeed = luaL_checkinteger(L, 1);
+
+	//HUDSAFE
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed));
+	return 1;
+}
+
+static int lib_kKartKickstart(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, K_KartKickstart(player));
+	return 1;
+}
+
+static int lib_kGetKartButtons(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetKartButtons(player));
+	return 1;
+}
+
+static int lib_kGetForwardMove(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetForwardMove(player));
+	return 1;
+}
+
+static int lib_kAwardPlayerRings(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	UINT16 rings = luaL_checkinteger(L, 2);
+	boolean overload = lua_optboolean(L, 3);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AwardPlayerRings(player, rings, overload);
+	return 0;
+}
+
+static int lib_kAwardScaledPlayerRings(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	SINT8 mode = luaL_checkinteger(L, 2);
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_AwardScaledPlayerRings(player, mode);
+	return 0;
+}
+
 static int lib_getTimeMicros(lua_State *L)
 {
 	lua_pushinteger(L, I_GetPreciseTime() / (I_GetPrecisePrecision() / 1000000));
@@ -4404,7 +4505,15 @@ static luaL_Reg lib[] = {
 	{"K_ClearBoost",lib_kClearBoost},
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
-
+	{"K_GetNewSpeed", lib_kGetNewSpeed},
+	{"K_3dKartMovement", lib_k3dKartMovement},
+	{"K_MomentumAngle", lib_kMomentumAngle},
+	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},
+	{"K_KartKickstart", lib_kKartKickstart},
+	{"K_GetKartButtons", lib_kGetKartButtons},
+	{"K_GetForwardMove", lib_kGetForwardMove},
+	{"K_AwardPlayerRings", lib_kAwardPlayerRings},
+	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},

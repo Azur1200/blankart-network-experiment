@@ -2478,6 +2478,10 @@ static void K_drawKartWanted(void)
 			basey += 16; // slight adjust for 3P
 			basex -= 6;
 		}
+		else if (!r_splitscreen)
+		{
+			basex -= 48;
+		}
 	}
 	else if (r_splitscreen == 3) // 4P splitscreen...
 	{
@@ -4620,7 +4624,7 @@ void K_drawKartHUD(void)
 				K_drawRingMeter();
 			}
 
-			if ((cv_showinput.value > 0) || (modeattacking && !bossinfo.boss))
+			if (cv_showinput.value > 0)
 			{
 				// Draw the input UI
 				if (LUA_HudEnabled(hud_position))
