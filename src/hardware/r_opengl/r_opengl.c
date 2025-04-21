@@ -3233,6 +3233,7 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 
 	pglDisable(GL_DEPTH_TEST);
 	pglDisable(GL_BLEND);
+	pglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
 	// const float blackBack[16]
 
@@ -3242,9 +3243,9 @@ EXPORT void HWRAPI(PostImgRedraw) (float points[SCREENVERTS][SCREENVERTS][2])
 
 	pglVertexPointer(3, GL_FLOAT, 0, blackBack);
 	pglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
 	pglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-	for(x=0;x<SCREENVERTS-1;x++)
+
+	for(x = 0; x < SCREENVERTS-1;x ++)
 	{
 		for(y=0;y<SCREENVERTS-1;y++)
 		{
@@ -3458,8 +3459,6 @@ EXPORT void HWRAPI(DoScreenWipe)(void)
 	pglBindTexture(GL_TEXTURE_2D, fademaskdownloaded);
 
 	pglTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	// const float defaultST[8]
 
 	pglClientActiveTexture(GL_TEXTURE0);
 	pglTexCoordPointer(2, GL_FLOAT, 0, fix);
