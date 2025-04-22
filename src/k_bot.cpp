@@ -405,7 +405,7 @@ static fixed_t K_BotSpeedScaled(const player_t *player, fixed_t speed)
 {
 	fixed_t result = speed;
 
-	if (P_IsObjectOnGround(player->mo) == false)
+	if (!player->pogospring && P_IsObjectOnGround(player->mo) == false)
 	{
 		// You have no air control, so don't predict too far ahead.
 		return 0;
