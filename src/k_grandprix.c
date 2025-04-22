@@ -654,7 +654,7 @@ void K_RetireBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (usableskins >= K_GetGPPlayerCount(1))
+				if (((cv_ingamecap.value > 0) && (usableskins+1 >= cv_ingamecap.value)) || (usableskins+1 >= cv_maxplayers.value))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}
