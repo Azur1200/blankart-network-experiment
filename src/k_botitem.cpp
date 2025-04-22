@@ -1356,14 +1356,29 @@ static void K_BotItemRings(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
+	if (!player->pogospring && P_IsObjectOnGround(player->mo) == false)
 	{
 		// Don't use while mid-air.
 		return;
 	}
 
+	if (K_ChainingActive())
+	{
+		if (((player->sneakertimer > 0) && player->sneakertimer <= (sneakertime/3))
+			|| ((player->driftboost > 0) && player->driftboost <= 20))
+		{
+			// Chain your boost with some rings for extra fun.
+			saferingsval -= 5;
+		}
+		else if ((player->startboost > 0) && player->startboost <= 20)
+		{
+			// Start Boost chains have a different threshold.
+			saferingsval -= 2;
+		}
+	}
+
 	if (player->speed < (K_GetKartSpeed(player, false, true) * 9) / 10 // Being slowed down too much
-		|| player->speedboost > (FRACUNIT/5)) // Have another type of boost (tethering)
+		|| player->speedboost > (FRACUNIT/5)) // Have another type of boost
 	{
 		saferingsval -= 5;
 	}

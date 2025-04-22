@@ -5533,6 +5533,8 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 					thrust = FixedMul(thrust, 5*FRACUNIT/4);
 				else if (mo->player->invincibilitytimer)
 					thrust = FixedMul(thrust, 9*FRACUNIT/8);
+				else if (mo->player->flamestore)
+					thrust = FixedMul(thrust, 9*FRACUNIT/8);
 			}
 		}
 		else
