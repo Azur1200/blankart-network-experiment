@@ -738,6 +738,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 static void P_NetArchiveParties(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, k;
 	UINT8 partySize;
 
@@ -757,10 +759,14 @@ static void P_NetArchiveParties(savebuffer_t *save)
 			WRITEUINT8(save->p, G_PartyMember(i, k));
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveParties(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, k;
 	UINT8 partySize;
 
@@ -772,6 +778,7 @@ static void P_NetUnArchiveParties(savebuffer_t *save)
 		if (!playeringame[i])
 			continue;
 
+		G_DestroyParty(i);
 		G_BuildLocalSplitscreenParty(i);
 	}
 
@@ -787,6 +794,8 @@ static void P_NetUnArchiveParties(savebuffer_t *save)
 			G_JoinParty(i, READUINT8(save->p));
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 ///
