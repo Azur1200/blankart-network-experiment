@@ -426,8 +426,8 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 {
 	//B  C  D  E  F  G  H  I
-	{ 0, 0, 4, 6, 7, 0, 0, 0 }, // Sneaker
-	{ 0, 0, 0, 0, 1, 4, 6, 3 }, // Rocket Sneaker
+	{ 0, 0, 4, 5, 3, 0, 0, 0 }, // Sneaker
+	{ 0, 0, 0, 0, 2, 5, 8, 5 }, // Rocket Sneaker
 	{ 0, 0, 0, 0, 1, 4, 6,10 }, // Invincibility
 	{ 9, 4, 2, 1, 0, 0, 0, 0 }, // Banana
 	{ 3, 2, 1, 0, 0, 0, 0, 0 }, // Eggman Monitor
@@ -445,10 +445,10 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 	{ 1, 2, 2, 0, 0, 0, 0, 0 }, // Super Ring
 	{ 3, 0, 0, 0, 0, 0, 0, 0 }, // Land Mine
 	{ 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
-	{ 0, 0, 0, 0, 0, 2, 4, 5 }, // Flame Shield
+	{ 0, 0, 0, 0, 2, 5, 5, 0 }, // Flame Shield
 	{ 1, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
-	{ 0, 0, 2, 2, 2, 0, 0, 0 }, // Sneaker x2
-	{ 0, 0, 0, 1, 6,10, 5, 0 }, // Sneaker x3
+	{ 0, 0, 4, 3, 4, 0, 0, 0 }, // Sneaker x2
+	{ 0, 0, 0, 1, 5, 6, 3, 0 }, // Sneaker x3
 	{ 0, 1, 1, 0, 0, 0, 0, 0 }, // Banana x3
 	{ 0, 0, 0, 1, 0, 0, 0, 0 }, // Banana x10
 	{ 0, 0, 1, 0, 0, 0, 0, 0 }, // Orbinaut x3
