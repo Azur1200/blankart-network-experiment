@@ -3459,6 +3459,28 @@ void K_ClearBoost(player_t *player)
 	player->boostinfo.grade = 0;
 }
 
+static fixed_t K_RingDurationBoost(const player_t *player)
+{
+	fixed_t ret = FRACUNIT;
+
+	if (K_PlayerUsesBotMovement(player))
+	{
+		// x1.125 for Lv. 9
+		const fixed_t modifier = K_BotMapModifier();
+		fixed_t add = (((player->botvars.difficulty-1) * modifier)/8) / (DIFFICULTBOT-1);
+
+		ret += add;
+	}
+
+	if (player->botvars.rival == true)
+	{
+		// + x1.125 for Rival
+		ret += FRACUNIT/8;
+	}
+
+	return ret;
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -8811,12 +8833,11 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 
 INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 {
-	INT32 ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) / 2;
+	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
 
-	if (boosted == true && K_PlayerUsesBotMovement(player))
+	if (boosted == true)
 	{
-		// 1.5x for Lv. 9
-		ringPower += ((player->botvars.difficulty * ringPower) /2) / DIFFICULTBOT;
+		ringPower = FixedMul(ringPower, K_RingDurationBoost(player));
 	}
 
 	if (player->kartspeed == 9 && player->kartweight == 9)
@@ -8825,7 +8846,7 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 		ringPower += 1;
 	}
 
-	return ringPower;
+	return max(ringPower / FRACUNIT, 1);
 }
 
 // Returns false if this player being placed here causes them to collide with any other player
