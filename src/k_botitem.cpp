@@ -1364,7 +1364,7 @@ static void K_BotItemRings(player_t *player, ticcmd_t *cmd)
 
 	if (K_ChainingActive())
 	{
-		if (((player->sneakertimer > 0) && player->sneakertimer <= (sneakertime/3))
+		if (((player->sneakertimer > 0) && player->sneakertimer <= (sneakertime/2))
 			|| ((player->driftboost > 0) && player->driftboost <= 20))
 		{
 			// Chain your boost with some rings for extra fun.
