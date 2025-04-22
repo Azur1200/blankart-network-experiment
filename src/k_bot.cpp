@@ -702,13 +702,6 @@ fixed_t K_BotRubberband(const player_t *player)
 		scaled_dist = FixedDiv(scaled_dist, mapobjectscale);
 	}
 
-	constexpr UINT32 END_DIST = 2048 * 14;
-	if (scaled_dist < END_DIST)
-	{
-		// At the end of tracks, start slowing down.
-		rubberband = FixedMul(rubberband, FixedDiv(scaled_dist, END_DIST));
-	}
-
 	return Easing_Linear(rubberband, rubberSlow, rubberFast);
 }
 
