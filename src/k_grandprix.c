@@ -548,7 +548,7 @@ void K_RetireBots(void)
 	const UINT8 defaultbotskin = K_BotDefaultSkin();
 	SINT8 newDifficulty;
 
-	UINT8 usableskins, skincount =  numskins;
+	UINT8 usableskins = 0, skincount =  numskins;
 	UINT8 grabskins[MAXSKINS+1];
 
 	UINT8 i;
@@ -562,30 +562,25 @@ void K_RetireBots(void)
 	}
 
 	// Init usable bot skins list
-	for (usableskins = 0; usableskins < skincount; usableskins++)
+	for (i = 0; i < skincount; i++)
 	{
-		grabskins[usableskins] = usableskins;
+		grabskins[usableskins++] = i;
 	}
 	grabskins[usableskins] = MAXSKINS;
-
-	// Exclude player skins
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i])
-			continue;
-		if (players[i].spectator)
-			continue;
-
-		grabskins[players[i].skin] = MAXSKINS;
-	}
 
 	// Rearrange usable bot skins list to prevent gaps for randomised selection
 	for (i = 0; i < usableskins; i++)
 	{
 		if (!(grabskins[i] == MAXSKINS || !R_SkinUsable(-1, grabskins[i])))
+		{
 			continue;
+		}
+
 		while (usableskins > i && (grabskins[usableskins] == MAXSKINS || !R_SkinUsable(-1, grabskins[usableskins])))
+		{
 			usableskins--;
+		}
+
 		grabskins[i] = grabskins[usableskins];
 		grabskins[usableskins] = MAXSKINS;
 	}
@@ -654,7 +649,7 @@ void K_RetireBots(void)
 			{
 				UINT8 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (((cv_ingamecap.value > 0) && (usableskins+1 >= cv_ingamecap.value)) || (usableskins+1 >= cv_maxplayers.value))
+				if (usableskins+1 >= K_GetGPPlayerCount(1))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}

@@ -664,35 +664,6 @@ void Y_IntermissionDrawer(void)
 
 				y2 = y;
 
-				if ((netgame || (demo.playback && demo.netgame)) && playerconsole[data.num[i]] == 0 && server_lagless && !players[data.num[i]].bot)
-				{
-					static int alagles_timer = 0;
-					patch_t *alagles;
-
-					y2 = ( y - 4 );
-
-					V_DrawScaledPatch(x + 36, y2, 0, W_CachePatchName(va("BLAGLES%d", (intertic / 3) % 6), PU_CACHE));
-					// every 70 tics
-					if (( leveltime % 70 ) == 0)
-					{
-						alagles_timer = 9;
-					}
-					if (alagles_timer > 0)
-					{
-						alagles = W_CachePatchName(va("ALAGLES%d", alagles_timer), PU_CACHE);
-						V_DrawScaledPatch(x + 36, y2, 0, alagles);
-						if (( leveltime % 2 ) == 0)
-							alagles_timer--;
-					}
-					else
-					{
-						alagles = W_CachePatchName("ALAGLES0", PU_CACHE);
-						V_DrawScaledPatch(x + 36, y2, 0, alagles);
-					}
-
-					y2 += SHORT (alagles->height) + 1;
-				}
-
 				if (data.numplayers > NUMFORNEWCOLUMN)
 					V_DrawThinString(x+36, y2-1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else
