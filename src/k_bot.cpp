@@ -510,7 +510,12 @@ const botcontroller_t *K_GetBotController(mobj_t *mobj)
 fixed_t K_BotMapModifier(void)
 {
 	constexpr INT32 complexity_scale = 10000;
-	constexpr fixed_t modifier_max = FRACUNIT * 2;
+	fixed_t modifier_max = cv_kartbot_modifiermax.value;
+
+	if (K_CanChangeRules() == false)
+	{
+		modifier_max = FRACUNIT;
+	}
 
 	const fixed_t complexity_value = std::clamp<fixed_t>(
 		FixedDiv(K_GetTrackComplexity(), complexity_scale),

@@ -252,6 +252,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartspeedometer);
 	CV_RegisterVar(&cv_kartvoices);
 	CV_RegisterVar(&cv_kartbot);
+	CV_RegisterVar(&cv_kartbot_modifiermax);
 	CV_RegisterVar(&cv_forcebots);
 	CV_RegisterVar(&cv_botcontrol);
 	CV_RegisterVar(&cv_karteliminatelast);
@@ -426,7 +427,7 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 {
 	//B  C  D  E  F  G  H  I
-	{ 0, 0, 4, 5, 3, 0, 0, 0 }, // Sneaker
+	{ 0, 0, 3, 3, 2, 0, 0, 0 }, // Sneaker
 	{ 0, 0, 0, 0, 2, 5, 8, 5 }, // Rocket Sneaker
 	{ 0, 0, 0, 0, 1, 4, 6,10 }, // Invincibility
 	{ 9, 4, 2, 1, 0, 0, 0, 0 }, // Banana
@@ -447,7 +448,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 	{ 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
 	{ 0, 0, 0, 0, 2, 5, 5, 0 }, // Flame Shield
 	{ 1, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
-	{ 0, 0, 4, 3, 4, 0, 0, 0 }, // Sneaker x2
+	{ 0, 0, 3, 4, 3, 0, 0, 0 }, // Sneaker x2
 	{ 0, 0, 0, 1, 5, 6, 3, 0 }, // Sneaker x3
 	{ 0, 1, 1, 0, 0, 0, 0, 0 }, // Banana x3
 	{ 0, 0, 0, 1, 0, 0, 0, 0 }, // Banana x10
@@ -489,8 +490,8 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 5, 1 }  // Jawz x2
 };
 
-#define DISTVAR (2048) // Magic number distance for use with item roulette tiers
-#define SPBSTARTDIST (5*DISTVAR) // Distance when SPB is forced onto 2nd place
+#define DISTVAR (1280) // Magic number distance for use with item roulette tiers
+#define SPBSTARTDIST (5*DISTVAR) // Distance when SPB can start appearing
 #define SPBFORCEDIST (15*DISTVAR) // Distance when SPB is forced onto 2nd place
 #define ENDDIST (12*DISTVAR) // Distance when the game stops giving you bananas
 
@@ -1166,8 +1167,6 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 	return useodds;
 }
 
-
-
 INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb)
 {
 	SINT8 sortedPlayers[MAXPLAYERS];
@@ -1557,8 +1556,6 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (player->roulettetype == 2)
 	{
 		player->eggmanexplode = 4*TICRATE;
-		//player->itemblink = TICRATE;
-		//player->itemblinkmode = 1;
 		player->itemroulette = 0;
 		player->roulettetype = 0;
 		if (P_IsDisplayPlayer(player))
@@ -3680,12 +3677,6 @@ fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberb
 		const fixed_t modifier = K_BotMapModifier();
 		fixed_t add = ((player->botvars.difficulty-1) * FixedMul(FRACUNIT / 10, modifier)) / (DIFFICULTBOT-1);
 		finalspeed = FixedMul(finalspeed, FRACUNIT + add);
-
-		if (player->bot && player->botvars.rival)
-		{
-			// +10% top speed for the rival
-			finalspeed = FixedMul(finalspeed, 11*FRACUNIT/10);
-		}
 	}
 
 	if (dorubberband == true && player->botvars.rubberband < FRACUNIT && K_PlayerUsesBotMovement(player) == true)
@@ -8824,8 +8815,8 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 
 	if (boosted == true && K_PlayerUsesBotMovement(player))
 	{
-		// Double for Lv. 9
-		ringPower += (player->botvars.difficulty * ringPower) / DIFFICULTBOT;
+		// 1.5x for Lv. 9
+		ringPower += ((player->botvars.difficulty * ringPower) /2) / DIFFICULTBOT;
 	}
 
 	if (player->kartspeed == 9 && player->kartweight == 9)
