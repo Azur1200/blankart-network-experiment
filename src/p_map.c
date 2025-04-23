@@ -257,7 +257,7 @@ P_DoSpringEx
 {
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
 	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
-	
+
 	object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
 	object->terrain = NULL;
 
@@ -365,7 +365,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
 		}
 	}
-	
+
 	// Re-solidify
 	spring->flags |= (spring->info->flags & (MF_SPECIAL|MF_SOLID));
 
@@ -2534,13 +2534,13 @@ increment_move
 
 	// reset this to 0 at the start of each trymove call as it's only used here
 	numspechitint = 0U;
-	// This makes sure that there are no freezes from computing extremely small movements.
-	// Originally was MAXRADIUS/2, but that can cause some bad inconsistencies for small players.
-	radius = max(radius, thing->scale);
 
-	// And we also have to prevent Big Large (tm) movements, as those can skip too far
-	// across slopes and cause us to fail step up checks on them when we otherwise shouldn't.
-	radius = min(radius, 16 * thing->scale);
+	// This makes sure that there are no freezes from computing extremely small movements.
+	// Originally was MAXRADIUS/2, but that causes some inconsistencies for small players.
+	radius = max(radius, mapobjectscale);
+
+	// And Big Large (tm) movements can skip over slopes.
+	radius = min(radius, 16*mapobjectscale);
 
 	// (This whole "step" system is flawed; it was OK before, but the addition of slopes has
 	// exposed the problems with doing it like this. The right thing to do would be to use
@@ -3709,7 +3709,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
-	
+
 	if (!cv_kartbumpspark.value || modeattacking != ATTACKING_NONE)
 	{
 		mo->player->drift = 0;
