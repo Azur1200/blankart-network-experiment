@@ -7202,10 +7202,7 @@ static INT32 statrangemap(UINT8 kartspeed, UINT8 kartweight)
     fixed_t result = 4*FRACUNIT - (FixedMul(scaled_input, 2*FRACUNIT));
 
     // Stay within range please!
-    if (result < 2*FRACUNIT)
-		result = 2*FRACUNIT;
-    if (result > 4*FRACUNIT)
-		result = 4*FRACUNIT;
+	result = CLAMP(result, 2*FRACUNIT, 4*FRACUNIT);
 
 	result = result >> FRACBITS;
 
