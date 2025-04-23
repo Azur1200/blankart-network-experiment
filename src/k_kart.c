@@ -8661,16 +8661,21 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 
 void K_SetRespawnAtNextWaypoint(player_t * player)
 {
-	mobj_t *currentwaypoint = player->currentwaypoint->mobj;
-	mobj_t *safewaypoint = player->nextwaypoint->mobj;
-	angle_t respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+	mobj_t *currentwaypoint;
+	mobj_t *safewaypoint;
+	angle_t respawnangle;
 
 	// Safety :P
-	if (!safewaypoint || !currentwaypoint)
+	if (!player->currentwaypoint || !player->nextwaypoint)
 	{
 		// Better safe then sorry.
+		CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
 		return;
 	}
+
+	currentwaypoint = player->currentwaypoint->mobj;
+	safewaypoint = player->nextwaypoint->mobj;
+	respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
 
 	player->pflags |= PF_TRUSTWAYPOINTS;
 	player->starposttime = player->realtime;
