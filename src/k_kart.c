@@ -9805,7 +9805,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->itemflags &= ~IF_USERINGS;
 	}
 
-	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && !(player->exiting || mapreset) && leveltime > introtime)
+	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset) && leveltime > introtime)
 	{
 		// First, the really specific, finicky items that function without the item being directly in your item slot.
 		{
@@ -9939,11 +9939,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								K_DropHnextList(player, false);
 							}
 
-							/*if (!onground && (leveltime % 8))
+							/*if (!onground)
 							{
 								P_Thrust(
-									player->mo, K_MomentumAngle(player->mo),
-									mapobjectscale
+									player->mo, player->mo->angle,
+									FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
 								);
 							}*/
 						}
