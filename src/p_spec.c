@@ -4993,7 +4993,7 @@ boolean P_IsPlayerValid(size_t playernum)
 
 boolean P_CanPlayerTrigger(size_t playernum)
 {
-	return P_IsPlayerValid(playernum) && !players[playernum].bot;
+	return P_IsPlayerValid(playernum);
 }
 
 /// \todo check continues for proper splitscreen support?
