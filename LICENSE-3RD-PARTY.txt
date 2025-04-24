@@ -17,6 +17,16 @@
           Copyright (c) 2010, The WebM Project authors. All rights reserved.
           All rights reserved.
           https://chromium.googlesource.com/webm/libvpx
+        - Tracy
+          Copyright (c) 2017-2025, Bartosz Taudul <wolf@nereid.pl>
+          All rights reserved.
+          https://github.com/wolfpld/tracy
+        - OpenMPT
+          Copyright (c) 2004-2025, OpenMPT Project Developers and Contributors
+          Copyright (c) 1997-2003, Olivier Lapicque
+          All rights reserved.
+          https://source.openmpt.org/
+
 --------------------------------------------------------------------------------
 
 Redistribution and use in source and binary forms, with or without
@@ -41,6 +51,26 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------------
+                        0-Clause BSD License
+        applies to:
+        - qs22j
+          Copyright (c) 2022, Raymond Gardner
+          https://github.com/raygard/qsort_dev
+--------------------------------------------------------------------------------
+
+Permission to use, copy, modify, and/or distribute this software for
+any purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED “AS IS” AND THE AUTHOR DISCLAIMS ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE
+FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY
+DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN
+AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 --------------------------------------------------------------------------------
                         curl License
