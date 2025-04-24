@@ -694,6 +694,27 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			player->pickuprings++;
 
 			return;
+		case MT_COIN:
+		case MT_FLINGCOIN:
+			if (!(P_CanPickupItem(player, 0)))
+				return;
+
+			special->momx = special->momy = 0;
+			P_GivePlayerRings(player, 1);
+			break;
+		case MT_BLUEBALL:
+			if (!(P_CanPickupItem(player, 0)))
+				return;
+
+			P_GivePlayerRings(player, 1);
+
+			special->momx = special->momy = special->momz = 0;
+			special->destscale = FixedMul(8*FRACUNIT, special->scale);
+			if (states[special->info->deathstate].tics > 0)
+				special->scalespeed = FixedDiv(FixedDiv(special->destscale, special->scale), states[special->info->deathstate].tics<<FRACBITS);
+			else
+				special->scalespeed = 4*FRACUNIT/5;
+			break;
 		// Special Stage Token
 		case MT_EMMY:
 			if (player->bot)

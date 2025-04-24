@@ -7286,7 +7286,6 @@ static void P_ConvertBinaryThingTypes(void)
 		case 1105: //Chain with maces spawnpoint
 		case 1106: //Chained spring spawnpoint
 		case 1107: //Chain spawnpoint
-		case 1109: //Firebar spawnpoint
 		case 1110: //Custom mace spawnpoint
 		{
 			mtag_t tag = (mtag_t)mapthings[i].angle;

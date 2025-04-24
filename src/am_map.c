@@ -1300,7 +1300,7 @@ static inline void AM_drawSpecialThingsOnly(UINT8 colors)
 			|| t->type == MT_PAPERITEMSPOT
 			//|| t->type == MT_OVERTIME_CENTER
 			|| t->type == MT_RING
-			|| t->type == MT_BLUESPHERE
+			|| t->type == MT_BLUEBALL
 			|| t->type == MT_WAYPOINT
 			|| t->type == MT_ITEMCAPSULE
 			|| t->flags & MF_SPRING)

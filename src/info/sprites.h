@@ -36,6 +36,7 @@ _(GSNP) // Green Snapper
 _(MNUS) // Minus
 _(SSHL) // Spring Shell
 _(UNID) // Unidus
+_(BBUZ) // AquaBuzz, for Azure Temple
 
 // Generic Boss Items
 _(JETF) // Boss jet fumes
@@ -46,12 +47,14 @@ _(EGLZ) // Boss 1 Junk
 
 // Boss 2 (Techno Hill)
 _(EGGN) // Boss 2
-_(TANK) // Boss 2 Junk
+_(TNKA) // Boss 2 Tank 1
+_(TNKB) // Boss 2 Tank 2
+_(SPNK) // Boss 2 Spigot
 _(GOOP) // Boss 2 Goop
 
 // Boss 3 (Deep Sea)
 _(EGGO) // Boss 3
-_(SEBH) // Boss 3 Junk
+_(PRPL) // Boss 3 Propeller
 _(FAKE) // Boss 3 Fakemobile
 _(SHCK) // Boss 3 Shockwave
 
@@ -97,7 +100,6 @@ _(NCHP) // NiGHTS chip
 _(NSTR) // NiGHTS star
 _(EMBM) // Emblem
 _(CEMG) // Chaos Emeralds
-_(SHRD) // Emerald Hunt
 
 // Interactive Objects
 _(BBLS) // water bubble source
@@ -179,8 +181,6 @@ _(SMCE) // Small Mace
 _(BMCE) // Big Mace
 _(YSPB) // Yellow spring on a ball
 _(RSPB) // Red spring on a ball
-_(SFBR) // Small Firebar
-_(BFBR) // Big Firebar
 
 // Arid Canyon Scenery
 _(BTBL) // Big tumbleweed
@@ -259,6 +259,8 @@ _(FL16) // Canary
 _(FS01) // Spider
 _(FS02) // Bat
 
+_(EMER)
+
 // Springs
 _(FANS) // Fan
 _(STEM) // Steam riser
@@ -271,7 +273,6 @@ _(SPRG) // Grey Vertical Spring
 _(YSPR) // Yellow Diagonal Spring
 _(RSPR) // Red Diagonal Spring
 _(BSPR) // Blue Diagonal Spring
-_(GSPR) // Grey Diagonal Spring
 _(SSWY) // Yellow Horizontal Spring
 _(SSWR) // Red Horizontal Spring
 _(SSWB) // Blue Horizontal Spring
@@ -302,9 +303,6 @@ _(LCKN) // Target
 _(TTAG) // Tag Sign
 _(GFLG) // Got Flag sign
 _(FNSF) // Finish flag
-
-_(CORK)
-_(LHRT)
 
 // Ring Weapons
 _(RRNG) // Red Ring
@@ -589,6 +587,7 @@ _(SNOB)
 _(ICEB)
 
 // Ezo's maps - many single-use sprites!
+_(CNDL)
 _(ECND)
 _(DOCH)
 _(DUCK)

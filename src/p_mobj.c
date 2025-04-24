@@ -1183,7 +1183,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 			{
 				case MT_FLINGRING:
 				case MT_FLINGCOIN:
-				case MT_FLINGBLUESPHERE:
 				case MT_FLINGNIGHTSCHIP:
 				case MT_FLINGEMERALD:
 				case MT_BOUNCERING:
@@ -2260,8 +2259,7 @@ boolean P_ZMovement(mobj_t *mo)
 			break;
 
 		case MT_RING: // Ignore still rings
-		case MT_BLUESPHERE:
-		case MT_FLINGRING:
+		case MT_BLUEBALL:
 			// Remove flinged stuff from death pits.
 			if (P_CheckDeathPitCollide(mo))
 			{
@@ -6996,9 +6994,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		break;
 	case MT_MACEPOINT:
 	case MT_CHAINMACEPOINT:
-	case MT_SPRINGBALLPOINT:
 	case MT_CHAINPOINT:
-	case MT_FIREBARPOINT:
 	case MT_CUSTOMMACEPOINT:
 	case MT_HIDDEN_SLING:
 		P_MaceSceneryThink(mobj);
@@ -7740,6 +7736,12 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 {
 	switch (mobj->type)
 	{
+	case MT_BLUEBALL:
+		if ((mobj->tics>>2)+1 > 0 && (mobj->tics>>2)+1 <= tr_trans60) // tr_trans50 through tr_trans90, shifting once every second frame
+			mobj->frame = (NUMTRANSMAPS-((mobj->tics>>2)+1))<<FF_TRANSSHIFT;
+		else // tr_trans60 otherwise
+			mobj->frame = tr_trans60<<FF_TRANSSHIFT;
+		break;
 	case MT_PLAYER:
 		/// \todo Have the player's dead body completely finish its animation even if they've already respawned.
 
@@ -10338,7 +10340,6 @@ void P_MobjThinker(mobj_t *mobj)
 	// Sliding physics for slidey mobjs!
 	if (mobj->type == MT_FLINGRING
 		|| mobj->type == MT_FLINGCOIN
-		|| mobj->type == MT_FLINGBLUESPHERE
 		|| mobj->type == MT_FLINGNIGHTSCHIP
 		|| mobj->type == MT_FLINGEMERALD
 		|| mobj->type == MT_BIGTUMBLEWEED
@@ -10658,7 +10659,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_RING:
 		case MT_FLINGRING:
 		case MT_FLOATINGITEM:
-		case MT_BLUESPHERE:
+		case MT_BLUEBALL:
 		case MT_ITEMCAPSULE:
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
@@ -10939,11 +10940,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			mobj->color = skincolor_blueteam;
 			break;
 		case MT_RING:
+		case MT_COIN:
+		case MT_BLUEBALL:
 			if (nummaprings >= 0)
 				nummaprings++;
-			break;
-		case MT_CORK:
-			mobj->flags2 |= MF2_SUPERFIRE;
 			break;
 		// SRB2Kart
 		case MT_ITEMCAPSULE:
@@ -11317,7 +11317,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	// Rings only, please!
 	if (mobj->spawnpoint &&
 		(mobj->type == MT_RING
-		|| mobj->type == MT_BLUESPHERE)
+		|| mobj->type == MT_BLUEBALL)
 		&& !(mobj->flags2 & MF2_DONTRESPAWN))
 	{
 		//CONS_Printf("added to queue at tic %d\n", leveltime);
@@ -12247,18 +12247,11 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	// Objects with a non-zero default height.
 	// (None yet)
 
-	// Horizontal springs, float additional units unless args[0] is set.
-	case MT_YELLOWHORIZ:
-	case MT_REDHORIZ:
-	case MT_BLUEHORIZ:
-		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
-		break;
-
 	// Ring-like items, float additional units unless args[0] is set.
 	case MT_SPIKEBALL:
 	case MT_EMBLEM:
 	case MT_RING:
-	case MT_BLUESPHERE:
+	case MT_BLUEBALL:
 	case MT_EMMY:
 		offset += mthing->args[0] ? 0 : 24*FRACUNIT;
 		break;
@@ -12396,6 +12389,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 			}
 			break;
 		case MT_COIN:
+		case MT_BLUEBALL:
 			{
 				if (gametype == GT_RACE || gametype == GT_BATTLE) // they don't spawn in kart so I guess i'll do this?
 					return false;
@@ -12542,18 +12536,6 @@ static boolean P_SetupMace(mapthing_t *mthing, mobj_t *mobj, boolean *doangle)
 	// Mobjtype selection
 	switch (mobj->type)
 	{
-	case MT_SPRINGBALLPOINT:
-		macetype = ((mthing->args[8] & TMM_DOUBLESIZE)
-			? MT_REDSPRINGBALL
-			: MT_YELLOWSPRINGBALL);
-		chainlink = MT_SMALLMACECHAIN;
-		break;
-	case MT_FIREBARPOINT:
-		macetype = ((mthing->args[8] & TMM_DOUBLESIZE)
-			? MT_BIGFIREBAR
-			: MT_SMALLFIREBAR);
-		chainlink = MT_NULL;
-		break;
 	case MT_CUSTOMMACEPOINT:
 		macetype = mthing->stringargs[0] ? get_number(mthing->stringargs[0]) : MT_NULL;
 		chainlink = mthing->stringargs[1] ? get_number(mthing->stringargs[1]) : MT_NULL;
@@ -12616,7 +12598,7 @@ static boolean P_SetupMace(mapthing_t *mthing, mobj_t *mobj, boolean *doangle)
 		mobj->flags2 |= MF2_BOSSNOTRAP;
 
 	// Make the links the same type as the end - repeated below
-	if ((mobj->type != MT_CHAINPOINT) && (((mthing->args[8] & TMM_MACELINKS) == TMM_MACELINKS) != (mobj->type == MT_FIREBARPOINT))) // exclusive or
+	if ((mobj->type != MT_CHAINPOINT) && ((mthing->args[8] & TMM_MACELINKS) == TMM_MACELINKS)) // exclusive or
 	{
 		linktype = macetype;
 		radiusfactor = 2; // Double the radius.
@@ -12967,9 +12949,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 	case MT_MACEPOINT:
 	case MT_CHAINMACEPOINT:
-	case MT_SPRINGBALLPOINT:
 	case MT_CHAINPOINT:
-	case MT_FIREBARPOINT:
 	case MT_CUSTOMMACEPOINT:
 		if (!P_SetupMace(mthing, mobj, doangle))
 			return false;
@@ -13305,10 +13285,9 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_REDDIAG:
 	case MT_YELLOWDIAG:
 	case MT_BLUEDIAG:
-	case MT_GREYDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
-	case MT_GREYSPRING:
+	case MT_GRAYSPRING:
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{
