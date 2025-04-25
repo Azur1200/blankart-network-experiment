@@ -1083,7 +1083,6 @@ static INT32 K_BotStartDrift(player_t* player)
 	// Handle DRIFTING towards waypoints!
 	boolean shouldDrift;
 	fixed_t botDriftSpeed, distToNext;
-	vector3_t pvec;
 	INT32 driftsetting, turnamt;
 
 	if ((!(player->currentwaypoint)) || 
@@ -1092,10 +1091,6 @@ static INT32 K_BotStartDrift(player_t* player)
 		// No waypoints, nothing we can do here.
 		return 0;
 	}
-
-	pvec.x = player->mo->x;
-	pvec.y = player->mo->y;
-	pvec.z = player->mo->z;
 
 	turnamt = 0;
 	driftsetting = player->currentwaypoint->driftsettings;
@@ -1115,25 +1110,16 @@ static INT32 K_BotStartDrift(player_t* player)
 			(botDriftSpeed <= player->speed))
 		{
 			{
-				vector3_t v1, v2;
-				vector3_t dirvec, crossvec, distToPoint;
-	
-				K_WaypointGetDirectionVector(
-					player->currentwaypoint, player->nextwaypoint, &dirvec);
-	
-				v1.x = player->currentwaypoint->mobj->x;
-				v1.y = player->currentwaypoint->mobj->y;
-				v1.z = player->currentwaypoint->mobj->z;
-	
-				v2.x = 0;
-				v2.y = 4096;
-				v2.z = 0;
-	
-				FV3_Cross(&dirvec, &v2, &crossvec);
-				FV3_SubEx(&pvec, &v1, &distToPoint);
-	
-				distToNext = abs(FV3_Dot(&distToPoint, &crossvec)) / 2;
-	
+				// Get our distance from the waypoint.
+				distToNext = R_PointToDist2(
+					0,
+					player->mo->z,
+					R_PointToDist2(player->mo->x,
+								   player->mo->y,
+								   player->currentwaypoint->mobj->x,
+								   player->currentwaypoint->mobj->y),
+					player->currentwaypoint->mobj->z);
+
 				// If we're within distance, start drifting!
 				if (distToNext < player->currentwaypoint->mobj->radius)
 				{
