@@ -4486,7 +4486,7 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, filename, 255);
 
-	// Maybe add md5 support?
+	// Maybe add hashing support?
 	if (strstr(filename, ".soc") != NULL)
 	{
 		ncs = findfile(filename, 0, true);
@@ -4626,7 +4626,7 @@ static void Command_Addfile(void)
 
 		WRITESTRINGN(buf_p,p,240);
 
-		// calculate and check md5
+		// calculate and check the hash
 		{
 			UINT64 filehash;
 #ifdef NOFILEHASH
@@ -4708,7 +4708,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 			sprintf(message, M_GetText("Too many files loaded to add %s\n"), filename);
 		else if (ncs == FS_NOTFOUND)
 			sprintf(message, M_GetText("The server doesn't have %s\n"), filename);
-		else if (ncs == FS_MD5SUMBAD)
+		else if (ncs == FS_BADHASH)
 			sprintf(message, M_GetText("Checksum mismatch on %s\n"), filename);
 		else
 			sprintf(message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
@@ -4758,7 +4758,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 			CONS_Printf(M_GetText("The server tried to add %s,\nbut you don't have this file.\nYou need to find it in order\nto play on this server."), filename);
 			M_StartMessage(va("The server added a file \n(%s)\nthat you do not have.\n\nPress ESC\n",filename), NULL, MM_NOTHING);
 		}
-		else if (ncs == FS_MD5SUMBAD)
+		else if (ncs == FS_BADHASH)
 		{
 			CONS_Printf(M_GetText("Checksum mismatch while loading %s.\nMake sure you have the copy of\nthis file that the server has.\n"), filename);
 			M_StartMessage(va("Checksum mismatch while loading \n%s.\nThe server seems to have a\ndifferent version of this file.\n\nPress ESC\n",filename), NULL, MM_NOTHING);

@@ -51,7 +51,6 @@
 #include "p_setup.h"
 #include "m_misc.h"
 #include "m_menu.h"
-#include "md5.h"
 #include "filesrch.h"
 
 #include <errno.h>
@@ -295,10 +294,10 @@ boolean CL_CheckDownloadable(void)
 		{
 			CONS_Printf(" * \"%s\" (%dK)", fileneeded[i].filename, fileneeded[i].totalsize >> 10);
 
-				if (fileneeded[i].status == FS_MD5SUMBAD)
-					CONS_Printf(M_GetText(" wrong version, md5: "));
+				if (fileneeded[i].status == FS_BADHASH)
+					CONS_Printf(M_GetText(" wrong version, hash: "));
 				else
-					CONS_Printf(M_GetText(" not found, md5: "));
+					CONS_Printf(M_GetText(" not found, hash: "));
 
 			CONS_Printf(HASHFMT "\n", fileneeded[i].hash);
 		}
@@ -381,7 +380,7 @@ boolean CL_SendFileRequest(void)
 			return false;
 		}
 #endif
-		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
+		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Error check for the first time around.
 			totalfreespaceneeded += fileneeded[i].totalsize;
@@ -412,7 +411,7 @@ tryagain:
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
+		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Pre-prepare.
 			size_t checklen;
@@ -450,7 +449,7 @@ tryagain:
 		CONS_Printf("Direct download - missing files are as follows:\n");
 		for (i = 0; i < fileneedednum; i++)
 		{
-			if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK || fileneeded[i].status == FS_REQUESTED)) // FS_REQUESTED added
+			if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK || fileneeded[i].status == FS_REQUESTED)) // FS_REQUESTED added
 				CONS_Printf(" %s\n", fileneeded[i].filename);
 		}
 		return false;
@@ -564,7 +563,7 @@ INT32 CL_CheckFiles(void)
 			if (i >= fileneedednum || j >= numwadfiles)
 				return 2;
 
-			// For the sake of speed, only bother with a md5 check
+			// For the sake of speed, only bother with a hash check
 			if (wadfiles[j]->hash != fileneeded[i].hash)
 				return 2;
 
@@ -583,7 +582,7 @@ INT32 CL_CheckFiles(void)
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK)
+		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK)
 			downloadrequired = true;
 		
 		if (fileneeded[i].status != FS_OPEN)
@@ -648,7 +647,7 @@ boolean CL_LoadServerFiles(void)
 			fileneeded[i].status = FS_OPEN;
 			return false;
 		}
-		else if (fileneeded[i].status == FS_MD5SUMBAD)
+		else if (fileneeded[i].status == FS_BADHASH)
 			I_Error("Wrong version of file %s", fileneeded[i].filename);
 		else
 		{
@@ -1544,8 +1543,8 @@ void PT_FileFragment(void)
 		case FS_OPEN:
 			s = "FS_OPEN";
 			break;
-		case FS_MD5SUMBAD:
-			s = "FS_MD5SUMBAD";
+		case FS_BADHASH:
+			s = "FS_BADHASH";
 			break;
 		default:
 			s = "unknown";
@@ -1701,7 +1700,7 @@ filestatus_t checkfilehash(const char *filename, UINT64 wantedhash)
 	if (W_MakeFileHash(filename, false, &filehash) && wantedhash == filehash)
 		return FS_FOUND;
 	else
-		return FS_MD5SUMBAD;
+		return FS_BADHASH;
 #endif
 }
 
@@ -1711,15 +1710,15 @@ filestatus_t checkfilehash(const char *filename, UINT64 wantedhash)
 filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 {
 	filestatus_t homecheck; // store result of last file search
-	boolean badmd5 = false; // store whether md5 was bad from either of the first two searches (if nothing was found in the third)
+	boolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
 
 	// first, check SRB2's "home" directory
 	homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
+	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+		badhash = true;
 	// if not found at all, just move on without doing anything
 
 	// next, check SRB2's "path" directory
@@ -1727,8 +1726,8 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
+	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+		badhash = true;
 	// if not found at all, just move on without doing anything
 
 	// finally check "." directory
@@ -1737,7 +1736,7 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 	if (homecheck != FS_NOTFOUND) // if not found this time, fall back on the below return statement
 		return homecheck; // otherwise return the result we got
 
-	return (badmd5 ? FS_MD5SUMBAD : FS_NOTFOUND); // md5 sum bad or file not found
+	return (badhash ? FS_BADHASH : FS_NOTFOUND); // hash is bad or file not found
 }
 
 #ifdef HAVE_CURL
@@ -1895,7 +1894,7 @@ void CURLGetFile(void)
 			{
 				fclose(curl_curfile->file);
 
-				if (checkfilehash(curl_curfile->filename, curl_curfile->hash) == FS_MD5SUMBAD)
+				if (checkfilehash(curl_curfile->filename, curl_curfile->hash) == FS_BADHASH)
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("HTTP Download of %s finished but is corrupt or has been modified\n"), filename);
 					curl_curfile->status = FS_FALLBACK;

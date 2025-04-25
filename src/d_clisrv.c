@@ -1637,7 +1637,7 @@ static boolean CL_FinishedFileList(void)
 			totalfilesrequestedsize = 0;
 
 			for (i = 0; i < fileneedednum; i++)
-				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 				{
 					totalfilesrequestednum++;
 					totalfilesrequestedsize += fileneeded[i].totalsize;
@@ -1802,7 +1802,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (http_source[0])
 			{
 				for (i = 0; i < fileneedednum; i++)
-					if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+					if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 					{
 						curl_transfers++;
 					}
@@ -1814,7 +1814,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		case CL_DOWNLOADHTTPFILES:
 			waitmore = false;
 			for (i = 0; i < fileneedednum; i++)
-				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 				{
 					if (!curl_running)
 						CURLPrepareFile(http_source, i);

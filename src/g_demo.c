@@ -2449,7 +2449,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			{
 				if (ncs == FS_NOTFOUND)
 					CONS_Alert(CONS_NOTICE, M_GetText("You do not have a copy of %s\n"), filename);
-				else if (ncs == FS_MD5SUMBAD)
+				else if (ncs == FS_BADHASH)
 					CONS_Alert(CONS_NOTICE, M_GetText("Checksum mismatch on %s\n"), filename);
 				else
 					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), filename);
@@ -3462,7 +3462,7 @@ void G_AddGhost(char *defdemoname)
 	for (gh = ghosts; gh; gh = gh->next)
 		if (demohash == gh->checksum) // another ghost in the game already has this checksum?
 		{ // Don't add another one, then!
-			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (MD5 was matched)\n", pdemoname);
+			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (hash was matched)\n", pdemoname);
 			Z_Free(pdemoname);
 			Z_Free(buffer);
 			return;

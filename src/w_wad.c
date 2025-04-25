@@ -919,8 +919,8 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 #ifndef NOFILEHASH
 	//
 	// w-waiiiit!
-	// Let's not add a wad file if the MD5 matches
-	// an MD5 of an already added WAD file!
+	// Let's not add a wad file if the hash matches
+	// the hash of an already added WAD file!
 	//
 	if (!W_MakeFileHash(filename, false, &filehash))
 		filehash = 0;
@@ -2153,9 +2153,9 @@ void *W_CachePatchLongName(const char *name, INT32 tag)
 	return W_CachePatchNum(num, tag);
 }
 
-/** Verifies a file's MD5 is as it should be.
-  * For releases, used as cheat prevention -- if the MD5 doesn't match, a
-  * fatal error is thrown. In debug mode, an MD5 mismatch only triggers a
+/** Verifies a file's hash is as it should be.
+  * For releases, used as cheat prevention -- if the hash doesn't match, a
+  * fatal error is thrown. In debug mode, a hash mismatch only triggers a
   * warning.
   *
   * \param wadfilenum Number of the loaded wad file to check.

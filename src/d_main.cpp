@@ -1193,7 +1193,7 @@ static void IdentifyVersion(void)
 	snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2waddir);
 	configfile[sizeof configfile - 1] = '\0';
 
-	// if you change the ordering of this or add/remove a file, be sure to update the md5
+	// if you change the ordering of this or add/remove a file, be sure to update the hash
 	// checking in D_SRB2Main
 
 	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
@@ -1483,8 +1483,8 @@ void D_SRB2Main(void)
 	D_CleanFile(startupiwads);
 
 #ifndef DEVELOP
-	// Check MD5s of autoloaded files
-	// Note: Do not add any files that ignore MD5!
+	// Check hashes of autoloaded files
+	// Note: Do not add any files that ignore hashing!
 	W_VerifyFileHash(MAINWAD_SRB2, ASSET_HASH_SRB2_SRB);
 	W_VerifyFileHash(MAINWAD_GFX, ASSET_HASH_GFX_KART);
 	W_VerifyFileHash(MAINWAD_TEXTURES, ASSET_HASH_TEXTURES_KART);

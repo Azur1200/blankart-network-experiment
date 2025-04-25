@@ -37,7 +37,7 @@ typedef enum
 	FS_REQUESTED,
 	FS_DOWNLOADING,
 	FS_OPEN, // Is opened and used in w_wad
-	FS_MD5SUMBAD,
+	FS_BADHASH,
 	FS_FALLBACK, // HTTP failed
 } filestatus_t;
 
