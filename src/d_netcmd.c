@@ -50,7 +50,6 @@
 #include "lua_hook.h"
 #include "m_cond.h"
 #include "m_anigif.h"
-#include "md5.h"
 
 // SRB2kart
 #include "k_kart.h"
@@ -201,7 +200,7 @@ static void Command_Displayplayer_f(void);
 
 static void Command_ExitLevel_f(void);
 static void Command_Showmap_f(void);
-static void Command_Mapmd5_f(void);
+static void Command_Maphash_f(void);
 
 static void Command_Teamchange_f(void);
 static void Command_Teamchange2_f(void);
@@ -788,7 +787,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("retry", Command_Retry_f);
 	COM_AddCommand("exitlevel", Command_ExitLevel_f);
 	COM_AddCommand("showmap", Command_Showmap_f);
-	COM_AddCommand("mapmd5", Command_Mapmd5_f);
+	COM_AddCommand("maphash", Command_Maphash_f);
 
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("listwad", Command_ListWADS_f);
@@ -4490,7 +4489,7 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 	// Maybe add md5 support?
 	if (strstr(filename, ".soc") != NULL)
 	{
-		ncs = findfile(filename,NULL,true);
+		ncs = findfile(filename, 0, true);
 
 		if (ncs != FS_FOUND)
 		{
@@ -4629,27 +4628,17 @@ static void Command_Addfile(void)
 
 		// calculate and check md5
 		{
-			UINT8 md5sum[16];
-#ifdef NOMD5
-			memset(md5sum,0,16);
+			UINT64 filehash;
+#ifdef NOFILEHASH
+			filehash = 0;
 #else
-			FILE *fhandle;
 			boolean valid = true;
-
-			if ((fhandle = W_OpenWadFile(&fn, true)) != NULL)
-			{
-				tic_t t = I_GetTime();
-				CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",fn);
-				md5_stream(fhandle, md5sum);
-				CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f second\n", fn, (float)(I_GetTime() - t)/TICRATE);
-				fclose(fhandle);
-			}
-			else // file not found
-				continue;
+			if (!W_MakeFileHash(fn, true, &filehash))
+				continue; // file not found
 
 			for (i = 0; i < numwadfiles; i++)
 			{
-				if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
+				if (wadfiles[i]->hash == filehash)
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), fn);
 					valid = false;
@@ -4662,7 +4651,7 @@ static void Command_Addfile(void)
 				continue;
 			}
 #endif
-			WRITEMEM(buf_p, md5sum, 16);
+			WRITEUINT64(buf_p, filehash);
 		}
 
 		WRITEUINT8(buf_p, compat);
@@ -4680,13 +4669,13 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
-	UINT8 md5sum[16];
+	UINT64 filehash;
 	boolean kick = false;
 	boolean toomany = false;
 	INT32 i,j;
 
 	READSTRINGN(*cp, filename, 240);
-	READMEM(*cp, md5sum, 16);
+	filehash = READUINT64(cp);
 	wadcompat_t compat = READUINT8(*cp);
 
 	// Only the server processes this message.
@@ -4709,7 +4698,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	if (numwadfiles >= MAX_WADFILES)
 		toomany = true;
 	else
-		ncs = findfile(filename,md5sum,true);
+		ncs = findfile(filename, filehash, true);
 
 	if (ncs != FS_FOUND || toomany)
 	{
@@ -4740,10 +4729,10 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
 	filestatus_t ncs = FS_NOTCHECKED;
-	UINT8 md5sum[16];
+	UINT64 filehash;
 
 	READSTRINGN(*cp, filename, 240);
-	READMEM(*cp, md5sum, 16);
+	filehash = READUINT64(*cp);
 	wadcompat_t compat = READUINT8(*cp);
 
 	if (playernum != serverplayer)
@@ -4754,7 +4743,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	ncs = findfile(filename,md5sum,true);
+	ncs = findfile(filename, filehash, true);
 
 	if (ncs != FS_FOUND || !P_AddWadFile(filename, compat))
 	{
@@ -5434,16 +5423,10 @@ static void Command_Showmap_f(void)
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 }
 
-static void Command_Mapmd5_f(void)
+static void Command_Maphash_f(void)
 {
 	if (gamestate == GS_LEVEL)
-	{
-		INT32 i;
-		char md5tmp[33];
-		for (i = 0; i < 16; ++i)
-			sprintf(&md5tmp[i*2], "%02x", mapmd5[i]);
-		CONS_Printf("%s: %s\n", G_BuildMapName(gamemap), md5tmp);
-	}
+		CONS_Printf("%s: " HASHFMT "\n", G_BuildMapName(gamemap), maphash);
 	else
 		CONS_Printf(M_GetText("You must be in a level to use this.\n"));
 }

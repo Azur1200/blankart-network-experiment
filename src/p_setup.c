@@ -68,8 +68,6 @@
 
 #include "f_finale.h" // wipes
 
-#include "md5.h" // map MD5
-
 #include "deh_tables.h"
 
 // for MapLoad hook
@@ -116,10 +114,10 @@
 #endif
 
 //
-// Map MD5, calculated on level load.
+// Map hash, calculated on level load.
 // Sent to clients in PT_SERVERINFO.
 //
-unsigned char mapmd5[16];
+UINT64 maphash;
 
 //
 // MAP related Lookup tables.
@@ -7634,49 +7632,15 @@ static void P_ConvertBinaryMap(void)
 		P_WriteTextmap();
 }
 
-/** Compute MD5 message digest for bytes read from memory source
-  *
-  * The resulting message digest number will be written into the 16 bytes
-  * beginning at RESBLOCK.
-  *
-  * \param filename path of file
-  * \param resblock resulting MD5 checksum
-  * \return 0 if MD5 checksum was made, and is at resblock, 1 if error was found
-  */
-static INT32 P_MakeBufferMD5(const char *buffer, size_t len, void *resblock)
+static void P_MakeMapHash(virtres_t *virt, UINT64 *dest)
 {
-#ifdef NOMD5
-	(void)buffer;
-	(void)len;
-	memset(resblock, 0x00, 16);
-	return 1;
-#else
-	tic_t t = I_GetTime();
-	CONS_Debug(DBG_SETUP, "Making MD5\n");
-	if (md5_buffer(buffer, len, resblock) == NULL)
-		return 1;
-	CONS_Debug(DBG_SETUP, "MD5 calc took %f seconds\n", (float)(I_GetTime() - t)/NEWTICRATE);
-	return 0;
-#endif
-}
-
-static void P_MakeMapMD5(virtres_t *virt, void *dest)
-{
-	unsigned char resmd5[16];
-
 	if (udmf)
 	{
 		virtlump_t *textmap = vres_Find(virt, "TEXTMAP");
-		P_MakeBufferMD5((char*)textmap->data, textmap->size, resmd5);
+		*dest = HASH64((char*)textmap->data, textmap->size);
 	}
 	else
 	{
-		unsigned char linemd5[16];
-		unsigned char sectormd5[16];
-		unsigned char thingmd5[16];
-		unsigned char sidedefmd5[16];
-		UINT8 i;
-
 		// Create a hash for the current map
 		// get the actual lumps!
 		virtlump_t* virtlines   = vres_Find(virt, "LINEDEFS");
@@ -7684,16 +7648,12 @@ static void P_MakeMapMD5(virtres_t *virt, void *dest)
 		virtlump_t* virtmthings = vres_Find(virt, "THINGS");
 		virtlump_t* virtsides   = vres_Find(virt, "SIDEDEFS");
 
-		P_MakeBufferMD5((char*)virtlines->data,   virtlines->size, linemd5);
-		P_MakeBufferMD5((char*)virtsectors->data, virtsectors->size,  sectormd5);
-		P_MakeBufferMD5((char*)virtmthings->data, virtmthings->size,   thingmd5);
-		P_MakeBufferMD5((char*)virtsides->data,   virtsides->size, sidedefmd5);
-
-		for (i = 0; i < 16; i++)
-			resmd5[i] = (linemd5[i] + sectormd5[i] + thingmd5[i] + sidedefmd5[i]) & 0xFF;
+		*dest = 0;
+		*dest += HASH64((char*)virtlines->data,   virtlines->size);
+		*dest += HASH64((char*)virtsectors->data, virtsectors->size);
+		*dest += HASH64((char*)virtmthings->data, virtmthings->size);
+		*dest += HASH64((char*)virtsides->data,   virtsides->size);
 	}
-
-	M_Memcpy(dest, &resmd5, 16);
 }
 
 static boolean P_SetMapNamespace(void)
@@ -7801,7 +7761,7 @@ static boolean P_LoadMapFromFile(void)
 		if (sectors[i].tags.count)
 			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
 
-	P_MakeMapMD5(curmapvirt, &mapmd5);
+	P_MakeMapHash(curmapvirt, &maphash);
 	TracyCZoneEnd(__zone);
 	return true;
 }

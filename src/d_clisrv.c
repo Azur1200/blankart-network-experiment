@@ -951,7 +951,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
 		MAXSERVERNAME);
 
-	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, 16);
+	netbuffer->u.serverinfo.maphash = maphash;
 
 	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) && !(mapheaderinfo[prevmap]->zonttl[0]))
 		netbuffer->u.serverinfo.iszone = 1;

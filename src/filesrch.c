@@ -337,12 +337,12 @@ char *refreshdirname = NULL;
 
 
 #if defined (_XBOX) && defined (_MSC_VER)
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash,
 	boolean completepath, int maxsearchdepth)
 {
 //NONE?
 	startpath = filename = NULL;
-	wantedmd5sum = NULL;
+	wantedhash = 0;
 	maxsearchdepth = 0;
 	completepath = false;
 	return FS_NOTFOUND;
@@ -369,7 +369,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 #else
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash, boolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
@@ -446,7 +446,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 		else if (!strcasecmp(searchname, dent->d_name))
 		{
-			switch (checkfilemd5(searchpath, wantedmd5sum))
+			switch (checkfilehash(searchpath, wantedhash))
 			{
 				case FS_FOUND:
 					if (completepath)
@@ -788,7 +788,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 							if (strcmp(dent->d_name, filenamebuf[i]))
 								continue;
-							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
+							if (cv_addons_md5.value && !checkfilehash(menupath, wadfiles[i]->hash))
 								continue;
 
 							ext |= EXT_LOADED;

@@ -62,7 +62,6 @@
 #include "r_picformats.h"
 #include "i_time.h"
 #include "i_system.h"
-#include "md5.h"
 #include "lua_script.h"
 #include "g_game.h" // G_MapNumber
 
@@ -211,7 +210,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors)
 
 		// If findfile finds the file, the full path will be returned
 		// in filenamebuf == *filename.
-		if (findfile(filenamebuf, NULL, true))
+		if (findfile(filenamebuf, 0, true))
 		{
 			if ((handle = fopen_utf8(*filename, "rb")) == NULL)
 			{
@@ -378,39 +377,52 @@ static inline boolean CheckCompatWad(UINT16 wadnum)
 	return false;
 }
 
-/** Compute MD5 message digest for bytes read from STREAM of this filname.
-  *
-  * The resulting message digest number will be written into the 16 bytes
-  * beginning at RESBLOCK.
+// adapted from the example in xxhash.h
+static UINT64 hashfile(FILE *f)
+{
+	static XXH3_state_t *state;
+	char buffer[4096];
+	size_t count;
+
+	if (!state)
+		state = XXH3_createState();
+
+	XXH3_64bits_reset(state);
+
+	while ((count = fread(buffer, 1, sizeof(buffer), f)) != 0)
+		XXH3_64bits_update(state, buffer, count);
+
+	return XXH3_64bits_digest(state);
+}
+
+/** Computes and returns the hash for a file.
   *
   * \param filename path of file
-  * \param resblock resulting MD5 checksum
-  * \return 0 if MD5 checksum was made, and is at resblock, 1 if error was found
+  * \param openwad true if W_OpenWadFile should be used instead of fopen
+  * \param ret pointer to UINT64 to store hash
+  * \return true on success, false on error
   */
-static inline INT32 W_MakeFileMD5(const char *filename, void *resblock)
+boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret)
 {
-#ifdef NOMD5
+#ifdef NOFILEHASH
 	(void)filename;
-	memset(resblock, 0x00, 16);
+	(void)openwad;
+	*ret = 0;
+	return true;
 #else
-	FILE *fhandle;
+	FILE *fhandle = openwad ? W_OpenWadFile(&filename, true) : fopen(filename, "rb");
 
-	if ((fhandle = fopen(filename, "rb")) != NULL)
+	if (fhandle == NULL)
 	{
-		tic_t t = I_GetTime();
-		CONS_Debug(DBG_SETUP, "Making MD5 for %s\n",filename);
-		if (md5_stream(fhandle, resblock) == 1)
-		{
-			fclose(fhandle);
-			return 1;
-		}
-		CONS_Debug(DBG_SETUP, "MD5 calc for %s took %f seconds\n",
-			filename, (float)(I_GetTime() - t)/NEWTICRATE);
-		fclose(fhandle);
-		return 0;
+		CONS_Alert(CONS_WARNING, "Could not open %s for hashing\n", filename);
+		return false;
 	}
+
+	CONS_Debug(DBG_SETUP, "Hashing file %s\n", filename);
+	*ret = hashfile(fhandle);
+	fclose(fhandle);
+	return true;
 #endif
-	return 1;
 }
 
 // Invalidates the cache of lump numbers. Call this whenever a wad is added.
@@ -863,10 +875,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 	wadfile_t *wadfile;
 	restype_t type;
 	UINT16 numlumps = 0;
-#ifndef NOMD5
-	size_t i;
-#endif
-	UINT8 md5sum[16];
+	UINT64 filehash = 0;
 	int important;
 
 	if (!(refreshdirmenu & REFRESHDIR_ADDFILE))
@@ -907,17 +916,18 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 
 	important = !important;
 
-#ifndef NOMD5
+#ifndef NOFILEHASH
 	//
 	// w-waiiiit!
 	// Let's not add a wad file if the MD5 matches
 	// an MD5 of an already added WAD file!
 	//
-	W_MakeFileMD5(filename, md5sum);
+	if (!W_MakeFileHash(filename, false, &filehash))
+		filehash = 0;
 
-	for (i = 0; i < numwadfiles; i++)
+	for (size_t i = 0; i < numwadfiles; i++)
 	{
-		if (!memcmp(wadfiles[i]->md5sum, md5sum, 16))
+		if (wadfiles[i]->hash == filehash)
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("%s is already loaded\n"), filename);
 			if (handle)
@@ -972,7 +982,7 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 	wadfile->type = type;
 
 	// already generated, just copy it over
-	M_Memcpy(&wadfile->md5sum, &md5sum, 16);
+	wadfile->hash = filehash;
 
 	//
 	// set up caching
@@ -2143,74 +2153,32 @@ void *W_CachePatchLongName(const char *name, INT32 tag)
 	return W_CachePatchNum(num, tag);
 }
 
-#ifndef NOMD5
-
-/**
-  * Prints an MD5 string into a human-readable textual format.
-  *
-  * \param md5 The md5 in binary form -- MD5_LEN (16) bytes.
-  * \param buf Where to print the textual form. Needs 2*MD5_LEN+1 (33) bytes.
-  * \author Graue <graue@oceanbase.org>
-  */
-#define MD5_FORMAT \
-	"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x"
-static void PrintMD5String(const UINT8 *md5, char *buf)
-{
-	snprintf(buf, 2*MD5_LEN+1, MD5_FORMAT,
-		md5[0], md5[1], md5[2], md5[3],
-		md5[4], md5[5], md5[6], md5[7],
-		md5[8], md5[9], md5[10], md5[11],
-		md5[12], md5[13], md5[14], md5[15]);
-}
-#endif
 /** Verifies a file's MD5 is as it should be.
   * For releases, used as cheat prevention -- if the MD5 doesn't match, a
   * fatal error is thrown. In debug mode, an MD5 mismatch only triggers a
   * warning.
   *
   * \param wadfilenum Number of the loaded wad file to check.
-  * \param matchmd5   The MD5 sum this wad should have, expressed as a
-  *                   textual string.
+  * \param matchhash  The hash value this wad should have.
   * \author Graue <graue@oceanbase.org>
   */
-void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5)
+void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash)
 {
-#ifdef NOMD5
+#ifdef NOFILEHASH
 	(void)wadfilenum;
-	(void)matchmd5;
+	(void)matchhash;
 #else
-	UINT8 realmd5[MD5_LEN];
-	INT32 ix;
-
-	I_Assert(strlen(matchmd5) == 2*MD5_LEN);
 	I_Assert(wadfilenum < numwadfiles);
-	// Convert an md5 string like "7d355827fa8f981482246d6c95f9bd48"
-	// into a real md5.
-	for (ix = 0; ix < 2*MD5_LEN; ix++)
-	{
-		INT32 n, c = matchmd5[ix];
-		if (isdigit(c))
-			n = c - '0';
-		else
-		{
-			I_Assert(isxdigit(c));
-			if (isupper(c)) n = c - 'A' + 10;
-			else n = c - 'a' + 10;
-		}
-		if (ix & 1) realmd5[ix>>1] = (UINT8)(realmd5[ix>>1]+n);
-		else realmd5[ix>>1] = (UINT8)(n<<4);
-	}
 
-	if (memcmp(realmd5, wadfiles[wadfilenum]->md5sum, 16))
+	if (matchhash != wadfiles[wadfilenum]->hash)
 	{
-		char actualmd5text[2*MD5_LEN+1];
-		PrintMD5String(wadfiles[wadfilenum]->md5sum, actualmd5text);
 #ifdef _DEBUG
 		CONS_Printf
 #else
 		I_Error
 #endif
-			(M_GetText("File is old, is corrupt or has been modified: %s (found md5: %s, wanted: %s)\n"), wadfiles[wadfilenum]->filename, actualmd5text, matchmd5);
+			(M_GetText("File is old, is corrupt or has been modified: %s (found hash: " HASHFMT ", wanted: " HASHFMT ")\n"),
+			 wadfiles[wadfilenum]->filename, wadfiles[wadfilenum]->hash, matchhash);
 	}
 #endif
 }
