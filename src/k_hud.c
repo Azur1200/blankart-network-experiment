@@ -2124,7 +2124,7 @@ static void K_drawKartSpeedometer(void)
 			break;
 		case 4: // Sonic Drift 2 style percentage
 			if (stplyr->mo)
-				convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), ORIG_FRICTION))*100)>>FRACBITS;
+				convSpeed = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), K_PlayerBaseFriction(stplyr, ORIG_FRICTION)))*100)>>FRACBITS;
 			labeln = 3;
 			break;
 		default:
