@@ -376,6 +376,11 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].botvars.itemconfirm);
 		WRITESINT8(save->p, players[i].botvars.turnconfirm);
 		WRITEUINT32(save->p, players[i].botvars.respawnconfirm);
+		WRITEFIXED(save->p, players[i].botvars.driftskill);
+		WRITEINT32(save->p, players[i].botvars.driftstate);
+		WRITESINT8(save->p, players[i].botvars.driftturn);
+		WRITEUINT32(save->p, players[i].botvars.drifttime);
+		WRITEUINT8(save->p, players[i].botvars.powersliding);
 		
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -694,6 +699,11 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.itemconfirm = READUINT32(save->p);
 		players[i].botvars.turnconfirm = READSINT8(save->p);
 		players[i].botvars.respawnconfirm = READUINT32(save->p);
+		players[i].botvars.driftskill = READFIXED(save->p);
+		players[i].botvars.driftstate = READINT32(save->p);
+		players[i].botvars.driftturn = READSINT8(save->p);
+		players[i].botvars.drifttime = READUINT32(save->p);
+		players[i].botvars.powersliding = (boolean)READUINT8(save->p);
 		
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);

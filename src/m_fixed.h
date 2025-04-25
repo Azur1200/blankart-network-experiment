@@ -122,6 +122,19 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv(fixed_t a, fixed_t b)
 	return FixedDiv2(a, b);
 }
 
+/*!
+  \brief Converts a percentage into a fixed number.
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentage(INT32 percent)
+{
+	return FixedDiv((percent * FRACUNIT), 100 * FRACUNIT);
+}
+
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentageFloat(float fpercent)
+{
+	return FixedDiv(FloatToFixed(fpercent), 100 * FRACUNIT);
+}
+
 /**	\brief	The FixedSqrt function
 
 	\param	x	fixed_t number

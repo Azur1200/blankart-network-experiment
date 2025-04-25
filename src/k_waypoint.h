@@ -24,6 +24,16 @@ extern "C" {
 
 #define DEFAULT_WAYPOINT_RADIUS (384)
 
+// "Powerslide" drifts in this context enable sliptiding.
+typedef enum {
+    DRIFT_NONE=0,
+    DRIFT_PWRSLIDE_L, 
+    DRIFT_LEFT,
+    DRIFT_PWRSLIDE_R,
+    DRIFT_RIGHT,
+    DRIFT_END
+} driftSetting_e;
+
 struct waypoint_t
 {
 	mobj_t             *mobj;
@@ -34,6 +44,7 @@ struct waypoint_t
 	UINT32             *prevwaypointdistances;
 	size_t              numnextwaypoints;
 	size_t              numprevwaypoints;
+	UINT32				driftsettings;
 };
 
 

@@ -3110,6 +3110,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 	fixed_t top2 = P_GetSectorCeilingZAt(sector, mobj->x, mobj->y);
 	fixed_t bot2 = P_GetSectorFloorZAt(sector, mobj->x, mobj->y);
 
+	if (mobj->type == MT_WAYPOINT)
+	{
+		CONS_Printf("P_MobjCheckWater waypoint call (oh boy...)\n");
+	}
+
 	// Default if no water exists.
 	mobj->watertop = mobj->waterbottom = mobj->z - 1000*FRACUNIT;
 
@@ -3407,6 +3412,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 static void P_SceneryCheckWater(mobj_t *mobj)
 {
 	sector_t *sector;
+
+	if (mobj->type == MT_WAYPOINT)
+	{
+		CONS_Printf("P_SceneryCheckWater waypoint call (oh boy...)\n");
+	}
 
 	// Default if no water exists.
 	mobj->watertop = mobj->waterbottom = mobj->z - 1000*FRACUNIT;
@@ -13083,7 +13093,9 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		// lastlook is used for indicating the waypoint is a shortcut
 		// extravalue1 is used for indicating the waypoint is disabled
 		// extravalue2 is used for indicating the waypoint is the finishline
+		// watertop is the waypoint's drift settings
 		mobj->threshold = mthing->args[0];
+
 		mobj->movecount = tag;
 		if (mthing->args[2] & TMWPF_DISABLED)
 		{
@@ -13121,9 +13133,34 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 			mobj->extravalue2 = 0;
 		}
 
+		mobj->watertop = mthing->args[3];
+
 		// Sryder 2018-12-7: Grabbed this from the old MT_BOSS3WAYPOINT section so they'll be in the waypointcap instead
 		P_SetTarget(&mobj->tracer, waypointcap);
 		P_SetTarget(&waypointcap, mobj);
+		break;
+	}
+	case MT_WAYPOINT_ANCHOR:
+	{
+		// Get the drift parameters from the anchor's spawnpoint.
+
+		// Drift left
+		mobj->extravalue1 = ((mthing->options & MTF_OBJECTSPECIAL) >> 1);
+
+		if (mthing->options & MTF_AMBUSH)
+		{
+			// Drift right
+			mobj->extravalue1 = ((mthing->options & MTF_AMBUSH) >> 1);
+		}
+
+		// Powerslide offset
+		mobj->extravalue1 = max(0, min(4, mobj->extravalue1 - (mthing->options & 1)));
+
+		if (mthing->extrainfo)
+		{
+			// If the parameter is set at all, this anchor ends the drift.
+			mobj->extravalue1 = 5;
+		}
 		break;
 	}
 	case MT_BOTHINT:
