@@ -1068,18 +1068,17 @@ static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vecto
 }
 
 /*--------------------------------------------------
-	static INT32 K_BotStartDrift(player_t* player, ticcmd_t* cmd)
+	static INT32 K_BotStartDrift(player_t* player)
 
 		Begins and ends "forced" drifts on a per-waypoint basis.
 
 	Input Arguments:-
 		player - Player to begin the drift for.
-		cmd - The player's ticcmd to modify.
 
 	Return:-
 		Override value for turn amount.
 --------------------------------------------------*/
-static INT32 K_BotStartDrift(player_t* player, ticcmd_t* cmd)
+static INT32 K_BotStartDrift(player_t* player)
 {
 	// Handle DRIFTING towards waypoints!
 	boolean shouldDrift;
@@ -1297,52 +1296,31 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			turnamt = 0;
 		}
 
-		// Figure out if we need to drift.
-		// Drift-ending waypoints will kill the drift timer,
-		// so no need to worry about doing that ourselves.
-		driftamt = K_BotStartDrift(player, cmd);
-
+		// Start or continue a drift.
 		if (player->botvars.drifttime)
 		{
-			// Continue the drift until we go over the threshold.
-
 			// Confirm our drift angle.
 			if ((player->botvars.driftturn)
-			&& (player->botvars.drifttime < 2))
+			&& (player->botvars.drifttime < 4))
 			{
 				turnamt = KART_FULLTURN * -player->botvars.driftturn;
-				player->botvars.drifttime++;
-			}
-
-			// Only increment when we're finishing our drift!
-			if (((player->botvars.driftstate == DRIFTSTATE_ENDING) || 
-				(player->botvars.driftstate == DRIFTSTATE_AUTO)))
-			{
-				player->botvars.drifttime++;
 			}
 
 			cmd->buttons |= BT_DRIFT;
-
-			if (player->botvars.drifttime > BOTDRIFTTICS + 1)
-			{
-				player->botvars.drifttime = 0;
-				player->botvars.driftstate = DRIFTSTATE_AUTO;
-			}
 		}
 		else if ((turnamt) && (player->botvars.driftstate == DRIFTSTATE_AUTO) &&
 			 (turnpower > FixedPercentage(DRIFTSTARTPCT)))
 		{
 			// TODO: Figure out a drift prediction system.
 		}
-		else if ((driftamt) && (player->botvars.driftstate))
+		else if ((player->botvars.driftamt < 2) && (player->botvars.driftstate))
 		{
-			if (driftamt != INT32_MAX)
+			cmd->buttons |= BT_DRIFT;
+			
+			if (player->botvars.driftamt != INT32_MAX)
 			{
 				turnamt = driftamt;
-				cmd->buttons |= BT_DRIFT;
 			}
-
-			player->botvars.drifttime++;
 		}
 	}
 
@@ -1780,6 +1758,40 @@ void K_UpdateBotGameplayVars(player_t *player)
 		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 
 		player->botvars.respawnconfirm = 0;
+	}
+	else
+	{
+		// Figure out if we need to drift.
+		// Drift-ending waypoints will kill the drift timer,
+		// so no need to worry about doing that ourselves.
+		player->botvars.driftamt = K_BotStartDrift(player);
+
+		if (player->botvars.drifttime)
+		{
+			// Continue the drift until we go over the threshold.
+			// Only increment when we're finishing our drift, or
+			// just starting it!
+			if (((player->botvars.driftstate == DRIFTSTATE_ENDING) || 
+				(player->botvars.driftstate == DRIFTSTATE_AUTO)) ||
+				(player->botvars.drifttime < 4))
+			{
+				player->botvars.drifttime++;
+			}
+
+			if (player->botvars.drifttime > BOTDRIFTTICS + 3)
+			{
+				player->botvars.drifttime = 0;
+				player->botvars.driftstate = DRIFTSTATE_AUTO;
+			}
+		}
+		else if ((player->botvars.driftamt) && (player->botvars.driftstate))
+		{
+			if (player->botvars.driftamt != INT32_MAX)
+			{
+				// Ready to drift!
+				player->botvars.drifttime++;
+			}
+		}
 	}
 
 	K_UpdateBotGameplayVarsItemUsage(player);

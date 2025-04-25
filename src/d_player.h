@@ -451,10 +451,10 @@ struct botvars_t
 	fixed_t driftskill; // The bot's "skill" at drifts.
 						// Determines how soon a bot starts to drift.
 	INT32 driftstate; // Drifting state
+	INT32 driftamt; // Turning severity for a drift
 	SINT8 driftturn; // Drifting turn direction
 	tic_t drifttime; // Time spent drifting
 	boolean powersliding; // Are we powersliding?
-
 };
 
 struct sonicloopcamvars_t
