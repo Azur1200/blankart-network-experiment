@@ -20,7 +20,7 @@ extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_sh
 
 	\param	filename	the file to look for
 	\param	startpath	where to start look from
-	\param	wantedmd5sum	want to check with MD5
+	\param	wantedhash	want to check with a hash
 	\param	completepath	want to return the complete path of the file?
 	\param	maxsearchdepth	the max depth to search for the file
 
@@ -29,7 +29,7 @@ extern consvar_t cv_addons_option, cv_addons_folder, cv_addons_md5, cv_addons_sh
 
 */
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash,
 	boolean completepath, int maxsearchdepth);
 
 #define menudepth 20

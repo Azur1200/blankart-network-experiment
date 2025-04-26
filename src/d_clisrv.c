@@ -951,7 +951,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	CopyCaretColors(netbuffer->u.serverinfo.servername, cv_servername.string,
 		MAXSERVERNAME);
 
-	M_Memcpy(netbuffer->u.serverinfo.mapmd5, mapmd5, 16);
+	netbuffer->u.serverinfo.maphash = maphash;
 
 	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE) && !(mapheaderinfo[prevmap]->zonttl[0]))
 		netbuffer->u.serverinfo.iszone = 1;
@@ -1637,7 +1637,7 @@ static boolean CL_FinishedFileList(void)
 			totalfilesrequestedsize = 0;
 
 			for (i = 0; i < fileneedednum; i++)
-				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 				{
 					totalfilesrequestednum++;
 					totalfilesrequestedsize += fileneeded[i].totalsize;
@@ -1802,7 +1802,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (http_source[0])
 			{
 				for (i = 0; i < fileneedednum; i++)
-					if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+					if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 					{
 						curl_transfers++;
 					}
@@ -1814,7 +1814,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		case CL_DOWNLOADHTTPFILES:
 			waitmore = false;
 			for (i = 0; i < fileneedednum; i++)
-				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD)
+				if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH)
 				{
 					if (!curl_running)
 						CURLPrepareFile(http_source, i);

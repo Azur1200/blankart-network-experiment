@@ -284,7 +284,7 @@ struct serverinfo_pak
 	tic_t leveltime;
 	char servername[MAXSERVERNAME];
 	char maptitle[33];
-	unsigned char mapmd5[16];
+	UINT64 maphash;
 	UINT8 actnum;
 	UINT8 iszone;
 	char httpsource[MAX_MIRROR_LENGTH]; // HTTP URL to download from, always defined for compatibility

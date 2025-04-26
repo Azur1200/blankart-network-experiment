@@ -81,14 +81,14 @@
 #include <tracy/tracy/Tracy.hpp>
 
 // Put hashes here to get them out of header hell.
-#define ASSET_HASH_MAIN_PK3     "6e6de1491bdd5410adedbe6e446a8990"
-#define ASSET_HASH_SRB2_SRB     "c1b9577687f8a795104aef4600720ea7"
-#define ASSET_HASH_GFX_KART       "06f86ee16136eb8a7043b15001797034"
-#define ASSET_HASH_TEXTURES_KART  "abb53d56aba47c3a8cb0f764da1c8b80"
-#define ASSET_HASH_CHARS_KART     "e2c428347dde52858a3dacd29fc5b964"
-#define ASSET_HASH_MAPS_KART      "d051e55141ba736582228c456953cd98"
+#define ASSET_HASH_MAIN_PK3     0x52f03a1c98030bb0
+#define ASSET_HASH_SRB2_SRB     0xf3ec1ea4d0eca4a9
+#define ASSET_HASH_GFX_KART       0xc91b0d43f5ba131f
+#define ASSET_HASH_TEXTURES_KART  0xb4211b2f32b6a291
+#define ASSET_HASH_CHARS_KART     0x1e68a3e01aa5c68b
+#define ASSET_HASH_MAPS_KART      0x38558ed00da41ce9
 #ifdef USE_PATCH_FILE
-#define ASSET_HASH_PATCH_PK3     "00000000000000000000000000000000"
+#define ASSET_HASH_PATCH_PK3     0x0000000000000000
 #endif
 
 #ifdef CMAKECONFIG
@@ -1193,7 +1193,7 @@ static void IdentifyVersion(void)
 	snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2waddir);
 	configfile[sizeof configfile - 1] = '\0';
 
-	// if you change the ordering of this or add/remove a file, be sure to update the md5
+	// if you change the ordering of this or add/remove a file, be sure to update the hash
 	// checking in D_SRB2Main
 
 	D_AddFile(startupiwads, va(pandf,srb2waddir,GRAPHICSNAME));
@@ -1483,16 +1483,16 @@ void D_SRB2Main(void)
 	D_CleanFile(startupiwads);
 
 #ifndef DEVELOP
-	// Check MD5s of autoloaded files
-	// Note: Do not add any files that ignore MD5!
-	W_VerifyFileMD5(MAINWAD_SRB2, ASSET_HASH_SRB2_SRB);
-	W_VerifyFileMD5(MAINWAD_GFX, ASSET_HASH_GFX_KART);
-	W_VerifyFileMD5(MAINWAD_TEXTURES, ASSET_HASH_TEXTURES_KART);
-	W_VerifyFileMD5(MAINWAD_CHARS, ASSET_HASH_CHARS_KART);
-	W_VerifyFileMD5(MAINWAD_MAPS, ASSET_HASH_MAPS_KART);
-	W_VerifyFileMD5(MAINWAD_MAIN, ASSET_HASH_MAIN_PK3);
+	// Check hashes of autoloaded files
+	// Note: Do not add any files that ignore hashing!
+	W_VerifyFileHash(MAINWAD_SRB2, ASSET_HASH_SRB2_SRB);
+	W_VerifyFileHash(MAINWAD_GFX, ASSET_HASH_GFX_KART);
+	W_VerifyFileHash(MAINWAD_TEXTURES, ASSET_HASH_TEXTURES_KART);
+	W_VerifyFileHash(MAINWAD_CHARS, ASSET_HASH_CHARS_KART);
+	W_VerifyFileHash(MAINWAD_MAPS, ASSET_HASH_MAPS_KART);
+	W_VerifyFileHash(MAINWAD_MAIN, ASSET_HASH_MAIN_PK3);
 #ifdef USE_PATCH_FILE
-	W_VerifyFileMD5(MAINWAD_PATCH, ASSET_HASH_PATCH_PK3);
+	W_VerifyFileHash(MAINWAD_PATCH, ASSET_HASH_PATCH_PK3);
 #endif
 #endif //ifndef DEVELOP
 

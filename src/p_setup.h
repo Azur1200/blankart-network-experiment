@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-// map md5, sent to players via PT_SERVERINFO
-extern unsigned char mapmd5[16];
+// map hash, sent to players via PT_SERVERINFO
+extern UINT64 maphash;
 
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS 64

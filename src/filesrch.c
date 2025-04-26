@@ -5,11 +5,11 @@
 ///	 filesearch:
 ///
 ///	 ATTENTION : make sure there is enouth space in filename to put a full path (255 or 512)
-///	 if needmd5check == 0 there is no md5 check
+///	 if wantedhash == 0 there is no hash check
 ///	 if completepath then filename will be change with the full path and name
 ///	 maxsearchdepth == 0 only search given directory, no subdirs
 ///	 return FS_NOTFOUND
-///	        FS_MD5SUMBAD;
+///	        FS_BADHASH;
 ///	        FS_FOUND
 
 #include <stdio.h>
@@ -337,12 +337,12 @@ char *refreshdirname = NULL;
 
 
 #if defined (_XBOX) && defined (_MSC_VER)
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum,
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash,
 	boolean completepath, int maxsearchdepth)
 {
 //NONE?
 	startpath = filename = NULL;
-	wantedmd5sum = NULL;
+	wantedhash = 0;
 	maxsearchdepth = 0;
 	completepath = false;
 	return FS_NOTFOUND;
@@ -369,7 +369,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 #else
 
-filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *wantedmd5sum, boolean completepath, int maxsearchdepth)
+filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash, boolean completepath, int maxsearchdepth)
 {
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
@@ -446,7 +446,7 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 		}
 		else if (!strcasecmp(searchname, dent->d_name))
 		{
-			switch (checkfilemd5(searchpath, wantedmd5sum))
+			switch (checkfilehash(searchpath, wantedhash))
 			{
 				case FS_FOUND:
 					if (completepath)
@@ -456,8 +456,8 @@ filestatus_t filesearch(char *filename, const char *startpath, const UINT8 *want
 					retval = FS_FOUND;
 					found = 1;
 					break;
-				case FS_MD5SUMBAD:
-					retval = FS_MD5SUMBAD;
+				case FS_BADHASH:
+					retval = FS_BADHASH;
 					break;
 				default: // prevent some compiler warnings
 					break;
@@ -788,7 +788,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 
 							if (strcmp(dent->d_name, filenamebuf[i]))
 								continue;
-							if (cv_addons_md5.value && !checkfilemd5(menupath, wadfiles[i]->md5sum))
+							if (cv_addons_md5.value && !checkfilehash(menupath, wadfiles[i]->hash))
 								continue;
 
 							ext |= EXT_LOADED;
