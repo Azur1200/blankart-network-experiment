@@ -217,8 +217,7 @@ static void Polyobj_GetInfo(polyobj_t *po, line_t *line)
 	if (po->parent == po->id) // do not allow a self-reference
 		po->parent = -1;
 
-	if (udmf)
-		po->translucency = max(min(line->args[2], NUMTRANSMAPS), 0);
+	po->translucency = max(min(line->args[2], NUMTRANSMAPS), 0);
 
 	if (udmf)
 	{
