@@ -2380,6 +2380,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	INT32 itemtype;
 	INT32 itemamount;
 	INT32 itemroulette;
+	INT32 previtemroulette;
 	INT32 roulettetype;
 	INT32 growshrinktimer;
 	INT32 bumper;
@@ -2439,6 +2440,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
 		itemroulette = 0;
+		previtemroulette = 0;
 		roulettetype = 0;
 		itemtype = 0;
 		itemamount = 0;
@@ -2472,6 +2474,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	else
 	{
 		itemroulette = (players[player].itemroulette > 0 ? 1 : 0);
+		previtemroulette = (players[player].previtemroulette > 0 ? 1 : 0);
 		roulettetype = players[player].roulettetype;
 
 		if (players[player].itemflags & IF_ITEMOUT)
@@ -2596,6 +2599,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	// SRB2kart
 	p->itemroulette = itemroulette;
+	p->previtemroulette = previtemroulette;
 	p->roulettetype = roulettetype;
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
