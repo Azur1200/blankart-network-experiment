@@ -2617,6 +2617,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	p->botvars.rubberband = FRACUNIT;
 	p->botvars.controller = UINT16_MAX;
+	p->botvars.driftskill =
+		FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(p));
+	p->botvars.driftstate = DRIFTSTATE_AUTO;
 
 	if (follower)
 		P_RemoveMobj(follower);

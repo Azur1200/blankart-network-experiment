@@ -2198,6 +2198,12 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 				thiswaypoint->onaline = K_GetWaypointIsOnLine(thiswaypoint);
 			}
 
+			// Set drift settings.
+			if (mobj->watertop)
+			{
+				thiswaypoint->driftsettings = mobj->watertop;
+			}
+
 			if (thiswaypoint->numnextwaypoints > 0)
 			{
 				waypoint_t *nextwaypoint = NULL;
@@ -2959,12 +2965,23 @@ static boolean K_AnchorWaypointRadius(
 {
 	if (anchor->spawnpoint->angle == waypointmobj->spawnpoint->angle)
 	{
-		waypointmobj->radius = R_PointToDist2(
-				waypointmobj->x, waypointmobj->y,
-				anchor->x, anchor->y);
+		// Let's keep drift parameters and radius modifications separate.
 
-		// Keep changes for -writetextmap
-		waypointmobj->spawnpoint->args[1] = waypointmobj->radius >> FRACBITS;
+		if (anchor->extravalue1)
+		{
+			waypointmobj->watertop = anchor->extravalue1;
+			waypointmobj->spawnpoint->args[3] = waypointmobj->watertop;
+		}
+		else
+		{
+			waypointmobj->radius = R_PointToDist2(
+					waypointmobj->x, waypointmobj->y,
+					anchor->x, anchor->y);
+
+			// Keep changes for -writetextmap
+			waypointmobj->spawnpoint->args[1] = waypointmobj->radius >> FRACBITS;
+		}
+
 		return true;
 	}
 	else
