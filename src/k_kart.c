@@ -3792,7 +3792,16 @@ SINT8 K_GetForwardMove(player_t *player)
 
 	if (K_KartKickstart(player)) // unlike the brute forward of sneakers, allow for backwards easing here
 	{
-		forwardmove = MAXPLMOVE;
+		if (player->cmd.buttons & BT_BRAKE)
+		{
+			// Allow v1 style clutching by holding brake.
+			forwardmove = MAXPLMOVE/2;
+		}
+		else
+		{
+			// Continue as usual.
+			forwardmove = MAXPLMOVE;
+		}
 	}
 
 	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
