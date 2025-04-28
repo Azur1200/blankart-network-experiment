@@ -352,6 +352,14 @@ static void LoadPalette(const char *lumpname)
 		pal = W_CacheLumpNum(lumpnum, PU_CACHE);
 		palsize = W_LumpLength(lumpnum)/3;
 		target = malloc(sizeof (*target)*palsize);
+
+		pMasterPalette = Z_Realloc(pMasterPalette, sizeof (*pMasterPalette)*palsize, PU_STATIC, NULL);
+		if (Cubeapply)
+			pLocalPalette = Z_Realloc(pLocalPalette, sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
+		else
+			pLocalPalette = pMasterPalette;
+		pGammaCorrectedPalette = Z_Realloc(pGammaCorrectedPalette, sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
+
 		for (i = 0; i < palsize; i++)
 		{
 			target[i].s.red = *pal++;
@@ -369,7 +377,7 @@ static void LoadPalette(const char *lumpname)
 
 		if (!Cubeapply)
 			continue;
-		
+
 		// Short hand this so its easier to type
 		RGBA_t pGCP = pGammaCorrectedPalette[i];
 
@@ -1170,7 +1178,7 @@ static UINT32 V_GetHWConsBackColor(void)
 		// Default green
 		default:	r = 0x00; g = 0x80; b = 0x00;	break;
 	}
-	
+
 	V_CubeApply(&r, &g, &b);
 	return (r << 24) | (g << 16) | (b << 8);
 }
