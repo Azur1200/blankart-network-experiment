@@ -61,6 +61,7 @@ IMPL_HUD_OFFSET(laps); // Number of laps
 IMPL_HUD_OFFSET(rings); // Number of laps
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 IMPL_HUD_OFFSET(speed); // Speedometer
+IMPL_HUD_OFFSET(acce); // Accessibility
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -78,7 +79,7 @@ static CV_PossibleValue_t speedo_cons_t[]= {
 	{1, "Small"},
 	//{2, "P-Meter"},  Readded later need to draw smaller sprites.
 	{0, NULL}};
-consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Default", CV_SAVE, speedo_cons_t, NULL);
+consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Small", CV_SAVE, speedo_cons_t, NULL);
 
 static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {3, "SRB2"}, {0, NULL}};
 
@@ -209,6 +210,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(rings); // Number of laps
 	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 	REG_HUD_OFFSET(speed); // Speedometer
+	REG_HUD_OFFSET(acce); // Accessibility
 	REG_HUD_OFFSET(posi); // Position in race
 	REG_HUD_OFFSET(face); // Mini rankings
 	REG_HUD_OFFSET(stcd); // Starting countdown
@@ -660,6 +662,7 @@ INT32 TIME_X, TIME_Y;	// Time Sticker
 INT32 LAPS_X, LAPS_Y;	// Lap Sticker
 INT32 RING_X, RING_Y;	// Player Rings
 INT32 SPDM_X, SPDM_Y;	// Speedometer
+INT32 ACCE_X, ACCE_Y;	// Accessibility
 INT32 POSI_X, POSI_Y;	// Position Number
 INT32 FACE_X, FACE_Y;	// Top-four Faces
 INT32 STCD_X, STCD_Y;	// Starting countdown
@@ -865,6 +868,9 @@ static void K_initKartHUD(void)
 	// Speedometer
 	SPDM_X = 9 + cv_speed_xoffset.value;						//   9
 	SPDM_Y = BASEVIDHEIGHT - 29 + cv_speed_yoffset.value;		// 171
+	// Accessibility
+	ACCE_X = 9 + cv_speed_xoffset.value;						//   9
+	ACCE_Y = BASEVIDHEIGHT - 29 + cv_speed_yoffset.value;		// 171
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;			// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;			// 138
@@ -2030,33 +2036,60 @@ static void K_drawKartLaps(void)
 			V_DrawKartString(LAPS_X+33, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", min(stplyr->laps, numlaps), numlaps));
 
 		// Lives
-		if (uselives)
+		if (LUA_HudEnabled(hud_lives) && uselives)
 		{
+			INT32 offsetx = 0;
+			INT32 offsety = 0;
+
+			if (cv_newspeedometer.value == 0 && !K_RingsActive())
+			{
+				offsetx = 25;
+				offsety = 15;
+			}
+			else if (K_RingsActive())
+			{
+				offsetx = 4;
+			}
+
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(LAPS_X+59, LAPS_Y-16, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_RANK], colormap);
+			V_DrawMappedPatch(LAPS_X+59+offsetx, LAPS_Y-16+offsety, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_RANK], colormap);
 			if (stplyr->lives >= 0)
-				V_DrawScaledPatch(LAPS_X+77, LAPS_Y-11, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+				V_DrawScaledPatch(LAPS_X+77+offsetx, LAPS_Y-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 		}
 	}
 }
 
 static void K_drawKartAccessibilityIcons(INT32 fx)
 {
-	INT32 fy = LAPS_Y-25;
-	INT32 splitflags = V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+	INT32 fy = ACCE_Y-25;
+	INT32 splitflags = V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANS|V_SPLITSCREEN;
 	//INT32 step = 1; -- if there's ever more than one accessibility icon
 
-	fx += LAPS_X;
+	fx += ACCE_X;
 
 	if (r_splitscreen < 2) // adjust to speedometer height
 	{
-		if (gametype == GT_BATTLE)
-			fy -= 4;
+		if (cv_acce_xoffset.value == 0 && cv_acce_yoffset.value == 0)
+		{
+
+			if (cv_newspeedometer.value == 0)
+			{
+				fy += 44;
+			}
+			else
+			{
+				if (cv_kartspeedometer.value == 0 && !K_RingsActive())
+					fy += 18;
+
+				if (gametype == GT_BATTLE)
+					fy -= 4;
+			}
+		}
 	}
 	else
 	{
-		fx = LAPS_X+43;
-		fy = LAPS_Y;
+		fx = ACCE_X+43;
+		fy = ACCE_Y;
 		if (!(stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]]))	// If we are not P1 or P3...
 		{
 			splitflags ^= (V_SNAPTOLEFT|V_SNAPTORIGHT);
@@ -2107,6 +2140,7 @@ static void K_drawKartSpeedometer(void)
 	INT32 splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_SPLITSCREEN;
 	INT32 battleoffset = 0;
 	INT32 ringoffset = 0;
+	INT32 oldringoffset = 0;
 
 	switch (cv_kartspeedometer.value)
 	{
@@ -2142,23 +2176,26 @@ static void K_drawKartSpeedometer(void)
 			battleoffset = -4;
 
 		if (K_RingsActive() == true)
+		{
 			ringoffset = -16;
+			oldringoffset = 6;
+		}
 	}
 	
 	if (cv_newspeedometer.value == 0) 
 	{
 		switch (cv_kartspeedometer.value) {
 			case 1:
-				V_DrawKartString(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed));
 				break;
 			case 2:
-				V_DrawKartString(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d mph", convSpeed));
 				break;
 			case 3:
-				V_DrawKartString(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed));
 				break;
 			case 4:
-				V_DrawKartString(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%4d %%", convSpeed));
 				break;
 			default:
 				break;
@@ -2203,7 +2240,7 @@ static void K_drawKartSpeedometer(void)
 		V_DrawScaledPatch(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
 	}*/
 
-	K_drawKartAccessibilityIcons(56);
+	K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0) ? 50 : 56);
 }
 
 static void K_drawRingMeter(void)
@@ -4616,7 +4653,7 @@ void K_drawKartHUD(void)
 			}
 			else
 			{
-				K_drawKartAccessibilityIcons(0);
+				K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0) ? 50 : 0);
 			}
 
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
