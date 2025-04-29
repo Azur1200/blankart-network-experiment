@@ -9614,6 +9614,9 @@ static void K_AirFailsafe(player_t *player)
 	const fixed_t maxSpeed = 1*player->mo->scale;
 	const fixed_t thrustSpeed = 6*player->mo->scale; // 10*player->mo->scale
 
+	if (leveltime < starttime)
+		return;
+
 	if (player->speed > maxSpeed // Above the max speed that you're allowed to use this technique.
 		|| player->respawn // Respawning, you don't need this AND drop dash :V
 		|| player->carry // Don't do in automated sections.
