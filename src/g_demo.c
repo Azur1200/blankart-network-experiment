@@ -613,7 +613,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
-	
+
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
 		WRITESINT8(demobuf.p,cmd->sidemove);
@@ -627,7 +627,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		oldcmd[playernum].turning = cmd->turning;
 		ziptic |= ZT_TURNING;
 	}
-	
+
 	if (cmd->angle != oldcmd[playernum].angle)
 	{
 		WRITEINT16(demobuf.p,cmd->angle);
@@ -757,7 +757,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 		return;
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, NULL);
+	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -939,9 +939,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				WRITEANGLE(demobuf.p,mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
-			Z_Free(ghostext[playernum].hitlist);
 			ghostext[playernum].hits = 0;
-			ghostext[playernum].hitlist = NULL;
 		}
 		if (ghostext[playernum].flags & EZT_SPRITE)
 			WRITEUINT16(demobuf.p,oldghost[playernum].sprite);
@@ -2193,7 +2191,7 @@ void G_BeginRecording(void)
 		WRITEUINT8(demobuf.p, grandprixinfo.masterbots == true);
 		WRITEUINT8(demobuf.p, grandprixinfo.eventmode);
 	}
-	
+
 	// Save "mapmusrng" used for altmusic selection
 	WRITEUINT8(demobuf.p, mapmusrng);
 
@@ -3165,7 +3163,7 @@ void G_DoPlayDemo(char *defdemoname)
 		grandprixinfo.masterbots = READUINT8(demobuf.p) != 0;
 		grandprixinfo.eventmode = READUINT8(demobuf.p);
 	}
-	
+
 	// Load "mapmusrng" used for altmusic selection
 	mapmusrng = READUINT8(demobuf.p);
 
