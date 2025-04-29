@@ -3834,7 +3834,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// Accessibility - kickstart your acceleration
-	if (!(player->pflags & PF_KICKSTARTACCEL))
+	if (!(player->pflags & PF_KICKSTARTACCEL) || leveltime < starttime)
 	{
 		player->kickstartaccel = 0;
 	}

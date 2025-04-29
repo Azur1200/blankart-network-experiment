@@ -9808,7 +9808,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
 			|| (player->growshrinktimer > 0)
-			|| player->flametimer))
+			|| player->flametimer)
+			|| leveltime < starttime)
 			player->itemflags |= IF_USERINGS;
 		else
 			player->itemflags &= ~IF_USERINGS;
