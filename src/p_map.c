@@ -812,6 +812,27 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		return K_MineCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
 
+	if (g_tm.thing->type == MT_MINEEXPLOSION)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return true; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return true; // underneath
+
+		return K_MineExplosionCollide(g_tm.thing, thing);
+	}
+	else if (thing->type == MT_MINEEXPLOSION)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return true; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return true; // underneath
+
+		return K_MineExplosionCollide(thing, g_tm.thing);
+	}
+
 	if (g_tm.thing->type == MT_LANDMINE)
 	{
 		// see if it went over / under
