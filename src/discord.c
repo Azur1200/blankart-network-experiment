@@ -556,7 +556,7 @@ void DRPC_UpdatePresence(void)
 		{
 			snprintf(detailstr, 48, "%s%s%s",
 				gametype_cons_t[gametype].strvalue,
-				va(" | %s", kartspeed_cons_t[gamespeed].strvalue),
+				va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
 				(encoremode == true) ? " | Encore" : ""
 			);
 			discordPresence.details = detailstr;
