@@ -816,9 +816,9 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	{
 		// see if it went over / under
 		if (g_tm.thing->z > thing->z + thing->height)
-			return true; // overhead
+			return BMIT_CONTINUE; // overhead
 		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return true; // underneath
+			return BMIT_CONTINUE; // underneath
 
 		return K_MineExplosionCollide(g_tm.thing, thing);
 	}
@@ -826,9 +826,9 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	{
 		// see if it went over / under
 		if (g_tm.thing->z > thing->z + thing->height)
-			return true; // overhead
+			return BMIT_CONTINUE; // overhead
 		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return true; // underneath
+			return BMIT_CONTINUE; // underneath
 
 		return K_MineExplosionCollide(thing, g_tm.thing);
 	}
