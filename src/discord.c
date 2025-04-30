@@ -577,11 +577,22 @@ void DRPC_UpdatePresence(void)
 		}
 		else
 		{
-			snprintf(detailstr, 48, "%s%s%s",
-				gametype_cons_t[gametype].strvalue,
-				va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
-				(encoremode == true) ? " | Encore" : ""
-			);
+			if (grandprixinfo.gp == true)
+			{
+				snprintf(detailstr, 48, "%s%s%s",
+					gametype_cons_t[gametype].strvalue,
+					va(" | %s", cv_dummygpdifficulty.string),
+					(encoremode == true) ? " | Encore" : ""
+				);
+			}
+			else
+			{
+				snprintf(detailstr, 48, "%s%s%s",
+					gametype_cons_t[gametype].strvalue,
+					va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
+					(encoremode == true) ? " | Encore" : ""
+				);
+			}
 			discordPresence.details = detailstr;
 		}
 	}
