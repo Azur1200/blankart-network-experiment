@@ -27,6 +27,7 @@
 #include "byteptr.h"
 #include "stun.h"
 #include "i_tcp.h" // current_port
+#include "k_grandprix.h"
 
 #include "discord.h"
 #include "doomdef.h"
@@ -541,7 +542,16 @@ void DRPC_UpdatePresence(void)
 
 		// Offline info
 		if (Playing())
-			discordPresence.state = "Offline";
+		{
+			if (grandprixinfo.gp == true)
+			{
+				discordPresence.state = "Grand Prix";
+			}
+			else
+			{
+				discordPresence.state = "Offline";
+			}
+		}
 		else if (demo.playback && !demo.title)
 			discordPresence.state = "Watching Replay";
 		else
