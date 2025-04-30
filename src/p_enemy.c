@@ -11116,6 +11116,7 @@ void A_SSMineExplode(mobj_t *actor)
 	INT32 d;
 	INT32 locvar1 = var1;
 	mobjtype_t type;
+	skincolornum_t color = SKINCOLOR_KETCHUP;
 	explodedist = FixedMul((3*actor->info->painchance)/2, actor->scale);
 
 	if (LUA_CallAction(A_SSMINEEXPLODE, actor))
@@ -11143,10 +11144,10 @@ void A_SSMineExplode(mobj_t *actor)
 	for (d = 0; d < 16; d++)
 		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64
 
-	if (actor->target && actor->target->player)
-		K_SpawnMineExplosion(actor, actor->target->player->skincolor);
-	else
-		K_SpawnMineExplosion(actor, SKINCOLOR_KETCHUP);
+	if (!P_MobjWasRemoved(actor->target) && actor->target->player)
+		color = actor->target->player->skincolor;
+
+	K_SpawnMineExplosion(actor, color);
 
 	P_SpawnMobj(actor->x, actor->y, actor->z, MT_MINEEXPLOSIONSOUND);
 
