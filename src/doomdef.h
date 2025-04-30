@@ -102,7 +102,7 @@ extern "C" {
 #endif
 
 #define NOMD5
-#define NOFILEHASH
+//#define NOFILEHASH
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK

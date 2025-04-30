@@ -554,7 +554,7 @@ void DRPC_UpdatePresence(void)
 		if (modeattacking)
 		{
 			SINT8 recordpreset = G_RecordPresetIndex();
-			char *currenttamode = "SRB2Kart";
+			const char *currenttamode = "SRB2Kart";
 
 			if (recordpreset == RP_TECH)
 				currenttamode = "Tech";
