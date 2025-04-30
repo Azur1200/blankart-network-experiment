@@ -595,8 +595,8 @@ _(PLAYERRETICULE) // Jawz reticule
 
 _(SSMINE) // Mine stuff
 _(SSMINE_SHIELD)
-
-_(MINEEXPLOSION) // to keep compatmode scripts happy
+_(MINEEXPLOSION)
+_(MINEEXPLOSIONSOUND)
 
 _(SMOLDERING) // New explosion
 _(BOOMEXPLODE)
