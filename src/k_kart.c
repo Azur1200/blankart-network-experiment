@@ -3288,21 +3288,63 @@ boolean K_WaterRun(mobj_t *mobj)
 
 void K_SpawnWaterTrail(mobj_t *mobj)
 {
-	fixed_t topspeed = mobj->player ? K_GetKartSpeed(mobj->player, false, false) : K_GetKartSpeedFromStat(5);
-	fixed_t runspd = 14*mobj->scale; //srb2kart
-	runspd = FixedMul(runspd, mobj->movefactor);
-	fixed_t trailScale;
+	fixed_t topspeed = INT32_MAX;
+	fixed_t speed = INT32_MAX;
+	fixed_t runspd = 14 * mobj->scale;
+	fixed_t trailScale = FRACUNIT;
+
+	if (mobj->momz != 0)
+	{
+		// Only while touching ground.
+		return;
+	}
+
+	if (mobj->watertop == INT32_MAX || mobj->waterbottom == INT32_MIN)
+	{
+		// Invalid water plane.
+		return;
+	}
+
+	if (!((!(mobj->eflags & MFE_VERTICALFLIP) && mobj->z + mobj->height >= mobj->watertop && mobj->z <= mobj->watertop)
+		|| (mobj->eflags & MFE_VERTICALFLIP && mobj->z + mobj->height >= mobj->waterbottom && mobj->z <= mobj->waterbottom)))
+	{
+		// No valid watertop.
+		return;
+	}
+
+	if (mobj->player != NULL)
+	{
+		if (mobj->player->spectator)
+		{
+			// Not as spectator.
+			return;
+		}
+
+		if (mobj->player->carry == CR_SLIDING)
+		{
+			// Not in water slides.
+			return;
+		}
+
+		topspeed = K_GetKartSpeed(mobj->player, false, false);
+		runspd = FixedMul(runspd, mobj->movefactor);
+	}
+	else
+	{
+		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5));
+	}
+
+	speed = P_AproxDistance(mobj->momx, mobj->momy);
+
+	if (speed <= runspd)
+	{
+		// Not fast enough.
+		return;
+	}
 
 	if (topspeed > runspd)
 	{
-		if (mobj->player)
-		{
-			trailScale = FixedMul(FixedDiv(mobj->player->speed - runspd, topspeed - runspd), mapobjectscale);
-		}
-		else
-		{
-			trailScale = FixedMul(FixedDiv(R_PointToDist2(0, 0, mobj->momx, mobj->momy) - runspd, topspeed - runspd), mapobjectscale);
-		}
+		trailScale = FixedMul(FixedDiv(speed - runspd, topspeed - runspd), mapobjectscale);
 	}
 	else
 		trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
@@ -3381,6 +3423,13 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 			const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
 			S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
 		}
+	}
+
+	// Little water sound while touching water - just a nicety.
+	if ((mobj->eflags & MFE_TOUCHWATER) && !(mobj->eflags & MFE_UNDERWATER))
+	{
+		if (P_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
+			S_StartSound(mobj, sfx_floush);
 	}
 }
 

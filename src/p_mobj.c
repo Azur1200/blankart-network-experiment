@@ -3208,6 +3208,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 		return;
 	}
 
+	if (mobj->flags & MF_APPLYTERRAIN)
+	{
+		K_SpawnWaterTrail(mobj);
+	}
+
 	// The rest of this code only executes on a water state change.
 	if (!!(mobj->eflags & MFE_UNDERWATER) == wasinwater)
 		return;
@@ -8333,7 +8338,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			P_Thrust(mobj, mobj->angle, thrustamount);
 
-			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 			{
 				// Not moving fast enough to water run.
 				mobj->flags2 &= ~MF2_WATERRUN;
@@ -8351,6 +8356,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (leveltime % 6 == 0)
 				S_StartSound(mobj, mobj->info->activesound);
 		}
+		P_MobjCheckWater(mobj);
 		break;
 	}
 	case MT_JAWZ:
@@ -8405,7 +8411,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			K_DriftDustHandling(mobj);
 
-			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 			{
 				// Not moving fast enough to water run.
 				mobj->flags2 &= ~MF2_WATERRUN;
@@ -8417,6 +8423,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
 
+			P_MobjCheckWater(mobj);
 			break;
 		}
 		case MT_JAWZ_DUD:
@@ -8435,6 +8442,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 			else
 			{
+				P_MobjCheckWater(mobj);
 				P_SpawnGhostMobj(mobj);
 				mobj->angle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 				P_InstaThrust(mobj, mobj->angle, mobj->movefactor);
@@ -8448,7 +8456,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 						K_DoPogoSpring(mobj, 0, 1);
 				}
 
-				if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+				if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 				{
 					// Not moving fast enough to water run.
 					mobj->flags2 &= ~MF2_WATERRUN;
@@ -8459,14 +8467,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (leveltime % TICRATE == 0)
 					S_StartSound(mobj, mobj->info->activesound);
-			}
 
+
+			}
+			P_MobjCheckWater(mobj);
 			break;
 		}
 	case MT_EGGMANITEM:
 		/* FALLTHRU */
 	case MT_BANANA:
 		mobj->friction = ORIG_FRICTION/4;
+		P_MobjCheckWater(mobj);
 
 		if (mobj->momx || mobj->momy)
 		{
@@ -8488,6 +8499,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+
+		P_MobjCheckWater(mobj);
 		break;
 	case MT_SPB:
 		indirectitemcooldown = 20*TICRATE;
@@ -8505,6 +8518,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
+			P_MobjCheckWater(mobj);
 		}
 		break;
 	case MT_SINK:
@@ -8527,6 +8541,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+		P_MobjCheckWater(mobj);
 		break;
 	case MT_SSMINE:
 		if (mobj->target && mobj->target->player)
@@ -8559,6 +8574,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+		P_MobjCheckWater(mobj);
 		break;
 	case MT_LANDMINE:
 		mobj->friction = ORIG_FRICTION/4;
@@ -8578,6 +8594,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+		P_MobjCheckWater(mobj);
 		break;
 	case MT_DROPTARGET:
 		if (mobj->reactiontime > 0)
@@ -8615,7 +8632,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		mobj->renderflags = (mobj->renderflags|RF_FULLBRIGHT) ^ RF_FULLDARK; // the difference between semi and fullbright
 
-		if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+		if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 		{
 			// Not moving fast enough to water run.
 			mobj->flags2 &= ~MF2_WATERRUN;
@@ -8623,6 +8640,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
+		P_MobjCheckWater(mobj);
 		break;
 	case MT_SPBEXPLOSION:
 		mobj->health--;
