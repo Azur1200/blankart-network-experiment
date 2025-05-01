@@ -6,6 +6,8 @@ if("${CMAKE_COMPILER_IS_GNUCC}" AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows" AND
 endif()
 
 target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
+set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
+set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
 
 # Core sources
 target_sourcefile(c)
@@ -284,7 +286,6 @@ target_compile_options(SRB2SDL2 PRIVATE
 
 		$<$<VERSION_GREATER_EQUAL:$<C_COMPILER_VERSION>,9.1.0>:
 			-Wno-error=address-of-packed-member
-			-Wc11-c2x-compat
 		>
 	>
 
