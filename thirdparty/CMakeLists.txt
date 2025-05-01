@@ -13,8 +13,8 @@ endif()
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	CPMAddPackage(
 		NAME SDL2
-		VERSION 2.24.2
-		URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.24.2.zip"
+		VERSION 2.28.0
+		URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-2.28.0.zip"
 		EXCLUDE_FROM_ALL ON
 		OPTIONS
 			"BUILD_SHARED_LIBS ${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}"
