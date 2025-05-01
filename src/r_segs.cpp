@@ -1301,7 +1301,18 @@ static inline void R_ExpandPlaneY(visplane_t *pl, INT32 x, INT16 top, INT16 bott
 // Returns true if a fake floor can clip a column away.
 static boolean R_FFloorCanClip(visffloor_t *pfloor)
 {
-	return (cv_ffloorclip.value && !R_IsFFloorTranslucent(pfloor) && !pfloor->polyobj);
+	boolean value = false;
+
+	if (cv_ffloorclip.value)
+		value = true;
+
+	if (R_IsFFloorTranslucent(pfloor))
+		value = false;
+
+	if (pfloor->polyobj)
+		value = false;
+
+	return value;
 }
 
 //
