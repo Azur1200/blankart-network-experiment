@@ -15,8 +15,12 @@ target_sources(SRB2SDL2 PRIVATE
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
 	target_sources(SRB2SDL2 PRIVATE
-		../win32/win_dbg.c
-		../win32/Srb2win.rc)
+		../win32/win_dbg.c)
+
+	if("${CMAKE_C_COMPILER_ID}" MATCHES clang)
+		target_sources(SRB2SDL2 PRIVATE
+			../win32/Srb2win.rc)
+	endif()
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
