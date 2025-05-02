@@ -1732,7 +1732,7 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	{
 		fixed_t textop, texbottom;
 
-		P_GetMidtextureTopBottom(ld, &open,
+		P_GetTripwireTopBottom(ld, g_tm.x, g_tm.y,
 				&textop, &texbottom);
 
 		/* The effect handling is done later but it won't

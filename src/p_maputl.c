@@ -496,6 +496,95 @@ P_GetMidtextureTopBottom
 	return true;
 }
 
+boolean
+P_GetTripwireTopBottom
+(		line_t * linedef,
+		fixed_t x,
+		fixed_t y,
+		fixed_t * return_top,
+		fixed_t * return_bottom)
+{
+	side_t *side = &sides[linedef->sidenum[0]];
+	fixed_t textop, texbottom, texheight;
+	INT32 texnum = R_GetTextureNum(side->midtexture); // make sure the texture is actually valid
+
+	sector_t *front = linedef->frontsector;
+	sector_t *back = linedef->backsector;
+	fixed_t z;
+
+	if (!texnum)
+		return false;
+
+	textop = P_GetSectorCeilingZAt(front, x, y);
+	texbottom = P_GetSectorFloorZAt(front, x, y);
+
+	if (back)
+	{
+		z = P_GetSectorCeilingZAt(back, x, y);
+
+		if (z < textop)
+			textop = z;
+
+		z = P_GetSectorFloorZAt(back, x, y);
+
+		if (z > texbottom)
+			texbottom = z;
+	}
+
+	// Get the midtexture's height
+	texheight = textures[texnum]->height << FRACBITS;
+
+	// Set texbottom and textop to the Z coordinates of the texture's boundaries
+#if 0
+	// don't remove this code unless solid midtextures
+	// on non-solid polyobjects should NEVER happen in the future
+	if (linedef->polyobj && (linedef->polyobj->flags & POF_TESTHEIGHT))
+	{
+		if ((linedef->flags & ML_WRAPMIDTEX) && !side->repeatcnt) // "infinite" repeat
+		{
+			texbottom = back->floorheight + side->rowoffset;
+			textop = back->ceilingheight + side->rowoffset;
+		}
+		else if (linedef->flags & ML_MIDPEG)
+		{
+			texbottom = back->floorheight + side->rowoffset;
+			textop = texbottom + texheight*(side->repeatcnt+1);
+		}
+		else
+		{
+			textop = back->ceilingheight + side->rowoffset;
+			texbottom = textop - texheight*(side->repeatcnt+1);
+		}
+	}
+	else
+#endif
+	{
+		if ((linedef->flags & ML_WRAPMIDTEX) && !side->repeatcnt) // "infinite" repeat
+		{
+			texbottom += side->rowoffset;
+			textop += side->rowoffset;
+		}
+		else if (linedef->flags & ML_MIDPEG)
+		{
+			texbottom += side->rowoffset;
+			textop = texbottom + texheight*(side->repeatcnt+1);
+		}
+		else
+		{
+			textop += side->rowoffset;
+			texbottom = textop - texheight*(side->repeatcnt+1);
+		}
+	}
+
+	if (return_top)
+		*return_top = textop;
+
+	if (return_bottom)
+		*return_bottom = texbottom;
+
+	return true;
+}
+
 static boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
 {
 	if (linedef->polyobj)
@@ -512,6 +601,51 @@ static boolean P_MidtextureIsSolid(line_t *linedef, mobj_t *mobj)
 
 	// Determined solely by the flag.
 	return ((linedef->flags & ML_MIDSOLID) == ML_MIDSOLID);
+}
+
+static void P_ProcessMidtextureTopBottom
+(
+	fixed_t textop,
+	fixed_t texbottom,
+	mobj_t *mobj,
+	fixed_t thingtop,
+	opening_t *open,
+	fixed_t *topedge,
+	fixed_t *botedge,
+	int hi,
+	int lo
+)
+{
+	fixed_t texmid, delta1, delta2;
+	texmid = texbottom+(textop-texbottom)/2;
+
+	delta1 = abs(mobj->z - texmid);
+	delta2 = abs(thingtop - texmid);
+
+	if (delta1 > delta2)
+	{
+		// Below
+		if (open->ceiling > texbottom)
+		{
+			topedge[lo] -= ( open->ceiling - texbottom );
+
+			open->ceiling = texbottom;
+			open->ceilingstep = ( thingtop    - topedge[lo] );
+			open->ceilingdrop = ( topedge[hi] - topedge[lo] );
+		}
+	}
+	else
+	{
+		// Above
+		if (open->floor < textop)
+		{
+			botedge[hi] += ( textop - open->floor );
+
+			open->floor = textop;
+			open->floorstep = ( botedge[hi] - mobj->z );
+			open->floordrop = ( botedge[hi] - botedge[lo] );
+		}
+	}
 }
 
 void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
@@ -620,39 +754,14 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 		if (P_MidtextureIsSolid(linedef, mobj) == true)
 		{
 			fixed_t textop, texbottom;
-			fixed_t texmid, delta1, delta2;
 
-			if (P_GetMidtextureTopBottom(linedef, open, &textop, &texbottom))
+			if (P_IsLineTripWire(linedef) && P_GetTripwireTopBottom(linedef, cross.x, cross.y, &textop, &texbottom))
 			{
-				texmid = texbottom+(textop-texbottom)/2;
-
-				delta1 = abs(mobj->z - texmid);
-				delta2 = abs(thingtop - texmid);
-
-				if (delta1 > delta2)
-				{
-					// Below
-					if (open->ceiling > texbottom)
-					{
-						topedge[lo] -= ( open->ceiling - texbottom );
-
-						open->ceiling = texbottom;
-						open->ceilingstep = ( thingtop    - topedge[lo] );
-						open->ceilingdrop = ( topedge[hi] - topedge[lo] );
-					}
-				}
-				else
-				{
-					// Above
-					if (open->floor < textop)
-					{
-						botedge[hi] += ( textop - open->floor );
-
-						open->floor = textop;
-						open->floorstep = ( botedge[hi] - mobj->z );
-						open->floordrop = ( botedge[hi] - botedge[lo] );
-					}
-				}
+				P_ProcessMidtextureTopBottom(textop, texbottom, mobj, thingtop, open, topedge, botedge, hi, lo);
+			}
+			else if (P_GetMidtextureTopBottom(linedef, open, &textop, &texbottom))
+			{
+				P_ProcessMidtextureTopBottom(textop, texbottom, mobj, thingtop, open, topedge, botedge, hi, lo);
 			}
 		}
 
