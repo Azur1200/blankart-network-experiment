@@ -8382,6 +8382,11 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 		if (bestwaypoint != NULL)
 		{
 			player->currentwaypoint = bestwaypoint;
+
+			// if currentwaypoint is the finish line, don't set nextwaypoint to it!
+			// fixes bigwaypointgap triggering if we're facing the back of the finish line
+			if (bestwaypoint == finishline)
+				bestwaypoint = NULL;
 		}
 
 		// check the waypoint's location in relation to the player
@@ -8499,7 +8504,8 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 				}
 
 				if ((waypoint->prevwaypoints != NULL) && (waypoint->numprevwaypoints > 0U)
-				&& !(K_PlayerUsesBotMovement(player))) // Bots do not need prev waypoints
+				&& !(K_PlayerUsesBotMovement(player)) // Bots do not need prev waypoints
+				&& waypoint != finishline) // do not check finish line's prevwaypoints
 				{
 					for (i = 0U; i < waypoint->numprevwaypoints; i++)
 					{

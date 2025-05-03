@@ -2051,7 +2051,7 @@ static void K_HandleLapIncrement(player_t *player)
 				player->karthud[khud_lapanimation] = 80;
 			}
 
-			if (netgame && player->laps >= numlaps)
+			if (netgame && player->laps > numlaps)
 				CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 
 			if (P_IsDisplayPlayer(player))
@@ -2135,7 +2135,9 @@ static void K_HandleLapDecrement(player_t *player)
 {
 	if (player)
 	{
-		if ((player->starpostnum == 0) && (player->laps > 0))
+		if (K_IgnoreFinishLine(player))
+			return;
+		if (player->laps > 0)
 		{
 			player->starpostnum = numstarposts;
 			player->laps--;

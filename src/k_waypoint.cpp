@@ -2179,14 +2179,14 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 				firstwaypoint = thiswaypoint;
 			}
 
-			if (K_GetWaypointIsFinishline(thiswaypoint))
+			if (K_GetWaypointIsFinishline(thiswaypoint) && K_GetWaypointIsEnabled(thiswaypoint))
 			{
 				if (finishline != NULL)
 				{
 					const INT32 oldfinishlineid = K_GetWaypointID(finishline);
 					const INT32 thiswaypointid  = K_GetWaypointID(thiswaypoint);
 					CONS_Alert(
-						CONS_WARNING, "Multiple finish line waypoints with IDs %d and %d! Using %d.",
+						CONS_WARNING, "Multiple finish line waypoints with IDs %d and %d! Using %d.\n",
 						oldfinishlineid, thiswaypointid, thiswaypointid);
 				}
 				finishline = thiswaypoint;
