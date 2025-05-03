@@ -5356,7 +5356,7 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		P_ProcessZoomTube(player, sectag, true);
 	if (sector->specialflags & SSF_FINISHLINE)
 	{
-		if ((gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+		if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 		{
 			K_HandleLapIncrement(player);
 			player->pflags |= PF_HITFINISHLINE;

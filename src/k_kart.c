@@ -11002,6 +11002,11 @@ boolean K_SlipdashActive(void)
 
 boolean K_UsingLegacyCheckpoints(void)
 {
+	if (patch_version && waypointcap)
+	{
+		// we're presumably adding waypoints to an existing map
+		return false;
+	}
 	if (numbosswaypoints > 0)
 	{
 		// We are using Kart V1 waypoints!

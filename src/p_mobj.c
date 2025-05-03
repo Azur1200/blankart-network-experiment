@@ -12860,15 +12860,22 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void P_SnapToFinishLine(mobj_t *mobj)
+static void SpreadFinishLine(line_t *line, line_t *prev, boolean flip)
 {
-	line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
-			mobj->subsector->sector, 2001); // case 2001: Finish Line
-	if (finishline != NULL)
+	size_t i;
+	for (i = 0; i < numlines; i++)
 	{
-		P_UnsetThingPosition(mobj);
-		P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
-		P_SetThingPosition(mobj);
+		line_t *line2 = &lines[i];
+		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
+		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
+		{
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2;
+			line2->special = 2001; // Finish Line
+			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			if (flipped != flip)
+				line2->args[0] |= TMCFF_FLIP;
+			SpreadFinishLine(line2, line, flipped != flip);
+		}
 	}
 }
 
@@ -13161,7 +13168,21 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 			mobj->extravalue2 = 1; // args[2] of 1 means the waypoint is at the finish line
 			mobj->reactiontime = 0; // Also don't respawn at finish lines
 
-			P_SnapToFinishLine(mobj);
+			line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
+					mobj->subsector->sector, -1);
+			if (finishline != NULL)
+			{
+				P_UnsetThingPosition(mobj);
+				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
+				P_SetThingPosition(mobj);
+
+				boolean flip = mthing->args[2] & TMWPF_FLIPFINISH;
+				finishline->special = 2001; // Finish Line
+				finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+				if (flip)
+					finishline->args[0] |= TMCFF_FLIP;
+				SpreadFinishLine(finishline, NULL, flip);
+			}
 		}
 		else
 		{
