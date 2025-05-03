@@ -1067,6 +1067,8 @@ static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vecto
 	FV3_Normalize(a_o);
 }
 
+#define MINBOTDRIFT (KART_FULLTURN * 2) / 3 // 0.66
+
 /*--------------------------------------------------
 	static INT32 K_BotStartDrift(player_t* player)
 
@@ -1282,6 +1284,11 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			turnamt = 0;
 		}
 
+		fixed_t minspeed = (10 * player->mo->scale);
+
+		// 0.5 on Easy, 1.0 on Normal, 1.5 on Hard.
+		INT32 mindriftamt = FixedMul(MINBOTDRIFT * (cv_kartspeed.value + 1), 2 * FRACUNIT);
+
 		// Start or continue a drift.
 		if (player->botvars.drifttime)
 		{
@@ -1290,6 +1297,18 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			&& (player->botvars.drifttime < 4))
 			{
 				turnamt = KART_FULLTURN * -player->botvars.driftturn;
+			}
+			else if ((player->botvars.powersliding) && (player->speed >= minspeed))
+			{
+				// Force a mostly inward drift during powerslides.
+				if (player->botvars.driftturn < 0)
+				{
+					turnamt = std::min<INT32>(KART_FULLTURN, std::max<INT32>(mindriftamt, turnamt));
+				}
+				else
+				{
+					turnamt = std::min<INT32>(-MINBOTDRIFT, std::max<INT32>(-mindriftamt, turnamt));
+				}
 			}
 
 			cmd->buttons |= BT_DRIFT;
@@ -1312,6 +1331,8 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 
 	return turnamt;
 }
+
+#undef MINBOTDRIFT
 
 /*--------------------------------------------------
 	static INT32 K_HandleBotReverse(const player_t *player, ticcmd_t *cmd, botprediction_t *predict)

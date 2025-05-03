@@ -128,6 +128,8 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 INT32 K_GetRollingRouletteItem(player_t *player);
 INT32 K_GetShieldFromPlayer(player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
+SINT8 K_ItemResultToType(SINT8 getitem);
+UINT8 K_ItemResultToAmount(SINT8 getitem);
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid);
 void K_KartPainEnergyFling(player_t *player);

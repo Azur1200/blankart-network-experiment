@@ -185,6 +185,23 @@ typedef enum
 	NUMKARTRESULTS
 } kartitems_t;
 
+typedef enum {
+	KROULETTE_DISABLED,
+	KROULETTE_ACTIVE,
+} kartroulette_t;
+
+typedef enum {
+	KROULETTETYPE_NORMAL,
+	KROULETTETYPE_KARMA,
+	KROULETTETYPE_EGGMAN,
+} kartroulettetype_t;
+
+typedef enum {
+	KITEMBLINKMODE_NORMAL,
+	KITEMBLINKMODE_MASHED,
+	KITEMBLINKMODE_KARMA,
+} kartitemblinkmode_t;
+
 typedef enum
 {
 	KSHIELD_NONE = 0,

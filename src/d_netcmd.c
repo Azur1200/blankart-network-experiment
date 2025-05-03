@@ -5569,7 +5569,7 @@ static void Got_GiveItemcmd(UINT8 **cp, INT32 playernum)
 	}
 
 	K_StripItems(&players[playernum]);
-	players[playernum].itemroulette = 0;
+	players[playernum].itemroulette = KROULETTE_DISABLED;
 
 	players[playernum].itemtype   = item;
 	players[playernum].itemamount = amt;

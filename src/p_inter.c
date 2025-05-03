@@ -136,7 +136,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				return false;
 
 			// Already have fake
-			if (player->roulettetype == 2
+			if (player->roulettetype == KROULETTETYPE_EGGMAN
 				|| player->eggmanexplode)
 				return false;
 		}
@@ -457,8 +457,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				player->itemroulette = 1;
-				player->roulettetype = 1;
+				player->itemroulette = KROULETTE_ACTIVE;
+				player->roulettetype = KROULETTETYPE_KARMA;
 			}
 			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
 			{
@@ -496,8 +496,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				K_DropItems(player); //K_StripItems(player);
 				//K_StripOther(player);
 
-				player->itemroulette = 1;
-				player->roulettetype = 2;
+				player->itemroulette = KROULETTE_ACTIVE;
+				player->roulettetype = KROULETTETYPE_EGGMAN;
 
 				if (special->target->player->eggmanblame >= 0
 					&& special->target->player->eggmanblame < MAXPLAYERS
@@ -591,8 +591,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->fuse || !P_CanPickupItem(player, 1) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
-			player->itemroulette = 1;
-			player->roulettetype = 1;
+			player->itemroulette = KROULETTE_ACTIVE;
+			player->roulettetype = KROULETTETYPE_KARMA;
 
 			// Karma fireworks
 			for (i = 0; i < 5; i++)
@@ -1713,9 +1713,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 						player->itemamount = max(1, target->movecount);
 				}
 				player->itemblink = TICRATE;
-				player->itemblinkmode = 0;
-				player->itemroulette = 0;
-				player->roulettetype = 0;
+				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
+				player->itemroulette = KROULETTE_DISABLED;
+				player->roulettetype = KROULETTETYPE_NORMAL;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
