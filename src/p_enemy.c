@@ -10606,7 +10606,7 @@ void A_ItemPop(mobj_t *actor)
 	
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
-		actor->target->player->itemroulette = 1;
+		actor->target->player->itemroulette = KROULETTE_ACTIVE;
 	}
 	else if (itembreaker)
 	{

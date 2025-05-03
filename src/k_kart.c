@@ -1144,7 +1144,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 
 	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
 	{
-		if (player->roulettetype == 1 && oddsvalid[1] == true)
+		if (player->roulettetype == KROULETTETYPE_KARMA && oddsvalid[1] == true)
 		{
 			// 1 is the extreme odds of player-controlled "Karma" items
 			useodds = 1;
@@ -1353,7 +1353,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 
 	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
 	{
-		if (player->roulettetype == 1 && oddsvalid[1] == true)
+		if (player->roulettetype == KROULETTETYPE_KARMA && oddsvalid[1] == true)
 		{
 			// 1 is the extreme odds of player-controlled "Karma" items
 			useodds = 1;
@@ -1585,11 +1585,11 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 1:
 	// Fake Eggman items
-	if (player->roulettetype == 2)
+	if (player->roulettetype == KROULETTETYPE_EGGMAN)
 	{
 		player->eggmanexplode = 4*TICRATE;
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrole);
 		return;
@@ -1601,9 +1601,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		K_KartGetItemResult(player, cv_kartdebugitem.value);
 		player->itemblink = TICRATE;
-		player->itemblinkmode = 2;
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemblinkmode = KITEMBLINKMODE_KARMA;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_dbgsal);
 		return;
@@ -1617,9 +1617,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 		K_KartGetItemResult(player, itemroll);
 		player->itemblink = TICRATE;
-		player->itemblinkmode = 0;
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemblinkmode = KITEMBLINKMODE_NORMAL;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrolf);
 		return;
@@ -1636,7 +1636,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && ((K_RingsActive() == true) && (modeattacking || cv_superring.value))) // ANY mashed value? You get rings.
 			{
 				K_KartGetItemResult(player, KITEM_SUPERRING);
-				player->itemblinkmode = 1;
+				player->itemblinkmode = KITEMBLINKMODE_MASHED;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
@@ -1646,7 +1646,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 					K_KartGetItemResult(player, KITEM_SNEAKER);
 				else  // Default to sad if nothing's enabled...
 					K_KartGetItemResult(player, KITEM_SAD);
-				player->itemblinkmode = 0;
+				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
@@ -1656,29 +1656,29 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			if (mashed && (bossinfo.boss || cv_banana.value) && !itembreaker) // ANY mashed value? You get a banana.
 			{
 				K_KartGetItemResult(player, KITEM_BANANA);
-				player->itemblinkmode = 1;
+				player->itemblinkmode = KITEMBLINKMODE_MASHED;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
 			else if (bossinfo.boss)
 			{
 				K_KartGetItemResult(player, KITEM_ORBINAUT);
-				player->itemblinkmode = 0;
+				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
 			else if (itembreaker)
 			{
 				K_KartGetItemResult(player, KITEM_SNEAKER);
-				player->itemblinkmode = 1;
+				player->itemblinkmode = KITEMBLINKMODE_MASHED;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolm);
 			}
 		}
 
 		player->itemblink = TICRATE;
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 		return;
 	}
 
@@ -1691,9 +1691,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		{
 			K_KartGetItemResult(player, KITEM_SUPERRING);
 			player->itemblink = TICRATE;
-			player->itemblinkmode = 1;
-			player->itemroulette = 0;
-			player->roulettetype = 0;
+			player->itemblinkmode = KITEMBLINKMODE_MASHED;
+			player->itemroulette = KROULETTE_DISABLED;
+			player->roulettetype = KROULETTETYPE_NORMAL;
 			if (P_IsDisplayPlayer(player))
 				S_StartSound(NULL, sfx_itrolm);
 			return;
@@ -1710,9 +1710,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		{
 			K_KartGetItemResult(player, KITEM_SPB);
 			player->itemblink = TICRATE;
-			player->itemblinkmode = 2;
-			player->itemroulette = 0;
-			player->roulettetype = 0;
+			player->itemblinkmode = KITEMBLINKMODE_KARMA;
+			player->itemroulette = KROULETTE_DISABLED;
+			player->roulettetype = KROULETTETYPE_NORMAL;
 			if (P_IsDisplayPlayer(player))
 				S_StartSound(NULL, sfx_itrolk);
 			return;
@@ -1735,9 +1735,9 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		K_KartGetItemResult(player, KITEM_SPB);
 		player->itemblink = TICRATE;
-		player->itemblinkmode = 2;
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemblinkmode = KITEMBLINKMODE_KARMA;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrolk);
 		return;
@@ -1776,13 +1776,13 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	}
 
 	if (P_IsDisplayPlayer(player))
-		S_StartSound(NULL, ((player->roulettetype == 1) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
+		S_StartSound(NULL, ((player->roulettetype == KROULETTETYPE_KARMA) ? sfx_itrolk : (mashed ? sfx_itrolm : sfx_itrolf)));
 
 	player->itemblink = TICRATE;
-	player->itemblinkmode = ((player->roulettetype == 1) ? 2 : (mashed ? 1 : 0));
+	player->itemblinkmode = ((player->roulettetype == KROULETTETYPE_KARMA) ? KITEMBLINKMODE_KARMA : (mashed ? KITEMBLINKMODE_MASHED :  KITEMBLINKMODE_NORMAL));
 
-	player->itemroulette = 0; // Since we're done, clear the roulette number
-	player->roulettetype = 0; // This too
+	player->itemroulette = KROULETTE_DISABLED; // Since we're done, clear the roulette number
+	player->roulettetype = KROULETTETYPE_NORMAL; // This too
 }
 
 //}
@@ -7722,7 +7722,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->itemblink && player->itemblink-- <= 0)
 	{
-		player->itemblinkmode = 0;
+		player->itemblinkmode = KITEMBLINKMODE_NORMAL;
 		player->itemblink = 0;
 	}
 
@@ -7815,7 +7815,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_KartItemRoulette(player, cmd);
 
 	// Gain rings when roulette starts.
-	if (player->itemroulette > 0 && player->previtemroulette == 0)
+	if (player->itemroulette > KROULETTE_DISABLED
+		&& player->previtemroulette == KROULETTE_DISABLED
+		&& player->roulettetype != KROULETTETYPE_EGGMAN)
 	{
 		K_AwardScaledPlayerRings(player, ASR_ITEMBOX);
 	}
@@ -9693,8 +9695,8 @@ void K_StripItems(player_t *player)
 
 	if (!player->itemroulette || player->roulettetype != 2)
 	{
-		player->itemroulette = 0;
-		player->roulettetype = 0;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
 	}
 
 	player->hyudorotimer = 0;
@@ -9711,8 +9713,8 @@ void K_StripItems(player_t *player)
 
 void K_StripOther(player_t *player)
 {
-	player->itemroulette = 0;
-	player->roulettetype = 0;
+	player->itemroulette = KROULETTE_DISABLED;
+	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
 	if (player->growshrinktimer)
