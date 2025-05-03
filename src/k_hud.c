@@ -4297,44 +4297,48 @@ K_drawMiniPing (void)
 	}
 }
 
+static patch_t *K_GetSmallStaticCachedItemPatch(kartitems_t item)
+{
+	UINT8 offset;
+
+	item = K_ItemResultToType(item);
+
+	switch (item)
+	{
+		case KITEM_INVINCIBILITY:
+			offset = 7;
+			break;
+
+		case KITEM_BANANA:
+			offset = 4;
+			break;
+
+		case KITEM_ORBINAUT:
+			offset = 4;
+			break;
+
+		case KITEM_JAWZ:
+			offset = 2;
+			break;
+
+		case KITEM_SNEAKER:
+			offset = 3;
+			break;
+
+		default:
+			offset = 1;
+	}
+
+	return K_GetCachedItemPatch(item, offset);
+}
+
 static void K_drawDistributionDebugger(void)
 {
-	patch_t *items[NUMKARTRESULTS] = {
-		kp_sadface[1],
-		kp_sneaker[3],
-		kp_rocketsneaker[1],
-		kp_invincibility[7],
-		kp_banana[4],
-		kp_eggman[1],
-		kp_orbinaut[4],
-		kp_jawz[2],
-		kp_mine[1],
-		kp_ballhog[1],
-		kp_selfpropelledbomb[1],
-		kp_grow[1],
-		kp_shrink[1],
-		kp_thundershield[1],
-		kp_hyudoro[1],
-		kp_pogospring[1],
-		kp_kitchensink[1],
-		kp_superring[1],
-		kp_landmine[1],
-		kp_bubbleshield[1],
-		kp_flameshield[1],
-		kp_droptarget[1],
-
-		kp_sneaker[3],
-		kp_sneaker[3],
-		kp_banana[4],
-		kp_banana[4],
-		kp_orbinaut[4],
-		kp_orbinaut[4],
-		kp_jawz[2]
-	};
 	UINT8 useodds = 0;
 	UINT8 pingame = 0, bestbumper = 0;
 	UINT32 pdis = 0;
 	INT32 i;
+	INT32 item;
 	INT32 x = -9, y = -9;
 	boolean dontforcespb = false;
 	boolean spbrush = false;
@@ -4354,7 +4358,7 @@ static void K_drawDistributionDebugger(void)
 			bestbumper = players[i].bumper;
 	}
 
-	if (!(K_UsingLegacyCheckpoints()))
+	if (!K_UsingLegacyCheckpoints())
 	{
 		// lovely double loop......
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -4368,6 +4372,123 @@ static void K_drawDistributionDebugger(void)
 			}
 		}
 	}
+	else
+	{
+		// Pain and fucking suffering.
+		SINT8 sortedPlayers[MAXPLAYERS];
+		UINT8 sortLength = 0;
+
+		memset(sortedPlayers, -1, sizeof(sortedPlayers));
+
+		if (stplyr->mo != NULL && P_MobjWasRemoved(stplyr->mo) == false)
+		{
+			// Sort all of the players ahead of you.
+			// Then tally up their distances in a conga line.
+
+			// This will create a much more consistent item
+			// distance algorithm than the "spider web" thing
+			// that it was doing before.
+
+			// Add yourself to the list.
+			// You'll always be the end of the list,
+			// so we can also calculate the length here.
+			sortedPlayers[ stplyr->position - 1 ] = stplyr - players;
+			sortLength = stplyr->position;
+
+			// Will only need to do this if there's goint to be
+			// more than yourself in the list.
+			if (sortLength > 1)
+			{
+				SINT8 firstIndex = -1;
+				SINT8 secondIndex = -1;
+				INT32 startFrom = INT32_MAX;
+
+				// Add all of the other players.
+				for (i = 0; i < MAXPLAYERS; i++)
+				{
+					INT32 pos = INT32_MAX;
+
+					if (!playeringame[i] || players[i].spectator)
+					{
+						continue;
+					}
+
+					if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
+					{
+						continue;
+					}
+
+					pos = players[i].position;
+
+					if (pos <= 0 || pos > MAXPLAYERS)
+					{
+						// Invalid position.
+						continue;
+					}
+
+					if (pos >= stplyr->position)
+					{
+						// Tied / behind us.
+						// Also handles ourselves, obviously.
+						continue;
+					}
+
+					// Ties are done with port priority, if there are any.
+					if (sortedPlayers[ pos - 1 ] == -1)
+					{
+						sortedPlayers[ pos - 1 ] = i;
+					}
+				}
+
+				// The chance of this list having gaps is improbable,
+				// but not impossible. So we need to spend some extra time
+				// to prevent the gaps from mattering.
+				for (i = 0; i < sortLength-1; i++)
+				{
+					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+					{
+						// First valid index in the list found.
+						firstIndex = sortedPlayers[i];
+
+						// Start the next loop after this player.
+						startFrom = i + 1;
+						break;
+					}
+				}
+
+				if (firstIndex >= 0 && firstIndex < MAXPLAYERS
+					&& startFrom < sortLength)
+				{
+					// First index is valid, so we can
+					// start comparing the players.
+
+					player_t *firstPlayer = NULL;
+					player_t *secondPlayer = NULL;
+
+					for (i = startFrom; i < sortLength; i++)
+					{
+						if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+						{
+							secondIndex = sortedPlayers[i];
+
+							firstPlayer = &players[firstIndex];
+							secondPlayer = &players[secondIndex];
+
+							// Add the distance to the player behind you.
+							pdis += P_AproxDistance(P_AproxDistance(
+										firstPlayer->mo->x - secondPlayer->mo->x,
+										firstPlayer->mo->y - secondPlayer->mo->y),
+										firstPlayer->mo->z - secondPlayer->mo->z) / FRACUNIT;
+
+							// Advance to next index.
+							firstIndex = secondIndex;
+						}
+					}
+				}
+			}
+		}
+
+	}
 
 	if (spbplace != -1 && stplyr->position == spbplace+1)
 	{
@@ -4377,17 +4498,12 @@ static void K_drawDistributionDebugger(void)
 		spbrush = true;
 	}
 
+	pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
 
-	if (!(K_UsingLegacyCheckpoints()))
+	if (stplyr->bot && stplyr->botvars.rival)
 	{
-
-		pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
-
-		if (stplyr->bot && stplyr->botvars.rival)
-		{
-			// Rival has better odds :)
-			pdis = (15 * pdis) / 14;
-		}
+		// Rival has better odds :)
+		pdis = (15 * pdis) / 14;
 	}
 
 	if (K_UsingLegacyCheckpoints())
@@ -4398,31 +4514,30 @@ static void K_drawDistributionDebugger(void)
 	if (pingame == 1)
 	{
 		if (stplyr->itemroulette && (stplyr->cmd.buttons & BT_ATTACK) && cv_superring.value && (K_RingsActive() == true))
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, kp_superring[1]);
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(KITEM_SUPERRING));
 		else
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[1]);
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(KITEM_SNEAKER));
 		V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
 	}
 	else if (useodds == 69)
 	{
-		V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[11]);
+		V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(KITEM_SPB));
 		V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
 
 	}
 	else
 	{
 
-		for (i = 1; i < NUMKARTRESULTS; i++)
+		for (item = 1; item < NUMKARTRESULTS; item++)
 		{
 			INT32 itemodds;
-
-
+			INT32 amount;
 
 			if (K_UsingLegacyCheckpoints())
-				itemodds = K_KartGetLegacyItemOdds(useodds, i, 0, spbrush);
+				itemodds = K_KartGetLegacyItemOdds(useodds, item, 0, spbrush);
 			else
 				itemodds = K_KartGetItemOdds(
-					useodds, i,
+					useodds, item,
 					stplyr->distancetofinish,
 					0,
 					spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
@@ -4431,33 +4546,16 @@ static void K_drawDistributionDebugger(void)
 			if (itemodds <= 0)
 				continue;
 
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, items[i]);
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(item));
 			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
 
 			// Display amount for multi-items
-			if (i >= NUMKARTITEMS)
+			amount = K_ItemResultToAmount(item);
+			if (amount > 1)
 			{
-				INT32 amount;
-				switch (i)
-				{
-					case KRITEM_TENFOLDBANANA:
-						amount = 10;
-						break;
-					case KRITEM_QUADORBINAUT:
-						amount = 4;
-						break;
-					case KRITEM_DUALJAWZ:
-						amount = 2;
-						break;
-					case KRITEM_DUALSNEAKER:
-						amount = 2;
-						break;
-					default:
-						amount = 3;
-						break;
-				}
 				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
 			}
+
 
 			x += 32;
 			if (x >= 297)
@@ -4474,6 +4572,8 @@ static void K_drawDistributionDebugger(void)
 		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "FORCED SPB");
 	else
 		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
+
+	V_DrawString(150, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("PDIS %d", pdis));
 
 	if (K_UsingLegacyCheckpoints())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
