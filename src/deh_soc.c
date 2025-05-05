@@ -52,6 +52,7 @@
 // SRB2Kart
 #include "filesrch.h" // refreshdirmenu
 #include "k_follower.h"
+#include "k_hud.h"
 #include "doomstat.h" // MAXMUSNAMES
 
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
@@ -471,6 +472,7 @@ void readfreeslots(MYFILE *f)
 						FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
 						strcpy(FREE_SKINCOLORS[i],word);
 						M_AddMenuColor(numskincolors++);
+						K_ReloadHUDColorCvar();
 						break;
 					}
 			}

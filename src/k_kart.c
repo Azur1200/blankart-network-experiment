@@ -4148,7 +4148,7 @@ void K_ApplyTripWire(player_t *player, tripwirestate_t state)
 
 	if (state == TRIPSTATE_PASSED)
 	{
-		S_StartSound(player->mo, sfx_ssa015);
+		//S_StartSound(player->mo, sfx_ssa015);
 		player->tripwireLeniency += TICRATE/2;
 	}
 	else if (state == TRIPSTATE_BLOCKED)

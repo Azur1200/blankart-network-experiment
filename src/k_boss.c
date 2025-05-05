@@ -71,7 +71,7 @@ void K_BossInfoTicker(void)
 
 	if (bossinfo.doweakspotsound != SPOT_NONE)
 	{
-		S_StartSound(NULL, sfx_mbs55); // may change for bump option
+		//S_StartSound(NULL, sfx_mbs55); // may change for bump option
 		bossinfo.doweakspotsound = SPOT_NONE;
 	}
 

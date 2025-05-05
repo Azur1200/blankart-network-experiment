@@ -101,7 +101,8 @@
 extern "C" {
 #endif
 
-#define NOMD5
+// Special Hashing.
+//#define NOMD5
 //#define NOFILEHASH
 
 // Uncheck this to compile debugging code

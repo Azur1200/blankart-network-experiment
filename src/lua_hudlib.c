@@ -33,6 +33,8 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
+#include "k_hud.h"
+
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
 boolean hud_running = false;
@@ -167,6 +169,50 @@ static const char *const camera_opt[] = {
 	"pan",
 	"pitch",
 	"pnum",
+	NULL};
+
+enum hudpatch {
+	hudpatch_item = 0,
+	hudpatch_itemmul
+};
+
+static const char *const hud_patch_options[] = {
+	"item",
+	"itemmul",
+	NULL};
+
+enum hudoffsets {
+	hudoffsets_item = 0,
+	hudoffsets_time,
+	hudoffsets_gametypeinfo,
+	hudoffsets_rings,
+	hudoffsets_countdown,
+	hudoffsets_speedometer,
+	hudoffsets_accessibility,
+	hudoffsets_position,
+	hudoffsets_minirankings,
+	hudoffsets_startcountdown,
+	hudoffsets_check,
+	hudoffsets_minimap,
+	hudoffsets_wanted,
+	//hudoffsets_statdisplay,
+};
+
+static const char *const hud_offsets_options[] = {
+	"item",
+	"time",
+	"gametypeinfo",
+	"rings",
+	"countdown",
+	"speedometer",
+	"accessibility",
+	"position",
+	"minirankings",
+	"startcountdown",
+	"check",
+	"minimap",
+	"wanted",
+	//"statdisplay",
 	NULL};
 
 static int colormap_get(lua_State *L)
@@ -1093,6 +1139,53 @@ static int libd_getColormap(lua_State *L)
 	return 1;
 }
 
+static int libd_getColorHudPatch(lua_State *L)
+{
+	HUDONLY
+	enum hudpatch option = luaL_checkoption(L, 1, NULL, hud_patch_options);
+	patch_t *patch;
+	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	boolean small, dark;
+
+	switch (option) {
+		case hudpatch_item:
+			small = lua_optboolean(L, 2);
+			dark = lua_optboolean(L, 3);
+			patch = K_getItemBoxPatch(small, dark);
+			if (!cv_colorizeditembox.value)
+				colormap = NULL;
+			break;
+		case hudpatch_itemmul:
+			small = lua_optboolean(L, 2);
+			patch = K_getItemMulPatch(small);
+			break;
+		default:
+			return 0; // you shouldn't be here
+	}
+
+	LUA_PushUserdata(L, patch, META_PATCH);
+	if (colormap && K_UseColorHud())
+		LUA_PushUserdata(L, colormap, META_COLORMAP);
+	else
+		lua_pushnil(L);
+
+	return 2;
+}
+
+static int libd_getHudColor(lua_State *L)
+{
+	HUDONLY
+	lua_pushinteger(L, K_GetHudColor());
+	return 1;
+}
+
+static int libd_useColorHud(lua_State *L)
+{
+	HUDONLY
+	lua_pushboolean(L, K_UseColorHud());
+	return 1;
+}
+
 static int libd_getStringColormap(lua_State *L)
 {
 	INT32 flags = luaL_checkinteger(L, 1);
@@ -1252,6 +1345,41 @@ static int libd_getlocaltransflag(lua_State *L)
 	return 1;
 }
 
+enum huddrawinfo {
+	huddrawinfo_item = 0,
+	huddrawinfo_gametypeinfo,
+	huddrawinfo_rings,
+	huddrawinfo_minimap
+};
+
+static const char *const hud_drawinfo_options[] = {
+	"item",
+	"gametypeinfo",
+	"rings",
+	"minimap",
+	NULL};
+
+static int libd_getDrawInfo(lua_State *L)
+{
+	HUDONLY
+	enum huddrawinfo option = luaL_checkoption(L, 1, NULL, hud_drawinfo_options);
+	drawinfo_t info;
+
+	switch(option) {
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);  break;
+		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);     break;
+		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);     break;
+		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);  break;
+		default:
+			return 0; // unreachable
+	}
+
+	lua_pushinteger(L, info.x);
+	lua_pushinteger(L, info.y);
+	lua_pushinteger(L, info.flags);
+	return 3;
+}
+
 // Get cv_translucenthud's value for HUD rendering as a normal V_xxTRANS int
 static int libd_getusertransflag(lua_State *L)
 {
@@ -1342,6 +1470,10 @@ static luaL_Reg lib_draw[] = {
 	{"renderer", libd_renderer},
 	{"localTransFlag", libd_getlocaltransflag},
 	{"drawOnMinimap", libd_drawOnMinimap},
+	{"getColorHudPatch", libd_getColorHudPatch},
+	{"getDrawInfo", libd_getDrawInfo},
+	{"getHudColor", libd_getHudColor},
+	{"useColorHud", libd_useColorHud},
 	{"userTransFlag", libd_getusertransflag},
 	{"getDeltaTime", libd_getDeltaTime},
 	// interpolation
@@ -1418,6 +1550,38 @@ static int lib_hudsetvotebackground(lua_State *L)
 	return 0;
 }
 
+static int lib_hudgetoffsets(lua_State *L)
+{
+	enum hudoffsets option = luaL_checkoption(L, 1, NULL, hud_offsets_options);
+	INT32 ofx, ofy;
+
+#define OFS(it) ofx = cv_##it##_xoffset.value; ofy = cv_##it##_yoffset.value; break;
+#define OFY(it) ofx = 0; ofy = cv_##it##_yoffset.value; break;
+	switch(option) {
+		case hudoffsets_item:           OFS(item)
+		case hudoffsets_time:           OFS(time)
+		case hudoffsets_gametypeinfo:   OFS(laps)
+		case hudoffsets_rings:          OFS(rings)
+		case hudoffsets_countdown:      OFS(dnft)
+		case hudoffsets_speedometer:    OFS(speed)
+		case hudoffsets_position:       OFS(posi)
+		case hudoffsets_minirankings:   OFS(face)
+		case hudoffsets_startcountdown: OFS(stcd)
+		case hudoffsets_check:          OFY(chek)
+		case hudoffsets_minimap:        OFS(mini)
+		case hudoffsets_wanted:         OFS(want)
+		//case hudoffsets_statdisplay:    OFS(stat)
+		default:
+			return 0; // unreachable
+	}
+#undef OFS
+#undef OFY
+
+	lua_pushinteger(L, ofx);
+	lua_pushinteger(L, ofy);
+	return 2;
+}
+
 // add a HUD element for rendering
 extern int lib_hudadd(lua_State *L);
 
@@ -1427,6 +1591,7 @@ static luaL_Reg lib_hud[] = {
 	{"enabled", lib_hudenabled},
 	{"add", lib_hudadd},
 	{"setVoteBackground", lib_hudsetvotebackground},
+	{"getOffsets", lib_hudgetoffsets},
 	{NULL, NULL}
 };
 
