@@ -720,7 +720,7 @@ void K_ReloadHUDColorCvar(void)
 	HudColor_cons_t[0].value = 0;
 	HudColor_cons_t[0].strvalue = "Skin Color";
 
-	for (INT32 i = 1; i < MAXSKINCOLORS; i++)
+	for (INT32 i = 1; i < numskincolors; i++)
 	{
 		HudColor_cons_t[i].value = i;
 		HudColor_cons_t[i].strvalue = skincolors[i].name;				// SRB2kart
@@ -2622,7 +2622,7 @@ static void K_drawKartBumpersOrKarma(void)
 
 			V_DrawStretchyFixedPatch((29 + item->width/2/4)*FRACUNIT, 193*FRACUNIT, FRACUNIT/2, FRACUNIT/2, V_HUDTRANS|splitflags, item, itemcolormap);
 			V_DrawStretchyFixedPatch((29 + item->width/2/4)*FRACUNIT, 192*FRACUNIT, FRACUNIT/2, FRACUNIT/2, V_HUDTRANS|splitflags, item, NULL);
-			V_DrawKartString(fx+47, LAPS_Y+3, V_HUDTRANS|splitflags, va("%d/%d", numtargets, nummapboxes));
+			V_DrawKartString(fx+47, fy+3, V_HUDTRANS|splitflags, va("%d/%d", numtargets, nummapboxes));
 		}
 		else
 		{
