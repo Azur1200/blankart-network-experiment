@@ -11018,6 +11018,17 @@ boolean K_UsingLegacyCheckpoints(void)
 	return false;
 }
 
+boolean K_UsingPatchedMap(void)
+{
+	if (patch_version)
+	{
+		// This map has been patched!
+		return true;
+	}
+
+	return false;
+}
+
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
 {
 	switch (itemType)

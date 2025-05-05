@@ -13139,6 +13139,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		mobj->threshold = mthing->args[0];
 
 		mobj->movecount = tag;
+
 		if (mthing->args[2] & TMWPF_DISABLED)
 		{
 			mobj->extravalue1 = 0; // The waypoint is disabled if extra is on
@@ -13163,6 +13164,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		{
 			mobj->reactiontime = 1;
 		}
+
 		if (mthing->args[2] & TMWPF_FINISHLINE)
 		{
 			mobj->extravalue2 = 1; // args[2] of 1 means the waypoint is at the finish line
@@ -13170,7 +13172,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 
 			line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
 					mobj->subsector->sector, -1);
-			if (finishline != NULL)
+			if (K_UsingPatchedMap() && finishline != NULL)
 			{
 				P_UnsetThingPosition(mobj);
 				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
