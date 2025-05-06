@@ -63,7 +63,6 @@ typedef enum
 	TMWPF_SHORTCUT   = 1<<1,
 	TMWPF_NORESPAWN  = 1<<2,
 	TMWPF_FINISHLINE = 1<<3,
-	TMWPF_FLIPFINISH = 1<<4,
 } textmapwaypointflags_t;
 
 typedef enum
@@ -488,7 +487,9 @@ typedef enum
 
 typedef enum
 {
-	TMCFF_FLIP = 1,
+	TMCFF_FLIP       = 1,
+	TMCFF_SINGLEUSE  = 1<<1,
+	TMCFF_NEEDSECTOR = 1<<2,
 } textmapcrossfinishflags_t;
 
 typedef enum

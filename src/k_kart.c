@@ -11004,7 +11004,7 @@ boolean K_SlipdashActive(void)
 
 boolean K_UsingLegacyCheckpoints(void)
 {
-	if (patch_version && waypointcap)
+	if (K_UsingPatchedMap() && waypointcap)
 	{
 		// we're presumably adding waypoints to an existing map
 		return false;

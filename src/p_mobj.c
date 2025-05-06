@@ -12870,7 +12870,7 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void SpreadFinishLine(line_t *line, line_t *prev, boolean flip)
+static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
 {
 	size_t i;
 	for (i = 0; i < numlines; i++)
@@ -12879,12 +12879,11 @@ static void SpreadFinishLine(line_t *line, line_t *prev, boolean flip)
 		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
 		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
 		{
-			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2;
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
 			line2->special = 2001; // Finish Line
 			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
-			if (flipped != flip)
-				line2->args[0] |= TMCFF_FLIP;
-			SpreadFinishLine(line2, line, flipped != flip);
+			line2->args[0] = args ^ flipped;
+			SpreadFinishLine(line2, line, args ^ flipped);
 		}
 	}
 }
@@ -13181,19 +13180,20 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 			mobj->reactiontime = 0; // Also don't respawn at finish lines
 
 			line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
-					mobj->subsector->sector, -1);
-			if (K_UsingPatchedMap() && finishline != NULL)
+					mobj->subsector->sector, K_UsingPatchedMap() ? -1 : 2001); // case 2001: Finish Line
+			if (finishline != NULL)
 			{
 				P_UnsetThingPosition(mobj);
 				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
 				P_SetThingPosition(mobj);
 
-				boolean flip = mthing->args[2] & TMWPF_FLIPFINISH;
-				finishline->special = 2001; // Finish Line
-				finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
-				if (flip)
-					finishline->args[0] |= TMCFF_FLIP;
-				SpreadFinishLine(finishline, NULL, flip);
+				if (K_UsingPatchedMap())
+				{
+					finishline->special = 2001; // Finish Line
+					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+					finishline->args[0] = mthing->args[4];
+					SpreadFinishLine(finishline, NULL, mthing->args[4]);
+				}
 			}
 		}
 		else

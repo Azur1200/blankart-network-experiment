@@ -4451,6 +4451,36 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 			if ((gametyperules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
 			{
+				// megablock cope 1: single-use finish lines
+				if (args[0] & TMCFF_SINGLEUSE && mo->player->laps > 0)
+					return false;
+
+				// megablock cope 2: require a circuit finish line special to be hit at the same time
+				if (args[0] & TMCFF_NEEDSECTOR)
+				{
+					boolean touching = false;
+					if (P_MobjTouchingSectorSpecialFlag(mo, SSF_FINISHLINE))
+						touching = true;
+
+					// we have to check if we WERE touching a finish line sector last tic too!
+					// otherwise lap decrementing wouldn't work!
+					// YAAAAAAAAAAAAAAY
+					fixed_t realx = mo->x, realy = mo->y;
+					P_UnsetThingPosition(mo);
+					mo->x = mo->old_x, mo->y = mo->old_y;
+					P_SetThingPosition(mo);
+
+					if (P_MobjTouchingSectorSpecialFlag(mo, SSF_FINISHLINE))
+						touching = true;
+
+					P_UnsetThingPosition(mo);
+					mo->x = realx, mo->y = realy;
+					P_SetThingPosition(mo);
+
+					if (!touching)
+						return false;
+				}
+
 				if (((args[0] & TMCFF_FLIP) && (side == 0))
 					|| (!(args[0] & TMCFF_FLIP) && (side == 1))) // crossed from behind to infront
 				{
