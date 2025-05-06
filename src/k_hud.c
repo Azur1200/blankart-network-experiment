@@ -3310,6 +3310,12 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 		amypos += 2 * FRACUNIT;
 	}
 
+	if (cv_minihead.value && (icon == kp_wantedreticle))
+	{
+		amxpos += 2 * FRACUNIT;
+		amypos += 2 * FRACUNIT;
+	}
+
 	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
 }
 
@@ -3414,6 +3420,39 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
 
+typedef struct
+{
+	boolean draw;
+	boolean red;
+} spbdraw_t;
+
+static spbdraw_t K_ShouldDrawSPB(mobj_t *mobj)
+{
+	fixed_t dist;
+	spbdraw_t spbdraw;
+
+	spbdraw.draw = false;
+	spbdraw.red = false;
+
+	if (!mobj->tracer)
+	{
+		spbdraw.draw = true;
+		return spbdraw;
+	}
+
+	dist = FixedHypot(mobj->x-mobj->tracer->x, mobj->y-mobj->tracer->y)/mobj->tracer->scale;
+
+	if (dist < 3072)
+	{
+		spbdraw.draw = (dist > 1024);
+		spbdraw.red  = (leveltime/2 % 2 == 0);
+		return spbdraw;
+	}
+
+	spbdraw.draw = true;
+	return spbdraw;
+}
+
 static void K_drawKartMinimap(void)
 {
 	patch_t *workingPic;
@@ -3427,6 +3466,7 @@ static void K_drawKartMinimap(void)
 	SINT8 numlocalplayers = 0;
 	mobj_t *mobj, *next;	// for SPB drawing (or any other item(s) we may wanna draw, I dunno!)
 	fixed_t interpx, interpy;
+	spbdraw_t spb;
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -3606,23 +3646,27 @@ static void K_drawKartMinimap(void)
 		switch (mobj->type)
 		{
 			case MT_SPB:
-				workingPic = kp_spbminimap;
-#if 0
-				if (mobj->target && !P_MobjWasRemoved(mobj->target) && mobj->target->player && mobj->target->player->skincolor)
-				{
-					colormap = R_GetTranslationColormap(TC_RAINBOW, mobj->target->player->skincolor, GTC_CACHE);
-				}
-				else
-#endif
-				if (mobj->color)
-				{
-					colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
-				}
-				else
-				{
-					colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_RED, GTC_CACHE);
-				}
+				spb = K_ShouldDrawSPB(mobj);
 
+				if (spb.draw)
+				{
+					INT32 tc = spb.red ? TC_BLINK : TC_DEFAULT;
+					skincolornum_t color = SKINCOLOR_RED;
+
+					// If not flashing red then...
+					if (!spb.red && mobj->color != SKINCOLOR_NONE)
+					{
+						// Use SPB's current color.
+						color = mobj->color;
+					}
+
+					workingPic = kp_spbminimap;
+					colormap = R_GetTranslationColormap(tc, color, GTC_CACHE);
+				}
+				else
+				{
+					workingPic = NULL;
+				}
 				break;
 			case MT_RANDOMITEM:
 				if (itembreaker && (mobj->flags2 & MF2_BOSSNOTRAP) && !(mobj->flags2 & MF2_BOSSFLEE))
