@@ -8507,10 +8507,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->health = 1;
 		}
 
+		P_MobjCheckWater(mobj);
+
 		if (mobj->threshold > 0)
 			mobj->threshold--;
-
-		P_MobjCheckWater(mobj);
 		break;
 	case MT_SPB:
 		indirectitemcooldown = 20*TICRATE;
@@ -8551,7 +8551,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
-		P_MobjCheckWater(mobj);
 		break;
 	case MT_SSMINE:
 		if (mobj->target && mobj->target->player)
@@ -8584,7 +8583,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
-		P_MobjCheckWater(mobj);
 		break;
 	case MT_LANDMINE:
 		mobj->friction = ORIG_FRICTION/4;
@@ -8604,7 +8602,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
-		P_MobjCheckWater(mobj);
 		break;
 	case MT_DROPTARGET:
 		if (mobj->reactiontime > 0)
@@ -8650,7 +8647,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
-		P_MobjCheckWater(mobj);
 		break;
 	case MT_SPBEXPLOSION:
 		mobj->health--;
