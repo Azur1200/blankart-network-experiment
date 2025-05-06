@@ -45,7 +45,7 @@ static waypoint_t *startingwaypoint = NULL;
 
 static UINT32 circuitlength = 0U;
 
-#define BASE_TRACK_COMPLEXITY (-7000) // Arbritrary, vibes-based value
+#define BASE_TRACK_COMPLEXITY (cv_kartbot_basetrackcomplexity.value) // Arbritrary, vibes-based value
 static INT32 trackcomplexity = 0;
 
 static size_t numwaypoints       = 0U;
