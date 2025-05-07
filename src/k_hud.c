@@ -88,6 +88,7 @@ consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, inputdisplay_co
 consvar_t cv_colorizedhud = CVAR_INIT ("colorizedhud", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_showfinishedplayers = CVAR_INIT ("showfinishedplayers", "On", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
@@ -238,6 +239,8 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
 	CV_RegisterVar(&cv_colorizeditembox);
+	CV_RegisterVar(&cv_darkitembox);
+	CV_RegisterVar(&cv_showfinishedplayers);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -3551,7 +3554,7 @@ static void K_drawKartMinimap(void)
 			g = g->next;
 		}
 
-		if (!stplyr->mo || stplyr->spectator || stplyr->exiting)
+		if (!stplyr->mo || stplyr->spectator || (!cv_showfinishedplayers.value && stplyr->exiting))
 			return;
 
 		localplayers[numlocalplayers++] = stplyr-players;
@@ -3563,7 +3566,7 @@ static void K_drawKartMinimap(void)
 
 			if (!playeringame[i])
 				continue;
-			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || players[i].exiting)
+			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && stplyr->exiting))
 				continue;
 
 			if (i == displayplayers[0] || i == displayplayers[1] || i == displayplayers[2] || i == displayplayers[3])
