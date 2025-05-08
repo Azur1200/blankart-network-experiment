@@ -556,7 +556,7 @@ SINT8 K_ItemResultToType(SINT8 getitem)
 				return KITEM_JAWZ;
 
 			default:
-				I_Error("Bad item redirect for result %d\n", getitem);
+				I_Error("K_ItemResultToType: Bad item redirect for result %d\n", getitem);
 				break;
 		}
 	}
@@ -5543,6 +5543,7 @@ static void K_SneakerPanelEffect(player_t *player, INT32 type)
 void K_DoSneaker(player_t *player, INT32 type)
 {
 	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
+	const tic_t sneakerduration = (type == 3) ? TICRATE*2 : sneakertime;
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
@@ -5555,46 +5556,24 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 	K_SneakerPanelEffect(player, type);
 
-	if (type != 0)
+	if (type != 0 && type != 3)
 	{
 		K_PlayBoostTaunt(player->mo);
 	}
 
-	player->sneakertimer = sneakertime;
-	player->realsneakertimer = sneakertime;
+	player->sneakertimer = sneakerduration;
+	player->realsneakertimer = sneakerduration;
 
 	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
 	{
 		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
 	}
 
-	// set angle for spun out players:
-	player->boostangle = player->mo->angle;
-}
-
-void K_DoWaterRunPanel(player_t *player)
-{
-	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
-
-	if (player->floorboost == 0 || player->floorboost == 3)
+	if (type == 3)
 	{
-		K_SneakerPanelStackSound(player);
-		K_SpawnDashDustRelease(player);
-		if (intendedboost > player->speedboost)
-			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
+		// Water Running please!
+		player->mo->flags2 |= MF2_WATERRUN;
 	}
-
-	K_SneakerPanelEffect(player, 0);
-
-	player->sneakertimer = TICRATE*2;
-	player->realsneakertimer = TICRATE*2;
-
-	if (player->sneakertimer && (player->floorboost == 0 || player->floorboost == 3))
-	{
-		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
-	}
-
-	player->mo->flags2 |= MF2_WATERRUN;
 
 	// set angle for spun out players:
 	player->boostangle = player->mo->angle;
@@ -7202,7 +7181,7 @@ static void K_RaceStart(player_t *player)
 			if (player->boostcharge <= 36)
 			{
 				player->startboost = 0;
-				K_DoSneaker(player, 0);
+				K_DoSneaker(player, SNEAKERTYPE_PANEL);
 				player->sneakertimer = 70; // PERFECT BOOST!!
 				player->realsneakertimer = 70;
 
@@ -10043,7 +10022,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				{
 					if (ATTACK_IS_DOWN && !HOLDING_ITEM && onground && NO_HYUDORO)
 					{
-						K_DoSneaker(player, 2);
+						K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
 						K_PlayBoostTaunt(player->mo);
 						if (player->rocketsneakertimer <= 3*TICRATE)
 							player->rocketsneakertimer = 1;
@@ -10129,7 +10108,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_SNEAKER:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && onground && NO_HYUDORO)
 							{
-								K_DoSneaker(player, 1);
+								K_DoSneaker(player, SNEAKERTYPE_SNEAKER);
 								K_PlayBoostTaunt(player->mo);
 								player->itemamount--;
 								player->botvars.itemconfirm = 0;
@@ -10146,7 +10125,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								K_PlayBoostTaunt(player->mo);
 								S_StartSound(player->mo, sfx_s3k3a);
 
-								//K_DoSneaker(player, 2);
+								//K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
 
 								player->rocketsneakertimer = (itemtime*3);
 								player->itemamount--;
