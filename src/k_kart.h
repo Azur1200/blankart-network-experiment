@@ -256,6 +256,7 @@ boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
+INT32 K_CheckpointThreshold(void);
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
 

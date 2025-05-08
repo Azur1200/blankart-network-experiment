@@ -11009,6 +11009,11 @@ boolean K_UsingPatchedMap(void)
 	return false;
 }
 
+INT32 K_CheckpointThreshold(void)
+{
+	return K_UsingLegacyCheckpoints() || K_UsingPatchedMap() ? numstarposts - numstarposts/2 : numstarposts;
+}
+
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
 {
 	switch (itemType)
