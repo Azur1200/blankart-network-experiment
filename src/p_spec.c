@@ -5186,9 +5186,9 @@ static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 			player->floorboost = 2;
 
 		if (type == SBPT_WATER)
-			K_DoWaterRunPanel(player);
+			K_DoSneaker(player, SNEAKERTYPE_WATERPANEL);
 		else
-			K_DoSneaker(player, 0);
+			K_DoSneaker(player, SNEAKERTYPE_PANEL);
 	}
 }
 

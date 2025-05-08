@@ -612,7 +612,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		else
 			player->floorboost = 2;
 
-		K_DoSneaker(player, 0);
+		K_DoSneaker(player, SNEAKERTYPE_PANEL);
 	}
 	
 	// WaterRun Panel
@@ -623,7 +623,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		else
 			player->floorboost = 2;
 
-		K_DoWaterRunPanel(player);
+		K_DoSneaker(player, SNEAKERTYPE_WATERPANEL);
 	}
 	
 	// Speed pad
