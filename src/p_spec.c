@@ -1988,7 +1988,7 @@ static void K_HandleLapIncrement(player_t *player)
 	{
 		if (K_IgnoreFinishLine(player))
 			return;
-		if ((player->starpostnum >= K_CheckpointThreshold()) || (player->laps == 0))
+		if ((player->starpostnum >= K_CheckpointThreshold(true)) || (player->laps == 0))
 		{
 			size_t i = 0;
 			UINT8 nump = 0;

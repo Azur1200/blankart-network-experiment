@@ -4790,10 +4790,10 @@ static void K_drawCheckpointDebugger(void)
 	if (stplyr != &players[displayplayers[0]]) // only for p1
 		return;
 
-	if (stplyr->starpostnum >= K_CheckpointThreshold())
+	if (stplyr->starpostnum >= K_CheckpointThreshold(true))
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Can finish)", stplyr->starpostnum, numstarposts));
-	else if (K_CheckpointThreshold() != numstarposts)
-		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Skip: %d)", stplyr->starpostnum, numstarposts, ((numstarposts/2) + stplyr->starpostnum)));
+	else if (K_CheckpointThreshold(false) != numstarposts)
+		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d (Skip: %d)", stplyr->starpostnum, numstarposts, K_CheckpointThreshold(false) + stplyr->starpostnum));
 	else
 		V_DrawString(8, 184, 0, va("Checkpoint: %d / %d", stplyr->starpostnum, numstarposts));
 

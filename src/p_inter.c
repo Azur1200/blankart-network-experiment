@@ -942,7 +942,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	(void)snaptopost;
 
 	// Going backwards triggers sound
-	if (post->health >= ((numstarposts/2) + player->starpostnum))
+	if (K_CheckpointThreshold(false) == numstarposts
+	    ? post->health - player->starpostnum > 1
+	    : post->health >= player->starpostnum + K_CheckpointThreshold(false))
 	{
 		if (!player->checkskip)
 		{
