@@ -8358,6 +8358,11 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 		if (bestwaypoint != NULL)
 		{
 			player->currentwaypoint = bestwaypoint;
+
+			// if currentwaypoint is the finish line, don't set nextwaypoint to it!
+			// fixes bigwaypointgap triggering if we're facing the back of the finish line
+			if (bestwaypoint == finishline)
+				bestwaypoint = NULL;
 		}
 
 		// check the waypoint's location in relation to the player
@@ -8475,7 +8480,8 @@ static boolean K_SetPlayerNextWaypoint(player_t *player)
 				}
 
 				if ((waypoint->prevwaypoints != NULL) && (waypoint->numprevwaypoints > 0U)
-				&& !(K_PlayerUsesBotMovement(player))) // Bots do not need prev waypoints
+				&& !(K_PlayerUsesBotMovement(player)) // Bots do not need prev waypoints
+				&& waypoint != finishline) // do not check finish line's prevwaypoints
 				{
 					for (i = 0U; i < waypoint->numprevwaypoints; i++)
 					{
@@ -10978,6 +10984,11 @@ boolean K_SlipdashActive(void)
 
 boolean K_UsingLegacyCheckpoints(void)
 {
+	if (K_UsingPatchedMap() && waypointcap)
+	{
+		// we're presumably adding waypoints to an existing map
+		return false;
+	}
 	if (numbosswaypoints > 0)
 	{
 		// We are using Kart V1 waypoints!
@@ -10985,6 +10996,25 @@ boolean K_UsingLegacyCheckpoints(void)
 	}
 
 	return false;
+}
+
+boolean K_UsingPatchedMap(void)
+{
+	if (patch_version)
+	{
+		// This map has been patched!
+		return true;
+	}
+
+	return false;
+}
+
+INT32 K_CheckpointThreshold(boolean roundup)
+{
+	if (K_UsingLegacyCheckpoints() || K_UsingPatchedMap())
+		return roundup ? numstarposts - numstarposts/2 : numstarposts/2;
+	else
+		return numstarposts;
 }
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)

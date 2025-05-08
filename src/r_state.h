@@ -64,8 +64,9 @@ extern size_t numspritelumps, max_spritelumps;
 // Lookup tables for map data.
 //
 #define UDMF_CURRENT_VERSION (3)
+#define PATCH_CURRENT_VERSION (1)
 extern boolean udmf;
-extern INT32 udmf_version;
+extern INT32 udmf_version, patch_version;
 
 extern size_t numsprites;
 extern spritedef_t *sprites;

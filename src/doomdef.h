@@ -441,7 +441,7 @@ UINT32 quickncasehash (const char *p, size_t n)
 #include "xxhash.h"
 #define HASH64(p, n) ((UINT64)XXH3_64bits(p, n))
 #define HASH32(p, n) ((UINT32)(XXH3_64bits(p, n) & UINT32_MAX))
-#define HASHFMT "%jx"
+#define HASHFMT "%016jx"
 
 #ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h

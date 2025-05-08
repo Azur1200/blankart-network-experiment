@@ -2175,9 +2175,12 @@ boolean P_ZMovement(mobj_t *mo)
 {
 	fixed_t dist, delta;
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2604,6 +2607,8 @@ boolean P_ZMovement(mobj_t *mo)
 		}
 	}
 
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
+
 	return true;
 }
 
@@ -2697,12 +2702,15 @@ static boolean P_PlayerPolyObjectZMovement(mobj_t *mo)
 void P_PlayerZMovement(mobj_t *mo)
 {
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (!mo->player)
 		return;
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2834,6 +2842,8 @@ void P_PlayerZMovement(mobj_t *mo)
 			P_CheckGravity(mo, true);
 		}
 	}
+
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
 }
 
 boolean P_SceneryZMovement(mobj_t *mo)
@@ -10212,7 +10222,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (udmf)
 	{
 		// Check for continuous sector special actions
-		P_CheckMobjTouchingSectorActions(mobj, true);
+		P_CheckMobjTouchingSectorActions(mobj, true, true);
 	}
 	else
 	{
@@ -12856,15 +12866,21 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void P_SnapToFinishLine(mobj_t *mobj)
+static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
 {
-	line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
-			mobj->subsector->sector, 2001); // case 2001: Finish Line
-	if (finishline != NULL)
+	size_t i;
+	for (i = 0; i < numlines; i++)
 	{
-		P_UnsetThingPosition(mobj);
-		P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
-		P_SetThingPosition(mobj);
+		line_t *line2 = &lines[i];
+		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
+		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
+		{
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
+			line2->special = 2001; // Finish Line
+			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line2->args[0] = args ^ flipped;
+			SpreadFinishLine(line2, line, args ^ flipped);
+		}
 	}
 }
 
@@ -13128,6 +13144,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		mobj->threshold = mthing->args[0];
 
 		mobj->movecount = tag;
+
 		if (mthing->args[2] & TMWPF_DISABLED)
 		{
 			mobj->extravalue1 = 0; // The waypoint is disabled if extra is on
@@ -13152,12 +13169,28 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		{
 			mobj->reactiontime = 1;
 		}
+
 		if (mthing->args[2] & TMWPF_FINISHLINE)
 		{
 			mobj->extravalue2 = 1; // args[2] of 1 means the waypoint is at the finish line
 			mobj->reactiontime = 0; // Also don't respawn at finish lines
 
-			P_SnapToFinishLine(mobj);
+			line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
+					mobj->subsector->sector, K_UsingPatchedMap() ? -1 : 2001); // case 2001: Finish Line
+			if (finishline != NULL)
+			{
+				P_UnsetThingPosition(mobj);
+				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
+				P_SetThingPosition(mobj);
+
+				if (K_UsingPatchedMap())
+				{
+					finishline->special = 2001; // Finish Line
+					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+					finishline->args[0] = mthing->args[4];
+					SpreadFinishLine(finishline, NULL, mthing->args[4]);
+				}
+			}
 		}
 		else
 		{

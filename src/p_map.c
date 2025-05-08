@@ -100,6 +100,9 @@ camera_t *mapcampointer;
 //
 static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
+	boolean startingonground = P_IsObjectOnGround(thing);
+	sector_t *oldsector = thing->subsector->sector;
+
 	numspechit = 0U;
 
 	// the move is ok,
@@ -128,6 +131,8 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	thing->ceilingz = g_tm.ceilingz;
 	thing->floorrover = g_tm.floorrover;
 	thing->ceilingrover = g_tm.ceilingrover;
+
+	P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
 
 	return true;
 }
@@ -2745,6 +2750,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	fixed_t oldx = thing->x;
 	fixed_t oldy = thing->y;
 	fixed_t startingonground = P_IsObjectOnGround(thing);
+	sector_t *oldsector = thing->subsector->sector;
 
 	// Is the move OK?
 	if (increment_move(thing, x, y, allowdropoff, result) == false)
@@ -2846,6 +2852,8 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 		thing->eflags |= MFE_ONGROUND;
 
 	P_SetThingPosition(thing);
+
+	P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
 
 	// remove any duplicates that may be in spechitint
 	spechitint_removedups();

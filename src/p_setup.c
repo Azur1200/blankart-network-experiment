@@ -125,7 +125,7 @@ UINT64 maphash;
 //
 
 boolean udmf;
-INT32 udmf_version;
+INT32 udmf_version, patch_version;
 mapnamespace_t mapnamespace = MNS_UNKNOWN;
 size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
 size_t num_orig_vertexes;
@@ -1461,30 +1461,95 @@ static void TextmapStorePos(textmap_block_t *blocks, size_t *count)
 }
 
 // Determine total amount of map data in TEXTMAP.
-static boolean TextmapCount(size_t size)
+static boolean TextmapCount(size_t size, boolean patch)
 {
 	TracyCZone(__zone, true);
 
 	const char *tkn = M_TokenizerRead(0);
 	UINT8 brackets = 0;
 
-	nummapthings = 0;
-	numlines = 0;
-	numsides = 0;
-	numvertexes = 0;
-	numsectors = 0;
+	// check namespace for patches
+	if (patch)
+	{
+		// Look for namespace at the beginning.
+		if (!fastcmp(tkn, "namespace"))
+		{
+			CONS_Alert(CONS_ERROR, "No namespace at beginning of lump!\n");
+			return false;
+		}
 
-	// skip namespace, it's checked by P_SetMapNamespace
-	M_TokenizerRead(0);
+		// Check if namespace is valid.
+		tkn = M_TokenizerRead(0);
+		if (!fastcmp(tkn, "blankart-patch"))
+		{
+			CONS_Alert(CONS_ERROR, "Invalid namespace '%s'. Only 'blankart-patch' is supported.\n", tkn);
+			return false;
+		}
+	}
+	else
+		M_TokenizerRead(0);
 
 	// Check for version
 	tkn = M_TokenizerRead(0);
 	if (fastcmp(tkn, "version"))
 	{
 		tkn = M_TokenizerRead(0);
-		udmf_version = atoi(tkn);
-		if (udmf_version > UDMF_CURRENT_VERSION)
-			CONS_Alert(CONS_WARNING, "Map is intended for future UDMF version '%d', current supported version is '%d'. This map may have issues loading.\n", udmf_version, UDMF_CURRENT_VERSION);
+		if (patch)
+		{
+			patch_version = atoi(tkn);
+			if (patch_version > PATCH_CURRENT_VERSION)
+				CONS_Alert(CONS_WARNING, "Patch is intended for future patch version '%d', current supported version is '%d'. This patch may have issues loading.\n", patch_version, PATCH_CURRENT_VERSION);
+		}
+		else
+		{
+			udmf_version = atoi(tkn);
+			if (udmf_version > UDMF_CURRENT_VERSION)
+				CONS_Alert(CONS_WARNING, "Map is intended for future UDMF version '%d', current supported version is '%d'. This map may have issues loading.\n", udmf_version, UDMF_CURRENT_VERSION);
+		}
+	}
+
+	// check hash for patches
+	if (patch)
+	{
+		tkn = M_TokenizerRead(0);
+		if (!fastcmp(tkn, "checksum"))
+		{
+			CONS_Alert(CONS_ERROR, "No checksum in lump!\n");
+			return false;
+		}
+
+		tkn = M_TokenizerRead(0);
+		boolean foundhash = false;
+		const char *hashstr = tkn;
+		char *end;
+
+		// check for hashes separated by pipes
+		// e.g. "abc123|def456|ghi789"
+		do
+		{
+			UINT64 hash = strtoull(hashstr, &end, 16);
+			if (hash == maphash)
+				foundhash = true;
+			if (end == hashstr || (*end && *end != '|'))
+			{
+				CONS_Alert(CONS_ERROR, "Invalid checksum string '%s'\n", tkn);
+				return false;
+			}
+			hashstr = end + 1;
+		}
+		while (*end);
+
+		if (!foundhash)
+			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
+	}
+
+	nummapthings = 0;
+	if (!patch)
+	{
+		numlines = 0;
+		numsides = 0;
+		numvertexes = 0;
+		numsectors = 0;
 	}
 
 	while ((tkn = M_TokenizerRead(0)) && M_TokenizerGetEndPos() < size)
@@ -1500,6 +1565,8 @@ static boolean TextmapCount(size_t size)
 		// Check for valid fields.
 		else if (fastcmp(tkn, "thing"))
 			TextmapStorePos(&mapthingBlocks, &nummapthings);
+		else if (patch)
+			continue;
 		else if (fastcmp(tkn, "linedef"))
 			TextmapStorePos(&linedefBlocks, &numlines);
 		else if (fastcmp(tkn, "sidedef"))
@@ -3213,7 +3280,7 @@ static void P_WriteTextmapWaypoints(void)
 
 /** Loads the textmap data, after obtaining the elements count and allocating their respective space.
   */
-static void P_LoadTextmap(void)
+static void P_LoadTextmap(boolean patch)
 {
 	TracyCZone(__zone, true);
 
@@ -3232,6 +3299,7 @@ static void P_LoadTextmap(void)
 	/// from the textmap, and therefore we have to account for it by
 	/// preemptively setting that value beforehand.
 
+	if (!patch)
 	for (i = 0, vt = vertexes; i < numvertexes; i++, vt++)
 	{
 		// Defaults.
@@ -3247,6 +3315,7 @@ static void P_LoadTextmap(void)
 			I_Error("P_LoadTextmap: vertex %s has no y value set!\n", sizeu1(i));
 	}
 
+	if (!patch)
 	for (i = 0, sc = sectors; i < numsectors; i++, sc++)
 	{
 		// Defaults.
@@ -3332,6 +3401,7 @@ static void P_LoadTextmap(void)
 		TextmapFixFlatOffsets(sc);
 	}
 
+	if (!patch)
 	for (i = 0, ld = lines; i < numlines; i++, ld++)
 	{
 		// Defaults.
@@ -3362,6 +3432,7 @@ static void P_LoadTextmap(void)
 		P_InitializeLinedef(ld);
 	}
 
+	if (!patch)
 	for (i = 0, sd = sides; i < numsides; i++, sd++)
 	{
 		// Defaults.
@@ -3576,7 +3647,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	{
 		virtlump_t *textmap = vres_Find(virt, "TEXTMAP");
 		M_TokenizerOpen((char *)textmap->data, textmap->size);
-		if (!TextmapCount(textmap->size))
+		if (!TextmapCount(textmap->size, false))
 		{
 			M_TokenizerClose();
 			TracyCZoneEnd(__zone);
@@ -3640,7 +3711,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	// Load map data.
 	if (udmf)
 	{
-		P_LoadTextmap();
+		P_LoadTextmap(false);
 		M_TokenizerClose();
 	}
 	else
@@ -3665,6 +3736,44 @@ static boolean P_LoadMapData(const virtres_t *virt)
 
 	// search for animated flats and set up
 	P_SetupLevelFlatAnims();
+
+	TracyCZoneEnd(__zone);
+	return true;
+}
+
+static boolean P_LoadMapPatchData(const lumpnum_t lumpnum)
+{
+	TracyCZone(__zone, true);
+
+	size_t realnummapthings = nummapthings;
+
+	// Count map data.
+	size_t patchlen = W_LumpLength(lumpnum);
+	char *patchdata = malloc(patchlen);
+	W_ReadLump(lumpnum, patchdata);
+	M_TokenizerOpen(patchdata, patchlen);
+	if (!TextmapCount(patchlen, true))
+	{
+		M_TokenizerClose();
+		free(patchdata);
+		TracyCZoneEnd(__zone);
+		return false;
+	}
+
+	mapthing_t *realmapthings = mapthings;
+	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
+
+	// Load map data.
+	P_LoadTextmap(true);
+	M_TokenizerClose();
+	free(patchdata);
+
+	// concatenate the two mapthing arrays
+	realmapthings = Z_Realloc(realmapthings, (nummapthings + realnummapthings) * sizeof (*mapthings), PU_LEVEL, NULL);
+	memcpy(realmapthings + realnummapthings, mapthings, nummapthings * sizeof (*mapthings));
+	Z_Free(mapthings);
+	mapthings = realmapthings;
+	nummapthings += realnummapthings;
 
 	TracyCZoneEnd(__zone);
 	return true;
@@ -7728,7 +7837,7 @@ static boolean P_LoadMapFromFile(void)
 	virtlump_t *textmap = vres_Find(curmapvirt, "TEXTMAP");
 	size_t i;
 	udmf = textmap != NULL;
-	udmf_version = 0;
+	udmf_version = patch_version = 0;
 
 	if (!P_LoadMapData(curmapvirt))
 	{
@@ -7748,6 +7857,14 @@ static boolean P_LoadMapFromFile(void)
 	if (!udmf)
 		P_ConvertBinaryMap();
 
+	P_MakeMapHash(curmapvirt, &maphash);
+
+	// load map patch?
+	lumpnum_t patchlump = W_CheckNumForNameInFolder(G_BuildMapName(gamemap), "MapPatch/");
+	if (patchlump != LUMPERROR)
+		if (!P_LoadMapPatchData(patchlump))
+			CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
+
 	// Copy relevant map data for NetArchive purposes.
 	spawnsectors = Z_Calloc(numsectors * sizeof(*sectors), PU_LEVEL, NULL);
 	spawnlines = Z_Calloc(numlines * sizeof(*lines), PU_LEVEL, NULL);
@@ -7761,7 +7878,6 @@ static boolean P_LoadMapFromFile(void)
 		if (sectors[i].tags.count)
 			spawnsectors[i].tags.tags = memcpy(Z_Malloc(sectors[i].tags.count*sizeof(mtag_t), PU_LEVEL, NULL), sectors[i].tags.tags, sectors[i].tags.count*sizeof(mtag_t));
 
-	P_MakeMapHash(curmapvirt, &maphash);
 	TracyCZoneEnd(__zone);
 	return true;
 }

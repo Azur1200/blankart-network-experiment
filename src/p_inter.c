@@ -941,8 +941,10 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 
 	(void)snaptopost;
 
-	// Player must have touched all previous starposts
-	if ((post->health - player->starpostnum > 1) && (!K_UsingLegacyCheckpoints()))
+	// Going backwards triggers sound
+	if (K_CheckpointThreshold(false) == numstarposts
+	    ? post->health - player->starpostnum > 1
+	    : post->health >= player->starpostnum + K_CheckpointThreshold(false))
 	{
 		if (!player->checkskip)
 		{
@@ -952,17 +954,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 				player->grieftime += TICRATE;
 			}
 
-
 		}
-		player->checkskip = 3;
-		return;
-	}
-
-	// Going backwards triggers sound
-	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (K_UsingLegacyCheckpoints()))
-	{
-		if (!player->checkskip)
-			S_StartSound(toucher, sfx_s26d);
 
 		player->checkskip = 3;
 		return;

@@ -1988,7 +1988,7 @@ static void K_HandleLapIncrement(player_t *player)
 	{
 		if (K_IgnoreFinishLine(player))
 			return;
-		if (((K_UsingLegacyCheckpoints()) ? (player->starpostnum >= (numstarposts - (numstarposts/2))) : (player->starpostnum == numstarposts)) || (player->laps == 0))
+		if ((player->starpostnum >= K_CheckpointThreshold(true)) || (player->laps == 0))
 		{
 			size_t i = 0;
 			UINT8 nump = 0;
@@ -2051,7 +2051,7 @@ static void K_HandleLapIncrement(player_t *player)
 				player->karthud[khud_lapanimation] = 80;
 			}
 
-			if (netgame && player->laps >= numlaps)
+			if (netgame && player->laps > numlaps)
 				CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 
 			if (P_IsDisplayPlayer(player))
@@ -2135,7 +2135,9 @@ static void K_HandleLapDecrement(player_t *player)
 {
 	if (player)
 	{
-		if ((player->starpostnum == 0) && (player->laps > 0))
+		if (K_IgnoreFinishLine(player))
+			return;
+		if (player->laps > 0)
 		{
 			player->starpostnum = numstarposts;
 			player->laps--;
@@ -4449,6 +4451,36 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 			if ((gametyperules & GTR_CIRCUIT) && (mo->player->exiting == 0) && !(mo->player->pflags & PF_HITFINISHLINE))
 			{
+				// megablock cope 1: single-use finish lines
+				if (args[0] & TMCFF_SINGLEUSE && mo->player->laps > 0)
+					return false;
+
+				// megablock cope 2: require a circuit finish line special to be hit at the same time
+				if (args[0] & TMCFF_NEEDSECTOR)
+				{
+					boolean touching = false;
+					if (P_MobjTouchingSectorSpecialFlag(mo, SSF_FINISHLINE))
+						touching = true;
+
+					// we have to check if we WERE touching a finish line sector last tic too!
+					// otherwise lap decrementing wouldn't work!
+					// YAAAAAAAAAAAAAAY
+					fixed_t realx = mo->x, realy = mo->y;
+					P_UnsetThingPosition(mo);
+					mo->x = mo->old_x, mo->y = mo->old_y;
+					P_SetThingPosition(mo);
+
+					if (P_MobjTouchingSectorSpecialFlag(mo, SSF_FINISHLINE))
+						touching = true;
+
+					P_UnsetThingPosition(mo);
+					mo->x = realx, mo->y = realy;
+					P_SetThingPosition(mo);
+
+					if (!touching)
+						return false;
+				}
+
 				if (((args[0] & TMCFF_FLIP) && (side == 0))
 					|| (!(args[0] & TMCFF_FLIP) && (side == 1))) // crossed from behind to infront
 				{
@@ -5356,7 +5388,7 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		P_ProcessZoomTube(player, sectag, true);
 	if (sector->specialflags & SSF_FINISHLINE)
 	{
-		if ((gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
+		if (K_UsingLegacyCheckpoints() && (gametyperules & GTR_CIRCUIT) && (player->exiting == 0) && !(player->pflags & PF_HITFINISHLINE))
 		{
 			K_HandleLapIncrement(player);
 			player->pflags |= PF_HITFINISHLINE;
@@ -5761,7 +5793,7 @@ static boolean P_AllowSpecialCeiling(sector_t *sec, mobj_t *thing)
 	return false;
 }
 
-static void P_CheckMobj3DFloorAction(mobj_t *mo, sector_t *sec, boolean continuous)
+static void P_CheckMobj3DFloorAction(mobj_t *mo, sector_t *sec, boolean continuous, boolean sectorchanged)
 {
 	sector_t *originalsector = mo->subsector->sector;
 	ffloor_t *rover;
@@ -5820,6 +5852,10 @@ static void P_CheckMobj3DFloorAction(mobj_t *mo, sector_t *sec, boolean continuo
 				continue;
 			}
 		}
+		else if (sectorchanged == false)
+		{
+			continue;
+		}
 
 		activator = Z_Calloc(sizeof(activator_t), PU_LEVEL, NULL);
 		I_Assert(activator != NULL);
@@ -5839,7 +5875,7 @@ static void P_CheckMobj3DFloorAction(mobj_t *mo, sector_t *sec, boolean continuo
 	}
 }
 
-static void P_CheckMobjPolyobjAction(mobj_t *mo, boolean continuous)
+static void P_CheckMobjPolyobjAction(mobj_t *mo, boolean continuous, boolean sectorchanged)
 {
 	sector_t *originalsector = mo->subsector->sector;
 	polyobj_t *po;
@@ -5894,6 +5930,10 @@ static void P_CheckMobjPolyobjAction(mobj_t *mo, boolean continuous)
 				continue;
 			}
 		}
+		else if (sectorchanged == false)
+		{
+			continue;
+		}
 
 		activator = Z_Calloc(sizeof(activator_t), PU_LEVEL, NULL);
 		I_Assert(activator != NULL);
@@ -5913,7 +5953,7 @@ static void P_CheckMobjPolyobjAction(mobj_t *mo, boolean continuous)
 	}
 }
 
-static void P_CheckMobjSectorAction(mobj_t *mo, sector_t *sec, boolean continuous)
+static void P_CheckMobjSectorAction(mobj_t *mo, sector_t *sec, boolean continuous, boolean sectorchanged)
 {
 	activator_t *activator = NULL;
 	boolean result = false;
@@ -5950,6 +5990,10 @@ static void P_CheckMobjSectorAction(mobj_t *mo, sector_t *sec, boolean continuou
 			return;
 		}
 	}
+	else if (sectorchanged == false)
+	{
+		return;
+	}
 
 	activator = Z_Calloc(sizeof(activator_t), PU_LEVEL, NULL);
 	I_Assert(activator != NULL);
@@ -5966,7 +6010,7 @@ static void P_CheckMobjSectorAction(mobj_t *mo, sector_t *sec, boolean continuou
 	}
 }
 
-void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous)
+void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous, boolean sectorchanged)
 {
 	sector_t *originalsector;
 
@@ -5992,13 +6036,13 @@ void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous)
 		}
 	}
 
-	P_CheckMobj3DFloorAction(mobj, originalsector, continuous);
+	P_CheckMobj3DFloorAction(mobj, originalsector, continuous, sectorchanged);
 	if TELEPORTED(mobj)	return;
 
-	P_CheckMobjPolyobjAction(mobj, continuous);
+	P_CheckMobjPolyobjAction(mobj, continuous, sectorchanged);
 	if TELEPORTED(mobj)	return;
 
-	P_CheckMobjSectorAction(mobj, originalsector, continuous);
+	P_CheckMobjSectorAction(mobj, originalsector, continuous, sectorchanged);
 }
 
 #undef TELEPORTED
@@ -9490,4 +9534,22 @@ void P_StartQuake(fixed_t intensity, tic_t time)
 {
 	quake.intensity = FixedMul(intensity, mapobjectscale);
 	quake.time = time;
+}
+
+void P_CheckSectorTransitionalEffects(mobj_t *thing, sector_t *prevsec, boolean wasgrounded)
+{
+	if (!udmf)
+	{
+		return;
+	}
+
+	boolean sectorchanged = (prevsec != thing->subsector->sector);
+
+	if (!sectorchanged && wasgrounded == P_IsObjectOnGround(thing))
+	{
+		return;
+	}
+
+	// Check for each time / once sector special actions
+	P_CheckMobjTouchingSectorActions(thing, false, sectorchanged);
 }
