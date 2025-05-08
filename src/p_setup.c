@@ -1519,15 +1519,28 @@ static boolean TextmapCount(size_t size, boolean patch)
 		}
 
 		tkn = M_TokenizerRead(0);
-		char *end = NULL;
-		UINT64 hash = strtoull(tkn, &end, 16);
-		if (!end || *end)
+		boolean foundhash = false;
+		const char *hashstr = tkn;
+		char *end;
+
+		// check for hashes separated by pipes
+		// e.g. "abc123|def456|ghi789"
+		do
 		{
-			CONS_Alert(CONS_ERROR, "Invalid checksum value '%s'\n", tkn);
-			return false;
+			UINT64 hash = strtoull(hashstr, &end, 16);
+			if (hash == maphash)
+				foundhash = true;
+			if (end == hashstr || (*end && *end != '|'))
+			{
+				CONS_Alert(CONS_ERROR, "Invalid checksum string '%s'\n", tkn);
+				return false;
+			}
+			hashstr = end + 1;
 		}
-		if (hash != maphash)
-			CONS_Alert(CONS_WARNING, "Patch checksum " HASHFMT " does not match map checksum " HASHFMT ". This patch may not work.\n", hash, maphash);
+		while (*end);
+
+		if (!foundhash)
+			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
 	}
 
 	nummapthings = 0;
