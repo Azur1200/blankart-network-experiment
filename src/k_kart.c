@@ -4171,6 +4171,12 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 			player->mo->momz *= 2;
 			ringburst = 10;
 		}
+
+		if (inflictor->type == MT_LANDMINE)
+		{
+			player->spinouttimer = (((5*player->spinouttimer)/2)+1)/4;
+			player->mo->momz = FixedDiv(player->mo->momz, FRACUNIT + FRACUNIT/2);
+		}
 	}
 
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
