@@ -91,8 +91,7 @@ extern consvar_t
 	cv_superring,
 	cv_landmine,
 	cv_bubbleshield,
-	cv_flameshield,
-	cv_droptarget;
+	cv_flameshield;
 
 extern consvar_t
 	cv_dualsneaker,

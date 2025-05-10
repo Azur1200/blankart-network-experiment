@@ -162,8 +162,7 @@ Run this macro, then #undef FOREACH afterward
 	FOREACH (SUPERRING,     17),\
 	FOREACH (LANDMINE,      18),\
 	FOREACH (BUBBLESHIELD,  19),\
-	FOREACH (FLAMESHIELD,   20),\
-	FOREACH (DROPTARGET,    21)
+	FOREACH (FLAMESHIELD,   20)
 
 typedef enum
 {

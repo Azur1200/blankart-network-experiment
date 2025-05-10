@@ -228,7 +228,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_landmine);
 	CV_RegisterVar(&cv_bubbleshield);
 	CV_RegisterVar(&cv_flameshield);
-	CV_RegisterVar(&cv_droptarget);
 
 	CV_RegisterVar(&cv_dualsneaker);
 	CV_RegisterVar(&cv_triplesneaker);
@@ -412,7 +411,6 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_landmine,
 	&cv_bubbleshield,
 	&cv_flameshield,
-	&cv_droptarget,
 	&cv_dualsneaker,
 	&cv_triplesneaker,
 	&cv_triplebanana,
@@ -448,7 +446,6 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
 	{ 3, 0, 0, 0, 0, 0, 0, 0 }, // Land Mine
 	{ 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
 	{ 0, 0, 0, 0, 2, 5, 5, 0 }, // Flame Shield
-	{ 1, 0, 0, 0, 0, 0, 0, 0 }, // Drop Target
 	{ 0, 0, 3, 4, 3, 0, 0, 0 }, // Sneaker x2
 	{ 0, 0, 0, 1, 5, 6, 3, 0 }, // Sneaker x3
 	{ 0, 1, 1, 0, 0, 0, 0, 0 }, // Banana x3
@@ -481,7 +478,6 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 2, 0 }, // Land Mine
 	{ 1, 0 }, // Bubble Shield
 	{ 1, 0 }, // Flame Shield
-	{ 2, 0 }, // Drop Target
 	{ 0, 0 }, // Sneaker x2
 	{ 0, 1 }, // Sneaker x3
 	{ 0, 0 }, // Banana x3
@@ -796,7 +792,6 @@ INT32 K_KartGetItemOdds(
 		case KITEM_ROCKETSNEAKER:
 		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
-		case KITEM_DROPTARGET:
 		case KITEM_BALLHOG:
 		case KRITEM_TRIPLESNEAKER:
 		case KRITEM_TRIPLEORBINAUT:
@@ -990,7 +985,6 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 		case KITEM_JAWZ:
 		case KITEM_BALLHOG:
 		case KITEM_LANDMINE:
-		case KITEM_DROPTARGET:
 		case KRITEM_TRIPLESNEAKER:
 		case KRITEM_TRIPLEBANANA:
 		case KRITEM_TENFOLDBANANA:
@@ -1865,10 +1859,6 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 			else
 				weight += 3*FRACUNIT;
 			break;
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			if (against->player)
-				weight = K_PlayerWeight(against, NULL);
 		default:
 			break;
 	}
@@ -1896,7 +1886,6 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		|| (mobj2->player && mobj2->player->respawn))
 		return false;
 
-	if (mobj1->type != MT_DROPTARGET && mobj1->type != MT_DROPTARGET_SHIELD)
 	{ // Don't bump if you're flashing
 		INT32 flash;
 
@@ -3282,9 +3271,7 @@ boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
 		case MT_ORBINAUT:
 		case MT_JAWZ:
 		case MT_JAWZ_DUD:
-		case MT_DROPTARGET:
 		case MT_BANANA_SHIELD:
-		case MT_DROPTARGET_SHIELD:
 		case MT_SSMINE_SHIELD:
 			return true;
 			break;
@@ -3301,7 +3288,6 @@ boolean K_WaterRun(mobj_t *mobj)
 	switch (mobj->type)
 	{
 		case MT_BANANA_SHIELD:
-		case MT_DROPTARGET_SHIELD:
 		case MT_SSMINE_SHIELD:
 			if (mobj->target && (mobj->target->flags2 & MF2_WATERRUN))
 				return true;
@@ -5130,12 +5116,6 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 				// Shoot forward
 				mo = K_SpawnKartMissile(player->mo, mapthing, player->mo->angle, 0, PROJSPEED);
 			}
-
-			if (mapthing == MT_DROPTARGET && mo)
-			{
-				mo->reactiontime = TICRATE/2;
-				P_SetMobjState(mo, mo->info->painstate);
-			}
 		}
 	}
 	else
@@ -5631,8 +5611,7 @@ static void K_DoShrink(player_t *user)
 
 		if (mobj->type == MT_BANANA_SHIELD || mobj->type == MT_JAWZ_SHIELD ||
 		mobj->type == MT_SSMINE_SHIELD || mobj->type == MT_EGGMANITEM_SHIELD ||
-		mobj->type == MT_SINK_SHIELD || mobj->type == MT_ORBINAUT_SHIELD ||
-		mobj->type == MT_DROPTARGET_SHIELD)
+		mobj->type == MT_SINK_SHIELD || mobj->type == MT_ORBINAUT_SHIELD)
 		{
 			if (mobj->target && mobj->target->player)
 			{
@@ -5893,11 +5872,6 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 				orbit = false;
 				dropall = false;
 				type = MT_SSMINE;
-				break;
-			case MT_DROPTARGET_SHIELD:
-				orbit = false;
-				dropall = false;
-				type = MT_DROPTARGET;
 				break;
 			case MT_EGGMANITEM_SHIELD:
 				orbit = false;
@@ -6470,7 +6444,6 @@ static void K_MoveHeldObjects(player_t *player)
 			break;
 		case MT_BANANA_SHIELD: // Kart trailing items
 		case MT_SSMINE_SHIELD:
-		case MT_DROPTARGET_SHIELD:
 		case MT_EGGMANITEM_SHIELD:
 		case MT_SINK_SHIELD:
 			{
@@ -6494,10 +6467,6 @@ static void K_MoveHeldObjects(player_t *player)
 					{
 						// Decided that this should use their "canon" color.
 						cur->color = SKINCOLOR_BLACK;
-					}
-					else if (cur->type == MT_DROPTARGET_SHIELD)
-					{
-						cur->renderflags = (cur->renderflags|RF_FULLBRIGHT) ^ RF_FULLDARK; // the difference between semi and fullbright
 					}
 
 					cur->flags &= ~MF_NOCLIPTHING;
@@ -10340,34 +10309,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								player->itemamount--;
 								K_ThrowLandMine(player);
 								K_PlayAttackTaunt(player->mo);
-								player->botvars.itemconfirm = 0;
-							}
-							break;
-						case KITEM_DROPTARGET:
-							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
-							{
-								mobj_t *mo;
-								K_SetItemOut(player);
-								S_StartSound(player->mo, sfx_s254);
-								mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_DROPTARGET_SHIELD);
-								if (mo)
-								{
-									mo->flags |= MF_NOCLIPTHING;
-									mo->threshold = 10;
-									mo->movecount = 1;
-									mo->movedir = 1;
-									P_SetTarget(&mo->target, player->mo);
-									P_SetTarget(&player->mo->hnext, mo);
-								}
-								player->botvars.itemconfirm = 0;
-							}
-							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT))
-							{
-								player->itemamount--;
-								K_ThrowKartItem(player, (player->throwdir > 0), MT_DROPTARGET, -1, 0);
-								K_PlayAttackTaunt(player->mo);
-								player->itemflags &= ~IF_ITEMOUT;
-								K_UpdateHnextList(player, true);
 								player->botvars.itemconfirm = 0;
 							}
 							break;

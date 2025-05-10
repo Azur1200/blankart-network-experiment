@@ -465,8 +465,6 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
 		case MT_LANDMINE:
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
 		case MT_BALLHOG:
 		case MT_SPB:
 		case MT_BUBBLESHIELDTRAP:

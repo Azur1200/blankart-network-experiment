@@ -442,7 +442,6 @@ _(JAWZ) // Jawz
 _(SSMN) // SS Mine
 _(KRBM) // SS Mine BOOM
 _(LNDM) // Land Mine
-_(DTRG) // Drop Target
 _(BHOG) // Ballhog
 _(BHBM) // Ballhog BOOM
 _(SPBM) // Self-Propelled Bomb

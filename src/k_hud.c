@@ -175,7 +175,6 @@ static patch_t *kp_superring[2];
 static patch_t *kp_landmine[2];
 static patch_t *kp_bubbleshield[2];
 static patch_t *kp_flameshield[2];
-static patch_t *kp_droptarget[2];
 
 static patch_t *kp_check[6];
 
@@ -457,7 +456,6 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_landmine[0], "K_ITLNDM");
 	HU_UpdatePatch(&kp_bubbleshield[0], "K_ITBUBS");
 	HU_UpdatePatch(&kp_flameshield[0], "K_ITFLMS");
-	HU_UpdatePatch(&kp_droptarget[0], "K_ITDTRG");
 
 	// Splitscreen
 	HU_UpdatePatch(&kp_itembg[2], "K_ISBG");
@@ -494,7 +492,6 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_landmine[1], "K_ISLNDM");
 	HU_UpdatePatch(&kp_bubbleshield[1], "K_ISBUBS");
 	HU_UpdatePatch(&kp_flameshield[1], "K_ISFLMS");
-	HU_UpdatePatch(&kp_droptarget[1], "K_ISDTRG");
 
 	// CHECK indicators
 	sprintf(buffer, "K_CHECKx");
@@ -642,8 +639,6 @@ const char *K_GetItemPatch(UINT8 item, boolean tiny)
 			return (tiny ? "K_ISBUBS" : "K_ITBUBS");
 		case KITEM_FLAMESHIELD:
 			return (tiny ? "K_ISFLMS" : "K_ITFLMS");
-		case KITEM_DROPTARGET:
-			return (tiny ? "K_ISDTRG" : "K_ITDTRG");
 		case KRITEM_DUALSNEAKER:
 			return (tiny ? "K_ISSHOE" : "K_ITSHO2");
 		case KRITEM_TRIPLESNEAKER:
@@ -688,7 +683,6 @@ static patch_t *K_GetCachedItemPatch(INT32 item, UINT8 offset)
 		kp_landmine,
 		kp_bubbleshield,
 		kp_flameshield,
-		kp_droptarget,
 	};
 
 	if (item == KITEM_SAD || (item > KITEM_NONE && item < NUMKARTITEMS))

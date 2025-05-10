@@ -604,9 +604,6 @@ _(BOOMPARTICLE)
 
 _(LANDMINE) // Land Mine
 
-_(DROPTARGET) // Drop Target
-_(DROPTARGET_SHIELD)
-
 _(BALLHOG) // Ballhog
 _(BALLHOGBOOM)
 

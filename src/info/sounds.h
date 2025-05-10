@@ -847,11 +847,6 @@ _(typri1)
 _(typri2)
 _(eggspr)
 
-// SRB2Kart - Drop target sounds
-_(kdtrg1)
-_(kdtrg2)
-_(kdtrg3)
-
 // Chaining Sound
 _(bstchn)
 

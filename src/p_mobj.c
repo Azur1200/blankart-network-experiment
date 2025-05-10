@@ -1219,7 +1219,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
-				case MT_DROPTARGET:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -1799,12 +1798,6 @@ void P_XYMovement(mobj_t *mo)
 
 						case MT_BUBBLESHIELDTRAP:
 							S_StartSound(mo, sfx_s3k44); // Bubble bounce
-							break;
-
-						case MT_DROPTARGET:
-							// This prevents an item thrown at a wall from
-							// phasing through you on its return.
-							mo->threshold = 0;
 							break;
 
 						default:
@@ -6498,7 +6491,6 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
-		case MT_DROPTARGET:
 			return true;
 
 		default:
@@ -6512,7 +6504,6 @@ boolean P_IsKartItem(INT32 type)
 	{
 		case MT_EGGMANITEM_SHIELD:
 		case MT_BANANA_SHIELD:
-		case MT_DROPTARGET_SHIELD:
 		case MT_ORBINAUT_SHIELD:
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE_SHIELD:
@@ -7814,7 +7805,6 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
-	//case MT_DROPTARGET:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -8598,51 +8588,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			S_StartSound(mobj, mobj->info->activesound);
 			mobj->momx = mobj->momy = 0;
 			mobj->health = 1;
-		}
-
-		if (mobj->threshold > 0)
-			mobj->threshold--;
-		break;
-	case MT_DROPTARGET:
-		if (mobj->reactiontime > 0)
-		{
-			// Slippery tipping mode.
-			INT32 slippytip = 1 + (mobj->reactiontime/2);
-			if (slippytip > 64)
-				slippytip = 64;
-			else if (slippytip < 8)
-				slippytip = 8;
-			if (!(mobj->health & 1) == !(mobj->flags2 & MF2_AMBUSH))
-			{
-				slippytip = -slippytip;
-			}
-			mobj->angle += slippytip*ANG2;
-
-			mobj->friction = ((2*ORIG_FRICTION)+FRACUNIT)/3; // too low still?
-
-			/*if (mobj->momx || mobj->momy || mobj->momz)
-			{
-				mobj_t *ghost = P_SpawnGhostMobj(mobj);
-				ghost->colorized = true; // already has color!
-			}*/
-
-			if (!--mobj->reactiontime)
-			{
-				P_SetMobjState(mobj, mobj->info->spawnstate);
-			}
-		}
-		else
-		{
-			// Time to stop, ramp up the friction...
-			mobj->friction = ORIG_FRICTION/4; // too high still?
-		}
-
-		mobj->renderflags = (mobj->renderflags|RF_FULLBRIGHT) ^ RF_FULLDARK; // the difference between semi and fullbright
-
-		if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
-		{
-			// Not moving fast enough to water run.
-			mobj->flags2 &= ~MF2_WATERRUN;
 		}
 
 		if (mobj->threshold > 0)
@@ -10396,8 +10341,7 @@ void P_MobjThinker(mobj_t *mobj)
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_LITTLETUMBLEWEED
 		|| mobj->type == MT_CANNONBALLDECOR
-		|| mobj->type == MT_FALLINGROCK
-		|| (mobj->type == MT_DROPTARGET && mobj->reactiontime))
+		|| mobj->type == MT_FALLINGROCK)
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true, NULL); // Sets mo->standingslope correctly
 
@@ -10695,11 +10639,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_EGGMANITEM_SHIELD:
 			thing->shadowscale = 3*FRACUNIT/2;
 			thing->whiteshadow = false;
-			break;
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			thing->shadowscale = 5*FRACUNIT/4;
-			thing->whiteshadow = true;
 			break;
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
@@ -11160,12 +11099,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 						P_SpawnMobj(newx, newy, mobj->z, MT_EERIEFOG);
 				}
 			}
-			break;
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			mobj->color = SKINCOLOR_LIME;
-			mobj->colorized = true;
-			mobj->renderflags |= RF_FULLBRIGHT;
 			break;
 		case MT_SMK_MOLE:
 			mobj->reactiontime = P_RandomRange(0, 3*mobj->info->reactiontime/2); // Random delay on start of level
