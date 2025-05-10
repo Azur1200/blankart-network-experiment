@@ -3459,12 +3459,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 			if (stringargs[0])
 			{
-				if (line && mo && callsec)
-				{
-					// Allow running the old hook as well.
-					LUA_HookLinedefExecute(line, mo, callsec);
-				}
-
+				// Also executes the old hook as well.
 				LUA_HookSpecialExecute(activator, args, stringargs);
 			}
 			else

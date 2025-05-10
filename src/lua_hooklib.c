@@ -901,6 +901,7 @@ int LUA_HookMobjMoveBlocked(mobj_t *t1, mobj_t *t2, line_t *line)
 	return hook.status;
 }
 
+// Backwards Compatability For older scripts
 void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 {
 	Hook_State hook;
@@ -922,6 +923,13 @@ void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector)
 void LUA_HookSpecialExecute(activator_t *activator, INT32 *args, char **stringargs)
 {
 	Hook_State hook;
+
+	if (activator->line)
+	{
+		// Run the old hook if possible.
+		LUA_HookLinedefExecute(activator->line, activator->mo, activator->sector);
+	}
+
 	if (prepare_string_hook
 			(&hook, 0, STRING_HOOK(SpecialExecute), stringargs[0]))
 	{
