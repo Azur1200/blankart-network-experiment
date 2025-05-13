@@ -8746,7 +8746,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 		}
 
 		currentwaypoint = player->mo;
-		safewaypoint = player->nextwaypoint->mobj;
+		safewaypoint = oopisepoint->mobj;
 		CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
 	}
 	else
