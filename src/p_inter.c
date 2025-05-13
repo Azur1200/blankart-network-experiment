@@ -573,7 +573,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			// kill
 			if (player->invincibilitytimer > 0
 				|| player->growshrinktimer > 0
-				|| player->flamestore > 0)
+				|| player->flamedash > 0)
 			{
 				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 				return;

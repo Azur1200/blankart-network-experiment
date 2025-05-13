@@ -744,7 +744,8 @@ INT32 K_KartGetItemOdds(
 		if (players[i].exiting)
 			pexiting++;
 
-		if (shieldtype != KSHIELD_NONE && shieldtype == K_GetShieldFromPlayer(&players[i]))
+		if ((shieldtype == K_GetShieldFromItem(players[i].itemtype))
+			|| (shieldtype == K_GetShieldFromPlayer(&players[i])))
 		{
 			// Don't allow more than one of each shield type at a time
 			return 0;
@@ -956,7 +957,8 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 		if (players[i].exiting)
 			pexiting++;
 
-		if (shieldtype != KSHIELD_NONE && shieldtype == K_GetShieldFromItem(players[i].itemtype))
+		if ((shieldtype == K_GetShieldFromItem(players[i].itemtype))
+			|| (shieldtype == K_GetShieldFromPlayer(&players[i])))
 		{
 			// Don't allow more than one of each shield type at a time
 			return 0;
