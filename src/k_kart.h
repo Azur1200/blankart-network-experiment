@@ -214,7 +214,7 @@ boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed);
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
 fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberbanding);
 fixed_t K_GetKartAccel(player_t *player);
 UINT16 K_GetKartFlashing(player_t *player);

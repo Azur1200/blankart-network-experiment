@@ -3349,7 +3349,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	}
 	else
 	{
-		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5));
+		topspeed = FixedMul(mobj->scale, K_GetKartSpeedFromStat(5, false));
 	}
 
 	speed = P_AproxDistance(mobj->momx, mobj->momy);
@@ -3461,10 +3461,10 @@ static inline fixed_t K_GetProjectileSpeed(void)
 {
 	switch (gamespeed)
 	{
-		case 0:
+		case KARTSPEED_EASY:
 			return 68*mapobjectscale; // Avg Speed is 34
 			break;
-		case 2:
+		case KARTSPEED_HARD:
 			return 96*mapobjectscale; // Avg Speed is 48
 			break;
 		default:
@@ -3477,10 +3477,10 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 {
 	switch (gamespeed)
 	{
-		case 0:
+		case KARTSPEED_EASY:
 			return EASYSNEAKERSPEEDBOOST;
 			break;
-		case 2:
+		case KARTSPEED_HARD:
 			return HARDSNEAKERSPEEDBOOST;
 			break;
 		default:
@@ -3703,25 +3703,15 @@ static fixed_t K_GrowShrinkOrNormal(const player_t *player)
 }
 
 // Returns kart speed from a stat. Boost power and scale are NOT taken into account, no player or object is necessary.
-fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed)
+fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
 {
-	const fixed_t xspd = 3072;
-	fixed_t g_cc = FRACUNIT;
+	const fixed_t xspd = (3*FRACUNIT)/64;
+	fixed_t g_cc = K_GetKartGameSpeedScalar(gamespeed) + xspd;
 	fixed_t k_speed = 150;
 	fixed_t finalspeed;
 
-	switch (gamespeed)
-	{
-		case 0:
-			g_cc = 53248 + xspd; //  50cc =  81.25 + 4.69 =  85.94%
-			break;
-		case 2:
-			g_cc = 77824 + xspd; // 150cc = 118.75 + 4.69 = 123.44%
-			break;
-		default:
-			g_cc = 65536 + xspd; // 100cc = 100.00 + 4.69 = 104.69%
-			break;
-	}
+	if (karmabomb)
+		kartspeed = 1;
 
 	k_speed += kartspeed*3; // 153 - 177
 
@@ -3731,34 +3721,13 @@ fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed)
 
 fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberband)
 {
-	fixed_t k_speed = 150;
-	fixed_t g_cc = FRACUNIT;
-	fixed_t xspd = 3072;		// 4.6875 aka 3/64
-	UINT8 kartspeed = player->kartspeed;
+	boolean karmabomb = ((gametyperules & GTR_KARMA) && player->bumper <= 0);
 	fixed_t finalspeed;
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo))
 		return (75*mapobjectscale); // air speed cap
 
-	switch (gamespeed)
-	{
-		case 0:
-			g_cc = 53248 + xspd; //  50cc =  81.25 + 4.69 =  85.94%
-			break;
-		case 2:
-			g_cc = 77824 + xspd; // 150cc = 118.75 + 4.69 = 123.44%
-			break;
-		default:
-			g_cc = 65536 + xspd; // 100cc = 100.00 + 4.69 = 104.69%
-			break;
-	}
-
-	if ((gametyperules & GTR_KARMA) && (player->bumper <= 0))
-		kartspeed = 1;
-
-	k_speed += kartspeed*3; // 153 - 177
-
-	finalspeed = FixedMul(FixedMul(k_speed<<14, g_cc), player->mo->scale);
+	finalspeed = K_GetKartSpeedFromStat(player->kartspeed, karmabomb);
 
 	if (K_PlayerUsesBotMovement(player))
 	{
@@ -3768,13 +3737,17 @@ fixed_t K_GetKartSpeed(player_t *player, boolean doboostpower, boolean dorubberb
 		finalspeed = FixedMul(finalspeed, FRACUNIT + add);
 	}
 
+	finalspeed = FixedMul(finalspeed, player->mo->scale);
+
 	if (dorubberband == true && player->botvars.rubberband < FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
 		finalspeed = FixedMul(finalspeed, player->botvars.rubberband);
 	}
 
 	if (doboostpower)
+	{
 		finalspeed = FixedMul(finalspeed, player->boostpower+player->speedboost);
+	}
 
 	if (player->outrun != 0)
 	{
@@ -5039,9 +5012,9 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 	if (missile && mapthing != MT_BALLHOG) // Trying to keep compatability...
 	{
 		PROJSPEED = mobjinfo[mapthing].speed;
-		if (gamespeed == 0)
+		if (gamespeed == KARTSPEED_EASY)
 			PROJSPEED = FixedMul(PROJSPEED, FRACUNIT-FRACUNIT/4);
-		else if (gamespeed == 2)
+		else if (gamespeed == KARTSPEED_HARD)
 			PROJSPEED = FixedMul(PROJSPEED, FRACUNIT+FRACUNIT/4);
 		PROJSPEED = FixedMul(PROJSPEED, mapobjectscale);
 	}
@@ -8762,13 +8735,26 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 	// Safety :P
 	if (!player->currentwaypoint || !player->nextwaypoint)
 	{
+		waypoint_t *oopisepoint = K_GetClosestWaypointToMobj(player->mo);
+
 		// Better safe then sorry.
-		CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
-		return;
+		if (!oopisepoint)
+		{
+			// Oh shit, oh fuck.....
+			CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
+			return;
+		}
+
+		currentwaypoint = player->mo;
+		safewaypoint = player->nextwaypoint->mobj;
+		CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
+	}
+	else
+	{
+		currentwaypoint = player->currentwaypoint->mobj;
+		safewaypoint = player->nextwaypoint->mobj;
 	}
 
-	currentwaypoint = player->currentwaypoint->mobj;
-	safewaypoint = player->nextwaypoint->mobj;
 	respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
 
 	player->pflags |= PF_TRUSTWAYPOINTS;

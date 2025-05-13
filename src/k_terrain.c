@@ -944,13 +944,14 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 
 	if (mo->player != NULL)
 	{
+		boolean karmabomb = ((gametyperules & GTR_KARMA) && mo->player->bumper <= 0);
 		tireAngle = (mo->player->drawangle + ANGLE_180);
-		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed);
+		speedValue = K_GetKartSpeedFromStat(mo->player->kartspeed, karmabomb);
 	}
 	else
 	{
 		tireAngle = (mo->angle + ANGLE_180);
-		speedValue = K_GetKartSpeedFromStat(5);
+		speedValue = K_GetKartSpeedFromStat(5, false);
 	}
 
 	speedValue = FixedMul(speedValue, mo->scale);

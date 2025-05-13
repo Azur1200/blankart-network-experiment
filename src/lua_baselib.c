@@ -4152,9 +4152,20 @@ static int lib_kGetKartSpeedFromStat(lua_State *L)
 	UINT16 kartspeed = luaL_checkinteger(L, 1);
 
 	//HUDSAFE
-	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed));
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, false));
 	return 1;
 }
+
+static int lib_kGetKartSpeedFromStatEx(lua_State *L)
+{
+	UINT16 kartspeed = luaL_checkinteger(L, 1);
+	boolean karmabomb = lua_optboolean(L, 2);
+
+	//HUDSAFE
+	lua_pushinteger(L, K_GetKartSpeedFromStat(kartspeed, karmabomb));
+	return 1;
+}
+
 
 static int lib_kKartKickstart(lua_State *L)
 {
@@ -4529,6 +4540,7 @@ static luaL_Reg lib[] = {
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},
+	{"K_GetKartSpeedFromStatEx", lib_kGetKartSpeedFromStatEx},
 	{"K_KartKickstart", lib_kKartKickstart},
 	{"K_GetKartButtons", lib_kGetKartButtons},
 	{"K_GetForwardMove", lib_kGetForwardMove},

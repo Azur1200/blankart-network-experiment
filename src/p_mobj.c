@@ -8373,10 +8373,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (leveltime % TICRATE == 0)
 				S_StartSound(mobj, mobj->info->activesound);
 
-			if (gamespeed == 0)
+			if (gamespeed == KARTSPEED_EASY)
 				distbarrier = FixedMul(distbarrier, FRACUNIT-FRACUNIT/4);
-			//expert speed
-			else if (gamespeed == 2 || gamespeed == 3)
+			else if (gamespeed == KARTSPEED_EASY)
 				distbarrier = FixedMul(distbarrier, FRACUNIT+FRACUNIT/4);
 
 			if ((gametyperules & GTR_CIRCUIT) && mobj->tracer)
