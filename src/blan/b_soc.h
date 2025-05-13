@@ -19,7 +19,7 @@ extern "C" {
 
 boolean B_UseWallTransfer(void);
 boolean B_UseTerrainDef(void);
-boolean B_TrackComplexity(void);
+INT32 B_TrackComplexity(void);
 fixed_t K_TrackModifierMax(void);
 
 #ifdef __cplusplus
