@@ -1247,7 +1247,7 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if ((K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE))
+		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
 
