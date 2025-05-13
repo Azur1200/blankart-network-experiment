@@ -393,6 +393,9 @@ TYPEDEF (vmode_t);
 // sounds.h
 TYPEDEF (sfxinfo_t);
 
+// strbuf.h
+TYPEDEF (strbuf_t);
+
 // taglist.h
 TYPEDEF (taglist_t);
 TYPEDEF (taggroup_t);
