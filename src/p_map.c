@@ -100,6 +100,9 @@ camera_t *mapcampointer;
 //
 static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 {
+	boolean startingonground = P_IsObjectOnGround(thing);
+	sector_t *oldsector = thing->subsector->sector;
+
 	numspechit = 0U;
 
 	// the move is ok,
@@ -128,6 +131,8 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	thing->ceilingz = g_tm.ceilingz;
 	thing->floorrover = g_tm.floorrover;
 	thing->ceilingrover = g_tm.ceilingrover;
+
+	P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
 
 	return true;
 }
@@ -257,7 +262,7 @@ P_DoSpringEx
 {
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - object->scale);
 	const fixed_t vscale = mapobjectscale + (object->scale - mapobjectscale);
-	
+
 	object->standingslope = NULL; // Okay, now we know it's not going to be relevant - no launching off at silly angles for you.
 	object->terrain = NULL;
 
@@ -365,7 +370,7 @@ boolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
 		}
 	}
-	
+
 	// Re-solidify
 	spring->flags |= (spring->info->flags & (MF_SPECIAL|MF_SOLID));
 
@@ -712,41 +717,6 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	if (thing->type == MT_BUBBLESHIELD || g_tm.thing->type == MT_BUBBLESHIELD)
 		return BMIT_CONTINUE;
 
-	// Droptarget reflect
-	if ((thing->type == MT_DROPTARGET || thing->type == MT_DROPTARGET_SHIELD)
-		&& (g_tm.thing->type == MT_ORBINAUT || g_tm.thing->type == MT_JAWZ || g_tm.thing->type == MT_JAWZ_DUD
-		|| g_tm.thing->type == MT_BANANA || g_tm.thing->type == MT_EGGMANITEM || g_tm.thing->type == MT_BALLHOG
-		|| g_tm.thing->type == MT_SSMINE || g_tm.thing->type == MT_LANDMINE || g_tm.thing->type == MT_SINK
-		|| (g_tm.thing->type == MT_PLAYER)))
-	{
-		// see if it went over / under
-		if (g_tm.thing->z > thing->z + thing->height)
-			return BMIT_CONTINUE; // overhead
-		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return BMIT_CONTINUE; // underneath
-
-		return K_DropTargetCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
-	}
-	else if ((g_tm.thing->type == MT_DROPTARGET || g_tm.thing->type == MT_DROPTARGET_SHIELD)
-		&& (thing->type == MT_ORBINAUT || thing->type == MT_JAWZ || thing->type == MT_JAWZ_DUD
-		|| thing->type == MT_BANANA || thing->type == MT_EGGMANITEM || thing->type == MT_BALLHOG
-		|| thing->type == MT_SSMINE || thing->type == MT_LANDMINE || thing->type == MT_SINK
-		|| (thing->type == MT_PLAYER)))
-	{
-		// see if it went over / under
-		if (g_tm.thing->z > thing->z + thing->height)
-			return BMIT_CONTINUE; // overhead
-		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return BMIT_CONTINUE; // underneath
-
-		return K_DropTargetCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
-	}
-
-	// double make sure drop targets won't collide with anything else
-	if (thing->type == MT_DROPTARGET || g_tm.thing->type == MT_DROPTARGET
-		|| thing->type == MT_DROPTARGET_SHIELD || g_tm.thing->type == MT_DROPTARGET_SHIELD)
-		return BMIT_CONTINUE;
-
 	if (g_tm.thing->type == MT_ORBINAUT || g_tm.thing->type == MT_JAWZ || g_tm.thing->type == MT_JAWZ_DUD
 		|| g_tm.thing->type == MT_ORBINAUT_SHIELD || g_tm.thing->type == MT_JAWZ_SHIELD)
 	{
@@ -810,6 +780,27 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			return BMIT_CONTINUE; // underneath
 
 		return K_MineCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (g_tm.thing->type == MT_MINEEXPLOSION)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_MineExplosionCollide(g_tm.thing, thing);
+	}
+	else if (thing->type == MT_MINEEXPLOSION)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_MineExplosionCollide(thing, g_tm.thing);
 	}
 
 	if (g_tm.thing->type == MT_LANDMINE)
@@ -1711,7 +1702,7 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 	{
 		fixed_t textop, texbottom;
 
-		P_GetMidtextureTopBottom(ld, &open,
+		P_GetTripwireTopBottom(ld, g_tm.x, g_tm.y,
 				&textop, &texbottom);
 
 		/* The effect handling is done later but it won't
@@ -2534,13 +2525,13 @@ increment_move
 
 	// reset this to 0 at the start of each trymove call as it's only used here
 	numspechitint = 0U;
-	// This makes sure that there are no freezes from computing extremely small movements.
-	// Originally was MAXRADIUS/2, but that can cause some bad inconsistencies for small players.
-	radius = max(radius, thing->scale);
 
-	// And we also have to prevent Big Large (tm) movements, as those can skip too far
-	// across slopes and cause us to fail step up checks on them when we otherwise shouldn't.
-	radius = min(radius, 16 * thing->scale);
+	// This makes sure that there are no freezes from computing extremely small movements.
+	// Originally was MAXRADIUS/2, but that causes some inconsistencies for small players.
+	radius = max(radius, mapobjectscale);
+
+	// And Big Large (tm) movements can skip over slopes.
+	radius = min(radius, 16*mapobjectscale);
 
 	// (This whole "step" system is flawed; it was OK before, but the addition of slopes has
 	// exposed the problems with doing it like this. The right thing to do would be to use
@@ -2724,6 +2715,7 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 	fixed_t oldx = thing->x;
 	fixed_t oldy = thing->y;
 	fixed_t startingonground = P_IsObjectOnGround(thing);
+	sector_t *oldsector = thing->subsector->sector;
 
 	// Is the move OK?
 	if (increment_move(thing, x, y, allowdropoff, result) == false)
@@ -2825,6 +2817,8 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 		thing->eflags |= MFE_ONGROUND;
 
 	P_SetThingPosition(thing);
+
+	P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
 
 	// remove any duplicates that may be in spechitint
 	spechitint_removedups();
@@ -3709,12 +3703,18 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
-	
+
 	if (!cv_kartbumpspark.value || modeattacking != ATTACKING_NONE)
 	{
 		mo->player->drift = 0;
 		mo->player->driftcharge = 0;
 	}
+
+	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
+	mo->player->botvars.drifttime = 0;
+	mo->player->botvars.driftstate = DRIFTSTATE_AUTO;
+	mo->player->botvars.driftturn = 0;
+	mo->player->botvars.powersliding = false;
 
 	if (!cv_kartbumpspring.value || modeattacking != ATTACKING_NONE)
 	{

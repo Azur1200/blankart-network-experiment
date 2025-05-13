@@ -126,7 +126,7 @@ struct wadfile_t
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
-	UINT8 md5sum[16];
+	UINT64 hash;
 
 	boolean important; // also network - !W_VerifyNMUSlumps
 	boolean compatmode;
@@ -153,6 +153,8 @@ void W_Shutdown(void);
 FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 // Load and add a wadfile to the active wad files, returns numbers of lumps, INT16_MAX on error
 UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadcompat_t compat);
+
+boolean W_MakeFileHash(const char *filename, boolean openwad, UINT64 *ret);
 
 // W_InitMultipleFiles returns 1 if all is okay, 0 otherwise,
 // so that it stops with a message if a file was not found, but not if all is okay.
@@ -224,7 +226,7 @@ void *W_CacheSoftwarePatchNum(lumpnum_t lumpnum, INT32 tag);
 
 void W_UnlockCachedPatch(void *patch);
 
-void W_VerifyFileMD5(UINT16 wadfilenum, const char *matchmd5);
+void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash);
 
 int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error);
 

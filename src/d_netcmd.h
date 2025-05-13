@@ -91,8 +91,7 @@ extern consvar_t
 	cv_superring,
 	cv_landmine,
 	cv_bubbleshield,
-	cv_flameshield,
-	cv_droptarget;
+	cv_flameshield;
 
 extern consvar_t
 	cv_dualsneaker,
@@ -116,6 +115,8 @@ extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
 extern consvar_t cv_kartbot;
+extern consvar_t cv_kartbot_modifiermax;
+extern consvar_t cv_kartbot_basetrackcomplexity;
 extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;

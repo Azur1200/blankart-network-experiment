@@ -289,6 +289,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].tripwireReboundDelay);
 
 		WRITEUINT16(save->p, players[i].itemroulette);
+		WRITEUINT16(save->p, players[i].previtemroulette);
 		WRITEUINT16(save->p, players[i].itemblink);
 		WRITEUINT16(save->p, players[i].itemblinkmode);
 		WRITEUINT8(save->p, players[i].roulettetype);
@@ -365,6 +366,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].itemflags);
 
 		// botvars_t
+		WRITEUINT8(save->p, players[i].bot);
 		WRITEUINT8(save->p, players[i].botvars.difficulty);
 		WRITEUINT8(save->p, players[i].botvars.diffincrease);
 		WRITEUINT8(save->p, players[i].botvars.rival);
@@ -374,6 +376,11 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].botvars.itemconfirm);
 		WRITESINT8(save->p, players[i].botvars.turnconfirm);
 		WRITEUINT32(save->p, players[i].botvars.respawnconfirm);
+		WRITEFIXED(save->p, players[i].botvars.driftskill);
+		WRITEINT32(save->p, players[i].botvars.driftstate);
+		WRITESINT8(save->p, players[i].botvars.driftturn);
+		WRITEUINT32(save->p, players[i].botvars.drifttime);
+		WRITEUINT8(save->p, players[i].botvars.powersliding);
 		
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -605,6 +612,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].tripwireReboundDelay = READUINT8(save->p);
 
 		players[i].itemroulette = READUINT16(save->p);
+		players[i].previtemroulette = READUINT16(save->p);
 		players[i].itemblink = READUINT16(save->p);
 		players[i].itemblinkmode = READUINT16(save->p);
 		players[i].roulettetype = READUINT8(save->p);
@@ -681,6 +689,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].itemflags = READUINT8(save->p);
 
 		// botvars_t
+		players[i].bot = READUINT8(save->p);
 		players[i].botvars.difficulty = READUINT8(save->p);
 		players[i].botvars.diffincrease = READUINT8(save->p);
 		players[i].botvars.rival = (boolean)READUINT8(save->p);
@@ -690,6 +699,11 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.itemconfirm = READUINT32(save->p);
 		players[i].botvars.turnconfirm = READSINT8(save->p);
 		players[i].botvars.respawnconfirm = READUINT32(save->p);
+		players[i].botvars.driftskill = READFIXED(save->p);
+		players[i].botvars.driftstate = READINT32(save->p);
+		players[i].botvars.driftturn = READSINT8(save->p);
+		players[i].botvars.drifttime = READUINT32(save->p);
+		players[i].botvars.powersliding = (boolean)READUINT8(save->p);
 		
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);
@@ -734,6 +748,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 static void P_NetArchiveParties(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, k;
 	UINT8 partySize;
 
@@ -753,10 +769,14 @@ static void P_NetArchiveParties(savebuffer_t *save)
 			WRITEUINT8(save->p, G_PartyMember(i, k));
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 static void P_NetUnArchiveParties(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
+
 	INT32 i, k;
 	UINT8 partySize;
 
@@ -768,6 +788,7 @@ static void P_NetUnArchiveParties(savebuffer_t *save)
 		if (!playeringame[i])
 			continue;
 
+		G_DestroyParty(i);
 		G_BuildLocalSplitscreenParty(i);
 	}
 
@@ -783,6 +804,8 @@ static void P_NetUnArchiveParties(savebuffer_t *save)
 			G_JoinParty(i, READUINT8(save->p));
 		}
 	}
+
+	TracyCZoneEnd(__zone);
 }
 
 ///

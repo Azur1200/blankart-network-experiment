@@ -26,9 +26,7 @@
 #include "i_video.h"
 #include "z_zone.h"
 #include "lua_hook.h"
-
-// SRB2kart
-#include "k_kart.h"
+#include "k_kart.h" // SRB2kart
 #include "k_waypoint.h"
 #include "k_battle.h"
 #include "k_collide.h"
@@ -10149,84 +10147,6 @@ void A_FadeOverlay(mobj_t *actor)
 		P_SetTarget(&actor->tracer, fade);
 }
 
-// Function: A_MineExplode
-// Description: Handles the explosion of a DSZ mine.
-//
-// var1 = unused
-// var2 = unused
-//
-void A_MineExplode(mobj_t *actor)
-{
-	// INT32 locvar1 = var1;
-	// INT32 locvar2 = var2;
-
-	if (LUA_CallAction(A_MINEEXPLODE, actor))
-		return;
-
-	A_Scream(actor);
-	actor->flags = MF_NOGRAVITY|MF_NOCLIP;
-
-	/*
-	quake.epicenter = NULL;
-	quake.radius = 512*FRACUNIT;
-	quake.intensity = 8*FRACUNIT;
-	quake.time = TICRATE/3;
-	*/
-	P_StartQuake(8<<FRACBITS, TICRATE/3);
-
-	P_RadiusAttack(actor, actor->tracer, 192*FRACUNIT, 0, true);
-	P_MobjCheckWater(actor);
-
-	{
-#define dist 64
-		UINT8 i;
-		mobjtype_t type = ((actor->eflags & MFE_UNDERWATER) ? MT_UWEXPLODE : MT_SONIC3KBOSSEXPLODE);
-		S_StartSound(actor, ((actor->eflags & MFE_UNDERWATER) ? sfx_s3k57 : sfx_s3k4e));
-		P_SpawnMobj(actor->x, actor->y, actor->z, type);
-		for (i = 0; i < 16; i++)
-		{
-			mobj_t *b = P_SpawnMobj(actor->x+P_RandomRange(-dist, dist)*FRACUNIT,
-				actor->y+P_RandomRange(-dist, dist)*FRACUNIT,
-				actor->z+P_RandomRange(((actor->eflags & MFE_UNDERWATER) ? -dist : 0), dist)*FRACUNIT,
-				type);
-			fixed_t dx = b->x - actor->x, dy = b->y - actor->y, dz = b->z - actor->z;
-			fixed_t dm = P_AproxDistance(dz, P_AproxDistance(dy, dx));
-			b->momx = FixedDiv(dx, dm)*3;
-			b->momy = FixedDiv(dy, dm)*3;
-			b->momz = FixedDiv(dz, dm)*3;
-			if ((actor->watertop == INT32_MAX) || (b->z + b->height > actor->watertop))
-				b->flags &= ~MF_NOGRAVITY;
-		}
-#undef dist
-
-		if (actor->watertop != INT32_MAX)
-			P_SpawnMobj(actor->x, actor->y, actor->watertop, (actor->eflags & MFE_TOUCHLAVA) ? MT_LAVASPLISH : MT_SPLISH);
-	}
-}
-
-// Function: A_MineRange
-// Description: If the target gets too close, change the state to meleestate.
-//
-// var1 = Distance to alert at
-// var2 = unused
-//
-void A_MineRange(mobj_t *actor)
-{
-	fixed_t dm;
-	INT32 locvar1 = var1;
-	// INT32 locvar2 = var2;
-
-	if (LUA_CallAction(A_MINERANGE, actor))
-		return;
-
-	if (!actor->target)
-		return;
-
-	dm = P_AproxDistance(actor->z - actor->target->z, P_AproxDistance(actor->y - actor->target->y, actor->x - actor->target->x));
-	if ((dm>>FRACBITS) < locvar1)
-		P_SetMobjState(actor, actor->info->meleestate);
-}
-
 // Function: A_ConnectToGround
 // Description: Create a palm tree trunk/mine chain.
 //
@@ -10686,7 +10606,7 @@ void A_ItemPop(mobj_t *actor)
 	
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
-		actor->target->player->itemroulette = 1;
+		actor->target->player->itemroulette = KROULETTE_ACTIVE;
 	}
 	else if (itembreaker)
 	{
@@ -10696,22 +10616,6 @@ void A_ItemPop(mobj_t *actor)
 			actor->target->player->itemamount += 1;
 		}
 
-	}
-
-	// Let Ring-less maps in on the rings fun as well!
-	if ((K_RingsActive() == true) )
-	{
-		SINT8 awardamount = 10;
-		if (actor->target->player->position == 1)
-		{
-			awardamount = 3;
-		}
-		else if(!K_IsPlayerLosing(actor->target->player))
-		{
-			awardamount = 5;
-		}
-
-		K_AwardPlayerRings(actor->target->player, awardamount, false);
 	}
 
 	remains->flags2 &= ~MF2_AMBUSH;
@@ -11097,9 +11001,55 @@ void A_SPBChase(mobj_t *actor)
 	return;
 }
 
+static mobj_t *grenade;
+static fixed_t explodedist;
+
+static inline BlockItReturn_t PIT_SSMineSearch(mobj_t *thing)
+{
+	if (!grenade)
+		return BMIT_ABORT;
+
+	if (grenade->flags2 & MF2_DEBRIS)
+		return BMIT_ABORT;
+
+	if (thing->type != MT_PLAYER) // Don't explode for anything but an actual player.
+		return BMIT_CONTINUE;
+
+	if (!(thing->flags & MF_SHOOTABLE))
+	{
+		// didn't do any damage
+		return BMIT_CONTINUE;
+	}
+
+	if (netgame && thing->player && thing->player->spectator)
+		return BMIT_CONTINUE;
+
+	if (thing == grenade->target && grenade->threshold != 0) // Don't blow up at your owner.
+		return BMIT_CONTINUE;
+
+	if (thing->player && (thing->player->hyudorotimer
+		|| ((gametyperules & GTR_BUMPERS) && thing->player && thing->player->bumper <= 0 && thing->player->karmadelay)))
+		return BMIT_CONTINUE;
+
+	// see if it went over / under
+	if (grenade->z - explodedist > thing->z + thing->height)
+		return BMIT_CONTINUE; // overhead
+	if (grenade->z + grenade->height + explodedist < thing->z)
+		return BMIT_CONTINUE; // underneath
+
+	if (P_AproxDistance(P_AproxDistance(thing->x - grenade->x, thing->y - grenade->y),
+		thing->z - grenade->z) > explodedist)
+		return BMIT_CONTINUE; // Too far away
+
+	// Explode!
+	P_SetMobjState(grenade, grenade->info->deathstate);
+	return BMIT_ABORT;
+}
+
 void A_SSMineSearch(mobj_t *actor)
 {
-	fixed_t dis = INT32_MAX;
+	INT32 bx, by, xl, xh, yl, yh;
+	explodedist = FixedMul(actor->info->painchance, mapobjectscale);
 
 	if (LUA_CallAction(A_SSMINESEARCH, actor))
 		return;
@@ -11107,19 +11057,67 @@ void A_SSMineSearch(mobj_t *actor)
 	if (actor->flags2 & MF2_DEBRIS)
 		return;
 
+	if (actor->state == &states[S_SSMINE_DEPLOY8])
+		explodedist = (3*explodedist)/2;
+
 	if (leveltime % 35 == 0)
 		S_StartSound(actor, actor->info->activesound);
 
-	dis = actor->info->painchance;
-	if (actor->state == &states[S_SSMINE_DEPLOY8])
-		dis = (3*dis)>>1;
+	// Use blockmap to check for nearby shootables
+	yh = (unsigned)(actor->y + explodedist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(actor->y - explodedist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(actor->x + explodedist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(actor->x - explodedist - bmaporgx)>>MAPBLOCKSHIFT;
 
-	K_DoMineSearch(actor, dis);
+	grenade = actor;
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_SSMineSearch);
+}
+
+static inline BlockItReturn_t PIT_MineExplode(mobj_t *thing)
+{
+	if (!grenade || P_MobjWasRemoved(grenade))
+		return BMIT_ABORT; // There's the possibility these can chain react onto themselves after they've already died if there are enough all in one spot
+
+	if (grenade->flags2 & MF2_DEBRIS) // don't explode twice
+		return BMIT_ABORT;
+
+	if (thing == grenade || thing->type == MT_MINEEXPLOSIONSOUND) // Don't explode yourself! Endless loop!
+		return BMIT_CONTINUE;
+
+	if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
+		return BMIT_CONTINUE;
+
+	if (netgame && thing->player && thing->player->spectator)
+		return BMIT_CONTINUE;
+
+	if ((gametyperules & GTR_BUMPERS) && grenade->target && grenade->target->player && grenade->target->player->bumper <= 0 && thing == grenade->target)
+		return BMIT_CONTINUE;
+
+	// see if it went over / under
+	if (grenade->z - explodedist > thing->z + thing->height)
+		return BMIT_CONTINUE; // overhead
+	if (grenade->z + grenade->height + explodedist < thing->z)
+		return BMIT_CONTINUE; // underneath
+
+	if (P_AproxDistance(P_AproxDistance(thing->x - grenade->x, thing->y - grenade->y),
+		thing->z - grenade->z) > explodedist)
+		return BMIT_CONTINUE; // Too far away
+
+	P_DamageMobj(thing, grenade, grenade->target, 1, DMG_EXPLODE);
+	return BMIT_CONTINUE;
 }
 
 void A_SSMineExplode(mobj_t *actor)
 {
+	INT32 bx, by, xl, xh, yl, yh;
+	INT32 d;
 	INT32 locvar1 = var1;
+	mobjtype_t type;
+	skincolornum_t color = SKINCOLOR_KETCHUP;
+	explodedist = FixedMul((3*actor->info->painchance)/2, actor->scale);
 
 	if (LUA_CallAction(A_SSMINEEXPLODE, actor))
 		return;
@@ -11127,13 +11125,33 @@ void A_SSMineExplode(mobj_t *actor)
 	if (actor->flags2 & MF2_DEBRIS)
 		return;
 
-	K_MineExplodeAttack(actor, (3*actor->info->painchance)>>1, (boolean)locvar1);
+	type = (mobjtype_t)locvar1;
 
-	skincolornum_t color = SKINCOLOR_KETCHUP;
+	// Use blockmap to check for nearby shootables
+	yh = (unsigned)(actor->y + explodedist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(actor->y - explodedist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(actor->x + explodedist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(actor->x - explodedist - bmaporgx)>>MAPBLOCKSHIFT;
+
+	BMBOUNDFIX (xl, xh, yl, yh);
+
+	grenade = actor;
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_MineExplode);
+
+	for (d = 0; d < 16; d++)
+		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64
+
 	if (!P_MobjWasRemoved(actor->target) && actor->target->player)
 		color = actor->target->player->skincolor;
 
 	K_SpawnMineExplosion(actor, color);
+
+	P_SpawnMobj(actor->x, actor->y, actor->z, MT_MINEEXPLOSIONSOUND);
+
+	actor->flags2 |= MF2_DEBRIS;	// Set this flag to ensure that the explosion won't be effective more than 1 frame.
 }
 
 void A_LandMineExplode(mobj_t *actor)

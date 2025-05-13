@@ -1621,7 +1621,7 @@ bool CallFunc_CountPushables(ACSVM::Thread *thread, const ACSVM::Word *argV, ACS
 --------------------------------------------------*/
 /*bool CallFunc_HaveUnlockable(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 {
-	UINT8 id = 0;
+	UINT32 id = 0;
 	bool unlocked = false;
 
 	(void)argC;

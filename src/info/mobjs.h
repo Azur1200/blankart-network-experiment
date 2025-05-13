@@ -57,6 +57,9 @@ _(EGGMOBILE_FIRE)
 // Boss 2
 _(EGGMOBILE2)
 _(EGGMOBILE2_POGO)
+_(BOSSTANK1)
+_(BOSSTANK2)
+_(BOSSSPIGOT)
 _(GOOP)
 
 // Boss 3
@@ -97,9 +100,7 @@ _(MSGATHER)
 // Collectible Items
 _(RING)
 _(FLINGRING) // Lost ring
-_(BLUESPHERE) // Blue sphere for special stages
-_(FLINGBLUESPHERE) // Lost blue sphere
-_(BOMBSPHERE)
+_(BLUEBALL) // Blue sphere for special stages
 _(REDTEAMRING) // Rings collectable by red team.
 _(BLUETEAMRING) // Rings collectable by blue team.
 _(EMMY) // Special Stage token for special stage
@@ -126,16 +127,11 @@ _(BALLOON)
 _(YELLOWSPRING)
 _(REDSPRING)
 _(BLUESPRING)
-_(GREYSPRING)
+_(GRAYSPRING)
 _(INVISSPRING)
 _(YELLOWDIAG) // Yellow Diagonal Spring
 _(REDDIAG) // Red Diagonal Spring
 _(BLUEDIAG) // Blue Diagonal Spring
-_(GREYDIAG) // Grey Diagonal Spring
-_(YELLOWHORIZ) // Yellow Horizontal Spring
-_(REDHORIZ) // Red Horizontal Spring
-_(BLUEHORIZ) // Blue Horizontal Spring
-_(GREYHORIZ) // Grey Horizontal Spring
 
 // Interactive Objects
 _(BUBBLES) // Bubble source
@@ -234,10 +230,8 @@ _(FLAME) // Flame
 _(EGGSTATUE) // Eggman Statue
 _(MACEPOINT) // Mace rotation point
 _(CHAINMACEPOINT) // Combination of chains and maces point
-_(SPRINGBALLPOINT) // Spring ball point
 _(CHAINPOINT) // Mace chain
 _(HIDDEN_SLING) // Spin mace chain (activatable)
-_(FIREBARPOINT) // Firebar
 _(CUSTOMMACEPOINT) // Custom mace
 _(SMALLMACECHAIN) // Small Mace Chain
 _(BIGMACECHAIN) // Big Mace Chain
@@ -245,10 +239,6 @@ _(SMALLMACE) // Small Mace
 _(BIGMACE) // Big Mace
 _(SMALLGRABCHAIN) // Small Grab Chain
 _(BIGGRABCHAIN) // Big Grab Chain
-_(YELLOWSPRINGBALL) // Yellow spring on a ball
-_(REDSPRINGBALL) // Red spring on a ball
-_(SMALLFIREBAR) // Small Firebar
-_(BIGFIREBAR) // Big Firebar
 _(CEZFLOWER) // Flower
 
 // Arid Canyon Scenery
@@ -279,8 +269,6 @@ _(TRAPGOYLEUP)
 _(TRAPGOYLEDOWN)
 _(TRAPGOYLELONG)
 _(TARGET) // AKA Red Crystal
-_(GREENFLAME)
-_(BLUEGARGOYLE)
 
 // Stalagmites
 _(STALAGMITE0)
@@ -435,9 +423,6 @@ _(FINISHFLAG) // Finish flag
 
 // Ambient Sounds
 _(AMBIENT)
-
-_(CORK)
-_(LHRT)
 
 // Ring Weapons
 _(REDRING)
@@ -610,17 +595,14 @@ _(PLAYERRETICULE) // Jawz reticule
 
 _(SSMINE) // Mine stuff
 _(SSMINE_SHIELD)
-
-_(MINEEXPLOSION) // to keep compatmode scripts happy
+_(MINEEXPLOSION)
+_(MINEEXPLOSIONSOUND)
 
 _(SMOLDERING) // New explosion
 _(BOOMEXPLODE)
 _(BOOMPARTICLE)
 
 _(LANDMINE) // Land Mine
-
-_(DROPTARGET) // Drop Target
-_(DROPTARGET_SHIELD)
 
 _(BALLHOG) // Ballhog
 _(BALLHOGBOOM)
@@ -704,8 +686,6 @@ _(FIREDITEM)
 _(INSTASHIELDA)
 _(INSTASHIELDB)
 
-_(POWERCLASH) // Grow/Invinc clash VFX
-
 _(PLAYERARROW)
 _(PLAYERWANTED)
 
@@ -720,7 +700,7 @@ _(FZEROBOOM)
 _(SONICBUSH)
 
 // Marble Zone
-_(MARBLEFLAMEPARTICLE)
+_(FLAMEPARTICLE)
 _(MARBLETORCH)
 _(MARBLELIGHT)
 _(MARBLEBURNER)

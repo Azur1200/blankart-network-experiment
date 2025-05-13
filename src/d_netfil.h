@@ -37,7 +37,7 @@ typedef enum
 	FS_REQUESTED,
 	FS_DOWNLOADING,
 	FS_OPEN, // Is opened and used in w_wad
-	FS_MD5SUMBAD,
+	FS_BADHASH,
 	FS_FALLBACK, // HTTP failed
 } filestatus_t;
 
@@ -45,7 +45,7 @@ struct fileneeded_t
 {
 	UINT8 willsend; // Is the server willing to send it?
 	char filename[MAX_WADPATH];
-	UINT8 md5sum[16];
+	UINT64 hash;
 	filestatus_t status; // The value returned by recsearch
 	boolean justdownloaded; // To prevent late fragments from causing an I_Error
 	boolean compatmode;
@@ -155,9 +155,9 @@ void Command_Downloads_f(void);
 boolean fileexist(char *filename, time_t ptime);
 
 // Search a file in the wadpath, return FS_FOUND when found
-filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum,
+filestatus_t findfile(char *filename, UINT64 wantedhash,
 	boolean completepath);
-filestatus_t checkfilemd5(char *filename, const UINT8 *wantedmd5sum);
+filestatus_t checkfilehash(const char *filename, UINT64 wantedhash);
 
 void nameonly(char *s);
 size_t nameonlylength(const char *s);

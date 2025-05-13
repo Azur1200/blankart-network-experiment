@@ -217,10 +217,12 @@ static void Polyobj_GetInfo(polyobj_t *po, line_t *line)
 	if (po->parent == po->id) // do not allow a self-reference
 		po->parent = -1;
 
-	if (udmf)
+	if (mapnamespace == MNS_SRB2KART)
+		po->translucency = max(min(line->args[1], NUMTRANSMAPS), 0);
+	else
 		po->translucency = max(min(line->args[2], NUMTRANSMAPS), 0);
 
-	if (udmf)
+	if (mapnamespace != MNS_SRB2KART)
 	{
 		po->flags = POF_SOLID|POF_TESTHEIGHT|POF_RENDERSIDES|POF_RENDERPLANES;
 

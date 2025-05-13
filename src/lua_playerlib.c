@@ -241,6 +241,7 @@ enum player_e
 	player_tripwireLeniency,
 	player_tripwireReboundDelay,
 	player_itemroulette,
+	player_previtemroulette,
 	player_itemblink,
 	player_itemblinkmode,
 	player_roulettetype,
@@ -419,6 +420,7 @@ static const char *const player_opt[] = {
 	"tripwireLeniency",
 	"tripwireReboundDelay",
 	"itemroulette",
+	"previtemroulette",
 	"itemblink",
 	"itemblinkmode",
 	"roulettetype",
@@ -752,6 +754,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemroulette:
 		lua_pushinteger(L, plr->itemroulette);
+		break;
+	case player_previtemroulette:
+		lua_pushinteger(L, plr->previtemroulette);
 		break;
 	case player_itemblink:
 		lua_pushinteger(L, plr->itemblink);
@@ -1373,6 +1378,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemroulette:
 		plr->itemroulette = luaL_checkinteger(L, 3);
+		break;
+	case player_previtemroulette:
+		plr->previtemroulette = luaL_checkinteger(L, 3);
 		break;
 	case player_itemblink:
 		plr->itemblink = luaL_checkinteger(L, 3);

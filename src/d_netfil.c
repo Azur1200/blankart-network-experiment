@@ -51,7 +51,6 @@
 #include "p_setup.h"
 #include "m_misc.h"
 #include "m_menu.h"
-#include "md5.h"
 #include "filesrch.h"
 
 #include <errno.h>
@@ -104,7 +103,7 @@ static tic_t lasttimeackpacketsent = 0;
 typedef struct
 {
 	char filename[MAX_WADPATH];
-	UINT8 md5sum[16];
+	UINT64 hash;
 	boolean *receivedfragments;
 	UINT32 fragmentsize;
 	UINT32 currentsize;
@@ -207,7 +206,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 		count++;
 		WRITEUINT32(p, wadfiles[i]->filesize);
 		WRITESTRINGN(p, wadfilename, MAX_WADPATH);
-		WRITEMEM(p, wadfiles[i]->md5sum, 16);
+		WRITEUINT64(p, wadfiles[i]->hash);
 		WRITEUINT8(p, wadfiles[i]->compatmode);
 	}
 	if (netbuffer->packettype == PT_MOREFILESNEEDED)
@@ -241,7 +240,7 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 		fileneeded[i].totalsize = READUINT32(p); // The four next bytes are the file size
 		fileneeded[i].file = NULL; // The file isn't open yet
 		READSTRINGN(p, fileneeded[i].filename, MAX_WADPATH); // The next bytes are the file name
-		READMEM(p, fileneeded[i].md5sum, 16); // The last 16 bytes are the file checksum
+		fileneeded[i].hash = READUINT64(p); // The last 8 bytes are the file checksum
 		fileneeded[i].compatmode = READUINT8(p);
 	}
 }
@@ -255,7 +254,7 @@ void CL_PrepareDownloadSaveGame(const char *tmpsave)
 	fileneeded[0].justdownloaded = false;
 	fileneeded[0].totalsize = UINT32_MAX;
 	fileneeded[0].file = NULL;
-	memset(fileneeded[0].md5sum, 0, 16);
+	fileneeded[0].hash = 0;
 	strcpy(fileneeded[0].filename, tmpsave);
 }
 
@@ -295,19 +294,12 @@ boolean CL_CheckDownloadable(void)
 		{
 			CONS_Printf(" * \"%s\" (%dK)", fileneeded[i].filename, fileneeded[i].totalsize >> 10);
 
-				if (fileneeded[i].status == FS_MD5SUMBAD)
-					CONS_Printf(M_GetText(" wrong version, md5: "));
+				if (fileneeded[i].status == FS_BADHASH)
+					CONS_Printf(M_GetText(" wrong version, hash: "));
 				else
-					CONS_Printf(M_GetText(" not found, md5: "));
+					CONS_Printf(M_GetText(" not found, hash: "));
 
-			{
-				INT32 j;
-				char md5tmp[33];
-				for (j = 0; j < 16; j++)
-					sprintf(&md5tmp[j*2], "%02x", fileneeded[i].md5sum[j]);
-				CONS_Printf("%s", md5tmp);
-			}
-			CONS_Printf("\n");
+			CONS_Printf(HASHFMT "\n", fileneeded[i].hash);
 		}
 
 	switch (dlstatus)
@@ -335,7 +327,7 @@ static boolean CL_CanResumeDownload(fileneeded_t *file)
 {
 	return pauseddownload
 		&& !strcmp(pauseddownload->filename, file->filename) // Same name
-		&& !memcmp(pauseddownload->md5sum, file->md5sum, 16) // Same checksum
+		&& pauseddownload->hash == file->hash // Same checksum
 		&& pauseddownload->fragmentsize == file->fragmentsize; // Same fragment size
 }
 
@@ -388,7 +380,7 @@ boolean CL_SendFileRequest(void)
 			return false;
 		}
 #endif
-		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
+		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Error check for the first time around.
 			totalfreespaceneeded += fileneeded[i].totalsize;
@@ -419,7 +411,7 @@ tryagain:
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK))
+		if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK))
 		{
 			// Pre-prepare.
 			size_t checklen;
@@ -457,7 +449,7 @@ tryagain:
 		CONS_Printf("Direct download - missing files are as follows:\n");
 		for (i = 0; i < fileneedednum; i++)
 		{
-			if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK || fileneeded[i].status == FS_REQUESTED)) // FS_REQUESTED added
+			if ((fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK || fileneeded[i].status == FS_REQUESTED)) // FS_REQUESTED added
 				CONS_Printf(" %s\n", fileneeded[i].filename);
 		}
 		return false;
@@ -571,8 +563,8 @@ INT32 CL_CheckFiles(void)
 			if (i >= fileneedednum || j >= numwadfiles)
 				return 2;
 
-			// For the sake of speed, only bother with a md5 check
-			if (memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+			// For the sake of speed, only bother with a hash check
+			if (wadfiles[j]->hash != fileneeded[i].hash)
 				return 2;
 
 			// compatmode has to match too!
@@ -590,7 +582,7 @@ INT32 CL_CheckFiles(void)
 
 	for (i = 0; i < fileneedednum; i++)
 	{
-		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_MD5SUMBAD || fileneeded[i].status == FS_FALLBACK)
+		if (fileneeded[i].status == FS_NOTFOUND || fileneeded[i].status == FS_BADHASH || fileneeded[i].status == FS_FALLBACK)
 			downloadrequired = true;
 		
 		if (fileneeded[i].status != FS_OPEN)
@@ -611,7 +603,7 @@ INT32 CL_CheckFiles(void)
 		{
 			nameonly(strcpy(wadfilename, wadfiles[j]->filename));
 			if (!stricmp(wadfilename, fileneeded[i].filename) &&
-				!memcmp(wadfiles[j]->md5sum, fileneeded[i].md5sum, 16))
+				wadfiles[j]->hash == fileneeded[i].hash)
 			{
 				CONS_Debug(DBG_NETPLAY, "already loaded\n");
 				fileneeded[i].status = FS_OPEN;
@@ -621,7 +613,7 @@ INT32 CL_CheckFiles(void)
 
 		packetsize += nameonlylength(fileneeded[i].filename) + 22;
 
-		fileneeded[i].status = findfile(fileneeded[i].filename, fileneeded[i].md5sum, true);
+		fileneeded[i].status = findfile(fileneeded[i].filename, fileneeded[i].hash, true);
 		CONS_Debug(DBG_NETPLAY, "found %d\n", fileneeded[i].status);
 		return 4;
 	}
@@ -655,7 +647,7 @@ boolean CL_LoadServerFiles(void)
 			fileneeded[i].status = FS_OPEN;
 			return false;
 		}
-		else if (fileneeded[i].status == FS_MD5SUMBAD)
+		else if (fileneeded[i].status == FS_BADHASH)
 			I_Error("Wrong version of file %s", fileneeded[i].filename);
 		else
 		{
@@ -866,7 +858,7 @@ void CL_PrepareDownloadLuaFile(void)
 	fileneeded[0].justdownloaded = false;
 	fileneeded[0].totalsize = UINT32_MAX;
 	fileneeded[0].file = NULL;
-	memset(fileneeded[0].md5sum, 0, 16);
+	fileneeded[0].hash = 0;
 	strcpy(fileneeded[0].filename, luafiletransfers->realfilename);
 
 	// Make sure all directories in the file path exist
@@ -1551,8 +1543,8 @@ void PT_FileFragment(void)
 		case FS_OPEN:
 			s = "FS_OPEN";
 			break;
-		case FS_MD5SUMBAD:
-			s = "FS_MD5SUMBAD";
+		case FS_BADHASH:
+			s = "FS_BADHASH";
 			break;
 		default:
 			s = "unknown";
@@ -1609,7 +1601,7 @@ void CloseNetFile(void)
 					I_Error("CloseNetFile: No more memory\n");
 
 				strcpy(pauseddownload->filename, fileneeded[i].filename);
-				memcpy(pauseddownload->md5sum, fileneeded[i].md5sum, 16);
+				pauseddownload->hash = fileneeded[i].hash;
 				pauseddownload->currentsize = fileneeded[i].currentsize;
 				pauseddownload->receivedfragments = fileneeded[i].receivedfragments;
 				pauseddownload->fragmentsize = fileneeded[i].fragmentsize;
@@ -1694,66 +1686,57 @@ size_t nameonlylength(const char *s)
 #define O_BINARY 0
 #endif
 
-filestatus_t checkfilemd5(char *filename, const UINT8 *wantedmd5sum)
+filestatus_t checkfilehash(const char *filename, UINT64 wantedhash)
 {
-#if defined (NOMD5)
-	(void)wantedmd5sum;
+#ifdef NOFILEHASH
+	(void)wantedhash;
 	(void)filename;
+	return FS_FOUND;
 #else
-	FILE *fhandle;
-	UINT8 md5sum[16];
-
-	if (!wantedmd5sum)
+	if (!wantedhash)
 		return FS_FOUND;
 
-	fhandle = fopen(filename, "rb");
-	if (fhandle)
-	{
-		md5_stream(fhandle,md5sum);
-		fclose(fhandle);
-		if (!memcmp(wantedmd5sum, md5sum, 16))
-			return FS_FOUND;
-		return FS_MD5SUMBAD;
-	}
-
-	I_Error("Couldn't open %s for md5 check", filename);
+	UINT64 filehash;
+	if (W_MakeFileHash(filename, false, &filehash) && wantedhash == filehash)
+		return FS_FOUND;
+	else
+		return FS_BADHASH;
 #endif
-	return FS_FOUND; // will never happen, but makes the compiler shut up
 }
 
 // Rewritten by Monster Iestyn to be less stupid
 // Note: if completepath is true, "filename" is modified, but only if FS_FOUND is going to be returned
 // (Don't worry about WinCE's version of filesearch, nobody cares about that OS anymore)
-filestatus_t findfile(char *filename, const UINT8 *wantedmd5sum, boolean completepath)
+filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 {
 	filestatus_t homecheck; // store result of last file search
-	boolean badmd5 = false; // store whether md5 was bad from either of the first two searches (if nothing was found in the third)
+	boolean badhash = false; // store whether hash was bad from either of the first two searches (if nothing was found in the third)
 
 	// first, check SRB2's "home" directory
-	homecheck = filesearch(filename, srb2home, wantedmd5sum, completepath, 10);
+	homecheck = filesearch(filename, srb2home, wantedhash, completepath, 10);
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
+	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+		badhash = true;
 	// if not found at all, just move on without doing anything
 
 	// next, check SRB2's "path" directory
-	homecheck = filesearch(filename, srb2path, wantedmd5sum, completepath, 10);
+	homecheck = filesearch(filename, srb2path, wantedhash, completepath, 10);
 
 	if (homecheck == FS_FOUND) // we found the file, so return that we have :)
 		return FS_FOUND;
-	else if (homecheck == FS_MD5SUMBAD) // file has a bad md5; move on and look for a file with the right md5
-		badmd5 = true;
+	else if (homecheck == FS_BADHASH) // file has a bad hash; move on and look for a file with the right hash
+		badhash = true;
 	// if not found at all, just move on without doing anything
 
 	// finally check "." directory
-	homecheck = filesearch(filename, ".", wantedmd5sum, completepath, 10);
+	homecheck = filesearch(filename, ".", wantedhash, completepath, 10);
 
 	if (homecheck != FS_NOTFOUND) // if not found this time, fall back on the below return statement
 		return homecheck; // otherwise return the result we got
 
-	return (badmd5 ? FS_MD5SUMBAD : FS_NOTFOUND); // md5 sum bad or file not found
+	return (badhash ? FS_BADHASH : FS_NOTFOUND); // hash is bad or file not found
 }
 
 #ifdef HAVE_CURL
@@ -1911,7 +1894,7 @@ void CURLGetFile(void)
 			{
 				fclose(curl_curfile->file);
 
-				if (checkfilemd5(curl_curfile->filename, curl_curfile->md5sum) == FS_MD5SUMBAD)
+				if (checkfilehash(curl_curfile->filename, curl_curfile->hash) == FS_BADHASH)
 				{
 					CONS_Alert(CONS_ERROR, M_GetText("HTTP Download of %s finished but is corrupt or has been modified\n"), filename);
 					curl_curfile->status = FS_FALLBACK;

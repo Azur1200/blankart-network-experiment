@@ -10,9 +10,18 @@
 #ifndef __B_SOC__
 #define __B_SOC__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../doomstat.h"
 #include "../deh_soc.h"
 
 boolean B_UseWallTransfer(void);
+boolean B_UseTerrainDef(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

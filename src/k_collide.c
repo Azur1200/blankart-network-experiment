@@ -242,8 +242,8 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		{
 			K_DropItems(t2->player); //K_StripItems(t2->player);
 			//K_StripOther(t2->player);
-			t2->player->itemroulette = 1;
-			t2->player->roulettetype = 2;
+			t2->player->itemroulette = KROULETTE_ACTIVE;
+			t2->player->roulettetype = KROULETTETYPE_EGGMAN;
 		}
 
 		if (t2->player->flamestore && t2->player->itemtype == KITEM_FLAMESHIELD)
@@ -284,115 +284,6 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 	}
 
 	return true;
-}
-
-static mobj_t *grenade;
-static fixed_t explodedist;
-static boolean explodespin;
-
-static inline boolean PIT_SSMineChecks(mobj_t *thing)
-{
-	if (thing == grenade) // Don't explode yourself! Endless loop!
-		return true;
-
-	if (thing->health <= 0)
-		return true;
-
-	if (!(thing->flags & MF_SHOOTABLE) || (thing->flags & MF_SCENERY))
-		return true;
-
-	if (thing->player && thing->player->spectator)
-		return true;
-
-	if (P_AproxDistance(P_AproxDistance(thing->x - grenade->x, thing->y - grenade->y), thing->z - grenade->z) > explodedist)
-		return true; // Too far away
-
-	if (P_CheckSight(grenade, thing) == false)
-		return true; // Not in sight
-
-	return false;
-}
-
-static inline BlockItReturn_t PIT_SSMineSearch(mobj_t *thing)
-{
-	if (grenade == NULL || P_MobjWasRemoved(grenade))
-		return BMIT_ABORT; // There's the possibility these can chain react onto themselves after they've already died if there are enough all in one spot
-
-	if (grenade->flags2 & MF2_DEBRIS) // don't explode twice
-		return BMIT_ABORT;
-
-	if (thing->type != MT_PLAYER) // Don't explode for anything but an actual player.
-		return BMIT_CONTINUE;
-
-	if (thing == grenade->target && grenade->threshold != 0) // Don't blow up at your owner instantly.
-		return BMIT_CONTINUE;
-
-	if (PIT_SSMineChecks(thing) == true)
-		return BMIT_CONTINUE;
-
-	// Explode!
-	P_SetMobjState(grenade, grenade->info->deathstate);
-	return BMIT_ABORT;
-}
-
-void K_DoMineSearch(mobj_t *actor, fixed_t size)
-{
-	INT32 bx, by, xl, xh, yl, yh;
-
-	explodedist = FixedMul(size, actor->scale);
-	grenade = actor;
-
-	yh = (unsigned)(actor->y + (explodedist + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(actor->y - (explodedist + MAXRADIUS) - bmaporgy)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(actor->x + (explodedist + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
-	xl = (unsigned)(actor->x - (explodedist + MAXRADIUS) - bmaporgx)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX (xl, xh, yl, yh);
-
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_SSMineSearch);
-}
-
-static inline BlockItReturn_t PIT_SSMineExplode(mobj_t *thing)
-{
-	if (grenade == NULL || P_MobjWasRemoved(grenade))
-		return BMIT_ABORT; // There's the possibility these can chain react onto themselves after they've already died if there are enough all in one spot
-
-#if 0
-	if (grenade->flags2 & MF2_DEBRIS) // don't explode twice
-		return BMIT_ABORT;
-#endif
-
-	if (PIT_SSMineChecks(thing) == true)
-		return BMIT_CONTINUE;
-
-	P_DamageMobj(thing, grenade, grenade->target, 1, (explodespin ? DMG_NORMAL : DMG_EXPLODE));
-	return BMIT_CONTINUE;
-}
-
-void K_MineExplodeAttack(mobj_t *actor, fixed_t size, boolean spin)
-{
-	INT32 bx, by, xl, xh, yl, yh;
-
-	explodespin = spin;
-	explodedist = FixedMul(size, actor->scale);
-	grenade = actor;
-
-	// Use blockmap to check for nearby shootables
-	yh = (unsigned)(actor->y + explodedist - bmaporgy)>>MAPBLOCKSHIFT;
-	yl = (unsigned)(actor->y - explodedist - bmaporgy)>>MAPBLOCKSHIFT;
-	xh = (unsigned)(actor->x + explodedist - bmaporgx)>>MAPBLOCKSHIFT;
-	xl = (unsigned)(actor->x - explodedist - bmaporgx)>>MAPBLOCKSHIFT;
-
-	BMBOUNDFIX (xl, xh, yl, yh);
-
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_SSMineExplode);
-
-	// Set this flag to ensure that the inital action won't be triggered twice.
-	actor->flags2 |= MF2_DEBRIS;
 }
 
 boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
@@ -438,6 +329,31 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 	{
 		// Bomb death
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
+		// Shootable damage
+		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+	}
+
+	return true;
+}
+
+boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
+{
+	if (t2->player)
+	{
+		if (t2->player->flashing > 0)
+			return true;
+
+		if (t1->state == &states[S_MINEEXPLOSION1])
+		{
+			P_DamageMobj(t2, t1, t1->target, 1, DMG_EXPLODE);
+		}
+		else
+		{
+			P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		}
+	}
+	else if (t2->flags & MF_SHOOTABLE)
+	{
 		// Shootable damage
 		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
 	}
@@ -509,113 +425,6 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		// Shootable damage
 		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
-	}
-
-	return true;
-}
-
-boolean K_DropTargetCollide(mobj_t *t1, mobj_t *t2)
-{
-	mobj_t *draggeddroptarget = (t1->type == MT_DROPTARGET_SHIELD) ? t1->target : NULL;
-
-	if (((t1->target == t2) || (t1->target == t2->target)) && ((t1->threshold > 0 && t2->type == MT_PLAYER) || (t2->type != MT_PLAYER && t2->threshold > 0)))
-		return true;
-
-	if (t1->health <= 0 || t2->health <= 0)
-		return true;
-
-	if (t2->player && (t2->player->hyudorotimer || t2->player->justbumped))
-		return true;
-
-	// Intensify bumps if already spinning...
-	P_Thrust(t1, R_PointToAngle2(t1->x, t1->y, t2->x, t2->y),
-		(t1->reactiontime && !draggeddroptarget) ? 35*mapobjectscale : 20*mapobjectscale);
-
-	if (draggeddroptarget)
-	{
-		// "Pass through" the shock of the impact, part 1.
-		t1->momx = t1->target->momx;
-		t1->momy = t1->target->momy;
-		t1->momz = t1->target->momz;
-	}
-
-	{
-		angle_t t2angle = R_PointToAngle2(t2->momx, t2->momy, 0, 0);
-		angle_t t2deflect;
-		fixed_t t1speed, t2speed;
-		K_KartBouncing(t1, t2, false, false);
-		t1speed = FixedHypot(t1->momx, t1->momy);
-		t2speed = FixedHypot(t2->momx, t2->momy);
-
-		t2deflect = t2angle - R_PointToAngle2(0, 0, t2->momx, t2->momy);
-		if (t2deflect > ANGLE_180)
-			t2deflect = InvAngle(t2deflect);
-		if (t2deflect < ANG10)
-			P_InstaThrust(t2, t2angle, t2speed);
-
-		t1->angle = t1->old_angle = R_PointToAngle2(0, 0, t1->momx, t1->momy);
-
-		t1->reactiontime = 7*(t1speed+t2speed)/mapobjectscale;
-		if (t1->reactiontime < 10)
-			t1->reactiontime = 10;
-		t1->threshold = 10;
-	}
-
-	t1->renderflags &= ~RF_FULLDARK; // brightest on the bump
-
-	if (draggeddroptarget)
-	{
-		// "Pass through" the shock of the impact, part 2.
-		draggeddroptarget->momx = t1->momx;
-		draggeddroptarget->momy = t1->momy;
-		draggeddroptarget->momz = t1->momz;
-
-		// Have the drop target travel between them.
-		t1->momx = (t1->momx + t2->momx)/2;
-		t1->momy = (t1->momy + t2->momy)/2;
-		t1->momz = (t1->momz + t2->momz)/2;
-	}
-
-	{
-		mobj_t *ghost = P_SpawnGhostMobj(t1);
-
-		P_SetScale(ghost, 3*ghost->destscale/2);
-		ghost->destscale = 15*ghost->destscale/2;
-		ghost->fuse = 10;
-		ghost->scalespeed = (ghost->destscale - ghost->scale)/ghost->fuse;
-	}
-
-	t1->flags |= MF_SHOOTABLE;
-	// The following sets t1->target to t2, so draggeddroptarget keeps it persisting...
-	P_DamageMobj(t1, t2, (t2->target ? t2->target : t2), 1, DMG_NORMAL);
-	t1->color = (t1->health > 1)
-		? SKINCOLOR_GOLD
-		: SKINCOLOR_CRIMSON;
-	t1->flags &= ~MF_SHOOTABLE;
-
-	if (!t2->player)
-	{
-		t2->angle += ANGLE_180;
-		if (t2->type == MT_JAWZ)
-			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-		t2->threshold = 10;
-	}
-
-	if (t1->reactiontime > 1000) {
-		S_StartSound(t2, sfx_kdtrg3);
-	} else if (t1->reactiontime > 500) {
-		S_StartSound(t2, sfx_kdtrg2);
-	} else {
-		S_StartSound(t2, sfx_kdtrg1);
-	}
-
-	if (draggeddroptarget && draggeddroptarget->player)
-	{
-		// The following removes t1, be warned
-		// (its newly assigned properties are moved across)
-		K_DropHnextList(draggeddroptarget->player, true);
-		// Do NOT modify or reference t1 after this line
-		// I mean it! Do not even absentmindedly try it
 	}
 
 	return true;
@@ -733,7 +542,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
 	mobj_t *owner = t1->player ? t1 : t1->target;
 
-	if (t2->target != owner || !t2->threshold || t2->type == MT_DROPTARGET)
+	if (t2->target != owner || !t2->threshold)
 	{
 		if (!t2->momx && !t2->momy)
 		{
@@ -761,7 +570,6 @@ boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ
 		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
 		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
-		|| t2->type == MT_DROPTARGET
 		|| t2->type == MT_KART_LEFTOVER
 		|| (t2->type == MT_PLAYER && t1->target != t2));
 }
@@ -863,7 +671,6 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 	if (t2->type == MT_BANANA || t2->type == MT_BANANA_SHIELD
 		|| t2->type == MT_EGGMANITEM || t2->type == MT_EGGMANITEM_SHIELD
 		|| t2->type == MT_SSMINE || t2->type == MT_SSMINE_SHIELD
-		|| t2->type == MT_DROPTARGET_SHIELD
 		|| t2->type == MT_ORBINAUT_SHIELD || t2->type == MT_JAWZ_SHIELD)
 		return false;
 

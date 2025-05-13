@@ -38,7 +38,6 @@
 #include "y_inter.h"
 #include "v_video.h"
 #include "lua_hook.h"
-#include "md5.h" // demo checksums
 #include "p_saveg.h" // savebuffer_t
 #include "g_party.h"
 
@@ -110,7 +109,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0007
+#define DEMOVERSION 0x0008
 #define DEMOHEADER  "\xF0" "KartReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -614,7 +613,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		oldcmd[playernum].forwardmove = cmd->forwardmove;
 		ziptic |= ZT_FWD;
 	}
-	
+
 	if (cmd->sidemove != oldcmd[playernum].sidemove)
 	{
 		WRITESINT8(demobuf.p,cmd->sidemove);
@@ -628,7 +627,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		oldcmd[playernum].turning = cmd->turning;
 		ziptic |= ZT_TURNING;
 	}
-	
+
 	if (cmd->angle != oldcmd[playernum].angle)
 	{
 		WRITEINT16(demobuf.p,cmd->angle);
@@ -758,7 +757,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 		return;
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, NULL);
+	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -940,9 +939,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				WRITEANGLE(demobuf.p,mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
-			Z_Free(ghostext[playernum].hitlist);
 			ghostext[playernum].hits = 0;
-			ghostext[playernum].hitlist = NULL;
 		}
 		if (ghostext[playernum].flags & EZT_SPRITE)
 			WRITEUINT16(demobuf.p,oldghost[playernum].sprite);
@@ -2133,12 +2130,12 @@ void G_BeginRecording(void)
 	snprintf(demo.titlename, 64, "%s - %s", G_BuildMapTitle(gamemap), modeattacking ? "Record Attack" : connectedservername);
 
 	// demo checksum
-	demobuf.p += 16;
+	demobuf.p += sizeof(UINT64);
 
 	// game data
 	M_Memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
 	WRITESTRINGN(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
-	M_Memcpy(demobuf.p, mapmd5, 16); demobuf.p += 16;
+	WRITEUINT64(demobuf.p, maphash);
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
@@ -2154,8 +2151,8 @@ void G_BeginRecording(void)
 	{
 		nameonly(( filename = va("%s", wadfiles[i]->filename) ));
 		WRITESTRINGL(demobuf.p, filename, MAX_WADPATH);
-		WRITEMEM(demobuf.p, wadfiles[i]->md5sum, 16);
-		WRITEUINT8(demobuf.p, wadfiles[i]->compatmode);
+		WRITEUINT64(demobuf.p, wadfiles[i]->hash);
+		WRITEUINT8(demobuf.p, !!wadfiles[i]->compatmode);
 
 		totalfiles++;
 	}
@@ -2194,7 +2191,7 @@ void G_BeginRecording(void)
 		WRITEUINT8(demobuf.p, grandprixinfo.masterbots == true);
 		WRITEUINT8(demobuf.p, grandprixinfo.eventmode);
 	}
-	
+
 	// Save "mapmusrng" used for altmusic selection
 	WRITEUINT8(demobuf.p, mapmusrng);
 
@@ -2327,7 +2324,7 @@ void G_BeginMetal(void)
 	WRITEUINT16(demobuf.p,DEMOVERSION);
 
 	// demo checksum
-	demobuf.p += 16;
+	demobuf.p += sizeof(UINT64);
 
 	M_Memcpy(demobuf.p, "METL", 4); demobuf.p += 4;
 
@@ -2399,7 +2396,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 {
 	UINT8 totalfiles;
 	char filename[MAX_WADPATH];
-	UINT8 md5sum[16];
+	UINT64 filehash;
 	filestatus_t ncs;
 	boolean toomany = false;
 	boolean alreadyloaded;
@@ -2416,7 +2413,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			strlcpy(filename, (char *)(*pp), sizeof filename);
 			SKIPSTRING((*pp));
 		}
-		READMEM((*pp), md5sum, 16);
+		filehash = READUINT64((*pp));
 		compatmode = READUINT8((*pp));
 
 		if (!toomany)
@@ -2425,7 +2422,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 
 			for (j = 0; j < numwadfiles; ++j)
 			{
-				if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
+				if (filehash == wadfiles[j]->hash)
 				{
 					alreadyloaded = true;
 					break;
@@ -2438,7 +2435,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			if (numwadfiles >= MAX_WADFILES)
 				toomany = true;
 			else
-				ncs = findfile(filename, md5sum, false);
+				ncs = findfile(filename, filehash, false);
 
 			if (toomany)
 			{
@@ -2450,7 +2447,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			{
 				if (ncs == FS_NOTFOUND)
 					CONS_Alert(CONS_NOTICE, M_GetText("You do not have a copy of %s\n"), filename);
-				else if (ncs == FS_MD5SUMBAD)
+				else if (ncs == FS_BADHASH)
 					CONS_Alert(CONS_NOTICE, M_GetText("Checksum mismatch on %s\n"), filename);
 				else
 					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), filename);
@@ -2478,7 +2475,7 @@ static void G_SkipDemoExtraFiles(UINT8 **pp)
 	for (i = 0; i < totalfiles; ++i)
 	{
 		SKIPSTRING((*pp));// file name
-		(*pp) += 16;// md5
+		(*pp) += sizeof(UINT64); // hash
 		(*pp) += 1; // compatmode
 	}
 }
@@ -2489,7 +2486,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 {
 	UINT8 totalfiles, filesloaded, nmusfilecount;
 	char filename[MAX_WADPATH];
-	UINT8 md5sum[16];
+	UINT64 filehash;
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
@@ -2506,7 +2503,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 			strlcpy(filename, (char *)(*pp), sizeof filename);
 			SKIPSTRING((*pp));
 		}
-		READMEM((*pp), md5sum, 16);
+		filehash = READUINT64((*pp));
 		(void)READUINT8((*pp)); // compatmode
 
 		if (!toomany)
@@ -2521,7 +2518,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 				else
 					continue;
 
-				if (memcmp(md5sum, wadfiles[j]->md5sum, 16) == 0)
+				if (filehash == wadfiles[j]->hash)
 				{
 					alreadyloaded = true;
 
@@ -2540,7 +2537,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 
 			if (numwadfiles >= MAX_WADFILES)
 				error = DFILE_ERROR_CANNOTLOAD;
-			else if (!quick && findfile(filename, md5sum, false) != FS_FOUND)
+			else if (!quick && findfile(filename, filehash, false) != FS_FOUND)
 				error = DFILE_ERROR_CANNOTLOAD;
 			else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
 				error |= DFILE_ERROR_NOTLOADED;
@@ -2593,11 +2590,11 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	s = READUINT16(p);
 	I_Assert(s == DEMOVERSION);
 	p += 64; // full demo title
-	p += 16; // demo checksum
+	p += sizeof(UINT64); // demo checksum
 	I_Assert(!memcmp(p, "PLAY", 4));
 	p += 4; // PLAY
 	SKIPSTRING(p); // gamemap
-	p += 16; // map md5
+	p += sizeof(UINT64); // map hash
 	flags = READUINT8(p); // demoflags
 	p++; // gametype
 	p++; // numlaps
@@ -2647,7 +2644,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 		return UINT8_MAX;
 	}
 	p += 64; // full demo title
-	p += 16; // demo checksum
+	p += sizeof(UINT64); // demo checksum
 	if (memcmp(p, "PLAY", 4))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
@@ -2655,7 +2652,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 		return UINT8_MAX;
 	} p += 4; // "PLAY"
 	SKIPSTRING(p); // gamemap
-	p += 16; // mapmd5
+	p += sizeof(UINT64); // maphash
 	flags = READUINT8(p);
 	p++; // gametype
 	p++; // numlaps
@@ -2750,7 +2747,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	if (version != VERSION || subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
 
-	info_p += 16; // demo checksum
+	info_p += sizeof(UINT64); // demo checksum
 	if (memcmp(info_p, "PLAY", 4))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
@@ -2762,7 +2759,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	info_p += 4; // "PLAY"
 	READSTRINGN(info_p, mapname, sizeof(mapname));
 	pdemo->map = G_MapNumber(mapname);
-	info_p += 16; // mapmd5
+	info_p += sizeof(UINT64); // maphash
 
 	pdemoflags = READUINT8(info_p);
 
@@ -3033,7 +3030,7 @@ void G_DoPlayDemo(char *defdemoname)
 	M_Memcpy(demo.titlename, demobuf.p, 64);
 	demobuf.p += 64;
 
-	demobuf.p += 16; // demo checksum
+	demobuf.p += sizeof(UINT64); // demo checksum
 
 	if (memcmp(demobuf.p, "PLAY", 4))
 	{
@@ -3050,7 +3047,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demobuf.p += 4; // "PLAY"
 	READSTRINGN(demobuf.p, mapname, sizeof(mapname)); // gamemap
 	gamemap = G_MapNumber(mapname)+1;
-	demobuf.p += 16; // mapmd5
+	demobuf.p += sizeof(UINT64); // maphash
 
 	demoflags = READUINT8(demobuf.p);
 	gametype = READUINT8(demobuf.p);
@@ -3166,7 +3163,7 @@ void G_DoPlayDemo(char *defdemoname)
 		grandprixinfo.masterbots = READUINT8(demobuf.p) != 0;
 		grandprixinfo.eventmode = READUINT8(demobuf.p);
 	}
-	
+
 	// Load "mapmusrng" used for altmusic selection
 	mapmusrng = READUINT8(demobuf.p);
 
@@ -3388,7 +3385,8 @@ void G_AddGhost(char *defdemoname)
 {
 	INT32 i;
 	lumpnum_t l;
-	char name[17],skin[17],color[MAXCOLORNAME+1],*n,*pdemoname,md5[16];
+	char name[17],skin[17],color[MAXCOLORNAME+1],*n,*pdemoname;
+	UINT64 demohash;
 	demoghost *gh;
 	UINT8 flags;
 	UINT8 *buffer,*p;
@@ -3457,12 +3455,12 @@ void G_AddGhost(char *defdemoname)
 	}
 
 	p += 64; // title
-	M_Memcpy(md5, p, 16); p += 16; // demo checksum
+	demohash = READUINT64(p); // demo checksum
 
 	for (gh = ghosts; gh; gh = gh->next)
-		if (!memcmp(md5, gh->checksum, 16)) // another ghost in the game already has this checksum?
+		if (demohash == gh->checksum) // another ghost in the game already has this checksum?
 		{ // Don't add another one, then!
-			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (MD5 was matched)\n", pdemoname);
+			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (hash was matched)\n", pdemoname);
 			Z_Free(pdemoname);
 			Z_Free(buffer);
 			return;
@@ -3478,7 +3476,7 @@ void G_AddGhost(char *defdemoname)
 
 
 	SKIPSTRING(p); // gamemap
-	p += 16; // mapmd5 (possibly check for consistency?)
+	p += sizeof(UINT64); // maphash (possibly check for consistency?)
 
 	flags = READUINT8(p);
 	if (!(flags & DF_GHOST))
@@ -3605,7 +3603,7 @@ void G_AddGhost(char *defdemoname)
 	gh = Z_Calloc(sizeof(demoghost), PU_LEVEL, NULL);
 	gh->next = ghosts;
 	gh->buffer = buffer;
-	M_Memcpy(gh->checksum, md5, 16);
+	gh->checksum = demohash;
 	gh->p = p;
 
 	ghosts = gh;
@@ -3707,7 +3705,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	}
 
 	p += 64; // full demo title
-	p += 16; // demo checksum
+	p += sizeof(UINT64); // demo checksum
 
 	if (memcmp(p, "PLAY", 4))
 	{
@@ -3716,7 +3714,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 
 	p += 4; // "PLAY"
 	SKIPSTRING(p); // gamemap
-	p += 16; // mapmd5 (possibly check for consistency?)
+	p += sizeof(UINT64); // maphash (possibly check for consistency?)
 
 	flags = READUINT8(p);
 	if (!(flags & DF_GHOST))
@@ -3843,7 +3841,7 @@ void G_DoPlayMetal(void)
 		Z_Free(metalbuffer);
 		return;
 	}
-	metal_p += 16; // demo checksum
+	metal_p += sizeof(UINT64); // demo checksum
 	if (memcmp(metal_p, "METL", 4))
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Failed to load bot recording for this map, wasn't recorded in Metal format.\n"));
@@ -3876,17 +3874,11 @@ void G_DoneLevelLoad(void)
 ===================
 */
 
-// Writes the demo's checksum, or just random garbage if you can't do that for some reason.
+// Writes the demo's checksum.
 static void WriteDemoChecksum(void)
 {
 	UINT8 *p = demobuf.buffer+16; // checksum position
-#ifdef NOMD5
-	UINT8 i;
-	for (i = 0; i < 16; i++, p++)
-		*p = P_RandomByte(); // This MD5 was chosen by fair dice roll and most likely < 50% correct.
-#else
-	md5_buffer((char *)p+16, demobuf.p - (p+16), p); // make a checksum of everything after the checksum in the file.
-#endif
+	WRITEUINT64(p, HASH64(p+16, demobuf.p - (p+16)));
 }
 
 // Stops metal sonic's demo. Separate from other functions because metal + replays can coexist
@@ -4113,13 +4105,9 @@ void G_SaveDemo(void)
 	WRITEUINT32(demoinfo_p, length);
 
 	// Doesn't seem like I can use WriteDemoChecksum here, correct me if I'm wrong -Sal
-#ifdef NOMD5
-	for (UINT8 i = 0; i < 16; i++, p++)
-		*p = M_RandomByte(); // This MD5 was chosen by fair dice roll and most likely < 50% correct.
-#else
+
 	// Make a checksum of everything after the checksum in the file up to the end of the standard data. Extrainfo is freely modifiable.
-	md5_buffer((char *)p+16, (demobuf.buffer + length) - (p+16), p);
-#endif
+	WRITEUINT64(p, HASH64(p+16, (demobuf.buffer + length) - (p+16)));
 
 	if (FIL_WriteFile(demoname, demobuf.buffer, demobuf.p - demobuf.buffer)) // finally output the file.
 		demo.savemode = DSM_SAVED;

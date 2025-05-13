@@ -45,7 +45,7 @@ static waypoint_t *startingwaypoint = NULL;
 
 static UINT32 circuitlength = 0U;
 
-#define BASE_TRACK_COMPLEXITY (-5000) // Arbritrary, vibes-based value
+#define BASE_TRACK_COMPLEXITY (cv_kartbot_basetrackcomplexity.value) // Arbritrary, vibes-based value
 static INT32 trackcomplexity = 0;
 
 static size_t numwaypoints       = 0U;
@@ -2179,14 +2179,14 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 				firstwaypoint = thiswaypoint;
 			}
 
-			if (K_GetWaypointIsFinishline(thiswaypoint))
+			if (K_GetWaypointIsFinishline(thiswaypoint) && K_GetWaypointIsEnabled(thiswaypoint))
 			{
 				if (finishline != NULL)
 				{
 					const INT32 oldfinishlineid = K_GetWaypointID(finishline);
 					const INT32 thiswaypointid  = K_GetWaypointID(thiswaypoint);
 					CONS_Alert(
-						CONS_WARNING, "Multiple finish line waypoints with IDs %d and %d! Using %d.",
+						CONS_WARNING, "Multiple finish line waypoints with IDs %d and %d! Using %d.\n",
 						oldfinishlineid, thiswaypointid, thiswaypointid);
 				}
 				finishline = thiswaypoint;
@@ -2196,6 +2196,12 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 			if (K_GetWaypointIsSpawnpoint(thiswaypoint))
 			{
 				thiswaypoint->onaline = K_GetWaypointIsOnLine(thiswaypoint);
+			}
+
+			// Set drift settings.
+			if (mobj->watertop)
+			{
+				thiswaypoint->driftsettings = mobj->watertop;
 			}
 
 			if (thiswaypoint->numnextwaypoints > 0)
@@ -2959,12 +2965,23 @@ static boolean K_AnchorWaypointRadius(
 {
 	if (anchor->spawnpoint->angle == waypointmobj->spawnpoint->angle)
 	{
-		waypointmobj->radius = R_PointToDist2(
-				waypointmobj->x, waypointmobj->y,
-				anchor->x, anchor->y);
+		// Let's keep drift parameters and radius modifications separate.
 
-		// Keep changes for -writetextmap
-		waypointmobj->spawnpoint->args[1] = waypointmobj->radius >> FRACBITS;
+		if (anchor->extravalue1)
+		{
+			waypointmobj->watertop = anchor->extravalue1;
+			waypointmobj->spawnpoint->args[3] = waypointmobj->watertop;
+		}
+		else
+		{
+			waypointmobj->radius = R_PointToDist2(
+					waypointmobj->x, waypointmobj->y,
+					anchor->x, anchor->y);
+
+			// Keep changes for -writetextmap
+			waypointmobj->spawnpoint->args[1] = waypointmobj->radius >> FRACBITS;
+		}
+
 		return true;
 	}
 	else

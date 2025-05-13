@@ -2048,7 +2048,7 @@ void I_Error(const char *error, ...)
 	W_Shutdown();
 
 #if defined (PARANOIA) && defined (__CYGWIN__)
-	*(INT32 *)2 = 4; //Alam: Debug!
+	*(volatile INT32 *)0 = 4; //Alam: Debug!
 #endif
 
 	exit(-1);
@@ -2382,7 +2382,7 @@ static const char *searchWad(const char *searchDir)
 	filestatus_t fstemp;
 
 	strcpy(tempsw, WADKEYWORD);
-	fstemp = filesearch(tempsw,searchDir,NULL,true,20);
+	fstemp = filesearch(tempsw,searchDir,0,true,20);
 	if (fstemp == FS_FOUND)
 	{
 		pathonly(tempsw);

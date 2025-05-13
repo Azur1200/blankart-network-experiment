@@ -1183,7 +1183,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 			{
 				case MT_FLINGRING:
 				case MT_FLINGCOIN:
-				case MT_FLINGBLUESPHERE:
 				case MT_FLINGNIGHTSCHIP:
 				case MT_FLINGEMERALD:
 				case MT_BOUNCERING:
@@ -1220,7 +1219,6 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
-				case MT_DROPTARGET:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -1802,12 +1800,6 @@ void P_XYMovement(mobj_t *mo)
 							S_StartSound(mo, sfx_s3k44); // Bubble bounce
 							break;
 
-						case MT_DROPTARGET:
-							// This prevents an item thrown at a wall from
-							// phasing through you on its return.
-							mo->threshold = 0;
-							break;
-
 						default:
 							break;
 					}
@@ -2176,9 +2168,12 @@ boolean P_ZMovement(mobj_t *mo)
 {
 	fixed_t dist, delta;
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2260,8 +2255,7 @@ boolean P_ZMovement(mobj_t *mo)
 			break;
 
 		case MT_RING: // Ignore still rings
-		case MT_BLUESPHERE:
-		case MT_FLINGRING:
+		case MT_BLUEBALL:
 			// Remove flinged stuff from death pits.
 			if (P_CheckDeathPitCollide(mo))
 			{
@@ -2606,6 +2600,8 @@ boolean P_ZMovement(mobj_t *mo)
 		}
 	}
 
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
+
 	return true;
 }
 
@@ -2699,12 +2695,15 @@ static boolean P_PlayerPolyObjectZMovement(mobj_t *mo)
 void P_PlayerZMovement(mobj_t *mo)
 {
 	boolean onground;
+	boolean wasonground;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
 
 	if (!mo->player)
 		return;
+
+	wasonground = P_IsObjectOnGround(mo);
 
 	// Intercept the stupid 'fall through 3dfloors' bug
 	if (mo->subsector->sector->ffloors)
@@ -2836,6 +2835,8 @@ void P_PlayerZMovement(mobj_t *mo)
 			P_CheckGravity(mo, true);
 		}
 	}
+
+	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
 }
 
 boolean P_SceneryZMovement(mobj_t *mo)
@@ -3112,6 +3113,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 	fixed_t top2 = P_GetSectorCeilingZAt(sector, mobj->x, mobj->y);
 	fixed_t bot2 = P_GetSectorFloorZAt(sector, mobj->x, mobj->y);
 
+	if (mobj->type == MT_WAYPOINT)
+	{
+		CONS_Printf("P_MobjCheckWater waypoint call (oh boy...)\n");
+	}
+
 	// Default if no water exists.
 	mobj->watertop = mobj->waterbottom = mobj->z - 1000*FRACUNIT;
 
@@ -3173,7 +3179,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		}
 	}
 
-	if (mobj->terrain != NULL)
+	if (mobj->terrain != NULL && B_UseTerrainDef())
 	{
 		if (mobj->terrain->flags & TRF_LIQUID)
 		{
@@ -3203,6 +3209,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 	if (p && (p->spectator || p->playerstate != PST_LIVE))
 	{
 		return;
+	}
+
+	if (mobj->flags & MF_APPLYTERRAIN)
+	{
+		K_SpawnWaterTrail(mobj);
 	}
 
 	// The rest of this code only executes on a water state change.
@@ -3409,6 +3420,11 @@ void P_MobjCheckWater(mobj_t *mobj)
 static void P_SceneryCheckWater(mobj_t *mobj)
 {
 	sector_t *sector;
+
+	if (mobj->type == MT_WAYPOINT)
+	{
+		CONS_Printf("P_SceneryCheckWater waypoint call (oh boy...)\n");
+	}
 
 	// Default if no water exists.
 	mobj->watertop = mobj->waterbottom = mobj->z - 1000*FRACUNIT;
@@ -6241,22 +6257,6 @@ void P_Attract(mobj_t *source, mobj_t *dest, boolean nightsgrab) // Home in on y
 	}
 }
 
-static void P_NightsItemChase(mobj_t *thing)
-{
-	if (!thing->tracer)
-	{
-		P_SetTarget(&thing->tracer, NULL);
-		thing->flags2 &= ~MF2_NIGHTSPULL;
-		thing->movefactor = 0;
-		return;
-	}
-
-	if (!thing->tracer->player)
-		return;
-
-	P_Attract(thing, thing->tracer, true);
-}
-
 //
 // P_MaceRotate
 // Spins a hnext-chain of objects around its centerpoint, side to side or periodically.
@@ -6491,7 +6491,6 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
-		case MT_DROPTARGET:
 			return true;
 
 		default:
@@ -6505,7 +6504,6 @@ boolean P_IsKartItem(INT32 type)
 	{
 		case MT_EGGMANITEM_SHIELD:
 		case MT_BANANA_SHIELD:
-		case MT_DROPTARGET_SHIELD:
 		case MT_ORBINAUT_SHIELD:
 		case MT_JAWZ_SHIELD:
 		case MT_SSMINE_SHIELD:
@@ -7012,9 +7010,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		break;
 	case MT_MACEPOINT:
 	case MT_CHAINMACEPOINT:
-	case MT_SPRINGBALLPOINT:
 	case MT_CHAINPOINT:
-	case MT_FIREBARPOINT:
 	case MT_CUSTOMMACEPOINT:
 	case MT_HIDDEN_SLING:
 		P_MaceSceneryThink(mobj);
@@ -7756,6 +7752,12 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 {
 	switch (mobj->type)
 	{
+	case MT_BLUEBALL:
+		if ((mobj->tics>>2)+1 > 0 && (mobj->tics>>2)+1 <= tr_trans60) // tr_trans50 through tr_trans90, shifting once every second frame
+			mobj->frame = (NUMTRANSMAPS-((mobj->tics>>2)+1))<<FF_TRANSSHIFT;
+		else // tr_trans60 otherwise
+			mobj->frame = tr_trans60<<FF_TRANSSHIFT;
+		break;
 	case MT_PLAYER:
 		/// \todo Have the player's dead body completely finish its animation even if they've already respawned.
 
@@ -7803,7 +7805,6 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
-	//case MT_DROPTARGET:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -7837,6 +7838,9 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 			return false;
 		}
 		break;
+	case MT_MINEEXPLOSIONSOUND:
+		P_RemoveMobj(mobj);
+		return false;
 	case MT_CDUFO:
 		if (mobj->fuse > TICRATE)
 			mobj->renderflags ^= RF_DONTDRAW; // only by good fortune does this end with it having RF_DONTDRAW... don't touch!
@@ -8175,24 +8179,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
 
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
-		else
-			A_AttractChase(mobj);
+		A_AttractChase(mobj);
 		return false;
 		// Flung items
 	case MT_FLINGRING:
 		if (P_MobjWasRemoved(mobj))
 			return false;
 
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
-		else
-			A_AttractChase(mobj);
-		break;
-	case MT_EMBLEM:
-		if (mobj->flags2 & MF2_NIGHTSPULL)
-			P_NightsItemChase(mobj);
+		A_AttractChase(mobj);
 		break;
 	case MT_FLOATINGITEM:
 	{
@@ -8344,14 +8338,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			P_Thrust(mobj, mobj->angle, thrustamount);
 
-			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 			{
 				// Not moving fast enough to water run.
 				mobj->flags2 &= ~MF2_WATERRUN;
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
@@ -8362,6 +8356,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (leveltime % 6 == 0)
 				S_StartSound(mobj, mobj->info->activesound);
 		}
+		P_MobjCheckWater(mobj);
 		break;
 	}
 	case MT_JAWZ:
@@ -8378,10 +8373,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (leveltime % TICRATE == 0)
 				S_StartSound(mobj, mobj->info->activesound);
 
-			if (gamespeed == 0)
+			if (gamespeed == KARTSPEED_EASY)
 				distbarrier = FixedMul(distbarrier, FRACUNIT-FRACUNIT/4);
-			//expert speed
-			else if (gamespeed == 2 || gamespeed == 3)
+			else if (gamespeed == KARTSPEED_HARD)
 				distbarrier = FixedMul(distbarrier, FRACUNIT+FRACUNIT/4);
 
 			if ((gametyperules & GTR_CIRCUIT) && mobj->tracer)
@@ -8416,18 +8410,19 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			K_DriftDustHandling(mobj);
 
-			if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+			if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 			{
 				// Not moving fast enough to water run.
 				mobj->flags2 &= ~MF2_WATERRUN;
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
 
+			P_MobjCheckWater(mobj);
 			break;
 		}
 		case MT_JAWZ_DUD:
@@ -8446,6 +8441,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 			else
 			{
+				P_MobjCheckWater(mobj);
 				P_SpawnGhostMobj(mobj);
 				mobj->angle = R_PointToAngle2(0, 0, mobj->momx, mobj->momy);
 				P_InstaThrust(mobj, mobj->angle, mobj->movefactor);
@@ -8453,13 +8449,13 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (grounded)
 				{
 					sector_t *sec2 = P_ThingOnSpecial3DFloor(mobj);
-					if ((mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+					if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 						|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 						&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 						K_DoPogoSpring(mobj, 0, 1);
 				}
 
-				if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
+				if (P_AproxDistance(mobj->momx, mobj->momy) <= 14*mobj->scale)
 				{
 					// Not moving fast enough to water run.
 					mobj->flags2 &= ~MF2_WATERRUN;
@@ -8470,14 +8466,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 				if (leveltime % TICRATE == 0)
 					S_StartSound(mobj, mobj->info->activesound);
-			}
 
+
+			}
+			P_MobjCheckWater(mobj);
 			break;
 		}
 	case MT_EGGMANITEM:
 		/* FALLTHRU */
 	case MT_BANANA:
 		mobj->friction = ORIG_FRICTION/4;
+		P_MobjCheckWater(mobj);
 
 		if (mobj->momx || mobj->momy)
 		{
@@ -8496,6 +8495,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->momx = mobj->momy = 0;
 			mobj->health = 1;
 		}
+
+		P_MobjCheckWater(mobj);
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
@@ -8516,6 +8517,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (mobj->threshold > 0)
 				mobj->threshold--;
+			P_MobjCheckWater(mobj);
 		}
 		break;
 	case MT_SINK:
@@ -8590,52 +8592,35 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0)
 			mobj->threshold--;
 		break;
-	case MT_DROPTARGET:
-		if (mobj->reactiontime > 0)
-		{
-			// Slippery tipping mode.
-			INT32 slippytip = 1 + (mobj->reactiontime/2);
-			if (slippytip > 64)
-				slippytip = 64;
-			else if (slippytip < 8)
-				slippytip = 8;
-			if (!(mobj->health & 1) == !(mobj->flags2 & MF2_AMBUSH))
-			{
-				slippytip = -slippytip;
-			}
-			mobj->angle += slippytip*ANG2;
-
-			mobj->friction = ((2*ORIG_FRICTION)+FRACUNIT)/3; // too low still?
-
-			/*if (mobj->momx || mobj->momy || mobj->momz)
-			{
-				mobj_t *ghost = P_SpawnGhostMobj(mobj);
-				ghost->colorized = true; // already has color!
-			}*/
-
-			if (!--mobj->reactiontime)
-			{
-				P_SetMobjState(mobj, mobj->info->spawnstate);
-			}
-		}
-		else
-		{
-			// Time to stop, ramp up the friction...
-			mobj->friction = ORIG_FRICTION/4; // too high still?
-		}
-
-		mobj->renderflags = (mobj->renderflags|RF_FULLBRIGHT) ^ RF_FULLDARK; // the difference between semi and fullbright
-
-		if (R_PointToDist2(0, 0, mobj->momx, mobj->momy) < 8*FRACUNIT)
-		{
-			// Not moving fast enough to water run.
-			mobj->flags2 &= ~MF2_WATERRUN;
-		}
-
-		if (mobj->threshold > 0)
-			mobj->threshold--;
-		break;
 	case MT_SPBEXPLOSION:
+		mobj->health--;
+		break;
+	case MT_MINEEXPLOSION:
+		if ((mobj->z < mobj->floorz - mobj->height) || (mobj->z > mobj->ceilingz + mobj->height))
+		{
+			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
+			break;
+		}
+
+		if (mobj->tics != -1)
+		{
+			mobj->tics--;
+
+			// you can cycle through multiple states in a tic
+			if (!mobj->tics)
+				if (!P_SetMobjState(mobj, mobj->state->nextstate))
+					return false; // freed itself
+		}
+
+		P_UnsetThingPosition(mobj);
+		mobj->x += mobj->momx;
+		mobj->y += mobj->momy;
+		mobj->z += mobj->momz;
+		P_SetThingPosition(mobj);
+		return false;
+	case MT_MINEEXPLOSIONSOUND:
+		if (mobj->health == 100)
+			S_StartSound(mobj, sfx_s3k4e);
 		mobj->health--;
 		break;
 	case MT_BOOSTFLAME:
@@ -10001,17 +9986,6 @@ static void P_FiringThink(mobj_t *mobj)
 		mobj->angle = R_PointToAngle2(mobj->x, mobj->y, mobj->target->x, mobj->target->y);
 }
 
-static void K_MineExplodeThink(mobj_t *mobj)
-{
-	if (mobj->state->action.acp1 == (actionf_p1)A_SSMineExplode)
-	{
-		if (mobj->state->tics > 1)
-		{
-			K_MineExplodeAttack(mobj, mobj->info->painchance, (boolean)mobj->state->var1);
-		}
-	}
-}
-
 static void P_MonitorFuseThink(mobj_t *mobj)
 {
 	mobj_t *newmobj;
@@ -10192,7 +10166,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if (udmf)
 	{
 		// Check for continuous sector special actions
-		P_CheckMobjTouchingSectorActions(mobj, true);
+		P_CheckMobjTouchingSectorActions(mobj, true, true);
 	}
 	else
 	{
@@ -10316,9 +10290,6 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags2 & MF2_FIRING)
 		P_FiringThink(mobj);
 
-	if (mobj->flags2 & MF2_DEBRIS)
-		K_MineExplodeThink(mobj);
-
 	if (mobj->flags & MF_AMBIENT)
 	{
 		if (leveltime % mobj->health)
@@ -10364,14 +10335,12 @@ void P_MobjThinker(mobj_t *mobj)
 	// Sliding physics for slidey mobjs!
 	if (mobj->type == MT_FLINGRING
 		|| mobj->type == MT_FLINGCOIN
-		|| mobj->type == MT_FLINGBLUESPHERE
 		|| mobj->type == MT_FLINGNIGHTSCHIP
 		|| mobj->type == MT_FLINGEMERALD
 		|| mobj->type == MT_BIGTUMBLEWEED
 		|| mobj->type == MT_LITTLETUMBLEWEED
 		|| mobj->type == MT_CANNONBALLDECOR
-		|| mobj->type == MT_FALLINGROCK
-		|| (mobj->type == MT_DROPTARGET && mobj->reactiontime))
+		|| mobj->type == MT_FALLINGROCK)
 	{
 		P_TryMove(mobj, mobj->x, mobj->y, true, NULL); // Sets mo->standingslope correctly
 
@@ -10670,11 +10639,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 			thing->shadowscale = 3*FRACUNIT/2;
 			thing->whiteshadow = false;
 			break;
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			thing->shadowscale = 5*FRACUNIT/4;
-			thing->whiteshadow = true;
-			break;
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
 		case MT_BUBBLESHIELDTRAP:
@@ -10684,7 +10648,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_RING:
 		case MT_FLINGRING:
 		case MT_FLOATINGITEM:
-		case MT_BLUESPHERE:
+		case MT_BLUEBALL:
 		case MT_ITEMCAPSULE:
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
@@ -10965,11 +10929,10 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			mobj->color = skincolor_blueteam;
 			break;
 		case MT_RING:
+		case MT_COIN:
+		case MT_BLUEBALL:
 			if (nummaprings >= 0)
 				nummaprings++;
-			break;
-		case MT_CORK:
-			mobj->flags2 |= MF2_SUPERFIRE;
 			break;
 		// SRB2Kart
 		case MT_ITEMCAPSULE:
@@ -11135,12 +11098,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 						P_SpawnMobj(newx, newy, mobj->z, MT_EERIEFOG);
 				}
 			}
-			break;
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			mobj->color = SKINCOLOR_LIME;
-			mobj->colorized = true;
-			mobj->renderflags |= RF_FULLBRIGHT;
 			break;
 		case MT_SMK_MOLE:
 			mobj->reactiontime = P_RandomRange(0, 3*mobj->info->reactiontime/2); // Random delay on start of level
@@ -11343,7 +11300,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	// Rings only, please!
 	if (mobj->spawnpoint &&
 		(mobj->type == MT_RING
-		|| mobj->type == MT_BLUESPHERE)
+		|| mobj->type == MT_BLUEBALL)
 		&& !(mobj->flags2 & MF2_DONTRESPAWN))
 	{
 		//CONS_Printf("added to queue at tic %d\n", leveltime);
@@ -11851,7 +11808,7 @@ void P_RespawnSpecials(void)
 		}
 		else if (pcount > 1)
 		{
-			time = (120 - ((pcount-2) * 20)) * TICRATE;
+			time = (120 * TICRATE) / (pcount - 1);
 
 			// If the map is longer or shorter than 3 laps, then adjust ring respawn to account for this.
 			// 5 lap courses would have more retreaded ground, while 2 lap courses would have less.
@@ -12273,18 +12230,11 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	// Objects with a non-zero default height.
 	// (None yet)
 
-	// Horizontal springs, float additional units unless args[0] is set.
-	case MT_YELLOWHORIZ:
-	case MT_REDHORIZ:
-	case MT_BLUEHORIZ:
-		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
-		break;
-
 	// Ring-like items, float additional units unless args[0] is set.
 	case MT_SPIKEBALL:
 	case MT_EMBLEM:
 	case MT_RING:
-	case MT_BLUESPHERE:
+	case MT_BLUEBALL:
 	case MT_EMMY:
 		offset += mthing->args[0] ? 0 : 24*FRACUNIT;
 		break;
@@ -12422,6 +12372,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 			}
 			break;
 		case MT_COIN:
+		case MT_BLUEBALL:
 			{
 				if (gametype == GT_RACE || gametype == GT_BATTLE) // they don't spawn in kart so I guess i'll do this?
 					return false;
@@ -12568,18 +12519,6 @@ static boolean P_SetupMace(mapthing_t *mthing, mobj_t *mobj, boolean *doangle)
 	// Mobjtype selection
 	switch (mobj->type)
 	{
-	case MT_SPRINGBALLPOINT:
-		macetype = ((mthing->args[8] & TMM_DOUBLESIZE)
-			? MT_REDSPRINGBALL
-			: MT_YELLOWSPRINGBALL);
-		chainlink = MT_SMALLMACECHAIN;
-		break;
-	case MT_FIREBARPOINT:
-		macetype = ((mthing->args[8] & TMM_DOUBLESIZE)
-			? MT_BIGFIREBAR
-			: MT_SMALLFIREBAR);
-		chainlink = MT_NULL;
-		break;
 	case MT_CUSTOMMACEPOINT:
 		macetype = mthing->stringargs[0] ? get_number(mthing->stringargs[0]) : MT_NULL;
 		chainlink = mthing->stringargs[1] ? get_number(mthing->stringargs[1]) : MT_NULL;
@@ -12642,7 +12581,7 @@ static boolean P_SetupMace(mapthing_t *mthing, mobj_t *mobj, boolean *doangle)
 		mobj->flags2 |= MF2_BOSSNOTRAP;
 
 	// Make the links the same type as the end - repeated below
-	if ((mobj->type != MT_CHAINPOINT) && (((mthing->args[8] & TMM_MACELINKS) == TMM_MACELINKS) != (mobj->type == MT_FIREBARPOINT))) // exclusive or
+	if ((mobj->type != MT_CHAINPOINT) && ((mthing->args[8] & TMM_MACELINKS) == TMM_MACELINKS)) // exclusive or
 	{
 		linktype = macetype;
 		radiusfactor = 2; // Double the radius.
@@ -12859,15 +12798,21 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void P_SnapToFinishLine(mobj_t *mobj)
+static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
 {
-	line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
-			mobj->subsector->sector, 2001); // case 2001: Finish Line
-	if (finishline != NULL)
+	size_t i;
+	for (i = 0; i < numlines; i++)
 	{
-		P_UnsetThingPosition(mobj);
-		P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
-		P_SetThingPosition(mobj);
+		line_t *line2 = &lines[i];
+		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
+		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
+		{
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
+			line2->special = 2001; // Finish Line
+			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line2->args[0] = args ^ flipped;
+			SpreadFinishLine(line2, line, args ^ flipped);
+		}
 	}
 }
 
@@ -12993,9 +12938,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		break;
 	case MT_MACEPOINT:
 	case MT_CHAINMACEPOINT:
-	case MT_SPRINGBALLPOINT:
 	case MT_CHAINPOINT:
-	case MT_FIREBARPOINT:
 	case MT_CUSTOMMACEPOINT:
 		if (!P_SetupMace(mthing, mobj, doangle))
 			return false;
@@ -13129,8 +13072,11 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		// lastlook is used for indicating the waypoint is a shortcut
 		// extravalue1 is used for indicating the waypoint is disabled
 		// extravalue2 is used for indicating the waypoint is the finishline
+		// watertop is the waypoint's drift settings
 		mobj->threshold = mthing->args[0];
+
 		mobj->movecount = tag;
+
 		if (mthing->args[2] & TMWPF_DISABLED)
 		{
 			mobj->extravalue1 = 0; // The waypoint is disabled if extra is on
@@ -13155,21 +13101,62 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		{
 			mobj->reactiontime = 1;
 		}
+
 		if (mthing->args[2] & TMWPF_FINISHLINE)
 		{
 			mobj->extravalue2 = 1; // args[2] of 1 means the waypoint is at the finish line
 			mobj->reactiontime = 0; // Also don't respawn at finish lines
 
-			P_SnapToFinishLine(mobj);
+			line_t *finishline = P_FindNearestLine(mobj->x, mobj->y,
+					mobj->subsector->sector, K_UsingPatchedMap() ? -1 : 2001); // case 2001: Finish Line
+			if (finishline != NULL)
+			{
+				P_UnsetThingPosition(mobj);
+				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
+				P_SetThingPosition(mobj);
+
+				if (K_UsingPatchedMap())
+				{
+					finishline->special = 2001; // Finish Line
+					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+					finishline->args[0] = mthing->args[4];
+					SpreadFinishLine(finishline, NULL, mthing->args[4]);
+				}
+			}
 		}
 		else
 		{
 			mobj->extravalue2 = 0;
 		}
 
+		mobj->watertop = mthing->args[3];
+
 		// Sryder 2018-12-7: Grabbed this from the old MT_BOSS3WAYPOINT section so they'll be in the waypointcap instead
 		P_SetTarget(&mobj->tracer, waypointcap);
 		P_SetTarget(&waypointcap, mobj);
+		break;
+	}
+	case MT_WAYPOINT_ANCHOR:
+	{
+		// Get the drift parameters from the anchor's spawnpoint.
+
+		// Drift left
+		mobj->extravalue1 = ((mthing->options & MTF_OBJECTSPECIAL) >> 1);
+
+		if (mthing->options & MTF_AMBUSH)
+		{
+			// Drift right
+			mobj->extravalue1 = ((mthing->options & MTF_AMBUSH) >> 1);
+		}
+
+		// Powerslide offset
+		mobj->extravalue1 = max(0, min(4, mobj->extravalue1 - (mthing->options & 1)));
+
+		if (mthing->extrainfo)
+		{
+			// If the parameter is set at all, this anchor ends the drift.
+			mobj->extravalue1 = 5;
+		}
 		break;
 	}
 	case MT_BOTHINT:
@@ -13331,10 +13318,9 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_REDDIAG:
 	case MT_YELLOWDIAG:
 	case MT_BLUEDIAG:
-	case MT_GREYDIAG:
 	case MT_REDSPRING:
 	case MT_BLUESPRING:
-	case MT_GREYSPRING:
+	case MT_GRAYSPRING:
 	case MT_YELLOWSPRING:
 	case MT_INVISSPRING:
 	{

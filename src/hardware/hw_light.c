@@ -501,9 +501,6 @@ light_t *t_lspr[NUMSPRITES] =
 	&lspr[NOLIGHT],     // SPR_GFLG
 	&lspr[NOLIGHT],     // SPR_FNSF
 
-	&lspr[NOLIGHT],     // SPR_CORK
-	&lspr[NOLIGHT],     // SPR_LHRT
-
 	// Ring Weapons
 	&lspr[RINGLIGHT_L],     // SPR_RRNG
 	&lspr[RINGLIGHT_L],     // SPR_RNGB

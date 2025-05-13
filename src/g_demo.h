@@ -160,7 +160,7 @@ void G_LoadMetal(UINT8 **buffer);
 // Your naming conventions are stupid and useless.
 // There is no conflict here.
 struct demoghost {
-	UINT8 checksum[16];
+	UINT64 checksum;
 	UINT8 *buffer, *p, color;
 	UINT8 fadein;
 	UINT16 version;

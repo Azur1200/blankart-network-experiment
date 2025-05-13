@@ -2380,6 +2380,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	INT32 itemtype;
 	INT32 itemamount;
 	INT32 itemroulette;
+	INT32 previtemroulette;
 	INT32 roulettetype;
 	INT32 growshrinktimer;
 	INT32 bumper;
@@ -2438,8 +2439,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
-		itemroulette = 0;
-		roulettetype = 0;
+		itemroulette = KROULETTE_DISABLED;
+		previtemroulette = KROULETTE_DISABLED;
+		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
 		growshrinktimer = 0;
@@ -2471,7 +2473,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	}
 	else
 	{
-		itemroulette = (players[player].itemroulette > 0 ? 1 : 0);
+		itemroulette = (players[player].itemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
+		previtemroulette = (players[player].previtemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
 		roulettetype = players[player].roulettetype;
 
 		if (players[player].itemflags & IF_ITEMOUT)
@@ -2596,6 +2599,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	// SRB2kart
 	p->itemroulette = itemroulette;
+	p->previtemroulette = previtemroulette;
 	p->roulettetype = roulettetype;
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
@@ -2617,6 +2621,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	p->botvars.rubberband = FRACUNIT;
 	p->botvars.controller = UINT16_MAX;
+	p->botvars.driftskill =
+		FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(p));
+	p->botvars.driftstate = DRIFTSTATE_AUTO;
 
 	if (follower)
 		P_RemoveMobj(follower);

@@ -14,6 +14,12 @@ boolean B_UseWallTransfer(void)
 {
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
 	boolean value = false;
+
+	if (mapnamespace == MNS_RINGRACERS)
+		return true;
+
+	if (cv_kartwalltransfer.value)
+		return true;
     
 	if (mapheader->use_walltransfer == true)
 		value = true;
@@ -21,11 +27,23 @@ boolean B_UseWallTransfer(void)
 	if (mapheader->use_walltransfer == false)
 		value = false;
 
+	return value;
+}
+
+// Map header toggle for TerrainDefs.
+boolean B_UseTerrainDef(void)
+{
+	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
+	boolean value = false;
+
 	if (mapnamespace == MNS_RINGRACERS)
+		return true;
+
+	if (mapheader->use_terrain == true)
 		value = true;
 
-	if (cv_kartwalltransfer.value)
-		value = true;
+	if (mapheader->use_terrain == false)
+		value = false;
 
 	return value;
 }

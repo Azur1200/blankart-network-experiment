@@ -101,7 +101,9 @@
 extern "C" {
 #endif
 
+// Special Hashing.
 //#define NOMD5
+//#define NOFILEHASH
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -121,7 +123,7 @@ extern char logfilename[1024];
 /* A mod name to further distinguish versions. */
 #define SRB2APPLICATION "SRB2Kart"
 
-//#define DEVELOP // Disable this for release builds to remove excessive cheat commands and enable MD5 checking and stuff, all in one go. :3
+//#define DEVELOP // Disable this for release builds to remove excessive cheat commands and enable hash checking and stuff, all in one go. :3
 #ifdef DEVELOP
 #define VERSIONSTRING "Development EXE"
 #define VERSIONSTRING_RC "Development EXE" "\0"
@@ -399,6 +401,9 @@ extern struct debugFlagNames_s const debug_flag_names[];
 // Misc stuff for later...
 // =======================
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #define ANG2RAD(angle) ((float)((angle)*M_PI)/ANGLE_180)
 
 // Modifier key variables, accessible anywhere
@@ -430,6 +435,13 @@ UINT32 quickncasehash (const char *p, size_t n)
 
 	return x;
 }
+
+// Standard Hashing Functions (tm)
+// see W_MakeFileHash for hashing files
+#include "xxhash.h"
+#define HASH64(p, n) ((UINT64)XXH3_64bits(p, n))
+#define HASH32(p, n) ((UINT32)(XXH3_64bits(p, n) & UINT32_MAX))
+#define HASHFMT "%016jx"
 
 #ifndef __cplusplus
 #ifndef min // Double-Check with WATTCP-32's cdefs.h

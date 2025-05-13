@@ -1029,73 +1029,6 @@ static void K_BotItemBallhog(player_t *player, ticcmd_t *cmd)
 }
 
 /*--------------------------------------------------
-	static void K_BotItemDropTarget(const player_t *player, ticcmd_t *cmd, INT16 turnamt)
-
-		Item usage for Drop Target throwing.
-
-	Input Arguments:-
-		player - Bot to do this for.
-		cmd - Bot's ticcmd to edit.
-		turnamt - How hard they currently are turning.
-
-	Return:-
-		None
---------------------------------------------------*/
-static void K_BotItemDropTarget(player_t *player, ticcmd_t *cmd, INT16 turnamt)
-{
-	ZoneScoped;
-
-	const fixed_t topspeed = K_GetKartSpeed(player, false, true);
-	fixed_t radius = FixedMul(1280 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed));
-	SINT8 throwdir = -1;
-	boolean tryLookback = false;
-	UINT8 snipeMul = 2;
-	player_t *target = NULL;
-
-	if (player->speed > topspeed)
-	{
-		radius = FixedMul(radius, FixedDiv(player->speed, topspeed));
-		snipeMul = 3; // Confirm faster when you'll throw it with a bunch of extra speed!!
-	}
-
-	cmd->bot.itemconfirm++;
-
-	if (abs(turnamt) >= KART_FULLTURN/2)
-	{
-		cmd->bot.itemconfirm += player->botvars.difficulty / 2;
-		throwdir = -1;
-	}
-
-	target = K_PlayerInCone(player, radius, 15, false);
-	if (target != NULL)
-	{
-		K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty * snipeMul);
-		throwdir = 1;
-	}
-	else
-	{
-		target = K_PlayerInCone(player, radius, 15, true);
-
-		if (target != NULL)
-		{
-			K_ItemConfirmForTarget(player, cmd, target, player->botvars.difficulty);
-			throwdir = -1;
-			tryLookback = true;
-		}
-	}
-
-	if (tryLookback == true && throwdir == -1)
-	{
-		cmd->buttons |= BT_LOOKBACK;
-	}
-
-	if (player->botvars.itemconfirm > 10*TICRATE || player->bananadrag >= TICRATE)
-	{
-		K_BotGenericPressItem(player, cmd, throwdir);
-	}
-}
-
-/*--------------------------------------------------
 	static void K_BotItemJawz(const player_t *player, ticcmd_t *cmd)
 
 		Item usage for Jawz throwing.
@@ -1356,14 +1289,29 @@ static void K_BotItemRings(player_t *player, ticcmd_t *cmd)
 		return;
 	}
 
-	if (P_IsObjectOnGround(player->mo) == false)
+	if (!player->pogospring && P_IsObjectOnGround(player->mo) == false)
 	{
 		// Don't use while mid-air.
 		return;
 	}
 
+	if (K_ChainingActive())
+	{
+		if (((player->sneakertimer > 0) && player->sneakertimer <= (sneakertime/2))
+			|| ((player->driftboost > 0) && player->driftboost <= 20))
+		{
+			// Chain your boost with some rings for extra fun.
+			saferingsval -= 5;
+		}
+		else if ((player->startboost > 0) && player->startboost <= 20)
+		{
+			// Start Boost chains have a different threshold.
+			saferingsval -= 2;
+		}
+	}
+
 	if (player->speed < (K_GetKartSpeed(player, false, true) * 9) / 10 // Being slowed down too much
-		|| player->speedboost > (FRACUNIT/5)) // Have another type of boost (tethering)
+		|| player->speedboost > (FRACUNIT/5)) // Have another type of boost
 	{
 		saferingsval -= 5;
 	}
@@ -1543,16 +1491,6 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt)
 						break;
 					case KITEM_BALLHOG:
 						K_BotItemBallhog(player, cmd);
-						break;
-					case KITEM_DROPTARGET:
-						if (!(player->itemflags & IF_ITEMOUT))
-						{
-							K_BotItemGenericTrapShield(player, cmd, turnamt, false);
-						}
-						else
-						{
-							K_BotItemDropTarget(player, cmd, turnamt);
-						}
 						break;
 					case KITEM_THUNDERSHIELD:
 						K_BotItemLightning(player, cmd);

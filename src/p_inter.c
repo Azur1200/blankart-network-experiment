@@ -136,7 +136,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 				return false;
 
 			// Already have fake
-			if (player->roulettetype == 2
+			if (player->roulettetype == KROULETTETYPE_EGGMAN
 				|| player->eggmanexplode)
 				return false;
 		}
@@ -457,8 +457,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				player->itemroulette = 1;
-				player->roulettetype = 1;
+				player->itemroulette = KROULETTE_ACTIVE;
+				player->roulettetype = KROULETTETYPE_KARMA;
 			}
 			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
 			{
@@ -496,8 +496,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				K_DropItems(player); //K_StripItems(player);
 				//K_StripOther(player);
 
-				player->itemroulette = 1;
-				player->roulettetype = 2;
+				player->itemroulette = KROULETTE_ACTIVE;
+				player->roulettetype = KROULETTETYPE_EGGMAN;
 
 				if (special->target->player->eggmanblame >= 0
 					&& special->target->player->eggmanblame < MAXPLAYERS
@@ -591,8 +591,8 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->fuse || !P_CanPickupItem(player, 1) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
-			player->itemroulette = 1;
-			player->roulettetype = 1;
+			player->itemroulette = KROULETTE_ACTIVE;
+			player->roulettetype = KROULETTETYPE_KARMA;
 
 			// Karma fireworks
 			for (i = 0; i < 5; i++)
@@ -686,9 +686,35 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->extravalue1 = 1; // Ring collect animation timer
 			special->angle = R_PointToAngle2(toucher->x, toucher->y, special->x, special->y); // animation angle
 			P_SetTarget(&special->target, toucher); // toucher for thinker
+
+			// For MT_FLINGRING - don't delete yourself mid-pickup.
+			special->renderflags &= ~RF_DONTDRAW;
+			special->fuse = 0;
+
 			player->pickuprings++;
 
 			return;
+		case MT_COIN:
+		case MT_FLINGCOIN:
+			if (!(P_CanPickupItem(player, 0)))
+				return;
+
+			special->momx = special->momy = 0;
+			P_GivePlayerRings(player, 1);
+			break;
+		case MT_BLUEBALL:
+			if (!(P_CanPickupItem(player, 0)))
+				return;
+
+			P_GivePlayerRings(player, 1);
+
+			special->momx = special->momy = special->momz = 0;
+			special->destscale = FixedMul(8*FRACUNIT, special->scale);
+			if (states[special->info->deathstate].tics > 0)
+				special->scalespeed = FixedDiv(FixedDiv(special->destscale, special->scale), states[special->info->deathstate].tics<<FRACBITS);
+			else
+				special->scalespeed = 4*FRACUNIT/5;
+			break;
 		// Special Stage Token
 		case MT_EMMY:
 			if (player->bot)
@@ -915,8 +941,10 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 
 	(void)snaptopost;
 
-	// Player must have touched all previous starposts
-	if ((post->health - player->starpostnum > 1) && (!K_UsingLegacyCheckpoints()))
+	// Going backwards triggers sound
+	if (K_CheckpointThreshold(false) == numstarposts
+	    ? post->health - player->starpostnum > 1
+	    : post->health >= player->starpostnum + K_CheckpointThreshold(false))
 	{
 		if (!player->checkskip)
 		{
@@ -926,17 +954,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 				player->grieftime += TICRATE;
 			}
 
-
 		}
-		player->checkskip = 3;
-		return;
-	}
-
-	// Going backwards triggers sound
-	if ((post->health >= ((numstarposts/2) + player->starpostnum)) && (K_UsingLegacyCheckpoints()))
-	{
-		if (!player->checkskip)
-			S_StartSound(toucher, sfx_s26d);
 
 		player->checkskip = 3;
 		return;
@@ -1299,7 +1317,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		 && !(target->type == MT_ORBINAUT || target->type == MT_ORBINAUT_SHIELD
 		 || target->type == MT_JAWZ || target->type == MT_JAWZ_DUD || target->type == MT_JAWZ_SHIELD
 		 || target->type == MT_BANANA || target->type == MT_BANANA_SHIELD
-		 || target->type == MT_DROPTARGET || target->type == MT_DROPTARGET_SHIELD
 		 || target->type == MT_EGGMANITEM || target->type == MT_EGGMANITEM_SHIELD
 		 || target->type == MT_BALLHOG || target->type == MT_SPB)) // kart dead items
 		target->flags |= MF_NOGRAVITY; // Don't drop Tails 03-08-2000
@@ -1341,7 +1358,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		{
 			if ((target->type == MT_BANANA_SHIELD && target->target->player->itemtype == KITEM_BANANA) // trail items
 				|| (target->type == MT_SSMINE_SHIELD && target->target->player->itemtype == KITEM_MINE)
-				|| (target->type == MT_DROPTARGET_SHIELD && target->target->player->itemtype == KITEM_DROPTARGET)
 				|| (target->type == MT_SINK_SHIELD && target->target->player->itemtype == KITEM_KITCHENSINK))
 			{
 				if (target->movedir != 0 && target->movedir < (UINT16)target->target->player->itemamount)
@@ -1697,9 +1713,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 						player->itemamount = max(1, target->movecount);
 				}
 				player->itemblink = TICRATE;
-				player->itemblinkmode = 0;
-				player->itemroulette = 0;
-				player->roulettetype = 0;
+				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
+				player->itemroulette = KROULETTE_DISABLED;
+				player->roulettetype = KROULETTETYPE_NORMAL;
 				if (P_IsDisplayPlayer(player))
 					S_StartSound(NULL, sfx_itrolf);
 			}
@@ -1733,11 +1749,6 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				overlay->color = target->color;
 				P_SetMobjState(overlay, S_INVISIBLE);
 			}
-			break;
-
-		case MT_DROPTARGET:
-		case MT_DROPTARGET_SHIELD:
-			target->fuse = 1;
 			break;
 
 		default:
@@ -2404,6 +2415,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	return true;
 }
 
+#define RING_LAYER_SIDE_SIZE (3)
+#define RING_LAYER_SIZE (RING_LAYER_SIDE_SIZE * 2)
+
 static void P_FlingBurst
 (		player_t *player,
 		angle_t fa,
@@ -2412,16 +2426,11 @@ static void P_FlingBurst
 		fixed_t objScale,
 		INT32 i)
 {
-	mobj_t *mo;
-	fixed_t ns;
-	fixed_t momxy = 5<<FRACBITS, momz = 12<<FRACBITS; // base horizonal/vertical thrusts
-	INT32 mx = (i + 1) >> 1;
-
-	mo = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, objType);
+	mobj_t *mo = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, objType);
+	P_SetTarget(&mo->target, player->mo);
 
 	mo->threshold = 10; // not useful for spikes
 	mo->fuse = objFuse;
-	P_SetTarget(&mo->target, player->mo);
 
 	if (objScale != FRACUNIT)
 	{
@@ -2429,27 +2438,20 @@ static void P_FlingBurst
 		mo->destscale = mo->scale;
 	}
 
-	/*
-	0: 0
-	1: 1 = (1+1)/2 = 1
-	2: 1 = (2+1)/2 = 1
-	3: 2 = (3+1)/2 = 2
-	4: 2 = (4+1)/2 = 2
-	5: 3 = (4+1)/2 = 2
-	 */
-	// Angle / height offset changes every other ring
-	momxy -= mx * FRACUNIT;
-	momz += mx * (2<<FRACBITS);
-
 	if (i & 1)
+	{
 		fa += ANGLE_180;
+	}
 
-	ns = FixedMul(momxy, player->mo->scale);
-	mo->momx = (mo->target->momx/2) + FixedMul(FINECOSINE(fa>>ANGLETOFINESHIFT), ns);
-	mo->momy = (mo->target->momy/2) + FixedMul(FINESINE(fa>>ANGLETOFINESHIFT), ns);
+	// Pitch offset changes every other ring
+	angle_t offset = ANGLE_90 / (RING_LAYER_SIDE_SIZE + 2);
+	angle_t fp = offset + (((i / 2) % RING_LAYER_SIDE_SIZE) * (offset * 3 >> 1));
 
-	ns = FixedMul(momz, player->mo->scale);
-	mo->momz = (mo->target->momz/2) + ((ns) * P_MobjFlip(mo));
+	const UINT8 layer = i / RING_LAYER_SIZE;
+	const fixed_t thrust = (13 * mo->scale) + (7 * mo->scale * layer);
+	mo->momx = (player->mo->momx / 2) + FixedMul(FixedMul(thrust, FINECOSINE(fp >> ANGLETOFINESHIFT)), FINECOSINE(fa >> ANGLETOFINESHIFT));
+	mo->momy = (player->mo->momy / 2) + FixedMul(FixedMul(thrust, FINECOSINE(fp >> ANGLETOFINESHIFT)), FINESINE(fa >> ANGLETOFINESHIFT));
+	mo->momz = (player->mo->momz / 2) + (FixedMul(thrust, FINESINE(fp >> ANGLETOFINESHIFT)) * P_MobjFlip(mo));
 }
 
 /** Spills an injured player's rings.
@@ -2461,7 +2463,7 @@ static void P_FlingBurst
   */
 void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 {
-	INT32 num_fling_rings;
+	INT32 spill_total, num_fling_rings;
 	INT32 i;
 	angle_t fa;
 
@@ -2483,14 +2485,14 @@ void P_PlayerRingBurst(player_t *player, INT32 num_rings)
 	else if (num_rings <= 0)
 		return;
 
-	num_rings = -P_GivePlayerRings(player, -num_rings);
-	num_fling_rings = num_rings+min(0, player->rings);
+	spill_total = -P_GivePlayerRings(player, -num_rings);
+	num_fling_rings = spill_total + min(0, player->rings);
 
 	// determine first angle
 	fa = player->mo->angle + ((P_RandomByte() & 1) ? -ANGLE_90 : ANGLE_90);
 
 	for (i = 0; i < num_fling_rings; i++)
 	{
-		P_FlingBurst(player, fa, MT_FLINGRING, 20*TICRATE, FRACUNIT, i);
+		P_FlingBurst(player, fa, MT_FLINGRING, 60*TICRATE, FRACUNIT, i);
 	}
 }

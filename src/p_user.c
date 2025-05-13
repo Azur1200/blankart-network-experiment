@@ -2217,21 +2217,6 @@ void P_MovePlayer(player_t *player)
 //GAMEPLAY STUFF//
 //////////////////
 
-	if (((!(player->mo->eflags & MFE_VERTICALFLIP) && player->mo->z + player->mo->height >= player->mo->watertop && player->mo->z <= player->mo->watertop)
-		|| (player->mo->eflags & MFE_VERTICALFLIP && player->mo->z + player->mo->height >= player->mo->waterbottom && player->mo->z <= player->mo->waterbottom))
-	&& (player->speed > runspd)
-	&& player->mo->momz == 0 && player->carry != CR_SLIDING && !player->spectator)
-	{
-		K_SpawnWaterTrail(player->mo);
-	}
-
-	// Little water sound while touching water - just a nicety.
-	if ((player->mo->eflags & MFE_TOUCHWATER) && !(player->mo->eflags & MFE_UNDERWATER) && !player->spectator)
-	{
-		if (P_RandomChance(FRACUNIT/2) && leveltime % TICRATE == 0)
-			S_StartSound(player->mo, sfx_floush);
-	}
-
 	////////////////////////////
 	//SPINNING AND SPINDASHING//
 	////////////////////////////
@@ -3834,7 +3819,7 @@ void P_PlayerThink(player_t *player)
 	}
 
 	// Accessibility - kickstart your acceleration
-	if (!(player->pflags & PF_KICKSTARTACCEL))
+	if (!(player->pflags & PF_KICKSTARTACCEL) || leveltime < starttime)
 	{
 		player->kickstartaccel = 0;
 	}

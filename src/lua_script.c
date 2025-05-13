@@ -181,7 +181,13 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushboolean(L, modeattacking);
 		return 1;
 	} else if (fastcmp(word,"splitscreen")) {
-		lua_pushinteger(L, splitscreen);
+		// You may be wondering why?
+		// Kart lua scripts expects splitscreen to mean "number of split views"
+		// not "number of local players"
+		if (lua_compatmode)
+			lua_pushinteger(L, r_splitscreen);
+		else
+			lua_pushinteger(L, splitscreen);
 		return 1;
 	} else if (fastcmp(word,"gamecomplete")) {
 		lua_pushboolean(L, (gamecomplete != 0));

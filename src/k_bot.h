@@ -376,6 +376,20 @@ void K_UpdateBotGameplayVars(player_t *player);
 
 void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt);
 
+/*--------------------------------------------------
+	fixed_t K_BotDetermineDriftSkill(player_t *player)
+
+		Calculates drift skill for a player based on stats.
+
+	Input Arguments:-
+		player - Player to get drift skill for.
+
+	Return:-
+		Calculated drift skill.
+--------------------------------------------------*/
+
+fixed_t K_BotDetermineDriftSkill(player_t *player);
+
 
 #ifdef __cplusplus
 } // extern "C"

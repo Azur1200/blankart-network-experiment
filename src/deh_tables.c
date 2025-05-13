@@ -28,6 +28,7 @@
 #include "k_boss.h" // spottype_t (for lua)
 #include "k_follower.h" // followermode_t (for lua)
 #include "g_input.h" // Game controls (for lua)
+#include "k_kart.h" // awardscaledrings_t
 
 #include "deh_tables.h"
 
@@ -1450,6 +1451,20 @@ struct int_const_s const INT_CONST[] = {
 	// kartitems_t
 	{"KITEM_LIGHTNINGSHIELD",KITEM_THUNDERSHIELD},
 
+	// kartroulette_t
+	{"KROULETTE_DISABLED",KROULETTE_DISABLED},
+	{"KROULETTE_ACTIVE",KROULETTE_ACTIVE},
+
+	// kartroulettetype_t
+	{"KROULETTETYPE_NORMAL",KROULETTETYPE_NORMAL},
+	{"KROULETTETYPE_KARMA",KROULETTETYPE_KARMA},
+	{"KROULETTETYPE_EGGMAN",KROULETTETYPE_EGGMAN},
+
+	// kartitemblinkmode_t
+	{"KITEMBLINKMODE_NORMAL",KITEMBLINKMODE_NORMAL},
+	{"KITEMBLINKMODE_MASHED",KITEMBLINKMODE_MASHED},
+	{"KITEMBLINKMODE_KARMA",KITEMBLINKMODE_KARMA},
+
 	// kartspinoutflags_t
 	{"KSPIN_THRUST",KSPIN_THRUST},
 	{"KSPIN_IFRAMES",KSPIN_IFRAMES},
@@ -1471,7 +1486,7 @@ struct int_const_s const INT_CONST[] = {
 	{"PRECIPFX_THUNDER",PRECIPFX_THUNDER},
 	{"PRECIPFX_LIGHTNING",PRECIPFX_LIGHTNING},
 	{"PRECIPFX_WATERPARTICLES",PRECIPFX_WATERPARTICLES},
-	
+
 	// followermode_t
 	{"FOLLOWERMODE_FLOAT",FOLLOWERMODE_FLOAT},
 	{"FOLLOWERMODE_GROUND",FOLLOWERMODE_GROUND},
@@ -1484,6 +1499,27 @@ struct int_const_s const INT_CONST[] = {
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1}, // This is to trick kart luas that look for this since its already here.
 	{"FEATURE_VOTEHUD",1},
+
+	// tripwirestate_t
+	{"TRIPSTATE_NONE", TRIPSTATE_NONE},
+	{"TRIPSTATE_PASSED", TRIPSTATE_PASSED},
+	{"TRIPSTATE_BLOCKED", TRIPSTATE_BLOCKED},
+
+	// tripwirepass_t
+	{"TRIPWIRE_NONE", TRIPWIRE_NONE},
+	{"TRIPWIRE_IGNORE", TRIPWIRE_IGNORE},
+	{"TRIPWIRE_BOOST", TRIPWIRE_BOOST},
+	{"TRIPWIRE_BLASTER", TRIPWIRE_BLASTER},
+
+	// awardscaledrings_t
+	{"ASR_ITEMBOX", ASR_ITEMBOX},
+	{"ASR_SUPERRING", ASR_SUPERRING},
+
+	// sneakertype_t
+	{"SNEAKERTYPE_PANEL", SNEAKERTYPE_PANEL},
+	{"SNEAKERTYPE_SNEAKER", SNEAKERTYPE_SNEAKER},
+	{"SNEAKERTYPE_ROCKETSNEAKER", SNEAKERTYPE_ROCKETSNEAKER},
+	{"SNEAKERTYPE_WATERPANEL", SNEAKERTYPE_WATERPANEL},
 
 	{NULL,0}
 };

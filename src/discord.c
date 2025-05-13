@@ -27,12 +27,13 @@
 #include "byteptr.h"
 #include "stun.h"
 #include "i_tcp.h" // current_port
+#include "k_grandprix.h"
 
 #include "discord.h"
 #include "doomdef.h"
 
 // Feel free to provide your own, if you care enough to create another Discord app for this :P
-#define DISCORD_APPID "977470696852684833"
+#define DISCORD_APPID "1364963317784776714"
 
 // length of IP strings
 #define IP_SIZE 21
@@ -465,8 +466,9 @@ void DRPC_UpdatePresence(void)
 	char detailstr[48+1];
 
 	char mapname[5+21+21+2+1];
+	char mapimg[MAXMAPLUMPNAME+5];
 
-	char charimg[4+SKINNAMESIZE+1];
+	char charimg[4+SKINNAMESIZE+2];
 	char charname[11+SKINNAMESIZE+1];
 
 	boolean joinSecretSet = false;
@@ -540,7 +542,16 @@ void DRPC_UpdatePresence(void)
 
 		// Offline info
 		if (Playing())
-			discordPresence.state = "Offline";
+		{
+			if (grandprixinfo.gp == true)
+			{
+				discordPresence.state = "Grand Prix";
+			}
+			else
+			{
+				discordPresence.state = "Offline";
+			}
+		}
 		else if (demo.playback && !demo.title)
 			discordPresence.state = "Watching Replay";
 		else
@@ -551,14 +562,37 @@ void DRPC_UpdatePresence(void)
 	if ((gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING) && Playing())
 	{
 		if (modeattacking)
-			discordPresence.details = "Time Attack";
+		{
+			SINT8 recordpreset = G_RecordPresetIndex();
+			const char *currenttamode = "SRB2Kart";
+
+			if (recordpreset == RP_TECH)
+				currenttamode = "Tech";
+			else if (recordpreset == RP_BLAN)
+				currenttamode = "BlanKart";
+			else if (recordpreset == RP_CUST)
+				currenttamode = "Custom";
+
+			discordPresence.details = va("Time Attack: %s Mode", currenttamode);
+		}
 		else
 		{
-			snprintf(detailstr, 48, "%s%s%s",
-				gametype_cons_t[gametype].strvalue,
-				va(" | %s", kartspeed_cons_t[gamespeed].strvalue),
-				(encoremode == true) ? " | Encore" : ""
-			);
+			if (grandprixinfo.gp == true)
+			{
+				snprintf(detailstr, 48, "%s%s%s",
+					gametype_cons_t[gametype].strvalue,
+					va(" | %s", cv_dummygpdifficulty.string),
+					(encoremode == true) ? " | Encore" : ""
+				);
+			}
+			else
+			{
+				snprintf(detailstr, 48, "%s%s%s",
+					gametype_cons_t[gametype].strvalue,
+					va(" | %s", kartspeed_cons_t[gamespeed+1].strvalue),
+					(encoremode == true) ? " | Encore" : ""
+				);
+			}
 			discordPresence.details = detailstr;
 		}
 	}
@@ -573,8 +607,125 @@ void DRPC_UpdatePresence(void)
 		}
 		else
 		{
-			// This is probably a custom map!
-			discordPresence.largeImageKey = "mapcustom";
+			// Supported map names
+			// I hate that this is easiest but oh well.
+			static const char *supportedMaps[] = {
+				// base game
+				"MAP01",
+				"MAP02",
+				"MAP03",
+				"MAP04",
+				"MAP05",
+				"MAP06",
+				"MAP07",
+				"MAP08",
+				"MAP09",
+				"MAP10",
+				"MAP11",
+				"MAP12",
+				"MAP13",
+				"MAP14",
+				"MAP15",
+				"MAP16",
+				"MAP17",
+				"MAP18",
+				"MAP19",
+				"MAP20",
+				"MAP21",
+				"MAP22",
+				"MAP23",
+				"MAP24",
+				"MAP25",
+				"MAP26",
+				"MAP27",
+				"MAP28",
+				"MAP29",
+				"MAP30",
+				"MAP31",
+				"MAP32",
+				"MAP33",
+				"MAP34",
+				"MAP35",
+				"MAP36",
+				"MAP37",
+				"MAP38",
+				"MAP39",
+				"MAP40",
+				"MAP41",
+				"MAP42",
+				"MAP43",
+				"MAP44",
+				"MAP45",
+				"MAP46",
+				"MAP47",
+				"MAP48",
+				"MAP49",
+				"MAP50",
+				"MAP51",
+				"MAP52",
+				"MAP53",
+				"MAP54",
+				"MAP55",
+				"MAP56",
+				"MAP57",
+				"MAP58",
+				"MAP59",
+				"MAP60",
+				"MAPB0",
+				"MAPB1",
+				"MAPB2",
+				"MAPB3",
+				"MAPB4",
+				"MAPB5",
+				"MAPB6",
+				"MAPB7",
+				"MAPB8",
+				"MAPB9",
+				"MAPBA",
+				"MAPBB",
+				"MAPBC",
+				"MAPBD",
+				"MAPBE",
+				"MAPBF",
+				"MAPBG",
+				"MAPBH",
+				"MAPBI",
+				"MAPBJ",
+				"MAPBK",
+				"MAPBL",
+				"MAPBM",
+				"MAPBN",
+				"MAPBO",
+				"MAPBP",
+				"MAPBQ",
+				"MAPBR",
+				"MAPBS",
+				NULL
+			};
+
+			boolean customMap = true;
+			UINT16 checkMap = 0;
+
+			// Map image
+			while (supportedMaps[checkMap] != NULL)
+			{
+				if (!strcmp(mapheaderinfo[gamemap-1]->lumpname, supportedMaps[checkMap]))
+				{
+					snprintf(mapimg, MAXMAPLUMPNAME+4, "map_%s", mapheaderinfo[gamemap-1]->lumpname);
+					strlwr(mapimg);
+					discordPresence.largeImageKey = mapimg; // Map image
+					customMap = false;
+					break;
+				}
+
+				checkMap++;
+			}
+
+			if (customMap == true)
+			{
+				// This is probably a custom map!
+				discordPresence.largeImageKey = "mapcustom";
+			}
 		}
 
 		if (mapheaderinfo[gamemap-1]->menuflags & LF2_HIDEINMENU)
@@ -669,7 +820,7 @@ void DRPC_UpdatePresence(void)
 		{
 			if (!strcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
 			{
-				snprintf(charimg, 21, "char%s", supportedSkins[checkSkin]);
+				snprintf(charimg, 22, "char_%s", supportedSkins[checkSkin]);
 				discordPresence.smallImageKey = charimg;
 				customChar = false;
 				break;
