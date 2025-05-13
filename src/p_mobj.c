@@ -8375,7 +8375,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			if (gamespeed == KARTSPEED_EASY)
 				distbarrier = FixedMul(distbarrier, FRACUNIT-FRACUNIT/4);
-			else if (gamespeed == KARTSPEED_EASY)
+			else if (gamespeed == KARTSPEED_HARD)
 				distbarrier = FixedMul(distbarrier, FRACUNIT+FRACUNIT/4);
 
 			if ((gametyperules & GTR_CIRCUIT) && mobj->tracer)
