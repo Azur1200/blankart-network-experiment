@@ -41,6 +41,7 @@
 #include "discord.h" // DRPC_UpdatePresence
 #endif
 #include "i_net.h" // doomcom
+#include "blan/b_soc.h"
 
 consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -510,7 +511,7 @@ const botcontroller_t *K_GetBotController(mobj_t *mobj)
 fixed_t K_BotMapModifier(void)
 {
 	constexpr INT32 complexity_scale = 10000;
-	fixed_t modifier_max = cv_kartbot_modifiermax.value;
+	fixed_t modifier_max = K_TrackModifierMax();
 
 	if (K_CanChangeRules() == false)
 	{

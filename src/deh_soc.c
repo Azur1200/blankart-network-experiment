@@ -1416,6 +1416,10 @@ void readlevelheader(MYFILE *f, char * name)
 				mapheaderinfo[num]->encorepal = (UINT16)i;
 			else if (fastcmp(word, "NUMLAPS"))
 				mapheaderinfo[num]->numlaps = (UINT8)i;
+			else if (fastcmp(word, "BASETRACKCOMPLEXITY"))
+				mapheaderinfo[num]->base_track_complexity = i;
+			else if (fastcmp(word, "TRACKMODIFIERMAX"))
+				mapheaderinfo[num]->track_modifier_max = FloatToFixed(atof(word2));
 			else if (fastcmp(word, "LAPSPERSECTION"))
 				mapheaderinfo[num]->lapspersection = max((UINT8)i, 1u);
 			else if (fastcmp(word, "UNLOCKABLE"))

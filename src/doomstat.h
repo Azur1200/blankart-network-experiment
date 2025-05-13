@@ -443,6 +443,8 @@ struct mapheader_t
 	// BlanKart
 	boolean use_walltransfer;					///< Whether to use RR style wall transfering or not
 	boolean use_terrain;						///< Whether to use gameplay affecting Terrain effects or not (leaves visuals alone)
+	INT32 base_track_complexity;				///< Decides what the base track compexity for the current map is.
+	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
 };
 
 
