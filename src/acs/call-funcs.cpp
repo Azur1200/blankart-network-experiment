@@ -83,23 +83,14 @@ static bool ACS_GetMobjTypeFromString(const char *word, mobjtype_t *type)
 		word += 3;
 	}
 
-	for (int i = 0; i < NUMMOBJFREESLOTS; i++)
+	for (int i = 0; i < NUMMOBJTYPES; i++)
 	{
-		if (!FREE_MOBJS[i])
+		if (!mobjinfo[i].nameofs)
 		{
 			break;
 		}
 
-		if (fastcmp(word, FREE_MOBJS[i]))
-		{
-			*type = static_cast<mobjtype_t>(static_cast<int>(MT_FIRSTFREESLOT) + i);
-			return true;
-		}
-	}
-
-	for (int i = 0; i < MT_FIRSTFREESLOT; i++)
-	{
-		if (fastcmp(word, MOBJTYPE_LIST[i] + 3))
+		if (fastcmp(word, strbuf_get(mobjnames, mobjinfo[i].nameofs)))
 		{
 			*type = static_cast<mobjtype_t>(i);
 			return true;
@@ -234,23 +225,14 @@ static bool ACS_GetStateFromString(const char *word, statenum_t *type)
 		word += 2;
 	}
 
-	for (int i = 0; i < NUMMOBJFREESLOTS; i++)
+	for (int i = 0; i < NUMSTATES; i++)
 	{
-		if (!FREE_STATES[i])
+		if (!states[i].nameofs)
 		{
 			break;
 		}
 
-		if (fastcmp(word, FREE_STATES[i]))
-		{
-			*type = static_cast<statenum_t>(static_cast<int>(S_FIRSTFREESLOT) + i);
-			return true;
-		}
-	}
-
-	for (int i = 0; i < S_FIRSTFREESLOT; i++)
-	{
-		if (fastcmp(word, STATE_LIST[i] + 2))
+		if (fastcmp(word, strbuf_get(statenames, states[i].nameofs)))
 		{
 			*type = static_cast<statenum_t>(i);
 			return true;
@@ -2336,16 +2318,9 @@ bool CallFunc_GetObjectClass(ACSVM::Thread *thread, const ACSVM::Word *argV, ACS
 	mobj_t *mobj = P_FindMobjFromTID(argV[0], NULL, info->mo);
 	if (mobj != NULL && P_MobjWasRemoved(mobj) == false)
 	{
-		if (mobj->type >= MT_FIRSTFREESLOT)
-		{
-			std::string	prefix = "MT_";
-			std::string	full = prefix + FREE_MOBJS[mobj->type - MT_FIRSTFREESLOT];
-			mobjClass = static_cast<INT32>( ~env->getString( full.c_str() )->idx );
-		}
-		else
-		{
-			mobjClass = static_cast<INT32>( ~env->getString( MOBJTYPE_LIST[ mobj->type ] )->idx );
-		}
+		std::string     prefix = "MT_";
+		std::string     full = prefix + (strbuf_get(mobjnames, mobjinfo[mobj->type].nameofs));
+		mobjClass = static_cast<INT32>( ~env->getString( full.c_str() )->idx );
 	}
 
 	thread->dataStk.push(mobjClass);
@@ -4397,16 +4372,9 @@ bool CallFunc_GetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 #define PROP_TYPE(x, y) \
 	case x: \
 	{ \
-		if (mobj->y >= MT_FIRSTFREESLOT) \
-		{ \
-			std::string	prefix = "MT_"; \
-			std::string	full = prefix + FREE_MOBJS[mobj->y - MT_FIRSTFREESLOT]; \
-			value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
-		} \
-		else \
-		{ \
-			value = static_cast<INT32>( ~env->getString( MOBJTYPE_LIST[ mobj->y ] )->idx ); \
-		} \
+		std::string	prefix = "MT_"; \
+		std::string	full = prefix + (strbuf_get(mobjnames, mobjinfo[mobj->y].nameofs)); \
+		value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
 		break; \
 	}
 
@@ -4430,16 +4398,9 @@ bool CallFunc_GetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 	case x: \
 	{ \
 		statenum_t stateID = static_cast<statenum_t>(mobj->y - states); \
-		if (stateID >= S_FIRSTFREESLOT) \
-		{ \
-			std::string	prefix = "S_"; \
-			std::string	full = prefix + FREE_STATES[stateID - S_FIRSTFREESLOT]; \
-			value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
-		} \
-		else \
-		{ \
-			value = static_cast<INT32>( ~env->getString( STATE_LIST[ stateID ] )->idx ); \
-		} \
+		std::string	prefix = "S_"; \
+		std::string	full = prefix + strbuf_get(statenames, states[stateID].nameofs); \
+		value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
 		break; \
 	}
 

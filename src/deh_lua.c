@@ -81,33 +81,31 @@ static inline int lib_freeslot(lua_State *L)
 		else if (fastcmp(type, "S"))
 		{
 			statenum_t i;
-			for (i = 0; i < NUMSTATEFREESLOTS; i++)
-				if (!FREE_STATES[i]) {
+			for (i = S_FIRSTFREESLOT; i < NUMSTATES; i++)
+				if (!states[i].nameofs) {
 					CONS_Printf("State S_%s allocated.\n",word);
-					FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_STATES[i],word);
+					states[i].nameofs = strbuf_append(&statenames, word);
 					freeslotusage[0][0]++;
-					lua_pushinteger(L, S_FIRSTFREESLOT + i);
+					lua_pushinteger(L, i);
 					r++;
 					break;
 				}
-			if (i == NUMSTATEFREESLOTS)
+			if (i == NUMSTATES)
 				CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
 		}
 		else if (fastcmp(type, "MT"))
 		{
 			mobjtype_t i;
-			for (i = 0; i < NUMMOBJFREESLOTS; i++)
-				if (!FREE_MOBJS[i]) {
+			for (i = MT_FIRSTFREESLOT; i < NUMMOBJTYPES; i++)
+				if (!mobjinfo[i].nameofs) {
 					CONS_Printf("MobjType MT_%s allocated.\n",word);
-					FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MOBJS[i],word);
+					mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
 					freeslotusage[1][0]++;
-					lua_pushinteger(L, MT_FIRSTFREESLOT + i);
+					lua_pushinteger(L, i);
 					r++;
 					break;
 				}
-			if (i == NUMMOBJFREESLOTS)
+			if (i == NUMMOBJTYPES)
 				CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
 		}
 		else if (fastcmp(type, "SKINCOLOR"))
@@ -426,19 +424,14 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, S_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMSTATEFREESLOTS; i++) {
-			if (!FREE_STATES[i])
+		for (i = 0; i < NUMSTATES; i++) {
+			if (!states[i].nameofs)
 				break;
-			if (fastcmp(p, FREE_STATES[i])) {
-				CacheAndPushConstant(L, word, S_FIRSTFREESLOT+i);
-				return 1;
-			}
-		}
-		for (i = 0; i < S_FIRSTFREESLOT; i++)
-			if (fastcmp(p, STATE_LIST[i]+2)) {
+			if (fastcmp(p, strbuf_get(statenames, states[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+		}
 		if (lua_compatmode)
 			for (i = 0; STATE_ALIASES[i].n; i++)
 				if (fastcmp(p, STATE_ALIASES[i].n)) {
@@ -454,20 +447,14 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, MT_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMMOBJFREESLOTS; i++) {
-			if (!FREE_MOBJS[i])
+		for (i = 0; i < NUMMOBJTYPES; i++) {
+			if (!mobjinfo[i].nameofs)
 				break;
-			if (fastcmp(p, FREE_MOBJS[i])) {
-				CacheAndPushConstant(L, word, MT_FIRSTFREESLOT+i);
-				return 1;
-			}
-		}
-		for (i = 0; i < MT_FIRSTFREESLOT; i++)
-			if (fastcmp(p, MOBJTYPE_LIST[i]+3)) {
+			if (fastcmp(p, strbuf_get(mobjnames, mobjinfo[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
-
+		}
 		if (lua_compatmode)
 			for (i = 0; MOBJ_ALIASES[i].n; i++)
 				if (fastcmp(p, MOBJ_ALIASES[i].n)) {

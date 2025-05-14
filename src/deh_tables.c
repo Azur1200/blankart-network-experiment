@@ -32,8 +32,8 @@
 
 #include "deh_tables.h"
 
-char *FREE_STATES[NUMSTATEFREESLOTS];
-char *FREE_MOBJS[NUMMOBJFREESLOTS];
+strbuf_t *statenames;
+strbuf_t *mobjnames;
 char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
 char *FREE_MENUS[NUMMENUFREESLOTS];
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
@@ -83,12 +83,6 @@ actionpointer_t actionpointers[] =
 // TODO: Make the lists public so we can start using actual mobj
 // and state names in warning and error messages! :D
 
-const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
-#define _(name, ...) "S_"#name,
-#include "info/states.h"
-#undef _
-};
-
 struct int_const_s const STATE_ALIASES[] = {
 	{"KART_STND1",    	S_KART_STILL},
 	{"KART_STND2" ,   	S_KART_STILL},
@@ -121,12 +115,6 @@ struct int_const_s const STATE_ALIASES[] = {
 	{"KART_SQUISH", 	S_KART_SPINOUT},
 	{"PLAY_SIGN", 		S_KART_SIGN},
 	{ NULL, 0 }
-};
-
-const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
-#define _(name, ...) "MT_"#name,
-#include "info/mobjs.h"
-#undef _
 };
 
 struct int_const_s const MOBJ_ALIASES[] = {
@@ -1529,15 +1517,7 @@ struct int_const_s const INT_CONST[] = {
 void DEH_TableCheck(void)
 {
 #if defined(_DEBUG) || defined(PARANOIA)
-	const size_t dehstates = sizeof(STATE_LIST)/sizeof(const char*);
-	const size_t dehmobjs  = sizeof(MOBJTYPE_LIST)/sizeof(const char*);
 	const size_t dehcolors = sizeof(COLOR_ENUMS)/sizeof(const char*);
-
-	if (dehstates != S_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked states list, you dolt!\n(%d states defined, versus %s in the Dehacked list)\n", S_FIRSTFREESLOT, sizeu1(dehstates));
-
-	if (dehmobjs != MT_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked mobjtype list, you dolt!\n(%d mobj types defined, versus %s in the Dehacked list)\n", MT_FIRSTFREESLOT, sizeu1(dehmobjs));
 
 	if (dehcolors != SKINCOLOR_FIRSTFREESLOT)
 		I_Error("You forgot to update the Dehacked colors list, you dolt!\n(%d colors defined, versus %s in the Dehacked list)\n", SKINCOLOR_FIRSTFREESLOT, sizeu1(dehcolors));

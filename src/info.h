@@ -79,6 +79,8 @@ typedef enum state
 
 struct state_t
 {
+	UINT32 nameofs;
+
 	spritenum_t sprite;
 	UINT32 frame; // we use the upper 16 bits for translucency and other shade effects
 	INT32 tics;
@@ -107,6 +109,8 @@ typedef enum mobj_type
 
 struct mobjinfo_t
 {
+	UINT32 nameofs;
+
 	INT32 doomednum;
 	statenum_t spawnstate;
 	INT32 spawnhealth;

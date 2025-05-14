@@ -176,6 +176,18 @@ static void ignorelines(MYFILE *f)
 	Z_Free(s);
 }
 
+static const char *hardcodemobjs =
+#define _(name, ...) #name "\0"
+#include "info/mobjs.h"
+#undef _
+;
+
+static const char *hardcodestates =
+#define _(name, ...) #name "\0"
+#include "info/states.h"
+#undef _
+;
+
 static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -185,7 +197,18 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	INT32 i;
 
 	if (!deh_loaded)
+	{
 		initfreeslots();
+		const char *name;
+
+		name = hardcodemobjs;
+		for (i = 0; i < MT_FIRSTFREESLOT; i++, name += strlen(name)+1)
+			mobjinfo[i].nameofs = strbuf_append(&mobjnames, name);
+
+		name = hardcodestates;
+		for (i = 0; i < S_FIRSTFREESLOT; i++, name += strlen(name)+1)
+			states[i].nameofs = strbuf_append(&statenames, name);
+	}
 
 	deh_num_warning = 0;
 

@@ -18,6 +18,7 @@
 #include "info.h" // Mobj, state, sprite, etc constants
 #include "m_menu.h" // NUMMENUFREESLOTS
 #include "lua_script.h"
+#include "strbuf.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,15 +26,15 @@ extern "C" {
 
 // Free slot names
 // The crazy word-reading stuff uses these.
-extern char *FREE_STATES[NUMSTATEFREESLOTS];
-extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
+extern strbuf_t *statenames;
+extern strbuf_t *mobjnames;
 extern char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
 extern char *FREE_MENUS[NUMMENUFREESLOTS];
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 #define initfreeslots() {\
-	memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
-	memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
+	statenames = strbuf_alloc();\
+	mobjnames = strbuf_alloc();\
 	memset(FREE_SKINCOLORS,0,sizeof(char *) * NUMCOLORFREESLOTS);\
 	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
 }
@@ -71,9 +72,7 @@ struct int_const_s {
 
 extern struct flickytypes_s FLICKYTYPES[];
 extern actionpointer_t actionpointers[]; // Array mapping action names to action functions.
-extern const char *const STATE_LIST[];
 extern struct int_const_s const STATE_ALIASES[];
-extern const char *const MOBJTYPE_LIST[];
 extern struct int_const_s const MOBJ_ALIASES[];
 extern const char *const MOBJFLAG_LIST[];
 extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2

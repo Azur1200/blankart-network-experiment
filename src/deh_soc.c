@@ -444,22 +444,20 @@ void readfreeslots(MYFILE *f)
 			}
 			else if (fastcmp(type, "S"))
 			{
-				for (i = 0; i < NUMSTATEFREESLOTS; i++)
-					if (!FREE_STATES[i]) {
+				for (i = S_FIRSTFREESLOT; i < NUMSTATES; i++)
+					if (!states[i].nameofs) {
 						CONS_Printf("State S_%s allocated.\n",word);
-						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_STATES[i],word);
+						states[i].nameofs = strbuf_append(&statenames, word);
 						freeslotusage[0][0]++;
 						break;
 					}
 			}
 			else if (fastcmp(type, "MT"))
 			{
-				for (i = 0; i < NUMMOBJFREESLOTS; i++)
-					if (!FREE_MOBJS[i]) {
+				for (i = MT_FIRSTFREESLOT; i < NUMMOBJFREESLOTS; i++)
+					if (!mobjinfo[i].nameofs) {
 						CONS_Printf("MobjType MT_%s allocated.\n",word);
-						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MOBJS[i],word);
+						mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
 						freeslotusage[1][0]++;
 						break;
 					}
@@ -4266,15 +4264,12 @@ mobjtype_t get_mobjtype(const char *word)
 		return atoi(word);
 	if (fastncmp("MT_",word,3))
 		word += 3; // take off the MT_
-	for (i = 0; i < NUMMOBJFREESLOTS; i++) {
-		if (!FREE_MOBJS[i])
+	for (i = 0; i < NUMMOBJTYPES; i++) {
+		if (!mobjinfo[i].nameofs)
 			break;
-		if (fastcmp(word, FREE_MOBJS[i]))
-			return MT_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < MT_FIRSTFREESLOT; i++)
-		if (fastcmp(word, MOBJTYPE_LIST[i]+3))
+		if (fastcmp(word, strbuf_get(mobjnames, mobjinfo[i].nameofs)))
 			return i;
+	}
 	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
 	return -1;
 }
@@ -4286,15 +4281,12 @@ statenum_t get_state(const char *word)
 		return atoi(word);
 	if (fastncmp("S_",word,2))
 		word += 2; // take off the S_
-	for (i = 0; i < NUMSTATEFREESLOTS; i++) {
-		if (!FREE_STATES[i])
+	for (i = 0; i < NUMSTATES; i++) {
+		if (!states[i].nameofs)
 			break;
-		if (fastcmp(word, FREE_STATES[i]))
-			return S_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < S_FIRSTFREESLOT; i++)
-		if (fastcmp(word, STATE_LIST[i]+2))
+		if (fastcmp(word, strbuf_get(statenames, states[i].nameofs)))
 			return i;
+	}
 	deh_warning("Couldn't find state named 'S_%s'",word);
 	return -1;
 }

@@ -752,8 +752,13 @@ static int lib_setState(lua_State *L)
 		return luaL_error(L, "Do not alter states in CMD building code!");
 
 	// clear the state to start with, in case of missing table elements
-	memset(state,0,sizeof(state_t));
+	state->sprite = SPR_NULL;
+	state->frame = 0;
 	state->tics = -1;
+	state->action.acp1 = NULL;
+	state->var1 = 0;
+	state->var2 = 0;
+	state->nextstate = S_NULL;
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
@@ -975,16 +980,9 @@ static int state_get(lua_State *L)
 	else if (fastcmp(field,"string"))
 	{
 		statenum_t id = st-states;
-		if (id < S_FIRSTFREESLOT)
+		if (id < NUMSTATES)
 		{
-			lua_pushstring(L, STATE_LIST[id]+2);
-			return 1;
-		}
-
-		id -= S_FIRSTFREESLOT;
-		if (id < NUMSTATEFREESLOTS && FREE_STATES[id])
-		{
-			lua_pushstring(L, FREE_STATES[id]);
+			lua_pushstring(L, strbuf_get(statenames, states[id].nameofs));
 			return 1;
 		}
 
@@ -1114,9 +1112,30 @@ static int lib_setMobjInfo(lua_State *L)
 		return luaL_error(L, "Do not alter mobjinfo in CMD building code!");
 
 	// clear the mobjinfo to start with, in case of missing table elements
-	memset(info,0,sizeof(mobjinfo_t));
 	info->doomednum = -1; // default to no editor value
+	info->spawnstate = S_NULL;
 	info->spawnhealth = 1; // avoid 'dead' noclip behaviors
+	info->seestate = S_NULL;
+	info->seesound = sfx_None;
+	info->reactiontime = 0;
+	info->attacksound = sfx_None;
+	info->painstate = S_NULL;
+	info->painchance = 0;
+	info->painsound = sfx_None;
+	info->meleestate = S_NULL;
+	info->missilestate = S_NULL;
+	info->deathstate = S_NULL;
+	info->xdeathstate = S_NULL;
+	info->deathsound = sfx_None;
+	info->speed = 0;
+	info->radius = 0;
+	info->height = 0;
+	info->dispoffset = 0;
+	info->mass = 0;
+	info->damage = 0;
+	info->activesound = sfx_None;
+	info->flags = 0U;
+	info->raisestate = S_NULL;
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
@@ -1257,16 +1276,9 @@ static int mobjinfo_get(lua_State *L)
 		lua_pushinteger(L, info->raisestate);
 	else if (fastcmp(field,"string")) {
 		mobjtype_t id = info-mobjinfo;
-		if (id < MT_FIRSTFREESLOT)
+		if (id < NUMMOBJTYPES)
 		{
-			lua_pushstring(L, MOBJTYPE_LIST[id]+3);
-			return 1;
-		}
-
-		id -= MT_FIRSTFREESLOT;
-		if (id < NUMMOBJFREESLOTS && FREE_MOBJS[id])
-		{
-			lua_pushstring(L, FREE_MOBJS[id]);
+			lua_pushstring(L, strbuf_get(mobjnames, mobjinfo[id].nameofs));
 			return 1;
 		}
 
