@@ -1185,10 +1185,7 @@ static void P_WriteSkincolor(INT32 constant, char **target)
 	|| constant >= (INT32)numskincolors)
 		return;
 
-	if (constant >= SKINCOLOR_FIRSTFREESLOT)
-		color_name = FREE_SKINCOLORS[constant - SKINCOLOR_FIRSTFREESLOT];
-	else
-		color_name = COLOR_ENUMS[constant];
+	color_name = strbuf_get(skincolornames, skincolors[constant].nameofs);
 
 	P_WriteDuplicateText(
 		va("SKINCOLOR_%s", color_name),

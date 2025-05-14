@@ -111,18 +111,17 @@ static inline int lib_freeslot(lua_State *L)
 		else if (fastcmp(type, "SKINCOLOR"))
 		{
 			skincolornum_t i;
-			for (i = 0; i < NUMCOLORFREESLOTS; i++)
-				if (!FREE_SKINCOLORS[i]) {
+			for (i = SKINCOLOR_FIRSTFREESLOT; i < MAXSKINCOLORS; i++)
+				if (!skincolors[i].nameofs) {
 					CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-					FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_SKINCOLORS[i],word);
+					skincolors[i].nameofs = strbuf_append(&skincolornames, word);
 					M_AddMenuColor(numskincolors++);
 					K_ReloadHUDColorCvar();
-					lua_pushinteger(L, SKINCOLOR_FIRSTFREESLOT + i);
+					lua_pushinteger(L, i);
 					r++;
 					break;
 				}
-			if (i == NUMCOLORFREESLOTS)
+			if (i == MAXSKINCOLORS)
 				CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
 		}
 		else if (fastcmp(type, "SPR2"))
@@ -588,19 +587,14 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
-		for (i = 0; i < NUMCOLORFREESLOTS; i++) {
-			if (!FREE_SKINCOLORS[i])
+		for (i = 0; i < MAXSKINCOLORS; i++) {
+			if (!skincolors[i].nameofs)
 				break;
-			if (fastcmp(p, FREE_SKINCOLORS[i])) {
-				CacheAndPushConstant(L, word, SKINCOLOR_FIRSTFREESLOT+i);
-				return 1;
-			}
-		}
-		for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++)
-			if (fastcmp(p, COLOR_ENUMS[i])) {
+			if (fastcmp(p, strbuf_get(skincolornames, skincolors[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+		}
 		return luaL_error(L, "skincolor '%s' could not be found.\n", word);
 	}
 	else if (fastncmp("MN_",word,3)) {

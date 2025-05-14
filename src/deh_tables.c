@@ -34,7 +34,7 @@
 
 strbuf_t *statenames;
 strbuf_t *mobjnames;
-char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+strbuf_t *skincolornames;
 char *FREE_MENUS[NUMMENUFREESLOTS];
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
@@ -425,12 +425,6 @@ const char *const TO_LIST[] = {
 	"ALLPLAYERS",
 	"MOBJ",
 	NULL
-};
-
-const char *COLOR_ENUMS[] = {
-#define _(name, ...) #name,
-#include "info/skincolors.h"
-#undef _
 };
 
 const char *const POWERS_LIST[] = {
@@ -1511,15 +1505,3 @@ struct int_const_s const INT_CONST[] = {
 
 	{NULL,0}
 };
-
-// For this to work compile-time without being in this file,
-// this function would need to check sizes at runtime, without sizeof
-void DEH_TableCheck(void)
-{
-#if defined(_DEBUG) || defined(PARANOIA)
-	const size_t dehcolors = sizeof(COLOR_ENUMS)/sizeof(const char*);
-
-	if (dehcolors != SKINCOLOR_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked colors list, you dolt!\n(%d colors defined, versus %s in the Dehacked list)\n", SKINCOLOR_FIRSTFREESLOT, sizeu1(dehcolors));
-#endif
-}

@@ -28,14 +28,14 @@ extern "C" {
 // The crazy word-reading stuff uses these.
 extern strbuf_t *statenames;
 extern strbuf_t *mobjnames;
-extern char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
+extern strbuf_t *skincolornames;
 extern char *FREE_MENUS[NUMMENUFREESLOTS];
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 #define initfreeslots() {\
 	statenames = strbuf_alloc();\
 	mobjnames = strbuf_alloc();\
-	memset(FREE_SKINCOLORS,0,sizeof(char *) * NUMCOLORFREESLOTS);\
+	skincolornames = strbuf_alloc();\
 	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
 }
 
@@ -87,7 +87,6 @@ extern const char *const MSF_LIST[]; // Sector flags
 extern const char *const SSF_LIST[]; // Sector special flags
 extern const char *const SD_LIST[]; // Sector damagetype
 extern const char *const TO_LIST[]; // Sector triggerer
-extern const char *COLOR_ENUMS[];
 extern const char *const POWERS_LIST[];
 extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
@@ -97,9 +96,6 @@ extern struct menu_routine_s const MENU_ROUTINES[];
 extern struct menu_drawer_s const MENU_DRAWERS[];
 
 extern struct int_const_s const INT_CONST[];
-
-// Moved to this file because it can't work compile-time otherwise
-void DEH_TableCheck(void);
 
 #ifdef __cplusplus
 } // extern "C"

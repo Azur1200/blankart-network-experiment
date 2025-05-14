@@ -464,11 +464,10 @@ void readfreeslots(MYFILE *f)
 			}
 			else if (fastcmp(type, "SKINCOLOR"))
 			{
-				for (i = 0; i < NUMCOLORFREESLOTS; i++)
-					if (!FREE_SKINCOLORS[i]) {
+				for (i = SKINCOLOR_FIRSTFREESLOT; i < MAXSKINCOLORS; i++)
+					if (!skincolors[i].nameofs) {
 						CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-						FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_SKINCOLORS[i],word);
+						skincolors[i].nameofs = strbuf_append(&skincolornames, word);
 						M_AddMenuColor(numskincolors++);
 						K_ReloadHUDColorCvar();
 						break;
@@ -4298,15 +4297,12 @@ skincolornum_t get_skincolor(const char *word)
 		return atoi(word);
 	if (fastncmp("SKINCOLOR_",word,10))
 		word += 10; // take off the SKINCOLOR_
-	for (i = 0; i < NUMCOLORFREESLOTS; i++) {
-		if (!FREE_SKINCOLORS[i])
+	for (i = 0; i < MAXSKINCOLORS; i++) {
+		if (!skincolors[i].nameofs)
 			break;
-		if (fastcmp(word, FREE_SKINCOLORS[i]))
-			return SKINCOLOR_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++)
-		if (fastcmp(word, COLOR_ENUMS[i]))
+		if (fastcmp(word, strbuf_get(skincolornames, skincolors[i].nameofs)))
 			return i;
+	}
 	deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'",word);
 	return -1;
 }

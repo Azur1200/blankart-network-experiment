@@ -1277,9 +1277,6 @@ void D_SRB2Main(void)
 	// MAINCFG is now taken care of where "OBJCTCFG" is handled
 	G_LoadGameSettings();
 
-	// Test Dehacked lists
-	DEH_TableCheck();
-
 	// Netgame URL special case: change working dir to EXE folder.
 	ChangeDirForUrlHandler();
 
