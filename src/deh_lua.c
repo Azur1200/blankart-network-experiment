@@ -53,6 +53,14 @@ static inline int lib_freeslot(lua_State *L)
 		INT32 index;
 		if (!DEH_ReadFreeslot(type, word, &index))
 		{
+			if (lua_compatmode)
+			{
+				if (fastcmp(type, "MT"))
+					index -= MT_FIRSTFREESLOT;
+				if (fastcmp(type, "S"))
+					index -= S_FIRSTFREESLOT;
+			}
+
 			lua_pushinteger(L, index);
 			r++;
 		}
