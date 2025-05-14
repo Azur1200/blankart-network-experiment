@@ -42,8 +42,6 @@ fixed_t get_number(const char *word);
 FUNCPRINTF void deh_warning(const char *first, ...);
 void deh_strlcpy(char *dst, const char *src, size_t size, const char *warntext);
 
-extern boolean deh_loaded;
-
 extern boolean gamedataadded;
 extern boolean titlechanged;
 extern boolean introchanged;

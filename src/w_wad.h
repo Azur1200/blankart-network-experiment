@@ -169,6 +169,7 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in on
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump); // checks only in one pwad
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
+UINT16 W_CheckNumForLongNamePwadNoUpper(const char *name, UINT16 wad, UINT16 startlump);
 
 /* Find the first lump after F_START for instance. */
 UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump);

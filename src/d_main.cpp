@@ -1427,7 +1427,7 @@ void D_SRB2Main(void)
 		netgame = server = true;
 
 	// adapt tables to SRB2's needs, including extra slots for dehacked file support
-	P_PatchInfoTables();
+	P_ResetData(15);
 
 	// initiate menu metadata before SOCcing them
 	M_InitMenuPresTables();
@@ -1443,9 +1443,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
 
-	// Make backups of some SOCcable tables.
-	P_BackupTables();
-	
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 

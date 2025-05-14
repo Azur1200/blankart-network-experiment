@@ -32,14 +32,6 @@ extern strbuf_t *skincolornames;
 extern strbuf_t *menunames;
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
-#define initfreeslots() {\
-	statenames = strbuf_alloc();\
-	mobjnames = strbuf_alloc();\
-	skincolornames = strbuf_alloc();\
-	menunames = strbuf_alloc();\
-	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
-}
-
 struct flickytypes_s {
 	const char *name;
 	const mobjtype_t type;
