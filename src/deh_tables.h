@@ -29,13 +29,14 @@ extern "C" {
 extern strbuf_t *statenames;
 extern strbuf_t *mobjnames;
 extern strbuf_t *skincolornames;
-extern char *FREE_MENUS[NUMMENUFREESLOTS];
+extern strbuf_t *menunames;
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 #define initfreeslots() {\
 	statenames = strbuf_alloc();\
 	mobjnames = strbuf_alloc();\
 	skincolornames = strbuf_alloc();\
+	menunames = strbuf_alloc();\
 	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
 }
 
@@ -91,7 +92,6 @@ extern const char *const POWERS_LIST[];
 extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
-extern const char *const MENUTYPES_LIST[];
 extern struct menu_routine_s const MENU_ROUTINES[];
 extern struct menu_drawer_s const MENU_DRAWERS[];
 

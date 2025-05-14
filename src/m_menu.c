@@ -166,7 +166,7 @@ static UINT32 serverlistpage;
 
 INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
-menu_t *menudefs[NUMMENUTYPES] = {NULL}; // pointers to all menudefs
+menu_t menudefs[NUMMENUTYPES]; // array of all menudefs
 menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
@@ -237,8 +237,7 @@ static void Dummystaff_OnChange(void);
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name)
 {
 	INT16 i;
-	menu_t *menu = menudefs[type];
-	I_Assert(menu);
+	menu_t *menu = &menudefs[type];
 
 	for (i = 0; i < menu->numitems; i++)
 		if (!strncmp(menu->menuitems[i].itemname, name, ITEMNAMELEN))
@@ -256,7 +255,7 @@ menuitem_t *M_GetMenuItem(menutype_t type, const char *name)
 
 static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 {
-	return M_GetMenuItem(type, name) - menudefs[type]->menuitems;
+	return M_GetMenuItem(type, name) - menudefs[type].menuitems;
 }
 
 // an array of macros for getting/setting menuitem properties
@@ -1714,8 +1713,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 {
 	INT16 i;
-	menu_t *menudef = menudefs[menunum];
-	I_Assert(menudef);
+	menu_t *menudef = &menudefs[menunum];
 
 	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
 	if (callexit && currentMenu && currentMenu != menudef && currentMenu->quitroutine)
@@ -4427,7 +4425,7 @@ void M_Options(INT32 choice)
 
 	M_SetItemStatus(MN_OP_GAME, "ENCORE", M_SecretUnlocked(SECRET_ENCORE) ? IT_CVAR|IT_STRING : IT_SECRET);
 
-	M_SetItemStatus(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM]->numitems ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+	M_SetItemStatus(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM].numitems ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
 
 	M_EnterMenu(MN_OP_MAIN, true);
 }
@@ -6262,7 +6260,7 @@ void M_DrawConnectMenu(void)
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
 	INT32 numPages = (serverlistcount+(serversperpage-1))/serversperpage;
 	int waiting;
-	menu_t *conmenu = menudefs[MN_MP_CONNECT]; // meh, whatever
+	menu_t *conmenu = &menudefs[MN_MP_CONNECT]; // meh, whatever
 
 	for (i = firstserverline; i < firstserverline+serversperpage; i++)
 		conmenu->menuitems[i].status = IT_STRING | IT_SPACE;
@@ -7026,8 +7024,8 @@ void M_DrawSetupMultiPlayerMenu(void)
 	char *fname;
 	INT16 i;
 
-	mx = menudefs[MN_MP_PLAYERSETUP]->x;
-	my = menudefs[MN_MP_PLAYERSETUP]->y;
+	mx = menudefs[MN_MP_PLAYERSETUP].x;
+	my = menudefs[MN_MP_PLAYERSETUP].y;
 
 	statx = (BASEVIDWIDTH - mx - 118);
 	staty = (my+62);
@@ -7941,7 +7939,7 @@ void M_DrawJoystick(void)
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
-		M_DrawTextBox(menudefs[MN_OP_JOYSTICKSET]->x-8, menudefs[MN_OP_JOYSTICKSET]->y+LINEHEIGHT*i-12, 28, 1);
+		M_DrawTextBox(menudefs[MN_OP_JOYSTICKSET].x-8, menudefs[MN_OP_JOYSTICKSET].y+LINEHEIGHT*i-12, 28, 1);
 
 #ifdef JOYSTICK_HOTPLUG
 		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > I_NumJoys())
@@ -7950,7 +7948,7 @@ void M_DrawJoystick(void)
 #endif
 			compareval = cv_usejoystick[setupcontrolplayer-1].value;
 
-		V_DrawString(menudefs[MN_OP_JOYSTICKSET]->x, menudefs[MN_OP_JOYSTICKSET]->y+LINEHEIGHT*i-4, (i == compareval) ? V_GREENMAP : 0, joystickInfo[i]);
+		V_DrawString(menudefs[MN_OP_JOYSTICKSET].x, menudefs[MN_OP_JOYSTICKSET].y+LINEHEIGHT*i-4, (i == compareval) ? V_GREENMAP : 0, joystickInfo[i]);
 	}
 }
 
@@ -8595,11 +8593,11 @@ void M_DrawVideoMode(void)
 	// draw title
 	M_DrawMenuTitle();
 
-	V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE]->y,
+	V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE].y,
 		highlightflags, "Choose mode, reselect to change default");
 
 	row = 41;
-	col = menudefs[MN_OP_VIDEOMODE]->y + 14;
+	col = menudefs[MN_OP_VIDEOMODE].y + 14;
 	for (i = 0; i < vidm_nummodes; i++)
 	{
 		if (i == vidm_selected)
@@ -8612,7 +8610,7 @@ void M_DrawVideoMode(void)
 		if ((i % vidm_column_size) == (vidm_column_size-1))
 		{
 			row += 7*13;
-			col = menudefs[MN_OP_VIDEOMODE]->y + 14;
+			col = menudefs[MN_OP_VIDEOMODE].y + 14;
 		}
 	}
 
@@ -8620,40 +8618,40 @@ void M_DrawVideoMode(void)
 	{
 		INT32 testtime = (vidm_testingmode/TICRATE) + 1;
 
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 116,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 116,
 			va("Previewing mode %c%dx%d",
 				(SCR_IsAspectCorrect(vid.width, vid.height)) ? 0x83 : 0x80,
 				vid.width, vid.height));
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 138,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 138,
 			"Press ENTER again to keep this mode");
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 150,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 150,
 			va("Wait %d second%s", testtime, (testtime > 1) ? "s" : ""));
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 158,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 158,
 			"or press ESC to return");
 
 	}
 	else
 	{
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 116,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 116,
 			va("Current mode is %c%dx%d",
 				(SCR_IsAspectCorrect(vid.width, vid.height)) ? 0x83 : 0x80,
 				vid.width, vid.height));
-		M_CentreText(menudefs[MN_OP_VIDEOMODE]->y + 124,
+		M_CentreText(menudefs[MN_OP_VIDEOMODE].y + 124,
 			va("Default mode is %c%dx%d",
 				(SCR_IsAspectCorrect(cv_scr_width.value, cv_scr_height.value)) ? 0x83 : 0x80,
 				cv_scr_width.value, cv_scr_height.value));
 
-		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE]->y + 138,
+		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE].y + 138,
 			recommendedflags, "Marked modes are recommended.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE]->y + 146,
+		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE].y + 146,
 			highlightflags, "Other modes may have visual errors.");
-		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE]->y + 158,
+		V_DrawCenteredString(BASEVIDWIDTH/2, menudefs[MN_OP_VIDEOMODE].y + 158,
 			highlightflags, "Larger modes may have performance issues.");
 	}
 
 	// Draw the cursor for the VidMode menu
 	i = 41 - 10 + ((vidm_selected / vidm_column_size)*7*13);
-	j = menudefs[MN_OP_VIDEOMODE]->y + 14 + ((vidm_selected % vidm_column_size)*8);
+	j = menudefs[MN_OP_VIDEOMODE].y + 14 + ((vidm_selected % vidm_column_size)*8);
 
 	V_DrawScaledPatch(i - 8, j, 0,
 		W_CachePatchName("M_CURSOR", PU_CACHE));

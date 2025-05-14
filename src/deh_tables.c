@@ -35,7 +35,7 @@
 strbuf_t *statenames;
 strbuf_t *mobjnames;
 strbuf_t *skincolornames;
-char *FREE_MENUS[NUMMENUFREESLOTS];
+strbuf_t *menunames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 struct flickytypes_s FLICKYTYPES[] = {
@@ -599,12 +599,6 @@ const char *const HUDITEMS_LIST[] = {
 	"TIMEUP",
 	"HUNTPICS",
 	"POWERUPS"
-};
-
-const char *const MENUTYPES_LIST[] = {
-#define _(name, ...) #name,
-#include "info/menus.h"
-#undef _
 };
 
 struct menu_routine_s const MENU_ROUTINES[] = {

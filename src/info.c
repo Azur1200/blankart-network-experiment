@@ -23,6 +23,7 @@
 #include "d_player.h"
 #include "v_video.h" // V_*MAP constants
 #include "lzf.h"
+#include "m_menu.h"
 
 // Hey, moron! If you wanna change this table, you can just change the sprite enum in info/sprites.h,
 // so you don't have to copy and paste the list of sprite names back in here :^)
@@ -115,12 +116,15 @@ void P_PatchInfoTables(void)
 	memset(&states[S_FIRSTFREESLOT], 0, sizeof (state_t) * NUMSTATEFREESLOTS);
 	memset(&mobjinfo[MT_FIRSTFREESLOT], 0, sizeof (mobjinfo_t) * NUMMOBJFREESLOTS);
 	memset(&skincolors[SKINCOLOR_FIRSTFREESLOT], 0, sizeof (skincolor_t) * NUMCOLORFREESLOTS);
+	memset(&menudefs[MN_FIRSTFREESLOT], 0, sizeof (menu_t) * NUMMENUFREESLOTS);
 	for (i = SKINCOLOR_FIRSTFREESLOT; i <= SKINCOLOR_LASTFREESLOT; i++) {
 		skincolors[i].accessible = false;
 		skincolors[i].name[0] = '\0';
 	}
 	for (i = MT_FIRSTFREESLOT; i <= MT_LASTFREESLOT; i++)
 		mobjinfo[i].doomednum = -1;
+	for (i = 0; i < NUMMENUTYPES; i++)
+		menudefs[i].drawroutine = M_DrawGenericMenu;
 }
 
 #ifdef ALLOW_RESETDATA

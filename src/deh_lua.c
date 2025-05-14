@@ -190,15 +190,15 @@ static inline int lib_freeslot(lua_State *L)
 		else if (fastcmp(type, "MN"))
 		{
 			menutype_t i;
-			for (i = 0; i < NUMMENUFREESLOTS; i++)
-				if (!FREE_MENUS[i]) {
+			for (i = MN_FIRSTFREESLOT; i < NUMMENUTYPES; i++) {
+				if (!menudefs[i].nameofs) {
 					CONS_Printf("Menu MN_%s allocated.\n",word);
-					FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MENUS[i],word);
-					lua_pushinteger(L, MN_FIRSTFREESLOT + i);
+					menudefs[i].nameofs = strbuf_append(&menunames, word);
+					lua_pushinteger(L, i);
 					r++;
 					break;
 				}
+			}
 			if (i == NUMMENUFREESLOTS)
 				CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
 		}
@@ -599,19 +599,14 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
-		for (i = 0; i < NUMMENUFREESLOTS; i++) {
-			if (!FREE_MENUS[i])
+		for (i = 0; i < NUMMENUTYPES; i++) {
+			if (!menudefs[i].nameofs)
 				break;
-			if (fastcmp(p, FREE_MENUS[i])) {
-				CacheAndPushConstant(L, word, MN_FIRSTFREESLOT+i);
-				return 1;
-			}
-		}
-		for (i = 0; i < MN_FIRSTFREESLOT; i++)
-			if (fastcmp(p, MENUTYPES_LIST[i])) {
+			if (fastcmp(p, strbuf_get(menunames, menudefs[i].nameofs)) ){
 				CacheAndPushConstant(L, word, i);
 				return 1;
 			}
+		}
 		if (mathlib) return luaL_error(L, "menutype '%s' could not be found.\n", word);
 		return 0;
 	}

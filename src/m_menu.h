@@ -50,7 +50,6 @@ typedef enum
 } menutype_t;
 #define NUMMENUFREESLOTS (NUMMENUTYPES - MN_FIRSTFREESLOT)
 
-extern menu_t *menudefs[NUMMENUTYPES];
 extern menutype_t menustack[NUMMENULEVELS];
 
 typedef struct
@@ -249,6 +248,7 @@ struct menuitem_t
 
 struct menu_t
 {
+	UINT32         nameofs;
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items
@@ -257,6 +257,8 @@ struct menu_t
 	INT16          lastOn;             // last item user was on in menu
 	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
+
+extern menu_t menudefs[NUMMENUTYPES];
 
 void M_EnterMenu(menutype_t menu, boolean callexit);
 void M_ExitMenu(void);

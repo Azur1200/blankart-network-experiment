@@ -531,11 +531,10 @@ void readfreeslots(MYFILE *f)
 			}
 			else if (fastcmp(type, "MN"))
 			{
-				for (i = 0; i < NUMMENUFREESLOTS; i++)
-					if (!FREE_MENUS[i]) {
+				for (i = MN_FIRSTFREESLOT; i < NUMMENUTYPES; i++)
+					if (!menudefs[i].nameofs) {
 						CONS_Printf("Menu MN_%s allocated.\n",word);
-						FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MENUS[i],word);
+						menudefs[i].nameofs = strbuf_append(&menunames, word);
 						break;
 					}
 			}
@@ -2151,21 +2150,6 @@ void readtextprompt(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-static menu_t *allocmenu(INT32 num)
-{
-	if (num < 0 || num >= NUMMENUTYPES)
-		I_Error("Tried to allocate out-of-range menu number");
-
-	menu_t *menu = menudefs[num];
-	if (menu == NULL)
-	{
-		menudefs[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
-		menu->drawroutine = M_DrawGenericMenu;
-	}
-
-	return menu;
-}
-
 // super secret menu cvars... :shushing_face:
 static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "CHOOSESKIN", &cv_chooseskin },
@@ -2315,7 +2299,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			}
 			actionset = true;
 			status |= IT_SUBMENU;
-			allocmenu(mn);
 			menuitem->itemaction.submenu = mn;
 		}
 		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
@@ -2369,7 +2352,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 #undef WARN
 #undef WARN0
 
-#define WARN(str, ...) deh_warning("Menu %s: " str, num < MN_FIRSTFREESLOT ? MENUTYPES_LIST[num] : FREE_MENUS[num - MN_FIRSTFREESLOT], __VA_ARGS__)
+#define WARN(str, ...) deh_warning("Menu %s: " str, strbuf_get(menunames, menudefs[num].nameofs), __VA_ARGS__)
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2378,7 +2361,7 @@ void readmenu(MYFILE *f, INT32 num)
 	char *tmp;
 	INT32 value;
 
-	menu_t *menudef = allocmenu(num);
+	menu_t *menudef = &menudefs[num];
 
 	do
 	{
@@ -4358,15 +4341,12 @@ menutype_t get_menutype(const char *word)
 		return atoi(word);
 	if (fastncmp("MN_",word,3))
 		word += 3; // take off the MN_
-	for (i = 0; i < NUMMENUFREESLOTS; i++) {
-		if (!FREE_MENUS[i])
+	for (i = 0; i < NUMMENUTYPES; i++) {
+		if (!menudefs[i].nameofs)
 			break;
-		if (fastcmp(word, FREE_MENUS[i]))
-			return MN_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < MN_FIRSTFREESLOT; i++)
-		if (fastcmp(word, MENUTYPES_LIST[i]))
+		if (fastcmp(word, strbuf_get(menunames, menudefs[i].nameofs)))
 			return i;
+	}
 	deh_warning("Couldn't find menutype named 'MN_%s'",word);
 	return MN_NONE;
 }

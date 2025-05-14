@@ -194,6 +194,12 @@ static const char *hardcodeskincolors =
 #undef _
 ;
 
+static const char *hardcodemenus =
+#define _(name, ...) #name "\0"
+#include "info/menus.h"
+#undef _
+;
+
 static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -218,6 +224,10 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 		name = hardcodeskincolors;
 		for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++, name += strlen(name)+1)
 			skincolors[i].nameofs = strbuf_append(&skincolornames, name);
+
+		name = hardcodemenus;
+		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1)
+			menudefs[i].nameofs = strbuf_append(&menunames, name);
 	}
 
 	deh_num_warning = 0;
