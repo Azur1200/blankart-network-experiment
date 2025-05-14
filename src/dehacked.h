@@ -33,6 +33,7 @@ typedef enum
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, boolean mainfile);
+INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out);
 
 // SRB2Kart
 extern int freeslotusage[2][2];

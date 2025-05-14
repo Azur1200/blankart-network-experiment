@@ -52,7 +52,6 @@
 // SRB2Kart
 #include "filesrch.h" // refreshdirmenu
 #include "k_follower.h"
-#include "k_hud.h"
 #include "doomstat.h" // MAXMUSNAMES
 
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
@@ -392,7 +391,6 @@ void readfreeslots(MYFILE *f)
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word,*type;
 	char *tmp;
-	int i;
 
 	do
 	{
@@ -419,126 +417,8 @@ void readfreeslots(MYFILE *f)
 			else
 				break;
 
-			// TODO: Check for existing freeslot mobjs/states/etc. and make errors.
-			// TODO: Out-of-slots warnings/errors.
-			// TODO: Name too long (truncated) warnings.
-			if (fastcmp(type, "SFX"))
-			{
-				CONS_Printf("Sound sfx_%s allocated.\n",word);
-				S_AddSoundFx(word, false, 0, false);
-			}
-			else if (fastcmp(type, "SPR"))
-			{
-				for (i = SPR_FIRSTFREESLOT; i <= SPR_LASTFREESLOT; i++)
-				{
-					if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
-						continue; // Already allocated, next.
-					// Found a free slot!
-					CONS_Printf("Sprite SPR_%s allocated.\n",word);
-					strncpy(sprnames[i],word,4);
-					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
-					// Lua needs to update the value in _G if it exists
-					LUA_UpdateSprName(word, i);
-					break;
-				}
-			}
-			else if (fastcmp(type, "S"))
-			{
-				for (i = S_FIRSTFREESLOT; i < NUMSTATES; i++)
-					if (!states[i].nameofs) {
-						CONS_Printf("State S_%s allocated.\n",word);
-						states[i].nameofs = strbuf_append(&statenames, word);
-						freeslotusage[0][0]++;
-						break;
-					}
-			}
-			else if (fastcmp(type, "MT"))
-			{
-				for (i = MT_FIRSTFREESLOT; i < NUMMOBJFREESLOTS; i++)
-					if (!mobjinfo[i].nameofs) {
-						CONS_Printf("MobjType MT_%s allocated.\n",word);
-						mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
-						freeslotusage[1][0]++;
-						break;
-					}
-			}
-			else if (fastcmp(type, "SKINCOLOR"))
-			{
-				for (i = SKINCOLOR_FIRSTFREESLOT; i < MAXSKINCOLORS; i++)
-					if (!skincolors[i].nameofs) {
-						CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-						skincolors[i].nameofs = strbuf_append(&skincolornames, word);
-						M_AddMenuColor(numskincolors++);
-						K_ReloadHUDColorCvar();
-						break;
-					}
-			}
-			else if (fastcmp(type, "SPR2"))
-			{
-				// Search if we already have an SPR2 by that name...
-				for (i = SPR2_FIRSTFREESLOT; i < (int)free_spr2; i++)
-					if (memcmp(spr2names[i],word,4) == 0)
-						break;
-				// We found it? (Two mods using the same SPR2 name?) Then don't allocate another one.
-				if (i < (int)free_spr2)
-					continue;
-				// Copy in the spr2 name and increment free_spr2.
-				if (free_spr2 < NUMPLAYERSPRITES) {
-					strncpy(spr2names[free_spr2],word,4);
-					spr2defaults[free_spr2] = 0;
-					spr2names[free_spr2++][4] = 0;
-				} else
-					deh_warning("Ran out of free SPR2 slots!\n");
-			}
-			else if (fastcmp(type, "TOL"))
-			{
-				// Search if we already have a typeoflevel by that name...
-				for (i = 0; TYPEOFLEVEL[i].name; i++)
-					if (fastcmp(word, TYPEOFLEVEL[i].name))
-						break;
-
-				// We found it? Then don't allocate another one.
-				if (TYPEOFLEVEL[i].name)
-					continue;
-
-				// We don't, so freeslot it.
-				if (lastcustomtol == (UINT32)MAXTOL) // Unless you have way too many, since they're flags.
-					deh_warning("Ran out of free typeoflevel slots!\n");
-				else
-				{
-					G_AddTOL(lastcustomtol, word);
-					lastcustomtol <<= 1;
-				}
-			}
-			else if (fastcmp(type, "PRECIP"))
-			{
-				// Search if we already have a PRECIP by that name...
-				for (i = PRECIP_FIRSTFREESLOT; i < (int)precip_freeslot; i++)
-					if (fastcmp(word, precipprops[i].name))
-						break;
-
-				// We found it? Then don't allocate another one.
-				if (i < (int)precip_freeslot)
-					continue;
-
-				// We don't, so allocate a new one.
-				if (precip_freeslot < MAXPRECIP)
-				{
-					precipprops[i].name = Z_StrDup(word);
-					precip_freeslot++;
-				} else
-					deh_warning("Ran out of free PRECIP slots!\n");
-			}
-			else if (fastcmp(type, "MN"))
-			{
-				for (i = MN_FIRSTFREESLOT; i < NUMMENUTYPES; i++)
-					if (!menudefs[i].nameofs) {
-						CONS_Printf("Menu MN_%s allocated.\n",word);
-						menudefs[i].nameofs = strbuf_append(&menunames, word);
-						break;
-					}
-			}
-			else
+			INT32 index;
+			if (DEH_ReadFreeslot(type, word, &index) == -2)
 				deh_warning("Freeslots: unknown enum class '%s' for '%s_%s'", type, type, word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
