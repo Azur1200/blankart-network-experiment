@@ -294,8 +294,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"\x01",
 	"\x01",
 	"\x01",
-	"\x01",
-
+	"ATTACKDOWN",
 	"SLIDING",
 
 	NULL // stop loop here.

@@ -8730,44 +8730,98 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 
 void K_SetRespawnAtNextWaypoint(player_t * player)
 {
-	mobj_t *currentwaypoint;
-	mobj_t *safewaypoint;
+	mobj_t *currentwaypoint = NULL;
+	mobj_t *safewaypoint = NULL;
 	angle_t respawnangle;
+	size_t i;
 
-	// Safety :P
-	if (!player->currentwaypoint || !player->nextwaypoint)
+
+	if ((player != NULL) && (player->mo != NULL) && (P_MobjWasRemoved(player->mo) == false))
 	{
-		waypoint_t *oopisepoint = K_GetClosestWaypointToMobj(player->mo);
+
+		// Safety :P
+		if (!player->currentwaypoint || !player->nextwaypoint)
+		{
+			waypoint_t *oopisepoint = K_GetBestWaypointForMobj(player->mo, NULL);
+
+			if (!oopisepoint || !oopisepoint->mobj)
+			{
+				oopisepoint = K_GetClosestWaypointToMobj(player->mo);
+			}
+
+			if ((oopisepoint->nextwaypoints != NULL) && (oopisepoint->numnextwaypoints > 0))
+			{
+				for (i = 0; i < oopisepoint->numnextwaypoints; i++)
+				{
+					if (!K_GetWaypointIsEnabled(oopisepoint->nextwaypoints[i]))
+					{
+						// Waypoint is not enabled.
+						continue;
+					}
+
+					if (K_GetWaypointIsShortcut(oopisepoint->nextwaypoints[i]))
+					{
+						// Respawning into offroad/tripwire path would suck.
+						continue;
+					}
+
+					if (!K_GetWaypointIsSpawnpoint(oopisepoint->nextwaypoints[i]))
+					{
+						// We can't spawn at these anyway.
+						continue;
+					}
+
+					if (!K_GetWaypointIsFinishline(oopisepoint->nextwaypoints[i]))
+					{
+						// Please don't spawn on the other side of the map please.
+						continue;
+					}
+
+					if (!oopisepoint->nextwaypoints[i]->mobj)
+					{
+						// No mobj? No Dice.
+						continue;
+					}
+
+					safewaypoint = oopisepoint->nextwaypoints[i]->mobj;
+					break;
+				}
+			}
+
+			currentwaypoint = player->mo;
+			CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
+		}
+		else
+		{
+			currentwaypoint = player->currentwaypoint->mobj;
+			safewaypoint = player->nextwaypoint->mobj;
+		}
 
 		// Better safe then sorry.
-		if (!oopisepoint)
+		if (!safewaypoint)
 		{
 			// Oh shit, oh fuck.....
 			CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
 			return;
 		}
 
-		currentwaypoint = player->mo;
-		safewaypoint = oopisepoint->mobj;
-		CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
+		respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+
+		player->pflags |= PF_TRUSTWAYPOINTS;
+		player->starposttime = player->realtime;
+		player->starpostz = (safewaypoint->spawnpoint->z + 15) >> FRACBITS;
+		player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+		player->starpostangle = respawnangle;
+
+		// Then do x and y
+		player->starpostx = safewaypoint->x >> FRACBITS;
+		player->starposty = safewaypoint->y >> FRACBITS;
 	}
 	else
 	{
-		currentwaypoint = player->currentwaypoint->mobj;
-		safewaypoint = player->nextwaypoint->mobj;
+		CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn invalid player or player mobj!\n"));
+		return;
 	}
-
-	respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
-
-	player->pflags |= PF_TRUSTWAYPOINTS;
-	player->starposttime = player->realtime;
-	player->starpostz = (safewaypoint->spawnpoint->z + 15) >> FRACBITS;
-	player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
-	player->starpostangle = respawnangle;
-
-	// Then do x and y
-	player->starpostx = safewaypoint->x >> FRACBITS;
-	player->starposty = safewaypoint->y >> FRACBITS;
 }
 
 static boolean K_MobjIsOnLine(mobj_t *const mobj)
