@@ -700,6 +700,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
+		K_DoInstashield(t1->player);
+		K_DoInstashield(t2->player);
 		return false;
 	}
 	else if (t1Condition == true && t2Condition == false)
