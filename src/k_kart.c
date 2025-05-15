@@ -8862,7 +8862,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 			respawnangle = R_PointToAngle2(currentwaypoint->mobj->x, currentwaypoint->mobj->y, safewaypoint->mobj->x, safewaypoint->mobj->y);
 		}
 
-		if (K_GetWaypointIsFinishline(safewaypoint))
+		if (currentwaypoint && K_GetWaypointIsFinishline(safewaypoint))
 		{
 			// Please don't spawn after the line.
 			player->pflags |= PF_TRUSTWAYPOINTS;
