@@ -2088,6 +2088,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	player_t *player;
 	boolean force = false;
 	boolean spbpop = false;
+	boolean trapitem = false;
 
 	if (objectplacing)
 		return false;
@@ -2360,7 +2361,25 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				P_PlayerRingBurst(player, ringburst);
 			}
 
-			K_PlayPainSound(target, source);
+			if (inflictor)
+			{
+				switch(inflictor->type)
+				{
+					case MT_BANANA:
+					case MT_BANANA_SHIELD:
+						trapitem = true;
+						break;
+
+					default:
+						break;
+				}
+			}
+
+			if (!trapitem)
+			{
+				// Bananas don't make you scream.
+				K_PlayPainSound(target, source);
+			}
 
 			if ((explosioncombo == true) || (cv_kartdebughuddrop.value && !modeattacking))
 			{
