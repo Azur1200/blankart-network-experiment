@@ -117,8 +117,6 @@ int SUBVERSION;
 
 // platform independant focus loss
 UINT8 window_notinfocus = false;
-INT32 window_x;
-INT32 window_y;
 
 //
 // DEMO LOOP
