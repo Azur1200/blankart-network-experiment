@@ -2616,6 +2616,7 @@ static void K_RespawnChecker(player_t *player)
 			player->mo->colorized = false;
 			player->dropdash = 0;
 			player->respawn = 0;
+			player->softlocktimer = 3*TICRATE;
 		}
 	}
 }
@@ -7550,6 +7551,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->checkskip)
 		player->checkskip--;
 
+	if (player->softlocktimer)
+		player->softlocktimer--;
+
 	if (player->bigwaypointgap && (player->bigwaypointgap > AUTORESPAWN_THRESHOLD || !P_PlayerInPain(player)))
 	{
 		player->bigwaypointgap--;
@@ -8730,15 +8734,19 @@ static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
 
 void K_SetRespawnAtNextWaypoint(player_t * player)
 {
-	mobj_t *currentwaypoint = NULL;
-	mobj_t *safewaypoint = NULL;
+	waypoint_t *currentwaypoint = NULL;
+	waypoint_t *safewaypoint = NULL;
 	angle_t respawnangle;
 	size_t i;
 
+	if (K_UsingLegacyCheckpoints())
+	{
+		// Woah what are you doing...
+		return;
+	}
 
 	if ((player != NULL) && (player->mo != NULL) && (P_MobjWasRemoved(player->mo) == false))
 	{
-
 		// Safety :P
 		if (!player->currentwaypoint || !player->nextwaypoint)
 		{
@@ -8771,30 +8779,70 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 						continue;
 					}
 
-					if (!K_GetWaypointIsFinishline(oopisepoint->nextwaypoints[i]))
-					{
-						// Please don't spawn on the other side of the map please.
-						continue;
-					}
-
 					if (!oopisepoint->nextwaypoints[i]->mobj)
 					{
 						// No mobj? No Dice.
 						continue;
 					}
 
-					safewaypoint = oopisepoint->nextwaypoints[i]->mobj;
+					if (!K_SafeRespawnPosition(oopisepoint->nextwaypoints[i]->mobj))
+					{
+						// This waypoint is not safe.
+						continue;
+					}
+
+					if (K_GetWaypointIsFinishline(oopisepoint->nextwaypoints[i]))
+					{
+						// Please don't spawn over the line.
+						currentwaypoint = oopisepoint->nextwaypoints[i];
+						break;
+					}
+
+					safewaypoint = oopisepoint->nextwaypoints[i];
 					break;
 				}
 			}
 
-			currentwaypoint = player->mo;
+			if ((oopisepoint->prevwaypoints != NULL) && (oopisepoint->numprevwaypoints > 0))
+			{
+				for (i = 0; i < oopisepoint->numprevwaypoints; i++)
+				{
+					if (!K_GetWaypointIsEnabled(oopisepoint->prevwaypoints[i]))
+					{
+						// Waypoint is not enabled.
+						continue;
+					}
+
+					if (K_GetWaypointIsShortcut(oopisepoint->prevwaypoints[i]))
+					{
+						// Respawning into offroad/tripwire path would suck.
+						continue;
+					}
+
+					if (!K_GetWaypointIsSpawnpoint(oopisepoint->prevwaypoints[i]))
+					{
+						// We can't spawn at these anyway.
+						continue;
+					}
+
+					if (!oopisepoint->prevwaypoints[i]->mobj)
+					{
+						// No mobj? No Dice.
+						continue;
+					}
+
+					currentwaypoint = oopisepoint->prevwaypoints[i];
+					break;
+				}
+			}
+
+
 			CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
 		}
 		else
 		{
-			currentwaypoint = player->currentwaypoint->mobj;
-			safewaypoint = player->nextwaypoint->mobj;
+			currentwaypoint = player->currentwaypoint;
+			safewaypoint = player->nextwaypoint;
 		}
 
 		// Better safe then sorry.
@@ -8805,17 +8853,39 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 			return;
 		}
 
-		respawnangle = R_PointToAngle2(currentwaypoint->x, currentwaypoint->y, safewaypoint->x, safewaypoint->y);
+		if (!currentwaypoint)
+		{
+			respawnangle = R_PointToAngle2(player->mo->x, player->mo->y, safewaypoint->mobj->x, safewaypoint->mobj->y);
+		}
+		else
+		{
+			respawnangle = R_PointToAngle2(currentwaypoint->mobj->x, currentwaypoint->mobj->y, safewaypoint->mobj->x, safewaypoint->mobj->y);
+		}
+
+		if (K_GetWaypointIsFinishline(safewaypoint))
+		{
+			// Please don't spawn after the line.
+			player->pflags |= PF_TRUSTWAYPOINTS;
+			player->starposttime = player->realtime;
+			player->starpostz = currentwaypoint->mobj->z >> FRACBITS;
+			player->starpostflip = (currentwaypoint->mobj->flags2 & MF2_OBJECTFLIP);
+			player->starpostangle = player->mo->angle;
+
+			// Then do x and y
+			player->starpostx = currentwaypoint->mobj->x >> FRACBITS;
+			player->starposty = currentwaypoint->mobj->y >> FRACBITS;
+			return;
+		}
 
 		player->pflags |= PF_TRUSTWAYPOINTS;
 		player->starposttime = player->realtime;
-		player->starpostz = (safewaypoint->spawnpoint->z + 15) >> FRACBITS;
-		player->starpostflip = (safewaypoint->flags2 & MF2_OBJECTFLIP);
+		player->starpostz = safewaypoint->mobj->z >> FRACBITS;
+		player->starpostflip = (safewaypoint->mobj->flags2 & MF2_OBJECTFLIP);
 		player->starpostangle = respawnangle;
 
 		// Then do x and y
-		player->starpostx = safewaypoint->x >> FRACBITS;
-		player->starposty = safewaypoint->y >> FRACBITS;
+		player->starpostx = safewaypoint->mobj->x >> FRACBITS;
+		player->starposty = safewaypoint->mobj->y >> FRACBITS;
 	}
 	else
 	{

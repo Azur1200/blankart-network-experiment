@@ -602,8 +602,9 @@ struct player_t
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
 
 	// Respawn
-	UINT8 dropdash;
-	UINT8 respawn;
+	UINT8 dropdash;			// Gain a burst of speed when you drop while respawning
+	UINT8 respawn;			// Timer given when you die.
+	UINT8 softlocktimer;	// Tracks how fast you died after respawning. Use for softlock prevention.
 	
 	UINT16 flashing;
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
