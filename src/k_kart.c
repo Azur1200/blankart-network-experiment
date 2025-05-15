@@ -8794,7 +8794,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					if (K_GetWaypointIsFinishline(oopisepoint->nextwaypoints[i]))
 					{
 						// Please don't spawn over the line.
-						currentwaypoint = oopisepoint->nextwaypoints[i];
+						safewaypoint = oopisepoint->nextwaypoints[i];
 						break;
 					}
 
@@ -8802,6 +8802,8 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					break;
 				}
 			}
+
+			oopisepoint = safewaypoint;
 
 			if ((oopisepoint->prevwaypoints != NULL) && (oopisepoint->numprevwaypoints > 0))
 			{
