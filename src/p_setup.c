@@ -137,6 +137,7 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
+static boolean basemaptyperemoval[4097];
 sector_t *spawnsectors;
 line_t *spawnlines;
 side_t *spawnsides;
@@ -815,6 +816,10 @@ static void P_SpawnMapThings(boolean spawnemblems)
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
 			continue;
 
+		// Don't spawn non-patch objects of this type if they are uneeded
+		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
+			continue;
+
 		mt->mobj = NULL;
 
 		if (mt->type == mobjinfo[MT_LOOPENDPOINT].doomednum)
@@ -1413,6 +1418,7 @@ static void P_LoadThings(UINT8 *data)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->pitch = mt->roll = 0;
 		mt->layer = 0;
+		mt->patch = false;
 
 		mt->type &= 4095;
 
@@ -1543,6 +1549,39 @@ static boolean TextmapCount(size_t size, boolean patch)
 
 		if (!foundhash)
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
+	}
+
+	// check for things to remove from the base map
+	if (patch)
+	{
+		tkn = M_TokenizerRead(0);
+		if (fastcmp(tkn, "basemaptyperemoval"))
+		{
+			tkn = M_TokenizerRead(0);
+			const char *typestr = tkn;
+			char *typetoken = strtok(typestr, " | ");
+			int i;
+
+			// check for types separated by pipes
+			// e.g. 300|2001|2004
+			while (typetoken != NULL)
+			{
+				i = atoi(typetoken);
+
+				if (i && !(i > 4096 || i < 0))
+				{
+					// Set type to removed.
+					basemaptyperemoval[i] = true;
+					CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", i);
+				}
+				else
+				{
+					CONS_Alert(CONS_ERROR, "Invalid mapthing type supplied for base mapthing removal.\n");
+				}
+
+				typetoken = strtok(NULL, " | ");
+			}
+		}
 	}
 
 	nummapthings = 0;
@@ -3294,7 +3333,14 @@ static void P_LoadTextmap(boolean patch)
 	side_t     *sd;
 	mapthing_t *mt;
 
-	CONS_Alert(CONS_NOTICE, "UDMF support is still a work-in-progress; its specs and features are prone to change until it is fully implemented.\n");
+	if (!patch)
+	{
+		CONS_Alert(CONS_NOTICE, "UDMF support is still a work-in-progress; its specs and features are prone to change until it is fully implemented.\n");
+	}
+	else
+	{
+		CONS_Alert(CONS_NOTICE, "Patching current map.\n");
+	}
 
 	/// Given the UDMF specs, some fields are given a default value.
 	/// If an element's field has a default value set, it is omitted
@@ -3477,6 +3523,7 @@ static void P_LoadTextmap(boolean patch)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->layer = 0;
 		mt->mobj = NULL;
+		mt->patch = patch;
 
 		K_UserPropertiesClear(&mt->user);
 
@@ -8738,6 +8785,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_InitSpecials();
 
 	P_InitSlopes(); //Initialize slopes before the map loads.
+
+	memset(basemaptyperemoval, 0, 4097*sizeof(boolean));
 
 	if (!P_LoadMapFromFile())
 	{

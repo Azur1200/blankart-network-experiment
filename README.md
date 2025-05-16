@@ -63,8 +63,8 @@ make -j$(nproc)
 ## How to install
 - Obtain an executable
 - Grab the assets from the [blankart-assets repo](https://codeberg.org/NepDisk/blankart-assets) 
-- Compile the pk3 by running buildmainpk3.bat on windows or buildmainpk3.sh on *nix.
-- Copy the generated pk3 into the folder `out/` and your compiled executable into a folder with the [SRB2Kart 1.6 assets](https://github.com/STJr/Kart-Public/releases/download/v1.6/AssetsLinuxOnly.zip) (such as an existing install).
+- Compile the pk3s by running buildall.bat on windows or buildall.sh on *nix.
+- Copy the generated pk3s from the folder `out/` and your compiled executable into a folder with the [SRB2Kart 1.6 assets](https://github.com/STJr/Kart-Public/releases/download/v1.6/AssetsLinuxOnly.zip) (such as an existing install).
 
 # Disclaimer
 BlanKart is in no way affiliated with Kart Krew Dev or Sonic Team Jr. This is just a project meant for fun. If you have any issues report to us not them.
