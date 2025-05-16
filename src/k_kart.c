@@ -611,7 +611,13 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 
 fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
 {
+	// CEP: due to how baseplayer works, 17P+ lobbies will STILL have the disastrous odds of 0.22 prior, if not WORSE
+	// let's try adding another condition
+
 	const UINT8 basePlayer = 8; // The player count we design most of the game around.
+	const UINT8 vanillaMax = 17; // CEP: Maximum players in "vanilla" (non-30P) clients.
+	const UINT8 extPlayer = 24; // CEP: Cap for 17P+ so that odds don't get too muddled.
+
 	UINT8 playerCount = (spbrush ? 2 : numPlayers);
 	fixed_t playerScaling = 0;
 
@@ -627,8 +633,22 @@ fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
 	else if (playerCount > basePlayer)
 	{
 		// More than basePlayer: reduce odds slightly.
-		// 16P: x0.75
-		playerScaling = (basePlayer - playerCount) * (FRACUNIT / 32);
+
+		// CEP: 17P+ adjustments
+		if (playerCount < vanillaMax)
+		{
+			// Less than vanillaMax: Use standard calculations.
+			// 16P: x0.6
+			playerScaling = (basePlayer - playerCount) * (FRACUNIT / 20);
+
+		}
+		else if (playerCount > vanillaMax)
+		{
+			// More than vanillaMax: Increase odds to fit with the increased playercount
+			// 24P: x0.6
+			// 30P: x0.45
+			playerScaling = (basePlayer - min(extPlayer, playerCount)) * (FRACUNIT / 40); // adding a cap here to be sure
+		}
 	}
 
 	return playerScaling;
