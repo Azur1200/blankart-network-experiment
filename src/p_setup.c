@@ -8366,6 +8366,8 @@ static void P_InitGametype(void)
 	lastLowestLap = 0;
 	spbplace = -1;
 
+	G_ClearRetryFlag();
+
 	startedInFreePlay = false;
 	{
 		UINT8 nump = 0;
