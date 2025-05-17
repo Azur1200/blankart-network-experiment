@@ -87,7 +87,6 @@ static void Got_ExitLevelcmd(UINT8 **cp, INT32 playernum);
 static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum);
 static void Got_ModifyVotecmd(UINT8 **cp, INT32 playernum);
 static void Got_PickVotecmd(UINT8 **cp, INT32 playernum);
-static void Got_GiveItemcmd(UINT8 **cp, INT32 playernum);
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum);
 static void Got_Addfilecmd(UINT8 **cp, INT32 playernum);
 static void Got_Pause(UINT8 **cp, INT32 playernum);
@@ -518,7 +517,6 @@ consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_C
 #else
 #define VALUE "No"
 #endif
-consvar_t cv_kartallowgiveitem = CVAR_INIT ("kartallowgiveitem", VALUE, CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_YesNo, NULL);
 #undef VALUE
 
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
@@ -695,7 +693,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"ACCEPTPARTYINVITE", // XD_ACCEPTPARTYINVITE
 	"LEAVEPARTY", // XD_LEAVEPARTY
 	"CANCELPARTYINVITE", // XD_CANCELPARTYINVITE
-	"GIVEITEM", // XD_GIVEITEM
 	"ADDBOT", // XD_ADDBOT
 	"DISCORD", // XD_DISCORD
 	"PLAYSOUND", // XD_PLAYSOUND
@@ -754,8 +751,6 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_SETUPVOTE, Got_SetupVotecmd);
 	RegisterNetXCmd(XD_MODIFYVOTE, Got_ModifyVotecmd);
 	RegisterNetXCmd(XD_PICKVOTE, Got_PickVotecmd);
-
-	RegisterNetXCmd(XD_GIVEITEM, Got_GiveItemcmd);
 
 	RegisterNetXCmd(XD_SCHEDULETASK, Got_ScheduleTaskcmd);
 	RegisterNetXCmd(XD_SCHEDULECLEAR, Got_ScheduleClearcmd);
@@ -1193,15 +1188,18 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("god", Command_CheatGod_f);
 	COM_AddCommand("setrings", Command_Setrings_f);
 	COM_AddCommand("setlives", Command_Setlives_f);
+	COM_AddCommand("setscore", Command_Setscore_f);
 	COM_AddCommand("devmode", Command_Devmode_f);
 	COM_AddCommand("savecheckpoint", Command_Savecheckpoint_f);
 	COM_AddCommand("scale", Command_Scale_f);
 	COM_AddCommand("gravflip", Command_Gravflip_f);
 	COM_AddCommand("hurtme", Command_Hurtme_f);
+	COM_AddCommand("ateleport", Command_ATeleport_f);
 	COM_AddCommand("teleport", Command_Teleport_f);
 	COM_AddCommand("rteleport", Command_RTeleport_f);
 	COM_AddCommand("skynum", Command_Skynum_f);
 	COM_AddCommand("weather", Command_Weather_f);
+	COM_AddCommand("angle", Command_Angle_f);
 	CV_RegisterVar(&cv_renderhitbox);
 	CV_RegisterVar(&cv_showgremlins);
 
@@ -2121,6 +2119,24 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 		return;
 	}
 
+	if (demo.playback && cheat == CHEAT_DEVMODE)
+	{
+		// There is no networking in demos, but devmode is
+		// too useful to be inaccessible!
+		// TODO: maybe allow everything, even though it would
+		// desync replays? May be useful for debugging.
+		va_start(ap, cheat);
+		cht_debug = va_arg(ap, UINT32);
+		va_end(ap);
+		return;
+	}
+
+	// sanity check
+	if (demo.playback)
+	{
+		return;
+	}
+
 	WRITEUINT8(p, playernum);
 	WRITEUINT8(p, cheat);
 
@@ -2151,6 +2167,7 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 			break;
 
 		case CHEAT_RELATIVE_TELEPORT:
+		case CHEAT_TELEPORT:
 			COPY(WRITEFIXED, fixed_t);
 			COPY(WRITEFIXED, fixed_t);
 			COPY(WRITEFIXED, fixed_t);
@@ -2159,6 +2176,20 @@ void D_Cheat(INT32 playernum, INT32 cheat, ...)
 		case CHEAT_DEVMODE:
 			COPY(WRITEUINT32, UINT32);
 			break;
+
+		case CHEAT_GIVEITEM:
+			COPY(WRITESINT8, int);
+			COPY(WRITEUINT8, unsigned int);
+			break;
+
+		case CHEAT_SCORE:
+			COPY(WRITEUINT32, UINT32);
+			break;
+
+		case CHEAT_ANGLE:
+			COPY(WRITEANGLE, angle_t);
+			break;
+
 	}
 
 #undef COPY
@@ -5547,34 +5578,6 @@ static void Got_PickVotecmd(UINT8 **cp, INT32 playernum)
 	Y_SetupVoteFinish(pick, level);
 }
 
-static void Got_GiveItemcmd(UINT8 **cp, INT32 playernum)
-{
-	int item;
-	int  amt;
-
-	item = READSINT8 (*cp);
-	amt  = READUINT8 (*cp);
-
-	if (
-			( netgame && ! cv_kartallowgiveitem.value ) ||
-			( item < KITEM_SAD || item >= NUMKARTITEMS )
-	)
-	{
-		CONS_Alert(CONS_WARNING,
-				M_GetText ("Illegal give item received from %s\n"),
-				player_names[playernum]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		return;
-	}
-
-	K_StripItems(&players[playernum]);
-	players[playernum].itemroulette = KROULETTE_DISABLED;
-
-	players[playernum].itemtype   = item;
-	players[playernum].itemamount = amt;
-}
-
 static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum)
 {
 	char command[MAXTEXTCMD];
@@ -5704,10 +5707,12 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			if (!P_MobjWasRemoved(player->mo))
 			{
 				player->mo->flags ^= MF_NOCLIP;
+				player->noclip = true;
 
 				if (!(player->mo->flags & MF_NOCLIP))
 				{
 					status = "off";
+					player->noclip = false;
 				}
 			}
 
@@ -5801,7 +5806,8 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			break;
 		}
 
-		case CHEAT_RELATIVE_TELEPORT: {
+		case CHEAT_RELATIVE_TELEPORT:
+		case CHEAT_TELEPORT: {
 			fixed_t x = READFIXED(*cp);
 			fixed_t y = READFIXED(*cp);
 			fixed_t z = READFIXED(*cp);
@@ -5816,11 +5822,21 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			if (!P_MobjWasRemoved(player->mo))
 			{
 				P_MapStart();
-				P_SetOrigin(player->mo,
-						player->mo->x + x,
-						player->mo->y + y,
-						player->mo->z + z);
+				if (cheat == CHEAT_RELATIVE_TELEPORT)
+				{
+					P_SetOrigin(player->mo,
+							player->mo->x + x,
+							player->mo->y + y,
+							player->mo->z + z);
+				}
+				else
+				{
+					P_SetOrigin(player->mo, x, y, z);
+				}
 				P_MapEnd();
+
+				player->pflags |= PF_TRUSTWAYPOINTS;
+				player->bigwaypointgap = 0;
 
 				S_StartSound(player->mo, sfx_mixup);
 			}
@@ -5829,7 +5845,10 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			strlcpy(t[1], M_Ftrim(f[1]), sizeof t[1]);
 			strlcpy(t[2], M_Ftrim(f[2]), sizeof t[2]);
 
-			CV_CheaterWarning(targetPlayer, va("relative teleport by %d%s, %d%s, %d%s",
+			CV_CheaterWarning(targetPlayer, va("%s %d%s, %d%s, %d%s",
+						cheat == CHEAT_RELATIVE_TELEPORT
+						? "relative teleport by"
+						: "teleport to",
 						(int)f[0], t[0], (int)f[1], t[1], (int)f[2], t[2]));
 			break;
 		}
@@ -5838,6 +5857,54 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			UINT32 flags = READUINT32(*cp);
 			cht_debug = flags;
 			CV_CheaterWarning(targetPlayer, va("devmode %08x", flags));
+			break;
+		}
+
+		case CHEAT_GIVEITEM: {
+			SINT8 item = READSINT8(*cp);
+			UINT8 amt = READUINT8(*cp);
+
+			item = max(item, KITEM_SAD);
+			item = min(item, NUMKARTITEMS - 1);
+
+			K_StripItems(player);
+
+			// Cancel roulette if rolling
+			player->itemroulette = KROULETTE_DISABLED;
+
+			player->itemtype = item;
+			player->itemamount = amt;
+
+			if (amt == 0)
+			{
+				CV_CheaterWarning(playernum, "delete my items");
+			}
+			else
+			{
+				// FIXME: we should have actual KITEM_ name array
+				const char *itemname = cv_kartdebugitem.PossibleValue[1 + item].strvalue;
+
+				CV_CheaterWarning(playernum, va("give item %s x%d", itemname, amt));
+			}
+			break;
+		}
+
+		case CHEAT_SCORE: {
+			UINT32 score = READUINT32(*cp);
+
+			player->roundscore = score;
+
+			CV_CheaterWarning(targetPlayer, va("score = %u", score));
+			break;
+		}
+
+		case CHEAT_ANGLE: {
+			angle_t angle = READANGLE(*cp);
+			float anglef = FIXED_TO_FLOAT(AngleFixed(angle));
+
+			P_SetPlayerAngle(player, angle);
+
+			CV_CheaterWarning(targetPlayer, va("angle = %d%s", (int)anglef, M_Ftrim(anglef)));
 			break;
 		}
 
@@ -6080,77 +6147,73 @@ static void Command_Archivetest_f(void)
 }
 #endif
 
-/** Give yourself an, optional quantity or one of, an item.
-  *
-  * \sa cv_kartallowgiveitem
-*/
+/** Give yourself an, optional quantity or one of, an item.**/
+
 static void Command_KartGiveItem_f(void)
 {
-	char         buf[2];
+	UINT8 localplayer = g_localplayers[consoleplayer];
 
 	int           ac;
 	const char *name;
-	int         item;
+	INT32       item;
 
 	const char * str;
 
 	int i;
 
-	/* Allow always in local games. */
-	if (! netgame || cv_kartallowgiveitem.value)
+	ac = COM_Argc();
+	if (ac < 2)
 	{
-		ac = COM_Argc();
-		if (ac < 2)
-		{
-			CONS_Printf(
-"kartgiveitem <item> [amount]: Give yourself an item\n"
-			);
-		}
-		else
-		{
-			item = NUMKARTITEMS;
-
-			name = COM_Argv(1);
-
-			if (isdigit(*name) || *name == '-')
-			{
-				item = atoi(name);
-			}
-			else
-			{
-				for (i = 0; ( str = kartdebugitem_cons_t[i].strvalue ); ++i)
-				{
-					if (strcasecmp(name, str) == 0)
-					{
-						item = kartdebugitem_cons_t[i].value;
-						break;
-					}
-				}
-			}
-
-			if (item < NUMKARTITEMS)
-			{
-				buf[0] = item;
-
-				if (ac > 2)
-					buf[1] = atoi(COM_Argv(2));
-				else
-					buf[1] = 1;/* default to one quantity */
-
-				SendNetXCmd(XD_GIVEITEM, buf, 2);
-			}
-			else
-			{
-				CONS_Alert(CONS_WARNING,
-						"No item matches '%s'\n",
-						name);
-			}
-		}
+		CONS_Printf(
+			"give <item> [amount]: Give yourself an item\n"
+		);
 	}
 	else
 	{
-		CONS_Alert(CONS_NOTICE,
-				"The server does not allow this.\n");
+		item = NUMKARTITEMS;
+
+		name = COM_Argv(1);
+
+		if (isdigit(*name) || *name == '-')
+		{
+			item = atoi(name);
+		}
+		else
+		{
+			/* first check exact match */
+			if (!CV_CompleteValue(&cv_kartdebugitem, &name, &item))
+			{
+				CONS_Printf("\x83" "Autocomplete:\n");
+
+				/* then do very loose partial matching */
+				for (i = 0; ( str = kartdebugitem_cons_t[i].strvalue ); ++i)
+				{
+					if (strcasestr(str, name) != NULL)
+					{
+						CONS_Printf("\x83\t%s\n", str);
+						item = kartdebugitem_cons_t[i].value;
+					}
+				}
+			}
+		}
+
+		if (item < NUMKARTITEMS)
+		{
+			INT32 amt;
+
+			if (ac > 2)
+				amt = atoi(COM_Argv(2));
+			else
+				amt = (item != KITEM_NONE);/* default to one quantity, or zero, if KITEM_NONE */
+
+			D_Cheat(localplayer, CHEAT_GIVEITEM, item, amt);
+		}
+		else
+		{
+			CONS_Alert(CONS_WARNING,
+					"No item matches '%s'\n",
+					name);
+		}
 	}
 }
 

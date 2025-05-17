@@ -33,7 +33,11 @@ typedef enum {
 	CHEAT_FLIP,
 	CHEAT_HURT,
 	CHEAT_RELATIVE_TELEPORT,
+	CHEAT_TELEPORT,
 	CHEAT_DEVMODE,
+	CHEAT_GIVEITEM,
+	CHEAT_SCORE,
+	CHEAT_ANGLE,
 
 	NUMBER_OF_CHEATS
 } cheat_t;
@@ -76,8 +80,11 @@ void Command_Gravflip_f(void);
 void Command_Hurtme_f(void);
 void Command_Teleport_f(void);
 void Command_RTeleport_f(void);
+void Command_ATeleport_f(void);
 void Command_Skynum_f(void);
 void Command_Weather_f(void);
+void Command_Angle_f(void);
+void Command_Setscore_f(void);
 #ifdef _DEBUG
 void Command_CauseCfail_f(void);
 #endif

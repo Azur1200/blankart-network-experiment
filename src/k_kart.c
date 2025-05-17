@@ -261,7 +261,6 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartdebugitem);
 	CV_RegisterVar(&cv_kartdebugamount);
-	CV_RegisterVar(&cv_kartallowgiveitem);
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
@@ -7801,13 +7800,23 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// If a Grow player or a sector crushes you, get flattened instead of being killed.
 	if (player->squishedtimer <= 0)
 	{
-		player->mo->flags &= ~MF_NOCLIP;
+		if (!player->noclip)
+		{
+			// le no clipping cheat.
+			player->mo->flags &= ~MF_NOCLIP;
+		}
 	}
 	else
 	{
 		player->mo->flags |= MF_NOCLIP;
 		player->mo->momx = 0;
 		player->mo->momy = 0;
+	}
+
+	if (player->noclip)
+	{
+		// Might as well make it apply this as well.
+		player->mo->flags |= MF_NOCLIP;
 	}
 
 	if ((player->mo->eflags & MFE_UNDERWATER) && player->curshield != KSHIELD_BUBBLE)

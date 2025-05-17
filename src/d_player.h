@@ -612,6 +612,7 @@ struct player_t
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
+	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
