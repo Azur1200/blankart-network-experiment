@@ -2156,6 +2156,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		if (player->pflags & PF_GODMODE)
 			return false;
 
+		if (player->exiting)
+		{
+			K_DoInstashield(player);
+			return false;
+		}
+
 		if (!force)
 		{
 			// Player hits another player
