@@ -218,6 +218,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!states[i].nameofs) {
 				CONS_Printf("State S_%s allocated.\n",word);
 				states[i].nameofs = strbuf_append(&statenames, word);
+				numstates++;
 				freeslotusage[0][0]++;
 				*out = i;
 				return 0;
@@ -231,6 +232,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!mobjinfo[i].nameofs) {
 				CONS_Printf("MobjType MT_%s allocated.\n",word);
 				mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
+				nummobjtypes++;
 				freeslotusage[1][0]++;
 				*out = i;
 				return 0;
@@ -320,10 +322,11 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "MN"))
 	{
-		for (i = MN_FIRSTFREESLOT; i < NUMMENUTYPES; i++) {
+		for (i = MN_FIRSTFREESLOT; i < MAXMENUTYPES; i++) {
 			if (!menudefs[i].nameofs) {
 				CONS_Printf("Menu MN_%s allocated.\n",word);
 				menudefs[i].nameofs = strbuf_append(&menunames, word);
+				nummenutypes++;
 				*out = i;
 				return 0;
 			}
@@ -632,12 +635,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
-					if (i >= 1 && i < NUMMENUTYPES)
+					if (i >= 1 && i < nummenutypes)
 						readmenu(f, i);
 					else
 					{
 						// zero-based, but let's start at 1
-						deh_warning("Menu number %d out of range (1 - %d)", i, NUMMENUTYPES-1);
+						deh_warning("Menu number %d out of range (1 - %d)", i, nummenutypes-1);
 						ignorelines(f);
 					}
 				}

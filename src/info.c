@@ -81,8 +81,10 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
 state_t states[NUMSTATES] = {0};
+size_t numstates;
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {0};
+size_t nummobjtypes;
 
 skincolor_t skincolors[MAXSKINCOLORS] = {0};
 
@@ -145,6 +147,8 @@ void P_ResetData(INT32 flags)
 		if (!init)
 			memset(states, 0, sizeof(states));
 
+		numstates = S_FIRSTFREESLOT;
+
 		if (statenames)
 			Z_Free(statenames);
 		statenames = strbuf_alloc();
@@ -164,6 +168,8 @@ void P_ResetData(INT32 flags)
 	{
 		if (!init)
 			memset(mobjinfo, 0, sizeof(mobjinfo));
+
+		nummobjtypes = MT_FIRSTFREESLOT;
 
 		if (mobjnames)
 			Z_Free(mobjnames);
@@ -211,9 +217,11 @@ void P_ResetData(INT32 flags)
 	// menudefs (TODO: actually reset this with resetdata?)
 	if (init)
 	{
-		memset(&menudefs[MN_FIRSTFREESLOT], 0, sizeof (menu_t) * NUMMENUFREESLOTS);
-		for (i = 0; i < NUMMENUTYPES; i++)
+		memset(menudefs, 0, sizeof(menudefs));
+		for (i = 0; i < MAXMENUTYPES; i++)
 			menudefs[i].drawroutine = M_DrawGenericMenu;
+
+		nummenutypes = MN_FIRSTFREESLOT;
 
 		if (menunames)
 			Z_Free(menunames);

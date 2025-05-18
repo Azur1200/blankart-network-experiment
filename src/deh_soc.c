@@ -4126,9 +4126,7 @@ mobjtype_t get_mobjtype(const char *word)
 		return atoi(word);
 	if (fastncmp("MT_",word,3))
 		word += 3; // take off the MT_
-	for (i = 0; i < NUMMOBJTYPES; i++) {
-		if (!mobjinfo[i].nameofs)
-			break;
+	for (i = 0; i < nummobjtypes; i++) {
 		if (fastcmp(word, strbuf_get(mobjnames, mobjinfo[i].nameofs)))
 			return i;
 	}
@@ -4143,9 +4141,7 @@ statenum_t get_state(const char *word)
 		return atoi(word);
 	if (fastncmp("S_",word,2))
 		word += 2; // take off the S_
-	for (i = 0; i < NUMSTATES; i++) {
-		if (!states[i].nameofs)
-			break;
+	for (i = 0; i < numstates; i++) {
 		if (fastcmp(word, strbuf_get(statenames, states[i].nameofs)))
 			return i;
 	}
@@ -4160,9 +4156,7 @@ skincolornum_t get_skincolor(const char *word)
 		return atoi(word);
 	if (fastncmp("SKINCOLOR_",word,10))
 		word += 10; // take off the SKINCOLOR_
-	for (i = 0; i < MAXSKINCOLORS; i++) {
-		if (!skincolors[i].nameofs)
-			break;
+	for (i = 0; i < numskincolors; i++) {
 		if (fastcmp(word, strbuf_get(skincolornames, skincolors[i].nameofs)))
 			return i;
 	}
@@ -4221,9 +4215,7 @@ menutype_t get_menutype(const char *word)
 		return atoi(word);
 	if (fastncmp("MN_",word,3))
 		word += 3; // take off the MN_
-	for (i = 0; i < NUMMENUTYPES; i++) {
-		if (!menudefs[i].nameofs)
-			break;
+	for (i = 0; i < nummenutypes; i++) {
 		if (fastcmp(word, strbuf_get(menunames, menudefs[i].nameofs)))
 			return i;
 	}

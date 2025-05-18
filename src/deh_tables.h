@@ -16,7 +16,6 @@
 #include "doomdef.h" // Constants
 #include "d_think.h" // actionf_t
 #include "info.h" // Mobj, state, sprite, etc constants
-#include "m_menu.h" // NUMMENUFREESLOTS
 #include "lua_script.h"
 #include "strbuf.h"
 

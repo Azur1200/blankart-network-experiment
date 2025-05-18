@@ -111,7 +111,7 @@ static void CacheAndPushConstant(lua_State *L, const char *name, lua_Integer val
 static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 {
 	const char *p;
-	fixed_t i;
+	size_t i;
 
 	if (strlen(word) == 1) { // Assume sprite frame if length 1.
 		if (*word >= 'A' && *word <= '~')
@@ -285,9 +285,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, S_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMSTATES; i++) {
-			if (!states[i].nameofs)
-				break;
+		for (i = 0; i < numstates; i++) {
 			if (fastcmp(p, strbuf_get(statenames, states[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
@@ -308,9 +306,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, MT_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMMOBJTYPES; i++) {
-			if (!mobjinfo[i].nameofs)
-				break;
+		for (i = 0; i < nummobjtypes ; i++) {
 			if (fastcmp(p, strbuf_get(mobjnames, mobjinfo[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
@@ -346,7 +342,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SPR2_",word,5)) {
 		p = word+5;
-		for (i = 0; i < (fixed_t)free_spr2; i++)
+		for (i = 0; i < free_spr2; i++)
 			if (!spr2names[i][4])
 			{
 				// special 3-char cases, e.g. SPR2_RUN
@@ -449,9 +445,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
-		for (i = 0; i < MAXSKINCOLORS; i++) {
-			if (!skincolors[i].nameofs)
-				break;
+		for (i = 0; i < numskincolors; i++) {
 			if (fastcmp(p, strbuf_get(skincolornames, skincolors[i].nameofs))) {
 				CacheAndPushConstant(L, word, i);
 				return 1;
@@ -461,9 +455,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
-		for (i = 0; i < NUMMENUTYPES; i++) {
-			if (!menudefs[i].nameofs)
-				break;
+		for (i = 0; i < nummenutypes; i++) {
 			if (fastcmp(p, strbuf_get(menunames, menudefs[i].nameofs)) ){
 				CacheAndPushConstant(L, word, i);
 				return 1;

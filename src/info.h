@@ -91,6 +91,7 @@ struct state_t
 };
 
 extern state_t states[NUMSTATES];
+extern size_t numstates;
 extern char sprnames[NUMSPRITES + 1][5];
 extern char spr2names[NUMPLAYERSPRITES][5];
 extern playersprite_t spr2defaults[NUMPLAYERSPRITES];
@@ -138,6 +139,7 @@ struct mobjinfo_t
 };
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
+extern size_t nummobjtypes;
 
 void P_ResetData(INT32 flags);
 
