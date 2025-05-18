@@ -971,7 +971,7 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 		joystickvector->yaxis = min(joystickvector->yaxis, JOYAXISRANGE);
 		joystickvector->yaxis = max(joystickvector->yaxis, -JOYAXISRANGE);
 
-		if (joystickvector->xaxis >= deadZone)
+		if (joystickvector->xaxis <= -deadZone)
 			joystickvector->xaxis = 0;
 		if (joystickvector->yaxis <= deadZone)
 			joystickvector->yaxis = 0;
