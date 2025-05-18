@@ -446,7 +446,7 @@ consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOIN
 
 // Stacking related
 consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
-consvar_t cv_kartstacking_calc_arg_offset = CVAR_INIT ("kartstacking_calcargoffset", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);

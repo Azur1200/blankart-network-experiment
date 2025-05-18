@@ -122,7 +122,7 @@ extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 
 extern consvar_t cv_kartstacking;
-extern consvar_t cv_kartstacking_calc_arg_offset;
+extern consvar_t cv_kartstacking_diminishparam;
 extern consvar_t cv_kartstacking_maxvanillaboost;
 extern consvar_t cv_kartstacking_speedboostdropoff;
 extern consvar_t cv_kartstacking_speedboostdropoff_brake;

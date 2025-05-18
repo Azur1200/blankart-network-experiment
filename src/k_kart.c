@@ -283,7 +283,7 @@ void K_RegisterKartStuff(void)
 
 	// Stacking
 	CV_RegisterVar(&cv_kartstacking);
-	CV_RegisterVar(&cv_kartstacking_calc_arg_offset);
+	CV_RegisterVar(&cv_kartstacking_diminishparam);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff_brake);
 	CV_RegisterVar(&cv_kartstacking_accelstack);
@@ -3525,7 +3525,7 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 
 static fixed_t diminish(fixed_t speedboost)
 {
-	return FixedSqrt(speedboost + CALC_ARG_OFFSET) - CALC_RET_OFFSET;
+	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
 }
 
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible)

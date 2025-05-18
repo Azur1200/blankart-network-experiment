@@ -10619,9 +10619,6 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_LANDMINE:
 		case MT_BALLHOG:
 		case MT_SINK:
-		case MT_THUNDERSHIELD:
-		case MT_BUBBLESHIELD:
-		case MT_FLAMESHIELD:
 		case MT_ROCKETSNEAKER:
 		case MT_SPB:
 		case MT_ADVENTURESPIKEA:
@@ -10649,6 +10646,9 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_ITEMCAPSULE:
 			thing->shadowscale = FRACUNIT/2;
 			break;
+		case MT_THUNDERSHIELD:
+		case MT_BUBBLESHIELD:
+		case MT_FLAMESHIELD:
 		case MT_BLUEFRUIT:
 		case MT_ORANGEFRUIT:
 		case MT_REDFRUIT:
@@ -10746,7 +10746,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_THROWNEXPLOSION:
 		case MT_THROWNGRENADE:
 		case MT_EMBLEM:
-			thing->shadowscale = FRACUNIT;
+			thing->shadowscale = FRACUNIT/3;
 			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
