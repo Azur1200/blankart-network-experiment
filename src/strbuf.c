@@ -47,9 +47,3 @@ UINT32 strbuf_append(strbuf_t **strbuf, const char *str)
 	strcpy(buf->buf - sizeof(UINT32) + oldsize, str);
 	return oldsize;
 }
-
-// returns the string at the given offset
-char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
-{
-	return strbuf->buf - sizeof(UINT32) + ofs;
-}
