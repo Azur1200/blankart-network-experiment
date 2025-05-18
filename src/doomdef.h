@@ -222,6 +222,7 @@ extern char logfilename[1024];
 
 struct skincolor_t
 {
+	UINT32 namehash;            // Hash for internal name
 	UINT32 nameofs;             // Offset for internal name
 	char name[MAXCOLORNAME+1];  // Skincolor name
 	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp

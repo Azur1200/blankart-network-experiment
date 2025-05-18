@@ -62,7 +62,10 @@ const char *DEH_MenutypeName(menutype_t i)
 mobjtype_t DEH_FindMobjtype(const char *word)
 {
 	mobjtype_t i;
+	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummobjtypes; i++) {
+		if (hash != mobjinfo[i].namehash)
+			continue;
 		if (fastcmp(word, DEH_MobjtypeName(i)))
 			return i;
 	}
@@ -72,7 +75,10 @@ mobjtype_t DEH_FindMobjtype(const char *word)
 statenum_t DEH_FindState(const char *word)
 {
 	statenum_t i;
+	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < numstates; i++) {
+		if (hash != states[i].namehash)
+			continue;
 		if (fastcmp(word, DEH_StateName(i)))
 			return i;
 	}
@@ -82,7 +88,10 @@ statenum_t DEH_FindState(const char *word)
 skincolornum_t DEH_FindSkincolor(const char *word)
 {
 	skincolornum_t i;
+	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < numskincolors; i++) {
+		if (hash != skincolors[i].namehash)
+			continue;
 		if (fastcmp(word, DEH_SkincolorName(i)))
 			return i;
 	}
@@ -92,7 +101,10 @@ skincolornum_t DEH_FindSkincolor(const char *word)
 menutype_t DEH_FindMenutype(const char *word)
 {
 	menutype_t i;
+	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummenutypes; i++) {
+		if (hash != menudefs[i].namehash)
+			continue;
 		if (fastcmp(word, DEH_MenutypeName(i)))
 			return i;
 	}

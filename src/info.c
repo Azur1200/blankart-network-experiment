@@ -153,8 +153,10 @@ void P_ResetData(INT32 flags)
 			Z_Free(statenames);
 		statenames = strbuf_alloc();
 		name = hardcodestates;
-		for (i = 0; i < S_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		for (i = 0; i < S_FIRSTFREESLOT; i++, name += strlen(name)+1) {
 			states[i].nameofs = strbuf_append(&statenames, name);
+			states[i].namehash = HASH32(name, strlen(name));
+		}
 
 		if (!init)
 		{
@@ -175,8 +177,10 @@ void P_ResetData(INT32 flags)
 			Z_Free(mobjnames);
 		mobjnames = strbuf_alloc();
 		name = hardcodemobjs;
-		for (i = 0; i < MT_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		for (i = 0; i < MT_FIRSTFREESLOT; i++, name += strlen(name)+1) {
 			mobjinfo[i].nameofs = strbuf_append(&mobjnames, name);
+			mobjinfo[i].namehash = HASH32(name, strlen(name));
+		}
 
 		for (i = MT_FIRSTFREESLOT; i <= MT_LASTFREESLOT; i++)
 			mobjinfo[i].doomednum = -1;
@@ -198,8 +202,10 @@ void P_ResetData(INT32 flags)
 			Z_Free(skincolornames);
 		skincolornames = strbuf_alloc();
 		name = hardcodeskincolors;
-		for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++, name += strlen(name)+1) {
 			skincolors[i].nameofs = strbuf_append(&skincolornames, name);
+			skincolors[i].namehash = HASH32(name, strlen(name));
+		}
 
 		for (i = SKINCOLOR_FIRSTFREESLOT; i <= SKINCOLOR_LASTFREESLOT; i++)
 		{
@@ -227,7 +233,9 @@ void P_ResetData(INT32 flags)
 			Z_Free(menunames);
 		menunames = strbuf_alloc();
 		name = hardcodemenus;
-		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1) {
 			menudefs[i].nameofs = strbuf_append(&menunames, name);
+			menudefs[i].namehash = HASH32(name, strlen(name));
+		}
 	}
 }

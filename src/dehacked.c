@@ -218,6 +218,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!states[i].nameofs) {
 				CONS_Printf("State S_%s allocated.\n",word);
 				states[i].nameofs = strbuf_append(&statenames, word);
+				states[i].namehash = HASH32(word, strlen(word));
 				numstates++;
 				freeslotusage[0][0]++;
 				*out = i;
@@ -232,6 +233,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!mobjinfo[i].nameofs) {
 				CONS_Printf("MobjType MT_%s allocated.\n",word);
 				mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
+				mobjinfo[i].namehash = HASH32(word, strlen(word));
 				nummobjtypes++;
 				freeslotusage[1][0]++;
 				*out = i;
@@ -246,6 +248,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!skincolors[i].nameofs) {
 				CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
 				skincolors[i].nameofs = strbuf_append(&skincolornames, word);
+				skincolors[i].namehash = HASH32(word, strlen(word));
 				M_AddMenuColor(numskincolors++);
 				K_ReloadHUDColorCvar();
 				*out = i;
@@ -326,6 +329,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 			if (!menudefs[i].nameofs) {
 				CONS_Printf("Menu MN_%s allocated.\n",word);
 				menudefs[i].nameofs = strbuf_append(&menunames, word);
+				menudefs[i].namehash = HASH32(word, strlen(word));
 				nummenutypes++;
 				*out = i;
 				return 0;
