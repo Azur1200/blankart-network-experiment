@@ -26,7 +26,11 @@ UINT32 strbuf_append(strbuf_t **strbuf, const char *str);
 // returns the string at the given offset
 FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
 {
+#ifdef __cplusplus
+	return reinterpret_cast<char *>(strbuf) + ofs;
+#else
 	return (char *)strbuf + ofs;
+#endif
 }
 
 #ifdef __cplusplus

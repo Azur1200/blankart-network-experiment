@@ -31,12 +31,73 @@
 #include "k_kart.h" // awardscaledrings_t
 
 #include "deh_tables.h"
+#include "fastcmp.h"
 
 strbuf_t *statenames;
 strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+
+const char *DEH_MobjtypeName(mobjtype_t i)
+{
+	return strbuf_get(mobjnames, mobjinfo[i].nameofs);
+}
+
+const char *DEH_StateName(statenum_t i)
+{
+	return strbuf_get(statenames, states[i].nameofs);
+}
+
+const char *DEH_SkincolorName(skincolornum_t i)
+{
+	return strbuf_get(skincolornames, skincolors[i].nameofs);
+}
+
+const char *DEH_MenutypeName(menutype_t i)
+{
+	return strbuf_get(menunames, menudefs[i].nameofs);
+}
+
+mobjtype_t DEH_FindMobjtype(const char *word)
+{
+	mobjtype_t i;
+	for (i = 0; i < nummobjtypes; i++) {
+		if (fastcmp(word, DEH_MobjtypeName(i)))
+			return i;
+	}
+	return NUMMOBJTYPES;
+}
+
+statenum_t DEH_FindState(const char *word)
+{
+	statenum_t i;
+	for (i = 0; i < numstates; i++) {
+		if (fastcmp(word, DEH_StateName(i)))
+			return i;
+	}
+	return NUMSTATES;
+}
+
+skincolornum_t DEH_FindSkincolor(const char *word)
+{
+	skincolornum_t i;
+	for (i = 0; i < numskincolors; i++) {
+		if (fastcmp(word, DEH_SkincolorName(i)))
+			return i;
+	}
+	return MAXSKINCOLORS;
+}
+
+menutype_t DEH_FindMenutype(const char *word)
+{
+	menutype_t i;
+	for (i = 0; i < nummenutypes; i++) {
+		if (fastcmp(word, DEH_MenutypeName(i)))
+			return i;
+	}
+	return MAXMENUTYPES;
+}
 
 struct flickytypes_s FLICKYTYPES[] = {
 	{"BLUEBIRD", MT_FLICKY_01}, // Flicky (Flicky)

@@ -1185,7 +1185,7 @@ static void P_WriteSkincolor(INT32 constant, char **target)
 	|| constant >= (INT32)numskincolors)
 		return;
 
-	color_name = strbuf_get(skincolornames, skincolors[constant].nameofs);
+	color_name = DEH_SkincolorName(constant);
 
 	P_WriteDuplicateText(
 		va("SKINCOLOR_%s", color_name),

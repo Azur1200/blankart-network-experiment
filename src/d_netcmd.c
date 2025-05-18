@@ -4872,10 +4872,10 @@ static void Command_ListDoomednums_f(void)
 			CONS_Printf("	doomednum \x82""%d""\x80 is \x85""double-defined\x80 by ", j+1);
 			if (i < MT_FIRSTFREESLOT)
 			{
-				CONS_Printf("\x87""hardcode MT_%s <-- MAJOR ERROR\n", strbuf_get(mobjnames, mobjinfo[i].nameofs));
+				CONS_Printf("\x87""hardcode MT_%s <-- MAJOR ERROR\n", DEH_MobjtypeName(i));
 				continue;
 			}
-			CONS_Printf("\x81""freeslot MT_""%s\n", strbuf_get(mobjnames, mobjinfo[i].nameofs));
+			CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(i));
 			continue;
 		}
 		table[j] = i;
@@ -4908,10 +4908,10 @@ static void Command_ListDoomednums_f(void)
 		CONS_Printf("	doomednum \x82""%d""\x80 is used by ", i+1);
 		if (table[i] < MT_FIRSTFREESLOT)
 		{
-			CONS_Printf("\x87""hardcode MT_%s\n", strbuf_get(mobjnames, mobjinfo[i].nameofs));
+			CONS_Printf("\x87""hardcode MT_%s\n", DEH_MobjtypeName(i));
 			continue;
 		}
-		CONS_Printf("\x81""freeslot MT_""%s\n", strbuf_get(mobjnames, mobjinfo[i].nameofs));
+		CONS_Printf("\x81""freeslot MT_""%s\n", DEH_MobjtypeName(i));
 	}
 }
 

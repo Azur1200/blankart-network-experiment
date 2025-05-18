@@ -1160,7 +1160,7 @@ void readlevelheader(MYFILE *f, char * name)
 						if (fastncmp(tmp, "MT_", 3)) // support for specified mobjtypes...
 						{
 							i = get_mobjtype(tmp);
-							if (i == -1)
+							if (i == NUMMOBJTYPES)
 							{
 								//deh_warning("Level header %d: unknown flicky mobj type %s\n", num, tmp); -- no need for this line as get_mobjtype complains too
 								continue;
@@ -2172,7 +2172,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				continue;
 			}
 			menutype_t mn = get_menutype(word2);
-			if (mn == MN_NONE)
+			if (mn == MAXMENUTYPES)
 			{
 				WARN("unknown menu '%s'", word2);
 				continue;
@@ -2232,7 +2232,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 #undef WARN
 #undef WARN0
 
-#define WARN(str, ...) deh_warning("Menu %s: " str, strbuf_get(menunames, menudefs[num].nameofs), __VA_ARGS__)
+#define WARN(str, ...) deh_warning("Menu %s: " str, DEH_MenutypeName(num), __VA_ARGS__)
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2539,7 +2539,7 @@ void readframe(MYFILE *f, INT32 num)
 			else if (fastcmp(word1, "NEXT"))
 			{
 				statenum_t state = get_state(word2);
-				states[num].nextstate = state == (statenum_t)-1 ? S_NULL : state;
+				states[num].nextstate = state == NUMSTATES ? S_NULL : state;
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
@@ -3867,7 +3867,7 @@ void readfollower(MYFILE *f)
 				else
 				{
 					skincolornum_t color = get_skincolor(word2);
-					followers[numfollowers].defaultcolor = color == (skincolornum_t)-1 ? SKINCOLOR_GREEN : color;
+					followers[numfollowers].defaultcolor = color == MAXSKINCOLORS ? SKINCOLOR_GREEN : color;
 				}
 			}
 			else if (fastcmp(word, "SCALE"))
@@ -4101,7 +4101,7 @@ void readweather(MYFILE *f, INT32 num)
 			if (fastcmp(word, "TYPE"))
 			{
 				mobjtype_t mt = get_mobjtype(word2);
-				precipprops[num].type = mt == (mobjtype_t)-1 ? MT_NULL : mt;
+				precipprops[num].type = mt == NUMMOBJTYPES ? MT_NULL : mt;
 			}
 			else if (fastcmp(word, "EFFECTS"))
 			{
@@ -4126,12 +4126,10 @@ mobjtype_t get_mobjtype(const char *word)
 		return atoi(word);
 	if (fastncmp("MT_",word,3))
 		word += 3; // take off the MT_
-	for (i = 0; i < nummobjtypes; i++) {
-		if (fastcmp(word, strbuf_get(mobjnames, mobjinfo[i].nameofs)))
-			return i;
-	}
-	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
-	return -1;
+	i = DEH_FindMobjtype(word);
+	if (i == NUMMOBJTYPES)
+		deh_warning("Couldn't find mobjtype named 'MT_%s'", word);
+	return i;
 }
 
 statenum_t get_state(const char *word)
@@ -4141,12 +4139,10 @@ statenum_t get_state(const char *word)
 		return atoi(word);
 	if (fastncmp("S_",word,2))
 		word += 2; // take off the S_
-	for (i = 0; i < numstates; i++) {
-		if (fastcmp(word, strbuf_get(statenames, states[i].nameofs)))
-			return i;
-	}
-	deh_warning("Couldn't find state named 'S_%s'",word);
-	return -1;
+	i = DEH_FindState(word);
+	if (i == NUMSTATES)
+		deh_warning("Couldn't find state named 'S_%s'", word);
+	return i;
 }
 
 skincolornum_t get_skincolor(const char *word)
@@ -4156,12 +4152,10 @@ skincolornum_t get_skincolor(const char *word)
 		return atoi(word);
 	if (fastncmp("SKINCOLOR_",word,10))
 		word += 10; // take off the SKINCOLOR_
-	for (i = 0; i < numskincolors; i++) {
-		if (fastcmp(word, strbuf_get(skincolornames, skincolors[i].nameofs)))
-			return i;
-	}
-	deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'",word);
-	return -1;
+	i = DEH_FindSkincolor(word);
+	if (i == MAXSKINCOLORS)
+		deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'", word);
+	return i;
 }
 
 spritenum_t get_sprite(const char *word)
@@ -4215,12 +4209,10 @@ menutype_t get_menutype(const char *word)
 		return atoi(word);
 	if (fastncmp("MN_",word,3))
 		word += 3; // take off the MN_
-	for (i = 0; i < nummenutypes; i++) {
-		if (fastcmp(word, strbuf_get(menunames, menudefs[i].nameofs)))
-			return i;
-	}
-	deh_warning("Couldn't find menutype named 'MN_%s'",word);
-	return MN_NONE;
+	i = DEH_FindMenutype(word);
+	if (i == MAXMENUTYPES)
+		deh_warning("Couldn't find menutype named 'MN_%s'", word);
+	return i;
 }
 
 void (*get_menuroutine(const char *word))(INT32)

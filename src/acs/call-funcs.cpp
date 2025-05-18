@@ -83,21 +83,13 @@ static bool ACS_GetMobjTypeFromString(const char *word, mobjtype_t *type)
 		word += 3;
 	}
 
-	for (int i = 0; i < NUMMOBJTYPES; i++)
-	{
-		if (!mobjinfo[i].nameofs)
-		{
-			break;
-		}
+	mobjtype_t i = DEH_FindMobjtype(word);
 
-		if (fastcmp(word, strbuf_get(mobjnames, mobjinfo[i].nameofs)))
-		{
-			*type = static_cast<mobjtype_t>(i);
-			return true;
-		}
-	}
+	if (i == NUMMOBJTYPES)
+		return false;
 
-	return false;
+	*type = i;
+	return true;
 }
 
 /*--------------------------------------------------
@@ -225,21 +217,13 @@ static bool ACS_GetStateFromString(const char *word, statenum_t *type)
 		word += 2;
 	}
 
-	for (int i = 0; i < NUMSTATES; i++)
-	{
-		if (!states[i].nameofs)
-		{
-			break;
-		}
+	statenum_t i = DEH_FindState(word);
 
-		if (fastcmp(word, strbuf_get(statenames, states[i].nameofs)))
-		{
-			*type = static_cast<statenum_t>(i);
-			return true;
-		}
-	}
+	if (i == NUMSTATES)
+		return false;
 
-	return false;
+	*type = i;
+	return true;
 }
 
 /*--------------------------------------------------
@@ -2319,7 +2303,7 @@ bool CallFunc_GetObjectClass(ACSVM::Thread *thread, const ACSVM::Word *argV, ACS
 	if (mobj != NULL && P_MobjWasRemoved(mobj) == false)
 	{
 		std::string     prefix = "MT_";
-		std::string     full = prefix + (strbuf_get(mobjnames, mobjinfo[mobj->type].nameofs));
+		std::string     full = prefix + DEH_MobjtypeName(mobj->type);
 		mobjClass = static_cast<INT32>( ~env->getString( full.c_str() )->idx );
 	}
 
@@ -4373,7 +4357,7 @@ bool CallFunc_GetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 	case x: \
 	{ \
 		std::string	prefix = "MT_"; \
-		std::string	full = prefix + (strbuf_get(mobjnames, mobjinfo[mobj->y].nameofs)); \
+		std::string	full = prefix + DEH_MobjtypeName(mobj->y); \
 		value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
 		break; \
 	}
@@ -4399,7 +4383,7 @@ bool CallFunc_GetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 	{ \
 		statenum_t stateID = static_cast<statenum_t>(mobj->y - states); \
 		std::string	prefix = "S_"; \
-		std::string	full = prefix + strbuf_get(statenames, states[stateID].nameofs); \
+		std::string	full = prefix + DEH_StateName(stateID); \
 		value = static_cast<INT32>( ~env->getString( full.c_str() )->idx ); \
 		break; \
 	}

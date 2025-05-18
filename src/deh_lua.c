@@ -285,11 +285,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, S_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < numstates; i++) {
-			if (fastcmp(p, strbuf_get(statenames, states[i].nameofs))) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
+		i = DEH_FindState(p);
+		if (i != NUMSTATES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
 		if (lua_compatmode)
 			for (i = 0; STATE_ALIASES[i].n; i++)
@@ -306,11 +306,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, MT_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < nummobjtypes ; i++) {
-			if (fastcmp(p, strbuf_get(mobjnames, mobjinfo[i].nameofs))) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
+		i = DEH_FindMobjtype(p);
+		if (i != NUMMOBJTYPES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
 		if (lua_compatmode)
 			for (i = 0; MOBJ_ALIASES[i].n; i++)
@@ -445,21 +445,21 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
-		for (i = 0; i < numskincolors; i++) {
-			if (fastcmp(p, strbuf_get(skincolornames, skincolors[i].nameofs))) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
+		i = DEH_FindSkincolor(p);
+		if (i != MAXSKINCOLORS)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
 		return luaL_error(L, "skincolor '%s' could not be found.\n", word);
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
-		for (i = 0; i < nummenutypes; i++) {
-			if (fastcmp(p, strbuf_get(menunames, menudefs[i].nameofs)) ){
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
+		i = DEH_FindMenutype(p);
+		if (i != MAXMENUTYPES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
 		if (mathlib) return luaL_error(L, "menutype '%s' could not be found.\n", word);
 		return 0;

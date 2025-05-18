@@ -263,13 +263,13 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
-		return strbuf_get(mobjnames, mobjinfo[mobj->type].nameofs);
+		return DEH_MobjtypeName(mobj->type);
 	}
 	else if (p1 == (actionf_p1)P_RemoveThinkerDelayed)
 	{
 		if (mobj->thinker.debug_mobjtype != MT_NULL)
 		{
-			return strbuf_get(mobjnames, mobjinfo[mobj->thinker.debug_mobjtype].nameofs);
+			return DEH_MobjtypeName(mobj->thinker.debug_mobjtype);
 		}
 	}
 

@@ -982,7 +982,7 @@ static int state_get(lua_State *L)
 		statenum_t id = st-states;
 		if (id < NUMSTATES)
 		{
-			lua_pushstring(L, strbuf_get(statenames, states[id].nameofs));
+			lua_pushstring(L, DEH_StateName(id));
 			return 1;
 		}
 
@@ -1278,7 +1278,7 @@ static int mobjinfo_get(lua_State *L)
 		mobjtype_t id = info-mobjinfo;
 		if (id < NUMMOBJTYPES)
 		{
-			lua_pushstring(L, strbuf_get(mobjnames, mobjinfo[id].nameofs));
+			lua_pushstring(L, DEH_MobjtypeName(id));
 			return 1;
 		}
 
