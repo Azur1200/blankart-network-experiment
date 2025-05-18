@@ -3530,14 +3530,14 @@ static fixed_t diminish(fixed_t speedboost)
 
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible)
 {
-	if (stack && stackingactive)
+	if (stack && K_StackingActive())
 	{
 		player->boostinfo.stackspeedboost += speedboost;
 	}
 
 	player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, speedboost);
 
-	if (cv_kartstacking_accelstack.value && stackingactive)
+	if (cv_kartstacking_accelstack.value && K_StackingActive())
 	{
 		player->boostinfo.accelboost += accelboost;
 	}
@@ -3679,7 +3679,7 @@ static void K_GetKartBoostPower(player_t *player)
 	finalgrade = player->boostinfo.grade;
 
 	// value smoothing
-	if (stackingactive)
+	if (K_StackingActive())
 	{
 		if (player->offroad && K_ApplyOffroad(player))
 		{
@@ -5489,7 +5489,7 @@ static void K_SneakerPanelStackSound(player_t *player)
 	const sfxenum_t smallsfx = sfx_cdfm40;
 	sfxenum_t sfx = normalsfx;
 
-	if ((player->numsneakers > 0) && stackingactive)
+	if ((player->numsneakers > 0) && K_StackingActive() && cv_kartstacking_sneakerstacksound.value)
 	{
 		// Use a less annoying sound when stacking sneakers.
 		sfx = smallsfx;
