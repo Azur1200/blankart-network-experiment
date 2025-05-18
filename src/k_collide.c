@@ -770,20 +770,6 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			return true;
 		}
 	}
-
-	// Ring Loss on bump.
-	t1Condition = ((t2->player->rings > 0) && (K_GetShieldFromPlayer(t2->player) == KSHIELD_NONE));
-	t2Condition = ((t1->player->rings > 0) && (K_GetShieldFromPlayer(t1->player) == KSHIELD_NONE));
-
-	if (t1Condition == true)
-	{
-		P_PlayerRingBurst(t2->player, 1);
-	}
-
-	if (t2Condition == true)
-	{
-		P_PlayerRingBurst(t1->player, 1);
-	}
 	
 	return false;
 }

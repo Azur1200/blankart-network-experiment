@@ -2050,6 +2050,12 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		mobj1->player->rmomy = mobj1->momy - mobj1->player->cmomy;
 		mobj1->player->justbumped = bumptime;
 
+		// Moved here so it only fires once on bump.
+		if ((mobj1->player->rings > 0) && (K_GetShieldFromPlayer(mobj1->player) == KSHIELD_NONE))
+		{
+			P_PlayerRingBurst(mobj1->player, 1);
+		}
+
 		if (mobj1->player->spinouttimer)
 		{
 			mobj1->player->wipeoutslow = wipeoutslowtime+1;
@@ -2063,6 +2069,12 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		mobj2->player->rmomx = mobj2->momx - mobj2->player->cmomx;
 		mobj2->player->rmomy = mobj2->momy - mobj2->player->cmomy;
 		mobj2->player->justbumped = bumptime;
+
+		// Moved here so it only fires once on bump.
+		if ((mobj2->player->rings > 0) && (K_GetShieldFromPlayer(mobj2->player) == KSHIELD_NONE))
+		{
+			P_PlayerRingBurst(mobj2->player, 1);
+		}
 
 		if (mobj2->player->spinouttimer)
 		{
