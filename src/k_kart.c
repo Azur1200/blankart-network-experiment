@@ -3589,7 +3589,6 @@ static void K_GetKartBoostPower(player_t *player)
 	fixed_t finalspeedboost = 0;
 	fixed_t finalaccelboost = 0;
 	UINT8 finalgrade = 0;
-	fixed_t prevspeedboost = player->speedboost;
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
 	{
@@ -3686,19 +3685,19 @@ static void K_GetKartBoostPower(player_t *player)
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
 			player->accelboost = max(finalaccelboost, player->accelboost)/2;
 		}
-		else if (finalspeedboost >= prevspeedboost)
+		else if (finalspeedboost >= player->prevspeedboost)
 		{
 			player->speedboost = max(player->speedboost, finalspeedboost);
 			player->accelboost = max(player->accelboost, finalaccelboost);
 		}
 		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
 		{
-			player->speedboost = max(prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
+			player->speedboost = max(player->prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
 			player->accelboost = finalaccelboost;
 		}
 		else
 		{
-			player->speedboost = prevspeedboost - SPEEDBOOSTDROPOFF;
+			player->speedboost = max(player->speedboost + (finalspeedboost - player->speedboost) / (TICRATE/2), player->speedboost - SPEEDBOOSTDROPOFF);
 			player->accelboost = finalaccelboost;
 		}
 	}
@@ -3718,6 +3717,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	player->numboosts = finalgrade;
 	K_ClearBoost(player);
+	player->prevspeedboost = player->speedboost;
 }
 
 // Returns value based on being Grown or Shrunk otherwise returns FRACUNIT

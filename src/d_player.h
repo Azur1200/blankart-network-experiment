@@ -635,6 +635,7 @@ struct player_t
 	
 	fixed_t boostpower;		// Base boost value, for offroad
 	fixed_t speedboost;		// Boost value smoothing for max speed
+	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
