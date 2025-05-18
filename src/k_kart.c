@@ -2790,47 +2790,33 @@ void K_KartMoveAnimation(player_t *player)
 	if (onground == false)
 	{
 		// Only use certain frames in the air, to make it look like your tires are spinning fruitlessly!
-
-		if (drift > 0)
+		if (turndir == -1)
 		{
-			// Neutral drift
-			SetState(S_KART_DRIFT_L);
+			SetState(S_KART_FAST_R);
 		}
-		else if (drift < 0)
+		else if (turndir == 1)
 		{
-			// Neutral drift
-			SetState(S_KART_DRIFT_R);
+			SetState(S_KART_FAST_L);
 		}
 		else
 		{
-			if (turndir == -1)
+			switch (player->glanceDir)
 			{
-				SetState(S_KART_FAST_R);
-			}
-			else if (turndir == 1)
-			{
-				SetState(S_KART_FAST_L);
-			}
-			else
-			{
-				switch (player->glanceDir)
-				{
-					case -2:
-						SetState(S_KART_FAST_LOOK_R);
-						break;
-					case 2:
-						SetState(S_KART_FAST_LOOK_L);
-						break;
-					case -1:
-						SetState(S_KART_FAST_GLANCE_R);
-						break;
-					case 1:
-						SetState(S_KART_FAST_GLANCE_L);
-						break;
-					default:
-						SetState(S_KART_FAST);
-						break;
-				}
+				case -2:
+					SetState(S_KART_FAST_LOOK_R);
+					break;
+				case 2:
+					SetState(S_KART_FAST_LOOK_L);
+					break;
+				case -1:
+					SetState(S_KART_FAST_GLANCE_R);
+					break;
+				case 1:
+					SetState(S_KART_FAST_GLANCE_L);
+					break;
+				default:
+					SetState(S_KART_FAST);
+					break;
 			}
 		}
 
