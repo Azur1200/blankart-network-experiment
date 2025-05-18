@@ -958,27 +958,16 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 {
 	INT32 gamepadStyle = Joystick[splitnum].bGamepadStyle;
 	fixed_t deadZone = cv_deadzone[splitnum].value;
-	boolean deadZoneStyle = cv_deadzonestyle[splitnum].value;
+	SINT8 deadZoneStyle = cv_deadzonestyle[splitnum].value;
 
 	// When gamepadstyle is "true" the values are just -1, 0, or 1. This is done in the interface code.
 
-	// v1 style deadzone
+	// v1 style deadzone == (deadZoneStyle == 0)
 	// Deadzone doesn't scale so shallower angles are easier to hit.
-	if (!gamepadStyle && (deadZoneStyle == 0))
-	{
-		joystickvector->xaxis = min(joystickvector->xaxis, JOYAXISRANGE);
-		joystickvector->xaxis = max(joystickvector->xaxis, -JOYAXISRANGE);
-		joystickvector->yaxis = min(joystickvector->yaxis, JOYAXISRANGE);
-		joystickvector->yaxis = max(joystickvector->yaxis, -JOYAXISRANGE);
 
-		if (joystickvector->xaxis <= -deadZone)
-			joystickvector->xaxis = 0;
-		if (joystickvector->yaxis <= deadZone)
-			joystickvector->yaxis = 0;
-	}
 	// RR style deadzone
 	// Dead zone scales so shallower angles are harder to hit but you have more range.
-	else if (!gamepadStyle && (deadZoneStyle == 1))
+	if (!gamepadStyle && (deadZoneStyle == 1))
 	{
 		// Get the total magnitude of the 2 axes
 		INT32 magnitude = (joystickvector->xaxis * joystickvector->xaxis) + (joystickvector->yaxis * joystickvector->yaxis);

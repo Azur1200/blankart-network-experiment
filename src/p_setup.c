@@ -137,7 +137,7 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
-static boolean basemaptyperemoval[4097];
+static boolean basemaptyperemoval[65537];
 sector_t *spawnsectors;
 line_t *spawnlines;
 side_t *spawnsides;
@@ -1559,28 +1559,30 @@ static boolean TextmapCount(size_t size, boolean patch)
 		{
 			tkn = M_TokenizerRead(0);
 			const char *typestr = tkn;
-			char *typetoken = strtok(typestr, " | ");
-			int i;
+			char *end;
 
 			// check for types separated by pipes
 			// e.g. 300|2001|2004
-			while (typetoken != NULL)
+			do
 			{
-				i = atoi(typetoken);
+				UINT16 types = strtoull(typestr, &end, 10);
 
-				if (i && !(i > 4096 || i < 0))
+				if (types)
 				{
 					// Set type to removed.
-					basemaptyperemoval[i] = true;
-					CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", i);
-				}
-				else
-				{
-					CONS_Alert(CONS_ERROR, "Invalid mapthing type supplied for base mapthing removal.\n");
+					basemaptyperemoval[types] = true;
+					CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", types);
 				}
 
-				typetoken = strtok(NULL, " | ");
+				if (end == typestr || (*end && *end != '|'))
+				{
+					CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
+					return false;
+				}
+
+				typestr = end + 1;
 			}
+			while (*end);
 		}
 	}
 
@@ -8788,7 +8790,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_InitSlopes(); //Initialize slopes before the map loads.
 
-	memset(basemaptyperemoval, 0, 4097*sizeof(boolean));
+	memset(basemaptyperemoval, 0, 65537*sizeof(boolean));
 
 	if (!P_LoadMapFromFile())
 	{
