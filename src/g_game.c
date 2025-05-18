@@ -447,6 +447,14 @@ consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
 };
 
+static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
+consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("deadzonestyle", "Kart",  CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle2", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle3", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
+};
+
 // now automatically allocated in D_RegisterClientCommands
 // so that it doesn't have to be updated depending on the value of MAXPLAYERS
 char player_names[MAXPLAYERS][MAXPLAYERNAME+1];
@@ -950,9 +958,27 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 {
 	INT32 gamepadStyle = Joystick[splitnum].bGamepadStyle;
 	fixed_t deadZone = cv_deadzone[splitnum].value;
+	boolean deadZoneStyle = cv_deadzonestyle[splitnum].value;
 
 	// When gamepadstyle is "true" the values are just -1, 0, or 1. This is done in the interface code.
-	if (!gamepadStyle)
+
+	// v1 style deadzone
+	// Deadzone doesn't scale so shallower angles are easier to hit.
+	if (!gamepadStyle && (deadZoneStyle == 0))
+	{
+		joystickvector->xaxis = min(joystickvector->xaxis, JOYAXISRANGE);
+		joystickvector->xaxis = max(joystickvector->xaxis, -JOYAXISRANGE);
+		joystickvector->yaxis = min(joystickvector->yaxis, JOYAXISRANGE);
+		joystickvector->yaxis = max(joystickvector->yaxis, -JOYAXISRANGE);
+
+		if (joystickvector->xaxis >= deadZone)
+			joystickvector->xaxis = 0;
+		if (joystickvector->yaxis <= deadZone)
+			joystickvector->yaxis = 0;
+	}
+	// RR style deadzone
+	// Dead zone scales so shallower angles are harder to hit but you have more range.
+	else if (!gamepadStyle && (deadZoneStyle == 1))
 	{
 		// Get the total magnitude of the 2 axes
 		INT32 magnitude = (joystickvector->xaxis * joystickvector->xaxis) + (joystickvector->yaxis * joystickvector->yaxis);

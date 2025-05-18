@@ -170,7 +170,7 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("flipcam4", "Off", CV_CALL|CV_SAVE, CV_OnOff, weaponPrefChange4)
 };
 
-consvar_t cv_shadow = CVAR_INIT ("shadow", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_shadow = CVAR_INIT ("dropshadow", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_skybox = CVAR_INIT ("skybox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_ffloorclip = CVAR_INIT ("ffloorclip", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_allowmlook = CVAR_INIT ("allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL);
