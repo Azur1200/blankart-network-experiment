@@ -2504,9 +2504,9 @@ static void P_DeathThink(player_t *player)
 	else
 		player->karthud[khud_timeovercam] = 0;
 
-	// Set players next respawn point to the next waypoint
-	// If they die while still in respawn state for extra safety.
-	if (player->nextwaypoint && player->respawn > 0)
+	// If the player dies too fast or dies during respawn...
+	// Set players next respawn point to the next waypoint for extra safety.
+	if (player->softlocktimer > 0 || player->respawn > 0)
 	{
 		// Now a clean function! Neat, eh?
 		K_SetRespawnAtNextWaypoint(player);
@@ -2644,7 +2644,6 @@ consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
 consvar_t cv_tilting = CVAR_INIT ("tilting", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_actionmovie = CVAR_INIT ("actionmovie", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_windowquake = CVAR_INIT ("windowquake", "Off", CV_SAVE, CV_OnOff, NULL);
 
 fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};

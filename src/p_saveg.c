@@ -244,6 +244,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].airtime);
 		WRITEUINT8(save->p, players[i].startboost);
 
+		WRITEUINT8(save->p, players[i].dropdash);
+		WRITEUINT8(save->p, players[i].respawn);
+		WRITEUINT8(save->p, players[i].softlocktimer);
+
 		WRITEUINT16(save->p, players[i].flashing);
 		WRITEUINT16(save->p, players[i].spinouttimer);
 		WRITEUINT8(save->p, players[i].spinouttype);
@@ -251,6 +255,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].instashield);
 		WRITEUINT8(save->p, players[i].wipeoutslow);
 		WRITEUINT8(save->p, players[i].justbumped);
+		WRITEUINT8(save->p, players[i].noclip);
 
 		WRITESINT8(save->p, players[i].drift);
 		WRITEFIXED(save->p, players[i].driftcharge);
@@ -272,6 +277,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEFIXED(save->p, players[i].boostpower);
 		WRITEFIXED(save->p, players[i].speedboost);
+		WRITEFIXED(save->p, players[i].prevspeedboost);
 		WRITEFIXED(save->p, players[i].accelboost);
 		WRITEANGLE(save->p, players[i].boostangle);
 		WRITEUINT8(save->p, players[i].numsneakers);
@@ -567,6 +573,10 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].airtime = READUINT32(save->p);
 		players[i].startboost = READUINT8(save->p);
 
+		players[i].dropdash = READUINT8(save->p);
+		players[i].respawn = READUINT8(save->p);
+		players[i].softlocktimer = READUINT8(save->p);
+
 		players[i].flashing = READUINT16(save->p);
 		players[i].spinouttimer = READUINT16(save->p);
 		players[i].spinouttype = READUINT8(save->p);
@@ -574,6 +584,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].instashield = READUINT8(save->p);
 		players[i].wipeoutslow = READUINT8(save->p);
 		players[i].justbumped = READUINT8(save->p);
+		players[i].noclip = READUINT8(save->p);
 
 		players[i].drift = READSINT8(save->p);
 		players[i].driftcharge = READFIXED(save->p);
@@ -595,6 +606,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].boostpower = READFIXED(save->p);
 		players[i].speedboost = READFIXED(save->p);
+		players[i].prevspeedboost = READFIXED(save->p);
 		players[i].accelboost = READFIXED(save->p);
 		players[i].boostangle = READANGLE(save->p);
 		players[i].numsneakers = READUINT8(save->p);

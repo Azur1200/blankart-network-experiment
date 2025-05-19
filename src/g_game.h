@@ -79,6 +79,7 @@ extern consvar_t cv_invertmouse;
 extern consvar_t cv_kickstartaccel[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS];
 
 extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_guest, cv_ghost_staff;
 

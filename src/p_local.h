@@ -159,7 +159,6 @@ extern consvar_t cv_cam_speed[MAXSPLITSCREENPLAYERS], cv_cam_rotate[MAXSPLITSCRE
 
 extern consvar_t cv_tilting;
 extern consvar_t cv_actionmovie;
-extern consvar_t cv_windowquake;
 
 extern fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS], t_cam_height[MAXSPLITSCREENPLAYERS], t_cam_rotate[MAXSPLITSCREENPLAYERS];
 

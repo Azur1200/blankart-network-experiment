@@ -280,6 +280,7 @@ struct mapthing_t
 	UINT8 layer; // FOF layer to spawn on, see P_GetMobjSpawnHeight
 	mapUserProperties_t user; // UDMF user-defined custom properties.
 	mobj_t *mobj;
+	boolean patch;
 };
 
 #define ZSHIFT 4

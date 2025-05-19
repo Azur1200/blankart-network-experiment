@@ -602,8 +602,9 @@ struct player_t
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
 
 	// Respawn
-	UINT8 dropdash;
-	UINT8 respawn;
+	UINT8 dropdash;			// Gain a burst of speed when you drop while respawning
+	UINT8 respawn;			// Timer given when you die.
+	UINT8 softlocktimer;	// Tracks how fast you died after respawning. Use for softlock prevention.
 	
 	UINT16 flashing;
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
@@ -611,6 +612,7 @@ struct player_t
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
+	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
@@ -633,6 +635,7 @@ struct player_t
 	
 	fixed_t boostpower;		// Base boost value, for offroad
 	fixed_t speedboost;		// Boost value smoothing for max speed
+	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.

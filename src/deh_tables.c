@@ -355,8 +355,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"\x01",
 	"\x01",
 	"\x01",
-	"\x01",
-
+	"ATTACKDOWN",
 	"SLIDING",
 
 	NULL // stop loop here.
@@ -775,6 +774,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
+	{ "DRAWGENERICSCROLLMENU", &M_DrawGenericScrollMenu },
 	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
 	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },

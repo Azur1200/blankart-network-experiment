@@ -22,14 +22,15 @@ extern "C" {
 #endif
 
 // Store file nameres here for future reference else where.
-#define MAINNAME "main.pk3"
 #define SRB2NAME "srb2.srb"
+#define GRAPHICSNAME "gfx.kart"
 #define TEXTURESNAME "textures.kart"
+#define CHARSNAME "chars.kart"
 #define MAPSNAME "maps.kart"
+#define MAINNAME "main.pk3"
+#define MAPPATCHNAME "mappatch.pk3"
 #define PATCHNAME "patch.pk3"
 #define MUSICNAME "music.kart"
-#define CHARSNAME "chars.kart"
-#define GRAPHICSNAME "gfx.kart"
 #define SOUNDSNAME "sounds.kart"
 
 typedef enum
@@ -40,6 +41,7 @@ typedef enum
 	MAINWAD_CHARS,
 	MAINWAD_MAPS,
 	MAINWAD_MAIN,
+	MAINWAD_MAPPATCH,
 #ifdef USE_PATCH_FILE
 	MAINWAD_PATCH,
 #endif
