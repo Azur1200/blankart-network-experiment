@@ -9551,6 +9551,7 @@ static void K_KartSlipdash(player_t *player, boolean onground)
 INT32 K_GetDriftAngleOffset(player_t *player)
 {
 	INT32 a = 0;
+	boolean onground = P_IsObjectOnGround(player->mo);
 	boolean compat = wadfiles[skins[player->skin].wadnum]->compatmode;
 	if (player->aizdriftturn)
 	{
@@ -9558,7 +9559,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 		if (compat)
 			a /= 2; // don't turn too much in compatmode
 	}
-	else if (player->drift != 0)
+	else if (player->drift != 0 && onground)
 	{
 		a = (ANGLE_45 / 5) * player->drift;
 	}
