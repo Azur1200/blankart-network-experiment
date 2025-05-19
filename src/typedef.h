@@ -88,6 +88,7 @@ TYPEDEF (ticcmd_t);
 TYPEDEF (actionpointer_t);
 
 // dehacked.h
+TYPEDEF (dehinfo_t);
 TYPEDEF (MYFILE);
 
 // domdata.h

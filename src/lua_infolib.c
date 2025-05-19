@@ -752,13 +752,8 @@ static int lib_setState(lua_State *L)
 		return luaL_error(L, "Do not alter states in CMD building code!");
 
 	// clear the state to start with, in case of missing table elements
-	state->sprite = SPR_NULL;
-	state->frame = 0;
+	memset((char *)state + sizeof(dehinfo_t), 0, sizeof(*state) - sizeof(dehinfo_t));
 	state->tics = -1;
-	state->action.acp1 = NULL;
-	state->var1 = 0;
-	state->var2 = 0;
-	state->nextstate = S_NULL;
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
@@ -1112,30 +1107,9 @@ static int lib_setMobjInfo(lua_State *L)
 		return luaL_error(L, "Do not alter mobjinfo in CMD building code!");
 
 	// clear the mobjinfo to start with, in case of missing table elements
+	memset((char *)info + sizeof(dehinfo_t), 0, sizeof(*info) - sizeof(dehinfo_t));
 	info->doomednum = -1; // default to no editor value
-	info->spawnstate = S_NULL;
 	info->spawnhealth = 1; // avoid 'dead' noclip behaviors
-	info->seestate = S_NULL;
-	info->seesound = sfx_None;
-	info->reactiontime = 0;
-	info->attacksound = sfx_None;
-	info->painstate = S_NULL;
-	info->painchance = 0;
-	info->painsound = sfx_None;
-	info->meleestate = S_NULL;
-	info->missilestate = S_NULL;
-	info->deathstate = S_NULL;
-	info->xdeathstate = S_NULL;
-	info->deathsound = sfx_None;
-	info->speed = 0;
-	info->radius = 0;
-	info->height = 0;
-	info->dispoffset = 0;
-	info->mass = 0;
-	info->damage = 0;
-	info->activesound = sfx_None;
-	info->flags = 0U;
-	info->raisestate = S_NULL;
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
@@ -1683,7 +1657,7 @@ static int lib_setSkinColor(lua_State *L)
 		return luaL_error(L, "Do not alter skincolors in CMD building code!");
 
 	// clear the skincolor to start with, in case of missing table elements
-	memset(info,0,sizeof(skincolor_t));
+	memset((char *)info + sizeof(dehinfo_t), 0, sizeof(*info) - sizeof(dehinfo_t));
 
 	Color_cons_t[cnum].value = cnum;
 	lua_pushnil(L);
@@ -1925,7 +1899,7 @@ static int lib_setPrecipProps(lua_State *L)
 
 	// clear the precipprops to start with, in case of missing table elements
 	// make sure we do not clear the name
-	memset(props + sizeof(props->name), 0, sizeof(precipprops_t) - sizeof(props->name));
+	memset((char *)props + sizeof(props->name), 0, sizeof(*props) - sizeof(props->name));
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {

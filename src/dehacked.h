@@ -19,20 +19,15 @@
 extern "C" {
 #endif
 
-typedef enum
+struct dehinfo_t
 {
-	UNDO_NONE    = 0x00,
-	UNDO_NEWLINE = 0x01,
-	UNDO_SPACE   = 0x02,
-	UNDO_CUTLINE = 0x04,
-	UNDO_HEADER  = 0x07,
-	UNDO_ENDTEXT = 0x08,
-	UNDO_TODO = 0,
-	UNDO_DONE = 0,
-} undotype_f;
+	UINT32 namehash; // excluding prefix (no MT_ or S_)
+	UINT32 nameofs; // into strbuf_t
+};
 
 void DEH_LoadDehackedLump(lumpnum_t lumpnum);
 void DEH_LoadDehackedLumpPwad(UINT16 wad, UINT16 lump, boolean mainfile);
+void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf);
 INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out);
 
 // SRB2Kart

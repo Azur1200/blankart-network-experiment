@@ -18,6 +18,7 @@
 #include "d_think.h"
 #include "sounds.h"
 #include "m_fixed.h"
+#include "dehacked.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,8 +80,7 @@ typedef enum state
 
 struct state_t
 {
-	UINT32 namehash, nameofs;
-
+	dehinfo_t info;
 	spritenum_t sprite;
 	UINT32 frame; // we use the upper 16 bits for translucency and other shade effects
 	INT32 tics;
@@ -110,8 +110,7 @@ typedef enum mobj_type
 
 struct mobjinfo_t
 {
-	UINT32 namehash, nameofs;
-
+	dehinfo_t info;
 	INT32 doomednum;
 	statenum_t spawnstate;
 	INT32 spawnhealth;
@@ -157,8 +156,7 @@ typedef enum
 
 struct skincolor_t
 {
-	UINT32 namehash;            // Hash for internal name
-	UINT32 nameofs;             // Offset for internal name
+	dehinfo_t info;             // Internal name hash and offset
 	char name[MAXCOLORNAME+1];  // Skincolor name
 	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
 	UINT16 invcolor;            // Signpost color

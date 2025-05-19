@@ -247,7 +247,7 @@ struct menuitem_t
 
 struct menu_t
 {
-	UINT32         namehash, nameofs;
+	dehinfo_t      info;
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items

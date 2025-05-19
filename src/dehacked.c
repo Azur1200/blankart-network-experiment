@@ -176,6 +176,12 @@ static void ignorelines(MYFILE *f)
 	Z_Free(s);
 }
 
+void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf)
+{
+	info->namehash = HASH32(name, strlen(name));
+	info->nameofs = strbuf_append(buf, name);
+}
+
 INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 {
 	size_t i;
@@ -214,48 +220,40 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "S"))
 	{
-		for (i = S_FIRSTFREESLOT; i < NUMSTATES; i++)
-			if (!states[i].nameofs) {
-				CONS_Printf("State S_%s allocated.\n",word);
-				states[i].nameofs = strbuf_append(&statenames, word);
-				states[i].namehash = HASH32(word, strlen(word));
-				numstates++;
-				freeslotusage[0][0]++;
-				*out = i;
-				return 0;
-			}
-		CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
-		return -1;
+		if (numstates == NUMSTATES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
+			return -1;
+		}
+		CONS_Printf("State S_%s allocated.\n",word);
+		DEH_Link(word, &states[numstates].info, &statenames);
+		*out = numstates++;
+		freeslotusage[0][0]++;
+		return 0;
 	}
 	else if (fastcmp(type, "MT"))
 	{
-		for (i = MT_FIRSTFREESLOT; i < NUMMOBJTYPES; i++)
-			if (!mobjinfo[i].nameofs) {
-				CONS_Printf("MobjType MT_%s allocated.\n",word);
-				mobjinfo[i].nameofs = strbuf_append(&mobjnames, word);
-				mobjinfo[i].namehash = HASH32(word, strlen(word));
-				nummobjtypes++;
-				freeslotusage[1][0]++;
-				*out = i;
-				return 0;
-			}
-		CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
-		return -1;
+		if (nummobjtypes == NUMMOBJTYPES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
+			return -1;
+		}
+		CONS_Printf("MobjType MT_%s allocated.\n",word);
+		DEH_Link(word, &mobjinfo[nummobjtypes].info, &mobjnames);
+		*out = nummobjtypes++;
+		freeslotusage[1][0]++;
+		return 0;
 	}
 	else if (fastcmp(type, "SKINCOLOR"))
 	{
-		for (i = SKINCOLOR_FIRSTFREESLOT; i < MAXSKINCOLORS; i++)
-			if (!skincolors[i].nameofs) {
-				CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-				skincolors[i].nameofs = strbuf_append(&skincolornames, word);
-				skincolors[i].namehash = HASH32(word, strlen(word));
-				M_AddMenuColor(numskincolors++);
-				K_ReloadHUDColorCvar();
-				*out = i;
-				return 0;
-			}
-		CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
-		return -1;
+		if (numskincolors == MAXSKINCOLORS) {
+			CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
+			return -1;
+		}
+		CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
+		DEH_Link(word, &skincolors[numskincolors].info, &skincolornames);
+		M_AddMenuColor(numskincolors);
+		K_ReloadHUDColorCvar();
+		*out = numskincolors++;
+		return 0;
 	}
 	else if (fastcmp(type, "SPR2"))
 	{
@@ -325,18 +323,14 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "MN"))
 	{
-		for (i = MN_FIRSTFREESLOT; i < MAXMENUTYPES; i++) {
-			if (!menudefs[i].nameofs) {
-				CONS_Printf("Menu MN_%s allocated.\n",word);
-				menudefs[i].nameofs = strbuf_append(&menunames, word);
-				menudefs[i].namehash = HASH32(word, strlen(word));
-				nummenutypes++;
-				*out = i;
-				return 0;
-			}
+		if (nummenutypes == MAXMENUTYPES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
+			return -1;
 		}
-		CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
-		return -1;
+		CONS_Printf("Menu MN_%s allocated.\n",word);
+		DEH_Link(word, &menudefs[nummenutypes].info, &menunames);
+		*out = nummenutypes++;
+		return 0;
 	}
 
 	return -2;

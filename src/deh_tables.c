@@ -41,22 +41,22 @@ UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslo
 
 const char *DEH_MobjtypeName(mobjtype_t i)
 {
-	return strbuf_get(mobjnames, mobjinfo[i].nameofs);
+	return strbuf_get(mobjnames, mobjinfo[i].info.nameofs);
 }
 
 const char *DEH_StateName(statenum_t i)
 {
-	return strbuf_get(statenames, states[i].nameofs);
+	return strbuf_get(statenames, states[i].info.nameofs);
 }
 
 const char *DEH_SkincolorName(skincolornum_t i)
 {
-	return strbuf_get(skincolornames, skincolors[i].nameofs);
+	return strbuf_get(skincolornames, skincolors[i].info.nameofs);
 }
 
 const char *DEH_MenutypeName(menutype_t i)
 {
-	return strbuf_get(menunames, menudefs[i].nameofs);
+	return strbuf_get(menunames, menudefs[i].info.nameofs);
 }
 
 mobjtype_t DEH_FindMobjtype(const char *word)
@@ -64,7 +64,7 @@ mobjtype_t DEH_FindMobjtype(const char *word)
 	mobjtype_t i;
 	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummobjtypes; i++) {
-		if (hash != mobjinfo[i].namehash)
+		if (hash != mobjinfo[i].info.namehash)
 			continue;
 		if (fastcmp(word, DEH_MobjtypeName(i)))
 			return i;
@@ -77,7 +77,7 @@ statenum_t DEH_FindState(const char *word)
 	statenum_t i;
 	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < numstates; i++) {
-		if (hash != states[i].namehash)
+		if (hash != states[i].info.namehash)
 			continue;
 		if (fastcmp(word, DEH_StateName(i)))
 			return i;
@@ -90,7 +90,7 @@ skincolornum_t DEH_FindSkincolor(const char *word)
 	skincolornum_t i;
 	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < numskincolors; i++) {
-		if (hash != skincolors[i].namehash)
+		if (hash != skincolors[i].info.namehash)
 			continue;
 		if (fastcmp(word, DEH_SkincolorName(i)))
 			return i;
@@ -103,7 +103,7 @@ menutype_t DEH_FindMenutype(const char *word)
 	menutype_t i;
 	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < nummenutypes; i++) {
-		if (hash != menudefs[i].namehash)
+		if (hash != menudefs[i].info.namehash)
 			continue;
 		if (fastcmp(word, DEH_MenutypeName(i)))
 			return i;
