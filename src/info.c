@@ -81,10 +81,10 @@ playersprite_t spr2defaults[NUMPLAYERSPRITES] = {
 
 // Doesn't work with g++, needs actionf_p1 (don't modify this comment)
 state_t states[NUMSTATES] = {0};
-size_t numstates;
+UINT16 numstates;
 
 mobjinfo_t mobjinfo[NUMMOBJTYPES] = {0};
-size_t nummobjtypes;
+UINT16 nummobjtypes;
 
 skincolor_t skincolors[MAXSKINCOLORS] = {0};
 

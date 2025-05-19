@@ -258,7 +258,7 @@ struct menu_t
 };
 
 extern menu_t menudefs[MAXMENUTYPES];
-extern size_t nummenutypes;
+extern UINT16 nummenutypes;
 
 void M_EnterMenu(menutype_t menu, boolean callexit);
 void M_ExitMenu(void);

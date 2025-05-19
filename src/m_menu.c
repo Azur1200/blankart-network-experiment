@@ -167,7 +167,7 @@ static UINT32 serverlistpage;
 INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
 menu_t menudefs[MAXMENUTYPES]; // array of all menudefs
-size_t nummenutypes;
+UINT16 nummenutypes;
 menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002

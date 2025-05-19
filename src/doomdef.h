@@ -211,7 +211,7 @@ extern char logfilename[1024];
 
 #define COLORRAMPSIZE 16
 #define MAXCOLORNAME 32
-#define NUMCOLORFREESLOTS UINT16_MAX
+#define NUMCOLORFREESLOTS 32768
 
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
