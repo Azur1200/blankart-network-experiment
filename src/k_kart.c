@@ -8780,7 +8780,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 				oopisepoint = K_GetClosestWaypointToMobj(player->mo);
 			}
 
-			if ((oopisepoint->nextwaypoints != NULL) && (oopisepoint->numnextwaypoints > 0))
+			if (oopisepoint->numnextwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numnextwaypoints; i++)
 				{
@@ -8824,11 +8824,10 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					safewaypoint = oopisepoint->nextwaypoints[i];
 					break;
 				}
+				oopisepoint = safewaypoint;
 			}
 
-			oopisepoint = safewaypoint;
-
-			if ((oopisepoint->prevwaypoints != NULL) && (oopisepoint->numprevwaypoints > 0))
+			if (oopisepoint->numprevwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numprevwaypoints; i++)
 				{
