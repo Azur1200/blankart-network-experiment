@@ -54,9 +54,7 @@ git clone https://codeberg.org/NepDisk/blankart.git
 cd blankart
 mkdir build
 cd build
-cmake -G "MSYS Makefiles" ..
-./_deps/sdl2_mixer-src/external/download.sh
-cmake -G "MSYS Makefiles" ..
+cmake -G "MSYS Makefiles" ..
 make -j$(nproc)
 ```
 
