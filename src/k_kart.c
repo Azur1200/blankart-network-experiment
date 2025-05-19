@@ -284,6 +284,7 @@ void K_RegisterKartStuff(void)
 	// Stacking
 	CV_RegisterVar(&cv_kartstacking);
 	CV_RegisterVar(&cv_kartstacking_diminishparam);
+	CV_RegisterVar(&cv_kartstacking_maxvanillaboost);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff);
 	CV_RegisterVar(&cv_kartstacking_speedboostdropoff_brake);
 	CV_RegisterVar(&cv_kartstacking_accelstack);
@@ -3671,15 +3672,15 @@ static void K_GetKartBoostPower(player_t *player)
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
 			player->accelboost = max(finalaccelboost, player->accelboost)/2;
 		}
-		else if (finalspeedboost >= player->prevspeedboost)
-		{
-			player->speedboost = max(player->speedboost, finalspeedboost);
-			player->accelboost = max(player->accelboost, finalaccelboost);
-		}
 		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
 		{
 			player->speedboost = max(player->prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
 			player->accelboost = finalaccelboost;
+		}
+		else if (finalspeedboost >= player->prevspeedboost)
+		{
+			player->speedboost = max(player->speedboost, finalspeedboost);
+			player->accelboost = max(player->accelboost, finalaccelboost);
 		}
 		else
 		{
@@ -10141,8 +10142,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
 						K_PlayBoostTaunt(player->mo);
 						player->rocketsneakertimer -= 2*TICRATE;
-						if (player->rocketsneakertimer < 1)
+						if (player->rocketsneakertimer <= 2*TICRATE)
 							player->rocketsneakertimer = 1;
+						else
+							player->rocketsneakertimer -= 2*TICRATE;
 						player->botvars.itemconfirm = 0;
 					}
 				}
