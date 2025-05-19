@@ -10141,7 +10141,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 					{
 						K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
 						K_PlayBoostTaunt(player->mo);
-						player->rocketsneakertimer -= 2*TICRATE;
 						if (player->rocketsneakertimer <= 2*TICRATE)
 							player->rocketsneakertimer = 1;
 						else
