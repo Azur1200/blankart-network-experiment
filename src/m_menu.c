@@ -5756,7 +5756,7 @@ void M_DrawTimeAttackMenu(void)
 		if (i == itemOn)
 			cursory = y;
 
-		V_DrawString(x, y, (dispstatus == IT_WHITESTRING) ? highlightflags : 0 | MENUCAPS, currentMenu->menuitems[i].text);
+		V_DrawString(x, y, ((dispstatus == IT_WHITESTRING) ? highlightflags : 0) | MENUCAPS, currentMenu->menuitems[i].text);
 
 		// Cvar specific handling
 		if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CVAR)
