@@ -7538,14 +7538,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	if (player->sneakertimer)
-	{
 		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
 
-		if (player->sneakertimer <= 0)
-		{
-			player->mo->flags2 &= ~MF2_WATERRUN;
-			player->numsneakers = 0;
-		}
+	if (player->sneakertimer <= 0)
+	{
+		player->mo->flags2 &= ~MF2_WATERRUN;
+		player->numsneakers = 0;
 	}
 
 	if (player->realsneakertimer)
