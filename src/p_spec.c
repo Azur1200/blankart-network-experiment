@@ -1971,6 +1971,73 @@ void P_SwitchWeather(preciptype_t newWeather)
 		P_SpawnPrecipitation();
 }
 
+static boolean isfinish(waypoint_t *check)
+{
+	size_t i;
+	waypoint_t *finish = K_GetFinishLineWaypoint();
+
+	if (check == NULL)
+		return false;
+	if (check == finish)
+		return true;
+
+	for (i = 0; i < check->numnextwaypoints; i++)
+	{
+		if (check->nextwaypoints[i] == finish)
+			return true;
+	}
+	for (i = 0; i < check->numprevwaypoints; i++)
+	{
+		if (check->prevwaypoints[i] == finish)
+			return true;
+	}
+
+	return false;
+}
+
+// fix the player's current waypoint after crossing the finish line
+// get them off the finish line waypoint ASAP!
+static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
+{
+	size_t i;
+	fixed_t closest = INT32_MAX;
+	waypoint_t *finish = K_GetFinishLineWaypoint(), *snapto = NULL;
+
+	// now did we actually cross the REAL finish line?
+	// this is important for sprint maps
+	if (!isfinish(player->currentwaypoint) && !isfinish(player->nextwaypoint))
+		return;
+
+	//CONS_Printf("fixed up %td\n", player - players);
+
+	if (reverse)
+	{
+		for (i = 0; i < finish->numprevwaypoints; i++)
+		{
+			waypoint_t *check = finish->prevwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+	else
+	{
+		for (i = 0; i < finish->numnextwaypoints; i++)
+		{
+			waypoint_t *check = finish->nextwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+
+	if (snapto)
+	{
+		player->currentwaypoint = snapto;
+		player->nextwaypoint = NULL; // don't forget to update position after this :^)
+	}
+}
+
 static boolean K_IgnoreFinishLine(player_t *player)
 {
 	// If potential lap cheating has been detected, do not
@@ -2027,8 +2094,10 @@ static void K_HandleLapIncrement(player_t *player)
 			}
 
 			if (!cv_kartdebuglap.value && player->laps == 1)
-					player->pflags |= PF_TRUSTWAYPOINTS;
+				player->pflags |= PF_TRUSTWAYPOINTS;
+			K_FixupFinishWaypoint(player, false);
 			K_UpdateAllPlayerPositions();
+
 
 			// Set up lap animation vars
 			if (player->laps > 1)
@@ -2139,6 +2208,7 @@ static void K_HandleLapDecrement(player_t *player)
 			return;
 		if (player->laps > 0)
 		{
+			K_FixupFinishWaypoint(player, true);
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_UpdateAllPlayerPositions();
