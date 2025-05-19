@@ -1514,12 +1514,12 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (udmf_version > UDMF_CURRENT_VERSION)
 				CONS_Alert(CONS_WARNING, "Map is intended for future UDMF version '%d', current supported version is '%d'. This map may have issues loading.\n", udmf_version, UDMF_CURRENT_VERSION);
 		}
+		tkn = M_TokenizerRead(0);
 	}
 
 	// check hash for patches
 	if (patch)
 	{
-		tkn = M_TokenizerRead(0);
 		if (!fastcmp(tkn, "checksum"))
 		{
 			CONS_Alert(CONS_ERROR, "No checksum in lump!\n");
@@ -1546,44 +1546,42 @@ static boolean TextmapCount(size_t size, boolean patch)
 			hashstr = end + 1;
 		}
 		while (*end);
+		tkn = M_TokenizerRead(0);
 
 		if (!foundhash)
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
 	}
 
 	// check for things to remove from the base map
-	if (patch)
+	if (patch && fastcmp(tkn, "basemaptyperemoval"))
 	{
 		tkn = M_TokenizerRead(0);
-		if (fastcmp(tkn, "basemaptyperemoval"))
+		const char *typestr = tkn;
+		char *end;
+
+		// check for types separated by pipes
+		// e.g. 300|2001|2004
+		do
 		{
-			tkn = M_TokenizerRead(0);
-			const char *typestr = tkn;
-			char *end;
+			UINT16 types = strtoull(typestr, &end, 10);
 
-			// check for types separated by pipes
-			// e.g. 300|2001|2004
-			do
+			if (types)
 			{
-				UINT16 types = strtoull(typestr, &end, 10);
-
-				if (types)
-				{
-					// Set type to removed.
-					basemaptyperemoval[types] = true;
-					CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", types);
-				}
-
-				if (end == typestr || (*end && *end != '|'))
-				{
-					CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
-					return false;
-				}
-
-				typestr = end + 1;
+				// Set type to removed.
+				basemaptyperemoval[types] = true;
+				CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", types);
 			}
-			while (*end);
+
+			if (end == typestr || (*end && *end != '|'))
+			{
+				CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
+				return false;
+			}
+
+			typestr = end + 1;
 		}
+		while (*end);
+		tkn = M_TokenizerRead(0);
 	}
 
 	nummapthings = 0;
@@ -1595,7 +1593,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		numsectors = 0;
 	}
 
-	while ((tkn = M_TokenizerRead(0)) && M_TokenizerGetEndPos() < size)
+	while (M_TokenizerGetEndPos() < size)
 	{
 		// Avoid anything inside bracketed stuff, only look for external keywords.
 		if (brackets)
@@ -1620,6 +1618,10 @@ static boolean TextmapCount(size_t size, boolean patch)
 			TextmapStorePos(&sectorBlocks, &numsectors);
 		else
 			CONS_Alert(CONS_NOTICE, "Unknown field '%s'.\n", tkn);
+
+		tkn = M_TokenizerRead(0);
+		if (!tkn)
+			break;
 	}
 
 	if (brackets)
