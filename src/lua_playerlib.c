@@ -1741,7 +1741,7 @@ static int power_get(lua_State *L)
 {
 	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
-	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
 	if (p >= NUMPOWERS)
 		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
 	switch (p)
@@ -1765,7 +1765,7 @@ static int power_set(lua_State *L)
 {
 	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
-	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
 	UINT16 i = (UINT16)luaL_checkinteger(L, 3);
 	if (p >= NUMPOWERS)
 		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
@@ -1801,7 +1801,7 @@ static int power_len(lua_State *L)
 static int kartstuff_get(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
-	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 
 	if (ks >= NUMKARTSTUFF)
@@ -2054,7 +2054,7 @@ static int kartstuff_get(lua_State *L)
 static int kartstuff_set(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
-	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 	INT32 i = (INT32)luaL_checkinteger(L, 3);
 
