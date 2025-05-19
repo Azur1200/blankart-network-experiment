@@ -2745,7 +2745,7 @@ void K_KartMoveAnimation(player_t *player)
 					gainaxstate = S_GAINAX_MID1;
 			}
 
-			if (destGlanceDir && !(player->pflags & PF_GAINAX))
+			/*if (destGlanceDir && !(player->pflags & PF_GAINAX))
 			{
 				mobj_t *gainax = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_GAINAX);
 				gainax->movedir = (destGlanceDir < 0) ? (ANGLE_270-ANG10) : (ANGLE_90+ANG10);
@@ -2753,7 +2753,7 @@ void K_KartMoveAnimation(player_t *player)
 				P_SetMobjState(gainax, gainaxstate);
 				gainax->flags2 |= MF2_AMBUSH;
 				player->pflags |= PF_GAINAX;
-			}
+			}*/
 		}
 		else if (player->cmd.forwardmove < 0 && destGlanceDir == 0)
 		{
