@@ -141,6 +141,35 @@ struct mobjinfo_t
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 extern size_t nummobjtypes;
 
+typedef enum
+{
+#define _(name, ...) SKINCOLOR_##name,
+#include "info/skincolors.h"
+#undef _
+	SKINCOLOR_FIRSTFREESLOT,
+	SKINCOLOR_LASTFREESLOT = SKINCOLOR_FIRSTFREESLOT + NUMCOLORFREESLOTS - 1,
+	MAXSKINCOLORS,
+
+	FIRSTRAINBOWCOLOR = SKINCOLOR_PINK,
+	FIRSTSUPERCOLOR = SKINCOLOR_SUPER1,
+	NUMSUPERCOLORS = ((SKINCOLOR_FIRSTFREESLOT - FIRSTSUPERCOLOR)/5)
+} skincolornum_t;
+
+struct skincolor_t
+{
+	UINT32 namehash;            // Hash for internal name
+	UINT32 nameofs;             // Offset for internal name
+	char name[MAXCOLORNAME+1];  // Skincolor name
+	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
+	UINT16 invcolor;            // Signpost color
+	UINT8 invshade;             // Signpost color shade
+	UINT16 chatcolor;           // Chat color
+	boolean accessible;         // Accessible by the color command + setup menu
+};
+
+extern skincolor_t skincolors[MAXSKINCOLORS];
+extern UINT16 numskincolors;
+
 void P_ResetData(INT32 flags);
 
 #ifdef __cplusplus

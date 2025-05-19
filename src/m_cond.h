@@ -13,7 +13,7 @@
 #ifndef __M_COND_H__
 #define __M_COND_H__
 
-#include "doomdef.h"
+#include "info.h"
 
 #ifdef __cplusplus
 extern "C" {

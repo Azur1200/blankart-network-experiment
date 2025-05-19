@@ -198,6 +198,8 @@ void P_ResetData(INT32 flags)
 		if (!init)
 			memset(skincolors, 0, sizeof(skincolors));
 
+		numskincolors = SKINCOLOR_FIRSTFREESLOT;
+
 		if (skincolornames)
 			Z_Free(skincolornames);
 		skincolornames = strbuf_alloc();
