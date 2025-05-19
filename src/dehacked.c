@@ -220,6 +220,10 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "S"))
 	{
+		*out = DEH_FindState(word);
+		if (*out != NUMSTATES)
+			return 0; // already allocated
+
 		if (numstates == NUMSTATES) {
 			CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
 			return -1;
@@ -232,6 +236,10 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "MT"))
 	{
+		*out = DEH_FindMobjtype(word);
+		if (*out != NUMMOBJTYPES)
+			return 0; // already allocated
+
 		if (nummobjtypes == NUMMOBJTYPES) {
 			CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
 			return -1;
@@ -244,6 +252,10 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "SKINCOLOR"))
 	{
+		*out = DEH_FindSkincolor(word);
+		if (*out != MAXSKINCOLORS)
+			return 0; // already allocated
+
 		if (numskincolors == MAXSKINCOLORS) {
 			CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
 			return -1;
@@ -323,6 +335,10 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "MN"))
 	{
+		*out = DEH_FindMenutype(word);
+		if (*out != MAXMENUTYPES)
+			return 0; // already allocated
+
 		if (nummenutypes == MAXMENUTYPES) {
 			CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
 			return -1;
