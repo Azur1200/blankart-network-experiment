@@ -359,6 +359,7 @@ void M_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
+void M_DrawGenericScrollMenu(void);
 void M_DrawCenteredMenu(void);
 void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
@@ -470,6 +471,10 @@ extern consvar_t cv_dummyrings, cv_dummylives;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
+
+extern consvar_t cv_menucaps;
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];

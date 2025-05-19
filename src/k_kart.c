@@ -3672,7 +3672,7 @@ static void K_GetKartBoostPower(player_t *player)
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
 			player->accelboost = max(finalaccelboost, player->accelboost)/2;
 		}
-		else if ((player->aizdriftstrat && abs((player->drift) < 5)) || (K_GetKartButtons(player) & BT_BRAKE))
+		else if (K_Sliptiding(player) || (K_GetKartButtons(player) & BT_BRAKE))
 		{
 			player->speedboost = max(player->prevspeedboost - SPEEDBOOSTDROPOFF_BRAKE, min(player->speedboost, MAXVANILLABOOST));
 			player->accelboost = finalaccelboost;
