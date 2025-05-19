@@ -5495,8 +5495,8 @@ bottomarrow:
 
 static void M_DrawStatsPlaytime(void)
 {
-	V_DrawString(20, 42, highlightflags, "Total Play Time:");
-	V_DrawCenteredString(BASEVIDWIDTH/2, 52, 0, va("%i hours, %i minutes, %i seconds",
+	V_DrawString(20, 42, MENUCAPS|highlightflags, "Total Play Time:");
+	V_DrawCenteredString(BASEVIDWIDTH/2, 52, MENUCAPS, va("%i hours, %i minutes, %i seconds",
 	                         G_TicsToHours(kartstats.totalplaytime),
 	                         G_TicsToMinutes(kartstats.totalplaytime, false),
 	                         G_TicsToSeconds(kartstats.totalplaytime)));
