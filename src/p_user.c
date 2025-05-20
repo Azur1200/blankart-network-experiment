@@ -1364,7 +1364,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 
 	clipmomz = !(P_CheckDeathPitCollide(player->mo));
 
-	if (fromAir == true && clipmomz == true)
+	if (player->prevonground == false && fromAir == true && clipmomz == true)
 	{
 		K_SpawnSplashForMobj(player->mo, abs(player->mo->momz));
 	}

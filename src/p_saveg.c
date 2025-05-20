@@ -423,6 +423,9 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].linktimer);
 		WRITEINT32(save->p, players[i].maxlink);
 
+		// Fix janky landing particle
+		WRITEUINT8(save->p, players[i].prevonground);
+
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -752,6 +755,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].linkcount = READINT32(save->p);
 		players[i].linktimer = READUINT32(save->p);
 		players[i].maxlink = READINT32(save->p);
+
+		// Fix janky landing particle
+		players[i].prevonground = READUINT8(save->p);
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}

@@ -852,6 +852,11 @@ static void K_SpawnSplashParticles(mobj_t *mo, t_splash_t *s, fixed_t impact)
 			dust->color = s->color;
 		}
 
+		if (s->mobjType == MT_WIPEOUTTRAIL)
+		{
+			dust->renderflags = RF_GHOSTLY;
+		}
+
 		if (s->sfx != sfx_None)
 		{
 			S_StartSound(mo, s->sfx);
@@ -1012,6 +1017,12 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 		dust->color = fs->color;
 	}
 
+	// Make offroad dust transparent
+	if (K_GetFootstepHeapIndex(fs) == defaultOffroadFootstep)
+	{
+		dust->renderflags |= RF_GHOSTLY;
+	}
+
 	if ((fs->sfx != sfx_None) && (fs->sfxFreq > 0) && (timer % fs->sfxFreq == 0))
 	{
 		S_StartSound(mo, fs->sfx);
@@ -1073,7 +1084,7 @@ offroadhandle:
 
 	// - Being affected by offroad
 	// Using acutal offroad check here to prevent lua boostpower modifications from spawning the offroad particles - Nep
-	if (!(K_ApplyOffroad(mo->player) && mo->player->offroad > 0))
+	if (!(mo->player->bananadrag > TICRATE) && !(K_ApplyOffroad(mo->player) && mo->player->offroad > 0))
 	{
 		return;
 	}

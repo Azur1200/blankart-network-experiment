@@ -503,6 +503,16 @@ struct boostinfo_t {
   UINT8 grade;
 };
 
+// player_t struct for saltyhop related variables
+struct saltyhop_t
+{
+	boolean jump; // Player has the ability to do the hop
+	boolean ready; // Saltyhop is ready
+	boolean tapping; // Player is tapping the drift button
+
+	fixed_t momz, zoffset; // erm... the mechanism....
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -803,6 +813,10 @@ struct player_t
 	INT32 linkcount;
 	tic_t linktimer;
 	INT32 maxlink; // maximum link obtained
+
+	saltyhop_t salty;
+
+	boolean prevonground;
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

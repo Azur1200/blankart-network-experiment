@@ -47,6 +47,7 @@
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"
+#include "blan/b_soc.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -5167,6 +5168,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	fixed_t sfxnum;
 	size_t i;
 
+	if (player->mo->terrain && player->mo->terrain->speedPad > 0 && B_UseTerrainDef())
+	{
+		// Don't double process Speed Pads.
+		return;
+	}
+
 	if (player->dashpadcooldown != 0)
 		return;
 
@@ -5258,6 +5265,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 {
+	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && B_UseTerrainDef())
+	{
+		// Don't double process Pogo Springs.
+		return;
+	}
+
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
 	const fixed_t minspeed = 24*hscale;
 	const fixed_t maxspeed = 28*hscale;
@@ -5281,6 +5294,23 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 
 static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
+
+	if (player->mo->terrain && B_UseTerrainDef())
+	{
+		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
+		{
+			// Don't double process sneakerpanels.
+			return;
+		}
+
+		if (player->mo->terrain->flags & TRF_WATERRUNPANEL)
+		{
+			// Don't double process waterpanels.
+			return;
+		}
+	}
+
+
 	if (isTouching)
 	{
 		if (!player->floorboost)

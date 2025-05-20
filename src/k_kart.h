@@ -270,6 +270,8 @@ typedef enum
 
 void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
 
+void K_QuiteSaltyHop(player_t *player);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
