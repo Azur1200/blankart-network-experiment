@@ -1396,7 +1396,10 @@ static boolean P_CheckPushables(line_t *triggerline, sector_t *caller)
 		case TMC_GTE:
 			return numpushables >= targetpushables;
 		case TMC_LTE:
-			return numpushables <= targetpushables;
+			if (mapnamespace == MNS_SRB2KART)
+				return numpushables < targetpushables;
+			else
+				return numpushables <= targetpushables;
 	}
 }
 
