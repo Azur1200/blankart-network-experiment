@@ -1292,6 +1292,45 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
+//
+// Like W_CheckNumForLongNamePwad, but doesn't uppercase the search string AAAAAAAAAAAAA
+//
+UINT16 W_CheckNumForLongNamePwadNoUpper(const char *name, UINT16 wad, UINT16 startlump)
+{
+	UINT16 i;
+	char uname[8+1];
+	UINT32 hash;
+
+	if (!TestValidLump(wad,0))
+		return INT16_MAX;
+
+	strncpy(uname, name, sizeof uname);
+	strupr(uname);
+	hash = quickncasehash(uname, 8); // Not a mistake, legacy system for short lumpnames
+
+	//
+	// scan forward
+	// start at 'startlump', useful parameter when there are multiple
+	//                       resources with the same name
+	//
+	if (startlump < wadfiles[wad]->numlumps)
+	{
+		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		{
+			if (lump_p->hash != hash)
+				continue;
+			if (strcmp(lump_p->longname, name))
+				continue;
+			return i;
+		}
+
+	}
+
+	// not found.
+	return INT16_MAX;
+}
+
 UINT16
 W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
 {

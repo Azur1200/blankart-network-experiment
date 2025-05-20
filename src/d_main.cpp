@@ -1277,9 +1277,6 @@ void D_SRB2Main(void)
 	// MAINCFG is now taken care of where "OBJCTCFG" is handled
 	G_LoadGameSettings();
 
-	// Test Dehacked lists
-	DEH_TableCheck();
-
 	// Netgame URL special case: change working dir to EXE folder.
 	ChangeDirForUrlHandler();
 
@@ -1395,10 +1392,6 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
 
-	// player setup menu colors must be initialized before
-	// any wad file is added, as they may contain colors themselves
-	M_InitPlayerSetupColors();
-
 	CONS_Printf("Z_Init(): Init zone memory allocation daemon. \n");
 	Z_Init();
 	CON_SetLoadingProgress(LOADED_ZINIT);
@@ -1430,7 +1423,7 @@ void D_SRB2Main(void)
 		netgame = server = true;
 
 	// adapt tables to SRB2's needs, including extra slots for dehacked file support
-	P_PatchInfoTables();
+	P_ResetData(15);
 
 	// initiate menu metadata before SOCcing them
 	M_InitMenuPresTables();
@@ -1446,9 +1439,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
 
-	// Make backups of some SOCcable tables.
-	P_BackupTables();
-	
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 
@@ -1510,7 +1500,6 @@ void D_SRB2Main(void)
 
 	R_InitPaletteRemap();
 
-	// now do it again for the SOC colors in main.pk3!
 	M_InitPlayerSetupColors();
 
 	// Do it before P_InitMapData because PNG patch

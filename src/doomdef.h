@@ -211,7 +211,7 @@ extern char logfilename[1024];
 
 #define COLORRAMPSIZE 16
 #define MAXCOLORNAME 32
-#define NUMCOLORFREESLOTS UINT16_MAX
+#define NUMCOLORFREESLOTS 32768
 
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
@@ -219,34 +219,6 @@ extern char logfilename[1024];
 
 // Master Server compatibility ONLY
 #define MSCOMPAT_MAXPLAYERS (32)
-
-struct skincolor_t
-{
-	char name[MAXCOLORNAME+1];  // Skincolor name
-	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
-	UINT16 invcolor;            // Signpost color
-	UINT8 invshade;             // Signpost color shade
-	UINT16 chatcolor;           // Chat color
-	boolean accessible;         // Accessible by the color command + setup menu
-};
-
-typedef enum
-{
-#define _(name, ...) SKINCOLOR_##name,
-#include "info/skincolors.h"
-#undef _
-	SKINCOLOR_FIRSTFREESLOT,
-	SKINCOLOR_LASTFREESLOT = SKINCOLOR_FIRSTFREESLOT + NUMCOLORFREESLOTS - 1,
-	MAXSKINCOLORS,
-
-	FIRSTRAINBOWCOLOR = SKINCOLOR_PINK,
-	FIRSTSUPERCOLOR = SKINCOLOR_SUPER1,
-	NUMSUPERCOLORS = ((SKINCOLOR_FIRSTFREESLOT - FIRSTSUPERCOLOR)/5)
-} skincolornum_t;
-
-extern UINT16 numskincolors;
-
-extern skincolor_t skincolors[MAXSKINCOLORS];
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
@@ -511,13 +483,6 @@ extern int compuncommitted;
 
 ///	Shuffle's incomplete OpenGL sorting code.
 #define SHUFFLE // This has nothing to do with sorting, why was it disabled?
-
-///	Allow the use of the SOC RESETINFO command.
-///	\note	Builds that are tight on memory should disable this.
-///	    	This stops the game from storing backups of the states, sprites, and mobjinfo tables.
-///	    	Though this info is compressed under normal circumstances, it's still a lot of extra
-///	    	memory that never gets touched.
-#define ALLOW_RESETDATA
 
 /// Experimental tweaks to analog mode. (Needs a lot of work before it's ready for primetime.)
 //#define REDSANALOG

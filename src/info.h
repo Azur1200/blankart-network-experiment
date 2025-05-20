@@ -18,6 +18,7 @@
 #include "d_think.h"
 #include "sounds.h"
 #include "m_fixed.h"
+#include "dehacked.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,6 +80,7 @@ typedef enum state
 
 struct state_t
 {
+	dehinfo_t info;
 	spritenum_t sprite;
 	UINT32 frame; // we use the upper 16 bits for translucency and other shade effects
 	INT32 tics;
@@ -89,6 +91,7 @@ struct state_t
 };
 
 extern state_t states[NUMSTATES];
+extern UINT16 numstates;
 extern char sprnames[NUMSPRITES + 1][5];
 extern char spr2names[NUMPLAYERSPRITES][5];
 extern playersprite_t spr2defaults[NUMPLAYERSPRITES];
@@ -107,6 +110,7 @@ typedef enum mobj_type
 
 struct mobjinfo_t
 {
+	dehinfo_t info;
 	INT32 doomednum;
 	statenum_t spawnstate;
 	INT32 spawnhealth;
@@ -134,10 +138,35 @@ struct mobjinfo_t
 };
 
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
+extern UINT16 nummobjtypes;
 
-void P_PatchInfoTables(void);
+typedef enum
+{
+#define _(name, ...) SKINCOLOR_##name,
+#include "info/skincolors.h"
+#undef _
+	SKINCOLOR_FIRSTFREESLOT,
+	SKINCOLOR_LASTFREESLOT = SKINCOLOR_FIRSTFREESLOT + NUMCOLORFREESLOTS - 1,
+	MAXSKINCOLORS,
 
-void P_BackupTables(void);
+	FIRSTRAINBOWCOLOR = SKINCOLOR_PINK,
+	FIRSTSUPERCOLOR = SKINCOLOR_SUPER1,
+	NUMSUPERCOLORS = ((SKINCOLOR_FIRSTFREESLOT - FIRSTSUPERCOLOR)/5)
+} skincolornum_t;
+
+struct skincolor_t
+{
+	dehinfo_t info;             // Internal name hash and offset
+	char name[MAXCOLORNAME+1];  // Skincolor name
+	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
+	UINT16 invcolor;            // Signpost color
+	UINT8 invshade;             // Signpost color shade
+	UINT16 chatcolor;           // Chat color
+	boolean accessible;         // Accessible by the color command + setup menu
+};
+
+extern skincolor_t skincolors[MAXSKINCOLORS];
+extern UINT16 numskincolors;
 
 void P_ResetData(INT32 flags);
 
