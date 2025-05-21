@@ -1725,7 +1725,7 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 				break;
 
 			case moveFloorByFrontSector:
-				dofloor->speed = line->args[2] << (FRACBITS - 3);
+				dofloor->speed = line->args[3] << (FRACBITS - 3);
 				dofloor->floordestheight = line->frontsector->floorheight;
 
 				if (dofloor->floordestheight >= sec->floorheight)
@@ -1735,11 +1735,11 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 
 				// chained linedef executing ability
 				// Only set it on one of the moving sectors (the smallest numbered)
-				if (line->args[3])
+				if (line->args[4])
 					dofloor->tag = firstone ? (INT16)line->args[3] : -1;
 
 				// flat changing ability
-				dofloor->texture = line->args[4] ? line->frontsector->floorpic : -1;
+				dofloor->texture = line->args[5] ? line->frontsector->floorpic : -1;
 				break;
 
 			case moveFloorByDistance:
