@@ -13,9 +13,9 @@
 #include "doomdef.h"
 #include "m_cond.h"
 #include "deh_soc.h"
+#include "deh_lua.h"
 #include "deh_tables.h"
-
-boolean deh_loaded = false;
+#include "k_hud.h"
 
 boolean gamedataadded = false;
 boolean titlechanged = false;
@@ -176,6 +176,182 @@ static void ignorelines(MYFILE *f)
 	Z_Free(s);
 }
 
+void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf)
+{
+	info->namehash = HASH32(name, strlen(name));
+	info->nameofs = strbuf_append(buf, name);
+}
+
+INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
+{
+	size_t i;
+
+	// TODO: Check for existing freeslot mobjs/states/etc. and make errors.
+	// TODO: Name too long (truncated) warnings.
+	if (fastcmp(type, "SFX"))
+	{
+		CONS_Printf("Sound sfx_%s allocated.\n", word);
+		i = S_AddSoundFx(word, false, 0, false);
+		if (i != sfx_None)
+		{
+			*out = i;
+			return 0;
+		}
+		CONS_Alert(CONS_WARNING, "Ran out of free SFX slots!\n");
+		return -1;
+	}
+	else if (fastcmp(type, "SPR"))
+	{
+		for (i = SPR_FIRSTFREESLOT; i <= SPR_LASTFREESLOT; i++)
+		{
+			if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
+				continue; // Already allocated, next.
+			// Found a free slot!
+			CONS_Printf("Sprite SPR_%s allocated.\n",word);
+			strncpy(sprnames[i],word,4);
+			used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
+			// Lua needs to update the value in _G if it exists
+			LUA_UpdateSprName(word, i);
+			*out = i;
+			return 0;
+		}
+		CONS_Alert(CONS_WARNING, "Ran out of free sprite slots!\n");
+		return -1;
+	}
+	else if (fastcmp(type, "S"))
+	{
+		*out = DEH_FindState(word);
+		if (*out != NUMSTATES)
+			return 0; // already allocated
+
+		if (numstates == NUMSTATES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
+			return -1;
+		}
+		CONS_Printf("State S_%s allocated.\n",word);
+		DEH_Link(word, &states[numstates].info, &statenames);
+		*out = numstates++;
+		freeslotusage[0][0]++;
+		return 0;
+	}
+	else if (fastcmp(type, "MT"))
+	{
+		*out = DEH_FindMobjtype(word);
+		if (*out != NUMMOBJTYPES)
+			return 0; // already allocated
+
+		if (nummobjtypes == NUMMOBJTYPES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
+			return -1;
+		}
+		CONS_Printf("MobjType MT_%s allocated.\n",word);
+		DEH_Link(word, &mobjinfo[nummobjtypes].info, &mobjnames);
+		*out = nummobjtypes++;
+		freeslotusage[1][0]++;
+		return 0;
+	}
+	else if (fastcmp(type, "SKINCOLOR"))
+	{
+		*out = DEH_FindSkincolor(word);
+		if (*out != MAXSKINCOLORS)
+			return 0; // already allocated
+
+		if (numskincolors == MAXSKINCOLORS) {
+			CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
+			return -1;
+		}
+		CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
+		DEH_Link(word, &skincolors[numskincolors].info, &skincolornames);
+		M_AddMenuColor(numskincolors);
+		K_ReloadHUDColorCvar();
+		*out = numskincolors++;
+		return 0;
+	}
+	else if (fastcmp(type, "SPR2"))
+	{
+		// Search if we already have an SPR2 by that name...
+		for (i = SPR2_FIRSTFREESLOT; i < free_spr2; i++)
+			if (memcmp(spr2names[i],word,4) == 0)
+				break;
+		// We don't, so allocate a new one.
+		if (i >= free_spr2) {
+			if (free_spr2 < NUMPLAYERSPRITES)
+			{
+				CONS_Printf("Sprite SPR2_%s allocated.\n",word);
+				strncpy(spr2names[free_spr2],word,4);
+				spr2defaults[free_spr2] = 0;
+				*out = free_spr2;
+				spr2names[free_spr2++][4] = 0;
+				return 0;
+			} else {
+				CONS_Alert(CONS_WARNING, "Ran out of free SPR2 slots!\n");
+				return -1;
+			}
+		}
+	}
+	else if (fastcmp(type, "TOL"))
+	{
+		// Search if we already have a typeoflevel by that name...
+		for (i = 0; TYPEOFLEVEL[i].name; i++)
+			if (fastcmp(word, TYPEOFLEVEL[i].name))
+				break;
+
+		// We don't, so allocate a new one.
+		if (TYPEOFLEVEL[i].name == NULL) {
+			if (lastcustomtol == (UINT32)MAXTOL) // Unless you have way too many, since they're flags.
+			{
+				CONS_Alert(CONS_WARNING, "Ran out of free typeoflevel slots!\n");
+				return -1;
+			} else {
+				CONS_Printf("TypeOfLevel TOL_%s allocated.\n",word);
+				G_AddTOL(lastcustomtol, word);
+				*out = lastcustomtol;
+				lastcustomtol <<= 1;
+				return 0;
+			}
+		}
+	}
+	else if (fastcmp(type, "PRECIP"))
+	{
+		// Search if we already have a PRECIP by that name...
+		for (i = PRECIP_FIRSTFREESLOT; i < precip_freeslot; i++)
+			if (fastcmp(word, precipprops[i].name))
+				break;
+
+		// We don't, so allocate a new one.
+		if (i >= precip_freeslot) {
+			if (precip_freeslot < MAXPRECIP)
+			{
+				CONS_Printf("Weather PRECIP_%s allocated.\n",word);
+				precipprops[i].name = Z_StrDup(word);
+				*out = precip_freeslot;
+				precip_freeslot++;
+				return 0;
+			} else {
+				CONS_Alert(CONS_WARNING, "Ran out of free PRECIP slots!\n");
+				return -1;
+			}
+		}
+	}
+	else if (fastcmp(type, "MN"))
+	{
+		*out = DEH_FindMenutype(word);
+		if (*out != MAXMENUTYPES)
+			return 0; // already allocated
+
+		if (nummenutypes == MAXMENUTYPES) {
+			CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
+			return -1;
+		}
+		CONS_Printf("Menu MN_%s allocated.\n",word);
+		DEH_Link(word, &menudefs[nummenutypes].info, &menunames);
+		*out = nummenutypes++;
+		return 0;
+	}
+
+	return -2;
+}
+
 static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -183,9 +359,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 	char *word;
 	char *word2;
 	INT32 i;
-
-	if (!deh_loaded)
-		initfreeslots();
 
 	deh_num_warning = 0;
 
@@ -476,12 +649,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
-					if (i >= 1 && i < NUMMENUTYPES)
+					if (i >= 1 && i < nummenutypes)
 						readmenu(f, i);
 					else
 					{
 						// zero-based, but let's start at 1
-						deh_warning("Menu number %d out of range (1 - %d)", i, NUMMENUTYPES-1);
+						deh_warning("Menu number %d out of range (1 - %d)", i, nummenutypes-1);
 						ignorelines(f);
 					}
 				}
@@ -685,7 +858,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 		}
 	}
 
-	deh_loaded = true;
 	Z_Free(s);
 }
 

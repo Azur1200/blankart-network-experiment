@@ -700,6 +700,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{
+		K_DoInstashield(t1->player);
+		K_DoInstashield(t2->player);
 		return false;
 	}
 	else if (t1Condition == true && t2Condition == false)
@@ -767,20 +769,6 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 			P_DamageMobj(t1, t2, t2, 1, DMG_WIPEOUT|DMG_STEAL);
 			return true;
 		}
-	}
-
-	// Ring Loss on bump.
-	t1Condition = ((t2->player->rings > 0) && (K_GetShieldFromPlayer(t2->player) == KSHIELD_NONE));
-	t2Condition = ((t1->player->rings > 0) && (K_GetShieldFromPlayer(t1->player) == KSHIELD_NONE));
-
-	if (t1Condition == true)
-	{
-		P_PlayerRingBurst(t2->player, 1);
-	}
-
-	if (t2Condition == true)
-	{
-		P_PlayerRingBurst(t1->player, 1);
 	}
 	
 	return false;

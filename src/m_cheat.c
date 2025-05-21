@@ -354,7 +354,7 @@ void Command_RTeleport_f(void)
 			FLOAT_TO_FIXED(x), FLOAT_TO_FIXED(y), FLOAT_TO_FIXED(z));
 }
 
-void Command_Teleport_f(void)
+void Command_ATeleport_f(void)
 {
 	fixed_t intx, inty, intz;
 	size_t i;
@@ -575,6 +575,25 @@ void Command_Teleport_f(void)
 	P_MapEnd();
 }
 
+void Command_Teleport_f(void)
+{
+	float x = atof(COM_Argv(1));
+	float y = atof(COM_Argv(2));
+	float z = atof(COM_Argv(3));
+
+	REQUIRE_DEVMODE;
+	REQUIRE_INLEVEL;
+
+	if (COM_Argc() != 4)
+	{
+		CONS_Printf(M_GetText("teleport <x> <y> <z>: teleport to a location\n"));
+		return;
+	}
+
+	D_Cheat(consoleplayer, CHEAT_TELEPORT,
+			FLOAT_TO_FIXED(x), FLOAT_TO_FIXED(y), FLOAT_TO_FIXED(z));
+}
+
 void Command_Skynum_f(void)
 {
 	REQUIRE_DEVMODE;
@@ -782,8 +801,6 @@ void Command_Devmode_f(void)
 void Command_Setrings_f(void)
 {
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_PANDORA;
 
 	D_Cheat(consoleplayer, CHEAT_RINGS, atoi(COM_Argv(1)));
 }
@@ -791,10 +808,25 @@ void Command_Setrings_f(void)
 void Command_Setlives_f(void)
 {
 	REQUIRE_INLEVEL;
-	REQUIRE_SINGLEPLAYER;
-	REQUIRE_PANDORA;
 
 	D_Cheat(consoleplayer, CHEAT_LIVES, atoi(COM_Argv(1)));
+}
+
+void Command_Setscore_f(void)
+{
+	REQUIRE_INLEVEL;
+
+	D_Cheat(consoleplayer, CHEAT_SCORE, atoi(COM_Argv(1)));
+}
+
+void Command_Angle_f(void)
+{
+	const float anglef = atof(COM_Argv(1));
+	const angle_t angle = FixedAngle(FLOAT_TO_FIXED(anglef));
+
+	REQUIRE_INLEVEL;
+
+	D_Cheat(consoleplayer, CHEAT_ANGLE, angle);
 }
 
 //

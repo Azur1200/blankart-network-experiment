@@ -350,7 +350,7 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 
 			//  Linedef executor excellence
 			case moveCeilingByFrontSector:
-				ceiling->speed = line->args[2] << (FRACBITS - 3);
+				ceiling->speed = line->args[3] << (FRACBITS - 3);
 				if (line->frontsector->ceilingheight >= sec->ceilingheight) // Move up
 				{
 					ceiling->direction = 1;
@@ -371,11 +371,11 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 				// chained linedef executing ability
 				// only set it on ONE of the moving sectors (the smallest numbered)
 				// and front side x offset must be positive
-				if (line->args[4])
+				if (line->args[5])
 				{
 					ceiling->texture = firstone ? line->args[4] - 32769 : -1;
 				}
-				else if (line->args[3]) // flat changing ability
+				else if (line->args[4]) // flat changing ability
 					ceiling->texture = line->frontsector->ceilingpic;
 				else
 					ceiling->texture = -1;

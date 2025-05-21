@@ -409,6 +409,10 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 				return;
 			}
 
+			// do not path over the finish line. just don't.
+			if (checkwaypoint == finishline)
+				return;
+
 			checkdist = P_AproxDistance(
 				(mobj->x / FRACUNIT) - (checkwaypoint->mobj->x / FRACUNIT),
 				(mobj->y / FRACUNIT) - (checkwaypoint->mobj->y / FRACUNIT));

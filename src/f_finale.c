@@ -976,7 +976,7 @@ static void F_DrawDiagCubes(void)
 	for (j = -4; j < 5; j++)
 	{
 		//Up Cubes
-		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
@@ -994,8 +994,9 @@ void F_BlanCreditDrawer(void)
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
 
+	V_DrawFill(-100,-100,vid.width, vid.height,81);
 	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
-	V_DrawFillConsoleMap(0,0,vid.width, vid.height,0);
+	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
 	// Draw credits text on top
 	for (i = 0; blancredits[i]; i++)

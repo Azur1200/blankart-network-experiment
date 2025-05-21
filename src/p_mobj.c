@@ -1859,7 +1859,7 @@ void P_XYMovement(mobj_t *mo)
 		else if (predictedz-mo->z > abs(slopemom.z/2)
 		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true // Now check if we were supposed to stick to this slope
 		&& ((!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
-		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz)))) // Always do this for old demos
+		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz))))
 		{
 			// Now check if we were supposed to stick to this slope
 			//CONS_Printf("%d-%d > %d\n", (predictedz), (mo->z), (slopemom.z/2));
@@ -9095,7 +9095,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->sloperoll = mobj->target->sloperoll;
 
 			P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
-			mobj->angle = mobj->target->angle;
+			mobj->angle = K_MomentumAngle(mobj->target);
 			break;
 		}
 	case MT_ROCKETSNEAKER:
@@ -10596,11 +10596,10 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 	thing->whiteshadow = ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
 	thing->shadowcolor = 15;
 
+	// Those have shadow by default
 	switch (thing->type)
 	{
 		case MT_PLAYER:
-			thing->shadowscale = FRACUNIT;
-			break;
 		case MT_SMALLMACE:
 		case MT_BIGMACE:
 		case MT_PUMA:
@@ -10622,7 +10621,11 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
 		case MT_SPB:
-			thing->shadowscale = 3*FRACUNIT/2;
+		case MT_ADVENTURESPIKEA:
+		case MT_ADVENTURESPIKEB:
+		case MT_ADVENTURESPIKEC:
+		case MT_CDUFO:
+			thing->shadowscale = 4*FRACUNIT/3;
 			break;
 		case MT_BANANA_SHIELD:
 			thing->shadowscale = 12*FRACUNIT/5;
@@ -10639,17 +10642,112 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 			thing->shadowscale = 3*FRACUNIT/2;
 			thing->whiteshadow = false;
 			break;
+		case MT_FLOATINGITEM:
+		case MT_ITEMCAPSULE:
+			thing->shadowscale = FRACUNIT/2;
+			break;
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
-		case MT_BUBBLESHIELDTRAP:
 		case MT_FLAMESHIELD:
+		case MT_BLUEFRUIT:
+		case MT_ORANGEFRUIT:
+		case MT_REDFRUIT:
+		case MT_PINKFRUIT:
+		case MT_RANDOMAUDIENCE:
+		case MT_DOOD_BOX:
+		case MT_DOOD_BALLOON:
+		case MT_BLUECRAWLA:
+		case MT_REDCRAWLA:
+		case MT_GFZFISH: // Greenflower Fish
+		case MT_GOLDBUZZ:
+		case MT_REDBUZZ:
+		case MT_AQUABUZZ: // AquaBuzz for ATZ
+		case MT_JETTBOMBER: // Jetty-Syn Bomber
+		case MT_JETTGUNNER: // Jetty-Syn Gunner
+		case MT_CRAWLACOMMANDER: // Crawla Commander
+		case MT_DETON: // Deton
+		case MT_SKIM: // Skim mine dropper
+		case MT_TURRET:
+		case MT_POPUPTURRET:
+		case MT_SHARP: // Sharp
+		case MT_JETJAW: // Jet Jaw
+		case MT_SNAILER: // Snailer
+		case MT_VULTURE: // Vulture
+		case MT_POINTY: // Pointy
+		case MT_POINTYBALL: // Pointy Ball
+		case MT_ROBOHOOD: // Robo-Hood
+		case MT_FACESTABBER: // CastleBot FaceStabber
+		case MT_EGGGUARD: // Egg Guard
+		case MT_EGGSHIELD: // Egg Shield for Egg Guard
+		case MT_GSNAPPER: // Green Snapper
+		case MT_MINUS: // Minus
+		case MT_SPRINGSHELL: // Spring Shell
+		case MT_YELLOWSHELL: // Spring Shell (yellow)
+		case MT_UNIDUS: // Unidus
+		case MT_UNIBALL: // Unidus Ball
+		case MT_GOOMBA:
+		case MT_BLUEGOOMBA:
+		case MT_KOOPA:
+		case MT_MONOKUMA:
+		case MT_ARIDTOAD:
+		case MT_SRB1_CRAWLA:
+		case MT_SRB1_BAT:
+		case MT_SRB1_ROBOFISH:
+		case MT_SRB1_VOLCANOGUY:
+		case MT_SRB1_HOPPY:
+		case MT_SRB1_HOPPYWATER:
+		case MT_SRB1_HOPPYSKYLAB:
+		case MT_SRB1_MMZFLYING:
+		case MT_SRB1_UFO:
+		case MT_SRB1_GRAYBOT:
+		case MT_SRB1_ROBOTOPOLIS:
+		case MT_SRB1_RBZBUZZ:
+		case MT_SRB1_RBZSPIKES:
+		case MT_SRB1_METALSONIC:
+		case MT_SRB1_GOLDBOT:
+		case MT_SRB1_GENREX:
+		case MT_BOWLINGPIN:
+		case MT_EXPLODINGBARREL:
+		case MT_FROGGER:
+		case MT_ROBRA:
+		case MT_CHOMPER:
+		case MT_BUZZBOMBER:
+		case MT_GARGOYLE:
+		case MT_GBA_BOO:
+		case MT_FLYINGGARG:
 			thing->shadowscale = FRACUNIT;
 			break;
 		case MT_RING:
 		case MT_FLINGRING:
-		case MT_FLOATINGITEM:
-		case MT_BLUEBALL:
-		case MT_ITEMCAPSULE:
+		case MT_COIN:
+		case MT_FLINGCOIN:
+		case MT_REDTEAMRING:
+		case MT_BLUETEAMRING:
+		case MT_REDFLAG:
+		case MT_BLUEFLAG:
+		case MT_BOUNCERING:
+		case MT_AUTOMATICRING:
+		case MT_INFINITYRING:
+		case MT_RAILRING:
+		case MT_EXPLOSIONRING:
+		case MT_SCATTERRING:
+		case MT_GRENADERING:
+		case MT_BOUNCEPICKUP:
+		case MT_RAILPICKUP:
+		case MT_AUTOPICKUP:
+		case MT_EXPLODEPICKUP:
+		case MT_SCATTERPICKUP:
+		case MT_GRENADEPICKUP:
+		case MT_REDRING:
+		case MT_THROWNBOUNCE:
+		case MT_THROWNINFINITY:
+		case MT_THROWNAUTOMATIC:
+		case MT_THROWNSCATTER:
+		case MT_THROWNEXPLOSION:
+		case MT_THROWNGRENADE:
+		case MT_EMBLEM:
+			thing->shadowscale = FRACUNIT/3;
+			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
 				thing->shadowscale = FRACUNIT;

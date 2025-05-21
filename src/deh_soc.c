@@ -52,7 +52,6 @@
 // SRB2Kart
 #include "filesrch.h" // refreshdirmenu
 #include "k_follower.h"
-#include "k_hud.h"
 #include "doomstat.h" // MAXMUSNAMES
 
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
@@ -392,7 +391,6 @@ void readfreeslots(MYFILE *f)
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word,*type;
 	char *tmp;
-	int i;
 
 	do
 	{
@@ -419,130 +417,8 @@ void readfreeslots(MYFILE *f)
 			else
 				break;
 
-			// TODO: Check for existing freeslot mobjs/states/etc. and make errors.
-			// TODO: Out-of-slots warnings/errors.
-			// TODO: Name too long (truncated) warnings.
-			if (fastcmp(type, "SFX"))
-			{
-				CONS_Printf("Sound sfx_%s allocated.\n",word);
-				S_AddSoundFx(word, false, 0, false);
-			}
-			else if (fastcmp(type, "SPR"))
-			{
-				for (i = SPR_FIRSTFREESLOT; i <= SPR_LASTFREESLOT; i++)
-				{
-					if (used_spr[(i-SPR_FIRSTFREESLOT)/8] & (1<<(i%8)))
-						continue; // Already allocated, next.
-					// Found a free slot!
-					CONS_Printf("Sprite SPR_%s allocated.\n",word);
-					strncpy(sprnames[i],word,4);
-					used_spr[(i-SPR_FIRSTFREESLOT)/8] |= 1<<(i%8); // Okay, this sprite slot has been named now.
-					// Lua needs to update the value in _G if it exists
-					LUA_UpdateSprName(word, i);
-					break;
-				}
-			}
-			else if (fastcmp(type, "S"))
-			{
-				for (i = 0; i < NUMSTATEFREESLOTS; i++)
-					if (!FREE_STATES[i]) {
-						CONS_Printf("State S_%s allocated.\n",word);
-						FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_STATES[i],word);
-						freeslotusage[0][0]++;
-						break;
-					}
-			}
-			else if (fastcmp(type, "MT"))
-			{
-				for (i = 0; i < NUMMOBJFREESLOTS; i++)
-					if (!FREE_MOBJS[i]) {
-						CONS_Printf("MobjType MT_%s allocated.\n",word);
-						FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MOBJS[i],word);
-						freeslotusage[1][0]++;
-						break;
-					}
-			}
-			else if (fastcmp(type, "SKINCOLOR"))
-			{
-				for (i = 0; i < NUMCOLORFREESLOTS; i++)
-					if (!FREE_SKINCOLORS[i]) {
-						CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-						FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_SKINCOLORS[i],word);
-						M_AddMenuColor(numskincolors++);
-						K_ReloadHUDColorCvar();
-						break;
-					}
-			}
-			else if (fastcmp(type, "SPR2"))
-			{
-				// Search if we already have an SPR2 by that name...
-				for (i = SPR2_FIRSTFREESLOT; i < (int)free_spr2; i++)
-					if (memcmp(spr2names[i],word,4) == 0)
-						break;
-				// We found it? (Two mods using the same SPR2 name?) Then don't allocate another one.
-				if (i < (int)free_spr2)
-					continue;
-				// Copy in the spr2 name and increment free_spr2.
-				if (free_spr2 < NUMPLAYERSPRITES) {
-					strncpy(spr2names[free_spr2],word,4);
-					spr2defaults[free_spr2] = 0;
-					spr2names[free_spr2++][4] = 0;
-				} else
-					deh_warning("Ran out of free SPR2 slots!\n");
-			}
-			else if (fastcmp(type, "TOL"))
-			{
-				// Search if we already have a typeoflevel by that name...
-				for (i = 0; TYPEOFLEVEL[i].name; i++)
-					if (fastcmp(word, TYPEOFLEVEL[i].name))
-						break;
-
-				// We found it? Then don't allocate another one.
-				if (TYPEOFLEVEL[i].name)
-					continue;
-
-				// We don't, so freeslot it.
-				if (lastcustomtol == (UINT32)MAXTOL) // Unless you have way too many, since they're flags.
-					deh_warning("Ran out of free typeoflevel slots!\n");
-				else
-				{
-					G_AddTOL(lastcustomtol, word);
-					lastcustomtol <<= 1;
-				}
-			}
-			else if (fastcmp(type, "PRECIP"))
-			{
-				// Search if we already have a PRECIP by that name...
-				for (i = PRECIP_FIRSTFREESLOT; i < (int)precip_freeslot; i++)
-					if (fastcmp(word, precipprops[i].name))
-						break;
-
-				// We found it? Then don't allocate another one.
-				if (i < (int)precip_freeslot)
-					continue;
-
-				// We don't, so allocate a new one.
-				if (precip_freeslot < MAXPRECIP)
-				{
-					precipprops[i].name = Z_StrDup(word);
-					precip_freeslot++;
-				} else
-					deh_warning("Ran out of free PRECIP slots!\n");
-			}
-			else if (fastcmp(type, "MN"))
-			{
-				for (i = 0; i < NUMMENUFREESLOTS; i++)
-					if (!FREE_MENUS[i]) {
-						CONS_Printf("Menu MN_%s allocated.\n",word);
-						FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-						strcpy(FREE_MENUS[i],word);
-						break;
-					}
-			}
-			else
+			INT32 index;
+			if (DEH_ReadFreeslot(type, word, &index) == -2)
 				deh_warning("Freeslots: unknown enum class '%s' for '%s_%s'", type, type, word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
@@ -1284,7 +1160,7 @@ void readlevelheader(MYFILE *f, char * name)
 						if (fastncmp(tmp, "MT_", 3)) // support for specified mobjtypes...
 						{
 							i = get_mobjtype(tmp);
-							if (i == -1)
+							if (i == NUMMOBJTYPES)
 							{
 								//deh_warning("Level header %d: unknown flicky mobj type %s\n", num, tmp); -- no need for this line as get_mobjtype complains too
 								continue;
@@ -2154,21 +2030,6 @@ void readtextprompt(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 
-static menu_t *allocmenu(INT32 num)
-{
-	if (num < 0 || num >= NUMMENUTYPES)
-		I_Error("Tried to allocate out-of-range menu number");
-
-	menu_t *menu = menudefs[num];
-	if (menu == NULL)
-	{
-		menudefs[num] = menu = Z_Calloc(sizeof(menu_t), PU_STATIC, NULL);
-		menu->drawroutine = M_DrawGenericMenu;
-	}
-
-	return menu;
-}
-
 // super secret menu cvars... :shushing_face:
 static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "CHOOSESKIN", &cv_chooseskin },
@@ -2311,14 +2172,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				continue;
 			}
 			menutype_t mn = get_menutype(word2);
-			if (mn == MN_NONE)
+			if (mn == MAXMENUTYPES)
 			{
 				WARN("unknown menu '%s'", word2);
 				continue;
 			}
 			actionset = true;
 			status |= IT_SUBMENU;
-			allocmenu(mn);
 			menuitem->itemaction.submenu = mn;
 		}
 		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
@@ -2372,7 +2232,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 #undef WARN
 #undef WARN0
 
-#define WARN(str, ...) deh_warning("Menu %s: " str, num < MN_FIRSTFREESLOT ? MENUTYPES_LIST[num] : FREE_MENUS[num - MN_FIRSTFREESLOT], __VA_ARGS__)
+#define WARN(str, ...) deh_warning("Menu %s: " str, DEH_MenutypeName(num), __VA_ARGS__)
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2381,7 +2241,7 @@ void readmenu(MYFILE *f, INT32 num)
 	char *tmp;
 	INT32 value;
 
-	menu_t *menudef = allocmenu(num);
+	menu_t *menudef = &menudefs[num];
 
 	do
 	{
@@ -2679,7 +2539,7 @@ void readframe(MYFILE *f, INT32 num)
 			else if (fastcmp(word1, "NEXT"))
 			{
 				statenum_t state = get_state(word2);
-				states[num].nextstate = state == (statenum_t)-1 ? S_NULL : state;
+				states[num].nextstate = state == NUMSTATES ? S_NULL : state;
 			}
 			else if (fastcmp(word1, "VAR1"))
 			{
@@ -4007,7 +3867,7 @@ void readfollower(MYFILE *f)
 				else
 				{
 					skincolornum_t color = get_skincolor(word2);
-					followers[numfollowers].defaultcolor = color == (skincolornum_t)-1 ? SKINCOLOR_GREEN : color;
+					followers[numfollowers].defaultcolor = color == MAXSKINCOLORS ? SKINCOLOR_GREEN : color;
 				}
 			}
 			else if (fastcmp(word, "SCALE"))
@@ -4241,7 +4101,7 @@ void readweather(MYFILE *f, INT32 num)
 			if (fastcmp(word, "TYPE"))
 			{
 				mobjtype_t mt = get_mobjtype(word2);
-				precipprops[num].type = mt == (mobjtype_t)-1 ? MT_NULL : mt;
+				precipprops[num].type = mt == NUMMOBJTYPES ? MT_NULL : mt;
 			}
 			else if (fastcmp(word, "EFFECTS"))
 			{
@@ -4266,17 +4126,10 @@ mobjtype_t get_mobjtype(const char *word)
 		return atoi(word);
 	if (fastncmp("MT_",word,3))
 		word += 3; // take off the MT_
-	for (i = 0; i < NUMMOBJFREESLOTS; i++) {
-		if (!FREE_MOBJS[i])
-			break;
-		if (fastcmp(word, FREE_MOBJS[i]))
-			return MT_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < MT_FIRSTFREESLOT; i++)
-		if (fastcmp(word, MOBJTYPE_LIST[i]+3))
-			return i;
-	deh_warning("Couldn't find mobjtype named 'MT_%s'",word);
-	return -1;
+	i = DEH_FindMobjtype(word);
+	if (i == NUMMOBJTYPES)
+		deh_warning("Couldn't find mobjtype named 'MT_%s'", word);
+	return i;
 }
 
 statenum_t get_state(const char *word)
@@ -4286,17 +4139,10 @@ statenum_t get_state(const char *word)
 		return atoi(word);
 	if (fastncmp("S_",word,2))
 		word += 2; // take off the S_
-	for (i = 0; i < NUMSTATEFREESLOTS; i++) {
-		if (!FREE_STATES[i])
-			break;
-		if (fastcmp(word, FREE_STATES[i]))
-			return S_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < S_FIRSTFREESLOT; i++)
-		if (fastcmp(word, STATE_LIST[i]+2))
-			return i;
-	deh_warning("Couldn't find state named 'S_%s'",word);
-	return -1;
+	i = DEH_FindState(word);
+	if (i == NUMSTATES)
+		deh_warning("Couldn't find state named 'S_%s'", word);
+	return i;
 }
 
 skincolornum_t get_skincolor(const char *word)
@@ -4306,17 +4152,10 @@ skincolornum_t get_skincolor(const char *word)
 		return atoi(word);
 	if (fastncmp("SKINCOLOR_",word,10))
 		word += 10; // take off the SKINCOLOR_
-	for (i = 0; i < NUMCOLORFREESLOTS; i++) {
-		if (!FREE_SKINCOLORS[i])
-			break;
-		if (fastcmp(word, FREE_SKINCOLORS[i]))
-			return SKINCOLOR_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++)
-		if (fastcmp(word, COLOR_ENUMS[i]))
-			return i;
-	deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'",word);
-	return -1;
+	i = DEH_FindSkincolor(word);
+	if (i == MAXSKINCOLORS)
+		deh_warning("Couldn't find skincolor named 'SKINCOLOR_%s'", word);
+	return i;
 }
 
 spritenum_t get_sprite(const char *word)
@@ -4370,17 +4209,10 @@ menutype_t get_menutype(const char *word)
 		return atoi(word);
 	if (fastncmp("MN_",word,3))
 		word += 3; // take off the MN_
-	for (i = 0; i < NUMMENUFREESLOTS; i++) {
-		if (!FREE_MENUS[i])
-			break;
-		if (fastcmp(word, FREE_MENUS[i]))
-			return MN_FIRSTFREESLOT+i;
-	}
-	for (i = 0; i < MN_FIRSTFREESLOT; i++)
-		if (fastcmp(word, MENUTYPES_LIST[i]))
-			return i;
-	deh_warning("Couldn't find menutype named 'MN_%s'",word);
-	return MN_NONE;
+	i = DEH_FindMenutype(word);
+	if (i == MAXMENUTYPES)
+		deh_warning("Couldn't find menutype named 'MN_%s'", word);
+	return i;
 }
 
 void (*get_menuroutine(const char *word))(INT32)

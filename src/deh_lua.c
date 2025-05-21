@@ -12,7 +12,6 @@
 
 #include "deh_lua.h"
 #include "deh_tables.h"
-#include "k_hud.h"
 
 // freeslot takes a name (string only!)
 // and allocates it to the appropriate free slot.
@@ -47,165 +46,25 @@ static inline int lib_freeslot(lua_State *L)
 			Z_Free(s);
 			return luaL_error(L, "Missing enum name in '%s'\n", luaL_checkstring(L, 1));
 		}
-		if (fastcmp(type, "SFX")) {
-			sfxenum_t sfx;
+
+		if (fastcmp(type, "SFX"))
 			strlwr(word);
-			CONS_Printf("Sound sfx_%s allocated.\n",word);
-			sfx = S_AddSoundFx(word, false, 0, false);
-			if (sfx != sfx_None) {
-				lua_pushinteger(L, sfx);
-				r++;
-			} else
-				CONS_Alert(CONS_WARNING, "Ran out of free SFX slots!\n");
-		}
-		else if (fastcmp(type, "SPR"))
+
+		INT32 index;
+		if (!DEH_ReadFreeslot(type, word, &index))
 		{
-			spritenum_t j;
-			for (j = SPR_FIRSTFREESLOT; j <= SPR_LASTFREESLOT; j++)
+			if (lua_compatmode)
 			{
-				if (used_spr[(j-SPR_FIRSTFREESLOT)/8] & (1<<(j%8)))
-					continue; // Already allocated, next.
-				// Found a free slot!
-				CONS_Printf("Sprite SPR_%s allocated.\n",word);
-				strncpy(sprnames[j],word,4);
-				used_spr[(j-SPR_FIRSTFREESLOT)/8] |= 1<<(j%8); // Okay, this sprite slot has been named now.
-				// Lua needs to update the value in _G if it exists
-				LUA_UpdateSprName(word, j);
-				lua_pushinteger(L, j);
-				r++;
-				break;
+				if (fastcmp(type, "MT"))
+					index -= MT_FIRSTFREESLOT;
+				if (fastcmp(type, "S"))
+					index -= S_FIRSTFREESLOT;
 			}
-			if (j > SPR_LASTFREESLOT)
-				CONS_Alert(CONS_WARNING, "Ran out of free sprite slots!\n");
-		}
-		else if (fastcmp(type, "S"))
-		{
-			statenum_t i;
-			for (i = 0; i < NUMSTATEFREESLOTS; i++)
-				if (!FREE_STATES[i]) {
-					CONS_Printf("State S_%s allocated.\n",word);
-					FREE_STATES[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_STATES[i],word);
-					freeslotusage[0][0]++;
-					lua_pushinteger(L, S_FIRSTFREESLOT + i);
-					r++;
-					break;
-				}
-			if (i == NUMSTATEFREESLOTS)
-				CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
-		}
-		else if (fastcmp(type, "MT"))
-		{
-			mobjtype_t i;
-			for (i = 0; i < NUMMOBJFREESLOTS; i++)
-				if (!FREE_MOBJS[i]) {
-					CONS_Printf("MobjType MT_%s allocated.\n",word);
-					FREE_MOBJS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MOBJS[i],word);
-					freeslotusage[1][0]++;
-					lua_pushinteger(L, MT_FIRSTFREESLOT + i);
-					r++;
-					break;
-				}
-			if (i == NUMMOBJFREESLOTS)
-				CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
-		}
-		else if (fastcmp(type, "SKINCOLOR"))
-		{
-			skincolornum_t i;
-			for (i = 0; i < NUMCOLORFREESLOTS; i++)
-				if (!FREE_SKINCOLORS[i]) {
-					CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
-					FREE_SKINCOLORS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_SKINCOLORS[i],word);
-					M_AddMenuColor(numskincolors++);
-					K_ReloadHUDColorCvar();
-					lua_pushinteger(L, SKINCOLOR_FIRSTFREESLOT + i);
-					r++;
-					break;
-				}
-			if (i == NUMCOLORFREESLOTS)
-				CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
-		}
-		else if (fastcmp(type, "SPR2"))
-		{
-			// Search if we already have an SPR2 by that name...
-			playersprite_t i;
-			for (i = SPR2_FIRSTFREESLOT; i < free_spr2; i++)
-				if (memcmp(spr2names[i],word,4) == 0)
-					break;
-			// We don't, so allocate a new one.
-			if (i >= free_spr2) {
-				if (free_spr2 < NUMPLAYERSPRITES)
-				{
-					CONS_Printf("Sprite SPR2_%s allocated.\n",word);
-					strncpy(spr2names[free_spr2],word,4);
-					spr2defaults[free_spr2] = 0;
-					lua_pushinteger(L, free_spr2);
-					r++;
-					spr2names[free_spr2++][4] = 0;
-				} else
-					CONS_Alert(CONS_WARNING, "Ran out of free SPR2 slots!\n");
-			}
-		}
-		else if (fastcmp(type, "TOL"))
-		{
-			// Search if we already have a typeoflevel by that name...
-			int i;
-			for (i = 0; TYPEOFLEVEL[i].name; i++)
-				if (fastcmp(word, TYPEOFLEVEL[i].name))
-					break;
 
-			// We don't, so allocate a new one.
-			if (TYPEOFLEVEL[i].name == NULL) {
-				if (lastcustomtol == (UINT32)MAXTOL) // Unless you have way too many, since they're flags.
-					CONS_Alert(CONS_WARNING, "Ran out of free typeoflevel slots!\n");
-				else {
-					CONS_Printf("TypeOfLevel TOL_%s allocated.\n",word);
-					G_AddTOL(lastcustomtol, word);
-					lua_pushinteger(L, lastcustomtol);
-					lastcustomtol <<= 1;
-					r++;
-				}
-			}
+			lua_pushinteger(L, index);
+			r++;
 		}
-		else if (fastcmp(type, "PRECIP"))
-		{
-			// Search if we already have a PRECIP by that name...
-			preciptype_t i;
-			for (i = PRECIP_FIRSTFREESLOT; i < precip_freeslot; i++)
-				if (fastcmp(word, precipprops[i].name))
-					break;
 
-			// We don't, so allocate a new one.
-			if (i >= precip_freeslot) {
-				if (precip_freeslot < MAXPRECIP)
-				{
-					CONS_Printf("Weather PRECIP_%s allocated.\n",word);
-					precipprops[i].name = Z_StrDup(word);
-					lua_pushinteger(L, precip_freeslot);
-					r++;
-					precip_freeslot++;
-				} else
-					CONS_Alert(CONS_WARNING, "Ran out of free PRECIP slots!\n");
-			}
-		}
-		else if (fastcmp(type, "MN"))
-		{
-			menutype_t i;
-			for (i = 0; i < NUMMENUFREESLOTS; i++)
-				if (!FREE_MENUS[i]) {
-					CONS_Printf("Menu MN_%s allocated.\n",word);
-					FREE_MENUS[i] = Z_Malloc(strlen(word)+1, PU_STATIC, NULL);
-					strcpy(FREE_MENUS[i],word);
-					lua_pushinteger(L, MN_FIRSTFREESLOT + i);
-					r++;
-					break;
-				}
-			if (i == NUMMENUFREESLOTS)
-				CONS_Alert(CONS_WARNING, "Ran out of free menu slots!\n");
-		}
-		Z_Free(s);
 		lua_remove(L, 1);
 		continue;
 	}
@@ -252,7 +111,7 @@ static void CacheAndPushConstant(lua_State *L, const char *name, lua_Integer val
 static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 {
 	const char *p;
-	fixed_t i;
+	size_t i;
 
 	if (strlen(word) == 1) { // Assume sprite frame if length 1.
 		if (*word >= 'A' && *word <= '~')
@@ -426,19 +285,12 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, S_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMSTATEFREESLOTS; i++) {
-			if (!FREE_STATES[i])
-				break;
-			if (fastcmp(p, FREE_STATES[i])) {
-				CacheAndPushConstant(L, word, S_FIRSTFREESLOT+i);
-				return 1;
-			}
+		i = DEH_FindState(p);
+		if (i != NUMSTATES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
-		for (i = 0; i < S_FIRSTFREESLOT; i++)
-			if (fastcmp(p, STATE_LIST[i]+2)) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
 		if (lua_compatmode)
 			for (i = 0; STATE_ALIASES[i].n; i++)
 				if (fastcmp(p, STATE_ALIASES[i].n)) {
@@ -454,20 +306,12 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, MT_FIRSTFREESLOT);
 			return 1;
 		}
-		for (i = 0; i < NUMMOBJFREESLOTS; i++) {
-			if (!FREE_MOBJS[i])
-				break;
-			if (fastcmp(p, FREE_MOBJS[i])) {
-				CacheAndPushConstant(L, word, MT_FIRSTFREESLOT+i);
-				return 1;
-			}
+		i = DEH_FindMobjtype(p);
+		if (i != NUMMOBJTYPES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
-		for (i = 0; i < MT_FIRSTFREESLOT; i++)
-			if (fastcmp(p, MOBJTYPE_LIST[i]+3)) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
-
 		if (lua_compatmode)
 			for (i = 0; MOBJ_ALIASES[i].n; i++)
 				if (fastcmp(p, MOBJ_ALIASES[i].n)) {
@@ -498,7 +342,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SPR2_",word,5)) {
 		p = word+5;
-		for (i = 0; i < (fixed_t)free_spr2; i++)
+		for (i = 0; i < free_spr2; i++)
 			if (!spr2names[i][4])
 			{
 				// special 3-char cases, e.g. SPR2_RUN
@@ -601,36 +445,22 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
-		for (i = 0; i < NUMCOLORFREESLOTS; i++) {
-			if (!FREE_SKINCOLORS[i])
-				break;
-			if (fastcmp(p, FREE_SKINCOLORS[i])) {
-				CacheAndPushConstant(L, word, SKINCOLOR_FIRSTFREESLOT+i);
-				return 1;
-			}
+		i = DEH_FindSkincolor(p);
+		if (i != MAXSKINCOLORS)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
-		for (i = 0; i < SKINCOLOR_FIRSTFREESLOT; i++)
-			if (fastcmp(p, COLOR_ENUMS[i])) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
 		return luaL_error(L, "skincolor '%s' could not be found.\n", word);
 	}
 	else if (fastncmp("MN_",word,3)) {
 		p = word+3;
-		for (i = 0; i < NUMMENUFREESLOTS; i++) {
-			if (!FREE_MENUS[i])
-				break;
-			if (fastcmp(p, FREE_MENUS[i])) {
-				CacheAndPushConstant(L, word, MN_FIRSTFREESLOT+i);
-				return 1;
-			}
+		i = DEH_FindMenutype(p);
+		if (i != MAXMENUTYPES)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
 		}
-		for (i = 0; i < MN_FIRSTFREESLOT; i++)
-			if (fastcmp(p, MENUTYPES_LIST[i])) {
-				CacheAndPushConstant(L, word, i);
-				return 1;
-			}
 		if (mathlib) return luaL_error(L, "menutype '%s' could not be found.\n", word);
 		return 0;
 	}

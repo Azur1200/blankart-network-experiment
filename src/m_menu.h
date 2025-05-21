@@ -46,11 +46,9 @@ typedef enum
 
 	MN_FIRSTFREESLOT,
 	MN_LASTFREESLOT = MN_FIRSTFREESLOT + 128,
-	NUMMENUTYPES,
+	MAXMENUTYPES,
 } menutype_t;
-#define NUMMENUFREESLOTS (NUMMENUTYPES - MN_FIRSTFREESLOT)
 
-extern menu_t *menudefs[NUMMENUTYPES];
 extern menutype_t menustack[NUMMENULEVELS];
 
 typedef struct
@@ -85,7 +83,7 @@ typedef struct
 	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
 } menupres_t;
 
-extern menupres_t menupres[NUMMENUTYPES];
+extern menupres_t menupres[MAXMENUTYPES];
 
 void M_InitMenuPresTables(void);
 //UINT8 M_GetYoungestChildMenu(void);
@@ -249,6 +247,7 @@ struct menuitem_t
 
 struct menu_t
 {
+	dehinfo_t      info;
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items
@@ -257,6 +256,9 @@ struct menu_t
 	INT16          lastOn;             // last item user was on in menu
 	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
+
+extern menu_t menudefs[MAXMENUTYPES];
+extern UINT16 nummenutypes;
 
 void M_EnterMenu(menutype_t menu, boolean callexit);
 void M_ExitMenu(void);
@@ -359,6 +361,7 @@ void M_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
+void M_DrawGenericScrollMenu(void);
 void M_DrawCenteredMenu(void);
 void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
@@ -470,6 +473,10 @@ extern consvar_t cv_dummyrings, cv_dummylives;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
+
+extern consvar_t cv_menucaps;
+// allow menu text to be displayed in lowercase
+#define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
 
 extern char dummystaffname[22];

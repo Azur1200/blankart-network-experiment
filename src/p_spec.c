@@ -47,6 +47,7 @@
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"
+#include "blan/b_soc.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -1396,7 +1397,10 @@ static boolean P_CheckPushables(line_t *triggerline, sector_t *caller)
 		case TMC_GTE:
 			return numpushables >= targetpushables;
 		case TMC_LTE:
-			return numpushables <= targetpushables;
+			if (mapnamespace == MNS_SRB2KART)
+				return numpushables < targetpushables;
+			else
+				return numpushables <= targetpushables;
 	}
 }
 
@@ -1971,6 +1975,73 @@ void P_SwitchWeather(preciptype_t newWeather)
 		P_SpawnPrecipitation();
 }
 
+static boolean isfinish(waypoint_t *check)
+{
+	size_t i;
+	waypoint_t *finish = K_GetFinishLineWaypoint();
+
+	if (check == NULL)
+		return false;
+	if (check == finish)
+		return true;
+
+	for (i = 0; i < check->numnextwaypoints; i++)
+	{
+		if (check->nextwaypoints[i] == finish)
+			return true;
+	}
+	for (i = 0; i < check->numprevwaypoints; i++)
+	{
+		if (check->prevwaypoints[i] == finish)
+			return true;
+	}
+
+	return false;
+}
+
+// fix the player's current waypoint after crossing the finish line
+// get them off the finish line waypoint ASAP!
+static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
+{
+	size_t i;
+	fixed_t closest = INT32_MAX;
+	waypoint_t *finish = K_GetFinishLineWaypoint(), *snapto = NULL;
+
+	// now did we actually cross the REAL finish line?
+	// this is important for sprint maps
+	if (!isfinish(player->currentwaypoint) && !isfinish(player->nextwaypoint))
+		return;
+
+	//CONS_Printf("fixed up %td\n", player - players);
+
+	if (reverse)
+	{
+		for (i = 0; i < finish->numprevwaypoints; i++)
+		{
+			waypoint_t *check = finish->prevwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+	else
+	{
+		for (i = 0; i < finish->numnextwaypoints; i++)
+		{
+			waypoint_t *check = finish->nextwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+
+	if (snapto)
+	{
+		player->currentwaypoint = snapto;
+		player->nextwaypoint = NULL; // don't forget to update position after this :^)
+	}
+}
+
 static boolean K_IgnoreFinishLine(player_t *player)
 {
 	// If potential lap cheating has been detected, do not
@@ -2027,8 +2098,10 @@ static void K_HandleLapIncrement(player_t *player)
 			}
 
 			if (!cv_kartdebuglap.value && player->laps == 1)
-					player->pflags |= PF_TRUSTWAYPOINTS;
+				player->pflags |= PF_TRUSTWAYPOINTS;
+			K_FixupFinishWaypoint(player, false);
 			K_UpdateAllPlayerPositions();
+
 
 			// Set up lap animation vars
 			if (player->laps > 1)
@@ -2139,6 +2212,7 @@ static void K_HandleLapDecrement(player_t *player)
 			return;
 		if (player->laps > 0)
 		{
+			K_FixupFinishWaypoint(player, true);
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_UpdateAllPlayerPositions();
@@ -2650,6 +2724,16 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						CONS_Debug(DBG_GAMELOGIC, "Special type 403 Executor: No frontsector to copy planes from!\n");
 						return false;
 					}
+
+					if (mapnamespace == MNS_SRB2KART)
+					{
+						if (line->args[2] != TMP_CEILING)
+							EV_DoFloor(line->args[1], line, moveFloorByFrontSector);
+						if (line->args[2] != TMP_FLOOR)
+							EV_DoCeiling(line->args[1], line, moveCeilingByFrontSector);
+						break;
+					}
+
 					copySector = line->frontsector;
 				}
 				else
@@ -5094,6 +5178,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	fixed_t sfxnum;
 	size_t i;
 
+	if (player->mo->terrain && player->mo->terrain->speedPad > 0 && B_UseTerrainDef())
+	{
+		// Don't double process Speed Pads.
+		return;
+	}
+
 	if (player->dashpadcooldown != 0)
 		return;
 
@@ -5185,6 +5275,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 {
+	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && B_UseTerrainDef())
+	{
+		// Don't double process Pogo Springs.
+		return;
+	}
+
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
 	const fixed_t minspeed = 24*hscale;
 	const fixed_t maxspeed = 28*hscale;
@@ -5208,6 +5304,23 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 
 static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
+
+	if (player->mo->terrain && B_UseTerrainDef())
+	{
+		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
+		{
+			// Don't double process sneakerpanels.
+			return;
+		}
+
+		if (player->mo->terrain->flags & TRF_WATERRUNPANEL)
+		{
+			// Don't double process waterpanels.
+			return;
+		}
+	}
+
+
 	if (isTouching)
 	{
 		if (!player->floorboost)
