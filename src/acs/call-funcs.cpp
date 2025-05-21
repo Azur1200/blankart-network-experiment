@@ -3196,7 +3196,7 @@ bool CallFunc_MusicStopAll(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM
 bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 {
 	ACSVM::MapScope *map = thread->scopeMap;
-	UINT32 lastmapmusposition = mapmusposition;
+	UINT32 lastmapmusposition = S_GetMusicPosition();
 
 	// 0: str song - lump name for the song to map to
 	// 1: [bool foractivator] - only do this if the activator is a player and is being viewed
