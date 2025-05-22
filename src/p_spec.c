@@ -5545,12 +5545,12 @@ static void P_EvaluateLinedefExecutorTrigger(player_t *player, sector_t *sector,
 
 static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, sector_t *roversector, boolean isTouching)
 {
-	switch (GETSECSPECIAL(sector->special, 1))
+	/*switch (GETSECSPECIAL(sector->special, 1))
 	{
 		case 9: // Ring Drainer (Floor Touch)
 			if (!isTouching)
 				break;
-			/* FALLTHRU */
+			// FALLTHRU
 		case 10: // Ring Drainer (No Floor Touch)
 			if (leveltime % (TICRATE/2) == 0 && player->rings > 0)
 			{
@@ -5558,7 +5558,7 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				S_StartSound(player->mo, sfx_antiri);
 			}
 			break;
-	}
+	}*/
 
 	switch (GETSECSPECIAL(sector->special, 2))
 	{
