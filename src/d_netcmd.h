@@ -209,6 +209,8 @@ extern consvar_t cv_director;
 
 extern consvar_t cv_schedule;
 
+extern consvar_t cv_test1, cv_test2, cv_test3;
+
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
 extern char timedemo_csv_id[256];

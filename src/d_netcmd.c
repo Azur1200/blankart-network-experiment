@@ -627,6 +627,10 @@ consvar_t cv_schedule = CVAR_INIT ("schedule", "On", CV_NETVAR|CV_CALL, CV_OnOff
 
 consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_test1 = CVAR_INIT ("test1", "-25", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
+consvar_t cv_test2 = CVAR_INIT ("test2", "55", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
+consvar_t cv_test3 = CVAR_INIT ("test3", "0", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
