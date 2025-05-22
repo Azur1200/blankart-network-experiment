@@ -3372,9 +3372,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 
 static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	mtag_t sectag = Tag_FGet(&sector->tags);
-
-	if (Tag_FindLineSpecial(13, sectag))
+	if (sector->flags & MSF_HEATWAVE)
 		return true;
 
 	if (sector->ffloors)
@@ -3388,13 +3386,10 @@ static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, 
 
 			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
 				continue;
-
 			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
 				continue;
 
-			sectag = Tag_FGet(&rover->master->frontsector->tags);
-
-			if (Tag_FindLineSpecial(13, sectag))
+			if (rover->master->frontsector->flags & MSF_HEATWAVE)
 				return true;
 		}
 	}
@@ -3410,12 +3405,11 @@ static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector,
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
-			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
+			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKOTHERS)
 				continue;
 
 			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
 				continue;
-
 			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
 				continue;
 
