@@ -3176,8 +3176,7 @@ void A_AttractChase(mobj_t *actor)
 
 				if (actor->target->player->rings <= 10)
 				{
-					S_StartSoundAtVolume(actor->target, sfx_s251, 255 - actor->target->player->rings*8);
-					S_StartSoundAtVolume(actor->target, sfx_s251, 255 - actor->target->player->rings*8);
+					S_StartSoundAtVolume(actor->target, sfx_ringlw, 255 - actor->target->player->rings*10);
 				}
 
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
