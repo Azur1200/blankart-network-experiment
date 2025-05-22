@@ -3405,7 +3405,7 @@ static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector,
 
 		for (rover = sector->ffloors; rover; rover = rover->next)
 		{
-			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKOTHERS)
+			if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_SWIMMABLE) || rover->fofflags & FOF_BLOCKPLAYER)
 				continue;
 
 			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
