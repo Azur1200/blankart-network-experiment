@@ -1884,9 +1884,11 @@ void D_SRB2Main(void)
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's
 			// lives hell.
+#if 0
 			if (!dedicated && M_MapLocked(pstartmap))
 				I_Error("You need to unlock this level before you can warp to it!\n");
 			else
+#endif
 			{
 				D_MapChange(pstartmap, gametype, (cv_kartencore.value == 1), true, 0, false, false);
 			}
