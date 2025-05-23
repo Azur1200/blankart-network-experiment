@@ -438,11 +438,13 @@ typedef enum
 	BOT_STYLE__MAX
 } botStyle_e;
 
-typedef enum {
-    DRIFTSTATE_AUTO=0,
-    DRIFTSTATE_ACTIVE,
-    DRIFTSTATE_ENDING,
-    NUMDRIFTSTATES
+typedef enum
+{
+	DRIFTSTATE_AUTO,
+	DRIFTSTATE_STARTING,
+	DRIFTSTATE_ACTIVE,
+	DRIFTSTATE_ENDING,
+	NUMDRIFTSTATES
 } botdrift_t;
 
 // player_t struct for all bot variables
@@ -471,6 +473,7 @@ struct botvars_t
 	tic_t drifttime; // Time spent drifting
 	tic_t driftlockout; // do not allow drifting for this many tics
 	tic_t driftending; // number of tics to force turning towards waypoint
+	UINT32 driftdist; // distance to finish when drift state changes
 };
 
 struct sonicloopcamvars_t

@@ -4825,6 +4825,7 @@ static void K_DrawBotDebugger(void)
 
 	static const char *driftstates[] = {
 		[DRIFTSTATE_AUTO] = "Auto",
+		[DRIFTSTATE_STARTING] = "Starting",
 		[DRIFTSTATE_ACTIVE] = "Active",
 		[DRIFTSTATE_ENDING] = "Ending",
 	};
@@ -4834,6 +4835,7 @@ static void K_DrawBotDebugger(void)
 	V_DrawThinString(24, 116, vflags, va("Drift turn: %d", stplyr->botvars.driftturn));
 	V_DrawThinString(24, 124, vflags, va("Drift timer: %d", stplyr->botvars.drifttime));
 	V_DrawThinString(24, 132, vflags, va("Drift end time: %d", stplyr->botvars.driftending));
+	V_DrawThinString(24, 140, vflags, va("Drift dist: %d", stplyr->botvars.driftdist - stplyr->distancetofinish));
 }
 
 void K_drawKartHUD(void)

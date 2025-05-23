@@ -42,6 +42,8 @@
 
 #include "m_perfstats.h" // ps_checkposition_calls
 
+#include "k_bot.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -3691,8 +3693,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-	mo->player->botvars.driftstate = DRIFTSTATE_AUTO;
-	mo->player->botvars.driftlockout = BOTDRIFTLOCKOUT;
+	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT);
 
 	if (!cv_kartbumpspring.value || modeattacking != ATTACKING_NONE)
 	{
