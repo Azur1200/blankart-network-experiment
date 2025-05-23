@@ -1625,7 +1625,7 @@ boolean G_Responder(event_t *ev)
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, true))
+		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, false))
 	{
 		if (!demo.playback && (r_splitscreen))
 			g_localplayers[0] = consoleplayer;
