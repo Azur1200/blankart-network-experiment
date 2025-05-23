@@ -196,6 +196,8 @@ consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
 consvar_t cv_sloperoll = CVAR_INIT ("spritesloperoll", "On", CV_SAVE, CV_OnOff, NULL);
 
+consvar_t cv_sliptidetilt = CVAR_INIT ("sliptidetilt", "On", CV_SAVE, CV_OnOff, NULL);
+
 void SplitScreen_OnChange(void)
 {
 	UINT8 i;
@@ -1836,6 +1838,7 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_actionmovie);
 	CV_RegisterVar(&cv_sloperoll);
+	CV_RegisterVar(&cv_sliptidetilt);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

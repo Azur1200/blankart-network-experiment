@@ -3639,7 +3639,7 @@ Quaketilt (player_t *player)
 		delta = (INT32)(( moma + ANGLE_180 ) - player->mo->angle );
 	if (P_IsObjectOnGround(player->mo))
 	{
-		if (sliptiding)
+		if (sliptiding && cv_sliptidetilt.value)
 		{
 			tilt = ANGLE_45;
 			lowb = 20*FRACUNIT;
