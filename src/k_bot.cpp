@@ -1096,28 +1096,25 @@ static boolean K_BotStartDrift(player_t* player)
 		return false;
 	}
 
-	if (player->botvars.drifttimeout)
+	if (player->botvars.driftlockout)
 	{
-		player->botvars.drifttimeout--;
+		// things are not working out in our favor
 		return false;
 	}
 
 	if (player->speed < 10 * player->mo->scale)
 	{
 		// don't bother if we can't even drift
-		player->botvars.drifttime = 0;
 		player->botvars.driftstate = DRIFTSTATE_AUTO;
-		player->botvars.driftturn = 0;
-		player->botvars.powersliding = false;
-
-		player->botvars.drifttimeout = TICRATE/2;
+		player->botvars.driftlockout = BOTDRIFTLOCKOUT;
 		return false;
 	}
 
 	if (player->speed > K_GetKartSpeed(player, false, false) + 10*player->mo->scale)
 	{
 		// likewise, don't bother if we're going too fast
-		player->botvars.drifttimeout = TICRATE/4;
+		player->botvars.driftstate = DRIFTSTATE_AUTO;
+		player->botvars.driftlockout = BOTDRIFTLOCKOUT/2;
 		return false;
 	}
 
@@ -1164,36 +1161,25 @@ static boolean K_BotStartDrift(player_t* player)
 			switch (driftsetting)
 			{
 			case DRIFT_PWRSLIDE_L:
-				player->botvars.wpdriftstate = -2;
 				player->botvars.driftstate = DRIFTSTATE_ACTIVE;
-				player->botvars.driftturn = -1;
-				player->botvars.powersliding = true;
+				player->botvars.driftturn = -2;
 				break;
 			case DRIFT_LEFT:
-				player->botvars.wpdriftstate = -1;
 				player->botvars.driftstate = DRIFTSTATE_ACTIVE;
 				player->botvars.driftturn = -1;
-				player->botvars.powersliding = false;
 				break;
 			case DRIFT_PWRSLIDE_R:
-				player->botvars.wpdriftstate = 2;
 				player->botvars.driftstate = DRIFTSTATE_ACTIVE;
-				player->botvars.driftturn = 1;
-				player->botvars.powersliding = true;
+				player->botvars.driftturn = 2;
 				break;
 			case DRIFT_RIGHT:
-				player->botvars.wpdriftstate = 1;
 				player->botvars.driftstate = DRIFTSTATE_ACTIVE;
 				player->botvars.driftturn = 1;
-				player->botvars.powersliding = false;
 				break;
 			case DRIFT_END:
-				player->botvars.wpdriftstate = 0;
 				if (player->botvars.driftstate)
 				{
 					player->botvars.driftstate = DRIFTSTATE_ENDING;
-					//player->botvars.driftturn = 0;
-					player->botvars.powersliding = false;
 					shouldDrift = false;  // Tells the game not to modify turning.
 				}
 				break;
@@ -1256,7 +1242,8 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		cmd->buttons |= BT_BRAKE;
 
 		// Why would we need to drift?
-		cmd->buttons &= ~(BT_DRIFT);
+		player->botvars.driftstate = DRIFTSTATE_AUTO;
+		player->botvars.driftlockout = BOTDRIFTLOCKOUT;
 	}
 	else
 	{
@@ -1273,13 +1260,6 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		{
 			realrad = playerwidth;
 		}
-
-		// Nonesensical and hacky. Figure out a better way eventually.
-        fixed_t turnpower =
-            FRACUNIT -
-            FixedMul(
-                FRACUNIT,
-                FixedDiv(std::max<angle_t>(0, ANGLE_90 - anglediff), ANGLE_90));
 
 		// Become more precise based on how hard you need to turn
 		// This makes predictions into turns a little nicer
@@ -1318,10 +1298,8 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		if (player->botvars.driftending)
 			player->botvars.driftending--;
 
-		fixed_t minspeed = (10 * player->mo->scale);
-
 		// 0.5 on Easy, 1.0 on Normal, 1.5 on Hard.
-		INT32 mindriftamt = FixedMul(MINBOTDRIFT * (cv_kartspeed.value + 1), 2 * FRACUNIT);
+		//INT32 mindriftamt = FixedMul(MINBOTDRIFT * (cv_kartspeed.value + 1), 2 * FRACUNIT);
 
 		// Start or continue a drift.
 		if (player->botvars.driftstate != DRIFTSTATE_AUTO)
@@ -1329,43 +1307,17 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			if (player->botvars.drifttime > 1)
 				cmd->buttons |= BT_DRIFT;
 
-			// Confirm our drift angle.
-			//if (player->botvars.driftturn)
+			fixed_t driftpower = (cv_test1.value*player->botvars.driftturn - FixedDiv(anglediff2, 11930464))/(FixedInt(cv_test2.value) - std::max<int>(0, TICRATE/2 - player->botvars.drifttime));
+
+			// brakedrift if we're steering too hard
+			if (abs(driftpower) >= 21*FRACUNIT/20)
 			{
-				fixed_t driftpower = (cv_test1.value*player->botvars.driftturn - FixedDiv(anglediff2, 11930464))/(FixedInt(cv_test2.value) - std::max<int>(0, TICRATE/2 - player->botvars.drifttime));
-
-				// brakedrift if we're steering too hard
-				if (abs(driftpower) >= 21*FRACUNIT/20)
-				{
-					cmd->buttons |= BT_BRAKE;
-				}
-
-				/*if (player->botvars.drifttime < 4)
-				{
-					driftpower = FRACUNIT;
-				}
-				else*/
-				{
-					driftpower = FixedMul(driftpower, FRACUNIT/3 + (player->kartweight * FRACUNIT/15));
-				}
-
-				turnamt = std::clamp(FixedMul(driftpower, KART_FULLTURN), -KART_FULLTURN, KART_FULLTURN);
-				//CONS_Printf("%03d %03d\n", anglediff2/ANG1, FixedMul(driftpower, KART_FULLTURN));
+				cmd->buttons |= BT_BRAKE;
 			}
-			/*
-			else if ((player->botvars.powersliding) && (player->speed >= minspeed))
-			{
-				// Force a mostly inward drift during powerslides.
-				if (player->botvars.driftturn < 0)
-				{
-					turnamt = std::min<INT32>(KART_FULLTURN, std::max<INT32>(mindriftamt, turnamt));
-				}
-				else
-				{
-					turnamt = std::min<INT32>(-MINBOTDRIFT, std::max<INT32>(-mindriftamt, turnamt));
-				}
-			}
-			*/
+
+			driftpower = FixedMul(driftpower, FRACUNIT/3 + (player->kartweight * FRACUNIT/15));
+
+			turnamt = std::clamp(FixedMul(driftpower, KART_FULLTURN), -KART_FULLTURN, KART_FULLTURN);
 		}
 		/*
 		else if ((turnamt) && (player->botvars.driftstate == DRIFTSTATE_AUTO) &&
@@ -1695,7 +1647,7 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 	// Free the prediction we made earlier
 	if (predict != nullptr)
 	{
-		if (cv_kartdebugbotpredict.value != 0 && player - players == displayplayers[0] && !(paused || P_AutoPause()))
+		if (cv_kartdebugbot.value != 0 && player - players == displayplayers[0] && !(paused || P_AutoPause()))
 		{
 			K_DrawPredictionDebug(predict, player);
 		}
@@ -1800,6 +1752,9 @@ void K_UpdateBotGameplayVars(player_t *player)
 
 	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
 
+	if (player->botvars.driftlockout)
+		player->botvars.driftlockout--;
+
 	// Is a bot not making any progress? Kill it and respawn at next waypoint.
 	K_IncrementBotRespawn(player, &player->botvars.respawnconfirm, BOTRESPAWNCONFIRM);
 
@@ -1832,7 +1787,7 @@ void K_UpdateBotGameplayVars(player_t *player)
 				player->botvars.drifttime++;
 			}
 
-			if (player->botvars.drifttime > BOTDRIFTTICS + 3)
+			if (player->botvars.drifttime > BOTDRIFTTICS)
 			{
 				player->botvars.drifttime = 0;
 				player->botvars.driftstate = DRIFTSTATE_AUTO;

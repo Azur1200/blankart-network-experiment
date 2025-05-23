@@ -173,7 +173,7 @@ extern consvar_t cv_votetime;
 
 extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution, cv_kartdebughuddrop;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
-extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap,cv_kartdebugbotpredict;
+extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot;
 
 extern consvar_t cv_itemfinder;
 

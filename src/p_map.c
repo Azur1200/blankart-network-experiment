@@ -3691,10 +3691,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-	mo->player->botvars.drifttime = 0;
 	mo->player->botvars.driftstate = DRIFTSTATE_AUTO;
-	mo->player->botvars.driftturn = 0;
-	mo->player->botvars.powersliding = false;
+	mo->player->botvars.driftlockout = BOTDRIFTLOCKOUT;
 
 	if (!cv_kartbumpspring.value || modeattacking != ATTACKING_NONE)
 	{
