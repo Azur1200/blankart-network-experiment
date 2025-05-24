@@ -8776,7 +8776,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 				oopisepoint = K_GetClosestWaypointToMobj(player->mo);
 			}
 
-			if (oopisepoint->numnextwaypoints > 0)
+			if (oopisepoint && oopisepoint->numnextwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numnextwaypoints; i++)
 				{
@@ -8820,10 +8820,14 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					safewaypoint = oopisepoint->nextwaypoints[i];
 					break;
 				}
-				oopisepoint = safewaypoint;
+
+				if (safewaypoint)
+				{
+					oopisepoint = safewaypoint;
+				}
 			}
 
-			if (oopisepoint->numprevwaypoints > 0)
+			if (oopisepoint && oopisepoint->numprevwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numprevwaypoints; i++)
 				{
@@ -8855,7 +8859,6 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					break;
 				}
 			}
-
 
 			CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
 		}
