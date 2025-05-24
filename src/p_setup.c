@@ -7272,7 +7272,7 @@ static void P_ConvertBinaryThingTypes(void)
 				if (mapthings[i].options & MTF_EXTRA)
 					mapthings[i].args[2] |= TMSF_RETRACTED;
 			}
-			if (mapthings[i].options & MTF_AMBUSH)
+			if (!(mapthings[i].options & MTF_AMBUSH))
 				mapthings[i].args[2] |= TMSF_INTANGIBLE;
 			break;
 		case 523: //Spike
@@ -7283,7 +7283,7 @@ static void P_ConvertBinaryThingTypes(void)
 				if (mapthings[i].options & MTF_EXTRA)
 					mapthings[i].args[2] |= TMSF_RETRACTED;
 			}
-			if (mapthings[i].options & MTF_AMBUSH)
+			if (!(mapthings[i].options & MTF_AMBUSH))
 				mapthings[i].args[2] |= TMSF_INTANGIBLE;
 			break;
 		case 540: //Fan
