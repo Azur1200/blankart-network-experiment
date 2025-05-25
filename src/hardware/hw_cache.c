@@ -991,6 +991,13 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 		if (!grMipmap->data && !grMipmap->downloaded)
 		{
+			UINT8 *colormap = colormaps;
+
+			if (!noencoremap && encoremap)
+			{
+				colormap += COLORMAP_REMAPOFFSET;
+			}
+
 			grMipmap->format = GL_TEXFMT_P_8;
 			grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
 

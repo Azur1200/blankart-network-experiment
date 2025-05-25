@@ -532,7 +532,6 @@ levelflat_t *foundflats;
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
 {
-	lumpnum_t lump;
 	size_t i;
 
 	//SoM: 4/18/2000: New flat code to make use of levelflats.
@@ -581,6 +580,7 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 
 	// Look for a flat
 	int texturenum = R_CheckFlatNumForName(levelflat->name);
+	lumpnum_t texturelump = W_CheckNumForName(levelflat->name);
 	if (texturenum <= 0)
 	{
 		// If we can't find a flat, try looking for a texture!
@@ -588,7 +588,8 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 		if (texturenum <= 0)
 		{
 			// Use "not found" texture
-			texturenum = R_CheckTextureNumForName("REDWALL");
+			texturenum = R_CheckTextureNumForName(MISSING_TEXTURE);
+			texturelump = W_CheckNumForName(MISSING_TEXTURE);
 
 			// Give up?
 			if (texturenum <= 0)
@@ -600,6 +601,7 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 	}
 
 	levelflat->texture_id = texturenum;
+	levelflat->lump = texturelump;
 
 	levelflat->terrain =
 		K_GetTerrainForTextureName(levelflat->name);

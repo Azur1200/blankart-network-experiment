@@ -953,14 +953,15 @@ void *R_GetFlat(levelflat_t *levelflat)
 
 	// FIXME: checking this every time a flat is fetched for drawing is stupid...
 	// sadly they are not cached anywhere else so i have no choice
-	/*boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
+	lumpnum_t flatlumpnum = levelflat->lump;
+	boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
 	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
 	if (doremap)
-		R_DoPaletteRemapFlat(flat, W_LumpLength(levelflat->texture_id));
-	return flat;*/
+		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
+	return flat;
 
 	// FIXME: How do I convert above for new format.
-	return R_GetFlatForTexture(R_GetTextureNumForFlat(levelflat));
+	//return R_GetFlatForTexture(R_GetTextureNumForFlat(levelflat));
 }
 
 //
