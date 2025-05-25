@@ -2059,6 +2059,8 @@ INT32 R_CheckFlatNumForName(const char *name)
 	if (name[0] == '-')
 		return 0;
 
+	PaletteTextureHack(&name);
+
 	hash = quickncasehash(name, 8);
 
 	for (i = 0; i < tidcachelen; i++)
