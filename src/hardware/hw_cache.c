@@ -1001,6 +1001,8 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 			memcpy(Z_Malloc(size, PU_HWRCACHE, &grMipmap->data), R_GetFlatForTexture(brightmapnum), size);
 		}
 
+		grtex->mipmap.flags |= TF_BRIGHTMAP;
+
 		if (!grMipmap->downloaded)
 			HWD.pfnSetTexture(&grtex->mipmap);
 

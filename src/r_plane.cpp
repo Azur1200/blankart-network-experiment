@@ -1136,7 +1136,6 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	}*/
 
 	// Get the span's brightmap.
-	// FLATS not supported, SORRY!!
 	INT32 bmNum = R_GetTextureBrightmap(levelflat->texture_id);
 	if (bmNum != 0)
 	{
