@@ -574,13 +574,8 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		texpatch_t *patch = &texture->patches[0];
 		UINT16 wadnum = patch->wad;
 		lumpnum_t lumpnum = patch->lump;
-		boolean doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
 		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
-		if (doremap)
-		{
-			R_DoPaletteRemapFlat(pdata, W_LumpLengthPwad(wadnum, lumpnum));
-		}
 
 #ifndef NO_PNG_LUMPS
 		if (Picture_IsLumpPNG(pdata, lumplength))
@@ -591,6 +586,9 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 			texture->flat = Z_Malloc(lumplength, PU_STATIC, NULL);
 			memcpy(texture->flat, pdata, lumplength);
 		}
+
+		if (W_NeedPaletteRemapPwad(wadnum, lumpnum, true))
+			R_DoPaletteRemapFlat(texture->flat, lumplength);
 
 		Z_SetUser(texture->flat, &texture->flat);
 

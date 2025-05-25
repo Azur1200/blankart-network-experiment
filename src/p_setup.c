@@ -580,7 +580,6 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 
 	// Look for a flat
 	int texturenum = R_CheckFlatNumForName(levelflat->name);
-	lumpnum_t texturelump = W_CheckNumForName(levelflat->name);
 	if (texturenum <= 0)
 	{
 		// If we can't find a flat, try looking for a texture!
@@ -589,7 +588,6 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 		{
 			// Use "not found" texture
 			texturenum = R_CheckTextureNumForName(MISSING_TEXTURE);
-			texturelump = W_CheckNumForName(MISSING_TEXTURE);
 
 			// Give up?
 			if (texturenum <= 0)
@@ -601,7 +599,6 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 	}
 
 	levelflat->texture_id = texturenum;
-	levelflat->lump = texturelump;
 
 	levelflat->terrain =
 		K_GetTerrainForTextureName(levelflat->name);

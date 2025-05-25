@@ -66,7 +66,6 @@ struct levelflat_t
 	terrain_t *terrain;
 	UINT8 type;
 	INT32 texture_id;
-	lumpnum_t lump;
 };
 
 extern size_t numlevelflats;
