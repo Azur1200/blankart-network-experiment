@@ -2057,6 +2057,7 @@ INT32 R_TextureNumForName(const char *name)
 	return i;
 }
 
+// Like R_CheckTextureNumForName, but only looks in the flat namespace specifically.
 INT32 R_CheckFlatNumForName(const char *name)
 {
 	INT32 i;
