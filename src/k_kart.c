@@ -3600,7 +3600,12 @@ static void K_GetKartBoostPower(player_t *player)
 
 		for (i = 0; i < numsneakers; i++)
 		{
-			K_DoBoost(player, sneakerspeedboost, SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
+			K_DoBoost(player, sneakerspeedboost, ACCELSTACK ? 0 : SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
+		}
+
+		if (ACCELSTACK)
+		{
+			K_DoBoost(player, 0, SNEAKERACCELBOOST, true, false); // + 800% acceleration
 		}
 	}
 
