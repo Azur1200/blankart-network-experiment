@@ -521,7 +521,6 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 			realpatch = (softwarepatch_t *)Picture_PNGConvert(pdata, PICFMT_DOOMPATCH, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
 		else
 #endif
-#ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
 		{
 			if (doremap)
@@ -529,7 +528,6 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
 		}
 		else
-#endif
 		{
 			dealloc = false;
 			if (doremap)
@@ -767,7 +765,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures));
 	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats));
 
-	if ((gl_textures == NULL) || (gl_flats == NULL))
+	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
 
 	gl_maptexturesloaded = true;
@@ -896,36 +894,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 			flat[steppy] = grMipmap->colormap->source[flat[steppy]];
 }
 
-static void HWR_CacheTextureAsFlat(GLMipmap_t *grMipmap, INT32 texturenum, boolean noencoremap)
-{
-	UINT8 *flat;
-	UINT8 *converted;
-	size_t size;
-	size_t i;
-	UINT8 *colormap = colormaps;
-
-	if (!noencoremap && encoremap)
-	{
-		colormap += COLORMAP_REMAPOFFSET;
-	}
-
-	// setup the texture info
-	grMipmap->format = GL_TEXFMT_P_8;
-	grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
-
-	grMipmap->width  = (UINT16)textures[texturenum]->width;
-	grMipmap->height = (UINT16)textures[texturenum]->height;
-	size = (grMipmap->width * grMipmap->height);
-
-	flat = Z_Malloc(size, PU_HWRCACHE, &grMipmap->data);
-	converted = (UINT8 *)Picture_TextureToFlat(texturenum);
-	for (i = 0; i < size; i++)
-	{
-		flat[i] = colormap[converted[i]];
-	}
-	Z_Free(converted);
-}
-
 // Download a Doom 'flat' to the hardware cache and make it ready for use
 void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 {
@@ -966,125 +934,84 @@ void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 {
-	// Who knows?
-	if (levelflat == NULL)
-		return;
-
-	if (levelflat->type == LEVELFLAT_FLAT)
-		HWR_GetRawFlat(levelflat->u.flat.lumpnum, noencoremap);
-	else if (levelflat->type == LEVELFLAT_TEXTURE)
+	if (levelflat->type == LEVELFLAT_NONE)
 	{
-		GLMapTexture_t *grtex;
-		INT32 texturenum = levelflat->u.texture.num;
-#ifdef PARANOIA
-		if ((unsigned)texturenum >= gl_numtextures)
-			I_Error("HWR_GetLevelFlat: texturenum >= numtextures");
-#endif
+		HWR_SetCurrentTexture(NULL);
+		return;
+	}
 
-		// Who knows?
-		if (texturenum == 0 || texturenum == -1)
-			return;
+	INT32 texturenum = texturetranslation[levelflat->texture_id];
+	INT32 brightmapnum = R_GetTextureBrightmap(texturenum);
+	if (texturenum <= 0)
+	{
+		HWR_SetCurrentTexture(NULL);
+		return;
+	}
 
-		// Every texture in memory, stored as a 8-bit flat. Wow!
-		grtex = &gl_flats[texturenum];
+	GLMapTexture_t *grtex = &gl_flats[texturenum];
+	GLMipmap_t *grMipmap = &grtex->mipmap;
 
-		// Generate flat if missing from the cache
-		if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
+	if (!grMipmap->data && !grMipmap->downloaded)
+	{
+		UINT8 *flat;
+		UINT8 *colormap = colormaps;
+
+		grMipmap->format = GL_TEXFMT_P_8;
+		grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
+
+		grMipmap->width  = (UINT16)textures[texturenum]->width;
+		grMipmap->height = (UINT16)textures[texturenum]->height;
+
+		size_t size = grMipmap->width * grMipmap->height;
+		flat = Picture_TextureToFlat(texturenum);
+		Z_ChangeTag(flat, PU_HWRCACHE);
+		Z_SetUser(flat, &grMipmap->data);
+
+		if (!noencoremap && encoremap)
+			colormap += COLORMAP_REMAPOFFSET;
+
+		grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+		grtex->mipmap.colormap->source = colormap;
+		M_Memcpy(grtex->mipmap.colormap->data, colormap, 256);
+
+		for (size_t steppy = 0; steppy < size; steppy++)
+			if (flat[steppy] != HWR_PATCHES_CHROMAKEY_COLORINDEX)
+				flat[steppy] = grtex->mipmap.colormap->source[flat[steppy]];
+	}
+
+	if (!grMipmap->downloaded)
+		HWD.pfnSetTexture(&grtex->mipmap);
+
+	HWR_SetCurrentTexture(&grtex->mipmap);
+
+	Z_ChangeTag(grMipmap->data, PU_HWRCACHE_UNLOCKED);
+
+	if (brightmapnum)
+	{
+		grtex = &gl_flats[brightmapnum];
+		grMipmap = &grtex->mipmap;
+
+		if (!grMipmap->data && !grMipmap->downloaded)
 		{
-			HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, noencoremap);
+			grMipmap->format = GL_TEXFMT_P_8;
+			grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
 
-			if (!noencoremap && encoremap)
-			{
-				grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
-				grtex->mipmap.colormap->source = colormaps + COLORMAP_REMAPOFFSET;
-				M_Memcpy(grtex->mipmap.colormap->data, colormaps + COLORMAP_REMAPOFFSET, 256);
-			}
+			grMipmap->width  = (UINT16)textures[brightmapnum]->width;
+			grMipmap->height = (UINT16)textures[brightmapnum]->height;
+
+			size_t size = grMipmap->width * grMipmap->height;
+			memcpy(Z_Malloc(size, PU_HWRCACHE, &grMipmap->data), R_GetFlatForTexture(brightmapnum), size);
 		}
 
-		// If hardware does not have the texture, then call pfnSetTexture to upload it
-		if (!grtex->mipmap.downloaded)
+		grtex->mipmap.flags |= TF_BRIGHTMAP;
+
+		if (!grMipmap->downloaded)
 			HWD.pfnSetTexture(&grtex->mipmap);
+
 		HWR_SetCurrentTexture(&grtex->mipmap);
 
-		// The system-memory data can be purged now.
-		Z_ChangeTag(grtex->mipmap.data, PU_HWRCACHE_UNLOCKED);
-
-		if ((texturenum = R_GetTextureBrightmap(texturenum)))
-		{
-			// Every texture in memory, stored as a 8-bit flat. Wow!
-			grtex = &gl_flats[texturenum];
-
-			// Generate flat if missing from the cache
-			if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
-				HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, true);
-
-			grtex->mipmap.flags |= TF_BRIGHTMAP;
-
-			// If hardware does not have the texture, then call pfnSetTexture to upload it
-			if (!grtex->mipmap.downloaded)
-				HWD.pfnSetTexture(&grtex->mipmap);
-			HWR_SetCurrentTexture(&grtex->mipmap);
-
-			// The system-memory data can be purged now.
-			Z_ChangeTag(grtex->mipmap.data, PU_HWRCACHE_UNLOCKED);
-		}
+		Z_ChangeTag(grMipmap->data, PU_HWRCACHE_UNLOCKED);
 	}
-	else if (levelflat->type == LEVELFLAT_PATCH)
-	{
-		patch_t *patch = W_CachePatchNum(levelflat->u.flat.lumpnum, PU_CACHE);
-		levelflat->width = (UINT16)(patch->width);
-		levelflat->height = (UINT16)(patch->height);
-		HWR_GetPatch(patch);
-	}
-#ifndef NO_PNG_LUMPS
-	else if (levelflat->type == LEVELFLAT_PNG)
-	{
-		GLMipmap_t *mipmap = levelflat->mipmap;
-
-		// Cache the picture.
-		if (!levelflat->mippic)
-		{
-			INT32 pngwidth = 0, pngheight = 0;
-			void *pic = Picture_PNGConvert(W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_CACHE), PICFMT_FLAT, &pngwidth, &pngheight, NULL, NULL, W_LumpLength(levelflat->u.flat.lumpnum), NULL, 0);
-
-			Z_ChangeTag(pic, PU_LEVEL);
-			Z_SetUser(pic, &levelflat->mippic);
-
-			levelflat->width = (UINT16)pngwidth;
-			levelflat->height = (UINT16)pngheight;
-		}
-
-		// Make the mipmap.
-		if (mipmap == NULL)
-		{
-			mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_STATIC, NULL);
-			mipmap->format = GL_TEXFMT_P_8;
-			mipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
-			levelflat->mipmap = mipmap;
-		}
-
-		if (!mipmap->data && !mipmap->downloaded)
-		{
-			UINT8 *flat;
-			size_t size;
-
-			if (levelflat->mippic == NULL)
-				I_Error("HWR_GetLevelFlat: levelflat->mippic == NULL");
-
-			mipmap->width = levelflat->width;
-			mipmap->height = levelflat->height;
-
-			size = (mipmap->width * mipmap->height);
-			flat = Z_Malloc(size, PU_LEVEL, &mipmap->data);
-			M_Memcpy(flat, levelflat->mippic, size);
-		}
-
-		// Tell the hardware driver to bind the current texture to the flat's mipmap
-		HWR_SetCurrentTexture(mipmap);
-	}
-#endif
-	else // set no texture
-		HWR_SetCurrentTexture(NULL);
 }
 
 // --------------------+

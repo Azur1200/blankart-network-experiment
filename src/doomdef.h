@@ -515,9 +515,6 @@ extern int compuncommitted;
 #define NO_PNG_LUMPS
 #endif
 
-/// Render flats on walls
-#define WALLFLATS
-
 /// Divide volume of music and sounds by this much (loudest sounds on earth)
 #define VOLUME_DIVIDER 4
 #define USER_VOLUME_SCALE 2
