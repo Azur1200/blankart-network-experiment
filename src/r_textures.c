@@ -576,21 +576,25 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		lumpnum_t lumpnum = patch->lump;
 		boolean doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		if (doremap)
 		{
 			R_DoPaletteRemapFlat(pdata, W_LumpLengthPwad(wadnum, lumpnum));
 		}
 
 #ifndef NO_PNG_LUMPS
-		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 		if (Picture_IsLumpPNG(pdata, lumplength))
-		{
 			texture->flat = Picture_PNGConvert(pdata, PICFMT_FLAT, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
-			Z_Free(pdata);
-		}
 		else
 #endif
-			texture->flat = pdata;
+		{
+			texture->flat = Z_Malloc(lumplength, PU_STATIC, NULL);
+			memcpy(texture->flat, pdata, lumplength);
+		}
+
+		Z_SetUser(texture->flat, &texture->flat);
+
+		Z_Free(pdata);
 	}
 	else
 		texture->flat = (UINT8 *)Picture_TextureToFlat(texnum);
@@ -1104,7 +1108,10 @@ void R_FlushTextureCache(void)
 
 	if (numtextures)
 		for (i = 0; i < numtextures; i++)
+		{
+			Z_Free(textures[i]->flat);
 			Z_Free(texturecache[i]);
+		}
 }
 
 // Need these prototypes for later; defining them here instead of r_textures.h so they're "private"
