@@ -571,7 +571,12 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		texpatch_t *patch = &texture->patches[0];
 		UINT16 wadnum = patch->wad;
 		lumpnum_t lumpnum = patch->lump;
+		boolean doremap = W_NeedPaletteRemapPwad(wadnum, lumpnum, false);
 		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+		if (doremap)
+		{
+			R_DoPaletteRemapFlat(pdata, W_LumpLengthPwad(wadnum, lumpnum));
+		}
 
 #ifndef NO_PNG_LUMPS
 		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
@@ -951,17 +956,7 @@ void *R_GetFlat(levelflat_t *levelflat)
 	if (levelflat->type == LEVELFLAT_NONE)
 		return NULL;
 
-	// FIXME: checking this every time a flat is fetched for drawing is stupid...
-	// sadly they are not cached anywhere else so i have no choice
-	lumpnum_t flatlumpnum = levelflat->lump;
-	boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
-	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
-	if (doremap)
-		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
-	return flat;
-
-	// FIXME: How do I convert above for new format.
-	//return R_GetFlatForTexture(R_GetTextureNumForFlat(levelflat));
+	return R_GetFlatForTexture(R_GetTextureNumForFlat(levelflat));
 }
 
 //

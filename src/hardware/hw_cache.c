@@ -953,7 +953,9 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 	if (!grMipmap->data && !grMipmap->downloaded)
 	{
+		UINT8 *flat;
 		UINT8 *colormap = colormaps;
+		UINT8 *converted;
 
 		if (!noencoremap && encoremap)
 		{
@@ -967,7 +969,13 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		grMipmap->height = (UINT16)textures[texturenum]->height;
 
 		size_t size = grMipmap->width * grMipmap->height;
-		memcpy(Z_Malloc(size, PU_HWRCACHE, &grMipmap->data), R_GetFlatForTexture(texturenum), size);
+		flat = Z_Malloc(size, PU_HWRCACHE, &grMipmap->data);
+		converted = (UINT8 *)Picture_TextureToFlat(texturenum);
+		for (size_t i = 0; i < size; i++)
+		{
+			flat[i] = colormap[converted[i]];
+		}
+		Z_Free(converted);
 
 		if (!noencoremap && encoremap)
 		{
@@ -991,13 +999,6 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 		if (!grMipmap->data && !grMipmap->downloaded)
 		{
-			UINT8 *colormap = colormaps;
-
-			if (!noencoremap && encoremap)
-			{
-				colormap += COLORMAP_REMAPOFFSET;
-			}
-
 			grMipmap->format = GL_TEXFMT_P_8;
 			grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
 
