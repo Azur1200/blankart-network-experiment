@@ -1616,6 +1616,17 @@ static void P_CheckBouncySectors(player_t *player)
 				if (abs(momentum.z) < (rover->bouncestrength*2))
 					goto bouncydone;
 
+				if ((mapnamespace == MNS_SRB2KART) && !(rover->master->flags & ML_NOTBOUNCY))
+				{
+					if (momentum.z > 0)
+					{
+						if (momentum.z < 8*FRACUNIT)
+							momentum.z = 8*FRACUNIT;
+					}
+					else if (momentum.z > -8*FRACUNIT && momentum.z != 0)
+						momentum.z = -8*FRACUNIT;
+				}
+
 				if (momentum.z > FixedMul(24*FRACUNIT, player->mo->scale)) //half of the default player height
 					momentum.z = FixedMul(24*FRACUNIT, player->mo->scale);
 				else if (momentum.z < -FixedMul(24*FRACUNIT, player->mo->scale))
