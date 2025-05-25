@@ -955,12 +955,6 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 	{
 		UINT8 *flat;
 		UINT8 *colormap = colormaps;
-		UINT8 *converted;
-
-		if (!noencoremap && encoremap)
-		{
-			colormap += COLORMAP_REMAPOFFSET;
-		}
 
 		grMipmap->format = GL_TEXFMT_P_8;
 		grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
@@ -969,20 +963,20 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		grMipmap->height = (UINT16)textures[texturenum]->height;
 
 		size_t size = grMipmap->width * grMipmap->height;
-		flat = Z_Malloc(size, PU_HWRCACHE, &grMipmap->data);
-		converted = (UINT8 *)Picture_TextureToFlat(texturenum);
-		for (size_t i = 0; i < size; i++)
-		{
-			flat[i] = colormap[converted[i]];
-		}
-		Z_Free(converted);
+		flat = Picture_TextureToFlat(texturenum);
+		Z_ChangeTag(flat, PU_HWRCACHE);
+		Z_SetUser(flat, &grMipmap->data);
 
 		if (!noencoremap && encoremap)
-		{
-			grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
-			grtex->mipmap.colormap->source = colormaps + COLORMAP_REMAPOFFSET;
-			M_Memcpy(grtex->mipmap.colormap->data, colormaps + COLORMAP_REMAPOFFSET, 256);
-		}
+			colormap += COLORMAP_REMAPOFFSET;
+
+		grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+		grtex->mipmap.colormap->source = colormap;
+		M_Memcpy(grtex->mipmap.colormap->data, colormap, 256);
+
+		for (size_t steppy = 0; steppy < size; steppy++)
+			if (flat[steppy] != HWR_PATCHES_CHROMAKEY_COLORINDEX)
+				flat[steppy] = grtex->mipmap.colormap->source[flat[steppy]];
 	}
 
 	if (!grMipmap->downloaded)
