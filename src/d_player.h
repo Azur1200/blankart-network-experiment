@@ -473,7 +473,6 @@ struct botvars_t
 	tic_t drifttime; // Time spent drifting
 	tic_t driftlockout; // do not allow drifting for this many tics
 	tic_t driftending; // number of tics to force turning towards waypoint
-	UINT32 driftdist; // distance to finish when drift state changes
 };
 
 struct sonicloopcamvars_t
