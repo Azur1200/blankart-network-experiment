@@ -1118,39 +1118,32 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	ds->currentplane = pl;
 	levelflat = &levelflats[pl->picnum];
 
-	/* :james: */
-	type = levelflat->type;
-	switch (type)
-	{
-		case LEVELFLAT_NONE:
-			return;
-		case LEVELFLAT_FLAT:
-			ds->source = (UINT8 *)R_GetFlat(levelflat->u.flat.lumpnum);
-			R_CheckFlatLength(ds, W_LumpLength(levelflat->u.flat.lumpnum));
-			// Raw flats always have dimensions that are powers-of-two numbers.
-			ds->powersoftwo = true;
-			break;
-		default:
-			ds->source = (UINT8 *)R_GetLevelFlat(ds, levelflat);
-			if (!ds->source)
-				return;
-		// Check if this texture or patch has power-of-two dimensions.
-		if (R_CheckPowersOfTwo(ds))
-			R_CheckFlatLength(ds, ds->flatwidth * ds->flatheight);
-	}
+	// Get the texture
+	ds->source = (UINT8 *)R_GetFlat(levelflat);
+	if (ds->source == NULL)
+		return;
 
-	if (type == LEVELFLAT_TEXTURE)
+	texture_t *texture = textures[R_GetTextureNumForFlat(levelflat)];
+	ds->flatwidth = texture->width;
+	ds->flatheight = texture->height;
+
+	/*(if (R_CheckSolidColorFlat())
+		ds->solidcolor = true;
+	else if (R_CheckPowersOfTwo())
 	{
-		// Get the span's brightmap.
-		// FLATS not supported, SORRY!!
-		INT32 bmNum = R_GetTextureBrightmap(levelflat->u.texture.num);
-		if (bmNum != 0)
-		{
-			// FIXME: This has the potential to read out of
-			// bounds if the brightmap texture is not as
-			// large as the flat.
-			ds->brightmap = (UINT8 *)R_GenerateTextureAsFlat(bmNum);
-		}
+		R_SetFlatVars(ds_flatwidth * ds_flatheight);
+		ds->powersoftwo = true;
+	}*/
+
+	// Get the span's brightmap.
+	// FLATS not supported, SORRY!!
+	INT32 bmNum = R_GetTextureBrightmap(levelflat->texture_id);
+	if (bmNum != 0)
+	{
+		// FIXME: This has the potential to read out of
+		// bounds if the brightmap texture is not as
+		// large as the flat.
+		ds->brightmap = (UINT8 *)R_GetFlatForTexture(bmNum);
 	}
 
 	if (!pl->slope // Don't mess with angle on slopes! We'll handle this ourselves later

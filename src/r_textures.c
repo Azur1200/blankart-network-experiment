@@ -66,6 +66,7 @@ static struct {
 	char name[9];
 	UINT32 hash;
 	INT32 id;
+	UINT8 type;
 } *tidcache = NULL;
 static INT32 tidcachelen = 0;
 
@@ -361,7 +362,8 @@ UINT8 *R_GenerateTexture(size_t texnum)
 	texture = textures[texnum];
 	I_Assert(texture != NULL);
 
-	// allocate texture column offset lookup
+	if (texture->type == TEXTURETYPE_FLAT)
+		goto multipatch;
 
 	// single-patch textures can have holes in them and may be used on
 	// 2sided lines so they need to be kept in 'packed' format
@@ -390,11 +392,8 @@ UINT8 *R_GenerateTexture(size_t texnum)
 		realpatch = (softwarepatch_t *)pdata;
 
 #ifndef NO_PNG_LUMPS
-		if (Picture_IsLumpPNG((UINT8 *)realpatch, lumplength))
-			goto multipatch;
-#endif
-#ifdef WALLFLATS
-		if (texture->type == TEXTURETYPE_FLAT)
+		// TODO: Is it worth converting those?
+		if (Picture_IsLumpPNG(pdata, lumplength))
 			goto multipatch;
 #endif
 
@@ -495,7 +494,6 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			realpatch = (softwarepatch_t *)Picture_PNGConvert((UINT8 *)realpatch, PICFMT_DOOMPATCH, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
 		else
 #endif
-#ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
 		{
 			if (doremap)
@@ -503,7 +501,6 @@ UINT8 *R_GenerateTexture(size_t texnum)
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
 		}
 		else
-#endif
 		{
 			dealloc = false;
 			if (doremap)
@@ -562,28 +559,37 @@ done:
 	return blocktex;
 }
 
-//
-// R_GenerateTextureAsFlat
-//
-// Generates a flat picture for a texture.
-//
-UINT8 *R_GenerateTextureAsFlat(size_t texnum)
+UINT8 *R_GetFlatForTexture(size_t texnum)
 {
 	texture_t *texture = textures[texnum];
-	UINT8 *converted = NULL;
-	size_t size = (texture->width * texture->height);
 
-	// The flat picture for this texture was not generated yet.
-	if (!texture->flat)
+	if (texture->flat != NULL)
+		return texture->flat;
+
+	if (texture->type == TEXTURETYPE_FLAT)
 	{
-		// Well, let's do it now, then.
-		Z_Malloc(size, PU_LEVEL, &texture->flat);
+		texpatch_t *patch = &texture->patches[0];
+		UINT16 wadnum = patch->wad;
+		lumpnum_t lumpnum = patch->lump;
+		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
 
-		// Picture_TextureToFlat handles everything for us.
-		converted = (UINT8 *)Picture_TextureToFlat(texnum);
-		M_Memcpy(texture->flat, converted, size);
-		Z_Free(converted);
+#ifndef NO_PNG_LUMPS
+		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+		if (Picture_IsLumpPNG(pdata, lumplength))
+		{
+			texture->flat = Picture_PNGConvert(pdata, PICFMT_FLAT, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
+			Z_Free(pdata);
+		}
+		else
+#endif
+			texture->flat = pdata;
+
+		return texture->flat;
 	}
+
+	texture->flat = (UINT8 *)Picture_TextureToFlat(texnum);
+
+	flatmemory += texture->width + texture->height;
 
 	return texture->flat;
 }
@@ -935,96 +941,26 @@ UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col)
 	return texturebrightmapcache[tex] + LONG(texturecolumnofs[tex][wrap_column(tex, col)]);
 }
 
-void *R_GetFlat(lumpnum_t flatlumpnum)
+INT32 R_GetTextureNumForFlat(levelflat_t *levelflat)
 {
-	// FIXME: checking this every time a flat is fetched for drawing is stupid...
-	// sadly they are not cached anywhere else so i have no choice
-	boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
-	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
-	if (doremap)
-		R_DoPaletteRemapFlat(flat, W_LumpLength(flatlumpnum));
-	return flat;
+	return texturetranslation[levelflat->texture_id];
 }
 
-//
-// R_GetLevelFlat
-//
-// If needed, convert a texture or patch to a flat.
-//
-void *R_GetLevelFlat(drawspandata_t* ds, levelflat_t *levelflat)
+void *R_GetFlat(levelflat_t *levelflat)
 {
-	boolean isleveltexture = (levelflat->type == LEVELFLAT_TEXTURE);
-	texture_t *texture = (isleveltexture ? textures[levelflat->u.texture.num] : NULL);
-	boolean texturechanged = (isleveltexture ? (levelflat->u.texture.num != levelflat->u.texture.lastnum) : false);
-	UINT8 *flatdata = NULL;
+	if (levelflat->type == LEVELFLAT_NONE)
+		return NULL;
 
-	// Check if the texture changed.
-	if (isleveltexture && (!texturechanged))
-	{
-		if (texture->flat)
-		{
-			flatdata = texture->flat;
-			ds->flatwidth = texture->width;
-			ds->flatheight = texture->height;
-			texturechanged = false;
-		}
-		else
-			texturechanged = true;
-	}
+	// FIXME: checking this every time a flat is fetched for drawing is stupid...
+	// sadly they are not cached anywhere else so i have no choice
+	/*boolean doremap = W_NeedPaletteRemap(flatlumpnum, false);
+	void *flat = W_CacheLumpNum(flatlumpnum, PU_LEVEL);
+	if (doremap)
+		R_DoPaletteRemapFlat(flat, W_LumpLength(levelflat->texture_id));
+	return flat;*/
 
-	// If the texture changed, or the flat wasn't generated, convert.
-	if (levelflat->picture == NULL || texturechanged)
-	{
-		// Level texture
-		if (isleveltexture)
-		{
-			levelflat->picture = R_GenerateTextureAsFlat(levelflat->u.texture.num);
-			ds->flatwidth = levelflat->width = texture->width;
-			ds->flatheight = levelflat->height = texture->height;
-		}
-		else
-		{
-#ifndef NO_PNG_LUMPS
-			if (levelflat->type == LEVELFLAT_PNG)
-			{
-				INT32 pngwidth, pngheight;
-
-				levelflat->picture = Picture_PNGConvert(W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_LEVEL), PICFMT_FLAT, &pngwidth, &pngheight, NULL, NULL, W_LumpLength(levelflat->u.flat.lumpnum), NULL, 0);
-				levelflat->width = (UINT16)pngwidth;
-				levelflat->height = (UINT16)pngheight;
-
-				ds->flatwidth = levelflat->width;
-				ds->flatheight = levelflat->height;
-			}
-			else
-#endif
-			if (levelflat->type == LEVELFLAT_PATCH)
-			{
-				UINT8 *converted;
-				size_t size;
-				softwarepatch_t *patch = W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_LEVEL);
-
-				levelflat->width = ds->flatwidth = SHORT(patch->width);
-				levelflat->height = ds->flatheight = SHORT(patch->height);
-
-				levelflat->picture = Z_Malloc(levelflat->width * levelflat->height, PU_LEVEL, NULL);
-				converted = Picture_FlatConvert(PICFMT_DOOMPATCH, patch, PICFMT_FLAT, 0, &size, levelflat->width, levelflat->height, SHORT(patch->topoffset), SHORT(patch->leftoffset), 0);
-				M_Memcpy(levelflat->picture, converted, size);
-				Z_Free(converted);
-			}
-		}
-	}
-	else
-	{
-		ds->flatwidth = levelflat->width;
-		ds->flatheight = levelflat->height;
-	}
-
-	levelflat->u.texture.lastnum = levelflat->u.texture.num;
-
-	if (flatdata == NULL)
-		flatdata = levelflat->picture;
-	return flatdata;
+	// FIXME: How do I convert above for new format.
+	return R_GetFlatForTexture(R_GetTextureNumForFlat(levelflat));
 }
 
 //
@@ -1178,7 +1114,6 @@ void R_FlushTextureCache(void)
 int R_CountTexturesInTEXTURESLump(UINT16 wadNum, UINT16 lumpNum);
 void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *index);
 
-#ifdef WALLFLATS
 static INT32
 Rloadflats (INT32 i, INT32 w)
 {
@@ -1188,7 +1123,6 @@ Rloadflats (INT32 i, INT32 w)
 	texpatch_t *patch;
 	UINT8 header[PNG_HEADER_SIZE];
 
-	// Yes
 	if (wadfiles[w]->type == RET_PK3)
 	{
 		texstart = W_CheckNumForFolderStartPK3("flats/", (UINT16)w, 0);
@@ -1207,8 +1141,6 @@ Rloadflats (INT32 i, INT32 w)
 		{
 			UINT16 wadnum = (UINT16)w;
 			lumpnum_t lumpnum = texstart + j;
-			size_t lumplength;
-			size_t flatsize = 0;
 
 			if (wadfiles[w]->type == RET_PK3)
 			{
@@ -1216,10 +1148,8 @@ Rloadflats (INT32 i, INT32 w)
 					continue; // If it is then SKIP IT
 			}
 
-			W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
-			lumplength = W_LumpLengthPwad(wadnum, lumpnum);
-
-			flatsize = R_FlatDimensionsFromLumpSize(lumplength);
+			size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+			size_t flatsize = R_FlatDimensionsFromLumpSize(lumplength);
 
 			//CONS_Printf("\n\"%s\" is a flat, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),flatsize,flatsize);
 			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
@@ -1229,6 +1159,8 @@ Rloadflats (INT32 i, INT32 w)
 			texture->hash = quickncasehash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
+			W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
+
 			if (Picture_IsLumpPNG(header, lumplength))
 			{
 				UINT8 *flatlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
@@ -1264,7 +1196,6 @@ Rloadflats (INT32 i, INT32 w)
 
 	return i;
 }
-#endif/*WALLFLATS*/
 
 #define TX_START "TX_START"
 #define TX_END "TX_END"
@@ -1424,9 +1355,7 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	// This system will allocate memory for all duplicate/patched textures even if it never uses them,
 	// but the alternative is to spend a ton of time checking and re-checking all previous entries just to skip any potentially patched textures.
 
-#ifdef WALLFLATS
 	count += count_range("F_START", "F_END", "flats/", wadnum);
-#endif
 
 	// Count the textures from TEXTURES lumps
 	texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", wadnum, 0);
@@ -1508,9 +1437,7 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm)
 
 static INT32 R_DefineTextures(INT32 i, UINT16 w)
 {
-#ifdef WALLFLATS
 	i = Rloadflats(i, w);
-#endif
 	return Rloadtextures(i, w);
 }
 
@@ -2044,56 +1971,6 @@ static void PaletteTextureHack(const char **name)
 	}
 }
 
-// Search for flat name.
-lumpnum_t R_GetFlatNumForName(const char *name)
-{
-	INT32 i;
-	lumpnum_t lump;
-	lumpnum_t start;
-	lumpnum_t end;
-
-	PaletteTextureHack(&name);
-
-	// Scan wad files backwards so patched flats take preference.
-	for (i = numwadfiles - 1; i >= 0; i--)
-	{
-		switch (wadfiles[i]->type)
-		{
-		case RET_WAD:
-			if ((start = W_CheckNumForMarkerStartPwad("F_START", (UINT16)i, 0)) == INT16_MAX)
-			{
-				if ((start = W_CheckNumForMarkerStartPwad("FF_START", (UINT16)i, 0)) == INT16_MAX)
-					continue;
-				else if ((end = W_CheckNumForNamePwad("FF_END", (UINT16)i, start)) == INT16_MAX)
-					continue;
-			}
-			else
-				if ((end = W_CheckNumForNamePwad("F_END", (UINT16)i, start)) == INT16_MAX)
-					continue;
-			break;
-		case RET_PK3:
-			if ((start = W_CheckNumForFolderStartPK3("Flats/", i, 0)) == INT16_MAX)
-				continue;
-			if ((end = W_CheckNumForFolderEndPK3("Flats/", i, start)) == INT16_MAX)
-				continue;
-			break;
-		default:
-			continue;
-		}
-
-		// Now find lump with specified name in that range.
-		lump = W_CheckNumForNamePwad(name, (UINT16)i, start);
-		if (lump < end)
-		{
-			lump += (i<<16); // found it, in our constraints
-			break;
-		}
-		lump = LUMPERROR;
-	}
-
-	return lump;
-}
-
 void R_ClearTextureNumCache(boolean btell)
 {
 	if (tidcache)
@@ -2102,6 +1979,20 @@ void R_ClearTextureNumCache(boolean btell)
 	if (btell)
 		CONS_Debug(DBG_SETUP, "Fun Fact: There are %d textures used in this map.\n", tidcachelen);
 	tidcachelen = 0;
+}
+
+static void AddTextureToCache(const char *name, UINT32 hash, INT32 id, UINT8 type)
+{
+	tidcachelen++;
+	Z_Realloc(tidcache, tidcachelen * sizeof(*tidcache), PU_STATIC, &tidcache);
+	strncpy(tidcache[tidcachelen-1].name, name, 8);
+	tidcache[tidcachelen-1].name[8] = '\0';
+#ifndef ZDEBUG
+	CONS_Debug(DBG_SETUP, "texture #%s: %s\n", sizeu1(tidcachelen), tidcache[tidcachelen-1].name);
+#endif
+	tidcache[tidcachelen-1].hash = hash;
+	tidcache[tidcachelen-1].id = id;
+	tidcache[tidcachelen-1].type = type;
 }
 
 //
@@ -2126,18 +2017,10 @@ INT32 R_CheckTextureNumForName(const char *name)
 		if (tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))
 			return tidcache[i].id;
 
-	// Need to parse the list backwards, so textures loaded more recently are used in lieu of ones loaded earlier
-	//for (i = 0; i < numtextures; i++) <- old
-	for (i = (numtextures - 1); i >= 0; i--) // <- new
+	for (i = numtextures - 1; i >= 0; i--)
 		if (textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8))
 		{
-			tidcachelen++;
-			Z_Realloc(tidcache, tidcachelen * sizeof(*tidcache), PU_STATIC, &tidcache);
-			strncpy(tidcache[tidcachelen-1].name, name, 8);
-			tidcache[tidcachelen-1].name[8] = '\0';
-			CONS_Debug(DBG_SETUP, "texture #%s: %s\n", sizeu1(tidcachelen), tidcache[tidcachelen-1].name);
-			tidcache[tidcachelen-1].hash = hash;
-			tidcache[tidcachelen-1].id = i;
+			AddTextureToCache(name, hash, i, textures[i]->type);
 			return i;
 		}
 
@@ -2169,4 +2052,29 @@ INT32 R_TextureNumForName(const char *name)
 		return 1;
 	}
 	return i;
+}
+
+INT32 R_CheckFlatNumForName(const char *name)
+{
+	INT32 i;
+	UINT32 hash;
+
+	// "NoTexture" marker.
+	if (name[0] == '-')
+		return 0;
+
+	hash = quickncasehash(name, 8);
+
+	for (i = 0; i < tidcachelen; i++)
+		if (tidcache[i].type == TEXTURETYPE_FLAT && tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))
+			return tidcache[i].id;
+
+	for (i = numtextures - 1; i >= 0; i--)
+		if (textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8) && textures[i]->type == TEXTURETYPE_FLAT)
+		{
+			AddTextureToCache(name, hash, i, TEXTURETYPE_FLAT);
+			return i;
+		}
+
+	return -1;
 }
