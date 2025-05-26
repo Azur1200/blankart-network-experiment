@@ -3992,16 +3992,21 @@ void P_PlayerThink(player_t *player)
 
 	if (netgame && cv_antigrief.value != 0 && (gametyperules & GTR_CIRCUIT))
 	{
-		if (!player->spectator && !player->exiting && !(player->pflags & PF_NOCONTEST))
+		INT32 i;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+			if (&players[i] == player)
+				continue;
+			break;
+		}
+
+		if (i < MAXPLAYERS && !player->spectator && !player->exiting && !(player->pflags & PF_NOCONTEST))
 		{
 			const tic_t griefval = cv_antigrief.value * TICRATE;
 			const UINT8 n = player - players;
 
-		if (n != serverplayer
-#ifndef DEVELOP
-			&& !IsPlayerAdmin(n)
-#endif
-			)
 			{
 				if (player->grieftime > griefval)
 				{
@@ -4010,7 +4015,11 @@ void P_PlayerThink(player_t *player)
 
 					if (server)
 					{
-						if (player->griefstrikes > 2)
+						if ((player->griefstrikes > 2)
+#ifndef DEVELOP
+							&& !IsPlayerAdmin(n)
+#endif
+							&& !P_IsLocalPlayer(player)) // P_IsMachineLocalPlayer for DRRR
 						{
 							// Send kick
 							SendKick(n, KICK_MSG_GRIEF);

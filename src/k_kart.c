@@ -10888,7 +10888,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 		return;
 
 	// Organize by spectate wait timer (if there's more than one to sort)
-	if (cv_maxplayers.value && numjoiners > 1)
+	if (cv_ingamecap.value && numjoiners > 1)
 	{
 		UINT8 oldrespawnlist[MAXPLAYERS];
 		memcpy(oldrespawnlist, respawnlist, numjoiners);
@@ -10919,7 +10919,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 	for (i = 0; i < numjoiners; i++)
 	{
 		// Hit the in-game player cap while adding people?
-		if (cv_maxplayers.value && numingame >= cv_maxplayers.value)
+		if (cv_ingamecap.value && numingame >= cv_ingamecap.value)
 		{
 			if (numbots > 0)
 			{
