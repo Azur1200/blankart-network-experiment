@@ -237,9 +237,9 @@ void P_InitPicAnims(void)
 
 		if (lastanim->numpics < 2)
 		{
-			free(anims);
-			I_Error("P_InitPicAnims: bad cycle from %s to %s",
+			CONS_Alert(CONS_WARNING, "P_InitPicAnims: bad cycle from %s to %s.\n",
 				animdefs->startname, animdefs->endname);
+			continue;
 		}
 
 		lastanim->speed = animdef->speed;
