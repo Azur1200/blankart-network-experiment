@@ -1120,12 +1120,6 @@ static void K_BotStartDrift(player_t* player)
 		return;
 	}
 
-	if (player->botvars.driftlockout)
-	{
-		// things are not working out in our favor
-		return;
-	}
-
 	// check for waypoints ahead of us with drift settings, based on our current speed
 	path_t path = {0};
 	INT32 maxdist = FixedInt(cv_test1.value);
@@ -1150,6 +1144,16 @@ static void K_BotStartDrift(player_t* player)
 	if (driftsetting == DRIFT_NONE)
 	{
 		// No waypoints, nothing we can do here.
+		// ...except decrement driftlockout!
+		// do this here to prevent chaining drifts after messing up
+		if (player->botvars.driftlockout)
+			player->botvars.driftlockout--;
+		return;
+	}
+
+	if (player->botvars.driftlockout)
+	{
+		// things are not working out in our favor
 		return;
 	}
 
@@ -1336,9 +1340,11 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			if (abs(driftpower) >= FRACUNIT)
 				cmd->buttons |= BT_BRAKE;
 
-			driftpower = FixedMul(driftpower, FRACUNIT/3 + (player->kartweight * FRACUNIT/15));
+			// get the raw turn value and "invert" it (higher weight needs harder steering!)
+			INT16 turnvalue = abs(K_GetKartTurnValue(player, KART_FULLTURN * (player->botvars.driftturn < 0 ? 1 : -1)));
+			turnvalue = 541 - (turnvalue - 541); // weight 5 = 541
 
-			turnamt = std::clamp(FixedMul(driftpower, KART_FULLTURN), -KART_FULLTURN, KART_FULLTURN);
+			turnamt = std::clamp(FixedMul(driftpower, turnvalue), -KART_FULLTURN, KART_FULLTURN);
 		}
 		/*
 		else if ((turnamt) && (player->botvars.driftstate == DRIFTSTATE_AUTO) &&
@@ -1777,9 +1783,6 @@ void K_UpdateBotGameplayVars(player_t *player)
 	player->botvars.rubberband = K_UpdateRubberband(player);
 
 	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
-
-	if (player->botvars.driftlockout)
-		player->botvars.driftlockout--;
 
 	if (player->botvars.driftending)
 		player->botvars.driftending--;
