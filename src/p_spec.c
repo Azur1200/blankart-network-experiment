@@ -135,7 +135,7 @@ static animdef_t *animdefs = NULL;
 
 // A prototype; here instead of p_spec.h, so they're "private"
 void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum);
-void P_ParseAnimationDefintion(SINT8 istexture);
+void P_ParseAnimationDefintion(SINT8 istexture, boolean compat);
 
 static boolean P_FindTextureForAnimation(anim_t *anim, animdef_t *animdef)
 {
@@ -237,9 +237,9 @@ void P_InitPicAnims(void)
 
 		if (lastanim->numpics < 2)
 		{
-			CONS_Alert(CONS_WARNING, "P_InitPicAnims: bad cycle from %s to %s.\n",
+			free(anims);
+			I_Error("P_InitPicAnims: bad cycle from %s to %s",
 				animdefs->startname, animdefs->endname);
-			continue;
 		}
 
 		lastanim->speed = animdef->speed;
@@ -260,6 +260,7 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	char *animdefsText;
 	char *animdefsToken;
 	char *p;
+	boolean compat = wadfiles[wadNum]->compatmode;
 
 	// Since lumps AREN'T \0-terminated like I'd assumed they should be, I'll
 	// need to make a space of memory where I can ensure that it will terminate
@@ -286,12 +287,12 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 		if (stricmp(animdefsToken, "TEXTURE") == 0)
 		{
 			Z_Free(animdefsToken);
-			P_ParseAnimationDefintion(1);
+			P_ParseAnimationDefintion(1, compat);
 		}
 		else if (stricmp(animdefsToken, "FLAT") == 0)
 		{
 			Z_Free(animdefsToken);
-			P_ParseAnimationDefintion(0);
+			P_ParseAnimationDefintion(0, compat);
 		}
 		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
 		{
@@ -311,7 +312,7 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	Z_Free((void *)animdefsText);
 }
 
-void P_ParseAnimationDefintion(SINT8 istexture)
+void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 {
 	char *animdefsToken;
 	size_t animdefsTokenLength;
@@ -354,7 +355,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
-		if (animdefs[i].istexture == istexture // Check if it's the same type!
+		if ((compat || animdefs[i].istexture == istexture) // Check if it's the same type!
 		&& stricmp(animdefsToken, animdefs[i].startname) == 0)
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
