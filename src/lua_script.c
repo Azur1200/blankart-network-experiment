@@ -357,6 +357,10 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		else
 			lua_pushinteger(L, MAXSKINCOLORS);
 		return 1;
+	} else if (fastcmp(word,"MAXTRANSLATIONS")) {
+		if (lua_compatmode)
+			lua_pushinteger(L, numskincolors);
+		return 1;
 	} else if (fastcmp(word,"gamespeed")) {
 		lua_pushinteger(L, gamespeed);
 		return 1;
