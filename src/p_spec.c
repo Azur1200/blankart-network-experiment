@@ -239,7 +239,7 @@ void P_InitPicAnims(void)
 		{
 			free(anims);
 			I_Error("P_InitPicAnims: bad cycle from %s to %s",
-				animdefs->startname, animdefs->endname);
+				animdef->startname, animdef->endname);
 		}
 
 		lastanim->speed = animdef->speed;
