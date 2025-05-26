@@ -44,9 +44,7 @@ enum
 	TEXTURETYPE_UNKNOWN,
 	TEXTURETYPE_SINGLEPATCH,
 	TEXTURETYPE_COMPOSITE,
-#ifdef WALLFLATS
 	TEXTURETYPE_FLAT,
-#endif
 };
 
 // A texture_t describes a rectangular texture,
@@ -86,7 +84,7 @@ void R_FlushTextureCache(void);
 
 // Texture generation
 UINT8 *R_GenerateTexture(size_t texnum);
-UINT8 *R_GenerateTextureAsFlat(size_t texnum);
+UINT8 *R_GetFlatForTexture(size_t texnum);
 UINT8 *R_GenerateTextureBrightmap(size_t texnum);
 INT32 R_GetTextureNum(INT32 texnum);
 INT32 R_GetTextureBrightmap(INT32 texnum);
@@ -98,10 +96,11 @@ void R_DoPaletteRemapPatch(softwarepatch_t *patch, size_t size);
 void R_DoPaletteRemapFlat(UINT8 *data, size_t size);
 
 // Retrieve texture data.
-void *R_GetLevelFlat(drawspandata_t* ds, levelflat_t *levelflat);
 UINT8 *R_GetColumn(fixed_t tex, INT32 col);
 UINT8 *R_GetBrightmapColumn(fixed_t tex, INT32 col);
-void *R_GetFlat(lumpnum_t flatnum);
+void *R_GetFlat(levelflat_t *levelflat);
+
+INT32 R_GetTextureNumForFlat(levelflat_t *levelflat);
 
 boolean R_CheckPowersOfTwo(drawspandata_t* ds);
 void R_CheckFlatLength(drawspandata_t* ds, size_t size);
@@ -111,7 +110,7 @@ void R_UpdateTextureBrightmap(INT32 tx, INT32 bm);
 // Returns the texture number for the texture name.
 INT32 R_TextureNumForName(const char *name);
 INT32 R_CheckTextureNumForName(const char *name);
-lumpnum_t R_GetFlatNumForName(const char *name);
+INT32 R_CheckFlatNumForName(const char *name);
 
 extern INT32 numtextures;
 

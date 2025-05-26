@@ -43,6 +43,7 @@ Make sure this matches the actual number of states
 #define MAXVANILLABOOST K_RAGuard(cv_kartstacking_maxvanillaboost)
 #define SPEEDBOOSTDROPOFF K_RAGuard(cv_kartstacking_speedboostdropoff)
 #define SPEEDBOOSTDROPOFF_BRAKE K_RAGuard(cv_kartstacking_speedboostdropoff_brake)
+#define ACCELSTACK K_RAGuard(cv_kartstacking_accelstack)
 
 // Vanilla Boosts
 #define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost)

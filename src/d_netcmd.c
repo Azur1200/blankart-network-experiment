@@ -1899,7 +1899,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 
 	UINT8 prefs = READUINT8(*cp);
 
-	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME);
+	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;

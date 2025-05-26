@@ -355,15 +355,15 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dump
 		finalmessage,
 		sizeof(finalmessage),
 			"\"SRB2Kart V2\" has encountered an unrecoverable error and needs to close.\n"
-			"The %s log file is located at (%s).\n"
+			"The %slog file is located at (%s).\n"
 			"\n"
 			"\n"
 			"%s",
 		dumpmade ?
 #if defined (UNIXBACKTRACE)
-			"crash-log.txt"
+			"crash-log.txt "
 #elif defined (_WIN32)
-			".rpt crash dump"
+			".rpt crash dump "
 #endif
 			: "",
 		logfilename,

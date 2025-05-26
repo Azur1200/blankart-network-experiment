@@ -1585,12 +1585,17 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		destangle = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
 		turnamt = K_HandleBotTrack(player, cmd, predict, destangle);
 	}
-	else if (leveltime <= starttime )
+	else if (leveltime <= starttime)
 	{
-		if (leveltime >= starttime-TICRATE-TICRATE/7)
+		UINT8 timing = P_RandomRange(0, 5);
+		UINT8 finaltiming = (MAXBOTDIFFICULTY/2)-(player->botvars.difficulty/2)+timing;
+		if (player->botvars.difficulty > 4)
 		{
-			cmd->buttons |= BT_ACCELERATE;
-			cmd->forwardmove = MAXPLMOVE;
+			if (leveltime >= starttime-TICRATE-TICRATE/7+finaltiming)
+			{
+				cmd->buttons |= BT_ACCELERATE;
+				cmd->forwardmove = MAXPLMOVE;
+			}
 		}
 	}
 	else

@@ -3174,6 +3174,11 @@ void A_AttractChase(mobj_t *actor)
 				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
+				if (actor->target->player->rings <= 10)
+				{
+					S_StartSoundAtVolume(actor->target, sfx_ringlw, 255 - actor->target->player->rings*10);
+				}
+
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
 

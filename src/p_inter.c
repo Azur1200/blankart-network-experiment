@@ -2158,7 +2158,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 		if (player->exiting)
 		{
-			K_DoInstashield(player);
+			if (inflictor)
+				K_DoInstashield(player);
 			return false;
 		}
 

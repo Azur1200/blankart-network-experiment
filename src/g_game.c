@@ -1625,7 +1625,7 @@ boolean G_Responder(event_t *ev)
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, true))
+		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, false))
 	{
 		if (!demo.playback && (r_splitscreen))
 			g_localplayers[0] = consoleplayer;
@@ -2474,7 +2474,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
-		rings = 10;
+		rings = 5;
 		kickstartaccel = 0;
 		lastsafelap = 0;
 		lastsafestarpost = 0;
@@ -2545,9 +2545,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		starposttime = players[player].starposttime;
 		prevcheck = players[player].prevcheck;
 		prevcheck = players[player].nextcheck;
-
-		pflags |= (players[player].pflags & (PF_STASIS|PF_ELIMINATED|PF_NOCONTEST|PF_LOSTLIFE|PF_FLIPCAM));
-
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;

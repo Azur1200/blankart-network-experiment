@@ -764,7 +764,7 @@ void *Picture_TextureToFlat(size_t trickytex)
 	R_CheckTextureCache(tex);
 
 	// Allocate the flat
-	flatsize = (texture->width * texture->height);
+	flatsize = texture->width * texture->height;
 	converted = Z_Malloc(flatsize, PU_STATIC, NULL);
 	memset(converted, TRANSPARENTPIXEL, flatsize);
 

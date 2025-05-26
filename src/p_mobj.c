@@ -3558,7 +3558,7 @@ void P_DestroyRobots(void)
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	const boolean flipcam = (player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = ((player->pflags & PF_FLIPCAM) && (player->mo->eflags & MFE_VERTICALFLIP));
 	UINT8 postimgtype = 0;
 
 	// This can happen when joining

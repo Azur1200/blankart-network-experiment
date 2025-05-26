@@ -3604,7 +3604,12 @@ static void K_GetKartBoostPower(player_t *player)
 
 		for (i = 0; i < numsneakers; i++)
 		{
-			K_DoBoost(player, sneakerspeedboost, SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
+			K_DoBoost(player, sneakerspeedboost, ACCELSTACK ? 0 : SNEAKERACCELBOOST, SNEAKERSTACKABLE, SNEAKERSTACKABLE); // + ???% top speed, + 800% acceleration
+		}
+
+		if (ACCELSTACK)
+		{
+			K_DoBoost(player, 0, SNEAKERACCELBOOST, true, false); // + 800% acceleration
 		}
 	}
 
@@ -8780,7 +8785,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 				oopisepoint = K_GetClosestWaypointToMobj(player->mo);
 			}
 
-			if (oopisepoint->numnextwaypoints > 0)
+			if (oopisepoint && oopisepoint->numnextwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numnextwaypoints; i++)
 				{
@@ -8824,10 +8829,14 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					safewaypoint = oopisepoint->nextwaypoints[i];
 					break;
 				}
-				oopisepoint = safewaypoint;
+
+				if (safewaypoint)
+				{
+					oopisepoint = safewaypoint;
+				}
 			}
 
-			if (oopisepoint->numprevwaypoints > 0)
+			if (oopisepoint && oopisepoint->numprevwaypoints > 0)
 			{
 				for (i = 0; i < oopisepoint->numprevwaypoints; i++)
 				{
@@ -8859,7 +8868,6 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 					break;
 				}
 			}
-
 
 			CONS_Debug(DBG_GAMELOGIC, M_GetText("Tried to respawn at invalid waypoint! Setting respawn to closest waypoint\n"));
 		}
@@ -10884,7 +10892,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 		return;
 
 	// Organize by spectate wait timer (if there's more than one to sort)
-	if (cv_maxplayers.value && numjoiners > 1)
+	if (cv_ingamecap.value && numjoiners > 1)
 	{
 		UINT8 oldrespawnlist[MAXPLAYERS];
 		memcpy(oldrespawnlist, respawnlist, numjoiners);
@@ -10915,7 +10923,7 @@ void K_CheckSpectateStatus(boolean considermapreset)
 	for (i = 0; i < numjoiners; i++)
 	{
 		// Hit the in-game player cap while adding people?
-		if (cv_maxplayers.value && numingame >= cv_maxplayers.value)
+		if (cv_ingamecap.value && numingame >= cv_ingamecap.value)
 		{
 			if (numbots > 0)
 			{
