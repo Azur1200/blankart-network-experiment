@@ -4834,7 +4834,6 @@ static void K_DrawBotDebugger(void)
 	V_DrawThinString(24, 108, vflags|(stplyr->botvars.driftlockout ? V_ORANGEMAP : 0), va("Drift lockout: %d", stplyr->botvars.driftlockout));
 	V_DrawThinString(24, 116, vflags, va("Drift turn: %d", stplyr->botvars.driftturn));
 	V_DrawThinString(24, 124, vflags, va("Drift timer: %d", stplyr->botvars.drifttime));
-	V_DrawThinString(24, 132, vflags, va("Drift end time: %d", stplyr->botvars.driftending));
 }
 
 void K_drawKartHUD(void)

@@ -472,7 +472,6 @@ struct botvars_t
 	SINT8 driftturn; // Drifting turn direction
 	tic_t drifttime; // Time spent drifting
 	tic_t driftlockout; // do not allow drifting for this many tics
-	tic_t driftending; // number of tics to force turning towards waypoint
 };
 
 struct sonicloopcamvars_t

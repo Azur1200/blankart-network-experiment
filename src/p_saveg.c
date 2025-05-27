@@ -387,7 +387,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].botvars.driftturn);
 		WRITEUINT32(save->p, players[i].botvars.drifttime);
 		WRITEUINT32(save->p, players[i].botvars.driftlockout);
-		WRITEUINT32(save->p, players[i].botvars.driftending);
 
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -720,7 +719,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.driftturn = READSINT8(save->p);
 		players[i].botvars.drifttime = READUINT32(save->p);
 		players[i].botvars.driftlockout = READUINT32(save->p);
-		players[i].botvars.driftending = READUINT32(save->p);
 
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);

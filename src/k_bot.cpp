@@ -1108,22 +1108,29 @@ static void K_BotStartDrift(player_t* player)
 
 	if (speedfactor < FRACUNIT/2)
 	{
-		// don't bother if we can't even drift
+		// don't bother if we're going too slow
 		K_BotSetDriftState(player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT);
 		return;
 	}
 
-	if (speedfactor > 4*FRACUNIT/3)
+	if (speedfactor > (6-gamespeed)*FRACUNIT/3)
 	{
 		// likewise, don't bother if we're going too fast
 		K_BotSetDriftState(player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT/2);
 		return;
 	}
 
+	if (player->botvars.driftlockout)
+	{
+		// things are not working out in our favor
+		player->botvars.driftlockout--;
+		return;
+	}
+
 	// check for waypoints ahead of us with drift settings, based on our current speed
 	path_t path = {0};
-	INT32 maxdist = FixedInt(cv_test1.value);
-	maxdist = FixedMul(maxdist, speedfactor + cv_test2.value);
+	INT32 maxdist = FixedInt(cv_test1.value) + gamespeed*50;
+	maxdist = FixedMul(maxdist, speedfactor * (player->botvars.driftstate == DRIFTSTATE_ACTIVE ? 1 : 2));
 
 	if (maxdist >= 0 && K_PathfindThruCircuit(player->currentwaypoint, maxdist, &path, false, false))
 	{
@@ -1144,16 +1151,6 @@ static void K_BotStartDrift(player_t* player)
 	if (driftsetting == DRIFT_NONE)
 	{
 		// No waypoints, nothing we can do here.
-		// ...except decrement driftlockout!
-		// do this here to prevent chaining drifts after messing up
-		if (player->botvars.driftlockout)
-			player->botvars.driftlockout--;
-		return;
-	}
-
-	if (player->botvars.driftlockout)
-	{
-		// things are not working out in our favor
 		return;
 	}
 
@@ -1307,8 +1304,7 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		cmd->forwardmove = MAXPLMOVE;
 
 		if (dirdist <= rad
-		 && player->botvars.driftstate != DRIFTSTATE_STARTING // steer towards waypoints when starting drift
-		 && player->botvars.driftending == 0) // ...and after releasing a drift
+		 && player->botvars.driftstate != DRIFTSTATE_STARTING) // steer towards waypoints when starting drift
 		{
 			// Going the right way, don't turn at all.
 			turnamt = 0;
@@ -1322,19 +1318,15 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		{
 			cmd->buttons |= BT_DRIFT;
 
-			fixed_t angofs = -45*FRACUNIT;
+			fixed_t angofs = K_GetKartSpeedFromStat(5 - (player->kartspeed - 5), false) * -player->botvars.driftturn;
 
-			// steer a bit harder when starting a drift
-			angofs -= std::max<int>(0, TICRATE/4 - player->botvars.drifttime)*2;
+			// adjust for speed
+			angofs = FixedMul(angofs, speedfactor - (2-gamespeed)*FRACUNIT/4);
 
-			// steer harder when above 75% speed
-			//if (speedfactor > 3*FRACUNIT/4)
-				//angofs = FixedMul(angofs, FRACUNIT/4 + 3*speedfactor/4);
-
-			fixed_t driftpower = angofs*player->botvars.driftturn - FixedDiv(anglediff2, ANG1);
+			fixed_t driftpower = angofs - FixedDiv(anglediff2, ANG1);
 
 			// arbitrary divider on the final driftpower
-			driftpower /= 55;
+			driftpower /= FixedInt(cv_test2.value);
 
 			// brakedrift if we're steering too hard
 			if (abs(driftpower) >= FRACUNIT)
@@ -1784,9 +1776,6 @@ void K_UpdateBotGameplayVars(player_t *player)
 
 	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
 
-	if (player->botvars.driftending)
-		player->botvars.driftending--;
-
 	// Is a bot not making any progress? Kill it and respawn at next waypoint.
 	K_IncrementBotRespawn(player, &player->botvars.respawnconfirm, BOTRESPAWNCONFIRM);
 
@@ -1812,7 +1801,8 @@ void K_UpdateBotGameplayVars(player_t *player)
 		// so no need to worry about doing that ourselves.
 		K_BotStartDrift(player);
 
-		tic_t limit, dtime = ++player->botvars.drifttime;
+		INT32 limit = FixedInt(cv_test3.value) - gamespeed*5;
+		INT32 dtime = ++player->botvars.drifttime;
 
 		// the faster we are going, the sooner we need to drift
 		fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
@@ -1820,7 +1810,7 @@ void K_UpdateBotGameplayVars(player_t *player)
 		switch (player->botvars.driftstate)
 		{
 		case DRIFTSTATE_STARTING:
-			limit = std::max(0, FixedInt(cv_test3.value) - FixedMul(TICRATE/5, speedfactor));
+			limit = std::max(0, limit - FixedMul(TICRATE/5, speedfactor));
 			if (dtime > limit)
 			{
 				K_BotSetDriftState(player, DRIFTSTATE_ACTIVE, 0);
@@ -1828,11 +1818,10 @@ void K_UpdateBotGameplayVars(player_t *player)
 			break;
 
 		case DRIFTSTATE_ENDING:
-			limit = std::max(0, FixedInt(cv_test3.value) - FixedMul(TICRATE/5, speedfactor));
+			limit = std::max(0, limit - FixedMul(TICRATE/5, speedfactor));
 			if (dtime > limit)
 			{
 				K_BotSetDriftState(player, DRIFTSTATE_AUTO, 0);
-				player->botvars.driftending = TICRATE/2;
 			}
 			break;
 
