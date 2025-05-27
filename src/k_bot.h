@@ -390,6 +390,23 @@ void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt);
 
 fixed_t K_BotDetermineDriftSkill(player_t *player);
 
+/*--------------------------------------------------
+	void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
+
+		Changes a bot's drift state.
+		Resets the drift timer if the old and new state are different.
+
+	Input Arguments:-
+		player - Player to set drift state for.
+		newstate - The new drift state.
+		lockout - If non-zero, apply drift lockout for this many tics.
+
+	Return:-
+		None
+--------------------------------------------------*/
+
+void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout);
+
 
 #ifdef __cplusplus
 } // extern "C"

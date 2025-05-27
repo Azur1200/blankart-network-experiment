@@ -424,8 +424,8 @@ typedef enum
 // Minimum turning percentage for an auto drift to begin.
 #define DRIFTSTARTPCT (45)
 
-#define DRIFTTICMUL (43690) // FRACUNIT * 0.66
-#define BOTDRIFTTICS (FixedMul(TICRATE, DRIFTTICMUL))
+#define BOTDRIFTTICS (2*TICRATE/3)
+#define BOTDRIFTLOCKOUT (TICRATE/2)
 
 #define MAXDRIFTSKILL (FRACUNIT/2)
 
@@ -438,11 +438,13 @@ typedef enum
 	BOT_STYLE__MAX
 } botStyle_e;
 
-typedef enum {
-    DRIFTSTATE_AUTO=0,
-    DRIFTSTATE_ACTIVE,
-    DRIFTSTATE_ENDING,
-    NUMDRIFTSTATES
+typedef enum
+{
+	DRIFTSTATE_AUTO,
+	DRIFTSTATE_STARTING,
+	DRIFTSTATE_ACTIVE,
+	DRIFTSTATE_ENDING,
+	NUMDRIFTSTATES
 } botdrift_t;
 
 // player_t struct for all bot variables
@@ -466,11 +468,10 @@ struct botvars_t
 	// Drift-relevant data below:
 	fixed_t driftskill; // The bot's "skill" at drifts.
 						// Determines how soon a bot starts to drift.
-	INT32 driftstate; // Drifting state
-	INT32 driftamt; // Turning severity for a drift
+	botdrift_t driftstate; // Drifting state
 	SINT8 driftturn; // Drifting turn direction
 	tic_t drifttime; // Time spent drifting
-	boolean powersliding; // Are we powersliding?
+	tic_t driftlockout; // do not allow drifting for this many tics
 };
 
 struct sonicloopcamvars_t

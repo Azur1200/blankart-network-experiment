@@ -173,7 +173,7 @@ extern consvar_t cv_votetime;
 
 extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution, cv_kartdebughuddrop;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
-extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap,cv_kartdebugbotpredict;
+extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot;
 
 extern consvar_t cv_itemfinder;
 
@@ -208,6 +208,8 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_director;
 
 extern consvar_t cv_schedule;
+
+extern consvar_t cv_test1, cv_test2, cv_test3;
 
 extern char timedemo_name[256];
 extern boolean timedemo_csv;

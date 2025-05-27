@@ -266,7 +266,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
 	CV_RegisterVar(&cv_kartdebuglap);
-	CV_RegisterVar(&cv_kartdebugbotpredict);
+	CV_RegisterVar(&cv_kartdebugbot);
 
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
@@ -344,6 +344,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdriftefx);
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_saltyhop);
+
+	CV_RegisterVar(&cv_test1);
+	CV_RegisterVar(&cv_test2);
+	CV_RegisterVar(&cv_test3);
 }
 
 //}

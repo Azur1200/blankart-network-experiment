@@ -87,7 +87,7 @@
 #define ASSET_HASH_CHARS_KART     0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART      0x38558ed00da41ce9
 #define ASSET_HASH_MAIN_PK3     0x3bbd056a4ce5e993
-#define ASSET_HASH_MAPPATCH_PK3  0x602a099e28f12544
+#define ASSET_HASH_MAPPATCH_PK3  0x01a21a5e96a2a76b
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3     0x0000000000000000
 #endif
@@ -1884,9 +1884,11 @@ void D_SRB2Main(void)
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's
 			// lives hell.
+#if 0
 			if (!dedicated && M_MapLocked(pstartmap))
 				I_Error("You need to unlock this level before you can warp to it!\n");
 			else
+#endif
 			{
 				D_MapChange(pstartmap, gametype, (cv_kartencore.value == 1), true, 0, false, false);
 			}
