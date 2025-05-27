@@ -44,15 +44,23 @@ static int lib_iteratePlayers(lua_State *L)
 
 	i++;
 
-	if (i == serverplayer)
+	if (!lua_compatmode)
 	{
-		return LUA_PushServerPlayer(L);
+		if (i == serverplayer)
+		{
+			return LUA_PushServerPlayer(L);
+		}
 	}
 
 	for (; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
+		if (lua_compatmode)
+		{
+			if (!players[i].mo)
+				continue;
+		}
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}
@@ -69,10 +77,22 @@ static int lib_getPlayer(lua_State *L)
 		lua_Integer i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= MAXPLAYERS)
 			return luaL_error(L, "players[] index %d out of range (0 - %d)", i, MAXPLAYERS-1);
-		if (i == serverplayer)
-			return LUA_PushServerPlayer(L);
+
+
+		if (!lua_compatmode)
+		{
+			if (i == serverplayer)
+				return LUA_PushServerPlayer(L);
+		}
+
 		if (!playeringame[i])
 			return 0;
+
+		if (lua_compatmode)
+		{
+			if (!players[i].mo)
+				return 0;
+		}
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}
