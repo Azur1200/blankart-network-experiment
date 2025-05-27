@@ -3209,7 +3209,7 @@ static patch_t *shadowpatch = NULL;
 
 static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 {
-	patch_t *gpatch;
+	patch_t *gpatch = NULL;
 	FOutVector shadowVerts[4];
 	FSurfaceInfo sSurf;
 	float fscale; float fx; float fy; float offset;
@@ -3245,13 +3245,17 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	groundz = R_GetShadowZ(thing, &groundslope);
 
-	if (shadowpatch == NULL)
+	if (!shadowpatch || !shadowpatch->hardware)
 	{
-		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_STATIC);
+		CONS_Printf("remaking shadowsprite\n");
+		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_SPRITE);
 	}
 
 	gpatch = shadowpatch;
-	if (!(gpatch && ((GLPatch_t *)gpatch->hardware)->mipmap->format)) return;
+
+	if (!gpatch || !gpatch->hardware || !((GLPatch_t *)gpatch->hardware)->mipmap->format)
+		return;
+
 	HWR_GetPatch(gpatch);
 
 	scalemul = FixedMul(scale, (thing->radius * 2) / gpatch->height);
@@ -5026,7 +5030,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			{
 				R_InterpolateMobjState(caster, FRACUNIT, &casterinterp);
 			}
-			
+
 			groundz = R_GetShadowZ(thing, NULL);
 			floordiff = abs(((thing->eflags & MFE_VERTICALFLIP) ? caster->height : 0) + casterinterp.z - groundz);
 
@@ -5263,7 +5267,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
-	
+
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
 	{
@@ -5944,7 +5948,7 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	if (cv_glbatching.value)
 		HWR_StartBatching();
-	
+
 #ifdef HWPRECIP
 	HWR_AddPrecipitationSprites();
 #endif
@@ -6135,7 +6139,7 @@ void HWR_RenderPlayerView(void)
 
 	if (cv_glbatching.value)
 		HWR_StartBatching();
-	
+
 #ifdef HWPRECIP
 	HWR_AddPrecipitationSprites();
 #endif
