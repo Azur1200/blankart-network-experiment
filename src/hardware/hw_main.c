@@ -3247,7 +3247,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	if (!shadowpatch || !shadowpatch->hardware)
 	{
-		CONS_Printf("remaking shadowsprite\n");
+		CONS_Debug(DBG_RENDER, "remaking shadowsprite\n");
 		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_SPRITE);
 	}
 
