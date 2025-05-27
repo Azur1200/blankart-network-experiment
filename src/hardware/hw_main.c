@@ -3205,6 +3205,8 @@ static boolean HWR_DoCulling(line_t *cullheight, line_t *viewcullheight, float v
 	return false;
 }
 
+static patch_t *shadowpatch = NULL;
+
 static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 {
 	patch_t *gpatch;
@@ -3243,7 +3245,12 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 
 	groundz = R_GetShadowZ(thing, &groundslope);
 
-	gpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_SPRITE);
+	if (shadowpatch == NULL)
+	{
+		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_STATIC);
+	}
+
+	gpatch = shadowpatch;
 	if (!(gpatch && ((GLPatch_t *)gpatch->hardware)->mipmap->format)) return;
 	HWR_GetPatch(gpatch);
 

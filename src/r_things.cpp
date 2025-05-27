@@ -1443,6 +1443,8 @@ static void R_SkewShadowSprite(
 	*shadowskew = xslope;
 }
 
+static patch_t *shadowpatch = NULL;
+
 static void R_ProjectDropShadow(
 	mobj_t *thing, vissprite_t *vis,
 	fixed_t scale, fixed_t tx, fixed_t tz)
@@ -1468,7 +1470,12 @@ static void R_ProjectDropShadow(
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
 
-	patch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
+	if (shadowpatch == NULL)
+	{
+		shadowpatch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_STATIC));
+	}
+
+	patch = shadowpatch;
 	xscale = FixedDiv(projection[viewssnum], tz);
 	yscale = FixedDiv(projectiony[viewssnum], tz);
 	shadowxscale = FixedMul(thing->radius*2, scale);
