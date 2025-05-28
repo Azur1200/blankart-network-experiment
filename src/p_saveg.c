@@ -5150,7 +5150,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, slipdashactive);
 	WRITEUINT8(save->p, purpledriftactive);
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < 12; i++)
 	{
 		WRITEINT16(save->p, votelevels[i][0]);
 		WRITEINT16(save->p, votelevels[i][1]);
@@ -5323,7 +5323,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	slipdashactive = READUINT8(save->p);
 	purpledriftactive = READUINT8(save->p);
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < 12; i++)
 	{
 		votelevels[i][0] = READINT16(save->p);
 		votelevels[i][1] = READINT16(save->p);
