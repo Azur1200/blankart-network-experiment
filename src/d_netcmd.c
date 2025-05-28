@@ -2804,15 +2804,21 @@ void D_SetupVote(void)
 	for (i = 0; i < VOTEROWSADDSONE; i++)
 	{
 		UINT16 m;
+		UINT16 hellpick = 0;
+
+		hellpick = ((i == ((VOTEROWS) + 1) ) ? 2 : 0);
+
+		if (i == VOTEROWS)
+			hellpick = 1;
 
 		if (i == 2) // sometimes a different gametype
 			m = G_RandMap(G_TOLFlag(secondgt), prevmap, ((secondgt != gametype) ? 2 : 0), 0, true, votebuffer);
 		else if (i >= VOTEROWS) // unknown-random and formerly force-unknown MAP HELL
-			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, (i-2), (i < 4), votebuffer);
+			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, hellpick, (i < VOTEROWSADDSONE), votebuffer);
 		else
 			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, 0, true, votebuffer);
 		if (i < VOTEROWS)
-			votebuffer[i] = m;
+			votebuffer[min(i, 2)] = m; // min() is a dumb workaround for gcc 4.4 array-bounds error
 		WRITEUINT16(p, m);
 	}
 
