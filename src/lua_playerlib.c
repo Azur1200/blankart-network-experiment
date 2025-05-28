@@ -307,6 +307,7 @@ enum player_e
 	player_breathTimer,
 	player_lastsafelap,
 	player_lastsafestarpost,
+	player_interpoints,
 	player_roundscore,
 	player_marescore,
 	player_emeralds,
@@ -486,6 +487,7 @@ static const char *const player_opt[] = {
 	"breathTimer",
 	"lastsafelap",
 	"lastsafestarpost",
+	"interpoints",
 	"roundscore",
 	"marescore",
 	"emeralds",
@@ -913,6 +915,8 @@ static int player_get(lua_State *L)
 	case player_lastsafestarpost:
 		lua_pushinteger(L, plr->lastsafestarpost);
 		break;
+	case player_interpoints:
+		lua_pushinteger(L, plr->interpoints);
 	case player_roundscore:
 	case player_marescore:
 		lua_pushinteger(L, plr->roundscore);
@@ -1537,6 +1541,8 @@ static int player_set(lua_State *L)
 	case player_lastsafestarpost:
 		plr->lastsafestarpost = luaL_checkinteger(L, 3);
 		break;
+	case player_interpoints:
+		plr->interpoints = luaL_checkinteger(L, 3);
 	case player_roundscore:
 	case player_marescore:
 		plr->roundscore = luaL_checkinteger(L, 3);

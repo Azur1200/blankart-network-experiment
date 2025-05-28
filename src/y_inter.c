@@ -71,7 +71,7 @@ typedef struct
 	char levelstring[64]; // holds levelnames up to 64 characters
 
 	// SRB2kart
-	INT16 increase[MAXPLAYERS]; // how much did the score increase by?
+	INT32 increase[MAXPLAYERS]; // how much did the score increase by?
 	UINT8 jitter[MAXPLAYERS]; // wiggle
 
 	UINT32 val[MAXPLAYERS]; // Gametype-specific value
@@ -211,7 +211,7 @@ static void Y_CompareScore(INT32 i)
 
 static void Y_CompareRank(INT32 i)
 {
-	INT16 increase = ((data.increase[i] == INT16_MIN) ? 0 : data.increase[i]);
+	INT32 increase = ((data.increase[i] == INT32_MIN) ? 0 : data.increase[i]);
 	UINT32 score = players[i].score;
 
 	if (powertype != PWRLV_DISABLED)
@@ -291,12 +291,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 
 		if (!playeringame[i] || players[i].spectator)
 		{
-			data.increase[i] = INT16_MIN;
+			data.increase[i] = INT32_MIN;
 			continue;
 		}
 
 		if (!rankingsmode)
-			data.increase[i] = INT16_MIN;
+			data.increase[i] = INT32_MIN;
 
 		numplayersingame++;
 	}
@@ -336,11 +336,11 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		if (!rankingsmode)
 		{
 			if ((powertype == PWRLV_DISABLED)
-				&& !(players[i].pflags & PF_NOCONTEST)
+				&& (!(players[i].pflags & PF_NOCONTEST) || players[i].interpoints)
 				&& (data.pos[data.numplayers] < (numplayersingame + spectateGriefed)))
 			{
 				// Online rank is handled further below in this file.
-				data.increase[i] = K_CalculateGPRankPoints(data.pos[data.numplayers], numplayersingame + spectateGriefed);
+				data.increase[i] = players[i].interpoints ? players[i].interpoints : K_CalculateGPRankPoints(data.pos[data.numplayers], numplayersingame + spectateGriefed);
 				players[i].score += data.increase[i];
 			}
 
@@ -681,9 +681,15 @@ void Y_IntermissionDrawer(void)
 					}
 					else
 					{
-						if (data.increase[data.num[i]] != INT16_MIN)
+						if (data.increase[data.num[i]] != INT32_MIN)
 						{
-							snprintf(strtime, sizeof strtime, "(%d)", data.increase[data.num[i]]);
+							// Checking player.interpoints so when "negative increase" reaches 0, it keeps the -
+							char sign = players[data.num[i]].interpoints < 0 ? '-' : '+';
+
+							if (powertype == PWRLV_DISABLED)
+								snprintf(strtime, sizeof strtime, "(%c%02d)", sign, abs(data.increase[data.num[i]]));
+							else
+								snprintf(strtime, sizeof strtime, "(%d)", data.increase[data.num[i]]);
 
 							if (data.numplayers > NUMFORNEWCOLUMN)
 								V_DrawRightAlignedThinString(x+133+gutter, y-1, V_6WIDTHSPACE, strtime);
@@ -862,7 +868,7 @@ void Y_Ticker(void)
 				{
 					if (data.num[q] == MAXPLAYERS
 						|| !data.increase[data.num[q]]
-						|| data.increase[data.num[q]] == INT16_MIN)
+						|| data.increase[data.num[q]] == INT32_MIN)
 					{
 						continue;
 					}
@@ -900,8 +906,19 @@ void Y_Ticker(void)
 						// Basic bitch points
 						if (data.increase[data.num[q]])
 						{
-							if (--data.increase[data.num[q]])
+							INT32 diff = 1;
+							INT32 increase = data.increase[data.num[q]];
+							if (increase > 25)
+								diff = increase/10;
+							// This is wordy... But allows negative "increase"
+							if (increase < 0)
+								increase += diff;
+							else
+								increase -= diff;
+
+							if (increase)
 								kaching = false;
+							data.increase[data.num[q]] = increase;
 						}
 					}
 				}

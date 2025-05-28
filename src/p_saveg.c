@@ -354,6 +354,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].confirmVictim);
 		WRITEUINT8(save->p, players[i].confirmVictimDelay);
 
+		WRITEINT32(save->p, players[i].interpoints);
 		WRITEUINT32(save->p, players[i].roundscore);
 		WRITEUINT8(save->p, players[i].emeralds);
 		WRITEUINT8(save->p, players[i].bumper);
@@ -691,6 +692,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].confirmVictim = READUINT8(save->p);
 		players[i].confirmVictimDelay = READUINT8(save->p);
 
+		players[i].interpoints = READINT32(save->p);
 		players[i].roundscore = READUINT32(save->p);
 		players[i].emeralds = READUINT8(save->p);
 		players[i].bumper = READUINT8(save->p);

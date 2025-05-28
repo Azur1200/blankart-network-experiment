@@ -5117,6 +5117,8 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 			players[i].totalring = 0;
 			players[i].score = 0;
 		}
+
+		players[i].interpoints = 0;
 	}
 
 	// Reset unlockable triggers
