@@ -3220,10 +3220,29 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 434: // Custom Power
 			if (mo && mo->player)
 			{
-				powertype_t power = line->stringargs[0] ? get_number(line->stringargs[0]) : 0;
-				INT32 value = line->stringargs[1] ? get_number(line->stringargs[1]) : 0;
+				powertype_t power = stringargs[0] ? get_number(stringargs[0]) : 0;
+				INT32 value = stringargs[1] ? get_number(stringargs[1]) : 0;
 				if (value == -1) // 'Infinite'
 					value = UINT16_MAX;
+
+				if (stringargs[0])
+				{
+					if (strcasecmp(stringargs[0], "PW_FLASHING"))
+					{
+						mo->player->flashing = value;
+						break;
+					}
+					else if (strcasecmp(stringargs[0], "PW_NOCONTROL"))
+					{
+						mo->player->nocontrol = value;
+						break;
+					}
+					else if (strcasecmp(stringargs[0], "PW_EMERALDS"))
+					{
+						mo->player->emeralds = value;
+						break;
+					}
+				}
 
 				mo->player->powers[power] = value;
 			}

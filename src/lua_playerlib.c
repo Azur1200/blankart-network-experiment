@@ -1772,6 +1772,9 @@ static int power_get(lua_State *L)
 		case pw_nocontrol:
 			lua_pushinteger(L, plr->nocontrol);
 			return 1;
+		case pw_emeralds:
+			lua_pushinteger(L, plr->emeralds);
+			return 1;
 		default:
 			lua_pushinteger(L, powers[p]);
 			return 1;
@@ -1800,6 +1803,9 @@ static int power_set(lua_State *L)
 			break;
 		case pw_nocontrol:
 			plr->nocontrol = i;
+			break;
+		case pw_emeralds:
+			plr->emeralds = i;
 			break;
 		default:
 			powers[p] = i;
