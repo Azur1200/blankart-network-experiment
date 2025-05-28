@@ -3227,17 +3227,17 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 
 				if (stringargs[0])
 				{
-					if (strcasecmp(stringargs[0], "PW_FLASHING"))
+					if (!strcasecmp(stringargs[0], "PW_FLASHING"))
 					{
 						mo->player->flashing = value;
 						break;
 					}
-					else if (strcasecmp(stringargs[0], "PW_NOCONTROL"))
+					else if (!strcasecmp(stringargs[0], "PW_NOCONTROL"))
 					{
 						mo->player->nocontrol = value;
 						break;
 					}
-					else if (strcasecmp(stringargs[0], "PW_EMERALDS"))
+					else if (!strcasecmp(stringargs[0], "PW_EMERALDS"))
 					{
 						mo->player->emeralds = value;
 						break;
