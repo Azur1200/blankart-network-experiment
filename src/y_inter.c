@@ -1154,7 +1154,7 @@ static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 void Y_VoteDrawer(void)
 {
 	INT32 rowval, i, lvls, x, picdiff, y = 0, height = 0;
-	UINT8 selected[4];
+	UINT8 selected[12];
 	fixed_t rubyheight = 0;
 	fixed_t scale;
 	patch_t *pic;
