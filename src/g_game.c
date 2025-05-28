@@ -3620,7 +3620,7 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 					break;
 			}
 		}
-		if (encorepossible != (cv_kartencore.value == 1))
+		if (encorepossible != (cv_kartencore.value == 0))
 			encoremodifier = VOTEMODIFIER_ENCORE;
 	}
 
