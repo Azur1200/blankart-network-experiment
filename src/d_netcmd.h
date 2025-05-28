@@ -169,6 +169,8 @@ extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
 extern consvar_t cv_kartslipdash;
 
+extern consvar_t cv_encorevotes;
+
 extern consvar_t cv_votetime;
 
 extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution, cv_kartdebughuddrop;

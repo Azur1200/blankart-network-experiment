@@ -611,6 +611,9 @@ consvar_t cv_mute = CVAR_INIT ("mute", "Off", CV_NETVAR|CV_CALL, CV_OnOff, Mute_
 
 consvar_t cv_sleep = CVAR_INIT ("cpusleep", "1", CV_SAVE, sleeping_cons_t, NULL);
 
+static CV_PossibleValue_t encorevotes_cons_t[] = {{0, "One"}, {1, "Except One"}, {0, NULL}};
+consvar_t cv_encorevotes = CVAR_INIT ("kartencorevotes", "One", CV_NETVAR, encorevotes_cons_t, NULL);
+
 static CV_PossibleValue_t perfstats_cons_t[] = {
 	{PS_OFF, "Off"},
 	{PS_RENDER, "Rendering"},
@@ -907,6 +910,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_automate);
 
 	CV_RegisterVar(&cv_dummyconsvar);
+	CV_RegisterVar(&cv_encorevotes);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
@@ -2779,11 +2783,15 @@ void D_SetupVote(void)
 	UINT8 secondgt = G_SometimesGetDifferentGametype(gt);
 	INT16 votebuffer[4] = {-1,-1,-1,0};
 
-	if ((cv_kartencore.value == 1) && (gametypedefaultrules[gt] & GTR_CIRCUIT))
+	if (cv_kartencore.value && cv_encorevotes.value == 1 && (gametypedefaultrules[gt] & GTR_CIRCUIT))
 		WRITEUINT8(p, (gt|VOTEMODIFIER_ENCORE));
 	else
 		WRITEUINT8(p, gt);
-	WRITEUINT8(p, secondgt);
+
+	if (cv_kartencore.value && cv_encorevotes.value == 0 && (gametypedefaultrules[gt] & GTR_CIRCUIT))
+		WRITEUINT8(p, secondgt|VOTEMODIFIER_ENCORE);
+	else
+		WRITEUINT8(p, secondgt);
 	secondgt &= ~VOTEMODIFIER_ENCORE;
 
 	for (i = 0; i < 4; i++)
