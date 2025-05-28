@@ -570,6 +570,9 @@ consvar_t cv_forceskin = CVAR_INIT ("forceskin", "None", CV_NETVAR|CV_CALL|CV_CH
 consvar_t cv_downloading = CVAR_INIT ("downloading", "On", 0, CV_OnOff, NULL);
 consvar_t cv_allowexitlevel = CVAR_INIT ("allowexitlevel", "No", CV_NETVAR, CV_YesNo, NULL);
 
+static CV_PossibleValue_t votemaxrows_cons_t[] = {{1, "MIN"}, {3, "MAX"}, {0, NULL}};
+consvar_t cv_votemaxrows = CVAR_INIT ("votemaxrows", "2", CV_SAVE|CV_NETVAR, votemaxrows_cons_t, NULL);
+
 consvar_t cv_netstat = CVAR_INIT ("netstat", "Off", 0, CV_OnOff, NULL); // show bandwidth statistics
 static CV_PossibleValue_t nettimeout_cons_t[] = {{TICRATE/7, "MIN"}, {60*TICRATE, "MAX"}, {0, NULL}};
 consvar_t cv_nettimeout = CVAR_INIT ("nettimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, NetTimeout_OnChange);
@@ -648,6 +651,9 @@ boolean deferencoremode = false;
 UINT8 splitscreen = 0;
 boolean circuitmap = false;
 INT32 adminplayers[MAXPLAYERS];
+
+#define VOTEROWS ((cv_votemaxrows.value*3) + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
+#define VOTEROWSADDSONE ((cv_votemaxrows.value*3) + 1 + ((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0))
 
 // Scheduled commands.
 scheduleTask_t **schedule = NULL;
@@ -854,6 +860,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_playbackspeed);
 	CV_RegisterVar(&cv_forceskin);
 	CV_RegisterVar(&cv_downloading);
+	CV_RegisterVar(&cv_votemaxrows);
 
 	K_RegisterKartStuff(); // SRB2kart
 
@@ -2776,7 +2783,7 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 
 void D_SetupVote(void)
 {
-	UINT8 buf[5*2]; // four UINT16 maps (at twice the width of a UINT8), and two gametypes
+	UINT8 buf[13*2]; // twelve UINT16 maps (at twice the width of a UINT8), and two gametypes
 	UINT8 *p = buf;
 	INT32 i;
 	UINT8 gt = (cv_kartgametypepreference.value == -1) ? gametype : cv_kartgametypepreference.value;
@@ -2794,16 +2801,17 @@ void D_SetupVote(void)
 		WRITEUINT8(p, secondgt);
 	secondgt &= ~VOTEMODIFIER_ENCORE;
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < VOTEROWSADDSONE; i++)
 	{
 		UINT16 m;
+
 		if (i == 2) // sometimes a different gametype
 			m = G_RandMap(G_TOLFlag(secondgt), prevmap, ((secondgt != gametype) ? 2 : 0), 0, true, votebuffer);
-		else if (i >= 3) // unknown-random and formerly force-unknown MAP HELL
+		else if (i >= VOTEROWS) // unknown-random and formerly force-unknown MAP HELL
 			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, (i-2), (i < 4), votebuffer);
 		else
 			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, 0, true, votebuffer);
-		if (i < 3)
+		if (i < VOTEROWS)
 			votebuffer[i] = m;
 		WRITEUINT16(p, m);
 	}
@@ -5510,7 +5518,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 {
 	INT32 i;
 	UINT8 gt, secondgt;
-	INT16 tempvotelevels[4][2];
+	INT16 tempvotelevels[12][2];
 
 	if (playernum != serverplayer) // admin shouldn't be able to set up vote...
 	{
@@ -5520,6 +5528,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
+	// Get gametype data.
 	gt = (UINT8)READUINT8(*cp);
 	secondgt = (UINT8)READUINT8(*cp);
 
@@ -5530,7 +5539,7 @@ static void Got_SetupVotecmd(UINT8 **cp, INT32 playernum)
 		gt &= ~VOTEMODIFIER_ENCORE;
 	}
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < VOTEROWSADDSONE; i++)
 	{
 		tempvotelevels[i][0] = (UINT16)READUINT16(*cp);
 		tempvotelevels[i][1] = gt;
@@ -7320,3 +7329,6 @@ void Got_DiscordInfo(UINT8 **p, INT32 playernum)
 	(*p) += 3;
 #endif
 }
+
+#undef VOTEROWS
+#undef VOTEROWSADDSONE

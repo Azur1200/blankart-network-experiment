@@ -52,6 +52,8 @@ extern consvar_t cv_numlaps;
 extern UINT32 timelimitintics, extratimeintics, secretextratime;
 extern consvar_t cv_allowexitlevel;
 
+extern consvar_t cv_votemaxrows;
+
 extern consvar_t cv_autobalance;
 extern consvar_t cv_teamscramble;
 extern consvar_t cv_scrambleonchange;
