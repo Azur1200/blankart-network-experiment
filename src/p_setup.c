@@ -9371,8 +9371,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	//
 	// search for sprite replacements
 	//
-	Patch_FreeTag(PU_SPRITE);
-	Patch_FreeTag(PU_PATCH_ROTATED);
+	//Patch_FreeTag(PU_SPRITE);
+	//Patch_FreeTag(PU_PATCH_ROTATED);
 	R_AddSpriteDefs(wadnum);
 
 	// Reload it all anyway, just in case they
