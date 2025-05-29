@@ -759,7 +759,7 @@ FBITFIELD HWR_TranstableToAlpha(INT32 transtablenum, FSurfaceInfo *pSurf)
 	return PF_Translucent;
 }
 
-static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap);
 
 // ==========================================================================
 // Wall generation from subsector segs
@@ -800,7 +800,7 @@ static void HWR_ProjectWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIEL
 // SoM: split up and light walls according to the lightlist.
 // This may also include leaving out parts of the wall that can't be seen
 //
-static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
+static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum, boolean noencore, FSurfaceInfo* Surf, INT32 cutflag, ffloor_t *pfloor, FBITFIELD polyflags)
 {
 	float realtop, realbot, top, bot;
 	float pegt, pegb, pegmul;
@@ -943,9 +943,9 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 		wallVerts[1].y = endbot;
 
 		if (polyflags & PF_Fog)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, polyflags, true, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true,  HWR_CalcWallLight(lightnum, gl_curline), colormap);
 		else if (polyflags & PF_EnvironmentTrans)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false,  HWR_CalcWallLight(lightnum, gl_curline), colormap);
 		else
 			HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
 
@@ -972,9 +972,9 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, INT32 texnum,
 	wallVerts[1].y = endbot;
 
 	if (polyflags & PF_Fog)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, polyflags, true, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true,  HWR_CalcWallLight(lightnum, gl_curline), colormap);
 	else if (polyflags & PF_EnvironmentTrans)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
 	else
 		HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
 }
@@ -1054,6 +1054,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	fixed_t hS, lS;
 
 	boolean tripwire;
+	boolean noencore;
 
 	gl_sidedef = gl_curline->sidedef;
 	gl_linedef = gl_curline->linedef;
@@ -1115,6 +1116,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	Surf.PolyColor.s.alpha = 255;
 
 	tripwire = P_IsLineTripWire(gl_linedef);
+	noencore = (gl_linedef->flags & ML_TFERLINE);
 
 	if (tripwire == false)
 	{
@@ -1259,7 +1261,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 			texturevpeg %= textureheight[gl_toptexture];
 
-			grTex = HWR_GetTexture(gl_toptexture);
+			grTex = HWR_GetTexture(gl_toptexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gl_frontsector->ceilingheight - gl_backsector->ceilingheight) * grTex->scaleY;
@@ -1301,9 +1303,9 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				polyflags = PF_Environment;
 
 			if (gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, gl_toptexture, &Surf, FOF_CUTLEVEL, NULL, polyflags);
+				HWR_SplitWall(gl_frontsector, wallVerts, gl_toptexture, noencore, &Surf, FOF_CUTLEVEL, NULL, polyflags);
 			else if (grTex->mipmap.flags & TF_TRANSPARENT)
-				HWR_AddTransparentWall(wallVerts, &Surf, gl_toptexture, polyflags, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gl_toptexture, noencore, polyflags, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap);
 		}
@@ -1324,7 +1326,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			// This is so that it doesn't overflow and screw up the wall, it doesn't need to go higher than the texture's height anyway
 			texturevpeg %= textureheight[gl_bottomtexture];
 
-			grTex = HWR_GetTexture(gl_bottomtexture);
+			grTex = HWR_GetTexture(gl_bottomtexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gl_backsector->floorheight - gl_frontsector->floorheight) * grTex->scaleY;
@@ -1365,9 +1367,9 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				polyflags = PF_Environment;
 
 			if (gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, gl_bottomtexture, &Surf, FOF_CUTLEVEL, NULL, polyflags);
+				HWR_SplitWall(gl_frontsector, wallVerts, gl_bottomtexture, noencore, &Surf, FOF_CUTLEVEL, NULL, polyflags);
 			else if (grTex->mipmap.flags & TF_TRANSPARENT)
-				HWR_AddTransparentWall(wallVerts, &Surf, gl_bottomtexture, polyflags, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gl_bottomtexture, noencore, polyflags, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, polyflags, lightnum, colormap);
 		}
@@ -1509,7 +1511,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				texturevpegslope = polytopslope - hS;
 			}
 
-			grTex = HWR_GetTexture(gl_midtexture);
+			grTex = HWR_GetTexture(gl_midtexture, noencore);
 
 			// Left side
 			wallVerts[3].t = texturevpeg * grTex->scaleY;
@@ -1608,14 +1610,14 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 			if (tripwire == false && gl_frontsector->numlights)
 			{
 				if (!(blendmode & PF_Masked))
-					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, &Surf, FOF_TRANSLUCENT, NULL, blendmode); // vanilla just uses PF_Masked here - if we run into any issues, maybe change to that
+					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FOF_TRANSLUCENT, NULL, blendmode); // vanilla just uses PF_Masked here - if we run into any issues, maybe change to that
 				else
 				{
-					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, &Surf, FOF_CUTLEVEL, NULL, blendmode); // vanilla just uses PF_Masked here - if we run into any issues, maybe change to that
+					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FOF_CUTLEVEL, NULL, blendmode); // vanilla just uses PF_Masked here - if we run into any issues, maybe change to that
 				}
 			}
 			else if (!(blendmode & PF_Masked))
-				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, blendmode, false, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture,  noencore, blendmode, false, lightnum, colormap);
 			else
 				HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
 		}
@@ -1664,7 +1666,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				// top of texture at top
 				texturevpeg = gl_sidedef->rowoffset + gl_sidedef->offsety_mid;
 
-			grTex = HWR_GetTexture(gl_midtexture);
+			grTex = HWR_GetTexture(gl_midtexture, noencore);
 
 			wallVerts[3].t = wallVerts[2].t = texturevpeg * grTex->scaleY;
 			wallVerts[0].t = wallVerts[1].t = (texturevpeg + gl_frontsector->ceilingheight - gl_frontsector->floorheight) * grTex->scaleY;
@@ -1693,7 +1695,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 			// I don't think that solid walls can use translucent linedef types...
 			if (gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, &Surf, FOF_CUTLEVEL, NULL, 0);
+				HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FOF_CUTLEVEL, NULL, 0);
 			else
 			{
 				FBITFIELD blendmode = PF_Masked;
@@ -1702,11 +1704,11 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 				// I don't think that solid walls can use translucent linedef types...
 				if (gl_frontsector->numlights)
-					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, &Surf, FOF_CUTLEVEL, NULL, blendmode);
+					HWR_SplitWall(gl_frontsector, wallVerts, gl_midtexture, noencore, &Surf, FOF_CUTLEVEL, NULL, blendmode);
 				else
 				{
 					if (grTex->mipmap.flags & TF_TRANSPARENT)
-						HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture, blendmode, false, lightnum, colormap);
+						HWR_AddTransparentWall(wallVerts, &Surf, gl_midtexture,  noencore, blendmode, false, lightnum, colormap);
 					else
 						HWR_ProjectWall(wallVerts, &Surf, blendmode, lightnum, colormap);
 				}
@@ -1850,7 +1852,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 						slopeskew = !!(rover->master->flags & ML_SKEWTD);
 					}
 
-					grTex = HWR_GetTexture(texnum);
+					grTex = HWR_GetTexture(texnum, noencore);
 
 					if (!slopeskew) // no skewing
 					{
@@ -1892,9 +1894,9 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, 0, &Surf, rover->fofflags, rover, blendmode);
+						HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->fofflags, rover, blendmode);
 					else
-						HWR_AddTransparentWall(wallVerts, &Surf, 0, blendmode, true, lightnum, colormap);
+						HWR_AddTransparentWall(wallVerts, &Surf, 0, false ,blendmode, true, lightnum, colormap);
 				}
 				else
 				{
@@ -1910,11 +1912,11 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					}
 
 					if (gl_frontsector->numlights)
-						HWR_SplitWall(gl_frontsector, wallVerts, texnum, &Surf, rover->fofflags, rover, blendmode);
+						HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->fofflags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
-							HWR_AddTransparentWall(wallVerts, &Surf, texnum, blendmode, false, lightnum, colormap);
+							HWR_AddTransparentWall(wallVerts, &Surf, texnum, noencore, blendmode, false, lightnum, colormap);
 						else
 							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 					}
@@ -1989,7 +1991,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				}
 				else
 				{
-					grTex = HWR_GetTexture(texnum);
+					grTex = HWR_GetTexture(texnum, noencore);
 
 					if (newline)
 					{
@@ -2018,9 +2020,9 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, 0, &Surf, rover->fofflags, rover, blendmode);
+						HWR_SplitWall(gl_backsector, wallVerts, 0, false, &Surf, rover->fofflags, rover, blendmode);
 					else
-						HWR_AddTransparentWall(wallVerts, &Surf, 0, blendmode, true, lightnum, colormap);
+						HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 				}
 				else
 				{
@@ -2036,11 +2038,11 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 					}
 
 					if (gl_backsector->numlights)
-						HWR_SplitWall(gl_backsector, wallVerts, texnum, &Surf, rover->fofflags, rover, blendmode);
+						HWR_SplitWall(gl_backsector, wallVerts, texnum, noencore, &Surf, rover->fofflags, rover, blendmode);
 					else
 					{
 						if (blendmode != PF_Masked)
-							HWR_AddTransparentWall(wallVerts, &Surf, texnum, blendmode, false, lightnum, colormap);
+							HWR_AddTransparentWall(wallVerts, &Surf, texnum, noencore, blendmode, false, lightnum, colormap);
 						else
 							HWR_ProjectWall(wallVerts, &Surf, PF_Masked, lightnum, colormap);
 					}
@@ -4306,6 +4308,7 @@ typedef struct
 	FBITFIELD     blend;
 	INT32         drawcount;
 	boolean fogwall;
+	boolean noencore;
 	INT32 lightlevel;
 	extracolormap_t *wallcolormap; // Doing the lighting in HWR_RenderWall now for correct fog after sorting
 } wallinfo_t;
@@ -4576,7 +4579,7 @@ static void HWR_CreateDrawNodes(void)
 		else if (sortnode[sortindex[i]].wall)
 		{
 			if (!(sortnode[sortindex[i]].wall->blend & PF_NoTexture))
-				HWR_GetTexture(sortnode[sortindex[i]].wall->texnum);
+				HWR_GetTexture(sortnode[sortindex[i]].wall->texnum, sortnode[sortindex[i]].wall->noencore);
 			HWR_RenderWall(sortnode[sortindex[i]].wall->wallVerts, &sortnode[sortindex[i]].wall->Surf, sortnode[sortindex[i]].wall->blend, sortnode[sortindex[i]].wall->fogwall,
 				sortnode[sortindex[i]].wall->lightlevel, sortnode[sortindex[i]].wall->wallcolormap);
 		}
@@ -5618,7 +5621,7 @@ static void HWR_DrawSkyBackground(player_t *player)
 		HWR_RollTransform(&dometransform, viewroll);
 		dometransform.splitscreen = r_splitscreen;
 
-		HWR_GetTexture(texturetranslation[skytexture]);
+		HWR_GetTexture(texturetranslation[skytexture], false);
 
 		if (gl_sky.texture != texturetranslation[skytexture])
 		{
@@ -5638,7 +5641,7 @@ static void HWR_DrawSkyBackground(player_t *player)
 		float aspectratio;
 		float angleturn;
 
-		HWR_GetTexture(texturetranslation[skytexture]);
+		HWR_GetTexture(texturetranslation[skytexture], false);
 		aspectratio = (float)vid.width/(float)vid.height;
 
 		//Hurdler: the sky is the only texture who need 4.0f instead of 1.0
@@ -6395,7 +6398,7 @@ void transform(float *cx, float *cy, float *cz)
 	*cx *= gl_fovlud;
 }
 
-void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
+static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 texnum, boolean noencore, FBITFIELD blend, boolean fogwall, INT32 lightlevel, extracolormap_t *wallcolormap)
 {
 	static size_t allocedwalls = 0;
 
@@ -6413,6 +6416,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, INT32 te
 	M_Memcpy(&wallinfo[numwalls].Surf, pSurf, sizeof (FSurfaceInfo));
 	wallinfo[numwalls].texnum = texnum;
 	wallinfo[numwalls].blend = blend;
+	wallinfo[numwalls].noencore = noencore;
 	wallinfo[numwalls].drawcount = drawcount++;
 	wallinfo[numwalls].fogwall = fogwall;
 	wallinfo[numwalls].lightlevel = lightlevel;

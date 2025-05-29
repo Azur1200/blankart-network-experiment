@@ -871,7 +871,7 @@ static void HWR_PrecacheLevelTextures(void)
 		{
 			for (h = 1; h < anim->numpics; h++)
 			{
-				HWR_GetTexture(anim->basepic+h);
+				HWR_GetTexture(anim->basepic+h, false);
 			}
 		}
 #ifdef GLENCORE
@@ -879,7 +879,7 @@ static void HWR_PrecacheLevelTextures(void)
 		{
 			for (h = 1; h < anim->numpics; h++)
 			{
-				HWR_GetTexture(anim->basepic+h);
+				HWR_GetTexture(anim->basepic+h, true);
 			}
 		}
 #endif
@@ -899,12 +899,12 @@ static void HWR_PrecacheLevelTextures(void)
 
 		if (texpresent & 1)
 		{
-			HWR_GetTexture(i);
+			HWR_GetTexture(i, false);
 		}
 #ifdef GLENCORE
 		if (texpresent & 2)
 		{
-			HWR_GetTexture(i);
+			HWR_GetTexture(i, true);
 		}
 #endif
 	}
@@ -1024,7 +1024,7 @@ void HWR_SetPalette(RGBA_t *palette)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLMapTexture_t *HWR_GetTexture(INT32 tex)
+GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap)
 {
 	GLMapTexture_t *grtex;
 #ifdef PARANOIA
@@ -1032,13 +1032,15 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex)
 		I_Error("HWR_GetTexture: tex >= numtextures\n");
 #endif
 
-	// Every texture in memory, stored in the
-	// hardware renderer's bit depth format. Wow!
+#ifdef GLENCORE
+	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
+#else
 	grtex = &gl_textures[tex];
+#endif
 
 	// Generate texture if missing from the cache
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
-		HWR_GenerateTexture(grtex, tex, !R_TextureCanRemap(tex));
+		HWR_GenerateTexture(grtex, tex, noencoremap || !R_TextureCanRemap(tex));
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!grtex->mipmap.downloaded)
@@ -1185,7 +1187,11 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		return;
 	}
 
+#ifdef GLENCORE
+	GLMapTexture_t *grtex = &gr_flats[texturenum*2 + (encoremap && !noencore ? 0 : 1)];
+#else
 	GLMapTexture_t *grtex = &gl_flats[texturenum];
+#endif
 	GLMipmap_t *grMipmap = &grtex->mipmap;
 
 	if (!grMipmap->data && !grMipmap->downloaded)
