@@ -3272,9 +3272,6 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		CON_LogMessage(M_GetText("Speeding off to level...\n"));
 	}
 
-	if (demo.playback && !demo.timing)
-		precache = false;
-
 	if (resetplayer && !FLS)
 	{
 		emeralds = 0;
@@ -3289,8 +3286,7 @@ static void Got_Mapcmd(UINT8 **cp, INT32 playernum)
 		G_CheckDemoStatus();
 
 	G_InitNew(pencoremode, mapnumber, resetplayer, skipprecutscene, FLS);
-	if (demo.playback && !demo.timing)
-		precache = true;
+
 	if (demo.timing)
 		G_DoneLevelLoad();
 

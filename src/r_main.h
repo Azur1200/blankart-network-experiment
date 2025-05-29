@@ -145,6 +145,7 @@ extern struct RenderStats g_renderstats;
 // REFRESH - the actual rendering functions.
 //
 
+extern consvar_t cv_precachetextures;
 extern consvar_t cv_showhud, cv_translucenthud;
 extern consvar_t cv_homremoval;
 extern consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS];

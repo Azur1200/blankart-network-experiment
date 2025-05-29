@@ -338,8 +338,6 @@ typedef struct joystickvector2_s
 	INT32 yaxis;
 } joystickvector2_t;
 
-boolean precache = true; // if true, load all graphics at start
-
 INT16 prevmap, nextmap;
 
 INT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};

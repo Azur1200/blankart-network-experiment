@@ -917,6 +917,7 @@ static int player_get(lua_State *L)
 		break;
 	case player_interpoints:
 		lua_pushinteger(L, plr->interpoints);
+		break;
 	case player_roundscore:
 	case player_marescore:
 		lua_pushinteger(L, plr->roundscore);
@@ -1543,6 +1544,7 @@ static int player_set(lua_State *L)
 		break;
 	case player_interpoints:
 		plr->interpoints = luaL_checkinteger(L, 3);
+		break;
 	case player_roundscore:
 	case player_marescore:
 		plr->roundscore = luaL_checkinteger(L, 3);

@@ -8843,7 +8843,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (rendermode != render_none && !titlemapinaction && !reloadinggamestate)
 		F_WipeColorFill(levelfadecol);
 
-	if (precache || dedicated)
+	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
 	if (!(netgame || multiplayer || demo.playback) && !majormods)

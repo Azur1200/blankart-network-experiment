@@ -60,41 +60,6 @@ mobj_t *skyboxmo[2]; // current skybox mobjs: 0 = viewpoint, 1 = centerpoint
 mobj_t *skyboxviewpnts[16]; // array of MT_SKYBOX viewpoint mobjs
 mobj_t *skyboxcenterpnts[16]; // array of MT_SKYBOX centerpoint mobjs
 
-/** Animated texture descriptor
-  * This keeps track of an animated texture or an animated flat.
-  * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
-  */
-typedef struct
-{
-	INT32 picnum;    ///< The end flat number
-	INT32 basepic;   ///< The start flat number
-	INT32 numpics;   ///< Number of frames in the animation
-	tic_t speed;     ///< Number of tics for which each frame is shown
-} anim_t;
-
-/** Animated texture definition.
-  * Used for loading an ANIMDEFS lump from a wad.
-  *
-  * Animations are defined by the first and last frame (i.e., flat or texture).
-  * The animation sequence uses all flats between the start and end entry, in
-  * the order found in the wad.
-  *
-  * \sa anim_t
-  */
-typedef struct
-{
-	SINT8 istexture; ///< True for a texture, false for a flat.
-	char endname[9]; ///< Name of the last frame, null-terminated.
-	char startname[9]; ///< Name of the first frame, null-terminated.
-	INT32 speed; ///< Number of tics for which each frame is shown.
-} ATTRPACK animdef_t;
-
-typedef struct
-{
-	UINT32 count;
-	thinker_t **thinkers;
-} thinkerlist_t;
-
 static void P_SpawnScrollers(void);
 static void P_SpawnFriction(void);
 static void P_SpawnPushers(void);
@@ -122,8 +87,8 @@ static void P_AddPlaneDisplaceThinker(INT32 type, fixed_t speed, INT32 control, 
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-static anim_t *lastanim;
-static anim_t *anims = NULL; /// \todo free leak
+anim_t *lastanim;
+anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
 // Animating line specials
