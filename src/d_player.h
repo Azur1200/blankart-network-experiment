@@ -709,7 +709,7 @@ struct player_t
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake
 
-	UINT8 bananadrag;		// After a second of holding a banana behind you, you start to slow down
+	UINT16 bananadrag;		// After a second of holding a banana behind you, you start to slow down
 
 	SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
 	UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy

@@ -346,7 +346,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].eggmanexplode);
 		WRITESINT8(save->p, players[i].eggmanblame);
 
-		WRITEUINT8(save->p, players[i].bananadrag);
+		WRITEUINT16(save->p, players[i].bananadrag);
 
 		WRITESINT8(save->p, players[i].lastjawztarget);
 		WRITEUINT8(save->p, players[i].jawztargetdelay);
@@ -684,7 +684,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].eggmanexplode = READUINT8(save->p);
 		players[i].eggmanblame = READSINT8(save->p);
 
-		players[i].bananadrag = READUINT8(save->p);
+		players[i].bananadrag = READUINT16(save->p);
 
 		players[i].lastjawztarget = READSINT8(save->p);
 		players[i].jawztargetdelay = READUINT8(save->p);
