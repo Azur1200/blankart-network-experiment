@@ -229,11 +229,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		if (flags & FOLLOWER)
 			WRITEUINT32(save->p, players[i].follower->mobjnum);
 
-		for (j = 0; j < NUMPOWERS; j++)
-			WRITEUINT16(save->p, players[i].powers[j]);
-		for (j = 0; j < NUMKARTSTUFF; j++)
-			WRITEINT32(save->p, players[i].kartstuff[j]);
-
 		WRITEUINT16(save->p, players[i].nocontrol);
 		WRITEUINT8(save->p, players[i].carry);
 		WRITEUINT16(save->p, players[i].dye);
@@ -432,6 +427,11 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		// Fix janky landing particle
 		WRITEUINT8(save->p, players[i].prevonground);
 
+		for (j = 0; j < NUMPOWERS; j++)
+			WRITEUINT16(save->p, players[i].powers[j]);
+		for (j = 0; j < NUMKARTSTUFF; j++)
+			WRITEINT32(save->p, players[i].kartstuff[j]);
+
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -565,11 +565,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].followercolor = READUINT16(save->p);
 		if (flags & FOLLOWER)
 			players[i].follower = (mobj_t *)(size_t)READUINT32(save->p);
-
-		for (j = 0; j < NUMPOWERS; j++)
-			players[i].powers[j] = READUINT16(save->p);
-		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = READINT32(save->p);
 
 		players[i].nocontrol = READUINT16(save->p);
 		players[i].carry = READUINT8(save->p);
@@ -770,6 +765,11 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		// Fix janky landing particle
 		players[i].prevonground = READUINT8(save->p);
+
+		for (j = 0; j < NUMPOWERS; j++)
+			players[i].powers[j] = READUINT16(save->p);
+		for (j = 0; j < NUMKARTSTUFF; j++)
+			players[i].kartstuff[j] = READINT32(save->p);
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}
