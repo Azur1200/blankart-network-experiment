@@ -158,7 +158,7 @@ static void Fov_OnChange(void);
 consvar_t cv_tailspickup = CVAR_INIT ("tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL);
 
 // if enabled, load all graphics at level load
-consvar_t cv_precachetextures = CVAR_INIT ("precachetextures", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL);
+consvar_t cv_precachetextures = CVAR_INIT ("precachetextures", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("chasecam", "On", 0, CV_OnOff, NULL),
