@@ -356,6 +356,7 @@ void M_ResetControls(INT32 choice);
 void M_ChangeControl(INT32 choice);
 void M_AssignJoystick(INT32 choice);
 void M_HandleMonitorToggles(INT32 choice);
+void M_RestartAudio(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 void M_HandleDiscordRequests(INT32 choice);
 #endif

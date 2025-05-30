@@ -766,6 +766,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CHANGECONTROL", &M_ChangeControl },
 	{ "ASSIGNJOYSTICK", &M_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &M_HandleMonitorToggles },
+	{ "RESTARTAUDIO", &M_RestartAudio },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &M_HandleDiscordRequests },
 #endif

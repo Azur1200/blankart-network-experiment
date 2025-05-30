@@ -8617,6 +8617,12 @@ void M_ResetControls(INT32 choice)
 	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), M_ResetControlsResponse, MM_YESNO);
 }
 
+void M_RestartAudio(INT32 choice)
+{
+	(void)choice;
+	COM_ImmedExecute("restartaudio");
+}
+
 // ===============
 // VIDEO MODE MENU
 // ===============
