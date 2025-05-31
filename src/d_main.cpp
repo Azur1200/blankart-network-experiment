@@ -111,6 +111,7 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
+UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"

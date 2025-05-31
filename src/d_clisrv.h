@@ -33,7 +33,7 @@ The 'packet version' is used to distinguish packet formats.
 This version is independent of VERSION and SUBVERSION. Different
 applications may follow different packet versions.
 */
-#define PACKETVERSION 0
+#define PACKETVERSION 2
 
 // Network play related stuff.
 // There is a data struct that stores network
@@ -272,6 +272,7 @@ struct serverinfo_pak
 	char  application[MAXAPPLICATION];
 	UINT8 version;
 	UINT8 subversion;
+	UINT8 commit[GIT_SHA_ABBREV];
 	UINT8 numberofplayer;
 	UINT8 maxplayer;
 	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
