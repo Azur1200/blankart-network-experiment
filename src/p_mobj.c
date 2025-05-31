@@ -2765,7 +2765,7 @@ void P_PlayerZMovement(mobj_t *mo)
 		K_UpdateMobjTerrain(mo, (mo->eflags & MFE_VERTICALFLIP ? g_tm.ceilingpic : g_tm.floorpic));
 
 		// Get up if you fell.
-		if (mo->player->panim == PA_HURT && mo->player->spinouttimer == 0 && mo->player->squishedtimer == 0)
+		if (mo->player->panim == PA_HURT && !K_IsPlayerDamaged(mo->player) && mo->player->squishedtimer == 0)
 		{
 			P_SetPlayerMobjState(mo, S_KART_STILL);
 		}

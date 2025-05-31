@@ -495,6 +495,14 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE|MF_SPRING)))
 		return BMIT_CONTINUE;
 
+	// Get rid of the "just flipped" flag.
+	// We only use that to confirm flipover hits.
+	if (thing->player)
+		thing->player->pflags &= ~PF_JUSTFLIPPED;
+
+	if (g_tm.thing->player)
+		g_tm.thing->player->pflags &= ~PF_JUSTFLIPPED;
+
 	blockdist = thing->radius + g_tm.thing->radius;
 
 	if (abs(thing->x - g_tm.x) >= blockdist || abs(thing->y - g_tm.y) >= blockdist)
@@ -1267,7 +1275,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			}
 
 			// no interaction
-			if (g_tm.thing->player->flashing > 0 || g_tm.thing->player->hyudorotimer > 0 || g_tm.thing->player->spinouttimer > 0)
+			if (g_tm.thing->player->flashing > 0 || g_tm.thing->player->hyudorotimer > 0 || K_IsPlayerDamaged(g_tm.thing->player))
 				return BMIT_CONTINUE;
 
 			// collide

@@ -11324,7 +11324,7 @@ void A_RandomShadowFrame(mobj_t *actor)
 		if (actor->target && !actor->target->player->flashing
 		&& !actor->target->player->invincibilitytimer
 		&& !actor->target->player->growshrinktimer
-		&& !actor->target->player->spinouttimer
+		&& !K_IsPlayerDamaged(actor->target->player)
 		&& P_IsObjectOnGround(actor->target)
 		&& actor->z == actor->target->z)
 		{
@@ -11369,7 +11369,7 @@ void A_RoamingShadowThinker(mobj_t *actor)
 			if (actor->target && !actor->target->player->flashing
 			&& !actor->target->player->invincibilitytimer
 			&& !actor->target->player->growshrinktimer
-			&& !actor->target->player->spinouttimer)
+			&& !K_IsPlayerDamaged(actor->target->player))
 			{
 				// send them flying and spawn the WIND!
 				P_InstaThrust(actor->target, 0, 0);
@@ -11611,7 +11611,7 @@ void A_ReaperThinker(mobj_t *actor)
 				if (!(actor->target == targetplayermo && actor->target && !actor->target->player->flashing
 				&& !actor->target->player->invincibilitytimer
 				&& !actor->target->player->growshrinktimer
-				&& !actor->target->player->spinouttimer))
+				&& !K_IsPlayerDamaged(actor->target->player)))
 					P_SetTarget(&actor->target, actor->hnext);
 					// if the above isn't correct, then we should go back to targetting waypoints or something.
 			}

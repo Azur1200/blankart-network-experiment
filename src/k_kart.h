@@ -37,6 +37,31 @@ Make sure this matches the actual number of states
 
 #define FLAMESTOREMAX TICRATE*2
 
+// Fixed distance of a flipover.
+#define FLIPOVERDIST (112<<FRACBITS)
+
+// Time (in tics) of a flipover.
+// (TICRATE * (0.56666 * FRACUNIT))
+#define FLIPOVERTICS 19
+#define FLIPOVERHALFTICS (FLIPOVERTICS>>1)
+
+#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // 0.1666 * FRACUNIT
+
+// Angle movement for a flipover
+// ANGLE_90 / FLIPOVER_90DEGTIME
+// Precalculating it here for some slight optimization.
+#define FLIPOVERANG 0x0CCCCCCC
+
+#define FLIPOVERSPEED (FLIPOVERDIST / FLIPOVERTICS)
+
+#define FLIPOVERHEIGHT (32 << FRACBITS)
+
+// By the middle of a jump arc, you'll reach the apex.
+#define FlipOverZMomentum(grav)                                \
+    ((FLIPOVERHEIGHT +                                         \
+      ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
+     FLIPOVERHALFTICS)
+
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
 #define DIMINISHPARAM K_RAGuard(cv_kartstacking_diminishparam)
@@ -153,7 +178,9 @@ void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
 void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);
+void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
+boolean K_IsPlayerDamaged(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);

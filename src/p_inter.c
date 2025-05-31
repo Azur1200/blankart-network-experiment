@@ -127,7 +127,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 		{
 			// Invulnerable
 			if (player->flashing > 0
-				|| player->spinouttimer > 0
+				|| K_IsPlayerDamaged(player)
 				|| player->squishedtimer > 0
 				|| player->invincibilitytimer > 0
 				|| player->growshrinktimer > 0
@@ -2055,7 +2055,7 @@ static UINT8 P_ShouldHookDamage(mobj_t *target, mobj_t *inflictor, mobj_t *sourc
 
 	status = shouldDamage;
 
-	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT)))
+	if (shouldSpin > 0 && ((type == DMG_NORMAL) || (type == DMG_WIPEOUT) || (type == DMG_FLIPOVER)))
 		status = shouldSpin;
 	else if (shouldExplode > 0 && ((type == DMG_EXPLODE) || (type == DMG_KARMA)))
 		status = shouldExplode;
@@ -2266,7 +2266,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				K_DestroyBumpers(player, 1);
 			}
 
-			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE))
+			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE || type == DMG_FLIPOVER))
 			{
 				player->sneakertimer = 0;
 				player->mo->flags2 &= ~MF2_WATERRUN;
@@ -2345,6 +2345,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					K_SquishPlayer(player, inflictor, source);
 					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
 					break;
+				case DMG_FLIPOVER:
+					if (P_IsDisplayPlayer(player))
+						P_StartQuake(32<<FRACBITS, 5);
+					K_FlipPlayer(player, inflictor, source);
+					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
+					K_KartPainEnergyFling(player);
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);

@@ -1896,6 +1896,13 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 	return weight;
 }
 
+// Checks if the bump interaction was a flip-over.
+static boolean K_CheckMobjFlippedOver(mobj_t* mobj1, mobj_t* mobj2)
+{
+    return ((mobj1->player && (mobj1->player->pflags & PF_JUSTFLIPPED)) ||
+            (mobj2->player && (mobj2->player->pflags & PF_JUSTFLIPPED)));
+}
+
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
 	mobj_t *fx;
@@ -1949,6 +1956,19 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	if (mobj2->player && mobj2->player->justbumped)
+	{
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
+	// Don't bump if you're flipping over
+	if (mobj1->player && mobj1->player->flipovertimer && (!(mobj1->player->pflags & PF_JUSTFLIPPED)))
+	{
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && mobj2->player->flipovertimer && (!(mobj2->player->pflags & PF_JUSTFLIPPED)))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -2040,7 +2060,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	// Do the bump fx when we've CONFIRMED we can bump.
 	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD) || (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
 		S_StartSound(mobj1, sfx_s3k44);
-	else
+	else if (!K_CheckMobjFlippedOver(mobj1, mobj2))
 		S_StartSound(mobj1, sfx_s3k49);
 
 	fx = P_SpawnMobj(mobj1->x/2 + mobj2->x/2, mobj1->y/2 + mobj2->y/2, mobj1->z/2 + mobj2->z/2, MT_BUMP);
@@ -2063,6 +2083,15 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		if (mobj2->player && (mobj1->player->rings > 0) && (K_GetShieldFromPlayer(mobj1->player) == KSHIELD_NONE))
 		{
 			P_PlayerRingBurst(mobj1->player, 1);
+		}
+
+		if (mobj1->player->pflags & PF_JUSTFLIPPED)
+		{
+			S_StartSound(mobj2, sfx_mdse8);
+			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx,mobj1->player->rmomy);
+			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj1->scale));
+			mobj1->momz = FixedMul(FlipOverZMomentum(gravity), mobj1->scale);
+			mobj1->player->pflags &= ~PF_JUSTFLIPPED;
 		}
 
 		if (mobj1->player->spinouttimer)
@@ -2090,6 +2119,15 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 			mobj2->player->wipeoutslow = wipeoutslowtime+1;
 			mobj2->player->spinouttimer = max(wipeoutslowtime+1, mobj2->player->spinouttimer);
 			//mobj2->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
+		}
+
+		if (mobj2->player->pflags & PF_JUSTFLIPPED)
+		{
+			S_StartSound(mobj1, sfx_mdse8);
+			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx,mobj2->player->rmomy);
+			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj2->scale));
+			mobj2->momz = FixedMul(FlipOverZMomentum(gravity), mobj2->scale);
+			mobj2->player->pflags &= ~PF_JUSTFLIPPED;
 		}
 	}
 
@@ -3878,7 +3916,10 @@ SINT8 K_GetForwardMove(player_t *player)
 		}
 	}
 
-	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
+	if ((player->exiting || mapreset) ||
+		player->pflags & PF_STASIS ||
+		player->spinouttimer ||
+		player->flipovertimer) // pw_introcam?
 	{
 		forwardmove = 0;
 		if (player->sneakertimer)
@@ -4088,6 +4129,19 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
+void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
+{
+	(void)inflictor;
+	(void)source;
+
+	K_DirectorFollowAttack(player, inflictor, source);
+
+	K_StatPlayerHit(player, source ? source->player : NULL);
+	player->flipovertimer = 1;
+	player->pflags |= PF_JUSTFLIPPED;
+	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+}
+
 static void K_RemoveGrowShrink(player_t *player)
 {
 	if (player->mo && !P_MobjWasRemoved(player->mo))
@@ -4192,6 +4246,11 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 		P_StartQuake(64<<FRACBITS, 5);
 
 	return ringburst;
+}
+
+boolean K_IsPlayerDamaged(player_t *player)
+{
+	return ((player->spinouttimer > 0) || (player->flipovertimer > 0));
 }
 
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
@@ -7398,7 +7457,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateEngineSounds(player); // Thanks, VAda!
 
 	// update boost angle if not spun out
-	if (!player->spinouttimer && !player->wipeoutslow)
+	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
 	K_GetKartBoostPower(player);
@@ -7473,13 +7532,30 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// Make ABSOLUTELY SURE that your flashing tics don't get set WHILE you're still in hit animations.
 	if (player->spinouttimer != 0
 		|| player->wipeoutslow != 0
-		|| player->squishedtimer != 0)
+		|| player->squishedtimer != 0
+		|| player->flipovertimer != 0)
 	{
 		player->flashing = K_GetKartFlashing(player);
 	}
 	else if (player->flashing >= K_GetKartFlashing(player))
 	{
 		player->flashing--;
+	}
+
+	if (player->flipovertimer)
+	{
+		player->flipovertimer++;
+
+		// Kill off any extra damage values.
+		player->spinouttimer = 0;
+		player->wipeoutslow = 0;
+
+		if (P_IsObjectOnGround(player->mo) &&
+			((INT32)(player->flipovertimer - 1) > 2))
+		{
+			player->flipovertimer = 0;
+			player->mo->rollangle = 0;
+		}
 	}
 
 	if (player->spinouttimer)
@@ -10009,12 +10085,12 @@ static void K_AdjustPlayerFriction(player_t *player)
 			player->mo->movefactor = 32;
 	}
 
-	// Wipeout slowdown
-	if (player->speed > 0 && player->spinouttimer && player->wipeoutslow)
+	// Wipeout slowdown, or getting flipped over
+	if ((player->speed > 0 && player->spinouttimer && player->wipeoutslow) || (player->flipovertimer))
 	{
 		if (player->offroad)
 			player->mo->friction -= 4912;
-		if (player->wipeoutslow == 1)
+		if ((player->wipeoutslow == 1) || (player->flipovertimer))
 			player->mo->friction -= 9824;
 	}
 }
