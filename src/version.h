@@ -12,4 +12,4 @@
 #define MODVERSION 11
 
 // Define this as a prerelease version suffix
- #define BETAVERSION "Test Server"
+//#define BETAVERSION "Alpha"
