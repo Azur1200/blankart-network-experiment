@@ -1695,7 +1695,7 @@ void S_ShowMusicCredit(void)
 	UINT8 i = 0;
 	musicdef_t *def = S_FindMusicDef(music_name, &i);
 
-	char credittext[128] = "";
+	char credittext[128+1] = "";
 	char *work = NULL;
 	size_t len = 128, worklen;
 	INT32 widthused = (3*BASEVIDWIDTH/4) - 7, workwidth;
