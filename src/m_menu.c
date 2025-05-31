@@ -7408,7 +7408,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 	{
 		UINT8 *colormap = R_GetTranslationColormap(setupm_fakeskin, setupm_fakecolor->color, GTC_MENUCACHE);
 
-		if (skins[setupm_fakeskin].flags & SF_HIRES)
+		if (skins[setupm_fakeskin].highresscale != FRACUNIT)
 		{
 			V_DrawFixedPatch((mx+43)<<FRACBITS,
 						(my+131)<<FRACBITS,

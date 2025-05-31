@@ -1018,7 +1018,6 @@ struct int_const_s const INT_CONST[] = {
 	{"CR_ZOOMTUBE",CR_ZOOMTUBE},
 
 	// Character flags (skinflags_t)
-	{"SF_HIRES",SF_HIRES},
 	{"SF_MACHINE",SF_MACHINE},
 
 	// Sound flags
