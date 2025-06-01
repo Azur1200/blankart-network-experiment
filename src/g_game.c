@@ -2328,6 +2328,8 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	p->starposty = 0;
 	p->starpostz = 0;
 	p->starpostnum = 0;
+	p->nextcheck = 0;
+	p->prevcheck = 0;
 
 	// SRB2kart: Increment the "matches played" counter.
 	if (player == consoleplayer)
