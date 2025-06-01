@@ -2320,10 +2320,14 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	p->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK); // cancel invisibility
 	P_FlashPal(p, 0, 0); // Resets
 
-	p->starpostnum = 0;
+	memset(p->powers, 0, sizeof (p->powers));
+	memset(p->kartstuff, 0, sizeof (p->kartstuff)); // SRB2kart
+	p->starpostangle = 0;
 	p->starposttime = 0;
-	p->prevcheck = 0;
-	p->nextcheck = 0;
+	p->starpostx = 0;
+	p->starposty = 0;
+	p->starpostz = 0;
+	p->starpostnum = 0;
 
 	// SRB2kart: Increment the "matches played" counter.
 	if (player == consoleplayer)
