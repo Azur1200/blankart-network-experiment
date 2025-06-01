@@ -2720,7 +2720,7 @@ void K_KartMoveAnimation(player_t *player)
 
 		if (lookback == true)
 		{
-			statenum_t gainaxstate = S_GAINAX_TINY;
+			//statenum_t gainaxstate = S_GAINAX_TINY;
 			if (destGlanceDir == 0)
 			{
 				if (player->glanceDir != 0)
@@ -2745,10 +2745,10 @@ void K_KartMoveAnimation(player_t *player)
 			{
 				// Looking back AND glancing? Amplify the look!
 				destGlanceDir *= 2;
-				if (player->itemamount && player->itemtype)
+				/*if (player->itemamount && player->itemtype)
 					gainaxstate = S_GAINAX_HUGE;
 				else
-					gainaxstate = S_GAINAX_MID1;
+					gainaxstate = S_GAINAX_MID1;*/
 			}
 
 			/*if (destGlanceDir && !(player->pflags & PF_GAINAX))

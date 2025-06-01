@@ -4607,16 +4607,16 @@ boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec)
 	return P_IsMobjTouchingPlane(mo, sec, P_GetSpecialBottomZ(mo, sec, sec), P_GetSpecialTopZ(mo, sec, sec));
 }
 
-boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *ffloor, sector_t *sec)
+boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
 {
-	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + ffloor->secnum, sec);
-	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + ffloor->secnum, sec);
+	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + fof->secnum, sec);
+	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + fof->secnum, sec);
 
-	if (((ffloor->fofflags & FOF_BLOCKPLAYER) && mo->player)
-		|| ((ffloor->fofflags & FOF_BLOCKOTHERS) && !mo->player))
+	if (((fof->fofflags & FOF_BLOCKPLAYER) && mo->player)
+		|| ((fof->fofflags & FOF_BLOCKOTHERS) && !mo->player))
 	{
 		// Solid 3D floor: Mobj must touch the top or bottom
-		return P_IsMobjTouchingPlane(mo, ffloor->master->frontsector, topheight, bottomheight);
+		return P_IsMobjTouchingPlane(mo, fof->master->frontsector, topheight, bottomheight);
 	}
 	else
 	{
@@ -5452,6 +5452,7 @@ static void P_EvaluateLinedefExecutorTrigger(player_t *player, sector_t *sector,
 
 static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, sector_t *roversector, boolean isTouching)
 {
+	(void)isTouching;
 	/*switch (GETSECSPECIAL(sector->special, 1))
 	{
 		case 9: // Ring Drainer (Floor Touch)

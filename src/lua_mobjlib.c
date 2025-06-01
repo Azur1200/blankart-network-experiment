@@ -379,7 +379,7 @@ static int mobj_get(lua_State *L)
 		UINT32 flags2 = mo->flags2;
 		if (lua_compatmode && (mo->renderflags & RF_DONTDRAW) == RF_DONTDRAW)
 			flags2 |= MF2_DONTDRAW;
-		if (lua_compatmode && (mo->renderflags & RF_GHOSTLY) == RF_GHOSTLY)
+		if (lua_compatmode && (mo->renderflags & RF_GHOSTLY))
 			flags2 |= MF2_SHADOW;
 		lua_pushinteger(L, flags2);
 		break;
