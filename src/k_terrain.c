@@ -2,7 +2,8 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2021 by ZDoom + GZDoom teams, and contributors
 // Copyright (C) 2021 by Sally "TehRealSalt" Cochenour
-// Copyright (C) 2021 by Kart Krew
+// Copyright (C) 2021-2024 by Kart Krew
+// Copyright (C) 2025 Blankart Team
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -569,7 +570,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		return;
 	}
 
-	if (!B_UseTerrainDef())
+	if (!K_AffectingTerrainActive())
 	{
 		// Terrain has been disabled for this map.
 		return;
@@ -1650,14 +1651,14 @@ static void K_TerrainDefaults(terrain_t *terrain)
 }
 
 /*--------------------------------------------------
-	boolean K_TerrainHasAffect(terrain_t *terrain)
+	boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
 
 		See header file for description.
 --------------------------------------------------*/
 
-boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly)
+boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
 {
-	if (!B_UseTerrainDef())
+	if (followmaprules && !K_AffectingTerrainActive())
 		return false;
 
 	if (terrain->friction > 0
@@ -2332,4 +2333,22 @@ void K_InitTerrain(void)
 	{
 		K_InitTerrainPwad(wadNum);
 	}
+}
+
+// Map header toggle for Affecting Terrain Defs.
+boolean K_AffectingTerrainActive(void)
+{
+	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
+	boolean value = false;
+
+	if (mapnamespace == MNS_RINGRACERS)
+		return true;
+
+	if (mapheader->use_terrain == true)
+		value = true;
+
+	if (mapheader->use_terrain == false)
+		value = false;
+
+	return value;
 }

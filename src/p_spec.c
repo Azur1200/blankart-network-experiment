@@ -5085,7 +5085,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	fixed_t sfxnum;
 	size_t i;
 
-	if (player->mo->terrain && player->mo->terrain->speedPad > 0 && B_UseTerrainDef())
+	if (player->mo->terrain && player->mo->terrain->speedPad > 0 && K_AffectingTerrainActive())
 	{
 		// Don't double process Speed Pads.
 		return;
@@ -5182,7 +5182,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 {
-	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && B_UseTerrainDef())
+	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && K_AffectingTerrainActive())
 	{
 		// Don't double process Pogo Springs.
 		return;
@@ -5212,7 +5212,7 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
 
-	if (player->mo->terrain && B_UseTerrainDef())
+	if (player->mo->terrain && K_AffectingTerrainActive())
 	{
 		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
 		{

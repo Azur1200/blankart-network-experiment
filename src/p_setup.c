@@ -3529,7 +3529,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	sda = &sides[n];
 
 	terrain = K_GetTerrainForTextureNum(sda->midtexture);
-	terraintripwire = (B_UseTerrainDef() && terrain && (terrain->flags & TRF_TRIPWIRE));
+	terraintripwire = (K_AffectingTerrainActive() && terrain && (terrain->flags & TRF_TRIPWIRE));
 	tripwire = terraintripwire ? terraintripwire : ld->tripwire;
 
 	if (terraintripwire)

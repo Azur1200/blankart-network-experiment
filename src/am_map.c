@@ -962,8 +962,8 @@ static ffloor_t *AM_CompareFOFs(size_t i, ffloor_t *rover, ffloor_t *secondaryst
 				terrain2 = K_GetTerrainForFlatNum(*secondaryrover->bottompic);
 			}
 
-			if ((terrain1 && K_TerrainHasAffect(terrain1, false))
-				|| (terrain2 && K_TerrainHasAffect(terrain2, false)))
+			if ((terrain1 && K_TerrainHasAffect(terrain1, false, true))
+				|| (terrain2 && K_TerrainHasAffect(terrain2, false, true)))
 				continue;
 
 			break;
@@ -1106,8 +1106,8 @@ static void AM_drawWalls(UINT8 pass)
 					defercol = CDWALLCOLORS; // possible ceiling offroad boundary
 				}
 
-				if ((terrain1 && K_TerrainHasAffect(terrain1, false))
-					|| (terrain2 && K_TerrainHasAffect(terrain2, false)))
+				if ((terrain1 && K_TerrainHasAffect(terrain1, false, true))
+					|| (terrain2 && K_TerrainHasAffect(terrain2, false, true)))
 				{
 					if (pass & PASS_INTANGIBLE)
 						AM_drawMline(&l, defercol); // Yep, definitely a functionality boundary
@@ -1290,7 +1290,7 @@ static inline void AM_drawSpecialThingsOnly(UINT8 colors)
 		if (!terrain)
 			terrain = K_GetTerrainForFlatNum(sectors[i].ceilingpic);
 
-		if (terrain && K_TerrainHasAffect(terrain, true))
+		if (terrain && K_TerrainHasAffect(terrain, true, true))
 			continue;
 
 		t = sectors[i].thinglist;

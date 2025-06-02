@@ -18,7 +18,6 @@ extern "C" {
 #include "../deh_soc.h"
 
 boolean B_UseWallTransfer(void);
-boolean B_UseTerrainDef(void);
 INT32 B_TrackComplexity(void);
 fixed_t K_TrackModifierMax(void);
 

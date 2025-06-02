@@ -2169,7 +2169,7 @@ static void K_UpdateOffroad(player_t *player)
 	fixed_t offroadstrength = 0;
 
 	// TODO: Make this use actual special touch code.
-	if (terrain != NULL && terrain->offroad > 0 && B_UseTerrainDef())
+	if (terrain != NULL && terrain->offroad > 0 && K_AffectingTerrainActive())
 	{
 		offroadstrength = (terrain->offroad << FRACBITS);
 	}
@@ -3898,7 +3898,7 @@ fixed_t K_GetNewSpeed(player_t *player)
 		fixed_t minspeed = 24*hscale;
 		fixed_t maxspeed = 28*hscale;
 
-		if (player->mo->terrain && B_UseTerrainDef())
+		if (player->mo->terrain && K_AffectingTerrainActive())
 		{
 			minspeed = player->mo->terrain->pogoSpringMin*hscale;
 			maxspeed = player->mo->terrain->pogoSpringMax*hscale;

@@ -4243,6 +4243,12 @@ static int lib_iGetPreciseTime(lua_State *L)
 	return 1;
 }
 
+static int lib_kAffectingTerrainActive(lua_State *L)
+{
+	lua_pushboolean(L, K_AffectingTerrainActive());
+	return 1;
+}
+
 static int lib_kGetDefaultTerrain(lua_State *L)
 {
 	LUA_PushUserdata(L, K_GetDefaultTerrain(), META_TERRAIN);
@@ -4324,6 +4330,7 @@ static int lib_kTerrainHasAffect(lua_State *L)
 {
 	terrain_t *terrain = *((terrain_t **)luaL_checkudata(L, 1, META_TERRAIN));
 	boolean badonly = lua_optboolean(L, 2);
+	boolean followmaprules = lua_optboolean(L, 3);
 
 	NOHUD
 	INLEVEL
@@ -4331,7 +4338,7 @@ static int lib_kTerrainHasAffect(lua_State *L)
 	if (!terrain)
 		return LUA_ErrInvalid(L, "terrain_t");
 
-	lua_pushboolean(L, K_TerrainHasAffect(terrain, badonly));
+	lua_pushboolean(L, K_TerrainHasAffect(terrain, badonly, followmaprules));
 	return 1;
 }
 
@@ -4653,6 +4660,7 @@ static luaL_Reg lib[] = {
 	{"I_GetPreciseTime",lib_iGetPreciseTime},
 
 	// k_terrain
+	{"K_AffectingTerrainActive", lib_kAffectingTerrainActive},
 	{"K_GetDefaultTerrain", lib_kGetDefaultTerrain},
 	{"K_GetTerrainForTextureName", lib_kGetTerrainForTextureName},
 	{"K_GetTerrainForTextureNum", lib_kGetTerrainForTextureNum},

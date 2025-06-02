@@ -30,24 +30,6 @@ boolean B_UseWallTransfer(void)
 	return value;
 }
 
-// Map header toggle for TerrainDefs.
-boolean B_UseTerrainDef(void)
-{
-	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
-	boolean value = false;
-
-	if (mapnamespace == MNS_RINGRACERS)
-		return true;
-
-	if (mapheader->use_terrain == true)
-		value = true;
-
-	if (mapheader->use_terrain == false)
-		value = false;
-
-	return value;
-}
-
 // Give each map a custom track complexity
 INT32 B_TrackComplexity(void)
 {
