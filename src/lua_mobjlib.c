@@ -102,6 +102,7 @@ enum mobj_e {
 	mobj_sprxoff,
 	mobj_spryoff,
 	mobj_sprzoff,
+	mobj_terrain,
 	mobj_dispoffset,
 	mobj_tid,
 	mobj_special,
@@ -189,6 +190,7 @@ static const char *const mobj_opt[] = {
 	"sprxoff",
 	"spryoff",
 	"sprzoff",
+	"terrain",
 	"dispoffset",
 	"tid",
 	"special",
@@ -534,6 +536,9 @@ static int mobj_get(lua_State *L)
 		break;
 	case mobj_sprzoff:
 		lua_pushfixed(L, mo->sprzoff);
+		break;
+	case mobj_terrain:
+		LUA_PushUserdata(L, mo->terrain, META_TERRAIN);
 		break;
 	case mobj_dispoffset:
 		lua_pushinteger(L, mo->dispoffset);
@@ -1016,6 +1021,9 @@ static int mobj_set(lua_State *L)
 		break;
 	case mobj_sprzoff:
 		mo->sprzoff = luaL_checkfixed(L, 3);
+		break;
+	case mobj_terrain:
+		mo->terrain = *((terrain_t **)luaL_checkudata(L, 3, META_TERRAIN));
 		break;
 	case mobj_dispoffset:
 		mo->dispoffset = luaL_checkinteger(L, 3);
