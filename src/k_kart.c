@@ -9853,6 +9853,9 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		}
     }
 
+    if (pingame <= 1)
+        return 0; // There's only us around.
+
     if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
     {
         // Compare yourself against the cluster player to determine the distance.
