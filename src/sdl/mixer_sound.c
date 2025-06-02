@@ -279,7 +279,7 @@ get_real_sfx_volume (int vol)
 
 // this is as fast as I can possibly make it.
 // sorry. more asm needed.
-static Mix_Chunk *ds2chunk(void const *stream)
+static Mix_Chunk *ds2chunk(const void *stream)
 {
 	UINT16 ver,freq;
 	UINT32 samples, i, newsamples;
