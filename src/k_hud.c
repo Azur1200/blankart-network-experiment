@@ -4839,11 +4839,12 @@ static void K_drawDistributionDebugger(void)
 			INT32 amount;
 
 			if (K_UsingLegacyCheckpoints())
-				itemodds = K_KartGetLegacyItemOdds(useodds, item, 0, spbrush);
+				itemodds = K_KartGetLegacyItemOdds(useodds, item, stplyr->distancefromcluster, 0, spbrush);
 			else
 				itemodds = K_KartGetItemOdds(
 					useodds, item,
 					stplyr->distancetofinish,
+					stplyr->distancefromcluster,
 					0,
 					spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
 				);

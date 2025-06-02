@@ -441,10 +441,10 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_dualjawz
 };
 
-#define NUMKARTODDS 	80
+#define NUMKARTODDS 	(MAXODDS*10)
 
 // Less ugly 2D arrays
-static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
+static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 {
 	//B  C  D  E  F  G  H  I
 	{ 0, 0, 3, 3, 2, 0, 0, 0 }, // Sneaker
@@ -701,6 +701,32 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 	return distance;
 }
 
+#define INVODDS 4
+#define INVINDESPERATION 4
+
+static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
+{
+    if (dist < (INVINDIST/2))
+        return 0;
+
+    INT32 finodds = 0;
+    fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
+
+    if (fac > FRACUNIT)
+    {
+        // Desperation! Climb exponentially until Invincibility is practically guaranteed.
+        fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
+        finodds = Easing_InCubic(fac, INVODDS, 20 * INVINDESPERATION);
+    }
+    else
+    {
+        // Basic linear climb to "reasonable" odds.
+        finodds = FixedMul(INVODDS, fac);
+    }
+
+    return min(20 * INVINDESPERATION, finodds);
+}
+
 /**	\brief	Item Roulette for Kart
 
 	\param	player	player object passed from P_KartPlayerThink
@@ -711,6 +737,7 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 INT32 K_KartGetItemOdds(
 	UINT8 pos, SINT8 item,
 	UINT32 ourDist,
+    UINT32 clusterDist,
 	fixed_t mashed,
 	boolean spbrush, boolean bot, boolean rival)
 {
@@ -761,7 +788,7 @@ INT32 K_KartGetItemOdds(
 	}
 	else if (gametyperules & GTR_RACEODDS)
 	{
-		I_Assert(pos < 8); // Ditto
+		I_Assert(pos < MAXODDS); // Ditto
 		newodds = K_KartItemOddsRace[item-1][pos];
 	}
 	else
@@ -847,6 +874,16 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
+            // It's a power item, yes, but we don't want mashing to lessen
+            // its chances, so we lie to the game's face.
+            // Nonetheless, apply the start cooldown.
+            cooldownOnStart = true;
+
+            // Unique odds for Invincibility.
+            newodds = K_KartGetInvincibilityOdds(clusterDist);
+            
+            newodds *= 4;
+            break;
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -957,7 +994,7 @@ INT32 K_KartGetItemOdds(
 	return newodds;
 }
 
-INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush)
+INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_t mashed, boolean spbrush)
 {
 	INT32 newodds;
 	INT32 i;
@@ -1037,6 +1074,16 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 			powerItem = true;
 			break;
 		case KITEM_INVINCIBILITY:
+            // It's a power item, yes, but we don't want mashing to lessen
+            // its chances, so we lie to the game's face.
+            // Nonetheless, apply the start cooldown.
+            cooldownOnStart = true;
+
+            // Unique odds for Invincibility.
+            newodds = K_KartGetInvincibilityOdds(clusterDist);
+            
+            newodds *= 4;
+            break;
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -1163,6 +1210,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 			if (K_KartGetItemOdds(
 					i, j,
 					player->distancetofinish,
+                    player->distancefromcluster,
 					mashed,
 					spbrush, player->bot, (player->bot && player->botvars.rival)
 				) > 0)
@@ -1263,7 +1311,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		for (j = 1; j < NUMKARTRESULTS; j++)
 		{
 
-			if (K_KartGetLegacyItemOdds(i, j, mashed, spbrush) > 0)
+			if (K_KartGetLegacyItemOdds(i, j, player->distancefromcluster, mashed, spbrush) > 0)
 			{
 				available = true;
 				break;
@@ -1785,7 +1833,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		if (K_UsingLegacyCheckpoints())
 		{
-			spawnchance[i] = (totalspawnchance += K_KartGetLegacyItemOdds(useodds, i, mashed, spbrush));
+			spawnchance[i] = (totalspawnchance += K_KartGetLegacyItemOdds(useodds, i, player->distancefromcluster, mashed, spbrush));
 
 		}
 		else
@@ -1793,6 +1841,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
 				useodds, i,
 				player->distancetofinish,
+                player->distancefromcluster,
 				mashed,
 				spbrush, player->bot, (player->bot && player->botvars.rival))
 			);
@@ -5883,7 +5932,9 @@ void K_DoInvincibility(player_t *player, tic_t time)
         aura->extravalue2 = 1;
 	}
 
-	player->invincibilitytimer = time;
+    // Don't punish a player for spamming.
+    // That sounds stupid, yes.
+	player->invincibilitytimer = max(player->invincibilitytimer, time);
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -6178,6 +6229,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
 				useodds, i,
 				UINT32_MAX,
+                0,
 				0,
 				false, false, false
 				)
@@ -9780,11 +9832,43 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 {
     player_t *cluster_p;
+    UINT32 i, pingame, first;
+    INT32 divmul;
+
+    pingame = 0;
+    first = -1;
+    divmul = 1;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+        if (players[i].mo && gametype == GT_RACE)
+		{
+			if (players[i].position == 1 && first == -1)
+				first = i;
+		}
+    }
 
     if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
     {
         // Compare yourself against the cluster player to determine the distance.
-        cluster_p = &players[clusterid];
+        
+        if ((pingame == 2) && (first != -1))
+        {
+            // 1v1: The cluster player is first place.
+            // Half the cluster distance so that the losing player
+            // doesn't get overly pitied.
+            cluster_p = &players[first];
+            divmul = 2;
+        }
+        else
+        {
+            cluster_p = &players[clusterid];
+        }
 
         if (player == cluster_p)
             return 0; // We ARE the cluster player.
@@ -9793,10 +9877,23 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
             return 0; // Ahead, or tying.
 
         // Return the 3D distance from the cluster player.
-        return K_PlayerDistance3D(player, cluster_p) / FRACUNIT;
+        return K_PlayerDistance3D(player, cluster_p) / (FRACUNIT*divmul);
     }
     else
     {
+        if ((pingame == 2) && (first != -1))
+        {
+            // 1v1: Compare against first place's distance to finish.
+            // Half the cluster distance so that the losing player
+            // doesn't get overly pitied.
+
+            // Theoretically impossible, but what do I know?
+            if (player->distancetofinish <= players[first].distancetofinish)
+                return 0; // Ahead, or tying.
+            
+            return (player->distancetofinish - players[first].distancetofinish) / 2;
+        }
+
         if (player->distancetofinish <= clusterdtf.x)
             return 0; // Ahead, or tying.
 
@@ -10097,13 +10194,13 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
-            // Get the cluster distance.
-            players[i].distancefromcluster = K_UpdateDistanceFromCluster(&players[i]);
-
 			if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
+
+            // Get the cluster distance.
+            players[i].distancefromcluster = K_UpdateDistanceFromCluster(&players[i]);
 		}
 	}
 }
