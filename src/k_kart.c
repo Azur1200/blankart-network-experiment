@@ -51,6 +51,7 @@
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
 #include "m_cheat.h"	// objectplacing
 #include "p_spec.h"
+#include "m_easing.h"   // Invincibility gradienting
 
 
 #include "k_stats.h"
@@ -62,6 +63,7 @@
 #include "k_collide.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "k_cluster.hpp"
 
 #include "blan/b_soc.h"
 
@@ -82,6 +84,13 @@ consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL
 // battlewanted is an array of the WANTED player nums, -1 for no player in that slot
 // indirectitemcooldown is timer before anyone's allowed another Shrink/SPB
 // mapreset is set when enough players fill an empty server
+
+// Cluster point.
+// During a legacy race, this is an actual 3D vector.
+// During a waypointed race, this is simply a storage point for the "cluster distance";
+// the distance to finish with the most active number of players.
+boolean clusterplayer[MAXPLAYERS];
+vector3_t clusterpoint, clusterdtf;
 
 void K_TimerInit(void)
 {
@@ -268,6 +277,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugwaypoints);
 	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbot);
+    CV_RegisterVar(&cv_kartdebugcluster);
 
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
@@ -341,6 +351,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbumpspring);
 
 	CV_RegisterVar(&cv_kartslipdash);
+
+    CV_RegisterVar(&cv_kartinvindist);
+    CV_RegisterVar(&cv_kartinvindistmul);
 
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
@@ -3562,6 +3575,65 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 	}
 }
 
+// Used to determine the speed and power of Invincibility.
+fixed_t K_InvincibilityGradient(UINT16 time)
+{
+    return (min(936, (fixed_t)time) * FRACUNIT / BASEINVINTIME);
+}
+
+static fixed_t K_InvincibilityEasing(fixed_t x)
+{
+    fixed_t u = max(FRACUNIT / 4, (min(32000, x) * FRACUNIT) / INVINDIST);
+
+    if (x < INVINDIST)
+        return u;
+
+    u = max(0, (u - FRACUNIT));
+
+    if (u < FRACUNIT)
+        return Easing_InCubic(u, FRACUNIT, 22 * FRACUNIT / 10);
+
+    return Easing_OutCubic(
+        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), 22 * FRACUNIT / 10, 4 * FRACUNIT);
+}
+
+
+UINT16 K_GetInvincibilityTime(player_t *player)
+{
+    UINT32 i, pingame;
+
+    pingame = 0;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+        if (pingame > 1) // We only want to see if one player is playing.
+            continue;
+    }
+
+    if (pingame <= 1)
+        return BASEINVINTIME;
+
+    fixed_t clustermul = K_InvincibilityEasing(player->distancefromcluster);
+    return FixedMul(BASEINVINTIME, clustermul);
+}
+
+static fixed_t K_GetInvincibilitySpeed(UINT16 time)
+{
+    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
+    return Easing_OutCubic(t, 0, INVINSPEEDBOOST);
+}
+
+static fixed_t K_GetInvincibilityAccel(UINT16 time)
+{
+    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
+    return Easing_OutCubic(t, 0, INVINACCELBOOST);
+}
+
 static fixed_t diminish(fixed_t speedboost)
 {
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
@@ -3661,7 +3733,9 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
+        fixed_t invspeedboost = K_GetInvincibilitySpeed(player->invincibilitytimer);
+        fixed_t invaccelboost = K_GetInvincibilityAccel(player->invincibilitytimer);
+		K_DoBoost(player, invspeedboost, invaccelboost, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
@@ -5801,6 +5875,12 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		P_SetTarget(&overlay->target, player->mo);
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
+
+        mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
+		P_SetTarget(&aura->target, player->mo);
+        aura->destscale = player->mo->scale;
+		P_SetScale(aura, player->mo->scale);
+        aura->extravalue2 = 1;
 	}
 
 	player->invincibilitytimer = time;
@@ -7650,7 +7730,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1, false);
 
 	if (player->invincibilitytimer)
-		player->invincibilitytimer--;
+	{	
+        player->invincibilitytimer--;
+    }
 
 	if (player->checkskip)
 		player->checkskip--;
@@ -7957,10 +8039,10 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-		fullbright = true;
+		//fullbright = true;
 
-		player->mo->color = K_RainbowColor(leveltime / 2);
-		player->mo->colorized = true;
+		// player->mo->color = K_RainbowColor(leveltime / 2);
+		// player->mo->colorized = true;
 		skip = true;
 
 		if (skip)
@@ -9680,6 +9762,49 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 	return a;
 }
 
+static fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+{
+    fixed_t dist_xy = R_PointToDist2(x1,y1,x2,y2);
+
+    return R_PointToDist2(0,z1,dist_xy,z2);
+}
+
+static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
+{
+    if ((!source->mo) || (!destination->mo))
+        return INT32_MAX; // Return a garbage value.
+
+    return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
+}
+
+static UINT32 K_UpdateDistanceFromCluster(player_t *player)
+{
+    player_t *cluster_p;
+
+    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+    {
+        // Compare yourself against the cluster player to determine the distance.
+        cluster_p = &players[clusterid];
+
+        if (player == cluster_p)
+            return 0; // We ARE the cluster player.
+
+        if (player->position <= cluster_p->position)
+            return 0; // Ahead, or tying.
+
+        // Return the 3D distance from the cluster player.
+        return K_PlayerDistance3D(player, cluster_p) / FRACUNIT;
+    }
+    else
+    {
+        if (player->distancetofinish <= clusterdtf.x)
+            return 0; // Ahead, or tying.
+
+        // Return the difference between us and the cluster distance.
+        return (player->distancetofinish - clusterdtf.x);
+    }
+}
+
 //
 // K_KartUpdatePosition
 //
@@ -9857,10 +9982,95 @@ void K_KartLegacyUpdatePosition(player_t *player)
 	player->position = position;
 }
 
+// Brute-force finds the area on the course with the highest player density in a given radius.
+// Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
+UINT32 clusterid = 0;
+
+static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fixed_t, vector3_t *), vector3_t *out)
+{
+    INT32 bestdensity = 0; // Cluster counter
+    vector3_t tempclusterpoint;
+    player_t *findme;
+    player_t *player;
+
+    INT32 i;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+        clusterplayer[i] = false;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+        // Find neighbors
+        INT32 N = func(player, eps, &tempclusterpoint);
+
+        // Double-remove the clusterplayer flag. Bad hack, I know...
+        clusterplayer[i] = false;
+
+        // Density check
+        if (N > bestdensity)                                
+        {                                   
+            bestdensity = N;
+
+            findme = closesttocluster;
+
+            out->x = tempclusterpoint.x;
+            out->y = tempclusterpoint.y;
+            out->z = tempclusterpoint.z;
+            continue;
+        }
+    }
+
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        if (!playeringame[i])
+			continue;
+        
+        player = &players[i];
+        
+        if (player == findme)
+        {
+            clusterid = i;
+            break;
+        }
+    }
+
+    return out;
+}
+
+#define CLUSTER_EPSILON (160*FRACUNIT)
+#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(CLUSTER_EPSILON, K_CountNeighboringPlayers, &clusterpoint))
+#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((CLUSTER_EPSILON / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
+
+void K_UpdateClusterPoints(void)
+{
+    // Get the player cluster.
+    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+    {
+        K_FindPlayerClusterLegacy();
+    }
+    else
+    {
+        if (cv_kartdebugcluster.value)
+        {
+            K_FindPlayerClusterLegacy();
+        }
+
+        K_FindPlayerClusterDTF();
+    }
+}
+
 void K_UpdateAllPlayerPositions(void)
 {
 	INT32 i;
-
 	if (!K_UsingLegacyCheckpoints())
 	{
 		// First loop: Ensure all players' distance to the finish line are all accurate
@@ -9887,6 +10097,9 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
+            // Get the cluster distance.
+            players[i].distancefromcluster = K_UpdateDistanceFromCluster(&players[i]);
+
 			if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
@@ -10378,7 +10591,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_INVINCIBILITY:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage normally, so you're free to waste it if you have multiple
 							{
-								K_DoInvincibility(player, 10 * TICRATE);
+								K_DoInvincibility(player, K_GetInvincibilityTime(player));
 								K_PlayPowerGloatSound(player->mo);
 								player->itemamount--;
 								player->botvars.itemconfirm = 0;

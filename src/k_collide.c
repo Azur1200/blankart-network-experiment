@@ -687,6 +687,11 @@ boolean K_SMKIceBlockCollide(mobj_t *t1, mobj_t *t2)
 	return false;
 }
 
+boolean K_CanInvincibilityDamage(UINT16 timer)
+{
+	return (K_InvincibilityGradient(timer) > (FRACUNIT/2));
+}
+
 boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 {
 	const boolean flameT1 = ((t1->player->flamedash > 0) && (t1->player->flametimer > 0));
@@ -695,8 +700,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t1Condition = false;
 	boolean t2Condition = false;
 
-	t1Condition = (t1->player->invincibilitytimer > 0);
-	t2Condition = (t2->player->invincibilitytimer > 0);
+	t1Condition = ((t1->player->invincibilitytimer > 0) && (K_CanInvincibilityDamage(t1->player->invincibilitytimer)));
+	t2Condition = ((t2->player->invincibilitytimer > 0) && (K_CanInvincibilityDamage(t2->player->invincibilitytimer)));
 
 	if ((t1Condition == true || flameT1 == true) && (t2Condition == true || flameT2 == true))
 	{

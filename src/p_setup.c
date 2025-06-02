@@ -8293,6 +8293,7 @@ static void P_InitPlayers(void)
 				G_SpawnPlayer(i, false);
 		}
 	}
+	K_UpdateClusterPoints();
 	K_UpdateAllPlayerPositions();
 }
 

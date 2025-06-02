@@ -2241,8 +2241,14 @@ void P_MovePlayer(player_t *player)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 
-	if (player->invincibilitytimer > 0)
-		K_SpawnSparkleTrail(player->mo);
+	if ((player->invincibilitytimer > 0) &&
+        ((leveltime % max(1,
+                          10 - FixedMul(9,
+                                       K_InvincibilityGradient(
+                                           player->invincibilitytimer)))) == 0))
+    {
+        K_SpawnSparkleTrail(player->mo);
+    }
 
 	if (player->wipeoutslow > 1 && (leveltime & 1))
 		K_SpawnWipeoutTrail(player->mo, false);

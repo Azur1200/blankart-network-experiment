@@ -462,7 +462,7 @@ consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_
 consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT, CV_Natural, NULL);
 consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_invincibility_speedboost = CVAR_INIT ("vanillaboost_invincibility_speedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_speedboost = CVAR_INIT ("vanillaboost_invincibility_speedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_accelboost = CVAR_INIT ("vanillaboost_invincibility_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
 
@@ -503,6 +503,12 @@ consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_Y
 
 consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
 
+// How far the player must be from the cluster to begin frequently rolling Invincibility.
+static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT, invindist_cons_t, NULL);
+
+consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
 #define FOREACH( name, n ) { n, #name }
@@ -527,6 +533,7 @@ static CV_PossibleValue_t kartdebugwaypoint_cons_t[] = {{0, "Off"}, {1, "Forward
 consvar_t cv_kartdebugwaypoints = CVAR_INIT ("kartdebugwaypoints", "Off", CV_NETVAR|CV_CHEAT, kartdebugwaypoint_cons_t, NULL);
 consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT, kartdebugwaypoint_cons_t, NULL);
 consvar_t cv_kartdebugbot = CVAR_INIT ("kartdebugbot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartdebugcluster = CVAR_INIT ("kartdebugcluster", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);
