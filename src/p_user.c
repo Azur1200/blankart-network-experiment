@@ -3995,7 +3995,7 @@ void P_PlayerThink(player_t *player)
 		INT32 i;
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || players[i].spectator)
+			if (!playeringame[i] || players[i].spectator || players[i].bot)
 				continue;
 			if (&players[i] == player)
 				continue;
