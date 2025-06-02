@@ -11497,7 +11497,7 @@ void A_ReaperThinker(mobj_t *actor)
 
 	if (actor->health == 1000)	// if health is 1000, set it to a small scale and have it start growing with destscale. Then set the health to uh, not 1000.
 	{
-		actor->scale = 1;
+		P_SetScale(actor, 1);
 		actor->destscale = 2<<FRACBITS;
 		actor->scalespeed = FRACUNIT/24;	// Should take a bit less than 2 seconds to fully grow.
 		S_StartSound(NULL, sfx_chain);
