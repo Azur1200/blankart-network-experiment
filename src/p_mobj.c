@@ -13212,7 +13212,8 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 					finishline->special = 2001; // Finish Line
 					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
 					finishline->args[0] = mthing->args[4];
-					SpreadFinishLine(finishline, NULL, mthing->args[4]);
+					if (!(mthing->args[4] & TMCFF_NOSPREAD))
+						SpreadFinishLine(finishline, NULL, mthing->args[4]);
 				}
 			}
 		}

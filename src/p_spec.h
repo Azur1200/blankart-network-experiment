@@ -528,6 +528,7 @@ typedef enum
 	TMCFF_FLIP       = 1,
 	TMCFF_SINGLEUSE  = 1<<1,
 	TMCFF_NEEDSECTOR = 1<<2,
+	TMCFF_NOSPREAD   = 1<<3,
 } textmapcrossfinishflags_t;
 
 typedef enum
