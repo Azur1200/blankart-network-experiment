@@ -1339,7 +1339,7 @@ boolean M_Responder(event_t *ev)
 						routine(1); // right arrow
 						break;
 					case IT_CALL:
-						routine(itemOn);
+						routine(currentMenu->menuitems[itemOn].argument);
 						break;
 					case IT_SUBMENU:
 						currentMenu->lastOn = itemOn;
@@ -6052,14 +6052,14 @@ void M_BlanKartPreset(INT32 choice)
 }
 
 // Player has selected the "REPLAY" from the time attack screen
-void M_ReplayTimeAttack(INT32 choice)
+void M_ReplayTimeAttack(INT32 arg)
 {
 	const char *which;
 	char *gamemode = M_AppendGametypeAndModName();
 	M_ClearMenus(true);
 	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
-	switch(choice) {
+	switch(arg) {
 	default:
 	case 0: // best time
 		which = "time-best";
@@ -6135,10 +6135,10 @@ static void M_OverwriteGuest_Last(INT32 choice)
 	M_OverwriteGuest("last");
 }
 
-void M_SetGuestReplay(INT32 choice)
+void M_SetGuestReplay(INT32 arg)
 {
 	void (*which)(INT32);
-	switch(choice)
+	switch(arg)
 	{
 	case 0: // best time
 		which = M_OverwriteGuest_Time;
@@ -6371,13 +6371,12 @@ void M_HandleServerPage(INT32 choice)
 		M_ExitMenu();
 }
 
-void M_Connect(INT32 choice)
+void M_Connect(INT32 arg)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
-	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "LINE1");
-	COM_BufAddText(va("connect node %d\n", serverlist[choice-firstserverline + serverlistpage * M_ServersPerPage()].node));
+	COM_BufAddText(va("connect node %d\n", serverlist[arg + serverlistpage * M_ServersPerPage()].node));
 }
 
 void M_Refresh(INT32 choice)
@@ -6626,6 +6625,7 @@ Check_new_version_thread (int *id)
 static void M_ConnectMenu(INT32 choice)
 {
 	(void)choice;
+	messagebox.active = false;
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
 
@@ -8061,15 +8061,15 @@ static void M_EraseDataResponse(INT32 ch)
 	M_ClearMenus(true);
 }
 
-void M_EraseData(INT32 choice)
+void M_EraseData(INT32 arg)
 {
 	const char *eschoice, *esstr = M_GetText("Are you sure you want to erase\n%s?\n\n(Press 'Y' to confirm)\n");
 
-	erasecontext = (UINT8)choice;
+	erasecontext = (UINT8)arg;
 
-	if (choice == 0)
+	if (arg == 0)
 		eschoice = M_GetText("Record Attack data");
-	else if (choice == 1)
+	else if (arg == 1)
 		eschoice = M_GetText("Secrets data");
 	else
 		eschoice = M_GetText("ALL game data");
@@ -8178,7 +8178,7 @@ void M_Setup4PJoystickMenu(INT32 choice)
 	M_SetupJoystickMenu(choice);
 }
 
-void M_AssignJoystick(INT32 choice)
+void M_AssignJoystick(INT32 arg)
 {
 	const UINT8 p = setupcontrolplayer-1;
 
@@ -8187,12 +8187,12 @@ void M_AssignJoystick(INT32 choice)
 	INT32 numjoys = I_NumJoys();
 
 	oldchoice = oldstringchoice = atoi(cv_usejoystick[p].string) > numjoys ? atoi(cv_usejoystick[p].string) : cv_usejoystick[p].value;
-	CV_SetValue(&cv_usejoystick[p], choice);
+	CV_SetValue(&cv_usejoystick[p], arg);
 
 	// Just in case last-minute changes were made to cv_usejoystick.value,
 	// update the string too
 	// But don't do this if we're intentionally setting higher than numjoys
-	if (choice <= numjoys)
+	if (arg <= numjoys)
 	{
 		CV_SetValue(&cv_usejoystick[p], cv_usejoystick[p].value);
 
@@ -8200,9 +8200,9 @@ void M_AssignJoystick(INT32 choice)
 		if (oldchoice > numjoys)
 			oldchoice = cv_usejoystick[p].value;
 
-		if (oldchoice != choice)
+		if (oldchoice != arg)
 		{
-			if (choice && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
+			if (arg && oldstringchoice > numjoys) // if we did not select "None", we likely selected a used device
 				CV_SetValue(&cv_usejoystick[p], (oldstringchoice > numjoys ? oldstringchoice : oldchoice));
 
 			if (oldstringchoice ==
@@ -8214,7 +8214,7 @@ void M_AssignJoystick(INT32 choice)
 		}
 	}
 #else
-	CV_SetValue(&cv_usejoystick[p], choice);
+	CV_SetValue(&cv_usejoystick[p], arg);
 #endif
 }
 
@@ -8579,16 +8579,16 @@ static void M_ChangecontrolResponse(event_t *ev)
 	messagebox.active = false;
 }
 
-void M_ChangeControl(INT32 choice)
+void M_ChangeControl(INT32 arg)
 {
 	// This buffer assumes a 35-character message (per below) plus a max control name limit of 32 chars (per controltochangetext)
 	// If you change the below message, then change the size of this buffer!
 	static char tmp[68];
 
-	controltochange = currentMenu->menuitems[choice].argument;
+	controltochange = arg;
 	sprintf(tmp, M_GetText("Hit the new key for\n%s\nESC for Cancel"),
-		currentMenu->menuitems[choice].text);
-	strlcpy(controltochangetext, currentMenu->menuitems[choice].text, 33);
+		currentMenu->menuitems[itemOn].text);
+	strlcpy(controltochangetext, currentMenu->menuitems[itemOn].text, 33);
 
 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
 }
