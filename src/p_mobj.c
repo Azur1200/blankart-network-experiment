@@ -3532,29 +3532,6 @@ static boolean P_CameraCheckWater(camera_t *thiscam)
 	return false;
 }
 
-void P_DestroyRobots(void)
-{
-	// Search through all the thinkers for enemies.
-	mobj_t *mo;
-	thinker_t *think;
-
-	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
-	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-			continue;
-
-		mo = (mobj_t *)think;
-		if (mo->health <= 0 || !(mo->flags & (MF_ENEMY|MF_BOSS)))
-			continue; // not a valid enemy
-
-		if (mo->type == MT_PLAYER) // Don't chase after other players!
-			continue;
-
-		// Found a target enemy
-		P_KillMobj(mo, players[consoleplayer].mo, players[consoleplayer].mo, DMG_NORMAL);
-	}
-}
-
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {

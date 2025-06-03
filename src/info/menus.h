@@ -72,8 +72,6 @@ _(SP_LEVELSTATS)
 _(SR_UNLOCKCHECKLIST)
 _(MISC_REPLAYHUT)
 _(MISC_REPLAYSTART)
-_(SR_PANDORA)
-_(SR_EMBLEMHINT)
 
 // Addons (Part of MISC, but let's make it our own)
 _(AD_MAIN)

@@ -346,16 +346,12 @@ static CV_PossibleValue_t dummymenuplayer_cons_t[] = {{0, "NOPE"}, {1, "P1"}, {2
 static CV_PossibleValue_t dummyteam_cons_t[] = {{0, "Spectator"}, {1, "Red"}, {2, "Blue"}, {0, NULL}};
 static CV_PossibleValue_t dummyspectate_cons_t[] = {{0, "Spectator"}, {1, "Playing"}, {0, NULL}};
 static CV_PossibleValue_t dummyscramble_cons_t[] = {{0, "Random"}, {1, "Points"}, {0, NULL}};
-static CV_PossibleValue_t ringlimit_cons_t[] = {{-20, "MIN"}, {20, "MAX"}, {0, NULL}};
-static CV_PossibleValue_t liveslimit_cons_t[] = {{-1, "MIN"}, {9, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t dummystaff_cons_t[] = {{0, "MIN"}, {100, "MAX"}, {0, NULL}};
 
 consvar_t cv_dummymenuplayer = CVAR_INIT ("dummymenuplayer", "P1", CV_HIDEN|CV_CALL, dummymenuplayer_cons_t, Dummymenuplayer_OnChange);
 consvar_t cv_dummyteam = CVAR_INIT ("dummyteam", "Spectator", CV_HIDEN, dummyteam_cons_t, NULL);
 consvar_t cv_dummyspectate = CVAR_INIT ("dummyspectate", "Spectator", CV_HIDEN, dummyspectate_cons_t, NULL);
 consvar_t cv_dummyscramble = CVAR_INIT ("dummyscramble", "Random", CV_HIDEN, dummyscramble_cons_t, NULL);
-consvar_t cv_dummyrings = CVAR_INIT ("dummyrings", "0", CV_HIDEN, ringlimit_cons_t, NULL);
-consvar_t cv_dummylives = CVAR_INIT ("dummylives", "0", CV_HIDEN, liveslimit_cons_t, NULL);
 static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
 consvar_t cv_dummyattackingrings = CVAR_INIT ("dummyattackingrings", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
@@ -1558,16 +1554,12 @@ void M_StartControlPanel(void)
 	{
 		if (gamestate != GS_LEVEL /*|| ultimatemode*/) // intermission, so gray out stuff.
 		{
-			M_SetItemStatus(MN_SPAUSE, "PANDORA", M_SecretUnlocked(SECRET_PANDORA) ? IT_GRAYEDOUT : IT_DISABLED);
 			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_GRAYEDOUT);
 		}
 		else
 		{
-			M_SetItemStatus(MN_SPAUSE, "PANDORA", M_SecretUnlocked(SECRET_PANDORA) ? IT_STRING|IT_CALL : IT_DISABLED);
 			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_STRING|IT_CALL);
 		}
-
-		M_SetItemStatus(MN_SPAUSE, "EMBLEMS", M_SecretUnlocked(SECRET_EMBLEMHINTS) ? IT_STRING|IT_CALL : IT_DISABLED);
 
 		M_EnterMenu(MN_SPAUSE, true);
 		M_SetItemOn(MN_SPAUSE, "CONTINUE");
@@ -1849,8 +1841,6 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyteam);
 	CV_RegisterVar(&cv_dummyspectate);
 	CV_RegisterVar(&cv_dummyscramble);
-	CV_RegisterVar(&cv_dummyrings);
-	CV_RegisterVar(&cv_dummylives);
 	CV_RegisterVar(&cv_dummystaff);
 
 	CV_RegisterVar(&cv_dummyattackingrings);
@@ -4406,23 +4396,6 @@ void M_PlaybackQuit(INT32 choice)
 	}
 }
 
-void M_PandorasBox(INT32 choice)
-{
-	(void)choice;
-	CV_StealthSetValue(&cv_dummyrings, players[consoleplayer].rings);
-	CV_StealthSetValue(&cv_dummylives, players[consoleplayer].lives);
-	M_EnterMenu(MN_SR_PANDORA, true);
-}
-
-void M_ExitPandorasBox(INT32 choice)
-{
-	(void)choice;
-	if (cv_dummyrings.value != players[consoleplayer].rings)
-		COM_ImmedExecute(va("setrings %d", cv_dummyrings.value));
-	if (cv_dummylives.value != players[consoleplayer].lives)
-		COM_ImmedExecute(va("setlives %d", cv_dummylives.value));
-}
-
 void M_ChangeLevel(INT32 choice)
 {
 	(void)choice;
@@ -4589,44 +4562,6 @@ void M_RefreshPauseMenu(void)
 #endif
 }
 
-// ======
-// CHEATS
-// ======
-
-ATTRNORETURN void FUNCNORETURN M_UltimateCheat(INT32 choice)
-{
-	(void)choice;
-	I_Quit();
-}
-
-void M_GetAllEmeralds(INT32 choice)
-{
-	(void)choice;
-
-	emeralds = ((EMERALD7)*2)-1;
-	M_StartMessage(M_GetText("You now have all 7 emeralds.\nUse them wisely.\nWith great power comes great ring drain.\n"),NULL,MM_NOTHING);
-
-	G_SetGameModified(multiplayer, true);
-}
-
-static void M_DestroyRobotsResponse(INT32 ch)
-{
-	if (ch != 'y' && ch != KEY_ENTER)
-		return;
-
-	// Destroy all robots
-	P_DestroyRobots();
-
-	G_SetGameModified(multiplayer, true);
-}
-
-void M_DestroyRobots(INT32 choice)
-{
-	(void)choice;
-
-	M_StartMessage(M_GetText("Do you want to destroy all\nrobots in the current level?\n\n(Press 'Y' to confirm)\n"), M_DestroyRobotsResponse, MM_YESNO);
-}
-
 // ========
 // SKY ROOM
 // ========
@@ -4738,63 +4673,6 @@ void M_DrawChecklist(void)
 	}
 }
 #undef NUMCHECKLIST
-
-#define NUMHINTS 5
-void M_EmblemHints(INT32 choice)
-{
-	(void)choice;
-	M_SetItemStatus(MN_SR_EMBLEMHINT, "RADAR", M_SecretUnlocked(SECRET_ITEMFINDER) ? IT_CVAR|IT_STRING : IT_SECRET);
-	M_EnterMenu(MN_SR_EMBLEMHINT, true);
-	M_SetItemOn(MN_SR_EMBLEMHINT, "BACK"); // always start on back.
-}
-
-void M_DrawEmblemHints(void)
-{
-	INT32 i, j = 0;
-	UINT32 collected = 0;
-	emblem_t *emblem;
-	const char *hint;
-
-	for (i = 0; i < numemblems; i++)
-	{
-		INT32 checkLevel;
-
-		emblem = &emblemlocations[i];
-		if (emblem->type != ET_GLOBAL)
-			continue;
-
-		checkLevel = G_MapNumber(emblem->level);
-
-		if (!mapheaderinfo[checkLevel] || gamemap != checkLevel)
-			continue;
-
-		if (emblem->collected)
-		{
-			collected = recommendedflags;
-			V_DrawMappedPatch(12, 12+(28*j), 0, W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE),
-				R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
-		}
-		else
-		{
-			collected = 0;
-			V_DrawScaledPatch(12, 12+(28*j), 0, W_CachePatchName("NEEDIT", PU_CACHE));
-		}
-
-		if (emblem->hint[0])
-			hint = emblem->hint;
-		else
-			hint = M_GetText("No hints available.");
-		hint = V_WordWrap(40, BASEVIDWIDTH-12, 0, hint);
-		V_DrawString(40, 8+(28*j), V_ALLOWLOWERCASE|collected, hint);
-
-		if (++j >= NUMHINTS)
-			break;
-	}
-	if (!j)
-		V_DrawCenteredString(160, 48, MENUCAPS|highlightflags, "No hidden medals on this map.");
-
-	M_DrawGenericMenu();
-}
 
 void M_DrawSkyRoom(void)
 {
