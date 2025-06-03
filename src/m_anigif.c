@@ -584,7 +584,7 @@ static void GIF_framewrite(void)
 		else if (rendermode == render_opengl)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
-			GIF_rgbconvert(linear, base_screen);
+			GIF_rgbconvert(linear, movie_screen);
 			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
@@ -600,7 +600,7 @@ static void GIF_framewrite(void)
 		if (rendermode == render_opengl)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
-			GIF_rgbconvert(linear, screens[0]);
+			GIF_rgbconvert(linear, base_screen);
 			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
@@ -618,7 +618,7 @@ static void GIF_framewrite(void)
 		UINT16 delay = 0;
 		INT32 startline;
 
-		if (gif_dynamicdelay ==(UINT8) 2)
+		if (gif_dynamicdelay ==(UINT8) 2 && !singletics)
 		{
 			// golden's attempt at creating a "dynamic delay"
 			UINT16 mingifdelay = 10; // minimum gif delay in milliseconds (keep at 10 because gifs can't get more precise).
@@ -631,7 +631,7 @@ static void GIF_framewrite(void)
 				gif_delayus -= frames*(mingifdelay*1000); // remove frames by the amount of milliseconds they take. don't reset to 0, the microseconds help consistency.
 			}
 		}
-		else if (gif_dynamicdelay ==(UINT8) 1)
+		else if (gif_dynamicdelay ==(UINT8) 1 && !singletics)
 		{
 			float delayf = ceil(100.0f/NEWTICRATE);
 
