@@ -312,8 +312,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
 	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
 
-	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_legacyspeedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_legacyaccelboost);
+    CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
@@ -352,8 +354,12 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartslipdash);
 
+    CV_RegisterVar(&cv_kartinvintype);
     CV_RegisterVar(&cv_kartinvindist);
     CV_RegisterVar(&cv_kartinvindistmul);
+
+    CV_RegisterVar(&cv_kartinvin_maxtime);
+    CV_RegisterVar(&cv_kartinvin_midtime);
 
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
@@ -874,16 +880,19 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
-            // It's a power item, yes, but we don't want mashing to lessen
-            // its chances, so we lie to the game's face.
-            // Nonetheless, apply the start cooldown.
-            cooldownOnStart = true;
+            if (invintype == KARTINVIN_ALTERN)
+            {
+                // It's a power item, yes, but we don't want mashing to lessen
+                // its chances, so we lie to the game's face.
+                // Nonetheless, apply the start cooldown.
+                cooldownOnStart = true;
 
-            // Unique odds for Invincibility.
-            newodds = K_KartGetInvincibilityOdds(clusterDist);
-            
-            newodds *= 4;
-            break;
+                // Unique odds for Invincibility.
+                newodds = K_KartGetInvincibilityOdds(clusterDist);
+                
+                newodds *= 4;
+                break;
+            }
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -1074,16 +1083,19 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 			powerItem = true;
 			break;
 		case KITEM_INVINCIBILITY:
-            // It's a power item, yes, but we don't want mashing to lessen
-            // its chances, so we lie to the game's face.
-            // Nonetheless, apply the start cooldown.
-            cooldownOnStart = true;
+            if (invintype == KARTINVIN_ALTERN)
+            {
+                // It's a power item, yes, but we don't want mashing to lessen
+                // its chances, so we lie to the game's face.
+                // Nonetheless, apply the start cooldown.
+                cooldownOnStart = true;
 
-            // Unique odds for Invincibility.
-            newodds = K_KartGetInvincibilityOdds(clusterDist);
-            
-            newodds *= 4;
-            break;
+                // Unique odds for Invincibility.
+                newodds = K_KartGetInvincibilityOdds(clusterDist);
+                
+                newodds *= 4;
+                break;
+            }
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -3640,16 +3652,19 @@ static fixed_t K_InvincibilityEasing(fixed_t x)
     u = max(0, (u - FRACUNIT));
 
     if (u < FRACUNIT)
-        return Easing_InCubic(u, FRACUNIT, 22 * FRACUNIT / 10);
+        return Easing_InCubic(u, FRACUNIT, (INVINMIDTIME/10));
 
     return Easing_OutCubic(
-        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), 22 * FRACUNIT / 10, 4 * FRACUNIT);
+        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
 }
 
 
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
     UINT32 i, pingame;
+
+    if (invintype == KARTINVIN_LEGACY)
+        return BASEINVINTIME;
 
     pingame = 0;
     for (i = 0; i < MAXPLAYERS; i++)
@@ -3673,14 +3688,20 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
 static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
+    if (invintype == KARTINVIN_LEGACY)
+        return INVINSPEEDBOOSTLGC;
+    
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINSPEEDBOOST);
+    return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
 }
 
 static fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
+    if (invintype == KARTINVIN_LEGACY)
+        return INVINACCELBOOSTLGC;
+    
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
-    return Easing_OutCubic(t, 0, INVINACCELBOOST);
+    return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
 }
 
 static fixed_t diminish(fixed_t speedboost)
@@ -5925,16 +5946,29 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
 
-        mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
-		P_SetTarget(&aura->target, player->mo);
-        aura->destscale = player->mo->scale;
-		P_SetScale(aura, player->mo->scale);
-        aura->extravalue2 = 1;
+        if (invintype == KARTINVIN_ALTERN)
+        {
+            mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
+            P_SetTarget(&aura->target, player->mo);
+            aura->destscale = player->mo->scale;
+            P_SetScale(aura, player->mo->scale);
+            aura->extravalue2 = 1;
+        }
 	}
 
-    // Don't punish a player for spamming.
-    // That sounds stupid, yes.
-	player->invincibilitytimer = max(player->invincibilitytimer, time);
+    if (invintype == KARTINVIN_ALTERN)
+    {
+        // Rim suggestion: Don't allow already invincible players to chain.
+        if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
+        {
+            // Be nice to players at half-power or less.
+            player->invincibilitytimer = max(player->invincibilitytimer, time);
+        }
+    }
+    else
+    {
+        player->invincibilitytimer = time;
+    }
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -7782,7 +7816,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1, false);
 
 	if (player->invincibilitytimer)
-	{	
+	{
         player->invincibilitytimer--;
     }
 
@@ -8091,11 +8125,15 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-		//fullbright = true;
+        if (invintype == KARTINVIN_LEGACY)
+        {
+            fullbright = true;
 
-		// player->mo->color = K_RainbowColor(leveltime / 2);
-		// player->mo->colorized = true;
-		skip = true;
+            player->mo->color = K_RainbowColor(leveltime / 2);
+            player->mo->colorized = true;
+
+            skip = true;
+        }
 
 		if (skip)
 		{

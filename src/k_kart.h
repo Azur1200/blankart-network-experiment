@@ -71,6 +71,12 @@ extern vector3_t clusterpoint, clusterdtf;
 // :)
 #define MAXODDS 8
 
+// Invincibility-related constants
+#define INVINDIST K_RAGuard(cv_kartinvindist)
+#define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
+#define INVINMIDTIME K_RAGuard(cv_kartinvin_midtime)
+#define INVINMAXTIME K_RAGuard(cv_kartinvin_maxtime)
+
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
 #define DIMINISHPARAM K_RAGuard(cv_kartstacking_diminishparam)
@@ -87,10 +93,10 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
-#define INVINDIST K_RAGuard(cv_kartinvindist)
-#define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
-#define INVINSPEEDBOOST K_RAGuard(cv_kartstacking_invincibility_speedboost)
-#define INVINACCELBOOST K_RAGuard(cv_kartstacking_invincibility_accelboost)
+#define INVINSPEEDBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyspeedboost)
+#define INVINACCELBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyaccelboost)
+#define INVINSPEEDBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternatespeedboost)
+#define INVINACCELBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternateaccelboost)
 #define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable)
 #define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)

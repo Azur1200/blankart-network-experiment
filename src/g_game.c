@@ -282,6 +282,7 @@ INT32 cheats; //for multiplayer cheat commands
 // Cvars that we don't want changed mid-game
 UINT8 numlaps; // Removed from Cvar hell
 UINT8 gamespeed; // Game's current speed (or difficulty, or cc, or etc); 0 for easy, 1 for normal, 2 for hard
+UINT8 invintype; // How Invincibility functions. 0 for Legacy/Vanilla, 1 for Alternative.
 boolean encoremode = false; // Encore Mode currently enabled?
 boolean prevencoremode;
 boolean franticitems; // Frantic items currently enabled?

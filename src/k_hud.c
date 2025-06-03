@@ -1873,7 +1873,7 @@ static boolean K_drawKartPositionFaces(void)
 
 			V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
 
-			if (players[rankplayer[i]].invincibilitytimer)
+			if ((players[rankplayer[i]].invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
 			{
 				colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
@@ -3657,7 +3657,7 @@ static void K_drawKartMinimap(void)
 
 				colorizeplayer = players[i].mo->colorized;
 
-				if ((players[i].invincibilitytimer) && (K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)))
+				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (invintype == KARTINVIN_LEGACY)))
 				{
 					usecolor = (K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
@@ -3820,7 +3820,9 @@ static void K_drawKartMinimap(void)
 
 			colorizeplayer = players[localplayers[i]].mo->colorized;
 
-			if ((players[localplayers[i]].invincibilitytimer) && (K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) > (FRACUNIT/2)))
+			if ((players[localplayers[i]].invincibilitytimer) &&
+				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
+				  (FRACUNIT / 2)) || (invintype == KARTINVIN_LEGACY)))
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
 				colorizeplayer = true;

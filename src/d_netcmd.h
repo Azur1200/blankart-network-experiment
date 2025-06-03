@@ -138,8 +138,10 @@ extern consvar_t cv_kartstacking_sneaker_accelboost;
 extern consvar_t cv_kartstacking_sneaker_maxgrade;
 extern consvar_t cv_kartstacking_sneaker_stackable;
 
-extern consvar_t cv_kartstacking_invincibility_speedboost;
-extern consvar_t cv_kartstacking_invincibility_accelboost;
+extern consvar_t cv_kartstacking_invincibility_legacyspeedboost;
+extern consvar_t cv_kartstacking_invincibility_legacyaccelboost;
+extern consvar_t cv_kartstacking_invincibility_alternatespeedboost;
+extern consvar_t cv_kartstacking_invincibility_alternateaccelboost;
 extern consvar_t cv_kartstacking_invincibility_stackable;
 
 extern consvar_t cv_kartstacking_flame_speedval;
@@ -171,8 +173,11 @@ extern consvar_t cv_kartpurpledrift;
 extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
 extern consvar_t cv_kartslipdash;
+extern consvar_t cv_kartinvintype;
 extern consvar_t cv_kartinvindist;
 extern consvar_t cv_kartinvindistmul;
+extern consvar_t cv_kartinvin_maxtime;
+extern consvar_t cv_kartinvin_midtime;
 
 extern consvar_t cv_encorevotes;
 
