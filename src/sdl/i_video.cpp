@@ -16,7 +16,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //-----------------------------------------------------------------------------
-/// \file
+/// \file i_video.cpp
 /// \brief SRB2 graphics stuff for SDL
 
 #include <stdlib.h>
@@ -82,7 +82,6 @@
 #ifdef HWRENDER
 #include "../hardware/hw_main.h"
 #include "../hardware/hw_drv.h"
-// For dynamic referencing of HW rendering functions
 #include "hwsym_sdl.h"
 #include "ogl_sdl.h"
 #endif
@@ -93,14 +92,6 @@
 
 // maximum number of windowed modes (see windowedModes[][])
 #define MAXWINMODES (22)
-
-/**	\brief
-*/
-static INT32 numVidModes = -1;
-
-/**	\brief
-*/
-static char vidModeName[33][32]; // allow 33 different modes
 
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
@@ -118,14 +109,13 @@ UINT8 graphics_started = 0; // Is used in console.c and screen.c
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
 static SDL_bool disable_fullscreen = SDL_FALSE;
-#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?0:cv_fullscreen.value
+
+#define USE_FULLSCREEN (disable_fullscreen||!allow_fullscreen)?static_cast<SDL_bool>(0):static_cast<SDL_bool>(cv_fullscreen.value)
+
 static SDL_bool disable_mouse = SDL_FALSE;
 #define USE_MOUSEINPUT (!disable_mouse && cv_usemouse.value && havefocus)
 #define MOUSE_MENU false //(!disable_mouse && cv_usemouse.value && menustack[0] && !USE_FULLSCREEN)
 #define MOUSEBUTTONS_MAX MOUSEBUTTONS
-
-// first entry in the modelist which is not bigger than MAXVIDWIDTHxMAXVIDHEIGHT
-static      INT32          firstEntry = 0;
 
 // Total mouse motion X/Y offsets
 static      INT32        mousemovex = 0, mousemovey = 0;
@@ -133,28 +123,42 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 // SDL vars
 static      SDL_Surface *vidSurface = NULL;
 static      SDL_Surface *bufSurface = NULL;
-static      SDL_Surface *icoSurface = NULL;
 static      SDL_Color    localPalette[256];
-#if 0
-static      SDL_Rect   **modeList = NULL;
-static       Uint8       BitsPerPixel = 16;
-#endif
-Uint16      realwidth = BASEVIDWIDTH;
-Uint16      realheight = BASEVIDHEIGHT;
 static       SDL_bool    mousegrabok = SDL_TRUE;
 static       SDL_bool    wrapmouseok = SDL_FALSE;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
-static       SDL_bool    videoblitok = SDL_FALSE;
-static       SDL_bool    exposevideo = SDL_FALSE;
 static       SDL_bool    usesdl2soft = SDL_FALSE;
 static       SDL_bool    borderlesswindow = SDL_FALSE;
 
-// SDL2 vars
+Uint16      realwidth = BASEVIDWIDTH;
+Uint16      realheight = BASEVIDHEIGHT;
+
 SDL_Window   *window;
 SDL_Renderer *renderer;
 static SDL_Texture  *texture;
 static SDL_bool      havefocus = SDL_TRUE;
-static const char *fallback_resolution_name = "Fallback";
+
+static UINT32 refresh_rate;
+
+static boolean video_init = false;
+
+static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
+
+static void Impl_VideoSetupSurfaces(int width, int height);
+static void Impl_VideoSetupBuffer(void);
+
+static void Impl_SetupSoftwareBuffer(void);
+
+static void Impl_InitOpenGL(void);
+
+#if !defined(__ANDROID__) && defined(HAVE_IMAGE)
+#define USE_WINDOW_ICON
+#endif
+
+#ifdef USE_WINDOW_ICON
+static void Impl_SetWindowIcon(void);
+static SDL_Surface *icoSurface = NULL;
+#endif
 
 // windowed video modes from which to choose from.
 static INT32 windowedModes[MAXWINMODES][2] =
@@ -187,11 +191,110 @@ static INT32 windowedModes[MAXWINMODES][2] =
 static INT32 custom_width = 0;
 static INT32 custom_height = 0;
 
-static void Impl_VideoSetupSDLBuffer(void);
-static void Impl_VideoSetupBuffer(void);
-static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
-//static void Impl_SetWindowName(const char *title);
-static void Impl_SetWindowIcon(void);
+static char vidModeName[MAXWINMODES][32];
+static const char *fallback_resolution_name = "Fallback";
+
+#define VIDEO_INIT_ERROR(str) { \
+	if (!graphics_started) \
+		I_Error(str, SDL_GetError()); \
+	else \
+		CONS_Printf(str "\n", SDL_GetError()); \
+}
+
+static SDL_bool Impl_RenderContextCreate(void)
+{
+	if (rendermode != render_opengl)
+	{
+		int flags = 0; // Use this to set SDL_RENDERER_* flags now
+
+		if (usesdl2soft)
+			flags |= SDL_RENDERER_SOFTWARE;
+		else if (cv_vidwait.value)
+		{
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+			// If SDL is new enough, we can turn off vsync later.
+			flags |= SDL_RENDERER_PRESENTVSYNC;
+#else
+			// However, if it isn't, we should just silently turn vid_wait off
+			// This is because the renderer will be created before the config
+			// is read and vid_wait is set from the user's preferences, and thus
+			// vid_wait will have no effect.
+			CV_StealthSetValue(&cv_vidwait, 0);
+#endif
+		}
+
+		if (!renderer)
+			renderer = SDL_CreateRenderer(window, -1, flags);
+
+		if (renderer == NULL)
+		{
+			VIDEO_INIT_ERROR("Couldn't create rendering context: %s");
+			return SDL_FALSE;
+		}
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && vid.glstate != VID_GL_LIBRARY_ERROR)
+	{
+		if (sdlglcontext == NULL)
+		{
+			sdlglcontext = SDL_GL_CreateContext(window);
+
+			if (sdlglcontext == NULL)
+			{
+				VIDEO_INIT_ERROR("Couldn't create OpenGL context: %s");
+				return SDL_FALSE;
+			}
+		}
+	}
+#endif
+
+	return SDL_TRUE;
+}
+
+static SDL_bool Impl_RenderContextReset(void)
+{
+	if (renderer)
+	{
+		SDL_DestroyRenderer(renderer);
+		texture = NULL; // Destroying a renderer also destroys all of its textures
+	}
+	renderer = NULL;
+
+	if (Impl_RenderContextCreate() == SDL_FALSE)
+		return SDL_FALSE;
+
+	if (vidSurface != NULL)
+	{
+		SDL_FreeSurface(vidSurface);
+		vidSurface = NULL;
+	}
+
+	if (bufSurface != NULL)
+	{
+		SDL_FreeSurface(bufSurface);
+		bufSurface = NULL;
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		SDL_GL_MakeCurrent(window, sdlglcontext);
+		SDL_GL_SetSwapInterval(cv_vidwait.value ? 1 : 0);
+
+		OglSdlSurface(realwidth, realheight);
+		HWR_Startup();
+	}
+	else
+#endif
+	{
+		SDL_RenderClear(renderer);
+		SDL_RenderSetLogicalSize(renderer, realwidth, realheight);
+		Impl_VideoSetupSurfaces(realwidth, realheight);
+	}
+
+	return SDL_TRUE;
+}
 
 static void Impl_SetSoftwareVsync(int vsync)
 {
@@ -205,25 +308,78 @@ static void Impl_SetSoftwareVsync(int vsync)
 #endif
 }
 
-static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
+static void Impl_VideoSetupSurfaces(int width, int height)
 {
-	static SDL_bool wasfullscreen = SDL_FALSE;
-	Uint32 rmask;
-	Uint32 gmask;
-	Uint32 bmask;
-	Uint32 amask;
 	int bpp = 16;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
 
-	realwidth = vid.width;
-	realheight = vid.height;
+#if !defined(__ANDROID__)
+	if (!usesdl2soft)
+	{
+		sw_texture_format = SDL_PIXELFORMAT_RGB565;
+	}
+	else
+#endif
+	{
+		bpp = 32;
+		sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
+	}
+
+	if (texture == NULL)
+		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
+
+	// Set up SW surface
+	if (vidSurface == NULL)
+	{
+		Uint32 rmask;
+		Uint32 gmask;
+		Uint32 bmask;
+		Uint32 amask;
+
+		SDL_PixelFormatEnumToMasks(sw_texture_format, &bpp, &rmask, &gmask, &bmask, &amask);
+		vidSurface = SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
+	}
+}
+
+static void Impl_SetupSoftwareBuffer(void)
+{
+	// Set up game's software render buffer
+	size_t size;
+
+	vid.rowbytes = vid.width * vid.bpp;
+	vid.direct = NULL;
+
+	free(vid.buffer);
+
+	size = vid.rowbytes*vid.height * NUMSCREENS;
+	vid.buffer = static_cast<UINT8*>(malloc(size));
+
+	if (vid.buffer)
+	{
+		// Clear the buffer
+		// HACK: Wasn't sure where else to put this.
+		memset(vid.buffer, 31, size);
+	}
+	else
+		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
+}
+
+static SDL_Rect src_rect = { 0, 0, 0, 0 };
+
+static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
+{
+	static SDL_bool wasfullscreen = SDL_FALSE;
+	int fullscreen_type = SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+	src_rect.w = realwidth = width;
+	src_rect.h = realheight = height;
 
 	if (window)
 	{
 		if (fullscreen)
 		{
 			wasfullscreen = SDL_TRUE;
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			SDL_SetWindowFullscreen(window, fullscreen_type);
 		}
 		else // windowed mode
 		{
@@ -233,9 +389,12 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool 
 				SDL_SetWindowFullscreen(window, 0);
 			}
 			// Reposition window only in windowed mode
+
 			SDL_SetWindowSize(window, width, height);
+
 			if (reposition)
 			{
+				// Reposition window only in windowed mode
 				SDL_SetWindowPosition(window,
 					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window)),
 					SDL_WINDOWPOS_CENTERED_DISPLAY(SDL_GetWindowDisplayIndex(window))
@@ -245,60 +404,45 @@ static void SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool 
 	}
 	else
 	{
-		Impl_CreateWindow(fullscreen);
+		if (Impl_CreateWindow(fullscreen) == SDL_FALSE)
+			return SDL_FALSE;
+
 		wasfullscreen = fullscreen;
 		SDL_SetWindowSize(window, width, height);
 		if (fullscreen)
-		{
-			SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
+			SDL_SetWindowFullscreen(window, fullscreen_type);
 	}
 
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
+	if (Impl_RenderContextReset() == SDL_FALSE)
+		I_Error("Couldn't create or reset rendering context");
+
+	if (vid.buffer)
 	{
-		OglSdlSurface(vid.width, vid.height);
+		free(vid.buffer);
+		vid.buffer = NULL;
 	}
-#endif
 
-	if (rendermode == render_soft)
+	return SDL_TRUE;
+}
+
+static UINT32 VID_GetRefreshRate(void)
+{
+	int index = SDL_GetWindowDisplayIndex(window);
+	SDL_DisplayMode m;
+
+	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
 	{
-		SDL_RenderClear(renderer);
-		SDL_RenderSetLogicalSize(renderer, width, height);
-		// Set up Texture
-		realwidth = width;
-		realheight = height;
-		if (texture != NULL)
-		{
-			SDL_DestroyTexture(texture);
-		}
-
-		if (!usesdl2soft)
-		{
-			sw_texture_format = SDL_PIXELFORMAT_RGB565;
-		}
-		else
-		{
-			bpp = 32;
-			sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
-		}
-
-		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
-
-		// Set up SW surface
-		if (vidSurface != NULL)
-		{
-			SDL_FreeSurface(vidSurface);
-		}
-		if (vid.buffer)
-		{
-			free(vid.buffer);
-			vid.buffer = NULL;
-		}
-		SDL_PixelFormatEnumToMasks(sw_texture_format, &bpp, &rmask, &gmask, &bmask, &amask);
-		vidSurface = SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
-		Impl_SetSoftwareVsync(cv_vidwait.value);
+		// Video not init yet.
+		return 0;
 	}
+
+	if (SDL_GetCurrentDisplayMode(index, &m) != 0)
+	{
+		// Error has occurred.
+		return 0;
+	}
+
+	return m.refresh_rate;
 }
 
 static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
@@ -385,6 +529,7 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 		case SDL_SCANCODE_RALT:   return KEY_RALT;
 		case SDL_SCANCODE_LGUI:   return KEY_LEFTWIN;
 		case SDL_SCANCODE_RGUI:   return KEY_RIGHTWIN;
+
 		default:                  break;
 	}
 	return 0;
@@ -465,65 +610,14 @@ static void SurfaceInfo(const SDL_Surface *infoSurface, const char *SurfaceText)
 
 static void VID_Command_Info_f (void)
 {
-#if 0
-	SDL2STUB();
-#else
-#if 0
-	const SDL_VideoInfo *videoInfo;
-	videoInfo = SDL_GetVideoInfo(); //Alam: Double-Check
-	if (videoInfo)
-	{
-		CONS_Printf("%s", M_GetText("Video Interface Capabilities:\n"));
-		if (videoInfo->hw_available)
-			CONS_Printf("%s", M_GetText(" Hardware surfaces\n"));
-		if (videoInfo->wm_available)
-			CONS_Printf("%s", M_GetText(" Window manager\n"));
-		//UnusedBits1  :6
-		//UnusedBits2  :1
-		if (videoInfo->blit_hw)
-			CONS_Printf("%s", M_GetText(" Accelerated blits HW-2-HW\n"));
-		if (videoInfo->blit_hw_CC)
-			CONS_Printf("%s", M_GetText(" Accelerated blits HW-2-HW with Colorkey\n"));
-		if (videoInfo->wm_available)
-			CONS_Printf("%s", M_GetText(" Accelerated blits HW-2-HW with Alpha\n"));
-		if (videoInfo->blit_sw)
-		{
-			CONS_Printf("%s", M_GetText(" Accelerated blits SW-2-HW\n"));
-			if (!M_CheckParm("-noblit")) videoblitok = SDL_TRUE;
-		}
-		if (videoInfo->blit_sw_CC)
-			CONS_Printf("%s", M_GetText(" Accelerated blits SW-2-HW with Colorkey\n"));
-		if (videoInfo->blit_sw_A)
-			CONS_Printf("%s", M_GetText(" Accelerated blits SW-2-HW with Alpha\n"));
-		if (videoInfo->blit_fill)
-			CONS_Printf("%s", M_GetText(" Accelerated Color filling\n"));
-		//UnusedBits3  :16
-		if (videoInfo->video_mem)
-			CONS_Printf(M_GetText(" There is %i KB of video memory\n"), videoInfo->video_mem);
-		else
-			CONS_Printf("%s", M_GetText(" There no video memory for SDL\n"));
-		//*vfmt
-	}
-#else
-	if (!M_CheckParm("-noblit")) videoblitok = SDL_TRUE;
-#endif
 	SurfaceInfo(bufSurface, M_GetText("Current Engine Mode"));
 	SurfaceInfo(vidSurface, M_GetText("Current Video Mode"));
-#endif
 }
 
 static void VID_Command_ModeList_f(void)
 {
-	// List windowed modes
-	INT32 i = 0;
-	CONS_Printf("NOTE: Under SDL2, all modes are supported on all platforms.\n");
-	CONS_Printf("Under opengl, fullscreen only supports native desktop resolution.\n");
-	CONS_Printf("Under software, the mode is stretched up to desktop resolution.\n");
-	for (i = 0; i < MAXWINMODES; i++)
-	{
+	for (INT32 i = 0; i < MAXWINMODES; i++)
 		CONS_Printf("%2d: %dx%d\n", i, windowedModes[i][0], windowedModes[i][1]);
-	}
-
 }
 
 static void VID_Command_Mode_f (void)
@@ -541,7 +635,26 @@ static void VID_Command_Mode_f (void)
 	if (modenum >= VID_NumModes())
 		CONS_Printf(M_GetText("Video mode not present\n"));
 	else
-		setmodeneeded = modenum+1; // request vid mode change
+	{
+		setmodeneeded = modenum + 1; // request vid mode change
+	}
+}
+
+static void Impl_SetFocused(boolean focused)
+{
+	window_notinfocus = !focused;
+
+	if (window_notinfocus)
+	{
+		if (! cv_playmusicifunfocused.value)
+			S_PauseAudio();
+		if (! cv_playsoundifunfocused.value)
+			S_StopSounds();
+
+		memset(gamekeydown, 0, NUMKEYS); // TODO this is a scary memset
+	}
+	else if (!paused)
+		S_ResumeAudio();
 }
 
 static inline void SDLJoyRemap(event_t *event)
@@ -579,12 +692,9 @@ static INT32 SDLJoyAxis(const Sint16 axis, UINT8 pid)
 
 static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 {
-#define FOCUSUNION static_cast<unsigned int>(mousefocus | (kbfocus << 1))
 	static SDL_bool firsttimeonmouse = SDL_TRUE;
 	static SDL_bool mousefocus = SDL_TRUE;
 	static SDL_bool kbfocus = SDL_TRUE;
-
-	const unsigned int oldfocus = FOCUSUNION;
 
 	switch (evt.event)
 	{
@@ -604,28 +714,17 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 			break;
 		case SDL_WINDOWEVENT_MAXIMIZED:
 			break;
-	}
-
-	if (FOCUSUNION == oldfocus) // No state change
-	{
-		return;
+		case SDL_WINDOWEVENT_SIZE_CHANGED:
+			break;
 	}
 
 	if (mousefocus && kbfocus)
 	{
 		// Tell game we got focus back, resume music if necessary
-		window_notinfocus = false;
+		Impl_SetFocused(true);
 
-		S_InitMusicVolume();
-
-		if (cv_gamesounds.value)
-			S_EnableSound();
-
-		if (!firsttimeonmouse)
-		{
-			if (cv_usemouse.value) I_StartupMouse();
-		}
-		//else firsttimeonmouse = SDL_FALSE;
+		if (!firsttimeonmouse && cv_usemouse.value)
+			I_StartupMouse();
 
 		if (USE_MOUSEINPUT && !IgnoreMouse())
 			SDLdoGrabMouse();
@@ -633,25 +732,14 @@ static void Impl_HandleWindowEvent(SDL_WindowEvent evt)
 	else if (!mousefocus && !kbfocus)
 	{
 		// Tell game we lost focus, pause music
-		window_notinfocus = true;
-		if (!cv_playmusicifunfocused.value)
-			I_SetMusicVolume(0);
-		if (!cv_playsoundifunfocused.value)
-			S_DisableSound();
+		Impl_SetFocused(false);
 
 		if (!disable_mouse)
-		{
 			SDLforceUngrabMouse();
-		}
-		memset(gamekeydown, 0, sizeof(gamekeydown)); // TODO this is a scary memset
-		memset(deviceResponding, false, sizeof (deviceResponding));
 
 		if (MOUSE_MENU)
-		{
 			SDLdoUngrabMouse();
-		}
 	}
-#undef FOCUSUNION
 }
 
 static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
@@ -673,6 +761,7 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 	event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+
 	if (event.data1) D_PostEvent(&event);
 }
 
@@ -886,21 +975,24 @@ static void Impl_HandleControllerButtonEvent(SDL_ControllerButtonEvent evt, Uint
 	}
 }
 
+static void Impl_HandleVideoEvent(SDL_Event *evt)
+{
+	switch (evt->type)
+	{
+		case SDL_WINDOWEVENT:
+			Impl_HandleWindowEvent(evt->window);
+			break;
+		default:
+			break;
+	}
+}
+
 void I_GetEvent(void)
 {
 	SDL_Event evt;
 	char* dropped_filedir;
 
-	// We only want the first motion event,
-	// otherwise we'll end up catching the warp back to center.
-	//int mouseMotionOnce = 0;
-
 	UINT8 i;
-
-	if (!graphics_started)
-	{
-		return;
-	}
 
 	mousemovex = mousemovey = 0;
 
@@ -908,9 +1000,10 @@ void I_GetEvent(void)
 	{
 		switch (evt.type)
 		{
-			case SDL_WINDOWEVENT:
-				Impl_HandleWindowEvent(evt.window);
+			default:
+				Impl_HandleVideoEvent(&evt);
 				break;
+			// TODO: Move input code out of this file, desperately
 			case SDL_KEYUP:
 			case SDL_KEYDOWN:
 				Impl_HandleKeyboardEvent(evt.key, evt.type);
@@ -1160,24 +1253,6 @@ void I_OsPolling(void)
 //
 void I_UpdateNoBlit(void)
 {
-	if (rendermode == render_none)
-		return;
-	if (exposevideo)
-	{
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-		{
-			OglSdlFinishUpdate(cv_vidwait.value);
-		}
-		else
-#endif
-		if (rendermode == render_soft)
-		{
-			SDL_RenderCopy(renderer, texture, NULL, NULL);
-			SDL_RenderPresent(renderer);
-		}
-	}
-	exposevideo = SDL_FALSE;
 }
 
 // I_SkipFrame
@@ -1214,8 +1289,6 @@ static inline boolean I_SkipFrame(void)
 //
 // I_FinishUpdate
 //
-static SDL_Rect src_rect = { 0, 0, 0, 0 };
-
 void I_FinishUpdate(void)
 {
 	int player;
@@ -1224,9 +1297,6 @@ void I_FinishUpdate(void)
 		return; //Alam: No software or OpenGl surface
 
 	SCR_CalculateFPS();
-
-	if (I_SkipFrame())
-		return;
 
 	if (st_overlay)
 	{
@@ -1274,19 +1344,14 @@ void I_FinishUpdate(void)
 
 	if (rendermode == render_soft && screens[0])
 	{
-		if (!bufSurface) //Double-Check
-		{
-			Impl_VideoSetupSDLBuffer();
-		}
+		if (!bufSurface) // Double-check
+			Impl_VideoSetupBuffer();
 
-		if (bufSurface)
-		{
-			SDL_BlitSurface(bufSurface, &src_rect, vidSurface, &src_rect);
-			// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
-			SDL_LockSurface(vidSurface);
-			SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
-			SDL_UnlockSurface(vidSurface);
-		}
+		SDL_BlitSurface(bufSurface, &src_rect, vidSurface, &src_rect);
+		// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
+		SDL_LockSurface(vidSurface);
+		SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
+		SDL_UnlockSurface(vidSurface);
 
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
@@ -1295,12 +1360,8 @@ void I_FinishUpdate(void)
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
-	{
 		OglSdlFinishUpdate(cv_vidwait.value);
-	}
 #endif
-
-	exposevideo = SDL_FALSE;
 }
 
 //
@@ -1347,39 +1408,18 @@ void I_SetPalette(RGBA_t *palette)
 // return number of fullscreen + X11 modes
 INT32 VID_NumModes(void)
 {
-	if (USE_FULLSCREEN && numVidModes != -1)
-		return numVidModes - firstEntry;
-	else
-		return MAXWINMODES;
+	return MAXWINMODES;
 }
 
 const char *VID_GetModeName(INT32 modeNum)
 {
-#if 0
-	if (USE_FULLSCREEN && numVidModes != -1) // fullscreen modes
-	{
-		modeNum += firstEntry;
-		if (modeNum >= numVidModes)
-			return NULL;
 
-		sprintf(&vidModeName[modeNum][0], "%dx%d",
-			modeList[modeNum]->w,
-			modeList[modeNum]->h);
-	}
-	else // windowed modes
-	{
-#endif
 	if (modeNum == -1)
-	{
 		return fallback_resolution_name;
-	}
-		if (modeNum > MAXWINMODES)
-			return NULL;
+	else if (modeNum > MAXWINMODES)
+		return NULL;
 
-		sprintf(&vidModeName[modeNum][0], "%dx%d",
-			windowedModes[modeNum][0],
-			windowedModes[modeNum][1]);
-	//}
+	snprintf(&vidModeName[modeNum][0], 32, "%dx%d", windowedModes[modeNum][0], windowedModes[modeNum][1]);
 	return &vidModeName[modeNum][0];
 }
 
@@ -1404,146 +1444,12 @@ INT32 VID_GetModeForSize(INT32 w, INT32 h)
 		return CUSTOMMODENUM;
 	}
 	return -1;
-#if 0
-	INT32 matchMode = -1, i;
-	VID_PrepareModeList();
-	if (USE_FULLSCREEN && numVidModes != -1)
-	{
-		for (i=firstEntry; i<numVidModes; i++)
-		{
-			if (modeList[i]->w == w &&
-			    modeList[i]->h == h)
-			{
-				matchMode = i;
-				break;
-			}
-		}
-		if (-1 == matchMode) // use smaller mode
-		{
-			w -= w%BASEVIDWIDTH;
-			h -= h%BASEVIDHEIGHT;
-			for (i=firstEntry; i<numVidModes; i++)
-			{
-				if (modeList[i]->w == w &&
-				    modeList[i]->h == h)
-				{
-					matchMode = i;
-					break;
-				}
-			}
-			if (-1 == matchMode) // use smallest mode
-				matchMode = numVidModes-1;
-		}
-		matchMode -= firstEntry;
-	}
-	else
-	{
-		for (i=0; i<MAXWINMODES; i++)
-		{
-			if (windowedModes[i][0] == w &&
-			    windowedModes[i][1] == h)
-			{
-				matchMode = i;
-				break;
-			}
-		}
-		if (-1 == matchMode) // use smaller mode
-		{
-			w -= w%BASEVIDWIDTH;
-			h -= h%BASEVIDHEIGHT;
-			for (i=0; i<MAXWINMODES; i++)
-			{
-				if (windowedModes[i][0] == w &&
-				    windowedModes[i][1] == h)
-				{
-					matchMode = i;
-					break;
-				}
-			}
-			if (-1 == matchMode) // use smallest mode
-				matchMode = MAXWINMODES-1;
-		}
-	}
-	return matchMode;
-#endif
 }
 
 void VID_PrepareModeList(void)
 {
 	// Under SDL2, we just use the windowed modes list, and scale in windowed fullscreen.
 	allow_fullscreen = true;
-#if 0
-	INT32 i;
-
-	firstEntry = 0;
-
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-		modeList = SDL_ListModes(NULL, SDL_OPENGL|SDL_FULLSCREEN);
-	else
-#endif
-	modeList = SDL_ListModes(NULL, surfaceFlagsF|SDL_HWSURFACE); //Alam: At least hardware surface
-
-	if (disable_fullscreen?0:cv_fullscreen.value) // only fullscreen needs preparation
-	{
-		if (-1 != numVidModes)
-		{
-			for (i=0; i<numVidModes; i++)
-			{
-				if (modeList[i]->w <= MAXVIDWIDTH &&
-					modeList[i]->h <= MAXVIDHEIGHT)
-				{
-					firstEntry = i;
-					break;
-				}
-			}
-		}
-	}
-	allow_fullscreen = true;
-#endif
-}
-
-static SDL_bool Impl_CreateContext(void)
-{
-	// Renderer-specific stuff
-#ifdef HWRENDER
-	if ((rendermode == render_opengl)
-	&& (vid.glstate != VID_GL_LIBRARY_ERROR))
-	{
-		if (!sdlglcontext)
-			sdlglcontext = SDL_GL_CreateContext(window);
-		if (sdlglcontext == NULL)
-		{
-			SDL_DestroyWindow(window);
-			I_Error("Failed to create a GL context: %s\n", SDL_GetError());
-		}
-		SDL_GL_MakeCurrent(window, sdlglcontext);
-	}
-	else
-#endif
-	if (rendermode == render_soft)
-	{
-		int flags = 0; // Use this to set SDL_RENDERER_* flags now
-		if (usesdl2soft)
-			flags |= SDL_RENDERER_SOFTWARE;
-
-		// 3 August 2022
-		// Possibly a Windows 11 issue; the default
-		// "direct3d" driver (D3D9) causes Drmingw exchndl
-		// to not write RPT files. Every other driver
-		// seems fine.
-		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
-
-		if (!renderer)
-			renderer = SDL_CreateRenderer(window, -1, flags);
-		if (renderer == NULL)
-		{
-			CONS_Printf(M_GetText("Couldn't create rendering context: %s\n"), SDL_GetError());
-			return SDL_FALSE;
-		}
-		SDL_RenderSetLogicalSize(renderer, BASEVIDWIDTH, BASEVIDHEIGHT);
-	}
-	return SDL_TRUE;
 }
 
 void VID_CheckGLLoaded(rendermode_t oldrender)
@@ -1552,7 +1458,6 @@ void VID_CheckGLLoaded(rendermode_t oldrender)
 #ifdef HWRENDER
 	if (vid.glstate == VID_GL_LIBRARY_ERROR) // Well, it didn't work the first time anyway.
 	{
-		CONS_Alert(CONS_ERROR, "OpenGL never loaded\n");
 		rendermode = oldrender;
 		if (chosenrendermode == render_opengl) // fallback to software
 			rendermode = render_soft;
@@ -1568,13 +1473,15 @@ void VID_CheckGLLoaded(rendermode_t oldrender)
 boolean VID_CheckRenderer(void)
 {
 	boolean rendererchanged = false;
-	boolean contextcreated = false;
+
 #ifdef HWRENDER
 	rendermode_t oldrenderer = rendermode;
 #endif
 
+	refresh_rate = VID_GetRefreshRate();
+
 	if (dedicated)
-		return false;
+		return 0;
 
 	if (setrenderneeded)
 	{
@@ -1586,58 +1493,39 @@ boolean VID_CheckRenderer(void)
 		{
 			VID_CheckGLLoaded(oldrenderer);
 
-			// Initialise OpenGL before calling SDLSetMode!!!
-			// This is because SDLSetMode calls OglSdlSurface.
+			// Initialize OpenGL before calling SDLSetMode, because it calls OglSdlSurface.
 			if (vid.glstate == VID_GL_LIBRARY_NOTLOADED)
-			{
-				VID_StartupOpenGL();
-
-				// Loaded successfully!
-				if (vid.glstate == VID_GL_LIBRARY_LOADED)
-				{
-					// Destroy the current window, if it exists.
-					if (window)
-					{
-						SDL_DestroyWindow(window);
-						window = NULL;
-					}
-
-					// Destroy the current window rendering context, if that also exists.
-					if (renderer)
-					{
-						SDL_DestroyRenderer(renderer);
-						renderer = NULL;
-					}
-
-					// Create a new window.
-					Impl_CreateWindow(static_cast<SDL_bool>(USE_FULLSCREEN));
-
-					// From there, the OpenGL context was already created.
-					contextcreated = true;
-				}
-			}
+				Impl_InitOpenGL();
 			else if (vid.glstate == VID_GL_LIBRARY_ERROR)
 				rendererchanged = false;
 		}
 #endif
 
-		if (!contextcreated)
-			Impl_CreateContext();
-
 		setrenderneeded = 0;
 	}
 
-	SDLSetMode(vid.width, vid.height, static_cast<SDL_bool>(USE_FULLSCREEN), (setmodeneeded ? SDL_TRUE : SDL_FALSE));
-	Impl_VideoSetupBuffer();
+	SDL_bool center = setmodeneeded ? SDL_TRUE : SDL_FALSE;
+
+	if (SDLSetMode(vid.width, vid.height, USE_FULLSCREEN, center) == SDL_FALSE)
+	{
+		if (!graphics_started)
+		{
+			// Guess I'll die
+			I_Error("Couldn't initialize video");
+		}
+		else
+		{
+			CONS_Printf("Couldn't initialize video\n");
+			return false;
+		}
+	}
+
+	if (rendererchanged)
+		vid.recalc = true;
 
 	if (rendermode == render_soft)
 	{
-		if (bufSurface)
-		{
-			SDL_FreeSurface(bufSurface);
-			bufSurface = NULL;
-		}
-
+		Impl_SetupSoftwareBuffer();
 		SCR_SetDrawFuncs();
 	}
 #ifdef HWRENDER
@@ -1651,32 +1539,30 @@ boolean VID_CheckRenderer(void)
 	return rendererchanged;
 }
 
-static UINT32 refresh_rate;
-static UINT32 VID_GetRefreshRate(void)
+#if 0
+static void Impl_GetCurrentDisplayMode(INT32 *width, INT32 *height)
 {
-	int index = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode m;
+	int i = SDL_GetWindowDisplayIndex(window);
+	SDL_DisplayMode resolution;
 
-	if (SDL_WasInit(SDL_INIT_VIDEO) == 0)
+	if (i < 0)
+		return;
+
+	if (!SDL_GetCurrentDisplayMode(i, &resolution))
 	{
-		// Video not init yet.
-		return 0;
+		if ((*width) == 0)
+			(*width) = (INT32)(resolution.w);
+		if ((*height) == 0)
+			(*height) = (INT32)(resolution.h);
 	}
-
-	if (SDL_GetCurrentDisplayMode(index, &m) != 0)
-	{
-		// Error has occurred.
-		return 0;
-	}
-
-	return m.refresh_rate;
 }
+#endif
 
 INT32 VID_SetMode(INT32 modeNum)
 {
 	SDLdoUngrabMouse();
 
-	vid.recalc = 1;
+	vid.recalc = true;
 	vid.bpp = 1;
 
 	if (modeNum >= 0 && modeNum < MAXWINMODES)
@@ -1710,13 +1596,8 @@ INT32 VID_SetMode(INT32 modeNum)
 		vid.modenum = -1;
 	}
 
-	src_rect.w = vid.width;
-	src_rect.h = vid.height;
-
-	refresh_rate = VID_GetRefreshRate();
-
-	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
 	VID_CheckRenderer();
+
 	return SDL_TRUE;
 }
 
@@ -1724,11 +1605,8 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 {
 	int flags = 0;
 
-	if (rendermode == render_none) // dedicated
-		return SDL_TRUE; // Monster Iestyn -- not sure if it really matters what we return here tbh
-
 	if (window != NULL)
-		return SDL_FALSE;
+		return SDL_TRUE;
 
 	if (fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -1737,44 +1615,35 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		flags |= SDL_WINDOW_BORDERLESS;
 
 #ifdef HWRENDER
-	if (vid.glstate == VID_GL_LIBRARY_LOADED)
-		flags |= SDL_WINDOW_OPENGL;
+	flags |= SDL_WINDOW_OPENGL;
 #endif
 
 	// Create a window
-	window = SDL_CreateWindow("SRB2Kart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-			realwidth, realheight, flags);
-
+	window = SDL_CreateWindow("SRB2Kart " VERSIONSTRING, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, realwidth, realheight, flags);
 
 	if (window == NULL)
 	{
-		CONS_Printf(M_GetText("Couldn't create window: %s\n"), SDL_GetError());
+		VIDEO_INIT_ERROR("Couldn't create window: %s");
 		return SDL_FALSE;
 	}
 
+#ifdef USE_WINDOW_ICON
 	Impl_SetWindowIcon();
+#endif
 
-	return Impl_CreateContext();
+	return SDL_TRUE;
+
 }
 
-/*
-static void Impl_SetWindowName(const char *title)
-{
-	if (window == NULL)
-	{
-		return;
-	}
-	SDL_SetWindowTitle(window, title);
-}
-*/
-
+#ifdef USE_WINDOW_ICON
 static void Impl_SetWindowIcon(void)
 {
 	if (window && icoSurface)
 		SDL_SetWindowIcon(window, icoSurface);
 }
+#endif
 
-static void Impl_VideoSetupSDLBuffer(void)
+static void Impl_VideoSetupBuffer(void)
 {
 	if (bufSurface != NULL)
 	{
@@ -1802,32 +1671,26 @@ static void Impl_VideoSetupSDLBuffer(void)
 	}
 }
 
-static void Impl_VideoSetupBuffer(void)
+static void Impl_InitVideoSubSystem(void)
 {
-	// Set up game's software render buffer
-	vid.rowbytes = vid.width * vid.bpp;
-	vid.direct = NULL;
-	if (vid.buffer)
-		free(vid.buffer);
-	vid.buffer = static_cast<uint8_t*>(calloc(vid.rowbytes*vid.height, NUMSCREENS));
-	if (!vid.buffer)
-	{
-		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
-	}
-}
-
-void I_RegisterSysCommands(void)
-{
-	if (dedicated || graphics_started)
+	if (video_init)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_info", VID_Command_Info_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
-	CV_RegisterVar (&cv_alwaysgrabmouse);
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+	{
+		CONS_Printf(M_GetText("Couldn't initialize SDL's Video System: %s\n"), SDL_GetError());
+		return;
+	}
+
+#ifdef HAVE_GLES
+	Impl_InitGLESDriver();
+#endif
+
+#ifdef MOBILE_PLATFORM
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
+
+	video_init = true;
 }
 
 void I_StartupGraphics(void)
@@ -1840,30 +1703,37 @@ void I_StartupGraphics(void)
 	if (graphics_started)
 		return;
 
+	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand ("vid_info", VID_Command_Info_f);
+	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar (&cv_vidwait);
+	CV_RegisterVar (&cv_stretch);
+	CV_RegisterVar (&cv_alwaysgrabmouse);
 	disable_mouse = static_cast<SDL_bool>(M_CheckParm("-nomouse"));
 	disable_fullscreen = M_CheckParm("-win") ? SDL_TRUE : SDL_FALSE;
 
 	keyboard_started = true;
 
-#if !defined(HAVE_TTF)
-	// Previously audio was init here for questionable reasons?
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-	{
-		CONS_Printf(M_GetText("Couldn't initialize SDL's Video System: %s\n"), SDL_GetError());
-		return;
-	}
-#endif
+	// If it wasn't already initialized
+	if (!video_init)
+		Impl_InitVideoSubSystem();
+
+	const char *vd = SDL_GetCurrentVideoDriver();
+	if (vd)
 	{
 		const char *vd = SDL_GetCurrentVideoDriver();
 		//CONS_Printf(M_GetText("Starting up with video driver: %s\n"), vd);
-		if (vd && (
+		if (
 			strncasecmp(vd, "gcvideo", 8) == 0 ||
 			strncasecmp(vd, "fbcon", 6) == 0 ||
 			strncasecmp(vd, "wii", 4) == 0 ||
 			strncasecmp(vd, "psl1ght", 8) == 0
-		))
+		)
 			framebuffer = SDL_TRUE;
 	}
+
+	rendermode = render_soft;
 
 	// Renderer choices
 	// Takes priority over the config.
@@ -1907,54 +1777,36 @@ void I_StartupGraphics(void)
 	usesdl2soft = M_CheckParm("-softblit") ? SDL_TRUE : SDL_FALSE;
 	borderlesswindow = M_CheckParm("-borderless") ? SDL_TRUE : SDL_FALSE;
 
-	//SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY>>1,SDL_DEFAULT_REPEAT_INTERVAL<<2);
-	VID_Command_ModeList_f();
-
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
-		VID_StartupOpenGL();
+		Impl_InitOpenGL();
 #endif
 
 	// Window icon
-#ifdef HAVE_IMAGE
+#ifdef USE_WINDOW_ICON
 	icoSurface = IMG_ReadXPMFromArray(SDL_icon_xpm);
 #endif
 
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
+	vid.recalc = true;
+	vid.direct = NULL;
+	vid.bpp = 1;
+	vid.WndParent = NULL;
 
 	// Create window
-	//Impl_CreateWindow(USE_FULLSCREEN);
-	//Impl_SetWindowName("SRB2Kart "VERSIONSTRING);
-	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
+	// Default size for startup
+	vid.width = BASEVIDWIDTH;
+	vid.height = BASEVIDHEIGHT;
 
-	vid.width = BASEVIDWIDTH; // Default size for startup
-	vid.height = BASEVIDHEIGHT; // BitsPerPixel is the SDL interface's
-	vid.recalc = true; // Set up the console stufff
-	vid.direct = NULL; // Maybe direct access?
-	vid.bpp = 1; // This is the game engine's Bpp
-	vid.WndParent = NULL; //For the window?
+	VID_SetMode(VID_GetModeForSize(vid.width, vid.height));
 
 #ifdef HAVE_TTF
 	I_ShutdownTTF();
 #endif
 
-	VID_SetMode(VID_GetModeForSize(BASEVIDWIDTH, BASEVIDHEIGHT));
-
 	if (M_CheckParm("-nomousegrab"))
 		mousegrabok = SDL_FALSE;
-#if 0 // defined (_DEBUG)
-	else
-	{
-		char videodriver[4] = {'S','D','L',0};
-		if (!M_CheckParm("-mousegrab") &&
-		    *strncpy(videodriver, SDL_GetCurrentVideoDriver(), 4) != '\0' &&
-		    strncasecmp("x11",videodriver,4) == 0)
-			mousegrabok = SDL_FALSE; //X11's XGrabPointer not good
-	}
-#endif
-	realwidth = (Uint16)vid.width;
-	realheight = (Uint16)vid.height;
 
 	VID_Command_Info_f();
 	SDLdoUngrabMouse();
@@ -1967,80 +1819,89 @@ void I_StartupGraphics(void)
 	graphics_started = true;
 }
 
-void VID_StartupOpenGL(void)
+static void Impl_InitOpenGL(void)
 {
 #ifdef HWRENDER
-	static boolean glstartup = false;
-	if (!glstartup)
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+		return;
+
+	CONS_Printf("VID_StartupOpenGL()...\n");
+	*(void**)&HWD.pfnInit             = hwSym("Init",NULL);
+	*(void**)&HWD.pfnFinishUpdate     = NULL;
+	*(void**)&HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
+	*(void**)&HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
+	*(void**)&HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
+	*(void**)&HWD.pfnRenderSkyDome    = hwSym("RenderSkyDome",NULL);
+	*(void**)&HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
+	*(void**)&HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
+	*(void**)&HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
+	*(void**)&HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
+	*(void**)&HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
+	*(void**)&HWD.pfnReadRect         = hwSym("ReadRect",NULL);
+	*(void**)&HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
+	*(void**)&HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
+	*(void**)&HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
+	*(void**)&HWD.pfnSetPalette       = hwSym("SetPalette",NULL);
+	*(void**)&HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
+	*(void**)&HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
+	*(void**)&HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
+	*(void**)&HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
+	*(void**)&HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
+	*(void**)&HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
+	*(void**)&HWD.pfnStartScreenWipe  = hwSym("StartScreenWipe",NULL);
+	*(void**)&HWD.pfnEndScreenWipe    = hwSym("EndScreenWipe",NULL);
+	*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
+	*(void**)&HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
+	*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
+	*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
+	*(void**)&HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
+	*(void**)&HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
+
+	*(void**)&HWD.pfnCompileShaders   = hwSym("CompileShaders",NULL);
+	*(void**)&HWD.pfnCleanShaders     = hwSym("CleanShaders",NULL);
+	*(void**)&HWD.pfnSetShader        = hwSym("SetShader",NULL);
+	*(void**)&HWD.pfnUnSetShader      = hwSym("UnSetShader",NULL);
+
+	*(void**)&HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
+	*(void**)&HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
+
+	if (HWD.pfnInit())
+		vid.glstate = VID_GL_LIBRARY_LOADED;
+	else
 	{
-		CONS_Printf("VID_StartupOpenGL()...\n");
-		*(void**)&HWD.pfnInit             = hwSym("Init",NULL);
-		*(void**)&HWD.pfnFinishUpdate     = NULL;
-		*(void**)&HWD.pfnDraw2DLine       = hwSym("Draw2DLine",NULL);
-		*(void**)&HWD.pfnDrawPolygon      = hwSym("DrawPolygon",NULL);
-		*(void**)&HWD.pfnDrawIndexedTriangles = hwSym("DrawIndexedTriangles",NULL);
-		*(void**)&HWD.pfnRenderSkyDome    = hwSym("RenderSkyDome",NULL);
-		*(void**)&HWD.pfnSetBlend         = hwSym("SetBlend",NULL);
-		*(void**)&HWD.pfnClearBuffer      = hwSym("ClearBuffer",NULL);
-		*(void**)&HWD.pfnSetTexture       = hwSym("SetTexture",NULL);
-		*(void**)&HWD.pfnUpdateTexture    = hwSym("UpdateTexture",NULL);
-		*(void**)&HWD.pfnDeleteTexture    = hwSym("DeleteTexture",NULL);
-		*(void**)&HWD.pfnReadRect         = hwSym("ReadRect",NULL);
-		*(void**)&HWD.pfnGClipRect        = hwSym("GClipRect",NULL);
-		*(void**)&HWD.pfnClearMipMapCache = hwSym("ClearMipMapCache",NULL);
-		*(void**)&HWD.pfnSetSpecialState  = hwSym("SetSpecialState",NULL);
-		*(void**)&HWD.pfnSetPalette       = hwSym("SetPalette",NULL);
-		*(void**)&HWD.pfnGetTextureUsed   = hwSym("GetTextureUsed",NULL);
-		*(void**)&HWD.pfnDrawModel        = hwSym("DrawModel",NULL);
-		*(void**)&HWD.pfnCreateModelVBOs  = hwSym("CreateModelVBOs",NULL);
-		*(void**)&HWD.pfnSetTransform     = hwSym("SetTransform",NULL);
-		*(void**)&HWD.pfnPostImgRedraw    = hwSym("PostImgRedraw",NULL);
-		*(void**)&HWD.pfnFlushScreenTextures=hwSym("FlushScreenTextures",NULL);
-		*(void**)&HWD.pfnStartScreenWipe  = hwSym("StartScreenWipe",NULL);
-		*(void**)&HWD.pfnEndScreenWipe    = hwSym("EndScreenWipe",NULL);
-		*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
-		*(void**)&HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
-		*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
-		*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
-		*(void**)&HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);
-		*(void**)&HWD.pfnDrawScreenFinalTexture=hwSym("DrawScreenFinalTexture",NULL);
+		vid.glstate = VID_GL_LIBRARY_ERROR;
 
-		*(void**)&HWD.pfnCompileShaders   = hwSym("CompileShaders",NULL);
-		*(void**)&HWD.pfnCleanShaders     = hwSym("CleanShaders",NULL);
-		*(void**)&HWD.pfnSetShader        = hwSym("SetShader",NULL);
-		*(void**)&HWD.pfnUnSetShader      = hwSym("UnSetShader",NULL);
+		CV_StealthSet(&cv_renderer, "Software");
+		rendermode = render_soft;
 
-		*(void**)&HWD.pfnSetShaderInfo    = hwSym("SetShaderInfo",NULL);
-		*(void**)&HWD.pfnLoadCustomShader = hwSym("LoadCustomShader",NULL);
-
-		vid.glstate = HWD.pfnInit() ? VID_GL_LIBRARY_LOADED : VID_GL_LIBRARY_ERROR; // let load the OpenGL library
-
-		if (vid.glstate == VID_GL_LIBRARY_ERROR)
-		{
-			rendermode = render_soft;
+		if (setrenderneeded)
 			setrenderneeded = 0;
-		}
-		glstartup = true;
 	}
 #endif
 }
 
 void I_ShutdownGraphics(void)
 {
-	const rendermode_t oldrendermode = rendermode;
-
-	rendermode = render_none;
-	if (icoSurface) SDL_FreeSurface(icoSurface);
+#ifdef USE_WINDOW_ICON
+	if (icoSurface)
+		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
-	if (oldrendermode == render_soft)
+#endif
+	if (rendermode == render_soft)
 	{
-		if (vidSurface) SDL_FreeSurface(vidSurface);
+		if (vidSurface)
+			SDL_FreeSurface(vidSurface);
 		vidSurface = NULL;
-		if (vid.buffer) free(vid.buffer);
-		vid.buffer = NULL;
-		if (bufSurface) SDL_FreeSurface(bufSurface);
+
+		if (bufSurface)
+			SDL_FreeSurface(bufSurface);
 		bufSurface = NULL;
 	}
+
+	free(vid.buffer);
+	vid.buffer = NULL;
+
+	rendermode = render_none;
 
 	I_OutputMsg("I_ShutdownGraphics(): ");
 

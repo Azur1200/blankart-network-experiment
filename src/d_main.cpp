@@ -1459,8 +1459,6 @@ void D_SRB2Main(void)
 		CV_RegisterVar(&cv_constextsize);
 	}
 
-	I_RegisterSysCommands();
-
 #ifdef HWRENDER
 	// Lactozilla: Add every hardware mode CVAR and CCMD.
 	// Has to be done before the configuration file loads,
