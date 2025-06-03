@@ -274,15 +274,12 @@ void M_HandleLevelStats(INT32 choice);
 void M_QuitReplayHut(INT32 choice);
 void M_HandleReplayHutList(INT32 choice);
 void M_GrandPrixTemp(INT32 choice);
-void M_TimeAttack(INT32 choice);
-void M_ItemBreaker(INT32 choice);
+void M_TimeAttack(INT32 arg);
 void M_StartGrandPrix(INT32 choice);
 void M_QuitTimeAttackMenu(INT32 choice);
 void M_ChooseTimeAttack(INT32 choice);
 void M_SetGuestReplay(INT32 arg);
-void M_SRB2KartPreset(INT32 choice);
-void M_TechPreset(INT32 choice);
-void M_BlanKartPreset(INT32 choice);
+void M_TimeAttackPreset(INT32 arg);
 void M_ReplayTimeAttack(INT32 arg);
 void M_HandleStaffReplay(INT32 choice);
 void M_SetupMultiHandler(INT32 choice);
@@ -294,10 +291,7 @@ void M_StartServer(INT32 choice);
 void M_ConnectMenuModChecks(INT32 choice);
 void M_HandleConnectIP(INT32 choice);
 void M_CancelConnect(INT32 choice);
-void M_Setup1PControlsMenu(INT32 choice);
-void M_Setup2PControlsMenu(INT32 choice);
-void M_Setup3PControlsMenu(INT32 choice);
-void M_Setup4PControlsMenu(INT32 choice);
+void M_SetupControlsMenu(INT32 arg);
 void M_HandleServerPage(INT32 choice);
 void M_Refresh(INT32 choice);
 void M_Connect(INT32 arg);
@@ -323,9 +317,6 @@ void M_Retry(INT32 choice);
 void M_EndGame(INT32 choice);
 void M_MapChange(INT32 choice);
 void M_SetupMultiPlayer(INT32 choice);
-void M_SetupMultiPlayer2(INT32 choice);
-void M_SetupMultiPlayer3(INT32 choice);
-void M_SetupMultiPlayer4(INT32 choice);
 void M_ConfirmSpectate(INT32 choice);
 void M_ConfirmEnterGame(INT32 choice);
 void M_ExitPandorasBox(INT32 choice);
@@ -347,10 +338,6 @@ void M_PlaybackToggleFreecam(INT32 choice);
 void M_PlaybackQuit(INT32 choice);
 void M_HandleImageDef(INT32 choice);
 void M_HandleMusicTest(INT32 choice);
-void M_Setup1PJoystickMenu(INT32 choice);
-void M_Setup2PJoystickMenu(INT32 choice);
-void M_Setup3PJoystickMenu(INT32 choice);
-void M_Setup4PJoystickMenu(INT32 choice);
 void M_ResetControls(INT32 choice);
 void M_ChangeControl(INT32 arg);
 void M_AssignJoystick(INT32 arg);
@@ -397,7 +384,7 @@ extern I_mutex m_menu_mutex;
 #endif
 
 // Call upon joystick hotplug
-void M_SetupJoystickMenu(INT32 choice);
+void M_SetupJoystickMenu(INT32 arg);
 
 // Stuff for customizing the player select screen
 typedef struct

@@ -273,6 +273,7 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_GetItemStatus(t, n)           (M_GetMenuItem(t, n)->status)
 #define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->itemaction.routine = v)
 #define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->itemaction.cvar = v)
+#define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
 #define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
@@ -5872,51 +5873,15 @@ void M_DrawTimeAttackMenu(void)
 }
 
 // Going to Time Attack menu...
-void M_TimeAttack(INT32 choice)
+void M_TimeAttack(INT32 arg)
 {
-	(void)choice;
-
 	memset(skins_cons_t, 0, sizeof (skins_cons_t));
 
-	levellistmode = LLM_TIMEATTACK; // Don't be dependent on cv_newgametype
+	levellistmode = arg ? LLM_ITEMBREAKER : LLM_TIMEATTACK; // Don't be dependent on cv_newgametype
 
 	if (M_CountLevelsToShowInList() == 0)
 	{
-		M_StartMessage(M_GetText("No levels found for Time Attack.\n"),NULL,MM_NOTHING);
-		return;
-	}
-
-	M_PatchSkinNameTable();
-
-	M_PrepareLevelSelect();
-	M_ClearMenus(true);
-	M_EnterMenu(MN_SP_TIMEATTACK, true);
-
-	G_SetGamestate(GS_TIMEATTACK);
-	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
-
-	if (cv_nextmap.value)
-		Nextmap_OnChange();
-	else
-		CV_AddValue(&cv_nextmap, 1);
-
-	M_SetItemOn(MN_SP_TIMEATTACK, "START"); // "Start" is selected.
-
-	S_ChangeMusicInternal("racent", true);
-}
-
-// Same as above, but sets a different levellistmode. Should probably be merged...
-void M_ItemBreaker(INT32 choice)
-{
-	(void)choice;
-
-	memset(skins_cons_t, 0, sizeof (skins_cons_t));
-
-	levellistmode = LLM_ITEMBREAKER; // Don't be dependent on cv_newgametype
-
-	if (M_CountLevelsToShowInList() == 0)
-	{
-		M_StartMessage(M_GetText("No levels found for Item Breaker.\n"),NULL,MM_NOTHING);
+		M_StartMessage(M_GetText(va("No levels found for %s.\n", arg ? "Item Breaker" : "Time Attack")),NULL,MM_NOTHING);
 		return;
 	}
 
@@ -6018,38 +5983,27 @@ void M_HandleStaffReplay(INT32 choice)
 		M_ExitMenu();
 }
 
-void M_SRB2KartPreset(INT32 choice)
+#define NUMPRESETS 3
+static boolean presets[NUMPRESETS][5] = {
+	//rings  stacking  chaining  slipdash  purpledrift
+	{ false, false,    false,    false,    false       }, // SRB2Kart
+	{ false, true,     true,     false,    false       }, // Tech
+	{ true,  true,     true,     true,     true        }, // BlanKart
+};
+
+void M_TimeAttackPreset(INT32 arg)
 {
-	(void)choice;
+	if (arg < 0 || arg >= NUMPRESETS)
+		return;
 
-	CV_Set(&cv_dummyattackingrings, "Off");
-	CV_Set(&cv_dummyattackingstacking, "Off");
-	CV_Set(&cv_dummyattackingchaining, "Off");
-	CV_Set(&cv_dummyattackingslipdash, "Off");
-	CV_Set(&cv_dummyattackingpurpledrift, "Off");
+	boolean *preset = presets[arg];
+	CV_Set(&cv_dummyattackingrings, preset[0] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingstacking, preset[1] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingchaining, preset[2] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingslipdash, preset[3] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingpurpledrift, preset[4] ? "On" : "Off");
 }
-
-void M_TechPreset(INT32 choice)
-{
-	(void)choice;
-
-	CV_Set(&cv_dummyattackingrings, "Off");
-	CV_Set(&cv_dummyattackingstacking, "On");
-	CV_Set(&cv_dummyattackingchaining, "On");
-	CV_Set(&cv_dummyattackingslipdash,"Off");
-	CV_Set(&cv_dummyattackingpurpledrift, "Off");
-}
-
-void M_BlanKartPreset(INT32 choice)
-{
-	(void)choice;
-
-	CV_Set(&cv_dummyattackingrings, "On");
-	CV_Set(&cv_dummyattackingstacking, "On");
-	CV_Set(&cv_dummyattackingchaining, "On");
-	CV_Set(&cv_dummyattackingslipdash, "On");
-	CV_Set(&cv_dummyattackingpurpledrift, "On");
-}
+#undef NUMPRESETS
 
 // Player has selected the "REPLAY" from the time attack screen
 void M_ReplayTimeAttack(INT32 arg)
@@ -7023,13 +6977,13 @@ void M_SetupMultiHandler(INT32 choice)
 			switch (setupm_pselect)
 			{
 				case 2:
-					M_SetupMultiPlayer2(0);
+					M_SetupMultiPlayer(1);
 					return;
 				case 3:
-					M_SetupMultiPlayer3(0);
+					M_SetupMultiPlayer(2);
 					return;
 				case 4:
-					M_SetupMultiPlayer4(0);
+					M_SetupMultiPlayer(3);
 					return;
 				default:
 					M_SetupMultiPlayer(0);
@@ -7666,22 +7620,22 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 }
 
 // start the multiplayer setup menu
-void M_SetupMultiPlayer(INT32 choice)
+void M_SetupMultiPlayer(INT32 arg)
 {
-	(void)choice;
+	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
+		return;
+	INT32 pnum = arg == 0 ? consoleplayer : g_localplayers[arg];
 
 	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics * FRACUNIT;
+	strcpy(setupm_name, cv_playername[arg].string);
 
-	strcpy(setupm_name, cv_playername[0].string);
-
-	// set for player 1
-	setupm_player = &players[consoleplayer];
-	setupm_cvskin = &cv_skin[0];
-	setupm_cvcolor = &cv_playercolor[0];
-	setupm_cvname = &cv_playername[0];
-	setupm_cvfollower = &cv_follower[0];
-	setupm_cvfollowercolor = &cv_followercolor[0];
+	setupm_player = &players[pnum];
+	setupm_cvskin = &cv_skin[arg];
+	setupm_cvcolor = &cv_playercolor[arg];
+	setupm_cvname = &cv_playername[arg];
+	setupm_cvfollower = &cv_follower[arg];
+	setupm_cvfollowercolor = &cv_followercolor[arg];
 
 	setupm_fakefollower = setupm_cvfollower->value;
 
@@ -7701,139 +7655,10 @@ void M_SetupMultiPlayer(INT32 choice)
 			break;
 
 	// disable skin changes if we can't actually change skins
-	if (!CanChangeSkin(consoleplayer))
+	if (splitscreen >= pnum && !CanChangeSkin(pnum))
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
 	else
 		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER|IT_STRING);
-
-	M_EnterMenu(MN_MP_PLAYERSETUP, true);
-}
-
-// start the multiplayer setup menu, for secondary player (splitscreen mode)
-void M_SetupMultiPlayer2(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics * FRACUNIT;
-	strcpy (setupm_name, cv_playername[1].string);
-
-	// set for splitscreen secondary player
-	setupm_player = &players[g_localplayers[1]];
-	setupm_cvskin = &cv_skin[1];
-	setupm_cvcolor = &cv_playercolor[1];
-	setupm_cvname = &cv_playername[1];
-	setupm_cvfollower = &cv_follower[1];
-	setupm_cvfollowercolor = &cv_followercolor[1];
-
-	setupm_fakefollower = setupm_cvfollower->value;
-
-	// yikes, we don't want none of that...
-	if (setupm_fakefollower >= numfollowers)
-		setupm_fakefollower = -1;
-
-	M_GetFollowerState();	// update follower state
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-
-	for (setupm_fakecolor=menucolorhead;;setupm_fakecolor=setupm_fakecolor->next)
-		if (setupm_fakecolor->color == setupm_cvcolor->value || setupm_fakecolor == menucolortail)
-			break;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen && !CanChangeSkin(g_localplayers[1]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
-	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
-
-	M_EnterMenu(MN_MP_PLAYERSETUP, true);
-}
-
-// start the multiplayer setup menu, for third player (splitscreen mode)
-void M_SetupMultiPlayer3(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics;
-	strcpy(setupm_name, cv_playername[2].string);
-
-	// set for splitscreen third player
-	setupm_player = &players[g_localplayers[2]];
-	setupm_cvskin = &cv_skin[2];
-	setupm_cvcolor = &cv_playercolor[2];
-	setupm_cvname = &cv_playername[2];
-	setupm_cvfollower = &cv_follower[2];
-	setupm_cvfollowercolor = &cv_followercolor[2];
-
-	setupm_fakefollower = setupm_cvfollower->value;
-
-	// yikes, we don't want none of that...
-	if (setupm_fakefollower >= numfollowers)
-		setupm_fakefollower = -1;
-
-	M_GetFollowerState();	// update follower state
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-
-	for (setupm_fakecolor=menucolorhead;;setupm_fakecolor=setupm_fakecolor->next)
-		if (setupm_fakecolor->color == setupm_cvcolor->value || setupm_fakecolor == menucolortail)
-			break;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen > 1 && !CanChangeSkin(g_localplayers[2]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
-	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
-
-	M_EnterMenu(MN_MP_PLAYERSETUP, true);
-}
-
-// start the multiplayer setup menu, for third player (splitscreen mode)
-void M_SetupMultiPlayer4(INT32 choice)
-{
-	(void)choice;
-
-	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
-	multi_tics = multi_state->tics;
-	strcpy(setupm_name, cv_playername[3].string);
-
-	// set for splitscreen fourth player
-	setupm_player = &players[g_localplayers[3]];
-	setupm_cvskin = &cv_skin[3];
-	setupm_cvcolor = &cv_playercolor[3];
-	setupm_cvname = &cv_playername[3];
-	setupm_cvfollower = &cv_follower[3];
-	setupm_cvfollowercolor = &cv_followercolor[3];
-
-	setupm_fakefollower = setupm_cvfollower->value;
-
-	// yikes, we don't want none of that...
-	if (setupm_fakefollower >= numfollowers)
-		setupm_fakefollower = -1;
-
-	M_GetFollowerState();	// update follower state
-
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-
-	for (setupm_fakecolor=menucolorhead;;setupm_fakecolor=setupm_fakecolor->next)
-		if (setupm_fakecolor->color == setupm_cvcolor->value || setupm_fakecolor == menucolortail)
-			break;
-
-	// disable skin changes if we can't actually change skins
-	if (splitscreen > 2 && !CanChangeSkin(g_localplayers[3]))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
-	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER | IT_STRING);
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
@@ -8115,7 +7940,7 @@ void M_DrawJoystick(void)
 	}
 }
 
-void M_SetupJoystickMenu(INT32 choice)
+void M_SetupJoystickMenu(INT32 arg)
 {
 	const char *joyNA = "Unavailable";
 	const INT32 n = I_NumJoys();
@@ -8123,7 +7948,10 @@ void M_SetupJoystickMenu(INT32 choice)
 	INT32 i = 0;
 	INT32 j;
 
-	(void)choice;
+	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
+		return;
+
+	setupcontrolplayer = arg + 1;
 
 	strcpy(joystickInfo[i], "None");
 
@@ -8152,30 +7980,6 @@ void M_SetupJoystickMenu(INT32 choice)
 	}
 
 	M_EnterMenu(MN_OP_JOYSTICKSET, true);
-}
-
-void M_Setup1PJoystickMenu(INT32 choice)
-{
-	setupcontrolplayer = 1;
-	M_SetupJoystickMenu(choice);
-}
-
-void M_Setup2PJoystickMenu(INT32 choice)
-{
-	setupcontrolplayer = 2;
-	M_SetupJoystickMenu(choice);
-}
-
-void M_Setup3PJoystickMenu(INT32 choice)
-{
-	setupcontrolplayer = 3;
-	M_SetupJoystickMenu(choice);
-}
-
-void M_Setup4PJoystickMenu(INT32 choice)
-{
-	setupcontrolplayer = 4;
-	M_SetupJoystickMenu(choice);
 }
 
 void M_AssignJoystick(INT32 arg)
@@ -8222,137 +8026,42 @@ void M_AssignJoystick(INT32 arg)
 // CONTROLS MENU
 // =============
 
-void M_Setup1PControlsMenu(INT32 choice)
+void M_SetupControlsMenu(INT32 arg)
 {
-	(void)choice;
-	setupcontrolplayer = 1;
-	setupcontrols = gamecontrol[0];        // was called from main Options (for console player, then)
+	UINT16 status = arg == 0 ? IT_CONTROL : IT_GRAYEDOUT2;
+
+	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
+		return;
+
+	setupcontrolplayer = arg + 1;
+	setupcontrols = gamecontrol[arg];        // was called from main Options (for console player, then)
 	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
-	M_SetItemRoutine(MN_OP_CHANGECONTROLS, "SETJOY", M_Setup1PJoystickMenu);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[0]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[0]);
+	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 
-	// Unhide P1-only controls
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_CONTROL); // Chat
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_CONTROL); // Team-chat
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_CONTROL); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_CONTROL); // Viewpoint
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", status); // Chat
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", status); // Team-chat
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", status); // Rankings
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", status); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_CONTROL); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_CONTROL); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_CONTROL); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_CONTROL); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_CONTROL); // Console
-	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_HEADER); // Spectator Controls header
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_SPACE); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_CONTROL); // Spectate
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_CONTROL); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_CONTROL); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_CONTROL); // Center View
-	*/
-
-	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
-}
-
-void M_Setup2PControlsMenu(INT32 choice)
-{
-	(void)choice;
-	setupcontrolplayer = 2;
-	setupcontrols = gamecontrol[1];
-	currentMenu->lastOn = itemOn;
-
-	// Set proper gamepad options
-	M_SetItemRoutine(MN_OP_CHANGECONTROLS, "SETJOY", M_Setup2PJoystickMenu);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[1]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[1]);
-
-	// Hide P1-only controls
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
-	// 19 is Reset Camera, 20 is Toggle Chasecam
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
-	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
-	*/
-
-	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
-}
-
-void M_Setup3PControlsMenu(INT32 choice)
-{
-	(void)choice;
-	setupcontrolplayer = 3;
-	setupcontrols = gamecontrol[2];
-	currentMenu->lastOn = itemOn;
-
-	// Set proper gamepad options
-	M_SetItemRoutine(MN_OP_CHANGECONTROLS, "SETJOY", M_Setup3PJoystickMenu);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[2]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[2]);
-
-	// Hide P1-only controls
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
-	// 19 is Reset Camera, 20 is Toggle Chasecam
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
-	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
-	*/
-
-	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
-}
-
-void M_Setup4PControlsMenu(INT32 choice)
-{
-	(void)choice;
-	setupcontrolplayer = 4;
-	setupcontrols = gamecontrol[3];
-	currentMenu->lastOn = itemOn;
-
-	// Set proper gamepad options
-	M_SetItemRoutine(MN_OP_CHANGECONTROLS, "SETJOY", M_Setup4PJoystickMenu);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[3]);
-	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[3]);
-
-	// Hide P1-only controls
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
-	// 19 is Reset Camera, 20 is Toggle Chasecam
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
-	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", status); // Screenshot
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", status); // GIF
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", status); // System Menu
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", status); // Console
+	/*if (arg == 0) {
+		M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_HEADER); // Spectator Controls header
+		M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_SPACE); // Spectator Controls space
+	} else {
+		M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
+		M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
+	}
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", status); // Spectate
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", status); // Look Up
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", status); // Look Down
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", status); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
