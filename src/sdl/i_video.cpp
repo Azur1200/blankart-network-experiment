@@ -151,7 +151,7 @@ static void Impl_SetupSoftwareBuffer(void);
 
 static void Impl_InitOpenGL(void);
 
-#if !defined(__ANDROID__) && defined(HAVE_IMAGE)
+#if defined(HAVE_IMAGE)
 #define USE_WINDOW_ICON
 #endif
 
@@ -313,13 +313,11 @@ static void Impl_VideoSetupSurfaces(int width, int height)
 	int bpp = 16;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
 
-#if !defined(__ANDROID__)
 	if (!usesdl2soft)
 	{
 		sw_texture_format = SDL_PIXELFORMAT_RGB565;
 	}
 	else
-#endif
 	{
 		bpp = 32;
 		sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
@@ -1539,25 +1537,6 @@ boolean VID_CheckRenderer(void)
 	return rendererchanged;
 }
 
-#if 0
-static void Impl_GetCurrentDisplayMode(INT32 *width, INT32 *height)
-{
-	int i = SDL_GetWindowDisplayIndex(window);
-	SDL_DisplayMode resolution;
-
-	if (i < 0)
-		return;
-
-	if (!SDL_GetCurrentDisplayMode(i, &resolution))
-	{
-		if ((*width) == 0)
-			(*width) = (INT32)(resolution.w);
-		if ((*height) == 0)
-			(*height) = (INT32)(resolution.h);
-	}
-}
-#endif
-
 INT32 VID_SetMode(INT32 modeNum)
 {
 	SDLdoUngrabMouse();
@@ -1681,14 +1660,6 @@ static void Impl_InitVideoSubSystem(void)
 		CONS_Printf(M_GetText("Couldn't initialize SDL's Video System: %s\n"), SDL_GetError());
 		return;
 	}
-
-#ifdef HAVE_GLES
-	Impl_InitGLESDriver();
-#endif
-
-#ifdef MOBILE_PLATFORM
-	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-#endif
 
 	video_init = true;
 }
