@@ -174,5 +174,7 @@ char *I_ClipboardPaste(void)
 	return NULL;
 }
 
+void I_RegisterSysCommands(void) {}
+
 #include "../sdl/dosstr.c"
 

@@ -326,6 +326,8 @@ INT32 I_ClipboardCopy(const char *data, size_t size);
 */
 const char *I_ClipboardPaste(void);
 
+void I_RegisterSysCommands(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
