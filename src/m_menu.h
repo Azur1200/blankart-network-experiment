@@ -111,9 +111,6 @@ void M_Drawer(void);
 // Called by D_SRB2Main, loads the config file.
 void M_Init(void);
 
-// Called by D_SRB2Main also, sets up the playermenu and description tables.
-void M_InitCharacterTables(void);
-
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
 void M_StartControlPanel(void);
@@ -386,27 +383,6 @@ extern I_mutex m_menu_mutex;
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 arg);
 
-// Stuff for customizing the player select screen
-typedef struct
-{
-	boolean used;
-	char notes[441];
-	char picname[8];
-	char skinname[SKINNAMESIZE*2+2]; // skin&skin\0
-	patch_t *charpic;
-	UINT8 prev;
-	UINT8 next;
-
-	// new character select
-	char displayname[SKINNAMESIZE+1];
-	SINT8 skinnum[2];
-	UINT16 oppositecolor;
-	char nametag[8];
-	patch_t *namepic;
-	UINT16 tagtextcolor;
-	UINT16 tagoutlinecolor;
-} description_t;
-
 // level select platter
 typedef struct
 {
@@ -450,8 +426,6 @@ typedef struct
 	INT32 continuescore;
 	INT32 gamemap;
 } saveinfo_t;
-
-extern description_t description[MAXSKINS];
 
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;

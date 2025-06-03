@@ -427,18 +427,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 			else
 				i = 0;
 
-			if (fastcmp(word, "CHARACTER"))
-			{
-				if (i >= 0 && i < 32)
-					readPlayer(f, i);
-				else
-				{
-					deh_warning("Character %d out of range (0 - 31)", i);
-					ignorelines(f);
-				}
-				continue;
-			}
-			else if (fastcmp(word, "EMBLEM"))
+			if (fastcmp(word, "EMBLEM"))
 			{
 				if (!mainfile && !gamedataadded)
 				{

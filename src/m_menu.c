@@ -147,9 +147,6 @@ M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 
 const char *quitmsg[NUM_QUITMESSAGES];
 
-// Stuff for customizing the player select screen Tails 09-22-2003
-description_t description[MAXSKINS];
-
 boolean fromlevelselect = false;
 
 typedef enum
@@ -1893,46 +1890,6 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_serversort);
 	CV_RegisterVar(&cv_menucaps);
-}
-
-void M_InitCharacterTables(void)
-{
-	UINT8 i;
-
-	// Setup description table
-	for (i = 0; i < MAXSKINS; i++)
-	{
-		if (i == 0)
-		{
-			strcpy(description[i].notes, "\x82Sonic\x80 is the fastest of the three, but also the hardest to control. Beginners beware, but experts will find Sonic very powerful.\n\n\x82""Ability:\x80 Speed Thok\nDouble jump to zoom forward with a huge burst of speed.\n\n\x82Tip:\x80 Simply letting go of forward does not slow down in SRB2. To slow down, hold the opposite direction.");
-			strcpy(description[i].picname, "");
-			strcpy(description[i].skinname, "sonic");
-		}
-		else if (i == 1)
-		{
-			strcpy(description[i].notes, "\x82Tails\x80 is the most mobile of the three, but has the slowest speed. Because of his mobility, he's well-\nsuited to beginners.\n\n\x82""Ability:\x80 Fly\nDouble jump to start flying for a limited time. Repetitively hit the jump button to ascend.\n\n\x82Tip:\x80 To quickly descend while flying, hit the spin button.");
-			strcpy(description[i].picname, "");
-			strcpy(description[i].skinname, "tails");
-		}
-		else if (i == 2)
-		{
-			strcpy(description[i].notes, "\x82Knuckles\x80 is well-\nrounded and can destroy breakable walls simply by touching them, but he can't jump as high as the other two.\n\n\x82""Ability:\x80 Glide & Climb\nDouble jump to glide in the air as long as jump is held. Glide into a wall to climb it.\n\n\x82Tip:\x80 Press spin while climbing to jump off the wall; press jump instead to jump off\nand face away from\nthe wall.");
-			strcpy(description[i].picname, "");
-			strcpy(description[i].skinname, "knuckles");
-		}
-		else if (i == 3)
-		{
-			strcpy(description[i].notes, "\x82Sonic & Tails\x80 team up to take on Dr. Eggman!\nControl Sonic while Tails desperately struggles to keep up.\n\nPlayer 2 can control Tails directly by setting the controls in the options menu.\nTails's directional controls are relative to Player 1's camera.\n\nTails can pick up Sonic while flying and carry him around.");
-			strcpy(description[i].picname, "CHRS&T");
-			strcpy(description[i].skinname, "sonic&tails");
-		}
-		else
-		{
-			strcpy(description[i].notes, "???");
-			strcpy(description[i].picname, "");
-			strcpy(description[i].skinname, "");
-		}
-	}
 }
 
 // ==========================================================================
