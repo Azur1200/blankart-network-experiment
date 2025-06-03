@@ -79,6 +79,9 @@
 // And just some randomness for the exits.
 #include "m_random.h"
 
+#include "deh_tables.h" // menunames
+#include "fastcmp.h"
+
 #if defined(HAVE_SDL)
 #include <SDL.h>
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -239,10 +242,14 @@ menuitem_t *M_CheckMenuItem(menutype_t type, const char *name)
 {
 	INT16 i;
 	menu_t *menu = &menudefs[type];
+	UINT32 hash = HASH32(name, strlen(name));
 
-	for (i = 0; i < menu->numitems; i++)
-		if (!strncmp(menu->menuitems[i].itemname, name, ITEMNAMELEN))
+	for (i = 0; i < menu->numitems; i++) {
+		if (hash != menu->menuitems[i].info.namehash)
+			continue;
+		if (fastcmp(name, strbuf_get(menunames, menu->menuitems[i].info.nameofs)))
 			return &menu->menuitems[i];
+	}
 	return NULL;
 }
 
@@ -266,17 +273,15 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_GetItemStatus(t, n)           (M_GetMenuItem(t, n)->status)
 #define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->itemaction.routine = v)
 #define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->itemaction.cvar = v)
-#define M_SetItemKey(t, n, v)           (M_GetMenuItem(t, n)->alphaKey = v)
-#define M_SetItemY M_SetItemKey
-#define M_SetItemX M_SetItemKey // 2D menus wen
-#define M_GetItemKey(t, n)              (M_GetMenuItem(t, n)->alphaKey)
-#define M_GetItemY M_GetItemKey
-#define M_AdjustItemY(t, n, v)          (M_GetMenuItem(t, n)->alphaKey += v)
+#define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
+#define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
+#define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
+#define M_AdjustItemY(t, n, v)          (M_GetMenuItem(t, n)->y += v)
 
 // bruh...
 static UINT32 M_ServersPerPage(void)
 {
-	INT32 spp = M_GetMenuIndex(MN_MP_CONNECT, "LASLIN") - M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN") + 1;
+	INT32 spp = M_GetMenuIndex(MN_MP_CONNECT, "LINEMAX") - M_GetMenuIndex(MN_MP_CONNECT, "LINE1") + 1;
 	if (spp < 1 || spp >= MAXSERVERLIST)
 		I_Error("Broken server connection menu");
 	return (UINT32)spp;
@@ -580,42 +585,42 @@ void Nextmap_OnChange(void)
 		M_SetItemStatus(MN_SP_TIMEATTACK, "REPLAY", IT_DISABLED);
 
 		// Check if file exists, if not, disable REPLAY option
-		M_SetItemStatus(MN_SP_REPLAY, "RPTIME", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "RPLAP", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "RPLAST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "RPGUES", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "RPSTAF", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "STIME", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "SLAP", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "SLAST", IT_DISABLED);
+		M_SetItemStatus(MN_SP_REPLAY, "REPLAYTIME", IT_DISABLED);
+		M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAP", IT_DISABLED);
+		M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAST", IT_DISABLED);
+		M_SetItemStatus(MN_SP_REPLAY, "REPLAYGUEST", IT_DISABLED);
+		M_SetItemStatus(MN_SP_REPLAY, "REPLAYSTAFF", IT_DISABLED);
+		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVETIME", IT_DISABLED);
+		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAP", IT_DISABLED);
+		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAST", IT_DISABLED);
 		M_SetItemStatus(MN_SP_GUESTREPLAY, "DELETE", IT_DISABLED);
 
 		M_SetItemStatus(MN_SP_GHOST, "GUEST", IT_DISABLED);
 		M_SetItemStatus(MN_SP_GHOST, "STAFF", IT_DISABLED);
 
 		if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
-			M_SetItemStatus(MN_SP_REPLAY, "RPTIME", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GUESTREPLAY, "STIME", IT_WHITESTRING|IT_CALL);
+			M_SetItemStatus(MN_SP_REPLAY, "REPLAYTIME", IT_WHITESTRING|IT_CALL);
+			M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVETIME", IT_WHITESTRING|IT_CALL);
 			active |= 3;
 		}
 
 		if (levellistmode != LLM_ITEMBREAKER) {
 			if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
-				M_SetItemStatus(MN_SP_REPLAY, "RPLAP", IT_WHITESTRING|IT_CALL);
-				M_SetItemStatus(MN_SP_GUESTREPLAY, "SLAP", IT_WHITESTRING|IT_CALL);
+				M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAP", IT_WHITESTRING|IT_CALL);
+				M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAP", IT_WHITESTRING|IT_CALL);
 				active |= 3;
 			}
 		}
 
 		if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode))) {
-			M_SetItemStatus(MN_SP_REPLAY, "RPLAST", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GUESTREPLAY, "SLAST", IT_WHITESTRING|IT_CALL);
+			M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAST", IT_WHITESTRING|IT_CALL);
+			M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAST", IT_WHITESTRING|IT_CALL);
 			active |= 3;
 		}
 
 		if (FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
 		{
-			M_SetItemStatus(MN_SP_REPLAY, "RPGUES", IT_WHITESTRING|IT_CALL);
+			M_SetItemStatus(MN_SP_REPLAY, "REPLAYGUEST", IT_WHITESTRING|IT_CALL);
 			M_SetItemStatus(MN_SP_GUESTREPLAY, "DELETE", IT_WHITESTRING|IT_CALL);
 			M_SetItemStatus(MN_SP_GHOST, "GUEST", IT_STRING|IT_CVAR);
 			active |= 3;
@@ -624,7 +629,7 @@ void Nextmap_OnChange(void)
 		CV_SetValue(&cv_dummystaff, 1);
 		if (cv_dummystaff.value)
 		{
-			M_SetItemStatus(MN_SP_REPLAY, "RPSTAF", IT_WHITESTRING|IT_KEYHANDLER);
+			M_SetItemStatus(MN_SP_REPLAY, "REPLAYSTAFF", IT_WHITESTRING|IT_KEYHANDLER);
 			M_SetItemStatus(MN_SP_GHOST, "STAFF", IT_STRING|IT_CVAR);
 			CV_StealthSetValue(&cv_dummystaff, 1);
 			active |= 1;
@@ -715,24 +720,24 @@ void Screenshot_option_Onchange(void)
 
 void Moviemode_mode_Onchange(void)
 {
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPT", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDWN", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNMEM", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNCMP", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNSTR", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNWIN", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPTIMIZE", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDOWNSCALE", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGMEMORY", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGCOMPRESSION", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGSTRATEGY", IT_DISABLED);
+	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGWINDOW", IT_DISABLED);
 
 	switch (cv_moviemode.value)
 	{
 	case MM_GIF:
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPT", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDWN", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPTIMIZE", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDOWNSCALE", IT_STRING|IT_CVAR);
 		break;
 	case MM_APNG:
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNMEM", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNCMP", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNSTR", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNWIN", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGMEMORY", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGCOMPRESSION", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGSTRATEGY", IT_STRING|IT_CVAR);
+		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGWINDOW", IT_STRING|IT_CVAR);
 		break;
 	default:
 		break;
@@ -1364,7 +1369,7 @@ boolean M_Responder(event_t *ev)
 			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
 			{
 				// detach any keys associated with the game control
-				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
+				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
 				S_StartSound(NULL, sfx_shldls);
 				return true;
 			}
@@ -1544,68 +1549,68 @@ void M_StartControlPanel(void)
 	else if (!Playing())
 	{
 		M_EnterMenu(MN_MAIN, true);
-		M_SetItemOn(MN_MAIN, "SINGLE");
+		M_SetItemOn(MN_MAIN, "SINGLEPLAYER");
 	}
 	else if (modeattacking)
 	{
 		M_EnterMenu(MN_MAPAUSE, true);
-		M_SetItemOn(MN_MAPAUSE, "CONTIN");
+		M_SetItemOn(MN_MAPAUSE, "CONTINUE");
 	}
 	else if (!(netgame || multiplayer)) // Single Player
 	{
 		if (gamestate != GS_LEVEL /*|| ultimatemode*/) // intermission, so gray out stuff.
 		{
-			M_SetItemStatus(MN_SPAUSE, "PANDOR", M_SecretUnlocked(SECRET_PANDORA) ? IT_GRAYEDOUT : IT_DISABLED);
+			M_SetItemStatus(MN_SPAUSE, "PANDORA", M_SecretUnlocked(SECRET_PANDORA) ? IT_GRAYEDOUT : IT_DISABLED);
 			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_GRAYEDOUT);
 		}
 		else
 		{
-			M_SetItemStatus(MN_SPAUSE, "PANDOR", M_SecretUnlocked(SECRET_PANDORA) ? IT_STRING|IT_CALL : IT_DISABLED);
+			M_SetItemStatus(MN_SPAUSE, "PANDORA", M_SecretUnlocked(SECRET_PANDORA) ? IT_STRING|IT_CALL : IT_DISABLED);
 			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_STRING|IT_CALL);
 		}
 
-		M_SetItemStatus(MN_SPAUSE, "EMBLEM", M_SecretUnlocked(SECRET_EMBLEMHINTS) ? IT_STRING|IT_CALL : IT_DISABLED);
+		M_SetItemStatus(MN_SPAUSE, "EMBLEMS", M_SecretUnlocked(SECRET_EMBLEMHINTS) ? IT_STRING|IT_CALL : IT_DISABLED);
 
 		M_EnterMenu(MN_SPAUSE, true);
-		M_SetItemOn(MN_SPAUSE, "CONTIN");
+		M_SetItemOn(MN_SPAUSE, "CONTINUE");
 	}
 	else // multiplayer
 	{
-		M_SetItemStatus(MN_MPAUSE, "MAPCHG", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "MAPCHANGE", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "ADDONS", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SCRMBL", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "SCRAMBLE", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "SETUP1", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "SETUP2", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "SETUP3", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "SETUP4", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SPECTA", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_DISABLED);
 		M_SetItemStatus(MN_MPAUSE, "ENTER", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "CANCJO", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "TEAMCH", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SPECCH", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "PSETUP", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "CANCELJOIN", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "SPECTATECHANGE", IT_DISABLED);
+		M_SetItemStatus(MN_MPAUSE, "PLAYERSETUP", IT_DISABLED);
 		M_SetItemStatus(MN_CHANGETEAM, "PLAYER", IT_DISABLED);
 		M_SetItemStatus(MN_CHANGESPECTATE, "PLAYER", IT_DISABLED);
 
 		// Reset these in case splitscreen messes things up
 		M_SetItemY(MN_MPAUSE, "ADDONS", 8);
-		M_SetItemY(MN_MPAUSE, "SCRMBL", 8);
-		M_SetItemY(MN_MPAUSE, "MAPCHG", 24);
+		M_SetItemY(MN_MPAUSE, "SCRAMBLE", 8);
+		M_SetItemY(MN_MPAUSE, "MAPCHANGE", 24);
 
-		M_SetItemY(MN_MPAUSE, "TEAMCH", 48);
-		M_SetItemY(MN_MPAUSE, "SPECCH", 48);
-		M_SetItemY(MN_MPAUSE, "OPTION", 64);
-		M_SetItemY(MN_MPAUSE, "TITLE", 80);
-		M_SetItemY(MN_MPAUSE, "QUIT", 88);
+		M_SetItemY(MN_MPAUSE, "TEAMCHANGE", 48);
+		M_SetItemY(MN_MPAUSE, "SPECTATECHANGE", 48);
+		M_SetItemY(MN_MPAUSE, "OPTIONS", 64);
+		M_SetItemY(MN_MPAUSE, "ENDGAME", 80);
+		M_SetItemY(MN_MPAUSE, "QUITGAME", 88);
 
 		Dummymenuplayer_OnChange();
 
 		if ((server || IsPlayerAdmin(consoleplayer)))
 		{
-			M_SetItemStatus(MN_MPAUSE, "MAPCHG", IT_STRING | IT_CALL);
+			M_SetItemStatus(MN_MPAUSE, "MAPCHANGE", IT_STRING | IT_CALL);
 			M_SetItemStatus(MN_MPAUSE, "ADDONS", IT_STRING | IT_CALL);
 			if (G_GametypeHasTeams())
-				M_SetItemStatus(MN_MPAUSE, "SCRMBL", IT_STRING | IT_SUBMENU);
+				M_SetItemStatus(MN_MPAUSE, "SCRAMBLE", IT_STRING | IT_SUBMENU);
 		}
 
 		if (splitscreen)
@@ -1619,19 +1624,19 @@ void M_StartControlPanel(void)
 			{
 				if (G_GametypeHasTeams())
 				{
-					M_SetItemStatus(MN_MPAUSE, "TEAMCH", IT_STRING | IT_SUBMENU);
-					M_AdjustItemY(MN_MPAUSE, "TEAMCH", (splitscreen+1) * 8);
-					M_AdjustItemY(MN_MPAUSE, "OPTION", 8);
-					M_AdjustItemY(MN_MPAUSE, "TITLE", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUIT", 8);
+					M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_STRING | IT_SUBMENU);
+					M_AdjustItemY(MN_MPAUSE, "TEAMCHANGE", (splitscreen+1) * 8);
+					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
+					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
+					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
 				}
 				else if (G_GametypeHasSpectators())
 				{
-					M_SetItemStatus(MN_MPAUSE, "SPECCH", IT_STRING | IT_SUBMENU);
-					M_AdjustItemY(MN_MPAUSE, "SPECCH", (splitscreen+1) * 8);
-					M_AdjustItemY(MN_MPAUSE, "OPTION", 8);
-					M_AdjustItemY(MN_MPAUSE, "TITLE", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUIT", 8);
+					M_SetItemStatus(MN_MPAUSE, "SPECTATECHANGE", IT_STRING | IT_SUBMENU);
+					M_AdjustItemY(MN_MPAUSE, "SPECTATECHANGE", (splitscreen+1) * 8);
+					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
+					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
+					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
 				}
 			}
 
@@ -1639,49 +1644,49 @@ void M_StartControlPanel(void)
 			{
 				M_SetItemStatus(MN_MPAUSE, "SETUP3", IT_STRING | IT_CALL);
 
-				M_AdjustItemY(MN_MPAUSE, "OPTION", 8);
-				M_AdjustItemY(MN_MPAUSE, "TITLE", 8);
-				M_AdjustItemY(MN_MPAUSE, "QUIT", 8);
+				M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
+				M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
+				M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
 
 				if (splitscreen > 2)
 				{
 					M_SetItemStatus(MN_MPAUSE, "SETUP4", IT_STRING | IT_CALL);
-					M_AdjustItemY(MN_MPAUSE, "OPTION", 8);
-					M_AdjustItemY(MN_MPAUSE, "TITLE", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUIT", 8);
+					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
+					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
+					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
 				}
 			}
 		}
 		else
 		{
-			M_SetItemStatus(MN_MPAUSE, "PSETUP", IT_STRING | IT_CALL);
+			M_SetItemStatus(MN_MPAUSE, "PLAYERSETUP", IT_STRING | IT_CALL);
 
 			if (G_GametypeHasTeams())
-				M_SetItemStatus(MN_MPAUSE, "TEAMCH", IT_STRING | IT_SUBMENU);
+				M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_STRING | IT_SUBMENU);
 			else if (G_GametypeHasSpectators())
 			{
 				if (!players[consoleplayer].spectator)
-					M_SetItemStatus(MN_MPAUSE, "SPECTA", IT_STRING | IT_CALL);
+					M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_STRING | IT_CALL);
 				else if (players[consoleplayer].pflags & PF_WANTSTOJOIN)
-					M_SetItemStatus(MN_MPAUSE, "CANCJO", IT_STRING | IT_CALL);
+					M_SetItemStatus(MN_MPAUSE, "CANCELJOIN", IT_STRING | IT_CALL);
 				else
 					M_SetItemStatus(MN_MPAUSE, "ENTER", IT_STRING | IT_CALL);
 			}
 			else // in this odd case, we still want something to be on the menu even if it's useless
-				M_SetItemStatus(MN_MPAUSE, "SPECTA", IT_GRAYEDOUT);
+				M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_GRAYEDOUT);
 		}
 
 #ifdef HAVE_DISCORDRPC
 		{
 			M_AdjustItemY(MN_MPAUSE, "ADDONS", -8);
-			M_AdjustItemY(MN_MPAUSE, "SCRMBL", -8);
-			M_AdjustItemY(MN_MPAUSE, "MAPCHG", -8);
+			M_AdjustItemY(MN_MPAUSE, "SCRAMBLE", -8);
+			M_AdjustItemY(MN_MPAUSE, "MAPCHANGE", -8);
 			M_RefreshPauseMenu();
 		}
 #endif
 
 		M_EnterMenu(MN_MPAUSE, true);
-		M_SetItemOn(MN_MPAUSE, "CONTIN");
+		M_SetItemOn(MN_MPAUSE, "CONTINUE");
 	}
 
 	CON_ToggleOff(); // move away console
@@ -2166,7 +2171,7 @@ void M_DrawGenericMenu(void)
 				/* FALLTHRU */
 			case IT_NOTHING:
 			case IT_DYBIGSPACE:
-				y = currentMenu->y+currentMenu->menuitems[i].alphaKey;//+= LINEHEIGHT;
+				y = currentMenu->y+currentMenu->menuitems[i].y;//+= LINEHEIGHT;
 				break;
 			case IT_BIGSLIDER:
 				M_DrawThermo(x, y, currentMenu->menuitems[i].itemaction.cvar);
@@ -2174,8 +2179,8 @@ void M_DrawGenericMenu(void)
 				break;
 			case IT_STRING:
 			case IT_WHITESTRING:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 				if (i == itemOn)
 					cursory = y;
 
@@ -2234,23 +2239,23 @@ void M_DrawGenericMenu(void)
 				y += LINEHEIGHT;
 				break;
 			case IT_TRANSTEXT:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 				/* FALLTHRU */
 			case IT_TRANSTEXT2:
 				V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_QUESTIONMARKS:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 
 				V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 
 				V_DrawString(x-16, y,  MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
@@ -2284,18 +2289,18 @@ void M_DrawGenericScrollMenu(void)
 	x = currentMenu->x;
 	y = currentMenu->y;
 
-	if (currentMenu->menuitems[currentMenu->numitems-1].alphaKey < scrollareaheight)
+	if (currentMenu->menuitems[currentMenu->numitems-1].y < scrollareaheight)
 		tempcentery = currentMenu->y; // Not tall enough to scroll, but this thinker is used in case it becomes so
-	else if ((currentMenu->menuitems[itemOn].alphaKey*2 - currentMenu->menuitems[0].alphaKey*2) <= scrollareaheight)
-		tempcentery = currentMenu->y - currentMenu->menuitems[0].alphaKey*2;
-	else if ((currentMenu->menuitems[currentMenu->numitems-1].alphaKey*2 - currentMenu->menuitems[itemOn].alphaKey*2) <= scrollareaheight)
-		tempcentery = currentMenu->y - currentMenu->menuitems[currentMenu->numitems-1].alphaKey*2 + 2*scrollareaheight;
+	else if ((currentMenu->menuitems[itemOn].y*2 - currentMenu->menuitems[0].y*2) <= scrollareaheight)
+		tempcentery = currentMenu->y - currentMenu->menuitems[0].y*2;
+	else if ((currentMenu->menuitems[currentMenu->numitems-1].y*2 - currentMenu->menuitems[itemOn].y*2) <= scrollareaheight)
+		tempcentery = currentMenu->y - currentMenu->menuitems[currentMenu->numitems-1].y*2 + 2*scrollareaheight;
 	else
-		tempcentery = currentMenu->y - currentMenu->menuitems[itemOn].alphaKey*2 + scrollareaheight;
+		tempcentery = currentMenu->y - currentMenu->menuitems[itemOn].y*2 + scrollareaheight;
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
-		if (currentMenu->menuitems[i].status != IT_DISABLED && currentMenu->menuitems[i].alphaKey*2 + tempcentery >= currentMenu->y)
+		if (currentMenu->menuitems[i].status != IT_DISABLED && currentMenu->menuitems[i].y*2 + tempcentery >= currentMenu->y)
 			break;
 	}
 
@@ -2307,7 +2312,7 @@ void M_DrawGenericScrollMenu(void)
 
 	for (max = bottom; max > 0; max--)
 	{
-		if (currentMenu->menuitems[max-1].status != IT_DISABLED && currentMenu->menuitems[max-1].alphaKey*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
+		if (currentMenu->menuitems[max-1].status != IT_DISABLED && currentMenu->menuitems[max-1].y*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
 			break;
 	}
 
@@ -2321,7 +2326,7 @@ void M_DrawGenericScrollMenu(void)
 
 	for (; i < max; i++)
 	{
-		y = currentMenu->menuitems[i].alphaKey*2 + tempcentery;
+		y = currentMenu->menuitems[i].y*2 + tempcentery;
 		if (i == itemOn)
 			cursory = y;
 		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
@@ -2432,7 +2437,7 @@ void M_DrawPauseMenu(void)
 		if ((leveltime % freq) >= freq/2)
 		{
 			V_DrawFixedPatch(204 * FRACUNIT,
-				(currentMenu->y + M_GetItemY(MN_MPAUSE, "DISCRQ") - 1) * FRACUNIT,
+				(currentMenu->y + M_GetItemY(MN_MPAUSE, "DISCORDREQUESTS") - 1) * FRACUNIT,
 				FRACUNIT,
 				0,
 				W_CachePatchName("K_REQUE2", PU_CACHE),
@@ -2488,8 +2493,8 @@ void M_DrawCenteredMenu(void)
 				break;
 			case IT_STRING:
 			case IT_WHITESTRING:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 				if (i == itemOn)
 					cursory = y;
 
@@ -2533,8 +2538,8 @@ void M_DrawCenteredMenu(void)
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_QUESTIONMARKS:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 
 				V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
@@ -2546,8 +2551,8 @@ void M_DrawCenteredMenu(void)
 				y += LINEHEIGHT;
 				break;
 			case IT_TRANSTEXT:
-				if (currentMenu->menuitems[i].alphaKey)
-					y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+				if (currentMenu->menuitems[i].y)
+					y = currentMenu->y+currentMenu->menuitems[i].y;
 				/* FALLTHRU */
 			case IT_TRANSTEXT2:
 				V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
@@ -2970,7 +2975,7 @@ void M_DrawImageDef(void)
 	else
 		V_DrawSmallScaledPatch(0,0,0,patch);
 
-	if (currentMenu->menuitems[itemOn].alphaKey)
+	if (currentMenu->menuitems[itemOn].argument)
 	{
 		V_DrawString(2,BASEVIDHEIGHT-10, MENUCAPS|V_YELLOWMAP, va("%d", (itemOn<<1)-1)); // intentionally not highlightflags, unlike below
 		V_DrawRightAlignedString(BASEVIDWIDTH-2,BASEVIDHEIGHT-10, MENUCAPS|V_YELLOWMAP, va("%d", itemOn<<1)); // ditto
@@ -3726,29 +3731,29 @@ void M_HandleReplayHutList(INT32 choice)
 				{
 				case DFILE_ERROR_CANNOTLOAD:
 					// Only show "Watch Replay Without Addons"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWA", IT_DISABLED);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOAD", IT_CALL|IT_STRING);
-					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOAD", 0);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_DISABLED);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_CALL|IT_STRING);
+					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOADWATCH", 0);
 					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_DISABLED);
-					M_SetItemOn(MN_MISC_REPLAYSTART, "NOLOAD");
+					M_SetItemOn(MN_MISC_REPLAYSTART, "NOLOADWATCH");
 					break;
 
 				case DFILE_ERROR_NOTLOADED:
 				case DFILE_ERROR_INCOMPLETEOUTOFORDER:
 					// Show "Load Addons and Watch Replay" and "Watch Replay Without Addons"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWA", IT_CALL|IT_STRING);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOAD", IT_CALL|IT_STRING);
-					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOAD", 10);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_CALL|IT_STRING);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_CALL|IT_STRING);
+					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOADWATCH", 10);
 					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_DISABLED);
-					M_SetItemOn(MN_MISC_REPLAYSTART, "LOADWA");
+					M_SetItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
 					break;
 
 				case DFILE_ERROR_EXTRAFILES:
 				case DFILE_ERROR_OUTOFORDER:
 				default:
 					// Show "Watch Replay"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWA", IT_DISABLED);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOAD", IT_DISABLED);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_DISABLED);
+					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_DISABLED);
 					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_CALL|IT_STRING);
 					//M_SetItemY(MN_MISC_REPLAYSTART, "WATCH", 0);
 					M_SetItemOn(MN_MISC_REPLAYSTART, "WATCH");
@@ -3910,8 +3915,8 @@ void M_DrawReplayHut(void)
 	{
 		INT32 maxy;
 		// Scroll menu items if needed
-		cursory = y + currentMenu->menuitems[replaylistitem].alphaKey + dir_on[menudepthleft]*10;
-		maxy = y + currentMenu->menuitems[replaylistitem].alphaKey + sizedirmenu*10;
+		cursory = y + currentMenu->menuitems[replaylistitem].y + dir_on[menudepthleft]*10;
+		maxy = y + currentMenu->menuitems[replaylistitem].y + sizedirmenu*10;
 
 		if (cursory > maxy - 20)
 			cursory = maxy - 20;
@@ -3929,7 +3934,7 @@ void M_DrawReplayHut(void)
 	// Draw static menu items
 	for (i = 0; i < replaylistitem; i++)
 	{
-		INT32 localy = y + currentMenu->menuitems[i].alphaKey;
+		INT32 localy = y + currentMenu->menuitems[i].y;
 
 		if (localy < 65)
 			continue;
@@ -3943,7 +3948,7 @@ void M_DrawReplayHut(void)
 			V_DrawString(x, localy, MENUCAPS|V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags, currentMenu->menuitems[i].text);
 	}
 
-	y += currentMenu->menuitems[replaylistitem].alphaKey;
+	y += currentMenu->menuitems[replaylistitem].y;
 
 	for (i = 0; i < (INT16)sizedirmenu; i++)
 	{
@@ -4001,7 +4006,7 @@ void M_DrawReplayHut(void)
 	}
 
 	// Draw scrollbar
-	y = sizedirmenu*10 + currentMenu->menuitems[replaylistitem].alphaKey + 30;
+	y = sizedirmenu*10 + currentMenu->menuitems[replaylistitem].y + 30;
 	if (y > SCALEDVIEWHEIGHT-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, SCALEDVIEWHEIGHT-80, V_SNAPTOTOP|V_SNAPTORIGHT|159);
@@ -4150,8 +4155,8 @@ void M_HutStartReplay(INT32 choice)
 	(void)choice;
 
 	M_ClearMenus(false);
-	demo.loadfiles = M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWA");
-	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWA");
+	demo.loadfiles = M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
+	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
 
 	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
 }
@@ -4176,57 +4181,57 @@ void M_DrawPlaybackMenu(void)
 	if (paused && !demo.rewinding)
 	{
 		M_SetItemStatus(MN_PLAYBACK, "PAUSE", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "FASTFW", IT_DISABLED);
+		M_SetItemStatus(MN_PLAYBACK, "FASTFORWARD", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "REWIND", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "RESUME", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "ADVFRA", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "REWFRA", IT_CALL|IT_STRING);
+		M_SetItemStatus(MN_PLAYBACK, "ADVANCEFRAME", IT_CALL|IT_STRING);
+		M_SetItemStatus(MN_PLAYBACK, "REWINDFRAME", IT_CALL|IT_STRING);
 
 		if (M_IsItemOn(MN_PLAYBACK, "REWIND"))
-			M_SetItemOn(MN_PLAYBACK, "REWFRA");
+			M_SetItemOn(MN_PLAYBACK, "REWINDFRAME");
 		else if (M_IsItemOn(MN_PLAYBACK, "PAUSE"))
 			M_SetItemOn(MN_PLAYBACK, "RESUME");
-		else if (M_IsItemOn(MN_PLAYBACK, "FASTFW"))
-			M_SetItemOn(MN_PLAYBACK, "ADVFRA");
+		else if (M_IsItemOn(MN_PLAYBACK, "FASTFORWARD"))
+			M_SetItemOn(MN_PLAYBACK, "ADVANCEFRAME");
 	}
 	else
 	{
 		M_SetItemStatus(MN_PLAYBACK, "PAUSE", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "FASTFW", IT_CALL|IT_STRING);
+		M_SetItemStatus(MN_PLAYBACK, "FASTFORWARD", IT_CALL|IT_STRING);
 		M_SetItemStatus(MN_PLAYBACK, "REWIND", IT_CALL|IT_STRING);
 		M_SetItemStatus(MN_PLAYBACK, "RESUME", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "ADVFRA", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "REWFRA", IT_DISABLED);
+		M_SetItemStatus(MN_PLAYBACK, "ADVANCEFRAME", IT_DISABLED);
+		M_SetItemStatus(MN_PLAYBACK, "REWINDFRAME", IT_DISABLED);
 
-		if (M_IsItemOn(MN_PLAYBACK, "REWFRA"))
+		if (M_IsItemOn(MN_PLAYBACK, "REWINDFRAME"))
 			M_SetItemOn(MN_PLAYBACK, "REWIND");
 		else if (M_IsItemOn(MN_PLAYBACK, "RESUME"))
 			M_SetItemOn(MN_PLAYBACK, "PAUSE");
-		else if (M_IsItemOn(MN_PLAYBACK, "ADVFRA"))
-			M_SetItemOn(MN_PLAYBACK, "FASTFW");
+		else if (M_IsItemOn(MN_PLAYBACK, "ADVANCEFRAME"))
+			M_SetItemOn(MN_PLAYBACK, "FASTFORWARD");
 	}
 
 	if (modeattacking)
 	{
-		M_SetItemStatus(MN_PLAYBACK, "NUMVIE", IT_DISABLED);
+		M_SetItemStatus(MN_PLAYBACK, "NUMVIEWS", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW1", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW2", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW3", IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW4", IT_DISABLED);
-		M_SetItemX(MN_PLAYBACK, "FRECAM", 72);
+		M_SetItemX(MN_PLAYBACK, "FREECAM", 72);
 		M_SetItemX(MN_PLAYBACK, "QUIT", 88);
 
 		currentMenu->x = BASEVIDWIDTH/2 - 52;
 	}
 	else
 	{
-		M_SetItemStatus(MN_PLAYBACK, "NUMVIE", IT_ARROWS|IT_STRING);
+		M_SetItemStatus(MN_PLAYBACK, "NUMVIEWS", IT_ARROWS|IT_STRING);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW1", r_splitscreen >= 0 ? IT_ARROWS|IT_STRING : IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW2", r_splitscreen >= 1 ? IT_ARROWS|IT_STRING : IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW3", r_splitscreen >= 2 ? IT_ARROWS|IT_STRING : IT_DISABLED);
 		M_SetItemStatus(MN_PLAYBACK, "VIEW4", r_splitscreen >= 3 ? IT_ARROWS|IT_STRING : IT_DISABLED);
 
-		M_SetItemX(MN_PLAYBACK, "FRECAM", 156);
+		M_SetItemX(MN_PLAYBACK, "FREECAM", 156);
 		M_SetItemX(MN_PLAYBACK, "QUIT", 172);
 		currentMenu->x = BASEVIDWIDTH/2 - 88;
 	}
@@ -4268,14 +4273,14 @@ void M_DrawPlaybackMenu(void)
 		else
 			icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
 
-		if ((i == M_GetMenuIndex(MN_PLAYBACK, "FASTFW") && cv_playbackspeed.value > 1) || (i == M_GetMenuIndex(MN_PLAYBACK, "REWIND") && demo.rewinding))
-			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].alphaKey, currentMenu->y, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
+		if ((i == M_GetMenuIndex(MN_PLAYBACK, "FASTFORWARD") && cv_playbackspeed.value > 1) || (i == M_GetMenuIndex(MN_PLAYBACK, "REWIND") && demo.rewinding))
+			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x, currentMenu->y, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
 		else
-			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].alphaKey, currentMenu->y, transmap|V_SNAPTOTOP, icon, (i == itemOn) ? activemap : inactivemap);
+			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x, currentMenu->y, transmap|V_SNAPTOTOP, icon, (i == itemOn) ? activemap : inactivemap);
 
 		if (i == itemOn)
 		{
-			V_DrawCharacter(currentMenu->x + currentMenu->menuitems[i].alphaKey + 4, currentMenu->y + 14,
+			V_DrawCharacter(currentMenu->x + currentMenu->menuitems[i].x + 4, currentMenu->y + 14,
 				'\x1A' | transmap|V_SNAPTOTOP|highlightflags, false);
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y + 18, transmap|V_SNAPTOTOP|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
@@ -4284,15 +4289,15 @@ void M_DrawPlaybackMenu(void)
 			{
 				char *str = NULL;
 
-				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE") && r_splitscreen == 3))
+				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIEWS") && r_splitscreen == 3))
 					V_DrawCharacter(BASEVIDWIDTH/2 - 4, currentMenu->y + 28 - (skullAnimCounter/5),
 						'\x1A' | transmap|V_SNAPTOTOP|highlightflags, false); // up arrow
 
-				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE") && r_splitscreen == 0))
+				if (!(i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIEWS") && r_splitscreen == 0))
 					V_DrawCharacter(BASEVIDWIDTH/2 - 4, currentMenu->y + 48 + (skullAnimCounter/5),
 						'\x1B' | transmap|V_SNAPTOTOP|highlightflags, false); // down arrow
 
-				if (i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIE"))
+				if (i == M_GetMenuIndex(MN_PLAYBACK, "NUMVIEWS"))
 					str = va("%d", r_splitscreen+1);
 				else if (splitnum >= 0 && splitnum < 4)
 					str = player_names[displayplayers[splitnum]]; // 0 to 3
@@ -4567,12 +4572,12 @@ void M_Options(INT32 choice)
 	(void)choice;
 
 	// if the player is not admin or server, disable gameplay & server options
-	M_SetItemStatus(MN_OP_MAIN, "GAMEPL", Playing() && !(server || IsPlayerAdmin(consoleplayer)) ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+	M_SetItemStatus(MN_OP_MAIN, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)) ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
 	M_SetItemStatus(MN_OP_MAIN, "SERVER", Playing() && !(server || IsPlayerAdmin(consoleplayer)) ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
 
 	// no credits or data erasing in-game
-	M_SetItemStatus(MN_OP_MAIN, "KCRED", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
-	M_SetItemStatus(MN_OP_MAIN, "BCRED", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
+	M_SetItemStatus(MN_OP_MAIN, "KARTCREDITS", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
+	M_SetItemStatus(MN_OP_MAIN, "BLANCREDITS", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
 	M_SetItemStatus(MN_OP_DATA, "ERASE", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
 
 	M_SetItemStatus(MN_OP_GAME, "ENCORE", M_SecretUnlocked(SECRET_ENCORE) ? IT_CVAR|IT_STRING : IT_SECRET);
@@ -4617,11 +4622,11 @@ void M_RefreshPauseMenu(void)
 #ifdef HAVE_DISCORDRPC
 	if (discordRequestList != NULL)
 	{
-		M_SetItemStatus(MN_MPAUSE, "DISCRQ", IT_STRING | IT_SUBMENU);
+		M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_STRING | IT_SUBMENU);
 	}
 	else
 	{
-		M_SetItemStatus(MN_MPAUSE, "DISCRQ", IT_GRAYEDOUT);
+		M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_GRAYEDOUT);
 	}
 #endif
 }
@@ -4843,18 +4848,18 @@ void M_DrawSkyRoom(void)
 	if (menustack[0] == MN_OP_SOUND)
 	{
 		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
-			currentMenu->y+M_GetItemY(MN_OP_SOUND, "SNDENA"),
+			currentMenu->y+M_GetItemY(MN_OP_SOUND, "SOUND"),
 			(sound_disabled ? warningflags : highlightflags),
 			(sound_disabled ? "OFF" : "ON"));
 
 		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
-			currentMenu->y+M_GetItemY(MN_OP_SOUND, "MUSENA"),
+			currentMenu->y+M_GetItemY(MN_OP_SOUND, "MUSIC"),
 			(digital_disabled ? warningflags : highlightflags),
 			(digital_disabled ? "OFF" : "ON"));
 
-		if (M_IsItemOn(MN_OP_SOUND, "SNDENA"))
+		if (M_IsItemOn(MN_OP_SOUND, "SOUND"))
 			lengthstring = 8*(sound_disabled ? 3 : 2);
-		else if (M_IsItemOn(MN_OP_SOUND, "MUSENA"))
+		else if (M_IsItemOn(MN_OP_SOUND, "MUSIC"))
 			lengthstring = 8*(digital_disabled ? 3 : 2);
 	}
 
@@ -4862,7 +4867,7 @@ void M_DrawSkyRoom(void)
 	{
 		if (currentMenu->menuitems[i].itemaction.routine == M_HandleSoundTest)
 		{
-			y = currentMenu->menuitems[i].alphaKey;
+			y = currentMenu->menuitems[i].y;
 			break;
 		}
 	}
@@ -4881,9 +4886,9 @@ void M_DrawSkyRoom(void)
 
 	if (lengthstring)
 	{
-		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x - 10 - lengthstring - (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].alphaKey,
+		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x - 10 - lengthstring - (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].y,
 			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x + 2 + (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].alphaKey,
+		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x + 2 + (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].y,
 			'\x1D' | highlightflags, false); // right arrow
 	}
 }
@@ -5280,9 +5285,9 @@ void M_BlanCredits(INT32 choice)
 void M_SinglePlayerMenu(INT32 choice)
 {
 	(void)choice;
-	M_SetItemStatus(MN_SP_MAIN, "GP", IT_CALL|IT_STRING);
-	M_SetItemStatus(MN_SP_MAIN, "TA", M_SecretUnlocked(SECRET_TIMEATTACK) ? IT_CALL|IT_STRING : IT_SECRET);
-	M_SetItemStatus(MN_SP_MAIN, "IT", M_SecretUnlocked(SECRET_ITEMBREAKER) ? IT_CALL|IT_STRING : IT_SECRET);
+	M_SetItemStatus(MN_SP_MAIN, "GRANDPRIX", IT_CALL|IT_STRING);
+	M_SetItemStatus(MN_SP_MAIN, "TIMEATTACK", M_SecretUnlocked(SECRET_TIMEATTACK) ? IT_CALL|IT_STRING : IT_SECRET);
+	M_SetItemStatus(MN_SP_MAIN, "ITEMBREAKER", M_SecretUnlocked(SECRET_ITEMBREAKER) ? IT_CALL|IT_STRING : IT_SECRET);
 	M_EnterMenu(MN_SP_MAIN, true);
 }
 
@@ -5699,7 +5704,7 @@ void M_StartGrandPrix(INT32 choice)
 static void M_DrawTimeAttackBackground(menuitem_t *item)
 {
 	INT16 x = currentMenu->x;
-	INT16 y = currentMenu->y+item->alphaKey;
+	INT16 y = currentMenu->y+item->y;
 	consvar_t *ncv = item->itemaction.cvar;
 	V_DrawString(x, y, MENUCAPS|V_TRANSLUCENT, item->text);
 	if (item->status & IT_CV_STRING)
@@ -5751,7 +5756,7 @@ void M_DrawTimeAttackMenu(void)
 		if (dispstatus != IT_STRING && dispstatus != IT_WHITESTRING)
 			continue;
 
-		y = currentMenu->y+currentMenu->menuitems[i].alphaKey;
+		y = currentMenu->y+currentMenu->menuitems[i].y;
 		if (i == itemOn)
 			cursory = y;
 
@@ -6371,7 +6376,7 @@ void M_Connect(INT32 choice)
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
-	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN");
+	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "LINE1");
 	COM_BufAddText(va("connect node %d\n", serverlist[choice-firstserverline + serverlistpage * M_ServersPerPage()].node));
 }
 
@@ -6408,7 +6413,7 @@ void M_DrawConnectMenu(void)
 	//const char *gt = "Unknown";
 	//const char *spd = "";
 	const char *pwr = "----";
-	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "FIRLIN");
+	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "LINE1");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
 	INT32 numPages = (serverlistcount+(serversperpage-1))/serversperpage;
 	int waiting;
@@ -6905,15 +6910,15 @@ void M_DrawMPMainMenu(void)
 #if MAXPLAYERS != 16
 Update the maxplayers label...
 #endif
-	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "STASRV"),
-		(M_IsItemOn(MN_MP_MAIN, "STASRV") ? highlightflags : 0)|MENUCAPS, "(2-16 players)");
+	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "STARTSERVER"),
+		(M_IsItemOn(MN_MP_MAIN, "STARTSERVER") ? highlightflags : 0)|MENUCAPS, "(2-16 players)");
 
-	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "OFLSRV"),
-		(M_IsItemOn(MN_MP_MAIN, "OFLSRV") ? highlightflags : 0)|MENUCAPS,
+	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "OFFLINESERVER"),
+		(M_IsItemOn(MN_MP_MAIN, "OFFLINESERVER") ? highlightflags : 0)|MENUCAPS,
 		"(2-4 players)"
 		);
 
-	y += M_GetItemY(MN_MP_MAIN, "CONIP");
+	y += M_GetItemY(MN_MP_MAIN, "CONNECTIP");
 
 	V_DrawFill(x+5, y+4+5, /*16*8 + 6,*/ BASEVIDWIDTH - 2*(x+5), 8+6, 159);
 
@@ -6921,7 +6926,7 @@ Update the maxplayers label...
 	V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
 
 	// draw text cursor for name
-	if (M_IsItemOn(MN_MP_MAIN, "CONIP")
+	if (M_IsItemOn(MN_MP_MAIN, "CONNECTIP")
 	    && skullAnimCounter < 4)   //blink cursor
 		V_DrawCharacter(x+8+V_StringWidth(setupm_ip, V_ALLOWLOWERCASE),y+12,'_',false);
 
@@ -6953,7 +6958,7 @@ Update the maxplayers label...
 
 			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, trans, faceprefix[pskin][FACE_WANTED], colmap);
 
-			if (M_IsItemOn(MN_MP_MAIN, "PSETUP") && i == setupm_pselect)
+			if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP") && i == setupm_pselect)
 			{
 				static fixed_t cursorframe = 0;
 				
@@ -7223,9 +7228,9 @@ void M_DrawSetupMultiPlayerMenu(void)
 
 	st = V_StringWidth(fname, 0);
 	V_DrawString(BASEVIDWIDTH - mx - st, my + 26,
-	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "FOLLOW") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
+	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "FOLLOWER") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
 	             fname);
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOW"))
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER"))
 	{
 		V_DrawCharacter(BASEVIDWIDTH - mx - 10 - st - (skullAnimCounter/5), my + 26,
 			'\x1C' | highlightflags, false); // left arrow
@@ -7542,7 +7547,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 				while ((prev_setupm_fakeskin != setupm_fakeskin) && !(R_SkinUsable(-1, setupm_fakeskin)));
 				multi_spr2 = P_GetSkinSprite2(&skins[setupm_fakeskin], SPR2_FSTN, NULL);
 			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOW")) // follower
+			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
 			{
 				S_StartSound(NULL,sfx_menu1);
 				setupm_fakefollower--;
@@ -7569,7 +7574,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 				while ((prev_setupm_fakeskin != setupm_fakeskin) && !(R_SkinUsable(-1, setupm_fakeskin)));
 				multi_spr2 = P_GetSkinSprite2(&skins[setupm_fakeskin], SPR2_FSTN, NULL);
 			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOW")) // follower
+			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
 			{
 				S_StartSound(NULL,sfx_menu1);
 				setupm_fakefollower++;
@@ -7595,7 +7600,7 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 					setupm_name[l-1] =0;
 				}
 			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOW")) // follower
+			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
 			{
 				S_StartSound(NULL,sfx_menu1);
 				setupm_fakefollower = -1;
@@ -8233,19 +8238,19 @@ void M_Setup1PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_CONTROL); // Chat
 	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_CONTROL); // Team-chat
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_CONTROL); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPT", IT_CONTROL); // Viewpoint
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_CONTROL); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_CONTROL); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCRSHT", IT_CONTROL); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECGIF", IT_CONTROL); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSMEN", IT_CONTROL); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOL", IT_CONTROL); // Console
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_CONTROL); // Screenshot
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_CONTROL); // GIF
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_CONTROL); // System Menu
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_CONTROL); // Console
 	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_HEADER); // Spectator Controls header
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_SPACE); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTA", IT_CONTROL); // Spectate
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_CONTROL); // Spectate
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_CONTROL); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDW", IT_CONTROL); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_CONTROL); // Center View
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_CONTROL); // Look Down
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_CONTROL); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
@@ -8267,19 +8272,19 @@ void M_Setup2PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
 	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPT", IT_GRAYEDOUT2); // Viewpoint
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCRSHT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSMEN", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOL", IT_GRAYEDOUT2); // Console
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
 	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTA", IT_GRAYEDOUT2); // Spectate
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDW", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
@@ -8301,19 +8306,19 @@ void M_Setup3PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
 	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPT", IT_GRAYEDOUT2); // Viewpoint
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCRSHT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSMEN", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOL", IT_GRAYEDOUT2); // Console
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
 	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTA", IT_GRAYEDOUT2); // Spectate
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDW", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
@@ -8335,19 +8340,19 @@ void M_Setup4PControlsMenu(INT32 choice)
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", IT_GRAYEDOUT2); // Chat
 	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", IT_GRAYEDOUT2); // Team-chat
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", IT_GRAYEDOUT2); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPT", IT_GRAYEDOUT2); // Viewpoint
+	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", IT_GRAYEDOUT2); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "PAUSE", IT_GRAYEDOUT2); // Pause
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCRSHT", IT_GRAYEDOUT2); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECGIF", IT_GRAYEDOUT2); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSMEN", IT_GRAYEDOUT2); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOL", IT_GRAYEDOUT2); // Console
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", IT_GRAYEDOUT2); // Screenshot
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", IT_GRAYEDOUT2); // GIF
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", IT_GRAYEDOUT2); // System Menu
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", IT_GRAYEDOUT2); // Console
 	/*M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTA", IT_GRAYEDOUT2); // Spectate
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", IT_GRAYEDOUT2); // Spectate
 	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", IT_GRAYEDOUT2); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDW", IT_GRAYEDOUT2); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTER", IT_GRAYEDOUT2); // Center View
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", IT_GRAYEDOUT2); // Look Down
+	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", IT_GRAYEDOUT2); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
@@ -8435,7 +8440,7 @@ void M_DrawControl(void)
 			tmp[0] ='\0';
 			for (iter = 0; iter < MAXINPUTMAPPING; iter++)
 			{
-				key = setupcontrols[currentMenu->menuitems[i].alphaKey][iter];
+				key = setupcontrols[currentMenu->menuitems[i].argument][iter];
 				if (key != KEY_NULL)
 				{
 					if (tmp[0] != '\0')
@@ -8580,7 +8585,7 @@ void M_ChangeControl(INT32 choice)
 	// If you change the below message, then change the size of this buffer!
 	static char tmp[68];
 
-	controltochange = currentMenu->menuitems[choice].alphaKey;
+	controltochange = currentMenu->menuitems[choice].argument;
 	sprintf(tmp, M_GetText("Hit the new key for\n%s\nESC for Cancel"),
 		currentMenu->menuitems[choice].text);
 	strlcpy(controltochangetext, currentMenu->menuitems[choice].text, 33);
@@ -8710,7 +8715,7 @@ void M_DrawVideoMenu(void)
 {
 	M_DrawGenericMenu();
 
-	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_OP_VIDEO, "SETMOD"),
+	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_OP_VIDEO, "SETMODE"),
 		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|MENUCAPS,
 			va("%dx%d", vid.width, vid.height));
 	
@@ -8719,12 +8724,12 @@ void M_DrawVideoMenu(void)
 	if (rendermode == render_opengl)
 	{
 		M_SetItemStatus(MN_OP_VIDEO, "OPENGL", IT_CALL | IT_STRING);
-		//M_SetItemStatus(MN_OP_VIDEO, "PARSOF", IT_DISABLED);
+		//M_SetItemStatus(MN_OP_VIDEO, "PARALLEL", IT_DISABLED);
 	}
 	else
 #endif
 	{
-		//M_SetItemStatus(MN_OP_VIDEO, "PARSOF", IT_CALL | IT_CVAR);
+		//M_SetItemStatus(MN_OP_VIDEO, "PARALLEL", IT_CALL | IT_CVAR);
 #ifdef HWRENDER
 		M_SetItemStatus(MN_OP_VIDEO, "OPENGL", IT_DISABLED);
 #endif
@@ -8953,23 +8958,23 @@ void M_DrawMonitorToggles(void)
 			}
 
 #ifdef ITEMTOGGLEBOTTOMRIGHT
-			if (currentMenu->menuitems[thisitem].alphaKey == 255)
+			if (currentMenu->menuitems[thisitem].argument == 255)
 			{
 				V_DrawScaledPatch(x, y, V_TRANSLUCENT, W_CachePatchName("K_ISBG", PU_CACHE));
 				continue;
 			}
 #endif
-			if (currentMenu->menuitems[thisitem].alphaKey == 0)
+			if (currentMenu->menuitems[thisitem].argument == 0)
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISTOGL", PU_CACHE));
 				continue;
 			}
 
-			cv = KartItemCVars[currentMenu->menuitems[thisitem].alphaKey-1];
+			cv = KartItemCVars[currentMenu->menuitems[thisitem].argument-1];
 			translucent = (cv->value ? 0 : V_TRANSLUCENT);
 
-			switch (currentMenu->menuitems[thisitem].alphaKey)
+			switch (currentMenu->menuitems[thisitem].argument)
 			{
 				case KRITEM_DUALSNEAKER:
 				case KRITEM_DUALJAWZ:
@@ -8999,11 +9004,11 @@ void M_DrawMonitorToggles(void)
 			if (drawnum != 0)
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].alphaKey, true), PU_CACHE));
+				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
 				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", drawnum));
 			}
 			else
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].alphaKey, true), PU_CACHE));
+				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
 
 			y += spacing;
 		}
@@ -9014,7 +9019,7 @@ void M_DrawMonitorToggles(void)
 
 	{
 #ifdef ITEMTOGGLEBOTTOMRIGHT
-		if (currentMenu->menuitems[itemOn].alphaKey == 255)
+		if (currentMenu->menuitems[itemOn].argument == 255)
 		{
 			V_DrawScaledPatch(onx-1, ony-2, V_TRANSLUCENT, W_CachePatchName("K_ITBG", PU_CACHE));
 			if (shitsfree)
@@ -9029,17 +9034,17 @@ void M_DrawMonitorToggles(void)
 		}
 		else
 #endif
-		if (currentMenu->menuitems[itemOn].alphaKey == 0)
+		if (currentMenu->menuitems[itemOn].argument == 0)
 		{
 			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
 			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITTOGL", PU_CACHE));
 		}
 		else
 		{
-			cv = KartItemCVars[currentMenu->menuitems[itemOn].alphaKey-1];
+			cv = KartItemCVars[currentMenu->menuitems[itemOn].argument-1];
 			translucent = (cv->value ? 0 : V_TRANSLUCENT);
 
-			switch (currentMenu->menuitems[itemOn].alphaKey)
+			switch (currentMenu->menuitems[itemOn].argument)
 			{
 				case KRITEM_TENFOLDBANANA:
 					drawnum = 10;
@@ -9057,12 +9062,12 @@ void M_DrawMonitorToggles(void)
 			if (drawnum != 0)
 			{
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].alphaKey, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
 				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
 				V_DrawKartString(onx+37, ony+34, translucent, va("%d", drawnum));
 			}
 			else
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].alphaKey, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
 		}
 	}
 
@@ -9128,7 +9133,7 @@ void M_HandleMonitorToggles(INT32 choice)
 
 		case KEY_ENTER:
 #ifdef ITEMTOGGLEBOTTOMRIGHT
-			if (currentMenu->menuitems[itemOn].alphaKey == 255)
+			if (currentMenu->menuitems[itemOn].argument == 255)
 			{
 				//S_StartSound(NULL, sfx_s26d);
 				if (!shitsfree)
@@ -9139,7 +9144,7 @@ void M_HandleMonitorToggles(INT32 choice)
 			}
 			else
 #endif
-			if (currentMenu->menuitems[itemOn].alphaKey == 0)
+			if (currentMenu->menuitems[itemOn].argument == 0)
 			{
 				INT32 v = cv_sneaker.value;
 				S_StartSound(NULL, sfx_s1b4);
@@ -9152,7 +9157,7 @@ void M_HandleMonitorToggles(INT32 choice)
 			else
 			{
 				S_StartSound(NULL, sfx_s1ba);
-				CV_AddValue(KartItemCVars[currentMenu->menuitems[itemOn].alphaKey-1], 1);
+				CV_AddValue(KartItemCVars[currentMenu->menuitems[itemOn].argument-1], 1);
 			}
 			break;
 
@@ -9377,11 +9382,11 @@ void M_DrawDiscordRequests(void)
 		if (discordRequestList == NULL)
 		{
 			// No other requests
-			M_SetItemStatus(MN_MPAUSE, "DISCRQ", IT_GRAYEDOUT);
+			M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_GRAYEDOUT);
 
 			M_ExitMenu();
 			if (menustack[0] == MN_MPAUSE)
-				M_SetItemOn(MN_MPAUSE, "CONTIN");
+				M_SetItemOn(MN_MPAUSE, "CONTINUE");
 
 			return;
 		}

@@ -2052,8 +2052,8 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
-#define WARN(str, ...) deh_warning("MenuItem " ITEMNAMEFMT ": " str, menuitem->itemname, __VA_ARGS__)
-#define WARN0(str) deh_warning("MenuItem " ITEMNAMEFMT ": " str, menuitem->itemname)
+#define WARN(str, ...) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs))
 static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2095,9 +2095,25 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		word2 = tmp += 2;
 		//strupr(word2);
 
-		if (fastcmp(word, "PATCH"))
+		if (fastcmp(word, "X"))
+		{
+			menuitem->x = get_number(word2);
+		}
+		else if (fastcmp(word, "Y"))
+		{
+			menuitem->y = get_number(word2);
+		}
+		else if (fastcmp(word, "ARGUMENT"))
+		{
+			menuitem->argument = get_number(word2);
+		}
+		else if (fastcmp(word, "PATCH"))
 		{
 			menuitem->patch = Z_StrDup(word2);
+		}
+		else if (fastcmp(word, "TOOLTIP"))
+		{
+			menuitem->tooltip = Z_StrDup(word2);
 		}
 		else if (fastncmp(word, "TEXT", 4))
 		{
@@ -2217,10 +2233,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			status |= flags;
 			menuitem->itemaction.routine = routine;
 		}
-		else if (fastcmp(word, "ALPHAKEY") || fastcmp(word, "Y"))
-		{
-			menuitem->alphaKey = get_number(word2);
-		}
 		else
 			WARN("unknown word '%s'", word);
 	}
@@ -2233,6 +2245,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 #undef WARN0
 
 #define WARN(str, ...) deh_warning("Menu %s: " str, DEH_MenutypeName(num), __VA_ARGS__)
+#define WARN0(str) deh_warning("Menu %s: " str, DEH_MenutypeName(num))
 void readmenu(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2269,29 +2282,23 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				// ...or get the word after the space. yay special syntax!
 				word2 = strchr(s, ' ');
-				if (word2)
+				if (!word2 || *word2 == '\0' || word2[1] == ' ') // trailing space(s) after MenuItem doesn't count
 				{
-					*word2++ = '\0';
-					if (*word2 == '\0' || *word2 == ' ') // trailing space(s) after MenuItem doesn't count
-						word2 = NULL;
-					else
-						strupr(word2);
+					WARN0("missing name for menuitem");
+					continue;
 				}
+				*word2++ = '\0';
+				strupr(word2);
 				strupr(word);
 
 				if (fastcmp(word, "MENUITEM"))
 				{
-					if (word2 && strlen(word2) > ITEMNAMELEN)
-					{
-						WARN("item name %s is too long (max %d characters)", word2, ITEMNAMELEN);
-						continue;
-					}
-					menuitem_t *item = word2 ? M_CheckMenuItem(num, word2) : NULL;
+					menuitem_t *item = M_CheckMenuItem(num, word2);
 					if (item == NULL)
 					{
 						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
 						item = menudef->menuitems + menudef->numitems++;
-						strncpy(item->itemname, word2 ? word2 : "", ITEMNAMELEN);
+						DEH_Link(word2, &item->info, &menunames);
 						item->text = "";
 					}
 					readmenuitem(f, item);
@@ -2471,6 +2478,16 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				menudef->y = value;
 			}
+			else if (fastcmp(word, "ENTERROUTINE"))
+			{
+				void (*routine)(INT32) = get_menuroutine(word2);
+				if (!routine)
+				{
+					WARN("unknown enter routine '%s'", word2);
+					continue;
+				}
+				menudef->enterroutine = routine;
+			}
 			else if (fastcmp(word, "QUITROUTINE"))
 			{
 				void (*routine)(INT32) = get_menuroutine(word2);
@@ -2489,6 +2506,7 @@ void readmenu(MYFILE *f, INT32 num)
 	Z_Free(s);
 }
 #undef WARN
+#undef WARN0
 
 void readframe(MYFILE *f, INT32 num)
 {

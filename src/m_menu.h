@@ -216,9 +216,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
-#define ITEMNAMELEN 6
-#define ITEMNAMEFMT "%.6s"
-
 typedef union
 {
 	menutype_t submenu;      // IT_SUBMENU
@@ -231,18 +228,19 @@ typedef union
 //
 struct menuitem_t
 {
-	char itemname[ITEMNAMELEN];
+	dehinfo_t info;
 
 	// show IT_xxx
 	UINT16 status;
 
 	const char *patch;
 	const char *text; // used when FONTBxx lump is found
+	const char *tooltip;
 
 	itemaction_t itemaction;
 
-	// hotkey in menu or y of the item
-	UINT16 alphaKey;
+	INT32 argument;
+	INT16 x, y;
 };
 
 struct menu_t
@@ -254,6 +252,7 @@ struct menu_t
 	void         (*drawroutine)(void); // draw routine
 	INT16          x, y;               // x, y of menu
 	INT16          lastOn;             // last item user was on in menu
+	void         (*enterroutine)(INT32 choice); // called before enter a menu
 	void         (*quitroutine)(INT32 choice); // called before quit a menu
 };
 
