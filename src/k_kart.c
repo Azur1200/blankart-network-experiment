@@ -7266,27 +7266,21 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 }
 
 // Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
-static INT32 ticinversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
+static INT32 K_TicInversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
 {
     return (TICRATE / kartspeed) + (TICRATE / CLAMP(kartweight, 1, 5)) + grade;
 }
 
-// Get the maximum required stacks needed for the ringnerf based on kartspeed and kartweight
-static INT32 statrangemap(UINT8 kartspeed, UINT8 kartweight)
+// Get the threshold for the ringnerf based on kartspeed and kartweight
+static INT32 K_StackThreshold(UINT8 kartspeed, UINT8 kartweight)
 {
 	INT32 scaledsw = (9 - kartspeed) + (9 - kartweight);
-
-    fixed_t scaled_input = (scaledsw)*FRACUNIT/16;
-
-    // Scale the result to be within range [2, 4]
-    fixed_t result = 4*FRACUNIT - (FixedMul(scaled_input, 2*FRACUNIT));
+    fixed_t result = 4*FRACUNIT - (FixedMul(scaledsw*FRACUNIT/16, 2*FRACUNIT));
 
     // Stay within range please!
 	result = CLAMP(result, 2*FRACUNIT, 4*FRACUNIT);
 
-	result = result >> FRACBITS;
-
-    return result;
+    return result >> FRACBITS;
 }
 
 static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
@@ -7301,11 +7295,11 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 
 	if (chainnerf)
 	{
-		UINT8 requiredgrade = statrangemap(player->kartspeed, player->kartweight);
+		UINT8 requiredgrade = K_StackThreshold(player->kartspeed, player->kartweight);
 
 		if (player->numboosts >= requiredgrade)
 		{
-			INT32 insum = ticinversesum(player->kartspeed, player->kartweight, player->numboosts);
+			INT32 insum = K_TicInversesum(player->kartspeed, player->kartweight, player->numboosts);
 			INT32 subring = (player->ringboost*2)/insum;
 
 			if (player->kartspeed == 1)
