@@ -157,59 +157,40 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 // flags for items in the menu
 // menu handle (what we do when key is pressed
-#define IT_TYPE             15     // (1+2+4+8)
-#define IT_CALL              0     // call the function
-#define IT_SPACE             1     // no handling
+#define IT_TYPE           (1+2+4)
+#define IT_CALL              1     // call the function
 #define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
 #define IT_KEYHANDLER        4     // call with the key in param
-#define IT_SUBMENU           6     // go to sub menu
-#define IT_CVAR              8     // handle as a cvar
-#define IT_PAIR             11     // no handling, define both sides of text
+#define IT_SUBMENU         (1+2)   // go to sub menu
+#define IT_CVAR            (1+4)   // handle as a cvar
+#define IT_PAIR            (2+4)   // no handling, define both sides of text
 
-#define IT_DISPLAY   (48+64+128)    // 16+32+64+128
-#define IT_NOTHING            0     // space
-#define IT_PATCH             16     // a patch or a string with big font
-#define IT_STRING            32     // little string (spaced with 10)
-#define IT_WHITESTRING       48     // little string in white
-#define IT_DYBIGSPACE        64     // same as noting
-#define IT_DYLITLSPACE   (16+64)    // little space
-#define IT_STRING2       (32+64)    // a simple string
-#define IT_GRAYPATCH     (16+32+64) // grayed patch or big font string
-#define IT_BIGSLIDER        128     // volume sound use this
-#define IT_TRANSTEXT     (16+128)   // Transparent text
-#define IT_TRANSTEXT2    (32+128)   // used for control names
-#define IT_HEADERTEXT    (48+128)   // Non-selectable header option, displays in yellow offset to the left a little
-#define IT_QUESTIONMARKS (64+128)   // Displays as question marks, used for secrets
-#define IT_CENTER           256     // if IT_PATCH, center it on screen
+// display flags
+#define IT_DISPLAY       (8+16+32)
+#define IT_PATCH              8    // a patch or a string with big font
+#define IT_STRING            16    // little string (spaced with 10)
+#define IT_WHITESTRING       32    // little string in white
+#define IT_STRING2         (8+16)  // a simple string
+#define IT_HEADERTEXT      (8+32)  // Non-selectable header option, displays in yellow offset to the left a little
+
+// flags specific to each item action type
+#define IT_ACTION        (64+128+256)
 
 //consvar specific
-#define IT_CVARTYPE   (512+1024+2048)
-#define IT_CV_NORMAL         0
-#define IT_CV_SLIDER       512
-#define IT_CV_STRING      1024
-#define IT_CV_NOPRINT     1536
-#define IT_CV_NOMOD       2048
-#define IT_CV_INVISSLIDER 2560
-#define IT_CV_INTEGERSTEP 4096      // if IT_CV_NORMAL and cvar is CV_FLOAT, modify it by 1 instead of 0.0625
-#define IT_CV_FLOATSLIDER 4608      // IT_CV_SLIDER, value modified by 0.0625 instead of 1 (for CV_FLOAT cvars)
+#define IT_CV_SLIDER         64
+#define IT_CV_STRING        128
+#define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
 
 //call/submenu specific
 // There used to be a lot more here but ...
 // A lot of them became redundant with the advent of the Pause menu, so they were removed
-#define IT_CALLTYPE   (512+1024)
-#define IT_CALL_NORMAL          0
-#define IT_CALL_NOTMODIFIED   512
+#define IT_CALL_NOTMODIFIED  64
 
-// in INT16 for some common use
-#define IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
-#define IT_LITLSPACE   (IT_SPACE  +IT_DYLITLSPACE)
-#define IT_CONTROL     (IT_STRING2+IT_CALL)
-#define IT_CVARMAX     (IT_CVAR   +IT_CV_NOMOD)
-#define IT_DISABLED    (IT_SPACE  +IT_GRAYPATCH)
-#define IT_GRAYEDOUT   (IT_SPACE  +IT_TRANSTEXT)
-#define IT_GRAYEDOUT2  (IT_SPACE  +IT_TRANSTEXT2)
-#define IT_HEADER      (IT_SPACE  +IT_HEADERTEXT)
-#define IT_SECRET      (IT_SPACE  +IT_QUESTIONMARKS)
+// extra flags
+#define IT_CENTER           512    // if IT_PATCH, center it on screen
+#define IT_HIDDEN          1024    // invisible, unselectable
+#define IT_GRAYEDOUT       2048    // grayed out, unselectable
+#define IT_SECRET          4096    // ??????? ????????????
 
 #define MAXSTRINGLENGTH 32
 

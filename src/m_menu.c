@@ -266,15 +266,29 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 // an array of macros for getting/setting menuitem properties
 #define M_IsItemOn(t, n)                (itemOn == M_GetMenuIndex(t, n))
 #define M_SetItemOn(t, n)               (itemOn = M_GetMenuIndex(t, n))
-#define M_SetItemStatus(t, n, v)        (M_GetMenuItem(t, n)->status = v)
-#define M_GetItemStatus(t, n)           (M_GetMenuItem(t, n)->status)
 #define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->itemaction.routine = v)
 #define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->itemaction.cvar = v)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
 #define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
-#define M_AdjustItemY(t, n, v)          (M_GetMenuItem(t, n)->y += v)
+
+static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, boolean cond)
+{
+	if (cond)
+		M_GetMenuItem(type, name)->status |= flag;
+	else
+		M_GetMenuItem(type, name)->status &= ~flag;
+}
+
+#define M_SetItemVisible(t, n, c)  M_ChangeItemStatus(t, n, IT_HIDDEN, !(c))
+#define M_SetItemDisabled(t, n, c) M_ChangeItemStatus(t, n, IT_GRAYEDOUT, c)
+#define M_SetItemSecret(t, n, c)   M_ChangeItemStatus(t, n, IT_SECRET, c)
+
+static boolean M_ItemSelectable(menuitem_t *item)
+{
+	return !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET)) && (item->status & IT_TYPE);
+}
 
 // bruh...
 static UINT32 M_ServersPerPage(void)
@@ -570,76 +584,53 @@ void Nextmap_OnChange(void)
 		// see also p_setup.c's P_LoadRecordGhosts
 		char *gamemode = M_AppendGametypeAndModName();
 		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
-		UINT8 active = 0;
 
+		boolean visible;
+		boolean showreplay = false, showguest = false;
+
+		// best time
+		visible = FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode));
+		M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
+		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
+		if (visible)
+			showreplay = showguest = true;
+
+		// best lap
+		visible = levellistmode != LLM_ITEMBREAKER && FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode));
+		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
+		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
+		if (visible)
+			showreplay = showguest = true;
+
+		// last
+		visible = FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode));
+		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
+		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
+		if (visible)
+			showreplay = showguest = true;
+
+		// guest
+		visible = FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode));
+		M_SetItemVisible(MN_SP_REPLAY, "REPLAYGUEST", visible);
+		M_SetItemVisible(MN_SP_GUESTREPLAY, "DELETE", visible);
+		M_SetItemVisible(MN_SP_GHOST, "GUEST", visible);
+		if (visible)
+			showreplay = showguest = true;
+
+		// staff
 		CV_StealthSetValue(&cv_dummystaff, 0);
-
-		active = 0;
-		M_SetItemStatus(MN_SP_TIMEATTACK, "GUEST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_TIMEATTACK, "REPLAY", IT_DISABLED);
-
-		// Check if file exists, if not, disable REPLAY option
-		M_SetItemStatus(MN_SP_REPLAY, "REPLAYTIME", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAP", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "REPLAYGUEST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_REPLAY, "REPLAYSTAFF", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVETIME", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAP", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GUESTREPLAY, "DELETE", IT_DISABLED);
-
-		M_SetItemStatus(MN_SP_GHOST, "GUEST", IT_DISABLED);
-		M_SetItemStatus(MN_SP_GHOST, "STAFF", IT_DISABLED);
-
-		if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
-			M_SetItemStatus(MN_SP_REPLAY, "REPLAYTIME", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVETIME", IT_WHITESTRING|IT_CALL);
-			active |= 3;
-		}
-
-		if (levellistmode != LLM_ITEMBREAKER) {
-			if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode))) {
-				M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAP", IT_WHITESTRING|IT_CALL);
-				M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAP", IT_WHITESTRING|IT_CALL);
-				active |= 3;
-			}
-		}
-
-		if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode))) {
-			M_SetItemStatus(MN_SP_REPLAY, "REPLAYLAST", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GUESTREPLAY, "SAVELAST", IT_WHITESTRING|IT_CALL);
-			active |= 3;
-		}
-
-		if (FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
-		{
-			M_SetItemStatus(MN_SP_REPLAY, "REPLAYGUEST", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GUESTREPLAY, "DELETE", IT_WHITESTRING|IT_CALL);
-			M_SetItemStatus(MN_SP_GHOST, "GUEST", IT_STRING|IT_CVAR);
-			active |= 3;
-		}
-
 		CV_SetValue(&cv_dummystaff, 1);
-		if (cv_dummystaff.value)
+		visible = cv_dummystaff.value != 0;
+		M_SetItemVisible(MN_SP_REPLAY, "REPLAYSTAFF", visible);
+		M_SetItemVisible(MN_SP_GHOST, "STAFF", visible);
+		if (visible)
 		{
-			M_SetItemStatus(MN_SP_REPLAY, "REPLAYSTAFF", IT_WHITESTRING|IT_KEYHANDLER);
-			M_SetItemStatus(MN_SP_GHOST, "STAFF", IT_STRING|IT_CVAR);
 			CV_StealthSetValue(&cv_dummystaff, 1);
-			active |= 1;
+			showreplay = true;
 		}
 
-		if (active) {
-			if (active & 1)
-				M_SetItemStatus(MN_SP_TIMEATTACK, "REPLAY", IT_WHITESTRING|IT_SUBMENU);
-			if (active & 2)
-				M_SetItemStatus(MN_SP_TIMEATTACK, "GUEST", IT_WHITESTRING|IT_SUBMENU);
-		}
-		else if (M_IsItemOn(MN_SP_TIMEATTACK, "REPLAY")) // Reset lastOn so replay isn't still selected when not available.
-		{
-			currentMenu->lastOn = itemOn;
-			M_SetItemOn(MN_SP_TIMEATTACK, "START");
-		}
+		M_SetItemVisible(MN_SP_TIMEATTACK, "REPLAY", showreplay);
+		M_SetItemVisible(MN_SP_TIMEATTACK, "GUEST", showguest);
 
 		free(gpath);
 		Z_Free(gamemode);
@@ -709,38 +700,22 @@ static void Newgametype_OnChange(void)
 
 void Screenshot_option_Onchange(void)
 {
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "FOLDER", cv_screenshot_option.value == 3 ? IT_CVAR|IT_STRING|IT_CV_STRING : IT_DISABLED);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "FOLDER", cv_screenshot_option.value == 3);
 }
 
 void Moviemode_mode_Onchange(void)
 {
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPTIMIZE", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDOWNSCALE", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGMEMORY", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGCOMPRESSION", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGSTRATEGY", IT_DISABLED);
-	M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGWINDOW", IT_DISABLED);
-
-	switch (cv_moviemode.value)
-	{
-	case MM_GIF:
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFOPTIMIZE", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "GIFDOWNSCALE", IT_STRING|IT_CVAR);
-		break;
-	case MM_APNG:
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGMEMORY", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGCOMPRESSION", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGSTRATEGY", IT_STRING|IT_CVAR);
-		M_SetItemStatus(MN_OP_SCREENSHOTS, "APNGWINDOW", IT_STRING|IT_CVAR);
-		break;
-	default:
-		break;
-	}
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "GIFOPTIMIZE", cv_moviemode.value == MM_GIF);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "GIFDOWNSCALE", cv_moviemode.value == MM_GIF);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "APNGMEMORY", cv_moviemode.value == MM_APNG);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "APNGCOMPRESSION", cv_moviemode.value == MM_APNG);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "APNGSTRATEGY", cv_moviemode.value == MM_APNG);
+	M_SetItemVisible(MN_OP_SCREENSHOTS, "APNGWINDOW", cv_moviemode.value == MM_APNG);
 }
 
 void Addons_option_Onchange(void)
 {
-	M_SetItemStatus(MN_OP_ADDONS, "FOLDER", cv_addons_option.value == 3 ? IT_CVAR|IT_STRING|IT_CV_STRING : IT_DISABLED);
+	M_SetItemVisible(MN_OP_ADDONS, "FOLDER", cv_addons_option.value == 3);
 }
 
 void Moviemode_option_Onchange(void)
@@ -823,9 +798,7 @@ static void M_ChangeCvar(INT32 choice)
 
 	choice = (choice<<1) - 1;
 
-	if (((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER)
-	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_INVISSLIDER)
-	    ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD))
+	if ((currentMenu->menuitems[itemOn].status & IT_ACTION) == IT_CV_SLIDER)
 	{
 		CV_SetValue(cv,cv->value+choice);
 	}
@@ -902,7 +875,7 @@ static void M_NextOpt(void)
 			itemOn = 0;
 		else
 			itemOn++;
-	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+	} while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
 }
 
 static void M_PrevOpt(void)
@@ -915,7 +888,7 @@ static void M_PrevOpt(void)
 			itemOn = currentMenu->numitems - 1;
 		else
 			itemOn--;
-	} while (oldItemOn != itemOn && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE);
+	} while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
 }
 
 // lock out further input in a tic when important buttons are pressed
@@ -1200,7 +1173,7 @@ boolean M_Responder(event_t *ev)
 	// BP: one of the more big hack i have never made
 	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR)
 	{
-		if ((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_STRING)
+		if ((currentMenu->menuitems[itemOn].status & IT_ACTION) == IT_CV_STRING)
 		{
 
 			if (shiftdown && ch >= 32 && ch <= 127)
@@ -1360,7 +1333,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
-			if ((currentMenu->menuitems[itemOn].status) == IT_CONTROL)
+			if ((currentMenu->menuitems[itemOn].status) == (IT_STRING2|IT_CALL))
 			{
 				// detach any keys associated with the game control
 				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
@@ -1552,128 +1525,79 @@ void M_StartControlPanel(void)
 	}
 	else if (!(netgame || multiplayer)) // Single Player
 	{
-		if (gamestate != GS_LEVEL /*|| ultimatemode*/) // intermission, so gray out stuff.
-		{
-			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_GRAYEDOUT);
-		}
-		else
-		{
-			M_SetItemStatus(MN_SPAUSE, "RETRY", IT_STRING|IT_CALL);
-		}
+		// intermission, so gray out stuff.
+		M_SetItemDisabled(MN_SPAUSE, "RETRY", gamestate != GS_LEVEL /*|| ultimatemode*/);
 
 		M_EnterMenu(MN_SPAUSE, true);
 		M_SetItemOn(MN_SPAUSE, "CONTINUE");
 	}
 	else // multiplayer
 	{
-		M_SetItemStatus(MN_MPAUSE, "MAPCHANGE", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "ADDONS", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SCRAMBLE", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SETUP1", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SETUP2", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SETUP3", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SETUP4", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "ENTER", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "CANCELJOIN", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "SPECTATECHANGE", IT_DISABLED);
-		M_SetItemStatus(MN_MPAUSE, "PLAYERSETUP", IT_DISABLED);
-		M_SetItemStatus(MN_CHANGETEAM, "PLAYER", IT_DISABLED);
-		M_SetItemStatus(MN_CHANGESPECTATE, "PLAYER", IT_DISABLED);
-
-		// Reset these in case splitscreen messes things up
-		M_SetItemY(MN_MPAUSE, "ADDONS", 8);
-		M_SetItemY(MN_MPAUSE, "SCRAMBLE", 8);
-		M_SetItemY(MN_MPAUSE, "MAPCHANGE", 24);
-
-		M_SetItemY(MN_MPAUSE, "TEAMCHANGE", 48);
-		M_SetItemY(MN_MPAUSE, "SPECTATECHANGE", 48);
-		M_SetItemY(MN_MPAUSE, "OPTIONS", 64);
-		M_SetItemY(MN_MPAUSE, "ENDGAME", 80);
-		M_SetItemY(MN_MPAUSE, "QUITGAME", 88);
-
+		INT32 offset = 0;
+#ifdef HAVE_DISCORDRPC
+		offset = -8;
+		M_RefreshPauseMenu();
+#endif
 		Dummymenuplayer_OnChange();
 
-		if ((server || IsPlayerAdmin(consoleplayer)))
+		M_SetItemY(MN_MPAUSE, "ADDONS", 8 + offset);
+		M_SetItemY(MN_MPAUSE, "SCRAMBLE", 8 + offset);
+		M_SetItemY(MN_MPAUSE, "MAPCHANGE", 24 + offset);
+
+		M_SetItemVisible(MN_MPAUSE, "MAPCHANGE", server || IsPlayerAdmin(consoleplayer));
+		M_SetItemVisible(MN_MPAUSE, "ADDONS", server || IsPlayerAdmin(consoleplayer));
+		M_SetItemVisible(MN_MPAUSE, "SCRAMBLE", (server || IsPlayerAdmin(consoleplayer)) && G_GametypeHasTeams());
+
+		M_SetItemVisible(MN_MPAUSE, "SETUP1", splitscreen > 0);
+		M_SetItemVisible(MN_MPAUSE, "SETUP2", splitscreen > 0);
+		M_SetItemVisible(MN_MPAUSE, "SETUP3", splitscreen > 1);
+		M_SetItemVisible(MN_MPAUSE, "SETUP4", splitscreen > 2);
+		M_SetItemVisible(MN_MPAUSE, "PLAYERSETUP", !splitscreen);
+		M_SetItemVisible(MN_CHANGETEAM, "PLAYER", splitscreen);
+		M_SetItemVisible(MN_CHANGESPECTATE, "PLAYER", splitscreen);
+
+		// splitscreen hell! yay!
+		M_SetItemVisible(MN_MPAUSE, "SPECTATE", false);
+		M_SetItemDisabled(MN_MPAUSE, "SPECTATE", false);
+		M_SetItemVisible(MN_MPAUSE, "ENTER", false);
+		M_SetItemVisible(MN_MPAUSE, "CANCELJOIN", false);
+		M_SetItemVisible(MN_MPAUSE, "TEAMCHANGE", false);
+		M_SetItemVisible(MN_MPAUSE, "SPECTATECHANGE", false);
+
+		if (splitscreen && netgame)
 		{
-			M_SetItemStatus(MN_MPAUSE, "MAPCHANGE", IT_STRING | IT_CALL);
-			M_SetItemStatus(MN_MPAUSE, "ADDONS", IT_STRING | IT_CALL);
+			offset = splitscreen*8;
 			if (G_GametypeHasTeams())
-				M_SetItemStatus(MN_MPAUSE, "SCRAMBLE", IT_STRING | IT_SUBMENU);
+				M_SetItemVisible(MN_MPAUSE, "TEAMCHANGE", true);
+			else if (G_GametypeHasSpectators())
+				M_SetItemVisible(MN_MPAUSE, "SPECTATECHANGE", true);
+			else
+				offset = 0;
 		}
-
-		if (splitscreen)
+		else if (!splitscreen)
 		{
-			M_SetItemStatus(MN_MPAUSE, "SETUP1", IT_STRING | IT_CALL);
-			M_SetItemStatus(MN_MPAUSE, "SETUP2", IT_STRING | IT_CALL);
-			M_SetItemStatus(MN_CHANGETEAM, "PLAYER", IT_STRING|IT_CVAR);
-			M_SetItemStatus(MN_CHANGESPECTATE, "PLAYER", IT_STRING|IT_CVAR);
-
-			if (netgame)
+			offset = 0;
+			if (G_GametypeHasTeams())
+				M_SetItemVisible(MN_MPAUSE, "TEAMCHANGE", true);
+			else if (G_GametypeHasSpectators())
+				M_SetItemVisible(MN_MPAUSE, !players[consoleplayer].spectator ? "SPECTATE" :
+				                            players[consoleplayer].pflags & PF_WANTSTOJOIN ? "CANCELJOIN" :
+				                            "ENTER", true);
+			else // in this odd case, we still want something to be on the menu even if it's useless
 			{
-				if (G_GametypeHasTeams())
-				{
-					M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_STRING | IT_SUBMENU);
-					M_AdjustItemY(MN_MPAUSE, "TEAMCHANGE", (splitscreen+1) * 8);
-					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
-					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
-				}
-				else if (G_GametypeHasSpectators())
-				{
-					M_SetItemStatus(MN_MPAUSE, "SPECTATECHANGE", IT_STRING | IT_SUBMENU);
-					M_AdjustItemY(MN_MPAUSE, "SPECTATECHANGE", (splitscreen+1) * 8);
-					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
-					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
-				}
-			}
-
-			if (splitscreen > 1)
-			{
-				M_SetItemStatus(MN_MPAUSE, "SETUP3", IT_STRING | IT_CALL);
-
-				M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
-				M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
-				M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
-
-				if (splitscreen > 2)
-				{
-					M_SetItemStatus(MN_MPAUSE, "SETUP4", IT_STRING | IT_CALL);
-					M_AdjustItemY(MN_MPAUSE, "OPTIONS", 8);
-					M_AdjustItemY(MN_MPAUSE, "ENDGAME", 8);
-					M_AdjustItemY(MN_MPAUSE, "QUITGAME", 8);
-				}
+				M_SetItemVisible(MN_MPAUSE, "SPECTATE", true);
+				M_SetItemDisabled(MN_MPAUSE, "SPECTATE", true);
 			}
 		}
 		else
-		{
-			M_SetItemStatus(MN_MPAUSE, "PLAYERSETUP", IT_STRING | IT_CALL);
+			offset = (splitscreen-1)*8;
 
-			if (G_GametypeHasTeams())
-				M_SetItemStatus(MN_MPAUSE, "TEAMCHANGE", IT_STRING | IT_SUBMENU);
-			else if (G_GametypeHasSpectators())
-			{
-				if (!players[consoleplayer].spectator)
-					M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_STRING | IT_CALL);
-				else if (players[consoleplayer].pflags & PF_WANTSTOJOIN)
-					M_SetItemStatus(MN_MPAUSE, "CANCELJOIN", IT_STRING | IT_CALL);
-				else
-					M_SetItemStatus(MN_MPAUSE, "ENTER", IT_STRING | IT_CALL);
-			}
-			else // in this odd case, we still want something to be on the menu even if it's useless
-				M_SetItemStatus(MN_MPAUSE, "SPECTATE", IT_GRAYEDOUT);
-		}
+		M_SetItemY(MN_MPAUSE, "OPTIONS", 64 + offset);
+		M_SetItemY(MN_MPAUSE, "ENDGAME", 80 + offset);
+		M_SetItemY(MN_MPAUSE, "QUITGAME", 88 + offset);
 
-#ifdef HAVE_DISCORDRPC
-		{
-			M_AdjustItemY(MN_MPAUSE, "ADDONS", -8);
-			M_AdjustItemY(MN_MPAUSE, "SCRAMBLE", -8);
-			M_AdjustItemY(MN_MPAUSE, "MAPCHANGE", -8);
-			M_RefreshPauseMenu();
-		}
-#endif
+		M_SetItemY(MN_MPAUSE, "TEAMCHANGE", 48 + offset+8);
+		M_SetItemY(MN_MPAUSE, "SPECTATECHANGE", 48 + offset+8);
 
 		M_EnterMenu(MN_MPAUSE, true);
 		M_SetItemOn(MN_MPAUSE, "CONTINUE");
@@ -1726,11 +1650,11 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 
 	// the curent item can be disabled,
 	// this code go up until an enabled item found
-	if ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_SPACE)
+	if (!M_ItemSelectable(&currentMenu->menuitems[itemOn]))
 	{
 		for (i = 0; i < currentMenu->numitems; i++)
 		{
-			if ((currentMenu->menuitems[i].status & IT_TYPE) != IT_SPACE)
+			if (M_ItemSelectable(&currentMenu->menuitems[i]))
 			{
 				itemOn = i;
 				break;
@@ -1910,33 +1834,6 @@ static const char *M_CreateSecretMenuOption(const char *str)
 	return qbuf;
 }
 
-static void M_DrawThermo(INT32 x, INT32 y, consvar_t *cv)
-{
-	INT32 xx = x, i;
-	lumpnum_t leftlump, rightlump, centerlump[2], cursorlump;
-	patch_t *p;
-
-	leftlump = W_GetNumForName("M_THERML");
-	rightlump = W_GetNumForName("M_THERMR");
-	centerlump[0] = W_GetNumForName("M_THERMM");
-	centerlump[1] = W_GetNumForName("M_THERMM");
-	cursorlump = W_GetNumForName("M_THERMO");
-
-	V_DrawScaledPatch(xx, y, 0, p = W_CachePatchNum(leftlump,PU_CACHE));
-	xx += SHORT(p->width) - SHORT(p->leftoffset);
-	for (i = 0; i < 16; i++)
-	{
-		V_DrawScaledPatch(xx, y, 0, W_CachePatchNum(centerlump[i & 1], PU_CACHE));
-		xx += 8;
-	}
-	V_DrawScaledPatch(xx, y, 0, W_CachePatchNum(rightlump, PU_CACHE));
-
-	xx = (cv->value - cv->PossibleValue[0].value) * (15*8) /
-		(cv->PossibleValue[1].value - cv->PossibleValue[0].value);
-
-	V_DrawScaledPatch((x + 8) + xx, y, 0, W_CachePatchNum(cursorlump, PU_CACHE));
-}
-
 //  A smaller 'Thermo', with range given as percents (0-100)
 static void M_DrawSlider(INT32 x, INT32 y, const consvar_t *cv, boolean ontop)
 {
@@ -2099,7 +1996,27 @@ void M_DrawGenericMenu(void)
 	{
 		if (i == itemOn)
 			cursory = y;
-		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
+		if (currentMenu->menuitems[i].status & IT_HIDDEN)
+		{
+			y += LINEHEIGHT;
+		}
+		else if (currentMenu->menuitems[i].status & IT_SECRET)
+		{
+			if (currentMenu->menuitems[i].y)
+				y = currentMenu->y+currentMenu->menuitems[i].y;
+
+			V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+			y += SMALLLINEHEIGHT;
+		}
+		else if (currentMenu->menuitems[i].status & IT_GRAYEDOUT)
+		{
+			if (currentMenu->menuitems[i].y)
+				y = currentMenu->y+currentMenu->menuitems[i].y;
+
+			V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
+			y += SMALLLINEHEIGHT;
+		}
+		else switch (currentMenu->menuitems[i].status & IT_DISPLAY)
 		{
 			case IT_PATCH:
 				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
@@ -2117,13 +2034,8 @@ void M_DrawGenericMenu(void)
 					}
 				}
 				/* FALLTHRU */
-			case IT_NOTHING:
-			case IT_DYBIGSPACE:
+			default:
 				y = currentMenu->y+currentMenu->menuitems[i].y;//+= LINEHEIGHT;
-				break;
-			case IT_BIGSLIDER:
-				M_DrawThermo(x, y, currentMenu->menuitems[i].itemaction.cvar);
-				y += LINEHEIGHT;
 				break;
 			case IT_STRING:
 			case IT_WHITESTRING:
@@ -2142,12 +2054,10 @@ void M_DrawGenericMenu(void)
 					case IT_CVAR:
 					{
 						consvar_t *cv = currentMenu->menuitems[i].itemaction.cvar;
-						switch (currentMenu->menuitems[i].status & IT_CVARTYPE)
+						switch (currentMenu->menuitems[i].status & IT_ACTION)
 						{
 							case IT_CV_SLIDER:
 								M_DrawSlider(x, y, cv, (i == itemOn));
-							case IT_CV_NOPRINT: // color use this
-							case IT_CV_INVISSLIDER: // monitor toggles use this
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
@@ -2176,29 +2086,6 @@ void M_DrawGenericMenu(void)
 					break;
 			case IT_STRING2:
 				V_DrawString(x, y,  MENUCAPS, currentMenu->menuitems[i].text);
-				/* FALLTHRU */
-			case IT_DYLITLSPACE:
-				y += SMALLLINEHEIGHT;
-				break;
-			case IT_GRAYPATCH:
-				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
-					V_DrawMappedPatch(x, y, 0,
-						W_CachePatchName(currentMenu->menuitems[i].patch,PU_CACHE), graymap);
-				y += LINEHEIGHT;
-				break;
-			case IT_TRANSTEXT:
-				if (currentMenu->menuitems[i].y)
-					y = currentMenu->y+currentMenu->menuitems[i].y;
-				/* FALLTHRU */
-			case IT_TRANSTEXT2:
-				V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
-				y += SMALLLINEHEIGHT;
-				break;
-			case IT_QUESTIONMARKS:
-				if (currentMenu->menuitems[i].y)
-					y = currentMenu->y+currentMenu->menuitems[i].y;
-
-				V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
 				y += SMALLLINEHEIGHT;
 				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
@@ -2213,7 +2100,7 @@ void M_DrawGenericMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (((currentMenu->menuitems[itemOn].status & IT_DISPLAY) == IT_PATCH)
-		|| ((currentMenu->menuitems[itemOn].status & IT_DISPLAY) == IT_NOTHING))
+		|| !(currentMenu->menuitems[itemOn].status & IT_DISPLAY))
 	{
 		V_DrawScaledPatch(currentMenu->x + SKULLXOFF, cursory - 5, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
@@ -2248,19 +2135,19 @@ void M_DrawGenericScrollMenu(void)
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
-		if (currentMenu->menuitems[i].status != IT_DISABLED && currentMenu->menuitems[i].y*2 + tempcentery >= currentMenu->y)
+		if (!(currentMenu->menuitems[i].status & IT_HIDDEN) && currentMenu->menuitems[i].y*2 + tempcentery >= currentMenu->y)
 			break;
 	}
 
 	for (bottom = currentMenu->numitems; bottom > 0; bottom--)
 	{
-		if (currentMenu->menuitems[bottom-1].status != IT_DISABLED)
+		if (!(currentMenu->menuitems[bottom-1].status & IT_HIDDEN))
 			break;
 	}
 
 	for (max = bottom; max > 0; max--)
 	{
-		if (currentMenu->menuitems[max-1].status != IT_DISABLED && currentMenu->menuitems[max-1].y*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
+		if (!(currentMenu->menuitems[max-1].status & IT_HIDDEN) && currentMenu->menuitems[max-1].y*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
 			break;
 	}
 
@@ -2280,15 +2167,9 @@ void M_DrawGenericScrollMenu(void)
 		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
 		{
 			case IT_PATCH:
-			case IT_DYBIGSPACE:
-			case IT_BIGSLIDER:
 			case IT_STRING2:
-			case IT_DYLITLSPACE:
-			case IT_GRAYPATCH:
-			case IT_TRANSTEXT2:
+			default:
 				// unsupported
-				break;
-			case IT_NOTHING:
 				break;
 			case IT_STRING:
 			case IT_WHITESTRING:
@@ -2302,12 +2183,10 @@ void M_DrawGenericScrollMenu(void)
 					case IT_CVAR:
 					{
 						consvar_t *cv = currentMenu->menuitems[i].itemaction.cvar;
-						switch (currentMenu->menuitems[i].status & IT_CVARTYPE)
+						switch (currentMenu->menuitems[i].status & IT_ACTION)
 						{
 							case IT_CV_SLIDER:
 								M_DrawSlider(x, y, cv, (i == itemOn));
-							case IT_CV_NOPRINT: // color use this
-							case IT_CV_INVISSLIDER: // monitor toggles use this
 								break;
 							case IT_CV_STRING:
 #if 1
@@ -2346,23 +2225,6 @@ void M_DrawGenericScrollMenu(void)
 						break;
 					}
 					break;
-			case IT_TRANSTEXT:
-				switch (currentMenu->menuitems[i].status & IT_TYPE)
-				{
-					case IT_PAIR:
-						V_DrawString(x, y,
-								 MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].patch);
-						V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
-								V_TRANSLUCENT, currentMenu->menuitems[i].text);
-						break;
-					default:
-						V_DrawString(x, y,
-								 MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
-				}
-				break;
-			case IT_QUESTIONMARKS:
-				V_DrawString(x, y,  MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
-				break;
 			case IT_HEADERTEXT:
 				V_DrawString(x-16, y,  MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
 				break;
@@ -2413,7 +2275,27 @@ void M_DrawCenteredMenu(void)
 	{
 		if (i == itemOn)
 			cursory = y;
-		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
+		if (currentMenu->menuitems[i].status & IT_HIDDEN)
+		{
+			y += LINEHEIGHT;
+		}
+		else if (currentMenu->menuitems[i].status & IT_SECRET)
+		{
+			if (currentMenu->menuitems[i].y)
+				y = currentMenu->y+currentMenu->menuitems[i].y;
+
+			V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
+			y += SMALLLINEHEIGHT;
+		}
+		else if (currentMenu->menuitems[i].status & IT_GRAYEDOUT)
+		{
+			if (currentMenu->menuitems[i].y)
+				y = currentMenu->y+currentMenu->menuitems[i].y;
+
+			V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
+			y += SMALLLINEHEIGHT;
+		}
+		else switch (currentMenu->menuitems[i].status & IT_DISPLAY)
 		{
 			case IT_PATCH:
 				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
@@ -2431,12 +2313,7 @@ void M_DrawCenteredMenu(void)
 					}
 				}
 				/* FALLTHRU */
-			case IT_NOTHING:
-			case IT_DYBIGSPACE:
-				y += LINEHEIGHT;
-				break;
-			case IT_BIGSLIDER:
-				M_DrawThermo(x, y, currentMenu->menuitems[i].itemaction.cvar);
+			default:
 				y += LINEHEIGHT;
 				break;
 			case IT_STRING:
@@ -2456,11 +2333,10 @@ void M_DrawCenteredMenu(void)
 					case IT_CVAR:
 					{
 						consvar_t *cv = currentMenu->menuitems[i].itemaction.cvar;
-						switch(currentMenu->menuitems[i].status & IT_CVARTYPE)
+						switch(currentMenu->menuitems[i].status & IT_ACTION)
 						{
 							case IT_CV_SLIDER:
 								M_DrawSlider(x, y, cv, (i == itemOn));
-							case IT_CV_NOPRINT: // color use this
 								break;
 							case IT_CV_STRING:
 								M_DrawTextBox(x, y + 4, MAXSTRINGLENGTH, 1);
@@ -2481,29 +2357,6 @@ void M_DrawCenteredMenu(void)
 					break;
 			case IT_STRING2:
 				V_DrawCenteredString(x, y,  MENUCAPS, currentMenu->menuitems[i].text);
-				/* FALLTHRU */
-			case IT_DYLITLSPACE:
-				y += SMALLLINEHEIGHT;
-				break;
-			case IT_QUESTIONMARKS:
-				if (currentMenu->menuitems[i].y)
-					y = currentMenu->y+currentMenu->menuitems[i].y;
-
-				V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
-				y += SMALLLINEHEIGHT;
-				break;
-			case IT_GRAYPATCH:
-				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
-					V_DrawMappedPatch(x, y, 0,
-						W_CachePatchName(currentMenu->menuitems[i].patch,PU_CACHE), graymap);
-				y += LINEHEIGHT;
-				break;
-			case IT_TRANSTEXT:
-				if (currentMenu->menuitems[i].y)
-					y = currentMenu->y+currentMenu->menuitems[i].y;
-				/* FALLTHRU */
-			case IT_TRANSTEXT2:
-				V_DrawCenteredString(x, y, MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
 				y += SMALLLINEHEIGHT;
 				break;
 		}
@@ -2511,7 +2364,7 @@ void M_DrawCenteredMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (((currentMenu->menuitems[itemOn].status & IT_DISPLAY) == IT_PATCH)
-		|| ((currentMenu->menuitems[itemOn].status & IT_DISPLAY) == IT_NOTHING))
+		|| !(currentMenu->menuitems[itemOn].status & IT_DISPLAY))
 	{
 		V_DrawScaledPatch(x + SKULLXOFF, cursory - 5, 0,
 			W_CachePatchName("M_CURSOR", PU_CACHE));
@@ -3516,9 +3369,6 @@ void M_HandleAddons(INT32 choice)
 	{
 		closefilemenu(true);
 
-		// Secret menu!
-		//MainMenu[secrets].status = (M_AnySecretUnlocked()) ? (IT_STRING | IT_CALL) : (IT_DISABLED);
-
 		M_ExitMenu();
 	}
 }
@@ -3679,20 +3529,18 @@ void M_HandleReplayHutList(INT32 choice)
 				{
 				case DFILE_ERROR_CANNOTLOAD:
 					// Only show "Watch Replay Without Addons"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_DISABLED);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_CALL|IT_STRING);
-					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOADWATCH", 0);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_DISABLED);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", false);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", true);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", false);
 					M_SetItemOn(MN_MISC_REPLAYSTART, "NOLOADWATCH");
 					break;
 
 				case DFILE_ERROR_NOTLOADED:
 				case DFILE_ERROR_INCOMPLETEOUTOFORDER:
 					// Show "Load Addons and Watch Replay" and "Watch Replay Without Addons"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_CALL|IT_STRING);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_CALL|IT_STRING);
-					//M_SetItemY(MN_MISC_REPLAYSTART, "NOLOADWATCH", 10);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_DISABLED);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", true);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", true);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", false);
 					M_SetItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
 					break;
 
@@ -3700,10 +3548,9 @@ void M_HandleReplayHutList(INT32 choice)
 				case DFILE_ERROR_OUTOFORDER:
 				default:
 					// Show "Watch Replay"
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "LOADWATCH", IT_DISABLED);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "NOLOADWATCH", IT_DISABLED);
-					M_SetItemStatus(MN_MISC_REPLAYSTART, "WATCH", IT_CALL|IT_STRING);
-					//M_SetItemY(MN_MISC_REPLAYSTART, "WATCH", 0);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "LOADWATCH", false);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "NOLOADWATCH", false);
+					M_SetItemVisible(MN_MISC_REPLAYSTART, "WATCH", true);
 					M_SetItemOn(MN_MISC_REPLAYSTART, "WATCH");
 					break;
 				}
@@ -4126,15 +3973,17 @@ void M_DrawPlaybackMenu(void)
 		playback_last_menu_interaction_leveltime = leveltime - 6*TICRATE;
 
 	// Toggle items
-	if (paused && !demo.rewinding)
-	{
-		M_SetItemStatus(MN_PLAYBACK, "PAUSE", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "FASTFORWARD", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "REWIND", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "RESUME", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "ADVANCEFRAME", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "REWINDFRAME", IT_CALL|IT_STRING);
+	boolean showpause = paused && !demo.rewinding;
 
+	M_SetItemVisible(MN_PLAYBACK, "PAUSE", showpause);
+	M_SetItemVisible(MN_PLAYBACK, "FASTFORWARD", showpause);
+	M_SetItemVisible(MN_PLAYBACK, "REWIND", showpause);
+	M_SetItemVisible(MN_PLAYBACK, "RESUME", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "ADVANCEFRAME", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "REWINDFRAME", !showpause);
+
+	if (!showpause)
+	{
 		if (M_IsItemOn(MN_PLAYBACK, "REWIND"))
 			M_SetItemOn(MN_PLAYBACK, "REWINDFRAME");
 		else if (M_IsItemOn(MN_PLAYBACK, "PAUSE"))
@@ -4144,13 +3993,6 @@ void M_DrawPlaybackMenu(void)
 	}
 	else
 	{
-		M_SetItemStatus(MN_PLAYBACK, "PAUSE", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "FASTFORWARD", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "REWIND", IT_CALL|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "RESUME", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "ADVANCEFRAME", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "REWINDFRAME", IT_DISABLED);
-
 		if (M_IsItemOn(MN_PLAYBACK, "REWINDFRAME"))
 			M_SetItemOn(MN_PLAYBACK, "REWIND");
 		else if (M_IsItemOn(MN_PLAYBACK, "RESUME"))
@@ -4159,26 +4001,20 @@ void M_DrawPlaybackMenu(void)
 			M_SetItemOn(MN_PLAYBACK, "FASTFORWARD");
 	}
 
+	M_SetItemVisible(MN_PLAYBACK, "NUMVIEWS", !modeattacking);
+	M_SetItemVisible(MN_PLAYBACK, "VIEW1", !modeattacking && r_splitscreen >= 0);
+	M_SetItemVisible(MN_PLAYBACK, "VIEW2", !modeattacking && r_splitscreen >= 1);
+	M_SetItemVisible(MN_PLAYBACK, "VIEW3", !modeattacking && r_splitscreen >= 2);
+	M_SetItemVisible(MN_PLAYBACK, "VIEW4", !modeattacking && r_splitscreen >= 3);
+
 	if (modeattacking)
 	{
-		M_SetItemStatus(MN_PLAYBACK, "NUMVIEWS", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW1", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW2", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW3", IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW4", IT_DISABLED);
 		M_SetItemX(MN_PLAYBACK, "FREECAM", 72);
 		M_SetItemX(MN_PLAYBACK, "QUIT", 88);
-
 		currentMenu->x = BASEVIDWIDTH/2 - 52;
 	}
 	else
 	{
-		M_SetItemStatus(MN_PLAYBACK, "NUMVIEWS", IT_ARROWS|IT_STRING);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW1", r_splitscreen >= 0 ? IT_ARROWS|IT_STRING : IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW2", r_splitscreen >= 1 ? IT_ARROWS|IT_STRING : IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW3", r_splitscreen >= 2 ? IT_ARROWS|IT_STRING : IT_DISABLED);
-		M_SetItemStatus(MN_PLAYBACK, "VIEW4", r_splitscreen >= 3 ? IT_ARROWS|IT_STRING : IT_DISABLED);
-
 		M_SetItemX(MN_PLAYBACK, "FREECAM", 156);
 		M_SetItemX(MN_PLAYBACK, "QUIT", 172);
 		currentMenu->x = BASEVIDWIDTH/2 - 88;
@@ -4214,7 +4050,7 @@ void M_DrawPlaybackMenu(void)
 			else
 				icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
 		}
-		else if (currentMenu->menuitems[i].status == IT_DISABLED)
+		else if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
 		else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
 			icon = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
@@ -4503,17 +4339,17 @@ void M_Options(INT32 choice)
 	(void)choice;
 
 	// if the player is not admin or server, disable gameplay & server options
-	M_SetItemStatus(MN_OP_MAIN, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)) ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
-	M_SetItemStatus(MN_OP_MAIN, "SERVER", Playing() && !(server || IsPlayerAdmin(consoleplayer)) ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+	M_SetItemDisabled(MN_OP_MAIN, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
+	M_SetItemDisabled(MN_OP_MAIN, "SERVER", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
 
 	// no credits or data erasing in-game
-	M_SetItemStatus(MN_OP_MAIN, "KARTCREDITS", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
-	M_SetItemStatus(MN_OP_MAIN, "BLANCREDITS", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_CALL);
-	M_SetItemStatus(MN_OP_DATA, "ERASE", Playing() ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", Playing());
+	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", Playing());
+	M_SetItemDisabled(MN_OP_DATA, "ERASE", Playing());
 
-	M_SetItemStatus(MN_OP_GAME, "ENCORE", M_SecretUnlocked(SECRET_ENCORE) ? IT_CVAR|IT_STRING : IT_SECRET);
+	M_SetItemSecret(MN_OP_GAME, "ENCORE", !M_SecretUnlocked(SECRET_ENCORE));
 
-	M_SetItemStatus(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM].numitems ? IT_GRAYEDOUT : IT_STRING|IT_SUBMENU);
+	M_SetItemDisabled(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM].numitems);
 
 	M_EnterMenu(MN_OP_MAIN, true);
 }
@@ -4551,14 +4387,7 @@ void M_SelectableClearMenus(INT32 choice)
 void M_RefreshPauseMenu(void)
 {
 #ifdef HAVE_DISCORDRPC
-	if (discordRequestList != NULL)
-	{
-		M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_STRING | IT_SUBMENU);
-	}
-	else
-	{
-		M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_GRAYEDOUT);
-	}
+	M_SetItemDisabled(MN_MPAUSE, "DISCORDREQUESTS", discordRequestList == NULL);
 #endif
 }
 
@@ -5121,9 +4950,9 @@ void M_BlanCredits(INT32 choice)
 void M_SinglePlayerMenu(INT32 choice)
 {
 	(void)choice;
-	M_SetItemStatus(MN_SP_MAIN, "GRANDPRIX", IT_CALL|IT_STRING);
-	M_SetItemStatus(MN_SP_MAIN, "TIMEATTACK", M_SecretUnlocked(SECRET_TIMEATTACK) ? IT_CALL|IT_STRING : IT_SECRET);
-	M_SetItemStatus(MN_SP_MAIN, "ITEMBREAKER", M_SecretUnlocked(SECRET_ITEMBREAKER) ? IT_CALL|IT_STRING : IT_SECRET);
+	M_SetItemSecret(MN_SP_MAIN, "GRANDPRIX", false);
+	M_SetItemSecret(MN_SP_MAIN, "TIMEATTACK", !M_SecretUnlocked(SECRET_TIMEATTACK));
+	M_SetItemSecret(MN_SP_MAIN, "ITEMBREAKER", !M_SecretUnlocked(SECRET_ITEMBREAKER));
 	M_EnterMenu(MN_SP_MAIN, true);
 }
 
@@ -5566,7 +5395,6 @@ static void M_DrawTimeAttackBackground(menuitem_t *item)
 void M_DrawTimeAttackMenu(void)
 {
 	INT32 i, x, y, cursory = 0;
-	UINT16 dispstatus;
 	SINT8 preset = G_RecordPresetIndex();
 
 	//S_ChangeMusicInternal("racent", true); // Eww, but needed for when user hits escape during demo playback
@@ -5588,15 +5416,14 @@ void M_DrawTimeAttackMenu(void)
 
 	for (i = 0; i < currentMenu->numitems; ++i)
 	{
-		dispstatus = (currentMenu->menuitems[i].status & IT_DISPLAY);
-		if (dispstatus != IT_STRING && dispstatus != IT_WHITESTRING)
+		if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
 
 		y = currentMenu->y+currentMenu->menuitems[i].y;
 		if (i == itemOn)
 			cursory = y;
 
-		V_DrawString(x, y, ((dispstatus == IT_WHITESTRING) ? highlightflags : 0) | MENUCAPS, currentMenu->menuitems[i].text);
+		V_DrawString(x, y, ((currentMenu->menuitems[i].status & IT_DISPLAY) == IT_WHITESTRING ? highlightflags : 0) | MENUCAPS, currentMenu->menuitems[i].text);
 
 		// Cvar specific handling
 		if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CVAR)
@@ -6208,7 +6035,7 @@ void M_DrawConnectMenu(void)
 	menu_t *conmenu = &menudefs[MN_MP_CONNECT]; // meh, whatever
 
 	for (i = firstserverline; i < firstserverline+serversperpage; i++)
-		conmenu->menuitems[i].status = IT_STRING | IT_SPACE;
+		conmenu->menuitems[i].status |= IT_HIDDEN;
 
 	if (!numPages)
 		numPages = 1;
@@ -6268,7 +6095,7 @@ void M_DrawConnectMenu(void)
 		if (serverlist[slindex].info.cheatsenabled)
 			V_DrawSmallString(currentMenu->x+265, S_LINEY(i)+8, globalflags, "\x83" "Cheats");
 
-		conmenu->menuitems[i+firstserverline].status = IT_STRING | IT_CALL;
+		conmenu->menuitems[i+firstserverline].status &= ~IT_HIDDEN;
 	}
 
 	M_DrawGenericMenu();
@@ -6997,7 +6824,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 	// draw skin string
 	st = V_StringWidth(skins[setupm_fakeskin].realname, 0);
 	V_DrawString(BASEVIDWIDTH - mx - st, my + 16,
-	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "SKIN") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
+	             (!M_ItemSelectable(M_GetMenuItem(MN_MP_PLAYERSETUP, "SKIN")) ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
 	             skins[setupm_fakeskin].realname);
 	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
 	{
@@ -7017,7 +6844,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 
 	st = V_StringWidth(fname, 0);
 	V_DrawString(BASEVIDWIDTH - mx - st, my + 26,
-	             ((M_GetItemStatus(MN_MP_PLAYERSETUP, "FOLLOWER") & IT_TYPE) == IT_SPACE ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
+	             (!M_ItemSelectable(M_GetMenuItem(MN_MP_PLAYERSETUP, "FOLLOWER")) ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
 	             fname);
 	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER"))
 	{
@@ -7490,10 +7317,7 @@ void M_SetupMultiPlayer(INT32 arg)
 			break;
 
 	// disable skin changes if we can't actually change skins
-	if (splitscreen >= pnum && !CanChangeSkin(pnum))
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_GRAYEDOUT);
-	else
-		M_SetItemStatus(MN_MP_PLAYERSETUP, "SKIN", IT_KEYHANDLER|IT_STRING);
+	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum));
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
 }
@@ -7863,7 +7687,7 @@ void M_AssignJoystick(INT32 arg)
 
 void M_SetupControlsMenu(INT32 arg)
 {
-	UINT16 status = arg == 0 ? IT_CONTROL : IT_GRAYEDOUT2;
+	boolean player1 = arg == 0;
 
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return;
@@ -7877,26 +7701,22 @@ void M_SetupControlsMenu(INT32 arg)
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
 
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "TALK", status); // Chat
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "TEAM", status); // Team-chat
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCORES", status); // Rankings
-	//M_SetItemStatus(MN_OP_CHANGECONTROLS, "VIEWPOINT", status); // Viewpoint
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
+	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "TEAM", player1); // Team-chat
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SCORES", player1); // Rankings
+	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "VIEWPOINT", player1); // Viewpoint
 	// 19 is Reset Camera, 20 is Toggle Chasecam
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SCREENSHOT", status); // Screenshot
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "RECORDGIF", status); // GIF
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SYSTEMMENU", status); // System Menu
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CONSOLE", status); // Console
-	/*if (arg == 0) {
-		M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_HEADER); // Spectator Controls header
-		M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_SPACE); // Spectator Controls space
-	} else {
-		M_SetItemStatus(MN_OP_CHANGECONTROLS, 26, IT_GRAYEDOUT2); // Spectator Controls header
-		M_SetItemStatus(MN_OP_CHANGECONTROLS, 27, IT_GRAYEDOUT2); // Spectator Controls space
-	}
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "SPECTATE", status); // Spectate
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKUP", status); // Look Up
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "LOOKDOWN", status); // Look Down
-	M_SetItemStatus(MN_OP_CHANGECONTROLS, "CENTERVIEW", status); // Center View
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SCREENSHOT", player1); // Screenshot
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "RECORDGIF", player1); // GIF
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SYSTEMMENU", player1); // System Menu
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "CONSOLE", player1); // Console
+	/*
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SPECTATORBUTTONS", player1); // Spectator Controls header
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SPECTATORBUTTONS_", player1); // Spectator Controls space
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "SPECTATE", player1); // Spectate
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "LOOKUP", player1); // Look Up
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "LOOKDOWN", player1); // Look Down
+	M_SetItemVisible(MN_OP_CHANGECONTROLS, "CENTERVIEW", player1); // Center View
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
@@ -7920,27 +7740,27 @@ void M_DrawControl(void)
 	*/
 
 	iter = (controlheight/2);
-	for (i = itemOn; ((iter || currentMenu->menuitems[i].status == IT_GRAYEDOUT2) && i > 0); i--)
+	for (i = itemOn; ((iter || currentMenu->menuitems[i].status & IT_HIDDEN) && i > 0); i--)
 	{
-		if (currentMenu->menuitems[i].status != IT_GRAYEDOUT2)
+		if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
 			iter--;
 	}
-	if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
+	if (currentMenu->menuitems[i].status & IT_HIDDEN)
 		i--;
 
 	iter += (controlheight/2);
 	for (max = itemOn; (iter && max < currentMenu->numitems); max++)
 	{
-		if (currentMenu->menuitems[max].status != IT_GRAYEDOUT2)
+		if (!(currentMenu->menuitems[max].status & IT_HIDDEN))
 			iter--;
 	}
 
 	if (iter)
 	{
 		iter += (controlheight/2);
-		for (i = itemOn; ((iter || currentMenu->menuitems[i].status == IT_GRAYEDOUT2) && i > 0); i--)
+		for (i = itemOn; ((iter || currentMenu->menuitems[i].status & IT_HIDDEN) && i > 0); i--)
 		{
-			if (currentMenu->menuitems[i].status != IT_GRAYEDOUT2)
+			if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
 				iter--;
 		}
 	}
@@ -7971,13 +7791,13 @@ void M_DrawControl(void)
 
 	for (; i < max; i++)
 	{
-		if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
+		if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
 
 		if (i == itemOn)
 			cursory = y;
 
-		if (currentMenu->menuitems[i].status == IT_CONTROL)
+		if (currentMenu->menuitems[i].status == (IT_STRING2|IT_CALL))
 		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0)|MENUCAPS, currentMenu->menuitems[i].text);
 
@@ -7999,14 +7819,12 @@ void M_DrawControl(void)
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
 		}
-		/*else if (currentMenu->menuitems[i].status == IT_GRAYEDOUT2)
-			V_DrawString(x, y, MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);*/
-		else if ((currentMenu->menuitems[i].status == IT_HEADER) && (i != max-1))
+		else if ((currentMenu->menuitems[i].status == IT_HEADERTEXT) && (i != max-1))
 			V_DrawString(13, y+6, MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
-		else if (currentMenu->menuitems[i].status & IT_STRING)
+		else if ((currentMenu->menuitems[i].status & IT_DISPLAY) == IT_STRING)
 		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0)|MENUCAPS, currentMenu->menuitems[i].text);
-			if (currentMenu->menuitems[i].status & IT_CVAR)
+			if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CVAR)
 			{
 				V_DrawRightAlignedString(BASEVIDWIDTH-currentMenu->x, y, MENUCAPS|highlightflags, currentMenu->menuitems[i].itemaction.cvar->string);
 				if (i == itemOn)
@@ -8262,22 +8080,12 @@ void M_DrawVideoMenu(void)
 	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_OP_VIDEO, "SETMODE"),
 		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|MENUCAPS,
 			va("%dx%d", vid.width, vid.height));
-	
-#ifdef HWRENDER
+
 	// Hide some options based on the current render mode
-	if (rendermode == render_opengl)
-	{
-		M_SetItemStatus(MN_OP_VIDEO, "OPENGL", IT_CALL | IT_STRING);
-		//M_SetItemStatus(MN_OP_VIDEO, "PARALLEL", IT_DISABLED);
-	}
-	else
-#endif
-	{
-		//M_SetItemStatus(MN_OP_VIDEO, "PARALLEL", IT_CALL | IT_CVAR);
 #ifdef HWRENDER
-		M_SetItemStatus(MN_OP_VIDEO, "OPENGL", IT_DISABLED);
+	M_SetItemVisible(MN_OP_VIDEO, "OPENGL", rendermode == render_opengl);
 #endif
-	}
+	//M_SetItemVisible(MN_OP_VIDEO, "PARALLEL", rendermode == render_soft);
 }
 
 void M_DrawHUDOptions(void)
@@ -8926,7 +8734,7 @@ void M_DrawDiscordRequests(void)
 		if (discordRequestList == NULL)
 		{
 			// No other requests
-			M_SetItemStatus(MN_MPAUSE, "DISCORDREQUESTS", IT_GRAYEDOUT);
+			M_SetItemDisabled(MN_MPAUSE, "DISCORDREQUESTS", true);
 
 			M_ExitMenu();
 			if (menustack[0] == MN_MPAUSE)

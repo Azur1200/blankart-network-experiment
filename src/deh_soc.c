@@ -1923,13 +1923,9 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			UINT16 flags = IT_STRING;
 			if (fastcmp(word+4, "HEADER"))
-				flags = IT_HEADER;
-			else if (fastcmp(word+4, "SECRET"))
-				flags = IT_SECRET;
+				flags = IT_HEADERTEXT;
 			else if (fastcmp(word+4, "WHITE"))
 				flags = IT_WHITESTRING;
-			else if (fastcmp(word+4, "DISABLED"))
-				flags = IT_DISABLED;
 			else if (fastcmp(word+4, "2"))
 				flags = IT_STRING2;
 			else if (word[4])
@@ -2042,7 +2038,8 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 	}
 	while (!myfeof(f)); // finish when the line is empty
 
-	menuitem->status = status;
+	if (textset || actionset)
+		menuitem->status = status;
 	Z_Free(s);
 }
 #undef WARN
