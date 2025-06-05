@@ -4299,7 +4299,7 @@ void G_AfterIntermission(void)
 		G_StopDemo();
 
 		if (demo.inreplayhut)
-			MR_ReplayHut(0);
+			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 		else
 			D_StartTitle();
 

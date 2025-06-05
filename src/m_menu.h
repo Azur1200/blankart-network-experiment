@@ -240,7 +240,7 @@ struct menu_t
 extern menu_t menudefs[MAXMENUTYPES];
 extern UINT16 nummenutypes;
 
-void M_EnterMenu(menutype_t menu, boolean callexit);
+void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
@@ -267,7 +267,6 @@ INT32 MR_SetupMultiHandler(INT32 choice);
 INT32 MR_HandleSetupMultiPlayer(INT32 choice);
 INT32 MR_QuitMultiPlayerMenu(INT32 choice);
 INT32 MR_StartServerMenu(INT32 choice);
-INT32 MR_StartOfflineServerMenu(INT32 choice);
 INT32 MR_StartServer(INT32 choice);
 INT32 MR_ConnectMenuModChecks(INT32 choice);
 INT32 MR_HandleConnectIP(INT32 choice);
@@ -286,7 +285,6 @@ INT32 MR_MusicTest(INT32 choice);
 INT32 MR_ScreenshotOptions(INT32 choice);
 INT32 MR_AddonsOptions(INT32 choice);
 INT32 MR_EraseData(INT32 arg);
-INT32 MR_Manual(INT32 choice);
 INT32 MR_Credits(INT32 choice);
 INT32 MR_BlanCredits(INT32 choice);
 INT32 MR_HandleAddons(INT32 choice);
