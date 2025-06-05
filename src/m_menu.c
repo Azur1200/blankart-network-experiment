@@ -870,32 +870,6 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	return false;
 }
 
-static void M_NextOpt(void)
-{
-	INT16 oldItemOn = itemOn; // prevent infinite loop
-
-	do
-	{
-		if (itemOn + 1 > currentMenu->numitems - 1)
-			itemOn = 0;
-		else
-			itemOn++;
-	} while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
-}
-
-static void M_PrevOpt(void)
-{
-	INT16 oldItemOn = itemOn; // prevent infinite loop
-
-	do
-	{
-		if (!itemOn)
-			itemOn = currentMenu->numitems - 1;
-		else
-			itemOn--;
-	} while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
-}
-
 // lock out further input in a tic when important buttons are pressed
 // (in other words -- stop bullshit happening by mashing buttons in fades)
 static boolean noFurtherInput = false;
@@ -1169,8 +1143,8 @@ boolean M_Responder(event_t *ev)
 	{
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
-		routine(ch);
-		return true;
+		if (routine(ch))
+			return true;
 	}
 
 	// BP: one of the more big hack i have never made
@@ -1254,16 +1228,24 @@ boolean M_Responder(event_t *ev)
 		}
 	}
 
+	INT16 oldItemOn = itemOn; // prevent infinite loop
+
 	// Keys usable within menu
 	switch (ch)
 	{
 		case KEY_DOWNARROW:
-			M_NextOpt();
+			do if (++itemOn >= currentMenu->numitems)
+				itemOn = 0;
+			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
 		case KEY_UPARROW:
-			M_PrevOpt();
+			do if (--itemOn < 0)
+				itemOn = currentMenu->numitems - 1;
+			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
@@ -3331,8 +3313,6 @@ static boolean M_ChangeStringAddons(INT32 choice)
 
 INT32 MR_HandleAddons(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
-
 	if (M_ChangeStringAddons(choice))
 	{
 		char *tempname = NULL;
@@ -3342,11 +3322,12 @@ INT32 MR_HandleAddons(INT32 choice)
 		if (!preparefilemenu(true, false))
 		{
 			UNEXIST;
-			return 0;
+			return true;
 		}
 #else // streamlined
 		searchfilemenu(tempname);
 #endif
+		return true;
 	}
 
 	switch (choice)
@@ -3402,7 +3383,7 @@ INT32 MR_HandleAddons(INT32 choice)
 									if (!preparefilemenu(true, false))
 									{
 										UNEXIST;
-										return 0;
+										return true;
 									}
 								}
 								else
@@ -3425,7 +3406,7 @@ INT32 MR_HandleAddons(INT32 choice)
 							if (!preparefilemenu(false, false))
 							{
 								UNEXIST;
-								return 0;
+								return true;
 							}
 							break;
 						case EXT_TXT:
@@ -3451,22 +3432,17 @@ INT32 MR_HandleAddons(INT32 choice)
 					refreshdirmenu |= REFRESHDIR_NORMAL;
 			}
 			break;
-
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
-
 		default:
-			break;
+			return false;
 	}
-	if (exitmenu)
-	{
-		closefilemenu(true);
+	return true;
+}
 
-		M_ExitMenu();
-	}
-
-	return 0;
+INT32 MR_QuitAddons(INT32 choice)
+{
+	(void)choice;
+	closefilemenu(true);
+	return true;
 }
 
 // ---- REPLAY HUT -----
@@ -3547,8 +3523,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		if (dir_on[menudepthleft])
 			dir_on[menudepthleft]--;
 		else
-			return 0;
-			//M_PrevOpt();
+			break;
 
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
@@ -3558,15 +3533,10 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		if (dir_on[menudepthleft] < sizedirmenu-1)
 			dir_on[menudepthleft]++;
 		else
-			return 0;
-			//itemOn = 0; // Not M_NextOpt because that would take us to the extra dummy item
+			break;
 
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-		break;
-
-	case KEY_ESCAPE:
-		MR_QuitReplayHut(0);
 		break;
 
 	case KEY_ENTER:
@@ -3587,8 +3557,8 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 
 						if (!preparefilemenu(true, true))
 						{
-							MR_QuitReplayHut(0);
-							return 0;
+							M_ExitMenu();
+							return true;
 						}
 					}
 					else
@@ -3610,8 +3580,8 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 				menupath[menupathindex[++menudepthleft]] = 0;
 				if (!preparefilemenu(false, true))
 				{
-					MR_QuitReplayHut(0);
-					return 0;
+					M_ExitMenu();
+					return true;
 				}
 				PrepReplayList();
 				break;
@@ -3653,8 +3623,11 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 		}
 
 		break;
+
+	default:
+		return false;
 	}
-	return 0;
+	return true;
 }
 
 #define SCALEDVIEWWIDTH (vid.width/vid.dupx)
@@ -4673,23 +4646,8 @@ void M_DrawSkyRoom(void)
 
 INT32 MR_HandleSoundTest(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
-
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_BACKSPACE:
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
-
 		case KEY_RIGHTARROW:
 			CV_AddValue(&cv_soundtest, 1);
 			break;
@@ -4700,14 +4658,10 @@ INT32 MR_HandleSoundTest(INT32 choice)
 			S_StopSounds();
 			S_StartSound(NULL, cv_soundtest.value);
 			break;
-
 		default:
-			break;
+			return false;
 	}
-	if (exitmenu)
-		M_ExitMenu();
-
-	return 0;
+	return true;
 }
 
 static musicdef_t *curplaying = NULL;
@@ -4954,8 +4908,6 @@ void M_DrawMusicTest(void)
 
 INT32 MR_HandleMusicTest(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
-
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
@@ -5008,11 +4960,6 @@ INT32 MR_HandleMusicTest(INT32 choice)
 				S_StartSound(NULL, sfx_skid);
 			}
 			break;
-		case KEY_ESCAPE:
-			exitmenu = true;
-			st_namescroll = 0;
-			st_namescrollstate = 0;
-			break;
 
 		case KEY_RIGHTARROW:
 		case KEY_LEFTARROW:
@@ -5025,16 +4972,19 @@ INT32 MR_HandleMusicTest(INT32 choice)
 			break;
 
 		default:
-			break;
+			return false;
 	}
-	if (exitmenu)
-	{
-		Z_Free(soundtestdefs);
-		soundtestdefs = NULL;
+	return true;
+}
 
-		M_ExitMenu();
-	}
-	return 0;
+INT32 MR_QuitMusicTest(INT32 choice)
+{
+	(void)choice;
+	Z_Free(soundtestdefs);
+	soundtestdefs = NULL;
+	st_namescroll = 0;
+	st_namescrollstate = 0;
+	return true;
 }
 
 // ==================
@@ -5341,8 +5291,6 @@ void M_DrawLevelStats(void)
 // Handle statistics.
 INT32 MR_HandleLevelStats(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
-
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
@@ -5390,13 +5338,10 @@ INT32 MR_HandleLevelStats(INT32 choice)
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
 			break;
 
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
+		default:
+			return false;
 	}
-	if (exitmenu)
-		M_ExitMenu();
-	return 0;
+	return true;
 }
 
 INT32 MR_GrandPrixTemp(INT32 choice)
@@ -5729,23 +5674,10 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 
 INT32 MR_HandleStaffReplay(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
 	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_BACKSPACE:
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
 		case KEY_RIGHTARROW:
 			CV_AddValue(&cv_dummystaff, 1);
 			S_StartSound(NULL, sfx_menu1);
@@ -5762,11 +5694,9 @@ INT32 MR_HandleStaffReplay(INT32 choice)
 			G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 			break;
 		default:
-			break;
+			return false;
 	}
-	if (exitmenu)
-		M_ExitMenu();
-	return 0;
+	return true;
 }
 
 #define NUMPRESETS 3
@@ -6078,23 +6008,8 @@ Fetch_servers_thread (int *id)
 
 INT32 MR_HandleServerPage(INT32 choice)
 {
-	boolean exitmenu = false; // exit to previous menu
-
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_BACKSPACE:
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
-
 		case KEY_ENTER:
 		case KEY_RIGHTARROW:
 			S_StartSound(NULL, sfx_menu1);
@@ -6108,11 +6023,9 @@ INT32 MR_HandleServerPage(INT32 choice)
 			break;
 
 		default:
-			break;
+			return false;
 	}
-	if (exitmenu)
-		M_ExitMenu();
-	return 0;
+	return true;
 }
 
 INT32 MR_Connect(INT32 arg)
@@ -6726,8 +6639,6 @@ static void Splitplayers_OnChange(void)
 
 INT32 MR_SetupMultiHandler(INT32 choice)
 {
-	boolean exitmenu = false;  // exit to previous menu and send name change
-
 	switch (choice)
 	{
 		case KEY_LEFTARROW:
@@ -6748,31 +6659,15 @@ INT32 MR_SetupMultiHandler(INT32 choice)
 			}
 			break;
 
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
 		case KEY_ENTER:
-		{
 			S_StartSound(NULL,sfx_menu1); // Tails
 			M_EnterMenu(MN_MP_PLAYERSETUP, true, setupm_pselect - 1);
 			break;
-		}
 
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
+		default:
+			return false;
 	}
-
-	if (exitmenu)
-		M_ExitMenu();
-	return 0;
+	return true;
 }
 
 // Tails 11-19-2002
@@ -6803,28 +6698,13 @@ static void M_ConnectIP(INT32 choice)
 INT32 MR_HandleConnectIP(INT32 choice)
 {
 	size_t l;
-	boolean exitmenu = false;  // exit to previous menu and send name change
 
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
 		case KEY_ENTER:
 			S_StartSound(NULL,sfx_menu1); // Tails
 			currentMenu->lastOn = itemOn;
 			M_ConnectIP(1);
-			break;
-
-		case KEY_ESCAPE:
-			exitmenu = true;
 			break;
 
 		case KEY_BACKSPACE:
@@ -6845,31 +6725,25 @@ INT32 MR_HandleConnectIP(INT32 choice)
 
 		default:
 			l = strlen(setupm_ip);
+
+			// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
+			if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
+			 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
+				return false;
+
 			if (l >= 28-1)
 				break;
 
-			// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-			if ((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l] = (char)choice;
-				setupm_ip[l+1] = 0;
-			}
-			else if (choice >= 199 && choice <= 211 && choice != 202 && choice != 206) //numpad too!
-			{
-				char keypad_translation[] = {'7','8','9','-','4','5','6','+','1','2','3','0','.'};
-				choice = keypad_translation[choice - 199];
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l] = (char)choice;
-				setupm_ip[l+1] = 0;
-			}
+			if (choice >= KEY_KEYPAD7)
+				// sir, have you been golfing tonight?
+				choice = "789-456+1230."[choice - KEY_KEYPAD7];
+
+			S_StartSound(NULL,sfx_menu1); // Tails
+			setupm_ip[l] = (char)choice;
+			setupm_ip[l+1] = 0;
 			break;
 	}
-
-	if (exitmenu)
-		M_ExitMenu();
-
-	return 0;
+	return true;
 }
 
 // ========================
@@ -7249,20 +7123,9 @@ INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 {
 	size_t   l;
 	INT32 prev_setupm_fakeskin;
-	boolean  exitmenu = false;  // exit to previous menu and send name change
 
 	switch (choice)
 	{
-		case KEY_DOWNARROW:
-			M_NextOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
-		case KEY_UPARROW:
-			M_PrevOpt();
-			S_StartSound(NULL,sfx_menu1); // Tails
-			break;
-
 		case KEY_LEFTARROW:
 			if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))       //player skin
 			{
@@ -7280,13 +7143,16 @@ INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
 			{
 				S_StartSound(NULL,sfx_menu1);
-				setupm_fakefollower--;
+				if (--setupm_fakefollower < -1)
+					setupm_fakefollower = numfollowers - 1;
 				M_GetFollowerState();	// update follower state
 			}
 			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR")) // player color
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_fakecolor = setupm_fakecolor->prev;
+				do
+					setupm_fakecolor = setupm_fakecolor->prev;
+				while (!skincolors[setupm_fakecolor->color].accessible);
 			}
 			break;
 
@@ -7307,18 +7173,17 @@ INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
 			{
 				S_StartSound(NULL,sfx_menu1);
-				setupm_fakefollower++;
-				M_GetFollowerState();
+				if (++setupm_fakefollower >= numfollowers)
+					setupm_fakefollower = -1;
+				M_GetFollowerState(); // update follower state
 			}
 			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR")) // player color
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_fakecolor = setupm_fakecolor->next;
+				do
+					setupm_fakecolor = setupm_fakecolor->next;
+				while (!skincolors[setupm_fakecolor->color].accessible);
 			}
-			break;
-
-		case KEY_ESCAPE:
-			exitmenu = true;
 			break;
 
 		case KEY_BACKSPACE:
@@ -7358,7 +7223,7 @@ INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 
 		default:
 			if (choice < 32 || choice > 127 || !M_IsItemOn(MN_MP_PLAYERSETUP, "NAME"))
-				break;
+				return false;
 			l = strlen(setupm_name);
 			if (l < MAXPLAYERNAME)
 			{
@@ -7369,32 +7234,7 @@ INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 			break;
 	}
 
-	// check followers:
-	if (setupm_fakefollower < -1)
-	{
-		setupm_fakefollower = numfollowers;
-		M_GetFollowerState(); // update follower state
-	}
-	if (setupm_fakefollower >= numfollowers)
-	{
-		setupm_fakefollower = -1;
-		M_GetFollowerState(); // update follower state
-	}
-
-	// check color
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR") && !skincolors[setupm_fakecolor->color].accessible) {
-		if (choice == KEY_LEFTARROW)
-			while (!skincolors[setupm_fakecolor->color].accessible)
-				setupm_fakecolor = setupm_fakecolor->prev;
-		else if (choice == KEY_RIGHTARROW || choice == KEY_ENTER)
-			while (!skincolors[setupm_fakecolor->color].accessible)
-				setupm_fakecolor = setupm_fakecolor->next;
-	}
-
-	if (exitmenu)
-		M_ExitMenu();
-
-	return 0;
+	return true;
 }
 
 // start the multiplayer setup menu
@@ -8363,14 +8203,10 @@ INT32 MR_HandleVideoMode(INT32 ch)
 			}
 			break;
 
-		case KEY_ESCAPE: // this one same as M_Responder
-			M_ExitMenu();
-			break;
-
 		default:
-			break;
+			return false;
 	}
-	return 0;
+	return true;
 }
 
 // ===============
@@ -8556,7 +8392,6 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	INT32 column = itemOn/height, row = itemOn%height;
 	INT16 next;
 	UINT8 i;
-	boolean exitmenu = false;
 
 	switch (choice)
 	{
@@ -8634,15 +8469,11 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			}
 			break;
 
-		case KEY_ESCAPE:
-			exitmenu = true;
-			break;
+		default:
+			return false;
 	}
 
-	if (exitmenu)
-		M_ExitMenu();
-
-	return 0;
+	return true;
 }
 
 // =========
@@ -8724,12 +8555,15 @@ static boolean confirmAccept = false;
 
 INT32 MR_HandleDiscordRequests(INT32 choice)
 {
-	if (confirmDelay > 0)
-		return 0;
-
 	switch (choice)
 	{
+		case KEY_UPARROW:
+		case KEY_DOWNARROW:
+			break;
+
 		case KEY_ENTER:
+			if (confirmDelay > 0)
+				break;
 			Discord_Respond(discordRequestList->userID, DISCORD_REPLY_YES);
 			confirmAccept = true;
 			confirmDelay = confirmLength;
@@ -8737,14 +8571,19 @@ INT32 MR_HandleDiscordRequests(INT32 choice)
 			break;
 
 		case KEY_ESCAPE:
+			if (confirmDelay > 0)
+				break;
 			Discord_Respond(discordRequestList->userID, DISCORD_REPLY_NO);
 			confirmAccept = false;
 			confirmDelay = confirmLength;
 			S_StartSound(NULL, sfx_s3kb2);
 			break;
+
+		default:
+			return false;
 	}
 
-	return 0;
+	return true;
 }
 
 static const char *M_GetDiscordName(discordRequest_t *r)
