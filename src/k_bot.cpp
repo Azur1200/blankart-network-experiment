@@ -359,10 +359,6 @@ void K_UpdateMatchRaceBots(void)
 --------------------------------------------------*/
 boolean K_PlayerUsesBotMovement(const player_t *player)
 {
-
-	if (player->exiting)
-		return false;
-
 	if (player->bot)
 		return true;
 
@@ -1538,6 +1534,14 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 	if (botController != nullptr && (botController->flags & TMBOT_NOCONTROL) == TMBOT_NOCONTROL)
 	{
 		// Disable bot controls entirely.
+		return;
+	}
+
+	if (player->exiting)
+	{
+
+		//Bot finish
+		// TODO: Make bots spin around like a player would based on random chance
 		return;
 	}
 
