@@ -1890,6 +1890,80 @@ static void M_DrawSlider(INT32 x, INT32 y, const consvar_t *cv, boolean ontop)
 	V_DrawScaledPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p);
 }
 
+// Thanks to hayaUnderscore for creating this code used in SRB2Kart Saturn
+static void M_DrawSplitText(INT32 x, INT32 y, INT32 option,INT32 alpha)
+{
+	char* icopy = strdup(currentMenu->menuitems[itemOn].tooltip);
+	char** clines = NULL;
+	INT16 num_lines = 0;
+
+	if (icopy == NULL) return;
+
+	char* strtoken = strtok(icopy, "\n");
+
+	while (strtoken != NULL)
+	{
+		char* line = strdup(strtoken);
+
+		if (line == NULL) return;
+
+		clines = (char**)realloc(clines, (num_lines + 1) * sizeof(char*));
+		clines[num_lines] = line;
+		num_lines++;
+
+		strtoken = strtok(NULL, "\n");
+	}
+
+	free(icopy);
+
+	INT16 yoffset;
+	yoffset = (((5*10 - num_lines*10)));
+
+	// Draw BG first,,,
+	for (int i = 0; i < num_lines; i++)
+	{
+		V_DrawFill(0, (y + yoffset - 6)+5, vid.width, 11, 159|V_SNAPTOBOTTOM|V_SNAPTOLEFT);
+		yoffset += 11;
+	}
+
+	yoffset = (((5*10 - num_lines*10)));
+
+	// THEN the text
+	for (int i = 0; i < num_lines; i++)
+	{
+        V_DrawCenteredThinString(x, y + yoffset, option, clines[i]);
+		V_DrawCenteredThinString(x, y + yoffset, option|highlightflags|((9 - alpha) << V_ALPHASHIFT), clines[i]);
+		yoffset += 10;
+        // Remember to free the memory for each line when you're done with it.
+        free((void*)clines[i]);
+    }
+
+	free(clines);
+}
+
+//
+// M_DrawMenuTooltips
+//
+// Draw a banner across the bottom of the screen, with a description of the current option displayed
+//
+INT16 lastitemon = 0;
+INT32 alphatimer = 0;
+static void M_DrawMenuTooltips(void)
+{
+	if (currentMenu->menuitems[itemOn].tooltip != NULL)
+	{
+		if (lastitemon != itemOn)
+		{
+			alphatimer = 9;
+			lastitemon = itemOn;
+		}
+
+		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM, alphatimer);
+		if (alphatimer > 0 && renderisnewtic)
+			alphatimer--;
+	}
+}
+
 //
 //  Draw a textbox, like Quake does, because sometimes it's difficult
 //  to read the text with all the stuff in the background...
@@ -2111,6 +2185,8 @@ void M_DrawGenericMenu(void)
 			W_CachePatchName("M_CURSOR", PU_CACHE));
 		V_DrawString(currentMenu->x, cursory,  MENUCAPS|highlightflags, currentMenu->menuitems[itemOn].text);
 	}
+
+	M_DrawMenuTooltips();
 }
 
 #define scrollareaheight 72
@@ -2234,6 +2310,8 @@ void M_DrawGenericScrollMenu(void)
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, 0,
 		W_CachePatchName("M_CURSOR", PU_PATCH));
+
+	M_DrawMenuTooltips();
 }
 
 void M_DrawPauseMenu(void)
