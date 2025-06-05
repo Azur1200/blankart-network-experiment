@@ -4026,7 +4026,7 @@ boolean G_CheckDemoStatus(void)
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
 			else if (modeattacking)
-				M_ModeAttackEndGame(0);
+				MR_ModeAttackEndGame(0);
 			else
 				D_StartTitle();
 		}

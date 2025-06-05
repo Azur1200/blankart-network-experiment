@@ -2023,7 +2023,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN0("action already set!");
 				continue;
 			}
-			void (*routine)(INT32) = get_menuroutine(word2);
+			menufunc_f *routine = get_menuroutine(word2);
 			if (!routine)
 			{
 				WARN("unknown call routine '%s'", word2);
@@ -2263,7 +2263,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
 			{
-				void (*drawer)(void) = get_menudrawer(word2);
+				menudrawer_f *drawer = get_menudrawer(word2);
 				if (drawer == NULL)
 				{
 					WARN("unknown draw routine '%s'", word2);
@@ -2281,7 +2281,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "ENTERROUTINE"))
 			{
-				void (*routine)(INT32) = get_menuroutine(word2);
+				menufunc_f *routine = get_menuroutine(word2);
 				if (!routine)
 				{
 					WARN("unknown enter routine '%s'", word2);
@@ -2291,7 +2291,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "QUITROUTINE"))
 			{
-				void (*routine)(INT32) = get_menuroutine(word2);
+				menufunc_f *routine = get_menuroutine(word2);
 				if (!routine)
 				{
 					WARN("unknown quit routine '%s'", word2);
@@ -4034,7 +4034,7 @@ menutype_t get_menutype(const char *word)
 	return i;
 }
 
-void (*get_menuroutine(const char *word))(INT32)
+menufunc_f *get_menuroutine(const char *word)
 { // Returns the value of MR_ enumerations
 	size_t i;
 	if (fastncmp("MR_",word,3))
@@ -4046,7 +4046,7 @@ void (*get_menuroutine(const char *word))(INT32)
 	return NULL;
 }
 
-void (*get_menudrawer(const char *word))(void)
+menudrawer_f *get_menudrawer(const char *word)
 { // Returns the value of MD_ enumerations
 	size_t i;
 	if (fastncmp("MD_",word,3))

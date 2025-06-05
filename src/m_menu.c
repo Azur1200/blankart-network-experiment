@@ -488,14 +488,20 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out)
 
 // Options
 #ifdef HWRENDER
-void M_OpenGLOptionsMenu(INT32 choice)
+INT32 MR_OpenGLOptionsMenu(INT32 choice)
 {
 	(void)choice;
 
 	if (rendermode == render_opengl)
+	{
 		M_EnterMenu(MN_OP_OPENGL, true);
+		return true;
+	}
 	else
+	{
 		M_StartMessage(M_GetText("You must be in OpenGL mode\nto access this menu.\n\n(Press a key)\n"), NULL, MM_NOTHING);
+		return false;
+	}
 }
 #endif
 
@@ -779,7 +785,7 @@ void M_InitMenuPresTables(void)
 // BASIC MENU HANDLING
 // =========================================================================
 
-static void M_ChangeCvar(INT32 choice)
+static INT32 M_ChangeCvar(INT32 choice)
 {
 	consvar_t *cv = currentMenu->menuitems[itemOn].itemaction.cvar;
 
@@ -790,10 +796,10 @@ static void M_ChangeCvar(INT32 choice)
 			SINT8 skinno = R_SkinAvailable(cv_chooseskin.string);
 			if (skinno != -1)
 				CV_SetValue(cv,skins[skinno].prefcolor);
-			return;
+			return true;
 		}
 		CV_Set(cv,cv->defaultvalue);
-		return;
+		return true;
 	}
 
 	choice = (choice<<1) - 1;
@@ -816,6 +822,8 @@ static void M_ChangeCvar(INT32 choice)
 	}
 	else
 		CV_AddValue(cv,choice);
+
+	return true;
 }
 
 static boolean M_ChangeStringCvar(INT32 choice)
@@ -900,7 +908,7 @@ static void Command_Manual_f(void)
 	if (modeattacking)
 		return;
 	M_StartControlPanel();
-	M_Manual(INT32_MAX);
+	MR_Manual(INT32_MAX);
 	itemOn = 0;
 }
 
@@ -914,7 +922,7 @@ boolean M_Responder(event_t *ev)
 	static tic_t joywait = 0, mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
-	void (*routine)(INT32 choice); // for some casting problem
+	menufunc_f *routine; // for some casting problem
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
@@ -1106,7 +1114,7 @@ boolean M_Responder(event_t *ev)
 				if (modeattacking)
 					return true;
 				M_StartControlPanel();
-				M_Options(0);
+				MR_Options(0);
 				M_EnterMenu(MN_OP_SOUND, true);
 				itemOn = 0;
 				return true;
@@ -1116,9 +1124,9 @@ boolean M_Responder(event_t *ev)
 				if (modeattacking)
 					return true;
 				M_StartControlPanel();
-				M_Options(0);
+				MR_Options(0);
 				M_EnterMenu(MN_OP_VIDEO, true);
-				M_VideoModeMenu(0);
+				MR_VideoModeMenu(0);
 				return true;
 #endif
 
@@ -1129,14 +1137,14 @@ boolean M_Responder(event_t *ev)
 				if (modeattacking)
 					return true;
 				M_StartControlPanel();
-				M_Options(0);
+				MR_Options(0);
 				return true;
 
 			// Screenshots on F8 now handled elsewhere
 			// Same with Moviemode on F9
 
 			case KEY_F10: // Quit SRB2
-				M_QuitSRB2(0);
+				MR_QuitSRB2(0);
 				return true;
 
 			case KEY_F11: // Fullscreen
@@ -1201,31 +1209,31 @@ boolean M_Responder(event_t *ev)
 			// arbitrary keyboard shortcuts because fuck you
 
 			case '\'':	// toggle freecam
-				M_PlaybackToggleFreecam(0);
+				MR_PlaybackToggleFreecam(0);
 				break;
 
 			case ']':	// ffw / advance frame (depends on if paused or not)
 				if (paused)
-					M_PlaybackAdvance(0);
+					MR_PlaybackAdvance(0);
 				else
-					M_PlaybackFastForward(0);
+					MR_PlaybackFastForward(0);
 				break;
 
 			case '[':	// rewind /backupframe, uses the same function
-				M_PlaybackRewind(0);
+				MR_PlaybackRewind(0);
 				break;
 
 			case '\\':	// pause
-				M_PlaybackPause(0);
+				MR_PlaybackPause(0);
 				break;
 
 			// viewpoints, an annoyance (tm)
 			case '-':	// viewpoint minus
-				M_PlaybackSetViews(-1);	// yeah lol.
+				MR_PlaybackSetViews(-1); // yeah lol.
 				break;
 
 			case '=':	// viewpoint plus
-				M_PlaybackSetViews(1);	// yeah lol.
+				MR_PlaybackSetViews(1); // yeah lol.
 				break;
 
 			// switch viewpoints:
@@ -1400,35 +1408,35 @@ boolean M_DemoResponder(event_t *ev)
 			// arbitrary keyboard shortcuts because fuck you
 
 			case '\'':	// toggle freecam
-				M_PlaybackToggleFreecam(0);
+				MR_PlaybackToggleFreecam(0);
 				eatinput = true;
 				break;
 
 			case ']':	// ffw / advance frame (depends on if paused or not)
 				if (paused)
-					M_PlaybackAdvance(0);
+					MR_PlaybackAdvance(0);
 				else
-					M_PlaybackFastForward(0);
+					MR_PlaybackFastForward(0);
 				eatinput = true;
 				break;
 
 			case '[':	// rewind /backupframe, uses the same function
-				M_PlaybackRewind(0);
+				MR_PlaybackRewind(0);
 				break;
 
 			case '\\':	// pause
-				M_PlaybackPause(0);
+				MR_PlaybackPause(0);
 				eatinput = true;
 				break;
 
 			// viewpoints, an annoyance (tm)
 			case '-':	// viewpoint minus
-				M_PlaybackSetViews(-1);	// yeah lol.
+				MR_PlaybackSetViews(-1); // yeah lol.
 				eatinput = true;
 				break;
 
 			case '=':	// viewpoint plus
-				M_PlaybackSetViews(1);	// yeah lol.
+				MR_PlaybackSetViews(1); // yeah lol.
 				eatinput = true;
 				break;
 
@@ -2874,7 +2882,7 @@ void M_DrawImageDef(void)
 
 // Handles the ImageDefs.  Just a specialized function that
 // uses left and right movement.
-void M_HandleImageDef(INT32 choice)
+INT32 MR_HandleImageDef(INT32 choice)
 {
 	boolean exitmenu = false;
 
@@ -2903,24 +2911,27 @@ void M_HandleImageDef(INT32 choice)
 
 	if (exitmenu)
 		M_ExitMenu();
+
+	return true;
 }
 
 // ======================
 // MISC MAIN MENU OPTIONS
 // ======================
 
-void M_AddonsOptions(INT32 choice)
+INT32 MR_AddonsOptions(INT32 choice)
 {
 	(void)choice;
 	Addons_option_Onchange();
 
 	M_EnterMenu(MN_OP_ADDONS, true);
+	return true;
 }
 
 #define LOCATIONSTRING1 "Visit \x83SRB2.ORG/MODS\x80 to get & make addons!"
 #define LOCATIONSTRING2 "Visit \x88SRB2.ORG/MODS\x80 to get & make addons!"
 
-void M_Addons(INT32 choice)
+INT32 MR_Addons(INT32 choice)
 {
 	const char *pathname = ".";
 
@@ -2952,7 +2963,7 @@ void M_Addons(INT32 choice)
 	if (!preparefilemenu(false, false))
 	{
 		M_StartMessage(va("No files/folders found.\n\n%s\n\n(Press a key)\n", (recommendedflags == V_SKYMAP ? LOCATIONSTRING2 : LOCATIONSTRING1)),NULL,MM_NOTHING);
-		return;
+		return false;
 	}
 	else
 		dir_on[menudepthleft] = 0;
@@ -2983,6 +2994,7 @@ void M_Addons(INT32 choice)
 	addonsp[NUM_EXT+4] = W_CachePatchName("M_FSAVE", PU_STATIC);
 
 	M_EnterMenu(MN_AD_MAIN, true);
+	return true;
 }
 
 #define width 4
@@ -3313,7 +3325,7 @@ static boolean M_ChangeStringAddons(INT32 choice)
 }
 #undef len
 
-void M_HandleAddons(INT32 choice)
+INT32 MR_HandleAddons(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -3326,7 +3338,7 @@ void M_HandleAddons(INT32 choice)
 		if (!preparefilemenu(true, false))
 		{
 			UNEXIST;
-			return;
+			return 0;
 		}
 #else // streamlined
 		searchfilemenu(tempname);
@@ -3386,7 +3398,7 @@ void M_HandleAddons(INT32 choice)
 									if (!preparefilemenu(true, false))
 									{
 										UNEXIST;
-										return;
+										return 0;
 									}
 								}
 								else
@@ -3409,7 +3421,7 @@ void M_HandleAddons(INT32 choice)
 							if (!preparefilemenu(false, false))
 							{
 								UNEXIST;
-								return;
+								return 0;
 							}
 							break;
 						case EXT_TXT:
@@ -3449,6 +3461,8 @@ void M_HandleAddons(INT32 choice)
 
 		M_ExitMenu();
 	}
+
+	return 0;
 }
 
 // ---- REPLAY HUT -----
@@ -3488,7 +3502,7 @@ static void PrepReplayList(void)
 	}
 }
 
-void M_ReplayHut(INT32 choice)
+INT32 MR_ReplayHut(INT32 choice)
 {
 	(void)choice;
 
@@ -3500,7 +3514,7 @@ void M_ReplayHut(INT32 choice)
 	if (!preparefilemenu(false, true))
 	{
 		M_StartMessage("No replays found.\n\n(Press a key)\n", NULL, MM_NOTHING);
-		return;
+		return false;
 	}
 	else if (!demo.inreplayhut)
 		dir_on[menudepthleft] = 0;
@@ -3519,9 +3533,10 @@ void M_ReplayHut(INT32 choice)
 	CL_ClearRewinds();
 
 	S_ChangeMusicInternal("replst", true);
+	return true;
 }
 
-void M_HandleReplayHutList(INT32 choice)
+INT32 MR_HandleReplayHutList(INT32 choice)
 {
 	switch (choice)
 	{
@@ -3529,7 +3544,7 @@ void M_HandleReplayHutList(INT32 choice)
 		if (dir_on[menudepthleft])
 			dir_on[menudepthleft]--;
 		else
-			return;
+			return 0;
 			//M_PrevOpt();
 
 		S_StartSound(NULL, sfx_menu1);
@@ -3540,7 +3555,7 @@ void M_HandleReplayHutList(INT32 choice)
 		if (dir_on[menudepthleft] < sizedirmenu-1)
 			dir_on[menudepthleft]++;
 		else
-			return;
+			return 0;
 			//itemOn = 0; // Not M_NextOpt because that would take us to the extra dummy item
 
 		S_StartSound(NULL, sfx_menu1);
@@ -3548,7 +3563,7 @@ void M_HandleReplayHutList(INT32 choice)
 		break;
 
 	case KEY_ESCAPE:
-		M_QuitReplayHut(0);
+		MR_QuitReplayHut(0);
 		break;
 
 	case KEY_ENTER:
@@ -3569,8 +3584,8 @@ void M_HandleReplayHutList(INT32 choice)
 
 						if (!preparefilemenu(true, true))
 						{
-							M_QuitReplayHut(0);
-							return;
+							MR_QuitReplayHut(0);
+							return 0;
 						}
 					}
 					else
@@ -3592,8 +3607,8 @@ void M_HandleReplayHutList(INT32 choice)
 				menupath[menupathindex[++menudepthleft]] = 0;
 				if (!preparefilemenu(false, true))
 				{
-					M_QuitReplayHut(0);
-					return;
+					MR_QuitReplayHut(0);
+					return 0;
 				}
 				PrepReplayList();
 				break;
@@ -3636,6 +3651,7 @@ void M_HandleReplayHutList(INT32 choice)
 
 		break;
 	}
+	return 0;
 }
 
 #define SCALEDVIEWWIDTH (vid.width/vid.dupx)
@@ -4010,7 +4026,7 @@ void M_DrawReplayStartMenu(void)
 	V_DrawSmallString(4, BASEVIDHEIGHT-14, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_ALLOWLOWERCASE, warning);
 }
 
-void M_QuitReplayHut(INT32 choice)
+INT32 MR_QuitReplayHut(INT32 choice)
 {
 	(void)choice;
 
@@ -4021,9 +4037,10 @@ void M_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+	return true;
 }
 
-void M_HutStartReplay(INT32 choice)
+INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
@@ -4032,6 +4049,7 @@ void M_HutStartReplay(INT32 choice)
 	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
 
 	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
+	return true;
 }
 
 void M_SetPlaybackMenuPointer(void)
@@ -4172,7 +4190,7 @@ void M_DrawPlaybackMenu(void)
 	}
 }
 
-void M_PlaybackRewind(INT32 choice)
+INT32 MR_PlaybackRewind(INT32 choice)
 {
 	static tic_t lastconfirmtime;
 
@@ -4196,9 +4214,10 @@ void M_PlaybackRewind(INT32 choice)
 	}
 
 	CV_SetValue(&cv_playbackspeed, 1);
+	return true;
 }
 
-void M_PlaybackPause(INT32 choice)
+INT32 MR_PlaybackPause(INT32 choice)
 {
 	(void)choice;
 
@@ -4216,9 +4235,10 @@ void M_PlaybackPause(INT32 choice)
 		S_ResumeAudio();
 
 	CV_SetValue(&cv_playbackspeed, 1);
+	return true;
 }
 
-void M_PlaybackFastForward(INT32 choice)
+INT32 MR_PlaybackFastForward(INT32 choice)
 {
 	(void)choice;
 
@@ -4229,21 +4249,23 @@ void M_PlaybackFastForward(INT32 choice)
 		S_ResumeAudio();
 	}
 	CV_SetValue(&cv_playbackspeed, cv_playbackspeed.value == 1 ? 4 : 1);
+	return true;
 }
 
-void M_PlaybackAdvance(INT32 choice)
+INT32 MR_PlaybackAdvance(INT32 choice)
 {
 	(void)choice;
 
 	paused = false;
 	TryRunTics(1);
 	paused = true;
+	return true;
 }
 
-void M_PlaybackSetViews(INT32 choice)
+INT32 MR_PlaybackSetViews(INT32 choice)
 {
 	if (demo.freecam)
-		return; // not here.
+		return false; // not here.
 
 	if (choice > 0)
 	{
@@ -4261,21 +4283,25 @@ void M_PlaybackSetViews(INT32 choice)
 			G_SyncDemoParty(consoleplayer, 0);
 		}
 	}
+	return true;
 }
 
-void M_PlaybackAdjustView(INT32 choice)
+INT32 MR_PlaybackAdjustView(INT32 choice)
 {
 	INT16 splitnum = M_IsItemOn(MN_PLAYBACK, "VIEW1") ? 1 :
 	                 M_IsItemOn(MN_PLAYBACK, "VIEW2") ? 2 :
 	                 M_IsItemOn(MN_PLAYBACK, "VIEW3") ? 3 :
 	                 M_IsItemOn(MN_PLAYBACK, "VIEW4") ? 4 : -1;
 
-	if (splitnum >= 1 && splitnum <= 4)
-		G_AdjustView(splitnum, (choice > 0) ? 1 : -1, true);
+	if (splitnum < 1 && splitnum > 4)
+		return false;
+
+	G_AdjustView(splitnum, (choice > 0) ? 1 : -1, true);
+	return true;
 }
 
 // this one's rather tricky
-void M_PlaybackToggleFreecam(INT32 choice)
+INT32 MR_PlaybackToggleFreecam(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
@@ -4289,18 +4315,19 @@ void M_PlaybackToggleFreecam(INT32 choice)
 	{
 		P_ToggleDemoCamera(i);
 	}
+	return true;
 }
 
-void M_PlaybackQuit(INT32 choice)
+INT32 MR_PlaybackQuit(INT32 choice)
 {
 	(void)choice;
 	G_StopDemo();
 
 	if (demo.inreplayhut)
-		M_ReplayHut(choice);
+		MR_ReplayHut(choice);
 	else if (modeattacking)
 	{
-		M_ModeAttackEndGame(0);
+		MR_ModeAttackEndGame(0);
 		S_ChangeMusicInternal("racent", true);
 	}
 	else
@@ -4308,55 +4335,60 @@ void M_PlaybackQuit(INT32 choice)
 		M_ClearMenus(true);
 		D_StartTitle();
 	}
+	return true;
 }
 
-void M_ChangeLevel(INT32 choice)
+INT32 MR_ChangeLevel(INT32 choice)
 {
 	(void)choice;
 	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, false, NULL);
 	M_ClearMenus(true);
 	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
+	return true;
 }
 
-void M_ConfirmSpectate(INT32 choice)
+INT32 MR_ConfirmSpectate(INT32 choice)
 {
 	(void)choice;
 	// We allow switching to spectator even if team changing is not allowed
 	M_ClearMenus(true);
 	COM_ImmedExecute("changeteam spectator");
+	return true;
 }
 
-void M_ConfirmEnterGame(INT32 choice)
+INT32 MR_ConfirmEnterGame(INT32 choice)
 {
 	(void)choice;
 	if (!cv_allowteamchange.value)
 	{
 		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
-		return;
+		return false;
 	}
 	M_ClearMenus(true);
 	COM_ImmedExecute("changeteam playing");
+	return true;
 }
 
-void M_ConfirmTeamScramble(INT32 choice)
+INT32 MR_ConfirmTeamScramble(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
 
 	COM_ImmedExecute(va("teamscramble %d", cv_dummyscramble.value+1));
+	return true;
 }
 
-void M_ConfirmTeamChange(INT32 choice)
+INT32 MR_ConfirmTeamChange(INT32 choice)
 {
 	(void)choice;
 
 	if (cv_dummymenuplayer.value > splitscreen+1)
-		return;
+		return false;
 
 	if (!cv_allowteamchange.value && cv_dummyteam.value)
 	{
 		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
-		return;
+		return false;
 	}
 
 	M_ClearMenus(true);
@@ -4377,19 +4409,21 @@ void M_ConfirmTeamChange(INT32 choice)
 			COM_ImmedExecute(va("changeteam4 %s", cv_dummyteam.string));
 			break;
 	}
+
+	return true;
 }
 
-void M_ConfirmSpectateChange(INT32 choice)
+INT32 MR_ConfirmSpectateChange(INT32 choice)
 {
 	(void)choice;
 
 	if (cv_dummymenuplayer.value > splitscreen+1)
-		return;
+		return false;
 
 	if (!cv_allowteamchange.value && cv_dummyspectate.value)
 	{
 		M_StartMessage(M_GetText("The server is not allowing\nteam changes at this time.\nPress a key.\n"), NULL, MM_NOTHING);
-		return;
+		return false;
 	}
 
 	M_ClearMenus(true);
@@ -4410,9 +4444,11 @@ void M_ConfirmSpectateChange(INT32 choice)
 			COM_ImmedExecute(va("changeteam4 %s", cv_dummyspectate.string));
 			break;
 	}
+
+	return true;
 }
 
-void M_Options(INT32 choice)
+INT32 MR_Options(INT32 choice)
 {
 	(void)choice;
 
@@ -4430,12 +4466,14 @@ void M_Options(INT32 choice)
 	M_SetItemDisabled(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM].numitems);
 
 	M_EnterMenu(MN_OP_MAIN, true);
+	return true;
 }
 
-void M_Manual(INT32 choice)
+INT32 MR_Manual(INT32 choice)
 {
 	(void)choice;
 	M_EnterMenu(MN_HELP, true);
+	return true;
 }
 
 static void M_RetryResponse(INT32 ch)
@@ -4450,16 +4488,18 @@ static void M_RetryResponse(INT32 ch)
 	G_SetRetryFlag();
 }
 
-void M_Retry(INT32 choice)
+INT32 MR_Retry(INT32 choice)
 {
 	(void)choice;
 	M_StartMessage(va("Start this %s over?\n\n(Press 'Y' to confirm)\n", (gametyperules & GTR_CIRCUIT) ? "race" : "battle"),M_RetryResponse,MM_YESNO);
+	return true;
 }
 
-void M_SelectableClearMenus(INT32 choice)
+INT32 MR_SelectableClearMenus(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
+	return true;
 }
 
 void M_RefreshPauseMenu(void)
@@ -4608,7 +4648,7 @@ void M_DrawSkyRoom(void)
 
 	for (i = 0; i < currentMenu->numitems; ++i)
 	{
-		if (currentMenu->menuitems[i].itemaction.routine == M_HandleSoundTest)
+		if (currentMenu->menuitems[i].itemaction.routine == MR_HandleSoundTest)
 		{
 			y = currentMenu->menuitems[i].y;
 			break;
@@ -4636,7 +4676,7 @@ void M_DrawSkyRoom(void)
 	}
 }
 
-void M_HandleSoundTest(INT32 choice)
+INT32 MR_HandleSoundTest(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -4671,6 +4711,8 @@ void M_HandleSoundTest(INT32 choice)
 	}
 	if (exitmenu)
 		M_ExitMenu();
+
+	return 0;
 }
 
 static musicdef_t *curplaying = NULL;
@@ -4679,7 +4721,7 @@ static tic_t st_time = 0;
 static size_t st_namescroll = 0;
 static size_t st_namescrollstate = 0;
 
-void M_MusicTest(INT32 choice)
+INT32 MR_MusicTest(INT32 choice)
 {
 	//INT32 ul = skyRoomMenuTranslations[choice-1];
 	//UINT8 i;
@@ -4689,7 +4731,7 @@ void M_MusicTest(INT32 choice)
 	if (!S_PrepareSoundTest())
 	{
 		M_StartMessage(M_GetText("No selectable tracks found.\n"),NULL,MM_NOTHING);
-		return;
+		return false;
 	}
 
 	curplaying = NULL;
@@ -4698,6 +4740,7 @@ void M_MusicTest(INT32 choice)
 	st_sel = 0;
 
 	M_EnterMenu(MN_SR_SOUNDTEST, true);
+	return true;
 }
 
 void M_DrawMusicTest(void)
@@ -4917,7 +4960,7 @@ void M_DrawMusicTest(void)
 	}
 }
 
-void M_HandleMusicTest(INT32 choice)
+INT32 MR_HandleMusicTest(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -4999,39 +5042,43 @@ void M_HandleMusicTest(INT32 choice)
 
 		M_ExitMenu();
 	}
+	return 0;
 }
 
 // ==================
 // NEW GAME FUNCTIONS
 // ==================
 
-void M_Credits(INT32 choice)
+INT32 MR_Credits(INT32 choice)
 {
 	(void)choice;
 	cursaveslot = -2;
 	M_ClearMenus(true);
 	F_StartCredits();
+	return true;
 }
 
-void M_BlanCredits(INT32 choice)
+INT32 MR_BlanCredits(INT32 choice)
 {
 	(void)choice;
 	cursaveslot = -2;
 	M_ClearMenus(true);
 	F_BlanStartCredits();
+	return true;
 }
 
 // ==================
 // SINGLE PLAYER MENU
 // ==================
 
-void M_SinglePlayerMenu(INT32 choice)
+INT32 MR_SinglePlayerMenu(INT32 choice)
 {
 	(void)choice;
 	M_SetItemSecret(MN_SP_MAIN, "GRANDPRIX", false);
 	M_SetItemSecret(MN_SP_MAIN, "TIMEATTACK", !M_SecretUnlocked(SECRET_TIMEATTACK));
 	M_SetItemSecret(MN_SP_MAIN, "ITEMBREAKER", !M_SecretUnlocked(SECRET_ITEMBREAKER));
 	M_EnterMenu(MN_SP_MAIN, true);
+	return true;
 }
 
 // ===============
@@ -5050,7 +5097,7 @@ static UINT8 statsCurrentPage = 0;
 
 typedef struct statpage_s {
 	const char *title;
-	void (*drawer)(void);
+	menudrawer_f *drawer;
 } statpage_t;
 
 static statpage_t statsPages[] = {
@@ -5062,7 +5109,7 @@ static statpage_t statsPages[] = {
 #define LENSTATSPAGES (sizeof(statsPages)/sizeof(statsPages[0]))
 #define NUMSTATSPAGES (kartstats.vanilla ? 2 : LENSTATSPAGES)
 
-void M_Statistics(INT32 choice)
+INT32 MR_Statistics(INT32 choice)
 {
 	INT16 i, j = 0;
 
@@ -5096,6 +5143,7 @@ void M_Statistics(INT32 choice)
 		statsMax = 0;
 
 	M_EnterMenu(MN_SP_LEVELSTATS, true);
+	return true;
 }
 
 static void M_DrawStatsMaps(void)
@@ -5301,7 +5349,7 @@ void M_DrawLevelStats(void)
 }
 
 // Handle statistics.
-void M_HandleLevelStats(INT32 choice)
+INT32 MR_HandleLevelStats(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -5358,22 +5406,24 @@ void M_HandleLevelStats(INT32 choice)
 	}
 	if (exitmenu)
 		M_ExitMenu();
+	return 0;
 }
 
-void M_GrandPrixTemp(INT32 choice)
+INT32 MR_GrandPrixTemp(INT32 choice)
 {
 	(void)choice;
 	if (!M_PrepareCupList())
 	{
 		M_StartMessage(M_GetText("No cups found for Grand Prix.\n"),NULL,MM_NOTHING);
-		return;
+		return false;
 	}
 	M_PatchSkinNameTable();
 	M_EnterMenu(MN_SP_GRANDPRIX, true);
+	return true;
 }
 
 // Start Grand Prix!
-void M_StartGrandPrix(INT32 choice)
+INT32 MR_StartGrandPrix(INT32 choice)
 {
 	cupheader_t *gpcup = kartcupheaders;
 	INT32 levelNum;
@@ -5384,7 +5434,7 @@ void M_StartGrandPrix(INT32 choice)
 	{
 		// welp
 		I_Error("No cup definitions for GP\n");
-		return;
+		return false;
 	}
 
 	M_ClearMenus(true);
@@ -5437,6 +5487,7 @@ void M_StartGrandPrix(INT32 choice)
 		(UINT8)(cv_splitplayers.value - 1),
 		false
 	);
+	return true;
 }
 
 // ===========
@@ -5613,7 +5664,7 @@ void M_DrawTimeAttackMenu(void)
 }
 
 // Going to Time Attack menu...
-void M_TimeAttack(INT32 arg)
+INT32 MR_TimeAttack(INT32 arg)
 {
 	memset(skins_cons_t, 0, sizeof (skins_cons_t));
 
@@ -5622,7 +5673,7 @@ void M_TimeAttack(INT32 arg)
 	if (M_CountLevelsToShowInList() == 0)
 	{
 		M_StartMessage(M_GetText(va("No levels found for %s.\n", arg ? "Item Breaker" : "Time Attack")),NULL,MM_NOTHING);
-		return;
+		return false;
 	}
 
 	M_PatchSkinNameTable();
@@ -5642,18 +5693,20 @@ void M_TimeAttack(INT32 arg)
 	M_SetItemOn(MN_SP_TIMEATTACK, "START"); // "Start" is selected.
 
 	S_ChangeMusicInternal("racent", true);
+	return true;
 }
 
-void M_QuitTimeAttackMenu(INT32 choice)
+INT32 MR_QuitTimeAttackMenu(INT32 choice)
 {
 	(void)choice;
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", cv_chooseskin.string));
+	return true;
 }
 
 // Player has selected the "START" from the time attack screen
-void M_ChooseTimeAttack(INT32 choice)
+INT32 MR_ChooseTimeAttack(INT32 choice)
 {
 	char *gpath;
 	char *gamemode = M_AppendGametypeAndModName();
@@ -5680,9 +5733,10 @@ void M_ChooseTimeAttack(INT32 choice)
 		G_RecordDemo(nameofdemo);
 
 	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value-1), 0, false);
+	return true;
 }
 
-void M_HandleStaffReplay(INT32 choice)
+INT32 MR_HandleStaffReplay(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
@@ -5721,6 +5775,7 @@ void M_HandleStaffReplay(INT32 choice)
 	}
 	if (exitmenu)
 		M_ExitMenu();
+	return 0;
 }
 
 #define NUMPRESETS 3
@@ -5731,10 +5786,10 @@ static boolean presets[NUMPRESETS][5] = {
 	{ true,  true,     true,     true,     true        }, // BlanKart
 };
 
-void M_TimeAttackPreset(INT32 arg)
+INT32 MR_TimeAttackPreset(INT32 arg)
 {
 	if (arg < 0 || arg >= NUMPRESETS)
-		return;
+		return false;
 
 	boolean *preset = presets[arg];
 	CV_Set(&cv_dummyattackingrings, preset[0] ? "On" : "Off");
@@ -5742,11 +5797,12 @@ void M_TimeAttackPreset(INT32 arg)
 	CV_Set(&cv_dummyattackingchaining, preset[2] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingslipdash, preset[3] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingpurpledrift, preset[4] ? "On" : "Off");
+	return true;
 }
 #undef NUMPRESETS
 
 // Player has selected the "REPLAY" from the time attack screen
-void M_ReplayTimeAttack(INT32 arg)
+INT32 MR_ReplayTimeAttack(INT32 arg)
 {
 	const char *which;
 	char *gamemode = M_AppendGametypeAndModName();
@@ -5767,11 +5823,13 @@ void M_ReplayTimeAttack(INT32 arg)
 	case 3: // guest
 		// srb2/replay/main/map01-guest.lmp
 		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
-		return;
+		Z_Free(gamemode);
+		return true;
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
 	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
 	Z_Free(gamemode);
+	return true;
 }
 
 static void M_EraseGuest(INT32 choice)
@@ -5829,7 +5887,7 @@ static void M_OverwriteGuest_Last(INT32 choice)
 	M_OverwriteGuest("last");
 }
 
-void M_SetGuestReplay(INT32 arg)
+INT32 MR_SetGuestReplay(INT32 arg)
 {
 	void (*which)(INT32);
 	switch(arg)
@@ -5846,23 +5904,27 @@ void M_SetGuestReplay(INT32 arg)
 	case 3: // guest
 	default:
 		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), M_EraseGuest, MM_YESNO);
-		return;
+		return true;
 	}
 	if (FIL_FileExists(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value))))
 		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
 	else
 		which(0);
+	return true;
 }
 
-void M_ModeAttackRetry(INT32 choice)
+INT32 MR_ModeAttackRetry(INT32 choice)
 {
 	(void)choice;
 	G_CheckDemoStatus(); // Cancel recording
-	if (modeattacking)
-		M_ChooseTimeAttack(0);
+	if (!modeattacking)
+		return false;
+
+	MR_ChooseTimeAttack(0);
+	return true;
 }
 
-void M_ModeAttackEndGame(INT32 choice)
+INT32 MR_ModeAttackEndGame(INT32 choice)
 {
 	(void)choice;
 	G_CheckDemoStatus(); // Cancel recording
@@ -5879,6 +5941,7 @@ void M_ModeAttackEndGame(INT32 choice)
 	// Update replay availability.
 	CV_AddValue(&cv_nextmap, 1);
 	CV_AddValue(&cv_nextmap, -1);
+	return true;
 }
 
 // ========
@@ -5895,16 +5958,17 @@ static void M_ExitGameResponse(INT32 ch)
 	M_ClearMenus(true);
 }
 
-void M_EndGame(INT32 choice)
+INT32 MR_EndGame(INT32 choice)
 {
 	(void)choice;
 	if (demo.playback)
-		return;
+		return false;
 
 	if (!Playing())
-		return;
+		return false;
 
 	M_StartMessage(M_GetText("Are you sure you want to end the game?\n\n(Press 'Y' to confirm)\n"), M_ExitGameResponse, MM_YESNO);
+	return true;
 }
 
 //===========================================================================
@@ -6027,7 +6091,7 @@ Fetch_servers_thread (int *id)
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
-void M_HandleServerPage(INT32 choice)
+INT32 MR_HandleServerPage(INT32 choice)
 {
 	boolean exitmenu = false; // exit to previous menu
 
@@ -6063,17 +6127,19 @@ void M_HandleServerPage(INT32 choice)
 	}
 	if (exitmenu)
 		M_ExitMenu();
+	return 0;
 }
 
-void M_Connect(INT32 arg)
+INT32 MR_Connect(INT32 arg)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
 	COM_BufAddText(va("connect node %d\n", serverlist[arg + serverlistpage * M_ServersPerPage()].node));
+	return true;
 }
 
-void M_Refresh(INT32 choice)
+INT32 MR_Refresh(INT32 choice)
 {
 	(void)choice;
 
@@ -6098,6 +6164,8 @@ void M_Refresh(INT32 choice)
 #else/*MASTERSERVER*/
 	CL_UpdateServerList();
 #endif/*MASTERSERVER*/
+
+	return true;
 }
 
 void M_DrawConnectMenu(void)
@@ -6196,10 +6264,11 @@ void M_DrawConnectMenu(void)
 	}
 }
 
-void M_CancelConnect(INT32 choice)
+INT32 MR_CancelConnect(INT32 choice)
 {
 	(void)choice;
 	D_CloseConnection();
+	return true;
 }
 
 // Ascending order, not descending.
@@ -6358,7 +6427,7 @@ static void M_ConnectMenu(INT32 choice)
 #endif/*defined (MASTERSERVER) && defined (HAVE_THREADS)*/
 }
 
-void M_ConnectMenuModChecks(INT32 choice)
+INT32 MR_ConnectMenuModChecks(INT32 choice)
 {
 	(void)choice;
 	// okay never mind we want to COMMUNICATE to the player pre-emptively instead of letting them try and then get confused when it doesn't work
@@ -6366,10 +6435,11 @@ void M_ConnectMenuModChecks(INT32 choice)
 	if (modifiedgame)
 	{
 		M_StartMessage(M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n\n(Press a key)\n"), M_ConnectMenu, MM_EVENTHANDLER);
-		return;
+		return false;
 	}
 
 	M_ConnectMenu(-1);
+	return true;
 }
 
 //===========================================================================
@@ -6401,7 +6471,7 @@ static INT32 M_FindFirstMap(INT32 gtype)
 	return 1;
 }
 
-void M_StartServer(INT32 choice)
+INT32 MR_StartServer(INT32 choice)
 {
 	UINT8 ssplayers = cv_splitplayers.value-1;
 
@@ -6450,6 +6520,7 @@ void M_StartServer(INT32 choice)
 	}
 
 	M_ClearMenus(true);
+	return true;
 }
 
 static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
@@ -6555,7 +6626,7 @@ void M_DrawServerMenu(void)
 	M_DrawGenericMenu();
 }
 
-void M_MapChange(INT32 choice)
+INT32 MR_MapChange(INT32 choice)
 {
 	(void)choice;
 
@@ -6566,22 +6637,25 @@ void M_MapChange(INT32 choice)
 
 	M_PrepareLevelSelect();
 	M_EnterMenu(MN_CHANGELEVEL, true);
+	return true;
 }
 
-void M_StartOfflineServerMenu(INT32 choice)
+INT32 MR_StartOfflineServerMenu(INT32 choice)
 {
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
 	M_EnterMenu(MN_MP_SPLITSCREEN, true);
+	return true;
 }
 
-void M_StartServerMenu(INT32 choice)
+INT32 MR_StartServerMenu(INT32 choice)
 {
 	(void)choice;
 	levellistmode = LLM_CREATESERVER;
 	M_PrepareLevelSelect();
 	M_EnterMenu(MN_MP_SERVER, true);
+	return true;
 }
 
 // ==============
@@ -6676,7 +6750,7 @@ static void Splitplayers_OnChange(void)
 		setupm_pselect = 1;
 }
 
-void M_SetupMultiHandler(INT32 choice)
+INT32 MR_SetupMultiHandler(INT32 choice)
 {
 	boolean exitmenu = false;  // exit to previous menu and send name change
 
@@ -6717,17 +6791,17 @@ void M_SetupMultiHandler(INT32 choice)
 			switch (setupm_pselect)
 			{
 				case 2:
-					M_SetupMultiPlayer(1);
-					return;
+					MR_SetupMultiPlayer(1);
+					return 0;
 				case 3:
-					M_SetupMultiPlayer(2);
-					return;
+					MR_SetupMultiPlayer(2);
+					return 0;
 				case 4:
-					M_SetupMultiPlayer(3);
-					return;
+					MR_SetupMultiPlayer(3);
+					return 0;
 				default:
-					M_SetupMultiPlayer(0);
-					return;
+					MR_SetupMultiPlayer(0);
+					return 0;
 			}
 			break;
 		}
@@ -6739,6 +6813,7 @@ void M_SetupMultiHandler(INT32 choice)
 
 	if (exitmenu)
 		M_ExitMenu();
+	return 0;
 }
 
 // Tails 11-19-2002
@@ -6766,7 +6841,7 @@ static void M_ConnectIP(INT32 choice)
 }
 
 // Tails 11-19-2002
-void M_HandleConnectIP(INT32 choice)
+INT32 MR_HandleConnectIP(INT32 choice)
 {
 	size_t l;
 	boolean exitmenu = false;  // exit to previous menu and send name change
@@ -6834,6 +6909,8 @@ void M_HandleConnectIP(INT32 choice)
 
 	if (exitmenu)
 		M_ExitMenu();
+
+	return 0;
 }
 
 // ========================
@@ -7209,7 +7286,7 @@ static void M_GetFollowerState(void)
 }
 
 // Handle 1P/2P MP Setup
-void M_HandleSetupMultiPlayer(INT32 choice)
+INT32 MR_HandleSetupMultiPlayer(INT32 choice)
 {
 	size_t   l;
 	INT32 prev_setupm_fakeskin;
@@ -7357,13 +7434,15 @@ void M_HandleSetupMultiPlayer(INT32 choice)
 
 	if (exitmenu)
 		M_ExitMenu();
+
+	return 0;
 }
 
 // start the multiplayer setup menu
-void M_SetupMultiPlayer(INT32 arg)
+INT32 MR_SetupMultiPlayer(INT32 arg)
 {
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
-		return;
+		return false;
 	INT32 pnum = arg == 0 ? consoleplayer : g_localplayers[arg];
 
 	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
@@ -7398,9 +7477,10 @@ void M_SetupMultiPlayer(INT32 arg)
 	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum));
 
 	M_EnterMenu(MN_MP_PLAYERSETUP, true);
+	return true;
 }
 
-void M_QuitMultiPlayerMenu(INT32 choice)
+INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 {
 	(void)choice;
 	size_t l;
@@ -7419,6 +7499,7 @@ void M_QuitMultiPlayerMenu(INT32 choice)
 	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
 	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor->color));
 	COM_BufAddText (va("%s %s\n",setupm_cvfollower->name,followername));
+	return true;
 }
 
 void M_AddMenuColor(UINT16 color) {
@@ -7623,7 +7704,7 @@ static void M_EraseDataResponse(INT32 ch)
 	M_ClearMenus(true);
 }
 
-void M_EraseData(INT32 arg)
+INT32 MR_EraseData(INT32 arg)
 {
 	const char *eschoice, *esstr = M_GetText("Are you sure you want to erase\n%s?\n\n(Press 'Y' to confirm)\n");
 
@@ -7637,15 +7718,17 @@ void M_EraseData(INT32 arg)
 		eschoice = M_GetText("ALL game data");
 
 	M_StartMessage(va(esstr, eschoice), M_EraseDataResponse, MM_YESNO);
+	return true;
 }
 
-void M_ScreenshotOptions(INT32 choice)
+INT32 MR_ScreenshotOptions(INT32 choice)
 {
 	(void)choice;
 	Screenshot_option_Onchange();
 	Moviemode_mode_Onchange();
 
 	M_EnterMenu(MN_OP_SCREENSHOTS, true);
+	return true;
 }
 
 // =============
@@ -7677,7 +7760,7 @@ void M_DrawJoystick(void)
 	}
 }
 
-void M_SetupJoystickMenu(INT32 arg)
+INT32 MR_SetupJoystickMenu(INT32 arg)
 {
 	const char *joyNA = "Unavailable";
 	const INT32 n = I_NumJoys();
@@ -7686,7 +7769,7 @@ void M_SetupJoystickMenu(INT32 arg)
 	INT32 j;
 
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
-		return;
+		return false;
 
 	setupcontrolplayer = arg + 1;
 
@@ -7717,9 +7800,10 @@ void M_SetupJoystickMenu(INT32 arg)
 	}
 
 	M_EnterMenu(MN_OP_JOYSTICKSET, true);
+	return true;
 }
 
-void M_AssignJoystick(INT32 arg)
+INT32 MR_AssignJoystick(INT32 arg)
 {
 	const UINT8 p = setupcontrolplayer-1;
 
@@ -7757,18 +7841,19 @@ void M_AssignJoystick(INT32 arg)
 #else
 	CV_SetValue(&cv_usejoystick[p], arg);
 #endif
+	return true;
 }
 
 // =============
 // CONTROLS MENU
 // =============
 
-void M_SetupControlsMenu(INT32 arg)
+INT32 MR_SetupControlsMenu(INT32 arg)
 {
 	boolean player1 = arg == 0;
 
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
-		return;
+		return false;
 
 	setupcontrolplayer = arg + 1;
 	setupcontrols = gamecontrol[arg];        // was called from main Options (for console player, then)
@@ -7798,6 +7883,7 @@ void M_SetupControlsMenu(INT32 arg)
 	*/
 
 	M_EnterMenu(MN_OP_CHANGECONTROLS, true);
+	return true;
 }
 
 #define controlheight 18
@@ -8019,7 +8105,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	messagebox.active = false;
 }
 
-void M_ChangeControl(INT32 arg)
+INT32 MR_ChangeControl(INT32 arg)
 {
 	// This buffer assumes a 35-character message (per below) plus a max control name limit of 32 chars (per controltochangetext)
 	// If you change the below message, then change the size of this buffer!
@@ -8031,6 +8117,7 @@ void M_ChangeControl(INT32 arg)
 	strlcpy(controltochangetext, currentMenu->menuitems[itemOn].text, 33);
 
 	M_StartMessage(tmp, M_ChangecontrolResponse, MM_EVENTHANDLER);
+	return true;
 }
 
 static void M_ResetControlsResponse(INT32 ch)
@@ -8056,16 +8143,18 @@ static void M_ResetControlsResponse(INT32 ch)
 	S_StartSound(NULL, sfx_s224);
 }
 
-void M_ResetControls(INT32 choice)
+INT32 MR_ResetControls(INT32 choice)
 {
 	(void)choice;
 	M_StartMessage(va(M_GetText("Reset Player %d's controls to defaults?\n\n(Press 'Y' to confirm)\n"), setupcontrolplayer), M_ResetControlsResponse, MM_YESNO);
+	return true;
 }
 
-void M_RestartAudio(INT32 choice)
+INT32 MR_RestartAudio(INT32 choice)
 {
 	(void)choice;
 	COM_ImmedExecute("restartaudio");
+	return true;
 }
 
 // ===============
@@ -8078,7 +8167,7 @@ void M_RestartAudio(INT32 choice)
 
 static modedesc_t modedescs[MAXMODEDESCS];
 
-void M_VideoModeMenu(INT32 choice)
+INT32 MR_VideoModeMenu(INT32 choice)
 {
 	INT32 i, j, vdup, nummodes;
 	UINT32 width, height;
@@ -8149,6 +8238,7 @@ void M_VideoModeMenu(INT32 choice)
 	vidm_column_size = (vidm_nummodes+2) / 3;
 
 	M_EnterMenu(MN_OP_VIDEOMODE, true);
+	return true;
 }
 
 void M_DrawVideoMenu(void)
@@ -8261,7 +8351,7 @@ void M_DrawVideoMode(void)
 }
 
 // special menuitem key handler for video mode list
-void M_HandleVideoMode(INT32 ch)
+INT32 MR_HandleVideoMode(INT32 ch)
 {
 	if (vidm_testingmode > 0) switch (ch)
 	{
@@ -8328,6 +8418,7 @@ void M_HandleVideoMode(INT32 ch)
 		default:
 			break;
 	}
+	return 0;
 }
 
 // ===============
@@ -8507,7 +8598,7 @@ void M_DrawMonitorToggles(void)
 	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", currentMenu->menuitems[itemOn].text));
 }
 
-void M_HandleMonitorToggles(INT32 choice)
+INT32 MR_HandleMonitorToggles(INT32 choice)
 {
 	const INT32 width = 6, height = 4;
 	INT32 column = itemOn/height, row = itemOn%height;
@@ -8598,6 +8689,8 @@ void M_HandleMonitorToggles(INT32 choice)
 
 	if (exitmenu)
 		M_ExitMenu();
+
+	return 0;
 }
 
 // =========
@@ -8663,12 +8756,13 @@ void M_QuitResponse(INT32 ch)
 	I_Quit();
 }
 
-void M_QuitSRB2(INT32 choice)
+INT32 MR_QuitSRB2(INT32 choice)
 {
 	// We pick index 0 which is language sensitive, or one at random,
 	// between 1 and maximum number.
 	(void)choice;
 	M_StartMessage(quitmsg[M_RandomKey(NUM_QUITMESSAGES)], M_QuitResponse, MM_YESNO);
+	return true;
 }
 
 #ifdef HAVE_DISCORDRPC
@@ -8676,10 +8770,10 @@ static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
 static boolean confirmAccept = false;
 
-void M_HandleDiscordRequests(INT32 choice)
+INT32 MR_HandleDiscordRequests(INT32 choice)
 {
 	if (confirmDelay > 0)
-		return;
+		return 0;
 
 	switch (choice)
 	{
@@ -8697,6 +8791,8 @@ void M_HandleDiscordRequests(INT32 choice)
 			S_StartSound(NULL, sfx_s3kb2);
 			break;
 	}
+
+	return 0;
 }
 
 static const char *M_GetDiscordName(discordRequest_t *r)

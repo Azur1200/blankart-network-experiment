@@ -3386,7 +3386,7 @@ static void Command_Pause(void)
 		}
 		else if (modeattacking)	// in time attack, pausing restarts the map
 		{
-			M_ModeAttackRetry(0);	// directly call from m_menu;
+			MR_ModeAttackRetry(0); // directly call from m_menu;
 			return;
 		}
 

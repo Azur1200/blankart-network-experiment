@@ -702,7 +702,7 @@ void G_SetGameModified(boolean silent, boolean major)
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
-		M_ModeAttackEndGame(0);
+		MR_ModeAttackEndGame(0);
 	else if (marathonmode)
 		Command_ExitGame_f();
 }
@@ -4299,7 +4299,7 @@ void G_AfterIntermission(void)
 		G_StopDemo();
 
 		if (demo.inreplayhut)
-			M_ReplayHut(0);
+			MR_ReplayHut(0);
 		else
 			D_StartTitle();
 
@@ -4310,7 +4310,7 @@ void G_AfterIntermission(void)
 
 	if (modeattacking) // End the run.
 	{
-		M_ModeAttackEndGame(0);
+		MR_ModeAttackEndGame(0);
 		return;
 	}
 

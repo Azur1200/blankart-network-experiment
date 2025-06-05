@@ -122,7 +122,7 @@ void M_SortServerList(void);
 void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
 
 // Used in d_netcmd to restart time attack
-void M_ModeAttackRetry(INT32 choice);
+INT32 MR_ModeAttackRetry(INT32 choice);
 
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)
@@ -194,11 +194,14 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 #define MAXSTRINGLENGTH 32
 
+typedef INT32 (menufunc_f)(INT32);
+typedef void  (menudrawer_f)(void);
+
 typedef union
 {
-	menutype_t submenu;      // IT_SUBMENU
-	consvar_t *cvar;             // IT_CVAR
-	void (*routine)(INT32 choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
+	menutype_t submenu;  // IT_SUBMENU
+	consvar_t *cvar;     // IT_CVAR
+	menufunc_f *routine; // IT_CALL, IT_KEYHANDLER, IT_ARROWS
 } itemaction_t;
 
 //
@@ -227,11 +230,11 @@ struct menu_t
 	const char    *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items
-	void         (*drawroutine)(void); // draw routine
+	menudrawer_f  *drawroutine;        // draw routine
 	INT16          x, y;               // x, y of menu
 	INT16          lastOn;             // last item user was on in menu
-	void         (*enterroutine)(INT32 choice); // called before enter a menu
-	void         (*quitroutine)(INT32 choice); // called before quit a menu
+	menufunc_f    *enterroutine;       // called before enter a menu
+	menufunc_f    *quitroutine;        // called before quit a menu
 };
 
 extern menu_t menudefs[MAXMENUTYPES];
@@ -243,80 +246,80 @@ void M_ClearMenus(boolean callexitmenufunc);
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
 menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
 
-void M_SinglePlayerMenu(INT32 choice);
-void M_Options(INT32 choice);
-void M_Addons(INT32 choice);
-void M_QuitSRB2(INT32 choice);
-void M_Statistics(INT32 choice);
-void M_HandleLevelStats(INT32 choice);
-void M_QuitReplayHut(INT32 choice);
-void M_HandleReplayHutList(INT32 choice);
-void M_GrandPrixTemp(INT32 choice);
-void M_TimeAttack(INT32 arg);
-void M_StartGrandPrix(INT32 choice);
-void M_QuitTimeAttackMenu(INT32 choice);
-void M_ChooseTimeAttack(INT32 choice);
-void M_SetGuestReplay(INT32 arg);
-void M_TimeAttackPreset(INT32 arg);
-void M_ReplayTimeAttack(INT32 arg);
-void M_HandleStaffReplay(INT32 choice);
-void M_SetupMultiHandler(INT32 choice);
-void M_HandleSetupMultiPlayer(INT32 choice);
-void M_QuitMultiPlayerMenu(INT32 choice);
-void M_StartServerMenu(INT32 choice);
-void M_StartOfflineServerMenu(INT32 choice);
-void M_StartServer(INT32 choice);
-void M_ConnectMenuModChecks(INT32 choice);
-void M_HandleConnectIP(INT32 choice);
-void M_CancelConnect(INT32 choice);
-void M_SetupControlsMenu(INT32 arg);
-void M_HandleServerPage(INT32 choice);
-void M_Refresh(INT32 choice);
-void M_Connect(INT32 arg);
-void M_VideoModeMenu(INT32 choice);
+INT32 MR_SinglePlayerMenu(INT32 choice);
+INT32 MR_Options(INT32 choice);
+INT32 MR_Addons(INT32 choice);
+INT32 MR_QuitSRB2(INT32 choice);
+INT32 MR_Statistics(INT32 choice);
+INT32 MR_HandleLevelStats(INT32 choice);
+INT32 MR_QuitReplayHut(INT32 choice);
+INT32 MR_HandleReplayHutList(INT32 choice);
+INT32 MR_GrandPrixTemp(INT32 choice);
+INT32 MR_TimeAttack(INT32 arg);
+INT32 MR_StartGrandPrix(INT32 choice);
+INT32 MR_QuitTimeAttackMenu(INT32 choice);
+INT32 MR_ChooseTimeAttack(INT32 choice);
+INT32 MR_SetGuestReplay(INT32 arg);
+INT32 MR_TimeAttackPreset(INT32 arg);
+INT32 MR_ReplayTimeAttack(INT32 arg);
+INT32 MR_HandleStaffReplay(INT32 choice);
+INT32 MR_SetupMultiHandler(INT32 choice);
+INT32 MR_HandleSetupMultiPlayer(INT32 choice);
+INT32 MR_QuitMultiPlayerMenu(INT32 choice);
+INT32 MR_StartServerMenu(INT32 choice);
+INT32 MR_StartOfflineServerMenu(INT32 choice);
+INT32 MR_StartServer(INT32 choice);
+INT32 MR_ConnectMenuModChecks(INT32 choice);
+INT32 MR_HandleConnectIP(INT32 choice);
+INT32 MR_CancelConnect(INT32 choice);
+INT32 MR_SetupControlsMenu(INT32 arg);
+INT32 MR_HandleServerPage(INT32 choice);
+INT32 MR_Refresh(INT32 choice);
+INT32 MR_Connect(INT32 arg);
+INT32 MR_VideoModeMenu(INT32 choice);
 #ifdef HWRENDER
-void M_OpenGLOptionsMenu(INT32 choice);
+INT32 MR_OpenGLOptionsMenu(INT32 choice);
 #endif
-void M_HandleVideoMode(INT32 ch);
-void M_HandleSoundTest(INT32 choice);
-void M_MusicTest(INT32 choice);
-void M_ScreenshotOptions(INT32 choice);
-void M_AddonsOptions(INT32 choice);
-void M_EraseData(INT32 arg);
-void M_Manual(INT32 choice);
-void M_Credits(INT32 choice);
-void M_BlanCredits(INT32 choice);
-void M_HandleAddons(INT32 choice);
-void M_SelectableClearMenus(INT32 choice);
-void M_ModeAttackEndGame(INT32 choice);
-void M_Retry(INT32 choice);
-void M_EndGame(INT32 choice);
-void M_MapChange(INT32 choice);
-void M_SetupMultiPlayer(INT32 choice);
-void M_ConfirmSpectate(INT32 choice);
-void M_ConfirmEnterGame(INT32 choice);
-void M_ConfirmTeamScramble(INT32 choice);
-void M_ConfirmTeamChange(INT32 choice);
-void M_ConfirmSpectateChange(INT32 choice);
-void M_ChangeLevel(INT32 choice);
-void M_HutStartReplay(INT32 choice);
-void M_PlaybackRewind(INT32 choice);
-void M_PlaybackPause(INT32 choice);
-void M_PlaybackFastForward(INT32 choice);
-void M_PlaybackAdvance(INT32 choice);
-void M_PlaybackSetViews(INT32 choice);
-void M_PlaybackAdjustView(INT32 choice);
-void M_PlaybackToggleFreecam(INT32 choice);
-void M_PlaybackQuit(INT32 choice);
-void M_HandleImageDef(INT32 choice);
-void M_HandleMusicTest(INT32 choice);
-void M_ResetControls(INT32 choice);
-void M_ChangeControl(INT32 arg);
-void M_AssignJoystick(INT32 arg);
-void M_HandleMonitorToggles(INT32 choice);
-void M_RestartAudio(INT32 choice);
+INT32 MR_HandleVideoMode(INT32 ch);
+INT32 MR_HandleSoundTest(INT32 choice);
+INT32 MR_MusicTest(INT32 choice);
+INT32 MR_ScreenshotOptions(INT32 choice);
+INT32 MR_AddonsOptions(INT32 choice);
+INT32 MR_EraseData(INT32 arg);
+INT32 MR_Manual(INT32 choice);
+INT32 MR_Credits(INT32 choice);
+INT32 MR_BlanCredits(INT32 choice);
+INT32 MR_HandleAddons(INT32 choice);
+INT32 MR_SelectableClearMenus(INT32 choice);
+INT32 MR_ModeAttackEndGame(INT32 choice);
+INT32 MR_Retry(INT32 choice);
+INT32 MR_EndGame(INT32 choice);
+INT32 MR_MapChange(INT32 choice);
+INT32 MR_SetupMultiPlayer(INT32 choice);
+INT32 MR_ConfirmSpectate(INT32 choice);
+INT32 MR_ConfirmEnterGame(INT32 choice);
+INT32 MR_ConfirmTeamScramble(INT32 choice);
+INT32 MR_ConfirmTeamChange(INT32 choice);
+INT32 MR_ConfirmSpectateChange(INT32 choice);
+INT32 MR_ChangeLevel(INT32 choice);
+INT32 MR_HutStartReplay(INT32 choice);
+INT32 MR_PlaybackRewind(INT32 choice);
+INT32 MR_PlaybackPause(INT32 choice);
+INT32 MR_PlaybackFastForward(INT32 choice);
+INT32 MR_PlaybackAdvance(INT32 choice);
+INT32 MR_PlaybackSetViews(INT32 choice);
+INT32 MR_PlaybackAdjustView(INT32 choice);
+INT32 MR_PlaybackToggleFreecam(INT32 choice);
+INT32 MR_PlaybackQuit(INT32 choice);
+INT32 MR_HandleImageDef(INT32 choice);
+INT32 MR_HandleMusicTest(INT32 choice);
+INT32 MR_ResetControls(INT32 choice);
+INT32 MR_ChangeControl(INT32 arg);
+INT32 MR_AssignJoystick(INT32 arg);
+INT32 MR_HandleMonitorToggles(INT32 choice);
+INT32 MR_RestartAudio(INT32 choice);
 #ifdef HAVE_DISCORDRPC
-void M_HandleDiscordRequests(INT32 choice);
+INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
@@ -355,7 +358,7 @@ extern I_mutex m_menu_mutex;
 #endif
 
 // Call upon joystick hotplug
-void M_SetupJoystickMenu(INT32 arg);
+INT32 MR_SetupJoystickMenu(INT32 arg);
 
 // level select platter
 typedef struct
@@ -425,14 +428,6 @@ extern INT16 char_on, startchar;
 
 #define BwehHehHe() S_StartSound(NULL, sfx_bewar1+M_RandomKey(4)) // Bweh heh he
 
-//void M_TutorialSaveControlResponse(INT32 ch);
-
-void M_ForceSaveSlotSelected(INT32 sslot);
-
-void M_CheatActivationResponder(INT32 ch);
-
-void M_ModeAttackRetry(INT32 choice);
-
 // File name appender for RA gametype+mod reading.
 char *M_AppendGametypeAndModName(void);
 
@@ -446,7 +441,7 @@ void Screenshot_option_Onchange(void);
 // Addons menu updating
 void Addons_option_Onchange(void);
 
-void M_ReplayHut(INT32 choice);
+INT32 MR_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 
 void M_RefreshPauseMenu(void);
