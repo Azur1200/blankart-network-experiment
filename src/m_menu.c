@@ -883,13 +883,70 @@ static void Command_Manual_f(void)
 	itemOn = 0;
 }
 
+// arbitrary keyboard shortcuts because fuck you
+static boolean M_DemoBinds(INT32 ch)
+{
+	switch (ch)
+	{
+	case '\'':	// toggle freecam
+		MR_PlaybackToggleFreecam(0);
+		break;
+
+	case ']':	// ffw / advance frame (depends on if paused or not)
+		if (paused)
+			MR_PlaybackAdvance(0);
+		else
+			MR_PlaybackFastForward(0);
+		break;
+
+	case '[':	// rewind /backupframe, uses the same function
+		MR_PlaybackRewind(0);
+		return false;
+
+	case '\\':	// pause
+		MR_PlaybackPause(0);
+		break;
+
+	// viewpoints, an annoyance (tm)
+	case '-':	// viewpoint minus
+		MR_PlaybackSetViews(-1); // yeah lol.
+		break;
+
+	case '=':	// viewpoint plus
+		MR_PlaybackSetViews(1); // yeah lol.
+		break;
+
+	// switch viewpoints:
+	case '1':	// viewpoint for p1 (also f12)
+		// maximum laziness:
+		if (!demo.freecam)
+			G_AdjustView(1, 1, true);
+		return false;
+	case '2':	// viewpoint for p2
+		if (!demo.freecam)
+			G_AdjustView(2, 1, true);
+		return false;
+	case '3':	// viewpoint for p3
+		if (!demo.freecam)
+			G_AdjustView(3, 1, true);
+		return false;
+	case '4':	// viewpoint for p4
+		if (!demo.freecam)
+			G_AdjustView(4, 1, true);
+		return false;
+
+	default:
+		return false;
+	}
+	return true;
+}
+
 //
 // M_Responder
 //
 boolean M_Responder(event_t *ev)
 {
 	INT32 ch = -1;
-//	INT32 i;
 	static tic_t joywait = 0, mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
@@ -1136,23 +1193,23 @@ boolean M_Responder(event_t *ev)
 		return false;
 	}
 
-	routine = currentMenu->menuitems[itemOn].itemaction.routine;
-
 	// Handle menuitems which need a specific key handling
-	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_KEYHANDLER)
+	if (currentMenu->keyhandler)
 	{
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
-		if (routine(ch))
+		if (currentMenu->keyhandler(ch))
 			return true;
 	}
 
 	// BP: one of the more big hack i have never made
-	if (routine && (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR)
+	// G: not so hacky anymore...?
+	UINT16 itemtype = currentMenu->numitems ? currentMenu->menuitems[itemOn].status & IT_TYPE : 0;
+	switch (itemtype)
 	{
+	case IT_CVAR:
 		if ((currentMenu->menuitems[itemOn].status & IT_ACTION) == IT_CV_STRING)
 		{
-
 			if (shiftdown && ch >= 32 && ch <= 127)
 				ch = shiftxform[ch];
 			if (M_ChangeStringCvar(ch))
@@ -1162,11 +1219,21 @@ boolean M_Responder(event_t *ev)
 		}
 		else
 			routine = M_ChangeCvar;
+		break;
+	case IT_CALL:
+	case IT_ARROWS:
+		routine = currentMenu->menuitems[itemOn].itemaction.routine;
+		break;
+	default:
+		routine = NULL;
+		break;
 	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
 		playback_last_menu_interaction_leveltime = leveltime;
+		M_DemoBinds(ch);
+
 		// Flip left/right with up/down for the playback menu, since it's a horizontal icon row.
 		switch (ch)
 		{
@@ -1174,55 +1241,6 @@ boolean M_Responder(event_t *ev)
 			case KEY_UPARROW: ch = KEY_RIGHTARROW; break;
 			case KEY_RIGHTARROW: ch = KEY_DOWNARROW; break;
 			case KEY_DOWNARROW: ch = KEY_LEFTARROW; break;
-
-			// arbitrary keyboard shortcuts because fuck you
-
-			case '\'':	// toggle freecam
-				MR_PlaybackToggleFreecam(0);
-				break;
-
-			case ']':	// ffw / advance frame (depends on if paused or not)
-				if (paused)
-					MR_PlaybackAdvance(0);
-				else
-					MR_PlaybackFastForward(0);
-				break;
-
-			case '[':	// rewind /backupframe, uses the same function
-				MR_PlaybackRewind(0);
-				break;
-
-			case '\\':	// pause
-				MR_PlaybackPause(0);
-				break;
-
-			// viewpoints, an annoyance (tm)
-			case '-':	// viewpoint minus
-				MR_PlaybackSetViews(-1); // yeah lol.
-				break;
-
-			case '=':	// viewpoint plus
-				MR_PlaybackSetViews(1); // yeah lol.
-				break;
-
-			// switch viewpoints:
-			case '1':	// viewpoint for p1 (also f12)
-				// maximum laziness:
-				if (!demo.freecam)
-					G_AdjustView(1, 1, true);
-				break;
-			case '2':	// viewpoint for p2
-				if (!demo.freecam)
-					G_AdjustView(2, 1, true);
-				break;
-			case '3':	// viewpoint for p3
-				if (!demo.freecam)
-					G_AdjustView(3, 1, true);
-				break;
-			case '4':	// viewpoint for p4
-				if (!demo.freecam)
-					G_AdjustView(4, 1, true);
-				break;
 
 			default: break;
 		}
@@ -1234,6 +1252,9 @@ boolean M_Responder(event_t *ev)
 	switch (ch)
 	{
 		case KEY_DOWNARROW:
+			if (!currentMenu->numitems)
+				return true;
+
 			do if (++itemOn >= currentMenu->numitems)
 				itemOn = 0;
 			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
@@ -1242,6 +1263,9 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_UPARROW:
+			if (!currentMenu->numitems)
+				return true;
+
 			do if (--itemOn < 0)
 				itemOn = currentMenu->numitems - 1;
 			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
@@ -1250,8 +1274,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_LEFTARROW:
-			if (routine && ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
-				|| (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR))
+			if (itemtype == IT_ARROWS || itemtype == IT_CVAR)
 			{
 				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
@@ -1260,8 +1283,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_RIGHTARROW:
-			if (routine && ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
-				|| (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR))
+			if (itemtype == IT_ARROWS || itemtype == IT_CVAR)
 			{
 				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
@@ -1281,28 +1303,28 @@ boolean M_Responder(event_t *ev)
 				playback_enterheld = 3;
 			}
 
-			if (routine)
+			switch (itemtype)
 			{
+			case IT_CVAR:
+			case IT_ARROWS:
 				S_StartSound(NULL, sfx_menu1);
-				switch (currentMenu->menuitems[itemOn].status & IT_TYPE)
-				{
-					case IT_CVAR:
-					case IT_ARROWS:
-						routine(1); // right arrow
-						break;
-					case IT_CALL:
-						routine(currentMenu->menuitems[itemOn].argument);
-						break;
-					case IT_SUBMENU:
-						currentMenu->lastOn = itemOn;
-						M_EnterMenu(currentMenu->menuitems[itemOn].itemaction.submenu, true, currentMenu->menuitems[itemOn].argument);
-						break;
-				}
+				routine(1); // right arrow
+				break;
+			case IT_CALL:
+				S_StartSound(NULL, sfx_menu1);
+				routine(currentMenu->menuitems[itemOn].argument);
+				break;
+			case IT_SUBMENU:
+				S_StartSound(NULL, sfx_menu1);
+				currentMenu->lastOn = itemOn;
+				M_EnterMenu(currentMenu->menuitems[itemOn].itemaction.submenu, true, currentMenu->menuitems[itemOn].argument);
+				break;
+			default:
+				break;
 			}
 			return true;
 
 		case KEY_ESCAPE:
-		//case KEY_JOY1 + 2:
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
 
@@ -1318,16 +1340,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
-			if ((currentMenu->menuitems[itemOn].status) == (IT_STRING2|IT_CALL))
-			{
-				// detach any keys associated with the game control
-				G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
-				S_StartSound(NULL, sfx_shldls);
-				return true;
-			}
-
-			if (routine && ((currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_ARROWS
-				|| (currentMenu->menuitems[itemOn].status & IT_TYPE) == IT_CVAR))
+			if (itemtype == IT_CVAR)
 			{
 				consvar_t *cv = currentMenu->menuitems[itemOn].itemaction.cvar;
 
@@ -1343,21 +1356,17 @@ boolean M_Responder(event_t *ev)
 				return true;
 			}
 
-			return false;
+			return true;
 
 		default:
 			CON_Responder(ev);
-			break;
+			return true;
 	}
-
-	return true;
 }
 
 // special responder for demos
 boolean M_DemoResponder(event_t *ev)
 {
-
-	INT32 ch = -1;	// cur event data
 	boolean eatinput = false;	// :omnom:
 
 	//should be accounted for beforehand but just to be safe...
@@ -1372,69 +1381,8 @@ boolean M_DemoResponder(event_t *ev)
 	}
 	else if (ev->type == ev_keydown && !con_destlines)	// not while the console is on please
 	{
-		ch = ev->data1;
 		// since this is ONLY for demos, there isn't MUCH for us to do.
-		// mirrored from m_responder
-
-		switch (ch)
-		{
-			// arbitrary keyboard shortcuts because fuck you
-
-			case '\'':	// toggle freecam
-				MR_PlaybackToggleFreecam(0);
-				eatinput = true;
-				break;
-
-			case ']':	// ffw / advance frame (depends on if paused or not)
-				if (paused)
-					MR_PlaybackAdvance(0);
-				else
-					MR_PlaybackFastForward(0);
-				eatinput = true;
-				break;
-
-			case '[':	// rewind /backupframe, uses the same function
-				MR_PlaybackRewind(0);
-				break;
-
-			case '\\':	// pause
-				MR_PlaybackPause(0);
-				eatinput = true;
-				break;
-
-			// viewpoints, an annoyance (tm)
-			case '-':	// viewpoint minus
-				MR_PlaybackSetViews(-1); // yeah lol.
-				eatinput = true;
-				break;
-
-			case '=':	// viewpoint plus
-				MR_PlaybackSetViews(1); // yeah lol.
-				eatinput = true;
-				break;
-
-			// switch viewpoints:
-			case '1':	// viewpoint for p1 (also f12)
-				// maximum laziness:
-				if (!demo.freecam)
-					G_AdjustView(1, 1, true);
-				break;
-			case '2':	// viewpoint for p2
-				if (!demo.freecam)
-					G_AdjustView(2, 1, true);
-				break;
-			case '3':	// viewpoint for p3
-				if (!demo.freecam)
-					G_AdjustView(3, 1, true);
-				break;
-			case '4':	// viewpoint for p4
-				if (!demo.freecam)
-					G_AdjustView(4, 1, true);
-				break;
-
-			default: break;
-		}
-
+		eatinput = M_DemoBinds(ev->data1);
 	}
 	return eatinput;
 }
@@ -1624,6 +1572,11 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 	currentMenu = menudef;
 	itemOn = currentMenu->lastOn;
 
+	hidetitlemap = false;
+
+	if (!currentMenu->numitems)
+		return;
+
 	// in case of...
 	if (itemOn >= currentMenu->numitems)
 		itemOn = currentMenu->numitems - 1;
@@ -1641,8 +1594,6 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 			}
 		}
 	}
-
-	hidetitlemap = false;
 }
 
 // pop the active menu from the stack
@@ -2155,10 +2106,6 @@ void M_DrawGenericMenu(void)
 					}
 					y += STRINGHEIGHT;
 					break;
-			case IT_STRING2:
-				V_DrawString(x, y,  MENUCAPS, currentMenu->menuitems[i].text);
-				y += SMALLLINEHEIGHT;
-				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
 				if (currentMenu->menuitems[i].y)
 					y = currentMenu->y+currentMenu->menuitems[i].y;
@@ -2240,7 +2187,6 @@ void M_DrawGenericScrollMenu(void)
 		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
 		{
 			case IT_PATCH:
-			case IT_STRING2:
 			default:
 				// unsupported
 				break;
@@ -2430,10 +2376,6 @@ void M_DrawCenteredMenu(void)
 					}
 					y += STRINGHEIGHT;
 					break;
-			case IT_STRING2:
-				V_DrawCenteredString(x, y,  MENUCAPS, currentMenu->menuitems[i].text);
-				y += SMALLLINEHEIGHT;
-				break;
 		}
 	}
 
@@ -3752,7 +3694,6 @@ void M_DrawReplayHut(void)
 {
 	INT32 x, y, cursory = 0;
 	INT16 i;
-	INT16 replaylistitem = currentMenu->numitems-2;
 	boolean processed_one_this_frame = false;
 
 	static UINT16 replayhutmenuy = 0;
@@ -3764,56 +3705,20 @@ void M_DrawReplayHut(void)
 	x = currentMenu->x;
 	y = currentMenu->y;
 
-	if (itemOn > replaylistitem)
-	{
-		itemOn = replaylistitem;
-		dir_on[menudepthleft] = sizedirmenu-1;
-		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-	}
-	else if (itemOn < replaylistitem)
-	{
-		dir_on[menudepthleft] = 0;
-		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
-	}
+	INT32 maxy;
+	// Scroll menu items if needed
+	cursory = y + dir_on[menudepthleft]*10;
+	maxy = y + sizedirmenu*10;
 
-	if (itemOn == replaylistitem)
-	{
-		INT32 maxy;
-		// Scroll menu items if needed
-		cursory = y + currentMenu->menuitems[replaylistitem].y + dir_on[menudepthleft]*10;
-		maxy = y + currentMenu->menuitems[replaylistitem].y + sizedirmenu*10;
+	if (cursory > maxy - 20)
+		cursory = maxy - 20;
 
-		if (cursory > maxy - 20)
-			cursory = maxy - 20;
-
-		if (cursory - replayhutmenuy > SCALEDVIEWHEIGHT-50)
-			replayhutmenuy += (cursory-SCALEDVIEWHEIGHT-replayhutmenuy + 51)/2;
-		else if (cursory - replayhutmenuy < 110)
-			replayhutmenuy += (max(0, cursory-110)-replayhutmenuy - 1)/2;
-	}
-	else
-		replayhutmenuy /= 2;
+	if (cursory - replayhutmenuy > SCALEDVIEWHEIGHT-50)
+		replayhutmenuy += (cursory-SCALEDVIEWHEIGHT-replayhutmenuy + 51)/2;
+	else if (cursory - replayhutmenuy < 110)
+		replayhutmenuy += (max(0, cursory-110)-replayhutmenuy - 1)/2;
 
 	y -= replayhutmenuy;
-
-	// Draw static menu items
-	for (i = 0; i < replaylistitem; i++)
-	{
-		INT32 localy = y + currentMenu->menuitems[i].y;
-
-		if (localy < 65)
-			continue;
-
-		if (i == itemOn)
-			cursory = localy;
-
-		if ((currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-			V_DrawString(x, localy, MENUCAPS|V_SNAPTOTOP|V_SNAPTOLEFT, currentMenu->menuitems[i].text);
-		else
-			V_DrawString(x, localy, MENUCAPS|V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags, currentMenu->menuitems[i].text);
-	}
-
-	y += currentMenu->menuitems[replaylistitem].y;
 
 	for (i = 0; i < (INT16)sizedirmenu; i++)
 	{
@@ -3837,7 +3742,7 @@ void M_DrawReplayHut(void)
 			V_DrawScaledPatch(x - 4, localy, V_SNAPTOTOP|V_SNAPTOLEFT, W_CachePatchName(dirmenu[i][DIR_TYPE] == EXT_UP ? "M_RBACK" : "M_RFLDR", PU_CACHE));
 		}
 
-		if (itemOn == replaylistitem && i == (INT16)dir_on[menudepthleft])
+		if (i == (INT16)dir_on[menudepthleft])
 		{
 			cursory = localy;
 
@@ -3871,7 +3776,7 @@ void M_DrawReplayHut(void)
 	}
 
 	// Draw scrollbar
-	y = sizedirmenu*10 + currentMenu->menuitems[replaylistitem].y + 30;
+	y = sizedirmenu*10 + 30;
 	if (y > SCALEDVIEWHEIGHT-80)
 	{
 		V_DrawFill(BASEVIDWIDTH-4, 75, 4, SCALEDVIEWHEIGHT-80, V_SNAPTOTOP|V_SNAPTORIGHT|159);
@@ -3881,15 +3786,11 @@ void M_DrawReplayHut(void)
 	// Draw the cursor
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, V_SNAPTOTOP|V_SNAPTOLEFT,
 		W_CachePatchName("M_CURSOR", PU_CACHE));
-	V_DrawString(currentMenu->x, cursory, MENUCAPS|V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags, currentMenu->menuitems[itemOn].text);
 
 	// Now draw some replay info!
 	V_DrawFill(10, 10, 300, 60, V_SNAPTOTOP|159);
 
-	if (itemOn == replaylistitem)
-	{
-		DrawReplayHutReplayInfo();
-	}
+	DrawReplayHutReplayInfo();
 }
 
 void M_DrawReplayStartMenu(void)
@@ -4616,7 +4517,7 @@ void M_DrawSkyRoom(void)
 
 	for (i = 0; i < currentMenu->numitems; ++i)
 	{
-		if (currentMenu->menuitems[i].itemaction.routine == MR_HandleSoundTest)
+		if (&currentMenu->menuitems[i] == M_CheckMenuItem(MN_OP_SOUND, "SOUNDTEST"))
 		{
 			y = currentMenu->menuitems[i].y;
 			break;
@@ -4646,14 +4547,11 @@ void M_DrawSkyRoom(void)
 
 INT32 MR_HandleSoundTest(INT32 choice)
 {
+	if (!M_IsItemOn(MN_OP_SOUND, "SOUNDTEST"))
+		return false;
+
 	switch (choice)
 	{
-		case KEY_RIGHTARROW:
-			CV_AddValue(&cv_soundtest, 1);
-			break;
-		case KEY_LEFTARROW:
-			CV_AddValue(&cv_soundtest, -1);
-			break;
 		case KEY_ENTER:
 			S_StopSounds();
 			S_StartSound(NULL, cv_soundtest.value);
@@ -5520,7 +5418,7 @@ void M_DrawTimeAttackMenu(void)
 				}
 			}
 		}
-		else if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_KEYHANDLER && cv_dummystaff.value) // bad hacky assumption: IT_KEYHANDLER is assumed to be staff ghost selector
+		else if (&currentMenu->menuitems[i] == M_CheckMenuItem(MN_SP_REPLAY, "REPLAYSTAFF") && cv_dummystaff.value)
 		{
 			INT32 strw = V_StringWidth(dummystaffname, V_ALLOWLOWERCASE);
 			V_DrawString(BASEVIDWIDTH - x - strw, y, highlightflags|V_ALLOWLOWERCASE, dummystaffname);
@@ -5674,6 +5572,9 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 
 INT32 MR_HandleStaffReplay(INT32 choice)
 {
+	if (!M_IsItemOn(MN_SP_REPLAY, "REPLAYSTAFF"))
+		return false;
+
 	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 
 	switch (choice)
@@ -6008,6 +5909,9 @@ Fetch_servers_thread (int *id)
 
 INT32 MR_HandleServerPage(INT32 choice)
 {
+	if (!M_IsItemOn(MN_MP_CONNECT, "PAGE"))
+		return false;
+
 	switch (choice)
 	{
 		case KEY_ENTER:
@@ -6637,7 +6541,7 @@ static void Splitplayers_OnChange(void)
 		setupm_pselect = 1;
 }
 
-INT32 MR_SetupMultiHandler(INT32 choice)
+static INT32 MR_SetupMultiHandler(INT32 choice)
 {
 	switch (choice)
 	{
@@ -6695,7 +6599,7 @@ static void M_ConnectIP(INT32 choice)
 }
 
 // Tails 11-19-2002
-INT32 MR_HandleConnectIP(INT32 choice)
+static INT32 MR_HandleConnectIP(INT32 choice)
 {
 	size_t l;
 
@@ -6744,6 +6648,16 @@ INT32 MR_HandleConnectIP(INT32 choice)
 			break;
 	}
 	return true;
+}
+
+INT32 MR_HandleMPMainMenu(INT32 choice)
+{
+	if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP"))
+		return MR_SetupMultiHandler(choice);
+	else if (M_IsItemOn(MN_MP_MAIN, "CONNECTIP"))
+		return MR_HandleConnectIP(choice);
+	else
+		return false;
 }
 
 // ========================
@@ -7680,6 +7594,25 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	return true;
 }
 
+INT32 MR_HandleControlsMenu(INT32 ch)
+{
+	if ((currentMenu->menuitems[itemOn].status & IT_TYPE) != IT_CALL
+	 ||  currentMenu->menuitems[itemOn].itemaction.routine != MR_ChangeControl)
+		return false;
+
+	switch (ch)
+	{
+	case KEY_BACKSPACE:
+		// detach any keys associated with the game control
+		G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
+		S_StartSound(NULL, sfx_shldls);
+		break;
+	default:
+		return false;
+	}
+	return true;
+}
+
 #define controlheight 18
 
 // Draws the Customise Controls menu
@@ -7755,7 +7688,8 @@ void M_DrawControl(void)
 		if (i == itemOn)
 			cursory = y;
 
-		if (currentMenu->menuitems[i].status == (IT_STRING2|IT_CALL))
+		if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_CALL
+		  && currentMenu->menuitems[i].itemaction.routine == MR_ChangeControl)
 		{
 			V_DrawString(x, y, ((i == itemOn) ? highlightflags : 0)|MENUCAPS, currentMenu->menuitems[i].text);
 

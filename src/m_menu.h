@@ -160,7 +160,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_TYPE           (1+2+4)
 #define IT_CALL              1     // call the function
 #define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_KEYHANDLER        4     // call with the key in param
+#define IT_DUMMY             4     // selectable, but does nothing
 #define IT_SUBMENU         (1+2)   // go to sub menu
 #define IT_CVAR            (1+4)   // handle as a cvar
 #define IT_PAIR            (2+4)   // no handling, define both sides of text
@@ -170,7 +170,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_PATCH              8    // a patch or a string with big font
 #define IT_STRING            16    // little string (spaced with 10)
 #define IT_WHITESTRING       32    // little string in white
-#define IT_STRING2         (8+16)  // a simple string
 #define IT_HEADERTEXT      (8+32)  // Non-selectable header option, displays in yellow offset to the left a little
 
 // flags specific to each item action type
@@ -201,7 +200,7 @@ typedef union
 {
 	menutype_t submenu;  // IT_SUBMENU
 	consvar_t *cvar;     // IT_CVAR
-	menufunc_f *routine; // IT_CALL, IT_KEYHANDLER, IT_ARROWS
+	menufunc_f *routine; // IT_CALL, IT_ARROWS
 } itemaction_t;
 
 //
@@ -235,6 +234,7 @@ struct menu_t
 	INT16          lastOn;             // last item user was on in menu
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
+	menufunc_f    *keyhandler;         // called before key press is processed
 };
 
 extern menu_t menudefs[MAXMENUTYPES];
@@ -264,15 +264,15 @@ INT32 MR_SetGuestReplay(INT32 arg);
 INT32 MR_TimeAttackPreset(INT32 arg);
 INT32 MR_ReplayTimeAttack(INT32 arg);
 INT32 MR_HandleStaffReplay(INT32 choice);
-INT32 MR_SetupMultiHandler(INT32 choice);
+INT32 MR_HandleMPMainMenu(INT32 choice);
 INT32 MR_HandleSetupMultiPlayer(INT32 choice);
 INT32 MR_QuitMultiPlayerMenu(INT32 choice);
 INT32 MR_StartServerMenu(INT32 choice);
 INT32 MR_StartServer(INT32 choice);
 INT32 MR_ConnectMenuModChecks(INT32 choice);
-INT32 MR_HandleConnectIP(INT32 choice);
 INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
+INT32 MR_HandleControlsMenu(INT32 ch);
 INT32 MR_HandleServerPage(INT32 choice);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);

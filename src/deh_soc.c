@@ -1926,8 +1926,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				flags = IT_HEADERTEXT;
 			else if (fastcmp(word+4, "WHITE"))
 				flags = IT_WHITESTRING;
-			else if (fastcmp(word+4, "2"))
-				flags = IT_STRING2;
 			else if (word[4])
 			{
 				WARN("unknown word '%s'", word);
@@ -1997,7 +1995,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			status |= IT_SUBMENU;
 			menuitem->itemaction.submenu = mn;
 		}
-		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "KEYHANDLER") || fastcmp(word, "ARROWS"))
+		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "ARROWS"))
 		{
 			UINT16 flags;
 			if (word[0] == 'C')
@@ -2011,8 +2009,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 					continue;
 				}
 			}
-			else if (word[0] == 'K')
-				flags = IT_KEYHANDLER;
 			else if (word[0] == 'A')
 				flags = IT_ARROWS;
 			else
@@ -2032,6 +2028,17 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			actionset = true;
 			status |= flags;
 			menuitem->itemaction.routine = routine;
+		}
+		else if (fastcmp(word, "DUMMY"))
+		{
+			if (actionset)
+			{
+				WARN0("action already set!");
+				continue;
+			}
+			actionset = true;
+			status |= IT_DUMMY;
+			menuitem->itemaction.routine = NULL;
 		}
 		else
 			WARN("unknown word '%s'", word);
@@ -2298,6 +2305,16 @@ void readmenu(MYFILE *f, INT32 num)
 					continue;
 				}
 				menudef->quitroutine = routine;
+			}
+			else if (fastcmp(word, "KEYHANDLER"))
+			{
+				menufunc_f *routine = get_menuroutine(word2);
+				if (!routine)
+				{
+					WARN("unknown key handler '%s'", word2);
+					continue;
+				}
+				menudef->keyhandler = routine;
 			}
 			else
 				WARN("unknown word '%s'", word);
