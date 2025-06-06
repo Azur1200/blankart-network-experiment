@@ -1812,7 +1812,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	basetx = tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > FixedMul(tz, fovtan[viewssnum])<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan[viewssnum])<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -2545,7 +2545,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
-	
+
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
 	{
