@@ -3948,14 +3948,14 @@ void M_DrawPlaybackMenu(void)
 	// Toggle items
 	boolean showpause = paused && !demo.rewinding;
 
-	M_SetItemVisible(MN_PLAYBACK, "PAUSE", showpause);
-	M_SetItemVisible(MN_PLAYBACK, "FASTFORWARD", showpause);
-	M_SetItemVisible(MN_PLAYBACK, "REWIND", showpause);
-	M_SetItemVisible(MN_PLAYBACK, "RESUME", !showpause);
-	M_SetItemVisible(MN_PLAYBACK, "ADVANCEFRAME", !showpause);
-	M_SetItemVisible(MN_PLAYBACK, "REWINDFRAME", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "PAUSE", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "FASTFORWARD", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "REWIND", !showpause);
+	M_SetItemVisible(MN_PLAYBACK, "RESUME", showpause);
+	M_SetItemVisible(MN_PLAYBACK, "ADVANCEFRAME", showpause);
+	M_SetItemVisible(MN_PLAYBACK, "REWINDFRAME", showpause);
 
-	if (!showpause)
+	if (showpause)
 	{
 		if (M_IsItemOn(MN_PLAYBACK, "REWIND"))
 			M_SetItemOn(MN_PLAYBACK, "REWINDFRAME");
