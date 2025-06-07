@@ -191,6 +191,11 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_GRAYEDOUT       2048    // grayed out, unselectable
 #define IT_SECRET          4096    // ??????? ????????????
 
+// carefully chosen to not conflict with V_ flags
+#define MDF_CENTERED 0x20
+#define MDF_TIMEATTACK 0x40
+#define MDF_CONTROLS 0x80
+
 #define MAXSTRINGLENGTH 32
 
 typedef INT32 (menufunc_f)(INT32);

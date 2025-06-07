@@ -2023,6 +2023,145 @@ void M_DrawPauseMenu(void)
 	M_DrawGenericMenu();
 }
 
+static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+{
+	INT16 w;
+	const char *string = item->text;
+	INT16 display = item->status & IT_DISPLAY;
+	INT32 highlight = selected || display == IT_WHITESTRING || display == IT_HEADERTEXT ? highlightflags : 0;
+
+	if (item->status & IT_SECRET)
+	{
+		string = M_CreateSecretMenuOption(string);
+		vflags |= V_TRANSLUCENT|V_OLDSPACING;
+	}
+	else if (item->status & IT_GRAYEDOUT)
+		vflags |= V_TRANSLUCENT;
+
+	switch (display)
+	{
+	case IT_PATCH:
+		if (item->patch && item->patch[0])
+		{
+			if (item->status & IT_CENTER)
+			{
+				patch_t *p;
+				p = W_CachePatchName(item->patch, PU_CACHE);
+				V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
+			}
+			else
+			{
+				V_DrawScaledPatch(x, y, 0,
+					W_CachePatchName(item->patch, PU_CACHE));
+			}
+		}
+		break;
+	case IT_STRING:
+	case IT_WHITESTRING:
+		if (vflags & MDF_CENTERED)
+			V_DrawCenteredString(x, y, vflags|highlight, string);
+		else
+			V_DrawString(x, y, vflags|highlight, string);
+
+		if (item->status & (IT_SECRET|IT_GRAYEDOUT))
+			break;
+
+		if (item == M_CheckMenuItem(MN_OP_CHANGECONTROLS, "SETJOY")) // gamepad select
+		{
+			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
+			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+			if (!name) name = "?";
+			w = V_StringWidth(name, vflags);
+			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, name);
+		}
+
+		switch(item->status & IT_TYPE)
+		{
+		case IT_CVAR:
+		{
+			consvar_t *cv = item->itemaction.cvar;
+			switch(item->status & IT_ACTION)
+			{
+			case IT_CV_SLIDER:
+				M_DrawSlider(x, y, cv, selected);
+				break;
+			case IT_CV_STRING:
+				if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
+					break;
+
+				INT32 xofs = vflags & MDF_TIMEATTACK ? 32 : 0;
+				INT32 yofs = vflags & MDF_TIMEATTACK ? -8 : 4;
+				w = vflags & MDF_TIMEATTACK ? MAXPLAYERNAME : MAXSTRINGLENGTH;
+
+				M_DrawTextBox(x + xofs, y + yofs, w, 1);
+				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
+				if (selected && skullAnimCounter < 4) // blink cursor
+					V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
+						'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
+
+				if (!(vflags & MDF_TIMEATTACK))
+					y += 16;
+				break;
+			default:
+			{
+				const char *str = (cv == &cv_chooseskin ? skins[cv_chooseskin.value-1].realname : cv->string);
+				INT32 soffset = vflags & MDF_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
+
+				w = V_StringWidth(str, vflags);
+				V_DrawString(BASEVIDWIDTH - x - soffset - w, y,
+					((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|vflags, str);
+
+				if (selected)
+				{
+					V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
+						'\x1C' | highlightflags | (vflags & ~(V_FLIP|V_PARAMMASK)), false); // left arrow
+					V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
+						'\x1D' | highlightflags | (vflags & ~(V_FLIP|V_PARAMMASK)), false); // right arrow
+				}
+				break;
+			}
+			}
+			break;
+		}
+		case IT_CALL:
+		{
+			char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
+			INT32 key;
+			if (item->itemaction.routine != MR_ChangeControl)
+				break;
+
+			tmp[0] ='\0';
+			for (w = 0; w < MAXINPUTMAPPING; w++)
+			{
+				key = setupcontrols[item->argument][w];
+				if (key != KEY_NULL)
+				{
+					if (tmp[0] != '\0')
+						strcat(tmp, ", ");
+					strcat(tmp, G_KeynumToString(key));
+				}
+			}
+			if (tmp[0] == '\0')
+				strcpy(tmp, "---");
+
+			w = V_StringWidth(tmp, vflags);
+			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, tmp);
+			break;
+		}
+		}
+		break;
+	case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
+		V_DrawString(x - (vflags & MDF_CONTROLS ? 7 : 16), y - (vflags & MDF_CONTROLS ? 2 : 0), vflags|highlight, string);
+		break;
+	default:
+		break;
+	}
+
+	return V_StringWidth(string, vflags);
+}
+
 static INT16 getheight(INT16 index)
 {
 	INT16 y = currentMenu->menuitems[index].y;
@@ -2032,12 +2171,12 @@ static INT16 getheight(INT16 index)
 	return y;
 }
 
-static void M_DrawBaseMenu(boolean centered, boolean tamenu, boolean controls)
+static void M_DrawBaseMenu(INT32 flags)
 {
 	INT16 scrollx = currentMenu->x, scrolly = currentMenu->y;
 	INT16 scrollheight = currentMenu->scrollheight;
 	if (!scrollheight)
-		scrollheight = BASEVIDHEIGHT - currentMenu->y;
+		scrollheight = INT16_MAX;
 
 	INT16 topy = getheight(0);
 	INT16 boty = getheight(currentMenu->numitems-1);
@@ -2059,17 +2198,15 @@ static void M_DrawBaseMenu(boolean centered, boolean tamenu, boolean controls)
 
 	for (INT16 i = 0; i < currentMenu->numitems; i++)
 	{
-		INT32 vflags = MENUCAPS;
-		const char *string = currentMenu->menuitems[i].text;
+		INT32 vflags = flags;
 
 		if (currentMenu->menuitems[i].status & IT_HIDDEN)
 		{
-			if (!controls)
-				y += LINEHEIGHT; // don't leave gaps when buttons are hidden for P2/P3/P4
+			if (!(vflags & MDF_CONTROLS)) // don't leave gaps when buttons are hidden for P2/P3/P4
+				y += LINEHEIGHT;
 			continue;
 		}
 
-		// coordinates setup
 		if (currentMenu->menuitems[i].y)
 			y = currentMenu->menuitems[i].y + scrolly;
 		if (currentMenu->menuitems[i].x)
@@ -2088,154 +2225,12 @@ static void M_DrawBaseMenu(boolean centered, boolean tamenu, boolean controls)
 			continue;
 		}
 
+		w = M_DrawMenuItem(&currentMenu->menuitems[i], x, y, vflags, i == itemOn);
+
 		if (i == itemOn)
 		{
 			cursory = y;
-			cursorx = x - (centered ? V_StringWidth(string, vflags)/2 : 0) - (controls ? 18 : 24);
-		}
-
-		// vflags setup
-		if (i == itemOn || (currentMenu->menuitems[i].status & IT_WHITESTRING))
-			vflags |= highlightflags;
-
-		if (currentMenu->menuitems[i].status & IT_SECRET)
-		{
-			vflags |= V_TRANSLUCENT|V_OLDSPACING;
-			string = M_CreateSecretMenuOption(string);
-		}
-		else if (currentMenu->menuitems[i].status & IT_GRAYEDOUT)
-			vflags |= V_TRANSLUCENT;
-
-		// start drawing!
-		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
-		{
-			case IT_PATCH:
-				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
-				{
-					if (currentMenu->menuitems[i].status & IT_CENTER)
-					{
-						patch_t *p;
-						p = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
-						V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
-					}
-					else
-					{
-						V_DrawScaledPatch(x, y, 0,
-							W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE));
-					}
-				}
-				break;
-			case IT_STRING:
-			case IT_WHITESTRING:
-				if (centered)
-					V_DrawCenteredString(x, y, vflags, string);
-				else
-					V_DrawString(x, y, vflags, string);
-
-				if (currentMenu->menuitems[i].status & (IT_SECRET|IT_GRAYEDOUT))
-					break;
-
-				if (controls && i == M_GetMenuIndex(MN_OP_CHANGECONTROLS, "SETJOY")) // gamepad select
-				{
-					INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-					const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
-					if (!name) name = "?";
-					w = V_StringWidth(name, highlightflags);
-					(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-						(BASEVIDWIDTH-currentMenu->x, y, MENUCAPS|highlightflags, name);
-				}
-
-				// Cvar specific handling
-				switch(currentMenu->menuitems[i].status & IT_TYPE)
-				{
-					case IT_CVAR:
-					{
-						consvar_t *cv = currentMenu->menuitems[i].itemaction.cvar;
-						switch(currentMenu->menuitems[i].status & IT_ACTION)
-						{
-							case IT_CV_SLIDER:
-								M_DrawSlider(x, y, cv, (i == itemOn));
-								break;
-							case IT_CV_STRING:
-								if (y + 12 > currentMenu->y + scrollheight)
-									break;
-#if 1
-								INT32 xofs = tamenu ? 32 : 0, yofs = tamenu ? -8 : 4;
-								w = tamenu ? MAXPLAYERNAME : MAXSTRINGLENGTH;
-
-								M_DrawTextBox(x + xofs, y + yofs, w, 1);
-								V_DrawString(x + xofs + 8, y + yofs + 8, V_ALLOWLOWERCASE, cv->string);
-								if (itemOn == i && skullAnimCounter < 4) // blink cursor
-									V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, V_ALLOWLOWERCASE), y + yofs + 8, '_', false);
-#else // cool new string type stuff, not ready for limelight
-								if (i == itemOn)
-								{
-									V_DrawFill(x-2, y-1, MAXSTRINGLENGTH*8 + 4, 8+3, 159);
-									V_DrawString(x, y, V_ALLOWLOWERCASE, cv->string);
-									if (skullAnimCounter < 4)
-										V_DrawCharacter(x + V_StringWidth(cv->string, 0), y, '_' | 0x80, false);
-								}
-								else
-									V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
-									highlightflags|V_ALLOWLOWERCASE, cv->string);
-#endif
-								if (!tamenu)
-									y += 16;
-								break;
-							default:
-							{
-								const char *str = (cv == &cv_chooseskin ? skins[cv_chooseskin.value-1].realname : cv->string);
-								INT32 soffset = tamenu && menustack[0] == MN_SP_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
-
-								w = V_StringWidth(str, MENUCAPS);
-								V_DrawString(BASEVIDWIDTH - x - soffset - w, y,
-									((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|MENUCAPS, str);
-
-								if (i == itemOn)
-								{
-									V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
-											'\x1C' | highlightflags, false); // left arrow
-									V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
-											'\x1D' | highlightflags, false); // right arrow
-								}
-								break;
-							}
-						}
-						break;
-					}
-					case IT_CALL:
-					{
-						char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
-						INT32 key;
-						if (!controls || currentMenu->menuitems[i].itemaction.routine != MR_ChangeControl)
-							break;
-
-						tmp[0] ='\0';
-						for (w = 0; w < MAXINPUTMAPPING; w++)
-						{
-							key = setupcontrols[currentMenu->menuitems[i].argument][w];
-							if (key != KEY_NULL)
-							{
-								if (tmp[0] != '\0')
-									strcat(tmp, ", ");
-								strcat(tmp, G_KeynumToString(key));
-							}
-						}
-						if (tmp[0] == '\0')
-							strcpy(tmp, "---");
-
-						w = V_StringWidth(tmp, highlightflags);
-						(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-							(BASEVIDWIDTH-currentMenu->x, y, highlightflags, tmp);
-						break;
-					}
-				}
-				break;
-			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
-				V_DrawString(x - (controls ? 7 : 16), y - (controls ? 2 : 0), vflags, string);
-				break;
-			default:
-				break;
+			cursorx = x - (vflags & MDF_CENTERED ? w/2 : 0) - (vflags & MDF_CONTROLS ? 18 : 24);
 		}
 
 		y += LINEHEIGHT;
@@ -2244,10 +2239,11 @@ static void M_DrawBaseMenu(boolean centered, boolean tamenu, boolean controls)
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
 
+	x = currentMenu->x - (flags & MDF_CONTROLS ? 16 : 20);
 	if (cliptop)
-		V_DrawCharacter(currentMenu->x - (controls ? 16 : 20), currentMenu->y - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
+		V_DrawCharacter(x, currentMenu->y - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
 	if (clipbot)
-		V_DrawCharacter(currentMenu->x - (controls ? 16 : 20), currentMenu->y + scrollheight + (skullAnimCounter/5), '\x1B' | highlightflags, false); // down arrow
+		V_DrawCharacter(x, currentMenu->y + scrollheight + (skullAnimCounter/5), '\x1B' | highlightflags, false); // down arrow
 
 	if (menustack[0] == MN_MAIN)
 	{
@@ -2282,12 +2278,12 @@ texty -= 10*vid.dupy;\
 
 void M_DrawGenericMenu(void)
 {
-	M_DrawBaseMenu(false, false, false);
+	M_DrawBaseMenu(MENUCAPS);
 }
 
 void M_DrawCenteredMenu(void)
 {
-	M_DrawBaseMenu(true, false, false);
+	M_DrawBaseMenu(MDF_CENTERED|MENUCAPS);
 }
 
 //
@@ -5194,32 +5190,6 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // MODE ATTACK
 // ===========
 
-// draw stuff "in the background" for time attack
-static void M_DrawTimeAttackBackground(menuitem_t *item)
-{
-	INT16 x = currentMenu->x;
-	INT16 y = currentMenu->y+item->y;
-	consvar_t *ncv = item->itemaction.cvar;
-	V_DrawString(x, y, MENUCAPS|V_TRANSLUCENT, item->text);
-	if (item->status & IT_CV_STRING)
-	{
-		M_DrawTextBox(x + 32, y - 8, MAXPLAYERNAME, 1);
-		V_DrawString(x + 40, y, V_TRANSLUCENT|V_ALLOWLOWERCASE, ncv->string);
-	}
-	else
-	{
-		const char *str = ((ncv == &cv_chooseskin) ? skins[cv_chooseskin.value-1].realname : ncv->string);
-		INT32 soffset = 40, strw = V_StringWidth(str, 0);
-
-		// hack to keep the menu from overlapping the level icon
-		if (ncv == &cv_nextmap)
-			soffset = 0;
-
-		// Should see nothing but strings
-		V_DrawString(BASEVIDWIDTH - x - soffset - strw, y, MENUCAPS|highlightflags|V_TRANSLUCENT, str);
-	}
-}
-
 // Drawing function for Time Attack
 void M_DrawTimeAttackMenu(void)
 {
@@ -5264,7 +5234,7 @@ void M_DrawTimeAttackMenu(void)
 		}
 	}
 
-	M_DrawBaseMenu(false, true, false);
+	M_DrawBaseMenu((menustack[0] == MN_SP_TIMEATTACK ? MDF_TIMEATTACK : 0)|MENUCAPS);
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -5313,12 +5283,16 @@ void M_DrawTimeAttackMenu(void)
 	}
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
-	if (menustack[0] != MN_SP_TIMEATTACK)
+	if (menustack[0] == MN_SP_TIMEATTACK)
+		return;
+
+	menu_t *menu = &menudefs[MN_SP_TIMEATTACK];
+	for (i = 0; i < menu->numitems; i++)
 	{
-		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "NAME"));
-		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "SKIN"));
-		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "COLOR"));
-		M_DrawTimeAttackBackground(M_GetMenuItem(MN_SP_TIMEATTACK, "LEVEL"));
+		x = menu->x + menu->menuitems[i].x;
+		y = menu->y + menu->menuitems[i].y;
+		if (y < 128)
+			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MDF_TIMEATTACK|MENUCAPS, false);
 	}
 }
 
@@ -7447,7 +7421,7 @@ void M_DrawControl(void)
 		(setupcontrolplayer > 1 ? va("\x86""Set controls for ""\x82""Player %d", setupcontrolplayer) :
 		                          "\x86""Press ""\x82""ENTER""\x86"" to change, ""\x82""BACKSPACE""\x86"" to clear"));
 
-	M_DrawBaseMenu(false, false, true);
+	M_DrawBaseMenu(MDF_CONTROLS|MENUCAPS);
 }
 
 static INT32 controltochange;
