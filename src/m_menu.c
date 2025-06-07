@@ -102,11 +102,7 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 
 #include "qs22j.h"
 
-#define SKULLXOFF -32
-#define LINEHEIGHT 16
-#define STRINGHEIGHT 8
-#define FONTBHEIGHT 20
-#define SMALLLINEHEIGHT 8
+#define LINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
 
@@ -2003,8 +1999,6 @@ static void M_DrawMenuTitle(void)
 	}
 }
 
-#define scrollareaheight 72
-
 void M_DrawPauseMenu(void)
 {
 #ifdef HAVE_DISCORDRPC
@@ -2029,131 +2023,91 @@ void M_DrawPauseMenu(void)
 	M_DrawGenericMenu();
 }
 
-// this function is macro'd so it needs a wrapper
-static void drawstringleft(INT32 x, INT32 y, INT32 option, const char *string)
+static INT16 getheight(INT16 index)
 {
-	V_DrawString(x, y, option, string);
+	INT16 y = currentMenu->menuitems[index].y;
+	if (!y) for (INT16 i = 0; i < index; i++)
+		if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
+			y += 8;
+	return y;
 }
 
-static void M_DrawBaseMenu(boolean centered, boolean scrollma, boolean tamenu, boolean controls)
+static void M_DrawBaseMenu(boolean centered, boolean tamenu, boolean controls)
 {
-	INT32 x, y, i, cursory = 0;
-	INT32 w, max, bottom, tempcentery;
+	INT16 scrollx = currentMenu->x, scrolly = currentMenu->y;
+	INT16 scrollheight = currentMenu->scrollheight;
+	if (!scrollheight)
+		scrollheight = BASEVIDHEIGHT - currentMenu->y;
 
-	void (*DrawString)(INT32, INT32, INT32, const char *) = centered ? V_DrawCenteredString : drawstringleft;
+	INT16 topy = getheight(0);
+	INT16 boty = getheight(currentMenu->numitems-1);
 
-	// DRAW MENU
-	x = currentMenu->x;
-	y = currentMenu->y;
-
-	if (scrollma)
+	if (boty - topy > scrollheight)
 	{
-		if (currentMenu->menuitems[currentMenu->numitems-1].y < scrollareaheight)
-			tempcentery = currentMenu->y; // Not tall enough to scroll, but this thinker is used in case it becomes so
-		else if ((currentMenu->menuitems[itemOn].y*2 - currentMenu->menuitems[0].y*2) <= scrollareaheight)
-			tempcentery = currentMenu->y - currentMenu->menuitems[0].y*2;
-		else if ((currentMenu->menuitems[currentMenu->numitems-1].y*2 - currentMenu->menuitems[itemOn].y*2) <= scrollareaheight)
-			tempcentery = currentMenu->y - currentMenu->menuitems[currentMenu->numitems-1].y*2 + 2*scrollareaheight;
-		else
-			tempcentery = currentMenu->y - currentMenu->menuitems[itemOn].y*2 + scrollareaheight;
-
-		for (i = 0; i < currentMenu->numitems; i++)
-		{
-			if (!(currentMenu->menuitems[i].status & IT_HIDDEN) && currentMenu->menuitems[i].y*2 + tempcentery >= currentMenu->y)
-				break;
-		}
-
-		for (bottom = currentMenu->numitems; bottom > 0; bottom--)
-		{
-			if (!(currentMenu->menuitems[bottom-1].status & IT_HIDDEN))
-				break;
-		}
-
-		for (max = bottom; max > 0; max--)
-		{
-			if (!(currentMenu->menuitems[max-1].status & IT_HIDDEN) && currentMenu->menuitems[max-1].y*2 + tempcentery <= (currentMenu->y + 2*scrollareaheight))
-				break;
-		}
-
-		if (i)
-			V_DrawString(currentMenu->x - 20, currentMenu->y - (skullAnimCounter/5), highlightflags, "\x1A"); // up arrow
-		if (max != bottom)
-			V_DrawString(currentMenu->x - 20, currentMenu->y + 2*scrollareaheight + (skullAnimCounter/5), highlightflags, "\x1B"); // down arrow
-	}
-	else if (controls)
-	{
-#define controlheight 18
-		INT32 iter = (controlheight/2);
-		for (i = itemOn; ((iter || currentMenu->menuitems[i].status & IT_HIDDEN) && i > 0); i--)
-		{
-			if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
-				iter--;
-		}
-		if (currentMenu->menuitems[i].status & IT_HIDDEN)
-			i--;
-
-		iter += (controlheight/2);
-		for (max = itemOn; (iter && max < currentMenu->numitems); max++)
-		{
-			if (!(currentMenu->menuitems[max].status & IT_HIDDEN))
-				iter--;
-		}
-
-		if (iter)
-		{
-			iter += (controlheight/2);
-			for (i = itemOn; ((iter || currentMenu->menuitems[i].status & IT_HIDDEN) && i > 0); i--)
-			{
-				if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
-					iter--;
-			}
-		}
-
-		if (i)
-			V_DrawCharacter(currentMenu->x - 16, y-(skullAnimCounter/5),
-				'\x1A' | highlightflags, false); // up arrow
-		if (max != currentMenu->numitems)
-			V_DrawCharacter(currentMenu->x - 16, y+(SMALLLINEHEIGHT*(controlheight-1))+(skullAnimCounter/5) + (skullAnimCounter/5),
-				'\x1B' | highlightflags, false); // down arrow
-#undef controlheight
-	}
-	else
-	{
-		i = 0;
-		max = currentMenu->numitems;
+		scrolly = scrolly - getheight(itemOn) + scrollheight/2;
+		if (scrolly > currentMenu->y - topy)
+			scrolly = currentMenu->y - topy;
+		else if (scrolly < currentMenu->y - boty + scrollheight)
+			scrolly = currentMenu->y - boty + scrollheight;
 	}
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
 
-	for (; i < max; i++)
+	INT16 w, x = scrollx, y = scrolly, cursorx = 0, cursory = 0;
+	boolean clipbot = false, cliptop = false;
+
+	for (INT16 i = 0; i < currentMenu->numitems; i++)
 	{
-		if (scrollma)
-			y = currentMenu->menuitems[i].y*2 + tempcentery;
-		if (i == itemOn)
-			cursory = y;
+		INT32 vflags = MENUCAPS;
+		const char *string = currentMenu->menuitems[i].text;
+
 		if (currentMenu->menuitems[i].status & IT_HIDDEN)
 		{
 			if (!controls)
-				y += LINEHEIGHT;
+				y += LINEHEIGHT; // don't leave gaps when buttons are hidden for P2/P3/P4
+			continue;
 		}
-		else if (currentMenu->menuitems[i].status & IT_SECRET)
-		{
-			if (currentMenu->menuitems[i].y)
-				y = currentMenu->y+currentMenu->menuitems[i].y;
 
-			DrawString(x, y, MENUCAPS|V_TRANSLUCENT|V_OLDSPACING, M_CreateSecretMenuOption(currentMenu->menuitems[i].text));
-			y += SMALLLINEHEIGHT;
+		// coordinates setup
+		if (currentMenu->menuitems[i].y)
+			y = currentMenu->menuitems[i].y + scrolly;
+		if (currentMenu->menuitems[i].x)
+			x = currentMenu->menuitems[i].x + scrollx;
+
+		if (y < currentMenu->y)
+		{
+			cliptop = true;
+			y += LINEHEIGHT;
+			continue;
+		}
+		else if (y > currentMenu->y + scrollheight)
+		{
+			clipbot = true;
+			y += LINEHEIGHT;
+			continue;
+		}
+
+		if (i == itemOn)
+		{
+			cursory = y;
+			cursorx = x - (centered ? V_StringWidth(string, vflags)/2 : 0) - (controls ? 18 : 24);
+		}
+
+		// vflags setup
+		if (i == itemOn || (currentMenu->menuitems[i].status & IT_WHITESTRING))
+			vflags |= highlightflags;
+
+		if (currentMenu->menuitems[i].status & IT_SECRET)
+		{
+			vflags |= V_TRANSLUCENT|V_OLDSPACING;
+			string = M_CreateSecretMenuOption(string);
 		}
 		else if (currentMenu->menuitems[i].status & IT_GRAYEDOUT)
-		{
-			if (currentMenu->menuitems[i].y)
-				y = currentMenu->y+currentMenu->menuitems[i].y;
+			vflags |= V_TRANSLUCENT;
 
-			DrawString(x, y, MENUCAPS|V_TRANSLUCENT, currentMenu->menuitems[i].text);
-			y += SMALLLINEHEIGHT;
-		}
-		else switch (currentMenu->menuitems[i].status & IT_DISPLAY)
+		// start drawing!
+		switch (currentMenu->menuitems[i].status & IT_DISPLAY)
 		{
 			case IT_PATCH:
 				if (currentMenu->menuitems[i].patch && currentMenu->menuitems[i].patch[0])
@@ -2170,29 +2124,16 @@ static void M_DrawBaseMenu(boolean centered, boolean scrollma, boolean tamenu, b
 							W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE));
 					}
 				}
-				/* FALLTHRU */
-			default:
-				if (centered)
-					y += LINEHEIGHT;
-				else if (controls)
-					y += SMALLLINEHEIGHT;
-				else if (!scrollma)
-					y = currentMenu->y+currentMenu->menuitems[i].y;//+= LINEHEIGHT;
 				break;
 			case IT_STRING:
 			case IT_WHITESTRING:
-				if (!scrollma && !controls)
-				{
-					if (currentMenu->menuitems[i].y)
-						y = currentMenu->y+currentMenu->menuitems[i].y;
-					if (i == itemOn)
-						cursory = y;
-				}
-
-				if (i != itemOn && (currentMenu->menuitems[i].status & IT_DISPLAY)==IT_STRING)
-					DrawString(x, y, MENUCAPS, currentMenu->menuitems[i].text);
+				if (centered)
+					V_DrawCenteredString(x, y, vflags, string);
 				else
-					DrawString(x, y, MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
+					V_DrawString(x, y, vflags, string);
+
+				if (currentMenu->menuitems[i].status & (IT_SECRET|IT_GRAYEDOUT))
+					break;
 
 				if (controls && i == M_GetMenuIndex(MN_OP_CHANGECONTROLS, "SETJOY")) // gamepad select
 				{
@@ -2216,7 +2157,7 @@ static void M_DrawBaseMenu(boolean centered, boolean scrollma, boolean tamenu, b
 								M_DrawSlider(x, y, cv, (i == itemOn));
 								break;
 							case IT_CV_STRING:
-								if (scrollma && y + 12 > (currentMenu->y + 2*scrollareaheight))
+								if (y + 12 > currentMenu->y + scrollheight)
 									break;
 #if 1
 								INT32 xofs = tamenu ? 32 : 0, yofs = tamenu ? -8 : 4;
@@ -2238,7 +2179,7 @@ static void M_DrawBaseMenu(boolean centered, boolean scrollma, boolean tamenu, b
 									V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
 									highlightflags|V_ALLOWLOWERCASE, cv->string);
 #endif
-								if (!scrollma && !tamenu)
+								if (!tamenu)
 									y += 16;
 								break;
 							default:
@@ -2289,28 +2230,24 @@ static void M_DrawBaseMenu(boolean centered, boolean scrollma, boolean tamenu, b
 						break;
 					}
 				}
-				if (!scrollma)
-					y += controls ? SMALLLINEHEIGHT : STRINGHEIGHT;
 				break;
 			case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
-				if (!scrollma && !controls && currentMenu->menuitems[i].y)
-					y = currentMenu->y+currentMenu->menuitems[i].y;
-
-				if (!controls || i != max-1)
-					V_DrawString(controls ? 13 : x-16, controls ? y+6 : y, MENUCAPS|highlightflags, currentMenu->menuitems[i].text);
-				if (!scrollma)
-					y += SMALLLINEHEIGHT;
+				V_DrawString(x - (controls ? 7 : 16), y - (controls ? 2 : 0), vflags, string);
+				break;
+			default:
 				break;
 		}
+
+		y += LINEHEIGHT;
 	}
 
 	// DRAW THE SKULL CURSOR
-	if (centered)
-		x -= V_StringWidth(currentMenu->menuitems[itemOn].text, MENUCAPS)/2;
-	else
-		x = currentMenu->x;
-	V_DrawScaledPatch(x + (controls ? -18 : -24), cursory, 0,
-		W_CachePatchName("M_CURSOR", PU_CACHE));
+	V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+
+	if (cliptop)
+		V_DrawCharacter(currentMenu->x - (controls ? 16 : 20), currentMenu->y - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
+	if (clipbot)
+		V_DrawCharacter(currentMenu->x - (controls ? 16 : 20), currentMenu->y + scrollheight + (skullAnimCounter/5), '\x1B' | highlightflags, false); // down arrow
 
 	if (menustack[0] == MN_MAIN)
 	{
@@ -2345,18 +2282,12 @@ texty -= 10*vid.dupy;\
 
 void M_DrawGenericMenu(void)
 {
-	M_DrawBaseMenu(false, false, false, false);
+	M_DrawBaseMenu(false, false, false);
 }
 
 void M_DrawCenteredMenu(void)
 {
-	M_DrawBaseMenu(true, false, false, false);
-}
-
-// note that alphakey is multiplied by 2 for scrolling menus to allow greater usage in UINT8 range.
-void M_DrawGenericScrollMenu(void)
-{
-	M_DrawBaseMenu(false, true, false, false);
+	M_DrawBaseMenu(true, false, false);
 }
 
 //
@@ -5333,7 +5264,7 @@ void M_DrawTimeAttackMenu(void)
 		}
 	}
 
-	M_DrawBaseMenu(false, false, true, false);
+	M_DrawBaseMenu(false, true, false);
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -7353,7 +7284,7 @@ void M_DrawJoystick(void)
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
-		M_DrawTextBox(menudefs[MN_OP_JOYSTICKSET].x-8, menudefs[MN_OP_JOYSTICKSET].y+LINEHEIGHT*i-12, 28, 1);
+		M_DrawTextBox(menudefs[MN_OP_JOYSTICKSET].x-8, menudefs[MN_OP_JOYSTICKSET].y + 16*i - 8, 28, 1);
 
 #ifdef JOYSTICK_HOTPLUG
 		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > I_NumJoys())
@@ -7362,7 +7293,7 @@ void M_DrawJoystick(void)
 #endif
 			compareval = cv_usejoystick[setupcontrolplayer-1].value;
 
-		V_DrawString(menudefs[MN_OP_JOYSTICKSET].x, menudefs[MN_OP_JOYSTICKSET].y+LINEHEIGHT*i-4, ((i == compareval) ? V_GREENMAP : 0)|MENUCAPS, joystickInfo[i]);
+		V_DrawString(menudefs[MN_OP_JOYSTICKSET].x, menudefs[MN_OP_JOYSTICKSET].y + 16*i, ((i == compareval) ? V_GREENMAP : 0)|MENUCAPS, joystickInfo[i]);
 	}
 }
 
@@ -7516,7 +7447,7 @@ void M_DrawControl(void)
 		(setupcontrolplayer > 1 ? va("\x86""Set controls for ""\x82""Player %d", setupcontrolplayer) :
 		                          "\x86""Press ""\x82""ENTER""\x86"" to change, ""\x82""BACKSPACE""\x86"" to clear"));
 
-	M_DrawBaseMenu(false, false, false, true);
+	M_DrawBaseMenu(false, false, true);
 }
 
 static INT32 controltochange;

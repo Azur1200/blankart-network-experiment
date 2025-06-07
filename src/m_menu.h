@@ -231,6 +231,7 @@ struct menu_t
 	menuitem_t    *menuitems;          // menu items
 	menudrawer_f  *drawroutine;        // draw routine
 	INT16          x, y;               // x, y of menu
+	INT16          scrollheight;       // height of scrolling area
 	INT16          lastOn;             // last item user was on in menu
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
@@ -323,7 +324,6 @@ INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
-void M_DrawGenericScrollMenu(void);
 void M_DrawCenteredMenu(void);
 void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);

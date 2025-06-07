@@ -2286,6 +2286,10 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				menudef->y = value;
 			}
+			else if (fastcmp(word, "SCROLLHEIGHT"))
+			{
+				menudef->scrollheight = get_number(word2);
+			}
 			else if (fastcmp(word, "ENTERROUTINE"))
 			{
 				menufunc_f *routine = get_menuroutine(word2);
