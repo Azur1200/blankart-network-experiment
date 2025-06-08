@@ -157,13 +157,12 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 // flags for items in the menu
 // menu handle (what we do when key is pressed
-#define IT_TYPE           (1+2+4)
+#define IT_TYPE           (1+2+4+8192+16384)
 #define IT_CALL              1     // call the function
 #define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
 #define IT_DUMMY             4     // selectable, but does nothing
-#define IT_SUBMENU         (1+2)   // go to sub menu
-#define IT_CVAR            (1+4)   // handle as a cvar
-#define IT_PAIR            (2+4)   // no handling, define both sides of text
+#define IT_SUBMENU        8192     // go to sub menu
+#define IT_CVAR          16384     // handle as a cvar
 
 // display flags
 #define IT_DISPLAY       (8+16+32)
@@ -179,11 +178,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 #define IT_CV_SLIDER         64
 #define IT_CV_STRING        128
 #define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
-
-//call/submenu specific
-// There used to be a lot more here but ...
-// A lot of them became redundant with the advent of the Pause menu, so they were removed
-#define IT_CALL_NOTMODIFIED  64
 
 // extra flags
 #define IT_CENTER           512    // if IT_PATCH, center it on screen
@@ -201,13 +195,6 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 typedef INT32 (menufunc_f)(INT32);
 typedef void  (menudrawer_f)(void);
 
-typedef union
-{
-	menutype_t submenu;  // IT_SUBMENU
-	consvar_t *cvar;     // IT_CVAR
-	menufunc_f *routine; // IT_CALL, IT_ARROWS
-} itemaction_t;
-
 //
 // MENU TYPEDEFS
 //
@@ -218,11 +205,13 @@ struct menuitem_t
 	// show IT_xxx
 	UINT16 status;
 
+	menutype_t submenu;  // IT_SUBMENU
+	consvar_t *cvar;     // IT_CVAR
+	menufunc_f *routine; // IT_CALL, IT_ARROWS
+
 	const char *patch;
 	const char *text; // used when FONTBxx lump is found
 	const char *tooltip;
-
-	itemaction_t itemaction;
 
 	INT32 argument;
 	INT16 x, y;
@@ -269,9 +258,8 @@ INT32 MR_ChooseTimeAttack(INT32 choice);
 INT32 MR_SetGuestReplay(INT32 arg);
 INT32 MR_TimeAttackPreset(INT32 arg);
 INT32 MR_ReplayTimeAttack(INT32 arg);
-INT32 MR_HandleStaffReplay(INT32 choice);
-INT32 MR_HandleMPMainMenu(INT32 choice);
-INT32 MR_HandleSetupMultiPlayer(INT32 choice);
+INT32 MR_ReplayStaff(INT32 choice);
+INT32 MR_ConnectIP(INT32 choice);
 INT32 MR_QuitMultiPlayerMenu(INT32 choice);
 INT32 MR_StartServerMenu(INT32 choice);
 INT32 MR_StartServer(INT32 choice);
@@ -287,7 +275,7 @@ INT32 MR_VideoModeMenu(INT32 choice);
 INT32 MR_OpenGLOptionsMenu(INT32 choice);
 #endif
 INT32 MR_HandleVideoMode(INT32 ch);
-INT32 MR_HandleSoundTest(INT32 choice);
+INT32 MR_PlaySound(INT32 choice);
 INT32 MR_MusicTest(INT32 choice);
 INT32 MR_QuitMusicTest(INT32 choice);
 INT32 MR_ScreenshotOptions(INT32 choice);
@@ -337,7 +325,6 @@ void M_DrawReplayHut(void);
 void M_DrawTimeAttackMenu(void);
 void M_DrawMPMainMenu(void);
 void M_DrawSetupMultiPlayerMenu(void);
-void M_DrawServerMenu(void);
 void M_DrawConnectMenu(void);
 void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
@@ -415,6 +402,8 @@ extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
+extern consvar_t cv_dummystaff;
+extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase

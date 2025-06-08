@@ -592,14 +592,14 @@ static void G_UpdateRecordReplays(void)
 	parts = M_PathParts(gpath);
 	M_MkdirEachUntil(gpath, parts - 4, parts - 1, 0755);
 
-	snprintf(lastdemo, 255, "%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode);
+	snprintf(lastdemo, 255, "%s-%s-%s-last.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode);
+		snprintf(bestdemo, 255, "%s-%s-%s-time-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -610,7 +610,7 @@ static void G_UpdateRecordReplays(void)
 
 		if (modeattacking == ATTACKING_TIME)
 		{
-			snprintf(bestdemo, 255, "%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode);
+			snprintf(bestdemo, 255, "%s-%s-%s-lap-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 			if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 			{ // Better lap time, save this demo.
 				if (FIL_FileExists(bestdemo))

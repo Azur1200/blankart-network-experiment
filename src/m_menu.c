@@ -105,6 +105,7 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 #define LINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
+#define MAXIPADDRESSLEN 28
 
 typedef enum
 {
@@ -262,8 +263,8 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 // an array of macros for getting/setting menuitem properties
 #define M_IsItemOn(t, n)                (itemOn == M_GetMenuIndex(t, n))
 #define M_SetItemOn(t, n)               (itemOn = M_GetMenuIndex(t, n))
-#define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->itemaction.routine = v)
-#define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->itemaction.cvar = v)
+#define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->routine = v)
+#define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->cvar = v)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
 #define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
@@ -310,8 +311,8 @@ consvar_t cv_nextmap = CVAR_INIT ("nextmap", "1", CV_HIDEN|CV_CALL|CV_NOINIT, ma
 
 static INT16 lastnextmap = 1;
 
-static CV_PossibleValue_t skins_cons_t[MAXSKINS+1] = {{1, DEFAULTSKIN}};
-consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", DEFAULTSKIN, CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
+static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, NULL}};
+consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
@@ -362,7 +363,7 @@ consvar_t cv_dummymenuplayer = CVAR_INIT ("dummymenuplayer", "P1", CV_HIDEN|CV_C
 consvar_t cv_dummyteam = CVAR_INIT ("dummyteam", "Spectator", CV_HIDEN, dummyteam_cons_t, NULL);
 consvar_t cv_dummyspectate = CVAR_INIT ("dummyspectate", "Spectator", CV_HIDEN, dummyspectate_cons_t, NULL);
 consvar_t cv_dummyscramble = CVAR_INIT ("dummyscramble", "Random", CV_HIDEN, dummyscramble_cons_t, NULL);
-static consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
+consvar_t cv_dummystaff = CVAR_INIT ("dummystaff", "0", CV_HIDEN|CV_CALL, dummystaff_cons_t, Dummystaff_OnChange);
 
 consvar_t cv_dummyattackingrings = CVAR_INIT ("dummyattackingrings", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingstacking = CVAR_INIT ("dummyattackingstacking", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
@@ -376,6 +377,16 @@ static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG
 consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
 consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
+
+static CV_PossibleValue_t dummymultiplayer_cons_t[] = {{0, "MIN"}, {3, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t dummyfollower_cons_t[] = {{-1, "MIN"}, {MAXFOLLOWERS, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t dummycolor_cons_t[] = {{0, "MIN"}, {MAXSKINCOLORS, "MAX"}, {0, NULL}};
+
+consvar_t cv_dummymultiplayer = CVAR_INIT ("dummymultiplayer", "0", CV_HIDEN, dummymultiplayer_cons_t, NULL);
+consvar_t cv_dummyip = CVAR_INIT ("dummyip", "", CV_HIDEN, NULL, NULL);
+consvar_t cv_dummyname = CVAR_INIT ("dummyname", "", CV_HIDEN, NULL, NULL);
+consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfollower_cons_t, NULL);
+consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN, dummycolor_cons_t, NULL);
 
 consvar_t cv_menucaps = CVAR_INIT ("menucaps", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -396,7 +407,8 @@ static INT32 highlightflags, recommendedflags, warningflags;
 
 inline static void M_GetGametypeColor(void)
 {
-	INT16 gt;
+	INT16 gt, i;
+	boolean usenewgametype = false;
 
 	warningflags = V_REDMAP;
 	recommendedflags = V_GREENMAP;
@@ -427,7 +439,14 @@ inline static void M_GetGametypeColor(void)
 		return;
 	}
 
-	if (currentMenu && currentMenu->drawroutine == M_DrawServerMenu)
+	if (currentMenu) for (i = 0; i < currentMenu->numitems; i++)
+		if (currentMenu->menuitems[i].cvar == &cv_newgametype)
+		{
+			usenewgametype = true;
+			break;
+		}
+
+	if (usenewgametype)
 		gt = cv_newgametype.value;
 	else if (!Playing())
 	{
@@ -588,21 +607,21 @@ void Nextmap_OnChange(void)
 		boolean showreplay = false, showguest = false;
 
 		// best time
-		visible = FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode));
+		visible = FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// best lap
-		visible = levellistmode != LLM_ITEMBREAKER && FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode));
+		visible = levellistmode != LLM_ITEMBREAKER && FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// last
-		visible = FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode));
+		visible = FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
 		if (visible)
@@ -778,16 +797,19 @@ void M_InitMenuPresTables(void)
 // BASIC MENU HANDLING
 // =========================================================================
 
+static UINT8      multi_spr2;
+static void M_GetFollowerState(void);
+
 static INT32 M_ChangeCvar(INT32 choice)
 {
-	consvar_t *cv = currentMenu->menuitems[itemOn].itemaction.cvar;
+	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
 
 	if (choice == -1)
 	{
-		if (cv == &cv_playercolor[0])
+		if (cv == &cv_playercolor[0] || cv == &cv_playercolor[1] || cv == &cv_playercolor[2] || cv == &cv_playercolor[3] || cv == &cv_dummycolor)
 		{
-			SINT8 skinno = R_SkinAvailable(cv_chooseskin.string);
-			if (skinno != -1)
+			INT32 skinno = R_SkinAvailable(skins[cv_chooseskin.value].name);
+			if (skinno != -1 && skincolors[skins[skinno].prefcolor].accessible)
 				CV_SetValue(cv,skins[skinno].prefcolor);
 			return true;
 		}
@@ -816,12 +838,17 @@ static INT32 M_ChangeCvar(INT32 choice)
 	else
 		CV_AddValue(cv,choice);
 
+	if (cv == &cv_chooseskin)
+		multi_spr2 = P_GetSkinSprite2(&skins[cv->value], SPR2_FSTN, NULL);
+	else if (cv == &cv_dummyfollower)
+		M_GetFollowerState();	// update follower state
+
 	return true;
 }
 
 static boolean M_ChangeStringCvar(INT32 choice)
 {
-	consvar_t *cv = currentMenu->menuitems[itemOn].itemaction.cvar;
+	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
 	char buf[MAXSTRINGLENGTH];
 	size_t len;
 
@@ -848,10 +875,22 @@ static boolean M_ChangeStringCvar(INT32 choice)
 			}
 			return true;
 		default:
+			if (cv == &cv_dummyip)
+			{
+				// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
+				if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
+				 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
+					return false;
+
+				if (choice >= KEY_KEYPAD7)
+					// sir, have you been golfing tonight?
+					choice = "789-456+1230."[choice - KEY_KEYPAD7];
+			}
+
 			if (choice >= 32 && choice <= 127)
 			{
 				len = strlen(cv->string);
-				if (len < MAXSTRINGLENGTH - 1)
+				if (len < (cv == &cv_dummyip ? MAXIPADDRESSLEN : MAXSTRINGLENGTH) - 1)
 				{
 					S_StartSound(NULL,sfx_menu1); // Tails
 					M_Memcpy(buf, cv->string, len);
@@ -946,7 +985,7 @@ boolean M_Responder(event_t *ev)
 	static tic_t joywait = 0, mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
-	menufunc_f *routine; // for some casting problem
+	menufunc_f *routine = NULL; // for some casting problem
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
@@ -1200,29 +1239,19 @@ boolean M_Responder(event_t *ev)
 
 	// BP: one of the more big hack i have never made
 	// G: not so hacky anymore...?
-	UINT16 itemtype = currentMenu->numitems ? currentMenu->menuitems[itemOn].status & IT_TYPE : 0;
-	switch (itemtype)
+	// G: nevermind we have combi menuitems now
+	UINT16 itemtype = 0;
+	if (currentMenu->numitems)
 	{
-	case IT_CVAR:
-		if ((currentMenu->menuitems[itemOn].status & IT_ACTION) == IT_CV_STRING)
-		{
-			if (shiftdown && ch >= 32 && ch <= 127)
-				ch = shiftxform[ch];
-			if (M_ChangeStringCvar(ch))
-				return true;
-			else
-				routine = NULL;
-		}
-		else
-			routine = M_ChangeCvar;
-		break;
-	case IT_CALL:
-	case IT_ARROWS:
-		routine = currentMenu->menuitems[itemOn].itemaction.routine;
-		break;
-	default:
-		routine = NULL;
-		break;
+		itemtype = currentMenu->menuitems[itemOn].status;
+		routine = currentMenu->menuitems[itemOn].routine;
+	}
+	if ((itemtype & (IT_CVAR|IT_CV_STRING)) == (IT_CVAR|IT_CV_STRING))
+	{
+		if (shiftdown && ch >= 32 && ch <= 127)
+			ch = shiftxform[ch];
+		if (M_ChangeStringCvar(ch))
+			return true;
 	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
@@ -1270,20 +1299,20 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_LEFTARROW:
-			if (itemtype == IT_ARROWS || itemtype == IT_CVAR)
+			if (itemtype & (IT_ARROWS|IT_CVAR) && !(itemtype & IT_CV_STRING))
 			{
 				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
-				routine(0);
+				(itemtype & IT_ARROWS ? routine : M_ChangeCvar)(0);
 			}
 			return true;
 
 		case KEY_RIGHTARROW:
-			if (itemtype == IT_ARROWS || itemtype == IT_CVAR)
+			if (itemtype & (IT_ARROWS|IT_CVAR) && !(itemtype & IT_CV_STRING))
 			{
 				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
-				routine(1);
+				(itemtype & IT_ARROWS ? routine : M_ChangeCvar)(1);
 			}
 			return true;
 
@@ -1299,24 +1328,24 @@ boolean M_Responder(event_t *ev)
 				playback_enterheld = 3;
 			}
 
-			switch (itemtype)
+			INT32 argument = currentMenu->menuitems[itemOn].argument;
+			if (currentMenu->menuitems[itemOn].cvar)
+				argument = currentMenu->menuitems[itemOn].cvar->value;
+
+			if (currentMenu->menuitems[itemOn].submenu)
 			{
-			case IT_CVAR:
-			case IT_ARROWS:
 				S_StartSound(NULL, sfx_menu1);
-				routine(1); // right arrow
-				break;
-			case IT_CALL:
+				M_EnterMenu(currentMenu->menuitems[itemOn].submenu, true, argument);
+			}
+			else if (currentMenu->menuitems[itemOn].routine)
+			{
 				S_StartSound(NULL, sfx_menu1);
-				routine(currentMenu->menuitems[itemOn].argument);
-				break;
-			case IT_SUBMENU:
+				routine(argument);
+			}
+			else if (currentMenu->menuitems[itemOn].cvar && !(itemtype & IT_CV_STRING))
+			{
 				S_StartSound(NULL, sfx_menu1);
-				currentMenu->lastOn = itemOn;
-				M_EnterMenu(currentMenu->menuitems[itemOn].itemaction.submenu, true, currentMenu->menuitems[itemOn].argument);
-				break;
-			default:
-				break;
+				M_ChangeCvar(1); // right arrow
 			}
 			return true;
 
@@ -1336,19 +1365,20 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
-			if (itemtype == IT_CVAR)
+			if (itemtype & IT_CVAR)
 			{
-				consvar_t *cv = currentMenu->menuitems[itemOn].itemaction.cvar;
+				consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
 
 				if (cv == &cv_chooseskin
 					|| cv == &cv_dummystaff
 					|| cv == &cv_nextmap
-					|| cv == &cv_newgametype)
+					|| cv == &cv_newgametype
+					|| cv == &cv_dummymultiplayer)
 					return true;
 
 				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 					S_StartSound(NULL, sfx_menu1);
-				routine(-1);
+				M_ChangeCvar(-1);
 				return true;
 			}
 
@@ -1721,6 +1751,12 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummygpencore);
 	CV_RegisterVar(&cv_dummygpcup);
 
+	CV_RegisterVar(&cv_dummymultiplayer);
+	CV_RegisterVar(&cv_dummyip);
+	CV_RegisterVar(&cv_dummyname);
+	CV_RegisterVar(&cv_dummyfollower);
+	CV_RegisterVar(&cv_dummycolor);
+
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n\n(Press 'Y' to quit)");
 	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n\n(Press 'Y' to quit)");
 	quitmsg[QUITMSG2] = M_GetText("Hey!\nWhere do ya think you're goin'?\n\n(Press 'Y' to quit)");
@@ -2076,11 +2112,9 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, name);
 		}
 
-		switch(item->status & IT_TYPE)
+		if (item->status & IT_CVAR)
 		{
-		case IT_CVAR:
-		{
-			consvar_t *cv = item->itemaction.cvar;
+			consvar_t *cv = item->cvar;
 			switch(item->status & IT_ACTION)
 			{
 			case IT_CV_SLIDER:
@@ -2090,9 +2124,10 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
 					break;
 
-				INT32 xofs = vflags & MDF_TIMEATTACK ? 32 : 0;
-				INT32 yofs = vflags & MDF_TIMEATTACK ? -8 : 4;
-				w = vflags & MDF_TIMEATTACK ? MAXPLAYERNAME : MAXSTRINGLENGTH;
+				boolean side = vflags & MDF_TIMEATTACK || cv == &cv_dummyname;
+				INT32 xofs = side ? 32 : 0;
+				INT32 yofs = side ? -8 : 4;
+				w = side ? MAXPLAYERNAME : cv == &cv_dummyip ? MAXIPADDRESSLEN : MAXSTRINGLENGTH;
 
 				M_DrawTextBox(x + xofs, y + yofs, w, 1);
 				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
@@ -2100,35 +2135,51 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 					V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
 						'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
 
-				if (!(vflags & MDF_TIMEATTACK))
+				if (!side)
 					y += 16;
 				break;
 			default:
 			{
-				const char *str = (cv == &cv_chooseskin ? skins[cv_chooseskin.value-1].realname : cv->string);
+				const char *str = cv->string;
 				INT32 soffset = vflags & MDF_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
+				INT32 strvf = vflags;
 
-				w = V_StringWidth(str, vflags);
+				if (cv == &cv_chooseskin)
+					str = skins[cv_chooseskin.value].realname;
+				else if (cv == &cv_dummyfollower)
+					str = cv_dummyfollower.value == -1 ? "None" : followers[cv_dummyfollower.value].name;
+				else if (cv == &cv_dummystaff && cv_dummystaff.value)
+					str = dummystaffname;
+				else if (cv == &cv_dummycolor)
+					str = skincolors[cv_dummycolor.value].name;
+				else if (cv == &cv_dummymultiplayer)
+					break;
+
+				if (menustack[0] == MN_MP_PLAYERSETUP)
+					strvf |= V_ALLOWLOWERCASE|highlightflags;
+
+				w = V_StringWidth(str, strvf);
 				V_DrawString(BASEVIDWIDTH - x - soffset - w, y,
-					((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|vflags, str);
+					((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|strvf, str);
 
 				if (selected)
 				{
+					strvf &= ~(V_FLIP|V_PARAMMASK);
 					V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
-						'\x1C' | highlightflags | (vflags & ~(V_FLIP|V_PARAMMASK)), false); // left arrow
+						'\x1C' | highlightflags | strvf, false); // left arrow
 					V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
-						'\x1D' | highlightflags | (vflags & ~(V_FLIP|V_PARAMMASK)), false); // right arrow
+						'\x1D' | highlightflags | strvf, false); // right arrow
 				}
 				break;
 			}
 			}
 			break;
 		}
-		case IT_CALL:
+		else if (item->status & IT_CALL)
 		{
 			char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
 			INT32 key;
-			if (item->itemaction.routine != MR_ChangeControl)
+			if (item->routine != MR_ChangeControl)
 				break;
 
 			tmp[0] ='\0';
@@ -2149,7 +2200,6 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, tmp);
 			break;
-		}
 		}
 		break;
 	case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
@@ -2193,10 +2243,15 @@ static void M_DrawBaseMenu(INT32 flags)
 	// draw title (or big pic)
 	M_DrawMenuTitle();
 
-	INT16 w, x = scrollx, y = scrolly, cursorx = 0, cursory = 0;
+	INT16 i, w, x = scrollx, y = scrolly, cursorx = 0, cursory = 0;
 	boolean clipbot = false, cliptop = false;
 
-	for (INT16 i = 0; i < currentMenu->numitems; i++)
+	// levelselect no longer needs a special drawer!
+	for (i = 0; i < currentMenu->numitems; i++)
+		if (currentMenu->menuitems[i].cvar == &cv_nextmap)
+			M_DrawLevelSelectOnly(menustack[0] == MN_SP_TIMEATTACK, false);
+
+	for (i = 0; i < currentMenu->numitems; i++)
 	{
 		INT32 vflags = flags;
 
@@ -2315,28 +2370,15 @@ static void M_PatchSkinNameTable(void)
 {
 	INT32 j;
 
-	memset(skins_cons_t, 0, sizeof (skins_cons_t));
-
-	for (j = 0; j < MAXSKINS; j++)
-	{
-		if (skins[j].name[0] != '\0')
-		{
-			skins_cons_t[j].strvalue = skins[j].name;
-			skins_cons_t[j].value = j+1;
-		}
-		else
-		{
-			skins_cons_t[j].strvalue = NULL;
-			skins_cons_t[j].value = 0;
-			break;
-		}
-	}
+	skins_cons_t[1].value = numskins-1;
+	dummyfollower_cons_t[1].value = numfollowers-1;
+	dummycolor_cons_t[1].value = numskincolors-1;
 
 	j = R_SkinAvailable(cv_skin[0].string);
 	if (j == -1)
 		j = 0;
 
-	CV_SetValue(&cv_chooseskin, j+1); // This causes crash sometimes?!
+	CV_SetValue(&cv_chooseskin, j); // This causes crash sometimes?!
 
 	return;
 }
@@ -4409,20 +4451,10 @@ void M_DrawSkyRoom(void)
 	}
 }
 
-INT32 MR_HandleSoundTest(INT32 choice)
+INT32 MR_PlaySound(INT32 arg)
 {
-	if (!M_IsItemOn(MN_OP_SOUND, "SOUNDTEST"))
-		return false;
-
-	switch (choice)
-	{
-		case KEY_ENTER:
-			S_StopSounds();
-			S_StartSound(NULL, cv_soundtest.value);
-			break;
-		default:
-			return false;
-	}
+	S_StopSounds();
+	S_StartSound(NULL, arg);
 	return true;
 }
 
@@ -5179,7 +5211,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	G_DeferedInitNew(
 		false,
 		levelNum + 1,
-		(UINT8)(cv_chooseskin.value - 1),
+		(UINT8)(cv_chooseskin.value),
 		(UINT8)(cv_splitplayers.value - 1),
 		false
 	);
@@ -5196,12 +5228,6 @@ void M_DrawTimeAttackMenu(void)
 	INT32 i, x, y;
 	SINT8 preset = G_RecordPresetIndex();
 
-	//S_ChangeMusicInternal("racent", true); // Eww, but needed for when user hits escape during demo playback
-
-	M_DrawMenuTitle();
-	if (menustack[0] == MN_SP_TIMEATTACK)
-		M_DrawLevelSelectOnly(true, false);
-
 	// draw menu (everything else goes on top of it)
 	// Sadly we can't just use generic mode menus because we need some extra hacks
 	x = currentMenu->x;
@@ -5209,29 +5235,8 @@ void M_DrawTimeAttackMenu(void)
 
 	// Character face!
 	{
-		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value-1, cv_playercolor[0].value, GTC_MENUCACHE);
-		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(faceprefix[cv_chooseskin.value-1][FACE_WANTED]->width), y, 0, faceprefix[cv_chooseskin.value-1][FACE_WANTED], colormap);
-	}
-
-	for (i = 0; i < currentMenu->numitems; ++i)
-	{
-		if (currentMenu->menuitems[i].status & IT_HIDDEN)
-			continue;
-
-		y = currentMenu->y+currentMenu->menuitems[i].y;
-
-		if (&currentMenu->menuitems[i] == M_CheckMenuItem(MN_SP_REPLAY, "REPLAYSTAFF") && cv_dummystaff.value)
-		{
-			INT32 strw = V_StringWidth(dummystaffname, V_ALLOWLOWERCASE);
-			V_DrawString(BASEVIDWIDTH - x - strw, y, highlightflags|V_ALLOWLOWERCASE, dummystaffname);
-			if (i == itemOn)
-			{
-				V_DrawCharacter(BASEVIDWIDTH - x - 10 - strw - (skullAnimCounter/5), y,
-					'\x1C' | highlightflags, false); // left arrow
-				V_DrawCharacter(BASEVIDWIDTH - x + 2 + (skullAnimCounter/5), y,
-					'\x1D' | highlightflags, false); // right arrow
-			}
-		}
+		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value, cv_playercolor[0].value, GTC_MENUCACHE);
+		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(faceprefix[cv_chooseskin.value][FACE_WANTED]->width), y, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
 	}
 
 	M_DrawBaseMenu((menustack[0] == MN_SP_TIMEATTACK ? MDF_TIMEATTACK : 0)|MENUCAPS);
@@ -5299,8 +5304,6 @@ void M_DrawTimeAttackMenu(void)
 // Going to Time Attack menu...
 INT32 MR_TimeAttack(INT32 arg)
 {
-	memset(skins_cons_t, 0, sizeof (skins_cons_t));
-
 	if (arg != -1)
 	{
 		levellistmode = arg ? LLM_ITEMBREAKER : LLM_TIMEATTACK; // Don't be dependent on cv_newgametype
@@ -5336,7 +5339,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 	(void)choice;
 
 	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText(va("skin \"%s\"\n", cv_chooseskin.string));
+	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
 	return true;
 }
 
@@ -5367,37 +5370,20 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(nameofdemo);
 
-	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value-1), 0, false);
+	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value), 0, false);
 	return true;
 }
 
-INT32 MR_HandleStaffReplay(INT32 choice)
+INT32 MR_ReplayStaff(INT32 choice)
 {
-	if (!M_IsItemOn(MN_SP_REPLAY, "REPLAYSTAFF"))
+	(void)choice;
+	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	if (l == LUMPERROR)
 		return false;
 
-	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
-
-	switch (choice)
-	{
-		case KEY_RIGHTARROW:
-			CV_AddValue(&cv_dummystaff, 1);
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_LEFTARROW:
-			CV_AddValue(&cv_dummystaff, -1);
-			S_StartSound(NULL, sfx_menu1);
-			break;
-		case KEY_ENTER:
-			if (l == LUMPERROR)
-				break;
-			M_ClearMenus(true);
-			demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
-			G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
-			break;
-		default:
-			return false;
-	}
+	M_ClearMenus(true);
+	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
+	G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 	return true;
 }
 
@@ -5450,7 +5436,7 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 		return true;
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
-	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode, which));
+	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
 	Z_Free(gamemode);
 	return true;
 }
@@ -5475,7 +5461,7 @@ static void M_OverwriteGuest(const char *which)
 	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 	UINT8 *buf;
 	size_t len;
-	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), cv_chooseskin.string, gamemode,which), &buf);
+	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode,which), &buf);
 	if (!len) {
 		return;
 	}
@@ -6137,7 +6123,7 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 	x = BASEVIDWIDTH/2 - w/2;
 	y = currentMenu->y + 130 + 8 - i;
 
-	if (currentMenu->menuitems[itemOn].itemaction.cvar == &cv_nextmap && skullAnimCounter < 4)
+	if (currentMenu->menuitems[itemOn].cvar == &cv_nextmap && skullAnimCounter < 4)
 		trans = 0;
 	else
 		trans = G_GetGametypeColor(cv_newgametype.value);
@@ -6223,12 +6209,6 @@ static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
 #undef horizspac
 }
 
-void M_DrawServerMenu(void)
-{
-	M_DrawLevelSelectOnly(false, false);
-	M_DrawGenericMenu();
-}
-
 INT32 MR_MapChange(INT32 choice)
 {
 	(void)choice;
@@ -6254,9 +6234,6 @@ INT32 MR_StartServerMenu(INT32 choice)
 // CONNECT VIA IP
 // ==============
 
-static char setupm_ip[28];
-static UINT8 setupm_pselect = 1;
-
 // Draw the funky Connect IP menu. Tails 11-19-2002
 // So much work for such a little thing!
 void M_DrawMPMainMenu(void)
@@ -6277,18 +6254,6 @@ Update the maxplayers label...
 		(M_IsItemOn(MN_MP_MAIN, "OFFLINESERVER") ? highlightflags : 0)|MENUCAPS,
 		"(2-4 players)"
 		);
-
-	y += M_GetItemY(MN_MP_MAIN, "CONNECTIP");
-
-	V_DrawFill(x+5, y+4+5, /*16*8 + 6,*/ BASEVIDWIDTH - 2*(x+5), 8+6, 159);
-
-	// draw name string
-	V_DrawString(x+8,y+12, V_ALLOWLOWERCASE, setupm_ip);
-
-	// draw text cursor for name
-	if (M_IsItemOn(MN_MP_MAIN, "CONNECTIP")
-	    && skullAnimCounter < 4)   //blink cursor
-		V_DrawCharacter(x+8+V_StringWidth(setupm_ip, V_ALLOWLOWERCASE),y+12,'_',false);
 
 	// character bar, ripped off the color bar :V
 	{
@@ -6318,7 +6283,7 @@ Update the maxplayers label...
 
 			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, trans, faceprefix[pskin][FACE_WANTED], colmap);
 
-			if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP") && i == setupm_pselect)
+			if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP") && i == cv_dummymultiplayer.value+1)
 			{
 				static fixed_t cursorframe = 0;
 				
@@ -6338,57 +6303,27 @@ Update the maxplayers label...
 
 static void Splitplayers_OnChange(void)
 {
-	if (cv_splitplayers.value < setupm_pselect)
-		setupm_pselect = 1;
-}
+	if (cv_splitplayers.value <= cv_dummymultiplayer.value)
+		CV_SetValue(&cv_dummymultiplayer, 0);
 
-static INT32 MR_SetupMultiHandler(INT32 choice)
-{
-	switch (choice)
-	{
-		case KEY_LEFTARROW:
-			if (cv_splitplayers.value > 1)
-			{
-				if (--setupm_pselect < 1)
-					setupm_pselect = cv_splitplayers.value;
-				S_StartSound(NULL,sfx_menu1); // Tails
-			}
-			break;
-
-		case KEY_RIGHTARROW:
-			if (cv_splitplayers.value > 1)
-			{
-				if (++setupm_pselect > cv_splitplayers.value)
-					setupm_pselect = 1;
-				S_StartSound(NULL,sfx_menu1); // Tails
-			}
-			break;
-
-		case KEY_ENTER:
-			S_StartSound(NULL,sfx_menu1); // Tails
-			M_EnterMenu(MN_MP_PLAYERSETUP, true, setupm_pselect - 1);
-			break;
-
-		default:
-			return false;
-	}
-	return true;
+	// anything to avoid a keyhandler :^)
+	dummymultiplayer_cons_t[1].value = cv_splitplayers.value - 1;
 }
 
 // Tails 11-19-2002
-static void M_ConnectIP(INT32 choice)
+INT32 MR_ConnectIP(INT32 choice)
 {
 	(void)choice;
 
-	if (*setupm_ip == 0)
+	if (*cv_dummyip.string == 0)
 	{
 		M_StartMessage("You must specify an IP address.\n", NULL, MM_NOTHING);
-		return;
+		return false;
 	}
 
 	M_ClearMenus(true);
 
-	COM_BufAddText(va("connect \"%s\"\n", setupm_ip));
+	COM_BufAddText(va("connect \"%s\"\n", cv_dummyip.string));
 
 	// A little "please wait" message.
 	M_DrawTextBox(56, BASEVIDHEIGHT/2-12, 24, 2);
@@ -6397,68 +6332,7 @@ static void M_ConnectIP(INT32 choice)
 	I_UpdateNoBlit();
 	if (rendermode == render_soft)
 		I_FinishUpdate(); // page flip or blit buffer
-}
-
-// Tails 11-19-2002
-static INT32 MR_HandleConnectIP(INT32 choice)
-{
-	size_t l;
-
-	switch (choice)
-	{
-		case KEY_ENTER:
-			S_StartSound(NULL,sfx_menu1); // Tails
-			currentMenu->lastOn = itemOn;
-			M_ConnectIP(1);
-			break;
-
-		case KEY_BACKSPACE:
-			if ((l = strlen(setupm_ip)) != 0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[l-1] = 0;
-			}
-			break;
-
-		case KEY_DEL:
-			if (setupm_ip[0])
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_ip[0] = 0;
-			}
-			break;
-
-		default:
-			l = strlen(setupm_ip);
-
-			// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-			if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
-			 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
-				return false;
-
-			if (l >= 28-1)
-				break;
-
-			if (choice >= KEY_KEYPAD7)
-				// sir, have you been golfing tonight?
-				choice = "789-456+1230."[choice - KEY_KEYPAD7];
-
-			S_StartSound(NULL,sfx_menu1); // Tails
-			setupm_ip[l] = (char)choice;
-			setupm_ip[l+1] = 0;
-			break;
-	}
 	return true;
-}
-
-INT32 MR_HandleMPMainMenu(INT32 choice)
-{
-	if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP"))
-		return MR_SetupMultiHandler(choice);
-	else if (M_IsItemOn(MN_MP_MAIN, "CONNECTIP"))
-		return MR_HandleConnectIP(choice);
-	else
-		return false;
 }
 
 // ========================
@@ -6469,7 +6343,6 @@ INT32 MR_HandleMPMainMenu(INT32 choice)
 // used for skin display on player setup menu
 static fixed_t    multi_tics;
 static state_t   *multi_state;
-static UINT8      multi_spr2;
 
 // used for follower display on player setup menu
 static fixed_t follower_tics;
@@ -6478,16 +6351,7 @@ static state_t *follower_state;
 
 // this is set before entering the MultiPlayer setup menu,
 // for either player 1 or 2
-static char       setupm_name[MAXPLAYERNAME+1];
-static player_t  *setupm_player;
-static consvar_t *setupm_cvskin;
-static consvar_t *setupm_cvcolor;
-static consvar_t *setupm_cvname;
-static consvar_t *setupm_cvfollower;
-static consvar_t *setupm_cvfollowercolor;
-static INT32      setupm_fakeskin;
-static menucolor_t *setupm_fakecolor;
-static INT32	  setupm_fakefollower;	// -1 is for none, our followers start at 0
+static UINT8 setupplayer;
 
 void M_DrawSetupMultiPlayerMenu(void)
 {
@@ -6504,7 +6368,6 @@ void M_DrawSetupMultiPlayerMenu(void)
 	UINT8 weight;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT32 statx, staty;
-	char *fname;
 	INT16 i;
 
 	mx = menudefs[MN_MP_PLAYERSETUP].x;
@@ -6515,59 +6378,6 @@ void M_DrawSetupMultiPlayerMenu(void)
 
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
-
-	// draw name string
-	M_DrawTextBox(mx + 32, my - 8, MAXPLAYERNAME, 1);
-	V_DrawString(mx + 40, my, V_ALLOWLOWERCASE, setupm_name);
-
-	// draw text cursor for name
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "NAME") && skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(mx + 40 + V_StringWidth(setupm_name, V_ALLOWLOWERCASE), my, '_',false);
-
-	// draw skin string
-	st = V_StringWidth(skins[setupm_fakeskin].realname, 0);
-	V_DrawString(BASEVIDWIDTH - mx - st, my + 16,
-	             (!M_ItemSelectable(M_GetMenuItem(MN_MP_PLAYERSETUP, "SKIN")) ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
-	             skins[setupm_fakeskin].realname);
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
-	{
-		V_DrawCharacter(BASEVIDWIDTH - mx - 10 - st - (skullAnimCounter/5), my + 16,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(BASEVIDWIDTH - mx + 2 + (skullAnimCounter/5), my + 16,
-			'\x1D' | highlightflags, false); // right arrow
-	}
-
-	// draw follower string
-	fname = malloc(SKINNAMESIZE+1);
-
-	if (setupm_fakefollower == -1)
-		strcpy(fname, "None");
-	else
-		strcpy(fname, followers[setupm_fakefollower].name);
-
-	st = V_StringWidth(fname, 0);
-	V_DrawString(BASEVIDWIDTH - mx - st, my + 26,
-	             (!M_ItemSelectable(M_GetMenuItem(MN_MP_PLAYERSETUP, "FOLLOWER")) ? V_TRANSLUCENT : 0)|highlightflags|V_ALLOWLOWERCASE,
-	             fname);
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER"))
-	{
-		V_DrawCharacter(BASEVIDWIDTH - mx - 10 - st - (skullAnimCounter/5), my + 26,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(BASEVIDWIDTH - mx + 2 + (skullAnimCounter/5), my + 26,
-			'\x1D' | highlightflags, false); // right arrow
-	}
-
-	// draw the name of the color you have chosen
-	// Just so people don't go thinking that "Default" is Green.
-	st = V_StringWidth(skincolors[setupm_fakecolor->color].name, 0);
-	V_DrawString(BASEVIDWIDTH - mx - st, my + 152, highlightflags|V_ALLOWLOWERCASE, skincolors[setupm_fakecolor->color].name);	// SRB2kart
-	if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR"))
-	{
-		V_DrawCharacter(BASEVIDWIDTH - mx - 10 - st - (skullAnimCounter/5), my + 152,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(BASEVIDWIDTH - mx + 2 + (skullAnimCounter/5), my + 152,
-			'\x1D' | highlightflags, false); // right arrow
-	}
 
 	// SRB2Kart: draw the stat backer
 	// labels
@@ -6583,7 +6393,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 
 	for (i = 0; i < numskins; i++) // draw the stat dots
 	{
-		if (i != setupm_fakeskin && R_SkinAvailable(skins[i].name) != -1)
+		if (i != cv_chooseskin.value && R_SkinAvailable(skins[i].name) != -1)
 		{
 			speed = skins[i].kartspeed;
 			weight = skins[i].kartweight;
@@ -6591,8 +6401,8 @@ void M_DrawSetupMultiPlayerMenu(void)
 		}
 	}
 
-	speed = skins[setupm_fakeskin].kartspeed;
-	weight = skins[setupm_fakeskin].kartweight;
+	speed = skins[cv_chooseskin.value].kartspeed;
+	weight = skins[cv_chooseskin.value].kartweight;
 
 	statdot = W_CachePatchName("K_SDOT1", PU_CACHE);
 	if (skullAnimCounter < 4) // SRB2Kart: we draw this dot later so that it's not covered if there's multiple skins with the same stats
@@ -6601,8 +6411,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 		V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, NULL);
 
 	statdot = W_CachePatchName("K_SDOT2", PU_CACHE); // coloured center
-	if (setupm_fakecolor->color)
-		V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, R_GetTranslationColormap(0, setupm_fakecolor->color, GTC_MENUCACHE));
+	V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, R_GetTranslationColormap(0, cv_dummycolor.value, GTC_MENUCACHE));
 
 	// 2.2 color bar backported with permission
 #define charw 72
@@ -6611,15 +6420,19 @@ void M_DrawSetupMultiPlayerMenu(void)
 		const INT32 numcolors = (250-charw)/(2*indexwidth); // Number of colors per side
 		INT32 x = mx;
 		INT32 w = indexwidth; // Width of a singular color block
-		menucolor_t *mc = setupm_fakecolor->prev; // Last accessed color
+		menucolor_t *mc, *choosecolor = menucolorhead; // Last accessed color
 		UINT8 h;
+
+		while (choosecolor->color != cv_dummycolor.value && choosecolor != menucolortail)
+			choosecolor = choosecolor->next;
 
 		// Draw color in the middle
 		x += numcolors*w;
 		for (h = 0; h < 16; h++)
-			V_DrawFill(x, my+162+h, charw, 1, skincolors[setupm_fakecolor->color].ramp[h]);
+			V_DrawFill(x, my+162+h, charw, 1, skincolors[cv_dummycolor.value].ramp[h]);
 
 		//Draw colors from middle to left
+		mc = choosecolor->prev;
 		for (i=0; i<numcolors; i++) {
 			x -= w;
 			// Find accessible color before this one
@@ -6631,7 +6444,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 		}
 
 		// Draw colors from middle to right
-		mc = setupm_fakecolor->next;
+		mc = choosecolor->next;
 		x += numcolors*w + charw;
 		for (i=0; i<numcolors; i++) {
 			// Find accessible color after this one
@@ -6646,12 +6459,11 @@ void M_DrawSetupMultiPlayerMenu(void)
 #undef indexwidth
 
 	// character bar, ripped off the color bar :V
-	if (setupm_fakecolor->color) // inverse should never happen
 #define iconwidth 32
 	{
 		const INT32 icons = 4;
 		INT32 k = -icons;
-		INT16 col = (setupm_fakeskin - icons) % numskins;
+		INT16 col = (cv_chooseskin.value - icons) % numskins;
 		INT32 x = BASEVIDWIDTH/2 - ((icons+1)*24) - 4;
 		fixed_t scale = FRACUNIT/2;
 		INT32 offx = 8, offy = 8;
@@ -6683,7 +6495,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 				offx = 8;
 				offy = 8;
 			}
-			colmap =  R_GetTranslationColormap(col, setupm_fakecolor->color, GTC_MENUCACHE);
+			colmap = R_GetTranslationColormap(col, cv_dummycolor.value, GTC_MENUCACHE);
 			if (face)
 				V_DrawFixedPatch((x+offx)<<FRACBITS, (my+28+offy)<<FRACBITS, FRACUNIT, 0, face, colmap);
 			if (scale == FRACUNIT) // bit of a hack
@@ -6710,7 +6522,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 	}
 
 	// skin 0 is default player sprite
-	sprdef = &skins[setupm_fakeskin].sprites[multi_spr2];
+	sprdef = &skins[cv_chooseskin.value].sprites[multi_spr2];
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -6728,23 +6540,14 @@ void M_DrawSetupMultiPlayerMenu(void)
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 159);
 
 	// draw player sprite
-	if (setupm_fakecolor->color) // inverse should never happen
-	{
-		UINT8 *colormap = R_GetTranslationColormap(setupm_fakeskin, setupm_fakecolor->color, GTC_MENUCACHE);
-
-		if (skins[setupm_fakeskin].highresscale != FRACUNIT)
-		{
-			V_DrawFixedPatch((mx+43)<<FRACBITS,
-						(my+131)<<FRACBITS,
-						skins[setupm_fakeskin].highresscale,
-						flags, patch, colormap);
-		}
-		else
-			V_DrawMappedPatch(mx+43, my+131, flags, patch, colormap);
-	}
+	UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value, cv_dummycolor.value, GTC_MENUCACHE);
+	V_DrawFixedPatch((mx+43)<<FRACBITS,
+				(my+131)<<FRACBITS,
+				skins[cv_chooseskin.value].highresscale,
+				flags, patch, colormap);
 
 	// draw their follower if there is one
-	if (setupm_fakefollower > -1 && setupm_fakefollower < numfollowers)
+	if (cv_dummyfollower.value > -1)
 	{
 		// animate the follower
 
@@ -6782,10 +6585,9 @@ void M_DrawSetupMultiPlayerMenu(void)
 			flags |= V_FLIP; // This sprite is left/right flipped!
 
 		// draw follower sprite
-		if (setupm_fakecolor->color) // inverse should never happen
 		{
 			// Fake the follower's in game appearance by now also applying some of its variables! coolio, eh?
-			follower_t fl = followers[setupm_fakefollower];	// shortcut for our sanity
+			follower_t fl = followers[cv_dummyfollower.value]; // shortcut for our sanity
 
 			tic_t bobspeed = fl.bobspeed;
 			if (fl.mode == FOLLOWERMODE_GROUND)
@@ -6794,8 +6596,8 @@ void M_DrawSetupMultiPlayerMenu(void)
 			// smooth floating, totally not stolen from rocket sneakers.
 			fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * followertimer)>>ANGLETOFINESHIFT) & FINEMASK));
 
-			UINT16 color = K_GetEffectiveFollowerColor(setupm_cvfollowercolor->value, &fl, setupm_fakecolor->color, &skins[setupm_fakeskin]);
-			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, color, 0); // why does GTC_MENUCACHE not work here...?
+			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, &skins[cv_chooseskin.value]);
+			colormap = R_GetTranslationColormap(TC_DEFAULT, color, 0); // why does GTC_MENUCACHE not work here...?
 
 			INT32 x = (mx+65)*FRACUNIT;
 			INT32 y = ((my+100)*FRACUNIT);
@@ -6815,15 +6617,14 @@ void M_DrawSetupMultiPlayerMenu(void)
 // follower state update. This is its own function so that it's at least somewhat clean
 static void M_GetFollowerState(void)
 {
-
-	if (setupm_fakefollower <= -1 || setupm_fakefollower >= numfollowers) // yikes, there's none!
+	if (cv_dummyfollower.value <= -1) // yikes, there's none!
 		return;
 	// ^ we don't actually need to set anything since it won't be displayed anyway.
 
 	//followertimer = 0;	// reset timer. not like it'll overflow anytime soon but whatever.
 
 	// set follower state
-	follower_state = &states[followers[setupm_fakefollower].followstate];
+	follower_state = &states[followers[cv_dummyfollower.value].followstate];
 
 	if (follower_state->frame & FF_ANIMATE)
 		follower_tics = follower_state->var2*FRACUNIT;	// support for FF_ANIMATE
@@ -6833,162 +6634,27 @@ static void M_GetFollowerState(void)
 	follower_frame = follower_state->frame & FF_FRAMEMASK;
 }
 
-// Handle 1P/2P MP Setup
-INT32 MR_HandleSetupMultiPlayer(INT32 choice)
-{
-	size_t   l;
-	INT32 prev_setupm_fakeskin;
-
-	switch (choice)
-	{
-		case KEY_LEFTARROW:
-			if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))       //player skin
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				prev_setupm_fakeskin = setupm_fakeskin;
-				do
-				{
-					setupm_fakeskin--;
-					if (setupm_fakeskin < 0)
-						setupm_fakeskin = numskins-1;
-				}
-				while ((prev_setupm_fakeskin != setupm_fakeskin) && !(R_SkinUsable(-1, setupm_fakeskin)));
-				multi_spr2 = P_GetSkinSprite2(&skins[setupm_fakeskin], SPR2_FSTN, NULL);
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
-			{
-				S_StartSound(NULL,sfx_menu1);
-				if (--setupm_fakefollower < -1)
-					setupm_fakefollower = numfollowers - 1;
-				M_GetFollowerState();	// update follower state
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR")) // player color
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				do
-					setupm_fakecolor = setupm_fakecolor->prev;
-				while (!skincolors[setupm_fakecolor->color].accessible);
-			}
-			break;
-
-		case KEY_RIGHTARROW:
-			if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))       //player skin
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				prev_setupm_fakeskin = setupm_fakeskin;
-				do
-				{
-					setupm_fakeskin++;
-					if (setupm_fakeskin > numskins-1)
-						setupm_fakeskin = 0;
-				}
-				while ((prev_setupm_fakeskin != setupm_fakeskin) && !(R_SkinUsable(-1, setupm_fakeskin)));
-				multi_spr2 = P_GetSkinSprite2(&skins[setupm_fakeskin], SPR2_FSTN, NULL);
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
-			{
-				S_StartSound(NULL,sfx_menu1);
-				if (++setupm_fakefollower >= numfollowers)
-					setupm_fakefollower = -1;
-				M_GetFollowerState(); // update follower state
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR")) // player color
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				do
-					setupm_fakecolor = setupm_fakecolor->next;
-				while (!skincolors[setupm_fakecolor->color].accessible);
-			}
-			break;
-
-		case KEY_BACKSPACE:
-			if (M_IsItemOn(MN_MP_PLAYERSETUP, "NAME"))
-			{
-				if ((l = strlen(setupm_name))!=0)
-				{
-					S_StartSound(NULL,sfx_menu1); // Tails
-					setupm_name[l-1] =0;
-				}
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "FOLLOWER")) // follower
-			{
-				S_StartSound(NULL,sfx_menu1);
-				setupm_fakefollower = -1;
-			}
-			else if (M_IsItemOn(MN_MP_PLAYERSETUP, "COLOR"))
-			{
-				UINT16 col = skins[setupm_fakeskin].prefcolor;
-				if ((setupm_fakecolor->color != col) && skincolors[col].accessible)
-				{
-					S_StartSound(NULL,sfx_menu1); // Tails
-					for (setupm_fakecolor=menucolorhead;;setupm_fakecolor=setupm_fakecolor->next)
-						if (setupm_fakecolor->color == col || setupm_fakecolor == menucolortail)
-							break;
-				}
-			}
-			break;
-
-		case KEY_DEL:
-			if (M_IsItemOn(MN_MP_PLAYERSETUP, "NAME") && (l = strlen(setupm_name))!=0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_name[0] = 0;
-			}
-			break;
-
-		default:
-			if (choice < 32 || choice > 127 || !M_IsItemOn(MN_MP_PLAYERSETUP, "NAME"))
-				return false;
-			l = strlen(setupm_name);
-			if (l < MAXPLAYERNAME)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				setupm_name[l] =(char)choice;
-				setupm_name[l+1] =0;
-			}
-			break;
-	}
-
-	return true;
-}
-
 // start the multiplayer setup menu
 INT32 MR_SetupMultiPlayer(INT32 arg)
 {
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return false;
-	INT32 pnum = arg == 0 ? consoleplayer : g_localplayers[arg];
+
+	setupplayer = arg;
+	M_PatchSkinNameTable();
 
 	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics * FRACUNIT;
-	strcpy(setupm_name, cv_playername[arg].string);
 
-	setupm_player = &players[pnum];
-	setupm_cvskin = &cv_skin[arg];
-	setupm_cvcolor = &cv_playercolor[arg];
-	setupm_cvname = &cv_playername[arg];
-	setupm_cvfollower = &cv_follower[arg];
-	setupm_cvfollowercolor = &cv_followercolor[arg];
-
-	setupm_fakefollower = setupm_cvfollower->value;
-
-	// yikes, we don't want none of that...
-	if (setupm_fakefollower >= numfollowers)
-		setupm_fakefollower = -1;
+	CV_Set(&cv_dummyname, cv_playername[arg].string);
+	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
+	CV_SetValue(&cv_chooseskin, R_SkinAvailable(cv_skin[arg].string));
+	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
 
 	M_GetFollowerState();	// update follower state
 
-	// For whatever reason this doesn't work right if you just use ->value
-	setupm_fakeskin = R_SkinAvailable(setupm_cvskin->string);
-	if (setupm_fakeskin == -1)
-		setupm_fakeskin = 0;
-
-	for (setupm_fakecolor=menucolorhead;;setupm_fakecolor=setupm_fakecolor->next)
-		if (setupm_fakecolor->color == setupm_cvcolor->value || setupm_fakecolor == menucolortail)
-			break;
-
 	// disable skin changes if we can't actually change skins
-	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= pnum && !CanChangeSkin(pnum));
+	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= arg && !CanChangeSkin(arg == 0 ? consoleplayer : g_localplayers[arg]));
 
 	return true;
 }
@@ -6996,22 +6662,15 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 {
 	(void)choice;
-	size_t l;
-	const char *followername = setupm_fakefollower == -1 ?
-		"None" : followers[setupm_fakefollower].skinname;
-	// send name if changed
-	if (strcmp(setupm_name, setupm_cvname->string))
-	{
-		// remove trailing whitespaces
-		for (l= strlen(setupm_name)-1;
-		    (signed)l >= 0 && setupm_name[l] ==' '; l--)
-			setupm_name[l] =0;
-		COM_BufAddText (va("%s \"%s\"\n",setupm_cvname->name,setupm_name));
-	}
-	// you know what? always putting these in the buffer won't hurt anything.
-	COM_BufAddText (va("%s \"%s\"\n",setupm_cvskin->name,skins[setupm_fakeskin].name));
-	COM_BufAddText (va("%s %d\n",setupm_cvcolor->name,setupm_fakecolor->color));
-	COM_BufAddText (va("%s %s\n",setupm_cvfollower->name,followername));
+	const char *followername = cv_dummyfollower.value == -1 ?
+		"None" : followers[cv_dummyfollower.value].skinname;
+	COM_BufInsertText(va(
+		"%s \"%s\"; %s \"%s\"; %s \"%s\"; %s \"%s\"\n",
+		cv_playername[setupplayer].name,  cv_dummyname.string,
+		cv_skin[setupplayer].name,        skins[cv_chooseskin.value].name,
+		cv_playercolor[setupplayer].name, skincolors[cv_dummycolor.value].name,
+		cv_follower[setupplayer].name,    followername
+	));
 	return true;
 }
 
@@ -7397,8 +7056,7 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 
 INT32 MR_HandleControlsMenu(INT32 ch)
 {
-	if ((currentMenu->menuitems[itemOn].status & IT_TYPE) != IT_CALL
-	 ||  currentMenu->menuitems[itemOn].itemaction.routine != MR_ChangeControl)
+	if (currentMenu->menuitems[itemOn].routine != MR_ChangeControl)
 		return false;
 
 	switch (ch)

@@ -1853,6 +1853,12 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYATTACKINGCHAINING", &cv_dummyattackingchaining },
 	{ "DUMMYATTACKINGSLIPDASH", &cv_dummyattackingslipdash },
 	{ "DUMMYATTACKINGPURPLEDRIFT", &cv_dummyattackingpurpledrift },
+	{ "DUMMYSTAFF", &cv_dummystaff },
+	{ "DUMMYMULTIPLAYER", &cv_dummymultiplayer },
+	{ "DUMMYIP", &cv_dummyip },
+	{ "DUMMYNAME", &cv_dummyname },
+	{ "DUMMYFOLLOWER", &cv_dummyfollower },
+	{ "DUMMYCOLOR", &cv_dummycolor },
 	{ NULL, NULL }
 };
 
@@ -1866,8 +1872,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 	char *tmp;
 
 	UINT16 status = 0;
-	boolean actionset = false;
-	boolean textset = false;
 
 	// taking quite possibly the only opportunity i'll ever get
 	// to avoid three tabs of indentation...
@@ -1932,12 +1936,11 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				continue;
 			}
 
-			if (textset)
+			if (status & IT_DISPLAY)
 			{
 				WARN0("text already set!");
 				continue;
 			}
-			textset = true;
 			status |= flags;
 			menuitem->text = Z_StrDup(word2);
 		}
@@ -1956,11 +1959,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				continue;
 			}
 
-			if (actionset)
-			{
-				WARN0("action already set!");
-				continue;
-			}
 			consvar_t *cvar = CV_FindVar(word2);
 			if (!cvar)
 				for (size_t i = 0; HIDDENVARS[i].name; i++)
@@ -1974,78 +1972,50 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN("unable to find cvar '%s'", word2);
 				continue;
 			}
-			actionset = true;
 			status |= flags;
-			menuitem->itemaction.cvar = cvar;
+			menuitem->cvar = cvar;
 		}
 		else if (fastcmp(word, "SUBMENU"))
 		{
-			if (actionset)
-			{
-				WARN0("action already set!");
-				continue;
-			}
 			menutype_t mn = get_menutype(word2);
 			if (mn == MAXMENUTYPES)
 			{
 				WARN("unknown menu '%s'", word2);
 				continue;
 			}
-			actionset = true;
 			status |= IT_SUBMENU;
-			menuitem->itemaction.submenu = mn;
+			menuitem->submenu = mn;
 		}
-		else if (fastncmp(word, "CALL", 4) || fastcmp(word, "ARROWS"))
+		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
 		{
 			UINT16 flags;
 			if (word[0] == 'C')
-			{
 				flags = IT_CALL;
-				if (fastcmp(word+4, "NOTMODIFIED"))
-					flags |= IT_CALL_NOTMODIFIED;
-				else if (word[4])
-				{
-					WARN("unknown word '%s'", word);
-					continue;
-				}
-			}
 			else if (word[0] == 'A')
 				flags = IT_ARROWS;
 			else
 				I_Error("bruh"); // i should probably just make "CALL" the stem for all of these
 
-			if (actionset)
-			{
-				WARN0("action already set!");
-				continue;
-			}
 			menufunc_f *routine = get_menuroutine(word2);
 			if (!routine)
 			{
 				WARN("unknown call routine '%s'", word2);
 				continue;
 			}
-			actionset = true;
 			status |= flags;
-			menuitem->itemaction.routine = routine;
+			menuitem->routine = routine;
 		}
 		else if (fastcmp(word, "DUMMY"))
 		{
-			if (actionset)
-			{
-				WARN0("action already set!");
-				continue;
-			}
-			actionset = true;
 			status |= IT_DUMMY;
-			menuitem->itemaction.routine = NULL;
+			menuitem->routine = NULL;
 		}
 		else
 			WARN("unknown word '%s'", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
 
-	if (textset || actionset)
+	if (status)
 		menuitem->status = status;
 	Z_Free(s);
 }
