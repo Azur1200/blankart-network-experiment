@@ -345,6 +345,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT16(save->p, players[i].growcancel);
 		WRITEUINT16(save->p, players[i].rocketsneakertimer);
 		WRITEUINT16(save->p, players[i].invincibilitytimer);
+		WRITEUINT16(save->p, players[i].invincibilitybottleneck);
 
 		WRITEUINT8(save->p, players[i].eggmanexplode);
 		WRITESINT8(save->p, players[i].eggmanblame);
@@ -686,6 +687,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].growcancel = READINT16(save->p);
 		players[i].rocketsneakertimer = READUINT16(save->p);
 		players[i].invincibilitytimer = READUINT16(save->p);
+		players[i].invincibilitybottleneck = READUINT16(save->p);
 
 		players[i].eggmanexplode = READUINT8(save->p);
 		players[i].eggmanblame = READSINT8(save->p);

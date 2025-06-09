@@ -712,6 +712,7 @@ struct player_t
 	INT16 squishedtimer;		// Duration of being squished
 	UINT16 rocketsneakertimer;	// Rocket Sneaker duration timer
 	UINT16 invincibilitytimer;	// Invincibility timer
+	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake
