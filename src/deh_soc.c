@@ -1859,6 +1859,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYNAME", &cv_dummyname },
 	{ "DUMMYFOLLOWER", &cv_dummyfollower },
 	{ "DUMMYCOLOR", &cv_dummycolor },
+	{ "DUMMYSERVERPAGE", &cv_dummyserverpage },
 	{ NULL, NULL }
 };
 
@@ -2004,11 +2005,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			}
 			status |= flags;
 			menuitem->routine = routine;
-		}
-		else if (fastcmp(word, "DUMMY"))
-		{
-			status |= IT_DUMMY;
-			menuitem->routine = NULL;
 		}
 		else
 			WARN("unknown word '%s'", word);

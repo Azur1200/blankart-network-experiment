@@ -157,12 +157,11 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 // flags for items in the menu
 // menu handle (what we do when key is pressed
-#define IT_TYPE           (1+2+4+8192+16384)
+#define IT_TYPE           (1+2+4+8192)
 #define IT_CALL              1     // call the function
 #define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_DUMMY             4     // selectable, but does nothing
-#define IT_SUBMENU        8192     // go to sub menu
-#define IT_CVAR          16384     // handle as a cvar
+#define IT_SUBMENU           4     // go to sub menu
+#define IT_CVAR           8192     // handle as a cvar
 
 // display flags
 #define IT_DISPLAY       (8+16+32)
@@ -267,7 +266,6 @@ INT32 MR_ConnectMenuModChecks(INT32 choice);
 INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
 INT32 MR_HandleControlsMenu(INT32 ch);
-INT32 MR_HandleServerPage(INT32 choice);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);
 INT32 MR_VideoModeMenu(INT32 choice);
@@ -328,7 +326,6 @@ void M_DrawSetupMultiPlayerMenu(void);
 void M_DrawConnectMenu(void);
 void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
-void M_DrawSkyRoom(void);
 void M_DrawHUDOptions(void);
 void M_DrawAddons(void);
 void M_DrawReplayStartMenu(void);
@@ -404,11 +401,14 @@ extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyatt
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
+extern consvar_t cv_dummyserverpage;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
+
+void M_UpdateNumServerPages(void);
 
 extern char dummystaffname[22];
 

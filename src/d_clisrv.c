@@ -1412,6 +1412,7 @@ static void SL_ClearServerList(INT32 connectedserver)
 			serverlist[i].node = 0;
 		}
 	serverlistcount = 0;
+	M_UpdateNumServerPages();
 }
 
 static UINT32 SL_SearchServer(INT32 node)
@@ -1452,6 +1453,7 @@ static void SL_InsertServer(serverinfo_pak* info, SINT8 node)
 			return;/* that's a different mod */
 
 		i = serverlistcount++;
+		M_UpdateNumServerPages();
 	}
 
 	serverlist[i].info = *info;

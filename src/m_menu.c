@@ -159,7 +159,6 @@ levellist_mode_t levellistmode = LLM_CREATESERVER;
 UINT8 maplistoption = 0;
 
 static char joystickInfo[MAXGAMEPADS][29];
-static UINT32 serverlistpage;
 
 INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
@@ -388,6 +387,9 @@ consvar_t cv_dummyname = CVAR_INIT ("dummyname", "", CV_HIDEN, NULL, NULL);
 consvar_t cv_dummyfollower = CVAR_INIT ("dummyfollower", "-1", CV_HIDEN, dummyfollower_cons_t, NULL);
 consvar_t cv_dummycolor = CVAR_INIT ("dummycolor", "0", CV_HIDEN, dummycolor_cons_t, NULL);
 
+static CV_PossibleValue_t dummyserverpage_cons_t[] = {{0, "MIN"}, {0, "MAX"}, {0, NULL}};
+consvar_t cv_dummyserverpage = CVAR_INIT ("dummyserverpage", "0", CV_HIDEN, dummyserverpage_cons_t, NULL);
+
 consvar_t cv_menucaps = CVAR_INIT ("menucaps", "Off", CV_SAVE, CV_OnOff, NULL);
 
 static tic_t playback_last_menu_interaction_leveltime = 0;
@@ -516,6 +518,11 @@ INT32 MR_OpenGLOptionsMenu(INT32 choice)
 	return true;
 }
 #endif
+
+void M_UpdateNumServerPages(void)
+{
+	dummyserverpage_cons_t[1].value = serverlistcount ? (serverlistcount - 1)/M_ServersPerPage() : 0;
+}
 
 // ==========================================================================
 // CVAR ONCHANGE EVENTS GO HERE
@@ -1756,6 +1763,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyname);
 	CV_RegisterVar(&cv_dummyfollower);
 	CV_RegisterVar(&cv_dummycolor);
+	CV_RegisterVar(&cv_dummyserverpage);
 
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n\n(Press 'Y' to quit)");
 	quitmsg[QUITMSG1] = M_GetText("What would Tails say if\nhe saw you quitting the game?\n\n(Press 'Y' to quit)");
@@ -2143,6 +2151,7 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				const char *str = cv->string;
 				INT32 soffset = vflags & MDF_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
 				INT32 strvf = vflags;
+				boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
 
 				if (cv == &cv_chooseskin)
 					str = skins[cv_chooseskin.value].realname;
@@ -2152,15 +2161,28 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 					str = dummystaffname;
 				else if (cv == &cv_dummycolor)
 					str = skincolors[cv_dummycolor.value].name;
+				else if (cv == &cv_dummyserverpage)
+					str = va("%d of %d", cv->value + 1, dummyserverpage_cons_t[1].value + 1);
+				else if (cv == &cv_soundtest && cv_soundtest.value)
+					V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, strvf|highlightflags, S_sfx[cv_soundtest.value].name);
+				else if (cv == &cv_gamesounds)
+				{
+					str = sound_disabled ? "Off" : "On";
+					warning = sound_disabled;
+				}
+				else if (cv == &cv_gamedigimusic)
+				{
+					str = digital_disabled ? "Off" : "On";
+					warning = digital_disabled;
+				}
 				else if (cv == &cv_dummymultiplayer)
 					break;
 
 				if (menustack[0] == MN_MP_PLAYERSETUP)
-					strvf |= V_ALLOWLOWERCASE|highlightflags;
+					strvf |= V_ALLOWLOWERCASE;
 
 				w = V_StringWidth(str, strvf);
-				V_DrawString(BASEVIDWIDTH - x - soffset - w, y,
-					((cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv) ? warningflags : highlightflags)|strvf, str);
+				V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|strvf, str);
 
 				if (selected)
 				{
@@ -2699,7 +2721,7 @@ void M_DrawImageDef(void)
 	else
 		V_DrawSmallScaledPatch(0,0,0,patch);
 
-	if (currentMenu->menuitems[itemOn].argument)
+	if (!currentMenu->menuitems[itemOn].argument)
 	{
 		V_DrawString(2,BASEVIDHEIGHT-10, MENUCAPS|V_YELLOWMAP, va("%d", (itemOn<<1)-1)); // intentionally not highlightflags, unlike below
 		V_DrawRightAlignedString(BASEVIDWIDTH-2,BASEVIDHEIGHT-10, MENUCAPS|V_YELLOWMAP, va("%d", itemOn<<1)); // ditto
@@ -2721,8 +2743,6 @@ void M_DrawImageDef(void)
 // uses left and right movement.
 INT32 MR_HandleImageDef(INT32 choice)
 {
-	boolean exitmenu = false;
-
 	switch (choice)
 	{
 		case KEY_RIGHTARROW:
@@ -2740,14 +2760,9 @@ INT32 MR_HandleImageDef(INT32 choice)
 			itemOn--;
 			break;
 
-		case KEY_ESCAPE:
-		case KEY_ENTER:
-			exitmenu = true;
-			break;
+		default:
+			return false;
 	}
-
-	if (exitmenu)
-		M_ExitMenu();
 
 	return true;
 }
@@ -4396,61 +4411,6 @@ void M_DrawChecklist(void)
 }
 #undef NUMCHECKLIST
 
-void M_DrawSkyRoom(void)
-{
-	INT32 i, y = 0;
-	INT32 lengthstring = 0;
-
-	M_DrawGenericMenu();
-
-	if (menustack[0] == MN_OP_SOUND)
-	{
-		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
-			currentMenu->y+M_GetItemY(MN_OP_SOUND, "SOUND"),
-			(sound_disabled ? warningflags : highlightflags),
-			(sound_disabled ? "OFF" : "ON"));
-
-		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x,
-			currentMenu->y+M_GetItemY(MN_OP_SOUND, "MUSIC"),
-			(digital_disabled ? warningflags : highlightflags),
-			(digital_disabled ? "OFF" : "ON"));
-
-		if (M_IsItemOn(MN_OP_SOUND, "SOUND"))
-			lengthstring = 8*(sound_disabled ? 3 : 2);
-		else if (M_IsItemOn(MN_OP_SOUND, "MUSIC"))
-			lengthstring = 8*(digital_disabled ? 3 : 2);
-	}
-
-	for (i = 0; i < currentMenu->numitems; ++i)
-	{
-		if (&currentMenu->menuitems[i] == M_CheckMenuItem(MN_OP_SOUND, "SOUNDTEST"))
-		{
-			y = currentMenu->menuitems[i].y;
-			break;
-		}
-	}
-
-	if (y)
-	{
-		y += currentMenu->y;
-
-		V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, y, MENUCAPS|highlightflags, cv_soundtest.string);
-		if (cv_soundtest.value)
-			V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, y + 8, MENUCAPS|highlightflags, S_sfx[cv_soundtest.value].name);
-
-		if (i == itemOn)
-			lengthstring = V_StringWidth(cv_soundtest.string, 0);
-	}
-
-	if (lengthstring)
-	{
-		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x - 10 - lengthstring - (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].y,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(BASEVIDWIDTH - currentMenu->x + 2 + (skullAnimCounter/5), currentMenu->y+currentMenu->menuitems[itemOn].y,
-			'\x1D' | highlightflags, false); // right arrow
-	}
-}
-
 INT32 MR_PlaySound(INT32 arg)
 {
 	S_StopSounds();
@@ -5694,37 +5654,12 @@ Fetch_servers_thread (int *id)
 
 #define S_LINEY(n) currentMenu->y + SERVERHEADERHEIGHT + (n * SERVERLINEHEIGHT)
 
-INT32 MR_HandleServerPage(INT32 choice)
-{
-	if (!M_IsItemOn(MN_MP_CONNECT, "PAGE"))
-		return false;
-
-	switch (choice)
-	{
-		case KEY_ENTER:
-		case KEY_RIGHTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			if ((serverlistpage + 1) * M_ServersPerPage() < serverlistcount)
-				serverlistpage++;
-			break;
-		case KEY_LEFTARROW:
-			S_StartSound(NULL, sfx_menu1);
-			if (serverlistpage > 0)
-				serverlistpage--;
-			break;
-
-		default:
-			return false;
-	}
-	return true;
-}
-
 INT32 MR_Connect(INT32 arg)
 {
 	// do not call menuexitfunc
 	M_ClearMenus(false);
 
-	COM_BufAddText(va("connect node %d\n", serverlist[arg + serverlistpage * M_ServersPerPage()].node));
+	COM_BufAddText(va("connect node %d\n", serverlist[arg + cv_dummyserverpage.value * M_ServersPerPage()].node));
 	return true;
 }
 
@@ -5742,7 +5677,7 @@ INT32 MR_Refresh(INT32 choice)
 		I_FinishUpdate(); // page flip or blit buffer
 
 	// first page of servers
-	serverlistpage = 0;
+	CV_SetValue(&cv_dummyserverpage, 0);
 
 #ifdef MASTERSERVER
 #ifdef HAVE_THREADS
@@ -5765,19 +5700,11 @@ void M_DrawConnectMenu(void)
 	const char *pwr = "----";
 	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "LINE1");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
-	INT32 numPages = (serverlistcount+(serversperpage-1))/serversperpage;
 	int waiting;
 	menu_t *conmenu = &menudefs[MN_MP_CONNECT]; // meh, whatever
 
 	for (i = firstserverline; i < firstserverline+serversperpage; i++)
 		conmenu->menuitems[i].status |= IT_HIDDEN;
-
-	if (!numPages)
-		numPages = 1;
-
-	// Page num
-	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_MP_CONNECT, "PAGE"),
-	                         MENUCAPS|highlightflags, va("%u of %d", serverlistpage+1, numPages));
 
 	// Horizontal line!
 	V_DrawFill(1, currentMenu->y+32, 318, 1, 0);
@@ -5785,9 +5712,9 @@ void M_DrawConnectMenu(void)
 	if (serverlistcount <= 0)
 		V_DrawString(currentMenu->x,currentMenu->y+SERVERHEADERHEIGHT, MENUCAPS, "No servers found");
 	else
-	for (i = 0; i < min(serverlistcount - serverlistpage * serversperpage, serversperpage); i++)
+	for (i = 0; i < min(serverlistcount - cv_dummyserverpage.value * serversperpage, serversperpage); i++)
 	{
-		INT32 slindex = i + serverlistpage * serversperpage;
+		INT32 slindex = i + cv_dummyserverpage.value * serversperpage;
 		UINT32 globalflags = ((serverlist[slindex].info.numberofplayer >= serverlist[slindex].info.maxplayer) ? V_TRANSLUCENT : 0)
 			|((itemOn == firstserverline+i) ? highlightflags : 0)|V_ALLOWLOWERCASE;
 
@@ -5982,7 +5909,7 @@ static void M_ConnectMenu(INT32 choice)
 	// we don't request a restart unless the filelist differs
 
 	// first page of servers
-	serverlistpage = 0;
+	CV_SetValue(&cv_dummyserverpage, 0);
 	M_EnterMenu(MN_MP_CONNECT, true, 0);
 	itemOn = 0;
 
