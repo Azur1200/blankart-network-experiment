@@ -778,6 +778,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWCONTROL", &M_DrawControl },
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
+	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
 	{ "DRAWVIEWSERVER", &M_DrawViewServer },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
