@@ -7404,6 +7404,19 @@ INT32 MR_HandleVideoMode(INT32 ch)
 	return true;
 }
 
+INT32 MR_CameraSetup(INT32 arg)
+{
+	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
+		return false;
+
+	M_SetItemCvar(MN_OP_CAMERASETUP, "FLIPCAM", &cv_flipcam[arg]);
+	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMDISTANCE", &cv_cam_dist[arg]);
+	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMHEIGHT", &cv_cam_height[arg]);
+	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMSPEED", &cv_cam_speed[arg]);
+	M_SetItemCvar(MN_OP_CAMERASETUP, "CHASECAM", &cv_chasecam[arg]);
+	return true;
+}
+
 // ===============
 // Monitor Toggles
 // ===============
