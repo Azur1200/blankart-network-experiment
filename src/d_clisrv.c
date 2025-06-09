@@ -154,6 +154,8 @@ static boolean cl_redownloadinggamestate = false;
 static UINT8 localtextcmd[MAXSPLITSCREENPLAYERS][MAXTEXTCMD];
 static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
+SINT8 joinnode = 0; // used for CL_VIEWSERVER
+
 char connectedservername[MAXSERVERNAME+1];
 /// \brief do we accept new players?
 /// \todo WORK!
@@ -541,27 +543,6 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 
 static INT16 Consistancy(void);
 
-typedef enum
-{
-	CL_SEARCHING,
-	CL_CHECKFILES,
-	CL_DOWNLOADFILES,
-	CL_DOWNLOADFAILED,
-	CL_ASKJOIN,
-	CL_LOADFILES,
-	CL_SETUPFILES,
-	CL_WAITJOINRESPONSE,
-	CL_DOWNLOADSAVEGAME,
-	CL_CONNECTED,
-	CL_ABORTED,
-	CL_ASKFULLFILELIST,
-	CL_CONFIRMCONNECT,
-#ifdef HAVE_CURL
-	CL_PREPAREHTTPFILES,
-	CL_DOWNLOADHTTPFILES,
-#endif
-} cl_mode_t;
-
 static void GetPackets(void);
 
 static cl_mode_t cl_mode = CL_SEARCHING;
@@ -571,6 +552,34 @@ char http_source[MAX_MIRROR_LENGTH];
 #endif
 
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
+
+static const char* servmus_1 = "SRVMS1";
+static const char* servmus_2 = "SRVMS2";
+// "SRVMS3" allows for the music position to be kept between servmus_1 and servmus_3
+// also takes priority over servmus_2
+static const char* servmus_3 = "SRVMS3";
+
+static void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
+{
+	if (S_MusicExists(musname))
+		if (keepPos)
+			S_ChangeMusicEx(musname,0,true, S_GetMusicPosition(), 0,0);
+		else
+			S_ChangeMusicInternal(musname,true);
+	else if (fallback)
+		S_ChangeMusicInternal("BLANCD",true);
+}
+
+// Let external code read and modify this stuff.
+INT32 GetClientMode(void)
+{
+	return cl_mode;
+}
+
+void ChangeClientMode(INT32 mode)
+{
+	cl_mode = mode;
+}
 
 //
 // CL_DrawConnectionStatus
@@ -589,6 +598,7 @@ static inline void CL_DrawConnectionStatus(void)
 #ifdef HAVE_CURL
 	&& cl_mode != CL_DOWNLOADHTTPFILES
 #endif
+	&& cl_mode != CL_VIEWSERVER
 	)
 	{
 		INT32 i, animtime = ((ccstime / 4) & 15) + 16;
@@ -702,6 +712,14 @@ static inline void CL_DrawConnectionStatus(void)
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
 				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
+		}
+		else if (cl_mode == CL_VIEWSERVER)
+		{
+			if (!menustack[0])
+			{
+				M_StartControlPanel();
+				M_EnterMenu(MN_VIEWSERVER, true, 0);
+			}
 		}
 		else if (lastfilenum != -1)
 		{
@@ -944,7 +962,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	else
 		netbuffer->u.serverinfo.refusereason = 0;
 
-	strncpy(netbuffer->u.serverinfo.gametypename, Gametype_Names[prefgametype],
+	strncpy(netbuffer->u.serverinfo.gametypename, Gametype_Names[gametype],
 			sizeof netbuffer->u.serverinfo.gametypename);
 	netbuffer->u.serverinfo.modifiedgame = (UINT8)modifiedgame;
 	netbuffer->u.serverinfo.cheatsenabled = CV_CheatsEnabled();
@@ -1043,20 +1061,16 @@ static void SV_SendPlayerInfo(INT32 node)
 
 	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
 	{
-		if (i >= MAXPLAYERS)
-		{
-			netbuffer->u.playerinfo[i].num = 255; // Master Server compat
-			continue;
-		}
-
-		if (!playeringame[i])
+		if (i >= MAXPLAYERS || playernode[i] == UINT8_MAX || !playeringame[i])
 		{
 			netbuffer->u.playerinfo[i].num = 255; // This slot is empty.
 			continue;
 		}
 
 		netbuffer->u.playerinfo[i].num = i;
-		strncpy(netbuffer->u.playerinfo[i].name, (const char *)&player_names[i], MAXPLAYERNAME+1);
+		memset(netbuffer->u.playerinfo[i].name, 0x00, sizeof(netbuffer->u.playerinfo[i].name));
+		memcpy(netbuffer->u.playerinfo[i].name, player_names[i], sizeof(player_names[i]));
+
 		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
 
 		//fetch IP address
@@ -1603,6 +1617,10 @@ static boolean CL_FinishedFileList(void)
 				"Press ACCEL to continue or BRAKE to cancel.\n\n"
 			), M_ConfirmConnect, MM_EVENTHANDLER);
 			cl_mode = CL_CONFIRMCONNECT;
+			if (S_MusicExists(servmus_3))
+				ChangeServMusic(servmus_3, true,true);
+			else
+				ChangeServMusic(servmus_2, false,false);
 		}
 		else
 			cl_mode = CL_LOADFILES;
@@ -1672,6 +1690,11 @@ static boolean CL_FinishedFileList(void)
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;
+
+			if (S_MusicExists(servmus_3))
+				ChangeServMusic(servmus_3, true,true);
+			else
+				ChangeServMusic(servmus_2, false,false);
 		}
 #ifdef HAVE_CURL
 		else
@@ -1771,7 +1794,8 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = CL_CHECKFILES;
+			cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
+			ChangeServMusic(servmus_1, true,false);
 		}
 		else
 		{
@@ -1816,7 +1840,10 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
-				cl_mode = CL_CHECKFILES;
+			{
+				cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
+				ChangeServMusic(servmus_1, true,false);
+			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
 				if (CL_AskFileList(fileneedednum))
@@ -2002,8 +2029,15 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				else
 					continue;
 
-				if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
-					cl_mode = CL_ABORTED;
+				if (cl_mode == CL_VIEWSERVER && menustack[0])
+				{
+					M_Responder(ev);
+				}
+				else
+				{
+					if (key == KEY_ESCAPE || G_ControlBoundToKey(0, gc_brake, key, true))
+						cl_mode = CL_ABORTED;
+				}
 			}
 		}
 
@@ -4331,31 +4365,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 	switch (netbuffer->packettype)
 	{
 		case PT_ASKINFOVIAMS:
-#if 0
-			if (server && serverrunning)
-			{
-				INT32 clientnode;
-				if (ms_RoomId < 0) // ignore if we're not actually on the MS right now
-				{
-					Net_CloseConnection(node); // and yes, close connection
-					return;
-				}
-				clientnode = I_NetMakeNode(netbuffer->u.msaskinfo.clientaddr);
-				if (clientnode != -1)
-				{
-					SV_SendServerInfo(clientnode, (tic_t)LONG(netbuffer->u.msaskinfo.time));
-					SV_SendPlayerInfo(clientnode); // Send extra info
-					Net_CloseConnection(clientnode);
-					// Don't close connection to MS...
-				}
-				else
-					Net_CloseConnection(node); // ...unless the IP address is not valid
-			}
-			else
-				Net_CloseConnection(node); // you're not supposed to get it, so ignore it
-#else
 			Net_CloseConnection(node);
-#endif
 			break;
 
 		case PT_TELLFILESNEEDED:
@@ -4535,6 +4545,9 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 		case PT_CLIENTCMD:
 			break; // This is not an "unknown packet"
+
+		case PT_PLAYERINFO:
+			break;
 
 		case PT_SERVERTICS:
 			// Do not remove my own server (we have just get a out of order packet)

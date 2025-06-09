@@ -100,6 +100,7 @@ void weaponPrefChange4(void);
 
 const char *G_BuildMapName(INT32 map);
 INT32 G_MapNumber(const char *mapname);
+INT32 G_LevelTitleToMapNum(const char * leveltitle);
 INT16 G_KartMapToNative(INT16 mapnum);
 INT16 G_NativeMapToKart(INT16 mapnum);
 

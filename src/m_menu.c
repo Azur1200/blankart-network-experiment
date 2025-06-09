@@ -268,6 +268,8 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
 #define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
+#define M_SetItemText(t, n, s)             (M_GetMenuItem(t, n)->text = s)
+#define M_GetItemX(t, n)                (M_GetMenuItem(t, n)->x)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
 
 static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, boolean cond)
@@ -7742,6 +7744,352 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	}
 
 	return true;
+}
+
+INT32 MR_QuitViewServer(INT32 choice)
+{
+	(void)choice;
+
+	D_QuitNetGame();
+	CL_Reset();
+	return true;
+}
+
+static boolean viewserver_showaddons = false;
+static INT32 viewserver_scroll = 0;
+static INT16 viewserver_animcount = 8;
+
+INT32 MR_HandleViewServer(INT32 choice)
+{
+	switch (choice)
+	{
+		case KEY_ENTER:
+			S_StartSound(NULL, sfx_menu1);
+			ChangeClientMode(CL_CHECKFILES);
+			M_ClearMenus(false);
+			return true;
+			break;
+
+		case KEY_SPACE:
+			S_StartSound(NULL, sfx_menu1);
+			viewserver_showaddons = !viewserver_showaddons;
+			return true;
+			break;
+
+		case KEY_UPARROW:
+		case KEY_DOWNARROW:
+			if (viewserver_showaddons && fileneedednum > 22)
+			{
+				if (choice == KEY_UPARROW)
+					viewserver_scroll -= 1;
+				else if (choice == KEY_DOWNARROW)
+					viewserver_scroll += 1;
+				S_StartSound(NULL, sfx_menu1);
+				if (viewserver_scroll < 0) viewserver_scroll = 0;
+				if (viewserver_scroll >= fileneedednum - 22) viewserver_scroll = fileneedednum -22;
+				return true;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	return false;
+}
+
+void M_DrawViewServer(void)
+{
+	UINT32 ping = (UINT32)serverlist[joinnode].info.time;
+	UINT8 kartvars = serverlist[joinnode].info.kartvars;
+	const char *speedstring = "Auto";
+	const char *serverstring = "Listen";
+	const char *maptitle = serverlist[joinnode].info.maptitle;
+	INT32 mapnum = G_LevelTitleToMapNum(maptitle);
+	patch_t *current_map;
+
+	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemY(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemX(MN_VIEWSERVER, "TOPBOXWH"), M_GetItemY(MN_VIEWSERVER, "TOPBOXWH"), 159);
+
+	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERNAME"), M_GetItemY(MN_VIEWSERVER, "SERVERNAME"), V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.servername));
+
+	if (mapnum == INT32_MIN)
+	{
+		V_DrawSmallScaledPatch(10, 18, 0, W_CachePatchName("RANDOMLV", PU_CACHE));
+	}
+	else
+	{
+		fixed_t scale = M_GetMapThumbnail(mapnum, &current_map)/4;
+		V_DrawFixedPatch(10<<FRACBITS, 18<<FRACBITS, scale, 0, current_map, NULL);
+	}
+
+	switch (kartvars & SV_SPEEDMASK)
+	{
+		case KARTSPEED_EASY:
+			speedstring = "Easy";
+			break;
+		case KARTSPEED_NORMAL:
+			speedstring = "Normal";
+			break;
+		case KARTSPEED_HARD:
+			speedstring = "Hard";
+			break;
+	}
+
+	if (kartvars & SV_DEDICATED)
+	{
+		serverstring = "Dedicated";
+	}
+
+	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERPING"), M_GetItemY(MN_VIEWSERVER, "SERVERPING"), V_ALLOWLOWERCASE, va("Ping: %s%ums", (ping < 128 ? "\x83" : (ping < 256 ? "\x82" : "\x85")), ping));
+	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERMAP"), M_GetItemY(MN_VIEWSERVER, "SERVERMAP"), V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
+	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERGAMETYPE"), M_GetItemY(MN_VIEWSERVER, "SERVERGAMETYPE"), V_ALLOWLOWERCASE, va("%s: %s", serverlist[joinnode].info.gametypename, speedstring));
+
+	if (fileneedednum > 0)
+	{
+		V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERADDON"), M_GetItemY(MN_VIEWSERVER, "SERVERADDON"), V_ALLOWLOWERCASE|warningflags, va("%i Addons", fileneedednum));
+	}
+	else
+	{
+		V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERADDON"), M_GetItemY(MN_VIEWSERVER, "SERVERADDON"), V_ALLOWLOWERCASE|highlightflags, "Vanilla");
+	}
+
+	if (serverlist[joinnode].info.cheatsenabled)
+	{
+		V_DrawRightAlignedThinString(M_GetItemX(MN_VIEWSERVER, "SERVERCHEATS"), M_GetItemY(MN_VIEWSERVER, "SERVERCHEATS"), V_ALLOWLOWERCASE|recommendedflags, "Cheats");
+	}
+
+	V_DrawRightAlignedThinString(M_GetItemX(MN_VIEWSERVER, "SERVERDEDICATED"), M_GetItemY(MN_VIEWSERVER, "SERVERDEDICATED"), V_ALLOWLOWERCASE|recommendedflags, va("%s Server", serverstring));
+
+	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemY(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemX(MN_VIEWSERVER, "MIDBOXWH"), M_GetItemY(MN_VIEWSERVER, "MIDBOXWH"), 159);
+
+	if (!viewserver_showaddons)
+	{
+		INT32 i;
+		INT32 count = 0;
+		INT32 x = 14;
+		INT32 y = 84;
+		char player_name[MAXPLAYERNAME+1];
+		plrinfo *playerinfo = netbuffer->u.playerinfo;
+		UINT8 playeramount = serverlist[joinnode].info.numberofplayer;
+		UINT8 maxplayer = serverlist[joinnode].info.maxplayer;
+
+		V_DrawString(12, 74, V_ALLOWLOWERCASE|highlightflags, "Players");
+		V_DrawRightAlignedString(BASEVIDWIDTH - 12, 74, V_ALLOWLOWERCASE|highlightflags, va("%i / %i", playeramount, maxplayer));
+
+		if (playeramount > 0)
+		{
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				if (playerinfo[i].num < 255)
+				{
+					if (playeramount <= 16)
+					{
+						UINT8 skinum = playerinfo[i].skin;
+						INT32 flags = 0;
+
+						if (R_SkinAvailable(skins[skinum].name) == -1)
+						{
+							INT32 statuscolor = 1;
+
+							if (playerinfo[i].team == 0) { statuscolor = 112; } // playing
+							if (playerinfo[i].team == 1) { statuscolor = 35; } // ctf red team
+							if (playerinfo[i].team == 2) { statuscolor = 152; } // ctf blue team
+							if (playerinfo[i].team == 255) { statuscolor = 16; flags |= V_40TRANS; } // spectator or non-team
+
+							V_DrawFill(x, y+5, 16, 16, statuscolor);
+						}
+						else
+						{
+							patch_t *facerank = faceprefix[skinum][FACE_RANK];
+							UINT8 *colormap = R_GetTranslationColormap(skinum, skins[skinum].prefcolor, GTC_MENUCACHE);
+
+							if (playerinfo[i].team == 255)
+							{
+								colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GREY, GTC_MENUCACHE);
+								flags |= V_40TRANS;
+							}
+
+
+							V_DrawFixedPatch(x<<FRACBITS, (y+5)<<FRACBITS, FRACUNIT, flags, facerank, colormap);
+						}
+
+						strlcpy(player_name, playerinfo[i].name, 12);
+						V_DrawThinString(x + 20, y + 3 + 5, flags|V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						y += 22;
+						count++;
+						if ((count == 4) || (count == 8) || (count == 12))
+						{
+							x += 74;
+							y = 84;
+						}
+					}
+					else
+					{
+						INT32 statuscolor = 1;
+
+						strlcpy(player_name, playerinfo[i].name, 12);
+						V_DrawThinString(x + 10, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE, player_name);
+
+						if (playerinfo[i].team == 0) { statuscolor = 112; } // playing
+						if (playerinfo[i].team == 1) { statuscolor = 35; } // ctf red team
+						if (playerinfo[i].team == 2) { statuscolor = 152; } // ctf blue team
+						if (playerinfo[i].team == 255) { statuscolor = 16; } // spectator or non-team
+
+						V_DrawFill(x, y, 7, 7, 31);
+						V_DrawFill(x, y, 6, 6, statuscolor);
+
+						y += 9;
+						count++;
+						if ((count == 11) || (count == 22))
+						{
+							x += 104;
+							y = 84;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		INT32 i;
+		INT32 count = 0;
+		INT32 x = 14;
+		INT32 y = 84;
+		boolean small_mode = fileneedednum <= 11;
+		char file_name[MAX_WADPATH+1];
+
+		V_DrawString(12, 74, V_ALLOWLOWERCASE|highlightflags, "Addons");
+
+#define maxcharlen (20 + 3) // 3 for the 3 dots
+#define charsonside 10
+
+		for (i = viewserver_scroll; i < fileneedednum; i++)
+		{
+			if (i & 1)
+				V_DrawFill(x,y-1,
+					(small_mode) ? 292 : 146, 9,
+					156
+				);
+
+			fileneeded_t addon_file = fileneeded[i];
+			strncpy(file_name, addon_file.filename, MAX_WADPATH);
+			if ((UINT8)(strlen(file_name)+1) > maxcharlen && !small_mode)
+				V_DrawThinString(x, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE,
+					va("\x82[#%d]\x80: %.*s...%s",i+1, charsonside, file_name, file_name+strlen(file_name)-((charsonside+1)))
+				);
+			else
+			{
+				V_DrawThinString(x, y, V_ALLOWLOWERCASE|V_6WIDTHSPACE,
+					va("\x82[#%d]\x80: %s",i+1, file_name)
+				);
+
+				// make sure we have the space
+				if (small_mode)
+				{
+					float file_size = ((float)addon_file.totalsize);
+					UINT8 size_mode = 0; // regular bytes
+					//in megabytes
+					if (file_size >= (1024.0f * 1024.0f))
+					{
+						size_mode = 1;
+						file_size /= (1024.0f * 1024.0f);
+					}
+					// KB
+					else if (file_size >= 1024.0f)
+					{
+						size_mode = 2;
+						file_size /= 1024.0f;
+					}
+
+					V_DrawRightAlignedThinString(x + 292,
+						y, highlightflags|V_ALLOWLOWERCASE,
+						// "~" since its approx this size, we mightve lost some
+						// accuracy from only having 4 bytes carry the size
+						va("(~%.1f%s)", file_size, size_mode == 0 ? "b" : (size_mode == 2 ? "kb" : "mb"))
+					);
+				}
+			}
+
+			y += 9;
+			count++;
+			if (count == 11)
+			{
+				x = BASEVIDWIDTH/2;
+				y = 84;
+			}
+			// Cannot draw any more
+			if (count == 22)
+				break;
+		}
+
+		// reiterate again!!! Yes!!! Yay!!!
+		{
+			UINT32 totalsize = 0;
+			UINT8 size_mode = 0; // regular bytes
+
+			for (INT32 j = 0; j < fileneedednum; j++)
+				totalsize += fileneeded[j].totalsize;
+			totalsize = (float)totalsize;
+
+			//in megabytes
+			if (totalsize >= (1024.0f * 1024.0f))
+			{
+				size_mode = 1;
+				totalsize /= (1024.0f * 1024.0f);
+			}
+			// KB
+			else if (totalsize >= 1024.0f)
+			{
+				size_mode = 2;
+				totalsize /= 1024.0f;
+			}
+
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 22, 74,
+				V_ALLOWLOWERCASE|highlightflags,
+				va("~%.1f%s total", (float)totalsize, size_mode == 0 ? "b" : (size_mode == 2 ? "kb" : "mb"))
+			);
+		}
+
+		// draw the little arrows
+		if (fileneedednum >= 22)
+		{
+			// up arrow
+			if (viewserver_scroll)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12,
+					74 - (viewserver_animcount/5), highlightflags,
+					"\x1A"
+				);
+
+			if (viewserver_scroll != fileneedednum-22)
+				V_DrawRightAlignedThinString(BASEVIDWIDTH - 12,
+					y-9 + (viewserver_animcount/5), highlightflags,
+					"\x1B"
+				);
+		}
+	}
+
+#undef maxcharlen
+#undef charsonside
+
+	// Buttons
+	V_DrawFill(8, BASEVIDHEIGHT - 14, BASEVIDWIDTH - 16, 13, 159);
+	V_DrawThinString(
+		16, BASEVIDHEIGHT - 11,
+		V_ALLOWLOWERCASE, "[""\x82""ESC""\x80""] = Return"
+	);
+
+	V_DrawCenteredThinString(
+		BASEVIDWIDTH/2, BASEVIDHEIGHT - 11,
+		V_ALLOWLOWERCASE,
+		va("[""\x82""SPACE""\x80""] = %s", (viewserver_showaddons ? "Players" : "Addons"))
+	);
+
+	V_DrawRightAlignedThinString(
+		BASEVIDWIDTH - 12, BASEVIDHEIGHT - 11,
+		V_ALLOWLOWERCASE, "[""\x82""ENTER""\x80""] = Join"
+	);
 }
 
 // =========

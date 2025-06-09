@@ -768,6 +768,31 @@ INT32 G_MapNumber(const char * name)
 #endif
 }
 
+/** Returns the map number from level title.
+  *
+  * \param name Map name;
+  * \return Map number.
+  * \sa G_BuildMapName, nextmapspecial_t
+  */
+INT32 G_LevelTitleToMapNum(const char * leveltitle)
+{
+	INT32 map;
+
+	for (map = 0; map < nummapheaders; ++map)
+	{
+		if (!strcasecmp(leveltitle, mapheaderinfo[map]->lvlttl))
+		{
+			return map;
+		}
+
+		if (!strcasecmp(leveltitle, va("%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum)))
+		{
+			return map;
+		}
+	}
+	return INT32_MIN;
+}
+
 // convert kart map number to native map number
 INT16 G_KartMapToNative(INT16 mapnum)
 {

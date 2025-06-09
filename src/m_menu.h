@@ -312,6 +312,8 @@ INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
+INT32 MR_QuitViewServer(INT32 choice);
+INT32 MR_HandleViewServer(INT32 choice);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
@@ -338,6 +340,7 @@ void M_DrawMusicTest(void);
 void M_DrawControl(void);
 void M_DrawJoystick(void);
 void M_DrawMonitorToggles(void);
+void M_DrawViewServer(void);
 #ifdef HAVE_DISCORDRPC
 void M_DrawDiscordRequests(void);
 #endif
