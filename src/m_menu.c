@@ -1891,7 +1891,7 @@ void M_Init(void)
 
 void M_InitCharacterTables(void)
 {
-	UINT8 i;
+	UINT16 i;
 
 	// Setup description table
 	for (i = 0; i < MAXSKINS; i++)
@@ -6930,7 +6930,7 @@ Update the maxplayers label...
 #define iconwidth 32
 #define spacingwidth 32
 #define incrwidth (iconwidth + spacingwidth)
-		UINT8 i = 0, pskin, pcol;
+		UINT16 i = 0, pskin, pcol;
 		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
 		const INT32 paw = iconwidth + 3*incrwidth;
 		INT32 trans = 0;

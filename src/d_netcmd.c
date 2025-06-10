@@ -1726,7 +1726,7 @@ static void SendNameAndColor(UINT8 n)
 	WRITESTRINGN(p, cv_playername[n].zstring, MAXPLAYERNAME);
 	WRITEUINT32(p, (UINT32)player->availabilities);
 	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
-	WRITEUINT8(p, (UINT8)cv_skin[n].value);
+	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITESINT8(p, (SINT8)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
 
@@ -1738,10 +1738,10 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
 	UINT16 color, followercolor;
-	UINT8 skin;
+	UINT16 skin;
 	SINT8 follower;
 	SINT8 localplayer = -1;
-	UINT8 i;
+	UINT16 i;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -1767,7 +1767,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	p->availabilities = READUINT32(*cp);
 	color = READUINT16(*cp);
-	skin = READUINT8(*cp);
+	skin = READUINT16(*cp);
 	follower = READSINT8(*cp);
 	followercolor = READUINT16(*cp);
 

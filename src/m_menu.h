@@ -457,7 +457,7 @@ struct modedesc_t
 typedef struct
 {
 	char levelname[32];
-	UINT8 skinnum;
+	UINT16 skinnum;
 	UINT8 numemeralds;
 	UINT8 numgameovers;
 	INT32 lives;

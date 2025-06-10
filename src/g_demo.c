@@ -973,7 +973,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 			if (ghost->player->followmobj->colorized)
 				followtic |= FZT_COLORIZED;
 			if (followtic & FZT_SKIN)
-				WRITEUINT8(demobuf.p,(UINT8)(((skin_t *)(ghost->player->followmobj->skin))-skins));
+				WRITEUINT16(demobuf.p,(UINT16)(((skin_t *)(ghost->player->followmobj->skin))-skins));
 			oldghost[playernum].flags2 |= MF2_AMBUSH;
 		}
 
@@ -1134,14 +1134,14 @@ void G_ConsGhostTic(INT32 playernum)
 		{
 			demobuf.p += sizeof(INT16);
 			if (followtic & FZT_SKIN)
-				demobuf.p++;
+				demobuf.p += sizeof(UINT16);
 		}
 		if (followtic & FZT_SCALE)
 			demobuf.p += sizeof(fixed_t);
 		// momx, momy and momz
 		demobuf.p += sizeof(fixed_t) * 3;
 		if (followtic & FZT_SKIN)
-			demobuf.p++;
+			demobuf.p += sizeof(UINT16);
 		demobuf.p += sizeof(UINT16);
 		demobuf.p++;
 		demobuf.p += sizeof(UINT16);
@@ -1432,7 +1432,7 @@ void G_GhostTicker(void)
 					follow->colorized = true;
 
 				if (followtic & FZT_SKIN)
-					follow->skin = &skins[READUINT8(g->p)];
+					follow->skin = &skins[READUINT16(g->p)];
 			}
 			if (follow)
 			{
@@ -1452,7 +1452,7 @@ void G_GhostTicker(void)
 				follow->z = g->mo->z + temp;
 				P_SetThingPosition(follow);
 				if (followtic & FZT_SKIN)
-					follow->sprite2 = READUINT8(g->p);
+					follow->sprite2 = READUINT16(g->p);
 				else
 					follow->sprite2 = 0;
 				follow->sprite = READUINT16(g->p);

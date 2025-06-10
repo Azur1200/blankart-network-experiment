@@ -103,7 +103,7 @@ extern "C" {
 
 // Special Hashing.
 //#define NOMD5
-//#define NOFILEHASH
+#define NOFILEHASH
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -207,7 +207,7 @@ extern char logfilename[1024];
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
 
-#define MAXSKINS UINT8_MAX
+#define MAXSKINS 4096
 #define MAXFOLLOWERS UINT16_MAX
 
 #define COLORRAMPSIZE 16
