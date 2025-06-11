@@ -3654,7 +3654,9 @@ static void K_GetKartBoostPower(player_t *player)
 	// This should always remain the last boost
 	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
-		K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
+		//K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
+		//Always stack this boost....
+		player->boostinfo.stackspeedboost += player->botvars.rubberband - FRACUNIT;
 	}
 
 	player->boostpower = boostpower;
