@@ -7524,11 +7524,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ringdelay--;
 
 	if (P_PlayerInPain(player))
+	{
 		player->ringboost = 0;
+		player->ringtime = 0;
+	}
 	else if (player->ringboost)
 	{
 		K_HandleRingDeincrement(player, chainingactive);
 	}
+
+	if (!player->ringboost && !player->chaintimer)
+		player->ringtime = 0;
 
 	if (player->sneakertimer)
 		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
@@ -9075,6 +9081,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
+	UINT16 finalPower = 0;
 
 	if (boosted == true)
 	{
@@ -9087,7 +9094,20 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 		ringPower += 1;
 	}
 
-	return max(ringPower / FRACUNIT, 1);
+	finalPower = max(ringPower / FRACUNIT, 1);
+
+	// the base is 4 tics
+	finalPower += 3;
+
+	// If you use more then 20 rings at a time, you start gaining less ring timer..
+	if (player->ringtime == finalPower*20)
+		S_StartSound(NULL, sfx_cdfm66);
+	else if (player->ringtime > finalPower*20)
+	{
+		finalPower = 2;
+	}
+
+	return finalPower;
 }
 
 // Returns false if this player being placed here causes them to collide with any other player

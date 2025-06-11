@@ -675,6 +675,7 @@ struct player_t
 	UINT8 pickuprings;	// Number of rings being picked up before added to the counter (prevents rings from being deleted forever over 20)
 	UINT8 ringdelay;	// (0 to 3) - 3 tic delay between every ring usage
 	UINT16 ringboost;	// Ring boost timer
+	UINT16 ringtime;	// The current Ring boost timer if it wasn't capped. Used for spam prevention measures.
 	UINT16 superring;	// Spawn rings on top of you every tic!
 	UINT8 nextringaward;	// When should we spawn our next superring ring?
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
