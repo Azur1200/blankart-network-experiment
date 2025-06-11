@@ -77,6 +77,9 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
 
 		if (!player->mo)
 			continue;
+
+        if (!K_IsPlayerLosing(player))
+            continue; // Ignore winning players to prevent sandbagging.
         
         // Scan all points in the database
         if (K_PlayerDistance3D(sourcePlayer, player) <= eps)
@@ -145,6 +148,11 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
 static std::vector<player_t *> dtf_vec;
 static boolean cleardtf = true;
 
+static UINT32 K_GetU32Diff(UINT32 a, UINT32 b)
+{
+    return (b > a) ? (b - a) : (a - b);
+}
+
 INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector3_t *out)
 {
     INT64 mean;
@@ -180,6 +188,9 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
 
 		if (!player->mo)
 			continue;
+
+        if (!K_IsPlayerLosing(player))
+            continue; // Ignore winning players to prevent sandbagging.
         
         // Scan all points in the database
         if ((fixed_t)K_GetDTFDifference(sourcePlayer, player) <= eps)
@@ -217,6 +228,20 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
         out->x = (fixed_t)(mean);
         out->y = 0;
         out->z = 0;
+
+        // Get the player closest to the cluster.
+        UINT32 disttocluster, bestdist;
+        bestdist = UINT32_MAX;
+        for (i = 0; i < N; i++)
+        {
+            disttocluster = K_GetU32Diff(dtf_vec[i]->distancetofinish, mean);
+
+            if (disttocluster < bestdist)
+            {
+                closesttocluster = dtf_vec[i];
+                bestdist = disttocluster;
+            }
+        }
     }
     else
     {

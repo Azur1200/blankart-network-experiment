@@ -5988,6 +5988,8 @@ void K_DoInvincibility(player_t *player, tic_t time)
         player->invincibilitytimer = time;
     }
 
+	player->maxinvincibilitytime = time;
+
 	if (P_IsLocalPlayer(player) == true)
 	{
 		S_ChangeMusicSpecial("kinvnc");
@@ -7841,7 +7843,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			if (player->distancefromcluster < (INVINDIST >> 2))
 			{
 				player->invincibilitybottleneck = min(256, player->invincibilitybottleneck + 4);
-				invinfac = FixedMul(4, max(0, min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2)))));
+				invinfac = FixedMul(8, max(0, min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2)))));
 			}
 			else
 			{
@@ -7859,6 +7861,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else
 	{
 		player->invincibilitybottleneck = 0; // No need for bottlenecking.
+		player->maxinvincibilitytime = 0;
 	}
 
 	if (player->checkskip)
@@ -9908,6 +9911,8 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }
 
+#define MINCLUSTERPLAYERS 6
+
 static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 {
     player_t *cluster_p;
@@ -9944,6 +9949,26 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		player->invincibilitybottleneck = (UINT16)(-1); // No bottlenecking!
 		return 0;
 	}
+	else if ((pingame > 3) && (pingame < MINCLUSTERPLAYERS))
+	{
+		// "Second place" in this case is actually second to last.
+		// In very small lobbies, it's harder for players to cluster together.
+		second = -1;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+
+			if (players[i].mo && gametype == GT_RACE)
+			{
+				if (players[i].position == (pingame - 1) && second == -1)
+				{	
+					second = i;
+					break;
+				}
+			}
+		}
+	}
 
 	tinypoptarget = (pingame < 3) ? first : second;
 
@@ -9951,18 +9976,21 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
     {
         // Compare yourself against the cluster player to determine the distance.
         
-        if ((pingame < 4) && (tinypoptarget != -1))
+        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
         {
-            // At under 4P, the cluster player is first/second place.
+            // In very small lobbies, the cluster player is first place/second to last.
             // Half the cluster distance so that the losing player
             // doesn't get overly pitied.
             cluster_p = &players[tinypoptarget];
             divmul = 2;
         }
-        else
+        else if (clusterid != -1)
         {
             cluster_p = &players[clusterid];
         }
+
+		if ((clusterid == -1) || (!cluster_p))
+			return 0; // No cluster player; not good!
 
         if (player == cluster_p)
             return 0; // We ARE the cluster player.
@@ -9975,9 +10003,10 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
     }
     else
     {
-        if ((pingame < 4) && (tinypoptarget != -1))
+        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
         {
-            // At under 4P, compare against first/second place's distance to finish.
+            // In very small lobbies, compare against first place/second to last's
+			// distance to finish.
             // Half the cluster distance so that the losing player
             // doesn't get overly pitied.
 
@@ -9988,13 +10017,27 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
             return (player->distancetofinish - players[tinypoptarget].distancetofinish) / 2;
         }
 
-        if (player->distancetofinish <= clusterdtf.x)
+		UINT32 targetdtf;
+		
+		if (clusterid != -1)
+		{
+			// Use the cluster player's DtF.
+			targetdtf = players[clusterid].distancetofinish;
+		}
+		else
+		{
+			targetdtf = (UINT32)(clusterdtf.x);
+		}
+
+        if (player->distancetofinish <= targetdtf)
             return 0; // Ahead, or tying.
 
         // Return the difference between us and the cluster distance.
-        return (player->distancetofinish - clusterdtf.x);
+        return (player->distancetofinish - targetdtf);
     }
 }
+
+#undef MINCLUSTERPLAYERS
 
 //
 // K_KartUpdatePosition
@@ -10220,19 +10263,23 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
         }
     }
 
-    for (i = 0; i < MAXPLAYERS; i++)
+	if (bestdensity)
     {
-        if (!playeringame[i])
-			continue;
-        
-        player = &players[i];
-        
-        if (player == findme)
-        {
-            clusterid = i;
-            break;
-        }
-    }
+		// Only find the cluster player if a cluster's populated.
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+
+			player = &players[i];
+
+			if (player == findme)
+			{
+				clusterid = i;
+				break;
+			}
+		}
+	}
 
     return out;
 }
@@ -10518,6 +10565,14 @@ void K_UnsetItemOut(player_t *player)
 	player->bananadrag = 0;
 }
 
+static boolean K_InvincibilitySlotHogging(player_t *player)
+{
+	if (invintype == KARTINVIN_LEGACY)
+		return false;
+
+	return ((player->invincibilitytimer) != 0);
+}
+
 //
 // K_MoveKartPlayer
 //
@@ -10728,6 +10783,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->growcancel = 0;
 					}
 				}
+				// Invincibility
+				else if (K_InvincibilitySlotHogging(player))
+				{
+					// Does nothing, for now.
+				}
 				else if (player->itemamount == 0)
 				{
 					K_UnsetItemOut(player);
@@ -10780,7 +10840,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_INVINCIBILITY:
-							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage normally, so you're free to waste it if you have multiple
+							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage in Legacy, so you're free to waste it if you have multiple
 							{
 								K_DoInvincibility(player, K_GetInvincibilityTime(player));
 								K_PlayPowerGloatSound(player->mo);

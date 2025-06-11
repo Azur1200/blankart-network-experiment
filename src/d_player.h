@@ -707,11 +707,12 @@ struct player_t
 
 	UINT8 boostcharge; 		// Charge during race start
 	
-	INT16 growshrinktimer;		// > 0 = Big, < 0 = small
-	INT16 growcancel;			// Duration of grow canceling
-	INT16 squishedtimer;		// Duration of being squished
-	UINT16 rocketsneakertimer;	// Rocket Sneaker duration timer
-	UINT16 invincibilitytimer;	// Invincibility timer
+	INT16 growshrinktimer;			// > 0 = Big, < 0 = small
+	INT16 growcancel;				// Duration of grow canceling
+	INT16 squishedtimer;			// Duration of being squished
+	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
+	UINT16 invincibilitytimer;		// Invincibility timer
+	UINT16 maxinvincibilitytime;	// Initial time for Invincibility, used for the item bar.
 	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds

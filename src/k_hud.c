@@ -1249,6 +1249,16 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
+		else if ((stplyr->invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
+		{
+			itembar = stplyr->invincibilitytimer;
+			maxl = max(1, stplyr->maxinvincibilitytime);
+
+			if (leveltime & 1)
+				localpatch = localinv;
+			else
+				localpatch = kp_nodraw;
+		}
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
@@ -1392,7 +1402,7 @@ static void K_drawKartItem(void)
 
 	//V_ClearClipRect();
 
-	// Extensible meter, currently used by Grow, Rocket Sneakers and Flame Shield
+	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
 	if (itembar)
 	{
 		const INT32 fill = ((itembar*barlength)/maxl);
