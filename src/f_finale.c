@@ -936,6 +936,7 @@ static const char *blancredits[] = {
 	"\1Item Design",
 	"\"NepDisk\"",
 	"\"Anonimus\"",
+	"\"Denny\" aka \"shephoron\"",
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
