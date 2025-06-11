@@ -645,14 +645,17 @@ static void Impl_SetFocused(boolean focused)
 	if (window_notinfocus)
 	{
 		if (! cv_playmusicifunfocused.value)
-			S_PauseAudio();
+			I_SetMusicVolume(0);
 		if (! cv_playsoundifunfocused.value)
-			S_StopSounds();
+			S_DisableSound();
 
 		memset(gamekeydown, 0, NUMKEYS); // TODO this is a scary memset
 	}
 	else if (!paused)
-		S_ResumeAudio();
+	{
+		S_InitMusicVolume();
+		S_EnableSound();
+	}
 }
 
 static inline void SDLJoyRemap(event_t *event)
