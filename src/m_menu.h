@@ -155,37 +155,29 @@ void M_QuitResponse(INT32 ch);
 // Determines whether to show a level in the list (platter version does not need to be exposed)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
-// flags for items in the menu
-// menu handle (what we do when key is pressed
-#define IT_CALL              1     // call the function
-#define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-//#define IT_SUBMENU           4     // go to sub menu
-#define IT_CVAR           8192     // handle as a cvar
+typedef enum
+{
+	IT_INTERACT  = 1<<0, // item can be interacted with
+	IT_HIDDEN    = 1<<1, // item is invisible and cannot be interacted with (has priority over IT_INTERACT)
+	IT_GRAYEDOUT = 1<<2, // item is grayed out and non-interactible
+	IT_SECRET    = 1<<3, // item text is displayed with question marks and non-interactible
 
-// display flags
-#define IT_DISPLAY       (8+16+32)
-#define IT_PATCH              8    // a patch or a string with big font
-#define IT_STRING            16    // little string (spaced with 10)
-#define IT_WHITESTRING       32    // little string in white
-#define IT_HEADERTEXT      (8+32)  // Non-selectable header option, displays in yellow offset to the left a little
+	IT_ARROWS = 1<<4, // call-type items use arrow keys instead of enter
+	IT_SLIDER = 1<<5, // cvar-type items display a slider
 
-// flags specific to each item action type
-#define IT_ACTION        (64+128+256)
+	IT_PATCH       = 1<<6, // display a patch
+	IT_STRING      = 1<<7, // display a string
+	IT_WHITESTRING = 1<<8, // displays a string with highlighted text
+	IT_HEADERTEXT  = IT_PATCH|IT_WHITESTRING,
+	IT_DISPLAY     = IT_PATCH|IT_STRING|IT_WHITESTRING,
 
-//consvar specific
-#define IT_CV_SLIDER         64
-#define IT_CV_STRING        128
-//#define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
+	IT_OFSX      = 1<<9,  // X coordinate is relative to current position
+	IT_OFSY      = 1<<10, // ditto
+	IT_TEMPORARY = 1<<11, // with IT_OFS*, offset applies only to this item
+	IT_OVERLAY   = 1<<12, // item is drawn at absolute coordinates, without scrolling
 
-// extra flags
-#define IT_CENTER           512    // if IT_PATCH, center it on screen
-#define IT_HIDDEN          1024    // invisible, unselectable
-#define IT_GRAYEDOUT       2048    // grayed out, unselectable
-#define IT_SECRET          4096    // ??????? ????????????
-#define IT_OFSX           16384    // x coordinate is relative
-#define IT_OFSY           32768    // ditto
-#define IT_TEMPORARY          4    // offset is only applied temporarily
-#define IT_OVERLAY          256    // no scrolling, draw at absolute coordinates
+	IT_CENTER = 1<<13, // centered text/patch
+} menuitemflags_t;
 
 // carefully chosen to not conflict with V_ flags
 #define MDF_CENTERED 0x20

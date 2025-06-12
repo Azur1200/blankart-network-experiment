@@ -1972,13 +1972,9 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastncmp(word, "CVAR", 4))
 		{
-			UINT16 flags = IT_CVAR;
+			UINT16 flags = IT_INTERACT;
 			if (fastcmp(word+4, "SLIDER"))
-				flags |= IT_CV_SLIDER;
-			else if (fastcmp(word+4, "STRING"))
-				flags |= IT_CV_STRING;
-			//else if (fastcmp(word+4, "INTEGER"))
-				//flags |= IT_CV_INTEGERSTEP;
+				flags |= IT_SLIDER;
 			else if (word[4])
 			{
 				WARN("unknown word '%s'", word);
@@ -2009,17 +2005,14 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN("unknown menu '%s'", word2);
 				continue;
 			}
+			status |= IT_INTERACT;
 			menuitem->submenu = mn;
 		}
 		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
 		{
-			UINT16 flags;
-			if (word[0] == 'C')
-				flags = IT_CALL;
-			else if (word[0] == 'A')
-				flags = IT_ARROWS;
-			else
-				I_Error("bruh"); // i should probably just make "CALL" the stem for all of these
+			UINT16 flags = IT_INTERACT;
+			if (word[0] == 'A')
+				flags |= IT_ARROWS;
 
 			menufunc_f *routine = get_menuroutine(word2);
 			if (!routine)

@@ -282,7 +282,7 @@ static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, b
 
 static boolean M_ItemSelectable(menuitem_t *item)
 {
-	return !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET)) && (item->submenu || item->routine || item->cvar);
+	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
 }
 
 // bruh...
@@ -806,57 +806,57 @@ void M_InitMenuPresTables(void)
 static UINT8      multi_spr2;
 static void M_GetFollowerState(void);
 
-static INT32 M_ChangeCvar(INT32 choice)
+static void M_ResetCvar(menuitem_t *item)
 {
-	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
+	consvar_t *cv = item->cvar;
 
-	if (choice == -1)
+	if (cv == &cv_playercolor[0] || cv == &cv_playercolor[1] || cv == &cv_playercolor[2] || cv == &cv_playercolor[3] || cv == &cv_dummycolor)
 	{
-		if (cv == &cv_playercolor[0] || cv == &cv_playercolor[1] || cv == &cv_playercolor[2] || cv == &cv_playercolor[3] || cv == &cv_dummycolor)
-		{
-			INT32 skinno = R_SkinAvailable(skins[cv_chooseskin.value].name);
-			if (skinno != -1 && skincolors[skins[skinno].prefcolor].accessible)
-				CV_SetValue(cv,skins[skinno].prefcolor);
-			return true;
-		}
-		CV_Set(cv,cv->defaultvalue);
-		return true;
-	}
-
-	choice = (choice<<1) - 1;
-
-	if ((currentMenu->menuitems[itemOn].status & IT_ACTION) == IT_CV_SLIDER)
-	{
-		CV_SetValue(cv,cv->value+choice);
-	}
-	else if (cv->flags & CV_FLOAT)
-	{
-		/*if (!(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
-		{
-			char s[20];
-			float n = FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f);
-			sprintf(s,"%ld%s",(long)n,M_Ftrim(n));
-			CV_Set(cv,s);
-		}
-		else*/
-			CV_SetValue(cv,FIXED_TO_FLOAT(cv->value)+(choice));
+		INT32 skinno = R_SkinAvailable(skins[cv_chooseskin.value].name);
+		if (skinno != -1 && skincolors[skins[skinno].prefcolor].accessible)
+			CV_SetValue(cv, skins[skinno].prefcolor);
 	}
 	else
-		CV_AddValue(cv,choice);
+		CV_Set(cv, cv->defaultvalue);
+}
+
+static void M_ChangeCvar(menuitem_t *item, SINT8 direction)
+{
+	consvar_t *cv = item->cvar;
+	INT32 amount = item->argument ? item->argument : cv->flags & CV_FLOAT ? FRACUNIT/16 : 1;
+	amount *= direction;
+
+	if (cv->flags & CV_FLOAT)
+	{
+		char s[20];
+		float n = FIXED_TO_FLOAT(cv->value + amount);
+		sprintf(s, "%ld%s", (long)n, M_Ftrim(n));
+		CV_Set(cv, s);
+	}
+	else
+		CV_AddValue(cv, amount);
 
 	if (cv == &cv_chooseskin)
 		multi_spr2 = P_GetSkinSprite2(&skins[cv->value], SPR2_FSTN, NULL);
 	else if (cv == &cv_dummyfollower)
 		M_GetFollowerState();	// update follower state
+}
 
-	return true;
+static UINT32 M_StringCvarLength(consvar_t *cv)
+{
+	if (cv == &cv_dummyip)
+		return MAXIPADDRESSLEN;
+	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
+		return MAXPLAYERNAME + 1;
+	else
+		return MAXSTRINGLENGTH;
 }
 
 static boolean M_ChangeStringCvar(INT32 choice)
 {
 	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
 	char buf[MAXSTRINGLENGTH];
-	size_t len;
+	size_t len = strlen(cv->string);
 
 	if (shiftdown && choice >= 32 && choice <= 127)
 		choice = shiftxform[choice];
@@ -864,7 +864,6 @@ static boolean M_ChangeStringCvar(INT32 choice)
 	switch (choice)
 	{
 		case KEY_BACKSPACE:
-			len = strlen(cv->string);
 			if (len > 0)
 			{
 				S_StartSound(NULL,sfx_menu1); // Tails
@@ -880,33 +879,35 @@ static boolean M_ChangeStringCvar(INT32 choice)
 				CV_Set(cv, "");
 			}
 			return true;
+		case KEY_LEFTARROW:
+		case KEY_RIGHTARROW:
+			// TODO: navigation
+			return true;
 		default:
 			if (cv == &cv_dummyip)
 			{
 				// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
 				if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
 				 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
-					return false;
+					break;
 
 				if (choice >= KEY_KEYPAD7)
 					// sir, have you been golfing tonight?
 					choice = "789-456+1230."[choice - KEY_KEYPAD7];
 			}
 
-			if (choice >= 32 && choice <= 127)
+			if (choice < 32 || choice > 127)
+				break;
+
+			if (len < M_StringCvarLength(cv) - 1)
 			{
-				len = strlen(cv->string);
-				if (len < (cv == &cv_dummyip ? MAXIPADDRESSLEN : MAXSTRINGLENGTH) - 1)
-				{
-					S_StartSound(NULL,sfx_menu1); // Tails
-					M_Memcpy(buf, cv->string, len);
-					buf[len++] = (char)choice;
-					buf[len] = 0;
-					CV_Set(cv, buf);
-				}
-				return true;
+				S_StartSound(NULL, sfx_menu1); // Tails
+				M_Memcpy(buf, cv->string, len);
+				buf[len++] = (char)choice;
+				buf[len] = 0;
+				CV_Set(cv, buf);
 			}
-			break;
+			return true;
 	}
 	return false;
 }
@@ -991,7 +992,6 @@ boolean M_Responder(event_t *ev)
 	static tic_t joywait = 0, mousewait = 0;
 	static INT32 pmousex = 0, pmousey = 0;
 	static INT32 lastx = 0, lasty = 0;
-	menufunc_f *routine = NULL; // for some casting problem
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
@@ -1246,19 +1246,10 @@ boolean M_Responder(event_t *ev)
 	// BP: one of the more big hack i have never made
 	// G: not so hacky anymore...?
 	// G: nevermind we have combi menuitems now
-	UINT16 itemtype = 0;
-	if (currentMenu->numitems)
-	{
-		itemtype = currentMenu->menuitems[itemOn].status;
-		routine = currentMenu->menuitems[itemOn].routine;
-	}
-	if ((itemtype & (IT_CVAR|IT_CV_STRING)) == (IT_CVAR|IT_CV_STRING))
-	{
-		if (shiftdown && ch >= 32 && ch <= 127)
-			ch = shiftxform[ch];
-		if (M_ChangeStringCvar(ch))
-			return true;
-	}
+	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
+
+	if (item && item->cvar && !item->cvar->PossibleValue && M_ChangeStringCvar(ch))
+		return true;
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
@@ -1283,7 +1274,7 @@ boolean M_Responder(event_t *ev)
 	switch (ch)
 	{
 		case KEY_DOWNARROW:
-			if (!currentMenu->numitems)
+			if (!item)
 				return true;
 
 			do if (++itemOn >= currentMenu->numitems)
@@ -1294,7 +1285,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_UPARROW:
-			if (!currentMenu->numitems)
+			if (!item)
 				return true;
 
 			do if (--itemOn < 0)
@@ -1305,24 +1296,24 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_LEFTARROW:
-			if (itemtype & (IT_ARROWS|IT_CVAR) && !(itemtype & IT_CV_STRING))
-			{
-				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
-					S_StartSound(NULL, sfx_menu1);
-				(itemtype & IT_ARROWS ? routine : M_ChangeCvar)(0);
-			}
-			return true;
-
 		case KEY_RIGHTARROW:
-			if (itemtype & (IT_ARROWS|IT_CVAR) && !(itemtype & IT_CV_STRING))
-			{
-				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
-					S_StartSound(NULL, sfx_menu1);
-				(itemtype & IT_ARROWS ? routine : M_ChangeCvar)(1);
-			}
+			if (!item || !(item->cvar || item->status & IT_ARROWS))
+				return true;
+
+			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
+				S_StartSound(NULL, sfx_menu1);
+
+			if (item->cvar)
+				M_ChangeCvar(item, ch == KEY_RIGHTARROW ? 1 : -1);
+			else
+				item->routine(ch == KEY_RIGHTARROW ? 1 : 0);
+
 			return true;
 
 		case KEY_ENTER:
+			if (!item)
+				return true;
+
 			noFurtherInput = true;
 			currentMenu->lastOn = itemOn;
 
@@ -1334,24 +1325,24 @@ boolean M_Responder(event_t *ev)
 				playback_enterheld = 3;
 			}
 
-			INT32 argument = currentMenu->menuitems[itemOn].argument;
-			if (currentMenu->menuitems[itemOn].cvar)
-				argument = currentMenu->menuitems[itemOn].cvar->value;
+			INT32 argument = item->argument;
+			if (item->cvar)
+				argument = item->cvar->value;
 
-			if (currentMenu->menuitems[itemOn].submenu)
+			if (item->submenu)
 			{
 				S_StartSound(NULL, sfx_menu1);
-				M_EnterMenu(currentMenu->menuitems[itemOn].submenu, true, argument);
+				M_EnterMenu(item->submenu, true, argument);
 			}
-			else if (currentMenu->menuitems[itemOn].routine)
+			else if (item->routine)
 			{
 				S_StartSound(NULL, sfx_menu1);
-				routine(argument);
+				item->routine(argument);
 			}
-			else if (currentMenu->menuitems[itemOn].cvar && !(itemtype & IT_CV_STRING))
+			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
 				S_StartSound(NULL, sfx_menu1);
-				M_ChangeCvar(1); // right arrow
+				M_ChangeCvar(item, 1); // right arrow
 			}
 			return true;
 
@@ -1371,23 +1362,17 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
-			if (itemtype & IT_CVAR)
-			{
-				consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
-
-				if (cv == &cv_chooseskin
-					|| cv == &cv_dummystaff
-					|| cv == &cv_nextmap
-					|| cv == &cv_newgametype
-					|| cv == &cv_dummymultiplayer)
-					return true;
-
-				if (menustack[0] != MN_OP_SOUND || itemOn > 3)
-					S_StartSound(NULL, sfx_menu1);
-				M_ChangeCvar(-1);
+			if (!item || !item->cvar
+			 || item->cvar == &cv_chooseskin
+			 || item->cvar == &cv_dummystaff
+			 || item->cvar == &cv_nextmap
+			 || item->cvar == &cv_newgametype
+			 || item->cvar == &cv_dummymultiplayer)
 				return true;
-			}
 
+			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
+				S_StartSound(NULL, sfx_menu1);
+			M_ResetCvar(item);
 			return true;
 
 		default:
@@ -2119,22 +2104,18 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, name);
 		}
 
-		if (item->status & IT_CVAR)
+		if (item->cvar)
 		{
 			consvar_t *cv = item->cvar;
-			switch(item->status & IT_ACTION)
+			if (!cv->PossibleValue) // string cvar?
 			{
-			case IT_CV_SLIDER:
-				M_DrawSlider(x, y, cv, selected);
-				break;
-			case IT_CV_STRING:
 				if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
 					break;
 
 				boolean side = vflags & MDF_TIMEATTACK || cv == &cv_dummyname;
 				INT32 xofs = side ? 32 : 0;
 				INT32 yofs = side ? -8 : 4;
-				w = side ? MAXPLAYERNAME : cv == &cv_dummyip ? MAXIPADDRESSLEN : MAXSTRINGLENGTH;
+				w = M_StringCvarLength(cv);
 
 				M_DrawTextBox(x + xofs, y + yofs, w, 1);
 				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
@@ -2144,8 +2125,12 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 
 				if (!side)
 					y += 16;
-				break;
-			default:
+			}
+			else if (item->status & IT_SLIDER)
+			{
+				M_DrawSlider(x, y, cv, selected);
+			}
+			else
 			{
 				const char *str = cv->string;
 				INT32 soffset = vflags & MDF_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
@@ -2191,12 +2176,10 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 					V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
 						'\x1D' | highlightflags | strvf, false); // right arrow
 				}
-				break;
-			}
 			}
 			break;
 		}
-		else if (item->status & IT_CALL)
+		else if (item->routine)
 		{
 			char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
 			INT32 key;
