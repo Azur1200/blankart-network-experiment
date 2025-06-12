@@ -9101,7 +9101,10 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 
 	// If you use more then 20 rings at a time, you start gaining less ring timer..
 	if (player->ringtime == finalPower*20)
-		S_StartSound(NULL, sfx_cdfm66);
+	{
+		if (P_IsLocalPlayer(player))
+			S_StartSound(NULL, sfx_cdfm66);
+	}
 	else if (player->ringtime > finalPower*20)
 	{
 		finalPower = 2;
