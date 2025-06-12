@@ -157,10 +157,9 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
 // flags for items in the menu
 // menu handle (what we do when key is pressed
-#define IT_TYPE           (1+2+4+8192)
 #define IT_CALL              1     // call the function
 #define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_SUBMENU           4     // go to sub menu
+//#define IT_SUBMENU           4     // go to sub menu
 #define IT_CVAR           8192     // handle as a cvar
 
 // display flags
@@ -176,18 +175,21 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 //consvar specific
 #define IT_CV_SLIDER         64
 #define IT_CV_STRING        128
-#define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
+//#define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
 
 // extra flags
 #define IT_CENTER           512    // if IT_PATCH, center it on screen
 #define IT_HIDDEN          1024    // invisible, unselectable
 #define IT_GRAYEDOUT       2048    // grayed out, unselectable
 #define IT_SECRET          4096    // ??????? ????????????
+#define IT_OFSX           16384    // x coordinate is relative
+#define IT_OFSY           32768    // ditto
+#define IT_TEMPORARY          4    // offset is only applied temporarily
+#define IT_OVERLAY          256    // no scrolling, draw at absolute coordinates
 
 // carefully chosen to not conflict with V_ flags
 #define MDF_CENTERED 0x20
 #define MDF_TIMEATTACK 0x40
-#define MDF_CONTROLS 0x80
 
 #define MAXSTRINGLENGTH 32
 
@@ -226,6 +228,8 @@ struct menu_t
 	INT16          x, y;               // x, y of menu
 	INT16          scrollheight;       // height of scrolling area
 	INT16          lastOn;             // last item user was on in menu
+	INT16          cursoroffset;       // X offset of cursor
+	INT16          lineheight;         // default Y offset to add for each item
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
 	menufunc_f    *keyhandler;         // called before key press is processed
@@ -333,7 +337,6 @@ void M_DrawReplayStartMenu(void);
 void M_DrawPlaybackMenu(void);
 void M_DrawImageDef(void);
 void M_DrawMusicTest(void);
-void M_DrawControl(void);
 void M_DrawJoystick(void);
 void M_DrawMonitorToggles(void);
 #ifdef HAVE_DISCORDRPC

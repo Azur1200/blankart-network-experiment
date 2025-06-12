@@ -1908,9 +1908,27 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			menuitem->x = get_number(word2);
 		}
+		else if (fastcmp(word, "OFSX"))
+		{
+			menuitem->x = get_number(word2);
+			status |= IT_OFSX;
+		}
 		else if (fastcmp(word, "Y"))
 		{
 			menuitem->y = get_number(word2);
+		}
+		else if (fastcmp(word, "OFSY"))
+		{
+			menuitem->y = get_number(word2);
+			status |= IT_OFSY;
+		}
+		else if (fastcmp(word, "OVERLAY"))
+		{
+			status |= IT_OVERLAY;
+		}
+		else if (fastcmp(word, "TEMPOFFSET"))
+		{
+			status |= IT_TEMPORARY;
 		}
 		else if (fastcmp(word, "ARGUMENT"))
 		{
@@ -1923,6 +1941,13 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		else if (fastcmp(word, "TOOLTIP"))
 		{
 			menuitem->tooltip = Z_StrDup(word2);
+		}
+		else if (fastcmp(word, "STYLE"))
+		{
+			if (fasticmp(word2, "CENTER"))
+				status |= IT_CENTER;
+			else
+				WARN("unknown style '%s'", word2);
 		}
 		else if (fastncmp(word, "TEXT", 4))
 		{
@@ -1952,8 +1977,8 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				flags |= IT_CV_SLIDER;
 			else if (fastcmp(word+4, "STRING"))
 				flags |= IT_CV_STRING;
-			else if (fastcmp(word+4, "INTEGER"))
-				flags |= IT_CV_INTEGERSTEP;
+			//else if (fastcmp(word+4, "INTEGER"))
+				//flags |= IT_CV_INTEGERSTEP;
 			else if (word[4])
 			{
 				WARN("unknown word '%s'", word);
@@ -1984,7 +2009,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN("unknown menu '%s'", word2);
 				continue;
 			}
-			status |= IT_SUBMENU;
 			menuitem->submenu = mn;
 		}
 		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
@@ -2256,6 +2280,14 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				menudef->scrollheight = get_number(word2);
 			}
+			else if (fastcmp(word, "CURSOROFFSET"))
+			{
+				menudef->cursoroffset = get_number(word2);
+			}
+			else if (fastcmp(word, "LINEHEIGHT"))
+			{
+				menudef->lineheight = get_number(word2);
+			}
 			else if (fastcmp(word, "ENTERROUTINE"))
 			{
 				menufunc_f *routine = get_menuroutine(word2);
@@ -2290,6 +2322,10 @@ void readmenu(MYFILE *f, INT32 num)
 				WARN("unknown word '%s'", word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
+
+	// default line height
+	if (!menudef->lineheight)
+		menudef->lineheight = 8;
 
 	Z_Free(s);
 }

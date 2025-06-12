@@ -772,7 +772,6 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },
 	{ "DRAWIMAGEDEF", &M_DrawImageDef },
 	{ "DRAWMUSICTEST", &M_DrawMusicTest },
-	{ "DRAWCONTROL", &M_DrawControl },
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },

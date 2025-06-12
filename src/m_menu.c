@@ -102,7 +102,6 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 
 #include "qs22j.h"
 
-#define LINEHEIGHT 8
 #define SLIDER_RANGE 10
 #define SLIDER_WIDTH (8*SLIDER_RANGE+6)
 #define MAXIPADDRESSLEN 28
@@ -283,7 +282,7 @@ static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, b
 
 static boolean M_ItemSelectable(menuitem_t *item)
 {
-	return !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET)) && (item->status & IT_TYPE);
+	return !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET)) && (item->submenu || item->routine || item->cvar);
 }
 
 // bruh...
@@ -832,14 +831,14 @@ static INT32 M_ChangeCvar(INT32 choice)
 	}
 	else if (cv->flags & CV_FLOAT)
 	{
-		if (!(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
+		/*if (!(currentMenu->menuitems[itemOn].status & IT_CV_INTEGERSTEP))
 		{
 			char s[20];
 			float n = FIXED_TO_FLOAT(cv->value)+(choice)*(1.0f/16.0f);
 			sprintf(s,"%ld%s",(long)n,M_Ftrim(n));
 			CV_Set(cv,s);
 		}
-		else
+		else*/
 			CV_SetValue(cv,FIXED_TO_FLOAT(cv->value)+(choice));
 	}
 	else
@@ -2102,7 +2101,7 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		break;
 	case IT_STRING:
 	case IT_WHITESTRING:
-		if (vflags & MDF_CENTERED)
+		if (vflags & MDF_CENTERED || item->status & IT_CENTER)
 			V_DrawCenteredString(x, y, vflags|highlight, string);
 		else
 			V_DrawString(x, y, vflags|highlight, string);
@@ -2225,7 +2224,7 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		}
 		break;
 	case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
-		V_DrawString(x - (vflags & MDF_CONTROLS ? 7 : 16), y - (vflags & MDF_CONTROLS ? 2 : 0), vflags|highlight, string);
+		V_DrawString(x - 16, y, vflags|highlight, string);
 		break;
 	default:
 		break;
@@ -2234,12 +2233,22 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	return V_StringWidth(string, vflags);
 }
 
+// gets the absolute Y coordinate where this menuitem should be drawn (in a broken way)
+// TODO: merge this with the actual drawing loop somehow
 static INT16 getheight(INT16 index)
 {
+	// gotta skip overlay items...
+	INT16 i = 0;
+	while (index + i < currentMenu->numitems && currentMenu->menuitems[index + i].status & IT_OVERLAY)
+		i++;
+	index += i;
+	if (index >= currentMenu->numitems)
+		return 0;
+
 	INT16 y = currentMenu->menuitems[index].y;
-	if (!y) for (INT16 i = 0; i < index; i++)
-		if (!(currentMenu->menuitems[i].status & IT_HIDDEN))
-			y += 8;
+	if (!y) while (i < index)
+		if (!(currentMenu->menuitems[i++].status & (IT_HIDDEN|IT_OVERLAY)))
+			y += currentMenu->lineheight;
 	return y;
 }
 
@@ -2249,6 +2258,8 @@ static void M_DrawBaseMenu(INT32 flags)
 	INT16 scrollheight = currentMenu->scrollheight;
 	if (!scrollheight)
 		scrollheight = INT16_MAX;
+	if (!currentMenu->numitems)
+		return;
 
 	INT16 topy = getheight(0);
 	INT16 boty = getheight(currentMenu->numitems-1);
@@ -2275,48 +2286,68 @@ static void M_DrawBaseMenu(INT32 flags)
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
+		INT16 dx, dy;
 		INT32 vflags = flags;
+		menuitem_t *item = &currentMenu->menuitems[i];
 
-		if (currentMenu->menuitems[i].status & IT_HIDDEN)
-		{
-			if (!(vflags & MDF_CONTROLS)) // don't leave gaps when buttons are hidden for P2/P3/P4
-				y += LINEHEIGHT;
+		if (item->status & IT_HIDDEN)
 			continue;
+
+		if (item->status & IT_OVERLAY)
+		{
+			// draw at absolute coordinates; no clipping needed
+			dx = item->x;
+			dy = item->y;
+		}
+		else
+		{
+			dx = x + item->x;
+			if (item->x)
+			{
+				if (!(item->status & IT_OFSX))
+					x = dx = item->x + scrollx;
+				else if (!(item->status & IT_TEMPORARY))
+					x = dx;
+			}
+
+			dy = y + item->y;
+			if (item->y)
+			{
+				if (!(item->status & IT_OFSY))
+					y = dy = item->y + scrolly;
+				else if (!(item->status & IT_TEMPORARY))
+					y = dy;
+			}
+
+			if (dy < currentMenu->y)
+			{
+				cliptop = true;
+				goto nodraw;
+			}
+			else if (dy > currentMenu->y + scrollheight)
+			{
+				clipbot = true;
+				goto nodraw;
+			}
 		}
 
-		if (currentMenu->menuitems[i].y)
-			y = currentMenu->menuitems[i].y + scrolly;
-		if (currentMenu->menuitems[i].x)
-			x = currentMenu->menuitems[i].x + scrollx;
-
-		if (y < currentMenu->y)
-		{
-			cliptop = true;
-			y += LINEHEIGHT;
-			continue;
-		}
-		else if (y > currentMenu->y + scrollheight)
-		{
-			clipbot = true;
-			y += LINEHEIGHT;
-			continue;
-		}
-
-		w = M_DrawMenuItem(&currentMenu->menuitems[i], x, y, vflags, i == itemOn);
+		w = M_DrawMenuItem(item, dx, dy, vflags, i == itemOn);
 
 		if (i == itemOn)
 		{
 			cursory = y;
-			cursorx = x - (vflags & MDF_CENTERED ? w/2 : 0) - (vflags & MDF_CONTROLS ? 18 : 24);
+			cursorx = x - (vflags & MDF_CENTERED ? w/2 : 0) - 24 + currentMenu->cursoroffset;
 		}
 
-		y += LINEHEIGHT;
+	nodraw:
+		if (!(item->status & IT_OVERLAY))
+			y += currentMenu->lineheight;
 	}
 
 	// DRAW THE SKULL CURSOR
 	V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
 
-	x = currentMenu->x - (flags & MDF_CONTROLS ? 16 : 20);
+	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)
 		V_DrawCharacter(x, currentMenu->y - (skullAnimCounter/5), '\x1A' | highlightflags, false); // up arrow
 	if (clipbot)
@@ -3963,7 +3994,7 @@ void M_DrawPlaybackMenu(void)
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y + 18, transmap|V_SNAPTOTOP|V_ALLOWLOWERCASE, currentMenu->menuitems[i].text);
 
-			if ((currentMenu->menuitems[i].status & IT_TYPE) == IT_ARROWS)
+			if (currentMenu->menuitems[i].status & IT_ARROWS)
 			{
 				char *str = NULL;
 
@@ -6997,16 +7028,6 @@ INT32 MR_HandleControlsMenu(INT32 ch)
 		return false;
 	}
 	return true;
-}
-
-// Draws the Customise Controls menu
-void M_DrawControl(void)
-{
-	M_CentreText(28,
-		(setupcontrolplayer > 1 ? va("\x86""Set controls for ""\x82""Player %d", setupcontrolplayer) :
-		                          "\x86""Press ""\x82""ENTER""\x86"" to change, ""\x82""BACKSPACE""\x86"" to clear"));
-
-	M_DrawBaseMenu(MDF_CONTROLS|MENUCAPS);
 }
 
 static INT32 controltochange;
