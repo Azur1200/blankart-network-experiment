@@ -976,7 +976,7 @@ static void F_DrawDiagCubes(void)
 	for (j = -4; j < 5; j++)
 	{
 		//Up Cubes
-		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOBOTTOM|V_SNAPTORIGHT);
+		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)+32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
 		V_DrawFill(-((credbgtimer % 128)+1)+(32*j)-32-20, ((credbgtimer % 128)+1)-(32*j), 32, 32, 31|V_SNAPTOTOP|V_SNAPTOLEFT);
@@ -994,8 +994,9 @@ void F_BlanCreditDrawer(void)
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
 
+	V_DrawFill(-100,-100,vid.width, vid.height,81);
 	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
-	V_DrawFillConsoleMap(0,0,vid.width, vid.height,0);
+	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
 	// Draw credits text on top
 	for (i = 0; blancredits[i]; i++)
@@ -1066,13 +1067,6 @@ void F_BlanCreditTicker(void)
 
 void F_StartGameEvaluation(void)
 {
-	// Credits option in secrets menu
-	if (cursaveslot == -2)
-	{
-		F_StartGameEnd();
-		return;
-	}
-
 	G_SetGamestate(GS_EVALUATION);
 
 	// Just in case they're open ... somehow
@@ -1083,6 +1077,9 @@ void F_StartGameEvaluation(void)
 	CON_ToggleOff();
 
 	finalecount = 0;
+
+	G_SetGamestate(GS_TITLESCREEN);
+	S_StopMusic();
 }
 
 void F_GameEvaluationDrawer(void)
@@ -1092,12 +1089,6 @@ void F_GameEvaluationDrawer(void)
 
 void F_GameEvaluationTicker(void)
 {
-	if (++finalecount > 10*TICRATE)
-	{
-		F_StartGameEnd();
-		return;
-	}
-
 	if (finalecount == 5*TICRATE)
 	{
 		if (netgame || multiplayer) // modify this when we finally allow unlocking stuff in 2P
@@ -1125,44 +1116,6 @@ void F_GameEvaluationTicker(void)
 		}
 	}
 }
-
-// ==========
-//  GAME END
-// ==========
-void F_StartGameEnd(void)
-{
-	G_SetGamestate(GS_GAMEEND);
-
-	gameaction = ga_nothing;
-	paused = false;
-	CON_ToggleOff();
-	S_StopSounds();
-
-	// In case menus are still up?!!
-	M_ClearMenus(true);
-
-	timetonext = TICRATE;
-}
-
-//
-// F_GameEndDrawer
-//
-void F_GameEndDrawer(void)
-{
-	// this function does nothing
-}
-
-//
-// F_GameEndTicker
-//
-void F_GameEndTicker(void)
-{
-	if (timetonext > 0)
-		timetonext--;
-	else
-		D_StartTitle();
-}
-
 
 // ==============
 //  TITLE SCREEN

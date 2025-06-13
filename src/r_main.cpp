@@ -156,6 +156,10 @@ static CV_PossibleValue_t homremoval_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Fla
 static void Fov_OnChange(void);
 
 consvar_t cv_tailspickup = CVAR_INIT ("tailspickup", "On", CV_NETVAR|CV_NOSHOWHELP, CV_OnOff, NULL);
+
+// if enabled, load all graphics at level load
+consvar_t cv_precachetextures = CVAR_INIT ("precachetextures", "On", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_chasecam[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("chasecam", "On", 0, CV_OnOff, NULL),
 	CVAR_INIT ("chasecam2", "On", 0, CV_OnOff, NULL),
@@ -170,7 +174,7 @@ consvar_t cv_flipcam[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("flipcam4", "Off", CV_CALL|CV_SAVE, CV_OnOff, weaponPrefChange4)
 };
 
-consvar_t cv_shadow = CVAR_INIT ("shadow", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_shadow = CVAR_INIT ("dropshadow", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_skybox = CVAR_INIT ("skybox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_ffloorclip = CVAR_INIT ("ffloorclip", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_allowmlook = CVAR_INIT ("allowmlook", "Yes", CV_NETVAR, CV_YesNo, NULL);
@@ -195,6 +199,8 @@ consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons
 consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
 consvar_t cv_sloperoll = CVAR_INIT ("spritesloperoll", "On", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_sliptidetilt = CVAR_INIT ("sliptidetilt", "On", CV_SAVE, CV_OnOff, NULL);
 
 void SplitScreen_OnChange(void)
 {
@@ -1814,6 +1820,8 @@ void R_RegisterEngineStuff(void)
 	if (dedicated)
 		return;
 
+	CV_RegisterVar(&cv_precachetextures);
+
 	CV_RegisterVar(&cv_drawdist);
 	CV_RegisterVar(&cv_drawdist_precip);
 
@@ -1835,8 +1843,8 @@ void R_RegisterEngineStuff(void)
 
 	CV_RegisterVar(&cv_tilting);
 	CV_RegisterVar(&cv_actionmovie);
-	CV_RegisterVar(&cv_windowquake);
 	CV_RegisterVar(&cv_sloperoll);
+	CV_RegisterVar(&cv_sliptidetilt);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

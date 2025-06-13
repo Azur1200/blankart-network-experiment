@@ -28,6 +28,44 @@ extern mobj_t *skyboxcenterpnts[16]; // array of MT_SKYBOX centerpoint mobjs
 
 void P_InitSkyboxPoint(mobj_t *mobj, mapthing_t *mthing);
 
+/** Animated texture descriptor
+  * This keeps track of an animated texture or an animated flat.
+  * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
+  */
+typedef struct
+{
+	INT32 picnum;    ///< The end flat number
+	INT32 basepic;   ///< The start flat number
+	INT32 numpics;   ///< Number of frames in the animation
+	tic_t speed;     ///< Number of tics for which each frame is shown
+} anim_t;
+
+extern anim_t *lastanim;
+extern anim_t *anims;
+
+typedef struct
+{
+	UINT32 count;
+	thinker_t **thinkers;
+} thinkerlist_t;
+
+/** Animated texture definition.
+  * Used for loading an ANIMDEFS lump from a wad.
+  *
+  * Animations are defined by the first and last frame (i.e., flat or texture).
+  * The animation sequence uses all flats between the start and end entry, in
+  * the order found in the wad.
+  *
+  * \sa anim_t
+  */
+typedef struct
+{
+	SINT8 istexture; ///< True for a texture, false for a flat.
+	char endname[9]; ///< Name of the last frame, null-terminated.
+	char startname[9]; ///< Name of the first frame, null-terminated.
+	INT32 speed; ///< Number of tics for which each frame is shown.
+} ATTRPACK animdef_t;
+
 // Amount (dx, dy) vector linedef is shifted right to get scroll amount
 #define SCROLL_SHIFT 5
 
@@ -490,6 +528,7 @@ typedef enum
 	TMCFF_FLIP       = 1,
 	TMCFF_SINGLEUSE  = 1<<1,
 	TMCFF_NEEDSECTOR = 1<<2,
+	TMCFF_NOSPREAD   = 1<<3,
 } textmapcrossfinishflags_t;
 
 typedef enum
@@ -525,9 +564,6 @@ void P_StartQuake(fixed_t intensity, tic_t time);
 
 // at game start
 void P_InitPicAnims(void);
-
-// at map load (sectors)
-void P_SetupLevelFlatAnims(void);
 
 // at map load
 void P_InitSpecials(void);

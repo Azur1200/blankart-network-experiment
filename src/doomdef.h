@@ -123,6 +123,7 @@ extern char logfilename[1024];
 /* A mod name to further distinguish versions. */
 #define SRB2APPLICATION "SRB2Kart"
 
+#define COMMITVERSION // Enable this to use add commit hash checking to client join checks.
 //#define DEVELOP // Disable this for release builds to remove excessive cheat commands and enable hash checking and stuff, all in one go. :3
 #ifdef DEVELOP
 #define VERSIONSTRING "Development EXE"
@@ -206,12 +207,12 @@ extern char logfilename[1024];
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
 
-#define MAXSKINS UINT8_MAX
+#define MAXSKINS 4096
 #define MAXFOLLOWERS UINT16_MAX
 
 #define COLORRAMPSIZE 16
 #define MAXCOLORNAME 32
-#define NUMCOLORFREESLOTS UINT16_MAX
+#define NUMCOLORFREESLOTS 32768
 
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
@@ -219,34 +220,6 @@ extern char logfilename[1024];
 
 // Master Server compatibility ONLY
 #define MSCOMPAT_MAXPLAYERS (32)
-
-struct skincolor_t
-{
-	char name[MAXCOLORNAME+1];  // Skincolor name
-	UINT8 ramp[COLORRAMPSIZE];  // Colormap ramp
-	UINT16 invcolor;            // Signpost color
-	UINT8 invshade;             // Signpost color shade
-	UINT16 chatcolor;           // Chat color
-	boolean accessible;         // Accessible by the color command + setup menu
-};
-
-typedef enum
-{
-#define _(name, ...) SKINCOLOR_##name,
-#include "info/skincolors.h"
-#undef _
-	SKINCOLOR_FIRSTFREESLOT,
-	SKINCOLOR_LASTFREESLOT = SKINCOLOR_FIRSTFREESLOT + NUMCOLORFREESLOTS - 1,
-	MAXSKINCOLORS,
-
-	FIRSTRAINBOWCOLOR = SKINCOLOR_PINK,
-	FIRSTSUPERCOLOR = SKINCOLOR_SUPER1,
-	NUMSUPERCOLORS = ((SKINCOLOR_FIRSTFREESLOT - FIRSTSUPERCOLOR)/5)
-} skincolornum_t;
-
-extern UINT16 numskincolors;
-
-extern skincolor_t skincolors[MAXSKINCOLORS];
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
@@ -365,6 +338,15 @@ char *sizeu5(size_t num);
 // d_main.c
 extern int    VERSION;
 extern int SUBVERSION;
+
+// 4 bytes handles 8 characters of a git object SHA. At
+// around 20k commits, we only need 6 characters for a unique
+// abbreviation. Maybe in another 20k commits, more than 8
+// characters will be required! =P
+// P.S. 8 is also what comptime generates
+#define GIT_SHA_ABBREV (4)
+extern UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
+
 extern boolean devparm; // development mode (-debug)
 
 // m_cheat.c
@@ -512,13 +494,6 @@ extern int compuncommitted;
 ///	Shuffle's incomplete OpenGL sorting code.
 #define SHUFFLE // This has nothing to do with sorting, why was it disabled?
 
-///	Allow the use of the SOC RESETINFO command.
-///	\note	Builds that are tight on memory should disable this.
-///	    	This stops the game from storing backups of the states, sprites, and mobjinfo tables.
-///	    	Though this info is compressed under normal circumstances, it's still a lot of extra
-///	    	memory that never gets touched.
-#define ALLOW_RESETDATA
-
 /// Experimental tweaks to analog mode. (Needs a lot of work before it's ready for primetime.)
 //#define REDSANALOG
 
@@ -549,9 +524,6 @@ extern int compuncommitted;
 #ifndef HAVE_PNG
 #define NO_PNG_LUMPS
 #endif
-
-/// Render flats on walls
-#define WALLFLATS
 
 /// Divide volume of music and sounds by this much (loudest sounds on earth)
 #define VOLUME_DIVIDER 4

@@ -44,15 +44,23 @@ static int lib_iteratePlayers(lua_State *L)
 
 	i++;
 
-	if (i == serverplayer)
+	if (!lua_compatmode)
 	{
-		return LUA_PushServerPlayer(L);
+		if (i == serverplayer)
+		{
+			return LUA_PushServerPlayer(L);
+		}
 	}
 
 	for (; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
+		if (lua_compatmode)
+		{
+			if (!players[i].mo)
+				continue;
+		}
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}
@@ -69,10 +77,22 @@ static int lib_getPlayer(lua_State *L)
 		lua_Integer i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= MAXPLAYERS)
 			return luaL_error(L, "players[] index %d out of range (0 - %d)", i, MAXPLAYERS-1);
-		if (i == serverplayer)
-			return LUA_PushServerPlayer(L);
+
+
+		if (!lua_compatmode)
+		{
+			if (i == serverplayer)
+				return LUA_PushServerPlayer(L);
+		}
+
 		if (!playeringame[i])
 			return 0;
+
+		if (lua_compatmode)
+		{
+			if (!players[i].mo)
+				return 0;
+		}
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}
@@ -287,6 +307,7 @@ enum player_e
 	player_breathTimer,
 	player_lastsafelap,
 	player_lastsafestarpost,
+	player_interpoints,
 	player_roundscore,
 	player_marescore,
 	player_emeralds,
@@ -466,6 +487,7 @@ static const char *const player_opt[] = {
 	"breathTimer",
 	"lastsafelap",
 	"lastsafestarpost",
+	"interpoints",
 	"roundscore",
 	"marescore",
 	"emeralds",
@@ -892,6 +914,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_lastsafestarpost:
 		lua_pushinteger(L, plr->lastsafestarpost);
+		break;
+	case player_interpoints:
+		lua_pushinteger(L, plr->interpoints);
 		break;
 	case player_roundscore:
 	case player_marescore:
@@ -1517,6 +1542,9 @@ static int player_set(lua_State *L)
 	case player_lastsafestarpost:
 		plr->lastsafestarpost = luaL_checkinteger(L, 3);
 		break;
+	case player_interpoints:
+		plr->interpoints = luaL_checkinteger(L, 3);
+		break;
 	case player_roundscore:
 	case player_marescore:
 		plr->roundscore = luaL_checkinteger(L, 3);
@@ -1741,7 +1769,7 @@ static int power_get(lua_State *L)
 {
 	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
-	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
 	if (p >= NUMPOWERS)
 		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
 	switch (p)
@@ -1751,6 +1779,9 @@ static int power_get(lua_State *L)
 			return 1;
 		case pw_nocontrol:
 			lua_pushinteger(L, plr->nocontrol);
+			return 1;
+		case pw_emeralds:
+			lua_pushinteger(L, plr->emeralds);
 			return 1;
 		default:
 			lua_pushinteger(L, powers[p]);
@@ -1765,7 +1796,7 @@ static int power_set(lua_State *L)
 {
 	UINT16 *powers = *((UINT16 **)luaL_checkudata(L, 1, META_POWERS));
 	powertype_t p = luaL_checkinteger(L, 2);
-	player_t *plr = (player_t*)((void*)powers - offsetof(player_t, powers));
+	player_t *plr = (player_t*)((char*)powers - offsetof(player_t, powers));
 	UINT16 i = (UINT16)luaL_checkinteger(L, 3);
 	if (p >= NUMPOWERS)
 		return luaL_error(L, LUA_QL("powertype_t") " cannot be %u", p);
@@ -1780,6 +1811,9 @@ static int power_set(lua_State *L)
 			break;
 		case pw_nocontrol:
 			plr->nocontrol = i;
+			break;
+		case pw_emeralds:
+			plr->emeralds = i;
 			break;
 		default:
 			powers[p] = i;
@@ -1801,7 +1835,7 @@ static int power_len(lua_State *L)
 static int kartstuff_get(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
-	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 
 	if (ks >= NUMKARTSTUFF)
@@ -2054,7 +2088,7 @@ static int kartstuff_get(lua_State *L)
 static int kartstuff_set(lua_State *L)
 {
 	INT32 *kartstuff = *((INT32 **)luaL_checkudata(L, 1, META_KARTSTUFF));
-	player_t *plr = (player_t*)((void*)kartstuff - offsetof(player_t, kartstuff));
+	player_t *plr = (player_t*)((char*)kartstuff - offsetof(player_t, kartstuff));
 	kartstufftype_t ks = luaL_checkinteger(L, 2);
 	INT32 i = (INT32)luaL_checkinteger(L, 3);
 

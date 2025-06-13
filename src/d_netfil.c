@@ -1402,18 +1402,20 @@ void PT_FileFragment(void)
 	filename = va("%s", file->filename);
 	nameonly(filename);
 
-	if (!strcmp(filename, MAINNAME)
-		|| !strcmp(filename, SRB2NAME)
+	if (!strcmp(filename, SRB2NAME)
 		|| !strcmp(filename, GRAPHICSNAME)
 		|| !strcmp(filename, TEXTURESNAME)
 		|| !strcmp(filename, CHARSNAME)
 		|| !strcmp(filename, MAPSNAME)
+		|| !strcmp(filename, MAINNAME)
+		|| !strcmp(filename, MAPPATCHNAME)
+		|| !strcmp(filename, BONUSCHARSNAME)
 		|| !strcmp(filename, PATCHNAME)
 		|| !strcmp(filename, SOUNDSNAME)
 		|| !strcmp(filename, MUSICNAME)
 		)
 	{
-		I_Error("Tried to download \"%s\"", filename);
+		I_Error("Tried to download base-game file: \"%s\"", filename);
 	}
 
 	filename = file->filename;

@@ -62,7 +62,7 @@ static angle_t R_PlayerSpriteRotation(player_t *player, player_t *viewPlayer)
 
 	angle_t rollAngle = 0;
 
-	if (sliptideLift)
+	if (sliptideLift && cv_sliptidetilt.value)
 	{
 		/* (from side) tilt downward if turning
 		   toward camera, upward if away. */
@@ -111,11 +111,25 @@ INT32 R_GetRollAngle(angle_t rollangle)
 patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip)
 {
 	rotsprite_t *rotsprite = patch->rotated;
-	if (rotsprite == NULL || angle < 1 || angle >= ROTANGLES)
+	if (angle < 1 || angle >= ROTANGLES)
 		return NULL;
+
+	if (rotsprite == NULL)
+	{
+		rotsprite = RotatedPatch_Create(ROTANGLES);
+		patch->rotated = rotsprite;
+	}
 
 	if (flip)
 		angle += rotsprite->angles;
+
+	if (rotsprite->patches[angle] == NULL)
+	{
+		INT32 xpivot = 0, ypivot = 0;
+		xpivot = patch->leftoffset;
+		ypivot = patch->topoffset;
+		RotatedPatch_DoRotation(rotsprite, patch, angle, xpivot, ypivot, flip);
+	}
 
 	return rotsprite->patches[angle];
 }

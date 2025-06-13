@@ -33,7 +33,6 @@ boolean F_CutsceneResponder(event_t *ev);
 boolean F_CreditResponder(event_t *ev);
 
 // Called by main loop.
-void F_GameEndTicker(void);
 void F_IntroTicker(void);
 void F_TitleScreenTicker(boolean run);
 void F_CutsceneTicker(void);
@@ -41,7 +40,6 @@ void F_TitleDemoTicker(void);
 void F_TextPromptTicker(void);
 
 // Called by main loop.
-void F_GameEndDrawer(void);
 void F_IntroDrawer(void);
 void F_TitleScreenDrawer(void);
 void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname);
@@ -73,7 +71,6 @@ void F_EndTextPrompt(boolean forceexec, boolean noexec);
 boolean F_GetPromptHideHudAll(void);
 boolean F_GetPromptHideHud(fixed_t y);
 
-void F_StartGameEnd(void);
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
 void F_StartCredits(void);
@@ -164,12 +161,10 @@ enum
 	wipe_level_toblack,
 	wipe_intermission_toblack,
 	wipe_voting_toblack,
-	wipe_continuing_toblack,
 	wipe_titlescreen_toblack,
 	wipe_timeattack_toblack,
 	wipe_credits_toblack,
 	wipe_evaluation_toblack,
-	wipe_gameend_toblack,
 	wipe_intro_toblack,
 	wipe_ending_toblack,
 	wipe_cutscene_toblack,
@@ -182,12 +177,10 @@ enum
 	wipe_level_final,
 	wipe_intermission_final,
 	wipe_voting_final,
-	wipe_continuing_final,
 	wipe_titlescreen_final,
 	wipe_timeattack_final,
 	wipe_credits_final,
 	wipe_evaluation_final,
-	wipe_gameend_final,
 	wipe_intro_final,
 	wipe_ending_final,
 	wipe_cutscene_final,

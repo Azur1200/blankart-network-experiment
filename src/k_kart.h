@@ -39,11 +39,11 @@ Make sure this matches the actual number of states
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
-#define CALC_ARG_OFFSET K_RAGuard(cv_kartstacking_calc_arg_offset)
-#define CALC_RET_OFFSET FixedSqrt(CALC_ARG_OFFSET)
+#define DIMINISHPARAM K_RAGuard(cv_kartstacking_diminishparam)
 #define MAXVANILLABOOST K_RAGuard(cv_kartstacking_maxvanillaboost)
 #define SPEEDBOOSTDROPOFF K_RAGuard(cv_kartstacking_speedboostdropoff)
 #define SPEEDBOOSTDROPOFF_BRAKE K_RAGuard(cv_kartstacking_speedboostdropoff_brake)
+#define ACCELSTACK K_RAGuard(cv_kartstacking_accelstack)
 
 // Vanilla Boosts
 #define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost)
@@ -271,6 +271,8 @@ typedef enum
 } awardscaledrings_t;
 
 void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
+
+void K_QuiteSaltyHop(player_t *player);
 
 #ifdef __cplusplus
 } // extern "C"

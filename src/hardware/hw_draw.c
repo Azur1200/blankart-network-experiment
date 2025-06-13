@@ -541,8 +541,9 @@ void HWR_DrawPic(INT32 x, INT32 y, lumpnum_t lumpnum)
 
 // --------------------------------------------------------------------------
 // Fills a box of pixels using a flat texture as a pattern
+// Fixed to properly align like the other draw functions -luigi budd
 // --------------------------------------------------------------------------
-void HWR_DrawFlatFill (INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
+void HWR_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatlumpnum)
 {
 	const size_t len = W_LumpLength(flatlumpnum);
 

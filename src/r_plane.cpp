@@ -265,18 +265,16 @@ static void R_MapTiltedPlane(drawspandata_t *ds, void(*spanfunc)(drawspandata_t*
 	spanfunc(ds);
 }
 
-void R_ClearFFloorClips (void)
+void R_ClearFFloorClips(void)
 {
-	INT32 i, p;
+	INT32 p;
 
 	// opening / clipping determination
-	for (i = 0; i < viewwidth; i++)
+	for (p = 0; p < MAXFFLOORS; p++)
 	{
-		for (p = 0; p < MAXFFLOORS; p++)
-		{
-			ffloor[p].f_clip[i] = (INT16)viewheight;
-			ffloor[p].c_clip[i] = -1;
-		}
+		visffloor_t *fffloor = &ffloor[p];
+		std::fill(fffloor->f_clip, fffloor->f_clip + viewwidth, static_cast<INT16>(viewheight));
+		std::fill(fffloor->c_clip, fffloor->c_clip + viewwidth, static_cast<INT16>(-1));
 	}
 
 	numffloors = 0;
@@ -288,20 +286,14 @@ void R_ClearFFloorClips (void)
 //
 void R_ClearPlanes(void)
 {
-	INT32 i, p;
+	INT32 i;
 
 	// opening / clipping determination
-	for (i = 0; i < viewwidth; i++)
-	{
-		floorclip[i] = (INT16)viewheight;
-		ceilingclip[i] = -1;
-		frontscale[i] = INT32_MAX;
-		for (p = 0; p < MAXFFLOORS; p++)
-		{
-			ffloor[p].f_clip[i] = (INT16)viewheight;
-			ffloor[p].c_clip[i] = -1;
-		}
-	}
+	std::fill(floorclip, floorclip + viewwidth, static_cast<INT16>(viewheight));
+	std::fill(ceilingclip, ceilingclip + viewwidth, static_cast<INT16>(-1));
+	std::fill(frontscale, frontscale + viewwidth, INT32_MAX);
+
+	R_ClearFFloorClips();
 
 	for (i = 0; i < MAXVISPLANES; i++)
 	for (*freehead = visplanes[i], visplanes[i] = NULL;
@@ -944,7 +936,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	INT32 light = 0;
 	INT32 x, stop;
 	ffloor_t *rover;
-	INT32 type, spanfunctype = BASEDRAWFUNC;
+	INT32 spanfunctype = BASEDRAWFUNC;
 	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 	INT16 highlight = R_PlaneIsHighlighted(pl);
@@ -1118,39 +1110,31 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	ds->currentplane = pl;
 	levelflat = &levelflats[pl->picnum];
 
-	/* :james: */
-	type = levelflat->type;
-	switch (type)
-	{
-		case LEVELFLAT_NONE:
-			return;
-		case LEVELFLAT_FLAT:
-			ds->source = (UINT8 *)R_GetFlat(levelflat->u.flat.lumpnum);
-			R_CheckFlatLength(ds, W_LumpLength(levelflat->u.flat.lumpnum));
-			// Raw flats always have dimensions that are powers-of-two numbers.
-			ds->powersoftwo = true;
-			break;
-		default:
-			ds->source = (UINT8 *)R_GetLevelFlat(ds, levelflat);
-			if (!ds->source)
-				return;
-		// Check if this texture or patch has power-of-two dimensions.
-		if (R_CheckPowersOfTwo(ds))
-			R_CheckFlatLength(ds, ds->flatwidth * ds->flatheight);
-	}
+	// Get the texture
+	ds->source = (UINT8 *)R_GetFlat(levelflat);
+	if (ds->source == NULL)
+		return;
 
-	if (type == LEVELFLAT_TEXTURE)
+	texture_t *texture = textures[R_GetTextureNumForFlat(levelflat)];
+	ds->flatwidth = texture->width;
+	ds->flatheight = texture->height;
+
+	/*(if (R_CheckSolidColorFlat())
+		ds->solidcolor = true;
+	else if (R_CheckPowersOfTwo())
 	{
-		// Get the span's brightmap.
-		// FLATS not supported, SORRY!!
-		INT32 bmNum = R_GetTextureBrightmap(levelflat->u.texture.num);
-		if (bmNum != 0)
-		{
-			// FIXME: This has the potential to read out of
-			// bounds if the brightmap texture is not as
-			// large as the flat.
-			ds->brightmap = (UINT8 *)R_GenerateTextureAsFlat(bmNum);
-		}
+		R_SetFlatVars(ds_flatwidth * ds_flatheight);
+		ds->powersoftwo = true;
+	}*/
+
+	// Get the span's brightmap.
+	INT32 bmNum = R_GetTextureBrightmap(levelflat->texture_id);
+	if (bmNum != 0)
+	{
+		// FIXME: This has the potential to read out of
+		// bounds if the brightmap texture is not as
+		// large as the flat.
+		ds->brightmap = (UINT8 *)R_GetFlatForTexture(bmNum);
 	}
 
 	if (!pl->slope // Don't mess with angle on slopes! We'll handle this ourselves later

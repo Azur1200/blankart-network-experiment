@@ -12,7 +12,7 @@
 #ifndef __K_COLOR__
 #define __K_COLOR__
 
-#include "doomdef.h"
+#include "info.h"
 #include "doomtype.h"
 
 #ifdef __cplusplus

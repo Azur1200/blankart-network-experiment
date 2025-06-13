@@ -52,6 +52,8 @@ extern consvar_t cv_numlaps;
 extern UINT32 timelimitintics, extratimeintics, secretextratime;
 extern consvar_t cv_allowexitlevel;
 
+extern consvar_t cv_votemaxrows;
+
 extern consvar_t cv_autobalance;
 extern consvar_t cv_teamscramble;
 extern consvar_t cv_scrambleonchange;
@@ -122,7 +124,7 @@ extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 
 extern consvar_t cv_kartstacking;
-extern consvar_t cv_kartstacking_calc_arg_offset;
+extern consvar_t cv_kartstacking_diminishparam;
 extern consvar_t cv_kartstacking_maxvanillaboost;
 extern consvar_t cv_kartstacking_speedboostdropoff;
 extern consvar_t cv_kartstacking_speedboostdropoff_brake;
@@ -169,11 +171,13 @@ extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
 extern consvar_t cv_kartslipdash;
 
+extern consvar_t cv_encorevotes;
+
 extern consvar_t cv_votetime;
 
-extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartallowgiveitem, cv_kartdebugdistribution, cv_kartdebughuddrop;
+extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution, cv_kartdebughuddrop;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
-extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap,cv_kartdebugbotpredict;
+extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot;
 
 extern consvar_t cv_itemfinder;
 
@@ -208,6 +212,8 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_director;
 
 extern consvar_t cv_schedule;
+
+extern consvar_t cv_test1, cv_test2, cv_test3;
 
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
@@ -249,14 +255,13 @@ typedef enum
 	XD_ACCEPTPARTYINVITE, // 29
 	XD_LEAVEPARTY,  // 30
 	XD_CANCELPARTYINVITE, // 31
-	XD_GIVEITEM,    // 32
-	XD_ADDBOT,      // 33
-	XD_DISCORD,     // 34
-	XD_PLAYSOUND,   // 35
-	XD_SCHEDULETASK, // 36
-	XD_SCHEDULECLEAR, // 37
-	XD_AUTOMATE,    // 38
-	XD_CHEAT,       // 39
+	XD_ADDBOT,      // 32
+	XD_DISCORD,     // 33
+	XD_PLAYSOUND,   // 34
+	XD_SCHEDULETASK, // 35
+	XD_SCHEDULECLEAR, // 36
+	XD_AUTOMATE,    // 37
+	XD_CHEAT,       // 38
 
 	MAXNETXCMD
 } netxcmd_t;

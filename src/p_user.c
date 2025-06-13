@@ -1364,7 +1364,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 
 	clipmomz = !(P_CheckDeathPitCollide(player->mo));
 
-	if (fromAir == true && clipmomz == true)
+	if (player->airtime > 10 && player->prevonground == false && fromAir == true && clipmomz == true)
 	{
 		K_SpawnSplashForMobj(player->mo, abs(player->mo->momz));
 	}
@@ -1616,6 +1616,17 @@ static void P_CheckBouncySectors(player_t *player)
 				if (abs(momentum.z) < (rover->bouncestrength*2))
 					goto bouncydone;
 
+				if ((mapnamespace == MNS_SRB2KART) && !(rover->master->flags & ML_NOTBOUNCY))
+				{
+					if (momentum.z > 0)
+					{
+						if (momentum.z < 8*FRACUNIT)
+							momentum.z = 8*FRACUNIT;
+					}
+					else if (momentum.z > -8*FRACUNIT && momentum.z != 0)
+						momentum.z = -8*FRACUNIT;
+				}
+
 				if (momentum.z > FixedMul(24*FRACUNIT, player->mo->scale)) //half of the default player height
 					momentum.z = FixedMul(24*FRACUNIT, player->mo->scale);
 				else if (momentum.z < -FixedMul(24*FRACUNIT, player->mo->scale))
@@ -1731,7 +1742,7 @@ static void P_DoBubbleBreath(player_t *player)
 	fixed_t z = player->mo->z;
 	mobj_t *bubble = NULL;
 
-	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || player->curshield == KSHIELD_BUBBLE)
+	if (!(player->mo->eflags & MFE_UNDERWATER) || player->spectator || (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE))
 		return;
 
 	if (player->charflags & SF_MACHINE)
@@ -2504,9 +2515,9 @@ static void P_DeathThink(player_t *player)
 	else
 		player->karthud[khud_timeovercam] = 0;
 
-	// Set players next respawn point to the next waypoint
-	// If they die while still in respawn state for extra safety.
-	if (player->nextwaypoint && player->respawn > 0)
+	// If the player dies too fast or dies during respawn...
+	// Set players next respawn point to the next waypoint for extra safety.
+	if (player->softlocktimer > 0 || player->respawn > 0)
 	{
 		// Now a clean function! Neat, eh?
 		K_SetRespawnAtNextWaypoint(player);
@@ -2644,7 +2655,6 @@ consvar_t cv_cam_rotate[MAXSPLITSCREENPLAYERS] = {
 consvar_t cv_tilting = CVAR_INIT ("tilting", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_actionmovie = CVAR_INIT ("actionmovie", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_windowquake = CVAR_INIT ("windowquake", "Off", CV_SAVE, CV_OnOff, NULL);
 
 fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
 fixed_t t_cam_height[MAXSPLITSCREENPLAYERS] = {-42,-42,-42,-42};
@@ -3373,9 +3383,7 @@ boolean P_SpectatorJoinGame(player_t *player)
 
 static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, fixed_t pviewheight)
 {
-	mtag_t sectag = Tag_FGet(&sector->tags);
-
-	if (Tag_FindLineSpecial(13, sectag))
+	if (sector->flags & MSF_HEATWAVE)
 		return true;
 
 	if (sector->ffloors)
@@ -3389,13 +3397,10 @@ static boolean P_CameraCheckHeatFirstperson(player_t *player, sector_t *sector, 
 
 			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
 				continue;
-
 			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
 				continue;
 
-			sectag = Tag_FGet(&rover->master->frontsector->tags);
-
-			if (Tag_FindLineSpecial(13, sectag))
+			if (rover->master->frontsector->flags & MSF_HEATWAVE)
 				return true;
 		}
 	}
@@ -3416,7 +3421,6 @@ static boolean P_CameraCheckWaterFirstperson(player_t *player, sector_t *sector,
 
 			if (pviewheight >= P_GetFFloorTopZAt(rover, player->mo->x, player->mo->y))
 				continue;
-
 			if (pviewheight <= P_GetFFloorBottomZAt(rover, player->mo->x, player->mo->y))
 				continue;
 
@@ -3646,7 +3650,7 @@ Quaketilt (player_t *player)
 		delta = (INT32)(( moma + ANGLE_180 ) - player->mo->angle );
 	if (P_IsObjectOnGround(player->mo))
 	{
-		if (sliptiding)
+		if (sliptiding && cv_sliptidetilt.value)
 		{
 			tilt = ANGLE_45;
 			lowb = 20*FRACUNIT;
@@ -3988,16 +3992,21 @@ void P_PlayerThink(player_t *player)
 
 	if (netgame && cv_antigrief.value != 0 && (gametyperules & GTR_CIRCUIT))
 	{
-		if (!player->spectator && !player->exiting && !(player->pflags & PF_NOCONTEST))
+		INT32 i;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator || players[i].bot)
+				continue;
+			if (&players[i] == player)
+				continue;
+			break;
+		}
+
+		if (i < MAXPLAYERS && !player->spectator && !player->exiting && !(player->pflags & PF_NOCONTEST))
 		{
 			const tic_t griefval = cv_antigrief.value * TICRATE;
 			const UINT8 n = player - players;
 
-		if (n != serverplayer
-#ifndef DEVELOP
-			&& !IsPlayerAdmin(n)
-#endif
-			)
 			{
 				if (player->grieftime > griefval)
 				{
@@ -4006,7 +4015,11 @@ void P_PlayerThink(player_t *player)
 
 					if (server)
 					{
-						if (player->griefstrikes > 2)
+						if ((player->griefstrikes > 2)
+#ifndef DEVELOP
+							&& !IsPlayerAdmin(n)
+#endif
+							&& !P_IsLocalPlayer(player)) // P_IsMachineLocalPlayer for DRRR
 						{
 							// Send kick
 							SendKick(n, KICK_MSG_GRIEF);

@@ -3171,8 +3171,14 @@ void A_AttractChase(mobj_t *actor)
 			{
 
 				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
-				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
+				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
+
+				if (actor->target->player->rings <= 10)
+				{
+					S_StartSoundAtVolume(actor->target, sfx_ringlw, 255 - actor->target->player->rings*10);
+				}
 
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
@@ -3199,7 +3205,10 @@ void A_AttractChase(mobj_t *actor)
 			if (actor->extravalue1 >= 16)
 			{
 				if (!P_GivePlayerRings(actor->target->player, 1)) // returns 0 if addition failed
-					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
+				{
+					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+					actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+				}
 
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);
@@ -11492,7 +11501,7 @@ void A_ReaperThinker(mobj_t *actor)
 
 	if (actor->health == 1000)	// if health is 1000, set it to a small scale and have it start growing with destscale. Then set the health to uh, not 1000.
 	{
-		actor->scale = 1;
+		P_SetScale(actor, 1);
 		actor->destscale = 2<<FRACBITS;
 		actor->scalespeed = FRACUNIT/24;	// Should take a bit less than 2 seconds to fully grow.
 		S_StartSound(NULL, sfx_chain);

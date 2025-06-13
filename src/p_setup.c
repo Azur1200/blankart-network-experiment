@@ -137,6 +137,7 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
+static boolean basemaptyperemoval[65537];
 sector_t *spawnsectors;
 line_t *spawnlines;
 side_t *spawnsides;
@@ -432,6 +433,8 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	mapheaderinfo[num]->palette = UINT16_MAX;
 	mapheaderinfo[num]->encorepal = UINT16_MAX;
 	mapheaderinfo[num]->numlaps = NUMLAPS_DEFAULT;
+	mapheaderinfo[num]->base_track_complexity = INT32_MAX;
+	mapheaderinfo[num]->track_modifier_max = INT32_MAX;
 	mapheaderinfo[num]->lapspersection = 1;
 	mapheaderinfo[num]->unlockrequired = -1;
 	mapheaderinfo[num]->levelselect = 0;
@@ -529,20 +532,14 @@ levelflat_t *foundflats;
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
 {
-	lumpnum_t lump;
 	size_t i;
 
 	//SoM: 4/18/2000: New flat code to make use of levelflats.
 	flatmemory = 0;
 	for (i = 0; i < numlevelflats; i++)
 	{
-		if (levelflats[i].type == LEVELFLAT_FLAT)
-		{
-			lump = levelflats[i].u.flat.lumpnum;
-			if (devparm)
-				flatmemory += W_LumpLength(lump);
-			R_GetFlat(lump);
-		}
+		if (levelflats[i].type != LEVELFLAT_NONE)
+			R_GetFlat(&levelflats[i]);
 	}
 	return flatmemory;
 }
@@ -554,18 +551,8 @@ or NULL if we want to allocate it now.
 static INT32
 Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 {
-#ifndef NO_PNG_LUMPS
-	UINT8         buffer[8];
-#endif
-
-	lumpnum_t    flatnum;
-	int       texturenum;
-	UINT8     *flatpatch;
-	size_t    lumplength;
-	size_t i;
-
 	// Scan through the already found flats, return if it matches.
-	for (i = 0; i < numlevelflats; i++)
+	for (size_t i = 0; i < numlevelflats; i++)
 	{
 		if (strnicmp(levelflat[i].name, flatname, 8) == 0)
 			return i;
@@ -589,65 +576,38 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 	strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
 	strupr(levelflat->name);
 
-	/* If we can't find a flat, try looking for a texture! */
-	if (( flatnum = R_GetFlatNumForName(levelflat->name) ) == LUMPERROR)
-	{
-		if (( texturenum = R_CheckTextureNumForName(levelflat->name) ) == -1)
-		{
-			// check for REDWALL
-			if (( texturenum = R_CheckTextureNumForName(MISSING_TEXTURE) ) != -1)
-				goto texturefound;
-			// check for REDFLR
-			else if (( flatnum = R_GetFlatNumForName(MISSING_TEXTURE) ) != LUMPERROR)
-				goto flatfound;
-			// nevermind
-			levelflat->type = LEVELFLAT_NONE;
-		}
-		else
-		{
-texturefound:
-			levelflat->type = LEVELFLAT_TEXTURE;
-			levelflat->u.texture.    num = texturenum;
-			levelflat->u.texture.lastnum = texturenum;
-			/* start out unanimated */
-			levelflat->u.texture.basenum = -1;
-		}
-	}
-	else
-	{
-flatfound:
-		/* This could be a flat, patch, or PNG. */
-		flatpatch = W_CacheLumpNum(flatnum, PU_CACHE);
-		lumplength = W_LumpLength(flatnum);
-		if (Picture_CheckIfDoomPatch((softwarepatch_t *)flatpatch, lumplength))
-			levelflat->type = LEVELFLAT_PATCH;
-		else
-		{
-#ifndef NO_PNG_LUMPS
-			/*
-			Only need eight bytes for PNG headers.
-			FIXME: Put this elsewhere.
-			*/
-			W_ReadLumpHeader(flatnum, buffer, 8, 0);
-			if (Picture_IsLumpPNG(buffer, lumplength))
-				levelflat->type = LEVELFLAT_PNG;
-			else
-#endif/*NO_PNG_LUMPS*/
-				levelflat->type = LEVELFLAT_FLAT;/* phew */
-		}
-		if (flatpatch)
-			Z_Free(flatpatch);
+	levelflat->type = LEVELFLAT_TEXTURE;
 
-		levelflat->u.flat.    lumpnum = flatnum;
-		levelflat->u.flat.baselumpnum = LUMPERROR;
+	// Look for a flat
+	int texturenum = R_CheckFlatNumForName(levelflat->name);
+	if (texturenum <= 0)
+	{
+		// If we can't find a flat, try looking for a texture!
+		texturenum = R_CheckTextureNumForName(levelflat->name);
+		if (texturenum <= 0)
+		{
+			// Use "not found" texture
+			texturenum = R_CheckTextureNumForName(MISSING_TEXTURE);
+
+			// Give up?
+			if (texturenum <= 0)
+			{
+				levelflat->type = LEVELFLAT_NONE;
+				texturenum = -1;
+			}
+		}
 	}
+
+	levelflat->texture_id = texturenum;
 
 	levelflat->terrain =
 		K_GetTerrainForTextureName(levelflat->name);
 
+#ifndef ZDEBUG
 	CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
+#endif
 
-	return ( numlevelflats++ );
+	return numlevelflats++;
 }
 
 // Auxiliary function. Find a flat in the active wad files,
@@ -811,6 +771,10 @@ static void P_SpawnMapThings(boolean spawnemblems)
 		}
 
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
+			continue;
+
+		// Don't spawn non-patch objects of this type if they are uneeded
+		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
 			continue;
 
 		mt->mobj = NULL;
@@ -1183,10 +1147,7 @@ static void P_WriteSkincolor(INT32 constant, char **target)
 	|| constant >= (INT32)numskincolors)
 		return;
 
-	if (constant >= SKINCOLOR_FIRSTFREESLOT)
-		color_name = FREE_SKINCOLORS[constant - SKINCOLOR_FIRSTFREESLOT];
-	else
-		color_name = COLOR_ENUMS[constant];
+	color_name = DEH_SkincolorName(constant);
 
 	P_WriteDuplicateText(
 		va("SKINCOLOR_%s", color_name),
@@ -1411,6 +1372,7 @@ static void P_LoadThings(UINT8 *data)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->pitch = mt->roll = 0;
 		mt->layer = 0;
+		mt->patch = false;
 
 		mt->type &= 4095;
 
@@ -1506,12 +1468,12 @@ static boolean TextmapCount(size_t size, boolean patch)
 			if (udmf_version > UDMF_CURRENT_VERSION)
 				CONS_Alert(CONS_WARNING, "Map is intended for future UDMF version '%d', current supported version is '%d'. This map may have issues loading.\n", udmf_version, UDMF_CURRENT_VERSION);
 		}
+		tkn = M_TokenizerRead(0);
 	}
 
 	// check hash for patches
 	if (patch)
 	{
-		tkn = M_TokenizerRead(0);
 		if (!fastcmp(tkn, "checksum"))
 		{
 			CONS_Alert(CONS_ERROR, "No checksum in lump!\n");
@@ -1538,9 +1500,42 @@ static boolean TextmapCount(size_t size, boolean patch)
 			hashstr = end + 1;
 		}
 		while (*end);
+		tkn = M_TokenizerRead(0);
 
 		if (!foundhash)
 			CONS_Alert(CONS_WARNING, "This map patch is not compatible with the current map (checksum: " HASHFMT "). The patch may not work.\n", maphash);
+	}
+
+	// check for things to remove from the base map
+	if (patch && fastcmp(tkn, "basemaptyperemoval"))
+	{
+		tkn = M_TokenizerRead(0);
+		const char *typestr = tkn;
+		char *end;
+
+		// check for types separated by pipes
+		// e.g. 300|2001|2004
+		do
+		{
+			UINT16 types = strtoull(typestr, &end, 10);
+
+			if (types)
+			{
+				// Set type to removed.
+				basemaptyperemoval[types] = true;
+				CONS_Debug(DBG_SETUP,"Ignoring base mapthing type %d for patch\n", types);
+			}
+
+			if (end == typestr || (*end && *end != '|'))
+			{
+				CONS_Alert(CONS_ERROR, "Invalid basemaptyperemoval string '%s'\n", tkn);
+				return false;
+			}
+
+			typestr = end + 1;
+		}
+		while (*end);
+		tkn = M_TokenizerRead(0);
 	}
 
 	nummapthings = 0;
@@ -1552,7 +1547,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		numsectors = 0;
 	}
 
-	while ((tkn = M_TokenizerRead(0)) && M_TokenizerGetEndPos() < size)
+	while (M_TokenizerGetEndPos() < size)
 	{
 		// Avoid anything inside bracketed stuff, only look for external keywords.
 		if (brackets)
@@ -1577,6 +1572,10 @@ static boolean TextmapCount(size_t size, boolean patch)
 			TextmapStorePos(&sectorBlocks, &numsectors);
 		else
 			CONS_Alert(CONS_NOTICE, "Unknown field '%s'.\n", tkn);
+
+		tkn = M_TokenizerRead(0);
+		if (!tkn)
+			break;
 	}
 
 	if (brackets)
@@ -3292,7 +3291,14 @@ static void P_LoadTextmap(boolean patch)
 	side_t     *sd;
 	mapthing_t *mt;
 
-	CONS_Alert(CONS_NOTICE, "UDMF support is still a work-in-progress; its specs and features are prone to change until it is fully implemented.\n");
+	if (!patch)
+	{
+		CONS_Alert(CONS_NOTICE, "UDMF support is still a work-in-progress; its specs and features are prone to change until it is fully implemented.\n");
+	}
+	else
+	{
+		CONS_Alert(CONS_NOTICE, "Patching current map.\n");
+	}
 
 	/// Given the UDMF specs, some fields are given a default value.
 	/// If an element's field has a default value set, it is omitted
@@ -3475,6 +3481,7 @@ static void P_LoadTextmap(boolean patch)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->layer = 0;
 		mt->mobj = NULL;
+		mt->patch = patch;
 
 		K_UserPropertiesClear(&mt->user);
 
@@ -3522,7 +3529,7 @@ static boolean P_CheckLineSideTripWire(line_t *ld, int p)
 	sda = &sides[n];
 
 	terrain = K_GetTerrainForTextureNum(sda->midtexture);
-	terraintripwire = (B_UseTerrainDef() && terrain && (terrain->flags & TRF_TRIPWIRE));
+	terraintripwire = (K_AffectingTerrainActive() && terrain && (terrain->flags & TRF_TRIPWIRE));
 	tripwire = terraintripwire ? terraintripwire : ld->tripwire;
 
 	if (terraintripwire)
@@ -3733,9 +3740,6 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	// copy table for global usage
 	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
 	free(foundflats);
-
-	// search for animated flats and set up
-	P_SetupLevelFlatAnims();
 
 	TracyCZoneEnd(__zone);
 	return true;
@@ -7222,7 +7226,7 @@ static void P_ConvertBinaryThingTypes(void)
 				if (mapthings[i].options & MTF_EXTRA)
 					mapthings[i].args[2] |= TMSF_RETRACTED;
 			}
-			if (mapthings[i].options & MTF_AMBUSH)
+			if (!(mapthings[i].options & MTF_AMBUSH))
 				mapthings[i].args[2] |= TMSF_INTANGIBLE;
 			break;
 		case 523: //Spike
@@ -7233,7 +7237,7 @@ static void P_ConvertBinaryThingTypes(void)
 				if (mapthings[i].options & MTF_EXTRA)
 					mapthings[i].args[2] |= TMSF_RETRACTED;
 			}
-			if (mapthings[i].options & MTF_AMBUSH)
+			if (!(mapthings[i].options & MTF_AMBUSH))
 				mapthings[i].args[2] |= TMSF_INTANGIBLE;
 			break;
 		case 540: //Fan
@@ -8317,6 +8321,8 @@ static void P_InitGametype(void)
 	lastLowestLap = 0;
 	spbplace = -1;
 
+	G_ClearRetryFlag();
+
 	startedInFreePlay = false;
 	{
 		UINT8 nump = 0;
@@ -8737,6 +8743,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_InitSlopes(); //Initialize slopes before the map loads.
 
+	memset(basemaptyperemoval, 0, 65537*sizeof(boolean));
+
 	if (!P_LoadMapFromFile())
 	{
 		TracyCZoneEnd(__zone);
@@ -8835,7 +8843,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (rendermode != render_none && !titlemapinaction && !reloadinggamestate)
 		F_WipeColorFill(levelfadecol);
 
-	if (precache || dedicated)
+	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
 	if (!(netgame || multiplayer || demo.playback) && !majormods)
@@ -9363,8 +9371,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	//
 	// search for sprite replacements
 	//
-	Patch_FreeTag(PU_SPRITE);
-	Patch_FreeTag(PU_PATCH_ROTATED);
+	//Patch_FreeTag(PU_SPRITE);
+	//Patch_FreeTag(PU_PATCH_ROTATED);
 	R_AddSpriteDefs(wadnum);
 
 	// Reload it all anyway, just in case they

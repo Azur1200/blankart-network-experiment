@@ -263,13 +263,13 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
-		return MOBJTYPE_LIST[mobj->type];
+		return DEH_MobjtypeName(mobj->type);
 	}
 	else if (p1 == (actionf_p1)P_RemoveThinkerDelayed)
 	{
 		if (mobj->thinker.debug_mobjtype != MT_NULL)
 		{
-			return MOBJTYPE_LIST[mobj->thinker.debug_mobjtype];
+			return DEH_MobjtypeName(mobj->thinker.debug_mobjtype);
 		}
 	}
 
@@ -331,7 +331,7 @@ void P_RemoveThinkerDelayed(thinker_t *thinker)
 		else if ((thinker->debug_time + delay) <= leveltime)
 		{
 			CONS_Printf(
-					"PARANOIA/P_RemoveThinkerDelayed: %p %s references=%d\n",
+					"PARANOIA/P_RemoveThinkerDelayed: %p MT_%s references=%d\n",
 					(void*)thinker,
 					MobjTypeName((mobj_t*)thinker),
 					thinker->references
@@ -423,7 +423,7 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 		if ((*mop)->thinker.references < 0)
 		{
 			CONS_Printf(
-					"PARANOIA/P_SetTarget: %p %s %s references=%d, references go negative! (%s:%d)\n",
+					"PARANOIA/P_SetTarget: %p MT_%s %s references=%d, references go negative! (%s:%d)\n",
 					(void*)*mop,
 					MobjTypeName(*mop),
 					MobjThinkerName(*mop),
@@ -862,8 +862,6 @@ void P_Ticker(boolean run)
 			quake.x = M_RandomRange(-ir,ir);
 			quake.y = M_RandomRange(-ir,ir);
 			quake.z = M_RandomRange(-ir,ir);
-			if (cv_windowquake.value)
-				I_CursedWindowMovement(FixedInt(quake.x), FixedInt(quake.y));
 			--quake.time;
 		}
 		else

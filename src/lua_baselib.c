@@ -44,6 +44,8 @@
 #include "taglist.h" // P_FindSpecialLineFromTag
 #include "lua_hook.h" // hook_cmd_running errors
 
+#include "k_terrain.h"
+
 #define NOHUD if (hud_running)\
 return luaL_error(L, "HUD rendering code should not call this function!");\
 else if (hook_cmd_running)\
@@ -229,6 +231,10 @@ static const struct {
 	{META_ACTIVATOR,    "activator_t"},
 	
 	{META_FOLLOWER,    "follower_t"},
+	{META_SPLASH,       "t_splash_t"},
+	{META_FOOTSTEP,     "t_footstep_t"},
+	{META_OVERLAY,      "t_overlay_t"},
+	{META_TERRAIN,      "terrain_t"},
 	
 	{NULL,              NULL}
 };
@@ -4237,6 +4243,104 @@ static int lib_iGetPreciseTime(lua_State *L)
 	return 1;
 }
 
+static int lib_kAffectingTerrainActive(lua_State *L)
+{
+	lua_pushboolean(L, K_AffectingTerrainActive());
+	return 1;
+}
+
+static int lib_kGetDefaultTerrain(lua_State *L)
+{
+	LUA_PushUserdata(L, K_GetDefaultTerrain(), META_TERRAIN);
+	return 1;
+}
+
+static int lib_kGetTerrainForTextureName(lua_State *L)
+{
+	const char *str = luaL_checkstring(L, 1);
+	LUA_PushUserdata(L, K_GetTerrainForTextureName(str), META_TERRAIN);
+	return 1;
+}
+
+static int lib_kGetTerrainForTextureNum(lua_State *L)
+{
+	INT32 id = luaL_checkinteger(L, 1);
+	LUA_PushUserdata(L, K_GetTerrainForTextureNum(id), META_TERRAIN);
+	return 1;
+}
+
+static int lib_kProcessTerrainEffect(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	NOHUD
+	INLEVEL
+
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	K_ProcessTerrainEffect(mo);
+	return 0;
+}
+
+static int lib_kSpawnSplashForMobj(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	fixed_t impact = luaL_optinteger(L, 2, FRACUNIT);
+
+	NOHUD
+	INLEVEL
+
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	K_SpawnSplashForMobj(mo, impact);
+	return 0;
+}
+
+static int lib_kHandleFootstepParticles(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	NOHUD
+	INLEVEL
+
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	K_HandleFootstepParticles(mo);
+	return 0;
+}
+
+static int lib_kUpdateTerrainOverlay(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	NOHUD
+	INLEVEL
+
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	K_UpdateTerrainOverlay(mo);
+	return 0;
+}
+
+static int lib_kTerrainHasAffect(lua_State *L)
+{
+	terrain_t *terrain = *((terrain_t **)luaL_checkudata(L, 1, META_TERRAIN));
+	boolean badonly = lua_optboolean(L, 2);
+	boolean followmaprules = lua_optboolean(L, 3);
+
+	NOHUD
+	INLEVEL
+
+	if (!terrain)
+		return LUA_ErrInvalid(L, "terrain_t");
+
+	lua_pushboolean(L, K_TerrainHasAffect(terrain, badonly, followmaprules));
+	return 1;
+}
 
 static luaL_Reg lib[] = {
 	{"print", lib_print},
@@ -4554,6 +4658,17 @@ static luaL_Reg lib[] = {
 	
 	// I_System
 	{"I_GetPreciseTime",lib_iGetPreciseTime},
+
+	// k_terrain
+	{"K_AffectingTerrainActive", lib_kAffectingTerrainActive},
+	{"K_GetDefaultTerrain", lib_kGetDefaultTerrain},
+	{"K_GetTerrainForTextureName", lib_kGetTerrainForTextureName},
+	{"K_GetTerrainForTextureNum", lib_kGetTerrainForTextureNum},
+	{"K_ProcessTerrainEffect", lib_kProcessTerrainEffect},
+	{"K_SpawnSplashForMobj", lib_kSpawnSplashForMobj},
+	{"K_HandleFootstepParticles", lib_kHandleFootstepParticles},
+	{"K_UpdateTerrainOverlay", lib_kUpdateTerrainOverlay},
+	{"K_TerrainHasAffect", lib_kTerrainHasAffect},
 
 	{NULL, NULL}
 };

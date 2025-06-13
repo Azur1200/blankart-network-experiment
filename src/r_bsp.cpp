@@ -67,6 +67,13 @@ boolean R_NoEncore(sector_t *sector, levelflat_t *flat, boolean ceiling)
 {
 	const boolean invertEncore = (sector->flags & MSF_INVERTENCORE);
 	const terrain_t *terrain = (flat != NULL ? flat->terrain : NULL);
+	const sectorspecialflags_t flags = sector->specialflags;
+
+	if (flags & (SSF_SNEAKERPANEL|SSF_WATERPANEL|SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))
+	{
+		// Automatically handle encore invert for sneaker, water and pogospring panels.
+		return invertEncore;
+	}
 
 	if ((terrain == NULL) || (terrain->flags & TRF_REMAP))
 	{

@@ -1443,6 +1443,8 @@ static void R_SkewShadowSprite(
 	*shadowskew = xslope;
 }
 
+static patch_t *shadowpatch = NULL;
+
 static void R_ProjectDropShadow(
 	mobj_t *thing, vissprite_t *vis,
 	fixed_t scale, fixed_t tx, fixed_t tz)
@@ -1468,7 +1470,12 @@ static void R_ProjectDropShadow(
 		R_InterpolateMobjState(thing, FRACUNIT, &interp);
 	}
 
-	patch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
+	if (shadowpatch == NULL)
+	{
+		shadowpatch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
+	}
+
+	patch = shadowpatch;
 	xscale = FixedDiv(projection[viewssnum], tz);
 	yscale = FixedDiv(projectiony[viewssnum], tz);
 	shadowxscale = FixedMul(thing->radius*2, scale);
@@ -1509,7 +1516,7 @@ static void R_ProjectDropShadow(
 	shadow->gzt = groundz + patch->height * shadowyscale / 2;
 	shadow->gz = shadow->gzt - patch->height * shadowyscale;
 	shadow->texturemid = FixedMul(interp.scale, FixedDiv(shadow->gzt - viewz, shadowyscale));
-	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
 		shadow->texturemid = FixedMul(shadow->texturemid, ((skin_t *)thing->skin)->highresscale);
 	shadow->scalestep = 0;
 	shadow->shear.tan = shadowskew; // repurposed variable
@@ -1805,7 +1812,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	basetx = tx = FixedMul(tr_x, viewsin) - FixedMul(tr_y, viewcos); // sideways distance
 
 	// too far off the side?
-	if (!papersprite && abs(tx) > FixedMul(tz, fovtan[viewssnum])<<2) // papersprite clipping is handled later
+	if (!papersprite && abs(tx) > (INT64)FixedMul(tz, fovtan[viewssnum])<<2) // papersprite clipping is handled later
 		return;
 
 	// aspect ratio stuff
@@ -1907,7 +1914,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	I_Assert(lump < max_spritelumps);
 
-	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
+	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
 		this_scale = FixedMul(this_scale, ((skin_t *)thing->skin)->highresscale);
 
 	spr_width = spritecachedinfo[lump].width;
@@ -2538,7 +2545,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
-	
+
 	// okay... this is a hack, but weather isn't networked, so it should be ok
 	if (!P_PrecipThinker(thing))
 	{

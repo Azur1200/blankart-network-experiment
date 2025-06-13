@@ -288,7 +288,7 @@ boolean franticitems; // Frantic items currently enabled?
 boolean comeback; // Battle Mode's karma comeback is on/off
 
 // Voting system
-INT16 votelevels[4][2]; // Levels that were rolled by the host
+INT16 votelevels[12][2]; // Levels that were rolled by the host
 SINT8 votes[MAXPLAYERS]; // Each player's vote
 SINT8 pickedvote; // What vote the host rolls
 
@@ -337,8 +337,6 @@ typedef struct joystickvector2_s
 	INT32 xaxis;
 	INT32 yaxis;
 } joystickvector2_t;
-
-boolean precache = true; // if true, load all graphics at start
 
 INT16 prevmap, nextmap;
 
@@ -445,6 +443,14 @@ consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
 	CVAR_INIT ("deadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
 	CVAR_INIT ("deadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+};
+
+static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
+consvar_t cv_deadzonestyle[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("deadzonestyle", "Kart",  CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle2", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle3", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL),
+	CVAR_INIT ("deadzonestyle4", "Kart", CV_SAVE, deadzonestyle_cons_t, NULL)
 };
 
 // now automatically allocated in D_RegisterClientCommands
@@ -661,6 +667,17 @@ static void G_SetSaveGameModified(void)
 	strcatbf(savegamename, srb2home, PATHSEP);
 
 	G_LoadGameData();
+
+	// unlock EVERYTHING.
+	for (UINT8 i = 0; i < MAXUNLOCKABLES; i++)
+	{
+		if (!unlockables[i].conditionset)
+			continue;
+		if (!unlockables[i].unlocked)
+		{
+			unlockables[i].unlocked = true;
+		}
+	}
 }
 
 // for consistency among messages: this modifies the game and removes savemoddata.
@@ -939,9 +956,16 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 {
 	INT32 gamepadStyle = Joystick[splitnum].bGamepadStyle;
 	fixed_t deadZone = cv_deadzone[splitnum].value;
+	SINT8 deadZoneStyle = cv_deadzonestyle[splitnum].value;
 
 	// When gamepadstyle is "true" the values are just -1, 0, or 1. This is done in the interface code.
-	if (!gamepadStyle)
+
+	// v1 style deadzone == (deadZoneStyle == 0)
+	// Deadzone doesn't scale so shallower angles are easier to hit.
+
+	// RR style deadzone
+	// Dead zone scales so shallower angles are harder to hit but you have more range.
+	if (!gamepadStyle && (deadZoneStyle == 1))
 	{
 		// Get the total magnitude of the 2 axes
 		INT32 magnitude = (joystickvector->xaxis * joystickvector->xaxis) + (joystickvector->yaxis * joystickvector->yaxis);
@@ -1581,15 +1605,6 @@ boolean G_Responder(event_t *ev)
 			return true;
 		}
 	}
-	else if (gamestate == GS_CONTINUING)
-	{
-		return true;
-	}
-	// Demo End
-	else if (gamestate == GS_GAMEEND)
-	{
-		return true;
-	}
 	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_EVALUATION)
 		if (HU_Responder(ev))
 		{
@@ -1599,7 +1614,7 @@ boolean G_Responder(event_t *ev)
 
 	// allow spy mode changes even during the demo
 	if (gamestate == GS_LEVEL && ev->type == ev_keydown
-		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, true))
+		&& G_ControlBoundToKey(0, gc_viewpoint, ev->data1, false))
 	{
 		if (!demo.playback && (r_splitscreen))
 			g_localplayers[0] = consoleplayer;
@@ -2200,18 +2215,10 @@ void G_Ticker(boolean run)
 			HU_Ticker();
 			break;
 
-		case GS_GAMEEND:
-			if (run)
-				F_GameEndTicker();
-			break;
-
 		case GS_EVALUATION:
 			if (run)
 				F_GameEvaluationTicker();
 			HU_Ticker();
-			break;
-
-		case GS_CONTINUING:
 			break;
 
 		case GS_CREDITS:
@@ -2296,10 +2303,16 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	p->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK); // cancel invisibility
 	P_FlashPal(p, 0, 0); // Resets
 
-	p->starpostnum = 0;
+	memset(p->powers, 0, sizeof (p->powers));
+	memset(p->kartstuff, 0, sizeof (p->kartstuff)); // SRB2kart
+	p->starpostangle = 0;
 	p->starposttime = 0;
-	p->prevcheck = 0;
+	p->starpostx = 0;
+	p->starposty = 0;
+	p->starpostz = 0;
+	p->starpostnum = 0;
 	p->nextcheck = 0;
+	p->prevcheck = 0;
 
 	// SRB2kart: Increment the "matches played" counter.
 	if (player == consoleplayer)
@@ -2448,7 +2461,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
-		rings = 10;
+		rings = 5;
 		kickstartaccel = 0;
 		lastsafelap = 0;
 		lastsafestarpost = 0;
@@ -2519,9 +2532,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		starposttime = players[player].starposttime;
 		prevcheck = players[player].prevcheck;
 		prevcheck = players[player].nextcheck;
-
-		pflags |= (players[player].pflags & (PF_STASIS|PF_ELIMINATED|PF_NOCONTEST|PF_LOSTLIFE|PF_FLIPCAM));
-
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;
@@ -3597,7 +3607,7 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 					break;
 			}
 		}
-		if (encorepossible != (cv_kartencore.value == 1))
+		if (encorepossible != (cv_kartencore.value == 0))
 			encoremodifier = VOTEMODIFIER_ENCORE;
 	}
 
@@ -5094,6 +5104,8 @@ void G_InitNew(UINT8 pencoremode, INT32 map, boolean resetplayer, boolean skippr
 			players[i].totalring = 0;
 			players[i].score = 0;
 		}
+
+		players[i].interpoints = 0;
 	}
 
 	// Reset unlockable triggers

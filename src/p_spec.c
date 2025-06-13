@@ -47,6 +47,7 @@
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"
+#include "blan/b_soc.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -58,50 +59,6 @@
 mobj_t *skyboxmo[2]; // current skybox mobjs: 0 = viewpoint, 1 = centerpoint
 mobj_t *skyboxviewpnts[16]; // array of MT_SKYBOX viewpoint mobjs
 mobj_t *skyboxcenterpnts[16]; // array of MT_SKYBOX centerpoint mobjs
-
-/** Animated texture descriptor
-  * This keeps track of an animated texture or an animated flat.
-  * \sa P_UpdateSpecials, P_InitPicAnims, animdef_t
-  */
-typedef struct
-{
-	SINT8 istexture; ///< ::true for a texture, ::false for a flat
-	INT32 picnum;    ///< The end flat number
-	INT32 basepic;   ///< The start flat number
-	INT32 numpics;   ///< Number of frames in the animation
-	tic_t speed;     ///< Number of tics for which each frame is shown
-} anim_t;
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
-/** Animated texture definition.
-  * Used for loading an ANIMDEFS lump from a wad.
-  *
-  * Animations are defined by the first and last frame (i.e., flat or texture).
-  * The animation sequence uses all flats between the start and end entry, in
-  * the order found in the wad.
-  *
-  * \sa anim_t
-  */
-typedef struct
-{
-	SINT8 istexture; ///< True for a texture, false for a flat.
-	char endname[9]; ///< Name of the last frame, null-terminated.
-	char startname[9]; ///< Name of the first frame, null-terminated.
-	INT32 speed ; ///< Number of tics for which each frame is shown.
-} ATTRPACK animdef_t;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
-typedef struct
-{
-	UINT32 count;
-	thinker_t **thinkers;
-} thinkerlist_t;
 
 static void P_SpawnScrollers(void);
 static void P_SpawnFriction(void);
@@ -130,8 +87,8 @@ static void P_AddPlaneDisplaceThinker(INT32 type, fixed_t speed, INT32 control, 
 
 
 //SoM: 3/7/2000: New sturcture without limits.
-static anim_t *lastanim;
-static anim_t *anims = NULL; /// \todo free leak
+anim_t *lastanim;
+anim_t *anims = NULL; /// \todo free leak
 static size_t maxanims;
 
 // Animating line specials
@@ -141,16 +98,31 @@ static size_t maxanims;
 
 static animdef_t *animdefs = NULL;
 
-// Increase the size of animdefs to make room for a new animation definition
-static void GrowAnimDefs(void)
-{
-	maxanims++;
-	animdefs = (animdef_t *)Z_Realloc(animdefs, sizeof(animdef_t)*(maxanims + 1), PU_STATIC, NULL);
-}
-
 // A prototype; here instead of p_spec.h, so they're "private"
 void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum);
-void P_ParseAnimationDefintion(SINT8 istexture);
+void P_ParseAnimationDefintion(SINT8 istexture, boolean compat);
+
+static boolean P_FindTextureForAnimation(anim_t *anim, animdef_t *animdef)
+{
+	if (R_CheckTextureNumForName(animdef->startname) == -1)
+		return false;
+
+	anim->picnum = R_TextureNumForName(animdef->endname);
+	anim->basepic = R_TextureNumForName(animdef->startname);
+
+	return true;
+}
+
+static boolean P_FindFlatForAnimation(anim_t *anim, animdef_t *animdef)
+{
+	if (R_CheckFlatNumForName(animdef->startname) == -1)
+		return false;
+
+	anim->picnum = R_CheckFlatNumForName(animdef->endname);
+	anim->basepic = R_CheckFlatNumForName(animdef->startname);
+
+	return true;
+}
 
 /** Sets up texture and flat animations.
   *
@@ -206,37 +178,38 @@ void P_InitPicAnims(void)
 	lastanim = anims;
 	for (i = 0; animdefs[i].istexture != -1; i++)
 	{
-		if (animdefs[i].istexture == 1)
-		{
-			if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
-				continue;
+		animdef_t *animdef = &animdefs[i];
 
-			lastanim->picnum = R_TextureNumForName(animdefs[i].endname);
-			lastanim->basepic = R_TextureNumForName(animdefs[i].startname);
+		// If this animation is for a texture, look for one first, THEN look for a flat
+		if (animdefs[i].istexture)
+		{
+			if (!P_FindTextureForAnimation(lastanim, animdef))
+			{
+				if (!P_FindFlatForAnimation(lastanim, animdef))
+					continue;
+			}
 		}
 		else
 		{
-			if ((W_CheckNumForName(animdefs[i].startname)) == LUMPERROR)
-				continue;
-
-			lastanim->picnum = R_GetFlatNumForName(animdefs[i].endname);
-			lastanim->basepic = R_GetFlatNumForName(animdefs[i].startname);
+			if (!P_FindFlatForAnimation(lastanim, animdef))
+			{
+				if (!P_FindTextureForAnimation(lastanim, animdef))
+					continue;
+			}
 		}
 
-		lastanim->istexture = animdefs[i].istexture;
 		lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
 
 		if (lastanim->numpics < 2)
 		{
 			free(anims);
 			I_Error("P_InitPicAnims: bad cycle from %s to %s",
-				animdefs[i].startname, animdefs[i].endname);
+				animdef->startname, animdef->endname);
 		}
 
-		lastanim->speed = LONG(animdefs[i].speed);
+		lastanim->speed = animdef->speed;
 		lastanim++;
 	}
-	lastanim->istexture = -1;
 	R_ClearTextureNumCache(false);
 
 	// Clear animdefs now that we're done with it.
@@ -252,6 +225,7 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	char *animdefsText;
 	char *animdefsToken;
 	char *p;
+	boolean compat = wadfiles[wadNum]->compatmode;
 
 	// Since lumps AREN'T \0-terminated like I'd assumed they should be, I'll
 	// need to make a space of memory where I can ensure that it will terminate
@@ -278,12 +252,12 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 		if (stricmp(animdefsToken, "TEXTURE") == 0)
 		{
 			Z_Free(animdefsToken);
-			P_ParseAnimationDefintion(1);
+			P_ParseAnimationDefintion(1, compat);
 		}
 		else if (stricmp(animdefsToken, "FLAT") == 0)
 		{
 			Z_Free(animdefsToken);
-			P_ParseAnimationDefintion(0);
+			P_ParseAnimationDefintion(0, compat);
 		}
 		else if (stricmp(animdefsToken, "OSCILLATE") == 0)
 		{
@@ -303,7 +277,7 @@ void P_ParseANIMDEFSLump(INT32 wadNum, UINT16 lumpnum)
 	Z_Free((void *)animdefsText);
 }
 
-void P_ParseAnimationDefintion(SINT8 istexture)
+void P_ParseAnimationDefintion(SINT8 istexture, boolean compat)
 {
 	char *animdefsToken;
 	size_t animdefsTokenLength;
@@ -346,7 +320,7 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 
 	// Search for existing animdef
 	for (i = 0; i < maxanims; i++)
-		if (animdefs[i].istexture == istexture // Check if it's the same type!
+		if ((compat || animdefs[i].istexture == istexture) // Check if it's the same type!
 		&& stricmp(animdefsToken, animdefs[i].startname) == 0)
 		{
 			//CONS_Alert(CONS_NOTICE, "Duplicate animation: %s\n", animdefsToken);
@@ -361,7 +335,8 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	if (i == maxanims)
 	{
 		// Increase the size to make room for the new animation definition
-		GrowAnimDefs();
+		maxanims++;
+		animdefs = (animdef_t *)Z_Realloc(animdefs, sizeof(animdef_t)*(maxanims + 1), PU_STATIC, NULL);
 		strncpy(animdefs[i].startname, animdefsToken, 9);
 	}
 
@@ -447,83 +422,6 @@ void P_ParseAnimationDefintion(SINT8 istexture)
 	}
 	animdefs[i].speed = animSpeed;
 	Z_Free(animdefsToken);
-
-#ifdef WALLFLATS
-	// hehe... uhh.....
-	if (!istexture)
-	{
-		GrowAnimDefs();
-		M_Memcpy(&animdefs[maxanims-1], &animdefs[i], sizeof(animdef_t));
-		animdefs[maxanims-1].istexture = 1;
-	}
-#endif
-}
-
-/** Checks for flats in levelflats that are part of a flat animation sequence
-  * and sets them up for animation.
-  *
-  * \param animnum Index into ::anims to find flats for.
-  * \sa P_SetupLevelFlatAnims
-  */
-static inline void P_FindAnimatedFlat(INT32 animnum)
-{
-	size_t i;
-	lumpnum_t startflatnum, endflatnum;
-	levelflat_t *foundflats;
-
-	foundflats = levelflats;
-	startflatnum = anims[animnum].basepic;
-	endflatnum = anims[animnum].picnum;
-
-	// note: high word of lumpnum is the wad number
-	if ((startflatnum>>16) != (endflatnum>>16))
-		I_Error("AnimatedFlat start %s not in same wad as end %s\n",
-			animdefs[animnum].startname, animdefs[animnum].endname);
-
-	//
-	// now search through the levelflats if this anim flat sequence is used
-	//
-	for (i = 0; i < numlevelflats; i++, foundflats++)
-	{
-		// is that levelflat from the flat anim sequence ?
-		if ((anims[animnum].istexture) && (foundflats->type == LEVELFLAT_TEXTURE)
-			&& ((UINT16)foundflats->u.texture.num >= startflatnum && (UINT16)foundflats->u.texture.num <= endflatnum))
-		{
-			foundflats->u.texture.basenum = startflatnum;
-			foundflats->animseq = foundflats->u.texture.num - startflatnum;
-			foundflats->numpics = endflatnum - startflatnum + 1;
-			foundflats->speed = anims[animnum].speed;
-
-			CONS_Debug(DBG_SETUP, "animflat: #%03d name:%.8s animseq:%d numpics:%d speed:%d\n",
-					atoi(sizeu1(i)), foundflats->name, foundflats->animseq,
-					foundflats->numpics,foundflats->speed);
-		}
-		else if ((!anims[animnum].istexture) && (foundflats->type == LEVELFLAT_FLAT)
-			&& (foundflats->u.flat.lumpnum >= startflatnum && foundflats->u.flat.lumpnum <= endflatnum))
-		{
-			foundflats->u.flat.baselumpnum = startflatnum;
-			foundflats->animseq = foundflats->u.flat.lumpnum - startflatnum;
-			foundflats->numpics = endflatnum - startflatnum + 1;
-			foundflats->speed = anims[animnum].speed;
-
-			CONS_Debug(DBG_SETUP, "animflat: #%03d name:%.8s animseq:%d numpics:%d speed:%d\n",
-					atoi(sizeu1(i)), foundflats->name, foundflats->animseq,
-					foundflats->numpics,foundflats->speed);
-		}
-	}
-}
-
-/** Sets up all flats used in a level.
-  *
-  * \sa P_InitPicAnims, P_FindAnimatedFlat
-  */
-void P_SetupLevelFlatAnims(void)
-{
-	INT32 i;
-
-	// the original game flat anim sequences
-	for (i = 0; anims[i].istexture != -1; i++)
-		P_FindAnimatedFlat(i);
 }
 
 //
@@ -1396,7 +1294,10 @@ static boolean P_CheckPushables(line_t *triggerline, sector_t *caller)
 		case TMC_GTE:
 			return numpushables >= targetpushables;
 		case TMC_LTE:
-			return numpushables <= targetpushables;
+			if (mapnamespace == MNS_SRB2KART)
+				return numpushables < targetpushables;
+			else
+				return numpushables <= targetpushables;
 	}
 }
 
@@ -1971,6 +1872,73 @@ void P_SwitchWeather(preciptype_t newWeather)
 		P_SpawnPrecipitation();
 }
 
+static boolean isfinish(waypoint_t *check)
+{
+	size_t i;
+	waypoint_t *finish = K_GetFinishLineWaypoint();
+
+	if (check == NULL)
+		return false;
+	if (check == finish)
+		return true;
+
+	for (i = 0; i < check->numnextwaypoints; i++)
+	{
+		if (check->nextwaypoints[i] == finish)
+			return true;
+	}
+	for (i = 0; i < check->numprevwaypoints; i++)
+	{
+		if (check->prevwaypoints[i] == finish)
+			return true;
+	}
+
+	return false;
+}
+
+// fix the player's current waypoint after crossing the finish line
+// get them off the finish line waypoint ASAP!
+static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
+{
+	size_t i;
+	fixed_t closest = INT32_MAX;
+	waypoint_t *finish = K_GetFinishLineWaypoint(), *snapto = NULL;
+
+	// now did we actually cross the REAL finish line?
+	// this is important for sprint maps
+	if (!isfinish(player->currentwaypoint) && !isfinish(player->nextwaypoint))
+		return;
+
+	//CONS_Printf("fixed up %td\n", player - players);
+
+	if (reverse)
+	{
+		for (i = 0; i < finish->numprevwaypoints; i++)
+		{
+			waypoint_t *check = finish->prevwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+	else
+	{
+		for (i = 0; i < finish->numnextwaypoints; i++)
+		{
+			waypoint_t *check = finish->nextwaypoints[i];
+			fixed_t dist = R_PointToDist2(player->mo->x, player->mo->y, check->mobj->x, check->mobj->y);
+			if (dist < closest)
+				closest = dist, snapto = check;
+		}
+	}
+
+	if (snapto)
+	{
+		player->currentwaypoint = snapto;
+		player->nextwaypoint = NULL; // don't forget to update position after this :^)
+	}
+}
+
 static boolean K_IgnoreFinishLine(player_t *player)
 {
 	// If potential lap cheating has been detected, do not
@@ -2027,8 +1995,10 @@ static void K_HandleLapIncrement(player_t *player)
 			}
 
 			if (!cv_kartdebuglap.value && player->laps == 1)
-					player->pflags |= PF_TRUSTWAYPOINTS;
+				player->pflags |= PF_TRUSTWAYPOINTS;
+			K_FixupFinishWaypoint(player, false);
 			K_UpdateAllPlayerPositions();
+
 
 			// Set up lap animation vars
 			if (player->laps > 1)
@@ -2139,6 +2109,7 @@ static void K_HandleLapDecrement(player_t *player)
 			return;
 		if (player->laps > 0)
 		{
+			K_FixupFinishWaypoint(player, true);
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_UpdateAllPlayerPositions();
@@ -2650,6 +2621,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						CONS_Debug(DBG_GAMELOGIC, "Special type 403 Executor: No frontsector to copy planes from!\n");
 						return false;
 					}
+
 					copySector = line->frontsector;
 				}
 				else
@@ -3213,10 +3185,29 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 434: // Custom Power
 			if (mo && mo->player)
 			{
-				powertype_t power = line->stringargs[0] ? get_number(line->stringargs[0]) : 0;
-				INT32 value = line->stringargs[1] ? get_number(line->stringargs[1]) : 0;
+				powertype_t power = stringargs[0] ? get_number(stringargs[0]) : 0;
+				INT32 value = stringargs[1] ? get_number(stringargs[1]) : 0;
 				if (value == -1) // 'Infinite'
 					value = UINT16_MAX;
+
+				if (stringargs[0])
+				{
+					if (!strcasecmp(stringargs[0], "PW_FLASHING"))
+					{
+						mo->player->flashing = value;
+						break;
+					}
+					else if (!strcasecmp(stringargs[0], "PW_NOCONTROL"))
+					{
+						mo->player->nocontrol = value;
+						break;
+					}
+					else if (!strcasecmp(stringargs[0], "PW_EMERALDS"))
+					{
+						mo->player->emeralds = value;
+						break;
+					}
+				}
 
 				mo->player->powers[power] = value;
 			}
@@ -4616,16 +4607,16 @@ boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec)
 	return P_IsMobjTouchingPlane(mo, sec, P_GetSpecialBottomZ(mo, sec, sec), P_GetSpecialTopZ(mo, sec, sec));
 }
 
-boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *ffloor, sector_t *sec)
+boolean P_IsMobjTouching3DFloor(mobj_t *mo, ffloor_t *fof, sector_t *sec)
 {
-	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + ffloor->secnum, sec);
-	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + ffloor->secnum, sec);
+	fixed_t topheight = P_GetSpecialTopZ(mo, sectors + fof->secnum, sec);
+	fixed_t bottomheight = P_GetSpecialBottomZ(mo, sectors + fof->secnum, sec);
 
-	if (((ffloor->fofflags & FOF_BLOCKPLAYER) && mo->player)
-		|| ((ffloor->fofflags & FOF_BLOCKOTHERS) && !mo->player))
+	if (((fof->fofflags & FOF_BLOCKPLAYER) && mo->player)
+		|| ((fof->fofflags & FOF_BLOCKOTHERS) && !mo->player))
 	{
 		// Solid 3D floor: Mobj must touch the top or bottom
-		return P_IsMobjTouchingPlane(mo, ffloor->master->frontsector, topheight, bottomheight);
+		return P_IsMobjTouchingPlane(mo, fof->master->frontsector, topheight, bottomheight);
 	}
 	else
 	{
@@ -5094,6 +5085,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	fixed_t sfxnum;
 	size_t i;
 
+	if (player->mo->terrain && player->mo->terrain->speedPad > 0 && K_AffectingTerrainActive())
+	{
+		// Don't double process Speed Pads.
+		return;
+	}
+
 	if (player->dashpadcooldown != 0)
 		return;
 
@@ -5185,6 +5182,12 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 
 static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 {
+	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && K_AffectingTerrainActive())
+	{
+		// Don't double process Pogo Springs.
+		return;
+	}
+
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - player->mo->scale);
 	const fixed_t minspeed = 24*hscale;
 	const fixed_t maxspeed = 28*hscale;
@@ -5208,6 +5211,23 @@ static void P_ProcessPogoSpring(player_t *player, boolean isTouching, int type)
 
 static void P_ProcessBoostPanel(player_t *player, boolean isTouching, int type)
 {
+
+	if (player->mo->terrain && K_AffectingTerrainActive())
+	{
+		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
+		{
+			// Don't double process sneakerpanels.
+			return;
+		}
+
+		if (player->mo->terrain->flags & TRF_WATERRUNPANEL)
+		{
+			// Don't double process waterpanels.
+			return;
+		}
+	}
+
+
 	if (isTouching)
 	{
 		if (!player->floorboost)
@@ -5432,12 +5452,13 @@ static void P_EvaluateLinedefExecutorTrigger(player_t *player, sector_t *sector,
 
 static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, sector_t *roversector, boolean isTouching)
 {
-	switch (GETSECSPECIAL(sector->special, 1))
+	(void)isTouching;
+	/*switch (GETSECSPECIAL(sector->special, 1))
 	{
 		case 9: // Ring Drainer (Floor Touch)
 			if (!isTouching)
 				break;
-			/* FALLTHRU */
+			// FALLTHRU
 		case 10: // Ring Drainer (No Floor Touch)
 			if (leveltime % (TICRATE/2) == 0 && player->rings > 0)
 			{
@@ -5445,7 +5466,7 @@ static void P_EvaluateOldSectorSpecial(player_t *player, sector_t *sector, secto
 				S_StartSound(player->mo, sfx_antiri);
 			}
 			break;
-	}
+	}*/
 
 	switch (GETSECSPECIAL(sector->special, 2))
 	{
@@ -6051,13 +6072,6 @@ void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous, boolean 
   */
 void P_UpdateSpecials(void)
 {
-	anim_t *anim;
-	INT32 i;
-	INT32 pic;
-	size_t j;
-
-	levelflat_t *foundflats; // for flat animation
-
 	// LEVEL TIMER
 	P_CheckTimeLimit();
 
@@ -6065,37 +6079,18 @@ void P_UpdateSpecials(void)
 	P_CheckPointLimit();
 
 	// ANIMATE TEXTURES
-	for (anim = anims; anim < lastanim; anim++)
+	for (anim_t *anim = anims; anim < lastanim; anim++)
 	{
-		for (i = 0; i < anim->numpics; i++)
+		for (INT32 i = 0; i < anim->numpics; i++)
 		{
-			pic = anim->basepic + ((leveltime/anim->speed + i) % anim->numpics);
-			if (anim->istexture)
-				texturetranslation[anim->basepic+i] = pic;
-		}
-	}
-
-	// ANIMATE FLATS
-	/// \todo do not check the non-animate flat.. link the animated ones?
-	/// \note its faster than the original anywaysince it animates only
-	///    flats used in the level, and there's usually very few of them
-	foundflats = levelflats;
-	for (j = 0; j < numlevelflats; j++, foundflats++)
-	{
-		if (foundflats->speed) // it is an animated flat
-		{
-			// update the levelflat texture number
-			if ((foundflats->type == LEVELFLAT_TEXTURE) && (foundflats->u.texture.basenum != -1))
-				foundflats->u.texture.num = foundflats->u.texture.basenum + ((leveltime/foundflats->speed + foundflats->animseq) % foundflats->numpics);
-			// update the levelflat lump number
-			else if ((foundflats->type == LEVELFLAT_FLAT) && (foundflats->u.flat.baselumpnum != LUMPERROR))
-				foundflats->u.flat.lumpnum = foundflats->u.flat.baselumpnum + ((leveltime/foundflats->speed + foundflats->animseq) % foundflats->numpics);
+			INT32 pic = anim->basepic + ((leveltime/anim->speed + i) % anim->numpics);
+			texturetranslation[anim->basepic+i] = pic;
 		}
 	}
 }
 
 //
-// Floor over floors (FOFs), 3Dfloors, 3Dblocks, fake floors (ffloors), rovers, or whatever you want to call them
+// 3D floors
 //
 
 /** Gets the ID number for a 3Dfloor in its target sector.

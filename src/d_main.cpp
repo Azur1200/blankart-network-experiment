@@ -81,14 +81,16 @@
 #include <tracy/tracy/Tracy.hpp>
 
 // Put hashes here to get them out of header hell.
-#define ASSET_HASH_MAIN_PK3     0x6be3d5a671916bcb
-#define ASSET_HASH_SRB2_SRB     0xf3ec1ea4d0eca4a9
-#define ASSET_HASH_GFX_KART       0xc91b0d43f5ba131f
-#define ASSET_HASH_TEXTURES_KART  0xb4211b2f32b6a291
-#define ASSET_HASH_CHARS_KART     0x1e68a3e01aa5c68b
-#define ASSET_HASH_MAPS_KART      0x38558ed00da41ce9
+#define ASSET_HASH_SRB2_SRB            0xf3ec1ea4d0eca4a9
+#define ASSET_HASH_GFX_KART            0xc91b0d43f5ba131f
+#define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
+#define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
+#define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
+#define ASSET_HASH_MAIN_PK3            0x41568cadaf608e27
+#define ASSET_HASH_MAPPATCH_PK3        0x36ef622b54d98871
+#define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
-#define ASSET_HASH_PATCH_PK3     0x0000000000000000
+#define ASSET_HASH_PATCH_PK3           0x0000000000000000
 #endif
 
 #ifdef CMAKECONFIG
@@ -110,6 +112,7 @@
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
 int SUBVERSION;
+UINT8 comprevision_abbrev_bin[GIT_SHA_ABBREV];
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -117,8 +120,6 @@ int SUBVERSION;
 
 // platform independant focus loss
 UINT8 window_notinfocus = false;
-INT32 window_x;
-INT32 window_y;
 
 //
 // DEMO LOOP
@@ -556,18 +557,10 @@ static bool D_Display(void)
 			HU_Drawer();
 			break;
 
-		case GS_GAMEEND:
-			F_GameEndDrawer();
-			break;
-
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
 			HU_Erase();
 			HU_Drawer();
-			break;
-
-		case GS_CONTINUING:
-			//F_ContinueDrawer();
 			break;
 
 		case GS_CREDITS:
@@ -1201,6 +1194,8 @@ static void IdentifyVersion(void)
 	D_AddFile(startupiwads, va(pandf,srb2waddir,CHARSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPSNAME));
 	D_AddFile(startupiwads, va(pandf,srb2waddir,MAINNAME));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,MAPPATCHNAME));
+	D_AddFile(startupiwads, va(pandf,srb2waddir,BONUSCHARSNAME));
 #ifdef USE_PATCH_FILE
 	D_AddFile(startupiwads, va(pandf,srb2waddir,PATCHNAME));
 #endif
@@ -1276,9 +1271,6 @@ void D_SRB2Main(void)
 
 	// MAINCFG is now taken care of where "OBJCTCFG" is handled
 	G_LoadGameSettings();
-
-	// Test Dehacked lists
-	DEH_TableCheck();
 
 	// Netgame URL special case: change working dir to EXE folder.
 	ChangeDirForUrlHandler();
@@ -1395,10 +1387,6 @@ void D_SRB2Main(void)
 	if (M_CheckParm("-password") && M_IsNextParm())
 		D_SetPassword(M_GetNextParm());
 
-	// player setup menu colors must be initialized before
-	// any wad file is added, as they may contain colors themselves
-	M_InitPlayerSetupColors();
-
 	CONS_Printf("Z_Init(): Init zone memory allocation daemon. \n");
 	Z_Init();
 	CON_SetLoadingProgress(LOADED_ZINIT);
@@ -1430,7 +1418,7 @@ void D_SRB2Main(void)
 		netgame = server = true;
 
 	// adapt tables to SRB2's needs, including extra slots for dehacked file support
-	P_PatchInfoTables();
+	P_ResetData(15);
 
 	// initiate menu metadata before SOCcing them
 	M_InitMenuPresTables();
@@ -1446,9 +1434,6 @@ void D_SRB2Main(void)
 	I_InitializeTime();
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
 
-	// Make backups of some SOCcable tables.
-	P_BackupTables();
-	
 	// Setup default unlockable conditions
 	M_SetupDefaultConditionSets();
 
@@ -1491,6 +1476,8 @@ void D_SRB2Main(void)
 	W_VerifyFileHash(MAINWAD_CHARS, ASSET_HASH_CHARS_KART);
 	W_VerifyFileHash(MAINWAD_MAPS, ASSET_HASH_MAPS_KART);
 	W_VerifyFileHash(MAINWAD_MAIN, ASSET_HASH_MAIN_PK3);
+	W_VerifyFileHash(MAINWAD_MAPPATCH, ASSET_HASH_MAPPATCH_PK3);
+	W_VerifyFileHash(MAINWAD_BONUSCHARS, ASSET_HASH_BONUSCHARS_KART);
 #ifdef USE_PATCH_FILE
 	W_VerifyFileHash(MAINWAD_PATCH, ASSET_HASH_PATCH_PK3);
 #endif
@@ -1502,13 +1489,14 @@ void D_SRB2Main(void)
 	wadfiles[MAINWAD_CHARS]->compatmode = true;
 	wadfiles[MAINWAD_MAPS]->compatmode = true;
 	wadfiles[MAINWAD_MAIN]->compatmode = false;
+	wadfiles[MAINWAD_MAPPATCH]->compatmode = false;
+	wadfiles[MAINWAD_BONUSCHARS]->compatmode = true;
 #ifdef USE_PATCH_FILE
 	wadfiles[MAINWAD_PATCH]->compatmode = false;
 #endif
 
 	R_InitPaletteRemap();
 
-	// now do it again for the SOC colors in main.pk3!
 	M_InitPlayerSetupColors();
 
 	// Do it before P_InitMapData because PNG patch
@@ -1642,6 +1630,7 @@ void D_SRB2Main(void)
 		I_StartupSound();
 		I_InitMusic();
 		S_InitSfxChannels(cv_soundvolume.value);
+		S_InitMusicVolume();
 	}
 	CON_SetLoadingProgress(LOADED_SINITSFXCHANNELS);
 
@@ -1893,9 +1882,11 @@ void D_SRB2Main(void)
 			// ... unless you're in a dedicated server.  Yes, technically this means you can view any level by
 			// running a dedicated server and joining it yourself, but that's better than making dedicated server's
 			// lives hell.
+#if 0
 			if (!dedicated && M_MapLocked(pstartmap))
 				I_Error("You need to unlock this level before you can warp to it!\n");
 			else
+#endif
 			{
 				D_MapChange(pstartmap, gametype, (cv_kartencore.value == 1), true, 0, false, false);
 			}
@@ -1928,10 +1919,6 @@ void D_SRB2Main(void)
 const char *D_Home(void)
 {
 	const char *userhome = NULL;
-
-#ifdef ANDROID
-	return "/data/data/org.srb2/";
-#endif
 
 	if (M_CheckParm("-home") && M_IsNextParm())
 		userhome = M_GetNextParm();

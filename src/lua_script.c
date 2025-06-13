@@ -60,6 +60,7 @@ static lua_CFunction liblist[] = {
 	LUA_BlockmapLib, // blockmap stuff
 	LUA_HudLib, // HUD stuff
 	LUA_FollowerLib, // follower_t, followers[]
+	LUA_TerrainLib, // t_splash_t, t_footstep_t, t_overlay_t, terrain_t
 	NULL
 };
 
@@ -356,6 +357,10 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 			lua_pushinteger(L, numskincolors);
 		else
 			lua_pushinteger(L, MAXSKINCOLORS);
+		return 1;
+	} else if (fastcmp(word,"MAXTRANSLATIONS")) {
+		if (lua_compatmode)
+			lua_pushinteger(L, numskincolors);
 		return 1;
 	} else if (fastcmp(word,"gamespeed")) {
 		lua_pushinteger(L, gamespeed);

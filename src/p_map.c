@@ -42,6 +42,8 @@
 
 #include "m_perfstats.h" // ps_checkposition_calls
 
+#include "k_bot.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -617,7 +619,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (g_tm.thing->player && g_tm.thing->flags & MF_SHOOTABLE && thing->health > 0)
 		{
 			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
-			if (!damagetype && thing->flags & MF_FIRE) // BURN!
+			if (!damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(g_tm.thing, thing, thing, 1, damagetype);
 		}
@@ -633,7 +635,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		if (thing->player && thing->flags & MF_SHOOTABLE && g_tm.thing->health > 0)
 		{
 			UINT32 damagetype = (g_tm.thing->info->mass & DMG_TYPEMASK);
-			if (!damagetype && g_tm.thing->flags & MF_FIRE) // BURN!
+			if (!damagetype) // OWWWWW!
 				damagetype = DMG_NORMAL;
 			P_DamageMobj(thing, g_tm.thing, g_tm.thing, 1, damagetype);
 		}
@@ -2837,26 +2839,6 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 			{
 				P_CrossSpecialLine(ld, oldside, thing);
 			}
-			else if (ld->special == 2001 && thing->player) // Finish Line
-			{
-				// ~~ WAYPOINT BULLSHIT ~~
-				// Right on the line, P_PointOnLineSide may
-				// disagree with P_TraceWaypointTraversal.
-				// If this happens, nextwaypoint may update
-				// ahead of the finish line before the player
-				// crosses it.
-				// This bloats the finish line distance and
-				// triggers lap cheat prevention, preventing
-				// the player from gaining a lap.
-				// Since this only seems like it can happen
-				// very near to the line, simply don't update
-				// waypoints if the player is touching the
-				// line but hasn't crossed it.
-				// This will cause distancetofinish to jump
-				// but only for a very short distance (the
-				// radius of the player).
-				thing->player->pflags |= PF_FREEZEWAYPOINTS;
-			}
 		}
 	}
 
@@ -3711,10 +3693,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-	mo->player->botvars.drifttime = 0;
-	mo->player->botvars.driftstate = DRIFTSTATE_AUTO;
-	mo->player->botvars.driftturn = 0;
-	mo->player->botvars.powersliding = false;
+	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT);
 
 	if (!cv_kartbumpspring.value || modeattacking != ATTACKING_NONE)
 	{

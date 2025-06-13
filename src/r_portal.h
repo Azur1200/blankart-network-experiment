@@ -58,6 +58,7 @@ void Portal_Remove		(portal_t* portal);
 void Portal_Add2Lines	(const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2);
 void Portal_AddSkybox	(const visplane_t* plane);
 
+void Portal_ClipRange (portal_t* portal);
 void Portal_ClipApply (const portal_t* portal);
 
 void Portal_AddSkyboxPortals (void);

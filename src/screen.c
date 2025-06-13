@@ -73,7 +73,11 @@ CV_PossibleValue_t cv_renderer_t[] = {
 	{0, NULL}
 };
 
+#ifdef HWRENDER
+consvar_t cv_renderer = CVAR_INIT ("renderer", "OpenGL", CV_SAVE|CV_NOLUA|CV_CALL, cv_renderer_t, SCR_ChangeRenderer);
+#else
 consvar_t cv_renderer = CVAR_INIT ("renderer", "Software", CV_SAVE|CV_NOLUA|CV_CALL, cv_renderer_t, SCR_ChangeRenderer);
+#endif
 
 static void SCR_ChangeFullscreen(void);
 

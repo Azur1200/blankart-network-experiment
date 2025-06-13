@@ -850,6 +850,9 @@ _(eggspr)
 // Chaining Sound
 _(bstchn)
 
+// Low Ring Sound
+_(ringlw)
+
 // Shout message sound effect
 _(sysmsg)
 

@@ -1859,7 +1859,7 @@ void P_XYMovement(mobj_t *mo)
 		else if (predictedz-mo->z > abs(slopemom.z/2)
 		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true // Now check if we were supposed to stick to this slope
 		&& ((!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
-		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz)))) // Always do this for old demos
+		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz))))
 		{
 			// Now check if we were supposed to stick to this slope
 			//CONS_Printf("%d-%d > %d\n", (predictedz), (mo->z), (slopemom.z/2));
@@ -3179,7 +3179,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		}
 	}
 
-	if (mobj->terrain != NULL && B_UseTerrainDef())
+	if (mobj->terrain != NULL && K_AffectingTerrainActive())
 	{
 		if (mobj->terrain->flags & TRF_LIQUID)
 		{
@@ -3558,7 +3558,7 @@ void P_DestroyRobots(void)
 // the below is chasecam only, if you're curious. check out P_CalcPostImg in p_user.c for first person
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam)
 {
-	const boolean flipcam = (player->pflags & PF_FLIPCAM && player->mo->eflags & MFE_VERTICALFLIP);
+	const boolean flipcam = ((player->pflags & PF_FLIPCAM) && (player->mo->eflags & MFE_VERTICALFLIP));
 	UINT8 postimgtype = 0;
 
 	// This can happen when joining
@@ -8345,7 +8345,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((K_AffectingTerrainActive() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
@@ -8417,7 +8417,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 
 			sec2 = P_ThingOnSpecial3DFloor(mobj);
-			if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+			if ((K_AffectingTerrainActive() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 				|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 				&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 				K_DoPogoSpring(mobj, 0, 1);
@@ -8449,7 +8449,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				if (grounded)
 				{
 					sector_t *sec2 = P_ThingOnSpecial3DFloor(mobj);
-					if ((B_UseTerrainDef() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
+					if ((K_AffectingTerrainActive() && mobj->terrain && mobj->terrain->pogoSpring > 0) || (sec2 && (sec2->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING)))
 						|| (P_IsObjectOnRealGround(mobj, mobj->subsector->sector)
 						&& (mobj->subsector->sector->specialflags & (SSF_YELLOWPOGOSPRING|SSF_REDPOGOSPRING))))
 						K_DoPogoSpring(mobj, 0, 1);
@@ -9095,7 +9095,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->sloperoll = mobj->target->sloperoll;
 
 			P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
-			mobj->angle = mobj->target->angle;
+			mobj->angle = K_MomentumAngle(mobj->target);
 			break;
 		}
 	case MT_ROCKETSNEAKER:
@@ -10596,11 +10596,10 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 	thing->whiteshadow = ((thing->frame & FF_BRIGHTMASK) == FF_FULLBRIGHT);
 	thing->shadowcolor = 15;
 
+	// Those have shadow by default
 	switch (thing->type)
 	{
 		case MT_PLAYER:
-			thing->shadowscale = FRACUNIT;
-			break;
 		case MT_SMALLMACE:
 		case MT_BIGMACE:
 		case MT_PUMA:
@@ -10622,7 +10621,11 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
 		case MT_SPB:
-			thing->shadowscale = 3*FRACUNIT/2;
+		case MT_ADVENTURESPIKEA:
+		case MT_ADVENTURESPIKEB:
+		case MT_ADVENTURESPIKEC:
+		case MT_CDUFO:
+			thing->shadowscale = 4*FRACUNIT/3;
 			break;
 		case MT_BANANA_SHIELD:
 			thing->shadowscale = 12*FRACUNIT/5;
@@ -10639,17 +10642,112 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 			thing->shadowscale = 3*FRACUNIT/2;
 			thing->whiteshadow = false;
 			break;
+		case MT_FLOATINGITEM:
+		case MT_ITEMCAPSULE:
+			thing->shadowscale = FRACUNIT/2;
+			break;
 		case MT_THUNDERSHIELD:
 		case MT_BUBBLESHIELD:
-		case MT_BUBBLESHIELDTRAP:
 		case MT_FLAMESHIELD:
+		case MT_BLUEFRUIT:
+		case MT_ORANGEFRUIT:
+		case MT_REDFRUIT:
+		case MT_PINKFRUIT:
+		case MT_RANDOMAUDIENCE:
+		case MT_DOOD_BOX:
+		case MT_DOOD_BALLOON:
+		case MT_BLUECRAWLA:
+		case MT_REDCRAWLA:
+		case MT_GFZFISH: // Greenflower Fish
+		case MT_GOLDBUZZ:
+		case MT_REDBUZZ:
+		case MT_AQUABUZZ: // AquaBuzz for ATZ
+		case MT_JETTBOMBER: // Jetty-Syn Bomber
+		case MT_JETTGUNNER: // Jetty-Syn Gunner
+		case MT_CRAWLACOMMANDER: // Crawla Commander
+		case MT_DETON: // Deton
+		case MT_SKIM: // Skim mine dropper
+		case MT_TURRET:
+		case MT_POPUPTURRET:
+		case MT_SHARP: // Sharp
+		case MT_JETJAW: // Jet Jaw
+		case MT_SNAILER: // Snailer
+		case MT_VULTURE: // Vulture
+		case MT_POINTY: // Pointy
+		case MT_POINTYBALL: // Pointy Ball
+		case MT_ROBOHOOD: // Robo-Hood
+		case MT_FACESTABBER: // CastleBot FaceStabber
+		case MT_EGGGUARD: // Egg Guard
+		case MT_EGGSHIELD: // Egg Shield for Egg Guard
+		case MT_GSNAPPER: // Green Snapper
+		case MT_MINUS: // Minus
+		case MT_SPRINGSHELL: // Spring Shell
+		case MT_YELLOWSHELL: // Spring Shell (yellow)
+		case MT_UNIDUS: // Unidus
+		case MT_UNIBALL: // Unidus Ball
+		case MT_GOOMBA:
+		case MT_BLUEGOOMBA:
+		case MT_KOOPA:
+		case MT_MONOKUMA:
+		case MT_ARIDTOAD:
+		case MT_SRB1_CRAWLA:
+		case MT_SRB1_BAT:
+		case MT_SRB1_ROBOFISH:
+		case MT_SRB1_VOLCANOGUY:
+		case MT_SRB1_HOPPY:
+		case MT_SRB1_HOPPYWATER:
+		case MT_SRB1_HOPPYSKYLAB:
+		case MT_SRB1_MMZFLYING:
+		case MT_SRB1_UFO:
+		case MT_SRB1_GRAYBOT:
+		case MT_SRB1_ROBOTOPOLIS:
+		case MT_SRB1_RBZBUZZ:
+		case MT_SRB1_RBZSPIKES:
+		case MT_SRB1_METALSONIC:
+		case MT_SRB1_GOLDBOT:
+		case MT_SRB1_GENREX:
+		case MT_BOWLINGPIN:
+		case MT_EXPLODINGBARREL:
+		case MT_FROGGER:
+		case MT_ROBRA:
+		case MT_CHOMPER:
+		case MT_BUZZBOMBER:
+		case MT_GARGOYLE:
+		case MT_GBA_BOO:
+		case MT_FLYINGGARG:
 			thing->shadowscale = FRACUNIT;
 			break;
 		case MT_RING:
 		case MT_FLINGRING:
-		case MT_FLOATINGITEM:
-		case MT_BLUEBALL:
-		case MT_ITEMCAPSULE:
+		case MT_COIN:
+		case MT_FLINGCOIN:
+		case MT_REDTEAMRING:
+		case MT_BLUETEAMRING:
+		case MT_REDFLAG:
+		case MT_BLUEFLAG:
+		case MT_BOUNCERING:
+		case MT_AUTOMATICRING:
+		case MT_INFINITYRING:
+		case MT_RAILRING:
+		case MT_EXPLOSIONRING:
+		case MT_SCATTERRING:
+		case MT_GRENADERING:
+		case MT_BOUNCEPICKUP:
+		case MT_RAILPICKUP:
+		case MT_AUTOPICKUP:
+		case MT_EXPLODEPICKUP:
+		case MT_SCATTERPICKUP:
+		case MT_GRENADEPICKUP:
+		case MT_REDRING:
+		case MT_THROWNBOUNCE:
+		case MT_THROWNINFINITY:
+		case MT_THROWNAUTOMATIC:
+		case MT_THROWNSCATTER:
+		case MT_THROWNEXPLOSION:
+		case MT_THROWNGRENADE:
+		case MT_EMBLEM:
+			thing->shadowscale = FRACUNIT/3;
+			break;
 		default:
 			if (thing->flags & (MF_ENEMY|MF_BOSS))
 				thing->shadowscale = FRACUNIT;
@@ -11418,15 +11516,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	memset((UINT8 *)mobj + sizeof(thinker_t), 0xff, sizeof(mobj_t) - sizeof(thinker_t));
 #endif
 
-}
-
-// This does not need to be added to Lua.
-// To test it in Lua, check mobj.valid
-boolean P_MobjWasRemoved(mobj_t *mobj)
-{
-	if (mobj && mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker)
-		return false;
-	return true;
 }
 
 void P_FreePrecipMobj(precipmobj_t *mobj)
@@ -12260,9 +12349,7 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 #if MAXPLAYERS > 32
 	You should think about modifying the deathmatch starts to take full advantage of this!
 #endif
-	UINT8 maxplayers = 32;
-
-	if (mthing->type <= maxplayers) // Player starts
+	if (mthing->type <= MAXPLAYERS) // Player starts
 	{
 		// save spots for respawning in network games
 		if (!metalrecording)
@@ -12281,7 +12368,7 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	}
 	else if (mthing->type == 34) // Red CTF starts
 	{
-		if (numredctfstarts < maxplayers)
+		if (numredctfstarts < MAXPLAYERS)
 		{
 			redctfstarts[numredctfstarts] = mthing;
 			mthing->type = 0;
@@ -12291,7 +12378,7 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	}
 	else if (mthing->type == 35) // Blue CTF starts
 	{
-		if (numbluectfstarts < maxplayers)
+		if (numbluectfstarts < MAXPLAYERS)
 		{
 			bluectfstarts[numbluectfstarts] = mthing;
 			mthing->type = 0;
@@ -12311,6 +12398,11 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 		     || mthing->type == 1713) // Hoops
 	{
 		return true; // These are handled elsewhere.
+	}
+	else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
+	{
+		CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
+		return true;
 	}
 
 	return false;
@@ -13120,7 +13212,8 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 					finishline->special = 2001; // Finish Line
 					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
 					finishline->args[0] = mthing->args[4];
-					SpreadFinishLine(finishline, NULL, mthing->args[4]);
+					if (!(mthing->args[4] & TMCFF_NOSPREAD))
+						SpreadFinishLine(finishline, NULL, mthing->args[4]);
 				}
 			}
 		}

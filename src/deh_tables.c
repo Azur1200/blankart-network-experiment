@@ -31,12 +31,85 @@
 #include "k_kart.h" // awardscaledrings_t
 
 #include "deh_tables.h"
+#include "fastcmp.h"
 
-char *FREE_STATES[NUMSTATEFREESLOTS];
-char *FREE_MOBJS[NUMMOBJFREESLOTS];
-char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
-char *FREE_MENUS[NUMMENUFREESLOTS];
+strbuf_t *statenames;
+strbuf_t *mobjnames;
+strbuf_t *skincolornames;
+strbuf_t *menunames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
+
+const char *DEH_MobjtypeName(mobjtype_t i)
+{
+	return strbuf_get(mobjnames, mobjinfo[i].info.nameofs);
+}
+
+const char *DEH_StateName(statenum_t i)
+{
+	return strbuf_get(statenames, states[i].info.nameofs);
+}
+
+const char *DEH_SkincolorName(skincolornum_t i)
+{
+	return strbuf_get(skincolornames, skincolors[i].info.nameofs);
+}
+
+const char *DEH_MenutypeName(menutype_t i)
+{
+	return strbuf_get(menunames, menudefs[i].info.nameofs);
+}
+
+mobjtype_t DEH_FindMobjtype(const char *word)
+{
+	mobjtype_t i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < nummobjtypes; i++) {
+		if (hash != mobjinfo[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_MobjtypeName(i)))
+			return i;
+	}
+	return NUMMOBJTYPES;
+}
+
+statenum_t DEH_FindState(const char *word)
+{
+	statenum_t i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < numstates; i++) {
+		if (hash != states[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_StateName(i)))
+			return i;
+	}
+	return NUMSTATES;
+}
+
+skincolornum_t DEH_FindSkincolor(const char *word)
+{
+	skincolornum_t i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < numskincolors; i++) {
+		if (hash != skincolors[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_SkincolorName(i)))
+			return i;
+	}
+	return MAXSKINCOLORS;
+}
+
+menutype_t DEH_FindMenutype(const char *word)
+{
+	menutype_t i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < nummenutypes; i++) {
+		if (hash != menudefs[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_MenutypeName(i)))
+			return i;
+	}
+	return MAXMENUTYPES;
+}
 
 struct flickytypes_s FLICKYTYPES[] = {
 	{"BLUEBIRD", MT_FLICKY_01}, // Flicky (Flicky)
@@ -83,12 +156,6 @@ actionpointer_t actionpointers[] =
 // TODO: Make the lists public so we can start using actual mobj
 // and state names in warning and error messages! :D
 
-const char *const STATE_LIST[] = { // array length left dynamic for sanity testing later.
-#define _(name, ...) "S_"#name,
-#include "info/states.h"
-#undef _
-};
-
 struct int_const_s const STATE_ALIASES[] = {
 	{"KART_STND1",    	S_KART_STILL},
 	{"KART_STND2" ,   	S_KART_STILL},
@@ -121,12 +188,6 @@ struct int_const_s const STATE_ALIASES[] = {
 	{"KART_SQUISH", 	S_KART_SPINOUT},
 	{"PLAY_SIGN", 		S_KART_SIGN},
 	{ NULL, 0 }
-};
-
-const char *const MOBJTYPE_LIST[] = {  // array length left dynamic for sanity testing later.
-#define _(name, ...) "MT_"#name,
-#include "info/mobjs.h"
-#undef _
 };
 
 struct int_const_s const MOBJ_ALIASES[] = {
@@ -294,8 +355,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"\x01",
 	"\x01",
 	"\x01",
-	"\x01",
-
+	"ATTACKDOWN",
 	"SLIDING",
 
 	NULL // stop loop here.
@@ -437,12 +497,6 @@ const char *const TO_LIST[] = {
 	"ALLPLAYERS",
 	"MOBJ",
 	NULL
-};
-
-const char *COLOR_ENUMS[] = {
-#define _(name, ...) #name,
-#include "info/skincolors.h"
-#undef _
 };
 
 const char *const POWERS_LIST[] = {
@@ -619,12 +673,6 @@ const char *const HUDITEMS_LIST[] = {
 	"POWERUPS"
 };
 
-const char *const MENUTYPES_LIST[] = {
-#define _(name, ...) #name,
-#include "info/menus.h"
-#undef _
-};
-
 struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "SINGLEPLAYERMENU", &M_SinglePlayerMenu },
 	{ "OPTIONS", &M_Options },
@@ -718,6 +766,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CHANGECONTROL", &M_ChangeControl },
 	{ "ASSIGNJOYSTICK", &M_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &M_HandleMonitorToggles },
+	{ "RESTARTAUDIO", &M_RestartAudio },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &M_HandleDiscordRequests },
 #endif
@@ -726,6 +775,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
+	{ "DRAWGENERICSCROLLMENU", &M_DrawGenericScrollMenu },
 	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
 	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },
@@ -968,8 +1018,10 @@ struct int_const_s const INT_CONST[] = {
 	{"CR_ZOOMTUBE",CR_ZOOMTUBE},
 
 	// Character flags (skinflags_t)
-	{"SF_HIRES",SF_HIRES},
+	{"SF_HIRES",0},
 	{"SF_MACHINE",SF_MACHINE},
+	{"SF_NOGIBS",SF_NOGIBS},
+	{"SF_OLDDEATH",SF_OLDDEATH},
 
 	// Sound flags
 	{"SF_TOTALLYSINGLE",SF_TOTALLYSINGLE},
@@ -1377,12 +1429,10 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_NULL",GS_NULL},
 	{"GS_LEVEL",GS_LEVEL},
 	{"GS_INTERMISSION",GS_INTERMISSION},
-	{"GS_CONTINUING",GS_CONTINUING},
 	{"GS_TITLESCREEN",GS_TITLESCREEN},
 	{"GS_TIMEATTACK",GS_TIMEATTACK},
 	{"GS_CREDITS",GS_CREDITS},
 	{"GS_EVALUATION",GS_EVALUATION},
-	{"GS_GAMEEND",GS_GAMEEND},
 	{"GS_INTRO",GS_INTRO},
 	{"GS_CUTSCENE",GS_CUTSCENE},
 	{"GS_DEDICATEDSERVER",GS_DEDICATEDSERVER},
@@ -1521,25 +1571,19 @@ struct int_const_s const INT_CONST[] = {
 	{"SNEAKERTYPE_ROCKETSNEAKER", SNEAKERTYPE_ROCKETSNEAKER},
 	{"SNEAKERTYPE_WATERPANEL", SNEAKERTYPE_WATERPANEL},
 
+	// t_overlay_action_t
+	{"TOV_UNDEFINED",TOV_UNDEFINED},
+	{"TOV_STILL",TOV_STILL},
+	{"TOV_MOVING",TOV_MOVING},
+	{"TOV__MAX",TOV__MAX},
+
+	// terrain_flags_t
+	{"TRF_LIQUID",TRF_LIQUID},
+	{"TRF_SNEAKERPANEL",TRF_SNEAKERPANEL},
+	{"TRF_WATERRUNPANEL", TRF_WATERRUNPANEL},
+	{"TRF_TRIPWIRE",TRF_TRIPWIRE},
+	{"TRF_REMAP",TRF_REMAP},
+	{"TRF_BYPASSBOOST", TRF_BYPASSBOOST},
+
 	{NULL,0}
 };
-
-// For this to work compile-time without being in this file,
-// this function would need to check sizes at runtime, without sizeof
-void DEH_TableCheck(void)
-{
-#if defined(_DEBUG) || defined(PARANOIA)
-	const size_t dehstates = sizeof(STATE_LIST)/sizeof(const char*);
-	const size_t dehmobjs  = sizeof(MOBJTYPE_LIST)/sizeof(const char*);
-	const size_t dehcolors = sizeof(COLOR_ENUMS)/sizeof(const char*);
-
-	if (dehstates != S_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked states list, you dolt!\n(%d states defined, versus %s in the Dehacked list)\n", S_FIRSTFREESLOT, sizeu1(dehstates));
-
-	if (dehmobjs != MT_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked mobjtype list, you dolt!\n(%d mobj types defined, versus %s in the Dehacked list)\n", MT_FIRSTFREESLOT, sizeu1(dehmobjs));
-
-	if (dehcolors != SKINCOLOR_FIRSTFREESLOT)
-		I_Error("You forgot to update the Dehacked colors list, you dolt!\n(%d colors defined, versus %s in the Dehacked list)\n", SKINCOLOR_FIRSTFREESLOT, sizeu1(dehcolors));
-#endif
-}

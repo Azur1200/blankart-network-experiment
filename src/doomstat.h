@@ -173,8 +173,6 @@ extern boolean digital_disabled;
 
 extern UINT8 paused; // Game paused?
 extern UINT8 window_notinfocus; // are we in focus? (backend independant -- handles auto pausing and display of "focus lost" message)
-extern INT32 window_x;
-extern INT32 window_y;
 
 extern boolean nodrawers;
 extern boolean noblit;
@@ -443,6 +441,8 @@ struct mapheader_t
 	// BlanKart
 	boolean use_walltransfer;					///< Whether to use RR style wall transfering or not
 	boolean use_terrain;						///< Whether to use gameplay affecting Terrain effects or not (leaves visuals alone)
+	INT32 base_track_complexity;				///< Decides what the base track compexity for the current map is.
+	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
 };
 
 
@@ -681,7 +681,7 @@ extern boolean legitimateexit;
 extern boolean comebackshowninfo;
 extern tic_t curlap, bestlap;
 
-extern INT16 votelevels[4][2];
+extern INT16 votelevels[12][2];
 extern SINT8 votes[MAXPLAYERS];
 extern SINT8 pickedvote;
 
@@ -734,9 +734,6 @@ boolean P_IsDegeneratedTubeWaypointSequence(UINT8 sequence);
 extern FILE *debugfile;
 extern INT32 debugload;
 #endif
-
-// if true, load all graphics at level load
-extern boolean precache;
 
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw

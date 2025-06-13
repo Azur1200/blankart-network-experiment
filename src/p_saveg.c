@@ -229,6 +229,11 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		if (flags & FOLLOWER)
 			WRITEUINT32(save->p, players[i].follower->mobjnum);
 
+		for (j = 0; j < NUMPOWERS; j++)
+			WRITEUINT16(save->p, players[i].powers[j]);
+		for (j = 0; j < NUMKARTSTUFF; j++)
+			WRITEINT32(save->p, players[i].kartstuff[j]);
+
 		WRITEUINT16(save->p, players[i].nocontrol);
 		WRITEUINT8(save->p, players[i].carry);
 		WRITEUINT16(save->p, players[i].dye);
@@ -244,6 +249,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT32(save->p, players[i].airtime);
 		WRITEUINT8(save->p, players[i].startboost);
 
+		WRITEUINT8(save->p, players[i].dropdash);
+		WRITEUINT8(save->p, players[i].respawn);
+		WRITEUINT8(save->p, players[i].softlocktimer);
+
 		WRITEUINT16(save->p, players[i].flashing);
 		WRITEUINT16(save->p, players[i].spinouttimer);
 		WRITEUINT8(save->p, players[i].spinouttype);
@@ -251,6 +260,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].instashield);
 		WRITEUINT8(save->p, players[i].wipeoutslow);
 		WRITEUINT8(save->p, players[i].justbumped);
+		WRITEUINT8(save->p, players[i].noclip);
 
 		WRITESINT8(save->p, players[i].drift);
 		WRITEFIXED(save->p, players[i].driftcharge);
@@ -272,6 +282,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEFIXED(save->p, players[i].boostpower);
 		WRITEFIXED(save->p, players[i].speedboost);
+		WRITEFIXED(save->p, players[i].prevspeedboost);
 		WRITEFIXED(save->p, players[i].accelboost);
 		WRITEANGLE(save->p, players[i].boostangle);
 		WRITEUINT8(save->p, players[i].numsneakers);
@@ -304,6 +315,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].pickuprings);
 		WRITEUINT8(save->p, players[i].ringdelay);
 		WRITEUINT16(save->p, players[i].ringboost);
+		WRITEUINT16(save->p, players[i].ringtime);
 		WRITEUINT16(save->p, players[i].superring);
 		WRITEUINT8(save->p, players[i].nextringaward);
 		WRITEUINT8(save->p, players[i].ringvolume);
@@ -335,7 +347,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].eggmanexplode);
 		WRITESINT8(save->p, players[i].eggmanblame);
 
-		WRITEUINT8(save->p, players[i].bananadrag);
+		WRITEUINT16(save->p, players[i].bananadrag);
 
 		WRITESINT8(save->p, players[i].lastjawztarget);
 		WRITEUINT8(save->p, players[i].jawztargetdelay);
@@ -343,6 +355,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].confirmVictim);
 		WRITEUINT8(save->p, players[i].confirmVictimDelay);
 
+		WRITEINT32(save->p, players[i].interpoints);
 		WRITEUINT32(save->p, players[i].roundscore);
 		WRITEUINT8(save->p, players[i].emeralds);
 		WRITEUINT8(save->p, players[i].bumper);
@@ -380,8 +393,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT32(save->p, players[i].botvars.driftstate);
 		WRITESINT8(save->p, players[i].botvars.driftturn);
 		WRITEUINT32(save->p, players[i].botvars.drifttime);
-		WRITEUINT8(save->p, players[i].botvars.powersliding);
-		
+		WRITEUINT32(save->p, players[i].botvars.driftlockout);
+
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
 		
@@ -416,6 +429,9 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEINT32(save->p, players[i].linkcount);
 		WRITEUINT32(save->p, players[i].linktimer);
 		WRITEINT32(save->p, players[i].maxlink);
+
+		// Fix janky landing particle
+		WRITEUINT8(save->p, players[i].prevonground);
 
 	}
 	TracyCZoneEnd(__zone);
@@ -551,6 +567,11 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		if (flags & FOLLOWER)
 			players[i].follower = (mobj_t *)(size_t)READUINT32(save->p);
 
+		for (j = 0; j < NUMPOWERS; j++)
+			players[i].powers[j] = READUINT16(save->p);
+		for (j = 0; j < NUMKARTSTUFF; j++)
+			players[i].kartstuff[j] = READINT32(save->p);
+
 		players[i].nocontrol = READUINT16(save->p);
 		players[i].carry = READUINT8(save->p);
 		players[i].dye = READUINT16(save->p);
@@ -567,6 +588,10 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].airtime = READUINT32(save->p);
 		players[i].startboost = READUINT8(save->p);
 
+		players[i].dropdash = READUINT8(save->p);
+		players[i].respawn = READUINT8(save->p);
+		players[i].softlocktimer = READUINT8(save->p);
+
 		players[i].flashing = READUINT16(save->p);
 		players[i].spinouttimer = READUINT16(save->p);
 		players[i].spinouttype = READUINT8(save->p);
@@ -574,6 +599,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].instashield = READUINT8(save->p);
 		players[i].wipeoutslow = READUINT8(save->p);
 		players[i].justbumped = READUINT8(save->p);
+		players[i].noclip = READUINT8(save->p);
 
 		players[i].drift = READSINT8(save->p);
 		players[i].driftcharge = READFIXED(save->p);
@@ -595,6 +621,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].boostpower = READFIXED(save->p);
 		players[i].speedboost = READFIXED(save->p);
+		players[i].prevspeedboost = READFIXED(save->p);
 		players[i].accelboost = READFIXED(save->p);
 		players[i].boostangle = READANGLE(save->p);
 		players[i].numsneakers = READUINT8(save->p);
@@ -626,7 +653,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].rings = READSINT8(save->p);
 		players[i].pickuprings = READUINT8(save->p);
 		players[i].ringdelay = READUINT8(save->p);
-		players[i].ringboost = READUINT16(save->p);;
+		players[i].ringboost = READUINT16(save->p);
+		players[i].ringtime = READUINT16(save->p);;
 		players[i].superring = READUINT16(save->p);
 		players[i].nextringaward = READUINT8(save->p);
 		players[i].ringvolume = READUINT8(save->p);
@@ -658,7 +686,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].eggmanexplode = READUINT8(save->p);
 		players[i].eggmanblame = READSINT8(save->p);
 
-		players[i].bananadrag = READUINT8(save->p);
+		players[i].bananadrag = READUINT16(save->p);
 
 		players[i].lastjawztarget = READSINT8(save->p);
 		players[i].jawztargetdelay = READUINT8(save->p);
@@ -666,6 +694,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].confirmVictim = READUINT8(save->p);
 		players[i].confirmVictimDelay = READUINT8(save->p);
 
+		players[i].interpoints = READINT32(save->p);
 		players[i].roundscore = READUINT32(save->p);
 		players[i].emeralds = READUINT8(save->p);
 		players[i].bumper = READUINT8(save->p);
@@ -703,8 +732,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.driftstate = READINT32(save->p);
 		players[i].botvars.driftturn = READSINT8(save->p);
 		players[i].botvars.drifttime = READUINT32(save->p);
-		players[i].botvars.powersliding = (boolean)READUINT8(save->p);
-		
+		players[i].botvars.driftlockout = READUINT32(save->p);
+
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);
 
@@ -740,6 +769,9 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].linkcount = READINT32(save->p);
 		players[i].linktimer = READUINT32(save->p);
 		players[i].maxlink = READINT32(save->p);
+
+		// Fix janky landing particle
+		players[i].prevonground = READUINT8(save->p);
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}
@@ -2462,7 +2494,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff2 & MD2_CVMEM)
 		WRITEINT32(save->p, mobj->cvmem);
 	if (diff2 & MD2_SKIN)
-		WRITEUINT8(save->p, (UINT8)((skin_t *)mobj->skin - skins));
+		WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
 	if (diff2 & MD2_COLOR)
 		WRITEUINT16(save->p, mobj->color);
 	if (diff2 & MD2_EXTVAL1)
@@ -3696,7 +3728,7 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_CVMEM)
 		mobj->cvmem = READINT32(save->p);
 	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READUINT8(save->p)];
+		mobj->skin = &skins[READUINT16(save->p)];
 	if (diff2 & MD2_COLOR)
 		mobj->color = READUINT16(save->p);
 	if (diff2 & MD2_EXTVAL1)
@@ -3948,6 +3980,7 @@ static thinker_t* LoadThwompThinker(savebuffer_t *save, actionf_p1 thinker)
 	ht->delay = READINT32(save->p);
 	ht->tag = READINT16(save->p);
 	ht->sound = READUINT16(save->p);
+	ht->initDelay = READINT32(save->p);
 
 	if (ht->sector)
 	{
@@ -5121,7 +5154,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, slipdashactive);
 	WRITEUINT8(save->p, purpledriftactive);
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < 12; i++)
 	{
 		WRITEINT16(save->p, votelevels[i][0]);
 		WRITEINT16(save->p, votelevels[i][1]);
@@ -5294,7 +5327,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	slipdashactive = READUINT8(save->p);
 	purpledriftactive = READUINT8(save->p);
 
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < 12; i++)
 	{
 		votelevels[i][0] = READINT16(save->p);
 		votelevels[i][1] = READINT16(save->p);

@@ -1248,7 +1248,7 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if (stplyr->curshield == KSHIELD_BUBBLE)
+		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
 
@@ -3343,7 +3343,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
-	UINT8 skin = 0;
+	UINT16 skin = 0;
 	UINT16 chatcolor = skincolors[player->mo->color].chatcolor;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
@@ -3458,7 +3458,7 @@ static void K_drawKartMinimap(void)
 	INT32 x, y;
 	INT32 minimaptrans = cv_kartminimap.value;
 	INT32 splitflags = 0;
-	UINT8 skin = 0;
+	UINT16 skin = 0;
 	UINT8 *colormap = NULL;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;
@@ -4814,6 +4814,29 @@ static void K_DrawWaypointDebugger(void)
 	V_DrawString(8, 176, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
 }
 
+static void K_DrawBotDebugger(void)
+{
+	if (!cv_kartdebugbot.value || !stplyr->bot)
+		return;
+
+	if (stplyrnum != 0) // only for p1
+		return;
+
+	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
+
+	static const char *driftstates[] = {
+		[DRIFTSTATE_AUTO] = "Auto",
+		[DRIFTSTATE_STARTING] = "Starting",
+		[DRIFTSTATE_ACTIVE] = "Active",
+		[DRIFTSTATE_ENDING] = "Ending",
+	};
+
+	V_DrawThinString(24, 100, vflags, va("Drift state: %s", driftstates[stplyr->botvars.driftstate]));
+	V_DrawThinString(24, 108, vflags|(stplyr->botvars.driftlockout ? V_ORANGEMAP : 0), va("Drift lockout: %d", stplyr->botvars.driftlockout));
+	V_DrawThinString(24, 116, vflags, va("Drift turn: %d", stplyr->botvars.driftturn));
+	V_DrawThinString(24, 124, vflags, va("Drift timer: %d", stplyr->botvars.drifttime));
+}
+
 void K_drawKartHUD(void)
 {
 	boolean islonesome = false;
@@ -5051,5 +5074,6 @@ void K_drawKartHUD(void)
 	}
 
 	K_DrawWaypointDebugger();
+	K_DrawBotDebugger();
 	K_DrawDirectorDebugger();
 }

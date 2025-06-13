@@ -355,15 +355,15 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, boolean dump
 		finalmessage,
 		sizeof(finalmessage),
 			"\"SRB2Kart V2\" has encountered an unrecoverable error and needs to close.\n"
-			"The %s log file is located at (%s).\n"
+			"The %slog file is located at (%s).\n"
 			"\n"
 			"\n"
 			"%s",
 		dumpmade ?
 #if defined (UNIXBACKTRACE)
-			"crash-log.txt"
+			"crash-log.txt "
 #elif defined (_WIN32)
-			".rpt crash dump"
+			".rpt crash dump "
 #endif
 			: "",
 		logfilename,
@@ -1056,12 +1056,6 @@ INT32 I_GetKey (void)
 	return rc;
 }
 
-void
-I_CursedWindowMovement (int xd, int yd)
-{
-	SDL_SetWindowPosition(window, window_x + xd, window_y + yd);
-}
-
 //
 // I_JoyScale
 //
@@ -1299,6 +1293,18 @@ void I_InitJoystick(UINT8 index)
 	//SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
 	if (M_CheckParm("-nojoy"))
 		return;
+
+	{
+		char dbpath[1024];
+		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb.txt", srb2path);
+		SDL_GameControllerAddMappingsFromFile(dbpath);
+	}
+
+	{
+		char dbpath[1024];
+		sprintf(dbpath, "%s" PATHSEP "gamecontrollerdb_user.txt", srb2home);
+		SDL_GameControllerAddMappingsFromFile(dbpath);
+	}
 
 	if (M_CheckParm("-noxinput"))
 		SDL_SetHintWithPriority("SDL_XINPUT_ENABLED", "0", SDL_HINT_OVERRIDE);
@@ -2686,8 +2692,5 @@ UINT32 I_GetFreeMem(UINT32 *total)
 	return 48<<20;
 #endif
 }
-
-// note CPUAFFINITY code used to reside here
-//void I_RegisterSysCommands(void) {}
 
 #endif // HAVE_SDL

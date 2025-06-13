@@ -33,7 +33,7 @@ The 'packet version' is used to distinguish packet formats.
 This version is independent of VERSION and SUBVERSION. Different
 applications may follow different packet versions.
 */
-#define PACKETVERSION 0
+#define PACKETVERSION 2
 
 // Network play related stuff.
 // There is a data struct that stores network
@@ -272,6 +272,7 @@ struct serverinfo_pak
 	char  application[MAXAPPLICATION];
 	UINT8 version;
 	UINT8 subversion;
+	UINT8 commit[GIT_SHA_ABBREV];
 	UINT8 numberofplayer;
 	UINT8 maxplayer;
 	UINT8 refusereason; // 0: joinable, 1: joins disabled, 2: full
@@ -316,7 +317,7 @@ struct plrinfo
 	char name[MAXPLAYERNAME+1];
 	UINT8 address[4]; // sending another string would run us up against MAXPACKETLENGTH
 	UINT8 team;
-	UINT8 skin;
+	UINT16 skin;
 	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
 	UINT32 score;
 	UINT16 timeinserver; // In seconds.
@@ -326,7 +327,7 @@ struct plrinfo
 struct plrconfig
 {
 	char name[MAXPLAYERNAME+1];
-	UINT8 skin;
+	UINT16 skin;
 	UINT16 color;
 	UINT32 pflags;
 	UINT32 score;
@@ -478,6 +479,27 @@ void SV_StartSinglePlayerServer(void);
 boolean SV_SpawnServer(void);
 void SV_StopServer(void);
 void SV_ResetServer(void);
+
+/*--------------------------------------------------
+	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
+
+		Adds a new bot, using a server-sided packet sent to all clients.
+		Using regular K_AddBot wherever possible is better, but this is kept
+		as a back-up measure if this is the only option.
+
+	Input Arguments:-
+		skin - Skin number that the bot will use.
+		difficulty - Difficulty level this bot will use.
+		style - Bot style to spawn this bot with, see botStyle_e.
+		newplayernum - Pointer to the last valid player slot number.
+			Is a pointer so that this function can be called multiple times to add more than one bot.
+
+	Return:-
+		true if a bot can be added via a packet later, otherwise false.
+--------------------------------------------------*/
+
+boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+
 void CL_AddSplitscreenPlayer(void);
 void CL_RemoveSplitscreenPlayer(UINT8 p);
 void CL_Reset(void);

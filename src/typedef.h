@@ -47,6 +47,7 @@ TYPEDEF (boostinfo_t);
 TYPEDEF (player_t);
 TYPEDEF (sonicloopcamvars_t);
 TYPEDEF (sonicloopvars_t);
+TYPEDEF (saltyhop_t);
 
 // d_clisrv.h
 TYPEDEF (clientcmd_pak);
@@ -88,6 +89,7 @@ TYPEDEF (ticcmd_t);
 TYPEDEF (actionpointer_t);
 
 // dehacked.h
+TYPEDEF (dehinfo_t);
 TYPEDEF (MYFILE);
 
 // domdata.h
@@ -392,6 +394,9 @@ TYPEDEF (vmode_t);
 
 // sounds.h
 TYPEDEF (sfxinfo_t);
+
+// strbuf.h
+TYPEDEF (strbuf_t);
 
 // taglist.h
 TYPEDEF (taglist_t);

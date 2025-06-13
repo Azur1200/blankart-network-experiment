@@ -21,6 +21,7 @@
 #include "g_game.h"
 #include "p_slopes.h"
 #include "k_kart.h"
+#include "blan/b_soc.h"
 
 #include "cxxutil.hpp"
 
@@ -45,7 +46,8 @@ static waypoint_t *startingwaypoint = NULL;
 
 static UINT32 circuitlength = 0U;
 
-#define BASE_TRACK_COMPLEXITY (cv_kartbot_basetrackcomplexity.value) // Arbritrary, vibes-based value
+// Defaults to arbritrary, vibes-based value other wise uses maps specified value instead.
+#define BASE_TRACK_COMPLEXITY (B_TrackComplexity())
 static INT32 trackcomplexity = 0;
 
 static size_t numwaypoints       = 0U;
@@ -406,6 +408,10 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 			{
 				return;
 			}
+
+			// do not path over the finish line. just don't.
+			if (checkwaypoint == finishline)
+				return;
 
 			checkdist = P_AproxDistance(
 				(mobj->x / FRACUNIT) - (checkwaypoint->mobj->x / FRACUNIT),

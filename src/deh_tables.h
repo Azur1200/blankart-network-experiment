@@ -16,8 +16,9 @@
 #include "doomdef.h" // Constants
 #include "d_think.h" // actionf_t
 #include "info.h" // Mobj, state, sprite, etc constants
-#include "m_menu.h" // NUMMENUFREESLOTS
 #include "lua_script.h"
+#include "strbuf.h"
+#include "m_menu.h" // menutype_t
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,18 +26,21 @@ extern "C" {
 
 // Free slot names
 // The crazy word-reading stuff uses these.
-extern char *FREE_STATES[NUMSTATEFREESLOTS];
-extern char *FREE_MOBJS[NUMMOBJFREESLOTS];
-extern char *FREE_SKINCOLORS[NUMCOLORFREESLOTS];
-extern char *FREE_MENUS[NUMMENUFREESLOTS];
+extern strbuf_t *statenames;
+extern strbuf_t *mobjnames;
+extern strbuf_t *skincolornames;
+extern strbuf_t *menunames;
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
-#define initfreeslots() {\
-	memset(FREE_STATES,0,sizeof(char *) * NUMSTATEFREESLOTS);\
-	memset(FREE_MOBJS,0,sizeof(char *) * NUMMOBJFREESLOTS);\
-	memset(FREE_SKINCOLORS,0,sizeof(char *) * NUMCOLORFREESLOTS);\
-	memset(used_spr,0,sizeof(UINT8) * ((NUMSPRITEFREESLOTS / 8) + 1));\
-}
+const char *DEH_MobjtypeName(mobjtype_t i);
+const char *DEH_StateName(statenum_t i);
+const char *DEH_SkincolorName(skincolornum_t i);
+const char *DEH_MenutypeName(menutype_t i);
+
+mobjtype_t DEH_FindMobjtype(const char *word);
+statenum_t DEH_FindState(const char *word);
+skincolornum_t DEH_FindSkincolor(const char *word);
+menutype_t DEH_FindMenutype(const char *word);
 
 struct flickytypes_s {
 	const char *name;
@@ -71,9 +75,7 @@ struct int_const_s {
 
 extern struct flickytypes_s FLICKYTYPES[];
 extern actionpointer_t actionpointers[]; // Array mapping action names to action functions.
-extern const char *const STATE_LIST[];
 extern struct int_const_s const STATE_ALIASES[];
-extern const char *const MOBJTYPE_LIST[];
 extern struct int_const_s const MOBJ_ALIASES[];
 extern const char *const MOBJFLAG_LIST[];
 extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", // \2
@@ -88,19 +90,14 @@ extern const char *const MSF_LIST[]; // Sector flags
 extern const char *const SSF_LIST[]; // Sector special flags
 extern const char *const SD_LIST[]; // Sector damagetype
 extern const char *const TO_LIST[]; // Sector triggerer
-extern const char *COLOR_ENUMS[];
 extern const char *const POWERS_LIST[];
 extern const char *const KARTSTUFF_LIST[];
 extern const char *const KARTHUD_LIST[];
 extern const char *const HUDITEMS_LIST[];
-extern const char *const MENUTYPES_LIST[];
 extern struct menu_routine_s const MENU_ROUTINES[];
 extern struct menu_drawer_s const MENU_DRAWERS[];
 
 extern struct int_const_s const INT_CONST[];
-
-// Moved to this file because it can't work compile-time otherwise
-void DEH_TableCheck(void);
 
 #ifdef __cplusplus
 } // extern "C"

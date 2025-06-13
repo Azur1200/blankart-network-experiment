@@ -27,8 +27,13 @@
 #include "../v_video.h"
 #include "../r_draw.h"
 #include "../r_patch.h"
+#include "../r_main.h"
 #include "../r_picformats.h"
 #include "../p_setup.h"
+#include "../p_setup.h" // levelflats
+#include "../p_spec.h" // anim_t
+#include "../r_sky.h"
+#include "../p_local.h"
 
 INT32 patchformat = GL_TEXFMT_AP_88; // use alpha for holes
 INT32 textureformat = GL_TEXFMT_P_8; // use chromakey for hole
@@ -521,7 +526,6 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 			realpatch = (softwarepatch_t *)Picture_PNGConvert(pdata, PICFMT_DOOMPATCH, NULL, NULL, NULL, NULL, lumplength, NULL, 0);
 		else
 #endif
-#ifdef WALLFLATS
 		if (texture->type == TEXTURETYPE_FLAT)
 		{
 			if (doremap)
@@ -529,7 +533,6 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 			realpatch = (softwarepatch_t *)Picture_Convert(PICFMT_FLAT, pdata, PICFMT_DOOMPATCH, 0, NULL, texture->width, texture->height, 0, 0, 0);
 		}
 		else
-#endif
 		{
 			dealloc = false;
 			if (doremap)
@@ -758,6 +761,238 @@ void HWR_FreeMapTextures(void)
 	gl_maptexturesloaded = false;
 }
 
+static void HWR_PrecacheLevelFlats(void)
+{
+	levelflat_t levelflat;
+	size_t i;
+
+	// special case for encore
+#ifdef GLENCORE
+	if (encoremode)
+	{
+		// go through all sectors to determine if it should be remapped for encore
+		for (i = 0; i < numsectors; i++)
+		{
+			sector_t *sec = &sectors[i];
+
+			// sector checked already?
+			if (sec->validcount == validcount)
+				continue;
+
+			sec->validcount = validcount;
+
+			// gotta check sector floor and ceiling
+			for (j = 0; j < 2; j++)
+			{
+				const boolean ceiling = (j == 1);
+				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
+
+				levelflat = levelflats[pic];
+
+				HWR_GetLevelFlat(&levelflat, R_NoEncore(sec, ceiling));
+			}
+		}
+	}
+	else
+#endif
+	{
+		// on non encore we have it simple
+		// just load every flat in the level
+		for (i = 0; i < numlevelflats; i++)
+		{
+			levelflat = levelflats[i];
+
+			HWR_GetLevelFlat(&levelflat, false);
+		}
+	}
+}
+
+static void HWR_PrecacheLevelTextures(void)
+{
+	char *texturepresent;
+	anim_t *anim;
+	size_t i, j;
+	INT32 h;
+
+	texturepresent = calloc(numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	for (i = 0; i < numlines; i++)
+	{
+		line_t *line = &lines[i];
+#ifdef GLENCORE
+		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
+#else
+		const int noencoremap = 1;
+#endif
+
+		// line checked already?
+		if (line->validcount == validcount)
+			continue;
+
+		line->validcount = validcount;
+
+		// two sides
+		for (j = 0; j < 2; j++)
+		{
+			side_t *side = &sides[line->sidenum[j]];
+
+			// Single-side linedef
+			if (line->sidenum[j] == 0xffff)
+				continue;
+
+			if (side->toptexture >= 0 && side->toptexture < numtextures)
+			{
+				texturepresent[side->toptexture] = 1|noencoremap;
+			}
+			if (side->midtexture >= 0 && side->midtexture < numtextures)
+			{
+				texturepresent[side->midtexture] = 1|noencoremap;
+			}
+			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
+			{
+				texturepresent[side->bottomtexture] = 1|noencoremap;
+			}
+		}
+	}
+
+	// check for animated textures
+	for (anim = anims; anim < lastanim; anim++)
+	{
+		if (!texturepresent[anim->basepic])
+			continue;
+
+		const char texpresent = texturepresent[anim->basepic];
+
+		if (!texpresent)
+			continue;
+
+		if (texpresent & 1)
+		{
+			for (h = 1; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, false);
+			}
+		}
+#ifdef GLENCORE
+		if (texpresent & 2)
+		{
+			for (h = 1; h < anim->numpics; h++)
+			{
+				HWR_GetTexture(anim->basepic+h, true);
+			}
+		}
+#endif
+	}
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = 1;
+
+	for (i = 0; i < (unsigned)numtextures; i++)
+	{
+		const char texpresent = texturepresent[i];
+
+		if (!texpresent)
+			continue;
+
+		if (texpresent & 1)
+		{
+			HWR_GetTexture(i, false);
+		}
+#ifdef GLENCORE
+		if (texpresent & 2)
+		{
+			HWR_GetTexture(i, true);
+		}
+#endif
+	}
+	free(texturepresent);
+}
+
+static void HWR_PrecacheLevelSprites(void)
+{
+	GLPatch_t *spritepatch;
+	char *spritepresent;
+	size_t i, j, k;
+	lumpnum_t lump;
+
+	thinker_t *th;
+	mobj_t *mo;
+	spriteframe_t *sf;
+
+	spritepresent = calloc(numsprites, sizeof (*spritepresent));
+	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "HWR_PrecacheLevel");
+
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		mo = (mobj_t *)th;
+
+		// ogl is weird
+		// for some reason it does not want to preload sprites with colormaps
+		// so just save us the work
+		if (mo->color || mo->colorized)
+			continue;
+
+		spritepresent[mo->sprite] = 1;
+	}
+
+	for (i = 0; i < numsprites; i++)
+	{
+		if (!spritepresent[i])
+			continue;
+
+		for (j = 0; j < sprites[i].numframes; j++)
+		{
+			sf = &sprites[i].spriteframes[j];
+
+#define cacheang(a) {\
+				lump = sf->lumppat[a];\
+				spritepatch = W_CachePatchNum(lump, PU_CACHE);\
+				if (spritepatch != NULL)\
+					HWR_GetPatch((patch_t *)spritepatch);\
+			}
+			// see R_InitSprites for more about lumppat,lumpid
+			switch (sf->rotate)
+			{
+				case SRF_SINGLE:
+					cacheang(0);
+					break;
+				case SRF_2D:
+					cacheang(2);
+					cacheang(6);
+					break;
+				default:
+					k = 8;
+					while (k--)
+						cacheang(k);
+					break;
+			}
+#undef cacheang
+		}
+	}
+	free(spritepresent);
+}
+
+void HWR_PrecacheLevel(void)
+{
+	if (rendermode != render_opengl)
+		return;
+
+	// Precache flats.
+	HWR_PrecacheLevelFlats();
+
+	// Precache textures.
+	HWR_PrecacheLevelTextures();
+
+	// Precache sprites.
+	HWR_PrecacheLevelSprites();
+}
+
 void HWR_LoadMapTextures(size_t pnumtextures)
 {
 	// we must free it since numtextures may have changed
@@ -767,7 +1002,7 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures));
 	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats));
 
-	if ((gl_textures == NULL) || (gl_flats == NULL))
+	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
 
 	gl_maptexturesloaded = true;
@@ -789,7 +1024,7 @@ void HWR_SetPalette(RGBA_t *palette)
 // --------------------------------------------------------------------------
 // Make sure texture is downloaded and set it as the source
 // --------------------------------------------------------------------------
-GLMapTexture_t *HWR_GetTexture(INT32 tex)
+GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap)
 {
 	GLMapTexture_t *grtex;
 #ifdef PARANOIA
@@ -797,13 +1032,15 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex)
 		I_Error("HWR_GetTexture: tex >= numtextures\n");
 #endif
 
-	// Every texture in memory, stored in the
-	// hardware renderer's bit depth format. Wow!
+#ifdef GLENCORE
+	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
+#else
 	grtex = &gl_textures[tex];
+#endif
 
 	// Generate texture if missing from the cache
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
-		HWR_GenerateTexture(grtex, tex, !R_TextureCanRemap(tex));
+		HWR_GenerateTexture(grtex, tex, noencoremap || !R_TextureCanRemap(tex));
 
 	// If hardware does not have the texture, then call pfnSetTexture to upload it
 	if (!grtex->mipmap.downloaded)
@@ -896,36 +1133,6 @@ static void HWR_CacheFlat(GLMipmap_t *grMipmap, lumpnum_t flatlumpnum)
 			flat[steppy] = grMipmap->colormap->source[flat[steppy]];
 }
 
-static void HWR_CacheTextureAsFlat(GLMipmap_t *grMipmap, INT32 texturenum, boolean noencoremap)
-{
-	UINT8 *flat;
-	UINT8 *converted;
-	size_t size;
-	size_t i;
-	UINT8 *colormap = colormaps;
-
-	if (!noencoremap && encoremap)
-	{
-		colormap += COLORMAP_REMAPOFFSET;
-	}
-
-	// setup the texture info
-	grMipmap->format = GL_TEXFMT_P_8;
-	grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
-
-	grMipmap->width  = (UINT16)textures[texturenum]->width;
-	grMipmap->height = (UINT16)textures[texturenum]->height;
-	size = (grMipmap->width * grMipmap->height);
-
-	flat = Z_Malloc(size, PU_HWRCACHE, &grMipmap->data);
-	converted = (UINT8 *)Picture_TextureToFlat(texturenum);
-	for (i = 0; i < size; i++)
-	{
-		flat[i] = colormap[converted[i]];
-	}
-	Z_Free(converted);
-}
-
 // Download a Doom 'flat' to the hardware cache and make it ready for use
 void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 {
@@ -966,125 +1173,88 @@ void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 {
-	// Who knows?
-	if (levelflat == NULL)
-		return;
-
-	if (levelflat->type == LEVELFLAT_FLAT)
-		HWR_GetRawFlat(levelflat->u.flat.lumpnum, noencoremap);
-	else if (levelflat->type == LEVELFLAT_TEXTURE)
+	if (levelflat->type == LEVELFLAT_NONE)
 	{
-		GLMapTexture_t *grtex;
-		INT32 texturenum = levelflat->u.texture.num;
-#ifdef PARANOIA
-		if ((unsigned)texturenum >= gl_numtextures)
-			I_Error("HWR_GetLevelFlat: texturenum >= numtextures");
+		HWR_SetCurrentTexture(NULL);
+		return;
+	}
+
+	INT32 texturenum = texturetranslation[levelflat->texture_id];
+	INT32 brightmapnum = R_GetTextureBrightmap(texturenum);
+	if (texturenum <= 0)
+	{
+		HWR_SetCurrentTexture(NULL);
+		return;
+	}
+
+#ifdef GLENCORE
+	GLMapTexture_t *grtex = &gr_flats[texturenum*2 + (encoremap && !noencore ? 0 : 1)];
+#else
+	GLMapTexture_t *grtex = &gl_flats[texturenum];
 #endif
+	GLMipmap_t *grMipmap = &grtex->mipmap;
 
-		// Who knows?
-		if (texturenum == 0 || texturenum == -1)
-			return;
+	if (!grMipmap->data && !grMipmap->downloaded)
+	{
+		UINT8 *flat;
+		UINT8 *colormap = colormaps;
 
-		// Every texture in memory, stored as a 8-bit flat. Wow!
-		grtex = &gl_flats[texturenum];
+		grMipmap->format = GL_TEXFMT_P_8;
+		grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
 
-		// Generate flat if missing from the cache
-		if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
+		grMipmap->width  = (UINT16)textures[texturenum]->width;
+		grMipmap->height = (UINT16)textures[texturenum]->height;
+
+		size_t size = grMipmap->width * grMipmap->height;
+		flat = Picture_TextureToFlat(texturenum);
+		Z_ChangeTag(flat, PU_HWRCACHE);
+		Z_SetUser(flat, &grMipmap->data);
+
+		if (!noencoremap && encoremap)
+			colormap += COLORMAP_REMAPOFFSET;
+
+		grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
+		grtex->mipmap.colormap->source = colormap;
+		M_Memcpy(grtex->mipmap.colormap->data, colormap, 256);
+
+		for (size_t steppy = 0; steppy < size; steppy++)
+			if (flat[steppy] != HWR_PATCHES_CHROMAKEY_COLORINDEX)
+				flat[steppy] = grtex->mipmap.colormap->source[flat[steppy]];
+	}
+
+	if (!grMipmap->downloaded)
+		HWD.pfnSetTexture(&grtex->mipmap);
+
+	HWR_SetCurrentTexture(&grtex->mipmap);
+
+	Z_ChangeTag(grMipmap->data, PU_HWRCACHE_UNLOCKED);
+
+	if (brightmapnum)
+	{
+		grtex = &gl_flats[brightmapnum];
+		grMipmap = &grtex->mipmap;
+
+		if (!grMipmap->data && !grMipmap->downloaded)
 		{
-			HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, noencoremap);
+			grMipmap->format = GL_TEXFMT_P_8;
+			grMipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
 
-			if (!noencoremap && encoremap)
-			{
-				grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
-				grtex->mipmap.colormap->source = colormaps + COLORMAP_REMAPOFFSET;
-				M_Memcpy(grtex->mipmap.colormap->data, colormaps + COLORMAP_REMAPOFFSET, 256);
-			}
+			grMipmap->width  = (UINT16)textures[brightmapnum]->width;
+			grMipmap->height = (UINT16)textures[brightmapnum]->height;
+
+			size_t size = grMipmap->width * grMipmap->height;
+			memcpy(Z_Malloc(size, PU_HWRCACHE, &grMipmap->data), R_GetFlatForTexture(brightmapnum), size);
 		}
 
-		// If hardware does not have the texture, then call pfnSetTexture to upload it
-		if (!grtex->mipmap.downloaded)
+		grtex->mipmap.flags |= TF_BRIGHTMAP;
+
+		if (!grMipmap->downloaded)
 			HWD.pfnSetTexture(&grtex->mipmap);
+
 		HWR_SetCurrentTexture(&grtex->mipmap);
 
-		// The system-memory data can be purged now.
-		Z_ChangeTag(grtex->mipmap.data, PU_HWRCACHE_UNLOCKED);
-
-		if ((texturenum = R_GetTextureBrightmap(texturenum)))
-		{
-			// Every texture in memory, stored as a 8-bit flat. Wow!
-			grtex = &gl_flats[texturenum];
-
-			// Generate flat if missing from the cache
-			if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
-				HWR_CacheTextureAsFlat(&grtex->mipmap, texturenum, true);
-
-			grtex->mipmap.flags |= TF_BRIGHTMAP;
-
-			// If hardware does not have the texture, then call pfnSetTexture to upload it
-			if (!grtex->mipmap.downloaded)
-				HWD.pfnSetTexture(&grtex->mipmap);
-			HWR_SetCurrentTexture(&grtex->mipmap);
-
-			// The system-memory data can be purged now.
-			Z_ChangeTag(grtex->mipmap.data, PU_HWRCACHE_UNLOCKED);
-		}
+		Z_ChangeTag(grMipmap->data, PU_HWRCACHE_UNLOCKED);
 	}
-	else if (levelflat->type == LEVELFLAT_PATCH)
-	{
-		patch_t *patch = W_CachePatchNum(levelflat->u.flat.lumpnum, PU_CACHE);
-		levelflat->width = (UINT16)(patch->width);
-		levelflat->height = (UINT16)(patch->height);
-		HWR_GetPatch(patch);
-	}
-#ifndef NO_PNG_LUMPS
-	else if (levelflat->type == LEVELFLAT_PNG)
-	{
-		GLMipmap_t *mipmap = levelflat->mipmap;
-
-		// Cache the picture.
-		if (!levelflat->mippic)
-		{
-			INT32 pngwidth = 0, pngheight = 0;
-			void *pic = Picture_PNGConvert(W_CacheLumpNum(levelflat->u.flat.lumpnum, PU_CACHE), PICFMT_FLAT, &pngwidth, &pngheight, NULL, NULL, W_LumpLength(levelflat->u.flat.lumpnum), NULL, 0);
-
-			Z_ChangeTag(pic, PU_LEVEL);
-			Z_SetUser(pic, &levelflat->mippic);
-
-			levelflat->width = (UINT16)pngwidth;
-			levelflat->height = (UINT16)pngheight;
-		}
-
-		// Make the mipmap.
-		if (mipmap == NULL)
-		{
-			mipmap = Z_Calloc(sizeof(GLMipmap_t), PU_STATIC, NULL);
-			mipmap->format = GL_TEXFMT_P_8;
-			mipmap->flags = TF_WRAPXY|TF_CHROMAKEYED;
-			levelflat->mipmap = mipmap;
-		}
-
-		if (!mipmap->data && !mipmap->downloaded)
-		{
-			UINT8 *flat;
-			size_t size;
-
-			if (levelflat->mippic == NULL)
-				I_Error("HWR_GetLevelFlat: levelflat->mippic == NULL");
-
-			mipmap->width = levelflat->width;
-			mipmap->height = levelflat->height;
-
-			size = (mipmap->width * mipmap->height);
-			flat = Z_Malloc(size, PU_LEVEL, &mipmap->data);
-			M_Memcpy(flat, levelflat->mippic, size);
-		}
-
-		// Tell the hardware driver to bind the current texture to the flat's mipmap
-		HWR_SetCurrentTexture(mipmap);
-	}
-#endif
-	else // set no texture
-		HWR_SetCurrentTexture(NULL);
 }
 
 // --------------------+

@@ -598,7 +598,7 @@ static inline void CL_DrawConnectionStatus(void)
 
 		// Draw bottom box
 		M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
-		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, V_YELLOWMAP, "Press ESC to abort");
+		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 		for (i = 0; i < 16; ++i)
 			V_DrawFill((BASEVIDWIDTH/2-128) + (i * 16), BASEVIDHEIGHT-24, 16, 8, palstart + ((animtime - i) & 15));
@@ -655,7 +655,7 @@ static inline void CL_DrawConnectionStatus(void)
 				cltext = M_GetText("Connecting to server...");
 				break;
 		}
-		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-16-24, V_YELLOWMAP, cltext);
+		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-16-24, MENUCAPS|V_YELLOWMAP, cltext);
 	}
 	else
 	{
@@ -665,7 +665,7 @@ static inline void CL_DrawConnectionStatus(void)
 			INT32 checkednum = 0;
 			INT32 i;
 
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, V_YELLOWMAP, "Press ESC to abort");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			//ima just count files here
 			for (i = 0; i < fileneedednum; i++)
@@ -673,7 +673,7 @@ static inline void CL_DrawConnectionStatus(void)
 					checkednum++;
 
 			// Loading progress
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP, "Checking server addons...");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Checking server addons...");
 			totalfileslength = (INT32)((checkednum/(double)(fileneedednum)) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
@@ -687,7 +687,7 @@ static inline void CL_DrawConnectionStatus(void)
 			INT32 loadcompletednum = 0;
 			INT32 i;
 
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, V_YELLOWMAP, "Press ESC to abort");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			//ima just count files here
 			for (i = 0; i < fileneedednum; i++)
@@ -695,12 +695,12 @@ static inline void CL_DrawConnectionStatus(void)
 					loadcompletednum++;
 
 			// Loading progress
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP, "Loading server addons...");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, MENUCAPS|V_YELLOWMAP, "Loading server addons...");
 			totalfileslength = (INT32)((loadcompletednum/(double)(fileneedednum)) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
 				va(" %2u/%2u Files",loadcompletednum,fileneedednum));
 		}
 		else if (lastfilenum != -1)
@@ -714,7 +714,7 @@ static inline void CL_DrawConnectionStatus(void)
 
 			// Draw the bottom box.
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-58-8, 32, 1);
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14, V_YELLOWMAP, "Press ESC to abort");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-14,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			Net_GetNetStat();
 			dldlength = (INT32)((file->currentsize/(double)file->totalsize) * 256);
@@ -741,8 +741,12 @@ static inline void CL_DrawConnectionStatus(void)
 			}
 
 			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-30, 0,
+#ifdef HAVE_CURL
 				va(M_GetText("%s downloading"), ((cl_mode == CL_DOWNLOADHTTPFILES) ? "\x82""HTTP" : "\x85""Direct")));
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22, V_YELLOWMAP,
+#else
+				M_GetText("Direct downloading"));
+#endif
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-58-22,  MENUCAPS|V_YELLOWMAP,
 				va(M_GetText("\"%s\""), tempname));
 			V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-58, V_20TRANS|V_MONOSPACE,
 				va(" %4uK/%4uK",fileneeded[lastfilenum].currentsize>>10,file->totalsize>>10));
@@ -756,20 +760,20 @@ static inline void CL_DrawConnectionStatus(void)
 			else
 				totaldldsize = downloadcompletedsize;
 
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14, V_YELLOWMAP, "Overall Download Progress");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-14,  MENUCAPS|V_YELLOWMAP, "Overall Download Progress");
 			totalfileslength = (INT32)((totaldldsize/(double)totalfilesrequestedsize) * 256);
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, 256, 8, 111);
 			V_DrawFill(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, totalfileslength, 8, 96);
 
 			if (totalfilesrequestedsize>>20 >= 10) //display in MB if over 10MB
-				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
+				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24,  MENUCAPS|V_20TRANS|V_MONOSPACE,
 					va(" %4uM/%4uM",totaldldsize>>20,totalfilesrequestedsize>>20));
 			else
-				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
+				V_DrawString(BASEVIDWIDTH/2-128, BASEVIDHEIGHT-24,  MENUCAPS|V_20TRANS|V_MONOSPACE,
 					va(" %4uK/%4uK",totaldldsize>>10,totalfilesrequestedsize>>10));
 
-			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, V_20TRANS|V_MONOSPACE,
+			V_DrawRightAlignedString(BASEVIDWIDTH/2+128, BASEVIDHEIGHT-24, MENUCAPS|V_20TRANS|V_MONOSPACE,
 					va("%2u/%2u Files ",downloadcompletednum,totalfilesrequestednum));
 		}
 		else
@@ -780,12 +784,12 @@ static inline void CL_DrawConnectionStatus(void)
 
 			//Draw bottom box
 			M_DrawTextBox(BASEVIDWIDTH/2-128-8, BASEVIDHEIGHT-24-8, 32, 1);
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24, V_YELLOWMAP, "Press ESC to abort");
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-24,  MENUCAPS|V_YELLOWMAP, "Press ESC to abort");
 
 			for (i = 0; i < 16; ++i)
 				V_DrawFill((BASEVIDWIDTH/2-128) + (i * 16), BASEVIDHEIGHT-24, 16, 8, palstart + ((animtime - i) & 15));
 
-			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32, V_YELLOWMAP,
+			V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24-32,  MENUCAPS|V_YELLOWMAP,
 				M_GetText("Waiting to download files..."));
 		}
 	}
@@ -920,6 +924,8 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	netbuffer->u.serverinfo.packetversion = PACKETVERSION;
 	netbuffer->u.serverinfo.version = VERSION;
 	netbuffer->u.serverinfo.subversion = SUBVERSION;
+	memcpy(netbuffer->u.serverinfo.commit,
+			comprevision_abbrev_bin, GIT_SHA_ABBREV);
 	strncpy(netbuffer->u.serverinfo.application, SRB2APPLICATION,
 			sizeof netbuffer->u.serverinfo.application);
 	// return back the time value so client can compute their ping
@@ -1074,7 +1080,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
-		netbuffer->u.playerinfo[i].skin = (UINT8)(players[i].skin
+		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin
 #ifdef DEVELOP // it's safe to do this only because PLAYERINFO isn't read by the game itself
 		% 3
 #endif
@@ -1721,6 +1727,33 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 
 		if (client)
 		{
+#ifdef COMMITVERSION
+			// Commits do not match? Do not connect!
+			if (memcmp(serverlist[i].info.commit,
+						comprevision_abbrev_bin,
+						GIT_SHA_ABBREV))
+			{
+				char theirs[GIT_SHA_ABBREV * 2 + 1];
+				UINT8 n;
+
+				for (n = 0; n < GIT_SHA_ABBREV; ++n)
+				{
+					sprintf(&theirs[n * 2], "%02hhx",
+							serverlist[i].info.commit[n]);
+				}
+
+				D_QuitNetGame();
+				CL_Reset();
+				D_StartTitle();
+				M_StartMessage(
+							va(
+							"Connection failed.\n\nYour binary differs from the server.\n"
+							"  Yours: %.*s\n"
+							"Theirs: %s\n\n\nPress ESC\n",
+							GIT_SHA_ABBREV * 2, comprevision, theirs), NULL, MM_NOTHING);
+				return false;
+			}
+#endif
 #ifdef HAVE_CURL
 			if (serverlist[i].info.httpsource[0])
 				strncpy(http_source, serverlist[i].info.httpsource, MAX_MIRROR_LENGTH);
@@ -3679,7 +3712,7 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 static void Got_AddBot(UINT8 **p, INT32 playernum)
 {
 	INT16 newplayernum;
-	UINT8 skinnum = 0;
+	UINT16 skinnum = 0;
 	UINT8 difficulty = DIFFICULTBOT;
 	botStyle_e style = BOT_STYLE_NORMAL;
 
@@ -3695,7 +3728,7 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	}
 
 	newplayernum = READUINT8(*p);
-	skinnum = READUINT8(*p);
+	skinnum = READUINT16(*p);
 	difficulty = READUINT8(*p);
 	style = READUINT8(*p);
 
@@ -3799,11 +3832,11 @@ static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *na
 }
 
 /*--------------------------------------------------
-	boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 {
 	UINT8 newplayernum = *p;
 
@@ -3844,7 +3877,7 @@ boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8
 
 	if (server)
 	{
-		UINT8 buf[4];
+		UINT8 buf[5];
 		UINT8 *buf_p = buf;
 
 		WRITEUINT8(buf_p, newplayernum);
@@ -3854,7 +3887,7 @@ boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8
 			skin = numskins;
 		}
 
-		WRITEUINT8(buf_p, skin);
+		WRITEUINT16(buf_p, skin);
 
 		if (difficulty < 1)
 		{
@@ -4626,7 +4659,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			// If we already received a ticcmd for this tic, just submit it for the next one.
 			tic_t faketic = maketic;
 
-			if (!!(netcmds[maketic % BACKUPTICS][netconsole].flags & TICCMD_RECEIVED))
+			if ((!!(netcmds[maketic % BACKUPTICS][netconsole].flags & TICCMD_RECEIVED))
+				&& (maketic - firstticstosend < BACKUPTICS))
 				faketic++;
 
 			// Copy ticcmd

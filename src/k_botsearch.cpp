@@ -141,7 +141,7 @@ static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, con
 {
 	terrain_t *terrain = K_GetTerrainForFlatNum(flip ? sec->ceilingpic : sec->floorpic);
 
-	if (terrain != NULL && B_UseTerrainDef())
+	if (terrain != NULL && K_AffectingTerrainActive())
 	{
 		if (terrain->damageType != SD_NONE)
 		{

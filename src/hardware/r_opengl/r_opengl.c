@@ -1836,6 +1836,7 @@ EXPORT void HWRAPI(SetBlend) (FBITFIELD PolyFlags)
 				pglDepthMask(0);
 		}
 		////Hurdler: not used if we don't define POLYSKY
+		////Nep: This is also used for portals and HWR_DrawSkyWall acutally.
 		if (Xor & PF_Invisible)
 		{
 			if (PolyFlags&PF_Invisible)

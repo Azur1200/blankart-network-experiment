@@ -30,20 +30,27 @@ boolean B_UseWallTransfer(void)
 	return value;
 }
 
-// Map header toggle for TerrainDefs.
-boolean B_UseTerrainDef(void)
+// Give each map a custom track complexity
+INT32 B_TrackComplexity(void)
 {
 	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
-	boolean value = false;
+	const INT32 defaultvalue = atoi(cv_kartbot_basetrackcomplexity.defaultvalue);
+	const INT32 mapvalue = mapheader->base_track_complexity;
 
-	if (mapnamespace == MNS_RINGRACERS)
-		return true;
+	if (cv_kartbot_basetrackcomplexity.value != defaultvalue || mapvalue == INT32_MAX)
+		return cv_kartbot_basetrackcomplexity.value;
 
-	if (mapheader->use_terrain == true)
-		value = true;
+	return mapvalue;
+}
 
-	if (mapheader->use_terrain == false)
-		value = false;
+fixed_t K_TrackModifierMax(void)
+{
+	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
+	const fixed_t defaultvalue = FloatToFixed(atof(cv_kartbot_modifiermax.defaultvalue));
+	const fixed_t mapvalue = mapheader->track_modifier_max;
 
-	return value;
+	if (cv_kartbot_modifiermax.value != defaultvalue || mapvalue == INT32_MAX)
+		return cv_kartbot_modifiermax.value;
+
+	return mapvalue;
 }

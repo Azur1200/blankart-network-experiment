@@ -31,6 +31,10 @@
 #include "byteptr.h"
 #include "dehacked.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_glob.h"
+#endif
+
 // DRRR
 #include "k_brightmap.h"
 
@@ -1243,33 +1247,12 @@ void R_InitTextureData(void)
 	
 }
 
-//
-// R_PrecacheLevel
-//
-// Preloads all relevant graphics for the level.
-//
-void R_PrecacheLevel(void)
+static void R_PrecacheLevelTextures(void)
 {
-	char *texturepresent, *spritepresent;
-	size_t i, j, k;
-	lumpnum_t lump;
-
-	thinker_t *th;
-	spriteframe_t *sf;
-
-	if (demo.playback)
-		return;
-
-	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
-	if (rendermode != render_soft)
-		return;
-
-	// Precache flats.
-	flatmemory = P_PrecacheLevelFlats();
-
-	//
-	// Precache textures.
-	//
+	char *texturepresent;
+	anim_t *anim;
+	size_t j;
+	INT32 h;
 	// no need to precache all software textures in 3D mode
 	// (note they are still used with the reference software view)
 	texturepresent = calloc(numtextures, sizeof (*texturepresent));
@@ -1284,6 +1267,19 @@ void R_PrecacheLevel(void)
 			texturepresent[sides[j].midtexture] = 1;
 		if (sides[j].bottomtexture >= 0 && sides[j].bottomtexture < numtextures)
 			texturepresent[sides[j].bottomtexture] = 1;
+	}
+
+	// check for animated textures
+	for (anim = anims; anim < lastanim; anim++)
+	{
+		if (!texturepresent[anim->basepic])
+			continue;
+
+		for (h = 1; h < anim->numpics; h++)
+		{
+			if (!texturecache[anim->basepic+h])
+				R_GenerateTexture(anim->basepic+h);
+		}
 	}
 
 	// Sky texture is always present.
@@ -1303,6 +1299,16 @@ void R_PrecacheLevel(void)
 		// since we cache entire composite textures
 	}
 	free(texturepresent);
+}
+
+static void R_PrecacheLevelSprites(void)
+{
+	char *spritepresent;
+	size_t i, j, k;
+	lumpnum_t lump;
+
+	thinker_t *th;
+	spriteframe_t *sf;
 
 	//
 	// Precache sprites.
@@ -1311,8 +1317,12 @@ void R_PrecacheLevel(void)
 	if (spritepresent == NULL) I_Error("%s: Out of memory looking up sprites", "R_PrecacheLevel");
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
-			spritepresent[((mobj_t *)th)->sprite] = 1;
+	{
+		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+			continue;
+
+		spritepresent[((mobj_t *)th)->sprite] = 1;
+	}
 
 	spritememory = 0;
 	for (i = 0; i < numsprites; i++)
@@ -1349,6 +1359,38 @@ void R_PrecacheLevel(void)
 		}
 	}
 	free(spritepresent);
+}
+
+//
+// R_PrecacheLevel
+//
+// Preloads all relevant graphics for the level.
+//
+void R_PrecacheLevel(void)
+{
+	// do not flush the memory, Z_Malloc twice with same user will cause error in Z_CheckHeap()
+	if (rendermode == render_none)
+		return;
+
+	if (demo.playback)
+		return;
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl)
+	{
+		HWR_PrecacheLevel();
+		return;
+	}
+#endif
+
+	// Precache flats.
+	flatmemory = P_PrecacheLevelFlats();
+
+	// Precache textures.
+	R_PrecacheLevelTextures();
+
+	// Precache sprites.
+	R_PrecacheLevelSprites();
 
 	// FIXME: this is no longer correct with OpenGL render mode
 	CONS_Debug(DBG_SETUP, "Precache level done:\n"

@@ -39,10 +39,9 @@ extern "C" {
 // Extra abilities/settings for skins (combinable stuff)
 typedef enum
 {
-	SF_HIRES            = 1, // Draw the sprite at different size?
-	SF_MACHINE          = 1<<1, // Beep boop. Are you a robot?
-	SF_NOGIBS			= 1<<2, // Does this kart smash into pieces?
-	SF_OLDDEATH			= 1<<3, // Kart V1 styled death animation
+	SF_MACHINE          = 1, // Beep boop. Are you a robot?
+	SF_NOGIBS			= 1<<1, // Does this kart smash into pieces?
+	SF_OLDDEATH			= 1<<2, // Kart V1 styled death animation
 	// free up to and including 1<<31
 } skinflags_t;
 
@@ -424,8 +423,8 @@ typedef enum
 // Minimum turning percentage for an auto drift to begin.
 #define DRIFTSTARTPCT (45)
 
-#define DRIFTTICMUL (43690) // FRACUNIT * 0.66
-#define BOTDRIFTTICS (FixedMul(TICRATE, DRIFTTICMUL))
+#define BOTDRIFTTICS (2*TICRATE/3)
+#define BOTDRIFTLOCKOUT (TICRATE/2)
 
 #define MAXDRIFTSKILL (FRACUNIT/2)
 
@@ -438,11 +437,13 @@ typedef enum
 	BOT_STYLE__MAX
 } botStyle_e;
 
-typedef enum {
-    DRIFTSTATE_AUTO=0,
-    DRIFTSTATE_ACTIVE,
-    DRIFTSTATE_ENDING,
-    NUMDRIFTSTATES
+typedef enum
+{
+	DRIFTSTATE_AUTO,
+	DRIFTSTATE_STARTING,
+	DRIFTSTATE_ACTIVE,
+	DRIFTSTATE_ENDING,
+	NUMDRIFTSTATES
 } botdrift_t;
 
 // player_t struct for all bot variables
@@ -466,11 +467,10 @@ struct botvars_t
 	// Drift-relevant data below:
 	fixed_t driftskill; // The bot's "skill" at drifts.
 						// Determines how soon a bot starts to drift.
-	INT32 driftstate; // Drifting state
-	INT32 driftamt; // Turning severity for a drift
+	botdrift_t driftstate; // Drifting state
 	SINT8 driftturn; // Drifting turn direction
 	tic_t drifttime; // Time spent drifting
-	boolean powersliding; // Are we powersliding?
+	tic_t driftlockout; // do not allow drifting for this many tics
 };
 
 struct sonicloopcamvars_t
@@ -501,6 +501,16 @@ struct boostinfo_t {
   fixed_t nonstackspeedboost;
   fixed_t accelboost;
   UINT8 grade;
+};
+
+// player_t struct for saltyhop related variables
+struct saltyhop_t
+{
+	boolean jump; // Player has the ability to do the hop
+	boolean ready; // Saltyhop is ready
+	boolean tapping; // Player is tapping the drift button
+
+	fixed_t momz, zoffset; // erm... the mechanism....
 };
 
 // ========================================================================
@@ -602,8 +612,9 @@ struct player_t
 	UINT8 startboost;		// (0 to 125) - Boost you get from start of race or respawn drop dash
 
 	// Respawn
-	UINT8 dropdash;
-	UINT8 respawn;
+	UINT8 dropdash;			// Gain a burst of speed when you drop while respawning
+	UINT8 respawn;			// Timer given when you die.
+	UINT8 softlocktimer;	// Tracks how fast you died after respawning. Use for softlock prevention.
 	
 	UINT16 flashing;
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
@@ -611,6 +622,7 @@ struct player_t
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
+	boolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	SINT8 drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
@@ -633,6 +645,7 @@ struct player_t
 	
 	fixed_t boostpower;		// Base boost value, for offroad
 	fixed_t speedboost;		// Boost value smoothing for max speed
+	fixed_t prevspeedboost;	// Max speed boost value from the last frame
 	fixed_t accelboost;		// Boost value smoothing for acceleration
 	angle_t boostangle;		// angle set when not spun out OR boosted to determine what direction you should keep going at if you're spun out and boosted.
 	boostinfo_t boostinfo;	// Stores values used for setting speed and accel boosts.
@@ -662,6 +675,7 @@ struct player_t
 	UINT8 pickuprings;	// Number of rings being picked up before added to the counter (prevents rings from being deleted forever over 20)
 	UINT8 ringdelay;	// (0 to 3) - 3 tic delay between every ring usage
 	UINT16 ringboost;	// Ring boost timer
+	UINT16 ringtime;	// The current Ring boost timer if it wasn't capped. Used for spam prevention measures.
 	UINT16 superring;	// Spawn rings on top of you every tic!
 	UINT8 nextringaward;	// When should we spawn our next superring ring?
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
@@ -695,7 +709,7 @@ struct player_t
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake
 
-	UINT8 bananadrag;		// After a second of holding a banana behind you, you start to slow down
+	UINT16 bananadrag;		// After a second of holding a banana behind you, you start to slow down
 
 	SINT8 lastjawztarget;	// (-1 to 15) - Last person you target with jawz, for playing the target switch sfx
 	UINT8 jawztargetdelay;	// (0 to 5) - Delay for Jawz target switching, to make it less twitchy
@@ -703,6 +717,7 @@ struct player_t
 	UINT8 confirmVictim;		// Player ID that you dealt damage to
 	UINT8 confirmVictimDelay;	// Delay before playing the sound
 
+	INT32 interpoints; // BlanKart (port from SRB2Kart CEP): override for number of points earned in intermission
 	UINT32 roundscore; // battle score this round
 	UINT8 emeralds;
 	UINT8 bumper;
@@ -800,6 +815,10 @@ struct player_t
 	INT32 linkcount;
 	tic_t linktimer;
 	INT32 maxlink; // maximum link obtained
+
+	saltyhop_t salty;
+
+	boolean prevonground;
 
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering

@@ -752,7 +752,7 @@ static int lib_setState(lua_State *L)
 		return luaL_error(L, "Do not alter states in CMD building code!");
 
 	// clear the state to start with, in case of missing table elements
-	memset(state,0,sizeof(state_t));
+	memset((char *)state + sizeof(dehinfo_t), 0, sizeof(*state) - sizeof(dehinfo_t));
 	state->tics = -1;
 
 	lua_pushnil(L);
@@ -975,16 +975,9 @@ static int state_get(lua_State *L)
 	else if (fastcmp(field,"string"))
 	{
 		statenum_t id = st-states;
-		if (id < S_FIRSTFREESLOT)
+		if (id < NUMSTATES)
 		{
-			lua_pushstring(L, STATE_LIST[id]+2);
-			return 1;
-		}
-
-		id -= S_FIRSTFREESLOT;
-		if (id < NUMSTATEFREESLOTS && FREE_STATES[id])
-		{
-			lua_pushstring(L, FREE_STATES[id]);
+			lua_pushstring(L, DEH_StateName(id));
 			return 1;
 		}
 
@@ -1114,7 +1107,7 @@ static int lib_setMobjInfo(lua_State *L)
 		return luaL_error(L, "Do not alter mobjinfo in CMD building code!");
 
 	// clear the mobjinfo to start with, in case of missing table elements
-	memset(info,0,sizeof(mobjinfo_t));
+	memset((char *)info + sizeof(dehinfo_t), 0, sizeof(*info) - sizeof(dehinfo_t));
 	info->doomednum = -1; // default to no editor value
 	info->spawnhealth = 1; // avoid 'dead' noclip behaviors
 
@@ -1257,16 +1250,9 @@ static int mobjinfo_get(lua_State *L)
 		lua_pushinteger(L, info->raisestate);
 	else if (fastcmp(field,"string")) {
 		mobjtype_t id = info-mobjinfo;
-		if (id < MT_FIRSTFREESLOT)
+		if (id < NUMMOBJTYPES)
 		{
-			lua_pushstring(L, MOBJTYPE_LIST[id]+3);
-			return 1;
-		}
-
-		id -= MT_FIRSTFREESLOT;
-		if (id < NUMMOBJFREESLOTS && FREE_MOBJS[id])
-		{
-			lua_pushstring(L, FREE_MOBJS[id]);
+			lua_pushstring(L, DEH_MobjtypeName(id));
 			return 1;
 		}
 
@@ -1671,7 +1657,7 @@ static int lib_setSkinColor(lua_State *L)
 		return luaL_error(L, "Do not alter skincolors in CMD building code!");
 
 	// clear the skincolor to start with, in case of missing table elements
-	memset(info,0,sizeof(skincolor_t));
+	memset((char *)info + sizeof(dehinfo_t), 0, sizeof(*info) - sizeof(dehinfo_t));
 
 	Color_cons_t[cnum].value = cnum;
 	lua_pushnil(L);
@@ -1913,7 +1899,7 @@ static int lib_setPrecipProps(lua_State *L)
 
 	// clear the precipprops to start with, in case of missing table elements
 	// make sure we do not clear the name
-	memset(props + sizeof(props->name), 0, sizeof(precipprops_t) - sizeof(props->name));
+	memset((char *)props + sizeof(props->name), 0, sizeof(*props) - sizeof(props->name));
 
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {

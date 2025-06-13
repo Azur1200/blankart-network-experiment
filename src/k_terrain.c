@@ -2,7 +2,8 @@
 //-----------------------------------------------------------------------------
 // Copyright (C) 1998-2021 by ZDoom + GZDoom teams, and contributors
 // Copyright (C) 2021 by Sally "TehRealSalt" Cochenour
-// Copyright (C) 2021 by Kart Krew
+// Copyright (C) 2021-2024 by Kart Krew
+// Copyright (C) 2025 Blankart Team
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -569,7 +570,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		return;
 	}
 
-	if (!B_UseTerrainDef())
+	if (!K_AffectingTerrainActive())
 	{
 		// Terrain has been disabled for this map.
 		return;
@@ -852,6 +853,11 @@ static void K_SpawnSplashParticles(mobj_t *mo, t_splash_t *s, fixed_t impact)
 			dust->color = s->color;
 		}
 
+		if (s->mobjType == MT_WIPEOUTTRAIL)
+		{
+			dust->renderflags = RF_GHOSTLY;
+		}
+
 		if (s->sfx != sfx_None)
 		{
 			S_StartSound(mo, s->sfx);
@@ -1012,6 +1018,12 @@ static void K_SpawnFootstepParticle(mobj_t *mo, t_footstep_t *fs, tic_t timer)
 		dust->color = fs->color;
 	}
 
+	// Make offroad dust transparent
+	if (K_GetFootstepHeapIndex(fs) == defaultOffroadFootstep)
+	{
+		dust->renderflags |= RF_GHOSTLY;
+	}
+
 	if ((fs->sfx != sfx_None) && (fs->sfxFreq > 0) && (timer % fs->sfxFreq == 0))
 	{
 		S_StartSound(mo, fs->sfx);
@@ -1073,7 +1085,7 @@ offroadhandle:
 
 	// - Being affected by offroad
 	// Using acutal offroad check here to prevent lua boostpower modifications from spawning the offroad particles - Nep
-	if (!(K_ApplyOffroad(mo->player) && mo->player->offroad > 0))
+	if (!(mo->player->bananadrag > TICRATE) && !(K_ApplyOffroad(mo->player) && mo->player->offroad > 0))
 	{
 		return;
 	}
@@ -1639,14 +1651,14 @@ static void K_TerrainDefaults(terrain_t *terrain)
 }
 
 /*--------------------------------------------------
-	boolean K_TerrainHasAffect(terrain_t *terrain)
+	boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
 
 		See header file for description.
 --------------------------------------------------*/
 
-boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly)
+boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly, boolean followmaprules)
 {
-	if (!B_UseTerrainDef())
+	if (followmaprules && !K_AffectingTerrainActive())
 		return false;
 
 	if (terrain->friction > 0
@@ -1659,8 +1671,9 @@ boolean K_TerrainHasAffect(terrain_t *terrain, boolean badonly)
 
 	return (terrain->friction != 0
 	|| terrain->speedPad != 0
+	|| terrain->pogoSpring != 0
 	|| terrain->springStrength != 0
-	|| terrain->flags != 0);
+	|| (terrain->flags & (TRF_LIQUID|TRF_SNEAKERPANEL|TRF_BYPASSBOOST|TRF_WATERRUNPANEL|TRF_TRIPWIRE)));
 }
 
 /*--------------------------------------------------
@@ -2320,4 +2333,22 @@ void K_InitTerrain(void)
 	{
 		K_InitTerrainPwad(wadNum);
 	}
+}
+
+// Map header toggle for Affecting Terrain Defs.
+boolean K_AffectingTerrainActive(void)
+{
+	const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
+	boolean value = false;
+
+	if (mapnamespace == MNS_RINGRACERS)
+		return true;
+
+	if (mapheader->use_terrain == true)
+		value = true;
+
+	if (mapheader->use_terrain == false)
+		value = false;
+
+	return value;
 }
