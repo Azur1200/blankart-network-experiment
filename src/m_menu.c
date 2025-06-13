@@ -946,7 +946,7 @@ boolean M_Responder(event_t *ev)
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
-	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
+	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
 	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
 	|| gamestate == GS_BLANCREDITS
 	)

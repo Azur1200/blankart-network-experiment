@@ -557,18 +557,10 @@ static bool D_Display(void)
 			HU_Drawer();
 			break;
 
-		case GS_GAMEEND:
-			F_GameEndDrawer();
-			break;
-
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
 			HU_Erase();
 			HU_Drawer();
-			break;
-
-		case GS_CONTINUING:
-			//F_ContinueDrawer();
 			break;
 
 		case GS_CREDITS:

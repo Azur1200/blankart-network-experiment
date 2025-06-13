@@ -1067,13 +1067,6 @@ void F_BlanCreditTicker(void)
 
 void F_StartGameEvaluation(void)
 {
-	// Credits option in secrets menu
-	if (cursaveslot == -2)
-	{
-		F_StartGameEnd();
-		return;
-	}
-
 	G_SetGamestate(GS_EVALUATION);
 
 	// Just in case they're open ... somehow
@@ -1084,6 +1077,9 @@ void F_StartGameEvaluation(void)
 	CON_ToggleOff();
 
 	finalecount = 0;
+
+	G_SetGamestate(GS_TITLESCREEN);
+	S_StopMusic();
 }
 
 void F_GameEvaluationDrawer(void)
@@ -1093,12 +1089,6 @@ void F_GameEvaluationDrawer(void)
 
 void F_GameEvaluationTicker(void)
 {
-	if (++finalecount > 10*TICRATE)
-	{
-		F_StartGameEnd();
-		return;
-	}
-
 	if (finalecount == 5*TICRATE)
 	{
 		if (netgame || multiplayer) // modify this when we finally allow unlocking stuff in 2P
@@ -1126,44 +1116,6 @@ void F_GameEvaluationTicker(void)
 		}
 	}
 }
-
-// ==========
-//  GAME END
-// ==========
-void F_StartGameEnd(void)
-{
-	G_SetGamestate(GS_GAMEEND);
-
-	gameaction = ga_nothing;
-	paused = false;
-	CON_ToggleOff();
-	S_StopSounds();
-
-	// In case menus are still up?!!
-	M_ClearMenus(true);
-
-	timetonext = TICRATE;
-}
-
-//
-// F_GameEndDrawer
-//
-void F_GameEndDrawer(void)
-{
-	// this function does nothing
-}
-
-//
-// F_GameEndTicker
-//
-void F_GameEndTicker(void)
-{
-	if (timetonext > 0)
-		timetonext--;
-	else
-		D_StartTitle();
-}
-
 
 // ==============
 //  TITLE SCREEN

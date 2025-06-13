@@ -3585,14 +3585,6 @@ void readwipes(MYFILE *f)
 				else if (fastcmp(pword, "FINAL"))
 					wipeoffset = wipe_voting_final;
 			}
-			else if (fastncmp(word, "CONTINUING_", 11))
-			{
-				pword = word + 11;
-				if (fastcmp(pword, "TOBLACK"))
-					wipeoffset = wipe_continuing_toblack;
-				else if (fastcmp(pword, "FINAL"))
-					wipeoffset = wipe_continuing_final;
-			}
 			else if (fastncmp(word, "TITLESCREEN_", 12))
 			{
 				pword = word + 12;
@@ -3626,14 +3618,6 @@ void readwipes(MYFILE *f)
 					wipeoffset = wipe_evaluation_toblack;
 				else if (fastcmp(pword, "FINAL"))
 					wipeoffset = wipe_evaluation_final;
-			}
-			else if (fastncmp(word, "GAMEEND_", 8))
-			{
-				pword = word + 8;
-				if (fastcmp(pword, "TOBLACK"))
-					wipeoffset = wipe_gameend_toblack;
-				else if (fastcmp(pword, "FINAL"))
-					wipeoffset = wipe_gameend_final;
 			}
 			else if (fastncmp(word, "ENCORE_", 7))
 			{
