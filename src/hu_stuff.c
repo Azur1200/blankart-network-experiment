@@ -922,7 +922,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 // Handles key input and string input
 //
-static inline boolean HU_keyInChatString(char *s, char ch)
+/*static inline boolean HU_keyInChatString(char *s, char ch)
 {
 	size_t l;
 
@@ -983,7 +983,7 @@ static inline boolean HU_keyInChatString(char *s, char ch)
 		return false; // did not eat key
 
 	return true; // ate the key
-}
+}*/
 
 //
 //

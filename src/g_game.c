@@ -2531,7 +2531,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		starpostnum = players[player].starpostnum;
 		starposttime = players[player].starposttime;
 		prevcheck = players[player].prevcheck;
-		prevcheck = players[player].nextcheck;
+		nextcheck = players[player].nextcheck;
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;
