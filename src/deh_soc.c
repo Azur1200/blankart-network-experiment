@@ -1280,8 +1280,13 @@ void readlevelheader(MYFILE *f, char * name)
 				deh_strlcpy(mapheaderinfo[num]->skytexture, word2,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
 			else if (fastcmp(word, "SKYNUM"))
-				deh_strlcpy(mapheaderinfo[num]->skytexture, va("SKY%s", word2),
+			{
+				char namebuf[9];
+
+				sprintf(namebuf, "SKY%.5s", word2);
+				deh_strlcpy(mapheaderinfo[num]->skytexture, namebuf,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
+			}
 			else if (fastcmp(word, "PRECUTSCENENUM"))
 				mapheaderinfo[num]->precutscenenum = (UINT8)i;
 			else if (fastcmp(word, "CUTSCENENUM"))
