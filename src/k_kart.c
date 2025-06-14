@@ -262,6 +262,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartdebugitem);
 	CV_RegisterVar(&cv_kartdebugamount);
+	CV_RegisterVar(&cv_kartdebugshrink);
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
@@ -3810,6 +3811,9 @@ UINT16 K_GetKartFlashing(player_t *player)
 
 boolean K_PlayerShrinkCheat(player_t *player)
 {
+	if (cv_kartdebugshrink.value)
+		return true;
+
 	return (
 		(player->pflags & PF_SHRINKACTIVE)
 		&& (player->bot == false)

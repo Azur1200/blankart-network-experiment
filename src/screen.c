@@ -63,7 +63,7 @@ consvar_t cv_renderview = CVAR_INIT ("renderview", "On", 0, CV_OnOff, NULL);
 consvar_t cv_vhseffect = CVAR_INIT ("vhspause", "On", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
-consvar_t cv_shittyscreen = CVAR_INIT ("televisionsignal", "Okay", CV_NOSHOWHELP, shittyscreen_cons_t, NULL);
+consvar_t cv_shittyscreen = CVAR_INIT ("televisionsignal", "Okay", 0, shittyscreen_cons_t, NULL);
 
 CV_PossibleValue_t cv_renderer_t[] = {
 	{1, "Software"},
