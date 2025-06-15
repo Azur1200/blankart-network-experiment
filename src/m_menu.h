@@ -155,40 +155,29 @@ void M_QuitResponse(INT32 ch);
 // Determines whether to show a level in the list (platter version does not need to be exposed)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
-// flags for items in the menu
-// menu handle (what we do when key is pressed
-#define IT_TYPE           (1+2+4+8192+16384)
-#define IT_CALL              1     // call the function
-#define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_DUMMY             4     // selectable, but does nothing
-#define IT_SUBMENU        8192     // go to sub menu
-#define IT_CVAR          16384     // handle as a cvar
+typedef enum
+{
+	IT_INTERACT  = 1<<0, // item can be interacted with
+	IT_HIDDEN    = 1<<1, // item is invisible and cannot be interacted with (has priority over IT_INTERACT)
+	IT_GRAYEDOUT = 1<<2, // item is grayed out and non-interactible
+	IT_SECRET    = 1<<3, // item text is displayed with question marks and non-interactible
 
-// display flags
-#define IT_DISPLAY       (8+16+32)
-#define IT_PATCH              8    // a patch or a string with big font
-#define IT_STRING            16    // little string (spaced with 10)
-#define IT_WHITESTRING       32    // little string in white
-#define IT_HEADERTEXT      (8+32)  // Non-selectable header option, displays in yellow offset to the left a little
+	IT_ARROWS = 1<<4, // call-type items use arrow keys instead of enter
+	IT_SLIDER = 1<<5, // cvar-type items display a slider
 
-// flags specific to each item action type
-#define IT_ACTION        (64+128+256)
+	IT_OFSX      = 1<<6, // X coordinate is relative to current position
+	IT_OFSY      = 1<<7, // ditto
+	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
+	IT_OVERLAY   = 1<<9, // item is drawn at absolute coordinates, without scrolling
 
-//consvar specific
-#define IT_CV_SLIDER         64
-#define IT_CV_STRING        128
-#define IT_CV_INTEGERSTEP   256    // if cvar is CV_FLOAT, modify it by 1 instead of 0.0625
-
-// extra flags
-#define IT_CENTER           512    // if IT_PATCH, center it on screen
-#define IT_HIDDEN          1024    // invisible, unselectable
-#define IT_GRAYEDOUT       2048    // grayed out, unselectable
-#define IT_SECRET          4096    // ??????? ????????????
-
-// carefully chosen to not conflict with V_ flags
-#define MDF_CENTERED 0x20
-#define MDF_TIMEATTACK 0x40
-#define MDF_CONTROLS 0x80
+	IT_PATCH     = 1<<10, // display a patch instead of text
+	IT_CENTER    = 1<<11, // center the text/patch
+	IT_SMALL     = 1<<12, // draw at half scale
+	IT_THIN      = 1<<13, // thin font
+	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
+	IT_HEADER    = 1<<15, // draw with an offset to the left
+	IT_STYLE     = IT_PATCH|IT_CENTER|IT_SMALL|IT_THIN|IT_HIGHLIGHT|IT_HEADER,
+} menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
 
@@ -227,6 +216,8 @@ struct menu_t
 	INT16          x, y;               // x, y of menu
 	INT16          scrollheight;       // height of scrolling area
 	INT16          lastOn;             // last item user was on in menu
+	INT16          cursoroffset;       // X offset of cursor
+	INT16          lineheight;         // default Y offset to add for each item
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
 	menufunc_f    *keyhandler;         // called before key press is processed
@@ -267,7 +258,6 @@ INT32 MR_ConnectMenuModChecks(INT32 choice);
 INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
 INT32 MR_HandleControlsMenu(INT32 ch);
-INT32 MR_HandleServerPage(INT32 choice);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);
 INT32 MR_VideoModeMenu(INT32 choice);
@@ -314,12 +304,12 @@ INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
 INT32 MR_QuitViewServer(INT32 choice);
 INT32 MR_HandleViewServer(INT32 choice);
+INT32 MR_CameraSetup(INT32 arg);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
-void M_DrawCenteredMenu(void);
 void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
 void M_DrawLevelStats(void);
@@ -328,16 +318,12 @@ void M_DrawTimeAttackMenu(void);
 void M_DrawMPMainMenu(void);
 void M_DrawSetupMultiPlayerMenu(void);
 void M_DrawConnectMenu(void);
-void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
-void M_DrawSkyRoom(void);
-void M_DrawHUDOptions(void);
 void M_DrawAddons(void);
 void M_DrawReplayStartMenu(void);
 void M_DrawPlaybackMenu(void);
 void M_DrawImageDef(void);
 void M_DrawMusicTest(void);
-void M_DrawControl(void);
 void M_DrawJoystick(void);
 void M_DrawMonitorToggles(void);
 void M_DrawViewServer(void);
@@ -407,11 +393,14 @@ extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyatt
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
+extern consvar_t cv_dummyserverpage;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
+
+void M_UpdateNumServerPages(void);
 
 extern char dummystaffname[22];
 

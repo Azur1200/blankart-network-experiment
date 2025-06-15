@@ -1859,6 +1859,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYNAME", &cv_dummyname },
 	{ "DUMMYFOLLOWER", &cv_dummyfollower },
 	{ "DUMMYCOLOR", &cv_dummycolor },
+	{ "DUMMYSERVERPAGE", &cv_dummyserverpage },
 	{ NULL, NULL }
 };
 
@@ -1907,13 +1908,35 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			menuitem->x = get_number(word2);
 		}
+		else if (fastcmp(word, "OFSX"))
+		{
+			menuitem->x = get_number(word2);
+			status |= IT_OFSX;
+		}
 		else if (fastcmp(word, "Y"))
 		{
 			menuitem->y = get_number(word2);
 		}
+		else if (fastcmp(word, "OFSY"))
+		{
+			menuitem->y = get_number(word2);
+			status |= IT_OFSY;
+		}
+		else if (fastcmp(word, "OVERLAY"))
+		{
+			status |= IT_OVERLAY;
+		}
+		else if (fastcmp(word, "TEMPOFFSET"))
+		{
+			status |= IT_TEMPORARY;
+		}
 		else if (fastcmp(word, "ARGUMENT"))
 		{
 			menuitem->argument = get_number(word2);
+		}
+		else if (fastcmp(word, "TEXT"))
+		{
+			menuitem->text = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "PATCH"))
 		{
@@ -1923,36 +1946,42 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			menuitem->tooltip = Z_StrDup(word2);
 		}
-		else if (fastncmp(word, "TEXT", 4))
+		else if (fastcmp(word, "STYLE"))
 		{
-			UINT16 flags = IT_STRING;
-			if (fastcmp(word+4, "HEADER"))
-				flags = IT_HEADERTEXT;
-			else if (fastcmp(word+4, "WHITE"))
-				flags = IT_WHITESTRING;
-			else if (word[4])
+			if (status & IT_STYLE)
 			{
-				WARN("unknown word '%s'", word);
+				WARN0("style already set!");
 				continue;
 			}
 
-			if (status & IT_DISPLAY)
-			{
-				WARN0("text already set!");
-				continue;
-			}
-			status |= flags;
-			menuitem->text = Z_StrDup(word2);
+			if (fasticmp(word2, "HEADER"))
+				status |= IT_HEADER|IT_HIGHLIGHT;
+			else if (fasticmp(word2, "HIGHLIGHT"))
+				status |= IT_HIGHLIGHT;
+			else if (fasticmp(word2, "CENTER"))
+				status |= IT_CENTER;
+			else if (fasticmp(word2, "CENTER-HIGHLIGHT"))
+				status |= IT_CENTER|IT_HIGHLIGHT;
+			else if (fasticmp(word2, "THIN"))
+				status |= IT_THIN;
+			else if (fasticmp(word2, "THIN-HIGHLIGHT"))
+				status |= IT_THIN|IT_HIGHLIGHT;
+			else if (fasticmp(word2, "PATCH"))
+				status |= IT_PATCH;
+			else if (fasticmp(word2, "PATCH-CENTER"))
+				status |= IT_PATCH|IT_CENTER;
+			else if (fasticmp(word2, "PATCH-SMALL"))
+				status |= IT_PATCH|IT_SMALL;
+			else if (fasticmp(word2, "PATCH-HIGHLIGHT"))
+				status |= IT_PATCH|IT_HIGHLIGHT;
+			else
+				WARN("unknown style '%s'", word2);
 		}
 		else if (fastncmp(word, "CVAR", 4))
 		{
-			UINT16 flags = IT_CVAR;
+			UINT16 flags = IT_INTERACT;
 			if (fastcmp(word+4, "SLIDER"))
-				flags |= IT_CV_SLIDER;
-			else if (fastcmp(word+4, "STRING"))
-				flags |= IT_CV_STRING;
-			else if (fastcmp(word+4, "INTEGER"))
-				flags |= IT_CV_INTEGERSTEP;
+				flags |= IT_SLIDER;
 			else if (word[4])
 			{
 				WARN("unknown word '%s'", word);
@@ -1983,18 +2012,14 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN("unknown menu '%s'", word2);
 				continue;
 			}
-			status |= IT_SUBMENU;
+			status |= IT_INTERACT;
 			menuitem->submenu = mn;
 		}
 		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
 		{
-			UINT16 flags;
-			if (word[0] == 'C')
-				flags = IT_CALL;
-			else if (word[0] == 'A')
-				flags = IT_ARROWS;
-			else
-				I_Error("bruh"); // i should probably just make "CALL" the stem for all of these
+			UINT16 flags = IT_INTERACT;
+			if (word[0] == 'A')
+				flags |= IT_ARROWS;
 
 			menufunc_f *routine = get_menuroutine(word2);
 			if (!routine)
@@ -2004,11 +2029,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 			}
 			status |= flags;
 			menuitem->routine = routine;
-		}
-		else if (fastcmp(word, "DUMMY"))
-		{
-			status |= IT_DUMMY;
-			menuitem->routine = NULL;
 		}
 		else
 			WARN("unknown word '%s'", word);
@@ -2077,7 +2097,6 @@ void readmenu(MYFILE *f, INT32 num)
 						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
 						item = menudef->menuitems + menudef->numitems++;
 						DEH_Link(word2, &item->info, &menunames);
-						item->text = "";
 					}
 					readmenuitem(f, item);
 				}
@@ -2260,6 +2279,14 @@ void readmenu(MYFILE *f, INT32 num)
 			{
 				menudef->scrollheight = get_number(word2);
 			}
+			else if (fastcmp(word, "CURSOROFFSET"))
+			{
+				menudef->cursoroffset = get_number(word2);
+			}
+			else if (fastcmp(word, "LINEHEIGHT"))
+			{
+				menudef->lineheight = get_number(word2);
+			}
 			else if (fastcmp(word, "ENTERROUTINE"))
 			{
 				menufunc_f *routine = get_menuroutine(word2);
@@ -2294,6 +2321,10 @@ void readmenu(MYFILE *f, INT32 num)
 				WARN("unknown word '%s'", word);
 		}
 	} while (!myfeof(f)); // finish when the line is empty
+
+	// default line height
+	if (!menudef->lineheight)
+		menudef->lineheight = 8;
 
 	Z_Free(s);
 }

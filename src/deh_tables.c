@@ -701,7 +701,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CANCELCONNECT", &MR_CancelConnect },
 	{ "SETUPCONTROLSMENU", &MR_SetupControlsMenu },
 	{ "HANDLECONTROLSMENU", &MR_HandleControlsMenu },
-	{ "HANDLESERVERPAGE", &MR_HandleServerPage },
 	{ "REFRESH", &MR_Refresh },
 	{ "CONNECT", &MR_Connect },
 	{ "VIDEOMODEMENU", &MR_VideoModeMenu },
@@ -750,6 +749,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "RESTARTAUDIO", &MR_RestartAudio },
 	{ "QUITVIEWSERVER", &MR_QuitViewServer },
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
+	{ "CAMERASETUP", &MR_CameraSetup },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
@@ -758,7 +758,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
-	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
 	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },
 	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
@@ -766,16 +765,12 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWTIMEATTACKMENU", &M_DrawTimeAttackMenu },
 	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
-	{ "DRAWVIDEOMENU", &M_DrawVideoMenu },
 	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
-	{ "DRAWSKYROOM", &M_DrawSkyRoom },
-	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
 	{ "DRAWADDONS", &M_DrawAddons },
 	{ "DRAWREPLAYSTARTMENU", &M_DrawReplayStartMenu },
 	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },
 	{ "DRAWIMAGEDEF", &M_DrawImageDef },
 	{ "DRAWMUSICTEST", &M_DrawMusicTest },
-	{ "DRAWCONTROL", &M_DrawControl },
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
