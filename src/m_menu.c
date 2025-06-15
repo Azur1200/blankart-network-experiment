@@ -2057,11 +2057,156 @@ void M_DrawPauseMenu(void)
 	M_DrawGenericMenu();
 }
 
-static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
 {
 	INT16 w;
+	if (item->cvar)
+	{
+		consvar_t *cv = item->cvar;
+		if (!cv->PossibleValue) // string cvar?
+		{
+			if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
+				return;
+
+			boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
+			INT32 xofs = side ? 32 : 0;
+			INT32 yofs = side ? -8 : 4;
+			w = M_StringCvarLength(cv);
+
+			M_DrawTextBox(x + xofs, y + yofs, w, 1);
+			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
+			if (selected && skullAnimCounter < 4) // blink cursor
+				V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
+					'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
+
+			if (!side)
+				y += 16;
+		}
+		else if (item->status & IT_SLIDER)
+		{
+			M_DrawSlider(x, y, cv, selected);
+		}
+		else
+		{
+			const char *str = cv->string;
+			INT32 soffset = 0;
+			INT32 strvf = vflags;
+			boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
+
+			// special cvar value offsets for time attack!
+			// i don't feel like adding an extra flag for this...
+			if (y < 78) for (w = 0; w < NUMMENULEVELS; w++)
+			{
+				if (menustack[w] == MN_SP_TIMEATTACK)
+				{
+					soffset = 40;
+					break;
+				}
+			}
+
+			if (cv == &cv_chooseskin)
+				str = skins[cv_chooseskin.value].realname;
+			else if (cv == &cv_dummyfollower)
+				str = cv_dummyfollower.value == -1 ? "None" : followers[cv_dummyfollower.value].name;
+			else if (cv == &cv_dummystaff && cv_dummystaff.value)
+				str = dummystaffname;
+			else if (cv == &cv_dummycolor)
+				str = skincolors[cv_dummycolor.value].name;
+			else if (cv == &cv_dummyserverpage)
+				str = va("%d of %d", cv->value + 1, dummyserverpage_cons_t[1].value + 1);
+			else if (cv == &cv_soundtest && cv_soundtest.value)
+				V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, strvf|highlightflags, S_sfx[cv_soundtest.value].name);
+			else if (cv == &cv_gamesounds)
+			{
+				str = sound_disabled ? "Off" : "On";
+				warning = sound_disabled;
+			}
+			else if (cv == &cv_gamedigimusic)
+			{
+				str = digital_disabled ? "Off" : "On";
+				warning = digital_disabled;
+			}
+			else if (cv == &cons_menuhighlight)
+			{
+				INT16 hx = x - 2;
+				static const char *hstr[5] = {
+					"(", "Good highlight", ",", " Warning highlight", ")"
+				};
+				for (w = 0; w < 5; w++)
+				{
+					V_DrawString(hx, y + 10, (w == 1 ? recommendedflags : w == 3 ? warningflags : highlightflags)|strvf, hstr[w]);
+					hx += V_StringWidth(hstr[w], strvf);
+				}
+			}
+			else if (cv == &cv_dummymultiplayer)
+				return;
+
+			if (menustack[0] == MN_MP_PLAYERSETUP)
+				strvf |= V_ALLOWLOWERCASE;
+
+			w = V_StringWidth(str, strvf);
+			V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|strvf, str);
+
+			if (selected)
+			{
+				strvf &= ~(V_FLIP|V_PARAMMASK);
+				V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
+					'\x1C' | highlightflags | strvf, false); // left arrow
+				V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
+					'\x1D' | highlightflags | strvf, false); // right arrow
+			}
+		}
+	}
+	else if (item->routine)
+	{
+		char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
+		INT32 key;
+		if (item->routine != MR_ChangeControl)
+			return;
+
+		tmp[0] ='\0';
+		for (w = 0; w < MAXINPUTMAPPING; w++)
+		{
+			key = setupcontrols[item->argument][w];
+			if (key != KEY_NULL)
+			{
+				if (tmp[0] != '\0')
+					strcat(tmp, ", ");
+				strcat(tmp, G_KeynumToString(key));
+			}
+		}
+		if (tmp[0] == '\0')
+			strcpy(tmp, "---");
+
+		w = V_StringWidth(tmp, vflags);
+		(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+			(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, tmp);
+	}
+	else
+	{
+		if (item->submenu == MN_OP_VIDEOMODE) // show current resolution
+		{
+			V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
+				(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|vflags,
+				va("%dx%d", vid.width, vid.height));
+		}
+		else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
+		{
+			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
+			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+			if (!name) name = "?";
+			w = V_StringWidth(name, vflags);
+			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
+		}
+		else if (item->patch)
+			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
+	}
+}
+
+static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+{
 	const char *string = item->text ? item->text : "";
-	INT32 highlight = selected || item->status & IT_HIGHLIGHT ? highlightflags : 0;
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font = HU_FONT;
 	INT32 (*widthfunc)(const char *string, INT32 option) = V_StringWidth;
@@ -2074,11 +2219,11 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_GRAYEDOUT)
 		vflags |= V_TRANSLUCENT;
 
-	switch (item->status & IT_DISPLAY)
+	// draw a patch instead of a string?
+	if (item->status & IT_PATCH)
 	{
-	case IT_PATCH:
 		if (!item->patch)
-			break;
+			return 0;
 
 		patch_t *p = W_CachePatchName(item->patch, PU_CACHE);
 		UINT8 *cmap = NULL;
@@ -2089,175 +2234,25 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 			cmap = V_GetStringColormap(highlightflags);
 
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
-		break;
-	case IT_STRING:
-		if (item->status & IT_THIN)
-		{
-			font = TINY_FONT;
-			vflags |= V_6WIDTHSPACE;
-			widthfunc = V_ThinStringWidth;
-		}
-
-		if (item->status & IT_CENTER)
-			x -= widthfunc(string, vflags)/2;
-
-		V_DrawStringScaled(x<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, vflags|highlight, font, string);
-
-		if (item->status & (IT_SECRET|IT_GRAYEDOUT))
-			break;
-
-		// draw the right-side string
-		if (item->cvar)
-		{
-			consvar_t *cv = item->cvar;
-			if (!cv->PossibleValue) // string cvar?
-			{
-				if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
-					break;
-
-				boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
-				INT32 xofs = side ? 32 : 0;
-				INT32 yofs = side ? -8 : 4;
-				w = M_StringCvarLength(cv);
-
-				M_DrawTextBox(x + xofs, y + yofs, w, 1);
-				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
-				if (selected && skullAnimCounter < 4) // blink cursor
-					V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
-						'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
-
-				if (!side)
-					y += 16;
-			}
-			else if (item->status & IT_SLIDER)
-			{
-				M_DrawSlider(x, y, cv, selected);
-			}
-			else
-			{
-				const char *str = cv->string;
-				INT32 soffset = 0;
-				INT32 strvf = vflags;
-				boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
-
-				// special cvar value offsets for time attack!
-				// i don't feel like adding an extra flag for this...
-				if (y < 78) for (w = 0; w < NUMMENULEVELS; w++)
-				{
-					if (menustack[w] == MN_SP_TIMEATTACK)
-					{
-						soffset = 40;
-						break;
-					}
-				}
-
-				if (cv == &cv_chooseskin)
-					str = skins[cv_chooseskin.value].realname;
-				else if (cv == &cv_dummyfollower)
-					str = cv_dummyfollower.value == -1 ? "None" : followers[cv_dummyfollower.value].name;
-				else if (cv == &cv_dummystaff && cv_dummystaff.value)
-					str = dummystaffname;
-				else if (cv == &cv_dummycolor)
-					str = skincolors[cv_dummycolor.value].name;
-				else if (cv == &cv_dummyserverpage)
-					str = va("%d of %d", cv->value + 1, dummyserverpage_cons_t[1].value + 1);
-				else if (cv == &cv_soundtest && cv_soundtest.value)
-					V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, strvf|highlightflags, S_sfx[cv_soundtest.value].name);
-				else if (cv == &cv_gamesounds)
-				{
-					str = sound_disabled ? "Off" : "On";
-					warning = sound_disabled;
-				}
-				else if (cv == &cv_gamedigimusic)
-				{
-					str = digital_disabled ? "Off" : "On";
-					warning = digital_disabled;
-				}
-				else if (cv == &cons_menuhighlight)
-				{
-					INT16 hx = x - 2;
-					static const char *hstr[5] = {
-						"(", "Good highlight", ",", " Warning highlight", ")"
-					};
-					for (w = 0; w < 5; w++)
-					{
-						V_DrawString(hx, y + 10, (w == 1 ? recommendedflags : w == 3 ? warningflags : highlightflags)|strvf, hstr[w]);
-						hx += V_StringWidth(hstr[w], strvf);
-					}
-				}
-				else if (cv == &cv_dummymultiplayer)
-					break;
-
-				if (menustack[0] == MN_MP_PLAYERSETUP)
-					strvf |= V_ALLOWLOWERCASE;
-
-				w = V_StringWidth(str, strvf);
-				V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|strvf, str);
-
-				if (selected)
-				{
-					strvf &= ~(V_FLIP|V_PARAMMASK);
-					V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
-						'\x1C' | highlightflags | strvf, false); // left arrow
-					V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
-						'\x1D' | highlightflags | strvf, false); // right arrow
-				}
-			}
-			break;
-		}
-		else if (item->routine)
-		{
-			char tmp[32*MAXINPUTMAPPING]; // should be enough :^)
-			INT32 key;
-			if (item->routine != MR_ChangeControl)
-				break;
-
-			tmp[0] ='\0';
-			for (w = 0; w < MAXINPUTMAPPING; w++)
-			{
-				key = setupcontrols[item->argument][w];
-				if (key != KEY_NULL)
-				{
-					if (tmp[0] != '\0')
-						strcat(tmp, ", ");
-					strcat(tmp, G_KeynumToString(key));
-				}
-			}
-			if (tmp[0] == '\0')
-				strcpy(tmp, "---");
-
-			w = V_StringWidth(tmp, vflags);
-			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, tmp);
-			break;
-		}
-		else
-		{
-			if (item->submenu == MN_OP_VIDEOMODE) // show current resolution
-			{
-				V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
-					(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|vflags,
-					va("%dx%d", vid.width, vid.height));
-			}
-			else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
-			{
-				INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-				const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
-				if (!name) name = "?";
-				w = V_StringWidth(name, vflags);
-				(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-					(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
-			}
-			else if (item->patch)
-				V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (highlight ? highlightflags : 0)|vflags, item->patch);
-		}
-		break;
-	case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
-		V_DrawString(x - 16, y, vflags|highlight, string);
-		break;
-	default:
-		break;
+		return SHORT(p->width);
 	}
+
+	if (item->status & IT_THIN)
+	{
+		font = TINY_FONT;
+		vflags |= V_6WIDTHSPACE; // TODO: make this a style?
+		widthfunc = V_ThinStringWidth;
+	}
+
+	if (item->status & IT_CENTER)
+		x -= widthfunc(string, vflags)/2;
+	if (item->status & IT_HEADER)
+		x -= 16;
+
+	V_DrawStringScaled(x<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
+
+	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
+		M_DrawRightString(item, x, y, vflags, selected);
 
 	return widthfunc(string, vflags);
 }

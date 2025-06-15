@@ -1934,6 +1934,10 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			menuitem->argument = get_number(word2);
 		}
+		else if (fastcmp(word, "TEXT"))
+		{
+			menuitem->text = Z_StrDup(word2);
+		}
 		else if (fastcmp(word, "PATCH"))
 		{
 			menuitem->patch = Z_StrDup(word2);
@@ -1944,10 +1948,24 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "STYLE"))
 		{
-			if (fasticmp(word2, "CENTER"))
+			if (status & IT_STYLE)
+			{
+				WARN0("style already set!");
+				continue;
+			}
+
+			if (fasticmp(word2, "HEADER"))
+				status |= IT_HEADER|IT_HIGHLIGHT;
+			else if (fasticmp(word2, "HIGHLIGHT"))
+				status |= IT_HIGHLIGHT;
+			else if (fasticmp(word2, "CENTER"))
 				status |= IT_CENTER;
+			else if (fasticmp(word2, "CENTER-HIGHLIGHT"))
+				status |= IT_CENTER|IT_HIGHLIGHT;
 			else if (fasticmp(word2, "THIN"))
 				status |= IT_THIN;
+			else if (fasticmp(word2, "THIN-HIGHLIGHT"))
+				status |= IT_THIN|IT_HIGHLIGHT;
 			else if (fasticmp(word2, "PATCH"))
 				status |= IT_PATCH;
 			else if (fasticmp(word2, "PATCH-CENTER"))
@@ -1958,27 +1976,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				status |= IT_PATCH|IT_HIGHLIGHT;
 			else
 				WARN("unknown style '%s'", word2);
-		}
-		else if (fastncmp(word, "TEXT", 4))
-		{
-			UINT16 flags = IT_STRING;
-			if (fastcmp(word+4, "HEADER"))
-				flags = IT_HEADERTEXT|IT_HIGHLIGHT;
-			else if (fastcmp(word+4, "WHITE"))
-				flags |= IT_HIGHLIGHT;
-			else if (word[4])
-			{
-				WARN("unknown word '%s'", word);
-				continue;
-			}
-
-			if (status & IT_DISPLAY)
-			{
-				WARN0("text already set!");
-				continue;
-			}
-			status |= flags;
-			menuitem->text = Z_StrDup(word2);
 		}
 		else if (fastncmp(word, "CVAR", 4))
 		{

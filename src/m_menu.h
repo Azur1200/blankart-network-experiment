@@ -170,15 +170,13 @@ typedef enum
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
 	IT_OVERLAY   = 1<<9, // item is drawn at absolute coordinates, without scrolling
 
-	IT_CENTER    = 1<<10, // center the text/patch
-	IT_SMALL     = 1<<11, // draw at half scale
-	IT_THIN      = 1<<12, // thin font
-	IT_HIGHLIGHT = 1<<13, // add highlightflags to text/patch
-
-	IT_PATCH       = 1<<14, // display a patch
-	IT_STRING      = 2<<14, // display a string
-	IT_HEADERTEXT  = 3<<14, // whitestring with an offset
-	IT_DISPLAY     = 3<<14,
+	IT_PATCH     = 1<<10, // display a patch instead of text
+	IT_CENTER    = 1<<11, // center the text/patch
+	IT_SMALL     = 1<<12, // draw at half scale
+	IT_THIN      = 1<<13, // thin font
+	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
+	IT_HEADER    = 1<<15, // draw with an offset to the left
+	IT_STYLE     = IT_PATCH|IT_CENTER|IT_SMALL|IT_THIN|IT_HIGHLIGHT|IT_HEADER,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
