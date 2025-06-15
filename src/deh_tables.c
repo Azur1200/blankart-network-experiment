@@ -756,7 +756,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
-	{ "DRAWCENTEREDMENU", &M_DrawCenteredMenu },
 	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },
 	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
@@ -764,9 +763,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWTIMEATTACKMENU", &M_DrawTimeAttackMenu },
 	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
-	{ "DRAWVIDEOMENU", &M_DrawVideoMenu },
 	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
-	{ "DRAWHUDOPTIONS", &M_DrawHUDOptions },
 	{ "DRAWADDONS", &M_DrawAddons },
 	{ "DRAWREPLAYSTARTMENU", &M_DrawReplayStartMenu },
 	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },

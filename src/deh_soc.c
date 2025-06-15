@@ -1946,6 +1946,16 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			if (fasticmp(word2, "CENTER"))
 				status |= IT_CENTER;
+			else if (fasticmp(word2, "THIN"))
+				status |= IT_THIN;
+			else if (fasticmp(word2, "PATCH"))
+				status |= IT_PATCH;
+			else if (fasticmp(word2, "PATCH-CENTER"))
+				status |= IT_PATCH|IT_CENTER;
+			else if (fasticmp(word2, "PATCH-SMALL"))
+				status |= IT_PATCH|IT_SMALL;
+			else if (fasticmp(word2, "PATCH-HIGHLIGHT"))
+				status |= IT_PATCH|IT_HIGHLIGHT;
 			else
 				WARN("unknown style '%s'", word2);
 		}
@@ -1953,9 +1963,9 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			UINT16 flags = IT_STRING;
 			if (fastcmp(word+4, "HEADER"))
-				flags = IT_HEADERTEXT;
+				flags = IT_HEADERTEXT|IT_HIGHLIGHT;
 			else if (fastcmp(word+4, "WHITE"))
-				flags = IT_WHITESTRING;
+				flags |= IT_HIGHLIGHT;
 			else if (word[4])
 			{
 				WARN("unknown word '%s'", word);
@@ -2090,7 +2100,6 @@ void readmenu(MYFILE *f, INT32 num)
 						menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
 						item = menudef->menuitems + menudef->numitems++;
 						DEH_Link(word2, &item->info, &menunames);
-						item->text = "";
 					}
 					readmenuitem(f, item);
 				}

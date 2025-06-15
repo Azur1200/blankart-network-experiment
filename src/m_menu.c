@@ -1688,6 +1688,12 @@ void M_Ticker(void)
 	else
 		playback_enterheld = 0;
 
+	// Hide some options based on the current render mode
+#ifdef HWRENDER
+	M_SetItemVisible(MN_OP_VIDEO, "OPENGL", rendermode == render_opengl);
+#endif
+	//M_SetItemVisible(MN_OP_VIDEO, "PARALLEL", rendermode == render_soft);
+
 	//added : 30-01-98 : test mode for five seconds
 	if (vidm_testingmode > 0)
 	{
@@ -2054,9 +2060,11 @@ void M_DrawPauseMenu(void)
 static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
 {
 	INT16 w;
-	const char *string = item->text;
-	INT16 display = item->status & IT_DISPLAY;
-	INT32 highlight = selected || display == IT_WHITESTRING || display == IT_HEADERTEXT ? highlightflags : 0;
+	const char *string = item->text ? item->text : "";
+	INT32 highlight = selected || item->status & IT_HIGHLIGHT ? highlightflags : 0;
+	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
+	int font = HU_FONT;
+	INT32 (*widthfunc)(const char *string, INT32 option) = V_StringWidth;
 
 	if (item->status & IT_SECRET)
 	{
@@ -2066,44 +2074,39 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_GRAYEDOUT)
 		vflags |= V_TRANSLUCENT;
 
-	switch (display)
+	switch (item->status & IT_DISPLAY)
 	{
 	case IT_PATCH:
-		if (item->patch && item->patch[0])
-		{
-			if (item->status & IT_CENTER)
-			{
-				patch_t *p;
-				p = W_CachePatchName(item->patch, PU_CACHE);
-				V_DrawScaledPatch((BASEVIDWIDTH - SHORT(p->width))/2, y, 0, p);
-			}
-			else
-			{
-				V_DrawScaledPatch(x, y, 0,
-					W_CachePatchName(item->patch, PU_CACHE));
-			}
-		}
+		if (!item->patch)
+			break;
+
+		patch_t *p = W_CachePatchName(item->patch, PU_CACHE);
+		UINT8 *cmap = NULL;
+
+		if (item->status & IT_CENTER)
+			x -= SHORT(p->width)/2;
+		if (item->status & IT_HIGHLIGHT)
+			cmap = V_GetStringColormap(highlightflags);
+
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
 		break;
 	case IT_STRING:
-	case IT_WHITESTRING:
-		if (vflags & MDF_CENTERED || item->status & IT_CENTER)
-			V_DrawCenteredString(x, y, vflags|highlight, string);
-		else
-			V_DrawString(x, y, vflags|highlight, string);
+		if (item->status & IT_THIN)
+		{
+			font = TINY_FONT;
+			vflags |= V_6WIDTHSPACE;
+			widthfunc = V_ThinStringWidth;
+		}
+
+		if (item->status & IT_CENTER)
+			x -= widthfunc(string, vflags)/2;
+
+		V_DrawStringScaled(x<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, vflags|highlight, font, string);
 
 		if (item->status & (IT_SECRET|IT_GRAYEDOUT))
 			break;
 
-		if (item == M_CheckMenuItem(MN_OP_CHANGECONTROLS, "SETJOY")) // gamepad select
-		{
-			INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
-			const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
-			if (!name) name = "?";
-			w = V_StringWidth(name, vflags);
-			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
-				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, name);
-		}
-
+		// draw the right-side string
 		if (item->cvar)
 		{
 			consvar_t *cv = item->cvar;
@@ -2112,7 +2115,7 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
 					break;
 
-				boolean side = vflags & MDF_TIMEATTACK || cv == &cv_dummyname;
+				boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
 				INT32 xofs = side ? 32 : 0;
 				INT32 yofs = side ? -8 : 4;
 				w = M_StringCvarLength(cv);
@@ -2133,9 +2136,20 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 			else
 			{
 				const char *str = cv->string;
-				INT32 soffset = vflags & MDF_TIMEATTACK && cv != &cv_nextmap ? 40 : 0;
+				INT32 soffset = 0;
 				INT32 strvf = vflags;
 				boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
+
+				// special cvar value offsets for time attack!
+				// i don't feel like adding an extra flag for this...
+				if (y < 78) for (w = 0; w < NUMMENULEVELS; w++)
+				{
+					if (menustack[w] == MN_SP_TIMEATTACK)
+					{
+						soffset = 40;
+						break;
+					}
+				}
 
 				if (cv == &cv_chooseskin)
 					str = skins[cv_chooseskin.value].realname;
@@ -2158,6 +2172,18 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				{
 					str = digital_disabled ? "Off" : "On";
 					warning = digital_disabled;
+				}
+				else if (cv == &cons_menuhighlight)
+				{
+					INT16 hx = x - 2;
+					static const char *hstr[5] = {
+						"(", "Good highlight", ",", " Warning highlight", ")"
+					};
+					for (w = 0; w < 5; w++)
+					{
+						V_DrawString(hx, y + 10, (w == 1 ? recommendedflags : w == 3 ? warningflags : highlightflags)|strvf, hstr[w]);
+						hx += V_StringWidth(hstr[w], strvf);
+					}
 				}
 				else if (cv == &cv_dummymultiplayer)
 					break;
@@ -2205,6 +2231,26 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 				(BASEVIDWIDTH-currentMenu->x, y, vflags|highlightflags, tmp);
 			break;
 		}
+		else
+		{
+			if (item->submenu == MN_OP_VIDEOMODE) // show current resolution
+			{
+				V_DrawRightAlignedString(BASEVIDWIDTH - x, y,
+					(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|vflags,
+					va("%dx%d", vid.width, vid.height));
+			}
+			else if (item->submenu == MN_OP_JOYSTICKSET) // gamepad select
+			{
+				INT32 stick = cv_usejoystick[setupcontrolplayer-1].value;
+				const char *name = stick == 0 ? "None" : I_GetJoyName(stick);
+				if (!name) name = "?";
+				w = V_StringWidth(name, vflags);
+				(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
+					(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
+			}
+			else if (item->patch)
+				V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (highlight ? highlightflags : 0)|vflags, item->patch);
+		}
 		break;
 	case IT_HEADERTEXT: // draws 16 pixels to the left, in yellow text
 		V_DrawString(x - 16, y, vflags|highlight, string);
@@ -2213,7 +2259,7 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		break;
 	}
 
-	return V_StringWidth(string, vflags);
+	return widthfunc(string, vflags);
 }
 
 // gets the absolute Y coordinate where this menuitem should be drawn (in a broken way)
@@ -2235,7 +2281,7 @@ static INT16 getheight(INT16 index)
 	return y;
 }
 
-static void M_DrawBaseMenu(INT32 flags)
+void M_DrawGenericMenu(void)
 {
 	INT16 scrollx = currentMenu->x, scrolly = currentMenu->y;
 	INT16 scrollheight = currentMenu->scrollheight;
@@ -2270,7 +2316,6 @@ static void M_DrawBaseMenu(INT32 flags)
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
 		INT16 dx, dy;
-		INT32 vflags = flags;
 		menuitem_t *item = &currentMenu->menuitems[i];
 
 		if (item->status & IT_HIDDEN)
@@ -2314,12 +2359,12 @@ static void M_DrawBaseMenu(INT32 flags)
 			}
 		}
 
-		w = M_DrawMenuItem(item, dx, dy, vflags, i == itemOn);
+		w = M_DrawMenuItem(item, dx, dy, MENUCAPS, i == itemOn);
 
 		if (i == itemOn)
 		{
 			cursory = y;
-			cursorx = x - (vflags & MDF_CENTERED ? w/2 : 0) - 24 + currentMenu->cursoroffset;
+			cursorx = x - (item->status & IT_CENTER ? w/2 : 0) - 24 + currentMenu->cursoroffset;
 		}
 
 	nodraw:
@@ -2328,7 +2373,8 @@ static void M_DrawBaseMenu(INT32 flags)
 	}
 
 	// DRAW THE SKULL CURSOR
-	V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+	if (M_ItemSelectable(&currentMenu->menuitems[itemOn]))
+		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
 
 	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)
@@ -2365,16 +2411,6 @@ texty -= 10*vid.dupy;\
 	}
 
 	M_DrawMenuTooltips();
-}
-
-void M_DrawGenericMenu(void)
-{
-	M_DrawBaseMenu(MENUCAPS);
-}
-
-void M_DrawCenteredMenu(void)
-{
-	M_DrawBaseMenu(MDF_CENTERED|MENUCAPS);
 }
 
 //
@@ -2729,11 +2765,15 @@ static void M_DrawMessageMenu(void)
 // You can even put multiple images in one menu!
 void M_DrawImageDef(void)
 {
-	patch_t *patch = W_CachePatchName(currentMenu->menuitems[itemOn].text,PU_CACHE);
-	if (patch->width <= BASEVIDWIDTH)
-		V_DrawScaledPatch(0,0,0,patch);
-	else
-		V_DrawSmallScaledPatch(0,0,0,patch);
+	for (INT16 i = 0; i < currentMenu->numitems; i++)
+	{
+		if (i == itemOn)
+			currentMenu->menuitems[i].status &= ~IT_HIDDEN;
+		else
+			currentMenu->menuitems[i].status |= IT_HIDDEN;
+	}
+
+	M_DrawGenericMenu();
 
 	if (!currentMenu->menuitems[itemOn].argument)
 	{
@@ -5213,7 +5253,7 @@ void M_DrawTimeAttackMenu(void)
 		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(faceprefix[cv_chooseskin.value][FACE_WANTED]->width), y, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
 	}
 
-	M_DrawBaseMenu((menustack[0] == MN_SP_TIMEATTACK ? MDF_TIMEATTACK : 0)|MENUCAPS);
+	M_DrawGenericMenu();
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -5271,7 +5311,7 @@ void M_DrawTimeAttackMenu(void)
 		x = menu->x + menu->menuitems[i].x;
 		y = menu->y + menu->menuitems[i].y;
 		if (y < 128)
-			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MDF_TIMEATTACK|MENUCAPS, false);
+			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MENUCAPS, false);
 	}
 }
 
@@ -6185,17 +6225,6 @@ void M_DrawMPMainMenu(void)
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
 
-#if MAXPLAYERS != 16
-Update the maxplayers label...
-#endif
-	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "STARTSERVER"),
-		(M_IsItemOn(MN_MP_MAIN, "STARTSERVER") ? highlightflags : 0)|MENUCAPS, "(2-16 players)");
-
-	V_DrawRightAlignedString(BASEVIDWIDTH-x, y+M_GetItemY(MN_MP_MAIN, "OFFLINESERVER"),
-		(M_IsItemOn(MN_MP_MAIN, "OFFLINESERVER") ? highlightflags : 0)|MENUCAPS,
-		"(2-4 players)"
-		);
-
 	// character bar, ripped off the color bar :V
 	{
 #define iconwidth 32
@@ -6299,38 +6328,22 @@ void M_DrawSetupMultiPlayerMenu(void)
 	INT32 mx, my, st, flags = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
-	patch_t *statbg = W_CachePatchName("K_STATBG", PU_CACHE);
-	patch_t *statlr = W_CachePatchName("K_STATLR", PU_CACHE);
-	patch_t *statud = W_CachePatchName("K_STATUD", PU_CACHE);
 	patch_t *statdot = W_CachePatchName("K_SDOT0", PU_CACHE);
 	patch_t *patch;
 	UINT8 frame;
 	UINT8 speed;
 	UINT8 weight;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
-	INT32 statx, staty;
 	INT16 i;
 
 	mx = menudefs[MN_MP_PLAYERSETUP].x;
 	my = menudefs[MN_MP_PLAYERSETUP].y;
 
-	statx = (BASEVIDWIDTH - mx - 118);
-	staty = (my+62);
-
 	// use generic drawer for cursor, items and title
 	M_DrawGenericMenu();
 
 	// SRB2Kart: draw the stat backer
-	// labels
-	V_DrawThinString(statx+16, staty, MENUCAPS|V_6WIDTHSPACE|highlightflags, "Acceleration");
-	V_DrawThinString(statx+91, staty, MENUCAPS|V_6WIDTHSPACE|highlightflags, "Max Speed");
-	V_DrawThinString(statx, staty+12, MENUCAPS|V_6WIDTHSPACE|highlightflags, "Handling");
-	V_DrawThinString(statx+7, staty+77, MENUCAPS|V_6WIDTHSPACE|highlightflags, "Weight");
-	// label arrows
-	V_DrawFixedPatch((statx+64)<<FRACBITS, staty<<FRACBITS, FRACUNIT, 0, statlr, flashcol);
-	V_DrawFixedPatch((statx+24)<<FRACBITS, (staty+22)<<FRACBITS, FRACUNIT, 0, statud, flashcol);
-	// bg
-	V_DrawFixedPatch((statx+34)<<FRACBITS, (staty+10)<<FRACBITS, FRACUNIT, 0, statbg, 0);
+	// bg, text, arrows handled by generic drawer
 
 	for (i = 0; i < numskins; i++) // draw the stat dots
 	{
@@ -7230,43 +7243,6 @@ INT32 MR_VideoModeMenu(INT32 choice)
 
 	vidm_column_size = (vidm_nummodes+2) / 3;
 	return true;
-}
-
-void M_DrawVideoMenu(void)
-{
-	M_DrawGenericMenu();
-
-	V_DrawRightAlignedString(BASEVIDWIDTH - currentMenu->x, currentMenu->y + M_GetItemY(MN_OP_VIDEO, "SETMODE"),
-		(SCR_IsAspectCorrect(vid.width, vid.height) ? recommendedflags : highlightflags)|MENUCAPS,
-			va("%dx%d", vid.width, vid.height));
-
-	// Hide some options based on the current render mode
-#ifdef HWRENDER
-	M_SetItemVisible(MN_OP_VIDEO, "OPENGL", rendermode == render_opengl);
-#endif
-	//M_SetItemVisible(MN_OP_VIDEO, "PARALLEL", rendermode == render_soft);
-}
-
-void M_DrawHUDOptions(void)
-{
-	const char *str0 = ")";
-	const char *str1 = " Warning highlight";
-	const char *str2 = ",";
-	const char *str3 = "Good highlight";
-	INT32 x = BASEVIDWIDTH - currentMenu->x + 2, y = currentMenu->y + 90;
-	INT32 w0 = V_StringWidth(str0, 0), w1 = V_StringWidth(str1, 0), w2 = V_StringWidth(str2, 0), w3 = V_StringWidth(str3, 0);
-
-	M_DrawGenericMenu();
-
-	x -= w0;
-	V_DrawString(x, y, MENUCAPS|highlightflags, str0);
-	x -= w1;
-	V_DrawString(x, y, MENUCAPS|warningflags, str1);
-	x -= w2;
-	V_DrawString(x, y, MENUCAPS|highlightflags, str2);
-	x -= w3;
-	V_DrawString(x, y, MENUCAPS|recommendedflags, str3);
-	V_DrawRightAlignedString(x, y, highlightflags, "(");
 }
 
 // Draw the video modes list, a-la-Quake

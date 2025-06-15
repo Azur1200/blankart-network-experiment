@@ -165,23 +165,21 @@ typedef enum
 	IT_ARROWS = 1<<4, // call-type items use arrow keys instead of enter
 	IT_SLIDER = 1<<5, // cvar-type items display a slider
 
-	IT_PATCH       = 1<<6, // display a patch
-	IT_STRING      = 1<<7, // display a string
-	IT_WHITESTRING = 1<<8, // displays a string with highlighted text
-	IT_HEADERTEXT  = IT_PATCH|IT_WHITESTRING,
-	IT_DISPLAY     = IT_PATCH|IT_STRING|IT_WHITESTRING,
+	IT_OFSX      = 1<<6, // X coordinate is relative to current position
+	IT_OFSY      = 1<<7, // ditto
+	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
+	IT_OVERLAY   = 1<<9, // item is drawn at absolute coordinates, without scrolling
 
-	IT_OFSX      = 1<<9,  // X coordinate is relative to current position
-	IT_OFSY      = 1<<10, // ditto
-	IT_TEMPORARY = 1<<11, // with IT_OFS*, offset applies only to this item
-	IT_OVERLAY   = 1<<12, // item is drawn at absolute coordinates, without scrolling
+	IT_CENTER    = 1<<10, // center the text/patch
+	IT_SMALL     = 1<<11, // draw at half scale
+	IT_THIN      = 1<<12, // thin font
+	IT_HIGHLIGHT = 1<<13, // add highlightflags to text/patch
 
-	IT_CENTER = 1<<13, // centered text/patch
+	IT_PATCH       = 1<<14, // display a patch
+	IT_STRING      = 2<<14, // display a string
+	IT_HEADERTEXT  = 3<<14, // whitestring with an offset
+	IT_DISPLAY     = 3<<14,
 } menuitemflags_t;
-
-// carefully chosen to not conflict with V_ flags
-#define MDF_CENTERED 0x20
-#define MDF_TIMEATTACK 0x40
 
 #define MAXSTRINGLENGTH 32
 
@@ -312,7 +310,6 @@ INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
-void M_DrawCenteredMenu(void);
 void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
 void M_DrawLevelStats(void);
@@ -321,9 +318,7 @@ void M_DrawTimeAttackMenu(void);
 void M_DrawMPMainMenu(void);
 void M_DrawSetupMultiPlayerMenu(void);
 void M_DrawConnectMenu(void);
-void M_DrawVideoMenu(void);
 void M_DrawVideoMode(void);
-void M_DrawHUDOptions(void);
 void M_DrawAddons(void);
 void M_DrawReplayStartMenu(void);
 void M_DrawPlaybackMenu(void);
