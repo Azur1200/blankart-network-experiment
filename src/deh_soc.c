@@ -2121,142 +2121,142 @@ void readmenu(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "BACKGROUNDNAME"))
 			{
-				strncpy(menupres[num].bgname, word2, 8);
+				strncpy(menudefs[num].bgname, word2, 8);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "HIDEBACKGROUND"))
 			{
-				menupres[num].bghide = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].bghide = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "BACKGROUNDCOLOR"))
 			{
-				menupres[num].bgcolor = get_number(word2);
+				menudefs[num].bgcolor = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "HIDETITLEPICS") || fastcmp(word, "HIDEPICS") || fastcmp(word, "TITLEPICSHIDE"))
 			{
 				// true by default, except MM_MAIN
-				menupres[num].hidetitlepics = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].hidetitlepics = (boolean)(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSMODE"))
 			{
 				if (fastcmp(word2, "USER"))
-					menupres[num].ttmode = TTMODE_USER;
+					menudefs[num].ttmode = TTMODE_USER;
 				else if (fastcmp(word2, "HIDE") || fastcmp(word2, "HIDDEN") || fastcmp(word2, "NONE"))
 				{
-					menupres[num].ttmode = TTMODE_USER;
-					menupres[num].ttname[0] = 0;
-					menupres[num].hidetitlepics = true;
+					menudefs[num].ttmode = TTMODE_USER;
+					menudefs[num].ttname[0] = 0;
+					menudefs[num].hidetitlepics = true;
 				}
 				else if (fastcmp(word2, "KART"))
-					menupres[num].ttmode = TTMODE_KART;
+					menudefs[num].ttmode = TTMODE_KART;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSSCALE"))
 			{
 				// Don't handle Alacroix special case here; see Maincfg section.
-				menupres[num].ttscale = max(1, min(8, (UINT8)get_number(word2)));
+				menudefs[num].ttscale = max(1, min(8, (UINT8)get_number(word2)));
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSNAME"))
 			{
-				strncpy(menupres[num].ttname, word2, 9);
+				strncpy(menudefs[num].ttname, word2, 9);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSX"))
 			{
-				menupres[num].ttx = (INT16)get_number(word2);
+				menudefs[num].ttx = (INT16)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSY"))
 			{
-				menupres[num].tty = (INT16)get_number(word2);
+				menudefs[num].tty = (INT16)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSLOOP"))
 			{
-				menupres[num].ttloop = (INT16)get_number(word2);
+				menudefs[num].ttloop = (INT16)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSTICS"))
 			{
-				menupres[num].tttics = (UINT16)get_number(word2);
+				menudefs[num].tttics = (UINT16)get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLESCROLLSPEED") || fastcmp(word, "TITLESCROLLXSPEED")
 				|| fastcmp(word, "SCROLLSPEED") || fastcmp(word, "SCROLLXSPEED"))
 			{
-				menupres[num].titlescrollxspeed = get_number(word2);
+				menudefs[num].titlescrollxspeed = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLESCROLLYSPEED") || fastcmp(word, "SCROLLYSPEED"))
 			{
-				menupres[num].titlescrollyspeed = get_number(word2);
+				menudefs[num].titlescrollyspeed = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "MUSIC"))
 			{
-				strncpy(menupres[num].musname, word2, 7);
-				menupres[num].musname[6] = 0;
+				strncpy(menudefs[num].musname, word2, 7);
+				menudefs[num].musname[6] = 0;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "MUSICTRACK"))
 			{
-				menupres[num].mustrack = ((UINT16)value - 1);
+				menudefs[num].mustrack = ((UINT16)value - 1);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "MUSICLOOP"))
 			{
 				// true by default except MM_MAIN
-				menupres[num].muslooping = (value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].muslooping = (value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "NOMUSIC"))
 			{
-				menupres[num].musstop = (value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].musstop = (value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "IGNOREMUSIC"))
 			{
-				menupres[num].musignore = (value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].musignore = (value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "FADESTRENGTH"))
 			{
 				// one-based, <= 0 means use default value. 1-32
-				menupres[num].fadestrength = get_number(word2)-1;
+				menudefs[num].fadestrength = get_number(word2)-1;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "NOENTERBUBBLE"))
 			{
-				menupres[num].enterbubble = !(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].enterbubble = !(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "NOEXITBUBBLE"))
 			{
-				menupres[num].exitbubble = !(value || word2[0] == 'T' || word2[0] == 'Y');
+				menudefs[num].exitbubble = !(value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "ENTERTAG"))
 			{
-				menupres[num].entertag = get_number(word2);
+				menudefs[num].entertag = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "EXITTAG"))
 			{
-				menupres[num].exittag = get_number(word2);
+				menudefs[num].exittag = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "ENTERWIPE"))
 			{
-				menupres[num].enterwipe = get_number(word2);
+				menudefs[num].enterwipe = get_number(word2);
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "EXITWIPE"))
 			{
-				menupres[num].exitwipe = get_number(word2);
+				menudefs[num].exitwipe = get_number(word2);
 				titlechanged = true;
 			}
 			// MENUDEF STARTS HERE

@@ -1191,9 +1191,9 @@ void F_InitMenuPresValues(void)
 	curtttics = tttics;
 
 	// Find current presentation values
-	//M_SetMenuCurBackground((gamestate == GS_TIMEATTACK) ? "RECATTBG" : "TITLESKY");
-	//M_SetMenuCurFadeValue(16);
-	//M_SetMenuCurTitlePics();
+	M_SetMenuCurBackground((gamestate == GS_TIMEATTACK) ? "RECATTBG" : "TITLESKY");
+	M_SetMenuCurFadeValue(16);
+	M_SetMenuCurTitlePics();
 
 	LUA_HUD_DestroyDrawList(luahuddrawlist_title);
 	luahuddrawlist_title = LUA_HUD_CreateDrawList();
@@ -1325,7 +1325,7 @@ void F_StartTitleScreen(void)
 	{
 		ttuser_count = 0;
 		finalecount = 0;
-		wipetypepost = menupres[MN_MAIN].enterwipe;
+		wipetypepost = menudefs[MN_MAIN].enterwipe;
 	}
 	else
 		wipegamestate = GS_TITLESCREEN;
@@ -1378,8 +1378,8 @@ void F_StartTitleScreen(void)
 		camera[0].height = 0;
 
 		// Run enter linedef exec for MN_MAIN, since this is where we start
-		if (menupres[MN_MAIN].entertag)
-			P_LinedefExecute(menupres[MN_MAIN].entertag, players[displayplayers[0]].mo, NULL);
+		if (menudefs[MN_MAIN].entertag)
+			P_LinedefExecute(menudefs[MN_MAIN].entertag, players[displayplayers[0]].mo, NULL);
 
 		wipegamestate = prevwipegamestate;
 	}
@@ -1542,8 +1542,8 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			if (menupres[MN_MAIN].musname[0])
-				S_ChangeMusic(menupres[MN_MAIN].musname, menupres[MN_MAIN].mustrack, menupres[MN_MAIN].muslooping);
+			if (menudefs[MN_MAIN].musname[0])
+				S_ChangeMusic(menudefs[MN_MAIN].musname, menudefs[MN_MAIN].mustrack, menudefs[MN_MAIN].muslooping);
 			else
 				S_ChangeMusicInternal("titles", looptitle);
 			S_StartSound(NULL, sfx_s23c);

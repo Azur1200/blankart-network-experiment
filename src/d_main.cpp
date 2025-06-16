@@ -1426,9 +1426,6 @@ void D_SRB2Main(void)
 	// adapt tables to SRB2's needs, including extra slots for dehacked file support
 	P_ResetData(15);
 
-	// initiate menu metadata before SOCcing them
-	M_InitMenuPresTables();
-
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
 		F_InitMenuPresValues();
