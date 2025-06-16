@@ -268,7 +268,7 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
 
-static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, boolean cond)
+static void M_ChangeItemStatus(menutype_t type, const char *name, menuitemflags_t flag, boolean cond)
 {
 	if (cond)
 		M_GetMenuItem(type, name)->status |= flag;
@@ -2204,12 +2204,14 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 	}
 }
 
-static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+// draws a menu item, returns cursor offset
+static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
 {
+	INT32 width = 0;
 	const char *string = item->text ? item->text : "";
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
-	int font = HU_FONT;
-	INT32 (*widthfunc)(const char *string, INT32 option) = V_StringWidth;
+	int font;
+	INT32 (*widthfunc)(const char *string, INT32 option);
 
 	if (item->status & IT_SECRET)
 	{
@@ -2229,32 +2231,45 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		UINT8 *cmap = NULL;
 
 		if (item->status & IT_CENTER)
-			x -= SHORT(p->width)/2;
+			width = SHORT(p->width)/2;
+		else if (item->status & IT_RIGHT)
+			width = SHORT(p->width);
+
 		if (item->status & IT_HIGHLIGHT)
 			cmap = V_GetStringColormap(highlightflags);
 
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
-		return SHORT(p->width);
+		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
+		return width;
 	}
 
-	if (item->status & IT_THIN)
+	switch (item->status & ITF_MASK)
 	{
+	case ITF_THIN2:
+		vflags |= V_6WIDTHSPACE; // FALLTHRU
+	case ITF_THIN:
 		font = TINY_FONT;
-		vflags |= V_6WIDTHSPACE; // TODO: make this a style?
 		widthfunc = V_ThinStringWidth;
+		break;
+
+	case ITF_HEADER:
+		x -= 16; // FALLTHRU
+	default:
+		font = HU_FONT;
+		widthfunc = V_StringWidth;
+		break;
 	}
 
 	if (item->status & IT_CENTER)
-		x -= widthfunc(string, vflags)/2;
-	if (item->status & IT_HEADER)
-		x -= 16;
+		width = widthfunc(string, vflags)/2;
+	else if (item->status & IT_RIGHT)
+		width = widthfunc(string, vflags);
 
-	V_DrawStringScaled(x<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
+	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
 
 	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
 		M_DrawRightString(item, x, y, vflags, selected);
 
-	return widthfunc(string, vflags);
+	return width;
 }
 
 // gets the absolute Y coordinate where this menuitem should be drawn (in a broken way)
@@ -2359,7 +2374,7 @@ void M_DrawGenericMenu(void)
 		if (i == itemOn)
 		{
 			cursory = y;
-			cursorx = x - (item->status & IT_CENTER ? w/2 : 0) - 24 + currentMenu->cursoroffset;
+			cursorx = x - w - 24 + currentMenu->cursoroffset;
 		}
 
 	nodraw:

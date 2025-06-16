@@ -172,11 +172,17 @@ typedef enum
 
 	IT_PATCH     = 1<<10, // display a patch instead of text
 	IT_CENTER    = 1<<11, // center the text/patch
-	IT_SMALL     = 1<<12, // draw at half scale
-	IT_THIN      = 1<<13, // thin font
+	IT_RIGHT     = 1<<12, // right-align the text/patch
+	IT_SMALL     = 1<<13, // draw at half scale
 	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
-	IT_HEADER    = 1<<15, // draw with an offset to the left
-	IT_STYLE     = IT_PATCH|IT_CENTER|IT_SMALL|IT_THIN|IT_HIGHLIGHT|IT_HEADER,
+
+	ITF_STANDARD = 0<<15, // standard font
+	ITF_HEADER   = 1<<15, // standard font, with an offset to the left
+	ITF_THIN     = 2<<15, // thin font
+	ITF_THIN2    = 3<<15, // thin font with tighter spacing
+
+	ITF_MASK     = 3<<15,
+	IT_STYLE     = IT_PATCH|IT_CENTER|IT_RIGHT|IT_SMALL|IT_HIGHLIGHT|ITF_MASK,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
@@ -191,19 +197,18 @@ struct menuitem_t
 {
 	dehinfo_t info;
 
-	// show IT_xxx
-	UINT16 status;
+	char *text;    // left-side string
+	char *patch;   // name of patch lump to draw, OR right-side string
+	char *tooltip; // help text displayed at bottom
 
-	menutype_t submenu;  // IT_SUBMENU
-	consvar_t *cvar;     // IT_CVAR
-	menufunc_f *routine; // IT_CALL, IT_ARROWS
+	consvar_t *cvar;     // console variable to modify
+	menufunc_f *routine; // menu routine to call
+	menutype_t submenu;  // navigate to another menu
 
-	const char *patch;
-	const char *text; // used when FONTBxx lump is found
-	const char *tooltip;
+	menuitemflags_t status; // show IT_xxx
 
-	INT32 argument;
-	INT16 x, y;
+	INT32 argument; // passed to routine/submenu, OR step size for cvars
+	INT16 x, y;     // coordinates, see menuitemflags
 };
 
 struct menu_t

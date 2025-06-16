@@ -1863,6 +1863,38 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
+// parses an item style in the form of "<font>-SMALL-<align>-HIGHLIGHT"
+// each component is optional, and the style cannot be written in arbitrary order
+// returns IT_HIDDEN if style is invalid
+static menuitemflags_t parsestyle(const char *p)
+{
+	menuitemflags_t style = 0;
+
+	// yeah yeah, macro hell, but it's more economical than 100 entries in a table
+#define STYLE(string, flag) \
+	(!strncmp(p, string, sizeof(string)-1)) { \
+		style |= flag; \
+		p += sizeof(string)-1; \
+		if (*p == '\0') return style; \
+		if (*p++ != '-') return IT_HIDDEN; \
+	}
+
+	if STYLE("THIN2", ITF_THIN2)
+	else if STYLE("THIN", ITF_THIN)
+	else if STYLE("HEADER", ITF_HEADER|IT_HIGHLIGHT)
+	else if STYLE("PATCH", IT_PATCH)
+
+	if STYLE("SMALL", IT_SMALL)
+
+	if STYLE("CENTER", IT_CENTER)
+	else if STYLE("RIGHT", IT_RIGHT)
+
+	if STYLE("HIGHLIGHT", IT_HIGHLIGHT)
+
+	return IT_HIDDEN;
+#undef STYLE
+}
+
 #define WARN(str, ...) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs), __VA_ARGS__)
 #define WARN0(str) deh_warning("MenuItem %s: " str, strbuf_get(menunames, menuitem->info.nameofs))
 static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
@@ -1872,7 +1904,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 	char *word2;
 	char *tmp;
 
-	UINT16 status = 0;
+	menuitemflags_t status = 0;
 
 	// taking quite possibly the only opportunity i'll ever get
 	// to avoid three tabs of indentation...
@@ -1948,46 +1980,21 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "STYLE"))
 		{
+			menuitemflags_t style = 0;
 			if (status & IT_STYLE)
 			{
 				WARN0("style already set!");
 				continue;
 			}
-
-			if (fasticmp(word2, "HEADER"))
-				status |= IT_HEADER|IT_HIGHLIGHT;
-			else if (fasticmp(word2, "HIGHLIGHT"))
-				status |= IT_HIGHLIGHT;
-			else if (fasticmp(word2, "CENTER"))
-				status |= IT_CENTER;
-			else if (fasticmp(word2, "CENTER-HIGHLIGHT"))
-				status |= IT_CENTER|IT_HIGHLIGHT;
-			else if (fasticmp(word2, "THIN"))
-				status |= IT_THIN;
-			else if (fasticmp(word2, "THIN-HIGHLIGHT"))
-				status |= IT_THIN|IT_HIGHLIGHT;
-			else if (fasticmp(word2, "PATCH"))
-				status |= IT_PATCH;
-			else if (fasticmp(word2, "PATCH-CENTER"))
-				status |= IT_PATCH|IT_CENTER;
-			else if (fasticmp(word2, "PATCH-SMALL"))
-				status |= IT_PATCH|IT_SMALL;
-			else if (fasticmp(word2, "PATCH-HIGHLIGHT"))
-				status |= IT_PATCH|IT_HIGHLIGHT;
-			else
+			strupr(word2);
+			style = parsestyle(word2);
+			if (style == IT_HIDDEN)
 				WARN("unknown style '%s'", word2);
+			else
+				status |= style;
 		}
-		else if (fastncmp(word, "CVAR", 4))
+		else if (fastcmp(word, "CVAR") || fastcmp(word, "SLIDER"))
 		{
-			UINT16 flags = IT_INTERACT;
-			if (fastcmp(word+4, "SLIDER"))
-				flags |= IT_SLIDER;
-			else if (word[4])
-			{
-				WARN("unknown word '%s'", word);
-				continue;
-			}
-
 			consvar_t *cvar = CV_FindVar(word2);
 			if (!cvar)
 				for (size_t i = 0; HIDDENVARS[i].name; i++)
@@ -2001,7 +2008,9 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 				WARN("unable to find cvar '%s'", word2);
 				continue;
 			}
-			status |= flags;
+			status |= IT_INTERACT;
+			if (word[0] == 'S')
+				status |= IT_SLIDER;
 			menuitem->cvar = cvar;
 		}
 		else if (fastcmp(word, "SUBMENU"))
@@ -2017,17 +2026,15 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "CALL") || fastcmp(word, "ARROWS"))
 		{
-			UINT16 flags = IT_INTERACT;
-			if (word[0] == 'A')
-				flags |= IT_ARROWS;
-
 			menufunc_f *routine = get_menuroutine(word2);
 			if (!routine)
 			{
 				WARN("unknown call routine '%s'", word2);
 				continue;
 			}
-			status |= flags;
+			status |= IT_INTERACT;
+			if (word[0] == 'A')
+				status |= IT_ARROWS;
 			menuitem->routine = routine;
 		}
 		else
