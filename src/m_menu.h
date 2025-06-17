@@ -52,8 +52,7 @@ typedef enum
 extern menutype_t menustack[NUMMENULEVELS];
 
 void M_InitMenuPresTables(void);
-UINT8 M_GetYoungestChildMenu(void);
-void M_ChangeMenuMusic(const char *defaultmusname, boolean defaultmuslooping);
+void M_ChangeMenuMusic(void);
 void M_SetMenuCurBackground(const char *defaultname);
 void M_SetMenuCurFadeValue(UINT8 defaultvalue);
 void M_SetMenuCurTitlePics(void);

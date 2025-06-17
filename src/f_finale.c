@@ -1540,10 +1540,7 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			if (menudefs[MN_MAIN].musname[0])
-				S_ChangeMusic(menudefs[MN_MAIN].musname, menudefs[MN_MAIN].mustrack, menudefs[MN_MAIN].muslooping);
-			else
-				S_ChangeMusicInternal("titles", looptitle);
+			M_ChangeMenuMusic();
 			S_StartSound(NULL, sfx_s23c);
 		}
 	}

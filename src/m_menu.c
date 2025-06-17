@@ -782,270 +782,141 @@ void M_InitMenuPresTables(void)
 		// default true
 		menudefs[i].enterbubble = true;
 		menudefs[i].exitbubble = true;
-
-		if (i != MN_MAIN)
-		{
-			menudefs[i].muslooping = true;
-		}
-		if (i == MN_SP_TIMEATTACK)
-			strncpy(menudefs[i].musname, "_recat", 7);
-		else if (i == MN_SR_SOUNDTEST)
-		{
-			*menudefs[i].musname = '\0';
-			menudefs[i].musstop = true;
-		}
+		menudefs[i].muslooping = true;
 	}
-}
-
-// ====================================
-// TREE ITERATION
-// ====================================
-
-// UINT32 menutype - current menutype_t
-// INT32 level - current level up the tree, higher means younger
-// INT32 *retval - Return value
-// void *input - Pointer to input of any type
-//
-// return true - stop iterating
-// return false - continue
-typedef boolean (*menutree_iterator)(UINT32, INT32, INT32 *, void **, boolean fromoldest);
-
-// HACK: Used in the ChangeMusic iterator because we only allow
-// a single input. Maybe someday use this struct program-wide.
-typedef struct
-{
-	char musname[7];
-	UINT16 mustrack;
-	boolean muslooping;
-} menupresmusic_t;
-
-static INT32 M_IterateMenuTree(menutree_iterator itfunc, void *input)
-{
-	INT32 i, retval = 0;
-
-	for (i = NUMMENULEVELS; i >= 0; i--)
-	{
-		if (itfunc(menustack[i], i, &retval, &input, false))
-			break;
-	}
-
-	return retval;
-}
-
-// ====================================
-// ITERATORS
-// ====================================
-
-static boolean MIT_GetMenuAtLevel(UINT32 menutype, INT32 level, INT32 *retval, void **input, boolean fromoldest)
-{
-	INT32 *inputptr = (INT32*)*input;
-	INT32 targetlevel = *inputptr;
-	if (menutype)
-	{
-		if (level == targetlevel || targetlevel < 0)
-		{
-			*retval = menutype;
-			return true;
-		}
-	}
-	else if (targetlevel >= 0)
-	{
-		// offset targetlevel by failed attempts; this should only happen in beginning of iteration
-		if (fromoldest)
-			(*inputptr)++;
-		else
-			(*inputptr)--; // iterating backwards, so count from highest
-	}
-	return false;
-}
-
-static boolean MIT_SetCurBackground(UINT32 menutype, INT32 level, INT32 *retval, void **input, boolean fromoldest)
-{
-	char *defaultname = (char*)*input;
-
-	(void)retval;
-	(void)fromoldest;
-
-	if (!menutype) // if there's nothing in this level, do nothing
-		return false;
-
-	if (menudefs[menutype].bgcolor >= 0)
-	{
-		curbgcolor = menudefs[menutype].bgcolor;
-		return true;
-	}
-	else if (menudefs[menutype].bghide && titlemapinaction) // hide the background
-	{
-		curbghide = true;
-		return true;
-	}
-	else if (menudefs[menutype].bgname[0])
-	{
-		strncpy(curbgname, menudefs[menutype].bgname, 8);
-		curbgxspeed = menudefs[menutype].titlescrollxspeed != INT32_MAX ? menudefs[menutype].titlescrollxspeed : titlescrollxspeed;
-		curbgyspeed = menudefs[menutype].titlescrollyspeed != INT32_MAX ? menudefs[menutype].titlescrollyspeed : titlescrollyspeed;
-		return true;
-	}
-	else if (!level)
-	{
-		/*if (M_GetYoungestChildMenu() == MN_SP_PLAYER || !defaultname || !defaultname[0])
-			curbgcolor = 31;
-		else*/ if (titlemapinaction) // hide the background by default in titlemap
-			curbghide = true;
-		else
-		{
-			strncpy(curbgname, defaultname, 9);
-			curbgxspeed = (gamestate == GS_TIMEATTACK) ? 0 : titlescrollxspeed;
-			curbgyspeed = (gamestate == GS_TIMEATTACK) ? 18 : titlescrollyspeed;
-		}
-	}
-	return false;
-}
-
-static boolean MIT_ChangeMusic(UINT32 menutype, INT32 level, INT32 *retval, void **input, boolean fromoldest)
-{
-	menupresmusic_t *defaultmusic = (menupresmusic_t*)*input;
-
-	(void)retval;
-	(void)fromoldest;
-
-	if (!menutype) // if there's nothing in this level, do nothing
-		return false;
-
-	if (menudefs[menutype].musname[0])
-	{
-		S_ChangeMusic(menudefs[menutype].musname, menudefs[menutype].mustrack, menudefs[menutype].muslooping);
-		return true;
-	}
-	else if (menudefs[menutype].musstop)
-	{
-		S_StopMusic();
-		return true;
-	}
-	else if (menudefs[menutype].musignore)
-		return true;
-	else if (!level && defaultmusic && defaultmusic->musname[0])
-		S_ChangeMusic(defaultmusic->musname, defaultmusic->mustrack, defaultmusic->muslooping);
-	return false;
-}
-
-static boolean MIT_SetCurFadeValue(UINT32 menutype, INT32 level, INT32 *retval, void **input, boolean fromoldest)
-{
-	UINT8 defaultvalue = *(UINT8*)*input;
-
-	(void)retval;
-	(void)fromoldest;
-
-	if (!menutype) // if there's nothing in this level, do nothing
-		return false;
-
-	if (menudefs[menutype].fadestrength >= 0)
-	{
-		curfadevalue = (menudefs[menutype].fadestrength % 32);
-		return true;
-	}
-	else if (!level)
-		curfadevalue = (gamestate == GS_TIMEATTACK) ? 0 : (defaultvalue % 32);
-	return false;
-}
-
-static boolean MIT_SetCurTitlePics(UINT32 menutype, INT32 level, INT32 *retval, void **input, boolean fromoldest)
-{
-	(void)input;
-	(void)retval;
-	(void)fromoldest;
-
-	if (!menutype) // if there's nothing in this level, do nothing
-		return false;
-
-	if (menudefs[menutype].hidetitlepics >= 0)
-	{
-		curhidepics = menudefs[menutype].hidetitlepics;
-		return true;
-	}
-	else if (menudefs[menutype].ttmode == TTMODE_USER)
-	{
-		if (menudefs[menutype].ttname[0])
-		{
-			curhidepics = menudefs[menutype].hidetitlepics;
-			curttmode = menudefs[menutype].ttmode;
-			curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
-			strncpy(curttname, menudefs[menutype].ttname, sizeof(curttname)-1);
-			curttx = (menudefs[menutype].ttx != INT16_MAX ? menudefs[menutype].ttx : ttx);
-			curtty = (menudefs[menutype].tty != INT16_MAX ? menudefs[menutype].tty : tty);
-			curttloop = (menudefs[menutype].ttloop != INT16_MAX ? menudefs[menutype].ttloop : ttloop);
-			curtttics = (menudefs[menutype].tttics != UINT16_MAX ? menudefs[menutype].tttics : tttics);
-		}
-		else
-			curhidepics = menudefs[menutype].hidetitlepics;
-		return true;
-	}
-	else if (menudefs[menutype].ttmode != TTMODE_NONE)
-	{
-		curhidepics = menudefs[menutype].hidetitlepics;
-		curttmode = menudefs[menutype].ttmode;
-		curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
-		return true;
-	}
-	else if (!level)
-	{
-		curhidepics = hidetitlepics;
-		curttmode = ttmode;
-		curttscale = ttscale;
-		strncpy(curttname, ttname, 9);
-		curttx = ttx;
-		curtty = tty;
-		curttloop = ttloop;
-		curtttics = tttics;
-	}
-	return false;
-}
-
-// ====================================
-// TREE RETRIEVAL
-// ====================================
-
-UINT8 M_GetYoungestChildMenu(void) // aka the active menu
-{
-	INT32 targetlevel = -1;
-	return M_IterateMenuTree(MIT_GetMenuAtLevel, &targetlevel);
 }
 
 // ====================================
 // EFFECTS
 // ====================================
 
-void M_ChangeMenuMusic(const char *defaultmusname, boolean defaultmuslooping)
-{
-	menupresmusic_t defaultmusic;
-
-	if (!defaultmusname)
-		defaultmusname = "";
-
-	strncpy(defaultmusic.musname, defaultmusname, 7);
-	defaultmusic.musname[6] = 0;
-	defaultmusic.mustrack = 0;
-	defaultmusic.muslooping = defaultmuslooping;
-
-	M_IterateMenuTree(MIT_ChangeMusic, &defaultmusic);
-}
-
 void M_SetMenuCurBackground(const char *defaultname)
 {
-	char name[9] = "";
-	strncpy(name, defaultname, 8);
-	name[8] = '\0';
-	M_IterateMenuTree(MIT_SetCurBackground, &name);
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].bgcolor >= 0)
+		{
+			curbgcolor = menudefs[menutype].bgcolor;
+			return;
+		}
+		else if (menudefs[menutype].bghide && titlemapinaction) // hide the background
+		{
+			curbghide = true;
+			return;
+		}
+		else if (menudefs[menutype].bgname[0])
+		{
+			strncpy(curbgname, menudefs[menutype].bgname, 8);
+			curbgxspeed = menudefs[menutype].titlescrollxspeed != INT32_MAX ? menudefs[menutype].titlescrollxspeed : titlescrollxspeed;
+			curbgyspeed = menudefs[menutype].titlescrollyspeed != INT32_MAX ? menudefs[menutype].titlescrollyspeed : titlescrollyspeed;
+			return;
+		}
+	}
+	if (!defaultname || !defaultname[0])
+		curbgcolor = 31;
+	else if (titlemapinaction) // hide the background by default in titlemap
+		curbghide = true;
+	else
+	{
+		strncpy(curbgname, defaultname, 9);
+		curbgxspeed = (gamestate == GS_TIMEATTACK) ? 0 : titlescrollxspeed;
+		curbgyspeed = (gamestate == GS_TIMEATTACK) ? 18 : titlescrollyspeed;
+	}
+}
+
+void M_ChangeMenuMusic(void)
+{
+	menutype_t target = MN_MAIN; // default if nothing is found
+
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].musname[0])
+		{
+			target = menutype;
+			break;
+		}
+		else if (menudefs[menutype].musstop)
+		{
+			S_StopMusic();
+			return;
+		}
+		else if (menudefs[menutype].musignore)
+			return;
+	}
+	if (target == MN_MAIN && gamestate == GS_TITLESCREEN && finalecount < 50)
+		S_StopMusic();
+	else
+		S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
 }
 
 void M_SetMenuCurFadeValue(UINT8 defaultvalue)
 {
-	M_IterateMenuTree(MIT_SetCurFadeValue, &defaultvalue);
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].fadestrength >= 0)
+		{
+			curfadevalue = (menudefs[menutype].fadestrength % 32);
+			return;
+		}
+	}
+	curfadevalue = (gamestate == GS_TIMEATTACK) ? 0 : (defaultvalue % 32);
 }
 
 void M_SetMenuCurTitlePics(void)
 {
-	M_IterateMenuTree(MIT_SetCurTitlePics, NULL);
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].hidetitlepics >= 0)
+		{
+			curhidepics = menudefs[menutype].hidetitlepics;
+			return;
+		}
+		else if (menudefs[menutype].ttmode == TTMODE_USER)
+		{
+			if (menudefs[menutype].ttname[0])
+			{
+				curhidepics = menudefs[menutype].hidetitlepics;
+				curttmode = menudefs[menutype].ttmode;
+				curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
+				strncpy(curttname, menudefs[menutype].ttname, sizeof(curttname)-1);
+				curttx = (menudefs[menutype].ttx != INT16_MAX ? menudefs[menutype].ttx : ttx);
+				curtty = (menudefs[menutype].tty != INT16_MAX ? menudefs[menutype].tty : tty);
+				curttloop = (menudefs[menutype].ttloop != INT16_MAX ? menudefs[menutype].ttloop : ttloop);
+				curtttics = (menudefs[menutype].tttics != UINT16_MAX ? menudefs[menutype].tttics : tttics);
+			}
+			else
+				curhidepics = menudefs[menutype].hidetitlepics;
+			return;
+		}
+		else if (menudefs[menutype].ttmode != TTMODE_NONE)
+		{
+			curhidepics = menudefs[menutype].hidetitlepics;
+			curttmode = menudefs[menutype].ttmode;
+			curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
+			return;
+		}
+	}
+	// nothing found, use default values
+	curhidepics = hidetitlepics;
+	curttmode = ttmode;
+	curttscale = ttscale;
+	strncpy(curttname, ttname, 9);
+	curttx = ttx;
+	curtty = tty;
+	curttloop = ttloop;
+	curtttics = tttics;
 }
 
 // ====================================
@@ -1195,7 +1066,7 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 	}
 
 	// Change the music
-	M_ChangeMenuMusic("_title", false);
+	M_ChangeMenuMusic();
 
 	// Run the linedef execs
 	if (titlemapinaction)
@@ -2039,6 +1910,9 @@ void M_ClearMenus(boolean callexitmenufunc)
 	if (menustack[0])
 		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
 
+	if (gamestate == GS_TIMEATTACK)
+		wipetypepre = menudefs[menustack[0]].exitwipe;
+
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
 	messagebox.active = false;
@@ -2046,10 +1920,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	if (gamestate == GS_TIMEATTACK)
-	{
-		wipetypepre = menudefs[M_GetYoungestChildMenu()].exitwipe;
 		D_StartTitle();
-	}
 }
 
 //
@@ -3918,7 +3789,6 @@ INT32 MR_ReplayHut(INT32 choice)
 	demo.rewinding = false;
 	CL_ClearRewinds();
 
-	M_ChangeMenuMusic("replst", true);
 	return true;
 }
 
@@ -4668,10 +4538,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	if (demo.inreplayhut)
 		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 	else if (modeattacking)
-	{
 		MR_ModeAttackEndGame(0);
-		M_ChangeMenuMusic("racent", true);
-	}
 	else
 	{
 		M_ClearMenus(true);
@@ -5266,7 +5133,7 @@ INT32 MR_HandleMusicTest(INT32 choice)
 			S_StopMusic();
 			st_time = 0;
 			curplaying = soundtestdefs[st_sel];
-			S_ChangeMusicInternal(&curplaying->name[0][0], true); // TODO: M_ChangeMenuMusic?
+			S_ChangeMusicInternal(&curplaying->name[0][0], true);
 			break;
 
 		default:
@@ -5834,7 +5701,6 @@ INT32 MR_TimeAttack(INT32 arg)
 
 	M_SetItemOn(MN_SP_TIMEATTACK, "START"); // "Start" is selected.
 
-	M_ChangeMenuMusic("racent", true);
 	return true;
 }
 
