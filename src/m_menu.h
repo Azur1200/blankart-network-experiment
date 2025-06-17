@@ -276,6 +276,7 @@ INT32 MR_Credits(INT32 choice);
 INT32 MR_BlanCredits(INT32 choice);
 INT32 MR_HandleAddons(INT32 choice);
 INT32 MR_SelectableClearMenus(INT32 choice);
+INT32 MR_GoBack(INT32 choice);
 INT32 MR_ModeAttackEndGame(INT32 choice);
 INT32 MR_Retry(INT32 choice);
 INT32 MR_EndGame(INT32 choice);

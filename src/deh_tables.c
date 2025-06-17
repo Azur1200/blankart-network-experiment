@@ -718,6 +718,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "BLANCREDITS", &MR_BlanCredits },
 	{ "HANDLEADDONS", &MR_HandleAddons },
 	{ "SELECTABLECLEARMENUS", &MR_SelectableClearMenus },
+	{ "GOBACK", &MR_GoBack },
 	{ "MODEATTACKRETRY", &MR_ModeAttackRetry },
 	{ "MODEATTACKENDGAME", &MR_ModeAttackEndGame },
 	{ "RETRY", &MR_Retry },

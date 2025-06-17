@@ -4162,8 +4162,6 @@ INT32 MR_QuitReplayHut(INT32 choice)
 {
 	(void)choice;
 
-	M_ClearMenus(false);
-
 	if (demolist)
 		Z_Free(demolist);
 	demolist = NULL;
@@ -4620,6 +4618,13 @@ INT32 MR_SelectableClearMenus(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
+	return true;
+}
+
+INT32 MR_GoBack(INT32 choice)
+{
+	(void)choice;
+	M_ExitMenu();
 	return true;
 }
 
