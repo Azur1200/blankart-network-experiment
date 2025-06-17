@@ -1248,7 +1248,7 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 			// because 0 is a valid index and -1 means default
 			wipetypepre = ((exitwipe && enterlevel <= exitlevel) || anceslevel < 0) ? exitwipe : INT16_MAX;
 		wipetypepost = ((enterwipe && enterlevel >= exitlevel) || anceslevel < 0) ? enterwipe : INT16_MAX;
-		wipegamestate = -1; // G: FORCEWIPE
+		wipegamestate = FORCEWIPE;
 
 		// If just one of the above is a force not-wipe,
 		// mirror the other wipe.
@@ -1878,9 +1878,22 @@ void M_Drawer(void)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
 		if (gamestate == GS_TIMEATTACK)
-			V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-		else if (!WipeInAction && menustack[0] != MN_PLAYBACK) // Replay playback has its own background
-			V_DrawFadeScreen(0xFF00, 16);
+		{
+			// TODO: M_DrawScrollingBackground("SRB2BACK")
+			// TODO: M_DrawFadeScreen(0)
+			//V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
+			//M_SetMenuCurBackground("SRB2BACK");
+			if (curbgcolor >= 0)
+				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
+			else if (!curbghide || !titlemapinaction)
+				F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
+			if (curfadevalue)
+				V_DrawFadeScreen(0xFF00, curfadevalue);
+		}
+		else if (!WipeInAction && menustack[0] != MN_PLAYBACK && (curfadevalue || (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK))) // Replay playback has its own background
+			// TODO: M_DrawFadeScreen(16)
+			// nope!
+			V_DrawFadeScreen(0xFF00, (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK) ? 16 : curfadevalue);
 	}
 
 	if (messagebox.active)
@@ -2033,7 +2046,10 @@ void M_ClearMenus(boolean callexitmenufunc)
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	if (gamestate == GS_TIMEATTACK)
+	{
+		wipetypepre = menudefs[M_GetYoungestChildMenu()].exitwipe;
 		D_StartTitle();
+	}
 }
 
 //
@@ -3896,13 +3912,13 @@ INT32 MR_ReplayHut(INT32 choice)
 	PrepReplayList();
 
 	M_ClearMenus(true);
-	G_SetGamestate(GS_TIMEATTACK);
+	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	demo.rewinding = false;
 	CL_ClearRewinds();
 
-	S_ChangeMusicInternal("replst", true);
+	M_ChangeMenuMusic("replst", true);
 	return true;
 }
 
@@ -4654,7 +4670,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	else if (modeattacking)
 	{
 		MR_ModeAttackEndGame(0);
-		S_ChangeMusicInternal("racent", true);
+		M_ChangeMenuMusic("racent", true);
 	}
 	else
 	{
@@ -5250,7 +5266,7 @@ INT32 MR_HandleMusicTest(INT32 choice)
 			S_StopMusic();
 			st_time = 0;
 			curplaying = soundtestdefs[st_sel];
-			S_ChangeMusicInternal(&curplaying->name[0][0], true);
+			S_ChangeMusicInternal(&curplaying->name[0][0], true); // TODO: M_ChangeMenuMusic?
 			break;
 
 		default:
@@ -5808,7 +5824,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	M_PatchSkinNameTable();
 	M_ClearMenus(true);
 
-	G_SetGamestate(GS_TIMEATTACK);
+	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	if (cv_nextmap.value)
@@ -5818,7 +5834,7 @@ INT32 MR_TimeAttack(INT32 arg)
 
 	M_SetItemOn(MN_SP_TIMEATTACK, "START"); // "Start" is selected.
 
-	S_ChangeMusicInternal("racent", true);
+	M_ChangeMenuMusic("racent", true);
 	return true;
 }
 

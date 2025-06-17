@@ -26,6 +26,9 @@ extern "C" {
 //
 // FINALE
 //
+// HACK for menu fading while titlemapinaction; skips the level check
+#define FORCEWIPE -2
+
 
 // Called by main loop.
 boolean F_IntroResponder(event_t *ev);
@@ -153,6 +156,8 @@ extern INT32 lastwipetic;
 void F_WipeStartScreen(void);
 void F_WipeEndScreen(void);
 void F_RunWipe(UINT8 wipetype, boolean drawMenu);
+tic_t F_GetWipeLength(UINT8 wipetype);
+boolean F_WipeExists(UINT8 wipetype);
 void F_WipeStageTitle(void);
 #define F_WipeColorFill(c) V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, c)
 
