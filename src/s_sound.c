@@ -35,6 +35,7 @@
 #include "k_boss.h" // bossinfo
 #include "byteptr.h"
 #include "v_video.h"
+#include "m_menu.h" // M_ChangeMenuMusic
 
 #ifdef HW3SOUND
 // 3D Sound Interface
@@ -2769,7 +2770,7 @@ static void Command_RestartAudio_f(void)
 	if (Playing()) // Gotta make sure the player is in a level
 		P_RestoreMusic(&players[consoleplayer]);
 	else
-		S_ChangeMusicInternal("titles", looptitle);
+		M_ChangeMenuMusic();
 }
 
 static void Command_PlaySound(void)

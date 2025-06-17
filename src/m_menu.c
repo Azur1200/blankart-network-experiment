@@ -270,7 +270,7 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_GetItemX(t, n)                (M_GetMenuItem(t, n)->x)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
 
-static void M_ChangeItemStatus(menutype_t type, const char *name, UINT16 flag, boolean cond)
+static void M_ChangeItemStatus(menutype_t type, const char *name, menuitemflags_t flag, boolean cond)
 {
 	if (cond)
 		M_GetMenuItem(type, name)->status |= flag;
@@ -757,8 +757,6 @@ void Moviemode_option_Onchange(void)
 // MENU PRESENTATION PARAMETER HANDLING (BACKGROUNDS)
 // =========================================================================
 
-menupres_t menupres[MAXMENUTYPES];
-
 void M_InitMenuPresTables(void)
 {
 	INT32 i;
@@ -768,36 +766,292 @@ void M_InitMenuPresTables(void)
 	for (i = 0; i < MAXMENUTYPES; i++)
 	{
 		// so-called "undefined"
-		menupres[i].fadestrength = -1;
-		menupres[i].hidetitlepics = -1; // inherits global hidetitlepics
-		menupres[i].ttmode = TTMODE_NONE;
-		menupres[i].ttscale = UINT8_MAX;
-		menupres[i].ttname[0] = 0;
-		menupres[i].ttx = INT16_MAX;
-		menupres[i].tty = INT16_MAX;
-		menupres[i].ttloop = INT16_MAX;
-		menupres[i].tttics = UINT16_MAX;
-		menupres[i].enterwipe = -1;
-		menupres[i].exitwipe = -1;
-		menupres[i].bgcolor = -1;
-		menupres[i].titlescrollxspeed = INT32_MAX;
-		menupres[i].titlescrollyspeed = INT32_MAX;
-		menupres[i].bghide = true;
+		menudefs[i].fadestrength = -1;
+		menudefs[i].hidetitlepics = -1; // inherits global hidetitlepics
+		menudefs[i].ttmode = TTMODE_NONE;
+		menudefs[i].ttscale = UINT8_MAX;
+		menudefs[i].ttname[0] = 0;
+		menudefs[i].ttx = INT16_MAX;
+		menudefs[i].tty = INT16_MAX;
+		menudefs[i].ttloop = INT16_MAX;
+		menudefs[i].tttics = UINT16_MAX;
+		menudefs[i].enterwipe = -1;
+		menudefs[i].exitwipe = -1;
+		menudefs[i].bgcolor = -1;
+		menudefs[i].titlescrollxspeed = INT32_MAX;
+		menudefs[i].titlescrollyspeed = INT32_MAX;
+		menudefs[i].bghide = true;
 		// default true
-		menupres[i].enterbubble = true;
-		menupres[i].exitbubble = true;
+		menudefs[i].enterbubble = true;
+		menudefs[i].exitbubble = true;
+		menudefs[i].muslooping = true;
+	}
+}
 
-		if (i != MN_MAIN)
+// ====================================
+// EFFECTS
+// ====================================
+
+void M_SetMenuCurBackground(void)
+{
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].bgcolor >= 0)
 		{
-			menupres[i].muslooping = true;
+			curbgcolor = menudefs[menutype].bgcolor;
+			return;
 		}
-		if (i == MN_SP_TIMEATTACK)
-			strncpy(menupres[i].musname, "_recat", 7);
-		else if (i == MN_SR_SOUNDTEST)
+		else if (menudefs[menutype].bghide && titlemapinaction) // hide the background
 		{
-			*menupres[i].musname = '\0';
-			menupres[i].musstop = true;
+			curbghide = true;
+			return;
 		}
+		else if (menudefs[menutype].bgname[0])
+		{
+			strncpy(curbgname, menudefs[menutype].bgname, 8);
+			curbgxspeed = menudefs[menutype].titlescrollxspeed != INT32_MAX ? menudefs[menutype].titlescrollxspeed : titlescrollxspeed;
+			curbgyspeed = menudefs[menutype].titlescrollyspeed != INT32_MAX ? menudefs[menutype].titlescrollyspeed : titlescrollyspeed;
+			return;
+		}
+	}
+	if (titlemapinaction) // hide the background by default in titlemap
+		curbghide = true;
+	else
+	{
+		strncpy(curbgname, "TITLESKY", 9);
+		curbgxspeed = titlescrollxspeed;
+		curbgyspeed = titlescrollyspeed;
+	}
+}
+
+void M_ChangeMenuMusic(void)
+{
+	menutype_t target = MN_MAIN; // default if nothing is found
+
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].musname[0])
+		{
+			target = menutype;
+			break;
+		}
+		else if (menudefs[menutype].musstop)
+		{
+			S_StopMusic();
+			return;
+		}
+		else if (menudefs[menutype].musignore)
+			return;
+	}
+	if (target == MN_MAIN && gamestate == GS_TITLESCREEN && finalecount < 50)
+		S_StopMusic();
+	else
+		S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
+}
+
+void M_SetMenuCurFadeValue(void)
+{
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].fadestrength >= 0)
+		{
+			curfadevalue = menudefs[menutype].fadestrength;
+			return;
+		}
+	}
+	curfadevalue = 16; // default
+}
+
+void M_SetMenuCurTitlePics(void)
+{
+	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
+	{
+		menutype_t menutype = menustack[i];
+		if (!menutype)
+			break;
+		if (menudefs[menutype].hidetitlepics >= 0)
+		{
+			curhidepics = menudefs[menutype].hidetitlepics;
+			return;
+		}
+		else if (menudefs[menutype].ttmode == TTMODE_USER)
+		{
+			if (menudefs[menutype].ttname[0])
+			{
+				curhidepics = menudefs[menutype].hidetitlepics;
+				curttmode = menudefs[menutype].ttmode;
+				curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
+				strncpy(curttname, menudefs[menutype].ttname, sizeof(curttname)-1);
+				curttx = (menudefs[menutype].ttx != INT16_MAX ? menudefs[menutype].ttx : ttx);
+				curtty = (menudefs[menutype].tty != INT16_MAX ? menudefs[menutype].tty : tty);
+				curttloop = (menudefs[menutype].ttloop != INT16_MAX ? menudefs[menutype].ttloop : ttloop);
+				curtttics = (menudefs[menutype].tttics != UINT16_MAX ? menudefs[menutype].tttics : tttics);
+			}
+			else
+				curhidepics = menudefs[menutype].hidetitlepics;
+			return;
+		}
+		else if (menudefs[menutype].ttmode != TTMODE_NONE)
+		{
+			curhidepics = menudefs[menutype].hidetitlepics;
+			curttmode = menudefs[menutype].ttmode;
+			curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
+			return;
+		}
+	}
+	// nothing found, use default values
+	curhidepics = hidetitlepics;
+	curttmode = ttmode;
+	curttscale = ttscale;
+	strncpy(curttname, ttname, 9);
+	curttx = ttx;
+	curtty = tty;
+	curttloop = ttloop;
+	curtttics = tttics;
+}
+
+// ====================================
+// MENU STATE
+// ====================================
+
+static void M_HandleMenuPresState(menutype_t newMenuType)
+{
+	INT32 i;
+	menutype_t menutype, exittype = currentMenu ? currentMenu - menudefs : MN_NONE;
+	boolean noancestor = menustack[0] == MN_NONE;
+	INT16 exittag = 0, entertag = 0;
+	INT16 exitwipe = -1, enterwipe = -1;
+	boolean exitbubble = true, enterbubble = true;
+
+	if (newMenuType == exittype) // same menu?
+		return;
+
+	F_InitMenuPresValues(false);
+
+	// don't do the below during the in-game menus
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
+		return;
+
+	// 0. Get the type and level of each menu, and level of common ancestor
+	// 1. Get the wipes for both, then run the exit wipe
+	// 2. Change music (so that execs can change it again later)
+	// 3. Run each exit exec on the prevMenuId up to the common ancestor (UNLESS NoBubbleExecs)
+	// 4. Run each entrance exec on the activeMenuId down from the common ancestor (UNLESS NoBubbleExecs)
+	// 5. Run the entrance wipe
+
+	// menustack changes happen before this function, currentMenu is changed afterwards
+	if (exittype && menustack[1] != exittype)
+	{
+		exitwipe = menudefs[exittype].exitwipe;
+		exitbubble = menudefs[exittype].exitbubble;
+		exittag = menudefs[exittype].exittag;
+	}
+
+	if (newMenuType && menustack[1] == exittype)
+	{
+		enterwipe = menudefs[newMenuType].enterwipe;
+		enterbubble = menudefs[newMenuType].enterbubble;
+		entertag = menudefs[newMenuType].entertag;
+	}
+
+	// if no common ancestor (top menu), force a wipe. Look for a specified wipe first.
+	// Don't force a wipe if you're actually going to/from the main menu
+	if (noancestor && exitwipe < 0 && newMenuType != MN_MAIN && exittype != MN_MAIN)
+	{
+		for (i = 0; i < NUMMENULEVELS; i++)
+		{
+			menutype = menustack[i];
+
+			if (menudefs[menutype].exitwipe >= 0)
+			{
+				exitwipe = menudefs[menutype].exitwipe;
+				break;
+			}
+		}
+
+		if (exitwipe < 0)
+			exitwipe = menudefs[MN_MAIN].exitwipe;
+	}
+
+	// do the same for enter wipe
+	if (noancestor && enterwipe < 0 && newMenuType != MN_MAIN && exittype != MN_MAIN)
+	{
+		for (i = 0; i < NUMMENULEVELS; i++)
+		{
+			menutype = menustack[i];
+
+			if (menudefs[menutype].enterwipe >= 0)
+			{
+				exitwipe = menudefs[menutype].enterwipe;
+				break;
+			}
+		}
+
+		if (enterwipe < 0)
+			enterwipe = menudefs[MN_MAIN].enterwipe;
+	}
+
+	// Change the music
+	M_ChangeMenuMusic();
+
+	// Run the linedef execs
+	if (titlemapinaction)
+	{
+		// Run the exit tags
+		if (exitbubble && noancestor)
+		{
+			for (i = 0; i < NUMMENULEVELS; i++) // don't run the common ancestor's exit tag
+			{
+				menutype = menustack[i];
+				if (!menutype)
+					break;
+				if (menudefs[menutype].exittag)
+					P_LinedefExecute(menudefs[menutype].exittag, players[displayplayers[0]].mo, NULL);
+			}
+		}
+		if (exittag)
+			P_LinedefExecute(exittag, players[displayplayers[0]].mo, NULL);
+
+		// Run the enter tags
+		(void)enterbubble;/*if (enterbubble)
+		{
+			for (i = anceslevel+1; i <= enterlevel; i++) // don't run the common ancestor's enter tag
+			{
+				menutype = menustack[i];
+				if (menudefs[menutype].entertag)
+					P_LinedefExecute(menudefs[menutype].entertag, players[displayplayers[0]].mo, NULL);
+			}
+		}
+		else*/ if (entertag)
+			P_LinedefExecute(entertag, players[displayplayers[0]].mo, NULL);
+	}
+
+	// Set the wipes for next frame
+	if (exitwipe >= 0 || enterwipe >= 0 || noancestor)
+	{
+		// HACK: INT16_MAX signals to not wipe
+		// because 0 is a valid index and -1 means default
+		wipetypepre = (exitwipe || noancestor) ? exitwipe : INT16_MAX;
+		wipetypepost = (enterwipe || noancestor) ? enterwipe : INT16_MAX;
+		wipegamestate = FORCEWIPE;
+
+		// If just one of the above is a force not-wipe,
+		// mirror the other wipe.
+		if (wipetypepre != INT16_MAX && wipetypepost == INT16_MAX)
+			wipetypepost = wipetypepre;
+		else if (wipetypepost != INT16_MAX && wipetypepre == INT16_MAX)
+			wipetypepre = wipetypepost;
+
+		// D_Display runs the next step of processing
 	}
 }
 
@@ -1418,9 +1672,16 @@ void M_Drawer(void)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
 		if (gamestate == GS_TIMEATTACK)
-			V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
-		else if (!WipeInAction && menustack[0] != MN_PLAYBACK) // Replay playback has its own background
-			V_DrawFadeScreen(0xFF00, 16);
+		{
+			if (curbgcolor >= 0)
+				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
+			else if (!curbghide || !titlemapinaction)
+				F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
+			if (curfadevalue)
+				V_DrawFadeScreen(0xFF00, curfadevalue);
+		}
+		else if (!WipeInAction && curfadevalue)
+			V_DrawFadeScreen(0xFF00, curfadevalue);
 	}
 
 	if (messagebox.active)
@@ -1559,12 +1820,20 @@ void M_StartControlPanel(void)
 //
 void M_ClearMenus(boolean callexitmenufunc)
 {
-	if (currentMenu && currentMenu->quitroutine && callexitmenufunc)
-		currentMenu->quitroutine(0);
+	if (currentMenu)
+	{
+		if (currentMenu->quitroutine && callexitmenufunc)
+			currentMenu->quitroutine(0);
 
-	// Save the config file. I'm sick of crashing the game later and losing all my changes!
-	if (menustack[0])
+		// Save the config file. I'm sick of crashing the game later and losing all my changes!
 		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
+
+		if (currentMenu->exitwipe >= 0)
+		{
+			wipetypepre = currentMenu->exitwipe;
+			wipegamestate = FORCEWIPE;
+		}
+	}
 
 	memset(menustack, 0, sizeof(menustack));
 	currentMenu = NULL;
@@ -1587,6 +1856,8 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
 	if (callexit && currentMenu && currentMenu != menudef && currentMenu->quitroutine)
 		currentMenu->quitroutine(0);
+
+	M_HandleMenuPresState(menunum);
 
 	currentMenu = menudef;
 	itemOn = currentMenu->lastOn;
@@ -2206,12 +2477,14 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 	}
 }
 
-static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
+// draws a menu item, returns cursor offset
+static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
 {
+	INT32 width = 0;
 	const char *string = item->text ? item->text : "";
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
-	int font = HU_FONT;
-	INT32 (*widthfunc)(const char *string, INT32 option) = V_StringWidth;
+	int font;
+	INT32 (*widthfunc)(const char *string, INT32 option);
 
 	if (item->status & IT_SECRET)
 	{
@@ -2231,32 +2504,45 @@ static INT16 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		UINT8 *cmap = NULL;
 
 		if (item->status & IT_CENTER)
-			x -= SHORT(p->width)/2;
+			width = SHORT(p->width)/2;
+		else if (item->status & IT_RIGHT)
+			width = SHORT(p->width);
+
 		if (item->status & IT_HIGHLIGHT)
 			cmap = V_GetStringColormap(highlightflags);
 
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
-		return SHORT(p->width);
+		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
+		return width;
 	}
 
-	if (item->status & IT_THIN)
+	switch (item->status & ITF_MASK)
 	{
+	case ITF_THIN2:
+		vflags |= V_6WIDTHSPACE; // FALLTHRU
+	case ITF_THIN:
 		font = TINY_FONT;
-		vflags |= V_6WIDTHSPACE; // TODO: make this a style?
 		widthfunc = V_ThinStringWidth;
+		break;
+
+	case ITF_HEADER:
+		x -= 16; // FALLTHRU
+	default:
+		font = HU_FONT;
+		widthfunc = V_StringWidth;
+		break;
 	}
 
 	if (item->status & IT_CENTER)
-		x -= widthfunc(string, vflags)/2;
-	if (item->status & IT_HEADER)
-		x -= 16;
+		width = widthfunc(string, vflags)/2;
+	else if (item->status & IT_RIGHT)
+		width = widthfunc(string, vflags);
 
-	V_DrawStringScaled(x<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
+	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
 
 	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
 		M_DrawRightString(item, x, y, vflags, selected);
 
-	return widthfunc(string, vflags);
+	return width;
 }
 
 // gets the absolute Y coordinate where this menuitem should be drawn (in a broken way)
@@ -2361,7 +2647,7 @@ void M_DrawGenericMenu(void)
 		if (i == itemOn)
 		{
 			cursory = y;
-			cursorx = x - (item->status & IT_CENTER ? w/2 : 0) - 24 + currentMenu->cursoroffset;
+			cursorx = x - w - 24 + currentMenu->cursoroffset;
 		}
 
 	nodraw:
@@ -3419,13 +3705,12 @@ INT32 MR_ReplayHut(INT32 choice)
 	PrepReplayList();
 
 	M_ClearMenus(true);
-	G_SetGamestate(GS_TIMEATTACK);
+	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	demo.rewinding = false;
 	CL_ClearRewinds();
 
-	S_ChangeMusicInternal("replst", true);
 	return true;
 }
 
@@ -4175,10 +4460,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	if (demo.inreplayhut)
 		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 	else if (modeattacking)
-	{
 		MR_ModeAttackEndGame(0);
-		S_ChangeMusicInternal("racent", true);
-	}
 	else
 	{
 		M_ClearMenus(true);
@@ -5331,7 +5613,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	M_PatchSkinNameTable();
 	M_ClearMenus(true);
 
-	G_SetGamestate(GS_TIMEATTACK);
+	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	if (cv_nextmap.value)
@@ -5341,7 +5623,6 @@ INT32 MR_TimeAttack(INT32 arg)
 
 	M_SetItemOn(MN_SP_TIMEATTACK, "START"); // "Start" is selected.
 
-	S_ChangeMusicInternal("racent", true);
 	return true;
 }
 

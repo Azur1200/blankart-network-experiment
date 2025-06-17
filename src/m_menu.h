@@ -51,46 +51,11 @@ typedef enum
 
 extern menutype_t menustack[NUMMENULEVELS];
 
-typedef struct
-{
-	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
-	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
-	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
-	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
-	INT32 titlescrollyspeed; // y scroll
-	boolean bghide; // for titlemaps, hide the background.
-
-	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
-	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
-	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
-	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
-	INT16 ttx; // X position of title wing
-	INT16 tty; // Y position of title wing
-	INT16 ttloop; // # frame to loop; -1 means dont loop
-	UINT16 tttics; // # of tics per frame
-
-	char musname[7]; ///< Music track to play. "" for no music.
-	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	boolean muslooping; ///< Loop the music
-	boolean musstop; ///< Don't play any music
-	boolean musignore; ///< Let the current music keep playing
-
-	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
-	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
-	INT32 entertag; // line exec to run on menu enter, if titlemap
-	INT32 exittag; // line exec to run on menu exit, if titlemap
-	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
-	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
-} menupres_t;
-
-extern menupres_t menupres[MAXMENUTYPES];
-
 void M_InitMenuPresTables(void);
-//UINT8 M_GetYoungestChildMenu(void);
-//void M_ChangeMenuMusic(const char *defaultmusname, boolean defaultmuslooping);
-//void M_SetMenuCurBackground(const char *defaultname);
-//void M_SetMenuCurFadeValue(UINT8 defaultvalue);
-//void M_SetMenuCurTitlePics(void);
+void M_ChangeMenuMusic(void);
+void M_SetMenuCurBackground(void);
+void M_SetMenuCurFadeValue(void);
+void M_SetMenuCurTitlePics(void);
 
 // Called by main loop,
 // saves config file and calls I_Quit when user exits.
@@ -172,11 +137,17 @@ typedef enum
 
 	IT_PATCH     = 1<<10, // display a patch instead of text
 	IT_CENTER    = 1<<11, // center the text/patch
-	IT_SMALL     = 1<<12, // draw at half scale
-	IT_THIN      = 1<<13, // thin font
+	IT_RIGHT     = 1<<12, // right-align the text/patch
+	IT_SMALL     = 1<<13, // draw at half scale
 	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
-	IT_HEADER    = 1<<15, // draw with an offset to the left
-	IT_STYLE     = IT_PATCH|IT_CENTER|IT_SMALL|IT_THIN|IT_HIGHLIGHT|IT_HEADER,
+
+	ITF_STANDARD = 0<<15, // standard font
+	ITF_HEADER   = 1<<15, // standard font, with an offset to the left
+	ITF_THIN     = 2<<15, // thin font
+	ITF_THIN2    = 3<<15, // thin font with tighter spacing
+
+	ITF_MASK     = 3<<15,
+	IT_STYLE     = IT_PATCH|IT_CENTER|IT_RIGHT|IT_SMALL|IT_HIGHLIGHT|ITF_MASK,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
@@ -191,19 +162,18 @@ struct menuitem_t
 {
 	dehinfo_t info;
 
-	// show IT_xxx
-	UINT16 status;
+	char *text;    // left-side string
+	char *patch;   // name of patch lump to draw, OR right-side string
+	char *tooltip; // help text displayed at bottom
 
-	menutype_t submenu;  // IT_SUBMENU
-	consvar_t *cvar;     // IT_CVAR
-	menufunc_f *routine; // IT_CALL, IT_ARROWS
+	consvar_t *cvar;     // console variable to modify
+	menufunc_f *routine; // menu routine to call
+	menutype_t submenu;  // navigate to another menu
 
-	const char *patch;
-	const char *text; // used when FONTBxx lump is found
-	const char *tooltip;
+	menuitemflags_t status; // show IT_xxx
 
-	INT32 argument;
-	INT16 x, y;
+	INT32 argument; // passed to routine/submenu, OR step size for cvars
+	INT16 x, y;     // coordinates, see menuitemflags
 };
 
 struct menu_t
@@ -221,6 +191,37 @@ struct menu_t
 	menufunc_f    *enterroutine;       // called before enter a menu
 	menufunc_f    *quitroutine;        // called before quit a menu
 	menufunc_f    *keyhandler;         // called before key press is processed
+
+	// MENUPRES STUFF BELOW
+
+	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
+	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
+	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
+	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
+	INT32 titlescrollyspeed; // y scroll
+	boolean bghide; // for titlemaps, hide the background.
+
+	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
+	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
+	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
+	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
+	INT16 ttx; // X position of title wing
+	INT16 tty; // Y position of title wing
+	INT16 ttloop; // # frame to loop; -1 means dont loop
+	UINT16 tttics; // # of tics per frame
+
+	char musname[7]; ///< Music track to play. "" for no music.
+	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
+	boolean muslooping; ///< Loop the music
+	boolean musstop; ///< Don't play any music
+	boolean musignore; ///< Let the current music keep playing
+
+	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
+	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
+	INT32 entertag; // line exec to run on menu enter, if titlemap
+	INT32 exittag; // line exec to run on menu exit, if titlemap
+	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
+	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
 };
 
 extern menu_t menudefs[MAXMENUTYPES];

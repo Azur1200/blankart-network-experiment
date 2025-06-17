@@ -2279,6 +2279,7 @@ void G_Ticker(boolean run)
 			if (titlemapinaction)
 				P_Ticker(run);
 
+			F_MenuPresTicker(run);
 			F_TitleScreenTicker(run);
 			break;
 

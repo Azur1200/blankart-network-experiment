@@ -456,19 +456,20 @@ static bool D_Display(void)
 		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
 			wipedefindex = wipe_timeattack_toblack;
 
-		if (wipetypepre < 0)
+		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
 
 		if (rendermode != render_none)
 		{
 			// Fade to black first
-			if (!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)) // fades to black on its own timing, always
+			if ((wipegamestate == FORCEWIPE ||
+				!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
 			 && wipetypepre != UINT8_MAX)
 			{
 				F_WipeStartScreen();
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
-				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK);
+				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
 				ranwipe = true;
 			}
 
@@ -482,7 +483,7 @@ static bool D_Display(void)
 		}
 		else //dedicated servers
 		{
-			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK);
+			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
 			ranwipe = true;
 			wipegamestate = gamestate;
 		}
@@ -670,14 +671,14 @@ static bool D_Display(void)
 		// and input during wipe tends to mess things up
 		wipedefindex += WIPEFINALSHIFT;
 
-		if (wipetypepost < 0)
+		if (wipetypepost < 0 || !F_WipeExists(wipetypepost))
 			wipetypepost = wipedefs[wipedefindex];
 
 		if (rendermode != render_none)
 		{
 			F_WipeEndScreen();
 
-			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
 			ranwipe = true;
 		}
 
@@ -1061,7 +1062,7 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
-	F_InitMenuPresValues();
+	F_InitMenuPresValues(true);
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
@@ -1426,12 +1427,9 @@ void D_SRB2Main(void)
 	// adapt tables to SRB2's needs, including extra slots for dehacked file support
 	P_ResetData(15);
 
-	// initiate menu metadata before SOCcing them
-	M_InitMenuPresTables();
-
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
-		F_InitMenuPresValues();
+		F_InitMenuPresValues(true);
 
 	//---------------------------------------------------- READY TIME
 	// we need to check for dedicated before initialization of some subsystems
@@ -1893,7 +1891,7 @@ void D_SRB2Main(void)
 	}
 	else if (M_CheckParm("-skipintro"))
 	{
-		F_InitMenuPresValues();
+		F_InitMenuPresValues(true);
 		F_StartTitleScreen();
 	}
 	else
