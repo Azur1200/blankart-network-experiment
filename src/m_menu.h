@@ -53,8 +53,8 @@ extern menutype_t menustack[NUMMENULEVELS];
 
 void M_InitMenuPresTables(void);
 void M_ChangeMenuMusic(void);
-void M_SetMenuCurBackground(const char *defaultname);
-void M_SetMenuCurFadeValue(UINT8 defaultvalue);
+void M_SetMenuCurBackground(void);
+void M_SetMenuCurFadeValue(void);
 void M_SetMenuCurTitlePics(void);
 
 // Called by main loop,

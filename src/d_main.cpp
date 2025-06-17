@@ -1062,7 +1062,7 @@ void D_StartTitle(void)
 	//demosequence = -1;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
-	F_InitMenuPresValues();
+	F_InitMenuPresValues(true);
 
 	// clear cmd building stuff
 	memset(gamekeydown, 0, sizeof(gamekeydown));
@@ -1429,7 +1429,7 @@ void D_SRB2Main(void)
 
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
-		F_InitMenuPresValues();
+		F_InitMenuPresValues(true);
 
 	//---------------------------------------------------- READY TIME
 	// we need to check for dedicated before initialization of some subsystems
@@ -1891,7 +1891,7 @@ void D_SRB2Main(void)
 	}
 	else if (M_CheckParm("-skipintro"))
 	{
-		F_InitMenuPresValues();
+		F_InitMenuPresValues(true);
 		F_StartTitleScreen();
 	}
 	else

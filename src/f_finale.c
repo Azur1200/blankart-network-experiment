@@ -1169,9 +1169,14 @@ void F_GameEndTicker(void)
 //  TITLE SCREEN
 // ==============
 
-void F_InitMenuPresValues(void)
+void F_InitMenuPresValues(boolean title)
 {
-	menuanimtimer = 0;
+	if (title)
+	{
+		menuanimtimer = 0;
+		LUA_HUD_DestroyDrawList(luahuddrawlist_title);
+		luahuddrawlist_title = LUA_HUD_CreateDrawList();
+	}
 
 	// Set defaults for presentation values
 	strncpy(curbgname, "TITLESKY", 9);
@@ -1179,7 +1184,7 @@ void F_InitMenuPresValues(void)
 	curbgcolor = -1;
 	curbgxspeed = titlescrollxspeed;
 	curbgyspeed = titlescrollyspeed;
-	curbghide = false;
+	curbghide = true;
 
 	curhidepics = hidetitlepics;
 	curttmode = ttmode;
@@ -1191,12 +1196,9 @@ void F_InitMenuPresValues(void)
 	curtttics = tttics;
 
 	// Find current presentation values
-	M_SetMenuCurBackground((gamestate == GS_TIMEATTACK) ? "RECATTBG" : "TITLESKY");
-	M_SetMenuCurFadeValue(16);
+	M_SetMenuCurBackground();
+	M_SetMenuCurFadeValue();
 	M_SetMenuCurTitlePics();
-
-	LUA_HUD_DestroyDrawList(luahuddrawlist_title);
-	luahuddrawlist_title = LUA_HUD_CreateDrawList();
 }
 
 //

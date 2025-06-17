@@ -2226,7 +2226,7 @@ void readmenu(MYFILE *f, INT32 num)
 			else if (fastcmp(word, "FADESTRENGTH"))
 			{
 				// one-based, <= 0 means use default value. 1-32
-				menudefs[num].fadestrength = get_number(word2)-1;
+				menudefs[num].fadestrength = (get_number(word2) - 1) % 32;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "NOENTERBUBBLE"))
