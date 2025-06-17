@@ -1529,8 +1529,6 @@ void F_MenuPresTicker(boolean run)
 // (no longer) De-Demo'd Title Screen
 void F_TitleScreenTicker(boolean run)
 {
-	F_MenuPresTicker(true); // title sky
-
 	if (run)
 	{
 		finalecount++;
