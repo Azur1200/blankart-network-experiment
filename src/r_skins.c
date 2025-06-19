@@ -173,7 +173,7 @@ UINT32 R_GetSkinAvailabilities(void)
 	{
 		if (unlockables[i].type == SECRET_SKIN && unlockables[i].unlocked)
 		{
-			UINT8 s = min(unlockables[i].variable, MAXSKINS);
+			UINT16 s = min(unlockables[i].variable, MAXSKINS);
 			response |= (1 << s);
 		}
 	}

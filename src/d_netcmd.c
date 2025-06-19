@@ -509,9 +509,10 @@ static CV_PossibleValue_t kartdebugitem_cons_t[] =
 #undef  FOREACH
 	{0}
 };
-consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "0", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugitem_cons_t, NULL);
+consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "0", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
 static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugamount_cons_t, NULL);
+consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL);
+consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 #ifdef DEVELOP
 #define VALUE "Yes"
 #else
@@ -519,17 +520,17 @@ consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_C
 #endif
 #undef VALUE
 
-consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
-consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
+consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 static CV_PossibleValue_t kartdebugwaypoint_cons_t[] = {{0, "Off"}, {1, "Forwards"}, {2, "Backwards"}, {0, NULL}};
-consvar_t cv_kartdebugwaypoints = CVAR_INIT ("kartdebugwaypoints", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugwaypoint_cons_t, NULL);
-consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, kartdebugwaypoint_cons_t, NULL);
-consvar_t cv_kartdebugbot = CVAR_INIT ("kartdebugbot", "Off", CV_NETVAR|CV_CHEAT|CV_NOSHOWHELP, CV_OnOff, NULL);
+consvar_t cv_kartdebugwaypoints = CVAR_INIT ("kartdebugwaypoints", "Off", CV_NETVAR|CV_CHEAT, kartdebugwaypoint_cons_t, NULL);
+consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT, kartdebugwaypoint_cons_t, NULL);
+consvar_t cv_kartdebugbot = CVAR_INIT ("kartdebugbot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
-consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", CV_NOSHOWHELP, CV_OnOff, NULL);
-consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", CV_NOSHOWHELP, CV_OnOff, NULL);
-consvar_t cv_kartdebugcolorize = CVAR_INIT ("kartdebugcolorize", "Off", CV_NOSHOWHELP, CV_OnOff, NULL);
-consvar_t cv_kartdebugdirector = CVAR_INIT ("kartdebugdirector", "Off", CV_NOSHOWHELP, CV_OnOff, NULL);
+consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_kartdebugcolorize = CVAR_INIT ("kartdebugcolorize", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_kartdebugdirector = CVAR_INIT ("kartdebugdirector", "Off", 0, CV_OnOff, NULL);
 
 static CV_PossibleValue_t votetime_cons_t[] = {{10, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_votetime = CVAR_INIT ("votetime", "20", CV_NETVAR, votetime_cons_t, NULL);
@@ -1727,7 +1728,7 @@ static void SendNameAndColor(UINT8 n)
 	WRITESTRINGN(p, cv_playername[n].zstring, MAXPLAYERNAME);
 	WRITEUINT32(p, (UINT32)player->availabilities);
 	WRITEUINT16(p, (UINT16)cv_playercolor[n].value);
-	WRITEUINT8(p, (UINT8)cv_skin[n].value);
+	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITESINT8(p, (SINT8)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
 
@@ -1739,10 +1740,10 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
 	UINT16 color, followercolor;
-	UINT8 skin;
+	UINT16 skin;
 	SINT8 follower;
 	SINT8 localplayer = -1;
-	UINT8 i;
+	UINT16 i;
 
 #ifdef PARANOIA
 	if (playernum < 0 || playernum > MAXPLAYERS)
@@ -1768,7 +1769,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	READSTRINGN(*cp, name, MAXPLAYERNAME);
 	p->availabilities = READUINT32(*cp);
 	color = READUINT16(*cp);
-	skin = READUINT8(*cp);
+	skin = READUINT16(*cp);
 	follower = READSINT8(*cp);
 	followercolor = READUINT16(*cp);
 

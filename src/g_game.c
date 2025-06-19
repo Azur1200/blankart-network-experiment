@@ -1670,15 +1670,6 @@ boolean G_Responder(event_t *ev)
 			return true;
 		}
 	}
-	else if (gamestate == GS_CONTINUING)
-	{
-		return true;
-	}
-	// Demo End
-	else if (gamestate == GS_GAMEEND)
-	{
-		return true;
-	}
 	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_EVALUATION)
 		if (HU_Responder(ev))
 		{
@@ -2289,18 +2280,10 @@ void G_Ticker(boolean run)
 			HU_Ticker();
 			break;
 
-		case GS_GAMEEND:
-			if (run)
-				F_GameEndTicker();
-			break;
-
 		case GS_EVALUATION:
 			if (run)
 				F_GameEvaluationTicker();
 			HU_Ticker();
-			break;
-
-		case GS_CONTINUING:
 			break;
 
 		case GS_CREDITS:
@@ -2614,7 +2597,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		starpostnum = players[player].starpostnum;
 		starposttime = players[player].starposttime;
 		prevcheck = players[player].prevcheck;
-		prevcheck = players[player].nextcheck;
+		nextcheck = players[player].nextcheck;
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;

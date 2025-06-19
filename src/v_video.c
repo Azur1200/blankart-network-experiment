@@ -1571,7 +1571,7 @@ void V_DrawVhsEffect(boolean rewind)
 	fixed_t uby = upbary>>FRACBITS, dby = downbary>>FRACBITS;
 
 #ifdef HWRENDER
-	if ((rendermode == render_opengl))
+	if (rendermode == render_opengl)
 	{
 		HWR_RenderVhsEffect(uby, dby, updistort, downdistort, barsize);
 		return;

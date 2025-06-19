@@ -688,8 +688,7 @@ void R_RenderMaskedSegRange(drawseg_t *drawseg, INT32 x1, INT32 x2)
 template <typename T>
 static constexpr T saturating_add(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) + static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) + static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
@@ -704,8 +703,7 @@ static constexpr T saturating_add(T x, T y) noexcept
 template <typename T>
 static constexpr T saturating_mul(T x, T y) noexcept
 {
-	INT64 z;
-	z = static_cast<INT64>(x) * static_cast<INT64>(y);
+	INT64 z = static_cast<INT64>(x) * static_cast<INT64>(y);
 	if (z > static_cast<INT64>(std::numeric_limits<T>::max()))
 	{
 		z = static_cast<INT64>(std::numeric_limits<T>::max());
@@ -1596,7 +1594,7 @@ static void R_RenderSegLoop (drawcolumndata_t* dc)
 		// Portal line
 		// Spans the entire height of a single-sided line or
 		// the "window" of a double-sided line.
-		if (g_portal)
+		if (g_portal && (mapnamespace != MNS_SRB2KART))
 		{
 			I_Assert(rw_x >= g_portal->start && rw_x < g_portal->end);
 			i = rw_x - g_portal->start;
@@ -2245,7 +2243,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| frontsector->extra_colormap != backsector->extra_colormap
 			|| (frontsector->ffloors != backsector->ffloors && !Tag_Compare(&frontsector->tags, &backsector->tags))
 			// Portals block traversal behind them
-			|| g_portal
+			|| (g_portal && mapnamespace != MNS_SRB2KART)
 			// Highlighting death pits
 			|| (cv_debugfinishline.value && frontsector->damagetype != backsector->damagetype))
 		{
@@ -2283,7 +2281,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			|| frontsector->extra_colormap != backsector->extra_colormap
 			|| (frontsector->ffloors != backsector->ffloors && !Tag_Compare(&frontsector->tags, &backsector->tags))
 			// Portals block traversal behind them
-			|| g_portal
+			|| (g_portal && mapnamespace != MNS_SRB2KART)
 			// Highlighting death pits
 			|| (cv_debugfinishline.value && frontsector->damagetype != backsector->damagetype))
 		{

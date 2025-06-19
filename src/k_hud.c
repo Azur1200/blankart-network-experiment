@@ -3342,7 +3342,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
-	UINT8 skin = 0;
+	UINT16 skin = 0;
 	UINT16 chatcolor = skincolors[player->mo->color].chatcolor;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
@@ -3457,7 +3457,7 @@ static void K_drawKartMinimap(void)
 	INT32 x, y;
 	INT32 minimaptrans = cv_kartminimap.value;
 	INT32 splitflags = 0;
-	UINT8 skin = 0;
+	UINT16 skin = 0;
 	UINT8 *colormap = NULL;
 	SINT8 localplayers[MAXSPLITSCREENPLAYERS];
 	SINT8 numlocalplayers = 0;

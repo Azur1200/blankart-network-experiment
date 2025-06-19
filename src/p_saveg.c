@@ -315,6 +315,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].pickuprings);
 		WRITEUINT8(save->p, players[i].ringdelay);
 		WRITEUINT16(save->p, players[i].ringboost);
+		WRITEUINT16(save->p, players[i].ringtime);
 		WRITEUINT16(save->p, players[i].superring);
 		WRITEUINT8(save->p, players[i].nextringaward);
 		WRITEUINT8(save->p, players[i].ringvolume);
@@ -652,7 +653,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].rings = READSINT8(save->p);
 		players[i].pickuprings = READUINT8(save->p);
 		players[i].ringdelay = READUINT8(save->p);
-		players[i].ringboost = READUINT16(save->p);;
+		players[i].ringboost = READUINT16(save->p);
+		players[i].ringtime = READUINT16(save->p);;
 		players[i].superring = READUINT16(save->p);
 		players[i].nextringaward = READUINT8(save->p);
 		players[i].ringvolume = READUINT8(save->p);
@@ -2492,7 +2494,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff2 & MD2_CVMEM)
 		WRITEINT32(save->p, mobj->cvmem);
 	if (diff2 & MD2_SKIN)
-		WRITEUINT8(save->p, (UINT8)((skin_t *)mobj->skin - skins));
+		WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
 	if (diff2 & MD2_COLOR)
 		WRITEUINT16(save->p, mobj->color);
 	if (diff2 & MD2_EXTVAL1)
@@ -3726,7 +3728,7 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_CVMEM)
 		mobj->cvmem = READINT32(save->p);
 	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READUINT8(save->p)];
+		mobj->skin = &skins[READUINT16(save->p)];
 	if (diff2 & MD2_COLOR)
 		mobj->color = READUINT16(save->p);
 	if (diff2 & MD2_EXTVAL1)

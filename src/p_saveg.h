@@ -36,7 +36,7 @@ mobj_t *P_FindNewPosition(UINT32 oldposition);
 
 struct savedata_t
 {
-	UINT8 skin;
+	UINT16 skin;
 	INT32 score;
 	INT32 lives;
 	UINT16 emeralds;

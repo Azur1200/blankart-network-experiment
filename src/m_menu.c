@@ -1251,7 +1251,7 @@ boolean M_Responder(event_t *ev)
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
-	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
+	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
 	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
 	|| gamestate == GS_BLANCREDITS
 	)
@@ -4164,8 +4164,6 @@ INT32 MR_QuitReplayHut(INT32 choice)
 {
 	(void)choice;
 
-	M_ClearMenus(false);
-
 	if (demolist)
 		Z_Free(demolist);
 	demolist = NULL;
@@ -4622,6 +4620,13 @@ INT32 MR_SelectableClearMenus(INT32 choice)
 {
 	(void)choice;
 	M_ClearMenus(true);
+	return true;
+}
+
+INT32 MR_GoBack(INT32 choice)
+{
+	(void)choice;
+	M_ExitMenu();
 	return true;
 }
 
@@ -6508,7 +6513,7 @@ void M_DrawMPMainMenu(void)
 #define iconwidth 32
 #define spacingwidth 32
 #define incrwidth (iconwidth + spacingwidth)
-		UINT8 i = 0, pskin, pcol;
+		UINT16 i = 0, pskin, pcol;
 		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
 		const INT32 paw = iconwidth + 3*incrwidth;
 		INT32 trans = 0;

@@ -1094,7 +1094,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
-		netbuffer->u.playerinfo[i].skin = (UINT8)(players[i].skin
+		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin
 #ifdef DEVELOP // it's safe to do this only because PLAYERINFO isn't read by the game itself
 		% 3
 #endif
@@ -3749,7 +3749,7 @@ static void Got_RemovePlayer(UINT8 **p, INT32 playernum)
 static void Got_AddBot(UINT8 **p, INT32 playernum)
 {
 	INT16 newplayernum;
-	UINT8 skinnum = 0;
+	UINT16 skinnum = 0;
 	UINT8 difficulty = DIFFICULTBOT;
 	botStyle_e style = BOT_STYLE_NORMAL;
 
@@ -3765,7 +3765,7 @@ static void Got_AddBot(UINT8 **p, INT32 playernum)
 	}
 
 	newplayernum = READUINT8(*p);
-	skinnum = READUINT8(*p);
+	skinnum = READUINT16(*p);
 	difficulty = READUINT8(*p);
 	style = READUINT8(*p);
 
@@ -3869,11 +3869,11 @@ static boolean SV_AddWaitingPlayers(SINT8 node, const char *name, const char *na
 }
 
 /*--------------------------------------------------
-	boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
+boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p)
 {
 	UINT8 newplayernum = *p;
 
@@ -3914,7 +3914,7 @@ boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8
 
 	if (server)
 	{
-		UINT8 buf[4];
+		UINT8 buf[5];
 		UINT8 *buf_p = buf;
 
 		WRITEUINT8(buf_p, newplayernum);
@@ -3924,7 +3924,7 @@ boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8
 			skin = numskins;
 		}
 
-		WRITEUINT8(buf_p, skin);
+		WRITEUINT16(buf_p, skin);
 
 		if (difficulty < 1)
 		{
@@ -4675,7 +4675,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 			// If we already received a ticcmd for this tic, just submit it for the next one.
 			tic_t faketic = maketic;
 
-			if (!!(netcmds[maketic % BACKUPTICS][netconsole].flags & TICCMD_RECEIVED))
+			if ((!!(netcmds[maketic % BACKUPTICS][netconsole].flags & TICCMD_RECEIVED))
+				&& (maketic - firstticstosend < BACKUPTICS))
 				faketic++;
 
 			// Copy ticcmd

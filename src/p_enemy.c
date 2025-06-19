@@ -3171,7 +3171,8 @@ void A_AttractChase(mobj_t *actor)
 			{
 
 				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
-				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
+				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
 
 				if (actor->target->player->rings <= 10)
@@ -3204,7 +3205,10 @@ void A_AttractChase(mobj_t *actor)
 			if (actor->extravalue1 >= 16)
 			{
 				if (!P_GivePlayerRings(actor->target->player, 1)) // returns 0 if addition failed
-					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true) + 3;
+				{
+					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+					actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+				}
 
 				if (actor->target->player->ringboost > (4*TICRATE + TICRATE/2))
 					actor->target->player->ringboost = (4*TICRATE + TICRATE/2);

@@ -1402,7 +1402,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 	INT32 i;
 	UINT32 hash = name ? quickncasehash(name, 8) : 0;
 	lumpnum_t check = INT16_MAX;
-	
+
 	if (name == NULL)
 		return LUMPERROR;
 
@@ -1454,7 +1454,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	INT32 i;
 	UINT32 hash = name ? quickncasehash(name, 8) : 0;
 	lumpnum_t check = INT16_MAX;
-	
+
 	if (name == NULL)
 		return LUMPERROR;
 

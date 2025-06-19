@@ -57,6 +57,13 @@ static precise_t gif_prevframetime = 0;
 static UINT32 gif_delayus = 0; // "us" is microseconds
 static UINT8 gif_writeover = 0;
 
+typedef struct
+{
+	void *pixels;
+	size_t size;
+	boolean owns_pixels;
+} gif_screen_t;
+static gif_screen_t gif_screens[2];
 
 
 // OPTIMIZE gif output
@@ -541,7 +548,8 @@ static void GIF_rgbconvert(UINT8 *linear, UINT8 *scr)
 static void GIF_framewrite(void)
 {
 	UINT8 *p;
-	UINT8 *movie_screen = screens[2];
+	UINT8 *base_screen = gif_screens[0].pixels;
+	UINT8 *movie_screen = gif_screens[1].pixels;
 	INT32 blitx, blity, blitw, blith;
 	boolean palchanged;
 
@@ -566,7 +574,7 @@ static void GIF_framewrite(void)
 	if (gif_optimize && gif_frames > 0 && (!palchanged))
 	{
 		// before blit movie_screen points to last frame, cur_screen points to this frame
-		UINT8 *cur_screen = screens[0];
+		UINT8 *cur_screen = base_screen;
 		GIF_optimizeregion(cur_screen, movie_screen, &blitx, &blity, &blitw, &blith);
 
 		// blit to temp screen
@@ -592,7 +600,7 @@ static void GIF_framewrite(void)
 		if (rendermode == render_opengl)
 		{
 			UINT8 *linear = HWR_GetScreenshot();
-			GIF_rgbconvert(linear, screens[0]);
+			GIF_rgbconvert(linear, base_screen);
 			//free(linear); // Allocated 'statically', no need to free now
 		}
 #endif
@@ -602,7 +610,7 @@ static void GIF_framewrite(void)
 		if (gif_frames == 0 && rendermode == render_soft)
 			I_ReadScreen(movie_screen);
 
-		movie_screen = screens[0];
+		movie_screen = base_screen;
 	}
 
 	// screen regions are handled in GIF_lzw
@@ -610,7 +618,7 @@ static void GIF_framewrite(void)
 		UINT16 delay = 0;
 		INT32 startline;
 
-		if (gif_dynamicdelay ==(UINT8) 2)
+		if (gif_dynamicdelay ==(UINT8) 2 && !singletics)
 		{
 			// golden's attempt at creating a "dynamic delay"
 			UINT16 mingifdelay = 10; // minimum gif delay in milliseconds (keep at 10 because gifs can't get more precise).
@@ -623,7 +631,7 @@ static void GIF_framewrite(void)
 				gif_delayus -= frames*(mingifdelay*1000); // remove frames by the amount of milliseconds they take. don't reset to 0, the microseconds help consistency.
 			}
 		}
-		else if (gif_dynamicdelay ==(UINT8) 1)
+		else if (gif_dynamicdelay ==(UINT8) 1 && !singletics)
 		{
 			float delayf = ceil(100.0f/NEWTICRATE);
 
@@ -750,13 +758,66 @@ INT32 GIF_open(const char *filename)
 	return 1;
 }
 
+static void GIF_checkscreens(void)
+{
+	for (size_t i = 0; i < sizeof(gif_screens) / sizeof(gif_screens[0]); i++)
+	{
+		if (rendermode == render_soft)
+		{
+			if (gif_screens[i].owns_pixels)
+			{
+				Z_Free(gif_screens[i].pixels);
+				gif_screens[i].owns_pixels = false;
+			}
+
+			gif_screens[i].size = 0;
+
+			if (i == 1)
+				gif_screens[i].pixels = screens[2];
+			else
+				gif_screens[i].pixels = screens[0];
+		}
+		else
+		{
+			size_t sz = vid.width * vid.height * vid.bpp;
+
+			if (!gif_screens[i].owns_pixels)
+			{
+				gif_screens[i].size = sz;
+				gif_screens[i].pixels = Z_Malloc(gif_screens[i].size, PU_STATIC, NULL);
+				gif_screens[i].owns_pixels = true;
+			}
+			else if (gif_screens[i].size != sz)
+			{
+				gif_screens[i].size = sz;
+				gif_screens[i].pixels = Z_Realloc(gif_screens[i].pixels, gif_screens[i].size, PU_STATIC, NULL);
+			}
+		}
+	}
+}
+
+static void GIF_freescreens(void)
+{
+	for (size_t i = 0; i < sizeof(gif_screens) / sizeof(gif_screens[0]); i++)
+	{
+		if (gif_screens[i].owns_pixels)
+		{
+			Z_Free(gif_screens[i].pixels);
+			gif_screens[i].owns_pixels = false;
+		}
+
+		gif_screens[i].size = 0;
+		gif_screens[i].pixels = NULL;
+	}
+}
+
 //
 // GIF_frame
 // writes a frame into the output gif
 //
 void GIF_frame(void)
 {
-	// there's not much actually needed here, is there.
+	GIF_checkscreens();
 	GIF_framewrite();
 }
 
@@ -785,6 +846,8 @@ INT32 GIF_close(void)
 	if (giflzw_hashTable)
 		Z_Free(giflzw_hashTable);
 	giflzw_hashTable = NULL;
+
+	GIF_freescreens();
 
 	CONS_Printf(M_GetText("Animated gif closed; wrote %d frames\n"), gif_frames);
 	return 1;
