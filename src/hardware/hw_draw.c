@@ -1116,9 +1116,11 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 {
 	FOutVector v[4];
+	FBITFIELD flags;
 	FSurfaceInfo Surf;
 	float fx, fy, fw, fh;
 	UINT8 alphalevel = ((color & V_ALPHAMASK) >> V_ALPHASHIFT);
+	UINT8 blendmode = ((color & V_BLENDMASK) >> V_BLENDSHIFT);
 
 //  3--2
 //  | /|
@@ -1198,6 +1200,8 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	Surf.PolyColor = V_GetColor(color);
 
+	flags = HWR_GetBlendModeFlag(blendmode+1)|PF_Modulated|PF_NoDepthTest|PF_NoTexture;
+
 	if (alphalevel)
 	{
 		if (alphalevel == 13) Surf.PolyColor.s.alpha = softwaretranstogl_lo[st_translucency]; // V_HUDTRANSHALF
@@ -1208,7 +1212,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 	}
 
 	HWD.pfnDrawPolygon(&Surf, v, 4,
-		PF_Modulated|PF_NoTexture|PF_NoDepthTest|PF_Translucent);
+		flags);
 }
 
 #ifdef HAVE_PNG
