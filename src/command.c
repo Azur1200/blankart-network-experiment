@@ -65,8 +65,8 @@ static boolean CV_Command(void);
 consvar_t *CV_FindVar(const char *name);
 static const char *CV_StringValue(const char *var_name);
 
-static consvar_t *consvar_vars; // list of registered console variables
-static UINT16     consvar_number_of_netids = 0;
+consvar_t *consvar_vars; // list of registered console variables
+UINT16     consvar_number_of_netids = 0;
 
 static char com_token[1024];
 static char *COM_Parse(char *data);

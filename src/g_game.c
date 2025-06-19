@@ -777,58 +777,34 @@ INT32 G_MapNumber(const char * name)
 INT32 G_LevelTitleToMapNum(const char * leveltitle)
 {
 	INT32 map;
-	char *levelname;
-	char *levelnameact;
-	char *levelnamezone;
-	char *levelnameactzone;
+	char levelname[48];
 
 	for (map = 0; map < nummapheaders; ++map)
 	{
-		levelname = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl);
-		levelnameact = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
-		levelnamezone = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
-		levelnameactzone = zva(PU_STATIC, NULL, "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
-
+		sprintf(levelname, "%s", mapheaderinfo[map]->lvlttl);
 		if (!strcasecmp(leveltitle, levelname))
 		{
-			Z_Free(levelname);
-			Z_Free(levelnameact);
-			Z_Free(levelnamezone);
-			Z_Free(levelnameactzone);
 			return map;
 		}
 
-		if (!strcasecmp(leveltitle, levelnameact))
+		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
+		if (!strcasecmp(leveltitle, levelname))
 		{
-			Z_Free(levelname);
-			Z_Free(levelnameact);
-			Z_Free(levelnamezone);
-			Z_Free(levelnameactzone);
 			return map;
 		}
 
-		if (!strcasecmp(leveltitle, levelnamezone))
+		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
+		if (!strcasecmp(leveltitle, levelname))
 		{
-			Z_Free(levelname);
-			Z_Free(levelnameact);
-			Z_Free(levelnamezone);
-			Z_Free(levelnameactzone);
 			return map;
 		}
 
-		if (!strcasecmp(leveltitle, levelnameactzone))
+		sprintf(levelname, "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
+		if (!strcasecmp(leveltitle, levelname))
 		{
-			Z_Free(levelname);
-			Z_Free(levelnameact);
-			Z_Free(levelnamezone);
-			Z_Free(levelnameactzone);
 			return map;
 		}
 
-		Z_Free(levelname);
-		Z_Free(levelnameact);
-		Z_Free(levelnamezone);
-		Z_Free(levelnameactzone);
 	}
 	return INT32_MIN;
 }

@@ -6568,7 +6568,6 @@ static void Splitplayers_OnChange(void)
 // Tails 11-19-2002
 INT32 MR_ConnectIP(INT32 choice)
 {
-	int i;
 	(void)choice;
 
 	if (*cv_dummyip.string == 0)
@@ -7963,8 +7962,15 @@ INT32 MR_EnterViewServer(INT32 choice)
 	UINT32 ping = serverlist[joinnode].info.time;
 	UINT8 kartvars = serverlist[joinnode].info.kartvars;
 
+	if (serveraddon)
+		Z_Free(serveraddon);
+	if (serverping)
+		Z_Free(serverping);
+	if (servergametype)
+		Z_Free(servergametype);
+
 	serveraddon = zva(PU_STATIC, NULL, "\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : "");
-	serverping = zva(PU_STATIC, NULL, "Ping: %s%ums", (ping < 128 ? "\x83" : (ping < 256 ? "\x82" : "\x85")), ping);
+	serverping = zva(PU_STATIC, NULL, "Ping: %c%ums", (ping < 128 ? '\x83' : (ping < 256 ? '\x82' : '\x85')), ping);
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -7999,10 +8005,8 @@ INT32 MR_EnterViewServer(INT32 choice)
 	{
 		M_SetItemText(MN_VIEWSERVER, "SERVERCHEATS", "Cheats");
 	}
-	else
-	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERCHEATS", "");
-	}
+
+	M_SetItemVisible(MN_VIEWSERVER, "SERVERCHEATS", serverlist[joinnode].info.cheatsenabled);
 
 	if (kartvars & SV_DEDICATED)
 	{
@@ -8019,13 +8023,6 @@ INT32 MR_EnterViewServer(INT32 choice)
 INT32 MR_QuitViewServer(INT32 choice)
 {
 	(void)choice;
-
-	if (serveraddon)
-		Z_Free(serveraddon);
-	if (serverping)
-		Z_Free(serverping);
-	if (servergametype)
-		Z_Free(servergametype);
 
 	D_QuitNetGame();
 	CL_Reset();
@@ -8044,12 +8041,6 @@ INT32 MR_HandleViewServer(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
 			M_ClearMenus(false);
-			if (serveraddon)
-				Z_Free(serveraddon);
-			if (serverping)
-				Z_Free(serverping);
-			if (servergametype)
-				Z_Free(servergametype);
 			return true;
 			break;
 
