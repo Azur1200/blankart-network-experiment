@@ -988,7 +988,7 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	{
 		//strncpy(netbuffer->u.serverinfo.maptitle, (char *)mapheaderinfo[gamemap-1]->lvlttl, sizeof netbuffer->u.serverinfo.maptitle);
 		// set up the levelstring
-		if (netbuffer->u.serverinfo.iszone || (mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
+		if (!netbuffer->u.serverinfo.iszone || (mapheaderinfo[gamemap-1]->levelflags & LF_NOZONE))
 		{
 			if (mapheaderinfo[gamemap-1]->actnum[0])
 				snprintf(netbuffer->u.serverinfo.maptitle,

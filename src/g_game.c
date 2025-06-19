@@ -777,18 +777,58 @@ INT32 G_MapNumber(const char * name)
 INT32 G_LevelTitleToMapNum(const char * leveltitle)
 {
 	INT32 map;
+	char *levelname;
+	char *levelnameact;
+	char *levelnamezone;
+	char *levelnameactzone;
 
 	for (map = 0; map < nummapheaders; ++map)
 	{
-		if (!strcasecmp(leveltitle, mapheaderinfo[map]->lvlttl))
+		levelname = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl);
+		levelnameact = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
+		levelnamezone = zva(PU_STATIC, NULL, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
+		levelnameactzone = zva(PU_STATIC, NULL, "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
+
+		if (!strcasecmp(leveltitle, levelname))
 		{
+			Z_Free(levelname);
+			Z_Free(levelnameact);
+			Z_Free(levelnamezone);
+			Z_Free(levelnameactzone);
 			return map;
 		}
 
-		if (!strcasecmp(leveltitle, va("%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum)))
+		if (!strcasecmp(leveltitle, levelnameact))
 		{
+			Z_Free(levelname);
+			Z_Free(levelnameact);
+			Z_Free(levelnamezone);
+			Z_Free(levelnameactzone);
 			return map;
 		}
+
+		if (!strcasecmp(leveltitle, levelnamezone))
+		{
+			Z_Free(levelname);
+			Z_Free(levelnameact);
+			Z_Free(levelnamezone);
+			Z_Free(levelnameactzone);
+			return map;
+		}
+
+		if (!strcasecmp(leveltitle, levelnameactzone))
+		{
+			Z_Free(levelname);
+			Z_Free(levelnameact);
+			Z_Free(levelnamezone);
+			Z_Free(levelnameactzone);
+			return map;
+		}
+
+		Z_Free(levelname);
+		Z_Free(levelnameact);
+		Z_Free(levelnamezone);
+		Z_Free(levelnameactzone);
 	}
 	return INT32_MIN;
 }

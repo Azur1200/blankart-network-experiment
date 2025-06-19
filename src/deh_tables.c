@@ -747,6 +747,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
+	{ "ENTERVIEWSERVER", &MR_EnterViewServer },
 	{ "QUITVIEWSERVER", &MR_QuitViewServer },
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
 	{ "CAMERASETUP", &MR_CameraSetup },

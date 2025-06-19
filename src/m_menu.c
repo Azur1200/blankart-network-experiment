@@ -6558,9 +6558,12 @@ static void Splitplayers_OnChange(void)
 	dummymultiplayer_cons_t[1].value = cv_splitplayers.value - 1;
 }
 
+
+
 // Tails 11-19-2002
 INT32 MR_ConnectIP(INT32 choice)
 {
+	int i;
 	(void)choice;
 
 	if (*cv_dummyip.string == 0)
@@ -7942,9 +7945,82 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	return true;
 }
 
+static char *serveraddon = NULL;
+static char *serverping = NULL;
+static char *servergametype = NULL;
+
+INT32 MR_EnterViewServer(INT32 choice)
+{
+	(void)choice;
+	char *servermap = serverlist[joinnode].info.maptitle;
+	char *servername = serverlist[joinnode].info.servername;
+	const char *speedstring = "Auto";
+	UINT32 ping = serverlist[joinnode].info.time;
+	UINT8 kartvars = serverlist[joinnode].info.kartvars;
+
+	serveraddon = zva(PU_STATIC, NULL, "\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : "");
+	serverping = zva(PU_STATIC, NULL, "Ping: %s%ums", (ping < 128 ? "\x83" : (ping < 256 ? "\x82" : "\x85")), ping);
+
+	switch (kartvars & SV_SPEEDMASK)
+	{
+		case KARTSPEED_EASY:
+			speedstring = "Easy";
+			break;
+		case KARTSPEED_NORMAL:
+			speedstring = "Normal";
+			break;
+		case KARTSPEED_HARD:
+			speedstring = "Hard";
+			break;
+	}
+
+	servergametype = zva(PU_STATIC, NULL, "%s: %s", serverlist[joinnode].info.gametypename, speedstring);
+
+	M_SetItemText(MN_VIEWSERVER, "SERVERNAME", servername);
+	M_SetItemText(MN_VIEWSERVER, "SERVERPING", serverping);
+	M_SetItemText(MN_VIEWSERVER, "SERVERMAP", servermap);
+	M_SetItemText(MN_VIEWSERVER, "SERVERGAMETYPE", servergametype);
+
+	if (fileneedednum > 0)
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", serveraddon);
+	}
+	else
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", "Vanilla");
+	}
+
+	if (serverlist[joinnode].info.cheatsenabled)
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERCHEATS", "Cheats");
+	}
+	else
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERCHEATS", "");
+	}
+
+	if (kartvars & SV_DEDICATED)
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERDEDICATED", "Dedicated Server");
+	}
+	else
+	{
+		M_SetItemText(MN_VIEWSERVER, "SERVERDEDICATED", "Listen Server");
+	}
+
+	return true;
+}
+
 INT32 MR_QuitViewServer(INT32 choice)
 {
 	(void)choice;
+
+	if (serveraddon)
+		Z_Free(serveraddon);
+	if (serverping)
+		Z_Free(serverping);
+	if (servergametype)
+		Z_Free(servergametype);
 
 	D_QuitNetGame();
 	CL_Reset();
@@ -7963,6 +8039,12 @@ INT32 MR_HandleViewServer(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
 			M_ClearMenus(false);
+			if (serveraddon)
+				Z_Free(serveraddon);
+			if (serverping)
+				Z_Free(serverping);
+			if (servergametype)
+				Z_Free(servergametype);
 			return true;
 			break;
 
@@ -7996,17 +8078,11 @@ INT32 MR_HandleViewServer(INT32 choice)
 
 void M_DrawViewServer(void)
 {
-	UINT32 ping = (UINT32)serverlist[joinnode].info.time;
-	UINT8 kartvars = serverlist[joinnode].info.kartvars;
-	const char *speedstring = "Auto";
-	const char *serverstring = "Listen";
 	const char *maptitle = serverlist[joinnode].info.maptitle;
 	INT32 mapnum = G_LevelTitleToMapNum(maptitle);
 	patch_t *current_map;
 
 	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemY(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemX(MN_VIEWSERVER, "TOPBOXWH"), M_GetItemY(MN_VIEWSERVER, "TOPBOXWH"), 159);
-
-	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERNAME"), M_GetItemY(MN_VIEWSERVER, "SERVERNAME"), V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.servername));
 
 	if (mapnum == INT32_MIN)
 	{
@@ -8018,45 +8094,9 @@ void M_DrawViewServer(void)
 		V_DrawFixedPatch(10<<FRACBITS, 18<<FRACBITS, scale, 0, current_map, NULL);
 	}
 
-	switch (kartvars & SV_SPEEDMASK)
-	{
-		case KARTSPEED_EASY:
-			speedstring = "Easy";
-			break;
-		case KARTSPEED_NORMAL:
-			speedstring = "Normal";
-			break;
-		case KARTSPEED_HARD:
-			speedstring = "Hard";
-			break;
-	}
-
-	if (kartvars & SV_DEDICATED)
-	{
-		serverstring = "Dedicated";
-	}
-
-	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERPING"), M_GetItemY(MN_VIEWSERVER, "SERVERPING"), V_ALLOWLOWERCASE, va("Ping: %s%ums", (ping < 128 ? "\x83" : (ping < 256 ? "\x82" : "\x85")), ping));
-	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERMAP"), M_GetItemY(MN_VIEWSERVER, "SERVERMAP"), V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.maptitle));
-	V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERGAMETYPE"), M_GetItemY(MN_VIEWSERVER, "SERVERGAMETYPE"), V_ALLOWLOWERCASE, va("%s: %s", serverlist[joinnode].info.gametypename, speedstring));
-
-	if (fileneedednum > 0)
-	{
-		V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERADDON"), M_GetItemY(MN_VIEWSERVER, "SERVERADDON"), V_ALLOWLOWERCASE|warningflags, va("%i Addons", fileneedednum));
-	}
-	else
-	{
-		V_DrawThinString(M_GetItemX(MN_VIEWSERVER, "SERVERADDON"), M_GetItemY(MN_VIEWSERVER, "SERVERADDON"), V_ALLOWLOWERCASE|highlightflags, "Vanilla");
-	}
-
-	if (serverlist[joinnode].info.cheatsenabled)
-	{
-		V_DrawRightAlignedThinString(M_GetItemX(MN_VIEWSERVER, "SERVERCHEATS"), M_GetItemY(MN_VIEWSERVER, "SERVERCHEATS"), V_ALLOWLOWERCASE|recommendedflags, "Cheats");
-	}
-
-	V_DrawRightAlignedThinString(M_GetItemX(MN_VIEWSERVER, "SERVERDEDICATED"), M_GetItemY(MN_VIEWSERVER, "SERVERDEDICATED"), V_ALLOWLOWERCASE|recommendedflags, va("%s Server", serverstring));
-
 	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemY(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemX(MN_VIEWSERVER, "MIDBOXWH"), M_GetItemY(MN_VIEWSERVER, "MIDBOXWH"), 159);
+
+	M_DrawGenericMenu();
 
 	if (!viewserver_showaddons)
 	{
@@ -8080,7 +8120,7 @@ void M_DrawViewServer(void)
 				{
 					if (playeramount <= 16)
 					{
-						UINT8 skinum = playerinfo[i].skin;
+						UINT16 skinum = playerinfo[i].skin;
 						INT32 flags = 0;
 
 						if (R_SkinAvailable(skins[skinum].name) == -1)
