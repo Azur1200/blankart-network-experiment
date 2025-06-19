@@ -1249,7 +1249,7 @@ boolean M_Responder(event_t *ev)
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
 	if (dedicated || (demo.playback && demo.title)
-	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE || gamestate == GS_GAMEEND
+	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
 	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
 	|| gamestate == GS_BLANCREDITS
 	)
@@ -6511,7 +6511,7 @@ void M_DrawMPMainMenu(void)
 #define iconwidth 32
 #define spacingwidth 32
 #define incrwidth (iconwidth + spacingwidth)
-		UINT8 i = 0, pskin, pcol;
+		UINT16 i = 0, pskin, pcol;
 		// player arrangement width, but there's also a chance i'm a furry, shhhhhh
 		const INT32 paw = iconwidth + 3*incrwidth;
 		INT32 trans = 0;

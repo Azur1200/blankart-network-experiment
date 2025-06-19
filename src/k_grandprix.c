@@ -96,11 +96,11 @@ INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers)
 }
 
 /*--------------------------------------------------
-	UINT8 K_BotDefaultSkin(void)
+	UINT16 K_BotDefaultSkin(void)
 
 		See header file for description.
 --------------------------------------------------*/
-UINT8 K_BotDefaultSkin(void)
+UINT16 K_BotDefaultSkin(void)
 {
 	const char *defaultbotskinname = "tails";
 	INT32 defaultbotskin = R_SkinAvailable(defaultbotskinname);
@@ -111,7 +111,7 @@ UINT8 K_BotDefaultSkin(void)
 		defaultbotskin = 0;
 	}
 
-	return (UINT8)defaultbotskin;
+	return (UINT16)defaultbotskin;
 }
 
 /*--------------------------------------------------
@@ -136,7 +136,7 @@ UINT8 K_GetGPPlayerCount(UINT8 humans)
 --------------------------------------------------*/
 void K_InitGrandPrixBots(void)
 {
-	const UINT8 defaultbotskin = K_BotDefaultSkin();
+	const UINT16 defaultbotskin = K_BotDefaultSkin();
 
 	const UINT8 startingdifficulty = K_BotStartingDifficulty(grandprixinfo.gamespeed);
 	UINT8 difficultylevels[MAXPLAYERS];
@@ -147,14 +147,14 @@ void K_InitGrandPrixBots(void)
 	UINT8 numplayers = 0;
 	UINT8 competitors[MAXSPLITSCREENPLAYERS];
 
-	UINT8 usableskins, skincount = numskins;
-	UINT8 grabskins[MAXSKINS+1];
+	UINT16 usableskins, skincount = numskins;
+	UINT16 grabskins[MAXSKINS+1];
 
-	UINT8 botskinlist[MAXPLAYERS];
-	UINT8 botskinlistpos = 0;
+	UINT16 botskinlist[MAXPLAYERS];
+	UINT16 botskinlistpos = 0;
 
 	UINT8 newplayernum = 0;
-	UINT8 i, j;
+	UINT16 i, j;
 
 	memset(competitors, MAXPLAYERS, sizeof (competitors));
 	memset(botskinlist, defaultbotskin, sizeof (botskinlist));
@@ -237,10 +237,10 @@ void K_InitGrandPrixBots(void)
 				rivalnum = R_SkinAvailable(rivalname);
 
 				// Intentionally referenced before (currently dummied out) unlock check. Such a tease!
-				if (rivalnum != -1 && grabskins[(UINT8)rivalnum] != MAXSKINS)
+				if (rivalnum != -1 && grabskins[(UINT16)rivalnum] != MAXSKINS)
 				{
-					botskinlist[botskinlistpos++] = (UINT8)rivalnum;
-					grabskins[(UINT8)rivalnum] = MAXSKINS;
+					botskinlist[botskinlistpos++] = (UINT16)rivalnum;
+					grabskins[(UINT16)rivalnum] = MAXSKINS;
 				}
 			}
 		}
@@ -268,11 +268,11 @@ void K_InitGrandPrixBots(void)
 	{
 		while (botskinlistpos < wantedbots)
 		{
-			UINT8 skinnum = defaultbotskin;
+			UINT16 skinnum = defaultbotskin;
 
 			if (usableskins > 0)
 			{
-				UINT8 index = P_RandomKey(usableskins);
+				UINT16 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
 				if (usableskins >= K_GetGPPlayerCount(1))
 				{
@@ -545,13 +545,13 @@ void K_IncreaseBotDifficulty(player_t *bot)
 --------------------------------------------------*/
 void K_RetireBots(void)
 {
-	const UINT8 defaultbotskin = K_BotDefaultSkin();
+	const UINT16 defaultbotskin = K_BotDefaultSkin();
 	SINT8 newDifficulty;
 
-	UINT8 usableskins = 0, skincount =  numskins;
-	UINT8 grabskins[MAXSKINS+1];
+	UINT16 usableskins = 0, skincount = numskins;
+	UINT16 grabskins[MAXSKINS+1];
 
-	UINT8 i;
+	UINT16 i;
 
 	if (grandprixinfo.gp == true
 		&& (((grandprixinfo.cup != NULL) && (grandprixinfo.roundnum >= grandprixinfo.cup->numlevels))
@@ -643,11 +643,11 @@ void K_RetireBots(void)
 
 		if (bot->pflags & PF_NOCONTEST)
 		{
-			UINT8 skinnum = defaultbotskin;
+			UINT16 skinnum = defaultbotskin;
 
 			if (usableskins > 0)
 			{
-				UINT8 index = P_RandomKey(usableskins);
+				UINT16 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
 				if (usableskins+1 >= K_GetGPPlayerCount(1))
 				{

@@ -317,7 +317,7 @@ struct plrinfo
 	char name[MAXPLAYERNAME+1];
 	UINT8 address[4]; // sending another string would run us up against MAXPACKETLENGTH
 	UINT8 team;
-	UINT8 skin;
+	UINT16 skin;
 	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
 	UINT32 score;
 	UINT16 timeinserver; // In seconds.
@@ -327,7 +327,7 @@ struct plrinfo
 struct plrconfig
 {
 	char name[MAXPLAYERNAME+1];
-	UINT8 skin;
+	UINT16 skin;
 	UINT16 color;
 	UINT32 pflags;
 	UINT32 score;
@@ -481,7 +481,7 @@ void SV_StopServer(void);
 void SV_ResetServer(void);
 
 /*--------------------------------------------------
-	boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
+	boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *newplayernum);
 
 		Adds a new bot, using a server-sided packet sent to all clients.
 		Using regular K_AddBot wherever possible is better, but this is kept
@@ -498,7 +498,7 @@ void SV_ResetServer(void);
 		true if a bot can be added via a packet later, otherwise false.
 --------------------------------------------------*/
 
-boolean K_AddBotFromServer(UINT8 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
+boolean K_AddBotFromServer(UINT16 skin, UINT8 difficulty, botStyle_e style, UINT8 *p);
 
 void CL_AddSplitscreenPlayer(void);
 void CL_RemoveSplitscreenPlayer(UINT8 p);

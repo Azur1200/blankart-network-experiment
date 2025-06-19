@@ -85,7 +85,7 @@ struct menudemo_t {
 	struct {
 		UINT8 ranking;
 		char name[17];
-		UINT8 skin, color;
+		UINT16 skin, color;
 		UINT32 timeorscore;
 	} standings[MAXPLAYERS];
 };

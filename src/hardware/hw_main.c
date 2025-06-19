@@ -53,7 +53,6 @@
 
 #define R_FAKEFLOORS
 #define HWPRECIP
-//#define POLYSKY
 
 // ==========================================================================
 // the hardware driver object
@@ -77,8 +76,6 @@ static void HWR_RollTransform(FTransform *tr, angle_t roll);
 void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, boolean isceiling, fixed_t fixedheight, INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, boolean fogplane, extracolormap_t *planecolormap);
 void HWR_AddTransparentPolyobjectFloor(levelflat_t *levelflat, polyobj_t *polysector, boolean isceiling, fixed_t fixedheight,
                              INT32 lightlevel, INT32 alpha, sector_t *FOFSector, FBITFIELD blend, extracolormap_t *planecolormap);
-
-boolean drawsky = true;
 
 // ==========================================================================
 //                                                               VIEW GLOBALS
@@ -107,10 +104,6 @@ static angle_t gl_xtoviewangle[MAXVIDWIDTH+1];
 // uncomment to remove the plane rendering
 #define DOPLANES
 //#define DOWALLS
-
-// test of drawing sky by polygons like in software with visplane, unfortunately
-// this doesn't work since we must have z for pixel and z for texture (not like now with z = oow)
-//#define POLYSKY
 
 // test change fov when looking up/down but bsp projection messup :(
 //#define NOCRAPPYMLOOK
@@ -643,50 +636,6 @@ static void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, bool
 	HWR_PlaneLighting(planeVerts, nrPlaneVerts);
 #endif
 }
-
-#ifdef POLYSKY
-// this don't draw anything it only update the z-buffer so there isn't problem with
-// wall/things upper that sky (map12)
-static void HWR_RenderSkyPlane(extrasubsector_t *xsub, fixed_t fixedheight)
-{
-	polyvertex_t *pv;
-	float height; //constant y for all points on the convex flat polygon
-	FOutVector *v3d;
-	INT32 nrPlaneVerts;   //verts original define of convex flat polygon
-	INT32 i;
-
-	// no convex poly were generated for this subsector
-	if (!xsub->planepoly)
-		return;
-
-	height = FIXED_TO_FLOAT(fixedheight);
-
-	pv  = xsub->planepoly->pts;
-	nrPlaneVerts = xsub->planepoly->numpts;
-
-	if (nrPlaneVerts < 3) // not even a triangle?
-		return;
-
-	if (nrPlaneVerts > MAXPLANEVERTICES) // FIXME: exceeds plVerts size
-	{
-		CONS_Debug(DBG_RENDER, "polygon size of %d exceeds max value of %d vertices\n", nrPlaneVerts, MAXPLANEVERTICES);
-		return;
-	}
-
-	// transform
-	v3d = planeVerts;
-	for (i = 0; i < nrPlaneVerts; i++,v3d++,pv++)
-	{
-		v3d->s = 0.0f;
-		v3d->t = 0.0f;
-		v3d->x = pv->x;
-		v3d->y = height;
-		v3d->z = pv->y;
-	}
-
-	HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts, PF_Invisible|PF_NoTexture|PF_Occlude);
-}
-#endif //polysky
 
 #endif //doplanes
 
@@ -2761,12 +2710,6 @@ static void HWR_Subsector(size_t num)
 					floorlightlevel, &levelflats[gl_frontsector->floorpic], NULL, 255, floorcolormap);
 			}
 		}
-		else
-		{
-#ifdef POLYSKY
-			HWR_RenderSkyPlane(&extrasubsectors[num], locFloorHeight);
-#endif
-		}
 	}
 
 	if (cullCeilingHeight > dup_viewz)
@@ -2784,19 +2727,7 @@ static void HWR_Subsector(size_t num)
 					ceilinglightlevel, &levelflats[gl_frontsector->ceilingpic], NULL, 255, ceilingcolormap);
 			}
 		}
-		else
-		{
-#ifdef POLYSKY
-			HWR_RenderSkyPlane(&extrasubsectors[num], locCeilingHeight);
-#endif
-		}
 	}
-
-#ifndef POLYSKY
-	// Moved here because before, when above the ceiling and the floor does not have the sky flat, it doesn't draw the sky
-	if (gl_frontsector->ceilingpic == skyflatnum || gl_frontsector->floorpic == skyflatnum)
-		drawsky = true;
-#endif
 
 #ifdef R_FAKEFLOORS
 	if (gl_frontsector->ffloors)
@@ -5928,11 +5859,7 @@ void HWR_RenderSkyboxView(player_t *player)
 	//------------------------------------------------------------------------
 	HWR_ClearView();
 
-	if (drawsky)
-		HWR_DrawSkyBackground(player);
-
-	//Hurdler: it doesn't work in splitscreen mode
-	drawsky = r_splitscreen;
+	HWR_DrawSkyBackground(player);
 
 	HWR_ClearSprites();
 
@@ -6028,7 +5955,7 @@ void HWR_RenderPlayerView(void)
 		HWD.pfnClearBuffer(true, false, &ClearColor); // Clear the Color Buffer, stops HOMs. Also seems to fix the skybox issue on Intel GPUs.
 
 	ps_hw_skyboxtime = I_GetPreciseTime();
-	if (skybox && drawsky) // If there's a skybox and we should be drawing the sky, draw the skybox
+	if (skybox) // If there's a skybox and we should be drawing the sky, draw the skybox
 		HWR_RenderSkyboxView(player); // This is drawn before everything else so it is placed behind
 	ps_hw_skyboxtime = I_GetPreciseTime() - ps_hw_skyboxtime;
 
@@ -6115,11 +6042,8 @@ void HWR_RenderPlayerView(void)
 	//------------------------------------------------------------------------
 	HWR_ClearView(); // Clears the depth buffer and resets the view I believe
 
-	if (!skybox && drawsky) // Don't draw the regular sky if there's a skybox
+	if (!skybox) // Don't draw the regular sky if there's a skybox
 		HWR_DrawSkyBackground(player);
-
-	//Hurdler: it doesn't work in splitscreen mode
-	drawsky = r_splitscreen;
 
 	HWR_ClearSprites();
 

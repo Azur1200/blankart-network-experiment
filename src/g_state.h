@@ -28,14 +28,12 @@ typedef enum
 	GS_LEVEL,           // Playing, in a level.
 	GS_INTERMISSION,    // Gazing at the intermission screen.
 	GS_VOTING,          // SRB2Kart: MP voting screen
-	GS_CONTINUING,      // continue screen
 
 	GS_TITLESCREEN,     // title screen
 	GS_TIMEATTACK,      // time attack menu
 
 	GS_CREDITS,         // credit sequence
 	GS_EVALUATION,      // Evaluation at the end of a game.
-	GS_GAMEEND,         // game end sequence - "did you get all those chaos emeralds?"
 
 	// Hardcoded fades or other fading methods
 	GS_INTRO,           // introduction

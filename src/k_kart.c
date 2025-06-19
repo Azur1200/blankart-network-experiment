@@ -262,6 +262,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartdebugitem);
 	CV_RegisterVar(&cv_kartdebugamount);
+	CV_RegisterVar(&cv_kartdebugshrink);
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
@@ -3654,7 +3655,9 @@ static void K_GetKartBoostPower(player_t *player)
 	// This should always remain the last boost
 	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
-		K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
+		//K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
+		//Always stack this boost....
+		player->boostinfo.stackspeedboost += player->botvars.rubberband - FRACUNIT;
 	}
 
 	player->boostpower = boostpower;
@@ -3808,6 +3811,9 @@ UINT16 K_GetKartFlashing(player_t *player)
 
 boolean K_PlayerShrinkCheat(player_t *player)
 {
+	if (cv_kartdebugshrink.value)
+		return true;
+
 	return (
 		(player->pflags & PF_SHRINKACTIVE)
 		&& (player->bot == false)
@@ -7266,27 +7272,21 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 }
 
 // Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
-static INT32 ticinversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
+static INT32 K_TicInversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
 {
     return (TICRATE / kartspeed) + (TICRATE / CLAMP(kartweight, 1, 5)) + grade;
 }
 
-// Get the maximum required stacks needed for the ringnerf based on kartspeed and kartweight
-static INT32 statrangemap(UINT8 kartspeed, UINT8 kartweight)
+// Get the threshold for the ringnerf based on kartspeed and kartweight
+static INT32 K_StackThreshold(UINT8 kartspeed, UINT8 kartweight)
 {
 	INT32 scaledsw = (9 - kartspeed) + (9 - kartweight);
-
-    fixed_t scaled_input = (scaledsw)*FRACUNIT/16;
-
-    // Scale the result to be within range [2, 4]
-    fixed_t result = 4*FRACUNIT - (FixedMul(scaled_input, 2*FRACUNIT));
+    fixed_t result = 4*FRACUNIT - (FixedMul(scaledsw*FRACUNIT/16, 2*FRACUNIT));
 
     // Stay within range please!
 	result = CLAMP(result, 2*FRACUNIT, 4*FRACUNIT);
 
-	result = result >> FRACBITS;
-
-    return result;
+    return result >> FRACBITS;
 }
 
 static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
@@ -7301,11 +7301,11 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 
 	if (chainnerf)
 	{
-		UINT8 requiredgrade = statrangemap(player->kartspeed, player->kartweight);
+		UINT8 requiredgrade = K_StackThreshold(player->kartspeed, player->kartweight);
 
 		if (player->numboosts >= requiredgrade)
 		{
-			INT32 insum = ticinversesum(player->kartspeed, player->kartweight, player->numboosts);
+			INT32 insum = K_TicInversesum(player->kartspeed, player->kartweight, player->numboosts);
 			INT32 subring = (player->ringboost*2)/insum;
 
 			if (player->kartspeed == 1)
@@ -7528,11 +7528,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ringdelay--;
 
 	if (P_PlayerInPain(player))
+	{
 		player->ringboost = 0;
+		player->ringtime = 0;
+	}
 	else if (player->ringboost)
 	{
 		K_HandleRingDeincrement(player, chainingactive);
 	}
+
+	if (!player->ringboost && !player->chaintimer)
+		player->ringtime = 0;
 
 	if (player->sneakertimer)
 		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
@@ -9079,6 +9085,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
+	UINT16 finalPower = 0;
 
 	if (boosted == true)
 	{
@@ -9091,7 +9098,23 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 		ringPower += 1;
 	}
 
-	return max(ringPower / FRACUNIT, 1);
+	finalPower = max(ringPower / FRACUNIT, 1);
+
+	// the base is 4 tics
+	finalPower += 3;
+
+	// If you use more then 20 rings at a time, you start gaining less ring timer..
+	if (player->ringtime == finalPower*20)
+	{
+		if (P_IsLocalPlayer(player))
+			S_StartSound(NULL, sfx_cdfm66);
+	}
+	else if (player->ringtime > finalPower*20)
+	{
+		finalPower = 2;
+	}
+
+	return finalPower;
 }
 
 // Returns false if this player being placed here causes them to collide with any other player

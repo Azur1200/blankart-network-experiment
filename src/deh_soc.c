@@ -1086,8 +1086,13 @@ void readlevelheader(MYFILE *f, char * name)
 				deh_strlcpy(mapheaderinfo[num]->skytexture, word2,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
 			else if (fastcmp(word, "SKYNUM"))
-				deh_strlcpy(mapheaderinfo[num]->skytexture, va("SKY%s", word2),
+			{
+				char namebuf[9];
+
+				sprintf(namebuf, "SKY%.5s", word2);
+				deh_strlcpy(mapheaderinfo[num]->skytexture, namebuf,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
+			}
 			else if (fastcmp(word, "PRECUTSCENENUM"))
 				mapheaderinfo[num]->precutscenenum = (UINT8)i;
 			else if (fastcmp(word, "CUTSCENENUM"))
@@ -3433,14 +3438,6 @@ void readwipes(MYFILE *f)
 				else if (fastcmp(pword, "FINAL"))
 					wipeoffset = wipe_voting_final;
 			}
-			else if (fastncmp(word, "CONTINUING_", 11))
-			{
-				pword = word + 11;
-				if (fastcmp(pword, "TOBLACK"))
-					wipeoffset = wipe_continuing_toblack;
-				else if (fastcmp(pword, "FINAL"))
-					wipeoffset = wipe_continuing_final;
-			}
 			else if (fastncmp(word, "TITLESCREEN_", 12))
 			{
 				pword = word + 12;
@@ -3474,14 +3471,6 @@ void readwipes(MYFILE *f)
 					wipeoffset = wipe_evaluation_toblack;
 				else if (fastcmp(pword, "FINAL"))
 					wipeoffset = wipe_evaluation_final;
-			}
-			else if (fastncmp(word, "GAMEEND_", 8))
-			{
-				pword = word + 8;
-				if (fastcmp(pword, "TOBLACK"))
-					wipeoffset = wipe_gameend_toblack;
-				else if (fastcmp(pword, "FINAL"))
-					wipeoffset = wipe_gameend_final;
 			}
 			else if (fastncmp(word, "ENCORE_", 7))
 			{
