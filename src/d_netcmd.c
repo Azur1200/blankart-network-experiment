@@ -509,7 +509,7 @@ static CV_PossibleValue_t kartdebugitem_cons_t[] =
 #undef  FOREACH
 	{0}
 };
-consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "0", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
+consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "NONE", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
 static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL);
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -6109,7 +6109,17 @@ static void Command_Cheats_f(void)
 
 	if (CV_CheatsEnabled())
 	{
+		consvar_t *cvar;
 		CONS_Printf(M_GetText("At least one CHEAT-marked variable has been changed -- Cheats are enabled.\n"));
+
+		for (cvar = consvar_vars; cvar; cvar = cvar->next)
+		{
+			if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+			{
+				CONS_Printf("%s: Default Value: %s Current Value:%s\n", cvar->name, cvar->defaultvalue, cvar->string);
+			}
+		}
+
 		if (server || (IsPlayerAdmin(consoleplayer)))
 			CONS_Printf(M_GetText("Type CHEATS OFF to reset all cheat variables to default.\n"));
 	}

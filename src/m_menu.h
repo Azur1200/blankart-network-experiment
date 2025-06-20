@@ -140,13 +140,16 @@ typedef enum
 	IT_RIGHT     = 1<<12, // right-align the text/patch
 	IT_SMALL     = 1<<13, // draw at half scale
 	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
+	IT_RECOMMENDEDHIGHLIGHT = 1<<15,  // add recommendedflags to text/patch
+	IT_WARNINGHIGHLIGHT = 1<<16, // add warningflags to text/patch
+	IT_MAPTHUMBNAIL = 1<<17, // display a mapthumbnail instead of text
 
-	ITF_STANDARD = 0<<15, // standard font
-	ITF_HEADER   = 1<<15, // standard font, with an offset to the left
-	ITF_THIN     = 2<<15, // thin font
-	ITF_THIN2    = 3<<15, // thin font with tighter spacing
+	ITF_STANDARD = 0<<18, // standard font
+	ITF_HEADER   = 1<<18, // standard font, with an offset to the left
+	ITF_THIN     = 2<<18, // thin font
+	ITF_THIN2    = 3<<18, // thin font with tighter spacing
 
-	ITF_MASK     = 3<<15,
+	ITF_MASK     = 3<<18,
 	IT_STYLE     = IT_PATCH|IT_CENTER|IT_RIGHT|IT_SMALL|IT_HIGHLIGHT|ITF_MASK,
 } menuitemflags_t;
 
@@ -304,6 +307,9 @@ INT32 MR_ChangeControl(INT32 arg);
 INT32 MR_AssignJoystick(INT32 arg);
 INT32 MR_HandleMonitorToggles(INT32 choice);
 INT32 MR_RestartAudio(INT32 choice);
+INT32 MR_EnterViewServer(INT32 choice);
+INT32 MR_QuitViewServer(INT32 choice);
+INT32 MR_HandleViewServer(INT32 choice);
 INT32 MR_CameraSetup(INT32 arg);
 #ifdef HAVE_DISCORDRPC
 INT32 MR_HandleDiscordRequests(INT32 choice);
@@ -326,6 +332,7 @@ void M_DrawImageDef(void);
 void M_DrawMusicTest(void);
 void M_DrawJoystick(void);
 void M_DrawMonitorToggles(void);
+void M_DrawViewServer(void);
 #ifdef HAVE_DISCORDRPC
 void M_DrawDiscordRequests(void);
 #endif

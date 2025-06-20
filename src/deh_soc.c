@@ -1888,6 +1888,7 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("THIN", ITF_THIN)
 	else if STYLE("HEADER", ITF_HEADER|IT_HIGHLIGHT)
 	else if STYLE("PATCH", IT_PATCH)
+	else if STYLE("MAPTHUMBNAIL", IT_MAPTHUMBNAIL)
 
 	if STYLE("SMALL", IT_SMALL)
 
@@ -1895,6 +1896,8 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("RIGHT", IT_RIGHT)
 
 	if STYLE("HIGHLIGHT", IT_HIGHLIGHT)
+	else if STYLE("RECOMMENDEDHIGHLIGHT", IT_RECOMMENDEDHIGHLIGHT)
+	else if STYLE("WARNINGHIGHLIGHT", IT_WARNINGHIGHLIGHT)
 
 	return IT_HIDDEN;
 #undef STYLE

@@ -748,6 +748,9 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
+	{ "ENTERVIEWSERVER", &MR_EnterViewServer },
+	{ "QUITVIEWSERVER", &MR_QuitViewServer },
+	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
 	{ "CAMERASETUP", &MR_CameraSetup },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
@@ -773,6 +776,7 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWJOYSTICK", &M_DrawJoystick },
 	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
 	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
+	{ "DRAWVIEWSERVER", &M_DrawViewServer },
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
 #endif

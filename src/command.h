@@ -168,6 +168,9 @@ struct consvar_t //NULL, NULL, 0, NULL, NULL |, 0, NULL, NULL, 0, 0, NULL
 #define CVAR_INIT( ... ) \
 { __VA_ARGS__, 0, NULL, NULL, {0, {NULL}}, 0U, (char)0, NULL }
 
+extern consvar_t *consvar_vars; // list of registered console variables
+extern UINT16 consvar_number_of_netids;
+
 extern CV_PossibleValue_t CV_OnOff[];
 extern CV_PossibleValue_t CV_YesNo[];
 extern CV_PossibleValue_t CV_Signed[];
