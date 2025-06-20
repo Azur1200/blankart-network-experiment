@@ -2495,14 +2495,33 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_GRAYEDOUT)
 		vflags |= V_TRANSLUCENT;
 
-	// draw a patch instead of a string?
-	if (item->status & IT_PATCH)
+	// draw a patch or map thumbnail instead of a string?
+	if (item->status & IT_PATCH || item->status & IT_MAPTHUMBNAIL)
 	{
-		if (!item->patch)
-			return 0;
-
-		patch_t *p = W_CachePatchName(item->patch, PU_CACHE);
+		patch_t *p = NULL;
 		UINT8 *cmap = NULL;
+
+		if (item->status & IT_MAPTHUMBNAIL)
+		{
+			INT32 mapnum = item->argument;
+
+			if (mapnum == INT32_MIN)
+			{
+				scale = FRACUNIT/2;
+				p = W_CachePatchName("RANDOMLV", PU_CACHE);
+			}
+			else
+			{
+				scale = M_GetMapThumbnail(mapnum, &p)/4;
+			}
+		}
+		else
+		{
+			if (!item->patch)
+				return 0;
+
+			p = W_CachePatchName(item->patch, PU_CACHE);
+		}
 
 		if (item->status & IT_CENTER)
 			width = SHORT(p->width)/2;
@@ -2518,34 +2537,6 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 
 		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
 		return width;
-	}
-
-	if (item->status & IT_MAPTHUMBNAIL)
-	{
-		INT32 mapnum = item->argument;
-		UINT8 *cmap = NULL;
-		patch_t *current_map;
-		fixed_t scale;
-
-		if (mapnum == INT32_MIN)
-		{
-			scale = FRACUNIT/2;
-			current_map = W_CachePatchName("RANDOMLV", PU_CACHE);
-		}
-		else
-		{
-			scale = M_GetMapThumbnail(mapnum, &current_map)/4;
-		}
-
-		if (item->status & IT_HIGHLIGHT)
-			cmap = V_GetStringColormap(highlightflags);
-		else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
-			cmap = V_GetStringColormap(recommendedflags);
-		else if (item->status & IT_WARNINGHIGHLIGHT)
-			cmap = V_GetStringColormap(warningflags);
-
-		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, current_map, cmap);
-		return scale;
 	}
 
 	switch (item->status & ITF_MASK)
