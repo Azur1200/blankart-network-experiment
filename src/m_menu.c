@@ -2484,6 +2484,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	const char *string = item->text ? item->text : "";
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font;
+	int colorflag;
 	INT32 (*widthfunc)(const char *string, INT32 option);
 
 	if (item->status & IT_SECRET)
@@ -2537,7 +2538,16 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_RIGHT)
 		width = widthfunc(string, vflags);
 
-	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, font, string);
+	if (item->status & IT_HIGHLIGHT)
+		colorflag = highlightflags;
+	else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
+		colorflag = recommendedflags;
+	else if (item->status & IT_WARNINGHIGHLIGHT)
+		colorflag = warningflags;
+	else
+		colorflag = 0;
+
+	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
 	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
 		M_DrawRightString(item, x, y, vflags, selected);
@@ -8082,12 +8092,12 @@ void M_DrawViewServer(void)
 
 	if (mapnum == INT32_MIN)
 	{
-		V_DrawSmallScaledPatch(10, 18, 0, W_CachePatchName("RANDOMLV", PU_CACHE));
+		V_DrawSmallScaledPatch(M_GetItemX(MN_VIEWSERVER, "MAPPIC"), M_GetItemY(MN_VIEWSERVER, "MAPPIC"), 0, W_CachePatchName("RANDOMLV", PU_CACHE));
 	}
 	else
 	{
 		fixed_t scale = M_GetMapThumbnail(mapnum, &current_map)/4;
-		V_DrawFixedPatch(10<<FRACBITS, 18<<FRACBITS, scale, 0, current_map, NULL);
+		V_DrawFixedPatch(M_GetItemX(MN_VIEWSERVER, "MAPPIC")<<FRACBITS, M_GetItemY(MN_VIEWSERVER, "MAPPIC")<<FRACBITS, scale, 0, current_map, NULL);
 	}
 
 	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemY(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemX(MN_VIEWSERVER, "MIDBOXWH"), M_GetItemY(MN_VIEWSERVER, "MIDBOXWH"), 159);
@@ -8306,21 +8316,21 @@ void M_DrawViewServer(void)
 #undef charsonside
 
 	// Buttons
-	V_DrawFill(8, BASEVIDHEIGHT - 14, BASEVIDWIDTH - 16, 13, 159);
+	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "BOTBOXXY"), M_GetItemY(MN_VIEWSERVER, "BOTBOXXY"), M_GetItemX(MN_VIEWSERVER, "BOTBOXWH"), M_GetItemY(MN_VIEWSERVER, "BOTBOXWH"), 159);
 	V_DrawThinString(
-		16, BASEVIDHEIGHT - 11,
-		V_ALLOWLOWERCASE, "[""\x82""ESC""\x80""] = Return"
+		M_GetItemX(MN_VIEWSERVER, "BUTTON1"), M_GetItemY(MN_VIEWSERVER, "BUTTON1"),
+		V_ALLOWLOWERCASE|V_6WIDTHSPACE, "[""\x82""ESC""\x80""] = Return"
 	);
 
 	V_DrawCenteredThinString(
-		BASEVIDWIDTH/2, BASEVIDHEIGHT - 11,
-		V_ALLOWLOWERCASE,
+		M_GetItemX(MN_VIEWSERVER, "BUTTON2"), M_GetItemY(MN_VIEWSERVER, "BUTTON2"),
+		V_ALLOWLOWERCASE|V_6WIDTHSPACE,
 		va("[""\x82""SPACE""\x80""] = %s", (viewserver_showaddons ? "Players" : "Addons"))
 	);
 
 	V_DrawRightAlignedThinString(
-		BASEVIDWIDTH - 12, BASEVIDHEIGHT - 11,
-		V_ALLOWLOWERCASE, "[""\x82""ENTER""\x80""] = Join"
+		M_GetItemX(MN_VIEWSERVER, "BUTTON3"), M_GetItemY(MN_VIEWSERVER, "BUTTON3"),
+		V_ALLOWLOWERCASE|V_6WIDTHSPACE, "[""\x82""ENTER""\x80""] = Join"
 	);
 }
 

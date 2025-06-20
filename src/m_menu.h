@@ -140,13 +140,15 @@ typedef enum
 	IT_RIGHT     = 1<<12, // right-align the text/patch
 	IT_SMALL     = 1<<13, // draw at half scale
 	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
+	IT_RECOMMENDEDHIGHLIGHT = 1<<15,
+	IT_WARNINGHIGHLIGHT = 1<<16,
 
-	ITF_STANDARD = 0<<15, // standard font
-	ITF_HEADER   = 1<<15, // standard font, with an offset to the left
-	ITF_THIN     = 2<<15, // thin font
-	ITF_THIN2    = 3<<15, // thin font with tighter spacing
+	ITF_STANDARD = 0<<17, // standard font
+	ITF_HEADER   = 1<<17, // standard font, with an offset to the left
+	ITF_THIN     = 2<<17, // thin font
+	ITF_THIN2    = 3<<17, // thin font with tighter spacing
 
-	ITF_MASK     = 3<<15,
+	ITF_MASK     = 3<<17,
 	IT_STYLE     = IT_PATCH|IT_CENTER|IT_RIGHT|IT_SMALL|IT_HIGHLIGHT|ITF_MASK,
 } menuitemflags_t;
 

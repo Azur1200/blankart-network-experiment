@@ -1895,6 +1895,8 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("RIGHT", IT_RIGHT)
 
 	if STYLE("HIGHLIGHT", IT_HIGHLIGHT)
+	else if STYLE("RECOMMENDEDHIGHLIGHT", IT_RECOMMENDEDHIGHLIGHT)
+	else if STYLE("WARNINGHIGHLIGHT", IT_WARNINGHIGHLIGHT)
 
 	return IT_HIDDEN;
 #undef STYLE
