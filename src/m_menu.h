@@ -135,22 +135,27 @@ typedef enum
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
 	IT_OVERLAY   = 1<<9, // item is drawn at absolute coordinates, without scrolling
 
-	IT_PATCH     = 1<<10, // display a patch instead of text
-	IT_CENTER    = 1<<11, // center the text/patch
-	IT_RIGHT     = 1<<12, // right-align the text/patch
-	IT_SMALL     = 1<<13, // draw at half scale
-	IT_HIGHLIGHT = 1<<14, // add highlightflags to text/patch
-	IT_RECOMMENDEDHIGHLIGHT = 1<<15,  // add recommendedflags to text/patch
-	IT_WARNINGHIGHLIGHT = 1<<16, // add warningflags to text/patch
-	IT_MAPTHUMBNAIL = 1<<17, // display a mapthumbnail instead of text
+	IT_CENTER    = 1<<10, // center the text/patch
+	IT_RIGHT     = 1<<11, // right-align the text/patch
+	IT_SMALL     = 1<<12, // draw at half scale
 
-	ITF_STANDARD = 0<<18, // standard font
-	ITF_HEADER   = 1<<18, // standard font, with an offset to the left
-	ITF_THIN     = 2<<18, // thin font
-	ITF_THIN2    = 3<<18, // thin font with tighter spacing
+	ITH_NONE      = 0<<13, // no highlight
+	ITH_HIGHLIGHT = 1<<13, // add highlightflags to text/patch
+	ITH_RECOMMEND = 2<<13, // add recommendedflags to text/patch
+	ITH_WARNING   = 3<<13, // add warningflags to text/patch
+	ITH_MASK      = 0x3<<13,
 
-	ITF_MASK     = 3<<18,
-	IT_STYLE     = IT_PATCH|IT_CENTER|IT_RIGHT|IT_SMALL|IT_HIGHLIGHT|ITF_MASK,
+	ITF_STANDARD  = 0<<15, // standard font
+	ITF_HEADER    = 1<<15, // standard font, with an offset to the left
+	ITF_THIN      = 2<<15, // thin font
+	ITF_THIN2     = 3<<15, // thin font with tighter spacing
+	ITF_FILL      = 4<<15, // call drawfill using parameters in item->patch
+	ITF_PATCH     = 5<<15, // display a patch instead of text
+	ITF_THUMBNAIL = 6<<15, // display the thumbnail of the mapname in item->patch
+	ITF_IMAGETYPE = ITF_PATCH,
+	ITF_MASK      = 0x7<<15,
+
+	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|ITH_MASK|ITF_MASK,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32

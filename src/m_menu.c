@@ -2473,7 +2473,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
 		}
 		else if (item->patch)
-			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || item->status & IT_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
+			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
 	}
 }
 
@@ -2484,7 +2484,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	const char *string = item->text ? item->text : "";
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font;
-	int colorflag;
+	INT32 colorflag;
 	INT32 (*widthfunc)(const char *string, INT32 option);
 
 	if (item->status & IT_SECRET)
@@ -2495,13 +2495,45 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_GRAYEDOUT)
 		vflags |= V_TRANSLUCENT;
 
+	switch (item->status & ITH_MASK)
+	{
+	case ITH_HIGHLIGHT:
+		colorflag = highlightflags; break;
+	case ITH_RECOMMEND:
+		colorflag = recommendedflags; break;
+	case ITH_WARNING:
+		colorflag = warningflags; break;
+	default:
+		colorflag = 0; break;
+	}
+
+	// color a dinosaur?
+	if ((item->status & ITF_MASK) == ITF_FILL)
+	{
+		UINT16 fillw, fillh;
+		UINT8 fillc;
+		// TODO: any form of overflow during conversion is UB apparently??? but I want this damn thing done today
+		if (sscanf(item->patch, "%hux%hu,%hhu", &fillw, &fillh, &fillc) != 3)
+			return 0;
+
+		if (item->status & IT_CENTER)
+			width = fillw/2;
+		else if (item->status & IT_RIGHT)
+			width = fillw;
+
+		V_DrawFill(x - width, y, fillw, fillh, fillc);
+		return 0;
+	}
+
 	// draw a patch or map thumbnail instead of a string?
-	if (item->status & IT_PATCH || item->status & IT_MAPTHUMBNAIL)
+	if ((item->status & ITF_MASK) >= ITF_IMAGETYPE)
 	{
 		patch_t *p = NULL;
 		UINT8 *cmap = NULL;
 
-		if (item->status & IT_MAPTHUMBNAIL)
+		switch (item->status & ITF_MASK)
+		{
+		case ITF_THUMBNAIL:
 		{
 			INT32 mapnum = item->argument;
 
@@ -2514,13 +2546,16 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 			{
 				scale = M_GetMapThumbnail(mapnum, &p)/4;
 			}
+			break;
 		}
-		else
+		case ITF_PATCH:
 		{
 			if (!item->patch)
 				return 0;
 
 			p = W_CachePatchName(item->patch, PU_CACHE);
+			break;
+		}
 		}
 
 		if (item->status & IT_CENTER)
@@ -2528,12 +2563,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		else if (item->status & IT_RIGHT)
 			width = SHORT(p->width);
 
-		if (item->status & IT_HIGHLIGHT)
-			cmap = V_GetStringColormap(highlightflags);
-		else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
-			cmap = V_GetStringColormap(recommendedflags);
-		else if (item->status & IT_WARNINGHIGHLIGHT)
-			cmap = V_GetStringColormap(warningflags);
+		cmap = V_GetStringColormap(colorflag);
 
 		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
 		return width;
@@ -2560,15 +2590,6 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		width = widthfunc(string, vflags)/2;
 	else if (item->status & IT_RIGHT)
 		width = widthfunc(string, vflags);
-
-	if (item->status & IT_HIGHLIGHT)
-		colorflag = highlightflags;
-	else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
-		colorflag = recommendedflags;
-	else if (item->status & IT_WARNINGHIGHLIGHT)
-		colorflag = warningflags;
-	else
-		colorflag = 0;
 
 	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
