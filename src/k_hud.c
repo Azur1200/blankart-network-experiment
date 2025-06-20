@@ -1254,6 +1254,12 @@ static void K_drawKartItem(void)
 			itembar = stplyr->invincibilitytimer;
 			maxl = max(1, stplyr->maxinvincibilitytime);
 
+			if (stplyr->invincibilitycancel > 0)
+			{
+				flamebar = stplyr->invincibilitycancel;
+				flamemaxl = 26;
+			}
+
 			if (leveltime & 1)
 				localpatch = localinv;
 			else

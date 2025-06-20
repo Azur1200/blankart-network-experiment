@@ -7862,6 +7862,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->invincibilitybottleneck = 0; // No need for bottlenecking.
 		player->maxinvincibilitytime = 0;
+		player->invincibilitycancel = -1;
 	}
 
 	if (player->checkskip)
@@ -10381,6 +10382,8 @@ void K_StripOther(player_t *player)
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
+	player->invincibilitycancel = -1;
+
 	if (player->growshrinktimer)
 	{
 		K_RemoveGrowShrink(player);
@@ -10786,7 +10789,28 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				// Invincibility
 				else if (K_InvincibilitySlotHogging(player))
 				{
-					// Does nothing, for now.
+					// (Alternate) Cancel Invincibility
+					if (player->invincibilitycancel >= 0)
+					{
+						if (buttons & BT_ATTACK)
+						{
+							player->invincibilitycancel++;
+							if (player->invincibilitycancel > 25)
+							{
+								// Don't fully cancel due to how the music handling works.
+								player->invincibilitytimer = 1;
+							}
+						}
+						else
+							player->invincibilitycancel = 0;
+					}
+					else
+					{
+						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
+							player->invincibilitycancel = -1;
+						else
+							player->invincibilitycancel = 0;
+					}
 				}
 				else if (player->itemamount == 0)
 				{
