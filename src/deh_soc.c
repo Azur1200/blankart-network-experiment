@@ -1888,6 +1888,7 @@ static menuitemflags_t parsestyle(const char *p)
 	else if STYLE("THIN", ITF_THIN)
 	else if STYLE("HEADER", ITF_HEADER|IT_HIGHLIGHT)
 	else if STYLE("PATCH", IT_PATCH)
+	else if STYLE("MAPTHUMBNAIL", IT_MAPTHUMBNAIL)
 
 	if STYLE("SMALL", IT_SMALL)
 

@@ -2511,9 +2511,41 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 
 		if (item->status & IT_HIGHLIGHT)
 			cmap = V_GetStringColormap(highlightflags);
+		else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
+			cmap = V_GetStringColormap(recommendedflags);
+		else if (item->status & IT_WARNINGHIGHLIGHT)
+			cmap = V_GetStringColormap(warningflags);
 
 		V_DrawFixedPatch((x - width)<<FRACBITS, y<<FRACBITS, scale, vflags & ~V_FLIP, p, cmap);
 		return width;
+	}
+
+	if (item->status & IT_MAPTHUMBNAIL)
+	{
+		INT32 mapnum = item->argument;
+		UINT8 *cmap = NULL;
+		patch_t *current_map;
+		fixed_t scale;
+
+		if (mapnum == INT32_MIN)
+		{
+			scale = FRACUNIT/2;
+			current_map = W_CachePatchName("RANDOMLV", PU_CACHE);
+		}
+		else
+		{
+			scale = M_GetMapThumbnail(mapnum, &current_map)/4;
+		}
+
+		if (item->status & IT_HIGHLIGHT)
+			cmap = V_GetStringColormap(highlightflags);
+		else if (item->status & IT_RECOMMENDEDHIGHLIGHT)
+			cmap = V_GetStringColormap(recommendedflags);
+		else if (item->status & IT_WARNINGHIGHLIGHT)
+			cmap = V_GetStringColormap(warningflags);
+
+		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, current_map, cmap);
+		return scale;
 	}
 
 	switch (item->status & ITF_MASK)
@@ -7997,6 +8029,8 @@ INT32 MR_EnterViewServer(INT32 choice)
 
 	servergametype = zva(PU_STATIC, NULL, "%s: %s", serverlist[joinnode].info.gametypename, speedstring);
 
+
+	M_SetItemArgument(MN_VIEWSERVER, "THUMBNAIL", G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle));
 	M_SetItemText(MN_VIEWSERVER, "SERVERNAME", servername);
 	M_SetItemText(MN_VIEWSERVER, "SERVERPING", serverping);
 	M_SetItemText(MN_VIEWSERVER, "SERVERMAP", servermap);
@@ -8084,21 +8118,7 @@ INT32 MR_HandleViewServer(INT32 choice)
 
 void M_DrawViewServer(void)
 {
-	const char *maptitle = serverlist[joinnode].info.maptitle;
-	INT32 mapnum = G_LevelTitleToMapNum(maptitle);
-	patch_t *current_map;
-
 	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemY(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemX(MN_VIEWSERVER, "TOPBOXWH"), M_GetItemY(MN_VIEWSERVER, "TOPBOXWH"), 159);
-
-	if (mapnum == INT32_MIN)
-	{
-		V_DrawSmallScaledPatch(M_GetItemX(MN_VIEWSERVER, "MAPPIC"), M_GetItemY(MN_VIEWSERVER, "MAPPIC"), 0, W_CachePatchName("RANDOMLV", PU_CACHE));
-	}
-	else
-	{
-		fixed_t scale = M_GetMapThumbnail(mapnum, &current_map)/4;
-		V_DrawFixedPatch(M_GetItemX(MN_VIEWSERVER, "MAPPIC")<<FRACBITS, M_GetItemY(MN_VIEWSERVER, "MAPPIC")<<FRACBITS, scale, 0, current_map, NULL);
-	}
 
 	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemY(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemX(MN_VIEWSERVER, "MIDBOXWH"), M_GetItemY(MN_VIEWSERVER, "MIDBOXWH"), 159);
 

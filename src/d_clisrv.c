@@ -933,9 +933,9 @@ static void SV_SendServerInfo(INT32 node, tic_t servertime)
 	UINT8 *p;
 	size_t mirror_length;
 	const char *httpurl = cv_httpsource.string;
-	UINT8 prefgametype = (cv_kartgametypepreference.value == -1)
+	/*UINT8 prefgametype = (cv_kartgametypepreference.value == -1)
 		? gametype
-		: cv_kartgametypepreference.value;
+		: cv_kartgametypepreference.value;*/
 
 	netbuffer->packettype = PT_SERVERINFO;
 	netbuffer->u.serverinfo._255 = 255;
