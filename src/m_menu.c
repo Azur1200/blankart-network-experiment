@@ -266,7 +266,6 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
 #define M_SetItemX(t, n, v)             (M_GetMenuItem(t, n)->x = v)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
-#define M_SetItemText(t, n, s)             (M_GetMenuItem(t, n)->text = s)
 #define M_GetItemX(t, n)                (M_GetMenuItem(t, n)->x)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
 
@@ -276,6 +275,14 @@ static void M_ChangeItemStatus(menutype_t type, const char *name, menuitemflags_
 		M_GetMenuItem(type, name)->status |= flag;
 	else
 		M_GetMenuItem(type, name)->status &= ~flag;
+}
+
+static void M_SetItemText(menutype_t type, const char *name, const char *string)
+{
+	menuitem_t *item = M_GetMenuItem(type, name);
+	if (item->text)
+		Z_Free(item->text);
+	item->text = Z_StrDup(string);
 }
 
 #define M_SetItemVisible(t, n, c)  M_ChangeItemStatus(t, n, IT_HIDDEN, !(c))
@@ -8000,10 +8007,6 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	return true;
 }
 
-static char *serveraddon = NULL;
-static char *serverping = NULL;
-static char *servergametype = NULL;
-
 INT32 MR_EnterViewServer(INT32 choice)
 {
 	(void)choice;
@@ -8012,16 +8015,6 @@ INT32 MR_EnterViewServer(INT32 choice)
 	const char *speedstring = "Auto";
 	UINT32 ping = serverlist[joinnode].info.time;
 	UINT8 kartvars = serverlist[joinnode].info.kartvars;
-
-	if (serveraddon)
-		Z_Free(serveraddon);
-	if (serverping)
-		Z_Free(serverping);
-	if (servergametype)
-		Z_Free(servergametype);
-
-	serveraddon = zva(PU_STATIC, NULL, "\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : "");
-	serverping = zva(PU_STATIC, NULL, "Ping: %c%ums", (ping < 128 ? '\x83' : (ping < 256 ? '\x82' : '\x85')), ping);
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -8036,18 +8029,15 @@ INT32 MR_EnterViewServer(INT32 choice)
 			break;
 	}
 
-	servergametype = zva(PU_STATIC, NULL, "%s: %s", serverlist[joinnode].info.gametypename, speedstring);
-
-
 	M_SetItemArgument(MN_VIEWSERVER, "THUMBNAIL", G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle));
 	M_SetItemText(MN_VIEWSERVER, "SERVERNAME", servername);
-	M_SetItemText(MN_VIEWSERVER, "SERVERPING", serverping);
+	M_SetItemText(MN_VIEWSERVER, "SERVERPING", va("Ping: %c%ums", ping < 128 ? '\x83' : ping < 256 ? '\x82' : '\x85', ping));
 	M_SetItemText(MN_VIEWSERVER, "SERVERMAP", servermap);
-	M_SetItemText(MN_VIEWSERVER, "SERVERGAMETYPE", servergametype);
+	M_SetItemText(MN_VIEWSERVER, "SERVERGAMETYPE", va("%s: %s", serverlist[joinnode].info.gametypename, speedstring));
 
 	if (fileneedednum > 0)
 	{
-		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", serveraddon);
+		M_SetItemText(MN_VIEWSERVER, "SERVERADDON", va("\x82%d Addon%s", fileneedednum, fileneedednum > 1 ? "s" : ""));
 	}
 	else
 	{

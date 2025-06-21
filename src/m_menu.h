@@ -187,7 +187,7 @@ struct menuitem_t
 struct menu_t
 {
 	dehinfo_t      info;
-	const char    *headerpic;
+	char          *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items
 	menudrawer_f  *drawroutine;        // draw routine

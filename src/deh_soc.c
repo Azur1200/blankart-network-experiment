@@ -1977,14 +1977,20 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		}
 		else if (fastcmp(word, "TEXT"))
 		{
+			if (menuitem->text)
+				Z_Free(menuitem->text);
 			menuitem->text = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "PATCH"))
 		{
+			if (menuitem->patch)
+				Z_Free(menuitem->patch);
 			menuitem->patch = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "TOOLTIP"))
 		{
+			if (menuitem->tooltip)
+				Z_Free(menuitem->tooltip);
 			menuitem->tooltip = Z_StrDup(word2);
 		}
 		else if (fastcmp(word, "STYLE"))
@@ -2271,6 +2277,8 @@ void readmenu(MYFILE *f, INT32 num)
 			// MENUDEF STARTS HERE
 			else if (fastcmp(word, "HEADERPIC"))
 			{
+				if (menudef->headerpic)
+					Z_Free(menudef->headerpic);
 				menudef->headerpic = Z_StrDup(word2);
 			}
 			else if (fastcmp(word, "DRAWROUTINE"))
