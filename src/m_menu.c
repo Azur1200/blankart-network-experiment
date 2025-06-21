@@ -2512,8 +2512,10 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	{
 		UINT16 fillw, fillh;
 		UINT8 fillc;
-		// TODO: any form of overflow during conversion is UB apparently??? but I want this damn thing done today
-		if (sscanf(item->patch, "%hux%hu,%hhu", &fillw, &fillh, &fillc) != 3)
+		INT16 ofsx, ofsy;
+		// TODO: these can overflow, reimplement sscanf to fix i guess
+		int results = sscanf(item->patch, "%hux%hu,%hhu,%hd,%hd", &fillw, &fillh, &fillc, &ofsx, &ofsy);
+		if (results != 3 && results != 5)
 			return 0;
 
 		if (item->status & IT_CENTER)
@@ -2521,7 +2523,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		else if (item->status & IT_RIGHT)
 			width = fillw;
 
-		V_DrawFill(x - width, y, fillw, fillh, fillc);
+		V_DrawFill(x - width + (results == 5 ? ofsx : 0), y + (results == 5 ? ofsy : 0), fillw, fillh, fillc);
 		return 0;
 	}
 
@@ -6097,9 +6099,6 @@ void M_DrawConnectMenu(void)
 	for (i = firstserverline; i < firstserverline+serversperpage; i++)
 		conmenu->menuitems[i].status |= IT_HIDDEN;
 
-	// Horizontal line!
-	V_DrawFill(1, currentMenu->y+32, 318, 1, 0);
-
 	if (serverlistcount <= 0)
 		V_DrawString(currentMenu->x,currentMenu->y+SERVERHEADERHEIGHT, MENUCAPS, "No servers found");
 	else
@@ -7210,8 +7209,6 @@ void M_DrawJoystick(void)
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
-		M_DrawTextBox(menudefs[MN_OP_JOYSTICKSET].x-8, menudefs[MN_OP_JOYSTICKSET].y + 16*i - 8, 28, 1);
-
 #ifdef JOYSTICK_HOTPLUG
 		if (atoi(cv_usejoystick[setupcontrolplayer-1].string) > I_NumJoys())
 			compareval = atoi(cv_usejoystick[setupcontrolplayer-1].string);
@@ -8130,10 +8127,6 @@ INT32 MR_HandleViewServer(INT32 choice)
 
 void M_DrawViewServer(void)
 {
-	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemY(MN_VIEWSERVER, "TOPBOXXY"), M_GetItemX(MN_VIEWSERVER, "TOPBOXWH"), M_GetItemY(MN_VIEWSERVER, "TOPBOXWH"), 159);
-
-	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemY(MN_VIEWSERVER, "MIDBOXXY"), M_GetItemX(MN_VIEWSERVER, "MIDBOXWH"), M_GetItemY(MN_VIEWSERVER, "MIDBOXWH"), 159);
-
 	M_DrawGenericMenu();
 
 	if (!viewserver_showaddons)
@@ -8348,22 +8341,8 @@ void M_DrawViewServer(void)
 #undef charsonside
 
 	// Buttons
-	V_DrawFill(M_GetItemX(MN_VIEWSERVER, "BOTBOXXY"), M_GetItemY(MN_VIEWSERVER, "BOTBOXXY"), M_GetItemX(MN_VIEWSERVER, "BOTBOXWH"), M_GetItemY(MN_VIEWSERVER, "BOTBOXWH"), 159);
-	V_DrawThinString(
-		M_GetItemX(MN_VIEWSERVER, "BUTTON1"), M_GetItemY(MN_VIEWSERVER, "BUTTON1"),
-		V_ALLOWLOWERCASE|V_6WIDTHSPACE, "[""\x82""ESC""\x80""] = Return"
-	);
-
-	V_DrawCenteredThinString(
-		M_GetItemX(MN_VIEWSERVER, "BUTTON2"), M_GetItemY(MN_VIEWSERVER, "BUTTON2"),
-		V_ALLOWLOWERCASE|V_6WIDTHSPACE,
-		va("[""\x82""SPACE""\x80""] = %s", (viewserver_showaddons ? "Players" : "Addons"))
-	);
-
-	V_DrawRightAlignedThinString(
-		M_GetItemX(MN_VIEWSERVER, "BUTTON3"), M_GetItemY(MN_VIEWSERVER, "BUTTON3"),
-		V_ALLOWLOWERCASE|V_6WIDTHSPACE, "[""\x82""ENTER""\x80""] = Join"
-	);
+	M_SetItemVisible(MN_VIEWSERVER, "TOGGLEBUTTON1", viewserver_showaddons);
+	M_SetItemVisible(MN_VIEWSERVER, "TOGGLEBUTTON2", !viewserver_showaddons);
 }
 
 // =========
