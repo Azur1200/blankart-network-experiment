@@ -555,9 +555,6 @@ static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
 
 static const char* servmus_1 = "SRVMS1";
 static const char* servmus_2 = "SRVMS2";
-// "SRVMS3" allows for the music position to be kept between servmus_1 and servmus_3
-// also takes priority over servmus_2
-static const char* servmus_3 = "SRVMS3";
 
 static void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
 {
@@ -1619,10 +1616,7 @@ static boolean CL_FinishedFileList(void)
 				"Press ACCEL to continue or BRAKE to cancel.\n\n"
 			), M_ConfirmConnect, MM_EVENTHANDLER);
 			cl_mode = CL_CONFIRMCONNECT;
-			if (S_MusicExists(servmus_3))
-				ChangeServMusic(servmus_3, true,true);
-			else
-				ChangeServMusic(servmus_2, false,false);
+			ChangeServMusic(servmus_2, true,true);
 		}
 		else
 			cl_mode = CL_LOADFILES;
@@ -1692,11 +1686,7 @@ static boolean CL_FinishedFileList(void)
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;
-
-			if (S_MusicExists(servmus_3))
-				ChangeServMusic(servmus_3, true,true);
-			else
-				ChangeServMusic(servmus_2, false,false);
+			ChangeServMusic(servmus_2, true,true);
 		}
 #ifdef HAVE_CURL
 		else
