@@ -2295,11 +2295,11 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "X"))
 			{
-				menudef->x = value;
+				menudef->x = get_number(word2);
 			}
 			else if (fastcmp(word, "Y"))
 			{
-				menudef->y = value;
+				menudef->y = get_number(word2);
 			}
 			else if (fastcmp(word, "SCROLLHEIGHT"))
 			{
