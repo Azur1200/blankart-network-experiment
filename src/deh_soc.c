@@ -1868,7 +1868,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ NULL, NULL }
 };
 
-// parses an item style in the form of "<font>-SMALL-<align>-HIGHLIGHT"
+// parses an item style in the form of "<font>-SMALL-<align>-<highlight>-STICKER"
 // each component is optional, and the style cannot be written in arbitrary order
 // returns IT_HIDDEN if style is invalid
 static menuitemflags_t parsestyle(const char *p)
@@ -1899,6 +1899,8 @@ static menuitemflags_t parsestyle(const char *p)
 	if STYLE("HIGHLIGHT", ITH_HIGHLIGHT)
 	else if STYLE("RECOMMENDEDHIGHLIGHT", ITH_RECOMMEND)
 	else if STYLE("WARNINGHIGHLIGHT", ITH_WARNING)
+
+	if STYLE("STICKER", IT_STICKER)
 
 	return IT_HIDDEN;
 #undef STYLE
@@ -1970,10 +1972,6 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		else if (fastcmp(word, "TEMPOFFSET"))
 		{
 			status |= IT_TEMPORARY;
-		}
-		else if (fastcmp(word, "STICKER"))
-		{
-			status |= IT_STICKER;
 		}
 		else if (fastcmp(word, "ARGUMENT"))
 		{

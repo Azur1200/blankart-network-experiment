@@ -160,7 +160,7 @@ typedef enum
 	ITF_MASK      = 0x7<<sh,
 #undef sh
 
-	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|/*IT_STICKER|*/ITH_MASK|ITF_MASK,
+	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|IT_STICKER|ITH_MASK|ITF_MASK,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32

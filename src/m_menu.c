@@ -281,6 +281,14 @@ static void M_SetItemText(menutype_t type, const char *name, const char *string)
 	item->text = Z_StrDup(string);
 }
 
+static void M_SetItemPatch(menutype_t type, const char *name, const char *string)
+{
+	menuitem_t *item = M_GetMenuItem(type, name);
+	if (item->patch)
+		Z_Free(item->patch);
+	item->patch = Z_StrDup(string);
+}
+
 #define M_SetItemVisible(t, n, c)  M_ChangeItemStatus(t, n, IT_HIDDEN, !(c))
 #define M_SetItemDisabled(t, n, c) M_ChangeItemStatus(t, n, IT_GRAYEDOUT, c)
 #define M_SetItemSecret(t, n, c)   M_ChangeItemStatus(t, n, IT_SECRET, c)
@@ -2476,17 +2484,8 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		{
 		case ITF_THUMBNAIL:
 		{
-			INT32 mapnum = item->argument;
-
-			if (mapnum == INT32_MIN)
-			{
-				scale = FRACUNIT/2;
-				p = W_CachePatchName("RANDOMLV", PU_CACHE);
-			}
-			else
-			{
-				scale = M_GetMapThumbnail(mapnum, &p)/4;
-			}
+			INT32 mapnum = G_MapNumber(item->patch);
+			scale = M_GetMapThumbnail(mapnum < nummapheaders ? mapnum : -1, &p)/4;
 			break;
 		}
 		case ITF_PATCH:
@@ -7980,7 +7979,8 @@ INT32 MR_EnterViewServer(INT32 choice)
 			break;
 	}
 
-	M_SetItemArgument(MN_VIEWSERVER, "THUMBNAIL", G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle));
+	const char *mapname = G_BuildMapName(G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle)+1);
+	M_SetItemPatch(MN_VIEWSERVER, "THUMBNAIL", mapname ? mapname : "");
 	M_SetItemText(MN_VIEWSERVER, "SERVERNAME", servername);
 	M_SetItemText(MN_VIEWSERVER, "SERVERPING", va("Ping: %c%ums", ping < 128 ? '\x83' : ping < 256 ? '\x82' : '\x85', ping));
 	M_SetItemText(MN_VIEWSERVER, "SERVERMAP", servermap);
