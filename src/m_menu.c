@@ -1383,6 +1383,7 @@ boolean M_Responder(event_t *ev)
 			{ gc_accelerate,  KEY_ENTER      }, // these two first
 			{ gc_brake,       KEY_ESCAPE     }, // in case of conflicts
 			{ gc_fire,        KEY_BACKSPACE  },
+			{ gc_drift,       KEY_SPACE      },
 			{ gc_systemmenu,  KEY_ESCAPE     },
 			{ gc_aimforward,  KEY_UPARROW    },
 			{ gc_aimbackward, KEY_DOWNARROW  },
