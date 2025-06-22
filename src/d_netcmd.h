@@ -133,6 +133,7 @@ extern consvar_t cv_kartstacking_accelstack;
 extern consvar_t cv_kartstacking_sneaker_easyspeedboost;
 extern consvar_t cv_kartstacking_sneaker_normalspeedboost;
 extern consvar_t cv_kartstacking_sneaker_hardspeedboost;
+extern consvar_t cv_kartstacking_sneaker_expertspeedboost;
 extern consvar_t cv_kartstacking_sneaker_accelboost;
 extern consvar_t cv_kartstacking_sneaker_maxgrade;
 extern consvar_t cv_kartstacking_sneaker_stackable;

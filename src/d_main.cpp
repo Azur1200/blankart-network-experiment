@@ -1675,7 +1675,7 @@ void D_SRB2Main(void)
 			// Start up a "minor" grand prix session
 			memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
 
-			grandprixinfo.gamespeed = KARTSPEED_NORMAL;
+			grandprixinfo.gamespeed = KARTSPEED_HARD;
 			grandprixinfo.encore = false;
 			grandprixinfo.masterbots = false;
 
@@ -1833,10 +1833,15 @@ void D_SRB2Main(void)
 			const char *sskill = M_GetNextParm();
 
 			const char *masterstr = "Master";
+			const char *nightmarestr = "NIGHTMARE";
 
 			if (!strcasecmp(masterstr, sskill))
 			{
 				newskill = KARTGP_MASTER;
+			}
+			else if (!strcasecmp(nightmarestr, sskill))
+			{
+				newskill = KARTGP_NIGHTMARE;
 			}
 			else
 			{
@@ -1852,7 +1857,7 @@ void D_SRB2Main(void)
 				if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
 				{
 					j = atoi(sskill); // assume they gave us a skill number, which is okay too
-					if (j >= KARTSPEED_EASY && j <= KARTGP_MASTER)
+					if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
 						newskill = (INT16)j;
 				}
 			}
@@ -1864,12 +1869,21 @@ void D_SRB2Main(void)
 					grandprixinfo.masterbots = true;
 					newskill = KARTSPEED_HARD;
 				}
+				else if (newskill == KARTGP_NIGHTMARE)
+				{
+					grandprixinfo.masterbots = true;
+					newskill = KARTSPEED_EXPERT;
+				}
 
 				grandprixinfo.gamespeed = newskill;
 			}
 			else if (newskill == KARTGP_MASTER)
 			{
 				newskill = KARTSPEED_HARD;
+			}
+			else if (newskill == KARTGP_NIGHTMARE)
+			{
+				newskill = KARTSPEED_EXPERT;
 			}
 
 			if (newskill != -1)

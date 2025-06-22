@@ -473,7 +473,14 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 					return;
 				}
 
-				if (min >= 7800)
+				if (min >= 8200)
+				{
+					if (avg >= 8500)
+						t = 6;
+					else
+						t = 5;
+				}
+				else if (min >= 7800)
 				{
 					if (avg >= 8200)
 						t = 5;
@@ -520,6 +527,10 @@ void K_SetPowerLevelScrambles(SINT8 powertype)
 
 				switch (t)
 				{
+					case 6:
+						speed = KARTSPEED_EXPERT;
+						encore = P_RandomChance(FRACUNIT>>1);
+						break;
 					case 5:
 						speed = KARTSPEED_HARD;
 						encore = P_RandomChance(FRACUNIT>>1);

@@ -1545,6 +1545,7 @@ struct int_const_s const INT_CONST[] = {
 	{"KARTSPEED_EASY", KARTSPEED_EASY},
 	{"KARTSPEED_NORMAL", KARTSPEED_NORMAL},
 	{"KARTSPEED_HARD", KARTSPEED_HARD},
+	{"KARTSPEED_EXPERT", KARTSPEED_EXPERT},
 
 	// Custom client features exposed to lua
 	{"FEATURE_INTERMISSIONHUD",1}, // This is to trick kart luas that look for this since its already here.

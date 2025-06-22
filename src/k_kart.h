@@ -49,6 +49,7 @@ Make sure this matches the actual number of states
 #define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost)
 #define NORMALSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_normalspeedboost)
 #define HARDSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_hardspeedboost)
+#define EXPERTSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_expertspeedboost)
 #define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
