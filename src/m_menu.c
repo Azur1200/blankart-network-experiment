@@ -102,10 +102,6 @@ int	snprintf(char *str, size_t n, const char *fmt, ...);
 
 #include "qs22j.h"
 
-#define SLIDER_RANGE 10
-#define SLIDER_WIDTH (8*SLIDER_RANGE+6)
-#define MAXIPADDRESSLEN 28
-
 typedef enum
 {
 	QUITMSG = 0,
@@ -219,7 +215,7 @@ static UINT8 playback_enterheld = 0; // horrid hack to prevent holding the butto
 
 // Drawing functions
 static void M_DrawMessageMenu(void);
-static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade);
+static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, boolean rightfade);
 
 // uhhhhhh hack?
 static void M_ChangecontrolResponse(event_t *ev);
@@ -1108,7 +1104,7 @@ static void M_ChangeCvar(menuitem_t *item, SINT8 direction)
 static UINT32 M_StringCvarLength(consvar_t *cv)
 {
 	if (cv == &cv_dummyip)
-		return MAXIPADDRESSLEN;
+		return 28;
 	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
 		return MAXPLAYERNAME + 1;
 	else
@@ -1749,20 +1745,22 @@ void M_StartControlPanel(void)
 	}
 	else // multiplayer
 	{
-		INT32 offset = 0;
 #ifdef HAVE_DISCORDRPC
-		offset = -8;
+		menudefs[MN_MPAUSE].y = 72;
 		M_RefreshPauseMenu();
+		M_SetItemVisible(MN_MPAUSE, "DISCORDREQUESTS", true);
+#else
+		menudefs[MN_MPAUSE].y = 80;
+		M_SetItemVisible(MN_MPAUSE, "DISCORDREQUESTS", false);
 #endif
 		Dummymenuplayer_OnChange();
-
-		M_SetItemY(MN_MPAUSE, "ADDONS", 8 + offset);
-		M_SetItemY(MN_MPAUSE, "SCRAMBLE", 8 + offset);
-		M_SetItemY(MN_MPAUSE, "MAPCHANGE", 24 + offset);
 
 		M_SetItemVisible(MN_MPAUSE, "MAPCHANGE", server || IsPlayerAdmin(consoleplayer));
 		M_SetItemVisible(MN_MPAUSE, "ADDONS", server || IsPlayerAdmin(consoleplayer));
 		M_SetItemVisible(MN_MPAUSE, "SCRAMBLE", (server || IsPlayerAdmin(consoleplayer)) && G_GametypeHasTeams());
+
+		if (!(server || IsPlayerAdmin(consoleplayer)))
+			menudefs[MN_MPAUSE].y += 24;
 
 		M_SetItemVisible(MN_MPAUSE, "SETUP1", splitscreen > 0);
 		M_SetItemVisible(MN_MPAUSE, "SETUP2", splitscreen > 0);
@@ -1782,17 +1780,13 @@ void M_StartControlPanel(void)
 
 		if (splitscreen && netgame)
 		{
-			offset = splitscreen*8;
 			if (G_GametypeHasTeams())
 				M_SetItemVisible(MN_MPAUSE, "TEAMCHANGE", true);
 			else if (G_GametypeHasSpectators())
 				M_SetItemVisible(MN_MPAUSE, "SPECTATECHANGE", true);
-			else
-				offset = 0;
 		}
 		else if (!splitscreen)
 		{
-			offset = 0;
 			if (G_GametypeHasTeams())
 				M_SetItemVisible(MN_MPAUSE, "TEAMCHANGE", true);
 			else if (G_GametypeHasSpectators())
@@ -1805,15 +1799,6 @@ void M_StartControlPanel(void)
 				M_SetItemDisabled(MN_MPAUSE, "SPECTATE", true);
 			}
 		}
-		else
-			offset = (splitscreen-1)*8;
-
-		M_SetItemY(MN_MPAUSE, "OPTIONS", 64 + offset);
-		M_SetItemY(MN_MPAUSE, "ENDGAME", 80 + offset);
-		M_SetItemY(MN_MPAUSE, "QUITGAME", 88 + offset);
-
-		M_SetItemY(MN_MPAUSE, "TEAMCHANGE", 48 + offset+8);
-		M_SetItemY(MN_MPAUSE, "SPECTATECHANGE", 48 + offset+8);
 
 		M_EnterMenu(MN_MPAUSE, true, 0);
 		M_SetItemOn(MN_MPAUSE, "CONTINUE");
@@ -2092,62 +2077,6 @@ static const char *M_CreateSecretMenuOption(const char *str)
 	return qbuf;
 }
 
-//  A smaller 'Thermo', with range given as percents (0-100)
-static void M_DrawSlider(INT32 x, INT32 y, const consvar_t *cv, boolean ontop)
-{
-	INT32 i;
-	INT32 range;
-	patch_t *p;
-
-	for (i = 0; cv->PossibleValue[i+1].strvalue; i++);
-
-	x = BASEVIDWIDTH - x - SLIDER_WIDTH;
-
-	if (ontop)
-	{
-		V_DrawCharacter(x - 16 - (skullAnimCounter/5), y,
-			'\x1C' | highlightflags, false); // left arrow
-		V_DrawCharacter(x+(SLIDER_RANGE*8) + 8 + (skullAnimCounter/5), y,
-			'\x1D' | highlightflags, false); // right arrow
-	}
-
-	if ((range = atoi(cv->defaultvalue)) != cv->value)
-	{
-		range = ((range - cv->PossibleValue[0].value) * 100 /
-		(cv->PossibleValue[1].value - cv->PossibleValue[0].value));
-
-		if (range < 0)
-			range = 0;
-		if (range > 100)
-			range = 100;
-
-		// draw the default
-		p = W_CachePatchName("M_SLIDEC", PU_CACHE);
-		V_DrawScaledPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p);
-	}
-
-	V_DrawScaledPatch(x - 8, y, 0, W_CachePatchName("M_SLIDEL", PU_CACHE));
-
-	p =  W_CachePatchName("M_SLIDEM", PU_CACHE);
-	for (i = 0; i < SLIDER_RANGE; i++)
-		V_DrawScaledPatch (x+i*8, y, 0,p);
-
-	p = W_CachePatchName("M_SLIDER", PU_CACHE);
-	V_DrawScaledPatch(x+SLIDER_RANGE*8, y, 0, p);
-
-	range = ((cv->value - cv->PossibleValue[0].value) * 100 /
-	 (cv->PossibleValue[1].value - cv->PossibleValue[0].value));
-
-	if (range < 0)
-		range = 0;
-	if (range > 100)
-		range = 100;
-
-	// draw the slider cursor
-	p = W_CachePatchName("M_SLIDEC", PU_CACHE);
-	V_DrawScaledPatch(x - 4 + (((SLIDER_RANGE)*8 + 4)*range)/100, y, 0, p);
-}
-
 // Thanks to hayaUnderscore for creating this code used in SRB2Kart Saturn
 static void M_DrawSplitText(INT32 x, INT32 y, INT32 option,INT32 alpha)
 {
@@ -2313,28 +2242,11 @@ static void M_DrawMenuTitle(void)
 	}
 }
 
-void M_DrawPauseMenu(void)
+#define SLIDER_RANGE (10*8)
+static void M_DrawSliderCursor(INT16 x, INT16 y, INT32 vflags, consvar_t *cv, INT32 value)
 {
-#ifdef HAVE_DISCORDRPC
-	// kind of hackily baked in here
-	if (menustack[0] == MN_MPAUSE && discordRequestList != NULL)
-	{
-		const tic_t freq = TICRATE/2;
-
-		if ((leveltime % freq) >= freq/2)
-		{
-			V_DrawFixedPatch(204 * FRACUNIT,
-				(currentMenu->y + M_GetItemY(MN_MPAUSE, "DISCORDREQUESTS") - 1) * FRACUNIT,
-				FRACUNIT,
-				0,
-				W_CachePatchName("K_REQUE2", PU_CACHE),
-				NULL
-			);
-		}
-	}
-#endif
-
-	M_DrawGenericMenu();
+	fixed_t range = FixedDiv(value - cv->PossibleValue[0].value, cv->PossibleValue[1].value - cv->PossibleValue[0].value);
+	V_DrawFixedPatch((x - 4)*FRACUNIT + (SLIDER_RANGE+4)*range, y*FRACUNIT, FRACUNIT, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), NULL);
 }
 
 static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
@@ -2358,19 +2270,42 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			if (selected && skullAnimCounter < 4) // blink cursor
 				V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
 					'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
-
-			if (!side)
-				y += 16;
 		}
 		else if (item->status & IT_SLIDER)
 		{
-			M_DrawSlider(x, y, cv, selected);
+			INT32 i;
+			patch_t *p;
+
+			vflags &= ~(V_FLIP|V_PARAMMASK);
+			x = BASEVIDWIDTH - x - SLIDER_RANGE - 6;
+
+			if (selected)
+			{
+				V_DrawCharacter(x - 16 - (skullAnimCounter/5), y,
+					'\x1C' | highlightflags | vflags, false); // left arrow
+				V_DrawCharacter(x + SLIDER_RANGE + 8 + (skullAnimCounter/5), y,
+					'\x1D' | highlightflags | vflags, false); // right arrow
+			}
+
+			if (atoi(cv->defaultvalue) != cv->value)
+				M_DrawSliderCursor(x, y, vflags, cv, atoi(cv->defaultvalue));
+
+			p = W_CachePatchName("M_SLIDEL", PU_CACHE);
+			V_DrawScaledPatch(x - 8, y, vflags, p);
+
+			p = W_CachePatchName("M_SLIDEM", PU_CACHE);
+			for (i = 0; i < SLIDER_RANGE; i += 8)
+				V_DrawScaledPatch (x + i, y, vflags, p);
+
+			p = W_CachePatchName("M_SLIDER", PU_CACHE);
+			V_DrawScaledPatch(x + i, y, vflags, p);
+
+			M_DrawSliderCursor(x, y, vflags, cv, cv->value);
 		}
 		else
 		{
 			const char *str = cv->string;
 			INT32 soffset = 0;
-			INT32 strvf = vflags;
 			boolean warning = (cv->flags & CV_CHEAT) && !CV_IsSetToDefault(cv);
 
 			// special cvar value offsets for time attack!
@@ -2395,7 +2330,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			else if (cv == &cv_dummyserverpage)
 				str = va("%d of %d", cv->value + 1, dummyserverpage_cons_t[1].value + 1);
 			else if (cv == &cv_soundtest && cv_soundtest.value)
-				V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, strvf|highlightflags, S_sfx[cv_soundtest.value].name);
+				V_DrawRightAlignedString(BASEVIDWIDTH - x - soffset, y + 8, highlightflags|vflags, S_sfx[cv_soundtest.value].name);
 			else if (cv == &cv_gamesounds)
 			{
 				str = sound_disabled ? "Off" : "On";
@@ -2406,34 +2341,22 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 				str = digital_disabled ? "Off" : "On";
 				warning = digital_disabled;
 			}
-			else if (cv == &cons_menuhighlight)
-			{
-				INT16 hx = x - 2;
-				static const char *hstr[5] = {
-					"(", "Good highlight", ",", " Warning highlight", ")"
-				};
-				for (w = 0; w < 5; w++)
-				{
-					V_DrawString(hx, y + 10, (w == 1 ? recommendedflags : w == 3 ? warningflags : highlightflags)|strvf, hstr[w]);
-					hx += V_StringWidth(hstr[w], strvf);
-				}
-			}
 			else if (cv == &cv_dummymultiplayer)
 				return;
 
 			if (menustack[0] == MN_MP_PLAYERSETUP)
-				strvf |= V_ALLOWLOWERCASE;
+				vflags |= V_ALLOWLOWERCASE;
 
-			w = V_StringWidth(str, strvf);
-			V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|strvf, str);
+			w = V_StringWidth(str, vflags);
+			V_DrawString(BASEVIDWIDTH - x - soffset - w, y, (warning ? warningflags : highlightflags)|vflags, str);
 
 			if (selected)
 			{
-				strvf &= ~(V_FLIP|V_PARAMMASK);
+				vflags &= ~(V_FLIP|V_PARAMMASK);
 				V_DrawCharacter(BASEVIDWIDTH - x - soffset - 10 - w - (skullAnimCounter/5), y,
-					'\x1C' | highlightflags | strvf, false); // left arrow
+					'\x1C' | highlightflags | vflags, false); // left arrow
 				V_DrawCharacter(BASEVIDWIDTH - x - soffset + 2 + (skullAnimCounter/5), y,
-					'\x1D' | highlightflags | strvf, false); // right arrow
+					'\x1D' | highlightflags | vflags, false); // right arrow
 			}
 		}
 	}
@@ -2479,10 +2402,19 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
 		}
+		else if (item->submenu == MN_MISC_DISCORDREQUESTS)
+		{
+			vflags &= ~(V_FLIP|V_PARAMMASK);
+			const tic_t freq = TICRATE/2;
+			if ((leveltime % freq) >= freq/2)
+				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
+		}
 		else if (item->patch)
 			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
 	}
 }
+
+static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall);
 
 // draws a menu item, returns cursor offset
 static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
@@ -2600,6 +2532,9 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	else if (item->status & IT_RIGHT)
 		width = widthfunc(string, vflags);
 
+	if (item->status & IT_STICKER)
+		M_DrawSticker(x, y + 2, widthfunc(string, vflags), vflags & ~V_FLIP, true);
+
 	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
 	if (!(item->status & (IT_SECRET|IT_GRAYEDOUT)))
@@ -2608,22 +2543,32 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	return width;
 }
 
-// gets the absolute Y coordinate where this menuitem should be drawn (in a broken way)
+// gets the absolute Y coordinate where this menuitem should be drawn
 // TODO: merge this with the actual drawing loop somehow
-static INT16 getheight(INT16 index)
+static INT16 getheight(menu_t *menu, INT16 index)
 {
-	// gotta skip overlay items...
-	INT16 i = 0;
-	while (index + i < currentMenu->numitems && currentMenu->menuitems[index + i].status & IT_OVERLAY)
-		i++;
-	index += i;
-	if (index >= currentMenu->numitems)
-		return 0;
+	INT16 i, y = 0;
+	for (i = 0; i < menu->numitems; i++)
+	{
+		menuitem_t *item = &menu->menuitems[i];
 
-	INT16 y = currentMenu->menuitems[index].y;
-	if (!y) while (i < index)
-		if (!(currentMenu->menuitems[i++].status & (IT_HIDDEN|IT_OVERLAY)))
-			y += currentMenu->lineheight;
+		if (item->status & (IT_OVERLAY|IT_HIDDEN))
+			continue;
+
+		if (item->y)
+		{
+			if (!(item->status & IT_OFSY))
+				y = item->y;
+			else if (!(item->status & IT_TEMPORARY))
+				y = y + item->y;
+		}
+
+		if (i >= index)
+			break;
+
+		y += menu->lineheight;
+	}
+
 	return y;
 }
 
@@ -2636,12 +2581,12 @@ void M_DrawGenericMenu(void)
 	if (!currentMenu->numitems)
 		return;
 
-	INT16 topy = getheight(0);
-	INT16 boty = getheight(currentMenu->numitems-1);
+	INT16 topy = getheight(currentMenu, 0);
+	INT16 boty = getheight(currentMenu, currentMenu->numitems-1);
 
 	if (boty - topy > scrollheight)
 	{
-		scrolly = scrolly - getheight(itemOn) + scrollheight/2;
+		scrolly = scrolly - getheight(currentMenu, itemOn) + scrollheight/2;
 		if (scrolly > currentMenu->y - topy)
 			scrolly = currentMenu->y - topy;
 		else if (scrolly < currentMenu->y - boty + scrollheight)
@@ -2657,7 +2602,7 @@ void M_DrawGenericMenu(void)
 	// levelselect no longer needs a special drawer!
 	for (i = 0; i < currentMenu->numitems; i++)
 		if (currentMenu->menuitems[i].cvar == &cv_nextmap)
-			M_DrawLevelSelectOnly(menustack[0] == MN_SP_TIMEATTACK, false);
+			M_DrawLevelSelectOnly(scrolly + getheight(currentMenu, i), i == itemOn, menustack[0] == MN_SP_TIMEATTACK, false);
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
@@ -2705,7 +2650,7 @@ void M_DrawGenericMenu(void)
 			}
 		}
 
-		w = M_DrawMenuItem(item, dx, dy, MENUCAPS, i == itemOn);
+		w = M_DrawMenuItem(item, dx, dy, MENUCAPS, item->status & IT_INTERACT && i == itemOn);
 
 		if (i == itemOn)
 		{
@@ -4657,6 +4602,12 @@ INT32 MR_Options(INT32 choice)
 
 	M_SetItemDisabled(MN_OP_MAIN, "CUSTOM", !menudefs[MN_OP_CUSTOM].numitems);
 
+#ifdef HAVE_DISCORDRPC
+	M_SetItemVisible(MN_OP_DATA, "DISCORD", true);
+#else
+	M_SetItemVisible(MN_OP_DATA, "DISCORD", false);
+#endif
+
 	return true;
 }
 
@@ -5656,7 +5607,7 @@ void M_DrawTimeAttackMenu(void)
 	for (i = 0; i < menu->numitems; i++)
 	{
 		x = menu->x + menu->menuitems[i].x;
-		y = menu->y + menu->menuitems[i].y;
+		y = menu->y + getheight(menu, i);
 		if (y < 128)
 			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MENUCAPS, false);
 	}
@@ -6436,18 +6387,18 @@ INT32 MR_StartServer(INT32 choice)
 	return true;
 }
 
-static void M_DrawLevelSelectOnly(boolean leftfade, boolean rightfade)
+static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, boolean rightfade)
 {
 	patch_t *PictureOfLevel;
-	INT32 x, y, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
+	INT32 x, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
 	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel)/4;
 
 	w = FixedMul(SHORT(PictureOfLevel->width), scale);
 	i = FixedMul(SHORT(PictureOfLevel->height), scale);
 	x = BASEVIDWIDTH/2 - w/2;
-	y = currentMenu->y + 130 + 8 - i;
+	y = y + 60 - i;
 
-	if (currentMenu->menuitems[itemOn].cvar == &cv_nextmap && skullAnimCounter < 4)
+	if (selected && skullAnimCounter < 4)
 		trans = 0;
 	else
 		trans = G_GetGametypeColor(cv_newgametype.value);
@@ -8485,9 +8436,6 @@ void M_DrawDiscordRequests(void)
 	patch_t *hand = NULL;
 	boolean removeRequest = false;
 
-	const char *wantText = "...would like to join!";
-	const char *controlText = "\x82" "ENTER" "\x80" " - Accept    " "\x82" "ESC" "\x80" " - Decline";
-
 	INT32 x = 100;
 	INT32 y = 133;
 
@@ -8530,11 +8478,7 @@ void M_DrawDiscordRequests(void)
 	M_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(M_GetDiscordName(curRequest), V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, false);
 	V_DrawThinString(x + (slide * 32), y, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_YELLOWMAP, M_GetDiscordName(curRequest));
 
-	M_DrawSticker(x, y + 12, V_ThinStringWidth(wantText, V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, true);
-	V_DrawThinString(x, y + 10, V_ALLOWLOWERCASE|V_6WIDTHSPACE, wantText);
-
-	M_DrawSticker(x, y + 26, V_ThinStringWidth(controlText, V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, true);
-	V_DrawThinString(x, y + 24, V_ALLOWLOWERCASE|V_6WIDTHSPACE, controlText);
+	M_DrawGenericMenu();
 
 	y -= 18;
 

@@ -1971,6 +1971,10 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		{
 			status |= IT_TEMPORARY;
 		}
+		else if (fastcmp(word, "STICKER"))
+		{
+			status |= IT_STICKER;
+		}
 		else if (fastcmp(word, "ARGUMENT"))
 		{
 			menuitem->argument = get_number(word2);

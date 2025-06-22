@@ -407,15 +407,6 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				readfollower(f);
 				continue;
 			}
-			// sigh... menu hack
-			else if (fastcmp(word, "DISCORDONLY"))
-			{
-#ifdef HAVE_DISCORDRPC
-				continue;
-#else
-				break;
-#endif
-			}
 
 			word2 = strtok(NULL, " ");
 			if (word2) {

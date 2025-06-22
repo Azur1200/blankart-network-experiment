@@ -760,7 +760,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
-	{ "DRAWPAUSEMENU", &M_DrawPauseMenu },
 	{ "DRAWCHECKLIST", &M_DrawChecklist },
 	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
 	{ "DRAWREPLAYHUT", &M_DrawReplayHut },

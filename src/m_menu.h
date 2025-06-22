@@ -138,24 +138,29 @@ typedef enum
 	IT_CENTER    = 1<<10, // center the text/patch
 	IT_RIGHT     = 1<<11, // right-align the text/patch
 	IT_SMALL     = 1<<12, // draw at half scale
+	IT_STICKER   = 1<<13, // draw a sticker behind the text
 
-	ITH_NONE      = 0<<13, // no highlight
-	ITH_HIGHLIGHT = 1<<13, // add highlightflags to text/patch
-	ITH_RECOMMEND = 2<<13, // add recommendedflags to text/patch
-	ITH_WARNING   = 3<<13, // add warningflags to text/patch
-	ITH_MASK      = 0x3<<13,
+#define sh 14
+	ITH_NONE      = 0<<sh, // no highlight
+	ITH_HIGHLIGHT = 1<<sh, // add highlightflags to text/patch
+	ITH_RECOMMEND = 2<<sh, // add recommendedflags to text/patch
+	ITH_WARNING   = 3<<sh, // add warningflags to text/patch
+	ITH_MASK      = 0x3<<sh,
+#undef sh
 
-	ITF_STANDARD  = 0<<15, // standard font
-	ITF_HEADER    = 1<<15, // standard font, with an offset to the left
-	ITF_THIN      = 2<<15, // thin font
-	ITF_THIN2     = 3<<15, // thin font with tighter spacing
-	ITF_FILL      = 4<<15, // call drawfill using parameters in item->patch
-	ITF_PATCH     = 5<<15, // display a patch instead of text
-	ITF_THUMBNAIL = 6<<15, // display the thumbnail of the mapname in item->patch
+#define sh 16
+	ITF_STANDARD  = 0<<sh, // standard font
+	ITF_HEADER    = 1<<sh, // standard font, with an offset to the left
+	ITF_THIN      = 2<<sh, // thin font
+	ITF_THIN2     = 3<<sh, // thin font with tighter spacing
+	ITF_FILL      = 4<<sh, // call drawfill using parameters in item->patch
+	ITF_PATCH     = 5<<sh, // display a patch instead of text
+	ITF_THUMBNAIL = 6<<sh, // display the thumbnail of the mapname in item->patch
 	ITF_IMAGETYPE = ITF_PATCH,
-	ITF_MASK      = 0x7<<15,
+	ITF_MASK      = 0x7<<sh,
+#undef sh
 
-	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|ITH_MASK|ITF_MASK,
+	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|/*IT_STICKER|*/ITH_MASK|ITF_MASK,
 } menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
@@ -321,7 +326,6 @@ INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
 void M_DrawGenericMenu(void);
-void M_DrawPauseMenu(void);
 void M_DrawChecklist(void);
 void M_DrawLevelStats(void);
 void M_DrawReplayHut(void);
