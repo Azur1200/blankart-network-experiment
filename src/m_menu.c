@@ -153,7 +153,7 @@ typedef enum
 levellist_mode_t levellistmode = LLM_CREATESERVER;
 UINT8 maplistoption = 0;
 
-static char joystickInfo[MAXGAMEPADS][29];
+static char joystickInfo[MAXGAMEPADS+1][29];
 
 INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 
@@ -2806,8 +2806,6 @@ static void M_PrepareLevelSelect(void)
 //
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 {
-	UINT32 tolflag = G_TOLFlag(gt);
-
 	// Random map!
 	if (mapnum == -1)
 		return (levellistmode == LLM_CREATESERVER);
@@ -2835,7 +2833,7 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 				return false; // not unlocked
 
 			// Check for TOL
-			if (!(mapheaderinfo[mapnum]->typeoflevel & tolflag))
+			if (gt >= 0 && !(mapheaderinfo[mapnum]->typeoflevel & G_TOLFlag(gt)))
 				return false;
 
 			return true;
@@ -4433,7 +4431,7 @@ INT32 MR_PlaybackAdjustView(INT32 choice)
 	                 M_IsItemOn(MN_PLAYBACK, "VIEW3") ? 3 :
 	                 M_IsItemOn(MN_PLAYBACK, "VIEW4") ? 4 : -1;
 
-	if (splitnum < 1 && splitnum > 4)
+	if (splitnum < 1 || splitnum > 4)
 		return false;
 
 	G_AdjustView(splitnum, (choice > 0) ? 1 : -1, true);

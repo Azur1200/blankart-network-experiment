@@ -1547,7 +1547,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		numsectors = 0;
 	}
 
-	while (M_TokenizerGetEndPos() < size)
+	for (; tkn && M_TokenizerGetEndPos() < size; tkn = M_TokenizerRead(0))
 	{
 		// Avoid anything inside bracketed stuff, only look for external keywords.
 		if (brackets)
@@ -1572,10 +1572,6 @@ static boolean TextmapCount(size_t size, boolean patch)
 			TextmapStorePos(&sectorBlocks, &numsectors);
 		else
 			CONS_Alert(CONS_NOTICE, "Unknown field '%s'.\n", tkn);
-
-		tkn = M_TokenizerRead(0);
-		if (!tkn)
-			break;
 	}
 
 	if (brackets)
