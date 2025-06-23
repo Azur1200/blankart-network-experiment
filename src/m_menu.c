@@ -1924,12 +1924,8 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 	}
 
 	if (menustack[0] == MN_NONE)
-	{
-		// whoops, M_ClearMenus got called, our stack is gone!
-		// no big deal, just put our menunum back...
-		CONS_Alert(CONS_WARNING, "Enter routine cleared the menu stack!\n");
-		menustack[0] = menunum;
-	}
+		menustack[0] = menunum; // M_ClearMenus got called, put it back on the stack
+
 	M_SetupNextMenu(menunum, callexit);
 }
 
