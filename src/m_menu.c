@@ -2269,6 +2269,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			if (currentMenu->scrollheight && y + 12 > currentMenu->y + currentMenu->scrollheight)
 				return;
 
+			// see M_ItemExtraOffset
 			boolean side = cv == &cv_dummyname || cv == &cv_playername[0];
 			INT32 xofs = side ? 32 : 0;
 			INT32 yofs = side ? -8 : 4;
@@ -2543,9 +2544,17 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	return width;
 }
 
+// returns 16 if this item draws a cvar string input. yep, that's it!
+static INT16 M_ItemExtraOffset(menuitem_t *item)
+{
+	// see M_DrawRightString
+	boolean side = item->cvar == &cv_dummyname || item->cvar == &cv_playername[0];
+	return item->cvar && !item->cvar->PossibleValue && !side ? 16 : 0;
+}
+
 // gets the absolute Y coordinate where this menuitem should be drawn
 // TODO: merge this with the actual drawing loop somehow
-static INT16 getheight(menu_t *menu, INT16 index)
+static INT16 M_GetItemAbsY(menu_t *menu, INT16 index)
 {
 	INT16 i, y = 0;
 	for (i = 0; i < menu->numitems; i++)
@@ -2566,7 +2575,7 @@ static INT16 getheight(menu_t *menu, INT16 index)
 		if (i >= index)
 			break;
 
-		y += menu->lineheight;
+		y += menu->lineheight + M_ItemExtraOffset(item);
 	}
 
 	return y;
@@ -2581,12 +2590,12 @@ void M_DrawGenericMenu(void)
 	if (!currentMenu->numitems)
 		return;
 
-	INT16 topy = getheight(currentMenu, 0);
-	INT16 boty = getheight(currentMenu, currentMenu->numitems-1);
+	INT16 topy = M_GetItemAbsY(currentMenu, 0);
+	INT16 boty = M_GetItemAbsY(currentMenu, currentMenu->numitems-1);
 
 	if (boty - topy > scrollheight)
 	{
-		scrolly = scrolly - getheight(currentMenu, itemOn) + scrollheight/2;
+		scrolly = scrolly - M_GetItemAbsY(currentMenu, itemOn) + scrollheight/2;
 		if (scrolly > currentMenu->y - topy)
 			scrolly = currentMenu->y - topy;
 		else if (scrolly < currentMenu->y - boty + scrollheight)
@@ -2602,7 +2611,7 @@ void M_DrawGenericMenu(void)
 	// levelselect no longer needs a special drawer!
 	for (i = 0; i < currentMenu->numitems; i++)
 		if (currentMenu->menuitems[i].cvar == &cv_nextmap)
-			M_DrawLevelSelectOnly(scrolly + getheight(currentMenu, i), i == itemOn, menustack[0] == MN_SP_TIMEATTACK, false);
+			M_DrawLevelSelectOnly(scrolly + M_GetItemAbsY(currentMenu, i), i == itemOn, menustack[0] == MN_SP_TIMEATTACK, false);
 
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
@@ -2614,7 +2623,7 @@ void M_DrawGenericMenu(void)
 
 		if (item->status & IT_OVERLAY)
 		{
-			// draw at absolute coordinates; no clipping needed
+			// draw at screen coordinates; no clipping needed
 			dx = item->x;
 			dy = item->y;
 		}
@@ -2660,7 +2669,7 @@ void M_DrawGenericMenu(void)
 
 	nodraw:
 		if (!(item->status & IT_OVERLAY))
-			y += currentMenu->lineheight;
+			y += currentMenu->lineheight + M_ItemExtraOffset(item);
 	}
 
 	// DRAW THE SKULL CURSOR
@@ -5610,7 +5619,7 @@ void M_DrawTimeAttackMenu(void)
 	for (i = 0; i < menu->numitems; i++)
 	{
 		x = menu->x + menu->menuitems[i].x;
-		y = menu->y + getheight(menu, i);
+		y = menu->y + M_GetItemAbsY(menu, i);
 		if (y < 128)
 			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MENUCAPS, false);
 	}

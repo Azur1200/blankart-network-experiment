@@ -133,7 +133,7 @@ typedef enum
 	IT_OFSX      = 1<<6, // X coordinate is relative to current position
 	IT_OFSY      = 1<<7, // ditto
 	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
-	IT_OVERLAY   = 1<<9, // item is drawn at absolute coordinates, without scrolling
+	IT_OVERLAY   = 1<<9, // item is drawn at screen coordinates, without scrolling
 
 	IT_CENTER    = 1<<10, // center the text/patch
 	IT_RIGHT     = 1<<11, // right-align the text/patch
