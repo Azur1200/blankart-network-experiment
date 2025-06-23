@@ -7983,6 +7983,9 @@ INT32 MR_EnterViewServer(INT32 choice)
 		case KARTSPEED_HARD:
 			speedstring = "Hard";
 			break;
+		case KARTSPEED_EXPERT:
+			speedstring = "Expert";
+			break;
 	}
 
 	const char *mapname = G_BuildMapName(G_LevelTitleToMapNum(serverlist[joinnode].info.maptitle)+1);
