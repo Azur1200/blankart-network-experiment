@@ -2582,7 +2582,7 @@ static INT16 M_GetItemAbsY(menu_t *menu, INT16 index)
 	return y;
 }
 
-void M_DrawGenericMenu(void)
+void MD_DrawGenericMenu(void)
 {
 	INT16 scrollx = currentMenu->x, scrolly = currentMenu->y;
 	INT16 scrollheight = currentMenu->scrollheight;
@@ -3062,7 +3062,7 @@ static void M_DrawMessageMenu(void)
 // Draw an Image Def.  Aka, Help images.
 // Defines what image is used in (menuitem_t)->text.
 // You can even put multiple images in one menu!
-void M_DrawImageDef(void)
+void MD_DrawImageDef(void)
 {
 	for (INT16 i = 0; i < currentMenu->numitems; i++)
 	{
@@ -3072,7 +3072,7 @@ void M_DrawImageDef(void)
 			currentMenu->menuitems[i].status |= IT_HIDDEN;
 	}
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	if (!currentMenu->menuitems[itemOn].argument)
 	{
@@ -3341,7 +3341,7 @@ static boolean M_AddonsRefresh(void)
 	return false;
 }
 
-void M_DrawAddons(void)
+void MD_DrawAddons(void)
 {
 	INT32 x, y;
 	ssize_t i, m;
@@ -3963,7 +3963,7 @@ static void DrawReplayHutReplayInfo(void)
 	}
 }
 
-void M_DrawReplayHut(void)
+void MD_DrawReplayHut(void)
 {
 	INT32 x, y, cursory = 0;
 	INT16 i;
@@ -4066,12 +4066,12 @@ void M_DrawReplayHut(void)
 	DrawReplayHutReplayInfo();
 }
 
-void M_DrawReplayStartMenu(void)
+void MD_DrawReplayStartMenu(void)
 {
 	const char *warning;
 	UINT8 i;
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 #define STARTY 62-(replayScrollTitle>>1)
 	// Draw rankings beyond first
@@ -4205,7 +4205,7 @@ void M_SetPlaybackMenuPointer(void)
 	M_SetItemOn(MN_PLAYBACK, "PAUSE");
 }
 
-void M_DrawPlaybackMenu(void)
+void MD_DrawPlaybackMenu(void)
 {
 	INT16 i;
 	patch_t *icon;
@@ -4709,7 +4709,7 @@ static char *M_GetConditionString(condition_t cond)
 }
 
 #define NUMCHECKLIST 23
-void M_DrawChecklist(void)
+void MD_DrawChecklist(void)
 {
 	UINT32 i, line = 0, c;
 	INT32 lastid;
@@ -4803,7 +4803,7 @@ INT32 MR_MusicTest(INT32 choice)
 	return true;
 }
 
-void M_DrawMusicTest(void)
+void MD_DrawMusicTest(void)
 {
 	INT32 x, y, i;
 
@@ -5387,7 +5387,7 @@ static void M_DrawStatsExtra(void)
 #undef DRAWAMOUNTSTAT
 #undef DRAWTIMESTAT
 
-void M_DrawLevelStats(void)
+void MD_DrawLevelStats(void)
 {
 	M_DrawMenuTitle();
 
@@ -5548,7 +5548,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // ===========
 
 // Drawing function for Time Attack
-void M_DrawTimeAttackMenu(void)
+void MD_DrawTimeAttackMenu(void)
 {
 	INT32 i, x, y;
 	SINT8 preset = G_RecordPresetIndex();
@@ -5564,7 +5564,7 @@ void M_DrawTimeAttackMenu(void)
 		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(faceprefix[cv_chooseskin.value][FACE_WANTED]->width), y, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
 	}
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	// Level record list
 	if (cv_nextmap.value)
@@ -6056,7 +6056,7 @@ INT32 MR_Refresh(INT32 choice)
 	return true;
 }
 
-void M_DrawConnectMenu(void)
+void MD_DrawConnectMenu(void)
 {
 	UINT16 i;
 	//const char *gt = "Unknown";
@@ -6121,7 +6121,7 @@ void M_DrawConnectMenu(void)
 		conmenu->menuitems[i+firstserverline].status &= ~IT_HIDDEN;
 	}
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	waiting = M_GetWaitingMode();
 
@@ -6524,13 +6524,13 @@ INT32 MR_StartServerMenu(INT32 choice)
 
 // Draw the funky Connect IP menu. Tails 11-19-2002
 // So much work for such a little thing!
-void M_DrawMPMainMenu(void)
+void MD_DrawMPMainMenu(void)
 {
 	INT32 x = currentMenu->x;
 	INT32 y = currentMenu->y;
 
 	// use generic drawer for cursor, items and title
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	// character bar, ripped off the color bar :V
 	{
@@ -6632,7 +6632,7 @@ static state_t *follower_state;
 // for either player 1 or 2
 static UINT8 setupplayer;
 
-void M_DrawSetupMultiPlayerMenu(void)
+void MD_DrawSetupMultiPlayerMenu(void)
 {
 	INT32 mx, my, st, flags = 0;
 	spritedef_t *sprdef;
@@ -6649,7 +6649,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 	my = menudefs[MN_MP_PLAYERSETUP].y;
 
 	// use generic drawer for cursor, items and title
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	// SRB2Kart: draw the stat backer
 	// bg, text, arrows handled by generic drawer
@@ -7171,12 +7171,12 @@ INT32 MR_ScreenshotOptions(INT32 choice)
 // Start the controls menu, setting it up for either the console player,
 // or the secondary splitscreen player
 
-void M_DrawJoystick(void)
+void MD_DrawJoystick(void)
 {
 	INT32 i;
 	INT32 compareval;
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	for (i = 0; i <= MAXGAMEPADS; i++)
 	{
@@ -7553,7 +7553,7 @@ INT32 MR_VideoModeMenu(INT32 choice)
 }
 
 // Draw the video modes list, a-la-Quake
-void M_DrawVideoMode(void)
+void MD_DrawVideoMode(void)
 {
 	INT32 i, j, row, col;
 
@@ -7710,7 +7710,7 @@ INT32 MR_CameraSetup(INT32 arg)
 
 static tic_t shitsfree = 0;
 
-void M_DrawMonitorToggles(void)
+void MD_DrawMonitorToggles(void)
 {
 	const INT32 edges = 4;
 	const INT32 height = 4;
@@ -8083,9 +8083,9 @@ INT32 MR_HandleViewServer(INT32 choice)
 	return false;
 }
 
-void M_DrawViewServer(void)
+void MD_DrawViewServer(void)
 {
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	if (!viewserver_showaddons)
 	{
@@ -8446,7 +8446,7 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
 }
 
-void M_DrawDiscordRequests(void)
+void MD_DrawDiscordRequests(void)
 {
 	discordRequest_t *curRequest = discordRequestList;
 	UINT8 *colormap;
@@ -8495,7 +8495,7 @@ void M_DrawDiscordRequests(void)
 	M_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(M_GetDiscordName(curRequest), V_ALLOWLOWERCASE|V_6WIDTHSPACE), 0, false);
 	V_DrawThinString(x + (slide * 32), y, V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_YELLOWMAP, M_GetDiscordName(curRequest));
 
-	M_DrawGenericMenu();
+	MD_DrawGenericMenu();
 
 	y -= 18;
 

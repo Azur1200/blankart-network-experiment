@@ -222,7 +222,7 @@ void P_ResetData(INT32 flags)
 		memset(menudefs, 0, sizeof(menudefs));
 		M_InitMenuPresTables();
 		for (i = 0; i < MAXMENUTYPES; i++)
-			menudefs[i].drawroutine = M_DrawGenericMenu;
+			menudefs[i].drawroutine = MD_DrawGenericMenu;
 
 		nummenutypes = MN_FIRSTFREESLOT;
 

@@ -759,25 +759,25 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 };
 
 struct menu_drawer_s const MENU_DRAWERS[] = {
-	{ "DRAWGENERICMENU", &M_DrawGenericMenu },
-	{ "DRAWCHECKLIST", &M_DrawChecklist },
-	{ "DRAWLEVELSTATS", &M_DrawLevelStats },
-	{ "DRAWREPLAYHUT", &M_DrawReplayHut },
-	{ "DRAWTIMEATTACKMENU", &M_DrawTimeAttackMenu },
-	{ "DRAWMPMAINMENU", &M_DrawMPMainMenu },
-	{ "DRAWSETUPMULTIPLAYERMENU", &M_DrawSetupMultiPlayerMenu },
-	{ "DRAWVIDEOMODE", &M_DrawVideoMode },
-	{ "DRAWADDONS", &M_DrawAddons },
-	{ "DRAWREPLAYSTARTMENU", &M_DrawReplayStartMenu },
-	{ "DRAWPLAYBACKMENU", &M_DrawPlaybackMenu },
-	{ "DRAWIMAGEDEF", &M_DrawImageDef },
-	{ "DRAWMUSICTEST", &M_DrawMusicTest },
-	{ "DRAWJOYSTICK", &M_DrawJoystick },
-	{ "DRAWMONITORTOGGLES", &M_DrawMonitorToggles },
-	{ "DRAWCONNECTMENU", &M_DrawConnectMenu },
-	{ "DRAWVIEWSERVER", &M_DrawViewServer },
+	{ "DRAWGENERICMENU", &MD_DrawGenericMenu },
+	{ "DRAWCHECKLIST", &MD_DrawChecklist },
+	{ "DRAWLEVELSTATS", &MD_DrawLevelStats },
+	{ "DRAWREPLAYHUT", &MD_DrawReplayHut },
+	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
+	{ "DRAWMPMAINMENU", &MD_DrawMPMainMenu },
+	{ "DRAWSETUPMULTIPLAYERMENU", &MD_DrawSetupMultiPlayerMenu },
+	{ "DRAWVIDEOMODE", &MD_DrawVideoMode },
+	{ "DRAWADDONS", &MD_DrawAddons },
+	{ "DRAWREPLAYSTARTMENU", &MD_DrawReplayStartMenu },
+	{ "DRAWPLAYBACKMENU", &MD_DrawPlaybackMenu },
+	{ "DRAWIMAGEDEF", &MD_DrawImageDef },
+	{ "DRAWMUSICTEST", &MD_DrawMusicTest },
+	{ "DRAWJOYSTICK", &MD_DrawJoystick },
+	{ "DRAWMONITORTOGGLES", &MD_DrawMonitorToggles },
+	{ "DRAWCONNECTMENU", &MD_DrawConnectMenu },
+	{ "DRAWVIEWSERVER", &MD_DrawViewServer },
 #ifdef HAVE_DISCORDRPC
-	{ "DRAWDISCORDREQUESTS", &M_DrawDiscordRequests },
+	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
 	{ NULL, NULL }
 };

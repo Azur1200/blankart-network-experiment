@@ -326,25 +326,25 @@ INT32 MR_CameraSetup(INT32 arg);
 INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
-void M_DrawGenericMenu(void);
-void M_DrawChecklist(void);
-void M_DrawLevelStats(void);
-void M_DrawReplayHut(void);
-void M_DrawTimeAttackMenu(void);
-void M_DrawMPMainMenu(void);
-void M_DrawSetupMultiPlayerMenu(void);
-void M_DrawConnectMenu(void);
-void M_DrawVideoMode(void);
-void M_DrawAddons(void);
-void M_DrawReplayStartMenu(void);
-void M_DrawPlaybackMenu(void);
-void M_DrawImageDef(void);
-void M_DrawMusicTest(void);
-void M_DrawJoystick(void);
-void M_DrawMonitorToggles(void);
-void M_DrawViewServer(void);
+void MD_DrawGenericMenu(void);
+void MD_DrawChecklist(void);
+void MD_DrawLevelStats(void);
+void MD_DrawReplayHut(void);
+void MD_DrawTimeAttackMenu(void);
+void MD_DrawMPMainMenu(void);
+void MD_DrawSetupMultiPlayerMenu(void);
+void MD_DrawConnectMenu(void);
+void MD_DrawVideoMode(void);
+void MD_DrawAddons(void);
+void MD_DrawReplayStartMenu(void);
+void MD_DrawPlaybackMenu(void);
+void MD_DrawImageDef(void);
+void MD_DrawMusicTest(void);
+void MD_DrawJoystick(void);
+void MD_DrawMonitorToggles(void);
+void MD_DrawViewServer(void);
 #ifdef HAVE_DISCORDRPC
-void M_DrawDiscordRequests(void);
+void MD_DrawDiscordRequests(void);
 #endif
 
 // Maybe this goes here????? Who knows.
