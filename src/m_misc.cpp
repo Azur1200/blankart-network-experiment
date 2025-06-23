@@ -2193,14 +2193,14 @@ const char *M_TokenizerRead(UINT32 i)
 	M_DetectComment(&tokenizerStartPos);
 
 	// Find the first non-whitespace char, or else the end of the string trying
-	while ((tokenizerInput[tokenizerStartPos] == ' '
+	while (tokenizerStartPos < tokenizerInputLength
+			&& (tokenizerInput[tokenizerStartPos] == ' '
 			|| tokenizerInput[tokenizerStartPos] == '\t'
 			|| tokenizerInput[tokenizerStartPos] == '\r'
 			|| tokenizerInput[tokenizerStartPos] == '\n'
 			|| tokenizerInput[tokenizerStartPos] == '\0'
 			|| tokenizerInput[tokenizerStartPos] == '=' || tokenizerInput[tokenizerStartPos] == ';' // UDMF TEXTMAP.
-			|| tokenizerInComment != 0)
-			&& tokenizerStartPos < tokenizerInputLength)
+			|| tokenizerInComment != 0))
 	{
 		// Try to detect comment endings now
 		if (tokenizerInComment == 1	&& tokenizerInput[tokenizerStartPos] == '\n')

@@ -592,14 +592,14 @@ static void G_UpdateRecordReplays(void)
 	parts = M_PathParts(gpath);
 	M_MkdirEachUntil(gpath, parts - 4, parts - 1, 0755);
 
-	snprintf(lastdemo, 255, "%s-%s-%s-last.lmp", gpath, cv_chooseskin.string, gamemode);
+	snprintf(lastdemo, 255, "%s-%s-%s-last.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		snprintf(bestdemo, 255, "%s-%s-%s-time-best.lmp", gpath, cv_chooseskin.string, gamemode);
+		snprintf(bestdemo, 255, "%s-%s-%s-time-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -610,7 +610,7 @@ static void G_UpdateRecordReplays(void)
 
 		if (modeattacking == ATTACKING_TIME)
 		{
-			snprintf(bestdemo, 255, "%s-%s-%s-lap-best.lmp", gpath, cv_chooseskin.string, gamemode);
+			snprintf(bestdemo, 255, "%s-%s-%s-lap-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode);
 			if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 			{ // Better lap time, save this demo.
 				if (FIL_FileExists(bestdemo))
@@ -702,7 +702,7 @@ void G_SetGameModified(boolean silent, boolean major)
 
 	// If in record attack recording, cancel it.
 	if (modeattacking)
-		M_ModeAttackEndGame(0);
+		MR_ModeAttackEndGame(0);
 	else if (marathonmode)
 		Command_ExitGame_f();
 }
@@ -766,6 +766,47 @@ INT32 G_MapNumber(const char * name)
 	//if (strcasecmp("TITLE", name) == 0)
 		return NEXTMAP_TITLE;
 #endif
+}
+
+/** Returns the map number from level title.
+  *
+  * \param name Map name;
+  * \return Map number.
+  * \sa G_BuildMapName, nextmapspecial_t
+  */
+INT32 G_LevelTitleToMapNum(const char * leveltitle)
+{
+	INT32 map;
+	char levelname[48];
+
+	for (map = 0; map < nummapheaders; ++map)
+	{
+		sprintf(levelname, "%s", mapheaderinfo[map]->lvlttl);
+		if (!strcasecmp(leveltitle, levelname))
+		{
+			return map;
+		}
+
+		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->actnum);
+		if (!strcasecmp(leveltitle, levelname))
+		{
+			return map;
+		}
+
+		sprintf(levelname, "%s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl);
+		if (!strcasecmp(leveltitle, levelname))
+		{
+			return map;
+		}
+
+		sprintf(levelname, "%s %s %s", mapheaderinfo[map]->lvlttl, mapheaderinfo[map]->zonttl, mapheaderinfo[map]->actnum);
+		if (!strcasecmp(leveltitle, levelname))
+		{
+			return map;
+		}
+
+	}
+	return INT32_MIN;
 }
 
 // convert kart map number to native map number
@@ -2237,6 +2278,7 @@ void G_Ticker(boolean run)
 			if (titlemapinaction)
 				P_Ticker(run);
 
+			F_MenuPresTicker(run);
 			F_TitleScreenTicker(run);
 			break;
 
@@ -4282,7 +4324,7 @@ void G_AfterIntermission(void)
 		G_StopDemo();
 
 		if (demo.inreplayhut)
-			M_ReplayHut(0);
+			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 		else
 			D_StartTitle();
 
@@ -4293,7 +4335,7 @@ void G_AfterIntermission(void)
 
 	if (modeattacking) // End the run.
 	{
-		M_ModeAttackEndGame(0);
+		MR_ModeAttackEndGame(0);
 		return;
 	}
 

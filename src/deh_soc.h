@@ -57,8 +57,8 @@ spritenum_t get_sprite(const char *word);
 playersprite_t get_sprite2(const char *word);
 sfxenum_t get_sfx(const char *word);
 menutype_t get_menutype(const char *word);
-void (*get_menuroutine(const char *word))(INT32);
-void (*get_menudrawer(const char *word))(void);
+menufunc_f *get_menuroutine(const char *word);
+menudrawer_f *get_menudrawer(const char *word);
 //INT16 get_gametype(const char *word);
 //powertype_t get_power(const char *word);
 skincolornum_t get_skincolor(const char *word);
@@ -84,7 +84,6 @@ void readlight(MYFILE *f, INT32 num);
 void readskincolor(MYFILE *f, INT32 num, boolean mainfile);
 void readthing(MYFILE *f, INT32 num);
 void readfreeslots(MYFILE *f);
-void readPlayer(MYFILE *f, INT32 num);
 void clear_levels(void);
 void clear_conditionsets(void);
 

@@ -1105,7 +1105,7 @@ void I_GetEvent(void)
 
 					// update the menu
 					if (menustack[0] == MN_OP_JOYSTICKSET)
-						M_SetupJoystickMenu(0);
+						MR_SetupJoystickMenu(0);
 
 					for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 					{
@@ -1165,7 +1165,7 @@ void I_GetEvent(void)
 
 				// update the menu
 				if (menustack[0] == MN_OP_JOYSTICKSET)
-					M_SetupJoystickMenu(0);
+					MR_SetupJoystickMenu(0);
 				break;
 			case SDL_DROPFILE:
 				dropped_filedir = evt.drop.file;

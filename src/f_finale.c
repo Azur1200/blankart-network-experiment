@@ -919,6 +919,8 @@ static const char *blancredits[] = {
 	"\"Lactozilla\"",
 	"\"xyzzy\"",
 	"\"SuperJustinBros\"",
+	"SRB2Classic Team",
+	"\"luigi budd\"",
 	"",
 	"\1Ring Racers Programming",
 	"Kart Krew Dev",
@@ -1121,9 +1123,14 @@ void F_GameEvaluationTicker(void)
 //  TITLE SCREEN
 // ==============
 
-void F_InitMenuPresValues(void)
+void F_InitMenuPresValues(boolean title)
 {
-	menuanimtimer = 0;
+	if (title)
+	{
+		menuanimtimer = 0;
+		LUA_HUD_DestroyDrawList(luahuddrawlist_title);
+		luahuddrawlist_title = LUA_HUD_CreateDrawList();
+	}
 
 	// Set defaults for presentation values
 	strncpy(curbgname, "TITLESKY", 9);
@@ -1131,7 +1138,7 @@ void F_InitMenuPresValues(void)
 	curbgcolor = -1;
 	curbgxspeed = titlescrollxspeed;
 	curbgyspeed = titlescrollyspeed;
-	curbghide = false;
+	curbghide = true;
 
 	curhidepics = hidetitlepics;
 	curttmode = ttmode;
@@ -1143,12 +1150,9 @@ void F_InitMenuPresValues(void)
 	curtttics = tttics;
 
 	// Find current presentation values
-	//M_SetMenuCurBackground((gamestate == GS_TIMEATTACK) ? "RECATTBG" : "TITLESKY");
-	//M_SetMenuCurFadeValue(16);
-	//M_SetMenuCurTitlePics();
-
-	LUA_HUD_DestroyDrawList(luahuddrawlist_title);
-	luahuddrawlist_title = LUA_HUD_CreateDrawList();
+	M_SetMenuCurBackground();
+	M_SetMenuCurFadeValue();
+	M_SetMenuCurTitlePics();
 }
 
 //
@@ -1277,7 +1281,7 @@ void F_StartTitleScreen(void)
 	{
 		ttuser_count = 0;
 		finalecount = 0;
-		wipetypepost = menupres[MN_MAIN].enterwipe;
+		wipetypepost = menudefs[MN_MAIN].enterwipe;
 	}
 	else
 		wipegamestate = GS_TITLESCREEN;
@@ -1330,8 +1334,8 @@ void F_StartTitleScreen(void)
 		camera[0].height = 0;
 
 		// Run enter linedef exec for MN_MAIN, since this is where we start
-		if (menupres[MN_MAIN].entertag)
-			P_LinedefExecute(menupres[MN_MAIN].entertag, players[displayplayers[0]].mo, NULL);
+		if (menudefs[MN_MAIN].entertag)
+			P_LinedefExecute(menudefs[MN_MAIN].entertag, players[displayplayers[0]].mo, NULL);
 
 		wipegamestate = prevwipegamestate;
 	}
@@ -1481,8 +1485,6 @@ void F_MenuPresTicker(boolean run)
 // (no longer) De-Demo'd Title Screen
 void F_TitleScreenTicker(boolean run)
 {
-	F_MenuPresTicker(true); // title sky
-
 	if (run)
 	{
 		finalecount++;
@@ -1494,10 +1496,7 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			if (menupres[MN_MAIN].musname[0])
-				S_ChangeMusic(menupres[MN_MAIN].musname, menupres[MN_MAIN].mustrack, menupres[MN_MAIN].muslooping);
-			else
-				S_ChangeMusicInternal("titles", looptitle);
+			M_ChangeMenuMusic();
 			S_StartSound(NULL, sfx_s23c);
 		}
 	}

@@ -65,8 +65,8 @@ static boolean CV_Command(void);
 consvar_t *CV_FindVar(const char *name);
 static const char *CV_StringValue(const char *var_name);
 
-static consvar_t *consvar_vars; // list of registered console variables
-static UINT16     consvar_number_of_netids = 0;
+consvar_t *consvar_vars; // list of registered console variables
+UINT16     consvar_number_of_netids = 0;
 
 static char com_token[1024];
 static char *COM_Parse(char *data);
@@ -2141,19 +2141,28 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 	if (!increment)
 		return;
 
-	if (var == &cv_forceskin) // Special handling.
+	if (var == &cv_forceskin || var == &cv_chooseskin) // Special handling.
 	{
 		INT32 oldvalue = var->value;
+		INT32 min = var == &cv_forceskin ? -1 : 0;
 		newvalue = oldvalue;
 		do
 		{
 			newvalue += increment;
-			if (newvalue < -1)
-				newvalue = (numskins - 1);
+			if (newvalue < min)
+				newvalue = numskins-1;
 			else if (newvalue >= numskins)
-				newvalue = -1;
-		} while ((oldvalue != newvalue)
-				&& !(R_SkinUsable(-1, newvalue)));
+				newvalue = min;
+		} while (oldvalue != newvalue && !R_SkinUsable(-1, newvalue));
+	}
+	else if (var == &cv_playercolor[0] || var == &cv_playercolor[1] || var == &cv_playercolor[2] || var == &cv_playercolor[3] || var == &cv_dummycolor)
+	{
+		// Special case for the playercolor variable, used only directly from the menu
+		newvalue = var->value;
+		if (increment > 0) // Going up!
+			newvalue = M_GetColorAfter(newvalue);
+		else if (increment < 0) // Going down!
+			newvalue = M_GetColorBefore(newvalue);
 	}
 	else
 		newvalue = var->value + increment;
@@ -2217,56 +2226,6 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				if (var->PossibleValue[max].value == var->value)
 					currentindice = max;
 
-			// The following options will NOT handle netsyncing.
-			if (var == &cv_chooseskin)
-			{
-				// Special case for the chooseskin variable, used only directly from the menu
-				newvalue = var->value - 1;
-				do
-				{
-					if (increment > 0) // Going up!
-					{
-						newvalue++;
-						if (newvalue == MAXSKINS)
-							newvalue = 0;
-					}
-					else if (increment < 0) // Going down!
-					{
-						newvalue--;
-						if (newvalue == -1)
-							newvalue = MAXSKINS-1;
-					}
-				} while (var->PossibleValue[newvalue].strvalue == NULL);
-
-				var->value = newvalue + 1;
-				var->string = var->PossibleValue[newvalue].strvalue;
-				var->func();
-				return;
-			}
-			else if (var == &cv_playercolor[0] || var == &cv_playercolor[1] || var == &cv_playercolor[2] || var == &cv_playercolor[3])
-			{
-				// Special case for the playercolor variable, used only directly from the menu
-				if (increment > 0) // Going up!
-				{
-					newvalue = var->value + 1;
-					if (newvalue > numskincolors-1)
-						newvalue = 1;
-					var->value = newvalue;
-					var->string = var->PossibleValue[var->value].strvalue;
-					var->func();
-					return;
-				}
-				else if (increment < 0) // Going down!
-				{
-					newvalue = var->value - 1;
-					if (newvalue < 1)
-						newvalue = numskincolors-1;
-					var->value = newvalue;
-					var->string = var->PossibleValue[var->value].strvalue;
-					var->func();
-					return;
-				}
-			}
 			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
 			{
 				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 5 : 3);

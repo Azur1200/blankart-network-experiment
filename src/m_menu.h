@@ -3,7 +3,8 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Copyright (C) 2011-2016 by Matthew "Kaito Sinclaire" Walsh.
-// Copyright (C) 1999-2020 by Sonic Team Junior.
+// Copyright (C) 1999-2025 by Sonic Team Junior.
+// Copyright (C) 2025 by Team BlanKart.
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -51,46 +52,11 @@ typedef enum
 
 extern menutype_t menustack[NUMMENULEVELS];
 
-typedef struct
-{
-	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
-	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
-	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
-	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
-	INT32 titlescrollyspeed; // y scroll
-	boolean bghide; // for titlemaps, hide the background.
-
-	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
-	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
-	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
-	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
-	INT16 ttx; // X position of title wing
-	INT16 tty; // Y position of title wing
-	INT16 ttloop; // # frame to loop; -1 means dont loop
-	UINT16 tttics; // # of tics per frame
-
-	char musname[7]; ///< Music track to play. "" for no music.
-	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
-	boolean muslooping; ///< Loop the music
-	boolean musstop; ///< Don't play any music
-	boolean musignore; ///< Let the current music keep playing
-
-	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
-	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
-	INT32 entertag; // line exec to run on menu enter, if titlemap
-	INT32 exittag; // line exec to run on menu exit, if titlemap
-	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
-	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
-} menupres_t;
-
-extern menupres_t menupres[MAXMENUTYPES];
-
 void M_InitMenuPresTables(void);
-//UINT8 M_GetYoungestChildMenu(void);
-//void M_ChangeMenuMusic(const char *defaultmusname, boolean defaultmuslooping);
-//void M_SetMenuCurBackground(const char *defaultname);
-//void M_SetMenuCurFadeValue(UINT8 defaultvalue);
-//void M_SetMenuCurTitlePics(void);
+void M_ChangeMenuMusic(void);
+void M_SetMenuCurBackground(void);
+void M_SetMenuCurFadeValue(void);
+void M_SetMenuCurTitlePics(void);
 
 // Called by main loop,
 // saves config file and calls I_Quit when user exits.
@@ -111,9 +77,6 @@ void M_Drawer(void);
 // Called by D_SRB2Main, loads the config file.
 void M_Init(void);
 
-// Called by D_SRB2Main also, sets up the playermenu and description tables.
-void M_InitCharacterTables(void);
-
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
 void M_StartControlPanel(void);
@@ -125,7 +88,7 @@ void M_SortServerList(void);
 void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines);
 
 // Used in d_netcmd to restart time attack
-void M_ModeAttackRetry(INT32 choice);
+INT32 MR_ModeAttackRetry(INT32 choice);
 
 // the function to show a message box typing with the string inside
 // string must be static (not in the stack)
@@ -158,236 +121,230 @@ void M_QuitResponse(INT32 ch);
 // Determines whether to show a level in the list (platter version does not need to be exposed)
 boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt);
 
-// flags for items in the menu
-// menu handle (what we do when key is pressed
-#define IT_TYPE             15     // (1+2+4+8)
-#define IT_CALL              0     // call the function
-#define IT_SPACE             1     // no handling
-#define IT_ARROWS            2     // call function with 0 for left arrow and 1 for right arrow in param
-#define IT_KEYHANDLER        4     // call with the key in param
-#define IT_SUBMENU           6     // go to sub menu
-#define IT_CVAR              8     // handle as a cvar
-#define IT_PAIR             11     // no handling, define both sides of text
+typedef enum
+{
+	IT_INTERACT  = 1<<0, // item can be interacted with
+	IT_HIDDEN    = 1<<1, // item is invisible and cannot be interacted with (has priority over IT_INTERACT)
+	IT_GRAYEDOUT = 1<<2, // item is grayed out and non-interactible
+	IT_SECRET    = 1<<3, // item text is displayed with question marks and non-interactible
 
-#define IT_DISPLAY   (48+64+128)    // 16+32+64+128
-#define IT_NOTHING            0     // space
-#define IT_PATCH             16     // a patch or a string with big font
-#define IT_STRING            32     // little string (spaced with 10)
-#define IT_WHITESTRING       48     // little string in white
-#define IT_DYBIGSPACE        64     // same as noting
-#define IT_DYLITLSPACE   (16+64)    // little space
-#define IT_STRING2       (32+64)    // a simple string
-#define IT_GRAYPATCH     (16+32+64) // grayed patch or big font string
-#define IT_BIGSLIDER        128     // volume sound use this
-#define IT_TRANSTEXT     (16+128)   // Transparent text
-#define IT_TRANSTEXT2    (32+128)   // used for control names
-#define IT_HEADERTEXT    (48+128)   // Non-selectable header option, displays in yellow offset to the left a little
-#define IT_QUESTIONMARKS (64+128)   // Displays as question marks, used for secrets
-#define IT_CENTER           256     // if IT_PATCH, center it on screen
+	IT_ARROWS = 1<<4, // call-type items use arrow keys instead of enter
+	IT_SLIDER = 1<<5, // cvar-type items display a slider
 
-//consvar specific
-#define IT_CVARTYPE   (512+1024+2048)
-#define IT_CV_NORMAL         0
-#define IT_CV_SLIDER       512
-#define IT_CV_STRING      1024
-#define IT_CV_NOPRINT     1536
-#define IT_CV_NOMOD       2048
-#define IT_CV_INVISSLIDER 2560
-#define IT_CV_INTEGERSTEP 4096      // if IT_CV_NORMAL and cvar is CV_FLOAT, modify it by 1 instead of 0.0625
-#define IT_CV_FLOATSLIDER 4608      // IT_CV_SLIDER, value modified by 0.0625 instead of 1 (for CV_FLOAT cvars)
+	IT_OFSX      = 1<<6, // X coordinate is relative to current position
+	IT_OFSY      = 1<<7, // ditto
+	IT_TEMPORARY = 1<<8, // with IT_OFS*, offset applies only to this item
+	IT_OVERLAY   = 1<<9, // item is drawn at screen coordinates, without scrolling
 
-//call/submenu specific
-// There used to be a lot more here but ...
-// A lot of them became redundant with the advent of the Pause menu, so they were removed
-#define IT_CALLTYPE   (512+1024)
-#define IT_CALL_NORMAL          0
-#define IT_CALL_NOTMODIFIED   512
+	IT_CENTER    = 1<<10, // center the text/patch
+	IT_RIGHT     = 1<<11, // right-align the text/patch
+	IT_SMALL     = 1<<12, // draw at half scale
+	IT_STICKER   = 1<<13, // draw a sticker behind the text
 
-// in INT16 for some common use
-#define IT_BIGSPACE    (IT_SPACE  +IT_DYBIGSPACE)
-#define IT_LITLSPACE   (IT_SPACE  +IT_DYLITLSPACE)
-#define IT_CONTROL     (IT_STRING2+IT_CALL)
-#define IT_CVARMAX     (IT_CVAR   +IT_CV_NOMOD)
-#define IT_DISABLED    (IT_SPACE  +IT_GRAYPATCH)
-#define IT_GRAYEDOUT   (IT_SPACE  +IT_TRANSTEXT)
-#define IT_GRAYEDOUT2  (IT_SPACE  +IT_TRANSTEXT2)
-#define IT_HEADER      (IT_SPACE  +IT_HEADERTEXT)
-#define IT_SECRET      (IT_SPACE  +IT_QUESTIONMARKS)
+#define sh 14
+	ITH_NONE      = 0<<sh, // no highlight
+	ITH_HIGHLIGHT = 1<<sh, // add highlightflags to text/patch
+	ITH_RECOMMEND = 2<<sh, // add recommendedflags to text/patch
+	ITH_WARNING   = 3<<sh, // add warningflags to text/patch
+	ITH_MASK      = 0x3<<sh,
+#undef sh
+
+#define sh 16
+	ITF_STANDARD  = 0<<sh, // standard font
+	ITF_HEADER    = 1<<sh, // standard font, with an offset to the left
+	ITF_THIN      = 2<<sh, // thin font
+	ITF_THIN2     = 3<<sh, // thin font with tighter spacing
+	ITF_FILL      = 4<<sh, // call drawfill using parameters in item->patch
+	ITF_PATCH     = 5<<sh, // display a patch instead of text
+	ITF_THUMBNAIL = 6<<sh, // display the thumbnail of the mapname in item->patch
+	ITF_IMAGETYPE = ITF_PATCH,
+	ITF_MASK      = 0x7<<sh,
+#undef sh
+
+	IT_STYLE     = IT_CENTER|IT_RIGHT|IT_SMALL|IT_STICKER|ITH_MASK|ITF_MASK,
+} menuitemflags_t;
 
 #define MAXSTRINGLENGTH 32
 
-#define ITEMNAMELEN 6
-#define ITEMNAMEFMT "%.6s"
-
-typedef union
-{
-	menutype_t submenu;      // IT_SUBMENU
-	consvar_t *cvar;             // IT_CVAR
-	void (*routine)(INT32 choice); // IT_CALL, IT_KEYHANDLER, IT_ARROWS
-} itemaction_t;
+typedef INT32 (menufunc_f)(INT32);
+typedef void  (menudrawer_f)(void);
 
 //
 // MENU TYPEDEFS
 //
 struct menuitem_t
 {
-	char itemname[ITEMNAMELEN];
+	dehinfo_t info;
 
-	// show IT_xxx
-	UINT16 status;
+	char *text;    // left-side string
+	char *patch;   // name of patch lump to draw, OR right-side string
+	char *tooltip; // help text displayed at bottom
 
-	const char *patch;
-	const char *text; // used when FONTBxx lump is found
+	consvar_t *cvar;     // console variable to modify
+	menufunc_f *routine; // menu routine to call
+	menutype_t submenu;  // navigate to another menu
 
-	itemaction_t itemaction;
+	menuitemflags_t status; // show IT_xxx
 
-	// hotkey in menu or y of the item
-	UINT16 alphaKey;
+	INT32 argument; // passed to routine/submenu, OR step size for cvars
+	INT16 x, y;     // coordinates, see menuitemflags
 };
 
 struct menu_t
 {
 	dehinfo_t      info;
-	const char    *headerpic;
+	char          *headerpic;
 	INT16          numitems;           // # of menu items
 	menuitem_t    *menuitems;          // menu items
-	void         (*drawroutine)(void); // draw routine
+	menudrawer_f  *drawroutine;        // draw routine
 	INT16          x, y;               // x, y of menu
+	INT16          scrollheight;       // height of scrolling area
 	INT16          lastOn;             // last item user was on in menu
-	void         (*quitroutine)(INT32 choice); // called before quit a menu
+	INT16          cursoroffset;       // X offset of cursor
+	INT16          lineheight;         // default Y offset to add for each item
+	menufunc_f    *enterroutine;       // called before enter a menu
+	menufunc_f    *quitroutine;        // called before quit a menu
+	menufunc_f    *keyhandler;         // called before key press is processed
+
+	// MENUPRES STUFF BELOW
+
+	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
+	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
+	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
+	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
+	INT32 titlescrollyspeed; // y scroll
+	boolean bghide; // for titlemaps, hide the background.
+
+	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
+	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
+	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
+	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
+	INT16 ttx; // X position of title wing
+	INT16 tty; // Y position of title wing
+	INT16 ttloop; // # frame to loop; -1 means dont loop
+	UINT16 tttics; // # of tics per frame
+
+	char musname[7]; ///< Music track to play. "" for no music.
+	UINT16 mustrack; ///< Subsong to play. Only really relevant for music modules and specific formats supported by GME. 0 to ignore.
+	boolean muslooping; ///< Loop the music
+	boolean musstop; ///< Don't play any music
+	boolean musignore; ///< Let the current music keep playing
+
+	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
+	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
+	INT32 entertag; // line exec to run on menu enter, if titlemap
+	INT32 exittag; // line exec to run on menu exit, if titlemap
+	INT16 enterwipe; // wipe type to run on menu enter, -1 means default
+	INT16 exitwipe; // wipe type to run on menu exit, -1 means default
 };
 
 extern menu_t menudefs[MAXMENUTYPES];
 extern UINT16 nummenutypes;
 
-void M_EnterMenu(menutype_t menu, boolean callexit);
+void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
 void M_ClearMenus(boolean callexitmenufunc);
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
 menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
 
-void M_SinglePlayerMenu(INT32 choice);
-void M_Options(INT32 choice);
-void M_Addons(INT32 choice);
-void M_QuitSRB2(INT32 choice);
-void M_Statistics(INT32 choice);
-void M_HandleLevelStats(INT32 choice);
-void M_QuitReplayHut(INT32 choice);
-void M_HandleReplayHutList(INT32 choice);
-void M_GrandPrixTemp(INT32 choice);
-void M_TimeAttack(INT32 choice);
-void M_ItemBreaker(INT32 choice);
-void M_StartGrandPrix(INT32 choice);
-void M_QuitTimeAttackMenu(INT32 choice);
-void M_ChooseTimeAttack(INT32 choice);
-void M_SetGuestReplay(INT32 choice);
-void M_SRB2KartPreset(INT32 choice);
-void M_TechPreset(INT32 choice);
-void M_BlanKartPreset(INT32 choice);
-void M_ReplayTimeAttack(INT32 choice);
-void M_HandleStaffReplay(INT32 choice);
-void M_SetupMultiHandler(INT32 choice);
-void M_HandleSetupMultiPlayer(INT32 choice);
-void M_QuitMultiPlayerMenu(INT32 choice);
-void M_StartServerMenu(INT32 choice);
-void M_StartOfflineServerMenu(INT32 choice);
-void M_StartServer(INT32 choice);
-void M_ConnectMenuModChecks(INT32 choice);
-void M_HandleConnectIP(INT32 choice);
-void M_CancelConnect(INT32 choice);
-void M_Setup1PControlsMenu(INT32 choice);
-void M_Setup2PControlsMenu(INT32 choice);
-void M_Setup3PControlsMenu(INT32 choice);
-void M_Setup4PControlsMenu(INT32 choice);
-void M_HandleServerPage(INT32 choice);
-void M_Refresh(INT32 choice);
-void M_Connect(INT32 choice);
-void M_VideoModeMenu(INT32 choice);
+INT32 MR_SinglePlayerMenu(INT32 choice);
+INT32 MR_Options(INT32 choice);
+INT32 MR_Addons(INT32 choice);
+INT32 MR_QuitAddons(INT32 choice);
+INT32 MR_QuitSRB2(INT32 choice);
+INT32 MR_Statistics(INT32 choice);
+INT32 MR_HandleLevelStats(INT32 choice);
+INT32 MR_QuitReplayHut(INT32 choice);
+INT32 MR_HandleReplayHutList(INT32 choice);
+INT32 MR_GrandPrixTemp(INT32 choice);
+INT32 MR_TimeAttack(INT32 arg);
+INT32 MR_StartGrandPrix(INT32 choice);
+INT32 MR_QuitTimeAttackMenu(INT32 choice);
+INT32 MR_ChooseTimeAttack(INT32 choice);
+INT32 MR_SetGuestReplay(INT32 arg);
+INT32 MR_TimeAttackPreset(INT32 arg);
+INT32 MR_ReplayTimeAttack(INT32 arg);
+INT32 MR_ReplayStaff(INT32 choice);
+INT32 MR_ConnectIP(INT32 choice);
+INT32 MR_QuitMultiPlayerMenu(INT32 choice);
+INT32 MR_StartServerMenu(INT32 choice);
+INT32 MR_StartServer(INT32 choice);
+INT32 MR_ConnectMenuModChecks(INT32 choice);
+INT32 MR_CancelConnect(INT32 choice);
+INT32 MR_SetupControlsMenu(INT32 arg);
+INT32 MR_HandleControlsMenu(INT32 ch);
+INT32 MR_Refresh(INT32 choice);
+INT32 MR_Connect(INT32 arg);
+INT32 MR_VideoModeMenu(INT32 choice);
 #ifdef HWRENDER
-void M_OpenGLOptionsMenu(INT32 choice);
+INT32 MR_OpenGLOptionsMenu(INT32 choice);
 #endif
-void M_HandleVideoMode(INT32 ch);
-void M_HandleSoundTest(INT32 choice);
-void M_MusicTest(INT32 choice);
-void M_ScreenshotOptions(INT32 choice);
-void M_AddonsOptions(INT32 choice);
-void M_EraseData(INT32 choice);
-void M_Manual(INT32 choice);
-void M_Credits(INT32 choice);
-void M_BlanCredits(INT32 choice);
-void M_HandleAddons(INT32 choice);
-void M_SelectableClearMenus(INT32 choice);
-void M_ModeAttackEndGame(INT32 choice);
-void M_PandorasBox(INT32 choice);
-void M_EmblemHints(INT32 choice);
-void M_Retry(INT32 choice);
-void M_EndGame(INT32 choice);
-void M_MapChange(INT32 choice);
-void M_SetupMultiPlayer(INT32 choice);
-void M_SetupMultiPlayer2(INT32 choice);
-void M_SetupMultiPlayer3(INT32 choice);
-void M_SetupMultiPlayer4(INT32 choice);
-void M_ConfirmSpectate(INT32 choice);
-void M_ConfirmEnterGame(INT32 choice);
-void M_ExitPandorasBox(INT32 choice);
-void M_GetAllEmeralds(INT32 choice);
-void M_DestroyRobots(INT32 choice);
-ATTRNORETURN void FUNCNORETURN M_UltimateCheat(INT32 choice);
-void M_ConfirmTeamScramble(INT32 choice);
-void M_ConfirmTeamChange(INT32 choice);
-void M_ConfirmSpectateChange(INT32 choice);
-void M_ChangeLevel(INT32 choice);
-void M_HutStartReplay(INT32 choice);
-void M_PlaybackRewind(INT32 choice);
-void M_PlaybackPause(INT32 choice);
-void M_PlaybackFastForward(INT32 choice);
-void M_PlaybackAdvance(INT32 choice);
-void M_PlaybackSetViews(INT32 choice);
-void M_PlaybackAdjustView(INT32 choice);
-void M_PlaybackToggleFreecam(INT32 choice);
-void M_PlaybackQuit(INT32 choice);
-void M_HandleImageDef(INT32 choice);
-void M_HandleMusicTest(INT32 choice);
-void M_Setup1PJoystickMenu(INT32 choice);
-void M_Setup2PJoystickMenu(INT32 choice);
-void M_Setup3PJoystickMenu(INT32 choice);
-void M_Setup4PJoystickMenu(INT32 choice);
-void M_ResetControls(INT32 choice);
-void M_ChangeControl(INT32 choice);
-void M_AssignJoystick(INT32 choice);
-void M_HandleMonitorToggles(INT32 choice);
-void M_RestartAudio(INT32 choice);
+INT32 MR_HandleVideoMode(INT32 ch);
+INT32 MR_PlaySound(INT32 choice);
+INT32 MR_MusicTest(INT32 choice);
+INT32 MR_QuitMusicTest(INT32 choice);
+INT32 MR_ScreenshotOptions(INT32 choice);
+INT32 MR_AddonsOptions(INT32 choice);
+INT32 MR_EraseData(INT32 arg);
+INT32 MR_Credits(INT32 choice);
+INT32 MR_BlanCredits(INT32 choice);
+INT32 MR_HandleAddons(INT32 choice);
+INT32 MR_SelectableClearMenus(INT32 choice);
+INT32 MR_GoBack(INT32 choice);
+INT32 MR_ModeAttackEndGame(INT32 choice);
+INT32 MR_Retry(INT32 choice);
+INT32 MR_EndGame(INT32 choice);
+INT32 MR_MapChange(INT32 choice);
+INT32 MR_SetupMultiPlayer(INT32 choice);
+INT32 MR_ConfirmSpectate(INT32 choice);
+INT32 MR_ConfirmEnterGame(INT32 choice);
+INT32 MR_ConfirmTeamScramble(INT32 choice);
+INT32 MR_ConfirmTeamChange(INT32 choice);
+INT32 MR_ConfirmSpectateChange(INT32 choice);
+INT32 MR_ChangeLevel(INT32 choice);
+INT32 MR_HutStartReplay(INT32 choice);
+INT32 MR_PlaybackRewind(INT32 choice);
+INT32 MR_PlaybackPause(INT32 choice);
+INT32 MR_PlaybackFastForward(INT32 choice);
+INT32 MR_PlaybackAdvance(INT32 choice);
+INT32 MR_PlaybackSetViews(INT32 choice);
+INT32 MR_PlaybackAdjustView(INT32 choice);
+INT32 MR_PlaybackToggleFreecam(INT32 choice);
+INT32 MR_PlaybackQuit(INT32 choice);
+INT32 MR_HandleImageDef(INT32 choice);
+INT32 MR_HandleMusicTest(INT32 choice);
+INT32 MR_ResetControls(INT32 choice);
+INT32 MR_ChangeControl(INT32 arg);
+INT32 MR_AssignJoystick(INT32 arg);
+INT32 MR_HandleMonitorToggles(INT32 choice);
+INT32 MR_RestartAudio(INT32 choice);
+INT32 MR_EnterViewServer(INT32 choice);
+INT32 MR_QuitViewServer(INT32 choice);
+INT32 MR_HandleViewServer(INT32 choice);
+INT32 MR_CameraSetup(INT32 arg);
 #ifdef HAVE_DISCORDRPC
-void M_HandleDiscordRequests(INT32 choice);
+INT32 MR_HandleDiscordRequests(INT32 choice);
 #endif
 
-void M_DrawGenericMenu(void);
-void M_DrawGenericScrollMenu(void);
-void M_DrawCenteredMenu(void);
-void M_DrawPauseMenu(void);
-void M_DrawChecklist(void);
-void M_DrawLevelStats(void);
-void M_DrawReplayHut(void);
-void M_DrawTimeAttackMenu(void);
-void M_DrawMPMainMenu(void);
-void M_DrawSetupMultiPlayerMenu(void);
-void M_DrawServerMenu(void);
-void M_DrawConnectMenu(void);
-void M_DrawVideoMenu(void);
-void M_DrawVideoMode(void);
-void M_DrawSkyRoom(void);
-void M_DrawHUDOptions(void);
-void M_DrawAddons(void);
-void M_DrawEmblemHints(void);
-void M_DrawReplayStartMenu(void);
-void M_DrawPlaybackMenu(void);
-void M_DrawImageDef(void);
-void M_DrawMusicTest(void);
-void M_DrawControl(void);
-void M_DrawJoystick(void);
-void M_DrawMonitorToggles(void);
+void MD_DrawGenericMenu(void);
+void MD_DrawChecklist(void);
+void MD_DrawLevelStats(void);
+void MD_DrawReplayHut(void);
+void MD_DrawTimeAttackMenu(void);
+void MD_DrawMPMainMenu(void);
+void MD_DrawSetupMultiPlayerMenu(void);
+void MD_DrawConnectMenu(void);
+void MD_DrawVideoMode(void);
+void MD_DrawAddons(void);
+void MD_DrawReplayStartMenu(void);
+void MD_DrawPlaybackMenu(void);
+void MD_DrawImageDef(void);
+void MD_DrawMusicTest(void);
+void MD_DrawJoystick(void);
+void MD_DrawMonitorToggles(void);
+void MD_DrawViewServer(void);
 #ifdef HAVE_DISCORDRPC
-void M_DrawDiscordRequests(void);
+void MD_DrawDiscordRequests(void);
 #endif
 
 // Maybe this goes here????? Who knows.
@@ -398,28 +355,7 @@ extern I_mutex m_menu_mutex;
 #endif
 
 // Call upon joystick hotplug
-void M_SetupJoystickMenu(INT32 choice);
-
-// Stuff for customizing the player select screen
-typedef struct
-{
-	boolean used;
-	char notes[441];
-	char picname[8];
-	char skinname[SKINNAMESIZE*2+2]; // skin&skin\0
-	patch_t *charpic;
-	UINT8 prev;
-	UINT8 next;
-
-	// new character select
-	char displayname[SKINNAMESIZE+1];
-	SINT8 skinnum[2];
-	UINT16 oppositecolor;
-	char nametag[8];
-	patch_t *namepic;
-	UINT16 tagtextcolor;
-	UINT16 tagoutlinecolor;
-} description_t;
+INT32 MR_SetupJoystickMenu(INT32 arg);
 
 // level select platter
 typedef struct
@@ -465,20 +401,22 @@ typedef struct
 	INT32 gamemap;
 } saveinfo_t;
 
-extern description_t description[MAXSKINS];
-
 extern consvar_t cv_showfocuslost;
 extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
-extern consvar_t cv_dummyrings, cv_dummylives;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
 extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
+extern consvar_t cv_dummystaff;
+extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
+extern consvar_t cv_dummyserverpage;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
 extern CV_PossibleValue_t gametype_cons_t[];
+
+void M_UpdateNumServerPages(void);
 
 extern char dummystaffname[22];
 
@@ -491,14 +429,6 @@ extern INT16 char_on, startchar;
 #define MARATHONSLOT 420 // just has to be nonzero, but let's use one that'll show up as an obvious error if something goes wrong while not using our existing saves
 
 #define BwehHehHe() S_StartSound(NULL, sfx_bewar1+M_RandomKey(4)) // Bweh heh he
-
-//void M_TutorialSaveControlResponse(INT32 ch);
-
-void M_ForceSaveSlotSelected(INT32 sslot);
-
-void M_CheatActivationResponder(INT32 ch);
-
-void M_ModeAttackRetry(INT32 choice);
 
 // File name appender for RA gametype+mod reading.
 char *M_AppendGametypeAndModName(void);
@@ -513,7 +443,7 @@ void Screenshot_option_Onchange(void);
 // Addons menu updating
 void Addons_option_Onchange(void);
 
-void M_ReplayHut(INT32 choice);
+INT32 MR_ReplayHut(INT32 choice);
 void M_SetPlaybackMenuPointer(void);
 
 void M_RefreshPauseMenu(void);

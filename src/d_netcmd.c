@@ -510,7 +510,7 @@ static CV_PossibleValue_t kartdebugitem_cons_t[] =
 #undef  FOREACH
 	{0}
 };
-consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "0", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
+consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "NONE", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
 static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL);
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -538,7 +538,8 @@ consvar_t cv_votetime = CVAR_INIT ("votetime", "20", CV_NETVAR, votetime_cons_t,
 
 consvar_t cv_gravity = CVAR_INIT ("gravity", "0.8", CV_RESTRICT|CV_FLOAT|CV_CALL, NULL, Gravity_OnChange); // change DEFAULT_GRAVITY if you change this
 
-consvar_t cv_soundtest = CVAR_INIT ("soundtest", "0", CV_CALL, NULL, SoundTest_OnChange);
+static CV_PossibleValue_t soundtest_cons_t[] = {{0, "MIN"}, {NUMSFX, "MAX"}, {0, NULL}};
+consvar_t cv_soundtest = CVAR_INIT ("soundtest", "0", CV_CALL, soundtest_cons_t, SoundTest_OnChange);
 
 static CV_PossibleValue_t minitimelimit_cons_t[] = {{15, "MIN"}, {9999, "MAX"}, {0, NULL}};
 consvar_t cv_countdowntime = CVAR_INIT ("countdowntime", "30", CV_NETVAR|CV_CHEAT, minitimelimit_cons_t, NULL);
@@ -3398,7 +3399,7 @@ static void Command_Pause(void)
 		}
 		else if (modeattacking)	// in time attack, pausing restarts the map
 		{
-			M_ModeAttackRetry(0);	// directly call from m_menu;
+			MR_ModeAttackRetry(0); // directly call from m_menu;
 			return;
 		}
 
@@ -6119,7 +6120,17 @@ static void Command_Cheats_f(void)
 
 	if (CV_CheatsEnabled())
 	{
+		consvar_t *cvar;
 		CONS_Printf(M_GetText("At least one CHEAT-marked variable has been changed -- Cheats are enabled.\n"));
+
+		for (cvar = consvar_vars; cvar; cvar = cvar->next)
+		{
+			if ((cvar->flags & CV_CHEAT) && strcmp(cvar->defaultvalue, cvar->string))
+			{
+				CONS_Printf("%s: Default Value: %s Current Value:%s\n", cvar->name, cvar->defaultvalue, cvar->string);
+			}
+		}
+
 		if (server || (IsPlayerAdmin(consoleplayer)))
 			CONS_Printf(M_GetText("Type CHEATS OFF to reset all cheat variables to default.\n"));
 	}

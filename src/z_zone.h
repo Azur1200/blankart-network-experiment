@@ -145,6 +145,7 @@ size_t Z_TagsUsage(INT32 lowtag, INT32 hightag);
 //
 char *Z_StrDup(const char *in);
 #define Z_Unlock(p) (void)p // TODO: remove this now that NDS code has been removed
+char *zva(INT32 tag, void *user, const char *format,  ...);
 
 #ifdef __cplusplus
 } // extern "C"

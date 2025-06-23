@@ -471,6 +471,28 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 #define SendNetXCmd(id, param, nparam) SendNetXCmdForPlayer(0, id, param, nparam) // Shortcut for P1
 void SendKick(UINT8 playernum, UINT8 msg);
 
+typedef enum
+{
+	CL_SEARCHING,
+	CL_CHECKFILES,
+	CL_DOWNLOADFILES,
+	CL_DOWNLOADFAILED,
+	CL_ASKJOIN,
+	CL_LOADFILES,
+	CL_SETUPFILES,
+	CL_WAITJOINRESPONSE,
+	CL_DOWNLOADSAVEGAME,
+	CL_CONNECTED,
+	CL_ABORTED,
+	CL_ASKFULLFILELIST,
+	CL_CONFIRMCONNECT,
+	CL_VIEWSERVER,
+#ifdef HAVE_CURL
+	CL_PREPAREHTTPFILES,
+	CL_DOWNLOADHTTPFILES,
+#endif
+} cl_mode_t;
+
 // Create any new ticcmds and broadcast to other players.
 void NetKeepAlive(void);
 void NetUpdate(void);
@@ -530,6 +552,10 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
 extern UINT8 playerconsole[MAXPLAYERS];
+extern SINT8 joinnode;
+
+INT32 GetClientMode(void);
+void ChangeClientMode(INT32 mode);
 
 INT32 D_NumPlayers(void);
 boolean D_IsPlayerHumanAndGaming(INT32 player_number);

@@ -1547,7 +1547,7 @@ static boolean TextmapCount(size_t size, boolean patch)
 		numsectors = 0;
 	}
 
-	while (M_TokenizerGetEndPos() < size)
+	for (; tkn && M_TokenizerGetEndPos() < size; tkn = M_TokenizerRead(0))
 	{
 		// Avoid anything inside bracketed stuff, only look for external keywords.
 		if (brackets)
@@ -1572,10 +1572,6 @@ static boolean TextmapCount(size_t size, boolean patch)
 			TextmapStorePos(&sectorBlocks, &numsectors);
 		else
 			CONS_Alert(CONS_NOTICE, "Unknown field '%s'.\n", tkn);
-
-		tkn = M_TokenizerRead(0);
-		if (!tkn)
-			break;
 	}
 
 	if (brackets)
@@ -8632,18 +8628,30 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// But only if we didn't do the encore startup wipe
 	if (!ranspecialwipe && !demo.rewinding && !reloadinggamestate)
 	{
-			if(rendermode != render_none)
-			{
-				F_WipeStartScreen();
-				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
+		UINT16 wipe = encoremode ? wipe_level_final : wipe_level_toblack;
 
-				F_WipeEndScreen();
-				F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-			}
-			else //dedicated servers
-			{
-				F_RunWipe(wipedefs[(encoremode ? wipe_level_final : wipe_level_toblack)], false);
-			}
+		// for titlemap: run a specific wipe if specified
+		// needed for exiting time attack
+		if (wipetypepre != INT16_MAX && wipetypepre >= 0 && F_WipeExists(wipetypepre))
+		{
+			wipe = wipetypepre;
+			wipetypepre = -1;
+		}
+
+		if(rendermode != render_none)
+		{
+			F_WipeStartScreen();
+			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, levelfadecol);
+
+			F_WipeEndScreen();
+			if (wipetypepre != INT16_MAX)
+				F_RunWipe(wipedefs[wipe], false);
+		}
+		else //dedicated servers
+		{
+			if (wipetypepre != INT16_MAX)
+				F_RunWipe(wipedefs[wipe], false);
+		}
 	}
 	/*if (!titlemapinaction)
 		wipegamestate = GS_LEVEL;*/

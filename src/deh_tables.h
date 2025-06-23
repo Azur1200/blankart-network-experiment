@@ -59,12 +59,12 @@ struct actionpointer_t
 
 struct menu_routine_s {
 	const char *name;
-	void (*routine)(INT32);
+	menufunc_f *routine;
 };
 
 struct menu_drawer_s {
 	const char *name;
-	void (*drawer)(void);
+	menudrawer_f *drawer;
 };
 
 struct int_const_s {

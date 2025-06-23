@@ -75,7 +75,7 @@ void S_InitRuntimeSounds (void)
 		if (i >= sfx_freeslot0)
 		{
 			value = (i+1) - sfx_freeslot0;
-			sprintf(soundname, value < 1000 ? "fre%03d" : "fr%d", value);
+			sprintf(soundname, value < 1000 ? "fre%03d" : value < 10000 ? "fr%d" : "f%d", value);
 			strcpy(soundnames[i], soundname);
 		}
 
