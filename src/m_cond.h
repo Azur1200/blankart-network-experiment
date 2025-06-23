@@ -185,7 +185,8 @@ const char *M_GetExtraEmblemPatch(extraemblem_t *em, boolean big);
 UINT8 M_GotEnoughEmblems(INT32 number);
 UINT8 M_GotLowEnoughTime(INT32 tictime);
 
-#define M_Achieved(a) ((a) >= MAXCONDITIONSETS || conditionSets[a].achieved)
+//                     vvvvvvvvvv anti-integer promotion, do not remove
+#define M_Achieved(a) ((unsigned)(a) >= MAXCONDITIONSETS || conditionSets[a].achieved)
 
 #ifdef __cplusplus
 } // extern "C"
