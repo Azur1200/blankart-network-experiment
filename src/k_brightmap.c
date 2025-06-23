@@ -190,15 +190,9 @@ void K_InitBrightmapsPwad(INT32 wadNum)
 			size_t size = W_LumpLengthPwad(wadNum, lumpNum);
 			char *datacopy;
 
-			size_t nameLength = strlen(wadfiles[wadNum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-			char *name = malloc(nameLength + 1);
-
-			sprintf(name, "%s|%s", wadfiles[wadNum]->filename, lump_p->fullname);
-			name[nameLength] = '\0';
-
 			size = W_LumpLengthPwad(wadNum, lumpNum);
 
-			CONS_Printf(M_GetText("Loading BRIGHT from %s\n"), name);
+			CONS_Printf(M_GetText("Loading BRIGHT from %s|%s\n"), wadfiles[wadNum]->filename, strbuf_get(lumpnamebuf, lump_p->fullname));
 
 			datacopy = (char *)Z_Malloc((size+1)*sizeof(char),PU_STATIC,NULL);
 			memmove(datacopy,data,size);
@@ -209,8 +203,6 @@ void K_InitBrightmapsPwad(INT32 wadNum)
 			K_BRIGHTLumpParser(datacopy, size);
 
 			Z_Free(datacopy);
-
-			free(name);
 		}
 
 		lumpNum = W_CheckNumForNamePwad("BRIGHT", (UINT16)wadNum, lumpNum + 1);

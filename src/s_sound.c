@@ -1392,7 +1392,7 @@ MusicDefError
 	CONS_Alert(level,
 			va("%%s|%%s: %s (line %%d)\n", description),
 			wad->filename,
-			lump->fullname,
+			strbuf_get(lumpnamebuf, lump->fullname),
 			field,
 			line
 	);

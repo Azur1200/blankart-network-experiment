@@ -329,7 +329,8 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	for (l = startlump; l < endlump; l++)
 	{
-		if (memcmp(lumpinfo[l].name,sprname,4))
+		const char *longname = strbuf_get(lumpnamebuf, lumpinfo[l].longname);
+		if (memcmp(longname,sprname,4))
 			continue;
 
 		{
@@ -339,8 +340,8 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 			boolean isPNG = false;
 #endif
 
-			frame = R_Char2Frame(lumpinfo[l].name[4], compat);
-			rotation = R_Char2Rotation(lumpinfo[l].name[5]);
+			frame = R_Char2Frame(longname[4], compat);
+			rotation = R_Char2Rotation(longname[5]);
 
 			if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
 			{
@@ -391,10 +392,10 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 			R_InstallSpriteLump(wadnum, l, numspritelumps, frame, rotation, 0);
 
-			if (lumpinfo[l].name[6])
+			if (longname[6])
 			{
-				frame = R_Char2Frame(lumpinfo[l].name[6], compat);
-				rotation = R_Char2Rotation(lumpinfo[l].name[7]);
+				frame = R_Char2Frame(longname[6], compat);
+				rotation = R_Char2Rotation(longname[7]);
 
 				if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
 				{

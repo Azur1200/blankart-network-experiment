@@ -18,6 +18,8 @@
 #include "hardware/hw_data.h"
 #endif
 
+#include "strbuf.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,11 +68,10 @@ struct lumpinfo_t
 {
 	unsigned long position; // filelump_t filepos
 	unsigned long disksize; // filelump_t size
-	char name[9];           // filelump_t name[] e.g. "LongEntr"
-	UINT32 hash;
-	char *longname;         //                   e.g. "LongEntryName"
-	char *fullname;         //                   e.g. "Folder/Subfolder/LongEntryName.extension"
 	size_t size;            // real (uncompressed) size
+	UINT32 hash;
+	UINT32 longname;        //                   e.g. "LongEntryName"
+	UINT32 fullname;        //                   e.g. "Folder/Subfolder/LongEntryName.extension"
 	compmethod compression; // lump compression method
 };
 
@@ -105,6 +106,8 @@ void* vres_GetPatch(virtlump_t *vlump, INT32 tag);
 // because an UINT8 will never be >= 256, probably breaking some conditionals.
 
 #define lumpcache_t void *
+
+extern strbuf_t *lumpnamebuf;
 
 // Resource type of the WAD. Yeah, I know this sounds dumb, but I'll leave it like this until I clean up the code further.
 typedef enum restype

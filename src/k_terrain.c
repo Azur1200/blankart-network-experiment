@@ -2271,7 +2271,7 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 	{
 		UINT8 *data;
 
-		if (memcmp(lump_p->name, "TERRAIN", 8) != 0)
+		if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname), "TERRAIN", 8) != 0)
 		{
 			continue;
 		}
@@ -2288,17 +2288,10 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 			size_t size = W_LumpLengthPwad(wadNum, lumpNum);
 			char *datacopy;
 
-			size_t nameLength = strlen(wadfiles[wadNum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-			char *name = malloc(nameLength + 1);
-
-			sprintf(name, "%s|%s", wadfiles[wadNum]->filename, lump_p->fullname);
-			name[nameLength] = '\0';
-
 			size = W_LumpLengthPwad(wadNum, lumpNum);
 
-			CONS_Printf(M_GetText("Loading TERRAIN from %s\n"), name);
+			CONS_Printf(M_GetText("Loading TERRAIN from %s|%s\n"), wadfiles[wadNum]->filename, strbuf_get(lumpnamebuf, lump_p->fullname));
 			terrainLoaded = true;
-			
 
 			datacopy = (char *)Z_Malloc((size+1)*sizeof(char),PU_STATIC,NULL);
 			memmove(datacopy,data,size);
@@ -2309,8 +2302,6 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 			K_TERRAINLumpParser(datacopy, size);
 
 			Z_Free(datacopy);
-
-			free(name);
 		}
 	}
 

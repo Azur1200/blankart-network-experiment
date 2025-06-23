@@ -9038,11 +9038,11 @@ void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num)
 		// Let's check whether it's replacing an existing sound or it's a brand new one.
 		for (j = 1; j < NUMSFX; j++)
 		{
-			if (S_sfx[j].name && !strnicmp(S_sfx[j].name, lumpinfo->name + 2, 6))
+			if (S_sfx[j].name && !strnicmp(S_sfx[j].name, strbuf_get(lumpnamebuf, lumpinfo->longname) + 2, 6))
 			{
 				// the sound will be reloaded when needed,
 				// since sfx->data will be NULL
-				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", lumpinfo->name);
+				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", strbuf_get(lumpnamebuf, lumpinfo->longname));
 
 				I_FreeSfx(&S_sfx[j]);
 				break; // there shouldn't be two sounds with the same name, so stop looking
@@ -9053,6 +9053,7 @@ void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num)
 
 // Auxiliary function for PK3 loading - looks for music and music replacements.
 // NOTE: does nothing but print debug messages. The code is handled somewhere else.
+/*
 void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 num)
 {
 	lumpinfo_t *lumpinfo = wadfiles[wadnum]->lumpinfo + first;
@@ -9071,18 +9072,19 @@ void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 num)
 	}
 	return;
 }
+*/
 
 // Auxiliary function - input a folder name and gives us the resource markers positions.
 static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, lumpinfo_t *lumpinfo, UINT16 *pnumlumps, size_t *pi)
 {
 	UINT16 numlumps = *pnumlumps;
 	size_t i = *pi;
-	if (!stricmp(lumpinfo->fullname, folName))
+	if (!stricmp(strbuf_get(lumpnamebuf, lumpinfo->fullname), folName))
 	{
 		lumpinfo++;
 		*start = ++i;
 		for (; i < numlumps; i++, lumpinfo++)
-			if (strnicmp(lumpinfo->fullname, folName, strlen(folName)))
+			if (strnicmp(strbuf_get(lumpnamebuf, lumpinfo->fullname), folName, strlen(folName)))
 				break;
 		lumpinfo--;
 		*end = i-- - *start;
@@ -9316,8 +9318,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 //			P_LoadDehackRange(wadnum, socPos, socNum);
 		if (sfxNum) // Sounds. TODO: Function currently only updates already existing sounds, the rest is handled somewhere else.
 			P_LoadSoundsRange(wadnum, sfxPos, sfxNum);
-		if (musNum) // Music. TODO: Useless function right now.
-			P_LoadMusicsRange(wadnum, musPos, musNum);
+//		if (musNum) // Music. TODO: Useless function right now.
+//			P_LoadMusicsRange(wadnum, musPos, musNum);
 //		if (sprNum) // Sprites.
 //			R_LoadSpritsRange(wadnum, sprPos, sprNum);
 //		if (texNum) // Textures. TODO: R_LoadTextures() does the folder positioning once again. New function maybe?
@@ -9329,7 +9331,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 		lumpinfo = wadfiles[wadnum]->lumpinfo;
 		for (i = 0; i < numlumps; i++, lumpinfo++)
 		{
-			name = lumpinfo->name;
+			name = strbuf_get(lumpnamebuf, lumpinfo->longname);
 			if (name[0] == 'D')
 			{
 				if (name[1] == 'S')

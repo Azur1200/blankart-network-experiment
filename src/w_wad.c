@@ -101,6 +101,8 @@ typedef struct lumpnum_cache_s
 static lumpnum_cache_t lumpnumcache[LUMPNUMCACHESIZE];
 static UINT16 lumpnumcacheindex = 0;
 
+strbuf_t *lumpnamebuf;
+
 //===========================================================================
 //                                                                    GLOBALS
 //===========================================================================
@@ -120,18 +122,11 @@ void W_Shutdown(void)
 
 		fclose(wad->handle);
 		Z_Free(wad->filename);
-		while (wad->numlumps--)
-		{
-			Z_Free(wad->lumpinfo[wad->numlumps].longname);
-			if (wad->lumpinfo[wad->numlumps].fullname != wad->lumpinfo[wad->numlumps].longname)
-			{
-				Z_Free(wad->lumpinfo[wad->numlumps].fullname);
-			}
-		}
-
 		Z_Free(wad->lumpinfo);
 		Z_Free(wad);
 	}
+
+	Z_Free(lumpnamebuf);
 }
 
 //===========================================================================
@@ -257,14 +252,8 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 
 		for(; posStart < posEnd; posStart++)
 		{
-			lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[posStart];
-			size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-			char *name = malloc(length + 1);
-			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
-			name[length] = '\0';
-			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
+			CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, strbuf_get(lumpnamebuf, wadfiles[wadnum]->lumpinfo[posStart].fullname));
 			DEH_LoadDehackedLumpPwad(wadnum, posStart, mainfile);
-			free(name);
 		}
 	}
 }
@@ -278,30 +267,24 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-			if (memcmp(lump_p->name,"LUA_",4)==0)
+			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"LUA_",4)==0)
 				LUA_LoadLump(wadnum, lump, true);
 	}
 
 	{
 		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
 		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-			if (memcmp(lump_p->name,"SOC_",4)==0) // Check for generic SOC lump
+			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"SOC_",4)==0) // Check for generic SOC lump
 			{	// shameless copy+paste of code from LUA_LoadLump
-				size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-				char *name = malloc(length + 1);
-				sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
-				name[length] = '\0';
-
-				CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
+				CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, strbuf_get(lumpnamebuf, lump_p->fullname));
 				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
-				free(name);
 			}
-			else if (memcmp(lump_p->name,"MAINCFG",8)==0) // Check for MAINCFG
+			else if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"MAINCFG",8)==0) // Check for MAINCFG
 			{
 				CONS_Printf(M_GetText("Loading main config from %s\n"), wadfiles[wadnum]->filename);
 				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
 			}
-			else if (memcmp(lump_p->name,"OBJCTCFG",8)==0) // Check for OBJCTCFG
+			else if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"OBJCTCFG",9)==0) // Check for OBJCTCFG
 			{
 				CONS_Printf(M_GetText("Loading object config from %s\n"), wadfiles[wadnum]->filename);
 				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
@@ -455,18 +438,9 @@ static lumpinfo_t* ResGetLumpsStandalone (FILE* handle, UINT16* numlumps, const 
 	fseek(handle, 0, SEEK_END);
 	lumpinfo->size = ftell(handle);
 	fseek(handle, 0, SEEK_SET);
-	strcpy(lumpinfo->name, lumpname);
+
+	lumpinfo->longname = lumpinfo->fullname = strbuf_append(&lumpnamebuf, lumpname);
 	lumpinfo->hash = quickncasehash(lumpname, 8);
-
-	// Allocate the lump's long name.
-	lumpinfo->longname = Z_Malloc(9 * sizeof(char), PU_STATIC, NULL);
-	strcpy(lumpinfo->longname, lumpname);
-	lumpinfo->longname[8] = '\0';
-
-	// Allocate the lump's full name.
-	lumpinfo->fullname = Z_Malloc(9 * sizeof(char), PU_STATIC, NULL);
-	strcpy(lumpinfo->fullname, lumpname);
-	lumpinfo->fullname[8] = '\0';
 
 	*numlumps = 1;
 	return lumpinfo;
@@ -553,9 +527,6 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 		else
 			lump_p->compression = CM_NOCOMPRESSION;
 
-		memset(lump_p->name, 0x00, 9);
-		strncpy(lump_p->name, fileinfo->name, 8);
-
 		if (WADNAMECHECK(fileinfo->name))
 		{
 			size_t namelen;
@@ -601,26 +572,28 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 				namelen = strlen(trimname);
 
 			// Allocate the lump's long and full name (save on memory).
-			lump_p->longname = lump_p->fullname = Z_Calloc(namelen * sizeof(char), PU_STATIC, NULL);
-			strncpy(lump_p->longname, trimname, namelen);
-			lump_p->longname[namelen-1] = '\0';
+			char *name = strdup(trimname);
+			name[namelen-1] = '\0';
+			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, name);
 
-			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, lump_p->longname);
+			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, trimname);
 
 			// Grab the hash from the first part
-			lump_p->hash = quickncasehash(lump_p->longname, 8);
+			lump_p->hash = quickncasehash(name, 8);
+			free(name);
 
 			wadnamelump = i | (numwadfiles << 16);
 		}
 		else
 		{
-			// Set up true hash
-			lump_p->hash = quickncasehash(lump_p->name, 8);
-
 			// Allocate the lump's long and full name (save on memory).
-			lump_p->longname = lump_p->fullname = Z_Malloc(9 * sizeof(char), PU_STATIC, NULL);
-			strncpy(lump_p->longname, fileinfo->name, 8);
-			lump_p->longname[8] = '\0';
+			char name[9];
+			strncpy(name, fileinfo->name, 8);
+			name[8] = '\0';
+			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, name);
+
+			// Set up true hash
+			lump_p->hash = quickncasehash(name, 8);
 		}
 	}
 	free(fileinfov);
@@ -784,15 +757,15 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		if ((dotpos = strrchr(trimname, '.')) == 0)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
-		memset(lump_p->name, '\0', 9); // Making sure they're initialized to 0. Is it necessary?
-		strncpy(lump_p->name, trimname, min(8, dotpos - trimname));
-		lump_p->hash = quickncasehash(lump_p->name, 8);
+		char backup = trimname[dotpos - trimname];
+		trimname[dotpos - trimname] = '\0';
+		lump_p->longname = strbuf_append(&lumpnamebuf, trimname);
+		char name[8];
+		strncpy(name, trimname, 8);
+		lump_p->hash = quickncasehash(name, 8);
+		trimname[dotpos - trimname] = backup;
 
-		lump_p->longname = Z_Calloc(dotpos - trimname + 1, PU_STATIC, NULL);
-		strlcpy(lump_p->longname, trimname, dotpos - trimname + 1);
-
-		lump_p->fullname = Z_Calloc(zentry.namelen + 1, PU_STATIC, NULL);
-		strncpy(lump_p->fullname, fullname, zentry.namelen);
+		lump_p->fullname = strbuf_append(&lumpnamebuf, fullname);
 
 		switch(zentry.compression)
 		{
@@ -830,7 +803,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		// skip and ignore comments/extra fields
 		if ((fseek(handle, lump_p->position, SEEK_SET) != 0) || (fread(&zlentry, 1, sizeof(zlentry_t), handle) < sizeof(zlentry_t)))
 		{
-			CONS_Alert(CONS_ERROR, "Local headers for lump %s are corrupt\n", lump_p->fullname);
+			CONS_Alert(CONS_ERROR, "Local headers for lump %s are corrupt\n", strbuf_get(lumpnamebuf, lump_p->fullname));
 			Z_Free(lumpinfo);
 			return NULL;
 		}
@@ -1064,6 +1037,10 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	INT32 rc = 1;
 	INT32 overallrc = 1;
 
+	// this is the first W_ function called so put this here I guess
+	if (lumpnamebuf == NULL)
+		lumpnamebuf = strbuf_alloc();
+
 	// will be realloced as lumps are added
 	for (; *filenames; filenames++)
 	{
@@ -1105,7 +1082,7 @@ const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump)
 	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
 		return NULL;
 
-	return wadfiles[wad]->lumpinfo[lump].name;
+	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].longname);
 }
 
 const char *W_CheckNameForNum(lumpnum_t lumpnum)
@@ -1118,7 +1095,7 @@ static const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
 		return NULL;
 
-	return wadfiles[wad]->lumpinfo[lump].fullname;
+	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
 }
 
 static const char *W_CheckFullNameForNum(lumpnum_t lumpnum)
@@ -1170,7 +1147,7 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 				continue;
 
 			// Not the name? (always use longname, even in wads, to accomodate WADNAME)
-			if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
+			if (strcasecmp(name, strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[i].longname)))
 				continue;
 
 			// Not a header?
@@ -1196,7 +1173,7 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 					continue;
 
 				// Not the name?
-				if (strcasecmp(name, (wadfiles[wad]->lumpinfo + i)->longname))
+				if (strcasecmp(name, strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[i].longname)))
 					continue;
 
 #if 0
@@ -1242,7 +1219,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	{
 		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-			if (lump_p->hash == hash && !strncmp(lump_p->name, uname, sizeof(uname) - 1))
+			if (lump_p->hash == hash && !strncmp(strbuf_get(lumpnamebuf, lump_p->longname), uname, sizeof(uname) - 1))
 				return i;
 	}
 
@@ -1281,7 +1258,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 		{
 			if (lump_p->hash != hash)
 				continue;
-			if (strcmp(lump_p->longname, uname))
+			if (strcmp(strbuf_get(lumpnamebuf, lump_p->longname), uname))
 				continue;
 			return i;
 		}
@@ -1320,7 +1297,7 @@ UINT16 W_CheckNumForLongNamePwadNoUpper(const char *name, UINT16 wad, UINT16 sta
 		{
 			if (lump_p->hash != hash)
 				continue;
-			if (strcmp(lump_p->longname, name))
+			if (strcmp(strbuf_get(lumpnamebuf, lump_p->longname), name))
 				continue;
 			return i;
 		}
@@ -1350,10 +1327,10 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	name_length = strlen(name);
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, name_length) == 0)
+		if (strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), name_length) == 0)
 		{
 			/* SLADE is special and puts a single directory entry. Skip that. */
-			if (strlen(lump_p->fullname) == name_length)
+			if (strlen(strbuf_get(lumpnamebuf, lump_p->fullname)) == name_length)
 				i++;
 			break;
 		}
@@ -1370,7 +1347,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (strnicmp(name, lump_p->fullname, strlen(name)))
+		if (strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), strlen(name)))
 			break;
 	}
 	return i;
@@ -1384,7 +1361,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
-		if (!strnicmp(name, lump_p->fullname, strlen(name)))
+		if (!strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), strlen(name)))
 		{
 			return i;
 		}
@@ -1659,7 +1636,7 @@ UINT8 W_LumpExists(const char *name)
 	{
 		lumpinfo_t *lump_p = wadfiles[i]->lumpinfo;
 		for (j = 0; j < wadfiles[i]->numlumps; ++j, ++lump_p)
-			if (fastcmp(lump_p->longname, name))
+			if (fastcmp(strbuf_get(lumpnamebuf, lump_p->longname), name))
 				return true;
 	}
 	return false;
@@ -1690,7 +1667,7 @@ boolean W_IsLumpWad(lumpnum_t lumpnum)
 {
 	if (wadfiles[WADFILENUM(lumpnum)]->type == RET_PK3)
 	{
-		const char *lumpfullName = (wadfiles[WADFILENUM(lumpnum)]->lumpinfo + LUMPNUM(lumpnum))->fullname;
+		const char *lumpfullName = strbuf_get(lumpnamebuf, (wadfiles[WADFILENUM(lumpnum)]->lumpinfo + LUMPNUM(lumpnum))->fullname);
 
 		if (strlen(lumpfullName) < 4)
 			return false; // can't possibly be a WAD can it?
@@ -1708,7 +1685,7 @@ boolean W_IsLumpFolder(UINT16 wad, UINT16 lump)
 {
 	if (wadfiles[wad]->type == RET_PK3)
 	{
-		const char *name = wadfiles[wad]->lumpinfo[lump].fullname;
+		const char *name = strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
 
 		return (name[strlen(name)-1] == '/'); // folders end in '/'
 	}
@@ -1751,7 +1728,7 @@ boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
 		// ugh, palette textures...
 		// never do remapping on them; PaletteTextureHack handles that
 		unsigned num;
-		const char *name = (wadfiles[wad]->lumpinfo + lump)->longname;
+		const char *name = strbuf_get(lumpnamebuf, (wadfiles[wad]->lumpinfo + lump)->longname);
 		if (sscanf(name, "~%03u", &num) && num < 256)
 			return false;
 		else

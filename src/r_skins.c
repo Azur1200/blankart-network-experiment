@@ -362,7 +362,7 @@ static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 	{
 		lump_p = wadfiles[wadid]->lumpinfo + startlump;
 		for (i = startlump; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-			if (memcmp(lump_p->name,S_SKIN,6)==0)
+			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),S_SKIN,6)==0)
 				return i;
 	}
 	return INT16_MAX; // not found
@@ -393,7 +393,7 @@ static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 	{
 		lump_p = wadfiles[wadid]->lumpinfo + startlump;
 		for (i = startlump; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-			if (memcmp(lump_p->name,P_SKIN,6)==0)
+			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),P_SKIN,6)==0)
 				return i;
 	}
 	return INT16_MAX; // not found

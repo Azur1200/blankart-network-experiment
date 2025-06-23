@@ -6552,19 +6552,6 @@ void HWR_DrawScreenFinalTexture(int width, int height)
     HWD.pfnDrawScreenFinalTexture(width, height);
 }
 
-static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
-{
-	UINT16 i;
-	lumpinfo_t *lump_p;
-
-	lump_p = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lump_p++)
-		if (memcmp(lump_p->name, "SHADERS", 7) == 0)
-			return i;
-
-	return INT16_MAX;
-}
-
 boolean HWR_CompileShaders(void)
 {
 	return HWD.pfnCompileShaders();
@@ -6603,7 +6590,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int shadertype = 0;
 	int i;
 
-	lump = HWR_FindShaderDefs(wadnum);
+	lump = W_CheckNumForNamePwad("SHADERS", wadnum, 0);
 	if (lump == INT16_MAX)
 		return;
 
