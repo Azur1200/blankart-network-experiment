@@ -382,7 +382,7 @@ consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off"
 consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{0, "Easy"}, {1, "Normal"}, {2, "Hard"}, {3, "Master"}, {0, NULL}};
+static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
 consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
@@ -5486,10 +5486,15 @@ INT32 MR_StartGrandPrix(INT32 choice)
 		case KARTSPEED_EASY:
 		case KARTSPEED_NORMAL:
 		case KARTSPEED_HARD:
+		case KARTSPEED_EXPERT:
 			grandprixinfo.gamespeed = cv_dummygpdifficulty.value;
 			break;
 		case KARTGP_MASTER:
 			grandprixinfo.gamespeed = KARTSPEED_HARD;
+			grandprixinfo.masterbots = true;
+			break;
+		case KARTGP_NIGHTMARE:
+			grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 			grandprixinfo.masterbots = true;
 			break;
 		default:

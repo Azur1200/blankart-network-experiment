@@ -85,6 +85,7 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 	{KARTSPEED_EASY, "Easy"},
 	{KARTSPEED_NORMAL, "Normal"},
 	{KARTSPEED_HARD, "Hard"},
+	{KARTSPEED_EXPERT, "Expert"},
 	{0, NULL}
 };
 
@@ -2227,7 +2228,7 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 
 			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
 			{
-				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 4 : 3);
+				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 5 : 3);
 			}
 #ifdef PARANOIA
 			if (currentindice == -1)

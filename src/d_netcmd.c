@@ -457,6 +457,7 @@ consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Of
 consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT, CV_Natural, NULL);
 consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
@@ -3138,6 +3139,7 @@ static void Command_Map_f(void)
 			if (option_skill)
 			{
 				const char *masterstr = "Master";
+				const char *nightmarestr = "NIGHTMARE";
 				const char *skillname = COM_Argv(option_skill + 1);
 				INT32 newskill = -1;
 				INT32 j;
@@ -3145,6 +3147,10 @@ static void Command_Map_f(void)
 				if (!strcasecmp(masterstr, skillname))
 				{
 					newskill = KARTGP_MASTER;
+				}
+				else if (!strcasecmp(nightmarestr, skillname))
+				{
+					newskill = KARTGP_NIGHTMARE;
 				}
 				else
 				{
@@ -3160,7 +3166,7 @@ static void Command_Map_f(void)
 					if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
 					{
 						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
-						if (num >= KARTSPEED_EASY && num <= KARTGP_MASTER)
+						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
 							newskill = (INT16)num;
 					}
 				}
@@ -3170,6 +3176,11 @@ static void Command_Map_f(void)
 					if (newskill == KARTGP_MASTER)
 					{
 						grandprixinfo.gamespeed = KARTSPEED_HARD;
+						grandprixinfo.masterbots = true;
+					}
+					else if (newskill == KARTGP_NIGHTMARE)
+					{
+						grandprixinfo.gamespeed = KARTSPEED_EXPERT;
 						grandprixinfo.masterbots = true;
 					}
 					else
@@ -7042,7 +7053,7 @@ static void KartFrantic_OnChange(void)
 
 static void KartSpeed_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_HARDSPEED) && cv_kartspeed.value == KARTSPEED_HARD)
+	if (!M_SecretUnlocked(SECRET_HARDSPEED) && (cv_kartspeed.value == KARTSPEED_HARD || cv_kartspeed.value == KARTSPEED_EXPERT))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);
@@ -7067,7 +7078,7 @@ static void KartSpeed_OnChange(void)
 
 static void KartBattleSpeed_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_HARDSPEED) && cv_kartbattlespeed.value == KARTSPEED_HARD)
+	if (!M_SecretUnlocked(SECRET_HARDSPEED) && ((cv_kartbattlespeed.value == KARTSPEED_HARD) || (cv_kartbattlespeed.value == KARTSPEED_EXPERT)))
 	{
 		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
 		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);

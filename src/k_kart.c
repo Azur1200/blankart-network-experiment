@@ -297,6 +297,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_easyspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_normalspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_hardspeedboost);
+	CV_RegisterVar(&cv_kartstacking_sneaker_expertspeedboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_accelboost);
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
 	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
@@ -3495,6 +3496,9 @@ static inline fixed_t K_GetProjectileSpeed(void)
 		case KARTSPEED_HARD:
 			return 96*mapobjectscale; // Avg Speed is 48
 			break;
+		case KARTSPEED_EXPERT:
+			return 110*mapobjectscale; // Avg Speed is 62
+			break;
 		default:
 			return 82*mapobjectscale; // Avg Speed is 41
 			break;
@@ -3510,6 +3514,9 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 			break;
 		case KARTSPEED_HARD:
 			return HARDSNEAKERSPEEDBOOST;
+			break;
+		case KARTSPEED_EXPERT:
+			return EXPERTSNEAKERSPEEDBOOST;
 			break;
 		default:
 			return NORMALSNEAKERSPEEDBOOST;
@@ -5040,6 +5047,8 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 			PROJSPEED = FixedMul(PROJSPEED, FRACUNIT-FRACUNIT/4);
 		else if (gamespeed == KARTSPEED_HARD)
 			PROJSPEED = FixedMul(PROJSPEED, FRACUNIT+FRACUNIT/4);
+		else if (gamespeed == KARTSPEED_EXPERT)
+			PROJSPEED = FixedMul(PROJSPEED, FRACUNIT+FRACUNIT/2);
 		PROJSPEED = FixedMul(PROJSPEED, mapobjectscale);
 	}
 	else
