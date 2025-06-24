@@ -669,7 +669,7 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults)
 	if (wadfiles[wad]->type == RET_LUA)
 		name = xva("%s", wadfiles[wad]->filename);
 	else // If it's not a .lua file, copy the lump name in too.
-		name = xva("%s|%s", wadfiles[wad]->filename, strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname));
+		name = xva("%s|%s", wadfiles[wad]->filename, W_CheckFullNameForNumPwad(wad, lump));
 
 	lua_compatmode = wadfiles[wad]->compatmode;
 

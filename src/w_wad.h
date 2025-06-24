@@ -18,39 +18,9 @@
 #include "hardware/hw_data.h"
 #endif
 
-#include "strbuf.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// a raw entry of the wad directory
-// NOTE: This sits here and not in w_wad.c because p_setup.c makes use of it to load map WADs inside PK3s.
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-struct filelump_t
-{
-	UINT32 filepos; // file offset of the resource
-	UINT32 size; // size of the resource
-	char name[8]; // name of the resource
-} ATTRPACK;
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
-
-// ==============================================================
-//               WAD FILE STRUCTURE DEFINITIONS
-// ==============================================================
-
-// header of a wad file
-struct wadinfo_t
-{
-	char identification[4]; // should be "IWAD" or "PWAD"
-	UINT32 numlumps; // how many resources
-	UINT32 infotableofs; // the 'directory' of resources
-};
 
 // Available compression methods for lumps.
 typedef enum
@@ -62,18 +32,6 @@ typedef enum
 	CM_LZF,
 	CM_UNSUPPORTED
 } compmethod;
-
-//  a memory entry of the wad directory
-struct lumpinfo_t
-{
-	unsigned long position; // filelump_t filepos
-	unsigned long disksize; // filelump_t size
-	size_t size;            // real (uncompressed) size
-	UINT32 hash;
-	UINT32 longname;        //                   e.g. "LongEntryName"
-	UINT32 fullname;        //                   e.g. "Folder/Subfolder/LongEntryName.extension"
-	compmethod compression; // lump compression method
-};
 
 // =========================================================================
 //                         'VIRTUAL' RESOURCES
@@ -106,8 +64,6 @@ void* vres_GetPatch(virtlump_t *vlump, INT32 tag);
 // because an UINT8 will never be >= 256, probably breaking some conditionals.
 
 #define lumpcache_t void *
-
-extern strbuf_t *lumpnamebuf;
 
 // Resource type of the WAD. Yeah, I know this sounds dumb, but I'll leave it like this until I clean up the code further.
 typedef enum restype
@@ -142,6 +98,12 @@ typedef enum wadcompat
 	WC_OFF,
 } wadcompat_t;
 
+struct lumpprefixes_t
+{
+	const char *prefix;
+	size_t len;
+};
+
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad flumpnum>>16) // wad file number in upper word
 #define LUMPNUM(lumpnum) (UINT16)((lumpnum)&0xFFFF) // lump number for this pwad
 
@@ -166,13 +128,16 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons);
 
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump);
 const char *W_CheckNameForNum(lumpnum_t lumpnum);
+const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump);
+const char *W_CheckFullNameForNum(lumpnum_t lumpnum);
 
 UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in one pwad
 
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump); // checks only in one pwad
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
-UINT16 W_CheckNumForLongNamePwadNoUpper(const char *name, UINT16 wad, UINT16 startlump);
+UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump);
+UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t numprefixes, UINT16 wad, UINT16 startlump);
 
 /* Find the first lump after F_START for instance. */
 UINT16 W_CheckNumForMarkerStartPwad(const char *name, UINT16 wad, UINT16 startlump);

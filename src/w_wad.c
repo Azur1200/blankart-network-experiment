@@ -76,10 +76,96 @@
 #include "console.h"
 #endif
 
+#include "strbuf.h"
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 
+#if defined(_MSC_VER)
+#pragma pack(1)
+#endif
+// header of a wad file
+typedef struct wadinfo_s
+{
+	char identification[4]; // should be "IWAD" or "PWAD"
+	UINT32 numlumps; // how many resources
+	UINT32 infotableofs; // the 'directory' of resources
+} ATTRPACK wadinfo_t;
+
+// a raw entry of the wad directory
+typedef struct filelump_s
+{
+	UINT32 filepos; // file offset of the resource
+	UINT32 size; // size of the resource
+	char name[8]; // name of the resource
+} ATTRPACK filelump_t;
+
+// PKZip central directory
+typedef struct zend_s
+{
+	char signature[4];
+	UINT16 diskpos;
+	UINT16 cdirdisk;
+	UINT16 diskentries;
+	UINT16 entries;
+	UINT32 cdirsize;
+	UINT32 cdiroffset;
+	UINT16 commentlen;
+} ATTRPACK zend_t;
+
+// PKZip central header
+typedef struct zentry_s
+{
+	char signature[4];
+	UINT16 version;
+	UINT16 versionneeded;
+	UINT16 flags;
+	UINT16 compression;
+	UINT16 modtime;
+	UINT16 moddate;
+	UINT32 CRC32;
+	UINT32 compsize;
+	UINT32 size;
+	UINT16 namelen;
+	UINT16 xtralen;
+	UINT16 commlen;
+	UINT16 diskstart;
+	UINT16 attrint;
+	UINT32 attrext;
+	UINT32 offset;
+} ATTRPACK zentry_t;
+
+// PKZip local header
+typedef struct zlentry_s
+{
+	char signature[4];
+	UINT16 versionneeded;
+	UINT16 flags;
+	UINT16 compression;
+	UINT16 modtime;
+	UINT16 moddate;
+	UINT32 CRC32;
+	UINT32 compsize;
+	UINT32 size;
+	UINT16 namelen;
+	UINT16 xtralen;
+} ATTRPACK zlentry_t;
+#if defined(_MSC_VER)
+#pragma pack()
+#endif
+
+// a memory entry of the wad directory
+struct lumpinfo_t
+{
+	unsigned long position; // filelump_t filepos
+	unsigned long disksize; // filelump_t size
+	size_t size;            // real (uncompressed) size
+	UINT32 hash;
+	UINT32 longname;        //                   e.g. "LongEntryName"
+	UINT32 fullname;        //                   e.g. "Folder/Subfolder/LongEntryName.extension"
+	compmethod compression; // lump compression method
+};
 
 typedef struct
 {
@@ -101,7 +187,7 @@ typedef struct lumpnum_cache_s
 static lumpnum_cache_t lumpnumcache[LUMPNUMCACHESIZE];
 static UINT16 lumpnumcacheindex = 0;
 
-strbuf_t *lumpnamebuf;
+static strbuf_t *lumpnamebuf;
 
 //===========================================================================
 //                                                                    GLOBALS
@@ -252,7 +338,7 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 
 		for(; posStart < posEnd; posStart++)
 		{
-			CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, strbuf_get(lumpnamebuf, wadfiles[wadnum]->lumpinfo[posStart].fullname));
+			CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, W_CheckFullNameForNumPwad(wadnum, posStart));
 			DEH_LoadDehackedLumpPwad(wadnum, posStart, mainfile);
 		}
 	}
@@ -264,32 +350,24 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 	UINT16 lump;
 
 	// Find Lua scripts before SOCs to allow new A_Actions in SOC editing.
-	{
-		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
-		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"LUA_",4)==0)
-				LUA_LoadLump(wadnum, lump, true);
-	}
+	lump = W_CheckNumForNamePrefixPwad("LUA_", 4, wadnum, 0);
+	for (; lump != INT16_MAX; lump = W_CheckNumForNamePrefixPwad("LUA_", 4, wadnum, lump + 1))
+		LUA_LoadLump(wadnum, lump, true);
 
-	{
-		lumpinfo_t *lump_p = wadfiles[wadnum]->lumpinfo;
-		for (lump = 0; lump < wadfiles[wadnum]->numlumps; lump++, lump_p++)
-			if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"SOC_",4)==0) // Check for generic SOC lump
-			{	// shameless copy+paste of code from LUA_LoadLump
-				CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, strbuf_get(lumpnamebuf, lump_p->fullname));
-				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
-			}
-			else if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"MAINCFG",8)==0) // Check for MAINCFG
-			{
-				CONS_Printf(M_GetText("Loading main config from %s\n"), wadfiles[wadnum]->filename);
-				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
-			}
-			else if (memcmp(strbuf_get(lumpnamebuf, lump_p->longname),"OBJCTCFG",9)==0) // Check for OBJCTCFG
-			{
-				CONS_Printf(M_GetText("Loading object config from %s\n"), wadfiles[wadnum]->filename);
-				DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
-			}
+#define NUMPREFIXES 3
+	static lumpprefixes_t socprfx[NUMPREFIXES] = {
+		{ "SOC_", 4 },
+		{ "MAINCFG", 8 },
+		{ "OBJCTCFG", 9 },
+	};
+
+	lump = W_CheckNumForNameMultiPrefixPwad(socprfx, NUMPREFIXES, wadnum, 0);
+	for (; lump != INT16_MAX; lump = W_CheckNumForNameMultiPrefixPwad(socprfx, NUMPREFIXES, wadnum, lump+1))
+	{ // shameless copy+paste of code from LUA_LoadLump
+		CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, W_CheckFullNameForNumPwad(wadnum, lump));
+		DEH_LoadDehackedLumpPwad(wadnum, lump, mainfile);
 	}
+#undef NUMPREFIXES
 }
 
 static inline boolean CheckCompatFilename(const char *filename)
@@ -576,7 +654,7 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			name[namelen-1] = '\0';
 			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, name);
 
-			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, trimname);
+			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, name);
 
 			// Grab the hash from the first part
 			lump_p->hash = quickncasehash(name, 8);
@@ -625,60 +703,6 @@ static boolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
 	}
 	return false;
 }
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-typedef struct zend_s
-{
-	char signature[4];
-	UINT16 diskpos;
-	UINT16 cdirdisk;
-	UINT16 diskentries;
-	UINT16 entries;
-	UINT32 cdirsize;
-	UINT32 cdiroffset;
-	UINT16 commentlen;
-} ATTRPACK zend_t;
-
-typedef struct zentry_s
-{
-	char signature[4];
-	UINT16 version;
-	UINT16 versionneeded;
-	UINT16 flags;
-	UINT16 compression;
-	UINT16 modtime;
-	UINT16 moddate;
-	UINT32 CRC32;
-	UINT32 compsize;
-	UINT32 size;
-	UINT16 namelen;
-	UINT16 xtralen;
-	UINT16 commlen;
-	UINT16 diskstart;
-	UINT16 attrint;
-	UINT32 attrext;
-	UINT32 offset;
-} ATTRPACK zentry_t;
-
-typedef struct zlentry_s
-{
-	char signature[4];
-	UINT16 versionneeded;
-	UINT16 flags;
-	UINT16 compression;
-	UINT16 modtime;
-	UINT16 moddate;
-	UINT32 CRC32;
-	UINT32 compsize;
-	UINT32 size;
-	UINT16 namelen;
-	UINT16 xtralen;
-} ATTRPACK zlentry_t;
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 /** Create a lumpinfo_t array for a PKZip file.
  */
@@ -1090,7 +1114,7 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 	return W_CheckNameForNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum));
 }
 
-static const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
+const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 {
 	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
 		return NULL;
@@ -1098,7 +1122,7 @@ static const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
 }
 
-static const char *W_CheckFullNameForNum(lumpnum_t lumpnum)
+const char *W_CheckFullNameForNum(lumpnum_t lumpnum)
 {
 	return W_CheckFullNameForNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum));
 }
@@ -1147,7 +1171,7 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 				continue;
 
 			// Not the name? (always use longname, even in wads, to accomodate WADNAME)
-			if (strcasecmp(name, strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[i].longname)))
+			if (strcasecmp(name, W_CheckNameForNumPwad(wad, i)))
 				continue;
 
 			// Not a header?
@@ -1173,7 +1197,7 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 					continue;
 
 				// Not the name?
-				if (strcasecmp(name, strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[i].longname)))
+				if (strcasecmp(name, W_CheckNameForNumPwad(wad, i)))
 					continue;
 
 #if 0
@@ -1269,43 +1293,42 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	return INT16_MAX;
 }
 
-//
-// Like W_CheckNumForLongNamePwad, but doesn't uppercase the search string AAAAAAAAAAAAA
-//
-UINT16 W_CheckNumForLongNamePwadNoUpper(const char *name, UINT16 wad, UINT16 startlump)
+// same as W_CheckNumForNamePwad, but only checks for a name PREFIX
+UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	char uname[8+1];
-	UINT32 hash;
+	lumpinfo_t *lump_p;
 
-	if (!TestValidLump(wad,0))
+	if (!TestValidLump(wad, startlump))
 		return INT16_MAX;
 
-	strncpy(uname, name, sizeof uname);
-	strupr(uname);
-	hash = quickncasehash(uname, 8); // Not a mistake, legacy system for short lumpnames
-
-	//
-	// scan forward
-	// start at 'startlump', useful parameter when there are multiple
-	//                       resources with the same name
-	//
-	if (startlump < wadfiles[wad]->numlumps)
-	{
-		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-		{
-			if (lump_p->hash != hash)
-				continue;
-			if (strcmp(strbuf_get(lumpnamebuf, lump_p->longname), name))
-				continue;
+	// scan forward, start at <startlump>
+	lump_p = wadfiles[wad]->lumpinfo + startlump;
+	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		if (!strncmp(strbuf_get(lumpnamebuf, lump_p->longname), name, namelen))
 			return i;
-		}
 
-	}
+	return INT16_MAX; // not found
+}
 
-	// not found.
-	return INT16_MAX;
+// same as W_CheckNumForNamePrefixPwad, but check for MULTIPLE PREFIXES!!!!!!
+UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t numprefixes, UINT16 wad, UINT16 startlump)
+{
+	UINT16 i;
+	size_t j;
+	lumpinfo_t *lump_p;
+
+	if (!TestValidLump(wad, startlump))
+		return INT16_MAX;
+
+	// scan forward, start at <startlump>
+	lump_p = wadfiles[wad]->lumpinfo + startlump;
+	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		for (j = 0; j < numprefixes; j++)
+			if (!strncmp(strbuf_get(lumpnamebuf, lump_p->longname), prefixes[j].prefix, prefixes[j].len))
+				return i;
+
+	return INT16_MAX; // not found
 }
 
 UINT16
@@ -1667,7 +1690,7 @@ boolean W_IsLumpWad(lumpnum_t lumpnum)
 {
 	if (wadfiles[WADFILENUM(lumpnum)]->type == RET_PK3)
 	{
-		const char *lumpfullName = strbuf_get(lumpnamebuf, (wadfiles[WADFILENUM(lumpnum)]->lumpinfo + LUMPNUM(lumpnum))->fullname);
+		const char *lumpfullName = W_CheckFullNameForNum(lumpnum);
 
 		if (strlen(lumpfullName) < 4)
 			return false; // can't possibly be a WAD can it?
@@ -1685,7 +1708,7 @@ boolean W_IsLumpFolder(UINT16 wad, UINT16 lump)
 {
 	if (wadfiles[wad]->type == RET_PK3)
 	{
-		const char *name = strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
+		const char *name = W_CheckFullNameForNumPwad(wad, lump);
 
 		return (name[strlen(name)-1] == '/'); // folders end in '/'
 	}
@@ -1728,7 +1751,7 @@ boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache)
 		// ugh, palette textures...
 		// never do remapping on them; PaletteTextureHack handles that
 		unsigned num;
-		const char *name = strbuf_get(lumpnamebuf, (wadfiles[wad]->lumpinfo + lump)->longname);
+		const char *name = W_CheckNameForNumPwad(wad, lump);
 		if (sscanf(name, "~%03u", &num) && num < 256)
 			return false;
 		else

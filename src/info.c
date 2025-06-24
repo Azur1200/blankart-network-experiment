@@ -158,7 +158,7 @@ void P_ResetData(INT32 flags)
 
 		if (!init)
 		{
-			lumpnum = W_CheckNumForLongNamePwadNoUpper("states", MAINWAD_MAIN, 0);
+			lumpnum = W_CheckNumForLongNamePwad("STATES", MAINWAD_MAIN, 0);
 			DEH_LoadDehackedLumpPwad(MAINWAD_MAIN, lumpnum, true);
 		}
 	}
@@ -183,7 +183,7 @@ void P_ResetData(INT32 flags)
 
 		if (!init)
 		{
-			lumpnum = W_CheckNumForLongNamePwadNoUpper("mobjs", MAINWAD_MAIN, 0);
+			lumpnum = W_CheckNumForLongNamePwad("MOBJS", MAINWAD_MAIN, 0);
 			DEH_LoadDehackedLumpPwad(MAINWAD_MAIN, lumpnum, true);
 		}
 	}
@@ -211,7 +211,7 @@ void P_ResetData(INT32 flags)
 
 		if (!init)
 		{
-			lumpnum = W_CheckNumForLongNamePwadNoUpper("skincolors", MAINWAD_MAIN, 0);
+			lumpnum = W_CheckNumForLongNamePwad("SKINCOLORS", MAINWAD_MAIN, 0);
 			DEH_LoadDehackedLumpPwad(MAINWAD_MAIN, lumpnum, true);
 		}
 	}

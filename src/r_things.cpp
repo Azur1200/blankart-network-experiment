@@ -301,7 +301,6 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	UINT16 l;
 	UINT8 frame;
 	UINT8 rotation;
-	lumpinfo_t *lumpinfo;
 	softwarepatch_t patch;
 	UINT16 numadded = 0;
 	boolean compat = wadfiles[wadnum]->compatmode;
@@ -323,17 +322,14 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	// scan the lumps,
 	//  filling in the frames for whatever is found
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
 	if (endlump > wadfiles[wadnum]->numlumps)
 		endlump = wadfiles[wadnum]->numlumps;
 
-	for (l = startlump; l < endlump; l++)
+	l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, startlump);
+	for (; l != INT16_MAX && l < endlump; l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, l+1))
 	{
-		const char *longname = strbuf_get(lumpnamebuf, lumpinfo[l].longname);
-		if (memcmp(longname,sprname,4))
-			continue;
-
 		{
+			const char *longname = W_CheckNameForNumPwad(wadnum, l);
 			INT32 width, height;
 			INT16 topoffset, leftoffset;
 #ifndef NO_PNG_LUMPS

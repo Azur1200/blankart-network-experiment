@@ -287,7 +287,7 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 			texture->name,
 			sizeu1(offsetof(softwarepatch_t, columnofs)),
 			sizeu2(lumplength),
-			strbuf_get(lumpnamebuf, wadfiles[wadnum]->lumpinfo[lumpnum].fullname)
+			W_CheckFullNameForNumPwad(wadnum, lumpnum)
 		);
 
 		return false;

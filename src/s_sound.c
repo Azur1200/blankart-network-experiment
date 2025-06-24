@@ -1387,12 +1387,11 @@ MusicDefError
 		int          line
 ){
 	const wadfile_t  * wad  =    wadfiles[WADFILENUM (lumpnum)];
-	const lumpinfo_t * lump = &wad->lumpinfo[LUMPNUM (lumpnum)];
 
 	CONS_Alert(level,
 			va("%%s|%%s: %s (line %%d)\n", description),
 			wad->filename,
-			strbuf_get(lumpnamebuf, lump->fullname),
+			W_CheckFullNameForNum(lumpnum),
 			field,
 			line
 	);
