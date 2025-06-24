@@ -176,6 +176,34 @@ static void ignorelines(MYFILE *f)
 	Z_Free(s);
 }
 
+static void ignoremenulines(MYFILE *f)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *tmp;
+	do
+	{
+		if (myfgets(s, MAXLINELEN, f))
+		{
+			if (s[0] == '\n')
+				break;
+
+			// First remove trailing newline, if there is one
+			tmp = strchr(s, '\n');
+			if (tmp)
+				*tmp = '\0';
+
+			tmp = strchr(s, '#');
+			if (tmp)
+				*tmp = '\0';
+			if (s == tmp)
+				continue; // Skip comment lines, but don't break.
+
+			ignorelines(f);
+		}
+	} while (!myfeof(f));
+	Z_Free(s);
+}
+
 void DEH_Link(const char *name, dehinfo_t *info, strbuf_t **buf)
 {
 	info->namehash = HASH32(name, strlen(name));
@@ -625,7 +653,10 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				else if (fastcmp(word, "MENU"))
 				{
 					if (dedicated)
+					{
+						ignoremenulines(f);
 						continue; // dedis don't need menus, silly!
+					}
 
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_menutype(word2); // find a huditem by name
