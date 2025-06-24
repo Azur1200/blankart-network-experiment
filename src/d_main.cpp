@@ -1238,7 +1238,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	INT32 pstartmap = 0;
+	INT32 pstartmap = 1;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
