@@ -5243,6 +5243,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEINT32(save->p, hyudorotime);
 	WRITEINT32(save->p, stealtime);
 	WRITEINT32(save->p, sneakertime);
+	WRITEINT32(save->p, waterpaneltime);
 	WRITEINT32(save->p, itemtime);
 	WRITEINT32(save->p, bubbletime);
 	WRITEINT32(save->p, comebacktime);
@@ -5426,6 +5427,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	hyudorotime = READINT32(save->p);
 	stealtime = READINT32(save->p);
 	sneakertime = READINT32(save->p);
+	waterpaneltime = READINT32(save->p);
 	itemtime = READINT32(save->p);
 	bubbletime = READINT32(save->p);
 	comebacktime = READINT32(save->p);
