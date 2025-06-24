@@ -4,7 +4,11 @@ if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND 
 	target_link_options(SRB2SDL2 PRIVATE "-Wl,--disable-dynamicbase")
 	if("${SRB2_CONFIG_STATIC_STDLIB}")
 		# On MinGW with internal libraries, link the standard library statically
-		target_link_options(SRB2SDL2 PRIVATE -Wl,--add-stdcall-alias -static-libgcc -static-libstdc++ -static -lpthread)
+		if(CMAKE_LINKER_TYPE STREQUAL "LLD")
+			target_link_options(SRB2SDL2 PRIVATE -Wl, -static-libgcc -static-libstdc++ -static -lpthread)
+		else()
+			target_link_options(SRB2SDL2 PRIVATE -Wl,--add-stdcall-alias -static-libgcc -static-libstdc++ -static -lpthread)
+		endif()
 		set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 		find_package(Threads REQUIRED)
 		target_link_libraries(SRB2SDL2 PRIVATE Threads::Threads)

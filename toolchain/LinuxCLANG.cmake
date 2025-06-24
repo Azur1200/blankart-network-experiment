@@ -5,3 +5,6 @@ set(CMAKE_CXX_COMPILER clang++)
 # Set that this is clang.
 set(CMAKE_C_COMPILER_ID clang)
 set(CMAKE_CXX_COMPILER_ID clang)
+
+# Use LLD to link
+set(CMAKE_LINKER_TYPE LLD)
