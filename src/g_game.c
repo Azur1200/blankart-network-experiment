@@ -240,6 +240,7 @@ tic_t battleexittime = 8*TICRATE;
 INT32 hyudorotime = 7*TICRATE;
 INT32 stealtime = TICRATE/2;
 INT32 sneakertime = TICRATE + (TICRATE/3);
+INT32 waterpaneltime = TICRATE*2;
 INT32 itemtime = 8*TICRATE;
 INT32 bubbletime = TICRATE/2;
 INT32 comebacktime = 3*TICRATE;
@@ -254,7 +255,6 @@ UINT8 maxXtraLife = 2; // Max extra lives from rings
 
 UINT8 introtoplay;
 UINT8 creditscutscene;
-UINT8 useBlackRock = 1;
 
 // Emerald locations
 mobj_t *hunt1;

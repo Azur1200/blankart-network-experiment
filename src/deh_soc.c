@@ -3209,6 +3209,47 @@ void readmaincfg(MYFILE *f)
 			{
 				ammoremovaltics = get_number(word2);
 			}
+			// BlanKart: Easy ways to set these for balance purposes
+			else if (fastcmp(word, "HYUDOROTIME"))
+			{
+				hyudorotime = get_number(word2);
+			}
+			else if (fastcmp(word, "STEALTIME"))
+			{
+				stealtime = get_number(word2);
+			}
+			else if (fastcmp(word, "WATERPANELTIME"))
+			{
+				waterpaneltime = get_number(word2);
+			}
+			else if (fastcmp(word, "SNEAKERTIME"))
+			{
+				sneakertime = get_number(word2);
+			}
+			else if (fastcmp(word, "BUBBLETIME"))
+			{
+				bubbletime = get_number(word2);
+			}
+			else if (fastcmp(word, "COMEBACKTIME"))
+			{
+				comebacktime = get_number(word2);
+			}
+			else if (fastcmp(word, "GREASETICS"))
+			{
+				greasetics = get_number(word2);
+			}
+			else if (fastcmp(word, "WIPEOUTSLOWTIME"))
+			{
+				wipeoutslowtime = get_number(word2);
+			}
+			else if (fastcmp(word, "WANTEDREDUCE"))
+			{
+				wantedreduce = get_number(word2);
+			}
+			else if (fastcmp(word, "WANTEDFREQUENCY"))
+			{
+				wantedfrequency = get_number(word2);
+			}
 			else if (fastcmp(word, "INTROTOPLAY"))
 			{
 				introtoplay = (UINT8)get_number(word2);
@@ -3223,10 +3264,6 @@ void readmaincfg(MYFILE *f)
 				// range check, you morons.
 				if (creditscutscene > 128)
 					creditscutscene = 128;
-			}
-			else if (fastcmp(word, "USEBLACKROCK"))
-			{
-				useBlackRock = (UINT8)(value || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else if (fastcmp(word, "LOOPTITLE"))
 			{

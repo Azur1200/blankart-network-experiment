@@ -609,6 +609,7 @@ extern tic_t battleexittime;
 extern INT32 hyudorotime;
 extern INT32 stealtime;
 extern INT32 sneakertime;
+extern INT32 waterpaneltime;
 extern INT32 itemtime;
 extern INT32 bubbletime;
 extern INT32 comebacktime;
@@ -620,7 +621,6 @@ extern INT32 wantedfrequency;
 
 extern UINT8 introtoplay;
 extern UINT8 creditscutscene;
-extern UINT8 useBlackRock;
 
 extern UINT8 use1upSound;
 extern UINT8 maxXtraLife; // Max extra lives from rings

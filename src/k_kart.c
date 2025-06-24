@@ -5535,7 +5535,7 @@ static void K_SneakerPanelEffect(player_t *player, INT32 type)
 void K_DoSneaker(player_t *player, INT32 type)
 {
 	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
-	const tic_t sneakerduration = (type == 3) ? TICRATE*2 : sneakertime;
+	const tic_t sneakerduration = (type == SNEAKERTYPE_WATERPANEL) ? waterpaneltime : sneakertime;
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
@@ -5548,7 +5548,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 
 	K_SneakerPanelEffect(player, type);
 
-	if (type != 0 && type != 3)
+	if (type != SNEAKERTYPE_PANEL && type != SNEAKERTYPE_WATERPANEL)
 	{
 		K_PlayBoostTaunt(player->mo);
 	}
@@ -5561,7 +5561,7 @@ void K_DoSneaker(player_t *player, INT32 type)
 		player->numsneakers = CLAMP(player->numsneakers+1, 0, stackingactive ? MAXSNEAKERSTACK : 1);
 	}
 
-	if (type == 3)
+	if (type == SNEAKERTYPE_WATERPANEL)
 	{
 		// Water Running please!
 		player->mo->flags2 |= MF2_WATERRUN;

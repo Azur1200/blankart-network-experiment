@@ -365,6 +365,12 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"gamespeed")) {
 		lua_pushinteger(L, gamespeed);
 		return 1;
+	} else if (fastcmp(word,"nummapboxes")) {
+		lua_pushinteger(L, nummapboxes);
+		return 1;
+	} else if (fastcmp(word,"numgotboxes")) {
+		lua_pushinteger(L, numgotboxes);
+		return 1;
 	} else if (fastcmp(word,"itembreaker")) {
 		lua_pushinteger(L, itembreaker);
 		return 1;
@@ -427,6 +433,36 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		return 1;
 	} else if (fastcmp(word, "compatmode")) {
 		lua_pushboolean(L, lua_compatmode);
+		return 1;
+	} else if (fastcmp(word, "hyudorotime")) {
+		lua_pushinteger(L, hyudorotime);
+		return 1;
+	} else if (fastcmp(word, "stealtime")) {
+		lua_pushinteger(L, stealtime);
+		return 1;
+	} else if (fastcmp(word, "sneakertime")) {
+		lua_pushinteger(L, sneakertime);
+		return 1;
+	} else if (fastcmp(word, "waterpaneltime")) {
+		lua_pushinteger(L, waterpaneltime);
+		return 1;
+	} else if (fastcmp(word, "bubbletime")) {
+		lua_pushinteger(L, bubbletime);
+		return 1;
+	} else if (fastcmp(word, "comebacktime")) {
+		lua_pushinteger(L, comebacktime);
+		return 1;
+	} else if (fastcmp(word, "greasetics")) {
+		lua_pushinteger(L, greasetics);
+		return 1;
+	} else if (fastcmp(word, "wipeoutslowtime")) {
+		lua_pushinteger(L, wipeoutslowtime);
+		return 1;
+	} else if (fastcmp(word, "wantedreduce")) {
+		lua_pushinteger(L, wantedreduce);
+		return 1;
+	} else if (fastcmp(word, "wantedfrequency")) {
+		lua_pushinteger(L, wantedfrequency);
 		return 1;
 	} else if (fastcmp(word, "mapnamespace")) {
 		lua_pushstring(L, P_MapNamespaceString(mapnamespace));
@@ -513,6 +549,26 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 		nummapboxes = (INT32)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"numgotboxes"))
 		numgotboxes = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "hyudorotime"))
+		hyudorotime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "stealtime"))
+		stealtime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "sneakertime"))
+		sneakertime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "waterpaneltime"))
+		waterpaneltime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "bubbletime"))
+		bubbletime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "comebacktime"))
+		comebacktime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "greasetics"))
+		greasetics = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "wipeoutslowtime"))
+		wipeoutslowtime = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "wantedreduce"))
+		wantedreduce = (INT32)luaL_checkinteger(L, 2);
+	else if (fastcmp(word, "wantedfrequency"))
+		wantedfrequency = (INT32)luaL_checkinteger(L, 2);
 	else
 		return 0;
 
