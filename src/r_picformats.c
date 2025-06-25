@@ -1860,8 +1860,8 @@ void R_LoadSpriteInfoLumps(UINT16 wadnum)
 		{ "SPR_", 4 },
 	};
 
-	UINT16 i = W_CheckNumForNameMultiPrefixPwad(&sprtinfoprfx, NUMPREFIXES, wadnum, 0);
-	for (; i != INT16_MAX; i = W_CheckNumForNameMultiPrefixPwad(&sprtinfoprfx, NUMPREFIXES, wadnum, i + 1))
+	UINT16 i = W_CheckNumForNameMultiPrefixPwad(sprtinfoprfx, NUMPREFIXES, wadnum, 0);
+	for (; i != INT16_MAX; i = W_CheckNumForNameMultiPrefixPwad(sprtinfoprfx, NUMPREFIXES, wadnum, i + 1))
 	{
 		R_ParseSPRTINFOLump(wadnum, i);
 	}

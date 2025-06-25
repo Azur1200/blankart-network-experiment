@@ -158,13 +158,13 @@ typedef struct zlentry_s
 // a memory entry of the wad directory
 struct lumpinfo_t
 {
-	unsigned long position; // filelump_t filepos
-	unsigned long disksize; // filelump_t size
-	size_t size;            // real (uncompressed) size
-	UINT32 hash;
-	UINT32 longname;        //                   e.g. "LongEntryName"
-	UINT32 fullname;        //                   e.g. "Folder/Subfolder/LongEntryName.extension"
+	UINT32 hash;     // hash for longname in ALL CAPS
+	UINT32 longname; // e.g. "LongEntryName"
+	UINT32 fullname; // e.g. "Folder/Subfolder/LongEntryName.extension"
+	UINT32 position; // filelump_t filepos
+	UINT32 disksize; // filelump_t size
 	compmethod compression; // lump compression method
+	size_t size;     // real (uncompressed) size
 };
 
 typedef struct
@@ -180,7 +180,7 @@ typedef struct
 typedef struct lumpnum_cache_s
 {
 	char lumpname[32];
-	UINT32 lumphash;
+	UINT32 lumphash; // hash for lumpname WITHOUT all caps
 	lumpnum_t lumpnum;
 } lumpnum_cache_t;
 
@@ -518,7 +518,10 @@ static lumpinfo_t* ResGetLumpsStandalone (FILE* handle, UINT16* numlumps, const 
 	fseek(handle, 0, SEEK_SET);
 
 	lumpinfo->longname = lumpinfo->fullname = strbuf_append(&lumpnamebuf, lumpname);
-	lumpinfo->hash = quickncasehash(lumpname, 8);
+	char *name = strdup(lumpname);
+	strupr(name);
+	lumpinfo->hash = HASH32(lumpname, strlen(name));
+	free(name);
 
 	*numlumps = 1;
 	return lumpinfo;
@@ -657,7 +660,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, name);
 
 			// Grab the hash from the first part
-			lump_p->hash = quickncasehash(name, 8);
+			strupr(name);
+			lump_p->hash = HASH32(name, strlen(name));
 			free(name);
 
 			wadnamelump = i | (numwadfiles << 16);
@@ -671,7 +675,8 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, name);
 
 			// Set up true hash
-			lump_p->hash = quickncasehash(name, 8);
+			strupr(name);
+			lump_p->hash = HASH32(name, strlen(name));
 		}
 	}
 	free(fileinfov);
@@ -781,15 +786,11 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		if ((dotpos = strrchr(trimname, '.')) == 0)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
-		char backup = trimname[dotpos - trimname];
+		lump_p->fullname = strbuf_append(&lumpnamebuf, fullname);
 		trimname[dotpos - trimname] = '\0';
 		lump_p->longname = strbuf_append(&lumpnamebuf, trimname);
-		char name[8];
-		strncpy(name, trimname, 8);
-		lump_p->hash = quickncasehash(name, 8);
-		trimname[dotpos - trimname] = backup;
-
-		lump_p->fullname = strbuf_append(&lumpnamebuf, fullname);
+		strupr(trimname);
+		lump_p->hash = HASH32(trimname, strlen(trimname));
 
 		switch(zentry.compression)
 		{
@@ -1232,7 +1233,7 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 
 	strlcpy(uname, name, sizeof uname);
 	strupr(uname);
-	hash = quickncasehash(uname, 8);
+	hash = HASH32(uname, strlen(uname));
 
 	//
 	// scan forward
@@ -1268,7 +1269,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 
 	strlcpy(uname, name, sizeof uname);
 	strupr(uname);
-	hash = quickncasehash(uname, 8); // Not a mistake, legacy system for short lumpnames
+	hash = HASH32(uname, strlen(uname));
 
 	//
 	// scan forward
@@ -1400,7 +1401,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 lumpnum_t W_CheckNumForName(const char *name)
 {
 	INT32 i;
-	UINT32 hash = name ? quickncasehash(name, 8) : 0;
+	UINT32 hash = name ? HASH32(name, strlen(name)) : 0;
 	lumpnum_t check = INT16_MAX;
 
 	if (name == NULL)
@@ -1452,7 +1453,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 lumpnum_t W_CheckNumForLongName(const char *name)
 {
 	INT32 i;
-	UINT32 hash = name ? quickncasehash(name, 8) : 0;
+	UINT32 hash = name ? HASH32(name, strlen(name)) : 0;
 	lumpnum_t check = INT16_MAX;
 
 	if (name == NULL)
@@ -1502,7 +1503,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 lumpnum_t W_CheckNumForMap(const char *name)
 {
 	lumpnum_t check = INT16_MAX;
-	UINT32 uhash, hash = quickncasehash(name, LUMPNUMCACHENAME);
+	UINT32 uhash, hash = HASH32(name, min(strlen(name), LUMPNUMCACHENAME));
 	INT32 i;
 
 	// Check the lumpnumcache first. Loop backwards so that we check
@@ -1517,7 +1518,10 @@ lumpnum_t W_CheckNumForMap(const char *name)
 		}
 	}
 
-	uhash = quickncasehash(name, 8); // Not a mistake, legacy system for short lumpnames
+	char *uname = strdup(name);
+	strupr(uname);
+	uhash = HASH32(name, strlen(uname));
+	free(uname);
 
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
