@@ -554,6 +554,11 @@ extern UINT8 playernode[MAXPLAYERS];
 extern UINT8 playerconsole[MAXPLAYERS];
 extern SINT8 joinnode;
 
+#define SERVMUS_1 "SRVMS1"
+#define SERVMUS_2 "SRVMS2"
+
+void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos);
+
 INT32 GetClientMode(void);
 void ChangeClientMode(INT32 mode);
 

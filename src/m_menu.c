@@ -8047,6 +8047,7 @@ INT32 MR_HandleViewServer(INT32 choice)
 		case KEY_ENTER:
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
+			ChangeServMusic(SERVMUS_2, true,true);
 			M_ClearMenus(false);
 			return true;
 			break;

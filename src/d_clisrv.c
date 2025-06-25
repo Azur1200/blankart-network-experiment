@@ -553,10 +553,7 @@ char http_source[MAX_MIRROR_LENGTH];
 
 static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
 
-static const char* servmus_1 = "SRVMS1";
-static const char* servmus_2 = "SRVMS2";
-
-static void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
+void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
 {
 	if (S_MusicExists(musname))
 		if (keepPos)
@@ -1616,7 +1613,7 @@ static boolean CL_FinishedFileList(void)
 				"Press ACCEL to continue or BRAKE to cancel.\n\n"
 			), M_ConfirmConnect, MM_EVENTHANDLER);
 			cl_mode = CL_CONFIRMCONNECT;
-			ChangeServMusic(servmus_2, true,true);
+			ChangeServMusic(SERVMUS_2, true,true);
 		}
 		else
 			cl_mode = CL_LOADFILES;
@@ -1686,7 +1683,7 @@ static boolean CL_FinishedFileList(void)
 
 			Z_Free(downloadsize);
 			cl_mode = CL_CONFIRMCONNECT;
-			ChangeServMusic(servmus_2, true,true);
+			ChangeServMusic(SERVMUS_2, true,true);
 		}
 #ifdef HAVE_CURL
 		else
@@ -1787,7 +1784,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			}
 
 			cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
-			ChangeServMusic(servmus_1, true,false);
+			ChangeServMusic(SERVMUS_1, true,false);
 		}
 		else
 		{
@@ -1834,7 +1831,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
 			{
 				cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
-				ChangeServMusic(servmus_1, true,false);
+				ChangeServMusic(SERVMUS_1, true,false);
 			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
 			{
