@@ -105,7 +105,7 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	snprintf(skin->name,
 		sizeof skin->name, "skin %u", (UINT32)(skin-skins));
 	skin->name[sizeof skin->name - 1] = '\0';
-	skin->wadnum = INT16_MAX;
+	skin->wadnum = MAX_WADFILES;
 
 	skin->flags = 0;
 
@@ -648,7 +648,7 @@ void R_AddSkins(UINT16 wadnum)
 	// search for all skin markers in pwad
 	//
 
-	while ((lump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, lastlump)) != INT16_MAX)
+	while ((lump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		// advance by default
 		lastlump = lump + 1;
@@ -820,7 +820,7 @@ void R_PatchSkins(UINT16 wadnum)
 	// search for all skin patch markers in pwad
 	//
 
-	while ((lump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, lastlump)) != INT16_MAX)
+	while ((lump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		INT32 skinnum = 0;
 

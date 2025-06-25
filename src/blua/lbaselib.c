@@ -279,7 +279,7 @@ static int luaB_dofile (lua_State *L) {
 
 	snprintf(fullfilename, sizeof(fullfilename), "Lua/%s", filename);
 	lumpnum = W_CheckNumForFullNamePK3(fullfilename, numwadfiles - 1, 0);
-	if (lumpnum == INT16_MAX)
+	if (lumpnum == LUMPERROR)
 		luaL_error(L, "can't find script " LUA_QS, fullfilename);
 
 	LUA_LoadLump(numwadfiles - 1, lumpnum, false);

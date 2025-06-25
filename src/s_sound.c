@@ -1644,14 +1644,10 @@ void S_LoadMusicDefs(UINT16 wad)
 {
 	const lumpnum_t wadnum = wad << 16;
 
-	UINT16 lump = 0;
+	UINT16 lump;
 
-	while ((lump = W_CheckNumForLongNamePwad("MUSICDEF", wad, lump)) != INT16_MAX)
-	{
+	for (lump = 0; (lump = W_CheckNumForLongNamePwad("MUSICDEF", wad, lump)) != LUMPERROR; lump++)
 		S_LoadMusicDefLump(wadnum | lump);
-
-		lump++;
-	}
 }
 
 //

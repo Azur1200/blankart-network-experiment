@@ -6591,7 +6591,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int i;
 
 	lump = W_CheckNumForLongNamePwad("SHADERS", wadnum, 0);
-	if (lump == INT16_MAX)
+	if (lump == LUMPERROR)
 		return;
 
 	shaderdef = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
@@ -6671,7 +6671,7 @@ skip_lump:
 						shader_lumpnum = W_CheckNumForNamePwad(shader_lumpname, wadnum, 0);
 					}
 
-					if (shader_lumpnum == INT16_MAX)
+					if (shader_lumpnum == LUMPERROR)
 					{
 						CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: Missing shader source %s (file %s, line %d)\n", shader_lumpname, wadfiles[wadnum]->filename, linenum);
 						Z_Free(shader_lumpname);

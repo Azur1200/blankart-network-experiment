@@ -221,10 +221,10 @@ static inline lumpnum_t R_CheckNumForNameList(const char *name, lumplist_t *list
 	size_t i;
 	UINT16 lump;
 
-	for (i = listsize - 1; i < INT16_MAX; i--)
+	for (i = listsize - 1; i != SIZE_MAX; i--)
 	{
 		lump = W_CheckNumForNamePwad(name, list[i].wadfile, list[i].firstlump);
-		if (lump == INT16_MAX || lump > (list[i].firstlump + list[i].numlumps))
+		if (lump == LUMPERROR || lump > (list[i].firstlump + list[i].numlumps))
 			continue;
 		else
 			return (list[i].wadfile<<16)+lump;
@@ -241,12 +241,12 @@ static void R_InitExtraColormaps(void)
 	for (cfile = clump = 0; cfile < numwadfiles; cfile++, clump = 0)
 	{
 		startnum = W_CheckNumForLongNamePwad("C_START", cfile, clump);
-		if (startnum == INT16_MAX)
+		if (startnum == LUMPERROR)
 			continue;
 
 		endnum = W_CheckNumForLongNamePwad("C_END", cfile, clump);
 
-		if (endnum == INT16_MAX)
+		if (endnum == LUMPERROR)
 			I_Error("R_InitExtraColormaps: C_START without C_END\n");
 
 		// This shouldn't be possible when you use the Pwad function, silly

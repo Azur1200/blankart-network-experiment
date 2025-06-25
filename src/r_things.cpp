@@ -325,8 +325,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (endlump > wadfiles[wadnum]->numlumps)
 		endlump = wadfiles[wadnum]->numlumps;
 
-	l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, startlump);
-	for (; l != INT16_MAX && l < endlump; l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, l+1))
+	for (l = startlump; (l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, l)) != LUMPERROR && l < endlump; l++)
 	{
 		{
 			const char *longname = W_CheckNameForNumPwad(wadnum, l);
@@ -504,12 +503,12 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	{
 	case RET_WAD:
 		start = W_CheckNumForLongNamePwad("S_START", wadnum, 0);
-		if (start == INT16_MAX)
+		if (start == LUMPERROR)
 			start = W_CheckNumForLongNamePwad("SS_START", wadnum, 0); //deutex compatib.
-		if (start != INT16_MAX) start++;
+		if (start != LUMPERROR) start++;
 
 		end = W_CheckNumForLongNamePwad("S_END", wadnum, start);
-		if (end == INT16_MAX)
+		if (end == LUMPERROR)
 			end = W_CheckNumForLongNamePwad("SS_END", wadnum, start); //deutex compatib.
 		break;
 	case RET_PK3:
@@ -520,16 +519,20 @@ void R_AddSpriteDefs(UINT16 wadnum)
 		return;
 	}
 
-	if (start == INT16_MAX)
+	if (start == LUMPERROR)
 	{
 		// ignore skin wads (we don't want skin sprites interfering with vanilla sprites)
-		if (W_CheckNumForLongNamePwad("S_SKIN", wadnum, 0) != UINT16_MAX)
+		// G: DON'T ignore skin wads. this check did nothing because it incorrectly checked for UINT16_MAX instead of INT16_MAX
+		// plus, this didn't exist in kart, so it might break old WADs...
+		/*
+		if (W_CheckNumForLongNamePwad("S_SKIN", wadnum, 0) != LUMPERROR)
 			return;
+		*/
 
 		start = 0; //let say S_START is lump 0
 	}
 
-	if (end == INT16_MAX || start >= end)
+	if (end == LUMPERROR || start >= end)
 	{
 		CONS_Debug(DBG_SETUP, "no sprites in pwad %d\n", wadnum);
 		return;

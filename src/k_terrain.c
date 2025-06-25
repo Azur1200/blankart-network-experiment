@@ -2263,12 +2263,10 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 	UINT16 lumpNum;
 	boolean terrainLoaded = false;
 
-	lumpNum = W_CheckNumForLongNamePwad("TERRAIN", wadNum, 0);
-
 	// Iterate through all lumps and compare the name individually.
 	// In PK3 files, you can potentially have multiple TERRAIN differentiated by
 	// their file extension.
-	for (; lumpNum != INT16_MAX; lumpNum = W_CheckNumForLongNamePwad("TERRAIN", wadNum, lumpNum + 1))
+	for (lumpNum = 0; (lumpNum = W_CheckNumForLongNamePwad("TERRAIN", wadNum, lumpNum)) != LUMPERROR; lumpNum++)
 	{
 		UINT8 *data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
 

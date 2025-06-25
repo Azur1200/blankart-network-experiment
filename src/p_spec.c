@@ -152,13 +152,10 @@ void P_InitPicAnims(void)
 		UINT16 animdefsLumpNum;
 
 		// Find ANIMDEFS lump in the WAD
-		animdefsLumpNum = W_CheckNumForLongNamePwad("ANIMDEFS", w, 0);
-
-		while (animdefsLumpNum != INT16_MAX)
+		for (animdefsLumpNum = 0; (animdefsLumpNum = W_CheckNumForLongNamePwad("ANIMDEFS", w, animdefsLumpNum)) != LUMPERROR; animdefsLumpNum++)
 		{
-			animdeftempflats = ((partadd_earliestfile == UINT16_MAX) || partadd_earliestfile == w);
+			animdeftempflats = ((partadd_earliestfile == MAX_WADFILES) || partadd_earliestfile == w);
 			P_ParseANIMDEFSLump(w, animdefsLumpNum);
-			animdefsLumpNum = W_CheckNumForLongNamePwad("ANIMDEFS", (UINT16)w, animdefsLumpNum + 1);
 		}
 	}
 

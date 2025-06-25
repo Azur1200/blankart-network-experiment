@@ -312,19 +312,19 @@ patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *for
 	va_list ap;
 	char buffer[9];
 
-	lumpnum_t lump = INT16_MAX;
+	lumpnum_t lump = LUMPERROR;
 	patch_t *patch;
 
 	va_start (ap, format);
 	vsnprintf(buffer, sizeof buffer, format, ap);
 	va_end   (ap);
 
-	if (user && partadd_earliestfile != UINT16_MAX)
+	if (user && partadd_earliestfile != MAX_WADFILES)
 	{
 		UINT16 fileref = numwadfiles;
-		lump = INT16_MAX;
+		lump = LUMPERROR;
 
-		while ((lump == INT16_MAX) && ((--fileref) >= partadd_earliestfile))
+		while ((lump == LUMPERROR) && ((--fileref) >= partadd_earliestfile))
 		{
 			lump = W_CheckNumForNamePwad(buffer, fileref, 0);
 		}

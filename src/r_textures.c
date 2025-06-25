@@ -1134,11 +1134,11 @@ Rloadflats (INT32 i, INT32 w)
 	else
 	{
 		texstart = W_CheckNumForLongNamePwad("F_START", (UINT16)w, 0);
-		if (texstart != INT16_MAX) texstart++;
+		if (texstart != LUMPERROR) texstart++;
 		texend = W_CheckNumForLongNamePwad("F_END", (UINT16)w, texstart);
 	}
 
-	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
+	if (!( texstart == LUMPERROR || texend == LUMPERROR ))
 	{
 		// Work through each lump between the markers in the WAD.
 		for (j = 0; j < (texend - texstart); j++)
@@ -1216,7 +1216,7 @@ Rloadtextures (INT32 i, INT32 w)
 		texstart = W_CheckNumForFolderStartPK3("textures/", (UINT16)w, 0);
 		texend = W_CheckNumForFolderEndPK3("textures/", (UINT16)w, texstart);
 		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, 0);
-		while (texturesLumpPos != INT16_MAX)
+		while (texturesLumpPos != LUMPERROR)
 		{
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
 			texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, texturesLumpPos + 1);
@@ -1225,14 +1225,14 @@ Rloadtextures (INT32 i, INT32 w)
 	else
 	{
 		texstart = W_CheckNumForLongNamePwad("TX_START", (UINT16)w, 0);
-		if (texstart != INT16_MAX) texstart++;
+		if (texstart != LUMPERROR) texstart++;
 		texend = W_CheckNumForLongNamePwad("TX_END", (UINT16)w, 0);
 		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, 0);
-		if (texturesLumpPos != INT16_MAX)
+		if (texturesLumpPos != LUMPERROR)
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
 	}
 
-	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
+	if (!( texstart == LUMPERROR || texend == LUMPERROR ))
 	{
 		// Work through each lump between the markers in the WAD.
 		for (j = 0; j < (texend - texstart); j++)
@@ -1321,11 +1321,11 @@ count_range
 	else
 	{
 		texstart = W_CheckNumForLongNamePwad(marker_start, wadnum, 0);
-		if (texstart != INT16_MAX) texstart++;
+		if (texstart != LUMPERROR) texstart++;
 		texend = W_CheckNumForLongNamePwad(marker_end, wadnum, texstart);
 	}
 
-	if (texstart != INT16_MAX && texend != INT16_MAX)
+	if (texstart != LUMPERROR && texend != LUMPERROR)
 	{
 		// PK3s have subfolders, so we can't just make a simple sum
 		if (wadfiles[wadnum]->type == RET_PK3)
@@ -1361,13 +1361,8 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	count += count_range("F_START", "F_END", "flats/", wadnum);
 
 	// Count the textures from TEXTURES lumps
-	texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, 0);
-
-	while (texturesLumpPos != INT16_MAX)
-	{
+	for (texturesLumpPos = 0; (texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, texturesLumpPos)) != LUMPERROR; texturesLumpPos++)
 		count += R_CountTexturesInTEXTURESLump(wadnum, texturesLumpPos);
-		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, texturesLumpPos + 1);
-	}
 
 	// Count single-patch textures
 	count += count_range("TX_START", "TX_END", "textures/", wadnum);

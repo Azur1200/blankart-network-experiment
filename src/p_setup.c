@@ -196,7 +196,7 @@ static SINT8 partadd_stage = -1;
 static boolean partadd_replacescurrentmap = false;
 static boolean partadd_terrainloaded = false;
 static boolean partadd_important = false;
-UINT16 partadd_earliestfile = UINT16_MAX;
+UINT16 partadd_earliestfile = MAX_WADFILES;
 
 // Maintain *ZOOM TUBE* waypoints
 // Renamed because SRB2Kart owns real waypoints.
@@ -9096,7 +9096,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 		maplump = W_CheckNumForMap(name);
 
 		// Doesn't exist?
-		if (maplump == INT16_MAX)
+		if (maplump == LUMPERROR)
 		{
 #ifndef DEVELOP
 			if (!existingmapheaders)
@@ -9222,7 +9222,7 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 {
 	UINT16 wadnum;
 
-	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == UINT16_MAX)
+	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == MAX_WADFILES)
 		return false;
 
 	P_MultiSetupWadFiles(true);
@@ -9245,10 +9245,10 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	UINT16 musPos, musEnd;
 
 	// Init file.
-	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == LUMPERROR)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
-		return UINT16_MAX;
+		return MAX_WADFILES;
 	}
 	wadnum = (UINT16)(numwadfiles-1);
 
@@ -9422,7 +9422,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		partadd_important = false;
 		partadd_replacescurrentmap = false;
 		partadd_terrainloaded = false;
-		partadd_earliestfile = UINT16_MAX;
+		partadd_earliestfile = MAX_WADFILES;
 		return true;
 	}
 

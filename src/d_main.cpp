@@ -1550,7 +1550,7 @@ void D_SRB2Main(void)
 	}
 
 	D_CleanFile(startuppwads);
-	partadd_earliestfile = UINT16_MAX;
+	partadd_earliestfile = MAX_WADFILES;
 
 	CON_SetLoadingProgress(LOADED_PWAD);
 
