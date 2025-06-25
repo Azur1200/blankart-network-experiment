@@ -2145,7 +2145,7 @@ void readmenu(MYFILE *f, INT32 num)
 
 			if (fastcmp(word, "BACKGROUNDNAME"))
 			{
-				strncpy(menudefs[num].bgname, word2, 8);
+				strlcpy(menudefs[num].bgname, word2, sizeof(menudefs[num].bgname));
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "HIDEBACKGROUND"))
@@ -2186,7 +2186,7 @@ void readmenu(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "TITLEPICSNAME"))
 			{
-				strncpy(menudefs[num].ttname, word2, 9);
+				strlcpy(menudefs[num].ttname, word2, sizeof(menudefs[num].ttname));
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSX"))
@@ -3266,7 +3266,7 @@ void readmaincfg(MYFILE *f)
 			}
 			else if (fastcmp(word, "TITLEPICSNAME"))
 			{
-				strncpy(ttname, word2, 9);
+				strlcpy(ttname, word2, sizeof(ttname));
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSX"))

@@ -93,10 +93,12 @@ typedef enum
 #define TTMAX_ALACROIX 30 // max frames for SONIC typeface, plus one for NULL terminating entry
 #define TTMAX_USER 100
 
+#define SHORTNAMELEN 8
+
 extern ttmode_enum ttmode;
 extern UINT8 ttscale;
 // ttmode user vars
-extern char ttname[9];
+extern char ttname[SHORTNAMELEN+1];
 extern INT16 ttx;
 extern INT16 tty;
 extern INT16 ttloop;
@@ -114,7 +116,7 @@ typedef enum
 // Current menu parameters
 
 extern mobj_t *titlemapcameraref;
-extern char curbgname[9];
+extern char curbgname[SHORTNAMELEN+1];
 extern SINT8 curfadevalue;
 extern INT32 curbgcolor;
 extern INT32 curbgxspeed;
@@ -126,7 +128,7 @@ extern boolean curhidepics;
 extern ttmode_enum curttmode;
 extern UINT8 curttscale;
 // ttmode user vars
-extern char curttname[9];
+extern char curttname[SHORTNAMELEN+1];
 extern INT16 curttx;
 extern INT16 curtty;
 extern INT16 curttloop;

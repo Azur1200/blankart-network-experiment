@@ -64,7 +64,7 @@ static INT32 menuanimtimer; // Title screen: background animation timing
 mobj_t *titlemapcameraref = NULL;
 
 // menu presentation state
-char curbgname[9];
+char curbgname[SHORTNAMELEN+1];
 SINT8 curfadevalue;
 INT32 curbgcolor;
 INT32 curbgxspeed;
@@ -94,7 +94,7 @@ boolean curhidepics;
 ttmode_enum curttmode;
 UINT8 curttscale;
 // ttmode user vars
-char curttname[9];
+char curttname[SHORTNAMELEN+1];
 INT16 curttx;
 INT16 curtty;
 INT16 curttloop;
@@ -1133,7 +1133,7 @@ void F_InitMenuPresValues(boolean title)
 	}
 
 	// Set defaults for presentation values
-	strncpy(curbgname, "TITLESKY", 9);
+	strcpy(curbgname, "TITLESKY");
 	curfadevalue = 16;
 	curbgcolor = -1;
 	curbgxspeed = titlescrollxspeed;
@@ -1143,7 +1143,7 @@ void F_InitMenuPresValues(boolean title)
 	curhidepics = hidetitlepics;
 	curttmode = ttmode;
 	curttscale = ttscale;
-	strncpy(curttname, ttname, 9);
+	strcpy(curttname, ttname);
 	curttx = ttx;
 	curtty = tty;
 	curttloop = ttloop;
@@ -1180,7 +1180,7 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 		return;
 	}
 
-	pat = W_CachePatchName(patchname, PU_PATCH_LOWPRIORITY);
+	pat = W_CachePatchLongName(patchname, PU_PATCH_LOWPRIORITY);
 
 	if (scrollxspeed == 0 && scrollyspeed == 0)
 	{
@@ -1220,36 +1220,39 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 	}
 }
 
-#define LOADTTGFX(arr, name, maxf) \
-lumpnum = W_CheckNumForName(name); \
-if (lumpnum != LUMPERROR) \
-{ \
-	arr[0] = W_CachePatchName(name, PU_PATCH_LOWPRIORITY); \
-	arr[min(1, maxf-1)] = 0; \
-} \
-else if (strlen(name) <= 6) \
-{ \
-	fixed_t cnt = strlen(name); \
-	strncpy(lumpname, name, 7); \
-	for (i = 0; i < maxf-1; i++) \
-	{ \
-		sprintf(&lumpname[cnt], "%.2hu", (UINT16)(i+1)); \
-		lumpname[8] = 0; \
-		lumpnum = W_CheckNumForName(lumpname); \
-		if (lumpnum != LUMPERROR) \
-			arr[i] = W_CachePatchName(lumpname, PU_PATCH_LOWPRIORITY); \
-		else \
-			break; \
-	} \
-	arr[min(i, maxf-1)] = 0; \
-} \
-else \
-	arr[0] = 0;
+static void LoadTTGFX(patch_t **arr, const char *name, UINT16 maxf)
+{
+	UINT16 i;
+	lumpnum_t lumpnum;
+	char lumpname[SHORTNAMELEN+1];
+
+	lumpnum = W_CheckNumForLongName(name);
+	if (lumpnum != LUMPERROR)
+	{
+		arr[0] = W_CachePatchNum(lumpnum, PU_PATCH_LOWPRIORITY);
+		arr[min(1, maxf-1)] = NULL;
+	}
+	else if (strlen(name) <= 6)
+	{
+		fixed_t cnt = strlen(name);
+		strncpy(lumpname, name, 7);
+		for (i = 0; i < maxf-1; i++)
+		{
+			sprintf(&lumpname[cnt], "%.2hu", (UINT16)(i+1));
+			lumpnum = W_CheckNumForLongName(lumpname);
+			if (lumpnum != LUMPERROR)
+				arr[i] = W_CachePatchNum(lumpnum, PU_PATCH_LOWPRIORITY);
+			else
+				break;
+		}
+		arr[min(i, maxf-1)] = NULL;
+	}
+	else
+		arr[0] = NULL;
+}
 
 static void F_CacheTitleScreen(void)
 {
-	UINT16 i;
-
 	switch(curttmode)
 	{
 		case TTMODE_NONE:
@@ -1263,13 +1266,8 @@ static void F_CacheTitleScreen(void)
 			break;
 
 		case TTMODE_USER:
-		{
-			lumpnum_t lumpnum;
-			char lumpname[9];
-
-			LOADTTGFX(ttuser, curttname, TTMAX_USER)
+			LoadTTGFX(ttuser, curttname, TTMAX_USER);
 			break;
-		}
 	}
 }
 

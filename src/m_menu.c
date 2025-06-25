@@ -823,7 +823,7 @@ void M_SetMenuCurBackground(void)
 		}
 		else if (menudefs[menutype].bgname[0])
 		{
-			strncpy(curbgname, menudefs[menutype].bgname, 8);
+			strcpy(curbgname, menudefs[menutype].bgname);
 			curbgxspeed = menudefs[menutype].titlescrollxspeed != INT32_MAX ? menudefs[menutype].titlescrollxspeed : titlescrollxspeed;
 			curbgyspeed = menudefs[menutype].titlescrollyspeed != INT32_MAX ? menudefs[menutype].titlescrollyspeed : titlescrollyspeed;
 			return;
@@ -833,7 +833,7 @@ void M_SetMenuCurBackground(void)
 		curbghide = true;
 	else
 	{
-		strncpy(curbgname, "TITLESKY", 9);
+		strcpy(curbgname, "TITLESKY");
 		curbgxspeed = titlescrollxspeed;
 		curbgyspeed = titlescrollyspeed;
 	}
@@ -902,7 +902,7 @@ void M_SetMenuCurTitlePics(void)
 				curhidepics = menudefs[menutype].hidetitlepics;
 				curttmode = menudefs[menutype].ttmode;
 				curttscale = (menudefs[menutype].ttscale != UINT8_MAX ? menudefs[menutype].ttscale : ttscale);
-				strncpy(curttname, menudefs[menutype].ttname, sizeof(curttname)-1);
+				strcpy(curttname, menudefs[menutype].ttname);
 				curttx = (menudefs[menutype].ttx != INT16_MAX ? menudefs[menutype].ttx : ttx);
 				curtty = (menudefs[menutype].tty != INT16_MAX ? menudefs[menutype].tty : tty);
 				curttloop = (menudefs[menutype].ttloop != INT16_MAX ? menudefs[menutype].ttloop : ttloop);
@@ -924,7 +924,7 @@ void M_SetMenuCurTitlePics(void)
 	curhidepics = hidetitlepics;
 	curttmode = ttmode;
 	curttscale = ttscale;
-	strncpy(curttname, ttname, 9);
+	strcpy(curttname, ttname);
 	curttx = ttx;
 	curtty = tty;
 	curttloop = ttloop;
