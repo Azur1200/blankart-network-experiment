@@ -1211,10 +1211,11 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 }
 
 //
-// Like W_CheckNumForNamePwad, but can find entries with long names
+// Same as the original, but checks in one pwad only.
+// wadid is a wad number
+// (Used for sprites loading)
 //
-// Should be the only version, but that's not possible until we fix
-// all the instances of non null-terminated strings in the codebase...
+// 'startlump' is the lump number to start the search
 //
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
@@ -1337,10 +1338,8 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 }
 
 //
-// Like W_CheckNumForName, but can find entries with long names
-//
-// Should be the only version, but that's not possible until we fix
-// all the instances of non null-terminated strings in the codebase...
+// W_CheckNumForLongName
+// Returns LUMPERROR if name not found.
 //
 lumpnum_t W_CheckNumForLongName(const char *name)
 {
@@ -1448,10 +1447,9 @@ lumpnum_t W_CheckNumForMap(const char *name)
 }
 
 //
-// Like W_GetNumForName, but can find entries with long names
+// W_GetNumForLongName
 //
-// Should be the only version, but that's not possible until we fix
-// all the instances of non null-terminated strings in the codebase...
+// Calls W_CheckNumForLongName, but bombs out if not found.
 //
 lumpnum_t W_GetNumForLongName(const char *name)
 {
