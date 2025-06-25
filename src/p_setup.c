@@ -8104,13 +8104,11 @@ static void P_RunLevelScript(const char *scriptname)
 	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_SCRIPTISFILE))
 	{
 		lumpnum_t lumpnum;
-		char newname[9];
+		char newname[SHORTNAMELEN+1];
 
-		strncpy(newname, scriptname, 8);
+		strlcpy(newname, scriptname, sizeof(newname));
 
-		newname[8] = '\0';
-
-		lumpnum = W_CheckNumForName(newname);
+		lumpnum = W_CheckNumForLongName(newname);
 
 		if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 		{
@@ -9017,7 +9015,7 @@ boolean P_RunSOC(const char *socfilename)
 	if (strstr(socfilename, ".soc") != NULL)
 		return P_AddWadFile(socfilename, WC_AUTO);
 
-	lump = W_CheckNumForName(socfilename);
+	lump = W_CheckNumForLongName(socfilename);
 	if (lump == LUMPERROR)
 		return false;
 

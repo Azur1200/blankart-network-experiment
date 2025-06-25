@@ -154,7 +154,6 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
 lumpnum_t W_CheckNumForMap(const char *name);
-#define W_CheckNumForName(name) W_CheckNumForLongName(W_ShortName(name))
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder);

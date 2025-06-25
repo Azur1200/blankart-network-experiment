@@ -1616,7 +1616,7 @@ void F_TitleScreenTicker(boolean run)
 			if (vLump == NULL)
 			{
 
-				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
+				if (((W_CheckNumForLongName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
 					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
 				else
 				{

@@ -310,7 +310,7 @@ void HU_Init(void)
 patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *format, ...)
 {
 	va_list ap;
-	char buffer[9];
+	char buffer[SHORTNAMELEN+1];
 
 	lumpnum_t lump = LUMPERROR;
 	patch_t *patch;
@@ -326,7 +326,7 @@ patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *for
 
 		while ((lump == LUMPERROR) && ((--fileref) >= partadd_earliestfile))
 		{
-			lump = W_CheckNumForNamePwad(buffer, fileref, 0);
+			lump = W_CheckNumForLongNamePwad(buffer, fileref, 0);
 		}
 
 		/* no update in this wad */
@@ -339,7 +339,7 @@ patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *for
 	}
 	else
 	{
-		lump = W_CheckNumForName(buffer);
+		lump = W_CheckNumForLongName(buffer);
 
 		if (lump == LUMPERROR)
 		{

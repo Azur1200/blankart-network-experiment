@@ -6494,7 +6494,7 @@ static lumpnum_t wipelumpnum;
 // puts wipe lumpname in wipename[9]
 static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 {
-	static char lumpname[9] = "FADEmmss";
+	static char lumpname[SHORTNAMELEN+1] = "FADEmmss";
 	size_t lsize;
 
 	// not a valid wipe number
@@ -6506,7 +6506,7 @@ static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 	lumpname[5] = '0'+(wipenum%10);
 	lumpname[6] = '0'+(scrnnum/10);
 	lumpname[7] = '0'+(scrnnum%10);
-	wipelumpnum = W_CheckNumForName(lumpname);
+	wipelumpnum = W_CheckNumForLongName(lumpname);
 
 	// again, shouldn't be here really
 	if (wipelumpnum == LUMPERROR)

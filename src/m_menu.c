@@ -4285,14 +4285,14 @@ void MD_DrawPlaybackMenu(void)
 				if (i != itemOn)
 					inactivemap = R_GetTranslationColormap(players[ply].skin, players[ply].skincolor, GTC_MENUCACHE);
 			}
-			else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
+			else if (currentMenu->menuitems[i].patch && W_CheckNumForLongName(currentMenu->menuitems[i].patch) != LUMPERROR)
 				icon = W_CachePatchLongName(currentMenu->menuitems[i].patch, PU_CACHE);
 			else
 				icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
 		}
 		else if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
-		else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
+		else if (currentMenu->menuitems[i].patch && W_CheckNumForLongName(currentMenu->menuitems[i].patch) != LUMPERROR)
 			icon = W_CachePatchLongName(currentMenu->menuitems[i].patch, PU_CACHE);
 		else
 			icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
@@ -5697,7 +5697,7 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 INT32 MR_ReplayStaff(INT32 choice)
 {
 	(void)choice;
-	lumpnum_t l = W_CheckNumForName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	lumpnum_t l = W_CheckNumForLongName(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
 	if (l == LUMPERROR)
 		return false;
 

@@ -271,7 +271,7 @@ void R_AddKartFaces(skin_t *skin)
 	spritedef_t *sd = &skin->sprites[SPR2_XTRA];
 	for (size_t f = 0; f < NUMFACES; f++)
 	{
-		lumpnum_t lumpnum = W_CheckNumForName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
+		lumpnum_t lumpnum = W_CheckNumForLongName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
 		if (lumpnum == LUMPERROR)
 			I_Error("R_AddKartFaces: missing patch %s for skin %s", reinterpret_cast<char *>(skin) + KART_FACES[f], skin->name);
 		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps, f, 0, 0);

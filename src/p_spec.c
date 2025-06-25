@@ -2975,7 +2975,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 415: // Run a script
 			if (cv_runscripts.value)
 			{
-				lumpnum_t lumpnum = W_CheckNumForName(stringargs[0]);
+				lumpnum_t lumpnum = W_CheckNumForLongName(stringargs[0]);
 
 				if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 					CONS_Debug(DBG_SETUP, "Line type 415 Executor: script lump %s not found/not valid.\n", stringargs[0]);

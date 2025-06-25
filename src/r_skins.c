@@ -110,9 +110,9 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	skin->flags = 0;
 
 	strcpy(skin->realname, "Someone");
-	strncpy(skin->facerank, "MISSING", 9);
-	strncpy(skin->facewant, "MISSING", 9);
-	strncpy(skin->facemmap, "MISSING", 9);
+	strcpy(skin->facerank, "MISSING");
+	strcpy(skin->facewant, "MISSING");
+	strcpy(skin->facemmap, "MISSING");
 	skin->starttranscolor = 96;
 	skin->prefcolor = SKINCOLOR_GREEN;
 	skin->supercolor = SKINCOLOR_SUPER1;
@@ -586,7 +586,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETFLAG(OLDDEATH)
 #undef GETFLAG
 
-#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strncpy(skin->field, value, 8);
+#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strlcpy(skin->field, value, sizeof(skin->field));
 	GETPATCH(facerank)
 	GETPATCH(facewant)
 	GETPATCH(facemmap)

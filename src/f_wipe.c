@@ -102,7 +102,7 @@ static fixed_t paldiv;
   * \return	fademask_t for lump
   */
 static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
-	static char lumpname[9] = "FADEmmss";
+	static char lumpname[SHORTNAMELEN+1] = "FADEmmss";
 	static fademask_t fm = {NULL,0,0,0,0,0};
 	lumpnum_t lumpnum;
 	UINT8 *lump, *mask;
@@ -112,16 +112,9 @@ static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
 	if (masknum > 99 || scrnnum > 99)
 		goto freemask;
 
-	// SRB2Kart: This suddenly triggers ERRORMODE now
-	//sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)masknum, (UINT16)scrnnum);
+	sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)masknum, (UINT16)scrnnum);
 
-	lumpname[4] = '0'+(masknum/10);
-	lumpname[5] = '0'+(masknum%10);
-
-	lumpname[6] = '0'+(scrnnum/10);
-	lumpname[7] = '0'+(scrnnum%10);
-
-	lumpnum = W_CheckNumForName(lumpname);
+	lumpnum = W_CheckNumForLongName(lumpname);
 	if (lumpnum == LUMPERROR)
 		goto freemask;
 
@@ -429,7 +422,7 @@ tic_t F_GetWipeLength(UINT8 wipetype)
 	(void)wipetype;
 	return 0;
 #else
-	static char lumpname[10] = "FADEmmss";
+	static char lumpname[SHORTNAMELEN+1] = "FADEmmss";
 	lumpnum_t lumpnum;
 	UINT8 wipeframe;
 
@@ -440,7 +433,7 @@ tic_t F_GetWipeLength(UINT8 wipetype)
 	{
 		sprintf(&lumpname[4], "%.2hu%.2hu", (UINT16)wipetype, (UINT16)wipeframe);
 
-		lumpnum = W_CheckNumForName(lumpname);
+		lumpnum = W_CheckNumForLongName(lumpname);
 		if (lumpnum == LUMPERROR)
 			return --wipeframe;
 	}
@@ -456,7 +449,7 @@ boolean F_WipeExists(UINT8 wipetype)
 	(void)wipetype;
 	return false;
 #else
-	static char lumpname[10] = "FADEmm00";
+	static char lumpname[SHORTNAMELEN+1] = "FADEmm00";
 	lumpnum_t lumpnum;
 
 	if (wipetype > 99)
@@ -464,7 +457,7 @@ boolean F_WipeExists(UINT8 wipetype)
 
 	sprintf(&lumpname[4], "%.2hu00", (UINT16)wipetype);
 
-	lumpnum = W_CheckNumForName(lumpname);
+	lumpnum = W_CheckNumForLongName(lumpname);
 	return !(lumpnum == LUMPERROR);
 #endif
 }

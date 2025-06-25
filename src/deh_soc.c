@@ -3146,13 +3146,11 @@ void readmaincfg(MYFILE *f)
 				else
 				{
 					lumpnum_t lumpnum;
-					char newname[9];
+					char newname[SHORTNAMELEN+1];
 
-					strncpy(newname, word2, 8);
+					strlcpy(newname, word2, sizeof(newname));
 
-					newname[8] = '\0';
-
-					lumpnum = W_CheckNumForName(newname);
+					lumpnum = W_CheckNumForLongName(newname);
 
 					if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 						CONS_Debug(DBG_SETUP, "SOC Error: script lump %s not found/not valid.\n", newname);

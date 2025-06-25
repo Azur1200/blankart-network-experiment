@@ -1844,7 +1844,7 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 
 boolean S_MusicExists(const char *mname)
 {
-	return W_CheckNumForName(va("O_%s", mname)) != LUMPERROR;
+	return W_CheckNumForLongName(va("O_%s", mname)) != LUMPERROR;
 }
 
 /// ------------------------
