@@ -6590,7 +6590,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int shadertype = 0;
 	int i;
 
-	lump = W_CheckNumForNamePwad("SHADERS", wadnum, 0);
+	lump = W_CheckNumForLongNamePwad("SHADERS", wadnum, 0);
 	if (lump == INT16_MAX)
 		return;
 

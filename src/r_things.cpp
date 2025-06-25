@@ -503,13 +503,14 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	switch (wadfiles[wadnum]->type)
 	{
 	case RET_WAD:
-		start = W_CheckNumForMarkerStartPwad("S_START", wadnum, 0);
+		start = W_CheckNumForLongNamePwad("S_START", wadnum, 0);
 		if (start == INT16_MAX)
-			start = W_CheckNumForMarkerStartPwad("SS_START", wadnum, 0); //deutex compatib.
+			start = W_CheckNumForLongNamePwad("SS_START", wadnum, 0); //deutex compatib.
+		if (start != INT16_MAX) start++;
 
-		end = W_CheckNumForNamePwad("S_END",wadnum,start);
+		end = W_CheckNumForLongNamePwad("S_END", wadnum, start);
 		if (end == INT16_MAX)
-			end = W_CheckNumForNamePwad("SS_END",wadnum,start);     //deutex compatib.
+			end = W_CheckNumForLongNamePwad("SS_END", wadnum, start); //deutex compatib.
 		break;
 	case RET_PK3:
 		start = W_CheckNumForFolderStartPK3("Sprites/", wadnum, 0);
@@ -522,7 +523,7 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	if (start == INT16_MAX)
 	{
 		// ignore skin wads (we don't want skin sprites interfering with vanilla sprites)
-		if (W_CheckNumForNamePwad("S_SKIN", wadnum, 0) != UINT16_MAX)
+		if (W_CheckNumForLongNamePwad("S_SKIN", wadnum, 0) != UINT16_MAX)
 			return;
 
 		start = 0; //let say S_START is lump 0

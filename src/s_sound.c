@@ -1646,7 +1646,7 @@ void S_LoadMusicDefs(UINT16 wad)
 
 	UINT16 lump = 0;
 
-	while (( lump = W_CheckNumForNamePwad("MUSICDEF", wad, lump) ) != INT16_MAX)
+	while ((lump = W_CheckNumForLongNamePwad("MUSICDEF", wad, lump)) != INT16_MAX)
 	{
 		S_LoadMusicDefLump(wadnum | lump);
 

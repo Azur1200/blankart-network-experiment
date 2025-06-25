@@ -395,7 +395,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 	UINT8 sprite2;
 
 	*lump += 1; // start after S_SKIN
-	*lastlump = W_CheckNumForNamePwad("S_END",wadnum,*lump); // stop at S_END
+	*lastlump = W_CheckNumForLongNamePwad("S_END", wadnum, *lump); // stop at S_END
 
 	// old wadding practices die hard -- stop at S_SKIN (or P_SKIN) or S_START if they come before S_END.
 	newlastlump = W_FindNextEmptyInPwad(wadnum,*lump);
@@ -404,7 +404,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
 	newlastlump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, *lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
-	newlastlump = W_CheckNumForNamePwad("S_START",wadnum,*lump);
+	newlastlump = W_CheckNumForLongNamePwad("S_START", wadnum, *lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
 
 	/*// ...and let's handle super, too

@@ -155,6 +155,9 @@ typedef struct zlentry_s
 #pragma pack()
 #endif
 
+// maximum length of longname
+#define MAXLUMPNAME 256
+
 // a memory entry of the wad directory
 struct lumpinfo_t
 {
@@ -179,7 +182,7 @@ typedef struct
 
 typedef struct lumpnum_cache_s
 {
-	char lumpname[32];
+	char lumpname[LUMPNUMCACHENAME];
 	UINT32 lumphash; // hash for lumpname WITHOUT all caps
 	lumpnum_t lumpnum;
 } lumpnum_cache_t;
@@ -1085,26 +1088,20 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	return overallrc;
 }
 
-/** Make sure a lump number is valid.
-  * Compiles away to nothing if PARANOIA is not defined.
-  */
+// check for a valid lump number
+// lump cannot be asserted because some callers pass INT16_MAX,
+// and most W_ functions previously always passed 0 for lump...
 static boolean TestValidLump(UINT16 wad, UINT16 lump)
 {
-	I_Assert(wad < MAX_WADFILES);
-	if (!wadfiles[wad]) // make sure the wad file exists
-		return false;
-
-	I_Assert(lump < wadfiles[wad]->numlumps);
-	if (lump >= wadfiles[wad]->numlumps) // make sure the lump exists
-		return false;
-
-	return true;
+	I_Assert(wad < numwadfiles);
+	return lump < wadfiles[wad]->numlumps;
 }
 
-
+// NOTE: this actually returns the longname, but since nothing relies on
+// the 8-char truncation, i thought i'd save some effort :^)
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump)
 {
-	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
+	if (!TestValidLump(wad, lump))
 		return NULL;
 
 	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].longname);
@@ -1117,7 +1114,7 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 
 const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 {
-	if (lump >= wadfiles[wad]->numlumps || !TestValidLump(wad, 0))
+	if (!TestValidLump(wad, lump))
 		return NULL;
 
 	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
@@ -1138,7 +1135,7 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
 
-	if (!TestValidLump(wad,0))
+	if (!TestValidLump(wad, startlump))
 		return INT16_MAX;
 
 	//
@@ -1222,34 +1219,16 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 //
 // 'startlump' is the lump number to start the search
 //
+// NOTE: only exists for compatibility with code requiring the 8-char truncation.
+// use W_CheckNumForLongNamePwad in new code!
+// if the old code passes a string literal, you can switch without issues
+//
 UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
-	UINT16 i;
-	static char uname[8 + 1];
-	UINT32 hash;
-
-	if (!TestValidLump(wad,0))
-		return INT16_MAX;
-
-	strlcpy(uname, name, sizeof uname);
-	strupr(uname);
-	hash = HASH32(uname, strlen(uname));
-
-	//
-	// scan forward
-	// start at 'startlump', useful parameter when there are multiple
-	//                       resources with the same name
-	//
-	if (startlump < wadfiles[wad]->numlumps)
-	{
-		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-			if (lump_p->hash == hash && !strncmp(strbuf_get(lumpnamebuf, lump_p->longname), uname, sizeof(uname) - 1))
-				return i;
-	}
-
-	// not found.
-	return INT16_MAX;
+	char shortname[8+1];
+	strncpy(shortname, name, 8);
+	shortname[8] = '\0';
+	return W_CheckNumForLongNamePwad(shortname, wad, startlump);
 }
 
 //
@@ -1261,34 +1240,28 @@ UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
-	static char uname[256 + 1];
+	char uname[MAXLUMPNAME+1];
 	UINT32 hash;
+	size_t namelen = min(MAXLUMPNAME, strlen(name));
+	lumpinfo_t *lump_p;
 
-	if (!TestValidLump(wad,0))
+	if (!TestValidLump(wad, startlump))
 		return INT16_MAX;
 
-	strlcpy(uname, name, sizeof uname);
+	memcpy(uname, name, namelen);
+	uname[namelen] = '\0';
 	strupr(uname);
-	hash = HASH32(uname, strlen(uname));
+	hash = HASH32(uname, namelen);
 
 	//
 	// scan forward
 	// start at 'startlump', useful parameter when there are multiple
 	//                       resources with the same name
 	//
-	if (startlump < wadfiles[wad]->numlumps)
-	{
-		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-		{
-			if (lump_p->hash != hash)
-				continue;
-			if (strcmp(strbuf_get(lumpnamebuf, lump_p->longname), uname))
-				continue;
+	lump_p = wadfiles[wad]->lumpinfo + startlump;
+	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		if (lump_p->hash == hash && !strcmp(strbuf_get(lumpnamebuf, lump_p->longname), uname))
 			return i;
-		}
-
-	}
 
 	// not found.
 	return INT16_MAX;
@@ -1330,16 +1303,6 @@ UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t n
 				return i;
 
 	return INT16_MAX; // not found
-}
-
-UINT16
-W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
-{
-	UINT16 marker;
-	marker = W_CheckNumForNamePwad(name, wad, startlump);
-	if (marker != INT16_MAX)
-		marker++; // Do not count the first marker
-	return marker;
 }
 
 // Look for the first lump from a folder.
@@ -1398,50 +1361,16 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 // W_CheckNumForName
 // Returns LUMPERROR if name not found.
 //
+// NOTE: only exists for compatibility with code requiring the 8-char truncation.
+// use W_CheckNumForLongName in new code!
+// if the old code passes a string literal, you can switch without issues
+//
 lumpnum_t W_CheckNumForName(const char *name)
 {
-	INT32 i;
-	UINT32 hash = name ? HASH32(name, strlen(name)) : 0;
-	lumpnum_t check = INT16_MAX;
-
-	if (name == NULL)
-		return LUMPERROR;
-
-	if (!*name) // some doofus gave us an empty string?
-		return LUMPERROR;
-
-	// Check the lumpnumcache first. Loop backwards so that we check
-	// most recent entries first
-	for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
-	{
-		if (!lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname[8]
-			&& lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumphash == hash
-			&& strncmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name, 8) == 0)
-		{
-			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-			return lumpnumcache[lumpnumcacheindex].lumpnum;
-		}
-	}
-
-	// scan wad files backwards so patch lump files take precedence
-	for (i = numwadfiles - 1; i >= 0; i--)
-	{
-		check = W_CheckNumForNamePwad(name,(UINT16)i,0);
-		if (check != INT16_MAX)
-			break; //found it
-	}
-
-	if (check == INT16_MAX) return LUMPERROR;
-	else
-	{
-		// Update the cache.
-		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
-		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
-		lumpnumcache[lumpnumcacheindex].lumpnum = (i<<16)+check;
-
-		return lumpnumcache[lumpnumcacheindex].lumpnum;
-	}
+	char shortname[8+1];
+	strncpy(shortname, name, 8);
+	shortname[8] = '\0';
+	return W_CheckNumForLongName(shortname);
 }
 
 //
@@ -1453,8 +1382,8 @@ lumpnum_t W_CheckNumForName(const char *name)
 lumpnum_t W_CheckNumForLongName(const char *name)
 {
 	INT32 i;
-	UINT32 hash = name ? HASH32(name, strlen(name)) : 0;
-	lumpnum_t check = INT16_MAX;
+	UINT32 hash;
+	lumpnum_t check;
 
 	if (name == NULL)
 		return LUMPERROR;
@@ -1464,38 +1393,42 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 
 	// Check the lumpnumcache first. Loop backwards so that we check
 	// most recent entries first
-	for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
+	if (strlen(name) < LUMPNUMCACHENAME)
 	{
-		if (strcmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name) == 0)
+		hash = HASH32(name, strlen(name));
+		for (i = lumpnumcacheindex + LUMPNUMCACHESIZE; i > lumpnumcacheindex; i--)
 		{
-			lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
-			return lumpnumcache[lumpnumcacheindex].lumpnum;
+			if (lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumphash == hash
+				&& !strcmp(lumpnumcache[i & (LUMPNUMCACHESIZE - 1)].lumpname, name))
+			{
+				lumpnumcacheindex = i & (LUMPNUMCACHESIZE - 1);
+				return lumpnumcache[lumpnumcacheindex].lumpnum;
+			}
 		}
 	}
 
 	// scan wad files backwards so patch lump files take precedence
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
-		check = W_CheckNumForLongNamePwad(name,(UINT16)i,0);
+		check = W_CheckNumForLongNamePwad(name, i, 0);
 		if (check != INT16_MAX)
-			break; //found it
+			break; // found it
 	}
 
-	if (check == INT16_MAX) return LUMPERROR;
-	else
+	if (check == INT16_MAX)
+		return LUMPERROR;
+
+	if (strlen(name) < LUMPNUMCACHENAME)
 	{
-		if (strlen(name) < 32)
-		{
-			// Update the cache.
-			lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
-			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
-			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 32);
-			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
-			lumpnumcache[lumpnumcacheindex].lumphash = hash;
-		}
-
-		return (i << 16) + check;
+		// Update the cache.
+		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
+		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
+		strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
+		lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
+		lumpnumcache[lumpnumcacheindex].lumphash = hash;
 	}
+
+	return (i << 16) + check;
 }
 
 // Look for valid map data through all added files in descendant order.
@@ -1584,36 +1517,6 @@ lumpnum_t W_GetNumForLongName(const char *name)
 		I_Error("W_GetNumForLongName: %s not found!\n", name);
 
 	return i;
-}
-
-//
-// W_CheckNumForNameInBlock
-// Checks only in blocks from blockstart lump to blockend lump
-//
-lumpnum_t W_CheckNumForNameInBlock(const char *name, const char *blockstart, const char *blockend)
-{
-	INT32 i;
-	lumpnum_t bsid, beid;
-	lumpnum_t check = INT16_MAX;
-
-	// scan wad files backwards so patch lump files take precedence
-	for (i = numwadfiles - 1; i >= 0; i--)
-	{
-		if (wadfiles[i]->type == RET_WAD)
-		{
-			bsid = W_CheckNumForNamePwad(blockstart, (UINT16)i, 0);
-			if (bsid == INT16_MAX)
-				continue; // Start block doesn't exist?
-			beid = W_CheckNumForNamePwad(blockend, (UINT16)i, 0);
-			if (beid == INT16_MAX)
-				continue; // End block doesn't exist?
-
-			check = W_CheckNumForNamePwad(name, (UINT16)i, bsid);
-			if (check < beid)
-				return (i<<16)+check; // found it, in our constraints
-		}
-	}
-	return LUMPERROR;
 }
 
 //

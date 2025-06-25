@@ -1133,8 +1133,9 @@ Rloadflats (INT32 i, INT32 w)
 	}
 	else
 	{
-		texstart = W_CheckNumForMarkerStartPwad("F_START", (UINT16)w, 0);
-		texend = W_CheckNumForNamePwad("F_END", (UINT16)w, texstart);
+		texstart = W_CheckNumForLongNamePwad("F_START", (UINT16)w, 0);
+		if (texstart != INT16_MAX) texstart++;
+		texend = W_CheckNumForLongNamePwad("F_END", (UINT16)w, texstart);
 	}
 
 	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
@@ -1200,9 +1201,6 @@ Rloadflats (INT32 i, INT32 w)
 	return i;
 }
 
-#define TX_START "TX_START"
-#define TX_END "TX_END"
-
 static INT32
 Rloadtextures (INT32 i, INT32 w)
 {
@@ -1217,18 +1215,19 @@ Rloadtextures (INT32 i, INT32 w)
 	{
 		texstart = W_CheckNumForFolderStartPK3("textures/", (UINT16)w, 0);
 		texend = W_CheckNumForFolderEndPK3("textures/", (UINT16)w, texstart);
-		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
+		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, 0);
 		while (texturesLumpPos != INT16_MAX)
 		{
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
-			texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, texturesLumpPos + 1);
+			texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, texturesLumpPos + 1);
 		}
 	}
 	else
 	{
-		texstart = W_CheckNumForMarkerStartPwad(TX_START, (UINT16)w, 0);
-		texend = W_CheckNumForNamePwad(TX_END, (UINT16)w, 0);
-		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
+		texstart = W_CheckNumForLongNamePwad("TX_START", (UINT16)w, 0);
+		if (texstart != INT16_MAX) texstart++;
+		texend = W_CheckNumForLongNamePwad("TX_END", (UINT16)w, 0);
+		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, 0);
 		if (texturesLumpPos != INT16_MAX)
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
 	}
@@ -1321,8 +1320,9 @@ count_range
 	}
 	else
 	{
-		texstart = W_CheckNumForMarkerStartPwad(marker_start, wadnum, 0);
-		texend = W_CheckNumForNamePwad(marker_end, wadnum, texstart);
+		texstart = W_CheckNumForLongNamePwad(marker_start, wadnum, 0);
+		if (texstart != INT16_MAX) texstart++;
+		texend = W_CheckNumForLongNamePwad(marker_end, wadnum, texstart);
 	}
 
 	if (texstart != INT16_MAX && texend != INT16_MAX)
@@ -1361,16 +1361,16 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	count += count_range("F_START", "F_END", "flats/", wadnum);
 
 	// Count the textures from TEXTURES lumps
-	texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", wadnum, 0);
+	texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, 0);
 
 	while (texturesLumpPos != INT16_MAX)
 	{
 		count += R_CountTexturesInTEXTURESLump(wadnum, texturesLumpPos);
-		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", wadnum, texturesLumpPos + 1);
+		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, texturesLumpPos + 1);
 	}
 
 	// Count single-patch textures
-	count += count_range(TX_START, TX_END, "textures/", wadnum);
+	count += count_range("TX_START", "TX_END", "textures/", wadnum);
 
 	return count;
 }

@@ -240,11 +240,11 @@ static void R_InitExtraColormaps(void)
 
 	for (cfile = clump = 0; cfile < numwadfiles; cfile++, clump = 0)
 	{
-		startnum = W_CheckNumForNamePwad("C_START", cfile, clump);
+		startnum = W_CheckNumForLongNamePwad("C_START", cfile, clump);
 		if (startnum == INT16_MAX)
 			continue;
 
-		endnum = W_CheckNumForNamePwad("C_END", cfile, clump);
+		endnum = W_CheckNumForLongNamePwad("C_END", cfile, clump);
 
 		if (endnum == INT16_MAX)
 			I_Error("R_InitExtraColormaps: C_START without C_END\n");

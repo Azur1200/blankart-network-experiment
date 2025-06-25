@@ -178,9 +178,9 @@ void K_InitBrightmapsPwad(UINT16 wadNum)
 	I_Assert(brightmapStorage == NULL);
 
 	// Find BRIGHT lump in the WAD
-	lumpNum = W_CheckNumForNamePwad("BRIGHT", wadNum, 0);
+	lumpNum = W_CheckNumForLongNamePwad("BRIGHT", wadNum, 0);
 
-	for (; lumpNum != INT16_MAX; lumpNum = W_CheckNumForNamePwad("BRIGHT", wadNum, lumpNum + 1))
+	for (; lumpNum != INT16_MAX; lumpNum = W_CheckNumForLongNamePwad("BRIGHT", wadNum, lumpNum + 1))
 	{
 		UINT8 *data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
 
