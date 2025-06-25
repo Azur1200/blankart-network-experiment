@@ -133,18 +133,7 @@ const char *W_CheckFullNameForNum(lumpnum_t lumpnum);
 
 UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in one pwad
 
-// helper for old functions that use 8-char names
-// careful, you might be dealing with a non-terminated string!
-static inline const char *W_ShortName(const char *name)
-{
-	static char shortname[8+1];
-	strncpy(shortname, name, 8);
-	shortname[8] = '\0';
-	return shortname;
-}
-
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
-#define W_CheckNumForNamePwad(name, wad, start) W_CheckNumForLongNamePwad(W_ShortName(name), wad, start)
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t numprefixes, UINT16 wad, UINT16 startlump);
