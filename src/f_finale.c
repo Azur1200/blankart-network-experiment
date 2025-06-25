@@ -1842,10 +1842,10 @@ void F_CutsceneDrawer(void)
 	{
 		if (cutscenes[cutnum]->scene[scenenum].pichires[picnum])
 			V_DrawSmallScaledPatch(picxpos, picypos, 0,
-				W_CachePatchName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 		else
 			V_DrawScaledPatch(picxpos,picypos, 0,
-				W_CachePatchName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 	}
 
 	if (dofadenow && rendermode != render_none)
@@ -1928,7 +1928,7 @@ static void F_GetPageTextGeometry(UINT8 *pagelines, boolean *rightside, INT32 *b
 	// reuse:
 	// cutnum -> promptnum
 	// scenenum -> pagenum
-	lumpnum_t iconlump = W_CheckNumForName(textprompts[cutnum]->page[scenenum].iconname);
+	lumpnum_t iconlump = W_CheckNumForLongName(textprompts[cutnum]->page[scenenum].iconname);
 
 	*pagelines = textprompts[cutnum]->page[scenenum].lines ? textprompts[cutnum]->page[scenenum].lines : 4;
 	*rightside = (iconlump != LUMPERROR && textprompts[cutnum]->page[scenenum].rightside);
@@ -2303,7 +2303,7 @@ void F_TextPromptDrawer(void)
 	if (!promptactive)
 		return;
 
-	iconlump = W_CheckNumForName(textprompts[cutnum]->page[scenenum].iconname);
+	iconlump = W_CheckNumForLongName(textprompts[cutnum]->page[scenenum].iconname);
 	F_GetPageTextGeometry(&pagelines, &rightside, &boxh, &texth, &texty, &namey, &chevrony, &textx, &textr);
 
 	// Draw gfx first
@@ -2311,10 +2311,10 @@ void F_TextPromptDrawer(void)
 	{
 		if (textprompts[cutnum]->page[scenenum].pichires[picnum])
 			V_DrawSmallScaledPatch(picxpos, picypos, 0,
-				W_CachePatchName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 		else
 			V_DrawScaledPatch(picxpos,picypos, 0,
-				W_CachePatchName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 	}
 
 	// Draw background
@@ -2324,7 +2324,7 @@ void F_TextPromptDrawer(void)
 	if (iconlump != LUMPERROR)
 	{
 		INT32 iconx, icony, scale, scaledsize;
-		patch = W_CachePatchName(textprompts[cutnum]->page[scenenum].iconname, PU_PATCH_LOWPRIORITY);
+		patch = W_CachePatchLongName(textprompts[cutnum]->page[scenenum].iconname, PU_PATCH_LOWPRIORITY);
 
 		// scale and center
 		if (patch->width > patch->height)

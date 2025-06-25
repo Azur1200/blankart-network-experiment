@@ -204,10 +204,12 @@ extern UINT16 skincolor_redteam, skincolor_blueteam, skincolor_redring, skincolo
 
 extern boolean exitfadestarted;
 
+#define SHORTNAMELEN 8
+
 struct scene_t
 {
 	UINT8 numpics;
-	char picname[8][8];
+	char picname[8][SHORTNAMELEN+1];
 	UINT8 pichires[8];
 	char *text;
 	UINT16 xcoord[8];
@@ -251,7 +253,7 @@ struct textpage_t
 	UINT8 picmode; // sequence mode after displaying last pic, 0 = persist, 1 = loop, 2 = destroy
 	UINT8 pictoloop; // if picmode == loop, which pic to loop to?
 	UINT8 pictostart; // initial pic number to show
-	char picname[MAX_PROMPT_PICS][8];
+	char picname[MAX_PROMPT_PICS][SHORTNAMELEN+1];
 	UINT8 pichires[MAX_PROMPT_PICS];
 	UINT16 xcoord[MAX_PROMPT_PICS]; // gfx
 	UINT16 ycoord[MAX_PROMPT_PICS]; // gfx
@@ -263,7 +265,7 @@ struct textpage_t
 
 	char tag[33]; // page tag
 	char name[34]; // narrator name, extra char for color
-	char iconname[8]; // narrator icon lump
+	char iconname[SHORTNAMELEN+1]; // narrator icon lump
 	boolean rightside; // narrator side, false = left, true = right
 	boolean iconflip; // narrator flip icon horizontally
 	UINT8 hidehud; // hide hud, 0 = show all, 1 = hide depending on prompt position (top/bottom), 2 = hide all

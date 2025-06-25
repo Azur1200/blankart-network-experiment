@@ -1353,7 +1353,8 @@ static void readcutscenescene(MYFILE *f, INT32 num, INT32 scenenum)
 
 				if (fastcmp(word+4, "NAME"))
 				{
-					strncpy(cutscenes[num]->scene[scenenum].picname[picid], word2, 8);
+					strncpy(cutscenes[num]->scene[scenenum].picname[picid], word2, SHORTNAMELEN);
+					cutscenes[num]->scene[scenenum].picname[picid][SHORTNAMELEN] = '\0';
 				}
 				else if (fastcmp(word+4, "HIRES"))
 				{
@@ -1595,7 +1596,8 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 
 					for (picid = 0; picid < MAX_PROMPT_PICS; picid++)
 					{
-						strncpy(textprompts[num]->page[pagenum].picname[picid], textprompts[num]->page[metapagenum].picname[picid], 8);
+						strncpy(textprompts[num]->page[pagenum].picname[picid], textprompts[num]->page[metapagenum].picname[picid], SHORTNAMELEN);
+						textprompts[num]->page[pagenum].picname[picid][SHORTNAMELEN] = '\0';
 						textprompts[num]->page[pagenum].pichires[picid] = textprompts[num]->page[metapagenum].pichires[picid];
 						textprompts[num]->page[pagenum].picduration[picid] = textprompts[num]->page[metapagenum].picduration[picid];
 						textprompts[num]->page[pagenum].xcoord[picid] = textprompts[num]->page[metapagenum].xcoord[picid];
@@ -1615,7 +1617,8 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 
 				if (fastcmp(word+4, "NAME"))
 				{
-					strncpy(textprompts[num]->page[pagenum].picname[picid], word2, 8);
+					strncpy(textprompts[num]->page[pagenum].picname[picid], word2, SHORTNAMELEN);
+					textprompts[num]->page[pagenum].picname[picid][SHORTNAMELEN] = '\0';
 				}
 				else if (fastcmp(word+4, "HIRES"))
 				{
@@ -1677,7 +1680,10 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 					*textprompts[num]->page[pagenum].name = '\0';
 			}
 			else if (fastcmp(word, "ICON"))
-				strncpy(textprompts[num]->page[pagenum].iconname, word2, 8);
+			{
+				strncpy(textprompts[num]->page[pagenum].iconname, word2, SHORTNAMELEN);
+				textprompts[num]->page[pagenum].iconname[SHORTNAMELEN] = '\0';
+			}
 			else if (fastcmp(word, "ICONALIGN"))
 				textprompts[num]->page[pagenum].rightside = (i || word2[0] == 'R');
 			else if (fastcmp(word, "ICONFLIP"))
@@ -1745,7 +1751,8 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 					UINT8 metapagenum = usi - 1;
 
 					strncpy(textprompts[num]->page[pagenum].name, textprompts[num]->page[metapagenum].name, 32);
-					strncpy(textprompts[num]->page[pagenum].iconname, textprompts[num]->page[metapagenum].iconname, 8);
+					strncpy(textprompts[num]->page[pagenum].iconname, textprompts[num]->page[metapagenum].iconname, SHORTNAMELEN);
+					textprompts[num]->page[pagenum].iconname[SHORTNAMELEN] = '\0';
 					textprompts[num]->page[pagenum].rightside = textprompts[num]->page[metapagenum].rightside;
 					textprompts[num]->page[pagenum].iconflip = textprompts[num]->page[metapagenum].iconflip;
 					textprompts[num]->page[pagenum].lines = textprompts[num]->page[metapagenum].lines;
