@@ -511,7 +511,7 @@ void Y_IntermissionDrawer(void)
 		{
 			// no y_buffer
 			if (y_buffer == NULL)
-				V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
+				V_DrawPatchFill(W_CachePatchLongName("SRB2BACK", PU_CACHE));
 			else
 			{
 				// Maybe the resolution changed?
@@ -654,13 +654,13 @@ void Y_IntermissionDrawer(void)
 				if (data.num[i] == whiteplayer)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
-					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchLongName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
 				}
 
 				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
 				{
 					// RETIRED!!
-					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchName("K_NOBLNS", PU_CACHE));
+					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchLongName("K_NOBLNS", PU_CACHE));
 				}
 
 				STRBUFCPY(strtime, data.name[i]);
@@ -1509,7 +1509,7 @@ void Y_VoteDrawer(void)
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
-				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchLongName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
 			}
 		}
 
@@ -1851,14 +1851,14 @@ void Y_StartVote(void)
 
 	Y_AnimatedVoteScreenCheck();
 
-	widebgpatch = W_CachePatchName((battlemode ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
-	bgpatch = W_CachePatchName((battlemode ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
-	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
-	cursor1 = W_CachePatchName("P1CURSOR", PU_STATIC);
-	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
-	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
-	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
+	widebgpatch = W_CachePatchLongName((battlemode ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
+	bgpatch = W_CachePatchLongName((battlemode ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
+	cursor = W_CachePatchLongName("M_CURSOR", PU_STATIC);
+	cursor1 = W_CachePatchLongName("P1CURSOR", PU_STATIC);
+	cursor2 = W_CachePatchLongName("P2CURSOR", PU_STATIC);
+	cursor3 = W_CachePatchLongName("P3CURSOR", PU_STATIC);
+	cursor4 = W_CachePatchLongName("P4CURSOR", PU_STATIC);
+	rubyicon = W_CachePatchLongName("RUBYICON", PU_STATIC);
 
 	timer = cv_votetime.value*TICRATE;
 	pickedvote = -1;

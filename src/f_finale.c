@@ -232,8 +232,8 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	patch_t *pat, *pat2;
 	INT32 anim2 = 0;
 
-	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
-	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
+	pat = W_CachePatchLongName("TITLEBG1", PU_CACHE);
+	pat2 = W_CachePatchLongName("TITLEBG2", PU_CACHE);
 
 	w = (vid.width / vid.dupx)<<FRACBITS;
 
@@ -335,13 +335,13 @@ static void F_IntroDrawScene(void)
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
 	{
-		background = W_CachePatchName("KARTKREW", PU_CACHE);
+		background = W_CachePatchLongName("KARTKREW", PU_CACHE);
 		highres = true;
 	}
 
 	if (intro_scenenum == 1)
 	{
-		background = W_CachePatchName("BLANKART", PU_CACHE);
+		background = W_CachePatchLongName("BLANKART", PU_CACHE);
 		highres = false;
 	}
 
@@ -751,10 +751,10 @@ void F_CreditDrawer(void)
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
 	// Draw background
-	V_DrawSciencePatch(0, 0 - FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE)), V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE)), V_SNAPTOTOP, W_CachePatchLongName("CREDTILE", PU_CACHE), FRACUNIT);
 
-	V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
-	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP, W_CachePatchLongName("CREDZIGZ", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchLongName("CREDZIGZ", PU_CACHE), FRACUNIT);
 
 	// Draw pictures
 	for (i = 0; credits_pics[i].patch; i++)
@@ -997,7 +997,7 @@ void F_BlanCreditDrawer(void)
 	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
 
 	V_DrawFill(-100,-100,vid.width, vid.height,81);
-	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchLongName("CREDTILE", PU_CACHE), FRACUNIT);
 	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
 	// Draw credits text on top
@@ -1256,10 +1256,10 @@ static void F_CacheTitleScreen(void)
 			break;
 
 		case TTMODE_KART:
-			ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH_LOWPRIORITY);
-			ttkart = W_CachePatchName("TTKART", PU_PATCH_LOWPRIORITY);
-			ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
-			ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
+			ttbanner = W_CachePatchLongName("TTKBANNR", PU_PATCH_LOWPRIORITY);
+			ttkart = W_CachePatchLongName("TTKART", PU_PATCH_LOWPRIORITY);
+			ttcheckers = W_CachePatchLongName("TTCHECK", PU_PATCH_LOWPRIORITY);
+			ttkflash = W_CachePatchLongName("TTKFLASH", PU_PATCH_LOWPRIORITY);
 			break;
 
 		case TTMODE_USER:
@@ -1582,7 +1582,7 @@ void F_TitleScreenTicker(boolean run)
 		{
 			lumpnum_t l = LUMPERROR;
 			numstaff = 0;
-			while (numstaff < 99 && (l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
+			while (numstaff < 99 && (l = W_CheckNumForLongName(va("TDEMO%03u", numstaff))) != LUMPERROR)
 				numstaff++;
 
 			if (numstaff)

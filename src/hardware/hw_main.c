@@ -3181,7 +3181,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	if (!shadowpatch || !shadowpatch->hardware)
 	{
 		CONS_Debug(DBG_RENDER, "remaking shadowsprite\n");
-		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_SPRITE);
+		shadowpatch = (patch_t *)W_CachePatchLongName("DSHADOW", PU_SPRITE);
 	}
 
 	gpatch = shadowpatch;
@@ -5986,7 +5986,7 @@ void HWR_RenderPlayerView(void)
 	if (r_splitscreen == 2 && player == &players[displayplayers[2]]) // No black void please.
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *gpatch = W_CachePatchLongName("SRB2BACK", PU_CACHE);
 		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
 

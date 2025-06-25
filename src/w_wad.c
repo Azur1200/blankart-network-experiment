@@ -1211,25 +1211,6 @@ UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 st
 }
 
 //
-// Same as the original, but checks in one pwad only.
-// wadid is a wad number
-// (Used for sprites loading)
-//
-// 'startlump' is the lump number to start the search
-//
-// NOTE: only exists for compatibility with code requiring the 8-char truncation.
-// use W_CheckNumForLongNamePwad in new code!
-// if the old code passes a string literal, you can switch without issues
-//
-UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump)
-{
-	char shortname[8+1];
-	strncpy(shortname, name, 8);
-	shortname[8] = '\0';
-	return W_CheckNumForLongNamePwad(shortname, wad, startlump);
-}
-
-//
 // Like W_CheckNumForNamePwad, but can find entries with long names
 //
 // Should be the only version, but that's not possible until we fix
@@ -1356,22 +1337,6 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 }
 
 //
-// W_CheckNumForName
-// Returns LUMPERROR if name not found.
-//
-// NOTE: only exists for compatibility with code requiring the 8-char truncation.
-// use W_CheckNumForLongName in new code!
-// if the old code passes a string literal, you can switch without issues
-//
-lumpnum_t W_CheckNumForName(const char *name)
-{
-	char shortname[8+1];
-	strncpy(shortname, name, 8);
-	shortname[8] = '\0';
-	return W_CheckNumForLongName(shortname);
-}
-
-//
 // Like W_CheckNumForName, but can find entries with long names
 //
 // Should be the only version, but that's not possible until we fix
@@ -1480,23 +1445,6 @@ lumpnum_t W_CheckNumForMap(const char *name)
 
 		return (i << 16) + check;
 	}
-}
-
-//
-// W_GetNumForName
-//
-// Calls W_CheckNumForName, but bombs out if not found.
-//
-lumpnum_t W_GetNumForName(const char *name)
-{
-	lumpnum_t i;
-
-	i = W_CheckNumForName(name);
-
-	if (i == LUMPERROR)
-		I_Error("W_GetNumForName: %s not found!\n", name);
-
-	return i;
 }
 
 //
@@ -1959,14 +1907,6 @@ boolean W_IsPatchCached(lumpnum_t lumpnum, void *ptr)
 }
 
 // ==========================================================================
-// W_CacheLumpName
-// ==========================================================================
-void *W_CacheLumpName(const char *name, INT32 tag)
-{
-	return W_CacheLumpNum(W_GetNumForName(name), tag);
-}
-
-// ==========================================================================
 //                                         CACHING OF GRAPHIC PATCH RESOURCES
 // ==========================================================================
 
@@ -2073,17 +2013,6 @@ void W_UnlockCachedPatch(void *patch)
 	else
 #endif
 		Z_Unlock(patch);
-}
-
-void *W_CachePatchName(const char *name, INT32 tag)
-{
-	lumpnum_t num;
-
-	num = W_CheckNumForName(name);
-
-	if (num == LUMPERROR)
-		return missingpat;
-	return W_CachePatchNum(num, tag);
 }
 
 void *W_CachePatchLongName(const char *name, INT32 tag)

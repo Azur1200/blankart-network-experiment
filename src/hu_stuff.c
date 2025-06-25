@@ -228,7 +228,7 @@ void HU_Init(void)
 	// only allocate if not present, to save us a lot of headache
 	if (missingpat == NULL)
 	{
-		lumpnum_t missingnum = W_GetNumForName("MISSING");
+		lumpnum_t missingnum = W_GetNumForLongName("MISSING");
 		if (missingnum == LUMPERROR)
 			I_Error("HU_LoadGraphics: \"MISSING\" patch not present in resource files.");
 

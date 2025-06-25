@@ -275,7 +275,7 @@ void R_InitColormaps(void)
 	lumpnum_t lump;
 
 	// Load in the light tables
-	lump = W_GetNumForName("COLORMAP");
+	lump = W_GetNumForLongName("COLORMAP");
 	len = W_LumpLength(lump);
 	if (len < COLORMAP_SIZE*2) // accomodate encore mode later
 		len = COLORMAP_SIZE*2;
@@ -295,13 +295,13 @@ void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boo
 {
 	char colormap[9] = "COLORMAP";
 	lumpnum_t lump;
-	const lumpnum_t basecolormaplump = W_GetNumForName(colormap);
+	const lumpnum_t basecolormaplump = W_GetNumForLongName(colormap);
 	boolean remap = false;
 	if (num > 0 && num <= 10000)
 		snprintf(colormap, 8, "CLM%04u", num-1);
 
 	// Load in the light tables, now 64k aligned for smokie...
-	lump = W_GetNumForName(colormap);
+	lump = W_GetNumForLongName(colormap);
 	if (lump == LUMPERROR)
 		lump = basecolormaplump;
 	else
@@ -1204,7 +1204,8 @@ static void R_Init8to16(void)
 	UINT8 *palette;
 	int i;
 
-	palette = W_CacheLumpName("PLAYPAL",PU_CACHE);
+	lumpnum_t lump = W_GetNumForLongName("PLAYPAL");
+	palette = W_CacheLumpNum(lump, PU_CACHE);
 
 	for (i = 0; i < 256; i++)
 	{

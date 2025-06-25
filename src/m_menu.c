@@ -2208,7 +2208,7 @@ static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
 			V_DrawSmallMappedPatch(x, y, 0, W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE),
 			                       R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
 		else
-			V_DrawSmallScaledPatch(x, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
+			V_DrawSmallScaledPatch(x, y, 0, W_CachePatchLongName("NEEDIT", PU_CACHE));
 
 		emblem = M_GetLevelEmblems(-1);
 		x -= 8;
@@ -2252,7 +2252,7 @@ static void M_DrawMenuTitle(void)
 static void M_DrawSliderCursor(INT16 x, INT16 y, INT32 vflags, consvar_t *cv, INT32 value)
 {
 	fixed_t range = FixedDiv(value - cv->PossibleValue[0].value, cv->PossibleValue[1].value - cv->PossibleValue[0].value);
-	V_DrawFixedPatch((x - 4)*FRACUNIT + (SLIDER_RANGE+4)*range, y*FRACUNIT, FRACUNIT, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), NULL);
+	V_DrawFixedPatch((x - 4)*FRACUNIT + (SLIDER_RANGE+4)*range, y*FRACUNIT, FRACUNIT, vflags, W_CachePatchLongName("M_SLIDEC", PU_CACHE), NULL);
 }
 
 static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, boolean selected)
@@ -2297,14 +2297,14 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			if (atoi(cv->defaultvalue) != cv->value)
 				M_DrawSliderCursor(x, y, vflags, cv, atoi(cv->defaultvalue));
 
-			p = W_CachePatchName("M_SLIDEL", PU_CACHE);
+			p = W_CachePatchLongName("M_SLIDEL", PU_CACHE);
 			V_DrawScaledPatch(x - 8, y, vflags, p);
 
-			p = W_CachePatchName("M_SLIDEM", PU_CACHE);
+			p = W_CachePatchLongName("M_SLIDEM", PU_CACHE);
 			for (i = 0; i < SLIDER_RANGE; i += 8)
 				V_DrawScaledPatch (x + i, y, vflags, p);
 
-			p = W_CachePatchName("M_SLIDER", PU_CACHE);
+			p = W_CachePatchLongName("M_SLIDER", PU_CACHE);
 			V_DrawScaledPatch(x + i, y, vflags, p);
 
 			M_DrawSliderCursor(x, y, vflags, cv, cv->value);
@@ -2414,7 +2414,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			vflags &= ~(V_FLIP|V_PARAMMASK);
 			const tic_t freq = TICRATE/2;
 			if ((leveltime % freq) >= freq/2)
-				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
+				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchLongName("K_REQUE2", PU_CACHE));
 		}
 		else if (item->patch)
 			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
@@ -2671,7 +2671,7 @@ void MD_DrawGenericMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchLongName("M_CURSOR", PU_CACHE));
 
 	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)
@@ -3174,23 +3174,23 @@ INT32 MR_Addons(INT32 choice)
 			W_UnlockCachedPatch(addonsp[i]);
 	}
 
-	addonsp[EXT_FOLDER] = W_CachePatchName("M_FFLDR", PU_STATIC);
-	addonsp[EXT_UP] = W_CachePatchName("M_FBACK", PU_STATIC);
-	addonsp[EXT_NORESULTS] = W_CachePatchName("M_FNOPE", PU_STATIC);
-	addonsp[EXT_TXT] = W_CachePatchName("M_FTXT", PU_STATIC);
-	addonsp[EXT_CFG] = W_CachePatchName("M_FCFG", PU_STATIC);
-	addonsp[EXT_WAD] = W_CachePatchName("M_FWAD", PU_STATIC);
+	addonsp[EXT_FOLDER] = W_CachePatchLongName("M_FFLDR", PU_STATIC);
+	addonsp[EXT_UP] = W_CachePatchLongName("M_FBACK", PU_STATIC);
+	addonsp[EXT_NORESULTS] = W_CachePatchLongName("M_FNOPE", PU_STATIC);
+	addonsp[EXT_TXT] = W_CachePatchLongName("M_FTXT", PU_STATIC);
+	addonsp[EXT_CFG] = W_CachePatchLongName("M_FCFG", PU_STATIC);
+	addonsp[EXT_WAD] = W_CachePatchLongName("M_FWAD", PU_STATIC);
 #ifdef USE_KART
-	addonsp[EXT_KART] = W_CachePatchName("M_FKART", PU_STATIC);
+	addonsp[EXT_KART] = W_CachePatchLongName("M_FKART", PU_STATIC);
 #endif
-	addonsp[EXT_PK3] = W_CachePatchName("M_FPK3", PU_STATIC);
-	addonsp[EXT_SOC] = W_CachePatchName("M_FSOC", PU_STATIC);
-	addonsp[EXT_LUA] = W_CachePatchName("M_FLUA", PU_STATIC);
-	addonsp[NUM_EXT] = W_CachePatchName("M_FUNKN", PU_STATIC);
-	addonsp[NUM_EXT+1] = W_CachePatchName("M_FSEL", PU_STATIC);
-	addonsp[NUM_EXT+2] = W_CachePatchName("M_FLOAD", PU_STATIC);
-	addonsp[NUM_EXT+3] = W_CachePatchName("M_FSRCH", PU_STATIC);
-	addonsp[NUM_EXT+4] = W_CachePatchName("M_FSAVE", PU_STATIC);
+	addonsp[EXT_PK3] = W_CachePatchLongName("M_FPK3", PU_STATIC);
+	addonsp[EXT_SOC] = W_CachePatchLongName("M_FSOC", PU_STATIC);
+	addonsp[EXT_LUA] = W_CachePatchLongName("M_FLUA", PU_STATIC);
+	addonsp[NUM_EXT] = W_CachePatchLongName("M_FUNKN", PU_STATIC);
+	addonsp[NUM_EXT+1] = W_CachePatchLongName("M_FSEL", PU_STATIC);
+	addonsp[NUM_EXT+2] = W_CachePatchLongName("M_FLOAD", PU_STATIC);
+	addonsp[NUM_EXT+3] = W_CachePatchLongName("M_FSRCH", PU_STATIC);
+	addonsp[NUM_EXT+4] = W_CachePatchLongName("M_FSAVE", PU_STATIC);
 
 	return true;
 }
@@ -3885,7 +3885,7 @@ static void DrawReplayHutReplayInfo(void)
 			{
 				static angle_t rubyfloattime = 0;
 				const fixed_t rubyheight = FINESINE(rubyfloattime>>ANGLETOFINESHIFT);
-				V_DrawFixedPatch((x+(w>>2))<<FRACBITS, ((y+(h>>2))<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTOTOP, W_CachePatchName("RUBYICON", PU_CACHE), NULL);
+				V_DrawFixedPatch((x+(w>>2))<<FRACBITS, ((y+(h>>2))<<FRACBITS) - (rubyheight<<1), FRACUNIT, V_SNAPTOTOP, W_CachePatchLongName("RUBYICON", PU_CACHE), NULL);
 				rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 			}
 		}
@@ -3946,7 +3946,7 @@ static void DrawReplayHutReplayInfo(void)
 		}
 		else
 		{
-			patch = W_CachePatchName("M_NOWANT", PU_CACHE);
+			patch = W_CachePatchLongName("M_NOWANT", PU_CACHE);
 			colormap = R_GetTranslationColormap(
 				TC_RAINBOW,
 				demolist[dir_on[menudepthleft]].standings[0].color,
@@ -4008,7 +4008,7 @@ void MD_DrawReplayHut(void)
 		if (demolist[i].type == MD_SUBDIR)
 		{
 			localx += 8;
-			V_DrawScaledPatch(x - 4, localy, V_SNAPTOTOP|V_SNAPTOLEFT, W_CachePatchName(dirmenu[i][DIR_TYPE] == EXT_UP ? "M_RBACK" : "M_RFLDR", PU_CACHE));
+			V_DrawScaledPatch(x - 4, localy, V_SNAPTOTOP|V_SNAPTOLEFT, W_CachePatchLongName(dirmenu[i][DIR_TYPE] == EXT_UP ? "M_RBACK" : "M_RFLDR", PU_CACHE));
 		}
 
 		if (i == (INT16)dir_on[menudepthleft])
@@ -4054,7 +4054,7 @@ void MD_DrawReplayHut(void)
 
 	// Draw the cursor
 	V_DrawScaledPatch(currentMenu->x - 24, cursory, V_SNAPTOTOP|V_SNAPTOLEFT,
-		W_CachePatchName("M_CURSOR", PU_CACHE));
+		W_CachePatchLongName("M_CURSOR", PU_CACHE));
 
 	// Now draw some replay info!
 	V_DrawFill(10, 10, 300, 60, V_SNAPTOTOP|159);
@@ -4105,7 +4105,7 @@ void MD_DrawReplayStartMenu(void)
 		}
 		else
 		{
-			patch = W_CachePatchName("M_NORANK", PU_CACHE);
+			patch = W_CachePatchLongName("M_NORANK", PU_CACHE);
 			colormap = R_GetTranslationColormap(
 				TC_RAINBOW,
 				demolist[dir_on[menudepthleft]].standings[i].color,
@@ -4288,14 +4288,14 @@ void MD_DrawPlaybackMenu(void)
 			else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
 				icon = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
 			else
-				icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
+				icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
 		}
 		else if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
 		else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
 			icon = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
 		else
-			icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
+			icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
 
 		if ((i == M_GetMenuIndex(MN_PLAYBACK, "FASTFORWARD") && cv_playbackspeed.value > 1) || (i == M_GetMenuIndex(MN_PLAYBACK, "REWIND") && demo.rewinding))
 			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x, currentMenu->y, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
@@ -5234,7 +5234,7 @@ static void M_DrawStatsMaps(void)
 		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|recommendedflags, "(complete)");
 
 	V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchLongName("GOTITA", PU_STATIC));
 
 	if (location)
 		V_DrawCharacter(10, y-(skullAnimCounter/5),
@@ -5308,7 +5308,7 @@ static void M_DrawStatsMaps(void)
 				V_DrawSmallMappedPatch(295, y, 0, W_CachePatchName(M_GetExtraEmblemPatch(exemblem, false), PU_CACHE),
 				                       R_GetTranslationColormap(TC_DEFAULT, M_GetExtraEmblemColor(exemblem), GTC_MENUCACHE));
 			else
-				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
+				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchLongName("NEEDIT", PU_CACHE));
 
 			V_DrawString(20, y, 0, va("%s", exemblem->description));
 		}
@@ -6427,7 +6427,7 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 		{
 			static angle_t rubyfloattime = 0;
 			const fixed_t rubyheight = FINESINE(rubyfloattime>>ANGLETOFINESHIFT);
-			V_DrawFixedPatch((x+w/2)<<FRACBITS, ((y+i/2)<<FRACBITS) - (rubyheight<<1), FRACUNIT, 0, W_CachePatchName("RUBYICON", PU_CACHE), NULL);
+			V_DrawFixedPatch((x+w/2)<<FRACBITS, ((y+i/2)<<FRACBITS) - (rubyheight<<1), FRACUNIT, 0, W_CachePatchLongName("RUBYICON", PU_CACHE), NULL);
 			rubyfloattime += FixedMul(ANGLE_MAX/NEWTICRATE, renderdeltatics);
 		}
 	}
@@ -6563,7 +6563,7 @@ void MD_DrawMPMainMenu(void)
 				cursorframe += renderdeltatics / 4;
 				for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 
-				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, 0, W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE), NULL);
+				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, 0, W_CachePatchLongName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE), NULL);
 			}
 
 			x += incrwidth;
@@ -6633,7 +6633,7 @@ void MD_DrawSetupMultiPlayerMenu(void)
 	INT32 mx, my, st, flags = 0;
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
-	patch_t *statdot = W_CachePatchName("K_SDOT0", PU_CACHE);
+	patch_t *statdot = W_CachePatchLongName("K_SDOT0", PU_CACHE);
 	patch_t *patch;
 	UINT8 frame;
 	UINT8 speed;
@@ -6663,13 +6663,13 @@ void MD_DrawSetupMultiPlayerMenu(void)
 	speed = skins[cv_chooseskin.value].kartspeed;
 	weight = skins[cv_chooseskin.value].kartweight;
 
-	statdot = W_CachePatchName("K_SDOT1", PU_CACHE);
+	statdot = W_CachePatchLongName("K_SDOT1", PU_CACHE);
 	if (skullAnimCounter < 4) // SRB2Kart: we draw this dot later so that it's not covered if there's multiple skins with the same stats
 		V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, flashcol);
 	else
 		V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, NULL);
 
-	statdot = W_CachePatchName("K_SDOT2", PU_CACHE); // coloured center
+	statdot = W_CachePatchLongName("K_SDOT2", PU_CACHE); // coloured center
 	V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, R_GetTranslationColormap(0, cv_dummycolor.value, GTC_MENUCACHE));
 
 	// 2.2 color bar backported with permission
@@ -6734,7 +6734,7 @@ void MD_DrawSetupMultiPlayerMenu(void)
 		cursorframe += renderdeltatics / 4;
 		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 
-		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
+		cursor = W_CachePatchLongName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
 
 		if (col < 0)
 			col += numskins;
@@ -7617,7 +7617,7 @@ void MD_DrawVideoMode(void)
 	j = menudefs[MN_OP_VIDEOMODE].y + 14 + ((vidm_selected % vidm_column_size)*8);
 
 	V_DrawScaledPatch(i - 8, j, 0,
-		W_CachePatchName("M_CURSOR", PU_CACHE));
+		W_CachePatchLongName("M_CURSOR", PU_CACHE));
 }
 
 // special menuitem key handler for video mode list
@@ -7760,14 +7760,14 @@ void MD_DrawMonitorToggles(void)
 #ifdef ITEMTOGGLEBOTTOMRIGHT
 			if (currentMenu->menuitems[thisitem].argument == 255)
 			{
-				V_DrawScaledPatch(x, y, V_TRANSLUCENT, W_CachePatchName("K_ISBG", PU_CACHE));
+				V_DrawScaledPatch(x, y, V_TRANSLUCENT, W_CachePatchLongName("K_ISBG", PU_CACHE));
 				continue;
 			}
 #endif
 			if (currentMenu->menuitems[thisitem].argument == 0)
 			{
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISTOGL", PU_CACHE));
+				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISBG", PU_CACHE));
+				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISTOGL", PU_CACHE));
 				continue;
 			}
 
@@ -7797,13 +7797,13 @@ void MD_DrawMonitorToggles(void)
 			}
 
 			if (cv->value)
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
+				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISBG", PU_CACHE));
 			else
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBGD", PU_CACHE));
+				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISBGD", PU_CACHE));
 
 			if (drawnum != 0)
 			{
-				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
+				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISMUL", PU_CACHE));
 				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
 				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", drawnum));
 			}
@@ -7821,7 +7821,7 @@ void MD_DrawMonitorToggles(void)
 #ifdef ITEMTOGGLEBOTTOMRIGHT
 		if (currentMenu->menuitems[itemOn].argument == 255)
 		{
-			V_DrawScaledPatch(onx-1, ony-2, V_TRANSLUCENT, W_CachePatchName("K_ITBG", PU_CACHE));
+			V_DrawScaledPatch(onx-1, ony-2, V_TRANSLUCENT, W_CachePatchLongName("K_ITBG", PU_CACHE));
 			if (shitsfree)
 			{
 				INT32 trans = V_TRANSLUCENT;
@@ -7829,15 +7829,15 @@ void MD_DrawMonitorToggles(void)
 					trans = ((10-TICRATE)+shitsfree-1)<<V_ALPHASHIFT;
 				else if (shitsfree < 5)
 					trans = (10-shitsfree)<<V_ALPHASHIFT;
-				V_DrawScaledPatch(onx-1, ony-2, trans, W_CachePatchName("K_ITFREE", PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, trans, W_CachePatchLongName("K_ITFREE", PU_CACHE));
 			}
 		}
 		else
 #endif
 		if (currentMenu->menuitems[itemOn].argument == 0)
 		{
-			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
-			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITTOGL", PU_CACHE));
+			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITBG", PU_CACHE));
+			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITTOGL", PU_CACHE));
 		}
 		else
 		{
@@ -7855,15 +7855,15 @@ void MD_DrawMonitorToggles(void)
 			}
 
 			if (cv->value)
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITBG", PU_CACHE));
 			else
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITBGD", PU_CACHE));
 
 			if (drawnum != 0)
 			{
-				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITMUL", PU_CACHE));
 				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
-				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
+				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchLongName("K_ITX", PU_CACHE));
 				V_DrawKartString(onx+37, ony+34, translucent, va("%d", drawnum));
 			}
 			else
@@ -8353,7 +8353,7 @@ void M_QuitResponse(INT32 ch)
 		while (ptime > I_GetTime())
 		{
 			V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
-			V_DrawSmallScaledPatch(0, 0, 0, W_CachePatchName("GAMEQUIT", PU_CACHE)); // Demo 3 Quit Screen Tails 06-16-2001
+			V_DrawSmallScaledPatch(0, 0, 0, W_CachePatchLongName("GAMEQUIT", PU_CACHE)); // Demo 3 Quit Screen Tails 06-16-2001
 			I_FinishUpdate(); // Update the screen with the image Tails 06-19-2001
 			I_Sleep(cv_sleep.value);
 			I_UpdateTime(cv_timescale.value);
@@ -8428,12 +8428,12 @@ static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean is
 
 	if (isSmall == true)
 	{
-		stickerEnd = W_CachePatchName("K_STIKE2", PU_CACHE);
+		stickerEnd = W_CachePatchLongName("K_STIKE2", PU_CACHE);
 		height = 6;
 	}
 	else
 	{
-		stickerEnd = W_CachePatchName("K_STIKEN", PU_CACHE);
+		stickerEnd = W_CachePatchLongName("K_STIKEN", PU_CACHE);
 		height = 11;
 	}
 
@@ -8460,12 +8460,12 @@ void MD_DrawDiscordRequests(void)
 		if (confirmAccept == true)
 		{
 			colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GREEN, GTC_MENUCACHE);
-			hand = W_CachePatchName("K_LAPH02", PU_CACHE);
+			hand = W_CachePatchLongName("K_LAPH02", PU_CACHE);
 		}
 		else
 		{
 			colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_RED, GTC_MENUCACHE);
-			hand = W_CachePatchName("K_LAPH03", PU_CACHE);
+			hand = W_CachePatchLongName("K_LAPH03", PU_CACHE);
 		}
 
 		slide = confirmLength - confirmDelay;
@@ -8480,7 +8480,7 @@ void MD_DrawDiscordRequests(void)
 		colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GREY, GTC_MENUCACHE);
 	}
 
-	V_DrawFixedPatch(56*FRACUNIT, 150*FRACUNIT, FRACUNIT, 0, W_CachePatchName("K_LAPE01", PU_CACHE), colormap);
+	V_DrawFixedPatch(56*FRACUNIT, 150*FRACUNIT, FRACUNIT, 0, W_CachePatchLongName("K_LAPE01", PU_CACHE), colormap);
 
 	if (hand != NULL)
 	{

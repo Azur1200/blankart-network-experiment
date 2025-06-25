@@ -133,8 +133,18 @@ const char *W_CheckFullNameForNum(lumpnum_t lumpnum);
 
 UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in one pwad
 
+// helper for old functions that use 8-char names
+// careful, you might be dealing with a non-terminated string!
+static inline const char *W_ShortName(const char *name)
+{
+	static char shortname[8+1];
+	strncpy(shortname, name, 8);
+	shortname[8] = '\0';
+	return shortname;
+}
+
 UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
-UINT16 W_CheckNumForNamePwad(const char *name, UINT16 wad, UINT16 startlump); // checks only in one pwad
+#define W_CheckNumForNamePwad(name, wad, start) W_CheckNumForLongNamePwad(W_ShortName(name), wad, start)
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t numprefixes, UINT16 wad, UINT16 startlump);
@@ -144,9 +154,9 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
 lumpnum_t W_CheckNumForMap(const char *name);
-lumpnum_t W_CheckNumForName(const char *name);
+#define W_CheckNumForName(name) W_CheckNumForLongName(W_ShortName(name))
 lumpnum_t W_CheckNumForLongName(const char *name);
-lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR
+#define W_GetNumForName(name) W_GetNumForLongName(W_ShortName(name))
 lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder);
 UINT8 W_LumpExists(const char *name); // Lua uses this.
@@ -175,8 +185,7 @@ boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
 boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache);
 boolean W_NeedPaletteRemap(lumpnum_t lump, boolean ignorecache);
 
-void *W_CacheLumpName(const char *name, INT32 tag);
-void *W_CachePatchName(const char *name, INT32 tag);
+#define W_CachePatchName(name, tag) W_CachePatchLongName(W_ShortName(name), tag)
 void *W_CachePatchLongName(const char *name, INT32 tag);
 
 // Returns either a Software patch, or an OpenGL patch.

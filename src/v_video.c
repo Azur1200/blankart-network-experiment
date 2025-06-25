@@ -994,7 +994,7 @@ void V_DrawContinueIcon(INT32 x, INT32 y, INT32 flags, INT32 skinnum, UINT16 ski
 {
 	(void)skinnum;
 	(void)skincolor;
-	V_DrawScaledPatch(x - 10, y - 14, flags, W_CachePatchName("CONTINS", PU_PATCH));
+	V_DrawScaledPatch(x - 10, y - 14, flags, W_CachePatchLongName("CONTINS", PU_PATCH));
 }
 
 //
