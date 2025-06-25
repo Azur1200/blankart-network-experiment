@@ -1493,7 +1493,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	char *texturesToken;
 	size_t texturesTokenLength;
 	char *endPos;
-	char *patchName = NULL;
+	char patchName[SHORTNAMELEN+1];
 	INT16 patchXPos;
 	INT16 patchYPos;
 	UINT8 flip = 0;
@@ -1509,19 +1509,13 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch name should be");
 	}
 	texturesTokenLength = strlen(texturesToken);
-	if (texturesTokenLength>8)
+	if (texturesTokenLength >= sizeof(patchName))
 	{
-		I_Error("Error parsing TEXTURES lump: Patch name \"%s\" exceeds 8 characters",texturesToken);
+		I_Error("Error parsing TEXTURES lump: Patch name \"%s\" exceeds %zu characters", texturesToken, sizeof(patchName) - 1);
 	}
 	else
 	{
-		if (patchName != NULL)
-		{
-			Z_Free(patchName);
-		}
-		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-		M_Memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
-		patchName[texturesTokenLength] = '\0';
+		strcpy(patchName, texturesToken);
 	}
 
 	// Comma 1
@@ -1660,7 +1654,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	if (actuallyLoadPatch == true)
 	{
 		// Check lump exists
-		patchLumpNum = W_GetNumForName(patchName);
+		patchLumpNum = W_GetNumForLongName(patchName);
 		// If so, allocate memory for texpatch_t and fill 'er up
 		resultPatch = (texpatch_t *)Z_Malloc(sizeof(texpatch_t),PU_STATIC,NULL);
 		resultPatch->originx = patchXPos;
@@ -1670,14 +1664,11 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		resultPatch->flip = flip;
 		resultPatch->alpha = alpha;
 		resultPatch->style = style;
-		// Clean up a little after ourselves
-		Z_Free(patchName);
 		// Then return it
 		return resultPatch;
 	}
 	else
 	{
-		Z_Free(patchName);
 		return NULL;
 	}
 }

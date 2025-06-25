@@ -299,7 +299,7 @@ void CON_SetupBackColormapEx(INT32 color, boolean prompt)
 {
 	UINT16 i, palsum;
 	UINT8 j, palindex;
-	lumpnum_t lump = W_GetNumForName(GetPalette());
+	lumpnum_t lump = W_GetNumForLongName(GetPalette());
 	UINT8 *pal = W_CacheLumpNum(lump, PU_CACHE);
 	INT32 shift = 6;
 

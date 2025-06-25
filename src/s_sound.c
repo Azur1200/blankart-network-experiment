@@ -313,22 +313,17 @@ static void SetChannelsNum(void)
 //
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 {
-	char namebuf[9];
 	lumpnum_t sfxlump;
 
-	sprintf(namebuf, "ds%s", sfx->name);
-
-	sfxlump = W_CheckNumForName(namebuf);
+	sfxlump = W_CheckNumForLongName(va("DS%s", sfx->name));
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	strlcpy(namebuf, sfx->name, sizeof namebuf);
-
-	sfxlump = W_CheckNumForName(namebuf);
+	sfxlump = W_CheckNumForLongName(sfx->name);
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	return W_GetNumForName("dsthok");
+	return W_GetNumForLongName("DSTHOK");
 }
 
 //
@@ -2186,7 +2181,7 @@ boolean S_RecallMusic(UINT16 status, boolean fromfirst)
 static lumpnum_t S_GetMusicLumpNum(const char *mname)
 {
 	if (S_MusicExists(mname))
-		return W_GetNumForName(va("o_%s", mname));
+		return W_GetNumForLongName(va("O_%s", mname));
 	else
 		return LUMPERROR;
 }

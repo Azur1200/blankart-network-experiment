@@ -313,7 +313,7 @@ UINT32 V_GammaCorrect(UINT32 input, double power)
 // keep a copy of the palette so that we can get the RGB value for a color index at any time.
 static void LoadPalette(const char *lumpname)
 {
-	lumpnum_t lumpnum = W_GetNumForName(lumpname);
+	lumpnum_t lumpnum = W_GetNumForLongName(lumpname);
 	size_t i, palsize = W_LumpLength(lumpnum)/3;
 	UINT8 *pal;
 
@@ -408,22 +408,15 @@ void V_CubeApply(UINT8 *red, UINT8 *green, UINT8 *blue)
 	*blue = (UINT8)(working[0][2]);
 }
 
-const char *R_GetPalname(UINT16 num)
-{
-	static char palname[9];
-	char newpal[9] = "PLAYPAL";
-
-	if (num > 0 && num <= 10000)
-		snprintf(newpal, 8, "PAL%04u", num-1);
-
-	strncpy(palname, newpal, 8);
-	return palname;
-}
-
 const char *GetPalette(void)
 {
-	if (gamestate == GS_LEVEL)
-		return R_GetPalname((encoremode ? mapheaderinfo[gamemap-1]->encorepal : mapheaderinfo[gamemap-1]->palette));
+	UINT16 num = encoremode ? mapheaderinfo[gamemap-1]->encorepal : mapheaderinfo[gamemap-1]->palette;
+	if (gamestate == GS_LEVEL && num > 0 && num <= 10000)
+	{
+		static char palname[SHORTNAMELEN+1];
+		sprintf(palname, "PAL%04u", num-1);
+		return palname;
+	}
 	return "PLAYPAL";
 }
 
@@ -1667,7 +1660,7 @@ void V_DrawCustomFadeScreen(const char *lump, UINT8 strength)
 		lighttable_t *clm = NULL;
 
 		if (lump != NULL)
-			lumpnum = W_GetNumForName(lump);
+			lumpnum = W_GetNumForLongName(lump);
 		else
 			return;
 
