@@ -2205,7 +2205,7 @@ static void M_DrawMapEmblems(INT32 mapnum, INT32 x, INT32 y)
 		lasttype = curtype;
 
 		if (emblem->collected)
-			V_DrawSmallMappedPatch(x, y, 0, W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE),
+			V_DrawSmallMappedPatch(x, y, 0, W_CachePatchLongName(M_GetEmblemPatch(emblem, false), PU_CACHE),
 			                       R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_MENUCACHE));
 		else
 			V_DrawSmallScaledPatch(x, y, 0, W_CachePatchLongName("NEEDIT", PU_CACHE));
@@ -2219,7 +2219,7 @@ static void M_DrawMenuTitle(void)
 {
 	if (currentMenu->headerpic)
 	{
-		patch_t *p = W_CachePatchName(currentMenu->headerpic, PU_CACHE);
+		patch_t *p = W_CachePatchLongName(currentMenu->headerpic, PU_CACHE);
 
 		if (p->height > 24) // title is larger than normal
 		{
@@ -2492,7 +2492,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 			if (!item->patch)
 				return 0;
 
-			p = W_CachePatchName(item->patch, PU_CACHE);
+			p = W_CachePatchLongName(item->patch, PU_CACHE);
 			break;
 		}
 		}
@@ -4286,14 +4286,14 @@ void MD_DrawPlaybackMenu(void)
 					inactivemap = R_GetTranslationColormap(players[ply].skin, players[ply].skincolor, GTC_MENUCACHE);
 			}
 			else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
-				icon = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
+				icon = W_CachePatchLongName(currentMenu->menuitems[i].patch, PU_CACHE);
 			else
 				icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
 		}
 		else if (currentMenu->menuitems[i].status & IT_HIDDEN)
 			continue;
 		else if (currentMenu->menuitems[i].patch && W_CheckNumForName(currentMenu->menuitems[i].patch) != LUMPERROR)
-			icon = W_CachePatchName(currentMenu->menuitems[i].patch, PU_CACHE);
+			icon = W_CachePatchLongName(currentMenu->menuitems[i].patch, PU_CACHE);
 		else
 			icon = W_CachePatchLongName("PLAYRANK", PU_CACHE); // temp
 
@@ -5305,7 +5305,7 @@ static void M_DrawStatsMaps(void)
 			exemblem = &extraemblems[i];
 
 			if (exemblem->collected)
-				V_DrawSmallMappedPatch(295, y, 0, W_CachePatchName(M_GetExtraEmblemPatch(exemblem, false), PU_CACHE),
+				V_DrawSmallMappedPatch(295, y, 0, W_CachePatchLongName(M_GetExtraEmblemPatch(exemblem, false), PU_CACHE),
 				                       R_GetTranslationColormap(TC_DEFAULT, M_GetExtraEmblemColor(exemblem), GTC_MENUCACHE));
 			else
 				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchLongName("NEEDIT", PU_CACHE));
@@ -7804,11 +7804,11 @@ void MD_DrawMonitorToggles(void)
 			if (drawnum != 0)
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchLongName("K_ISMUL", PU_CACHE));
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
+				V_DrawScaledPatch(x, y, translucent, W_CachePatchLongName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
 				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", drawnum));
 			}
 			else
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
+				V_DrawScaledPatch(x, y, translucent, W_CachePatchLongName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
 
 			y += spacing;
 		}
@@ -7862,12 +7862,12 @@ void MD_DrawMonitorToggles(void)
 			if (drawnum != 0)
 			{
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchLongName("K_ITMUL", PU_CACHE));
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchLongName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
 				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchLongName("K_ITX", PU_CACHE));
 				V_DrawKartString(onx+37, ony+34, translucent, va("%d", drawnum));
 			}
 			else
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchLongName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
 		}
 	}
 

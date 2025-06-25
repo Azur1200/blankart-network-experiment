@@ -386,7 +386,7 @@ void K_LoadKartHUDGraphics(void)
 
 		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
 		{
-			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+			kp_kartzspeedo[m] = W_CachePatchLongName(patchNames[m], PU_HUDGFX);
 		}
 	}
 
@@ -1541,7 +1541,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 						if (emblem->collected)
 						{
-							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE);
+							emblempic[curemb] = W_CachePatchLongName(M_GetEmblemPatch(emblem, false), PU_CACHE);
 							emblemcol[curemb] = R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_CACHE);
 							if (++curemb == 3)
 								break;

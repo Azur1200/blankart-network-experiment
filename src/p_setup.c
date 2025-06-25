@@ -9191,7 +9191,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			// okay... try finding them the old-fashioned way
 			else
 			{
-				oldPic = W_CachePatchName(va("%sP", name), PU_STATIC);
+				oldPic = W_CachePatchLongName(va("%sP", name), PU_STATIC);
 				if (oldPic != missingpat)
 					mapheaderinfo[i]->thumbnailPic = oldPic;
 			}
@@ -9202,7 +9202,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 			else
 			{
-				oldPic = W_CachePatchName(va("%sR", name), PU_STATIC);
+				oldPic = W_CachePatchLongName(va("%sR", name), PU_STATIC);
 				if (oldPic != missingpat)
 					mapheaderinfo[i]->minimapPic = oldPic;
 			}

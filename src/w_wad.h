@@ -185,7 +185,6 @@ boolean W_IsPatchCached(lumpnum_t lump, void *ptr);
 boolean W_NeedPaletteRemapPwad(UINT16 wad, UINT16 lump, boolean ignorecache);
 boolean W_NeedPaletteRemap(lumpnum_t lump, boolean ignorecache);
 
-#define W_CachePatchName(name, tag) W_CachePatchLongName(W_ShortName(name), tag)
 void *W_CachePatchLongName(const char *name, INT32 tag);
 
 // Returns either a Software patch, or an OpenGL patch.

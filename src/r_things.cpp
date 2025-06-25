@@ -1473,7 +1473,7 @@ static void R_ProjectDropShadow(
 
 	if (shadowpatch == NULL)
 	{
-		shadowpatch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
+		shadowpatch = static_cast<patch_t*>(W_CachePatchLongName("DSHADOW", PU_SPRITE));
 	}
 
 	patch = shadowpatch;
