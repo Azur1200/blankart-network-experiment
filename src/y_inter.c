@@ -1163,6 +1163,22 @@ static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
 }
 
+static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
+{
+	picscale *= 10;
+	picscale /= (40-hypoti);
+
+	if ( ((hypoti % 5) == 1) || ((hypoti % 5) == 4) || ((hypoti % 5) == 2) )
+	{
+		if ((hypoti % 5) == 2) // scale DOWN the image
+			picscale -= (hypoti*16);
+		else
+			picscale += (hypoti*2); // scale UP the image
+	}
+
+	return picscale;
+}
+
 //
 // Y_VoteDrawer
 //
@@ -1176,7 +1192,6 @@ void Y_VoteDrawer(void)
 	fixed_t scale;
 	patch_t *pic;
 	INT16 mapnum;
-	fixed_t picscale = FRACUNIT; // GREENRES
 	fixed_t picwidth = 160;
 
 	// CEP: scale by screen hypotenuse for extra voting rows
@@ -1202,18 +1217,7 @@ void Y_VoteDrawer(void)
 	INT32 hypotdiv = max(10, (40-hypoti));
 
 	// readjust the picscale
-	picscale *= 10;
-	picscale /= (40-hypoti);
-	picwidth *= picscale;
-
-	// shitty hack to prevent alignment issues
-	if ( ((hypoti % 5) == 1) || ((hypoti % 5) == 4) || ((hypoti % 5) == 2) )
-	{
-		if ((hypoti % 5) == 2) // scale DOWN the image
-			picscale -= (hypoti*16);
-		else
-			picscale += (hypoti*2); // scale UP the image
-	}
+	picwidth *= Y_CalculatePicScale(FRACUNIT, hypoti);
 
 	if (rendermode == render_none)
 		return;
@@ -1313,7 +1317,7 @@ void Y_VoteDrawer(void)
 			str = levelinfo[i].str;
 			mapnum = votelevels[i][0];
 		}
-		scale = M_GetMapThumbnail(mapnum, &pic)/4;
+		scale = M_GetMapThumbnail(mapnum, &pic)/2;
 
 		if (selected[i])
 		{
@@ -1377,11 +1381,11 @@ void Y_VoteDrawer(void)
 			}
 
 			if (!levelinfo[i].encore)
-				V_DrawFixedPatch((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS, y<<FRACBITS, picscale/2, V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS, y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_SNAPTORIGHT, pic, 0);
 			else
 			{
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, picscale/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, picscale, V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH-(420/hypotdiv)-scaledpicdiff, (400/hypotdiv)+y, V_SNAPTORIGHT|V_6WIDTHSPACE, str);
@@ -1421,13 +1425,12 @@ void Y_VoteDrawer(void)
 		}
 		else
 		{
-			scale /= 2;
 			if (!levelinfo[i].encore)
-				V_DrawFixedPatch((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS, y<<FRACBITS, picscale/2, V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS, y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_SNAPTORIGHT, pic, 0);
 			else
 			{
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, picscale/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, picscale, V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, rubyicon, NULL);
 			}
 
 			if (levelinfo[i].gts)
