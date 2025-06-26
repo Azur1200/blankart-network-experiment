@@ -465,7 +465,9 @@ void F_IntroTicker(void)
 		}
 		if (finalecount == 80)
 		{
-			sfxenum_t rsound = skins[1].soundsid[SKSKWIN];
+			char chars[5][10] = {"tails", "chao", "aiai", "sakura"};
+			SINT8 random = P_RandomRange(0, 3);
+			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}
