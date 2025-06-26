@@ -22,17 +22,6 @@
 extern "C" {
 #endif
 
-// Available compression methods for lumps.
-typedef enum
-{
-	CM_NOCOMPRESSION,
-#ifdef HAVE_ZLIB
-	CM_DEFLATE,
-#endif
-	CM_LZF,
-	CM_UNSUPPORTED
-} compmethod;
-
 // =========================================================================
 //                         'VIRTUAL' RESOURCES
 // =========================================================================
@@ -79,6 +68,7 @@ struct wadfile_t
 {
 	char *filename;
 	restype_t type;
+	UINT32 *lumphashes; // hashes for every lump's fullname in ALL CAPS
 	lumpinfo_t *lumpinfo;
 	lumpcache_t *lumpcache;
 	lumpcache_t *patchcache;
@@ -133,7 +123,6 @@ const char *W_CheckFullNameForNum(lumpnum_t lumpnum);
 
 UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump); // checks only in one pwad
 
-UINT16 W_CheckNumForMapPwad(const char *name, UINT32 hash, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t numprefixes, UINT16 wad, UINT16 startlump);
