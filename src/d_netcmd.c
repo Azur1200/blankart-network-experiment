@@ -1172,6 +1172,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_renderview);
 	CV_RegisterVar(&cv_vhseffect);
 	CV_RegisterVar(&cv_shittyscreen);
+	CV_RegisterVar(&cv_votebgscaling);
 	CV_RegisterVar(&cv_renderer);
 	CV_RegisterVar(&cv_scr_depth);
 	CV_RegisterVar(&cv_scr_width);

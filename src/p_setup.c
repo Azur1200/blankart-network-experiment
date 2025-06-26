@@ -9246,6 +9246,12 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 	return true;
 }
 
+// check for replacement votescreen backgrounds
+boolean wideracereplaced = false;
+boolean racereplaced = false;
+boolean widebattlereplaced = false;
+boolean battlereplaced = false;
+
 //
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
@@ -9410,6 +9416,44 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	// extra sprite/skin data
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
+
+	//
+	// check for votescreen replacements
+	//
+	if (!wideracereplaced && !racereplaced && !widebattlereplaced && !battlereplaced)
+	{
+		lumpinfo = wadfiles[wadnum]->lumpinfo;
+		for (i = 0; i < numlumps; i++, lumpinfo++)
+		{
+			name = lumpinfo->name;
+
+			// widescreen patch Race
+			if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
+			{
+				wideracereplaced = true;
+				continue;
+			}
+
+			if (!racereplaced && !strncmp(name, "INTERSCR", 8))
+			{
+				racereplaced = true;
+				continue;
+			}
+
+			// widescreen patch Battle
+			if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
+			{
+				widebattlereplaced = true;
+				continue;
+			}
+
+			if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
+			{
+				battlereplaced = true;
+				continue;
+			}
+		}
+	}
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;

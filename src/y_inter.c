@@ -367,27 +367,22 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 static void Y_AnimatedVoteScreenCheck(void)
 {
 	char tmpPrefix[] = "INTS";
-	boolean stopSearching = false;
 
 	if (luaVoteScreen)
 		strncpy(tmpPrefix, luaVoteScreen, 4);
-	else
-	{
-		if(gametype == GT_BATTLE)
-			strcpy(tmpPrefix, "BTLS");
-	}
+	else if(gametype == GT_BATTLE)
+		strcpy(tmpPrefix, "BTLS");
 
 	strncpy(animPrefix, tmpPrefix, 4);
 	animPrefix[4] = 'C';
 	strncpy(animWidePrefix, tmpPrefix, 4);
 	animWidePrefix[4] = 'W';
 
-	foundAnimVoteFrames = 0;
-	foundAnimVoteWideFrames = 0;
+	foundAnimVoteFrames = foundAnimVoteWideFrames = 0;
 	currentAnimFrame = 0;
 
 	INT32 i = 1;
-	while(!stopSearching)
+	for (;;)
 	{
 		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
 		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
@@ -401,7 +396,7 @@ static void Y_AnimatedVoteScreenCheck(void)
 				foundAnimVoteWideFrames++;
 		}
 		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			stopSearching = true;
+			break;
 
 		i++;
 	}
@@ -1132,35 +1127,53 @@ static void Y_UnloadData(void)
 
 // SRB2Kart: Voting!
 
+static void Y_DrawVoteBackground(patch_t *patch)
+{
+	switch (cv_votebgscaling.value)
+	{
+		case 1: // adaptive
+			V_DrawAdaptiveScaledFullScreenPatch(patch);
+			break;
+		case 2: // vertical-fill
+			V_DrawVerticallyScaledFullScreenPatch(patch);
+			break;
+		case 3: // horizontal-fill
+			V_DrawHorizontallyScaledFullScreenPatch(patch);
+			break;
+		case 0: // vanilla
+		default:
+			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (patch->width/2),
+							  (vid.height / vid.dupy) - patch->height,
+							  V_SNAPTOTOP|V_SNAPTOLEFT, patch);
+			break;
+	}
+}
+
 // Y_DrawAnimatedVoteScreenPatch
 //
 // Draw animated patch based on frame counter on vote screen
 //
-static inline void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
 {
+	INT32 nextframe = 0;
+	patch_t *votebg = NULL;
 	char tempAnimPrefix[7];
-	(widePatch) ? strcpy(tempAnimPrefix, animWidePrefix) : strcpy(tempAnimPrefix, animPrefix);
-	INT32 tempFoundAnimVoteFrames = (widePatch) ? foundAnimVoteWideFrames : foundAnimVoteFrames;
+	const INT32 tempFoundAnimVoteFrames = ((widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1);
+
+	strcpy(tempAnimPrefix, (widePatch ? animWidePrefix : animPrefix));
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if (widePatch)
-	{
-		if (currentAnimFrame > foundAnimVoteWideFrames-1)
-			currentAnimFrame = 0;
-	}
-	else
-	{
-		if (currentAnimFrame > foundAnimVoteFrames-1)
-			currentAnimFrame = 0;
-	}
+	if (currentAnimFrame > tempFoundAnimVoteFrames)
+		currentAnimFrame = 0;
 
-	patch_t *background = W_CachePatchName(va("%s%d", tempAnimPrefix, currentAnimFrame + 1), PU_CACHE);
-	V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(background->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-				(vid.height / vid.dupy) - SHORT(background->height),
-				V_SNAPTOTOP|V_SNAPTOLEFT, background);
+	nextframe = (currentAnimFrame + 1);
 
-	if (renderisnewtic && votetic % 2 == 0 && !paused)
-		currentAnimFrame = (currentAnimFrame + 1 > tempFoundAnimVoteFrames - 1) ? 0 : currentAnimFrame + 1;
+	votebg = W_CachePatchName(va("%s%d", (widePatch ? animWidePrefix : animPrefix), nextframe), PU_PATCH);
+
+	Y_DrawVoteBackground(votebg);
+
+	if (renderisnewtic && (votetic % 2 == 0) && !paused)
+		currentAnimFrame = (nextframe > tempFoundAnimVoteFrames) ? 0 : nextframe;
 }
 
 static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
@@ -1177,6 +1190,32 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 	}
 
 	return picscale;
+}
+
+static void Y_DrawVoteScreenPatch(void)
+{
+	patch_t *votebg = NULL;
+	const boolean widescreen = (vid.width / vid.dupx > 320);
+
+	if (foundAnimVoteWideFrames || foundAnimVoteFrames)
+	{
+		Y_DrawAnimatedVoteScreenPatch((foundAnimVoteWideFrames && widescreen));
+		return;
+	}
+
+	votebg = bgpatch; // non widescreen patch
+
+	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
+	const boolean widebgreplaced = (prefgametype == GT_BATTLE) ? widebattlereplaced : wideracereplaced;
+	const boolean bgreplaced = (prefgametype == GT_BATTLE) ? battlereplaced : racereplaced;
+
+	if ((widescreen && (widebgreplaced || !bgreplaced))
+	|| (!widescreen && (widebgreplaced && !bgreplaced)))
+	{
+		votebg = widebgpatch;
+	}
+
+	Y_DrawVoteBackground(votebg);
 }
 
 //
@@ -1236,31 +1275,8 @@ void Y_VoteDrawer(void)
 
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
-	if (widebgpatch && vid.width / vid.dupx > 320) {
-
-		if(foundAnimVoteWideFrames == 0){
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(widebgpatch->width)/2),
-								(vid.height / vid.dupy) - SHORT(widebgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, widebgpatch);
-		} else {
-			// patch_t *currPatch = W_CachePatchName(va("%s%d", animPrefix, currentAnimFrame+1), PU_CACHE);
-			// V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(currPatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-			// 			(vid.height / vid.dupy) - SHORT(currPatch->height),
-			// 			V_SNAPTOTOP|V_SNAPTOLEFT, currPatch);
-			// if(votetic % 4 == 0 && !paused){
-			// 	currentAnimFrame = (currentAnimFrame+1 > foundAnimVoteFrames-1) ? 0 : currentAnimFrame + 1;
-			// }
-			Y_DrawAnimatedVoteScreenPatch(true);
-		}
-	} else {
-		if(foundAnimVoteFrames == 0) {
-			V_DrawScaledPatch(((vid.width/2) / vid.dupx) - (SHORT(bgpatch->width)/2), // Keep the width/height adjustments, for screens that are less wide than 320(?)
-								(vid.height / vid.dupy) - SHORT(bgpatch->height),
-								V_SNAPTOTOP|V_SNAPTOLEFT, bgpatch);
-		} else {
-			Y_DrawAnimatedVoteScreenPatch(false);
-		}
-	}
+	// decides which votebg to draw and draws it
+	Y_DrawVoteScreenPatch();
 
 	rowval = (votemax*3)+((votemax > 1) ? (votemax - 1) : 0);
 	for (i = 0; i < (rowval+1); i++) // First, we need to figure out the height of this thing...

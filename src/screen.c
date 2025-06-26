@@ -65,6 +65,9 @@ consvar_t cv_vhseffect = CVAR_INIT ("vhspause", "On", CV_SAVE, CV_OnOff, NULL);
 static CV_PossibleValue_t shittyscreen_cons_t[] = {{0, "Okay"}, {1, "Shitty"}, {2, "Extra Shitty"}, {0, NULL}};
 consvar_t cv_shittyscreen = CVAR_INIT ("televisionsignal", "Okay", 0, shittyscreen_cons_t, NULL);
 
+static CV_PossibleValue_t votescale_cons_t[] = {{0, "Vanilla"}, {1, "Adaptive"}, {2, "VerticalFill"}, {3, "HorizontalFill"}, {0, NULL}};
+consvar_t cv_votebgscaling = CVAR_INIT ("votebgscaling", "Adaptive", 0, votescale_cons_t, NULL);
+
 CV_PossibleValue_t cv_renderer_t[] = {
 	{1, "Software"},
 #ifdef HWRENDER
