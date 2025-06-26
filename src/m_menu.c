@@ -1314,6 +1314,21 @@ boolean M_Responder(event_t *ev)
 			default:
 				break;
 		}
+
+		if (menustack[0])
+		{
+			menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
+			if (item && item->cvar == &cv_nextmap)
+			{
+				if (ch == gamecontrol[0][gc_fire][0]
+					|| ch == gamecontrol[0][gc_fire][1])
+				{
+					S_StartSound(NULL, sfx_menu1);
+					COM_ImmedExecute("add kartencore 1");
+				}
+			}
+		}
+
 	}
 	else if (menustack[0])
 	{
@@ -1631,19 +1646,6 @@ boolean M_Responder(event_t *ev)
 			}
 			M_ExitMenu();
 
-			return true;
-
-		case KEY_SPACE:
-			noFurtherInput = true;
-			if (!item || !item->cvar)
-				return true;
-
-			if (item->cvar == &cv_nextmap)
-			{
-				S_StartSound(NULL, sfx_menu1);
-				COM_ImmedExecute("add kartencore 1");
-				return true;
-			}
 			return true;
 
 		case KEY_BACKSPACE:
