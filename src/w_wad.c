@@ -547,8 +547,6 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 	filelump_t *fileinfo;
 	void *fileinfov;
 
-	char shortname[9] = {0};
-
 	// read the header
 	if (fread(&header, 1, sizeof header, handle) < sizeof header)
 	{
@@ -649,14 +647,14 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			}
 #endif
 			// Strip away file address
-			if (trimname != 0)
+			if (trimname != NULL)
 				trimname++;
 			else
 				trimname = filename; // Care taken for root files.
 
 			// First stop, not last, to permit RR_GREENHILLS.beta3.wad
-			if ((dotpos = strchr(trimname, '.')) != 0)
-				namelen = (dotpos + 1 - trimname);
+			if ((dotpos = strchr(trimname, '.')) != NULL)
+				namelen = dotpos - trimname;
 			else
 				namelen = strlen(trimname);
 
@@ -664,26 +662,20 @@ static lumpinfo_t* ResGetLumpsWad (FILE* handle, UINT16* nlmp, const char* filen
 			{
 				CONS_Alert(CONS_ERROR, "Lumpname length %zu is longer than the limit (%d)", namelen, MAXLUMPNAME);
 				free(fileinfov);
+				Z_Free(lumpinfo);
 				return NULL;
 			}
 
 			// Allocate the lump's long and full name (save on memory).
-			char *name = strdup(trimname);
-			name[namelen-1] = '\0';
-			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, name);
+			lump_p->longname = lump_p->fullname = strbuf_append_m(&lumpnamebuf, trimname, namelen);
 
-			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, name);
-
-			free(name);
+			CONS_Debug(DBG_SETUP, "WADNAME handling:\n -- path %s\n -- interpreted lumpname %s\n", filename, strbuf_get(lumpnamebuf, lump_p->longname));
 
 			wadnamelump = i | (numwadfiles << 16);
 		}
 		else
-		{
 			// Allocate the lump's long and full name (save on memory).
-			memcpy(shortname, fileinfo->name, 8);
-			lump_p->longname = lump_p->fullname = strbuf_append(&lumpnamebuf, shortname);
-		}
+			lump_p->longname = lump_p->fullname = strbuf_append_m(&lumpnamebuf, fileinfo->name, strnlen(fileinfo->name, 8));
 	}
 	free(fileinfov);
 	*nlmp = numlumps;
@@ -778,6 +770,7 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		if (zentry.namelen > MAXLUMPNAME)
 		{
 			CONS_Alert(CONS_ERROR, "Lumpname length %hu is longer than the limit (%d)", zentry.namelen, MAXLUMPNAME);
+			Z_Free(lumpinfo);
 			return NULL;
 		}
 
@@ -789,17 +782,16 @@ static lumpinfo_t* ResGetLumpsZip (FILE* handle, UINT16* nlmp)
 		}
 
 		// Strip away file address and extension for the 8char name.
-		if ((trimname = strrchr(fullname, '/')) != 0)
+		if ((trimname = strrchr(fullname, '/')) != NULL)
 			trimname++;
 		else
 			trimname = fullname; // Care taken for root files.
 
-		if ((dotpos = strrchr(trimname, '.')) == 0)
+		if ((dotpos = strrchr(trimname, '.')) == NULL)
 			dotpos = fullname + strlen(fullname); // Watch for files without extension.
 
 		lump_p->fullname = strbuf_append(&lumpnamebuf, fullname);
-		trimname[dotpos - trimname] = '\0';
-		lump_p->longname = strbuf_append(&lumpnamebuf, trimname);
+		lump_p->longname = strbuf_append_m(&lumpnamebuf, trimname, dotpos - trimname);
 
 		switch(zentry.compression)
 		{
