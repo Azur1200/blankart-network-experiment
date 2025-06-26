@@ -70,6 +70,8 @@
 
 #include "deh_tables.h"
 
+#include "y_inter.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -9246,11 +9248,92 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 	return true;
 }
 
-// check for replacement votescreen backgrounds
-boolean wideracereplaced = false;
-boolean racereplaced = false;
-boolean widebattlereplaced = false;
-boolean battlereplaced = false;
+static size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
+
+
+//
+// search for sound replacements
+//
+static boolean P_CheckSoundReplacements(char *name, size_t i)
+{
+	if (name[0] == 'D')
+	{
+		if (name[1] == 'S')
+		{
+			for (i = 1; i < NUMSFX; i++)
+			{
+				if (S_sfx[i].name && !strnicmp(S_sfx[i].name, name + 2, 6))
+				{
+					// the sound will be reloaded when needed,
+					// since sfx->data will be NULL
+					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
+
+					I_FreeSfx(&S_sfx[i]);
+
+					// Re-cache it
+					//if (S_PrecacheSound())
+						//S_sfx[j].data = I_GetSfx(&S_sfx[j]);
+
+					sreplaces++;
+					return true;
+				}
+			}
+		}
+		else if (name[1] == '_')
+		{
+			CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
+			mreplaces++;
+			return true;
+		}
+	}
+	else if (name[0] == 'O' && name[1] == '_')
+	{
+		CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
+		digmreplaces++;
+		return true;
+	}
+	return false;
+}
+
+//
+// check for non Lua votescreen replacements
+//
+static boolean P_CheckVoteReplacements(char *name)
+{
+	// widescreen patch Race
+	if (!VoteScreen.replaced.widerace && !memcmp(name, "INTERSCW", 8))
+	{
+		VoteScreen.replaced.widerace = true;
+		return false;
+	}
+
+	if (!VoteScreen.replaced.race && !memcmp(name, "INTERSCR", 8))
+	{
+		VoteScreen.replaced.race = true;
+		return false;
+	}
+
+	// widescreen patch Battle
+	if (!VoteScreen.replaced.widebattle && !memcmp(name, "BATTLSCW", 8))
+	{
+		VoteScreen.replaced.widebattle = true;
+		return false;
+	}
+
+	if (!VoteScreen.replaced.battle && !memcmp(name, "BATTLSCR", 8))
+	{
+		VoteScreen.replaced.battle = true;
+		return false;
+	}
+
+	if (VoteScreen.replaced.widerace && VoteScreen.replaced.race
+	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 //
 // Add a WAD file and do the per-WAD setup stages.
@@ -9258,10 +9341,13 @@ boolean battlereplaced = false;
 //
 UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 {
-	size_t i, j, sreplaces = 0, mreplaces = 0, digmreplaces = 0;
+	size_t i;
 	UINT16 numlumps, wadnum;
 	char *name;
+	static boolean allvotereplaced = false;
 	lumpinfo_t *lumpinfo;
+
+	sreplaces = mreplaces = digmreplaces = 0;
 
 	// Vars to help us with the position start and amount of each resource type.
 	// Useful for PK3s since they use folders.
@@ -9336,36 +9422,12 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 		for (i = 0; i < numlumps; i++, lumpinfo++)
 		{
 			name = lumpinfo->name;
-			if (name[0] == 'D')
-			{
-				if (name[1] == 'S')
-				{
-					for (j = 1; j < NUMSFX; j++)
-					{
-						if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6))
-						{
-							// the sound will be reloaded when needed,
-							// since sfx->data will be NULL
-							CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
-							I_FreeSfx(&S_sfx[j]);
+			if (P_CheckSoundReplacements(name, i));
+				continue;
 
-							sreplaces++;
-							break; // there shouldn't be two sounds with the same name, so stop looking
-						}
-					}
-				}
-				else if (name[1] == '_')
-				{
-					CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
-					mreplaces++;
-				}
-			}
-			else if (name[0] == 'O' && name[1] == '_')
-			{
-				CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
-				digmreplaces++;
-			}
+			if (!allvotereplaced && P_CheckVoteReplacements(name))
+				allvotereplaced = true;
 		}
 		break;
 	}
@@ -9416,44 +9478,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	// extra sprite/skin data
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
-
-	//
-	// check for votescreen replacements
-	//
-	if (!wideracereplaced && !racereplaced && !widebattlereplaced && !battlereplaced)
-	{
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			// widescreen patch Race
-			if (!wideracereplaced && !strncmp(name, "INTERSCW", 8))
-			{
-				wideracereplaced = true;
-				continue;
-			}
-
-			if (!racereplaced && !strncmp(name, "INTERSCR", 8))
-			{
-				racereplaced = true;
-				continue;
-			}
-
-			// widescreen patch Battle
-			if (!widebattlereplaced && !strncmp(name, "BATTLSCW", 8))
-			{
-				widebattlereplaced = true;
-				continue;
-			}
-
-			if (!battlereplaced && !strncmp(name, "BATTLSCR", 8))
-			{
-				battlereplaced = true;
-				continue;
-			}
-		}
-	}
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;

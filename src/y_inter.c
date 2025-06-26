@@ -84,11 +84,10 @@ typedef struct
 static y_data data;
 
 // graphics
-static patch_t *bgpatch = NULL;     // INTERSCR
-static patch_t *widebgpatch = NULL;
 static patch_t *bgtile = NULL;      // SPECTILE/SRB2BACK
 static patch_t *interpic = NULL;    // custom picture defined in map header
 static boolean usetile;
+
 static INT32 timer;
 
 typedef struct
@@ -110,19 +109,6 @@ static y_buffer_t *y_buffer;
 static INT32 intertic;
 static INT32 endtic = -1;
 static INT32 sorttic = -1;
-
-patch_t *animVoteFramesPatches = NULL;
-// VEXTRN - Vote (V) Extra (EXT) Race (R) Normal (N - Normal sized patch)
-// VEXTBN - Vote (V) Extra (EXT) Battle (B) Normal (N - Normal sized patch)
-// VEXTBW - Vote (V) Extra (EXT) Battle (B) Normal (W - Wide patch used in software)
-// VEXTRW - Vote (V) Extra (EXT) Race (R) Normal (W - Wide patch used in software)
-char animPrefix[] = "INTSC";
-char animWidePrefix[] = "INTSW";
-char *luaVoteScreen = NULL;
-
-INT32 currentAnimFrame = 0;
-static INT32 foundAnimVoteFrames = 0;
-static INT32 foundAnimVoteWideFrames = 0;
 
 intertype_t intertype = int_none;
 intertype_t intermissiontypes[NUMGAMETYPES];
@@ -163,6 +149,9 @@ typedef struct
 	boolean loaded;
 } y_voteclient;
 
+// votescreen stuff
+votescreen_t VoteScreen = {0};
+
 static y_votelvlinfo levelinfo[13];
 static y_voteclient voteclient;
 static INT32 votetic;
@@ -172,12 +161,6 @@ static SINT8 votemax = 3;
 static INT32 voterowmem = 0;
 static boolean rowchange = false;
 static boolean votenotyetpicked;
-static patch_t *cursor = NULL;
-static patch_t *cursor1 = NULL;
-static patch_t *cursor2 = NULL;
-static patch_t *cursor3 = NULL;
-static patch_t *cursor4 = NULL;
-static patch_t *rubyicon = NULL;
 
 static void Y_UnloadVoteData(void);
 
@@ -361,48 +344,6 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 }
 
 //
-// Y_AnimatedVoteScreenCheck
-//
-// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
-static void Y_AnimatedVoteScreenCheck(void)
-{
-	char tmpPrefix[] = "INTS";
-
-	if (luaVoteScreen)
-		strncpy(tmpPrefix, luaVoteScreen, 4);
-	else if(gametype == GT_BATTLE)
-		strcpy(tmpPrefix, "BTLS");
-
-	strncpy(animPrefix, tmpPrefix, 4);
-	animPrefix[4] = 'C';
-	strncpy(animWidePrefix, tmpPrefix, 4);
-	animWidePrefix[4] = 'W';
-
-	foundAnimVoteFrames = foundAnimVoteWideFrames = 0;
-	currentAnimFrame = 0;
-
-	INT32 i = 1;
-	for (;;)
-	{
-		boolean normalLumpExists = W_LumpExists(va("%sC%d", tmpPrefix, i));
-		boolean wideLumpExists = W_LumpExists(va("%sW%d", tmpPrefix, i));
-
-		if (normalLumpExists || wideLumpExists)
-		{
-			if (normalLumpExists)
-				foundAnimVoteFrames++;
-
-			if (wideLumpExists)
-				foundAnimVoteWideFrames++;
-		}
-		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
-			break;
-
-		i++;
-	}
-}
-
-//
 // Y_ConsiderScreenBuffer
 //
 // Can we copy the current screen to a buffer?
@@ -521,11 +462,11 @@ void Y_IntermissionDrawer(void)
 		else if (rendermode != render_soft && usebuffer)
 			HWR_DrawIntermissionBG();
 #endif
-		else if (bgpatch)
+		else if (VoteScreen.bgpatch)
 		{
 			fixed_t hs = vid.width  * FRACUNIT / BASEVIDWIDTH;
 			fixed_t vs = vid.height * FRACUNIT / BASEVIDHEIGHT;
-			V_DrawStretchyFixedPatch(0, 0, hs, vs, V_NOSCALEPATCH, bgpatch, NULL);
+			V_DrawStretchyFixedPatch(0, 0, hs, vs, V_NOSCALEPATCH, VoteScreen.bgpatch, NULL);
 		}
 	}
 	else if (bgtile)
@@ -1086,7 +1027,8 @@ void Y_EndIntermission(void)
 		K_RetireBots();
 	}
 
-	Y_UnloadData();
+	if (!dedicated)
+		Y_UnloadData();
 
 	endtic = -1;
 	sorttic = -1;
@@ -1105,7 +1047,7 @@ static void Y_FollowIntermission(void)
 	G_AfterIntermission();
 }
 
-#define UNLOAD(x) if (x) {Patch_Free(x);} x = NULL;
+#define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
 #define CLEANUP(x) x = NULL;
 
 //
@@ -1113,21 +1055,65 @@ static void Y_FollowIntermission(void)
 //
 static void Y_UnloadData(void)
 {
-	// In hardware mode, don't Z_ChangeTag a pointer returned by W_CachePatchName().
-	// It doesn't work and is unnecessary.
-	if (rendermode != render_soft)
-		return;
-
 	// unload the background patches
-	UNLOAD(bgpatch);
-	UNLOAD(widebgpatch);
+	UNLOAD(VoteScreen.bgpatch);
+	UNLOAD(VoteScreen.widebgpatch);
 	UNLOAD(bgtile);
 	UNLOAD(interpic);
 }
 
 // SRB2Kart: Voting!
 
-static void Y_DrawVoteBackground(patch_t *patch)
+//
+// Y_VoteScreenCheck
+//
+static void Y_VoteScreenCheck(void)
+{
+	strcpy(VoteScreen.Prefix, "INTS");
+
+	if (VoteScreen.luaPrefix[0] != 0)
+		strlcpy(VoteScreen.Prefix, VoteScreen.luaPrefix, sizeof(VoteScreen.Prefix));
+	else if (gametype == GT_BATTLE)
+		strcpy(VoteScreen.Prefix, "BTLS");
+
+	VoteScreen.foundLuaVoteFrames = VoteScreen.foundLuaVoteWideFrames = 0;
+	VoteScreen.currentAnimFrame = 0;
+
+	INT32 i = 1;
+
+	// check for lua vote background replacements
+	for (;;)
+	{
+		// Check if the lumps exist (checking for VEXTR(N|W)xx for race and VEXTRB(N|W)xx for battle)
+		boolean normalLumpExists = W_LumpExists(va("%sC%d", VoteScreen.Prefix, i));
+		boolean wideLumpExists = W_LumpExists(va("%sW%d", VoteScreen.Prefix, i));
+
+		if (normalLumpExists || wideLumpExists)
+		{
+			if (normalLumpExists)
+				VoteScreen.foundLuaVoteFrames++;
+
+			if (wideLumpExists)
+				VoteScreen.foundLuaVoteWideFrames++;
+		}
+		else // If we don't find at least frame 1 (e.g VEXTRN1), let's just stop looking
+			break;
+
+		i++;
+	}
+
+	// non lua vote background handling
+	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_BATTLE);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
+}
+
+//
+// Y_VoteBackgroundDrawer
+//
+// Determines which patch drawer to use for scaling
+//
+static void Y_VoteBackgroundDrawer(patch_t *patch)
 {
 	switch (cv_votebgscaling.value)
 	{
@@ -1149,31 +1135,75 @@ static void Y_DrawVoteBackground(patch_t *patch)
 	}
 }
 
-// Y_DrawAnimatedVoteScreenPatch
 //
-// Draw animated patch based on frame counter on vote screen
+// Y_DrawLuaVoteScreenPatch
 //
-static void Y_DrawAnimatedVoteScreenPatch(boolean widePatch)
+// Handles votebackgrounds set by "setVoteBackground"
+// Aswell as animated patches
+//
+static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 {
 	INT32 nextframe = 0;
 	patch_t *votebg = NULL;
-	char tempAnimPrefix[7];
-	const INT32 tempFoundAnimVoteFrames = ((widePatch ? foundAnimVoteWideFrames : foundAnimVoteFrames) - 1);
+	char tempPrefix[6];
+	const INT32 tempfoundAnimLuaVoteFrames = ((widePatch ? VoteScreen.foundLuaVoteWideFrames : VoteScreen.foundLuaVoteFrames) - 1);
 
-	strcpy(tempAnimPrefix, (widePatch ? animWidePrefix : animPrefix));
+	strcpy(tempPrefix, va("%s%s", VoteScreen.Prefix, (widePatch ? "W" : "C")));
+
+	// Draw non animated patch
+	if (!tempfoundAnimLuaVoteFrames)
+	{
+		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH);
+		Y_VoteBackgroundDrawer(votebg);
+		return;
+	}
+
+	// Draw animated patch based on frame counter on vote screen
 
 	// Just in case someone provides LESS widescreen frames than normal frames or vice versa, reset the frame counter to 0
-	if (currentAnimFrame > tempFoundAnimVoteFrames)
-		currentAnimFrame = 0;
+	if (VoteScreen.currentAnimFrame > tempfoundAnimLuaVoteFrames)
+		VoteScreen.currentAnimFrame = 0;
 
-	nextframe = (currentAnimFrame + 1);
+	nextframe = (VoteScreen.currentAnimFrame + 1);
 
-	votebg = W_CachePatchName(va("%s%d", (widePatch ? animWidePrefix : animPrefix), nextframe), PU_PATCH);
+	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
 
-	Y_DrawVoteBackground(votebg);
+	Y_VoteBackgroundDrawer(votebg);
 
 	if (renderisnewtic && (votetic % 2 == 0) && !paused)
-		currentAnimFrame = (nextframe > tempFoundAnimVoteFrames) ? 0 : nextframe;
+		VoteScreen.currentAnimFrame = (nextframe > tempfoundAnimLuaVoteFrames) ? 0 : nextframe;
+}
+
+//
+// Y_DrawVoteScreenPatch
+//
+
+static void Y_DrawVoteScreenPatch(void)
+{
+	patch_t *votebg = NULL;
+	const boolean widescreen = (vid.width / vid.dupx > 320);
+
+	if (VoteScreen.foundLuaVoteWideFrames || VoteScreen.foundLuaVoteFrames)
+	{
+		Y_DrawLuaVoteScreenPatch(((widescreen && VoteScreen.foundLuaVoteWideFrames) || !VoteScreen.foundLuaVoteFrames));
+		return;
+	}
+
+	// non widescreen patch
+	votebg = VoteScreen.bgpatch;
+
+	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
+	const boolean widebgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.widebattle : VoteScreen.replaced.widerace;
+	const boolean bgreplaced = (prefgametype == GT_BATTLE) ? VoteScreen.replaced.battle : VoteScreen.replaced.race;
+
+	// we check a bunch of stuff to always have a "valid" fallback
+	if ((widescreen && (widebgreplaced || !bgreplaced))
+	|| (!widescreen && (widebgreplaced && !bgreplaced)))
+	{
+		votebg = VoteScreen.widebgpatch; // widescreen patch
+	}
+
+	Y_VoteBackgroundDrawer(votebg);
 }
 
 static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
@@ -1190,32 +1220,6 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 	}
 
 	return picscale;
-}
-
-static void Y_DrawVoteScreenPatch(void)
-{
-	patch_t *votebg = NULL;
-	const boolean widescreen = (vid.width / vid.dupx > 320);
-
-	if (foundAnimVoteWideFrames || foundAnimVoteFrames)
-	{
-		Y_DrawAnimatedVoteScreenPatch((foundAnimVoteWideFrames && widescreen));
-		return;
-	}
-
-	votebg = bgpatch; // non widescreen patch
-
-	UINT8 prefgametype = (votelevels[0][1] & ~0x80);
-	const boolean widebgreplaced = (prefgametype == GT_BATTLE) ? widebattlereplaced : wideracereplaced;
-	const boolean bgreplaced = (prefgametype == GT_BATTLE) ? battlereplaced : racereplaced;
-
-	if ((widescreen && (widebgreplaced || !bgreplaced))
-	|| (!widescreen && (widebgreplaced && !bgreplaced)))
-	{
-		votebg = widebgpatch;
-	}
-
-	Y_DrawVoteBackground(votebg);
 }
 
 //
@@ -1351,7 +1355,7 @@ void Y_VoteDrawer(void)
 
 				if (!splitscreen)
 				{
-					thiscurs = cursor;
+					thiscurs = VoteScreen.cursor[0];
 					p = consoleplayer;
 					color = levelinfo[i].gtc;
 					colormap = NULL;
@@ -1361,19 +1365,19 @@ void Y_VoteDrawer(void)
 					switch (j)
 					{
 						case 1:
-							thiscurs = cursor2;
+							thiscurs = VoteScreen.cursor[2];
 							p = g_localplayers[1];
 							break;
 						case 2:
-							thiscurs = cursor3;
+							thiscurs = VoteScreen.cursor[3];
 							p = g_localplayers[2];
 							break;
 						case 3:
-							thiscurs = cursor4;
+							thiscurs = VoteScreen.cursor[4];
 							p = g_localplayers[3];
 							break;
 						default:
-							thiscurs = cursor1;
+							thiscurs = VoteScreen.cursor[1];
 							p = g_localplayers[0];
 							break;
 					}
@@ -1401,7 +1405,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH-(420/hypotdiv)-scaledpicdiff, (400/hypotdiv)+y, V_SNAPTORIGHT|V_6WIDTHSPACE, str);
@@ -1446,7 +1450,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/2), y<<FRACBITS, Y_CalculatePicScale(scale,hypoti)/2, V_FLIP|V_SNAPTORIGHT, pic, 0);
-				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, rubyicon, NULL);
+				V_DrawFixedPatch(((BASEVIDWIDTH-(1200/hypotdiv)-scaledpicdiff)<<FRACBITS) + (picwidth/4), (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, Y_CalculatePicScale(FRACUNIT,hypoti), V_SNAPTORIGHT, VoteScreen.rubyicon, NULL);
 			}
 
 			if (levelinfo[i].gts)
@@ -1498,7 +1502,7 @@ void Y_VoteDrawer(void)
 
 			if (!timer && i == voteclient.ranim)
 			{
-				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, cursor);
+				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, VoteScreen.cursor[0]);
 				if (voteendtic != -1 && !(votetic % 4))
 					V_DrawFill(x-1, y-1, 42, 27, 0|V_SNAPTOLEFT);
 				else
@@ -1510,7 +1514,7 @@ void Y_VoteDrawer(void)
 			else
 			{
 				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
-				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, rubyicon, NULL);
+				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
 			}
 
 			if (levelinfo[votes[i]].gts)
@@ -1851,11 +1855,28 @@ void Y_VoteTicker(void)
 //
 // MK online style voting screen, appears after intermission
 //
+
+static void Y_InitVoteDrawing(void)
+{
+	if (dedicated)
+		return;
+
+	// setup the background patches
+	Y_VoteScreenCheck();
+
+	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH);
+	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH);
+	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH);
+	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH);
+	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH);
+
+	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH);
+}
+
 void Y_StartVote(void)
 {
 	INT32 i = 0;
 	INT32 rowval = (cv_votemaxrows.value*3)+((cv_votemaxrows.value > 1) ? (cv_votemaxrows.value - 1) : 0);
-	boolean battlemode = ((votelevels[0][1] & ~VOTEMODIFIER_ENCORE) == GT_BATTLE); // todo gametyperules
 
 	votemax = cv_votemaxrows.value; // can we please avoid SIGSEGVs
 	voterowmem = cv_votemaxrows.value; // this is just for the notif system
@@ -1868,16 +1889,8 @@ void Y_StartVote(void)
 		I_Error("voteendtic is dirty");
 #endif
 
-	Y_AnimatedVoteScreenCheck();
-
-	widebgpatch = W_CachePatchName((battlemode ? "BATTLSCW" : "INTERSCW"), PU_STATIC);
-	bgpatch = W_CachePatchName((battlemode ? "BATTLSCR" : "INTERSCR"), PU_STATIC);
-	cursor = W_CachePatchName("M_CURSOR", PU_STATIC);
-	cursor1 = W_CachePatchName("P1CURSOR", PU_STATIC);
-	cursor2 = W_CachePatchName("P2CURSOR", PU_STATIC);
-	cursor3 = W_CachePatchName("P3CURSOR", PU_STATIC);
-	cursor4 = W_CachePatchName("P4CURSOR", PU_STATIC);
-	rubyicon = W_CachePatchName("RUBYICON", PU_STATIC);
+	// cache vote patches
+	Y_InitVoteDrawing();
 
 	timer = cv_votetime.value*TICRATE;
 	pickedvote = -1;
@@ -1966,17 +1979,17 @@ static void Y_UnloadVoteData(void)
 {
 	voteclient.loaded = false;
 
-	if (rendermode != render_soft)
+	if (dedicated)
 		return;
 
-	UNLOAD(widebgpatch);
-	UNLOAD(bgpatch);
-	UNLOAD(cursor);
-	UNLOAD(cursor1);
-	UNLOAD(cursor2);
-	UNLOAD(cursor3);
-	UNLOAD(cursor4);
-	UNLOAD(rubyicon);
+	UNLOAD(VoteScreen.widebgpatch);
+	UNLOAD(VoteScreen.bgpatch);
+	UNLOAD(VoteScreen.cursor[0]);
+	UNLOAD(VoteScreen.cursor[1]);
+	UNLOAD(VoteScreen.cursor[2]);
+	UNLOAD(VoteScreen.cursor[3]);
+	UNLOAD(VoteScreen.cursor[4]);
+	UNLOAD(VoteScreen.rubyicon);
 }
 
 //

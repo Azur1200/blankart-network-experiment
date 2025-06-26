@@ -87,11 +87,6 @@ void HWR_LoadLevel(void);
 #endif
 boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat);
 
-extern boolean wideracereplaced;
-extern boolean racereplaced;
-extern boolean widebattlereplaced;
-extern boolean battlereplaced;
-
 #define MAPRET_ADDED (1)
 #define MAPRET_CURRENTREPLACED (1<<1)
 UINT8 P_InitMapData(boolean existingmapheaders);
