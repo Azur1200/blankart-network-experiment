@@ -2461,11 +2461,14 @@ static void K_drawRingMeter(void)
 		UINT8 *colormap = NULL;
 		SINT8 coloroffset = 0;
 
-		if (gametype == GT_BATTLE)
-			ringoffsety -= 4;
+		if (cv_speed_xoffset.value == 0 && cv_speed_yoffset.value == 0)
+		{
+			if (gametype == GT_BATTLE)
+				ringoffsety -= 4;
 
-		if (itembreaker)
-			ringoffsety -= 2;
+			if (itembreaker)
+				ringoffsety -= 2;
+		}
 
 		if (K_UseColorHud())
 			coloroffset = 2;
