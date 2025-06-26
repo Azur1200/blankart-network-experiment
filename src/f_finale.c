@@ -1596,7 +1596,7 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, false, NULL);
+		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, NULL);
 		if (mapnum == 0) // gotta have ONE
 		{
 			return;

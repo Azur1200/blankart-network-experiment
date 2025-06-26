@@ -2815,11 +2815,11 @@ void D_SetupVote(void)
 			hellpick = 1;
 
 		if (i == 2) // sometimes a different gametype
-			m = G_RandMap(G_TOLFlag(secondgt), prevmap, ((secondgt != gametype) ? 2 : 0), 0, true, votebuffer);
+			m = G_RandMap(G_TOLFlag(secondgt), prevmap, ((secondgt != gametype) ? 2 : 0), 0, votebuffer);
 		else if (i >= VOTEROWS) // unknown-random and formerly force-unknown MAP HELL
-			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, hellpick, (i < VOTEROWSADDSONE), votebuffer);
+			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, hellpick, votebuffer);
 		else
-			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, 0, true, votebuffer);
+			m = G_RandMap(G_TOLFlag(gt), prevmap, 0, 0, votebuffer);
 		if (i < VOTEROWS)
 			votebuffer[min(i, 2)] = m; // min() is a dumb workaround for gcc 4.4 array-bounds error
 		WRITEUINT16(p, m);
@@ -3354,7 +3354,7 @@ static void Command_RandomMap(void)
 		oldmapnum = -1;
 	}
 
-	newmapnum = G_RandMap(G_TOLFlag(newgametype), oldmapnum, 0, 0, false, NULL) + 1;
+	newmapnum = G_RandMap(G_TOLFlag(newgametype), oldmapnum, 0, 0, NULL) + 1;
 	D_MapChange(newmapnum, newgametype, newencoremode, newresetplayers, 0, false, false);
 }
 

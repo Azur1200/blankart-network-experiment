@@ -3778,11 +3778,11 @@ static INT32 TOLMaps(UINT8 pgametype)
   *         has those flags.
   * \author Graue <graue@oceanbase.org>
   */
-static INT16 *okmaps = NULL;
-INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer)
+INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer)
 {
 	UINT32 numokmaps = 0;
 	INT16 ix, bufx;
+	INT16 *okmaps = NULL;
 	UINT16 extbufsize = 0;
 	boolean usehellmaps; // Only consider Hell maps in this pick
 
@@ -3924,12 +3924,9 @@ tryagain:
 		ix = okmaps[M_RandomKey(numokmaps)];
 	}
 
-	if (!callagainsoon)
-	{
-		//CONS_Printf("(freeing okmaps)\n");
-		Z_Free(okmaps);
-		okmaps = NULL;
-	}
+	//CONS_Printf("(freeing okmaps)\n");
+	Z_Free(okmaps);
+	okmaps = NULL;
 
 	return ix;
 }
@@ -4196,7 +4193,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 			}
 			else if (cv_advancemap.value == 2) // Go to random map.
 			{
-				newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, false, NULL);
+				newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, NULL);
 			}
 			else if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
 			{
