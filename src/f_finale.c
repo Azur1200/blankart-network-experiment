@@ -337,15 +337,15 @@ static void F_IntroDrawScene(void)
 	{
 		background = W_CachePatchName("KARTKREW", PU_CACHE);
 		highres = true;
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 	}
 
 	if (intro_scenenum == 1)
 	{
 		background = W_CachePatchName("BLANKART", PU_CACHE);
 		highres = false;
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 	}
-
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 
 	if (background)
 	{
