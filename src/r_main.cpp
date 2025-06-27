@@ -1527,7 +1527,6 @@ void R_RenderPlayerView(void)
 {
 	INT32         nummasks = 1;
 	maskcount_t*  masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
-	player_t *    player   = &players[displayplayers[viewssnum]];
 	const boolean skybox   = (skyboxmo[0] && cv_skybox.value);
 	const boolean oldsky   = (skybox && mapnamespace == MNS_SRB2KART);
 
