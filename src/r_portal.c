@@ -31,7 +31,7 @@ INT32 portalclipstart, portalclipend;
 
 portal_t *g_portal; // is curline a portal seg?
 
-void Portal_InitList (void)
+void Portal_InitList(void)
 {
 	portalrender = 0;
 	portal_base = portal_cap = NULL;
@@ -43,7 +43,7 @@ void Portal_InitList (void)
  * the function is called, so it is useful for converting one-sided
  * lines into portals.
  */
-void Portal_ClipRange (portal_t* portal)
+void Portal_ClipRange(portal_t* portal)
 {
 	INT32 i;
 	INT32 start     = portal->start;
@@ -65,7 +65,7 @@ void Portal_ClipRange (portal_t* portal)
 
 /** Apply the clipping window from a portal.
  */
-void Portal_ClipApply (const portal_t* portal)
+void Portal_ClipApply(const portal_t* portal)
 {
 	INT32 i;
 	INT32 start     = portal->start;
@@ -97,7 +97,7 @@ void Portal_ClipApply (const portal_t* portal)
 	}
 }
 
-static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
+static portal_t* Portal_Add(const INT16 x1, const INT16 x2)
 {
 	portal_t *portal          = Z_Malloc(sizeof(portal_t), PU_LEVEL, NULL);
 	INT16    *ceilingclipsave = Z_Malloc(sizeof(INT16)*(x2-x1 + 1), PU_LEVEL, NULL);
@@ -127,10 +127,12 @@ static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
 	// Increase recursion level.
 	portal->pass = portalrender+1;
 
+	portal->isskybox = false;
+
 	return portal;
 }
 
-void Portal_Remove (portal_t* portal)
+void Portal_Remove(portal_t* portal)
 {
 	portalcullsector = NULL;
 	portal_base = portal->next;
@@ -150,7 +152,7 @@ void Portal_Remove (portal_t* portal)
  * When the portal renders, it will create the illusion of
  * the two lines being seamed together.
  */
-void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2)
+void Portal_Add2Lines(const INT32 line1, const INT32 line2, const INT32 x1, const INT32 x2)
 {
 	portal_t* portal = Portal_Add(x1, x2);
 
@@ -206,7 +208,7 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
  * Since visplanes top/bottom windows work in an identical way,
  * it can just be copied almost directly.
  */
-static void Portal_ClipVisplane (const visplane_t* plane, portal_t* portal)
+static void Portal_ClipVisplane(const visplane_t* plane, portal_t* portal)
 {
 	INT32 i;
 	INT16 start = portal->start;
@@ -230,7 +232,7 @@ static void Portal_ClipVisplane (const visplane_t* plane, portal_t* portal)
 
 extern INT32 viewwidth;
 
-static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16* end)
+static boolean TrimVisplaneBounds(const visplane_t* plane, INT16* start, INT16* end)
 {
 	*start = plane->minx;
 	*end = plane->maxx + 1;
@@ -268,7 +270,7 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
  * Applies the necessary offsets and rotation to give
  * a depth illusion to the skybox.
  */
-void Portal_AddSkybox (const visplane_t* plane)
+void Portal_AddSkybox(const visplane_t* plane)
 {
 	INT16 start, end;
 	mapheader_t *mh;
@@ -315,12 +317,13 @@ void Portal_AddSkybox (const visplane_t* plane)
 		portal->viewz += viewz * -mh->skybox_scalez;
 
 	portal->clipline = -1;
+	portal->isskybox = true;
 }
 
 /** Creates portals for the currently existing sky visplanes.
  * The visplanes are also removed and cleared from the list.
  */
-void Portal_AddSkyboxPortals (void)
+void Portal_AddSkyboxPortals(void)
 {
 	visplane_t *pl;
 	INT32 i;

@@ -1502,14 +1502,17 @@ static void Mask_Post (maskcount_t* m)
 // ================
 
 // viewx, viewy, viewangle, all that good stuff must be set
-static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum)
+static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum, boolean drawprecip)
 {
 	Mask_Pre(mask);
 
 	curdrawsegs = ds_p;
 
 	R_RenderFirstBSPNode(cachenum);
-	R_AddPrecipitationSprites();
+
+	// dont draw precip in skyboxes!
+	if (drawprecip)
+		R_AddPrecipitationSprites();
 
 	Mask_Post(mask);
 }
@@ -1539,7 +1542,7 @@ void R_RenderPlayerView(void)
 		R_ClearSegTables();
 		R_ClearPlanes();
 		R_ClearSprites();
-		R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+		R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, false);
 		R_ClipSprites(drawsegs, NULL);
 		R_DrawSkyPlanes();
 		R_DrawPlanes();
@@ -1577,7 +1580,7 @@ void R_RenderPlayerView(void)
 	// The head node is the last node output.
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
-	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, true);
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
 
 	ps_sw_spritecliptime = I_GetPreciseTime();
@@ -1623,9 +1626,7 @@ void R_RenderPlayerView(void)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
-
-			//portalskipprecipmobjs = false;
+			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, !portal->isskybox);
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
