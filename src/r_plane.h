@@ -81,6 +81,7 @@ void R_ClearPlanes(void);
 void R_ClearFFloorClips (void);
 
 void R_DrawPlanes(void);
+void R_DrawSkyPlanes(void);
 visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel, fixed_t xoff, fixed_t yoff, angle_t plangle,
 	extracolormap_t *planecolormap, ffloor_t *ffloor, polyobj_t *polyobj, pslope_t *slope, boolean noencore,
 	boolean ripple, boolean reverseLight, const sector_t *lighting_sector, sectordamage_t damage);

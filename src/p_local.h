@@ -71,7 +71,7 @@ typedef enum
 	THINK_MOBJ,
 	THINK_FLOORS, // thanks diamond square
 	THINK_DYNSLOPE,
-	
+
 	// Lists after this may exist but they do not call an
 	// action in P_RunThinkers
 	NUM_ACTIVETHINKERLISTS,
