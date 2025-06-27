@@ -480,7 +480,7 @@ void F_IntroTicker(void)
 	// check for skipping
 	if (keypressed)
 		keypressed = false;
-	
+
 	if (animtimer > 0)
 		animtimer--;
 }

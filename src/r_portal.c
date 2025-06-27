@@ -20,7 +20,7 @@
 #include "r_things.h"
 #include "r_sky.h"
 
-UINT8 portalrender;			/**< When rendering a portal, it establishes the depth of the current BSP traversal. */
+UINT8 portalrender; /**< When rendering a portal, it establishes the depth of the current BSP traversal. */
 
 // Linked list for portals.
 portal_t *portal_base, *portal_cap;
@@ -45,13 +45,13 @@ void Portal_InitList (void)
  */
 void Portal_ClipRange (portal_t* portal)
 {
-	INT32 start	= portal->start;
-	INT32 end	= portal->end;
-	INT16 *ceil		= portal->ceilingclip;
-	INT16 *floor	= portal->floorclip;
-	fixed_t *scale	= portal->frontscale;
-
 	INT32 i;
+	INT32 start     = portal->start;
+	INT32 end       = portal->end;
+	INT16 *ceil     = portal->ceilingclip;
+	INT16 *floor    = portal->floorclip;
+	fixed_t *scale  = portal->frontscale;
+
 	for (i = 0; i < end-start; i++)
 	{
 		*ceil = ceilingclip[start+i];
@@ -68,11 +68,11 @@ void Portal_ClipRange (portal_t* portal)
 void Portal_ClipApply (const portal_t* portal)
 {
 	INT32 i;
-	INT32 start	= portal->start;
-	INT32 end	= portal->end;
-	INT16 *ceil		= portal->ceilingclip;
-	INT16 *floor	= portal->floorclip;
-	fixed_t *scale	= portal->frontscale;
+	INT32 start     = portal->start;
+	INT32 end       = portal->end;
+	INT16 *ceil     = portal->ceilingclip;
+	INT16 *floor    = portal->floorclip;
+	fixed_t *scale  = portal->frontscale;
 
 	for (i = 0; i < end-start; i++)
 	{
@@ -99,10 +99,10 @@ void Portal_ClipApply (const portal_t* portal)
 
 static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
 {
-	portal_t *portal		= Z_Malloc(sizeof(portal_t), PU_LEVEL, NULL);
-	INT16 *ceilingclipsave	= Z_Malloc(sizeof(INT16)*(x2-x1 + 1), PU_LEVEL, NULL);
-	INT16 *floorclipsave	= Z_Malloc(sizeof(INT16)*(x2-x1 + 1), PU_LEVEL, NULL);
-	fixed_t *frontscalesave	= Z_Malloc(sizeof(fixed_t)*(x2-x1 + 1), PU_LEVEL, NULL);
+	portal_t *portal          = Z_Malloc(sizeof(portal_t), PU_LEVEL, NULL);
+	INT16    *ceilingclipsave = Z_Malloc(sizeof(INT16)*(x2-x1 + 1), PU_LEVEL, NULL);
+	INT16    *floorclipsave   = Z_Malloc(sizeof(INT16)*(x2-x1 + 1), PU_LEVEL, NULL);
+	fixed_t  *frontscalesave  = Z_Malloc(sizeof(fixed_t)*(x2-x1 + 1), PU_LEVEL, NULL);
 
 	// Linked list.
 	if (!portal_base)
@@ -118,11 +118,11 @@ static portal_t* Portal_Add (const INT16 x1, const INT16 x2)
 	portal->next = NULL;
 
 	// Store clipping values so they can be restored once the portal is rendered.
-	portal->ceilingclip	= ceilingclipsave;
-	portal->floorclip	= floorclipsave;
-	portal->frontscale	= frontscalesave;
-	portal->start	= x1;
-	portal->end		= x2;
+	portal->ceilingclip = ceilingclipsave;
+	portal->floorclip   = floorclipsave;
+	portal->frontscale  = frontscalesave;
+	portal->start       = x1;
+	portal->end         = x2;
 
 	// Increase recursion level.
 	portal->pass = portalrender+1;
@@ -155,8 +155,8 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 	portal_t* portal = Portal_Add(x1, x2);
 
 	// Offset the portal view by the linedef centers
-	line_t* start	= &lines[line1];
-	line_t* dest	= &lines[line2];
+	line_t* start = &lines[line1];
+	line_t* dest  = &lines[line2];
 
 	angle_t dangle = R_PointToAngle2(0,0,dest->dx,dest->dy) - R_PointToAngle2(start->dx,start->dy,0,0);
 
@@ -164,13 +164,6 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 	angle_t angtopoint;
 
 	vertex_t dest_c, start_c;
-
-	if (mapnamespace == MNS_SRB2KART)
-	{
-		portal->viewx = viewx;
-		portal->viewy = viewy;
-		portal->viewz = viewz;
-	}
 
 	// looking glass center
 	start_c.x = (start->v1->x + start->v2->x) / 2;
@@ -180,23 +173,23 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
 	dest_c.x = (dest->v1->x + dest->v2->x) / 2;
 	dest_c.y = (dest->v1->y + dest->v2->y) / 2;
 
-	portal->viewz = viewz + dest->frontsector->floorheight - start->frontsector->floorheight;
-
-	if ((dangle == 0) && (mapnamespace == MNS_SRB2KART))
+	if ((mapnamespace == MNS_SRB2KART) && dangle == 0)
 	{
 		// the entrance goes straight opposite the exit, so we just need to mess with the offset.
-		portal->viewx += dest_c.x - start_c.x;
-		portal->viewy += dest_c.y - start_c.y;
+		portal->viewx = viewx + (dest_c.x - start_c.x);
+		portal->viewy = viewy + (dest_c.y - start_c.y);
 	}
 	else
 	{
-		disttopoint = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
-		angtopoint = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
-		angtopoint += dangle;
+		disttopoint   = R_PointToDist2(start_c.x, start_c.y, viewx, viewy);
+		angtopoint    = R_PointToAngle2(start_c.x, start_c.y, viewx, viewy);
+		angtopoint   += dangle;
 
 		portal->viewx = dest_c.x + FixedMul(FINECOSINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
 		portal->viewy = dest_c.y + FixedMul(FINESINE(angtopoint>>ANGLETOFINESHIFT), disttopoint);
 	}
+
+	portal->viewz = viewz + (dest->frontsector->floorheight - start->frontsector->floorheight);
 
 	portal->viewangle = viewangle + dangle;
 
@@ -215,22 +208,23 @@ void Portal_Add2Lines (const INT32 line1, const INT32 line2, const INT32 x1, con
  */
 static void Portal_ClipVisplane (const visplane_t* plane, portal_t* portal)
 {
-	INT16 start	= portal->start;
-	INT16 end	= portal->end;
 	INT32 i;
+	INT16 start = portal->start;
+	INT16 end   = portal->end;
 
 	for (i = 0; i < end - start; i++)
 	{
 		// Invalid column.
-		if (plane->top[i + start] == 65535)
+		if (plane->top[i + start] == UINT16_MAX)
 		{
 			portal->ceilingclip[i] = -1;
-			portal->floorclip[i] = -1;
+			portal->floorclip[i]   = -1;
 			continue;
 		}
+
 		portal->ceilingclip[i] = plane->top[i + start] - 1;
-		portal->floorclip[i] = plane->bottom[i + start] + 1;
-		portal->frontscale[i] = INT32_MAX;
+		portal->floorclip[i]   = plane->bottom[i + start] + 1;
+		portal->frontscale[i]  = INT32_MAX;
 	}
 }
 
@@ -249,7 +243,6 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
 	if (!(*start < *end))
 		return true;
 
-
 	/** Trims a visplane's horizontal gap to match its render area.
 	 *
 	 * Visplanes' minx/maxx may sometimes exceed the area they're
@@ -257,13 +250,12 @@ static boolean TrimVisplaneBounds (const visplane_t* plane, INT16* start, INT16*
 	 * valid area.
 	 */
 
-	while (plane->bottom[*start] == 0 && plane->top[*start] == 65535 && *start < *end)
+	while (plane->bottom[*start] == 0 && plane->top[*start] == UINT16_MAX && *start < *end)
 	{
 		(*start)++;
 	}
 
-
-	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == 65535 && *end > *start)
+	while (plane->bottom[*end - 1] == 0 && plane->top[*start] == UINT16_MAX && *end > *start)
 	{
 		(*end)--;
 	}
@@ -289,9 +281,9 @@ void Portal_AddSkybox (const visplane_t* plane)
 
 	Portal_ClipVisplane(plane, portal);
 
-	portal->viewx = skyboxmo[0]->x;
-	portal->viewy = skyboxmo[0]->y;
-	portal->viewz = skyboxmo[0]->z;
+	portal->viewx     = skyboxmo[0]->x;
+	portal->viewy     = skyboxmo[0]->y;
+	portal->viewz     = skyboxmo[0]->z;
 	portal->viewangle = viewangle + skyboxmo[0]->angle;
 
 	mh = mapheaderinfo[gamemap-1];
@@ -338,15 +330,15 @@ void Portal_AddSkyboxPortals (void)
 	{
 		for (pl = visplanes[i]; pl; pl = pl->next)
 		{
-			if (pl->picnum == skyflatnum && !pl->damage)
-			{
-				Portal_AddSkybox(pl);
+			if (pl->picnum != skyflatnum || pl->damage)
+				continue;
 
-				pl->minx = 0;
-				pl->maxx = -1;
+			Portal_AddSkybox(pl);
 
-				count++;
-			}
+			pl->minx = 0;
+			pl->maxx = -1;
+
+			count++;
 		}
 	}
 
