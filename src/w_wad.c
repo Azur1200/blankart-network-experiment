@@ -332,23 +332,15 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 	{
 		LUA_LoadLump(wadnum, posStart, true);
 	}
-	else
+	else if (W_CheckNumForMarkers((const char *[]){"Lua/"}, 1, wadnum, &posStart, &posEnd))
 	{
-		posStart = W_CheckNumForFolderStartPK3("Lua/", wadnum, 0);
-		if (posStart != LUMPERROR)
-		{
-			posEnd = W_CheckNumForFolderEndPK3("Lua/", wadnum, posStart);
-			for (; posStart < posEnd; posStart++)
-				LUA_LoadLump(wadnum, posStart, true);
-		}
+		for (; posStart < posEnd; posStart++)
+			LUA_LoadLump(wadnum, posStart, true);
 	}
 
-	posStart = W_CheckNumForFolderStartPK3("SOC/", wadnum, 0);
-	if (posStart != LUMPERROR)
+	if (W_CheckNumForMarkers((const char *[]){"SOC/"}, 1, wadnum, &posStart, &posEnd))
 	{
-		posEnd = W_CheckNumForFolderEndPK3("SOC/", wadnum, posStart);
-
-		for(; posStart < posEnd; posStart++)
+		for (; posStart < posEnd; posStart++)
 		{
 			CONS_Printf(M_GetText("Loading SOC from %s|%s\n"), wadfiles[wadnum]->filename, W_CheckFullNameForNumPwad(wadnum, posStart));
 			DEH_LoadDehackedLumpPwad(wadnum, posStart, mainfile);
@@ -1099,22 +1091,25 @@ INT32 W_InitMultipleFiles(char **filenames, boolean addons)
 	return overallrc;
 }
 
-// check for a valid lump number
-// lump cannot be asserted because some callers pass LUMPERROR,
-// and most W_ functions previously always passed 0 for lump...
-static boolean TestValidLump(UINT16 wad, UINT16 lump)
-{
-	I_Assert(wad < numwadfiles);
-	return lump < wadfiles[wad]->numlumps;
-}
+#ifdef PARANOIA
+#define TESTVALID(wad, lump) \
+	if (wad >= numwadfiles || lump >= wadfiles[wad]->numlumps) \
+		I_Error("Invalid lump number %04x:%04x", wad, lump);
+
+// allows one past the end of the lump array to make iteration less hellish
+#define TESTVALIDEND(wad, lump) \
+	if (wad >= numwadfiles || lump > wadfiles[wad]->numlumps) \
+		I_Error("Invalid lump number %04x:%04x", wad, lump);
+#else
+#define TESTVALID(wad, lump)
+#define TESTVALIDEND(wad, lump)
+#endif
 
 // NOTE: this actually returns the longname, but since nothing relies on
 // the 8-char truncation, i thought i'd save some effort :^)
 const char *W_CheckNameForNumPwad(UINT16 wad, UINT16 lump)
 {
-	if (!TestValidLump(wad, lump))
-		return NULL;
-
+	TESTVALID(wad, lump)
 	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].longname);
 }
 
@@ -1125,9 +1120,7 @@ const char *W_CheckNameForNum(lumpnum_t lumpnum)
 
 const char *W_CheckFullNameForNumPwad(UINT16 wad, UINT16 lump)
 {
-	if (!TestValidLump(wad, lump))
-		return NULL;
-
+	TESTVALID(wad, lump)
 	return strbuf_get(lumpnamebuf, wadfiles[wad]->lumpinfo[lump].fullname);
 }
 
@@ -1146,21 +1139,17 @@ UINT16 W_FindNextEmptyInPwad(UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
 
-	if (!TestValidLump(wad, startlump))
-		return LUMPERROR;
+	TESTVALIDEND(wad, startlump)
 
 	//
 	// scan forward
 	// start at 'startlump', useful parameter when there are multiple
 	//                       resources with the same name
 	//
-	if (startlump < wadfiles[wad]->numlumps)
-	{
-		lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-			if (!lump_p->size)
-				return i;
-	}
+	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+		if (!lump_p->size)
+			return i;
 
 	// not found.
 	return LUMPERROR;
@@ -1202,8 +1191,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 	UINT32 hash;
 	char *up = uname;
 
-	if (!TestValidLump(wad, startlump))
-		return LUMPERROR;
+	TESTVALIDEND(wad, startlump)
 
 	while (*name)
 		*up++ = toupper(*name++);
@@ -1219,8 +1207,7 @@ UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad,
 	UINT16 i;
 	lumpinfo_t *lump_p;
 
-	if (!TestValidLump(wad, startlump))
-		return LUMPERROR;
+	TESTVALIDEND(wad, startlump)
 
 	// scan forward, start at <startlump>
 	lump_p = wadfiles[wad]->lumpinfo + startlump;
@@ -1238,8 +1225,7 @@ UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t n
 	size_t j;
 	lumpinfo_t *lump_p;
 
-	if (!TestValidLump(wad, startlump))
-		return LUMPERROR;
+	TESTVALIDEND(wad, startlump)
 
 	// scan forward, start at <startlump>
 	lump_p = wadfiles[wad]->lumpinfo + startlump;
@@ -1251,39 +1237,50 @@ UINT16 W_CheckNumForNameMultiPrefixPwad(const lumpprefixes_t *prefixes, size_t n
 	return LUMPERROR; // not found
 }
 
-// Look for the first lump from a folder.
-UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump)
+// finds the range [start:end) of lumps within the given PK3 folder or (optionally) WAD marker names
+// if wadnum is a WAD but no markers are specified, yields 0 and wad->numlumps
+// returns true and sets ostart/oend if lumps were found
+// [0] = PK3 folder   [1], [2] = WAD start/end markers   [3], [4] = secondary WAD start/end markers   etc...
+boolean W_CheckNumForMarkers(const char *markers[], size_t nummarkers, UINT16 wad, UINT16 *ostart, UINT16 *oend)
 {
-	size_t name_length;
-	INT32 i;
-	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	name_length = strlen(name);
-	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
+	INT32 start, end;
+	if (wadfiles[wad]->type == RET_PK3)
 	{
-		if (strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), name_length) == 0)
+		size_t name_length = strlen(markers[0]);
+		for (start = 0; start < wadfiles[wad]->numlumps; start++)
+			if (!strncasecmp(markers[0], W_CheckFullNameForNumPwad(wad, start), name_length))
+				break;
+		if (start == wadfiles[wad]->numlumps)
+			return false;
+		for (end = start + 1; end < wadfiles[wad]->numlumps; end++)
+			if (strncasecmp(markers[0], W_CheckFullNameForNumPwad(wad, end), name_length))
+				break;
+	}
+	else if (nummarkers == 1)
+	{
+		start = 0;
+		end = wadfiles[wad]->numlumps;
+	}
+	else
+	{
+		size_t i;
+		for (i = 1; i < nummarkers; i += 2)
 		{
-			/* SLADE is special and puts a single directory entry. Skip that. */
-			if (strlen(strbuf_get(lumpnamebuf, lump_p->fullname)) == name_length)
-				i++;
+			start = W_CheckNumForLongNamePwad(markers[i], wad, 0);
+			if (start == LUMPERROR || ++start == wadfiles[wad]->numlumps)
+				continue;
+			end = W_CheckNumForLongNamePwad(markers[i+1], wad, start);
+			if (end == LUMPERROR)
+				continue;
 			break;
 		}
+		if (i == nummarkers)
+			return false;
 	}
-	return i;
-}
 
-// In a PK3 type of resource file, it looks for the next lumpinfo entry that doesn't share the specified pathfile.
-// Useful for finding folder ends.
-// Returns the position of the lumpinfo entry.
-UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
-{
-	INT32 i;
-	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
-	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
-	{
-		if (strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), strlen(name)))
-			break;
-	}
-	return i;
+	*ostart = (UINT16)start;
+	*oend = (UINT16)end;
+	return true;
 }
 
 // In a PK3 type of resource file, it looks for an entry with the specified full name.
@@ -1292,6 +1289,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump)
 {
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
 		if (!strnicmp(name, strbuf_get(lumpnamebuf, lump_p->fullname), strlen(name)))
@@ -1315,8 +1313,7 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 	char uname[MAXLUMPNAME+1];
 	char *up = uname;
 
-	if (name == NULL)
-		return LUMPERROR;
+	I_Assert(name != NULL);
 
 	if (!*name) // some doofus gave us an empty string?
 		return LUMPERROR;
@@ -1388,19 +1385,7 @@ lumpnum_t W_CheckNumForMap(const char *name)
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
 		UINT16 start, end;
-		switch (wadfiles[i]->type)
-		{
-		case RET_PK3:
-			start = W_CheckNumForFolderStartPK3("Maps/", i, 0);
-			end = W_CheckNumForFolderEndPK3("Maps/", i, start);
-			break;
-		default:
-			start = 0;
-			end = wadfiles[i]->numlumps;
-			break;
-		}
-
-		if (start == LUMPERROR || end == LUMPERROR)
+		if (!W_CheckNumForMarkers((const char *[]){"Maps/"}, 1, i, &start, &end))
 			continue;
 
 	retry:
@@ -1454,31 +1439,22 @@ lumpnum_t W_GetNumForLongName(const char *name)
 lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder)
 {
 	INT32 i;
-	lumpnum_t fsid, feid;
+	UINT16 fsid, feid;
 	lumpnum_t check = LUMPERROR;
 
 	// scan wad files backwards so patch lump files take precedence
 	for (i = numwadfiles - 1; i >= 0; i--)
 	{
-		if (wadfiles[i]->type == RET_PK3)
+		if (wadfiles[i]->type != RET_PK3)
+			continue;
+
+		if (!W_CheckNumForMarkers(&folder, 1, i, &fsid, &feid))
+			continue;
+
+		check = W_CheckNumForLongNamePwad(lump, (UINT16)i, fsid);
+		if (check < feid)
 		{
-			fsid = W_CheckNumForFolderStartPK3(folder, (UINT16)i, 0);
-			if (fsid == LUMPERROR)
-			{
-				continue; // Start doesn't exist?
-			}
-
-			feid = W_CheckNumForFolderEndPK3(folder, (UINT16)i, fsid);
-			if (feid == LUMPERROR)
-			{
-				continue; // End doesn't exist?
-			}
-
-			check = W_CheckNumForLongNamePwad(lump, (UINT16)i, fsid);
-			if (check < feid)
-			{
-				return (i<<16) + check; // found it, in our constraints
-			}
+			return (i<<16) + check; // found it, in our constraints
 		}
 	}
 
@@ -1502,8 +1478,7 @@ UINT8 W_LumpExists(const char *name)
 
 size_t W_LumpLengthPwad(UINT16 wad, UINT16 lump)
 {
-	if (!TestValidLump(wad, lump))
-		return 0;
+	TESTVALID(wad, lump)
 	return wadfiles[wad]->lumpinfo[lump].size;
 }
 
@@ -1617,8 +1592,7 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 	lumpinfo_t *l;
 	FILE *handle;
 
-	if (!TestValidLump(wad,lump))
-		return 0;
+	TESTVALID(wad, lump)
 
 	lumpsize = wadfiles[wad]->lumpinfo[lump].size;
 	// empty resource (usually markers like S_START, F_END ..)
@@ -1782,8 +1756,7 @@ void *W_CacheLumpNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	lumpcache_t *lumpcache;
 
-	if (!TestValidLump(wad,lump))
-		return NULL;
+	TESTVALID(wad, lump)
 
 	lumpcache = wadfiles[wad]->lumpcache;
 	if (!lumpcache[lump])
@@ -1815,8 +1788,7 @@ void *W_CacheLumpNumForce(lumpnum_t lumpnum, INT32 tag)
 	wad = WADFILENUM(lumpnum);
 	lump = LUMPNUM(lumpnum);
 
-	if (!TestValidLump(wad,lump))
-		return NULL;
+	TESTVALID(wad, lump)
 
 	ptr = Z_Malloc(W_LumpLengthPwad(wad, lump), tag, NULL);
 	W_ReadLumpHeaderPwad(wad, lump, ptr, 0, 0);  // read the lump in full
@@ -1835,8 +1807,7 @@ static inline boolean W_IsLumpCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 {
 	void *lcache;
 
-	if (!TestValidLump(wad, lump))
-		return false;
+	TESTVALID(wad, lump)
 
 	lcache = wadfiles[wad]->lumpcache[lump];
 
@@ -1867,8 +1838,7 @@ static inline boolean W_IsPatchCachedPWAD(UINT16 wad, UINT16 lump, void *ptr)
 {
 	void *lcache;
 
-	if (!TestValidLump(wad, lump))
-		return false;
+	TESTVALID(wad, lump)
 
 	lcache = wadfiles[wad]->patchcache[lump];
 
@@ -1929,8 +1899,7 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	lumpcache_t *lumpcache = NULL;
 
-	if (!TestValidLump(wad, lump))
-		return NULL;
+	TESTVALID(wad, lump)
 
 	lumpcache = wadfiles[wad]->patchcache;
 
@@ -1960,8 +1929,7 @@ void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 {
 	patch_t *patch;
 
-	if (!TestValidLump(wad, lump))
-		return NULL;
+	TESTVALID(wad, lump)
 
 	patch = W_CacheSoftwarePatchNumPwad(wad, lump, tag);
 
@@ -2405,17 +2373,20 @@ virtres_t* vres_GetMap(lumpnum_t lumpnum)
 	{
 		// Count number of lumps until the end of resource OR up until next 0-length lump.
 		lumpnum_t lumppos = lumpnum + 1;
-		lumpnum_t lastlump = wadfiles[WADFILENUM(lumpnum)]->numlumps;
+		UINT16 wad = WADFILENUM(lumpnum);
+		UINT16 lastlump = wadfiles[wad]->numlumps;
+
 		// or the end of directory, for PK3 files
 		if (wadfiles[WADFILENUM(lumpnum)]->type == RET_PK3)
 		{
 			const char *fullname = W_CheckFullNameForNum(lumpnum);
 			const char *dirend = strrchr(fullname, '/');
-			char *dirname = malloc(dirend - fullname + 2);
-			strlcpy(dirname, fullname, dirend - fullname + 2);
-			lastlump = W_CheckNumForFolderEndPK3(dirname, WADFILENUM(lumpnum), lumpnum);
-			free(dirname);
+			size_t dirlen = dirend - fullname + 1;
+			for (lastlump = LUMPNUM(lumppos); lastlump < wadfiles[wad]->numlumps; lastlump++)
+				if (strnicmp(fullname, W_CheckFullNameForNumPwad(wad, lastlump), dirlen))
+					break;
 		}
+
 		for (i = LUMPNUM(lumppos); i < lastlump; i++, lumppos++, numlumps++)
 		{
 			if (W_LumpLength(lumppos) > 0)

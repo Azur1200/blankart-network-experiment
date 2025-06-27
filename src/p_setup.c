@@ -9027,11 +9027,14 @@ boolean P_RunSOC(const char *socfilename)
 
 // Auxiliary function for PK3 loading - looks for sound replacements.
 // NOTE: it does not really add any new sound entry or anything.
-static void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 end, size_t *sreplaces)
+static void P_LoadSoundsRange(UINT16 wadnum, size_t *sreplaces)
 {
 	sfxenum_t j;
-	UINT16 i;
-	for (i = first; i < end; i++)
+	UINT16 i, end;
+	if (!W_CheckNumForMarkers((const char *[]){"Sounds/"}, 1, wadnum, &i, &end))
+		return;
+
+	for (; i < end; i++)
 	{
 		// Let's check whether it's replacing an existing sound or it's a brand new one.
 		const char *name = W_CheckNameForNumPwad(wadnum, i);
@@ -9055,10 +9058,13 @@ static void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 end, size_t *s
 
 // Auxiliary function for PK3 loading - looks for music and music replacements.
 // NOTE: does nothing but print debug messages. The code is handled somewhere else.
-static void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 end, size_t *digmreplaces, size_t *mreplaces)
+static void P_LoadMusicsRange(UINT16 wadnum, size_t *digmreplaces, size_t *mreplaces)
 {
-	UINT16 i;
-	for (i = first; i < end; i++)
+	UINT16 i, end;
+	if (!W_CheckNumForMarkers((const char *[]){"Music/"}, 1, wadnum, &i, &end))
+		return;
+
+	for (; i < end; i++)
 	{
 		const char *name = W_CheckNameForNumPwad(wadnum, i);
 		if (name[0] == 'O' && name[1] == '_')
@@ -9236,12 +9242,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 	UINT16 numlumps, wadnum;
 
-	// Vars to help us with the position start and amount of each resource type.
-	// Useful for PK3s since they use folders.
-	// WADs use markers for some resources, but others such as sounds are checked lump-by-lump anyway.
-	UINT16 sfxPos, sfxEnd;
-	UINT16 musPos, musEnd;
-
 	// Init file.
 	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == LUMPERROR)
 	{
@@ -9261,23 +9261,8 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	}
 	partadd_stage = 0;
 
-	switch(wadfiles[wadnum]->type)
-	{
-	case RET_PK3:
-		sfxPos = W_CheckNumForFolderStartPK3("Sounds/", wadnum, 0);
-		sfxEnd = W_CheckNumForFolderEndPK3("Sounds/", wadnum, sfxPos);
-		musPos = W_CheckNumForFolderStartPK3("Music/", wadnum, 0);
-		musEnd = W_CheckNumForFolderEndPK3("Music/", wadnum, musPos);
-		break;
-
-	default:
-		sfxPos = musPos = 0;
-		sfxEnd = musEnd = numlumps;
-		break;
-	}
-
-	P_LoadSoundsRange(wadnum, sfxPos, sfxEnd, &sreplaces);
-	P_LoadMusicsRange(wadnum, musPos, musEnd, &digmreplaces, &mreplaces);
+	P_LoadSoundsRange(wadnum, &sreplaces);
+	P_LoadMusicsRange(wadnum, &digmreplaces, &mreplaces);
 
 	if (!devparm && sreplaces)
 		CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));

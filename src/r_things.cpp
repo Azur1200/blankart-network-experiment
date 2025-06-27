@@ -489,6 +489,12 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	return true;
 }
 
+static const char *spritemarkers[] = {
+	"Sprites/",
+	"S_START", "S_END",
+	"SS_START", "SS_END", // deutex compatib.
+};
+
 //
 // Search for sprites replacements in a wad whose names are in namelist
 //
@@ -498,46 +504,11 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	UINT16 start, end;
 	char wadname[MAX_WADPATH];
 
-	// Find the sprites section in this resource file.
-	switch (wadfiles[wadnum]->type)
-	{
-	case RET_WAD:
-		start = W_CheckNumForLongNamePwad("S_START", wadnum, 0);
-		if (start == LUMPERROR)
-			start = W_CheckNumForLongNamePwad("SS_START", wadnum, 0); //deutex compatib.
-		if (start != LUMPERROR) start++;
-
-		end = W_CheckNumForLongNamePwad("S_END", wadnum, start);
-		if (end == LUMPERROR)
-			end = W_CheckNumForLongNamePwad("SS_END", wadnum, start); //deutex compatib.
-		break;
-	case RET_PK3:
-		start = W_CheckNumForFolderStartPK3("Sprites/", wadnum, 0);
-		end = W_CheckNumForFolderEndPK3("Sprites/", wadnum, start);
-		break;
-	default:
-		return;
-	}
-
-	if (start == LUMPERROR)
-	{
-		// ignore skin wads (we don't want skin sprites interfering with vanilla sprites)
-		// G: DON'T ignore skin wads. this check did nothing because it incorrectly checked for UINT16_MAX instead of INT16_MAX
-		// plus, this didn't exist in kart, so it might break old WADs...
-		/*
-		if (W_CheckNumForLongNamePwad("S_SKIN", wadnum, 0) != LUMPERROR)
-			return;
-		*/
-
-		start = 0; //let say S_START is lump 0
-	}
-
-	if (end == LUMPERROR || start >= end)
+	if (!W_CheckNumForMarkers(spritemarkers, sizeof(spritemarkers)/sizeof(*spritemarkers), wadnum, &start, &end))
 	{
 		CONS_Debug(DBG_SETUP, "no sprites in pwad %d\n", wadnum);
 		return;
 	}
-
 
 	//
 	// scan through lumps, for each sprite, find all the sprite frames

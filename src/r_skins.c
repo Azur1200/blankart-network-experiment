@@ -648,7 +648,7 @@ void R_AddSkins(UINT16 wadnum)
 	// search for all skin markers in pwad
 	//
 
-	while ((lump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
+	while (lastlump != LUMPERROR && (lump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		// advance by default
 		lastlump = lump + 1;
@@ -820,7 +820,7 @@ void R_PatchSkins(UINT16 wadnum)
 	// search for all skin patch markers in pwad
 	//
 
-	while ((lump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
+	while (lastlump != LUMPERROR && (lump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		INT32 skinnum = 0;
 
