@@ -1533,47 +1533,30 @@ static void R_RenderViewpoint(maskcount_t* mask, INT32 cachenum)
 
 void R_RenderPlayerView(void)
 {
-	INT32			nummasks	= 1;
-	maskcount_t*	masks		= static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
-	player_t * player = &players[displayplayers[viewssnum]];
-	const boolean skybox = (skyboxmo[0] && cv_skybox.value);
-	UINT8 i;
+	INT32         nummasks = 1;
+	maskcount_t*  masks    = static_cast<maskcount_t*>(malloc(sizeof(maskcount_t)));
+	player_t *    player   = &players[displayplayers[viewssnum]];
+	const boolean skybox   = (skyboxmo[0] && cv_skybox.value);
+	const boolean oldsky   = (skybox && mapnamespace == MNS_SRB2KART);
 
-	srb2::ThreadPool::Sema tp_sema;
-	srb2::g_main_threadpool->begin_sema();
+	// using sky portals on kart maps usually results in pretty bad performance
+	skyVisible = oldsky && skyVisiblePerPlayer[viewssnum];
 
-	// using sky portals on kart maps usually results in very bad performance
-	if (mapnamespace == MNS_SRB2KART)
+	if (skyVisible)
 	{
-		// load previous saved value of skyVisible for the player
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player != &players[displayplayers[i]])
-				continue;
-			skyVisible = skyVisiblePerPlayer[i];
-			break;
-		}
-		if (skybox && skyVisible)
-		{
-			R_SkyboxFrame(viewssnum);
-			R_ClearClipSegs();
-			R_ClearDrawSegs();
-			R_ClearSegTables();
-			R_ClearPlanes();
-			R_ClearSprites();
-			Mask_Pre(&masks[nummasks - 1]);
-			R_RenderBSPNode((INT32)numnodes - 1);
-			Mask_Post(&masks[nummasks - 1]);
-			R_ClipSprites(drawsegs, NULL);
-			R_DrawPlanes();
-			// well sometimes synchronization is off and may result in some visual glitching, oh well
-			tp_sema = srb2::g_main_threadpool->end_sema();
-			srb2::g_main_threadpool->notify_sema(tp_sema);
-			srb2::g_main_threadpool->wait_sema(tp_sema);
-			srb2::g_main_threadpool->begin_sema();
-			R_DrawMasked(masks, nummasks);
-		}
+		R_SkyboxFrame(viewssnum);
+		R_ClearClipSegs();
+		R_ClearDrawSegs();
+		R_ClearSegTables();
+		R_ClearPlanes();
+		R_ClearSprites();
+		R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
+		R_ClipSprites(drawsegs, NULL);
+		R_DrawSkyPlanes();
+		R_DrawPlanes();
+		R_DrawMasked(masks, nummasks);
 	}
+
 	R_SetupFrame(viewssnum, skybox);
 	skyVisible = false;
 	framecount++;
@@ -1589,7 +1572,7 @@ void R_RenderPlayerView(void)
 		portalclipend = viewwidth-viewmorph[viewssnum].x1-1;
 		R_PortalClearClipSegs(portalclipstart, portalclipend);
 		memcpy(ceilingclip, viewmorph[viewssnum].ceilingclip, sizeof(INT16)*vid.width);
-		memcpy(floorclip, viewmorph[viewssnum].floorclip, sizeof(INT16)*vid.width);
+		memcpy(floorclip,   viewmorph[viewssnum].floorclip,   sizeof(INT16)*vid.width);
 	}
 	else
 	{
@@ -1611,6 +1594,7 @@ void R_RenderPlayerView(void)
 	mytotal = 0;
 	ProfZeroTimer();
 #endif
+
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
 
@@ -1631,7 +1615,7 @@ void R_RenderPlayerView(void)
 	ps_sw_spritecliptime = I_GetPreciseTime() - ps_sw_spritecliptime;
 
 	// Add skybox portals caused by sky visplanes.
-	if (mapnamespace != MNS_SRB2KART && skybox)
+	if (skybox && !oldsky)
 		Portal_AddSkyboxPortals();
 
 	// Portal rendering. Hijacks the BSP traversal.
@@ -1672,7 +1656,6 @@ void R_RenderPlayerView(void)
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
-
 			R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
 
 			//portalskipprecipmobjs = false;
@@ -1690,10 +1673,8 @@ void R_RenderPlayerView(void)
 	ps_sw_portaltime = I_GetPreciseTime() - ps_sw_portaltime;
 
 	ps_sw_planetime = I_GetPreciseTime();
+	R_DrawSkyPlanes();
 	R_DrawPlanes();
-	tp_sema = srb2::g_main_threadpool->end_sema();
-	srb2::g_main_threadpool->notify_sema(tp_sema);
-	srb2::g_main_threadpool->wait_sema(tp_sema);
 	ps_sw_planetime = I_GetPreciseTime() - ps_sw_planetime;
 
 	// draw mid texture and sprite
@@ -1710,6 +1691,7 @@ void R_RenderPlayerView(void)
 			{
 				if (pl->minx > pl->maxx)
 					continue;
+
 				auto col = [](int x, int top, int bot)
 				{
 					if (top > bot)
@@ -1718,7 +1700,9 @@ void R_RenderPlayerView(void)
 						top = 0;
 					if (bot > viewheight-1)
 						bot = viewheight-1;
+
 					UINT8* p = &topleft[x + top * vid.width];
+
 					while (top <= bot)
 					{
 						*p = 35;
@@ -1726,21 +1710,27 @@ void R_RenderPlayerView(void)
 						top++;
 					}
 				};
+
 				auto span = [col](int x, int top, int bot)
 				{
 					if (top <= bot)
 						col(x, top, bot);
 				};
+
 				INT32 top = pl->top[pl->minx];
 				INT32 bottom = pl->bottom[pl->minx];
+
 				span(pl->minx, top, bottom);
 				span(pl->maxx, pl->top[pl->maxx], pl->bottom[pl->maxx]);
+
 				for (INT32 x = pl->minx + 1; x < std::min(pl->maxx, viewwidth); ++x)
 				{
 					INT32 new_top = pl->top[x];
 					INT32 new_bottom = pl->bottom[x];
+
 					if (new_top > new_bottom)
 						continue;
+
 					if (top > bottom)
 					{
 						col(x, new_top, new_top);
@@ -1751,6 +1741,7 @@ void R_RenderPlayerView(void)
 						col(x, top, new_top);
 						col(x, bottom, new_bottom);
 					}
+
 					top = new_top;
 					bottom = new_bottom;
 				}
@@ -1761,13 +1752,13 @@ void R_RenderPlayerView(void)
 	// debugrender_portal: fill portals with red, draw over everything
 	if (portal_base && cv_debugrender_portal.value)
 	{
-		const UINT8 pal = 0x23; // red
 		portal_t *portal;
+		constexpr UINT8 pal = 0x23; // red
 
 		for (portal = portal_base; portal; portal = portal_base)
 		{
-			INT32 width = (portal->end - portal->start);
 			INT32 i;
+			INT32 width = (portal->end - portal->start);
 
 			for (i = 0; i < std::min(width, viewwidth); ++i)
 			{
@@ -1784,18 +1775,9 @@ void R_RenderPlayerView(void)
 		}
 	}
 
-	if (mapnamespace == MNS_SRB2KART)
-	{
-		// save value to skyVisiblePerPlayer
-		// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
-		for (i = 0; i <= splitscreen; i++)
-		{
-			if (player != &players[displayplayers[i]])
-				continue;
-			skyVisiblePerPlayer[i] = skyVisible;
-			break;
-		}
-	}
+	// save value to skyVisiblePerPlayer
+	// this is so that P1 can't affect whether P2 can see a skybox or not, or vice versa
+	skyVisiblePerPlayer[viewssnum] = (!oldsky || skyVisible); // if we dont draw the sky using the old method, always mark this as true
 
 	free(masks);
 }
