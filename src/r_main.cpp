@@ -45,16 +45,6 @@
 #include "hardware/hw_main.h"
 #endif
 
-//profile stuff ---------------------------------------------------------
-//#define TIMING
-#ifdef TIMING
-#include "p5prof.h"
-INT64 mycount;
-INT64 mytotal = 0;
-//unsigned long  nombre = 100000;
-#endif
-//profile stuff ---------------------------------------------------------
-
 extern consvar_t cv_debugrender_visplanes;
 extern consvar_t cv_debugrender_freezebsp;
 
@@ -1420,7 +1410,6 @@ void R_SkyboxFrame(int s)
 			newview->z += campos.z * -mh->skybox_scalez;
 	}
 
-
 	R_SetupCommonFrame(player, r_viewmobj->subsector);
 }
 
@@ -1589,11 +1578,6 @@ void R_RenderPlayerView(void)
 
 	Mask_Pre(&masks[nummasks - 1]);
 	curdrawsegs = ds_p;
-//profile stuff ---------------------------------------------------------
-#ifdef TIMING
-	mytotal = 0;
-	ProfZeroTimer();
-#endif
 
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
@@ -1601,13 +1585,7 @@ void R_RenderPlayerView(void)
 	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
 
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
-#ifdef TIMING
-	RDMSR(0x10, &mycount);
-	mytotal += mycount; // 64bit add
 
-	CONS_Debug(DBG_RENDER, "RenderBSPNode: 0x%d %d\n", *((INT32 *)&mytotal + 1), (INT32)mytotal);
-#endif
-//profile stuff ---------------------------------------------------------
 	Mask_Post(&masks[nummasks - 1]);
 
 	ps_sw_spritecliptime = I_GetPreciseTime();
