@@ -1198,6 +1198,7 @@ UINT16 W_CheckNumForLongNamePwad(const char *name, UINT16 wad, UINT16 startlump)
 }
 
 // same as W_CheckNumForNamePwad, but only checks for a name PREFIX
+// this does NOT uppercase the search string, do it yourself!
 UINT16 W_CheckNumForNamePrefixPwad(const char *name, size_t namelen, UINT16 wad, UINT16 startlump)
 {
 	UINT16 i;
@@ -1409,6 +1410,21 @@ lumpnum_t W_CheckNumForMap(const char *name)
 	lumpnumcache[lumpnumcacheindex].lumphash = hash;
 
 	return (i << 16) + check;
+}
+
+// again, no uppercasing. see pwad version
+lumpnum_t W_CheckNumForNamePrefix(const char *name, size_t namelen)
+{
+	INT32 i;
+	UINT16 check;
+
+	for (i = numwadfiles - 1; i >= 0; i--)
+	{
+		check = W_CheckNumForNamePrefixPwad(name, namelen, i, 0);
+		if (check != LUMPERROR)
+			return (i << 16) + check;
+	}
+	return LUMPERROR;
 }
 
 //

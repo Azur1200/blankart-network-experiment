@@ -1842,9 +1842,16 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	return (boolean)mname[0];
 }
 
+static lumpnum_t S_GetMusicLumpNum(const char *mname)
+{
+	char *n = va("O_%s", mname);
+	strupr(n); // yep, you can do that
+	return W_CheckNumForNamePrefix(n, 8);
+}
+
 boolean S_MusicExists(const char *mname)
 {
-	return W_CheckNumForLongName(va("O_%s", mname)) != LUMPERROR;
+	return S_GetMusicLumpNum(mname) != LUMPERROR;
 }
 
 /// ------------------------
@@ -2177,14 +2184,6 @@ boolean S_RecallMusic(UINT16 status, boolean fromfirst)
 /// ------------------------
 /// Music Playback
 /// ------------------------
-
-static lumpnum_t S_GetMusicLumpNum(const char *mname)
-{
-	if (S_MusicExists(mname))
-		return W_GetNumForLongName(va("O_%s", mname));
-	else
-		return LUMPERROR;
-}
 
 static boolean S_LoadMusic(const char *mname)
 {

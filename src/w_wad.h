@@ -133,6 +133,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 
 lumpnum_t W_CheckNumForMap(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
+lumpnum_t W_CheckNumForNamePrefix(const char *name, size_t namelen);
 lumpnum_t W_GetNumForLongName(const char *name);
 lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder);
 UINT8 W_LumpExists(const char *name); // Lua uses this.
