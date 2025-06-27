@@ -665,6 +665,13 @@ void P_Ticker(boolean run)
 			players[i].jointime++;
 		}
 
+	if (run)
+	{
+		// Update old view state BEFORE ticking so resetting
+		// the old interpolation state from game logic works.
+		R_UpdateViewInterpolation();
+	}
+
 	if (objectplacing)
 	{
 		if (OP_FreezeObjectplace())

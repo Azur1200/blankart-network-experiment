@@ -893,7 +893,9 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && !hu_stopped)
+			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			if (!(paused || P_AutoPause()) && !lagging)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -902,7 +904,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if (!lagging)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{
@@ -942,7 +951,7 @@ void D_SRB2Loop(void)
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
 
-		// Use the time before sleep for frameskip calculations: 
+		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
 		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
 		deltatics = deltasecs * NEWTICRATE;
@@ -1534,11 +1543,11 @@ void D_SRB2Main(void)
 		I_Error("modifiedgame set during startup!");
 
 	CONS_Printf("W_InitMultipleFiles(): Adding external PWADs.\n");
-	
+
 	// HACK: Refer to https://git.do.srb2.org/KartKrew/RingRacers/-/merge_requests/29#note_61574
 	partadd_earliestfile = numwadfiles;
 	W_InitMultipleFiles(startuppwads, true);
-	
+
 	// Only search for pwad maps and reload graphics if we actually have a pwad added
 	if (startuppwads[0] != NULL)
 	{
