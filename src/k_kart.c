@@ -9152,25 +9152,24 @@ boolean K_CheckPlayersRespawnColliding(INT32 playernum, fixed_t x, fixed_t y)
 // turndir is the direction the controls are telling us to turn, -1 if turning right and 1 if turning left
 static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 {
-	INT16 basedrift, driftadjust;
+	INT16 basedrift, driftangle;
 	fixed_t driftweight = player->kartweight*14; // 12
 
 	if (player->drift == 0 || !P_IsObjectOnGround(player->mo))
 	{
-		// If they aren't drifting or on the ground, this doesn't apply
+		// If they aren't drifting or on the ground this doesn't apply
 		return 0;
 	}
 
 	if (player->pflags & PF_DRIFTEND)
 	{
-		// Drift has ended and we are tweaking their angle back a bit
-		return -266*player->drift;
+		return -266*player->drift; // Drift has ended and we are tweaking their angle back a bit
 	}
 
-	basedrift = (83 * player->drift) - (((driftweight - 14) * player->drift) / 5); // 415 - 303
-	driftadjust = abs((252 - driftweight) * player->drift / 5);
+	basedrift = 83*player->drift - (driftweight - 14)*player->drift/5; // 415 - 303
+	driftangle = abs((252 - driftweight)*player->drift/5);
 
-	return basedrift + (FixedMul(driftadjust * FRACUNIT, countersteer) / FRACUNIT);
+	return basedrift + FixedMul(driftangle, countersteer);
 }
 
 INT16 K_GetKartTurnValue(player_t *player, INT16 turnvalue)

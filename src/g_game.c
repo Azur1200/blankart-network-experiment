@@ -1152,6 +1152,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (joystickvector.xaxis != 0)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
 	}
 
@@ -1160,6 +1161,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
 		cmd->turning -= (mousex * 8) * (encoremode ? -1 : 1);
+		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
 	}
 
 	if (spectating || objectplacing) // SRB2Kart: spectators need special controls
@@ -1315,6 +1317,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
 		cmd->turning = -KART_FULLTURN;
+
+	if (cmd->angle > KART_FULLTURN)
+		cmd->angle = KART_FULLTURN;
+	else if (cmd->angle < -KART_FULLTURN)
+		cmd->angle = -KART_FULLTURN;
 
 	if (cmd->throwdir > KART_FULLTURN)
 		cmd->throwdir = KART_FULLTURN;
