@@ -466,7 +466,7 @@ void F_IntroTicker(void)
 		if (finalecount == 80)
 		{
 			char chars[5][10] = {"tails", "chao", "aiai", "sakura"};
-			SINT8 random = P_RandomRange(0, 3);
+			SINT8 random = M_RandomRange(0, 3);
 			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
@@ -480,7 +480,7 @@ void F_IntroTicker(void)
 	// check for skipping
 	if (keypressed)
 		keypressed = false;
-	
+
 	if (animtimer > 0)
 		animtimer--;
 }
