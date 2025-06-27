@@ -1575,18 +1575,10 @@ void R_RenderPlayerView(void)
 	Portal_InitList();
 
 	// The head node is the last node output.
-
-	Mask_Pre(&masks[nummasks - 1]);
-	curdrawsegs = ds_p;
-
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
-
 	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1);
-
 	ps_bsptime = I_GetPreciseTime() - ps_bsptime;
-
-	Mask_Post(&masks[nummasks - 1]);
 
 	ps_sw_spritecliptime = I_GetPreciseTime();
 	R_ClipSprites(drawsegs, NULL);
@@ -1607,7 +1599,7 @@ void R_RenderPlayerView(void)
 
 		portal_t *portal;
 
-		for(portal = portal_base; portal; portal = portal_base)
+		for (portal = portal_base; portal; portal = portal_base)
 		{
 			portalrender = portal->pass; // Recursiveness depth.
 
@@ -1628,9 +1620,6 @@ void R_RenderPlayerView(void)
 			validcount++;
 
 			masks = static_cast<maskcount_t*>(realloc(masks, (++nummasks)*sizeof(maskcount_t)));
-
-			Mask_Pre(&masks[nummasks - 1]);
-			curdrawsegs = ds_p;
 
 			// Render the BSP from the new viewpoint, and clip
 			// any sprites with the new clipsegs and window.
