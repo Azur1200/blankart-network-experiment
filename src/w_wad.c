@@ -382,11 +382,7 @@ static inline boolean CheckCompatFilename(const char *filename)
 static inline boolean CheckCompatExtension(const char *filename)
 {
 	char *basename = strrchr(filename, '.');
-
-	if (!stricmp(basename+1, "KART"))
-		return true;
-
-	return false;
+	return basename && !stricmp(basename+1, "KART");
 }
 
 static inline boolean CheckCompatSkins(UINT16 wadnum)

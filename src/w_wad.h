@@ -68,7 +68,7 @@ struct wadfile_t
 {
 	char *filename;
 	restype_t type;
-	UINT32 *lumphashes; // hashes for every lump's fullname in ALL CAPS
+	UINT32 *lumphashes; // hashes for every lump's longname in ALL CAPS
 	lumpinfo_t *lumpinfo;
 	lumpcache_t *lumpcache;
 	lumpcache_t *patchcache;
