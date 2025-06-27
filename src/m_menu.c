@@ -332,6 +332,9 @@ CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
 
 consvar_t cv_newgametype = CVAR_INIT ("newgametype", "Race", CV_HIDEN|CV_CALL, gametype_cons_t, Newgametype_OnChange);
 
+consvar_t cv_showallmaps = CVAR_INIT ("showallmaps", "No", CV_SAVE, CV_YesNo, NULL);
+consvar_t cv_showtrackaddon = CVAR_INIT ("showtrackaddon", "Yes", CV_SAVE, CV_YesNo, NULL);
+
 static CV_PossibleValue_t serversort_cons_t[] = {
 	{0,"Ping"},
 	{1,"Modified State"},
@@ -1311,6 +1314,21 @@ boolean M_Responder(event_t *ev)
 			default:
 				break;
 		}
+
+		if (menustack[0])
+		{
+			menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
+			if (item && item->cvar == &cv_nextmap)
+			{
+				if (ch == gamecontrol[0][gc_fire][0]
+					|| ch == gamecontrol[0][gc_fire][1])
+				{
+					S_StartSound(NULL, sfx_menu1);
+					COM_ImmedExecute("add kartencore 1");
+				}
+			}
+		}
+
 	}
 	else if (menustack[0])
 	{
@@ -2001,6 +2019,9 @@ void M_Init(void)
 		return;
 
 	COM_AddCommand("manual", Command_Manual_f);
+
+	CV_RegisterVar(&cv_showallmaps);
+	CV_RegisterVar(&cv_showtrackaddon);
 
 	// Menu hacks
 	CV_RegisterVar(&cv_dummymenuplayer);
@@ -2831,16 +2852,16 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 	switch (levellistmode)
 	{
 		case LLM_CREATESERVER:
-			// Should the map be hidden?
-			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap)
-				return false;
-
-			if (M_MapLocked(mapnum+1))
-				return false; // not unlocked
-
 			// Check for TOL
 			if (gt >= 0 && !(mapheaderinfo[mapnum]->typeoflevel & G_TOLFlag(gt)))
 				return false;
+
+			// Should the map be hidden?
+			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU && mapnum+1 != gamemap)
+				return cv_showallmaps.value;
+
+			if (M_MapLocked(mapnum+1))
+				return cv_showallmaps.value; // not unlocked
 
 			return true;
 
@@ -4482,7 +4503,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 INT32 MR_ChangeLevel(INT32 choice)
 {
 	(void)choice;
-	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, false, NULL);
+	INT16 map = cv_nextmap.value ? cv_nextmap.value : G_RandMap(G_TOLFlag(cv_newgametype.value), gamestate == GS_LEVEL ? gamemap-1 : prevmap, 0, 0, NULL);
 	M_ClearMenus(true);
 	COM_BufAddText(va("map %d -gametype \"%s\"\n", map, cv_newgametype.string));
 	return true;
@@ -6368,7 +6389,7 @@ INT32 MR_StartServer(INT32 choice)
 		G_StopMetalDemo();
 
 	if (!cv_nextmap.value)
-		CV_SetValue(&cv_nextmap, G_RandMap(G_TOLFlag(cv_newgametype.value), -1, 0, 0, false, NULL)+1);
+		CV_SetValue(&cv_nextmap, G_RandMap(G_TOLFlag(cv_newgametype.value), -1, 0, 0, NULL)+1);
 
 	if (cv_maxplayers.value < ssplayers+1)
 		CV_SetValue(&cv_maxplayers, ssplayers+1);
@@ -6401,11 +6422,27 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 	patch_t *PictureOfLevel;
 	INT32 x, w, i, oldval, trans, dupadjust = ((vid.width/vid.dupx) - BASEVIDWIDTH)>>1;
 	fixed_t scale = M_GetMapThumbnail(cv_nextmap.value-1, &PictureOfLevel)/4;
+	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
+
 
 	w = FixedMul(SHORT(PictureOfLevel->width), scale);
 	i = FixedMul(SHORT(PictureOfLevel->height), scale);
 	x = BASEVIDWIDTH/2 - w/2;
 	y = y + 60 - i;
+
+	if ((levellistmode != LLM_TIMEATTACK) && (item->cvar == &cv_nextmap)) // so it doesent show in record attack menu
+	{
+		char encoretoggle[40] = {0};
+		const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][0]) : NULL;
+		const char *item2 = gamecontrol[0][gc_fire][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][1]) : NULL;
+
+		if (item1 != NULL && item2 != NULL)
+			snprintf(encoretoggle, 40, "%s/%s - Toggle Encore: %s", item1, item2, cv_kartencore.string);
+		else
+			snprintf(encoretoggle, 40, "%s - Toggle Encore: %s", item1 != NULL ? item1 : item2 != NULL ? item2 : "Item", cv_kartencore.string);
+
+		V_DrawThinString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_TRANSLUCENT|V_ALLOWLOWERCASE, encoretoggle);
+	}
 
 	if (selected && skullAnimCounter < 4)
 		trans = 0;
@@ -6413,6 +6450,21 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 		trans = G_GetGametypeColor(cv_newgametype.value);
 
 	V_DrawFill(x-1, y-1, w+2, i+2, trans); // variable reuse...
+
+	if (cv_nextmap.value && cv_showtrackaddon.value)
+	{
+		char *addonname = wadfiles[WADFILENUM(mapheaderinfo[cv_nextmap.value-1]->lumpnum)]->filename;
+		INT32 len;
+		INT32 charlimit = 21 + (dupadjust/5);
+		nameonly(addonname);
+		len = strlen(addonname);
+#define charsonside 14
+		if (len > charlimit)
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, va("%.*s...%s", charsonside, addonname, addonname+((len-charlimit) + charsonside))); // variable reuse...
+#undef charsonside
+		else
+			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
+	}
 
 	if ((cv_kartencore.value != 1) || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, PictureOfLevel, NULL);
@@ -8047,6 +8099,7 @@ INT32 MR_HandleViewServer(INT32 choice)
 		case KEY_ENTER:
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
+			ChangeServMusic(SERVMUS_2, true,true);
 			M_ClearMenus(false);
 			return true;
 			break;

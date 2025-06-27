@@ -5209,6 +5209,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEFIXED(save->p, mapobjectscale);
 
 	// SRB2kart
+	WRITEINT32(save->p, nummapboxes);
 	WRITEINT32(save->p, numgotboxes);
 	WRITEUINT8(save->p, numtargets);
 	WRITEUINT8(save->p, itembreaker);
@@ -5238,6 +5239,19 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 
 	WRITEUINT32(save->p, introtime);
 	WRITEUINT32(save->p, starttime);
+
+	WRITEINT32(save->p, hyudorotime);
+	WRITEINT32(save->p, stealtime);
+	WRITEINT32(save->p, sneakertime);
+	WRITEINT32(save->p, waterpaneltime);
+	WRITEINT32(save->p, itemtime);
+	WRITEINT32(save->p, bubbletime);
+	WRITEINT32(save->p, comebacktime);
+	WRITEINT32(save->p, bumptime);
+	WRITEINT32(save->p, greasetics);
+	WRITEINT32(save->p, wipeoutslowtime);
+	WRITEINT32(save->p, wantedreduce);
+	WRITEINT32(save->p, wantedfrequency);
 
 	WRITEUINT32(save->p, timelimitintics);
 	WRITEUINT32(save->p, extratimeintics);
@@ -5379,6 +5393,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	mapobjectscale = READFIXED(save->p);
 
 	// SRB2kart
+	nummapboxes = READINT32(save->p);
 	numgotboxes = READINT32(save->p);
 	numtargets = READUINT8(save->p);
 	itembreaker = (boolean)READUINT8(save->p);
@@ -5408,6 +5423,19 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 
 	introtime = READUINT32(save->p);
 	starttime = READUINT32(save->p);
+
+	hyudorotime = READINT32(save->p);
+	stealtime = READINT32(save->p);
+	sneakertime = READINT32(save->p);
+	waterpaneltime = READINT32(save->p);
+	itemtime = READINT32(save->p);
+	bubbletime = READINT32(save->p);
+	comebacktime = READINT32(save->p);
+	bumptime = READINT32(save->p);
+	greasetics = READINT32(save->p);
+	wipeoutslowtime = READINT32(save->p);
+	wantedreduce = READINT32(save->p);
+	wantedfrequency = READINT32(save->p);
 	
 	timelimitintics = READUINT32(save->p);
 	extratimeintics = READUINT32(save->p);

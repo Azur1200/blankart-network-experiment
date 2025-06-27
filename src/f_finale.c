@@ -337,15 +337,15 @@ static void F_IntroDrawScene(void)
 	{
 		background = W_CachePatchLongName("KARTKREW", PU_CACHE);
 		highres = true;
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 	}
 
 	if (intro_scenenum == 1)
 	{
 		background = W_CachePatchLongName("BLANKART", PU_CACHE);
 		highres = false;
+		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 	}
-
-	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 
 	if (background)
 	{
@@ -465,7 +465,9 @@ void F_IntroTicker(void)
 		}
 		if (finalecount == 80)
 		{
-			sfxenum_t rsound = skins[1].soundsid[SKSKWIN];
+			char chars[5][10] = {"tails", "chao", "aiai", "sakura"};
+			SINT8 random = M_RandomRange(0, 3);
+			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
 		}
@@ -478,7 +480,7 @@ void F_IntroTicker(void)
 	// check for skipping
 	if (keypressed)
 		keypressed = false;
-	
+
 	if (animtimer > 0)
 		animtimer--;
 }
@@ -1594,7 +1596,7 @@ void F_TitleScreenTicker(boolean run)
 		// prevent console spam if failed
 		demoIdleLeft = demoIdleTime;
 
-		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, false, NULL);
+		mapnum = G_RandMap(TOL_RACE, -2, 2, 0, NULL);
 		if (mapnum == 0) // gotta have ONE
 		{
 			return;

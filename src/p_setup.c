@@ -70,6 +70,8 @@
 
 #include "deh_tables.h"
 
+#include "y_inter.h"
+
 // for MapLoad hook
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -9049,6 +9051,11 @@ static void P_LoadSoundsRange(UINT16 wadnum, size_t *sreplaces)
 				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
 				I_FreeSfx(&S_sfx[j]);
+
+				// Re-cache it
+				//if (S_PrecacheSound())
+					//S_sfx[j].data = I_GetSfx(&S_sfx[j]);
+
 				*sreplaces += 1;
 				break; // there shouldn't be two sounds with the same name, so stop looking
 			}
@@ -9234,6 +9241,35 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 }
 
 //
+// check for non Lua votescreen replacements
+//
+static boolean P_CheckVoteReplacements(UINT16 wad)
+{
+	UINT16 i;
+	for (i = 0; i < wadfiles[wad]->numlumps; i++)
+	{
+		const char *name = W_CheckNameForNumPwad(wad, i);
+
+		// widescreen patch Race
+		if (!VoteScreen.replaced.widerace && !strncmp(name, "INTERSCW", 8))
+			VoteScreen.replaced.widerace = true;
+
+		if (!VoteScreen.replaced.race && !strncmp(name, "INTERSCR", 8))
+			VoteScreen.replaced.race = true;
+
+		// widescreen patch Battle
+		if (!VoteScreen.replaced.widebattle && !strncmp(name, "BATTLSCW", 8))
+			VoteScreen.replaced.widebattle = true;
+
+		if (!VoteScreen.replaced.battle && !strncmp(name, "BATTLSCR", 8))
+			VoteScreen.replaced.battle = true;
+	}
+
+	return VoteScreen.replaced.widerace && VoteScreen.replaced.race
+	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle;
+}
+
+//
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
 //
@@ -9241,6 +9277,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 {
 	size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 	UINT16 numlumps, wadnum;
+	static boolean allvotereplaced = false;
 
 	// Init file.
 	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == LUMPERROR)
@@ -9263,6 +9300,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 
 	P_LoadSoundsRange(wadnum, &sreplaces);
 	P_LoadMusicsRange(wadnum, &digmreplaces, &mreplaces);
+
+	if (!allvotereplaced && P_CheckVoteReplacements(wadnum))
+		allvotereplaced = true;
 
 	if (!devparm && sreplaces)
 		CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));

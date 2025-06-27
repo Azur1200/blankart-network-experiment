@@ -86,8 +86,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0xc71788f74f5972ad
-#define ASSET_HASH_MAPPATCH_PK3        0xac5a4a1a51f9ec01
+#define ASSET_HASH_MAIN_PK3            0x9a6188063fcdcc93
+#define ASSET_HASH_MAPPATCH_PK3        0x93a9213b2b2ba260
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -893,7 +893,9 @@ void D_SRB2Loop(void)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
-			if (!(paused || P_AutoPause()) && !hu_stopped)
+			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			if (!(paused || P_AutoPause()) && !lagging)
 			{
 				rendertimefrac = g_time.timefrac;
 			}
@@ -902,7 +904,14 @@ void D_SRB2Loop(void)
 				rendertimefrac = FRACUNIT;
 			}
 
-			rendertimefrac_unpaused = g_time.timefrac;
+			if (!lagging)
+			{
+				rendertimefrac_unpaused = g_time.timefrac;
+			}
+			else
+			{
+				rendertimefrac_unpaused = FRACUNIT;
+			}
 		}
 		else
 		{
@@ -942,7 +951,7 @@ void D_SRB2Loop(void)
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();
 
-		// Use the time before sleep for frameskip calculations: 
+		// Use the time before sleep for frameskip calculations:
 		// post-sleep time is literally being intentionally wasted
 		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
 		deltatics = deltasecs * NEWTICRATE;
@@ -1238,7 +1247,7 @@ void D_SRB2Main(void)
 {
 	INT32 p;
 
-	INT32 pstartmap = 0;
+	INT32 pstartmap = 1;
 	boolean autostart = false;
 
 	/* break the version string into version numbers, for netplay */
@@ -1534,11 +1543,11 @@ void D_SRB2Main(void)
 		I_Error("modifiedgame set during startup!");
 
 	CONS_Printf("W_InitMultipleFiles(): Adding external PWADs.\n");
-	
+
 	// HACK: Refer to https://git.do.srb2.org/KartKrew/RingRacers/-/merge_requests/29#note_61574
 	partadd_earliestfile = numwadfiles;
 	W_InitMultipleFiles(startuppwads, true);
-	
+
 	// Only search for pwad maps and reload graphics if we actually have a pwad added
 	if (startuppwads[0] != NULL)
 	{

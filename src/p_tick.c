@@ -217,7 +217,7 @@ void P_InitThinkers(void)
 	boss3cap = NULL;
 	waypointcap = NULL;
 	kitemcap = NULL;
-	
+
 	iquehead = iquetail = 0;
 
 	for (i = 0; i <= 15; i++)
@@ -665,6 +665,13 @@ void P_Ticker(boolean run)
 			players[i].jointime++;
 		}
 
+	if (run)
+	{
+		// Update old view state BEFORE ticking so resetting
+		// the old interpolation state from game logic works.
+		R_UpdateViewInterpolation();
+	}
+
 	if (objectplacing)
 	{
 		if (OP_FreezeObjectplace())
@@ -782,7 +789,7 @@ void P_Ticker(boolean run)
 						S_StartSound(NULL, sfx_s3kad); // GO!
 					}
 				}
-			
+
 				if (!(gametyperules & GTR_FREEROAM) && leveltime < starttime) // SRB2Kart
 					S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
 				else if (leveltime == starttime) // The GO! sound stops the level start ambience
@@ -793,7 +800,7 @@ void P_Ticker(boolean run)
 					S_ShowMusicCredit();
 				}
 			}
-			
+
 		}
 
 		ps_lua_thinkframe_time = I_GetPreciseTime();
@@ -924,10 +931,9 @@ void P_Ticker(boolean run)
 				if (!player->mo)
 					continue;
 
-				const boolean isSkyVisibleForPlayer = (!udmf ? skyVisiblePerPlayer[i] : true);
 				const boolean skybox = (skyboxmo[0] && cv_skybox.value); // True if there's a skybox object and skyboxes are on
 
-				if (isSkyVisibleForPlayer && skybox)
+				if (skyVisiblePerPlayer[i] && skybox)
 				{
 					R_SkyboxFrame(i);
 				}

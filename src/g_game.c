@@ -240,6 +240,7 @@ tic_t battleexittime = 8*TICRATE;
 INT32 hyudorotime = 7*TICRATE;
 INT32 stealtime = TICRATE/2;
 INT32 sneakertime = TICRATE + (TICRATE/3);
+INT32 waterpaneltime = TICRATE*2;
 INT32 itemtime = 8*TICRATE;
 INT32 bubbletime = TICRATE/2;
 INT32 comebacktime = 3*TICRATE;
@@ -254,7 +255,6 @@ UINT8 maxXtraLife = 2; // Max extra lives from rings
 
 UINT8 introtoplay;
 UINT8 creditscutscene;
-UINT8 useBlackRock = 1;
 
 // Emerald locations
 mobj_t *hunt1;
@@ -1152,6 +1152,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	if (joystickvector.xaxis != 0)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
+		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
 	}
 
@@ -1160,6 +1161,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
 		cmd->turning -= (mousex * 8) * (encoremode ? -1 : 1);
+		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
 	}
 
 	if (spectating || objectplacing) // SRB2Kart: spectators need special controls
@@ -1315,6 +1317,11 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
 		cmd->turning = -KART_FULLTURN;
+
+	if (cmd->angle > KART_FULLTURN)
+		cmd->angle = KART_FULLTURN;
+	else if (cmd->angle < -KART_FULLTURN)
+		cmd->angle = -KART_FULLTURN;
 
 	if (cmd->throwdir > KART_FULLTURN)
 		cmd->throwdir = KART_FULLTURN;
@@ -3778,11 +3785,11 @@ static INT32 TOLMaps(UINT8 pgametype)
   *         has those flags.
   * \author Graue <graue@oceanbase.org>
   */
-static INT16 *okmaps = NULL;
-INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, boolean callagainsoon, INT16 *extbuffer)
+INT16 G_RandMap(UINT32 tolflags, INT16 pprevmap, UINT8 ignorebuffer, UINT8 maphell, INT16 *extbuffer)
 {
 	UINT32 numokmaps = 0;
 	INT16 ix, bufx;
+	INT16 *okmaps = NULL;
 	UINT16 extbufsize = 0;
 	boolean usehellmaps; // Only consider Hell maps in this pick
 
@@ -3924,12 +3931,9 @@ tryagain:
 		ix = okmaps[M_RandomKey(numokmaps)];
 	}
 
-	if (!callagainsoon)
-	{
-		//CONS_Printf("(freeing okmaps)\n");
-		Z_Free(okmaps);
-		okmaps = NULL;
-	}
+	//CONS_Printf("(freeing okmaps)\n");
+	Z_Free(okmaps);
+	okmaps = NULL;
 
 	return ix;
 }
@@ -4196,7 +4200,7 @@ static INT16 G_GetNextMap(boolean advancemap)
 			}
 			else if (cv_advancemap.value == 2) // Go to random map.
 			{
-				newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, false, NULL);
+				newmap = G_RandMap(G_TOLFlag(gametype), curmap, 0, 0, NULL);
 			}
 			else if (nextmap >= NEXTMAP_SPECIAL) // Loop back around
 			{

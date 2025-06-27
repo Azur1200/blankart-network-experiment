@@ -149,12 +149,13 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, IN
 	if (!R_CheckMapPlane(__func__, y, x1, x2))
 		return;
 
-	angle = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
+	angle    = (ds->currentplane->viewangle + ds->currentplane->plangle)>>ANGLETOFINESHIFT;
 	planecos = FINECOSINE(angle);
 	planesin = FINESINE(angle);
 
 	distance = FixedMul(ds->planeheight, yslope[y]);
-	span = abs(centery - y);
+	span     = abs(centery - y);
+
 	if (span) // Don't divide by zero
 	{
 		ds->xstep = FixedMul(planesin, ds->planeheight) / span;
@@ -214,7 +215,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, IN
 		}
 	}
 
-	ds->y = y;
+	ds->y  = y;
 	ds->x1 = x1;
 	ds->x2 = x2;
 
@@ -306,6 +307,7 @@ void R_ClearPlanes(void)
 static visplane_t *new_visplane(unsigned hash)
 {
 	visplane_t *check = freetail;
+
 	if (!check)
 	{
 		check = static_cast<visplane_t*>(calloc(1, sizeof (*check)));
@@ -317,6 +319,7 @@ static visplane_t *new_visplane(unsigned hash)
 		if (!freetail)
 			freehead = &freetail;
 	}
+
 	check->next = visplanes[hash];
 	visplanes[hash] = check;
 
@@ -409,6 +412,7 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	if (!pfloor)
 	{
 		hash = visplane_hash(picnum, lightlevel, height);
+
 		for (check = visplanes[hash]; check; check = check->next)
 		{
 			if (polyobj != check->polyobj)
@@ -456,8 +460,8 @@ visplane_t *R_FindPlane(fixed_t height, INT32 picnum, INT32 lightlevel,
 	check->ripple = ripple;
 	check->damage = damage;
 
-	memset(check->top, 0xff, sizeof (check->top));
-	memset(check->bottom, 0x00, sizeof (check->bottom));
+	memset(check->top,    0xff, sizeof(check->top));
+	memset(check->bottom, 0x00, sizeof(check->bottom));
 
 	return check;
 }
@@ -512,8 +516,7 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		}
 		else
 		{
-			unsigned hash =
-				visplane_hash(pl->picnum, pl->lightlevel, pl->height);
+			unsigned hash = visplane_hash(pl->picnum, pl->lightlevel, pl->height);
 			new_pl = new_visplane(hash);
 		}
 
@@ -537,8 +540,8 @@ visplane_t *R_CheckPlane(visplane_t *pl, INT32 start, INT32 stop)
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
-		memset(pl->top, 0xff, sizeof pl->top);
-		memset(pl->bottom, 0x00, sizeof pl->bottom);
+		memset(pl->top,    0xff, sizeof(pl->top));
+		memset(pl->bottom, 0x00, sizeof(pl->bottom));
 	}
 	return pl;
 }
@@ -570,7 +573,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	if (b1 >= vid.height) b1 = vid.height-1;
 	if (t2 >= vid.height) t2 = vid.height-1;
 	if (b2 >= vid.height) b2 = vid.height-1;
-	if (x-1 >= vid.width) x = vid.width;
+	if (x-1 >= vid.width) x  = vid.width;
 
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
@@ -582,6 +585,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
 		INT32 taskspans = 0;
+
 		for (int i = 0; i < kSpanTaskGranularity; i++)
 		{
 			if (!((t1 + i) < t2 && (t1 + i) <= b1))
@@ -591,12 +595,14 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 			spanstartcopy[i] = spanstart[t1 + i];
 			taskspans += 1;
 		}
+
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
 				mapfunc(&dc_copy, spanfunc, t1 + i, spanstartcopy[i], x - 1, false);
 			}
 		};
+
 		if (allow_parallel)
 		{
 			srb2::g_main_threadpool->schedule(std::move(task));
@@ -605,12 +611,14 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		{
 			(task)();
 		}
+
 		t1 += taskspans;
 	}
 	while (b1 > b2 && b1 >= t1)
 	{
 		INT32 spanstartcopy[kSpanTaskGranularity] = {0};
 		INT32 taskspans = 0;
+
 		for (int i = 0; i < kSpanTaskGranularity; i++)
 		{
 			if (!((b1 - i) > b2 && (b1 - i) >= t1))
@@ -620,12 +628,14 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 			spanstartcopy[i] = spanstart[b1 - i];
 			taskspans += 1;
 		}
+
 		auto task = [=]() mutable -> void {
 			for (int i = 0; i < taskspans; i++)
 			{
 				mapfunc(&dc_copy, spanfunc, b1 - i, spanstartcopy[i], x - 1, false);
 			}
 		};
+
 		if (allow_parallel)
 		{
 			srb2::g_main_threadpool->schedule(std::move(task));
@@ -634,6 +644,7 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		{
 			(task)();
 		}
+
 		b1 -= taskspans;
 	}
 
@@ -641,28 +652,6 @@ static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(draw
 		spanstart[t2++] = x;
 	while (b2 > b1 && b2 >= t2)
 		spanstart[b2--] = x;
-}
-
-void R_DrawPlanes(void)
-{
-	visplane_t *pl;
-	INT32 i;
-	drawspandata_t ds {0};
-
-	ZoneScoped;
-
-	R_UpdatePlaneRipple(&ds);
-
-	for (i = 0; i < MAXVISPLANES; i++, pl++)
-	{
-		for (pl = visplanes[i]; pl; pl = pl->next)
-		{
-			if (pl->ffloor != NULL || pl->polyobj != NULL)
-				continue;
-
-			R_DrawSinglePlane(&ds, pl, cv_parallelsoftware.value);
-		}
-	}
 }
 
 // R_DrawSkyPlane
@@ -757,6 +746,75 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), bo
 
 		x += kSkyPlaneMacroColumns;
 	}
+}
+
+void R_DrawSkyPlanes(void)
+{
+	INT32 i;
+	visplane_t *pl;
+
+	ZoneScoped;
+
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
+	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	{
+		for (pl = visplanes[i]; pl; pl = pl->next)
+		{
+			if (pl->picnum != skyflatnum || pl->ffloor || pl->polyobj)
+				continue;
+
+			INT16 highlight = R_PlaneIsHighlighted(pl);
+
+			if (highlight != -1)
+			{
+				drawcolumndata_t dc = {};
+				dc.r8_flatcolor = highlight;
+				dc.lightmap = colormaps;
+
+				for (dc.x = pl->minx; dc.x <= pl->maxx; ++dc.x)
+				{
+					dc.yl = pl->top[dc.x];
+					dc.yh = pl->bottom[dc.x];
+					R_DrawColumn_Flat(&dc);
+				}
+			}
+			else
+			{
+				R_DrawSkyPlane(pl, colfunc, cv_parallelsoftware.value);
+			}
+		}
+	}
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
+}
+
+void R_DrawPlanes(void)
+{
+	visplane_t *pl;
+	INT32 i;
+	drawspandata_t ds {0};
+
+	ZoneScoped;
+
+	R_UpdatePlaneRipple(&ds);
+
+	srb2::ThreadPool::Sema tp_sema;
+	srb2::g_main_threadpool->begin_sema();
+	for (i = 0; i < MAXVISPLANES; i++, pl++)
+	{
+		for (pl = visplanes[i]; pl; pl = pl->next)
+		{
+			if (pl->ffloor != NULL || pl->polyobj != NULL)
+				continue;
+
+			R_DrawSinglePlane(&ds, pl, cv_parallelsoftware.value);
+		}
+	}
+	tp_sema = srb2::g_main_threadpool->end_sema();
+	srb2::g_main_threadpool->notify_sema(tp_sema);
+	srb2::g_main_threadpool->wait_sema(tp_sema);
 }
 
 // Returns the height of the sloped plane at (x, y) as a 32.16 fixed_t
@@ -939,37 +997,22 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	INT32 spanfunctype = BASEDRAWFUNC;
 	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
-	INT16 highlight = R_PlaneIsHighlighted(pl);
+	INT16 highlight;
 
 	if (!(pl->minx <= pl->maxx))
 		return;
 
 	ZoneScoped;
 
-	R_UpdatePlaneRipple(ds);
-
-	// sky flat
+	// we check this here due to drawmasked
 	if (pl->picnum == skyflatnum)
 	{
-		if (highlight != -1)
-		{
-			drawcolumndata_t dc = {};
-			dc.r8_flatcolor = highlight;
-			dc.lightmap = colormaps;
-
-			for (dc.x = pl->minx; dc.x <= pl->maxx; ++dc.x)
-			{
-				dc.yl = pl->top[dc.x];
-				dc.yh = pl->bottom[dc.x];
-				R_DrawColumn_Flat(&dc);
-			}
-		}
-		else
-		{
-			R_DrawSkyPlane(pl, colfunc, allow_parallel);
-		}
 		return;
 	}
+
+	R_UpdatePlaneRipple(ds);
+
+	highlight = R_PlaneIsHighlighted(pl);
 
 	ds->planeripple.active = false;
 	ds->brightmap = NULL;
@@ -980,13 +1023,13 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 		// Hacked up support for alpha value in software mode Tails 09-24-2002 (sidenote: ported to polys 10-15-2014, there was no time travel involved -Red)
 		if (pl->polyobj->translucency >= NUMTRANSMAPS)
 			return; // Don't even draw it
-			else if (pl->polyobj->translucency > 0)
-			{
-				spanfunctype = (pl->polyobj->flags & POF_SPLAT) ? SPANDRAWFUNC_TRANSSPLAT : SPANDRAWFUNC_TRANS;
-				ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
-			}
-			else if (pl->polyobj->flags & POF_SPLAT) // Opaque, but allow transparent flat pixels
-				spanfunctype = SPANDRAWFUNC_SPLAT;
+		else if (pl->polyobj->translucency > 0)
+		{
+			spanfunctype = (pl->polyobj->flags & POF_SPLAT) ? SPANDRAWFUNC_TRANSSPLAT : SPANDRAWFUNC_TRANS;
+			ds->transmap = R_GetTranslucencyTable(pl->polyobj->translucency);
+		}
+		else if (pl->polyobj->flags & POF_SPLAT) // Opaque, but allow transparent flat pixels
+			spanfunctype = SPANDRAWFUNC_SPLAT;
 
 		if (pl->polyobj->translucency == 0 || (pl->extra_colormap && (pl->extra_colormap->flags & CMF_FOG)))
 			light = (pl->lightlevel >> LIGHTSEGSHIFT);
@@ -1050,7 +1093,6 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 			debug = SW_HI_PLANES;
 		}
 
-		#ifndef NOWATER
 		if (pl->ripple)
 		{
 			INT32 top, bottom;
@@ -1061,13 +1103,8 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 				spanfunctype = SPANDRAWFUNC_WATER;
 
 				// Copy the current scene, ugh
-				top = pl->high-8;
-				bottom = pl->low+8;
-
-				if (top < 0)
-					top = 0;
-				if (bottom > viewheight)
-					bottom = viewheight;
+				top    = std::max(0, pl->high - 8);
+				bottom = std::min(viewheight, pl->low + 8);
 
 				// Only copy the part of the screen we need
 				UINT8 i = R_GetViewNumber();
@@ -1104,7 +1141,6 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 					vid.width, vid.width);
 			}
 		}
-		#endif
 	}
 
 	ds->currentplane = pl;
@@ -1116,7 +1152,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 		return;
 
 	texture_t *texture = textures[R_GetTextureNumForFlat(levelflat)];
-	ds->flatwidth = texture->width;
+	ds->flatwidth  = texture->width;
 	ds->flatheight = texture->height;
 
 	/*(if (R_CheckSolidColorFlat())
@@ -1228,8 +1264,8 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	}
 
 	// set the maximum value for unsigned
-	pl->top[pl->maxx+1] = 0xffff;
-	pl->top[pl->minx-1] = 0xffff;
+	pl->top[pl->maxx+1]    = 0xffff;
+	pl->top[pl->minx-1]    = 0xffff;
 	pl->bottom[pl->maxx+1] = 0x0000;
 	pl->bottom[pl->minx-1] = 0x0000;
 
@@ -1250,10 +1286,11 @@ void R_PlaneBounds(visplane_t *plane)
 	for (i = plane->minx + 1; i <= plane->maxx; i++)
 	{
 		if (plane->top[i] < hi)
-		hi = plane->top[i];
+			hi = plane->top[i];
 		if (plane->bottom[i] > low)
-		low = plane->bottom[i];
+			low = plane->bottom[i];
 	}
+
 	plane->high = hi;
 	plane->low = low;
 }
@@ -1262,11 +1299,11 @@ INT16 R_PlaneIsHighlighted(const visplane_t *pl)
 {
 	switch (pl->damage)
 	{
-	case SD_DEATHPIT:
-	case SD_INSTAKILL:
-		return 35; // red
+		case SD_DEATHPIT:
+		case SD_INSTAKILL:
+			return 35; // red
 
-	default:
-		return -1;
+		default:
+			return -1;
 	}
 }

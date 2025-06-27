@@ -37,6 +37,15 @@
 // Allow scripters to write files of these types to SRB2's folder
 static const char *whitelist[] = {
 	".bmp",
+	".png",
+
+	".obj",
+
+	".json",
+	".yaml",
+	".xml",
+	".csv",
+	".soc",
 	".cfg",
 	".csv",
 	".dat",
@@ -176,7 +185,7 @@ void MakePathDirs(char *path)
 }
 
 
-static int CheckFileName(lua_State *L, const char *filename)
+static int CheckFileName(lua_State* L, const char* filename, boolean extensioncheck)
 {
 	int length = strlen(filename);
 	boolean pass = false;
@@ -188,12 +197,21 @@ static int CheckFileName(lua_State *L, const char *filename)
 		return pushresult(L,0,filename);
 	}
 
-	for (i = 0; i < (sizeof (whitelist) / sizeof(const char *)); i++)
-		if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
-		{
-			pass = true;
-			break;
-		}
+	if (extensioncheck)
+	{
+		for (i = 0; i < (sizeof(whitelist) / sizeof(const char*)); i++)
+			if (!stricmp(&filename[length - strlen(whitelist[i])], whitelist[i]))
+			{
+				pass = true;
+				break;
+			}
+	}
+	else
+	{
+		pass = true;
+	}
+
+
 	if (strstr(filename, "./")
 		|| strstr(filename, "..") || strchr(filename, ':')
 		|| filename[0] == '/'
@@ -214,7 +232,10 @@ static int io_openlocal (lua_State *L) {
 	luafiletransfer_t *filetransfer;
 	int checkresult;
 
-	checkresult = CheckFileName(L, filename);
+    // Decision was made for normal reading (binary + text) to have no whitelist restrictions
+	boolean readcheck = (strchr(mode, 'w') != NULL) || (strchr(mode, 'a') != NULL) || (strchr(mode, '+') != NULL);
+
+	checkresult = CheckFileName(L, filename, readcheck);
 	if (checkresult)
 		return checkresult;
 
@@ -240,10 +261,9 @@ static int io_open (lua_State *L) {
 	const char *mode = luaL_optstring(L, 2, "r");
 	int checkresult;
 
-	checkresult = CheckFileName(L, filename);
+	checkresult = CheckFileName(L, filename, false);
 	if (checkresult)
 		return checkresult;
-
 
 	if (lua_isfunction(L,3))
 	{
