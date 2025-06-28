@@ -271,7 +271,7 @@ void R_AddKartFaces(skin_t *skin)
 	spritedef_t *sd = &skin->sprites[SPR2_XTRA];
 	for (size_t f = 0; f < NUMFACES; f++)
 	{
-		lumpnum_t lumpnum = W_CheckNumForName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
+		lumpnum_t lumpnum = W_CheckNumForLongName(reinterpret_cast<char *>(skin) + KART_FACES[f]); // how do you do, fellow C++ers?
 		if (lumpnum == LUMPERROR)
 			I_Error("R_AddKartFaces: missing patch %s for skin %s", reinterpret_cast<char *>(skin) + KART_FACES[f], skin->name);
 		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps, f, 0, 0);
@@ -301,7 +301,6 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	UINT16 l;
 	UINT8 frame;
 	UINT8 rotation;
-	lumpinfo_t *lumpinfo;
 	softwarepatch_t patch;
 	UINT16 numadded = 0;
 	boolean compat = wadfiles[wadnum]->compatmode;
@@ -323,24 +322,21 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 	// scan the lumps,
 	//  filling in the frames for whatever is found
-	lumpinfo = wadfiles[wadnum]->lumpinfo;
 	if (endlump > wadfiles[wadnum]->numlumps)
 		endlump = wadfiles[wadnum]->numlumps;
 
-	for (l = startlump; l < endlump; l++)
+	for (l = startlump; (l = W_CheckNumForNamePrefixPwad(sprname, 4, wadnum, l)) != LUMPERROR && l < endlump; l++)
 	{
-		if (memcmp(lumpinfo[l].name,sprname,4))
-			continue;
-
 		{
+			const char *longname = W_CheckNameForNumPwad(wadnum, l);
 			INT32 width, height;
 			INT16 topoffset, leftoffset;
 #ifndef NO_PNG_LUMPS
 			boolean isPNG = false;
 #endif
 
-			frame = R_Char2Frame(lumpinfo[l].name[4], compat);
-			rotation = R_Char2Rotation(lumpinfo[l].name[5]);
+			frame = R_Char2Frame(longname[4], compat);
+			rotation = R_Char2Rotation(longname[5]);
 
 			if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
 			{
@@ -391,10 +387,10 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 
 			R_InstallSpriteLump(wadnum, l, numspritelumps, frame, rotation, 0);
 
-			if (lumpinfo[l].name[6])
+			if (longname[6])
 			{
-				frame = R_Char2Frame(lumpinfo[l].name[6], compat);
-				rotation = R_Char2Rotation(lumpinfo[l].name[7]);
+				frame = R_Char2Frame(longname[6], compat);
+				rotation = R_Char2Rotation(longname[7]);
 
 				if (frame >= 64 || rotation == 255) // Give an actual NAME error -_-...
 				{
@@ -493,6 +489,12 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	return true;
 }
 
+static const char *spritemarkers[] = {
+	"Sprites/",
+	"S_START", "S_END",
+	"SS_START", "SS_END", // deutex compatib.
+};
+
 //
 // Search for sprites replacements in a wad whose names are in namelist
 //
@@ -502,41 +504,11 @@ void R_AddSpriteDefs(UINT16 wadnum)
 	UINT16 start, end;
 	char wadname[MAX_WADPATH];
 
-	// Find the sprites section in this resource file.
-	switch (wadfiles[wadnum]->type)
-	{
-	case RET_WAD:
-		start = W_CheckNumForMarkerStartPwad("S_START", wadnum, 0);
-		if (start == INT16_MAX)
-			start = W_CheckNumForMarkerStartPwad("SS_START", wadnum, 0); //deutex compatib.
-
-		end = W_CheckNumForNamePwad("S_END",wadnum,start);
-		if (end == INT16_MAX)
-			end = W_CheckNumForNamePwad("SS_END",wadnum,start);     //deutex compatib.
-		break;
-	case RET_PK3:
-		start = W_CheckNumForFolderStartPK3("Sprites/", wadnum, 0);
-		end = W_CheckNumForFolderEndPK3("Sprites/", wadnum, start);
-		break;
-	default:
-		return;
-	}
-
-	if (start == INT16_MAX)
-	{
-		// ignore skin wads (we don't want skin sprites interfering with vanilla sprites)
-		if (W_CheckNumForNamePwad("S_SKIN", wadnum, 0) != UINT16_MAX)
-			return;
-
-		start = 0; //let say S_START is lump 0
-	}
-
-	if (end == INT16_MAX || start >= end)
+	if (!W_CheckNumForMarkers(spritemarkers, sizeof(spritemarkers)/sizeof(*spritemarkers), wadnum, &start, &end))
 	{
 		CONS_Debug(DBG_SETUP, "no sprites in pwad %d\n", wadnum);
 		return;
 	}
-
 
 	//
 	// scan through lumps, for each sprite, find all the sprite frames
@@ -1472,7 +1444,7 @@ static void R_ProjectDropShadow(
 
 	if (shadowpatch == NULL)
 	{
-		shadowpatch = static_cast<patch_t*>(W_CachePatchName("DSHADOW", PU_SPRITE));
+		shadowpatch = static_cast<patch_t*>(W_CachePatchLongName("DSHADOW", PU_SPRITE));
 	}
 
 	patch = shadowpatch;

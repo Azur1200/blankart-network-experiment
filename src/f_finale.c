@@ -64,7 +64,7 @@ static INT32 menuanimtimer; // Title screen: background animation timing
 mobj_t *titlemapcameraref = NULL;
 
 // menu presentation state
-char curbgname[9];
+char curbgname[SHORTNAMELEN+1];
 SINT8 curfadevalue;
 INT32 curbgcolor;
 INT32 curbgxspeed;
@@ -94,7 +94,7 @@ boolean curhidepics;
 ttmode_enum curttmode;
 UINT8 curttscale;
 // ttmode user vars
-char curttname[9];
+char curttname[SHORTNAMELEN+1];
 INT16 curttx;
 INT16 curtty;
 INT16 curttloop;
@@ -232,8 +232,8 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	patch_t *pat, *pat2;
 	INT32 anim2 = 0;
 
-	pat = W_CachePatchName("TITLEBG1", PU_CACHE);
-	pat2 = W_CachePatchName("TITLEBG2", PU_CACHE);
+	pat = W_CachePatchLongName("TITLEBG1", PU_CACHE);
+	pat2 = W_CachePatchLongName("TITLEBG2", PU_CACHE);
 
 	w = (vid.width / vid.dupx)<<FRACBITS;
 
@@ -335,14 +335,14 @@ static void F_IntroDrawScene(void)
 	// DRAW A FULL PIC INSTEAD OF FLAT!
 	if (intro_scenenum == 0)
 	{
-		background = W_CachePatchName("KARTKREW", PU_CACHE);
+		background = W_CachePatchLongName("KARTKREW", PU_CACHE);
 		highres = true;
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 0);
 	}
 
 	if (intro_scenenum == 1)
 	{
-		background = W_CachePatchName("BLANKART", PU_CACHE);
+		background = W_CachePatchLongName("BLANKART", PU_CACHE);
 		highres = false;
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 	}
@@ -753,10 +753,10 @@ void F_CreditDrawer(void)
 	V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
 
 	// Draw background
-	V_DrawSciencePatch(0, 0 - FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE)), V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE)), V_SNAPTOTOP, W_CachePatchLongName("CREDTILE", PU_CACHE), FRACUNIT);
 
-	V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
-	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchName("CREDZIGZ", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP, W_CachePatchLongName("CREDZIGZ", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(320<<FRACBITS, 0 - FixedMul(40<<FRACBITS, FixedDiv(credbgtimer%(TICRATE/2), (TICRATE/2))), V_SNAPTOTOP|V_FLIP, W_CachePatchLongName("CREDZIGZ", PU_CACHE), FRACUNIT);
 
 	// Draw pictures
 	for (i = 0; credits_pics[i].patch; i++)
@@ -770,7 +770,7 @@ void F_CreditDrawer(void)
 			sc = FRACUNIT; // quick hack so I don't have to add another field to credits_pics
 		}
 
-		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchName(credits_pics[i].patch, PU_CACHE), colormap);
+		V_DrawFixedPatch(credits_pics[i].x<<FRACBITS, (credits_pics[i].y<<FRACBITS) - 4*(animtimer<<FRACBITS)/5, sc, 0, W_CachePatchLongName(credits_pics[i].patch, PU_CACHE), colormap);
 	}
 
 	// Dim the background
@@ -999,7 +999,7 @@ void F_BlanCreditDrawer(void)
 	fixed_t yscroll = FixedMul(32<<FRACBITS, FixedDiv(credbgtimer%TICRATE, TICRATE));
 
 	V_DrawFill(-100,-100,vid.width, vid.height,81);
-	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
+	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchLongName("CREDTILE", PU_CACHE), FRACUNIT);
 	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
 	// Draw credits text on top
@@ -1135,7 +1135,7 @@ void F_InitMenuPresValues(boolean title)
 	}
 
 	// Set defaults for presentation values
-	strncpy(curbgname, "TITLESKY", 9);
+	strcpy(curbgname, "TITLESKY");
 	curfadevalue = 16;
 	curbgcolor = -1;
 	curbgxspeed = titlescrollxspeed;
@@ -1145,7 +1145,7 @@ void F_InitMenuPresValues(boolean title)
 	curhidepics = hidetitlepics;
 	curttmode = ttmode;
 	curttscale = ttscale;
-	strncpy(curttname, ttname, 9);
+	strcpy(curttname, ttname);
 	curttx = ttx;
 	curtty = tty;
 	curttloop = ttloop;
@@ -1182,7 +1182,7 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 		return;
 	}
 
-	pat = W_CachePatchName(patchname, PU_PATCH_LOWPRIORITY);
+	pat = W_CachePatchLongName(patchname, PU_PATCH_LOWPRIORITY);
 
 	if (scrollxspeed == 0 && scrollyspeed == 0)
 	{
@@ -1222,56 +1222,54 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 	}
 }
 
-#define LOADTTGFX(arr, name, maxf) \
-lumpnum = W_CheckNumForName(name); \
-if (lumpnum != LUMPERROR) \
-{ \
-	arr[0] = W_CachePatchName(name, PU_PATCH_LOWPRIORITY); \
-	arr[min(1, maxf-1)] = 0; \
-} \
-else if (strlen(name) <= 6) \
-{ \
-	fixed_t cnt = strlen(name); \
-	strncpy(lumpname, name, 7); \
-	for (i = 0; i < maxf-1; i++) \
-	{ \
-		sprintf(&lumpname[cnt], "%.2hu", (UINT16)(i+1)); \
-		lumpname[8] = 0; \
-		lumpnum = W_CheckNumForName(lumpname); \
-		if (lumpnum != LUMPERROR) \
-			arr[i] = W_CachePatchName(lumpname, PU_PATCH_LOWPRIORITY); \
-		else \
-			break; \
-	} \
-	arr[min(i, maxf-1)] = 0; \
-} \
-else \
-	arr[0] = 0;
+static void LoadTTGFX(patch_t **arr, const char *name, UINT16 maxf)
+{
+	UINT16 i;
+	lumpnum_t lumpnum;
+	char lumpname[SHORTNAMELEN+1];
+
+	lumpnum = W_CheckNumForLongName(name);
+	if (lumpnum != LUMPERROR)
+	{
+		arr[0] = W_CachePatchNum(lumpnum, PU_PATCH_LOWPRIORITY);
+		arr[min(1, maxf-1)] = NULL;
+	}
+	else if (strlen(name) <= 6)
+	{
+		fixed_t cnt = strlen(name);
+		strncpy(lumpname, name, 7);
+		for (i = 0; i < maxf-1; i++)
+		{
+			sprintf(&lumpname[cnt], "%.2hu", (UINT16)(i+1));
+			lumpnum = W_CheckNumForLongName(lumpname);
+			if (lumpnum != LUMPERROR)
+				arr[i] = W_CachePatchNum(lumpnum, PU_PATCH_LOWPRIORITY);
+			else
+				break;
+		}
+		arr[min(i, maxf-1)] = NULL;
+	}
+	else
+		arr[0] = NULL;
+}
 
 static void F_CacheTitleScreen(void)
 {
-	UINT16 i;
-
 	switch(curttmode)
 	{
 		case TTMODE_NONE:
 			break;
 
 		case TTMODE_KART:
-			ttbanner = W_CachePatchName("TTKBANNR", PU_PATCH_LOWPRIORITY);
-			ttkart = W_CachePatchName("TTKART", PU_PATCH_LOWPRIORITY);
-			ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
-			ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
+			ttbanner = W_CachePatchLongName("TTKBANNR", PU_PATCH_LOWPRIORITY);
+			ttkart = W_CachePatchLongName("TTKART", PU_PATCH_LOWPRIORITY);
+			ttcheckers = W_CachePatchLongName("TTCHECK", PU_PATCH_LOWPRIORITY);
+			ttkflash = W_CachePatchLongName("TTKFLASH", PU_PATCH_LOWPRIORITY);
 			break;
 
 		case TTMODE_USER:
-		{
-			lumpnum_t lumpnum;
-			char lumpname[9];
-
-			LOADTTGFX(ttuser, curttname, TTMAX_USER)
+			LoadTTGFX(ttuser, curttname, TTMAX_USER);
 			break;
-		}
 	}
 }
 
@@ -1584,7 +1582,7 @@ void F_TitleScreenTicker(boolean run)
 		{
 			lumpnum_t l = LUMPERROR;
 			numstaff = 0;
-			while (numstaff < 99 && (l = W_CheckNumForName(va("TDEMO%03u", numstaff))) != LUMPERROR)
+			while (numstaff < 99 && (l = W_CheckNumForLongName(va("TDEMO%03u", numstaff))) != LUMPERROR)
 				numstaff++;
 
 			if (numstaff)
@@ -1620,7 +1618,7 @@ void F_TitleScreenTicker(boolean run)
 			if (vLump == NULL)
 			{
 
-				if (((W_CheckNumForName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
+				if (((W_CheckNumForLongName(va("%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff)))) != LUMPERROR)
 					sprintf(dname, "%sS%02u", mapheaderinfo[mapnum]->lumpname, numstaff);
 				else
 				{
@@ -1844,10 +1842,10 @@ void F_CutsceneDrawer(void)
 	{
 		if (cutscenes[cutnum]->scene[scenenum].pichires[picnum])
 			V_DrawSmallScaledPatch(picxpos, picypos, 0,
-				W_CachePatchName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 		else
 			V_DrawScaledPatch(picxpos,picypos, 0,
-				W_CachePatchName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(cutscenes[cutnum]->scene[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 	}
 
 	if (dofadenow && rendermode != render_none)
@@ -1930,7 +1928,7 @@ static void F_GetPageTextGeometry(UINT8 *pagelines, boolean *rightside, INT32 *b
 	// reuse:
 	// cutnum -> promptnum
 	// scenenum -> pagenum
-	lumpnum_t iconlump = W_CheckNumForName(textprompts[cutnum]->page[scenenum].iconname);
+	lumpnum_t iconlump = W_CheckNumForLongName(textprompts[cutnum]->page[scenenum].iconname);
 
 	*pagelines = textprompts[cutnum]->page[scenenum].lines ? textprompts[cutnum]->page[scenenum].lines : 4;
 	*rightside = (iconlump != LUMPERROR && textprompts[cutnum]->page[scenenum].rightside);
@@ -2305,7 +2303,7 @@ void F_TextPromptDrawer(void)
 	if (!promptactive)
 		return;
 
-	iconlump = W_CheckNumForName(textprompts[cutnum]->page[scenenum].iconname);
+	iconlump = W_CheckNumForLongName(textprompts[cutnum]->page[scenenum].iconname);
 	F_GetPageTextGeometry(&pagelines, &rightside, &boxh, &texth, &texty, &namey, &chevrony, &textx, &textr);
 
 	// Draw gfx first
@@ -2313,10 +2311,10 @@ void F_TextPromptDrawer(void)
 	{
 		if (textprompts[cutnum]->page[scenenum].pichires[picnum])
 			V_DrawSmallScaledPatch(picxpos, picypos, 0,
-				W_CachePatchName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 		else
 			V_DrawScaledPatch(picxpos,picypos, 0,
-				W_CachePatchName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
+				W_CachePatchLongName(textprompts[cutnum]->page[scenenum].picname[picnum], PU_PATCH_LOWPRIORITY));
 	}
 
 	// Draw background
@@ -2326,7 +2324,7 @@ void F_TextPromptDrawer(void)
 	if (iconlump != LUMPERROR)
 	{
 		INT32 iconx, icony, scale, scaledsize;
-		patch = W_CachePatchName(textprompts[cutnum]->page[scenenum].iconname, PU_PATCH_LOWPRIORITY);
+		patch = W_CachePatchLongName(textprompts[cutnum]->page[scenenum].iconname, PU_PATCH_LOWPRIORITY);
 
 		// scale and center
 		if (patch->width > patch->height)

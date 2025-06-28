@@ -3181,7 +3181,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	if (!shadowpatch || !shadowpatch->hardware)
 	{
 		CONS_Debug(DBG_RENDER, "remaking shadowsprite\n");
-		shadowpatch = (patch_t *)W_CachePatchName("DSHADOW", PU_SPRITE);
+		shadowpatch = (patch_t *)W_CachePatchLongName("DSHADOW", PU_SPRITE);
 	}
 
 	gpatch = shadowpatch;
@@ -5986,7 +5986,7 @@ void HWR_RenderPlayerView(void)
 	if (r_splitscreen == 2 && player == &players[displayplayers[2]]) // No black void please.
 	{
 		// V_DrawPatchFill, but for the fourth screen only
-		patch_t *gpatch = W_CachePatchName("SRB2BACK", PU_CACHE);
+		patch_t *gpatch = W_CachePatchLongName("SRB2BACK", PU_CACHE);
 		INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 		INT32 x, y, pw = SHORT(gpatch->width) * dupz, ph = SHORT(gpatch->height) * dupz;
 
@@ -6494,7 +6494,7 @@ static lumpnum_t wipelumpnum;
 // puts wipe lumpname in wipename[9]
 static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 {
-	static char lumpname[9] = "FADEmmss";
+	static char lumpname[SHORTNAMELEN+1] = "FADEmmss";
 	size_t lsize;
 
 	// not a valid wipe number
@@ -6506,7 +6506,7 @@ static boolean HWR_WipeCheck(UINT8 wipenum, UINT8 scrnnum)
 	lumpname[5] = '0'+(wipenum%10);
 	lumpname[6] = '0'+(scrnnum/10);
 	lumpname[7] = '0'+(scrnnum%10);
-	wipelumpnum = W_CheckNumForName(lumpname);
+	wipelumpnum = W_CheckNumForLongName(lumpname);
 
 	// again, shouldn't be here really
 	if (wipelumpnum == LUMPERROR)
@@ -6552,19 +6552,6 @@ void HWR_DrawScreenFinalTexture(int width, int height)
     HWD.pfnDrawScreenFinalTexture(width, height);
 }
 
-static inline UINT16 HWR_FindShaderDefs(UINT16 wadnum)
-{
-	UINT16 i;
-	lumpinfo_t *lump_p;
-
-	lump_p = wadfiles[wadnum]->lumpinfo;
-	for (i = 0; i < wadfiles[wadnum]->numlumps; i++, lump_p++)
-		if (memcmp(lump_p->name, "SHADERS", 7) == 0)
-			return i;
-
-	return INT16_MAX;
-}
-
 boolean HWR_CompileShaders(void)
 {
 	return HWD.pfnCompileShaders();
@@ -6603,8 +6590,8 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	int shadertype = 0;
 	int i;
 
-	lump = HWR_FindShaderDefs(wadnum);
-	if (lump == INT16_MAX)
+	lump = W_CheckNumForLongNamePwad("SHADERS", wadnum, 0);
+	if (lump == LUMPERROR)
 		return;
 
 	shaderdef = W_CacheLumpNumPwad(wadnum, lump, PU_CACHE);
@@ -6671,23 +6658,19 @@ skip_lump:
 
 					if (PK3)
 					{
-						shader_lumpname = Z_Malloc(strlen(value) + 12, PU_STATIC, NULL);
-						strcpy(shader_lumpname, "Shaders/sh_");
-						strcat(shader_lumpname, value);
+						shader_lumpname = xva("Shaders/sh_%s", value);
 						shader_lumpnum = W_CheckNumForFullNamePK3(shader_lumpname, wadnum, 0);
 					}
 					else
 					{
-						shader_lumpname = Z_Malloc(strlen(value) + 4, PU_STATIC, NULL);
-						strcpy(shader_lumpname, "SH_");
-						strcat(shader_lumpname, value);
-						shader_lumpnum = W_CheckNumForNamePwad(shader_lumpname, wadnum, 0);
+						shader_lumpname = xva("SH_%.5s", value);
+						shader_lumpnum = W_CheckNumForLongNamePwad(shader_lumpname, wadnum, 0);
 					}
 
-					if (shader_lumpnum == INT16_MAX)
+					if (shader_lumpnum == LUMPERROR)
 					{
 						CONS_Alert(CONS_ERROR, "HWR_LoadCustomShadersFromFile: Missing shader source %s (file %s, line %d)\n", shader_lumpname, wadfiles[wadnum]->filename, linenum);
-						Z_Free(shader_lumpname);
+						free(shader_lumpname);
 						continue;
 					}
 
@@ -6698,7 +6681,7 @@ skip_lump:
 					HWD.pfnLoadCustomShader(shaderxlat[i].id, shader_source, shader_size, (shadertype == 2));
 
 					Z_Free(shader_source);
-					Z_Free(shader_lumpname);
+					free(shader_lumpname);
 				}
 			}
 

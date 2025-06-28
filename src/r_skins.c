@@ -105,14 +105,14 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	snprintf(skin->name,
 		sizeof skin->name, "skin %u", (UINT32)(skin-skins));
 	skin->name[sizeof skin->name - 1] = '\0';
-	skin->wadnum = INT16_MAX;
+	skin->wadnum = MAX_WADFILES;
 
 	skin->flags = 0;
 
 	strcpy(skin->realname, "Someone");
-	strncpy(skin->facerank, "MISSING", 9);
-	strncpy(skin->facewant, "MISSING", 9);
-	strncpy(skin->facemmap, "MISSING", 9);
+	strcpy(skin->facerank, "MISSING");
+	strcpy(skin->facewant, "MISSING");
+	strcpy(skin->facemmap, "MISSING");
 	skin->starttranscolor = 96;
 	skin->prefcolor = SKINCOLOR_GREEN;
 	skin->supercolor = SKINCOLOR_SUPER1;
@@ -159,7 +159,7 @@ void R_InitSkins(void)
 		R_AddSkins((UINT16)i);
 		if (!wadfiles[i]->compatmode)
 			R_PatchSkins((UINT16)i);
-		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
+		R_LoadSpriteInfoLumps(i);
 	}
 	ST_ReloadSkinFaceGraphics();
 }
@@ -347,27 +347,6 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 // Add skins from a pwad, each skin preceded by 'S_SKIN' marker
 //
 
-// Does the same is in w_wad, but check only for
-// the first 6 characters (this is so we can have S_SKIN1, S_SKIN2..
-// for wad editors that don't like multiple resources of the same name)
-//
-static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
-{
-	UINT16 i;
-	const char *S_SKIN = "S_SKIN";
-	lumpinfo_t *lump_p;
-
-	// scan forward, start at <startlump>
-	if (startlump < wadfiles[wadid]->numlumps)
-	{
-		lump_p = wadfiles[wadid]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-			if (memcmp(lump_p->name,S_SKIN,6)==0)
-				return i;
-	}
-	return INT16_MAX; // not found
-}
-
 // turn _ into spaces and . into katana dot
 #define SYMBOLCONVERT(name) for (value = name; *value; value++)\
 	{\
@@ -377,27 +356,6 @@ static UINT16 W_CheckForSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 //
 // Patch skins from a pwad, each skin preceded by 'P_SKIN' marker
 //
-
-// Does the same is in w_wad, but check only for
-// the first 6 characters (this is so we can have P_SKIN1, P_SKIN2..
-// for wad editors that don't like multiple resources of the same name)
-//
-static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
-{
-	UINT16 i;
-	const char *P_SKIN = "P_SKIN";
-	lumpinfo_t *lump_p;
-
-	// scan forward, start at <startlump>
-	if (startlump < wadfiles[wadid]->numlumps)
-	{
-		lump_p = wadfiles[wadid]->lumpinfo + startlump;
-		for (i = startlump; i < wadfiles[wadid]->numlumps; i++, lump_p++)
-			if (memcmp(lump_p->name,P_SKIN,6)==0)
-				return i;
-	}
-	return INT16_MAX; // not found
-}
 
 #define NUMKARTFRAMES 19
 #define S(f, s) { f - 'A', SPR2_##s },
@@ -437,16 +395,16 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 	UINT8 sprite2;
 
 	*lump += 1; // start after S_SKIN
-	*lastlump = W_CheckNumForNamePwad("S_END",wadnum,*lump); // stop at S_END
+	*lastlump = W_CheckNumForLongNamePwad("S_END", wadnum, *lump); // stop at S_END
 
 	// old wadding practices die hard -- stop at S_SKIN (or P_SKIN) or S_START if they come before S_END.
 	newlastlump = W_FindNextEmptyInPwad(wadnum,*lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
-	newlastlump = W_CheckForSkinMarkerInPwad(wadnum,*lump);
+	newlastlump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, *lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
-	newlastlump = W_CheckForPatchSkinMarkerInPwad(wadnum,*lump);
+	newlastlump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, *lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
-	newlastlump = W_CheckNumForNamePwad("S_START",wadnum,*lump);
+	newlastlump = W_CheckNumForLongNamePwad("S_START", wadnum, *lump);
 	if (newlastlump < *lastlump) *lastlump = newlastlump;
 
 	/*// ...and let's handle super, too
@@ -628,7 +586,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	GETFLAG(OLDDEATH)
 #undef GETFLAG
 
-#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strncpy(skin->field, value, 8);
+#define GETPATCH(field) else if (compat && !stricmp(stoken, #field)) strlcpy(skin->field, value, sizeof(skin->field));
 	GETPATCH(facerank)
 	GETPATCH(facewant)
 	GETPATCH(facemmap)
@@ -690,7 +648,7 @@ void R_AddSkins(UINT16 wadnum)
 	// search for all skin markers in pwad
 	//
 
-	while ((lump = W_CheckForSkinMarkerInPwad(wadnum, lastlump)) != INT16_MAX)
+	while (lastlump != LUMPERROR && (lump = W_CheckNumForNamePrefixPwad("S_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		// advance by default
 		lastlump = lump + 1;
@@ -862,7 +820,7 @@ void R_PatchSkins(UINT16 wadnum)
 	// search for all skin patch markers in pwad
 	//
 
-	while ((lump = W_CheckForPatchSkinMarkerInPwad(wadnum, lastlump)) != INT16_MAX)
+	while (lastlump != LUMPERROR && (lump = W_CheckNumForNamePrefixPwad("P_SKIN", 6, wadnum, lastlump)) != LUMPERROR)
 	{
 		INT32 skinnum = 0;
 

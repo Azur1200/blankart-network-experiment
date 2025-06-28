@@ -2261,22 +2261,14 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 boolean K_InitTerrainPwad(UINT16 wadNum)
 {
 	UINT16 lumpNum;
-	lumpinfo_t *lump_p = wadfiles[wadNum]->lumpinfo;
 	boolean terrainLoaded = false;
 
 	// Iterate through all lumps and compare the name individually.
 	// In PK3 files, you can potentially have multiple TERRAIN differentiated by
 	// their file extension.
-	for (lumpNum = 0; lumpNum < wadfiles[wadNum]->numlumps; lumpNum++, lump_p++)
+	for (lumpNum = 0; (lumpNum = W_CheckNumForLongNamePwad("TERRAIN", wadNum, lumpNum)) != LUMPERROR; lumpNum++)
 	{
-		UINT8 *data;
-
-		if (memcmp(lump_p->name, "TERRAIN", 8) != 0)
-		{
-			continue;
-		}
-
-		data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
+		UINT8 *data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
 
 		// If that didn't exist, we have nothing to do here.
 		if (data == NULL)
@@ -2288,17 +2280,10 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 			size_t size = W_LumpLengthPwad(wadNum, lumpNum);
 			char *datacopy;
 
-			size_t nameLength = strlen(wadfiles[wadNum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-			char *name = malloc(nameLength + 1);
-
-			sprintf(name, "%s|%s", wadfiles[wadNum]->filename, lump_p->fullname);
-			name[nameLength] = '\0';
-
 			size = W_LumpLengthPwad(wadNum, lumpNum);
 
-			CONS_Printf(M_GetText("Loading TERRAIN from %s\n"), name);
+			CONS_Printf(M_GetText("Loading TERRAIN from %s|%s\n"), wadfiles[wadNum]->filename, W_CheckFullNameForNumPwad(wadNum, lumpNum));
 			terrainLoaded = true;
-			
 
 			datacopy = (char *)Z_Malloc((size+1)*sizeof(char),PU_STATIC,NULL);
 			memmove(datacopy,data,size);
@@ -2309,8 +2294,6 @@ boolean K_InitTerrainPwad(UINT16 wadNum)
 			K_TERRAINLumpParser(datacopy, size);
 
 			Z_Free(datacopy);
-
-			free(name);
 		}
 	}
 

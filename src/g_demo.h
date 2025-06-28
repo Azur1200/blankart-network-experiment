@@ -179,9 +179,9 @@ extern demoghost *ghosts;
 #define DFILE_ERROR_EXTRAFILES           0x05 // Extra files outside of the replay's file list are loaded.
 
 void G_DeferedPlayDemo(const char *demo);
-void G_DoPlayDemo(char *defdemoname);
+void G_DoPlayDemo(const char *defdemoname);
 void G_TimeDemo(const char *name);
-void G_AddGhost(char *defdemoname);
+void G_AddGhost(const char *defdemoname);
 void G_UpdateStaffGhostName(lumpnum_t l);
 void G_FreeGhosts(void);
 void G_DoneLevelLoad(void);

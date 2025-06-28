@@ -710,7 +710,6 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults)
 {
 	MYFILE f;
 	char *name;
-	size_t len;
 
 	if (M_CheckParm("-nolua"))
 	{
@@ -723,21 +722,10 @@ void LUA_LoadLump(UINT16 wad, UINT16 lump, boolean noresults)
 	W_ReadLumpPwad(wad, lump, f.data);
 	f.curpos = f.data;
 
-	len = strlen(wadfiles[wad]->filename); // length of file name
-
 	if (wadfiles[wad]->type == RET_LUA)
-	{
-		name = malloc(len+1);
-		strcpy(name, wadfiles[wad]->filename);
-	}
+		name = xva("%s", wadfiles[wad]->filename);
 	else // If it's not a .lua file, copy the lump name in too.
-	{
-		lumpinfo_t *lump_p = &wadfiles[wad]->lumpinfo[lump];
-		len += 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
-		name = malloc(len+1);
-		sprintf(name, "%s|%s", wadfiles[wad]->filename, lump_p->fullname);
-		name[len] = '\0';
-	}
+		name = xva("%s|%s", wadfiles[wad]->filename, W_CheckFullNameForNumPwad(wad, lump));
 
 	lua_compatmode = wadfiles[wad]->compatmode;
 

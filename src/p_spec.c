@@ -152,13 +152,10 @@ void P_InitPicAnims(void)
 		UINT16 animdefsLumpNum;
 
 		// Find ANIMDEFS lump in the WAD
-		animdefsLumpNum = W_CheckNumForNamePwad("ANIMDEFS", w, 0);
-
-		while (animdefsLumpNum != INT16_MAX)
+		for (animdefsLumpNum = 0; (animdefsLumpNum = W_CheckNumForLongNamePwad("ANIMDEFS", w, animdefsLumpNum)) != LUMPERROR; animdefsLumpNum++)
 		{
-			animdeftempflats = ((partadd_earliestfile == UINT16_MAX) || partadd_earliestfile == w);
+			animdeftempflats = ((partadd_earliestfile == MAX_WADFILES) || partadd_earliestfile == w);
 			P_ParseANIMDEFSLump(w, animdefsLumpNum);
-			animdefsLumpNum = W_CheckNumForNamePwad("ANIMDEFS", (UINT16)w, animdefsLumpNum + 1);
 		}
 	}
 
@@ -2978,7 +2975,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 		case 415: // Run a script
 			if (cv_runscripts.value)
 			{
-				lumpnum_t lumpnum = W_CheckNumForName(stringargs[0]);
+				lumpnum_t lumpnum = W_CheckNumForLongName(stringargs[0]);
 
 				if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 					CONS_Debug(DBG_SETUP, "Line type 415 Executor: script lump %s not found/not valid.\n", stringargs[0]);

@@ -1537,7 +1537,7 @@ static void I_CleanupGME(void *userdata)
 
 static boolean I_StartGMESong(const char *musicname, boolean looping)
 {
-	char filename[9];
+	char filename[SHORTNAMELEN+1];
 	void *data;
 	lumpnum_t lumpnum;
 	size_t lumplength;
@@ -1552,7 +1552,7 @@ static boolean I_StartGMESong(const char *musicname, boolean looping)
 
 	snprintf(filename, sizeof filename, "o_%s", musicname);
 
-	lumpnum = W_CheckNumForName(filename);
+	lumpnum = W_CheckNumForLongName(filename);
 
 	if (lumpnum == LUMPERROR)
 	{

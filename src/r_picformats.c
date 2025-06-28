@@ -1852,17 +1852,18 @@ void R_ParseSPRTINFOLump(UINT16 wadNum, UINT16 lumpNum)
 //
 // Load and read every SPRTINFO lump from the specified file.
 //
-void R_LoadSpriteInfoLumps(UINT16 wadnum, UINT16 numlumps)
+void R_LoadSpriteInfoLumps(UINT16 wadnum)
 {
-	lumpinfo_t *lumpinfo = wadfiles[wadnum]->lumpinfo;
-	UINT16 i;
-	char *name;
+#define NUMPREFIXES 2
+	static lumpprefixes_t sprtinfoprfx[NUMPREFIXES] = {
+		{ "SPRTINFO", 8 },
+		{ "SPR_", 4 },
+	};
 
-	for (i = 0; i < numlumps; i++, lumpinfo++)
+	UINT16 i;
+	for (i = 0; (i = W_CheckNumForNameMultiPrefixPwad(sprtinfoprfx, NUMPREFIXES, wadnum, i)) != LUMPERROR; i++)
 	{
-		name = lumpinfo->name;
-		// Load SPRTINFO and SPR_ lumps as SpriteInfo
-		if (!memcmp(name, "SPRTINFO", 8) || !memcmp(name, "SPR_", 4))
-			R_ParseSPRTINFOLump(wadnum, i);
+		R_ParseSPRTINFOLump(wadnum, i);
 	}
+#undef NUMPREFIXES
 }

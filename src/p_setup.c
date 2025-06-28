@@ -198,7 +198,7 @@ static SINT8 partadd_stage = -1;
 static boolean partadd_replacescurrentmap = false;
 static boolean partadd_terrainloaded = false;
 static boolean partadd_important = false;
-UINT16 partadd_earliestfile = UINT16_MAX;
+UINT16 partadd_earliestfile = MAX_WADFILES;
 
 // Maintain *ZOOM TUBE* waypoints
 // Renamed because SRB2Kart owns real waypoints.
@@ -8106,13 +8106,11 @@ static void P_RunLevelScript(const char *scriptname)
 	if (!(mapheaderinfo[gamemap-1]->levelflags & LF_SCRIPTISFILE))
 	{
 		lumpnum_t lumpnum;
-		char newname[9];
+		char newname[SHORTNAMELEN+1];
 
-		strncpy(newname, scriptname, 8);
+		strlcpy(newname, scriptname, sizeof(newname));
 
-		newname[8] = '\0';
-
-		lumpnum = W_CheckNumForName(newname);
+		lumpnum = W_CheckNumForLongName(newname);
 
 		if (lumpnum == LUMPERROR || W_LumpLength(lumpnum) == 0)
 		{
@@ -9019,7 +9017,7 @@ boolean P_RunSOC(const char *socfilename)
 	if (strstr(socfilename, ".soc") != NULL)
 		return P_AddWadFile(socfilename, WC_AUTO);
 
-	lump = W_CheckNumForName(socfilename);
+	lump = W_CheckNumForLongName(socfilename);
 	if (lump == LUMPERROR)
 		return false;
 
@@ -9031,22 +9029,34 @@ boolean P_RunSOC(const char *socfilename)
 
 // Auxiliary function for PK3 loading - looks for sound replacements.
 // NOTE: it does not really add any new sound entry or anything.
-void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num)
+static void P_LoadSoundsRange(UINT16 wadnum, size_t *sreplaces)
 {
-	size_t j;
-	lumpinfo_t *lumpinfo = wadfiles[wadnum]->lumpinfo + first;
-	for (; num > 0; num--, lumpinfo++)
+	sfxenum_t j;
+	UINT16 i, end;
+	if (!W_CheckNumForMarkers((const char *[]){"Sounds/"}, 1, wadnum, &i, &end))
+		return;
+
+	for (; i < end; i++)
 	{
 		// Let's check whether it's replacing an existing sound or it's a brand new one.
+		const char *name = W_CheckNameForNumPwad(wadnum, i);
+		if (name[0] != 'D' || name[1] != 'S')
+			continue;
 		for (j = 1; j < NUMSFX; j++)
 		{
-			if (S_sfx[j].name && !strnicmp(S_sfx[j].name, lumpinfo->name + 2, 6))
+			if (S_sfx[j].name && !strnicmp(S_sfx[j].name, name + 2, 6))
 			{
 				// the sound will be reloaded when needed,
 				// since sfx->data will be NULL
-				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", lumpinfo->name);
+				CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
 
 				I_FreeSfx(&S_sfx[j]);
+
+				// Re-cache it
+				//if (S_PrecacheSound())
+					//S_sfx[j].data = I_GetSfx(&S_sfx[j]);
+
+				*sreplaces += 1;
 				break; // there shouldn't be two sounds with the same name, so stop looking
 			}
 		}
@@ -9055,44 +9065,26 @@ void P_LoadSoundsRange(UINT16 wadnum, UINT16 first, UINT16 num)
 
 // Auxiliary function for PK3 loading - looks for music and music replacements.
 // NOTE: does nothing but print debug messages. The code is handled somewhere else.
-void P_LoadMusicsRange(UINT16 wadnum, UINT16 first, UINT16 num)
+static void P_LoadMusicsRange(UINT16 wadnum, size_t *digmreplaces, size_t *mreplaces)
 {
-	lumpinfo_t *lumpinfo = wadfiles[wadnum]->lumpinfo + first;
-	char *name;
-	for (; num > 0; num--, lumpinfo++)
+	UINT16 i, end;
+	if (!W_CheckNumForMarkers((const char *[]){"Music/"}, 1, wadnum, &i, &end))
+		return;
+
+	for (; i < end; i++)
 	{
-		name = lumpinfo->name;
+		const char *name = W_CheckNameForNumPwad(wadnum, i);
 		if (name[0] == 'O' && name[1] == '_')
 		{
 			CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
+			*digmreplaces += 1;
 		}
 		else if (name[0] == 'D' && name[1] == '_')
 		{
-			CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
+			CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
+			*mreplaces += 1;
 		}
 	}
-	return;
-}
-
-// Auxiliary function - input a folder name and gives us the resource markers positions.
-static lumpinfo_t* FindFolder(const char *folName, UINT16 *start, UINT16 *end, lumpinfo_t *lumpinfo, UINT16 *pnumlumps, size_t *pi)
-{
-	UINT16 numlumps = *pnumlumps;
-	size_t i = *pi;
-	if (!stricmp(lumpinfo->fullname, folName))
-	{
-		lumpinfo++;
-		*start = ++i;
-		for (; i < numlumps; i++, lumpinfo++)
-			if (strnicmp(lumpinfo->fullname, folName, strlen(folName)))
-				break;
-		lumpinfo--;
-		*end = i-- - *start;
-		*pi = i;
-		*pnumlumps = numlumps;
-		return lumpinfo;
-	}
-	return lumpinfo;
 }
 
 lumpnum_t wadnamelump = LUMPERROR;
@@ -9115,7 +9107,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 		maplump = W_CheckNumForMap(name);
 
 		// Doesn't exist?
-		if (maplump == INT16_MAX)
+		if (maplump == LUMPERROR)
 		{
 #ifndef DEVELOP
 			if (!existingmapheaders)
@@ -9210,7 +9202,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			// okay... try finding them the old-fashioned way
 			else
 			{
-				oldPic = W_CachePatchName(va("%sP", name), PU_STATIC);
+				oldPic = W_CachePatchLongName(va("%sP", name), PU_STATIC);
 				if (oldPic != missingpat)
 					mapheaderinfo[i]->thumbnailPic = oldPic;
 			}
@@ -9221,7 +9213,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 			else
 			{
-				oldPic = W_CachePatchName(va("%sR", name), PU_STATIC);
+				oldPic = W_CachePatchLongName(va("%sR", name), PU_STATIC);
 				if (oldPic != missingpat)
 					mapheaderinfo[i]->minimapPic = oldPic;
 			}
@@ -9241,98 +9233,40 @@ boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
 {
 	UINT16 wadnum;
 
-	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == UINT16_MAX)
+	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == MAX_WADFILES)
 		return false;
 
 	P_MultiSetupWadFiles(true);
 	return true;
 }
 
-static size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
-
-
-//
-// search for sound replacements
-//
-static boolean P_CheckSoundReplacements(char *name, size_t i)
-{
-	if (name[0] == 'D')
-	{
-		if (name[1] == 'S')
-		{
-			for (i = 1; i < NUMSFX; i++)
-			{
-				if (S_sfx[i].name && !strnicmp(S_sfx[i].name, name + 2, 6))
-				{
-					// the sound will be reloaded when needed,
-					// since sfx->data will be NULL
-					CONS_Debug(DBG_SETUP, "Sound %.8s replaced\n", name);
-
-					I_FreeSfx(&S_sfx[i]);
-
-					// Re-cache it
-					//if (S_PrecacheSound())
-						//S_sfx[j].data = I_GetSfx(&S_sfx[j]);
-
-					sreplaces++;
-					return true;
-				}
-			}
-		}
-		else if (name[1] == '_')
-		{
-			CONS_Debug(DBG_SETUP, "Music %.8s ignored\n", name);
-			mreplaces++;
-			return true;
-		}
-	}
-	else if (name[0] == 'O' && name[1] == '_')
-	{
-		CONS_Debug(DBG_SETUP, "Music %.8s replaced\n", name);
-		digmreplaces++;
-		return true;
-	}
-	return false;
-}
-
 //
 // check for non Lua votescreen replacements
 //
-static boolean P_CheckVoteReplacements(char *name)
+static boolean P_CheckVoteReplacements(UINT16 wad)
 {
-	// widescreen patch Race
-	if (!VoteScreen.replaced.widerace && !memcmp(name, "INTERSCW", 8))
+	UINT16 i;
+	for (i = 0; i < wadfiles[wad]->numlumps; i++)
 	{
-		VoteScreen.replaced.widerace = true;
-		return false;
+		const char *name = W_CheckNameForNumPwad(wad, i);
+
+		// widescreen patch Race
+		if (!VoteScreen.replaced.widerace && !strncmp(name, "INTERSCW", 8))
+			VoteScreen.replaced.widerace = true;
+
+		if (!VoteScreen.replaced.race && !strncmp(name, "INTERSCR", 8))
+			VoteScreen.replaced.race = true;
+
+		// widescreen patch Battle
+		if (!VoteScreen.replaced.widebattle && !strncmp(name, "BATTLSCW", 8))
+			VoteScreen.replaced.widebattle = true;
+
+		if (!VoteScreen.replaced.battle && !strncmp(name, "BATTLSCR", 8))
+			VoteScreen.replaced.battle = true;
 	}
 
-	if (!VoteScreen.replaced.race && !memcmp(name, "INTERSCR", 8))
-	{
-		VoteScreen.replaced.race = true;
-		return false;
-	}
-
-	// widescreen patch Battle
-	if (!VoteScreen.replaced.widebattle && !memcmp(name, "BATTLSCW", 8))
-	{
-		VoteScreen.replaced.widebattle = true;
-		return false;
-	}
-
-	if (!VoteScreen.replaced.battle && !memcmp(name, "BATTLSCR", 8))
-	{
-		VoteScreen.replaced.battle = true;
-		return false;
-	}
-
-	if (VoteScreen.replaced.widerace && VoteScreen.replaced.race
-	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle)
-	{
-		return true;
-	}
-
-	return false;
+	return VoteScreen.replaced.widerace && VoteScreen.replaced.race
+	&& VoteScreen.replaced.widebattle && VoteScreen.replaced.battle;
 }
 
 //
@@ -9341,32 +9275,15 @@ static boolean P_CheckVoteReplacements(char *name)
 //
 UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 {
-	size_t i;
+	size_t sreplaces = 0, mreplaces = 0, digmreplaces = 0;
 	UINT16 numlumps, wadnum;
-	char *name;
 	static boolean allvotereplaced = false;
-	lumpinfo_t *lumpinfo;
-
-	sreplaces = mreplaces = digmreplaces = 0;
-
-	// Vars to help us with the position start and amount of each resource type.
-	// Useful for PK3s since they use folders.
-	// WADs use markers for some resources, but others such as sounds are checked lump-by-lump anyway.
-//	UINT16 luaPos, luaNum = 0;
-//	UINT16 socPos, socNum = 0;
-	UINT16 sfxPos = 0, sfxNum = 0;
-	UINT16 musPos = 0, musNum = 0;
-//	UINT16 sprPos, sprNum = 0;
-	UINT16 texPos = 0, texNum = 0;
-//	UINT16 patPos, patNum = 0;
-//	UINT16 flaPos, flaNum = 0;
-//	UINT16 mapPos, mapNum = 0;
 
 	// Init file.
-	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == LUMPERROR)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
-		return UINT16_MAX;
+		return MAX_WADFILES;
 	}
 	wadnum = (UINT16)(numwadfiles-1);
 
@@ -9381,56 +9298,12 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	}
 	partadd_stage = 0;
 
+	P_LoadSoundsRange(wadnum, &sreplaces);
+	P_LoadMusicsRange(wadnum, &digmreplaces, &mreplaces);
 
-	switch(wadfiles[wadnum]->type)
-	{
-	case RET_PK3:
-		// Look for the lumps that act as resource delimitation markers.
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < numlumps; i++, lumpinfo++)
-		{
-//			lumpinfo = FindFolder("Lua/",      &luaPos, &luaNum, lumpinfo, &numlumps, &i);
-//			lumpinfo = FindFolder("SOC/",      &socPos, &socNum, lumpinfo, &numlumps, &i);
-			lumpinfo = FindFolder("Sounds/",   &sfxPos, &sfxNum, lumpinfo, &numlumps, &i);
-			lumpinfo = FindFolder("Music/",    &musPos, &musNum, lumpinfo, &numlumps, &i);
-//			lumpinfo = FindFolder("Sprites/",  &sprPos, &sprNum, lumpinfo, &numlumps, &i);
-			lumpinfo = FindFolder("Textures/", &texPos, &texNum, lumpinfo, &numlumps, &i);
-//			lumpinfo = FindFolder("Patches/",  &patPos, &patNum, lumpinfo, &numlumps, &i);
-//			lumpinfo = FindFolder("Flats/",    &flaPos, &flaNum, lumpinfo, &numlumps, &i);
-//			lumpinfo = FindFolder("Maps/",     &mapPos, &mapNum, lumpinfo, &numlumps, &i);
-		}
+	if (!allvotereplaced && P_CheckVoteReplacements(wadnum))
+		allvotereplaced = true;
 
-		// Update the detected resources.
-		// Note: ALWAYS load Lua scripts first, SOCs right after, and the remaining resources afterwards.
-//		if (luaNum) // Lua scripts.
-//			P_LoadLuaScrRange(wadnum, luaPos, luaNum);
-//		if (socNum) // SOCs.
-//			P_LoadDehackRange(wadnum, socPos, socNum);
-		if (sfxNum) // Sounds. TODO: Function currently only updates already existing sounds, the rest is handled somewhere else.
-			P_LoadSoundsRange(wadnum, sfxPos, sfxNum);
-		if (musNum) // Music. TODO: Useless function right now.
-			P_LoadMusicsRange(wadnum, musPos, musNum);
-//		if (sprNum) // Sprites.
-//			R_LoadSpritsRange(wadnum, sprPos, sprNum);
-//		if (texNum) // Textures. TODO: R_LoadTextures() does the folder positioning once again. New function maybe?
-//			R_LoadTextures();
-//		if (mapNum) // Maps. TODO: Actually implement the map WAD loading code, lulz.
-//			P_LoadWadMapRange(wadnum, mapPos, mapNum);
-		break;
-	default:
-		lumpinfo = wadfiles[wadnum]->lumpinfo;
-		for (i = 0; i < numlumps; i++, lumpinfo++)
-		{
-			name = lumpinfo->name;
-
-			if (P_CheckSoundReplacements(name, i));
-				continue;
-
-			if (!allvotereplaced && P_CheckVoteReplacements(name))
-				allvotereplaced = true;
-		}
-		break;
-	}
 	if (!devparm && sreplaces)
 		CONS_Printf(M_GetText("%s sounds replaced\n"), sizeu1(sreplaces));
 	if (!devparm && mreplaces)
@@ -9477,7 +9350,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	//
 	// extra sprite/skin data
 	//
-	R_LoadSpriteInfoLumps(wadnum, numlumps);
+	R_LoadSpriteInfoLumps(wadnum);
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;
@@ -9572,7 +9445,7 @@ boolean P_MultiSetupWadFiles(boolean fullsetup)
 		partadd_important = false;
 		partadd_replacescurrentmap = false;
 		partadd_terrainloaded = false;
-		partadd_earliestfile = UINT16_MAX;
+		partadd_earliestfile = MAX_WADFILES;
 		return true;
 	}
 
