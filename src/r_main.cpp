@@ -1439,7 +1439,7 @@ boolean R_IsViewpointThirdPerson(player_t *player, boolean skybox)
 
 	// Prevent game crash if player is ever invalid.
 	if (!player)
-		return false;
+		return true;
 
 	chasecam = R_ViewpointHasChasecam(player);
 
