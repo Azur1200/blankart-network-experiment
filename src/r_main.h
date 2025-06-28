@@ -215,6 +215,11 @@ void R_RenderPlayerView(void);
 // add commands related to engine, at game startup
 void R_RegisterEngineStuff(void);
 
+// return multiplier for HUD uncap
+INT32 R_GetHudUncap(void);
+// same as above but keeps interpolation during pause
+INT32 R_GetMenuUncap(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

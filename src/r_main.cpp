@@ -377,6 +377,16 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		0;
 }
 
+INT32 R_GetHudUncap(void)
+{
+	return rendertimefrac & FRACMASK;
+}
+
+INT32 R_GetMenuUncap(void)
+{
+	return rendertimefrac_unpaused & FRACMASK;
+}
+
 //
 // R_ScaleFromGlobalAngle
 // Returns the texture mapping scale for the current line (horizontal span)

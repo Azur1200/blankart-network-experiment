@@ -505,11 +505,11 @@ void Y_IntermissionDrawer(void)
 		INT32 count = (intertic - sorttic);
 
 		if (count < 8)
-			x -= ((count * vid.width) / (8 * vid.dupx));
+			x -= ((((count<<FRACBITS) + R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 		else if (count == 8)
 			goto skiptallydrawer;
 		else if (count < 16)
-			x += (((16 - count) * vid.width) / (8 * vid.dupx));
+			x += (((((16 - count)<<FRACBITS) - R_GetHudUncap()) * vid.width)>>FRACBITS) / (8 * vid.dupx);
 	}
 
 	if (intertype == int_race || intertype == int_battle || intertype == int_battletime)

@@ -89,6 +89,7 @@ consvar_t cv_colorizedhud = CVAR_INIT ("colorizedhud", "On", CV_SAVE, CV_OnOff, 
 consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_showfinishedplayers = CVAR_INIT ("showfinishedplayers", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
@@ -240,6 +241,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_colorizeditembox);
 	CV_RegisterVar(&cv_darkitembox);
 	CV_RegisterVar(&cv_showfinishedplayers);
+	CV_RegisterVar(&cv_fancyroulette);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -1350,6 +1352,24 @@ static void K_drawKartItem(void)
 
 	//V_SetClipRect((fx + 10) << FRACBITS, (fy + 10) << FRACBITS, 30 << FRACBITS, 30 << FRACBITS, V_HUDTRANS|V_SLIDEIN|fflags);
 
+	fixed_t rfy = fy<<FRACBITS;
+	INT32 fancyflags = V_HUDTRANS|fflags;
+
+	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
+	{
+		fixed_t frac = R_GetHudUncap();
+		UINT8   fancystep = (offset ? 6 : 10);
+		fixed_t fancyoffset = (stplyr->itemroulette % 3)-1;
+
+		if (fancyoffset != 0)
+		{
+			fancyflags &= ~V_HUDTRANS;
+			fancyflags |=V_HUDTRANSHALF;
+		}
+
+		rfy += (fancystep * fancyoffset * FRACUNIT) + FixedMul(fancystep*FRACUNIT, frac) - fancystep/2*FRACUNIT;
+	}
+
 	// Then, the numbers:
 	if (stplyr->itemamount >= numberdisplaymin && !stplyr->itemroulette)
 	{
@@ -1368,7 +1388,7 @@ static void K_drawKartItem(void)
 		}
 	}
 	else
-		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
 
 	//V_ClearClipRect();
 
@@ -3911,8 +3931,21 @@ static void K_drawKartFinish(void)
 
 static void K_drawBattleFullscreen(void)
 {
+
+	INT32 cardanim = stplyr->karthud[khud_cardanimation] << FRACBITS;
+
+	// fill in the fractional bits
+	if (cardanim && cardanim != 164*FRACUNIT)
+	{
+		INT32 frac = R_GetHudUncap() * ((164 - stplyr->karthud[khud_cardanimation])/8 + 1);
+		if (stplyr->exiting)
+			cardanim += frac;
+		else
+			cardanim += stplyr->karmadelay < 6*TICRATE ? -frac : frac;
+	}
+
 	INT32 x = BASEVIDWIDTH/2;
-	INT32 y = -64+(stplyr->karthud[khud_cardanimation]); // card animation goes from 0 to 164, 164 is the middle of the screen
+	INT32 y = (-64*FRACUNIT) + cardanim; // card animation goes from 0 to 164, 164 is the middle of the screen the screen
 	INT32 splitflags = V_SNAPTOTOP; // I don't feel like properly supporting non-green resolutions, so you can have a misuse of SNAPTO instead
 	fixed_t scale = FRACUNIT;
 	boolean drawcomebacktimer = true;	// lazy hack because it's cleaner in the long run.
@@ -3924,11 +3957,11 @@ static void K_drawBattleFullscreen(void)
 	{
 		if ((splitscreen == 1 && stplyrnum == 1) || (splitscreen > 1 && stplyrnum & 2))
 		{
-			y = 232-(stplyr->karthud[khud_cardanimation]/2);
+			y = 232-(cardanim/2);
 			splitflags = V_SNAPTOBOTTOM;
 		}
 		else
-			y = -32+(stplyr->karthud[khud_cardanimation]/2);
+			y = -32+(cardanim/2);
 
 		if (r_splitscreen > 1)
 		{

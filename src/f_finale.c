@@ -1403,7 +1403,7 @@ void F_TitleScreenDrawer(void)
 				if (finalecount >= 20)
 					V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 				else if (finalecount >= 10)
-					V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - rendertimefrac), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
+					V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetMenuUncap()), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 			}
 			else if (finalecount < 52)
 			{
@@ -1419,8 +1419,8 @@ void F_TitleScreenDrawer(void)
 
 				F_TitleBGScroll(5);
 
-				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + rendertimefrac, 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + rendertimefrac, 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 				if (transval)
 					V_DrawFadeScreen(0, 10 - transval);
