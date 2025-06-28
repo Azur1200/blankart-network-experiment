@@ -3907,22 +3907,26 @@ static void K_drawKartFinish(void)
 
 	//else -- 1/2p, scrolling FINISH
 	{
-		INT32 x, xval, ox, interpx;
+		INT32 x, xval, ox, interpx, pwidth;
 
 		if (r_splitscreen) // wide splitscreen
 			pnum += 4;
 
 		x = ((vid.width<<FRACBITS)/vid.dupx);
 		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
-		x = ((TICRATE - stplyr->karthud[khud_cardanimation])*(xval > x ? xval : x))/TICRATE;
-		ox = ((TICRATE - (stplyr->karthud[khud_cardanimation] - 1))*(xval > x ? xval : x))/TICRATE;
+
+		pwidth = max(xval, x);
+
+		x = ((TICRATE - stplyr->karthud[khud_cardanimation]) * pwidth) / TICRATE;
+		ox = ((TICRATE - (stplyr->karthud[khud_cardanimation] - 1)) * pwidth) / TICRATE;
+
 
 		interpx = R_InterpolateFixed(ox, x);
 
 		if (r_splitscreen && stplyr == &players[displayplayers[1]])
 			interpx = -interpx;
 
-		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (xval>>1),
+		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
 			(STCD_Y<<FRACBITS) - (SHORT(kp_racefinish[pnum]->height)<<(FRACBITS-1)),
 			FRACUNIT,
 			splitflags, kp_racefinish[pnum], NULL);
