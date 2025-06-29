@@ -314,8 +314,11 @@ static void SetChannelsNum(void)
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 {
 	lumpnum_t sfxlump;
+	char dsname[10];
 
-	sfxlump = W_CheckNumForLongName(va("DS%s", sfx->name));
+	sprintf(dsname, "DS%s", sfx->name);
+
+	sfxlump = W_CheckNumForLongName(dsname);
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
