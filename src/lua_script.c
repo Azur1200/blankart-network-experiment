@@ -1037,6 +1037,8 @@ void LUA_InvalidatePlayer(player_t *player)
 		return;
 	LUA_InvalidateUserdata(player);
 	LUA_InvalidateUserdata(player->karthud);
+	LUA_InvalidateUserdata(player->kartstuff);
+	LUA_InvalidateUserdata(player->powers);
 	LUA_InvalidateUserdata(&player->cmd);
 }
 
