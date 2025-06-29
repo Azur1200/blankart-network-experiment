@@ -1284,6 +1284,11 @@ static patch_t *R_CacheSpriteBrightMap(const spriteinfo_t *sprinfo, UINT8 frame)
 		name = sprinfo->bright[SPRINFO_DEFAULT_PIVOT];
 	}
 
+	if (name == NULL)
+	{
+		return NULL;
+	}
+
 	const lumpnum_t num = W_CheckNumForLongName(name);
 
 	if (num == LUMPERROR)
