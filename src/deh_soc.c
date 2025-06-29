@@ -4157,6 +4157,9 @@ preciptype_t get_precip(const char *word)
 
 		if (eval)
 			return eval;
+
+		if (fasticmp("PRECIP_NONE",word))
+			return PRECIP_NONE;
 	}
 	deh_warning("Couldn't find weather type named 'PRECIP_%s'",word);
 	return PRECIP_NONE;
