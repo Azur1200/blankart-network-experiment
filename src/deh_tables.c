@@ -392,7 +392,7 @@ const char *const GAMETYPERULE_LIST[] = {
 	"\x01",
 	"LIVES",
 	"SPECIALBOTS",
-	"FREEROAM",
+	"NOCOUNTDOWN",
 	"ENCORE",
 	NULL
 };

@@ -775,7 +775,7 @@ void P_Ticker(boolean run)
 		{
 			if (!(titlemapinaction == TITLEMAP_RUNNING))
 			{
-				if (!(gametyperules & GTR_FREEROAM))
+				if (!(gametyperules & GTR_NOCOUNTDOWN))
 				{
 					if (leveltime == starttime-(3*TICRATE))
 					{
@@ -791,17 +791,20 @@ void P_Ticker(boolean run)
 					}
 				}
 
-				if (!(gametyperules & GTR_FREEROAM) && leveltime < starttime) // SRB2Kart
-					S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
-				else if (leveltime == starttime) // The GO! sound stops the level start ambience
-					S_StopMusic();
-				else if (leveltime == starttime + (TICRATE/2)) // Plays the music after the starting countdown.
+				// Change timing of start music based on gametyperules
 				{
-					S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-					S_ShowMusicCredit();
+					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
+					if (leveltime < startingtime) // SRB2Kart
+						S_ChangeMusicInternal((encoremode ? "estart" : "kstart"), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+					else if (leveltime == startingtime) // The GO! sound stops the level start ambience
+						S_StopMusic();
+					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
+					{
+						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
+						S_ShowMusicCredit();
+					}
 				}
 			}
-
 		}
 
 		ps_lua_thinkframe_time = I_GetPreciseTime();

@@ -510,7 +510,7 @@ enum GameTypeRules
 	GTR_SPECIALBOTS			= 1<<21, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
 	
 	// Misc
-	GTR_FREEROAM			= 1<<22, // Disables Countdown timer and control lock at the start of levels.
+	GTR_NOCOUNTDOWN			= 1<<22, // Disables Countdown timer and control lock at the start of levels.
 	GTR_ENCORE				= 1<<23, // Enable Encore mode.
 
 	// free: to and including 1<<31

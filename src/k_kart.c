@@ -111,9 +111,8 @@ void K_TimerInit(void)
 		introtime = (108) + 5; // 108 for rotation, + 5 for white fade
 		starttime = 6*TICRATE + (3*TICRATE/4);
 
-		if (gametyperules & GTR_FREEROAM)
+		if (gametyperules & GTR_NOCOUNTDOWN)
 		{
-			introtime = 0;
 			starttime = 0;
 		}
 	}
@@ -7802,7 +7801,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_HandleDelayedHitByEm(player);
 
-	if (!(gametyperules & GTR_FREEROAM))
+	if (!(gametyperules & GTR_NOCOUNTDOWN))
 		K_RaceStart(player);
 
 	// Squishing
