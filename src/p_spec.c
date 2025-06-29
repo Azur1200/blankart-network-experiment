@@ -1845,13 +1845,16 @@ void P_SwitchWeather(preciptype_t newWeather)
 				}
 			}
 
+			precipmobj->type = swap; // proper set the type
+			precipmobj->info = &mobjinfo[swap];
+
 			precipmobj->state = &states[st];
 			precipmobj->tics = precipmobj->state->tics;
 			precipmobj->sprite = precipmobj->state->sprite;
 			precipmobj->frame = precipmobj->state->frame;
 
 			precipmobj->momz = FixedMul(-mobjinfo[swap].speed, mapobjectscale);
-			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_FLIP);
+			precipmobj->precipflags &= ~(PCF_INVISIBLE|PCF_FLIP|PCF_SPLASH); // P_PrecipThinker will add this again if it needs to
 
 			if (precipmobj->momz > 0)
 			{
