@@ -3935,7 +3935,6 @@ static void K_drawKartFinish(void)
 
 static void K_drawBattleFullscreen(void)
 {
-
 	INT32 cardanim = stplyr->karthud[khud_cardanimation] << FRACBITS;
 
 	// fill in the fractional bits
@@ -3961,11 +3960,11 @@ static void K_drawBattleFullscreen(void)
 	{
 		if ((splitscreen == 1 && stplyrnum == 1) || (splitscreen > 1 && stplyrnum & 2))
 		{
-			y = 232-(cardanim/2);
+			y = (232*FRACUNIT) - (cardanim/2);
 			splitflags = V_SNAPTOBOTTOM;
 		}
 		else
-			y = -32+(cardanim/2);
+			y = (-32*FRACUNIT) + (cardanim/2);
 
 		if (r_splitscreen > 1)
 		{
@@ -4003,7 +4002,7 @@ static void K_drawBattleFullscreen(void)
 			else if (stplyr->position == 1 && (!itembreaker || numtargets >= nummapboxes))
 				p = kp_battlewin;
 
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, p, NULL);
+			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, p, NULL);
 		}
 		else
 			K_drawKartFinish();
@@ -4033,9 +4032,9 @@ static void K_drawBattleFullscreen(void)
 			V_DrawFadeScreen(0xFF00, 16);
 
 		if (!comebackshowninfo)
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, kp_battleinfo, NULL);
+			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, kp_battleinfo, NULL);
 		else
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, splitflags, kp_battlewait, NULL);
+			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, kp_battlewait, NULL);
 
 		if (r_splitscreen > 1)
 			V_DrawString(x-txoff, ty, 0, va("%d", stplyr->karmadelay/TICRATE));
