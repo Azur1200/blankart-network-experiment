@@ -4147,18 +4147,16 @@ menudrawer_f *get_menudrawer(const char *word)
 }*/
 
 preciptype_t get_precip(const char *word)
-{ // Returns the value of PRECIP_ enumerations
-	preciptype_t i;
+{
+	// Returns the value of PRECIP_ enumerations
 	if (*word >= '0' && *word <= '9')
 		return atoi(word);
-	if (fastncmp("PRECIP_",word,4))
-		word += 7; // take off the PRECIP_
-	for (i = 0; i < MAXPRECIP; i++)
+	if (fastncmp("PRECIP_",word,7))
 	{
-		if (precipprops[i].name == NULL)
-			break;
-		if (fasticmp(word, precipprops[i].name))
-			return i;
+		fixed_t eval = LUA_EvalMath(word);
+
+		if (eval)
+			return eval;
 	}
 	deh_warning("Couldn't find weather type named 'PRECIP_%s'",word);
 	return PRECIP_NONE;
