@@ -2648,6 +2648,9 @@ static boolean P_PlayerPolyObjectZMovement(mobj_t *mo)
 	msecnode_t *node;
 	boolean stopmovecut = false;
 
+	if (!numPolyObjects)
+		return false;
+
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
 		sector_t *sec = node->m_sector;

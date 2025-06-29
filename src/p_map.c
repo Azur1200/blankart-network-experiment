@@ -1783,7 +1783,11 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	g_tm.bbox[BOXRIGHT] = x + g_tm.thing->radius;
 	g_tm.bbox[BOXLEFT] = x - g_tm.thing->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thing->x != x || thing->y != y || thing->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thing->subsector;
+
 	g_tm.ceilingline = NULL;
 	g_tm.blocking = false;
 
@@ -1821,7 +1825,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 
 		for (rover = newsubsec->sector->ffloors; rover; rover = rover->next)
 		{
-			fixed_t topheight, bottomheight;
+			fixed_t topheight, bottomheight, midheight;
 
 			if (!(rover->fofflags & FOF_EXISTS))
 				continue;
@@ -1895,10 +1899,10 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 				continue;
 			}
 
-			delta1 = thing->z - (bottomheight
-				+ ((topheight - bottomheight)/2));
-			delta2 = thingtop - (bottomheight
-				+ ((topheight - bottomheight)/2));
+			midheight = (bottomheight + ((topheight - bottomheight)/2));
+
+			delta1 = thing->z - midheight;
+			delta2 = thingtop - midheight;
 
 			if (topheight > g_tm.floorz && abs(delta1) < abs(delta2)
 				&& !(rover->fofflags & FOF_REVERSEPLATFORM))
@@ -1936,6 +1940,8 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if g_tm.floorz/g_tm.ceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
@@ -2122,7 +2128,11 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	g_tm.bbox[BOXRIGHT] = x + thiscam->radius;
 	g_tm.bbox[BOXLEFT] = x - thiscam->radius;
 
-	newsubsec = R_PointInSubsector(x, y);
+	if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+		newsubsec = R_PointInSubsector(x, y);
+	else
+		newsubsec = thiscam->subsector;
+
 	g_tm.ceilingline = NULL;
 
 	mapcampointer = thiscam;
@@ -2201,6 +2211,8 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 	BMBOUNDFIX(xl, xh, yl, yh);
 
 	// Check polyobjects and see if g_tm.floorz/g_tm.ceilingz need to be altered
+	// do we really have to iterate through the complete blockmap for polyobjects if there are no polyobjects on the map?
+	if (numPolyObjects)
 	{
 		validcount++;
 
@@ -2292,7 +2304,7 @@ boolean P_CheckCameraPosition(fixed_t x, fixed_t y, camera_t *thiscam)
 //
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 {
-	subsector_t *s = R_PointInSubsector(x, y);
+	subsector_t *s = NULL;
 	boolean retval = true;
 
 	UINT8 i;
@@ -2351,6 +2363,11 @@ boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam)
 				return false; // doesn't fit
 
 			g_tm.floatok = true;
+
+			if (thiscam->x != x || thiscam->y != y || thiscam->subsector == NULL)
+				s = R_PointInSubsector(x, y);
+			else
+				s = thiscam->subsector;
 
 			if (g_tm.ceilingz - thiscam->z < thiscam->height)
 			{
