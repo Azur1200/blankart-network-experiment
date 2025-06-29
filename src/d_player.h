@@ -110,6 +110,8 @@ typedef enum
 	PF_SHRINKME			= 1<<25, // "Shrink me" cheat preference
 	PF_SHRINKACTIVE		= 1<<26, // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
+	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
+
 	// up to 1<<29 is free
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
@@ -605,6 +607,7 @@ struct player_t
 	UINT8 positiondelay;	// Used for position number, so it can grow when passing/being passed
 	UINT32 distancetofinish;
 	UINT32 distancetofinishprev;
+	UINT32 distancefromcluster;
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
 	UINT16 bigwaypointgap;
@@ -619,6 +622,10 @@ struct player_t
 	UINT16 flashing;
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")
 	UINT8 spinouttype;		// Determines the mode of spinout/wipeout, see kartspinoutflags_t
+
+	UINT16 flipovertimer;   // Flipped over by a player using Invincibility.
+	angle_t flipoverangle;  // Movement angle for a flipped-over player.
+
 	UINT8 instashield;		// Instashield no-damage animation timer
 	UINT8 wipeoutslow;		// Timer before you slowdown when getting wiped out
 	UINT8 justbumped;		// Prevent players from endlessly bumping into each other
@@ -700,11 +707,16 @@ struct player_t
 
 	UINT8 boostcharge; 		// Charge during race start
 	
-	INT16 growshrinktimer;		// > 0 = Big, < 0 = small
-	INT16 growcancel;			// Duration of grow canceling
-	INT16 squishedtimer;		// Duration of being squished
-	UINT16 rocketsneakertimer;	// Rocket Sneaker duration timer
-	UINT16 invincibilitytimer;	// Invincibility timer
+	INT16 growshrinktimer;			// > 0 = Big, < 0 = small
+	INT16 growcancel;				// Duration of grow canceling
+	INT16 squishedtimer;			// Duration of being squished
+
+	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
+
+	UINT16 invincibilitytimer;		// Invincibility timer
+	UINT16 maxinvincibilitytime;	// (Alternate) Initial time for Invincibility, used for the item bar.
+	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
+	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake

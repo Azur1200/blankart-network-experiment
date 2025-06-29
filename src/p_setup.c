@@ -7961,6 +7961,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartslipdash.value)
 		slipdashactive = true;
 
+	invintype = (UINT8)cv_kartinvintype.value;
+
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
 
@@ -8293,6 +8295,7 @@ static void P_InitPlayers(void)
 				G_SpawnPlayer(i, false);
 		}
 	}
+	K_UpdateClusterPoints();
 	K_UpdateAllPlayerPositions();
 }
 

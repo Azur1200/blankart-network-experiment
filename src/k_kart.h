@@ -32,10 +32,50 @@ Make sure this matches the actual number of states
 #define GROW_SCALE ((3*FRACUNIT)/2)
 #define SHRINK_SCALE ((6*FRACUNIT)/8)
 
+#define BASEINVINTIME (10 * TICRATE)
+
 #define AUTORESPAWN_TIME (10 * TICRATE)
 #define AUTORESPAWN_THRESHOLD (7 * TICRATE)
 
 #define FLAMESTOREMAX TICRATE*2
+
+// Fixed distance of a flipover.
+#define FLIPOVERDIST (336<<FRACBITS)
+
+// Time (in tics) of a flipover.
+// (TICRATE * (0.56666 * FRACUNIT))
+#define FLIPOVERTICS 19
+#define FLIPOVERHALFTICS (FLIPOVERTICS>>1)
+
+#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // 0.1666 * FRACUNIT
+
+// Angle movement for a flipover
+// ANGLE_90 / FLIPOVER_90DEGTIME
+// Precalculating it here for some slight optimization.
+#define FLIPOVERANG 0x0CCCCCCC
+
+#define FLIPOVERSPEED (FLIPOVERDIST / FLIPOVERTICS)
+
+#define FLIPOVERHEIGHT (32 << FRACBITS)
+
+// By the middle of a jump arc, you'll reach the apex.
+#define FlipOverZMomentum(grav)                                \
+    ((FLIPOVERHEIGHT +                                         \
+      ((grav >> 1) * (FLIPOVERHALFTICS * FLIPOVERHALFTICS))) / \
+     FLIPOVERHALFTICS)
+
+extern boolean clusterplayer[MAXPLAYERS];
+extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
+extern vector3_t clusterpoint, clusterdtf;
+
+// :)
+#define MAXODDS 8
+
+// Invincibility-related constants
+#define INVINDIST K_RAGuard(cv_kartinvindist)
+#define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
+#define INVINMIDTIME K_RAGuard(cv_kartinvin_midtime)
+#define INVINMAXTIME K_RAGuard(cv_kartinvin_maxtime)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
@@ -53,8 +93,10 @@ Make sure this matches the actual number of states
 #define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
-#define INVINSPEEDBOOST K_RAGuard(cv_kartstacking_invincibility_speedboost)
-#define INVINACCELBOOST K_RAGuard(cv_kartstacking_invincibility_accelboost)
+#define INVINSPEEDBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyspeedboost)
+#define INVINACCELBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyaccelboost)
+#define INVINSPEEDBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternatespeedboost)
+#define INVINACCELBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternateaccelboost)
 #define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable)
 #define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)
@@ -124,8 +166,8 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb);
 fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush);
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
-INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, UINT32 ourDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival);
-INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush);
+INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival);
+INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_t mashed, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 INT32 K_GetShieldFromPlayer(player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
@@ -153,7 +195,9 @@ void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
 void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);
+void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
+boolean K_IsPlayerDamaged(player_t *player);
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers);
 void K_DestroyBumpers(player_t *player, UINT8 amount);
 void K_TakeBumpersFromPlayer(player_t *player, player_t *victim, UINT8 amount);
@@ -178,6 +222,8 @@ typedef enum
 void K_DoSneaker(player_t *player, INT32 type);
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
+fixed_t K_InvincibilityGradient(UINT16 time);
+UINT16 K_GetInvincibilityTime(player_t *player);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
@@ -197,6 +243,7 @@ void K_SpawnDriftElectricSparks(player_t *player);
 INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
+void K_UpdateClusterPoints(void);
 void K_UpdateAllPlayerPositions(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount);
 void K_DropItems(player_t *player);

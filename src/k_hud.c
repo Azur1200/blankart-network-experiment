@@ -1249,6 +1249,22 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
+		else if ((stplyr->invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
+		{
+			itembar = stplyr->invincibilitytimer;
+			maxl = max(1, stplyr->maxinvincibilitytime);
+
+			if (stplyr->invincibilitycancel > 0)
+			{
+				flamebar = stplyr->invincibilitycancel;
+				flamemaxl = 26;
+			}
+
+			if (leveltime & 1)
+				localpatch = localinv;
+			else
+				localpatch = kp_nodraw;
+		}
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
@@ -1392,7 +1408,7 @@ static void K_drawKartItem(void)
 
 	//V_ClearClipRect();
 
-	// Extensible meter, currently used by Grow, Rocket Sneakers and Flame Shield
+	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
 	if (itembar)
 	{
 		const INT32 fill = ((itembar*barlength)/maxl);
@@ -1758,6 +1774,15 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 }
 
+static UINT32 K_InvincibilityHUDVisibility(UINT16 t)
+{
+	UINT32 alphalevel = st_translucency;
+
+	alphalevel = min(10, FixedMul(alphalevel, K_InvincibilityGradient(t)));
+
+	return min(9, 10 - alphalevel)<<V_ALPHASHIFT;
+}
+
 static boolean K_drawKartPositionFaces(void)
 {
 	// FACE_X = 15;				//  15
@@ -1769,6 +1794,7 @@ static boolean K_drawKartPositionFaces(void)
 	INT32 rankplayer[MAXPLAYERS];
 	INT32 bumperx, numplayersingame = 0;
 	UINT8 *colormap;
+	UINT32 invinchudtrans;
 
 	ranklines = 0;
 	memset(completed, 0, sizeof (completed));
@@ -1855,12 +1881,21 @@ static boolean K_drawKartPositionFaces(void)
 		if (players[rankplayer[i]].mo->color)
 		{
 			colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, players[rankplayer[i]].mo->color, GTC_CACHE);
+
 			if (players[rankplayer[i]].mo->colorized)
 				colormap = R_GetTranslationColormap(TC_RAINBOW, players[rankplayer[i]].mo->color, GTC_CACHE);
 			else
 				colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, players[rankplayer[i]].mo->color, GTC_CACHE);
 
 			V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
+
+			if ((players[rankplayer[i]].invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
+			{
+				colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime / 2), GTC_CACHE);
+				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
+
+				V_DrawMappedPatch(FACE_X, Y, invinchudtrans|V_SNAPTOLEFT|V_ADD, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
+			}
 
 			if (LUA_HudEnabled(hud_battlebumpers))
 			{
@@ -3438,6 +3473,20 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
 }
 
+static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
+{
+	UINT8 pal = 180; // Strong pink color.
+	UINT8 size = 6;
+
+	if (!(flags & V_NOSCALESTART))
+	{
+		hudx *= vid.dupx;
+		hudy *= vid.dupy;
+	}
+
+	K_drawKartMinimapDot(clusterpoint.x, clusterpoint.y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
+}
+
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
 
 typedef struct
@@ -3487,6 +3536,8 @@ static void K_drawKartMinimap(void)
 	mobj_t *mobj, *next;	// for SPB drawing (or any other item(s) we may wanna draw, I dunno!)
 	fixed_t interpx, interpy;
 	spbdraw_t spb;
+	UINT16 usecolor;
+	boolean colorizeplayer;
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -3532,6 +3583,8 @@ static void K_drawKartMinimap(void)
 
 	if (!minimaptrans)
 		return;
+
+	colorizeplayer = false;
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
@@ -3618,12 +3671,24 @@ static void K_drawKartMinimap(void)
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
+				colorizeplayer = players[i].mo->colorized;
+
+				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (invintype == KARTINVIN_LEGACY)))
+				{
+					usecolor = (K_RainbowColor(leveltime / 2));
+					colorizeplayer = true;
+				}
+				else
+				{
+					usecolor = players[i].mo->color;
+				}
+
 				if (players[i].mo->color)
 				{
-					if (players[i].mo->colorized)
-						colormap = R_GetTranslationColormap(TC_RAINBOW, players[i].mo->color, GTC_CACHE);
+					if (colorizeplayer)
+						colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
 					else
-						colormap = R_GetTranslationColormap(skin, players[i].mo->color, GTC_CACHE);
+						colormap = R_GetTranslationColormap(skin, usecolor, GTC_CACHE);
 				}
 				else
 					colormap = NULL;
@@ -3769,12 +3834,26 @@ static void K_drawKartMinimap(void)
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
+			colorizeplayer = players[localplayers[i]].mo->colorized;
+
+			if ((players[localplayers[i]].invincibilitytimer) &&
+				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
+				  (FRACUNIT / 2)) || (invintype == KARTINVIN_LEGACY)))
+			{
+				usecolor = (K_RainbowColor(leveltime / 2));
+				colorizeplayer = true;
+			}
+			else
+			{
+				usecolor = players[localplayers[i]].mo->color;
+			}
+
 			if (players[localplayers[i]].mo->color)
 			{
-				if (players[localplayers[i]].mo->colorized)
-					colormap = R_GetTranslationColormap(TC_RAINBOW, players[localplayers[i]].mo->color, GTC_CACHE);
+				if (colorizeplayer)
+					colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
 				else
-					colormap = R_GetTranslationColormap(skin, players[localplayers[i]].mo->color, GTC_CACHE);
+					colormap = R_GetTranslationColormap(skin, usecolor, GTC_CACHE);
 			}
 			else
 				colormap = NULL;
@@ -3840,6 +3919,11 @@ static void K_drawKartMinimap(void)
 			// should be drawn on top of the others
 			K_drawKartMinimapWaypoint(stplyr->nextwaypoint, x, y, splitflags);
 		}
+	}
+
+	if (cv_kartdebugcluster.value != 0)
+	{
+		K_drawKartMinimapCluster(x, y, splitflags);
 	}
 }
 
@@ -4772,11 +4856,12 @@ static void K_drawDistributionDebugger(void)
 			INT32 amount;
 
 			if (K_UsingLegacyCheckpoints())
-				itemodds = K_KartGetLegacyItemOdds(useodds, item, 0, spbrush);
+				itemodds = K_KartGetLegacyItemOdds(useodds, item, stplyr->distancefromcluster, 0, spbrush);
 			else
 				itemodds = K_KartGetItemOdds(
 					useodds, item,
 					stplyr->distancetofinish,
+					stplyr->distancefromcluster,
 					0,
 					spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
 				);
@@ -4850,6 +4935,28 @@ static void K_DrawWaypointDebugger(void)
 	V_DrawString(8, 156, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
 	V_DrawString(8, 166, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
 	V_DrawString(8, 176, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
+}
+
+static void K_DrawClusterDebugger(void)
+{
+	if (cv_kartdebugcluster.value == 0)
+		return;
+
+	if (stplyr != &players[displayplayers[0]]) // only for p1
+		return;
+	
+	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
+
+	if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+	{
+		V_DrawThinString(8, 136, vflags, va("Cluster player: %s", player_names[clusterid]));
+		V_DrawThinString(8, 146, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
+	}
+	else
+	{
+		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", clusterdtf.x, stplyr->distancetofinish));
+		V_DrawThinString(8, 146, vflags, va("Distance from Cluster: %d", stplyr->distancefromcluster));
+	}
 }
 
 static void K_DrawBotDebugger(void)
@@ -5111,5 +5218,6 @@ void K_drawKartHUD(void)
 
 	K_DrawWaypointDebugger();
 	K_DrawBotDebugger();
+	K_DrawClusterDebugger();
 	K_DrawDirectorDebugger();
 }

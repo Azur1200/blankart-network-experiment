@@ -51,6 +51,7 @@
 #include "lua_hook.h"	// For MobjDamage and ShouldDamage
 #include "m_cheat.h"	// objectplacing
 #include "p_spec.h"
+#include "m_easing.h"   // Invincibility gradienting
 
 
 #include "k_stats.h"
@@ -62,6 +63,7 @@
 #include "k_collide.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
+#include "k_cluster.hpp"
 
 #include "blan/b_soc.h"
 
@@ -82,6 +84,13 @@ consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL
 // battlewanted is an array of the WANTED player nums, -1 for no player in that slot
 // indirectitemcooldown is timer before anyone's allowed another Shrink/SPB
 // mapreset is set when enough players fill an empty server
+
+// Cluster point.
+// During a legacy race, this is an actual 3D vector.
+// During a waypointed race, this is simply a storage point for the "cluster distance";
+// the distance to finish with the most active number of players.
+boolean clusterplayer[MAXPLAYERS];
+vector3_t clusterpoint, clusterdtf;
 
 void K_TimerInit(void)
 {
@@ -267,6 +276,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugwaypoints);
 	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbot);
+    CV_RegisterVar(&cv_kartdebugcluster);
 
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);
@@ -301,8 +311,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_sneaker_maxgrade);
 	CV_RegisterVar(&cv_kartstacking_sneaker_stackable);
 
-	CV_RegisterVar(&cv_kartstacking_invincibility_speedboost);
-	CV_RegisterVar(&cv_kartstacking_invincibility_accelboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_legacyspeedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_legacyaccelboost);
+    CV_RegisterVar(&cv_kartstacking_invincibility_alternatespeedboost);
+	CV_RegisterVar(&cv_kartstacking_invincibility_alternateaccelboost);
 	CV_RegisterVar(&cv_kartstacking_invincibility_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
@@ -340,6 +352,13 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbumpspring);
 
 	CV_RegisterVar(&cv_kartslipdash);
+
+    CV_RegisterVar(&cv_kartinvintype);
+    CV_RegisterVar(&cv_kartinvindist);
+    CV_RegisterVar(&cv_kartinvindistmul);
+
+    CV_RegisterVar(&cv_kartinvin_maxtime);
+    CV_RegisterVar(&cv_kartinvin_midtime);
 
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
@@ -427,10 +446,10 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_dualjawz
 };
 
-#define NUMKARTODDS 	80
+#define NUMKARTODDS 	(MAXODDS*10)
 
 // Less ugly 2D arrays
-static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][8] =
+static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 {
 	//B  C  D  E  F  G  H  I
 	{ 0, 0, 3, 3, 2, 0, 0, 0 }, // Sneaker
@@ -687,6 +706,38 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 	return distance;
 }
 
+#define INVODDS 4
+#define INVINDESPERATION 4
+
+static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
+{
+    if (dist < (INVINDIST/2))
+        return 0;
+
+    INT32 finodds = 0;
+    fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
+
+    if (fac > FRACUNIT)
+    {
+        // Desperation! Climb exponentially until Invincibility is practically guaranteed.
+        fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
+        finodds = Easing_InCubic(fac, INVODDS, 20 * INVINDESPERATION);
+    }
+    else
+    {
+		if (fac <= FRACHALF)
+		{
+			// Invincibility is practically useless at lower distances.
+			// At below half, remove it from the item pool.
+			return 0;
+		}
+        // Basic linear climb to "reasonable" odds.
+        finodds = FixedMul(INVODDS, fac);
+    }
+
+    return min(20 * INVINDESPERATION, finodds);
+}
+
 /**	\brief	Item Roulette for Kart
 
 	\param	player	player object passed from P_KartPlayerThink
@@ -697,6 +748,7 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 INT32 K_KartGetItemOdds(
 	UINT8 pos, SINT8 item,
 	UINT32 ourDist,
+    UINT32 clusterDist,
 	fixed_t mashed,
 	boolean spbrush, boolean bot, boolean rival)
 {
@@ -747,7 +799,7 @@ INT32 K_KartGetItemOdds(
 	}
 	else if (gametyperules & GTR_RACEODDS)
 	{
-		I_Assert(pos < 8); // Ditto
+		I_Assert(pos < MAXODDS); // Ditto
 		newodds = K_KartItemOddsRace[item-1][pos];
 	}
 	else
@@ -833,6 +885,19 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
+            if (invintype == KARTINVIN_ALTERN)
+            {
+                // It's a power item, yes, but we don't want mashing to lessen
+                // its chances, so we lie to the game's face.
+                // Nonetheless, apply the start cooldown.
+                cooldownOnStart = true;
+
+                // Unique odds for Invincibility.
+                newodds = K_KartGetInvincibilityOdds(clusterDist);
+                
+                newodds *= 4;
+                break;
+            }
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -943,7 +1008,7 @@ INT32 K_KartGetItemOdds(
 	return newodds;
 }
 
-INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spbrush)
+INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_t mashed, boolean spbrush)
 {
 	INT32 newodds;
 	INT32 i;
@@ -1023,6 +1088,19 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t mashed, boolean spb
 			powerItem = true;
 			break;
 		case KITEM_INVINCIBILITY:
+            if (invintype == KARTINVIN_ALTERN)
+            {
+                // It's a power item, yes, but we don't want mashing to lessen
+                // its chances, so we lie to the game's face.
+                // Nonetheless, apply the start cooldown.
+                cooldownOnStart = true;
+
+                // Unique odds for Invincibility.
+                newodds = K_KartGetInvincibilityOdds(clusterDist);
+                
+                newodds *= 4;
+                break;
+            }
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -1149,6 +1227,7 @@ UINT8 K_FindUseodds(player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbum
 			if (K_KartGetItemOdds(
 					i, j,
 					player->distancetofinish,
+                    player->distancefromcluster,
 					mashed,
 					spbrush, player->bot, (player->bot && player->botvars.rival)
 				) > 0)
@@ -1249,7 +1328,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		for (j = 1; j < NUMKARTRESULTS; j++)
 		{
 
-			if (K_KartGetLegacyItemOdds(i, j, mashed, spbrush) > 0)
+			if (K_KartGetLegacyItemOdds(i, j, player->distancefromcluster, mashed, spbrush) > 0)
 			{
 				available = true;
 				break;
@@ -1771,7 +1850,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	{
 		if (K_UsingLegacyCheckpoints())
 		{
-			spawnchance[i] = (totalspawnchance += K_KartGetLegacyItemOdds(useodds, i, mashed, spbrush));
+			spawnchance[i] = (totalspawnchance += K_KartGetLegacyItemOdds(useodds, i, player->distancefromcluster, mashed, spbrush));
 
 		}
 		else
@@ -1779,6 +1858,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
 				useodds, i,
 				player->distancetofinish,
+                player->distancefromcluster,
 				mashed,
 				spbrush, player->bot, (player->bot && player->botvars.rival))
 			);
@@ -1895,6 +1975,13 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 	return weight;
 }
 
+// Checks if the bump interaction was a flip-over.
+static boolean K_CheckMobjFlippedOver(mobj_t* mobj1, mobj_t* mobj2)
+{
+    return ((mobj1->player && (mobj1->player->pflags & PF_JUSTFLIPPED)) ||
+            (mobj2->player && (mobj2->player->pflags & PF_JUSTFLIPPED)));
+}
+
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
 	mobj_t *fx;
@@ -1948,6 +2035,19 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	if (mobj2->player && mobj2->player->justbumped)
+	{
+		mobj2->player->justbumped = bumptime;
+		return false;
+	}
+
+	// Don't bump if you're flipping over
+	if (mobj1->player && mobj1->player->flipovertimer && (!(mobj1->player->pflags & PF_JUSTFLIPPED)))
+	{
+		mobj1->player->justbumped = bumptime;
+		return false;
+	}
+
+	if (mobj2->player && mobj2->player->flipovertimer && (!(mobj2->player->pflags & PF_JUSTFLIPPED)))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -2039,7 +2139,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	// Do the bump fx when we've CONFIRMED we can bump.
 	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD) || (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
 		S_StartSound(mobj1, sfx_s3k44);
-	else
+	else if (!K_CheckMobjFlippedOver(mobj1, mobj2))
 		S_StartSound(mobj1, sfx_s3k49);
 
 	fx = P_SpawnMobj(mobj1->x/2 + mobj2->x/2, mobj1->y/2 + mobj2->y/2, mobj1->z/2 + mobj2->z/2, MT_BUMP);
@@ -2062,6 +2162,15 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		if (mobj2->player && (mobj1->player->rings > 0) && (K_GetShieldFromPlayer(mobj1->player) == KSHIELD_NONE))
 		{
 			P_PlayerRingBurst(mobj1->player, 1);
+		}
+
+		if (mobj1->player->pflags & PF_JUSTFLIPPED)
+		{
+			S_StartSound(mobj2, sfx_mdse8);
+			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx,mobj1->player->rmomy);
+			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj1->scale));
+			mobj1->momz = FixedMul(FlipOverZMomentum(gravity), mobj1->scale);
+			mobj1->player->pflags &= ~PF_JUSTFLIPPED;
 		}
 
 		if (mobj1->player->spinouttimer)
@@ -2089,6 +2198,15 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 			mobj2->player->wipeoutslow = wipeoutslowtime+1;
 			mobj2->player->spinouttimer = max(wipeoutslowtime+1, mobj2->player->spinouttimer);
 			//mobj2->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
+		}
+
+		if (mobj2->player->pflags & PF_JUSTFLIPPED)
+		{
+			S_StartSound(mobj1, sfx_mdse8);
+			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx,mobj2->player->rmomy);
+			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj2->scale));
+			mobj2->momz = FixedMul(FlipOverZMomentum(gravity), mobj2->scale);
+			mobj2->player->pflags &= ~PF_JUSTFLIPPED;
 		}
 	}
 
@@ -2158,6 +2276,15 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 	return 0; // couldn't find any offroad
 }
 
+static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
+{
+	// At 50% or lower Invincibility, offroad creeps up on you.
+	fixed_t invinoffroad = (invintype == KARTINVIN_LEGACY) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
+	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
+
+	return FixedMul(offroad, fac);
+}
+
 /**	\brief	Updates the Player's offroad value once per frame
 
 	\param	player	player object passed from K_KartPlayerThink
@@ -2178,6 +2305,9 @@ static void K_UpdateOffroad(player_t *player)
 	{
 		offroadstrength = K_CheckOffroadCollide(player->mo);
 	}
+
+	// Gradient our offroad strength.
+	offroadstrength = K_OffroadGradient(player, offroadstrength);
 
 	// If you are in offroad, a timer starts.
 	if (offroadstrength)
@@ -3204,7 +3334,7 @@ boolean K_ApplyOffroad(player_t *player)
 	if (modeattacking != ATTACKING_NONE)
 		sneakertimer = player->sneakertimer > 0;
 
-	if (player->invincibilitytimer || player->hyudorotimer || sneakertimer)
+	if (player->hyudorotimer || sneakertimer)
 		return false;
 	return true;
 }
@@ -3523,6 +3653,74 @@ static inline fixed_t K_GetSneakerBoostSpeed(void)
 	}
 }
 
+// Used to determine the speed and power of Invincibility.
+fixed_t K_InvincibilityGradient(UINT16 time)
+{
+    return (min(936, (fixed_t)time) * FRACUNIT / BASEINVINTIME);
+}
+
+static fixed_t K_InvincibilityEasing(fixed_t x)
+{
+    fixed_t u = max(FRACUNIT / 4, (min(32000, x) * FRACUNIT) / INVINDIST);
+
+    if (x < INVINDIST)
+        return u;
+
+    u = max(0, (u - FRACUNIT));
+
+    if (u < FRACUNIT)
+        return Easing_InCubic(u, FRACUNIT, (INVINMIDTIME/10));
+
+    return Easing_OutCubic(
+        min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
+}
+
+
+UINT16 K_GetInvincibilityTime(player_t *player)
+{
+    UINT32 i, pingame;
+
+    if (invintype == KARTINVIN_LEGACY)
+        return BASEINVINTIME;
+
+    pingame = 0;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+        if (pingame > 1) // We only want to see if one player is playing.
+            continue;
+    }
+
+    if (pingame <= 1)
+        return BASEINVINTIME;
+
+    fixed_t clustermul = K_InvincibilityEasing(player->distancefromcluster);
+    return FixedMul(BASEINVINTIME, clustermul);
+}
+
+static fixed_t K_GetInvincibilitySpeed(UINT16 time)
+{
+    if (invintype == KARTINVIN_LEGACY)
+        return INVINSPEEDBOOSTLGC;
+    
+    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
+    return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
+}
+
+static fixed_t K_GetInvincibilityAccel(UINT16 time)
+{
+    if (invintype == KARTINVIN_LEGACY)
+        return INVINACCELBOOSTLGC;
+    
+    fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
+    return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
+}
+
 static fixed_t diminish(fixed_t speedboost)
 {
 	return FixedSqrt(speedboost + DIMINISHPARAM) - FixedSqrt(DIMINISHPARAM);
@@ -3622,7 +3820,9 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->invincibilitytimer) // Invincibility
 	{
-		K_DoBoost(player, INVINSPEEDBOOST, INVINACCELBOOST, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
+        fixed_t invspeedboost = K_GetInvincibilitySpeed(player->invincibilitytimer);
+        fixed_t invaccelboost = K_GetInvincibilityAccel(player->invincibilitytimer);
+		K_DoBoost(player, invspeedboost, invaccelboost, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
 	}
 
 	if (player->growshrinktimer > 0) // Grow
@@ -3877,7 +4077,10 @@ SINT8 K_GetForwardMove(player_t *player)
 		}
 	}
 
-	if ((player->exiting || mapreset) || player->pflags & PF_STASIS || player->spinouttimer) // pw_introcam?
+	if ((player->exiting || mapreset) ||
+		player->pflags & PF_STASIS ||
+		player->spinouttimer ||
+		player->flipovertimer) // pw_introcam?
 	{
 		forwardmove = 0;
 		if (player->sneakertimer)
@@ -4087,6 +4290,19 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
+void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
+{
+	(void)inflictor;
+	(void)source;
+
+	K_DirectorFollowAttack(player, inflictor, source);
+
+	K_StatPlayerHit(player, source ? source->player : NULL);
+	player->flipovertimer = 1;
+	player->pflags |= PF_JUSTFLIPPED;
+	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
+}
+
 static void K_RemoveGrowShrink(player_t *player)
 {
 	if (player->mo && !P_MobjWasRemoved(player->mo))
@@ -4191,6 +4407,11 @@ INT32 K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // A 
 		P_StartQuake(64<<FRACBITS, 5);
 
 	return ringburst;
+}
+
+boolean K_IsPlayerDamaged(player_t *player)
+{
+	return ((player->spinouttimer > 0) || (player->flipovertimer > 0));
 }
 
 void K_HandleBumperChanges(player_t *player, UINT8 prevBumpers)
@@ -5741,9 +5962,32 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		P_SetTarget(&overlay->target, player->mo);
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
+
+        if (invintype == KARTINVIN_ALTERN)
+        {
+            mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
+            P_SetTarget(&aura->target, player->mo);
+            aura->destscale = player->mo->scale;
+            P_SetScale(aura, player->mo->scale);
+            aura->extravalue2 = 1;
+        }
 	}
 
-	player->invincibilitytimer = time;
+    if (invintype == KARTINVIN_ALTERN)
+    {
+        // Rim suggestion: Don't allow already invincible players to chain.
+        if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
+        {
+            // Be nice to players at half-power or less.
+            player->invincibilitytimer = max(player->invincibilitytimer, time);
+        }
+    }
+    else
+    {
+        player->invincibilitytimer = time;
+    }
+
+	player->maxinvincibilitytime = time;
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -6038,6 +6282,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
 				useodds, i,
 				UINT32_MAX,
+                0,
 				0,
 				false, false, false
 				)
@@ -7397,7 +7642,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateEngineSounds(player); // Thanks, VAda!
 
 	// update boost angle if not spun out
-	if (!player->spinouttimer && !player->wipeoutslow)
+	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
 	K_GetKartBoostPower(player);
@@ -7472,13 +7717,30 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// Make ABSOLUTELY SURE that your flashing tics don't get set WHILE you're still in hit animations.
 	if (player->spinouttimer != 0
 		|| player->wipeoutslow != 0
-		|| player->squishedtimer != 0)
+		|| player->squishedtimer != 0
+		|| player->flipovertimer != 0)
 	{
 		player->flashing = K_GetKartFlashing(player);
 	}
 	else if (player->flashing >= K_GetKartFlashing(player))
 	{
 		player->flashing--;
+	}
+
+	if (player->flipovertimer)
+	{
+		player->flipovertimer++;
+
+		// Kill off any extra damage values.
+		player->spinouttimer = 0;
+		player->wipeoutslow = 0;
+
+		if (P_IsObjectOnGround(player->mo) &&
+			((INT32)(player->flipovertimer - 1) > 2))
+		{
+			player->flipovertimer = 0;
+			player->mo->rollangle = 0;
+		}
 	}
 
 	if (player->spinouttimer)
@@ -7573,7 +7835,34 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1, false);
 
 	if (player->invincibilitytimer)
-		player->invincibilitytimer--;
+	{
+		INT16 invinfac = 1;
+		if ((invintype == KARTINVIN_ALTERN) && ((INT16)(player->invincibilitybottleneck) != -1) && (player->invincibilitytimer > 2))
+		{
+			if (player->distancefromcluster < (INVINDIST >> 2))
+			{
+				player->invincibilitybottleneck = min(256, player->invincibilitybottleneck + 4);
+				invinfac = FixedMul(8, max(0, min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2)))));
+			}
+			else
+			{
+				player->invincibilitybottleneck = max(0, (INT32)(player->invincibilitybottleneck) - 2);
+			}
+
+			player->invincibilitytimer = (UINT16)(max(2, (INT32)(player->invincibilitytimer) - max(1, FixedMul((UINT16)invinfac, player->invincibilitybottleneck << 8))));
+		}
+		else
+		{
+			player->invincibilitytimer--;
+			player->invincibilitybottleneck = 0;
+		}
+    }
+	else
+	{
+		player->invincibilitybottleneck = 0; // No need for bottlenecking.
+		player->maxinvincibilitytime = 0;
+		player->invincibilitycancel = -1;
+	}
 
 	if (player->checkskip)
 		player->checkskip--;
@@ -7880,11 +8169,15 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-		fullbright = true;
+        if (invintype == KARTINVIN_LEGACY)
+        {
+            fullbright = true;
 
-		player->mo->color = K_RainbowColor(leveltime / 2);
-		player->mo->colorized = true;
-		skip = true;
+            player->mo->color = K_RainbowColor(leveltime / 2);
+            player->mo->colorized = true;
+
+            skip = true;
+        }
 
 		if (skip)
 		{
@@ -9603,6 +9896,149 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 	return a;
 }
 
+static fixed_t K_Distance3D(fixed_t x1, fixed_t y1, fixed_t z1, fixed_t x2, fixed_t y2, fixed_t z2)
+{
+    fixed_t dist_xy = R_PointToDist2(x1,y1,x2,y2);
+
+    return R_PointToDist2(0,z1,dist_xy,z2);
+}
+
+static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
+{
+    if ((!source->mo) || (!destination->mo))
+        return INT32_MAX; // Return a garbage value.
+
+    return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
+}
+
+#define MINCLUSTERPLAYERS 6
+
+static UINT32 K_UpdateDistanceFromCluster(player_t *player)
+{
+    player_t *cluster_p;
+    UINT32 i, pingame, first, second, tinypoptarget;
+    INT32 divmul;
+
+    pingame = 0;
+
+    first = -1;
+	second = -1;
+	tinypoptarget = -1;
+
+    divmul = 1;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+        if (players[i].mo && gametype == GT_RACE)
+		{
+			if (players[i].position == 1 && first == -1)
+				first = i;
+			else if (players[i].position == 2 && second == -1)
+				second = i;
+		}
+    }
+
+    if (pingame <= 1)
+    {
+		// There's only us around.
+		player->invincibilitybottleneck = (UINT16)(-1); // No bottlenecking!
+		return 0;
+	}
+	else if ((pingame > 3) && (pingame < MINCLUSTERPLAYERS))
+	{
+		// "Second place" in this case is actually second to last.
+		// In very small lobbies, it's harder for players to cluster together.
+		second = -1;
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+
+			if (players[i].mo && gametype == GT_RACE)
+			{
+				if (players[i].position == (pingame - 1) && second == -1)
+				{	
+					second = i;
+					break;
+				}
+			}
+		}
+	}
+
+	tinypoptarget = (pingame < 3) ? first : second;
+
+    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+    {
+        // Compare yourself against the cluster player to determine the distance.
+        
+        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
+        {
+            // In very small lobbies, the cluster player is first place/second to last.
+            // Half the cluster distance so that the losing player
+            // doesn't get overly pitied.
+            cluster_p = &players[tinypoptarget];
+            divmul = 2;
+        }
+        else if (clusterid != -1)
+        {
+            cluster_p = &players[clusterid];
+        }
+
+		if ((clusterid == -1) || (!cluster_p))
+			return 0; // No cluster player; not good!
+
+        if (player == cluster_p)
+            return 0; // We ARE the cluster player.
+
+        if (player->position <= cluster_p->position)
+            return 0; // Ahead, or tying.
+
+        // Return the 3D distance from the cluster player.
+        return K_PlayerDistance3D(player, cluster_p) / (FRACUNIT*divmul);
+    }
+    else
+    {
+        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
+        {
+            // In very small lobbies, compare against first place/second to last's
+			// distance to finish.
+            // Half the cluster distance so that the losing player
+            // doesn't get overly pitied.
+
+            // In a 1v1, this is theoretically impossible; but what do I know?
+            if (player->distancetofinish <= players[tinypoptarget].distancetofinish)
+                return 0; // Ahead, or tying.
+            
+            return (player->distancetofinish - players[tinypoptarget].distancetofinish) / 2;
+        }
+
+		UINT32 targetdtf;
+		
+		if (clusterid != -1)
+		{
+			// Use the cluster player's DtF.
+			targetdtf = players[clusterid].distancetofinish;
+		}
+		else
+		{
+			targetdtf = (UINT32)(clusterdtf.x);
+		}
+
+        if (player->distancetofinish <= targetdtf)
+            return 0; // Ahead, or tying.
+
+        // Return the difference between us and the cluster distance.
+        return (player->distancetofinish - targetdtf);
+    }
+}
+
+#undef MINCLUSTERPLAYERS
+
 //
 // K_KartUpdatePosition
 //
@@ -9780,10 +10216,99 @@ void K_KartLegacyUpdatePosition(player_t *player)
 	player->position = position;
 }
 
+// Brute-force finds the area on the course with the highest player density in a given radius.
+// Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
+UINT32 clusterid = 0;
+
+static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fixed_t, vector3_t *), vector3_t *out)
+{
+    INT32 bestdensity = 0; // Cluster counter
+    vector3_t tempclusterpoint;
+    player_t *findme;
+    player_t *player;
+
+    INT32 i;
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+        clusterplayer[i] = false;
+
+		if (!playeringame[i])
+			continue;
+
+		player = &players[i];
+
+		if (player->spectator)
+			continue; // spectator
+
+		if (!player->mo)
+			continue;
+
+        // Find neighbors
+        INT32 N = func(player, eps, &tempclusterpoint);
+
+        // Double-remove the clusterplayer flag. Bad hack, I know...
+        clusterplayer[i] = false;
+
+        // Density check
+        if (N > bestdensity)                                
+        {                                   
+            bestdensity = N;
+
+            findme = closesttocluster;
+
+            out->x = tempclusterpoint.x;
+            out->y = tempclusterpoint.y;
+            out->z = tempclusterpoint.z;
+            continue;
+        }
+    }
+
+	if (bestdensity)
+    {
+		// Only find the cluster player if a cluster's populated.
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+
+			player = &players[i];
+
+			if (player == findme)
+			{
+				clusterid = i;
+				break;
+			}
+		}
+	}
+
+    return out;
+}
+
+#define CLUSTER_EPSILON (160*FRACUNIT)
+#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(CLUSTER_EPSILON, K_CountNeighboringPlayers, &clusterpoint))
+#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((CLUSTER_EPSILON / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
+
+void K_UpdateClusterPoints(void)
+{
+    // Get the player cluster.
+    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+    {
+        K_FindPlayerClusterLegacy();
+    }
+    else
+    {
+        if (cv_kartdebugcluster.value)
+        {
+            K_FindPlayerClusterLegacy();
+        }
+
+        K_FindPlayerClusterDTF();
+    }
+}
+
 void K_UpdateAllPlayerPositions(void)
 {
 	INT32 i;
-
 	if (!K_UsingLegacyCheckpoints())
 	{
 		// First loop: Ensure all players' distance to the finish line are all accurate
@@ -9814,6 +10339,9 @@ void K_UpdateAllPlayerPositions(void)
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
+
+            // Get the cluster distance.
+            players[i].distancefromcluster = K_UpdateDistanceFromCluster(&players[i]);
 		}
 	}
 }
@@ -9853,6 +10381,8 @@ void K_StripOther(player_t *player)
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
+	player->invincibilitycancel = -1;
+
 	if (player->growshrinktimer)
 	{
 		K_RemoveGrowShrink(player);
@@ -10008,12 +10538,12 @@ static void K_AdjustPlayerFriction(player_t *player)
 			player->mo->movefactor = 32;
 	}
 
-	// Wipeout slowdown
-	if (player->speed > 0 && player->spinouttimer && player->wipeoutslow)
+	// Wipeout slowdown, or getting flipped over
+	if ((player->speed > 0 && player->spinouttimer && player->wipeoutslow) || (player->flipovertimer))
 	{
 		if (player->offroad)
 			player->mo->friction -= 4912;
-		if (player->wipeoutslow == 1)
+		if ((player->wipeoutslow == 1) || (player->flipovertimer))
 			player->mo->friction -= 9824;
 	}
 }
@@ -10035,6 +10565,14 @@ void K_UnsetItemOut(player_t *player)
 {
 	player->itemflags &= ~IF_ITEMOUT;
 	player->bananadrag = 0;
+}
+
+static boolean K_InvincibilitySlotHogging(player_t *player)
+{
+	if (invintype == KARTINVIN_LEGACY)
+		return false;
+
+	return ((player->invincibilitytimer) != 0);
 }
 
 //
@@ -10247,6 +10785,32 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							player->growcancel = 0;
 					}
 				}
+				// Invincibility
+				else if (K_InvincibilitySlotHogging(player))
+				{
+					// (Alternate) Cancel Invincibility
+					if (player->invincibilitycancel >= 0)
+					{
+						if (buttons & BT_ATTACK)
+						{
+							player->invincibilitycancel++;
+							if (player->invincibilitycancel > 25)
+							{
+								// Don't fully cancel due to how the music handling works.
+								player->invincibilitytimer = 1;
+							}
+						}
+						else
+							player->invincibilitycancel = 0;
+					}
+					else
+					{
+						if ((buttons & BT_ATTACK) || (player->oldcmd.buttons & BT_ATTACK))
+							player->invincibilitycancel = -1;
+						else
+							player->invincibilitycancel = 0;
+					}
+				}
 				else if (player->itemamount == 0)
 				{
 					K_UnsetItemOut(player);
@@ -10299,9 +10863,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_INVINCIBILITY:
-							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage normally, so you're free to waste it if you have multiple
+							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO) // Doesn't hold your item slot hostage in Legacy, so you're free to waste it if you have multiple
 							{
-								K_DoInvincibility(player, 10 * TICRATE);
+								K_DoInvincibility(player, K_GetInvincibilityTime(player));
 								K_PlayPowerGloatSound(player->mo);
 								player->itemamount--;
 								player->botvars.itemconfirm = 0;

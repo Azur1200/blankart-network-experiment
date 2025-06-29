@@ -734,6 +734,7 @@ void P_Ticker(boolean run)
 
 		ps_playerthink_time = I_GetPreciseTime();
 
+		K_UpdateClusterPoints();
 		K_UpdateAllPlayerPositions();
 
 		// OK! Now that we got all of that sorted, players can think!

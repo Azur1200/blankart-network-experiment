@@ -256,6 +256,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT16(save->p, players[i].flashing);
 		WRITEUINT16(save->p, players[i].spinouttimer);
 		WRITEUINT8(save->p, players[i].spinouttype);
+		WRITEUINT16(save->p, players[i].flipovertimer);
+		WRITEANGLE(save->p, players[i].flipoverangle);
 		WRITEINT16(save->p, players[i].squishedtimer);
 		WRITEUINT8(save->p, players[i].instashield);
 		WRITEUINT8(save->p, players[i].wipeoutslow);
@@ -341,8 +343,13 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEINT16(save->p, players[i].growshrinktimer);
 		WRITEINT16(save->p, players[i].growcancel);
+
 		WRITEUINT16(save->p, players[i].rocketsneakertimer);
+
 		WRITEUINT16(save->p, players[i].invincibilitytimer);
+		WRITEUINT16(save->p, players[i].maxinvincibilitytime);
+		WRITEUINT16(save->p, players[i].invincibilitybottleneck);
+		WRITEINT16(save->p, players[i].invincibilitycancel);
 
 		WRITEUINT8(save->p, players[i].eggmanexplode);
 		WRITESINT8(save->p, players[i].eggmanblame);
@@ -595,6 +602,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].flashing = READUINT16(save->p);
 		players[i].spinouttimer = READUINT16(save->p);
 		players[i].spinouttype = READUINT8(save->p);
+		players[i].flipoverangle = READUINT16(save->p);
+		players[i].flipovertimer = READANGLE(save->p);
 		players[i].squishedtimer = READINT16(save->p);
 		players[i].instashield = READUINT8(save->p);
 		players[i].wipeoutslow = READUINT8(save->p);
@@ -680,8 +689,13 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].growshrinktimer = READINT16(save->p);
 		players[i].growcancel = READINT16(save->p);
+
 		players[i].rocketsneakertimer = READUINT16(save->p);
+
 		players[i].invincibilitytimer = READUINT16(save->p);
+		players[i].maxinvincibilitytime = READUINT16(save->p);
+		players[i].invincibilitybottleneck = READUINT16(save->p);
+		players[i].invincibilitycancel = READINT16(save->p);
 
 		players[i].eggmanexplode = READUINT8(save->p);
 		players[i].eggmanblame = READSINT8(save->p);

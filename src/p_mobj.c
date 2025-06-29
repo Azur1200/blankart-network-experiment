@@ -2765,7 +2765,7 @@ void P_PlayerZMovement(mobj_t *mo)
 		K_UpdateMobjTerrain(mo, (mo->eflags & MFE_VERTICALFLIP ? g_tm.ceilingpic : g_tm.floorpic));
 
 		// Get up if you fell.
-		if (mo->player->panim == PA_HURT && mo->player->spinouttimer == 0 && mo->player->squishedtimer == 0)
+		if (mo->player->panim == PA_HURT && !K_IsPlayerDamaged(mo->player) && mo->player->squishedtimer == 0)
 		{
 			P_SetPlayerMobjState(mo, S_KART_STILL);
 		}
@@ -6715,6 +6715,75 @@ static void P_RemoveOverlay(mobj_t *thing)
 	}
 }
 
+static UINT32 P_GetTranslucencyForInvincibility(mobj_t *mo)
+{
+	if (!mo->player)
+	{
+		// Get out.
+		return 0;
+	}
+
+	return max(0, min(9, 10 - FixedMul(10, K_InvincibilityGradient(mo->player->invincibilitytimer))))<<RF_TRANSSHIFT;
+}
+
+// Called only when MT_OVERLAY thinks.
+static void P_PlayerInvincibilityOverlay(mobj_t *thing)
+{
+	I_Assert(thing->target != NULL);
+	I_Assert(thing->target->player != NULL);
+	
+	if (!thing->target->player->invincibilitytimer)
+	{
+		P_SetTarget(&thing->target, NULL);
+
+		I_Assert(thing->target == NULL);
+		return;
+	}
+
+	thing->destscale = thing->target->scale;
+
+	if (thing->target->eflags & MFE_VERTICALFLIP)
+	{
+		thing->eflags |= MFE_VERTICALFLIP;
+		thing->z += thing->target->height - thing->height;
+	}
+
+	thing->color = K_RainbowColor(leveltime / 2);
+	thing->colorized = true;
+	thing->dispoffset = min(2, thing->target->dispoffset + 1);
+
+	thing->angle = (thing->target->player ? thing->target->player->drawangle : thing->target->angle);
+
+	thing->roll = thing->target->roll;
+	thing->pitch = thing->target->pitch;
+	thing->sloperoll = thing->target->sloperoll;
+	thing->slopepitch = thing->target->slopepitch;
+
+	thing->sprite = thing->target->sprite;
+	thing->sprite2 = thing->target->sprite2;
+	thing->frame = thing->target->frame | FF_FULLBRIGHT | FF_ADD;
+	thing->tics = -1;
+	thing->renderflags = (thing->target->renderflags & ~RF_TRANSMASK)|P_GetTranslucencyForInvincibility(thing->target);
+	thing->skin = thing->target->skin;
+	thing->standingslope = thing->target->standingslope;
+
+	thing->sprxoff = thing->target->sprxoff;
+	thing->spryoff = thing->target->spryoff;
+	thing->sprzoff = thing->target->sprzoff;
+	thing->rollangle = thing->target->rollangle;
+
+	thing->spritexscale = thing->target->spritexscale;
+	thing->spriteyscale = thing->target->spriteyscale;
+	thing->spritexoffset = thing->target->spritexoffset;
+	thing->spriteyoffset = thing->target->spriteyoffset;
+
+	if (thing->target->flags2 & MF2_OBJECTFLIP)
+		thing->flags2 |= MF2_OBJECTFLIP;
+
+	if (!(thing->target->flags & MF_DONTENCOREMAP))
+		thing->flags &= ~MF_DONTENCOREMAP;
+}
+
 static void P_MobjScaleThink(mobj_t *mobj)
 {
 	fixed_t oldheight = mobj->height;
@@ -7051,7 +7120,14 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			return;
 		}
 		else
+		{
 			P_AddOverlay(mobj);
+			if ((mobj->extravalue2) && (mobj->target->player))
+			{
+				// Could be overlaying an invincible player.
+				P_PlayerInvincibilityOverlay(mobj);
+			}
+		}
 		break;
 	case MT_WATERDROP:
 		P_SceneryCheckWater(mobj);

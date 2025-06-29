@@ -464,7 +464,7 @@ UINT8 P_FindHighestLap(void)
 //
 boolean P_PlayerInPain(player_t *player)
 {
-	if (player->spinouttimer || player->squishedtimer)
+	if (K_IsPlayerDamaged(player) || player->squishedtimer)
 		return true;
 
 	return false;
@@ -1374,7 +1374,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 		// Cut momentum in half when you hit the ground and
 		// aren't pressing any controls.
 		if (!(player->cmd.forwardmove || player->cmd.sidemove) && !player->cmomx && !player->cmomy
-			&& !(player->spinouttimer))
+			&& !K_IsPlayerDamaged(player))
 		{
 			player->mo->momx = player->mo->momx/2;
 			player->mo->momy = player->mo->momy/2;
@@ -1806,7 +1806,7 @@ static void P_3dMovement(player_t *player)
 	{
 		movepushangle = player->mo->angle - (ANGLE_45/5) * player->drift;
 	}
-	else if (player->spinouttimer || player->wipeoutslow) // if spun out, use the boost angle
+	else if (K_IsPlayerDamaged(player) || player->wipeoutslow) // if spun out, use the boost angle
 	{
 		movepushangle = (angle_t)player->boostangle;
 	}
@@ -1896,13 +1896,13 @@ static void P_3dMovement(player_t *player)
 		totalthrust.x += P_ReturnThrustX(player->mo, movepushangle, movepushforward);
 		totalthrust.y += P_ReturnThrustY(player->mo, movepushangle, movepushforward);
 	}
-	else if (!(player->spinouttimer))
+	else if (!K_IsPlayerDamaged(player))
 	{
 		K_MomentumToFacing(player);
 	}
 	
 	// Sideways movement
-	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || player->spinouttimer))
+	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_IsPlayerDamaged(player)))
 	{
 		if (cmd->sidemove > 0)
 			movepushside = (cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
@@ -2169,6 +2169,10 @@ void P_MovePlayer(player_t *player)
 		player->glanceDir = 0;
 		player->pflags &= ~PF_GAINAX;
 	}
+	else if (player->flipovertimer > 0)
+	{
+		player->mo->rollangle = (angle_t)(player->flipovertimer - 1) * FLIPOVERANG;
+	}
 	else if ((player->spinouttimer > 0))
 	{
 		UINT16 speed = player->spinouttimer/8;
@@ -2237,8 +2241,13 @@ void P_MovePlayer(player_t *player)
 		&& onground && (leveltime & 1))
 		K_SpawnBoostTrail(player);
 
-	if (player->invincibilitytimer > 0)
+	if ((player->invincibilitytimer > 0) &&
+		(((leveltime %
+		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
+		 (invintype == KARTINVIN_LEGACY)))
+	{
 		K_SpawnSparkleTrail(player->mo);
+	}
 
 	if (player->wipeoutslow > 1 && (leveltime & 1))
 		K_SpawnWipeoutTrail(player->mo, false);
