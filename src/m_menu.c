@@ -8143,7 +8143,6 @@ void MD_DrawViewServer(void)
 		INT32 x = 14;
 		INT32 y = 84;
 		char player_name[MAXPLAYERNAME+1];
-		plrinfo *playerinfo = netbuffer->u.playerinfo;
 		UINT8 playeramount = serverlist[joinnode].info.numberofplayer;
 		UINT8 maxplayer = serverlist[joinnode].info.maxplayer;
 
@@ -8161,6 +8160,8 @@ void MD_DrawViewServer(void)
 						UINT16 skinum = playerinfo[i].skin;
 						INT32 flags = 0;
 
+						CONS_Printf("%d\n",skinum);
+						CONS_Printf("%s\n",skins[skinum].name);
 						if (R_SkinAvailable(skins[skinum].name) == -1)
 						{
 							INT32 statuscolor = 1;

@@ -1248,6 +1248,9 @@ void D_RegisterClientCommands(void)
 
 	COM_AddCommand("listskins", Command_ListSkins);
 
+	CV_RegisterVar(&cv_connectawaittime);
+	CV_RegisterVar(&cv_serverinfoscreen);
+
 }
 
 /**

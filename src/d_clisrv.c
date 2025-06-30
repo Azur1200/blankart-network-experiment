@@ -93,6 +93,7 @@ INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
 UINT8 playerconsole[MAXPLAYERS];
+plrinfo playerinfo[MAXPLAYERS];
 
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
@@ -124,6 +125,7 @@ SINT8 nodetoplayer3[MAXNETNODES]; // say the numplayer for this node if any (spl
 SINT8 nodetoplayer4[MAXNETNODES]; // say the numplayer for this node if any (splitscreen == 3)
 UINT8 playerpernode[MAXNETNODES]; // used specialy for splitscreen
 boolean nodeingame[MAXNETNODES]; // set false as nodes leave game
+boolean receivedplayerinfo = false;
 
 tic_t servermaxping = 20; // server's max delay, in frames. Defaults to 20
 static tic_t nettics[MAXNETNODES]; // what tic the client have received
@@ -709,7 +711,7 @@ static inline void CL_DrawConnectionStatus(void)
 		}
 		else if (cl_mode == CL_VIEWSERVER)
 		{
-			if (!menustack[0])
+			if (receivedplayerinfo && !menustack[0])
 			{
 				M_StartControlPanel();
 				M_EnterMenu(MN_VIEWSERVER, true, 0);
@@ -1779,7 +1781,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 				return true;
 			}
 
-			cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
+			cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 			ChangeServMusic(SERVMUS_1, true,false);
 		}
 		else
@@ -1826,7 +1828,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		case CL_ASKFULLFILELIST:
 			if (cl_lastcheckedfilecount == UINT16_MAX) // All files retrieved
 			{
-				cl_mode = CL_VIEWSERVER; //cl_mode = CL_CHECKFILES;
+				cl_mode = cv_serverinfoscreen.value ? CL_VIEWSERVER : CL_CHECKFILES;
 				ChangeServMusic(SERVMUS_1, true,false);
 			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
@@ -1928,18 +1930,19 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 			}
 			break;
 		case CL_ASKJOIN:
-			if (firstconnectattempttime + NEWTICRATE*300 < I_GetTime() && !server)
+			if (cv_connectawaittime.value && firstconnectattempttime + NEWTICRATE*60*cv_connectawaittime.value < I_GetTime() && !server)
 			{
-				CONS_Printf(M_GetText("5 minute wait time exceeded.\n"));
+				CONS_Printf("%d minute wait time exceeded.\n", cv_connectawaittime.value);
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
 				D_StartTitle();
-				M_StartMessage(M_GetText(
-					"5 minute wait time exceeded.\n"
+				M_StartMessage(va(
+					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
 					"\n"
-					"Press ESC\n"
+					"Press ESC\n",
+                    cv_connectawaittime.value
 				), NULL, MM_NOTHING);
 				return false;
 			}
@@ -2093,6 +2096,7 @@ static void CL_ConnectToServer(void)
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
 	lastfilenum = -1;
+	receivedplayerinfo = false;
 
 	cl_mode = CL_SEARCHING;
 
@@ -3365,6 +3369,11 @@ consvar_t cv_noticedownload = CVAR_INIT ("noticedownload", "Off", CV_SAVE|CV_NET
 static CV_PossibleValue_t downloadspeed_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
 consvar_t cv_downloadspeed = CVAR_INIT ("downloadspeed", "32", CV_SAVE|CV_NETVAR, downloadspeed_cons_t, NULL);
 
+static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, {0, "Inf"}, {0, NULL}};
+consvar_t cv_connectawaittime = CVAR_INIT ("connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL);
+
+consvar_t cv_serverinfoscreen = CVAR_INIT ("serverinfoscreen", "On", CV_SAVE, CV_OnOff, NULL);
+
 static void Got_AddPlayer(UINT8 **p, INT32 playernum);
 static void Got_RemovePlayer(UINT8 **p, INT32 playernum);
 static void Got_AddBot(UINT8 **p, INT32 playernum);
@@ -4290,6 +4299,16 @@ static void HandleServerInfo(SINT8 node)
 	SL_InsertServer(&netbuffer->u.serverinfo, node);
 }
 
+static void HandlePlayerInfo(SINT8 node)
+{
+	(void)node;
+	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	{
+		playerinfo[i] = netbuffer->u.playerinfo[i];
+	}
+	receivedplayerinfo = true;
+}
+
 static void PT_WillResendGamestate(void)
 {
 	char tmpsave[256];
@@ -4533,6 +4552,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 			break; // This is not an "unknown packet"
 
 		case PT_PLAYERINFO:
+			HandlePlayerInfo(node);
 			break;
 
 		case PT_SERVERTICS:
@@ -5083,9 +5103,6 @@ static void GetPackets(void)
 			HandleServerInfo(node);
 			continue;
 		}
-
-		if (netbuffer->packettype == PT_PLAYERINFO)
-			continue; // We do nothing with PLAYERINFO, that's for the MS browser.
 
 		// Packet received from someone already playing
 		if (nodeingame[node])

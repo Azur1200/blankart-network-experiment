@@ -403,6 +403,10 @@ extern consvar_t cv_kicktime;
 extern consvar_t cv_showjoinaddress;
 extern consvar_t cv_playbackspeed;
 
+extern consvar_t cv_connectawaittime;
+extern consvar_t cv_serverinfoscreen;
+
+
 #define BASEPACKETSIZE      offsetof(doomdata_t, u)
 #define FILETXHEADER        offsetof(filetx_pak, data)
 #define BASESERVERTICSSIZE  offsetof(doomdata_t, u.serverpak.cmds[0])
@@ -552,6 +556,7 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
 extern UINT8 playerconsole[MAXPLAYERS];
+extern plrinfo playerinfo[MAXPLAYERS];
 extern SINT8 joinnode;
 
 #define SERVMUS_1 "SRVMS1"
