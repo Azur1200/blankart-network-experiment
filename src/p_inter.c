@@ -2352,6 +2352,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					K_FlipPlayer(player, inflictor, source);
 					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					K_KartPainEnergyFling(player);
+					break;
 				case DMG_WIPEOUT:
 					if (P_IsDisplayPlayer(player))
 						P_StartQuake(32<<FRACBITS, 5);
