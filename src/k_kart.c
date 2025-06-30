@@ -9979,10 +9979,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
         if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
         {
             // In very small lobbies, the cluster player is first place/second to last.
-            // Half the cluster distance so that the losing player
-            // doesn't get overly pitied.
+
             cluster_p = &players[tinypoptarget];
-            divmul = 2;
+
+			// In 1v1s, half the cluster distance so that the losing player
+			// doesn't get overly pitied.
+			if (pingame < 3)
+			{
+				divmul = 2;
+			}
         }
         else if (clusterid != -1)
         {
@@ -9999,7 +10004,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
             return 0; // Ahead, or tying.
 
         // Return the 3D distance from the cluster player.
-        return K_PlayerDistance3D(player, cluster_p) / (FRACUNIT*divmul);
+		// Multiply by 2 to make up for shoddy euclidean distance checks.
+        return (K_PlayerDistance3D(player, cluster_p) << 1) / (FRACUNIT*divmul);
     }
     else
     {
@@ -10007,14 +10013,20 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
         {
             // In very small lobbies, compare against first place/second to last's
 			// distance to finish.
-            // Half the cluster distance so that the losing player
-            // doesn't get overly pitied.
 
             // In a 1v1, this is theoretically impossible; but what do I know?
             if (player->distancetofinish <= players[tinypoptarget].distancetofinish)
                 return 0; // Ahead, or tying.
             
-            return (player->distancetofinish - players[tinypoptarget].distancetofinish) / 2;
+			// In 1v1s, half the cluster distance so that the losing player
+            // doesn't get overly pitied.
+			// Otherwise, just use the raw distancing.
+			if (pingame < 3)
+			{
+				return (player->distancetofinish - players[tinypoptarget].distancetofinish) / 2;
+			}
+
+			return (player->distancetofinish - players[tinypoptarget].distancetofinish);
         }
 
 		UINT32 targetdtf;
