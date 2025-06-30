@@ -156,7 +156,7 @@ typedef struct zlentry_s
 #endif
 
 // maximum length of longname
-#define MAXLUMPNAME 512
+#define MAXLUMPNAME 256
 
 // Available compression methods for lumps.
 typedef enum
