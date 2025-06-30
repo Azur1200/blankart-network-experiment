@@ -896,8 +896,8 @@ INT32 K_KartGetItemOdds(
                 newodds = K_KartGetInvincibilityOdds(clusterDist);
                 
                 newodds *= 4;
-                break;
             }
+            break;
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -2166,7 +2166,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 		if (mobj1->player->pflags & PF_JUSTFLIPPED)
 		{
-			S_StartSound(mobj2, sfx_mdse8);
+			S_StartSound(mobj2, sfx_flipos);
 			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx,mobj1->player->rmomy);
 			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj1->scale));
 			mobj1->momz = FixedMul(FlipOverZMomentum(gravity), mobj1->scale);
@@ -2202,7 +2202,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 		if (mobj2->player->pflags & PF_JUSTFLIPPED)
 		{
-			S_StartSound(mobj1, sfx_mdse8);
+			S_StartSound(mobj2, sfx_flipos);
 			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx,mobj2->player->rmomy);
 			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj2->scale));
 			mobj2->momz = FixedMul(FlipOverZMomentum(gravity), mobj2->scale);

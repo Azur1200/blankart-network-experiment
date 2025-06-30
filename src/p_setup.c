@@ -8889,7 +8889,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		Z_Free(bossinfo.subtitle);
 		bossinfo.enemyname = bossinfo.subtitle = NULL;
 		bossinfo.titleshow = 0;
-		bossinfo.titlesound = sfx_typri1;
+		bossinfo.titlesound = sfx_itrol1;
 		memset(&(bossinfo.weakspots), 0, sizeof(weakspot_t)*NUMWEAKSPOTS);
 	}
 

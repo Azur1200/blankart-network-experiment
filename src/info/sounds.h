@@ -786,9 +786,6 @@ _(kc6c)
 _(kc6d)
 _(kc6e)
 
-// MKDS sounds
-_(mdse8)
-
 // SRB2kart
 _(slip)
 _(screec)
@@ -846,15 +843,15 @@ _(requst)
 _(syfail)
 _(itfree)
 _(dbgsal)
-_(typri1)
-_(typri2)
-_(eggspr)
 
 // Chaining Sound
 _(bstchn)
 
 // Low Ring Sound
 _(ringlw)
+
+// Flip Over Sound
+_(flipos)
 
 // Shout message sound effect
 _(sysmsg)
