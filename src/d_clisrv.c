@@ -1088,11 +1088,7 @@ static void SV_SendPlayerInfo(INT32 node)
 
 		netbuffer->u.playerinfo[i].score = LONG(players[i].score);
 		netbuffer->u.playerinfo[i].timeinserver = SHORT((UINT16)(players[i].jointime / TICRATE));
-		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin
-#ifdef DEVELOP // it's safe to do this only because PLAYERINFO isn't read by the game itself
-		% 3
-#endif
-		);
+		netbuffer->u.playerinfo[i].skin = (UINT16)(players[i].skin);
 
 		// Extra data
 		netbuffer->u.playerinfo[i].data = 0; //players[i].skincolor;
