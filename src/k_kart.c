@@ -885,19 +885,20 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
-            if (invintype == KARTINVIN_ALTERN)
-            {
-                // It's a power item, yes, but we don't want mashing to lessen
-                // its chances, so we lie to the game's face.
-                // Nonetheless, apply the start cooldown.
-                cooldownOnStart = true;
+			if (invintype == KARTINVIN_ALTERN)
+			{
+				// It's a power item, yes, but we don't want mashing to lessen
+				// its chances, so we lie to the game's face.
+				// Nonetheless, apply the start cooldown.
+				cooldownOnStart = true;
 
-                // Unique odds for Invincibility.
-                newodds = K_KartGetInvincibilityOdds(clusterDist);
+				// Unique odds for Invincibility.
+				newodds = K_KartGetInvincibilityOdds(clusterDist);
                 
-                newodds *= 4;
-            }
-            break;
+				newodds *= 4;
+				break;
+			}
+		/*FALLTHRU*/
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
@@ -1088,19 +1089,20 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 			powerItem = true;
 			break;
 		case KITEM_INVINCIBILITY:
-            if (invintype == KARTINVIN_ALTERN)
-            {
-                // It's a power item, yes, but we don't want mashing to lessen
-                // its chances, so we lie to the game's face.
-                // Nonetheless, apply the start cooldown.
-                cooldownOnStart = true;
+			if (invintype == KARTINVIN_ALTERN)
+			{
+				// It's a power item, yes, but we don't want mashing to lessen
+				// its chances, so we lie to the game's face.
+				// Nonetheless, apply the start cooldown.
+				cooldownOnStart = true;
 
-                // Unique odds for Invincibility.
-                newodds = K_KartGetInvincibilityOdds(clusterDist);
+				// Unique odds for Invincibility.
+				newodds = K_KartGetInvincibilityOdds(clusterDist);
                 
-                newodds *= 4;
-                break;
-            }
+				newodds *= 4;
+				break;
+			}
+		/*FALLTHRU*/
 		case KITEM_MINE:
 		case KITEM_GROW:
 		case KITEM_BUBBLESHIELD:
