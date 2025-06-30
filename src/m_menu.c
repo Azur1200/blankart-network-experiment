@@ -8160,8 +8160,6 @@ void MD_DrawViewServer(void)
 						UINT16 skinum = playerinfo[i].skin;
 						INT32 flags = 0;
 
-						CONS_Printf("%d\n",skinum);
-						CONS_Printf("%s\n",skins[skinum].name);
 						if (R_SkinAvailable(skins[skinum].name) == -1)
 						{
 							INT32 statuscolor = 1;
