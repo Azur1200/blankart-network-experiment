@@ -407,8 +407,9 @@ TYPEDEF (colorlookup_t);
 TYPEDEF (cliprect_t);
 
 // w_wad.h
+TYPEDEF (filelump_t);
+TYPEDEF (wadinfo_t);
 TYPEDEF (lumpinfo_t);
-TYPEDEF (lumpprefixes_t);
 TYPEDEF (virtlump_t);
 TYPEDEF (virtres_t);
 TYPEDEF (wadfile_t);

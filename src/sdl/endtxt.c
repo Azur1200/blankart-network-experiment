@@ -45,7 +45,7 @@ void ShowEndTxt(void)
 #endif
 	UINT16 *ptext;
 	void *data;
-	lumpnum_t endoomnum = W_GetNumForLongName("ENDOOM");
+	lumpnum_t endoomnum = W_GetNumForName("ENDOOM");
 	//char *col;
 
 	/* if the xterm has more then 80 columns we need to add nl's */

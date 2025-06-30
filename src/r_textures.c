@@ -287,7 +287,7 @@ static boolean R_CheckTextureLumpLength(texture_t *texture, size_t patch)
 			texture->name,
 			sizeu1(offsetof(softwarepatch_t, columnofs)),
 			sizeu2(lumplength),
-			W_CheckFullNameForNumPwad(wadnum, lumpnum)
+			wadfiles[wadnum]->lumpinfo[lumpnum].fullname
 		);
 
 		return false;
@@ -1117,11 +1117,6 @@ void R_FlushTextureCache(void)
 int R_CountTexturesInTEXTURESLump(UINT16 wadNum, UINT16 lumpNum);
 void R_ParseTEXTURESLump(UINT16 wadNum, UINT16 lumpNum, INT32 *index);
 
-static const char *flatmarkers[] = {
-	"Flats/",
-	"F_START", "F_END",
-};
-
 static INT32
 Rloadflats (INT32 i, INT32 w)
 {
@@ -1131,73 +1126,82 @@ Rloadflats (INT32 i, INT32 w)
 	texpatch_t *patch;
 	UINT8 header[PNG_HEADER_SIZE];
 
-	if (!W_CheckNumForMarkers(flatmarkers, sizeof(flatmarkers)/sizeof(*flatmarkers), (UINT16)w, &texstart, &texend))
-		return i;
-
-	// Work through each lump between the markers in the WAD.
-	for (j = 0; j < (texend - texstart); j++)
+	if (wadfiles[w]->type == RET_PK3)
 	{
-		UINT16 wadnum = (UINT16)w;
-		lumpnum_t lumpnum = texstart + j;
+		texstart = W_CheckNumForFolderStartPK3("flats/", (UINT16)w, 0);
+		texend = W_CheckNumForFolderEndPK3("flats/", (UINT16)w, texstart);
+	}
+	else
+	{
+		texstart = W_CheckNumForMarkerStartPwad("F_START", (UINT16)w, 0);
+		texend = W_CheckNumForNamePwad("F_END", (UINT16)w, texstart);
+	}
 
-		if (wadfiles[w]->type == RET_PK3)
+	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
+	{
+		// Work through each lump between the markers in the WAD.
+		for (j = 0; j < (texend - texstart); j++)
 		{
-			if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
-				continue; // If it is then SKIP IT
-		}
+			UINT16 wadnum = (UINT16)w;
+			lumpnum_t lumpnum = texstart + j;
 
-		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
-		size_t flatsize = R_FlatDimensionsFromLumpSize(lumplength);
+			if (wadfiles[w]->type == RET_PK3)
+			{
+				if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
+					continue; // If it is then SKIP IT
+			}
 
-		//CONS_Printf("\n\"%s\" is a flat, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),flatsize,flatsize);
-		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
+			size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+			size_t flatsize = R_FlatDimensionsFromLumpSize(lumplength);
 
-		// Set texture properties.
-		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-		texture->hash = quickncasehash(texture->name, 8);
+			//CONS_Printf("\n\"%s\" is a flat, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),flatsize,flatsize);
+			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
+
+			// Set texture properties.
+			M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
+			texture->hash = quickncasehash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
-		W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
+			W_ReadLumpHeaderPwad(wadnum, lumpnum, header, sizeof header, 0);
 
-		if (Picture_IsLumpPNG(header, lumplength))
-		{
-			UINT8 *flatlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
-			INT32 width, height;
-			Picture_PNGDimensions((UINT8 *)flatlump, &width, &height, NULL, NULL, lumplength);
-			texture->width = (INT16)width;
-			texture->height = (INT16)height;
-			Z_Free(flatlump);
-		}
-		else
+			if (Picture_IsLumpPNG(header, lumplength))
+			{
+				UINT8 *flatlump = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+				INT32 width, height;
+				Picture_PNGDimensions((UINT8 *)flatlump, &width, &height, NULL, NULL, lumplength);
+				texture->width = (INT16)width;
+				texture->height = (INT16)height;
+				Z_Free(flatlump);
+			}
+			else
 #endif
-			texture->width = texture->height = flatsize;
+				texture->width = texture->height = flatsize;
 
-		texture->type = TEXTURETYPE_FLAT;
-		texture->patchcount = 1;
-		texture->holes = false;
-		texture->flip = 0;
-		texture->terrainID = K_GetTerrainIDForTextureName(texture->name);
+			texture->type = TEXTURETYPE_FLAT;
+			texture->patchcount = 1;
+			texture->holes = false;
+			texture->flip = 0;
+			texture->terrainID = K_GetTerrainIDForTextureName(texture->name);
 
-		// Allocate information for the texture's patches.
-		patch = &texture->patches[0];
+			// Allocate information for the texture's patches.
+			patch = &texture->patches[0];
 
-		patch->originx = patch->originy = 0;
-		patch->wad = (UINT16)w;
-		patch->lump = texstart + j;
-		patch->flip = 0;
+			patch->originx = patch->originy = 0;
+			patch->wad = (UINT16)w;
+			patch->lump = texstart + j;
+			patch->flip = 0;
 
-		texturewidth[i] = texture->width;
-		textureheight[i] = texture->height << FRACBITS;
-		i++;
+			texturewidth[i] = texture->width;
+			textureheight[i] = texture->height << FRACBITS;
+			i++;
+		}
 	}
 
 	return i;
 }
 
-static const char *texturemarkers[] = {
-	"Textures/",
-	"TX_START", "TX_END",
-};
+#define TX_START "TX_START"
+#define TX_END "TX_END"
 
 static INT32
 Rloadtextures (INT32 i, INT32 w)
@@ -1209,107 +1213,133 @@ Rloadtextures (INT32 i, INT32 w)
 	softwarepatch_t patchlump;
 
 	// Get the lump numbers for the markers in the WAD, if they exist.
-	if (!W_CheckNumForMarkers(texturemarkers, sizeof(texturemarkers)/sizeof(*texturemarkers), (UINT16)w, &texstart, &texend))
-		return i;
-
 	if (wadfiles[w]->type == RET_PK3)
-		for (texturesLumpPos = 0; (texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, texturesLumpPos)) != LUMPERROR; texturesLumpPos++)
+	{
+		texstart = W_CheckNumForFolderStartPK3("textures/", (UINT16)w, 0);
+		texend = W_CheckNumForFolderEndPK3("textures/", (UINT16)w, texstart);
+		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
+		while (texturesLumpPos != INT16_MAX)
+		{
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
+			texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, texturesLumpPos + 1);
+		}
+	}
 	else
 	{
-		texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", (UINT16)w, 0);
-		if (texturesLumpPos != LUMPERROR)
+		texstart = W_CheckNumForMarkerStartPwad(TX_START, (UINT16)w, 0);
+		texend = W_CheckNumForNamePwad(TX_END, (UINT16)w, 0);
+		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", (UINT16)w, 0);
+		if (texturesLumpPos != INT16_MAX)
 			R_ParseTEXTURESLump(w, texturesLumpPos, &i);
 	}
 
-	// Work through each lump between the markers in the WAD.
-	for (j = 0; j < (texend - texstart); j++)
+	if (!( texstart == INT16_MAX || texend == INT16_MAX ))
 	{
-		UINT16 wadnum = (UINT16)w;
-		lumpnum_t lumpnum = texstart + j;
+		// Work through each lump between the markers in the WAD.
+		for (j = 0; j < (texend - texstart); j++)
+		{
+			UINT16 wadnum = (UINT16)w;
+			lumpnum_t lumpnum = texstart + j;
 #ifndef NO_PNG_LUMPS
-		size_t lumplength;
+			size_t lumplength;
 #endif
 
-		if (wadfiles[w]->type == RET_PK3)
-		{
-			if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
-				continue; // If it is then SKIP IT
-		}
+			if (wadfiles[w]->type == RET_PK3)
+			{
+				if (W_IsLumpFolder(wadnum, lumpnum)) // Check if lump is a folder
+					continue; // If it is then SKIP IT
+			}
 
-		W_ReadLumpHeaderPwad(wadnum, lumpnum, &patchlump, PNG_HEADER_SIZE, 0);
+			W_ReadLumpHeaderPwad(wadnum, lumpnum, &patchlump, PNG_HEADER_SIZE, 0);
 #ifndef NO_PNG_LUMPS
-		lumplength = W_LumpLengthPwad(wadnum, lumpnum);
+			lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 #endif
 
-		//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
-		texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
+			//CONS_Printf("\n\"%s\" is a single patch, dimensions %d x %d",W_CheckNameForNumPwad((UINT16)w,texstart+j),patchlump->width, patchlump->height);
+			texture = textures[i] = Z_Calloc(sizeof(texture_t) + sizeof(texpatch_t), PU_STATIC, NULL);
 
-		// Set texture properties.
-		M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
-		texture->hash = quickncasehash(texture->name, 8);
+			// Set texture properties.
+			M_Memcpy(texture->name, W_CheckNameForNumPwad(wadnum, lumpnum), sizeof(texture->name));
+			texture->hash = quickncasehash(texture->name, 8);
 
 #ifndef NO_PNG_LUMPS
-		if (Picture_IsLumpPNG((UINT8 *)&patchlump, lumplength))
-		{
-			UINT8 *png = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
-			INT32 width, height;
-			Picture_PNGDimensions(png, &width, &height, NULL, NULL, lumplength);
-			texture->width = (INT16)width;
-			texture->height = (INT16)height;
-			Z_Free(png);
-		}
-		else
+			if (Picture_IsLumpPNG((UINT8 *)&patchlump, lumplength))
+			{
+				UINT8 *png = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+				INT32 width, height;
+				Picture_PNGDimensions(png, &width, &height, NULL, NULL, lumplength);
+				texture->width = (INT16)width;
+				texture->height = (INT16)height;
+				Z_Free(png);
+			}
+			else
 #endif
-		{
-			texture->width = SHORT(patchlump.width);
-			texture->height = SHORT(patchlump.height);
+			{
+				texture->width = SHORT(patchlump.width);
+				texture->height = SHORT(patchlump.height);
+			}
+
+			texture->type = TEXTURETYPE_SINGLEPATCH;
+			texture->patchcount = 1;
+			texture->holes = false;
+			texture->flip = 0;
+			texture->terrainID = K_GetTerrainIDForTextureName(texture->name);
+
+			// Allocate information for the texture's patches.
+			patch = &texture->patches[0];
+
+			patch->originx = patch->originy = 0;
+			patch->wad = (UINT16)w;
+			patch->lump = texstart + j;
+			patch->flip = 0;
+
+			texturewidth[i] = texture->width;
+			textureheight[i] = texture->height << FRACBITS;
+			i++;
 		}
-
-		texture->type = TEXTURETYPE_SINGLEPATCH;
-		texture->patchcount = 1;
-		texture->holes = false;
-		texture->flip = 0;
-		texture->terrainID = K_GetTerrainIDForTextureName(texture->name);
-
-		// Allocate information for the texture's patches.
-		patch = &texture->patches[0];
-
-		patch->originx = patch->originy = 0;
-		patch->wad = (UINT16)w;
-		patch->lump = texstart + j;
-		patch->flip = 0;
-
-		texturewidth[i] = texture->width;
-		textureheight[i] = texture->height << FRACBITS;
-		i++;
 	}
 
 	return i;
 }
 
-static INT32 count_range(const char *markers[], size_t nummarkers, UINT16 wadnum)
+static INT32
+count_range
+(		const char * marker_start,
+		const char * marker_end,
+		const char * folder,
+		UINT16 wadnum)
 {
 	UINT16 j;
 	UINT16 texstart, texend;
 	INT32 count = 0;
 
 	// Count flats
-	if (!W_CheckNumForMarkers(markers, nummarkers, wadnum, &texstart, &texend))
-		return count;
-
-	// PK3s have subfolders, so we can't just make a simple sum
 	if (wadfiles[wadnum]->type == RET_PK3)
 	{
-		for (j = texstart; j < texend; j++)
-		{
-			if (!W_IsLumpFolder(wadnum, j)) // Check if lump is a folder; if not, then count it
-				count++;
-		}
+		texstart = W_CheckNumForFolderStartPK3(folder, wadnum, 0);
+		texend = W_CheckNumForFolderEndPK3(folder, wadnum, texstart);
 	}
-	else // Add all the textures between markers
+	else
 	{
-		count += (texend - texstart);
+		texstart = W_CheckNumForMarkerStartPwad(marker_start, wadnum, 0);
+		texend = W_CheckNumForNamePwad(marker_end, wadnum, texstart);
+	}
+
+	if (texstart != INT16_MAX && texend != INT16_MAX)
+	{
+		// PK3s have subfolders, so we can't just make a simple sum
+		if (wadfiles[wadnum]->type == RET_PK3)
+		{
+			for (j = texstart; j < texend; j++)
+			{
+				if (!W_IsLumpFolder(wadnum, j)) // Check if lump is a folder; if not, then count it
+					count++;
+			}
+		}
+		else // Add all the textures between markers
+		{
+			count += (texend - texstart);
+		}
 	}
 
 	return count;
@@ -1328,14 +1358,19 @@ static INT32 R_CountTextures(UINT16 wadnum)
 	// This system will allocate memory for all duplicate/patched textures even if it never uses them,
 	// but the alternative is to spend a ton of time checking and re-checking all previous entries just to skip any potentially patched textures.
 
-	count += count_range(flatmarkers, sizeof(flatmarkers)/sizeof(*flatmarkers), wadnum);
+	count += count_range("F_START", "F_END", "flats/", wadnum);
 
 	// Count the textures from TEXTURES lumps
-	for (texturesLumpPos = 0; (texturesLumpPos = W_CheckNumForLongNamePwad("TEXTURES", wadnum, texturesLumpPos)) != LUMPERROR; texturesLumpPos++)
+	texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", wadnum, 0);
+
+	while (texturesLumpPos != INT16_MAX)
+	{
 		count += R_CountTexturesInTEXTURESLump(wadnum, texturesLumpPos);
+		texturesLumpPos = W_CheckNumForNamePwad("TEXTURES", wadnum, texturesLumpPos + 1);
+	}
 
 	// Count single-patch textures
-	count += count_range(texturemarkers, sizeof(texturemarkers)/sizeof(*texturemarkers), wadnum);
+	count += count_range(TX_START, TX_END, "textures/", wadnum);
 
 	return count;
 }
@@ -1463,7 +1498,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	char *texturesToken;
 	size_t texturesTokenLength;
 	char *endPos;
-	char patchName[SHORTNAMELEN+1];
+	char *patchName = NULL;
 	INT16 patchXPos;
 	INT16 patchYPos;
 	UINT8 flip = 0;
@@ -1479,13 +1514,19 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		I_Error("Error parsing TEXTURES lump: Unexpected end of file where patch name should be");
 	}
 	texturesTokenLength = strlen(texturesToken);
-	if (texturesTokenLength >= sizeof(patchName))
+	if (texturesTokenLength>8)
 	{
-		I_Error("Error parsing TEXTURES lump: Patch name \"%s\" exceeds %zu characters", texturesToken, sizeof(patchName) - 1);
+		I_Error("Error parsing TEXTURES lump: Patch name \"%s\" exceeds 8 characters",texturesToken);
 	}
 	else
 	{
-		strcpy(patchName, texturesToken);
+		if (patchName != NULL)
+		{
+			Z_Free(patchName);
+		}
+		patchName = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
+		M_Memcpy(patchName,texturesToken,texturesTokenLength*sizeof(char));
+		patchName[texturesTokenLength] = '\0';
 	}
 
 	// Comma 1
@@ -1624,7 +1665,7 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 	if (actuallyLoadPatch == true)
 	{
 		// Check lump exists
-		patchLumpNum = W_GetNumForLongName(patchName);
+		patchLumpNum = W_GetNumForName(patchName);
 		// If so, allocate memory for texpatch_t and fill 'er up
 		resultPatch = (texpatch_t *)Z_Malloc(sizeof(texpatch_t),PU_STATIC,NULL);
 		resultPatch->originx = patchXPos;
@@ -1634,11 +1675,14 @@ static texpatch_t *R_ParsePatch(boolean actuallyLoadPatch)
 		resultPatch->flip = flip;
 		resultPatch->alpha = alpha;
 		resultPatch->style = style;
+		// Clean up a little after ourselves
+		Z_Free(patchName);
 		// Then return it
 		return resultPatch;
 	}
 	else
 	{
+		Z_Free(patchName);
 		return NULL;
 	}
 }

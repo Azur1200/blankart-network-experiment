@@ -237,15 +237,15 @@ void R_InitTranslucencyTables(void)
 	// optimised code (in other words, transtables pointer low word is 0)
 	transtables = static_cast<UINT8 *>(Z_MallocAlign(NUMTRANSTABLES*0x10000, PU_STATIC, NULL, 16));
 
-	W_ReadLump(W_GetNumForLongName("TRANS10"), transtables);
-	W_ReadLump(W_GetNumForLongName("TRANS20"), transtables+0x10000);
-	W_ReadLump(W_GetNumForLongName("TRANS30"), transtables+0x20000);
-	W_ReadLump(W_GetNumForLongName("TRANS40"), transtables+0x30000);
-	W_ReadLump(W_GetNumForLongName("TRANS50"), transtables+0x40000);
-	W_ReadLump(W_GetNumForLongName("TRANS60"), transtables+0x50000);
-	W_ReadLump(W_GetNumForLongName("TRANS70"), transtables+0x60000);
-	W_ReadLump(W_GetNumForLongName("TRANS80"), transtables+0x70000);
-	W_ReadLump(W_GetNumForLongName("TRANS90"), transtables+0x80000);
+	W_ReadLump(W_GetNumForName("TRANS10"), transtables);
+	W_ReadLump(W_GetNumForName("TRANS20"), transtables+0x10000);
+	W_ReadLump(W_GetNumForName("TRANS30"), transtables+0x20000);
+	W_ReadLump(W_GetNumForName("TRANS40"), transtables+0x30000);
+	W_ReadLump(W_GetNumForName("TRANS50"), transtables+0x40000);
+	W_ReadLump(W_GetNumForName("TRANS60"), transtables+0x50000);
+	W_ReadLump(W_GetNumForName("TRANS70"), transtables+0x60000);
+	W_ReadLump(W_GetNumForName("TRANS80"), transtables+0x70000);
+	W_ReadLump(W_GetNumForName("TRANS90"), transtables+0x80000);
 
 	R_AllocateBlendTables();
 	R_GenerateBlendTables();
@@ -345,8 +345,8 @@ void R_InitPaletteRemap(void)
 {
 	palremap = static_cast<UINT8 *>(Z_Malloc(256, PU_STATIC, NULL));
 	invremap = static_cast<UINT8 *>(Z_Malloc(256, PU_STATIC, NULL));
-	W_ReadLump(W_GetNumForLongName("PALREMAP"), palremap);
-	W_ReadLump(W_GetNumForLongName("INVREMAP"), invremap);
+	W_ReadLump(W_GetNumForName("PALREMAP"), palremap);
+	W_ReadLump(W_GetNumForName("INVREMAP"), invremap);
 }
 
 UINT8 R_GetPaletteRemap(UINT8 color)
@@ -512,14 +512,14 @@ lumpnum_t viewborderlump[8];
 
 void R_InitViewBorder(void)
 {
-	viewborderlump[BRDR_T] = W_GetNumForLongName("brdr_t");
-	viewborderlump[BRDR_B] = W_GetNumForLongName("brdr_b");
-	viewborderlump[BRDR_L] = W_GetNumForLongName("brdr_l");
-	viewborderlump[BRDR_R] = W_GetNumForLongName("brdr_r");
-	viewborderlump[BRDR_TL] = W_GetNumForLongName("brdr_tl");
-	viewborderlump[BRDR_BL] = W_GetNumForLongName("brdr_bl");
-	viewborderlump[BRDR_TR] = W_GetNumForLongName("brdr_tr");
-	viewborderlump[BRDR_BR] = W_GetNumForLongName("brdr_br");
+	viewborderlump[BRDR_T] = W_GetNumForName("brdr_t");
+	viewborderlump[BRDR_B] = W_GetNumForName("brdr_b");
+	viewborderlump[BRDR_L] = W_GetNumForName("brdr_l");
+	viewborderlump[BRDR_R] = W_GetNumForName("brdr_r");
+	viewborderlump[BRDR_TL] = W_GetNumForName("brdr_tl");
+	viewborderlump[BRDR_BL] = W_GetNumForName("brdr_bl");
+	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
+	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
 }
 
 #if 0

@@ -47,27 +47,3 @@ UINT32 strbuf_append(strbuf_t **strbuf, const char *str)
 	strcpy(buf->buf - sizeof(UINT32) + oldsize, str);
 	return oldsize;
 }
-
-// appends a fixed-size array of bytes to the buffer, and inserts a null terminator
-// useful if you know the length of a string in advance, or want to truncate it to a certain length
-// returns an offset to the newly appended bytes
-UINT32 strbuf_append_m(strbuf_t **strbuf, const void *src, UINT32 len)
-{
-	strbuf_t *buf = *strbuf;
-	size_t addbytes = len + 1;
-	UINT32 oldsize = buf->size;
-
-	buf->size += addbytes;
-	if ((oldsize % STRBUF_BLOCKSIZE) + addbytes >= STRBUF_BLOCKSIZE) {
-		UINT32 newsize = buf->size + STRBUF_BLOCKSIZE - (buf->size % STRBUF_BLOCKSIZE);
-		if (newsize <= oldsize)
-			I_Error("String buffer size wrapped around!?");
-		buf = *strbuf = Z_Realloc(buf, newsize, PU_STATIC, NULL);
-		if (!buf)
-			I_Error("Failed to allocate string buffer");
-	}
-
-	memcpy(buf->buf - sizeof(UINT32) + oldsize, src, len);
-	buf->buf[-sizeof(UINT32) + oldsize + len] = '\0';
-	return oldsize;
-}

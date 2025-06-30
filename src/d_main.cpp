@@ -295,7 +295,7 @@ static void D_RenderLevel(void)
 		if (r_splitscreen == 2) // Draw over the fourth screen so you don't have to stare at a HOM :V
 		{
 			// V_DrawPatchFill, but for the fourth screen only
-			patch_t *pat = static_cast<patch_t*>(W_CachePatchLongName("SRB2BACK", PU_CACHE));
+			patch_t *pat = static_cast<patch_t*>(W_CachePatchName("SRB2BACK", PU_CACHE));
 			INT32 dupz = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 			INT32 x, y, pw = SHORT(pat->width) * dupz, ph = SHORT(pat->height) * dupz;
 
@@ -632,7 +632,7 @@ static bool D_Display(void)
 			py = 4;
 		else
 			py = viewwindowy + 4;
-		patch = static_cast<patch_t*>(W_CachePatchLongName("M_PAUSE", PU_PATCH));
+		patch = static_cast<patch_t*>(W_CachePatchName("M_PAUSE", PU_PATCH));
 		V_DrawScaledPatch(viewwindowx + (BASEVIDWIDTH - patch->width)/2, py, 0, patch);
 	}
 
@@ -786,9 +786,9 @@ void D_SRB2Loop(void)
 	/* Smells like a hack... Don't fade Sonic's ass into the title screen. */
 	if (gamestate != GS_TITLESCREEN)
 	{
-		static lumpnum_t gstartuplumpnum = W_CheckNumForLongName("STARTUP");
+		static lumpnum_t gstartuplumpnum = W_CheckNumForName("STARTUP");
 		if (gstartuplumpnum == LUMPERROR)
-			gstartuplumpnum = W_GetNumForLongName("MISSING");
+			gstartuplumpnum = W_GetNumForName("MISSING");
 		V_DrawScaledPatch(0, 0, 0, W_CachePatchNum(gstartuplumpnum, PU_PATCH));
 	}
 #endif
@@ -1559,7 +1559,7 @@ void D_SRB2Main(void)
 	}
 
 	D_CleanFile(startuppwads);
-	partadd_earliestfile = MAX_WADFILES;
+	partadd_earliestfile = UINT16_MAX;
 
 	CON_SetLoadingProgress(LOADED_PWAD);
 

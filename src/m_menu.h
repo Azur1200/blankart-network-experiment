@@ -190,8 +190,6 @@ struct menuitem_t
 	INT16 x, y;     // coordinates, see menuitemflags
 };
 
-#define SHORTNAMELEN 8
-
 struct menu_t
 {
 	dehinfo_t      info;
@@ -210,7 +208,7 @@ struct menu_t
 
 	// MENUPRES STUFF BELOW
 
-	char bgname[SHORTNAMELEN+1]; // name for background gfx lump; lays over titlemap if this is set
+	char bgname[8]; // name for background gfx lump; lays over titlemap if this is set
 	SINT8 fadestrength;  // darken background when displaying this menu, strength 0-31 or -1 for undefined
 	INT32 bgcolor; // fill color, overrides bg name. -1 means follow bg name rules.
 	INT32 titlescrollxspeed; // background gfx scroll per menu; inherits global setting
@@ -220,7 +218,7 @@ struct menu_t
 	SINT8 hidetitlepics; // hide title gfx per menu; -1 means undefined, inherits global setting
 	ttmode_enum ttmode; // title wing animation mode; default TTMODE_KART
 	UINT8 ttscale; // scale of title wing gfx (FRACUNIT / ttscale); -1 means undefined, inherits global setting
-	char ttname[SHORTNAMELEN+1]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
+	char ttname[9]; // lump name of title wing gfx. If name length is <= 6, engine will attempt to load numbered frames (TTNAMExx)
 	INT16 ttx; // X position of title wing
 	INT16 tty; // Y position of title wing
 	INT16 ttloop; // # frame to loop; -1 means dont loop

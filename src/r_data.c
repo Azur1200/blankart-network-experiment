@@ -221,10 +221,10 @@ static inline lumpnum_t R_CheckNumForNameList(const char *name, lumplist_t *list
 	size_t i;
 	UINT16 lump;
 
-	for (i = listsize - 1; i != SIZE_MAX; i--)
+	for (i = listsize - 1; i < INT16_MAX; i--)
 	{
 		lump = W_CheckNumForNamePwad(name, list[i].wadfile, list[i].firstlump);
-		if (lump == LUMPERROR || lump > (list[i].firstlump + list[i].numlumps))
+		if (lump == INT16_MAX || lump > (list[i].firstlump + list[i].numlumps))
 			continue;
 		else
 			return (list[i].wadfile<<16)+lump;
@@ -240,13 +240,13 @@ static void R_InitExtraColormaps(void)
 
 	for (cfile = clump = 0; cfile < numwadfiles; cfile++, clump = 0)
 	{
-		startnum = W_CheckNumForLongNamePwad("C_START", cfile, clump);
-		if (startnum == LUMPERROR)
+		startnum = W_CheckNumForNamePwad("C_START", cfile, clump);
+		if (startnum == INT16_MAX)
 			continue;
 
-		endnum = W_CheckNumForLongNamePwad("C_END", cfile, clump);
+		endnum = W_CheckNumForNamePwad("C_END", cfile, clump);
 
-		if (endnum == LUMPERROR)
+		if (endnum == INT16_MAX)
 			I_Error("R_InitExtraColormaps: C_START without C_END\n");
 
 		// This shouldn't be possible when you use the Pwad function, silly
@@ -275,7 +275,7 @@ void R_InitColormaps(void)
 	lumpnum_t lump;
 
 	// Load in the light tables
-	lump = W_GetNumForLongName("COLORMAP");
+	lump = W_GetNumForName("COLORMAP");
 	len = W_LumpLength(lump);
 	if (len < COLORMAP_SIZE*2) // accomodate encore mode later
 		len = COLORMAP_SIZE*2;
@@ -295,13 +295,13 @@ void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boo
 {
 	char colormap[9] = "COLORMAP";
 	lumpnum_t lump;
-	const lumpnum_t basecolormaplump = W_GetNumForLongName(colormap);
+	const lumpnum_t basecolormaplump = W_GetNumForName(colormap);
 	boolean remap = false;
 	if (num > 0 && num <= 10000)
 		snprintf(colormap, 8, "CLM%04u", num-1);
 
 	// Load in the light tables, now 64k aligned for smokie...
-	lump = W_GetNumForLongName(colormap);
+	lump = W_GetNumForName(colormap);
 	if (lump == LUMPERROR)
 		lump = basecolormaplump;
 	else
@@ -1204,8 +1204,7 @@ static void R_Init8to16(void)
 	UINT8 *palette;
 	int i;
 
-	lumpnum_t lump = W_GetNumForLongName("PLAYPAL");
-	palette = W_CacheLumpNum(lump, PU_CACHE);
+	palette = W_CacheLumpName("PLAYPAL",PU_CACHE);
 
 	for (i = 0; i < 256; i++)
 	{

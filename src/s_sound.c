@@ -313,17 +313,22 @@ static void SetChannelsNum(void)
 //
 lumpnum_t S_GetSfxLumpNum(sfxinfo_t *sfx)
 {
+	char namebuf[9];
 	lumpnum_t sfxlump;
 
-	sfxlump = W_CheckNumForLongName(va("DS%s", sfx->name));
+	sprintf(namebuf, "ds%s", sfx->name);
+
+	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	sfxlump = W_CheckNumForLongName(sfx->name);
+	strlcpy(namebuf, sfx->name, sizeof namebuf);
+
+	sfxlump = W_CheckNumForName(namebuf);
 	if (sfxlump != LUMPERROR)
 		return sfxlump;
 
-	return W_GetNumForLongName("DSTHOK");
+	return W_GetNumForName("dsthok");
 }
 
 //
@@ -1382,11 +1387,12 @@ MusicDefError
 		int          line
 ){
 	const wadfile_t  * wad  =    wadfiles[WADFILENUM (lumpnum)];
+	const lumpinfo_t * lump = &wad->lumpinfo[LUMPNUM (lumpnum)];
 
 	CONS_Alert(level,
 			va("%%s|%%s: %s (line %%d)\n", description),
 			wad->filename,
-			W_CheckFullNameForNum(lumpnum),
+			lump->fullname,
 			field,
 			line
 	);
@@ -1639,10 +1645,14 @@ void S_LoadMusicDefs(UINT16 wad)
 {
 	const lumpnum_t wadnum = wad << 16;
 
-	UINT16 lump;
+	UINT16 lump = 0;
 
-	for (lump = 0; (lump = W_CheckNumForLongNamePwad("MUSICDEF", wad, lump)) != LUMPERROR; lump++)
+	while (( lump = W_CheckNumForNamePwad("MUSICDEF", wad, lump) ) != INT16_MAX)
+	{
 		S_LoadMusicDefLump(wadnum | lump);
+
+		lump++;
+	}
 }
 
 //
@@ -1842,16 +1852,9 @@ boolean S_MusicInfo(char *mname, UINT16 *mflags, boolean *looping)
 	return (boolean)mname[0];
 }
 
-static lumpnum_t S_GetMusicLumpNum(const char *mname)
-{
-	char *n = va("O_%s", mname);
-	strupr(n); // yep, you can do that
-	return W_CheckNumForNamePrefix(n, 8);
-}
-
 boolean S_MusicExists(const char *mname)
 {
-	return S_GetMusicLumpNum(mname) != LUMPERROR;
+	return W_CheckNumForName(va("O_%s", mname)) != LUMPERROR;
 }
 
 /// ------------------------
@@ -2184,6 +2187,14 @@ boolean S_RecallMusic(UINT16 status, boolean fromfirst)
 /// ------------------------
 /// Music Playback
 /// ------------------------
+
+static lumpnum_t S_GetMusicLumpNum(const char *mname)
+{
+	if (S_MusicExists(mname))
+		return W_GetNumForName(va("o_%s", mname));
+	else
+		return LUMPERROR;
+}
 
 static boolean S_LoadMusic(const char *mname)
 {

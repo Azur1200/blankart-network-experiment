@@ -388,7 +388,7 @@ void K_LoadKartHUDGraphics(void)
 
 		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
 		{
-			kp_kartzspeedo[m] = W_CachePatchLongName(patchNames[m], PU_HUDGFX);
+			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
 		}
 	}
 
@@ -1577,7 +1577,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 						if (emblem->collected)
 						{
-							emblempic[curemb] = W_CachePatchLongName(M_GetEmblemPatch(emblem, false), PU_CACHE);
+							emblempic[curemb] = W_CachePatchName(M_GetEmblemPatch(emblem, false), PU_CACHE);
 							emblemcol[curemb] = R_GetTranslationColormap(TC_DEFAULT, M_GetEmblemColor(emblem), GTC_CACHE);
 							if (++curemb == 3)
 								break;
@@ -1613,7 +1613,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 			V_DrawRightAlignedString(workx, worky, splitflags|V_6WIDTHSPACE, targettext);
 			workx -= 67;
-			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchLongName("NEEDIT", PU_CACHE));
+			V_DrawSmallScaledPatch(workx + 4, worky, splitflags, W_CachePatchName("NEEDIT", PU_CACHE));
 
 			break;
 
@@ -2663,7 +2663,7 @@ static void K_drawKartBumpersOrKarma(void)
 	{
 		if (itembreaker)
 		{
-			patch_t *item = W_CachePatchLongName("RNDMA0", PU_PATCH);
+			patch_t *item = W_CachePatchName("RNDMA0", PU_PATCH);
 			UINT8 *itemcolormap = R_GetTranslationColormap(TC_BLINK, SKINCOLOR_BLACK, GTC_CACHE);
 
 			if (!K_UseColorHud())
@@ -5075,8 +5075,8 @@ void K_drawKartHUD(void)
 				snapflags = 0;
 			}
 
-			V_DrawTinyScaledPatch(x-54, y, snapflags|V_SLIDEIN, W_CachePatchLongName("TTKBANNR", PU_CACHE));
-			V_DrawTinyScaledPatch(x-54, y+25, snapflags|V_SLIDEIN, W_CachePatchLongName("TTKART", PU_CACHE));
+			V_DrawTinyScaledPatch(x-54, y, snapflags|V_SLIDEIN, W_CachePatchName("TTKBANNR", PU_CACHE));
+			V_DrawTinyScaledPatch(x-54, y+25, snapflags|V_SLIDEIN, W_CachePatchName("TTKART", PU_CACHE));
 		}
 		else
 		{

@@ -447,7 +447,7 @@ void Y_IntermissionDrawer(void)
 		{
 			// no y_buffer
 			if (y_buffer == NULL)
-				V_DrawPatchFill(W_CachePatchLongName("SRB2BACK", PU_CACHE));
+				V_DrawPatchFill(W_CachePatchName("SRB2BACK", PU_CACHE));
 			else
 			{
 				// Maybe the resolution changed?
@@ -590,13 +590,13 @@ void Y_IntermissionDrawer(void)
 				if (data.num[i] == whiteplayer)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
-					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchLongName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
 				}
 
 				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
 				{
 					// RETIRED!!
-					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchLongName("K_NOBLNS", PU_CACHE));
+					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchName("K_NOBLNS", PU_CACHE));
 				}
 
 				STRBUFCPY(strtime, data.name[i]);
@@ -1104,8 +1104,8 @@ static void Y_VoteScreenCheck(void)
 
 	// non lua vote background handling
 	boolean prefbattletype = ((votelevels[0][1] & ~0x80) == GT_BATTLE);
-	VoteScreen.widebgpatch = W_CachePatchLongName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
-	VoteScreen.bgpatch = W_CachePatchLongName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
+	VoteScreen.widebgpatch = W_CachePatchName((prefbattletype ? "BATTLSCW" : "INTERSCW"), PU_PATCH);
+	VoteScreen.bgpatch = W_CachePatchName((prefbattletype ? "BATTLSCR" : "INTERSCR"), PU_PATCH);
 }
 
 //
@@ -1153,7 +1153,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 	// Draw non animated patch
 	if (!tempfoundAnimLuaVoteFrames)
 	{
-		votebg = W_CachePatchLongName(va("%s1", tempPrefix), PU_PATCH);
+		votebg = W_CachePatchName(va("%s1", tempPrefix), PU_PATCH);
 		Y_VoteBackgroundDrawer(votebg);
 		return;
 	}
@@ -1166,7 +1166,7 @@ static void Y_DrawLuaVoteScreenPatch(boolean widePatch)
 
 	nextframe = (VoteScreen.currentAnimFrame + 1);
 
-	votebg = W_CachePatchLongName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
+	votebg = W_CachePatchName(va("%s%d", tempPrefix, nextframe), PU_PATCH);
 
 	Y_VoteBackgroundDrawer(votebg);
 
@@ -1532,7 +1532,7 @@ void Y_VoteDrawer(void)
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
-				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchLongName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
 			}
 		}
 
@@ -1864,13 +1864,13 @@ static void Y_InitVoteDrawing(void)
 	// setup the background patches
 	Y_VoteScreenCheck();
 
-	VoteScreen.cursor[0] = W_CachePatchLongName("M_CURSOR", PU_PATCH);
-	VoteScreen.cursor[1] = W_CachePatchLongName("P1CURSOR", PU_PATCH);
-	VoteScreen.cursor[2] = W_CachePatchLongName("P2CURSOR", PU_PATCH);
-	VoteScreen.cursor[3] = W_CachePatchLongName("P3CURSOR", PU_PATCH);
-	VoteScreen.cursor[4] = W_CachePatchLongName("P4CURSOR", PU_PATCH);
+	VoteScreen.cursor[0] = W_CachePatchName("M_CURSOR", PU_PATCH);
+	VoteScreen.cursor[1] = W_CachePatchName("P1CURSOR", PU_PATCH);
+	VoteScreen.cursor[2] = W_CachePatchName("P2CURSOR", PU_PATCH);
+	VoteScreen.cursor[3] = W_CachePatchName("P3CURSOR", PU_PATCH);
+	VoteScreen.cursor[4] = W_CachePatchName("P4CURSOR", PU_PATCH);
 
-	VoteScreen.rubyicon  = W_CachePatchLongName("RUBYICON", PU_PATCH);
+	VoteScreen.rubyicon  = W_CachePatchName("RUBYICON", PU_PATCH);
 }
 
 void Y_StartVote(void)

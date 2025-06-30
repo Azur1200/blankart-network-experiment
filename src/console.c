@@ -299,8 +299,7 @@ void CON_SetupBackColormapEx(INT32 color, boolean prompt)
 {
 	UINT16 i, palsum;
 	UINT8 j, palindex;
-	lumpnum_t lump = W_GetNumForLongName(GetPalette());
-	UINT8 *pal = W_CacheLumpNum(lump, PU_CACHE);
+	UINT8 *pal = W_CacheLumpName(GetPalette(), PU_CACHE);
 	INT32 shift = 6;
 
 	if (color == INT32_MAX)
@@ -1759,12 +1758,12 @@ static void CON_DrawBackpic(void)
 
 	// Get the lumpnum for CONSBACK, STARTUP (Only during game startup) or fallback into MISSING.
 	if (con_startup)
-		piclump = W_CheckNumForLongName("STARTUP");
+		piclump = W_CheckNumForName("STARTUP");
 	else
-		piclump = W_CheckNumForLongName("KARTKREW");
+		piclump = W_CheckNumForName("KARTKREW");
 
 	if (piclump == LUMPERROR)
-		piclump = W_GetNumForLongName("MISSING");
+		piclump = W_GetNumForName("MISSING");
 
 	// Cache the patch.
 	con_backpic = W_CachePatchNum(piclump, PU_PATCH);

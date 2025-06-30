@@ -341,7 +341,7 @@ union FColorRGBA
 typedef union FColorRGBA RGBA_t;
 
 typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
-#define LUMPERROR UINT16_MAX // unified LUMPERROR
+#define LUMPERROR UINT32_MAX
 
 typedef UINT32 tic_t;
 #define INFTICS UINT32_MAX

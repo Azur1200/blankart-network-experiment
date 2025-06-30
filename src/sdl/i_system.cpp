@@ -1919,7 +1919,7 @@ void I_Quit(void)
 	I_ShutdownSystem();
 	SDL_Quit();
 	/* if option -noendtxt is set, don't print the text */
-	if (!M_CheckParm("-noendtxt") && W_CheckNumForLongName("ENDOOM") != LUMPERROR)
+	if (!M_CheckParm("-noendtxt") && W_CheckNumForName("ENDOOM") != LUMPERROR)
 	{
 		printf("\r");
 		ShowEndTxt();

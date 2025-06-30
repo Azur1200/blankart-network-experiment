@@ -1210,7 +1210,7 @@ void HWR_InitLight(void)
 		lspr[i].dynamic_sqrradius = lspr[i].dynamic_radius*lspr[i].dynamic_radius;
 
 	lightmappatch.mipmap->downloaded = false;
-	coronalumpnum = W_CheckNumForLongName("CORONA");
+	coronalumpnum = W_CheckNumForName("CORONA");
 }
 
 // -----------------+

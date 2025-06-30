@@ -35,12 +35,12 @@ struct brightmapStorage_t
 };
 
 /*--------------------------------------------------
-	void K_InitBrightmapsPwad(UINT16 wadNum);
+	void K_InitBrightmapsPwad(INT32 wadNum);
 
 		Finds all BRIGHT lumps for one WAD/PK3 and processes them.
 --------------------------------------------------*/
 
-void K_InitBrightmapsPwad(UINT16 wadNum);
+void K_InitBrightmapsPwad(INT32 wadNum);
 
 /*--------------------------------------------------
 	void K_InitBrightmaps(void);

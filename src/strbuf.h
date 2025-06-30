@@ -22,7 +22,6 @@ struct strbuf_t
 
 strbuf_t *strbuf_alloc(void);
 UINT32 strbuf_append(strbuf_t **strbuf, const char *str);
-UINT32 strbuf_append_m(strbuf_t **strbuf, const void *src, UINT32 len);
 
 // returns the string at the given offset
 FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)

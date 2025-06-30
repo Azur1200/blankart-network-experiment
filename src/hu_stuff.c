@@ -228,7 +228,7 @@ void HU_Init(void)
 	// only allocate if not present, to save us a lot of headache
 	if (missingpat == NULL)
 	{
-		lumpnum_t missingnum = W_GetNumForLongName("MISSING");
+		lumpnum_t missingnum = W_GetNumForName("MISSING");
 		if (missingnum == LUMPERROR)
 			I_Error("HU_LoadGraphics: \"MISSING\" patch not present in resource files.");
 
@@ -310,23 +310,23 @@ void HU_Init(void)
 patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *format, ...)
 {
 	va_list ap;
-	char buffer[SHORTNAMELEN+1];
+	char buffer[9];
 
-	lumpnum_t lump = LUMPERROR;
+	lumpnum_t lump = INT16_MAX;
 	patch_t *patch;
 
 	va_start (ap, format);
 	vsnprintf(buffer, sizeof buffer, format, ap);
 	va_end   (ap);
 
-	if (user && partadd_earliestfile != MAX_WADFILES)
+	if (user && partadd_earliestfile != UINT16_MAX)
 	{
 		UINT16 fileref = numwadfiles;
-		lump = LUMPERROR;
+		lump = INT16_MAX;
 
-		while ((lump == LUMPERROR) && ((--fileref) >= partadd_earliestfile))
+		while ((lump == INT16_MAX) && ((--fileref) >= partadd_earliestfile))
 		{
-			lump = W_CheckNumForLongNamePwad(buffer, fileref, 0);
+			lump = W_CheckNumForNamePwad(buffer, fileref, 0);
 		}
 
 		/* no update in this wad */
@@ -339,7 +339,7 @@ patch_t *HU_UpdateOrBlankPatch(patch_t **user, boolean required, const char *for
 	}
 	else
 	{
-		lump = W_CheckNumForLongName(buffer);
+		lump = W_CheckNumForName(buffer);
 
 		if (lump == LUMPERROR)
 		{

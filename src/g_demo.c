@@ -2868,12 +2868,11 @@ void G_DeferedPlayDemo(const char *name)
 
 #define SKIPERRORS
 
-void G_DoPlayDemo(const char *defdemoname)
+void G_DoPlayDemo(char *defdemoname)
 {
 	UINT8 i, p;
 	lumpnum_t l;
-	char skin[17],color[MAXCOLORNAME+1],follower[17],mapname[MAXMAPLUMPNAME],*pdemoname;
-	const char *n;
+	char skin[17],color[MAXCOLORNAME+1],follower[17],mapname[MAXMAPLUMPNAME],*n,*pdemoname;
 	UINT8 version,subversion;
 	UINT32 randseed;
 	char msg[1024];
@@ -2928,7 +2927,7 @@ void G_DoPlayDemo(const char *defdemoname)
 			if (n == defdemoname)
 			{
 				// Raw lump.
-				if ((l = W_CheckNumForLongName(defdemoname)) == LUMPERROR)
+				if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 				{
 					snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 					CONS_Alert(CONS_ERROR, "%s", msg);
@@ -3382,12 +3381,11 @@ void G_DoPlayDemo(const char *defdemoname)
 	demo.deferstart = true;
 }
 
-void G_AddGhost(const char *defdemoname)
+void G_AddGhost(char *defdemoname)
 {
 	INT32 i;
 	lumpnum_t l;
-	char name[17],skin[17],color[MAXCOLORNAME+1],*pdemoname;
-	const char *n;
+	char name[17],skin[17],color[MAXCOLORNAME+1],*n,*pdemoname;
 	UINT64 demohash;
 	demoghost *gh;
 	UINT8 flags;
@@ -3422,7 +3420,7 @@ void G_AddGhost(const char *defdemoname)
 		p = buffer;
 	}
 	// load demo resource from WAD
-	else if ((l = W_CheckNumForLongName(defdemoname)) == LUMPERROR)
+	else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
 		Z_Free(pdemoname);
@@ -3801,7 +3799,7 @@ void G_DoPlayMetal(void)
 
 	// it's an internal demo
 	// TODO: Use map header to determine lump name
-	if ((l = W_CheckNumForLongName(va("%sMS",G_BuildMapName(gamemap)))) == LUMPERROR)
+	if ((l = W_CheckNumForName(va("%sMS",G_BuildMapName(gamemap)))) == LUMPERROR)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("No bot recording for this map.\n"));
 		return;

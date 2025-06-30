@@ -68,6 +68,7 @@ void V_SetPalette(INT32 palettenum);
 
 void V_SetPaletteLump(const char *pal);
 
+const char *R_GetPalname(UINT16 num);
 const char *GetPalette(void);
 
 extern RGBA_t *pLocalPalette;

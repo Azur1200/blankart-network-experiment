@@ -200,7 +200,7 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 	}
 	if (i < FACE_MAX)
 	{
-		patch_t *missing = W_CachePatchLongName("MISSING", PU_HUDGFX);
+		patch_t *missing = W_CachePatchName("MISSING", PU_HUDGFX);
 		while (i < FACE_MAX)
 		{
 			faceprefix[skinnum][i] = missing;

@@ -166,11 +166,11 @@ static boolean K_BRIGHTLumpParser(char *data, size_t size)
 }
 
 /*--------------------------------------------------
-	void K_InitBrightmapsPwad(UINT16 wadNum)
+	void K_InitBrightmapsPwad(INT32 wadNum)
 
 		See header file for description.
 --------------------------------------------------*/
-void K_InitBrightmapsPwad(UINT16 wadNum)
+void K_InitBrightmapsPwad(INT32 wadNum)
 {
 	UINT16 lumpNum;
 	size_t i;
@@ -178,18 +178,27 @@ void K_InitBrightmapsPwad(UINT16 wadNum)
 	I_Assert(brightmapStorage == NULL);
 
 	// Find BRIGHT lump in the WAD
-	for (lumpNum = 0; (lumpNum = W_CheckNumForLongNamePwad("BRIGHT", wadNum, lumpNum)) != LUMPERROR; lumpNum++)
+	lumpNum = W_CheckNumForNamePwad("BRIGHT", wadNum, 0);
+
+	while (lumpNum != INT16_MAX)
 	{
-		UINT8 *data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_STATIC);
+		UINT8 *data = (UINT8 *)W_CacheLumpNumPwad(wadNum, lumpNum, PU_CACHE);
 
 		if (data != NULL)
 		{
+			lumpinfo_t *lump_p = &wadfiles[wadNum]->lumpinfo[lumpNum];
 			size_t size = W_LumpLengthPwad(wadNum, lumpNum);
 			char *datacopy;
 
+			size_t nameLength = strlen(wadfiles[wadNum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
+			char *name = malloc(nameLength + 1);
+
+			sprintf(name, "%s|%s", wadfiles[wadNum]->filename, lump_p->fullname);
+			name[nameLength] = '\0';
+
 			size = W_LumpLengthPwad(wadNum, lumpNum);
 
-			CONS_Printf(M_GetText("Loading BRIGHT from %s|%s\n"), wadfiles[wadNum]->filename, W_CheckFullNameForNumPwad(wadNum, lumpNum));
+			CONS_Printf(M_GetText("Loading BRIGHT from %s\n"), name);
 
 			datacopy = (char *)Z_Malloc((size+1)*sizeof(char),PU_STATIC,NULL);
 			memmove(datacopy,data,size);
@@ -200,7 +209,11 @@ void K_InitBrightmapsPwad(UINT16 wadNum)
 			K_BRIGHTLumpParser(datacopy, size);
 
 			Z_Free(datacopy);
+
+			free(name);
 		}
+
+		lumpNum = W_CheckNumForNamePwad("BRIGHT", (UINT16)wadNum, lumpNum + 1);
 	}
 
 	if (maxBrightmapStorage == 0)
@@ -243,7 +256,7 @@ void K_InitBrightmapsPwad(UINT16 wadNum)
 --------------------------------------------------*/
 void K_InitBrightmaps(void)
 {
-	UINT16 wadNum;
+	INT32 wadNum;
 
 	for (wadNum = 0; wadNum < numwadfiles; wadNum++)
 	{
