@@ -9426,8 +9426,10 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 		{
 			name = lumpinfo->name;
 
-			if (P_CheckSoundReplacements(name, i));
+			if (P_CheckSoundReplacements(name, i))
+			{
 				continue;
+			}
 
 			if (!allvotereplaced && P_CheckVoteReplacements(name))
 				allvotereplaced = true;

@@ -9,7 +9,9 @@
 // Thread execution.
 //
 //-----------------------------------------------------------------------------
-
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #include "Thread.hpp"
 
 #include "Array.hpp"
