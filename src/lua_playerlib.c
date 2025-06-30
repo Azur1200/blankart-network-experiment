@@ -226,6 +226,8 @@ enum player_e
 	player_flashing,
 	player_spinouttimer,
 	player_spinouttype,
+	player_flipovertimer,
+	player_flipoverangle,
 	player_instashield,
 	player_wipeoutslow,
 	player_justbumped,
@@ -406,6 +408,8 @@ static const char *const player_opt[] = {
 	"flashing",
 	"spinouttimer",
 	"spinouttype",
+	"flipovertimer",
+	"flipoverangle",
 	"instashield",
 	"wipeoutslow",
 	"justbumped",
@@ -671,6 +675,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_spinouttype:
 		lua_pushinteger(L, plr->spinouttype);
+		break;
+	case player_flipovertimer:
+		lua_pushinteger(L, plr->flipovertimer);
+		break;
+	case player_flipoverangle:
+		lua_pushinteger(L, plr->flipoverangle);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -1298,6 +1308,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_spinouttype:
 		plr->spinouttype = luaL_checkinteger(L, 3);
+		break;
+	case player_flipovertimer:
+		plr->flipovertimer = luaL_checkinteger(L, 3);
+		break;
+	case player_flipoverangle:
+		plr->flipoverangle = luaL_checkinteger(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
