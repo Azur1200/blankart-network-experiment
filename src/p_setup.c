@@ -7688,7 +7688,7 @@ static void P_ConvertBinaryThingTypes(void)
 			break;
 		case FLOOR_SLOPE_THING:
 		case CEILING_SLOPE_THING:
-			mapthings[i].tid = mapthings[i].extrainfo;
+			mapthings[i].args[0] = mapthings[i].extrainfo;
 			break;
 		default:
 			break;
