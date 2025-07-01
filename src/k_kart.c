@@ -10412,6 +10412,7 @@ void K_StripItems(player_t *player)
 	player->stolentimer = 0;
 
 	player->curshield = KSHIELD_NONE;
+	player->flametimer = 0;
 	player->bananadrag = 0;
 
 	player->sadtimer = 0;
