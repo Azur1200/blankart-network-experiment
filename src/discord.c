@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2 KART
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2018-2020 by Sally "TehRealSalt" Cochenour.
 // Copyright (C) 2018-2020 by Kart Krew.

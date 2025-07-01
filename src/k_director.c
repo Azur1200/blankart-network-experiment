@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2 KART
+// BLANKART
 //-----------------------------------------------------------------------------
 /// \file  k_director.c
 /// \brief SRB2kart automatic spectator camera.

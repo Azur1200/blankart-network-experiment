@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2 KART
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2018-2022 by Viv "toaster" Grannell
 // Copyright (C) 2018-2022 by Kart Krew

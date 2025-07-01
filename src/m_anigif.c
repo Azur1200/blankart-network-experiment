@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2013-2016 by Matthew "Kaito Sinclaire" Walsh.
 // Copyright (C) 2013      by "Ninji".

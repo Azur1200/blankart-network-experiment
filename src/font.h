@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 1999-2018 by Sonic Team Junior.
 // Copyright (C)      2019 by Kart Krew.

@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2004      by Stephen McGranahan
 // Copyright (C) 2015-2020 by Sonic Team Junior.

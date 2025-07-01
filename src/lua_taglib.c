@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2020 by James R.
 // Copyright (C) 2020 by Sonic Team Junior.

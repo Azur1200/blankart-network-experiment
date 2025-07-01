@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2003      by James Haley
 // Copyright (C) 2003-2020 by Sonic Team Junior.

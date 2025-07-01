@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2000-2005 by Marc Alexander Lehmann <schmorp@schmorp.de>
 //

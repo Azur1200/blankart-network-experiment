@@ -1,4 +1,4 @@
-// SONIC ROBO BLAST 2 KART ~ ZarroTsu
+// BLANKART
 //-----------------------------------------------------------------------------
 /// \file  k_kart.h
 /// \brief SRB2kart stuff.
