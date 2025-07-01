@@ -527,9 +527,9 @@ void P_AllocMapHeader(INT16 i)
 //
 #define MAXLEVELFLATS 256
 
+size_t nummaxflats;
 size_t numlevelflats;
 levelflat_t *levelflats;
-levelflat_t *foundflats;
 
 //SoM: Other files want this info.
 size_t P_PrecacheLevelFlats(void)
@@ -553,6 +553,7 @@ or NULL if we want to allocate it now.
 static INT32
 Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 {
+	boolean ranOutOfSpace = (!!(numlevelflats >= nummaxflats));
 	// Scan through the already found flats, return if it matches.
 	for (size_t i = 0; i < numlevelflats; i++)
 	{
@@ -560,19 +561,18 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 			return i;
 	}
 
-	if (resize)
+	// we either have to resize due to resynch or we ran out of space for flats
+	if (resize || ranOutOfSpace)
 	{
-		// allocate new flat memory
-		levelflats = Z_Realloc(levelflats, (numlevelflats + 1) * sizeof(*levelflats), PU_LEVEL, NULL);
-		levelflat  = levelflats + numlevelflats;
+		// we need more space for flats so let's double the number of maximum flats
+		if (ranOutOfSpace)
+			nummaxflats *= 2;
+		// time to actually reallocate the flats to ensure that it fits
+		levelflats = Z_Realloc(levelflats, nummaxflats * sizeof(*levelflats), PU_LEVEL, NULL);
+		if (levelflats == NULL)
+			I_Error("Ploadflat: ran out of memory for more flats");
 	}
-	else
-	{
-		if (numlevelflats >= MAXLEVELFLATS)
-			I_Error("Too many flats in level\n");
-
-		levelflat += numlevelflats;
-	}
+	levelflat = levelflats + numlevelflats;
 
 	// Store the name.
 	strlcpy(levelflat->name, flatname, sizeof (levelflat->name));
@@ -606,7 +606,7 @@ Ploadflat (levelflat_t *levelflat, const char *flatname, boolean resize)
 		K_GetTerrainForTextureName(levelflat->name);
 
 #ifndef ZDEBUG
-	CONS_Debug(DBG_SETUP, "flat #%03d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
+	CONS_Debug(DBG_SETUP, "flat #%d: %s\n", atoi(sizeu1(numlevelflats)), levelflat->name);
 #endif
 
 	return numlevelflats++;
@@ -940,8 +940,8 @@ static void P_LoadSectors(UINT8 *data)
 		ss->floorheight = SHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = SHORT(ms->ceilingheight)<<FRACBITS;
 
-		ss->floorpic = P_AddLevelFlat(ms->floorpic, foundflats);
-		ss->ceilingpic = P_AddLevelFlat(ms->ceilingpic, foundflats);
+		ss->floorpic = P_AddLevelFlat(ms->floorpic, levelflats);
+		ss->ceilingpic = P_AddLevelFlat(ms->ceilingpic, levelflats);
 
 		ss->lightlevel = SHORT(ms->lightlevel);
 		ss->special = SHORT(ms->special);
@@ -1717,9 +1717,9 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 	else if (fastcmp(param, "heightceiling"))
 		sectors[i].ceilingheight = atol(val) << FRACBITS;
 	if (fastcmp(param, "texturefloor"))
-		sectors[i].floorpic = P_AddLevelFlat(val, foundflats);
+		sectors[i].floorpic = P_AddLevelFlat(val, levelflats);
 	else if (fastcmp(param, "textureceiling"))
-		sectors[i].ceilingpic = P_AddLevelFlat(val, foundflats);
+		sectors[i].ceilingpic = P_AddLevelFlat(val, levelflats);
 	else if (fastcmp(param, "lightlevel"))
 		sectors[i].lightlevel = atol(val);
 	else if (fastcmp(param, "lightfloor"))
@@ -3705,13 +3705,9 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	lines     = Z_Calloc(numlines * sizeof (*lines), PU_LEVEL, NULL);
 	mapthings = Z_Calloc(nummapthings * sizeof (*mapthings), PU_LEVEL, NULL);
 
-	// Allocate a big chunk of memory as big as our MAXLEVELFLATS limit.
-	//Fab : FIXME: allocate for whatever number of flats - 512 different flats per level should be plenty
-	foundflats = calloc(MAXLEVELFLATS, sizeof (*foundflats));
-	if (foundflats == NULL)
-		I_Error("Ran out of memory while loading sectors\n");
-
 	numlevelflats = 0;
+	nummaxflats = MAXLEVELFLATS;
+	levelflats = Z_Calloc(nummaxflats * sizeof (*levelflats), PU_LEVEL, NULL);
 
 	// Load map data.
 	if (udmf)
@@ -3733,11 +3729,7 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	R_ClearTextureNumCache(true);
 
 	// set the sky flat num
-	skyflatnum = P_AddLevelFlat(SKYFLATNAME, foundflats);
-
-	// copy table for global usage
-	levelflats = M_Memcpy(Z_Calloc(numlevelflats * sizeof (*levelflats), PU_LEVEL, NULL), foundflats, numlevelflats * sizeof (levelflat_t));
-	free(foundflats);
+	skyflatnum = P_AddLevelFlat(SKYFLATNAME, levelflats);
 
 	TracyCZoneEnd(__zone);
 	return true;
