@@ -29,6 +29,7 @@ extern UINT8 *demo_p;
 // ======================================
 
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
+extern consvar_t cv_resyncdemo;
 
 extern tic_t demostarttime;
 
