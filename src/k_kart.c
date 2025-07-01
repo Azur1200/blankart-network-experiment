@@ -7647,6 +7647,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
+	if (P_PlayerInPain(player))
+	{
+		player->prevspeedboost = 0;
+	}
+
 	K_GetKartBoostPower(player);
 
 	// Special effect objects!

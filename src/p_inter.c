@@ -2280,7 +2280,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			//player->flamedash = 0;
 			player->ringboost = 0;
 			player->glanceDir = 0;
-			K_ClearBoost(player);
 			player->pflags &= ~PF_GAINAX;
 
 			INT16 ringburst = 3;
