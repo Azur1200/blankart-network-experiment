@@ -9085,9 +9085,18 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 	if ((player != NULL) && (player->mo != NULL) && (P_MobjWasRemoved(player->mo) == false))
 	{
 		// Safety :P
-		if (!player->currentwaypoint || !player->nextwaypoint)
+		if (!player->currentwaypoint || !player->nextwaypoint || !K_SafeRespawnPosition(player->nextwaypoint->mobj))
 		{
-			waypoint_t *oopisepoint = K_GetBestWaypointForMobj(player->mo, NULL);
+			waypoint_t *oopisepoint = NULL;
+
+			if (player->nextwaypoint)
+			{
+				oopisepoint = player->nextwaypoint;
+			}
+			else
+			{
+				oopisepoint = K_GetBestWaypointForMobj(player->mo, NULL);
+			}
 
 			if (!oopisepoint || !oopisepoint->mobj)
 			{
