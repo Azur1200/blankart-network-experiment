@@ -9152,6 +9152,13 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 				{
 					oopisepoint = safewaypoint;
 				}
+				else
+				{
+					if (player->nextwaypoint)
+					{
+						oopisepoint = player->nextwaypoint;
+					}
+				}
 			}
 
 			if (oopisepoint && oopisepoint->numprevwaypoints > 0)
@@ -9198,8 +9205,17 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 		// Better safe then sorry.
 		if (!safewaypoint)
 		{
-			// Oh shit, oh fuck.....
-			CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
+
+			if (player->nextwaypoint)
+			{
+				safewaypoint = player->nextwaypoint;
+			}
+			else
+			{
+				// Oh shit, oh fuck.....
+				CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn at invalid waypoint!\n"));
+			}
+
 			return;
 		}
 
