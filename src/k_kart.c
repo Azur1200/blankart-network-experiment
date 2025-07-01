@@ -3792,7 +3792,8 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->spinouttimer && player->wipeoutslow == 1) // Slow down after you've been bumped
 	{
-		player->boostpower = player->speedboost = player->accelboost = 0;
+		player->boostpower = player->speedboost = player->accelboost = player->prevspeedboost = 0;
+		K_ClearBoost(player);
 		return;
 	}
 
@@ -7646,11 +7647,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// update boost angle if not spun out
 	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
-
-	if (P_PlayerInPain(player))
-	{
-		player->prevspeedboost = 0;
-	}
 
 	K_GetKartBoostPower(player);
 
