@@ -711,31 +711,33 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
-    if (dist < (INVINDIST/2))
-        return 0;
+	UINT32 invindist = INVINDIST/2;
 
-    INT32 finodds = 0;
-    fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
+	if (dist < invindist)
+		return 0;
 
-    if (fac > FRACUNIT)
-    {
-        // Desperation! Climb exponentially until Invincibility is practically guaranteed.
-        fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
-        finodds = Easing_InCubic(fac, INVODDS, 20 * INVINDESPERATION);
-    }
-    else
-    {
+	INT32 finodds = 0;
+	fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
+
+	if (fac > FRACUNIT)
+	{
+		// Desperation! Climb exponentially until Invincibility is practically guaranteed.
+		fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
+		finodds = Easing_InCubic(fac, INVODDS, 20 * INVINDESPERATION);
+	}
+	else
+	{
 		if (fac <= FRACHALF)
 		{
 			// Invincibility is practically useless at lower distances.
 			// At below half, remove it from the item pool.
 			return 0;
 		}
-        // Basic linear climb to "reasonable" odds.
-        finodds = FixedMul(INVODDS, fac);
-    }
+		// Basic linear climb to "reasonable" odds.
+		finodds = FixedMul(INVODDS, fac);
+	}
 
-    return min(20 * INVINDESPERATION, finodds);
+	return min(20 * INVINDESPERATION, finodds);
 }
 
 /**	\brief	Item Roulette for Kart
@@ -7842,10 +7844,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		INT16 invinfac = 1;
 		if ((invintype == KARTINVIN_ALTERN) && ((INT16)(player->invincibilitybottleneck) != -1) && (player->invincibilitytimer > 2))
 		{
-			if (player->distancefromcluster < (INVINDIST >> 2))
+			UINT32 invindist = INVINDIST >> 2;
+			if (player->distancefromcluster < invindist)
 			{
 				player->invincibilitybottleneck = min(256, player->invincibilitybottleneck + 4);
-				invinfac = FixedMul(8, max(0, min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2)))));
+				invinfac = FixedMul(8, max(min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2))), 0));
 			}
 			else
 			{
@@ -9943,18 +9946,19 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 
 static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 {
-    player_t *cluster_p;
-    UINT32 i, pingame, first, second, tinypoptarget;
-    INT32 divmul;
+	player_t *cluster_p;
+	UINT32 i, pingame;
+	SINT8 first, second, tinypoptarget;
+	INT32 divmul;
 
-    pingame = 0;
+	pingame = 0;
 
-    first = -1;
+	first = -1;
 	second = -1;
 	tinypoptarget = -1;
 
-    divmul = 1;
-    for (i = 0; i < MAXPLAYERS; i++)
+	divmul = 1;
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 			continue;
@@ -9962,17 +9966,17 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
 			pingame++;
 
-        if (players[i].mo && gametype == GT_RACE)
+		if (players[i].mo && gametype == GT_RACE)
 		{
 			if (players[i].position == 1 && first == -1)
 				first = i;
 			else if (players[i].position == 2 && second == -1)
 				second = i;
 		}
-    }
+	}
 
-    if (pingame <= 1)
-    {
+	if (pingame <= 1)
+	{
 		// There's only us around.
 		player->invincibilitybottleneck = (UINT16)(-1); // No bottlenecking!
 		return 0;
@@ -9990,7 +9994,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			if (players[i].mo && gametype == GT_RACE)
 			{
 				if (players[i].position == (pingame - 1) && second == -1)
-				{	
+				{
 					second = i;
 					break;
 				}
@@ -10000,15 +10004,15 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 
 	tinypoptarget = (pingame < 3) ? first : second;
 
-    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
-    {
-        // Compare yourself against the cluster player to determine the distance.
-        
-        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
-        {
-            // In very small lobbies, the cluster player is first place/second to last.
+	if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+	{
+		// Compare yourself against the cluster player to determine the distance.
 
-            cluster_p = &players[tinypoptarget];
+		if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
+		{
+			// In very small lobbies, the cluster player is first place/second to last.
+
+			cluster_p = &players[tinypoptarget];
 
 			// In 1v1s, half the cluster distance so that the losing player
 			// doesn't get overly pitied.
@@ -10016,38 +10020,38 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			{
 				divmul = 2;
 			}
-        }
-        else if (clusterid != -1)
-        {
-            cluster_p = &players[clusterid];
-        }
+		}
+		else if (clusterid != UINT32_MAX)
+		{
+			cluster_p = &players[clusterid];
+		}
 
-		if ((clusterid == -1) || (!cluster_p))
+		if ((clusterid == UINT32_MAX) || (!cluster_p))
 			return 0; // No cluster player; not good!
 
-        if (player == cluster_p)
-            return 0; // We ARE the cluster player.
+		if (player == cluster_p)
+			return 0; // We ARE the cluster player.
 
-        if (player->position <= cluster_p->position)
-            return 0; // Ahead, or tying.
+		if (player->position <= cluster_p->position)
+			return 0; // Ahead, or tying.
 
-        // Return the 3D distance from the cluster player.
+		// Return the 3D distance from the cluster player.
 		// Multiply by 2 to make up for shoddy euclidean distance checks.
-        return (K_PlayerDistance3D(player, cluster_p) << 1) / (FRACUNIT*divmul);
-    }
-    else
-    {
-        if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
-        {
-            // In very small lobbies, compare against first place/second to last's
+		return (K_PlayerDistance3D(player, cluster_p) << 1) / (FRACUNIT*divmul);
+	}
+	else
+	{
+		if ((pingame < MINCLUSTERPLAYERS) && (tinypoptarget != -1))
+		{
+			// In very small lobbies, compare against first place/second to last's
 			// distance to finish.
 
-            // In a 1v1, this is theoretically impossible; but what do I know?
-            if (player->distancetofinish <= players[tinypoptarget].distancetofinish)
-                return 0; // Ahead, or tying.
-            
+			// In a 1v1, this is theoretically impossible; but what do I know?
+			if (player->distancetofinish <= players[tinypoptarget].distancetofinish)
+				return 0; // Ahead, or tying.
+
 			// In 1v1s, half the cluster distance so that the losing player
-            // doesn't get overly pitied.
+			// doesn't get overly pitied.
 			// Otherwise, just use the raw distancing.
 			if (pingame < 3)
 			{
@@ -10055,11 +10059,11 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			}
 
 			return (player->distancetofinish - players[tinypoptarget].distancetofinish);
-        }
+		}
 
 		UINT32 targetdtf;
-		
-		if (clusterid != -1)
+
+		if (clusterid != UINT32_MAX)
 		{
 			// Use the cluster player's DtF.
 			targetdtf = players[clusterid].distancetofinish;
@@ -10069,12 +10073,12 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			targetdtf = (UINT32)(clusterdtf.x);
 		}
 
-        if (player->distancetofinish <= targetdtf)
-            return 0; // Ahead, or tying.
+		if (player->distancetofinish <= targetdtf)
+			return 0; // Ahead, or tying.
 
-        // Return the difference between us and the cluster distance.
-        return (player->distancetofinish - targetdtf);
-    }
+		// Return the difference between us and the cluster distance.
+		return (player->distancetofinish - targetdtf);
+	}
 }
 
 #undef MINCLUSTERPLAYERS
