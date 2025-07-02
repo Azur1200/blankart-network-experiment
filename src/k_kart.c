@@ -10781,7 +10781,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							// TODO: gametyperules
 							const SINT8 incr = gametype == GT_BATTLE ? 3 : 2;
 							const SINT8 metincr = gametype == GT_BATTLE ? 4 : 3;
-							const SINT8 comincr = gametype == GT_BATTLE ? 10 : 3;
+							const SINT8 comincr = gametype == GT_BATTLE ? 10 : 4;
 
 							if (player->flamestore == 0)
 							{
