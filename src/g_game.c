@@ -1046,14 +1046,12 @@ static void G_HandleAxisDeadZone(UINT8 splitnum, joystickvector2_t *joystickvect
 INT32 localaiming[MAXSPLITSCREENPLAYERS];
 angle_t localangle[MAXSPLITSCREENPLAYERS];
 
-// Turning was removed from G_BuildTiccmd to prevent easy client hacking.
-// This brings back the camera prediction that was lost.
-static void G_DoAnglePrediction(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, player_t *player)
+static void G_DoCameraTurn(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, player_t *player)
 {
 	UINT8 viewnum = G_PartyPosition(g_localplayers[ssplayer-1]);
 
 	if (player->mo)
-		cmd->angle = K_GetKartTurnValue(player, cmd->turning);
+		cmd->angle = K_GetKartTurnValue(player, cmd->angle);
 	
 	cmd->angle *= realtics;
 
@@ -1329,7 +1327,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	else if (cmd->throwdir < -KART_FULLTURN)
 		cmd->throwdir = -KART_FULLTURN;
 
-	G_DoAnglePrediction(cmd, realtics, ssplayer, player);
+	G_DoCameraTurn(cmd, realtics, ssplayer, player);
 
 	// Reset away view if a command is given.
 	if ((cmd->forwardmove ||  cmd->sidemove || cmd->buttons)
