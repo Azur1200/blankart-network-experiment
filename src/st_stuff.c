@@ -631,7 +631,7 @@ void ST_drawTitleCard(void)
 	INT32 dupcalc = (vid.width/vid.dupx);
 	UINT8 gtc = G_GetGametypeColor(gametype);
 	INT32 sub = 0;
-	INT32 bary = (splitscreen)
+	INT32 bary = (r_splitscreen)
 		? BASEVIDHEIGHT/2
 		: 163;
 	INT32 lvlw;
