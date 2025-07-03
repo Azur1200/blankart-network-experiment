@@ -1241,7 +1241,7 @@ static void R_SetupAimingFrame(int s)
 		newview->aim = thiscam->aiming;
 		newview->angle = thiscam->angle;
 	}
-	else if (!demo.playback && player->playerstate != PST_DEAD)
+	else if (P_IsLocalPlayer(player) && !demo.playback && player->playerstate != PST_DEAD)
 	{
 		newview->aim = localaiming[s];
 		newview->angle = localangle[s];
