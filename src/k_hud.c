@@ -90,6 +90,7 @@ consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV
 consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_showfinishedplayers = CVAR_INIT ("showfinishedplayers", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_smoothposition = CVAR_INIT ("smoothposition", "On", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
@@ -242,6 +243,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_darkitembox);
 	CV_RegisterVar(&cv_showfinishedplayers);
 	CV_RegisterVar(&cv_fancyroulette);
+	CV_RegisterVar(&cv_smoothposition);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -1631,6 +1633,8 @@ bademblem:
 	}
 }
 
+#define POS_DELAY_TIME 10
+
 static void K_DrawKartPositionNum(INT32 num)
 {
 	// POSI_X = BASEVIDWIDTH - 51;	// 269
@@ -1655,7 +1659,9 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	if (stplyr->positiondelay || stplyr->exiting)
 	{
-		scale *= 2;
+		const UINT8 delay = (stplyr->exiting) ? POS_DELAY_TIME : stplyr->positiondelay;
+		const fixed_t add = (scale * 3) >> ((r_splitscreen == 1) ? 1 : 2);
+		scale = cv_smoothposition.value ? scale + min((add * (delay * delay)) / (POS_DELAY_TIME * POS_DELAY_TIME), add) : scale*2;
 		overtake = true;	// this is used for splitscreen stuff in conjunction with flipdraw.
 	}
 
