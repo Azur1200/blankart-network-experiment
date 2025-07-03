@@ -214,7 +214,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
 endif()
 
-if (${CMAKE_BUILD_TYPE} MATCHES Release OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+
+else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
 endif()
 
