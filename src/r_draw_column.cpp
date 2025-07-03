@@ -225,7 +225,21 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		npow2min = -1;
 		npow2max = dc->sourcelength;
 
-		if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
+		if (heightmask == -1)
+		{
+			if (frac < 0)
+				// adjust in case we underread
+				frac += FRACUNIT;
+
+			// texture has no height, so just go
+			while (--count > 0)
+			{
+				INT32 n = frac >> FRACBITS;
+				dest += vid.width;
+				*dest = R_DrawColumnPixel<Type>(dc, dest, n);
+			}
+		}
+		else if (dc->texheight & heightmask)   // not a power of 2 -- killough
 		{
 			heightmask = dc->texheight << FRACBITS;
 

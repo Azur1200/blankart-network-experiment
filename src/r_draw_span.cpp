@@ -255,7 +255,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds->x2 - ds->x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -263,9 +263,9 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT8 *dest;
 	UINT8 *dsrc;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	UINT32 bit;
 	INT32 tiltlighting[MAXVIDWIDTH];
@@ -390,7 +390,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds->szp.x * left;
 			uz += ds->sup.x * left;
 			vz += ds->svp.x * left;
@@ -514,7 +514,7 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 {
 	// x1, x2 = ds_x1, ds_x2
 	int width = ds->x2 - ds->x1;
-	double iz, uz, vz;
+	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
@@ -522,9 +522,9 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 	UINT8 *dest;
 	UINT8 *dsrc;
 
-	double startz, startu, startv;
-	double izstep, uzstep, vzstep;
-	double endz, endu, endv;
+	float startz, startu, startv;
+	float izstep, uzstep, vzstep;
+	float endz, endu, endv;
 	UINT32 stepu, stepv;
 	INT32 tiltlighting[MAXVIDWIDTH];
 
@@ -689,7 +689,7 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 		}
 		else
 		{
-			double left = width;
+			float left = width;
 			iz += ds->szp.x * left;
 			uz += ds->sup.x * left;
 			vz += ds->svp.x * left;
