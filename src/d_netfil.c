@@ -167,7 +167,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 	for (; i < numwadfiles; i++) //mainwads+1, otherwise we start on the first mainwad
 	{
 		// If it has only music/sound lumps, don't put it in the list
-		if (i >= NUMMAINWADS && !wadfiles[i]->important)
+		if (!wadfiles[i]->important)
 			continue;
 
 		if (firstfile)
@@ -175,6 +175,8 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 			firstfile--;
 			continue;
 		}
+
+		// CONS_Printf("putting %d (%s) - mw %d\n", i, wadfiles[i]->filename, mainwads);
 
 		nameonly(strcpy(wadfilename, wadfiles[i]->filename));
 
@@ -558,6 +560,9 @@ INT32 CL_CheckFiles(void)
 #endif
 		for (i = 0; i < fileneedednum || j < numwadfiles;)
 		{
+			// CONS_Printf("checking %d of %d / %d of %d?\n", i, fileneedednum, j, numwadfiles);
+			// CONS_Printf("i: %s / j: %s \n", fileneeded[i].filename, wadfiles[j]->filename);
+			
 			if (j < numwadfiles && !wadfiles[j]->important)
 			{
 				// Unimportant on our side.
@@ -568,7 +573,9 @@ INT32 CL_CheckFiles(void)
 			// If this test is true, we've reached the end of one file list
 			// and the other still has a file that's important
 			if (i >= fileneedednum || j >= numwadfiles)
+			{
 				return 2;
+			}
 
 			// For the sake of speed, only bother with a hash check
 			if (wadfiles[j]->hash != fileneeded[i].hash)
