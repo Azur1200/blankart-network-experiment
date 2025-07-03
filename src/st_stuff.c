@@ -820,7 +820,9 @@ void ST_DrawDemoTitleEntry(void)
 	static UINT8 skullAnimCounter = 0;
 	char *nametodraw;
 
-	skullAnimCounter++;
+	if (renderisnewtic)
+		skullAnimCounter++;
+
 	skullAnimCounter %= 8;
 
 	nametodraw = demo.titlename;

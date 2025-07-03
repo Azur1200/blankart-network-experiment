@@ -3683,6 +3683,7 @@ menudemo_t *demolist;
 
 #define DF_ENCORE       0x40
 static INT16 replayScrollTitle = 0;
+static INT16 replayScrollTitleOld = 0;
 static SINT8 replayScrollDelay = TICRATE, replayScrollDir = 1;
 
 static void PrepReplayList(void)
@@ -3759,6 +3760,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
+		replayScrollTitleOld =0;
 		break;
 
 	case KEY_DOWNARROW:
@@ -3769,6 +3771,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 
 		S_StartSound(NULL, sfx_menu1);
 		replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
+		replayScrollTitleOld =0;
 		break;
 
 	case KEY_ENTER:
@@ -3822,6 +3825,7 @@ INT32 MR_HandleReplayHutList(INT32 choice)
 				M_EnterMenu(MN_MISC_REPLAYSTART, false, 0); // ReplayDef's quit routine would boot us back to the title screen
 
 				replayScrollTitle = 0; replayScrollDelay = TICRATE; replayScrollDir = 1;
+				replayScrollTitleOld =0;
 
 				switch (demolist[dir_on[menudepthleft]].addonstatus)
 				{
@@ -3953,11 +3957,7 @@ static void DrawReplayHutReplayInfo(void)
 		}
 
 		// Character face!
-
-		// Lat: 08/06/2020: For some reason missing skins have their value set to 255 (don't even ask me why I didn't write this)
-		// and for an even STRANGER reason this passes the first check below, so we're going to make sure that the skin here ISN'T 255 before we do anything stupid.
-
-		if (demolist[dir_on[menudepthleft]].standings[0].skin != 0xFF)
+		if (demolist[dir_on[menudepthleft]].standings[0].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[0].skin].facewant) != LUMPERROR)
 		{
 			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[0].skin][FACE_WANTED];
 			colormap = R_GetTranslationColormap(
@@ -3979,6 +3979,9 @@ static void DrawReplayHutReplayInfo(void)
 		break;
 	}
 }
+
+static fixed_t finalscroll = 0;
+static fixed_t oldfinalscroll = 0;
 
 void MD_DrawReplayHut(void)
 {
@@ -4036,30 +4039,36 @@ void MD_DrawReplayHut(void)
 		{
 			cursory = localy;
 
-			if (replayScrollDelay)
-				replayScrollDelay--;
-			else if (replayScrollDir > 0)
+			if (renderisnewtic)
 			{
-				if (replayScrollTitle < (V_StringWidth(demolist[i].title, 0) - (SCALEDVIEWWIDTH - (x<<1)))<<1)
-					replayScrollTitle++;
-				else
+				if (replayScrollDelay)
+					replayScrollDelay--;
+				else if (replayScrollDir > 0)
 				{
-					replayScrollDelay = TICRATE;
-					replayScrollDir = -1;
+					if (replayScrollTitle < (V_StringWidth(demolist[i].title, 0) - (SCALEDVIEWWIDTH - (x<<1)))<<1)
+						replayScrollTitle++;
+					else
+					{
+						replayScrollDelay = TICRATE;
+						replayScrollDir = -1;
+					}
 				}
-			}
-			else
-			{
-				if (replayScrollTitle > 0)
-					replayScrollTitle--;
 				else
 				{
-					replayScrollDelay = TICRATE;
-					replayScrollDir = 1;
+					if (replayScrollTitle > 0)
+						replayScrollTitle--;
+					else
+					{
+						replayScrollDelay = TICRATE;
+						replayScrollDir = 1;
+					}
 				}
 			}
 
-			V_DrawString(localx - (replayScrollTitle>>1), localy, V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags|V_ALLOWLOWERCASE, demolist[i].title);
+			replayScrollTitleOld = replayScrollTitle;
+			finalscroll = (localx - (replayScrollTitle>>1))*FRACUNIT;
+			oldfinalscroll = (localx - (replayScrollTitleOld>>1))*FRACUNIT;
+			V_DrawStringAtFixed(R_InterpolateFixed(oldfinalscroll, finalscroll), localy*FRACUNIT, V_SNAPTOTOP|V_SNAPTOLEFT|highlightflags|V_ALLOWLOWERCASE, demolist[i].title);
 		}
 		else
 			V_DrawString(localx, localy, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, demolist[i].title);
@@ -4112,11 +4121,7 @@ void MD_DrawReplayStartMenu(void)
 			V_DrawString(BASEVIDWIDTH-92, STARTY + i*20 + 9, V_SNAPTOTOP, va("%d", demolist[dir_on[menudepthleft]].standings[i].timeorscore));
 
 		// Character face!
-
-		// Lat: 08/06/2020: For some reason missing skins have their value set to 255 (don't even ask me why I didn't write this)
-		// and for an even STRANGER reason this passes the first check below, so we're going to make sure that the skin here ISN'T 255 before we do anything stupid.
-
-		if (demolist[dir_on[menudepthleft]].standings[i].skin != 0xFF)
+		if (demolist[dir_on[menudepthleft]].standings[0].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[0].skin].facewant) != LUMPERROR)
 		{
 			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[i].skin][FACE_RANK];
 			colormap = R_GetTranslationColormap(
@@ -4138,26 +4143,29 @@ void MD_DrawReplayStartMenu(void)
 #undef STARTY
 
 	// Handle scrolling rankings
-	if (replayScrollDelay)
-		replayScrollDelay--;
-	else if (replayScrollDir > 0)
+	if (renderisnewtic)
 	{
-		if (replayScrollTitle < (i*20 - SCALEDVIEWHEIGHT + 100)<<1)
-			replayScrollTitle++;
-		else
+		if (replayScrollDelay)
+			replayScrollDelay--;
+		else if (replayScrollDir > 0)
 		{
-			replayScrollDelay = TICRATE;
-			replayScrollDir = -1;
+			if (replayScrollTitle < (i*20 - SCALEDVIEWHEIGHT + 100)<<1)
+				replayScrollTitle++;
+			else
+			{
+				replayScrollDelay = TICRATE;
+				replayScrollDir = -1;
+			}
 		}
-	}
-	else
-	{
-		if (replayScrollTitle > 0)
-			replayScrollTitle--;
 		else
 		{
-			replayScrollDelay = TICRATE;
-			replayScrollDir = 1;
+			if (replayScrollTitle > 0)
+				replayScrollTitle--;
+			else
+			{
+				replayScrollDelay = TICRATE;
+				replayScrollDir = 1;
+			}
 		}
 	}
 
