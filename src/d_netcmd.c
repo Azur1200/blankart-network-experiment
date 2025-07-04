@@ -3366,7 +3366,7 @@ static void Command_ResetCamera_f(void)
 }
 
 /* Consider replacing nametonum with this */
-static int32_t LookupPlayer(const char *s)
+int32_t D_LookupPlayer(const char *s)
 {
 	int32_t playernum;
 
@@ -3382,8 +3382,7 @@ static int32_t LookupPlayer(const char *s)
 	for (playernum = 0; playernum < MAXPLAYERS; ++playernum)
 	{
 		/* Match name case-insensitively: fully, or partially the start. */
-		if (playeringame[playernum])
-			if (strnicmp(player_names[playernum], s, strlen(s)) == 0)
+		if (playeringame[playernum] && (strnicmp(player_names[playernum], s, strlen(s)) == 0))
 		{
 			return playernum;
 		}
@@ -3491,7 +3490,7 @@ static void Command_View_f(void)
 		}
 		else
 		{
-			if (( playernum = LookupPlayer(COM_Argv(1)) ) == -1)
+			if (( playernum = D_LookupPlayer(COM_Argv(1)) ) == -1)
 			{
 				CONS_Alert(CONS_WARNING, "There is no player by that name!\n");
 				return;
@@ -3592,7 +3591,7 @@ Command_Invite_f (void)
 		return;
 	}
 
-	invitee = LookupPlayer(COM_Argv(1));
+	invitee = D_LookupPlayer(COM_Argv(1));
 
 	if (invitee == -1)
 	{
@@ -3650,7 +3649,7 @@ Command_CancelInvite_f (void)
 		return;
 	}
 
-	invitee = LookupPlayer(COM_Argv(1));
+	invitee = D_LookupPlayer(COM_Argv(1));
 
 	if (invitee == -1)
 	{
