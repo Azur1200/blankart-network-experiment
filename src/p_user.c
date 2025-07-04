@@ -1794,10 +1794,8 @@ static void P_3dMovement(player_t *player)
 	
 	cmd = &player->cmd;
 	
-	if (!player->pogospring)
-		cmd->sidemove = 0;
-	
 	cmd->forwardmove = K_GetForwardMove(player);
+	cmd->sidemove = K_GetSideMove(player);
 
 	// Get the old momentum; this will be needed at the end of the function! -SH
 	oldMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
@@ -1814,6 +1812,7 @@ static void P_3dMovement(player_t *player)
 	{
 		movepushangle = player->mo->angle;
 	}
+
 	movepushsideangle = movepushangle-ANGLE_90;
 
 	// cmomx/cmomy stands for the conveyor belt speed.
@@ -1825,9 +1824,7 @@ static void P_3dMovement(player_t *player)
 	}
 	else if (player->onconveyor == 4 && !P_IsObjectOnGround(player->mo)) // Actual conveyor belt
 		player->cmomx = player->cmomy = 0;
-	else if (player->onconveyor != 2 && player->onconveyor != 4
-				&& player->onconveyor != 1
-	)
+	else if (player->onconveyor != 2 && player->onconveyor != 4 && player->onconveyor != 1)
 		player->cmomx = player->cmomy = 0;
 
 	player->rmomx = player->mo->momx - player->cmomx;
@@ -1845,34 +1842,20 @@ static void P_3dMovement(player_t *player)
 		dangle = InvAngle(dangle);
 	}
 
-	// anything else will leave both at 0, so no need to do anything else
-
-	//{ SRB2kart 220217 - Toaster Code for misplaced thrust
-#if 0
-	if (!player->drift) // Not Drifting
-	{
-		angle_t difference = dangle/2;
-		boolean reverse = (dangle >= ANGLE_90);
-
-		if (dangleflip)
-			difference = InvAngle(difference);
-
-		if (reverse)
-			difference += ANGLE_180;
-
-		P_InstaThrust(player->mo, player->mo->angle + difference, player->speed);
-	}
-#endif
-	//}
+	// When sliding, don't allow forward/back
+	if (player->carry & CR_SLIDING)
+		cmd->forwardmove = 0;
 
 	// Do not let the player control movement if not onground.
 	// SRB2Kart: pogo spring and speed bumps are supposed to control like you're on the ground
 	onground = (P_IsObjectOnGround(player->mo) || (player->pogospring));
 
+	player->aiming = cmd->aiming<<FRACBITS;
+
 	// Forward movement
 	if (!((player->exiting || mapreset) || (P_PlayerInPain(player) && !onground)))
 	{
-		movepushforward = K_3dKartMovement(player, onground);
+		movepushforward = K_3dKartMovement(player, onground, cmd->forwardmove);
 
 		// allow very small movement while in air for gameplay
 		if (!onground)

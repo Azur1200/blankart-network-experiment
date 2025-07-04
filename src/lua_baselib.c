@@ -4134,11 +4134,14 @@ static int lib_k3dKartMovement(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	boolean onground = lua_optboolean(L, 2);
+	SINT8 fowardmove = luaL_checkinteger(L, 3);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	lua_pushinteger(L, K_3dKartMovement(player, onground));
+	if (lua_isnil(L, 3))
+		fowardmove = K_GetForwardMove(player);
+	lua_pushinteger(L, K_3dKartMovement(player, onground, fowardmove));
 	return 1;
 }
 

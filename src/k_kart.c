@@ -4097,6 +4097,26 @@ SINT8 K_GetForwardMove(player_t *player)
 	return forwardmove;
 }
 
+SINT8 K_GetSideMove(player_t *player)
+{
+	SINT8 sidemove = player->cmd.sidemove;
+
+	if ((player->exiting || mapreset) ||
+		player->pflags & PF_STASIS ||
+		player->spinouttimer ||
+		player->flipovertimer) // pw_introcam?
+	{
+		sidemove = 0;
+	}
+
+	if (!player->pogospring)
+	{
+		sidemove = 0;
+	}
+
+	return sidemove;
+}
+
 fixed_t K_GetNewSpeed(player_t *player)
 {
 	const fixed_t accelmax = 4000;
@@ -4137,10 +4157,9 @@ fixed_t K_GetNewSpeed(player_t *player)
 	return finalspeed;
 }
 
-fixed_t K_3dKartMovement(player_t *player, boolean onground)
+fixed_t K_3dKartMovement(player_t *player, boolean onground, SINT8 forwardmove)
 {
 	fixed_t finalspeed = K_GetNewSpeed(player);
-	SINT8 forwardmove = K_GetForwardMove(player);
 
 	if (!onground) return 0; // If the player isn't on the ground, there is no change in speed
 
