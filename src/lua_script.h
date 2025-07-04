@@ -99,8 +99,6 @@ typedef enum {
 void LUA_PushUserdata(lua_State *L, void *data, const char *meta);
 lpushed_t LUA_RawPushUserdata(lua_State *L, void *data);
 
-int  LUA_PushServerPlayer(lua_State *L);
-
 void LUA_InvalidateUserdata(void *data);
 
 void LUA_InvalidateLevel(void);

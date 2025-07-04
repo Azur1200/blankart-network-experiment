@@ -28,43 +28,25 @@
 static int lib_iteratePlayers(lua_State *L)
 {
 	INT32 i = -1;
-
 	if (lua_gettop(L) < 2)
 	{
 		//return luaL_error(L, "Don't call players.iterate() directly, use it as 'for player in players.iterate do <block> end'.");
 		lua_pushcfunction(L, lib_iteratePlayers);
 		return 1;
 	}
-
 	lua_settop(L, 2);
 	lua_remove(L, 1); // state is unused.
-
 	if (!lua_isnil(L, 1))
 		i = (INT32)(*((player_t **)luaL_checkudata(L, 1, META_PLAYER)) - players);
-
-	i++;
-
-	if (!lua_compatmode)
-	{
-		if (i == serverplayer)
-		{
-			return LUA_PushServerPlayer(L);
-		}
-	}
-
-	for (; i < MAXPLAYERS; i++)
+	for (i++; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
-		if (lua_compatmode)
-		{
-			if (!players[i].mo)
-				continue;
-		}
+		if (!players[i].mo)
+			continue;
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -78,21 +60,10 @@ static int lib_getPlayer(lua_State *L)
 		if (i < 0 || i >= MAXPLAYERS)
 			return luaL_error(L, "players[] index %d out of range (0 - %d)", i, MAXPLAYERS-1);
 
-
-		if (!lua_compatmode)
-		{
-			if (i == serverplayer)
-				return LUA_PushServerPlayer(L);
-		}
-
 		if (!playeringame[i])
 			return 0;
-
-		if (lua_compatmode)
-		{
-			if (!players[i].mo)
-				return 0;
-		}
+		if (!players[i].mo)
+			return 0;
 		LUA_PushUserdata(L, &players[i], META_PLAYER);
 		return 1;
 	}

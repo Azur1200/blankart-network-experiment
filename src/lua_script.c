@@ -920,14 +920,6 @@ lpushed_t LUA_RawPushUserdata(lua_State *L, void *data)
 	return status;
 }
 
-int LUA_PushServerPlayer(lua_State *L)
-{
-	if ((!multiplayer || !(netgame || demo.playback)) && !playeringame[serverplayer])
-		return 0;
-	LUA_PushUserdata(L, &players[serverplayer], META_PLAYER);
-	return 1;
-}
-
 // When userdata is freed, use this function to remove it from Lua.
 void LUA_InvalidateUserdata(void *data)
 {
