@@ -19,6 +19,7 @@
 #include "k_kart.h"
 #include "m_random.h"
 #include "r_things.h"
+#include "lua_hook.h" // LUA_HookGPRankPoints
 
 struct grandprixinfo grandprixinfo;
 
@@ -66,6 +67,8 @@ INT16 K_CalculateGPRankPoints(UINT8 position, UINT8 numplayers)
 	{
 		points = 0;
 	}
+
+	LUA_HookGPRankPoints(position, numplayers, &points);
 
 	return points;
 }
