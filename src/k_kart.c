@@ -2170,9 +2170,10 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 		if (mobj1->player->pflags & PF_JUSTFLIPPED)
 		{
+			fixed_t flipoveradd = R_PointToDist2(0, 0, mobj1->player->rmomx, mobj1->player->rmomy);
 			S_StartSound(mobj2, sfx_flipos);
-			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx, mobj1->player->rmomy)-ANGLE_45;
-			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj1->scale));
+			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx, mobj1->player->rmomy)-ANG15;
+			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), mobj1->scale));
 			mobj1->momz = FixedMul(FlipOverZMomentum(gravity), mobj1->scale);
 			mobj1->player->pflags &= ~PF_JUSTFLIPPED;
 		}
@@ -2206,9 +2207,10 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 		if (mobj2->player->pflags & PF_JUSTFLIPPED)
 		{
+			fixed_t flipoveradd = R_PointToDist2(0, 0, mobj2->player->rmomx, mobj2->player->rmomy);
 			S_StartSound(mobj2, sfx_flipos);
-			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx, mobj2->player->rmomy)-ANGLE_45;
-			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED, mobj2->scale));
+			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx, mobj2->player->rmomy)-ANG15;
+			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), mobj2->scale));
 			mobj2->momz = FixedMul(FlipOverZMomentum(gravity), mobj2->scale);
 			mobj2->player->pflags &= ~PF_JUSTFLIPPED;
 		}
