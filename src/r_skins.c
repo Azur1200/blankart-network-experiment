@@ -462,7 +462,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		*lastlump = newlastlump; // okay, make the normal sprite set loading end there
 	}*/
 
-	boolean sonic = !strcmp(skin->name, "sonic") && wadnum == 5; // main.pk3
+	boolean sonic = !strcmp(skin->name, "sonic") && wadnum == MAINWAD_MAIN;
 
 	if (!wadfiles[wadnum]->compatmode && !sonic)
 	{
