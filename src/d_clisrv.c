@@ -4961,8 +4961,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 				txtpak = (UINT8 *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numslots
 					* netbuffer->u.serverpak.numtics];
 
-			if (realend > gametic + BACKUPTICS)
-				realend = gametic + BACKUPTICS;
+			if (realend > gametic + CLIENTBACKUPTICS)
+				realend = gametic + CLIENTBACKUPTICS;
 			cl_packetmissed = realstart > neededtic;
 
 			if (realstart <= neededtic && realend > neededtic)
@@ -5407,8 +5407,8 @@ static void SV_SendTics(void)
 			realfirsttic = supposedtics[n];
 			lasttictosend = maketic;
 
-			if (lasttictosend - nettics[n] >= BACKUPTICS)
-				lasttictosend = nettics[n] + BACKUPTICS-1;
+			if (lasttictosend - nettics[n] >= CLIENTBACKUPTICS)
+				lasttictosend = nettics[n] + CLIENTBACKUPTICS-1;
 
 			if (realfirsttic >= lasttictosend)
 			{
