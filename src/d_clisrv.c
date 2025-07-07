@@ -1363,8 +1363,7 @@ static void CL_ReloadReceivedSavegame(void)
 
 	CL_LoadReceivedSavegame(true);
 
-	if (neededtic < gametic)
-		neededtic = gametic;
+	neededtic = max(neededtic, gametic);
 	maketic = neededtic;
 
 	for (i = 0; i <= r_splitscreen; i++)
@@ -5404,11 +5403,8 @@ static void SV_SendTics(void)
 		if (nodeingame[n])
 		{
 			// assert supposedtics[n]>=nettics[n]
-			realfirsttic = supposedtics[n];
-			lasttictosend = maketic;
-
-			if (lasttictosend - nettics[n] >= CLIENTBACKUPTICS)
-				lasttictosend = nettics[n] + CLIENTBACKUPTICS-1;
+			realfirsttic = max(supposedtics[n], firstticstosend);
+			lasttictosend = min(maketic, nettics[n] + CLIENTBACKUPTICS);
 
 			if (realfirsttic >= lasttictosend)
 			{
@@ -5424,8 +5420,8 @@ static void SV_SendTics(void)
 					continue;
 				DEBFILE(va("Sent %d anyway\n", realfirsttic));
 			}
-			if (realfirsttic < firstticstosend)
-				realfirsttic = firstticstosend;
+
+			realfirsttic = max(realfirsttic, firstticstosend);
 
 			// compute the length of the packet and cut it if too large
 			packsize = BASESERVERTICSSIZE;
@@ -5499,7 +5495,8 @@ static void SV_SendTics(void)
 				supposedtics[n] = lasttictosend-doomcom->extratics;
 			else
 				supposedtics[n] = lasttictosend;
-			if (supposedtics[n] < nettics[n]) supposedtics[n] = nettics[n];
+
+			supposedtics[n] = max(supposedtics[n], nettics[n]);
 		}
 	// node 0 is me!
 	supposedtics[0] = maketic;
