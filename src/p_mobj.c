@@ -3084,6 +3084,24 @@ boolean P_CanRunOnWater(mobj_t *mobj, ffloor_t *rover)
 	return false;
 }
 
+// Of course this shit is different.
+static boolean P_HandleSolidLavaCompat(mobj_t *mobj, ffloor_t *rover)
+{
+	if (mapnamespace == MNS_SRB2KART)
+	{
+		I_Assert(mobj != NULL);
+		I_Assert(!P_MobjWasRemoved(mobj));
+		fixed_t topheight = P_GetFFloorTopZAt(rover, mobj->x, mobj->y);
+
+		if (rover->fofflags & FOF_SWIMMABLE && GETSECSPECIAL(rover->master->frontsector->special, 1) == 3
+			&& !(rover->master->flags & ML_BLOCKMONSTERS)
+			&& ((rover->master->flags & ML_MIDPEG) || mobj->z-mobj->momz > topheight - FixedMul(16*FRACUNIT, mobj->scale)))
+			return true;
+	}
+
+	return P_CheckSolidLava(rover);
+}
+
 boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover)
 {
 	if (!mobj->player)
@@ -3092,7 +3110,9 @@ boolean P_CheckSolidFFloorSurface(mobj_t *mobj, ffloor_t *rover)
 		return P_CanRunOnWater(mobj, rover);
 	}
 
-	return P_CheckSolidLava(rover) ||
+
+
+	return P_HandleSolidLavaCompat(mobj, rover) ||
 		P_CanRunOnWater(mobj, rover);
 }
 
