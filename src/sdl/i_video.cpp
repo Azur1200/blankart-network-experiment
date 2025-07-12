@@ -122,8 +122,7 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 
 // SDL vars
 static      SDL_Surface *vidSurface = NULL;
-static      SDL_Surface *bufSurface = NULL;
-static      SDL_Color    localPalette[256];
+static      UINT32    localPalette[256];
 static       SDL_bool    mousegrabok = SDL_TRUE;
 static       SDL_bool    wrapmouseok = SDL_FALSE;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
@@ -145,7 +144,6 @@ static boolean video_init = false;
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 
 static void Impl_VideoSetupSurfaces(int width, int height);
-static void Impl_VideoSetupBuffer(void);
 
 static void Impl_SetupSoftwareBuffer(void);
 
@@ -272,12 +270,6 @@ static SDL_bool Impl_RenderContextReset(void)
 		vidSurface = NULL;
 	}
 
-	if (bufSurface != NULL)
-	{
-		SDL_FreeSurface(bufSurface);
-		bufSurface = NULL;
-	}
-
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
 	{
@@ -312,18 +304,8 @@ static void Impl_SetSoftwareVsync(int vsync)
 
 static void Impl_VideoSetupSurfaces(int width, int height)
 {
-	int bpp = 16;
+	int bpp;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
-
-	if (!usesdl2soft)
-	{
-		sw_texture_format = SDL_PIXELFORMAT_RGB565;
-	}
-	else
-	{
-		bpp = 32;
-		sw_texture_format = SDL_PIXELFORMAT_RGBA8888;
-	}
 
 	if (texture == NULL)
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -611,7 +593,6 @@ static void SurfaceInfo(const SDL_Surface *infoSurface, const char *SurfaceText)
 
 static void VID_Command_Info_f (void)
 {
-	SurfaceInfo(bufSurface, M_GetText("Current Engine Mode"));
 	SurfaceInfo(vidSurface, M_GetText("Current Video Mode"));
 }
 
@@ -1348,10 +1329,13 @@ void I_FinishUpdate(void)
 
 	if (rendermode == render_soft && screens[0])
 	{
-		if (!bufSurface) // Double-check
-			Impl_VideoSetupBuffer();
-
-		SDL_BlitSurface(bufSurface, &src_rect, vidSurface, &src_rect);
+		SDL_LockSurface(vidSurface);
+		// copy pixels ourselves to the video surface (prevents a crash in libsdl)
+		UINT32 *dst = vidSurface->pixels;
+		UINT8 *src = screens[0];
+		for (int32_t i = 0; i < vid.width * vid.height; i++)
+			*dst++ = localPalette[*src++];
+		SDL_UnlockSurface(vidSurface);
 		// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
 		SDL_LockSurface(vidSurface);
 		SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
@@ -1400,13 +1384,11 @@ void I_SetPalette(RGBA_t *palette)
 	size_t i;
 	for (i=0; i<256; i++)
 	{
-		localPalette[i].r = palette[i].s.red;
-		localPalette[i].g = palette[i].s.green;
-		localPalette[i].b = palette[i].s.blue;
+		localPalette[i] = 0xff000000;
+		localPalette[i] |= palette[i].s.red << 0;
+		localPalette[i] |= palette[i].s.green << 8;
+		localPalette[i] |= palette[i].s.blue << 16;
 	}
-	//if (vidSurface) SDL_SetPaletteColors(vidSurface->format->palette, localPalette, 0, 256);
-	// Fury -- SDL2 vidSurface is a 32-bit surface buffer copied to the texture. It's not palletized, like bufSurface.
-	if (bufSurface) SDL_SetPaletteColors(bufSurface->format->palette, localPalette, 0, 256);
 }
 
 // return number of fullscreen + X11 modes
@@ -1628,34 +1610,6 @@ static void Impl_SetWindowIcon(void)
 }
 #endif
 
-static void Impl_VideoSetupBuffer(void)
-{
-	if (bufSurface != NULL)
-	{
-		SDL_FreeSurface(bufSurface);
-		bufSurface = NULL;
-	}
-	// Set up the SDL palletized buffer (copied to vidbuffer before being rendered to texture)
-	if (vid.bpp == 1)
-	{
-		bufSurface = SDL_CreateRGBSurfaceFrom(screens[0],vid.width,vid.height,8,
-			(int)vid.rowbytes,0x00000000,0x00000000,0x00000000,0x00000000); // 256 mode
-	}
-	else if (vid.bpp == 2) // Fury -- don't think this is used at all anymore
-	{
-		bufSurface = SDL_CreateRGBSurfaceFrom(screens[0],vid.width,vid.height,15,
-			(int)vid.rowbytes,0x00007C00,0x000003E0,0x0000001F,0x00000000); // 555 mode
-	}
-	if (bufSurface)
-	{
-		SDL_SetPaletteColors(bufSurface->format->palette, localPalette, 0, 256);
-	}
-	else
-	{
-		I_Error("%s", M_GetText("No system memory for SDL buffer surface\n"));
-	}
-}
-
 static void Impl_InitVideoSubSystem(void)
 {
 	if (video_init)
@@ -1876,10 +1830,6 @@ void I_ShutdownGraphics(void)
 		if (vidSurface)
 			SDL_FreeSurface(vidSurface);
 		vidSurface = NULL;
-
-		if (bufSurface)
-			SDL_FreeSurface(bufSurface);
-		bufSurface = NULL;
 	}
 
 	free(vid.buffer);
