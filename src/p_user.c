@@ -2713,7 +2713,7 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	// forward/back will have a slope. So, as long as democam
 	// controls haven't been used to alter the vertical angle,
 	// slowly reset it to flat.
-	if ((cam->reset_aiming && moving) || ((cmd->buttons & BT_DRIFT) && !cam->button_a_held))
+	if (cam->reset_aiming || ((cmd->buttons & BT_DRIFT) && !cam->button_a_held))
 	{
 		INT32 aiming = cam->aiming;
 		INT32 smooth = FixedMul(ANGLE_11hh / 4, FCOS(cam->aiming));
@@ -2805,6 +2805,7 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 
 	thiscam->radius = 20*FRACUNIT;
 	thiscam->height = 16*FRACUNIT;
+	thiscam->reset_aiming = true;
 
 	while (!P_MoveChaseCamera(player,thiscam,true) && ++tries < 2*TICRATE);
 }
