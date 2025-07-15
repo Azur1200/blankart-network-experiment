@@ -10136,9 +10136,10 @@ static boolean P_FuseThink(mobj_t *mobj)
 		{
 			;
 		}
-		else if ((gametyperules & GTR_BUMPERS) && (mobj->threshold != 70))
+		else if (gametype == GT_BATTLE)
 		{
-			break;
+			if (mobj->threshold != 69)
+				break;
 		}
 		else
 		{
@@ -10154,7 +10155,7 @@ static boolean P_FuseThink(mobj_t *mobj)
 				newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
 
 			// Transfer flags2 (strongbox, objectflip, bossnotrap)
-			newmobj->flags2 = mobj->flags2;
+			newmobj->flags2 = mobj->flags2 & ~MF2_DONTDRAW;
 		}
 
 		P_RemoveMobj(mobj); // make sure they disappear
@@ -11956,6 +11957,47 @@ void P_RespawnSpecials(void)
 	INT32 time = 30*TICRATE; // Respawn things in empty dedicated servers
 	mapthing_t *mthing = NULL;
 
+	if (gametype == GT_BATTLE && numgotboxes >= (4*nummapboxes/5) && !itembreaker) // Battle Mode respawns all boxes in a different way
+	{
+		thinker_t *th;
+
+		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+		{
+			mobj_t *box;
+			mobj_t *newmobj;
+
+			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				continue;
+
+			box = (mobj_t *)th;
+
+			if (box->type != MT_RANDOMITEM || box->threshold != 68 || box->fuse) // only popped items
+				continue;
+
+			// Respawn from mapthing if you have one!
+			if (box->spawnpoint)
+			{
+				P_SpawnMapThing(box->spawnpoint);
+				newmobj = box->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
+				P_SpawnMobj(box->spawnpoint->mobj->x, box->spawnpoint->mobj->y, box->spawnpoint->mobj->z, MT_EXPLODE); // poof into existance
+			}
+			else
+			{
+				newmobj = P_SpawnMobj(box->x, box->y, box->z, box->type);
+				P_SpawnMobj(newmobj->x, newmobj->y, newmobj->z, MT_EXPLODE); // poof into existance
+			}
+
+			// Transfer flags2 (strongbox, objectflip)
+			newmobj->flags2 = box->flags2;
+			P_RemoveMobj(box); // make sure they disappear
+			numgotboxes--; // you've restored a box, remove it from the count
+			//continue; -- irrelevant?
+		}
+
+		if (numgotboxes < 0)
+			numgotboxes = 0;
+	}
+
 	// wait time depends on player count
 	for (p = 0; p < MAXPLAYERS; p++)
 	{
@@ -11992,6 +12034,10 @@ void P_RespawnSpecials(void)
 			}
 		}
 	}
+
+	// only respawn items when cv_itemrespawn is on
+	if (!cv_itemrespawn.value)
+		return;
 
 	// nothing left to respawn?
 	if (iquehead == iquetail)
