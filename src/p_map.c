@@ -2042,7 +2042,7 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *re
 
 	// MF_NOCLIPTHING: used by camera to not be blocked by things
 	// Respawning things should also be intangible to other things
-	if (!(thing->flags & MF_NOCLIPTHING) /*&& !P_MobjIsReappearing(thing)*/)
+	if (!(thing->flags & MF_NOCLIPTHING))
 	{
 		for (bx = xl; bx <= xh; bx++)
 		{

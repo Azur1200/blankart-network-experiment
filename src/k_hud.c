@@ -3642,7 +3642,7 @@ static void K_drawKartMinimap(void)
 
 			if (!playeringame[i])
 				continue;
-			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && stplyr->exiting))
+			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && players[i].exiting))
 				continue;
 
 			if (i == displayplayers[0] || i == displayplayers[1] || i == displayplayers[2] || i == displayplayers[3])
@@ -3702,6 +3702,12 @@ static void K_drawKartMinimap(void)
 
 			//if (doprogressionbar == false)
 			{
+				// draw external players transparent
+				if (mobj->player)
+				{
+					splitflags &= ~V_HUDTRANS;
+					splitflags |= V_HUDTRANSHALF;
+				}
 				interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
