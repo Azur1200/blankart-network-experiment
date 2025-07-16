@@ -1340,6 +1340,63 @@ static void K_BotItemRings(player_t *player, ticcmd_t *cmd)
 }
 
 /*--------------------------------------------------
+	static void K_BotCalculateUseodds(player_t *player)
+
+		Item usage for item roulette mashing.
+
+	Input Arguments:-
+		player - Bot to do this for.
+
+	Return:-
+		Returns the useodds of this bot.
+--------------------------------------------------*/
+static UINT32 K_BotCalculateUseodds(player_t *player)
+{
+	UINT32 pdis = 0;
+	UINT8 pingame = 0, bestbumper = 0;
+	boolean spbrush = false;
+	UINT8 i;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		pingame++;
+		if (players[i].bumper > bestbumper)
+			bestbumper = players[i].bumper;
+	}
+
+	// Calculate pdis for useodds
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i] && !players[i].spectator
+			&& players[i].position == 1)
+		{
+			// This player is first! Yay!
+			pdis = player->distancetofinish - players[i].distancetofinish;
+			break;
+		}
+	}
+
+	if (spbplace != -1 && player->position == spbplace+1)
+	{
+		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
+		pdis = (3 * pdis) / 2;
+		spbrush = true;
+	}
+
+	pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
+
+	if (player->bot && player->botvars.rival)
+	{
+		// Rival has better odds :)
+		pdis = (15 * pdis) / 14;
+	}
+
+	return K_FindUseodds(player, 0, pdis, bestbumper, spbrush);
+}
+
+/*--------------------------------------------------
 	static void K_BotItemRouletteMash(const player_t *player, ticcmd_t *cmd)
 
 		Item usage for item roulette mashing.
@@ -1354,21 +1411,47 @@ static void K_BotItemRings(player_t *player, ticcmd_t *cmd)
 static void K_BotItemRouletteMash(player_t *player, ticcmd_t *cmd)
 {
 	boolean mash = false;
+	UINT32 useodds = 0;
 
 	if (K_ItemButtonWasDown(player) == true)
 	{
 		return;
 	}
 
-	if (player->rings < 0 && cv_superring.value)
+	// Mash based on useodds to approximate bots in the back mashing like players would.
+	if (player->position > 1)
 	{
-		// Uh oh, we need a loan!
-		// It'll be better in the long run for bots to lose an item set for 10 free rings.
-		mash = true;
+		useodds = K_BotCalculateUseodds(player);
+
+		if (useodds >= 2 && useodds < 4)
+		{
+			// Around 25% chance to mash
+			if (M_RandomChance(FRACUNIT/4))
+			{
+				mash = true;
+			}
+		}
+		else if (useodds >= 4 && useodds < 6)
+		{
+			// Around 50% chance to mash
+			if (M_RandomChance(FRACUNIT/2))
+			{
+				mash = true;
+			}
+		}
+		else if (useodds >= 6)
+		{
+			// We are too far back!
+			mash = true;
+		}
 	}
 
-	// TODO: Mash based on how far behind you are, when items are
-	// almost garantueed to be in your favor.
+	if (player->rings < 0 && cv_superring.value && K_RingsActive())
+	{
+		// Uh oh, we need a loan!
+		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.
+		mash = true;
+	}
 
 	if (mash == true)
 	{
