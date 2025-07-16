@@ -2086,13 +2086,6 @@ static void P_UpdatePlayerAngle(player_t *player)
 	P_UpdatePlayerAiming(player);
 }
 
-static void P_UpdateBotAngle(player_t* player)
-{
-	angle_t angleChange = K_GetKartTurnValue(player, player->cmd.turning) << TICCMD_REDUCE;
-	P_SetPlayerAngle(player, player->angleturn + angleChange);
-	player->mo->angle = player->angleturn;
-}
-
 //
 // P_MovePlayer
 void P_MovePlayer(player_t *player)
@@ -2126,10 +2119,7 @@ void P_MovePlayer(player_t *player)
 	// MOVEMENT CODE	//
 	//////////////////////
 
-	if (K_PlayerUsesBotMovement(player))
-		P_UpdateBotAngle(player);
-	else
-		P_UpdatePlayerAngle(player);
+	P_UpdatePlayerAngle(player);
 
 	ticruned++;
 	if (!(cmd->flags & TICCMD_RECEIVED))
@@ -2924,9 +2914,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (demo.playback)
 	{
-		if (K_PlayerUsesBotMovement(player))
-			focusangle = mo->angle; // Bots don't even send cmd angle; they always turn where they want to!
-		else if (leveltime <= introtime)
+		if (leveltime <= introtime)
 			focusangle = mo->angle; // Can't turn yet. P_UpdatePlayerAngle will ignore angle in stale ticcmds, chasecam should too.
 		else
 			focusangle = player->cmd.angle << TICCMD_REDUCE;

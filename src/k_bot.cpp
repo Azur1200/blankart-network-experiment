@@ -1669,6 +1669,8 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		{
 			// You're commiting to your turn, you're allowed!
 			cmd->turning = turnamt;
+			if (P_CanPlayerTurn(player, cmd))
+				cmd->angle += K_GetKartTurnValue(player, turnamt);
 		}
 	}
 
@@ -1703,6 +1705,8 @@ void K_BuildBotTiccmd(
 		// Not in the level.
 		return;
 	}
+
+	cmd->angle = player->mo->angle >> TICCMD_REDUCE;
 
 	// Complete override of all ticcmd functionality.
 	// May add more hooks to individual pieces of bot ticcmd,
