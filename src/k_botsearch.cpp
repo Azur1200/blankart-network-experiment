@@ -568,8 +568,8 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				}
 				// Flame Shield
 				else if (K_PlayerAttackSteer(thing, side, 20,
-					g_nudgeSearch.botmo->player->itemtype == KITEM_FLAMESHIELD,
-					thing->player->itemtype == KITEM_FLAMESHIELD
+					g_nudgeSearch.botmo->player->flametimer && g_nudgeSearch.botmo->player->flamestore,
+					thing->player->flametimer && thing->player->flamestore
 				))
 				{
 					break;
@@ -578,14 +578,6 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 				else if (K_PlayerAttackSteer(thing, side, 20,
 					(thing->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT)),
 					(g_nudgeSearch.botmo->player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT))
-				))
-				{
-					break;
-				}
-				// Ring Sting
-				else if (K_PlayerAttackSteer(thing, side, 20,
-					thing->player->rings <= 0,
-					g_nudgeSearch.botmo->player->rings <= 0
 				))
 				{
 					break;
