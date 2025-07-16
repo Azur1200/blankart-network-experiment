@@ -22,8 +22,8 @@ This is still in active development and things are going to change. If you find 
 - Many features ported from Saturn
 
 ## Optional Gameplay Features
-- Rings (Based on how they were in v2 Indev)
-- New items (Such as the Flame Shield and the Bubble Shield)
+- Rings (Based on how they were in v2 Indev and then further rebalanced)
+- New items (Such as the as a rebalanced Flame Shield and a rebalanced Bubble Shield)
 - 4 tier drifts (Blue, Red, Purple, Rainbow)
 - Boost Stacking
 - Boost Chaining
