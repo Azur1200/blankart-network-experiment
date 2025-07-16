@@ -10812,7 +10812,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 
 							player->flamedash += incr;
-							player->flamestore = min(player->flamestore + metincr, TICRATE*2);
+							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 							player->flametimer -= comincr;
 
 							if (player->flametimer <= 0)

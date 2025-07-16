@@ -1246,17 +1246,34 @@ static void K_BotItemFlame(const player_t *player, ticcmd_t *cmd)
 
 	if (player->botvars.itemconfirm > TICRATE)
 	{
-		if (player->flametimer > 0)
+		if (player->botvars.difficulty >= 6 && player->flametimer <= 2*TICRATE)
 		{
 			cmd->buttons |= BT_ATTACK;
 			cmd->bot.itemconfirm = 0;
 		}
+		else if (player->flametimer > 0)
+		{
+			if (player->botvars.difficulty < 6 || player->flamestore < FLAMESTOREMAX - TICRATE/4)
+			{
+				cmd->buttons |= BT_ATTACK;
+				cmd->bot.itemconfirm = 0;
+			}
+			else
+			{
+				UINT8 difficultyadjust = MAXBOTDIFFICULTY - player->botvars.difficulty;
+				cmd->bot.itemconfirm = (-TICRATE/2) - difficultyadjust;
+			}
+		}
 	}
 	else
 	{
+		if (player->botvars.difficulty >= 6 && player->flametimer <= 2*TICRATE)
+		{
+			cmd->bot.itemconfirm = 0;
+		}
+
 		cmd->bot.itemconfirm++;
 	}
-
 }
 
 /*--------------------------------------------------
@@ -1559,30 +1576,16 @@ void K_UpdateBotGameplayVarsItemUsage(player_t *player)
 			{
 				;
 			}
+			else if (player->flametimer > 0)
+			{
+				;
+			}
 			else
 			{
 				switch (player->itemtype)
 				{
 					default:
 					{
-						break;
-					}
-					case KITEM_FLAMESHIELD:
-					{
-						if (player->botvars.itemconfirm == 0
-							&& (player->itemflags & IF_HOLDREADY) == IF_HOLDREADY)
-						{
-							INT32 flamemax = player->flametimer;
-
-							if (player->flamestore < flamemax || flamemax == 0)
-							{
-								;
-							}
-							else
-							{
-								player->botvars.itemconfirm = (3 * flamemax / 4) + (TICRATE / 2);
-							}
-						}
 						break;
 					}
 				}
