@@ -1589,7 +1589,7 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 	}
 	else if (leveltime <= starttime)
 	{
-		UINT8 timing = P_RandomRange(0, 5);
+		UINT8 timing = M_RandomRange(0, 5);
 		UINT8 finaltiming = (MAXBOTDIFFICULTY/2)-(player->botvars.difficulty/2)+timing;
 		if (player->botvars.difficulty > 4)
 		{
