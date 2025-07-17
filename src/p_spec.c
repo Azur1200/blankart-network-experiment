@@ -7784,7 +7784,9 @@ void P_SpawnSpecials(boolean fromnetsave)
 					if (sectors[s].colormap_protected)
 						continue;
 
-					if (!udmf)
+					if (mapnamespace == MNS_SRB2KART)
+						exc = lines[i].frontsector->extra_colormap;
+					else if (!udmf)
 						exc = sides[lines[i].sidenum[0]].colormap_data;
 					else
 					{

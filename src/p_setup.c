@@ -1213,6 +1213,8 @@ static void P_LoadSidedefs(UINT8 *data)
 				// SoM: R_CreateColormap will only create a colormap in software mode...
 				// Perhaps we should just call it instead of doing the calculations here.
 				sd->colormap_data = R_CreateColormapFromLinedef(msd->toptexture, msd->midtexture, msd->bottomtexture);
+				if (mapnamespace == MNS_SRB2KART)
+					sd->sector->extra_colormap = sd->sector->spawn_extra_colormap = sd->colormap_data;
 				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
 				break;
 

@@ -964,6 +964,14 @@ extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
 		cr = pLocalPalette[j].s.red;
 		cg = pLocalPalette[j].s.green;
 		cb = pLocalPalette[j].s.blue;
+
+		if (mapnamespace == MNS_SRB2KART)
+		{
+			j = encoremap[NearestColor((UINT8)cfr, (UINT8)cfg, (UINT8)cfb)];
+			cfr = pLocalPalette[j].s.red;
+			cfg = pLocalPalette[j].s.green;
+			cfb = pLocalPalette[j].s.blue;
+		}
 	}
 
 	// Pack rgba values into combined var
