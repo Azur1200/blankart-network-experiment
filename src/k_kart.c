@@ -75,6 +75,7 @@ consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", CV_SAVE, CV_OnOff, 
 static CV_PossibleValue_t driftsparkpulse_cons_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_FLOAT, driftsparkpulse_cons_t, NULL);
 consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -259,6 +260,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartgametypepreference);
 	CV_RegisterVar(&cv_kartspeedometer);
 	CV_RegisterVar(&cv_kartvoices);
+	CV_RegisterVar(&cv_karthitemdialog);
 	CV_RegisterVar(&cv_kartbot);
 	CV_RegisterVar(&cv_kartbot_modifiermax);
 	CV_RegisterVar(&cv_kartbot_basetrackcomplexity);
@@ -3219,14 +3221,25 @@ void K_PlayPainSound(mobj_t *source, mobj_t *other)
 	sfxenum_t sfx_id = ((skin_t *)source->skin)->soundsid[S_sfx[sfx_khurt1 + pick].skinsound];
 	boolean alwaysHear = false;
 
-	if (other != NULL && P_MobjWasRemoved(other) == false && other->player != NULL)
-	{
-		alwaysHear = P_IsDisplayPlayer(other->player);
-	}
-
 	if (cv_kartvoices.value)
 	{
-		S_StartSound(alwaysHear ? NULL : source, sfx_id);
+		if (cv_karthitemdialog.value)
+		{
+			if (other != NULL && P_MobjWasRemoved(other) == false && other->player != NULL)
+			{
+				alwaysHear = P_IsDisplayPlayer(other->player);
+			}
+
+			S_StartSound(alwaysHear ? NULL : source, sfx_id);
+		}
+		else
+		{
+			S_StartSound(source, sfx_id);
+		}
+	}
+	else
+	{
+		S_StartSound(source, sfx_slip);
 	}
 
 	K_RegularVoiceTimers(source->player);
@@ -3237,14 +3250,28 @@ void K_PlayHitEmSound(mobj_t *source, mobj_t *other)
 	sfxenum_t sfx_id = ((skin_t *)source->skin)->soundsid[S_sfx[sfx_khitem].skinsound];
 	boolean alwaysHear = false;
 
-	if (other != NULL && P_MobjWasRemoved(other) == false && other->player != NULL)
-	{
-		alwaysHear = P_IsDisplayPlayer(other->player);
-	}
-
 	if (cv_kartvoices.value)
 	{
-		S_StartSound(alwaysHear ? NULL : source, sfx_id);
+		if (cv_karthitemdialog.value)
+		{
+			if (other != NULL && P_MobjWasRemoved(other) == false && other->player != NULL)
+			{
+				alwaysHear = P_IsDisplayPlayer(other->player);
+			}
+
+			if (cv_kartvoices.value)
+			{
+				S_StartSound(alwaysHear ? NULL : source, sfx_id);
+			}
+		}
+		else
+		{
+			S_StartSound(source, sfx_id);
+		}
+	}
+	else
+	{
+		S_StartSound(source, sfx_s1c9); // The only lost gameplay functionality with voices disabled
 	}
 
 	K_RegularVoiceTimers(source->player);
