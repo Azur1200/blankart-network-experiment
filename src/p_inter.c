@@ -2089,7 +2089,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	player_t *player;
 	boolean force = false;
 	boolean spbpop = false;
-	boolean trapitem = false;
+	boolean painsound = false;
 
 	if (objectplacing)
 		return false;
@@ -2232,7 +2232,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (source && source != player->mo && source->player)
+			if (source && source != player->mo && (source->player || source->target && source->target->player))
 			{
 				if (gametyperules & GTR_BUMPERS)
 				{
@@ -2260,7 +2260,13 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					}
 				}
 
-				K_TryHurtSoundExchange(target, source);
+				// Fix for bubble shield hit having no hit em!!!!!!
+				{
+					mobj_t *attacker = source->player ? source : NULL;
+					if (!attacker && source->target && source->target->player)
+						attacker = source->target;
+					K_TryHurtSoundExchange(target, attacker);
+				}
 			}
 			else
 			{
@@ -2360,8 +2366,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_VOLTAGE:
-					// I'm not afarid of no thunder.
-					trapitem = true;
+					painsound = false;
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
@@ -2380,11 +2385,18 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 			if (inflictor)
 			{
+				if (inflictor->player)
+					painsound = true;
+
 				switch(inflictor->type)
 				{
-					case MT_BANANA:
-					case MT_BANANA_SHIELD:
-						trapitem = true;
+					case MT_ORBINAUT:
+					case MT_ORBINAUT_SHIELD:
+					case MT_JAWZ:
+					case MT_JAWZ_SHIELD:
+					case MT_JAWZ_DUD:
+					case MT_SMK_THWOMP:
+						painsound = true;
 						break;
 
 					default:
@@ -2392,9 +2404,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				}
 			}
 
-			if (!trapitem)
+			if (painsound)
 			{
-				// Bananas don't make you scream.
 				K_PlayPainSound(target, source);
 			}
 
