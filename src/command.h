@@ -192,6 +192,8 @@ extern CV_PossibleValue_t kartspeed_cons_t[];
 
 extern consvar_t cv_execversion;
 
+extern consvar_t cv_resetnetvars;
+
 void CV_InitFilterVar(void);
 void CV_ToggleExecVersion(boolean enable);
 

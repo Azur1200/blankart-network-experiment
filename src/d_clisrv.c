@@ -189,7 +189,7 @@ ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
 
-consvar_t cv_showjoinaddress = CVAR_INIT ("showjoinaddress", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_showjoinaddress = CVAR_INIT ("showjoinaddress", "Off", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t playbackspeed_cons_t[] = {{1, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_playbackspeed = CVAR_INIT ("playbackspeed", "1", 0, playbackspeed_cons_t, NULL);
@@ -3348,7 +3348,7 @@ static CV_PossibleValue_t maxplayers_cons_t[] = {{2, "MIN"}, {MAXPLAYERS, "MAX"}
 consvar_t cv_maxplayers = CVAR_INIT ("maxplayers", "8", CV_SAVE|CV_CALL, maxplayers_cons_t, Joinable_OnChange);
 
 static CV_PossibleValue_t joindelay_cons_t[] = {{1, "MIN"}, {3600, "MAX"}, {0, "Off"}, {0, NULL}};
-consvar_t cv_joindelay = CVAR_INIT ("joindelay", "10", CV_SAVE|CV_NETVAR, joindelay_cons_t, NULL);
+consvar_t cv_joindelay = CVAR_INIT ("joindelay", "10", CV_SAVE, joindelay_cons_t, NULL);
 
 // Here for dedicated servers
 static CV_PossibleValue_t discordinvites_cons_t[] = {{0, "Admins Only"}, {1, "Everyone"}, {0, NULL}};
@@ -3356,17 +3356,17 @@ consvar_t cv_discordinvites = CVAR_INIT ("discordinvites", "Everyone", CV_SAVE|C
 
 static CV_PossibleValue_t resynchattempts_cons_t[] = {{1, "MIN"}, {20, "MAX"}, {0, "No"}, {0, NULL}};
 
-consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "2", CV_SAVE|CV_NETVAR, resynchattempts_cons_t, NULL);
-consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "2", CV_SAVE, resynchattempts_cons_t, NULL);
+consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
 static CV_PossibleValue_t maxsend_cons_t[] = {{0, "MIN"}, {51200, "MAX"}, {0, NULL}};
-consvar_t cv_maxsend = CVAR_INIT ("maxsend", "51200", CV_SAVE|CV_NETVAR, maxsend_cons_t, NULL);
-consvar_t cv_noticedownload = CVAR_INIT ("noticedownload", "Off", CV_SAVE|CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_maxsend = CVAR_INIT ("maxsend", "51200", CV_SAVE, maxsend_cons_t, NULL);
+consvar_t cv_noticedownload = CVAR_INIT ("noticedownload", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // Speed of file downloading (in packets per tic)
 static CV_PossibleValue_t downloadspeed_cons_t[] = {{1, "MIN"}, {300, "MAX"}, {0, NULL}};
-consvar_t cv_downloadspeed = CVAR_INIT ("downloadspeed", "32", CV_SAVE|CV_NETVAR, downloadspeed_cons_t, NULL);
+consvar_t cv_downloadspeed = CVAR_INIT ("downloadspeed", "32", CV_SAVE, downloadspeed_cons_t, NULL);
 
 static CV_PossibleValue_t connectawaittime_cons_t[] = {{1, "MIN"}, {60, "MAX"}, {0, "Inf"}, {0, NULL}};
 consvar_t cv_connectawaittime = CVAR_INIT ("connectawaittime", "5", CV_SAVE, connectawaittime_cons_t, NULL);

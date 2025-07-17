@@ -89,6 +89,8 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 	{0, NULL}
 };
 
+consvar_t cv_resetnetvars = CVAR_INIT ("resetnetvars", "Off", CV_SAVE, CV_OnOff, NULL);
+
 // Filter consvars by EXECVERSION
 // First implementation is 2 (1.0.2), so earlier configs default at 1 (1.0.0)
 // Also set CV_HIDEN during runtime, after config is loaded
@@ -1875,7 +1877,7 @@ void CV_SaveVars(UINT8 **p, boolean in_demo)
 static void CV_LoadVars(UINT8 **p,
 		consvar_t *(*got)(UINT8 **p, char **ret_value, boolean *ret_stealth))
 {
-	const boolean store = (client || demo.playback);
+	const boolean store = cv_resetnetvars.value && (client || demo.playback);
 
 	consvar_t *cvar;
 	UINT16 count;
@@ -1916,6 +1918,12 @@ static void CV_LoadVars(UINT8 **p,
 void CV_RevertNetVars(void)
 {
 	consvar_t * cvar;
+
+	if (!cv_resetnetvars.value)
+	{
+		// Sorry bud, not today.
+		return;
+	}
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 	{

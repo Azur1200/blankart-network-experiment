@@ -603,7 +603,7 @@ consvar_t cv_maxping = CVAR_INIT ("maxdelay", "20", CV_SAVE, CV_Unsigned, NULL);
 consvar_t cv_lagless = CVAR_INIT ("lagless", "On", CV_SAVE|CV_NETVAR|CV_CALL, CV_OnOff, Lagless_OnChange);
 
 static CV_PossibleValue_t pingtimeout_cons_t[] = {{8, "MIN"}, {120, "MAX"}, {0, NULL}};
-consvar_t cv_pingtimeout = CVAR_INIT ("maxdelaytimeout", "10", CV_SAVE|CV_NETVAR, pingtimeout_cons_t, NULL);
+consvar_t cv_pingtimeout = CVAR_INIT ("maxdelaytimeout", "10", CV_SAVE, pingtimeout_cons_t, NULL);
 
 // show your ping on the HUD next to framerate. Defaults to warning only (shows up if your ping is > maxping)
 static CV_PossibleValue_t showping_cons_t[] = {{0, "Off"}, {1, "Always"}, {2, "Warning"}, {0, NULL}};
@@ -1026,6 +1026,7 @@ void D_RegisterClientCommands(void)
 	COM_AddCommand("stopdemo", Command_Stopdemo_f);
 	COM_AddCommand("playintro", Command_Playintro_f);
 	CV_RegisterVar(&cv_resyncdemo);
+	CV_RegisterVar(&cv_resetnetvars);
 
 	COM_AddCommand("resetcamera", Command_ResetCamera_f);
 
