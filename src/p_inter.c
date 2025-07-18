@@ -2348,6 +2348,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 						// Squished by player or object
 						ringburst = 5;
 					}
+					painsound = true;
 					K_SquishPlayer(player, inflictor, source);
 					LUA_HookPlayerSquish(target, inflictor, source, damage, damagetype);
 					break;
