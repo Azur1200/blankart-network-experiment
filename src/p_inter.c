@@ -2260,13 +2260,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					}
 				}
 
-				// Fix for bubble shield hit having no hit em!!!!!!
-				{
-					mobj_t *attacker = source->player ? source : NULL;
-					if (!attacker && source->target && source->target->player)
-						attacker = source->target;
-					K_TryHurtSoundExchange(target, attacker);
-				}
+				K_TryHurtSoundExchange(target, source);
 			}
 			else
 			{

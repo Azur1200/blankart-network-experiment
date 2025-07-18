@@ -591,7 +591,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		// Player Damage
 		if (K_KartBouncing(t2, t1->target, false, true))
 		{
-			P_DamageMobj(t2, t1->target, t1, 1, DMG_NORMAL);
+			P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
 			K_BubbleShieldCollideDrain(t1->target->player, t1);
 			S_StartSound(t2, sfx_s3k44);
 		}
