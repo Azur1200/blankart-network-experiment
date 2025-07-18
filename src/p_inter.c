@@ -2232,7 +2232,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (source && source != player->mo && (source->player || (source->target && source->target->player)))
+			if (source && source != player->mo && (source->player || ((source->type == MT_BUBBLESHIELD) && source->target && source->target->player)))
 			{
 				player_t *attacker = source->player ? source->player : NULL;
 
