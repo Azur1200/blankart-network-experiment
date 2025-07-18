@@ -8226,14 +8226,18 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-        if (invintype == KARTINVIN_LEGACY)
-        {
-            fullbright = true;
+		if (invintype == KARTINVIN_LEGACY)
+		{
+			fullbright = true;
 
-            player->mo->color = K_RainbowColor(leveltime / 2);
-            player->mo->colorized = true;
+			player->mo->color = K_RainbowColor(leveltime / 2);
 
-            skip = true;
+			if (player->invincibilitytimer)
+			{
+				player->mo->colorized = true;
+			}
+
+			skip = true;
         }
 
 		if (skip)
