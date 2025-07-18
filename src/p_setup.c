@@ -5123,6 +5123,10 @@ static void P_ConvertBinaryLinedefTypes(void)
 
 				if (lines[i].flags & ML_MIDPEG)
 					sectors[s].flags |= MSF_TRIGGERSPECIAL_TOUCH;
+
+				if (mapnamespace == MNS_SRB2KART)
+					continue; // the below doesn't exist in kart
+
 				if (lines[i].flags & ML_NOSKEW)
 					sectors[s].flags |= MSF_TRIGGERSPECIAL_HEADBUMP;
 

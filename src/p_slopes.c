@@ -689,6 +689,7 @@ static void line_SpawnViaMapthingVertexes(const int linenum, const boolean spawn
 	case TMSP_BACKCEILING:
 		slopetoset = &line->backsector->c_slope;
 		side = &sides[line->sidenum[1]];
+		break; // this break did not exist between 2019-04-19 and 2023-08-18. let that sink in.
 	default:
 		return;
 	}
