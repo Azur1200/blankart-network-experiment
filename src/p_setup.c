@@ -8905,6 +8905,11 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			}
 		}
 
+		// P_PreTicker is gone, but this still needs to be called to avoid misaligned flats
+		// scrollers are loaded before flat alignment, their interpolators are initialized with zero offsets!
+		if (mapnamespace != MNS_RINGRACERS)
+			R_UpdateLevelInterpolators();
+
 		if (marathonmode & MA_INGAME)
 		{
 			marathonmode |= MA_INIT;
