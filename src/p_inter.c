@@ -2232,22 +2232,28 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// We successfully damaged them! Give 'em some bumpers!
-			if (source && source != player->mo && (source->player || source->target && source->target->player))
+			if (source && source != player->mo && (source->player || (source->target && source->target->player)))
 			{
+				player_t *attacker = source->player ? source->player : NULL;
+
+				// Fix for bubble shield hit having no hit em!!!!!!
+				if (!attacker && (source->target && source->target->player))
+					attacker = source->target->player;
+
 				if (gametyperules & GTR_BUMPERS)
 				{
-					K_BattleAwardHit(source->player, player, inflictor, 1);
+					K_BattleAwardHit(attacker, player, inflictor, 1);
 
 					if (damagetype & DMG_STEAL)
 					{
-						K_TakeBumpersFromPlayer(source->player, player, 1);
+						K_TakeBumpersFromPlayer(attacker, player, 1);
 					}
-					else if (damage & DMG_KARMA)
+					else if (damagetype & DMG_KARMA)
 					{
-						source->player->karmapoints++;
-						if (source->player->karmapoints >= 2)
+						attacker->karmapoints++;
+						if (attacker->karmapoints >= 2)
 						{
-							K_TakeBumpersFromPlayer(source->player, player, 1);
+							K_TakeBumpersFromPlayer(attacker, player, 1);
 						}
 						else
 						{
@@ -2260,13 +2266,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					}
 				}
 
-				// Fix for bubble shield hit having no hit em!!!!!!
-				{
-					mobj_t *attacker = source->player ? source : NULL;
-					if (!attacker && source->target && source->target->player)
-						attacker = source->target;
-					K_TryHurtSoundExchange(target, attacker);
-				}
+				K_TryHurtSoundExchange(target, attacker->mo);
 			}
 			else
 			{
@@ -2366,7 +2366,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_VOLTAGE:
-					painsound = false;
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
