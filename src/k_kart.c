@@ -7746,6 +7746,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->itemtype == KITEM_NONE)
 		player->itemflags &= ~IF_HOLDREADY;
 
+	if (player->driftlock)
+		player->driftlock--;
+
 	// DKR style camera for boosting
 	if (player->karthud[khud_boostcam] != 0 || player->karthud[khud_destboostcam] != 0)
 	{

@@ -265,6 +265,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].noclip);
 
 		WRITESINT8(save->p, players[i].drift);
+		WRITESINT8(save->p, players[i].driftlock);
 		WRITEFIXED(save->p, players[i].driftcharge);
 		WRITEUINT8(save->p, players[i].driftboost);
 
@@ -611,6 +612,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].noclip = READUINT8(save->p);
 
 		players[i].drift = READSINT8(save->p);
+		players[i].driftlock = READSINT8(save->p);
 		players[i].driftcharge = READFIXED(save->p);
 		players[i].driftboost = READUINT8(save->p);
 

@@ -1800,7 +1800,7 @@ static void P_3dMovement(player_t *player)
 	// Get the old momentum; this will be needed at the end of the function! -SH
 	oldMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
 
-	if (player->drift != 0)
+	if (player->drift != 0 && player->driftlock == 0)
 	{
 		movepushangle = player->mo->angle - (ANGLE_45/5) * player->drift;
 	}

@@ -5137,6 +5137,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	}
 
 	player->mo->angle = player->drawangle = lineangle;
+	player->driftlock = TICRATE/8; // seems like a good value so its not noticable and you still get the right angle
 
 	// SRB2Kart: Scale the speed you get from them!
 	// This is scaled differently from other horizontal speed boosts from stuff like springs, because of how this is used for some ramp jumps.
@@ -5165,8 +5166,8 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	P_InstaThrust(player->mo, player->mo->angle, linespeed);
 
 	player->dashpadcooldown = TICRATE/3;
-	player->drift = 0;
-	player->driftcharge = 0;
+	// player->drift = 0;
+	// player->driftcharge = 0;
 	player->pogospring = 0;
 
 	sfxnum = lines[lineindex].stringargs[0] ? get_number(lines[lineindex].stringargs[0]) : sfx_spdpad;
