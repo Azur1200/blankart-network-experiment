@@ -1527,31 +1527,6 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 				wallVerts[1].y = FIXED_TO_FLOAT(l);
 			}
 
-			// set alpha for transparent walls
-			// ooops ! this do not work at all because render order we should render it in backtofront order
-			if (gl_linedef->blendmode && gl_linedef->blendmode != AST_FOG)
-			{
-				if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
-					blendmode = HWR_SurfaceBlend(gl_linedef->blendmode, R_GetLinedefTransTable(gl_linedef->alpha), &Surf);
-				else
-					blendmode = HWR_GetBlendModeFlag(gl_linedef->blendmode);
-			}
-			else if (gl_linedef->alpha >= 0 && gl_linedef->alpha < FRACUNIT)
-				blendmode = HWR_TranstableToAlpha(R_GetLinedefTransTable(gl_linedef->alpha), &Surf);
-			else
-				blendmode = PF_Masked;
-
-			if (gl_curline->polyseg && gl_curline->polyseg->translucency > 0)
-			{
-				if (gl_curline->polyseg->translucency >= NUMTRANSMAPS) // wall not drawn
-				{
-					Surf.PolyColor.s.alpha = 0x00; // This shouldn't draw anything regardless of blendmode
-					blendmode = PF_Masked;
-				}
-				else
-					blendmode = HWR_TranstableToAlpha(gl_curline->polyseg->translucency, &Surf);
-			}
-
 			// Render midtextures on two-sided lines with a z-buffer offset.
 			// This will cause the midtexture appear on top, if a FOF overlaps with it.
 			blendmode |= PF_Decal;
@@ -2239,7 +2214,7 @@ static void HWR_AddLine(seg_t * line)
 	angle2 = R_PointToAngle64(v2x, v2y);
 
 	 // PrBoom: Back side, i.e. backface culling - read: endAngle >= startAngle!
-	if (angle2 - angle1 < ANGLE_180 || !gl_curline->linedef)
+	if (angle2 - angle1 < ANGLE_180)
 		return;
 
 	// PrBoom: use REAL clipping math YAYYYYYYY!!!
