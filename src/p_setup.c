@@ -5201,6 +5201,12 @@ static void P_ConvertBinaryLinedefTypes(void)
 						? (sides[lines[paramline].sidenum[0]].textureoffset >> FRACBITS)
 						: ((lines[paramline].frontsector->floorheight >> FRACBITS) / 100);
 
+			if (mapnamespace == MNS_SRB2KART)
+			{
+				paramline = i; // flags from the start line!?
+				lines[i].args[2] = 0; // no such thing as translucency (only from linedef type 491)
+			}
+
 			//Flags
 			if (lines[paramline].flags & ML_SKEWTD)
 				lines[i].args[3] |= TMPF_NOINSIDES;
@@ -6239,13 +6245,13 @@ static void P_ConvertBinaryLinedefTypes(void)
 			lines[i].args[0] = sides[lines[i].sidenum[0]].textureoffset >> FRACBITS;
 			break;
 		case 442: //Change object type state
-			lines[i].args[2] = tag;
+			lines[i].args[0] = tag;
 			P_WriteDuplicateText(sides[lines[i].sidenum[0]].text, &lines[i].stringargs[0]);
 			if (lines[i].sidenum[1] == 0xffff)
 				lines[i].args[1] = 1;
 			else
 			{
-				lines[i].args[3] = 0;
+				lines[i].args[1] = 0;
 				P_WriteDuplicateText(sides[lines[i].sidenum[1]].text, &lines[i].stringargs[1]);
 			}
 			break;
@@ -6725,7 +6731,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 				lines[i].args[2] |= TMSL_NOPHYSICS;
 			if (lines[i].flags & ML_NONET)
 				lines[i].args[2] |= TMSL_DYNAMIC;
-			if (lines[i].flags & ML_TFERLINE)
+			if (mapnamespace != MNS_SRB2KART && lines[i].flags & ML_TFERLINE)
 				lines[i].args[2] |= TMSL_COPY;
 
 			lines[i].special = 700;
