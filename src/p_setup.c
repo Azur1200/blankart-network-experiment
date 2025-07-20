@@ -5183,7 +5183,16 @@ static void P_ConvertBinaryLinedefTypes(void)
 			}
 
 			//PolyObject ID
-			lines[i].args[0] = tag;
+			if (mapnamespace == MNS_SRB2KART)
+			{
+				// in kart land, polyobject ID is NOT the same as the linedef tag used to link the firstline and paramline
+				// 2 of 3 doors in Final Mall will go missing otherwise
+				if (paramline == -1)
+					I_Error("Polyobject (tag: %d) needs line 22 for information.\n", tag);
+				lines[i].args[0] = lines[paramline].frontsector->floorheight >> FRACBITS;
+			}
+			else
+				lines[i].args[0] = tag;
 
 			//Default: Invisible planes
 			lines[i].args[3] |= TMPF_INVISIBLEPLANES;
@@ -6539,12 +6548,20 @@ static void P_ConvertBinaryLinedefTypes(void)
 			break;
 		case 491: //Polyobject - set translucency
 			lines[i].args[0] = tag;
-			// If Front X Offset is specified, use that. Else, use floorheight.
-			lines[i].args[1] = (sides[lines[i].sidenum[0]].textureoffset ? sides[lines[i].sidenum[0]].textureoffset : lines[i].frontsector->floorheight) >> FRACBITS;
-			// If DONTPEGBOTTOM, specify raw translucency value. Else, take it out of 1000.
-			if (!(lines[i].flags & ML_DONTPEGBOTTOM))
-				lines[i].args[1] /= 100;
-			lines[i].args[2] = !!(lines[i].flags & ML_MIDPEG);
+			if (mapnamespace != MNS_SRB2KART)
+			{
+				// If Front X Offset is specified, use that. Else, use floorheight.
+				lines[i].args[1] = (sides[lines[i].sidenum[0]].textureoffset ? sides[lines[i].sidenum[0]].textureoffset : lines[i].frontsector->floorheight) >> FRACBITS;
+				// If DONTPEGBOTTOM, specify raw translucency value. Else, take it out of 1000.
+				if (!(lines[i].flags & ML_DONTPEGBOTTOM))
+					lines[i].args[1] /= 100;
+				lines[i].args[2] = !!(lines[i].flags & ML_MIDPEG);
+			}
+			else
+			{
+				lines[i].args[1] = (lines[i].frontsector->floorheight / 100) >> FRACBITS;
+				lines[i].args[2] = 0;
+			}
 			break;
 		case 492: //Polyobject - fade translucency
 			lines[i].args[0] = tag;
