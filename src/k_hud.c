@@ -2212,7 +2212,7 @@ static void K_drawKartLaps(void)
 		if (numlaps >= 10)
 		{
 			UINT8 ln[2];
-			ln[0] = ((stplyr->laps+1 / 10) % 10);
+			ln[0] = ((stplyr->laps / 10) % 10);
 			ln[1] = (stplyr->laps % 10);
 
 			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
