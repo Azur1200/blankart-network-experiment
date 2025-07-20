@@ -1988,6 +1988,22 @@ static boolean K_CheckMobjFlippedOver(mobj_t* mobj1, mobj_t* mobj2)
             (mobj2->player && (mobj2->player->pflags & PF_JUSTFLIPPED)));
 }
 
+static boolean K_JustBumpedException(mobj_t *mobj)
+{
+	switch (mobj->type)
+	{
+		case MT_WALLSPIKE:
+			return true;
+		default:
+			break;
+	}
+
+	if (mobj->flags & MF_PUSHABLE)
+		return true;
+
+	return false;
+}
+
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
 	mobj_t *fx;
@@ -2034,13 +2050,13 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 
 	// Don't bump if you've recently bumped
-	if (mobj1->player && mobj1->player->justbumped)
+	if (mobj1->player && mobj1->player->justbumped && !K_JustBumpedException(mobj2))
 	{
 		mobj1->player->justbumped = bumptime;
 		return false;
 	}
 
-	if (mobj2->player && mobj2->player->justbumped)
+	if (mobj2->player && mobj2->player->justbumped && !K_JustBumpedException(mobj1))
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
