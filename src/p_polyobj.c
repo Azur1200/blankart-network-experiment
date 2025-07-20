@@ -2175,8 +2175,7 @@ boolean EV_DoPolyObjWaypoint(polywaypointdata_t *pwdata)
 	th->direction = (pwdata->flags & PWF_REVERSE) ? -1 : 1;
 
 	th->returnbehavior = pwdata->returnbehavior;
-	if (pwdata->flags & PWF_LOOP)
-		th->continuous = true;
+	th->continuous = !!(pwdata->flags & PWF_LOOP);
 	th->stophere = false;
 
 	// Find the first waypoint we need to use
