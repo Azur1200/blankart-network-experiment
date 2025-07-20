@@ -2622,6 +2622,7 @@ increment_move
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = P_GetThingStepUp(thing, tryx, tryy);
+			fixed_t stepheight = 0;
 
 			if (thing->type == MT_SKIM)
 				maxstep = 0;
@@ -2640,64 +2641,60 @@ increment_move
 
 			thingtop = thing->z + thing->height;
 
-			if (maxstep > 0)
+			// Step up
+			if (thing->z < g_tm.floorz)
 			{
-				fixed_t stepheight;
+				stepheight = avgheight(g_tm.floorz - thing->z, g_tm.floorstep);
 
-				// Step up
-				if (thing->z < g_tm.floorz)
+				if (stepheight <= maxstep)
 				{
-					stepheight = avgheight(g_tm.floorz - thing->z, g_tm.floorstep);
-
-					if (stepheight <= maxstep)
-					{
-						thing->z = thing->floorz = g_tm.floorz;
-						thing->floorrover = g_tm.floorrover;
-						thing->eflags |= MFE_JUSTSTEPPEDDOWN;
-					}
-					else
-					{
-						return false; // mobj must raise itself to fit
-					}
+					thing->z = thing->floorz = g_tm.floorz;
+					thing->floorrover = g_tm.floorrover;
+					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
 				}
-				else if (g_tm.ceilingz < thingtop)
+				else
 				{
-					stepheight = avgheight(thingtop - g_tm.ceilingz, g_tm.ceilingstep);
-
-					if (stepheight <= maxstep)
-					{
-						thing->z = ( thing->ceilingz = g_tm.ceilingz ) - thing->height;
-						thing->ceilingrover = g_tm.ceilingrover;
-						thing->eflags |= MFE_JUSTSTEPPEDDOWN;
-					}
-					else
-					{
-						return false; // mobj must lower itself to fit
-					}
-				}
-				else if (thing->momz * P_MobjFlip(thing) <= 0 // Step down requires moving down.
-					&& !(P_MobjTouchingSectorSpecialFlag(thing, SSF_NOSTEPDOWN)
-					|| (R_PointInSubsector(x, y)->sector->specialflags & SSF_NOSTEPDOWN)))
-				{
-					// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
-					// step down! Formerly required a Section1:13 sector for the full MAXSTEPMOVE, but no more.
-
-					if (thingtop == thing->ceilingz && g_tm.ceilingz > thingtop && g_tm.ceilingz - thingtop <= maxstep)
-					{
-						thing->z = (thing->ceilingz = g_tm.ceilingz) - thing->height;
-						thing->ceilingrover = g_tm.ceilingrover;
-						thing->eflags |= MFE_JUSTSTEPPEDDOWN;
-						thing->ceilingdrop = 0;
-					}
-					else if (thing->z == thing->floorz && g_tm.floorz < thing->z && thing->z - g_tm.floorz <= maxstep)
-					{
-						thing->z = thing->floorz = g_tm.floorz;
-						thing->floorrover = g_tm.floorrover;
-						thing->eflags |= MFE_JUSTSTEPPEDDOWN;
-						thing->floordrop = 0;
-					}
+					return false; // mobj must raise itself to fit
 				}
 			}
+			else if (g_tm.ceilingz < thingtop)
+			{
+				stepheight = avgheight(thingtop - g_tm.ceilingz, g_tm.ceilingstep);
+
+				if (stepheight <= maxstep)
+				{
+					thing->z = ( thing->ceilingz = g_tm.ceilingz ) - thing->height;
+					thing->ceilingrover = g_tm.ceilingrover;
+					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
+				}
+				else
+				{
+					return false; // mobj must lower itself to fit
+				}
+			}
+			else if (thing->momz * P_MobjFlip(thing) <= 0 // Step down requires moving down.
+				&& !(P_MobjTouchingSectorSpecialFlag(thing, SSF_NOSTEPDOWN)
+				|| (R_PointInSubsector(x, y)->sector->specialflags & SSF_NOSTEPDOWN)))
+			{
+				// If the floor difference is MAXSTEPMOVE or less, and the sector isn't Section1:14, ALWAYS
+				// step down! Formerly required a Section1:13 sector for the full MAXSTEPMOVE, but no more.
+
+				if (thingtop == thing->ceilingz && g_tm.ceilingz > thingtop && g_tm.ceilingz - thingtop <= maxstep)
+				{
+					thing->z = (thing->ceilingz = g_tm.ceilingz) - thing->height;
+					thing->ceilingrover = g_tm.ceilingrover;
+					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
+					thing->ceilingdrop = 0;
+				}
+				else if (thing->z == thing->floorz && g_tm.floorz < thing->z && thing->z - g_tm.floorz <= maxstep)
+				{
+					thing->z = thing->floorz = g_tm.floorz;
+					thing->floorrover = g_tm.floorrover;
+					thing->eflags |= MFE_JUSTSTEPPEDDOWN;
+					thing->floordrop = 0;
+				}
+			}
+
 
 			if (!allowdropoff && !(thing->flags & MF_FLOAT) && thing->type != MT_SKIM && !g_tm.floorthing)
 			{
