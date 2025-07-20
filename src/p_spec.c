@@ -897,7 +897,7 @@ static sector_t *P_FindModelCeilingSector(fixed_t ceildestheight, INT32 secnum)
 #endif
 
 // Parses arguments for parameterized polyobject door types
-static boolean PolyDoor(INT32 *args)
+static boolean PolyDoor(INT32 *args, line_t *line)
 {
 	polydoordata_t pdd;
 
@@ -905,7 +905,10 @@ static boolean PolyDoor(INT32 *args)
 
 	pdd.doorType = POLY_DOOR_SLIDE;
 	pdd.speed    = args[1] << (FRACBITS - 3);
-	pdd.angle    = FixedAngle(args[2] << FRACBITS); // angle of motion
+	if (mapnamespace == MNS_RINGRACERS || line == NULL)
+		pdd.angle = FixedAngle(args[2] << FRACBITS);
+	else // avoid precision loss
+		pdd.angle = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y);
 	pdd.distance = args[3] << FRACBITS;
 	pdd.delay    = args[4]; // delay in tics
 
@@ -927,13 +930,16 @@ static boolean PolyDoorSwing(INT32 *args)
 }
 
 // Parses arguments for parameterized polyobject move special
-static boolean PolyMove(INT32 *args)
+static boolean PolyMove(INT32 *args, line_t *line)
 {
 	polymovedata_t pmd;
 
 	pmd.polyObjNum = args[0];
 	pmd.speed      = args[1] << (FRACBITS - 3);
-	pmd.angle      = FixedAngle(args[2] << FRACBITS);
+	if (mapnamespace == MNS_RINGRACERS || line == NULL)
+		pmd.angle = FixedAngle(args[2] << FRACBITS);
+	else // avoid precision loss
+		pmd.angle = R_PointToAngle2(line->v1->x, line->v1->y, line->v2->x, line->v2->y);
 	pmd.distance   = args[3] << FRACBITS;
 
 	pmd.overRide = !!args[4]; // Polyobj_OR_Move
@@ -1074,35 +1080,38 @@ static boolean PolyRotate(INT32 *args)
 }
 
 // Parses arguments for polyobject flag waving special
-static boolean PolyFlag(INT32 *args)
+static boolean PolyFlag(INT32 *args, line_t *line)
 {
 	polyflagdata_t pfd;
 
 	pfd.polyObjNum = args[0];
 	pfd.speed = args[1];
-	pfd.angle = FixedAngle(args[2] << FRACBITS) >> ANGLETOFINESHIFT;
+	if (mapnamespace == MNS_RINGRACERS || line == NULL)
+		pfd.angle = FixedAngle(args[2] << FRACBITS);
+	else // avoid precision loss
+		pfd.angle = line->angle;
+	pfd.angle >>= ANGLETOFINESHIFT;
 	pfd.momx = args[3];
 
 	return EV_DoPolyObjFlag(&pfd);
 }
 
 // Parses arguments for parameterized polyobject move-by-sector-heights specials
-static boolean PolyDisplace(INT32 *args, line_t *fallback)
+static boolean PolyDisplace(INT32 *args, line_t *line)
 {
 	polydisplacedata_t pdd;
 	fixed_t speed;
-	angle_t angle;
 
 	pdd.polyObjNum = args[0];
 
 	if (args[1] == 0)
 	{
-		if (fallback == NULL)
+		if (line == NULL)
 		{
 			CONS_Debug(DBG_GAMELOGIC, "PolyDisplace: No frontsector to displace from!\n");
 			return false;
 		}
-		pdd.controlSector = fallback->frontsector;
+		pdd.controlSector = line->frontsector;
 	}
 	else
 	{
@@ -1116,10 +1125,19 @@ static boolean PolyDisplace(INT32 *args, line_t *fallback)
 	}
 
 	speed = args[2] << FRACBITS;
-	angle = FixedAngle(args[3] << FRACBITS) >> ANGLETOFINESHIFT;
 
-	pdd.dx = FixedMul(FINECOSINE(angle), speed) >> 8;
-	pdd.dy = FixedMul(  FINESINE(angle), speed) >> 8;
+	if (mapnamespace == MNS_RINGRACERS || line == NULL)
+	{
+		angle_t angle = FixedAngle(args[3] << FRACBITS) >> ANGLETOFINESHIFT;
+		pdd.dx = FixedMul(FINECOSINE(angle), speed) >> 8;
+		pdd.dy = FixedMul(  FINESINE(angle), speed) >> 8;
+	}
+	else // avoid precision loss
+	{
+		fixed_t length = R_PointToDist2(line->v2->x, line->v2->y, line->v1->x, line->v1->y);
+		pdd.dx = FixedMul(FixedDiv(line->dx, length), speed) >> 8;
+		pdd.dy = FixedMul(FixedDiv(line->dy, length), speed) >> 8;
+	}
 
 	return EV_DoPolyObjDisplace(&pdd);
 }
@@ -4376,13 +4394,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			break;
 
 		case 480: // Polyobj_DoorSlide
-			PolyDoor(args);
+			PolyDoor(args, line);
 			break;
 		case 481: // Polyobj_DoorSwing
 			PolyDoorSwing(args);
 			break;
 		case 482: // Polyobj_Move
-			PolyMove(args);
+			PolyMove(args, line);
 			break;
 		case 484: // Polyobj_RotateRight
 			PolyRotate(args);
@@ -7971,7 +7989,7 @@ void P_SpawnSpecialsThatRequireObjects(boolean fromnetsave)
 		switch (lines[i].special)
 		{
 			case 30: // Polyobj_Flag
-				PolyFlag(lines[i].args);
+				PolyFlag(lines[i].args, &lines[i]);
 				break;
 
 			case 31: // Polyobj_Displace
