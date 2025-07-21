@@ -7596,7 +7596,7 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 // Get the tic inverse sum using kartspeed, kartweight and your number of boosts.
 static INT32 K_TicInversesum(UINT8 kartspeed, UINT8 kartweight, UINT8 grade)
 {
-    return (TICRATE / kartspeed) + (TICRATE / CLAMP(kartweight, 1, 5)) + grade;
+    return (TICRATE / CLAMP(kartspeed, 1, 5)) + (TICRATE / kartweight) + grade;
 }
 
 // Get the threshold for the ringnerf based on kartspeed and kartweight
