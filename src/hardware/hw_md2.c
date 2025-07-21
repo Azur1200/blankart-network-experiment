@@ -583,7 +583,7 @@ addskinmodel:
 				md2_playermodels[s].offset = offset;
 				md2_playermodels[s].notfound = false;
 				strcpy(md2_playermodels[s].filename, filename);
-				CONS_Printf("Added 3D model for '%s' %s\n", skins[s].name, iscompatskin ? "in compatibility mode" : "");
+				CONS_Printf("Added 3D model for skin '%s' %s\n", skins[s].name, iscompatskin ? "in compatibility mode" : "");
 				goto modelfound;
 			}
 		}
@@ -649,7 +649,7 @@ void HWR_AddPlayerModel(int skin) // For skins that were added after startup
 			md2_playermodels[skin].offset = offset;
 			md2_playermodels[skin].notfound = false;
 			strcpy(md2_playermodels[skin].filename, filename);
-			CONS_Printf("Added 3D model for '%s' %s\n", skins[skin].name, iscompatskin ? "in compatibility mode" : "");
+			CONS_Printf("Added 3D model for skin '%s' %s\n", skins[skin].name, iscompatskin ? "in compatibility mode" : "");
 			goto playermodelfound;
 		}
 	}
