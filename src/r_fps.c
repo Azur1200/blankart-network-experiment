@@ -25,6 +25,10 @@
 #include "console.h" // con_startup_loadprogress
 #include "i_time.h"
 
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
+
 static CV_PossibleValue_t fpscap_cons_t[] = {
 #ifdef DEVELOP
 	// Lower values are actually pretty useful for debugging interp problems!
@@ -276,6 +280,10 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->scale = mobj->scale;
 		out->subsector = mobj->subsector;
 		out->angle = mobj->player ? mobj->player->drawangle : mobj->angle;
+		out->pitch = mobj->pitch;
+		out->roll = mobj->roll;
+		out->slopepitch = mobj->slopepitch;
+		out->sloperoll = mobj->sloperoll;
 		out->spritexscale = mobj->spritexscale;
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
@@ -289,11 +297,8 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->scale = mobj->resetinterp ? mobj->scale : R_LerpFixed(mobj->old_scale, mobj->scale, frac);
 	out->spritexscale = mobj->resetinterp ? mobj->spritexscale : R_LerpFixed(mobj->old_spritexscale, mobj->spritexscale, frac);
 	out->spriteyscale = mobj->resetinterp ? mobj->spriteyscale : R_LerpFixed(mobj->old_spriteyscale, mobj->spriteyscale, frac);
-
-	// Sprite offsets are not interpolated until we have a way to interpolate them explicitly in Lua.
-	// It seems existing mods visually break more often than not if it is interpolated.
-	out->spritexoffset = mobj->spritexoffset;
-	out->spriteyoffset = mobj->spriteyoffset;
+	out->spritexoffset = mobj->resetinterp ? mobj->spritexoffset : R_LerpFixed(mobj->old_spritexoffset, mobj->spritexoffset, frac);
+	out->spriteyoffset = mobj->resetinterp ? mobj->spriteyoffset : R_LerpFixed(mobj->old_spriteyoffset, mobj->spriteyoffset, frac);
 
 	out->subsector = R_PointInSubsector(out->x, out->y);
 
@@ -304,6 +309,26 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	else
 	{
 		out->angle = mobj->resetinterp ? mobj->angle : R_LerpAngle(mobj->old_angle, mobj->angle, frac);
+	}
+
+#ifdef HWRENDER
+	if (rendermode == render_opengl && cv_glmodels.value)
+	{
+		// pitch roll stuff
+		out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
+		out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
+
+		// and the slope stuff
+		out->slopepitch = mobj->resetinterp ? mobj->slopepitch : R_LerpAngle(mobj->old_slopepitch, mobj->slopepitch, frac);
+		out->sloperoll = mobj->resetinterp ? mobj->sloperoll : R_LerpAngle(mobj->old_sloperoll, mobj->sloperoll, frac);
+	}
+	else
+#endif
+	{
+		out->pitch = mobj->pitch;
+		out->roll = mobj->roll;
+		out->slopepitch = mobj->slopepitch;
+		out->sloperoll = mobj->sloperoll;
 	}
 }
 
@@ -766,12 +791,20 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	mobj->old_pitch2 = mobj->old_pitch;
 	mobj->old_roll2 = mobj->old_roll;
 	mobj->old_scale2 = mobj->old_scale;
+	mobj->old_slopepitch2 = mobj->old_slopepitch;
+	mobj->old_sloperoll2 = mobj->old_sloperoll;
+	mobj->old_spritexscale2 = mobj->old_spritexscale;
+	mobj->old_spriteyscale2 = mobj->old_spriteyscale;
+	mobj->old_spritexoffset2 = mobj->old_spritexoffset;
+	mobj->old_spriteyoffset2 = mobj->old_spriteyoffset;
 	mobj->old_x = mobj->x;
 	mobj->old_y = mobj->y;
 	mobj->old_z = mobj->z;
 	mobj->old_angle = mobj->angle;
 	mobj->old_pitch = mobj->pitch;
 	mobj->old_roll = mobj->roll;
+	mobj->old_slopepitch = mobj->slopepitch;
+	mobj->old_sloperoll = mobj->sloperoll;
 	mobj->old_scale = mobj->scale;
 	mobj->old_spritexscale = mobj->spritexscale;
 	mobj->old_spriteyscale = mobj->spriteyscale;

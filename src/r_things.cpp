@@ -1932,7 +1932,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch = static_cast<patch_t*>(W_CachePatchNum(sprframe->lumppat[rot], PU_SPRITE));
 
 #ifdef ROTSPRITE
-	spriterotangle = R_SpriteRotationAngle(thing, NULL);
+	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp);
 
 	if (spriterotangle
 	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE)))

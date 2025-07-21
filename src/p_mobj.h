@@ -295,6 +295,8 @@ struct mobj_t
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
 	angle_t slopepitch, sloperoll;
+	angle_t old_slopepitch, old_sloperoll;
+	angle_t old_slopepitch2, old_sloperoll2;
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
@@ -307,7 +309,9 @@ struct mobj_t
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	fixed_t old_spritexoffset2, old_spriteyoffset2;
 	
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
@@ -463,6 +467,8 @@ struct precipmobj_t
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
 	angle_t slopepitch, sloperoll;
+	angle_t old_slopepitch, old_sloperoll;
+	angle_t old_slopepitch2, old_sloperoll2;
 	angle_t old_angle, old_pitch, old_roll; // orientation interpolation
 	angle_t old_angle2, old_pitch2, old_roll2;
 	angle_t rollangle;
@@ -475,7 +481,9 @@ struct precipmobj_t
 	fixed_t spritexscale, spriteyscale;
 	fixed_t spritexoffset, spriteyoffset;
 	fixed_t old_spritexscale, old_spriteyscale;
+	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
+	fixed_t old_spritexoffset2, old_spriteyoffset2;
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 

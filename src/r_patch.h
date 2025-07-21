@@ -16,6 +16,7 @@
 #include "r_picformats.h"
 #include "doomdef.h"
 #include "d_player.h"
+#include "typedef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,9 +46,9 @@ patch_t *Patch_GetRotatedSprite(
 	void *info, INT32 rotationangle);
 
 INT32 R_GetRollAngle(angle_t rollangle);
-angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer);
+angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp);
 angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer);
-angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer);
+angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp);
 #endif
 
 #ifdef __cplusplus

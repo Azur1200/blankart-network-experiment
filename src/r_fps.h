@@ -73,6 +73,8 @@ struct interpmobjstate_t {
 	fixed_t spriteyscale;
 	fixed_t spritexoffset;
 	fixed_t spriteyoffset;
+	angle_t pitch, roll;
+	angle_t sloperoll, slopepitch;
 };
 
 // Level interpolators

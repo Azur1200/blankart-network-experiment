@@ -16,16 +16,18 @@
 #include "r_main.h" // R_PointToAngle
 #include "k_kart.h" // K_Sliptiding
 #include "p_tick.h"
+#include "typedef.h"
+#include "r_fps.h"
 
 #ifdef ROTSPRITE
 fixed_t rollcosang[ROTANGLES];
 fixed_t rollsinang[ROTANGLES];
 
-angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
+angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp)
 {
 	angle_t viewingAngle, rollOrPitch;
-	angle_t sloperolll = mobj->slopepitch;
-	angle_t slopepitch = mobj->sloperoll;
+	angle_t sloperoll = interp->slopepitch;
+	angle_t slopepitch = interp->sloperoll;
 	fixed_t pitchMul, rollMul;
 
 	if (mobj->player)
@@ -44,11 +46,11 @@ angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer)
 
 	if (!cv_sloperoll.value || (mobj->player && (mobj->player->pogospring > 0)))
 	{
-		sloperolll = 0;
+		sloperoll = 0;
 		slopepitch = 0;
 	}
 
-	rollOrPitch = FixedMul(mobj->pitch + sloperolll, pitchMul) + FixedMul(mobj->roll + slopepitch, rollMul);
+	rollOrPitch = FixedMul(interp->pitch + sloperoll, pitchMul) + FixedMul(interp->roll + slopepitch, rollMul);
 
 	return rollOrPitch;
 }
@@ -91,9 +93,9 @@ angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer)
 	return rollAngle;
 }
 
-angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer)
+angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp)
 {
-	angle_t rollOrPitch = R_GetPitchRollAngle(mobj, viewPlayer);
+	angle_t rollOrPitch = R_GetPitchRollAngle(mobj, viewPlayer, interp);
 	return (rollOrPitch + R_ModelRotationAngle(mobj, viewPlayer));
 }
 
