@@ -82,6 +82,8 @@ extern skin_t skins[MAXSKINS];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
+extern const UINT8 kart2spr2[26][2];
+
 /// Function prototypes
 void R_InitSkins(void);
 

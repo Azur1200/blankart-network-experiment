@@ -401,7 +401,7 @@ static UINT16 W_CheckForPatchSkinMarkerInPwad(UINT16 wadid, UINT16 startlump)
 
 #define NUMKARTFRAMES 19
 #define S(f, s) { f - 'A', SPR2_##s },
-static UINT8 KART_TO_SPR2[][2] = {
+const UINT8 kart2spr2[26][2] = {
 	S('A', STIN)
 	S('B', STIN)
 	S('C', STIL)
@@ -487,13 +487,13 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 			I_Error("R_LoadSkinSprites: too few frames for kart skin");
 
 		// now shuffle them around to fit the new SPR2 system
-		// iterate over KART_TO_SPR2, then add any excess frames to SPR2_KART
-#define SPR2COUNT sizeof(KART_TO_SPR2)/sizeof(*KART_TO_SPR2)
+		// iterate over kart2spr2, then add any excess frames to SPR2_KART
+#define SPR2COUNT sizeof(kart2spr2)/sizeof(*kart2spr2)
 		for (i = 0; i < SPR2COUNT - NUMKARTFRAMES + tmp.numframes; i++)
 		{
 			boolean excess = i >= SPR2COUNT;
-			sf = &tmp.spriteframes[excess ? i - SPR2COUNT + NUMKARTFRAMES : KART_TO_SPR2[i][0]];
-			sd = &skin->sprites[excess ? SPR2_KART : KART_TO_SPR2[i][1]];
+			sf = &tmp.spriteframes[excess ? i - SPR2COUNT + NUMKARTFRAMES : kart2spr2[i][0]];
+			sd = &skin->sprites[excess ? SPR2_KART : kart2spr2[i][1]];
 			sd->spriteframes = Z_Realloc(sd->spriteframes, sizeof(*sd->spriteframes) * (sd->numframes+1), PU_STATIC, NULL);
 			sd->spriteframes[sd->numframes++] = *sf;
 		}
@@ -540,7 +540,6 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		R_AddKartFaces(skin);
 
 		skin->flags |= SF_OLDDEATH|SF_NOGIBS;
-
 	}
 
 	if (skin->sprites[0].numframes == 0)

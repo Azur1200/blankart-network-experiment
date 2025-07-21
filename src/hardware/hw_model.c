@@ -11,6 +11,7 @@
 #include "../doomtype.h"
 #include "../info.h"
 #include "../z_zone.h"
+#include "../r_skins.h"
 #include "hw_model.h"
 #include "hw_md2load.h"
 #include "hw_md3load.h"
@@ -145,7 +146,7 @@ tag_t *GetTagByName(model_t *model, char *name, int frame)
 // convert it to the
 // internal format.
 //
-model_t *LoadModel(const char *filename, int ztag)
+model_t *LoadModel(const char *filename, int ztag, modeltype_t modeltype)
 {
 	model_t *model;
 
@@ -198,7 +199,7 @@ model_t *LoadModel(const char *filename, int ztag)
 
 	Optimize(model);
 	GeneratePolygonNormals(model, ztag);
-	LoadModelSprite2(model);
+	LoadModelSprite2(model, modeltype);
 	if (!model->spr2frames)
 		LoadModelInterpolationSettings(model);
 
@@ -241,7 +242,7 @@ void HWR_ReloadModels(void)
 	for (s = 0; s < MAXSKINS; s++)
 	{
 		if (md2_playermodels[s].model)
-			LoadModelSprite2(md2_playermodels[s].model);
+			LoadModelSprite2(md2_playermodels[s].model, wadfiles[skins[s].wadnum]->compatmode ? MODELTYPE_OLDPLAYER : MODELTYPE_PLAYER);
 	}
 
 	for (i = 0; i < NUMSPRITES; i++)
@@ -255,7 +256,7 @@ void LoadModelInterpolationSettings(model_t *model)
 {
 	INT32 i;
 	INT32 numframes = model->meshes[0].numFrames;
-	char *framename = model->framenames;
+	const char *framename = model->framenames;
 
 	if (!framename)
 		return;
@@ -264,7 +265,7 @@ void LoadModelInterpolationSettings(model_t *model)
 		memcpy(&interpolation_flag, framename + offset, 2); \
 		model->interpolate[i] = (!memcmp(interpolation_flag, MODEL_INTERPOLATION_FLAG, 2));
 
-	for (i = 0; i < numframes; i++)
+	for (i = 0; i < numframes; i++, framename += 16)
 	{
 		int offset = (strlen(framename) - 4);
 		char interpolation_flag[3];
@@ -283,87 +284,84 @@ void LoadModelInterpolationSettings(model_t *model)
 			offset--;
 			GET_OFFSET;
 		}
-
-		framename += 16;
 	}
 
 	#undef GET_OFFSET
 }
 
-void LoadModelSprite2(model_t *model)
+void LoadModelSprite2(model_t *model, modeltype_t modeltype)
 {
 	INT32 i;
 	modelspr2frames_t *spr2frames = NULL;
 	INT32 numframes = model->meshes[0].numFrames;
-	char *framename = model->framenames;
+	const char *framename = model->framenames;
+
+	if (modeltype != MODELTYPE_PLAYER && modeltype != MODELTYPE_OLDPLAYER)
+		return;
 
 	if (!framename)
 		return;
 
-	for (i = 0; i < numframes; i++)
+	for (i = 0; i < numframes; i++, framename += 16)
 	{
-		char prefix[6];
-		char name[5];
-		char interpolation_flag[3];
-		char framechars[4];
-		UINT8 frame = 0;
+		const char *name;
+		const char *framechars;
+		UINT8 frame;
 		UINT8 spr2idx;
-		boolean interpolate = false;
+		boolean interpolate;
+		boolean super;
 
-		memset(&prefix, 0x00, 6);
-		memset(&name, 0x00, 5);
-		memset(&interpolation_flag, 0x00, 3);
-		memset(&framechars, 0x00, 4);
-
-		if (strlen(framename) >= 9)
+		if (modeltype == MODELTYPE_OLDPLAYER)
 		{
-			boolean super;
-			char *modelframename = framename;
-			memcpy(&prefix, modelframename, 5);
-			modelframename += 5;
-			memcpy(&name, modelframename, 4);
-			modelframename += 4;
-			// Oh look
-			memcpy(&interpolation_flag, modelframename, 2);
-			if (!memcmp(interpolation_flag, MODEL_INTERPOLATION_FLAG, 2))
-			{
-				interpolate = true;
-				modelframename += 2;
-			}
-			memcpy(&framechars, modelframename, 3);
+			size_t j;
+			spr2idx = SPR2_KART;
+			if (!spr2frames)
+				spr2frames = (modelspr2frames_t*)Z_Calloc(sizeof(modelspr2frames_t)*NUMPLAYERSPRITES*2, PU_STATIC, NULL);
 
-			if ((super = (!memcmp(prefix, "SUPER", 5))) || (!memcmp(prefix, "SPR2_", 5)))
-			{
-				spr2idx = 0;
-				while (spr2idx < free_spr2)
+			// i don't care, just iterate the whole array for every model frame
+			for (j = 0; j < sizeof(kart2spr2)/sizeof(*kart2spr2); j++)
+				if (kart2spr2[j][0] == i)
 				{
-					if (!memcmp(spr2names[spr2idx], name, 4))
-					{
-						if (!spr2frames)
-							spr2frames = (modelspr2frames_t*)Z_Calloc(sizeof(modelspr2frames_t)*NUMPLAYERSPRITES*2, PU_STATIC, NULL);
-						if (super)
-							spr2idx |= FF_SPR2SUPER;
-						if (framechars[0])
-						{
-							frame = atoi(framechars);
-							if (spr2frames[spr2idx].numframes < frame+1)
-								spr2frames[spr2idx].numframes = frame+1;
-						}
-						else
-						{
-							frame = spr2frames[spr2idx].numframes;
-							spr2frames[spr2idx].numframes++;
-						}
-						spr2frames[spr2idx].frames[frame] = i;
-						spr2frames[spr2idx].interpolate = interpolate;
-						break;
-					}
-					spr2idx++;
+					spr2idx = kart2spr2[j][1];
+					spr2frames[spr2idx].frames[spr2frames[spr2idx].numframes++] = i;
 				}
-			}
+			if (spr2idx == SPR2_KART) // excess frame?
+				spr2frames[spr2idx].frames[spr2frames[spr2idx].numframes++] = i;
+			continue;
 		}
 
-		framename += 16;
+		if (strlen(framename) < 9 || !((super = !memcmp(framename, "SUPER", 5)) || !memcmp(framename, "SPR2_", 5)))
+			continue;
+
+		name = framename + 5;
+		// Oh look
+		interpolate = !memcmp(framename + 9, MODEL_INTERPOLATION_FLAG, 2);
+		framechars = framename + (interpolate ? 11 : 9);
+
+		for (spr2idx = 0; spr2idx < free_spr2; spr2idx++)
+			if (!memcmp(spr2names[spr2idx], name, 4))
+				break;
+		if (spr2idx == free_spr2)
+			continue; // not found
+
+		if (!spr2frames)
+			spr2frames = (modelspr2frames_t*)Z_Calloc(sizeof(modelspr2frames_t)*NUMPLAYERSPRITES*2, PU_STATIC, NULL);
+		if (super)
+			spr2idx |= FF_SPR2SUPER;
+
+		if (framechars[0])
+		{
+			frame = atoi(framechars);
+			if (spr2frames[spr2idx].numframes < frame+1)
+				spr2frames[spr2idx].numframes = frame+1;
+		}
+		else
+		{
+			frame = spr2frames[spr2idx].numframes;
+			spr2frames[spr2idx].numframes++;
+		}
+		spr2frames[spr2idx].frames[frame] = i;
+		spr2frames[spr2idx].interpolate = interpolate;
 	}
 
 	if (model->spr2frames)

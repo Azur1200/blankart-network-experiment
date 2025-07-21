@@ -91,6 +91,13 @@ typedef struct
 	boolean interpolate;
 } modelspr2frames_t;
 
+typedef enum
+{
+	MODELTYPE_SPRITE,
+	MODELTYPE_PLAYER, // this model uses sprite2!
+	MODELTYPE_OLDPLAYER, // regular sprite translated to sprite2
+} modeltype_t;
+
 typedef struct model_s
 {
 	int maxNumFrames;
@@ -104,9 +111,10 @@ typedef struct model_s
 
 	char *mdlFilename;
 	boolean unloaded;
+	modeltype_t modeltype;
 
 	char *framenames;
-	boolean interpolate[256];
+	UINT8 interpolate[256];
 	modelspr2frames_t *spr2frames;
 
 	// the max_s and max_t values that the uvs are currently adjusted to
@@ -125,11 +133,11 @@ extern model_t *modelHead;
 void HWR_ReloadModels(void);
 
 tag_t *GetTagByName(model_t *model, char *name, int frame);
-model_t *LoadModel(const char *filename, int ztag);
+model_t *LoadModel(const char *filename, int ztag, modeltype_t modeltype);
 void UnloadModel(model_t *model);
 void Optimize(model_t *model);
 void LoadModelInterpolationSettings(model_t *model);
-void LoadModelSprite2(model_t *model);
+void LoadModelSprite2(model_t *model, modeltype_t modeltype);
 void GenerateVertexNormals(model_t *model);
 void GeneratePolygonNormals(model_t *model, int ztag);
 void CreateVBOTiny(mesh_t *mesh, tinyframe_t *frame);

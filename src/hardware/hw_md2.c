@@ -96,14 +96,14 @@ static void md2_freeModel (model_t *model)
 // load model
 //
 // Hurdler: the current path is the Legacy.exe path
-static model_t *md2_readModel(const char *filename)
+static model_t *md2_readModel(const char *filename, modeltype_t modeltype)
 {
 	//Filename checking fixed ~Monster Iestyn and Golden
 	if (FIL_FileExists(va("%s"PATHSEP"%s", srb2home, filename)))
-		return LoadModel(va("%s"PATHSEP"%s", srb2home, filename), PU_STATIC);
+		return LoadModel(va("%s"PATHSEP"%s", srb2home, filename), PU_STATIC, modeltype);
 
 	if (FIL_FileExists(va("%s"PATHSEP"%s", srb2path, filename)))
-		return LoadModel(va("%s"PATHSEP"%s", srb2path, filename), PU_STATIC);
+		return LoadModel(va("%s"PATHSEP"%s", srb2path, filename), PU_STATIC, modeltype);
 
 	return NULL;
 }
@@ -1391,6 +1391,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		spriteframe_t *sprframe;
 		INT32 mod;
 		interpmobjstate_t interp;
+		modeltype_t modeltype = MODELTYPE_SPRITE;
 
 		if (R_UsingFrameInterpolation() && !paused)
 		{
@@ -1439,6 +1440,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		{
 			md2 = &md2_playermodels[(skin_t*)spr->mobj->skin-skins];
 			md2->skin = (skin_t*)spr->mobj->skin-skins;
+			modeltype = wadfiles[((skin_t*)spr->mobj->skin)->wadnum]->compatmode ? MODELTYPE_OLDPLAYER : MODELTYPE_PLAYER;
 		}
 		else
 		{
@@ -1481,7 +1483,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		{
 			//CONS_Debug(DBG_RENDER, "Loading model... (%s)", sprnames[spr->mobj->sprite]);
 			sprintf(filename, "models/%s", md2->filename);
-			md2->model = md2_readModel(filename);
+			md2->model = md2_readModel(filename, modeltype);
 
 			if (md2->model)
 			{
@@ -1656,6 +1658,10 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			const fixed_t anglef = AngleFixed((R_PointToAngle(interp.x, interp.y))-ANGLE_180);
 			p.angley = FIXED_TO_FLOAT(anglef);
 		}
+
+		// drift frame unrotation hack...
+		if (modeltype == MODELTYPE_OLDPLAYER && (spr2 == SPR2_DRRN || spr2 == SPR2_DRLN))
+			p.angley += spr2 == SPR2_DRRN ? 45.0f : -45.0f;
 
 		{
 			fixed_t anglef = AngleFixed(R_SpriteRotationAngle(spr->mobj, NULL, &interp));
