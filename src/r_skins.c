@@ -684,6 +684,7 @@ void R_AddSkins(UINT16 wadnum)
 	size_t size;
 	skin_t *skin;
 	boolean realname;
+	boolean iscompatskin = false;
 
 	//
 	// search for all skin markers in pwad
@@ -822,7 +823,9 @@ next_token:
 
 		R_FlushTranslationColormapCache();
 
-		CONS_Printf(M_GetText("Added skin '%s'\n"), skin->name);
+		iscompatskin = wadfiles[skin->wadnum]->compatmode;
+
+		CONS_Printf(M_GetText("Added skin '%s' %s\n"), skin->name, iscompatskin ? "in compatibility mode" : "");
 
 #ifdef SKINVALUES
 		skin_cons_t[numskins].value = numskins;
