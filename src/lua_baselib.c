@@ -970,7 +970,7 @@ static int lib_pSetScale(lua_State *L)
 		return LUA_ErrInvalid(L, "mobj_t");
 	if (newscale < FRACUNIT/100)
 		newscale = FRACUNIT/100;
-	P_SetScale(mobj, newscale);
+	P_SetScale2(mobj, newscale, lua_compatmode);
 	return 0;
 }
 

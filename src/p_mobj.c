@@ -6165,7 +6165,7 @@ void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 numb
 //
 // Sets the sprite scaling
 //
-void P_SetScale(mobj_t *mobj, fixed_t newscale)
+void P_SetScale2(mobj_t *mobj, fixed_t newscale, boolean compat)
 {
 	player_t *player;
 	fixed_t oldscale;
@@ -6177,8 +6177,16 @@ void P_SetScale(mobj_t *mobj, fixed_t newscale)
 
 	mobj->scale = newscale;
 
-	mobj->radius = FixedMul(FixedDiv(mobj->radius, oldscale), newscale);
-	mobj->height = FixedMul(FixedDiv(mobj->height, oldscale), newscale);
+	if (compat)
+	{
+		mobj->radius = FixedMul(mobj->info->radius, newscale);
+		mobj->height = FixedMul(mobj->info->height, newscale);
+	}
+	else
+	{
+		mobj->radius = FixedMul(FixedDiv(mobj->radius, oldscale), newscale);
+		mobj->height = FixedMul(FixedDiv(mobj->height, oldscale), newscale);
+	}
 
 	player = mobj->player;
 

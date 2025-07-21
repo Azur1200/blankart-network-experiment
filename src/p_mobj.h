@@ -566,7 +566,8 @@ boolean P_SupermanLook4Players(mobj_t *actor);
 boolean P_PrecipThinker(precipmobj_t *mobj);
 void P_NullPrecipThinker(precipmobj_t *mobj);
 void P_FreePrecipMobj(precipmobj_t *mobj);
-void P_SetScale(mobj_t *mobj, fixed_t newscale);
+#define P_SetScale(mobj, newscale) P_SetScale2(mobj, newscale, false)
+void P_SetScale2(mobj_t *mobj, fixed_t newscale, boolean compat);
 void P_XYMovement(mobj_t *mo);
 void P_RingXYMovement(mobj_t *mo);
 void P_SceneryXYMovement(mobj_t *mo);

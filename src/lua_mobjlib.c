@@ -897,7 +897,7 @@ static int mobj_set(lua_State *L)
 			return luaL_error(L, "mobj.type %d out of range (0 - %d).", newtype, NUMMOBJTYPES-1);
 		mo->type = newtype;
 		mo->info = &mobjinfo[newtype];
-		P_SetScale(mo, mo->scale);
+		P_SetScale2(mo, mo->scale, lua_compatmode);
 		break;
 	}
 	case mobj_info:
@@ -972,7 +972,7 @@ static int mobj_set(lua_State *L)
 		if (scale < FRACUNIT/100)
 			scale = FRACUNIT/100;
 		mo->destscale = scale;
-		P_SetScale(mo, scale);
+		P_SetScale2(mo, scale, lua_compatmode);
 		mo->old_scale = scale;
 		break;
 	}
