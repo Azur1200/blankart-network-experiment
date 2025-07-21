@@ -838,9 +838,6 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 	if (skinnum == TC_BLINK)
 		blendcolor = V_GetColor(skincolors[color].ramp[3]);
 
-	if (skinnum == TC_BLINK)
-		blendcolor = V_GetColor(skincolors[color].ramp[3]);
-
 	while (size--)
 	{
 		if (skinnum == TC_BOSS)
