@@ -1564,5 +1564,11 @@ struct int_const_s const INT_CONST[] = {
 	{"TRF_REMAP",TRF_REMAP},
 	{"TRF_BYPASSBOOST", TRF_BYPASSBOOST},
 
+	// facepatches
+	{"FACE_RANK", FACE_RANK},
+	{"FACE_WANTED", FACE_WANTED},
+	{"FACE_MINIMAP", FACE_MINIMAP},
+	{"NUMFACES", NUMFACES},
+
 	{NULL,0}
 };
