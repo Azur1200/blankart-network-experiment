@@ -2333,6 +2333,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				case DMG_EXPLODE:
 				case DMG_KARMA:
 					// 10 on SPB hit, 5 on normal explosion
+					painsound = true;
 					ringburst = K_ExplodePlayer(player, inflictor, source);
 					LUA_HookPlayerExplode(target, inflictor, source, damage, damagetype);
 					break;
@@ -2390,6 +2391,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					case MT_JAWZ_SHIELD:
 					case MT_JAWZ_DUD:
 					case MT_SMK_THWOMP:
+					case MT_MINEEXPLOSION:
+					case MT_SPBEXPLOSION:
 						painsound = true;
 						break;
 
