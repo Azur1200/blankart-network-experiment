@@ -9993,10 +9993,7 @@ INT32 K_GetDriftAngleOffset(player_t *player)
 	}
 	else if (player->drift != 0 && onground)
 	{
-		SINT8 turn = (player->drift > 0) ? 5 : -5;
-
-
-		a = (ANGLE_45 / 5) * turn;
+		a = (ANGLE_45 / 5) * player->drift;
 	}
 	return a;
 }
