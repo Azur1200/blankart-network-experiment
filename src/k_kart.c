@@ -3855,9 +3855,9 @@ static void K_UpdateSlopeBoost(player_t *player)
 	pslope_t *slope = player->mo->standingslope;
 	boolean flip = player->mo->eflags & MFE_VERTICALFLIP;
 	angle_t momangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy), hillangle = 0;
-	fixed_t anglemult, slopemult, mult;
-	fixed_t addedboost, addedaccel;
-	INT32 brake;
+	fixed_t anglemult = 0, slopemult = 0, mult = 0;
+	fixed_t addedboost = 0, addedaccel = 0;
+	INT32 brake = 0;
 
 	if (!K_SlopeBoostActive())
 	{
