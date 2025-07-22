@@ -59,7 +59,10 @@ add_custom_target(_SRB2_reconf ALL
 )
 add_dependencies(SRB2SDL2 _SRB2_reconf)
 
-
+if(SRB2_CONFIG_ASAN)
+	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+endif()
 
 add_subdirectory(blua)
 add_subdirectory(blan)
@@ -219,9 +222,6 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
 endif()
-
-target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
-target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
 
 # Compiler warnings configuration
 target_compile_options(SRB2SDL2 PRIVATE
