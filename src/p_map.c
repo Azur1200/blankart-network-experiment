@@ -1628,13 +1628,6 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		g_tm.blocking = true;
 		return BMIT_CONTINUE;
 	}
-	else
-	{
-		if (g_tm.sweep)
-		{
-			P_TestLine(ld);
-		}
-	}
 
 	if (P_IsLineBlocking(ld, g_tm.thing))
 	{
