@@ -303,7 +303,10 @@ static void SetChannelsNum(void)
 
 	// Free all channels for use
 	for (i = 0; i < numofchannels; i++)
+	{
 		channels[i].sfxinfo = 0;
+		channels[i].origin = NULL;
+	}
 
 	S_ResetCaptions();
 }

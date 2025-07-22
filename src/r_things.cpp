@@ -1514,6 +1514,8 @@ static void R_ProjectDropShadow(
 	shadow->heightsec = vis->heightsec;
 
 	shadow->mobjflags = 0;
+	shadow->renderflags = 0;
+	shadow->floorclip = 0;
 	shadow->sortscale = vis->sortscale;
 	shadow->dispoffset = vis->dispoffset - 5;
 	shadow->gx = interp.x;
