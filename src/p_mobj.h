@@ -590,6 +590,7 @@ extern boolean stackingactive;
 extern boolean chainingactive;
 extern boolean slipdashactive;
 extern boolean purpledriftactive;
+extern boolean slopeboostactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

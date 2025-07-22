@@ -164,6 +164,13 @@ extern consvar_t cv_kartstacking_ring_speedboost;
 extern consvar_t cv_kartstacking_ring_accelboost;
 extern consvar_t cv_kartstacking_ring_stackable;
 
+extern consvar_t cv_kartstacking_slope_decay;
+extern consvar_t cv_kartstacking_slope_brakemod;
+extern consvar_t cv_kartstacking_slope_speedboost_max;
+extern consvar_t cv_kartstacking_slope_speedboost_cap;
+extern consvar_t cv_kartstacking_slope_accelboost;
+extern consvar_t cv_kartstacking_slope_stackable;
+
 extern consvar_t cv_kartchaining;
 extern consvar_t cv_kartchainingoffroad;
 
@@ -173,6 +180,7 @@ extern consvar_t cv_kartpurpledrift;
 extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
 extern consvar_t cv_kartslipdash;
+extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvintype;
 extern consvar_t cv_kartinvindist;
 extern consvar_t cv_kartinvindistmul;

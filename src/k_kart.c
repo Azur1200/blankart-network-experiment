@@ -339,6 +339,13 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_ring_accelboost);
 	CV_RegisterVar(&cv_kartstacking_ring_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_slope_decay);
+	CV_RegisterVar(&cv_kartstacking_slope_brakemod);
+	CV_RegisterVar(&cv_kartstacking_slope_speedboost_max);
+	CV_RegisterVar(&cv_kartstacking_slope_speedboost_cap);
+	CV_RegisterVar(&cv_kartstacking_slope_accelboost);
+	CV_RegisterVar(&cv_kartstacking_slope_stackable);
+
 	CV_RegisterVar(&cv_kartchaining);
 	CV_RegisterVar(&cv_kartchainingoffroad);
 	CV_RegisterVar(&cv_kartchainingsound);
@@ -354,6 +361,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbumpspring);
 
 	CV_RegisterVar(&cv_kartslipdash);
+
+	CV_RegisterVar(&cv_kartslopeboost);
 
     CV_RegisterVar(&cv_kartinvintype);
     CV_RegisterVar(&cv_kartinvindist);
@@ -3829,6 +3838,88 @@ static fixed_t K_RingDurationBoost(const player_t *player)
 	return ret;
 }
 
+static fixed_t K_DecaySlopeBoost(fixed_t prevslopeboost, INT32 brake)
+{
+	return max(prevslopeboost - (SLOPEDECAY + brake + prevslopeboost/60), 0);
+}
+
+static void K_DoSlopeBrake(player_t *player, fixed_t prevslopeboost, INT32 brake)
+{
+	player->slopeboost = K_DecaySlopeBoost(prevslopeboost, brake);
+	player->slopeaccel = 0;
+	player->prevslopeboost = player->slopeboost;
+}
+
+static void K_UpdateSlopeBoost(player_t *player)
+{
+	pslope_t *slope = player->mo->standingslope;
+	boolean flip = player->mo->eflags & MFE_VERTICALFLIP;
+	angle_t momangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy), hillangle = 0;
+	fixed_t anglemult, slopemult, mult;
+	fixed_t addedboost, addedaccel;
+	INT32 brake;
+
+	if (!K_SlopeBoostActive())
+	{
+		player->slopeboost = player->slopeaccel = player->prevslopeboost = 0;
+		return;
+	}
+
+	if ((K_GetKartButtons(player) & BT_BRAKE) || player->offroad || !player->speed)
+	{
+		brake = SLOPEBRAKEMOD;
+	}
+
+	if (!slope || (player->offroad && K_ApplyOffroad(player)) || !player->speed)
+	{
+		K_DoSlopeBrake(player, player->prevslopeboost, brake);
+		return;
+	}
+
+	if ((((int)slope->zangle > 0) && flip) || (((int)slope->zangle < 0) && (!flip)))
+	{
+		hillangle = momangle - slope->xydirection;
+	}
+	else
+	{
+		hillangle = momangle - (slope->xydirection + ANGLE_180);
+	}
+
+	hillangle = max(abs((int)hillangle) - ANG1*3, 0);  // ANG1*3 somehow fixes some slopes???
+
+	if (hillangle >= ANGLE_90)
+	{
+		K_DoSlopeBrake(player, player->prevslopeboost, brake);
+		return;
+	}
+
+	anglemult = FixedDiv(AngleFixed(ANGLE_90-hillangle), 90*FRACUNIT);
+	slopemult = FixedDiv(AngleFixed(min(abs((int)slope->zangle)+ANG1*3, ANGLE_90)), 90*FRACUNIT);
+
+	mult = FixedMul(anglemult, slopemult);
+
+	addedboost = min(FixedMul(mult, SLOPESPEEDBOOSTMAX), SLOPESPEEDBOOSTCAP);
+	addedaccel = FixedMul(mult, SLOPEACCELBOOST);
+
+	if (K_GetKartButtons(player) & BT_BRAKE)
+	{
+		addedboost = K_DecaySlopeBoost(player->prevslopeboost, brake);
+	}
+	else if (addedboost >= player->prevslopeboost)
+	{
+		addedboost = min(addedboost, player->prevslopeboost+mult*5/100);
+	}
+	else
+	{
+		addedboost = max(K_DecaySlopeBoost(player->prevslopeboost, brake), addedboost);
+	}
+
+	player->slopeboost = addedboost;
+	player->slopeaccel = addedaccel;
+
+	player->prevslopeboost = addedboost;
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -3906,6 +3997,11 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->ringboost) // Ring Boost
 	{
 		K_DoBoost(player, RINGSPEEDBOOST, RINGACCELBOOST, RINGSTACKABLE, RINGSTACKABLE); // + 20% top speed, + 400% acceleration
+	}
+
+	if (player->slopeboost || player->slopeaccel)
+	{
+		K_DoBoost(player, player->slopeboost, player->slopeaccel, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
 	}
 
 	// This should always remain the last boost
@@ -7714,6 +7810,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
+	K_UpdateSlopeBoost(player);
 	K_GetKartBoostPower(player);
 
 	// Special effect objects!
@@ -11793,6 +11890,17 @@ boolean K_SlipdashActive(void)
 	if (slipdashactive)
 	{
 		// Slipdash is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_SlopeBoostActive(void)
+{
+	if (slopeboostactive)
+	{
+		// SlopeBoost is enabled!
 		return true;
 	}
 

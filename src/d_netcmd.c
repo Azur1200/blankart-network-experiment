@@ -153,6 +153,7 @@ static void KartPurpleDrift_OnChange(void);
 static void KartStacking_OnChange(void);
 static void KartChaining_OnChange(void);
 static void KartSlipdash_OnChange(void);
+static void KartSlopeBoost_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
 
@@ -487,7 +488,14 @@ consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stack
 
 consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+
+consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_speedboost_cap", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
@@ -505,6 +513,8 @@ consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "No", CV_NETVAR, CV_Yes
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_YesNo, NULL);
 
 consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
+
+consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlopeBoost_OnChange);
 
 // Invincibility modifiers
 static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
@@ -7307,6 +7317,39 @@ static void KartSlipdash_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Slipdashing will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartSlopeBoost_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!K_SlopeBoostActive() && cv_kartslopeboost.value)
+	{
+		if (leveltime < starttime)
+		{
+			slopeboostactive = true;
+			CONS_Printf(M_GetText("Slopeboost has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Slopeboost will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_SlopeBoostActive() && !cv_kartslopeboost.value)
+	{
+		if (leveltime < starttime)
+		{
+			slopeboostactive = false;
+			CONS_Printf(M_GetText("Slopeboost has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Slopeboost will be turned \"Off\" next round.\n"));
 		}
 	}
 }

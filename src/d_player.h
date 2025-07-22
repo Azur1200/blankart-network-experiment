@@ -707,6 +707,10 @@ struct player_t
 	UINT16 chaintimer;		// Stores current chain timer length.
 
 	UINT8 boostcharge; 		// Charge during race start
+
+	fixed_t slopeboost; // Handle slopeboost speed
+	fixed_t prevslopeboost; // Last frame slopeboost speed
+	fixed_t slopeaccel; // Handle slopeboost accel
 	
 	INT16 growshrinktimer;			// > 0 = Big, < 0 = small
 	INT16 growcancel;				// Duration of grow canceling

@@ -406,7 +406,7 @@ extern consvar_t cv_newgametype, cv_nextmap, cv_chooseskin, cv_serversort;
 extern consvar_t cv_dummygpdifficulty, cv_dummygpencore, cv_dummygpcup;
 extern consvar_t cv_dummymenuplayer, cv_dummyteam, cv_dummyspectate, cv_dummyscramble;
 extern consvar_t cv_dummyattackingrings, cv_dummyattackingstacking,  cv_dummyattackingchaining;
-extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift;
+extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift, cv_dummyattackingslopeboost;
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;

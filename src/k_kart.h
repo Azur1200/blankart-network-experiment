@@ -93,26 +93,39 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
 #define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
 #define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
+
 #define INVINSPEEDBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyspeedboost)
 #define INVINACCELBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyaccelboost)
 #define INVINSPEEDBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternatespeedboost)
 #define INVINACCELBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternateaccelboost)
 #define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable)
+
 #define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost)
 #define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)
 #define GROWSTACKABLE K_RAGuard(cv_kartstacking_grow_stackable)
+
 #define FLAMESPEEDVAL K_RAGuard(cv_kartstacking_flame_speedval)
 #define FLAMEACCELBOOST K_RAGuard(cv_kartstacking_flame_accelboost)
 #define FLAMESTACKABLE K_RAGuard(cv_kartstacking_flame_stackable)
+
 #define STARTSPEEDBOOST K_RAGuard(cv_kartstacking_start_speedboost)
 #define STARTACCELBOOST K_RAGuard(cv_kartstacking_start_accelboost)
 #define STARTSTACKABLE K_RAGuard(cv_kartstacking_start_stackable)
+
 #define DRIFTSPEEDBOOST K_RAGuard(cv_kartstacking_drift_speedboost)
 #define DRIFTACCELBOOST K_RAGuard(cv_kartstacking_drift_accelboost)
 #define DRIFTSTACKABLE K_RAGuard(cv_kartstacking_drift_stackable)
+
 #define RINGSPEEDBOOST K_RAGuard(cv_kartstacking_ring_speedboost)
 #define RINGACCELBOOST K_RAGuard(cv_kartstacking_ring_accelboost)
 #define RINGSTACKABLE K_RAGuard(cv_kartstacking_ring_stackable)
+
+#define SLOPEDECAY K_RAGuard(cv_kartstacking_slope_decay)
+#define SLOPEBRAKEMOD K_RAGuard(cv_kartstacking_slope_brakemod)
+#define SLOPESPEEDBOOSTMAX K_RAGuard(cv_kartstacking_slope_speedboost_max)
+#define SLOPESPEEDBOOSTCAP K_RAGuard(cv_kartstacking_slope_speedboost_cap)
+#define SLOPEACCELBOOST K_RAGuard(cv_kartstacking_slope_accelboost)
+#define SLOPESTACKABLE K_RAGuard(cv_kartstacking_slope_stackable)
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
@@ -301,6 +314,7 @@ boolean K_PurpleDriftActive(void);
 boolean K_StackingActive(void);
 boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
+boolean K_SlopeBoostActive(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);
 boolean K_UsingLegacyCheckpoints(void);

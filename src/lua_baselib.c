@@ -4052,10 +4052,17 @@ static int lib_kChainingActive(lua_State *L)
 	return 1;
 }
 
-// Checks if Chaining is active.
+// Checks if Slipdash is active.
 static int lib_kSlipdashActive(lua_State *L)
 {
 	lua_pushboolean(L, K_SlipdashActive());
+	return 1;
+}
+
+// Checks if Slope Boost is active.
+static int lib_kSlopeBoostActive(lua_State *L)
+{
+	lua_pushboolean(L, K_SlopeBoostActive());
 	return 1;
 }
 
@@ -4638,6 +4645,7 @@ static luaL_Reg lib[] = {
 	{"K_StackingActive",lib_kStackingActive},
 	{"K_ChainingActive",lib_kChainingActive},
 	{"K_SlipdashActive",lib_kSlipdashActive},
+	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},

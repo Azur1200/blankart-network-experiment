@@ -342,6 +342,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		
 		WRITEUINT8(save->p, players[i].boostcharge);
 
+		WRITEFIXED(save->p, players[i].slopeboost);
+		WRITEFIXED(save->p, players[i].prevslopeboost);
+		WRITEFIXED(save->p, players[i].slopeaccel);
+
 		WRITEINT16(save->p, players[i].growshrinktimer);
 		WRITEINT16(save->p, players[i].growcancel);
 
@@ -688,6 +692,10 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].chaintimer = READUINT16(save->p);
 		
 		players[i].boostcharge = READUINT8(save->p);
+
+		players[i].slopeboost = READFIXED(save->p);
+		players[i].prevslopeboost = READFIXED(save->p);
+		players[i].slopeaccel = READFIXED(save->p);
 
 		players[i].growshrinktimer = READINT16(save->p);
 		players[i].growcancel = READINT16(save->p);
@@ -5169,6 +5177,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, chainingactive);
 	WRITEUINT8(save->p, slipdashactive);
 	WRITEUINT8(save->p, purpledriftactive);
+	WRITEUINT8(save->p, slopeboostactive);
 
 	for (i = 0; i < 12; i++)
 	{
@@ -5356,6 +5365,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	chainingactive = READUINT8(save->p);
 	slipdashactive = READUINT8(save->p);
 	purpledriftactive = READUINT8(save->p);
+	slopeboostactive = READUINT8(save->p);
 
 	for (i = 0; i < 12; i++)
 	{

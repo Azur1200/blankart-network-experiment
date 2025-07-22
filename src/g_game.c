@@ -467,14 +467,15 @@ SINT8 G_RecordPresetIndex(void)
 	boolean chaining = cv_dummyattackingchaining.value;
 	boolean slipdash = cv_dummyattackingslipdash.value;
 	boolean purpledrift = cv_dummyattackingpurpledrift.value;
+	boolean slopeboost = cv_dummyattackingslopeboost.value;
 
-	if (!rings && !stacking && !chaining && !slipdash && !purpledrift)
+	if (!rings && !stacking && !chaining && !slipdash && !purpledrift && !slopeboost)
 		return RP_KART;
 
-	if (stacking && chaining && !rings && !slipdash && !purpledrift)
+	if (stacking && chaining && slopeboost && !rings && !slipdash && !purpledrift)
 		return RP_TECH;
 
-	if (rings && stacking && chaining && slipdash && purpledrift)
+	if (rings && stacking && chaining && slipdash && purpledrift && slopeboost)
 		return RP_BLAN;
 
 	return RP_CUST;
