@@ -2840,28 +2840,13 @@ void K_KartMoveAnimation(player_t *player)
 	const boolean spinningwheels = (player->speed > 0);
 	const boolean lookback = ((buttons & BT_LOOKBACK) == BT_LOOKBACK);
 
-	SINT8 turndir = 0;
+	SINT8 turndir = intsign(player->cmd.turning);
 	SINT8 destGlanceDir = 0;
 	SINT8 drift = player->drift;
+	UINT8 spr2, glanceofs;
 
 	if (!lookback)
-	{
 		player->pflags &= ~PF_GAINAX;
-
-		if (player->cmd.turning < 0)
-		{
-			turndir = -1;
-		}
-		else if (player->cmd.turning > 0)
-		{
-			turndir = 1;
-		}
-	}
-	else if (drift == 0)
-	{
-		// Prioritize looking back frames over turning
-		turndir = 0;
-	}
 
 	// Sliptides: drift -> lookback frames
 	if (abs(player->aizdriftturn) >= ANGLE_90 && !wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode)
@@ -2876,7 +2861,7 @@ void K_KartMoveAnimation(player_t *player)
 		drift = intsign(player->aizdriftturn);
 		turndir = 0;
 	}
-	else if (turndir == 0 && drift == 0)
+	else if (drift == 0)
 	{
 		// Only try glancing if you're driving straight.
 		// This avoids all-players loops when we don't need it.
@@ -2946,210 +2931,64 @@ void K_KartMoveAnimation(player_t *player)
 				destGlanceDir = -1;
 			}
 		}
+		else if (turndir)
+		{
+			// Not glancing
+			destGlanceDir = 0;
+			player->glanceDir = 0;
+		}
 	}
-	else
-	{
-		// Not glancing
-		destGlanceDir = 0;
-		player->glanceDir = 0;
-	}
-
-#define SetState(sn) \
-	if (player->mo->state != &states[sn]) \
-		P_SetPlayerMobjState(player->mo, sn)
 
 	if (onground == false)
-	{
-		// Only use certain frames in the air, to make it look like your tires are spinning fruitlessly!
-		if (turndir == -1)
-		{
-			SetState(S_KART_FAST_R);
-		}
-		else if (turndir == 1)
-		{
-			SetState(S_KART_FAST_L);
-		}
-		else
-		{
-			switch (player->glanceDir)
-			{
-				case -2:
-					SetState(S_KART_FAST_LOOK_R);
-					break;
-				case 2:
-					SetState(S_KART_FAST_LOOK_L);
-					break;
-				case -1:
-					SetState(S_KART_FAST_GLANCE_R);
-					break;
-				case 1:
-					SetState(S_KART_FAST_GLANCE_L);
-					break;
-				default:
-					SetState(S_KART_FAST);
-					break;
-			}
-		}
-
-		if (!spinningwheels)
-		{
-			// TODO: The "tires still in the air" states should have it's own SPR2s.
-			// This was a quick hack to get the same functionality with less work,
-			// but it's really dunderheaded & isn't customizable at all.
-			player->mo->frame = (player->mo->frame & ~FF_FRAMEMASK);
-			player->mo->tics++; // Makes it properly use frame 0
-		}
-	}
+		spr2 = SPR2_FSTN; // Only use certain frames in the air, to make it look like your tires are spinning fruitlessly!
+	else if (drift > 0)
+		spr2 = SPR2_DRLN; // Drifting LEFT!
+	else if (drift < 0)
+		spr2 = SPR2_DRRN; // Drifting RIGHT!
+	else if (player->speed >= fastspeed && player->speed >= (player->lastspeed - speedthreshold))
+		spr2 = SPR2_FSTN; // Going REAL fast!
+	else if (spinningwheels)
+		spr2 = SPR2_SLWN; // Drivin' slow.
 	else
+		spr2 = SPR2_STIN; // Completely still.
+
+	glanceofs = abs(player->glanceDir)*2 + (player->glanceDir < 0);
+
+	// do we NOT have any glance/look sprites?
+	if (glanceofs && P_GetSkinSprite2(player->mo->skin, spr2 + glanceofs+1, player) == spr2)
+	{
+		// then don't bother glancing
+		// this lets kart 3D models still show their turning frames when looking back
+		glanceofs = 0;
+	}
+
+	if (onground && drift)
 	{
 		if (drift > 0)
-		{
-			// Drifting LEFT!
+			turndir *= -1;
 
-			if (turndir == -1)
-			{
-				// Right -- outwards drift
-				SetState(S_KART_DRIFT_L_OUT);
-			}
-			else if (turndir == 1)
-			{
-				// Left -- inwards drift
-				SetState(S_KART_DRIFT_L_IN);
-			}
-			else
-			{
-				// Neutral drift
-				SetState(S_KART_DRIFT_L);
-			}
-		}
-		else if (drift < 0)
-		{
-			// Drifting RIGHT!
+		if (turndir == -1)
+			spr2 += 2; // Inwards drift
+		else if (turndir == 1)
+			spr2 += 1; // Outwards drift
+	}
+	else if (glanceofs)
+		spr2 += glanceofs+1;
+	else if (turndir == -1)
+		spr2 += 2; // turn right
+	else if (turndir == 1)
+		spr2 += 1; // turn left
 
-			if (turndir == -1)
-			{
-				// Right -- inwards drift
-				SetState(S_KART_DRIFT_R_IN);
-			}
-			else if (turndir == 1)
-			{
-				// Left -- outwards drift
-				SetState(S_KART_DRIFT_R_OUT);
-			}
-			else
-			{
-				// Neutral drift
-				SetState(S_KART_DRIFT_R);
-			}
-		}
-		else
-		{
-			if (player->speed >= fastspeed && player->speed >= (player->lastspeed - speedthreshold))
-			{
-				// Going REAL fast!
+	if (player->mo->state != &states[S_KART_STILL + spr2])
+		P_SetPlayerMobjState(player->mo, S_KART_STILL + spr2);
 
-				if (turndir == -1)
-				{
-					SetState(S_KART_FAST_R);
-				}
-				else if (turndir == 1)
-				{
-					SetState(S_KART_FAST_L);
-				}
-				else
-				{
-					switch (player->glanceDir)
-					{
-						case -2:
-							SetState(S_KART_FAST_LOOK_R);
-							break;
-						case 2:
-							SetState(S_KART_FAST_LOOK_L);
-							break;
-						case -1:
-							SetState(S_KART_FAST_GLANCE_R);
-							break;
-						case 1:
-							SetState(S_KART_FAST_GLANCE_L);
-							break;
-						default:
-							SetState(S_KART_FAST);
-							break;
-					}
-				}
-			}
-			else
-			{
-				if (spinningwheels)
-				{
-					// Drivin' slow.
-
-					if (turndir == -1)
-					{
-						SetState(S_KART_SLOW_R);
-					}
-					else if (turndir == 1)
-					{
-						SetState(S_KART_SLOW_L);
-					}
-					else
-					{
-						switch (player->glanceDir)
-						{
-							case -2:
-								SetState(S_KART_SLOW_LOOK_R);
-								break;
-							case 2:
-								SetState(S_KART_SLOW_LOOK_L);
-								break;
-							case -1:
-								SetState(S_KART_SLOW_GLANCE_R);
-								break;
-							case 1:
-								SetState(S_KART_SLOW_GLANCE_L);
-								break;
-							default:
-								SetState(S_KART_SLOW);
-								break;
-						}
-					}
-				}
-				else
-				{
-					// Completely still.
-
-					if (turndir == -1)
-					{
-						SetState(S_KART_STILL_R);
-					}
-					else if (turndir == 1)
-					{
-						SetState(S_KART_STILL_L);
-					}
-					else
-					{
-						switch (player->glanceDir)
-						{
-							case -2:
-								SetState(S_KART_STILL_LOOK_R);
-								break;
-							case 2:
-								SetState(S_KART_STILL_LOOK_L);
-								break;
-							case -1:
-								SetState(S_KART_STILL_GLANCE_R);
-								break;
-							case 1:
-								SetState(S_KART_STILL_GLANCE_L);
-								break;
-							default:
-								SetState(S_KART_STILL);
-								break;
-						}
-					}
-				}
-			}
-		}
+	if (!onground && !spinningwheels)
+	{
+		// TODO: The "tires still in the air" states should have it's own SPR2s.
+		// This was a quick hack to get the same functionality with less work,
+		// but it's really dunderheaded & isn't customizable at all.
+		player->mo->frame = (player->mo->frame & ~FF_FRAMEMASK);
+		player->mo->tics++; // Makes it properly use frame 0
 	}
 
 #undef SetState
