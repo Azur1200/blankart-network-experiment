@@ -1919,7 +1919,11 @@ void WeaponPref_Send(UINT8 ssplayer)
 	if (cv_flipcam[ssplayer].value)
 		prefs |= WP_FLIPCAM;
 
-	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, &prefs, 1);
+	UINT8 buf[2];
+	buf[0] = prefs;
+	buf[1] = cv_mindelay.value;
+
+	SendNetXCmdForPlayer(ssplayer, XD_WEAPONPREF, buf, sizeof buf);
 }
 
 void WeaponPref_Save(UINT8 **cp, INT32 playernum)
@@ -1969,6 +1973,13 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 static void Got_WeaponPref(UINT8 **cp,INT32 playernum)
 {
 	WeaponPref_Parse(cp, playernum);
+
+	UINT8 mindelay = READUINT8(*cp);
+	if (server)
+	{
+		for (UINT8 i = 0; i < G_LocalSplitscreenPartySize(playernum); ++i)
+			playerdelaytable[G_LocalSplitscreenPartyMember(playernum, i)] = mindelay;
+	}
 
 	// SEE ALSO g_demo.c
 	demo_extradata[playernum] |= DXD_WEAPONPREF;

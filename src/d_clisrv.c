@@ -114,11 +114,10 @@ UINT16 pingmeasurecount = 1;
 UINT32 realpingtable[MAXPLAYERS]; //the base table of ping where an average will be sent to everyone.
 UINT32 playerpingtable[MAXPLAYERS]; //table of player latency values.
 UINT32 playerpacketlosstable[MAXPLAYERS];
+UINT32 playerdelaytable[MAXPLAYERS]; // mindelay values.
 
 static tic_t lowest_lag;
 boolean server_lagless;
-static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
-consvar_t cv_mindelay = CVAR_INIT ("mindelay", "0", CV_SAVE, mindelay_cons_t, NULL);
 
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
@@ -3494,6 +3493,8 @@ void SV_ResetServer(void)
 	pingmeasurecount = 1;
 	memset(realpingtable, 0, sizeof realpingtable);
 	memset(playerpingtable, 0, sizeof playerpingtable);
+	memset(playerpacketlosstable, 0, sizeof playerpacketlosstable);
+	memset(playerdelaytable, 0, sizeof playerdelaytable);
 
 	ClearAdminPlayers();
 	Schedule_Clear();
@@ -5024,6 +5025,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 					{
 						playerpingtable[i] = (tic_t)netbuffer->u.netinfo.pingtable[i];
 						playerpacketlosstable[i] = netbuffer->u.netinfo.packetloss[i];
+						playerdelaytable[i] = netbuffer->u.netinfo.delay[i];
 					}
 				}
 
@@ -5794,6 +5796,7 @@ static inline void PingUpdate(void)
 		}
 
 		netbuffer->u.netinfo.packetloss[i] = lost;
+		netbuffer->u.netinfo.delay[i] = playerdelaytable[i];
 	}
 
 	// send the server's maxping as last element of our ping table. This is useful to let us know when we're about to get kicked.
