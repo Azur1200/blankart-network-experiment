@@ -343,6 +343,12 @@ struct filesneededconfig_pak
 	UINT8 files[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
 
+struct netinfo_pak
+{
+	UINT32 pingtable[MAXPLAYERS+1];
+	UINT32 packetloss[MAXPLAYERS+1];
+} ATTRPACK;
+
 //
 // Network packet data
 //
@@ -376,7 +382,7 @@ struct doomdata_t
 		plrconfig playerconfig[MAXPLAYERS]; // (up to) 528 bytes(?)
 		INT32 filesneedednum;               //           4 bytes
 		filesneededconfig_pak filesneededcfg; //       ??? bytes
-		UINT32 pingtable[MAXPLAYERS+1];     //          68 bytes
+		netinfo_pak netinfo;					// Don't believe their lies
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -451,6 +457,7 @@ extern tic_t jointimeout;
 extern UINT16 pingmeasurecount;
 extern UINT32 realpingtable[MAXPLAYERS];
 extern UINT32 playerpingtable[MAXPLAYERS];
+extern UINT32 playerpacketlosstable[MAXPLAYERS];
 extern tic_t servermaxping;
 
 extern boolean server_lagless;

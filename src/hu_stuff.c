@@ -2309,6 +2309,19 @@ Ping_gfx_color (int lag)
 		return SKINCOLOR_MAGENTA;
 }
 
+static int
+PL_gfx_color (int pl)
+{
+	if (pl <= 2)
+		return 72;
+	else if (pl <= 4)
+		return 54;
+	else if (pl <= 6)
+		return 35;
+	else
+		return 181;
+}
+
 static const UINT8 *
 Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 {
@@ -2332,7 +2345,7 @@ Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean offline)
+void HU_drawPing(INT32 x, INT32 y, UINT32 lag, UINT32 pl, INT32 flags, boolean offline)
 {
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
@@ -2346,8 +2359,19 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean offline)
 
 	gfxnum = Ping_gfx_num(lag);
 
+	if (pl)
+	{
+		V_DrawFill(
+			-pinggfx[gfxnum]->leftoffset + x + 2 - 1,
+			 -pinggfx[gfxnum]->topoffset + y - 1,
+			 pinggfx[gfxnum]->width + 2,
+			 pinggfx[gfxnum]->height + 2,
+			 PL_gfx_color(pl) | flags
+		);
+	}
+
 	if (measureid == 1)
-		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
 
 	V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
@@ -2356,10 +2380,10 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, INT32 flags, boolean offline)
 		lag = (INT32)(lag * (1000.00f / TICRATE));
 	}
 
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+9, flags, lag, Ping_gfx_colormap(lag,drawlocal));
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, lag, Ping_gfx_colormap(lag,drawlocal));
 
 	if (measureid == 0)
-		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+9, flags, pingmeasure[measureid]);
+		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
 }
 
 void
