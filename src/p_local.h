@@ -636,6 +636,7 @@ fixed_t P_GetMobjGround(const mobj_t *);
 fixed_t P_GetMobjZMovement(mobj_t *mo);
 
 void P_InitTIDHash(void);
+void P_AddThingTID(mobj_t *mo);
 void P_SetThingTID(mobj_t *mo, mtag_t tid);
 void P_RemoveThingTID(mobj_t *mo);
 mobj_t *P_FindMobjFromTID(mtag_t tid, mobj_t *i, mobj_t *activator);

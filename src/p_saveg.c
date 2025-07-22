@@ -3782,7 +3782,7 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	if (diff2 & MD2_RENDERFLAGS)
 		mobj->renderflags = READUINT32(save->p);
 	if (diff2 & MD2_TID)
-		P_SetThingTID(mobj, READINT16(save->p));
+		mobj->tid = READINT16(save->p);
 	if (diff2 & MD2_SPRITESCALE)
 	{
 		mobj->spritexscale = READFIXED(save->p);
@@ -3882,6 +3882,9 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	// Reset some non-synch values
 	mobj->sloperoll = 0;
 	mobj->slopepitch = 0;
+
+	// link tid set earlier
+	P_AddThingTID(mobj);
 
 	// set sprev, snext, bprev, bnext, subsector
 	P_SetThingPosition(mobj);

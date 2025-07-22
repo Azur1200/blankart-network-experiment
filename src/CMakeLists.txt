@@ -220,6 +220,9 @@ else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
 endif()
 
+target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
+target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+
 # Compiler warnings configuration
 target_compile_options(SRB2SDL2 PRIVATE
 	# Using generator expressions to handle per-language compile options

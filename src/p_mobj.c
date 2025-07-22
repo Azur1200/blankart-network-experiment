@@ -11639,6 +11639,9 @@ void P_RemoveSavegameMobj(mobj_t *mobj)
 	}
 	else
 	{
+		// unlink from tid chains
+		P_RemoveThingTID(mobj);
+
 		// unlink from sector and block lists
 		P_UnsetThingPosition(mobj);
 
@@ -13639,14 +13642,6 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	mobj = P_SpawnMobj(x, y, z, i);
 	mobj->spawnpoint = mthing;
 
-	if (!P_SetupSpawnedMapThing(mthing, mobj, &doangle))
-	{
-		if (P_MobjWasRemoved(mobj))
-			return NULL;
-
-		return mobj;
-	}
-
 	if (doangle)
 	{
 		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
@@ -13672,7 +13667,8 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 	mobj->spritexscale = mthing->spritexscale;
 	mobj->spriteyscale = mthing->spriteyscale;
 
-	P_SetThingTID(mobj, mthing->tid);
+	mobj->tid = mthing->tid;
+	P_AddThingTID(mobj);
 
 	mobj->special = mthing->special;
 
@@ -13724,6 +13720,14 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 
 		mobj->script_stringargs[arg] = Z_Realloc(mobj->script_stringargs[arg], len + 1, PU_LEVEL, NULL);
 		M_Memcpy(mobj->script_stringargs[arg], mthing->script_stringargs[arg], len + 1);
+	}
+
+	if (!P_SetupSpawnedMapThing(mthing, mobj, &doangle))
+	{
+		if (P_MobjWasRemoved(mobj))
+			return NULL;
+
+		return mobj;
 	}
 
 	mthing->mobj = mobj;
@@ -14732,27 +14736,25 @@ void P_InitTIDHash(void)
 }
 
 //
-// P_SetThingTID
+// P_AddThingTID
 // Adds a mobj to the hash array
 //
-void P_SetThingTID(mobj_t *mo, mtag_t tid)
+void P_AddThingTID(mobj_t *mo)
 {
-	INT32 key = 0;
+	I_Assert(!P_MobjWasRemoved(mo));
 
-	if (tid == 0)
+	if (mo->tid <= 0)
 	{
-		if (mo->tid != 0)
-		{
-			P_RemoveThingTID(mo);
-		}
-
+		// 0 is no TID, and negative
+		// values are reserved.
+		mo->tid = 0;
+		mo->tid_next = NULL;
+		mo->tid_prev = NULL;
 		return;
 	}
 
-	mo->tid = tid;
-
 	// Insert at the head of this chain
-	key = tid % TID_HASH_CHAINS;
+	INT32 key = mo->tid % TID_HASH_CHAINS;
 
 	mo->tid_next = TID_Hash[key];
 	mo->tid_prev = &TID_Hash[key];
@@ -14780,10 +14782,31 @@ void P_RemoveThingTID(mobj_t *mo)
 		{
 			mo->tid_next->tid_prev = mo->tid_prev;
 		}
+
+		mo->tid_prev = NULL;
+		mo->tid_next = NULL;
 	}
 
 	// Remove TID.
 	mo->tid = 0;
+}
+
+//
+// P_SetThingTID
+// Changes a mobj's TID
+//
+void P_SetThingTID(mobj_t *mo, mtag_t tid)
+{
+	P_RemoveThingTID(mo);
+
+	if (P_MobjWasRemoved(mo))
+	{
+		// Do not assign if it is going to be removed.
+		return;
+	}
+
+	mo->tid = tid;
+	P_AddThingTID(mo);
 }
 
 //
@@ -14792,18 +14815,37 @@ void P_RemoveThingTID(mobj_t *mo)
 //
 mobj_t *P_FindMobjFromTID(mtag_t tid, mobj_t *i, mobj_t *activator)
 {
-	if (tid == 0)
+	if (tid <= 0)
 	{
-		// 0 grabs the activator, if applicable,
-		// for some ACS functions.
-
-		if (i != NULL)
+		if (tid == 0)
 		{
-			// Don't do more than once.
+			// 0 grabs the activator, if applicable,
+			// for some ACS functions.
+
+			if (i != NULL)
+			{
+				// Don't do more than once.
+				return NULL;
+			}
+
+			return activator;
+		}
+		else if (tid >= -MAXPLAYERS)
+		{
+			// -1 to -MAXPLAYERS returns an arbritrary player's object.
+			INT32 playerID = -tid - 1;
+			player_t *player = &players[ playerID ];
+
+			if (playeringame[playerID] == true && player->spectator == false)
+			{
+				return player->mo;
+			}
+
 			return NULL;
 		}
 
-		return activator;
+		// Invalid input, return NULL.
+		return NULL;
 	}
 
 	i = (i != NULL) ? i->tid_next : TID_Hash[tid % TID_HASH_CHAINS];
