@@ -2356,7 +2356,7 @@ Ping_conversion (UINT32 lag)
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags)
+void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, boolean icon)
 {
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
@@ -2366,19 +2366,25 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 
 	if (pl)
 	{
-		V_DrawFill(
-			-pinggfx[gfxnum]->leftoffset + x + 2 - 1,
-			 -pinggfx[gfxnum]->topoffset + y - 1,
-			 pinggfx[gfxnum]->width + 2,
-			 pinggfx[gfxnum]->height + 2,
-			 PL_gfx_color(pl) | flags
-		);
+		if (icon)
+		{
+			V_DrawFill(
+				-pinggfx[gfxnum]->leftoffset + x + 2 - 1,
+			  -pinggfx[gfxnum]->topoffset + y - 1,
+			  pinggfx[gfxnum]->width + 2,
+			  pinggfx[gfxnum]->height + 2,
+			  PL_gfx_color(pl) | flags
+			);
+		}
 	}
 
 	if (measureid == 1)
 		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
 
-	V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+	if (icon)
+	{
+		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
+	}
 
 	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, ping <= lag));
 
@@ -2501,11 +2507,26 @@ static void HU_DrawRankings(void)
 			hilicol = V_YELLOWMAP;
 	}
 
-	// draw the current gametype in the lower right
-	if (modeattacking)
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "Record Attack");
+	if (!demo.playback)
+	{
+		// draw the current map in the lower left
+		char *maptitle = G_BuildMapTitle(gamemap);
+
+		if (maptitle)
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, maptitle);
+			Z_Free(maptitle);
+		}
+		else
+		{
+			V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, "UNKNOWN");
+		}
+	}
 	else
-		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, gametype_cons_t[gametype].strvalue);
+	{
+		// draw the current gametype in the lower left
+		V_DrawString(4, 188, hilicol|V_SNAPTOBOTTOM|V_SNAPTOLEFT, (modeattacking) ? "Record Attack" : gametype_cons_t[gametype].strvalue);
+	}
 
 	if ((gametyperules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
 	{
@@ -2561,7 +2582,7 @@ static void HU_DrawRankings(void)
 	{
 		tab[i].num = -1;
 		tab[i].name = NULL;
-		tab[i].count = INT32_MAX;
+		tab[i].string[0] = '\0';
 
 		if (!playeringame[i] || players[i].spectator || !players[i].mo)
 			continue;
@@ -2592,13 +2613,19 @@ static void HU_DrawRankings(void)
 
 		if ((gametyperules & GTR_CIRCUIT))
 		{
-			if (circuitmap)
-				tab[scorelines].count = players[i].laps;
+			if (circuitmap && !players[i].exiting)
+				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
 			else
-				tab[scorelines].count = players[i].realtime;
+			{
+				INT32 min = G_TicsToMinutes(players[i].realtime, true);
+				INT32 sec = G_TicsToSeconds(players[i].realtime);
+				INT32 cen = G_TicsToCentiseconds(players[i].realtime);
+
+				sprintf(tab[scorelines].string, "%i'%02i\"%02i", min, sec, cen);
+			}
 		}
 		else
-			tab[scorelines].count = players[i].roundscore;
+			sprintf(tab[scorelines].string, "%d", players[i].roundscore);
 
 		scorelines++;
 
@@ -2608,7 +2635,7 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	K_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, whiteplayer, hilicol);
+	K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())
