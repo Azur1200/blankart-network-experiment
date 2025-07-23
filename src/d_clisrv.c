@@ -5821,7 +5821,7 @@ static void UpdatePingTable(void)
 
 	if (server)
 	{
-		if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_
+		if (Playing() && !(gametime % 35))	// update once per second.
 			PingUpdate();
 
 		fastest = 0;
