@@ -2613,7 +2613,7 @@ static void HU_DrawRankings(void)
 
 		if ((gametyperules & GTR_CIRCUIT))
 		{
-			if (circuitmap && !players[i].exiting)
+			if (!players[i].exiting)
 				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
 			else
 			{
