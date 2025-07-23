@@ -5821,7 +5821,7 @@ static void UpdatePingTable(void)
 
 	if (server)
 	{
-		if (Playing() && !(gametime % 35))	// update once per second.
+		if (Playing() && !(gametime % 8)) // Value chosen based on _my vibes man_
 			PingUpdate();
 
 		fastest = 0;
@@ -5831,55 +5831,42 @@ static void UpdatePingTable(void)
 		{
 			if (playeringame[i] && playernode[i] > 0)
 			{
-				if (! server_lagless && playernode[i] > 0 && !players[i].spectator)
-				{
-					lag = GetLag(playernode[i]);
-					realpingtable[i] += lag;
+				// TicsToMilliseconds can't handle pings over 1000ms lol
+				realpingtable[i] += GetLag(playernode[i]);
 
+				if (!players[i].spectator)
+				{
+					lag = playerpingtable[i];
 					if (! fastest || lag < fastest)
 						fastest = lag;
-				}
-				else
-				{
-					// TicsToMilliseconds can't handle pings over 1000ms lol
-					realpingtable[i] += GetLag(playernode[i]);
 				}
 			}
 		}
 
-		// Don't gentleman below your mindelay
-		if (fastest < (tic_t)cv_mindelay.value)
-			fastest = (tic_t)cv_mindelay.value;
-
-		pingmeasurecount++;
-
 		if (server_lagless)
 			lowest_lag = 0;
 		else
-		{
 			lowest_lag = fastest;
 
-			if (fastest)
-				lag = fastest;
-			else
-				lag = GetLag(0);
+		// Don't gentleman below your mindelay
+		if (lowest_lag < (tic_t)cv_mindelay.value)
+			lowest_lag = (tic_t)cv_mindelay.value;
 
-			lag = ( realpingtable[0] + lag );
+		pingmeasurecount++;
 
-			switch (playerpernode[0])
-			{
-				case 4:
-					realpingtable[nodetoplayer4[0]] = lag;
-					/*FALLTHRU*/
-				case 3:
-					realpingtable[nodetoplayer3[0]] = lag;
-					/*FALLTHRU*/
-				case 2:
-					realpingtable[nodetoplayer2[0]] = lag;
-					/*FALLTHRU*/
-				case 1:
-					realpingtable[nodetoplayer[0]] = lag;
-			}
+		switch (playerpernode[0])
+		{
+			case 4:
+				playerdelaytable[nodetoplayer4[0]] = lowest_lag;
+				/*FALLTHRU*/
+			case 3:
+				playerdelaytable[nodetoplayer3[0]] = lowest_lag;
+				/*FALLTHRU*/
+			case 2:
+				playerdelaytable[nodetoplayer2[0]] = lowest_lag;
+				/*FALLTHRU*/
+			case 1:
+				playerdelaytable[nodetoplayer[0]] = lowest_lag;
 		}
 	}
 	else // We're a client, handle mindelay on the way out.

@@ -2323,13 +2323,13 @@ PL_gfx_color (int pl)
 }
 
 static const UINT8 *
-Ping_gfx_colormap (UINT32 lag, boolean gentleman)
+Ping_gfx_colormap (UINT32 ping, boolean gentleman)
 {
 	const UINT8 *colormap = NULL;
 
-	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
+	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(ping), GTC_CACHE);
 
-	if (servermaxping && lag > servermaxping && hu_tick < 4)
+	if (servermaxping && ping > servermaxping && hu_tick < 4)
 	{
 		// flash ping red if too high
 		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
@@ -2342,22 +2342,27 @@ Ping_gfx_colormap (UINT32 lag, boolean gentleman)
 	return colormap;
 }
 
+static UINT32
+Ping_conversion (UINT32 lag)
+{
+	if (cv_pingmeasurement.value)
+	{
+		lag = (INT32)(lag * (1000.00f / TICRATE));
+	}
+
+	return lag;
+}
+
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 lag, UINT32 pl, INT32 flags, boolean offline)
+void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags)
 {
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
-	boolean drawlocal = (offline && cv_mindelay.value && lag <= (tic_t)cv_mindelay.value);
+	UINT32 lag = max(ping, mindelay);
 
-	if (!server && lag <= (tic_t)cv_mindelay.value)
-	{
-		lag = cv_mindelay.value;
-		drawlocal = true;
-	}
-
-	gfxnum = Ping_gfx_num(lag);
+	gfxnum = Ping_gfx_num(ping);
 
 	if (pl)
 	{
@@ -2375,19 +2380,14 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 lag, UINT32 pl, INT32 flags, boolean o
 
 	V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 
-	if (cv_pingmeasurement.value)
-	{
-		lag = (INT32)(lag * (1000.00f / TICRATE));
-	}
-
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, lag, Ping_gfx_colormap(lag,drawlocal));
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, ping <= lag));
 
 	if (measureid == 0)
 		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
 }
 
 void
-HU_drawMiniPing (INT32 x, INT32 y, UINT32 lag, INT32 flags)
+HU_drawMiniPing (INT32 x, INT32 y, UINT32 ping, UINT32 lag, INT32 flags)
 {
 	patch_t *patch;
 	INT32 w = BASEVIDWIDTH;
@@ -2400,16 +2400,10 @@ HU_drawMiniPing (INT32 x, INT32 y, UINT32 lag, INT32 flags)
 		w /= 2;
 	}
 
-	// This looks kinda dumb, but basically:
-	// Servers with mindelay set modify the ping table.
-	// Clients with mindelay unset don't, because they can't.
-	// Both are affected by mindelay, but a client's lag value is pre-adjustment.
-	if (server && cv_mindelay.value && (tic_t)cv_mindelay.value <= lag)
-		patch = pinglocal[1];
-	else if (!server && cv_mindelay.value && (tic_t)cv_mindelay.value >= lag)
-		patch = pinglocal[1];
+	if (ping <= lag)
+		patch = pinglocal[1]; // stone shoe
 	else
-		patch = mping[Ping_gfx_num(lag)];
+		patch = mping[Ping_gfx_num(ping)];
 
 	if (( flags & V_SNAPTORIGHT ))
 		x += ( w - SHORT (patch->width) );

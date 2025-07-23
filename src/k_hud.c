@@ -2105,7 +2105,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 			}
 			else if (tab[i].num != serverplayer || !server_lagless)
 			{
-				HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], playerpacketlosstable[tab[i].num], 0, false);
+				HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0);
 			}
 		}
 
@@ -4602,7 +4602,9 @@ void K_drawKartFreePlay(void)
 static void
 Draw_party_ping (int ss, INT32 snap)
 {
-	HU_drawMiniPing(0, 0, playerpingtable[displayplayers[ss]], V_HUDTRANS|V_SPLITSCREEN|V_SNAPTOTOP|snap);
+	UINT32 ping = playerpingtable[displayplayers[ss]];
+	UINT32 mindelay = playerdelaytable[displayplayers[ss]];
+	HU_drawMiniPing(0, 0, ping, max(ping, mindelay), V_HUDTRANS|V_SPLITSCREEN|V_SNAPTOTOP|snap);
 }
 
 static void
