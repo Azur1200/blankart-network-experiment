@@ -2282,13 +2282,13 @@ void HU_Erase(void)
 static int
 Ping_gfx_num (int lag)
 {
-	if (lag <= 2)
+	if (lag < 2)
 		return 0;
-	else if (lag <= 4)
+	else if (lag < 4)
 		return 1;
-	else if (lag <= 7)
+	else if (lag < 7)
 		return 2;
-	else if (lag <= 10)
+	else if (lag < 10)
 		return 3;
 	else
 		return 4;
@@ -2297,13 +2297,13 @@ Ping_gfx_num (int lag)
 static int
 Ping_gfx_color (int lag)
 {
-	if (lag <= 2)
+	if (lag < 2)
 		return SKINCOLOR_JAWZ;
-	else if (lag <= 4)
+	else if (lag < 4)
 		return SKINCOLOR_MINT;
-	else if (lag <= 7)
+	else if (lag < 7)
 		return SKINCOLOR_GOLD;
-	else if (lag <= 10)
+	else if (lag < 10)
 		return SKINCOLOR_RASPBERRY;
 	else
 		return SKINCOLOR_MAGENTA;
@@ -2314,22 +2314,22 @@ PL_gfx_color (int pl, boolean mode)
 {
 	if (mode)
 	{
-		if (pl <= 2)
+		if (pl < 2)
 			return SKINCOLOR_GOLD;
-		else if (pl <= 4)
+		else if (pl < 4)
 			return SKINCOLOR_ORANGE;
-		else if (pl <= 6)
+		else if (pl < 6)
 			return SKINCOLOR_CRIMSON;
 		else
 			return SKINCOLOR_MAGENTA;
 	}
 	else
 	{
-		if (pl <= 2)
+		if (pl < 2)
 			return 72;
-		else if (pl <= 4)
+		else if (pl < 4)
 			return 54;
-		else if (pl <= 6)
+		else if (pl < 6)
 			return 35;
 		else
 			return 181;
@@ -2337,20 +2337,14 @@ PL_gfx_color (int pl, boolean mode)
 }
 
 static const UINT8 *
-Ping_gfx_colormap (UINT32 ping, boolean gentleman)
+Ping_gfx_colormap (UINT32 ping, UINT32 lag)
 {
-	const UINT8 *colormap = NULL;
-
-	colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(ping), GTC_CACHE);
+	const UINT8 *colormap = R_GetTranslationColormap(TC_RAINBOW, Ping_gfx_color(lag), GTC_CACHE);
 
 	if (servermaxping && ping > servermaxping && hu_tick < 4)
 	{
 		// flash ping red if too high
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-	}
-	else if (gentleman)
-	{
-		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_PASTEL, GTC_CACHE);
+		colormap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_WHITE, GTC_CACHE);
 	}
 
 	return colormap;
@@ -2402,7 +2396,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 	}
 
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, ping <= lag));
+	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, lag));
 
 	if (measureid == 0)
 		V_DrawMappedPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
