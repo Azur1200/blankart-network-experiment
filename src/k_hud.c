@@ -2101,7 +2101,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 			}
 			else if (tab[i].num != serverplayer || !server_lagless)
 			{
-				INT32 xoff = cv_pingmeasurement.value == 1 ? 31 : 26;
+				INT32 xoff = cv_pingmeasurement.value == 1 ? 33 : 26;
 
 				HU_drawPing(x - 18 + xoff , y-10, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0, false);
 			}

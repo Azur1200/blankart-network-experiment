@@ -2310,16 +2310,30 @@ Ping_gfx_color (int lag)
 }
 
 static int
-PL_gfx_color (int pl)
+PL_gfx_color (int pl, boolean mode)
 {
-	if (pl <= 2)
-		return 72;
-	else if (pl <= 4)
-		return 54;
-	else if (pl <= 6)
-		return 35;
+	if (mode)
+	{
+		if (pl <= 2)
+			return SKINCOLOR_GOLD;
+		else if (pl <= 4)
+			return SKINCOLOR_ORANGE;
+		else if (pl <= 6)
+			return SKINCOLOR_CRIMSON;
+		else
+			return SKINCOLOR_MAGENTA;
+	}
 	else
-		return 181;
+	{
+		if (pl <= 2)
+			return 72;
+		else if (pl <= 4)
+			return 54;
+		else if (pl <= 6)
+			return 35;
+		else
+			return 181;
+	}
 }
 
 static const UINT8 *
@@ -2361,6 +2375,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
 	INT32 gfxnum; // gfx to draw
 	UINT32 lag = max(ping, mindelay);
+	UINT8 *colormap = NULL;
 
 	gfxnum = Ping_gfx_num(ping);
 
@@ -2373,13 +2388,14 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 			  -pinggfx[gfxnum]->topoffset + y - 1,
 			  pinggfx[gfxnum]->width + 2,
 			  pinggfx[gfxnum]->height + 2,
-			  PL_gfx_color(pl) | flags
+			  PL_gfx_color(pl, false) | flags
 			);
 		}
+		colormap = R_GetTranslationColormap(TC_RAINBOW, PL_gfx_color(pl, true), GTC_CACHE);
 	}
 
 	if (measureid == 1)
-		V_DrawScaledPatch(x+11 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
+		V_DrawMappedPatch(x+11 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
 
 	if (icon)
 	{
@@ -2389,7 +2405,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, ping <= lag));
 
 	if (measureid == 0)
-		V_DrawScaledPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid]);
+		V_DrawMappedPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
 }
 
 void
