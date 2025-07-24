@@ -5750,6 +5750,11 @@ void P_CheckMobjTrigger(mobj_t *mobj, boolean pushable)
 	if (!mobj->subsector)
 		return;
 
+	if (mobj->flags2 & MF2_DONTTRIGGER)
+	{
+		return;
+	}
+
 	originalsector = mobj->subsector->sector;
 
 	if (!pushable && !(originalsector->flags & MSF_TRIGGERLINE_MOBJ))
@@ -6056,6 +6061,11 @@ void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous, boolean 
 	sector_t *originalsector;
 
 	if (mobj->subsector == NULL)
+	{
+		return;
+	}
+
+	if (mobj->flags2 & MF2_DONTTRIGGER)
 	{
 		return;
 	}

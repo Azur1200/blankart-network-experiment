@@ -2610,6 +2610,7 @@ static void K_SpawnStackingEffect(player_t *player)
 {
 	// Thanks to 1ndev for code used for booststack->scale and boosttack->frame! (taken and modified from BoostStack)
 	mobj_t  *booststack = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTSTACK);
+	booststack->flags2 |= MF2_DONTTRIGGER; // No desyncs pls!
 	P_SetTarget(&booststack->target, player->mo);
 	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,4)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
 
@@ -9594,6 +9595,7 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 	}
 
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
+	overlay->flags2 |= MF2_DONTTRIGGER; // No desyncs pls!
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
