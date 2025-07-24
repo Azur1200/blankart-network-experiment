@@ -389,6 +389,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_EXPLODE);
 		}
 
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 	else if (t2->type == MT_BANANA || t2->type == MT_BANANA_SHIELD
@@ -412,10 +413,12 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 
 		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
 
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
 	{
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 		// Bomb death
 		P_KillMobj(t2, t1, t1, DMG_NORMAL);
@@ -424,6 +427,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 	{
 		// Shootable damage
 		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 

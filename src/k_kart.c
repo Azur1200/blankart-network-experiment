@@ -8036,7 +8036,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flamedash--;
 
 	if (player->flamestore)
+	{
 		player->flamestore--;
+
+		if (player->flametimer == 0 || player->flamestore == 0)
+		{
+			S_StopSoundByID(player->mo, sfx_s3kc2l);
+		}
+	}
 
 	if (player->flametimer > 0)
 	{
@@ -8047,6 +8054,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 		if (player->flametimer == 0)
 		{
+			S_StopSoundByID(player->mo, sfx_s3kc2l);
 			S_StartSound(player->mo, sfx_s3k47);
 			K_DropHnextList(player, false);
 		}
@@ -10808,6 +10816,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								S_StartSound(player->mo, sfx_s3k48);
 								K_PlayBoostTaunt(player->mo);
 							}
+
+							// Usage sound
+							if (!S_SoundPlaying(player->mo, sfx_s3kc2l) && player->flametimer != 0 && player->flamestore != 0)
+								S_StartSound(player->mo, sfx_s3kc2l);
 
 							player->flamedash += incr;
 							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
