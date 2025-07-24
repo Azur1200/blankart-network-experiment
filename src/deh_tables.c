@@ -257,7 +257,7 @@ const char *const MOBJFLAG2_LIST[] = {
 	"JUSTATTACKED",	  // can be pushed by other moving mobjs
 	"FIRING",		  // turret fire
 	"SUPERFIRE",	  // Firing something with Super Sonic-stopping properties. Or, if mobj has MF_MISSILE, this is the actual fire from it.
-	"DONTTRIGGER",    // Prevents this mobj from triggering stuff. Used for sync safety on toggle effects.
+	"DONTSYNC",       // Prevents this mobj from triggering stuff or being sent. Used for sync safety on toggle effects.
 	"STRONGBOX",	  // Flag used for "strong" random monitors.
 	"OBJECTFLIP",	  // Flag for objects that always have flipped gravity.
 	"SKULLFLY",		  // Special handling: skull in flight.

@@ -2171,6 +2171,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->type == MT_SPARK)
 		return;
 
+	// This is a non-synched visual effect mobj
+	if (mobj->flags2 & MF2_DONTSYNC)
+		return;
+
 	diff2 = 0;
 
 	if (mobj->spawnpoint)
