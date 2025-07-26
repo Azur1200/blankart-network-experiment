@@ -3440,6 +3440,11 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 			return; // cap
 
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+
+		// if sprite has PF_ALWAYSONTOP, draw on top of everything.
+		if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+			blend |= PF_NoDepthTest;
+
 		if (!trans && !blendmode)
 		{
 			// BP: i agree that is little better in environement but it don't
@@ -3937,6 +3942,11 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 				return; // cap
 
 			blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+
+			// if sprite has PF_ALWAYSONTOP, draw on top of everything.
+			if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+				blend |= PF_NoDepthTest;
+
 			if (!trans && !blendmode)
 			{
 				// BP: i agree that is little better in environement but it don't
