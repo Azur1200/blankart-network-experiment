@@ -1644,7 +1644,7 @@ static void SendNameAndColor(UINT8 n)
 	const INT32 playernum = g_localplayers[n];
 	player_t *player = &players[playernum];
 
-	char buf[MAXPLAYERNAME+9];
+	char buf[MAXPLAYERNAME+12];
 	char *p;
 
 	if (splitscreen < n)
