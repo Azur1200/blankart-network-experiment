@@ -29,10 +29,10 @@ target_sources(SRB2SDL2 PRIVATE comptime.c md5.c config.h.in)
 ### Configuration
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 	"Compile a development build of SRB2Kart.")
-	
+
 set(SRB2_CONFIG_SKIP_COMPTIME OFF CACHE BOOL
 	"Skip Comptime rebuild.")
-	
+
 if(NOT SRB2_CONFIG_SKIP_COMPTIME)
 	# This updates the modification time for comptime.c at the
 	# end of building so when the build system is ran next time,
@@ -250,7 +250,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wnested-externs
 		-Wformat-y2k
 		-Wformat-security
-		
+
 		$<$<VERSION_LESS:$<C_COMPILER_VERSION>,2.9.5>:
 			-Wno-div-by-zero
 			-Wendif-labels

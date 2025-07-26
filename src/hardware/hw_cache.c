@@ -28,6 +28,7 @@
 #include "../r_draw.h"
 #include "../r_patch.h"
 #include "../r_main.h"
+#include "../r_bsp.h"
 #include "../r_picformats.h"
 #include "../p_setup.h"
 #include "../p_setup.h" // levelflats
@@ -743,7 +744,7 @@ void HWR_FreeMapTextures(void)
 {
 	size_t i;
 
-	for (i = 0; i < gl_numtextures; i++)
+	for (i = 0; i < gl_numtextures*2; i++)
 	{
 		FreeMapTexture(&gl_textures[i]);
 		FreeMapTexture(&gl_flats[i]);
@@ -764,10 +765,9 @@ void HWR_FreeMapTextures(void)
 static void HWR_PrecacheLevelFlats(void)
 {
 	levelflat_t levelflat;
-	size_t i;
+	size_t i, j;
 
 	// special case for encore
-#ifdef GLENCORE
 	if (encoremode)
 	{
 		// go through all sectors to determine if it should be remapped for encore
@@ -784,17 +784,16 @@ static void HWR_PrecacheLevelFlats(void)
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
-				const boolean ceiling = (j == 1);
+				const boolean ceiling = (j == 0);
 				INT32 pic = ceiling ? sec->ceilingpic : sec->floorpic;
 
 				levelflat = levelflats[pic];
 
-				HWR_GetLevelFlat(&levelflat, R_NoEncore(sec, ceiling));
+				HWR_GetLevelFlat(&levelflat, R_NoEncore(sec, &levelflat, ceiling));
 			}
 		}
 	}
 	else
-#endif
 	{
 		// on non encore we have it simple
 		// just load every flat in the level
@@ -820,11 +819,7 @@ static void HWR_PrecacheLevelTextures(void)
 	for (i = 0; i < numlines; i++)
 	{
 		line_t *line = &lines[i];
-#ifdef GLENCORE
 		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
-#else
-		const int noencoremap = 1;
-#endif
 
 		// line checked already?
 		if (line->validcount == validcount)
@@ -874,7 +869,7 @@ static void HWR_PrecacheLevelTextures(void)
 				HWR_GetTexture(anim->basepic+h, false);
 			}
 		}
-#ifdef GLENCORE
+
 		if (texpresent & 2)
 		{
 			for (h = 1; h < anim->numpics; h++)
@@ -882,7 +877,6 @@ static void HWR_PrecacheLevelTextures(void)
 				HWR_GetTexture(anim->basepic+h, true);
 			}
 		}
-#endif
 	}
 
 	// Sky texture is always present.
@@ -901,12 +895,11 @@ static void HWR_PrecacheLevelTextures(void)
 		{
 			HWR_GetTexture(i, false);
 		}
-#ifdef GLENCORE
+
 		if (texpresent & 2)
 		{
 			HWR_GetTexture(i, true);
 		}
-#endif
 	}
 	free(texturepresent);
 }
@@ -999,8 +992,8 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	HWR_FreeMapTextures();
 
 	gl_numtextures = pnumtextures;
-	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures));
-	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats));
+	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
+	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats)*2);
 
 	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
@@ -1032,11 +1025,7 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap)
 		I_Error("HWR_GetTexture: tex >= numtextures\n");
 #endif
 
-#ifdef GLENCORE
-	grtex = &gr_textures[tex*2 + (encoremap && !noencore ? 0 : 1)];
-#else
-	grtex = &gl_textures[tex];
-#endif
+	grtex = &gl_textures[tex*2 + (encoremap && !noencoremap ? 0 : 1)];
 
 	// Generate texture if missing from the cache
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
@@ -1187,11 +1176,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 		return;
 	}
 
-#ifdef GLENCORE
-	GLMapTexture_t *grtex = &gr_flats[texturenum*2 + (encoremap && !noencore ? 0 : 1)];
-#else
-	GLMapTexture_t *grtex = &gl_flats[texturenum];
-#endif
+	GLMapTexture_t *grtex = &gl_flats[texturenum*2 + (encoremap && !noencoremap ? 0 : 1)];
 	GLMipmap_t *grMipmap = &grtex->mipmap;
 
 	if (!grMipmap->data && !grMipmap->downloaded)
