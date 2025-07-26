@@ -3385,7 +3385,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (!R_ThingIsPaperSprite(spr->mobj)) // but not for papersprites
+	if (!R_ThingIsPaperSprite(spr->mobj) && !(spr->mobj->terrain && spr->mobj->terrain->floorClip)) // but not for papersprites or for floorclip
 	{
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
@@ -3844,7 +3844,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	float sprdist = 0.0f, distfact = 0.0f;
 	size_t i;
 
-	if (!splat && !R_ThingIsPaperSprite(spr->mobj))
+	if (!splat && !R_ThingIsPaperSprite(spr->mobj) && !(spr->mobj->terrain && spr->mobj->terrain->floorClip))
 	{
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
@@ -4990,6 +4990,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		z2 = tr_y - x2 * rightsin;
 		x1 = tr_x + x1 * rightcos;
 		x2 = tr_x - x2 * rightcos;
+
+		if (thing->terrain && thing->terrain->floorClip)
+			spr_topoffset -=  thing->terrain->floorClip;
 
 		if (vflip)
 		{
