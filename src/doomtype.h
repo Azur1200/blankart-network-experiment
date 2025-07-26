@@ -163,7 +163,7 @@ extern "C" {
 #ifndef _WIN32
 typedef int32_t boolean;
 #else
-#define BOOL boolean
+#define boolean BOOL
 #endif
 
 #ifndef __cplusplus
