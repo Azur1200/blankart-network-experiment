@@ -223,6 +223,8 @@ static SDL_bool Impl_RenderContextCreate(void)
 #endif
 		}
 
+		SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+
 		if (!renderer)
 			renderer = SDL_CreateRenderer(window, -1, flags);
 
