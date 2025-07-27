@@ -38,6 +38,7 @@
 #include "r_fps.h" // R_ResetViewInterpolation in level load
 
 #include "s_sound.h"
+#include "m_emotes.h"
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -9577,6 +9578,10 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	// extra sprite/skin data
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
+
+	// look for emotes
+	//
+	M_LoadEmotes(wadnum);
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;

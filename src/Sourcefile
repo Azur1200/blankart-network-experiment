@@ -37,6 +37,7 @@ m_menu.c
 m_textinput.c
 m_memcpy.c
 m_misc.cpp
+m_emotes.cpp
 m_perfstats.c
 m_random.c
 m_queue.c

@@ -21,6 +21,7 @@
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "g_input.h"
 #include "m_menu.h"
 #include "p_mobj.h"
@@ -1103,6 +1104,8 @@ void D_RegisterClientCommands(void)
 
 	// HUD
 	CV_RegisterVar(&cv_itemfinder);
+
+	CV_RegisterVar(&cv_emotes);
 
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);

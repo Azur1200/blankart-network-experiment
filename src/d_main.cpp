@@ -38,6 +38,7 @@
 #include "f_finale.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "i_sound.h"
 #include "i_system.h"
 #include "i_time.h"
@@ -1798,6 +1799,8 @@ void D_SRB2Main(void)
 	CON_SetLoadingProgress(LOADED_SINITSFXCHANNELS);
 
 	S_InitMusicDefs();
+
+	M_InitEmotes();
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();

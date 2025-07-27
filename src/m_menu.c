@@ -2229,23 +2229,6 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
 }
 
-static void M_DrawTextInput(INT32 x, INT32 y, INT32 flags, textinput_t *input)
-{
-	// draw text cursor for name
-	if (skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(x+V_SubStringWidth(input->buffer, input->cursor, flags|V_ALLOWLOWERCASE), y+3, '_'|(flags & ~(V_FLIP|V_PARAMMASK)), false);
-
-	// draw selection
-	if (input->select != input->cursor)
-	{
-		size_t start = min(input->select, input->cursor);
-		size_t end =   max(input->select, input->cursor);
-		size_t len = end - start;
-		INT32 startx = V_SubStringWidth(input->buffer, start, flags|V_ALLOWLOWERCASE);
-		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, (flags & ~(V_ALPHAMASK|V_PARAMMASK))|103|V_TRANSLUCENT);
-	}
-}
-
 // horizontally centered text
 static void M_CentreText(INT32 y, const char *string)
 {
@@ -2353,7 +2336,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			M_DrawTextBox(x + xofs, y + yofs, w, 1);
 			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
 			if (selected)
-				M_DrawTextInput(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, &menuinput);
+				M_DrawTextInput(x + xofs + 8, y + yofs + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
 		}
 		else if (item->status & IT_SLIDER)
 		{
