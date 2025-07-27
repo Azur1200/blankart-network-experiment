@@ -3619,6 +3619,7 @@ static void HWR_DrawBoundingBox(gl_vissprite_t *vis)
 {
 	FOutVector v[24];
 	FSurfaceInfo Surf = {0};
+	RGBA_t *palette = HWR_GetTexturePalette();
 
 	//
 	// create a cube (side view)
@@ -3658,7 +3659,7 @@ static void HWR_DrawBoundingBox(gl_vissprite_t *vis)
 	v[003].y = v[004].y = v[005].y = v[011].y = v[012].y = v[013].y =
 		v[017].y = v[020].y = v[021].y = v[025].y = v[026].y = v[027].y = vis->gzt; // top
 
-	Surf.PolyColor = V_GetColor(R_GetBoundingBoxColor(vis->mobj));
+	Surf.PolyColor = palette[R_GetBoundingBoxColor(vis->mobj)];
 
 	HWR_ProcessPolygon(&Surf, v, 24, PF_Modulated|PF_NoTexture|PF_WireFrame, SHADER_NONE, false);
 }
