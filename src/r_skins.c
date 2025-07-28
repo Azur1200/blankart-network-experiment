@@ -480,6 +480,10 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		if (!sonic)
 		{
 			const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
+			for (newlastlump = *lump; newlastlump < *lastlump; newlastlump++)
+				if (memcmp(W_CheckNameForNumPwad(wadnum, newlastlump), sprname, 4))
+					break;
+			*lastlump = newlastlump;
 			R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
 		}
 
