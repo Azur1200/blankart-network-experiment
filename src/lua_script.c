@@ -63,6 +63,9 @@ static lua_CFunction liblist[] = {
 	LUA_BotVarsLib, // botvars_t
 	LUA_TerrainLib, // t_splash_t, t_footstep_t, t_overlay_t, terrain_t
 	LUA_WaypointLib, // waypoint_t
+	LUA_VectorLib, // vectors
+	LUA_MatrixLib, // matrices
+	LUA_QuaternionLib, // quaternions
 	NULL
 };
 

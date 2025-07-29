@@ -191,8 +191,6 @@ static const struct {
 	{META_NODE,         "node_t"},
 #endif
 	{META_SLOPE,        "slope_t"},
-	{META_VECTOR2,      "vector2_t"},
-	{META_VECTOR3,      "vector3_t"},
 	{META_MAPHEADER,    "mapheader_t"},
 
 	{META_POLYOBJ,      "polyobj_t"},
@@ -244,6 +242,11 @@ static const struct {
 	{META_FOOTSTEP,     "t_footstep_t"},
 	{META_OVERLAY,      "t_overlay_t"},
 	{META_TERRAIN,      "terrain_t"},
+
+	{META_VECTOR2,      "vector2_t"},
+	{META_VECTOR3,      "vector3_t"},
+	{META_MATRIX,       "matrix_t"},
+	{META_QUATERNION,   "quaternion_t"},
 
 	{NULL,              NULL}
 };
