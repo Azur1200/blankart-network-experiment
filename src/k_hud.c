@@ -1226,6 +1226,7 @@ static void K_drawKartItem(void)
 			flamebar = stplyr->flamestore;
 			flamemaxl = FLAMESTOREMAX;
 			localbg = kp_itembg[offset+1];
+			dark = true;
 
 			if ((stplyr->flamestore >= FLAMESTOREMAX-1) && (leveltime & 1))
 			{
@@ -1270,6 +1271,7 @@ static void K_drawKartItem(void)
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
+			dark = true;
 
 			if ((stplyr->bubbleblowup > bubbletime) && (leveltime & 1))
 			{

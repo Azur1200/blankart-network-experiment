@@ -11279,6 +11279,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										K_PlayAttackTaunt(player->mo);
 										player->bubbleblowup = 0;
 										player->bubblecool = 0;
+										player->bubblepop = 0;
 										player->itemflags &= ~IF_HOLDREADY;
 										player->botvars.itemconfirm = 0;
 									}

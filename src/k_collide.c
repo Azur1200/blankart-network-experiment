@@ -546,7 +546,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
 	mobj_t *owner = t1->player ? t1 : t1->target;
 
-	if (t2->target != owner || !t2->threshold)
+	if (!t2->threshold)
 	{
 		if (!t2->momx && !t2->momy)
 		{
@@ -571,7 +571,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 
 boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 {
-	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ
+	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
 		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
 		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
 		|| t2->type == MT_KART_LEFTOVER
@@ -580,12 +580,6 @@ boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t1->type == MT_PLAYER)
-		return true;
-
-	if (t1->target == t2)
-		return true;
-
 	if (t2->type == MT_PLAYER)
 	{
 		if (P_PlayerInPain(t2->player)
