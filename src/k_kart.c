@@ -6066,13 +6066,12 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 }
 
 // For getting hit!
-void K_DropHnextList(player_t *player, boolean keepshields)
+void K_DropHnextList(player_t *player)
 {
 	mobj_t *work = player->mo, *nextwork, *dropwork;
 	INT32 flip;
 	mobjtype_t type;
 	boolean orbit, ponground, dropall = true;
-	INT32 shield = K_GetShieldFromPlayer(player);
 
 	if (work == NULL || P_MobjWasRemoved(work))
 	{
@@ -6081,27 +6080,6 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 
 	flip = P_MobjFlip(player->mo);
 	ponground = P_IsObjectOnGround(player->mo);
-
-	if (shield != KSHIELD_NONE && !keepshields)
-	{
-		switch (shield)
-		{
-			case KSHIELD_THUNDER:
-				K_DoThunderShield(player);
-				break;
-			case KSHIELD_BUBBLE:
-				S_StartSound(player->mo, sfx_s3k4b);
-				break;
-			case KSHIELD_FLAME:
-				S_StartSound(player->mo, sfx_s3k47);
-				break;
-		}
-
-		player->curshield = KSHIELD_NONE;
-		player->itemtype = KITEM_NONE;
-		player->itemamount = 0;
-		K_UnsetItemOut(player);
-	}
 
 	nextwork = work->hnext;
 
@@ -6256,6 +6234,45 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 	}
 }
 
+// For getting hit!
+void K_PopPlayerShield(player_t *player)
+{
+	INT32 shield = K_GetShieldFromPlayer(player);
+
+	// Doesn't apply if player is invalid.
+	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
+	{
+		return;
+	}
+
+	switch (shield)
+	{
+		case KSHIELD_THUNDER:
+			K_DoThunderShield(player);
+			break;
+		case KSHIELD_BUBBLE:
+			S_StartSound(player->mo, sfx_s3k4b);
+			break;
+		case KSHIELD_FLAME:
+			S_StartSound(player->mo, sfx_s3k47);
+			break;
+	}
+
+	player->curshield = KSHIELD_NONE;
+	player->itemtype = KITEM_NONE;
+	player->itemamount = 0;
+
+	player->flametimer = 0;
+	//player->flamestore = 0
+	//player->flamedash = 0;
+
+	player->bubbleblowup = 0;
+	player->bubblecool = 0;
+	player->bubblepop = 0;
+
+	K_UnsetItemOut(player);
+}
+
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
 {
 	mobj_t *drop = P_SpawnMobj(x, y, z, MT_FLOATINGITEM);
@@ -6343,7 +6360,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 // For getting EXTRA hit!
 void K_DropItems(player_t *player)
 {
-	K_DropHnextList(player, true);
+	K_DropHnextList(player);
 
 	if (player->mo && !P_MobjWasRemoved(player->mo) && player->itemamount > 0)
 	{
@@ -8057,7 +8074,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		{
 			S_StopSoundByID(player->mo, sfx_s3kc2l);
 			S_StartSound(player->mo, sfx_s3k47);
-			K_DropHnextList(player, false);
+			K_PopPlayerShield(player);
 		}
 	}
 	else
@@ -10831,7 +10848,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							{
 								player->flametimer = 0;
 								S_StartSound(player->mo, sfx_s3k47);
-								K_DropHnextList(player, false);
+								K_PopPlayerShield(player);
 							}
 
 							/*if (!onground)

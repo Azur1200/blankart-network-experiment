@@ -538,7 +538,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 
 	if (player->bubblepop > 1)
 	{
-		K_DropHnextList(player, false);
+		K_PopPlayerShield(player);
 	}
 }
 

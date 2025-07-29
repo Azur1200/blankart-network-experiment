@@ -104,6 +104,7 @@ extern "C" {
 // Special Hashing.
 //#define NOMD5
 //#define NOFILEHASH
+//#define NOVERIFYIWADS
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK

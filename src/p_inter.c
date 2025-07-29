@@ -528,7 +528,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				if (player->bubbleblowup > 0)
 				{
-					K_DropHnextList(player, false);
+					K_PopPlayerShield(player);
 					special->extravalue1 = 2; // WAIT...
 					special->extravalue2 = 52; // Slightly over the respawn timer length
 					return;
@@ -537,7 +537,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
 				{
 					//player->flashing = 0;
-					K_DropHnextList(player, false);
+					K_DropHnextList(player);
 					K_StripItems(player);
 				}
 
@@ -2275,9 +2275,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			player->driftboost = 0;
 			player->bubblepop = 0;
-			player->flametimer = 0;
-			//player->flamestore = 0
-			//player->flamedash = 0;
 			player->ringboost = 0;
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
@@ -2369,13 +2366,20 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					break;
 			}
 
+			// Have a shield? You get hit, but don't lose your rings!
+			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+			{
+				ringburst = 0;
+			}
+
 			player->flashing = K_GetKartFlashing(player);
 
-			P_PlayRinglossSound(target);
+			K_PopPlayerShield(player);
 
 			if (ringburst > 0)
 			{
 				P_PlayerRingBurst(player, ringburst);
+				P_PlayRinglossSound(target);
 			}
 
 			if (inflictor)
@@ -2412,7 +2416,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			else
 			{
-				K_DropHnextList(player, false);
+				K_DropHnextList(player);
 			}
 
 			player->instashield = 15;
