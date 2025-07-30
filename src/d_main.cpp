@@ -1354,7 +1354,7 @@ static void IdentifyVersion(void)
 #endif
 ////
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
+#if !defined (HAVE_SDL) || defined (HAVE_MIXER) || defined (HAVE_OPENAL)
 
 #define MUSICTEST(str) \
 	{\

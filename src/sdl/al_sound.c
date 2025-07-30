@@ -52,16 +52,22 @@
 #include "../z_zone.h"
 #include "../w_wad.h"
 
-#define INVALID_HANDLE ((ALuint)-1)
+#define INVALID_HANDLE 0
 
 UINT8 sound_started = false;
 
-static float music_volume, sfx_volume, internal_volume;
+static float music_volume, sfx_volume, internal_volume = 1.0f;
 
 // fading
+<<<<<<< HEAD
 static boolean is_fading;
 static UINT8 fading_source;
 static UINT8 fading_target;
+=======
+static bool is_fading;
+static float fading_source;
+static float fading_target;
+>>>>>>> d734580a98 (Fix digital music playback)
 static UINT32 fading_timer;
 static UINT32 fading_duration;
 static void (*fading_callback)(void);
@@ -115,6 +121,9 @@ static const char *GetALError(ALenum error)
 
 void I_StartupSound(void)
 {
+	if (sound_started)
+		return; // not an error condition
+
 	device = alcOpenDevice(NULL);
 	if (device == NULL)
 	{
@@ -374,6 +383,7 @@ static sf_count_t TellVIOFile(void *userdata)
 
 static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 {
+	bool stereo = false;
 	// convert from standard DoomSound format.
 	void *data = ds2chunk(input, &size);
 	if (data == NULL)
@@ -484,6 +494,16 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 				.seekable = 1,
 			};
 			SNDFILE *snd = sf_open_virtual(&vio, SFM_READ, &info, &file);
+			if (snd == NULL)
+			{
+				CONS_Alert(CONS_ERROR, "No suitable loader for file '%s'\n", name);
+				return INVALID_HANDLE;
+			}
+			if (info.channels == 2)
+			{
+				stereo = true;
+			}
+
 			size = 4096;
 			size_t pos = 0;
 			data = Z_Malloc(size, PU_SOUND, NULL);
@@ -502,12 +522,6 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 			size = pos;
 			sf_close(snd);
 		}
-
-		if (data == NULL)
-		{
-			CONS_Alert(CONS_ERROR, "No suitable loader for file '%s'\n", name);
-			return INVALID_HANDLE;
-		}
 	}
 
 	ALuint buffer;
@@ -519,7 +533,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 		Z_Free(data);
 		return INVALID_HANDLE;
 	}
-	alBufferData(buffer, AL_FORMAT_MONO16, data, size, 44100);
+	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, 44100);
 	Z_Free(data);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
@@ -533,6 +547,9 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 
 void *I_GetSfx(sfxinfo_t *sfx)
 {
+	if (sfx->data != NULL)
+		return sfx->data;
+
 	if (sfx->lumpnum == LUMPERROR)
 		sfx->lumpnum = S_GetSfxLumpNum(sfx);
 	sfx->length = W_LumpLength(sfx->lumpnum);
@@ -543,7 +560,8 @@ void *I_GetSfx(sfxinfo_t *sfx)
 	if (buffer == INVALID_HANDLE)
 		return NULL;
 
-	return (void *)(uintptr_t)buffer;
+	sfx->data = (void *)(uintptr_t)buffer;
+	return sfx->data;
 }
 
 void I_FreeSfx(sfxinfo_t *sfx)
@@ -559,7 +577,7 @@ void I_FreeSfx(sfxinfo_t *sfx)
 
 void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 {
-	if (handle == -1)
+	if (handle == INVALID_HANDLE)
 		return;
 
 	ALuint source = handle;
@@ -584,7 +602,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 	if (err != AL_NO_ERROR)
 	{
 		CONS_Alert(CONS_ERROR, "Error generating sound source: %s\n", GetALError(err));
-		return -1;
+		return INVALID_HANDLE;
 	}
 
 	alSourcei(source, AL_BUFFER, (uintptr_t)S_sfx[id].data);
@@ -593,7 +611,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 	{
 		CONS_Alert(CONS_ERROR, "Error assigning buffer to source: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
-		return -1;
+		return INVALID_HANDLE;
 	}
 
 	alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
@@ -602,7 +620,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 	{
 		CONS_Alert(CONS_ERROR, "Error setting relative audio sounce: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
-		return -1;
+		return INVALID_HANDLE;
 	}
 
 	I_UpdateSoundParams(source, vol, sep, pitch);
@@ -613,7 +631,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 	{
 		CONS_Alert(CONS_ERROR, "Error playing sound: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
-		return -1;
+		return INVALID_HANDLE;
 	}
 
 	(void)sep; // panning is now handled by real object positioning instead
@@ -624,7 +642,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 
 void I_StopSound(INT32 handle)
 {
-	if (handle == -1)
+	if (handle == INVALID_HANDLE)
 		return;
 
 	ALuint source = handle;
@@ -634,7 +652,7 @@ void I_StopSound(INT32 handle)
 
 boolean I_SoundIsPlaying(INT32 handle)
 {
-	if (handle == -1 || !alIsSource((ALuint)handle))
+	if (handle == INVALID_HANDLE || !alIsSource((ALuint)handle))
 		return false;
 
 	ALint value;
@@ -824,6 +842,14 @@ boolean I_LoadSong(char *data, size_t len)
 		return INVALID_HANDLE;
 	}
 
+	alSourcePlay(music);
+	err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error playing music: %s\n", GetALError(err));
+		return false;
+	}
+
 	// Find the OGG loop point.
 	/*
 	loop_point = 0.0f;
@@ -943,7 +969,7 @@ void I_ResumeSong(void)
 
 void I_SetMusicVolume(int volume)
 {
-	music_volume = (float)volume / 20.0f;
+	music_volume = (float)volume / 35.0f;
 	if (music != INVALID_HANDLE)
 		I_UpdateMusicVolume();
 }
@@ -1008,8 +1034,8 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 	{
 		is_fading = true;
 		fading_timer = fading_duration = ms;
-		fading_source = source_volume;
-		fading_target = target_volume;
+		fading_source = source_volume / 100.0f;
+		fading_target = target_volume / 100.0f;
 		fading_callback = callback;
 
 		if (internal_volume != source_volume)
