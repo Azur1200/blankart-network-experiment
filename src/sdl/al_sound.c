@@ -42,6 +42,10 @@
 #define GME_BASS 1.0f
 #endif // HAVE_GME
 
+#define SAMPLERATE 44100
+#define BUFFERSIZE 4096
+#define BUFFERCOUNT 8
+
 #ifdef HAVE_OPENMPT
 #include "libopenmpt/libopenmpt.h"
 #endif
@@ -54,29 +58,33 @@
 
 #define INVALID_HANDLE 0
 
+typedef struct
+{
+	char *data;
+	char *cur;
+	char *end;
+} viofile_t;
+
 UINT8 sound_started = false;
 
 static float music_volume, sfx_volume, internal_volume = 1.0f;
 
 // fading
-<<<<<<< HEAD
-static boolean is_fading;
-static UINT8 fading_source;
-static UINT8 fading_target;
-=======
 static bool is_fading;
 static float fading_source;
 static float fading_target;
->>>>>>> d734580a98 (Fix digital music playback)
 static UINT32 fading_timer;
 static UINT32 fading_duration;
 static void (*fading_callback)(void);
-static boolean fading_do_callback;
-static boolean fading_nocleanup;
+static bool fading_nocleanup;
 
+static viofile_t musicfile;
+static SNDFILE *musicstream;
+static SF_INFO musicinfo;
 static ALCdevice *device;
 static ALCcontext *context;
-static ALuint musicbuffer = INVALID_HANDLE;
+static int bufferindex;
+static ALuint musicbuffers[BUFFERCOUNT] = { INVALID_HANDLE };
 static ALuint music = INVALID_HANDLE;
 
 #ifdef HAVE_GME
@@ -87,7 +95,7 @@ static UINT16 current_track;
 #ifdef HAVE_OPENMPT
 static int mod_err = OPENMPT_ERROR_OK;
 static const char *mod_err_str;
-static UINT16 current_subsong;
+static INT16 current_subsong = -1;
 static size_t probesize;
 static int result;
 #endif
@@ -124,6 +132,7 @@ void I_StartupSound(void)
 	if (sound_started)
 		return; // not an error condition
 
+	CONS_Printf("I_StartupSound()...\n");
 	device = alcOpenDevice(NULL);
 	if (device == NULL)
 	{
@@ -142,7 +151,9 @@ void I_StartupSound(void)
 	alcMakeContextCurrent(context);
 
 	music = INVALID_HANDLE;
-	musicbuffer = INVALID_HANDLE;
+	bufferindex = 0;
+	for (size_t i = 0; i < BUFFERCOUNT; i++)
+		musicbuffers[i] = INVALID_HANDLE;
 	music_volume = sfx_volume = 0;
 
 #ifdef HAVE_OPENMPT
@@ -157,6 +168,7 @@ void I_ShutdownSound(void)
 {
 	if (!sound_started)
 		return; // not an error condition
+	CONS_Printf("I_ShutdownSound(): shut down\n");
 	sound_started = false;
 
 	alcMakeContextCurrent(NULL);
@@ -165,12 +177,24 @@ void I_ShutdownSound(void)
 
 #ifdef HAVE_GME
 	if (gme)
+	{
 		gme_delete(gme);
+		gme = NULL;
+	}
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
+	{
 		openmpt_module_destroy(openmpt_mhandle);
+		openmpt_mhandle = NULL;
+	}
+	current_subsong = -1;
 #endif
+	if (musicstream != NULL)
+	{
+		sf_close(musicstream);
+		musicstream = NULL;
+	}
 }
 
 static boolean I_UpdateMusicVolume(void)
@@ -186,8 +210,110 @@ static boolean I_UpdateMusicVolume(void)
 	return true;
 }
 
+static bool I_QueueNextSample(bool unqueue)
+{
+	static INT16 *stream = NULL;
+
+	// keeping it at PU_CACHE_UNLOCKED is fine since we won't do any Z allocations while we use it
+	if (stream == NULL)
+		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
+
+	bool stereo = true;
+	size_t count;
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle != NULL)
+		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(INT16);
+	else
+#endif
+	if (musicstream != NULL)
+	{
+		if (musicinfo.channels == 1)
+			stereo = false;
+
+		count = sf_read_short(musicstream, stream, BUFFERSIZE) * musicinfo.channels;
+		if (count == 0)
+		{
+			// TODO: looppoints
+			sf_seek(musicstream, 0, SEEK_SET);
+		}
+	}
+	else
+	{
+		CONS_Alert(CONS_WARNING, "Music is active, but no source is available\n");
+		return false;
+	}
+
+	ALenum err;
+	if (unqueue)
+	{
+		alSourceUnqueueBuffers(music, 1, &musicbuffers[bufferindex]);
+		ALenum err = alGetError();
+		if (err != AL_NO_ERROR) // not fatal, we can keep going in this case
+		{
+			CONS_Alert(CONS_WARNING, "Error unqueuing buffer: %s\n", GetALError(err));
+			return false;
+		}
+	}
+
+	alBufferData(musicbuffers[bufferindex], stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, stream, count, SAMPLERATE);
+	err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error loading data into buffer: %s\n", GetALError(err));
+		return false;
+	}
+
+	alSourceQueueBuffers(music, 1, &musicbuffers[bufferindex]);
+	err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error queuing up buffer: %s\n", GetALError(err));
+		return false;
+	}
+
+	bufferindex = (bufferindex + 1) % BUFFERCOUNT;
+	return true;
+}
+
 void I_UpdateSound(void)
 {
+	if (music != INVALID_HANDLE)
+	{
+		ALint processed;
+		ALint queued;
+		alGetSourcei(music, AL_BUFFERS_PROCESSED, &processed);
+		ALenum err = alGetError();
+		if (err != AL_NO_ERROR)
+		{
+			CONS_Alert(CONS_ERROR, "Cannot query number of processed buffers: %s\n", GetALError(err));
+			return;
+		}
+
+		alGetSourcei(music, AL_BUFFERS_QUEUED, &queued);
+		err = alGetError();
+		if (err != AL_NO_ERROR)
+		{
+			CONS_Alert(CONS_ERROR, "Cannot query number of queued buffers: %s\n", GetALError(err));
+			return;
+		}
+
+		// semi-hack because this is sometimes not called for a longer period of time
+		bool need_restart = processed == BUFFERCOUNT;
+		while (processed > 0)
+		{
+			if (!I_QueueNextSample(true))
+				break;
+			processed--;
+		}
+		if (need_restart)
+		{
+			alSourcePlay(music);
+			err = alGetError();
+			if (err != AL_NO_ERROR)
+				CONS_Alert(CONS_WARNING, "Error restarting sound: %s\n", GetALError(err));
+		}
+	}
+
 	if (is_fading)
 	{
 		if (!is_fading ||
@@ -254,11 +380,11 @@ static UINT8 *ds2chunk(void *stream, size_t *len)
 		newsamples = samples<<2;
 		break;
 	default:
-		frac = (44100 << FRACBITS) / (UINT32)freq;
+		frac = (SAMPLERATE << FRACBITS) / (UINT32)freq;
 		if (!(frac & 0xFFFF)) // other solid multiples (change if FRACBITS != 16)
 			newsamples = samples * (frac >> FRACBITS);
 		else // strange and unusual fractional frequency steps, plus anything higher than 44100hz.
-			newsamples = FixedMul(FixedDiv(samples, freq), 44100) + 1; // add 1 to counter truncation.
+			newsamples = FixedMul(FixedDiv(samples, freq), SAMPLERATE) + 1; // add 1 to counter truncation.
 		if (newsamples >= UINT32_MAX>>2)
 			return NULL; // would and/or did wrap, can't store.
 		break;
@@ -305,7 +431,7 @@ static UINT8 *ds2chunk(void *stream, size_t *len)
 		break;
 	default: // convert arbitrary hz to 44100.
 		step = 0;
-		frac = ((UINT32)freq << FRACBITS) / 44100 + 1; //Add 1 to counter truncation.
+		frac = ((UINT32)freq << FRACBITS) / SAMPLERATE + 1; //Add 1 to counter truncation.
 		while (i < samples)
 		{
 			o = (INT16)(*s+0x80)<<8; // changed signedness and shift up to 16 bits
@@ -326,13 +452,6 @@ static UINT8 *ds2chunk(void *stream, size_t *len)
 	*len = (UINT8 *)d-sound;
 	return sound;
 }
-
-typedef struct
-{
-	char *data;
-	char *cur;
-	char *end;
-} viofile_t;
 
 static sf_count_t GetVIOFileLen(void *userdata)
 {
@@ -381,14 +500,21 @@ static sf_count_t TellVIOFile(void *userdata)
 	return file->cur - file->data;
 }
 
-static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
+static SF_VIRTUAL_IO virtual_io =
+{
+	.get_filelen = GetVIOFileLen,
+	.seek = SeekVIOFile,
+	.read = ReadVIOFile,
+	.write = WriteVIOFile,
+	.tell = TellVIOFile,
+};
+
+static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
 	bool stereo = false;
-	// convert from standard DoomSound format.
 	void *data = ds2chunk(input, &size);
 	if (data == NULL)
 	{
-		// Not a doom sound? Try something else.
 #ifdef HAVE_GME
 		// VGZ format
 		if (((UINT8 *)input)[0] == 0x1F
@@ -476,33 +602,20 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 				.cur = input,
 				.end = input + size,
 			};
-			SF_VIRTUAL_IO vio =
-			{
-				.get_filelen = GetVIOFileLen,
-				.seek = SeekVIOFile,
-				.read = ReadVIOFile,
-				.write = WriteVIOFile,
-				.tell = TellVIOFile,
-			};
 			SF_INFO info =
 			{
 				.frames = 1,
-				.samplerate = 44100,
+				.samplerate = SAMPLERATE,
 				.channels = 1,
 				.format = 0,
 				.sections = 1,
 				.seekable = 1,
 			};
-			SNDFILE *snd = sf_open_virtual(&vio, SFM_READ, &info, &file);
+			SNDFILE *snd = sf_open_virtual(&virtual_io, SFM_READ, &info, &file);
 			if (snd == NULL)
-			{
-				CONS_Alert(CONS_ERROR, "No suitable loader for file '%s'\n", name);
 				return INVALID_HANDLE;
-			}
 			if (info.channels == 2)
-			{
 				stereo = true;
-			}
 
 			size = 4096;
 			size_t pos = 0;
@@ -533,7 +646,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size, const char *name)
 		Z_Free(data);
 		return INVALID_HANDLE;
 	}
-	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, 44100);
+	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, SAMPLERATE);
 	Z_Free(data);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
@@ -556,7 +669,7 @@ void *I_GetSfx(sfxinfo_t *sfx)
 
 	void *lump = W_CacheLumpNum(sfx->lumpnum, PU_SOUND);
 
-	ALuint buffer = LoadDataIntoBuffer(lump, sfx->length, sfx->name);
+	ALuint buffer = LoadDataIntoBuffer(lump, sfx->length);
 	if (buffer == INVALID_HANDLE)
 		return NULL;
 
@@ -647,7 +760,14 @@ void I_StopSound(INT32 handle)
 
 	ALuint source = handle;
 	alSourceStop(source);
+	ALenum err = alGetError();
+	if (err != AL_NO_ERROR)
+		CONS_Alert(CONS_ERROR, "Error stopping sound: %s\n", GetALError(err));
+
 	alDeleteSources(1, &source);
+	err = alGetError();
+	if (err != AL_NO_ERROR)
+		CONS_Alert(CONS_ERROR, "Error deleting source: %s\n", GetALError(err));
 }
 
 boolean I_SoundIsPlaying(INT32 handle)
@@ -657,6 +777,12 @@ boolean I_SoundIsPlaying(INT32 handle)
 
 	ALint value;
 	alGetSourcei((ALuint)handle, AL_SOURCE_STATE, &value);
+	ALenum err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error getting sound state: %s\n", GetALError(err));
+		return false;
+	}
 	return value == AL_PLAYING;
 }
 
@@ -697,6 +823,12 @@ boolean I_SongPlaying(void)
 
 	ALint value;
 	alGetSourcei(music, AL_SOURCE_STATE, &value);
+	ALenum err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error getting play state: %s\n", GetALError(err));
+		return false;
+	}
 	return value == AL_PLAYING;
 }
 
@@ -707,6 +839,12 @@ boolean I_SongPaused(void)
 
 	ALint value;
 	alGetSourcei(music, AL_SOURCE_STATE, &value);
+	ALenum err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error getting pause state: %s\n", GetALError(err));
+		return false;
+	}
 	return value == AL_PAUSED;
 }
 
@@ -724,15 +862,22 @@ boolean I_SetSongSpeed(float speed)
 UINT32 I_GetSongLength(void)
 {
 	if (music == INVALID_HANDLE)
-		return false;
+		return 0;
 
 	ALint value;
-	alGetBufferi(musicbuffer, AL_SIZE, &value);
-	return value / 2 / 44100; // 16-bit, 44.1 khz
+	alGetBufferi(musicbuffers[0], AL_SIZE, &value);
+	ALenum err = alGetError();
+	if (err != AL_NO_ERROR)
+	{
+		CONS_Alert(CONS_ERROR, "Error getting song length: %s\n", GetALError(err));
+		return 0;
+	}
+	return value / 2 / SAMPLERATE; // 16-bit, 44.1 khz
 }
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
 {
+	(void)looppoint;
 	return false; // FIXME: implement
 }
 
@@ -767,7 +912,133 @@ UINT32 I_GetSongPosition(void)
 	return position * 1000.0f;
 }
 
-boolean I_LoadSong(char *data, size_t len)
+
+static bool InitializeMusicStreaming(void *input, size_t size)
+{
+	// Not a doom sound? Try something else.
+#ifdef HAVE_GME
+	// VGZ format
+	if (((UINT8 *)input)[0] == 0x1F
+		&& ((UINT8 *)input)[1] == 0x8B)
+	{
+#ifdef HAVE_ZLIB
+		UINT8 *inflatedData;
+		size_t inflatedLen;
+		z_stream stream;
+		int zErr; // Somewhere to handle any error messages zlib tosses out
+
+		memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
+		// Begin the inflation process
+		inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
+		inflatedData = (UINT8 *)Z_Malloc(inflatedLen, PU_SOUND, NULL); // Make room for the decompressed data
+		stream.total_in = stream.avail_in = size;
+		stream.total_out = stream.avail_out = inflatedLen;
+		stream.next_in = (UINT8 *)input;
+		stream.next_out = inflatedData;
+
+		zErr = inflateInit2(&stream, 32 + MAX_WBITS);
+		if (zErr == Z_OK) // We're good to go
+		{
+			zErr = inflate(&stream, Z_FINISH);
+			if (zErr == Z_STREAM_END) {
+				// Run GME on new data
+				if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
+				{
+					short *mem;
+					UINT32 len;
+					gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+
+					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+
+					gme_start_track(emu, 0);
+					gme_set_equalizer(emu, &eq);
+					gme_track_info(emu, &info, 0);
+
+					mem = Z_Malloc(len, PU_SOUND, 0);
+					gme_play(emu, len >> 1, mem);
+					gme_free_info(info);
+					gme_delete(emu);
+
+					data = mem;
+					size = len;
+				}
+			}
+			else
+				CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", get_zlib_error(zErr), stream.msg);
+			(void)inflateEnd(&stream);
+		}
+		else // Hold up, zlib's got a problem
+			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", get_zlib_error(zErr), stream.msg);
+		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+#else
+		return INVALID_HANDLE; // No zlib support
+#endif
+	}
+	// Try to read it as a GME sound
+	else if (!gme_open_data(input, size, &emu, SAMPLERATE))
+	{
+		short *mem;
+		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
+
+		gme_start_track(emu, 0);
+		gme_set_equalizer(emu, &eq);
+		gme_track_info(emu, &info, 0);
+
+		len = (info->play_length * 441 / 10) << 2;
+		mem = Z_Malloc(len, PU_SOUND, 0);
+		gme_play(emu, len >> 1, mem);
+		gme_free_info(info);
+		gme_delete(emu);
+
+		data = mem;
+		size = len;
+	}
+#endif
+
+	musicfile.data = input;
+	musicfile.cur = input;
+	musicfile.end = input + size;
+	musicinfo.frames = 1,
+	musicinfo.samplerate = SAMPLERATE,
+	musicinfo.channels = 1,
+	musicinfo.format = 0,
+	musicinfo.sections = 1,
+	musicinfo.seekable = 1,
+	musicstream = sf_open_virtual(&virtual_io, SFM_READ, &musicinfo, &musicfile);
+	if (musicstream != NULL)
+		return true;
+
+#ifdef HAVE_OPENMPT
+	/*
+		If the size of the data to be checked is bigger than the recommended size (> 2048 bytes)
+		Let's just set the probe size to the recommended size
+		Otherwise let's give it the full data size
+	*/
+
+	if (size > openmpt_probe_file_header_get_recommended_size())
+		probesize = openmpt_probe_file_header_get_recommended_size();
+	else
+		probesize = size;
+
+	result = openmpt_probe_file_header(OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT, input, probesize, size, NULL, NULL, NULL, NULL, NULL, NULL);
+	if (result != OPENMPT_PROBE_FILE_HEADER_RESULT_SUCCESS)
+		return false;
+
+	openmpt_mhandle = openmpt_module_create_from_memory2(input, size, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	if (openmpt_mhandle)
+	{
+		current_subsong = 0;
+		return true;
+	}
+
+	mod_err = openmpt_module_error_get_last(openmpt_mhandle);
+	mod_err_str = openmpt_error_string(mod_err);
+	CONS_Alert(CONS_ERROR, "openmpt_module_create_from_memory2: %s\n", mod_err_str);
+	return false;
+#endif
+}
+
+bool I_LoadSong(char *data, size_t len)
 {
 	/*
 	const char *key1 = "LOOP";
@@ -782,64 +1053,34 @@ boolean I_LoadSong(char *data, size_t len)
 	if (music != INVALID_HANDLE)
 		I_UnloadSong();
 
-	musicbuffer = LoadDataIntoBuffer(data, len, "");
-	if (musicbuffer == INVALID_HANDLE)
-	{
-#ifdef HAVE_OPENMPT
-		/*
-			If the size of the data to be checked is bigger than the recommended size (> 2048 bytes)
-			Let's just set the probe size to the recommended size
-			Otherwise let's give it the full data size
-		*/
-
-		if (len > openmpt_probe_file_header_get_recommended_size())
-			probesize = openmpt_probe_file_header_get_recommended_size();
-		else
-			probesize = len;
-
-		result = openmpt_probe_file_header(OPENMPT_PROBE_FILE_HEADER_FLAGS_DEFAULT, data, probesize, len, NULL, NULL, NULL, NULL, NULL, NULL);
-
-		if (result == OPENMPT_PROBE_FILE_HEADER_RESULT_SUCCESS) // We only cared if it succeeded, continue on if not.
-		{
-			openmpt_mhandle = openmpt_module_create_from_memory2(data, len, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-			if (openmpt_mhandle)
-				return true;
-
-			mod_err = openmpt_module_error_get_last(openmpt_mhandle);
-			mod_err_str = openmpt_error_string(mod_err);
-			CONS_Alert(CONS_ERROR, "openmpt_module_create_from_memory2: %s\n", mod_err_str);
-		}
+	if (!InitializeMusicStreaming(data, len))
 		return false;
-#endif
-	}
 
 	alGenSources(1, &music);
 	ALuint err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
 		CONS_Alert(CONS_ERROR, "Error generating music source: %s\n", GetALError(err));
-		music = INVALID_HANDLE;
-		return INVALID_HANDLE;
+		I_UnloadSong();
+		return false;
 	}
 
-	alSourcei(music, AL_BUFFER, musicbuffer);
+	alGenBuffers(BUFFERCOUNT, musicbuffers);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
-		CONS_Alert(CONS_ERROR, "Error assigning buffer to source: %s\n", GetALError(err));
-		alDeleteSources(1, &music);
-		music = INVALID_HANDLE;
-		return INVALID_HANDLE;
+		CONS_Alert(CONS_ERROR, "Error generating music buffers: %s\n", GetALError(err));
+		I_UnloadSong();
+		return false;
 	}
 
-	alSourcei(music, AL_LOOPING, AL_TRUE);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	for (size_t i = 0; i < BUFFERCOUNT; i++)
 	{
-		CONS_Alert(CONS_ERROR, "Error setting music to loop: %s\n", GetALError(err));
-		alDeleteSources(1, &music);
-		music = INVALID_HANDLE;
-		return INVALID_HANDLE;
+		if (!I_QueueNextSample(false))
+		{
+			I_UnloadSong();
+			return false;
+		}
 	}
 
 	alSourcePlay(music);
@@ -847,6 +1088,7 @@ boolean I_LoadSong(char *data, size_t len)
 	if (err != AL_NO_ERROR)
 	{
 		CONS_Alert(CONS_ERROR, "Error playing music: %s\n", GetALError(err));
+		I_UnloadSong();
 		return false;
 	}
 
@@ -904,12 +1146,18 @@ void I_UnloadSong(void)
 		openmpt_mhandle = NULL;
 	}
 #endif
-	if (music)
+	if (musicstream != NULL)
+	{
+		sf_close(musicstream);
+		musicstream = NULL;
+	}
+	if (music != INVALID_HANDLE)
 	{
 		alDeleteSources(1, &music);
-		alDeleteBuffers(1, &musicbuffer);
+		alDeleteBuffers(BUFFERCOUNT, musicbuffers);
+		for (size_t i = 0; i < BUFFERCOUNT; i++)
+			musicbuffers[i] = INVALID_HANDLE;
 		music = INVALID_HANDLE;
-		musicbuffer = INVALID_HANDLE;
 	}
 }
 
@@ -920,6 +1168,17 @@ boolean I_PlaySong(boolean looping)
 
 	if (!I_UpdateMusicVolume())
 		return false;
+
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		openmpt_module_select_subsong(openmpt_mhandle, 0);
+		openmpt_module_set_render_param(openmpt_mhandle, OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH, cv_modfilter.value);
+		if (looping)
+			openmpt_module_set_repeat_count(openmpt_mhandle, -1); // Always repeat
+		current_subsong = 0;
+	}
+#endif
 
 	alSourcePlay(music);
 	ALenum err = alGetError();
@@ -940,20 +1199,14 @@ void I_StopSong(void)
 
 #ifdef HAVE_GME
 	if (gme)
-	{
 		current_track = -1;
-	}
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
-	{
 		current_subsong = -1;
-	}
 #endif
 	if (music != INVALID_HANDLE)
-	{
 		alSourceStop(music);
-	}
 }
 
 void I_PauseSong(void)
@@ -976,6 +1229,7 @@ void I_SetMusicVolume(int volume)
 
 boolean I_SetSongTrack(INT32 track)
 {
+	(void)track;
 	// FIXME: implement
 	return false;
 }
