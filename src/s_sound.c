@@ -783,6 +783,8 @@ void S_UpdateSounds(void)
 	if (actualdigmusicvolume != cv_digmusicvolume.value * USER_VOLUME_SCALE)
 		S_SetDigMusicVolume (cv_digmusicvolume.value);
 
+	memset(listener, 0, sizeof(listener));
+
 	// We're done now, if we're not in a level.
 	if (gamestate != GS_LEVEL)
 	{
@@ -801,7 +803,6 @@ void S_UpdateSounds(void)
 	{
 		player_t *player = &players[displayplayers[i]];
 
-		memset(&listener[i], 0, sizeof (listener[i]));
 		listenmobj[i] = NULL;
 
 		if (!player)
