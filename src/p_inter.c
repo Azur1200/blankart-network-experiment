@@ -2370,11 +2370,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 			{
 				ringburst = 0;
+				K_PopPlayerShield(player);
 			}
 
 			player->flashing = K_GetKartFlashing(player);
-
-			K_PopPlayerShield(player);
 
 			if (ringburst > 0)
 			{
