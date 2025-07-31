@@ -820,10 +820,6 @@ void S_UpdateSounds(void)
 		}
 	}
 
-#ifndef NOMUMBLE
-	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
-#endif
-
 #ifdef HW3SOUND
 	if (hws_mode != HWS_DEFAULT_MODE)
 	{
@@ -856,6 +852,10 @@ void S_UpdateSounds(void)
 			listener[i].angle = listenmobj[i]->angle;
 		}
 	}
+
+#ifndef NOMUMBLE
+	I_UpdateMumble(players[consoleplayer].mo, listener[0]);
+#endif
 
 	for (cnum = 0; cnum < numofchannels; cnum++)
 	{
