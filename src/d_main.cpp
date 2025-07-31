@@ -926,7 +926,7 @@ void D_SRB2Loop(void)
 			{
 				ranwipe = D_Display();
 			}
-			else if (frameskip)
+			else if (!dedicated && frameskip)
 			{
 				// always update console and hud
 				// otherwise it may take minutes to open it
