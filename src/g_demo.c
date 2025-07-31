@@ -194,6 +194,790 @@ static ticcmd_t oldcmd[MAXPLAYERS];
 #define FZT_SCALE 0x10 // different scale to object
 // spare FZT slots 0x20 to 0x80
 
+typedef struct
+{
+	char *filename;
+	UINT64 filehash;
+	boolean compatmode;
+} demofile_t;
+
+typedef struct
+{
+	char *name;
+	char *value;
+	boolean stealth;
+} democvar_t;
+
+typedef struct
+{
+	UINT8 playernum;
+	UINT8 flags;
+
+	struct // DEMO_BOT
+	{
+		UINT8 difficulty;
+		UINT8 diffincrease;
+		boolean rival;
+	} bot;
+
+	char name[16+1];
+	char skin[16+1];
+	char color[16+1];
+	char follower[16+1];
+	char followercolor[16+1];
+
+	UINT32 score;
+	UINT16 powerlevel;
+	UINT8 kartspeed;
+	UINT8 kartweight;
+	mobjtype_t followitem;
+} demoplayer_t;
+
+typedef struct
+{
+	UINT8 version, subversion;
+	UINT16 demoversion;
+	char demotitle[64];
+	UINT64 demochecksum;
+
+	char maptitle[MAXMAPLUMPNAME];
+	UINT64 mapchecksum;
+	UINT8 demoflags;
+	UINT8 gametype;
+	UINT8 numlaps;
+
+	UINT8 filecount;
+	demofile_t *files;
+
+	struct // DF_ATTACKMASK
+	{
+		UINT32 time;
+		UINT32 lap;
+	} attacking;
+
+	UINT32 randseed;
+	UINT32 extrainfo;
+
+	UINT16 numcvars;
+	democvar_t *cvars;
+
+	struct // DF_GRANDPRIX
+	{
+		boolean masterbots;
+		UINT8 gamespeed;
+		UINT8 eventmode;
+	} grandprix;
+
+	UINT8 mapmusrng;
+
+	UINT8 numplayers;
+	demoplayer_t *playerdata;
+
+	UINT32 endofs;
+} demoheader_t;
+
+typedef struct
+{
+	mobjtype_t type;
+	UINT16 health;
+	fixed_t x, y, z;
+	angle_t angle;
+} zipticdamage_t;
+
+typedef struct
+{
+	UINT8 flags;
+	fixed_t x, y, z; // or momx, momy, momz
+	angle_t angle;
+	UINT8 frame, spr2;
+
+	// GZT_EXTRA
+	UINT8 extraflags;
+	UINT16 color;
+	fixed_t scale;
+	UINT16 damagecount;
+	zipticdamage_t *damage;
+	UINT16 sprite;
+	INT32 kartitem, kartamount, kartbumpers;
+
+	UINT8 followflags;
+	struct // GZT_FOLLOW
+	{
+		fixed_t height;
+		UINT16 skin;
+		fixed_t scale;
+		fixed_t xofs, yofs, zofs;
+		UINT16 sprite2;
+		UINT16 sprite;
+		UINT8 frame;
+		UINT16 color;
+	} follow;
+} ziptic_t;
+
+typedef struct
+{
+	UINT8 playernum; // index of player, or >= DW_EXTRASTUFF for special data
+	UINT8 flags; // DXD flags if playernum < DW_EXTRASTUFF
+
+	// DW_RNG
+	UINT32 randseed;
+
+	struct // DXD_JOINDATA
+	{
+		boolean bot;
+		UINT8 difficulty;
+		UINT8 diffincrease;
+		boolean rival;
+	} joindata;
+
+	// DXD_PLAYSTATE
+	UINT8 playstate;
+
+	// DXD_NAME
+	char playername[17];
+
+	// DXD_SKIN
+	char skinname[17];
+	UINT8 kartspeed;
+	UINT8 kartweight;
+
+	// DXD_COLOR
+	char colorname[17];
+
+	// DXD_FOLLOWER
+	char followername[17];
+	char followercolor[17];
+
+	// DXD_WEAPONPREF
+	UINT8 weaponpref;
+} extradata_t;
+
+typedef enum
+{
+	HEADER_OK,
+	HEADER_BADMAGIC,   // DEMOHEADER doesn't match
+	HEADER_BADVERSION, // unsupported version
+	HEADER_BADFORMAT,  // "PLAY" doesn't match, or some other error
+} headerstatus_e;
+
+static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
+{
+	UINT16 ziptic;
+	boolean kart = version <= 0x0002;
+	if (kart)
+	{
+		ziptic = READUINT8(dp);
+		ziptic = (ziptic & 3) | ((ziptic & (4|64)) << 1) | ((ziptic & (8|16)) << 2) | ((ziptic & 32) >> 3);
+	}
+	else
+		ziptic = READUINT16(dp);
+
+	if (ziptic & ZT_FWD)
+		cmd->forwardmove = READSINT8(dp);
+	if (ziptic & ZT_SIDE)
+		cmd->sidemove = READSINT8(dp);
+	if (!kart && ziptic & ZT_TURNING)
+		cmd->turning = READINT16(dp);
+	if (ziptic & ZT_ANGLE)
+		cmd->angle = READINT16(dp);
+	if (ziptic & ZT_THROWDIR)
+		cmd->throwdir = READINT16(dp);
+	if (ziptic & ZT_BUTTONS)
+		cmd->buttons = READUINT16(dp);
+	if (ziptic & ZT_AIMING)
+		cmd->aiming = READINT16(dp);
+	if (kart && ziptic & ZT_TURNING)
+		cmd->turning = READINT16(dp);
+	if (ziptic & ZT_LATENCY)
+		cmd->latency = READUINT8(dp);
+	if (ziptic & ZT_FLAGS)
+		cmd->flags = READUINT8(dp);
+
+	if (ziptic & ZT_BOT)
+	{
+		UINT16 botziptic = READUINT16(dp);
+
+		if (botziptic & ZT_BOT_TURN)
+			cmd->bot.turnconfirm = READSINT8(dp);
+		if (botziptic & ZT_BOT_ITEM)
+			cmd->bot.itemconfirm = READSINT8(dp);
+		if (botziptic & ZT_BOT_RESPAWN)
+			cmd->bot.respawnconfirm = READSINT8(dp);
+	}
+	return dp;
+}
+
+#define F(x) case x - 'A':
+static void frame2spr2(ziptic_t *zt, skin_t *skin, UINT32 inframe)
+{
+	UINT8 spr2, outframe = 0;
+	switch (inframe & FF_FRAMEMASK)
+	{
+	F('A') F('B')
+		spr2 = SPR2_STIN;
+		outframe = inframe & 1;
+		break;
+	F('C') F('D')
+		spr2 = SPR2_STIL;
+		outframe = inframe & 1;
+		break;
+	F('E') F('F')
+		spr2 = SPR2_STIR;
+		outframe = inframe & 1;
+		break;
+	F('G')
+		spr2 = SPR2_SLWN;
+		break;
+	F('H')
+		spr2 = SPR2_SLWL;
+		break;
+	F('I')
+		spr2 = SPR2_SLWR;
+		break;
+	F('J')
+		spr2 = SPR2_FSTN;
+		break;
+	F('K')
+		spr2 = SPR2_FSTL;
+		break;
+	F('L')
+		spr2 = SPR2_FSTR;
+		break;
+	F('M') F('N')
+		spr2 = SPR2_DRLN;
+		outframe = inframe & 1;
+		break;
+	F('O') F('P')
+		spr2 = SPR2_DRRN;
+		outframe = inframe & 1;
+		break;
+	F('Q')
+		spr2 = SPR2_SPIN;
+		break;
+	F('R')
+		spr2 = SPR2_KART;
+		break;
+	F('S')
+		spr2 = SPR2_SIGN;
+		break;
+	default:
+		spr2 = SPR2_KART;
+		outframe = inframe - 18; // not 19! frame 0 is squish
+		break;
+	}
+	zt->frame = (inframe & ~FF_FRAMEMASK) | outframe;
+	zt->spr2 = P_GetSkinSprite2(skin, spr2, NULL);
+}
+#undef F
+
+static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t *mo)
+{
+	boolean kart = version <= 0x0002;
+	UINT8 ziptic = READUINT8(dp);
+
+	if (kart)
+		// shift GZT_EXTRA to its correct position
+		// mask out GZT_NIGHTS (this ain't SRB2!)
+		ziptic = (ziptic & 0x1f) | ((ziptic & 0x20) << 1);
+
+	zt->flags = ziptic;
+
+	if (ziptic & GZT_XYZ)
+	{
+		zt->x = READFIXED(dp);
+		zt->y = READFIXED(dp);
+		zt->z = READFIXED(dp);
+	}
+	else
+	{
+		if (ziptic & GZT_MOMXY)
+		{
+			zt->x = kart ? READINT16(dp)<<8 : READFIXED(dp);
+			zt->y = kart ? READINT16(dp)<<8 : READFIXED(dp);
+		}
+		if (ziptic & GZT_MOMZ)
+			zt->z = kart ? READINT16(dp)<<8 : READFIXED(dp);
+	}
+
+	if (ziptic & GZT_ANGLE)
+		zt->angle = READUINT8(dp)<<24;
+
+	if (ziptic & GZT_FRAME)
+	{
+		if (kart)
+		{
+			frame2spr2(zt, mo->skin, READUINT8(dp));
+			zt->flags |= GZT_SPR2;
+		}
+		else
+			zt->frame = READUINT8(dp);
+	}
+
+	if (ziptic & GZT_SPR2)
+		zt->spr2 = READUINT8(dp);
+
+	if (ziptic & GZT_EXTRA)
+	{ // But wait, there's more!
+		UINT8 xziptic = READUINT8(dp);
+
+		// shifted down due to removal of EZT_THOKMASK
+		// thoks don't have any extra bytes so just ignore them
+		if (kart)
+			xziptic >>= 2;
+
+		zt->extraflags = xziptic;
+
+		if (xziptic & EZT_COLOR)
+			zt->color = kart ? READUINT8(dp) : READUINT16(dp);
+
+		if (xziptic & EZT_SCALE)
+			zt->scale = READFIXED(dp);
+
+		if (xziptic & EZT_HIT)
+		{ // Resync mob damage.
+			zt->damagecount = READUINT16(dp);
+			zt->damage = malloc(sizeof(zipticdamage_t) * zt->damagecount);
+			for (UINT16 i = 0; i < zt->damagecount; i++)
+			{
+				zipticdamage_t *damage = &zt->damage[i];
+				if (kart)
+					READUINT32(dp);
+				damage->type = READUINT32(dp);
+				damage->health = READUINT16(dp);
+				damage->x = READFIXED(dp);
+				damage->y = READFIXED(dp);
+				damage->z = READFIXED(dp);
+				damage->angle = READANGLE(dp);
+			}
+		}
+
+		if (xziptic & EZT_SPRITE)
+		{
+			if (kart)
+			{
+				if (READUINT8(dp) != 3)
+					CONS_Alert(CONS_WARNING, "sprite other than SPR_PLAY... oh dear");
+				zt->sprite = SPR_PLAY;
+			}
+			else
+				zt->sprite = READUINT16(dp);
+		}
+
+		if (xziptic & EZT_KART)
+		{
+			zt->kartitem = READINT32(dp);
+			zt->kartamount = READINT32(dp);
+			zt->kartbumpers = READINT32(dp);
+		}
+	}
+
+	if (ziptic & GZT_FOLLOW)
+	{ // Even more...
+		UINT8 followtic = READUINT8(dp);
+		if (followtic & FZT_SPAWNED)
+		{
+			zt->follow.height = READINT16(dp)<<FRACBITS;
+			if (followtic & FZT_SKIN)
+				zt->follow.skin = READUINT16(dp);
+		}
+
+		if (followtic & FZT_SCALE)
+			zt->follow.scale = READFIXED(dp);
+
+		zt->follow.xofs = READFIXED(dp);
+		zt->follow.yofs = READFIXED(dp);
+		zt->follow.zofs = READFIXED(dp);
+		if (followtic & FZT_SKIN)
+			zt->follow.sprite2 = READUINT16(dp);
+		zt->follow.sprite = READUINT16(dp);
+		zt->follow.frame = READUINT8(dp);
+		zt->follow.color = READUINT16(dp);
+	}
+
+	return dp;
+}
+
+static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
+{
+	UINT8 extradata;
+	extra->playernum = READUINT8(dp);
+	boolean kart = version <= 0x0002;
+
+	if (extra->playernum >= DW_EXTRASTUFF)
+	{
+		extra->flags = 0;
+		if (extra->playernum == DW_RNG)
+		{
+			extra->randseed = READUINT32(dp);
+		}
+		// DW_END has no data
+		return dp;
+	}
+
+	extradata = READUINT8(dp);
+
+	if (kart)
+	{
+		//              kart  blan
+		// DXD_JOINDATA  N/A    0
+		// DXD_PLAYSTATE  4     1
+		// DXD_NAME       2     2
+		// DXD_SKIN       1     3
+		// DXD_COLOR      3     4
+		// DXD_FOLLOWER  N/A    5
+		// DXD_RESPAWN    0     6
+		// completely rearranged... UGH...
+		extradata =
+		  ((extradata & 0x01) << 6) // DXD_RESPAWN
+		| ((extradata & 0x02) << 2) // DXD_SKIN
+		| ((extradata & 0x04)     ) // DXD_NAME
+		| ((extradata & 0x08) << 1) // DXD_COLOR
+		| ((extradata & 0x10) >> 3) // DXD_PLAYSTATE
+		;
+	}
+
+	extra->flags = extradata;
+
+	if (extradata & DXD_JOINDATA)
+	{
+		extra->joindata.bot = !!(READUINT8(dp));
+		if (extra->joindata.bot)
+		{
+			extra->joindata.difficulty = READUINT8(dp);
+			extra->joindata.diffincrease = READUINT8(dp); // needed to avoid having to duplicate logic
+			extra->joindata.rival = (boolean)READUINT8(dp);
+		}
+	}
+	if (!kart) // READING ORDER MATTERS if that wasn't obvious
+	{
+		if (extradata & DXD_PLAYSTATE)
+		{
+			extra->playstate = READUINT8(dp);
+		}
+		if (extradata & DXD_NAME)
+		{
+			READMEM(dp, extra->playername, 16);
+			extra->playername[16] = '\0';
+		}
+	}
+	if (extradata & DXD_SKIN)
+	{
+		READMEM(dp, extra->skinname, 16);
+		extra->skinname[16] = '\0';
+		extra->kartspeed = READUINT8(dp);
+		extra->kartweight = READUINT8(dp);
+	}
+	if (extradata & DXD_COLOR)
+	{
+		READMEM(dp, extra->colorname, 16);
+		extra->colorname[16] = '\0';
+	}
+	if (kart)
+	{
+		if (extradata & DXD_NAME)
+		{
+			READMEM(dp, extra->playername, 16);
+			extra->playername[16] = '\0';
+		}
+		if (extradata & DXD_PLAYSTATE)
+		{
+			extra->playstate = READUINT8(dp);
+		}
+	}
+	if (extradata & DXD_FOLLOWER)
+	{
+		READMEM(dp, extra->followername, 16);
+		extra->followername[16] = '\0';
+		READMEM(dp, extra->followercolor, 16);
+		extra->followercolor[16] = '\0';
+	}
+	if (extradata & DXD_WEAPONPREF)
+	{
+		extra->weaponpref = READUINT8(dp);
+	}
+
+	return dp;
+}
+
+// parses a demo header from the given byte pointer
+// remember to call G_FreeDemoHeader! (unless an error occurs)
+static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
+{
+	UINT8 *startdp = dp;
+	UINT8 attack;
+	boolean kart = false, oldkart = false;
+
+	// these may not be present in old demo formats, so initialize them
+	// also initialize them so the header can be free'd without issues
+	header->numplayers = 0;
+	header->playerdata = NULL;
+	header->filecount = 0;
+	header->files = NULL;
+	header->numcvars = 0;
+	header->cvars = NULL;
+	header->mapmusrng = 0;
+	header->numlaps = 0;
+
+	if (memcmp(dp, DEMOHEADER, 12))
+		return HEADER_BADMAGIC;
+	dp += 12;
+
+	header->version = READUINT8(dp);
+	header->subversion = READUINT8(dp);
+	header->demoversion = READUINT16(dp);
+
+	switch (header->demoversion)
+	{
+	case DEMOVERSION: // latest always supported
+		break;
+
+	case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
+		oldkart = kart = true;
+		break;
+
+	case 0x0002: // SRB2Kart 1.1+
+		kart = true;
+		break;
+
+	default: // too old, cannot support.
+		return HEADER_BADVERSION;
+	}
+
+	if (oldkart)
+		header->demotitle[0] = '\0';
+	else
+		READMEM(dp, &header->demotitle, 64);
+
+	header->demochecksum = READUINT64(dp);
+	if (kart) READUINT64(dp); // truncate the md5, this is only used for avoiding duped ghosts
+
+	if (memcmp(dp, "PLAY", 4))// && memcmp(dp, "METL", 4))
+		return HEADER_BADFORMAT;
+	dp += 4;
+
+	if (kart)
+	{
+		INT16 mapnum = READINT16(dp);
+		if (mapnum < 100)
+			sprintf(header->maptitle, "MAP%02d", mapnum);
+		else
+			sprintf(header->maptitle, "MAP%c%c", 'A' + (mapnum - 100)/36, ((mapnum - 100) % 36 < 10 ? '0' : 'A'-10) + (mapnum - 100) % 36);
+	}
+	else
+		READSTRINGN(dp, header->maptitle, MAXMAPLUMPNAME);
+
+	header->mapchecksum = READUINT64(dp);
+	if (kart) READUINT64(dp); // not even used anywhere
+
+	header->demoflags = READUINT8(dp);
+
+	if (oldkart)
+	{
+		if (header->demoflags & DF_MULTIPLAYER)
+			return HEADER_BADFORMAT; // multiplayer not supported
+
+		header->gametype = (header->demoflags & 0x30)>>4;
+
+		if (header->demoflags & 0x08) // DF_FILELIST
+			goto readfiles;
+		else
+			goto skipfiles;
+	}
+	else
+	{
+		header->gametype = READUINT8(dp);
+		if (!kart)
+			header->numlaps = READUINT8(dp);
+	}
+
+readfiles:
+	header->filecount = READUINT8(dp);
+	header->files = malloc(sizeof(demofile_t) * header->filecount);
+	for (UINT8 i = 0; i < header->filecount; i++)
+	{
+		char filename[MAX_WADPATH];
+		READSTRINGL(dp, filename, MAX_WADPATH);
+		header->files[i].filename = strdup(filename);
+
+		if (kart)
+		{
+			dp += 16; // md5 is useless anyway
+			header->files[i].filehash = 0;
+			header->files[i].compatmode = true; // duh...
+		}
+		else
+		{
+			header->files[i].filehash = READUINT64(dp);
+			header->files[i].compatmode = READUINT8(dp) & 1;
+		}
+	}
+
+skipfiles:
+	attack = (header->demoflags & DF_ATTACKMASK) >> DF_ATTACKSHIFT;
+	header->attacking.time = attack == ATTACKING_TIME || attack == ATTACKING_ITEMBREAK ? READUINT32(dp) : UINT32_MAX;
+	header->attacking.lap = attack == ATTACKING_TIME ? READUINT32(dp) : UINT32_MAX;
+
+	// Random seed
+	header->randseed = READUINT32(dp);
+
+	if (oldkart)
+	{
+		header->numplayers = 1;
+		header->playerdata = malloc(sizeof(demoplayer_t));
+		demoplayer_t *plr = &header->playerdata[0];
+
+		plr->playernum = 0;
+		plr->flags = 0;
+		READMEM(dp, plr->name, 16);
+		plr->name[16] = '\0';
+		READMEM(dp, plr->skin, 16);
+		plr->skin[16] = '\0';
+		READMEM(dp, plr->color, 16);
+		plr->color[16] = '\0';
+		strcpy(plr->follower, "None");
+		strcpy(plr->followercolor, "Default");
+		plr->followitem = MT_NULL;
+
+		dp += 5; // Backwards compat - some stats
+		// SRB2kart
+		plr->kartspeed = READUINT8(dp);
+		plr->kartweight = READUINT8(dp);
+		//
+		dp += 9; // Backwards compat - more stats
+	}
+	else
+		header->extrainfo = READUINT32(dp);
+
+	// net var data
+	header->numcvars = READUINT16(dp);
+	header->cvars = malloc(sizeof(democvar_t) * header->numcvars);
+	for (UINT16 i = 0; i < header->numcvars; i++)
+	{
+		if (kart)
+		{
+			// TODO: read netvars properly
+			header->cvars[i].name = NULL;
+			READUINT16(dp);
+		}
+		else
+		{
+			header->cvars[i].name = strdup((char *)dp);
+			SKIPSTRING(dp);
+		}
+		header->cvars[i].value = strdup((char *)dp);
+		SKIPSTRING(dp);
+		header->cvars[i].stealth = READUINT8(dp);
+	}
+
+	if (kart)
+	{
+		free(header->cvars);
+		header->cvars = NULL;
+		header->numcvars = 0;
+	}
+
+	if (header->demoflags & DF_GRANDPRIX)
+	{
+		header->grandprix.gamespeed = READUINT8(dp);
+		header->grandprix.masterbots = READUINT8(dp) != 0;
+		header->grandprix.eventmode = READUINT8(dp);
+	}
+
+	// Load "mapmusrng" used for altmusic selection
+	if (!kart)
+		header->mapmusrng = READUINT8(dp);
+
+	// Sigh ... it's an empty demo.
+	if (*dp == DEMOMARKER || oldkart)
+		goto end;
+
+	// Load players that were in-game when the map started
+	UINT8 playernum;
+	while ((playernum = READUINT8(dp)) != 0xff)
+	{
+		header->playerdata = realloc(header->playerdata, sizeof(demoplayer_t) * ++header->numplayers);
+		demoplayer_t *plr = &header->playerdata[header->numplayers - 1];
+		plr->playernum = playernum;
+
+		if (kart)
+		{
+			plr->flags = playernum & 0x40 ? DEMO_SPECTATOR : 0;
+			plr->playernum &= ~0x40;
+		}
+		else
+			plr->flags = READUINT8(dp);
+
+		if (plr->flags & DEMO_BOT)
+		{
+			plr->bot.difficulty = READUINT8(dp);
+			plr->bot.diffincrease = READUINT8(dp); // needed to avoid having to duplicate logic
+			plr->bot.rival = (boolean)READUINT8(dp);
+		}
+
+		READMEM(dp, plr->name, 16);
+		plr->name[16] = '\0';
+		READMEM(dp, plr->skin, 16);
+		plr->skin[16] = '\0';
+		READMEM(dp, plr->color, 16);
+		plr->color[16] = '\0';
+		if (!kart)
+		{
+			READMEM(dp, plr->follower, 16);
+			plr->follower[16] = '\0';
+			READMEM(dp, plr->followercolor, 16);
+			plr->followercolor[16] = '\0';
+		}
+		else
+		{
+			strcpy(plr->follower, "None");
+			strcpy(plr->followercolor, "Default");
+		}
+
+		plr->score = READUINT32(dp);
+		plr->powerlevel = !kart ? READUINT16(dp) : 0;
+		plr->kartspeed = READUINT8(dp);
+		plr->kartweight = READUINT8(dp);
+		plr->followitem = !kart ? READUINT32(dp) : MT_NULL;
+	}
+
+end:
+	header->endofs = dp - startdp;
+	return HEADER_OK;
+}
+
+static void G_FreeDemoHeader(demoheader_t *header)
+{
+	if (header->files)
+	{
+		for (UINT8 i = 0; i < header->filecount; i++)
+			free(header->files[i].filename);
+		free(header->files);
+		header->files = NULL;
+		header->filecount = 0;
+	}
+
+	if (header->cvars)
+	{
+		for (UINT16 i = 0; i < header->numcvars; i++)
+		{
+			free(header->cvars[i].name);
+			free(header->cvars[i].value);
+		}
+		free(header->cvars);
+		header->cvars = NULL;
+		header->numcvars = 0;
+	}
+
+	if (header->playerdata)
+	{
+		free(header->playerdata);
+		header->playerdata = NULL;
+		header->numplayers = 0;
+	}
+}
+
+// and now, the rest of g_demo.c
+
 static mobj_t oldmetal, oldghost[MAXPLAYERS];
 
 void G_SaveMetal(UINT8 **buffer)
@@ -238,10 +1022,22 @@ static void FindClosestSkinForStats(UINT32 p, UINT8 kartspeed, UINT8 kartweight)
 	SetPlayerSkinByNum(p, closest_skin);
 }
 
+void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boolean))
+{
+	demoheader_t *header = *p;
+	for (UINT16 i = 0; i < header->numcvars; i++)
+	{
+		consvar_t *cvar = CV_FindVar(header->cvars[i].name);
+		if (cvar)
+			setvalue(cvar, header->cvars[i].value, header->cvars[i].stealth);
+		else
+			CONS_Alert(CONS_WARNING, "Netvar not found with name %s\n", header->cvars[i].name);
+	}
+}
+
 void G_ReadDemoExtraData(void)
 {
-	INT32 p, extradata, i;
-	char name[17];
+	INT32 p, i;
 
 	if (leveltime > starttime)
 	{
@@ -253,34 +1049,47 @@ void G_ReadDemoExtraData(void)
 		}
 	}
 
-	memset(name, '\0', 17);
-
-	p = READUINT8(demobuf.p);
-
-	while (p < DW_EXTRASTUFF)
+	while (true)
 	{
-		extradata = READUINT8(demobuf.p);
+		extradata_t extra;
+		demobuf.p = G_ReadRawExtraData(&extra, demobuf.p, demo.version);
+		p = extra.playernum;
 
-		if (extradata & DXD_JOINDATA)
+		if (p == DW_END)
+			break;
+
+		if (p >= DW_EXTRASTUFF) switch (p)
 		{
-			if (!playeringame[p])
+		case DW_RNG:
+			if (P_GetRandSeed() != extra.randseed)
 			{
-				G_AddPlayer(p, p);
+				P_SetRandSeed(extra.randseed);
+
+				if (demosynced)
+					CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG)!\n"));
+				demosynced = false;
+			}
+			continue;
+		}
+
+		if (extra.flags & DXD_JOINDATA)
+		{
+			if (!playeringame[extra.playernum])
+			{
+				G_AddPlayer(extra.playernum, extra.playernum);
 			}
 
-			players[p].bot = !!(READUINT8(demobuf.p));
+			players[p].bot = extra.joindata.bot;
 			if (players[p].bot)
 			{
-				players[p].botvars.difficulty = READUINT8(demobuf.p);
-				players[p].botvars.diffincrease = READUINT8(demobuf.p); // needed to avoid having to duplicate logic
-				players[p].botvars.rival = (boolean)READUINT8(demobuf.p);
+				players[p].botvars.difficulty = extra.joindata.difficulty;
+				players[p].botvars.diffincrease = extra.joindata.diffincrease; // needed to avoid having to duplicate logic
+				players[p].botvars.rival = extra.joindata.rival;
 			}
 		}
-		if (extradata & DXD_PLAYSTATE)
+		if (extra.flags & DXD_PLAYSTATE)
 		{
-			i = READUINT8(demobuf.p);
-
-			switch (i) {
+			switch (extra.playstate) {
 			case DXD_PST_PLAYING:
 				if (players[p].spectator == true)
 				{
@@ -323,37 +1132,27 @@ void G_ReadDemoExtraData(void)
 			K_CheckBumpers();
 			P_CheckRacers();
 		}
-		if (extradata & DXD_NAME)
+		if (extra.flags & DXD_NAME)
 		{
 			// Name
-			M_Memcpy(player_names[p],demobuf.p,16);
-			demobuf.p += 16;
+			strcpy(player_names[p], extra.playername);
 		}
-		if (extradata & DXD_SKIN)
+		if (extra.flags & DXD_SKIN)
 		{
-			UINT8 kartspeed, kartweight;
-
 			// Skin
-			M_Memcpy(name, demobuf.p, 16);
-			demobuf.p += 16;
-			SetPlayerSkin(p, name);
+			SetPlayerSkin(p, extra.skinname);
 
-			kartspeed = READUINT8(demobuf.p);
-			kartweight = READUINT8(demobuf.p);
+			if (stricmp(skins[players[p].skin].name, extra.skinname) != 0)
+				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
-			if (stricmp(skins[players[p].skin].name, name) != 0)
-				FindClosestSkinForStats(p, kartspeed, kartweight);
-
-			players[p].kartspeed = kartspeed;
-			players[p].kartweight = kartweight;
+			players[p].kartspeed = extra.kartspeed;
+			players[p].kartweight = extra.kartweight;
 		}
-		if (extradata & DXD_COLOR)
+		if (extra.flags & DXD_COLOR)
 		{
 			// Color
-			M_Memcpy(name, demobuf.p, 16);
-			demobuf.p += 16;
 			for (i = 0; i < numskincolors; i++)
-				if (!stricmp(skincolors[i].name, name))				// SRB2kart
+				if (!stricmp(skincolors[i].name, extra.colorname)) // SRB2kart
 				{
 					players[p].skincolor = i;
 					if (players[p].mo)
@@ -361,26 +1160,20 @@ void G_ReadDemoExtraData(void)
 					break;
 				}
 		}
-		if (extradata & DXD_FOLLOWER)
+		if (extra.flags & DXD_FOLLOWER)
 		{
 			// Set our follower
-			M_Memcpy(name, demobuf.p, 16);
-			demobuf.p += 16;
-			K_SetFollowerByName(p, name);
+			K_SetFollowerByName(p, extra.followername);
 
 			// Follower's color
-			M_Memcpy(name, demobuf.p, 16);
-			demobuf.p += 16;
 			for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-			{
-					if (!stricmp(Followercolor_cons_t[i].strvalue, name))
-					{
-							players[p].followercolor = i;
-							break;
-					}
-			}
+				if (!stricmp(Followercolor_cons_t[i].strvalue, extra.followercolor))
+				{
+					players[p].followercolor = i;
+					break;
+				}
 		}
-		if (extradata & DXD_RESPAWN)
+		if (extra.flags & DXD_RESPAWN)
 		{
 			if (players[p].mo)
 			{
@@ -388,35 +1181,13 @@ void G_ReadDemoExtraData(void)
 				P_DamageMobj(players[p].mo, NULL, NULL, 1, DMG_INSTAKILL);
 			}
 		}
-		if (extradata & DXD_WEAPONPREF)
+		if (extra.flags & DXD_WEAPONPREF)
 		{
-			WeaponPref_Parse(&demobuf.p, p);
+			UINT8 *bruh = &extra.weaponpref;
+			WeaponPref_Parse(&bruh, p);
 
 			//CONS_Printf("weaponpref is %d for player %d\n", i, p);
 		}
-
-		p = READUINT8(demobuf.p);
-	}
-
-	while (p != DW_END)
-	{
-		UINT32 rng;
-
-		switch (p)
-		{
-		case DW_RNG:
-			rng = READUINT32(demobuf.p);
-			if (P_GetRandSeed() != rng)
-			{
-				P_SetRandSeed(rng);
-
-				if (demosynced)
-					CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (RNG)!\n"));
-				demosynced = false;
-			}
-		}
-
-		p = READUINT8(demobuf.p);
 	}
 
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
@@ -548,44 +1319,10 @@ void G_WriteDemoExtraData(void)
 
 void G_ReadDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 {
-	UINT16 ziptic;
-
 	if (!demobuf.p || !demo.deferstart)
 		return;
 
-	ziptic = READUINT16(demobuf.p);
-
-	if (ziptic & ZT_FWD)
-		oldcmd[playernum].forwardmove = READSINT8(demobuf.p);
-	if (ziptic & ZT_SIDE)
-		oldcmd[playernum].sidemove = READSINT8(demobuf.p);
-	if (ziptic & ZT_TURNING)
-		oldcmd[playernum].turning = READINT16(demobuf.p);
-	if (ziptic & ZT_ANGLE)
-		oldcmd[playernum].angle = READINT16(demobuf.p);
-	if (ziptic & ZT_THROWDIR)
-		oldcmd[playernum].throwdir = READINT16(demobuf.p);
-	if (ziptic & ZT_BUTTONS)
-		oldcmd[playernum].buttons = READUINT16(demobuf.p);
-	if (ziptic & ZT_AIMING)
-		oldcmd[playernum].aiming = READINT16(demobuf.p);
-	if (ziptic & ZT_LATENCY)
-		oldcmd[playernum].latency = READUINT8(demobuf.p);
-	if (ziptic & ZT_FLAGS)
-		oldcmd[playernum].flags = READUINT8(demobuf.p);
-
-	if (ziptic & ZT_BOT)
-	{
-		UINT16 botziptic = READUINT16(demobuf.p);
-
-		if (botziptic & ZT_BOT_TURN)
-			oldcmd[playernum].bot.turnconfirm = READSINT8(demobuf.p);
-		if (botziptic & ZT_BOT_ITEM)
-			oldcmd[playernum].bot.itemconfirm = READSINT8(demobuf.p);
-		if (botziptic & ZT_BOT_RESPAWN)
-			oldcmd[playernum].bot.respawnconfirm = READSINT8(demobuf.p);
-	}
-
+	demobuf.p = G_ReadZipTic(&oldcmd[playernum], demobuf.p, demo.version);
 	G_CopyTiccmd(cmd, &oldcmd[playernum], 1);
 
 	if (!(demoflags & DF_GHOST) && *demobuf.p == DEMOMARKER)
@@ -1031,7 +1768,6 @@ void G_ConsAllGhostTics(void)
 // This fixes desynchronising demos when fighting eggman.
 void G_ConsGhostTic(INT32 playernum)
 {
-	UINT8 ziptic;
 	INT32 px,py,pz,gx,gy,gz;
 	mobj_t *testmo;
 	UINT32 syncleeway;
@@ -1041,75 +1777,50 @@ void G_ConsGhostTic(INT32 playernum)
 
 	testmo = players[playernum].mo;
 
+	ziptic_t zt;
+	demobuf.p = G_ReadExtraZipTic(&zt, demobuf.p, demo.version, testmo);
+
 	// Grab ghost data.
-	ziptic = READUINT8(demobuf.p);
-	if (ziptic & GZT_XYZ)
+	if (zt.flags & GZT_XYZ)
 	{
-		oldghost[playernum].x = READFIXED(demobuf.p);
-		oldghost[playernum].y = READFIXED(demobuf.p);
-		oldghost[playernum].z = READFIXED(demobuf.p);
+		oldghost[playernum].x = zt.x;
+		oldghost[playernum].y = zt.y;
+		oldghost[playernum].z = zt.z;
 		syncleeway = 0;
 	}
 	else
 	{
-		if (ziptic & GZT_MOMXY)
+		if (zt.flags & GZT_MOMXY)
 		{
-			oldghost[playernum].momx = READFIXED(demobuf.p);
-			oldghost[playernum].momy = READFIXED(demobuf.p);
+			oldghost[playernum].momx = zt.x;
+			oldghost[playernum].momy = zt.y;
 		}
-		if (ziptic & GZT_MOMZ)
-			oldghost[playernum].momz = READFIXED(demobuf.p);
+		if (zt.flags & GZT_MOMZ)
+			oldghost[playernum].momz = zt.z;
 		oldghost[playernum].x += oldghost[playernum].momx;
 		oldghost[playernum].y += oldghost[playernum].momy;
 		oldghost[playernum].z += oldghost[playernum].momz;
 		syncleeway = FRACUNIT;
 	}
-	if (ziptic & GZT_ANGLE)
-		demobuf.p++;
-	if (ziptic & GZT_FRAME)
-		demobuf.p++;
-	if (ziptic & GZT_SPR2)
-		demobuf.p++;
 
-	if (ziptic & GZT_EXTRA)
+	if (zt.flags & GZT_EXTRA)
 	{ // But wait, there's more!
-		UINT8 xziptic = READUINT8(demobuf.p);
-		if (xziptic & EZT_COLOR)
-			demobuf.p += sizeof(UINT16);
-		if (xziptic & EZT_SCALE)
-			demobuf.p += sizeof(fixed_t);
-		if (xziptic & EZT_HIT)
+		if (zt.extraflags & EZT_HIT)
 		{ // Resync mob damage.
-			UINT16 i, count = READUINT16(demobuf.p);
-			thinker_t *th;
-			mobj_t *mobj;
-
-			UINT32 type;
-			UINT16 health;
-			fixed_t x;
-			fixed_t y;
-			fixed_t z;
-
-			for (i = 0; i < count; i++)
+			for (UINT16 i = 0; i < zt.damagecount; i++)
 			{
-				//demobuf.p += 4; // reserved.
-				type = READUINT32(demobuf.p);
-				health = READUINT16(demobuf.p);
-				x = READFIXED(demobuf.p);
-				y = READFIXED(demobuf.p);
-				z = READFIXED(demobuf.p);
-				demobuf.p += sizeof(angle_t); // angle, unnecessary for cons.
-
-				mobj = NULL;
+				zipticdamage_t *damage = &zt.damage[i];
+				mobj_t *mobj = NULL;
+				thinker_t *th = NULL;
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
 					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 					mobj = (mobj_t *)th;
-					if (mobj->type == (mobjtype_t)type && mobj->x == x && mobj->y == y && mobj->z == z)
+					if (mobj->type == damage->type && mobj->x == damage->x && mobj->y == damage->y && mobj->z == damage->z)
 						break;
 				}
-				if (th != &thlist[THINK_MOBJ] && mobj->health != health) // Wasn't damaged?! This is desync! Fix it!
+				if (th != &thlist[THINK_MOBJ] && mobj->health != damage->health) // Wasn't damaged?! This is desync! Fix it!
 				{
 					if (demosynced)
 						CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (health)!\n"));
@@ -1118,34 +1829,12 @@ void G_ConsGhostTic(INT32 playernum)
 				}
 			}
 		}
-		if (xziptic & EZT_SPRITE)
-			demobuf.p += sizeof(UINT16);
-		if (xziptic & EZT_KART)
+		if (zt.extraflags & EZT_KART)
 		{
-			ghostext[playernum].kartitem = READINT32(demobuf.p);
-			ghostext[playernum].kartamount = READINT32(demobuf.p);
-			ghostext[playernum].kartbumpers = READINT32(demobuf.p);
+			ghostext[playernum].kartitem = zt.kartitem;
+			ghostext[playernum].kartamount = zt.kartamount;
+			ghostext[playernum].kartbumpers = zt.kartbumpers;
 		}
-	}
-
-	if (ziptic & GZT_FOLLOW)
-	{ // Even more...
-		UINT8 followtic = READUINT8(demobuf.p);
-		if (followtic & FZT_SPAWNED)
-		{
-			demobuf.p += sizeof(INT16);
-			if (followtic & FZT_SKIN)
-				demobuf.p += sizeof(UINT16);
-		}
-		if (followtic & FZT_SCALE)
-			demobuf.p += sizeof(fixed_t);
-		// momx, momy and momz
-		demobuf.p += sizeof(fixed_t) * 3;
-		if (followtic & FZT_SKIN)
-			demobuf.p += sizeof(UINT16);
-		demobuf.p += sizeof(UINT16);
-		demobuf.p++;
-		demobuf.p += sizeof(UINT16);
 	}
 
 	if (testmo)
@@ -1186,9 +1875,10 @@ void G_ConsGhostTic(INT32 playernum)
 		else
 			ghostext[playernum].desyncframes = 0;
 
-		if (players[playernum].itemtype != ghostext[playernum].kartitem
-			|| players[playernum].itemamount != ghostext[playernum].kartamount
-			|| players[playernum].bumper != ghostext[playernum].kartbumpers)
+		if (demo.version != 0x0001 &&
+		   (players[playernum].itemtype != ghostext[playernum].kartitem
+		 || players[playernum].itemamount != ghostext[playernum].kartamount
+		 || players[playernum].bumper != ghostext[playernum].kartbumpers))
 		{
 			if (demosynced)
 				CONS_Alert(CONS_WARNING, M_GetText("Demo playback has desynced (item/bumpers)!\n"));
@@ -1214,125 +1904,81 @@ void G_GhostTicker(void)
 	for (g = ghosts, p = NULL; g; g = g->next)
 	{
 		// Skip normal demo data.
-		UINT16 ziptic = READUINT8(g->p);
-		UINT8 xziptic = 0;
+		ticcmd_t dummy;
+		ziptic_t zt;
 
 		if (g->done)
 		{
 			continue;
 		}
 
-		while (ziptic != DW_END) // Get rid of extradata stuff
+		if (g->version == 0x0001)
+			goto skipextradata;
+
+		while (true) // Get rid of extradata stuff
 		{
-			if (ziptic < MAXPLAYERS)
+			extradata_t extra;
+			g->p = G_ReadRawExtraData(&extra, g->p, g->version);
+
+			if (extra.playernum < MAXPLAYERS)
 			{
-#ifdef DEVELOP
-				UINT8 playerid = ziptic;
-#endif
 				// We want to skip *any* player extradata because some demos have extradata for bogus players,
 				// but if there is tic data later for those players *then* we'll consider it invalid.
 
-				ziptic = READUINT8(g->p);
-				if (ziptic & DXD_JOINDATA)
-				{
-					if (READUINT8(g->p) != 0)
-						I_Error("Ghost is not a record attack ghost (bot JOINDATA)");
-				}
-				if (ziptic & DXD_PLAYSTATE)
-				{
-					UINT8 playstate = READUINT8(g->p);
-					if (playstate != DXD_PST_PLAYING)
-					{
-						#ifdef DEVELOP
-						CONS_Alert(CONS_WARNING, "Ghost demo has non-playing playstate for player %d\n", playerid + 1);
-						#endif
-						;
-					}
-				}
-				if (ziptic & DXD_NAME)
-					g->p += 16; // yea
-				if (ziptic & DXD_SKIN)
-					g->p += 16; // We _could_ read this info, but it shouldn't change anything in record attack...
-				if (ziptic & DXD_COLOR)
-					g->p += 16; // Same tbh
-				if (ziptic & DXD_FOLLOWER)
-					g->p += 32; // ok (32 because there's both the skin and the colour)
-				if (ziptic & DXD_WEAPONPREF)
-					g->p++; // ditto
+				if (extra.flags & DXD_JOINDATA && extra.joindata.bot)
+					I_Error("Ghost is not a record attack ghost (bot JOINDATA)");
+#ifdef DEVELOP
+				if (extra.flags & DXD_PLAYSTATE && extra.playstate != DXD_PST_PLAYING)
+					CONS_Alert(CONS_WARNING, "Ghost demo has non-playing playstate for player %d\n", extra.playernum);
+#endif
 			}
-			else if (ziptic == DW_RNG)
-				g->p += 4; // RNG seed
-			else
-			{
-				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", ziptic); //@TODO lmao don't blow up like this
-			}
-
-			ziptic = READUINT8(g->p);
+			else if (extra.playernum == DW_END)
+				break;
+			else if (extra.playernum < DW_EXTRASTUFF)
+				I_Error("Ghost is not a record attack ghost DXD (ziptic = %u)", extra.playernum); //@TODO lmao don't blow up like this
 		}
 
-		ziptic = READUINT16(g->p);
-
-		if (ziptic & ZT_FWD)
-			g->p++;
-		if (ziptic & ZT_SIDE)
-			g->p++;
-		if (ziptic & ZT_TURNING)
-			g->p += 2;
-		if (ziptic & ZT_ANGLE)
-			g->p += 2;
-		if (ziptic & ZT_THROWDIR)
-			g->p += 2;
-		if (ziptic & ZT_BUTTONS)
-			g->p += 2;
-		if (ziptic & ZT_AIMING)
-			g->p += 2;
-		if (ziptic & ZT_LATENCY)
-			g->p++;
-		if (ziptic & ZT_FLAGS)
-			g->p++;
-		if (ziptic & ZT_BOT)
-		{
-			UINT16 botziptic = READUINT16(g->p);
-			if (botziptic & ZT_BOT_TURN)
-				g->p++;
-			if (botziptic & ZT_BOT_ITEM)
-				g->p++;
-		}
+	skipextradata:
+		g->p = G_ReadZipTic(&dummy, g->p, g->version);
+		if (g->version == 0x0001)
+			goto skipmultiplayer;
 
 		// Grab ghost data.
-		ziptic = READUINT8(g->p);
+		UINT8 pnum = READUINT8(g->p);
 
-		if (ziptic == 0xFF)
+		if (pnum == 0xFF)
 			goto skippedghosttic; // Didn't write ghost info this frame
-		else if (ziptic != 0)
+		else if (pnum != 0)
 			I_Error("Ghost is not a record attack ghost ZIPTIC"); //@TODO lmao don't blow up like this
-		ziptic = READUINT8(g->p);
 
-		if (ziptic & GZT_XYZ)
+	skipmultiplayer:
+		g->p = G_ReadExtraZipTic(&zt, g->p, g->version, g->mo);
+
+		if (zt.flags & GZT_XYZ)
 		{
-			g->oldmo.x = READFIXED(g->p);
-			g->oldmo.y = READFIXED(g->p);
-			g->oldmo.z = READFIXED(g->p);
+			g->oldmo.x = zt.x;
+			g->oldmo.y = zt.y;
+			g->oldmo.z = zt.z;
 		}
 		else
 		{
-			if (ziptic & GZT_MOMXY)
+			if (zt.flags & GZT_MOMXY)
 			{
-				g->oldmo.momx = READFIXED(g->p);
-				g->oldmo.momy = READFIXED(g->p);
+				g->oldmo.momx = zt.x;
+				g->oldmo.momy = zt.y;
 			}
-			if (ziptic & GZT_MOMZ)
-				g->oldmo.momz = READFIXED(g->p);
+			if (zt.flags & GZT_MOMZ)
+				g->oldmo.momz = zt.z;
 			g->oldmo.x += g->oldmo.momx;
 			g->oldmo.y += g->oldmo.momy;
 			g->oldmo.z += g->oldmo.momz;
 		}
-		if (ziptic & GZT_ANGLE)
-			g->oldmo.angle = READUINT8(g->p)<<24;
-		if (ziptic & GZT_FRAME)
-			g->oldmo.frame = READUINT8(g->p);
-		if (ziptic & GZT_SPR2)
-			g->oldmo.sprite2 = READUINT8(g->p);
+		if (zt.flags & GZT_ANGLE)
+			g->oldmo.angle = zt.angle;
+		if (zt.flags & GZT_FRAME)
+			g->oldmo.frame = zt.frame;
+		if (zt.flags & GZT_SPR2)
+			g->oldmo.sprite2 = zt.spr2;
 
 		// Update ghost
 		P_UnsetThingPosition(g->mo);
@@ -1349,12 +1995,11 @@ void G_GhostTicker(void)
 		}
 		g->mo->sprite2 = g->oldmo.sprite2;
 
-		if (ziptic & GZT_EXTRA)
+		if (zt.flags & GZT_EXTRA)
 		{ // But wait, there's more!
-			xziptic = READUINT8(g->p);
-			if (xziptic & EZT_COLOR)
+			if (zt.extraflags & EZT_COLOR)
 			{
-				g->color = READUINT16(g->p);
+				g->color = zt.color;
 				switch(g->color)
 				{
 				default:
@@ -1373,111 +2018,92 @@ void G_GhostTicker(void)
 					break;
 				}
 			}
-			if (xziptic & EZT_FLIP)
+			if (zt.extraflags & EZT_FLIP)
 				g->mo->eflags ^= MFE_VERTICALFLIP;
-			if (xziptic & EZT_SCALE)
+			if (zt.extraflags & EZT_SCALE)
 			{
-				g->mo->destscale = READFIXED(g->p);
+				g->mo->destscale = zt.scale;
 				if (g->mo->destscale != g->mo->scale)
 					P_SetScale(g->mo, g->mo->destscale);
 			}
-			if (xziptic & EZT_HIT)
+			if (zt.extraflags & EZT_HIT)
 			{ // Spawn hit poofs for killing things!
-				UINT16 i, count = READUINT16(g->p), health;
-				UINT32 type;
-				fixed_t x,y,z;
-				angle_t angle;
-				mobj_t *poof;
-				for (i = 0; i < count; i++)
+				for (UINT16 i = 0; i < zt.damagecount; i++)
 				{
-					//g->p += 4; // reserved
-					type = READUINT32(g->p);
-					health = READUINT16(g->p);
-					x = READFIXED(g->p);
-					y = READFIXED(g->p);
-					z = READFIXED(g->p);
-					angle = READANGLE(g->p);
-					if (!(mobjinfo[type].flags & MF_SHOOTABLE)
-					|| !(mobjinfo[type].flags & (MF_ENEMY|MF_MONITOR))
-					|| health != 0 || i >= 4) // only spawn for the first 4 hits per frame, to prevent ghosts from splode-spamming too bad.
+					zipticdamage_t *damage = &zt.damage[i];
+					if (!(mobjinfo[damage->type].flags & MF_SHOOTABLE)
+					|| !(mobjinfo[damage->type].flags & (MF_ENEMY|MF_MONITOR))
+					|| damage->health != 0 || i >= 4) // only spawn for the first 4 hits per frame, to prevent ghosts from splode-spamming too bad.
 						continue;
-					poof = P_SpawnMobj(x, y, z, MT_GHOST);
-					poof->angle = angle;
+					mobj_t *poof = P_SpawnMobj(damage->x, damage->y, damage->z, MT_GHOST);
+					poof->angle = damage->angle;
 					poof->flags = MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY; // make an ATTEMPT to curb crazy SOCs fucking stuff up...
 					poof->health = 0;
 					P_SetMobjStateNF(poof, S_XPLD1);
 				}
 			}
-			if (xziptic & EZT_SPRITE)
-				g->mo->sprite = READUINT16(g->p);
-			if (xziptic & EZT_KART)
-				g->p += 12; // kartitem, kartamount, kartbumpers
+			if (zt.extraflags & EZT_SPRITE)
+				g->mo->sprite = zt.sprite;
 		}
 
-#define follow g->mo->tracer
-		if (ziptic & GZT_FOLLOW)
+		mobj_t *fmo = g->mo->tracer;
+		if (zt.flags & GZT_FOLLOW)
 		{ // Even more...
-			UINT8 followtic = READUINT8(g->p);
-			fixed_t temp;
-			if (followtic & FZT_SPAWNED)
+			if (zt.followflags & FZT_SPAWNED)
 			{
-				if (follow)
-					P_RemoveMobj(follow);
-				P_SetTarget(&follow, P_SpawnMobjFromMobj(g->mo, 0, 0, 0, MT_GHOST));
-				P_SetTarget(&follow->tracer, g->mo);
-				follow->tics = -1;
-				temp = READINT16(g->p)<<FRACBITS;
-				follow->height = FixedMul(follow->scale, temp);
+				if (fmo)
+					P_RemoveMobj(fmo);
+				P_SetTarget(&fmo, P_SpawnMobjFromMobj(g->mo, 0, 0, 0, MT_GHOST));
+				P_SetTarget(&fmo->tracer, g->mo);
+				fmo->tics = -1;
+				fmo->height = FixedMul(fmo->scale, zt.follow.height);
 
-				if (followtic & FZT_LINKDRAW)
-					follow->flags2 |= MF2_LINKDRAW;
+				if (zt.followflags & FZT_LINKDRAW)
+					fmo->flags2 |= MF2_LINKDRAW;
 
-				if (followtic & FZT_COLORIZED)
-					follow->colorized = true;
+				if (zt.followflags & FZT_COLORIZED)
+					fmo->colorized = true;
 
-				if (followtic & FZT_SKIN)
-					follow->skin = &skins[READUINT16(g->p)];
+				if (zt.followflags & FZT_SKIN)
+					fmo->skin = &skins[zt.follow.skin];
 			}
-			if (follow)
+			if (fmo)
 			{
-				if (followtic & FZT_SCALE)
-					follow->destscale = READFIXED(g->p);
+				if (zt.followflags & FZT_SCALE)
+					fmo->destscale = zt.follow.scale;
 				else
-					follow->destscale = g->mo->destscale;
-				if (follow->destscale != follow->scale)
-					P_SetScale(follow, follow->destscale);
+					fmo->destscale = g->mo->destscale;
+				if (fmo->destscale != fmo->scale)
+					P_SetScale(fmo, fmo->destscale);
 
-				P_UnsetThingPosition(follow);
-				temp = (g->version < 0x000e) ? READINT16(g->p)<<8 : READFIXED(g->p);
-				follow->x = g->mo->x + temp;
-				temp = (g->version < 0x000e) ? READINT16(g->p)<<8 : READFIXED(g->p);
-				follow->y = g->mo->y + temp;
-				temp = (g->version < 0x000e) ? READINT16(g->p)<<8 : READFIXED(g->p);
-				follow->z = g->mo->z + temp;
-				P_SetThingPosition(follow);
-				if (followtic & FZT_SKIN)
-					follow->sprite2 = READUINT16(g->p);
+				P_UnsetThingPosition(fmo);
+				fmo->x = g->mo->x + zt.follow.xofs;
+				fmo->y = g->mo->y + zt.follow.yofs;
+				fmo->z = g->mo->z + zt.follow.zofs;
+				P_SetThingPosition(fmo);
+				if (zt.followflags & FZT_SKIN)
+					fmo->sprite2 = zt.follow.sprite2;
 				else
-					follow->sprite2 = 0;
-				follow->sprite = READUINT16(g->p);
-				follow->frame = (READUINT8(g->p)) | (g->mo->frame & FF_TRANSMASK);
-				follow->angle = g->mo->angle;
-				follow->color = READUINT16(g->p);
+					fmo->sprite2 = 0;
+				fmo->sprite = zt.follow.sprite;
+				fmo->frame = zt.follow.frame | (g->mo->frame & FF_TRANSMASK);
+				fmo->angle = g->mo->angle;
+				fmo->color = zt.follow.color;
 
-				if (!(followtic & FZT_SPAWNED))
+				if (!(zt.followflags & FZT_SPAWNED))
 				{
-					if (xziptic & EZT_FLIP)
+					if (zt.extraflags & EZT_FLIP)
 					{
-						follow->flags2 ^= MF2_OBJECTFLIP;
-						follow->eflags ^= MFE_VERTICALFLIP;
+						fmo->flags2 ^= MF2_OBJECTFLIP;
+						fmo->eflags ^= MFE_VERTICALFLIP;
 					}
 				}
 			}
 		}
-		else if (follow)
+		else if (fmo)
 		{
-			P_RemoveMobj(follow);
-			P_SetTarget(&follow, NULL);
+			P_RemoveMobj(fmo);
+			P_SetTarget(&fmo, NULL);
 		}
 
 skippedghosttic:
@@ -1501,7 +2127,7 @@ skippedghosttic:
 			break;
 		}
 
-		if (READUINT8(g->p) != 0xFF) // Make sure there isn't other ghost data here.
+		if (g->version != 0x0001 && READUINT8(g->p) != 0xFF) // Make sure there isn't other ghost data here.
 			I_Error("Ghost is not a record attack ghost GHOSTEND"); //@TODO lmao don't blow up like this
 
 		// Demo ends after ghost data.
@@ -1510,8 +2136,8 @@ skippedghosttic:
 			g->mo->momx = g->mo->momy = g->mo->momz = 0;
 #if 1 // freeze frame (maybe more useful for time attackers)
 			g->mo->colorized = true;
-			if (follow)
-				follow->colorized = true;
+			if (fmo)
+				fmo->colorized = true;
 #else // dissapearing act
 			g->mo->fuse = TICRATE;
 			if (follow)
@@ -2396,37 +3022,23 @@ void G_SetDemoTime(UINT32 ptime, UINT32 plap)
 	}
 }
 
-static void G_LoadDemoExtraFiles(UINT8 **pp)
+static void G_LoadDemoExtraFiles(demoheader_t *header)
 {
-	UINT8 totalfiles;
-	char filename[MAX_WADPATH];
-	UINT64 filehash;
 	filestatus_t ncs;
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
-	boolean compatmode;
 
-	totalfiles = READUINT8((*pp));
-	for (i = 0; i < totalfiles; ++i)
+	for (i = 0; i < header->filecount; i++)
 	{
-		if (toomany)
-			SKIPSTRING((*pp));
-		else
-		{
-			strlcpy(filename, (char *)(*pp), sizeof filename);
-			SKIPSTRING((*pp));
-		}
-		filehash = READUINT64((*pp));
-		compatmode = READUINT8((*pp));
-
+		demofile_t *file = &header->files[i];
 		if (!toomany)
 		{
 			alreadyloaded = false;
 
 			for (j = 0; j < numwadfiles; ++j)
 			{
-				if (filehash == wadfiles[j]->hash)
+				if (file->filehash == wadfiles[j]->hash)
 				{
 					alreadyloaded = true;
 					break;
@@ -2439,7 +3051,7 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			if (numwadfiles >= MAX_WADFILES)
 				toomany = true;
 			else
-				ncs = findfile(filename, filehash, false);
+				ncs = findfile(file->filename, file->filehash, false);
 
 			if (toomany)
 			{
@@ -2450,18 +3062,18 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 			else if (ncs != FS_FOUND)
 			{
 				if (ncs == FS_NOTFOUND)
-					CONS_Alert(CONS_NOTICE, M_GetText("You do not have a copy of %s\n"), filename);
+					CONS_Alert(CONS_NOTICE, M_GetText("You do not have a copy of %s\n"), file->filename);
 				else if (ncs == FS_BADHASH)
-					CONS_Alert(CONS_NOTICE, M_GetText("Checksum mismatch on %s\n"), filename);
+					CONS_Alert(CONS_NOTICE, M_GetText("Checksum mismatch on %s\n"), file->filename);
 				else
-					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), filename);
+					CONS_Alert(CONS_NOTICE, M_GetText("Unknown error finding file %s\n"), file->filename);
 
 				if (!CON_Ready())
 					M_StartMessage(M_GetText("There were errors trying to add this demo's addons. Check the console for more information.\n\nDemo playback may desync.\n\nPress ESC\n"), NULL, MM_NOTHING);
 			}
 			else
 			{
-				P_PartialAddWadFile(filename, compatmode ? WC_ON : WC_OFF);
+				P_PartialAddWadFile(file->filename, file->compatmode ? WC_ON : WC_OFF);
 			}
 		}
 	}
@@ -2470,45 +3082,20 @@ static void G_LoadDemoExtraFiles(UINT8 **pp)
 		P_MultiSetupWadFiles(true); // in case any partial adds were done
 }
 
-static void G_SkipDemoExtraFiles(UINT8 **pp)
-{
-	UINT8 totalfiles;
-	UINT8 i;
-
-	totalfiles = READUINT8((*pp));
-	for (i = 0; i < totalfiles; ++i)
-	{
-		SKIPSTRING((*pp));// file name
-		(*pp) += sizeof(UINT64); // hash
-		(*pp) += 1; // compatmode
-	}
-}
-
 // G_CheckDemoExtraFiles: checks if our loaded WAD list matches the demo's.
 // Enabling quick prevents filesystem checks to see if needed files are available to load.
-static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
+static UINT8 G_CheckDemoExtraFiles(demoheader_t *header, boolean quick)
 {
-	UINT8 totalfiles, filesloaded, nmusfilecount;
-	char filename[MAX_WADPATH];
-	UINT64 filehash;
+	UINT8 filesloaded, nmusfilecount;
 	boolean toomany = false;
 	boolean alreadyloaded;
 	UINT8 i, j;
 	UINT8 error = 0;
 
-	totalfiles = READUINT8((*pp));
 	filesloaded = 0;
-	for (i = 0; i < totalfiles; ++i)
+	for (i = 0; i < header->filecount; ++i)
 	{
-		if (toomany)
-			SKIPSTRING((*pp));
-		else
-		{
-			strlcpy(filename, (char *)(*pp), sizeof filename);
-			SKIPSTRING((*pp));
-		}
-		filehash = READUINT64((*pp));
-		(void)READUINT8((*pp)); // compatmode
+		demofile_t *file = &header->files[i];
 
 		if (!toomany)
 		{
@@ -2522,7 +3109,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 				else
 					continue;
 
-				if (filehash == wadfiles[j]->hash)
+				if (file->filehash == wadfiles[j]->hash)
 				{
 					alreadyloaded = true;
 
@@ -2541,7 +3128,7 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 
 			if (numwadfiles >= MAX_WADFILES)
 				error = DFILE_ERROR_CANNOTLOAD;
-			else if (!quick && findfile(filename, filehash, false) != FS_FOUND)
+			else if (!quick && findfile(file->filename, file->filehash, false) != FS_FOUND)
 				error = DFILE_ERROR_CANNOTLOAD;
 			else if (error < DFILE_ERROR_INCOMPLETEOUTOFORDER)
 				error |= DFILE_ERROR_NOTLOADED;
@@ -2568,10 +3155,8 @@ static UINT8 G_CheckDemoExtraFiles(UINT8 **pp, boolean quick)
 // 4 == new demo has higher rings
 UINT8 G_CmpDemoTime(char *oldname, char *newname)
 {
-	UINT8 *buffer,*p;
-	UINT8 flags;
+	UINT8 *buffer;
 	UINT32 oldtime, newtime, oldlap, newlap;
-	UINT16 oldversion;
 	size_t bufsize ATTRUNUSED;
 	UINT8 c;
 	UINT16 s ATTRUNUSED;
@@ -2582,41 +3167,29 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	FIL_DefaultExtension(newname, ".lmp");
 	bufsize = FIL_ReadFile(newname, &buffer);
 	I_Assert(bufsize != 0);
-	p = buffer;
 
 	// read demo header
-	I_Assert(!memcmp(p, DEMOHEADER, 12));
-	p += 12; // DEMOHEADER
-	c = READUINT8(p); // VERSION
-	I_Assert(c == VERSION);
-	c = READUINT8(p); // SUBVERSION
-	I_Assert(c == SUBVERSION);
-	s = READUINT16(p);
-	I_Assert(s == DEMOVERSION);
-	p += 64; // full demo title
-	p += sizeof(UINT64); // demo checksum
-	I_Assert(!memcmp(p, "PLAY", 4));
-	p += 4; // PLAY
-	SKIPSTRING(p); // gamemap
-	p += sizeof(UINT64); // map hash
-	flags = READUINT8(p); // demoflags
-	p++; // gametype
-	p++; // numlaps
-	G_SkipDemoExtraFiles(&p);
+	demoheader_t header;
+	I_Assert(G_ReadDemoHeader(buffer, &header) == HEADER_OK);
+	I_Assert(header.version == VERSION);
+	I_Assert(header.subversion == SUBVERSION);
+	I_Assert(header.demoversion == DEMOVERSION);
 
-	aflags = flags & (DF_TIMEATTACK|DF_ITEMBREAKER);
+	Z_Free(buffer);
+
+	aflags = header.demoflags & (DF_TIMEATTACK|DF_ITEMBREAKER);
 	I_Assert(aflags);
 
-	if (flags & DF_TIMEATTACK)
+	if (header.demoflags & DF_TIMEATTACK)
 		uselaps = true; // get around uninitalized error
 
-	newtime = READUINT32(p);
+	newtime = header.attacking.time;
 	if (uselaps)
-		newlap = READUINT32(p);
+		newlap = header.attacking.lap;
 	else
 		newlap = UINT32_MAX;
 
-	Z_Free(buffer);
+	G_FreeDemoHeader(&header);
 
 	// load old file
 	FIL_DefaultExtension(oldname, ".lmp");
@@ -2625,56 +3198,32 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), oldname);
 		return UINT8_MAX;
 	}
-	p = buffer;
 
 	// read demo header
-	if (memcmp(p, DEMOHEADER, 12))
+	demoheader_t oldheader;
+	if (G_ReadDemoHeader(buffer, &oldheader) != HEADER_OK)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
-		Z_Free(buffer);
-		return UINT8_MAX;
-	} p += 12; // DEMOHEADER
-	p++; // VERSION
-	p++; // SUBVERSION
-	oldversion = READUINT16(p);
-	switch(oldversion) // demoversion
-	{
-	case DEMOVERSION: // latest always supported
-		break;
-	// too old, cannot support.
-	default:
-		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
-		Z_Free(buffer);
-		return UINT8_MAX;
-	}
-	p += 64; // full demo title
-	p += sizeof(UINT64); // demo checksum
-	if (memcmp(p, "PLAY", 4))
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
-		Z_Free(buffer);
-		return UINT8_MAX;
-	} p += 4; // "PLAY"
-	SKIPSTRING(p); // gamemap
-	p += sizeof(UINT64); // maphash
-	flags = READUINT8(p);
-	p++; // gametype
-	p++; // numlaps
-	G_SkipDemoExtraFiles(&p);
-	if (!(flags & aflags))
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' not from same game mode. It will be overwritten.\n"), oldname);
 		Z_Free(buffer);
 		return UINT8_MAX;
 	}
 
-	oldtime = READUINT32(p);
+	Z_Free(buffer);
+
+	if (!(oldheader.demoflags & aflags))
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' not from same game mode. It will be overwritten.\n"), oldname);
+		G_FreeDemoHeader(&oldheader);
+		return UINT8_MAX;
+	}
+
+	oldtime = oldheader.attacking.time;
 	if (uselaps)
-		oldlap = READUINT32(p);
+		oldlap = oldheader.attacking.lap;
 	else
 		oldlap = 0;
 
-	Z_Free(buffer);
+	G_FreeDemoHeader(&oldheader);
 
 	c = 0;
 
@@ -2698,10 +3247,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 
 void G_LoadDemoInfo(menudemo_t *pdemo)
 {
-	UINT8 *infobuffer, *info_p, *extrainfo_p;
-	UINT8 version, subversion, pdemoflags;
-	UINT16 pdemoversion, count;
-	char mapname[MAXMAPLUMPNAME];
+	UINT8 *infobuffer, *extrainfo_p;
 
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
@@ -2712,104 +3258,76 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 
-	info_p = infobuffer;
+	pdemo->type = MD_LOADED;
 
-	if (memcmp(info_p, DEMOHEADER, 12))
+	demoheader_t header;
+	switch (G_ReadDemoHeader(infobuffer, &header))
 	{
+	case HEADER_OK:
+		break;
+
+	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
 		Z_Free(infobuffer);
 		return;
-	}
 
-	pdemo->type = MD_LOADED;
-
-	info_p += 12; // DEMOHEADER
-
-	version = READUINT8(info_p);
-	subversion = READUINT8(info_p);
-	pdemoversion = READUINT16(info_p);
-
-	switch(pdemoversion)
-	{
-	case DEMOVERSION: // latest always supported
-		// demo title
-		M_Memcpy(pdemo->title, info_p, 64);
-		info_p += 64;
-
-		break;
-	// too old, cannot support.
-	default:
+	case HEADER_BADVERSION:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
 		Z_Free(infobuffer);
 		return;
-	}
 
-	if (version != VERSION || subversion != SUBVERSION)
-		pdemo->type = MD_OUTDATED;
-
-	info_p += sizeof(UINT64); // demo checksum
-	if (memcmp(info_p, "PLAY", 4))
-	{
+	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
 		Z_Free(infobuffer);
 		return;
 	}
-	info_p += 4; // "PLAY"
-	READSTRINGN(info_p, mapname, sizeof(mapname));
-	pdemo->map = G_MapNumber(mapname);
-	info_p += sizeof(UINT64); // maphash
 
-	pdemoflags = READUINT8(info_p);
+	M_Memcpy(pdemo->title, header.demotitle, 64);
+
+	if (header.version != VERSION || header.subversion != SUBVERSION)
+		pdemo->type = MD_OUTDATED;
+
+	pdemo->map = G_MapNumber(header.maptitle);
 
 	// temp?
-	if (!(pdemoflags & DF_MULTIPLAYER))
+	if (!(header.demoflags & DF_MULTIPLAYER))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a multiplayer replay and can't be listed on this menu fully yet.\n"), pdemo->filepath);
 		Z_Free(infobuffer);
 		return;
 	}
 
-	pdemo->gametype = READUINT8(info_p);
-	pdemo->numlaps = READUINT8(info_p);
+	pdemo->gametype = header.gametype;
+	pdemo->numlaps = header.numlaps;
 
-	pdemo->addonstatus = G_CheckDemoExtraFiles(&info_p, true);
-	info_p += 4; // RNG seed
+	pdemo->addonstatus = G_CheckDemoExtraFiles(&header, true);
 
-	extrainfo_p = infobuffer + READUINT32(info_p); // The extra UINT32 read is for a blank 4 bytes?
+	extrainfo_p = infobuffer + header.extrainfo; // The extra UINT32 read is for a blank 4 bytes?
 
 	// Pared down version of CV_LoadNetVars to find the kart speed
 	pdemo->kartspeed = KARTSPEED_NORMAL; // Default to normal speed
-	count = READUINT16(info_p);
-	while (count--)
+	for (UINT16 i = 0; i < header.numcvars; i++)
 	{
-		UINT16 netid;
-		char *svalue;
-
-		netid = READUINT16(info_p);
-		svalue = (char *)info_p;
-		SKIPSTRING(info_p);
-		info_p++; // stealth
-
-		if (netid == cv_kartspeed.netid)
+		if (!strcmp(header.cvars[i].name, cv_kartspeed.name))
 		{
 			UINT8 j;
 			for (j = 0; kartspeed_cons_t[j].strvalue; j++)
-				if (!stricmp(kartspeed_cons_t[j].strvalue, svalue))
+				if (!stricmp(kartspeed_cons_t[j].strvalue, header.cvars[i].value))
 					pdemo->kartspeed = kartspeed_cons_t[j].value;
 		}
 	}
 
-	if (pdemoflags & DF_ENCORE)
+	if (header.demoflags & DF_ENCORE)
 		pdemo->kartspeed |= DF_ENCORE;
 
 	// Read standings!
-	count = 0;
+	UINT16 count = 0;
 
 	while (READUINT8(extrainfo_p) == DW_STANDING) // Assume standings are always first in the extrainfo
 	{
@@ -2854,6 +3372,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 	// I think that's everything we need?
 	Z_Free(infobuffer);
+	G_FreeDemoHeader(&header);
 }
 
 //
@@ -2874,11 +3393,9 @@ void G_DeferedPlayDemo(const char *name)
 
 void G_DoPlayDemo(char *defdemoname)
 {
-	UINT8 i, p;
+	UINT16 i;
 	lumpnum_t l;
-	char skin[17],color[MAXCOLORNAME+1],follower[17],mapname[MAXMAPLUMPNAME],*n,*pdemoname;
-	UINT8 version,subversion;
-	UINT32 randseed;
+	char *n,*pdemoname;
 	char msg[1024];
 
 	boolean spectator, bot;
@@ -2889,10 +3406,6 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	G_InitDemoRewind();
-
-	skin[16] = '\0';
-	follower[16] = '\0';
-	color[MAXCOLORNAME] = '\0';
 
 	// No demo name means we're restarting the current demo
 	if (defdemoname == NULL)
@@ -2950,6 +3463,7 @@ void G_DoPlayDemo(char *defdemoname)
 				virtlump_t *vLump;
 				UINT16 mapnum;
 				size_t step = 0;
+				char mapname[MAXMAPLUMPNAME];
 
 				step = 0;
 				while (defdemoname+step < n-1)
@@ -2998,8 +3512,16 @@ void G_DoPlayDemo(char *defdemoname)
 	gameaction = ga_nothing;
 	demo.playback = true;
 	demo.buffer = &demobuf;
-	if (memcmp(demobuf.p, DEMOHEADER, 12))
+
+	demoheader_t header;
+
+	switch (G_ReadDemoHeader(demobuf.p, &header))
 	{
+	case HEADER_OK:
+		demobuf.p += header.endofs;
+		break;
+
+	case HEADER_BADMAGIC:
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		Z_Free(pdemoname);
@@ -3008,18 +3530,8 @@ void G_DoPlayDemo(char *defdemoname)
 		demo.title = false;
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
-	}
-	demobuf.p += 12; // DEMOHEADER
 
-	version = READUINT8(demobuf.p);
-	subversion = READUINT8(demobuf.p);
-	demo.version = READUINT16(demobuf.p);
-	switch(demo.version)
-	{
-	case DEMOVERSION: // latest always supported
-		break;
-	// too old, cannot support.
-	default:
+	case HEADER_BADVERSION:
 		snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		Z_Free(pdemoname);
@@ -3028,16 +3540,8 @@ void G_DoPlayDemo(char *defdemoname)
 		demo.title = false;
 		M_StartMessage(msg, NULL, MM_NOTHING);
 		return;
-	}
 
-	// demo title
-	M_Memcpy(demo.titlename, demobuf.p, 64);
-	demobuf.p += 64;
-
-	demobuf.p += sizeof(UINT64); // demo checksum
-
-	if (memcmp(demobuf.p, "PLAY", 4))
-	{
+	case HEADER_BADFORMAT:
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		Z_Free(pdemoname);
@@ -3048,25 +3552,27 @@ void G_DoPlayDemo(char *defdemoname)
 		return;
 	}
 
-	demobuf.p += 4; // "PLAY"
-	READSTRINGN(demobuf.p, mapname, sizeof(mapname)); // gamemap
-	gamemap = G_MapNumber(mapname)+1;
-	demobuf.p += sizeof(UINT64); // maphash
+	demo.version = header.demoversion;
 
-	demoflags = READUINT8(demobuf.p);
-	gametype = READUINT8(demobuf.p);
+	// demo title
+	memcpy(demo.titlename, header.demotitle, 64);
+
+	gamemap = G_MapNumber(header.maptitle)+1;
+
+	demoflags = header.demoflags;
+	gametype = header.gametype;
 	G_SetGametype(gametype);
-	numlaps = READUINT8(demobuf.p);
+	numlaps = header.numlaps;
 
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
-		G_SkipDemoExtraFiles(&demobuf.p);
+		;//G_SkipDemoExtraFiles(&demobuf.p);
 	else if (demo.loadfiles)
-		G_LoadDemoExtraFiles(&demobuf.p);
+		G_LoadDemoExtraFiles(&header);
 	else if (demo.ignorefiles)
-		G_SkipDemoExtraFiles(&demobuf.p);
+		;//G_SkipDemoExtraFiles(&demobuf.p);
 	else
 	{
-		UINT8 error = G_CheckDemoExtraFiles(&demobuf.p, false);
+		UINT8 error = G_CheckDemoExtraFiles(&header, false);
 
 		if (error)
 		{
@@ -3106,6 +3612,7 @@ void G_DoPlayDemo(char *defdemoname)
 			CONS_Alert(CONS_ERROR, "%s", msg);
 			Z_Free(pdemoname);
 			P_SaveBufferFree(&demobuf);
+			G_FreeDemoHeader(&header);
 			demo.playback = false;
 			demo.title = false;
 			if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
@@ -3119,29 +3626,11 @@ void G_DoPlayDemo(char *defdemoname)
 	demo.netgame = (multiplayer && !(demoflags & DF_NONETMP));
 	CON_ToggleOff();
 
-	hu_demotime = UINT32_MAX;
-	hu_demolap = UINT32_MAX;
+	hu_demotime = header.attacking.time;
+	hu_demolap = header.attacking.lap;
 
-	switch (modeattacking)
-	{
-		case ATTACKING_NONE: // 0
-			break;
-		case ATTACKING_TIME: // 1
-			hu_demotime = READUINT32(demobuf.p);
-			hu_demolap = READUINT32(demobuf.p);
-			break;
-		case ATTACKING_ITEMBREAK: // 2
-			hu_demotime = READUINT32(demobuf.p);
-			break;
-		default: // 3
-			modeattacking = ATTACKING_NONE;
-			break;
-	}
-
-	// Random seed
-	randseed = READUINT32(demobuf.p);
-
-	demobuf.p += 4; // Extrainfo location
+	if (modeattacking != ATTACKING_TIME && modeattacking != ATTACKING_ITEMBREAK)
+		modeattacking = ATTACKING_NONE; // is this really necessary?
 
 	// ...*map* not loaded?
 	if (!gamemap || (gamemap > nummapheaders) || !mapheaderinfo[gamemap-1] || mapheaderinfo[gamemap-1]->lumpnum == LUMPERROR)
@@ -3150,6 +3639,7 @@ void G_DoPlayDemo(char *defdemoname)
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
+		G_FreeDemoHeader(&header);
 		demo.playback = false;
 		demo.title = false;
 		M_StartMessage(msg, NULL, MM_NOTHING);
@@ -3157,27 +3647,28 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 
 	// net var data
-	CV_LoadDemoVars(&demobuf.p);
+	CV_LoadDemoVars(&header);
 
 	memset(&grandprixinfo, 0, sizeof grandprixinfo);
 	if ((demoflags & DF_GRANDPRIX))
 	{
 		grandprixinfo.gp = true;
-		grandprixinfo.gamespeed = READUINT8(demobuf.p);
-		grandprixinfo.masterbots = READUINT8(demobuf.p) != 0;
-		grandprixinfo.eventmode = READUINT8(demobuf.p);
+		grandprixinfo.gamespeed = header.grandprix.gamespeed;
+		grandprixinfo.masterbots = header.grandprix.masterbots;
+		grandprixinfo.eventmode = header.grandprix.eventmode;
 	}
 
 	// Load "mapmusrng" used for altmusic selection
-	mapmusrng = READUINT8(demobuf.p);
+	mapmusrng = header.mapmusrng;
 
 	// Sigh ... it's an empty demo.
-	if (*demobuf.p == DEMOMARKER)
+	if (header.numplayers == 0)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
 		Z_Free(pdemoname);
 		P_SaveBufferFree(&demobuf);
+		G_FreeDemoHeader(&header);
 		demo.playback = false;
 		demo.title = false;
 		M_StartMessage(msg, NULL, MM_NOTHING);
@@ -3191,9 +3682,9 @@ void G_DoPlayDemo(char *defdemoname)
 	memset(&ghostext,0,sizeof(ghostext));
 
 #if defined(SKIPERRORS) && !defined(DEVELOP)
-	if ((VERSION != version || SUBVERSION != subversion) && !skiperrors)
+	if ((VERSION != header.version || SUBVERSION != header.subversion) && !skiperrors)
 #else
-	if (VERSION != version || SUBVERSION != subversion)
+	if (VERSION != header.version || SUBVERSION != header.subversion)
 #endif
 		CONS_Alert(CONS_WARNING, M_GetText("Demo version does not match game version. Desyncs may occur.\n"));
 
@@ -3213,14 +3704,11 @@ void G_DoPlayDemo(char *defdemoname)
 	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
-	p = READUINT8(demobuf.p);
-
-	while (p != 0xFF)
+	for (demoplayer_t *plr = header.playerdata; plr < header.playerdata + header.numplayers; plr++)
 	{
-		UINT8 flags = READUINT8(demobuf.p);
-
-		spectator = !!(flags & DEMO_SPECTATOR);
-		bot = !!(flags & DEMO_BOT);
+		UINT8 p = plr->playernum;
+		spectator = !!(plr->flags & DEMO_SPECTATOR);
+		bot = !!(plr->flags & DEMO_BOT);
 
 		if ((spectator || bot))
 		{
@@ -3258,12 +3746,12 @@ void G_DoPlayDemo(char *defdemoname)
 		G_AddPlayer(p, p);
 		players[p].spectator = spectator;
 
-		if (flags & DEMO_KICKSTART)
+		if (plr->flags & DEMO_KICKSTART)
 			players[p].pflags |= PF_KICKSTARTACCEL;
 		else
 			players[p].pflags &= ~PF_KICKSTARTACCEL;
 
-		if (flags & DEMO_SHRINKME)
+		if (plr->flags & DEMO_SHRINKME)
 			players[p].pflags |= PF_SHRINKME;
 		else
 			players[p].pflags &= ~PF_SHRINKME;
@@ -3272,14 +3760,13 @@ void G_DoPlayDemo(char *defdemoname)
 
 		if ((players[p].bot = bot) == true)
 		{
-			players[p].botvars.difficulty = READUINT8(demobuf.p);
-			players[p].botvars.diffincrease = READUINT8(demobuf.p); // needed to avoid having to duplicate logic
-			players[p].botvars.rival = (boolean)READUINT8(demobuf.p);
+			players[p].botvars.difficulty = plr->bot.difficulty;
+			players[p].botvars.diffincrease = plr->bot.diffincrease; // needed to avoid having to duplicate logic
+			players[p].botvars.rival = plr->bot.rival;
 		}
 
 		// Name
-		M_Memcpy(player_names[p],demobuf.p,16);
-		demobuf.p += 16;
+		M_Memcpy(player_names[p], plr->name, 16);
 
 		/*if (players[p].spectator)
 		{
@@ -3287,55 +3774,42 @@ void G_DoPlayDemo(char *defdemoname)
 		}*/
 
 		// Skin
-		M_Memcpy(skin,demobuf.p,16);
-		demobuf.p += 16;
-		SetPlayerSkin(p, skin);
+		SetPlayerSkin(p, plr->skin);
 
 		// Color
-		M_Memcpy(color,demobuf.p,16);
-		demobuf.p += 16;
 		for (i = 0; i < numskincolors; i++)
-			if (!stricmp(skincolors[i].name,color))				// SRB2kart
+			if (!stricmp(skincolors[i].name, plr->color)) // SRB2kart
 			{
 				players[p].skincolor = i;
 				break;
 			}
 
 		// Follower
-		M_Memcpy(follower, demobuf.p, 16);
-		demobuf.p += 16;
-		K_SetFollowerByName(p, follower);
+		K_SetFollowerByName(p, plr->follower);
 
 		// Follower colour
-		M_Memcpy(color, demobuf.p, 16);
-		demobuf.p += 16;
 		for (i = 0; i < numskincolors +2; i++)	// +2 because of Match and Opposite
-		{
-				if (!stricmp(Followercolor_cons_t[i].strvalue, color))
-				{
-						players[p].followercolor = i;
-						break;
-				}
-		}
+			if (!stricmp(Followercolor_cons_t[i].strvalue, plr->followercolor))
+			{
+				players[p].followercolor = i;
+				break;
+			}
 
 		// Score, since Kart uses this to determine where you start on the map
-		players[p].score = READUINT32(demobuf.p);
+		players[p].score = plr->score;
 
 		// Power Levels
-		clientpowerlevels[p][gametype == GT_BATTLE ? PWRLV_BATTLE : PWRLV_RACE] = READUINT16(demobuf.p);
+		clientpowerlevels[p][gametype == GT_BATTLE ? PWRLV_BATTLE : PWRLV_RACE] = plr->powerlevel;
 
 		// Kart stats, temporarily
-		kartspeed[p] = READUINT8(demobuf.p);
-		kartweight[p] = READUINT8(demobuf.p);
+		kartspeed[p] = plr->kartspeed;
+		kartweight[p] = plr->kartweight;
 
-		if (stricmp(skins[players[p].skin].name, skin) != 0)
+		if (stricmp(skins[players[p].skin].name, plr->skin) != 0)
 			FindClosestSkinForStats(p, kartspeed[p], kartweight[p]);
 
 		// Followitem
-		players[p].followitem = READUINT32(demobuf.p);
-
-		// Look for the next player
-		p = READUINT8(demobuf.p);
+		players[p].followitem = plr->followitem;
 	}
 
 	// end of player read (the 0xFF marker)
@@ -3356,24 +3830,18 @@ void G_DoPlayDemo(char *defdemoname)
 		splitscreen = M_RandomKey(6)-1;
 		splitscreen = min(min(3, numslots-1), splitscreen); // Bias toward 1p and 4p views
 
-		for (p = 0; p <= splitscreen; p++)
-			G_ResetView(p+1, slots[M_RandomKey(numslots)], false);
+		for (i = 0; i <= splitscreen; i++)
+			G_ResetView(i+1, slots[M_RandomKey(numslots)], false);
 	}
 
 	R_ExecuteSetViewSize();
 
-	P_SetRandSeed(randseed);
+	P_SetRandSeed(header.randseed);
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (players[i].mo)
-		{
-			players[i].mo->color = players[i].skincolor;
-			oldghost[i].x = players[i].mo->x;
-			oldghost[i].y = players[i].mo->y;
-			oldghost[i].z = players[i].mo->z;
-		}
+		// oldghost init doesn't work here, players aren't immediately spawned anymore
 
 		// Set saved attribute values
 		// No cheat checking here, because even if they ARE wrong...
@@ -3383,25 +3851,28 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 
 	demo.deferstart = true;
+	G_FreeDemoHeader(&header);
+}
+
+void G_SetupDemoPlayer(INT32 i)
+{
+	players[i].mo->color = players[i].skincolor;
+	oldghost[i].x = players[i].mo->x;
+	oldghost[i].y = players[i].mo->y;
+	oldghost[i].z = players[i].mo->z;
 }
 
 void G_AddGhost(char *defdemoname)
 {
 	INT32 i;
 	lumpnum_t l;
-	char name[17],skin[17],color[MAXCOLORNAME+1],*n,*pdemoname;
+	char *n,*pdemoname;
 	UINT64 demohash;
 	demoghost *gh;
 	UINT8 flags;
-	UINT8 *buffer,*p;
+	UINT8 *buffer;
 	mapthing_t *mthing;
-	UINT16 count, ghostversion;
 	skin_t *ghskin = &skins[0];
-	UINT8 kartspeed = UINT8_MAX, kartweight = UINT8_MAX;
-
-	name[16] = '\0';
-	skin[16] = '\0';
-	color[16] = '\0';
 
 	n = defdemoname+strlen(defdemoname);
 	while (*n != '/' && *n != '\\' && n != defdemoname)
@@ -3421,7 +3892,6 @@ void G_AddGhost(char *defdemoname)
 			Z_Free(pdemoname);
 			return;
 		}
-		p = buffer;
 	}
 	// load demo resource from WAD
 	else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
@@ -3431,35 +3901,34 @@ void G_AddGhost(char *defdemoname)
 		return;
 	}
 	else // it's an internal demo
-		buffer = p = W_CacheLumpNum(l, PU_LEVEL);
+		buffer = W_CacheLumpNum(l, PU_LEVEL);
 
-	// read demo header
-	if (memcmp(p, DEMOHEADER, 12))
+	demoheader_t header;
+	switch (G_ReadDemoHeader(buffer, &header))
 	{
+	case HEADER_OK:
+		break;
+
+	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Not a SRB2 replay.\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
 		return;
-	} p += 12; // DEMOHEADER
 
-	p++; // VERSION
-	p++; // SUBVERSION
-
-	ghostversion = READUINT16(p);
-	switch(ghostversion)
-	{
-	case DEMOVERSION: // latest always supported
-		break;
-	// too old, cannot support.
-	default:
+	case HEADER_BADVERSION:
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Demo version incompatible.\n"), pdemoname);
+		Z_Free(pdemoname);
+		Z_Free(buffer);
+		return;
+
+	case HEADER_BADFORMAT:
+		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Demo format unacceptable.\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
 		return;
 	}
 
-	p += 64; // title
-	demohash = READUINT64(p); // demo checksum
+	demohash = header.demochecksum;
 
 	for (gh = ghosts; gh; gh = gh->next)
 		if (demohash == gh->checksum) // another ghost in the game already has this checksum?
@@ -3467,27 +3936,18 @@ void G_AddGhost(char *defdemoname)
 			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (hash was matched)\n", pdemoname);
 			Z_Free(pdemoname);
 			Z_Free(buffer);
+			G_FreeDemoHeader(&header);
 			return;
 		}
 
-	if (memcmp(p, "PLAY", 4))
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Demo format unacceptable.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
-		return;
-	} p += 4; // "PLAY"
 
-
-	SKIPSTRING(p); // gamemap
-	p += sizeof(UINT64); // maphash (possibly check for consistency?)
-
-	flags = READUINT8(p);
+	flags = header.demoflags;
 	if (!(flags & DF_GHOST))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: No ghost data in this demo.\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
+		G_FreeDemoHeader(&header);
 		return;
 	}
 
@@ -3496,100 +3956,33 @@ void G_AddGhost(char *defdemoname)
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Replay data contains luavars, cannot continue.\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
+		G_FreeDemoHeader(&header);
 		return;
 	}
 
-	p++; // gametype
-	p++; // numlaps
-	G_SkipDemoExtraFiles(&p); // Don't wanna modify the file list for ghosts.
-
-	switch ((flags & DF_ATTACKMASK)>>DF_ATTACKSHIFT)
-	{
-		case ATTACKING_NONE: // 0
-			break;
-		case ATTACKING_TIME: // 1
-			p += 8; // demo time, lap
-			break;
-		case ATTACKING_ITEMBREAK: // 2
-			p += 4; // demo time
-			break;
-		default: // 3
-			break;
-	}
-
-	p += 4; // random seed
-	p += 4; // Extra data location reference
-
-	// net var data
-	count = READUINT16(p);
-	while (count--)
-	{
-		SKIPSTRING(p);
-		SKIPSTRING(p);
-		p++;
-	}
-
-	if ((flags & DF_GRANDPRIX))
-	{
-		p += 3;
-	}
-
-	// Skip mapmusrng
-	p++;
-
-	if (*p == DEMOMARKER)
+	if (header.numplayers == 0)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
+		G_FreeDemoHeader(&header);
 		return;
 	}
 
-	p++; // player number - doesn't really need to be checked, TODO maybe support adding multiple players' ghosts at once
+	demoplayer_t *plr = &header.playerdata[0];
 
 	// any invalidating flags?
-	i = READUINT8(p);
-	if ((i & (DEMO_SPECTATOR|DEMO_BOT)) != 0)
+	if ((plr->flags & (DEMO_SPECTATOR|DEMO_BOT)) != 0)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot (spectator/bot)\n"), defdemoname);
 		Z_Free(pdemoname);
 		Z_Free(buffer);
-		return;
-	}
-
-	// Player name (TODO: Display this somehow if it doesn't match cv_playername!)
-	M_Memcpy(name, p, 16);
-	p += 16;
-
-	// Skin
-	M_Memcpy(skin, p, 16);
-	p += 16;
-
-	// Color
-	M_Memcpy(color, p, 16);
-	p += 16;
-
-	// Follower data was here, skip it, we don't care about it for ghosts.
-	p += 32;	// followerskin (16) + followercolor (16)
-
-	p += 4; // score
-	p += 2; // powerlevel
-
-	kartspeed = READUINT8(p);
-	kartweight = READUINT8(p);
-
-	p += 4; // followitem (maybe change later)
-
-	if (READUINT8(p) != 0xFF)
-	{
-		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot. (Bad terminator)\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
+		G_FreeDemoHeader(&header);
 		return;
 	}
 
 	for (i = 0; i < numskins; i++)
-		if (!stricmp(skins[i].name,skin))
+		if (!stricmp(skins[i].name, plr->skin))
 		{
 			ghskin = &skins[i];
 			break;
@@ -3597,22 +3990,21 @@ void G_AddGhost(char *defdemoname)
 
 	if (i == numskins)
 	{
-		if (kartspeed != UINT8_MAX && kartweight != UINT8_MAX)
-			ghskin = &skins[GetSkinNumClosestToStats(kartspeed, kartweight)];
+		if (plr->kartspeed != UINT8_MAX && plr->kartweight != UINT8_MAX)
+			ghskin = &skins[GetSkinNumClosestToStats(plr->kartspeed, plr->kartweight)];
 
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Invalid character. Falling back to %s.\n"), pdemoname, ghskin->name);
 	}
-
 
 	gh = Z_Calloc(sizeof(demoghost), PU_LEVEL, NULL);
 	gh->next = ghosts;
 	gh->buffer = buffer;
 	gh->checksum = demohash;
-	gh->p = p;
+	gh->p = buffer + header.endofs;
 
 	ghosts = gh;
 
-	gh->version = ghostversion;
+	gh->version = header.demoversion;
 	mthing = playerstarts[0] ? playerstarts[0] : deathmatchstarts[0]; // todo not correct but out of scope
 	I_Assert(mthing);
 	{ // A bit more complex than P_SpawnPlayer because ghosts aren't solid and won't just push themselves out of the ceiling.
@@ -3655,14 +4047,15 @@ void G_AddGhost(char *defdemoname)
 	// Set color
 	gh->mo->color = ((skin_t*)gh->mo->skin)->prefcolor;
 	for (i = 0; i < numskincolors; i++)
-		if (!stricmp(skincolors[i].name,color))
+		if (!stricmp(skincolors[i].name, plr->color))
 		{
 			gh->mo->color = (UINT16)i;
 			break;
 		}
 	gh->oldmo.color = gh->mo->color;
 
-	CONS_Printf(M_GetText("Added ghost %s from %s\n"), name, pdemoname);
+	CONS_Printf(M_GetText("Added ghost %s from %s\n"), plr->name, pdemoname);
+	G_FreeDemoHeader(&header);
 	Z_Free(pdemoname);
 }
 
@@ -3681,96 +4074,24 @@ void G_FreeGhosts(void)
 // A simplified version of G_AddGhost...
 void G_UpdateStaffGhostName(lumpnum_t l)
 {
-	UINT8 *buffer,*p;
-	UINT16 ghostversion;
-	UINT8 flags;
+	UINT8 *buffer = W_CacheLumpNum(l, PU_CACHE);
 
-	buffer = p = W_CacheLumpNum(l, PU_CACHE);
-
-	// read demo header
-	if (memcmp(p, DEMOHEADER, 12))
-	{
+	demoheader_t header;
+	if (G_ReadDemoHeader(buffer, &header) != HEADER_OK)
 		goto fail;
-	}
 
-	p += 12; // DEMOHEADER
-	p++; // VERSION
-	p++; // SUBVERSION
-
-	ghostversion = READUINT16(p);
-	switch(ghostversion)
-	{
-		case DEMOVERSION: // latest always supported
-			break;
-
-		// too old, cannot support.
-		default:
-			goto fail;
-	}
-
-	p += 64; // full demo title
-	p += sizeof(UINT64); // demo checksum
-
-	if (memcmp(p, "PLAY", 4))
-	{
-		goto fail;
-	}
-
-	p += 4; // "PLAY"
-	SKIPSTRING(p); // gamemap
-	p += sizeof(UINT64); // maphash (possibly check for consistency?)
-
-	flags = READUINT8(p);
-	if (!(flags & DF_GHOST))
-	{
+	if (!(header.demoflags & DF_GHOST))
 		goto fail; // we don't NEED to do it here, but whatever
-	}
 
-	p++; // Gametype
-	p++; // numlaps
-	G_SkipDemoExtraFiles(&p);
-
-	switch ((flags & DF_ATTACKMASK)>>DF_ATTACKSHIFT)
-	{
-		case ATTACKING_NONE: // 0
-			break;
-		case ATTACKING_TIME: // 1
-			p += 8; // demo time, lap
-			break;
-		case ATTACKING_ITEMBREAK: // 2
-			p += 4; // demo time
-			break;
-		default: // 3
-			break;
-	}
-
-	p += 4; // random seed
-	p += 4; // Extrainfo location marker
-
-	// Ehhhh don't need ghostversion here (?) so I'll reuse the var here
-	ghostversion = READUINT16(p);
-	while (ghostversion--)
-	{
-		p += 2;
-		SKIPSTRING(p);
-		p++; // stealth
-	}
-
-	if ((flags & DF_GRANDPRIX))
-	{
-		p += 3;
-	}
-
-	// Assert first player is in and then read name
-	if (READUINT8(p) != 0)
+	if (header.numplayers == 0 || header.playerdata[0].playernum != 0)
 		goto fail;
-	if (READUINT8(p) & (DEMO_SPECTATOR|DEMO_BOT))
+	if (header.playerdata[0].flags & (DEMO_SPECTATOR|DEMO_BOT))
 		goto fail;
-	M_Memcpy(dummystaffname, p,16);
-	dummystaffname[16] = '\0';
+	strcpy(dummystaffname, header.playerdata[0].name);
 
 	// Ok, no longer any reason to care, bye
 fail:
+	G_FreeDemoHeader(&header);
 	Z_Free(buffer);
 	return;
 }

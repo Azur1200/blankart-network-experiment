@@ -241,7 +241,7 @@ void CV_LoadNetVars(UINT8 **p);
 void CV_RevertNetVars(void);
 
 #define CV_SaveDemoVars(p) CV_SaveVars(p, true)
-void CV_LoadDemoVars(UINT8 **p);
+void CV_LoadDemoVars(void *p);
 
 // reset cheat netvars after cheats is deactivated
 void CV_ResetCheatNetVars(void);
