@@ -386,6 +386,7 @@ struct mobj_t
 
 	fixed_t friction;
 	fixed_t movefactor;
+	fixed_t gravity;
 	fixed_t lastmomz;
 
 	INT32 fuse; // Does something in P_MobjThinker on reaching 0.

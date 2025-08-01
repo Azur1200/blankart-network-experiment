@@ -2069,7 +2069,8 @@ typedef enum
 	MD2_ITNEXT       = 1<<27,
 	MD2_LASTMOMZ     = 1<<28,
 	MD2_TERRAIN      = 1<<29,
-	MD2_LIGHTLEVEL   = (INT32)(1U<<30),
+	MD2_LIGHTLEVEL   = 1<<30,
+	MD2_GRAVITY      = (INT32)(1U<<31)
 } mobj_diff2_t;
 
 typedef enum
@@ -2375,6 +2376,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff2 |= MD2_LASTMOMZ;
 	if (mobj->terrain != NULL || mobj->terrainOverlay != NULL)
 		diff2 |= MD2_TERRAIN;
+	if (mobj->gravity != FRACUNIT)
+		diff2 |= MD2_GRAVITY;
 
 	if (diff2 != 0)
 		diff |= MD_MORE;
@@ -2640,6 +2643,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	{
 		WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain));
 		WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
+	}
+	if (diff2 & MD2_GRAVITY)
+	{
+		WRITEFIXED(save->p, mobj->gravity);
 	}
 
 	WRITEUINT32(save->p, mobj->mobjnum);
@@ -3881,6 +3888,14 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	else
 	{
 		mobj->terrain = NULL;
+	}
+	if (diff2 & MD2_GRAVITY)
+	{
+		mobj->gravity = READFIXED(save->p);
+	}
+	else
+	{
+		mobj->gravity = FRACUNIT;
 	}
 
 	// Reset some non-synch values
