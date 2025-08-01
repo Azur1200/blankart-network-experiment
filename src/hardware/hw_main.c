@@ -296,7 +296,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	}
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = min(max(light_level, cv_glsecbright.value), 255);
+	light_level = min(max(light_level, cv_secbright.value), 255);
 
 	V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
 	V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
