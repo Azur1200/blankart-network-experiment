@@ -203,9 +203,10 @@ typedef struct
 
 typedef struct
 {
-	char *name;
+	char *name; // NULL = bad netid
 	char *value;
 	boolean stealth;
+	UINT16 errornetid;
 } democvar_t;
 
 typedef struct
@@ -855,9 +856,10 @@ skipfiles:
 	{
 		if (kart)
 		{
-			// TODO: read netvars properly
-			header->cvars[i].name = NULL;
-			READUINT16(dp);
+			UINT16 netid = READUINT16(dp);
+			consvar_t *legacycvar = CV_FindLegacyNetVar(netid);
+			header->cvars[i].name = legacycvar ? strdup(legacycvar->name) : NULL;
+			header->cvars[i].errornetid = netid;
 		}
 		else
 		{
@@ -867,13 +869,6 @@ skipfiles:
 		header->cvars[i].value = strdup((char *)dp);
 		SKIPSTRING(dp);
 		header->cvars[i].stealth = READUINT8(dp);
-	}
-
-	if (kart)
-	{
-		free(header->cvars);
-		header->cvars = NULL;
-		header->numcvars = 0;
 	}
 
 	if (header->demoflags & DF_GRANDPRIX)
@@ -960,7 +955,8 @@ static void G_FreeDemoHeader(demoheader_t *header)
 	{
 		for (UINT16 i = 0; i < header->numcvars; i++)
 		{
-			free(header->cvars[i].name);
+			if (header->cvars[i].name)
+				free(header->cvars[i].name);
 			free(header->cvars[i].value);
 		}
 		free(header->cvars);
@@ -1027,6 +1023,12 @@ void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boole
 	demoheader_t *header = *p;
 	for (UINT16 i = 0; i < header->numcvars; i++)
 	{
+		if (header->cvars[i].name == NULL)
+		{
+			CONS_Alert(CONS_WARNING, "Netvar not found with netid %d\n", header->cvars[i].errornetid);
+			continue;
+		}
+
 		consvar_t *cvar = CV_FindVar(header->cvars[i].name);
 		if (cvar)
 			setvalue(cvar, header->cvars[i].value, header->cvars[i].stealth);
@@ -3314,6 +3316,8 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	pdemo->kartspeed = KARTSPEED_NORMAL; // Default to normal speed
 	for (UINT16 i = 0; i < header.numcvars; i++)
 	{
+		if (header.cvars[i].name == NULL)
+			continue;
 		if (!strcmp(header.cvars[i].name, cv_kartspeed.name))
 		{
 			UINT8 j;

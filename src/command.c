@@ -1393,6 +1393,21 @@ consvar_t *CV_FindVar(const char *name)
 	return NULL;
 }
 
+// Sets up a compat netid for old ass demos.
+static inline UINT16 CV_ComputeLegacyNetid(const char *s)
+{
+	UINT16 ret = 0, i = 0;
+	static UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+
+	while (*s)
+	{
+		ret = (UINT16)(ret + (*s)*premiers[i]);
+		s++;
+		i = (UINT16)((i+1) % 16);
+	}
+	return ret;
+}
+
 /** Finds a net variable based on its identifier number.
   *
   * \param netid The variable's identifier number.
@@ -1407,6 +1422,20 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->netid == netid)
+			return cvar;
+
+	if (netid == 44542) // ouch this hack
+		return &cv_karteliminatelast;
+
+	return NULL;
+}
+
+consvar_t *CV_FindLegacyNetVar(UINT16 netid)
+{
+	consvar_t *cvar;
+
+	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+		if (cvar->compatnetid == netid)
 			return cvar;
 
 	if (netid == 44542) // ouch this hack
@@ -1445,6 +1474,7 @@ void CV_RegisterVar(consvar_t *variable)
 			I_Error("Way too many netvars");
 
 		variable->netid = ++consvar_number_of_netids;
+		variable->compatnetid = CV_ComputeLegacyNetid(variable->name);
 	}
 
 	// link the variable in

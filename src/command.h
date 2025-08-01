@@ -159,6 +159,7 @@ struct consvar_t //NULL, NULL, 0, NULL, NULL |, 0, NULL, NULL, 0, 0, NULL
 	} revert;             // value of netvar before joining netgame
 
 	UINT16 netid; // used internaly : netid for send end receive
+	UINT16 compatnetid; // used internaly : for old demos.
 	                      // used only with CV_NETVAR
 	char changed;         // has variable been changed by the user? 0 = no, 1 = yes
 	consvar_t *next;
@@ -166,7 +167,7 @@ struct consvar_t //NULL, NULL, 0, NULL, NULL |, 0, NULL, NULL, 0, 0, NULL
 
 /* name, defaultvalue, flags, PossibleValue, func */
 #define CVAR_INIT( ... ) \
-{ __VA_ARGS__, 0, NULL, NULL, {0, {NULL}}, 0U, (char)0, NULL }
+{ __VA_ARGS__, 0, NULL, NULL, {0, {NULL}}, 0U, (char)0, (char)0, NULL }
 
 extern consvar_t *consvar_vars; // list of registered console variables
 extern UINT16 consvar_number_of_netids;
@@ -202,6 +203,9 @@ void CV_RegisterVar(consvar_t *variable);
 
 // returns a console variable by name
 consvar_t *CV_FindVar(const char *name);
+
+// compat netvar shit
+consvar_t *CV_FindLegacyNetVar(UINT16 netid);
 
 // sets changed to 0 for every console variable
 void CV_ClearChangedFlags(void);
