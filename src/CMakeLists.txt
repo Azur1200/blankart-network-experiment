@@ -389,6 +389,10 @@ if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	target_link_options(SRB2SDL2 PRIVATE -pg)
 endif()
 
+if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # strip debug symbols into separate file when using gcc or clang.
 # to be consistent with Makefile, don't generate for OS X.
 if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
