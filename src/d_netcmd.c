@@ -6225,7 +6225,7 @@ static void Command_Archivetest_f(void)
 	// test unarchive
 	save.p = save.buffer;
 	CONS_Printf("LUA_UnArchive...\n");
-	LUA_UnArchive(&save, true);
+	LUA_UnArchive(&save, true, false);
 	i = READUINT8(save.p);
 	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
 	{

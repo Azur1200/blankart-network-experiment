@@ -3820,7 +3820,7 @@ void G_DoPlayDemo(char *defdemoname)
 			LUA_ClearState();
 
 		// No modeattacking check, DF_LUAVARS won't be present here.
-		LUA_UnArchive(&demobuf, false);
+		LUA_UnArchive(&demobuf, false, demo.version <= 0x0002);
 	}
 
 	splitscreen = 0;
