@@ -1116,7 +1116,7 @@ static void D_AddFile(char **list, const char *file)
 	list[pnumwadfiles] = newfile;
 }
 
-static inline void D_CleanFile(char **list)
+static void D_CleanFile(char **list)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; list[pnumwadfiles]; pnumwadfiles++)
