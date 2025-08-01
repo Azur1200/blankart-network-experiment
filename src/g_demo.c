@@ -62,7 +62,7 @@ static CV_PossibleValue_t netdemosyncquality_cons_t[] = {{1, "MIN"}, {35, "MAX"}
 consvar_t cv_netdemosyncquality = CVAR_INIT ("netdemo_syncquality", "1", CV_SAVE, netdemosyncquality_cons_t, NULL);
 
 consvar_t cv_netdemosize = CVAR_INIT ("netdemo_size", "6", CV_SAVE, CV_Natural, NULL);
-consvar_t cv_resyncdemo = CVAR_INIT("resyncdemo", "On", 0, CV_OnOff, NULL);
+consvar_t cv_resyncdemo = CVAR_INIT("democonsistency", "On", 0, CV_OnOff, NULL);
 
 boolean nodrawers; // for comparative timing purposes
 boolean noblit; // for comparative timing purposes
@@ -1791,6 +1791,9 @@ void G_ConsGhostTic(INT32 playernum)
 	ziptic_t zt;
 	demobuf.p = G_ReadExtraZipTic(&zt, demobuf.p, demo.version, testmo);
 
+	if (!cv_resyncdemo.value)
+		goto skip;
+
 	// Grab ghost data.
 	if (zt.flags & GZT_XYZ)
 	{
@@ -1870,14 +1873,11 @@ void G_ConsGhostTic(INT32 playernum)
 					CONS_Alert(CONS_WARNING, "Demo playback has desynced (player %s)!\n", player_names[playernum]);
 				demosynced = false;
 
-				if (cv_resyncdemo.value)
-				{
-					P_UnsetThingPosition(testmo);
-					testmo->x = oldghost[playernum].x;
-					testmo->y = oldghost[playernum].y;
-					P_SetThingPosition(testmo);
-					testmo->z = oldghost[playernum].z;
-				}
+				P_UnsetThingPosition(testmo);
+				testmo->x = oldghost[playernum].x;
+				testmo->y = oldghost[playernum].y;
+				P_SetThingPosition(testmo);
+				testmo->z = oldghost[playernum].z;
 
 				if (abs(testmo->z - testmo->floorz) < 4*FRACUNIT)
 					testmo->z = testmo->floorz; // Sync players to the ground when they're likely supposed to be there...
@@ -1903,6 +1903,7 @@ void G_ConsGhostTic(INT32 playernum)
 		}
 	}
 
+skip:
 	if (*demobuf.p == DEMOMARKER)
 	{
 		// end of demo data stream
