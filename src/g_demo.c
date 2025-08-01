@@ -247,7 +247,7 @@ typedef struct
 	UINT8 gametype;
 	UINT8 numlaps;
 
-	UINT8 filecount;
+	UINT8 numfiles;
 	demofile_t *files;
 
 	struct // DF_ATTACKMASK
@@ -471,6 +471,7 @@ static void frame2spr2(ziptic_t *zt, skin_t *skin, UINT32 inframe)
 }
 #undef F
 
+// call G_FreeExtraZipTic, you get the idea
 static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t *mo)
 {
 	boolean kart = version <= 0x0002;
@@ -482,6 +483,7 @@ static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t 
 		ziptic = (ziptic & 0x1f) | ((ziptic & 0x20) << 1);
 
 	zt->flags = ziptic;
+	zt->damagecount = 0;
 
 	if (ziptic & GZT_XYZ)
 	{
@@ -537,7 +539,8 @@ static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t 
 		if (xziptic & EZT_HIT)
 		{ // Resync mob damage.
 			zt->damagecount = READUINT16(dp);
-			zt->damage = malloc(sizeof(zipticdamage_t) * zt->damagecount);
+			if (zt->damagecount)
+				zt->damage = malloc(sizeof(zipticdamage_t) * zt->damagecount);
 			for (UINT16 i = 0; i < zt->damagecount; i++)
 			{
 				zipticdamage_t *damage = &zt->damage[i];
@@ -596,6 +599,16 @@ static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t 
 	}
 
 	return dp;
+}
+
+static void G_FreeExtraZipTic(ziptic_t *zt)
+{
+	if (zt->damagecount)
+		free(zt->damage);
+
+#ifdef PARANOIA
+	memset(zt, 0xff, sizeof(*zt));
+#endif
 }
 
 static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
@@ -711,11 +724,8 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
 	header->numplayers = 0;
-	header->playerdata = NULL;
-	header->filecount = 0;
-	header->files = NULL;
+	header->numfiles = 0;
 	header->numcvars = 0;
-	header->cvars = NULL;
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 
@@ -792,9 +802,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	}
 
 readfiles:
-	header->filecount = READUINT8(dp);
-	header->files = malloc(sizeof(demofile_t) * header->filecount);
-	for (UINT8 i = 0; i < header->filecount; i++)
+	header->numfiles = READUINT8(dp);
+	if (header->numfiles)
+		header->files = malloc(sizeof(demofile_t) * header->numfiles);
+	for (UINT8 i = 0; i < header->numfiles; i++)
 	{
 		char filename[MAX_WADPATH];
 		READSTRINGL(dp, filename, MAX_WADPATH);
@@ -851,7 +862,8 @@ skipfiles:
 
 	// net var data
 	header->numcvars = READUINT16(dp);
-	header->cvars = malloc(sizeof(democvar_t) * header->numcvars);
+	if (header->numcvars)
+		header->cvars = malloc(sizeof(democvar_t) * header->numcvars);
 	for (UINT16 i = 0; i < header->numcvars; i++)
 	{
 		if (kart)
@@ -888,6 +900,7 @@ skipfiles:
 
 	// Load players that were in-game when the map started
 	UINT8 playernum;
+	header->playerdata = NULL;
 	while ((playernum = READUINT8(dp)) != 0xff)
 	{
 		header->playerdata = realloc(header->playerdata, sizeof(demoplayer_t) * ++header->numplayers);
@@ -942,16 +955,14 @@ end:
 
 static void G_FreeDemoHeader(demoheader_t *header)
 {
-	if (header->files)
+	if (header->numfiles)
 	{
-		for (UINT8 i = 0; i < header->filecount; i++)
+		for (UINT8 i = 0; i < header->numfiles; i++)
 			free(header->files[i].filename);
 		free(header->files);
-		header->files = NULL;
-		header->filecount = 0;
 	}
 
-	if (header->cvars)
+	if (header->numcvars)
 	{
 		for (UINT16 i = 0; i < header->numcvars; i++)
 		{
@@ -960,16 +971,14 @@ static void G_FreeDemoHeader(demoheader_t *header)
 			free(header->cvars[i].value);
 		}
 		free(header->cvars);
-		header->cvars = NULL;
-		header->numcvars = 0;
 	}
 
-	if (header->playerdata)
-	{
+	if (header->numplayers)
 		free(header->playerdata);
-		header->playerdata = NULL;
-		header->numplayers = 0;
-	}
+
+#ifdef PARANOIA
+	memset(header, 0xff, sizeof(*header));
+#endif
 }
 
 // and now, the rest of g_demo.c
@@ -1839,6 +1848,8 @@ void G_ConsGhostTic(INT32 playernum)
 		}
 	}
 
+	G_FreeExtraZipTic(&zt);
+
 	if (testmo)
 	{
 		// Re-synchronise
@@ -2107,6 +2118,8 @@ void G_GhostTicker(void)
 			P_RemoveMobj(fmo);
 			P_SetTarget(&fmo, NULL);
 		}
+
+		G_FreeExtraZipTic(&zt);
 
 skippedghosttic:
 		// Tick ghost colors (Super and Mario Invincibility flashing)
@@ -3031,7 +3044,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 	boolean alreadyloaded;
 	UINT8 i, j;
 
-	for (i = 0; i < header->filecount; i++)
+	for (i = 0; i < header->numfiles; i++)
 	{
 		demofile_t *file = &header->files[i];
 		if (!toomany)
@@ -3095,7 +3108,7 @@ static UINT8 G_CheckDemoExtraFiles(demoheader_t *header, boolean quick)
 	UINT8 error = 0;
 
 	filesloaded = 0;
-	for (i = 0; i < header->filecount; ++i)
+	for (i = 0; i < header->numfiles; ++i)
 	{
 		demofile_t *file = &header->files[i];
 
@@ -3708,8 +3721,9 @@ void G_DoPlayDemo(char *defdemoname)
 	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
-	for (demoplayer_t *plr = header.playerdata; plr < header.playerdata + header.numplayers; plr++)
+	for (UINT8 pnum = 0; pnum < header.numplayers; pnum++)
 	{
+		demoplayer_t *plr = &header.playerdata[pnum];
 		UINT8 p = plr->playernum;
 		spectator = !!(plr->flags & DEMO_SPECTATOR);
 		bot = !!(plr->flags & DEMO_BOT);
