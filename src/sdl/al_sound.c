@@ -199,11 +199,11 @@ void I_ShutdownSound(void)
 
 static boolean I_UpdateMusicVolume(void)
 {
-	alSourcef(music, AL_GAIN, music_volume * internal_volume);
+	alSourcef(music, AL_GAIN, music_volume);
 	ALenum err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
-		CONS_Alert(CONS_WARNING, "Error setting music volume: %s\n", GetALError(err));
+		CONS_Alert(CONS_ERROR, "Error setting music volume: %s\n", GetALError(err));
 		return false;
 	}
 
@@ -239,7 +239,7 @@ static bool I_QueueNextSample(bool unqueue)
 	}
 	else
 	{
-		CONS_Alert(CONS_WARNING, "Music is active, but no source is available\n");
+		CONS_Alert(CONS_ERROR, "Music is active, but no source is available\n");
 		return false;
 	}
 
@@ -250,7 +250,7 @@ static bool I_QueueNextSample(bool unqueue)
 		ALenum err = alGetError();
 		if (err != AL_NO_ERROR) // not fatal, we can keep going in this case
 		{
-			CONS_Alert(CONS_WARNING, "Error unqueuing buffer: %s\n", GetALError(err));
+			CONS_Alert(CONS_ERROR, "Error unqueuing buffer: %s\n", GetALError(err));
 			return false;
 		}
 	}
@@ -864,15 +864,43 @@ UINT32 I_GetSongLength(void)
 	if (music == INVALID_HANDLE)
 		return 0;
 
-	ALint value;
-	alGetBufferi(musicbuffers[0], AL_SIZE, &value);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
+#ifdef HAVE_GME
+	if (gme)
 	{
-		CONS_Alert(CONS_ERROR, "Error getting song length: %s\n", GetALError(err));
-		return 0;
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
+
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
+			length = 0;
+		}
+		else
+		{
+			// reconstruct info->play_length, from GME source
+			// we only want intro + 1 loop, not 2
+			length = info->length;
+			if (length <= 0)
+			{
+				length = info->intro_length + info->loop_length; // intro + 1 loop
+				if (length <= 0)
+					length = 150 * 1000; // 2.5 minutes
+			}
+		}
+
+		gme_free_info(info);
+		return max(length, 0);
 	}
-	return value / 2 / SAMPLERATE; // 16-bit, 44.1 khz
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		return (UINT32)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
+#endif
+
+	sf_count_t cur = sf_seek(musicstream, 0, SEEK_CUR);
+	sf_count_t length = sf_seek(musicstream, 0, SEEK_END);
+	sf_seek(musicstream, cur, SEEK_SET);
+	return length / 2 / SAMPLERATE; // 16-bit, 44.1 kHz
 }
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
@@ -1083,7 +1111,6 @@ bool I_LoadSong(char *data, size_t len)
 		}
 	}
 
-	alSourcePlay(music);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
