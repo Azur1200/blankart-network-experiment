@@ -1647,7 +1647,15 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 		LUA_PushUserdata(gL, &states[READUINT16(*p)], META_STATE);
 		break;
 	case ARCH_MOBJ:
-		LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
+		if (compat)
+		{
+			// Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
+			CONS_Alert(CONS_WARNING, "Couldn't read mobj_t\n");
+			*p += sizeof(UINT32);
+			lua_pushnil(gL);
+		}
+		else
+			LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
 		break;
 	case ARCH_PLAYER:
 		LUA_PushUserdata(gL, &players[READUINT8(*p)], META_PLAYER);

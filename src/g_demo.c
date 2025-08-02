@@ -3361,7 +3361,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		// Skin
 		M_Memcpy(temp,extrainfo_p,16);
 		extrainfo_p += 16;
-		pdemo->standings[count].skin = UINT8_MAX;
+		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
 			if (stricmp(skins[i].name, temp) == 0)
 			{
@@ -3372,6 +3372,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		// Color
 		M_Memcpy(temp,extrainfo_p,16);
 		extrainfo_p += 16;
+		pdemo->standings[count].color = SKINCOLOR_NONE;
 		for (i = 0; i < numskincolors; i++)
 			if (!stricmp(skincolors[i].name,temp))				// SRB2kart
 			{

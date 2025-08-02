@@ -4124,7 +4124,7 @@ void MD_DrawReplayStartMenu(void)
 			V_DrawString(BASEVIDWIDTH-92, STARTY + i*20 + 9, V_SNAPTOTOP, va("%d", demolist[dir_on[menudepthleft]].standings[i].timeorscore));
 
 		// Character face!
-		if (demolist[dir_on[menudepthleft]].standings[0].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[0].skin].facewant) != LUMPERROR)
+		if (demolist[dir_on[menudepthleft]].standings[i].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[i].skin].facewant) != LUMPERROR)
 		{
 			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[i].skin][FACE_RANK];
 			colormap = R_GetTranslationColormap(
