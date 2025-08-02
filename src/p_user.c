@@ -2224,7 +2224,7 @@ void P_MovePlayer(player_t *player)
 	if ((player->invincibilitytimer > 0) &&
 		(((leveltime %
 		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
-		 (invintype == KARTINVIN_LEGACY)))
+		 (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}

@@ -386,6 +386,18 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"chainingactive")) {
 		lua_pushinteger(L, chainingactive);
 		return 1;
+	} else if (fastcmp(word,"slipdashactive")) {
+		lua_pushinteger(L, slipdashactive);
+		return 1;
+	} else if (fastcmp(word,"slopeboostactive")) {
+		lua_pushinteger(L, slopeboostactive);
+		return 1;
+	} else if (fastcmp(word,"purpledriftactive")) {
+		lua_pushinteger(L, purpledriftactive);
+		return 1;
+	} else if (fastcmp(word,"invintype")) {
+		lua_pushinteger(L, invintype);
+		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, hyubgone);
 		return 1;

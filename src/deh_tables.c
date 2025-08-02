@@ -1570,5 +1570,10 @@ struct int_const_s const INT_CONST[] = {
 	{"FACE_MINIMAP", FACE_MINIMAP},
 	{"NUMFACES", NUMFACES},
 
+	// invintype
+	{"KARTINVIN_LEGACY", KARTINVIN_LEGACY},
+	{"KARTINVIN_ALTERN", KARTINVIN_ALTERN},
+
+
 	{NULL,0}
 };

@@ -345,6 +345,7 @@ enum player_e
 	player_splitscreenindex,
 	player_bumpertime,
 	player_ping,
+	player_packetloss,
 #ifdef HWRENDER
 	player_fovadd,
 #endif
@@ -530,6 +531,7 @@ static const char *const player_opt[] = {
 	"splitscreenindex",
 	"bumpertime",
 	"ping",
+	"packetloss",
 #ifdef HWRENDER
 	"fovadd",
 #endif
@@ -1116,6 +1118,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
+		break;
+	case player_packetloss:
+		lua_pushinteger(L, playerpacketlosstable[plr - players]);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1735,6 +1740,10 @@ static int player_set(lua_State *L)
 	case player_bumpertime:
 		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
 		break;
+	case player_ping:
+		return NOSET;
+	case player_packetloss:
+		return NOSET;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);

@@ -694,7 +694,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t2Condition = false;
 
 	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (invintype == KARTINVIN_LEGACY)
+	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -706,7 +706,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (invintype == KARTINVIN_LEGACY)
+	else if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 	{
 		if (t1Condition == true && t2Condition == false)
 		{

@@ -1116,7 +1116,7 @@ static void D_AddFile(char **list, const char *file)
 	list[pnumwadfiles] = newfile;
 }
 
-static inline void D_CleanFile(char **list)
+static void D_CleanFile(char **list)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; list[pnumwadfiles]; pnumwadfiles++)
@@ -1447,7 +1447,9 @@ void D_SRB2Main(void)
 
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
+	{
 		F_InitMenuPresValues(true);
+	}
 
 	//---------------------------------------------------- READY TIME
 	// we need to check for dedicated before initialization of some subsystems
