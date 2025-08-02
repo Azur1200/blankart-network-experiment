@@ -8125,9 +8125,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_HandleDelayedHitByEm(player);
 
-	if (!(gametyperules & GTR_NOCOUNTDOWN))
-		K_RaceStart(player);
-
 	// Squishing
 	// If a Grow player or a sector crushes you, get flattened instead of being killed.
 	if (player->squishedtimer <= 0)
@@ -11459,6 +11456,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		if (leveltime % 8 == 0)
 			S_StartSound(player->mo, sfx_s224);
 	}
+
+	if (!(gametyperules & GTR_NOCOUNTDOWN))
+		K_RaceStart(player);
 
 	if (onground == false)
 	{
