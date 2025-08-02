@@ -242,6 +242,7 @@ static bool I_QueueNextSample(bool unqueue)
 		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
 
 	bool stereo = true;
+	size_t samplerate = SAMPLERATE;
 	size_t count;
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle != NULL)
@@ -259,6 +260,8 @@ static bool I_QueueNextSample(bool unqueue)
 			// TODO: looppoints
 			sf_seek(musicstream, 0, SEEK_SET);
 		}
+
+		samplerate = musicinfo.samplerate;
 	}
 	else
 	{
@@ -278,7 +281,7 @@ static bool I_QueueNextSample(bool unqueue)
 		}
 	}
 
-	alBufferData(musicbuffers[bufferindex], stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, stream, count, SAMPLERATE);
+	alBufferData(musicbuffers[bufferindex], stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, stream, count, samplerate);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
@@ -536,6 +539,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
 	bool stereo = false;
 	char *data = ds2chunk(input, &size);
+	size_t samplerate = SAMPLERATE;
 	if (data == NULL)
 	{
 #ifdef HAVE_GME
@@ -658,6 +662,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 				}
 			}
 			size = pos;
+			samplerate = info.samplerate;
 			sf_close(snd);
 		}
 	}
@@ -671,7 +676,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 		Z_Free(data);
 		return INVALID_HANDLE;
 	}
-	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, SAMPLERATE);
+	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, samplerate);
 	Z_Free(data);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
@@ -927,7 +932,7 @@ UINT32 I_GetSongLength(void)
 	sf_count_t cur = sf_seek(musicstream, 0, SEEK_CUR);
 	sf_count_t length = sf_seek(musicstream, 0, SEEK_END);
 	sf_seek(musicstream, cur, SEEK_SET);
-	return length / 2 / SAMPLERATE; // 16-bit, 44.1 kHz
+	return length / 2 / musicinfo.samplerate;
 }
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
