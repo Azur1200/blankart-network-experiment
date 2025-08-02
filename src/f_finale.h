@@ -76,6 +76,7 @@ boolean F_GetPromptHideHud(fixed_t y);
 
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
+void F_CacheTitleScreen(void);
 void F_StartCredits(void);
 void F_BlanStartCredits(void);
 

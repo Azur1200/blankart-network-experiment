@@ -1447,7 +1447,9 @@ void D_SRB2Main(void)
 
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
+	{
 		F_InitMenuPresValues(true);
+	}
 
 	//---------------------------------------------------- READY TIME
 	// we need to check for dedicated before initialization of some subsystems
