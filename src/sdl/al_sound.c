@@ -127,6 +127,29 @@ static const char *GetALError(ALenum error)
 	}
 }
 
+#if defined (HAVE_GME) && defined (HAVE_ZLIB)
+static const char* GetZLibError(int zErr)
+{
+	switch (zErr)
+	{
+		case Z_ERRNO:
+			return "Z_ERRNO";
+		case Z_STREAM_ERROR:
+			return "Z_STREAM_ERROR";
+		case Z_DATA_ERROR:
+			return "Z_DATA_ERROR";
+		case Z_MEM_ERROR:
+			return "Z_MEM_ERROR";
+		case Z_BUF_ERROR:
+			return "Z_BUF_ERROR";
+		case Z_VERSION_ERROR:
+			return "Z_VERSION_ERROR";
+		default:
+			return "unknown error";
+	}
+}
+#endif
+
 void I_StartupSound(void)
 {
 	if (sound_started)
@@ -247,7 +270,7 @@ static bool I_QueueNextSample(bool unqueue)
 	if (unqueue)
 	{
 		alSourceUnqueueBuffers(music, 1, &musicbuffers[bufferindex]);
-		ALenum err = alGetError();
+		err = alGetError();
 		if (err != AL_NO_ERROR) // not fatal, we can keep going in this case
 		{
 			CONS_Alert(CONS_ERROR, "Error unqueuing buffer: %s\n", GetALError(err));
@@ -332,7 +355,7 @@ void I_UpdateSound(void)
 		}
 		else
 		{
-			UINT8 delta = abs(fading_target - fading_source);
+			UINT8 delta = fabsf(fading_target - fading_source);
 			fixed_t factor = FixedDiv(fading_duration - fading_timer, fading_duration);
 			if (fading_target < fading_source)
 				internal_volume = max(min(internal_volume, fading_source - FixedMul(delta, factor)), fading_target);
@@ -512,10 +535,13 @@ static SF_VIRTUAL_IO virtual_io =
 static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
 	bool stereo = false;
-	void *data = ds2chunk(input, &size);
+	char *data = ds2chunk(input, &size);
 	if (data == NULL)
 	{
 #ifdef HAVE_GME
+		Music_Emu *emu;
+		gme_info_t *gme_info;
+
 		// VGZ format
 		if (((UINT8 *)input)[0] == 0x1F
 			&& ((UINT8 *)input)[1] == 0x8B)
@@ -551,23 +577,23 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 
 						gme_start_track(emu, 0);
 						gme_set_equalizer(emu, &eq);
-						gme_track_info(emu, &info, 0);
+						gme_track_info(emu, &gme_info, 0);
 
 						mem = Z_Malloc(len, PU_SOUND, 0);
 						gme_play(emu, len >> 1, mem);
-						gme_free_info(info);
+						gme_free_info(gme_info);
 						gme_delete(emu);
 
-						data = mem;
+						data = (char *)mem;
 						size = len;
 					}
 				}
 				else
-					CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", get_zlib_error(zErr), stream.msg);
+					CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", GetZLibError(zErr), stream.msg);
 				(void)inflateEnd(&stream);
 			}
 			else // Hold up, zlib's got a problem
-				CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", get_zlib_error(zErr), stream.msg);
+				CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
 			Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
 #else
 			return INVALID_HANDLE; // No zlib support
@@ -581,16 +607,15 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 
 			gme_start_track(emu, 0);
 			gme_set_equalizer(emu, &eq);
-			gme_track_info(emu, &info, 0);
+			gme_track_info(emu, &gme_info, 0);
 
-			len = (info->play_length * 441 / 10) << 2;
-			mem = Z_Malloc(len, PU_SOUND, 0);
-			gme_play(emu, len >> 1, mem);
-			gme_free_info(info);
+			size = (gme_info->play_length * 441 / 10) << 2;
+			mem = Z_Malloc(size, PU_SOUND, 0);
+			gme_play(emu, size >> 1, mem);
+			gme_free_info(gme_info);
 			gme_delete(emu);
 
-			data = mem;
-			size = len;
+			data = (char *)mem;
 		}
 #endif
 
@@ -600,7 +625,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			{
 				.data = input,
 				.cur = input,
-				.end = input + size,
+				.end = (char *)input + size,
 			};
 			SF_INFO info =
 			{
@@ -870,6 +895,8 @@ UINT32 I_GetSongLength(void)
 		gme_info_t *info;
 		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
 
+		size_t length;
+
 		if (gme_e != NULL)
 		{
 			CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
@@ -946,6 +973,8 @@ static bool InitializeMusicStreaming(void *input, size_t size)
 	// Not a doom sound? Try something else.
 #ifdef HAVE_GME
 	// VGZ format
+
+	gme_info_t *gme_info;
 	if (((UINT8 *)input)[0] == 0x1F
 		&& ((UINT8 *)input)[1] == 0x8B)
 	{
@@ -968,9 +997,10 @@ static bool InitializeMusicStreaming(void *input, size_t size)
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
-			if (zErr == Z_STREAM_END) {
+			if (zErr == Z_STREAM_END)
+			{
 				// Run GME on new data
-				if (!gme_open_data(inflatedData, inflatedLen, &emu, SAMPLERATE))
+				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
 					short *mem;
 					UINT32 len;
@@ -978,54 +1008,47 @@ static bool InitializeMusicStreaming(void *input, size_t size)
 
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
 
-					gme_start_track(emu, 0);
-					gme_set_equalizer(emu, &eq);
-					gme_track_info(emu, &info, 0);
+					gme_start_track(gme, 0);
+					gme_set_equalizer(gme, &eq);
+					gme_track_info(gme, &gme_info, 0);
 
 					mem = Z_Malloc(len, PU_SOUND, 0);
-					gme_play(emu, len >> 1, mem);
-					gme_free_info(info);
-					gme_delete(emu);
-
-					data = mem;
-					size = len;
+					gme_play(gme, len >> 1, mem);
+					gme_free_info(gme_info);
 				}
 			}
 			else
-				CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", get_zlib_error(zErr), stream.msg);
+				CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", GetZLibError(zErr), stream.msg);
 			(void)inflateEnd(&stream);
 		}
 		else // Hold up, zlib's got a problem
-			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", get_zlib_error(zErr), stream.msg);
+			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
 		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
 #else
 		return INVALID_HANDLE; // No zlib support
 #endif
 	}
 	// Try to read it as a GME sound
-	else if (!gme_open_data(input, size, &emu, SAMPLERATE))
+	else if (!gme_open_data(input, size, &gme, SAMPLERATE))
 	{
 		short *mem;
+		UINT32 len;
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 
-		gme_start_track(emu, 0);
-		gme_set_equalizer(emu, &eq);
-		gme_track_info(emu, &info, 0);
+		gme_start_track(gme, 0);
+		gme_set_equalizer(gme, &eq);
+		gme_track_info(gme, &gme_info, 0);
 
-		len = (info->play_length * 441 / 10) << 2;
+		len = (gme_info->play_length * 441 / 10) << 2;
 		mem = Z_Malloc(len, PU_SOUND, 0);
-		gme_play(emu, len >> 1, mem);
-		gme_free_info(info);
-		gme_delete(emu);
-
-		data = mem;
-		size = len;
+		gme_play(gme, len >> 1, mem);
+		gme_free_info(gme_info);
 	}
 #endif
 
 	musicfile.data = input;
 	musicfile.cur = input;
-	musicfile.end = input + size;
+	musicfile.end = (char *)input + size;
 	musicinfo.frames = 1,
 	musicinfo.samplerate = SAMPLERATE,
 	musicinfo.channels = 1,
