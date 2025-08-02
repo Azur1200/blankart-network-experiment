@@ -408,69 +408,6 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 	return dp;
 }
 
-#define F(x) case x - 'A':
-static void frame2spr2(ziptic_t *zt, skin_t *skin, UINT32 inframe)
-{
-	UINT8 spr2, outframe = 0;
-	switch (inframe & FF_FRAMEMASK)
-	{
-	F('A') F('B')
-		spr2 = SPR2_STIN;
-		outframe = inframe & 1;
-		break;
-	F('C') F('D')
-		spr2 = SPR2_STIL;
-		outframe = inframe & 1;
-		break;
-	F('E') F('F')
-		spr2 = SPR2_STIR;
-		outframe = inframe & 1;
-		break;
-	F('G')
-		spr2 = SPR2_SLWN;
-		break;
-	F('H')
-		spr2 = SPR2_SLWL;
-		break;
-	F('I')
-		spr2 = SPR2_SLWR;
-		break;
-	F('J')
-		spr2 = SPR2_FSTN;
-		break;
-	F('K')
-		spr2 = SPR2_FSTL;
-		break;
-	F('L')
-		spr2 = SPR2_FSTR;
-		break;
-	F('M') F('N')
-		spr2 = SPR2_DRLN;
-		outframe = inframe & 1;
-		break;
-	F('O') F('P')
-		spr2 = SPR2_DRRN;
-		outframe = inframe & 1;
-		break;
-	F('Q')
-		spr2 = SPR2_SPIN;
-		break;
-	F('R')
-		spr2 = SPR2_KART;
-		break;
-	F('S')
-		spr2 = SPR2_SIGN;
-		break;
-	default:
-		spr2 = SPR2_KART;
-		outframe = inframe - 18; // not 19! frame 0 is squish
-		break;
-	}
-	zt->frame = (inframe & ~FF_FRAMEMASK) | outframe;
-	zt->spr2 = P_GetSkinSprite2(skin, spr2, NULL);
-}
-#undef F
-
 // call G_FreeExtraZipTic, you get the idea
 static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t *mo)
 {
@@ -509,7 +446,7 @@ static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t 
 	{
 		if (kart)
 		{
-			frame2spr2(zt, mo->skin, READUINT8(dp));
+			zt->spr2 = P_KartFrameToSprite2(mo->skin, READUINT8(dp), &zt->frame);
 			zt->flags |= GZT_SPR2;
 		}
 		else
@@ -1851,8 +1788,6 @@ void G_ConsGhostTic(INT32 playernum)
 		}
 	}
 
-	G_FreeExtraZipTic(&zt);
-
 	if (testmo)
 	{
 		// Re-synchronise
@@ -1904,6 +1839,7 @@ void G_ConsGhostTic(INT32 playernum)
 	}
 
 skip:
+	G_FreeExtraZipTic(&zt);
 	if (*demobuf.p == DEMOMARKER)
 	{
 		// end of demo data stream

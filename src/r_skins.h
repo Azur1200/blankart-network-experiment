@@ -96,6 +96,7 @@ void R_PatchSkins(UINT16 wadnum);
 void R_AddSkins(UINT16 wadnum);
 
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
+UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
 #ifdef __cplusplus
 } // extern "C"
