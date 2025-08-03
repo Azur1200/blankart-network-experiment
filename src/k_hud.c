@@ -762,7 +762,7 @@ patch_t *K_getItemMulPatch(boolean small)
 }
 
 // This version of the function was prototyped in Lua by Nev3r ... a HUGE thank you goes out to them!
-void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean reverse)
+void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean reverse)
 {
 #define NEWTAN(x) FINETANGENT(((x + ANGLE_90) >> ANGLETOFINESHIFT) & 4095) // tan function used by Lua
 #define NEWCOS(x) FINECOSINE((x >> ANGLETOFINESHIFT) & FINEMASK)
@@ -776,7 +776,7 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 	fixed_t fovDiff, fov, fovTangent, fg;
 
 	fixed_t h;
-	INT32 da;
+	INT32 da, dp;
 
 	UINT8 cameraNum = R_GetViewNumber();
 
@@ -836,11 +836,21 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 
 	// Determine viewpoint factors.
 	h = R_PointToDist2(point->x, point->y, viewx, viewy);
-	da = AngleDeltaSigned(viewpointAngle, R_PointToAngle2(point->x, point->y, viewx, viewy));
+	da = AngleDeltaSigned(viewpointAngle, R_PointToAngle2(viewx, viewy, point->x, point->y));
+	dp = AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, viewz));
+
+	if (reverse)
+	{
+		da = -(da);
+	}
 
 	// Set results relative to top left!
 	result->x = FixedMul(NEWTAN(da), fg);
-	result->y = FixedMul((NEWTAN(viewpointAiming) - FixedDiv((viewz - point->z), 1 + FixedMul(NEWCOS(da), h))), fg);
+	result->y = FixedMul((NEWTAN(viewpointAiming) - FixedDiv((point->z - viewz), 1 + FixedMul(NEWCOS(da), h))), fg);
+
+	result->angle = da;
+	result->pitch = dp;
+	result->fov = fg;
 
 	// Rotate for screen roll...
 	if (viewpointRoll)
@@ -863,7 +873,7 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 
 	result->scale = FixedDiv(screenHalfW, h+1);
 
-	result->onScreen = ((abs(da) > ANG60) || (abs(AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, (viewz - point->z)))) > ANGLE_45));
+	result->onScreen = !((abs(da) > ANG60) || (abs(AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, (viewz - point->z)))) > ANGLE_45));
 
 	// Cheap dirty hacks for some split-screen related cases
 	if (result->x < 0 || result->x > (screenWidth << FRACBITS))
@@ -2915,7 +2925,7 @@ static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 {
 	UINT16 chatcolor = skincolors[SKINCOLOR_ORANGE].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\n   v");
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\n     v");
 }
 
 static const char *K_StringTypingDot(player_t *p)

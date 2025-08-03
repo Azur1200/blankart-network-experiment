@@ -67,11 +67,13 @@ struct trackingResult_t
 	fixed_t x, y;
 	fixed_t scale;
 	boolean onScreen;
+	INT32 angle, pitch;
+	fixed_t fov;
 };
 
 void K_RegisterKartHUDStuff(void);
 
-void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean reverse);
+void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean reverse);
 
 typedef struct
 {
