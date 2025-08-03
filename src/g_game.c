@@ -3839,17 +3839,17 @@ tryagain:
 			virtlump_t *vLump;
 			lumpnum_t l;
 
-			vRes = vres_GetMap(mapheaderinfo[ix+1]->lumpnum);
+			vRes = vres_GetMap(mapheaderinfo[ix]->lumpnum);
 
 			for (int i = 0; i < 10; i++)
 			{
-				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix+1]->lumpname,i));
+				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix]->lumpname,i));
 
 				if (vLump != NULL)
 					break;
 			}
 
-			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix+1]->lumpname))) == LUMPERROR))
+			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix]->lumpname))) == LUMPERROR))
 			{
 				vres_Free(vRes);
 				continue;

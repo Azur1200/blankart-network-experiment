@@ -5674,7 +5674,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	}
 
 	ACS_UnArchive(save);
-	LUA_UnArchive(save, true);
+	LUA_UnArchive(save, true, false);
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());

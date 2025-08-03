@@ -22,8 +22,6 @@
 extern "C" {
 #endif
 
-extern UINT8 *demo_p;
-
 // ======================================
 // DEMO playback/recording related stuff.
 // ======================================
@@ -133,6 +131,8 @@ extern UINT8 demo_writerng;
 #define DXD_PST_SPECTATING 0x02
 #define DXD_PST_LEFT       0x03
 
+void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boolean));
+
 // Record/playback tics
 void G_ReadDemoExtraData(void);
 void G_WriteDemoExtraData(void);
@@ -181,6 +181,7 @@ extern demoghost *ghosts;
 
 void G_DeferedPlayDemo(const char *demo);
 void G_DoPlayDemo(char *defdemoname);
+void G_SetupDemoPlayer(INT32 i);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
 void G_UpdateStaffGhostName(lumpnum_t l);

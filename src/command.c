@@ -1393,6 +1393,21 @@ consvar_t *CV_FindVar(const char *name)
 	return NULL;
 }
 
+// Sets up a compat netid for old ass demos.
+static inline UINT16 CV_ComputeLegacyNetid(const char *s)
+{
+	UINT16 ret = 0, i = 0;
+	static UINT16 premiers[16] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53};
+
+	while (*s)
+	{
+		ret = (UINT16)(ret + (*s)*premiers[i]);
+		s++;
+		i = (UINT16)((i+1) % 16);
+	}
+	return ret;
+}
+
 /** Finds a net variable based on its identifier number.
   *
   * \param netid The variable's identifier number.
@@ -1407,6 +1422,20 @@ static consvar_t *CV_FindNetVar(UINT16 netid)
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->netid == netid)
+			return cvar;
+
+	if (netid == 44542) // ouch this hack
+		return &cv_karteliminatelast;
+
+	return NULL;
+}
+
+consvar_t *CV_FindLegacyNetVar(UINT16 netid)
+{
+	consvar_t *cvar;
+
+	for (cvar = consvar_vars; cvar; cvar = cvar->next)
+		if (cvar->compatnetid == netid)
 			return cvar;
 
 	if (netid == 44542) // ouch this hack
@@ -1445,6 +1474,7 @@ void CV_RegisterVar(consvar_t *variable)
 			I_Error("Way too many netvars");
 
 		variable->netid = ++consvar_number_of_netids;
+		variable->compatnetid = CV_ComputeLegacyNetid(variable->name);
 	}
 
 	// link the variable in
@@ -1800,34 +1830,6 @@ ReadNetVar (UINT8 **p, char **return_value, boolean *return_stealth)
 	return cvar;
 }
 
-static consvar_t *
-ReadDemoVar (UINT8 **p, char **return_value, boolean *return_stealth)
-{
-	char   *name;
-	char   *val;
-	boolean stealth;
-
-	consvar_t *cvar;
-
-	name    = (char *)*p;
-	SKIPSTRING (*p);
-	val     = (char *)*p;
-	SKIPSTRING (*p);
-	stealth = READUINT8  (*p);
-
-	cvar = CV_FindVar(name);
-
-	if (cvar)
-	{
-		(*return_value)   = val;
-		(*return_stealth) = stealth;
-	}
-	else
-		CONS_Alert(CONS_WARNING, "Netvar not found with name %s\n", name);
-
-	return cvar;
-}
-
 static void Got_NetVar(UINT8 **p, INT32 playernum)
 {
 	consvar_t *cvar;
@@ -1903,13 +1905,18 @@ static void CV_LoadVars(UINT8 **p,
 		}
 	}
 
-	count = READUINT16(*p);
-	while (count--)
+	if (got == NULL)
+		G_LoadDemoCvars((void **)p, Setvalue);
+	else
 	{
-		cvar = (*got)(p, &val, &stealth);
+		count = READUINT16(*p);
+		while (count--)
+		{
+			cvar = (*got)(p, &val, &stealth);
 
-		if (cvar)
-			Setvalue(cvar, val, stealth);
+			if (cvar)
+				Setvalue(cvar, val, stealth);
+		}
 	}
 
 	serverloading = false;
@@ -1947,9 +1954,9 @@ void CV_LoadNetVars(UINT8 **p)
 	CV_LoadVars(p, ReadNetVar);
 }
 
-void CV_LoadDemoVars(UINT8 **p)
+void CV_LoadDemoVars(void *p)
 {
-	CV_LoadVars(p, ReadDemoVar);
+	CV_LoadVars((UINT8 **)&p, NULL);
 }
 
 static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth);

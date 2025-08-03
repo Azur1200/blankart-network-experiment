@@ -8378,6 +8378,9 @@ static void P_InitPlayers(void)
 			else
 				G_SpawnPlayer(i, false);
 		}
+
+		if (demo.playback)
+			G_SetupDemoPlayer(i);
 	}
 	K_UpdateClusterPoints();
 	K_UpdateAllPlayerPositions();
