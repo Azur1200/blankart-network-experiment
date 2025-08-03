@@ -6442,7 +6442,7 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 	x = BASEVIDWIDTH/2 - w/2;
 	y = y + 60 - i;
 
-	if ((levellistmode != LLM_TIMEATTACK) && (item->cvar == &cv_nextmap)) // so it doesent show in record attack menu
+	if ((levellistmode != LLM_TIMEATTACK) && (levellistmode != LLM_ITEMBREAKER) && (item->cvar == &cv_nextmap)) // so it doesent show in record attack menu
 	{
 		char encoretoggle[40] = {0};
 		const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][0]) : NULL;

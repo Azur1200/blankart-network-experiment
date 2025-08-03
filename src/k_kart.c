@@ -1649,6 +1649,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// I'm returning via the exact opposite, however, to forgo having another bracket embed. Same result either way, I think.
 	// Finally, if you get past this check, now you can actually start calculating what item you get.
 	if ((cmd->buttons & BT_ATTACK) && (player->itemroulette >= roulettestop)
+		&& (K_RingsActive() || (modeattacking == ATTACKING_NONE))
 		&& !(player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT|IF_USERINGS)))
 	{
 		// Mashing reduces your chances for the good items
