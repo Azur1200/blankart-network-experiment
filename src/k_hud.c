@@ -2915,7 +2915,7 @@ static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 {
 	UINT16 chatcolor = skincolors[SKINCOLOR_ORANGE].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\nv");
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\n   v");
 }
 
 static const char *K_StringTypingDot(player_t *p)
