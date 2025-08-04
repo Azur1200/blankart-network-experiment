@@ -185,6 +185,7 @@ typedef struct textcmdtic_s
 	struct textcmdtic_s *next;
 } textcmdtic_t;
 
+static ticcmd_t playercmds[MAXPLAYERS];
 ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 static textcmdtic_t *textcmds[TEXTCMD_HASH_SIZE] = {NULL};
 
@@ -4677,15 +4678,8 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
 				break;
 			
-			// If we already received a ticcmd for this tic, just submit it for the next one.
-			tic_t faketic = maketic;
-
-			if ((!!(netcmds[maketic % BACKUPTICS][netconsole].flags & TICCMD_RECEIVED))
-				&& (maketic - firstticstosend < BACKUPTICS - 1))
-				faketic++;
-
-			// Copy ticcmd
-			G_MoveTiccmd(&netcmds[faketic%BACKUPTICS][netconsole], &netbuffer->u.clientpak.cmd, 1);
+			// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
+			G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
 
 			// Check ticcmd for "speed hacks"
 			if (CheckForSpeedHacks((UINT8)netconsole))
@@ -4697,8 +4691,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer2[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%BACKUPTICS][(UINT8)nodetoplayer2[node]],
-					&netbuffer->u.client2pak.cmd2, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer2[node]))
 					break;
@@ -4708,8 +4701,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
 				&& (nodetoplayer3[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%BACKUPTICS][(UINT8)nodetoplayer3[node]],
-					&netbuffer->u.client3pak.cmd3, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer3[node]))
 					break;
@@ -4718,8 +4710,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if ((netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)
 				&& (nodetoplayer4[node] >= 0))
 			{
-				G_MoveTiccmd(&netcmds[faketic%BACKUPTICS][(UINT8)nodetoplayer4[node]],
-					&netbuffer->u.client4pak.cmd4, 1);
+				G_MoveTiccmd(&playercmds[(UINT8)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
 
 				if (CheckForSpeedHacks((UINT8)nodetoplayer4[node]))
 					break;
@@ -5550,6 +5541,9 @@ static void SV_Maketic(void)
 {
 	INT32 i;
 
+	// Moved here so bots and packetloss indication doesn't break....
+	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
+
 	PS_ResetBotInfo();
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -5574,22 +5568,11 @@ static void SV_Maketic(void)
 		// We didn't receive this tic
 		if ((netcmds[maketic % BACKUPTICS][i].flags & TICCMD_RECEIVED) == 0)
 		{
-			ticcmd_t *    ticcmd = &netcmds[(maketic    ) % BACKUPTICS][i];
-			ticcmd_t *prevticcmd = &netcmds[(maketic - 1) % BACKUPTICS][i];
-
-			{
-				DEBFILE(va("MISS tic%4d for player %d\n", maketic, i));
-				// Copy the input from the previous tic
-				*ticcmd = *prevticcmd;
-				ticcmd->flags &= ~TICCMD_RECEIVED;
-			}
-
 			// packetloss[i][leveltime%PACKETMEASUREWINDOW] = (cmd->flags & TICCMD_RECEIVED) ? false : true;
 			packetloss[i][maketic%PACKETMEASUREWINDOW] = true;
 		}
 	}
 
-	// all tic are now proceed make the next
 	maketic++;
 }
 
