@@ -883,12 +883,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->exiting)
 				return;
 
-			if (player->bumpertime <= (TICRATE/2)-5)
+			if (player->bumpertime < TICRATE/4)
 			{
-				S_StartSound(toucher, special->info->seesound);
 				angle_t fa;
 				fixed_t xspeed, yspeed;
 				const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
+
+				S_StartSound(toucher, special->info->seesound);
 
 				player->bumpertime = TICRATE/2;
 
@@ -915,7 +916,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				P_ResetPlayer(player);
 
-				P_SetPlayerMobjState(toucher, S_KART_STILL);
+				P_SetPlayerMobjState(toucher, S_KART_STILL); // SRB2kart - was S_PLAY_FALL1
 			}
 			return;
 
