@@ -1997,7 +1997,6 @@ static void K_HandleLapIncrement(player_t *player)
 			player->lastsafestarpost = 0;
 			player->laps++;
 
-
 			if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
 			{
 				// SRB2Kart 281118
@@ -2042,9 +2041,6 @@ static void K_HandleLapIncrement(player_t *player)
 				player->karthud[khud_lapanimation] = 80;
 			}
 
-			if (netgame && player->laps > numlaps)
-				CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
-
 			if (P_IsDisplayPlayer(player))
 			{
 				if (player->laps == numlaps) // final lap
@@ -2072,6 +2068,8 @@ static void K_HandleLapIncrement(player_t *player)
 			{
 				P_DoPlayerExit(player);
 				P_SetupSignExit(player);
+				if (netgame)
+					CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 			}
 
 			if (player->laps > player->latestlap)
@@ -2096,7 +2094,8 @@ static void K_HandleLapIncrement(player_t *player)
 				player->latestlap = player->laps;
 			}
 
-			thwompsactive = true; // Lap 2 effects
+			if (player->laps > 1)
+				thwompsactive = true; // Lap 2 effects
 			player->grieftime = 0;
 
 			lowestLap = P_FindLowestLap();
