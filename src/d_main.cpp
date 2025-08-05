@@ -687,6 +687,8 @@ static bool D_Display(void)
 	else
 		wipetypepost = -1;
 
+	NetUpdate(); // send out any new accumulation
+
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
 	{

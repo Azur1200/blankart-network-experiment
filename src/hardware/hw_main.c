@@ -5802,6 +5802,9 @@ void HWR_RenderSkyboxView(player_t *player)
 	// set window position
 	HWR_ShiftViewPort();
 
+	// check for new console commands.
+	NetUpdate();
+
 	gl_viewx = FIXED_TO_FLOAT(dup_viewx);
 	gl_viewy = FIXED_TO_FLOAT(dup_viewy);
 	gl_viewz = FIXED_TO_FLOAT(dup_viewz);
@@ -5876,6 +5879,9 @@ void HWR_RenderSkyboxView(player_t *player)
 	if (cv_glbatching.value)
 		HWR_RenderBatches();
 
+	// Check for new console commands.
+	NetUpdate();
+
 #ifdef ALAM_LIGHTING
 	//14/11/99: Hurdler: moved here because it doesn't work with
 	// subsector, see other comments;
@@ -5898,6 +5904,9 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	HWD.pfnSetTransform(NULL);
 	HWD.pfnUnSetShader();
+
+	// Check for new console commands.
+	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
@@ -5985,6 +5994,9 @@ void HWR_RenderPlayerView(void)
 		}
 	}
 
+	// check for new console commands.
+	NetUpdate();
+
 	gl_viewx = FIXED_TO_FLOAT(dup_viewx);
 	gl_viewy = FIXED_TO_FLOAT(dup_viewy);
 	gl_viewz = FIXED_TO_FLOAT(dup_viewz);
@@ -6066,6 +6078,9 @@ void HWR_RenderPlayerView(void)
 	if (cv_glbatching.value)
 		HWR_RenderBatches();
 
+	// Check for new console commands.
+	NetUpdate();
+
 #ifdef ALAM_LIGHTING
 	//14/11/99: Hurdler: moved here because it doesn't work with
 	// subsector, see other comments;
@@ -6098,6 +6113,9 @@ void HWR_RenderPlayerView(void)
 	HWD.pfnUnSetShader();
 
 	HWR_DoPostProcessor(player);
+
+	// Check for new console commands.
+	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
