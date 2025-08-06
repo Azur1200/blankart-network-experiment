@@ -31,6 +31,18 @@ extern consvar_t cv_resyncdemo;
 
 extern tic_t demostarttime;
 
+extern UINT32 raflags;
+typedef enum
+{
+	RAF_RINGS			= 1<<0,
+	RAF_STACKING		= 1<<1,
+	RAF_CHAINING		= 1<<2,
+	RAF_SLIPDASH		= 1<<3,
+	RAF_PURPLEDRIFT		= 1<<4,
+	RAF_SLOPEBOOST		= 1<<5,
+	// up to 1<<31 is free
+} raflags_t;
+
 // Publicly-accessible demo vars
 struct demovars_s {
 	char titlename[65];

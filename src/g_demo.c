@@ -72,6 +72,7 @@ static char demoname[MAX_WADPATH];
 static savebuffer_t demobuf = {0};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 demoflags;
+UINT32 raflags = 0; // Time to do some hacky shit....
 boolean demosynced = true; // console warning message
 
 struct demovars_s demo;
@@ -110,7 +111,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0008
+#define DEMOVERSION 0x0009
 #define DEMOHEADER  "\xF0" "KartReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -244,6 +245,7 @@ typedef struct
 	char maptitle[MAXMAPLUMPNAME];
 	UINT64 mapchecksum;
 	UINT8 demoflags;
+	UINT32 raflags;
 	UINT8 gametype;
 	UINT8 numlaps;
 
@@ -657,6 +659,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	UINT8 *startdp = dp;
 	UINT8 attack;
 	boolean kart = false, oldkart = false;
+	boolean raflag = true;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -665,6 +668,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->numcvars = 0;
 	header->mapmusrng = 0;
 	header->numlaps = 0;
+	header->raflags = 0;
 
 	if (memcmp(dp, DEMOHEADER, 12))
 		return HEADER_BADMAGIC;
@@ -679,12 +683,19 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	case DEMOVERSION: // latest always supported
 		break;
 
+	case 0x0008: // BlanKart (Pre-RA mod flags)
+		raflag = false;
+		break;
+
+
 	case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
 		oldkart = kart = true;
+		raflag = false;
 		break;
 
 	case 0x0002: // SRB2Kart 1.1+
 		kart = true;
+		raflag = false;
 		break;
 
 	default: // too old, cannot support.
@@ -718,6 +729,11 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	if (kart) READUINT64(dp); // not even used anywhere
 
 	header->demoflags = READUINT8(dp);
+
+	if (raflag)
+	{
+		header->raflags = READUINT32(dp);
+	}
 
 	if (oldkart)
 	{
@@ -2701,6 +2717,27 @@ void G_BeginRecording(void)
 	if (multiplayer)
 		demoflags |= DF_LUAVARS;
 
+	// RAFlag stuff
+	if (!dedicated && modeattacking != ATTACKING_NONE)
+	{
+		if (cv_dummyattackingrings.value)
+			raflags |= RAF_RINGS;
+		if (cv_dummyattackingstacking.value)
+			raflags |= RAF_STACKING;
+		if (cv_dummyattackingchaining.value)
+			raflags |= RAF_CHAINING;
+		if (cv_dummyattackingslipdash.value)
+			raflags |= RAF_SLIPDASH;
+		if (cv_dummyattackingpurpledrift.value)
+			raflags |= RAF_PURPLEDRIFT;
+		if (cv_dummyattackingslopeboost.value)
+			raflags |= RAF_SLOPEBOOST;
+	}
+	else
+	{
+		raflags = 0;
+	}
+
 	// Setup header.
 	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
 	WRITEUINT8(demobuf.p,VERSION);
@@ -2720,6 +2757,7 @@ void G_BeginRecording(void)
 	WRITEUINT64(demobuf.p, maphash);
 
 	WRITEUINT8(demobuf.p, demoflags);
+	WRITEUINT32(demobuf.p, raflags);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
 	WRITEUINT8(demobuf.p, numlaps);
 
@@ -3515,6 +3553,7 @@ void G_DoPlayDemo(char *defdemoname)
 	gamemap = G_MapNumber(header.maptitle)+1;
 
 	demoflags = header.demoflags;
+	raflags = header.raflags;
 	gametype = header.gametype;
 	G_SetGametype(gametype);
 	numlaps = header.numlaps;
@@ -3578,6 +3617,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	modeattacking = (demoflags & DF_ATTACKMASK)>>DF_ATTACKSHIFT;
 	multiplayer = !!(demoflags & DF_MULTIPLAYER);
+
 	demo.netgame = (multiplayer && !(demoflags & DF_NONETMP));
 	CON_ToggleOff();
 

@@ -8117,12 +8117,31 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
-		ringsactive = cv_dummyattackingrings.value;
-		purpledriftactive = cv_dummyattackingpurpledrift.value;
-		stackingactive = cv_dummyattackingstacking.value;
-		chainingactive = cv_dummyattackingchaining.value;
-		slipdashactive = cv_dummyattackingslipdash.value;
-		slopeboostactive = cv_dummyattackingslopeboost.value;
+		if (demo.playback)
+		{
+			// raflags
+			if (raflags & RAF_RINGS)
+				ringsactive = true;
+			if (raflags & RAF_STACKING)
+				stackingactive = true;
+			if (raflags & RAF_CHAINING)
+				chainingactive = true;
+			if (raflags & RAF_SLIPDASH)
+				slipdashactive = true;
+			if (raflags & RAF_PURPLEDRIFT)
+				purpledriftactive = true;
+			if (raflags & RAF_SLOPEBOOST)
+				slopeboostactive = true;
+		}
+		else
+		{
+			ringsactive = cv_dummyattackingrings.value;
+			purpledriftactive = cv_dummyattackingpurpledrift.value;
+			stackingactive = cv_dummyattackingstacking.value;
+			chainingactive = cv_dummyattackingchaining.value;
+			slipdashactive = cv_dummyattackingslipdash.value;
+			slopeboostactive = cv_dummyattackingslopeboost.value;
+		}
 	}
 	else
 	{
