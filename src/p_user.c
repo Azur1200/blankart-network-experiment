@@ -2921,10 +2921,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (demo.playback)
 	{
-		if (leveltime <= introtime)
-			focusangle = mo->angle; // Can't turn yet. P_UpdatePlayerAngle will ignore angle in stale ticcmds, chasecam should too.
-		else
-			focusangle = player->cmd.angle << TICCMD_REDUCE;
+		focusangle = mo->angle;
 		focusaiming = 0;
 	}
 	else if (P_IsMachineLocalPlayer(player))
