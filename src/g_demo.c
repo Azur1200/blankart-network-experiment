@@ -484,7 +484,7 @@ static UINT8 *G_ReadExtraZipTic(ziptic_t *zt, UINT8 *dp, UINT16 version, mobj_t 
 			{
 				zipticdamage_t *damage = &zt->damage[i];
 				if (kart)
-					READUINT32(dp);
+					(void)READUINT32(dp);
 				damage->type = READUINT32(dp);
 				damage->health = READUINT16(dp);
 				damage->x = READFIXED(dp);
@@ -708,7 +708,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		READMEM(dp, &header->demotitle, 64);
 
 	header->demochecksum = READUINT64(dp);
-	if (kart) READUINT64(dp); // truncate the md5, this is only used for avoiding duped ghosts
+	if (kart) (void)READUINT64(dp); // truncate the md5, this is only used for avoiding duped ghosts
 
 	if (memcmp(dp, "PLAY", 4))// && memcmp(dp, "METL", 4))
 		return HEADER_BADFORMAT;
@@ -726,7 +726,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		READSTRINGN(dp, header->maptitle, MAXMAPLUMPNAME);
 
 	header->mapchecksum = READUINT64(dp);
-	if (kart) READUINT64(dp); // not even used anywhere
+	if (kart) (void)READUINT64(dp); // not even used anywhere
 
 	header->demoflags = READUINT8(dp);
 
