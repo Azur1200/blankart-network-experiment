@@ -1858,7 +1858,8 @@ void P_XYMovement(mobj_t *mo)
 		}
 		else if (predictedz-mo->z > abs(slopemom.z/2)
 		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true // Now check if we were supposed to stick to this slope
-		&& ((!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
+		&& (mapnamespace == MNS_SRB2KART
+		|| (!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
 		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz))))
 		{
 			// Now check if we were supposed to stick to this slope
