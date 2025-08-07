@@ -1098,6 +1098,20 @@ INT32 I_GetJoystickDeviceIndex(SDL_GameController *dev)
 	return -1;
 }
 
+INT32 I_GetJoystickDeviceIndexForPlayer(UINT8 pnum)
+{
+	SDL_Joystick *joystick = NULL;
+
+	joystick = SDL_GameControllerGetJoystick(JoyInfo[pnum].dev);
+
+	if (joystick)
+	{
+		return SDL_JoystickInstanceID(joystick);
+	}
+
+	return -1;
+}
+
 void I_UpdateJoystickDeviceIndex(UINT8 player)
 {
 	///////////////////////////////////////////////

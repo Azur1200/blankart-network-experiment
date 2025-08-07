@@ -310,6 +310,8 @@ const char *I_LocateWad(void);
 */
 void I_GetJoystickEvents(UINT8 index);
 
+INT32 I_GetJoystickDeviceIndexForPlayer(UINT8 pnum);
+
 /**	\brief Checks if the mouse needs to be grabbed
 */
 void I_UpdateMouseGrab(void);
