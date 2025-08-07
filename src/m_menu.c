@@ -1848,7 +1848,9 @@ void M_ClearMenus(boolean callexitmenufunc)
 			currentMenu->quitroutine(0);
 
 		// Save the config file. I'm sick of crashing the game later and losing all my changes!
-		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
+		char buf[sizeof(configfile) + 50];
+		sprintf(buf, "saveconfig \"%s\" -silent\n", configfile);
+		COM_BufAddText(buf);
 
 		if (currentMenu->exitwipe >= 0)
 		{
@@ -4220,11 +4222,9 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
-	M_ClearMenus(false);
-	demo.loadfiles = M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-
-	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
+	COM_BufAddText(va("playdemo %s %s",
+	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
 	return true;
 }
 
@@ -5733,9 +5733,7 @@ INT32 MR_ReplayStaff(INT32 choice)
 	if (l == LUMPERROR)
 		return false;
 
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
-	G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
 
@@ -5768,8 +5766,6 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 {
 	const char *which;
 	char *gamemode = M_AppendGametypeAndModName();
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
 	switch(arg) {
 	default:
@@ -5784,12 +5780,12 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 		break;
 	case 3: // guest
 		// srb2/replay/main/map01-guest.lmp
-		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+		COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 		Z_Free(gamemode);
 		return true;
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
-	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
+	COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
 	Z_Free(gamemode);
 	return true;
 }

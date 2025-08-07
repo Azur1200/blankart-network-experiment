@@ -3398,6 +3398,7 @@ void G_DoPlayDemo(char *defdemoname)
 	boolean skiperrors = false;
 #endif
 
+	M_ClearMenus(true);
 	G_InitDemoRewind();
 
 	// No demo name means we're restarting the current demo

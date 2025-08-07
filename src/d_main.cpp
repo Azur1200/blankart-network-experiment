@@ -189,6 +189,8 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
+static boolean recursioncheck = false;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -198,6 +200,11 @@ void D_ProcessEvents(void)
 	event_t *ev;
 
 	boolean eaten = false;
+
+	if (recursioncheck == true)
+		I_Error("D_ProcessEvents recursion detected");
+
+	recursioncheck = true;
 
 	// i have to reset this somewhere or else your camera just glides away!
 	for (size_t i = 0; i < 4; i++)
@@ -263,6 +270,8 @@ void D_ProcessEvents(void)
 
 		G_Responder(ev);
 	}
+
+	recursioncheck = false;
 }
 
 static void D_RenderLevel(void)
