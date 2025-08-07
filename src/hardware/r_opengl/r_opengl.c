@@ -1979,6 +1979,7 @@ EXPORT void HWRAPI(UpdateTexture) (GLMipmap_t *pTexInfo)
 
 	if (!(pTexInfo->flags & TF_BRIGHTMAP))
 	{
+		tex_downloaded = 0; // force update
 		SetNoTexture(GL_TEXTURE1); // will be assigned later, if needed
 	}
 
