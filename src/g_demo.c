@@ -276,6 +276,7 @@ typedef struct
 	UINT8 numplayers;
 	demoplayer_t *playerdata;
 
+	boolean empty;
 	UINT32 endofs;
 } demoheader_t;
 
@@ -669,6 +670,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 	header->raflags = 0;
+	header->empty = false;
 
 	if (memcmp(dp, DEMOHEADER, 12))
 		return HEADER_BADMAGIC;
@@ -686,7 +688,6 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	case 0x0008: // BlanKart (Pre-RA mod flags)
 		raflag = false;
 		break;
-
 
 	case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
 		oldkart = kart = true;
@@ -847,9 +848,15 @@ skipfiles:
 	if (!kart)
 		header->mapmusrng = READUINT8(dp);
 
-	// Sigh ... it's an empty demo.
-	if (*dp == DEMOMARKER || oldkart)
+	if (oldkart)
 		goto end;
+
+	// Sigh ... it's an empty demo.
+	if (*dp == DEMOMARKER)
+	{
+		header->empty = true;
+		goto end;
+	}
 
 	// Load players that were in-game when the map started
 	UINT8 playernum;
@@ -900,6 +907,10 @@ skipfiles:
 		plr->kartweight = READUINT8(dp);
 		plr->followitem = !kart ? READUINT32(dp) : MT_NULL;
 	}
+
+	// Sigh ... it's an empty demo. Again.
+	if (*dp == DEMOMARKER)
+		header->empty = true;
 
 end:
 	header->endofs = dp - startdp;
@@ -3658,7 +3669,7 @@ void G_DoPlayDemo(char *defdemoname)
 	mapmusrng = header.mapmusrng;
 
 	// Sigh ... it's an empty demo.
-	if (header.numplayers == 0)
+	if (header.empty)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
 		CONS_Alert(CONS_ERROR, "%s", msg);
@@ -3957,7 +3968,7 @@ void G_AddGhost(char *defdemoname)
 		return;
 	}
 
-	if (buffer[header.endofs] == DEMOMARKER || header.numplayers == 0)
+	if (header.empty)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
 		Z_Free(pdemoname);
