@@ -1435,6 +1435,8 @@ boolean M_Responder(event_t *ev)
 		{
 			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
 			{
+				if (WipeInAction)
+					goto wipebuffer;
 				if (messagebox.routine)
 					messagebox.routine(ch);
 				messagebox.active = false;
@@ -1568,9 +1570,9 @@ boolean M_Responder(event_t *ev)
 	// anything that might call a routine needs to be buffered until the wipe finishes
 	if (WipeInAction && (
 	    ((ch == KEY_LEFTARROW || ch == KEY_RIGHTARROW) && ((item->cvar && item->cvar->flags & CV_CALL) || item->status & IT_ARROWS))
-	 || (ch == KEY_ENTER && !item->submenu)
+	 || (ch == KEY_ENTER && ((item->submenu && menudefs[item->submenu].enterroutine) || item->routine || (item->cvar && item->cvar->flags & CV_CALL)))
 	 || (ch == KEY_ESCAPE && currentMenu->quitroutine)
-	 || (ch == KEY_BACKSPACE && item->cvar)))
+	 || (ch == KEY_BACKSPACE && item->cvar && item->cvar->flags & CV_CALL)))
 	{
 wipebuffer:
 		noFurtherInput = ch;
@@ -1765,7 +1767,7 @@ void M_Drawer(void)
 void M_StartControlPanel(void)
 {
 	// intro might call this repeatedly
-	if (menustack[0] || WipeInAction)
+	if (menustack[0])
 	{
 		CON_ToggleOff(); // move away console
 		return;
