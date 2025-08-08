@@ -1187,7 +1187,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 
 // lock out further input in a tic when important buttons are pressed
 // (in other words -- stop bullshit happening by mashing buttons in fades)
-static boolean noFurtherInput = false;
+static INT32 noFurtherInput = 0;
 
 static void Command_Manual_f(void)
 {
@@ -1438,7 +1438,7 @@ boolean M_Responder(event_t *ev)
 				if (messagebox.routine)
 					messagebox.routine(ch);
 				messagebox.active = false;
-				noFurtherInput = true;
+				noFurtherInput = -1;
 			}
 		}
 		else
@@ -1453,7 +1453,7 @@ boolean M_Responder(event_t *ev)
 	// F-Keys
 	if (!menustack[0])
 	{
-		noFurtherInput = true;
+		noFurtherInput = -1;
 
 		switch (ch)
 		{
@@ -1519,13 +1519,15 @@ boolean M_Responder(event_t *ev)
 					M_StartControlPanel();
 				return true;
 		}
-		noFurtherInput = false; // turns out we didn't care
+		noFurtherInput = 0; // turns out we didn't care
 		return false;
 	}
 
 	// Handle menuitems which need a specific key handling
 	if (currentMenu->keyhandler)
 	{
+		if (WipeInAction)
+			goto wipebuffer;
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
@@ -1537,8 +1539,14 @@ boolean M_Responder(event_t *ev)
 	// G: nevermind we have combi menuitems now
 	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
 
-	if (item && item->cvar && !item->cvar->PossibleValue && M_ChangeStringCvar(ch))
-		return true;
+	// string cvars accept any keyboard input
+	if (item && item->cvar && !item->cvar->PossibleValue)
+	{
+		if (WipeInAction && item->cvar->flags & CV_CALL)
+			goto wipebuffer;
+		if (M_ChangeStringCvar(ch))
+			return true;
+	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
@@ -1555,6 +1563,19 @@ boolean M_Responder(event_t *ev)
 
 			default: break;
 		}
+	}
+
+	// anything that might call a routine needs to be buffered until the wipe finishes
+	if (WipeInAction && (
+	    ((ch == KEY_LEFTARROW || ch == KEY_RIGHTARROW) && ((item->cvar && item->cvar->flags & CV_CALL) || item->status & IT_ARROWS))
+	 || (ch == KEY_ENTER && !item->submenu)
+	 || (ch == KEY_ESCAPE && currentMenu->quitroutine)
+	 || (ch == KEY_BACKSPACE && item->cvar)))
+	{
+wipebuffer:
+		noFurtherInput = ch;
+		S_StartSound(NULL, sfx_kc50);
+		return true;
 	}
 
 	INT16 oldItemOn = itemOn; // prevent infinite loop
@@ -1603,7 +1624,7 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
 
 			if (menustack[0] == MN_PLAYBACK)
@@ -1636,7 +1657,7 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_ESCAPE:
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
 
 			//If we entered the game search menu, but didn't enter a game,
@@ -1962,8 +1983,18 @@ boolean M_MouseNeeded(void)
 //
 void M_Ticker(void)
 {
-	// reset input trigger
-	noFurtherInput = false;
+	// send buffered input from wipe?
+	if (noFurtherInput > 0 && !WipeInAction)
+	{
+		event_t fake;
+		fake.device = 0;
+		fake.type = ev_keydown;
+		fake.data1 = noFurtherInput;
+		D_PostEvent(&fake);
+		noFurtherInput = 0;
+	}
+	else if (noFurtherInput == -1 || !WipeInAction)
+		noFurtherInput = 0;
 
 	if (dedicated)
 		return;
@@ -2697,7 +2728,9 @@ void MD_DrawGenericMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+		V_DrawScaledPatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0), W_CachePatchName("M_CURSOR", PU_CACHE));
+	if (noFurtherInput > 0)
+		V_DrawSmallString(cursorx, cursory+3, 0, "WAIT");
 
 	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)

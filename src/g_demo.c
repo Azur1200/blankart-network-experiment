@@ -3957,7 +3957,7 @@ void G_AddGhost(char *defdemoname)
 		return;
 	}
 
-	if (header.numplayers == 0)
+	if (buffer[header.endofs] == DEMOMARKER || header.numplayers == 0)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
 		Z_Free(pdemoname);
