@@ -471,20 +471,23 @@ static void D_Display(void)
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
 
-		if (rendermode != render_none)
+		// Fade to black first
+		if ((wipegamestate == FORCEWIPE ||
+			!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
+		 && wipetypepre != UINT8_MAX)
 		{
-			// Fade to black first
-			if ((wipegamestate == FORCEWIPE ||
-				!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
-			 && wipetypepre != UINT8_MAX)
+			if (rendermode != render_none)
 			{
 				F_WipeStartScreen();
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
-				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
 			}
+			F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+		}
 
-			if (gamestate != GS_LEVEL && rendermode != render_none)
+		if (rendermode != render_none)
+		{
+			if (gamestate != GS_LEVEL)
 			{
 				V_SetPaletteLump("PLAYPAL"); // Reset the palette
 				R_ReInitColormaps(0, NULL, 0, false);
@@ -492,19 +495,14 @@ static void D_Display(void)
 
 			F_WipeStartScreen();
 		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+		else
 			wipegamestate = gamestate;
-		}
-
-		wipetypepre = -1;
 	}
-	else
-		wipetypepre = -1;
+
+	wipetypepre = -1;
 
 	if (dedicated) //bail out after wipe logic
-		return;
+		goto dedipostwipe; // WAIT! don't forget about post wipes!
 
 	// Catch runaway clipping rectangles.
 	V_ClearClipRect();
@@ -668,6 +666,7 @@ static void D_Display(void)
 	//
 	// wipe update
 	//
+dedipostwipe:
 	if (wipe && wipetypepost != INT16_MAX)
 	{
 		// note: moved up here because NetUpdate does input changes
@@ -678,11 +677,9 @@ static void D_Display(void)
 			wipetypepost = wipedefs[wipedefindex];
 
 		if (rendermode != render_none)
-		{
 			F_WipeEndScreen();
 
-			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK);
-		}
+		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -690,11 +687,12 @@ static void D_Display(void)
 			framecount = 0;
 			demostarttime = I_GetTime();
 		}
-
-		wipetypepost = -1;
 	}
-	else
-		wipetypepost = -1;
+
+	wipetypepost = -1;
+
+	if (dedicated)
+		return; // NOW we can bail
 
 	NetUpdate(); // send out any new accumulation
 
