@@ -26,9 +26,6 @@ extern "C" {
 //
 // FINALE
 //
-// HACK for menu fading while titlemapinaction; skips the level check
-#define FORCEWIPE -2
-
 
 // Called by main loop.
 boolean F_IntroResponder(event_t *ev);

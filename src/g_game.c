@@ -2277,6 +2277,7 @@ void G_Ticker(boolean run)
 
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
+		case FORCEWIPE:
 			break; // do nothing
 	}
 
