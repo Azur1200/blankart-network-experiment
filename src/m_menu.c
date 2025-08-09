@@ -1269,6 +1269,8 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 	 || (routine == MR_SelectableClearMenus && !currentMenu->quitroutine)
 	 || routine == MR_Options
 	 || routine == MR_SetupMultiPlayer
+	 || routine == MR_SetupControlsMenu
+	 || routine == MR_ChangeControl
 	)
 		return false;
 
@@ -1697,6 +1699,14 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
+			// detach any keys associated with the game control
+			if (item && item->routine == MR_ChangeControl)
+			{
+				G_ClearControlKeys(setupcontrols, item->argument);
+				S_StartSound(NULL, sfx_shldls);
+				return true;
+			}
+
 			if (!item || !item->cvar
 			 || item->cvar == &cv_chooseskin
 			 || item->cvar == &cv_dummystaff
@@ -7404,7 +7414,6 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 
 	setupcontrolplayer = arg + 1;
 	setupcontrols = gamecontrol[arg];        // was called from main Options (for console player, then)
-	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
 	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
@@ -7429,24 +7438,6 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "CENTERVIEW", player1); // Center View
 	*/
 
-	return true;
-}
-
-INT32 MR_HandleControlsMenu(INT32 ch)
-{
-	if (currentMenu->menuitems[itemOn].routine != MR_ChangeControl)
-		return false;
-
-	switch (ch)
-	{
-	case KEY_BACKSPACE:
-		// detach any keys associated with the game control
-		G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
-		S_StartSound(NULL, sfx_shldls);
-		break;
-	default:
-		return false;
-	}
 	return true;
 }
 

@@ -700,7 +700,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CONNECTMENUMODCHECKS", &MR_ConnectMenuModChecks },
 	{ "CANCELCONNECT", &MR_CancelConnect },
 	{ "SETUPCONTROLSMENU", &MR_SetupControlsMenu },
-	{ "HANDLECONTROLSMENU", &MR_HandleControlsMenu },
 	{ "REFRESH", &MR_Refresh },
 	{ "CONNECT", &MR_Connect },
 	{ "VIDEOMODEMENU", &MR_VideoModeMenu },
