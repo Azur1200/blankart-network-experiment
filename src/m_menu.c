@@ -1708,8 +1708,8 @@ void M_Drawer(void)
 		{
 			if (curbgcolor >= 0)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
-			//else if (!curbghide || !titlemapinaction)
-				//F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
+			else if (!curbghide || !titlemapinaction)
+				F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
 			if (curfadevalue)
 				V_DrawFadeScreen(0xFF00, curfadevalue);
 		}
