@@ -714,27 +714,15 @@ static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 static const UINT8 *v_colormap = NULL;
 static const UINT8 *v_translevel = NULL;
 
-static inline UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	(void)dest; return source[ofs>>FRACBITS];
-}
-static inline UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	(void)dest; return *(v_colormap + source[ofs>>FRACBITS]);
-}
-static inline UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	return *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
-}
-static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	return *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
-}
+#define STANDARDDRAW 1
+#define MAPPEDDRAW 2
+#define TRANSLUCENTDRAW 3
+#define TRANSMAPPEDDRAW 4
 
 // Draws a patch scaled to arbitrary size.
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
-	UINT8 (*patchdrawfunc)(const UINT8*, const UINT8*, fixed_t);
+	UINT8 patchdrawtype;
 	UINT32 alphalevel, blendmode;
 
 	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
@@ -744,6 +732,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	const UINT8 *source, *deststop;
 	fixed_t pwidth; // patch width
 	fixed_t offx = 0; // x offset
+	const INT32 vidwidth = vid.width;
 
 	const cliprect_t *clip = V_GetClipRect();
 
@@ -759,7 +748,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	}
 #endif
 
-	patchdrawfunc = standardpdraw;
+	patchdrawtype = STANDARDDRAW;
 
 	if ((blendmode = ((scrn & V_BLENDMASK) >> V_BLENDSHIFT)))
 		blendmode++; // realign to constants
@@ -776,13 +765,13 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 			return;
 	}
 	if ((v_translevel = R_GetBlendTable(blendmode, alphalevel)))
-		patchdrawfunc = translucentpdraw;
+		patchdrawtype = TRANSLUCENTDRAW;
 
 	v_colormap = NULL;
 	if (colormap)
 	{
 		v_colormap = colormap;
-		patchdrawfunc = (v_translevel) ? transmappedpdraw : mappedpdraw;
+		patchdrawtype = (v_translevel) ? TRANSMAPPEDDRAW : MAPPEDDRAW;
 	}
 
 	dupx = vid.dupx;
@@ -858,7 +847,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 			V_AdjustXYWithSnap(&x, &y, scrn, dupx, dupy);
 		}
 
-		desttop += (y*vid.width) + x;
+		desttop += (y*vidwidth) + x;
 	}
 
 	if (pscale != FRACUNIT) // scale width properly
@@ -882,91 +871,324 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		{
 			if (x+pwidth-offx < (clip ? clip->left : 0)) // don't draw off the left of the screen (WRAP PREVENTION)
 				break;
-			if (x+pwidth-offx >= (clip ? clip->right : vid.width)) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+pwidth-offx >= (clip ? clip->right : vidwidth)) // don't draw off the right of the screen (WRAP PREVENTION)
 				continue;
 		}
 		else
 		{
 			if (x+offx < (clip ? clip->left : 0)) // don't draw off the left of the screen (WRAP PREVENTION)
 				continue;
-			if (x+offx >= (clip ? clip->right : vid.width)) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+offx >= (clip ? clip->right : vidwidth)) // don't draw off the right of the screen (WRAP PREVENTION)
 				break;
 		}
 
 		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[col>>FRACBITS]));
 
-		while (column->topdelta != 0xff)
+		switch (patchdrawtype)
 		{
-			fixed_t offy = 0;
-
-			topdelta = column->topdelta;
-			if (topdelta <= prevdelta)
-				topdelta += prevdelta;
-			prevdelta = topdelta;
-			source = (const UINT8 *)(column) + 3;
-
-			dest = desttop;
-			if (scrn & V_FLIP)
-				dest = deststart + (destend - dest);
-			topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
-			dest += topdelta * vid.width;
-
-			if (scrn & V_VFLIP)
-			{
-				for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+			case STANDARDDRAW:
+				while (column->topdelta != 0xff)
 				{
-					if (clip != NULL)
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
 					{
-						const INT32 cy = y + topdelta - offy;
-
-						if (cy < clip->top) // don't draw off the top of the clip rect
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = source[ofs>>FRACBITS];
+
+							dest += vidwidth;
 						}
-
-						if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = source[ofs>>FRACBITS];
+
+							dest += vidwidth;
 						}
 					}
 
-					if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
-						*dest = patchdrawfunc(dest, source, ofs);
-
-					dest += vid.width;
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
-			}
-			else
-			{
-				for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+			break;
+
+			case MAPPEDDRAW:
+				while (column->topdelta != 0xff)
 				{
-					if (clip != NULL)
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
 					{
-						const INT32 cy = y + topdelta + offy;
-
-						if (cy < clip->top) // don't draw off the top of the clip rect
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_colormap + source[ofs>>FRACBITS]);
+
+							dest += vidwidth;
 						}
-
-						if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_colormap + source[ofs>>FRACBITS]);
+
+							dest += vidwidth;
 						}
 					}
 
-					if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
-						*dest = patchdrawfunc(dest, source, ofs);
-
-					dest += vid.width;
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
-			}
+				break;
 
-			column = (const column_t *)((const UINT8 *)column + column->length + 4);
+			case TRANSMAPPEDDRAW:
+				while (column->topdelta != 0xff)
+				{
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
+					{
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
+				}
+				break;
+
+				case TRANSLUCENTDRAW:
+				while (column->topdelta != 0xff)
+				{
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
+					{
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
+				}
+				break;
 		}
 	}
 }

@@ -25,7 +25,7 @@ using namespace libdivide;
 // <Callum> 4194303 = (2048x2048)-1 (2048x2048 is maximum flat size)
 #define MAXFLATBYTES 4194303
 
-#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vid.width / ds->zeroheight / 21.0f * FIXED_TO_FLOAT(fovtan[viewssnum]))
+#define PLANELIGHTFLOAT (BASEVIDWIDTH * BASEVIDWIDTH / vidwidth / ds->zeroheight / 21.0f * FIXED_TO_FLOAT(fovtan[viewssnum]))
 
 enum DrawSpanType
 {
@@ -147,6 +147,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 
 	UINT8 *dest;
 	UINT8 *dsrc;
+	const INT32 vidwidth = vid.width;
 
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
@@ -174,7 +175,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	dest = ylookup[ds->y] + columnofs[ds->x1];
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vid.width + ds->x1;
+		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -262,6 +263,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	UINT8 *colormap;
 	UINT8 *dest;
 	UINT8 *dsrc;
+	const INT32 vidwidth = vid.width;
 
 	float startz, startu, startv;
 	float izstep, uzstep, vzstep;
@@ -298,7 +300,7 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	dest = ylookup[ds->y] + columnofs[ds->x1];
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vid.width + ds->x1;
+		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -437,6 +439,7 @@ static void R_DrawNPO2SpanTemplate(drawspandata_t* ds)
 
 	UINT8 *dest;
 	UINT8 *dsrc;
+	const INT32 vidwidth = vid.width;
 	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds->x2 - ds->x1 + 1);
@@ -453,7 +456,7 @@ static void R_DrawNPO2SpanTemplate(drawspandata_t* ds)
 
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vid.width + ds->x1;
+		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -521,6 +524,7 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 	UINT8 *colormap;
 	UINT8 *dest;
 	UINT8 *dsrc;
+	const INT32 vidwidth = vid.width;
 
 	float startz, startu, startv;
 	float izstep, uzstep, vzstep;
@@ -555,7 +559,7 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vid.width + ds->x1;
+		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -769,13 +773,14 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 	UINT8 *colormap;
 	UINT8 *dest;
+	const INT32 vidwidth = vid.width;
 
 	size_t count;
 
 	colormap = ds->colormap;
 
 	//dest = ylookup[ds_y] + columnofs[ds_x1];
-	dest = &topleft[ds->y *vid.width + ds->x1];
+	dest = &topleft[ds->y *vidwidth + ds->x1];
 
 	count = ds->x2 - ds->x1 + 1;
 
@@ -807,6 +812,7 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 	INT32 tiltlighting[MAXVIDWIDTH];
 
 	UINT8 *dest = ylookup[ds->y] + columnofs[ds->x1];
+	const INT32 vidwidth = vid.width;
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
@@ -845,6 +851,7 @@ void R_DrawTiltedSpan_Flat(drawspandata_t* ds)
 	int width = ds->x2 - ds->x1;
 	double iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	INT32 tiltlighting[MAXVIDWIDTH];
+	const INT32 vidwidth = vid.width;
 
 	UINT8 *dest = ylookup[ds->y];
 
