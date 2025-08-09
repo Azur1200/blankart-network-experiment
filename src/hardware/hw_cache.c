@@ -460,24 +460,22 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 
 	UINT8 *colormap = colormaps;
 
-	INT32 i;
+	INT32 i, idx;
 	boolean skyspecial = false; //poor hack for Legacy large skies..
 
 	texture = textures[texnum];
 
+	grtex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
+	grtex->mipmap.format = textureformat;
+
 	// hack the Legacy skies..
-	if (texture->name[0] == 'S' &&
-	    texture->name[1] == 'K' &&
-	    texture->name[2] == 'Y' &&
-	    (texture->name[4] == 0 ||
-	     texture->name[5] == 0)
-	   )
+	if (memcmp(texture->name, "SKY", 3) == 0 &&
+		(texture->name[4] == 0 || texture->name[5] == 0))
 	{
 		skyspecial = true;
-		grtex->mipmap.flags = TF_WRAPXY; // don't use the chromakey for sky
+		grtex->mipmap.flags &= ~TF_CHROMAKEYED; // don't use the chromakey for sky
+		grtex->mipmap.format = GL_TEXFMT_RGBA; // that skyspecial code below assumes this format ...
 	}
-	else
-		grtex->mipmap.flags = TF_CHROMAKEYED | TF_WRAPXY;
 
 	grtex->mipmap.width = (UINT16)texture->width;
 	grtex->mipmap.height = (UINT16)texture->height;
@@ -501,14 +499,14 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 		RGBA_t col;
 
 		col = V_GetColor(HWR_PATCHES_CHROMAKEY_COLORINDEX);
-		for (j = 0; j < blockheight; j++)
+		for (idx = 0, j = 0; j < blockheight; j++)
 		{
-			for (i = 0; i < blockwidth; i++)
+			for (i = 0; i < blockwidth; i++, idx++)
 			{
-				block[4*(j*blockwidth+i)+0] = col.s.red;
-				block[4*(j*blockwidth+i)+1] = col.s.green;
-				block[4*(j*blockwidth+i)+2] = col.s.blue;
-				block[4*(j*blockwidth+i)+3] = 0xff;
+				block[4*idx+0] = col.s.red;
+				block[4*idx+1] = col.s.green;
+				block[4*idx+2] = col.s.blue;
+				block[4*idx+3] = 0xff;
 			}
 		}
 	}

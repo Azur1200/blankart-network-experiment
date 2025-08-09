@@ -1381,8 +1381,8 @@ void F_TitleScreenDrawer(void)
 	// Draw that sky!
 	if (curbgcolor >= 0)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
-	else if (!curbghide || !titlemapinaction || gamestate == GS_WAITINGPLAYERS)
-		F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
+	//else if (!curbghide || !titlemapinaction || gamestate == GS_WAITINGPLAYERS)
+		//F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
 
 	// Don't draw outside of the title screen, or if the patch isn't there.
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)

@@ -3150,7 +3150,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			break;
 
 		case 428: // Start floating platform movement
-			EV_DoElevator(args[0], line, elevateContinuous);
+			EV_DoContinuousElevator(
+				args[0],
+				args[1] << (FRACBITS - 2),
+				args[2],
+				args[3],
+				(args[4] == 0)
+			);
 			break;
 
 		case 429: // Crush planes once
