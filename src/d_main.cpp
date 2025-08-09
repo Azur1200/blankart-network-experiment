@@ -400,9 +400,8 @@ gamestate_t wipegamestate = GS_LEVEL;
 INT16 wipetypepre = -1;
 INT16 wipetypepost = -1;
 
-static bool D_Display(void)
+static void D_Display(void)
 {
-	bool ranwipe = false;
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
@@ -413,7 +412,7 @@ static bool D_Display(void)
 	if (!dedicated)
 	{
 		if (nodrawers)
-			return false; // for comparative timing/profiling
+			return; // for comparative timing/profiling
 
 		// Lactozilla: Switching renderers works by checking
 		// if the game has to do it right when the frame
@@ -483,7 +482,6 @@ static bool D_Display(void)
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
 				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
-				ranwipe = true;
 			}
 
 			if (gamestate != GS_LEVEL && rendermode != render_none)
@@ -497,7 +495,6 @@ static bool D_Display(void)
 		else //dedicated servers
 		{
 			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
-			ranwipe = true;
 			wipegamestate = gamestate;
 		}
 
@@ -507,7 +504,7 @@ static bool D_Display(void)
 		wipetypepre = -1;
 
 	if (dedicated) //bail out after wipe logic
-		return false;
+		return;
 
 	// Catch runaway clipping rectangles.
 	V_ClearClipRect();
@@ -684,7 +681,6 @@ static bool D_Display(void)
 			F_WipeEndScreen();
 
 			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK);
-			ranwipe = true;
 		}
 
 		// reset counters so timedemo doesn't count the wipe duration
@@ -742,8 +738,6 @@ static bool D_Display(void)
 		I_FinishUpdate(); // page flip or blit buffer
 		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
 	}
-
-	return ranwipe;
 }
 
 static void D_WipeTick(boolean menu)
@@ -838,11 +832,13 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 }
 
 static INT32 endtimes[] = {
-	[WIPELOOP_RUNWIPE] = UINT8_MAX,
-	[WIPELOOP_TITLECARD] = PRELEVELTIME*NEWTICRATERATIO,
-	[WIPELOOP_ENCORE] = 3*TICRATE/2,
-	[WIPELOOP_TITLEBLACK] = NEWTICRATE, // Shortened the quit time, used to be 2 seconds
+	UINT8_MAX, // WIPELOOP_RUNWIPE
+	PRELEVELTIME*NEWTICRATERATIO, // WIPELOOP_TITLECARD
+	3*TICRATE/2, // WIPELOOP_ENCORE
+	NEWTICRATE, // WIPELOOP_TITLEBLACK
 };
+
+static bool ranwipe = false;
 
 // one single function for all the extra main loops in this god-forsaken codebase
 // should make it easier to fold these back into D_SRB2Loop at some point...
@@ -919,6 +915,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 		lastwipetic = nowtime;
 	}
 
+	ranwipe = true;
 	WipeInAction = 0;
 }
 
@@ -988,8 +985,6 @@ void D_SRB2Loop(void)
 
 		g_dc = {};
 		Z_Frame_Reset();
-
-		bool ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -1104,7 +1099,7 @@ void D_SRB2Loop(void)
 		{
 			if (!frameskip)
 			{
-				ranwipe = D_Display();
+				D_Display();
 			}
 			else if (!dedicated && frameskip)
 			{
@@ -1143,11 +1138,16 @@ void D_SRB2Loop(void)
 		}
 #endif
 
+		deltatics = D_EndFrame(enterprecise, &frameskip);
+
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
 		if (ranwipe)
+		{
+			deltatics = 35.0 / R_GetFramerateCap();
 			frameskip = 0;
-		deltatics = D_EndFrame(enterprecise, !ranwipe ? &frameskip : NULL);
+			ranwipe = false;
+		}
 	}
 }
 
