@@ -1256,6 +1256,30 @@ static boolean M_DemoBinds(INT32 ch)
 	return true;
 }
 
+// if the menu is being used during a wipe, running routines can be dangerous!
+// buffer a single input, then wait for the wipe to end
+static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
+{
+	if (!WipeInAction)
+		return false;
+
+	// these routines are allowed to run during wipes
+	// solely to make the menus less annoying to use
+	if (routine == NULL
+	 || (routine == MR_SelectableClearMenus && !currentMenu->quitroutine)
+	 || routine == MR_Options
+	 || routine == MR_SetupMultiPlayer
+	)
+		return false;
+
+	noFurtherInput = ch;
+	S_StartSound(NULL, sfx_kc50);
+	return true;
+}
+
+// use this when routine being NULL isn't a free pass
+static INT32 MR_Dummy(INT32 ch) { return true; }
+
 //
 // M_Responder
 //
@@ -1435,8 +1459,8 @@ boolean M_Responder(event_t *ev)
 		{
 			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
 			{
-				if (WipeInAction)
-					goto wipebuffer;
+				if (M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				if (messagebox.routine)
 					messagebox.routine(ch);
 				messagebox.active = false;
@@ -1528,8 +1552,8 @@ boolean M_Responder(event_t *ev)
 	// Handle menuitems which need a specific key handling
 	if (currentMenu->keyhandler)
 	{
-		if (WipeInAction)
-			goto wipebuffer;
+		if (M_WipeBuffer(ch, currentMenu->keyhandler))
+			return true;
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
@@ -1544,8 +1568,8 @@ boolean M_Responder(event_t *ev)
 	// string cvars accept any keyboard input
 	if (item && item->cvar && !item->cvar->PossibleValue)
 	{
-		if (WipeInAction && item->cvar->flags & CV_CALL)
-			goto wipebuffer;
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+			return true;
 		if (M_ChangeStringCvar(ch))
 			return true;
 	}
@@ -1565,19 +1589,6 @@ boolean M_Responder(event_t *ev)
 
 			default: break;
 		}
-	}
-
-	// anything that might call a routine needs to be buffered until the wipe finishes
-	if (WipeInAction && (
-	    ((ch == KEY_LEFTARROW || ch == KEY_RIGHTARROW) && ((item->cvar && item->cvar->flags & CV_CALL) || item->status & IT_ARROWS))
-	 || (ch == KEY_ENTER && ((item->submenu && menudefs[item->submenu].enterroutine) || item->routine || (item->cvar && item->cvar->flags & CV_CALL)))
-	 || (ch == KEY_ESCAPE && currentMenu->quitroutine)
-	 || (ch == KEY_BACKSPACE && item->cvar && item->cvar->flags & CV_CALL)))
-	{
-wipebuffer:
-		noFurtherInput = ch;
-		S_StartSound(NULL, sfx_kc50);
-		return true;
 	}
 
 	INT16 oldItemOn = itemOn; // prevent infinite loop
@@ -1612,6 +1623,9 @@ wipebuffer:
 			if (!item || !(item->cvar || item->status & IT_ARROWS))
 				return true;
 
+			if (M_WipeBuffer(ch, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
+				return true;
+
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 				S_StartSound(NULL, sfx_menu1);
 
@@ -1643,16 +1657,22 @@ wipebuffer:
 
 			if (item->submenu)
 			{
+				if (M_WipeBuffer(ch, menudefs[item->submenu].enterroutine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_EnterMenu(item->submenu, true, argument);
 			}
 			else if (item->routine)
 			{
+				if (M_WipeBuffer(ch, item->routine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				item->routine(argument);
 			}
 			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
+				if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_ChangeCvar(item, 1); // right arrow
 			}
@@ -1661,6 +1681,9 @@ wipebuffer:
 		case KEY_ESCAPE:
 			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
+
+			if (M_WipeBuffer(ch, currentMenu->quitroutine))
+				return true;
 
 			//If we entered the game search menu, but didn't enter a game,
 			//make sure the game doesn't still think we're in a netgame.
@@ -1680,6 +1703,9 @@ wipebuffer:
 			 || item->cvar == &cv_nextmap
 			 || item->cvar == &cv_newgametype
 			 || item->cvar == &cv_dummymultiplayer)
+				return true;
+
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
 				return true;
 
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
