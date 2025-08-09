@@ -1187,7 +1187,7 @@ static boolean M_ChangeStringCvar(INT32 choice)
 
 // lock out further input in a tic when important buttons are pressed
 // (in other words -- stop bullshit happening by mashing buttons in fades)
-static boolean noFurtherInput = false;
+static INT32 noFurtherInput = 0;
 
 static void Command_Manual_f(void)
 {
@@ -1255,6 +1255,30 @@ static boolean M_DemoBinds(INT32 ch)
 	}
 	return true;
 }
+
+// if the menu is being used during a wipe, running routines can be dangerous!
+// buffer a single input, then wait for the wipe to end
+static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
+{
+	if (!WipeInAction)
+		return false;
+
+	// these routines are allowed to run during wipes
+	// solely to make the menus less annoying to use
+	if (routine == NULL
+	 || (routine == MR_SelectableClearMenus && !currentMenu->quitroutine)
+	 || routine == MR_Options
+	 || routine == MR_SetupMultiPlayer
+	)
+		return false;
+
+	noFurtherInput = ch;
+	S_StartSound(NULL, sfx_kc50);
+	return true;
+}
+
+// use this when routine being NULL isn't a free pass
+static INT32 MR_Dummy(INT32 ch) { return true; }
 
 //
 // M_Responder
@@ -1435,10 +1459,12 @@ boolean M_Responder(event_t *ev)
 		{
 			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
 			{
+				if (M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				if (messagebox.routine)
 					messagebox.routine(ch);
 				messagebox.active = false;
-				noFurtherInput = true;
+				noFurtherInput = -1;
 			}
 		}
 		else
@@ -1453,7 +1479,7 @@ boolean M_Responder(event_t *ev)
 	// F-Keys
 	if (!menustack[0])
 	{
-		noFurtherInput = true;
+		noFurtherInput = -1;
 
 		switch (ch)
 		{
@@ -1469,7 +1495,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F4: // Sound Volume
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1478,7 +1504,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F5: // Video Mode
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1490,7 +1516,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F7: // Options
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1519,13 +1545,15 @@ boolean M_Responder(event_t *ev)
 					M_StartControlPanel();
 				return true;
 		}
-		noFurtherInput = false; // turns out we didn't care
+		noFurtherInput = 0; // turns out we didn't care
 		return false;
 	}
 
 	// Handle menuitems which need a specific key handling
 	if (currentMenu->keyhandler)
 	{
+		if (M_WipeBuffer(ch, currentMenu->keyhandler))
+			return true;
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
@@ -1537,8 +1565,14 @@ boolean M_Responder(event_t *ev)
 	// G: nevermind we have combi menuitems now
 	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
 
-	if (item && item->cvar && !item->cvar->PossibleValue && M_ChangeStringCvar(ch))
-		return true;
+	// string cvars accept any keyboard input
+	if (item && item->cvar && !item->cvar->PossibleValue)
+	{
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+			return true;
+		if (M_ChangeStringCvar(ch))
+			return true;
+	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
@@ -1589,6 +1623,9 @@ boolean M_Responder(event_t *ev)
 			if (!item || !(item->cvar || item->status & IT_ARROWS))
 				return true;
 
+			if (M_WipeBuffer(ch, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
+				return true;
+
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
 				S_StartSound(NULL, sfx_menu1);
 
@@ -1603,7 +1640,7 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
 
 			if (menustack[0] == MN_PLAYBACK)
@@ -1620,24 +1657,33 @@ boolean M_Responder(event_t *ev)
 
 			if (item->submenu)
 			{
+				if (M_WipeBuffer(ch, menudefs[item->submenu].enterroutine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_EnterMenu(item->submenu, true, argument);
 			}
 			else if (item->routine)
 			{
+				if (M_WipeBuffer(ch, item->routine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				item->routine(argument);
 			}
 			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
+				if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_ChangeCvar(item, 1); // right arrow
 			}
 			return true;
 
 		case KEY_ESCAPE:
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
+
+			if (M_WipeBuffer(ch, currentMenu->quitroutine))
+				return true;
 
 			//If we entered the game search menu, but didn't enter a game,
 			//make sure the game doesn't still think we're in a netgame.
@@ -1657,6 +1703,9 @@ boolean M_Responder(event_t *ev)
 			 || item->cvar == &cv_nextmap
 			 || item->cvar == &cv_newgametype
 			 || item->cvar == &cv_dummymultiplayer)
+				return true;
+
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
 				return true;
 
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
@@ -1848,7 +1897,9 @@ void M_ClearMenus(boolean callexitmenufunc)
 			currentMenu->quitroutine(0);
 
 		// Save the config file. I'm sick of crashing the game later and losing all my changes!
-		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
+		char buf[sizeof(configfile) + 50];
+		sprintf(buf, "saveconfig \"%s\" -silent\n", configfile);
+		COM_BufAddText(buf);
 
 		if (currentMenu->exitwipe >= 0)
 		{
@@ -1960,8 +2011,18 @@ boolean M_MouseNeeded(void)
 //
 void M_Ticker(void)
 {
-	// reset input trigger
-	noFurtherInput = false;
+	// send buffered input from wipe?
+	if (noFurtherInput > 0 && !WipeInAction)
+	{
+		event_t fake;
+		fake.device = 0;
+		fake.type = ev_keydown;
+		fake.data1 = noFurtherInput;
+		D_PostEvent(&fake);
+		noFurtherInput = 0;
+	}
+	else if (noFurtherInput == -1 || !WipeInAction)
+		noFurtherInput = 0;
 
 	if (dedicated)
 		return;
@@ -2695,7 +2756,9 @@ void MD_DrawGenericMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+		V_DrawScaledPatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0), W_CachePatchName("M_CURSOR", PU_CACHE));
+	if (noFurtherInput > 0)
+		V_DrawSmallString(cursorx, cursory+3, 0, "WAIT");
 
 	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)
@@ -4220,11 +4283,9 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
-	M_ClearMenus(false);
-	demo.loadfiles = M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-
-	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
+	COM_BufAddText(va("playdemo %s %s",
+	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
 	return true;
 }
 
@@ -5733,9 +5794,7 @@ INT32 MR_ReplayStaff(INT32 choice)
 	if (l == LUMPERROR)
 		return false;
 
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
-	G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
 
@@ -5768,8 +5827,6 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 {
 	const char *which;
 	char *gamemode = M_AppendGametypeAndModName();
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
 	switch(arg) {
 	default:
@@ -5784,12 +5841,12 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 		break;
 	case 3: // guest
 		// srb2/replay/main/map01-guest.lmp
-		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+		COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 		Z_Free(gamemode);
 		return true;
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
-	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
+	COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
 	Z_Free(gamemode);
 	return true;
 }

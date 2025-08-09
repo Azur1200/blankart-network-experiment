@@ -61,6 +61,16 @@ extern char srb2path[256]; //Alam: SRB2's Home
 // the infinite loop of D_SRB2Loop() called from win_main for windows version
 void D_SRB2Loop(void) FUNCNORETURN;
 
+typedef enum
+{
+	WIPELOOP_RUNWIPE,
+	WIPELOOP_TITLECARD,
+	WIPELOOP_ENCORE,
+	WIPELOOP_TITLEBLACK,
+} wipelooptype_t;
+
+void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu);
+
 //
 // D_SRB2Main()
 // Not a globally visible function, just included for source reference,

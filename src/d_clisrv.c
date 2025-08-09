@@ -2682,6 +2682,9 @@ void CL_Reset(void)
 	if (demo.recording)
 		G_CheckDemoStatus();
 
+	// don't carry menus into the title screen (or wherever we're going)
+	M_ClearMenus(true);
+
 	// reset client/server code
 	DEBFILE(va("\n-=-=-=-=-=-=-= Client reset =-=-=-=-=-=-=-\n\n"));
 

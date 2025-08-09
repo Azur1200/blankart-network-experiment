@@ -1507,30 +1507,7 @@ void G_StartTitleCard(void)
 void G_PreLevelTitleCard(void)
 {
 #ifndef NOWIPE
-    tic_t strtime = I_GetTime();
-    tic_t endtime = strtime + (PRELEVELTIME*NEWTICRATERATIO);
-    tic_t nowtime = strtime;
-    tic_t lasttime = strtime;
-    while (nowtime < endtime)
-    {
-        // draw loop
-        ST_runTitleCard();
-        ST_preLevelTitleCardDrawer();
-        I_FinishUpdate(); 	// page flip or blit buffer
-		NetKeepAlive();		// Prevent timeouts
-
-        if (moviemode)
-            M_SaveFrame();
-        if (takescreenshot) // Only take screenshots after drawing.
-            M_DoScreenShot();
-
-        while (!((nowtime = I_GetTime()) - lasttime))
-        {
-			I_Sleep(cv_sleep.value);
-			I_UpdateTime(cv_timescale.value);
-		}
-        lasttime = nowtime;
-    }
+	D_WipeLoop(WIPELOOP_TITLECARD, 0, false);
 #endif
 }
 
@@ -2300,6 +2277,7 @@ void G_Ticker(boolean run)
 
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
+		case FORCEWIPE:
 			break; // do nothing
 	}
 
