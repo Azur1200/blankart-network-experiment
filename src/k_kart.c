@@ -10505,6 +10505,7 @@ static void K_AirFailsafe(player_t *player)
 	if (player->speed > maxSpeed // Above the max speed that you're allowed to use this technique.
 		|| player->respawn // Respawning, you don't need this AND drop dash :V
 		|| player->carry // Don't do in automated sections.
+		|| player->bumpertime // Don't do from nights bumber.
 		|| P_PlayerInPain(player)) // Don't assist people hit by mines.
 	{
 		player->pflags &= ~PF_AIRFAILSAFE;
