@@ -249,6 +249,7 @@ enum player_e
 	player_pickuprings,
 	player_ringdelay,
 	player_ringboost,
+	player_ringtime,
 	player_superring,
 	player_nextringaward,
 	player_ringvolume,
@@ -435,6 +436,7 @@ static const char *const player_opt[] = {
 	"pickuprings",
 	"ringdelay",
 	"ringboost",
+	"ringtime",
 	"superring",
 	"nextringaward",
 	"ringvolume",
@@ -810,6 +812,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_ringboost:
 		lua_pushinteger(L, plr->ringboost);
+		break;
+	case player_ringtime:
+		lua_pushinteger(L, plr->ringtime);
 		break;
 	case player_superring:
 		lua_pushinteger(L, plr->superring);
@@ -1455,6 +1460,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_ringboost:
 		plr->ringboost = luaL_checkinteger(L, 3);
+		break;
+	case player_ringtime:
+		plr->ringtime = luaL_checkinteger(L, 3);
 		break;
 	case player_superring:
 		plr->superring = luaL_checkinteger(L, 3);

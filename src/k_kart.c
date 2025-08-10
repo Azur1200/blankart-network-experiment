@@ -9449,6 +9449,7 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
 	UINT16 finalPower = 0;
+	UINT8 ringcap = 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
 
 	if (boosted == true)
 	{
@@ -9466,13 +9467,17 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 	// the base is 4 tics
 	finalPower += 3;
 
-	// If you use more then 20 rings at a time, you start gaining less ring timer..
-	if (player->ringtime == finalPower*20)
+	// If you use alot of rings at a time, you start gaining less ring timer...
+	if (player->ringtime == finalPower*ringcap)
 	{
 		if (P_IsLocalPlayer(player))
 			S_StartSound(NULL, sfx_cdfm66);
 	}
-	else if (player->ringtime > finalPower*20)
+	else if (player->ringtime > finalPower*(ringcap+(ringcap/2)))
+	{
+		finalPower = 1;
+	}
+	else if (player->ringtime > finalPower*ringcap)
 	{
 		finalPower = 2;
 	}
