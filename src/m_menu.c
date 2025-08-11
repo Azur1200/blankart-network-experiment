@@ -4696,14 +4696,16 @@ INT32 MR_Options(INT32 choice)
 {
 	(void)choice;
 
+	boolean gamecheck = (Playing() || demo.playback);
+
 	// if the player is not admin or server, disable gameplay & server options
 	M_SetItemDisabled(MN_OP_MAIN, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
 	M_SetItemDisabled(MN_OP_MAIN, "SERVER", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
 
-	// no credits or data erasing in-game
-	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", Playing());
-	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", Playing());
-	M_SetItemDisabled(MN_OP_DATA, "ERASE", Playing());
+	// no credits or data erasing in-game/during replays
+	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", gamecheck);
+	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", gamecheck);
+	M_SetItemDisabled(MN_OP_DATA, "ERASE", gamecheck);
 
 	M_SetItemSecret(MN_OP_GAME, "ENCORE", !M_SecretUnlocked(SECRET_ENCORE));
 
