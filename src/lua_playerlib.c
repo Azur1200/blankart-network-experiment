@@ -193,7 +193,10 @@ enum player_e
 	player_nextcheck,
 	player_distancetofinish,
 	player_distancetofinishprev,
+	player_currentwaypoint,
+	player_nextwaypoint,
 	player_airtime,
+	player_bigwaypointgap,
 	player_flashing,
 	player_spinouttimer,
 	player_spinouttype,
@@ -381,7 +384,10 @@ static const char *const player_opt[] = {
 	"nextcheck",
 	"distancetofinish",
 	"distancetofinishprev",
+	"currentwaypoint",
+	"nextwaypoint",
 	"airtime",
+	"bigwaypointgap",
 	"flashing",
 	"spinouttimer",
 	"spinouttype",
@@ -649,6 +655,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_airtime:
 		lua_pushinteger(L, plr->airtime);
+		break;
+	case player_bigwaypointgap:
+		lua_pushinteger(L, plr->bigwaypointgap);
 		break;
 	case player_flashing:
 		lua_pushinteger(L, plr->flashing);
@@ -1295,11 +1304,22 @@ static int player_set(lua_State *L)
 		plr->nextcheck = luaL_checkinteger(L, 3);
 		break;
 	case player_distancetofinish:
-		return NOSET;
+		plr->distancetofinish = luaL_checkfixed(L, 3);
+		break;
 	case player_distancetofinishprev:
-		return NOSET;
+		plr->distancetofinishprev = luaL_checkfixed(L, 3);
+		break;
+	case player_currentwaypoint:
+		NOSET;
+		break;
+	case player_nextwaypoint:
+		NOSET;
+		break;
 	case player_airtime:
 		plr->airtime = luaL_checkinteger(L, 3);
+		break;
+	case player_bigwaypointgap:
+		plr->bigwaypointgap = luaL_checkinteger(L, 3);
 		break;
 	case player_flashing:
 		plr->flashing = luaL_checkinteger(L, 3);

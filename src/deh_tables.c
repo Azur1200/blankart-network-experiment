@@ -29,6 +29,8 @@
 #include "k_follower.h" // followermode_t (for lua)
 #include "g_input.h" // Game controls (for lua)
 #include "k_kart.h" // awardscaledrings_t
+#include "k_waypoint.h" // waypoint values (for lua)
+
 
 #include "deh_tables.h"
 #include "fastcmp.h"
@@ -1573,6 +1575,8 @@ struct int_const_s const INT_CONST[] = {
 	{"KARTINVIN_LEGACY", KARTINVIN_LEGACY},
 	{"KARTINVIN_ALTERN", KARTINVIN_ALTERN},
 
+	// k_waypoint.h values
+	{"DEFAULT_WAYPOINT_RADIUS",DEFAULT_WAYPOINT_RADIUS},
 
 	{NULL,0}
 };

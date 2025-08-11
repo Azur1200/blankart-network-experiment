@@ -105,6 +105,7 @@ extern lua_State *gL;
 #define META_ACTIVATOR "ACTIVATOR_T*"
 
 #define META_FOLLOWER "FOLLOWER_T*"
+#define META_WAYPOINT "WAYPOINT_T*"
 
 #define META_SPLASH "T_SPLASH_T*"
 #define META_FOOTSTEP "T_FOOTSTEP_T*"
@@ -134,6 +135,7 @@ int LUA_BlockmapLib(lua_State *L);
 int LUA_HudLib(lua_State *L);
 int LUA_FollowerLib(lua_State *L);
 int LUA_TerrainLib(lua_State *L);
+int LUA_WaypointLib(lua_State *L);
 
 #ifdef __cplusplus
 } // extern "C"
