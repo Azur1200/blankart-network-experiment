@@ -2202,13 +2202,13 @@ static int kartstuff_set(lua_State *L)
 				plr->driftcharge  = i;
 				break;
 			case k_driftboost:
-				plr->driftboost = i;
+				plr->driftboost = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_boostcharge:
 				plr->boostcharge = i;
 				break;
 			case k_startboost:
-				plr->startboost = i;
+				plr->startboost = CLAMP(i, 0, UINT8_MAX);
 				break;
 			/*case k_jmp:
 				plr->pflags |= PF_DRIFTINPUT;
@@ -2285,26 +2285,26 @@ static int kartstuff_set(lua_State *L)
 				plr->stolentimer = i;
 				break;
 			case k_sneakertimer:
-				plr->sneakertimer = i;
+				plr->sneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_growshrinktimer:
-				plr->growshrinktimer = i;
+				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_squishedtimer:
-				plr->squishedtimer = i;
+				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_rocketsneakertimer:
-				plr->rocketsneakertimer = i;
+				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_invincibilitytimer:
-				plr->invincibilitytimer = i;
+				plr->invincibilitytimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_eggmanheld:
 				if (i > 0)
 					plr->itemflags |= IF_EGGMANOUT;
 				break;
 			case k_eggmanexplode:
-				plr->eggmanexplode = i;
+				plr->eggmanexplode = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_eggmanblame:
 				plr->eggmanblame = i;
@@ -2313,13 +2313,13 @@ static int kartstuff_set(lua_State *L)
 				plr->lastjawztarget = i;
 				break;
 			case k_bananadrag:
-				plr->bananadrag = i;
+				plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_spinouttimer:
-				plr->spinouttimer = i;
+				plr->spinouttimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_wipeoutslow:
-				plr->wipeoutslow = i;
+				plr->wipeoutslow = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_justbumped:
 				plr->justbumped = i;
