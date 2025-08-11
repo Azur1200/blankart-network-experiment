@@ -653,6 +653,12 @@ static int player_get(lua_State *L)
 	case player_distancetofinishprev:
 		lua_pushinteger(L, plr->distancetofinishprev);
 		break;
+	case player_currentwaypoint:
+		LUA_PushUserdata(L, plr->currentwaypoint, META_WAYPOINT);
+		break;
+	case player_nextwaypoint:
+		LUA_PushUserdata(L, plr->nextwaypoint, META_WAYPOINT);
+		break;
 	case player_airtime:
 		lua_pushinteger(L, plr->airtime);
 		break;
@@ -1310,10 +1316,10 @@ static int player_set(lua_State *L)
 		plr->distancetofinishprev = luaL_checkfixed(L, 3);
 		break;
 	case player_currentwaypoint:
-		NOSET;
+		return NOSET;
 		break;
 	case player_nextwaypoint:
-		NOSET;
+		return NOSET;
 		break;
 	case player_airtime:
 		plr->airtime = luaL_checkinteger(L, 3);
