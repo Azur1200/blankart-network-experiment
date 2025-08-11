@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 //
 
 #define DEMOVERSION 0x0009
-#define DEMOHEADER  "\xF0" "KartReplay" "\x0F"
+#define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
 #define DF_TIMEATTACK   0x02 // This demo is from Time Attack and contains its final completion time & best lap!
@@ -672,36 +672,44 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->raflags = 0;
 	header->empty = false;
 
-	if (memcmp(dp, DEMOHEADER, 12))
-		return HEADER_BADMAGIC;
 	dp += 12;
-
 	header->version = READUINT8(dp);
 	header->subversion = READUINT8(dp);
 	header->demoversion = READUINT16(dp);
 
-	switch (header->demoversion)
+	if (!memcmp(startdp, DEMOHEADER, 12)) // BlanReplay
 	{
-	case DEMOVERSION: // latest always supported
-		break;
+		switch (header->demoversion)
+		{
+		case DEMOVERSION: // latest always supported
+			break;
 
-	case 0x0008: // BlanKart (Pre-RA mod flags)
-		raflag = false;
-		break;
-
-	case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
-		oldkart = kart = true;
-		raflag = false;
-		break;
-
-	case 0x0002: // SRB2Kart 1.1+
-		kart = true;
-		raflag = false;
-		break;
-
-	default: // too old, cannot support.
-		return HEADER_BADVERSION;
+		default: // too old, cannot support.
+			return HEADER_BADVERSION;
+		}
 	}
+	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
+	{
+		raflag = false;
+		switch (header->demoversion)
+		{
+		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
+			oldkart = kart = true;
+			break;
+
+		case 0x0002: // SRB2Kart 1.1+
+			kart = true;
+			break;
+
+		case 0x0008: // BlanKart (Pre-RA mod flags)
+			break;
+
+		default: // too old, cannot support.
+			return HEADER_BADVERSION;
+		}
+	}
+	else
+		return HEADER_BADMAGIC;
 
 	if (oldkart)
 		header->demotitle[0] = '\0';
@@ -946,6 +954,17 @@ static void G_FreeDemoHeader(demoheader_t *header)
 }
 
 // and now, the rest of g_demo.c
+
+boolean G_CompatLevel(UINT16 level)
+{
+	if (demo.playback)
+	{
+		// Check gameplay differences for older ghosts
+		return (demo.version <= level);
+	}
+
+	return false;
+}
 
 static mobj_t oldmetal, oldghost[MAXPLAYERS];
 
@@ -1850,7 +1869,7 @@ void G_ConsGhostTic(INT32 playernum)
 		else
 			ghostext[playernum].desyncframes = 0;
 
-		if (demo.version != 0x0001 &&
+		if (!G_CompatLevel(0x0001) &&
 		   (players[playernum].itemtype != ghostext[playernum].kartitem
 		 || players[playernum].itemamount != ghostext[playernum].kartamount
 		 || players[playernum].bumper != ghostext[playernum].kartbumpers))
@@ -3745,7 +3764,7 @@ void G_DoPlayDemo(char *defdemoname)
 			LUA_ClearState();
 
 		// No modeattacking check, DF_LUAVARS won't be present here.
-		LUA_UnArchive(&demobuf, false, demo.version <= 0x0002);
+		LUA_UnArchive(&demobuf, false, G_CompatLevel(0x0002));
 	}
 
 	splitscreen = 0;

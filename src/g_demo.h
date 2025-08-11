@@ -101,6 +101,7 @@ struct menudemo_t {
 	} standings[MAXPLAYERS];
 };
 
+boolean G_CompatLevel(UINT16 level);
 
 extern mobj_t *metalplayback;
 

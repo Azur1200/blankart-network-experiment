@@ -721,7 +721,7 @@ void P_Ticker(boolean run)
 		}
 		if (demo.playback)
 		{
-			if (demo.version == 0x0001 && !multiplayer)
+			if (G_CompatLevel(0x0001) && !multiplayer)
 				G_ReadDemoTiccmd(&players[0].cmd, 0);
 			else
 			{
@@ -899,7 +899,7 @@ void P_Ticker(boolean run)
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{
-			if (!multiplayer && demo.version == 0x0001)
+			if (!multiplayer && G_CompatLevel(0x0001))
 				G_ConsGhostTic(0);
 			else
 				G_ConsAllGhostTics();
