@@ -3190,7 +3190,9 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 
 	// read demo header
 	demoheader_t header;
-	I_Assert(G_ReadDemoHeader(buffer, &header) == HEADER_OK);
+	headerstatus_e status = G_ReadDemoHeader(buffer, &header);
+	(void)status;
+	I_Assert(status == HEADER_OK);
 	I_Assert(header.version == VERSION);
 	I_Assert(header.subversion == SUBVERSION);
 	I_Assert(header.demoversion == DEMOVERSION);
