@@ -86,9 +86,8 @@ void P_ExitPlayerOrbit(player_t *player)
 	}
 
 	// tiregrease gives less friction, extends momentum
-	K_SetTireGrease(player, TICRATE*2);
-	player->outruntime = TICRATE*2;
-	
+	K_SetTireGrease(player, 3*TICRATE);
+
 	P_HaltPlayerOrbit(player);
 }
 

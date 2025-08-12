@@ -7992,8 +7992,24 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->outruntime > 0)
 		player->outruntime--;
 
-	if (player->tiregrease > 0)
-		player->tiregrease--;
+	if (player->tiregrease)
+	{
+		// Remove grease faster if players are moving slower; players that are recovering
+		// from mistakes (or who got sprung purely for track traversal) need steering!
+		// Up to 4x degrease speed below 10FU/t (speed at which you lose drift sparks).
+		INT16 toDegrease = 1;
+		INT16 driftSpeedIncrements = player->speed / (10 * player->mo->scale); // Same breakpoints used for driftcharge stages.
+		toDegrease += max(3 - driftSpeedIncrements, 0);
+
+		if (player->tiregrease <= toDegrease)
+		{
+			player->tiregrease = 0;
+		}
+		else
+		{
+			player->tiregrease -= toDegrease;
+		}
+	}
 
 	if (player->chaintimer)
 		player->chaintimer--;
@@ -9528,6 +9544,11 @@ static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 	basedrift = 83*player->drift - (driftweight - 14)*player->drift/5; // 415 - 303
 	driftangle = abs((252 - driftweight)*player->drift/5);
 
+	if (player->tiregrease > 0) // Buff drift-steering while in greasemode
+	{
+		basedrift += (basedrift / greasetics) * player->tiregrease;
+	}
+
 	return basedrift + FixedMul(driftangle, countersteer);
 }
 
@@ -10598,6 +10619,27 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
+	// Reduce friction after exiting a loop.
+	if (player->tiregrease)
+	{
+		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
+
+		if (player->mo->friction > FRACUNIT)
+			player->mo->friction = FRACUNIT;
+		if (player->mo->friction < 0)
+			player->mo->friction = 0;
+
+		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
+
+		if (player->mo->movefactor < FRACUNIT)
+			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
+		else
+			player->mo->movefactor = FRACUNIT;
+
+		if (player->mo->movefactor < 32)
+			player->mo->movefactor = 32;
+	}
+
 	// Friction
 	if (!player->offroad)
 	{
@@ -10607,12 +10649,6 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	if (player->speed > 0 && player->cmd.forwardmove < 0)	// change friction while braking no matter what, otherwise it's not any more effective than just letting go off accel
 		player->mo->friction -= 2048;
-
-	// Reduce friction after exiting a loop.
-	if (player->tiregrease)
-	{
-		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
-	}
 
 	// Karma ice physics
 	if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
@@ -10630,7 +10666,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 		if (player->mo->movefactor < FRACUNIT)
 			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
 		else
-			player->mo->movefactor = FRACUNIT; //player->mo->movefactor = ((player->mo->friction - 0xDB34)*(0xA))/0x80;
+			player->mo->movefactor = FRACUNIT;
 
 		if (player->mo->movefactor < 32)
 			player->mo->movefactor = 32;
@@ -10652,6 +10688,13 @@ void K_SetTireGrease(player_t *player, tic_t tics)
 		return;
 
 	player->tiregrease = tics;
+}
+
+boolean K_SlopeResistance(player_t *player)
+{
+	if (player->tiregrease)
+		return true;
+	return false;
 }
 
 void K_SetItemOut(player_t *player)

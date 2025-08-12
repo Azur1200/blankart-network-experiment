@@ -1798,6 +1798,11 @@ static void P_3dMovement(player_t *player)
 
 	totalthrust.x = totalthrust.y = 0; // I forget if this is needed
 	totalthrust.z = FRACUNIT*P_MobjFlip(player->mo)/3; // A bit of extra push-back on slopes
+
+	if (K_SlopeResistance(player) == true)
+	{
+		totalthrust.z = -(totalthrust.z);
+	}
 	
 	cmd = &player->cmd;
 	
@@ -1949,7 +1954,7 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if ((player->outruntime == 0) || (player->offroad > 0))
+	if (player->offroad > 0 || !player->outruntime)
 	{
 		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
 		{

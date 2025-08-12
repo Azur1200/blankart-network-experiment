@@ -5013,6 +5013,7 @@ static luaL_Reg lib[] = {
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
 
 	// k_waypoint
+	{"K_NextRespawnWaypointIndex", lib_kNextRespawnWaypointIndex},
 	{"K_GetFinishLineWaypoint", lib_kGetFinishLineWaypoint},
 	{"K_GetStartingWaypoint", lib_kGetStartingWaypoint},
 	{"K_GetWaypointIsFinishline", lib_kGetWaypointIsFinishline},
