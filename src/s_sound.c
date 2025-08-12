@@ -192,7 +192,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 
 		// Now checks if same sound is being played, rather
 		// than just one sound per mobj
-		else if (sfxinfo == channels[cnum].sfxinfo && (sfxinfo->pitch & SF_NOMULTIPLESOUND))
+		else if (sfxinfo == channels[cnum].sfxinfo && (sfxinfo->flags & SF_NOMULTIPLESOUND))
 		{
 			return -1;
 		}
@@ -203,7 +203,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 		}
 		else if (origin && channels[cnum].origin == origin && channels[cnum].sfxinfo == sfxinfo)
 		{
-			if (sfxinfo->pitch & SF_NOINTERRUPT)
+			if (sfxinfo->flags & SF_NOINTERRUPT)
 				return -1;
 			else
 				S_StopChannel(cnum);
@@ -211,7 +211,7 @@ static INT32 S_getChannel(const void *origin, sfxinfo_t *sfxinfo)
 		}
 		else if (origin && channels[cnum].origin == origin
 			&& channels[cnum].sfxinfo->name != sfxinfo->name
-			&& (channels[cnum].sfxinfo->pitch & SF_TOTALLYSINGLE) && (sfxinfo->pitch & SF_TOTALLYSINGLE))
+			&& (channels[cnum].sfxinfo->flags & SF_TOTALLYSINGLE) && (sfxinfo->flags & SF_TOTALLYSINGLE))
 		{
 			S_StopChannel(cnum);
 			break;
@@ -1090,7 +1090,7 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 		}
 	}
 
-	if (sfxinfo->pitch & SF_OUTSIDESOUND) // Rain special case
+	if (sfxinfo->flags & SF_OUTSIDESOUND) // Rain special case
 	{
 		fixed_t x, y, yl, yh, xl, xh, newdist;
 
@@ -1126,14 +1126,14 @@ boolean S_AdjustSoundParams(const mobj_t *listener, const mobj_t *source, INT32 
 	}
 
 	// Ring loss, deaths, etc, should all be heard louder.
-	if (sfxinfo->pitch & SF_X8AWAYSOUND)
+	if (sfxinfo->flags & SF_X8AWAYSOUND)
 		approx_dist = FixedDiv(approx_dist,8*FRACUNIT);
 
 	// Combine 8XAWAYSOUND with 4XAWAYSOUND and get.... 32XAWAYSOUND?
-	if (sfxinfo->pitch & SF_X4AWAYSOUND)
+	if (sfxinfo->flags & SF_X4AWAYSOUND)
 		approx_dist = FixedDiv(approx_dist,4*FRACUNIT);
 
-	if (sfxinfo->pitch & SF_X2AWAYSOUND)
+	if (sfxinfo->flags & SF_X2AWAYSOUND)
 		approx_dist = FixedDiv(approx_dist,2*FRACUNIT);
 
 	if (approx_dist > S_CLIPPING_DIST)

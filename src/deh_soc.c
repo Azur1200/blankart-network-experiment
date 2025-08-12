@@ -2520,7 +2520,7 @@ void readsound(MYFILE *f, INT32 num)
 			}
 			else if (fastcmp(word, "FLAGS"))
 			{
-				S_sfx[num].pitch = value;
+				S_sfx[num].flags = value;
 			}
 			else if (fastcmp(word, "VOLUME"))
 			{

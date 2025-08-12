@@ -731,7 +731,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 					stoken + stokenadjust))
 			{
 				skin->soundsid[S_sfx[i].skinsound] =
-					S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].pitch, true);
+					S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
 				found = true;
 			}
 		}
