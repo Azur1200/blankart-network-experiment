@@ -2246,7 +2246,7 @@ static void M_DrawMenuTooltips(void)
 			lastitemon = itemOn;
 		}
 
-		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM, alphatimer);
+		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|MENUCAPS, alphatimer);
 		if (alphatimer > 0 && renderisnewtic)
 			alphatimer--;
 	}
