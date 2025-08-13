@@ -525,6 +525,12 @@ BlockItReturn_t PIT_PushableMoved(mobj_t *thing);
 void P_DoSpringEx(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
 boolean P_DoSpring(mobj_t *spring, mobj_t *object);
 
+INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+INT32 P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+INT32 P_GetSectorLightLevelAt(fixed_t x, fixed_t y, fixed_t z);
+extracolormap_t *P_GetColormapFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+extracolormap_t *P_GetSectorColormapAt(fixed_t x, fixed_t y, fixed_t z);
+
 fixed_t P_GetFOFTopZAt (ffloor_t *rover, fixed_t x, fixed_t y);
 fixed_t P_GetFOFBottomZAt (ffloor_t *rover, fixed_t x, fixed_t y);
 

@@ -1676,6 +1676,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			{
 				fixed_t camAngleDiff = AngleFixed(viewangle) - FLOAT_TO_FIXED(p.angley); // dumb reconversion back, I know
 
+				anglef *= flip ? -1 : 1; // Adjust for flipping
+
 				p.rollangle = FIXED_TO_FLOAT(anglef);
 				p.roll = true;
 
@@ -1697,13 +1699,23 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 		HWD.pfnSetShader(SHADER_MODEL);	// model shader
 		{
-			float this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
+			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
-			float xs = this_scale * FIXED_TO_FLOAT(spr->mobj->spritexscale);
-			float ys = this_scale * FIXED_TO_FLOAT(spr->mobj->spriteyscale);
+			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
+			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
 
-			float ox = xs * FIXED_TO_FLOAT(spr->mobj->spritexoffset);
-			float oy = ys * FIXED_TO_FLOAT(spr->mobj->spriteyoffset);
+			float ox = xs * FIXED_TO_FLOAT(interp.spritexoffset);
+			float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
+
+			SINT8 flipoffset = 1;
+
+			if ((spr->mobj->renderflags & RF_FLIPOFFSETS) && flip)
+			{
+				flipoffset = -1;
+			}
+
+			ox *= flipoffset;
+			oy *= flipoffset;
 
 			// offset perpendicular to the camera angle
 			p.x -= ox * gl_viewsin;

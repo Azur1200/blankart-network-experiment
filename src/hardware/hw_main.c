@@ -4046,16 +4046,22 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 			if (!R_ThingIsFullBright(spr->mobj))
 				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
 
-			if (*sector->lightlist[light].extra_colormap)
+			if (!(spr->mobj->renderflags & RF_NOCOLORMAPS))
+			{
+				if (*sector->lightlist[light].extra_colormap)
 				colormap = *sector->lightlist[light].extra_colormap;
+			}
 		}
 		else
 		{
 			if (!R_ThingIsFullBright(spr->mobj))
 				lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
 
-			if (sector->extra_colormap)
-				colormap = sector->extra_colormap;
+			if (!(spr->mobj->renderflags & RF_NOCOLORMAPS))
+			{
+				if (sector->extra_colormap)
+					colormap = sector->extra_colormap;
+			}
 		}
 
 		//lightlevel = 128 + (lightlevel>>1);
