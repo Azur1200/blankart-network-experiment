@@ -2819,6 +2819,8 @@ static void K_RespawnChecker(player_t *player)
 				player->startboost = 50;
 				K_SpawnDashDustRelease(player);
 			}
+
+			P_PlayerRingBurst(player, 2);
 			player->mo->colorized = false;
 			player->dropdash = 0;
 			player->respawn = 0;
