@@ -1577,7 +1577,7 @@ boolean G_Responder(event_t *ev)
 	// Intro
 	else if (gamestate == GS_INTRO)
 	{
-		if (F_IntroResponder(ev))
+		if (F_IntroResponder(ev) && !WipeInAction)
 		{
 			D_StartTitle();
 			return true;

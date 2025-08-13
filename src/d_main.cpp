@@ -679,7 +679,7 @@ dedipostwipe:
 		if (rendermode != render_none)
 			F_WipeEndScreen();
 
-		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK);
+		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_INTRO);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -851,7 +851,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_INTRO)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
