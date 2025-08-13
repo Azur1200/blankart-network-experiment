@@ -80,7 +80,8 @@ consvar_t cv_renderer = CVAR_INIT ("renderer", "Software", CV_SAVE|CV_NOLUA|CV_C
 
 static void SCR_ChangeFullscreen(void);
 
-consvar_t cv_fullscreen = CVAR_INIT ("fullscreen", "Yes", CV_SAVE|CV_CALL, CV_YesNo, SCR_ChangeFullscreen);
+static CV_PossibleValue_t fullscreen_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Borderless Window"}, {0, NULL}};
+consvar_t cv_fullscreen = CVAR_INIT ("fullscreen", "Yes", CV_SAVE|CV_CALL, fullscreen_cons_t, SCR_ChangeFullscreen);
 
 // =========================================================================
 //                           SCREEN VARIABLES
@@ -449,6 +450,8 @@ void SCR_SetDefaultMode(void)
 void SCR_ChangeFullscreen(void)
 {
 #ifdef DIRECTFULLSCREEN
+	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
+
 	// allow_fullscreen is set by VID_PrepareModeList
 	// it is used to prevent switching to fullscreen during startup
 	if (!allow_fullscreen)
