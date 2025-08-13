@@ -78,6 +78,9 @@
 static void P_NukeAllPlayers(player_t *player);
 #endif
 
+// Some people like the more limited camerea from V1 so why not.
+consvar_t cv_naturalcamera = CVAR_INIT ("naturalcamera", "Off", CV_SAVE, CV_OnOff, NULL);
+
 //
 // Jingle stuff.
 //
@@ -3091,26 +3094,27 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 
 	// sets ideal cam pos
+	dist = camdist;
+
+	if (player->loop.radius)
+	{
+		speed = player->speed;
+	}
+	else
+	{
+		speed = P_AproxDistance(P_AproxDistance(mo->momx, mo->momy), mo->momz / 16);
+	}
+
+	if (cv_naturalcamera.value)
 	{
 		const fixed_t speedthreshold = 48*mapobjectscale;
 		const fixed_t olddist = P_AproxDistance(mo->x - thiscam->x, mo->y - thiscam->y);
 
 		fixed_t lag, distoffset;
 
-		dist = camdist;
-
 		if (player->karthud[khud_boostcam])
 		{
 			dist -= FixedMul(11*dist/16, player->karthud[khud_boostcam]);
-		}
-
-		if (player->loop.radius)
-		{
-			speed = player->speed;
-		}
-		else
-		{
-			speed = P_AproxDistance(P_AproxDistance(mo->momx, mo->momy), mo->momz / 16);
 		}
 
 		lag = FRACUNIT - ((FixedDiv(speed, speedthreshold) - FRACUNIT) * 2);
@@ -3131,6 +3135,17 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		if (dist < 0)
 		{
 			dist = 0;
+		}
+	}
+	else
+	{
+		if (speed > K_GetKartSpeed(player, false, true))
+			dist += 4*(speed - K_GetKartSpeed(player, false, true));
+		dist += abs(thiscam->momz)/4;
+
+		if (player->karthud[khud_boostcam])
+		{
+			dist -= FixedMul(11*dist/16, player->karthud[khud_boostcam]);
 		}
 	}
 

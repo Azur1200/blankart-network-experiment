@@ -379,6 +379,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_test1);
 	CV_RegisterVar(&cv_test2);
 	CV_RegisterVar(&cv_test3);
+
+	CV_RegisterVar(&cv_naturalcamera);
 }
 
 //}

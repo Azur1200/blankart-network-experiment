@@ -28,6 +28,8 @@
 extern "C" {
 #endif
 
+extern consvar_t cv_naturalcamera;
+
 #define FLOATSPEED (FRACUNIT*4)
 
 //#define VIEWHEIGHTS "41"
