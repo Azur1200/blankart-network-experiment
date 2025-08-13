@@ -6945,6 +6945,8 @@ static void P_FlameJetSceneryThink(mobj_t *mobj)
 	flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLAMEJETFLAME);
 	P_SetMobjState(flame, S_FLAMEJETFLAME4);
 
+	flame->renderflags |= RF_TRANS40;
+
 	flame->angle = mobj->angle;
 
 	if (mobj->flags2 & MF2_AMBUSH) // Wave up and down instead of side-to-side
@@ -6982,6 +6984,8 @@ static void P_VerticalFlameJetSceneryThink(mobj_t *mobj)
 		mobj->fuse--;
 
 	flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLAMEJETFLAME);
+
+	flame->renderflags |= RF_TRANS40;
 
 	strength = 20*FRACUNIT;
 	strength -= ((20*FRACUNIT)/16)*mobj->movedir;
