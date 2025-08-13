@@ -30,6 +30,7 @@
 #include "p_setup.h"
 #include "s_sound.h"
 #include "i_sound.h"
+#include "i_net.h"
 #include "m_misc.h"
 #include "am_map.h"
 #include "byteptr.h"
@@ -4090,6 +4091,7 @@ static void Command_Changepassword_f(void)
 
 static void Command_Login_f(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 #ifdef NOMD5
 	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
 	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");

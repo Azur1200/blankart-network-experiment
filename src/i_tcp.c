@@ -579,6 +579,8 @@ void Command_Numnodes(void)
 
 static boolean hole_punch(ssize_t c)
 {
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
+
 	if (cv_rendezvousserver.string[0] &&
 			c == 10 && holepunchpacket->magic == hole_punch_magic)
 	{
@@ -1415,6 +1417,7 @@ static void rendezvous(int size)
 	static tic_t refreshtic = (tic_t)-1;
 
 	tic_t tic = I_GetTime();
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	if (tic != refreshtic)
 	{
@@ -1441,6 +1444,7 @@ static void rendezvous(int size)
 static void SOCK_RequestHolePunch(INT32 node)
 {
 	mysockaddr_t * addr = &clientaddress[node];
+	holepunch_t *holepunchpacket = HOLEPUNCH_DATA(doomcom);
 
 	holepunchpacket->addr = addr->ip4.sin_addr.s_addr;
 	holepunchpacket->port = addr->ip4.sin_port;
