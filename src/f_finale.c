@@ -900,6 +900,8 @@ static const char *blancredits[] = {
 	"\"SuperJustinBros\"",
 	"SRB2Classic Team",
 	"\"luigi budd\"",
+	"\"Lugent\"",
+	"\"chromaticpipe\"",
 	"",
 	"\1Ring Racers Programming",
 	"Kart Krew Dev",
