@@ -644,12 +644,8 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-/*--------------------------------------------------
-	void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
-
-		See header file for description.
---------------------------------------------------*/
-void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
+// See header file for description.
+void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -672,20 +668,14 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 	SINT8 gotoSide = -1;
 	UINT8 i;
 
-	if (predict == NULL)
-	{
-		ps_bots[player - players].nudge += I_GetPreciseTime() - time;
-		return;
-	}
-
-	distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
-	angleToPredict = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
+	distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
+	angleToPredict = R_PointToAngle2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 
 	radToPredict = distToPredict >> 1;
 	g_nudgeSearch.distancetocheck = FixedMul(radToPredict, radToPredict);
 
-	baseNudge = predict->baseRadius >> 3;
-	maxNudge = predict->baseRadius - baseNudge;
+	baseNudge = bd->predict.baseRadius >> 3;
+	maxNudge = bd->predict.baseRadius - baseNudge;
 
 	g_nudgeSearch.botmo = player->mo;
 	g_nudgeSearch.angle = angleToPredict;
@@ -735,7 +725,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 
 		avgDist = R_PointToDist2(
 			avgX, avgY,
-			predict->x, predict->y
+			bd->predict.x, bd->predict.y
 		);
 
 		// High handling characters dodge better
@@ -748,14 +738,14 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 		// Point away
 		nudgeDir = R_PointToAngle2(
 			avgX, avgY,
-			predict->x, predict->y
+			bd->predict.x, bd->predict.y
 		);
 
-		predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
-		predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
-		predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
+		bd->predict.x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
+		bd->predict.y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+		bd->predict.radius = std::max(bd->predict.radius - nudgeDist, baseNudge);
 
-		distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
+		distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 
 		// Flip side, since we want to check for objects to steer towards on the side we're NOT dodging.
 		if (gotoSide == 0)
@@ -797,7 +787,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 		avgY = (g_nudgeSearch.gotoAvgY[gotoSide] / g_nudgeSearch.gotoObjs[gotoSide]) * mapobjectscale;
 
 		avgDist = R_PointToDist2(
-			predict->x, predict->y,
+			bd->predict.x, bd->predict.y,
 			avgX, avgY
 		);
 
@@ -810,23 +800,23 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 
 		if (avgDist <= nudgeDist)
 		{
-			predict->x = avgX;
-			predict->y = avgY;
-			predict->radius = baseNudge;
+			bd->predict.x = avgX;
+			bd->predict.y = avgY;
+			bd->predict.radius = baseNudge;
 		}
 		else
 		{
 			// Point towards
 			nudgeDir = R_PointToAngle2(
-				predict->x, predict->y,
+				bd->predict.x, bd->predict.y,
 				avgX, avgY
 			);
 
-			predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
-			predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
-			predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
+			bd->predict.x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
+			bd->predict.y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+			bd->predict.radius = std::max(bd->predict.radius - nudgeDist, baseNudge);
 
-			//distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
+			//distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 		}
 	}
 

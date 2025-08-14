@@ -44,15 +44,60 @@ extern consvar_t cv_botcontrol;
 // How long it takes for a Lv.1 bot to decide to pick an item.
 #define BOT_ITEM_DECISION_TIME (2*TICRATE)
 
-// Point for bots to aim for
-struct botprediction_t
+// Minimum percentage for a (non-auto) drift to begin.
+#define BOTDRIFTPERCENT (10)
+
+// Minimum turning percentage for an auto drift to begin.
+#define DRIFTSTARTPCT (45)
+
+#define BOTDRIFTTICS (2*TICRATE/3)
+#define BOTDRIFTLOCKOUT (TICRATE/2)
+
+#define MAXDRIFTSKILL (FRACUNIT/2)
+
+typedef enum
 {
-	fixed_t x, y;
-	fixed_t radius, baseRadius;
+	DRIFTSTATE_AUTO,
+	DRIFTSTATE_STARTING,
+	DRIFTSTATE_ACTIVE,
+	DRIFTSTATE_ENDING,
+	NUMDRIFTSTATES
+} ATTRPACK botdrift_e;
+
+// unsynced bot variables, exclusively for use by bot logic and ticcmd generation
+// nobody except the server cares about this stuff!
+struct botdata_t
+{
+	// Point for bots to aim for
+	struct
+	{
+		fixed_t x, y;
+		fixed_t radius, baseRadius;
+	} predict;
+
+	tic_t itemdelay; // Delay before using item at all
+	tic_t itemconfirm; // When high enough, they will use their item
+
+	SINT8 turnconfirm; // Confirm turn direction
+	UINT8 respawnconfirm; // Confirm when respawn is needed.
+
+	botdrift_e driftstate; // Drifting state
+	SINT8 driftturn; // Drifting turn direction
+	tic_t drifttime; // Time spent drifting
+	tic_t driftlockout; // do not allow drifting for this many tics
+
+	boolean acceldown, brakedown, driftdown, itemdown; // buttons
+	boolean dolookback; // look out behind you
+	boolean itemwasdown; // last tic's item button
+	SINT8 itemthrow; // throwdir
+	INT16 turnamt; // turning
 };
 
 // AVAILABLE FOR LUA
 
+void K_BotTicker(player_t *player);
+
+void K_DrawBotDebugger(const player_t *player);
 
 /*--------------------------------------------------
 	boolean K_PlayerUsesBotMovement(const player_t *player);
@@ -278,21 +323,8 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
 
 boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y);
 
-
-/*--------------------------------------------------
-	void K_NudgePredictionTowardsObjects(botprediction_t *predict, player_t *player);
-
-		Moves the bot's prediction, based on objects around the bot.
-
-	Input Arguments:-
-		predict - The bot's prediction to nudge.
-		player - Player to compare.
-
-	Return:-
-		None
---------------------------------------------------*/
-
-void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player);
+// Moves the bot's prediction, based on objects around the bot.
+void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player);
 
 
 /*--------------------------------------------------
@@ -359,22 +391,12 @@ void K_UpdateBotGameplayVarsItemUsage(player_t *player);
 
 void K_UpdateBotGameplayVars(player_t *player);
 
+// Item usage part of ticcmd generation.
+void K_BotItemUsage(botdata_t *bd, player_t *player);
 
-/*--------------------------------------------------
-	void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt);
+void K_BotRespawn(player_t *player);
 
-		Item usage part of ticcmd generation.
-
-	Input Arguments:-
-		player - Player to generate the ticcmd for.
-		cmd - The player's ticcmd to modify.
-		turnamt - How hard the bot is turning.
-
-	Return:-
-		None
---------------------------------------------------*/
-
-void K_BotItemUsage(player_t *player, ticcmd_t *cmd, INT16 turnamt);
+void K_BotResetItemConfirm(player_t *player, boolean setdelay);
 
 /*--------------------------------------------------
 	fixed_t K_BotDetermineDriftSkill(player_t *player)
@@ -405,7 +427,7 @@ fixed_t K_BotDetermineDriftSkill(player_t *player);
 		None
 --------------------------------------------------*/
 
-void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout);
+void K_BotSetDriftState(player_t *player, botdrift_e newstate, tic_t lockout);
 
 
 #ifdef __cplusplus

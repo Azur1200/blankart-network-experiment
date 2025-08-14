@@ -40,6 +40,7 @@
 #include "k_waypoint.h"
 #include "k_director.h"
 #include "acs/interface.h"
+#include "k_bot.h" // K_BotTicker
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -766,6 +767,12 @@ void P_Ticker(boolean run)
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 				P_PlayerAfterThink(&players[i]);
+
+		// run all the bot tickers
+		if (server)
+			for (i = 0; i < MAXPLAYERS; i++)
+				if (playeringame[i] && players[i].bot && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+					K_BotTicker(&players[i]);
 
 		// Bosses have a punchy start, so no position.
 		if (bossinfo.boss == true)

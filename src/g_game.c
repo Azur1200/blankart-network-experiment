@@ -1363,13 +1363,6 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
-
-		if (dest[i].flags & TICCMD_BOT)
-		{
-			dest[i].bot.itemconfirm = src[i].bot.itemconfirm;
-			dest[i].bot.turnconfirm = src[i].bot.turnconfirm;
-			dest[i].bot.respawnconfirm = src[i].bot.respawnconfirm;
-		}
 	}
 	return dest;
 }
@@ -2670,7 +2663,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->botvars.controller = UINT16_MAX;
 	p->botvars.driftskill =
 		FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(p));
-	p->botvars.driftstate = DRIFTSTATE_AUTO;
+
+	K_BotRespawn(p);
 
 	if (follower)
 		P_RemoveMobj(follower);
