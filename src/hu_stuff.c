@@ -44,6 +44,8 @@
 #include "p_local.h" // camera[]
 #include "p_tick.h"
 
+#include "m_textinput.h"
+
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
 #endif
@@ -87,8 +89,8 @@ patch_t *frameslash;	// framerate stuff. Used in screen.c
 static player_t *plr;
 boolean hu_keystrokes; // :)
 boolean chat_on; // entering a chat message?
-static char w_chat[HU_MAXMSGLEN + 1];
-static size_t c_input = 0; // let's try to make the chat input less shitty.
+static char w_chat_buf[HU_MAXMSGLEN + 1];
+static textinput_t w_chat;
 static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
 static char hu_tick;
@@ -920,71 +922,6 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 #endif
 }
 
-// Handles key input and string input
-//
-/*static inline boolean HU_keyInChatString(char *s, char ch)
-{
-	size_t l;
-
-	if ((ch >= HU_FONTSTART && ch <= HU_FONTEND && fontv[HU_FONT].font[ch-HU_FONTSTART])
-	  || ch == ' ') // Allow spaces, of course
-	{
-		l = strlen(s);
-		if (l < HU_MAXMSGLEN - 1)
-		{
-			if (c_input >= strlen(s)) // don't do anything complicated
-			{
-				s[l++] = ch;
-				s[l]=0;
-			}
-			else
-			{
-				// move everything past c_input for new characters:
-				size_t m = HU_MAXMSGLEN-1;
-				while (m>=c_input)
-				{
-					if (s[m])
-						s[m+1] = (s[m]);
-					if (m == 0) // prevent overflow
-						break;
-					m--;
-				}
-				s[c_input] = ch; // and replace this.
-			}
-			c_input++;
-			return true;
-		}
-		return false;
-	}
-	else if (ch == KEY_BACKSPACE)
-	{
-		size_t i = c_input;
-
-		if (c_input <= 0)
-			return false;
-
-		if (!s[i-1])
-			return false;
-
-		if (i >= strlen(s)-1)
-		{
-			s[strlen(s)-1] = 0;
-			c_input--;
-			return false;
-		}
-
-		for (; (i < HU_MAXMSGLEN); i++)
-		{
-			s[i-1] = s[i];
-		}
-		c_input--;
-	}
-	else if (ch != KEY_ENTER)
-		return false; // did not eat key
-
-	return true; // ate the key
-}*/
-
 //
 //
 static void HU_TickSongCredits(void)
@@ -1109,8 +1046,8 @@ static boolean HU_chatboxContainsOnlySpaces(void)
 {
 	size_t i;
 
-	for (i = 0; w_chat[i]; i++)
-		if (w_chat[i] != ' ')
+	for (i = 0; w_chat_buf[i]; i++)
+		if (w_chat_buf[i] != ' ')
 			return false;
 
 	return true;
@@ -1128,16 +1065,15 @@ static void HU_sendChatMessage(void)
 		return;
 
 	// copy printable characters and terminating '\0' only.
-	for (ci = 2; w_chat[ci-2]; ci++)
+	for (ci = 2; w_chat_buf[ci-2]; ci++)
 	{
-		char c = w_chat[ci-2];
+		char c = w_chat_buf[ci-2];
 		if (c >= ' ' && !(c & 0x80))
 			buf[ci] = c;
 	};
 	buf[ci] = '\0';
 
-	memset(w_chat, '\0', sizeof(w_chat));
-	c_input = 0;
+	M_TextInputClear(&w_chat);
 
 	// last minute mute check
 	if (CHAT_MUTE)
@@ -1212,9 +1148,8 @@ static void HU_sendChatMessage(void)
 
 void HU_clearChatChars(void)
 {
-	memset(w_chat, '\0', sizeof(w_chat));
+	M_TextInputClear(&w_chat);
 	chat_on = false;
-	c_input = 0;
 
 	I_UpdateMouseGrab();
 }
@@ -1256,7 +1191,8 @@ boolean HU_Responder(event_t *ev)
 			&& netgame && !OLD_MUTE) // check for old chat mute, still let the players open the chat incase they want to scroll otherwise.
 		{
 			chat_on = true;
-			w_chat[0] = 0;
+			w_chat_buf[0] = 0;
+			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
 			teamtalk = false;
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1266,7 +1202,8 @@ boolean HU_Responder(event_t *ev)
 			&& netgame && !OLD_MUTE)
 		{
 			chat_on = true;
-			w_chat[0] = 0;
+			w_chat_buf[0] = 0;
+			M_TextInputInit(&w_chat, w_chat_buf, sizeof w_chat_buf);
 			teamtalk = G_GametypeHasTeams();	// Don't teamtalk if we don't have teams.
 			chat_scrollmedown = true;
 			typelines = 1;
@@ -1290,39 +1227,14 @@ boolean HU_Responder(event_t *ev)
 		&& !G_ControlBoundToKey(0, gc_talkkey, ev->data1, false))
 			return false;
 
-		c = CON_ShiftChar(c);
+		M_TextInputHandle(&w_chat, c);
 
-		// pasting. pasting is cool. chat is a bit limited, though :(
-		if ((c == 'v' || c == 'V') && ctrldown)
-		{
-			const char *paste;
-			size_t chatlen;
-			size_t pastelen;
-
-			if (CHAT_MUTE)
-				return true;
-
-			paste = I_ClipboardPaste();
-			if (paste == NULL)
-				return true;
-
-			chatlen = strlen(w_chat);
-			pastelen = strlen(paste);
-			if (chatlen+pastelen > HU_MAXMSGLEN)
-				return true; // we can't paste this!!
-
-			memmove(&w_chat[c_input + pastelen], &w_chat[c_input], pastelen);
-			memcpy(&w_chat[c_input], paste, pastelen); // copy all of that.
-			c_input += pastelen;
-			return true;
-		}
-		else if (c == KEY_ENTER)
+		if (c == KEY_ENTER)
 		{
 			if (!CHAT_MUTE)
 				HU_sendChatMessage();
 
 			chat_on = false;
-			c_input = 0; // reset input cursor
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
 			I_UpdateMouseGrab();
 		}
@@ -1332,7 +1244,6 @@ boolean HU_Responder(event_t *ev)
 			&& c >= NUMKEYS)) // If it's not a keyboard key, then the chat button is used as a toggle.
 		{
 			chat_on = false;
-			c_input = 0; // reset input cursor
 			I_UpdateMouseGrab();
 		}
 		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!
@@ -1346,45 +1257,6 @@ boolean HU_Responder(event_t *ev)
 			chat_scroll++;
 			justscrolleddown = true;
 			chat_scrolltime = 4;
-		}
-		else if (c == KEY_LEFTARROW && c_input != 0 && !OLDCHAT) // i said go back
-		{
-			if (ctrldown)
-				c_input = M_JumpWordReverse(w_chat, c_input);
-			else
-				c_input--;
-		}
-		else if (c == KEY_RIGHTARROW && c_input < strlen(w_chat) && !OLDCHAT) // don't need to check for admin or w/e here since the chat won't ever contain anything if it's muted.
-		{
-			if (ctrldown)
-				c_input += M_JumpWord(&w_chat[c_input]);
-			else
-				c_input++;
-		}
-		else if ((c >= HU_FONTSTART && c <= HU_FONTEND && fontv[HU_FONT].font[c-HU_FONTSTART])
-			|| c == ' ') // Allow spaces, of course
-		{
-			if (CHAT_MUTE || strlen(w_chat) >= HU_MAXMSGLEN)
-				return true;
-
-			memmove(&w_chat[c_input + 1], &w_chat[c_input], strlen(w_chat) - c_input + 1);
-			w_chat[c_input] = c;
-			c_input++;
-		}
-		else if (c == KEY_BACKSPACE)
-		{
-			if (CHAT_MUTE || c_input <= 0)
-				return true;
-
-			memmove(&w_chat[c_input - 1], &w_chat[c_input], strlen(w_chat) - c_input + 1);
-			c_input--;
-		}
-		else if (c == KEY_DEL)
-		{
-			if (CHAT_MUTE || c_input >= strlen(w_chat))
-				return true;
-
-			memmove(&w_chat[c_input], &w_chat[c_input + 1], strlen(w_chat) - c_input);
 		}
 
 		return true;
@@ -1742,8 +1614,9 @@ static void HU_DrawChat(void)
 	INT32 charwidth = 4, charheight = 6;
 	INT32 boxw = cv_chatwidth.value;
 	INT32 t = 0, c = 0, y = chaty - (typelines*charheight);
-	UINT32 i = 0, saylen = strlen(w_chat); // You learn new things everyday!
-	INT32 cflag = 0;
+	UINT32 i = 0, saylen = strlen(w_chat_buf); // You learn new things everyday!
+	INT32 cflag = 0;\
+	size_t select_start = 0, select_end = 0;
 	const char *ntalk = "Say: ", *ttalk = "Team: ";
 	const char *talk = ntalk;
 	const char *mute = "Chat has been muted.";
@@ -1807,13 +1680,19 @@ static void HU_DrawChat(void)
 	i = 0;
 	typelines = 1;
 
-	if ((strlen(w_chat) == 0 || c_input == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx + 2 + c, y+1, '_' |V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, true, NULL);
+	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
+		V_DrawChatCharacter(chatx+2+c+charwidth*w_chat.cursor, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_menucaps.value, NULL);
 
-	while (w_chat[i])
+	if (w_chat.select != w_chat.cursor)
+	{
+		select_start = min(w_chat.select, w_chat.cursor);
+		select_end =   max(w_chat.select, w_chat.cursor);
+	}
+
+	while (w_chat_buf[i])
 	{
 		boolean skippedline = false;
-		if (c_input == (i+1))
+		if (w_chat.cursor == (i+1))
 		{
 			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
 			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
@@ -1828,10 +1707,13 @@ static void HU_DrawChat(void)
 		}
 
 		//Hurdler: isn't it better like that?
-		if (w_chat[i] < HU_FONTSTART)
-			++i;
-		else
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat[i++] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, true, NULL);
+		if (w_chat_buf[i] >= HU_FONTSTART)
+			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_menucaps.value, NULL);
+
+		// Draw selection
+		if (i >= select_start && i < select_end)
+			V_DrawFill(chatx + c + 2, y-1, charwidth, charheight, 103|V_TRANSLUCENT|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t);
+		++i;
 
 		c += charwidth;
 		if (c > boxw-(charwidth*2) && !skippedline)
@@ -1843,7 +1725,7 @@ static void HU_DrawChat(void)
 	}
 
 	// handle /pm list. It's messy, horrible and I don't care.
-	if (strnicmp(w_chat, "/pm", 3) == 0 && vid.width >= 400 && !teamtalk) // 320x200 unsupported kthxbai
+	if (strnicmp(w_chat_buf, "/pm", 3) == 0 && vid.width >= 400 && !teamtalk) // 320x200 unsupported kthxbai
 	{
 		INT32 count = 0;
 		INT32 p_dispy = chaty - charheight -1;
@@ -1864,34 +1746,34 @@ static void HU_DrawChat(void)
 		for(i=0; (i<MAXPLAYERS); i++)
 		{
 			// filter: (code needs optimization pls help I'm bad with C)
-			if (w_chat[3])
+			if (w_chat_buf[3])
 			{
 				char playernum[3];
 				UINT32 n;
-				// right, that's half important: (w_chat[4] may be a space since /pm0 msg is perfectly acceptable!)
-				if ( ( ((w_chat[3] != 0) && ((w_chat[3] < '0') || (w_chat[3] > '9'))) || ((w_chat[4] != 0) && (((w_chat[4] < '0') || (w_chat[4] > '9'))))) && (w_chat[4] != ' '))
+				// right, that's half important: (w_chat_buf[4] may be a space since /pm0 msg is perfectly acceptable!)
+				if ( ( ((w_chat_buf[3] != 0) && ((w_chat_buf[3] < '0') || (w_chat_buf[3] > '9'))) || ((w_chat_buf[4] != 0) && (((w_chat_buf[4] < '0') || (w_chat_buf[4] > '9'))))) && (w_chat_buf[4] != ' '))
 					break;
 
-				strncpy(playernum, w_chat+3, 3);
+				strncpy(playernum, w_chat_buf+3, 3);
 				n = atoi(playernum); // turn that into a number
 				// special cases:
 
-				if ((n == 0) && !(w_chat[4] == '0'))
+				if ((n == 0) && !(w_chat_buf[4] == '0'))
 				{
 					if (!(i<10))
 						continue;
 				}
-				else if ((n == 1) && !(w_chat[3] == '0'))
+				else if ((n == 1) && !(w_chat_buf[3] == '0'))
 				{
 					if (!((i == 1) || ((i >= 10) && (i <= 19))))
 						continue;
 				}
-				else if ((n == 2) && !(w_chat[3] == '0'))
+				else if ((n == 2) && !(w_chat_buf[3] == '0'))
 				{
 					if (!((i == 2) || ((i >= 20) && (i <= 29))))
 						continue;
 				}
-				else if ((n == 3) && !(w_chat[3] == '0'))
+				else if ((n == 3) && !(w_chat_buf[3] == '0'))
 				{
 					if (!((i == 3) || ((i >= 30) && (i <= 31))))
 						continue;
@@ -1932,6 +1814,7 @@ static void HU_DrawChat_Old(void)
 	size_t i = 0;
 	const char *ntalk = "Say: ", *ttalk = "Say-Team: ";
 	const char *talk = ntalk;
+	size_t select_start = 0, select_end = 0;
 	INT32 charwidth = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->width) * con_scalefactor;
 	INT32 charheight = 8 * con_scalefactor; //(fontv[HU_FONT].font['A'-HU_FONTSTART]->height) * con_scalefactor;
 	if (teamtalk)
@@ -1955,19 +1838,24 @@ static void HU_DrawChat_Old(void)
 		else
 		{
 			//charwidth = (fontv[HU_FONT].font[talk[i]-HU_FONTSTART]->width) * con_scalefactor;
-			V_DrawCharacter(HU_INPUTX + c, y, talk[i++] | cv_constextsize.value | V_NOSCALESTART, true);
+			V_DrawCharacter(HU_INPUTX + c, y, talk[i++] | cv_constextsize.value | V_NOSCALESTART, !cv_menucaps.value);
 		}
 		c += charwidth;
 	}
 
-	if ((strlen(w_chat) == 0 || c_input == 0) && hu_tick < 4)
-		V_DrawCharacter(HU_INPUTX+c, y+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
+	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
+		V_DrawCharacter(HU_INPUTX+c+charwidth*w_chat.cursor, y+2*con_scalefactor, '_'|cv_constextsize.value|V_NOSCALESTART|t, !cv_menucaps.value);
+
+	if (w_chat.select != w_chat.cursor)
+	{
+		select_start = min(w_chat.select, w_chat.cursor);
+		select_end =   max(w_chat.select, w_chat.cursor);
+	}
 
 	i = 0;
-	while (w_chat[i])
+	while (w_chat_buf[i])
 	{
-
-		if (c_input == (i+1) && hu_tick < 4)
+		if (w_chat.cursor == (i+1) && hu_tick < 4)
 		{
 			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
 			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
@@ -1975,16 +1863,17 @@ static void HU_DrawChat_Old(void)
 		}
 
 		//Hurdler: isn't it better like that?
-		if (w_chat[i] < HU_FONTSTART)
-		{
-			++i;
-			//charwidth = 4 * con_scalefactor;
-		}
-		else
+		if (w_chat_buf[i] >= HU_FONTSTART)
 		{
 			//charwidth = (fontv[HU_FONT].font[w_chat[i]-HU_FONTSTART]->width) * con_scalefactor;
-			V_DrawCharacter(HU_INPUTX + c, y, w_chat[i++] | cv_constextsize.value | V_NOSCALESTART | t, true);
+			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, !cv_menucaps.value);
 		}
+
+		// Draw selection
+		if (i >= select_start && i < select_end)
+			V_DrawFill(HU_INPUTX + c, y, charwidth, charheight, 103|V_TRANSLUCENT|cv_constextsize.value|V_NOSCALESTART|t);
+
+		++i;
 
 		c += charwidth;
 		if (c >= vid.width)
@@ -1993,9 +1882,6 @@ static void HU_DrawChat_Old(void)
 			y += charheight;
 		}
 	}
-
-	if (hu_tick < 4)
-		V_DrawCharacter(HU_INPUTX + c, y, '_' | cv_constextsize.value |V_NOSCALESTART|t, true);
 }
 
 static void HU_DrawCEcho(void)

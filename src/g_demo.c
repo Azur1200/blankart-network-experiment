@@ -28,6 +28,7 @@
 #include "m_misc.h"
 #include "m_menu.h"
 #include "m_argv.h"
+#include "m_textinput.h"
 #include "hu_stuff.h"
 #include "z_zone.h"
 #include "i_video.h"
@@ -2776,7 +2777,19 @@ void G_BeginRecording(void)
 
 	// Full replay title
 	demobuf.p += 64;
-	snprintf(demo.titlename, 64, "%s - %s", G_BuildMapTitle(gamemap), modeattacking ? "Record Attack" : connectedservername);
+	{
+		char demotitlename[65];
+		char *title = G_BuildMapTitle(gamemap);
+		// Print to a separate temp buffer instead of demo.titlename, so we can use it in M_TextInputSetString
+		snprintf(demotitlename, 64, "%s - %s", title, modeattacking ? "Time Attack" : connectedservername);
+
+		// Init just in case it isn't initialized already
+		M_TextInputInit(&demo.titlenameinput, demo.titlename, sizeof(demo.titlename));
+
+		// This will indirectly assign to demo.titlename too
+		M_TextInputSetString(&demo.titlenameinput, demotitlename);
+		Z_Free(title);
+	}
 
 	// demo checksum
 	demobuf.p += sizeof(UINT64);
@@ -4410,7 +4423,6 @@ void G_SaveDemo(void)
 
 boolean G_DemoTitleResponder(event_t *ev)
 {
-	size_t len;
 	INT32 ch;
 
 	if (ev->type != ev_keydown)
@@ -4431,28 +4443,7 @@ boolean G_DemoTitleResponder(event_t *ev)
 		return true;
 	}
 
-	if ((ch >= HU_FONTSTART && ch <= HU_FONTEND && fontv[HU_FONT].font[ch-HU_FONTSTART])
-	  || ch == ' ') // Allow spaces, of course
-	{
-		len = strlen(demo.titlename);
-		if (len < 64)
-		{
-			demo.titlename[len+1] = 0;
-			demo.titlename[len] = CON_ShiftChar(ch);
-		}
-	}
-	else if (ch == KEY_BACKSPACE)
-	{
-		if (shiftdown)
-			memset(demo.titlename, 0, sizeof(demo.titlename));
-		else
-		{
-			len = strlen(demo.titlename);
-
-			if (len > 0)
-				demo.titlename[len-1] = 0;
-		}
-	}
+	M_TextInputHandle(&demo.titlenameinput, ch);
 
 	return true;
 }

@@ -441,4 +441,3 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND NOT "${SRB2_CONFIG_INTERNAL_LIBRA
 		COMMENT "Copying runtime DLLs"
 	)
 endif()
-
