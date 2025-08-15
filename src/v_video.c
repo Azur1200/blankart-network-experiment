@@ -3091,11 +3091,11 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 //
 // Find string width from tny_font chars, 0.5x scale
 //
-INT32 V_SmallThinStringWidth(const char *string, INT32 option)
+/*INT32 V_SmallThinStringWidth(const char *string, INT32 option)
 {
 	INT32 w = V_ThinStringWidth(string, option)<<FRACBITS;
 	return w/2 + FRACUNIT; // +FRACUNIT because otherwise it's offset wrong.
-}
+}*/
 
 //
 
