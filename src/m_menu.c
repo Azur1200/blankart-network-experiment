@@ -144,7 +144,7 @@ const char *quitmsg[NUM_QUITMESSAGES];
 
 boolean fromlevelselect = false;
 
-char menu_text_input_buf[MAXSTRINGLENGTH];
+static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
 typedef enum
@@ -260,9 +260,25 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 	return M_GetMenuItem(type, name) - menudefs[type].menuitems;
 }
 
+static boolean M_ItemSelectable(menuitem_t *item)
+{
+	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
+}
+
+// TODO this ought to be controlled by the item argument...
+static UINT32 M_StringCvarLength(consvar_t *cv)
+{
+	if (cv == &cv_dummyip)
+		return 28;
+	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
+		return MAXPLAYERNAME + 1;
+	else
+		return MAXSTRINGLENGTH;
+}
+
 // an array of macros for getting/setting menuitem properties
 #define M_IsItemOn(t, n)                (itemOn == M_GetMenuIndex(t, n))
-#define M_SetItemOn(t, n)               (itemOn = M_GetMenuIndex(t, n))
+#define M_SetItemOn(t, n)               (M_RawSetItemOn(&menudefs[t], M_GetMenuIndex(t, n)))
 #define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->routine = v)
 #define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->cvar = v)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
@@ -270,6 +286,41 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
 #define M_GetItemX(t, n)                (M_GetMenuItem(t, n)->x)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
+
+static void M_RawSetItemOn(menu_t *menu, INT16 index)
+{
+	INT16 i;
+	itemOn = index;
+
+	if (!menu->numitems)
+		return;
+
+	// in case of...
+	if (itemOn >= menu->numitems)
+		itemOn = menu->numitems - 1;
+
+	// the curent item can be disabled,
+	// this code go up until an enabled item found
+	if (menu->numitems && !M_ItemSelectable(&menu->menuitems[itemOn]))
+	{
+		for (i = 0; i < menu->numitems; i++)
+		{
+			if (M_ItemSelectable(&menu->menuitems[i]))
+			{
+				itemOn = i;
+				break;
+			}
+		}
+	}
+
+	// update text input for string cvars
+	consvar_t *cv = menu->menuitems[itemOn].cvar;
+	if (cv && !cv->PossibleValue)
+	{
+		M_TextInputInit(&menuinput, menu_text_input_buf, M_StringCvarLength(cv));
+		M_TextInputSetString(&menuinput, cv->string);
+	}
+}
 
 static void M_ChangeItemStatus(menutype_t type, const char *name, menuitemflags_t flag, boolean cond)
 {
@@ -298,11 +349,6 @@ static void M_SetItemPatch(menutype_t type, const char *name, const char *string
 #define M_SetItemVisible(t, n, c)  M_ChangeItemStatus(t, n, IT_HIDDEN, !(c))
 #define M_SetItemDisabled(t, n, c) M_ChangeItemStatus(t, n, IT_GRAYEDOUT, c)
 #define M_SetItemSecret(t, n, c)   M_ChangeItemStatus(t, n, IT_SECRET, c)
-
-static boolean M_ItemSelectable(menuitem_t *item)
-{
-	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
-}
 
 // bruh...
 static UINT32 M_ServersPerPage(void)
@@ -1120,31 +1166,6 @@ static void M_ChangeCvar(menuitem_t *item, SINT8 direction)
 		M_GetFollowerState();	// update follower state
 }
 
-static UINT32 M_StringCvarLength(consvar_t *cv)
-{
-	if (cv == &cv_dummyip)
-		return 28;
-	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
-		return MAXPLAYERNAME + 1;
-	else
-		return MAXSTRINGLENGTH;
-}
-
-static boolean M_ChangeStringCvar(INT32 choice)
-{
-	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
-
-	if (M_TextInputHandle(&menuinput, choice))
-	{
-		S_StartSound(NULL,sfx_menu1); // Tails
-		CV_Set(cv, menuinput.buffer);
-
-		return true;
-	}
-
-	return false;
-}
-
 // lock out further input in a tic when important buttons are pressed
 // (in other words -- stop bullshit happening by mashing buttons in fades)
 static INT32 noFurtherInput = 0;
@@ -1155,7 +1176,7 @@ static void Command_Manual_f(void)
 		return;
 	M_StartControlPanel();
 	M_EnterMenu(MN_HELP, true, 0);
-	itemOn = 0;
+	M_SetItemOn(MN_HELP, "PAGE0");
 }
 
 // arbitrary keyboard shortcuts because fuck you
@@ -1241,20 +1262,6 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { return true; }
-
-void M_UpdateTextInputString(void)
-{
-	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
-
-	if (item && item->cvar && !item->cvar->PossibleValue)
-	{
-		// Just in case
-		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
-		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
-		M_TextInputSetString(&menuinput, item->cvar->string);
-		CONS_Printf("Set input string to %s\n", item->cvar->string);
-	}
-}
 
 //
 // M_Responder
@@ -1476,7 +1483,7 @@ boolean M_Responder(event_t *ev)
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
 				M_EnterMenu(MN_OP_SOUND, true, 0);
-				itemOn = 0;
+				M_SetItemOn(MN_OP_SOUND, "SOUND");
 				return true;
 
 			case KEY_F5: // Video Mode
@@ -1546,8 +1553,13 @@ boolean M_Responder(event_t *ev)
 	{
 		if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
 			return true;
-		if (M_ChangeStringCvar(ch))
+
+		if (M_TextInputHandle(&menuinput, ch))
+		{
+			S_StartSound(NULL, sfx_menu1); // Tails
+			CV_Set(item->cvar, menuinput.buffer);
 			return true;
+		}
 	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
@@ -1568,6 +1580,7 @@ boolean M_Responder(event_t *ev)
 	}
 
 	INT16 oldItemOn = itemOn; // prevent infinite loop
+	INT16 newItemOn = itemOn;
 
 	// Keys usable within menu
 	switch (ch)
@@ -1576,10 +1589,11 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			do if (++itemOn >= currentMenu->numitems)
-				itemOn = 0;
-			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+			do if (++newItemOn >= currentMenu->numitems)
+				newItemOn = 0;
+			while (oldItemOn != newItemOn && !M_ItemSelectable(&currentMenu->menuitems[newItemOn]));
 
+			M_RawSetItemOn(currentMenu, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
@@ -1587,10 +1601,11 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			do if (--itemOn < 0)
-				itemOn = currentMenu->numitems - 1;
-			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+			do if (--newItemOn < 0)
+				newItemOn = currentMenu->numitems - 1;
+			while (oldItemOn != newItemOn && !M_ItemSelectable(&currentMenu->menuitems[newItemOn]));
 
+			M_RawSetItemOn(currentMenu, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
@@ -1907,7 +1922,6 @@ void M_ClearMenus(boolean callexitmenufunc)
 //
 static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 {
-	INT16 i;
 	menu_t *menudef = &menudefs[menunum];
 
 	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
@@ -1917,30 +1931,9 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 	M_HandleMenuPresState(menunum);
 
 	currentMenu = menudef;
-	itemOn = currentMenu->lastOn;
+	M_RawSetItemOn(currentMenu, currentMenu->lastOn);
 
 	hidetitlemap = false;
-
-	if (!currentMenu->numitems)
-		return;
-
-	// in case of...
-	if (itemOn >= currentMenu->numitems)
-		itemOn = currentMenu->numitems - 1;
-
-	// the curent item can be disabled,
-	// this code go up until an enabled item found
-	if (!M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-	{
-		for (i = 0; i < currentMenu->numitems; i++)
-		{
-			if (M_ItemSelectable(&currentMenu->menuitems[i]))
-			{
-				itemOn = i;
-				break;
-			}
-		}
-	}
 }
 
 // pop the active menu from the stack
@@ -2236,12 +2229,11 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
 }
 
-void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
+void M_DrawTextInput(INT32 x, INT32 y, INT32 flags, textinput_t *input)
 {
-	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, input->buffer);
 	// draw text cursor for name
-	if (input->length && skullAnimCounter < 4) // blink cursor
-		V_DrawCharacter(x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE), y+3, '_'|flags, false);
+	if (skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(x+V_SubStringWidth(input->buffer, input->cursor, flags|V_ALLOWLOWERCASE), y+3, '_'|(flags & ~(V_FLIP|V_PARAMMASK)), false);
 
 	// draw selection
 	if (input->select != input->cursor)
@@ -2249,8 +2241,8 @@ void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
 		size_t start = min(input->select, input->cursor);
 		size_t end =   max(input->select, input->cursor);
 		size_t len = end - start;
-		INT32 startx = V_SubStringWidth(input->buffer, start, V_ALLOWLOWERCASE);
-		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, 103|V_TRANSLUCENT|flags);
+		INT32 startx = V_SubStringWidth(input->buffer, start, flags|V_ALLOWLOWERCASE);
+		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, (flags & ~(V_ALPHAMASK|V_PARAMMASK))|103|V_TRANSLUCENT);
 	}
 }
 
@@ -2359,8 +2351,9 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			w = M_StringCvarLength(cv);
 
 			M_DrawTextBox(x + xofs, y + yofs, w, 1);
-			if (menuinput.buffer)
-				M_DrawTextInput(x + xofs, y + yofs, &menuinput, vflags);
+			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
+			if (selected)
+				M_DrawTextInput(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, &menuinput);
 		}
 		else if (item->status & IT_SLIDER)
 		{
@@ -3184,15 +3177,14 @@ INT32 MR_HandleImageDef(INT32 choice)
 			if (itemOn >= (INT16)(currentMenu->numitems-1))
 				break;
 			S_StartSound(NULL, sfx_menu1);
-			itemOn++;
+			M_RawSetItemOn(currentMenu, itemOn + 1);
 			break;
 
 		case KEY_LEFTARROW:
 			if (!itemOn)
 				break;
-
 			S_StartSound(NULL, sfx_menu1);
-			itemOn--;
+			M_RawSetItemOn(currentMenu, itemOn - 1);
 			break;
 
 		default:
@@ -6359,7 +6351,7 @@ static void M_ConnectMenu(INT32 choice)
 	// first page of servers
 	CV_SetValue(&cv_dummyserverpage, 0);
 	M_EnterMenu(MN_MP_CONNECT, true, 0);
-	itemOn = 0;
+	M_SetItemOn(MN_MP_CONNECT, "SORTING");
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
 	I_lock_mutex(&ms_QueryId_mutex);
@@ -7995,7 +7987,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			if (((column*height)+row) >= currentMenu->numitems)
 				column = 0;
 			next = min(((column*height)+row), currentMenu->numitems-1);
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_LEFTARROW:
@@ -8008,7 +8000,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			next = max(((column*height)+row), 0);
 			if (next >= currentMenu->numitems)
 				next = currentMenu->numitems-1;
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_DOWNARROW:
@@ -8017,7 +8009,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			if (((column*height)+row) >= currentMenu->numitems)
 				row = 0;
 			next = min(((column*height)+row), currentMenu->numitems-1);
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_UPARROW:
@@ -8030,7 +8022,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			next = max(((column*height)+row), 0);
 			if (next >= currentMenu->numitems)
 				next = currentMenu->numitems-1;
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_ENTER:
