@@ -219,6 +219,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
 endif()
 
+# TODO: fix prng and P_CreateBlockmap overflow at some point
+target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
+
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 
 else()
