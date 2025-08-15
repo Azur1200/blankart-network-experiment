@@ -58,6 +58,7 @@ static void M_TextInputAddString(textinput_t *input, const char *c)
 	memcpy(&input->buffer[input->cursor], c, csize);
 	input->length += csize;
 	input->select = (input->cursor += csize);
+	input->buffer[input->length] = 0;
 }
 
 static void M_TextInputAddChar(textinput_t *input, char c)
