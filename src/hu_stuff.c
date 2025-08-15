@@ -649,6 +649,9 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			}
 		}
 	}
+	
+	if (LUA_HookPlayerMsg(playernum, target, flags, msg))
+		return;
 
 	// If it's a CSAY, just CECHO and be done with it.
 	if (flags & HU_CSAY)
