@@ -1261,7 +1261,7 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 }
 
 // use this when routine being NULL isn't a free pass
-static INT32 MR_Dummy(INT32 ch) { return true; }
+static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
 //
 // M_Responder
@@ -2229,7 +2229,7 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
 }
 
-void M_DrawTextInput(INT32 x, INT32 y, INT32 flags, textinput_t *input)
+static void M_DrawTextInput(INT32 x, INT32 y, INT32 flags, textinput_t *input)
 {
 	// draw text cursor for name
 	if (skullAnimCounter < 4) // blink cursor
