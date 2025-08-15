@@ -338,6 +338,8 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option);
 INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
 #define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
 
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
+
 void V_DoPostProcessor(INT32 view, INT32 param);
 
 void V_DrawPatchFill(patch_t *pat);

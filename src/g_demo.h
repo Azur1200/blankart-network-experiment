@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "m_textinput.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +47,7 @@ typedef enum
 // Publicly-accessible demo vars
 struct demovars_s {
 	char titlename[65];
+	textinput_t titlenameinput;
 	boolean recording, playback, timing;
 	UINT16 version; // Current file format of the demo being played
 	boolean title; // Title Screen demo can be cancelled by any key
