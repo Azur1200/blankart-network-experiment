@@ -42,6 +42,7 @@ static double tictimer;
 
 tic_t I_GetTime(void)
 {
+	I_UpdateTime(cv_timescale.value);
 	return g_time.time;
 }
 

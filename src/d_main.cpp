@@ -788,6 +788,7 @@ static void D_WipeDraw(boolean menu)
 
 static double D_EndFrame(precise_t enterprecise, int *frameskip)
 {
+	I_UpdateTime(cv_timescale.value);
 	// Fully completed frame made.
 	precise_t finishprecise = I_GetPreciseTime();
 
@@ -809,6 +810,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 			*frameskip = 0;
 	}
 
+	I_UpdateTime(cv_timescale.value);
 	if (!singletics)
 	{
 		precise_t elapsed = finishprecise - enterprecise;
@@ -825,6 +827,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 		}
 	}
 
+	I_UpdateTime(cv_timescale.value);
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
@@ -1019,6 +1022,7 @@ void D_SRB2Loop(void)
 #ifdef HW3SOUND
 		HW3S_BeginFrameUpdate();
 #endif
+		I_UpdateTime(cv_timescale.value);
 
 		if (realtics > 0 || singletics)
 		{
@@ -1026,6 +1030,8 @@ void D_SRB2Loop(void)
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
 				realtics = 1;
+
+			I_UpdateTime(cv_timescale.value);
 
 			// process tics (but maybe not if realtic == 0)
 			{
@@ -1064,11 +1070,15 @@ void D_SRB2Loop(void)
 			renderisnewtic = false;
 		}
 
+		I_UpdateTime(cv_timescale.value);
+
 		if (interp)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			I_UpdateTime(cv_timescale.value);
 
 			if (!(paused || P_AutoPause()) && !lagging)
 			{
@@ -1094,6 +1104,8 @@ void D_SRB2Loop(void)
 			rendertimefrac = FRACUNIT;
 			rendertimefrac_unpaused = FRACUNIT;
 		}
+
+		I_UpdateTime(cv_timescale.value);
 
 		if (interp || doDisplay)
 		{
