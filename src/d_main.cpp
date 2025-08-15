@@ -816,7 +816,7 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 		precise_t elapsed = finishprecise - enterprecise;
 
 		// capbudget is the minimum precise_t duration of a single loop iteration
-		precise_t capbudget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
+		double capbudget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
 
 		// in the case of "match refresh rate" + vsync, don't sleep at all
 		const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
@@ -1156,7 +1156,8 @@ void D_SRB2Loop(void)
 		// the measured time.
 		if (ranwipe)
 		{
-			deltatics = 35.0 / R_GetFramerateCap();
+			double deltamath = (R_GetFramerateCap() == 0) ? 35.0 : 35.0 / R_GetFramerateCap();
+			deltatics = deltamath;
 			frameskip = 0;
 			ranwipe = false;
 		}
