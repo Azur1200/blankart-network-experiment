@@ -30,7 +30,9 @@
 #include "hu_stuff.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "v_video.h"
 #include "m_argv.h"
+#include "m_textinput.h"
 
 // Data.
 #include "sounds.h"
@@ -141,6 +143,9 @@ M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 const char *quitmsg[NUM_QUITMESSAGES];
 
 boolean fromlevelselect = false;
+
+char menu_text_input_buf[MAXSTRINGLENGTH];
+static textinput_t menuinput;
 
 typedef enum
 {
@@ -1128,60 +1133,15 @@ static UINT32 M_StringCvarLength(consvar_t *cv)
 static boolean M_ChangeStringCvar(INT32 choice)
 {
 	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
-	char buf[MAXSTRINGLENGTH];
-	size_t len = strlen(cv->string);
 
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
-
-	switch (choice)
+	if (M_TextInputHandle(&menuinput, choice))
 	{
-		case KEY_BACKSPACE:
-			if (len > 0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				M_Memcpy(buf, cv->string, len);
-				buf[len-1] = 0;
-				CV_Set(cv, buf);
-			}
-			return true;
-		case KEY_DEL:
-			if (cv->string[0])
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				CV_Set(cv, "");
-			}
-			return true;
-		case KEY_LEFTARROW:
-		case KEY_RIGHTARROW:
-			// TODO: navigation
-			return true;
-		default:
-			if (cv == &cv_dummyip)
-			{
-				// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-				if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
-				 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
-					break;
+		S_StartSound(NULL,sfx_menu1); // Tails
+		CV_Set(cv, menuinput.buffer);
 
-				if (choice >= KEY_KEYPAD7)
-					// sir, have you been golfing tonight?
-					choice = "789-456+1230."[choice - KEY_KEYPAD7];
-			}
-
-			if (choice < 32 || choice > 127)
-				break;
-
-			if (len < M_StringCvarLength(cv) - 1)
-			{
-				S_StartSound(NULL, sfx_menu1); // Tails
-				M_Memcpy(buf, cv->string, len);
-				buf[len++] = (char)choice;
-				buf[len] = 0;
-				CV_Set(cv, buf);
-			}
-			return true;
+		return true;
 	}
+
 	return false;
 }
 
@@ -1281,6 +1241,20 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { return true; }
+
+void M_UpdateTextInputString(void)
+{
+	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
+
+	if (item && item->cvar && !item->cvar->PossibleValue)
+	{
+		// Just in case
+		memset(menu_text_input_buf, 0, sizeof menu_text_input_buf);
+		M_TextInputInit(&menuinput, menu_text_input_buf, sizeof menu_text_input_buf);
+		M_TextInputSetString(&menuinput, item->cvar->string);
+		CONS_Printf("Set input string to %s\n", item->cvar->string);
+	}
+}
 
 //
 // M_Responder
@@ -2260,7 +2234,24 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 {
 	// Solid color textbox.
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
-	//V_DrawFill(x+8, y+8, width*8, boxlines*8, 31);
+}
+
+void M_DrawTextInput(INT32 x, INT32 y, textinput_t *input, INT32 flags)
+{
+	V_DrawString(x, y, V_ALLOWLOWERCASE|flags, input->buffer);
+	// draw text cursor for name
+	if (input->length && skullAnimCounter < 4) // blink cursor
+		V_DrawCharacter(x+V_SubStringWidth(input->buffer, input->cursor, V_ALLOWLOWERCASE), y+3, '_'|flags, false);
+
+	// draw selection
+	if (input->select != input->cursor)
+	{
+		size_t start = min(input->select, input->cursor);
+		size_t end =   max(input->select, input->cursor);
+		size_t len = end - start;
+		INT32 startx = V_SubStringWidth(input->buffer, start, V_ALLOWLOWERCASE);
+		V_DrawFill(x+startx, y, V_SubStringWidth(input->buffer+start, len, V_ALLOWLOWERCASE), 8, 103|V_TRANSLUCENT|flags);
+	}
 }
 
 // horizontally centered text
@@ -2368,10 +2359,8 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			w = M_StringCvarLength(cv);
 
 			M_DrawTextBox(x + xofs, y + yofs, w, 1);
-			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
-			if (selected && skullAnimCounter < 4) // blink cursor
-				V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
-					'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
+			if (menuinput.buffer)
+				M_DrawTextInput(x + xofs, y + yofs, &menuinput, vflags);
 		}
 		else if (item->status & IT_SLIDER)
 		{
@@ -2526,7 +2515,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font;
 	INT32 colorflag;
-	INT32 (*widthfunc)(const char *string, INT32 option);
+	INT32 (*widthfunc)(const char *string, INT32 length, INT32 option);
 
 	if (item->status & IT_SECRET)
 	{
@@ -2609,24 +2598,24 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		vflags |= V_6WIDTHSPACE; // FALLTHRU
 	case ITF_THIN:
 		font = TINY_FONT;
-		widthfunc = V_ThinStringWidth;
+		widthfunc = V_ThinSubStringWidth;
 		break;
 
 	case ITF_HEADER:
 		x -= 16; // FALLTHRU
 	default:
 		font = HU_FONT;
-		widthfunc = V_StringWidth;
+		widthfunc = V_SubStringWidth;
 		break;
 	}
 
 	if (item->status & IT_CENTER)
-		width = widthfunc(string, vflags)/2;
+		width = widthfunc(string, -1, vflags)/2;
 	else if (item->status & IT_RIGHT)
-		width = widthfunc(string, vflags);
+		width = widthfunc(string, -1, vflags);
 
 	if (item->status & IT_STICKER)
-		M_DrawSticker(x, y + 2, widthfunc(string, vflags), vflags & ~V_FLIP, true);
+		M_DrawSticker(x, y + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
 
 	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
