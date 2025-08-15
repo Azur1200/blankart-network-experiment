@@ -2352,7 +2352,7 @@ static int kartstuff_set(lua_State *L)
 				plr->spinouttimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_wipeoutslow:
-				plr->wipeoutslow = CLAMP(i, 0, UINT16_MAX);
+				plr->wipeoutslow = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_justbumped:
 				plr->justbumped = i;
