@@ -1827,7 +1827,8 @@ void LUA_Step(void)
 
 	if (lua_gettop(gL) != 0)
 	{
-		CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+		// TODO: Fix lua stack garbage so print can be always on.
+		//CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
 		lua_settop(gL, 0);
 		lua_gc(gL, LUA_GCSTEP, 1);
 	}
