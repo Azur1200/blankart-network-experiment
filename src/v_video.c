@@ -32,6 +32,15 @@
 #include "doomstat.h"
 #include "r_fps.h"
 
+#if defined(__SSE__) || defined(__AVX__)
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(align, size) _aligned_malloc(size, align)
+#endif
+
+#include <immintrin.h>
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
 #endif
@@ -487,10 +496,23 @@ static void CV_constextsize_OnChange(void)
 // Copy a rectangular area from one bitmap to another (8bpp)
 // --------------------------------------------------------------------------
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
-	size_t destrowbytes)
+						  size_t destrowbytes)
 {
-	if ((srcrowbytes == destrowbytes) && (srcrowbytes == (size_t)width))
-		M_Memcpy(destptr, srcptr, srcrowbytes * height);
+	if (srcrowbytes == destrowbytes)
+	{
+		size_t i = srcrowbytes * height;
+#if defined(__SSE__)
+		while (i >= 16)
+		{
+			// TODO: find where the buffer is misaligned at times and align it
+			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
+			srcptr += 16;
+			destptr += 16;
+			i -= 16;
+		}
+#endif
+		M_Memcpy(destptr, srcptr, i);
+	}
 	else
 	{
 		while (height--)
