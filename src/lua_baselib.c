@@ -891,7 +891,13 @@ static int lib_pGetMobjGravity(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
+
+	// HACK: reset the gravity of the object to remain compatible with addons
+	// that lack a MF_NOGRAVITY check around the call.
+	fixed_t grav = mobj->gravity;
+	mobj->gravity = FRACUNIT;
 	lua_pushfixed(L, P_GetMobjGravity(mobj));
+	mobj->gravity = grav;
 	return 1;
 }
 
