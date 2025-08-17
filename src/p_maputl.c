@@ -1756,8 +1756,8 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	py2 -= bmaporgy;
 
 	// blockmap traversal algorithm ported from antimony
-	int gridpos_x = px1 >> MAPBLOCKSHIFT;
-	int gridpos_y = py1 >> MAPBLOCKSHIFT;
+	int gridpos_x = (unsigned)px1 >> MAPBLOCKSHIFT;
+	int gridpos_y = (unsigned)py1 >> MAPBLOCKSHIFT;
 	if (flags & PT_ADDLINES)
 		if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
 			return false; // early out
@@ -1765,8 +1765,8 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 		if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
 			return false; // early out
 
-	int endpos_x = px2 >> MAPBLOCKSHIFT;
-	int endpos_y = py2 >> MAPBLOCKSHIFT;
+	int endpos_x = (unsigned)px2 >> MAPBLOCKSHIFT;
+	int endpos_y = (unsigned)py2 >> MAPBLOCKSHIFT;
 	if (gridpos_x == endpos_x && gridpos_y == endpos_y)
 		return P_TraverseIntercepts(trav, FRACUNIT);
 
