@@ -3115,54 +3115,9 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
-static fixed_t bestslidefrac, secondslidefrac;
 static line_t *bestslideline;
-static line_t *secondslideline;
 static mobj_t *slidemo;
 static fixed_t tmxmove, tmymove;
-
-//
-// P_HitCameraSlideLine
-//
-static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
-{
-	INT32 side;
-	angle_t lineangle, moveangle, deltaangle;
-	fixed_t movelen, newlen;
-
-	if (ld->slopetype == ST_HORIZONTAL)
-	{
-		tmymove = 0;
-		return;
-	}
-
-	if (ld->slopetype == ST_VERTICAL)
-	{
-		tmxmove = 0;
-		return;
-	}
-
-	side = P_PointOnLineSide(thiscam->x, thiscam->y, ld);
-	lineangle = ld->angle;
-
-	if (side == 1)
-		lineangle += ANGLE_180;
-
-	moveangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
-	deltaangle = moveangle-lineangle;
-
-	if (deltaangle > ANGLE_180)
-		deltaangle += ANGLE_180;
-
-	lineangle >>= ANGLETOFINESHIFT;
-	deltaangle >>= ANGLETOFINESHIFT;
-
-	movelen = P_AproxDistance(tmxmove, tmymove);
-	newlen = FixedMul(movelen, FINECOSINE(deltaangle));
-
-	tmxmove = FixedMul(newlen, FINECOSINE(lineangle));
-	tmymove = FixedMul(newlen, FINESINE(lineangle));
-}
 
 //
 // P_HitSlideLine
@@ -3271,57 +3226,6 @@ static void P_HitBounceLine(line_t *ld)
 	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
-//
-// PTR_SlideCameraTraverse
-//
-static boolean PTR_SlideCameraTraverse(intercept_t *in)
-{
-	line_t *li;
-	opening_t open = {0};
-
-	I_Assert(in->isaline);
-
-	li = in->d.line;
-
-	// one-sided linedef
-	if (!li->backsector)
-	{
-		if (P_PointOnLineSide(mapcampointer->x, mapcampointer->y, li))
-			return true; // don't hit the back side
-		goto isblocking;
-	}
-
-	// set openrange, opentop, openbottom
-	P_CameraLineOpening(li, &open);
-
-	if (open.range < mapcampointer->height)
-		goto isblocking; // doesn't fit
-
-	if (open.ceiling - mapcampointer->z < mapcampointer->height)
-		goto isblocking; // mobj is too high
-
-	if (open.floor - mapcampointer->z > 0) // We don't want to make the camera step up.
-		goto isblocking; // too big a step up
-
-	// this line doesn't block movement
-	return true;
-
-	// the line does block movement,
-	// see if it is closer than best so far
-isblocking:
-	{
-		if (in->frac < bestslidefrac)
-		{
-			secondslidefrac = bestslidefrac;
-			secondslideline = bestslideline;
-			bestslidefrac = in->frac;
-			bestslideline = li;
-		}
-	}
-
-	return false; // stop
-}
-
 /*
 static boolean PTR_LineIsBlocking(line_t *li)
 {
@@ -3381,105 +3285,6 @@ static boolean PTR_SlideTraverse(intercept_t *in)
 	return false; // stop
 }
 */
-
-//
-// P_SlideCameraMove
-//
-// Tries to slide the camera along a wall.
-//
-void P_SlideCameraMove(camera_t *thiscam)
-{
-	fixed_t leadx, leady, trailx, traily, newx, newy;
-	INT32 hitcount = 0;
-	INT32 retval = 0;
-
-	bestslideline = NULL;
-
-retry:
-	if (++hitcount == 3)
-		goto stairstep; // don't loop forever
-
-	// trace along the three leading corners
-	if (thiscam->momx > 0)
-	{
-		leadx = thiscam->x + thiscam->radius;
-		trailx = thiscam->x - thiscam->radius;
-	}
-	else
-	{
-		leadx = thiscam->x - thiscam->radius;
-		trailx = thiscam->x + thiscam->radius;
-	}
-
-	if (thiscam->momy > 0)
-	{
-		leady = thiscam->y + thiscam->radius;
-		traily = thiscam->y - thiscam->radius;
-	}
-	else
-	{
-		leady = thiscam->y - thiscam->radius;
-		traily = thiscam->y + thiscam->radius;
-	}
-
-	bestslidefrac = FRACUNIT+1;
-
-	mapcampointer = thiscam;
-
-	P_PathTraverse(leadx, leady, leadx + thiscam->momx, leady + thiscam->momy,
-		PT_ADDLINES, PTR_SlideCameraTraverse);
-	P_PathTraverse(trailx, leady, trailx + thiscam->momx, leady + thiscam->momy,
-		PT_ADDLINES, PTR_SlideCameraTraverse);
-	P_PathTraverse(leadx, traily, leadx + thiscam->momx, traily + thiscam->momy,
-		PT_ADDLINES, PTR_SlideCameraTraverse);
-
-	// move up to the wall
-	if (bestslidefrac == FRACUNIT+1)
-	{
-		retval = P_TryCameraMove(thiscam->x, thiscam->y + thiscam->momy, thiscam);
-		// the move must have hit the middle, so stairstep
-stairstep:
-		if (!retval) // Allow things to drop off.
-			P_TryCameraMove(thiscam->x + thiscam->momx, thiscam->y, thiscam);
-		return;
-	}
-
-	// fudge a bit to make sure it doesn't hit
-	bestslidefrac -= 0x800;
-	if (bestslidefrac > 0)
-	{
-		newx = FixedMul(thiscam->momx, bestslidefrac);
-		newy = FixedMul(thiscam->momy, bestslidefrac);
-
-		retval = P_TryCameraMove(thiscam->x + newx, thiscam->y + newy, thiscam);
-
-		if (!retval)
-			goto stairstep;
-	}
-
-	// Now continue along the wall.
-	// First calculate remainder.
-	bestslidefrac = FRACUNIT - (bestslidefrac+0x800);
-
-	if (bestslidefrac > FRACUNIT)
-		bestslidefrac = FRACUNIT;
-
-	if (bestslidefrac <= 0)
-		return;
-
-	tmxmove = FixedMul(thiscam->momx, bestslidefrac);
-	tmymove = FixedMul(thiscam->momy, bestslidefrac);
-
-	P_HitCameraSlideLine(bestslideline, thiscam); // clip the moves
-
-	thiscam->momx = tmxmove;
-	thiscam->momy = tmymove;
-
-	retval = P_TryCameraMove(thiscam->x + tmxmove, thiscam->y + tmymove, thiscam);
-
-	if (!retval)
-		goto retry;
-}
 
 static void P_CheckLavaWall(mobj_t *mo, sector_t *sec)
 {
