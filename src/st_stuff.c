@@ -33,8 +33,10 @@
 #include "m_anigif.h" // cv_gif_downscale
 #include "p_setup.h" // NiGHTS grading
 #include "k_grandprix.h"	// we need to know grandprix status for titlecards
+#include "k_director.h"
 #include "k_boss.h"
 #include "r_fps.h"
+#include "g_input.h"
 
 //random index
 #include "m_random.h"
@@ -63,6 +65,9 @@ consvar_t cv_lessflicker = CVAR_INIT ("lessflicker", "Off", CV_SAVE, CV_OnOff, N
 consvar_t cv_stagetitle = CVAR_INIT ("maptitle", "On", CV_SAVE, CV_OnOff, NULL);
 
 UINT16 objectsdrawn = 0;
+
+// dumb fade thing for director toggle
+tic_t directortoggletimer = 0;
 
 //
 // STATUS BAR DATA
@@ -725,6 +730,25 @@ void ST_preLevelTitleCardDrawer(void)
 	I_UpdateNoBlit();
 }
 
+// returns the actual button name for any gamecontrol
+// if unbound is set, it returns "Unbound" as a string should there be no button bound to a gamecontrol
+// if gamectrl is set, it adds an extra "-" for cases where theres also a hardcoded button like accelerate
+static const char *ST_GetButtonName(INT32 control, const char *inputtext, boolean unbound, boolean gamectrl)
+{
+	static char buttname[32] = "";
+	const char *butt1 = (gamecontrol[0][control][0] != 0 ? G_KeynumToString(gamecontrol[0][control][0]) : NULL);
+	const char *butt2 = (gamecontrol[0][control][1] != 0 ? G_KeynumToString(gamecontrol[0][control][1]) : NULL); // alternative bind
+
+	if (butt1 == NULL && butt2 == NULL) // not bound to a button
+		snprintf(buttname, 32, (unbound ? "%s - %s" : (gamectrl ? "-%s - %s" : "%s - %s")), (unbound ? "Unbound" : ""), inputtext);
+	else if (butt1 != NULL && butt2 != NULL) // bound to two buttons
+		snprintf(buttname, 32, "%s/%s - %s", butt1, butt2, inputtext);
+	else // bound to only one
+		snprintf(buttname, 32, (gamectrl ? "-%s - %s" : "%s - %s"), (butt1 != NULL ? butt1 : butt2 != NULL ? butt2 : ""), inputtext);
+
+	return buttname;
+}
+
 //
 // Draw the status bar overlay, customisable: the user chooses which
 // kind of information to overlay
@@ -748,6 +772,29 @@ static void ST_overlayDrawer(void)
 
 	if (!hu_showscores) // hide the following if TAB is held
 	{
+		// TODO: splitscreen support!
+		if (!splitscreen && !P_IsLocalPlayer(stplyr) && K_DirectorIsAvailable())
+		{
+			char directortext[20] = {0};
+
+			snprintf(directortext, 20, "Director: %s", cv_director.value ? "On" : "Off");
+
+			if ((!demo.playback && directortoggletimer < 13*TICRATE) || (demo.playback && directortoggletimer < 4*TICRATE))
+			{
+				if (renderisnewtic)
+					directortoggletimer++;
+
+				if (directortoggletimer < 4*TICRATE)
+					V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_HUDTRANSHALF|V_ALLOWLOWERCASE, directortext);
+				else if (cv_translucenthud.value != 0)
+					V_DrawString(1, BASEVIDHEIGHT-8-1, V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_80TRANS|V_ALLOWLOWERCASE, directortext); // idk if V_80TRANS is good?
+			}
+		}
+		else
+		{
+			directortoggletimer = 0;
+		}
+
 		if (cv_showviewpointtext.value)
 		{
 			if (!demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam)
@@ -806,10 +853,11 @@ static void ST_overlayDrawer(void)
 			}
 			else
 			{
-				V_DrawString(2, BASEVIDHEIGHT-40, V_HUDTRANSHALF|V_SPLITSCREEN|V_YELLOWMAP|V_SNAPTOLEFT|V_SNAPTOBOTTOM, M_GetText("- SPECTATING -"));
-				V_DrawString(2, BASEVIDHEIGHT-30, V_HUDTRANSHALF|V_SPLITSCREEN|V_SNAPTOLEFT|V_SNAPTOBOTTOM, itemtxt);
-				V_DrawString(2, BASEVIDHEIGHT-20, V_HUDTRANSHALF|V_SPLITSCREEN|V_SNAPTOLEFT|V_SNAPTOBOTTOM, M_GetText("Accelerate - Float"));
-				V_DrawString(2, BASEVIDHEIGHT-10, V_HUDTRANSHALF|V_SPLITSCREEN|V_SNAPTOLEFT|V_SNAPTOBOTTOM, M_GetText("Brake - Sink"));
+				V_DrawString(2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF|V_YELLOWMAP, M_GetText("- SPECTATING -"));
+				V_DrawString(2, BASEVIDHEIGHT-40, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, itemtxt);
+				V_DrawString(2, BASEVIDHEIGHT-30, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Accelerate %s", ST_GetButtonName(gc_accelerate, "Float", false, true)));
+				V_DrawString(2, BASEVIDHEIGHT-20, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, va("Brake %s", ST_GetButtonName(gc_brake, "Sink", false, true)));
+				V_DrawString(2, BASEVIDHEIGHT-10, V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANSHALF, ST_GetButtonName(gc_director, "Toggle Director", true, false));
 			}
 		}
 	}

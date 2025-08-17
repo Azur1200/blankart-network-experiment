@@ -408,6 +408,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"respawn",
+	"director",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

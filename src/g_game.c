@@ -1784,6 +1784,12 @@ boolean G_Responder(event_t *ev)
 						COM_ImmedExecute(commandname);
 					}
 				}
+
+				if (G_ControlBoundToKey(i, gc_director, ev->data1, false))
+				{
+					K_ToggleDirector();
+				}
+
 			}
 
 			return true;
