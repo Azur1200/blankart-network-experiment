@@ -123,7 +123,6 @@ static      INT32        mousemovex = 0, mousemovey = 0;
 // SDL vars
 static      SDL_Surface *vidSurface = NULL;
 static      UINT32    localPalette[256];
-static       SDL_bool    mousegrabok = SDL_TRUE;
 static       SDL_bool    wrapmouseok = SDL_FALSE;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
 static       SDL_bool    usesdl2soft = SDL_FALSE;
@@ -419,7 +418,7 @@ static UINT32 VID_GetRefreshRate(void)
 		return 0;
 	}
 
-	if (SDL_GetCurrentDisplayMode(index, &m) != 0)
+	if (SDL_GetDesktopDisplayMode(index, &m) != 0)
 	{
 		// Error has occurred.
 		return 0;
@@ -1743,16 +1742,10 @@ void I_StartupGraphics(void)
 	I_ShutdownTTF();
 #endif
 
-	if (M_CheckParm("-nomousegrab"))
-		mousegrabok = SDL_FALSE;
-
 	VID_Command_Info_f();
 	SDLdoUngrabMouse();
 
 	SDL_RaiseWindow(window);
-
-	if (mousegrabok && !disable_mouse)
-		SDLdoGrabMouse();
 
 	graphics_started = true;
 }
