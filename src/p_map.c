@@ -3115,54 +3115,9 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
-static fixed_t bestslidefrac, secondslidefrac;
 static line_t *bestslideline;
-static line_t *secondslideline;
 static mobj_t *slidemo;
 static fixed_t tmxmove, tmymove;
-
-//
-// P_HitCameraSlideLine
-//
-static void P_HitCameraSlideLine(line_t *ld, camera_t *thiscam)
-{
-	INT32 side;
-	angle_t lineangle, moveangle, deltaangle;
-	fixed_t movelen, newlen;
-
-	if (ld->slopetype == ST_HORIZONTAL)
-	{
-		tmymove = 0;
-		return;
-	}
-
-	if (ld->slopetype == ST_VERTICAL)
-	{
-		tmxmove = 0;
-		return;
-	}
-
-	side = P_PointOnLineSide(thiscam->x, thiscam->y, ld);
-	lineangle = ld->angle;
-
-	if (side == 1)
-		lineangle += ANGLE_180;
-
-	moveangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
-	deltaangle = moveangle-lineangle;
-
-	if (deltaangle > ANGLE_180)
-		deltaangle += ANGLE_180;
-
-	lineangle >>= ANGLETOFINESHIFT;
-	deltaangle >>= ANGLETOFINESHIFT;
-
-	movelen = P_AproxDistance(tmxmove, tmymove);
-	newlen = FixedMul(movelen, FINECOSINE(deltaangle));
-
-	tmxmove = FixedMul(newlen, FINECOSINE(lineangle));
-	tmymove = FixedMul(newlen, FINESINE(lineangle));
-}
 
 //
 // P_HitSlideLine
@@ -3269,57 +3224,6 @@ static void P_HitBounceLine(line_t *ld)
 	tmymove = FixedMul(movelen, FINESINE(deltaangle));
 
 	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
-}
-
-//
-// PTR_SlideCameraTraverse
-//
-static boolean PTR_SlideCameraTraverse(intercept_t *in)
-{
-	line_t *li;
-	opening_t open = {0};
-
-	I_Assert(in->isaline);
-
-	li = in->d.line;
-
-	// one-sided linedef
-	if (!li->backsector)
-	{
-		if (P_PointOnLineSide(mapcampointer->x, mapcampointer->y, li))
-			return true; // don't hit the back side
-		goto isblocking;
-	}
-
-	// set openrange, opentop, openbottom
-	P_CameraLineOpening(li, &open);
-
-	if (open.range < mapcampointer->height)
-		goto isblocking; // doesn't fit
-
-	if (open.ceiling - mapcampointer->z < mapcampointer->height)
-		goto isblocking; // mobj is too high
-
-	if (open.floor - mapcampointer->z > 0) // We don't want to make the camera step up.
-		goto isblocking; // too big a step up
-
-	// this line doesn't block movement
-	return true;
-
-	// the line does block movement,
-	// see if it is closer than best so far
-isblocking:
-	{
-		if (in->frac < bestslidefrac)
-		{
-			secondslidefrac = bestslidefrac;
-			secondslideline = bestslideline;
-			bestslidefrac = in->frac;
-			bestslideline = li;
-		}
-	}
-
-	return false; // stop
 }
 
 /*
