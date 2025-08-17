@@ -2334,9 +2334,10 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			w = M_StringCvarLength(cv);
 
 			M_DrawTextBox(x + xofs, y + yofs, w, 1);
-			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
 			if (selected)
 				M_DrawTextInput(x + xofs + 8, y + yofs + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
+			else
+				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
 		}
 		else if (item->status & IT_SLIDER)
 		{
@@ -3521,7 +3522,7 @@ void MD_DrawAddons(void)
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
 
 	if (menusearch.length)
-		M_DrawTextInput(x - 18, y + 8, &menusearch, 0);
+		M_DrawTextInput(x - 18, y + 8, &menusearch, V_ALLOWLOWERCASE);
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
 
