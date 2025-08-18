@@ -12,7 +12,7 @@ extern consvar_t cv_emotes;
 
 #define MAXEMOTENAME 32
 #define MAXEMOTEFRAMES 32
-#define EMOTEWIDTH 6
+#define EMOTEWIDTH 8
 
 typedef struct emote_s {
 	char name[MAXEMOTENAME+1];
