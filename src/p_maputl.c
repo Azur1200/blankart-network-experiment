@@ -105,15 +105,11 @@ void P_ClosestPointOnLine3D(const vector3_t *p, const vector3_t *Line, vector3_t
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-// killough 5/3/98: reformatted, cleaned up
-// ioanch 20151228: made line const
-//
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	return
-		!line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
-		!line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
-		((INT64)y - line->v1->y) * line->dx >= line->dy * ((INT64)x - line->v1->x);
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)y - line->v1->y) * line->dx - ((INT64)x - line->v1->x) * line->dy;
+	return v > 0;
 }
 
 //
@@ -153,15 +149,11 @@ INT32 P_BoxOnLineSide(const fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-// killough 5/3/98: reformatted, cleaned up
-//
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
 {
-	return
-		line->dx == 0 ? x <= line->x ? line->dy > 0 : line->dy < 0 :
-		line->dy == 0 ? y <= line->y ? line->dx < 0 : line->dx > 0 :
-		(line->dy ^ line->dx ^ (x -= line->x) ^ (y -= line->y)) < 0 ? (line->dy ^ x) < 0 :
-		(INT64)(y) * line->dx >= (INT64)(line->dy) * x;
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)y - line->y) * line->dx - ((INT64)x - line->x) * line->dy;
+	return v > 0;
 }
 
 //
