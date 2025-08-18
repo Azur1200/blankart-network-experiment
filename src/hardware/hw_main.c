@@ -952,7 +952,7 @@ static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
-	if (!gl_curline->polyseg)
+	if (LIKELY(!gl_curline->polyseg))
 	{
 		if (gl_linedef->blendmode && gl_linedef->blendmode != AST_FOG)
 		{
@@ -1008,7 +1008,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	gl_sidedef = gl_curline->sidedef;
 	gl_linedef = gl_curline->linedef;
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
 		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
@@ -1018,7 +1018,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		vs.x = FIXED_TO_FLOAT(gl_curline->v1->x);
 		vs.y = FIXED_TO_FLOAT(gl_curline->v1->y);
 	}
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
 		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
@@ -2006,7 +2006,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-		if (gl_curline->pv1)
+		if (LIKELY(gl_curline->pv1))
 		{
 			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2016,7 +2016,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 			v1x = gl_curline->v1->x;
 			v1y = gl_curline->v1->y;
 		}
-		if (gl_curline->pv2)
+		if (LIKELY(gl_curline->pv2))
 		{
 			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2188,7 +2188,7 @@ static void HWR_AddLine(seg_t * line)
 
 	gl_curline = line;
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2198,7 +2198,7 @@ static void HWR_AddLine(seg_t * line)
 		v1x = gl_curline->v1->x;
 		v1y = gl_curline->v1->y;
 	}
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2866,12 +2866,24 @@ static void HWR_Subsector(size_t num)
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		while (count--)
+		if (UNLIKELY(numPolyObjects))
 		{
 
-			if (!line->glseg && !line->polyseg) // ignore segs that belong to polyobjects
+			while (count--)
+			{
+
+				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
+					HWR_AddLine(line);
+				line++;
+			}
+		}
+		else
+		{
+			while (count--)
+			{
 				HWR_AddLine(line);
-			line++;
+				line++;
+			}
 		}
 	}
 
@@ -4574,7 +4586,7 @@ static void HWR_DrawSprites(void)
 
 			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 			{
-				if (!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f)
+				if (LIKELY(!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f))
 					HWR_DrawSprite(spr);
 				else
 				{
@@ -4584,7 +4596,7 @@ static void HWR_DrawSprites(void)
 			}
 			else
 			{
-				if (!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+				if (LIKELY(!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f))
 					HWR_DrawSprite(spr);
 				else
 				{
@@ -5873,7 +5885,7 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	validcount++;
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_StartBatching();
 
 #ifdef HWPRECIP
@@ -5882,7 +5894,7 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	HWR_RenderBSPNode((INT32)numnodes-1);
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches();
 
 	// Check for new console commands.

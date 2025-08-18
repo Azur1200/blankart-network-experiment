@@ -149,7 +149,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	UINT8 *dsrc;
 	const INT32 vidwidth = vid.width;
 
-	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	const UINT8 * restrict deststop = screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds->x2 - ds->x1 + 1);
 	size_t i;

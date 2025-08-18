@@ -4921,9 +4921,9 @@ static void P_RelinkPointers(void)
 
 		mobj = (mobj_t *)currentthinker;
 
-		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
+		if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 			// MT_SPARK: used for debug stuff
-			|| mobj->type == MT_SPARK)
+			|| mobj->type == MT_SPARK))
 			continue;
 
 		if (mobj->tracer)
@@ -5598,9 +5598,9 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 				continue;
 
 			mobj = (mobj_t *)th;
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
+			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK)
+				|| mobj->type == MT_SPARK))
 				continue;
 			mobj->mobjnum = i++;
 		}

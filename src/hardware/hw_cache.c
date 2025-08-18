@@ -469,8 +469,8 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 	grtex->mipmap.format = textureformat;
 
 	// hack the Legacy skies..
-	if (memcmp(texture->name, "SKY", 3) == 0 &&
-		(texture->name[4] == 0 || texture->name[5] == 0))
+	if (UNLIKELY(memcmp(texture->name, "SKY", 3) == 0 &&
+		(texture->name[4] == 0 || texture->name[5] == 0)))
 	{
 		skyspecial = true;
 		grtex->mipmap.flags &= ~TF_CHROMAKEYED; // don't use the chromakey for sky
@@ -1310,10 +1310,10 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 
 	// search for the mipmap
 	// skip the first (no colormap translated)
-	for (grMipmap = grPatch->mipmap; grMipmap->nextcolormap; )
+	for (grMipmap = grPatch->mipmap; LIKELY(grMipmap->nextcolormap); )
 	{
 		grMipmap = grMipmap->nextcolormap;
-		if (grMipmap->colormap && grMipmap->colormap->source == colormap)
+		if (UNLIKELY(grMipmap->colormap && grMipmap->colormap->source == colormap))
 		{
 			if (memcmp(grMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 			{

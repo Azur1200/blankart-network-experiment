@@ -3697,16 +3697,16 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 /* Check if thing may be drawn from our current view. */
 boolean R_ThingVisible (mobj_t *thing)
 {
-	if (thing->sprite == SPR_NULL)
+	if (UNLIKELY(thing->sprite == SPR_NULL))
 		return false;
 
-	if (r_viewmobj && (thing == r_viewmobj || (r_viewmobj->player && r_viewmobj->player->followmobj == thing)))
+	if (UNLIKELY(r_viewmobj && (thing == r_viewmobj || (r_viewmobj->player && r_viewmobj->player->followmobj == thing))))
 		return false;
 
-	if ((viewssnum == 0 && (thing->renderflags & RF_DONTDRAWP1))
+	if (UNLIKELY((viewssnum == 0 && (thing->renderflags & RF_DONTDRAWP1))
 	|| (viewssnum == 1 && (thing->renderflags & RF_DONTDRAWP2))
 	|| (viewssnum == 2 && (thing->renderflags & RF_DONTDRAWP3))
-	|| (viewssnum == 3 && (thing->renderflags & RF_DONTDRAWP4)))
+	|| (viewssnum == 3 && (thing->renderflags & RF_DONTDRAWP4))))
 		return false;
 
 	return true;

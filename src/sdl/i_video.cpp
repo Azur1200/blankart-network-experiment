@@ -1330,9 +1330,10 @@ void I_FinishUpdate(void)
 	{
 		SDL_LockSurface(vidSurface);
 		// copy pixels ourselves to the video surface (prevents a crash in libsdl)
-		UINT32 *dst = (UINT32*)vidSurface->pixels;
-		UINT8 *src = screens[0];
-		for (int32_t i = 0; i < vid.width * vid.height; i++)
+		UINT32 *restrict dst = (UINT32*)vidSurface->pixels;
+		const UINT8 *restrict src = screens[0];
+		const INT32 count = vid.width * vid.height;
+		for (INT32 i = 0; i < count; i++)
 			*dst++ = localPalette[*src++];
 		SDL_UnlockSurface(vidSurface);
 		// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
