@@ -762,7 +762,7 @@ patch_t *K_getItemMulPatch(boolean small)
 }
 
 // This version of the function was prototyped in Lua by Nev3r ... a HUGE thank you goes out to them!
-void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean reverse)
+void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean reverse)
 {
 #define NEWTAN(x) FINETANGENT(((x + ANGLE_90) >> ANGLETOFINESHIFT) & 4095) // tan function used by Lua
 #define NEWCOS(x) FINECOSINE((x >> ANGLETOFINESHIFT) & FINEMASK)
@@ -776,7 +776,7 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 	fixed_t fovDiff, fov, fovTangent, fg;
 
 	fixed_t h;
-	INT32 da;
+	INT32 da, dp;
 
 	UINT8 cameraNum = R_GetViewNumber();
 
@@ -836,11 +836,21 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 
 	// Determine viewpoint factors.
 	h = R_PointToDist2(point->x, point->y, viewx, viewy);
-	da = AngleDeltaSigned(viewpointAngle, R_PointToAngle2(point->x, point->y, viewx, viewy));
+	da = AngleDeltaSigned(viewpointAngle, R_PointToAngle2(viewx, viewy, point->x, point->y));
+	dp = AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, viewz));
+
+	if (reverse)
+	{
+		da = -(da);
+	}
 
 	// Set results relative to top left!
 	result->x = FixedMul(NEWTAN(da), fg);
-	result->y = FixedMul((NEWTAN(viewpointAiming) - FixedDiv((viewz - point->z), 1 + FixedMul(NEWCOS(da), h))), fg);
+	result->y = FixedMul((NEWTAN(viewpointAiming) - FixedDiv((point->z - viewz), 1 + FixedMul(NEWCOS(da), h))), fg);
+
+	result->angle = da;
+	result->pitch = dp;
+	result->fov = fg;
 
 	// Rotate for screen roll...
 	if (viewpointRoll)
@@ -863,7 +873,7 @@ void K_ObjectTracking(trackingResult_t *result, vector3_t *point, boolean revers
 
 	result->scale = FixedDiv(screenHalfW, h+1);
 
-	result->onScreen = ((abs(da) > ANG60) || (abs(AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, (viewz - point->z)))) > ANGLE_45));
+	result->onScreen = !((abs(da) > ANG60) || (abs(AngleDeltaSigned(viewpointAiming, R_PointToAngle2(0, 0, h, (viewz - point->z)))) > ANGLE_45));
 
 	// Cheap dirty hacks for some split-screen related cases
 	if (result->x < 0 || result->x > (screenWidth << FRACBITS))
@@ -1226,6 +1236,7 @@ static void K_drawKartItem(void)
 			flamebar = stplyr->flamestore;
 			flamemaxl = FLAMESTOREMAX;
 			localbg = kp_itembg[offset+1];
+			dark = true;
 
 			if ((stplyr->flamestore >= FLAMESTOREMAX-1) && (leveltime & 1))
 			{
@@ -1251,7 +1262,7 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if ((stplyr->invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
+		else if ((stplyr->invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 		{
 			itembar = stplyr->invincibilitytimer;
 			maxl = max(1, stplyr->maxinvincibilitytime);
@@ -1270,6 +1281,7 @@ static void K_drawKartItem(void)
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
 			localpatch = kp_bubbleshield[offset];
+			dark = true;
 
 			if ((stplyr->bubbleblowup > bubbletime) && (leveltime & 1))
 			{
@@ -1895,7 +1907,7 @@ static boolean K_drawKartPositionFaces(void)
 
 			V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
 
-			if ((players[rankplayer[i]].invincibilitytimer) && (invintype == KARTINVIN_ALTERN))
+			if ((players[rankplayer[i]].invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 			{
 				colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
@@ -2883,7 +2895,7 @@ static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 {
 	UINT16 chatcolor = skincolors[SKINCOLOR_ORANGE].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\nv");
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\n     v");
 }
 
 static const char *K_StringTypingDot(player_t *p)
@@ -3649,7 +3661,7 @@ static void K_drawKartMinimap(void)
 
 				colorizeplayer = players[i].mo->colorized;
 
-				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (invintype == KARTINVIN_LEGACY)))
+				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
 					usecolor = (K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
@@ -3820,7 +3832,7 @@ static void K_drawKartMinimap(void)
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
 				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
-				  (FRACUNIT / 2)) || (invintype == KARTINVIN_LEGACY)))
+				  (FRACUNIT / 2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
 				colorizeplayer = true;

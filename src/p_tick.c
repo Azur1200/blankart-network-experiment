@@ -721,10 +721,15 @@ void P_Ticker(boolean run)
 		}
 		if (demo.playback)
 		{
-			G_ReadDemoExtraData();
-			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i])
-					G_ReadDemoTiccmd(&players[i].cmd, i);
+			if (G_CompatLevel(0x0001) && !multiplayer)
+				G_ReadDemoTiccmd(&players[0].cmd, 0);
+			else
+			{
+				G_ReadDemoExtraData();
+				for (i = 0; i < MAXPLAYERS; i++)
+					if (playeringame[i])
+						G_ReadDemoTiccmd(&players[i].cmd, i);
+			}
 		}
 
 		ps_lua_mobjhooks = 0;
@@ -894,7 +899,10 @@ void P_Ticker(boolean run)
 		}
 		else if (demo.playback) // Use Ghost data for consistency checks.
 		{
-			G_ConsAllGhostTics();
+			if (!multiplayer && G_CompatLevel(0x0001))
+				G_ConsGhostTic(0);
+			else
+				G_ConsAllGhostTics();
 		}
 
 		if (modeattacking)

@@ -29,10 +29,10 @@ target_sources(SRB2SDL2 PRIVATE comptime.c md5.c config.h.in)
 ### Configuration
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 	"Compile a development build of SRB2Kart.")
-	
+
 set(SRB2_CONFIG_SKIP_COMPTIME OFF CACHE BOOL
 	"Skip Comptime rebuild.")
-	
+
 if(NOT SRB2_CONFIG_SKIP_COMPTIME)
 	# This updates the modification time for comptime.c at the
 	# end of building so when the build system is ran next time,
@@ -124,11 +124,13 @@ target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_THREADS)
 if(${SRB2_CONFIG_HAVE_ZLIB})
 	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
 		set(ZLIB_FOUND ON)
-		set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/thirdparty/zlib)
+		set(ZLIB_COMPAT ON)
+		set(WITH_GTEST OFF)
+		set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng)
 		if(${SRB2_SYSTEM_BITS} EQUAL 64)
-			set(ZLIB_LIBRARIES "-L${CMAKE_SOURCE_DIR}/thirdparty/zlib/win32 -lz64")
+			set(ZLIB_LIBRARIES "-L${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/win32 -lz64")
 		else() # 32-bit
-			set(ZLIB_LIBRARIES "-L${CMAKE_SOURCE_DIR}/thirdparty/zlib/win32 -lz32")
+			set(ZLIB_LIBRARIES "-L${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/win32 -lz32")
 		endif()
 	else()
 		find_package(ZLIB)
@@ -217,6 +219,9 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STRE
 	target_compile_options(SRB2SDL2 PRIVATE -mno-ms-bitfields)
 endif()
 
+# TODO: fix prng and P_CreateBlockmap overflow at some point
+target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
+
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 
 else()
@@ -248,7 +253,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wnested-externs
 		-Wformat-y2k
 		-Wformat-security
-		
+
 		$<$<VERSION_LESS:$<C_COMPILER_VERSION>,2.9.5>:
 			-Wno-div-by-zero
 			-Wendif-labels
@@ -387,6 +392,10 @@ if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	target_link_options(SRB2SDL2 PRIVATE -pg)
 endif()
 
+if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+	set_property(TARGET SRB2SDL2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # strip debug symbols into separate file when using gcc or clang.
 # to be consistent with Makefile, don't generate for OS X.
 if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
@@ -435,4 +444,3 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND NOT "${SRB2_CONFIG_INTERNAL_LIBRA
 		COMMENT "Copying runtime DLLs"
 	)
 endif()
-

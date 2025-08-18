@@ -26,9 +26,6 @@ extern "C" {
 //
 // FINALE
 //
-// HACK for menu fading while titlemapinaction; skips the level check
-#define FORCEWIPE -2
-
 
 // Called by main loop.
 boolean F_IntroResponder(event_t *ev);
@@ -76,6 +73,7 @@ boolean F_GetPromptHideHud(fixed_t y);
 
 void F_StartIntro(void);
 void F_StartTitleScreen(void);
+void F_CacheTitleScreen(void);
 void F_StartCredits(void);
 void F_BlanStartCredits(void);
 
@@ -141,15 +139,15 @@ void F_MenuPresTicker(boolean run);
 // WIPE
 //
 
-extern boolean WipeInAction;
+extern UINT8 WipeInAction;
 extern boolean WipeStageTitle;
-
-extern INT32 lastwipetic;
 
 // Don't know where else to place this constant
 // But this file seems appropriate
 #define PRELEVELTIME TICRATE // frames in tics
 
+fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum);
+void F_DoWipe(fademask_t *fademask);
 void F_WipeStartScreen(void);
 void F_WipeEndScreen(void);
 void F_RunWipe(UINT8 wipetype, boolean drawMenu);

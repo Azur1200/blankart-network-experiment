@@ -938,7 +938,7 @@ INT32 G_PlayerInputAnalog(UINT8 p, INT32 gc, boolean digital)
 
 	deadzone = (JOYAXISRANGE * cv_deadzone[p].value) / FRACUNIT;
 
-	deviceID = cv_usejoystick[p].value;
+	deviceID = I_GetJoystickDeviceIndexForPlayer(p) + 1;
 
 retrygetcontrol:
 	for (i = 0; i < MAXINPUTMAPPING; i++)
@@ -1056,7 +1056,7 @@ static void G_DoCameraTurn(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer, player
 
 	if (player->mo)
 		cmd->angle = K_GetKartTurnValue(player, cmd->angle);
-	
+
 	cmd->angle *= realtics;
 
 	if (P_CanPlayerTurn(player, cmd))
@@ -1315,7 +1315,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->sidemove = MAXPLMOVE;
 	else if (cmd->sidemove < -MAXPLMOVE)
 		cmd->sidemove = -MAXPLMOVE;
-	
+
 	if (cmd->turning > KART_FULLTURN)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
@@ -1507,30 +1507,7 @@ void G_StartTitleCard(void)
 void G_PreLevelTitleCard(void)
 {
 #ifndef NOWIPE
-    tic_t strtime = I_GetTime();
-    tic_t endtime = strtime + (PRELEVELTIME*NEWTICRATERATIO);
-    tic_t nowtime = strtime;
-    tic_t lasttime = strtime;
-    while (nowtime < endtime)
-    {
-        // draw loop
-        ST_runTitleCard();
-        ST_preLevelTitleCardDrawer();
-        I_FinishUpdate(); 	// page flip or blit buffer
-		NetKeepAlive();		// Prevent timeouts
-
-        if (moviemode)
-            M_SaveFrame();
-        if (takescreenshot) // Only take screenshots after drawing.
-            M_DoScreenShot();
-
-        while (!((nowtime = I_GetTime()) - lasttime))
-        {
-			I_Sleep(cv_sleep.value);
-			I_UpdateTime(cv_timescale.value);
-		}
-        lasttime = nowtime;
-    }
+	D_WipeLoop(WIPELOOP_TITLECARD, 0, false);
 #endif
 }
 
@@ -1600,7 +1577,7 @@ boolean G_Responder(event_t *ev)
 	// Intro
 	else if (gamestate == GS_INTRO)
 	{
-		if (F_IntroResponder(ev))
+		if (F_IntroResponder(ev) && !WipeInAction)
 		{
 			D_StartTitle();
 			return true;
@@ -1807,6 +1784,12 @@ boolean G_Responder(event_t *ev)
 						COM_ImmedExecute(commandname);
 					}
 				}
+
+				if (G_ControlBoundToKey(i, gc_director, ev->data1, false))
+				{
+					K_ToggleDirector();
+				}
+
 			}
 
 			return true;
@@ -2300,6 +2283,7 @@ void G_Ticker(boolean run)
 
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
+		case FORCEWIPE:
 			break; // do nothing
 	}
 
@@ -2397,9 +2381,9 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	boolean followerready;
 	INT32 followerskin;
 	UINT16 followercolor;
-	
+
 	mobj_t *follower; // old follower, will probably be removed by the time we're dead but you never know.
-	
+
 	INT32 charflags;
 	UINT32 followitem;
 
@@ -2416,7 +2400,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	tic_t starposttime; // The time of the last cheatcheck you hit
 	INT32 prevcheck; // Distance from Previous Legacy Checkpoint
 	INT32 nextcheck; // Distace to Next Legacy Checkpoint
-	
+
 	INT32 exiting;
 	INT32 khudcardanimation;
 	INT16 totalring;
@@ -2564,7 +2548,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		wanted = players[player].wanted;
 		rings = players[player].rings;
 		kickstartaccel = players[player].kickstartaccel;
-		
+
 		nocontrol = players[player].nocontrol;
 
 		laps = players[player].laps;
@@ -2574,7 +2558,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 		exiting = players[player].exiting;
 		khudcardanimation = (exiting > 0) ? players[player].karthud[khud_cardanimation] : 0;
-		
+
 		starpostx = players[player].starpostx;
 		starposty = players[player].starposty;
 		starpostz = players[player].starpostz;
@@ -2601,7 +2585,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	{
 		follower = NULL;
 	}
-	
+
 	spectatorreentry = players[player].spectatorreentry;
 
 	grieftime = players[player].grieftime;
@@ -2644,7 +2628,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->starposttime = starposttime;
 	p->prevcheck = prevcheck;
 	p->nextcheck = nextcheck;
-	
+
 	p->exiting = exiting;
 	p->karthud[khud_cardanimation] = khudcardanimation;
 
@@ -2676,7 +2660,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;
-	
+
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;
 	p->griefstrikes = griefstrikes;
@@ -2754,7 +2738,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	if (songcredit)
 		S_ShowMusicCredit();
-	
+
 	if (leveltime > (starttime + (TICRATE/2)) && !p->spectator)
 		p->respawn = 48; // Respawn effect
 }
@@ -2817,7 +2801,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost)
 }
 
 void G_MovePlayerToSpawnOrStarpost(INT32 playernum, boolean starpost)
-{	
+{
 	if ((leveltime > starttime) && starpost)
 		P_MovePlayerToStarpost(playernum);
 	else
@@ -3143,10 +3127,10 @@ void G_DoReborn(INT32 playernum)
 	{
 		// respawn at the start
 		mobj_t *oldmo = NULL;
-		
+
 		if (player->spectator)
 			;
-		else if ((player->starpostnum || ((player->nextwaypoint != NULL) && player->starposttime)) 
+		else if ((player->starpostnum || ((player->nextwaypoint != NULL) && player->starposttime))
 		|| ((mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE) && player->laps)) // SRB2kart
 			starpost = true;
 
@@ -3839,17 +3823,17 @@ tryagain:
 			virtlump_t *vLump;
 			lumpnum_t l;
 
-			vRes = vres_GetMap(mapheaderinfo[ix+1]->lumpnum);
+			vRes = vres_GetMap(mapheaderinfo[ix]->lumpnum);
 
 			for (int i = 0; i < 10; i++)
 			{
-				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix+1]->lumpname,i));
+				vLump = vres_Find(vRes, va("%s/GHOST_%u",mapheaderinfo[ix]->lumpname,i));
 
 				if (vLump != NULL)
 					break;
 			}
 
-			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix+1]->lumpname))) == LUMPERROR))
+			if (vLump == NULL && ((l = W_CheckNumForLongName(va("%sS01",mapheaderinfo[ix]->lumpname))) == LUMPERROR))
 			{
 				vres_Free(vRes);
 				continue;
@@ -4585,7 +4569,7 @@ void G_LoadGameData(void)
 		if (vspowerlevel[i] < PWRLVRECORD_MIN || vspowerlevel[i] > PWRLVRECORD_MAX)
 			goto datacorrupt;
 	}
-	
+
 	modded = READUINT8(save.p);
 
 	// Aha! Someone's been screwing with the save file!

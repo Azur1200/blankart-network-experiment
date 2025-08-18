@@ -327,7 +327,8 @@ char menupath[1024];
 size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
-char menusearch[MAXSTRINGLENGTH+1];
+char menusearchbuf[MAXSTRINGLENGTH+1];
+textinput_t menusearch;
 
 char **dirmenu, **coredirmenu; // core only local for this file
 size_t sizedirmenu, sizecoredirmenu; // ditto
@@ -428,9 +429,32 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 		// okay, now we actually want searchpath to incorporate d_name
 		strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
 
-		if (stat(searchpath,&fsstat) < 0) // do we want to follow symlinks? if not: change it to lstat
+#if defined(__linux__) || defined(__FreeBSD__)
+		if (dent->d_type == DT_UNKNOWN && lstat(searchpath, &fsstat) == 0)
+		{
+			if (S_ISDIR(fsstat.st_mode))
+				dent->d_type = DT_DIR;
+			else if (S_ISLNK(fsstat.st_mode))
+				dent->d_type = DT_LNK;
+		}
+
+		// Symlinks aren't always directory symlinks. Dunno if this would resolve recursive
+		// symlinks, but i think stat already does that
+		if (dent->d_type == DT_LNK && stat(searchpath, &fsstat) == 0 && !S_ISDIR(fsstat.st_mode))
+		{
+			dent->d_type = DT_UNKNOWN;
+		}
+
+		// Linux and FreeBSD has a special field for file type on dirent, so use that to speed up lookups.
+		// FIXME: should we also follow symlinks?
+		if ((dent->d_type == DT_DIR && depthleft) || (dent->d_type == DT_LNK && depthleft))
+#else
+		// if we wanna follow symlinks we can check with FILE_ATTRIBUTE_REPARSE_POINT
+		DWORD fileattr = GetFileAttributes(searchpath);
+		if (fileattr == INVALID_FILE_ATTRIBUTES)
 			; // was the file (re)moved? can't stat it
-		else if (S_ISDIR(fsstat.st_mode) && depthleft)
+		else if ((fileattr & FILE_ATTRIBUTE_DIRECTORY) && depthleft)
+#endif
 		{
 			searchpathindex[--depthleft] = strlen(searchpath) + 1;
 			dirhandle[depthleft] = opendir(searchpath);
@@ -493,7 +517,7 @@ static boolean filemenucmp(char *haystack, char *needle)
 		strupr(localhaystack);
 	if (cv_addons_search_type.value)
 		return (strstr(localhaystack, needle) != 0);
-	return (!strncmp(localhaystack, needle, menusearch[0]));
+	return (!strncmp(localhaystack, needle, menusearch.length));
 }
 
 void closefilemenu(boolean validsize)
@@ -559,7 +583,7 @@ void searchfilemenu(char *tempname)
 
 	first = (((UINT8)(coredirmenu[0][DIR_TYPE]) == EXT_UP) ? 1 : 0); // skip UP...
 
-	if (!menusearch[0])
+	if (!menusearch.length)
 	{
 		if (dirmenu)
 			Z_Free(dirmenu);
@@ -586,7 +610,7 @@ void searchfilemenu(char *tempname)
 		return;
 	}
 
-	strcpy(localmenusearch, menusearch+1);
+	strcpy(localmenusearch, menusearch.buffer);
 	if (!cv_addons_search_case.value)
 		strupr(localmenusearch);
 
@@ -648,7 +672,7 @@ boolean preparefilemenu(boolean samedepth, boolean replayhut)
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
 	}
 	else
-		menusearch[0] = menusearch[1] = 0; // clear search
+		M_TextInputInit(&menusearch, menusearchbuf, MAXSTRINGLENGTH+1);
 
 	if (!(dirhandle = opendir(menupath))) // get directory
 	{

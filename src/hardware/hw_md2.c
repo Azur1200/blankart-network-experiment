@@ -489,12 +489,20 @@ static void md2_loadBlendTexture(md2_t *model)
 // Don't spam the console, or the OS with fopen requests!
 static boolean nomd2s = false;
 
+typedef enum
+{
+	MD2M_MODELS = 0,
+	MD2M_BLANMODELS = 1,
+} md2modefile_e;
+
 void HWR_InitModels(void)
 {
 	size_t i;
 	INT32 s;
 	FILE *f;
 	char name[26], filename[32];
+	SINT8 loaded = MD2M_MODELS; // Check which model file has been loaded.
+	const char *modelfile = NULL;
 	// name[24] is used to check for names in the models.dat file that match with sprites or player skins
 	// sprite names are always 4 characters long, and names is for player skins can be up to 19 characters long
 	// PLAYERMODELPREFIX is 6 characters long
@@ -525,16 +533,29 @@ void HWR_InitModels(void)
 		md2_models[i].error = false;
 	}
 
-	// read the models.dat file
+loadmodelfile:
+	if (loaded == MD2M_MODELS)
+	{
+		modelfile = "models.dat";
+	}
+	else if (loaded == MD2M_BLANMODELS)
+	{
+		modelfile = "blanmodels.dat";
+	}
+
+	if (!modelfile)
+		return; // No modelfile somehow?
+
+	// read the models.dat/blanmodels.dat file
 	//Filename checking fixed ~Monster Iestyn and Golden
-	f = fopen(va("%s"PATHSEP"%s", srb2home, "models.dat"), "rt");
+	f = fopen(va("%s"PATHSEP"%s", srb2home, modelfile), "rt");
 
 	if (!f)
 	{
-		f = fopen(va("%s"PATHSEP"%s", srb2path, "models.dat"), "rt");
+		f = fopen(va("%s"PATHSEP"%s", srb2path, modelfile), "rt");
 		if (!f)
 		{
-			CONS_Printf("%s %s\n", M_GetText("Error while loading models.dat:"), strerror(errno));
+			CONS_Printf("Error while loading %s: %s\n", modelfile, strerror(errno));
 			nomd2s = true;
 			return;
 		}
@@ -595,6 +616,14 @@ modelfound:
 		// move on to next line...
 		continue;
 	}
+
+	if (loaded == MD2M_MODELS)
+	{
+		fclose(f);
+		loaded = MD2M_BLANMODELS;
+		goto loadmodelfile;
+	}
+
 	fclose(f);
 }
 
@@ -1676,6 +1705,8 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 			{
 				fixed_t camAngleDiff = AngleFixed(viewangle) - FLOAT_TO_FIXED(p.angley); // dumb reconversion back, I know
 
+				anglef *= flip ? -1 : 1; // Adjust for flipping
+
 				p.rollangle = FIXED_TO_FLOAT(anglef);
 				p.roll = true;
 
@@ -1697,13 +1728,23 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 		HWD.pfnSetShader(SHADER_MODEL);	// model shader
 		{
-			float this_scale = FIXED_TO_FLOAT(spr->mobj->scale);
+			float this_scale = FIXED_TO_FLOAT(interp.scale);
 
-			float xs = this_scale * FIXED_TO_FLOAT(spr->mobj->spritexscale);
-			float ys = this_scale * FIXED_TO_FLOAT(spr->mobj->spriteyscale);
+			float xs = this_scale * FIXED_TO_FLOAT(interp.spritexscale);
+			float ys = this_scale * FIXED_TO_FLOAT(interp.spriteyscale);
 
-			float ox = xs * FIXED_TO_FLOAT(spr->mobj->spritexoffset);
-			float oy = ys * FIXED_TO_FLOAT(spr->mobj->spriteyoffset);
+			float ox = xs * FIXED_TO_FLOAT(interp.spritexoffset);
+			float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
+
+			SINT8 flipoffset = 1;
+
+			if ((spr->mobj->renderflags & RF_FLIPOFFSETS) && flip)
+			{
+				flipoffset = -1;
+			}
+
+			ox *= flipoffset;
+			oy *= flipoffset;
 
 			// offset perpendicular to the camera angle
 			p.x -= ox * gl_viewsin;

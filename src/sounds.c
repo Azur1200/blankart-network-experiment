@@ -82,7 +82,7 @@ void S_InitRuntimeSounds (void)
 		S_sfx[i].name = soundnames[i];
 		S_sfx[i].singularity = false;
 		S_sfx[i].priority = 0;
-		S_sfx[i].pitch = 0;
+		S_sfx[i].flags = 0;
 		S_sfx[i].volume = -1;
 		S_sfx[i].data = NULL;
 		S_sfx[i].length = 0;
@@ -119,7 +119,7 @@ sfxenum_t S_AddSoundFx(const char *name, boolean singular, INT32 flags, boolean 
 		strncpy(soundnames[i], name, 6);
 		S_sfx[i].singularity = singular;
 		S_sfx[i].priority = 60;
-		S_sfx[i].pitch = flags;
+		S_sfx[i].flags = flags;
 		S_sfx[i].volume = -1;
 		S_sfx[i].lumpnum = LUMPERROR;
 		S_sfx[i].skinsound = -1;

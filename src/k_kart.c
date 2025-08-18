@@ -379,6 +379,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_test1);
 	CV_RegisterVar(&cv_test2);
 	CV_RegisterVar(&cv_test3);
+
+	CV_RegisterVar(&cv_naturalcamera);
 }
 
 //}
@@ -898,7 +900,7 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
-			if (invintype == KARTINVIN_ALTERN)
+			if (K_GetKartInvinType() == KARTINVIN_ALTERN)
 			{
 				// It's a power item, yes, but we don't want mashing to lessen
 				// its chances, so we lie to the game's face.
@@ -1102,7 +1104,7 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 			powerItem = true;
 			break;
 		case KITEM_INVINCIBILITY:
-			if (invintype == KARTINVIN_ALTERN)
+			if (K_GetKartInvinType() == KARTINVIN_ALTERN)
 			{
 				// It's a power item, yes, but we don't want mashing to lessen
 				// its chances, so we lie to the game's face.
@@ -1649,6 +1651,7 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// I'm returning via the exact opposite, however, to forgo having another bracket embed. Same result either way, I think.
 	// Finally, if you get past this check, now you can actually start calculating what item you get.
 	if ((cmd->buttons & BT_ATTACK) && (player->itemroulette >= roulettestop)
+		&& (K_RingsActive() || (modeattacking == ATTACKING_NONE))
 		&& !(player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT|IF_USERINGS)))
 	{
 		// Mashing reduces your chances for the good items
@@ -2312,7 +2315,7 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
 {
 	// At 50% or lower Invincibility, offroad creeps up on you.
-	fixed_t invinoffroad = (invintype == KARTINVIN_LEGACY) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
+	fixed_t invinoffroad = (K_GetKartInvinType() == KARTINVIN_LEGACY) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
 	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
 
 	return FixedMul(offroad, fac);
@@ -2610,6 +2613,7 @@ static void K_SpawnStackingEffect(player_t *player)
 {
 	// Thanks to 1ndev for code used for booststack->scale and boosttack->frame! (taken and modified from BoostStack)
 	mobj_t  *booststack = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTSTACK);
+	booststack->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 	P_SetTarget(&booststack->target, player->mo);
 	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,4)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
 
@@ -2815,6 +2819,8 @@ static void K_RespawnChecker(player_t *player)
 				player->startboost = 50;
 				K_SpawnDashDustRelease(player);
 			}
+
+			P_PlayerRingBurst(player, 2);
 			player->mo->colorized = false;
 			player->dropdash = 0;
 			player->respawn = 0;
@@ -3577,7 +3583,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 {
     UINT32 i, pingame;
 
-    if (invintype == KARTINVIN_LEGACY)
+    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return BASEINVINTIME;
 
     pingame = 0;
@@ -3602,7 +3608,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
 static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
-    if (invintype == KARTINVIN_LEGACY)
+    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return INVINSPEEDBOOSTLGC;
     
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
@@ -3611,7 +3617,7 @@ static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 
 static fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
-    if (invintype == KARTINVIN_LEGACY)
+    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return INVINACCELBOOSTLGC;
     
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
@@ -5967,7 +5973,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
 
-        if (invintype == KARTINVIN_ALTERN)
+        if (K_GetKartInvinType() == KARTINVIN_ALTERN)
         {
             mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
             P_SetTarget(&aura->target, player->mo);
@@ -5977,7 +5983,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
         }
 	}
 
-    if (invintype == KARTINVIN_ALTERN)
+    if (K_GetKartInvinType() == KARTINVIN_ALTERN)
     {
         // Rim suggestion: Don't allow already invincible players to chain.
         if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
@@ -6065,13 +6071,12 @@ void K_UpdateHnextList(player_t *player, boolean clean)
 }
 
 // For getting hit!
-void K_DropHnextList(player_t *player, boolean keepshields)
+void K_DropHnextList(player_t *player)
 {
 	mobj_t *work = player->mo, *nextwork, *dropwork;
 	INT32 flip;
 	mobjtype_t type;
 	boolean orbit, ponground, dropall = true;
-	INT32 shield = K_GetShieldFromPlayer(player);
 
 	if (work == NULL || P_MobjWasRemoved(work))
 	{
@@ -6080,27 +6085,6 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 
 	flip = P_MobjFlip(player->mo);
 	ponground = P_IsObjectOnGround(player->mo);
-
-	if (shield != KSHIELD_NONE && !keepshields)
-	{
-		switch (shield)
-		{
-			case KSHIELD_THUNDER:
-				K_DoThunderShield(player);
-				break;
-			case KSHIELD_BUBBLE:
-				S_StartSound(player->mo, sfx_s3k4b);
-				break;
-			case KSHIELD_FLAME:
-				S_StartSound(player->mo, sfx_s3k47);
-				break;
-		}
-
-		player->curshield = KSHIELD_NONE;
-		player->itemtype = KITEM_NONE;
-		player->itemamount = 0;
-		K_UnsetItemOut(player);
-	}
 
 	nextwork = work->hnext;
 
@@ -6255,6 +6239,45 @@ void K_DropHnextList(player_t *player, boolean keepshields)
 	}
 }
 
+// For getting hit!
+void K_PopPlayerShield(player_t *player)
+{
+	INT32 shield = K_GetShieldFromPlayer(player);
+
+	// Doesn't apply if player is invalid.
+	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
+	{
+		return;
+	}
+
+	switch (shield)
+	{
+		case KSHIELD_THUNDER:
+			K_DoThunderShield(player);
+			break;
+		case KSHIELD_BUBBLE:
+			S_StartSound(player->mo, sfx_s3k4b);
+			break;
+		case KSHIELD_FLAME:
+			S_StartSound(player->mo, sfx_s3k47);
+			break;
+	}
+
+	player->curshield = KSHIELD_NONE;
+	player->itemtype = KITEM_NONE;
+	player->itemamount = 0;
+
+	player->flametimer = 0;
+	//player->flamestore = 0
+	//player->flamedash = 0;
+
+	player->bubbleblowup = 0;
+	player->bubblecool = 0;
+	player->bubblepop = 0;
+
+	K_UnsetItemOut(player);
+}
+
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
 {
 	mobj_t *drop = P_SpawnMobj(x, y, z, MT_FLOATINGITEM);
@@ -6342,7 +6365,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 // For getting EXTRA hit!
 void K_DropItems(player_t *player)
 {
-	K_DropHnextList(player, true);
+	K_DropHnextList(player);
 
 	if (player->mo && !P_MobjWasRemoved(player->mo) && player->itemamount > 0)
 	{
@@ -7845,7 +7868,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->invincibilitytimer)
 	{
 		INT16 invinfac = 1;
-		if ((invintype == KARTINVIN_ALTERN) && ((INT16)(player->invincibilitybottleneck) != -1) && (player->invincibilitytimer > 2))
+		if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && ((INT16)(player->invincibilitybottleneck) != -1) && (player->invincibilitytimer > 2))
 		{
 			UINT32 invindist = INVINDIST >> 2;
 			if (player->distancefromcluster < invindist)
@@ -7973,8 +7996,24 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->outruntime > 0)
 		player->outruntime--;
 
-	if (player->tiregrease > 0)
-		player->tiregrease--;
+	if (player->tiregrease)
+	{
+		// Remove grease faster if players are moving slower; players that are recovering
+		// from mistakes (or who got sprung purely for track traversal) need steering!
+		// Up to 4x degrease speed below 10FU/t (speed at which you lose drift sparks).
+		INT16 toDegrease = 1;
+		INT16 driftSpeedIncrements = player->speed / (10 * player->mo->scale); // Same breakpoints used for driftcharge stages.
+		toDegrease += max(3 - driftSpeedIncrements, 0);
+
+		if (player->tiregrease <= toDegrease)
+		{
+			player->tiregrease = 0;
+		}
+		else
+		{
+			player->tiregrease -= toDegrease;
+		}
+	}
 
 	if (player->chaintimer)
 		player->chaintimer--;
@@ -8036,7 +8075,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flamedash--;
 
 	if (player->flamestore)
+	{
 		player->flamestore--;
+
+		if (player->flametimer == 0 || player->flamestore == 0)
+		{
+			S_StopSoundByID(player->mo, sfx_s3kc2l);
+		}
+	}
 
 	if (player->flametimer > 0)
 	{
@@ -8047,8 +8093,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 		if (player->flametimer == 0)
 		{
+			S_StopSoundByID(player->mo, sfx_s3kc2l);
 			S_StartSound(player->mo, sfx_s3k47);
-			K_DropHnextList(player, false);
+			K_PopPlayerShield(player);
 		}
 	}
 	else
@@ -8098,9 +8145,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_HandleDelayedHitByEm(player);
-
-	if (!(gametyperules & GTR_NOCOUNTDOWN))
-		K_RaceStart(player);
 
 	// Squishing
 	// If a Grow player or a sector crushes you, get flattened instead of being killed.
@@ -8178,7 +8222,7 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-		if (invintype == KARTINVIN_LEGACY)
+		if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 		{
 			fullbright = true;
 
@@ -9425,6 +9469,7 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 {
 	fixed_t ringPower = ((9 - player->kartspeed) + (9 - player->kartweight)) * (FRACUNIT/2);
 	UINT16 finalPower = 0;
+	UINT8 ringcap = 18 - ((9 - player->kartspeed) + (9 - player->kartweight))/2;
 
 	if (boosted == true)
 	{
@@ -9442,13 +9487,17 @@ INT32 K_GetKartRingPower(player_t *player, boolean boosted)
 	// the base is 4 tics
 	finalPower += 3;
 
-	// If you use more then 20 rings at a time, you start gaining less ring timer..
-	if (player->ringtime == finalPower*20)
+	// If you use alot of rings at a time, you start gaining less ring timer...
+	if (player->ringtime == finalPower*ringcap)
 	{
 		if (P_IsLocalPlayer(player))
 			S_StartSound(NULL, sfx_cdfm66);
 	}
-	else if (player->ringtime > finalPower*20)
+	else if (player->ringtime > finalPower*(ringcap+(ringcap/2)))
+	{
+		finalPower = 1;
+	}
+	else if (player->ringtime > finalPower*ringcap)
 	{
 		finalPower = 2;
 	}
@@ -9498,6 +9547,11 @@ static INT16 K_GetKartDriftValue(player_t *player, fixed_t countersteer)
 
 	basedrift = 83*player->drift - (driftweight - 14)*player->drift/5; // 415 - 303
 	driftangle = abs((252 - driftweight)*player->drift/5);
+
+	if (player->tiregrease > 0) // Buff drift-steering while in greasemode
+	{
+		basedrift += (basedrift / greasetics) * player->tiregrease;
+	}
 
 	return basedrift + FixedMul(driftangle, countersteer);
 }
@@ -9586,6 +9640,7 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 	}
 
 	mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTFLAME);
+	overlay->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 	P_SetMobjState(overlay, S_DRIFTBOOSTFLAME);
 	P_SetTarget(&overlay->target, player->mo);
 	P_SetScale(overlay, (overlay->destscale = player->mo->scale));
@@ -10480,6 +10535,7 @@ static void K_AirFailsafe(player_t *player)
 	if (player->speed > maxSpeed // Above the max speed that you're allowed to use this technique.
 		|| player->respawn // Respawning, you don't need this AND drop dash :V
 		|| player->carry // Don't do in automated sections.
+		|| player->bumpertime // Don't do from nights bumber.
 		|| P_PlayerInPain(player)) // Don't assist people hit by mines.
 	{
 		player->pflags &= ~PF_AIRFAILSAFE;
@@ -10567,6 +10623,27 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	player->mo->friction = prevfriction;
 
+	// Reduce friction after exiting a loop.
+	if (player->tiregrease)
+	{
+		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
+
+		if (player->mo->friction > FRACUNIT)
+			player->mo->friction = FRACUNIT;
+		if (player->mo->friction < 0)
+			player->mo->friction = 0;
+
+		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
+
+		if (player->mo->movefactor < FRACUNIT)
+			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
+		else
+			player->mo->movefactor = FRACUNIT;
+
+		if (player->mo->movefactor < 32)
+			player->mo->movefactor = 32;
+	}
+
 	// Friction
 	if (!player->offroad)
 	{
@@ -10576,12 +10653,6 @@ static void K_AdjustPlayerFriction(player_t *player)
 
 	if (player->speed > 0 && player->cmd.forwardmove < 0)	// change friction while braking no matter what, otherwise it's not any more effective than just letting go off accel
 		player->mo->friction -= 2048;
-
-	// Reduce friction after exiting a loop.
-	if (player->tiregrease)
-	{
-		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
-	}
 
 	// Karma ice physics
 	if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
@@ -10599,7 +10670,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 		if (player->mo->movefactor < FRACUNIT)
 			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
 		else
-			player->mo->movefactor = FRACUNIT; //player->mo->movefactor = ((player->mo->friction - 0xDB34)*(0xA))/0x80;
+			player->mo->movefactor = FRACUNIT;
 
 		if (player->mo->movefactor < 32)
 			player->mo->movefactor = 32;
@@ -10623,6 +10694,13 @@ void K_SetTireGrease(player_t *player, tic_t tics)
 	player->tiregrease = tics;
 }
 
+boolean K_SlopeResistance(player_t *player)
+{
+	if (player->tiregrease)
+		return true;
+	return false;
+}
+
 void K_SetItemOut(player_t *player)
 {
 	player->itemflags |= IF_ITEMOUT;
@@ -10636,7 +10714,7 @@ void K_UnsetItemOut(player_t *player)
 
 static boolean K_InvincibilitySlotHogging(player_t *player)
 {
-	if (invintype == KARTINVIN_LEGACY)
+	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 		return false;
 
 	return ((player->invincibilitytimer) != 0);
@@ -10678,6 +10756,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->itemroulette
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
+			|| ((K_GetKartInvinType() == KARTINVIN_ALTERN) && player->invincibilitytimer)
 			|| (player->growshrinktimer > 0)
 			|| player->flametimer
 			|| (leveltime < starttime)))
@@ -10809,6 +10888,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								K_PlayBoostTaunt(player->mo);
 							}
 
+							// Usage sound
+							if (!S_SoundPlaying(player->mo, sfx_s3kc2l) && player->flametimer != 0 && player->flamestore != 0)
+								S_StartSound(player->mo, sfx_s3kc2l);
+
 							player->flamedash += incr;
 							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 							player->flametimer -= comincr;
@@ -10817,7 +10900,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							{
 								player->flametimer = 0;
 								S_StartSound(player->mo, sfx_s3k47);
-								K_DropHnextList(player, false);
+								K_PopPlayerShield(player);
 							}
 
 							/*if (!onground)
@@ -11248,6 +11331,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										K_PlayAttackTaunt(player->mo);
 										player->bubbleblowup = 0;
 										player->bubblecool = 0;
+										player->bubblepop = 0;
 										player->itemflags &= ~IF_HOLDREADY;
 										player->botvars.itemconfirm = 0;
 									}
@@ -11426,6 +11510,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		if (leveltime % 8 == 0)
 			S_StartSound(player->mo, sfx_s224);
 	}
+
+	if (!(gametyperules & GTR_NOCOUNTDOWN))
+		K_RaceStart(player);
 
 	if (onground == false)
 	{
@@ -11744,6 +11831,11 @@ boolean K_SlopeBoostActive(void)
 	}
 
 	return false;
+}
+
+boolean K_GetKartInvinType(void)
+{
+	return invintype;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

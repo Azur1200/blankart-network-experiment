@@ -17,12 +17,11 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "d_event.h"
+#include "m_textinput.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-extern UINT8 *demo_p;
 
 // ======================================
 // DEMO playback/recording related stuff.
@@ -33,9 +32,22 @@ extern consvar_t cv_resyncdemo;
 
 extern tic_t demostarttime;
 
+extern UINT32 raflags;
+typedef enum
+{
+	RAF_RINGS			= 1<<0,
+	RAF_STACKING		= 1<<1,
+	RAF_CHAINING		= 1<<2,
+	RAF_SLIPDASH		= 1<<3,
+	RAF_PURPLEDRIFT		= 1<<4,
+	RAF_SLOPEBOOST		= 1<<5,
+	// up to 1<<31 is free
+} raflags_t;
+
 // Publicly-accessible demo vars
 struct demovars_s {
 	char titlename[65];
+	textinput_t titlenameinput;
 	boolean recording, playback, timing;
 	UINT16 version; // Current file format of the demo being played
 	boolean title; // Title Screen demo can be cancelled by any key
@@ -91,6 +103,7 @@ struct menudemo_t {
 	} standings[MAXPLAYERS];
 };
 
+boolean G_CompatLevel(UINT16 level);
 
 extern mobj_t *metalplayback;
 
@@ -132,6 +145,8 @@ extern UINT8 demo_writerng;
 #define DXD_PST_PLAYING    0x01
 #define DXD_PST_SPECTATING 0x02
 #define DXD_PST_LEFT       0x03
+
+void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boolean));
 
 // Record/playback tics
 void G_ReadDemoExtraData(void);
@@ -181,6 +196,7 @@ extern demoghost *ghosts;
 
 void G_DeferedPlayDemo(const char *demo);
 void G_DoPlayDemo(char *defdemoname);
+void G_SetupDemoPlayer(INT32 i);
 void G_TimeDemo(const char *name);
 void G_AddGhost(char *defdemoname);
 void G_UpdateStaffGhostName(lumpnum_t l);

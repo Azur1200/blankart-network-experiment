@@ -2115,6 +2115,9 @@ void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		// read the lump in full
 		W_ReadLumpHeaderPwad(wad, lump, lumpdata, 0, 0);
 
+		if (!Picture_IsLumpPNG(lumpdata,len) && !Picture_CheckIfDoomPatch(lumpdata, len))
+			return NULL;
+
 		MakePatch(lumpdata, len, tag, &lumpcache[lump], wadfiles[wad]->compatmode);
 		Z_Free(lumpdata);
 	}
@@ -2137,6 +2140,9 @@ void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag)
 		return NULL;
 
 	patch = W_CacheSoftwarePatchNumPwad(wad, lump, tag);
+
+	if (!patch)
+		return NULL;
 
 #ifdef HWRENDER
 	// Software-only compile cache the data without conversion
@@ -2203,7 +2209,7 @@ void *W_CachePatchLongName(const char *name, INT32 tag)
   */
 void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash)
 {
-#ifdef NOFILEHASH
+#if defined(NOVERIFYIWADS) || defined(NOFILEHASH)
 	(void)wadfilenum;
 	(void)matchhash;
 #else

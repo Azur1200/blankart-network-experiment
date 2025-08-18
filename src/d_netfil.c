@@ -149,6 +149,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 {
 	size_t i;
 	UINT8 count = 0;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	UINT8 *p_start = netbuffer->packettype == PT_MOREFILESNEEDED ? netbuffer->u.filesneededcfg.files : netbuffer->u.serverinfo.fileneeded;
 	UINT8 *p = p_start;
 	char wadfilename[MAX_WADPATH] = "";
@@ -361,6 +362,7 @@ boolean CL_SendFileRequest(void)
 #ifdef MORELEGACYDOWNLOADER
 	boolean firstloop = true;
 #endif
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 #ifdef PARANOIA
 	if (M_CheckParm("-nodownload"))
@@ -492,9 +494,11 @@ tryagain:
 // returns false if a requested file was not found or cannot be sent
 boolean PT_RequestFile(INT32 node)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	char wad[MAX_WADPATH+1];
 	UINT8 *p = netbuffer->u.textcmd;
 	UINT8 id;
+
 	while (p < netbuffer->u.textcmd + MAXTEXTCMD) // Don't allow hacked client to overflow
 	{
 		id = READUINT8(p);
@@ -731,6 +735,7 @@ static void SV_PrepareSendLuaFileToNextNode(void)
 {
 	INT32 i;
 	UINT8 success = 1;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
     // Find a client to send the file to
 	for (i = 1; i < MAXNETNODES; i++)
@@ -835,6 +840,7 @@ void SV_AbortLuaFileTransfer(INT32 node)
 
 void CL_PrepareDownloadLuaFile(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	// If there is no transfer in the list, this normally means the server
 	// called io.open before us, so we have to wait until we call it too
 	if (!luafiletransfers)
@@ -1101,6 +1107,7 @@ void FileSendTicker(void)
 	size_t fragmentsize;
 	filetx_t *f;
 	INT32 packetsent, ram, i, j;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	// If someone is taking too long to download, kick them with a timeout
 	// to prevent blocking the rest of the server...
@@ -1247,6 +1254,7 @@ void FileSendTicker(void)
 
 void PT_FileAck(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	fileack_pak *packet = (void*)&netbuffer->u.fileack;
 	INT32 node = doomcom->remotenode;
 	filetran_t *trans = &transfer[node];
@@ -1301,6 +1309,7 @@ void PT_FileAck(void)
 void PT_FileReceived(void)
 {
 	filetx_t *trans = transfer[doomcom->remotenode].txlist;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (trans && netbuffer->u.filereceived == trans->fileid)
 		SV_EndFileSend(doomcom->remotenode);
@@ -1310,6 +1319,7 @@ static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 {
 	size_t packetsize;
 	INT32 i;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	packetsize = sizeof(*packet) + packet->numsegments * sizeof(*packet->segments);
 
@@ -1391,6 +1401,7 @@ void FileReceiveTicker(void)
 
 void PT_FileFragment(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	filetx_pak *pak = (void*)&netbuffer->u.filetxpak;
 	INT32 filenum = pak->fileid;
 	fileneeded_t *file = &fileneeded[filenum];

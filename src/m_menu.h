@@ -272,7 +272,6 @@ INT32 MR_StartServer(INT32 choice);
 INT32 MR_ConnectMenuModChecks(INT32 choice);
 INT32 MR_CancelConnect(INT32 choice);
 INT32 MR_SetupControlsMenu(INT32 arg);
-INT32 MR_HandleControlsMenu(INT32 ch);
 INT32 MR_Refresh(INT32 choice);
 INT32 MR_Connect(INT32 arg);
 INT32 MR_VideoModeMenu(INT32 choice);

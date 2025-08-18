@@ -14,6 +14,7 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "g_input.h"
+#include "i_system.h"
 #include "keys.h"
 #include "hu_stuff.h" // need HUFONT start & end
 #include "d_net.h"
@@ -38,7 +39,7 @@ consvar_t cv_turnsmooth = CVAR_INIT ("turnsmoothing", "Off", CV_SAVE, turnsmooth
 // current state of the keys
 // JOYAXISRANGE for fully pressed, 0 for not pressed
 INT32 gamekeydown[MAXDEVICES][NUMINPUTS];
-boolean deviceResponding[MAXDEVICES]; 
+boolean deviceResponding[MAXDEVICES];
 
 // several key codes (or virtual key) per game control
 INT32 gamecontrol[MAXSPLITSCREENPLAYERS][num_gamecontrols][MAXINPUTMAPPING];
@@ -100,7 +101,7 @@ INT32 G_GetDevicePlayer(INT32 deviceID)
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
-		if (deviceID == cv_usejoystick[i].value)
+		if (deviceID == I_GetJoystickDeviceIndexForPlayer(i) + 1)
 		{
 			return i;
 		}
@@ -407,6 +408,7 @@ static const char *gamecontrolname[num_gamecontrols] =
 	"custom2",
 	"custom3",
 	"respawn",
+	"director",
 };
 
 #define NUMKEYNAMES (sizeof (keynames)/sizeof (keyname_t))

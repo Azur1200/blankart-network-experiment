@@ -21,6 +21,7 @@
 #include "i_system.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "g_input.h"
 #include "m_menu.h"
 #include "p_mobj.h"
@@ -30,6 +31,7 @@
 #include "p_setup.h"
 #include "s_sound.h"
 #include "i_sound.h"
+#include "i_net.h"
 #include "m_misc.h"
 #include "am_map.h"
 #include "byteptr.h"
@@ -1103,6 +1105,8 @@ void D_RegisterClientCommands(void)
 	// HUD
 	CV_RegisterVar(&cv_itemfinder);
 
+	CV_RegisterVar(&cv_emotes);
+
 	// time attack ghost options are also saved to config
 	CV_RegisterVar(&cv_ghost_besttime);
 	CV_RegisterVar(&cv_ghost_bestlap);
@@ -1644,7 +1648,7 @@ static void SendNameAndColor(UINT8 n)
 	const INT32 playernum = g_localplayers[n];
 	player_t *player = &players[playernum];
 
-	char buf[MAXPLAYERNAME+9];
+	char buf[MAXPLAYERNAME+12];
 	char *p;
 
 	if (splitscreen < n)
@@ -4090,6 +4094,7 @@ static void Command_Changepassword_f(void)
 
 static void Command_Login_f(void)
 {
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 #ifdef NOMD5
 	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
 	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
@@ -6225,7 +6230,7 @@ static void Command_Archivetest_f(void)
 	// test unarchive
 	save.p = save.buffer;
 	CONS_Printf("LUA_UnArchive...\n");
-	LUA_UnArchive(&save, true);
+	LUA_UnArchive(&save, true, false);
 	i = READUINT8(save.p);
 	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
 	{

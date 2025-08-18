@@ -146,7 +146,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 			if (player->stealingtimer || player->stolentimer
 				|| player->rocketsneakertimer
 				|| player->eggmanexplode
-				|| ((invintype == KARTINVIN_ALTERN) && (player->invincibilitytimer))
+				|| ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (player->invincibilitytimer))
 				|| (player->growshrinktimer > 0)
 				|| player->flametimer)
 				return false;
@@ -528,7 +528,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				if (player->bubbleblowup > 0)
 				{
-					K_DropHnextList(player, false);
+					K_PopPlayerShield(player);
 					special->extravalue1 = 2; // WAIT...
 					special->extravalue2 = 52; // Slightly over the respawn timer length
 					return;
@@ -537,7 +537,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				if (player->invincibilitytimer > 0 || player->growshrinktimer > 0 || player->hyudorotimer > 0)
 				{
 					//player->flashing = 0;
-					K_DropHnextList(player, false);
+					K_DropHnextList(player);
 					K_StripItems(player);
 				}
 
@@ -883,12 +883,13 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (player->exiting)
 				return;
 
-			if (player->bumpertime <= (TICRATE/2)-5)
+			if (player->bumpertime < TICRATE/4)
 			{
-				S_StartSound(toucher, special->info->seesound);
 				angle_t fa;
 				fixed_t xspeed, yspeed;
 				const fixed_t speed = FixedMul(FixedDiv(special->info->speed*FRACUNIT,75*FRACUNIT), FixedSqrt(FixedMul(toucher->scale,special->scale)));
+
+				S_StartSound(toucher, special->info->seesound);
 
 				player->bumpertime = TICRATE/2;
 
@@ -915,7 +916,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				P_ResetPlayer(player);
 
-				P_SetPlayerMobjState(toucher, S_KART_STILL);
+				P_SetPlayerMobjState(toucher, S_KART_STILL); // SRB2kart - was S_PLAY_FALL1
 			}
 			return;
 
@@ -2275,9 +2276,6 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			player->driftboost = 0;
 			player->bubblepop = 0;
-			player->flametimer = 0;
-			//player->flamestore = 0
-			//player->flamedash = 0;
 			player->ringboost = 0;
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
@@ -2369,13 +2367,19 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					break;
 			}
 
-			player->flashing = K_GetKartFlashing(player);
+			// Have a shield? You get hit, but don't lose your rings!
+			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+			{
+				ringburst = 0;
+				K_PopPlayerShield(player);
+			}
 
-			P_PlayRinglossSound(target);
+			player->flashing = K_GetKartFlashing(player);
 
 			if (ringburst > 0)
 			{
 				P_PlayerRingBurst(player, ringburst);
+				P_PlayRinglossSound(target);
 			}
 
 			if (inflictor)
@@ -2412,7 +2416,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 			else
 			{
-				K_DropHnextList(player, false);
+				K_DropHnextList(player);
 			}
 
 			player->instashield = 15;

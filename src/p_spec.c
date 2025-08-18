@@ -1997,7 +1997,6 @@ static void K_HandleLapIncrement(player_t *player)
 			player->lastsafestarpost = 0;
 			player->laps++;
 
-
 			if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
 			{
 				// SRB2Kart 281118
@@ -2042,9 +2041,6 @@ static void K_HandleLapIncrement(player_t *player)
 				player->karthud[khud_lapanimation] = 80;
 			}
 
-			if (netgame && player->laps > numlaps)
-				CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
-
 			if (P_IsDisplayPlayer(player))
 			{
 				if (player->laps == numlaps) // final lap
@@ -2072,6 +2068,8 @@ static void K_HandleLapIncrement(player_t *player)
 			{
 				P_DoPlayerExit(player);
 				P_SetupSignExit(player);
+				if (netgame)
+					CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
 			}
 
 			if (player->laps > player->latestlap)
@@ -2096,7 +2094,8 @@ static void K_HandleLapIncrement(player_t *player)
 				player->latestlap = player->laps;
 			}
 
-			thwompsactive = true; // Lap 2 effects
+			if (player->laps > 1)
+				thwompsactive = true; // Lap 2 effects
 			player->grieftime = 0;
 
 			lowestLap = P_FindLowestLap();
@@ -3151,7 +3150,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 			break;
 
 		case 428: // Start floating platform movement
-			EV_DoElevator(args[0], line, elevateContinuous);
+			EV_DoContinuousElevator(
+				args[0],
+				args[1] << (FRACBITS - 2),
+				args[2],
+				args[3],
+				(args[4] == 0)
+			);
 			break;
 
 		case 429: // Crush planes once
@@ -5750,6 +5755,11 @@ void P_CheckMobjTrigger(mobj_t *mobj, boolean pushable)
 	if (!mobj->subsector)
 		return;
 
+	if (mobj->flags2 & MF2_DONTSYNC)
+	{
+		return;
+	}
+
 	originalsector = mobj->subsector->sector;
 
 	if (!pushable && !(originalsector->flags & MSF_TRIGGERLINE_MOBJ))
@@ -6056,6 +6066,11 @@ void P_CheckMobjTouchingSectorActions(mobj_t *mobj, boolean continuous, boolean 
 	sector_t *originalsector;
 
 	if (mobj->subsector == NULL)
+	{
+		return;
+	}
+
+	if (mobj->flags2 & MF2_DONTSYNC)
 	{
 		return;
 	}

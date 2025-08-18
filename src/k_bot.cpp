@@ -1077,7 +1077,7 @@ void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
 		player->botvars.drifttime = 0;
 	}
 
-	if (lockout)
+	if (lockout > player->botvars.driftlockout)
 		player->botvars.driftlockout = lockout;
 }
 
@@ -1109,7 +1109,7 @@ static void K_BotStartDrift(player_t* player)
 		return;
 	}
 
-	if (speedfactor > (6-gamespeed)*FRACUNIT/3)
+	if (speedfactor > 5*FRACUNIT/4)
 	{
 		// likewise, don't bother if we're going too fast
 		K_BotSetDriftState(player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT/2);

@@ -105,15 +105,11 @@ void P_ClosestPointOnLine3D(const vector3_t *p, const vector3_t *Line, vector3_t
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-// killough 5/3/98: reformatted, cleaned up
-// ioanch 20151228: made line const
-//
 INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
 {
-	return
-		!line->dx ? x <= line->v1->x ? line->dy > 0 : line->dy < 0 :
-		!line->dy ? y <= line->v1->y ? line->dx < 0 : line->dx > 0 :
-		((INT64)y - line->v1->y) * line->dx >= line->dy * ((INT64)x - line->v1->x);
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)y - line->v1->y) * line->dx - ((INT64)x - line->v1->x) * line->dy;
+	return v > 0;
 }
 
 //
@@ -153,15 +149,11 @@ INT32 P_BoxOnLineSide(const fixed_t *tmbox, const line_t *ld)
 // P_PointOnDivlineSide
 // Returns 0 or 1.
 //
-// killough 5/3/98: reformatted, cleaned up
-//
 static INT32 P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
 {
-	return
-		line->dx == 0 ? x <= line->x ? line->dy > 0 : line->dy < 0 :
-		line->dy == 0 ? y <= line->y ? line->dx < 0 : line->dx > 0 :
-		(line->dy ^ line->dx ^ (x -= line->x) ^ (y -= line->y)) < 0 ? (line->dy ^ x) < 0 :
-		(INT64)(y) * line->dx >= (INT64)(line->dy) * x;
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)y - line->y) * line->dx - ((INT64)x - line->x) * line->dy;
+	return v > 0;
 }
 
 //
@@ -1736,10 +1728,6 @@ static boolean P_TraverseIntercepts(traverser_t func, fixed_t maxfrac)
 boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	INT32 flags, traverser_t trav)
 {
-	fixed_t xt1, yt1, xt2, yt2;
-	fixed_t xstep, ystep, partialx, partialy, xintercept, yintercept;
-	INT32 mapx, mapy, mapxstep, mapystep, count;
-
 	validcount++;
 	intercept_p = intercepts;
 
@@ -1756,169 +1744,93 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 
 	px1 -= bmaporgx;
 	py1 -= bmaporgy;
-	xt1 = (unsigned)px1>>MAPBLOCKSHIFT;
-	yt1 = (unsigned)py1>>MAPBLOCKSHIFT;
-
 	px2 -= bmaporgx;
 	py2 -= bmaporgy;
-	xt2 = (unsigned)px2>>MAPBLOCKSHIFT;
-	yt2 = (unsigned)py2>>MAPBLOCKSHIFT;
 
-	if (xt2 > xt1)
+	// blockmap traversal algorithm ported from antimony
+	int gridpos_x = (unsigned)px1 >> MAPBLOCKSHIFT;
+	int gridpos_y = (unsigned)py1 >> MAPBLOCKSHIFT;
+	if (flags & PT_ADDLINES)
+		if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
+			return false; // early out
+	if (flags & PT_ADDTHINGS)
+		if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
+			return false; // early out
+
+	int endpos_x = (unsigned)px2 >> MAPBLOCKSHIFT;
+	int endpos_y = (unsigned)py2 >> MAPBLOCKSHIFT;
+	if (gridpos_x == endpos_x && gridpos_y == endpos_y)
+		return P_TraverseIntercepts(trav, FRACUNIT);
+
+	fixed_t pos_x = px1;
+	fixed_t pos_y = py1;
+	fixed_t dist_x = px2 - px1;
+	fixed_t dist_y = py2 - py1;
+	int dir_x = dist_x < 0 ? -1 : 1;
+	int dir_y = dist_y < 0 ? -1 : 1;
+	fixed_t delta_x;
+	fixed_t delta_y;
+	// special cases for 0 to avoid crashes
+	if (dist_y == 0)
 	{
-		mapxstep = 1;
-		partialx = FRACUNIT - ((px1>>MAPBTOFRAC) & FRACMASK);
-		ystep = FixedDiv(py2 - py1, abs(px2 - px1));
+		delta_x = INT32_MAX;
+		delta_y = 0;
 	}
-	else if (xt2 < xt1)
+	else if (dist_x == 0)
 	{
-		mapxstep = -1;
-		partialx = (px1>>MAPBTOFRAC) & FRACMASK;
-		ystep = FixedDiv(py2 - py1, abs(px2 - px1));
+		delta_x = 0;
+		delta_y = INT32_MAX;
 	}
 	else
 	{
-		mapxstep = 0;
-		partialx = FRACUNIT;
-		ystep = 256*FRACUNIT;
+		delta_x = FixedDiv2(dist_x, abs(dist_y));
+		delta_y = FixedDiv2(dist_y, abs(dist_x));
 	}
 
-	yintercept = (py1>>MAPBTOFRAC) + FixedMul(partialx, ystep);
+	while (gridpos_x >= 0 && gridpos_y >= 0 && gridpos_x < bmapwidth && gridpos_y < bmapheight)
+	{
+		fixed_t hitx_x;
+		if (dir_x > 0)
+			hitx_x = (gridpos_x+1) << MAPBLOCKSHIFT;
+		else
+			hitx_x = gridpos_x << MAPBLOCKSHIFT;
 
-	if (yt2 > yt1)
-	{
-		mapystep = 1;
-		partialy = FRACUNIT - ((py1>>MAPBTOFRAC) & FRACMASK);
-		xstep = FixedDiv(px2 - px1, abs(py2 - py1));
-	}
-	else if (yt2 < yt1)
-	{
-		mapystep = -1;
-		partialy = (py1>>MAPBTOFRAC) & FRACMASK;
-		xstep = FixedDiv(px2 - px1, abs(py2 - py1));
-	}
-	else
-	{
-		mapystep = 0;
-		partialy = FRACUNIT;
-		xstep = 256*FRACUNIT;
-	}
-	xintercept = (px1>>MAPBTOFRAC) + FixedMul(partialy, xstep);
+		fixed_t hity_y;
+		if (dir_y > 0)
+			hity_y = (gridpos_y+1) << MAPBLOCKSHIFT;
+		else
+			hity_y = gridpos_y << MAPBLOCKSHIFT;
 
-	// [RH] Fix for traces that pass only through blockmap corners. In that case,
-	// xintercept and yintercept can both be set ahead of mapx and mapy, so the
-	// for loop would never advance anywhere.
-
-	if (abs(xstep) == FRACUNIT && abs(ystep) == FRACUNIT)
-	{
-		if (ystep < 0)
+		hitx_x -= pos_x;
+		hity_y -= pos_y;
+		fixed_t hitx_y = FixedMul(delta_y, abs(hitx_x));
+		fixed_t hity_x = FixedMul(delta_x, abs(hity_y));
+		if (FixedMul(hitx_x, hitx_x) + FixedMul(hitx_y, hitx_y) > FixedMul(hity_x, hity_x) + FixedMul(hity_y, hity_y))
 		{
-			partialx = FRACUNIT - partialx;
+			gridpos_y += dir_y;
+			pos_x += hity_x;
+			pos_y += hity_y;
 		}
-		if (xstep < 0)
+		else
 		{
-			partialy = FRACUNIT - partialy;
+			gridpos_x += dir_x;
+			pos_x += hitx_x;
+			pos_y += hitx_y;
 		}
-		if (partialx == partialy)
-		{
-			xintercept = xt1 << FRACBITS;
-			yintercept = yt1 << FRACBITS;
-		}
-	}
 
-	// Step through map blocks.
-	// Count is present to prevent a round off error
-	// from skipping the break.
-	mapx = xt1;
-	mapy = yt1;
-
-	for (count = 0; count < 100; count++)
-	{
 		if (flags & PT_ADDLINES)
-		{
-			P_BlockLinesIterator(mapx, mapy, PIT_AddLineIntercepts);
-		}
-
+			if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
+				return false; // early out
 		if (flags & PT_ADDTHINGS)
-		{
-			P_BlockThingsIterator(mapx, mapy, PIT_AddThingIntercepts);
-		}
-
-		// both coordinates reached the end, so end the traversing.
-		if ((mapxstep | mapystep) == 0)
-		{
+			if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
+				return false; // early out
+		if (gridpos_x == endpos_x && gridpos_y == endpos_y)
 			break;
-		}
-
-		// [RH] Handle corner cases properly instead of pretending they don't exist.
-		switch ( (((yintercept >> FRACBITS) == mapy) << 1) | ((xintercept >> FRACBITS) == mapx) )
-		{
-			case 0: // neither xintercept nor yintercept match!
-			{
-				count = 100; // Stop traversing, because somebody screwed up.
-				break;
-			}
-			case 1: // xintercept matches
-			{
-				xintercept += xstep;
-				mapy += mapystep;
-				if (mapy == yt2)
-				{
-					mapystep = 0;
-				}
-				break;
-			}
-			case 2: // yintercept matches
-			{
-				yintercept += ystep;
-				mapx += mapxstep;
-				if (mapx == xt2)
-				{
-					mapxstep = 0;
-				}
-				break;
-			}
-			case 3: // xintercept and yintercept both match
-			{
-				// The trace is exiting a block through its corner. Not only does the block
-				// being entered need to be checked (which will happen when this loop
-				// continues), but the other two blocks adjacent to the corner also need to
-				// be checked.
-				if (flags & PT_ADDLINES)
-				{
-					P_BlockLinesIterator(mapx + mapxstep, mapy, PIT_AddLineIntercepts);
-					P_BlockLinesIterator(mapx, mapy + mapystep, PIT_AddLineIntercepts);
-				}
-
-				if (flags & PT_ADDTHINGS)
-				{
-					P_BlockThingsIterator(mapx + mapxstep, mapy, PIT_AddThingIntercepts);
-					P_BlockThingsIterator(mapx, mapy + mapystep, PIT_AddThingIntercepts);
-				}
-
-				xintercept += xstep;
-				yintercept += ystep;
-
-				mapx += mapxstep;
-				mapy += mapystep;
-
-				if (mapx == xt2)
-				{
-					mapxstep = 0;
-				}
-				if (mapy == yt2)
-				{
-					mapystep = 0;
-				}
-				break;
-			}
-		}
 	}
 
 	// Go through the sorted list
 	return P_TraverseIntercepts(trav, FRACUNIT);
 }
-
 
 // =========================================================================
 //                                                        BLOCKMAP ITERATORS

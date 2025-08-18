@@ -57,8 +57,8 @@ struct sfxinfo_t
 	// Sfx priority
 	INT32 priority;
 
-	// pitch if a link
-	INT32 pitch;
+	// Sfx flags
+	INT32 flags;
 
 	// volume if a link
 	INT32 volume;

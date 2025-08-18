@@ -431,34 +431,7 @@ void F_IntroTicker(void)
 			}
 
 			// Stay on black for a bit. =)
-			{
-				tic_t nowtime, quittime, lasttime;
-				nowtime = lasttime = I_GetTime();
-				quittime = nowtime + NEWTICRATE; // Shortened the quit time, used to be 2 seconds
-				while (quittime > nowtime)
-				{
-					while (!((nowtime = I_GetTime()) - lasttime))
-					{
-						I_Sleep(cv_sleep.value);
-						I_UpdateTime(cv_timescale.value);
-					}
-					lasttime = nowtime;
-
-					I_OsPolling();
-					I_UpdateNoBlit();
-#ifdef HAVE_THREADS
-					I_lock_mutex(&m_menu_mutex);
-#endif
-					M_Drawer(); // menu is drawn even on top of wipes
-#ifdef HAVE_THREADS
-					I_unlock_mutex(m_menu_mutex);
-#endif
-					I_FinishUpdate(); // Update the screen with the image Tails 06-19-2001
-
-					if (moviemode) // make sure we save frames for the white hold too
-						M_SaveFrame();
-				}
-			}
+			D_WipeLoop(WIPELOOP_TITLEBLACK, 0, false);
 
 			D_StartTitle();
 			return;
@@ -927,6 +900,8 @@ static const char *blancredits[] = {
 	"\"SuperJustinBros\"",
 	"SRB2Classic Team",
 	"\"luigi budd\"",
+	"\"Lugent\"",
+	"\"chromaticpipe\"",
 	"",
 	"\1Ring Racers Programming",
 	"Kart Krew Dev",
@@ -940,6 +915,7 @@ static const char *blancredits[] = {
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
+	"\"JonUD\"",
 	"\"luna\"",
 	"\"Denny\" aka \"shephoron\"",
 	"\"White Mage (guy who picked up controller)\"",
@@ -956,11 +932,19 @@ static const char *blancredits[] = {
 	"\"GenericHeroGuy\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"\"JonUD\"",
+	"\"MotoBugger\"",
+	"\"Toad The Fungus\"",
+	"\"Anonimus\"",
 	"\"luna\"",
 	"\"swift\"",
+	"\"Astronight\"",
 	"\"Denny\" aka \"shephoron\"",
 	"\"Rim Jobless\"",
 	"\"White Mage (guy who picked up controller)\"",
+	"\"Mayo\"",
+	"\"minenice\"",
+	"\"LabrysXII\"",
+	"\"merrit\"",
 	"",
 	"\1Special Thanks",
 	"\"Sunflower\" aka \"AnimeSonic\"",
@@ -1276,7 +1260,7 @@ else if (strlen(name) <= 6) \
 else \
 	arr[0] = 0;
 
-static void F_CacheTitleScreen(void)
+void F_CacheTitleScreen(void)
 {
 	UINT16 i;
 
@@ -1399,8 +1383,8 @@ void F_TitleScreenDrawer(void)
 	// Draw that sky!
 	if (curbgcolor >= 0)
 		V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
-	else if (!curbghide || !titlemapinaction || gamestate == GS_WAITINGPLAYERS)
-		F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
+	//else if (!curbghide || !titlemapinaction || gamestate == GS_WAITINGPLAYERS)
+		//F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
 
 	// Don't draw outside of the title screen, or if the patch isn't there.
 	if (gamestate != GS_TITLESCREEN && gamestate != GS_WAITINGPLAYERS)

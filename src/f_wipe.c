@@ -43,12 +43,12 @@
 #define NOWIPE // do not enable wipe image post processing for ARM, SH and MIPS CPUs
 #endif
 
-typedef struct fademask_s {
+struct fademask_t {
 	UINT8* mask;
 	UINT16 width, height;
 	size_t size;
 	fixed_t xscale, yscale;
-} fademask_t;
+};
 
 UINT8 wipedefs[NUMWIPEDEFS] = {
 	99, // wipe_credits_intermediate (0)
@@ -83,9 +83,8 @@ UINT8 wipedefs[NUMWIPEDEFS] = {
 //                        SCREEN WIPE PACKAGE
 //--------------------------------------------------------------------------
 
-boolean WipeInAction = false;
+UINT8 WipeInAction = 0;
 boolean WipeStageTitle = false;
-INT32 lastwipetic = 0;
 
 #ifndef NOWIPE
 
@@ -101,7 +100,7 @@ static fixed_t paldiv;
   * \param	lump	Lump name to get data from
   * \return	fademask_t for lump
   */
-static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
+fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
 	static char lumpname[9] = "FADEmmss";
 	static fademask_t fm = {NULL,0,0,0,0,0};
 	lumpnum_t lumpnum;
@@ -186,7 +185,7 @@ static fademask_t *F_GetFadeMask(UINT8 masknum, UINT8 scrnnum) {
   *
   * \param	fademask	pixels to change
   */
-static void F_DoWipe(fademask_t *fademask)
+void F_DoWipe(fademask_t *fademask)
 {
 	// Software mask wipe -- optimized; though it might not look like it!
 	// Okay, to save you wondering *how* this is more optimized than the simpler
@@ -360,63 +359,12 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	(void)wipetype;
 	(void)drawMenu;
 #else
-	tic_t nowtime;
-	UINT8 wipeframe = 0;
-	fademask_t *fmask;
-
 	paldiv = FixedDiv(257<<FRACBITS, 11<<FRACBITS);
 
 	// Init the wipe
-	WipeInAction = true;
 	wipe_scr = screens[0];
 
-	// lastwipetic should either be 0 or the tic we last wiped
-	// on for fade-to-black
-	for (;;)
-	{
-		// get fademask first so we can tell if it exists or not
-		fmask = F_GetFadeMask(wipetype, wipeframe++);
-		if (!fmask)
-			break;
-
-		// wait loop
-		while (!((nowtime = I_GetTime()) - lastwipetic))
-		{
-			I_Sleep(cv_sleep.value);
-			I_UpdateTime(cv_timescale.value);
-		}
-		lastwipetic = nowtime;
-
-#ifdef HWRENDER
-		if (rendermode == render_opengl)
-			HWR_DoWipe(wipetype, wipeframe-1); // send in the wipe type and wipeframe because we need to cache the graphic
-		else
-#endif
-		if (rendermode != render_none) //this allows F_RunWipe to be called in dedicated servers
-			F_DoWipe(fmask);
-
-		I_OsPolling();
-		I_UpdateNoBlit();
-
-		if (drawMenu && rendermode != render_none)
-		{
-#ifdef HAVE_THREADS
-			I_lock_mutex(&m_menu_mutex);
-#endif
-			M_Drawer(); // menu is drawn even on top of wipes
-#ifdef HAVE_THREADS
-			I_unlock_mutex(m_menu_mutex);
-#endif
-		}
-
-		I_FinishUpdate(); // page flip or blit buffer
-
-		if (moviemode)
-			M_SaveFrame();
-
-		NetKeepAlive(); // Update the network so we don't cause timeouts
-	}
-	WipeInAction = false;
+	D_WipeLoop(WIPELOOP_RUNWIPE, wipetype, drawMenu);
 #endif
 }
 

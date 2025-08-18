@@ -38,6 +38,7 @@
 #include "f_finale.h"
 #include "g_game.h"
 #include "hu_stuff.h"
+#include "m_emotes.h"
 #include "i_sound.h"
 #include "i_system.h"
 #include "i_time.h"
@@ -86,8 +87,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x4bc55baaa1e5719e
-#define ASSET_HASH_MAPPATCH_PK3        0xb6597d7c9f236846
+#define ASSET_HASH_MAIN_PK3            0x0b1ca4fd1a704d9c
+#define ASSET_HASH_MAPPATCH_PK3        0x19ebc8123bd51191
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -131,6 +132,8 @@ boolean devparm = false; // started game with -devparm
 
 boolean singletics = false; // timedemo
 boolean lastdraw = false;
+
+static INT32 lastwipetic = 0;
 
 INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
@@ -187,6 +190,8 @@ UINT8 ctrldown = 0; // 0x1 left, 0x2 right
 UINT8 altdown = 0; // 0x1 left, 0x2 right
 boolean capslock = 0;	// gee i wonder what this does.
 
+static boolean recursioncheck = false;
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -195,7 +200,12 @@ void D_ProcessEvents(void)
 {
 	event_t *ev;
 
-	boolean eaten;
+	boolean eaten = false;
+
+	if (recursioncheck == true)
+		I_Error("D_ProcessEvents recursion detected");
+
+	recursioncheck = true;
 
 	// i have to reset this somewhere or else your camera just glides away!
 	for (size_t i = 0; i < 4; i++)
@@ -223,15 +233,16 @@ void D_ProcessEvents(void)
 		}
 
 		// Menu input
-#ifdef HAVE_THREADS
-		I_lock_mutex(&m_menu_mutex);
-#endif
+		if (WipeInAction < 2)
 		{
-			eaten = M_Responder(ev);
-		}
 #ifdef HAVE_THREADS
-		I_unlock_mutex(m_menu_mutex);
+			I_lock_mutex(&m_menu_mutex);
 #endif
+			eaten = M_Responder(ev);
+#ifdef HAVE_THREADS
+			I_unlock_mutex(m_menu_mutex);
+#endif
+		}
 
 		if (eaten)
 			continue; // menu ate the event
@@ -260,6 +271,8 @@ void D_ProcessEvents(void)
 
 		G_Responder(ev);
 	}
+
+	recursioncheck = false;
 }
 
 static void D_RenderLevel(void)
@@ -388,9 +401,8 @@ gamestate_t wipegamestate = GS_LEVEL;
 INT16 wipetypepre = -1;
 INT16 wipetypepost = -1;
 
-static bool D_Display(void)
+static void D_Display(void)
 {
-	bool ranwipe = false;
 	boolean forcerefresh = false;
 	static boolean wipe = false;
 	INT32 wipedefindex = 0;
@@ -401,7 +413,7 @@ static bool D_Display(void)
 	if (!dedicated)
 	{
 		if (nodrawers)
-			return false; // for comparative timing/profiling
+			return; // for comparative timing/profiling
 
 		// Lactozilla: Switching renderers works by checking
 		// if the game has to do it right when the frame
@@ -460,21 +472,23 @@ static bool D_Display(void)
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
 
-		if (rendermode != render_none)
+		// Fade to black first
+		if ((wipegamestate == FORCEWIPE ||
+			!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
+		 && wipetypepre != UINT8_MAX)
 		{
-			// Fade to black first
-			if ((wipegamestate == FORCEWIPE ||
-				!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
-			 && wipetypepre != UINT8_MAX)
+			if (rendermode != render_none)
 			{
 				F_WipeStartScreen();
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
-				F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
-				ranwipe = true;
 			}
+			F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
+		}
 
-			if (gamestate != GS_LEVEL && rendermode != render_none)
+		if (rendermode != render_none)
+		{
+			if (gamestate != GS_LEVEL)
 			{
 				V_SetPaletteLump("PLAYPAL"); // Reset the palette
 				R_ReInitColormaps(0, NULL, 0, false);
@@ -482,20 +496,14 @@ static bool D_Display(void)
 
 			F_WipeStartScreen();
 		}
-		else //dedicated servers
-		{
-			F_RunWipe(wipedefs[wipedefindex], gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
-			ranwipe = true;
+		else
 			wipegamestate = gamestate;
-		}
-
-		wipetypepre = -1;
 	}
-	else
-		wipetypepre = -1;
+
+	wipetypepre = -1;
 
 	if (dedicated) //bail out after wipe logic
-		return false;
+		goto dedipostwipe; // WAIT! don't forget about post wipes!
 
 	// Catch runaway clipping rectangles.
 	V_ClearClipRect();
@@ -587,6 +595,7 @@ static bool D_Display(void)
 			}
 		case GS_DEDICATEDSERVER:
 		case GS_NULL:
+		case FORCEWIPE:
 			break;
 	}
 
@@ -658,6 +667,7 @@ static bool D_Display(void)
 	//
 	// wipe update
 	//
+dedipostwipe:
 	if (wipe && wipetypepost != INT16_MAX)
 	{
 		// note: moved up here because NetUpdate does input changes
@@ -668,12 +678,9 @@ static bool D_Display(void)
 			wipetypepost = wipedefs[wipedefindex];
 
 		if (rendermode != render_none)
-		{
 			F_WipeEndScreen();
 
-			F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN);
-			ranwipe = true;
-		}
+		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_INTRO);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -681,11 +688,14 @@ static bool D_Display(void)
 			framecount = 0;
 			demostarttime = I_GetTime();
 		}
-
-		wipetypepost = -1;
 	}
-	else
-		wipetypepost = -1;
+
+	wipetypepost = -1;
+
+	if (dedicated)
+		return; // NOW we can bail
+
+	NetUpdate(); // send out any new accumulation
 
 	// It's safe to end the game now.
 	if (G_GetExitGameFlag())
@@ -728,8 +738,188 @@ static bool D_Display(void)
 		I_FinishUpdate(); // page flip or blit buffer
 		ps_swaptime = I_GetPreciseTime() - ps_swaptime;
 	}
+}
 
-	return ranwipe;
+static void D_WipeTick(boolean menu)
+{
+	I_OsPolling();
+	D_ProcessEvents();
+
+	// Update the network so we don't cause timeouts
+	NetKeepAlive();
+
+	HU_Ticker();
+	if (menu)
+	{
+#ifdef HAVE_THREADS
+		I_lock_mutex(&m_menu_mutex);
+#endif
+		M_Ticker();
+#ifdef HAVE_THREADS
+		I_unlock_mutex(m_menu_mutex);
+#endif
+	}
+	CON_Ticker();
+}
+
+static void D_WipeDraw(boolean menu)
+{
+	if (rendermode == render_none)
+		return;
+
+	I_UpdateNoBlit();
+
+	HU_Erase();
+	HU_Drawer();
+	if (menu)
+	{
+#ifdef HAVE_THREADS
+		I_lock_mutex(&m_menu_mutex);
+#endif
+		M_Drawer();
+#ifdef HAVE_THREADS
+		I_unlock_mutex(m_menu_mutex);
+#endif
+	}
+	CON_Drawer();
+
+	I_FinishUpdate(); // page flip or blit buffer
+}
+
+static double D_EndFrame(precise_t enterprecise, int *frameskip)
+{
+	I_UpdateTime(cv_timescale.value);
+	// Fully completed frame made.
+	precise_t finishprecise = I_GetPreciseTime();
+
+	// Use the time before sleep for frameskip calculations:
+	// post-sleep time is literally being intentionally wasted
+	double deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	double deltatics = deltasecs * NEWTICRATE;
+
+	// If time spent this game loop exceeds a single tic,
+	// it's probably because of rendering.
+	//
+	// Skip rendering the next frame, up to a limit of 3
+	// frames before a frame is rendered no matter what.
+	if (frameskip)
+	{
+		if (*frameskip < 3 && deltatics > 1.0)
+			*frameskip += 1;
+		else
+			*frameskip = 0;
+	}
+
+	I_UpdateTime(cv_timescale.value);
+	if (!singletics)
+	{
+		precise_t elapsed = finishprecise - enterprecise;
+
+		// capbudget is the minimum precise_t duration of a single loop iteration
+		double capbudget = ((R_GetFramerateCap() == 0) ? 0.0 : round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision()));
+
+		// in the case of "match refresh rate" + vsync, don't sleep at all
+		const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
+
+		if (elapsed > 0 && capbudget > elapsed && !vsync_with_match_refresh)
+		{
+			I_SleepDuration(capbudget - (finishprecise - enterprecise));
+		}
+	}
+
+	I_UpdateTime(cv_timescale.value);
+	// Capture the time once more to get the real delta time.
+	finishprecise = I_GetPreciseTime();
+	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
+	return deltasecs * NEWTICRATE;
+}
+
+static INT32 endtimes[] = {
+	UINT8_MAX, // WIPELOOP_RUNWIPE
+	PRELEVELTIME*NEWTICRATERATIO, // WIPELOOP_TITLECARD
+	3*TICRATE/2, // WIPELOOP_ENCORE
+	NEWTICRATE, // WIPELOOP_TITLEBLACK
+};
+
+static bool ranwipe = false;
+
+// one single function for all the extra main loops in this god-forsaken codebase
+// should make it easier to fold these back into D_SRB2Loop at some point...
+void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
+{
+	tic_t nowtime, endtime;
+	UINT8 wipeframe = 0;
+	fademask_t *fmask;
+	double delta = 0.0;
+
+	nowtime = lastwipetic = I_GetTime();
+	endtime = nowtime + endtimes[type];
+
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_INTRO)
+		drawMenu = true;
+
+	WipeInAction = 1 + !drawMenu;
+
+	// lastwipetic should either be 0 or the tic we last wiped
+	// on for fade-to-black
+	while (nowtime < endtime)
+	{
+		precise_t enterprecise = I_GetPreciseTime();
+		I_UpdateTime(cv_timescale.value);
+
+		nowtime = I_GetTime();
+
+		// wait loop
+		if (nowtime - lastwipetic)
+		{
+			renderisnewtic = true;
+			wipeframe++;
+			D_WipeTick(drawMenu);
+			if (type == WIPELOOP_TITLECARD)
+				ST_runTitleCard();
+		}
+		else
+			renderisnewtic = false;
+
+		// draw loop
+		rendertimefrac = g_time.timefrac;
+		renderdeltatics = FLOAT_TO_FIXED(delta);
+
+#ifndef NOWIPE
+		if (type == WIPELOOP_RUNWIPE)
+		{
+			// get fademask first so we can tell if it exists or not
+			fmask = F_GetFadeMask(wipetype, wipeframe);
+			if (!fmask)
+				break;
+
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				HWR_DoWipe(wipetype, wipeframe); // send in the wipe type and wipeframe because we need to cache the graphic
+			else
+#endif
+			if (rendermode != render_none) //this allows F_RunWipe to be called in dedicated servers
+				F_DoWipe(fmask);
+		}
+#endif
+
+		if (rendermode != render_none && type == WIPELOOP_TITLECARD)
+			ST_preLevelTitleCardDrawer();
+
+		D_WipeDraw(drawMenu);
+
+		// Only take screenshots after drawing.
+		if (moviemode)
+			M_SaveFrame();
+		if (takescreenshot)
+			M_DoScreenShot();
+
+		delta = D_EndFrame(enterprecise, NULL);
+		lastwipetic = nowtime;
+	}
+
+	ranwipe = true;
+	WipeInAction = 0;
 }
 
 // =========================================================================
@@ -742,7 +932,6 @@ void D_SRB2Loop(void)
 {
 	tic_t entertic = 0, oldentertics = 0, realtics = 0, rendertimeout = INFTICS;
 	double deltatics = 0.0;
-	double deltasecs = 0.0;
 
 	boolean interp = false;
 	boolean doDisplay = false;
@@ -795,21 +984,10 @@ void D_SRB2Loop(void)
 
 	for (;;)
 	{
-		// capbudget is the minimum precise_t duration of a single loop iteration
-		precise_t capbudget;
 		precise_t enterprecise = I_GetPreciseTime();
-		precise_t finishprecise = enterprecise;
 
 		g_dc = {};
 		Z_Frame_Reset();
-
-		{
-			// Casting the return value of a function is bad practice (apparently)
-			double budget = round((1.0 / R_GetFramerateCap()) * I_GetPrecisePrecision());
-			capbudget = (precise_t) budget;
-		}
-
-		bool ranwipe = false;
 
 		I_UpdateTime(cv_timescale.value);
 
@@ -844,6 +1022,7 @@ void D_SRB2Loop(void)
 #ifdef HW3SOUND
 		HW3S_BeginFrameUpdate();
 #endif
+		I_UpdateTime(cv_timescale.value);
 
 		if (realtics > 0 || singletics)
 		{
@@ -851,6 +1030,8 @@ void D_SRB2Loop(void)
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
 				realtics = 1;
+
+			I_UpdateTime(cv_timescale.value);
 
 			// process tics (but maybe not if realtic == 0)
 			{
@@ -889,11 +1070,15 @@ void D_SRB2Loop(void)
 			renderisnewtic = false;
 		}
 
+		I_UpdateTime(cv_timescale.value);
+
 		if (interp)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
+
+			I_UpdateTime(cv_timescale.value);
 
 			if (!(paused || P_AutoPause()) && !lagging)
 			{
@@ -920,9 +1105,26 @@ void D_SRB2Loop(void)
 			rendertimefrac_unpaused = FRACUNIT;
 		}
 
-		if ((interp || doDisplay) && !frameskip)
+		I_UpdateTime(cv_timescale.value);
+
+		if (interp || doDisplay)
 		{
-			ranwipe = D_Display();
+			if (!frameskip)
+			{
+				D_Display();
+			}
+			else if (!dedicated && frameskip)
+			{
+				// always update console and hud
+				// otherwise it may take minutes to open it
+				CON_Drawer();
+
+				if (gamestate == GS_LEVEL)
+				{
+					ST_Drawer();
+					HU_Drawer();
+				}
+			}
 		}
 
 		// Only take screenshots after drawing.
@@ -948,47 +1150,17 @@ void D_SRB2Loop(void)
 		}
 #endif
 
-		// Fully completed frame made.
-		finishprecise = I_GetPreciseTime();
+		deltatics = D_EndFrame(enterprecise, &frameskip);
 
-		// Use the time before sleep for frameskip calculations:
-		// post-sleep time is literally being intentionally wasted
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
-
-		// If time spent this game loop exceeds a single tic,
-		// it's probably because of rendering.
-		//
-		// Skip rendering the next frame, up to a limit of 3
-		// frames before a frame is rendered no matter what.
-		//
 		// Wipes run an inner loop and artificially increase
 		// the measured time.
-		if (!ranwipe && frameskip < 3 && deltatics > 1.0)
+		if (ranwipe)
 		{
-			frameskip++;
-		}
-		else
-		{
+			double deltamath = (R_GetFramerateCap() == 0) ? 35.0 : 35.0 / R_GetFramerateCap();
+			deltatics = deltamath;
 			frameskip = 0;
+			ranwipe = false;
 		}
-
-		if (!singletics)
-		{
-			INT64 elapsed = (INT64)(finishprecise - enterprecise);
-
-			// in the case of "match refresh rate" + vsync, don't sleep at all
-			const boolean vsync_with_match_refresh = cv_vidwait.value && cv_fpscap.value == 0;
-
-			if (elapsed > 0 && (INT64)capbudget > elapsed && !vsync_with_match_refresh)
-			{
-				I_SleepDuration(capbudget - (finishprecise - enterprecise));
-			}
-		}
-		// Capture the time once more to get the real delta time.
-		finishprecise = I_GetPreciseTime();
-		deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
-		deltatics = deltasecs * NEWTICRATE;
 	}
 }
 
@@ -1101,7 +1273,7 @@ static void D_AddFile(char **list, const char *file)
 	list[pnumwadfiles] = newfile;
 }
 
-static inline void D_CleanFile(char **list)
+static void D_CleanFile(char **list)
 {
 	size_t pnumwadfiles;
 	for (pnumwadfiles = 0; list[pnumwadfiles]; pnumwadfiles++)
@@ -1432,7 +1604,9 @@ void D_SRB2Main(void)
 
 	// init title screen display params
 	if (M_GetUrlProtocolArg() || M_CheckParm("-connect"))
+	{
 		F_InitMenuPresValues(true);
+	}
 
 	//---------------------------------------------------- READY TIME
 	// we need to check for dedicated before initialization of some subsystems
@@ -1638,6 +1812,8 @@ void D_SRB2Main(void)
 	CON_SetLoadingProgress(LOADED_SINITSFXCHANNELS);
 
 	S_InitMusicDefs();
+
+	M_InitEmotes();
 
 	CONS_Printf("ST_Init(): Init status bar.\n");
 	ST_Init();

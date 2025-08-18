@@ -29,6 +29,8 @@
 #include "k_follower.h" // followermode_t (for lua)
 #include "g_input.h" // Game controls (for lua)
 #include "k_kart.h" // awardscaledrings_t
+#include "k_waypoint.h" // waypoint values (for lua)
+
 
 #include "deh_tables.h"
 #include "fastcmp.h"
@@ -257,7 +259,7 @@ const char *const MOBJFLAG2_LIST[] = {
 	"JUSTATTACKED",	  // can be pushed by other moving mobjs
 	"FIRING",		  // turret fire
 	"SUPERFIRE",	  // Firing something with Super Sonic-stopping properties. Or, if mobj has MF_MISSILE, this is the actual fire from it.
-	"\x01",			  // free: 1<<20 (name un-matchable)
+	"DONTSYNC",       // Prevents this mobj from triggering stuff or being sent. Used for sync safety on toggle effects.
 	"STRONGBOX",	  // Flag used for "strong" random monitors.
 	"OBJECTFLIP",	  // Flag for objects that always have flipped gravity.
 	"SKULLFLY",		  // Special handling: skull in flight.
@@ -700,7 +702,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CONNECTMENUMODCHECKS", &MR_ConnectMenuModChecks },
 	{ "CANCELCONNECT", &MR_CancelConnect },
 	{ "SETUPCONTROLSMENU", &MR_SetupControlsMenu },
-	{ "HANDLECONTROLSMENU", &MR_HandleControlsMenu },
 	{ "REFRESH", &MR_Refresh },
 	{ "CONNECT", &MR_Connect },
 	{ "VIDEOMODEMENU", &MR_VideoModeMenu },
@@ -1447,6 +1448,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GC_CUSTOM2",gc_custom2},
 	{"GC_CUSTOM3",gc_custom3},
 	{"GC_RESPAWN",gc_respawn},
+	{"GC_DIRECTOR",gc_director},
 	{"NUM_GAMECONTROLS",num_gamecontrols},
 
 	// screen.h constants
@@ -1569,6 +1571,13 @@ struct int_const_s const INT_CONST[] = {
 	{"FACE_WANTED", FACE_WANTED},
 	{"FACE_MINIMAP", FACE_MINIMAP},
 	{"NUMFACES", NUMFACES},
+
+	// invintype
+	{"KARTINVIN_LEGACY", KARTINVIN_LEGACY},
+	{"KARTINVIN_ALTERN", KARTINVIN_ALTERN},
+
+	// k_waypoint.h values
+	{"DEFAULT_WAYPOINT_RADIUS",DEFAULT_WAYPOINT_RADIUS},
 
 	{NULL,0}
 };

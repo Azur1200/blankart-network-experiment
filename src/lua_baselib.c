@@ -32,6 +32,7 @@
 #include "k_collide.h"
 #include "k_color.h"
 #include "k_hud.h"
+#include "k_waypoint.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -236,6 +237,8 @@ static const struct {
 	{META_OVERLAY,      "t_overlay_t"},
 	{META_TERRAIN,      "terrain_t"},
 	
+	{META_SONICLOOPVARS,	"sonicloopvars_t"},
+	{META_SONICLOOPCAMVARS,	"sonicloopcamvars_t"},
 	{NULL,              NULL}
 };
 
@@ -888,7 +891,13 @@ static int lib_pGetMobjGravity(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
+
+	// HACK: reset the gravity of the object to remain compatible with addons
+	// that lack a MF_NOGRAVITY check around the call.
+	fixed_t grav = mobj->gravity;
+	mobj->gravity = FRACUNIT;
 	lua_pushfixed(L, P_GetMobjGravity(mobj));
+	mobj->gravity = grav;
 	return 1;
 }
 
@@ -1717,6 +1726,54 @@ static int lib_pCeilingzAtPos(lua_State *L)
 	lua_pushfixed(L, P_CeilingzAtPos(x, y, z, height));
 	return 1;
 }
+
+static int lib_pGetSectorLightLevelAt(lua_State *L)
+{
+	boolean has_sector = false;
+	sector_t *sector = NULL;
+	if (!lua_isnoneornil(L, 1))
+	{
+		has_sector = true;
+		sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
+	}
+	fixed_t x = luaL_checkfixed(L, 2);
+	fixed_t y = luaL_checkfixed(L, 3);
+	fixed_t z = luaL_checkfixed(L, 4);
+	INLEVEL
+	if (has_sector && !sector)
+		return LUA_ErrInvalid(L, "sector_t");
+	if (sector)
+		lua_pushinteger(L, P_GetLightLevelFromSectorAt(sector, x, y, z));
+	else
+		lua_pushinteger(L, P_GetSectorLightLevelAt(x, y, z));
+	return 1;
+}
+
+/* Maybe color lib someday....
+static int lib_pGetSectorColormapAt(lua_State *L)
+{
+	boolean has_sector = false;
+	sector_t *sector = NULL;
+	if (!lua_isnoneornil(L, 1))
+	{
+		has_sector = true;
+		sector = *((sector_t **)luaL_checkudata(L, 1, META_SECTOR));
+	}
+	fixed_t x = luaL_checkfixed(L, 2);
+	fixed_t y = luaL_checkfixed(L, 3);
+	fixed_t z = luaL_checkfixed(L, 4);
+	INLEVEL
+	if (has_sector && !sector)
+		return LUA_ErrInvalid(L, "sector_t");
+	extracolormap_t *exc;
+	if (sector)
+		exc = P_GetColormapFromSectorAt(sector, x, y, z);
+	else
+		exc = P_GetSectorColormapAt(x, y, z);
+	LUA_PushUserdata(L, exc, META_EXTRACOLORMAP);
+	return 1;
+}
+*/
 
 static int lib_pDoSpring(lua_State *L)
 {
@@ -4066,6 +4123,13 @@ static int lib_kSlopeBoostActive(lua_State *L)
 	return 1;
 }
 
+// Grabs the currently active invintype.
+static int lib_kGetKartInvinType(lua_State *L)
+{
+	lua_pushinteger(L, K_GetKartInvinType());
+	return 1;
+}
+
 // Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
 static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
@@ -4239,6 +4303,345 @@ static int lib_kAwardScaledPlayerRings(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	K_AwardScaledPlayerRings(player, mode);
 	return 0;
+}
+
+static int lib_kNextRespawnWaypointIndex(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+
+	INLEVEL
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushinteger(L, K_NextRespawnWaypointIndex(waypoint));
+	return 1;
+}
+
+static int lib_kGetFinishLineWaypoint(lua_State *L)
+{
+	INLEVEL
+	LUA_PushUserdata(L, K_GetFinishLineWaypoint(), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kGetStartingWaypoint(lua_State *L)
+{
+	INLEVEL
+	LUA_PushUserdata(L, K_GetStartingWaypoint(), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kGetWaypointIsFinishline(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushboolean(L, K_GetWaypointIsFinishline(waypoint));
+	return 1;
+}
+
+static int lib_kGetWaypointIsShortcut(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushboolean(L, K_GetWaypointIsShortcut(waypoint));
+	return 1;
+}
+
+static int lib_kGetWaypointIsEnabled(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushboolean(L, K_GetWaypointIsEnabled(waypoint));
+	return 1;
+}
+
+static int lib_kSetWaypointIsEnabled(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	boolean enabled = luaL_checkboolean(L, 2);
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	K_SetWaypointIsEnabled(waypoint, enabled);
+	return 0;
+}
+
+static int lib_kGetWaypointIsSpawnpoint(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushboolean(L, K_GetWaypointIsSpawnpoint(waypoint));
+	return 1;
+}
+
+static int lib_kGetWaypointNextID(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushinteger(L, K_GetWaypointNextID(waypoint));
+	return 1;
+}
+
+static int lib_kGetWaypointID(lua_State *L)
+{
+	waypoint_t *waypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	INLEVEL
+
+	if (!waypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	lua_pushinteger(L, K_GetWaypointID(waypoint));
+	return 1;
+}
+
+static int lib_kGetWaypointFromID(lua_State *L)
+{
+	INT32 waypointId = luaL_checkinteger(L, 1);
+	INLEVEL
+
+	LUA_PushUserdata(L, K_GetWaypointFromID(waypointId), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kGetCircuitLength(lua_State *L)
+{
+	INLEVEL
+	lua_pushinteger(L, K_GetCircuitLength());
+	return 1;
+}
+
+static int lib_kGetTrackComplexity(lua_State *L)
+{
+	INLEVEL
+	lua_pushinteger(L, K_GetTrackComplexity());
+	return 1;
+}
+
+static int lib_kGetClosestWaypointToMobj(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	LUA_PushUserdata(L, K_GetClosestWaypointToMobj(mobj), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kGetBestWaypointForMobj(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	waypoint_t *hint = NULL;
+	INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	// Optional waypoint parameter:
+	if (lua_isuserdata(L, 2) && lua_getmetatable(L, 2))
+	{
+		lua_getfield(L, LUA_REGISTRYINDEX, META_WAYPOINT);
+		int result = lua_rawequal(L, -1, -2);
+		lua_pop(L, 2);
+
+		if (!result)
+		{
+			return LUA_ErrInvalid(L, "waypoint_t");
+		}
+		else
+
+
+
+
+			hint = *((waypoint_t **)lua_touserdata(L, 2));
+	}
+	else if (!lua_isnoneornil(L, 2))
+	{
+		// If we reach this point and it isn't an userdata,
+		// the scripter used a basic data type. Let them know
+		// they messed up. (Just use nil or nothing, please.)
+		return LUA_ErrInvalid(L, "waypoint_t");
+	}
+
+	LUA_PushUserdata(L, K_GetBestWaypointForMobj(mobj, hint), META_WAYPOINT);
+	return 1;
+}
+
+/*
+ *	JugadorXEI @ 01/11/2025 (MM/DD/AAAA)
+ *	This was my way to work around giving path_t and pathfindnode_t objects
+ *	to Lua, as usually these are dynamically allocated. We give them a deep
+ *	copy of the values and then we free this memory after the fact.
+ *	Lua can manage its own copy itself.
+ */
+static void pushDeepCopyOfPathTypeAsTable(lua_State *L, path_t *const path)
+{
+	lua_createtable(L, 0, 3);
+
+	lua_pushinteger(L, path->numnodes);
+	lua_setfield(L, -2, "numnodes");
+
+	lua_createtable(L, path->numnodes, 0);
+	for (size_t i = 0; i < path->numnodes; i++)
+	{
+		lua_createtable(L, 0, 3);
+
+		// It doesn't make sense for heap-related stuff to be exposed to Lua.
+		// lua_pushinteger(L, path->array[i].heapindex);
+		// lua_setfield(L, -2, "heapindex");
+
+		LUA_PushUserdata(L, (waypoint_t *)path->array[i].nodedata, META_WAYPOINT);
+		lua_setfield(L, -2, "nodedata");
+
+		lua_pushinteger(L, path->array[i].gscore);
+		lua_setfield(L, -2, "gscore");
+
+		lua_pushinteger(L, path->array[i].hscore);
+		lua_setfield(L, -2, "hscore");
+
+		lua_rawseti(L, -2, 1 + i);
+	}
+	lua_setfield(L, -2, "array");
+
+	lua_pushinteger(L, path->totaldist);
+	lua_setfield(L, -2, "totaldist");
+}
+
+static int lib_kPathfindToWaypoint(lua_State *L)
+{
+	waypoint_t *sourcewaypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	waypoint_t *destinationwaypoint = *((waypoint_t **)luaL_checkudata(L, 2, META_WAYPOINT));
+	boolean useshortcuts = lua_optboolean(L, 3);
+	boolean huntbackwards = lua_optboolean(L, 4);
+
+	INLEVEL
+	if (!sourcewaypoint || !destinationwaypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	path_t returnpath = {0};
+	boolean success = K_PathfindToWaypoint(sourcewaypoint, destinationwaypoint, &returnpath, useshortcuts, huntbackwards);
+
+	lua_pushboolean(L, success);
+	if (success)
+	{
+		pushDeepCopyOfPathTypeAsTable(L, &returnpath);
+	}
+	else
+		lua_pushnil(L);
+
+	Z_Free(returnpath.array);
+	return 2;
+}
+
+static int lib_kPathfindThruCircuit(lua_State *L)
+{
+	waypoint_t *sourcewaypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	fixed_t traveldistance = luaL_checkfixed(L, 2);
+	boolean useshortcuts = lua_optboolean(L, 3);
+	boolean huntbackwards = lua_optboolean(L, 4);
+
+	INLEVEL
+	if (!sourcewaypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	path_t returnpath = {0};
+	boolean success = K_PathfindThruCircuit(sourcewaypoint, traveldistance, &returnpath, useshortcuts, huntbackwards);
+
+	lua_pushboolean(L, success);
+	if (success)
+	{
+		pushDeepCopyOfPathTypeAsTable(L, &returnpath);
+	}
+	else
+		lua_pushnil(L);
+
+	Z_Free(returnpath.array);
+	return 2;
+}
+
+static int lib_kPathfindThruCircuitSpawnable(lua_State *L)
+{
+	waypoint_t *sourcewaypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	fixed_t traveldistance = luaL_checkfixed(L, 2);
+	boolean useshortcuts = lua_optboolean(L, 3);
+	boolean huntbackwards = lua_optboolean(L, 4);
+
+	INLEVEL
+	if (!sourcewaypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	path_t returnpath = {0};
+	boolean success = K_PathfindThruCircuitSpawnable(sourcewaypoint, traveldistance, &returnpath, useshortcuts, huntbackwards);
+
+	lua_pushboolean(L, success);
+	if (success)
+	{
+		pushDeepCopyOfPathTypeAsTable(L, &returnpath);
+	}
+	else
+		lua_pushnil(L);
+
+	Z_Free(returnpath.array);
+	return 2;
+}
+
+static int lib_kGetNextWaypointToDestination(lua_State *L)
+{
+	waypoint_t *sourcewaypoint = *((waypoint_t **)luaL_checkudata(L, 1, META_WAYPOINT));
+	waypoint_t *destinationwaypoint = *((waypoint_t **)luaL_checkudata(L, 2, META_WAYPOINT));
+	boolean useshortcuts = lua_optboolean(L, 3);
+	boolean huntbackwards = lua_optboolean(L, 4);
+
+	INLEVEL
+	if (!sourcewaypoint || !destinationwaypoint)
+		return LUA_ErrInvalid(L, "waypoint_t");
+
+	LUA_PushUserdata(L, K_GetNextWaypointToDestination(sourcewaypoint, destinationwaypoint, useshortcuts, huntbackwards), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kSearchWaypointGraphForMobj(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	LUA_PushUserdata(L, K_SearchWaypointGraphForMobj(mobj), META_WAYPOINT);
+	return 1;
+}
+
+static int lib_kSearchWaypointHeapForMobj(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	LUA_PushUserdata(L, K_SearchWaypointHeapForMobj(mobj), META_WAYPOINT);
+	return 1;
 }
 
 static int lib_getTimeMicros(lua_State *L)
@@ -4472,6 +4875,8 @@ static luaL_Reg lib[] = {
 	{"P_RadiusAttack",lib_pRadiusAttack},
 	{"P_FloorzAtPos",lib_pFloorzAtPos},
 	{"P_CeilingzAtPos",lib_pCeilingzAtPos},
+	{"P_GetSectorLightLevelAt",lib_pGetSectorLightLevelAt},
+	//{"P_GetSectorColormapAt",lib_pGetSectorColormapAt},
 	{"P_DoSpring",lib_pDoSpring},
 
 	// p_inter
@@ -4646,6 +5051,7 @@ static luaL_Reg lib[] = {
 	{"K_ChainingActive",lib_kChainingActive},
 	{"K_SlipdashActive",lib_kSlipdashActive},
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
+	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
@@ -4661,6 +5067,29 @@ static luaL_Reg lib[] = {
 	{"K_GetForwardMove", lib_kGetForwardMove},
 	{"K_AwardPlayerRings", lib_kAwardPlayerRings},
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
+
+	// k_waypoint
+	{"K_NextRespawnWaypointIndex", lib_kNextRespawnWaypointIndex},
+	{"K_GetFinishLineWaypoint", lib_kGetFinishLineWaypoint},
+	{"K_GetStartingWaypoint", lib_kGetStartingWaypoint},
+	{"K_GetWaypointIsFinishline", lib_kGetWaypointIsFinishline},
+	{"K_GetWaypointIsShortcut", lib_kGetWaypointIsShortcut},
+	{"K_GetWaypointIsEnabled", lib_kGetWaypointIsEnabled},
+	{"K_SetWaypointIsEnabled", lib_kSetWaypointIsEnabled},
+	{"K_GetWaypointIsSpawnpoint", lib_kGetWaypointIsSpawnpoint},
+	{"K_GetWaypointNextID", lib_kGetWaypointNextID},
+	{"K_GetWaypointID", lib_kGetWaypointID},
+	{"K_GetWaypointFromID", lib_kGetWaypointFromID},
+	{"K_GetCircuitLength", lib_kGetCircuitLength},
+	{"K_GetTrackComplexity", lib_kGetTrackComplexity},
+	{"K_GetClosestWaypointToMobj", lib_kGetClosestWaypointToMobj},
+	{"K_GetBestWaypointForMobj", lib_kGetBestWaypointForMobj},
+	{"K_PathfindToWaypoint", lib_kPathfindToWaypoint},
+	{"K_PathfindThruCircuit", lib_kPathfindThruCircuit},
+	{"K_PathfindThruCircuitSpawnable", lib_kPathfindThruCircuitSpawnable},
+	{"K_GetNextWaypointToDestination", lib_kGetNextWaypointToDestination},
+	{"K_SearchWaypointGraphForMobj", lib_kSearchWaypointGraphForMobj},
+	{"K_SearchWaypointHeapForMobj", lib_kSearchWaypointHeapForMobj},
 
 	// k_boss
 	{"K_InitBossHealthBar", lib_kInitBossHealthBar},

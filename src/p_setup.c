@@ -38,6 +38,7 @@
 #include "r_fps.h" // R_ResetViewInterpolation in level load
 
 #include "s_sound.h"
+#include "m_emotes.h"
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -4133,7 +4134,6 @@ static boolean P_LoadExtraVertices(UINT8 **data)
 	UINT32 xtrvrtx = READUINT32((*data));
 	line_t* ld = lines;
 	vertex_t *oldpos = vertexes;
-	ssize_t offset;
 	size_t i;
 
 	if (numvertexes != origvrtx) // If native vertex count doesn't match node original vertex count, bail out (broken data?).
@@ -4148,12 +4148,11 @@ static boolean P_LoadExtraVertices(UINT8 **data)
 	// If extra vertexes were generated, reallocate the vertex array and fix the pointers.
 	numvertexes += xtrvrtx;
 	vertexes = Z_Realloc(vertexes, numvertexes*sizeof(*vertexes), PU_LEVEL, NULL);
-	offset = (size_t)(vertexes - oldpos);
 
 	for (i = 0, ld = lines; i < numlines; i++, ld++)
 	{
-		ld->v1 += offset;
-		ld->v2 += offset;
+		ld->v1 = &vertexes[ld->v1 - oldpos];
+		ld->v2 = &vertexes[ld->v2 - oldpos];
 	}
 
 	// Read extra vertex data.
@@ -8117,12 +8116,31 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
-		ringsactive = cv_dummyattackingrings.value;
-		purpledriftactive = cv_dummyattackingpurpledrift.value;
-		stackingactive = cv_dummyattackingstacking.value;
-		chainingactive = cv_dummyattackingchaining.value;
-		slipdashactive = cv_dummyattackingslipdash.value;
-		slopeboostactive = cv_dummyattackingslopeboost.value;
+		if (demo.playback)
+		{
+			// raflags
+			if (raflags & RAF_RINGS)
+				ringsactive = true;
+			if (raflags & RAF_STACKING)
+				stackingactive = true;
+			if (raflags & RAF_CHAINING)
+				chainingactive = true;
+			if (raflags & RAF_SLIPDASH)
+				slipdashactive = true;
+			if (raflags & RAF_PURPLEDRIFT)
+				purpledriftactive = true;
+			if (raflags & RAF_SLOPEBOOST)
+				slopeboostactive = true;
+		}
+		else
+		{
+			ringsactive = cv_dummyattackingrings.value;
+			purpledriftactive = cv_dummyattackingpurpledrift.value;
+			stackingactive = cv_dummyattackingstacking.value;
+			chainingactive = cv_dummyattackingchaining.value;
+			slipdashactive = cv_dummyattackingslipdash.value;
+			slopeboostactive = cv_dummyattackingslopeboost.value;
+		}
 	}
 	else
 	{
@@ -8378,6 +8396,9 @@ static void P_InitPlayers(void)
 			else
 				G_SpawnPlayer(i, false);
 		}
+
+		if (demo.playback)
+			G_SetupDemoPlayer(i);
 	}
 	K_UpdateClusterPoints();
 	K_UpdateAllPlayerPositions();
@@ -8615,8 +8636,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// This is handled BEFORE sounds are stopped.
 	else if (encoremode && !prevencoremode && !demo.rewinding)
 	{
-		tic_t locstarttime, endtime, nowtime;
-
 		if (rendermode != render_none)
 		{
 			S_StopMusic(); // er, about that...
@@ -8641,25 +8660,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 			F_RunWipe(wipedefs[wipe_level_final], false);
 		}
 
-		locstarttime = nowtime = lastwipetic;
-		endtime = locstarttime + (3*TICRATE)/2;
-
 		// Hold on white for extra effect.
-		while (nowtime < endtime)
-		{
-			// wait loop
-			while (!((nowtime = I_GetTime()) - lastwipetic))
-			{
-				I_Sleep(cv_sleep.value);
-				I_UpdateTime(cv_timescale.value);
-			}
-			lastwipetic = nowtime;
-			if (moviemode) // make sure we save frames for the white hold too
-				M_SaveFrame();
-
-			// Keep the network alive
-			NetKeepAlive();
-		}
+		D_WipeLoop(WIPELOOP_ENCORE, 0, false);
 
 		ranspecialwipe = 1;
 	}
@@ -9009,12 +9011,14 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		levelloading = false;
 	}
 
-	if (rendermode != render_none && reloadinggamestate == false)
+	if (reloadinggamestate == false)
 	{
-
-		R_ResetViewInterpolation(0);
-		R_ResetViewInterpolation(0);
-		R_UpdateMobjInterpolators();
+		if (rendermode != render_none)
+		{
+			R_ResetViewInterpolation(0);
+			R_ResetViewInterpolation(0);
+			R_UpdateMobjInterpolators();
+		}
 
 		// Title card!
 		G_StartTitleCard();
@@ -9023,6 +9027,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (WipeStageTitle && ranspecialwipe != 2 && fromnetsave == false)
 		{
 			G_PreLevelTitleCard();
+
+			// don't do a fade-in if we ran the title card, it trips up dedis!
+			// normal clients never see the fade-in, and it causes a very brief lag spike
+			wipegamestate = gamestate;
 		}
 	}
 
@@ -9570,6 +9578,10 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	// extra sprite/skin data
 	//
 	R_LoadSpriteInfoLumps(wadnum, numlumps);
+
+	// look for emotes
+	//
+	M_LoadEmotes(wadnum);
 
 	refreshdirmenu &= ~REFRESHDIR_GAMEDATA; // Under usual circumstances we'd wait for REFRESHDIR_ flags to disappear the next frame, but this one's a bit too dangerous for that...
 	partadd_stage = 0;

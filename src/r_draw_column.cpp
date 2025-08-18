@@ -99,6 +99,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
 
@@ -107,7 +108,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		return;
 	}
 
-	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
 	{
 		return;
 	}
@@ -210,7 +211,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// Use columnofs LUT for subwindows?
 
 		//dest = ylookup[dc_yl] + columnofs[dc_x];
-		dest = &topleft[dc->yl * vid.width + dc->x];
+		dest = &topleft[dc->yl * vidwidth + dc->x];
 
 		count++;
 
@@ -229,13 +230,13 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		{
 			if (frac < 0)
 				// adjust in case we underread
-				frac += FRACUNIT;
+				frac += fracstep;
 
 			// texture has no height, so just go
 			while (--count > 0)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
-				dest += vid.width;
+				dest += vidwidth;
 				frac += fracstep;
 			}
 		}
@@ -280,7 +281,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					*dest = R_DrawColumnPixel<Type>(dc, dest, n);
 				}
 
-				dest += vid.width;
+				dest += vidwidth;
 
 				// Avoid overflow.
 				if (fracstep > 0x7FFFFFFF - frac)
@@ -305,12 +306,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vid.width;
+				dest += vidwidth;
 				frac += fracstep;
 
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vid.width;
+				dest += vidwidth;
 				frac += fracstep;
 			}
 
@@ -348,6 +349,7 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
 
@@ -355,21 +357,21 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 	if (count < 0)
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
 		return;
 
 	// Framebuffer destination address.
 	// Use ylookup LUT to avoid multiply with ScreenWidth.
 	// Use columnofs LUT for subwindows?
 	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vid.width + dc->x];
+	dest = &topleft[dc->yl*vidwidth + dc->x];
 
 	// Determine scaling, which is the only mapping to be done.
 	do
 	{
 		// Simple. Apply the colormap to what's already on the screen.
 		*dest = dc->colormap[*dest];
-		dest += vid.width;
+		dest += vidwidth;
 	}
 	while (count--);
 }
@@ -386,21 +388,22 @@ void R_DrawDropShadowColumn(drawcolumndata_t *dc)
 
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl + 1;
 
 	if (count <= 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	dest = &topleft[dc->yl*vid.width + dc->x];
+	dest = &topleft[dc->yl*vidwidth + dc->x];
 
 	const UINT8 *transmap_offset = dc->transmap + (dc->shadowcolor << 8);
 	while ((count -= 2) >= 0)
 	{
 		*dest = *(transmap_offset + (*dest));
-		dest += vid.width;
+		dest += vidwidth;
 		*dest = *(transmap_offset + (*dest));
-		dest += vid.width;
+		dest += vidwidth;
 	}
 
 	if (count & 1)
@@ -414,13 +417,14 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	INT32 count;
 	UINT8 color = dc->lightmap[dc->r8_flatcolor];
 	UINT8 *dest;
+	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
 
 	if (count < 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
 		return;
 
 	// Framebuffer destination address.
@@ -428,14 +432,14 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	// Use columnofs LUT for subwindows?
 
 	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vid.width + dc->x];
+	dest = &topleft[dc->yl*vidwidth + dc->x];
 
 	count++;
 
 	do
 	{
 		*dest = color;
-		dest += vid.width;
+		dest += vidwidth;
 	}
 	while (--count);
 }

@@ -389,6 +389,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 			P_DamageMobj(t2, t1, t1->target, 1, DMG_EXPLODE);
 		}
 
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 	else if (t2->type == MT_BANANA || t2->type == MT_BANANA_SHIELD
@@ -412,10 +413,12 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 
 		P_SpawnMobj(t2->x/2 + t1->x/2, t2->y/2 + t1->y/2, t2->z/2 + t1->z/2, MT_ITEMCLASH);
 
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 	else if (t2->type == MT_SSMINE_SHIELD || t2->type == MT_SSMINE || t2->type == MT_LANDMINE)
 	{
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 		// Bomb death
 		P_KillMobj(t2, t1, t1, DMG_NORMAL);
@@ -424,6 +427,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 	{
 		// Shootable damage
 		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
 		P_KillMobj(t1, t2, t2, DMG_NORMAL);
 	}
 
@@ -534,7 +538,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 
 	if (player->bubblepop > 1)
 	{
-		K_DropHnextList(player, false);
+		K_PopPlayerShield(player);
 	}
 }
 
@@ -542,7 +546,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
 	mobj_t *owner = t1->player ? t1 : t1->target;
 
-	if (t2->target != owner || !t2->threshold)
+	if (!t2->threshold)
 	{
 		if (!t2->momx && !t2->momy)
 		{
@@ -567,7 +571,7 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 
 boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 {
-	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ
+	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
 		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
 		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
 		|| t2->type == MT_KART_LEFTOVER
@@ -576,12 +580,6 @@ boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t1->type == MT_PLAYER)
-		return true;
-
-	if (t1->target == t2)
-		return true;
-
 	if (t2->type == MT_PLAYER)
 	{
 		if (P_PlayerInPain(t2->player)
@@ -696,7 +694,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t2Condition = false;
 
 	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (invintype == KARTINVIN_LEGACY)
+	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -708,7 +706,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (invintype == KARTINVIN_LEGACY)
+	else if (K_GetKartInvinType() == KARTINVIN_LEGACY)
 	{
 		if (t1Condition == true && t2Condition == false)
 		{

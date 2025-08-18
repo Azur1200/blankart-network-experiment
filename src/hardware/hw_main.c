@@ -952,7 +952,7 @@ static boolean HWR_BlendMidtextureSurface(FSurfaceInfo *pSurf)
 
 	pSurf->PolyColor.s.alpha = 0xFF;
 
-	if (!gl_curline->polyseg)
+	if (LIKELY(!gl_curline->polyseg))
 	{
 		if (gl_linedef->blendmode && gl_linedef->blendmode != AST_FOG)
 		{
@@ -1008,7 +1008,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 	gl_sidedef = gl_curline->sidedef;
 	gl_linedef = gl_curline->linedef;
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		vs.x = ((polyvertex_t *)gl_curline->pv1)->x;
 		vs.y = ((polyvertex_t *)gl_curline->pv1)->y;
@@ -1018,7 +1018,7 @@ static void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 		vs.x = FIXED_TO_FLOAT(gl_curline->v1->x);
 		vs.y = FIXED_TO_FLOAT(gl_curline->v1->y);
 	}
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		ve.x = ((polyvertex_t *)gl_curline->pv2)->x;
 		ve.y = ((polyvertex_t *)gl_curline->pv2)->y;
@@ -2006,7 +2006,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 	if (afrontsector->f_slope || afrontsector->c_slope || abacksector->f_slope || abacksector->c_slope)
 	{
 		fixed_t v1x, v1y, v2x, v2y; // the seg's vertexes as fixed_t
-		if (gl_curline->pv1)
+		if (LIKELY(gl_curline->pv1))
 		{
 			v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 			v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2016,7 +2016,7 @@ static boolean CheckClip(seg_t * seg, sector_t * afrontsector, sector_t * abacks
 			v1x = gl_curline->v1->x;
 			v1y = gl_curline->v1->y;
 		}
-		if (gl_curline->pv2)
+		if (LIKELY(gl_curline->pv2))
 		{
 			v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 			v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2188,7 +2188,7 @@ static void HWR_AddLine(seg_t * line)
 
 	gl_curline = line;
 
-	if (gl_curline->pv1)
+	if (LIKELY(gl_curline->pv1))
 	{
 		v1x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->x);
 		v1y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv1)->y);
@@ -2198,7 +2198,7 @@ static void HWR_AddLine(seg_t * line)
 		v1x = gl_curline->v1->x;
 		v1y = gl_curline->v1->y;
 	}
-	if (gl_curline->pv2)
+	if (LIKELY(gl_curline->pv2))
 	{
 		v2x = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->x);
 		v2y = FLOAT_TO_FIXED(((polyvertex_t *)gl_curline->pv2)->y);
@@ -2866,12 +2866,24 @@ static void HWR_Subsector(size_t num)
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		while (count--)
+		if (UNLIKELY(numPolyObjects))
 		{
 
-			if (!line->glseg && !line->polyseg) // ignore segs that belong to polyobjects
+			while (count--)
+			{
+
+				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
+					HWR_AddLine(line);
+				line++;
+			}
+		}
+		else
+		{
+			while (count--)
+			{
 				HWR_AddLine(line);
-			line++;
+				line++;
+			}
 		}
 	}
 
@@ -3385,7 +3397,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	}
 
 	// push it toward the camera to mitigate floor-clipping sprites
-	if (!R_ThingIsPaperSprite(spr->mobj)) // but not for papersprites
+	if (/*!R_ThingIsPaperSprite(spr->mobj) && */!(spr->mobj->terrain && spr->mobj->terrain->floorClip)) // but not for papersprites or for floorclip
 	{
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
@@ -3440,6 +3452,11 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 			return; // cap
 
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+
+		// if sprite has PF_ALWAYSONTOP, draw on top of everything.
+		if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+			blend |= PF_NoDepthTest;
+
 		if (!trans && !blendmode)
 		{
 			// BP: i agree that is little better in environement but it don't
@@ -3844,7 +3861,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	float sprdist = 0.0f, distfact = 0.0f;
 	size_t i;
 
-	if (!splat && !R_ThingIsPaperSprite(spr->mobj))
+	if (!splat /*&& !R_ThingIsPaperSprite(spr->mobj)*/ && !(spr->mobj->terrain && spr->mobj->terrain->floorClip))
 	{
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
@@ -3937,6 +3954,11 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 				return; // cap
 
 			blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
+
+			// if sprite has PF_ALWAYSONTOP, draw on top of everything.
+			if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+				blend |= PF_NoDepthTest;
+
 			if (!trans && !blendmode)
 			{
 				// BP: i agree that is little better in environement but it don't
@@ -4036,16 +4058,22 @@ static inline void HWR_DrawPrecipitationSprite(gl_vissprite_t *spr)
 			if (!R_ThingIsFullBright(spr->mobj))
 				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
 
-			if (*sector->lightlist[light].extra_colormap)
+			if (!(spr->mobj->renderflags & RF_NOCOLORMAPS))
+			{
+				if (*sector->lightlist[light].extra_colormap)
 				colormap = *sector->lightlist[light].extra_colormap;
+			}
 		}
 		else
 		{
 			if (!R_ThingIsFullBright(spr->mobj))
 				lightlevel = sector->lightlevel > 255 ? 255 : sector->lightlevel;
 
-			if (sector->extra_colormap)
-				colormap = sector->extra_colormap;
+			if (!(spr->mobj->renderflags & RF_NOCOLORMAPS))
+			{
+				if (sector->extra_colormap)
+					colormap = sector->extra_colormap;
+			}
 		}
 
 		//lightlevel = 128 + (lightlevel>>1);
@@ -4558,7 +4586,7 @@ static void HWR_DrawSprites(void)
 
 			if (spr->mobj && spr->mobj->skin && spr->mobj->sprite == SPR_PLAY)
 			{
-				if (!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f)
+				if (LIKELY(!cv_glmodels.value || md2_playermodels[(skin_t*)spr->mobj->skin-skins].notfound || md2_playermodels[(skin_t*)spr->mobj->skin-skins].scale < 0.0f))
 					HWR_DrawSprite(spr);
 				else
 				{
@@ -4568,7 +4596,7 @@ static void HWR_DrawSprites(void)
 			}
 			else
 			{
-				if (!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f)
+				if (LIKELY(!cv_glmodels.value || md2_models[spr->mobj->sprite].notfound || md2_models[spr->mobj->sprite].scale < 0.0f))
 					HWR_DrawSprite(spr);
 				else
 				{
@@ -4990,6 +5018,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		z2 = tr_y - x2 * rightsin;
 		x1 = tr_x + x1 * rightcos;
 		x2 = tr_x - x2 * rightcos;
+
+		if (thing->terrain && thing->terrain->floorClip)
+			spr_topoffset -=  thing->terrain->floorClip;
 
 		if (vflip)
 		{
@@ -5789,6 +5820,9 @@ void HWR_RenderSkyboxView(player_t *player)
 	// set window position
 	HWR_ShiftViewPort();
 
+	// check for new console commands.
+	NetUpdate();
+
 	gl_viewx = FIXED_TO_FLOAT(dup_viewx);
 	gl_viewy = FIXED_TO_FLOAT(dup_viewy);
 	gl_viewz = FIXED_TO_FLOAT(dup_viewz);
@@ -5851,7 +5885,7 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	validcount++;
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_StartBatching();
 
 #ifdef HWPRECIP
@@ -5860,8 +5894,11 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	HWR_RenderBSPNode((INT32)numnodes-1);
 
-	if (cv_glbatching.value)
+	if (LIKELY(cv_glbatching.value))
 		HWR_RenderBatches();
+
+	// Check for new console commands.
+	NetUpdate();
 
 #ifdef ALAM_LIGHTING
 	//14/11/99: Hurdler: moved here because it doesn't work with
@@ -5885,6 +5922,9 @@ void HWR_RenderSkyboxView(player_t *player)
 
 	HWD.pfnSetTransform(NULL);
 	HWD.pfnUnSetShader();
+
+	// Check for new console commands.
+	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
@@ -5972,6 +6012,9 @@ void HWR_RenderPlayerView(void)
 		}
 	}
 
+	// check for new console commands.
+	NetUpdate();
+
 	gl_viewx = FIXED_TO_FLOAT(dup_viewx);
 	gl_viewy = FIXED_TO_FLOAT(dup_viewy);
 	gl_viewz = FIXED_TO_FLOAT(dup_viewz);
@@ -6053,6 +6096,9 @@ void HWR_RenderPlayerView(void)
 	if (cv_glbatching.value)
 		HWR_RenderBatches();
 
+	// Check for new console commands.
+	NetUpdate();
+
 #ifdef ALAM_LIGHTING
 	//14/11/99: Hurdler: moved here because it doesn't work with
 	// subsector, see other comments;
@@ -6085,6 +6131,9 @@ void HWR_RenderPlayerView(void)
 	HWD.pfnUnSetShader();
 
 	HWR_DoPostProcessor(player);
+
+	// Check for new console commands.
+	NetUpdate();
 
 	// added by Hurdler for correct splitscreen
 	// moved here by hurdler so it works with the new near clipping plane
@@ -6153,7 +6202,7 @@ consvar_t cv_glspritebillboarding = CVAR_INIT ("gr_spritebillboarding", "On", CV
 consvar_t cv_glskydome = CVAR_INIT ("gr_skydome", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_glfiltermode = CVAR_INIT ("gr_filtermode", "Nearest", CV_SAVE|CV_CALL, glfiltermode_cons_t, CV_glfiltermode_OnChange);
-consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_CALL, glanisotropicmode_cons_t, CV_glanisotropic_OnChange);
+consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_SAVE|CV_CALL, glanisotropicmode_cons_t, CV_glanisotropic_OnChange);
 
 consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL);
 
@@ -6388,6 +6437,8 @@ void HWR_DoPostProcessor(player_t *player)
 			Surf.PolyColor.s.red = Surf.PolyColor.s.green = Surf.PolyColor.s.blue = 0xff;
 
 		Surf.PolyColor.s.alpha = 0xc0; // match software mode
+
+		V_CubeApply(&Surf.PolyColor.s.red, &Surf.PolyColor.s.green, &Surf.PolyColor.s.blue);
 
 		HWD.pfnDrawPolygon(&Surf, v, 4, PF_Modulated|PF_Additive|PF_NoTexture|PF_NoDepthTest);
 	}

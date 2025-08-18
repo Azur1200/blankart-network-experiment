@@ -2069,7 +2069,8 @@ typedef enum
 	MD2_ITNEXT       = 1<<27,
 	MD2_LASTMOMZ     = 1<<28,
 	MD2_TERRAIN      = 1<<29,
-	MD2_LIGHTLEVEL   = (INT32)(1U<<30),
+	MD2_LIGHTLEVEL   = 1<<30,
+	MD2_GRAVITY      = (INT32)(1U<<31)
 } mobj_diff2_t;
 
 typedef enum
@@ -2169,6 +2170,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 
 	// MT_SPARK: used for debug stuff
 	if (mobj->type == MT_SPARK)
+		return;
+
+	// This is a non-synched visual effect mobj
+	if (mobj->flags2 & MF2_DONTSYNC)
 		return;
 
 	diff2 = 0;
@@ -2371,6 +2376,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff2 |= MD2_LASTMOMZ;
 	if (mobj->terrain != NULL || mobj->terrainOverlay != NULL)
 		diff2 |= MD2_TERRAIN;
+	if (mobj->gravity != FRACUNIT)
+		diff2 |= MD2_GRAVITY;
 
 	if (diff2 != 0)
 		diff |= MD_MORE;
@@ -2637,6 +2644,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain));
 		WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
 	}
+	if (diff2 & MD2_GRAVITY)
+	{
+		WRITEFIXED(save->p, mobj->gravity);
+	}
 
 	WRITEUINT32(save->p, mobj->mobjnum);
 }
@@ -2853,7 +2864,6 @@ static void SaveElevatorThinker(savebuffer_t *save, const thinker_t *th, const U
 	WRITEFIXED(save->p, ht->delaytimer);
 	WRITEFIXED(save->p, ht->floorwasheight);
 	WRITEFIXED(save->p, ht->ceilingwasheight);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
 }
 
 static void SaveCrumbleThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
@@ -3878,6 +3888,14 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	{
 		mobj->terrain = NULL;
 	}
+	if (diff2 & MD2_GRAVITY)
+	{
+		mobj->gravity = READFIXED(save->p);
+	}
+	else
+	{
+		mobj->gravity = FRACUNIT;
+	}
 
 	// Reset some non-synch values
 	mobj->sloperoll = 0;
@@ -4182,7 +4200,6 @@ static thinker_t* LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, bo
 	ht->delaytimer = READFIXED(save->p);
 	ht->floorwasheight = READFIXED(save->p);
 	ht->ceilingwasheight = READFIXED(save->p);
-	ht->sourceline = LoadLine(READUINT32(save->p));
 
 	if (ht->sector && setplanedata)
 	{
@@ -4904,9 +4921,9 @@ static void P_RelinkPointers(void)
 
 		mobj = (mobj_t *)currentthinker;
 
-		if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
+		if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 			// MT_SPARK: used for debug stuff
-			|| mobj->type == MT_SPARK)
+			|| mobj->type == MT_SPARK))
 			continue;
 
 		if (mobj->tracer)
@@ -5581,9 +5598,9 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 				continue;
 
 			mobj = (mobj_t *)th;
-			if (mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
+			if (UNLIKELY(mobj->type == MT_HOOP || mobj->type == MT_HOOPCOLLIDE || mobj->type == MT_HOOPCENTER
 				// MT_SPARK: used for debug stuff
-				|| mobj->type == MT_SPARK)
+				|| mobj->type == MT_SPARK))
 				continue;
 			mobj->mobjnum = i++;
 		}
@@ -5655,7 +5672,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	}
 
 	ACS_UnArchive(save);
-	LUA_UnArchive(save, true);
+	LUA_UnArchive(save, true, false);
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());

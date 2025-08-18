@@ -711,6 +711,8 @@ static void A_Lua(mobj_t *actor)
 	lua_pushinteger(gL, var2);
 	LUA_Call(gL, 3, 0, 1);
 
+	lua_pop(gL, 1); // pop error handler
+
 	if (found)
 	{
 		--superstack;
@@ -1427,7 +1429,7 @@ static int lib_setSfxInfo(lua_State *L)
 			info->priority = (INT32)luaL_checkinteger(L, 3);
 			break;
 		case sfxinfow_flags:
-			info->pitch = (INT32)luaL_checkinteger(L, 3);
+			info->flags = (INT32)luaL_checkinteger(L, 3);
 			break;
 		case sfxinfow_volume:
 			info->volume = (INT32)luaL_checkinteger(L, 3);
@@ -1470,7 +1472,7 @@ static int sfxinfo_get(lua_State *L)
 		lua_pushinteger(L, sfx->priority);
 		return 1;
 	case sfxinfor_flags:
-		lua_pushinteger(L, sfx->pitch);
+		lua_pushinteger(L, sfx->flags);
 		return 1;
 	case sfxinfor_volume:
 		lua_pushinteger(L, sfx->volume);
@@ -1517,7 +1519,7 @@ static int sfxinfo_set(lua_State *L)
 		sfx->priority = luaL_checkinteger(L, 1);
 		break;
 	case sfxinfow_flags:
-		sfx->pitch = luaL_checkinteger(L, 1);
+		sfx->flags = luaL_checkinteger(L, 1);
 		break;
 	case sfxinfow_volume:
 		sfx->volume = luaL_checkinteger(L, 1);

@@ -32,6 +32,15 @@
 #include "doomstat.h"
 #include "r_fps.h"
 
+#if defined(__SSE__) || defined(__AVX__)
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(align, size) _aligned_malloc(size, align)
+#endif
+
+#include <immintrin.h>
+#endif
+
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
 #endif
@@ -487,10 +496,23 @@ static void CV_constextsize_OnChange(void)
 // Copy a rectangular area from one bitmap to another (8bpp)
 // --------------------------------------------------------------------------
 void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
-	size_t destrowbytes)
+						  size_t destrowbytes)
 {
-	if ((srcrowbytes == destrowbytes) && (srcrowbytes == (size_t)width))
-		M_Memcpy(destptr, srcptr, srcrowbytes * height);
+	if (srcrowbytes == destrowbytes)
+	{
+		size_t i = srcrowbytes * height;
+#if defined(__SSE__)
+		while (i >= 16)
+		{
+			// TODO: find where the buffer is misaligned at times and align it
+			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
+			srcptr += 16;
+			destptr += 16;
+			i -= 16;
+		}
+#endif
+		M_Memcpy(destptr, srcptr, i);
+	}
 	else
 	{
 		while (height--)
@@ -714,27 +736,15 @@ static UINT8 hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 static const UINT8 *v_colormap = NULL;
 static const UINT8 *v_translevel = NULL;
 
-static inline UINT8 standardpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	(void)dest; return source[ofs>>FRACBITS];
-}
-static inline UINT8 mappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	(void)dest; return *(v_colormap + source[ofs>>FRACBITS]);
-}
-static inline UINT8 translucentpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	return *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
-}
-static inline UINT8 transmappedpdraw(const UINT8 *dest, const UINT8 *source, fixed_t ofs)
-{
-	return *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
-}
+#define STANDARDDRAW 1
+#define MAPPEDDRAW 2
+#define TRANSLUCENTDRAW 3
+#define TRANSMAPPEDDRAW 4
 
 // Draws a patch scaled to arbitrary size.
 void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap)
 {
-	UINT8 (*patchdrawfunc)(const UINT8*, const UINT8*, fixed_t);
+	UINT8 patchdrawtype;
 	UINT32 alphalevel, blendmode;
 
 	fixed_t col, ofs, colfrac, rowfrac, fdup, vdup;
@@ -744,6 +754,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	const UINT8 *source, *deststop;
 	fixed_t pwidth; // patch width
 	fixed_t offx = 0; // x offset
+	const INT32 vidwidth = vid.width;
 
 	const cliprect_t *clip = V_GetClipRect();
 
@@ -759,7 +770,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 	}
 #endif
 
-	patchdrawfunc = standardpdraw;
+	patchdrawtype = STANDARDDRAW;
 
 	if ((blendmode = ((scrn & V_BLENDMASK) >> V_BLENDSHIFT)))
 		blendmode++; // realign to constants
@@ -776,13 +787,13 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 			return;
 	}
 	if ((v_translevel = R_GetBlendTable(blendmode, alphalevel)))
-		patchdrawfunc = translucentpdraw;
+		patchdrawtype = TRANSLUCENTDRAW;
 
 	v_colormap = NULL;
 	if (colormap)
 	{
 		v_colormap = colormap;
-		patchdrawfunc = (v_translevel) ? transmappedpdraw : mappedpdraw;
+		patchdrawtype = (v_translevel) ? TRANSMAPPEDDRAW : MAPPEDDRAW;
 	}
 
 	dupx = vid.dupx;
@@ -858,7 +869,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 			V_AdjustXYWithSnap(&x, &y, scrn, dupx, dupy);
 		}
 
-		desttop += (y*vid.width) + x;
+		desttop += (y*vidwidth) + x;
 	}
 
 	if (pscale != FRACUNIT) // scale width properly
@@ -882,91 +893,324 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		{
 			if (x+pwidth-offx < (clip ? clip->left : 0)) // don't draw off the left of the screen (WRAP PREVENTION)
 				break;
-			if (x+pwidth-offx >= (clip ? clip->right : vid.width)) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+pwidth-offx >= (clip ? clip->right : vidwidth)) // don't draw off the right of the screen (WRAP PREVENTION)
 				continue;
 		}
 		else
 		{
 			if (x+offx < (clip ? clip->left : 0)) // don't draw off the left of the screen (WRAP PREVENTION)
 				continue;
-			if (x+offx >= (clip ? clip->right : vid.width)) // don't draw off the right of the screen (WRAP PREVENTION)
+			if (x+offx >= (clip ? clip->right : vidwidth)) // don't draw off the right of the screen (WRAP PREVENTION)
 				break;
 		}
 
 		column = (const column_t *)((const UINT8 *)(patch->columns) + (patch->columnofs[col>>FRACBITS]));
 
-		while (column->topdelta != 0xff)
+		switch (patchdrawtype)
 		{
-			fixed_t offy = 0;
-
-			topdelta = column->topdelta;
-			if (topdelta <= prevdelta)
-				topdelta += prevdelta;
-			prevdelta = topdelta;
-			source = (const UINT8 *)(column) + 3;
-
-			dest = desttop;
-			if (scrn & V_FLIP)
-				dest = deststart + (destend - dest);
-			topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
-			dest += topdelta * vid.width;
-
-			if (scrn & V_VFLIP)
-			{
-				for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+			case STANDARDDRAW:
+				while (column->topdelta != 0xff)
 				{
-					if (clip != NULL)
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
 					{
-						const INT32 cy = y + topdelta - offy;
-
-						if (cy < clip->top) // don't draw off the top of the clip rect
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = source[ofs>>FRACBITS];
+
+							dest += vidwidth;
 						}
-
-						if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = source[ofs>>FRACBITS];
+
+							dest += vidwidth;
 						}
 					}
 
-					if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
-						*dest = patchdrawfunc(dest, source, ofs);
-
-					dest += vid.width;
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
-			}
-			else
-			{
-				for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+			break;
+
+			case MAPPEDDRAW:
+				while (column->topdelta != 0xff)
 				{
-					if (clip != NULL)
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
 					{
-						const INT32 cy = y + topdelta + offy;
-
-						if (cy < clip->top) // don't draw off the top of the clip rect
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_colormap + source[ofs>>FRACBITS]);
+
+							dest += vidwidth;
 						}
-
-						if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
 						{
-							dest += vid.width;
-							continue;
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_colormap + source[ofs>>FRACBITS]);
+
+							dest += vidwidth;
 						}
 					}
 
-					if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
-						*dest = patchdrawfunc(dest, source, ofs);
-
-					dest += vid.width;
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
 				}
-			}
+				break;
 
-			column = (const column_t *)((const UINT8 *)column + column->length + 4);
+			case TRANSMAPPEDDRAW:
+				while (column->topdelta != 0xff)
+				{
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
+					{
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
+				}
+				break;
+
+				case TRANSLUCENTDRAW:
+				while (column->topdelta != 0xff)
+				{
+					fixed_t offy = 0;
+
+					topdelta = column->topdelta;
+					if (topdelta <= prevdelta)
+						topdelta += prevdelta;
+					prevdelta = topdelta;
+					source = (const UINT8 *)(column) + 3;
+
+					dest = desttop;
+					if (scrn & V_FLIP)
+						dest = deststart + (destend - dest);
+					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
+					dest += topdelta * vidwidth;
+
+					if (scrn & V_VFLIP)
+					{
+						for (ofs = (column->length << FRACBITS)-1; dest < deststop && ofs >= 0; ofs -= rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta - offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+					else
+					{
+						for (ofs = 0; dest < deststop && ofs < (column->length << FRACBITS); ofs += rowfrac, ++offy)
+						{
+							if (clip != NULL)
+							{
+								const INT32 cy = y + topdelta + offy;
+
+								if (cy < clip->top) // don't draw off the top of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+
+								if (cy >= clip->bottom) // don't draw off the bottom of the clip rect
+								{
+									dest += vidwidth;
+									continue;
+								}
+							}
+
+							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
+
+							dest += vidwidth;
+						}
+					}
+
+					column = (const column_t *)((const UINT8 *)column + column->length + 4);
+				}
+				break;
 		}
 	}
 }
@@ -1813,34 +2057,38 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color)
 	if (rendermode == render_opengl)
 	{
 		UINT32 hwcolor;
+		UINT8 r, g, b;
 		switch (color)
 		{
-			case 0:		hwcolor = 0xffffff00;	break; 	// White
-			case 1:		hwcolor = 0x00000000;	break; 	// Black // Note this is different from V_DrawFadeConsBack
-			case 2:		hwcolor = 0xdeb88700;	break;	// Sepia
-			case 3:		hwcolor = 0x40201000;	break; 	// Brown
-			case 4:		hwcolor = 0xfa807200;	break; 	// Pink
-			case 5:		hwcolor = 0xff69b400;	break; 	// Raspberry
-			case 6:		hwcolor = 0xff000000;	break; 	// Red
-			case 7:		hwcolor = 0xffd68300;	break;	// Creamsicle
-			case 8:		hwcolor = 0xff800000;	break; 	// Orange
-			case 9:		hwcolor = 0xdaa52000;	break; 	// Gold
-			case 10:	hwcolor = 0x80800000;	break; 	// Yellow
-			case 11:	hwcolor = 0x00ff0000;	break; 	// Emerald
-			case 12:	hwcolor = 0x00800000;	break; 	// Green
-			case 13:	hwcolor = 0x4080ff00;	break; 	// Cyan
-			case 14:	hwcolor = 0x4682b400;	break; 	// Steel
-			case 15:	hwcolor = 0x1e90ff00;	break;	// Periwinkle
-			case 16:	hwcolor = 0x0000ff00;	break; 	// Blue
-			case 17:	hwcolor = 0xff00ff00;	break; 	// Purple
-			case 18:	hwcolor = 0xee82ee00;	break; 	// Lavender
+			case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
+			case 1:		r = 0x00; g = 0x00; b = 0x00;	break; 	// Black
+			case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
+			case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
+			case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
+			case 5:		r = 0xff; g = 0x69; b = 0xb4;	break; 	// Raspberry
+			case 6:		r = 0xff; g = 0x00; b = 0x00;	break; 	// Red
+			case 7:		r = 0xff; g = 0xd6; b = 0x83;	break;	// Creamsicle
+			case 8:		r = 0xff; g = 0x80; b = 0x00;	break; 	// Orange
+			case 9:		r = 0xda; g = 0xa5; b = 0x20;	break; 	// Gold
+			case 10:	r = 0x80; g = 0x80; b = 0x00;	break; 	// Yellow
+			case 11:	r = 0x00; g = 0xff; b = 0x00;	break; 	// Emerald
+			case 12:	r = 0x00; g = 0x80; b = 0x00;	break; 	// Green
+			case 13:	r = 0x40; g = 0x80; b = 0xff;	break; 	// Cyan
+			case 14:	r = 0x46; g = 0x82; b = 0xb4;	break; 	// Steel
+			case 15:	r = 0x1e; g = 0x90; b = 0xff;	break;	// Periwinkle
+			case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
+			case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
+			case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
 			// Default green
-			default:	hwcolor = 0x00800000;	break;
+			default:	r = 0x00; g = 0x80; b = 0x00;	break;
 		}
+		V_CubeApply(&r, &g, &b);
+		hwcolor = (((r << 24) | (g << 16) | (b << 8)));
 		HWR_DrawTutorialBack(hwcolor, boxheight);
 		return;
 	}
 #endif
+
 
 	CON_SetupBackColormapEx(color, true);
 
@@ -2726,11 +2974,14 @@ INT32 V_LevelNameHeight(const char *string)
 //
 // Find string width from hu_font chars
 //
-INT32 V_StringWidth(const char *string, INT32 option)
+INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 4, charwidth = 0;
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2746,7 +2997,7 @@ INT32 V_StringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
@@ -2768,11 +3019,14 @@ INT32 V_StringWidth(const char *string, INT32 option)
 //
 // Find string width from hu_font chars, 0.5x scale
 //
-INT32 V_SmallStringWidth(const char *string, INT32 option)
+INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2788,7 +3042,7 @@ INT32 V_SmallStringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
@@ -2807,12 +3061,15 @@ INT32 V_SmallStringWidth(const char *string, INT32 option)
 //
 // Find string width from tny_font chars
 //
-INT32 V_ThinStringWidth(const char *string, INT32 option)
+INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
 	INT32 c, w = 0;
 	INT32 spacewidth = 2, charwidth = 0;
 	boolean lowercase = (option & V_ALLOWLOWERCASE);
-	size_t i;
+	ssize_t i;
+
+	if (length < 0)
+		length = strlen(string);
 
 	switch (option & V_SPACINGMASK)
 	{
@@ -2829,7 +3086,7 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 			break;
 	}
 
-	for (i = 0; i < strlen(string); i++)
+	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
@@ -2844,7 +3101,7 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 		else
 		{
 			w += (charwidth ? charwidth
-				: ((option & V_6WIDTHSPACE && i < strlen(string)-1) ? max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
+				: ((option & V_6WIDTHSPACE && i < (ssize_t)strlen(string)-1) ? max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
 				: fontv[TINY_FONT].font[c]->width));
 		}
 	}
@@ -2856,10 +3113,57 @@ INT32 V_ThinStringWidth(const char *string, INT32 option)
 //
 // Find string width from tny_font chars, 0.5x scale
 //
-INT32 V_SmallThinStringWidth(const char *string, INT32 option)
+/*INT32 V_SmallThinStringWidth(const char *string, INT32 option)
 {
 	INT32 w = V_ThinStringWidth(string, option)<<FRACBITS;
 	return w/2 + FRACUNIT; // +FRACUNIT because otherwise it's offset wrong.
+}*/
+
+//
+
+// Find maximum length for substring taken from current string to fit into given width
+
+//
+
+INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option)
+{
+	INT32 c, w = 0;
+	INT32 spacewidth = 4, charwidth = 0;
+	INT32 i;
+
+	switch (option & V_SPACINGMASK)
+	{
+		case V_MONOSPACE:
+			spacewidth = 8;
+			/* FALLTHRU */
+		case V_OLDSPACING:
+			charwidth = 8;
+			break;
+
+		case V_6WIDTHSPACE:
+			spacewidth = 6;
+			break;
+
+		default:
+			break;
+	}
+
+	for (i = 0; string[i] && w < width; i++)
+	{
+		c = string[i];
+
+		if ((UINT8)c >= 0x80 && (UINT8)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
+			continue;
+
+		c = toupper(c) - HU_FONTSTART;
+
+		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
+			w += spacewidth;
+		else
+			w += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
+	}
+
+	return max(i-1, 0);
 }
 
 boolean *heatshifter = NULL;

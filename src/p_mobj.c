@@ -1143,7 +1143,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 	if (!gravsector) // If there is no 3D floor gravity, check sector's gravity
 		gravsector = mo->subsector->sector;
 
-	gravityadd = -FixedMul(gravity, P_GetSectorGravityFactor(gravsector));
+	gravityadd = -FixedMul(FixedMul(gravity, mo->gravity), P_GetSectorGravityFactor(gravsector));
 
 	if ((gravsector->flags & MSF_GRAVITYFLIP) && gravityadd > 0)
 	{
@@ -1857,9 +1857,7 @@ void P_XYMovement(mobj_t *mo)
 
 		}
 		else if (predictedz-mo->z > abs(slopemom.z/2)
-		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true // Now check if we were supposed to stick to this slope
-		&& ((!(mo->eflags & MFE_VERTICALFLIP) && (mo->z <= mo->floorz)) // mo->z <= mo->floorz means 'only do this if we did a stairstep up'
-		|| ((mo->eflags & MFE_VERTICALFLIP) && (mo->z+mo->height >= mo->ceilingz))))
+		&& P_CanApplySlopePhysics(mo, mo->standingslope) == true)
 		{
 			// Now check if we were supposed to stick to this slope
 			//CONS_Printf("%d-%d > %d\n", (predictedz), (mo->z), (slopemom.z/2));
@@ -3643,8 +3641,6 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 			else
 			{
 				fixed_t camspeed = P_AproxDistance(thiscam->momx, thiscam->momy);
-
-				P_SlideCameraMove(thiscam);
 
 				if (!resetcalled && P_AproxDistance(thiscam->momx, thiscam->momy) == camspeed)
 				{
@@ -6947,6 +6943,8 @@ static void P_FlameJetSceneryThink(mobj_t *mobj)
 	flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLAMEJETFLAME);
 	P_SetMobjState(flame, S_FLAMEJETFLAME4);
 
+	flame->renderflags |= RF_TRANS40;
+
 	flame->angle = mobj->angle;
 
 	if (mobj->flags2 & MF2_AMBUSH) // Wave up and down instead of side-to-side
@@ -6984,6 +6982,8 @@ static void P_VerticalFlameJetSceneryThink(mobj_t *mobj)
 		mobj->fuse--;
 
 	flame = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_FLAMEJETFLAME);
+
+	flame->renderflags |= RF_TRANS40;
 
 	strength = 20*FRACUNIT;
 	strength -= ((20*FRACUNIT)/16)*mobj->movedir;
@@ -10909,6 +10909,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->friction = ORIG_FRICTION;
 
 	mobj->movefactor = FRACUNIT;
+	mobj->gravity = FRACUNIT;
 
 	// All mobjs are created at 100% scale.
 	mobj->scale = FRACUNIT;

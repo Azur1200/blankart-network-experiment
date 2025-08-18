@@ -79,6 +79,8 @@ struct doomcom_t
 	char data[MAXPACKETLENGTH];
 } ATTRPACK;
 
+#define DOOMCOM_DATA(d) (doomdata_t *)&(d)->data
+
 struct holepunch_t
 {
 	INT32 magic;
@@ -86,12 +88,13 @@ struct holepunch_t
 	INT16 port;
 } ATTRPACK;
 
+#define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
+
 #if defined(_MSC_VER)
 #pragma pack()
 #endif
 
 extern doomcom_t *doomcom;
-extern holepunch_t *holepunchpacket;
 
 /**	\brief return packet in doomcom struct
 */

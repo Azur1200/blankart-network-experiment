@@ -78,6 +78,9 @@
 static void P_NukeAllPlayers(player_t *player);
 #endif
 
+// Some people like the more limited camerea from V1 so why not.
+consvar_t cv_naturalcamera = CVAR_INIT ("naturalcamera", "Off", CV_SAVE, CV_OnOff, NULL);
+
 //
 // Jingle stuff.
 //
@@ -1798,6 +1801,11 @@ static void P_3dMovement(player_t *player)
 
 	totalthrust.x = totalthrust.y = 0; // I forget if this is needed
 	totalthrust.z = FRACUNIT*P_MobjFlip(player->mo)/3; // A bit of extra push-back on slopes
+
+	if (K_SlopeResistance(player) == true)
+	{
+		totalthrust.z = -(totalthrust.z);
+	}
 	
 	cmd = &player->cmd;
 	
@@ -1949,7 +1957,7 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if ((player->outruntime == 0) || (player->offroad > 0))
+	if (player->offroad > 0 || !player->outruntime)
 	{
 		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
 		{
@@ -2224,7 +2232,7 @@ void P_MovePlayer(player_t *player)
 	if ((player->invincibilitytimer > 0) &&
 		(((leveltime %
 		   max(1, 10 - FixedMul(9, K_InvincibilityGradient(player->invincibilitytimer)))) == 0) ||
-		 (invintype == KARTINVIN_LEGACY)))
+		 (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 	{
 		K_SpawnSparkleTrail(player->mo);
 	}
@@ -2921,10 +2929,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (demo.playback)
 	{
-		if (leveltime <= introtime)
-			focusangle = mo->angle; // Can't turn yet. P_UpdatePlayerAngle will ignore angle in stale ticcmds, chasecam should too.
-		else
-			focusangle = player->cmd.angle << TICCMD_REDUCE;
+		focusangle = mo->angle;
 		focusaiming = 0;
 	}
 	else if (P_IsMachineLocalPlayer(player))
@@ -3091,23 +3096,58 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	// sets ideal cam pos
 	dist = camdist;
 
-	/* player->speed subtracts conveyors, janks up the camera */
 	if (player->loop.radius)
 	{
 		speed = player->speed;
 	}
 	else
 	{
-		speed = R_PointToDist2(0, 0, player->mo->momx, player->mo->momy);
+		speed = P_AproxDistance(P_AproxDistance(mo->momx, mo->momy), mo->momz / 16);
 	}
-	
-	
-	if (speed > K_GetKartSpeed(player, false, true))
-		dist += 4*(speed - K_GetKartSpeed(player, false, true));
-	dist += abs(thiscam->momz)/4;
 
-	if (player->karthud[khud_boostcam])
-		dist -= FixedMul(11*dist/16, player->karthud[khud_boostcam]);
+	if (cv_naturalcamera.value)
+	{
+		const fixed_t speedthreshold = 48*mapobjectscale;
+		const fixed_t olddist = P_AproxDistance(mo->x - thiscam->x, mo->y - thiscam->y);
+
+		fixed_t lag, distoffset;
+
+		if (player->karthud[khud_boostcam])
+		{
+			dist -= FixedMul(11*dist/16, player->karthud[khud_boostcam]);
+		}
+
+		lag = FRACUNIT - ((FixedDiv(speed, speedthreshold) - FRACUNIT) * 2);
+
+		if (lag > FRACUNIT)
+		{
+			lag = FRACUNIT;
+		}
+
+		if (lag < camspeed)
+		{
+			lag = camspeed;
+		}
+
+		distoffset = dist - olddist;
+		dist = olddist + FixedMul(distoffset, lag);
+
+		if (dist < 0)
+		{
+			dist = 0;
+		}
+	}
+	else
+	{
+		if (speed > K_GetKartSpeed(player, false, true))
+			dist += 4*(speed - K_GetKartSpeed(player, false, true));
+		dist += abs(thiscam->momz)/4;
+
+		if (player->karthud[khud_boostcam])
+		{
+			dist -= FixedMul(11*dist/16, player->karthud[khud_boostcam]);
+		}
+	}
 
 	if (mo->standingslope)
 	{
@@ -3125,9 +3165,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	}
 	pitch = thiscam->pitch + (angle_t)FixedMul(pitch - thiscam->pitch, camspeed/4);
 
+#ifdef HWRENDER
 	if (rendermode == render_opengl && !cv_glshearing.value)
 		distxy = FixedMul(dist, FINECOSINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
 	else
+#endif
 		distxy = dist;
 	distz = -FixedMul(dist, FINESINE((pitch>>ANGLETOFINESHIFT) & FINEMASK));
 
@@ -4065,20 +4107,11 @@ void P_PlayerThink(player_t *player)
 	else if (player->loop.radius != 0)
 	{
 		P_PlayerOrbit(player);
-		player->rmomx = player->rmomy = 0;
+		player->rmomx = player->mo->momx;
+		player->rmomy = player->mo->momy;
 	}
 	else
 	{
-		if (player->bumpertime == TICRATE/2 && player->mo->hnext)
-		{
-			// Center player to NiGHTS bumper here because if you try to set player's position in
-			// P_TouchSpecialThing case MT_NIGHTSBUMPER, that position is fudged in the time
-			// between that routine in the previous tic
-			// and reaching here in the current tic
-			P_MoveOrigin(player->mo, player->mo->hnext->x, player->mo->hnext->y
-				, player->mo->hnext->z + FixedMul(player->mo->hnext->height/4, player->mo->hnext->scale));
-			P_SetTarget(&player->mo->hnext, NULL);
-		}
 		// Move around.
 		P_MovePlayer(player);
 	}

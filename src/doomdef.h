@@ -104,6 +104,7 @@ extern "C" {
 // Special Hashing.
 //#define NOMD5
 //#define NOFILEHASH
+//#define NOVERIFYIWADS
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -452,6 +453,27 @@ UINT32 quickncasehash (const char *p, size_t n)
 
 #ifndef DBL_EPSILON
 #define DBL_EPSILON 2.2204460492503131e-16l
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#ifndef LIKELY
+#define LIKELY(x)   __builtin_expect(!!(x), 1)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#endif
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif
+
+#ifdef __cplusplus
+#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#define restrict __restrict
+#else
+#define restrict
+#endif
 #endif
 
 // An assert-type mechanism.

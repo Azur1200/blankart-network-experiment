@@ -30,7 +30,9 @@
 #include "hu_stuff.h"
 #include "g_game.h"
 #include "g_input.h"
+#include "v_video.h"
 #include "m_argv.h"
+#include "m_textinput.h"
 
 // Data.
 #include "sounds.h"
@@ -141,6 +143,9 @@ M_waiting_mode_t m_waiting_mode = M_NOT_WAITING;
 const char *quitmsg[NUM_QUITMESSAGES];
 
 boolean fromlevelselect = false;
+
+static char menu_text_input_buf[MAXSTRINGLENGTH];
+static textinput_t menuinput;
 
 typedef enum
 {
@@ -255,9 +260,25 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 	return M_GetMenuItem(type, name) - menudefs[type].menuitems;
 }
 
+static boolean M_ItemSelectable(menuitem_t *item)
+{
+	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
+}
+
+// TODO this ought to be controlled by the item argument...
+static UINT32 M_StringCvarLength(consvar_t *cv)
+{
+	if (cv == &cv_dummyip)
+		return 28;
+	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
+		return MAXPLAYERNAME + 1;
+	else
+		return MAXSTRINGLENGTH;
+}
+
 // an array of macros for getting/setting menuitem properties
 #define M_IsItemOn(t, n)                (itemOn == M_GetMenuIndex(t, n))
-#define M_SetItemOn(t, n)               (itemOn = M_GetMenuIndex(t, n))
+#define M_SetItemOn(t, n)               (M_RawSetItemOn(&menudefs[t], M_GetMenuIndex(t, n)))
 #define M_SetItemRoutine(t, n, v)       (M_GetMenuItem(t, n)->routine = v)
 #define M_SetItemCvar(t, n, v)          (M_GetMenuItem(t, n)->cvar = v)
 #define M_SetItemArgument(t, n, v)      (M_GetMenuItem(t, n)->argument = v)
@@ -265,6 +286,41 @@ static INT16 M_GetMenuIndex(menutype_t type, const char *name)
 #define M_SetItemY(t, n, v)             (M_GetMenuItem(t, n)->y = v)
 #define M_GetItemX(t, n)                (M_GetMenuItem(t, n)->x)
 #define M_GetItemY(t, n)                (M_GetMenuItem(t, n)->y)
+
+static void M_RawSetItemOn(menu_t *menu, INT16 index)
+{
+	INT16 i;
+	itemOn = index;
+
+	if (!menu->numitems)
+		return;
+
+	// in case of...
+	if (itemOn >= menu->numitems)
+		itemOn = menu->numitems - 1;
+
+	// the curent item can be disabled,
+	// this code go up until an enabled item found
+	if (menu->numitems && !M_ItemSelectable(&menu->menuitems[itemOn]))
+	{
+		for (i = 0; i < menu->numitems; i++)
+		{
+			if (M_ItemSelectable(&menu->menuitems[i]))
+			{
+				itemOn = i;
+				break;
+			}
+		}
+	}
+
+	// update text input for string cvars
+	consvar_t *cv = menu->menuitems[itemOn].cvar;
+	if (cv && !cv->PossibleValue)
+	{
+		M_TextInputInit(&menuinput, menu_text_input_buf, M_StringCvarLength(cv));
+		M_TextInputSetString(&menuinput, cv->string);
+	}
+}
 
 static void M_ChangeItemStatus(menutype_t type, const char *name, menuitemflags_t flag, boolean cond)
 {
@@ -293,11 +349,6 @@ static void M_SetItemPatch(menutype_t type, const char *name, const char *string
 #define M_SetItemVisible(t, n, c)  M_ChangeItemStatus(t, n, IT_HIDDEN, !(c))
 #define M_SetItemDisabled(t, n, c) M_ChangeItemStatus(t, n, IT_GRAYEDOUT, c)
 #define M_SetItemSecret(t, n, c)   M_ChangeItemStatus(t, n, IT_SECRET, c)
-
-static boolean M_ItemSelectable(menuitem_t *item)
-{
-	return (item->status & IT_INTERACT) && !(item->status & (IT_HIDDEN|IT_GRAYEDOUT|IT_SECRET));
-}
 
 // bruh...
 static UINT32 M_ServersPerPage(void)
@@ -1115,79 +1166,9 @@ static void M_ChangeCvar(menuitem_t *item, SINT8 direction)
 		M_GetFollowerState();	// update follower state
 }
 
-static UINT32 M_StringCvarLength(consvar_t *cv)
-{
-	if (cv == &cv_dummyip)
-		return 28;
-	else if (cv == &cv_dummyname || cv == &cv_playername[0] || cv == &cv_playername[1] || cv == &cv_playername[2] || cv == &cv_playername[3])
-		return MAXPLAYERNAME + 1;
-	else
-		return MAXSTRINGLENGTH;
-}
-
-static boolean M_ChangeStringCvar(INT32 choice)
-{
-	consvar_t *cv = currentMenu->menuitems[itemOn].cvar;
-	char buf[MAXSTRINGLENGTH];
-	size_t len = strlen(cv->string);
-
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
-
-	switch (choice)
-	{
-		case KEY_BACKSPACE:
-			if (len > 0)
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				M_Memcpy(buf, cv->string, len);
-				buf[len-1] = 0;
-				CV_Set(cv, buf);
-			}
-			return true;
-		case KEY_DEL:
-			if (cv->string[0])
-			{
-				S_StartSound(NULL,sfx_menu1); // Tails
-				CV_Set(cv, "");
-			}
-			return true;
-		case KEY_LEFTARROW:
-		case KEY_RIGHTARROW:
-			// TODO: navigation
-			return true;
-		default:
-			if (cv == &cv_dummyip)
-			{
-				// Rudimentary number and period enforcing - also allows letters so hostnames can be used instead
-				if (!((choice >= '-' && choice <= ':') || (choice >= 'A' && choice <= 'Z') || (choice >= 'a' && choice <= 'z'))
-				 && !(choice >= KEY_KEYPAD7 && choice <= KEY_KPADDEL && choice != KEY_MINUSPAD && choice != KEY_PLUSPAD)) //numpad too!
-					break;
-
-				if (choice >= KEY_KEYPAD7)
-					// sir, have you been golfing tonight?
-					choice = "789-456+1230."[choice - KEY_KEYPAD7];
-			}
-
-			if (choice < 32 || choice > 127)
-				break;
-
-			if (len < M_StringCvarLength(cv) - 1)
-			{
-				S_StartSound(NULL, sfx_menu1); // Tails
-				M_Memcpy(buf, cv->string, len);
-				buf[len++] = (char)choice;
-				buf[len] = 0;
-				CV_Set(cv, buf);
-			}
-			return true;
-	}
-	return false;
-}
-
 // lock out further input in a tic when important buttons are pressed
 // (in other words -- stop bullshit happening by mashing buttons in fades)
-static boolean noFurtherInput = false;
+static INT32 noFurtherInput = 0;
 
 static void Command_Manual_f(void)
 {
@@ -1195,7 +1176,7 @@ static void Command_Manual_f(void)
 		return;
 	M_StartControlPanel();
 	M_EnterMenu(MN_HELP, true, 0);
-	itemOn = 0;
+	M_SetItemOn(MN_HELP, "PAGE0");
 }
 
 // arbitrary keyboard shortcuts because fuck you
@@ -1255,6 +1236,32 @@ static boolean M_DemoBinds(INT32 ch)
 	}
 	return true;
 }
+
+// if the menu is being used during a wipe, running routines can be dangerous!
+// buffer a single input, then wait for the wipe to end
+static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
+{
+	if (!WipeInAction)
+		return false;
+
+	// these routines are allowed to run during wipes
+	// solely to make the menus less annoying to use
+	if (routine == NULL
+	 || (routine == MR_SelectableClearMenus && !currentMenu->quitroutine)
+	 || routine == MR_Options
+	 || routine == MR_SetupMultiPlayer
+	 || routine == MR_SetupControlsMenu
+	 || routine == MR_ChangeControl
+	)
+		return false;
+
+	noFurtherInput = ch;
+	S_StartSound(NULL, sfx_kc50);
+	return true;
+}
+
+// use this when routine being NULL isn't a free pass
+static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
 //
 // M_Responder
@@ -1435,10 +1442,12 @@ boolean M_Responder(event_t *ev)
 		{
 			if (ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE || ch == KEY_ENTER)
 			{
+				if (M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				if (messagebox.routine)
 					messagebox.routine(ch);
 				messagebox.active = false;
-				noFurtherInput = true;
+				noFurtherInput = -1;
 			}
 		}
 		else
@@ -1453,7 +1462,7 @@ boolean M_Responder(event_t *ev)
 	// F-Keys
 	if (!menustack[0])
 	{
-		noFurtherInput = true;
+		noFurtherInput = -1;
 
 		switch (ch)
 		{
@@ -1469,16 +1478,16 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F4: // Sound Volume
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
 				M_EnterMenu(MN_OP_SOUND, true, 0);
-				itemOn = 0;
+				M_SetItemOn(MN_OP_SOUND, "SOUND");
 				return true;
 
 			case KEY_F5: // Video Mode
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1490,7 +1499,7 @@ boolean M_Responder(event_t *ev)
 				return true;
 
 			case KEY_F7: // Options
-				if (modeattacking)
+				if (modeattacking || WipeInAction)
 					return true;
 				M_StartControlPanel();
 				M_EnterMenu(MN_OP_MAIN, true, 0);
@@ -1519,13 +1528,15 @@ boolean M_Responder(event_t *ev)
 					M_StartControlPanel();
 				return true;
 		}
-		noFurtherInput = false; // turns out we didn't care
+		noFurtherInput = 0; // turns out we didn't care
 		return false;
 	}
 
 	// Handle menuitems which need a specific key handling
 	if (currentMenu->keyhandler)
 	{
+		if (M_WipeBuffer(ch, currentMenu->keyhandler))
+			return true;
 		if (shiftdown && ch >= 32 && ch <= 127)
 			ch = shiftxform[ch];
 		if (currentMenu->keyhandler(ch))
@@ -1537,8 +1548,19 @@ boolean M_Responder(event_t *ev)
 	// G: nevermind we have combi menuitems now
 	menuitem_t *item = currentMenu->numitems ? &currentMenu->menuitems[itemOn] : NULL;
 
-	if (item && item->cvar && !item->cvar->PossibleValue && M_ChangeStringCvar(ch))
-		return true;
+	// string cvars accept any keyboard input
+	if (item && item->cvar && !item->cvar->PossibleValue)
+	{
+		if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+			return true;
+
+		if (M_TextInputHandle(&menuinput, ch))
+		{
+			S_StartSound(NULL, sfx_menu1); // Tails
+			CV_Set(item->cvar, menuinput.buffer);
+			return true;
+		}
+	}
 
 	if (menustack[0] == MN_PLAYBACK && !con_destlines)
 	{
@@ -1558,6 +1580,7 @@ boolean M_Responder(event_t *ev)
 	}
 
 	INT16 oldItemOn = itemOn; // prevent infinite loop
+	INT16 newItemOn = itemOn;
 
 	// Keys usable within menu
 	switch (ch)
@@ -1566,10 +1589,11 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			do if (++itemOn >= currentMenu->numitems)
-				itemOn = 0;
-			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+			do if (++newItemOn >= currentMenu->numitems)
+				newItemOn = 0;
+			while (oldItemOn != newItemOn && !M_ItemSelectable(&currentMenu->menuitems[newItemOn]));
 
+			M_RawSetItemOn(currentMenu, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
@@ -1577,16 +1601,20 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			do if (--itemOn < 0)
-				itemOn = currentMenu->numitems - 1;
-			while (oldItemOn != itemOn && !M_ItemSelectable(&currentMenu->menuitems[itemOn]));
+			do if (--newItemOn < 0)
+				newItemOn = currentMenu->numitems - 1;
+			while (oldItemOn != newItemOn && !M_ItemSelectable(&currentMenu->menuitems[newItemOn]));
 
+			M_RawSetItemOn(currentMenu, newItemOn);
 			S_StartSound(NULL, sfx_menu1);
 			return true;
 
 		case KEY_LEFTARROW:
 		case KEY_RIGHTARROW:
 			if (!item || !(item->cvar || item->status & IT_ARROWS))
+				return true;
+
+			if (M_WipeBuffer(ch, item->cvar ? (item->cvar->flags & CV_CALL ? MR_Dummy : NULL) : item->routine))
 				return true;
 
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
@@ -1603,7 +1631,7 @@ boolean M_Responder(event_t *ev)
 			if (!item)
 				return true;
 
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
 
 			if (menustack[0] == MN_PLAYBACK)
@@ -1620,24 +1648,33 @@ boolean M_Responder(event_t *ev)
 
 			if (item->submenu)
 			{
+				if (M_WipeBuffer(ch, menudefs[item->submenu].enterroutine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_EnterMenu(item->submenu, true, argument);
 			}
 			else if (item->routine)
 			{
+				if (M_WipeBuffer(ch, item->routine))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				item->routine(argument);
 			}
 			else if (item->cvar && item->cvar->PossibleValue) // not for string cvars!
 			{
+				if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
+					return true;
 				S_StartSound(NULL, sfx_menu1);
 				M_ChangeCvar(item, 1); // right arrow
 			}
 			return true;
 
 		case KEY_ESCAPE:
-			noFurtherInput = true;
+			noFurtherInput = -1;
 			currentMenu->lastOn = itemOn;
+
+			if (M_WipeBuffer(ch, currentMenu->quitroutine))
+				return true;
 
 			//If we entered the game search menu, but didn't enter a game,
 			//make sure the game doesn't still think we're in a netgame.
@@ -1651,12 +1688,23 @@ boolean M_Responder(event_t *ev)
 			return true;
 
 		case KEY_BACKSPACE:
+			// detach any keys associated with the game control
+			if (item && item->routine == MR_ChangeControl)
+			{
+				G_ClearControlKeys(setupcontrols, item->argument);
+				S_StartSound(NULL, sfx_shldls);
+				return true;
+			}
+
 			if (!item || !item->cvar
 			 || item->cvar == &cv_chooseskin
 			 || item->cvar == &cv_dummystaff
 			 || item->cvar == &cv_nextmap
 			 || item->cvar == &cv_newgametype
 			 || item->cvar == &cv_dummymultiplayer)
+				return true;
+
+			if (item->cvar->flags & CV_CALL && M_WipeBuffer(ch, MR_Dummy))
 				return true;
 
 			if (menustack[0] != MN_OP_SOUND || itemOn > 3)
@@ -1848,7 +1896,9 @@ void M_ClearMenus(boolean callexitmenufunc)
 			currentMenu->quitroutine(0);
 
 		// Save the config file. I'm sick of crashing the game later and losing all my changes!
-		COM_BufAddText(va("saveconfig \"%s\" -silent\n", configfile));
+		char buf[sizeof(configfile) + 50];
+		sprintf(buf, "saveconfig \"%s\" -silent\n", configfile);
+		COM_BufAddText(buf);
 
 		if (currentMenu->exitwipe >= 0)
 		{
@@ -1872,7 +1922,6 @@ void M_ClearMenus(boolean callexitmenufunc)
 //
 static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 {
-	INT16 i;
 	menu_t *menudef = &menudefs[menunum];
 
 	// If you're going from a menu to itself, why are you running the quitroutine? You're not quitting it! -SH
@@ -1882,30 +1931,9 @@ static void M_SetupNextMenu(menutype_t menunum, boolean callexit)
 	M_HandleMenuPresState(menunum);
 
 	currentMenu = menudef;
-	itemOn = currentMenu->lastOn;
+	M_RawSetItemOn(currentMenu, currentMenu->lastOn);
 
 	hidetitlemap = false;
-
-	if (!currentMenu->numitems)
-		return;
-
-	// in case of...
-	if (itemOn >= currentMenu->numitems)
-		itemOn = currentMenu->numitems - 1;
-
-	// the curent item can be disabled,
-	// this code go up until an enabled item found
-	if (!M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-	{
-		for (i = 0; i < currentMenu->numitems; i++)
-		{
-			if (M_ItemSelectable(&currentMenu->menuitems[i]))
-			{
-				itemOn = i;
-				break;
-			}
-		}
-	}
 }
 
 // pop the active menu from the stack
@@ -1960,8 +1988,18 @@ boolean M_MouseNeeded(void)
 //
 void M_Ticker(void)
 {
-	// reset input trigger
-	noFurtherInput = false;
+	// send buffered input from wipe?
+	if (noFurtherInput > 0 && !WipeInAction)
+	{
+		event_t fake;
+		fake.device = 0;
+		fake.type = ev_keydown;
+		fake.data1 = noFurtherInput;
+		D_PostEvent(&fake);
+		noFurtherInput = 0;
+	}
+	else if (noFurtherInput == -1 || !WipeInAction)
+		noFurtherInput = 0;
 
 	if (dedicated)
 		return;
@@ -2175,7 +2213,7 @@ static void M_DrawMenuTooltips(void)
 			lastitemon = itemOn;
 		}
 
-		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM, alphatimer);
+		M_DrawSplitText(BASEVIDWIDTH / 2, BASEVIDHEIGHT-50, V_SNAPTOBOTTOM|MENUCAPS, alphatimer);
 		if (alphatimer > 0 && renderisnewtic)
 			alphatimer--;
 	}
@@ -2189,7 +2227,6 @@ void M_DrawTextBox(INT32 x, INT32 y, INT32 width, INT32 boxlines)
 {
 	// Solid color textbox.
 	V_DrawFill(x+5, y+5, width*8+6, boxlines*8+6, 159);
-	//V_DrawFill(x+8, y+8, width*8, boxlines*8, 31);
 }
 
 // horizontally centered text
@@ -2297,10 +2334,10 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			w = M_StringCvarLength(cv);
 
 			M_DrawTextBox(x + xofs, y + yofs, w, 1);
-			V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
-			if (selected && skullAnimCounter < 4) // blink cursor
-				V_DrawCharacter(x + xofs + 8 + V_StringWidth(cv->string, vflags|V_ALLOWLOWERCASE), y + yofs + 8,
-					'_' | (vflags & ~(V_FLIP|V_PARAMMASK)), false);
+			if (selected)
+				M_DrawTextInput(x + xofs + 8, y + yofs + 8, &menuinput, vflags|V_ALLOWLOWERCASE);
+			else
+				V_DrawString(x + xofs + 8, y + yofs + 8, vflags|V_ALLOWLOWERCASE, cv->string);
 		}
 		else if (item->status & IT_SLIDER)
 		{
@@ -2455,7 +2492,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 	fixed_t scale = item->status & IT_SMALL ? FRACUNIT/2 : FRACUNIT;
 	int font;
 	INT32 colorflag;
-	INT32 (*widthfunc)(const char *string, INT32 option);
+	INT32 (*widthfunc)(const char *string, INT32 length, INT32 option);
 
 	if (item->status & IT_SECRET)
 	{
@@ -2538,24 +2575,24 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		vflags |= V_6WIDTHSPACE; // FALLTHRU
 	case ITF_THIN:
 		font = TINY_FONT;
-		widthfunc = V_ThinStringWidth;
+		widthfunc = V_ThinSubStringWidth;
 		break;
 
 	case ITF_HEADER:
 		x -= 16; // FALLTHRU
 	default:
 		font = HU_FONT;
-		widthfunc = V_StringWidth;
+		widthfunc = V_SubStringWidth;
 		break;
 	}
 
 	if (item->status & IT_CENTER)
-		width = widthfunc(string, vflags)/2;
+		width = widthfunc(string, -1, vflags)/2;
 	else if (item->status & IT_RIGHT)
-		width = widthfunc(string, vflags);
+		width = widthfunc(string, -1, vflags);
 
 	if (item->status & IT_STICKER)
-		M_DrawSticker(x, y + 2, widthfunc(string, vflags), vflags & ~V_FLIP, true);
+		M_DrawSticker(x, y + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
 
 	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
@@ -2695,7 +2732,9 @@ void MD_DrawGenericMenu(void)
 
 	// DRAW THE SKULL CURSOR
 	if (M_ItemSelectable(&currentMenu->menuitems[itemOn]))
-		V_DrawScaledPatch(cursorx, cursory, 0, W_CachePatchName("M_CURSOR", PU_CACHE));
+		V_DrawScaledPatch(cursorx, cursory, (noFurtherInput > 0 ? V_TRANSLUCENT : 0), W_CachePatchName("M_CURSOR", PU_CACHE));
+	if (noFurtherInput > 0)
+		V_DrawSmallString(cursorx, cursory+3, 0, "WAIT");
 
 	x = currentMenu->x - 20 + currentMenu->cursoroffset;
 	if (cliptop)
@@ -3122,15 +3161,14 @@ INT32 MR_HandleImageDef(INT32 choice)
 			if (itemOn >= (INT16)(currentMenu->numitems-1))
 				break;
 			S_StartSound(NULL, sfx_menu1);
-			itemOn++;
+			M_RawSetItemOn(currentMenu, itemOn + 1);
 			break;
 
 		case KEY_LEFTARROW:
 			if (!itemOn)
 				break;
-
 			S_StartSound(NULL, sfx_menu1);
-			itemOn--;
+			M_RawSetItemOn(currentMenu, itemOn - 1);
 			break;
 
 		default:
@@ -3482,16 +3520,14 @@ void MD_DrawAddons(void)
 	y = BASEVIDHEIGHT - currentMenu->y + 1;
 
 	M_DrawTextBox(x - (21 + 5), y, MAXSTRINGLENGTH, 1);
-	if (menusearch[0])
-		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE, menusearch+1);
+
+	if (menusearch.length)
+		M_DrawTextInput(x - 18, y + 8, &menusearch, V_ALLOWLOWERCASE);
 	else
 		V_DrawString(x - 18, y + 8, V_ALLOWLOWERCASE|V_TRANSLUCENT, "Type to search...");
-	if (skullAnimCounter < 4)
-		V_DrawCharacter(x - 18 + V_StringWidth(menusearch+1, 0), y + 8,
-			'_' | 0x80, false);
 
 	x -= (21 + 5 + 16);
-	V_DrawSmallScaledPatch(x, y + 4, (menusearch[0] ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
+	V_DrawSmallScaledPatch(x, y + 4, (menusearch.length ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+3]);
 
 	x = BASEVIDWIDTH - x - 16;
 	V_DrawSmallScaledPatch(x, y + 4, ((!majormods) ? 0 : V_TRANSLUCENT), addonsp[NUM_EXT+4]);
@@ -3509,48 +3545,12 @@ static void M_AddonExec(INT32 ch)
 	COM_BufAddText(va("exec \"%s%s\"", menupath, dirmenu[dir_on[menudepthleft]]+DIR_STRING));
 }
 
-#define len menusearch[0]
-static boolean M_ChangeStringAddons(INT32 choice)
-{
-	if (shiftdown && choice >= 32 && choice <= 127)
-		choice = shiftxform[choice];
-
-	switch (choice)
-	{
-		case KEY_DEL:
-			if (len)
-			{
-				len = menusearch[1] = 0;
-				return true;
-			}
-			break;
-		case KEY_BACKSPACE:
-			if (len)
-			{
-				menusearch[1+--len] = 0;
-				return true;
-			}
-			break;
-		default:
-			if (choice >= 32 && choice <= 127)
-			{
-				if (len < MAXSTRINGLENGTH - 1)
-				{
-					menusearch[1+len++] = (char)choice;
-					menusearch[1+len] = 0;
-					return true;
-				}
-			}
-			break;
-	}
-	return false;
-}
-#undef len
-
 INT32 MR_HandleAddons(INT32 choice)
 {
-	if (M_ChangeStringAddons(choice))
+	if (M_TextInputHandle(&menusearch, choice))
 	{
+		S_StartSound(NULL,sfx_menu1);
+
 		char *tempname = NULL;
 		if (dirmenu && dirmenu[dir_on[menudepthleft]])
 			tempname = Z_StrDup(dirmenu[dir_on[menudepthleft]]+DIR_STRING); // don't need to I_Error if can't make - not important, just QoL
@@ -4124,7 +4124,7 @@ void MD_DrawReplayStartMenu(void)
 			V_DrawString(BASEVIDWIDTH-92, STARTY + i*20 + 9, V_SNAPTOTOP, va("%d", demolist[dir_on[menudepthleft]].standings[i].timeorscore));
 
 		// Character face!
-		if (demolist[dir_on[menudepthleft]].standings[0].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[0].skin].facewant) != LUMPERROR)
+		if (demolist[dir_on[menudepthleft]].standings[i].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[i].skin].facewant) != LUMPERROR)
 		{
 			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[i].skin][FACE_RANK];
 			colormap = R_GetTranslationColormap(
@@ -4220,11 +4220,9 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
-	M_ClearMenus(false);
-	demo.loadfiles = M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-	demo.ignorefiles = !M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH");
-
-	G_DoPlayDemo(demolist[dir_on[menudepthleft]].filepath);
+	COM_BufAddText(va("playdemo %s %s",
+	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
 	return true;
 }
 
@@ -4625,14 +4623,16 @@ INT32 MR_Options(INT32 choice)
 {
 	(void)choice;
 
+	boolean gamecheck = (Playing() || demo.playback);
+
 	// if the player is not admin or server, disable gameplay & server options
 	M_SetItemDisabled(MN_OP_MAIN, "GAMEPLAY", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
 	M_SetItemDisabled(MN_OP_MAIN, "SERVER", Playing() && !(server || IsPlayerAdmin(consoleplayer)));
 
-	// no credits or data erasing in-game
-	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", Playing());
-	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", Playing());
-	M_SetItemDisabled(MN_OP_DATA, "ERASE", Playing());
+	// no credits or data erasing in-game/during replays
+	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", gamecheck);
+	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", gamecheck);
+	M_SetItemDisabled(MN_OP_DATA, "ERASE", gamecheck);
 
 	M_SetItemSecret(MN_OP_GAME, "ENCORE", !M_SecretUnlocked(SECRET_ENCORE));
 
@@ -5733,9 +5733,7 @@ INT32 MR_ReplayStaff(INT32 choice)
 	if (l == LUMPERROR)
 		return false;
 
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
-	G_DoPlayDemo(va("%sS%02u",G_BuildMapName(cv_nextmap.value),cv_dummystaff.value));
+	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
 
@@ -5768,8 +5766,6 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 {
 	const char *which;
 	char *gamemode = M_AppendGametypeAndModName();
-	M_ClearMenus(true);
-	demo.loadfiles = false; demo.ignorefiles = true; // Just assume that record attack replays have the files needed
 
 	switch(arg) {
 	default:
@@ -5784,12 +5780,12 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 		break;
 	case 3: // guest
 		// srb2/replay/main/map01-guest.lmp
-		G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+		COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
 		Z_Free(gamemode);
 		return true;
 	}
 	// srb2/replay/main/map01-sonic-time-best.lmp
-	G_DoPlayDemo(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
+	COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
 	Z_Free(gamemode);
 	return true;
 }
@@ -6301,7 +6297,7 @@ static void M_ConnectMenu(INT32 choice)
 	// first page of servers
 	CV_SetValue(&cv_dummyserverpage, 0);
 	M_EnterMenu(MN_MP_CONNECT, true, 0);
-	itemOn = 0;
+	M_SetItemOn(MN_MP_CONNECT, "SORTING");
 
 #if defined (MASTERSERVER) && defined (HAVE_THREADS)
 	I_lock_mutex(&ms_QueryId_mutex);
@@ -6442,7 +6438,7 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 	x = BASEVIDWIDTH/2 - w/2;
 	y = y + 60 - i;
 
-	if ((levellistmode != LLM_TIMEATTACK) && (item->cvar == &cv_nextmap)) // so it doesent show in record attack menu
+	if ((levellistmode != LLM_TIMEATTACK) && (levellistmode != LLM_ITEMBREAKER) && (item->cvar == &cv_nextmap)) // so it doesent show in record attack menu
 	{
 		char encoretoggle[40] = {0};
 		const char *item1 = gamecontrol[0][gc_fire][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_fire][0]) : NULL;
@@ -7347,7 +7343,6 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 
 	setupcontrolplayer = arg + 1;
 	setupcontrols = gamecontrol[arg];        // was called from main Options (for console player, then)
-	currentMenu->lastOn = itemOn;
 
 	// Set proper gamepad options
 	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
@@ -7372,24 +7367,6 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "CENTERVIEW", player1); // Center View
 	*/
 
-	return true;
-}
-
-INT32 MR_HandleControlsMenu(INT32 ch)
-{
-	if (currentMenu->menuitems[itemOn].routine != MR_ChangeControl)
-		return false;
-
-	switch (ch)
-	{
-	case KEY_BACKSPACE:
-		// detach any keys associated with the game control
-		G_ClearControlKeys(setupcontrols, currentMenu->menuitems[itemOn].argument);
-		S_StartSound(NULL, sfx_shldls);
-		break;
-	default:
-		return false;
-	}
 	return true;
 }
 
@@ -7956,7 +7933,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			if (((column*height)+row) >= currentMenu->numitems)
 				column = 0;
 			next = min(((column*height)+row), currentMenu->numitems-1);
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_LEFTARROW:
@@ -7969,7 +7946,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			next = max(((column*height)+row), 0);
 			if (next >= currentMenu->numitems)
 				next = currentMenu->numitems-1;
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_DOWNARROW:
@@ -7978,7 +7955,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			if (((column*height)+row) >= currentMenu->numitems)
 				row = 0;
 			next = min(((column*height)+row), currentMenu->numitems-1);
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_UPARROW:
@@ -7991,7 +7968,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			next = max(((column*height)+row), 0);
 			if (next >= currentMenu->numitems)
 				next = currentMenu->numitems-1;
-			itemOn = next;
+			M_RawSetItemOn(currentMenu, next);
 			break;
 
 		case KEY_ENTER:

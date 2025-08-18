@@ -95,6 +95,71 @@ UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player)
 	return spr2;
 }
 
+// converts the kart player frame in inframe to the equivalent sprite2 + frame
+UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
+{
+	UINT8 spr2, frame = 0;
+#define F(x) case x - 'A':
+	switch (inframe & FF_FRAMEMASK)
+	{
+	F('A') F('B')
+		spr2 = SPR2_STIN;
+		frame = inframe & 1;
+		break;
+	F('C') F('D')
+		spr2 = SPR2_STIL;
+		frame = inframe & 1;
+		break;
+	F('E') F('F')
+		spr2 = SPR2_STIR;
+		frame = inframe & 1;
+		break;
+	F('G')
+		spr2 = SPR2_SLWN;
+		break;
+	F('H')
+		spr2 = SPR2_SLWL;
+		break;
+	F('I')
+		spr2 = SPR2_SLWR;
+		break;
+	F('J')
+		spr2 = SPR2_FSTN;
+		break;
+	F('K')
+		spr2 = SPR2_FSTL;
+		break;
+	F('L')
+		spr2 = SPR2_FSTR;
+		break;
+	F('M') F('N')
+		spr2 = SPR2_DRLN;
+		frame = inframe & 1;
+		break;
+	F('O') F('P')
+		spr2 = SPR2_DRRN;
+		frame = inframe & 1;
+		break;
+	F('Q')
+		spr2 = SPR2_SPIN;
+		break;
+	F('R')
+		spr2 = SPR2_KART;
+		break;
+	F('S')
+		spr2 = SPR2_SIGN;
+		break;
+	default:
+		spr2 = SPR2_KART;
+		frame = (inframe & FF_FRAMEMASK) - 18; // not 19! frame 0 is squish
+		break;
+	}
+#undef F
+	if (outframe)
+		*outframe = frame;
+	return P_GetSkinSprite2(skin, spr2, NULL);
+}
+
 static void Sk_SetDefaultValue(skin_t *skin)
 {
 	INT32 i;
@@ -480,6 +545,10 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 		if (!sonic)
 		{
 			const char *sprname = W_CheckNameForNumPwad(wadnum, *lump);
+			for (newlastlump = *lump; newlastlump < *lastlump; newlastlump++)
+				if (memcmp(W_CheckNameForNumPwad(wadnum, newlastlump), sprname, 4))
+					break;
+			*lastlump = newlastlump;
 			R_AddSingleSpriteDef(sprname, &tmp, wadnum, *lump, *lastlump);
 		}
 
@@ -662,7 +731,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 					stoken + stokenadjust))
 			{
 				skin->soundsid[S_sfx[i].skinsound] =
-					S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].pitch, true);
+					S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
 				found = true;
 			}
 		}

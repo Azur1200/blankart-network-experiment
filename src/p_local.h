@@ -28,6 +28,8 @@
 extern "C" {
 #endif
 
+extern consvar_t cv_naturalcamera;
+
 #define FLOATSPEED (FRACUNIT*4)
 
 //#define VIEWHEIGHTS "41"
@@ -165,7 +167,6 @@ extern fixed_t t_cam_dist[MAXSPLITSCREENPLAYERS], t_cam_height[MAXSPLITSCREENPLA
 void P_AddPlayerScore(player_t *player, UINT32 amount);
 void P_ResetCamera(player_t *player, camera_t *thiscam);
 boolean P_TryCameraMove(fixed_t x, fixed_t y, camera_t *thiscam);
-void P_SlideCameraMove(camera_t *thiscam);
 void P_DemoCameraMovement(camera_t *cam, UINT8 num);
 void P_ToggleDemoCamera(UINT8 viewnum);
 boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcalled);
@@ -522,6 +523,12 @@ BlockItReturn_t PIT_PushableMoved(mobj_t *thing);
 
 void P_DoSpringEx(mobj_t * object,fixed_t scaleVal, fixed_t vertispeed, fixed_t horizspeed, angle_t finalAngle);
 boolean P_DoSpring(mobj_t *spring, mobj_t *object);
+
+INT32 P_GetSectorLightNumAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+INT32 P_GetLightLevelFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+INT32 P_GetSectorLightLevelAt(fixed_t x, fixed_t y, fixed_t z);
+extracolormap_t *P_GetColormapFromSectorAt(sector_t *sector, fixed_t x, fixed_t y, fixed_t z);
+extracolormap_t *P_GetSectorColormapAt(fixed_t x, fixed_t y, fixed_t z);
 
 fixed_t P_GetFOFTopZAt (ffloor_t *rover, fixed_t x, fixed_t y);
 fixed_t P_GetFOFBottomZAt (ffloor_t *rover, fixed_t x, fixed_t y);

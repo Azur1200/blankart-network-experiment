@@ -61,6 +61,7 @@ static lua_CFunction liblist[] = {
 	LUA_HudLib, // HUD stuff
 	LUA_FollowerLib, // follower_t, followers[]
 	LUA_TerrainLib, // t_splash_t, t_footstep_t, t_overlay_t, terrain_t
+	LUA_WaypointLib, // waypoint_t
 	NULL
 };
 
@@ -385,6 +386,18 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		return 1;
 	} else if (fastcmp(word,"chainingactive")) {
 		lua_pushinteger(L, chainingactive);
+		return 1;
+	} else if (fastcmp(word,"slipdashactive")) {
+		lua_pushinteger(L, slipdashactive);
+		return 1;
+	} else if (fastcmp(word,"slopeboostactive")) {
+		lua_pushinteger(L, slopeboostactive);
+		return 1;
+	} else if (fastcmp(word,"purpledriftactive")) {
+		lua_pushinteger(L, purpledriftactive);
+		return 1;
+	} else if (fastcmp(word,"invintype")) {
+		lua_pushinteger(L, invintype);
 		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
 		lua_pushinteger(L, hyubgone);
@@ -1019,6 +1032,10 @@ void LUA_InvalidateLevel(void)
 		LUA_InvalidateUserdata(nodes[i].children);
 	}
 #endif
+	for (i = 0; i < K_GetNumWaypoints(); i++)
+	{
+		LUA_InvalidateUserdata(K_GetWaypointFromIndex(i));
+	}
 }
 
 void LUA_InvalidateMapthings(void)
@@ -1547,9 +1564,42 @@ static void ArchiveTables(UINT8 **p)
 	}
 }
 
-static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX)
+static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 {
 	UINT8 type = READUINT8(*p);
+
+	if (compat) switch (type)
+	{
+	case 0: // ARCH_NULL
+	case ARCH_TEND:
+		break;
+	case 1: // ARCH_BOOLEAN
+		lua_pushboolean(gL, READUINT8(*p));
+		return 0;
+	case 2: // ARCH_SIGNED
+		type = ARCH_INT32;
+		break;
+	case 3: // ARCH_STRING
+	{
+		UINT16 len = READUINT16(*p);
+		char *value = malloc(len);
+		READMEM(*p, value, len);
+		lua_pushlstring(gL, value, len);
+		free(value);
+		return 0;
+	}
+	default:
+		type += 4; // old ARCH_TABLE is 4, new ARCH_TABLE is 8
+		// ARCH_FFLOOR and ARCH_POLYOBJ inserted between ARCH_SECTOR and ARCH_SLOPE
+		if (type > ARCH_SECTOR)
+#ifdef HAVE_LUA_SEGS
+			type += 4;
+#else
+			type += 2;
+#endif
+		break;
+	}
+
 	switch (type)
 	{
 	case ARCH_NULL:
@@ -1614,7 +1664,15 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX)
 		LUA_PushUserdata(gL, &states[READUINT16(*p)], META_STATE);
 		break;
 	case ARCH_MOBJ:
-		LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
+		if (compat)
+		{
+			// Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
+			CONS_Alert(CONS_WARNING, "Couldn't read mobj_t\n");
+			*p += sizeof(UINT32);
+			lua_pushnil(gL);
+		}
+		else
+			LUA_PushUserdata(gL, P_FindNewPosition(READUINT32(*p)), META_MOBJ);
 		break;
 	case ARCH_PLAYER:
 		LUA_PushUserdata(gL, &players[READUINT8(*p)], META_PLAYER);
@@ -1672,7 +1730,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX)
 	return 0;
 }
 
-static void UnArchiveExtVars(UINT8 **p, void *pointer)
+static void UnArchiveExtVars(UINT8 **p, void *pointer, boolean compat)
 {
 	int TABLESINDEX;
 	UINT16 field_count = READUINT16(*p);
@@ -1689,7 +1747,7 @@ static void UnArchiveExtVars(UINT8 **p, void *pointer)
 	for (i = 0; i < field_count; i++)
 	{
 		READSTRING(*p, field);
-		UnArchiveValue(p, TABLESINDEX);
+		UnArchiveValue(p, TABLESINDEX, compat);
 		lua_setfield(gL, -2, field);
 	}
 
@@ -1707,11 +1765,11 @@ static int NetUnArchive(lua_State *L)
 	savebuffer_t *save = lua_touserdata(L, lua_upvalueindex(2));
 	int i, n = lua_gettop(L);
 	for (i = 1; i <= n; i++)
-		UnArchiveValue(&save->p, TABLESINDEX);
+		UnArchiveValue(&save->p, TABLESINDEX, false);
 	return n;
 }
 
-static void UnArchiveTables(UINT8 **p)
+static void UnArchiveTables(UINT8 **p, boolean compat)
 {
 	int TABLESINDEX;
 	UINT16 i, n;
@@ -1728,13 +1786,13 @@ static void UnArchiveTables(UINT8 **p)
 		lua_rawgeti(gL, TABLESINDEX, i);
 		while (true)
 		{
-			UINT8 e = UnArchiveValue(p,TABLESINDEX); // read key
+			UINT8 e = UnArchiveValue(p, TABLESINDEX, compat); // read key
 			if (e == 1) // End of table
 				break;
-			else if (e == 2) // Key contains a new table
+			else if (!compat && e == 2) // Key contains a new table
 				n++;
 
-			if (UnArchiveValue(p,TABLESINDEX) == 2) // read value
+			if (UnArchiveValue(p, TABLESINDEX, compat) == 2) // read value
 				n++;
 
 			if (lua_isnil(gL, -2)) // if key is nil (if a function etc was accidentally saved)
@@ -1746,7 +1804,7 @@ static void UnArchiveTables(UINT8 **p)
 				lua_rawset(gL, -3);
 		}
 
-		metatableid = READUINT16(*p);
+		metatableid = compat ? 0 : READUINT16(*p);
 		if (metatableid)
 		{
 			// setmetatable(table, registry.metatables[metatableid])
@@ -1766,8 +1824,14 @@ void LUA_Step(void)
 {
 	if (!gL)
 		return;
-	lua_settop(gL, 0);
-	lua_gc(gL, LUA_GCSTEP, 1);
+
+	if (lua_gettop(gL) != 0)
+	{
+		// TODO: Fix lua stack garbage so print can be always on.
+		//CONS_Alert(CONS_WARNING, "Eek, there is garbage on lua stack!\n");
+		lua_settop(gL, 0);
+		lua_gc(gL, LUA_GCSTEP, 1);
+	}
 }
 
 void LUA_Archive(savebuffer_t *save, boolean network)
@@ -1812,7 +1876,7 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 		lua_pop(gL, 1); // pop tables
 }
 
-void LUA_UnArchive(savebuffer_t *save, boolean network)
+void LUA_UnArchive(savebuffer_t *save, boolean network, boolean compat)
 {
 	UINT32 mobjnum;
 	INT32 i;
@@ -1825,7 +1889,7 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 	{
 		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
 			continue;
-		UnArchiveExtVars(&save->p, &players[i]);
+		UnArchiveExtVars(&save->p, &players[i], compat);
 	}
 
 	if (network == true)
@@ -1838,14 +1902,14 @@ void LUA_UnArchive(savebuffer_t *save, boolean network)
 					continue;
 				if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
 					continue;
-				UnArchiveExtVars(&save->p, th); // apply variables
+				UnArchiveExtVars(&save->p, th, false); // apply variables
 			}
 		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
 
 		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
 	}
 
-	UnArchiveTables(&save->p);
+	UnArchiveTables(&save->p, compat);
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables

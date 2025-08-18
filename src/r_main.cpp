@@ -1586,6 +1586,9 @@ void R_RenderPlayerView(void)
 	R_ClearSprites();
 	Portal_InitList();
 
+	// check for new console commands.
+	NetUpdate();
+
 	// The head node is the last node output.
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();

@@ -22,6 +22,7 @@ extern "C" {
 // the current state of the game
 typedef enum
 {
+	FORCEWIPE = -2,     // HACK for menu fading while titlemapinaction; skips the level check
 	GS_NULL = 0,        // At beginning.
 
 	// Fadable gamestates

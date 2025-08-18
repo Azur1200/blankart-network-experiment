@@ -90,6 +90,7 @@ extern lumpnum_t st_borderpatchnum;
 extern patch_t *faceprefix[MAXSKINS][NUMFACES];
 
 extern UINT16 objectsdrawn;
+extern tic_t directortoggletimer;
 
 // variable to stop mayonaka static from flickering
 extern consvar_t cv_lessflicker;

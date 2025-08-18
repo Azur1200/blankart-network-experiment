@@ -193,7 +193,10 @@ enum player_e
 	player_nextcheck,
 	player_distancetofinish,
 	player_distancetofinishprev,
+	player_currentwaypoint,
+	player_nextwaypoint,
 	player_airtime,
+	player_bigwaypointgap,
 	player_flashing,
 	player_spinouttimer,
 	player_spinouttype,
@@ -249,6 +252,7 @@ enum player_e
 	player_pickuprings,
 	player_ringdelay,
 	player_ringboost,
+	player_ringtime,
 	player_superring,
 	player_nextringaward,
 	player_ringvolume,
@@ -345,6 +349,8 @@ enum player_e
 	player_splitscreenindex,
 	player_bumpertime,
 	player_ping,
+	player_packetloss,
+	player_loop,
 #ifdef HWRENDER
 	player_fovadd,
 #endif
@@ -378,7 +384,10 @@ static const char *const player_opt[] = {
 	"nextcheck",
 	"distancetofinish",
 	"distancetofinishprev",
+	"currentwaypoint",
+	"nextwaypoint",
 	"airtime",
+	"bigwaypointgap",
 	"flashing",
 	"spinouttimer",
 	"spinouttype",
@@ -434,6 +443,7 @@ static const char *const player_opt[] = {
 	"pickuprings",
 	"ringdelay",
 	"ringboost",
+	"ringtime",
 	"superring",
 	"nextringaward",
 	"ringvolume",
@@ -530,6 +540,8 @@ static const char *const player_opt[] = {
 	"splitscreenindex",
 	"bumpertime",
 	"ping",
+	"packetloss",
+	"loop",
 #ifdef HWRENDER
 	"fovadd",
 #endif
@@ -641,8 +653,17 @@ static int player_get(lua_State *L)
 	case player_distancetofinishprev:
 		lua_pushinteger(L, plr->distancetofinishprev);
 		break;
+	case player_currentwaypoint:
+		LUA_PushUserdata(L, plr->currentwaypoint, META_WAYPOINT);
+		break;
+	case player_nextwaypoint:
+		LUA_PushUserdata(L, plr->nextwaypoint, META_WAYPOINT);
+		break;
 	case player_airtime:
 		lua_pushinteger(L, plr->airtime);
+		break;
+	case player_bigwaypointgap:
+		lua_pushinteger(L, plr->bigwaypointgap);
 		break;
 	case player_flashing:
 		lua_pushinteger(L, plr->flashing);
@@ -808,6 +829,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_ringboost:
 		lua_pushinteger(L, plr->ringboost);
+		break;
+	case player_ringtime:
+		lua_pushinteger(L, plr->ringtime);
 		break;
 	case player_superring:
 		lua_pushinteger(L, plr->superring);
@@ -1117,6 +1141,12 @@ static int player_get(lua_State *L)
 	case player_ping:
 		lua_pushinteger(L, playerpingtable[( plr - players )]);
 		break;
+	case player_packetloss:
+		lua_pushinteger(L, playerpacketlosstable[plr - players]);
+		break;
+	case player_loop:
+		LUA_PushUserdata(L, &plr->loop, META_SONICLOOPVARS);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		lua_pushfixed(L, plr->fovadd);
@@ -1280,11 +1310,22 @@ static int player_set(lua_State *L)
 		plr->nextcheck = luaL_checkinteger(L, 3);
 		break;
 	case player_distancetofinish:
-		return NOSET;
+		plr->distancetofinish = luaL_checkfixed(L, 3);
+		break;
 	case player_distancetofinishprev:
+		plr->distancetofinishprev = luaL_checkfixed(L, 3);
+		break;
+	case player_currentwaypoint:
 		return NOSET;
+		break;
+	case player_nextwaypoint:
+		return NOSET;
+		break;
 	case player_airtime:
 		plr->airtime = luaL_checkinteger(L, 3);
+		break;
+	case player_bigwaypointgap:
+		plr->bigwaypointgap = luaL_checkinteger(L, 3);
 		break;
 	case player_flashing:
 		plr->flashing = luaL_checkinteger(L, 3);
@@ -1450,6 +1491,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_ringboost:
 		plr->ringboost = luaL_checkinteger(L, 3);
+		break;
+	case player_ringtime:
+		plr->ringtime = luaL_checkinteger(L, 3);
 		break;
 	case player_superring:
 		plr->superring = luaL_checkinteger(L, 3);
@@ -1735,6 +1779,12 @@ static int player_set(lua_State *L)
 	case player_bumpertime:
 		plr->bumpertime = (tic_t)luaL_checkinteger(L, 3);
 		break;
+	case player_ping:
+		return NOSET;
+	case player_packetloss:
+		return NOSET;
+	case player_loop:
+		return NOSET;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);
@@ -2185,13 +2235,13 @@ static int kartstuff_set(lua_State *L)
 				plr->driftcharge  = i;
 				break;
 			case k_driftboost:
-				plr->driftboost = i;
+				plr->driftboost = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_boostcharge:
 				plr->boostcharge = i;
 				break;
 			case k_startboost:
-				plr->startboost = i;
+				plr->startboost = CLAMP(i, 0, UINT8_MAX);
 				break;
 			/*case k_jmp:
 				plr->pflags |= PF_DRIFTINPUT;
@@ -2268,26 +2318,26 @@ static int kartstuff_set(lua_State *L)
 				plr->stolentimer = i;
 				break;
 			case k_sneakertimer:
-				plr->sneakertimer = i;
+				plr->sneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_growshrinktimer:
-				plr->growshrinktimer = i;
+				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_squishedtimer:
-				plr->squishedtimer = i;
+				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_rocketsneakertimer:
-				plr->rocketsneakertimer = i;
+				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_invincibilitytimer:
-				plr->invincibilitytimer = i;
+				plr->invincibilitytimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_eggmanheld:
 				if (i > 0)
 					plr->itemflags |= IF_EGGMANOUT;
 				break;
 			case k_eggmanexplode:
-				plr->eggmanexplode = i;
+				plr->eggmanexplode = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_eggmanblame:
 				plr->eggmanblame = i;
@@ -2296,13 +2346,13 @@ static int kartstuff_set(lua_State *L)
 				plr->lastjawztarget = i;
 				break;
 			case k_bananadrag:
-				plr->bananadrag = i;
+				plr->bananadrag = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_spinouttimer:
-				plr->spinouttimer = i;
+				plr->spinouttimer = CLAMP(i, 0, UINT16_MAX);
 				break;
 			case k_wipeoutslow:
-				plr->wipeoutslow = i;
+				plr->wipeoutslow = CLAMP(i, 0, UINT8_MAX);
 				break;
 			case k_justbumped:
 				plr->justbumped = i;
@@ -2530,6 +2580,163 @@ static int ticcmd_set(lua_State *L)
 
 #undef NOFIELD
 
+enum sonicloopvars {
+	sonicloopvars_radius = 0,
+	sonicloopvars_revolution,
+	sonicloopvars_min_revolution,
+	sonicloopvars_max_revolution,
+	sonicloopvars_yaw,
+	sonicloopvars_origin_x,
+	sonicloopvars_origin_y,
+	sonicloopvars_origin_z,
+	sonicloopvars_origin_shift_x,
+	sonicloopvars_origin_shift_y,
+	sonicloopvars_shift_x,
+	sonicloopvars_shift_y,
+	sonicloopvars_flip,
+	sonicloopvars_camera,
+};
+
+static const char *const sonicloopvars_opt[] = {
+	"radius",
+	"revolution",
+	"min_revolution",
+	"max_revolution",
+	"yaw",
+	"origin_x",
+	"origin_y",
+	"origin_z",
+	"origin_shift_x",
+	"origin_shift_y",
+	"shift_x",
+	"shift_y",
+	"flip",
+	"camera",
+	NULL
+};
+
+static int sonicloopvars_get(lua_State *L)
+{
+	sonicloopvars_t *sonicloopvars = *((sonicloopvars_t **)luaL_checkudata(L, 1, META_SONICLOOPVARS));
+	enum sonicloopvars field = luaL_checkoption(L, 2, NULL, sonicloopvars_opt);
+
+	// This should always be valid.
+	I_Assert(sonicloopvars != NULL);
+
+	switch (field)
+	{
+	case sonicloopvars_radius:
+		lua_pushfixed(L, sonicloopvars->radius);
+		break;
+	case sonicloopvars_revolution:
+		lua_pushfixed(L, sonicloopvars->revolution);
+		break;
+	case sonicloopvars_min_revolution:
+		lua_pushfixed(L, sonicloopvars->min_revolution);
+		break;
+	case sonicloopvars_max_revolution:
+		lua_pushfixed(L, sonicloopvars->max_revolution);
+		break;
+	case sonicloopvars_yaw:
+		lua_pushangle(L, sonicloopvars->yaw);
+		break;
+	case sonicloopvars_origin_x:
+		lua_pushfixed(L, sonicloopvars->origin.x);
+		break;
+	case sonicloopvars_origin_y:
+		lua_pushfixed(L, sonicloopvars->origin.y);
+		break;
+	case sonicloopvars_origin_z:
+		lua_pushfixed(L, sonicloopvars->origin.z);
+		break;
+	case sonicloopvars_origin_shift_x:
+		lua_pushfixed(L, sonicloopvars->origin_shift.x);
+		break;
+	case sonicloopvars_origin_shift_y:
+		lua_pushfixed(L, sonicloopvars->origin_shift.y);
+		break;
+	case sonicloopvars_shift_x:
+		lua_pushfixed(L, sonicloopvars->shift.x);
+		break;
+	case sonicloopvars_shift_y:
+		lua_pushfixed(L, sonicloopvars->shift.y);
+		break;
+	case sonicloopvars_flip:
+		lua_pushboolean(L, sonicloopvars->flip);
+		break;
+	case sonicloopvars_camera:
+		LUA_PushUserdata(L, &sonicloopvars->camera, META_SONICLOOPCAMVARS);
+		break;
+	}
+	return 1;
+}
+
+enum sonicloopcamvars {
+	sonicloopcamvars_enter_tic = 0,
+	sonicloopcamvars_exit_tic,
+	sonicloopcamvars_zoom_in_speed,
+	sonicloopcamvars_zoom_out_speed,
+	sonicloopcamvars_dist,
+	sonicloopcamvars_pan,
+	sonicloopcamvars_pan_speed,
+	sonicloopcamvars_pan_accel,
+	sonicloopcamvars_pan_back,
+};
+
+static const char *const sonicloopcamvars_opt[] = {
+	"enter_tic",
+	"exit_tic",
+	"zoom_in_speed",
+	"zoom_out_speed",
+	"dist",
+	"pan",
+	"pan_speed",
+	"pan_accel",
+	"pan_back",
+	NULL
+};
+
+static int sonicloopcamvars_get(lua_State *L)
+{
+	sonicloopcamvars_t *sonicloopcamvars = *((sonicloopcamvars_t **)luaL_checkudata(L, 1, META_SONICLOOPCAMVARS));
+	enum sonicloopcamvars field = luaL_checkoption(L, 2, NULL, sonicloopcamvars_opt);
+
+	// This should always be valid.
+	I_Assert(sonicloopcamvars != NULL);
+
+	switch (field)
+	{
+	case sonicloopcamvars_enter_tic:
+		lua_pushinteger(L, sonicloopcamvars->enter_tic);
+		break;
+	case sonicloopcamvars_exit_tic:
+		lua_pushinteger(L, sonicloopcamvars->exit_tic);
+		break;
+	case sonicloopcamvars_zoom_in_speed:
+		lua_pushinteger(L, sonicloopcamvars->zoom_in_speed);
+		break;
+	case sonicloopcamvars_zoom_out_speed:
+		lua_pushinteger(L, sonicloopcamvars->zoom_out_speed);
+		break;
+	case sonicloopcamvars_dist:
+		lua_pushfixed(L, sonicloopcamvars->dist);
+		break;
+	case sonicloopcamvars_pan:
+		lua_pushangle(L, sonicloopcamvars->pan);
+		break;
+	case sonicloopcamvars_pan_speed:
+		lua_pushfixed(L, sonicloopcamvars->pan_speed);
+		break;
+	case sonicloopcamvars_pan_accel:
+		lua_pushinteger(L, sonicloopcamvars->pan_accel);
+		break;
+	case sonicloopcamvars_pan_back:
+		lua_pushinteger(L, sonicloopcamvars->pan_back);
+		break;
+	}
+	return 1;
+}
+
 int LUA_PlayerLib(lua_State *L)
 {
 	luaL_newmetatable(L, META_PLAYER);
@@ -2582,6 +2789,16 @@ int LUA_PlayerLib(lua_State *L)
 
 		lua_pushcfunction(L, ticcmd_set);
 		lua_setfield(L, -2, "__newindex");
+	lua_pop(L,1);
+	
+	luaL_newmetatable(L, META_SONICLOOPVARS);
+		lua_pushcfunction(L, sonicloopvars_get);
+		lua_setfield(L, -2, "__index");
+	lua_pop(L,1);
+	
+	luaL_newmetatable(L, META_SONICLOOPCAMVARS);
+		lua_pushcfunction(L, sonicloopcamvars_get);
+		lua_setfield(L, -2, "__index");
 	lua_pop(L,1);
 
 	lua_newuserdata(L, 0);
