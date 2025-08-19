@@ -2622,7 +2622,10 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
+	INT32 xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
+
+	K_DrawServerDescrption(xoffset+10, 33);
+	//V_DrawThinString(xoffset+10, 33, V_SNAPTORIGHT|V_6WIDTHSPACE|V_ALLOWLOWERCASE, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())

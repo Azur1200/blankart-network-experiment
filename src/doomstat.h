@@ -676,6 +676,9 @@ extern boolean thwompsactive;
 extern UINT8 lastLowestLap;
 extern SINT8 spbplace;
 extern boolean startedInFreePlay;
+#define MAXSERVERDESCRIPTION 320
+#define MAXSERVERDESCRIPTIONLINE 37
+extern char serverdescription[MAXSERVERDESCRIPTION];
 
 extern tic_t bombflashtimer;	// Used to avoid causing seizures if multiple mines explode close to you :)
 extern boolean legitimateexit;

@@ -1202,6 +1202,8 @@ void D_StartTitle(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
 
+	memset(&serverdescription, 0, sizeof(serverdescription));
+
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();

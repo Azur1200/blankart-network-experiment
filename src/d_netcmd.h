@@ -279,6 +279,8 @@ typedef enum
 	XD_SCHEDULECLEAR, // 36
 	XD_AUTOMATE,    // 37
 	XD_CHEAT,       // 38
+	XD_SCOREBOARDADD, // 39
+	XD_SCOREBOARDCLEAR, // 40
 
 	MAXNETXCMD
 } netxcmd_t;

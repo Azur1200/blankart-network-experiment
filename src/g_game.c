@@ -303,6 +303,7 @@ boolean thwompsactive; // Thwomps activate on lap 2
 UINT8 lastLowestLap; // Last lowest lap, for activating race lap executors
 SINT8 spbplace; // SPB exists, give the person behind better items
 boolean startedInFreePlay; // Map was started in free play
+char serverdescription[MAXSERVERDESCRIPTION]; // Server description for the scoreboard.
 
 // Client-sided, unsynched variables (NEVER use in anything that needs to be synced with other players)
 tic_t bombflashtimer = 0;	// Cooldown before another FlashPal can be intialized by a bomb exploding near a displayplayer. Avoids seizures.

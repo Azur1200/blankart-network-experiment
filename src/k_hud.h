@@ -99,6 +99,8 @@ void K_drawKartFreePlay(void);
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);
 INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, boolean split);
 
+void K_DrawServerDescrption(INT32 x, INT32 y);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
