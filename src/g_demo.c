@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0009
+#define DEMOVERSION 0x000A
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -249,6 +249,7 @@ typedef struct
 	UINT32 raflags;
 	UINT8 gametype;
 	UINT8 numlaps;
+	char serverdescription[MAXSERVERDESCRIPTIONLINE];
 
 	UINT8 numfiles;
 	demofile_t *files;
@@ -662,6 +663,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	UINT8 attack;
 	boolean kart = false, oldkart = false;
 	boolean raflag = true;
+	boolean serverdesc = true;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -671,6 +673,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 	header->raflags = 0;
+	memset(header->serverdescription, 0, sizeof(header->serverdescription));
 	header->empty = false;
 
 	dp += 12;
@@ -685,6 +688,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
+		case 0x0009:
+			serverdesc = false;
+			break;
+
 		default: // too old, cannot support.
 			return HEADER_BADVERSION;
 		}
@@ -692,6 +699,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
 		raflag = false;
+		serverdesc = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -743,6 +751,11 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	if (raflag)
 	{
 		header->raflags = READUINT32(dp);
+	}
+
+	if (serverdesc)
+	{
+		READSTRINGN(dp, header->serverdescription, MAXSERVERDESCRIPTION);
 	}
 
 	if (oldkart)
@@ -2801,6 +2814,7 @@ void G_BeginRecording(void)
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITEUINT32(demobuf.p, raflags);
+	WRITESTRINGN(demobuf.p, serverdescription, MAXSERVERDESCRIPTION);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
 	WRITEUINT8(demobuf.p, numlaps);
 
