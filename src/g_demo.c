@@ -3579,6 +3579,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	demoflags = header.demoflags;
 	raflags = header.raflags;
+	strncpy(serverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
 	gametype = header.gametype;
 	G_SetGametype(gametype);
 	numlaps = header.numlaps;
