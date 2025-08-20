@@ -3574,7 +3574,7 @@ void G_DoPlayDemo(char *defdemoname)
 
 	// demo title
 	memcpy(demo.titlename, header.demotitle, 64);
-	memcpy(serverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
+	strncpy(serverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
 
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
 		;//G_SkipDemoExtraFiles(&demobuf.p);
