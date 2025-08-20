@@ -208,7 +208,7 @@ typedef struct
 	char *name; // NULL = bad netid
 	char *value;
 	boolean stealth;
-	UINT16 errornetid;
+	UINT16 legacynetid;
 } democvar_t;
 
 typedef struct
@@ -847,7 +847,7 @@ skipfiles:
 			UINT16 netid = READUINT16(dp);
 			consvar_t *legacycvar = CV_FindLegacyNetVar(netid);
 			header->cvars[i].name = legacycvar ? strdup(legacycvar->name) : NULL;
-			header->cvars[i].errornetid = netid;
+			header->cvars[i].legacynetid = netid;
 		}
 		else
 		{
@@ -1031,7 +1031,7 @@ void G_LoadDemoCvars(void **p, void (*setvalue)(consvar_t *, const char *, boole
 	{
 		if (header->cvars[i].name == NULL)
 		{
-			CONS_Alert(CONS_WARNING, "Netvar not found with netid %d\n", header->cvars[i].errornetid);
+			CONS_Alert(CONS_WARNING, "Netvar not found with netid %d\n", header->cvars[i].legacynetid);
 			continue;
 		}
 
@@ -3445,7 +3445,7 @@ void G_DeferedPlayDemo(const char *name)
 
 void G_DoPlayDemo(char *defdemoname)
 {
-	UINT16 i;
+	UINT16 i, j;
 	lumpnum_t l;
 	char *n,*pdemoname;
 	char msg[1024];
@@ -3579,7 +3579,19 @@ void G_DoPlayDemo(char *defdemoname)
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
 		;//G_SkipDemoExtraFiles(&demobuf.p);
 	else if (demo.loadfiles)
+	{
 		G_LoadDemoExtraFiles(&header);
+
+		// Generate cvar names for missing Kart addon netids.
+		for (j = 0; j < header.numcvars; j++)
+		{
+			if (header.cvars[j].name == NULL && header.cvars[j].legacynetid)
+			{
+				consvar_t *legacycvar = CV_FindLegacyNetVar(header.cvars[j].legacynetid);
+				header.cvars[j].name = legacycvar ? strdup(legacycvar->name) : NULL;
+			}
+		}
+	}
 	else if (demo.ignorefiles)
 		;//G_SkipDemoExtraFiles(&demobuf.p);
 	else switch (G_CheckDemoExtraFiles(&header, false))
