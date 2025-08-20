@@ -3561,14 +3561,6 @@ void G_DoPlayDemo(char *defdemoname)
 	// demo title
 	memcpy(demo.titlename, header.demotitle, 64);
 
-	gamemap = G_MapNumber(header.maptitle)+1;
-
-	demoflags = header.demoflags;
-	raflags = header.raflags;
-	gametype = header.gametype;
-	G_SetGametype(gametype);
-	numlaps = header.numlaps;
-
 	if (demo.title) // Titledemos should always play and ought to always be compatible with whatever wadlist is running.
 		;//G_SkipDemoExtraFiles(&demobuf.p);
 	else if (demo.loadfiles)
@@ -3607,6 +3599,15 @@ void G_DoPlayDemo(char *defdemoname)
 		pdemoname);
 		goto error;
 	}
+
+	// Moved here so these init properly.
+	gamemap = G_MapNumber(header.maptitle)+1;
+
+	demoflags = header.demoflags;
+	raflags = header.raflags;
+	gametype = header.gametype;
+	G_SetGametype(gametype);
+	numlaps = header.numlaps;
 
 	// ...*map* not loaded?
 	if (!gamemap || (gamemap > nummapheaders) || !mapheaderinfo[gamemap-1] || mapheaderinfo[gamemap-1]->lumpnum == LUMPERROR)
