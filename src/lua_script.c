@@ -1667,7 +1667,7 @@ static UINT8 UnArchiveValue(UINT8 **p, int TABLESINDEX, boolean compat)
 		if (compat)
 		{
 			// Skip this data, we can't read a mobj here, it'd point to garbage and crash the game.
-			CONS_Alert(CONS_WARNING, "Couldn't read mobj_t\n");
+			//CONS_Alert(CONS_WARNING, "Couldn't read mobj_t\n");
 			*p += sizeof(UINT32);
 			lua_pushnil(gL);
 		}
