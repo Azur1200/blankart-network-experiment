@@ -503,6 +503,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 
 	*lump += 1; // start after S_SKIN
 	*lastlump = W_CheckNumForNamePwad("S_END",wadnum,*lump); // stop at S_END
+	*lastlump = min(*lastlump, wadfiles[wadnum]->numlumps); // or end of WAD
 
 	// old wadding practices die hard -- stop at S_SKIN (or P_SKIN) or S_START if they come before S_END.
 	newlastlump = W_FindNextEmptyInPwad(wadnum,*lump);
