@@ -2173,10 +2173,10 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
 	if (connectedservername[0] != '\0')
-		V_DrawThinString(x, y, V_SNAPTORIGHT|V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
+		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
 
 	if (serverdescription[0] != '\0')
-		V_DrawSmallString(x, y+20, V_SNAPTORIGHT|V_6WIDTHSPACE|V_ALLOWLOWERCASE, serverdescription);
+		V_DrawSmallString(x, y+20, V_6WIDTHSPACE|V_ALLOWLOWERCASE, serverdescription);
 
 }
 
