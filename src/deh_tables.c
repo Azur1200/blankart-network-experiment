@@ -1357,6 +1357,7 @@ struct int_const_s const INT_CONST[] = {
 	{"V_SNAPTOLEFT",V_SNAPTOLEFT},
 	{"V_SNAPTORIGHT",V_SNAPTORIGHT},
 	{"V_NOSCALESTART",V_NOSCALESTART},
+	{"V_OFFSET", 0}, // No proper support but its better to not error so it somewhat works :/
 	{"V_SPLITSCREEN",V_SPLITSCREEN},
 	{"V_SLIDEIN",V_SLIDEIN},
 
