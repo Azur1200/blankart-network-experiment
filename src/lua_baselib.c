@@ -3112,8 +3112,44 @@ static int lib_sShowMusicCredit(lua_State *L)
 		if (!player)
 			return LUA_ErrInvalid(L, "player_t");
 	}
+	fixed_t yoffset = luaL_checkfixed(L, 2);
+	UINT16 animtime = lua_isnone(L, 3) ? 5*TICRATE : luaL_checkinteger(L, 3);
+	INT32 snapflags = luaL_checkinteger(L, 4);
 	if (!player || P_IsLocalPlayer(player))
-		S_ShowMusicCredit();
+		S_ShowMusicCredit(yoffset, animtime, snapflags);
+	return 0;
+}
+
+static int lib_sChangeMusicCreditSettings(lua_State *L)
+{
+	player_t *player = NULL;
+	//HUDSAFE
+	if (!lua_isnone(L, 1) && lua_isuserdata(L, 1))
+	{
+		player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+		if (!player)
+			return LUA_ErrInvalid(L, "player_t");
+	}
+	fixed_t yoffset = luaL_checkfixed(L, 2);
+	INT32 snapflags = luaL_checkinteger(L, 3);
+	if (!player || P_IsLocalPlayer(player))
+		S_ChangeMusicCreditSettings(yoffset, snapflags);
+	return 0;
+}
+
+static int lib_sClearMusicCredit(lua_State *L)
+{
+	player_t *player = NULL;
+	//HUDSAFE
+	if (!lua_isnone(L, 1) && lua_isuserdata(L, 1))
+	{
+		player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+		if (!player)
+			return LUA_ErrInvalid(L, "player_t");
+	}
+
+	if (!player || P_IsLocalPlayer(player))
+		S_ClearMusicCredit();
 	return 0;
 }
 
@@ -4974,6 +5010,8 @@ static luaL_Reg lib[] = {
 	{"S_SoundPlaying",lib_sSoundPlaying},
 	{"S_StartMusicCaption", lib_sStartMusicCaption},
 	{"S_ShowMusicCredit",lib_sShowMusicCredit},
+	{"S_ChangeMusicCreditSettings",lib_sChangeMusicCreditSettings},
+	{"S_ClearMusicCredit",lib_sClearMusicCredit},
 
 	// g_game
 	{"G_AddGametype", lib_gAddGametype},

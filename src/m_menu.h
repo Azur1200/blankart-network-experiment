@@ -230,6 +230,12 @@ struct menu_t
 	boolean musstop; ///< Don't play any music
 	boolean musignore; ///< Let the current music keep playing
 
+	// Music credit shit.
+	boolean muscreditshow;
+	fixed_t muscredity;
+	UINT16 muscreditanimtime;
+	INT32 muscreditsnapflags;
+
 	boolean enterbubble; // run all entrance line execs after common ancestor and up to child. If false, only run the child's exec
 	boolean exitbubble; // run all exit line execs from child and up to before common ancestor. If false, only run the child's exec
 	INT32 entertag; // line exec to run on menu enter, if titlemap

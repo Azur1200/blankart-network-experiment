@@ -7474,7 +7474,7 @@ UINT8 K_RaceLapCount(INT16 mapNum)
 		return 0;
 	}
 
-	if (cv_numlaps.value == -1)
+	if (cv_numlaps.value == -1 || modeattacking != ATTACKING_NONE)
 	{
 		// Use map default
 		return mapheaderinfo[mapNum]->numlaps;

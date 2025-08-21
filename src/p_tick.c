@@ -773,7 +773,7 @@ void P_Ticker(boolean run)
 			if (leveltime == 0)
 			{
 				S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-				S_ShowMusicCredit();
+				S_ShowMusicCredit(0, 5*TICRATE, 0);
 			}
 		}
 		// Plays the music after the starting countdown.
@@ -807,7 +807,7 @@ void P_Ticker(boolean run)
 					else if (leveltime == startingtime + (TICRATE/2)) // Plays the music after the starting countdown.
 					{
 						S_ChangeMusicEx(mapmusname, mapmusflags, true, mapmusposition, 0, 0);
-						S_ShowMusicCredit();
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
 					}
 				}
 			}
