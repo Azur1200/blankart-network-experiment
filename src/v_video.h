@@ -235,6 +235,10 @@ void V_EncoreInvertScreen(void);
 void V_DrawPromptBack(INT32 boxheight, INT32 color);
 
 /* Convenience macros for leagacy string function macros. */
+
+/* Yes I'm lazy RN, deal with it. */
+#define V_DrawStringScaled( x,y,scale,space_scale,linefeed_scale,option,font,string ) \
+	V_DrawStringScaledEx(x,y,scale,scale,space_scale,linefeed_scale,option,NULL,font,string)
 #define V__DrawOneScaleString( x,y,scale,option,font,string ) \
 	V_DrawStringScaled(x,y,scale,FRACUNIT,FRACUNIT,option,font,string)
 #define V__DrawDupxString( x,y,scale,option,font,string )\
@@ -256,15 +260,34 @@ UINT8 *V_GetStringColormap(INT32 colorflags);
 char *V_WordWrap(INT32 x, INT32 w, INT32 option, const char *string);
 
 // draw a string using a font
-void V_DrawStringScaled(
+void V_DrawStringScaledEx(
 		fixed_t     x,
 		fixed_t     y,
 		fixed_t           scale,
+		fixed_t          vscale,
 		fixed_t     space_scale,
 		fixed_t  linefeed_scale,
 		INT32       flags,
+		const UINT8 *colormap,
 		int         font,
 		const char *text);
+
+fixed_t V_StringScaledWidth(
+		fixed_t      scale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		INT32      flags,
+		int        fontno,
+		const char *s);
+
+char * V_ScaledWordWrap(
+		fixed_t          w,
+		fixed_t      scale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		INT32      flags,
+		int        fontno,
+		const char *s);
 
 // draw a string using the hu_font
 #define V_DrawString( x,y,option,string ) \

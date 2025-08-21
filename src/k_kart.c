@@ -65,6 +65,7 @@
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
 
+#include "h_timers.h"
 #include "blan/b_soc.h"
 
 consvar_t cv_kartstacking_colorflame = CVAR_INIT ("kartstacking_colorflame", "On", CV_SAVE, CV_OnOff, NULL);
@@ -374,6 +375,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
 	CV_RegisterVar(&cv_driftsparkpulse);
+	CV_RegisterVar(&cv_itemtimers);
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_test1);
@@ -11906,6 +11908,41 @@ void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
 			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|(itemType);
 			break;
 	}
+}
+
+boolean K_NotFreePlay(void)
+{
+	UINT8 i;
+	UINT8 nump = 0;
+
+	if (K_CanChangeRules() == false)
+	{
+		// Rounds with direction are never FREE PLAY.
+		return true;
+	}
+
+	if (itembreaker)
+	{
+		// Prison Break is battle's FREE PLAY.
+		return false;
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i] == false || players[i].spectator == true)
+		{
+			continue;
+		}
+
+		nump++;
+
+		if (nump > 1)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void K_QuiteSaltyHop(player_t *player)
