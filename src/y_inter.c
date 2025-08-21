@@ -959,13 +959,18 @@ void Y_StartIntermission(void)
 	if (prevmap >= nummapheaders || !mapheaderinfo[prevmap])
 		I_Error("Y_StartIntermission: Internal map ID %d not found (nummapheaders = %d)", prevmap, nummapheaders);
 
+	S_ShowMusicCredit(-30*FRACUNIT, 5*TICRATE, 0);
+
 	switch (intertype)
 	{
 		case int_battle:
 		case int_battletime:
 		{
 			if (cv_inttime.value > 0)
+			{
 				S_ChangeMusicInternal("racent", true); // loop it
+				S_ShowMusicCredit(-30*FRACUNIT, 5*TICRATE, 0);
+			}
 
 			// Calculate who won
 			if (intertype == int_battle)
@@ -1637,7 +1642,10 @@ void Y_VoteTicker(void)
 		D_PickVote();
 
 	if (!votetic)
+	{
 		S_ChangeMusicInternal("vote", true);
+		S_ShowMusicCredit(0, 5*TICRATE, 0);
+	}
 
 	if (timer)
 		timer--;
@@ -1693,6 +1701,7 @@ void Y_VoteTicker(void)
 								if (M_RandomChance(FRACUNIT/32)) // Let it cheat occasionally~
 									voteclient.rendoff++;
 								S_ChangeMusicInternal("voteeb", false);
+								S_ShowMusicCredit(0, 5*TICRATE, 0);
 								break;
 							}
 						}
@@ -2039,6 +2048,7 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 		{
 			voteendtic = votetic + (5*TICRATE);
 			S_ChangeMusicInternal("voteeb", false);
+			S_ShowMusicCredit(0, 5*TICRATE, 0);
 			Y_VoteStops(pick, level);
 		}
 		else if (endtype == 0) // Might as well put this here, too.
@@ -2048,7 +2058,10 @@ void Y_SetupVoteFinish(SINT8 pick, SINT8 level)
 			return;
 		}
 		else
+		{
 			S_ChangeMusicInternal("voteea", true);
+			S_ShowMusicCredit(0, 5*TICRATE, 0);
+		}
 	}
 
 	deferredlevel = level;

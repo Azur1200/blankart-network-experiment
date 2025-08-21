@@ -2241,6 +2241,22 @@ void readmenu(MYFILE *f, INT32 num)
 				menudefs[num].musignore = (value || word2[0] == 'T' || word2[0] == 'Y');
 				titlechanged = true;
 			}
+			else if (fastcmp(word, "MUSICCREDITSHOW"))
+			{
+				menudefs[num].muscreditshow = (value || word2[0] == 'T' || word2[0] == 'Y');
+			}
+			else if (fastcmp(word, "MUSICCREDITYOFFSET"))
+			{
+				menudefs[num].muscredity = get_number(word2);
+			}
+			else if (fastcmp(word, "MUSICCREDITANIMTIME") || fastcmp(word, "MUSICCREDITANIMATIONTIME"))
+			{
+				menudefs[num].muscreditanimtime = (UINT16)get_number(word2);
+			}
+			else if (fastcmp(word, "MUSICCREDITSNAPFLAGS"))
+			{
+				menudefs[num].muscreditsnapflags = (INT32)get_number(word2);
+			}
 			else if (fastcmp(word, "FADESTRENGTH"))
 			{
 				// one-based, <= 0 means use default value. 1-32

@@ -2219,13 +2219,13 @@ void G_Ticker(boolean run)
 			F_TextPromptTicker();
 			AM_Ticker();
 			HU_Ticker();
-
 			break;
 
 		case GS_INTERMISSION:
 			if (run)
 				Y_Ticker();
 			HU_Ticker();
+
 			break;
 
 		case GS_VOTING:
@@ -2286,6 +2286,7 @@ void G_Ticker(boolean run)
 		case FORCEWIPE:
 			break; // do nothing
 	}
+	HU_TickSongCredits();
 
 	if (run)
 	{
@@ -2737,7 +2738,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	P_RestoreMusic(p);
 
 	if (songcredit)
-		S_ShowMusicCredit();
+		S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 	if (leveltime > (starttime + (TICRATE/2)) && !p->spectator)
 		p->respawn = 48; // Respawn effect
@@ -4259,7 +4260,10 @@ static void G_DoCompleted(void)
 
 	// play some generic music if there's no win/cool/lose music going on (for exitlevel commands)
 	if ((gametyperules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (cv_inttime.value > 0))
+	{
 		S_ChangeMusicInternal("racent", true);
+		S_ShowMusicCredit(-30*FRACUNIT, 5*TICRATE, V_SNAPTOTOP);
+	}
 
 	if (automapactive)
 		AM_Stop();

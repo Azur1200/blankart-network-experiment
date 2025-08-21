@@ -848,11 +848,15 @@ void M_InitMenuPresTables(void)
 		menudefs[i].bgcolor = -1;
 		menudefs[i].titlescrollxspeed = INT32_MAX;
 		menudefs[i].titlescrollyspeed = INT32_MAX;
+		menudefs[i].muscredity = 0;
+		menudefs[i].muscreditanimtime = 2*TICRATE;
+		menudefs[i].muscreditsnapflags = 0;
 		menudefs[i].bghide = true;
 		// default true
 		menudefs[i].enterbubble = true;
 		menudefs[i].exitbubble = true;
 		menudefs[i].muslooping = true;
+		menudefs[i].muscreditshow = true;
 	}
 }
 
@@ -912,15 +916,33 @@ void M_ChangeMenuMusic(void)
 		else if (menudefs[menutype].musstop)
 		{
 			S_StopMusic();
+			S_ClearMusicCredit();
 			return;
 		}
 		else if (menudefs[menutype].musignore)
 			return;
 	}
 	if (target == MN_MAIN && gamestate == GS_TITLESCREEN && finalecount < 50)
+	{
 		S_StopMusic();
+		S_ClearMusicCredit();
+	}
 	else
-		S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
+	{
+		if (stricmp(menudefs[target].musname, S_MusicName()))
+		{
+			S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
+
+			if (menudefs[target].muscreditshow)
+			{
+				S_ShowMusicCredit(menudefs[target].muscredity, menudefs[target].muscreditanimtime, menudefs[target].muscreditsnapflags);
+			}
+		}
+		else
+		{
+			S_ChangeMusic(menudefs[target].musname, menudefs[target].mustrack, menudefs[target].muslooping);
+		}
+	}
 }
 
 void M_SetMenuCurFadeValue(void)
@@ -4213,6 +4235,7 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+	S_ClearMusicCredit();
 	return true;
 }
 
@@ -5692,6 +5715,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
+	S_ClearMusicCredit();
 	return true;
 }
 

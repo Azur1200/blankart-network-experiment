@@ -199,6 +199,8 @@ extern struct cursongcredit
 	UINT8 trans;
 	fixed_t x;
 	fixed_t old_x;
+	fixed_t y;
+	INT32 snapflags;
 } cursongcredit;
 
 extern musicdef_t soundtestsfx;
@@ -211,7 +213,9 @@ extern int musicdef_volume;
 void S_LoadMusicDefs(UINT16 wadnum);
 void S_InitMusicDefs(void);
 musicdef_t *S_FindMusicDef(const char *name, UINT8 *i);
-void S_ShowMusicCredit(void);
+void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags);
+void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags);
+void S_ClearMusicCredit(void);
 boolean S_PrepareSoundTest(void);
 
 //

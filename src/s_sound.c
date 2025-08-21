@@ -1690,7 +1690,7 @@ void S_InitMusicDefs(void)
 //
 // Display current song's credit on screen
 //
-void S_ShowMusicCredit(void)
+void S_ShowMusicCredit(fixed_t yoffset, UINT16 animtime, INT32 snapflags)
 {
 	UINT8 i = 0;
 	musicdef_t *def = S_FindMusicDef(music_name, &i);
@@ -1756,7 +1756,7 @@ void S_ShowMusicCredit(void)
 		MUSICCREDITAPPEND(def->author, false);
 		MUSICCREDITAPPEND(def->source, true);
 
-//#undef MUSICCREDITAPPEND
+#undef MUSICCREDITAPPEND
 	}
 
 	if (credittext[0] == '\0')
@@ -1765,8 +1765,32 @@ void S_ShowMusicCredit(void)
 	cursongcredit.def = def;
 	Z_Free(cursongcredit.text);
 	cursongcredit.text = Z_StrDup(credittext);
-	cursongcredit.anim = 5*TICRATE;
+	cursongcredit.anim = animtime; // 5*TICRATE
 	cursongcredit.x = cursongcredit.old_x = 0;
+	cursongcredit.y = yoffset;
+	cursongcredit.snapflags = snapflags;
+	cursongcredit.trans = NUMTRANSMAPS;
+}
+
+void S_ChangeMusicCreditSettings(INT32 yoffset, INT32 snapflags)
+{
+	if (cursongcredit.def != NULL)
+	{
+		cursongcredit.y = yoffset;
+		cursongcredit.snapflags = snapflags;
+	}
+}
+
+//
+// S_ClearMusicCredit
+//
+// Clear the currently displaying song credit on the screen
+//
+void S_ClearMusicCredit(void)
+{
+	cursongcredit.x = cursongcredit.old_x = 0;
+	cursongcredit.y = 0;
+	cursongcredit.anim = 0;
 	cursongcredit.trans = NUMTRANSMAPS;
 }
 

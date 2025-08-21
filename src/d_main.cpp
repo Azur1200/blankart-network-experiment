@@ -655,6 +655,7 @@ static void D_Display(void)
 	I_lock_mutex(&m_menu_mutex);
 #endif
 	M_Drawer(); // menu is drawn even on top of everything
+	HU_DrawSongCredits(); // As are music credits.
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);
 #endif

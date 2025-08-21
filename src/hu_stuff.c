@@ -928,13 +928,11 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 
 //
 //
-static void HU_TickSongCredits(void)
+void HU_TickSongCredits(void)
 {
 	if (cursongcredit.def == NULL) // No def
 	{
-		cursongcredit.x = cursongcredit.old_x = 0;
-		cursongcredit.anim = 0;
-		cursongcredit.trans = NUMTRANSMAPS;
+		S_ClearMusicCredit();
 		return;
 	}
 
@@ -1037,8 +1035,6 @@ void HU_Ticker(void)
 	}
 
 	resynch_ticker++;
-
-	HU_TickSongCredits();
 }
 
 static boolean teamtalk = false;
@@ -2063,6 +2059,7 @@ void HU_DrawSongCredits(void)
 {
 	fixed_t x;
 	fixed_t y = (r_splitscreen ? (BASEVIDHEIGHT/2)-4 : 32) * FRACUNIT;
+	INT32 snapflags = cursongcredit.snapflags;
 	INT32 bgt;
 
 	if (!cursongcredit.def || cursongcredit.trans >= NUMTRANSMAPS) // No def
@@ -2072,16 +2069,17 @@ void HU_DrawSongCredits(void)
 
 	bgt = (NUMTRANSMAPS/2) + (cursongcredit.trans / 2);
 	x = R_InterpolateFixed(cursongcredit.old_x, cursongcredit.x);
+	y +=  cursongcredit.y;
 
 	if (bgt < NUMTRANSMAPS)
 	{
 		V_DrawFixedPatch(x, y - (2 * FRACUNIT),
-			FRACUNIT, V_SNAPTOLEFT|(bgt<<V_ALPHASHIFT),
+			FRACUNIT, V_SNAPTOLEFT|snapflags|(bgt<<V_ALPHASHIFT),
 			songcreditbg, NULL);
 	}
 
 	V_DrawRightAlignedThinStringAtFixed(x, y,
-		V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT|(cursongcredit.trans<<V_ALPHASHIFT),
+		V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_SNAPTOLEFT|snapflags|(cursongcredit.trans<<V_ALPHASHIFT),
 		cursongcredit.text);
 }
 
@@ -2147,10 +2145,6 @@ void HU_Drawer(void)
 
 	if (gamestate != GS_LEVEL)
 		return;
-
-	// draw song credits
-	if (cv_songcredits.value && !( hu_showscores && (netgame || multiplayer) ))
-		HU_DrawSongCredits();
 
 	// draw desynch text
 	if (hu_redownloadinggamestate)

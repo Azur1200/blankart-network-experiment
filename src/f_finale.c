@@ -711,7 +711,7 @@ void F_StartCredits(void)
 	S_StopSounds();
 
 	S_ChangeMusicInternal("credit", false);
-	S_ShowMusicCredit();
+	S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 	finalecount = 0;
 	animtimer = 0;
@@ -979,7 +979,7 @@ void F_BlanStartCredits(void)
 	S_StopSounds();
 
 	S_ChangeMusicInternal("BLANCD", true);
-	S_ShowMusicCredit();
+	S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 	finalecount = 0;
 	animtimer = 0;
@@ -1699,7 +1699,10 @@ void F_WaitingPlayersTicker(void)
 
 	// dumb hack, only start the music on the 1st tick so if you instantly go into the map you aren't hearing a tic of music
 	if (finalecount == 2)
+	{
 		S_ChangeMusicInternal("WAIT2J", true);
+		S_ShowMusicCredit(0, 5*TICRATE, 0);
+	}
 }
 
 void F_WaitingPlayersDrawer(void)

@@ -2975,7 +2975,7 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						!(args[0] & TMM_FADE) ? postfadems : 0);
 
 					if (!(args[0] & TMM_NOCREDIT))
-						S_ShowMusicCredit();
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 					if ((args[0] & TMM_FADE) && fadetarget)
 					{
