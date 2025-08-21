@@ -5188,7 +5188,7 @@ void K_drawKartHUD(void)
 			K_drawLapStartAnim();
 	}
 
-	K_DisplayItemTimers();
+	//K_DisplayItemTimers();
 
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;
