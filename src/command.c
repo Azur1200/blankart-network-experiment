@@ -1524,7 +1524,16 @@ void CV_RegisterVar(consvar_t *variable)
 			I_Error("Way too many netvars");
 
 		variable->netid = ++consvar_number_of_netids;
-		variable->compatnetid = CV_ComputeLegacyNetid(variable->name);
+
+		// Register Legacy netid and warn on conflicts.
+		{
+			UINT16 legacynetid = CV_ComputeLegacyNetid(variable->name);
+			consvar_t *conflictcheck = CV_FindLegacyNetVar(legacynetid);
+
+			if (conflictcheck && (conflictcheck->netid == legacynetid))
+				CONS_Alert(CONS_WARNING, "CV_RegisterVar: Added variable %s conflicts with existing legacy netid %d used by %s. This variable may conflict in SRB2Kart replays.\n", variable->name, legacynetid, conflictcheck->name);
+			variable->compatnetid = legacynetid;
+		}
 	}
 
 	// link the variable in
