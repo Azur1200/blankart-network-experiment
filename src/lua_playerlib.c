@@ -345,6 +345,7 @@ enum player_e
 	player_spectator,
 	player_spectatewait,
 	player_bot,
+	player_botvars,
 	player_jointime,
 	player_spectatorreentry,
 	player_grieftime,
@@ -539,6 +540,7 @@ static const char *const player_opt[] = {
 	"spectator",
 	"spectatewait",
 	"bot",
+	"botvars",
 	"jointime",
 	"spectatorreentry",
 	"grieftime",
@@ -1134,6 +1136,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_bot:
 		lua_pushboolean(L, plr->bot);
+		break;
+	case player_botvars:
+		LUA_PushUserdata(L, &plr->botvars, META_BOTVARS);
 		break;
 	case player_jointime:
 		lua_pushinteger(L, plr->jointime);
@@ -1785,6 +1790,8 @@ static int player_set(lua_State *L)
 		plr->spectatewait = luaL_checkinteger(L, 3);
 		break;
 	case player_bot:
+		return NOSET;
+	case player_botvars:
 		return NOSET;
 	case player_jointime:
 		plr->jointime = (tic_t)luaL_checkinteger(L, 3);
