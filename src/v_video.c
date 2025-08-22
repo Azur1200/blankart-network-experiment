@@ -3170,6 +3170,27 @@ INT32 V_DrawPingNum(INT32 x, INT32 y, INT32 flags, INT32 num, const UINT8 *color
 	return x;
 }
 
+INT32 V_DrawPingNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, const UINT8 *colormap)
+{
+	INT32 w = SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
+
+	if (flags & V_NOSCALESTART)
+		w *= vid.dupx;
+
+	if (num < 0)
+		num = -num;
+
+	// draw the number
+	do
+	{
+		x -= (w-1)*FRACUNIT;	// Oni wanted their outline to intersect.
+		V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
+		num /= 10;
+	} while (num);
+
+	return x;
+}
+
 // Jaden: Draw a number using the position numbers.
 //
 void V_DrawRankNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
@@ -3257,6 +3278,25 @@ void V_DrawPaddedTallNum(INT32 x, INT32 y, INT32 flags, INT32 num, INT32 digits)
 	{
 		x -= w;
 		V_DrawScaledPatch(x, y, flags, fontv[TALLNUM_FONT].font[num % 10]);
+		num /= 10;
+	} while (--digits);
+}
+
+void V_DrawPaddedTallColorNumAtFixed(fixed_t x, fixed_t y, INT32 flags, INT32 num, INT32 digits, const UINT8 *colormap)
+{
+	INT32 w = fontv[TALLNUM_FONT].font[0]->width;
+
+	if (flags & V_NOSCALESTART)
+		w *= vid.dupx;
+
+	if (num < 0)
+		num = -num;
+
+	// draw the number
+	do
+	{
+		x -= w*FRACUNIT;
+		V_DrawFixedPatch(x, y, FRACUNIT, flags, fontv[TALLNUM_FONT].font[num % 10], colormap);
 		num /= 10;
 	} while (--digits);
 }
