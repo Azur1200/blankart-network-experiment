@@ -3450,6 +3450,11 @@ static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, INT32 hudx, I
 	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-48)/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-24)/2)<<FRACBITS);
 
+	if (cv_minihead.value)
+	{
+		amxpos -= 1 * FRACUNIT;
+	}
+
 	V_DrawFixedPatch(amxpos, amypos, scale, flags|V_ADD, icon, colormap);
 }
 
