@@ -2866,24 +2866,11 @@ static void HWR_Subsector(size_t num)
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (UNLIKELY(numPolyObjects))
+		while (count--)
 		{
-
-			while (count--)
-			{
-
-				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
-			}
-		}
-		else
-		{
-			while (count--)
-			{
+			if (LIKELY(!line->glseg && !line->polyseg)) // ignore segs that belong to polyobjects
 				HWR_AddLine(line);
-				line++;
-			}
+			line++;
 		}
 	}
 
