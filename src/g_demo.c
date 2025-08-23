@@ -3053,17 +3053,18 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, skins[player->skin].voices[player->voice_id].name, 32+1);
 
 			// Save follower's skin name
-			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
-			// Doesn't really matter if the follower mobj is valid so long as it exists in a way or another.
-
-			if (player->follower)
-				WRITESTRINGL(demobuf.p, followers[player->followerskin].skinname, 16+1);
+			if (player->followerskin == -1)
+				WRITESTRINGL(demobuf.p, "None", 16+1);
 			else
-				WRITESTRINGL(demobuf.p, "None", 16+1); // Say we don't have one, then.
+				WRITESTRINGL(demobuf.p, followers[player->followerskin].name, 16+1);
 
 			// Save follower's colour
-			// Not KartColor_Names because followercolor has extra values such as "Match"
-			WRITESTRINGL(demobuf.p, Followercolor_cons_t[(UINT16)(player->followercolor+2)].strvalue, 16+1);
+			for (j = (numskincolors+2)-1; j > 0; j--)
+			{
+				if (Followercolor_cons_t[j].value == players[i].followercolor)
+					break;
+			}
+			WRITESTRINGL(demobuf.p, Followercolor_cons_t[j].strvalue, 16+1);	// Not KartColor_Names because followercolor has extra values such as "Match"
 
 			// Score, since Kart uses this to determine where you start on the map
 			WRITEUINT32(demobuf.p, player->score);
