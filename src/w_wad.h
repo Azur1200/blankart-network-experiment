@@ -123,6 +123,7 @@ struct wadfile_t
 	lumpinfo_t *lumpinfo;
 	lumpcache_t *lumpcache;
 	lumpcache_t *patchcache;
+	lumpcache_t *rotcache;
 	UINT16 numlumps; // this wad's number of resources
 	FILE *handle;
 	UINT32 filesize; // for network
@@ -218,6 +219,9 @@ void *W_CachePatchLongName(const char *name, INT32 tag);
 // Returns either a Software patch, or an OpenGL patch.
 // Performs any necessary conversions from PNG images.
 void *W_CachePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);
+#ifdef ROTSPRITE
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
+#endif
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
 
 // Returns a Software patch.

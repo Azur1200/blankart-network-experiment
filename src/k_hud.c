@@ -3384,7 +3384,7 @@ static void K_drawKartNameTags(void)
 	V_ClearClipRect();
 }
 
-static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
+static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -3425,6 +3425,32 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	}
 
 	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
+}
+
+static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, angle_t ang, UINT8 *colormap)
+{
+	// amnum xpos & ypos are the icon's speed around the HUD.
+	// The number being divided by is for how fast it moves.
+	// The higher the number, the slower it moves.
+
+	// am xpos & ypos are the icon's starting position. Withouht
+	// it, they wouldn't 'spawn' on the top-right side of the HUD.
+
+	fixed_t amnumxpos, amnumypos;
+	INT32 amxpos, amypos;
+	fixed_t scale = FRACUNIT;
+	patch_t *icon = W_CachePatchNameRotated("MMAPHDLT", R_GetRollAngle(ang), PU_PATCH);
+
+	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+
+	if (encoremode)
+		amnumxpos = -amnumxpos;
+
+	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-48)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-24)/2)<<FRACBITS);
+
+	V_DrawFixedPatch(amxpos, amypos, scale, flags|V_ADD, icon, colormap);
 }
 
 static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, player_t *player)
@@ -3471,7 +3497,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
 }
 
-static void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
+static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
 {
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
@@ -3934,6 +3960,35 @@ static void K_drawKartMinimap(void)
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
+			if (!nocontest)
+			{
+				if (cv_showminimapangle.value == 1)
+				{
+					K_drawKartMinimapIcon(
+							interpx,
+							interpy,
+							x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
+							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
+							splitflags,
+							kp_minimapdot,
+							colormap
+					);
+				}
+				else if (cv_showminimapangle.value == 2)
+				{
+					K_drawKartMinimapHeadlight(
+						interpx,
+						interpy,
+						x,
+						y,
+						splitflags,
+						ang,
+						colormap
+					);
+
+				}
+			}
+
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
 
 			// Target reticule
@@ -3941,19 +3996,6 @@ static void K_drawKartMinimap(void)
 				|| (gametype == GT_BATTLE && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL);
-			}
-
-			if (!nocontest)
-			{
-				K_drawKartMinimapIcon(
-						interpx,
-						interpy,
-						x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
-						y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
-						splitflags,
-						kp_minimapdot,
-						colormap
-				);
 			}
 
 			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);

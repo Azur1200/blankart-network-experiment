@@ -627,7 +627,8 @@ consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, 
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_showminimapnames = CVAR_INIT ("showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_showminimapangle = CVAR_INIT ("showminimapangle", "On", CV_SAVE, CV_OnOff, NULL);
+static CV_PossibleValue_t minimapdot_cons_t[] = {{0, "Off"}, {1, "Dot"}, {2, "Headlight"}, {0, NULL}};
+consvar_t cv_showminimapangle = CVAR_INIT ("showminimapangle", "Dot", CV_SAVE, minimapdot_cons_t, NULL);
 consvar_t cv_minihead = CVAR_INIT ("smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
