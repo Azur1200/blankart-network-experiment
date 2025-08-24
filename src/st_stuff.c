@@ -522,12 +522,10 @@ static void ST_drawDebugInfo(void)
 	if (cht_debug & DBG_RNG) // randomizer testing
 	{
 		fixed_t peekres = P_RandomPeek();
-		peekres *= 10000;     // Change from fixed point
-		peekres >>= FRACBITS; // to displayable decimal
 
 		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init: %08x", P_GetInitSeed()));
 		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed: %08x", P_GetRandSeed()));
-		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  :    .%04d", peekres));
+		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
 
 		height -= 32;
 	}
