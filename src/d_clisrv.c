@@ -143,8 +143,8 @@ UINT8 hu_redownloadinggamestate = 0;
 // kart, true when a player is connecting or disconnecting so that the gameplay has stopped in its tracks
 boolean hu_stopped = false;
 
-UINT8 adminpassmd5[16];
-boolean adminpasswordset = false;
+UINT8 (*adminpassmd5)[16];
+UINT32 adminpasscount = 0;
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
@@ -4629,6 +4629,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 	INT32 netconsole;
 	tic_t realend, realstart;
 	UINT8 *pak, *txtpak, numtxtpak;
+	UINT32 i;
 #ifndef NOMD5
 	UINT8 finalmd5[16];/* Well, it's the cool thing to do? */
 #endif
@@ -4874,22 +4875,26 @@ static void HandlePacketFromPlayer(SINT8 node)
 			if (doomcom->datalength < 16)/* ignore partial sends */
 				break;
 
-			if (!adminpasswordset)
+			if (adminpasscount == 0)
 			{
 				CONS_Printf(M_GetText("Password from %s failed (no password set).\n"), player_names[netconsole]);
 				break;
 			}
 
-			// Do the final pass to compare with the sent md5
-			D_MD5PasswordPass(adminpassmd5, 16, va("PNUM%02d", netconsole), &finalmd5);
-
-			if (!memcmp(netbuffer->u.md5sum, finalmd5, 16))
+			for (i = 0; i < adminpasscount; i++)
 			{
-				CONS_Printf(M_GetText("%s passed authentication.\n"), player_names[netconsole]);
-				COM_BufInsertText(va("promote %d\n", netconsole)); // do this immediately
+				// Do the final pass to compare with the sent md5
+				D_MD5PasswordPass(adminpassmd5[i], 16, va("PNUM%02d", netconsole), &finalmd5);
+
+				if (!memcmp(netbuffer->u.md5sum, finalmd5, 16))
+				{
+					CONS_Printf(M_GetText("%s passed authentication.\n"), player_names[netconsole]);
+					COM_BufInsertText(va("promote %d\n", netconsole)); // do this immediately
+					continue;
+				}
 			}
-			else
-				CONS_Printf(M_GetText("Password from %s failed.\n"), player_names[netconsole]);
+
+			CONS_Printf(M_GetText("Password from %s failed.\n"), player_names[netconsole]);
 #endif
 			break;
 		case PT_NODETIMEOUT:

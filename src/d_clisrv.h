@@ -588,8 +588,8 @@ void D_MD5PasswordPass(const UINT8 *buffer, size_t len, const char *salt, void *
 
 extern UINT8 hu_redownloadinggamestate;
 
-extern UINT8 adminpassmd5[16];
-extern boolean adminpasswordset;
+extern UINT8 (*adminpassmd5)[16];
+extern UINT32 adminpasscount;
 
 extern boolean hu_stopped;
 
