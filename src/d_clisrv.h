@@ -117,6 +117,8 @@ typedef enum
 	PT_MOREFILESNEEDED, // Server, to client: "you need these (+ more on top of those)"
 
 	PT_LOGIN,         // Login attempt from the client.
+	PT_LOGINCHALLENGE,// Challenge request sent to the client.
+	PT_LOGINAUTH,     // Challenge response from the client.
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
 	NUMPACKETTYPE
@@ -374,6 +376,7 @@ struct doomdata_t
 		char fileack[sizeof (fileack_pak)];
 		UINT8 filereceived;
 		clientconfig_pak clientcfg;         //         136 bytes
+		char salt[9];
 		UINT8 md5sum[16];
 		serverinfo_pak serverinfo;          //        1024 bytes
 		serverrefuse_pak serverrefuse;      //       65025 bytes (somehow I feel like those values are garbage...)
@@ -588,7 +591,8 @@ void D_MD5PasswordPass(const UINT8 *buffer, size_t len, const char *salt, void *
 
 extern UINT8 hu_redownloadinggamestate;
 
-extern UINT8 (*adminpassmd5)[16];
+extern char *reqpass;
+extern char **adminpass;
 extern UINT32 adminpasscount;
 
 extern boolean hu_stopped;
