@@ -35,6 +35,7 @@
 #include "am_map.h"
 #include "console.h"
 #include "d_net.h"
+#include "d_netfil.h"
 #include "f_finale.h"
 #include "f_dscredits.hpp"
 #include "g_game.h"
@@ -1187,6 +1188,7 @@ void D_StartTitle(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+	CURLAbortFile();
 	SV_StopServer();
 	SV_ResetServer();
 
