@@ -147,7 +147,6 @@ char *reqpass;
 char **adminpass;
 UINT32 adminpasscount = 0;
 static char adminsalt[MAXNETNODES][9];
-//I_StaticAssert(sizeof(netbuffer->u.salt) == sizeof(adminsalt[0]));
 
 // Client specific
 static ticcmd_t localcmds[MAXSPLITSCREENPLAYERS][MAXGENTLEMENDELAY];
@@ -4299,7 +4298,6 @@ static void PT_Login(SINT8 node)
 static void PT_LoginChallenge(SINT8 node)
 {
 	char salt[9];
-	//I_StaticAssert(sizeof(salt) == sizeof(netbuffer->u.salt));
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (node != servernode)
