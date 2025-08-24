@@ -8096,8 +8096,7 @@ INT32 MR_QuitViewServer(INT32 choice)
 {
 	(void)choice;
 
-	D_QuitNetGame();
-	CL_Reset();
+	ChangeClientMode(CL_ABORTED);
 	return true;
 }
 
