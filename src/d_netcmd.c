@@ -216,6 +216,7 @@ static void Command_Clearscores_f(void);
 
 // Remote Administration
 static void Command_Changepassword_f(void);
+static void Command_Clearpassword_f(void);
 static void Command_Login_f(void);
 static void Got_Verification(UINT8 **cp, INT32 playernum);
 static void Got_Removal(UINT8 **cp, INT32 playernum);
@@ -806,6 +807,7 @@ void D_RegisterServerCommands(void)
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
+	COM_AddCommand("clearpassword", Command_Clearpassword_f);
 	COM_AddCommand("login", Command_Login_f); // useful in dedicated to kick off remote admin
 	COM_AddCommand("promote", Command_Verify_f);
 	RegisterNetXCmd(XD_VERIFIED, Got_Verification);
@@ -4065,17 +4067,23 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 void D_SetPassword(const char *pw)
 {
-	D_MD5PasswordPass((const UINT8 *)pw, strlen(pw), BASESALT, &adminpassmd5);
-	adminpasswordset = true;
+	adminpass = Z_Realloc(adminpass, sizeof(*adminpass) * ++adminpasscount, PU_STATIC, NULL);
+	adminpass[adminpasscount-1] = Z_StrDup(pw);
+}
+
+void D_ClearPassword(void)
+{
+	UINT32 i;
+	for (i = 0; i < adminpasscount; i++)
+		Z_Free(adminpass[i]);
+	Z_Free(adminpass);
+	adminpass = NULL;
+	adminpasscount = 0;
 }
 
 // Remote Administration
 static void Command_Changepassword_f(void)
 {
-#ifdef NOMD5
-	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
-	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
-#else
 	if (client) // cannot change remotely
 	{
 		CONS_Printf(M_GetText("Only the server can use this.\n"));
@@ -4084,22 +4092,32 @@ static void Command_Changepassword_f(void)
 
 	if (COM_Argc() != 2)
 	{
-		CONS_Printf(M_GetText("password <password>: change remote admin password\n"));
+		CONS_Printf(M_GetText("password <password>: add remote admin password\n"));
 		return;
 	}
 
 	D_SetPassword(COM_Argv(1));
-	CONS_Printf(M_GetText("Password set.\n"));
-#endif
+	CONS_Printf(M_GetText("Password added.\n"));
+}
+
+
+// Remote Administration
+static void Command_Clearpassword_f(void)
+{
+	if (client) // cannot change remotely
+	{
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
+		return;
+	}
+
+	D_ClearPassword();
+	CONS_Printf(M_GetText("Passwords cleared.\n"));
 }
 
 static void Command_Login_f(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-#ifdef NOMD5
-	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
-	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
-#else
+
 	const char *pw;
 
 	if (!netgame)
@@ -4116,19 +4134,16 @@ static void Command_Login_f(void)
 		return;
 	}
 
+	if (reqpass)
+		Z_Free(reqpass);
+
 	pw = COM_Argv(1);
-
-	// Do the base pass to get what the server has (or should?)
-	D_MD5PasswordPass((const UINT8 *)pw, strlen(pw), BASESALT, &netbuffer->u.md5sum);
-
-	// Do the final pass to get the comparison the server will come up with
-	D_MD5PasswordPass(netbuffer->u.md5sum, 16, va("PNUM%02d", consoleplayer), &netbuffer->u.md5sum);
+	reqpass = Z_StrDup(pw);
 
 	CONS_Printf(M_GetText("Sending login... (Notice only given if password is correct.)\n"));
 
 	netbuffer->packettype = PT_LOGIN;
-	HSendPacket(servernode, true, 0, 16);
-#endif
+	HSendPacket(servernode, true, 0, 0);
 }
 
 boolean IsPlayerAdmin(INT32 playernum)

@@ -24,7 +24,7 @@ set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
 
 # Core sources
 target_sourcefile(c)
-target_sources(SRB2SDL2 PRIVATE comptime.c md5.c config.h.in)
+target_sources(SRB2SDL2 PRIVATE comptime.c config.h.in)
 
 ### Configuration
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
