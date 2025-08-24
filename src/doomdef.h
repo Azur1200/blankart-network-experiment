@@ -483,6 +483,12 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define I_Assert(e) ((void)0)
 #endif
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ == 202311L)
+#define I_StaticAssert(e) static_assert(e, "Static assertion failed: " #e)
+#else
+#define I_StaticAssert(e) _Static_assert(e, "Static assertion failed: " #e)
+#endif
+
 // The character that separates pathnames. Forward slash on
 // most systems, but reverse solidus (\) on Windows.
 #if defined (_WIN32)
