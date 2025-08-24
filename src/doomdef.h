@@ -102,7 +102,6 @@ extern "C" {
 #endif
 
 // Special Hashing.
-//#define NOMD5
 //#define NOFILEHASH
 //#define NOVERIFYIWADS
 
