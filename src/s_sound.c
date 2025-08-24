@@ -952,8 +952,6 @@ void S_UpdateClosedCaptions(void)
 	UINT8 i;
 	boolean gamestopped = (paused || P_AutoPause());
 
-	if (!renderisnewtic)
-		return;
 	for (i = 0; i < NUMCAPTIONS; i++) // update captions
 	{
 		if (!closedcaptions[i].s)

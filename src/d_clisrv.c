@@ -558,6 +558,7 @@ static UINT16 cl_lastcheckedfilecount = 0;	// used for full file list
 
 void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
 {
+	boolean viewserver = (cl_mode == CL_VIEWSERVER);
 	if (S_MusicExists(musname))
 		if (keepPos)
 			S_ChangeMusicEx(musname,0,true, S_GetMusicPosition(), 0,0);
@@ -565,6 +566,7 @@ void ChangeServMusic(const char* musname, boolean fallback, boolean keepPos)
 			S_ChangeMusicInternal(musname,true);
 	else if (fallback)
 		S_ChangeMusicInternal("BLANCD",true);
+	S_ShowMusicCredit(viewserver ? -28*FRACUNIT : 0, 5*TICRATE, 0);
 }
 
 // Let external code read and modify this stuff.
@@ -2066,10 +2068,13 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				F_TitleScreenDrawer();
 			}
 			CL_DrawConnectionStatus();
+			HU_TickSongCredits();
 #ifdef HAVE_THREADS
 			I_lock_mutex(&m_menu_mutex);
 #endif
-			M_Drawer(); //Needed for drawing messageboxes on the connection screen
+			M_Drawer(); // Needed for drawing messageboxes on the connection screen
+			if (cv_songcredits.value && !( hu_showscores && (netgame || multiplayer) ))
+				HU_DrawSongCredits(); // Needed for music credits on the connection screen
 #ifdef HAVE_THREADS
 			I_unlock_mutex(m_menu_mutex);
 #endif

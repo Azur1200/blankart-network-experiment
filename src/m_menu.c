@@ -903,6 +903,9 @@ void M_ChangeMenuMusic(void)
 {
 	menutype_t target = MN_MAIN; // default if nothing is found
 
+	if (GetClientMode() == CL_VIEWSERVER)
+		return;
+
 	for (UINT8 i = 0; i < NUMMENULEVELS; i++)
 	{
 		menutype_t menutype = menustack[i];
