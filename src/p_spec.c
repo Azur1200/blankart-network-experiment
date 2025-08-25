@@ -9197,6 +9197,21 @@ static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32
 	P_AddThinker(THINK_MAIN, &f->thinker);
 }
 
+// Much cleaner looking way of detecting when to use friction.
+boolean P_AllowFriction(mobj_t *mobj)
+{
+	if (!mobj->player)
+		return false;
+
+	if (mobj->player->invincibilitytimer
+		|| mobj->player->hyudorotimer
+		|| mobj->player->sneakertimer
+		|| mobj->player->growshrinktimer > 0)
+		return false;
+
+	return true;
+}
+
 /** Applies friction to all things in a sector.
   *
   * \param f Friction thinker.
@@ -9229,9 +9244,7 @@ void T_Friction(friction_t *f)
 		// apparently, all I had to do was comment out part of the next line and
 		// friction works for all mobj's
 		// (or at least MF_PUSHABLEs, which is all I care about anyway)
-		if ((!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) && thing->z == thing->floorz) && (thing->player
-			&& (thing->player->invincibilitytimer == 0 && thing->player->hyudorotimer == 0
-			&& thing->player->sneakertimer == 0 && thing->player->growshrinktimer <= 0)))
+		if ((!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) && thing->z == thing->floorz) && P_AllowFriction(thing))
 		{
 			if (f->roverfriction)
 			{

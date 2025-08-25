@@ -10603,6 +10603,24 @@ fixed_t K_PlayerBaseFriction(player_t *player, fixed_t original)
 	return frict;
 }
 
+static inline void K_RecalculateMovefactor(mobj_t *mobj)
+{
+	if (mobj->friction > FRACUNIT)
+		mobj->friction = FRACUNIT;
+	if (mobj->friction < 0)
+		mobj->friction = 0;
+
+	mobj->movefactor = FixedDiv(ORIG_FRICTION, mobj->friction);
+
+	if (mobj->movefactor < FRACUNIT)
+		mobj->movefactor = 19*mobj->movefactor - 18*FRACUNIT;
+	else
+		mobj->movefactor = FRACUNIT;
+
+	if (mobj->movefactor < 32)
+		mobj->movefactor = 32;
+}
+
 //
 static void K_AdjustPlayerFriction(player_t *player)
 {
@@ -10630,20 +10648,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 	{
 		player->mo->friction += ((FRACUNIT - prevfriction) / greasetics) * player->tiregrease;
 
-		if (player->mo->friction > FRACUNIT)
-			player->mo->friction = FRACUNIT;
-		if (player->mo->friction < 0)
-			player->mo->friction = 0;
-
-		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
-
-		if (player->mo->movefactor < FRACUNIT)
-			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
-		else
-			player->mo->movefactor = FRACUNIT;
-
-		if (player->mo->movefactor < 32)
-			player->mo->movefactor = 32;
+		K_RecalculateMovefactor(player->mo);
 	}
 
 	// Friction
@@ -10661,21 +10666,14 @@ static void K_AdjustPlayerFriction(player_t *player)
 	{
 		player->mo->friction += 1228;
 
-		if (player->mo->friction > FRACUNIT)
-			player->mo->friction = FRACUNIT;
-		if (player->mo->friction < 0)
-			player->mo->friction = 0;
+		K_RecalculateMovefactor(player->mo);
+	}
 
-		player->mo->movefactor = FixedDiv(ORIG_FRICTION, player->mo->friction);
+	if (P_WaterRunning(player->mo))
+	{
+		player->mo->friction += 614;
 
-
-		if (player->mo->movefactor < FRACUNIT)
-			player->mo->movefactor = 19*player->mo->movefactor - 18*FRACUNIT;
-		else
-			player->mo->movefactor = FRACUNIT;
-
-		if (player->mo->movefactor < 32)
-			player->mo->movefactor = 32;
+		K_RecalculateMovefactor(player->mo);
 	}
 
 	// Wipeout slowdown, or getting flipped over

@@ -641,6 +641,7 @@ fixed_t P_GetMobjHead(const mobj_t *);
 fixed_t P_GetMobjFeet(const mobj_t *);
 fixed_t P_GetMobjGround(const mobj_t *);
 fixed_t P_GetMobjZMovement(mobj_t *mo);
+boolean P_WaterRunning(mobj_t *thing);
 
 void P_InitTIDHash(void);
 void P_AddThingTID(mobj_t *mo);

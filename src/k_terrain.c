@@ -494,8 +494,7 @@ static void K_SetTerrainFriction(mobj_t *mo)
 	terrain = mo->terrain;
 	
 	if (isPlayer && !((terrain->flags & TRF_BYPASSBOOST) 
-		|| (mo->player->invincibilitytimer == 0 && mo->player->hyudorotimer == 0
-		&& mo->player->sneakertimer == 0 && mo->player->growshrinktimer <= 0)))
+		|| P_AllowFriction(mo)))
 	{
 		// I want this to be consistent with sector friction
 		// so boosts bypass friction unless specficied otherwise

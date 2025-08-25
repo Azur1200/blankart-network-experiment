@@ -2478,7 +2478,7 @@ BlockItReturn_t PIT_PushableMoved(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-static boolean P_WaterRunning(mobj_t *thing)
+boolean P_WaterRunning(mobj_t *thing)
 {
 	ffloor_t *rover = thing->floorrover;
 	return rover && (rover->fofflags & FOF_SWIMMABLE) &&
@@ -2502,7 +2502,7 @@ fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY)
 
 	if (P_WaterStepUp(thing) == true)
 	{
-		// Add some extra stepmove when waterskipping
+		// Add some extra stepmove when waterrunning
 		maxstep += maxstepmove;
 	}
 
