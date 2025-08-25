@@ -582,18 +582,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->type == MT_PLAYER)
 	{
-		if (P_PlayerInPain(t2->player)
-			|| t2->player->flashing || t2->player->hyudorotimer
-			|| t2->player->justbumped || t2->scale > t1->scale + (mapobjectscale/8))
-			return true;
-		// Player Damage
-		if (K_KartBouncing(t2, t1->target, false, true))
-		{
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
-			S_StartSound(t2, sfx_s3k44);
-		}
-
+		// Ignore players.
 		return true;
 	}
 

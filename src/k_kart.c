@@ -11581,18 +11581,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 									if (player->bubbleblowup > bubbletime*2)
 									{
-										player->itemamount--;
-										K_ThrowKartItem(player, (player->throwdir > 0), MT_BUBBLESHIELDTRAP, -1, 0);
-										K_PlayAttackTaunt(player->mo);
-										player->bubbleblowup = 0;
-										player->bubblecool = 0;
-										player->bubblepop = 0;
-										player->itemflags &= ~IF_HOLDREADY;
-										player->botvars.itemconfirm = 0;
-									}
+										// Jump straight to deflating the bubble.
+										goto bubbledeflate;
+									}z
 								}
 								else
 								{
+bubbledeflate:
 									if (player->bubbleblowup > bubbletime)
 										player->bubbleblowup = bubbletime;
 
