@@ -11593,7 +11593,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									{
 										// Jump straight to deflating the bubble.
 										goto bubbledeflate;
-									}z
+									}
 								}
 								else
 								{
