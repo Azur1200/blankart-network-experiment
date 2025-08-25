@@ -9899,6 +9899,19 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 		overlay->color = SKINCOLOR_PURPLE;
 }
 
+// Sliptide conditions for Alternative Invincibility.
+static boolean K_AltInvinSliptideCondition(player_t *player)
+{
+	if (K_GetKartInvinType() != KARTINVIN_ALTERN)
+	{
+		// Not in Alternative, hit the bricks!
+		return false;
+	}
+
+	// Allow sliptides if you're above half power.
+	return (K_InvincibilityGradient(player->invincibilitytimer) > (FRACUNIT/2));
+}
+
 static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
@@ -10086,7 +10099,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
 	}
 
-	if ( (!(player->sneakertimer || player->flamestore))
+	if ( (!(player->sneakertimer || player->flamestore || K_AltInvinSliptideCondition(player)))
 	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
 	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
