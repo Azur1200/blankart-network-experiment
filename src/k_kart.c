@@ -2450,21 +2450,19 @@ static void K_UpdateDraft(player_t *player)
 			yourangle = K_MomentumAngle(player->mo);
 			theirangle = K_MomentumAngle(players[i].mo);
 
-			diff = R_PointToAngle2(player->mo->x, player->mo->y, players[i].mo->x, players[i].mo->y) - yourangle;
-			if (diff > ANGLE_180)
-				diff = InvAngle(diff);
-
 			// Not in front of this player.
+			diff = AngleDelta(R_PointToAngle2(player->mo->x, player->mo->y, players[i].mo->x, players[i].mo->y), yourangle);
 			if (diff > ANG10)
+			{
 				continue;
-
-			diff = yourangle - theirangle;
-			if (diff > ANGLE_180)
-				diff = InvAngle(diff);
+			}
 
 			// Not moving in the same direction.
+			diff = AngleDelta(yourangle, theirangle);
 			if (diff > ANGLE_90)
+			{
 				continue;
+			}
 
 			//if (P_IsLocalPlayer(player))
 				//CONS_Printf("Within Range of %s!\nAngle = %d\n", player_names[player - players], diff);
@@ -2475,12 +2473,24 @@ static void K_UpdateDraft(player_t *player)
 #ifndef EASYDRAFTTEST
 			// TOO close to draft.
 			if (dist < minDist)
+			{
 				continue;
+			}
 
 			// Not close enough to draft.
 			if (dist > draftdistance && draftdistance > 0)
+			{
 				continue;
+			}
 #endif
+
+			// Bots are unusually good at keeping their facing aligned on long, tight turns.
+			// Force them to give up draft in these situations, like a drifting player typically would.
+			UINT16 rejectThreshold = KART_FULLTURN/4;
+			if (K_PlayerUsesBotMovement(player) && (abs(player->oldcmd.turning + player->cmd.turning) >= rejectThreshold))
+			{
+				continue;
+			}
 
 			olddraft = player->draftpower;
 
