@@ -152,6 +152,7 @@ boolean chainingactive;
 boolean slipdashactive;
 boolean purpledriftactive;
 boolean slopeboostactive;
+boolean draftingactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8022,6 +8023,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slipdashactive = false;
 	purpledriftactive = false;
 	slopeboostactive = false;
+	draftingactive = false;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8040,6 +8042,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartslopeboost.value)
 		slopeboostactive = true;
+
+	if (cv_kartdrafting.value)
+		draftingactive = true;
 
 	invintype = (UINT8)cv_kartinvintype.value;
 

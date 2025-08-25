@@ -235,6 +235,9 @@ enum player_e
 	player_boostinfo,
 	player_numsneakers,
 	player_numboosts,
+	player_draftpower,
+	player_draftleeway,
+	player_lastdraft,
 	player_tripwireState,
 	player_tripwirePass,
 	player_tripwireLeniency,
@@ -426,6 +429,9 @@ static const char *const player_opt[] = {
 	"boostinfo",
 	"numsneakers",
 	"numboosts",
+	"draftpower",
+	"draftleeway",
+	"lastdraft",
 	"tripwireState",
 	"tripwirePass",
 	"tripwireLeniency",
@@ -778,6 +784,15 @@ static int player_get(lua_State *L)
 		break;
 	case player_numboosts:
 		lua_pushinteger(L, plr->numboosts);
+		break;
+	case player_draftpower:
+		lua_pushinteger(L, plr->draftpower);
+		break;
+	case player_draftleeway:
+		lua_pushinteger(L, plr->draftleeway);
+		break;
+	case player_lastdraft:
+		lua_pushinteger(L, plr->lastdraft);
 		break;
 	case player_tripwireState:
 		lua_pushinteger(L, plr->tripwireState);
@@ -1440,6 +1455,15 @@ static int player_set(lua_State *L)
 		break;
 	case player_numboosts:
 		plr->numboosts = luaL_checkinteger(L, 3);
+		break;
+	case player_draftpower:
+		plr->draftpower = luaL_checkinteger(L, 3);
+		break;
+	case player_draftleeway:
+		plr->draftleeway = luaL_checkinteger(L, 3);
+		break;
+	case player_lastdraft:
+		plr->lastdraft = luaL_checkinteger(L, 3);
 		break;
 	case player_tripwireState:
 		plr->tripwireState = luaL_checkinteger(L, 3);

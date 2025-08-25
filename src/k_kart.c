@@ -347,6 +347,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_slope_accelboost);
 	CV_RegisterVar(&cv_kartstacking_slope_stackable);
 
+	CV_RegisterVar(&cv_kartdrafting);
+	CV_RegisterVar(&cv_kartstacking_drafting_minspeed);
+	CV_RegisterVar(&cv_kartstacking_drafting_maxspeed);
+
 	CV_RegisterVar(&cv_kartchaining);
 	CV_RegisterVar(&cv_kartchainingoffroad);
 	CV_RegisterVar(&cv_kartchainingsound);
@@ -2369,6 +2373,165 @@ static void K_UpdateOffroad(player_t *player)
 		player->offroad = 0;
 }
 
+/**	\brief	Updates the player's drafting values once per frame
+ *
+ *	\param	player	player object passed from K_KartPlayerThink
+ *
+ *	\return	void
+ */
+
+static void K_UpdateDraft(player_t *player)
+{
+	if (!K_DraftingActive())
+	{
+		player->draftpower = 0;
+		player->draftleeway = 0;
+		player->lastdraft = -1;
+		return;
+	}
+
+	fixed_t topspd = K_GetKartSpeed(player, false, false);
+	fixed_t draftdistance;
+	fixed_t minDist;
+	UINT8 leniency;
+	UINT8 i;
+
+	// Distance you have to be to draft. If you're still accelerating, then this distance is lessened.
+	// This distance biases toward low weight! (min weight gets ??? units, max weight gets 2560 units)
+	// This distance is also scaled based on game speed.
+	draftdistance = (2560 + (128 * (9 - player->kartweight))) * player->mo->scale;
+	if (player->speed < topspd)
+		draftdistance = FixedMul(draftdistance, FixedDiv(player->speed, topspd));
+	draftdistance = FixedMul(draftdistance, K_GetKartGameSpeedScalar(gamespeed));
+
+	// On the contrary, the leniency period biases toward high weight.
+	leniency = (3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
+
+	minDist = 640 * player->mo->scale;
+
+	if (gametype == GT_BATTLE)
+	{
+		// TODO: gametyperules
+		minDist /= 4;
+		draftdistance *= 2;
+		leniency *= 4;
+	}
+
+	// Not enough speed to draft.
+	if (player->speed >= 20*player->mo->scale)
+	{
+//#define EASYDRAFTTEST
+		// Let's hunt for players to draft off of!
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			fixed_t dist, olddraft;
+#ifndef EASYDRAFTTEST
+			angle_t yourangle, theirangle, diff;
+#endif
+
+			if (!playeringame[i] || players[i].spectator || !players[i].mo)
+				continue;
+
+#ifndef EASYDRAFTTEST
+			// Don't draft on yourself :V
+			if (&players[i] == player)
+				continue;
+#endif
+
+			// Not enough speed to draft off of.
+			if (players[i].speed < 20*players[i].mo->scale)
+				continue;
+
+			// You can't draft a ghost.
+			if (players[i].hyudorotimer)
+				continue;
+
+#ifndef EASYDRAFTTEST
+			yourangle = K_MomentumAngle(player->mo);
+			theirangle = K_MomentumAngle(players[i].mo);
+
+			diff = R_PointToAngle2(player->mo->x, player->mo->y, players[i].mo->x, players[i].mo->y) - yourangle;
+			if (diff > ANGLE_180)
+				diff = InvAngle(diff);
+
+			// Not in front of this player.
+			if (diff > ANG10)
+				continue;
+
+			diff = yourangle - theirangle;
+			if (diff > ANGLE_180)
+				diff = InvAngle(diff);
+
+			// Not moving in the same direction.
+			if (diff > ANGLE_90)
+				continue;
+
+			//if (P_IsLocalPlayer(player))
+				//CONS_Printf("Within Range of %s!\nAngle = %d\n", player_names[player - players], diff);
+#endif
+
+			dist = P_AproxDistance(P_AproxDistance(players[i].mo->x - player->mo->x, players[i].mo->y - player->mo->y), players[i].mo->z - player->mo->z);
+
+#ifndef EASYDRAFTTEST
+			// TOO close to draft.
+			if (dist < minDist)
+				continue;
+
+			// Not close enough to draft.
+			if (dist > draftdistance && draftdistance > 0)
+				continue;
+#endif
+
+			olddraft = player->draftpower;
+
+			player->draftleeway = leniency;
+			player->lastdraft = i;
+
+			// Draft power is used later in K_GetKartBoostPower, ranging from 0 for normal speed and FRACUNIT for max draft speed.
+			// How much this increments every tic biases toward acceleration! (min speed gets ???% per tic, max speed gets ???% per tic)
+			if (player->draftpower < FRACUNIT)
+			{
+				fixed_t add = (FRACUNIT/200) + ((9 - player->kartspeed+(player->kartspeed/3)) * ((3*FRACUNIT)/1600));
+				player->draftpower += add;
+
+				if (gametype == GT_BATTLE)
+				{
+					// TODO: gametyperules
+					// Double gain in Battle
+					player->draftpower += add;
+				}
+			}
+
+			if (player->draftpower > FRACUNIT)
+				player->draftpower = FRACUNIT;
+
+			// Play draft finish noise
+			if (olddraft < FRACUNIT && player->draftpower >= FRACUNIT)
+			{
+				S_StartSound(player->mo, sfx_s266);
+				S_StartSound(player->mo, sfx_s3k7c);
+			}
+
+			return; // Finished doing our draft.
+		}
+	}
+
+	// No one to draft off of? Then you can knock that off.
+	if (player->draftleeway > 0) // Prevent small disruptions from stopping your draft.
+	{
+		if (P_IsObjectOnGround(player->mo) == true)
+		{
+			// Allow maintaining draft in air setpieces.
+			player->draftleeway--;
+		}
+	}
+	else // Remove draft speed boost.
+	{
+		player->draftpower = 0;
+		player->lastdraft = -1;
+	}
+}
+
 void K_KartPainEnergyFling(player_t *player)
 {
 	static const UINT8 numfling = 5;
@@ -2553,13 +2716,7 @@ void K_SpawnNormalSpeedLines(player_t *player)
 		P_SetScale(fast, 3*fast->scale/2);
 	}
 
-	if (player->eggmanexplode)
-	{
-		// Make it red when you have the eggman speed boost
-		fast->color = SKINCOLOR_RED;
-		fast->colorized = true;
-	}
-	else if (player->invincibilitytimer)
+	if (player->invincibilitytimer)
 	{
 		const tic_t defaultTime = itemtime+(2*TICRATE);
 		if (player->invincibilitytimer > defaultTime)
@@ -2583,6 +2740,30 @@ void K_SpawnNormalSpeedLines(player_t *player)
 	{
 		fast->color = SKINCOLOR_WHITE;
 		fast->colorized = true;
+	}
+}
+
+void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent)
+{
+	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
+		player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
+		player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
+		MT_FASTLINE);
+
+	P_SetTarget(&fast->target, player->mo);
+	fast->angle = K_MomentumAngle(player->mo);
+	fast->momx = 3*player->mo->momx/4;
+	fast->momy = 3*player->mo->momy/4;
+	fast->momz = 3*P_GetMobjZMovement(player->mo)/4;
+
+	K_MatchGenericExtraFlags(fast, player->mo);
+
+	fast->colorized = true;
+	P_SetScale2(fast, scale, false);
+	fast->color = color;
+	if (translucent)
+	{
+		fast->renderflags |= RF_ADD;
 	}
 }
 
@@ -3767,6 +3948,11 @@ static void K_UpdateSlopeBoost(player_t *player)
 	player->prevslopeboost = addedboost;
 }
 
+static fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax)
+{
+	return newmin +  FixedMul(FixedDiv( value-oldmin , oldmax-oldmin), newmax-newmin);
+}
+
 // sets boostpower, speedboost and accelboost to whatever we need it to be
 static void K_GetKartBoostPower(player_t *player)
 {
@@ -3857,6 +4043,15 @@ static void K_GetKartBoostPower(player_t *player)
 		//K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
 		//Always stack this boost....
 		player->boostinfo.stackspeedboost += player->botvars.rubberband - FRACUNIT;
+	}
+
+	if (player->draftpower > 0) // Drafting
+	{
+		fixed_t draftspeed = K_BoostRescale(player->kartspeed*FRACUNIT, 9*FRACUNIT, FRACUNIT, DRAFTMINSPEED, DRAFTMAXSPEED);
+
+		player->boostinfo.stackspeedboost += FixedMul(draftspeed, player->draftpower);
+		player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, FixedMul(draftspeed, player->draftpower));
+		player->boostinfo.grade++;
 	}
 
 	player->boostpower = boostpower;
@@ -5135,6 +5330,34 @@ void K_SpawnSparkleTrail(mobj_t *mo)
 	}
 
 	P_SetMobjState(sparkle, S_KARTINVULN_LARGE1);
+}
+
+static void K_SpawnDraftDust(mobj_t *mo)
+{
+	I_Assert(mo != NULL);
+	I_Assert(!P_MobjWasRemoved(mo));
+
+	if (leveltime % 2)
+	{
+		SINT8 i;
+		for (i = 0; i < 2; i++)
+		{
+			fixed_t newx = mo->x + P_ReturnThrustX(mo, mo->angle + ((i == 0) ? -1 : 1)*ANGLE_90, FixedMul(16*FRACUNIT, mo->scale));
+			fixed_t newy = mo->y + P_ReturnThrustY(mo, mo->angle + ((i == 0) ? -1 : 1)*ANGLE_90, FixedMul(16*FRACUNIT, mo->scale));
+			mobj_t *dust = P_SpawnMobj(newx, newy, mo->z, MT_PARTICLE);
+
+			P_SetTarget(&dust->target, mo);
+			dust->angle = K_MomentumAngle(mo);
+			dust->destscale = mo->scale*3;
+			dust->scalespeed = mo->scale/6;
+			P_SetScale(dust, mo->scale);
+			K_FlipFromObject(dust, mo);
+			dust->momx = 3*mo->momx/5;
+			dust->momy = 3*mo->momy/5;
+			dust->renderflags |= RF_GHOSTLY;
+			dust->fuse = 5;
+		}
+	}
 }
 
 void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
@@ -7668,6 +7891,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_UpdateOffroad(player);
+	K_UpdateDraft(player);
+
+	if (player->draftpower > 0)
+	{
+		boolean fulldraft = player->draftpower >= FRACUNIT;
+		// Draft lines
+		K_SpawnDraftSpeedLines(player, FixedMul(player->draftpower, mapobjectscale), fulldraft ? player->skincolor : SKINCOLOR_WHITE, !fulldraft);
+	}
+
 	K_UpdateEngineSounds(player); // Thanks, VAda!
 
 	// update boost angle if not spun out
@@ -7707,9 +7939,19 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 			// Could probably be moved somewhere else.
 			K_HandleFootstepParticles(player->mo);
-			if (player->tiregrease)
+
+			if (P_IsObjectOnGround(player->mo))
 			{
-				K_TireGreaseEffect(player);
+				if (player->tiregrease)
+				{
+					K_TireGreaseEffect(player);
+				}
+
+				// Draft dust
+				if (player->draftpower >= FRACUNIT)
+				{
+					K_SpawnDraftDust(player->mo);
+				}
 			}
 		}
 
@@ -11827,6 +12069,17 @@ boolean K_SlopeBoostActive(void)
 	if (slopeboostactive)
 	{
 		// SlopeBoost is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_DraftingActive(void)
+{
+	if (draftingactive)
+	{
+		// Drafting is enabled!
 		return true;
 	}
 

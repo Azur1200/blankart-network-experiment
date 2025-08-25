@@ -4155,6 +4155,13 @@ static int lib_kSlopeBoostActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Drafting is active.
+static int lib_kDraftingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_DraftingActive());
+	return 1;
+}
+
 // Grabs the currently active invintype.
 static int lib_kGetKartInvinType(lua_State *L)
 {
@@ -5085,6 +5092,7 @@ static luaL_Reg lib[] = {
 	{"K_ChainingActive",lib_kChainingActive},
 	{"K_SlipdashActive",lib_kSlipdashActive},
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
+	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},

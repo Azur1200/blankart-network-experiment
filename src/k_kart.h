@@ -127,6 +127,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SLOPEACCELBOOST K_RAGuard(cv_kartstacking_slope_accelboost)
 #define SLOPESTACKABLE K_RAGuard(cv_kartstacking_slope_stackable)
 
+#define DRAFTMINSPEED K_RAGuard(cv_kartstacking_drafting_minspeed)
+#define DRAFTMAXSPEED K_RAGuard(cv_kartstacking_drafting_maxspeed)
+
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
 // Used for respawning checks.
@@ -195,6 +198,7 @@ void K_GenericExtraFlagsNoZAdjust(mobj_t *mo, mobj_t *master);
 void K_SpawnDashDustRelease(player_t *player);
 void K_SpawnDriftBoostClip(player_t *player);
 void K_SpawnNormalSpeedLines(player_t *player);
+void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent);
 void K_SpawnInvincibilitySpeedLines(mobj_t *mo);
 void K_SpawnBumpEffect(mobj_t *mo);
 void K_KartMoveAnimation(player_t *player);
@@ -317,6 +321,7 @@ boolean K_StackingActive(void);
 boolean K_ChainingActive(void);
 boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
+boolean K_DraftingActive(void);
 boolean K_GetKartInvinType(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);
 INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement, boolean chainsound);

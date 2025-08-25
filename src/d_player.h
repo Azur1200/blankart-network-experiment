@@ -660,6 +660,10 @@ struct player_t
 	UINT8 numsneakers;		// Number of stacked sneakers
 	UINT8 numboosts;		// Number of Boosts stacking this frame
 
+	fixed_t draftpower;		// (0 to FRACUNIT) - Drafting power, doubles your top speed & acceleration at max
+	UINT16 draftleeway;		// Leniency timer before removing draft power
+	SINT8 lastdraft;		// (-1 to 15) - Last player being drafted
+
 	UINT8 tripwireState; // see tripwirestate_t
 	UINT8 tripwirePass; // see tripwirepass_t
 	UINT16 tripwireLeniency;	// When reaching a state that lets you go thru tripwire, you get an extra second leniency after it ends to still go through it.
