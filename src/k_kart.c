@@ -11634,33 +11634,35 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								else
 								{
 bubbledeflate:
-									boolean popped = false;
-									if (player->bubbleblowup > bubbletime)
-										player->bubbleblowup = bubbletime;
-
-									if (player->bubbleblowup)
 									{
-										player->bubbleblowup--;
+										boolean popped = false;
+										if (player->bubbleblowup > bubbletime)
+											player->bubbleblowup = bubbletime;
 
-										if (!player->bubbleblowup)
+										if (player->bubbleblowup)
 										{
-											// Each use costs a point of health.
-											K_RemoveBubbleHealth(player, 1);
+											player->bubbleblowup--;
 
-											if (player->bubblehealth <= 0)
+											if (!player->bubbleblowup)
 											{
-												// Bubble popped!
-												popped = true;
+												// Each use costs a point of health.
+												K_RemoveBubbleHealth(player, 1);
+
+												if (player->bubblehealth <= 0)
+												{
+													// Bubble popped!
+													popped = true;
+												}
 											}
 										}
-									}
 
-									if (!popped)
-									{
-										if (player->bubblecool)
-											player->itemflags &= ~IF_HOLDREADY;
-										else
-											player->itemflags |= IF_HOLDREADY;
+										if (!popped)
+										{
+											if (player->bubblecool)
+												player->itemflags &= ~IF_HOLDREADY;
+											else
+												player->itemflags |= IF_HOLDREADY;
+										}
 									}
 								}
 							}
