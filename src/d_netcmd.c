@@ -528,6 +528,7 @@ consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CA
 
 consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartDrafting_OnChange);
 consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
 // Invincibility modifiers
 static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
