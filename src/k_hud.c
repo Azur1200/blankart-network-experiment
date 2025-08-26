@@ -1324,8 +1324,8 @@ static void K_drawKartItem(void)
 				localcolor = SKINCOLOR_WHITE;
 			}
 
-			itembar = 2 - stplyr->bubblepop;
-			maxl = 2;
+			itembar = stplyr->bubblehealth;
+			maxl = MAXBUBBLEHEALTH;
 		}
 		else if (stplyr->sadtimer > 0)
 		{

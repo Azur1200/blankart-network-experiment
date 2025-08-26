@@ -263,7 +263,7 @@ enum player_e
 	player_curshield,
 	player_bubblecool,
 	player_bubbleblowup,
-	player_bubblepop,
+	player_bubblehealth,
 	player_flamedash,
 	player_flametimer,
 	player_flamestore,
@@ -457,7 +457,7 @@ static const char *const player_opt[] = {
 	"curshield",
 	"bubblecool",
 	"bubbleblowup",
-	"bubblepop",
+	"bubblehealth",
 	"flamedash",
 	"flametimer",
 	"flamestore",
@@ -869,8 +869,8 @@ static int player_get(lua_State *L)
 	case player_bubbleblowup:
 		lua_pushinteger(L, plr->bubbleblowup);
 		break;
-	case player_bubblepop:
-		lua_pushinteger(L, plr->bubblepop);
+	case player_bubblehealth:
+		lua_pushinteger(L, plr->bubblehealth);
 		break;
 	case player_flamedash:
 		lua_pushinteger(L, plr->flamedash);
@@ -1540,8 +1540,8 @@ static int player_set(lua_State *L)
 	case player_bubbleblowup:
 		plr->bubbleblowup = luaL_checkinteger(L, 3);
 		break;
-	case player_bubblepop:
-		plr->bubblepop = luaL_checkinteger(L, 3);
+	case player_bubblehealth:
+		plr->bubblehealth = luaL_checkinteger(L, 3);
 		break;
 	case player_flamedash:
 		plr->flamedash = luaL_checkinteger(L, 3);

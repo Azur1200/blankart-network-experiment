@@ -530,15 +530,15 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 		return;
 	}
 
-	player->bubblepop++;
-	player->bubblecool = 15*4;
-	player->itemflags &= ~IF_HOLDREADY;
-	bubble->extravalue1 = 4;
-	bubble->cvmem = 1;
+	S_StartSound(player->mo, sfx_s3k6e);
+	K_RemoveBubbleHealth(player, 2);
 
-	if (player->bubblepop > 1)
+	if (player->bubblehealth > 0)
 	{
-		K_PopPlayerShield(player);
+		player->bubblecool = 15*4;
+		player->itemflags &= ~IF_HOLDREADY;
+		bubble->extravalue1 = 4;
+		bubble->cvmem = 1;
 	}
 }
 

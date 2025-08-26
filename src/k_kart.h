@@ -71,6 +71,8 @@ extern vector3_t clusterpoint, clusterdtf;
 // :)
 #define MAXODDS 8
 
+#define MAXBUBBLEHEALTH 6
+
 // Invincibility-related constants
 #define INVINDIST K_RAGuard(cv_kartinvindist)
 #define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
@@ -246,6 +248,7 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
+void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 void K_RepairOrbitChain(mobj_t *orbit);
 void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);
 player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);

@@ -6478,6 +6478,7 @@ void K_DropHnextList(player_t *player)
 void K_PopPlayerShield(player_t *player)
 {
 	INT32 shield = K_GetShieldFromPlayer(player);
+	boolean isbubble = false;
 
 	// Doesn't apply if player is invalid.
 	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
@@ -6491,11 +6492,28 @@ void K_PopPlayerShield(player_t *player)
 			K_DoThunderShield(player);
 			break;
 		case KSHIELD_BUBBLE:
-			S_StartSound(player->mo, sfx_s3k4b);
+			isbubble = true;
 			break;
 		case KSHIELD_FLAME:
 			S_StartSound(player->mo, sfx_s3k47);
 			break;
+	}
+
+	if (isbubble)
+	{
+		if (player->bubblehealth > 0)
+		{
+			// Chip HARD at the player's bubble health.
+			S_StartSound(player->mo, sfx_s3k6e);
+			K_RemoveBubbleHealth(player, 3);
+			player->flametimer = 0;
+			return;
+		}
+		else
+		{
+			// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
+			S_StartSound(player->mo, sfx_s3k4b);
+		}
 	}
 
 	player->curshield = KSHIELD_NONE;
@@ -6508,9 +6526,20 @@ void K_PopPlayerShield(player_t *player)
 
 	player->bubbleblowup = 0;
 	player->bubblecool = 0;
-	player->bubblepop = 0;
+	player->bubblehealth = 0;
 
 	K_UnsetItemOut(player);
+}
+
+// Depletes a bubble shield's health, and pops the shield at 0 health.
+void K_RemoveBubbleHealth(player_t *player, INT16 sub)
+{
+	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
+
+	if (player->bubblehealth <= 0)
+	{
+		K_PopPlayerShield(player);
+	}
 }
 
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
@@ -8322,7 +8351,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->bubbleblowup = 0;
 		player->bubblecool = 0;
-		player->bubblepop = 0;
+		player->bubblehealth = 0;
 	}
 
 	if (player->flamedash)
@@ -11579,6 +11608,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&shield->target, player->mo);
 								S_StartSound(player->mo, sfx_s3k3f);
 								player->curshield = KSHIELD_BUBBLE;
+								player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
@@ -11586,7 +11616,18 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 								{
 									if (player->bubbleblowup == 0)
+									{
+										// Each use costs a point of health.
+										K_RemoveBubbleHealth(player, 1);
+
+										if (player->bubblehealth <= 0)
+										{
+											// Bubble popped; abort!
+											goto bubblebreak;
+										}
+
 										S_StartSound(player->mo, sfx_s3k75);
+									}
 
 									player->bubbleblowup++;
 									player->bubblecool = player->bubbleblowup*4;
@@ -11612,6 +11653,7 @@ bubbledeflate:
 										player->itemflags |= IF_HOLDREADY;
 								}
 							}
+bubblebreak:
 							break;
 						case KITEM_FLAMESHIELD:
 
