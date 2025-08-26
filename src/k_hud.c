@@ -5062,7 +5062,8 @@ static void K_DrawClusterDebugger(void)
 	}
 	else
 	{
-		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", clusterdtf.x, stplyr->distancetofinish));
+		V_DrawThinString(8, 126, vflags, va("Cluster player: %s", player_names[clusterid]));
+		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
 		V_DrawThinString(8, 146, vflags, va("Distance from Cluster: %d", stplyr->distancefromcluster));
 	}
 }

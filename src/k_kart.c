@@ -10395,6 +10395,8 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		if (clusterid != UINT32_MAX)
 		{
 			// Use the cluster player's DtF.
+
+			clusterdtf.x = (INT32)(players[clusterid].distancetofinish);
 			targetdtf = players[clusterid].distancetofinish;
 		}
 		else
