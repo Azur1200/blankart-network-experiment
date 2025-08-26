@@ -349,6 +349,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartdrafting);
 	CV_RegisterVar(&cv_kartdrafting_closedraft);
+	CV_RegisterVar(&cv_kartdrafting_closedeadzone);
 	CV_RegisterVar(&cv_kartdrafting_basedistance);
 	CV_RegisterVar(&cv_kartstacking_drafting_minspeed);
 	CV_RegisterVar(&cv_kartstacking_drafting_maxspeed);
@@ -2409,7 +2410,7 @@ static void K_UpdateDraft(player_t *player)
 	// On the contrary, the leniency period biases toward high weight.
 	leniency = (3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
 
-	minDist = 640 * player->mo->scale;
+	minDist = cv_kartdrafting_closedeadzone.value * player->mo->scale;
 
 	if (gametype == GT_BATTLE)
 	{
