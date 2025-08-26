@@ -291,6 +291,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].numsneakers);
 		WRITEUINT8(save->p, players[i].numboosts);
 
+		WRITEFIXED(save->p, players[i].draftpower);
+		WRITEUINT16(save->p, players[i].draftleeway);
+		WRITESINT8(save->p, players[i].lastdraft);
+
 		// boostinfo_t
 		WRITEFIXED(save->p, players[i].boostinfo.stackspeedboost);
 		WRITEFIXED(save->p, players[i].boostinfo.nonstackspeedboost);
@@ -641,6 +645,10 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].boostangle = READANGLE(save->p);
 		players[i].numsneakers = READUINT8(save->p);
 		players[i].numboosts = READUINT8(save->p);
+
+		players[i].draftpower = READFIXED(save->p);
+		players[i].draftleeway = READUINT16(save->p);
+		players[i].lastdraft = READSINT8(save->p);
 
 		// boostinfo_t
 		players[i].boostinfo.stackspeedboost = READFIXED(save->p);
