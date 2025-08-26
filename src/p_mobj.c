@@ -9054,7 +9054,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 			mobj->angle += ANGLE_22h;
 			mobj->renderflags &= ~RF_GHOSTLYMASK;
-			scale += (blow * (3*scale)) / bubbletime;
+			scale += (blow * ((3*scale)>>1)) / bubbletime;
 
 			mobj->frame = CLAMP(states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1, states[S_BUBBLESHIELDBLOWUP].frame, states[S_BUBBLESHIELDBLOWUP].frame + 3);
 			if ((mobj->target->player->bubbleblowup > bubbletime) && (leveltime & 1))
