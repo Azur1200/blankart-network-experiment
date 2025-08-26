@@ -489,7 +489,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 	{ 0, 0, 0, 0, 0, 0, 0, 0 }, // Kitchen Sink
 	{ 1, 2, 2, 0, 0, 0, 0, 0 }, // Super Ring
 	{ 3, 0, 0, 0, 0, 0, 0, 0 }, // Land Mine
-	{ 0, 1, 2, 1, 0, 0, 0, 0 }, // Bubble Shield
+	{ 0, 0, 0, 2, 3, 1, 0, 0 }, // Bubble Shield
 	{ 0, 0, 0, 0, 2, 5, 5, 0 }, // Flame Shield
 	{ 0, 0, 3, 4, 3, 0, 0, 0 }, // Sneaker x2
 	{ 0, 0, 0, 1, 5, 6, 3, 0 }, // Sneaker x3
