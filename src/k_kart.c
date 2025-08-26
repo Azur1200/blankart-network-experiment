@@ -348,6 +348,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_slope_stackable);
 
 	CV_RegisterVar(&cv_kartdrafting);
+	CV_RegisterVar(&cv_kartdrafting_closedraft);
 	CV_RegisterVar(&cv_kartstacking_drafting_minspeed);
 	CV_RegisterVar(&cv_kartstacking_drafting_maxspeed);
 
@@ -2471,8 +2472,9 @@ static void K_UpdateDraft(player_t *player)
 			dist = P_AproxDistance(P_AproxDistance(players[i].mo->x - player->mo->x, players[i].mo->y - player->mo->y), players[i].mo->z - player->mo->z);
 
 #ifndef EASYDRAFTTEST
+
 			// TOO close to draft.
-			if (dist < minDist)
+			if (!cv_kartdrafting_closedraft.value && (dist < minDist))
 			{
 				continue;
 			}

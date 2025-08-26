@@ -172,6 +172,7 @@ extern consvar_t cv_kartstacking_slope_accelboost;
 extern consvar_t cv_kartstacking_slope_stackable;
 
 extern consvar_t cv_kartdrafting;
+extern consvar_t cv_kartdrafting_closedraft;
 extern consvar_t cv_kartstacking_drafting_minspeed;
 extern consvar_t cv_kartstacking_drafting_maxspeed;
 
