@@ -530,8 +530,8 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 		return;
 	}
 
-	S_StartSound(player->mo, sfx_s3k6e);
-	K_RemoveBubbleHealth(player, 2);
+	// Pop the bubble immediately after an item hit.
+	K_RemoveBubbleHealth(player, BUBBLEITMDAMAGE);
 
 	if (player->bubblehealth > 0)
 	{

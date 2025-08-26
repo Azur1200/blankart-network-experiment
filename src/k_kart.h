@@ -71,7 +71,18 @@ extern vector3_t clusterpoint, clusterdtf;
 // :)
 #define MAXODDS 8
 
+// Bubble Shield's maximum health
 #define MAXBUBBLEHEALTH 6
+
+// Chip damage done to a Bubble Shield upon bumping a player
+#define BUBBLEBUMPCHIP 1
+
+// HP cost for a Bubble Shield to inflate
+#define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
+
+// Damage done to an inflated Bubble Shield by items. By default, this is the maximum health,
+// so that the shield immediately breaks
+#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH)
 
 // Invincibility-related constants
 #define INVINDIST K_RAGuard(cv_kartinvindist)

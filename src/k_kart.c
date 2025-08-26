@@ -2032,6 +2032,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	fixed_t distx, disty;
 	fixed_t dot, force;
 	fixed_t mass1, mass2;
+	INT32 p1shield, p2shield;
 
 	if (!mobj1 || !mobj2)
 		return false;
@@ -2201,10 +2202,26 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		mobj1->player->rmomy = mobj1->momy - mobj1->player->cmomy;
 		mobj1->player->justbumped = bumptime;
 
+		p1shield = K_GetShieldFromPlayer(mobj1->player);
+
 		// Moved here so it only fires once on bump.
-		if (mobj2->player && (mobj1->player->rings > 0) && (K_GetShieldFromPlayer(mobj1->player) == KSHIELD_NONE))
+		if (p1shield == KSHIELD_BUBBLE)
 		{
-			P_PlayerRingBurst(mobj1->player, 1);
+			// Each bump does chip damage to the shield.
+			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
+
+			if (mobj1->player->bubblehealth > 0)
+			{
+				// Play a distinct "crack!" noise to clue the player in.
+				S_StartSound(mobj1, sfx_s3k6e);
+			}
+		}
+		else if (p1shield == KSHIELD_NONE)
+		{
+			if (mobj2->player && (mobj1->player->rings > 0))
+			{
+				P_PlayerRingBurst(mobj1->player, 1);
+			}
 		}
 
 		if (mobj1->player->pflags & PF_JUSTFLIPPED)
@@ -2231,10 +2248,26 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		mobj2->player->rmomy = mobj2->momy - mobj2->player->cmomy;
 		mobj2->player->justbumped = bumptime;
 
+		p2shield = K_GetShieldFromPlayer(mobj2->player);
+
 		// Moved here so it only fires once on bump.
-		if (mobj1->player && (mobj2->player->rings > 0) && (K_GetShieldFromPlayer(mobj2->player) == KSHIELD_NONE))
+		if (p2shield == KSHIELD_BUBBLE)
 		{
-			P_PlayerRingBurst(mobj2->player, 1);
+			// Each bump does chip damage to the shield.
+			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
+
+			if (mobj2->player->bubblehealth > 0)
+			{
+				// Play a distinct "crack!" noise to clue the player in.
+				S_StartSound(mobj2, sfx_s3k6e);
+			}
+		}
+		else if (p2shield == KSHIELD_NONE)
+		{
+			if (mobj1->player && (mobj2->player->rings > 0))
+			{
+				P_PlayerRingBurst(mobj2->player, 1);
+			}
 		}
 
 		if (mobj2->player->spinouttimer)
@@ -6503,21 +6536,11 @@ void K_PopPlayerShield(player_t *player)
 			break;
 	}
 
-	if (isbubble)
+	if ((isbubble) && (player->bubblehealth > 0))
 	{
-		if (player->bubblehealth > 0)
-		{
-			// Chip HARD at the player's bubble health.
-			S_StartSound(player->mo, sfx_s3k6e);
-			K_RemoveBubbleHealth(player, 3);
-			player->flametimer = 0;
-			return;
-		}
-		else
-		{
-			// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
-			S_StartSound(player->mo, sfx_s3k4b);
-		}
+		// Nice whiff; see ya!
+		// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
+		S_StartSound(player->mo, sfx_s3k4b);
 	}
 
 	player->curshield = KSHIELD_NONE;
@@ -11623,7 +11646,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										S_StartSound(player->mo, sfx_s3k75);
 
 									player->bubbleblowup++;
-									player->bubblecool = player->bubbleblowup*4;
+
+									// Reduce cooldown for easier itemset chaining.
+									// (was blowup x4 before)
+									player->bubblecool = player->bubbleblowup*2;
 
 									if (player->bubbleblowup > bubbletime*2)
 									{
@@ -11645,8 +11671,8 @@ bubbledeflate:
 
 											if (!player->bubbleblowup)
 											{
-												// Each use costs a point of health.
-												K_RemoveBubbleHealth(player, 1);
+												// Each use costs some points of health.
+												K_RemoveBubbleHealth(player, BUBBLEUSECOST);
 
 												if (player->bubblehealth <= 0)
 												{
