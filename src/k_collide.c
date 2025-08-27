@@ -642,7 +642,7 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
-	if ((t2->player && !t2->player->hyudorotimer) || t2->type == MT_FALLINGROCK)
+	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
 		K_KartBouncing(t2, t1, false, false);
 
 	return true;
@@ -721,13 +721,13 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 	else if (t1Condition == true && t2Condition == false)
 	{
-		if (!hyudoroT1)
+		if (G_CompatLevel(0x0008) || !hyudoroT1)
 			P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
 		return true;
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		if (!hyudoroT2)
+		if (G_CompatLevel(0x0008) || !hyudoroT2)
 			P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
 		return true;
 	}
