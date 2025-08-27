@@ -1353,14 +1353,7 @@ fixed_t R_GetShadowZ(
 	// for frame interpolation
 	interpmobjstate_t interp = {0};
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	halfHeight = interp.z + (thing->height >> 1);
 	floorz = P_GetFloorZ(thing, interp.subsector->sector, interp.x, interp.y, NULL);
@@ -1428,14 +1421,7 @@ static void R_SkewShadowSprite(
 	// for frame interpolation
 	interpmobjstate_t interp = {0};
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	sloperelang = (R_PointToAngle(interp.x, interp.y) - groundslope->xydirection) >> ANGLETOFINESHIFT;
 
@@ -1470,14 +1456,7 @@ static void R_ProjectDropShadow(
 
 	if (abs(groundz-viewz)/tz > 4) return; // Prevent stretchy shadows and possible crashes
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	if (shadowpatch == NULL)
 	{
@@ -1584,14 +1563,7 @@ static void R_ProjectBoundingBox(mobj_t *thing, vissprite_t *vis)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	// 1--3
 	// |  |
@@ -1781,14 +1753,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(interptarg, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(interptarg, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(interptarg, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	this_scale = interp.scale;
 
@@ -2128,14 +2093,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		thing = thing->tracer;
 
-		if (R_UsingFrameInterpolation() && !paused)
-		{
-			R_InterpolateMobjState(thing, rendertimefrac, &tracer_interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(thing, FRACUNIT, &tracer_interp);
-		}
+		R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &tracer_interp);
 
 		// sprite offset
 		tracer_interp.x += thing->sprxoff;
@@ -2540,14 +2498,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolatePrecipMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	this_scale = interp.scale;
 

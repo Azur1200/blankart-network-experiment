@@ -282,7 +282,7 @@ boolean D_RenderLevel(void)
 	if (automapactive || dedicated || !cv_renderview.value || !levelloaded)
 		return false;
 
-	R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
 	viewwindowy = 0;
 	viewwindowx = 0;
@@ -446,7 +446,7 @@ static void D_Display(void)
 			for (i = 0; i <= r_splitscreen; ++i)
 			{
 				R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + i));
-				R_InterpolateViewRollAngle(rendertimefrac);
+				R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_LEVEL));
 				R_CheckViewMorph(i);
 			}
 		}
@@ -882,7 +882,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 			renderisnewtic = false;
 
 		// draw loop
-		rendertimefrac = g_time.timefrac;
+		R_SetTimeFrac(g_time.timefrac);
 		renderdeltatics = FLOAT_TO_FIXED(delta);
 
 #ifndef NOWIPE
@@ -1016,7 +1016,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = R_UsingFrameInterpolation() && !dedicated;
+		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 		doDisplay = false;
 
 #ifdef HW3SOUND
@@ -1080,29 +1080,12 @@ void D_SRB2Loop(void)
 
 			I_UpdateTime(cv_timescale.value);
 
-			if (!(paused || P_AutoPause()) && !lagging)
-			{
-				rendertimefrac = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac = FRACUNIT;
-			}
-
-			if (!lagging)
-			{
-				rendertimefrac_unpaused = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac_unpaused = FRACUNIT;
-			}
+			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
-			rendertimefrac = FRACUNIT;
-			rendertimefrac_unpaused = FRACUNIT;
+			R_SetTimeFrac(FRACUNIT);
 		}
 
 		I_UpdateTime(cv_timescale.value);

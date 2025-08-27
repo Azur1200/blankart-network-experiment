@@ -673,7 +673,7 @@ void ST_drawTitleCard(void)
 
 		// uh... "fill in the bits" of sub, or something... no idea what I came up with
 		// VERY janky, but doesn't require m_easing
-		INT32 frac = (FixedMul(R_GetHudUncap(), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
+		INT32 frac = (FixedMul(R_GetTimeFrac(RTF_LEVEL), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
 
 		sub = dupcalc;
 		while (count-- > 0)
@@ -959,7 +959,7 @@ void ST_Drawer(void)
 			stplyr = &players[displayplayers[i]];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
-			R_InterpolateView(rendertimefrac); // to assist with object tracking
+			R_InterpolateView(R_GetTimeFrac(RTF_LEVEL)); // to assist with object tracking
 			ST_overlayDrawer();
 		}
 

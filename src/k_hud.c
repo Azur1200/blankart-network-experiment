@@ -1422,7 +1422,7 @@ static void K_drawKartItem(void)
 
 	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
 	{
-		fixed_t frac = R_GetHudUncap();
+		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);
 		UINT8   fancystep = (offset ? 6 : 10);
 		fixed_t fancyoffset = (stplyr->itemroulette % 3)-1;
 
@@ -4130,7 +4130,7 @@ static void K_drawBattleFullscreen(void)
 	// fill in the fractional bits
 	if (cardanim && cardanim != 164*FRACUNIT)
 	{
-		INT32 frac = R_GetHudUncap() * ((164 - stplyr->karthud[khud_cardanimation])/8 + 1);
+		INT32 frac = R_GetTimeFrac(RTF_LEVEL) * ((164 - stplyr->karthud[khud_cardanimation])/8 + 1);
 		if (stplyr->exiting)
 			cardanim += frac;
 		else

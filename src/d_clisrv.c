@@ -2006,7 +2006,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 		// Needs to be updated here for M_DrawEggaChannel
 		renderdeltatics = FRACUNIT;
-		rendertimefrac = FRACUNIT;
+		R_SetTimeFrac(FRACUNIT);
 
 		memset(deviceResponding, false, sizeof (deviceResponding));
 

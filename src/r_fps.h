@@ -25,8 +25,16 @@ extern "C" {
 
 extern consvar_t cv_fpscap;
 
+typedef enum
+{
+	RTF_LEVEL,
+	RTF_INTER,
+	RTF_MENU,
+} timefrac_e;
+
 UINT32 R_GetFramerateCap(void);
-boolean R_UsingFrameInterpolation(void);
+fixed_t R_GetTimeFrac(timefrac_e level);
+void R_SetTimeFrac(fixed_t frac);
 
 enum viewcontext_e
 {

@@ -39,6 +39,7 @@
 #include "p_setup.h"
 #include "st_stuff.h" // hud hiding
 #include "fastcmp.h"
+#include "r_fps.h" // R_GetTimeFrac
 
 #include "lua_hud.h"
 #include "lua_hook.h"
@@ -238,8 +239,8 @@ static void F_TitleBGScroll(INT32 scrollspeed)
 	w = (vid.width / vid.dupx)<<FRACBITS;
 
 	// The scroll offset MUST be clamped before shifting by FRACBITS, or else it'll overflow in about 3 minutes
-	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (rendertimefrac * scrollspeed))/16;
-	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (rendertimefrac * scrollspeed))/16;
+	animtimer = ((((finalecount * scrollspeed) % (SHORT(pat->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
+	anim2 = (SHORT(pat2->width)<<FRACBITS) - ((((finalecount * scrollspeed) % (SHORT(pat2->width)*16))<<FRACBITS) + (R_GetTimeFrac(RTF_MENU) * scrollspeed))/16;
 
 	// SRB2Kart: F_DrawPatchCol is over-engineered; recoded to be less shitty and error-prone
 	if (rendermode != render_none)
@@ -1220,7 +1221,7 @@ void F_SkyScroll(INT32 scrollxspeed, INT32 scrollyspeed, const char *patchname)
 	tilex = max(FixedCeil(FixedDiv(vid.width, pw)) >> FRACBITS, 1)+2; // one tile on both sides of center
 	tiley = max(FixedCeil(FixedDiv(vid.height, ph)) >> FRACBITS, 1)+2;
 
-	fracmenuanimtimer = (menuanimtimer * FRACUNIT) - (FRACUNIT - rendertimefrac);
+	fracmenuanimtimer = (menuanimtimer * FRACUNIT) - (FRACUNIT - R_GetTimeFrac(RTF_MENU));
 	xscrolltimer = ((fracmenuanimtimer*scrollxspeed)/16 + patwidth*xneg*FRACUNIT) % (patwidth * FRACUNIT);
 	yscrolltimer = ((fracmenuanimtimer*scrollyspeed)/16 + patheight*yneg*FRACUNIT) % (patheight * FRACUNIT);
 
@@ -1427,7 +1428,7 @@ void F_TitleScreenDrawer(void)
 				if (finalecount >= 20)
 					V_DrawSmallScaledPatch(84, 87, 0, ttkart);
 				else if (finalecount >= 10)
-					V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetMenuUncap()), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
+					V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - finalecount)<<FRACBITS) - R_GetTimeFrac(RTF_MENU)), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
 			}
 			else if (finalecount < 52)
 			{
@@ -1443,8 +1444,8 @@ void F_TitleScreenDrawer(void)
 
 				F_TitleBGScroll(5);
 
-				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
-				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetMenuUncap(), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(0, -40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTOLEFT, ttcheckers, FRACUNIT);
+				V_DrawSciencePatch(280<<FRACBITS, -(40<<FRACBITS) + 40*FixedDiv(((finalecount % 70)<<FRACBITS) + R_GetTimeFrac(RTF_MENU), 70<<FRACBITS), V_SNAPTOTOP|V_SNAPTORIGHT, ttcheckers, FRACUNIT);
 
 				if (transval)
 					V_DrawFadeScreen(0, 10 - transval);
