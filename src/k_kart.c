@@ -2085,13 +2085,13 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	}
 
 	// Don't bump if you're flipping over
-	if (mobj1->player && mobj1->player->flipovertimer && (!(mobj1->player->pflags & PF_JUSTFLIPPED)))
+	if (mobj1->player && mobj1->player->flipovertimer)
 	{
 		mobj1->player->justbumped = bumptime;
 		return false;
 	}
 
-	if (mobj2->player && mobj2->player->flipovertimer && (!(mobj2->player->pflags & PF_JUSTFLIPPED)))
+	if (mobj2->player && mobj2->player->flipovertimer)
 	{
 		mobj2->player->justbumped = bumptime;
 		return false;
@@ -2224,16 +2224,6 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 			}
 		}
 
-		if (mobj1->player->pflags & PF_JUSTFLIPPED)
-		{
-			fixed_t flipoveradd = R_PointToDist2(0, 0, mobj1->player->rmomx, mobj1->player->rmomy);
-			S_StartSound(mobj2, sfx_flipos);
-			mobj1->player->flipoverangle = R_PointToAngle2(0,0,mobj1->player->rmomx, mobj1->player->rmomy)-ANG15;
-			P_InstaThrust(mobj1, mobj1->player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), mobj1->scale));
-			mobj1->momz = FixedMul(FlipOverZMomentum(gravity), mobj1->scale);
-			mobj1->player->pflags &= ~PF_JUSTFLIPPED;
-		}
-
 		if (mobj1->player->spinouttimer)
 		{
 			mobj1->player->wipeoutslow = wipeoutslowtime+1;
@@ -2275,16 +2265,6 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 			mobj2->player->wipeoutslow = wipeoutslowtime+1;
 			mobj2->player->spinouttimer = max(wipeoutslowtime+1, mobj2->player->spinouttimer);
 			//mobj2->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
-		}
-
-		if (mobj2->player->pflags & PF_JUSTFLIPPED)
-		{
-			fixed_t flipoveradd = R_PointToDist2(0, 0, mobj2->player->rmomx, mobj2->player->rmomy);
-			S_StartSound(mobj2, sfx_flipos);
-			mobj2->player->flipoverangle = R_PointToAngle2(0,0,mobj2->player->rmomx, mobj2->player->rmomy)-ANG15;
-			P_InstaThrust(mobj2, mobj2->player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), mobj2->scale));
-			mobj2->momz = FixedMul(FlipOverZMomentum(gravity), mobj2->scale);
-			mobj2->player->pflags &= ~PF_JUSTFLIPPED;
 		}
 	}
 
@@ -4553,7 +4533,22 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	K_StatPlayerHit(player, source ? source->player : NULL);
 	player->flipovertimer = 1;
-	player->pflags |= PF_JUSTFLIPPED;
+
+	if (inflictor)
+	{
+		fixed_t flipoveradd = R_PointToDist2(0, 0, player->rmomx, player->rmomy);
+
+		if (inflictor->player)
+		{
+			S_StartSound(inflictor, sfx_flipos);
+		}
+
+		player->flipoverangle = R_PointToAngle2(0,0,player->rmomx, player->rmomy)-ANG15;
+		P_InstaThrust(player->mo, player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), player->mo->scale));
+		player->mo->momz = FixedMul(FlipOverZMomentum(gravity), player->mo->scale);
+		player->pflags |= PF_JUSTFLIPPED;
+	}
+
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
