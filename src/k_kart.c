@@ -6511,6 +6511,13 @@ void K_DropHnextList(player_t *player)
 	}
 }
 
+// Bubble shield break SFX and VFX (maybe, hopefully)
+static void K_BreakBubbleShield(player_t *player)
+{
+	// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
+	S_StartSound(player->mo, sfx_s3k4b);
+}
+
 // For getting hit!
 void K_PopPlayerShield(player_t *player)
 {
@@ -6539,8 +6546,7 @@ void K_PopPlayerShield(player_t *player)
 	if ((isbubble) && (player->bubblehealth > 0))
 	{
 		// Nice whiff; see ya!
-		// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
-		S_StartSound(player->mo, sfx_s3k4b);
+		K_BreakBubbleShield(player);
 	}
 
 	player->curshield = KSHIELD_NONE;
@@ -6565,6 +6571,7 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 
 	if (player->bubblehealth <= 0)
 	{
+		K_BreakBubbleShield(player);
 		K_PopPlayerShield(player);
 	}
 }
