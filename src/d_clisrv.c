@@ -4026,6 +4026,7 @@ void SV_StopServer(void)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 	gamestate = wipegamestate = GS_NULL;
+	P_UnloadLevel();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		((UINT16*)localtextcmd[i])[0] = 0;

@@ -275,9 +275,12 @@ void D_ProcessEvents(void)
 	recursioncheck = false;
 }
 
-static void D_RenderLevel(void)
+boolean D_RenderLevel(void)
 {
 	UINT8 i;
+
+	if (automapactive || dedicated || !cv_renderview.value || !levelloaded)
+		return false;
 
 	R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
 
@@ -387,6 +390,7 @@ static void D_RenderLevel(void)
 
 	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
 	R_RestoreLevelInterpolators();
+	return true;
 }
 
 //
@@ -511,12 +515,7 @@ static void D_Display(void)
 	// intermission background
 	if (lastdraw)
 	{
-		if (rendermode == render_soft && !automapactive && !dedicated && cv_renderview.value)
-		{
-			D_RenderLevel();
-			Y_ConsiderScreenBuffer();
-			usebuffer = true;
-		}
+		Y_ConsiderScreenBuffer();
 		lastdraw = false;
 	}
 
@@ -607,8 +606,7 @@ static void D_Display(void)
 		// see if the border needs to be initially drawn
 		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
-			if (!automapactive && !dedicated && cv_renderview.value)
-				D_RenderLevel();
+			D_RenderLevel();
 
 			ps_uitime = I_GetPreciseTime();
 

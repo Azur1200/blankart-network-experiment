@@ -6431,8 +6431,7 @@ void HWR_DoPostProcessor(player_t *player)
 	}
 
 	// Capture the screen for intermission and screen waving
-	if(gamestate != GS_INTERMISSION)
-		HWD.pfnMakeScreenTexture();
+	HWD.pfnMakeScreenTexture();
 
 	if (r_splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
@@ -6477,10 +6476,6 @@ void HWR_DoPostProcessor(player_t *player)
 			}
 		}
 		HWD.pfnPostImgRedraw(v);
-
-		// Capture the screen again for screen waving on the intermission
-		if(gamestate != GS_INTERMISSION)
-			HWD.pfnMakeScreenTexture();
 	}
 	// Flipping of the screen isn't done here anymore
 }
@@ -6495,6 +6490,11 @@ void HWR_EndScreenWipe(void)
 {
 	//CONS_Debug(DBG_RENDER, "In HWR_EndScreenWipe()\n");
 	HWD.pfnEndScreenWipe();
+}
+
+void HWR_MakeIntermissionBG(void)
+{
+	HWD.pfnMakeIntermissionBG();
 }
 
 void HWR_DrawIntermissionBG(void)

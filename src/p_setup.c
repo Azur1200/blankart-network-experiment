@@ -156,6 +156,7 @@ boolean draftingactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
+boolean levelloaded = false;
 UINT8 levelfadecol;
 
 virtres_t *curmapvirt;
@@ -9016,6 +9017,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		levelloading = false;
 	}
 
+	// the level is THOROUGHLY loaded now...
+	// set this before starting the titlecard though
+	levelloaded = true;
+
 	if (reloadinggamestate == false)
 	{
 		if (rendermode != render_none)
@@ -9109,6 +9114,12 @@ void P_PostLoadLevel(void)
 	TracyCZoneEnd(__zone);
 }
 
+void P_UnloadLevel(void)
+{
+	// this doesn't actually free any memory. i'm not messing with that...
+	// just clear the level loaded flag
+	levelloaded = false;
+}
 
 //
 // P_RunSOC

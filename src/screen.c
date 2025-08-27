@@ -328,6 +328,9 @@ void SCR_SetMode(void)
 
 	SCR_SetDrawFuncs();
 
+	// Shoot! The screen texture was flushed!
+	Y_CleanupScreenBuffer();
+
 	// set the apprpriate drawer for the sky (tall or INT16)
 	setmodeneeded = 0;
 	setrenderneeded = 0;
@@ -382,12 +385,6 @@ void SCR_Recalc(void)
 	// vid.recalc lasts only for the next refresh...
 	con_recalc = true;
 	am_recalc = true;
-
-#ifdef HWRENDER
-	// Shoot! The screen texture was flushed!
-	if ((rendermode == render_opengl) && (gamestate == GS_INTERMISSION))
-		usebuffer = false;
-#endif
 }
 
 // Check for screen cmd-line parms: to force a resolution.
