@@ -429,7 +429,7 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 		// okay, now we actually want searchpath to incorporate d_name
 		strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 		if (dent->d_type == DT_UNKNOWN && lstat(searchpath, &fsstat) == 0)
 		{
 			if (S_ISDIR(fsstat.st_mode))
