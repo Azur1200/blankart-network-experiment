@@ -1626,7 +1626,14 @@ void F_TitleScreenTicker(boolean run)
 			return;
 		}
 
-		numstaff = M_RandomKey(numstaff)+1;
+		if (numstaff)
+		{
+			numstaff = M_RandomKey(numstaff)+1;
+		}
+		else
+		{
+			numstaff++;;
+		}
 
 		// Setup demo name
 		sprintf(dname, "%s/GHOST_%u", mapheaderinfo[mapnum]->lumpname, numstaff);

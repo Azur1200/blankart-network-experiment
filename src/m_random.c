@@ -45,14 +45,23 @@ ATTRINLINE static UINT32 FUNCINLINE __external_prng__(void)
 
 ATTRINLINE static UINT32 FUNCINLINE __external_prng_bound__(UINT32 bound)
 {
-  // Do rejection sampling to remove the modulo bias.
-  UINT32 threshold = -bound % bound;
-  for (;;)
+  // Handle zero like it would previously.
+  if (bound == 0)
   {
-    UINT32 r = __external_prng__();
-    if (r >= threshold)
+    (void)__external_prng__();
+    return 0;
+  }
+  else
+  {
+    // Do rejection sampling to remove the modulo bias.
+    UINT32 threshold = -bound % bound;
+    for (;;)
     {
-      return r % bound;
+      UINT32 r = __external_prng__();
+      if (r >= threshold)
+      {
+        return r % bound;
+      }
     }
   }
 }
@@ -144,14 +153,23 @@ ATTRINLINE static UINT32 FUNCINLINE __internal_prng__(void)
  */
 ATTRINLINE static UINT32 FUNCINLINE __internal_prng_bound__(UINT32 bound)
 {
-  // Do rejection sampling to remove the modulo bias.
-  UINT32 threshold = -bound % bound;
-  for (;;)
+  // Handle zero like it would previously.
+  if (bound == 0)
   {
-    UINT32 r = __internal_prng__();
-    if (r >= threshold)
+    (void)__internal_prng__();
+    return 0;
+  }
+  else
+  {
+    // Do rejection sampling to remove the modulo bias.
+    UINT32 threshold = -bound % bound;
+    for (;;)
     {
-      return r % bound;
+      UINT32 r = __internal_prng__();
+      if (r >= threshold)
+      {
+        return r % bound;
+      }
     }
   }
 }
