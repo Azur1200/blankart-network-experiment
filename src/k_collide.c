@@ -679,6 +679,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 {
 	const boolean flameT1 = ((t1->player->flamestore > 0) && (t1->player->flametimer > 0));
 	const boolean flameT2 = ((t2->player->flamestore > 0) && (t2->player->flametimer > 0));
+	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
+	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 
 	boolean t1Condition = false;
 	boolean t2Condition = false;
@@ -719,12 +721,14 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 	else if (t1Condition == true && t2Condition == false)
 	{
-		P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+		if (!hyudoroT1)
+			P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
 		return true;
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+		if (!hyudoroT2)
+			P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
 		return true;
 	}
 
