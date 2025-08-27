@@ -17,6 +17,25 @@
 #include "r_things.h"
 #include "v_video.h"
 
+UINT16 altinvinccolors[16] = {
+    SKINCOLOR_BLOODCELL,   // 0
+    SKINCOLOR_FUCHSIA,     // 1
+    SKINCOLOR_LANTERN,     // 2
+    SKINCOLOR_FIERY,       // 3
+    SKINCOLOR_FLAME,       // 4
+    SKINCOLOR_APRICOT,     // 5
+    SKINCOLOR_GARDEN,      // 6
+    SKINCOLOR_OLIVINE,     // 7
+    SKINCOLOR_LIME,        // 8
+    SKINCOLOR_EMERALD,     // 9
+    SKINCOLOR_NAVY,        // 10
+    SKINCOLOR_BLUE,        // 11
+    SKINCOLOR_SAPPHIRE,    // 12
+    SKINCOLOR_BLUEBERRY,   // 13
+    SKINCOLOR_PURPLE,      // 14
+    SKINCOLOR_VIOLET       // 15
+};
+
 /*--------------------------------------------------
 	UINT8 K_ColorRelativeLuminance(UINT8 r, UINT8 g, UINT8 b)
 
@@ -40,6 +59,17 @@ UINT8 K_ColorRelativeLuminance(UINT8 r, UINT8 g, UINT8 b)
 UINT16 K_RainbowColor(tic_t time)
 {
 	return (UINT16)(FIRSTRAINBOWCOLOR + (time % (FIRSTSUPERCOLOR - FIRSTRAINBOWCOLOR)));
+}
+
+/*--------------------------------------------------
+	UINT16 K_AltInvincibilityColor(tic_t time)
+
+		See header file for description.
+--------------------------------------------------*/
+
+UINT16 K_AltInvincibilityColor(tic_t time)
+{
+	return (UINT16)(altinvinccolors[(time) & 15]);
 }
 
 /*--------------------------------------------------

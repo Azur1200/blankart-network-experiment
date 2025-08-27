@@ -1944,7 +1944,7 @@ static boolean K_drawKartPositionFaces(void)
 
 			if ((players[rankplayer[i]].invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 			{
-				colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime / 2), GTC_CACHE);
+				colormap = R_GetTranslationColormap(TC_BLINK, K_AltInvincibilityColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
 
 				V_DrawMappedPatch(FACE_X, Y, invinchudtrans|V_SNAPTOLEFT|V_ADD, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
@@ -3759,7 +3759,7 @@ static void K_drawKartMinimap(void)
 
 				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
-					usecolor = (K_RainbowColor(leveltime / 2));
+					usecolor = ((K_GetKartInvinType() == KARTINVIN_ALTERN) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
 				}
 				else

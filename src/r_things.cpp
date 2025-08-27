@@ -875,8 +875,13 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	if (vis->mobj->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
+		
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
-			return R_GetTranslationColormap(TC_RAINBOW, static_cast<skincolornum_t>(vis->mobj->color), GTC_CACHE);
+		{	
+			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
+											static_cast<skincolornum_t>(vis->mobj->color),
+											GTC_CACHE);
+		}
 		else if (!(vis->cut & SC_PRECIP) && vis->mobj->skin && vis->mobj->sprite == SPR_PLAY) // This thing is a player!
 		{
 			size_t skinnum = (skin_t*)vis->mobj->skin-skins;
@@ -1767,15 +1772,22 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
+	mobj_t *interptarg = thing;
+
+	if (R_IsOverlayingInvinciblePlayer(thing))
+	{
+		// Kill overlay misalignment
+		interptarg = thing->target;
+	}
 
 	// do interpolation
 	if (R_UsingFrameInterpolation() && !paused)
 	{
-		R_InterpolateMobjState(oldthing, rendertimefrac, &interp);
+		R_InterpolateMobjState(interptarg, rendertimefrac, &interp);
 	}
 	else
 	{
-		R_InterpolateMobjState(oldthing, FRACUNIT, &interp);
+		R_InterpolateMobjState(interptarg, FRACUNIT, &interp);
 	}
 
 	this_scale = interp.scale;

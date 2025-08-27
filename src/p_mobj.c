@@ -6773,16 +6773,13 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 		thing->z += thing->target->height - thing->height;
 	}
 
-	thing->color = K_RainbowColor(leveltime / 2);
+	thing->color = K_AltInvincibilityColor(leveltime / 2);
 	thing->colorized = true;
 	thing->dispoffset = min(2, thing->target->dispoffset + 1);
 
 	thing->angle = (thing->target->player ? thing->target->player->drawangle : thing->target->angle);
 
-	thing->roll = thing->target->roll;
-	thing->pitch = thing->target->pitch;
-	thing->sloperoll = thing->target->sloperoll;
-	thing->slopepitch = thing->target->slopepitch;
+	// Rotation is handled in r_patchrotation
 
 	thing->sprite = thing->target->sprite;
 	thing->sprite2 = thing->target->sprite2;
@@ -6795,7 +6792,6 @@ static void P_PlayerInvincibilityOverlay(mobj_t *thing)
 	thing->sprxoff = thing->target->sprxoff;
 	thing->spryoff = thing->target->spryoff;
 	thing->sprzoff = thing->target->sprzoff;
-	thing->rollangle = thing->target->rollangle;
 
 	thing->spritexscale = thing->target->spritexscale;
 	thing->spriteyscale = thing->target->spriteyscale;
