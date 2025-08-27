@@ -642,8 +642,9 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t2->player || t2->type == MT_FALLINGROCK)
+	if ((t2->player && !t2->player->hyudorotimer) || t2->type == MT_FALLINGROCK)
 		K_KartBouncing(t2, t1, false, false);
+
 	return true;
 }
 
