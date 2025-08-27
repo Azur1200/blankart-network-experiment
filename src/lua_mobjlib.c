@@ -253,7 +253,7 @@ static int mobj_get(lua_State *L)
 	enum mobj_e field = Lua_optoption(L, 2, NULL, mobj_opt);
 	lua_settop(L, 2);
 
-	if (!mo || !ISINLEVEL) {
+	if (!mo || !G_GamestateUsesLevel()) {
 		if (field == mobj_valid) {
 			lua_pushboolean(L, 0);
 			return 1;

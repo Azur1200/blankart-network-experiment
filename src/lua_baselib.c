@@ -3279,7 +3279,7 @@ static int lib_gAddGametype(lua_State *L)
 
 static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 {
-	if (ISINLEVEL)
+	if (G_GamestateUsesLevel())
 		return luaL_optinteger(L, idx, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
 	else
 	{

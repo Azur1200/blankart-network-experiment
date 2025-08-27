@@ -6238,7 +6238,7 @@ void HWR_Switch(void)
 		HWR_LoadMapTextures(numtextures);
 
 	// Create plane polygons
-	if (!gl_maploaded && (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
+	if (!gl_maploaded && levelloaded)
 	{
 		HWR_ClearAllTextures();
 		HWR_LoadLevel();

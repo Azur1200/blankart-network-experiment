@@ -477,8 +477,7 @@ static void D_Display(void)
 			wipetypepre = wipedefs[wipedefindex];
 
 		// Fade to black first
-		if ((wipegamestate == FORCEWIPE ||
-			!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
+		if ((wipegamestate == FORCEWIPE || !G_GamestateUsesLevel()) // fades to black on its own timing, always
 		 && wipetypepre != UINT8_MAX)
 		{
 			if (rendermode != render_none)
@@ -627,7 +626,7 @@ static void D_Display(void)
 
 	// change gamma if needed
 	// (GS_LEVEL handles this already due to level-specific palettes)
-	if (forcerefresh && !(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
+	if (forcerefresh && !G_GamestateUsesLevel())
 		V_SetPalette(0);
 
 	// draw pause pic
