@@ -959,7 +959,7 @@ void ST_Drawer(void)
 			stplyr = &players[displayplayers[i]];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
-			R_InterpolateView(R_GetTimeFrac(RTF_LEVEL)); // to assist with object tracking
+			R_InterpolateView(R_GetTimeFrac(RTF_CAMERA)); // to assist with object tracking
 			ST_overlayDrawer();
 		}
 

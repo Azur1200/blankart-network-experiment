@@ -1211,7 +1211,7 @@ R_SetupCommonFrame
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(R_GetTimeFrac(RTF_LEVEL));
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA));
 }
 
 static void R_SetupAimingFrame(int s)

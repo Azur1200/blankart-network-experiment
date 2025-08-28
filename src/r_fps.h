@@ -29,6 +29,7 @@ typedef enum
 {
 	RTF_LEVEL,
 	RTF_INTER,
+	RTF_CAMERA,
 	RTF_MENU,
 } timefrac_e;
 
