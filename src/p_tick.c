@@ -770,9 +770,23 @@ void P_Ticker(boolean run)
 
 		// run all the bot tickers
 		if (server)
+		{
+			PS_ResetBotInfo();
 			for (i = 0; i < MAXPLAYERS; i++)
-				if (playeringame[i] && players[i].bot && players[i].mo && !P_MobjWasRemoved(players[i].mo))
-					K_BotTicker(&players[i]);
+			{
+				player_t *player = &players[i];
+				if (playeringame[i] && player->mo && !P_MobjWasRemoved(player->mo) && K_PlayerUsesBotMovement(player))
+				{
+					const precise_t t = I_GetPreciseTime();
+
+					K_BotTicker(player);
+
+					ps_bots[i].total = I_GetPreciseTime() - t;
+					ps_bots[i].isBot = true;
+					ps_botticcmd_time += ps_bots[i].total;
+				}
+			}
+		}
 
 		// Bosses have a punchy start, so no position.
 		if (bossinfo.boss == true)

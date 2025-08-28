@@ -1178,7 +1178,7 @@ static void K_BotStartDrift(botdata_t *bd, player_t* player)
 	{
 		// Randomly decide to drift based on our skill at drifting,
 		// and how fast we're moving.
-		fixed_t driftpotential = P_RandomKey(MAXDRIFTSKILL);
+		fixed_t driftpotential = M_RandomKey(MAXDRIFTSKILL);
 
 		if ((driftpotential <= player->botvars.driftskill) &&
 			(botDriftSpeed <= player->speed))

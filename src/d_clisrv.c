@@ -5638,8 +5638,6 @@ static void SV_Maketic(void)
 	// Moved here so bots and packetloss indication doesn't break....
 	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
 
-	PS_ResetBotInfo();
-
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		packetloss[i][maketic%PACKETMEASUREWINDOW] = false;
@@ -5649,13 +5647,7 @@ static void SV_Maketic(void)
 
 		if (K_PlayerUsesBotMovement(&players[i]))
 		{
-			const precise_t t = I_GetPreciseTime();
-
 			K_BuildBotTiccmd(&players[i], &netcmds[maketic%BACKUPTICS][i]);
-
-			ps_bots[i].isBot = true;
-			ps_bots[i].total = I_GetPreciseTime() - t;
-			ps_botticcmd_time += ps_bots[i].total;
 			continue;
 		}
 
