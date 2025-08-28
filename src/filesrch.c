@@ -375,7 +375,9 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
 	struct dirent *dent;
+#ifndef _WIN32
 	struct stat fsstat;
+#endif
 	int found = 0;
 	char *searchname = strdup(filename);
 	int depthleft = maxsearchdepth;
