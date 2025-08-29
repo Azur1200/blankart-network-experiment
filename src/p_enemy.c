@@ -10619,12 +10619,13 @@ void A_ItemPop(mobj_t *actor)
 	}
 	else if (itembreaker)
 	{
+		K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
+
 		if (numgotboxes < 3)
 		{
 			actor->target->player->itemtype = KITEM_POGOSPRING;
 			actor->target->player->itemamount += 1;
 		}
-
 	}
 
 	remains->flags2 &= ~MF2_AMBUSH;
