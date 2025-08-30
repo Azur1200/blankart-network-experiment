@@ -8616,8 +8616,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Initialize sector node list.
 	P_Initsecnode();
 
-	if (netgame || multiplayer)
-		cht_debug = 0;
+	// if (netgame || multiplayer)
+		// cht_debug = 0;
 
 	if (metalplayback)
 		G_StopMetalDemo();
