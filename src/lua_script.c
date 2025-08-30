@@ -1292,8 +1292,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mobj_t *mobj = *((mobj_t **)lua_touserdata(gL, myindex));
 			if (!mobj)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MOBJ);
 				WRITEUINT32(*p, mobj->mobjnum);
 			}
@@ -1303,8 +1307,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			player_t *player = *((player_t **)lua_touserdata(gL, myindex));
 			if (!player)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_PLAYER);
 				WRITEUINT8(*p, player - players);
 			}
@@ -1314,8 +1322,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mapthing_t *mapthing = *((mapthing_t **)lua_touserdata(gL, myindex));
 			if (!mapthing)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MAPTHING);
 				WRITEUINT16(*p, mapthing - mapthings);
 			}
@@ -1325,8 +1337,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			vertex_t *vertex = *((vertex_t **)lua_touserdata(gL, myindex));
 			if (!vertex)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_VERTEX);
 				WRITEUINT16(*p, vertex - vertexes);
 			}
@@ -1336,8 +1352,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			line_t *line = *((line_t **)lua_touserdata(gL, myindex));
 			if (!line)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_LINE);
 				WRITEUINT16(*p, line - lines);
 			}
@@ -1347,8 +1367,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			side_t *side = *((side_t **)lua_touserdata(gL, myindex));
 			if (!side)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SIDE);
 				WRITEUINT16(*p, side - sides);
 			}
@@ -1358,8 +1382,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			subsector_t *subsector = *((subsector_t **)lua_touserdata(gL, myindex));
 			if (!subsector)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SUBSECTOR);
 				WRITEUINT16(*p, subsector - subsectors);
 			}
@@ -1369,8 +1397,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			sector_t *sector = *((sector_t **)lua_touserdata(gL, myindex));
 			if (!sector)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SECTOR);
 				WRITEUINT16(*p, sector - sectors);
 			}
@@ -1433,8 +1465,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			pslope_t *slope = *((pslope_t **)lua_touserdata(gL, myindex));
 			if (!slope)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_SLOPE);
 				WRITEUINT16(*p, slope->id);
 			}
@@ -1444,8 +1480,12 @@ static UINT8 ArchiveValue(UINT8 **p, int TABLESINDEX, int myindex)
 		{
 			mapheader_t *header = *((mapheader_t **)lua_touserdata(gL, myindex));
 			if (!header)
+			{
 				WRITEUINT8(*p, ARCH_NULL);
-			else {
+				return 3;
+			}
+			else
+			{
 				WRITEUINT8(*p, ARCH_MAPHEADER);
 				WRITEUINT16(*p, header - *mapheaderinfo);
 			}
@@ -1554,15 +1594,25 @@ static void ArchiveTables(UINT8 **p)
 		{
 			// Write key
 			e = ArchiveValue(p, TABLESINDEX, -2); // key should be either a number or a string, ArchiveValue can handle this.
+
 			if (e == 1)
 				n++; // the table contained a new table we'll have to archive. :(
 			else if (e == 2) // invalid key type (function, thread, lightuserdata, or anything we don't recognise)
+			{
 				CONS_Alert(CONS_ERROR, "Index '%s' (%s) of table %d could not be archived!\n", lua_tostring(gL, -2), luaL_typename(gL, -2), i);
+			}
+			else if (e == 3) // nil key due to invalid userdata. NOT an error.
+			{
+				lua_pop(gL, 1);
+				continue;
+			}
 
 			// Write value
 			e = ArchiveValue(p, TABLESINDEX, -1);
 			if (e == 1)
+			{
 				n++; // the table contained a new table we'll have to archive. :(
+			}
 			else if (e == 2) // invalid value type
 				CONS_Alert(CONS_ERROR, "Type of value for table %d entry '%s' (%s) could not be archived!\n", i, lua_tostring(gL, -2), luaL_typename(gL, -1));
 
