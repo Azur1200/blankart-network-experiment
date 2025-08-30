@@ -86,6 +86,10 @@ struct botdata_t
 	tic_t drifttime; // Time spent drifting
 	tic_t driftlockout; // do not allow drifting for this many tics
 
+	UINT16 driftmaxdist; // how far to look for drift waypoints
+	UINT16 driftpowerdiv; // arbitrary divider on drift turning
+	UINT16 driftstatedelay; // max time to wait between drift state changes
+
 	boolean acceldown, brakedown, driftdown, itemdown; // buttons
 	boolean dolookback; // look out behind you
 	boolean itemwasdown; // last tic's item button

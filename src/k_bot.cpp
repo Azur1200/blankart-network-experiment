@@ -1139,8 +1139,7 @@ static void K_BotStartDrift(botdata_t *bd, player_t* player)
 
 	// check for waypoints ahead of us with drift settings, based on our current speed
 	path_t path = {0};
-	INT32 maxdist = FixedInt(cv_test1.value) + gamespeed*50;
-	maxdist = FixedMul(maxdist, speedfactor * (bd->driftstate == DRIFTSTATE_ACTIVE ? 1 : 2));
+	INT32 maxdist = FixedMul(bd->driftmaxdist, speedfactor * (bd->driftstate == DRIFTSTATE_ACTIVE ? 1 : 2));
 
 	if (maxdist >= 0 && K_PathfindThruCircuit(player->currentwaypoint, maxdist, &path, false, false))
 	{
@@ -1322,7 +1321,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, player_t *player, angle_t destangle
 			fixed_t driftpower = angofs - FixedDiv(anglediff2, ANG1);
 
 			// arbitrary divider on the final driftpower
-			driftpower /= FixedInt(cv_test2.value);
+			driftpower /= bd->driftpowerdiv;
 
 			// brakedrift if we're steering too hard
 			if (abs(driftpower) >= FRACUNIT)
@@ -1702,7 +1701,7 @@ void K_BotTicker(player_t *player)
 		// so no need to worry about doing that ourselves.
 		K_BotStartDrift(bd, player);
 
-		INT32 limit = FixedInt(cv_test3.value) - gamespeed*5;
+		INT32 limit = bd->driftstatedelay;
 		INT32 dtime = ++bd->drifttime;
 
 		// the faster we are going, the sooner we need to drift
@@ -1827,6 +1826,11 @@ void K_BotRespawn(player_t *player)
 	botdata_t *bd = &botdata[player - players];
 	memset(bd, 0, sizeof(*bd));
 	bd->driftstate = DRIFTSTATE_AUTO;
+
+	// drift parameters, just fixed values for now
+	bd->driftmaxdist = 200 + gamespeed*50;
+	bd->driftpowerdiv = 40;
+	bd->driftstatedelay = TICRATE/2 - gamespeed*5;
 }
 
 void K_BotResetItemConfirm(player_t *player, boolean setdelay)
