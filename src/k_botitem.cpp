@@ -374,7 +374,7 @@ static boolean K_BotRevealsGenericTrap(botdata_t *bd, const player_t *player, bo
 
 // Item usage for Eggman shields.
 // mine - Set to true to handle Mine-specific behaviors.
-static void K_BotItemGenericTrapShield(botdata_t *bd, player_t *player, boolean mine)
+static void K_BotItemGenericTrapShield(botdata_t *bd, const player_t *player, boolean mine)
 {
 	ZoneScoped;
 
@@ -392,7 +392,7 @@ static void K_BotItemGenericTrapShield(botdata_t *bd, player_t *player, boolean 
 }
 
 // Item usage for orbitting shields.
-static void K_BotItemGenericOrbitShield(botdata_t *bd, player_t *player)
+static void K_BotItemGenericOrbitShield(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -405,7 +405,7 @@ static void K_BotItemGenericOrbitShield(botdata_t *bd, player_t *player)
 }
 
 // Item usage for sneakers.
-static void K_BotItemSneaker(botdata_t *bd, player_t *player)
+static void K_BotItemSneaker(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -434,7 +434,7 @@ static void K_BotItemSneaker(botdata_t *bd, player_t *player)
 }
 
 // Item usage for rocket sneakers.
-static void K_BotItemRocketSneaker(botdata_t *bd, player_t *player)
+static void K_BotItemRocketSneaker(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -459,7 +459,7 @@ static void K_BotItemRocketSneaker(botdata_t *bd, player_t *player)
 }
 
 // Item usage for trap item throwing.
-static void K_BotItemBanana(botdata_t *bd, player_t *player)
+static void K_BotItemBanana(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -506,7 +506,7 @@ static void K_BotItemBanana(botdata_t *bd, player_t *player)
 }
 
 // Item usage for trap item throwing.
-static void K_BotItemMine(botdata_t *bd, player_t *player)
+static void K_BotItemMine(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -559,7 +559,7 @@ static void K_BotItemMine(botdata_t *bd, player_t *player)
 }
 
 // Item usage for landmine tossing.
-static void K_BotItemLandmine(botdata_t *bd, player_t *player)
+static void K_BotItemLandmine(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -587,7 +587,7 @@ static void K_BotItemLandmine(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Eggman item throwing.
-static void K_BotItemEggman(botdata_t *bd, player_t *player)
+static void K_BotItemEggman(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -674,7 +674,7 @@ static boolean K_BotRevealsEggbox(const player_t *player)
 }
 
 // Item usage for Eggman shields.
-static void K_BotItemEggmanShield(botdata_t *bd, player_t *player)
+static void K_BotItemEggmanShield(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -692,7 +692,7 @@ static void K_BotItemEggmanShield(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Eggman explosions.
-static void K_BotItemEggmanExplosion(botdata_t *bd, player_t *player)
+static void K_BotItemEggmanExplosion(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -707,7 +707,7 @@ static void K_BotItemEggmanExplosion(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Orbinaut throwing.
-static void K_BotItemOrbinaut(botdata_t *bd, player_t *player)
+static void K_BotItemOrbinaut(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -756,7 +756,7 @@ static void K_BotItemOrbinaut(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Ballhog throwing.
-static void K_BotItemBallhog(botdata_t *bd, player_t *player)
+static void K_BotItemBallhog(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -821,7 +821,7 @@ static void K_BotItemBallhog(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Jawz throwing.
-static void K_BotItemJawz(botdata_t *bd, player_t *player)
+static void K_BotItemJawz(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -892,7 +892,7 @@ static void K_BotItemJawz(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Lightning Shield.
-static void K_BotItemLightning(botdata_t *bd, player_t *player)
+static void K_BotItemLightning(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -913,7 +913,7 @@ static void K_BotItemLightning(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Bubble Shield.
-static void K_BotItemBubble(botdata_t *bd, player_t *player)
+static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -982,7 +982,7 @@ static void K_BotItemBubble(botdata_t *bd, player_t *player)
 }
 
 // Item usage for Flame Shield.
-static void K_BotItemFlame(botdata_t *bd, player_t *player)
+static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -1025,7 +1025,7 @@ static void K_BotItemFlame(botdata_t *bd, player_t *player)
 }
 
 // Item usage for rings.
-static void K_BotItemRings(botdata_t *bd, player_t *player)
+static void K_BotItemRings(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -1087,7 +1087,7 @@ static void K_BotItemRings(botdata_t *bd, player_t *player)
 	Return:-
 		Returns the useodds of this bot.
 --------------------------------------------------*/
-static UINT32 K_BotCalculateUseodds(player_t *player)
+static UINT32 K_BotCalculateUseodds(const player_t *player)
 {
 	UINT32 pdis = 0;
 	UINT8 pingame = 0, bestbumper = 0;
@@ -1134,7 +1134,7 @@ static UINT32 K_BotCalculateUseodds(player_t *player)
 }
 
 // Item usage for item roulette mashing.
-static void K_BotItemRouletteMash(botdata_t *bd, player_t *player)
+static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 {
 	boolean mash = false;
 	UINT32 useodds = 0;
@@ -1186,7 +1186,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, player_t *player)
 }
 
 // See header file for description.
-void K_BotItemUsage(botdata_t *bd, player_t *player)
+void K_BotItemUsage(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 

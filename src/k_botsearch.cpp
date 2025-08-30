@@ -137,7 +137,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y)
 	Return:-
 		true if avoiding this sector special, false otherwise.
 --------------------------------------------------*/
-static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, const boolean flip)
+static boolean K_BotHatesThisSectorsSpecial(const player_t *player, sector_t *sec, const boolean flip)
 {
 	terrain_t *terrain = K_GetTerrainForFlatNum(flip ? sec->ceilingpic : sec->floorpic);
 
@@ -174,7 +174,7 @@ static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, con
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y)
+boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
 {
 	const boolean flip = (player->mo->eflags & MFE_VERTICALFLIP);
 	fixed_t highestfloor = INT32_MAX;

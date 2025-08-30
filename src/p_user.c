@@ -465,7 +465,7 @@ UINT8 P_FindHighestLap(void)
 // Is player in pain??
 // Checks for painstate and flashing, if both found return true
 //
-boolean P_PlayerInPain(player_t *player)
+boolean P_PlayerInPain(const player_t *player)
 {
 	if (K_IsPlayerDamaged(player) || player->squishedtimer)
 		return true;
@@ -890,7 +890,7 @@ void P_RestoreMusic(player_t *player)
 // Returns true if the object is inside goop water.
 // (Spectators and objects otherwise without gravity cannot have goop gravity!)
 //
-boolean P_IsObjectInGoop(mobj_t *mo)
+boolean P_IsObjectInGoop(const mobj_t *mo)
 {
 	if (mo->player && mo->player->spectator)
 		return false;
@@ -908,7 +908,7 @@ boolean P_IsObjectInGoop(mobj_t *mo)
 // on the ground. Takes reverse
 // gravity and FOFs into account.
 //
-boolean P_IsObjectOnGround(mobj_t *mo)
+boolean P_IsObjectOnGround(const mobj_t *mo)
 {
 	if (P_IsObjectInGoop(mo))
 	{
@@ -953,7 +953,7 @@ boolean P_IsObjectOnGround(mobj_t *mo)
 // on the ground in a specific sector. Takes reverse
 // gravity and FOFs into account.
 //
-boolean P_IsObjectOnGroundIn(mobj_t *mo, sector_t *sec)
+boolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec)
 {
 	ffloor_t *rover;
 
@@ -1040,7 +1040,7 @@ boolean P_IsObjectOnGroundIn(mobj_t *mo, sector_t *sec)
 // Really simple, but personally I think it's also incredibly helpful. I think this is fine in p_user.c
 // -- Sal
 
-boolean P_IsObjectOnRealGround(mobj_t *mo, sector_t *sec)
+boolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec)
 {
 	// Is the object in reverse gravity?
 	if (mo->eflags & MFE_VERTICALFLIP)
@@ -1132,7 +1132,7 @@ boolean P_IsMachineLocalPlayer(player_t *player)
 // on the local machine
 // (or simulated party)
 //
-boolean P_IsLocalPlayer(player_t *player)
+boolean P_IsLocalPlayer(const player_t *player)
 {
 	if (player == NULL)
 	{
@@ -1400,7 +1400,7 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir)
 	return clipmomz;
 }
 
-boolean P_InQuicksand(mobj_t *mo) // Returns true if you are in quicksand
+boolean P_InQuicksand(const mobj_t *mo) // Returns true if you are in quicksand
 {
 	sector_t *sector = mo->subsector->sector;
 	fixed_t topheight, bottomheight;

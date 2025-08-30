@@ -406,7 +406,7 @@ boolean K_PlayerUsesBotMovement(const player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotCanTakeCut(player_t *player)
+boolean K_BotCanTakeCut(const player_t *player)
 {
 	if (
 		(K_TripwirePassConditions(player) != TRIPWIRE_NONE || K_ApplyOffroad(player) == false)
@@ -493,7 +493,7 @@ static fixed_t K_BotSpeedScaled(const player_t *player, fixed_t speed)
 
 		See header file for description.
 --------------------------------------------------*/
-const botcontroller_t *K_GetBotController(mobj_t *mobj)
+const botcontroller_t *K_GetBotController(const mobj_t *mobj)
 {
 	botcontroller_t *ret = nullptr;
 
@@ -875,7 +875,7 @@ static fixed_t K_ScaleWPDistWithSlope(fixed_t disttonext, angle_t angletonext, c
 }
 
 // Calculates a point further along the track to attempt to drive towards.
-static boolean K_CreateBotPrediction(botdata_t *bd, player_t *player)
+static boolean K_CreateBotPrediction(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -1215,7 +1215,7 @@ static void K_BotStartDrift(botdata_t *bd, player_t* player)
 }
 
 // Determines inputs for standard track driving.
-static INT32 K_HandleBotTrack(botdata_t *bd, player_t *player, angle_t destangle)
+static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t destangle)
 {
 	ZoneScoped;
 
@@ -1392,7 +1392,7 @@ static void K_IncrementBotRespawn(player_t *player, UINT8 *respawn, const UINT8 
 	Return:-
 		New value for turn amount.
 --------------------------------------------------*/
-/*static INT32 K_HandleBotReverse(player_t *player, ticcmd_t *cmd, botprediction_t *predict, angle_t destangle)
+/*static INT32 K_HandleBotReverse(const player_t *player, ticcmd_t *cmd, botprediction_t *predict, angle_t destangle)
 {
 	ZoneScoped;
 

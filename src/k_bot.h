@@ -119,7 +119,7 @@ boolean K_PlayerUsesBotMovement(const player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_BotCanTakeCut(player_t *player);
+	boolean K_BotCanTakeCut(const player_t *player);
 
 		Tells if this bot is able to take shortcuts (currently unaffected by offroad,
 		or has certain items ready).
@@ -131,11 +131,11 @@ boolean K_PlayerUsesBotMovement(const player_t *player);
 		true if able to take shortcuts, otherwise false.
 --------------------------------------------------*/
 
-boolean K_BotCanTakeCut(player_t *player);
+boolean K_BotCanTakeCut(const player_t *player);
 
 
 /*--------------------------------------------------
-	const botcontroller_t *K_GetBotController(mobj_t *mobj);
+	const botcontroller_t *K_GetBotController(const mobj_t *mobj);
 
 		Retrieves the current bot controller values from
 		the player's current sector.
@@ -147,7 +147,7 @@ boolean K_BotCanTakeCut(player_t *player);
 		Pointer to the sector's bot controller struct.
 --------------------------------------------------*/
 
-const botcontroller_t *K_GetBotController(mobj_t *mobj);
+const botcontroller_t *K_GetBotController(const mobj_t *mobj);
 
 
 /*--------------------------------------------------
@@ -310,7 +310,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
 
 
 /*--------------------------------------------------
-	boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y)
+	boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
 
 		Tells us if a bot will play more careful around
 		this sector. Checks FOFs in the sector, as well.
@@ -325,7 +325,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y);
 		true if avoiding this sector, false otherwise.
 --------------------------------------------------*/
 
-boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y);
+boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y);
 
 // Moves the bot's prediction, based on objects around the bot.
 void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player);
@@ -396,7 +396,7 @@ void K_UpdateBotGameplayVarsItemUsage(player_t *player);
 void K_UpdateBotGameplayVars(player_t *player);
 
 // Item usage part of ticcmd generation.
-void K_BotItemUsage(botdata_t *bd, player_t *player);
+void K_BotItemUsage(botdata_t *bd, const player_t *player);
 
 void K_BotRespawn(player_t *player);
 
