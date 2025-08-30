@@ -4526,25 +4526,29 @@ void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 typ
 
 void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	(void)inflictor;
-	(void)source;
-
 	K_DirectorFollowAttack(player, inflictor, source);
 
 	K_StatPlayerHit(player, source ? source->player : NULL);
 	player->flipovertimer = 1;
 
-	if (inflictor)
 	{
 		fixed_t flipoveradd = R_PointToDist2(0, 0, player->rmomx, player->rmomy);
 
-		if (inflictor->player)
+		S_StartSound(player->mo, sfx_flipos);
+
+		player->flipoverangle = K_MomentumAngle(player->mo)-ANG15;
+
+		if (!inflictor)
 		{
-			S_StartSound(inflictor, sfx_flipos);
+			// This is probably a damage sector so lets not make this feel like ass.
+			// Also don't softlock.
+			P_InstaThrust(player->mo, player->flipoverangle, FixedMul(FLIPOVERSPEED+flipoveradd+(5*FRACUNIT), player->mo->scale));
+		}
+		else
+		{
+			P_InstaThrust(player->mo, player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), player->mo->scale));
 		}
 
-		player->flipoverangle = R_PointToAngle2(0,0,player->rmomx, player->rmomy)-ANG15;
-		P_InstaThrust(player->mo, player->flipoverangle, FixedMul(FLIPOVERSPEED+(flipoveradd/8), player->mo->scale));
 		player->mo->momz = FixedMul(FlipOverZMomentum(gravity), player->mo->scale);
 		player->pflags |= PF_JUSTFLIPPED;
 	}

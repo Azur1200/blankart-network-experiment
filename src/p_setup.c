@@ -1922,6 +1922,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 			sectors[i].damagetype = SD_DEATHPIT;
 		if (fastcmp(val, "Instakill"))
 			sectors[i].damagetype = SD_INSTAKILL;
+		if ((mapnamespace == MNS_RINGRACERS && fastcmp(val, "Stumble")) || fastcmp(val, "FlipOver"))
+			sectors[i].damagetype = SD_FLIPOVER;
 	}
 	else if (fastcmp(param, "offroad"))
 	{

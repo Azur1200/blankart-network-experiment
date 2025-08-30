@@ -5456,6 +5456,10 @@ static void P_EvaluateDamageType(player_t *player, sector_t *sector, boolean isT
 		case SD_INSTAKILL:
 			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
 			break;
+		case SD_FLIPOVER:
+			if (isTouching)
+				K_FlipPlayer(player, NULL, NULL);
+			break;
 		default:
 			break;
 	}
