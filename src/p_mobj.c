@@ -12232,13 +12232,14 @@ void P_SpawnPlayer(INT32 playernum)
 			// HEY! No being cheap...
 			p->bumper = 0;
 		}
-		else if ((p->bumper > 0) || (leveltime < starttime) || (pcount <= 1))
+		else if ((p->bumper > 0) || (leveltime < starttime))
 		{
-			if ((leveltime < starttime) || (pcount <= 1)) // Start of the map?
+			if ((leveltime < starttime)) // Start of the map?
 			{
 				p->bumper = K_StartingBumperCount();
-				K_SpawnPlayerBattleBumpers(p);
 			}
+
+			K_SpawnPlayerBattleBumpers(p);
 		}
 		else if (p->bumper <= 0)
 		{
