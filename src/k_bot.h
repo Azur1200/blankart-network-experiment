@@ -90,6 +90,9 @@ struct botdata_t
 	UINT16 driftpowerdiv; // arbitrary divider on drift turning
 	UINT16 driftstatedelay; // max time to wait between drift state changes
 
+	fixed_t driftskill; // The bot's "skill" at drifts.
+	                    // Determines how soon a bot starts to drift.
+
 	boolean acceldown, brakedown, driftdown, itemdown; // buttons
 	boolean dolookback; // look out behind you
 	boolean itemwasdown; // last tic's item button
@@ -99,7 +102,7 @@ struct botdata_t
 
 // AVAILABLE FOR LUA
 
-void K_BotTicker(player_t *player);
+void K_BotTicker(const player_t *player);
 
 void K_DrawBotDebugger(const player_t *player);
 
@@ -398,40 +401,13 @@ void K_UpdateBotGameplayVars(player_t *player);
 // Item usage part of ticcmd generation.
 void K_BotItemUsage(botdata_t *bd, const player_t *player);
 
-void K_BotRespawn(player_t *player);
+void K_BotReborn(const player_t *player);
 
-void K_BotResetItemConfirm(player_t *player, boolean setdelay);
+void K_BotResetItemConfirm(const player_t *player, boolean setdelay);
 
-/*--------------------------------------------------
-	fixed_t K_BotDetermineDriftSkill(player_t *player)
+fixed_t K_BotDetermineDriftSkill(const player_t *player);
 
-		Calculates drift skill for a player based on stats.
-
-	Input Arguments:-
-		player - Player to get drift skill for.
-
-	Return:-
-		Calculated drift skill.
---------------------------------------------------*/
-
-fixed_t K_BotDetermineDriftSkill(player_t *player);
-
-/*--------------------------------------------------
-	void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
-
-		Changes a bot's drift state.
-		Resets the drift timer if the old and new state are different.
-
-	Input Arguments:-
-		player - Player to set drift state for.
-		newstate - The new drift state.
-		lockout - If non-zero, apply drift lockout for this many tics.
-
-	Return:-
-		None
---------------------------------------------------*/
-
-void K_BotSetDriftState(player_t *player, botdrift_e newstate, tic_t lockout);
+void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout);
 
 botdata_t *K_GetBotData(UINT8 num);
 

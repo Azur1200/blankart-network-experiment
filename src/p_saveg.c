@@ -402,7 +402,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].botvars.rival);
 		WRITEFIXED(save->p, players[i].botvars.rubberband);
 		WRITEUINT16(save->p, players[i].botvars.controller);
-		WRITEFIXED(save->p, players[i].botvars.driftskill);
 
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -750,7 +749,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].botvars.rival = (boolean)READUINT8(save->p);
 		players[i].botvars.rubberband = READFIXED(save->p);
 		players[i].botvars.controller = READUINT16(save->p);
-		players[i].botvars.driftskill = READFIXED(save->p);
 
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);

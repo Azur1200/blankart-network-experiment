@@ -25,7 +25,6 @@ enum botvars {
 	botvars_diffincrease,
 	botvars_rival,
 	botvars_rubberband,
-	botvars_driftskill,
 };
 
 static const char *const botvars_opt[] = {
@@ -35,7 +34,6 @@ static const char *const botvars_opt[] = {
 	"diffincrease",
 	"rival",
 	"rubberband",
-	"driftskill",
 	NULL
 };
 
@@ -68,9 +66,6 @@ static int botvars_get(lua_State *L)
 		break;
 	case botvars_rubberband:
 		lua_pushfixed(L, botvars->rubberband);
-		break;
-	case botvars_driftskill:
-		lua_pushfixed(L, botvars->driftskill);
 		break;
 	}
 	return 1;
@@ -107,9 +102,6 @@ static int botvars_set(lua_State *L)
 	case botvars_rubberband:
 		botvars->rubberband = luaL_checkfixed(L, 3);
 		break;
-	case botvars_driftskill:
-		botvars->driftskill = luaL_checkfixed(L, 3);
-		break;
 	}
 	return 0;
 }
@@ -129,6 +121,7 @@ enum botdata {
 	botdata_driftmaxdist,
 	botdata_driftpowerdiv,
 	botdata_driftstatedelay,
+	botdata_driftskill,
 	botdata_acceldown,
 	botdata_brakedown,
 	botdata_driftdown,
@@ -152,6 +145,7 @@ static const char *const botdata_opt[] = {
 	"driftmaxdist",
 	"driftpowerdiv",
 	"driftstatedelay",
+	"driftskill",
 	"acceldown",
 	"brakedown",
 	"driftdown",
@@ -208,6 +202,9 @@ static int botdata_get(lua_State *L)
 		return 1;
 	case botdata_driftstatedelay:
 		lua_pushinteger(L, botdata->driftstatedelay);
+		return 1;
+	case botdata_driftskill:
+		lua_pushfixed(L, botdata->driftskill);
 		return 1;
 	case botdata_acceldown:
 		lua_pushboolean(L, botdata->acceldown);
@@ -281,6 +278,9 @@ static int botdata_set(lua_State *L)
 		return 0;
 	case botdata_driftstatedelay:
 		botdata->driftstatedelay = luaL_checkinteger(L, 3);
+		return 0;
+	case botdata_driftskill:
+		botdata->driftskill = luaL_checkfixed(L, 3);
 		return 0;
 	case botdata_acceldown:
 		botdata->acceldown = luaL_checkboolean(L, 3);

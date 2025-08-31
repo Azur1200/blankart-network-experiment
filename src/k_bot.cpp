@@ -1067,18 +1067,8 @@ static void K_DrawPredictionDebug(botdata_t *bd, const player_t *player)
 	}
 }
 
-/*--------------------------------------------------
-	fixed_t K_BotDetermineDriftSkill(player_t *player)
-
-		Calculates drift skill for a player based on stats.
-
-	Input Arguments:-
-		player - Player to get drift skill for.
-
-	Return:-
-		Calculated drift skill.
---------------------------------------------------*/
-fixed_t K_BotDetermineDriftSkill(player_t *player)
+// Calculates drift skill for a player based on stats.
+fixed_t K_BotDetermineDriftSkill(const player_t *player)
 {
 	return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
 }
@@ -1099,12 +1089,10 @@ static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vecto
 	FV3_Normalize(a_o);
 }
 
-/*--------------------------------------------------
-	void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
-
-		See header file for description.
---------------------------------------------------*/
-void K_BotSetDriftState(player_t *player, botdrift_e newstate, tic_t lockout)
+// Changes a bot's drift state.
+// Resets the drift timer if the old and new state are different.
+// If lockout is non-zero, apply drift lockout for this many tics.
+void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout)
 {
 	botdata_t *bd = &botdata[player - players];
 
@@ -1121,7 +1109,7 @@ void K_BotSetDriftState(player_t *player, botdrift_e newstate, tic_t lockout)
 #define MINBOTDRIFT (KART_FULLTURN * 2) / 3 // 0.66
 
 // Begins and ends "forced" drifts on a per-waypoint basis.
-static void K_BotStartDrift(botdata_t *bd, player_t* player)
+static void K_BotStartDrift(botdata_t *bd, const player_t* player)
 {
 	// Handle DRIFTING towards waypoints!
 	boolean shouldDrift;
@@ -1192,7 +1180,7 @@ static void K_BotStartDrift(botdata_t *bd, player_t* player)
 		// and how fast we're moving.
 		fixed_t driftpotential = M_RandomKey(MAXDRIFTSKILL);
 
-		if ((driftpotential <= player->botvars.driftskill) &&
+		if ((driftpotential <= bd->driftskill) &&
 			(botDriftSpeed <= player->speed))
 		{
 			shouldDrift = true;
@@ -1360,7 +1348,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 
 #undef MINBOTDRIFT
 
-static void K_IncrementBotRespawn(player_t *player, UINT8 *respawn, const UINT8 respawnmax)
+static void K_IncrementBotRespawn(const player_t *player, UINT8 *respawn, const UINT8 respawnmax)
 {
 	const fixed_t requireDist = (12*player->mo->scale) / FRACUNIT;
 	INT32 progress = player->distancetofinishprev - player->distancetofinish;
@@ -1538,7 +1526,7 @@ static void K_IncrementBotRespawn(player_t *player, UINT8 *respawn, const UINT8 
 }*/
 
 // updates server-sided bot logic
-void K_BotTicker(player_t *player)
+void K_BotTicker(const player_t *player)
 {
 	angle_t destangle = 0;
 	INT32 turnamt = 0;
@@ -1600,7 +1588,7 @@ void K_BotTicker(player_t *player)
 		if (bd->respawnconfirm >= BOTRESPAWNCONFIRM || player->speed < 10*FRACUNIT)
 		{
 			// Now a clean function! Neat, eh?
-			K_SetRespawnAtNextWaypoint(player);
+			//K_SetRespawnAtNextWaypoint(player);
 
 			// WHAT ARE YOU DOING??? RACE ALREADY!
 			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
@@ -1834,11 +1822,13 @@ void K_UpdateBotGameplayVars(player_t *player)
 }
 
 // resets some botdata stuff after respawning
-void K_BotRespawn(player_t *player)
+void K_BotReborn(const player_t *player)
 {
 	botdata_t *bd = &botdata[player - players];
 	memset(bd, 0, sizeof(*bd));
+
 	bd->driftstate = DRIFTSTATE_AUTO;
+	bd->driftskill = FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(player));
 
 	// drift parameters, just fixed values for now
 	bd->driftmaxdist = 200 + gamespeed*50;
@@ -1846,7 +1836,7 @@ void K_BotRespawn(player_t *player)
 	bd->driftstatedelay = TICRATE/2 - gamespeed*5;
 }
 
-void K_BotResetItemConfirm(player_t *player, boolean setdelay)
+void K_BotResetItemConfirm(const player_t *player, boolean setdelay)
 {
 	botdata_t *bd = &botdata[player - players];
 	bd->itemconfirm = 0;

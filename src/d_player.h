@@ -439,9 +439,6 @@ struct botvars_t
 
 	fixed_t rubberband; // Bot rubberband value
 	UINT16 controller; // Special bot controller linedef ID
-
-	fixed_t driftskill; // The bot's "skill" at drifts.
-	                    // Determines how soon a bot starts to drift.
 };
 
 struct sonicloopcamvars_t
