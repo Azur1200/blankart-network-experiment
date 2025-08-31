@@ -1590,8 +1590,8 @@ void K_BotTicker(const player_t *player)
 			// WHAT ARE YOU DOING??? RACE ALREADY!
 			// ...
 			// FINE, I'LL SEND A RESPAWN COMMAND ON YOUR BEHALF!
-			char buf[4], *cp = buf;
-			WRITEINT32(cp, player - players);
+			char buf[1], *cp = buf;
+			WRITEUINT8(cp, player - players);
 			SendNetXCmdForPlayer(consoleplayer, XD_RESPAWN, buf, sizeof(buf));
 		}
 		return;

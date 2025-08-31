@@ -3517,7 +3517,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
-	UINT8 buf[4];
+	UINT8 buf[1];
 	UINT8 *cp = buf;
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
@@ -3544,7 +3544,7 @@ static void HandleRespawnCommand(UINT8 localplayer)
 		return;
 	}
 
-	WRITEINT32(cp, g_localplayers[localplayer]);
+	WRITEUINT8(cp, g_localplayers[localplayer]);
 	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
 }
 
@@ -3571,7 +3571,7 @@ static void Command_Respawn4(void)
 
 static void Got_Respawn(UINT8 **cp, INT32 playernum)
 {
-	INT32 respawnplayer = READINT32(*cp);
+	INT32 respawnplayer = READUINT8(*cp);
 
 	// You can't respawn someone else. Nice try, there.
 	// Unless it's a bot. They can respawn whenever they feel like it, if the server says so.
