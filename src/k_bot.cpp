@@ -1587,11 +1587,12 @@ void K_BotTicker(const player_t *player)
 
 		if (bd->respawnconfirm >= BOTRESPAWNCONFIRM || player->speed < 10*FRACUNIT)
 		{
-			// Now a clean function! Neat, eh?
-			//K_SetRespawnAtNextWaypoint(player);
-
 			// WHAT ARE YOU DOING??? RACE ALREADY!
-			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
+			// ...
+			// FINE, I'LL SEND A RESPAWN COMMAND ON YOUR BEHALF!
+			char buf[4], *cp = buf;
+			WRITEINT32(cp, player - players);
+			SendNetXCmdForPlayer(consoleplayer, XD_RESPAWN, buf, sizeof(buf));
 		}
 		return;
 	}

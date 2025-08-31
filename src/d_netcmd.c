@@ -3574,7 +3574,10 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 	INT32 respawnplayer = READINT32(*cp);
 
 	// You can't respawn someone else. Nice try, there.
-	if (respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position) // srb2kart: "|| (!(gametyperules & GTR_CIRCUIT))"
+	// Unless it's a bot. They can respawn whenever they feel like it, if the server says so.
+	if (players[respawnplayer].bot
+	  ? playernum != serverplayer
+	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
@@ -3589,7 +3592,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 			return;
 
 		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1, DMG_INSTAKILL);
-		demo_extradata[playernum] |= DXD_RESPAWN;
+		demo_extradata[respawnplayer] |= DXD_RESPAWN;
 	}
 }
 
