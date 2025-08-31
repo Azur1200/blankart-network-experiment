@@ -405,8 +405,6 @@ void K_BotReborn(const player_t *player);
 
 void K_BotResetItemConfirm(const player_t *player, boolean setdelay);
 
-fixed_t K_BotDetermineDriftSkill(const player_t *player);
-
 void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout);
 
 botdata_t *K_GetBotData(UINT8 num);

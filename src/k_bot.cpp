@@ -1067,10 +1067,11 @@ static void K_DrawPredictionDebug(botdata_t *bd, const player_t *player)
 	}
 }
 
-// Calculates drift skill for a player based on stats.
-fixed_t K_BotDetermineDriftSkill(const player_t *player)
+// Calculates drift skill for a player based on ~~stats~~ difficulty.
+static fixed_t K_BotDetermineDriftSkill(const player_t *player)
 {
-	return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
+	return FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT;
+	//return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
 }
 
 static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vector3_t *a_o)
