@@ -393,7 +393,7 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 	if (ziptic & ZT_FLAGS)
 		cmd->flags = READUINT8(dp);
 
-	if (version < 0x0009 && ziptic & 0x8000) // ZT_BOT
+	if (version < 0x000a && ziptic & 0x8000) // ZT_BOT
 	{
 		UINT16 botziptic = READUINT16(dp);
 		if (botziptic & 1) READSINT8(dp);
