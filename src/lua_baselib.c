@@ -238,6 +238,7 @@ static const struct {
 
 	{META_BOTVARS,    "botvars_t"},
 	{META_BOTCONTROLLER,    "botcontroller_t"},
+	{META_BOTDATA,      "botdata_t"},
 
 	{META_SPLASH,       "t_splash_t"},
 	{META_FOOTSTEP,     "t_footstep_t"},

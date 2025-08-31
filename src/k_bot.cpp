@@ -1853,3 +1853,11 @@ void K_BotResetItemConfirm(player_t *player, boolean setdelay)
 	if (setdelay)
 		bd->itemdelay = TICRATE;
 }
+
+botdata_t *K_GetBotData(UINT8 num)
+{
+	if (num < 0 || num >= MAXPLAYERS)
+		return NULL;
+
+	return &botdata[num];
+}

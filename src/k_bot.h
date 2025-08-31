@@ -433,6 +433,7 @@ fixed_t K_BotDetermineDriftSkill(player_t *player);
 
 void K_BotSetDriftState(player_t *player, botdrift_e newstate, tic_t lockout);
 
+botdata_t *K_GetBotData(UINT8 num);
 
 #ifdef __cplusplus
 } // extern "C"
