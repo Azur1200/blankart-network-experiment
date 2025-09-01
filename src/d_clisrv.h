@@ -42,7 +42,7 @@ applications may follow different packet versions.
 //  be transmitted.
 
 #define MAXSERVERNAME 32
-#define MAXSERVERCONTACT 1024
+#define MAXSERVERCONTACT 320
 #define MAXSERVERDESCRIPTION 320
 #define MAXSERVERDESCRIPTIONLINE 40
 #define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!"
