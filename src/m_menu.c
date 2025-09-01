@@ -6413,8 +6413,6 @@ INT32 MR_StartServer(INT32 choice)
 
 	multiplayer = true;
 
-	strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
-
 	// Still need to reset devmode
 	cht_debug = 0;
 

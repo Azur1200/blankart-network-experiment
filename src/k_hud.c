@@ -2210,8 +2210,10 @@ void K_DrawServerDescrption(INT32 x, INT32 y)
 	if (connectedservername[0] != '\0')
 		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
 
-	if (serverdescription[0] != '\0')
-		V_DrawSmallString(x, y+20, V_6WIDTHSPACE|V_ALLOWLOWERCASE, serverdescription);
+	V_DrawSmallString(x, y+10, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, va("Contact: %s", (connectedservercontact[0] != '\0') ? connectedservercontact : ""));
+
+	if (connectedserverdescription[0] != '\0')
+		V_DrawSmallString(x, y+20, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedserverdescription);
 
 }
 

@@ -1185,8 +1185,6 @@ void D_StartTitle(void)
 	for (i = 0; i < MAXPLAYERS; i++)
 		CL_ClearPlayer(i);
 
-	memset(&serverdescription, 0, sizeof(serverdescription));
-
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
 		players[g_localplayers[i]].availabilities = R_GetSkinAvailabilities();
@@ -1963,8 +1961,6 @@ void D_SRB2Main(void)
 		M_PushSpecialParameters(); // push all "+" parameter at the command buffer
 
 		COM_BufExecute(); // ensure the command buffer gets executed before the map starts (+skin)
-
-		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
 
 		if (M_CheckParm("-gametype") && M_IsNextParm())
 		{

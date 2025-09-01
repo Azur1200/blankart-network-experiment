@@ -107,6 +107,7 @@ static void Got_ScoreboardAdd(UINT8 **cp, INT32 playernum);
 static void Got_ScoreboardClear(UINT8 **cp, INT32 playernum);
 static void Command_ScoreboardAdd(void);
 static void Command_ScoreboardClear(void);
+static void Got_ServerInfoUpdate(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -766,6 +767,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"CHEAT", // XD_CHEAT
 	"SCOREBOARDADD", // XD_SCOREBOARDADD
 	"SCOREBOARDCLEAR", // XD_SCOREBOARDCLEAR
+	"SERVERINFOUPDATE", // XD_SERVERINFOUPDATE
 };
 
 // =========================================================================
@@ -827,6 +829,7 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_SCOREBOARDCLEAR, Got_ScoreboardClear);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
 	COM_AddCommand("scoreboard_clear", Command_ScoreboardClear);
+	RegisterNetXCmd(XD_SERVERINFOUPDATE, Got_ServerInfoUpdate);
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
@@ -3814,7 +3817,7 @@ static void Got_ScoreboardAdd(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	serverdesclen = strlen(serverdescription);
+	serverdesclen = strlen(connectedserverdescription);
 	tempbufflen = strlen(tempbuff);
 
 	if ((serverdesclen + tempbufflen) > MAXSERVERDESCRIPTION)
@@ -3824,7 +3827,7 @@ static void Got_ScoreboardAdd(UINT8 **cp, INT32 playernum)
 	}
 	else
 	{
-		strncat(serverdescription, va("%s\n%c", tempbuff, '\0'), MAXSERVERDESCRIPTIONLINE);
+		strncat(connectedserverdescription, va("%s\n%c", tempbuff, '\0'), MAXSERVERDESCRIPTIONLINE);
 		CONS_Printf(M_GetText("Scoreboard text line has been added.\n"));
 	}
 }
@@ -3848,8 +3851,28 @@ static void Got_ScoreboardClear(UINT8 **cp, INT32 playernum)
 		return;
 	}
 
-	memset(&serverdescription, 0, sizeof(serverdescription));
+	memset(&connectedserverdescription, 0, sizeof(connectedserverdescription));
 	CONS_Printf(M_GetText("Scoreboard text have been reset by the server.\n"));
+}
+
+static void Got_ServerInfoUpdate(UINT8 **cp, INT32 playernum)
+{
+	char tempname[MAXSERVERNAME];
+	char tempcontact[MAXSERVERCONTACT];
+	READSTRINGN(*cp, tempname, MAXSERVERNAME);
+	READSTRINGN(*cp, tempcontact, MAXSERVERCONTACT);
+
+	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Illegal Server Info Update command received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	strncpy(connectedservername, tempname, MAXSERVERNAME);
+	strncpy(connectedservercontact, tempcontact, MAXSERVERCONTACT);
+	CONS_Printf(M_GetText("Updated Server Info.\n"));
 }
 
 // Team changing functions

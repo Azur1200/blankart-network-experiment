@@ -22,6 +22,7 @@
 #include "mserv.h"
 #include "m_menu.h"
 #include "z_zone.h"
+#include "byteptr.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -503,6 +504,20 @@ Update_parameters (void)
 			UpdateServer();
 	}
 #endif/*MASTERSERVER*/
+
+	// Lets update Clients on this info.
+	if (Playing() && server)
+	{
+		char buf[MAXSERVERNAME+MAXSERVERCONTACT];
+		char *cp = buf;
+
+		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
+		strncpy(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
+
+		WRITESTRINGN(cp, connectedservername, MAXSERVERNAME);
+		WRITESTRINGN(cp, connectedservercontact, MAXSERVERCONTACT);
+		SendNetXCmd(XD_SERVERINFOUPDATE, &buf, cp - buf);
+	}
 }
 
 static void MasterServer_OnChange(void)

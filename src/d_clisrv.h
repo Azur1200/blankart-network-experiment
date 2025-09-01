@@ -41,6 +41,12 @@ applications may follow different packet versions.
 //  one that defines the actual packets to
 //  be transmitted.
 
+#define MAXSERVERNAME 32
+#define MAXSERVERCONTACT 1024
+#define MAXSERVERDESCRIPTION 320
+#define MAXSERVERDESCRIPTIONLINE 40
+#define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!"
+
 // Networking and tick handling related.
 #define BACKUPTICS 512 // more than enough for most timeouts....
 #define CLIENTBACKUPTICS 32
@@ -211,6 +217,10 @@ struct serverconfig_pak
 	UINT8 maxplayer;
 	boolean allownewplayer;
 	boolean discordinvites;
+
+	char server_name[MAXSERVERNAME];
+	char server_contact[MAXSERVERCONTACT];
+	char server_description[MAXSERVERDESCRIPTION];
 } ATTRPACK;
 
 struct filetx_pak
@@ -259,7 +269,6 @@ struct clientconfig_pak
 #define SV_DEDICATED 0x40		// server is dedicated
 #define SV_LOTSOFADDONS 0x20	// flag used to ask for full file list in d_netfil
 
-#define MAXSERVERNAME 32
 #define MAXFILENEEDED 915
 #define MAX_MIRROR_LENGTH 256
 // This packet is too large
@@ -452,7 +461,9 @@ extern boolean dedicated; // For dedicated server
 extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
-extern char connectedservername[MAXSERVERNAME+1];
+extern char connectedservername[MAXSERVERNAME];
+extern char connectedservercontact[MAXSERVERCONTACT];
+extern char connectedserverdescription[MAXSERVERDESCRIPTION];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;

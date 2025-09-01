@@ -5278,7 +5278,6 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, lastLowestLap);
 	WRITESINT8(save->p, spbplace);
 	WRITEUINT8(save->p, startedInFreePlay);
-	WRITESTRINGN(save->p, serverdescription, MAXSERVERDESCRIPTION);
 
 	WRITEUINT32(save->p, introtime);
 	WRITEUINT32(save->p, starttime);
@@ -5465,7 +5464,6 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	lastLowestLap = READUINT8(save->p);
 	spbplace = READSINT8(save->p);
 	startedInFreePlay = READUINT8(save->p);
-	READSTRINGN(save->p, serverdescription, MAXSERVERDESCRIPTION);
 
 	introtime = READUINT32(save->p);
 	starttime = READUINT32(save->p);
