@@ -453,9 +453,10 @@ consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVA
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
 
-static CV_PossibleValue_t ringsmin_cons_t[] = {{-32000, "MIN"}, {0, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t ringsmin_cons_t[] = {{INT8_MIN, "MIN"}, {0, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t ringsmax_cons_t[] = {{0, "MIN"}, {INT8_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartringsmin = CVAR_INIT ("kartringsmin", "-20", CV_NETVAR, ringsmin_cons_t, NULL);
-consvar_t cv_kartringsmax = CVAR_INIT ("kartringsmax", "20", CV_NETVAR, CV_Unsigned, NULL);
+consvar_t cv_kartringsmax = CVAR_INIT ("kartringsmax", "20", CV_NETVAR, ringsmax_cons_t, NULL);
 
 // Stacking related
 consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
