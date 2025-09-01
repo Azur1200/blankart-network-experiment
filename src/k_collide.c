@@ -554,9 +554,9 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			t2->momx = -6*t2->momx;
-			t2->momy = -6*t2->momy;
-			t2->momz = -6*t2->momz;
+			t2->momx = (-1*t2->momx)/2;
+			t2->momy = (-1*t2->momy)/2;
+			t2->momz = (-1*t2->momz)/2;
 			t2->angle += ANGLE_180;
 		}
 		if (t2->type == MT_JAWZ)
@@ -598,7 +598,15 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->flags & MF_SHOOTABLE)
 	{
-		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		boolean shootable = P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+
+		if (shootable)
+		{
+			// Drain my stuff please.
+			K_BubbleShieldCollideDrain(t1->target->player, t1);
+		}
+
+		return shootable;
 	}
 
 	// no interaction

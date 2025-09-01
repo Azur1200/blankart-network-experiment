@@ -137,7 +137,7 @@ UINT8 K_EggboxStealth(fixed_t x, fixed_t y)
 	Return:-
 		true if avoiding this sector special, false otherwise.
 --------------------------------------------------*/
-static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, const boolean flip)
+static boolean K_BotHatesThisSectorsSpecial(const player_t *player, sector_t *sec, const boolean flip)
 {
 	terrain_t *terrain = K_GetTerrainForFlatNum(flip ? sec->ceilingpic : sec->floorpic);
 
@@ -174,7 +174,7 @@ static boolean K_BotHatesThisSectorsSpecial(player_t *player, sector_t *sec, con
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotHatesThisSector(player_t *player, sector_t *sec, fixed_t x, fixed_t y)
+boolean K_BotHatesThisSector(const player_t *player, sector_t *sec, fixed_t x, fixed_t y)
 {
 	const boolean flip = (player->mo->eflags & MFE_VERTICALFLIP);
 	fixed_t highestfloor = INT32_MAX;
@@ -644,12 +644,8 @@ static BlockItReturn_t K_FindObjectsForNudging(mobj_t *thing)
 	return BMIT_CONTINUE;
 }
 
-/*--------------------------------------------------
-	void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
-
-		See header file for description.
---------------------------------------------------*/
-void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *player)
+// See header file for description.
+void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -672,20 +668,14 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 	SINT8 gotoSide = -1;
 	UINT8 i;
 
-	if (predict == NULL)
-	{
-		ps_bots[player - players].nudge += I_GetPreciseTime() - time;
-		return;
-	}
-
-	distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
-	angleToPredict = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
+	distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
+	angleToPredict = R_PointToAngle2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 
 	radToPredict = distToPredict >> 1;
 	g_nudgeSearch.distancetocheck = FixedMul(radToPredict, radToPredict);
 
-	baseNudge = predict->baseRadius >> 3;
-	maxNudge = predict->baseRadius - baseNudge;
+	baseNudge = bd->predict.baseRadius >> 3;
+	maxNudge = bd->predict.baseRadius - baseNudge;
 
 	g_nudgeSearch.botmo = player->mo;
 	g_nudgeSearch.angle = angleToPredict;
@@ -735,7 +725,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 
 		avgDist = R_PointToDist2(
 			avgX, avgY,
-			predict->x, predict->y
+			bd->predict.x, bd->predict.y
 		);
 
 		// High handling characters dodge better
@@ -748,14 +738,14 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 		// Point away
 		nudgeDir = R_PointToAngle2(
 			avgX, avgY,
-			predict->x, predict->y
+			bd->predict.x, bd->predict.y
 		);
 
-		predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
-		predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
-		predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
+		bd->predict.x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
+		bd->predict.y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+		bd->predict.radius = std::max(bd->predict.radius - nudgeDist, baseNudge);
 
-		distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
+		distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 
 		// Flip side, since we want to check for objects to steer towards on the side we're NOT dodging.
 		if (gotoSide == 0)
@@ -797,7 +787,7 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 		avgY = (g_nudgeSearch.gotoAvgY[gotoSide] / g_nudgeSearch.gotoObjs[gotoSide]) * mapobjectscale;
 
 		avgDist = R_PointToDist2(
-			predict->x, predict->y,
+			bd->predict.x, bd->predict.y,
 			avgX, avgY
 		);
 
@@ -810,23 +800,23 @@ void K_NudgePredictionTowardsObjects(botprediction_t *predict, const player_t *p
 
 		if (avgDist <= nudgeDist)
 		{
-			predict->x = avgX;
-			predict->y = avgY;
-			predict->radius = baseNudge;
+			bd->predict.x = avgX;
+			bd->predict.y = avgY;
+			bd->predict.radius = baseNudge;
 		}
 		else
 		{
 			// Point towards
 			nudgeDir = R_PointToAngle2(
-				predict->x, predict->y,
+				bd->predict.x, bd->predict.y,
 				avgX, avgY
 			);
 
-			predict->x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
-			predict->y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
-			predict->radius = std::max(predict->radius - nudgeDist, baseNudge);
+			bd->predict.x += FixedMul(nudgeDist, FINECOSINE(nudgeDir >> ANGLETOFINESHIFT));
+			bd->predict.y += FixedMul(nudgeDist, FINESINE(nudgeDir >> ANGLETOFINESHIFT));
+			bd->predict.radius = std::max(bd->predict.radius - nudgeDist, baseNudge);
 
-			//distToPredict = R_PointToDist2(player->mo->x, player->mo->y, predict->x, predict->y);
+			//distToPredict = R_PointToDist2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
 		}
 	}
 
@@ -990,4 +980,91 @@ INT32 K_PositionBully(const player_t *player)
 		return -KART_FULLTURN;
 
 	return KART_FULLTURN;
+}
+
+static mobj_t *bubbleSource;
+static fixed_t bubbleDist;
+static boolean bubbleBlock;
+
+static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
+{
+	if (bubbleSource == NULL || P_MobjWasRemoved(bubbleSource))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == NULL || P_MobjWasRemoved(thing))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == bubbleSource)
+	{
+		// Don't block yourself!!
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->player)
+	{
+		// We don't block players.
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->health <= 0)
+	{
+		// Dead
+		return BMIT_CONTINUE;
+	}
+
+	if (!P_IsKartItem(thing->type) && !(thing->flags & MF_SHOOTABLE))
+	{
+		// Not a Item.
+		return BMIT_CONTINUE;
+	}
+
+	if (P_AproxDistance(P_AproxDistance(
+		bubbleSource->x - thing->x,
+		bubbleSource->y - thing->y),
+		(bubbleSource->z - thing->z) / 4) > bubbleDist)
+	{
+		// Too far away
+		return BMIT_CONTINUE;
+	}
+
+#if 0
+	if (P_CheckSight(bubbleSource, thing) == false)
+	{
+		// Not in sight
+		return BMIT_CONTINUE;
+	}
+#endif
+
+	bubbleBlock = true;
+	return BMIT_CONTINUE;
+}
+
+// Searches the blockmap for items to block with the Bubble Shield
+boolean K_GetBlockedBubbleItem(const player_t *player, fixed_t radius)
+{
+	INT32 bx, by, xl, xh, yl, yh;
+
+	bubbleSource = player->mo;
+	bubbleDist = radius;
+	bubbleBlock = false;
+
+	// Use blockmap to check for nearby harmful items.
+	yh = (unsigned)(bubbleSource->y + bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(bubbleSource->y - bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(bubbleSource->x + bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(bubbleSource->x - bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
+
+	BMBOUNDFIX (xl, xh, yl, yh);
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_BubbleShieldBlock);
+
+	return bubbleBlock;
 }

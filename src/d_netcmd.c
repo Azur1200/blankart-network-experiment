@@ -679,10 +679,6 @@ consvar_t cv_schedule = CVAR_INIT ("schedule", "On", CV_NETVAR|CV_CALL, CV_OnOff
 
 consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
 
-consvar_t cv_test1 = CVAR_INIT ("test1", "200", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
-consvar_t cv_test2 = CVAR_INIT ("test2", "40", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
-consvar_t cv_test3 = CVAR_INIT ("test3", "18", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
-
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -3521,7 +3517,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
-	UINT8 buf[4];
+	UINT8 buf[1];
 	UINT8 *cp = buf;
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
@@ -3548,7 +3544,7 @@ static void HandleRespawnCommand(UINT8 localplayer)
 		return;
 	}
 
-	WRITEINT32(cp, g_localplayers[localplayer]);
+	WRITEUINT8(cp, g_localplayers[localplayer]);
 	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
 }
 
@@ -3575,10 +3571,13 @@ static void Command_Respawn4(void)
 
 static void Got_Respawn(UINT8 **cp, INT32 playernum)
 {
-	INT32 respawnplayer = READINT32(*cp);
+	INT32 respawnplayer = READUINT8(*cp);
 
 	// You can't respawn someone else. Nice try, there.
-	if (respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position) // srb2kart: "|| (!(gametyperules & GTR_CIRCUIT))"
+	// Unless it's a bot. They can respawn whenever they feel like it, if the server says so.
+	if (players[respawnplayer].bot
+	  ? playernum != serverplayer
+	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
@@ -3593,7 +3592,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 			return;
 
 		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1, DMG_INSTAKILL);
-		demo_extradata[playernum] |= DXD_RESPAWN;
+		demo_extradata[respawnplayer] |= DXD_RESPAWN;
 	}
 }
 
