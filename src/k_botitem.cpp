@@ -919,55 +919,27 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 
 	boolean hold = false;
 
-	if (player->bubbleblowup <= 0)
+	// We are holding this thing too long, lets get rid of it.
+	if (bd->itemconfirm > 20*TICRATE)
 	{
-		UINT8 i;
-
 		bd->itemconfirm++;
 
+		if (player->itemflags & IF_HOLDREADY)
+		{
+			bd->itemdown = true;
+		}
+
+		return;
+	}
+
+	if (player->bubbleblowup <= 0)
+	{
 		if (player->bubblecool <= 0)
 		{
 			fixed_t radius = 192 * player->mo->scale;
 			radius = Easing_Linear(FRACUNIT * player->botvars.difficulty / MAXBOTDIFFICULTY, 2*radius, radius);
 
-			for (i = 0; i < MAXPLAYERS; i++)
-			{
-				player_t *target = NULL;
-				fixed_t dist = INT32_MAX;
-
-				if (!playeringame[i])
-				{
-					continue;
-				}
-
-				target = &players[i];
-
-				if (target->mo == NULL || P_MobjWasRemoved(target->mo)
-					|| player == target || target->spectator
-					|| target->flashing)
-				{
-					continue;
-				}
-
-				dist = P_AproxDistance(P_AproxDistance(
-					player->mo->x - target->mo->x,
-					player->mo->y - target->mo->y),
-					(player->mo->z - target->mo->z) / 4
-				);
-
-				if (dist <= radius)
-				{
-					hold = true;
-					break;
-				}
-			}
-		}
-	}
-	else if (player->bubbleblowup >= bubbletime)
-	{
-		if (bd->itemconfirm > 10*TICRATE)
-		{
-			hold = true;
+			hold = K_GetBlockedBubbleItem(player, radius);
 		}
 	}
 	else if (player->bubbleblowup < bubbletime)
@@ -979,6 +951,8 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 	{
 		bd->itemdown = true;
 	}
+
+	bd->itemconfirm++;
 }
 
 // Item usage for Flame Shield.
@@ -1203,7 +1177,7 @@ static boolean K_CanHandleItemDelay(botdata_t *bd, const player_t *player)
 	if (player->flametimer > 0)
 	{
 		// Flame Shield? We handle this there instead.
-		return false
+		return false;
 
 	}
 

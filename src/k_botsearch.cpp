@@ -981,3 +981,90 @@ INT32 K_PositionBully(const player_t *player)
 
 	return KART_FULLTURN;
 }
+
+static mobj_t *bubbleSource;
+static fixed_t bubbleDist;
+static boolean bubbleBlock;
+
+static inline BlockItReturn_t PIT_BubbleShieldBlock(mobj_t *thing)
+{
+	if (bubbleSource == NULL || P_MobjWasRemoved(bubbleSource))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == NULL || P_MobjWasRemoved(thing))
+	{
+		// Invalid?
+		return BMIT_ABORT;
+	}
+
+	if (thing == bubbleSource)
+	{
+		// Don't block yourself!!
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->player)
+	{
+		// We don't block players.
+		return BMIT_CONTINUE;
+	}
+
+	if (thing->health <= 0)
+	{
+		// Dead
+		return BMIT_CONTINUE;
+	}
+
+	if (!P_IsKartItem(thing->type) && !(thing->flags & MF_SHOOTABLE))
+	{
+		// Not a Item.
+		return BMIT_CONTINUE;
+	}
+
+	if (P_AproxDistance(P_AproxDistance(
+		bubbleSource->x - thing->x,
+		bubbleSource->y - thing->y),
+		(bubbleSource->z - thing->z) / 4) > bubbleDist)
+	{
+		// Too far away
+		return BMIT_CONTINUE;
+	}
+
+#if 0
+	if (P_CheckSight(bubbleSource, thing) == false)
+	{
+		// Not in sight
+		return BMIT_CONTINUE;
+	}
+#endif
+
+	bubbleBlock = true;
+	return BMIT_CONTINUE;
+}
+
+// Searches the blockmap for items to block with the Bubble Shield
+boolean K_GetBlockedBubbleItem(const player_t *player, fixed_t radius)
+{
+	INT32 bx, by, xl, xh, yl, yh;
+
+	bubbleSource = player->mo;
+	bubbleDist = radius;
+	bubbleBlock = false;
+
+	// Use blockmap to check for nearby harmful items.
+	yh = (unsigned)(bubbleSource->y + bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
+	yl = (unsigned)(bubbleSource->y - bubbleDist - bmaporgy)>>MAPBLOCKSHIFT;
+	xh = (unsigned)(bubbleSource->x + bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
+	xl = (unsigned)(bubbleSource->x - bubbleDist - bmaporgx)>>MAPBLOCKSHIFT;
+
+	BMBOUNDFIX (xl, xh, yl, yh);
+
+	for (by = yl; by <= yh; by++)
+		for (bx = xl; bx <= xh; bx++)
+			P_BlockThingsIterator(bx, by, PIT_BubbleShieldBlock);
+
+	return bubbleBlock;
+}
