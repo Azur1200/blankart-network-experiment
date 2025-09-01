@@ -3748,6 +3748,7 @@ static void Command_ScoreboardAdd(void)
 	if (!server)
 	{
 		CONS_Printf(M_GetText("Only the server can use this.\n"));
+		return;
 	}
 
 	if (COM_Argc() < 2)
