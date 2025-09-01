@@ -2551,7 +2551,7 @@ static void K_drawRingMeter(void)
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
 		colorring = true;
 	}
-	else if (ringcount >= 20) // (placeholder) over-ring
+	else if (ringcount > 20) // (placeholder) over-ring
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
 	else if (ringcount >= ringmax) // Maxed out
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
