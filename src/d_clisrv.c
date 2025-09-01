@@ -4396,7 +4396,7 @@ void ServerInfoUpdateSend(void)
 			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
 
 			netbuffer->packettype = PT_SERVERINFOUPDATE;
-			HSendPacket(n, false, 0, MAXSERVERNAME+MAXSERVERCONTACT+MAXSERVERDESCRIPTION);
+			HSendPacket(n, true, 0, sizeof(netbuffer->u.serverinfoupdate));
 		}
 	}
 }
@@ -4408,7 +4408,7 @@ static void PT_ServerInfoUpdate(SINT8 node)
 	if (node != servernode)
 		return;
 
-	if ((size_t)doomcom->datalength < sizeof(MAXSERVERNAME+MAXSERVERCONTACT+MAXSERVERDESCRIPTION))/* ignore partial sends */
+	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.serverinfoupdate))/* ignore partial sends */
 		return;
 
 	strncpy(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
