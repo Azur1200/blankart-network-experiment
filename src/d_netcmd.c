@@ -7408,7 +7408,7 @@ static void KartDrafting_OnChange(void)
 	{
 		if (leveltime < starttime)
 		{
-			slopeboostactive = true;
+			draftingactive = true;
 			CONS_Printf(M_GetText("Drafting has been turned \"On\".\n"));
 		}
 		else
@@ -7420,7 +7420,7 @@ static void KartDrafting_OnChange(void)
 	{
 		if (leveltime < starttime)
 		{
-			slopeboostactive = false;
+			draftingactive = false;
 			CONS_Printf(M_GetText("Drafting has been turned \"Off\".\n"));
 		}
 		else
