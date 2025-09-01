@@ -988,39 +988,45 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 
 	if (P_IsObjectOnGround(player->mo) == false)
 	{
+		// Drain itemdelay as needed so theres no delay when landing.
+		if (bd->itemdelay)
+		{
+			bd->itemdelay--;
+			bd->itemconfirm = 0;
+		}
+
 		// Don't use while mid-air.
 		return;
 	}
 
-	if (bd->itemconfirm > TICRATE)
+	if (player->botvars.difficulty < 6 || player->flametimer <= 2*TICRATE)
 	{
-		if (player->botvars.difficulty >= 6 && player->flametimer <= 2*TICRATE)
+		// We aren't smart enough to use this properly.
+		// ...or we are doing the finishing blow.
+		bd->itemdown = true;
+		bd->itemdelay = 0;
+		bd->itemconfirm++;
+		return;
+	}
+
+	if (!bd->itemdelay)
+	{
+		if (player->flamestore < FLAMESTOREMAX - TICRATE/4)
 		{
 			bd->itemdown = true;
-			bd->itemconfirm = 0;
 		}
-		else if (player->flametimer > 0)
+		else
 		{
-			if (player->botvars.difficulty < 6 || player->flamestore < FLAMESTOREMAX - TICRATE/4)
-			{
-				bd->itemdown = true;
-				bd->itemconfirm = 0;
-			}
-			else
-			{
-				UINT8 difficultyadjust = MAXBOTDIFFICULTY - player->botvars.difficulty;
-				bd->itemconfirm = (-TICRATE/2) - difficultyadjust;
-			}
-		}
-	}
-	else
-	{
-		if (player->botvars.difficulty >= 6 && player->flametimer <= 2*TICRATE)
-		{
-			bd->itemconfirm = 0;
+			UINT8 difficultyadjust = MAXBOTDIFFICULTY - player->botvars.difficulty;
+			bd->itemdelay = (TICRATE/2) + difficultyadjust;
 		}
 
 		bd->itemconfirm++;
+	}
+	else
+	{
+		bd->itemdelay--;
+		bd->itemconfirm = 0;
 	}
 }
 
@@ -1185,6 +1191,25 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 	}
 }
 
+// Determines if we should use the Regular Item Delay Logic.
+static boolean K_CanHandleItemDelay(botdata_t *bd, const player_t *player)
+{
+	if (!bd->itemdelay)
+	{
+		// We don't even have any. Don't bother.
+		return false;
+	}
+
+	if (player->flametimer > 0)
+	{
+		// Flame Shield? We handle this there instead.
+		return false
+
+	}
+
+	return true;
+}
+
 // See header file for description.
 void K_BotItemUsage(botdata_t *bd, const player_t *player)
 {
@@ -1200,7 +1225,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		return;
 	}
 
-	if (bd->itemdelay)
+	if (K_CanHandleItemDelay(bd, player))
 	{
 		bd->itemdelay--;
 		bd->itemconfirm = 0;
