@@ -33,6 +33,8 @@ extern mapthing_t *deathmatchstarts[MAX_DM_STARTS];
 extern INT32 numdmstarts, numcoopstarts, numredctfstarts, numbluectfstarts;
 
 extern boolean levelloading;
+extern boolean levelloaded; // is there an actual level loaded? for intermission
+                            // (i.e. is it safe to call D_RenderLevel?)
 extern UINT8 levelfadecol;
 
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
@@ -85,6 +87,7 @@ void P_PostLoadLevel(void);
 #ifdef HWRENDER
 void HWR_LoadLevel(void);
 #endif
+void P_UnloadLevel(void);
 boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat);
 
 #define MAPRET_ADDED (1)

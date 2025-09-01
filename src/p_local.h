@@ -174,13 +174,13 @@ void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
 
 boolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
 
-boolean P_PlayerInPain(player_t *player);
+boolean P_PlayerInPain(const player_t *player);
 void P_ResetPlayer(player_t *player);
 boolean P_PlayerCanDamage(player_t *player, mobj_t *thing);
 
 fixed_t P_GetPlayerHeight(player_t *player);
 fixed_t P_GetPlayerSpinHeight(player_t *player);
-boolean P_IsLocalPlayer(player_t *player);
+boolean P_IsLocalPlayer(const player_t *player);
 boolean P_IsMachineLocalPlayer(player_t *player);
 boolean P_IsDisplayPlayer(player_t *player);
 
@@ -189,12 +189,12 @@ angle_t P_GetLocalAngle(player_t *player);
 void P_ForceLocalAngle(player_t *player, angle_t angle, boolean interp);
 boolean P_PlayerFullbright(player_t *player);
 
-boolean P_IsObjectInGoop(mobj_t *mo);
-boolean P_IsObjectOnGround(mobj_t *mo);
-boolean P_IsObjectOnGroundIn(mobj_t *mo, sector_t *sec);
-boolean P_IsObjectOnRealGround(mobj_t *mo, sector_t *sec); // SRB2Kart
+boolean P_IsObjectInGoop(const mobj_t *mo);
+boolean P_IsObjectOnGround(const mobj_t *mo);
+boolean P_IsObjectOnGroundIn(const mobj_t *mo, const sector_t *sec);
+boolean P_IsObjectOnRealGround(const mobj_t *mo, const sector_t *sec); // SRB2Kart
 #define P_IsObjectFlipped(o) (((o)->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP)
-boolean P_InQuicksand(mobj_t *mo);
+boolean P_InQuicksand(const mobj_t *mo);
 boolean P_PlayerHitFloor(player_t *player, boolean fromAir);
 
 void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
@@ -328,13 +328,13 @@ void P_SceneryThinker(mobj_t *mobj);
 
 // This does not need to be added to Lua.
 // To test it in Lua, check mobj.valid
-FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(mobj_t *mobj)
+FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
 	return mobj == NULL || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker;
 }
 
-fixed_t P_MobjFloorZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
-fixed_t P_MobjCeilingZ(mobj_t *mobj, sector_t *sector, sector_t *boundsec, fixed_t x, fixed_t y, line_t *line, boolean lowest, boolean perfect);
+fixed_t P_MobjFloorZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, boolean lowest, boolean perfect);
+fixed_t P_MobjCeilingZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, boolean lowest, boolean perfect);
 #define P_GetFloorZ(mobj, sector, x, y, line) P_MobjFloorZ(mobj, sector, NULL, x, y, line, false, false)
 #define P_GetCeilingZ(mobj, sector, x, y, line) P_MobjCeilingZ(mobj, sector, NULL, x, y, line, true, false)
 #define P_GetFOFTopZ(mobj, sector, fof, x, y, line) P_MobjCeilingZ(mobj, sectors + fof->secnum, sector, x, y, line, false, false)
@@ -641,6 +641,7 @@ fixed_t P_GetMobjHead(const mobj_t *);
 fixed_t P_GetMobjFeet(const mobj_t *);
 fixed_t P_GetMobjGround(const mobj_t *);
 fixed_t P_GetMobjZMovement(mobj_t *mo);
+boolean P_WaterRunning(mobj_t *thing);
 
 void P_InitTIDHash(void);
 void P_AddThingTID(mobj_t *mo);

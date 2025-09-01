@@ -39,6 +39,8 @@
 #include "r_fps.h"
 #include "m_random.h"
 #include "g_party.h"
+#include "h_timers.h"
+#include "k_bot.h" // K_DrawBotDebugger
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
@@ -91,6 +93,9 @@ consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NU
 consvar_t cv_showfinishedplayers = CVAR_INIT ("showfinishedplayers", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_smoothposition = CVAR_INIT ("smoothposition", "On", CV_SAVE, CV_OnOff, NULL);
+static CV_PossibleValue_t driftgauge_cons_t[] = {{0, "Off"}, {1, "Spee"}, {2, "Achii"}, {3, "Wifi"}, {4, "Chaotix"}, {5, "Numbers"}, {6, "Legacy"}, {7, "Legacy Small"}, {8, "Legacy Large Numbers"}, {9, "Large Num"}, {0, NULL}};
+consvar_t cv_driftgauge = CVAR_INIT ("kartdriftgauge", "Off", CV_SAVE, driftgauge_cons_t, NULL);
+consvar_t cv_driftgaugeoffset = CVAR_INIT ("kartdriftgaugeoffset", "-10", CV_SAVE|CV_FLOAT, CV_Signed, NULL);
 
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
@@ -135,6 +140,9 @@ static patch_t *kp_ringdebtminussmall;
 static patch_t *kp_speedometersticker[2];
 static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
+
+static patch_t *kp_driftgauge[12];
+static patch_t *kp_driftgaugeparts[5];
 
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
@@ -244,6 +252,8 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_showfinishedplayers);
 	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_smoothposition);
+	CV_RegisterVar(&cv_driftgauge);
+	CV_RegisterVar(&cv_driftgaugeoffset);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -372,6 +382,31 @@ void K_LoadKartHUDGraphics(void)
 
 	// Speedometer Sticker Color
 	HU_UpdatePatch(&kp_speedometersticker[1], "SC_SMSTC");
+
+	// Driftgauge Stickers
+	//{0, "Spee"}, {1, "Achii"}, {2, "Wifi"}, {3, "Chaotix"}
+	HU_UpdatePatch(&kp_driftgauge[0], "K_DGAU0"); // Spee
+	HU_UpdatePatch(&kp_driftgauge[1], "K_DGAU1"); // Achii
+	HU_UpdatePatch(&kp_driftgauge[2], "K_WDGBG"); // Wifi
+	HU_UpdatePatch(&kp_driftgauge[3], "K_DGAU3"); // Chaotix
+	HU_UpdatePatch(&kp_driftgauge[4], "K_DGAU"); // Legacy
+	HU_UpdatePatch(&kp_driftgauge[5], "K_DGSU"); // Legacy Small
+
+	HU_UpdatePatch(&kp_driftgauge[6], "K_DGAUC0");
+	HU_UpdatePatch(&kp_driftgauge[7], "K_DGAUC1");
+	HU_UpdatePatch(&kp_driftgauge[8], "K_WDGBGC");
+	HU_UpdatePatch(&kp_driftgauge[9], "K_DGAUC3");
+	HU_UpdatePatch(&kp_driftgauge[10], "K_DCAU");
+	HU_UpdatePatch(&kp_driftgauge[11], "K_DCSU");
+
+
+	// Driftgauge Parts
+	HU_UpdatePatch(&kp_driftgaugeparts[0], "K_WDGM1");
+	HU_UpdatePatch(&kp_driftgaugeparts[1], "K_WDGM2");
+	HU_UpdatePatch(&kp_driftgaugeparts[2], "K_WDGM3");
+	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
+	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
+
 
 	// Speedometer labels
 	HU_UpdatePatch(&kp_speedometerlabel[0], "SP_MKMH");
@@ -1289,8 +1324,8 @@ static void K_drawKartItem(void)
 				localcolor = SKINCOLOR_WHITE;
 			}
 
-			itembar = 2 - stplyr->bubblepop;
-			maxl = 2;
+			itembar = stplyr->bubblehealth;
+			maxl = MAXBUBBLEHEALTH;
 		}
 		else if (stplyr->sadtimer > 0)
 		{
@@ -1387,7 +1422,7 @@ static void K_drawKartItem(void)
 
 	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
 	{
-		fixed_t frac = R_GetHudUncap();
+		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);
 		UINT8   fancystep = (offset ? 6 : 10);
 		fixed_t fancyoffset = (stplyr->itemroulette % 3)-1;
 
@@ -1909,7 +1944,7 @@ static boolean K_drawKartPositionFaces(void)
 
 			if ((players[rankplayer[i]].invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 			{
-				colormap = R_GetTranslationColormap(TC_RAINBOW, K_RainbowColor(leveltime / 2), GTC_CACHE);
+				colormap = R_GetTranslationColormap(TC_BLINK, K_AltInvincibilityColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
 
 				V_DrawMappedPatch(FACE_X, Y, invinchudtrans|V_SNAPTOLEFT|V_ADD, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
@@ -2478,6 +2513,8 @@ static void K_drawRingMeter(void)
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	SINT8 ringcount = stplyr->rings;
+	SINT8 overring = stplyr->rings % 20;
+	SINT8 ringmax = stplyr->ringmax;
 	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
 
 	rn[0] = ((abs(ringcount) / 10) % 10);
@@ -2494,7 +2531,9 @@ static void K_drawRingMeter(void)
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
 		colorring = true;
 	}
-	else if (ringcount >= 20) // Maxed out
+	else if (ringcount > 20) // (placeholder) over-ring
+		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
+	else if (ringcount >= ringmax) // Maxed out
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 
 	if (r_splitscreen > 1)
@@ -2534,12 +2573,15 @@ static void K_drawRingMeter(void)
 		{
 			V_DrawMappedPatch(fx-5, fy-11 + ringoffsety, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
 		}
-
+#if 0
 		if (stplyr->rings < 0)
 		{
 			// Invert the ring count
 			ringcount = -ringcount;
 		}
+#endif
+		// clamp and invert when needed for the bar
+		ringcount = CLAMP(abs(ringcount), -20, 20);
 
 		if (rn[1] == 1 && ringcount == 11)
 			V_DrawMappedPatch(fx+2, fy-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
@@ -2564,6 +2606,13 @@ static void K_drawRingMeter(void)
 				barcolors[2] = 32;
 				barcolors[3] = 40;
 				indebt = true;
+			}
+			else if (stplyr->rings > 20)
+			{
+				barcolors[0] = 132;
+				barcolors[1] = 131;
+				barcolors[2] = 128;
+				barcolors[3] = 154;
 			}
 
 			if (!indebt || (indebt && (leveltime/5 & 1)))
@@ -3329,7 +3378,7 @@ static void K_drawKartNameTags(void)
 	V_ClearClipRect();
 }
 
-static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
+static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -3370,6 +3419,37 @@ static void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 
 	}
 
 	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
+}
+
+static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, angle_t ang, UINT8 *colormap)
+{
+	// amnum xpos & ypos are the icon's speed around the HUD.
+	// The number being divided by is for how fast it moves.
+	// The higher the number, the slower it moves.
+
+	// am xpos & ypos are the icon's starting position. Withouht
+	// it, they wouldn't 'spawn' on the top-right side of the HUD.
+
+	fixed_t amnumxpos, amnumypos;
+	INT32 amxpos, amypos;
+	fixed_t scale = FRACUNIT;
+	patch_t *icon = W_CachePatchNameRotated("MMAPHDLT", R_GetRollAngle(ang), PU_PATCH);
+
+	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
+	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
+
+	if (encoremode)
+		amnumxpos = -amnumxpos;
+
+	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-48)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-24)/2)<<FRACBITS);
+
+	if (cv_minihead.value)
+	{
+		amxpos -= 1 * FRACUNIT;
+	}
+
+	V_DrawFixedPatch(amxpos, amypos, scale, flags|V_ADD, icon, colormap);
 }
 
 static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, player_t *player)
@@ -3416,7 +3496,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
 }
 
-static void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
+static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
 {
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
@@ -3673,7 +3753,7 @@ static void K_drawKartMinimap(void)
 
 				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
-					usecolor = (K_RainbowColor(leveltime / 2));
+					usecolor = ((K_GetKartInvinType() == KARTINVIN_ALTERN) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
 				}
 				else
@@ -3879,6 +3959,35 @@ static void K_drawKartMinimap(void)
 			interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 			interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
+			if (!nocontest)
+			{
+				if (cv_showminimapangle.value == 1)
+				{
+					K_drawKartMinimapIcon(
+							interpx,
+							interpy,
+							x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
+							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
+							splitflags,
+							kp_minimapdot,
+							colormap
+					);
+				}
+				else if (cv_showminimapangle.value == 2)
+				{
+					K_drawKartMinimapHeadlight(
+						interpx,
+						interpy,
+						x,
+						y,
+						splitflags,
+						ang,
+						colormap
+					);
+
+				}
+			}
+
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
 
 			// Target reticule
@@ -3886,19 +3995,6 @@ static void K_drawKartMinimap(void)
 				|| (gametype == GT_BATTLE && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL);
-			}
-
-			if (!nocontest)
-			{
-				K_drawKartMinimapIcon(
-						interpx,
-						interpy,
-						x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
-						y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
-						splitflags,
-						kp_minimapdot,
-						colormap
-				);
 			}
 
 			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);
@@ -4028,7 +4124,7 @@ static void K_drawBattleFullscreen(void)
 	// fill in the fractional bits
 	if (cardanim && cardanim != 164*FRACUNIT)
 	{
-		INT32 frac = R_GetHudUncap() * ((164 - stplyr->karthud[khud_cardanimation])/8 + 1);
+		INT32 frac = R_GetTimeFrac(RTF_LEVEL) * ((164 - stplyr->karthud[khud_cardanimation])/8 + 1);
 		if (stplyr->exiting)
 			cardanim += frac;
 		else
@@ -4960,32 +5056,10 @@ static void K_DrawClusterDebugger(void)
 	}
 	else
 	{
-		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", clusterdtf.x, stplyr->distancetofinish));
+		V_DrawThinString(8, 126, vflags, va("Cluster player: %s", player_names[clusterid]));
+		V_DrawThinString(8, 136, vflags, va("Cluster DtF: %d, Your DtF: %d", (UINT32)(clusterdtf.x), stplyr->distancetofinish));
 		V_DrawThinString(8, 146, vflags, va("Distance from Cluster: %d", stplyr->distancefromcluster));
 	}
-}
-
-static void K_DrawBotDebugger(void)
-{
-	if (!cv_kartdebugbot.value || !stplyr->bot)
-		return;
-
-	if (stplyrnum != 0) // only for p1
-		return;
-
-	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
-
-	static const char *driftstates[] = {
-		[DRIFTSTATE_AUTO] = "Auto",
-		[DRIFTSTATE_STARTING] = "Starting",
-		[DRIFTSTATE_ACTIVE] = "Active",
-		[DRIFTSTATE_ENDING] = "Ending",
-	};
-
-	V_DrawThinString(24, 100, vflags, va("Drift state: %s", driftstates[stplyr->botvars.driftstate]));
-	V_DrawThinString(24, 108, vflags|(stplyr->botvars.driftlockout ? V_ORANGEMAP : 0), va("Drift lockout: %d", stplyr->botvars.driftlockout));
-	V_DrawThinString(24, 116, vflags, va("Drift turn: %d", stplyr->botvars.driftturn));
-	V_DrawThinString(24, 124, vflags, va("Drift timer: %d", stplyr->botvars.drifttime));
 }
 
 void K_drawKartHUD(void)
@@ -5046,6 +5120,10 @@ void K_drawKartHUD(void)
 				K_drawKartMinimap();
 		}
 	}
+
+	// Drift gauge should ideally be drawn behind other hud stuff, right?
+	// right?
+	K_DrawDriftGauge();
 
 	if (battlefullscreen && !freecam)
 	{
@@ -5167,6 +5245,8 @@ void K_drawKartHUD(void)
 			K_drawLapStartAnim();
 	}
 
+	//K_DisplayItemTimers();
+
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;
 
@@ -5223,7 +5303,365 @@ void K_drawKartHUD(void)
 	}
 
 	K_DrawWaypointDebugger();
-	K_DrawBotDebugger();
 	K_DrawClusterDebugger();
 	K_DrawDirectorDebugger();
+
+	if (stplyrnum == 0)
+		K_DrawBotDebugger(stplyr);
+}
+
+// Thank you Haya....
+
+// DRIFT GAUGE //
+
+static INT32 driftskins[] =
+{
+	SKINCOLOR_BLACK,
+	SKINCOLOR_SILVER,
+	SKINCOLOR_BLUEBELL,
+	SKINCOLOR_RASPBERRY,
+	SKINCOLOR_VIOLET,
+};
+
+static INT32 afterval[MAXPLAYERS];
+static tic_t aftertime[MAXPLAYERS];
+
+#define V_100TRANS V_TRANSLUCENT*2
+
+static UINT8 lineofs[] = {0, 0, 2, 2, 0, 0};
+static UINT8 colors[] = {103, 103, 99, 99, 103, 103};
+static UINT8 oldcolors[] = {99, 99, 99, 99, 99, 103};
+
+// The modified colors above look awful on SKINCOLOR BLACK so new tables.....
+static UINT8 backcolors[] = {100, 100, 97, 97, 100, 100};
+static UINT8 oldbackcolors[] = {97, 97, 97, 97, 97, 100};
+
+#define BARWIDTH 46
+#define BARWIDTH_HALF BARWIDTH/2
+
+void K_ResetAfterImageValues(void)
+{
+	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	{
+		afterval[i] = 0;
+		aftertime[i] = 0;
+	}
+}
+
+// Based off https://github.com/GenericHeroGuy/ringracers-scripts/blob/master/src/sglua/Lua/HUD/driftgauge.lua
+// Original script by GenericHeroGuy, graphics by Spee
+void K_DrawDriftGauge(void)
+{
+	// NEW SIN....
+#define NEWSIN(x) FINESINE((x >> ANGLETOFINESHIFT) & FINEMASK)
+	// Reset stuff on level load
+	if (leveltime <= 1)
+		K_ResetAfterImageValues();
+	// Actually have it enabled?
+	if (!cv_driftgauge.value)
+		return;
+	// Not in RA
+	if (modeattacking != ATTACKING_NONE)
+		return;
+	// Make sure we actually have one, lmao
+	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo))
+		return;
+	// Check for chasecam
+	// TODO: Check for this better ffs
+	if (!cv_chasecam[R_GetViewNumber()].value)
+		return;
+	// I WANT TO LIVE
+	if (stplyr->playerstate != PST_LIVE)
+		return;
+
+	mobj_t *mo = stplyr->mo;
+	vector3_t pos = {
+		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
+		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
+		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + FixedMul(cv_driftgaugeoffset.value, ((cv_driftgaugeoffset.value > 0) ? mo->scale : mapobjectscale)),
+	};
+	trackingResult_t res;
+	INT32 basex, basey, i = 0;
+	INT32 flags = V_SPLITSCREEN; // V_HUDTRANS does not like other transparent effects...
+
+	K_ObjectTracking(&res, &pos, false);
+	basex = res.x;
+	basey = res.y;
+
+	INT32 textx = basex + 4*FRACUNIT;
+	INT32 texty = basey + 6*FRACUNIT;
+	INT32 meterfont = OPPRNK_FONT;
+
+	switch (cv_driftgauge.value)
+	{
+		case 1: // Spee
+			// PASS THRU
+		case 2: // Achii
+			break;
+		case 3: // Wifi
+			textx = basex + 30*FRACUNIT;
+			texty = basey + 10*FRACUNIT;
+			meterfont = PINGNUM_FONT;
+			break;
+		case 4: // Chaotix
+			textx = basex - 18*FRACUNIT;
+			texty = basey - 8*FRACUNIT;
+			break;
+		case 5: // Numbers
+			textx = basex;
+			texty = basey;
+			break;
+		case 6: // Legacy
+			textx = basex + 30*FRACUNIT;
+			texty = basey;
+			meterfont = PINGNUM_FONT;
+			break;
+		case 7: // Legacy Small
+			textx = basex + 20*FRACUNIT;
+			texty = basey;
+			meterfont = PINGNUM_FONT;
+			break;
+		case 8: // Legacy Large Numbers
+			textx = basex + 30*FRACUNIT;
+			texty = basey;
+			meterfont = TALLNUM_FONT;
+			break;
+		case 9: // Large Numbers
+			textx = basex + 10*FRACUNIT;
+			texty = basey;
+			meterfont = TALLNUM_FONT;
+			break;
+	}
+
+	// afterimage
+	if (aftertime[stplyrnum])
+	{
+		if (aftertime[stplyrnum] <= leveltime)
+		{
+			aftertime[stplyrnum] = 0;
+			return;
+		}
+		INT32 trans = V_100TRANS - (V_10TRANS * (aftertime[stplyrnum] - leveltime));
+
+		UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SILVER, GTC_CACHE);
+
+		if (meterfont == OPPRNK_FONT)
+		{
+			UINT8 numbers[3];
+			numbers[0] = ((afterval[stplyrnum] / 100) % 10);
+			numbers[1] = ((afterval[stplyrnum] / 10) % 10);
+			numbers[2] = (afterval[stplyrnum] % 10);
+			V_DrawFixedPatch(textx, texty, FRACUNIT, flags|trans, kp_facenum[numbers[0]], cmap);
+			V_DrawFixedPatch(textx+(6*FRACUNIT), texty, FRACUNIT, flags|trans, kp_facenum[numbers[1]], cmap);
+			V_DrawFixedPatch(textx+(12*FRACUNIT), texty, FRACUNIT, flags|trans, kp_facenum[numbers[2]], cmap);
+		}
+		else if (meterfont == PINGNUM_FONT)
+		{
+			V_DrawPingNumAtFixed(textx, texty, flags|trans, afterval[stplyrnum], cmap);
+		}
+		else if (meterfont == TALLNUM_FONT)
+		{
+			V_DrawPaddedTallColorNumAtFixed(textx, texty, flags|trans, afterval[stplyrnum], 3, cmap);
+		}
+
+		/*V_DrawStringScaledEx(
+			textx, texty,
+			FRACUNIT, FRACUNIT, FRACUNIT, FRACUNIT,
+			flags|trans|V_MONOSPACE, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_WSUPER1, GTC_CACHE),
+							  meterfont,
+						va("%03d", afterval[stplyrnum])
+		);*/
+		return;
+	}
+	else if (!stplyr->drift)
+		return;
+
+	INT32 driftval = K_GetKartDriftSparkValue(stplyr);
+	INT32 driftcharge = min(driftval*4, stplyr->driftcharge);
+	boolean rainbow = driftcharge >= driftval*4;
+	UINT8 level = min(4, (driftcharge / driftval) + 1);
+	UINT8 level2 = level == 0 ? 0 : level-1;
+	boolean colorhud = K_UseColorHud();
+	SINT8 clroffset = colorhud ? 6 : 0;
+	boolean legacy = (cv_driftgauge.value >= 6 && cv_driftgauge.value < 9);
+
+	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[level], GTC_CACHE);
+	UINT8 *cmap2 = R_GetTranslationColormap(TC_RAINBOW, driftskins[level2], GTC_CACHE);
+	UINT8 *cmap3 = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+
+	if (rainbow)
+	{
+		cmap = R_GetTranslationColormap(TC_RAINBOW, (1 + (leveltime % FIRSTSUPERCOLOR - 1)), GTC_CACHE);
+		cmap2 = cmap;
+	}
+
+	// Meter style
+	if (cv_driftgauge.value <= 2 || legacy)
+	{
+		UINT8 *barcolors = legacy ? oldcolors : colors;
+		SINT8 offset = (cv_driftgauge.value == 8) ? 4 : (cv_driftgauge.value < 6) ? 1 : 2;
+		if (cv_driftgauge.value == 7)
+			basex += 10*FRACUNIT;
+		// the base graphic
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+cv_driftgauge.value-offset], colorhud ? cmap3 : NULL);
+		if (rainbow)
+		{
+			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
+			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[cv_driftgauge.value-offset], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
+		}
+
+		INT32 barx = basex - 22*FRACUNIT;
+		INT32 bary = basey + FRACUNIT*2;
+		INT32 barwidth = (cv_driftgauge.value == 7) ? BARWIDTH_HALF : BARWIDTH;
+
+		if (legacy)
+		{
+			barx -= FRACUNIT;
+			bary -= 3*FRACUNIT;
+		}
+
+		INT32 width = ((driftcharge % driftval) * barwidth) / driftval;
+
+		const char *patch = "~%03u";
+
+		for (i = 0; i < 6; i++)
+		{
+			INT32 ofs = lineofs[i]*FRACUNIT/2;
+			INT32 x = barx+ofs;
+			INT32 y = bary+i*FRACUNIT/2;
+			INT32 w = (max(0, min(width*FRACUNIT - ofs, barwidth*FRACUNIT - ofs*2))) / 64;
+			INT32 h = FRACUNIT/128;
+
+			if (legacy)
+			{
+				h += (FRACUNIT/128)*2; // 1024
+			}
+
+			if (driftskins[level2] == SKINCOLOR_BLACK)
+			{
+				barcolors = legacy ? oldbackcolors : backcolors;
+			}
+
+			// back
+			char fmt[4];
+			sprintf(fmt, patch, R_GetPaletteRemap(barcolors[i] + (level == 1 ? 8 : 0)));
+			V_DrawStretchyFixedPatch(x, y, (barwidth*FRACUNIT - ofs*2)/64, h, flags, W_CachePatchName(fmt, PU_CACHE), cmap2);
+			// front
+			if (!rainbow)
+			{
+				barcolors = legacy ? oldcolors: colors;
+				sprintf(fmt, patch, R_GetPaletteRemap(barcolors[i]));
+				V_DrawStretchyFixedPatch(x, y, w, h, flags, W_CachePatchName(fmt, PU_CACHE), cmap);
+			}
+		}
+	}
+	else if (cv_driftgauge.value == 3) // Wifi style
+	{
+		// the base graphic
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+2], colorhud ? cmap3 : NULL);
+		if (rainbow)
+		{
+			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
+			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[2], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
+		}
+
+		const INT32 dsone = K_GetKartDriftSparkValueForStage(stplyr, 1);
+		const INT32 dstwo = K_GetKartDriftSparkValueForStage(stplyr, 2);
+		const INT32 dsthree = K_GetKartDriftSparkValueForStage(stplyr, 3);
+
+		const INT32 barx = basex + 6*FRACUNIT + 2*FRACUNIT;
+		const INT32 bary = basey - 8*FRACUNIT + 22*FRACUNIT;
+
+		// tier 1
+		fixed_t h = FixedDiv((max(0, min(driftcharge, dsone)) * 6*FRACUNIT), driftval*FRACUNIT);
+		V_SetClipRect(barx, bary-h, 4*FRACUNIT, 6*FRACUNIT, flags);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[0], cmap);
+
+		// tier 2
+		h = FixedDiv((max(0, min(driftcharge-dsone, dsone)) * 11*FRACUNIT), driftval*FRACUNIT);
+		V_SetClipRect(barx + 5*FRACUNIT, bary-h, 4*FRACUNIT, 11*FRACUNIT, flags);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[1], cmap);
+
+		// tier 3
+		h = FixedDiv((max(0, min(driftcharge-dstwo, dsone)) * 16*FRACUNIT), driftval*FRACUNIT);
+		V_SetClipRect(barx + 10*FRACUNIT, bary-h, 4*FRACUNIT, 16*FRACUNIT, flags);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[2], cmap);
+
+		// tier 4
+		h = FixedDiv((max(0, min(driftcharge-dsthree, dsone)) * 21*FRACUNIT), driftval*FRACUNIT);
+		V_SetClipRect(barx + 15*FRACUNIT, bary-h, 4*FRACUNIT, 21*FRACUNIT, flags);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[3], cmap);
+
+		V_ClearClipRect();
+	}
+	else if (cv_driftgauge.value == 4) // Chaotix style
+	{
+		// the base graphic
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+3], colorhud ? cmap3 : NULL);
+		if (rainbow)
+		{
+			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
+			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[3], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
+		}
+
+		const INT32 barx = basex - 23*FRACUNIT;
+		const INT32 bary = basey - 7*FRACUNIT;
+
+		INT32 width = FixedDiv(((driftcharge % driftval) * 34*FRACUNIT), driftval*FRACUNIT);
+
+		// back
+		if (driftcharge >= (driftval-2))
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], cmap2);
+
+		// front
+		if (!rainbow)
+		{
+			V_SetClipRect(barx, bary, width, 18*FRACUNIT, flags);
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], cmap);
+			V_ClearClipRect();
+		}
+	}
+
+	// right, also draw a cool number
+	INT32 charge = driftcharge*100 / driftval;
+
+	if (meterfont == OPPRNK_FONT)
+	{
+		UINT8 numbers[3];
+		numbers[0] = ((charge / 100) % 10);
+		numbers[1] = ((charge / 10) % 10);
+		numbers[2] = (charge % 10);
+		V_DrawFixedPatch(textx, texty, FRACUNIT, flags, kp_facenum[numbers[0]], cmap);
+		V_DrawFixedPatch(textx+(6*FRACUNIT), texty, FRACUNIT, flags, kp_facenum[numbers[1]], cmap);
+		V_DrawFixedPatch(textx+(12*FRACUNIT), texty, FRACUNIT, flags, kp_facenum[numbers[2]], cmap);
+	}
+	else if (meterfont == PINGNUM_FONT)
+	{
+		V_DrawPingNumAtFixed(textx, texty, flags, charge, cmap);
+	}
+	else if (meterfont == TALLNUM_FONT)
+	{
+		V_DrawPaddedTallColorNumAtFixed(textx, texty, flags, charge, 3, cmap);
+	}
+
+	/*V_DrawStringScaledEx(
+		textx, texty,
+		FRACUNIT, FRACUNIT, FRACUNIT, FRACUNIT,
+		flags|V_MONOSPACE, cmap,
+		meterfont,
+		va("%03d", charge)
+	);*/
+
+	// and trigger the afterimage
+	if (stplyr->pflags & PF_DRIFTEND)
+	{
+		afterval[stplyrnum] = charge;
+		aftertime[stplyrnum] = leveltime + 10;
+	}
+	else
+		aftertime[stplyrnum] = 0;
+#undef NEWSIN
 }

@@ -60,6 +60,7 @@ static lua_CFunction liblist[] = {
 	LUA_BlockmapLib, // blockmap stuff
 	LUA_HudLib, // HUD stuff
 	LUA_FollowerLib, // follower_t, followers[]
+	LUA_BotVarsLib, // botvars_t
 	LUA_TerrainLib, // t_splash_t, t_footstep_t, t_overlay_t, terrain_t
 	LUA_WaypointLib, // waypoint_t
 	NULL
@@ -392,6 +393,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		return 1;
 	} else if (fastcmp(word,"slopeboostactive")) {
 		lua_pushinteger(L, slopeboostactive);
+		return 1;
+	} else if (fastcmp(word,"draftingactive")) {
+		lua_pushinteger(L, draftingactive);
 		return 1;
 	} else if (fastcmp(word,"purpledriftactive")) {
 		lua_pushinteger(L, purpledriftactive);

@@ -255,10 +255,7 @@ static void M_DrawRenderStats(void)
 	perfstatcol_t     batchcalls_col = {220, 200, V_PURPLEMAP,     batchcalls_row};
 
 
-	boolean rendering = (
-			gamestate == GS_LEVEL ||
-			(gamestate == GS_TITLESCREEN && titlemapinaction)
-	);
+	boolean rendering = G_GamestateUsesLevel();
 
 	draw_row = 10;
 	M_DrawPerfTiming(&frametime_col);
@@ -373,10 +370,14 @@ static void M_DrawTickStats(void)
 		{0}
 	};
 
+	perfstatrow_t bot_time_row[] = {
+		{"botcmd ", "Bot logic:      ", &ps_botticcmd_time},
+		{0}
+	};
+
 	perfstatrow_t extra_thinker_time_row[] = {
 		{"lthinkf", "LUAh_ThinkFrame:", &ps_lua_thinkframe_time},
 		{"acs    ", "ACS_Tick:       ", &ps_acs_time},
-		{"botcmd ", "Bot logic:      ", &ps_botticcmd_time},
 		{"other  ", "Other:          ", &extratime},
 		{0}
 	};
@@ -420,6 +421,7 @@ static void M_DrawTickStats(void)
 	perfstatcol_t               tictime_col  =  {20,  20, V_YELLOWMAP,               tictime_row};
 	perfstatcol_t          thinker_time_col  =  {24,  24, V_YELLOWMAP,          thinker_time_row};
 	perfstatcol_t detailed_thinker_time_col  =  {28,  28, V_YELLOWMAP, detailed_thinker_time_row};
+	perfstatcol_t              bot_time_col  =  {24,  24, V_YELLOWMAP,              bot_time_row};
 	perfstatcol_t    extra_thinker_time_col  =  {24,  24, V_YELLOWMAP,    extra_thinker_time_row};
 
 	perfstatcol_t          thinkercount_col  =  {90, 115, V_BLUEMAP,            thinkercount_row};
@@ -465,6 +467,8 @@ static void M_DrawTickStats(void)
 	M_DrawPerfTiming(&tictime_col);
 	M_DrawPerfTiming(&thinker_time_col);
 	M_DrawPerfTiming(&detailed_thinker_time_col);
+	if (server)
+		M_DrawPerfTiming(&bot_time_col);
 	M_DrawPerfTiming(&extra_thinker_time_col);
 
 	draw_row = 10;
@@ -507,7 +511,11 @@ void M_DrawPerfStats(void)
 	}
 	else if (cv_perfstats.value == PS_BOT) // bot ticcmd
 	{
-		if (vid.width < 640 || vid.height < 400) // low resolution
+		if (!server)
+		{
+			V_DrawThinString(30, 30, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "Not applicable to clients");
+		}
+		else if (vid.width < 640 || vid.height < 400) // low resolution
 		{
 			// it's not gonna fit very well..
 			V_DrawThinString(30, 30, V_MONOSPACE | V_ALLOWLOWERCASE | V_YELLOWMAP, "Not available for resolutions below 640x400");
@@ -618,7 +626,7 @@ void M_DrawPerfStats(void)
 	}
 	else if (cv_perfstats.value == PS_THINKFRAME) // lua thinkframe
 	{
-		if (!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
+		if (!G_GamestateUsesLevel())
 			return;
 		if (vid.width < 640 || vid.height < 400) // low resolution
 		{

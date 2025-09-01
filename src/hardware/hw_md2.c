@@ -1426,14 +1426,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 		interpmobjstate_t interp;
 		modeltype_t modeltype = MODELTYPE_SPRITE;
 
-		if (R_UsingFrameInterpolation() && !paused)
-		{
-			R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-		}
+		R_InterpolateMobjState(spr->mobj, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 		// sprite offset
 		interp.x += spr->mobj->sprxoff;
@@ -1611,7 +1604,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 
 #ifdef USE_MODEL_NEXTFRAME
 		// Interpolate the model interpolation. (lol)
-		tics -= FixedToFloat(rendertimefrac);
+		tics -= FixedToFloat(R_GetTimeFrac(RTF_LEVEL));
 
 #define INTERPOLERATION_LIMIT TICRATE/4
 		if (

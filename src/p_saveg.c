@@ -291,6 +291,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].numsneakers);
 		WRITEUINT8(save->p, players[i].numboosts);
 
+		WRITEFIXED(save->p, players[i].draftpower);
+		WRITEUINT16(save->p, players[i].draftleeway);
+		WRITESINT8(save->p, players[i].lastdraft);
+
 		// boostinfo_t
 		WRITEFIXED(save->p, players[i].boostinfo.stackspeedboost);
 		WRITEFIXED(save->p, players[i].boostinfo.nonstackspeedboost);
@@ -315,6 +319,8 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].sadtimer);
 
 		WRITESINT8(save->p, players[i].rings);
+		WRITESINT8(save->p, players[i].ringmin);
+		WRITESINT8(save->p, players[i].ringmax);
 		WRITEUINT8(save->p, players[i].pickuprings);
 		WRITEUINT8(save->p, players[i].ringdelay);
 		WRITEUINT16(save->p, players[i].ringboost);
@@ -327,7 +333,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].curshield);
 		WRITEUINT8(save->p, players[i].bubblecool);
 		WRITEUINT8(save->p, players[i].bubbleblowup);
-		WRITEUINT8(save->p, players[i].bubblepop);
+		WRITEUINT8(save->p, players[i].bubblehealth);
 		WRITEUINT16(save->p, players[i].flamedash);
 		WRITEINT32(save->p, players[i].flametimer);
 		WRITEUINT8(save->p, players[i].flamestore);
@@ -392,20 +398,12 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		// botvars_t
 		WRITEUINT8(save->p, players[i].bot);
+		WRITEUINT8(save->p, players[i].botvars.style);
 		WRITEUINT8(save->p, players[i].botvars.difficulty);
 		WRITEUINT8(save->p, players[i].botvars.diffincrease);
 		WRITEUINT8(save->p, players[i].botvars.rival);
 		WRITEFIXED(save->p, players[i].botvars.rubberband);
 		WRITEUINT16(save->p, players[i].botvars.controller);
-		WRITEUINT32(save->p, players[i].botvars.itemdelay);
-		WRITEUINT32(save->p, players[i].botvars.itemconfirm);
-		WRITESINT8(save->p, players[i].botvars.turnconfirm);
-		WRITEUINT32(save->p, players[i].botvars.respawnconfirm);
-		WRITEFIXED(save->p, players[i].botvars.driftskill);
-		WRITEINT32(save->p, players[i].botvars.driftstate);
-		WRITESINT8(save->p, players[i].botvars.driftturn);
-		WRITEUINT32(save->p, players[i].botvars.drifttime);
-		WRITEUINT32(save->p, players[i].botvars.driftlockout);
 
 		WRITEFIXED(save->p, players[i].outrun);
 		WRITEUINT8(save->p, players[i].outruntime);
@@ -642,6 +640,10 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].numsneakers = READUINT8(save->p);
 		players[i].numboosts = READUINT8(save->p);
 
+		players[i].draftpower = READFIXED(save->p);
+		players[i].draftleeway = READUINT16(save->p);
+		players[i].lastdraft = READSINT8(save->p);
+
 		// boostinfo_t
 		players[i].boostinfo.stackspeedboost = READFIXED(save->p);
 		players[i].boostinfo.nonstackspeedboost = READFIXED(save->p);
@@ -666,6 +668,8 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].sadtimer = READUINT8(save->p);
 
 		players[i].rings = READSINT8(save->p);
+		players[i].ringmin = READSINT8(save->p);
+		players[i].ringmax = READSINT8(save->p);
 		players[i].pickuprings = READUINT8(save->p);
 		players[i].ringdelay = READUINT8(save->p);
 		players[i].ringboost = READUINT16(save->p);
@@ -678,7 +682,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].curshield = READUINT8(save->p);
 		players[i].bubblecool = READUINT8(save->p);
 		players[i].bubbleblowup = READUINT8(save->p);
-		players[i].bubblepop    = READUINT8(save->p);
+		players[i].bubblehealth = READUINT8(save->p);
 		players[i].flamedash = READUINT16(save->p);
 		players[i].flametimer = READINT32(save->p);
 		players[i].flamestore = READUINT8(save->p);
@@ -743,20 +747,12 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		// botvars_t
 		players[i].bot = READUINT8(save->p);
+		players[i].botvars.style = READUINT8(save->p);
 		players[i].botvars.difficulty = READUINT8(save->p);
 		players[i].botvars.diffincrease = READUINT8(save->p);
 		players[i].botvars.rival = (boolean)READUINT8(save->p);
 		players[i].botvars.rubberband = READFIXED(save->p);
 		players[i].botvars.controller = READUINT16(save->p);
-		players[i].botvars.itemdelay = READUINT32(save->p);
-		players[i].botvars.itemconfirm = READUINT32(save->p);
-		players[i].botvars.turnconfirm = READSINT8(save->p);
-		players[i].botvars.respawnconfirm = READUINT32(save->p);
-		players[i].botvars.driftskill = READFIXED(save->p);
-		players[i].botvars.driftstate = READINT32(save->p);
-		players[i].botvars.driftturn = READSINT8(save->p);
-		players[i].botvars.drifttime = READUINT32(save->p);
-		players[i].botvars.driftlockout = READUINT32(save->p);
 
 		players[i].outrun = READFIXED(save->p);
 		players[i].outruntime = READUINT8(save->p);
@@ -5198,6 +5194,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, slipdashactive);
 	WRITEUINT8(save->p, purpledriftactive);
 	WRITEUINT8(save->p, slopeboostactive);
+	WRITEUINT8(save->p, draftingactive);
 
 	for (i = 0; i < 12; i++)
 	{
@@ -5387,6 +5384,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	slipdashactive = READUINT8(save->p);
 	purpledriftactive = READUINT8(save->p);
 	slopeboostactive = READUINT8(save->p);
+	draftingactive = READUINT8(save->p);
 
 	for (i = 0; i < 12; i++)
 	{

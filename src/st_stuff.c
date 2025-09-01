@@ -522,12 +522,10 @@ static void ST_drawDebugInfo(void)
 	if (cht_debug & DBG_RNG) // randomizer testing
 	{
 		fixed_t peekres = P_RandomPeek();
-		peekres *= 10000;     // Change from fixed point
-		peekres >>= FRACBITS; // to displayable decimal
 
 		V_DrawRightAlignedString(320, height - 16, V_MONOSPACE, va("Init: %08x", P_GetInitSeed()));
 		V_DrawRightAlignedString(320, height - 8,  V_MONOSPACE, va("Seed: %08x", P_GetRandSeed()));
-		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  :    .%04d", peekres));
+		V_DrawRightAlignedString(320, height,      V_MONOSPACE, va("==  : %08x", peekres));
 
 		height -= 32;
 	}
@@ -675,7 +673,7 @@ void ST_drawTitleCard(void)
 
 		// uh... "fill in the bits" of sub, or something... no idea what I came up with
 		// VERY janky, but doesn't require m_easing
-		INT32 frac = (FixedMul(R_GetHudUncap(), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
+		INT32 frac = (FixedMul(R_GetTimeFrac(RTF_LEVEL), FixedDiv(dupcalc, BASEVIDWIDTH)) >> (count + 4))/13; // these two magic numbers seem to do the trick
 
 		sub = dupcalc;
 		while (count-- > 0)
@@ -961,7 +959,7 @@ void ST_Drawer(void)
 			stplyr = &players[displayplayers[i]];
 			stplyrnum = i;
 			R_SetViewContext(VIEWCONTEXT_PLAYER1 + i);
-			R_InterpolateView(rendertimefrac); // to assist with object tracking
+			R_InterpolateView(R_GetTimeFrac(RTF_CAMERA)); // to assist with object tracking
 			ST_overlayDrawer();
 		}
 

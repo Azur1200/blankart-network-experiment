@@ -235,6 +235,9 @@ enum player_e
 	player_boostinfo,
 	player_numsneakers,
 	player_numboosts,
+	player_draftpower,
+	player_draftleeway,
+	player_lastdraft,
 	player_tripwireState,
 	player_tripwirePass,
 	player_tripwireLeniency,
@@ -249,6 +252,8 @@ enum player_e
 	player_throwdir,
 	player_sadtimer,
 	player_rings,
+	player_ringmin,
+	player_ringmax,
 	player_pickuprings,
 	player_ringdelay,
 	player_ringboost,
@@ -260,7 +265,7 @@ enum player_e
 	player_curshield,
 	player_bubblecool,
 	player_bubbleblowup,
-	player_bubblepop,
+	player_bubblehealth,
 	player_flamedash,
 	player_flametimer,
 	player_flamestore,
@@ -342,6 +347,7 @@ enum player_e
 	player_spectator,
 	player_spectatewait,
 	player_bot,
+	player_botvars,
 	player_jointime,
 	player_spectatorreentry,
 	player_grieftime,
@@ -426,6 +432,9 @@ static const char *const player_opt[] = {
 	"boostinfo",
 	"numsneakers",
 	"numboosts",
+	"draftpower",
+	"draftleeway",
+	"lastdraft",
 	"tripwireState",
 	"tripwirePass",
 	"tripwireLeniency",
@@ -440,6 +449,8 @@ static const char *const player_opt[] = {
 	"throwdir",
 	"sadtimer",
 	"rings",
+	"ringmin",
+	"ringmax",
 	"pickuprings",
 	"ringdelay",
 	"ringboost",
@@ -451,7 +462,7 @@ static const char *const player_opt[] = {
 	"curshield",
 	"bubblecool",
 	"bubbleblowup",
-	"bubblepop",
+	"bubblehealth",
 	"flamedash",
 	"flametimer",
 	"flamestore",
@@ -533,6 +544,7 @@ static const char *const player_opt[] = {
 	"spectator",
 	"spectatewait",
 	"bot",
+	"botvars",
 	"jointime",
 	"spectatorreentry",
 	"grieftime",
@@ -779,6 +791,15 @@ static int player_get(lua_State *L)
 	case player_numboosts:
 		lua_pushinteger(L, plr->numboosts);
 		break;
+	case player_draftpower:
+		lua_pushinteger(L, plr->draftpower);
+		break;
+	case player_draftleeway:
+		lua_pushinteger(L, plr->draftleeway);
+		break;
+	case player_lastdraft:
+		lua_pushinteger(L, plr->lastdraft);
+		break;
 	case player_tripwireState:
 		lua_pushinteger(L, plr->tripwireState);
 		break;
@@ -821,6 +842,12 @@ static int player_get(lua_State *L)
 	case player_rings:
 		lua_pushinteger(L, plr->rings);
 		break;
+	case player_ringmin:
+		lua_pushinteger(L, plr->ringmin);
+		break;
+	case player_ringmax:
+		lua_pushinteger(L, plr->ringmax);
+		break;
 	case player_pickuprings:
 		lua_pushinteger(L, plr->pickuprings);
 		break;
@@ -854,8 +881,8 @@ static int player_get(lua_State *L)
 	case player_bubbleblowup:
 		lua_pushinteger(L, plr->bubbleblowup);
 		break;
-	case player_bubblepop:
-		lua_pushinteger(L, plr->bubblepop);
+	case player_bubblehealth:
+		lua_pushinteger(L, plr->bubblehealth);
 		break;
 	case player_flamedash:
 		lua_pushinteger(L, plr->flamedash);
@@ -1119,6 +1146,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_bot:
 		lua_pushboolean(L, plr->bot);
+		break;
+	case player_botvars:
+		LUA_PushUserdata(L, &plr->botvars, META_BOTVARS);
 		break;
 	case player_jointime:
 		lua_pushinteger(L, plr->jointime);
@@ -1441,6 +1471,15 @@ static int player_set(lua_State *L)
 	case player_numboosts:
 		plr->numboosts = luaL_checkinteger(L, 3);
 		break;
+	case player_draftpower:
+		plr->draftpower = luaL_checkinteger(L, 3);
+		break;
+	case player_draftleeway:
+		plr->draftleeway = luaL_checkinteger(L, 3);
+		break;
+	case player_lastdraft:
+		plr->lastdraft = luaL_checkinteger(L, 3);
+		break;
 	case player_tripwireState:
 		plr->tripwireState = luaL_checkinteger(L, 3);
 		break;
@@ -1483,6 +1522,12 @@ static int player_set(lua_State *L)
 	case player_rings:
 		plr->rings = luaL_checkinteger(L, 3);
 		break;
+	case player_ringmin:
+		plr->ringmin = luaL_checkinteger(L, 3);
+		break;
+	case player_ringmax:
+		plr->ringmax = luaL_checkinteger(L, 3);
+		break;
 	case player_pickuprings:
 		plr->pickuprings = luaL_checkinteger(L, 3);
 		break;
@@ -1516,8 +1561,8 @@ static int player_set(lua_State *L)
 	case player_bubbleblowup:
 		plr->bubbleblowup = luaL_checkinteger(L, 3);
 		break;
-	case player_bubblepop:
-		plr->bubblepop = luaL_checkinteger(L, 3);
+	case player_bubblehealth:
+		plr->bubblehealth = luaL_checkinteger(L, 3);
 		break;
 	case player_flamedash:
 		plr->flamedash = luaL_checkinteger(L, 3);
@@ -1761,6 +1806,8 @@ static int player_set(lua_State *L)
 		plr->spectatewait = luaL_checkinteger(L, 3);
 		break;
 	case player_bot:
+		return NOSET;
+	case player_botvars:
 		return NOSET;
 	case player_jointime:
 		plr->jointime = (tic_t)luaL_checkinteger(L, 3);

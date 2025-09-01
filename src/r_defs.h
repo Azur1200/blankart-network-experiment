@@ -441,6 +441,7 @@ typedef enum
 	SD_LAVA = 2,
 	SD_DEATHPIT = 3,
 	SD_INSTAKILL = 4,
+	SD_FLIPOVER = 5,
 } sectordamage_t;
 
 typedef enum

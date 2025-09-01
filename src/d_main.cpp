@@ -87,8 +87,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x0b1ca4fd1a704d9c
-#define ASSET_HASH_MAPPATCH_PK3        0x19ebc8123bd51191
+#define ASSET_HASH_MAIN_PK3            0x03995502cdc241f4
+#define ASSET_HASH_MAPPATCH_PK3        0x783b80ca253bd0db
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -275,11 +275,14 @@ void D_ProcessEvents(void)
 	recursioncheck = false;
 }
 
-static void D_RenderLevel(void)
+boolean D_RenderLevel(void)
 {
 	UINT8 i;
 
-	R_ApplyLevelInterpolators(R_UsingFrameInterpolation() ? rendertimefrac : FRACUNIT);
+	if (automapactive || dedicated || !cv_renderview.value || !levelloaded)
+		return false;
+
+	R_ApplyLevelInterpolators(R_GetTimeFrac(RTF_LEVEL));
 
 	viewwindowy = 0;
 	viewwindowx = 0;
@@ -387,6 +390,7 @@ static void D_RenderLevel(void)
 
 	ps_rendercalltime = I_GetPreciseTime() - ps_rendercalltime;
 	R_RestoreLevelInterpolators();
+	return true;
 }
 
 //
@@ -442,7 +446,7 @@ static void D_Display(void)
 			for (i = 0; i <= r_splitscreen; ++i)
 			{
 				R_SetViewContext(static_cast<viewcontext_e>(VIEWCONTEXT_PLAYER1 + i));
-				R_InterpolateViewRollAngle(rendertimefrac);
+				R_InterpolateViewRollAngle(R_GetTimeFrac(RTF_LEVEL));
 				R_CheckViewMorph(i);
 			}
 		}
@@ -473,8 +477,7 @@ static void D_Display(void)
 			wipetypepre = wipedefs[wipedefindex];
 
 		// Fade to black first
-		if ((wipegamestate == FORCEWIPE ||
-			!(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction))) // fades to black on its own timing, always
+		if ((wipegamestate == FORCEWIPE || !G_GamestateUsesLevel()) // fades to black on its own timing, always
 		 && wipetypepre != UINT8_MAX)
 		{
 			if (rendermode != render_none)
@@ -511,12 +514,7 @@ static void D_Display(void)
 	// intermission background
 	if (lastdraw)
 	{
-		if (rendermode == render_soft && !automapactive && !dedicated && cv_renderview.value)
-		{
-			D_RenderLevel();
-			Y_ConsiderScreenBuffer();
-			usebuffer = true;
-		}
+		Y_ConsiderScreenBuffer();
 		lastdraw = false;
 	}
 
@@ -607,8 +605,7 @@ static void D_Display(void)
 		// see if the border needs to be initially drawn
 		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
-			if (!automapactive && !dedicated && cv_renderview.value)
-				D_RenderLevel();
+			D_RenderLevel();
 
 			ps_uitime = I_GetPreciseTime();
 
@@ -629,7 +626,7 @@ static void D_Display(void)
 
 	// change gamma if needed
 	// (GS_LEVEL handles this already due to level-specific palettes)
-	if (forcerefresh && !(gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
+	if (forcerefresh && !G_GamestateUsesLevel())
 		V_SetPalette(0);
 
 	// draw pause pic
@@ -884,7 +881,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 			renderisnewtic = false;
 
 		// draw loop
-		rendertimefrac = g_time.timefrac;
+		R_SetTimeFrac(g_time.timefrac);
 		renderdeltatics = FLOAT_TO_FIXED(delta);
 
 #ifndef NOWIPE
@@ -1018,7 +1015,7 @@ void D_SRB2Loop(void)
 				debugload--;
 #endif
 
-		interp = R_UsingFrameInterpolation() && !dedicated;
+		interp = !dedicated && (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
 		doDisplay = false;
 
 #ifdef HW3SOUND
@@ -1082,29 +1079,12 @@ void D_SRB2Loop(void)
 
 			I_UpdateTime(cv_timescale.value);
 
-			if (!(paused || P_AutoPause()) && !lagging)
-			{
-				rendertimefrac = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac = FRACUNIT;
-			}
-
-			if (!lagging)
-			{
-				rendertimefrac_unpaused = g_time.timefrac;
-			}
-			else
-			{
-				rendertimefrac_unpaused = FRACUNIT;
-			}
+			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
-			rendertimefrac = FRACUNIT;
-			rendertimefrac_unpaused = FRACUNIT;
+			R_SetTimeFrac(FRACUNIT);
 		}
 
 		I_UpdateTime(cv_timescale.value);
@@ -1137,7 +1117,8 @@ void D_SRB2Loop(void)
 
 		// consoleplayer -> displayplayers (hear sounds from viewpoint)
 		S_UpdateSounds(); // move positional sounds
-		S_UpdateClosedCaptions();
+		if (renderisnewtic)
+			S_UpdateClosedCaptions();
 
 #ifdef HW3SOUND
 		HW3S_EndFrameUpdate();

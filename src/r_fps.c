@@ -29,6 +29,9 @@
 #include "hardware/hw_main.h"
 #endif
 
+// The fraction of a tic being drawn (for interpolation between two tics)
+static fixed_t rendertimefrac;
+
 static CV_PossibleValue_t fpscap_cons_t[] = {
 #ifdef DEVELOP
 	// Lower values are actually pretty useful for debugging interp problems!
@@ -67,9 +70,25 @@ UINT32 R_GetFramerateCap(void)
 	return cv_fpscap.value;
 }
 
-boolean R_UsingFrameInterpolation(void)
+// this wacky function exists now because rendertimefrac is stopped outside levels
+// just for the sake of the intermission background...
+fixed_t R_GetTimeFrac(timefrac_e level)
 {
-	return (R_GetFramerateCap() != TICRATE || cv_timescale.value < FRACUNIT);
+	// level interp. pauses if level isn't active
+	if ((level <= RTF_LEVEL || level == RTF_CAMERA) && !G_GamestateUsesLevel())
+		return FRACUNIT;
+
+	// intermission interp. pauses if game is paused
+	if (level <= RTF_INTER && (paused || P_AutoPause()))
+		return FRACUNIT;
+
+	// menu interp. interpolates no matter what
+	return rendertimefrac;
+}
+
+void R_SetTimeFrac(fixed_t frac)
+{
+	rendertimefrac = frac;
 }
 
 static viewvars_t pview_old[MAXSPLITSCREENPLAYERS];
@@ -252,22 +271,12 @@ void R_SetViewContext(enum viewcontext_e _viewcontext)
 
 fixed_t R_InterpolateFixed(fixed_t from, fixed_t to)
 {
-	if (!R_UsingFrameInterpolation())
-	{
-		return to;
-	}
-
-	return (R_LerpFixed(from, to, rendertimefrac));
+	return R_LerpFixed(from, to, R_GetTimeFrac(RTF_LEVEL));
 }
 
 angle_t R_InterpolateAngle(angle_t from, angle_t to)
 {
-	if (!R_UsingFrameInterpolation())
-	{
-		return to;
-	}
-
-	return (R_LerpAngle(from, to, rendertimefrac));
+	return R_LerpAngle(from, to, R_GetTimeFrac(RTF_LEVEL));
 }
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)

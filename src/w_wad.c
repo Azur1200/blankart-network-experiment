@@ -64,6 +64,7 @@
 #include "i_system.h"
 #include "lua_script.h"
 #include "g_game.h" // G_MapNumber
+#include "r_patchrotation.h"
 
 #include "k_terrain.h"
 
@@ -989,6 +990,10 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, wadco
 	//
 	Z_Calloc(numlumps * sizeof (*wadfile->lumpcache), PU_STATIC, &wadfile->lumpcache);
 	Z_Calloc(numlumps * sizeof (*wadfile->patchcache), PU_STATIC, &wadfile->patchcache);
+
+#ifdef ROTSPRITE
+	Z_Calloc(numlumps * sizeof (*wadfile->rotcache), PU_STATIC, &wadfile->rotcache);
+#endif
 
 	//
 	// add the wadfile
@@ -2161,6 +2166,22 @@ void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag)
 	return W_CachePatchNumPwad(WADFILENUM(lumpnum),LUMPNUM(lumpnum),tag);
 }
 
+#ifdef ROTSPRITE
+// Caches a rotsprite for patch rotation.
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum)
+{
+	lumpcache_t *rotcache = wadfiles[wadnum]->rotcache;
+
+	if (!rotcache[lumpnum])
+	{
+		rotsprite_t *rspr = RotatedPatch_Create(ROTANGLES);
+		Z_SetUser(rspr, (void **)(&rotcache[lumpnum]));
+	}
+
+	return (void *)(rotcache[lumpnum]);
+}
+#endif // ROTSPRITE
+
 void W_UnlockCachedPatch(void *patch)
 {
 	if (!patch)
@@ -2186,6 +2207,45 @@ void *W_CachePatchName(const char *name, INT32 tag)
 		return missingpat;
 	return W_CachePatchNum(num, tag);
 }
+
+#ifdef ROTSPRITE
+// Caches a patch, and if needed, rotates said patch.
+void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag)
+{
+	lumpnum_t num;
+	patch_t *ptr;
+	rotsprite_t *rspr;
+	INT32 idx = rotationangle;
+
+	num = W_CheckNumForName(name);
+
+	if (num == LUMPERROR)
+		num = W_GetNumForName("MISSING");
+
+	// No rotation? No need to do any of this nonsense.
+	if (rotationangle < 1 || rotationangle >= ROTANGLES)
+		return W_CachePatchNum(num, tag);
+
+	rspr = (rotsprite_t *)W_GetCachedRotPatchPwad(WADFILENUM(num),LUMPNUM(num));
+
+	if (rspr->patches[idx] == NULL)
+	{
+		INT32 xpivot = 0, ypivot = 0;
+
+		ptr = W_CachePatchNum(num, PU_PATCH);
+
+		// >y pivot centered
+		// >x pivot not centered
+		// Why?
+		xpivot = ptr->width / 2;
+		ypivot = ptr->height / 2;
+
+		RotatedPatch_DoRotation(rspr, ptr, rotationangle, xpivot, ypivot, false);
+	}
+
+	return rspr->patches[idx];
+}
+#endif
 
 void *W_CachePatchLongName(const char *name, INT32 tag)
 {

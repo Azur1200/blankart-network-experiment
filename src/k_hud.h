@@ -101,6 +101,8 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 
 void K_DrawServerDescrption(INT32 x, INT32 y);
 
+void K_DrawDriftGauge(void);
+void K_ResetAfterImageValues(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

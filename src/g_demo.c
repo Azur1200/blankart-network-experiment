@@ -146,12 +146,7 @@ demoghost *ghosts = NULL;
 #define ZT_AIMING	0x0040
 #define ZT_LATENCY	0x0080
 #define ZT_FLAGS	0x0100
-#define ZT_BOT		0x8000
 // Ziptics are UINT16 now, go nuts
-
-#define ZT_BOT_TURN			0x0001
-#define ZT_BOT_ITEM			0x0002
-#define ZT_BOT_RESPAWN		0x0004
 
 #define DEMOMARKER 0x80 // demobuf.end
 
@@ -399,16 +394,12 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 	if (ziptic & ZT_FLAGS)
 		cmd->flags = READUINT8(dp);
 
-	if (ziptic & ZT_BOT)
+	if (version < 0x000a && ziptic & 0x8000) // ZT_BOT
 	{
 		UINT16 botziptic = READUINT16(dp);
-
-		if (botziptic & ZT_BOT_TURN)
-			cmd->bot.turnconfirm = READSINT8(dp);
-		if (botziptic & ZT_BOT_ITEM)
-			cmd->bot.itemconfirm = READSINT8(dp);
-		if (botziptic & ZT_BOT_RESPAWN)
-			cmd->bot.respawnconfirm = READSINT8(dp);
+		if (botziptic & 1) READSINT8(dp);
+		if (botziptic & 2) READSINT8(dp);
+		if (botziptic & 4) READSINT8(dp);
 	}
 	return dp;
 }
@@ -1416,44 +1407,7 @@ void G_WriteDemoTiccmd(ticcmd_t *cmd, INT32 playernum)
 		ziptic |= ZT_FLAGS;
 	}
 
-	if (cmd->flags & TICCMD_BOT)
-	{
-		ziptic |= ZT_BOT;
-	}
-
 	WRITEUINT16(ziptic_p, ziptic);
-
-	if (ziptic & ZT_BOT)
-	{
-		UINT16 botziptic = 0;
-		UINT8 *botziptic_p;
-
-		botziptic_p = demobuf.p; // the ziptic, written at the end of this function
-		demobuf.p += 2;
-
-		if (cmd->bot.turnconfirm != oldcmd[playernum].bot.turnconfirm)
-		{
-			WRITESINT8(demobuf.p, cmd->bot.turnconfirm);
-			oldcmd[playernum].bot.turnconfirm = cmd->bot.turnconfirm;
-			botziptic |= ZT_BOT_TURN;
-		}
-
-		if (cmd->bot.itemconfirm != oldcmd[playernum].bot.itemconfirm)
-		{
-			WRITESINT8(demobuf.p, cmd->bot.itemconfirm);
-			oldcmd[playernum].bot.itemconfirm = cmd->bot.itemconfirm;
-			botziptic |= ZT_BOT_ITEM;
-		}
-
-		if (cmd->bot.respawnconfirm != oldcmd[playernum].bot.respawnconfirm)
-		{
-			WRITESINT8(demobuf.p, cmd->bot.respawnconfirm);
-			oldcmd[playernum].bot.respawnconfirm = cmd->bot.respawnconfirm;
-			botziptic |= ZT_BOT_RESPAWN;
-		}
-
-		WRITEUINT16(botziptic_p, botziptic);
-	}
 
 	// attention here for the ticcmd size!
 	// latest demos with mouse aiming byte in ticcmd

@@ -18,6 +18,7 @@
 #include "d_player.h"
 #include "g_state.h"
 #include "taglist.h"
+#include "g_game.h" // G_GamestateUsesLevel
 
 #include "blua/lua.h"
 #include "blua/lualib.h"
@@ -137,10 +138,7 @@ void COM_Lua_f(void);
 // uncomment if you want seg_t/node_t in Lua
 // #define HAVE_LUA_SEGS
 
-#define ISINLEVEL \
-	(gamestate == GS_LEVEL || titlemapinaction)
-
-#define INLEVEL if (! ISINLEVEL)\
+#define INLEVEL if (!G_GamestateUsesLevel())\
 return luaL_error(L, "This can only be used in a level!");
 
 #ifdef __cplusplus

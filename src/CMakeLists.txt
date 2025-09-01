@@ -24,7 +24,7 @@ set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
 
 # Core sources
 target_sourcefile(c)
-target_sources(SRB2SDL2 PRIVATE comptime.c md5.c config.h.in)
+target_sources(SRB2SDL2 PRIVATE comptime.c config.h.in)
 
 ### Configuration
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
@@ -89,13 +89,6 @@ endif()
 
 if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMACOSX)
-endif()
-
-target_link_libraries(SRB2SDL2 PRIVATE gme)
-target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_GME)
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
-	# this sucks but gme doesn't use modern cmake to delineate public headers
-	target_include_directories(SRB2SDL2 PRIVATE "${libgme_SOURCE_DIR}")
 endif()
 
 target_link_libraries(SRB2SDL2 PRIVATE openmpt)

@@ -494,8 +494,7 @@ static void K_SetTerrainFriction(mobj_t *mo)
 	terrain = mo->terrain;
 	
 	if (isPlayer && !((terrain->flags & TRF_BYPASSBOOST) 
-		|| (mo->player->invincibilitytimer == 0 && mo->player->hyudorotimer == 0
-		&& mo->player->sneakertimer == 0 && mo->player->growshrinktimer <= 0)))
+		|| P_AllowFriction(mo)))
 	{
 		// I want this to be consistent with sector friction
 		// so boosts bypass friction unless specficied otherwise
@@ -602,6 +601,13 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 	if (terrain->damageType > 0)
 	{
 		UINT8 dmg = (terrain->damageType & 0xFF);
+
+		if (dmg & DMG_FLIPOVER)
+		{
+			K_FlipPlayer(player, NULL, NULL);
+			dmg &= ~DMG_FLIPOVER;
+		}
+
 		P_DamageMobj(mo, NULL, NULL, 1, dmg);
 	}
 

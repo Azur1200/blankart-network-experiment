@@ -161,6 +161,7 @@ static void KartStacking_OnChange(void);
 static void KartChaining_OnChange(void);
 static void KartSlipdash_OnChange(void);
 static void KartSlopeBoost_OnChange(void);
+static void KartDrafting_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
 
@@ -221,6 +222,7 @@ static void Command_Clearscores_f(void);
 
 // Remote Administration
 static void Command_Changepassword_f(void);
+static void Command_Clearpassword_f(void);
 static void Command_Login_f(void);
 static void Got_Verification(UINT8 **cp, INT32 playernum);
 static void Got_Removal(UINT8 **cp, INT32 playernum);
@@ -453,6 +455,10 @@ consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVA
 // Toggles for new features
 consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
 
+static CV_PossibleValue_t ringsmin_cons_t[] = {{-32000, "MIN"}, {0, "MAX"}, {0, NULL}};
+consvar_t cv_kartringsmin = CVAR_INIT ("kartringsmin", "-20", CV_NETVAR, ringsmin_cons_t, NULL);
+consvar_t cv_kartringsmax = CVAR_INIT ("kartringsmax", "20", CV_NETVAR, CV_Unsigned, NULL);
+
 // Stacking related
 consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
 consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
@@ -504,6 +510,12 @@ consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_
 consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
+// Max speed for high speeds
+consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.22", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
+// Max speed for low speeds
+consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+
 consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
 
@@ -522,6 +534,11 @@ consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "No", CV_NETVAR, CV_Y
 consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
 
 consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlopeBoost_OnChange);
+
+consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartDrafting_OnChange);
+consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone", "640", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
+consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
 // Invincibility modifiers
 static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
@@ -632,7 +649,8 @@ consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, 
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_showminimapnames = CVAR_INIT ("showminimapnames", "Off", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_showminimapangle = CVAR_INIT ("showminimapangle", "On", CV_SAVE, CV_OnOff, NULL);
+static CV_PossibleValue_t minimapdot_cons_t[] = {{0, "Off"}, {1, "Dot"}, {2, "Headlight"}, {0, NULL}};
+consvar_t cv_showminimapangle = CVAR_INIT ("showminimapangle", "Dot", CV_SAVE, minimapdot_cons_t, NULL);
 consvar_t cv_minihead = CVAR_INIT ("smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
@@ -669,10 +687,6 @@ consvar_t cv_director = CVAR_INIT ("director", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_schedule = CVAR_INIT ("schedule", "On", CV_NETVAR|CV_CALL, CV_OnOff, Schedule_OnChange);
 
 consvar_t cv_automate = CVAR_INIT ("automate", "On", CV_NETVAR, CV_OnOff, NULL);
-
-consvar_t cv_test1 = CVAR_INIT ("test1", "200", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
-consvar_t cv_test2 = CVAR_INIT ("test2", "40", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
-consvar_t cv_test3 = CVAR_INIT ("test3", "18", CV_NETVAR|CV_FLOAT, CV_Signed, NULL);
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -816,6 +830,7 @@ void D_RegisterServerCommands(void)
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
+	COM_AddCommand("clearpassword", Command_Clearpassword_f);
 	COM_AddCommand("login", Command_Login_f); // useful in dedicated to kick off remote admin
 	COM_AddCommand("promote", Command_Verify_f);
 	RegisterNetXCmd(XD_VERIFIED, Got_Verification);
@@ -3517,7 +3532,7 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 // Command for stuck characters in netgames, griefing, etc.
 static void HandleRespawnCommand(UINT8 localplayer)
 {
-	UINT8 buf[4];
+	UINT8 buf[1];
 	UINT8 *cp = buf;
 
 	if (!(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING))
@@ -3544,7 +3559,7 @@ static void HandleRespawnCommand(UINT8 localplayer)
 		return;
 	}
 
-	WRITEINT32(cp, g_localplayers[localplayer]);
+	WRITEUINT8(cp, g_localplayers[localplayer]);
 	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
 }
 
@@ -3571,10 +3586,13 @@ static void Command_Respawn4(void)
 
 static void Got_Respawn(UINT8 **cp, INT32 playernum)
 {
-	INT32 respawnplayer = READINT32(*cp);
+	INT32 respawnplayer = READUINT8(*cp);
 
 	// You can't respawn someone else. Nice try, there.
-	if (respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position) // srb2kart: "|| (!(gametyperules & GTR_CIRCUIT))"
+	// Unless it's a bot. They can respawn whenever they feel like it, if the server says so.
+	if (players[respawnplayer].bot
+	  ? playernum != serverplayer
+	  : respawnplayer != playernum || P_PlayerInPain(&players[respawnplayer]) || spbplace == players[respawnplayer].position)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal respawn command received from %s\n"), player_names[playernum]);
 		if (server)
@@ -3589,7 +3607,7 @@ static void Got_Respawn(UINT8 **cp, INT32 playernum)
 			return;
 
 		P_DamageMobj(players[respawnplayer].mo, NULL, NULL, 1, DMG_INSTAKILL);
-		demo_extradata[playernum] |= DXD_RESPAWN;
+		demo_extradata[respawnplayer] |= DXD_RESPAWN;
 	}
 }
 
@@ -4251,17 +4269,23 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 
 void D_SetPassword(const char *pw)
 {
-	D_MD5PasswordPass((const UINT8 *)pw, strlen(pw), BASESALT, &adminpassmd5);
-	adminpasswordset = true;
+	adminpass = Z_Realloc(adminpass, sizeof(*adminpass) * ++adminpasscount, PU_STATIC, NULL);
+	adminpass[adminpasscount-1] = Z_StrDup(pw);
+}
+
+void D_ClearPassword(void)
+{
+	UINT32 i;
+	for (i = 0; i < adminpasscount; i++)
+		Z_Free(adminpass[i]);
+	Z_Free(adminpass);
+	adminpass = NULL;
+	adminpasscount = 0;
 }
 
 // Remote Administration
 static void Command_Changepassword_f(void)
 {
-#ifdef NOMD5
-	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
-	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
-#else
 	if (client) // cannot change remotely
 	{
 		CONS_Printf(M_GetText("Only the server can use this.\n"));
@@ -4270,22 +4294,32 @@ static void Command_Changepassword_f(void)
 
 	if (COM_Argc() != 2)
 	{
-		CONS_Printf(M_GetText("password <password>: change remote admin password\n"));
+		CONS_Printf(M_GetText("password <password>: add remote admin password\n"));
 		return;
 	}
 
 	D_SetPassword(COM_Argv(1));
-	CONS_Printf(M_GetText("Password set.\n"));
-#endif
+	CONS_Printf(M_GetText("Password added.\n"));
+}
+
+
+// Remote Administration
+static void Command_Clearpassword_f(void)
+{
+	if (client) // cannot change remotely
+	{
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
+		return;
+	}
+
+	D_ClearPassword();
+	CONS_Printf(M_GetText("Passwords cleared.\n"));
 }
 
 static void Command_Login_f(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-#ifdef NOMD5
-	// If we have no MD5 support then completely disable XD_LOGIN responses for security.
-	CONS_Alert(CONS_NOTICE, "Remote administration commands are not supported in this build.\n");
-#else
+
 	const char *pw;
 
 	if (!netgame)
@@ -4302,19 +4336,16 @@ static void Command_Login_f(void)
 		return;
 	}
 
+	if (reqpass)
+		Z_Free(reqpass);
+
 	pw = COM_Argv(1);
-
-	// Do the base pass to get what the server has (or should?)
-	D_MD5PasswordPass((const UINT8 *)pw, strlen(pw), BASESALT, &netbuffer->u.md5sum);
-
-	// Do the final pass to get the comparison the server will come up with
-	D_MD5PasswordPass(netbuffer->u.md5sum, 16, va("PNUM%02d", consoleplayer), &netbuffer->u.md5sum);
+	reqpass = Z_StrDup(pw);
 
 	CONS_Printf(M_GetText("Sending login... (Notice only given if password is correct.)\n"));
 
 	netbuffer->packettype = PT_LOGIN;
-	HSendPacket(servernode, true, 0, 16);
-#endif
+	HSendPacket(servernode, true, 0, 0);
 }
 
 boolean IsPlayerAdmin(INT32 playernum)
@@ -7553,6 +7584,39 @@ static void KartSlopeBoost_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Slopeboost will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartDrafting_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!K_DraftingActive() && cv_kartdrafting.value)
+	{
+		if (leveltime < starttime)
+		{
+			draftingactive = true;
+			CONS_Printf(M_GetText("Drafting has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Drafting will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_DraftingActive() && !cv_kartdrafting.value)
+	{
+		if (leveltime < starttime)
+		{
+			draftingactive = false;
+			CONS_Printf(M_GetText("Drafting has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Drafting will be turned \"Off\" next round.\n"));
 		}
 	}
 }

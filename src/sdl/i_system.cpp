@@ -57,7 +57,17 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 
 #include <stdio.h>
 #ifdef _WIN32
+// This is for RtlGenRandom.
+#define SystemFunction036 NTAPI SystemFunction036
+#include <ntsecapi.h>
+#undef SystemFunction036
+
 #include <conio.h>
+
+// This is for RtlGenRandom.
+#define SystemFunction036 NTAPI SystemFunction036
+#include <ntsecapi.h>
+#undef SystemFunction036
 #endif
 
 #ifdef _MSC_VER
@@ -2027,7 +2037,7 @@ void I_Error(const char *error, ...)
 		if (errorcount > 20)
 		{
 			va_start(argptr, error);
-			vsprintf(buffer, error, argptr);
+			vsnprintf(buffer, 8192, error, argptr);
 			va_end(argptr);
 			// Implement message box with SDL_ShowSimpleMessageBox,
 			// which should fail gracefully if it can't put a message box up
@@ -2052,7 +2062,7 @@ void I_Error(const char *error, ...)
 
 	// Display error message in the console before we start shutting it down
 	va_start(argptr, error);
-	vsprintf(buffer, error, argptr);
+	vsnprintf(buffer, 8192, error, argptr);
 	va_end(argptr);
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
@@ -2314,6 +2324,38 @@ char *I_GetEnv(const char *name)
 	return SDL_getenv(name);
 #else
 	return getenv(name);
+#endif
+}
+
+size_t I_GetRandomBytes(char *destination, size_t count)
+{
+#if defined (__unix__) || defined (UNIXCOMMON) || defined(__APPLE__)
+	FILE *rndsource;
+	size_t actual_bytes = 0;
+
+	if (!(rndsource = fopen("/dev/urandom", "r")))
+		if (!(rndsource = fopen("/dev/random", "r")))
+			actual_bytes = 0;
+
+	if (rndsource)
+	{
+		actual_bytes = fread(destination, 1, count, rndsource);
+		fclose(rndsource);
+	}
+
+	if (actual_bytes == 0)
+		I_OutputMsg("I_GetRandomBytes(): couldn't get any random bytes");
+
+	return actual_bytes;
+#elif defined (_WIN32)
+	if (RtlGenRandom(destination, count))
+		return count;
+
+	I_OutputMsg("I_GetRandomBytes(): couldn't get any random bytes");
+	return 0;
+#else
+	#warning SDL I_GetRandomBytes is not implemented on this platform.
+	return 0;
 #endif
 }
 

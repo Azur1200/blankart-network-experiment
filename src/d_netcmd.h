@@ -122,6 +122,8 @@ extern consvar_t cv_kartbot_basetrackcomplexity;
 extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
+extern consvar_t cv_kartringsmin;
+extern consvar_t cv_kartringsmax;
 
 extern consvar_t cv_kartstacking;
 extern consvar_t cv_kartstacking_diminishparam;
@@ -170,6 +172,13 @@ extern consvar_t cv_kartstacking_slope_speedboost_max;
 extern consvar_t cv_kartstacking_slope_speedboost_cap;
 extern consvar_t cv_kartstacking_slope_accelboost;
 extern consvar_t cv_kartstacking_slope_stackable;
+
+extern consvar_t cv_kartdrafting;
+extern consvar_t cv_kartdrafting_closedraft;
+extern consvar_t cv_kartdrafting_closedeadzone;
+extern consvar_t cv_kartdrafting_basedistance;
+extern consvar_t cv_kartstacking_drafting_minspeed;
+extern consvar_t cv_kartstacking_drafting_maxspeed;
 
 extern consvar_t cv_kartchaining;
 extern consvar_t cv_kartchainingoffroad;
@@ -229,8 +238,6 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_director;
 
 extern consvar_t cv_schedule;
-
-extern consvar_t cv_test1, cv_test2, cv_test3;
 
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
@@ -350,6 +357,7 @@ void ClearAdminPlayers(void);
 void RemoveAdminPlayer(INT32 playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
+void D_ClearPassword(void);
 
 void P_SetPlayerSpectator(INT32 playernum);
 

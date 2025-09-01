@@ -2866,24 +2866,11 @@ static void HWR_Subsector(size_t num)
 		//         without talking about the overdraw of course.
 		sub->sector->validcount = validcount;/// \todo fix that in a better way
 
-		if (UNLIKELY(numPolyObjects))
+		while (count--)
 		{
-
-			while (count--)
-			{
-
-				if (LIKELY(!line->polyseg)) // ignore segs that belong to polyobjects
-					HWR_AddLine(line);
-				line++;
-			}
-		}
-		else
-		{
-			while (count--)
-			{
+			if (LIKELY(!line->glseg && !line->polyseg)) // ignore segs that belong to polyobjects
 				HWR_AddLine(line);
-				line++;
-			}
+			line++;
 		}
 	}
 
@@ -3149,14 +3136,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, fixed_t scale)
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	// sprite offset
 	interp.x += thing->sprxoff;
@@ -3275,27 +3255,13 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 		interpmobjstate_t interp = {0};
 
 		// do interpolation
-		if (R_UsingFrameInterpolation() && !paused)
+		if (spr->precip)
 		{
-			if (spr->precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, rendertimefrac, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, rendertimefrac, &interp);
-			}
+			R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, R_GetTimeFrac(RTF_LEVEL), &interp);
 		}
 		else
 		{
-			if (spr->precip)
-			{
-				R_InterpolatePrecipMobjState((precipmobj_t *)spr->mobj, FRACUNIT, &interp);
-			}
-			else
-			{
-				R_InterpolateMobjState(spr->mobj, FRACUNIT, &interp);
-			}
+			R_InterpolateMobjState(spr->mobj, R_GetTimeFrac(RTF_LEVEL), &interp);
 		}
 
 		float basey = FIXED_TO_FLOAT(interp.z);
@@ -4754,14 +4720,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (!thing)
 		return;
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	dispoffset = thing->dispoffset;
 
@@ -4959,14 +4918,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			fixed_t groundz;
 			fixed_t floordiff;
 
-			if (R_UsingFrameInterpolation() && !paused)
-			{
-				R_InterpolateMobjState(caster, rendertimefrac, &casterinterp);
-			}
-			else
-			{
-				R_InterpolateMobjState(caster, FRACUNIT, &casterinterp);
-			}
+			R_InterpolateMobjState(caster, R_GetTimeFrac(RTF_LEVEL), &casterinterp);
 
 			groundz = R_GetShadowZ(thing, NULL);
 			floordiff = abs(((thing->eflags & MFE_VERTICALFLIP) ? caster->height : 0) + casterinterp.z - groundz);
@@ -5065,14 +5017,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		if (! R_ThingVisible(thing->tracer))
 			return;
 
-		if (R_UsingFrameInterpolation() && !paused)
-		{
-			R_InterpolateMobjState(thing->tracer, rendertimefrac, &tracer_interp);
-		}
-		else
-		{
-			R_InterpolateMobjState(thing->tracer, FRACUNIT, &tracer_interp);
-		}
+		R_InterpolateMobjState(thing->tracer, R_GetTimeFrac(RTF_LEVEL), &tracer_interp);
 
 		// calculate tz for tracer, same way it is calculated for this sprite
 		// transform the origin point
@@ -5215,14 +5160,7 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 	}
 
 	// do interpolation
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolatePrecipMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolatePrecipMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolatePrecipMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	this_scale = FIXED_TO_FLOAT(interp.scale);
 
@@ -5336,14 +5274,7 @@ static void HWR_ProjectBoundingBox(mobj_t *thing)
 	if (!R_ThingBoundingBoxVisible(thing))
 		return;
 
-	if (R_UsingFrameInterpolation() && !paused)
-	{
-		R_InterpolateMobjState(thing, rendertimefrac, &interp);
-	}
-	else
-	{
-		R_InterpolateMobjState(thing, FRACUNIT, &interp);
-	}
+	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	// transform the origin point
 	tr_x = FIXED_TO_FLOAT(interp.x) - gl_viewx;
@@ -6307,7 +6238,7 @@ void HWR_Switch(void)
 		HWR_LoadMapTextures(numtextures);
 
 	// Create plane polygons
-	if (!gl_maploaded && (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction)))
+	if (!gl_maploaded && levelloaded)
 	{
 		HWR_ClearAllTextures();
 		HWR_LoadLevel();
@@ -6444,8 +6375,7 @@ void HWR_DoPostProcessor(player_t *player)
 	}
 
 	// Capture the screen for intermission and screen waving
-	if(gamestate != GS_INTERMISSION)
-		HWD.pfnMakeScreenTexture();
+	HWD.pfnMakeScreenTexture();
 
 	if (r_splitscreen) // Not supported in splitscreen - someone want to add support?
 		return;
@@ -6459,7 +6389,7 @@ void HWR_DoPostProcessor(player_t *player)
 	{
 		// 10 by 10 grid. 2 coordinates (xy)
 		float v[SCREENVERTS][SCREENVERTS][2];
-		float disStart = (leveltime-1) + FIXED_TO_FLOAT(rendertimefrac);
+		float disStart = (leveltime-1) + FIXED_TO_FLOAT(R_GetTimeFrac(RTF_LEVEL));
 
 		UINT8 x, y;
 		INT32 WAVELENGTH;
@@ -6490,10 +6420,6 @@ void HWR_DoPostProcessor(player_t *player)
 			}
 		}
 		HWD.pfnPostImgRedraw(v);
-
-		// Capture the screen again for screen waving on the intermission
-		if(gamestate != GS_INTERMISSION)
-			HWD.pfnMakeScreenTexture();
 	}
 	// Flipping of the screen isn't done here anymore
 }
@@ -6508,6 +6434,11 @@ void HWR_EndScreenWipe(void)
 {
 	//CONS_Debug(DBG_RENDER, "In HWR_EndScreenWipe()\n");
 	HWD.pfnEndScreenWipe();
+}
+
+void HWR_MakeIntermissionBG(void)
+{
+	HWD.pfnMakeIntermissionBG();
 }
 
 void HWR_DrawIntermissionBG(void)

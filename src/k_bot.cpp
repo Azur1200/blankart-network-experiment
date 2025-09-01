@@ -42,9 +42,45 @@
 #endif
 #include "i_net.h" // doomcom
 #include "blan/b_soc.h"
+#include "v_video.h" // for debugging
 
 consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+
+botdata_t botdata[MAXPLAYERS];
+
+void K_DrawBotDebugger(const player_t *player)
+{
+	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_30TRANS;
+	botdata_t *bd = &botdata[player - players];
+
+	static const char *driftstates[] = {
+		"auto", // DRIFTSTATE_AUTO
+		"starting", // DRIFTSTATE_STARTING
+		"active", // DRIFTSTATE_ACTIVE
+		"ending", // DRIFTSTATE_ENDING
+	};
+
+	if (!cv_kartdebugbot.value || !player->bot)
+		return;
+
+	INT32 x1 = 26, x2 = 99, y = 92;
+
+	V_DrawThinString(x1, y+0, vflags, va("predict.x: %d", bd->predict.x/FRACUNIT));
+	V_DrawThinString(x2, y+0, vflags, va("predict.y: %d", bd->predict.y/FRACUNIT));
+	V_DrawThinString(x1, y+8, vflags, va("predict.radius: %d", bd->predict.radius/FRACUNIT));
+	V_DrawThinString(x2, y+8, vflags, va("predict.baseradius: %d", bd->predict.baseRadius/FRACUNIT));
+
+	V_DrawThinString(x1, y+16, vflags, va("itemconfirm: %d", bd->itemconfirm));
+	V_DrawThinString(x2, y+16, vflags, va("itemdelay: %d", bd->itemdelay));
+	V_DrawThinString(x1, y+24, vflags, va("turnconfirm: %d", bd->turnconfirm));
+	V_DrawThinString(x2, y+24, vflags, va("respawnconfirm: %d", bd->respawnconfirm));
+
+	V_DrawThinString(x1, y+32, vflags, va("driftstate: %s", driftstates[bd->driftstate]));
+	V_DrawThinString(x2, y+32, vflags|(bd->driftlockout ? V_ORANGEMAP : 0), va("driftlockout: %d", bd->driftlockout));
+	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
+	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
+}
 
 /*--------------------------------------------------
 	void K_SetNameForBot(UINT8 playerNum, const char *realname)
@@ -131,6 +167,8 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 	K_SetNameForBot(newplayernum, realname);
 
 	SetPlayerSkinByNum(newplayernum, skinnum);
+
+	LUA_HookPlayer(&players[newplayernum], HOOK(BotJoin));
 
 	for (UINT8 i = 0; i < PWRLV_NUMTYPES; i++)
 	{
@@ -359,6 +397,17 @@ void K_UpdateMatchRaceBots(void)
 --------------------------------------------------*/
 boolean K_PlayerUsesBotMovement(const player_t *player)
 {
+	// Lua can't override the podium sequence result, but it can
+	// override the following results:
+	{
+		UINT8 shouldOverride = LUA_HookPlayerForceResults(const_cast<player_t*>(player),
+			HOOK(PlayerUsesBotMovement));
+		if (shouldOverride == 1)
+			return true;
+		if (shouldOverride == 2)
+			return false;
+	}
+
 	if (player->bot)
 		return true;
 
@@ -370,7 +419,7 @@ boolean K_PlayerUsesBotMovement(const player_t *player)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_BotCanTakeCut(player_t *player)
+boolean K_BotCanTakeCut(const player_t *player)
 {
 	if (
 		(K_TripwirePassConditions(player) != TRIPWIRE_NONE || K_ApplyOffroad(player) == false)
@@ -453,11 +502,11 @@ static fixed_t K_BotSpeedScaled(const player_t *player, fixed_t speed)
 }
 
 /*--------------------------------------------------
-	const botcontroller_t *K_GetBotController(const mobj_t *mobj)
+	botcontroller_t *K_GetBotController(const mobj_t *mobj)
 
 		See header file for description.
 --------------------------------------------------*/
-const botcontroller_t *K_GetBotController(mobj_t *mobj)
+botcontroller_t *K_GetBotController(const mobj_t *mobj)
 {
 	botcontroller_t *ret = nullptr;
 
@@ -838,18 +887,8 @@ static fixed_t K_ScaleWPDistWithSlope(fixed_t disttonext, angle_t angletonext, c
 	return disttonext;
 }
 
-/*--------------------------------------------------
-	static botprediction_t *K_CreateBotPrediction(const player_t *player)
-
-		Calculates a point further along the track to attempt to drive towards.
-
-	Input Arguments:-
-		player - Player to compare.
-
-	Return:-
-		Bot prediction struct.
---------------------------------------------------*/
-static botprediction_t *K_CreateBotPrediction(player_t *player)
+// Calculates a point further along the track to attempt to drive towards.
+static boolean K_CreateBotPrediction(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
@@ -884,16 +923,13 @@ static botprediction_t *K_CreateBotPrediction(player_t *player)
 	boolean pathfindsuccess = false;
 	path_t pathtofinish = {0};
 
-	botprediction_t *predict = nullptr;
 	size_t i;
 
 	if (wp == nullptr || P_MobjWasRemoved(wp->mobj) == true)
 	{
 		// Can't do any of this if we don't have a waypoint.
-		return nullptr;
+		return false;
 	}
-
-	predict = static_cast<botprediction_t *>(Z_Calloc(sizeof(botprediction_t), PU_LEVEL, nullptr));
 
 	// Init defaults in case of pathfind failure
 	angletonext = R_PointToAngle2(prevwpmobj->x, prevwpmobj->y, wp->mobj->x, wp->mobj->y);
@@ -950,22 +986,22 @@ static botprediction_t *K_CreateBotPrediction(player_t *player)
 
 	// Set our predicted point's coordinates,
 	// and use the smallest radius of all of the waypoints in the chain!
-	predict->x = wp->mobj->x;
-	predict->y = wp->mobj->y;
+	bd->predict.x = wp->mobj->x;
+	bd->predict.y = wp->mobj->y;
 
-	predict->baseRadius = radius;
-	predict->radius = FixedMul(radiusScaled, radReduce);
+	bd->predict.baseRadius = radius;
+	bd->predict.radius = FixedMul(radiusScaled, radReduce);
 
 	// Set the prediction coordinates between the 2 waypoints if there's still distance left.
 	if (distanceleft > 0)
 	{
 		// Scaled with the leftover anglemul!
-		predict->x += P_ReturnThrustX(nullptr, angletonext, std::min<fixed_t>(disttonext, distanceleft) * FRACUNIT);
-		predict->y += P_ReturnThrustY(nullptr, angletonext, std::min<fixed_t>(disttonext, distanceleft) * FRACUNIT);
+		bd->predict.x += P_ReturnThrustX(nullptr, angletonext, std::min<fixed_t>(disttonext, distanceleft) * FRACUNIT);
+		bd->predict.y += P_ReturnThrustY(nullptr, angletonext, std::min<fixed_t>(disttonext, distanceleft) * FRACUNIT);
 	}
 
 	ps_bots[player - players].prediction += I_GetPreciseTime() - time;
-	return predict;
+	return true;
 }
 
 /*--------------------------------------------------
@@ -980,19 +1016,18 @@ static botprediction_t *K_CreateBotPrediction(player_t *player)
 	Return:-
 		None
 --------------------------------------------------*/
-static void K_DrawPredictionDebug(botprediction_t *predict, const player_t *player)
+static void K_DrawPredictionDebug(botdata_t *bd, const player_t *player)
 {
 	mobj_t *debugMobj = nullptr;
 	angle_t sideAngle = ANGLE_MAX;
 	UINT8 i = UINT8_MAX;
 
-	I_Assert(predict != nullptr);
 	I_Assert(player != nullptr);
 	I_Assert(player->mo != nullptr && P_MobjWasRemoved(player->mo) == false);
 
 	sideAngle = player->mo->angle + ANGLE_90;
 
-	debugMobj = P_SpawnMobj(predict->x, predict->y, player->mo->z, MT_SPARK);
+	debugMobj = P_SpawnMobj(bd->predict.x, bd->predict.y, player->mo->z, MT_SPARK);
 	P_SetMobjState(debugMobj, S_THOK);
 
 	debugMobj->frame &= ~FF_TRANSMASK;
@@ -1001,22 +1036,22 @@ static void K_DrawPredictionDebug(botprediction_t *predict, const player_t *play
 	debugMobj->color = SKINCOLOR_ORANGE;
 	P_SetScale(debugMobj, debugMobj->destscale * 2);
 
-	debugMobj->tics = 2;
+	debugMobj->tics = 1;
 
 	for (i = 0; i < 2; i++)
 	{
 		mobj_t *radiusMobj = nullptr;
-		fixed_t radiusX = predict->x, radiusY = predict->y;
+		fixed_t radiusX = bd->predict.x, radiusY = bd->predict.y;
 
 		if (i & 1)
 		{
-			radiusX -= FixedMul(predict->radius, FINECOSINE(sideAngle >> ANGLETOFINESHIFT));
-			radiusY -= FixedMul(predict->radius, FINESINE(sideAngle >> ANGLETOFINESHIFT));
+			radiusX -= FixedMul(bd->predict.radius, FINECOSINE(sideAngle >> ANGLETOFINESHIFT));
+			radiusY -= FixedMul(bd->predict.radius, FINESINE(sideAngle >> ANGLETOFINESHIFT));
 		}
 		else
 		{
-			radiusX += FixedMul(predict->radius, FINECOSINE(sideAngle >> ANGLETOFINESHIFT));
-			radiusY += FixedMul(predict->radius, FINESINE(sideAngle >> ANGLETOFINESHIFT));
+			radiusX += FixedMul(bd->predict.radius, FINECOSINE(sideAngle >> ANGLETOFINESHIFT));
+			radiusY += FixedMul(bd->predict.radius, FINESINE(sideAngle >> ANGLETOFINESHIFT));
 		}
 
 		radiusMobj = P_SpawnMobj(radiusX, radiusY, player->mo->z, MT_SPARK);
@@ -1028,24 +1063,15 @@ static void K_DrawPredictionDebug(botprediction_t *predict, const player_t *play
 		radiusMobj->color = SKINCOLOR_YELLOW;
 		P_SetScale(debugMobj, debugMobj->destscale / 2);
 
-		radiusMobj->tics = 2;
+		radiusMobj->tics = 1;
 	}
 }
 
-/*--------------------------------------------------
-	fixed_t K_BotDetermineDriftSkill(player_t *player)
-
-		Calculates drift skill for a player based on stats.
-
-	Input Arguments:-
-		player - Player to get drift skill for.
-
-	Return:-
-		Calculated drift skill.
---------------------------------------------------*/
-fixed_t K_BotDetermineDriftSkill(player_t *player)
+// Calculates drift skill for a player based on ~~stats~~ difficulty.
+static fixed_t K_BotDetermineDriftSkill(const player_t *player)
 {
-	return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
+	return FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT;
+	//return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
 }
 
 static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vector3_t *a_o)
@@ -1064,37 +1090,27 @@ static void K_WaypointGetDirectionVector(waypoint_t *wp1, waypoint_t *wp2, vecto
 	FV3_Normalize(a_o);
 }
 
-/*--------------------------------------------------
-	void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
-
-		See header file for description.
---------------------------------------------------*/
-void K_BotSetDriftState(player_t *player, botdrift_t newstate, tic_t lockout)
+// Changes a bot's drift state.
+// Resets the drift timer if the old and new state are different.
+// If lockout is non-zero, apply drift lockout for this many tics.
+void K_BotSetDriftState(const player_t *player, botdrift_e newstate, tic_t lockout)
 {
-	if (newstate != player->botvars.driftstate)
+	botdata_t *bd = &botdata[player - players];
+
+	if (newstate != bd->driftstate)
 	{
-		player->botvars.driftstate = newstate;
-		player->botvars.drifttime = 0;
+		bd->driftstate = newstate;
+		bd->drifttime = 0;
 	}
 
-	if (lockout > player->botvars.driftlockout)
-		player->botvars.driftlockout = lockout;
+	if (lockout > bd->driftlockout)
+		bd->driftlockout = lockout;
 }
 
 #define MINBOTDRIFT (KART_FULLTURN * 2) / 3 // 0.66
 
-/*--------------------------------------------------
-	static INT32 K_BotStartDrift(player_t* player)
-
-		Begins and ends "forced" drifts on a per-waypoint basis.
-
-	Input Arguments:-
-		player - Player to begin the drift for.
-
-	Return:-
-		Override value for turn amount.
---------------------------------------------------*/
-static void K_BotStartDrift(player_t* player)
+// Begins and ends "forced" drifts on a per-waypoint basis.
+static void K_BotStartDrift(botdata_t *bd, const player_t* player)
 {
 	// Handle DRIFTING towards waypoints!
 	boolean shouldDrift;
@@ -1116,17 +1132,16 @@ static void K_BotStartDrift(player_t* player)
 		return;
 	}
 
-	if (player->botvars.driftlockout)
+	if (bd->driftlockout)
 	{
 		// things are not working out in our favor
-		player->botvars.driftlockout--;
+		bd->driftlockout--;
 		return;
 	}
 
 	// check for waypoints ahead of us with drift settings, based on our current speed
 	path_t path = {0};
-	INT32 maxdist = FixedInt(cv_test1.value) + gamespeed*50;
-	maxdist = FixedMul(maxdist, speedfactor * (player->botvars.driftstate == DRIFTSTATE_ACTIVE ? 1 : 2));
+	INT32 maxdist = FixedMul(bd->driftmaxdist, speedfactor * (bd->driftstate == DRIFTSTATE_ACTIVE ? 1 : 2));
 
 	if (maxdist >= 0 && K_PathfindThruCircuit(player->currentwaypoint, maxdist, &path, false, false))
 	{
@@ -1156,17 +1171,17 @@ static void K_BotStartDrift(player_t* player)
 
 	if (driftsetting == DRIFT_END)
 	{
-		if (player->botvars.driftstate != DRIFTSTATE_AUTO)
+		if (bd->driftstate != DRIFTSTATE_AUTO)
 			K_BotSetDriftState(player, DRIFTSTATE_ENDING, 0);
 	}
 	else if (driftsetting > DRIFT_NONE && driftsetting < DRIFT_END
-	         && player->botvars.driftstate == DRIFTSTATE_AUTO)
+	         && bd->driftstate == DRIFTSTATE_AUTO)
 	{
 		// Randomly decide to drift based on our skill at drifting,
 		// and how fast we're moving.
-		fixed_t driftpotential = P_RandomKey(MAXDRIFTSKILL);
+		fixed_t driftpotential = M_RandomKey(MAXDRIFTSKILL);
 
-		if ((driftpotential <= player->botvars.driftskill) &&
+		if ((driftpotential <= bd->driftskill) &&
 			(botDriftSpeed <= player->speed))
 		{
 			shouldDrift = true;
@@ -1195,26 +1210,14 @@ static void K_BotStartDrift(player_t* player)
 				break;
 			}
 
-			player->botvars.driftturn = driftturn;
+			bd->driftturn = driftturn;
 			K_BotSetDriftState(player, DRIFTSTATE_STARTING, 0);
 		}
 	}
 }
 
-/*--------------------------------------------------
-	static INT32 K_HandleBotTrack(const player_t *player, ticcmd_t *cmd, botprediction_t *predict)
-
-		Determines inputs for standard track driving.
-
-	Input Arguments:-
-		player - Player to generate the ticcmd for.
-		cmd - The player's ticcmd to modify.
-		predict - Pointer to the bot's prediction.
-
-	Return:-
-		New value for turn amount.
---------------------------------------------------*/
-static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *predict, angle_t destangle)
+// Determines inputs for standard track driving.
+static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t destangle)
 {
 	ZoneScoped;
 
@@ -1225,15 +1228,13 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 	INT32 anglediff, anglediff2;
 	fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
 
-	I_Assert(predict != nullptr);
-
 	moveangle = player->mo->angle;
 	anglediff = AngleDeltaSigned(moveangle, destangle);
 
 	// line up for an incoming drift
-	if (player->botvars.driftstate == DRIFTSTATE_STARTING)
+	if (bd->driftstate == DRIFTSTATE_STARTING)
 	{
-		anglediff += FixedMul(ANG10-ANG2, speedfactor) * player->botvars.driftturn;
+		anglediff += FixedMul(ANG10-ANG2, speedfactor) * bd->driftturn;
 	}
 
 	if (anglediff < 0)
@@ -1252,18 +1253,18 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 	if (anglediff > ANGLE_67h)
 	{
 		// Wrong way!
-		cmd->forwardmove = -MAXPLMOVE;
-		cmd->buttons |= BT_BRAKE;
+		bd->acceldown = false;
+		bd->brakedown = true;
 	}
 	else
 	{
 		const fixed_t playerwidth = (player->mo->radius * 2);
-		fixed_t realrad = predict->radius*3/4; // Remove a "safe" distance away from the edges of the road
+		fixed_t realrad = bd->predict.radius*3/4; // Remove a "safe" distance away from the edges of the road
 		fixed_t rad = realrad;
 		fixed_t dirdist = K_DistanceOfLineFromPoint(
 			player->mo->x, player->mo->y,
 			player->mo->x + FINECOSINE(moveangle >> ANGLETOFINESHIFT), player->mo->y + FINESINE(moveangle >> ANGLETOFINESHIFT),
-			predict->x, predict->y
+			bd->predict.x, bd->predict.y
 		);
 
 		if (realrad < playerwidth)
@@ -1296,11 +1297,11 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		}
 
 		// Full speed ahead!
-		cmd->buttons |= BT_ACCELERATE;
-		cmd->forwardmove = MAXPLMOVE;
+		bd->acceldown = true;
+		bd->brakedown = false;
 
 		if (dirdist <= rad
-		 && player->botvars.driftstate != DRIFTSTATE_STARTING) // steer towards waypoints when starting drift
+		 && bd->driftstate != DRIFTSTATE_STARTING) // steer towards waypoints when starting drift
 		{
 			// Going the right way, don't turn at all.
 			turnamt = 0;
@@ -1310,11 +1311,11 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 		//INT32 mindriftamt = FixedMul(MINBOTDRIFT * (cv_kartspeed.value + 1), 2 * FRACUNIT);
 
 		// Start or continue a drift.
-		if (player->botvars.driftstate == DRIFTSTATE_ACTIVE || player->botvars.driftstate == DRIFTSTATE_ENDING)
+		if (bd->driftstate == DRIFTSTATE_ACTIVE || bd->driftstate == DRIFTSTATE_ENDING)
 		{
-			cmd->buttons |= BT_DRIFT;
+			bd->driftdown = true;
 
-			fixed_t angofs = K_GetKartSpeedFromStat(5 - (player->kartspeed - 5), false) * -player->botvars.driftturn;
+			fixed_t angofs = K_GetKartSpeedFromStat(5 - (player->kartspeed - 5), false) * -bd->driftturn;
 
 			// adjust for speed
 			angofs = FixedMul(angofs, speedfactor - (2-gamespeed)*FRACUNIT/4);
@@ -1322,20 +1323,20 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 			fixed_t driftpower = angofs - FixedDiv(anglediff2, ANG1);
 
 			// arbitrary divider on the final driftpower
-			driftpower /= FixedInt(cv_test2.value);
+			driftpower /= bd->driftpowerdiv;
 
 			// brakedrift if we're steering too hard
 			if (abs(driftpower) >= FRACUNIT)
-				cmd->buttons |= BT_BRAKE;
+				bd->brakedown = true;
 
 			// get the raw turn value and "invert" it (higher weight needs harder steering!)
-			INT16 turnvalue = abs(K_GetKartTurnValue(player, KART_FULLTURN * (player->botvars.driftturn < 0 ? 1 : -1)));
+			INT16 turnvalue = abs(K_GetKartTurnValue(player, KART_FULLTURN * (bd->driftturn < 0 ? 1 : -1)));
 			turnvalue = 541 - (turnvalue - 541); // weight 5 = 541
 
 			turnamt = std::clamp(FixedMul(driftpower, turnvalue), -KART_FULLTURN, KART_FULLTURN);
 		}
 		/*
-		else if ((turnamt) && (player->botvars.driftstate == DRIFTSTATE_AUTO) &&
+		else if ((turnamt) && (bd->driftstate == DRIFTSTATE_AUTO) &&
 			 (turnpower > FixedPercentage(DRIFTSTARTPCT)))
 		{
 			// TODO: Figure out a drift prediction system.
@@ -1347,6 +1348,38 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 }
 
 #undef MINBOTDRIFT
+
+static void K_IncrementBotRespawn(const player_t *player, UINT8 *respawn, const UINT8 respawnmax)
+{
+	const fixed_t requireDist = (12*player->mo->scale) / FRACUNIT;
+	INT32 progress = player->distancetofinishprev - player->distancetofinish;
+	boolean exceptions = (
+		(leveltime < starttime)
+		|| player->flashing != 0
+		|| player->spinouttimer != 0
+		|| player->airtime > 3*TICRATE/2
+		|| (player->justbumped > 0 && player->justbumped < bumptime-1)
+	);
+
+	if (!exceptions && (progress < requireDist))
+	{
+		if (*respawn < respawnmax)
+		{
+			// Making no progress, start counting against you.
+			*respawn = *respawn + 1;
+			if (progress < -requireDist && *respawn < respawnmax)
+			{
+				// Making NEGATIVE progress? Start counting even harder.
+				*respawn = *respawn + 1;
+			}
+		}
+	}
+	else if (*respawn > 0)
+	{
+		// Playing normally.
+		*respawn = *respawn - 1;
+	}
+}
 
 /*--------------------------------------------------
 	static INT32 K_HandleBotReverse(const player_t *player, ticcmd_t *cmd, botprediction_t *predict)
@@ -1361,7 +1394,7 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 	Return:-
 		New value for turn amount.
 --------------------------------------------------*/
-/*static INT32 K_HandleBotReverse(player_t *player, ticcmd_t *cmd, botprediction_t *predict, angle_t destangle)
+/*static INT32 K_HandleBotReverse(const player_t *player, ticcmd_t *cmd, botprediction_t *predict, angle_t destangle)
 {
 	ZoneScoped;
 
@@ -1493,26 +1526,24 @@ static INT32 K_HandleBotTrack(player_t *player, ticcmd_t *cmd, botprediction_t *
 	return turnamt;
 }*/
 
-/*--------------------------------------------------
-	static void K_BuildBotTiccmdNormal(const player_t *player, ticcmd_t *cmd)
-
-		Build ticcmd for bots with a style of BOT_STYLE_NORMAL
---------------------------------------------------*/
-static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
+// updates server-sided bot logic
+void K_BotTicker(const player_t *player)
 {
-	precise_t t = 0;
-
-	botprediction_t *predict = nullptr;
-	auto predict_finally = srb2::finally([&predict]() { Z_Free(predict); });
-
 	angle_t destangle = 0;
 	INT32 turnamt = 0;
+
+	botdata_t *bd = &botdata[player - players];
+	bd->itemwasdown = bd->itemdown;
+	bd->acceldown = bd->brakedown = bd->driftdown = bd->itemdown = false;
+	bd->dolookback = false;
+	bd->itemthrow = 0;
 
 	if (!(gametyperules & GTR_BOTS) // No bot behaviors
 		|| K_GetNumWaypoints() == 0 // No waypoints
 		|| leveltime <= introtime // During intro camera
 		|| player->playerstate == PST_DEAD // Dead, respawning.
-		|| player->mo->scale <= 1) // Post-finish "death" animation
+		|| player->mo->scale <= 1 // Post-finish "death" animation
+		|| player->spectator) // spectating
 	{
 		// No need to do anything else.
 		return;
@@ -1539,33 +1570,38 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 
 	if (player->exiting)
 	{
-
 		//Bot finish
 		// TODO: Make bots spin around like a player would based on random chance
 		return;
 	}
 
-	if (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM)
+	// Is a bot not making any progress? Kill it and respawn at next waypoint.
+	K_IncrementBotRespawn(player, &bd->respawnconfirm, BOTRESPAWNCONFIRM);
+
+	if (bd->respawnconfirm > BOTRESPAWNCONFIRM - TICRATE)
 	{
 		// We want to respawn. Simply hold brake and stop here!
-		cmd->buttons &= ~BT_ACCELERATE|BT_DRIFT|BT_ATTACK;
+		bd->acceldown = false;
+		K_BotSetDriftState(player, DRIFTSTATE_AUTO, TICRATE);
 		if (player->speed > 0)
-		{
-			cmd->buttons |= (BT_BRAKE);
-			cmd->bot.respawnconfirm++;
-		}
+			bd->brakedown = true;
 
-		if ((player->speed < 10*FRACUNIT))
+		if (bd->respawnconfirm >= BOTRESPAWNCONFIRM || player->speed < 10*FRACUNIT)
 		{
-			cmd->bot.respawnconfirm = TICRATE;
+			// WHAT ARE YOU DOING??? RACE ALREADY!
+			// ...
+			// FINE, I'LL SEND A RESPAWN COMMAND ON YOUR BEHALF!
+			char buf[1], *cp = buf;
+			WRITEUINT8(cp, player - players);
+			SendNetXCmdForPlayer(consoleplayer, XD_RESPAWN, buf, sizeof(buf));
 		}
 		return;
 	}
-	else
-	{
-		cmd->bot.respawnconfirm = 0;
-	}
+
 	destangle = player->mo->angle;
+
+	// it's time to start predicting
+	memset(&bd->predict, 0, sizeof(bd->predict));
 
 	boolean forcedDir = false;
 	if (botController != nullptr && (botController->flags & TMBOT_FORCEDIR) == TMBOT_FORCEDIR)
@@ -1573,19 +1609,19 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		const fixed_t dist = DEFAULT_WAYPOINT_RADIUS * player->mo->scale;
 
 		// Overwritten prediction
-		predict = static_cast<botprediction_t *>(Z_Calloc(sizeof(botprediction_t), PU_STATIC, nullptr));
-
-		predict->x = player->mo->x + FixedMul(dist, FINECOSINE(botController->forceAngle >> ANGLETOFINESHIFT));
-		predict->y = player->mo->y + FixedMul(dist, FINESINE(botController->forceAngle >> ANGLETOFINESHIFT));
-		predict->radius = (DEFAULT_WAYPOINT_RADIUS / 4) * mapobjectscale;
+		bd->predict = {
+			.x = player->mo->x + FixedMul(dist, FINECOSINE(botController->forceAngle >> ANGLETOFINESHIFT)),
+			.y = player->mo->y + FixedMul(dist, FINESINE(botController->forceAngle >> ANGLETOFINESHIFT)),
+			.radius = (DEFAULT_WAYPOINT_RADIUS / 4) * mapobjectscale,
+		};
 
 		forcedDir = true;
 	}
 
 	if (forcedDir == true)
 	{
-		destangle = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
-		turnamt = K_HandleBotTrack(player, cmd, predict, destangle);
+		destangle = R_PointToAngle2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
+		turnamt = K_HandleBotTrack(bd, player, destangle);
 	}
 	else if (leveltime <= starttime)
 	{
@@ -1594,210 +1630,69 @@ static void K_BuildBotTiccmdNormal(player_t *player, ticcmd_t *cmd)
 		if (player->botvars.difficulty > 4)
 		{
 			if (leveltime >= starttime-TICRATE-TICRATE/7+finaltiming)
-			{
-				cmd->buttons |= BT_ACCELERATE;
-				cmd->forwardmove = MAXPLMOVE;
-			}
+				bd->acceldown = true;
 		}
 	}
 	else
 	{
-		// Handle steering towards waypoints!
-		if (predict == nullptr)
+		// Create a prediction.
+		if (K_CreateBotPrediction(bd, player))
 		{
-			// Create a prediction.
-			predict = K_CreateBotPrediction(player);
-		}
-
-		if (predict != nullptr)
-		{
-			K_NudgePredictionTowardsObjects(predict, player);
-			destangle = R_PointToAngle2(player->mo->x, player->mo->y, predict->x, predict->y);
-			turnamt = K_HandleBotTrack(player, cmd, predict, destangle);
+			K_NudgePredictionTowardsObjects(bd, player);
+			destangle = R_PointToAngle2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);
+			turnamt = K_HandleBotTrack(bd, player, destangle);
 		}
 	}
+
+	if (turnamt > KART_FULLTURN)
+	{
+		turnamt = KART_FULLTURN;
+	}
+	else if (turnamt < -KART_FULLTURN)
+	{
+		turnamt = -KART_FULLTURN;
+	}
+
+	bd->turnamt = turnamt;
 
 	if (player->exiting == 0)
 	{
 		// TODO: Allowing projectile items like orbinaut while e-braking would be nice, maybe just pass in the spindash variable?
-		t = I_GetPreciseTime();
-		K_BotItemUsage(player, cmd, turnamt);
+		precise_t t = I_GetPreciseTime();
+		K_BotItemUsage(bd, player);
 		ps_bots[player - players].item = I_GetPreciseTime() - t;
 	}
 
-	if (turnamt != 0)
+	if (turnamt > 0)
 	{
-		if (turnamt > KART_FULLTURN)
+		// Count up
+		if (bd->turnconfirm < BOTTURNCONFIRM)
 		{
-			turnamt = KART_FULLTURN;
+			bd->turnconfirm++;
 		}
-		else if (turnamt < -KART_FULLTURN)
+	}
+	else if (turnamt < 0)
+	{
+		// Count down
+		if (bd->turnconfirm > -BOTTURNCONFIRM)
 		{
-			turnamt = -KART_FULLTURN;
+			bd->turnconfirm--;
 		}
-
-		if (turnamt > 0)
+	}
+	else
+	{
+		// Back to neutral
+		if (bd->turnconfirm < 0)
 		{
-			// Count up
-			if (player->botvars.turnconfirm < BOTTURNCONFIRM)
-			{
-				cmd->bot.turnconfirm++;
-			}
+			bd->turnconfirm++;
 		}
-		else if (turnamt < 0)
+		else if (bd->turnconfirm > 0)
 		{
-			// Count down
-			if (player->botvars.turnconfirm > -BOTTURNCONFIRM)
-			{
-				cmd->bot.turnconfirm--;
-			}
-		}
-		else
-		{
-			// Back to neutral
-			if (player->botvars.turnconfirm < 0)
-			{
-				cmd->bot.turnconfirm++;
-			}
-			else if (player->botvars.turnconfirm > 0)
-			{
-				cmd->bot.turnconfirm--;
-			}
-		}
-
-		if (abs(player->botvars.turnconfirm) >= BOTTURNCONFIRM)
-		{
-			// You're commiting to your turn, you're allowed!
-			cmd->turning = turnamt;
-			if (P_CanPlayerTurn(player, cmd))
-				cmd->angle += K_GetKartTurnValue(player, turnamt);
+			bd->turnconfirm--;
 		}
 	}
 
-	// Free the prediction we made earlier
-	if (predict != nullptr)
-	{
-		if (cv_kartdebugbot.value != 0 && player - players == displayplayers[0] && !(paused || P_AutoPause()))
-		{
-			K_DrawPredictionDebug(predict, player);
-		}
-	}
-}
-
-/*--------------------------------------------------
-	void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd)
-
-		See header file for description.
---------------------------------------------------*/
-void K_BuildBotTiccmd(
-	player_t *player, // annoyingly NOT const because of LUA_HookTiccmd... grumble grumble
-	ticcmd_t *cmd)
-{
-	ZoneScoped;
-
-	// Remove any existing controls
-	memset(cmd, 0, sizeof(ticcmd_t));
-
-	if (player->mo == nullptr
-		|| player->spectator == true
-		|| G_GamestateUsesLevel() == false)
-	{
-		// Not in the level.
-		return;
-	}
-
-	cmd->angle = player->mo->angle >> TICCMD_REDUCE;
-
-	// Complete override of all ticcmd functionality.
-	// May add more hooks to individual pieces of bot ticcmd,
-	// but this should always be here so anyone can roll
-	// their own :)
-	if (LUA_HookTiccmd(player, cmd, HOOK(BotTiccmd)) == true)
-	{
-		cmd->flags |= TICCMD_BOT;
-		return;
-	}
-
-	cmd->flags |= TICCMD_BOT;
-
-	switch (player->botvars.style)
-	{
-		case BOT_STYLE_STAY:
-		{
-			// Hey, this one's pretty easy :P
-			break;
-		}
-		default:
-		{
-			K_BuildBotTiccmdNormal(player, cmd);
-			break;
-		}
-	}
-}
-
-static void K_IncrementBotRespawn(player_t *player, UINT32 *respawn, const UINT32 respawnmax)
-{
-	const fixed_t requireDist = (12*player->mo->scale) / FRACUNIT;
-	INT32 progress = player->distancetofinishprev - player->distancetofinish;
-	boolean exceptions = (
-		(leveltime < starttime)
-		|| player->flashing != 0
-		|| player->spinouttimer != 0
-		|| player->airtime > 3*TICRATE/2
-		|| (player->justbumped > 0 && player->justbumped < bumptime-1)
-	);
-
-	if (!exceptions && (progress < requireDist))
-	{
-		if (*respawn < respawnmax)
-		{
-			// Making no progress, start counting against you.
-			*respawn = *respawn + 1;
-			if (progress < -requireDist && *respawn < respawnmax)
-			{
-				// Making NEGATIVE progress? Start counting even harder.
-				*respawn = *respawn + 1;
-			}
-		}
-	}
-	else if (*respawn > 0)
-	{
-		// Playing normally.
-		*respawn = *respawn - 1;
-	}
-}
-
-/*--------------------------------------------------
-	void K_UpdateBotGameplayVars(player_t *player);
-
-		See header file for description.
---------------------------------------------------*/
-void K_UpdateBotGameplayVars(player_t *player)
-{
-	if (gamestate != GS_LEVEL || !player->mo)
-	{
-		// Not in the level.
-		return;
-	}
-
-	player->botvars.rubberband = K_UpdateRubberband(player);
-
-	player->botvars.turnconfirm += player->cmd.bot.turnconfirm;
-
-	// Is a bot not making any progress? Kill it and respawn at next waypoint.
-	K_IncrementBotRespawn(player, &player->botvars.respawnconfirm, BOTRESPAWNCONFIRM);
-
-	if ((player->cmd.bot.respawnconfirm >= TICRATE) && (player->botvars.respawnconfirm >= BOTRESPAWNCONFIRM))
-	{
-		// Now a clean function! Neat, eh?
-		K_SetRespawnAtNextWaypoint(player);
-
-		// WHAT ARE YOU DOING??? RACE ALREADY!
-		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
-
-		player->botvars.respawnconfirm = 0;
-	}
-	else if (player->cmd.forwardmove < 0)
+	if (!bd->acceldown && bd->brakedown)
 	{
 		// stop drifting if we're reversing
 		K_BotSetDriftState(player, DRIFTSTATE_AUTO, BOTDRIFTLOCKOUT);
@@ -1807,15 +1702,15 @@ void K_UpdateBotGameplayVars(player_t *player)
 		// Figure out if we need to drift.
 		// Drift-ending waypoints will kill the drift timer,
 		// so no need to worry about doing that ourselves.
-		K_BotStartDrift(player);
+		K_BotStartDrift(bd, player);
 
-		INT32 limit = FixedInt(cv_test3.value) - gamespeed*5;
-		INT32 dtime = ++player->botvars.drifttime;
+		INT32 limit = bd->driftstatedelay;
+		INT32 dtime = ++bd->drifttime;
 
 		// the faster we are going, the sooner we need to drift
 		fixed_t speedfactor = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
 
-		switch (player->botvars.driftstate)
+		switch (bd->driftstate)
 		{
 		case DRIFTSTATE_STARTING:
 			limit = std::max(0, limit - FixedMul(TICRATE/5, speedfactor));
@@ -1838,5 +1733,123 @@ void K_UpdateBotGameplayVars(player_t *player)
 		}
 	}
 
+	if (cv_kartdebugbot.value != 0 && player - players == displayplayers[0] && !(paused || P_AutoPause()))
+	{
+		K_DrawPredictionDebug(bd, player);
+	}
+}
+
+/*--------------------------------------------------
+	void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd)
+
+		See header file for description.
+--------------------------------------------------*/
+void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd)
+{
+	ZoneScoped;
+
+	botdata_t *bd = &botdata[player - players];
+
+	// Remove any existing controls
+	memset(cmd, 0, sizeof(ticcmd_t));
+
+	if (player->mo == nullptr
+		|| player->spectator == true
+		|| G_GamestateUsesLevel() == false)
+	{
+		// Not in the level.
+		return;
+	}
+
+	cmd->angle = player->mo->angle >> TICCMD_REDUCE;
+
+	// Complete override of all ticcmd functionality.
+	// May add more hooks to individual pieces of bot ticcmd,
+	// but this should always be here so anyone can roll
+	// their own :)
+	if (LUA_HookTiccmd(player, cmd, HOOK(BotTiccmd)) == true)
+		return;
+
+	if (player->botvars.style == BOT_STYLE_STAY)
+	{
+		// Hey, this one's pretty easy :P
+		return;
+	}
+
+	// BOT_STYLE_NORMAL is the only other style, so...
+	cmd->forwardmove = !!bd->acceldown * MAXPLMOVE - !!bd->brakedown * MAXPLMOVE/2;
+	if (bd->itemthrow != 0)
+	{
+		cmd->throwdir = bd->itemthrow * KART_FULLTURN;
+		cmd->buttons |= bd->itemthrow > 0 ? BT_FORWARD : BT_BACKWARD;
+	}
+
+	if (bd->acceldown)
+		cmd->buttons |= BT_ACCELERATE;
+	if (bd->brakedown)
+		cmd->buttons |= BT_BRAKE;
+	if (bd->driftdown)
+		cmd->buttons |= BT_DRIFT;
+	if (bd->itemdown)
+		cmd->buttons |= BT_ATTACK;
+
+	if (bd->dolookback)
+		cmd->buttons |= BT_LOOKBACK;
+
+	if (abs(bd->turnconfirm) >= BOTTURNCONFIRM)
+	{
+		// You're commiting to your turn, you're allowed!
+		cmd->turning = bd->turnamt;
+		if (P_CanPlayerTurn(player, cmd))
+			cmd->angle += K_GetKartTurnValue(player, bd->turnamt);
+	}
+}
+
+/*--------------------------------------------------
+	void K_UpdateBotGameplayVars(player_t *player);
+
+		See header file for description.
+--------------------------------------------------*/
+void K_UpdateBotGameplayVars(player_t *player)
+{
+	if (gamestate != GS_LEVEL || !player->mo)
+	{
+		// Not in the level.
+		return;
+	}
+
+	player->botvars.rubberband = K_UpdateRubberband(player);
+
 	K_UpdateBotGameplayVarsItemUsage(player);
+}
+
+// resets some botdata stuff after respawning
+void K_BotReborn(const player_t *player)
+{
+	botdata_t *bd = &botdata[player - players];
+	memset(bd, 0, sizeof(*bd));
+
+	bd->driftstate = DRIFTSTATE_AUTO;
+	bd->driftskill = FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(player));
+
+	// drift parameters, just fixed values for now
+	bd->driftmaxdist = 200 + gamespeed*50;
+	bd->driftpowerdiv = 40;
+	bd->driftstatedelay = TICRATE/2 - gamespeed*5;
+}
+
+void K_BotResetItemConfirm(const player_t *player, boolean setdelay)
+{
+	botdata_t *bd = &botdata[player - players];
+	bd->itemconfirm = 0;
+	if (setdelay)
+		bd->itemdelay = TICRATE;
+}
+
+botdata_t *K_GetBotData(UINT8 num)
+{
+	if (num < 0 || num >= MAXPLAYERS)
+		return NULL;
+
+	return &botdata[num];
 }

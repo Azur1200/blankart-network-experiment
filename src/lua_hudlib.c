@@ -79,6 +79,10 @@ static const char *const hud_disable_options[] = {
 	"intermissionmessages",
 	NULL};
 
+// you know, let's actually make sure that the table is synced.
+// because fuck knows how many times this has happened at this point. :v
+I_StaticAssert(sizeof(hud_disable_options) / sizeof(*hud_disable_options) == hud_MAX+1);
+
 enum patch {
 	patch_valid = 0,
 	patch_width,

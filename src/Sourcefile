@@ -109,6 +109,7 @@ lua_maplib.c
 lua_taglib.c
 lua_polyobjlib.c
 lua_blockmaplib.c
+lua_botvarslib.c
 lua_hudlib.c
 lua_hudlib_drawlist.c
 lua_followerlib.c
@@ -135,4 +136,6 @@ k_director.c
 k_follower.c
 k_mapuser.c
 k_stats.c
+h_timers.cpp
 stun.c
+lonesha256.c

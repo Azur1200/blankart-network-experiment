@@ -621,6 +621,8 @@ struct activator_t
 boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, char **stringargs);
 boolean P_CanActivateSpecial(INT16 special);
 
+boolean P_AllowFriction(mobj_t *mobj);
+
 void P_SetupSignExit(player_t *player);
 
 boolean P_IsMobjTouchingSectorPlane(mobj_t *mo, sector_t *sec);

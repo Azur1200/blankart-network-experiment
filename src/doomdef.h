@@ -102,7 +102,6 @@ extern "C" {
 #endif
 
 // Special Hashing.
-//#define NOMD5
 //#define NOFILEHASH
 //#define NOVERIFYIWADS
 
@@ -482,6 +481,12 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define I_Assert(e) ((e) ? (void)0 : I_Error("assert failed: %s, file %s, line %d", #e, __FILE__, __LINE__))
 #else
 #define I_Assert(e) ((void)0)
+#endif
+
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ == 202311L)
+#define I_StaticAssert(e) static_assert(e, "Static assertion failed: " #e)
+#else
+#define I_StaticAssert(e) _Static_assert(e, "Static assertion failed: " #e)
 #endif
 
 // The character that separates pathnames. Forward slash on

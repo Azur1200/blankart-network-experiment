@@ -242,7 +242,7 @@ INT32 stealtime = TICRATE/2;
 INT32 sneakertime = TICRATE + (TICRATE/3);
 INT32 waterpaneltime = TICRATE*2;
 INT32 itemtime = 8*TICRATE;
-INT32 bubbletime = TICRATE/2;
+INT32 bubbletime = TICRATE/4;
 INT32 comebacktime = 10*TICRATE;
 INT32 bumptime = 6;
 INT32 greasetics = 3*TICRATE;
@@ -1364,13 +1364,6 @@ ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 		dest[i].buttons = (UINT16)SHORT(src[i].buttons);
 		dest[i].latency = src[i].latency;
 		dest[i].flags = src[i].flags;
-
-		if (dest[i].flags & TICCMD_BOT)
-		{
-			dest[i].bot.itemconfirm = src[i].bot.itemconfirm;
-			dest[i].bot.turnconfirm = src[i].bot.turnconfirm;
-			dest[i].bot.respawnconfirm = src[i].bot.respawnconfirm;
-		}
 	}
 	return dest;
 }
@@ -2418,8 +2411,11 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	boolean spectator;
 	boolean bot;
 	UINT8 botdifficulty;
+	botStyle_e style;
 
 	INT16 rings;
+	INT16 minrings;
+	INT16 maxrings;
 	angle_t playerangleturn;
 
 	UINT8 botdiffincrease;
@@ -2477,6 +2473,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	followitem = players[player].followitem;
 
 	bot = players[player].bot;
+	style = players[player].botvars.style;
 	botdifficulty = players[player].botvars.difficulty;
 
 	botdiffincrease = players[player].botvars.diffincrease;
@@ -2500,6 +2497,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = 0;
 		wanted = 0;
 		rings = 5;
+		minrings = cv_kartringsmin.value;
+		maxrings = cv_kartringsmax.value;
 		kickstartaccel = 0;
 		lastsafelap = 0;
 		lastsafestarpost = 0;
@@ -2549,6 +2548,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = players[player].karmapoints;
 		wanted = players[player].wanted;
 		rings = players[player].rings;
+		
+		minrings = players[player].ringmin;
+		maxrings = players[player].ringmax;
+
 		kickstartaccel = players[player].kickstartaccel;
 
 		nocontrol = players[player].nocontrol;
@@ -2639,8 +2642,11 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->totalring = totalring;
 
 	p->bot = bot;
+	p->botvars.style = style;
 	p->botvars.difficulty = botdifficulty;
 	p->rings = rings;
+	p->ringmin = minrings;
+	p->ringmax = maxrings;
 	p->botvars.diffincrease = botdiffincrease;
 	p->botvars.rival = botrival;
 	p->xtralife = xtralife;
@@ -2669,9 +2675,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	p->botvars.rubberband = FRACUNIT;
 	p->botvars.controller = UINT16_MAX;
-	p->botvars.driftskill =
-		FixedMul(MAXDRIFTSKILL, K_BotDetermineDriftSkill(p));
-	p->botvars.driftstate = DRIFTSTATE_AUTO;
+
+	K_BotReborn(p);
 
 	if (follower)
 		P_RemoveMobj(follower);

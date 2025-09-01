@@ -3274,7 +3274,7 @@ void A_AttractChase(mobj_t *actor)
 			actor->cusval = 1;
 
 			if ((actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
-					&& RINGTOTAL(actor->tracer->player) < 20
+					&& RINGTOTAL(actor->tracer->player) < actor->tracer->player->ringmax
 					&& !(actor->tracer->player->pflags & PF_RINGLOCK))
 				//&& P_CheckSight(actor, actor->tracer)
 				)
@@ -10619,12 +10619,13 @@ void A_ItemPop(mobj_t *actor)
 	}
 	else if (itembreaker)
 	{
+		K_AwardScaledPlayerRings(actor->target->player, ASR_ITEMBOX);
+
 		if (numgotboxes < 3)
 		{
 			actor->target->player->itemtype = KITEM_POGOSPRING;
 			actor->target->player->itemamount += 1;
 		}
-
 	}
 
 	remains->flags2 &= ~MF2_AMBUSH;

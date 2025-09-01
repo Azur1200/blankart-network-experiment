@@ -38,14 +38,14 @@
 #include "p_spec.h" // P_StartQuake
 #include "i_system.h" // I_GetPreciseTime, I_GetPrecisePrecision
 #include "v_video.h"
+#include "k_terrain.h"
+#include "k_bot.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
 #include "taglist.h" // P_FindSpecialLineFromTag
 #include "lua_hook.h" // hook_cmd_running errors
-
-#include "k_terrain.h"
 
 #define NOHUD if (hud_running)\
 return luaL_error(L, "HUD rendering code should not call this function!");\
@@ -230,15 +230,21 @@ static const struct {
 	{META_LUABANKS,     "luabanks[]"},
 
 	{META_ACTIVATOR,    "activator_t"},
-	
+
 	{META_FOLLOWER,    "follower_t"},
+
+	{META_SONICLOOPVARS,	"sonicloopvars_t"},
+	{META_SONICLOOPCAMVARS,	"sonicloopcamvars_t"},
+
+	{META_BOTVARS,    "botvars_t"},
+	{META_BOTCONTROLLER,    "botcontroller_t"},
+	{META_BOTDATA,      "botdata_t"},
+
 	{META_SPLASH,       "t_splash_t"},
 	{META_FOOTSTEP,     "t_footstep_t"},
 	{META_OVERLAY,      "t_overlay_t"},
 	{META_TERRAIN,      "terrain_t"},
-	
-	{META_SONICLOOPVARS,	"sonicloopvars_t"},
-	{META_SONICLOOPCAMVARS,	"sonicloopcamvars_t"},
+
 	{NULL,              NULL}
 };
 
@@ -435,10 +441,7 @@ static int lib_pRandomByte(lua_State *L)
 static int lib_pRandomKey(lua_State *L)
 {
 	INT32 a = (INT32)luaL_checkinteger(L, 1);
-
 	NOHUD
-	if (a > 65536)
-		LUA_UsageWarning(L, "P_RandomKey: range > 65536 is undefined behavior");
 	lua_pushinteger(L, P_RandomKey(a));
 	demo_writerng = 2;
 	return 1;
@@ -450,13 +453,12 @@ static int lib_pRandomRange(lua_State *L)
 	INT32 b = (INT32)luaL_checkinteger(L, 2);
 
 	NOHUD
-	if (b < a) {
+	if (b < a)
+	{
 		INT32 c = a;
 		a = b;
 		b = c;
 	}
-	if ((b-a+1) > 65536)
-		LUA_UsageWarning(L, "P_RandomRange: range > 65536 is undefined behavior");
 	lua_pushinteger(L, P_RandomRange(a, b));
 	demo_writerng = 2;
 	return 1;
@@ -2488,7 +2490,6 @@ static int lib_rSetPlayerSkin(lua_State *L)
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	INT32 i = -1, j = -1;
 	NOHUD
-	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 
@@ -3283,7 +3284,7 @@ static int lib_gAddGametype(lua_State *L)
 
 static int Lcheckmapnumber (lua_State *L, int idx, const char *fun)
 {
-	if (ISINLEVEL)
+	if (G_GamestateUsesLevel())
 		return luaL_optinteger(L, idx, lua_compatmode ? G_NativeMapToKart(gamemap) : gamemap);
 	else
 	{
@@ -4159,6 +4160,13 @@ static int lib_kSlopeBoostActive(lua_State *L)
 	return 1;
 }
 
+// Checks if Drafting is active.
+static int lib_kDraftingActive(lua_State *L)
+{
+	lua_pushboolean(L, K_DraftingActive());
+	return 1;
+}
+
 // Grabs the currently active invintype.
 static int lib_kGetKartInvinType(lua_State *L)
 {
@@ -4338,6 +4346,148 @@ static int lib_kAwardScaledPlayerRings(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	K_AwardScaledPlayerRings(player, mode);
+	return 0;
+}
+
+static int lib_kPlayerUsesBotMovement(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushboolean(L, K_PlayerUsesBotMovement(player));
+	return 1;
+}
+
+static int lib_kBotCanTakeCut(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushboolean(L, K_BotCanTakeCut(player));
+	return 1;
+}
+
+static int lib_kGetBotController(lua_State *L)
+{
+	mobj_t *mobj = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+	INLEVEL
+	if (!mobj)
+		return LUA_ErrInvalid(L, "mobj_t");
+	
+	botcontroller_t *botController = K_GetBotController(mobj);
+	if (botController != NULL)
+		LUA_PushUserdata(L, botController, META_BOTCONTROLLER);
+	else
+		lua_pushnil(L);
+	
+	return 1;
+}
+
+static int lib_kBotMapModifier(lua_State *L)
+{
+	INLEVEL
+	lua_pushfixed(L, K_BotMapModifier());
+	return 1;
+}
+
+static int lib_kBotRubberband(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushfixed(L, K_BotRubberband(player));
+	return 1;
+}
+
+static int lib_kUpdateRubberband(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	
+	lua_pushfixed(L, K_UpdateRubberband(player));
+	return 1;
+}
+
+static int lib_kDistanceOfLineFromPoint(lua_State *L)
+{
+	fixed_t v1x = luaL_checkfixed(L, 1);
+	fixed_t v1y = luaL_checkfixed(L, 2);
+	fixed_t v2x = luaL_checkfixed(L, 3);
+	fixed_t v2y = luaL_checkfixed(L, 4);
+	fixed_t cx = luaL_checkfixed(L, 5);
+	fixed_t cy = luaL_checkfixed(L, 6);
+	lua_pushfixed(L, K_DistanceOfLineFromPoint(v1x, v1y, v2x, v2y, cx, cy));
+	return 1;
+}
+
+static int lib_kAddBot(lua_State *L)
+{
+	INT32 skinid = -1;
+	UINT8 difficulty = luaL_checkinteger(L, 2);
+	botStyle_e style = luaL_checkinteger(L, 3);
+	UINT8 newplayernum = 0;
+
+	// Copypaste of libd_getSprite2Patch, but fails loudly on each fail state instead.
+	// get skin first!
+	if (lua_isnumber(L, 1)) // find skin by number
+	{
+		skinid = lua_tonumber(L, 1);
+		if (skinid < 0 || skinid >= numskins)
+			return luaL_error(L, "skin number %d out of range (0 - %d)", skinid, numskins-1);
+	}
+	else // find skin by name
+	{
+		const char *name = luaL_checkstring(L, 1);
+		skinid = R_SkinAvailable(name);
+		if (skinid == -1)
+			return luaL_error(L, "could not find skin %s by name", name);
+	}
+	
+	INLEVEL
+	
+	boolean success = K_AddBot(skinid, difficulty, style, &newplayernum);
+	lua_pushboolean(L, success);
+	if (success)
+		LUA_PushUserdata(L, &players[newplayernum - 1], META_PLAYER);
+	else
+		lua_pushnil(L);
+	
+	return 2;
+}
+
+static int lib_kSetNameForBot(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	const char *realname = luaL_checkstring(L, 2);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!player->bot)
+		return luaL_error(L, "You may only change bot names.");
+	
+	K_SetNameForBot(player-players, realname);
+	
+	return 0;
+}
+
+static int lib_kRemoveBot(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (!player->bot)
+		return luaL_error(L, "You may only remove bots.");
+	
+	CL_RemovePlayer(player-players, KR_LEAVE);
+	
 	return 0;
 }
 
@@ -5089,6 +5239,7 @@ static luaL_Reg lib[] = {
 	{"K_ChainingActive",lib_kChainingActive},
 	{"K_SlipdashActive",lib_kSlipdashActive},
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
+	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
@@ -5136,6 +5287,19 @@ static luaL_Reg lib[] = {
 	
 	// I_System
 	{"I_GetPreciseTime",lib_iGetPreciseTime},
+
+	// k_bot
+	{"K_PlayerUsesBotMovement", lib_kPlayerUsesBotMovement},
+	{"K_BotCanTakeCut", lib_kBotCanTakeCut},
+	{"K_GetBotController", lib_kGetBotController},
+	{"K_BotMapModifier", lib_kBotMapModifier},
+	{"K_BotRubberband", lib_kBotRubberband},
+	{"K_UpdateRubberband", lib_kUpdateRubberband},
+	{"K_DistanceOfLineFromPoint", lib_kDistanceOfLineFromPoint},
+	{"K_AddBot", lib_kAddBot},
+	{"K_SetNameForBot", lib_kSetNameForBot},
+	// Lua-only function to allow safely removing bots.
+	{"K_RemoveBot", lib_kRemoveBot},
 
 	// k_terrain
 	{"K_AffectingTerrainActive", lib_kAffectingTerrainActive},

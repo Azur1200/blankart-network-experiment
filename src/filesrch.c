@@ -375,7 +375,9 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 	filestatus_t retval = FS_NOTFOUND;
 	DIR **dirhandle;
 	struct dirent *dent;
+#ifndef _WIN32
 	struct stat fsstat;
+#endif
 	int found = 0;
 	char *searchname = strdup(filename);
 	int depthleft = maxsearchdepth;
@@ -429,7 +431,7 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 		// okay, now we actually want searchpath to incorporate d_name
 		strcpy(&searchpath[searchpathindex[depthleft]],dent->d_name);
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
 		if (dent->d_type == DT_UNKNOWN && lstat(searchpath, &fsstat) == 0)
 		{
 			if (S_ISDIR(fsstat.st_mode))

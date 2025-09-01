@@ -1784,6 +1784,7 @@ static void Impl_InitOpenGL(void)
 	*(void**)&HWD.pfnEndScreenWipe    = hwSym("EndScreenWipe",NULL);
 	*(void**)&HWD.pfnDoScreenWipe     = hwSym("DoScreenWipe",NULL);
 	*(void**)&HWD.pfnDrawIntermissionBG=hwSym("DrawIntermissionBG",NULL);
+	*(void**)&HWD.pfnMakeIntermissionBG=hwSym("MakeIntermissionBG",NULL);
 	*(void**)&HWD.pfnMakeScreenTexture= hwSym("MakeScreenTexture",NULL);
 	*(void**)&HWD.pfnRenderVhsEffect  = hwSym("RenderVhsEffect",NULL);
 	*(void**)&HWD.pfnMakeScreenFinalTexture=hwSym("MakeScreenFinalTexture",NULL);

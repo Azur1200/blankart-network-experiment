@@ -28,37 +28,41 @@ extern "C" {
 // P_Random functions pulls random bytes from a PRNG that is network synced.
 
 // RNG functions
+UINT32  M_Random(void);
 fixed_t M_RandomFixed(void);
 UINT8   M_RandomByte(void);
-INT32   M_RandomKey(INT32 a);
+UINT32  M_RandomKey(UINT32 a);
 INT32   M_RandomRange(INT32 a, INT32 b);
 
 // PRNG functions
 #ifdef DEBUGRANDOM
+#define P_Random()            P_RandomD(__FILE__, __LINE__)
 #define P_RandomFixed()     P_RandomFixedD(__FILE__, __LINE__)
 #define P_RandomByte()      P_RandomByteD(__FILE__, __LINE__)
 #define P_RandomKey(c)      P_RandomKeyD(__FILE__, __LINE__, c)
 #define P_RandomRange(c, d) P_RandomRangeD(__FILE__, __LINE__, c, d)
+UINT32  P_RandomD(const char *rfile, INT32 rline);
 fixed_t P_RandomFixedD(const char *rfile, INT32 rline);
 UINT8   P_RandomByteD(const char *rfile, INT32 rline);
-INT32   P_RandomKeyD(const char *rfile, INT32 rline, INT32 a);
+UINT32   P_RandomKeyD(const char *rfile, INT32 rline, INT32 a);
 INT32   P_RandomRangeD(const char *rfile, INT32 rline, INT32 a, INT32 b);
 #else
+UINT32  P_Random(void);
 fixed_t P_RandomFixed(void);
 UINT8   P_RandomByte(void);
-INT32   P_RandomKey(INT32 a);
+UINT32  P_RandomKey(UINT32 a);
 INT32   P_RandomRange(INT32 a, INT32 b);
 #endif
 
 // Macros for other functions
-#define M_SignedRandom()  ((INT32)M_RandomByte() - 128) // [-128, 127] signed byte, originally a
-#define P_SignedRandom()  ((INT32)P_RandomByte() - 128) // function of its own, moved to a macro
+#define M_SignedRandom()   ((INT32)M_RandomByte() + INT8_MIN)   // [-128, 127] signed byte, originally a
+#define P_SignedRandom() ((INT32)P_RandomByte() + INT8_MIN) // function of its own, moved to a macro
 
 #define M_RandomChance(p) (M_RandomFixed() < p) // given fixed point probability, p, between 0 (0%)
 #define P_RandomChance(p) (P_RandomFixed() < p) // and FRACUNIT (100%), returns true p% of the time
 
 // Debugging
-fixed_t P_RandomPeek(void);
+UINT32 P_RandomPeek(void);
 
 // Working with the seed for PRNG
 #ifdef DEBUGRANDOM

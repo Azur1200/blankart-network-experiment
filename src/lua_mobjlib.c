@@ -253,7 +253,7 @@ static int mobj_get(lua_State *L)
 	enum mobj_e field = Lua_optoption(L, 2, NULL, mobj_opt);
 	lua_settop(L, 2);
 
-	if (!mo || !ISINLEVEL) {
+	if (!mo || !G_GamestateUsesLevel()) {
 		if (field == mobj_valid) {
 			lua_pushboolean(L, 0);
 			return 1;
@@ -741,11 +741,18 @@ static int mobj_set(lua_State *L)
 		mo->tics = luaL_checkinteger(L, 3);
 		break;
 	case mobj_state: // set state by enum
+	{
+		statenum_t state = luaL_checkinteger(L, 3);
+
+		if (state < 0 || state >= numstates)
+			return luaL_error(L, "State %d out of range (0 - %d)", state, numstates - 1);
+
 		if (mo->player)
-			P_SetPlayerMobjState(mo, luaL_checkinteger(L, 3));
+			P_SetPlayerMobjState(mo, state);
 		else
-			P_SetMobjState(mo, luaL_checkinteger(L, 3));
+			P_SetMobjState(mo, state);
 		break;
+	}
 	case mobj_flags: // special handling for MF_NOBLOCKMAP and MF_NOSECTOR
 	{
 		UINT32 flags = luaL_checkinteger(L, 3);

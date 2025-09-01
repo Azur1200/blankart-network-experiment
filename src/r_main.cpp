@@ -78,8 +78,6 @@ mobj_t *r_viewmobj;
 
 int r_splitscreen;
 
-fixed_t rendertimefrac;
-fixed_t rendertimefrac_unpaused;
 fixed_t renderdeltatics;
 boolean renderisnewtic;
 
@@ -375,16 +373,6 @@ angle_t R_PointToAngle2(fixed_t pviewx, fixed_t pviewy, fixed_t x, fixed_t y)
 		(x = -x) > (y = -y) ? ANGLE_180+tantoangle[SlopeDiv(y,x)] :    // octant 4
 		ANGLE_270-tantoangle[SlopeDiv(x,y)] :                          // octant 5
 		0;
-}
-
-INT32 R_GetHudUncap(void)
-{
-	return rendertimefrac & FRACMASK;
-}
-
-INT32 R_GetMenuUncap(void)
-{
-	return rendertimefrac_unpaused & FRACMASK;
 }
 
 //
@@ -1223,7 +1211,7 @@ R_SetupCommonFrame
 	else
 		newview->sector = R_PointInSubsector(newview->x, newview->y)->sector;
 
-	R_InterpolateView(rendertimefrac_unpaused);
+	R_InterpolateView(R_GetTimeFrac(RTF_CAMERA));
 }
 
 static void R_SetupAimingFrame(int s)

@@ -679,7 +679,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 
 			// Reached the cap, don't waste 'em!
-			if (RINGTOTAL(player) >= 20)
+			if (RINGTOTAL(player) >= player->ringmax)
 				return;
 
 			special->momx = special->momy = special->momz = 0;
@@ -2274,8 +2274,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				player->mo->flags2 &= ~MF2_WATERRUN;
 
 			}
+
 			player->driftboost = 0;
-			player->bubblepop = 0;
 			player->ringboost = 0;
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;

@@ -152,9 +152,11 @@ boolean chainingactive;
 boolean slipdashactive;
 boolean purpledriftactive;
 boolean slopeboostactive;
+boolean draftingactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
+boolean levelloaded = false;
 UINT8 levelfadecol;
 
 virtres_t *curmapvirt;
@@ -1920,6 +1922,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 			sectors[i].damagetype = SD_DEATHPIT;
 		if (fastcmp(val, "Instakill"))
 			sectors[i].damagetype = SD_INSTAKILL;
+		if ((mapnamespace == MNS_RINGRACERS && fastcmp(val, "Stumble")) || fastcmp(val, "FlipOver"))
+			sectors[i].damagetype = SD_FLIPOVER;
 	}
 	else if (fastcmp(param, "offroad"))
 	{
@@ -8022,6 +8026,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slipdashactive = false;
 	purpledriftactive = false;
 	slopeboostactive = false;
+	draftingactive = false;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8040,6 +8045,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartslopeboost.value)
 		slopeboostactive = true;
+
+	if (cv_kartdrafting.value)
+		draftingactive = true;
 
 	invintype = (UINT8)cv_kartinvintype.value;
 
@@ -8608,8 +8616,8 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Initialize sector node list.
 	P_Initsecnode();
 
-	if (netgame || multiplayer)
-		cht_debug = 0;
+	// if (netgame || multiplayer)
+		// cht_debug = 0;
 
 	if (metalplayback)
 		G_StopMetalDemo();
@@ -9011,6 +9019,10 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		levelloading = false;
 	}
 
+	// the level is THOROUGHLY loaded now...
+	// set this before starting the titlecard though
+	levelloaded = true;
+
 	if (reloadinggamestate == false)
 	{
 		if (rendermode != render_none)
@@ -9104,6 +9116,12 @@ void P_PostLoadLevel(void)
 	TracyCZoneEnd(__zone);
 }
 
+void P_UnloadLevel(void)
+{
+	// this doesn't actually free any memory. i'm not messing with that...
+	// just clear the level loaded flag
+	levelloaded = false;
+}
 
 //
 // P_RunSOC

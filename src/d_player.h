@@ -419,17 +419,6 @@ typedef enum
 // for kickstartaccel
 #define ACCEL_KICKSTART (TICRATE)
 
-// Minimum percentage for a (non-auto) drift to begin.
-#define BOTDRIFTPERCENT (10)
-
-// Minimum turning percentage for an auto drift to begin.
-#define DRIFTSTARTPCT (45)
-
-#define BOTDRIFTTICS (2*TICRATE/3)
-#define BOTDRIFTLOCKOUT (TICRATE/2)
-
-#define MAXDRIFTSKILL (FRACUNIT/2)
-
 typedef enum
 {
 	BOT_STYLE_NORMAL,
@@ -438,15 +427,6 @@ typedef enum
 	//BOT_STYLE_ESCAPE,
 	BOT_STYLE__MAX
 } botStyle_e;
-
-typedef enum
-{
-	DRIFTSTATE_AUTO,
-	DRIFTSTATE_STARTING,
-	DRIFTSTATE_ACTIVE,
-	DRIFTSTATE_ENDING,
-	NUMDRIFTSTATES
-} botdrift_t;
 
 // player_t struct for all bot variables
 struct botvars_t
@@ -459,20 +439,6 @@ struct botvars_t
 
 	fixed_t rubberband; // Bot rubberband value
 	UINT16 controller; // Special bot controller linedef ID
-
-	tic_t itemdelay; // Delay before using item at all
-	tic_t itemconfirm; // When high enough, they will use their item
-
-	SINT8 turnconfirm; // Confirm turn direction
-	UINT32 respawnconfirm; // Confirm when respawn is needed.
-
-	// Drift-relevant data below:
-	fixed_t driftskill; // The bot's "skill" at drifts.
-						// Determines how soon a bot starts to drift.
-	botdrift_t driftstate; // Drifting state
-	SINT8 driftturn; // Drifting turn direction
-	tic_t drifttime; // Time spent drifting
-	tic_t driftlockout; // do not allow drifting for this many tics
 };
 
 struct sonicloopcamvars_t
@@ -660,6 +626,10 @@ struct player_t
 	UINT8 numsneakers;		// Number of stacked sneakers
 	UINT8 numboosts;		// Number of Boosts stacking this frame
 
+	fixed_t draftpower;		// (0 to FRACUNIT) - Drafting power, doubles your top speed & acceleration at max
+	UINT16 draftleeway;		// Leniency timer before removing draft power
+	SINT8 lastdraft;		// (-1 to 15) - Last player being drafted
+
 	UINT8 tripwireState; // see tripwirestate_t
 	UINT8 tripwirePass; // see tripwirepass_t
 	UINT16 tripwireLeniency;	// When reaching a state that lets you go thru tripwire, you get an extra second leniency after it ends to still go through it.
@@ -680,6 +650,8 @@ struct player_t
 
 	// player's ring count
 	SINT8 rings;
+	SINT8 ringmin;		// minimum rings
+	SINT8 ringmax;		// maximum rings
 	UINT8 pickuprings;	// Number of rings being picked up before added to the counter (prevents rings from being deleted forever over 20)
 	UINT8 ringdelay;	// (0 to 3) - 3 tic delay between every ring usage
 	UINT16 ringboost;	// Ring boost timer
@@ -692,7 +664,7 @@ struct player_t
 	UINT8 curshield;	// see kartshields_t
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
-	UINT8 bubblepop;	// Bubble Shield usage count
+	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 flamedash;	// Flame Shield dash power
 	INT32 flametimer;	// Flame Shield dash meter left
 	UINT8 flamestore;	// Flame Shield reserve boost

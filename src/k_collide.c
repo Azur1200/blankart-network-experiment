@@ -530,15 +530,15 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 		return;
 	}
 
-	player->bubblepop++;
-	player->bubblecool = 15*4;
-	player->itemflags &= ~IF_HOLDREADY;
-	bubble->extravalue1 = 4;
-	bubble->cvmem = 1;
+	// Pop the bubble immediately after an item hit.
+	K_RemoveBubbleHealth(player, BUBBLEITMDAMAGE);
 
-	if (player->bubblepop > 1)
+	if (player->bubblehealth > 0)
 	{
-		K_PopPlayerShield(player);
+		player->bubblecool = 15*4;
+		player->itemflags &= ~IF_HOLDREADY;
+		bubble->extravalue1 = 4;
+		bubble->cvmem = 1;
 	}
 }
 
@@ -554,9 +554,9 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			t2->momx = -6*t2->momx;
-			t2->momy = -6*t2->momy;
-			t2->momz = -6*t2->momz;
+			t2->momx = (-1*t2->momx)/2;
+			t2->momy = (-1*t2->momy)/2;
+			t2->momz = (-1*t2->momz)/2;
 			t2->angle += ANGLE_180;
 		}
 		if (t2->type == MT_JAWZ)
@@ -582,18 +582,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->type == MT_PLAYER)
 	{
-		if (P_PlayerInPain(t2->player)
-			|| t2->player->flashing || t2->player->hyudorotimer
-			|| t2->player->justbumped || t2->scale > t1->scale + (mapobjectscale/8))
-			return true;
-		// Player Damage
-		if (K_KartBouncing(t2, t1->target, false, true))
-		{
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
-			S_StartSound(t2, sfx_s3k44);
-		}
-
+		// Ignore players.
 		return true;
 	}
 
@@ -609,7 +598,15 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->flags & MF_SHOOTABLE)
 	{
-		P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+		boolean shootable = P_DamageMobj(t2, t1, t1->target, 1, DMG_NORMAL);
+
+		if (shootable)
+		{
+			// Drain my stuff please.
+			K_BubbleShieldCollideDrain(t1->target->player, t1);
+		}
+
+		return shootable;
 	}
 
 	// no interaction
@@ -653,8 +650,9 @@ boolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 
 boolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t2->player || t2->type == MT_FALLINGROCK)
+	if ((t2->player && (G_CompatLevel(0x0008) || !t2->player->hyudorotimer)) || t2->type == MT_FALLINGROCK)
 		K_KartBouncing(t2, t1, false, false);
+
 	return true;
 }
 
@@ -689,6 +687,8 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 {
 	const boolean flameT1 = ((t1->player->flamestore > 0) && (t1->player->flametimer > 0));
 	const boolean flameT2 = ((t2->player->flamestore > 0) && (t2->player->flametimer > 0));
+	const boolean hyudoroT1 = (t1->player->hyudorotimer > 0);
+	const boolean hyudoroT2 = (t2->player->hyudorotimer > 0);
 
 	boolean t1Condition = false;
 	boolean t2Condition = false;
@@ -729,12 +729,14 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	}
 	else if (t1Condition == true && t2Condition == false)
 	{
-		P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+		if (G_CompatLevel(0x0008) || !hyudoroT1)
+			P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
 		return true;
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
-		P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+		if (G_CompatLevel(0x0008) || !hyudoroT2)
+			P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
 		return true;
 	}
 

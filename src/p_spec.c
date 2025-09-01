@@ -4116,13 +4116,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						if (mo->player->pflags & PF_RINGLOCK)
 							return false;
 
-						// args[2]: don't cap rings to 20
+						// args[2]: don't cap rings to player's max rings
 						K_AwardPlayerRings(mo->player, rings, args[2]);
 					}
 					else
 					{
-						// args[2]: cap rings to -20 instead of 0
-						SINT8 baseline = (args[2] ? -20 : 0);
+						// args[2]: cap rings to player's min rings instead of 0
+						SINT8 baseline = (args[2] ? mo->player->ringmin : 0);
 
 						// Don't push you below baseline
 						if (mo->player->rings <= baseline)
@@ -5455,6 +5455,10 @@ static void P_EvaluateDamageType(player_t *player, sector_t *sector, boolean isT
 			break;
 		case SD_INSTAKILL:
 			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_INSTAKILL);
+			break;
+		case SD_FLIPOVER:
+			if (isTouching)
+				K_FlipPlayer(player, NULL, NULL);
 			break;
 		default:
 			break;
@@ -9197,6 +9201,21 @@ static void Add_Friction(INT32 friction, INT32 movefactor, INT32 affectee, INT32
 	P_AddThinker(THINK_MAIN, &f->thinker);
 }
 
+// Much cleaner looking way of detecting when to use friction.
+boolean P_AllowFriction(mobj_t *mobj)
+{
+	if (!mobj->player)
+		return false;
+
+	if (mobj->player->invincibilitytimer
+		|| mobj->player->hyudorotimer
+		|| mobj->player->sneakertimer
+		|| mobj->player->growshrinktimer > 0)
+		return false;
+
+	return true;
+}
+
 /** Applies friction to all things in a sector.
   *
   * \param f Friction thinker.
@@ -9229,9 +9248,7 @@ void T_Friction(friction_t *f)
 		// apparently, all I had to do was comment out part of the next line and
 		// friction works for all mobj's
 		// (or at least MF_PUSHABLEs, which is all I care about anyway)
-		if ((!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) && thing->z == thing->floorz) && (thing->player
-			&& (thing->player->invincibilitytimer == 0 && thing->player->hyudorotimer == 0
-			&& thing->player->sneakertimer == 0 && thing->player->growshrinktimer <= 0)))
+		if ((!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) && thing->z == thing->floorz) && P_AllowFriction(thing))
 		{
 			if (f->roverfriction)
 			{
