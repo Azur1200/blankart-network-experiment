@@ -509,9 +509,6 @@ Update_parameters (void)
 	// Lets update Clients on this info.
 	if (Playing() && server)
 	{
-		UINT32 n;
-		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-
 		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
 		strncpy(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
 
