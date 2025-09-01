@@ -3576,8 +3576,8 @@ static void SV_GenContext(void)
 			server_context[i] = 'a'+(a-26);
 	}
 
-	strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
-	strncpy(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
+	CopyCaretColors(connectedservername, cv_servername.string, MAXSERVERNAME);
+	CopyCaretColors(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, DEFAULTDESCSTRING, MAXSERVERDESCRIPTION);
 }
 

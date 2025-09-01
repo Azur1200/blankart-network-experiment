@@ -509,8 +509,8 @@ Update_parameters (void)
 	// Lets update Clients on this info.
 	if (Playing() && server)
 	{
-		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
-		strncpy(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
+		CopyCaretColors(connectedservername, cv_servername.string, MAXSERVERNAME);
+		CopyCaretColors(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
 
 		ServerInfoUpdateSend();
 	}
