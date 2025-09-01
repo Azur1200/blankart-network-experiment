@@ -870,7 +870,7 @@ static boolean CL_SendJoin(void)
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
-static void
+void
 CopyCaretColors (char *p, const char *s, int n)
 {
 	char *t;
@@ -4381,6 +4381,40 @@ static void PT_LoginAuth(SINT8 node, INT32 netconsole)
 	CONS_Printf(M_GetText("Password from %s failed.\n"), player_names[netconsole]);
 }
 
+void ServerInfoUpdateSend(void)
+{
+	UINT32 n;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	for (n = 1; n < MAXNETNODES; n++)
+	{
+		// Do Shit
+		if (nodeingame[n])
+		{
+			CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
+			CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
+			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
+
+			netbuffer->packettype = PT_SERVERINFOUPDATE;
+			HSendPacket(n, false, 0, MAXSERVERNAME+MAXSERVERCONTACT+MAXSERVERDESCRIPTION);
+		}
+	}
+}
+
+static void PT_ServerInfoUpdate(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (node != servernode)
+		return;
+
+	if ((size_t)doomcom->datalength < sizeof(MAXSERVERNAME+MAXSERVERCONTACT+MAXSERVERDESCRIPTION))/* ignore partial sends */
+		return;
+
+	strncpy(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
+	strncpy(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
+	strncpy(connectedserverdescription, netbuffer->u.serverinfoupdate.serverdescription, MAXSERVERDESCRIPTION);
+}
 
 /** Called when a PT_NODETIMEOUT packet is received
   *
@@ -5156,6 +5190,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_LOGINCHALLENGE:
 			PT_LoginChallenge(node);
+			break;
+		case PT_SERVERINFOUPDATE:
+			PT_ServerInfoUpdate(node);
 			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();

@@ -62,6 +62,7 @@ TYPEDEF (fileack_pak);
 TYPEDEF (clientconfig_pak);
 TYPEDEF (serverinfo_pak);
 TYPEDEF (serverrefuse_pak);
+TYPEDEF (serverinfoupdate_pak);
 TYPEDEF (askinfo_pak);
 TYPEDEF (msaskinfo_pak);
 TYPEDEF (plrinfo);

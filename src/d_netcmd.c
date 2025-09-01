@@ -103,11 +103,8 @@ static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum);
 static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
-static void Got_ScoreboardAdd(UINT8 **cp, INT32 playernum);
-static void Got_ScoreboardClear(UINT8 **cp, INT32 playernum);
 static void Command_ScoreboardAdd(void);
 static void Command_ScoreboardClear(void);
-static void Got_ServerInfoUpdate(UINT8 **cp, INT32 playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -765,9 +762,6 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"SCHEDULECLEAR", // XD_SCHEDULECLEAR
 	"AUTOMATE", // XD_AUTOMATE
 	"CHEAT", // XD_CHEAT
-	"SCOREBOARDADD", // XD_SCOREBOARDADD
-	"SCOREBOARDCLEAR", // XD_SCOREBOARDCLEAR
-	"SERVERINFOUPDATE", // XD_SERVERINFOUPDATE
 };
 
 // =========================================================================
@@ -825,11 +819,8 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
-	RegisterNetXCmd(XD_SCOREBOARDADD, Got_ScoreboardAdd);
-	RegisterNetXCmd(XD_SCOREBOARDCLEAR, Got_ScoreboardClear);
 	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
 	COM_AddCommand("scoreboard_clear", Command_ScoreboardClear);
-	RegisterNetXCmd(XD_SERVERINFOUPDATE, Got_ServerInfoUpdate);
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
@@ -3754,8 +3745,10 @@ static char *GetSpecialString(char *buf, char *input, size_t bufsize)
 
 static void Command_ScoreboardAdd(void)
 {
-	UINT8 buf[4];
-	UINT8 *cp = buf;
+	if (!server)
+	{
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
+	}
 
 	if (COM_Argc() < 2)
 	{
@@ -3763,14 +3756,14 @@ static void Command_ScoreboardAdd(void)
 		return;
 	}
 
-	if (server || IsPlayerAdmin(consoleplayer))
 	{
 		size_t i, j = COM_Argc();
 		char message[MAXSERVERDESCRIPTIONLINE+1];
 		char *finalstring;
 		INT32 strlensize = 0;
+		INT32 serverdesclen = 0;
 
-		//Steal from the motd code so you don't have to put the reason in quotes.
+		// Steal from the motd code so you don't have to put the string in quotes.
 		strlcpy(message, COM_Argv(1), sizeof message);
 		for (i = 2; i < j; i++)
 		{
@@ -3787,6 +3780,7 @@ static void Command_ScoreboardAdd(void)
 		GetSpecialString(finalstring, message, MAXSERVERDESCRIPTIONLINE);
 
 		strlensize = strlen(finalstring);
+		serverdesclen = strlen(connectedserverdescription);
 
 		if ((strlensize+1) > MAXSERVERDESCRIPTIONLINE)
 		{
@@ -3794,85 +3788,33 @@ static void Command_ScoreboardAdd(void)
 			return;
 		}
 
-		WRITESTRINGN(cp, finalstring, MAXSERVERDESCRIPTIONLINE+1);
-		SendNetXCmd(XD_SCOREBOARDADD, &buf, cp - buf);
+		if ((serverdesclen + strlensize) > MAXSERVERDESCRIPTION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Scoreboard text is full so no more text can be added.\n"));
+			return;
+		}
+		else
+		{
+			strncat(connectedserverdescription, finalstring, MAXSERVERDESCRIPTIONLINE);
+			CONS_Printf(M_GetText("Scoreboard text line has been added.\n"));
+		}
+
+		ServerInfoUpdateSend();
 		Z_Free(finalstring);
-	}
-	else
-		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
-}
-
-static void Got_ScoreboardAdd(UINT8 **cp, INT32 playernum)
-{
-	char tempbuff[MAXSERVERDESCRIPTIONLINE];
-	INT32 serverdesclen = 0;
-	INT32 tempbufflen = 0;
-	READSTRINGN(*cp, tempbuff, MAXSERVERDESCRIPTIONLINE+1);
-
-	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal Scoreboard Add command received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		return;
-	}
-
-	serverdesclen = strlen(connectedserverdescription);
-	tempbufflen = strlen(tempbuff);
-
-	if ((serverdesclen + tempbufflen) > MAXSERVERDESCRIPTION)
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Scoreboard text is full so no more text can be added.\n"));
-		return;
-	}
-	else
-	{
-		strncat(connectedserverdescription, va("%s\n%c", tempbuff, '\0'), MAXSERVERDESCRIPTIONLINE);
-		CONS_Printf(M_GetText("Scoreboard text line has been added.\n"));
 	}
 }
 
 static void Command_ScoreboardClear(void)
 {
-	if (!(server || (IsPlayerAdmin(consoleplayer))))
-		return;
-
-	SendNetXCmd(XD_SCOREBOARDCLEAR, NULL, 1);
-}
-
-static void Got_ScoreboardClear(UINT8 **cp, INT32 playernum)
-{
-	(void)cp;
-	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
+	if (!server)
 	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal Scoreboard Clear command received from %s\n"), player_names[playernum]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
 		return;
 	}
 
 	memset(&connectedserverdescription, 0, sizeof(connectedserverdescription));
+	ServerInfoUpdateSend();
 	CONS_Printf(M_GetText("Scoreboard text have been reset by the server.\n"));
-}
-
-static void Got_ServerInfoUpdate(UINT8 **cp, INT32 playernum)
-{
-	char tempname[MAXSERVERNAME];
-	char tempcontact[MAXSERVERCONTACT];
-	READSTRINGN(*cp, tempname, MAXSERVERNAME);
-	READSTRINGN(*cp, tempcontact, MAXSERVERCONTACT);
-
-	if (playernum != serverplayer && !IsPlayerAdmin(playernum)) // hacked client, or disasterous bug
-	{
-		CONS_Alert(CONS_WARNING, M_GetText("Illegal Server Info Update command received from %s (serverplayer is %s)\n"), player_names[playernum], player_names[serverplayer]);
-		if (server)
-			SendKick(playernum, KICK_MSG_CON_FAIL);
-		return;
-	}
-
-	strncpy(connectedservername, tempname, MAXSERVERNAME);
-	strncpy(connectedservercontact, tempcontact, MAXSERVERCONTACT);
-	CONS_Printf(M_GetText("Updated Server Info.\n"));
 }
 
 // Team changing functions

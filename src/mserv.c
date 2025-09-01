@@ -23,6 +23,7 @@
 #include "m_menu.h"
 #include "z_zone.h"
 #include "byteptr.h"
+#include "i_net.h"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -508,15 +509,13 @@ Update_parameters (void)
 	// Lets update Clients on this info.
 	if (Playing() && server)
 	{
-		char buf[MAXSERVERNAME+MAXSERVERCONTACT];
-		char *cp = buf;
+		UINT32 n;
+		doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
 		strncpy(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
 
-		WRITESTRINGN(cp, connectedservername, MAXSERVERNAME);
-		WRITESTRINGN(cp, connectedservercontact, MAXSERVERCONTACT);
-		SendNetXCmd(XD_SERVERINFOUPDATE, &buf, cp - buf);
+		ServerInfoUpdateSend();
 	}
 }
 
