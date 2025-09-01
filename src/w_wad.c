@@ -2539,6 +2539,7 @@ int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error)
 {
 	lumpchecklist_t NMUSlist[] =
 	{
+		{"D_", 2}, // MIDI music
 		{"O_", 2}, // Digital music
 		{"DS", 2}, // Sound effects
 
@@ -2548,6 +2549,7 @@ int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error)
 		{"PAL", 3}, // Palette changes
 		{"CLM", 3}, // Colormap changes
 		{"TRANS", 5}, // Translucency map
+		{"FADE", 4}, // Fades
 
 		{"CONSBACK", 8}, // Console Background graphic
 
@@ -2575,6 +2577,14 @@ int W_VerifyNMUSlumps(const char *filename, boolean exit_on_error)
 		{"MKFNT", 5}, // Kart font changes
 		{"K_", 2}, // Kart graphic changes
 		{"MUSICDEF", 8}, // Kart song definitions
+		{"SP_", 3}, // Speedometer changes do not count either.
+		{"SC_", 3}, // Colored speedometer stuff too.
+		{"SPRTINFO", 8}, // Sprite info
+		{"MMAPDOT", 7},  // Minimap Dot
+		{"MMAPHDLT", 8}, // Minimap Headlight
+		{"JOYBCK", 6}, // Joystick graphic
+		{"JOYKNB", 6}, // ^
+		{"JOYSHD", 6}, // ^
 
 #ifdef HWRENDER
 		{"SHADERS", 7},
