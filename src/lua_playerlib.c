@@ -252,6 +252,8 @@ enum player_e
 	player_throwdir,
 	player_sadtimer,
 	player_rings,
+	player_ringmin,
+	player_ringmax,
 	player_pickuprings,
 	player_ringdelay,
 	player_ringboost,
@@ -447,6 +449,8 @@ static const char *const player_opt[] = {
 	"throwdir",
 	"sadtimer",
 	"rings",
+	"ringmin",
+	"ringmax",
 	"pickuprings",
 	"ringdelay",
 	"ringboost",
@@ -837,6 +841,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_rings:
 		lua_pushinteger(L, plr->rings);
+		break;
+	case player_ringmin:
+		lua_pushinteger(L, plr->ringmin);
+		break;
+	case player_ringmax:
+		lua_pushinteger(L, plr->ringmax);
 		break;
 	case player_pickuprings:
 		lua_pushinteger(L, plr->pickuprings);
@@ -1511,6 +1521,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_rings:
 		plr->rings = luaL_checkinteger(L, 3);
+		break;
+	case player_ringmin:
+		plr->ringmin = luaL_checkinteger(L, 3);
+		break;
+	case player_ringmax:
+		plr->ringmax = luaL_checkinteger(L, 3);
 		break;
 	case player_pickuprings:
 		plr->pickuprings = luaL_checkinteger(L, 3);

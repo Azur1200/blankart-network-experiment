@@ -4116,13 +4116,13 @@ boolean P_ProcessSpecial(activator_t *activator, INT16 special, INT32 *args, cha
 						if (mo->player->pflags & PF_RINGLOCK)
 							return false;
 
-						// args[2]: don't cap rings to 20
+						// args[2]: don't cap rings to player's max rings
 						K_AwardPlayerRings(mo->player, rings, args[2]);
 					}
 					else
 					{
-						// args[2]: cap rings to -20 instead of 0
-						SINT8 baseline = (args[2] ? -20 : 0);
+						// args[2]: cap rings to player's min rings instead of 0
+						SINT8 baseline = (args[2] ? mo->player->ringmin : 0);
 
 						// Don't push you below baseline
 						if (mo->player->rings <= baseline)

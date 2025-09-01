@@ -3274,7 +3274,7 @@ void A_AttractChase(mobj_t *actor)
 			actor->cusval = 1;
 
 			if ((actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
-					&& RINGTOTAL(actor->tracer->player) < 20
+					&& RINGTOTAL(actor->tracer->player) < actor->tracer->player->ringmax
 					&& !(actor->tracer->player->pflags & PF_RINGLOCK))
 				//&& P_CheckSight(actor, actor->tracer)
 				)

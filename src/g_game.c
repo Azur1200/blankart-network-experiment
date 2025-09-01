@@ -2413,6 +2413,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	botStyle_e style;
 
 	INT16 rings;
+	INT16 minrings;
+	INT16 maxrings;
 	angle_t playerangleturn;
 
 	UINT8 botdiffincrease;
@@ -2494,6 +2496,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = 0;
 		wanted = 0;
 		rings = 5;
+		minrings = cv_kartringsmin.value;
+		maxrings = cv_kartringsmax.value;
 		kickstartaccel = 0;
 		lastsafelap = 0;
 		lastsafestarpost = 0;
@@ -2543,6 +2547,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		karmapoints = players[player].karmapoints;
 		wanted = players[player].wanted;
 		rings = players[player].rings;
+		
+		minrings = players[player].ringmin;
+		maxrings = players[player].ringmax;
+
 		kickstartaccel = players[player].kickstartaccel;
 
 		nocontrol = players[player].nocontrol;
@@ -2636,6 +2644,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->botvars.style = style;
 	p->botvars.difficulty = botdifficulty;
 	p->rings = rings;
+	p->ringmin = minrings;
+	p->ringmax = maxrings;
 	p->botvars.diffincrease = botdiffincrease;
 	p->botvars.rival = botrival;
 	p->xtralife = xtralife;

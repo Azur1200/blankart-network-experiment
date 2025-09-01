@@ -122,6 +122,8 @@ extern consvar_t cv_kartbot_basetrackcomplexity;
 extern consvar_t cv_karteliminatelast;
 extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
+extern consvar_t cv_kartringsmin;
+extern consvar_t cv_kartringsmax;
 
 extern consvar_t cv_kartstacking;
 extern consvar_t cv_kartstacking_diminishparam;

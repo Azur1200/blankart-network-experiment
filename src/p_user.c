@@ -506,10 +506,10 @@ INT32 P_GivePlayerRings(player_t *player, INT32 num_rings)
 		return 0;
 
 	test = player->rings + num_rings;
-	if (test > 20) // Caps at 20 rings, sorry!
-		num_rings -= (test-20);
-	else if (test < -20) // Chaotix ring debt!
-		num_rings -= (test+20);
+	if (test > player->ringmax) // Caps at 20 rings, sorry!
+		num_rings -= (test-player->ringmax);
+	else if (test < player->ringmin) // Chaotix ring debt!
+		num_rings -= (test+player->ringmin);
 
 	player->rings += num_rings;
 

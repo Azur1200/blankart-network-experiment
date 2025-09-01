@@ -2533,6 +2533,8 @@ static void K_drawRingMeter(void)
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	SINT8 ringcount = stplyr->rings;
+	SINT8 overring = stplyr->rings % 20;
+	SINT8 ringmax = stplyr->ringmax;
 	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
 
 	rn[0] = ((abs(ringcount) / 10) % 10);
@@ -2549,7 +2551,9 @@ static void K_drawRingMeter(void)
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
 		colorring = true;
 	}
-	else if (ringcount >= 20) // Maxed out
+	else if (ringcount >= 20) // (placeholder) over-ring
+		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
+	else if (ringcount >= ringmax) // Maxed out
 		ringmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
 
 	if (r_splitscreen > 1)
@@ -2589,12 +2593,15 @@ static void K_drawRingMeter(void)
 		{
 			V_DrawMappedPatch(fx-5, fy-11 + ringoffsety, V_HUDTRANS|splitflags, kp_ringdebtminus, ringmap);
 		}
-
+#if 0
 		if (stplyr->rings < 0)
 		{
 			// Invert the ring count
 			ringcount = -ringcount;
 		}
+#endif
+		// clamp and invert when needed for the bar
+		ringcount = CLAMP(abs(ringcount), -20, 20);
 
 		if (rn[1] == 1 && ringcount == 11)
 			V_DrawMappedPatch(fx+2, fy-11 + ringoffsety, V_HUDTRANS|splitflags, kp_facenum[rn[0]], ringmap);
@@ -2619,6 +2626,13 @@ static void K_drawRingMeter(void)
 				barcolors[2] = 32;
 				barcolors[3] = 40;
 				indebt = true;
+			}
+			else if (stplyr->rings > 20)
+			{
+				barcolors[0] = 132;
+				barcolors[1] = 131;
+				barcolors[2] = 128;
+				barcolors[3] = 154;
 			}
 
 			if (!indebt || (indebt && (leveltime/5 & 1)))

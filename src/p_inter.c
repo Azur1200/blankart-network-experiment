@@ -679,7 +679,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 
 			// Reached the cap, don't waste 'em!
-			if (RINGTOTAL(player) >= 20)
+			if (RINGTOTAL(player) >= player->ringmax)
 				return;
 
 			special->momx = special->momy = special->momz = 0;

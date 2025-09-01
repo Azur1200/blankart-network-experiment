@@ -294,6 +294,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_lessflicker);
 
 	CV_RegisterVar(&cv_kartrings);
+	CV_RegisterVar(&cv_kartringsmin);
+	CV_RegisterVar(&cv_kartringsmax);
 
 	// Stacking
 	CV_RegisterVar(&cv_kartstacking);
@@ -1811,8 +1813,8 @@ static void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Being in ring debt occasionally forces Super Ring on you if you mashed
 	if ((K_RingsActive() == true) && mashed && player->rings < 0 && cv_superring.value)
 	{
-		INT32 debtamount = min(20, abs(player->rings));
-		if (P_RandomChance((debtamount*FRACUNIT)/20))
+		INT32 debtamount = min(abs(player->ringmin), abs(player->rings));
+		if (P_RandomChance((debtamount*FRACUNIT)/abs(player->ringmin)))
 		{
 			K_KartGetItemResult(player, KITEM_SUPERRING);
 			player->itemblink = TICRATE;
@@ -4408,11 +4410,11 @@ void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload)
 			RINGTOTAL(player) + (player->superring);
 
 		/* capped at 20 rings */
-		if ((totalrings + rings) > 20)
+		if ((totalrings + rings) > player->ringmax)
 		{
-			if (totalrings >= 20)
+			if (totalrings >= player->ringmax)
 				return; // woah dont let that go negative buster
-			rings = (20 - totalrings);
+			rings = (player->ringmax - totalrings);
 		}
 	}
 
@@ -7599,7 +7601,7 @@ static inline BlockItReturn_t PIT_AttractingRings(mobj_t *thing)
 		return BMIT_CONTINUE; // Too far away
 	}
 
-	if (RINGTOTAL(attractmo->player) >= 20 || (attractmo->player->pflags & PF_RINGLOCK))
+	if (RINGTOTAL(attractmo->player) >= attractmo->player->ringmax || (attractmo->player->pflags & PF_RINGLOCK))
 	{
 		// Already reached max -- just joustle rings around.
 
@@ -8110,10 +8112,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 	else
 	{
-		if (player->rings > 20)
-			player->rings = 20;
-		else if (player->rings < -20)
-			player->rings = -20;
+		if (player->rings > player->ringmax)
+			player->rings = player->ringmax;
+		else if (player->rings < player->ringmin)
+			player->rings = player->ringmin;
 	}
 
 	if (comeback == false || !(gametyperules & GTR_KARMA) || (player->pflags & PF_ELIMINATED))
