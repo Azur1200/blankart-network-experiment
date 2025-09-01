@@ -3786,12 +3786,14 @@ static void Command_ScoreboardAdd(void)
 		if ((strlensize+1) > MAXSERVERDESCRIPTIONLINE)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Scoreboard line is too long to add.\n"));
+			Z_Free(finalstring);
 			return;
 		}
 
 		if ((serverdesclen + strlensize) > MAXSERVERDESCRIPTION)
 		{
 			CONS_Alert(CONS_WARNING, M_GetText("Scoreboard text is full so no more text can be added.\n"));
+			Z_Free(finalstring);
 			return;
 		}
 		else
