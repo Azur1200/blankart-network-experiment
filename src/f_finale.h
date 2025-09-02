@@ -76,6 +76,7 @@ void F_StartTitleScreen(void);
 void F_CacheTitleScreen(void);
 void F_StartCredits(void);
 void F_BlanStartCredits(void);
+void F_StartSecretCredits(void);
 
 extern INT32 finalecount;
 extern INT32 titlescrollxspeed;
@@ -100,7 +101,7 @@ extern INT16 tty;
 extern INT16 ttloop;
 extern UINT16 tttics;
 extern boolean ttavailable[6];
-
+extern const char *blancredits[];
 
 typedef enum
 {

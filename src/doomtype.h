@@ -346,6 +346,9 @@ typedef UINT32 lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 typedef UINT32 tic_t;
 #define INFTICS UINT32_MAX
 
+typedef UINT64 longtic_t;
+#define INFLONGTICS UINT64_MAX
+
 #include "endian.h" // This is needed to make sure the below macro acts correctly in big endian builds
 
 #ifdef SRB2_BIG_ENDIAN

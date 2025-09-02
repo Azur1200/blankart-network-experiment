@@ -36,6 +36,7 @@
 #include "console.h"
 #include "d_net.h"
 #include "f_finale.h"
+#include "f_dscredits.hpp"
 #include "g_game.h"
 #include "hu_stuff.h"
 #include "m_emotes.h"
@@ -87,7 +88,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x492465f56dce7a0c
+#define ASSET_HASH_MAIN_PK3            0x0cbfdd972b69f6ef
 #define ASSET_HASH_MAPPATCH_PK3        0x3a82d44f1514d7f1
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -578,6 +579,12 @@ static void D_Display(void)
 
 		case GS_BLANCREDITS:
 			F_BlanCreditDrawer();
+			HU_Erase();
+			HU_Drawer();
+			break;
+
+		case GS_SECRETCREDITS:
+			F_SecretCreditsDrawer();
 			HU_Erase();
 			HU_Drawer();
 			break;
