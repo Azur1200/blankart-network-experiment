@@ -64,6 +64,7 @@
 #include "acs/interface.h"
 #include "k_director.h"
 #include "g_party.h"
+#include "f_dscredits.hpp"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"

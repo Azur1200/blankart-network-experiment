@@ -51,7 +51,7 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
-static INT16 dscredits_idx = 0;
+//static INT16 dscredits_idx = 0;
 
 static longtic_t elapsed = 0;
 static longtic_t lastelapsed = 0;
@@ -527,7 +527,7 @@ void F_SecretCreditsTicker(void)
         grabskins[2] = R_SkinAvailable(skins[pskin].rivals[2]);
 
         // Pick a random initial point to find the rival.
-        rand = P_RandomKey(SKINRIVALS);
+        rand = M_RandomKey(SKINRIVALS);
 
         // Start verifying and looking for the first valid rival.
         for (i = 0; i < 5; i++)
@@ -592,7 +592,7 @@ void F_SecretCreditsTicker(void)
         }
 
         // Pick a random initial point to load in the usable skins
-        rand = P_RandomKey(usableskins);
+        rand = M_RandomKey(usableskins);
 
         // Pre-allocate the "special character" index. This can be random.
         special_idx = credskins;
@@ -761,7 +761,7 @@ void F_SecretCreditsTicker(void)
         {
             idx = F_FindFirstFreeObj();
 
-            patch_t *bld = dsbuildings[P_RandomKey(NUMDSBUILDINGS)];
+            patch_t *bld = dsbuildings[M_RandomKey(NUMDSBUILDINGS)];
 
             F_SpawnCreditsObject(idx,
                                  (-vidxdiff) - SHORT(bld->width),
@@ -771,7 +771,7 @@ void F_SecretCreditsTicker(void)
                                  INFLONGTICS);
 
             // 5 or 9 seconds, random delay
-            building_delay = static_cast<longtic_t>(P_RandomRange(5, 9)) *
+            building_delay = static_cast<longtic_t>(M_RandomRange(5, 9)) *
                 F_FixedLerp(1000000,400000,lerptime);
         }
 
@@ -802,11 +802,11 @@ void F_SecretCreditsTicker(void)
                 {
                     dscredits.creditsobj[idx].speed[0] =
                         (dscredits.creditsobj[idx].speed[0] * 9) / 2;
-                    player_delay = static_cast<longtic_t>(P_RandomRange(8, 12)) * 250000;
+                    player_delay = static_cast<longtic_t>(M_RandomRange(8, 12)) * 250000;
                 }
                 else
                 {
-                    player_delay = static_cast<longtic_t>(P_RandomRange(8, 12)) * 1000000;
+                    player_delay = static_cast<longtic_t>(M_RandomRange(8, 12)) * 1000000;
                 }
 
                 playersadded++;
@@ -818,7 +818,7 @@ void F_SecretCreditsTicker(void)
         // Set up players for the second set of spawns.
         if (dscredits.creditsscene == 12)
         {
-            player_delay = static_cast<longtic_t>(P_RandomRange(8, 12)) * 250000;
+            player_delay = static_cast<longtic_t>(M_RandomRange(8, 12)) * 250000;
         }
 
         if ((dscredits.creditsscene == 4) || (dscredits.creditsscene == 13))
@@ -965,7 +965,7 @@ void F_SecretCreditsTicker(void)
         }
 
         // Finale!
-        if ((dscredits.creditsscene == 15))
+        if (dscredits.creditsscene == 15)
         {
             if (!finalescene)
             {
