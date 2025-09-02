@@ -163,6 +163,8 @@ SINT8 joinnode = 0; // used for CL_VIEWSERVER
 char connectedservername[MAXSERVERNAME];
 char connectedservercontact[MAXSERVERCONTACT];
 char connectedserverdescription[MAXSERVERDESCRIPTION];
+servermods_t connectedservercustommods[MAXSERVERMODS];
+UINT8 numcustomservermods = 0;
 
 /// \brief do we accept new players?
 /// \todo WORK!

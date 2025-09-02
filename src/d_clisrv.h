@@ -47,6 +47,17 @@ applications may follow different packet versions.
 #define MAXSERVERDESCRIPTIONLINE 40
 #define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!"
 
+#define MAXSERVERMODS 255
+#define MAXSERVERMODNAME 13
+
+struct servermods_t
+{
+	char modname[MAXSERVERMODNAME];
+	consvar_t *cvar;
+	SINT8 active; // -1 is N/A, 0 is off, 1 is on.
+	boolean valid;
+};
+
 // Sends over info via packets to client players.
 void ServerInfoUpdateSend(void);
 
@@ -477,6 +488,8 @@ extern SINT8 servernode;
 extern char connectedservername[MAXSERVERNAME];
 extern char connectedservercontact[MAXSERVERCONTACT];
 extern char connectedserverdescription[MAXSERVERDESCRIPTION];
+extern servermods_t connectedservercustommods[MAXSERVERMODS];
+extern UINT8 numcustomservermods;
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;

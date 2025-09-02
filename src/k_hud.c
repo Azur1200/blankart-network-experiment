@@ -2205,6 +2205,72 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	return x+rightoffset;
 }
 
+#define BASEMODS 11
+void K_DrawServerMods(INT32 x, INT32 y)
+{
+	UINT8 i, j;
+	INT32 xoff = 0, yoff = 10;
+	UINT8 numdrawn = 0;
+
+	servermods_t basemods[BASEMODS] =
+	{
+		{"Rings", NULL, K_RingsActive() > 0, true},
+		{"4-Tier Drifts", NULL, K_PurpleDriftActive() > 0, true},
+		{"Slipdash", NULL, K_SlipdashActive() > 0, true},
+		{"Stacking", NULL, K_StackingActive() > 0, true},
+		{"Chaining", NULL, K_ChainingActive() > 0, true},
+		{"Chain Offroad", &cv_kartchainingoffroad, -1, true},
+		{"Slope Boost", NULL, K_PurpleDriftActive() > 0, true},
+		{"Drafting", NULL, K_PurpleDriftActive() > 0, true},
+		{"Bump Spark", &cv_kartbumpspark, -1, true},
+		{"Bump Spring", &cv_kartbumpspring, -1, true},
+		{"Alt. Invin.", NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
+	};
+
+	V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, "Gameplay / Balance Changes:");
+
+	for (j = 0; j < 2; j++)
+	{
+		UINT8 modcount = j == 0 ? BASEMODS : numcustomservermods;
+		servermods_t *modslist = j == 0 ? basemods : connectedservercustommods;
+
+		// Draw the the modlist.
+		for (i = 0; i < modcount; i++)
+		{
+			boolean drawdis = false;
+
+			if (modslist[i].valid)
+			{
+				if (modslist[i].cvar && modslist[i].cvar->value)
+				{
+					drawdis = true;
+				}
+				else if (modslist[i].active == 1)
+				{
+					drawdis = true;
+				}
+
+				if (drawdis && modslist[i].modname[0] != '\0')
+				{
+					V_DrawSmallString(x+xoff, y+yoff, V_6WIDTHSPACE|V_ALLOWLOWERCASE, modslist[i].modname);
+					numdrawn++;
+
+					if ((numdrawn % 2) == 0)
+					{
+						xoff -= 50;
+						yoff += 5;
+					}
+					else if ((numdrawn % 1) == 0)
+					{
+						xoff += 50;
+					}
+				}
+			}
+		}
+	}
+}
+#undef BASEMODS
+
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
 	if (connectedservername[0] != '\0')
@@ -2215,6 +2281,7 @@ void K_DrawServerDescrption(INT32 x, INT32 y)
 	if (connectedserverdescription[0] != '\0')
 		V_DrawSmallString(x, y+20, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedserverdescription);
 
+	K_DrawServerMods(x, y + 50);
 }
 
 static void K_drawKartLaps(void)

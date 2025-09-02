@@ -3799,7 +3799,7 @@ static void Command_ScoreboardAdd(void)
 		}
 		else
 		{
-			strncat(connectedserverdescription, finalstring, MAXSERVERDESCRIPTIONLINE);
+			strncat(connectedserverdescription, va("%s\n", finalstring), MAXSERVERDESCRIPTIONLINE);
 			CONS_Printf(M_GetText("Scoreboard text line has been added.\n"));
 		}
 
