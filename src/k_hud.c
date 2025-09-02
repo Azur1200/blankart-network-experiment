@@ -3686,6 +3686,13 @@ static void K_drawKartMinimap(void)
 	else
 		V_DrawScaledPatch(x, y, splitflags|minimaptrans, minimapinfo.minimap_pic);
 
+	// let offsets transfer to the heads, too!
+	if (encoremode)
+		x += SHORT(minimapinfo.minimap_pic->leftoffset);
+	else
+		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
+	y -= SHORT(minimapinfo.minimap_pic->topoffset);
+
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		localplayers[i] = -1;
