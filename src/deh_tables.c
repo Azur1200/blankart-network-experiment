@@ -717,6 +717,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "ERASEDATA", &MR_EraseData },
 	{ "CREDITS", &MR_Credits },
 	{ "BLANCREDITS", &MR_BlanCredits },
+	{ "SECRETCREDITS", &MR_SecretCredits },
 	{ "HANDLEADDONS", &MR_HandleAddons },
 	{ "SELECTABLECLEARMENUS", &MR_SelectableClearMenus },
 	{ "GOBACK", &MR_GoBack },
@@ -1418,6 +1419,7 @@ struct int_const_s const INT_CONST[] = {
 	{"GS_DEDICATEDSERVER",GS_DEDICATEDSERVER},
 	{"GS_WAITINGPLAYERS",GS_WAITINGPLAYERS},
 	{"GS_BLANCREDITS",GS_BLANCREDITS},
+	{"GS_SECRETCREDITS",GS_SECRETCREDITS},
 
 	// Game controls
 	{"GC_NULL",gc_null},

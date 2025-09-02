@@ -52,6 +52,7 @@
 #include "p_local.h"
 #include "p_setup.h"
 #include "f_finale.h"
+#include "f_dscredits.hpp" // BlanKart: Secret credits
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -1302,7 +1303,7 @@ boolean M_Responder(event_t *ev)
 	if (dedicated || (demo.playback && demo.title)
 	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
 	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
-	|| gamestate == GS_BLANCREDITS
+	|| gamestate == GS_BLANCREDITS || gamestate == GS_SECRETCREDITS
 	)
 		return false;
 		
@@ -4657,7 +4658,10 @@ INT32 MR_Options(INT32 choice)
 
 	// no credits or data erasing in-game/during replays
 	M_SetItemDisabled(MN_OP_MAIN, "KARTCREDITS", gamecheck);
-	M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", gamecheck);
+	M_SetItemDisabled(MN_OP_MAIN, "EXTRAREDITS", gamecheck);
+	//M_SetItemDisabled(MN_OP_MAIN, "BLANCREDITS", gamecheck);
+	//M_SetItemDisabled(MN_OP_MAIN, "SECRETCREDS", gamecheck);
+
 	M_SetItemDisabled(MN_OP_DATA, "ERASE", gamecheck);
 
 	M_SetItemSecret(MN_OP_GAME, "ENCORE", !M_SecretUnlocked(SECRET_ENCORE));
@@ -5174,6 +5178,18 @@ INT32 MR_BlanCredits(INT32 choice)
 	cursaveslot = -2;
 	M_ClearMenus(true);
 	F_BlanStartCredits();
+	return true;
+}
+
+INT32 MR_SecretCredits(INT32 choice)
+{
+	// Reset ticks here before anything else.
+	dscreditsticks = 0;
+
+	(void)choice;
+	cursaveslot = -2;
+	M_ClearMenus(true);
+	F_StartSecretCredits();
 	return true;
 }
 

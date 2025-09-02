@@ -64,6 +64,7 @@
 #include "acs/interface.h"
 #include "k_director.h"
 #include "g_party.h"
+#include "f_dscredits.hpp"
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
@@ -1626,6 +1627,24 @@ boolean G_Responder(event_t *ev)
 			return true;
 		}
 	}
+	else if (gamestate == GS_SECRETCREDITS)
+	{
+		if (HU_Responder(ev))
+		{
+			hu_keystrokes = true;
+			return true; // chat ate the event
+		}
+
+		if (F_CreditResponder(ev))
+		{
+			// Skip credits for everyone
+			if (! netgame)
+				F_StartGameEvaluation();
+			else if (server || IsPlayerAdmin(consoleplayer))
+				SendNetXCmd(XD_EXITLEVEL, NULL, 0);
+			return true;
+		}
+	}
 	else if (gamestate == GS_INTERMISSION || gamestate == GS_VOTING || gamestate == GS_EVALUATION)
 		if (HU_Responder(ev))
 		{
@@ -2257,6 +2276,12 @@ void G_Ticker(boolean run)
 		case GS_BLANCREDITS:
 			if (run)
 				F_BlanCreditTicker();
+			HU_Ticker();
+			break;
+
+		case GS_SECRETCREDITS:
+			if (run)
+				F_SecretCreditsTicker();
 			HU_Ticker();
 			break;
 
@@ -3292,7 +3317,7 @@ void G_FinishExitLevel(void)
 
 		// Don't save demos immediately here! Let standings write first
 	}
-	else if (gamestate == GS_CREDITS || gamestate == GS_BLANCREDITS)
+	else if (gamestate == GS_CREDITS || gamestate == GS_BLANCREDITS || gamestate == GS_SECRETCREDITS)
 	{
 		F_StartGameEvaluation();
 	}
