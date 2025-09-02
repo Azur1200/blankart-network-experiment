@@ -1552,6 +1552,9 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen)
 		return SDL_FALSE;
 	}
 
+	SDL_SetWindowMinimumSize(window, BASEVIDWIDTH, BASEVIDHEIGHT);
+	SDL_SetWindowMaximumSize(window, MAXVIDWIDTH, MAXVIDHEIGHT);
+
 #ifdef USE_WINDOW_ICON
 	Impl_SetWindowIcon();
 #endif
