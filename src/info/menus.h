@@ -62,6 +62,7 @@ _(OP_DISCORD)
 #endif
 
 _(OP_CUSTOM)
+_(OP_EXTRACREDITS)
 
 // Extras
 _(SR_MAIN)

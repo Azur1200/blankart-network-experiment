@@ -875,7 +875,7 @@ boolean F_CreditResponder(event_t *event)
 //  BLANCREDITS
 // ============
 
-static const char *blancredits[] = {
+const char *blancredits[] = {
 	"\1BlanKart",
 	"\1Credits",
 	"",
@@ -1003,6 +1003,33 @@ void F_BlanStartCredits(void)
 
 	S_ChangeMusicInternal("BLANCD", true);
 	S_ShowMusicCredit(0, 5*TICRATE, 0);
+
+	finalecount = 0;
+	animtimer = 0;
+	timetonext = 2*TICRATE;
+}
+
+void F_StartSecretCredits(void)
+{
+	G_SetGamestate(GS_SECRETCREDITS);
+
+	// Just in case they're open ... somehow
+	M_ClearMenus(true);
+
+	if (creditscutscene)
+	{
+		F_StartCustomCutscene(creditscutscene - 1, false, false);
+		return;
+	}
+
+	gameaction = ga_nothing;
+	paused = false;
+	CON_ToggleOff();
+	S_StopMusic();
+	S_StopSounds();
+
+	//S_ChangeMusicInternal("BLNCDS", true);
+	//S_ShowMusicCredit(0, 5*TICRATE, 0);
 
 	finalecount = 0;
 	animtimer = 0;

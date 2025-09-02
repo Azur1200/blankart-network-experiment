@@ -293,6 +293,7 @@ INT32 MR_AddonsOptions(INT32 choice);
 INT32 MR_EraseData(INT32 arg);
 INT32 MR_Credits(INT32 choice);
 INT32 MR_BlanCredits(INT32 choice);
+INT32 MR_SecretCredits(INT32 choice);
 INT32 MR_HandleAddons(INT32 choice);
 INT32 MR_SelectableClearMenus(INT32 choice);
 INT32 MR_GoBack(INT32 choice);

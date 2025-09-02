@@ -12,6 +12,7 @@ deh_lua.c
 deh_tables.c
 z_zone.c
 f_finale.c
+f_dscredits.cpp
 f_wipe.c
 g_demo.c
 g_game.c

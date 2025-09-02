@@ -46,6 +46,7 @@ typedef enum
 
 	// New
 	GS_BLANCREDITS,		// BlanKart: Credits for BlanKart
+	GS_SECRETCREDITS,   // BlanKart: Secret/full credits
 } gamestate_t;
 
 typedef enum
