@@ -647,6 +647,24 @@ const cliprect_t *V_GetClipRect(void)
 	return &cliprect;
 }
 
+static inline void V_GetClipBounds(INT32 *left, INT32 *right, INT32 *top, INT32 *bottom)
+{
+	if (cliprect.enabled)
+	{
+		*left = cliprect.left;
+		*right = cliprect.right;
+		*top = cliprect.top;
+		*bottom = cliprect.bottom;
+	}
+	else
+	{
+		*left = 0;
+		*right = vid.width;
+		*top = 0;
+		*bottom = vid.height;
+	}
+}
+
 void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 {
 	// Adjust position.
@@ -700,17 +718,15 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 		y = 0;
 	}
 
-	if (x > vid.width)
-	{
-		x = vid.width;
-		w = 0;
-	}
+	if (x + w > vid.width)
+		w = vid.width - x;
+	if (y + h > vid.height)
+		h = vid.height - y;
 
-	if (y > vid.height)
-	{
-		y = vid.height;
-		h = 0;
-	}
+	x = min(x, vid.width);
+	y = min(y, vid.height);
+	w = max(w, 0);
+	h = max(h, 0);
 
 	cliprect.left = x;
 	cliprect.top = y;
@@ -723,6 +739,18 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 	V_DrawFill(cliprect.l, cliprect.t, cliprect.r - cliprect.l, cliprect.b - cliprect.t, V_NOSCALESTART);
 	CONS_Printf("[(%d, %d), (%d, %d)]\n", cliprect.l, cliprect.t, cliprect.r, cliprect.b);
 	*/
+}
+
+// sets up a cliprect for a splitscreen player (and actually accounts for non-green res)
+void V_SetClipRectForPlayer(UINT8 pnum)
+{
+	INT32 w = vid.width, h = vid.height;
+	if (r_splitscreen == 0)
+		V_ClearClipRect(); // no need to
+	else if (r_splitscreen == 1)
+		V_SetClipRect(0, pnum ? h/2 : 0, w, h/2, V_NOSCALESTART);
+	else
+		V_SetClipRect(pnum & 1 ? w/2 : 0, pnum & 2 ? h/2 : 0, w/2, h/2, V_NOSCALESTART);
 }
 
 void V_ClearClipRect(void)
@@ -1272,7 +1300,7 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 //
 // Fills a box of pixels with a single color, NOTE: scaled to screen size
 //
-void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
+void V_DrawFixedFill(fixed_t x, fixed_t y, INT32 w, INT32 h, INT32 c)
 {
 	UINT8 *dest;
 	const UINT8 *deststop;
@@ -1300,55 +1328,69 @@ void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 			v_translevel = R_GetBlendTable(blendmode+1, alphalevel);
 	}
 
+	if (!(c & V_NOSCALESTART))
+	{
+		INT32 dupx = vid.dupx, dupy = vid.dupy;
+
+		if (x == 0 && y == 0 && w == BASEVIDWIDTH*FRACUNIT && h == BASEVIDHEIGHT*FRACUNIT)
+		{ // Clear the entire screen, from dest to deststop. Yes, this really works.
+#ifdef HWRENDER
+			if (rendermode == render_opengl)
+				goto fillscreen;
+#endif
+			memset(screens[0], (c&255), vid.width * vid.height * vid.bpp);
+			return;
+		}
+
+		x = (x * dupx) >> FRACBITS;
+		y = (y * dupy) >> FRACBITS;
+		w = (w * dupx) >> FRACBITS;
+		h = (h * dupy) >> FRACBITS;
+
+		// Center it if necessary
+		V_AdjustXYWithSnap(&x, &y, c, dupx, dupy);
+	}
+	else
+	{
+		x >>= FRACBITS;
+		y >>= FRACBITS;
+		w >>= FRACBITS;
+		h >>= FRACBITS;
+	}
+
+	INT32 left, right, top, bottom;
+	V_GetClipBounds(&left, &right, &top, &bottom);
+
+	if (x >= right || y >= bottom)
+		return; // off the screen
+
+	if (x < left)
+	{
+		w += x - left;
+		x = left;
+	}
+	if (y < top)
+	{
+		h += y - top;
+		y = top;
+	}
+
+	if (w <= 0 || h <= 0)
+		return; // zero width/height wouldn't draw anything
+	if (x + w > right)
+		w = right - x;
+	if (y + h > bottom)
+		h = bottom - y;
 
 #ifdef HWRENDER
 	//if (rendermode != render_soft && !con_startup)		// Not this again
 	if (rendermode == render_opengl)
 	{
+fillscreen:
 		HWR_DrawFill(x, y, w, h, c);
 		return;
 	}
 #endif
-
-	if (!(c & V_NOSCALESTART))
-	{
-		INT32 dupx = vid.dupx, dupy = vid.dupy;
-
-		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
-		{ // Clear the entire screen, from dest to deststop. Yes, this really works.
-			memset(screens[0], (c&255), vid.width * vid.height * vid.bpp);
-			return;
-		}
-
-		x *= dupx;
-		y *= dupy;
-		w *= dupx;
-		h *= dupy;
-
-		// Center it if necessary
-		V_AdjustXYWithSnap(&x, &y, c, dupx, dupy);
-	}
-
-	if (x >= vid.width || y >= vid.height)
-		return; // off the screen
-
-	if (x < 0)
-	{
-		w += x;
-		x = 0;
-	}
-	if (y < 0)
-	{
-		h += y;
-		y = 0;
-	}
-
-	if (w <= 0 || h <= 0)
-		return; // zero width/height wouldn't draw anything
-	if (x + w > vid.width)
-		w = vid.width - x;
-	if (y + h > vid.height)
-		h = vid.height - y;
 
 	dest = screens[0] + y*vid.width + x;
 	deststop = screens[0] + vid.rowbytes * vid.height;

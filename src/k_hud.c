@@ -3047,44 +3047,11 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 	const INT32 namelen = V_ThinStringWidth(player_names[p - players], V_6WIDTHSPACE|V_ALLOWLOWERCASE);
 
 	UINT8 *colormap = V_GetStringColormap(clr);
-	INT32 barx = 0, bary = 0, barw = 0;
-
-	UINT8 cnum = R_GetViewNumber();
-
-	// Since there's no "V_DrawFixedFill", and I don't feel like making it,
-	// fuck it, we're gonna just V_NOSCALESTART hack it
-	if (cnum & 1)
-	{
-		x += (BASEVIDWIDTH/2) * FRACUNIT;
-	}
-
-	if ((r_splitscreen == 1 && cnum == 1)
-	|| (r_splitscreen > 1 && cnum > 1))
-	{
-		y += (BASEVIDHEIGHT/2) * FRACUNIT;
-	}
-
-	barw = (namelen * vid.dupx);
-
-	barx = (x * vid.dupx) / FRACUNIT;
-	bary = (y * vid.dupy) / FRACUNIT;
-
-	barx += (6 * vid.dupx);
-	bary -= (16 * vid.dupx);
-
-	// Center it if necessary
-	if (vid.width != BASEVIDWIDTH * vid.dupx)
-	{
-		barx += (vid.width - (BASEVIDWIDTH * vid.dupx)) / 2;
-	}
-
-	if (vid.height != BASEVIDHEIGHT * vid.dupy)
-	{
-		bary += (vid.height - (BASEVIDHEIGHT * vid.dupy)) / 2;
-	}
+	INT32 barx = x + 6*FRACUNIT, bary = y - 16*FRACUNIT, barw = namelen*FRACUNIT;
+	UINT8 backcolor = colormap ? colormap[31] : 31, frontcolor = colormap ? colormap[0] : 0;
+	INT32 vflags = V_SPLITSCREEN;
 
 	// Lat: 10/06/2020: colormap can be NULL on the frame you join a game, just arbitrarily use palette indexes 31 and 0 instead of whatever the colormap would give us instead to avoid crashes.
-
 
 	// Draw the stem
 	{
@@ -3098,38 +3065,25 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 			flipped = (p->mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
 		else
 			flipped = p->mo->eflags & MFE_VERTICALFLIP;*/
-		stemx = (x * vid.dupx) / FRACUNIT;
-		stemy = (y * vid.dupy) / FRACUNIT;
-
-		// Center it if necessary
-		if (vid.width != BASEVIDWIDTH * vid.dupx)
-		{
-			stemx += (vid.width - (BASEVIDWIDTH * vid.dupx)) / 2;
-		}
-
-		if (vid.height != BASEVIDHEIGHT * vid.dupy)
-		{
-			stemy += (vid.height - (BASEVIDHEIGHT * vid.dupy)) / 2;
-		}
+		stemx = x;
+		stemy = y;
 
 		for	(j = 0; j < 4; j++)
 		{
-			stemy -= vid.dupy*4;
-			V_DrawFill(stemx, stemy, vid.dupy*3, vid.dupy*4, (colormap ? colormap[31] : 31)|V_NOSCALESTART);
-			V_DrawFill(stemx+vid.dupx, stemy + vid.dupy, vid.dupy, vid.dupy*4, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
-			stemx += vid.dupx;
+			fixed_t last = j == 3 ? FRACUNIT : 0;
+			stemy -= FRACUNIT*4;
+			V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
+			V_DrawFixedFill(stemx + FRACUNIT, stemy + last, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
+			stemx += FRACUNIT;
 		}
 
-		V_DrawFill(barx, bary, barw, (3 * vid.dupy), (colormap ? colormap[31] : 31)|V_NOSCALESTART);
-		V_DrawFill(barx, bary + vid.dupy, barw, vid.dupy, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
-		V_DrawFill(stemx+vid.dupx, stemy+vid.dupy, barw - vid.dupx*3, vid.dupy, (colormap ? colormap[0] : 0)|V_NOSCALESTART);
+		V_DrawFixedFill(barx, bary, barw, 3*FRACUNIT, vflags|backcolor);
+		V_DrawFixedFill(barx - FRACUNIT, bary + FRACUNIT, barw, FRACUNIT, vflags|frontcolor);
 	}
 	// END DRAWFILL DUMBNESS
 
-
-
 	// Draw the name itself
-	V_DrawThinStringAtFixed(x + (5*FRACUNIT), y - (26*FRACUNIT), V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
+	V_DrawThinStringAtFixed(x + (5*FRACUNIT), y - (26*FRACUNIT), vflags|V_6WIDTHSPACE|V_ALLOWLOWERCASE|clr, player_names[p - players]);
 }
 
 typedef struct weakspotdraw_t
@@ -3190,29 +3144,7 @@ static void K_drawKartNameTags(void)
 	}
 
 	// Crop within splitscreen bounds
-	switch (r_splitscreen)
-	{
-		case 1:
-			V_SetClipRect(
-				0,
-				cnum == 1 ? (BASEVIDHEIGHT / 2) * FRACUNIT : 0,
-				BASEVIDWIDTH * FRACUNIT,
-				(BASEVIDHEIGHT / 2) * FRACUNIT,
-				0
-			);
-			break;
-
-		case 2:
-		case 3:
-			V_SetClipRect(
-				cnum & 1 ? (BASEVIDWIDTH / 2) * FRACUNIT : 0,
-				cnum > 1 ? (BASEVIDHEIGHT / 2) * FRACUNIT : 0,
-				(BASEVIDWIDTH / 2) * FRACUNIT,
-				(BASEVIDHEIGHT / 2) * FRACUNIT,
-				0
-			);
-			break;
-	}
+	V_SetClipRectForPlayer(cnum);
 
 	c.x = viewx;
 	c.y = viewy;
@@ -3560,10 +3492,10 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
 }
 
-static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 size)
+static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 intsize)
 {
 	fixed_t amnumxpos, amnumypos;
-	INT32 amxpos, amypos;
+	fixed_t size = intsize * FRACUNIT;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
@@ -3571,16 +3503,10 @@ static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = (amnumxpos / FRACUNIT) + (minimapinfo.minimap_pic->width / 2);
-	amypos = (amnumypos / FRACUNIT) + (minimapinfo.minimap_pic->height / 2);
+	amnumxpos += minimapinfo.minimap_pic->width*FRACUNIT/2;
+	amnumypos += minimapinfo.minimap_pic->height*FRACUNIT/2;
 
-	if (flags & V_NOSCALESTART)
-	{
-		amxpos *= vid.dupx;
-		amypos *= vid.dupy;
-	}
-
-	V_DrawFill((amxpos + hudx) - (size / 2), (amypos + hudy) - (size / 2), size, size, flags | color);
+	V_DrawFixedFill((amnumxpos + hudx*FRACUNIT) - (size / 2), (amnumypos + hudy*FRACUNIT) - (size / 2), size, size, flags | color);
 }
 
 static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, INT32 flags)
@@ -3606,13 +3532,7 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 		pal = 0x40; // yellow
 	}
 
-	if (!(flags & V_NOSCALESTART))
-	{
-		hudx *= vid.dupx;
-		hudy *= vid.dupy;
-	}
-
-	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
+	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags, pal, size);
 }
 
 static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
@@ -3620,13 +3540,7 @@ static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 	UINT8 pal = 180; // Strong pink color.
 	UINT8 size = 6;
 
-	if (!(flags & V_NOSCALESTART))
-	{
-		hudx *= vid.dupx;
-		hudy *= vid.dupy;
-	}
-
-	K_drawKartMinimapDot(clusterpoint.x, clusterpoint.y, hudx, hudy, flags | V_NOSCALESTART, pal, size);
+	K_drawKartMinimapDot(clusterpoint.x, clusterpoint.y, hudx, hudy, flags, pal, size);
 }
 
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
@@ -3734,6 +3648,13 @@ static void K_drawKartMinimap(void)
 		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else
 		V_DrawScaledPatch(x, y, splitflags|minimaptrans, minimapinfo.minimap_pic);
+
+	// let offsets transfer to the heads, too!
+	if (encoremode)
+		x += SHORT(minimapinfo.minimap_pic->leftoffset);
+	else
+		x -= SHORT(minimapinfo.minimap_pic->leftoffset);
+	y -= SHORT(minimapinfo.minimap_pic->topoffset);
 
 	// initialize
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
