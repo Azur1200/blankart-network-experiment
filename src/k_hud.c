@@ -1168,8 +1168,8 @@ void K_getMinimapDrawinfo(drawinfo_t *out)
 {
 	INT32 fx = MINI_X, fy = MINI_Y, fflags = (r_splitscreen < 2 ? V_SNAPTORIGHT : 0);	// flags should only be 0 when it's centered (4p split)
 
-	fx -= SHORT(minimapinfo.minimap_pic->width)/2;
-	fy -= SHORT(minimapinfo.minimap_pic->height)/2;
+	fx -=minimapinfo.minimap_pic->width/2;
+	fy -=minimapinfo.minimap_pic->height/2;
 
 	out->x = fx;
 	out->y = fy;
@@ -1689,7 +1689,7 @@ static void K_DrawKartPositionNum(INT32 num)
 
 	boolean win = (stplyr->exiting && num == 1);
 	//INT32 X = POSI_X;
-	INT32 W = SHORT(kp_positionnum[0][0]->width);
+	INT32 W = kp_positionnum[0][0]->width;
 	fixed_t scale = FRACUNIT;
 	patch_t *localpatch = kp_positionnum[0][0];
 	INT32 fx = 0, fy = 0, fflags = 0;
@@ -1815,8 +1815,8 @@ static void K_DrawKartPositionNum(INT32 num)
 		}
 
 		V_DrawFixedPatch(
-			(fx<<FRACBITS) + ((overtake && flipdraw) ? (SHORT(localpatch->width)*scale/2) : 0),
-			(fy<<FRACBITS) + ((overtake && flipvdraw) ? (SHORT(localpatch->height)*scale/2) : 0),
+			(fx<<FRACBITS) + ((overtake && flipdraw) ? (localpatch->width)*scale/2 : 0),
+			(fy<<FRACBITS) + ((overtake && flipvdraw) ? (localpatch->height)*scale/2 : 0),
 			scale, addOrSub|V_HUDTRANSHALF|fflags, localpatch, NULL
 		);
 		// ^ if we overtake as p1 or p3 in splitscren, we shift it so that it doesn't go off screen.
@@ -2801,7 +2801,7 @@ static void K_drawKartWanted(void)
 	}
 	else if (r_splitscreen == 3) // 4P splitscreen...
 	{
-		basex = BASEVIDWIDTH/2 - (SHORT(kp_wantedsplit->width)/2);	// center on screen
+		basex = BASEVIDWIDTH/2 - (kp_wantedsplit->width/2);	// center on screen
 		basey = BASEVIDHEIGHT - 55;
 		//basey2 = 4;
 	}
@@ -3423,8 +3423,8 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx,
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(icon->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(icon->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-icon->width)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-icon->height)/2)<<FRACBITS);
 
 	if (cv_minihead.value && !(icon == kp_minimapdot))
 	{
@@ -3461,13 +3461,8 @@ static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, INT32 hudx, I
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-48)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-24)/2)<<FRACBITS);
-
-	if (cv_minihead.value)
-	{
-		amxpos -= 1 * FRACUNIT;
-	}
+	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-48)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-24)/2)<<FRACBITS);
 
 	V_DrawFixedPatch(amxpos, amypos, scale, flags|V_ADD, icon, colormap);
 }
@@ -3509,8 +3504,8 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 
 	skin = ((skin_t*)player->mo->skin)-skins;
 
-	amxpos = amnumxpos + ((hudx + (SHORT(minimapinfo.minimap_pic->width)-SHORT(faceprefix[skin][FACE_MINIMAP]->width))/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (SHORT(minimapinfo.minimap_pic->height)-SHORT(faceprefix[skin][FACE_MINIMAP]->height))/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-faceprefix[skin][FACE_MINIMAP]->width)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
 
 	const char *player_name = va("%s",player_names[player - players]);
 	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
@@ -3527,8 +3522,8 @@ static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, 
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = (amnumxpos / FRACUNIT) + (SHORT(minimapinfo.minimap_pic->width) / 2);
-	amypos = (amnumypos / FRACUNIT) + (SHORT(minimapinfo.minimap_pic->height) / 2);
+	amxpos = (amnumxpos / FRACUNIT) + (minimapinfo.minimap_pic->width / 2);
+	amypos = (amnumypos / FRACUNIT) + (minimapinfo.minimap_pic->height / 2);
 
 	if (flags & V_NOSCALESTART)
 	{
@@ -3687,7 +3682,7 @@ static void K_drawKartMinimap(void)
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
 	if (encoremode)
-		V_DrawScaledPatch(x+SHORT(minimapinfo.minimap_pic->width), y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
+		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else
 		V_DrawScaledPatch(x, y, splitflags|minimaptrans, minimapinfo.minimap_pic);
 
@@ -4088,7 +4083,7 @@ static void K_drawKartStartCountdown(void)
 		if (r_splitscreen) // splitscreen
 			pnum += 10;
 
-		V_DrawScaledPatch(STCD_X - (SHORT(kp_startcountdown[pnum]->width)/2), STCD_Y - (SHORT(kp_startcountdown[pnum]->height)/2), V_SPLITSCREEN, kp_startcountdown[pnum]);
+		V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), V_SPLITSCREEN, kp_startcountdown[pnum]);
 	}
 }
 
@@ -4105,7 +4100,7 @@ static void K_drawKartFinish(void)
 	if (r_splitscreen > 1) // 3/4p, stationary FIN
 	{
 		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (SHORT(kp_racefinish[pnum]->width)/2), STCD_Y - (SHORT(kp_racefinish[pnum]->height)/2), splitflags, kp_racefinish[pnum]);
+		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
 		return;
 	}
 
@@ -4117,7 +4112,7 @@ static void K_drawKartFinish(void)
 			pnum += 4;
 
 		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (SHORT(kp_racefinish[pnum]->width)<<FRACBITS);
+		xval = (kp_racefinish[pnum]->width)<<FRACBITS;
 
 		pwidth = max(xval, x);
 
@@ -4131,7 +4126,7 @@ static void K_drawKartFinish(void)
 			interpx = -interpx;
 
 		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
-			(STCD_Y<<FRACBITS) - (SHORT(kp_racefinish[pnum]->height)<<(FRACBITS-1)),
+			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
 			FRACUNIT,
 			splitflags, kp_racefinish[pnum], NULL);
 	}
@@ -5271,7 +5266,7 @@ void K_drawKartHUD(void)
 		return;
 
 	if (gametype == GT_BATTLE && !r_splitscreen && (stplyr->karthud[khud_yougotem] % 2)) // * YOU GOT EM *
-		V_DrawScaledPatch(BASEVIDWIDTH/2 - (SHORT(kp_yougotem->width)/2), 32, V_HUDTRANS, kp_yougotem);
+		V_DrawScaledPatch(BASEVIDWIDTH/2 - (kp_yougotem->width/2), 32, V_HUDTRANS, kp_yougotem);
 
 	// Draw FREE PLAY.
 	if (islonesome)

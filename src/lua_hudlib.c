@@ -762,10 +762,10 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
-		mx += SHORT(minimapinfo.minimap_pic->leftoffset);
+		mx += minimapinfo.minimap_pic->leftoffset;
 	else
-		mx -= SHORT(minimapinfo.minimap_pic->leftoffset);
-	my -= SHORT(minimapinfo.minimap_pic->topoffset);
+		mx -= minimapinfo.minimap_pic->leftoffset;
+	my -= minimapinfo.minimap_pic->topoffset;
 
 	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
 
