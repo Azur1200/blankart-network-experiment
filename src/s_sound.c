@@ -1525,7 +1525,7 @@ ReadMusicDefFields
 			}
 			else if (!stricmp(stoken, "volume"))
 			{
-				def->volume = atoi(textline);
+				def->volume = atoi(textline) / VOLUME_DIVIDER;
 				def->legacy = false;
 			}
 			else if (!stricmp(stoken, "contentidunsafe"))
