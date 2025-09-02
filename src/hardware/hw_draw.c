@@ -1134,10 +1134,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 
 	if (!(color & V_NOSCALESTART))
 	{
-		float dupx = (float)vid.dupx, dupy = (float)vid.dupy;
-		INT32 intx, inty;
-
-		if (x == 0 && y == 0 && w == BASEVIDWIDTH && h == BASEVIDHEIGHT)
+		if (x == 0 && y == 0 && w == BASEVIDWIDTH*FRACUNIT && h == BASEVIDHEIGHT*FRACUNIT)
 		{
 			RGBA_t rgbaColour = V_GetColor(color);
 			FRGBAFloat clearColour;
@@ -1148,38 +1145,7 @@ void HWR_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color)
 			HWD.pfnClearBuffer(true, false, &clearColour);
 			return;
 		}
-
-		fx *= dupx;
-		fy *= dupy;
-		fw *= dupx;
-		fh *= dupy;
-
-		intx = (INT32)fx;
-		inty = (INT32)fy;
-		V_AdjustXYWithSnap(&intx, &inty, color, dupx, dupy);
-		fx = (float)intx;
-		fy = (float)inty;
 	}
-
-	if (fx >= vid.width || fy >= vid.height)
-		return;
-	if (fx < 0)
-	{
-		fw += fx;
-		fx = 0;
-	}
-	if (fy < 0)
-	{
-		fh += fy;
-		fy = 0;
-	}
-
-	if (fw <= 0 || fh <= 0)
-		return;
-	if (fx + fw > vid.width)
-		fw = (float)vid.width - fx;
-	if (fy + fh > vid.height)
-		fh = (float)vid.height - fy;
 
 	fx = -1 + fx / (vid.width / 2);
 	fy = 1 - fy / (vid.height / 2);

@@ -184,6 +184,7 @@ struct cliprect_t
 
 const cliprect_t *V_GetClipRect(void);
 void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags);
+void V_SetClipRectForPlayer(UINT8 pnum);
 void V_ClearClipRect(void);
 
 // defines for old functions
@@ -211,7 +212,8 @@ void V_DrawContinueIcon(INT32 x, INT32 y, INT32 flags, INT32 skinnum, UINT16 ski
 void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const UINT8 *src);
 
 // fill a box with a single color
-void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c);
+#define V_DrawFill(x,y,w,h,c) V_DrawFixedFill((x)<<FRACBITS, (y)<<FRACBITS, (w)<<FRACBITS, (h)<<FRACBITS, c)
+void V_DrawFixedFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c);
 void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c);
 // fill a triangle with a single color
 void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c);
