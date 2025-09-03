@@ -255,7 +255,10 @@ static SDL_bool Impl_RenderContextReset(void)
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
+// Thanks Debian....
+#if SDL_VERSION_ATLEAST(2,28,0)
 		SDL_DestroyWindowSurface(window); // workaround for a bug in sdl
+#endif
 		texture = NULL; // Destroying a renderer also destroys all of its textures
 	}
 	renderer = NULL;
