@@ -3212,7 +3212,7 @@ void G_BeginLevelExit(void)
 	{
 		g_exit.losing = false; // never force a retry
 	}
-	else if (bossinfo.boss == true)
+	else
 	{
 		UINT8 i;
 
@@ -3227,14 +3227,6 @@ void G_BeginLevelExit(void)
 				}
 			}
 		}
-	}
-	else if (grandprixinfo.gp == true && grandprixinfo.eventmode == GPEVENT_NONE)
-	{
-		g_exit.losing = (grandprixinfo.wonround != true);
-	}
-	else if (grandprixinfo.gp == true && grandprixinfo.eventmode == GPEVENT_NONE)
-	{
-		g_exit.losing = (grandprixinfo.wonround != true);
 	}
 
 	if (g_exit.losing)
