@@ -121,7 +121,6 @@ static SDL_bool disable_mouse = SDL_FALSE;
 static      INT32        mousemovex = 0, mousemovey = 0;
 
 // SDL vars
-static      SDL_Surface *vidSurface = NULL;
 static      UINT32    localPalette[256];
 static       SDL_bool    wrapmouseok = SDL_FALSE;
 #define HalfWarpMouse(x,y) if (wrapmouseok) SDL_WarpMouseInWindow(window, (Uint16)(x/2),(Uint16)(y/2))
@@ -256,18 +255,13 @@ static SDL_bool Impl_RenderContextReset(void)
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
+		SDL_DestroyWindowSurface(window); // workaround for a bug in sdl
 		texture = NULL; // Destroying a renderer also destroys all of its textures
 	}
 	renderer = NULL;
 
 	if (Impl_RenderContextCreate() == SDL_FALSE)
 		return SDL_FALSE;
-
-	if (vidSurface != NULL)
-	{
-		SDL_FreeSurface(vidSurface);
-		vidSurface = NULL;
-	}
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -303,23 +297,10 @@ static void Impl_SetSoftwareVsync(int vsync)
 
 static void Impl_VideoSetupSurfaces(int width, int height)
 {
-	int bpp;
 	int sw_texture_format = SDL_PIXELFORMAT_ABGR8888;
 
 	if (texture == NULL)
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
-
-	// Set up SW surface
-	if (vidSurface == NULL)
-	{
-		Uint32 rmask;
-		Uint32 gmask;
-		Uint32 bmask;
-		Uint32 amask;
-
-		SDL_PixelFormatEnumToMasks(sw_texture_format, &bpp, &rmask, &gmask, &bmask, &amask);
-		vidSurface = SDL_CreateRGBSurface(0, width, height, bpp, rmask, gmask, bmask, amask);
-	}
 }
 
 static void Impl_SetupSoftwareBuffer(void)
@@ -564,35 +545,6 @@ void I_UpdateMouseGrab(void)
 static void VID_Command_NumModes_f (void)
 {
 	CONS_Printf(M_GetText("%d video mode(s) available(s)\n"), VID_NumModes());
-}
-
-// SDL2 doesn't have SDL_GetVideoSurface or a lot of the SDL_Surface flags that SDL 1.2 had
-static void SurfaceInfo(const SDL_Surface *infoSurface, const char *SurfaceText)
-{
-	INT32 vfBPP;
-
-	if (!infoSurface)
-		return;
-
-	if (!SurfaceText)
-		SurfaceText = M_GetText("Unknown Surface");
-
-	vfBPP = infoSurface->format?infoSurface->format->BitsPerPixel:0;
-
-	CONS_Printf("\x82" "%s\n", SurfaceText);
-	CONS_Printf(M_GetText(" %ix%i at %i bit color\n"), infoSurface->w, infoSurface->h, vfBPP);
-
-	if (infoSurface->flags&SDL_PREALLOC)
-		CONS_Printf("%s", M_GetText(" Uses preallocated memory\n"));
-	else
-		CONS_Printf("%s", M_GetText(" Stored in system memory\n"));
-	if (infoSurface->flags&SDL_RLEACCEL)
-		CONS_Printf("%s", M_GetText(" Colorkey RLE acceleration blit\n"));
-}
-
-static void VID_Command_Info_f (void)
-{
-	SurfaceInfo(vidSurface, M_GetText("Current Video Mode"));
 }
 
 static void VID_Command_ModeList_f(void)
@@ -1328,18 +1280,21 @@ void I_FinishUpdate(void)
 
 	if (rendermode == render_soft && screens[0])
 	{
-		SDL_LockSurface(vidSurface);
-		// copy pixels ourselves to the video surface (prevents a crash in libsdl)
-		UINT32 *restrict dst = (UINT32*)vidSurface->pixels;
-		const UINT8 *restrict src = screens[0];
-		const INT32 count = vid.width * vid.height;
-		for (INT32 i = 0; i < count; i++)
-			*dst++ = localPalette[*src++];
-		SDL_UnlockSurface(vidSurface);
-		// Fury -- there's no way around UpdateTexture, the GL backend uses it anyway
-		SDL_LockSurface(vidSurface);
-		SDL_UpdateTexture(texture, &src_rect, vidSurface->pixels, vidSurface->pitch);
-		SDL_UnlockSurface(vidSurface);
+		void *pixels;
+		int pitch;
+		SDL_LockTexture(texture, NULL, &pixels, &pitch);
+		int step = pitch / 4 - vid.width;
+		UINT32 *restrict dst = (UINT32*)pixels;
+		UINT8 *restrict src = screens[0];
+		UINT32 *restrict palette = localPalette;
+		for (int32_t y = 0; y < vid.height; y++)
+		{
+			UINT8 *restrict end = src + vid.width;
+			do *dst++ = palette[*src++];
+			while (src < end);
+			dst += step;
+		}
+		SDL_UnlockTexture(texture);
 
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, &src_rect, NULL);
@@ -1630,7 +1585,6 @@ void I_RegisterSysCommands(void)
 		return;
 
 	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_info", VID_Command_Info_f);
 	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
 	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
 	CV_RegisterVar (&cv_vidwait);
@@ -1743,7 +1697,6 @@ void I_StartupGraphics(void)
 	I_ShutdownTTF();
 #endif
 
-	VID_Command_Info_f();
 	SDLdoUngrabMouse();
 
 	SDL_RaiseWindow(window);
@@ -1820,12 +1773,6 @@ void I_ShutdownGraphics(void)
 		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
 #endif
-	if (rendermode == render_soft)
-	{
-		if (vidSurface)
-			SDL_FreeSurface(vidSurface);
-		vidSurface = NULL;
-	}
 
 	free(vid.buffer);
 	vid.buffer = NULL;
