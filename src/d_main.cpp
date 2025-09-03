@@ -76,6 +76,7 @@
 // SRB2Kart
 #include "k_grandprix.h"
 #include "k_boss.h"
+#include "k_hud.h"
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
@@ -1212,6 +1213,10 @@ void D_StartTitle(void)
 
 	// Reset GP
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
+
+	// Reset Server mods
+	numcustomservermods = 0;
+	memset(customservermods, 0, sizeof(customservermods));
 
 	// Reset boss info
 	K_ResetBossInfo();

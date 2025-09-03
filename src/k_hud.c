@@ -2208,6 +2208,56 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	return x+rightoffset;
 }
 
+servermods_t customservermods[MAXSERVERMODS];
+UINT8 numcustomservermods = 0;
+
+// Adds a new mod to the scoreboard display.
+void K_AddNewScoreboardMod(const char *name, const consvar_t *cvar, SINT8 active)
+{
+	UINT32 hashcompare = HASH32(name, MAXSERVERMODNAME);
+	UINT8 i;
+
+	for (i = 0; i < MAXSERVERMODS; i++)
+	{
+		if (customservermods[i].hash == hashcompare)
+		{
+			CONS_Alert(CONS_WARNING, "Scoreboard mod '%s' has already been added to the scoreboard.\n", name);
+			return;
+		}
+	}
+
+	if (numcustomservermods+1 == MAXSERVERMODS)
+	{
+		CONS_Alert(CONS_ERROR, "Maximum Amount of scoreboard mods has been reached.\n");
+		return;
+	}
+
+	strncpy(customservermods[numcustomservermods].modname, name, MAXSERVERMODNAME);
+	customservermods[numcustomservermods].hash = hashcompare;
+	customservermods[numcustomservermods].cvar = cvar;
+	customservermods[numcustomservermods].active = CLAMP(active, SCOREBOARDMOD_NOTUSED, SCOREBOARDMOD_ACTIVE);
+	customservermods[numcustomservermods].valid = true;
+	numcustomservermods++;
+}
+
+// Change the status of static scoreboard displays.
+void K_SetScoreboardModStatus(const char *name, SINT8 active)
+{
+	UINT32 hashcompare = HASH32(name, MAXSERVERMODNAME);
+	UINT8 i;
+
+	for (i = 0; i < MAXSERVERMODS; i++)
+	{
+		if (customservermods[i].hash == hashcompare)
+		{
+			customservermods[i].active = CLAMP(active, SCOREBOARDMOD_NOTUSED, SCOREBOARDMOD_ACTIVE);
+			return;
+		}
+	}
+
+	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
+}
+
 #define BASEMODS 11
 void K_DrawServerMods(INT32 x, INT32 y)
 {
@@ -2217,23 +2267,23 @@ void K_DrawServerMods(INT32 x, INT32 y)
 
 	servermods_t basemods[BASEMODS] =
 	{
-		{"Rings", NULL, K_RingsActive() > 0, true},
-		{"4-Tier Drifts", NULL, K_PurpleDriftActive() > 0, true},
-		{"Slipdash", NULL, K_SlipdashActive() > 0, true},
-		{"Stacking", NULL, K_StackingActive() > 0, true},
-		{"Chaining", NULL, K_ChainingActive() > 0, true},
-		{"Chain Offroad", &cv_kartchainingoffroad, -1, true},
-		{"Slope Boost", NULL, K_PurpleDriftActive() > 0, true},
-		{"Drafting", NULL, K_PurpleDriftActive() > 0, true},
-		{"Bump Spark", &cv_kartbumpspark, -1, true},
-		{"Bump Spring", &cv_kartbumpspring, -1, true},
-		{"Alt. Invin.", NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
+		{"Rings", 0, NULL, K_RingsActive() > 0, true},
+		{"4-Tier Drifts", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Slipdash", 0, NULL, K_SlipdashActive() > 0, true},
+		{"Stacking", 0, NULL, K_StackingActive() > 0, true},
+		{"Chaining", 0, NULL, K_ChainingActive() > 0, true},
+		{"Chain Offroad", 0, &cv_kartchainingoffroad, -1, true},
+		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Drafting", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
+		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
+		{"Alt. Invin.", 0, NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
 	};
 
 	for (j = 0; j < 2; j++)
 	{
 		UINT8 modcount = j == 0 ? BASEMODS : numcustomservermods;
-		servermods_t *modslist = j == 0 ? basemods : connectedservercustommods;
+		servermods_t *modslist = j == 0 ? basemods : customservermods;
 
 		// Draw the the modlist.
 		for (i = 0; i < modcount; i++)
@@ -2246,7 +2296,7 @@ void K_DrawServerMods(INT32 x, INT32 y)
 				{
 					drawdis = true;
 				}
-				else if (modslist[i].active == 1)
+				else if (modslist[i].active == SCOREBOARDMOD_ACTIVE)
 				{
 					drawdis = true;
 				}
