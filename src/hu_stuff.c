@@ -2616,10 +2616,15 @@ static void HU_DrawRankings(void)
 #endif
 	}
 
-	INT32 xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
-
-	K_DrawServerDescrption(xoffset+10, 33);
-	//V_DrawThinString(xoffset+10, 33, V_SNAPTORIGHT|V_6WIDTHSPACE|V_ALLOWLOWERCASE, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+	if (cv_newtabranking.value)
+	{
+		INT32 xoffset = K_DrawNeoTabRankings(0, 33, tab, scorelines, whiteplayer, hilicol, true);
+		K_DrawServerDescrption(xoffset+10, 33);
+	}
+	else
+	{
+		K_DrawTabRankings(((scorelines > 8) ? 32 : 40), 33, tab, scorelines, whiteplayer, hilicol);
+	}
 
 	// draw spectators in a ticker across the bottom
 	if (netgame && G_GametypeHasSpectators())

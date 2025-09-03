@@ -45,7 +45,7 @@ applications may follow different packet versions.
 #define MAXSERVERCONTACT 320
 #define MAXSERVERDESCRIPTION 320
 #define MAXSERVERDESCRIPTIONLINE 40
-#define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!"
+#define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!\n"
 
 #define MAXSERVERMODS 255
 #define MAXSERVERMODNAME 13
@@ -54,7 +54,7 @@ struct servermods_t
 {
 	char modname[MAXSERVERMODNAME];
 	consvar_t *cvar;
-	SINT8 active; // -1 is N/A, 0 is off, 1 is on.
+	SINT8 active; // -1 is N/A (example:if using cvar activation), 0 is off, 1 is on.
 	boolean valid;
 };
 
