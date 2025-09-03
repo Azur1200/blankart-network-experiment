@@ -48,7 +48,18 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 #define P_AproxDistance(dx, dy) FixedHypot(dx, dy)
 void P_ClosestPointOnLine(fixed_t x, fixed_t y, const line_t *line, vertex_t *result);
 void P_ClosestPointOnLine3D(const vector3_t *p, const vector3_t *line, vector3_t *result);
-INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line);
+
+//
+// P_PointOnLineSide
+// Returns 0 or 1
+//
+FUNCMATH FUNCINLINE static ATTRINLINE INT32 P_PointOnLineSide(fixed_t x, fixed_t y, const line_t *line)
+{
+	// use cross product to determine side quickly
+	INT64 v = ((INT64)y - line->v1->y) * line->dx - ((INT64)x - line->v1->x) * line->dy;
+	return v > 0;
+}
+
 void P_MakeDivline(const line_t *li, divline_t *dl);
 
 struct opening_t
