@@ -7037,11 +7037,6 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 void M_AddMenuColor(UINT16 color) {
 	menucolor_t *c;
 
-	// SRB2Kart: I do not understand vanilla doesn't need this but WE do???!?!??!
-	if (!skincolors[color].accessible) {
-		return;
-	}
-
 	if (color >= numskincolors) {
 		CONS_Printf("M_AddMenuColor: color %d does not exist.",color);
 		return;

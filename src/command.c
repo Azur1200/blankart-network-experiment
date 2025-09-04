@@ -2234,9 +2234,13 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 		// Special case for the playercolor variable, used only directly from the menu
 		newvalue = var->value;
 		if (increment > 0) // Going up!
-			newvalue = M_GetColorAfter(newvalue);
+			do
+				newvalue = M_GetColorAfter(newvalue);
+			while (!skincolors[newvalue].accessible);
 		else if (increment < 0) // Going down!
-			newvalue = M_GetColorBefore(newvalue);
+			do
+				newvalue = M_GetColorBefore(newvalue);
+			while (!skincolors[newvalue].accessible);
 	}
 	else
 		newvalue = var->value + increment;

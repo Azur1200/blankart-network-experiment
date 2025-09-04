@@ -290,9 +290,9 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 		}
 		CONS_Printf("Skincolor SKINCOLOR_%s allocated.\n",word);
 		DEH_Link(word, &skincolors[numskincolors].info, &skincolornames);
-		M_AddMenuColor(numskincolors);
+		M_AddMenuColor(numskincolors++);
 		K_ReloadHUDColorCvar();
-		*out = numskincolors++;
+		*out = numskincolors;
 		return 0;
 	}
 	else if (fastcmp(type, "SPR2"))
