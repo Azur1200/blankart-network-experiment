@@ -4411,8 +4411,8 @@ static void PT_ServerInfoUpdate(SINT8 node)
 	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.serverinfoupdate))/* ignore partial sends */
 		return;
 
-	strncpy(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
-	strncpy(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
+	CopyCaretColors(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
+	CopyCaretColors(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, netbuffer->u.serverinfoupdate.serverdescription, MAXSERVERDESCRIPTION);
 }
 
@@ -4646,8 +4646,8 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 				memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
 
-				strncpy(connectedservername, netbuffer->u.servercfg.server_name, MAXSERVERNAME);
-				strncpy(connectedservercontact, netbuffer->u.servercfg.server_contact, MAXSERVERCONTACT);
+				CopyCaretColors(connectedservername, netbuffer->u.servercfg.server_name, MAXSERVERNAME);
+				CopyCaretColors(connectedservercontact, netbuffer->u.servercfg.server_contact, MAXSERVERCONTACT);
 				strncpy(connectedserverdescription, netbuffer->u.servercfg.server_description, MAXSERVERDESCRIPTION);
 			}
 

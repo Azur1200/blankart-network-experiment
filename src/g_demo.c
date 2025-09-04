@@ -3788,8 +3788,8 @@ void G_DoPlayDemo(char *defdemoname)
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
 
 	// Setup server name, contact and description.
-	strncpy(connectedservername, header.servername, MAXSERVERNAME);
-	strncpy(connectedservercontact, header.servercontact, MAXSERVERCONTACT);
+	CopyCaretColors(connectedservername, header.servername, MAXSERVERNAME);
+	CopyCaretColors(connectedservercontact, header.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
 
 	for (pnum = 0; pnum < header.numplayers; pnum++)
