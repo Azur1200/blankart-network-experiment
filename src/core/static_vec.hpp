@@ -41,7 +41,7 @@ public:
 
 	StaticVec(const StaticVec& rhs)
 	{
-		for (size_t i = size_; i > 0; i--)
+		for (size_t i = size_ - 1; i != SIZE_MAX; i--)
 		{
 			arr_[i] = T();
 		}
@@ -54,7 +54,7 @@ public:
 
 	StaticVec(StaticVec&& rhs) noexcept(std::is_nothrow_move_assignable_v<T>)
 	{
-		for (size_t i = size_; i > 0; i--)
+		for (size_t i = size_ - 1; i != SIZE_MAX; i--)
 		{
 			arr_[i] = T();
 		}
@@ -84,7 +84,7 @@ public:
 
 	StaticVec& operator=(const StaticVec& rhs)
 	{
-		for (size_t i = size_; i > 0; i--)
+		for (size_t i = size_ - 1; i != SIZE_MAX; i--)
 		{
 			arr_[i] = T();
 		}
@@ -98,7 +98,7 @@ public:
 
 	StaticVec& operator=(StaticVec&& rhs) noexcept(std::is_nothrow_move_constructible_v<T>)
 	{
-		for (size_t i = size_; i > 0; i--)
+		for (size_t i = size_ - 1; i != SIZE_MAX; i--)
 		{
 			arr_[i] = T();
 		}
