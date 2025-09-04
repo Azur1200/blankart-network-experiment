@@ -3671,79 +3671,6 @@ static void Got_Clearscores(UINT8 **cp, INT32 playernum)
 	CONS_Printf(M_GetText("Scores have been reset by the server.\n"));
 }
 
-ATTRINLINE static FUNCINLINE unsigned char GetColorChar(char *input, size_t *curpos)
-{
-	char c = input[*curpos++];
-	if (c == '^') // oh, nevermind then.
-		return '^';
-
-	if (c >= '0' && c <= '9')
-		return 0x80+(c-'0');
-
-	c = tolower(c);
-
-	if (c >= 'a' && c <= 'f')
-		return 0x80+10+(c-'a');
-
-	return 0x80; // Unhandled -- default to no color
-}
-
-ATTRINLINE static FUNCINLINE char GetHexChar(char *input, size_t *curpos)
-{
-	char c = input[*curpos++];
-	char endchr = 0;
-	if (c == '\\') // oh, nevermind then.
-		return '\\';
-
-	if (c >= '0' && c <= '9')
-		endchr += (c-'0') << 4;
-	else if (c >= 'A' && c <= 'F')
-		endchr += ((c-'A') + 10) << 4;
-	else if (c >= 'a' && c <= 'f')
-		endchr += ((c-'a') + 10) << 4;
-	else // invalid. stop and return a question mark.
-		return '?';
-
-	c = input[*curpos++];
-	if (c >= '0' && c <= '9')
-		endchr += (c-'0');
-	else if (c >= 'A' && c <= 'F')
-		endchr += ((c-'A') + 10);
-	else if (c >= 'a' && c <= 'f')
-		endchr += ((c-'a') + 10);
-	else // invalid. stop and return a question mark.
-		return '?';
-
-	return endchr;
-}
-
-static char *GetSpecialString(char *buf, char *input, size_t bufsize)
-{
-	size_t i = 0;
-	size_t currentpos = 0;
-	strncpy(buf, input, bufsize);
-
-	// we need one byte for a null terminated string
-	bufsize--;
-	while (i < bufsize)
-	{
-		char c = buf[currentpos++];
-		if (c == '^')
-		{
-			buf[i++] = GetColorChar(buf, &currentpos);
-			currentpos++;
-		}
-		/*else if (c == '\\')
-		{
-			buf[i++] = GetHexChar(buf, &currentpos);
-		}*/
-		else if (c != '\r')
-			buf[i++] = c;
-	}
-
-	return buf;
-}
-
 static void Command_ScoreboardAdd(void)
 {
 	if (!server)
@@ -3779,7 +3706,7 @@ static void Command_ScoreboardAdd(void)
 
 		finalstring = Z_Calloc(MAXSERVERDESCRIPTIONLINE*sizeof(char), PU_STATIC, NULL);
 
-		GetSpecialString(finalstring, message, MAXSERVERDESCRIPTIONLINE);
+		CopyCaretColors(finalstring, message, MAXSERVERDESCRIPTIONLINE);
 
 		strlensize = strlen(finalstring);
 		serverdesclen = strlen(connectedserverdescription);
