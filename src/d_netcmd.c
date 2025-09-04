@@ -59,6 +59,7 @@
 #include "k_pwrlv.h"
 #include "y_inter.h"
 #include "k_color.h"
+#include "k_hud.h"
 #include "k_grandprix.h"
 #include "k_boss.h"
 #include "k_follower.h"
@@ -102,6 +103,8 @@ static void Got_ScheduleTaskcmd(UINT8 **cp, INT32 playernum);
 static void Got_ScheduleClearcmd(UINT8 **cp, INT32 playernum);
 static void Got_Automatecmd(UINT8 **cp, INT32 playernum);
 static void Got_Cheat(UINT8 **cp, INT32 playernum);
+static void Command_ScoreboardAdd(void);
+static void Command_ScoreboardClear(void);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -817,6 +820,8 @@ void D_RegisterServerCommands(void)
 	RegisterNetXCmd(XD_AUTOMATE, Got_Automatecmd);
 
 	RegisterNetXCmd(XD_CHEAT, Got_Cheat);
+	COM_AddCommand("scoreboard_addline", Command_ScoreboardAdd);
+	COM_AddCommand("scoreboard_clear", Command_ScoreboardClear);
 
 	// Remote Administration
 	COM_AddCommand("password", Command_Changepassword_f);
@@ -3664,6 +3669,83 @@ static void Got_Clearscores(UINT8 **cp, INT32 playernum)
 		players[i].score = 0;
 
 	CONS_Printf(M_GetText("Scores have been reset by the server.\n"));
+}
+
+static void Command_ScoreboardAdd(void)
+{
+	if (!server)
+	{
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
+		return;
+	}
+
+	if (COM_Argc() < 2)
+	{
+		CONS_Printf(M_GetText("addscoreboard <text>: Add text to the scoreboard\n"));
+		return;
+	}
+
+	{
+		size_t i, j = COM_Argc();
+		char message[MAXSERVERDESCRIPTIONLINE+1];
+		char *finalstring;
+		INT32 strlensize = 0;
+		INT32 serverdesclen = 0;
+
+		// Steal from the motd code so you don't have to put the string in quotes.
+		strlcpy(message, COM_Argv(1), sizeof message);
+		for (i = 2; i < j; i++)
+		{
+			strlcat(message, " ", sizeof message);
+			strlcat(message, COM_Argv(i), sizeof message);
+		}
+
+		strlensize = strlen(message);
+		message[strlensize+1] = '\0';
+		message[MAXSERVERDESCRIPTIONLINE] = '\0';
+
+		finalstring = Z_Calloc(MAXSERVERDESCRIPTIONLINE*sizeof(char), PU_STATIC, NULL);
+
+		CopyCaretColors(finalstring, message, MAXSERVERDESCRIPTIONLINE);
+
+		strlensize = strlen(finalstring);
+		serverdesclen = strlen(connectedserverdescription);
+
+		if ((strlensize+1) > MAXSERVERDESCRIPTIONLINE)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Scoreboard line is too long to add.\n"));
+			Z_Free(finalstring);
+			return;
+		}
+
+		if ((serverdesclen + strlensize) > MAXSERVERDESCRIPTION)
+		{
+			CONS_Alert(CONS_WARNING, M_GetText("Scoreboard text is full so no more text can be added.\n"));
+			Z_Free(finalstring);
+			return;
+		}
+		else
+		{
+			strncat(connectedserverdescription, va("%s\n", finalstring), MAXSERVERDESCRIPTIONLINE);
+			CONS_Printf(M_GetText("Scoreboard text line has been added.\n"));
+		}
+
+		ServerInfoUpdateSend();
+		Z_Free(finalstring);
+	}
+}
+
+static void Command_ScoreboardClear(void)
+{
+	if (!server)
+	{
+		CONS_Printf(M_GetText("Only the server can use this.\n"));
+		return;
+	}
+
+	memset(&connectedserverdescription, 0, sizeof(connectedserverdescription));
+	ServerInfoUpdateSend();
+	CONS_Printf(M_GetText("Scoreboard text have been reset by the server.\n"));
 }
 
 // Team changing functions

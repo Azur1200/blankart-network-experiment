@@ -4349,6 +4349,29 @@ static int lib_kAwardScaledPlayerRings(lua_State *L)
 	return 0;
 }
 
+static int lib_kAddNewScoreboardMod(lua_State *L)
+{
+	const char *modname = luaL_checkstring(L, 1);
+	const char *cvarname =  lua_isnil(L, 2) ? NULL : luaL_checkstring(L, 2);
+	const consvar_t *cvar = lua_isnil(L, 2) ? NULL : CV_FindVar(cvarname);
+	SINT8 active = SCOREBOARDMOD_NOTUSED;
+
+	if (!cvarname || !cvar)
+		active = SCOREBOARDMOD_ACTIVE;
+
+	K_AddNewScoreboardMod(modname, cvar, active);
+	return 0;
+}
+
+static int lib_kSetScoreboardModStatus(lua_State *L)
+{
+	const char *modname = luaL_checkstring(L, 1);
+	SINT8 active = CLAMP(luaL_checkinteger(L, 2), SCOREBOARDMOD_NOTUSED, SCOREBOARDMOD_ACTIVE);
+
+	K_SetScoreboardModStatus(modname, active);
+	return 0;
+}
+
 static int lib_kPlayerUsesBotMovement(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
@@ -5256,6 +5279,10 @@ static luaL_Reg lib[] = {
 	{"K_GetForwardMove", lib_kGetForwardMove},
 	{"K_AwardPlayerRings", lib_kAwardPlayerRings},
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
+
+	// k_hud
+	{"K_AddNewScoreboardMod", lib_kAddNewScoreboardMod},
+	{"K_SetScoreboardModStatus", lib_kSetScoreboardModStatus},
 
 	// k_waypoint
 	{"K_NextRespawnWaypointIndex", lib_kNextRespawnWaypointIndex},

@@ -76,6 +76,7 @@
 // SRB2Kart
 #include "k_grandprix.h"
 #include "k_boss.h"
+#include "k_hud.h"
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
@@ -1213,6 +1214,10 @@ void D_StartTitle(void)
 	// Reset GP
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
 
+	// Reset Server mods
+	numcustomservermods = 0;
+	memset(customservermods, 0, sizeof(customservermods));
+
 	// Reset boss info
 	K_ResetBossInfo();
 
@@ -1968,8 +1973,6 @@ void D_SRB2Main(void)
 		M_PushSpecialParameters(); // push all "+" parameter at the command buffer
 
 		COM_BufExecute(); // ensure the command buffer gets executed before the map starts (+skin)
-
-		strncpy(connectedservername, cv_servername.string, MAXSERVERNAME);
 
 		if (M_CheckParm("-gametype") && M_IsNextParm())
 		{

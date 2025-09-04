@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0009
+#define DEMOVERSION 0x000A
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -244,6 +244,9 @@ typedef struct
 	UINT32 raflags;
 	UINT8 gametype;
 	UINT8 numlaps;
+	char servername[MAXSERVERNAME];
+	char servercontact[MAXSERVERCONTACT];
+	char serverdescription[MAXSERVERDESCRIPTION];
 
 	UINT8 numfiles;
 	demofile_t *files;
@@ -653,6 +656,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	UINT8 attack;
 	boolean kart = false, oldkart = false;
 	boolean raflag = true;
+	boolean serverinfo = true;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -662,6 +666,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 	header->raflags = 0;
+	memset(header->servername, 0, MAXSERVERNAME);
+	memset(header->servercontact, 0, MAXSERVERCONTACT);
+	memset(header->serverdescription, 0, MAXSERVERDESCRIPTION);
 	header->empty = false;
 
 	dp += 12;
@@ -676,6 +683,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
+		case 0x0009:
+			serverinfo = false;
+			break;
+
 		default: // too old, cannot support.
 			return HEADER_BADVERSION;
 		}
@@ -683,6 +694,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
 		raflag = false;
+		serverinfo = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -734,6 +746,13 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	if (raflag)
 	{
 		header->raflags = READUINT32(dp);
+	}
+
+	if (serverinfo)
+	{
+		READSTRINGN(dp, header->servername, MAXSERVERNAME);
+		READSTRINGN(dp, header->servercontact, MAXSERVERCONTACT);
+		READSTRINGN(dp, header->serverdescription, MAXSERVERDESCRIPTION);
 	}
 
 	if (oldkart)
@@ -2755,6 +2774,9 @@ void G_BeginRecording(void)
 
 	WRITEUINT8(demobuf.p, demoflags);
 	WRITEUINT32(demobuf.p, raflags);
+	WRITESTRINGN(demobuf.p, connectedservername, MAXSERVERNAME);
+	WRITESTRINGN(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
+	WRITESTRINGN(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
 	WRITEUINT8(demobuf.p, gametype & 0xFF);
 	WRITEUINT8(demobuf.p, numlaps);
 
@@ -3764,6 +3786,11 @@ void G_DoPlayDemo(char *defdemoname)
 
 	P_SetRandSeed(header.randseed);
 	G_InitNew(demoflags & DF_ENCORE, gamemap, true, true, false); // Doesn't matter whether you reset or not here, given changes to resetplayer.
+
+	// Setup server name, contact and description.
+	strncpy(connectedservername, header.servername, MAXSERVERNAME);
+	strncpy(connectedservercontact, header.servercontact, MAXSERVERCONTACT);
+	strncpy(connectedserverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
 
 	for (pnum = 0; pnum < header.numplayers; pnum++)
 	{

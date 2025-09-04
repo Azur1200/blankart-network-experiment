@@ -100,6 +100,8 @@ consvar_t cv_driftgaugeoffset = CVAR_INIT ("kartdriftgaugeoffset", "-10", CV_SAV
 static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
 
+consvar_t cv_newtabranking = CVAR_INIT ("newtabranking", "On", CV_SAVE, CV_OnOff, NULL);
+
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
 
@@ -254,6 +256,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_smoothposition);
 	CV_RegisterVar(&cv_driftgauge);
 	CV_RegisterVar(&cv_driftgaugeoffset);
+	CV_RegisterVar(&cv_newtabranking);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -2109,17 +2112,247 @@ static void K_drawBossHealthBar(void)
 }
 
 //
-// HU_DrawTabRankings -- moved here to take advantage of kart stuff!
+// K_DrawNeoTabRankings -- A new way to view ingame info!
+//	returns starting x of right offset for drawing your own info in there!
 //
+INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol, boolean split)
+{
+	INT32 i, rightoffset = split ? 160 - 6: BASEVIDWIDTH - 6;
+	const UINT8 *colormap = NULL;
+	UINT16 hightlightcolor = 0;
+	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
+	INT32 basey = y, basex = x, y2, x2;
+
+	scorelines--;
+
+	x += 4;
+	y += 9*scorelines;
+
+	V_DrawFill(1-duptweak, 26, dupadjust-2, 1, 0); // Draw a horizontal line because it looks nice!
+
+	if (split)
+	{
+		V_DrawFill(x + rightoffset + 6, 26, 1, 162, 0); // Draw a vertical line because it looks nice!
+	}
+
+	for (i = scorelines; i >= 0; i--)
+	{
+		INT32 pos = CLAMP(players[tab[i].num].position, 0 , MAXPLAYERS);
+		char playername[MAXPLAYERNAME+1];
+
+		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
+			continue; //ignore them.
+
+		if (netgame) // don't draw ping offline
+		{
+			if (players[tab[i].num].bot)
+			{
+				V_DrawThinString(x - 18 + 25, y, 0, "CPU");
+			}
+			else if (tab[i].num != serverplayer || !server_lagless)
+			{
+				INT32 xoff = cv_pingmeasurement.value == 1 ? 33 : 26;
+
+				HU_drawPing(x - 18 + xoff , y-10, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0, false);
+			}
+			else if (tab[i].num == serverplayer)
+			{
+				V_DrawThinString(x - 18 + 25, y, 0, "SRV");
+			}
+		}
+
+		STRBUFCPY(playername, tab[i].name);
+
+		if (players[tab[i].num].mo->color)
+		{
+			colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
+			if (players[tab[i].num].mo->colorized)
+				colormap = R_GetTranslationColormap(TC_RAINBOW, players[tab[i].num].mo->color, GTC_CACHE);
+			else
+				colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
+
+			hightlightcolor = skincolors[players[tab[i].num].mo->color].chatcolor;
+		}
+
+		V_DrawScaledPatch(x-5, y+1, 0, kp_facenum[pos]);
+
+		x2 = netgame ? x + (BASEVIDWIDTH/20) : x;
+		y2 = y;
+
+		V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+
+		V_DrawFixedPatch((x2+11)*FRACUNIT, (y+1)*FRACUNIT, FRACUNIT/2, 0, faceprefix[players[tab[i].num].skin][FACE_RANK], colormap);
+
+		/*if (gametype == GT_BATTLE && players[tab[i].num].bumper > 0) -- not enough space for this
+		{
+			INT32 bumperx = x+19;
+			V_DrawMappedPatch(bumperx-2, y-4, 0, kp_tinybumper[0], colormap);
+			for (j = 1; j < players[tab[i].num].bumper; j++)
+			{
+				bumperx += 5;
+				V_DrawMappedPatch(bumperx, y-4, 0, kp_tinybumper[1], colormap);
+			}
+		}*/
+
+		if (tab[i].num == whiteplayer)
+			V_DrawFixedPatch((x2+11)*FRACUNIT, (y+1)*FRACUNIT, FRACUNIT/2, 0, kp_facehighlight[(leveltime / 4) % 8], NULL);
+
+		if ((gametyperules & GTR_BUMPERS) && players[tab[i].num].bumper <= 0)
+			V_DrawScaledPatch(x2-4, y-7, 0, kp_ranknobumpers);
+
+		if (tab[i].string[0] != '\0')
+			V_DrawRightAlignedThinString(x+rightoffset+2, y, V_6WIDTHSPACE, tab[i].string);
+
+		y -= 9;
+	}
+	return x+rightoffset;
+}
+
+servermods_t customservermods[MAXSERVERMODS];
+UINT8 numcustomservermods = 0;
+
+// Adds a new mod to the scoreboard display.
+void K_AddNewScoreboardMod(const char *name, const consvar_t *cvar, SINT8 active)
+{
+	UINT32 hashcompare = HASH32(name, MAXSERVERMODNAME);
+	UINT8 i;
+
+	for (i = 0; i < MAXSERVERMODS; i++)
+	{
+		if (customservermods[i].hash == hashcompare)
+		{
+			CONS_Alert(CONS_WARNING, "Scoreboard mod '%s' has already been added to the scoreboard.\n", name);
+			return;
+		}
+	}
+
+	if (numcustomservermods+1 == MAXSERVERMODS)
+	{
+		CONS_Alert(CONS_ERROR, "Maximum Amount of scoreboard mods has been reached.\n");
+		return;
+	}
+
+	strncpy(customservermods[numcustomservermods].modname, name, MAXSERVERMODNAME);
+	customservermods[numcustomservermods].hash = hashcompare;
+	customservermods[numcustomservermods].cvar = cvar;
+	customservermods[numcustomservermods].active = CLAMP(active, SCOREBOARDMOD_NOTUSED, SCOREBOARDMOD_ACTIVE);
+	customservermods[numcustomservermods].valid = true;
+	numcustomservermods++;
+}
+
+// Change the status of static scoreboard displays.
+void K_SetScoreboardModStatus(const char *name, SINT8 active)
+{
+	UINT32 hashcompare = HASH32(name, MAXSERVERMODNAME);
+	UINT8 i;
+
+	for (i = 0; i < MAXSERVERMODS; i++)
+	{
+		if (customservermods[i].hash == hashcompare)
+		{
+			customservermods[i].active = CLAMP(active, SCOREBOARDMOD_NOTUSED, SCOREBOARDMOD_ACTIVE);
+			return;
+		}
+	}
+
+	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
+}
+
+#define BASEMODS 11
+void K_DrawServerMods(INT32 x, INT32 y)
+{
+	UINT8 i, j;
+	INT32 xoff = 0, yoff = 10;
+	UINT8 numdrawn = 0;
+
+	servermods_t basemods[BASEMODS] =
+	{
+		{"Rings", 0, NULL, K_RingsActive() > 0, true},
+		{"4-Tier Drifts", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Slipdash", 0, NULL, K_SlipdashActive() > 0, true},
+		{"Stacking", 0, NULL, K_StackingActive() > 0, true},
+		{"Chaining", 0, NULL, K_ChainingActive() > 0, true},
+		{"Chain Offroad", 0, &cv_kartchainingoffroad, -1, true},
+		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Drafting", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
+		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
+		{"Alt. Invin.", 0, NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
+	};
+
+	for (j = 0; j < 2; j++)
+	{
+		UINT8 modcount = j == 0 ? BASEMODS : numcustomservermods;
+		servermods_t *modslist = j == 0 ? basemods : customservermods;
+
+		// Draw the the modlist.
+		for (i = 0; i < modcount; i++)
+		{
+			boolean drawdis = false;
+
+			if (modslist[i].valid)
+			{
+				if (modslist[i].cvar && modslist[i].cvar->value)
+				{
+					drawdis = true;
+				}
+				else if (modslist[i].active == SCOREBOARDMOD_ACTIVE)
+				{
+					drawdis = true;
+				}
+
+				if (drawdis && modslist[i].modname[0] != '\0')
+				{
+					V_DrawSmallString(x+xoff, y+yoff, V_6WIDTHSPACE|V_ALLOWLOWERCASE, modslist[i].modname);
+					numdrawn++;
+
+					if ((numdrawn % 2) == 0)
+					{
+						xoff -= 50;
+						yoff += 5;
+					}
+					else if ((numdrawn % 1) == 0)
+					{
+						xoff += 50;
+					}
+				}
+			}
+		}
+	}
+
+	if (numdrawn > 0)
+		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, "Gameplay / Balance Changes:");
+
+}
+#undef BASEMODS
+
+void K_DrawServerDescrption(INT32 x, INT32 y)
+{
+	UINT8 i, newlinecount = 0;
+	if (connectedservername[0] != '\0')
+		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
+
+	V_DrawSmallString(x, y+10, V_6WIDTHSPACE|V_ALLOWLOWERCASE|V_GRAYMAP, va("Contact: %s", (connectedservercontact[0] != '\0') ? connectedservercontact : ""));
+
+	if (connectedserverdescription[0] != '\0')
+	{
+		V_DrawSmallString(x, y+20, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedserverdescription);
+
+		for (i = 0; connectedserverdescription[i]; i++)
+			newlinecount += (connectedserverdescription[i] == '\n');
+	}
+
+	K_DrawServerMods(x, y + 25 + newlinecount*6);
+}
+
+// The old school one....
 void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol)
 {
 	INT32 i, rightoffset = 240;
-	const UINT8 *colormap;
+	UINT8 *colormap = NULL;
+	UINT16 hightlightcolor = 0;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 	int basey = y, basex = x, y2;
-
-	//this function is designed for 9 or less score lines only
-	//I_Assert(scorelines <= 9); -- not today bitch, kart fixed it up
 
 	V_DrawFill(1-duptweak, 26, dupadjust-2, 1, 0); // Draw a horizontal line because it looks nice!
 
@@ -2139,7 +2372,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 
 	for (i = scorelines; i >= 0; i--)
 	{
-		char strtime[MAXPLAYERNAME+1];
+		char playername[MAXPLAYERNAME+1];
 
 		if (players[tab[i].num].spectator || !players[tab[i].num].mo)
 			continue; //ignore them.
@@ -2152,18 +2385,17 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 			}
 			else if (tab[i].num != serverplayer || !server_lagless)
 			{
-				HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0);
+				HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0, true);
+			}
+			else if (tab[i].num == serverplayer)
+			{
+				V_DrawString(x + ((i < 8) ? -25 : rightoffset + 3), y-2, V_SNAPTOLEFT, "SRV");
 			}
 		}
 
-		STRBUFCPY(strtime, tab[i].name);
+		STRBUFCPY(playername, tab[i].name);
 
 		y2 = y;
-
-		if (scorelines >= 8)
-			V_DrawThinString(x + 20, y2, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
-		else
-			V_DrawString(x + 20, y2, ((tab[i].num == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
 
 		if (players[tab[i].num].mo->color)
 		{
@@ -2173,18 +2405,26 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 			else
 				colormap = R_GetTranslationColormap(players[tab[i].num].skin, players[tab[i].num].mo->color, GTC_CACHE);
 
-			V_DrawMappedPatch(x, y-4, 0, faceprefix[players[tab[i].num].skin][FACE_RANK], colormap);
-			/*if (gametype == GT_BATTLE && players[tab[i].num].bumper > 0) -- not enough space for this
-			{
-				INT32 bumperx = x+19;
-				V_DrawMappedPatch(bumperx-2, y-4, 0, kp_tinybumper[0], colormap);
-				for (j = 1; j < players[tab[i].num].bumper; j++)
-				{
-					bumperx += 5;
-					V_DrawMappedPatch(bumperx, y-4, 0, kp_tinybumper[1], colormap);
-				}
-			}*/
+			hightlightcolor = skincolors[players[tab[i].num].mo->color].chatcolor;
 		}
+
+		if (scorelines >= 8)
+			V_DrawThinString(x + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
+		else
+			V_DrawString(x + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE, playername);
+
+		V_DrawMappedPatch(x, y-4, 0, faceprefix[players[tab[i].num].skin][FACE_RANK], colormap);
+
+		/*if (gametype == GT_BATTLE && players[tab[i].num].bumper > 0) -- not enough space for this
+		{
+			INT32 bumperx = x+19;
+			V_DrawMappedPatch(bumperx-2, y-4, 0, kp_tinybumper[0], colormap);
+			for (j = 1; j < players[tab[i].num].bumper; j++)
+			{
+				bumperx += 5;
+				V_DrawMappedPatch(bumperx, y-4, 0, kp_tinybumper[1], colormap);
+			}
+		}*/
 
 		if (tab[i].num == whiteplayer)
 			V_DrawScaledPatch(x, y-4, 0, kp_facehighlight[(leveltime / 4) % 8]);
@@ -2200,31 +2440,8 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 			V_DrawScaledPatch(x-5, y+6, 0, kp_facenum[pos]);
 		}
 
-		if (gametype == GT_RACE)
-		{
-#define timestring(time) va("%i'%02i\"%02i", G_TicsToMinutes(time, true), G_TicsToSeconds(time), G_TicsToCentiseconds(time))
-			if (scorelines >= 8)
-			{
-				if (players[tab[i].num].exiting)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, hilicol|V_6WIDTHSPACE, timestring(players[tab[i].num].realtime));
-				else if (players[tab[i].num].pflags & PF_NOCONTEST)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, "NO CONTEST.");
-				else if (circuitmap)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, va("Lap %d", tab[i].count));
-			}
-			else
-			{
-				if (players[tab[i].num].exiting)
-					V_DrawRightAlignedString(x+rightoffset, y, hilicol, timestring(players[tab[i].num].realtime));
-				else if (players[tab[i].num].pflags & PF_NOCONTEST)
-					V_DrawRightAlignedThinString(x+rightoffset, y-1, 0, "NO CONTEST.");
-				else if (circuitmap)
-					V_DrawRightAlignedString(x+rightoffset, y, 0, va("Lap %d", tab[i].count));
-			}
-#undef timestring
-		}
-		else
-			V_DrawRightAlignedString(x+rightoffset, y, 0, va("%u", tab[i].count));
+		if (tab[i].string[0] != '\0')
+			V_DrawRightAlignedThinString(x+rightoffset, y-1, V_6WIDTHSPACE, tab[i].string);
 
 		y -= 18;
 		if (i == 8)

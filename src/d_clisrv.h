@@ -41,6 +41,15 @@ applications may follow different packet versions.
 //  one that defines the actual packets to
 //  be transmitted.
 
+#define MAXSERVERNAME 32
+#define MAXSERVERCONTACT 320
+#define MAXSERVERDESCRIPTION 320
+#define MAXSERVERDESCRIPTIONLINE 40
+#define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!\n"
+
+// Sends over info via packets to client players.
+void ServerInfoUpdateSend(void);
+
 // Networking and tick handling related.
 #define BACKUPTICS 512 // more than enough for most timeouts....
 #define CLIENTBACKUPTICS 32
@@ -121,6 +130,8 @@ typedef enum
 	PT_LOGINAUTH,     // Challenge response from the client.
 
 	PT_PING,          // Packet sent to tell clients the other client's latency to server.
+
+	PT_SERVERINFOUPDATE, // Update server info for clients.
 	NUMPACKETTYPE
 } packettype_t;
 
@@ -211,6 +222,10 @@ struct serverconfig_pak
 	UINT8 maxplayer;
 	boolean allownewplayer;
 	boolean discordinvites;
+
+	char server_name[MAXSERVERNAME];
+	char server_contact[MAXSERVERCONTACT];
+	char server_description[MAXSERVERDESCRIPTION];
 } ATTRPACK;
 
 struct filetx_pak
@@ -259,7 +274,6 @@ struct clientconfig_pak
 #define SV_DEDICATED 0x40		// server is dedicated
 #define SV_LOTSOFADDONS 0x20	// flag used to ask for full file list in d_netfil
 
-#define MAXSERVERNAME 32
 #define MAXFILENEEDED 915
 #define MAX_MIRROR_LENGTH 256
 // This packet is too large
@@ -295,6 +309,13 @@ struct serverinfo_pak
 	INT16 avgpwrlv; // Kart avg power level
 	UINT8 fileneeded[MAXFILENEEDED]; // is filled with writexxx (byteptr.h)
 } ATTRPACK;
+
+struct serverinfoupdate_pak
+{
+	char servername[MAXSERVERNAME];
+	char servercontact[MAXSERVERCONTACT];
+	char serverdescription[MAXSERVERDESCRIPTION];
+};
 
 struct serverrefuse_pak
 {
@@ -365,28 +386,29 @@ struct doomdata_t
 	UINT8 reserved; // Padding
 	union
 	{
-		clientcmd_pak clientpak;            //         147 bytes
-		client2cmd_pak client2pak;          //         206 bytes
-		client3cmd_pak client3pak;          //         264 bytes(?)
-		client4cmd_pak client4pak;          //         324 bytes(?)
-		servertics_pak serverpak;           //      132495 bytes (more around 360, no?)
-		serverconfig_pak servercfg;         //         773 bytes
-		UINT8 textcmd[MAXTEXTCMD+2];        //       66049 bytes (wut??? 64k??? More like 258 bytes...)
-		char filetxpak[sizeof (filetx_pak)];//         139 bytes
+		clientcmd_pak clientpak;
+		client2cmd_pak client2pak;
+		client3cmd_pak client3pak;
+		client4cmd_pak client4pak;
+		servertics_pak serverpak;
+		serverconfig_pak servercfg;
+		UINT8 textcmd[MAXTEXTCMD+2];
+		char filetxpak[sizeof (filetx_pak)];
 		char fileack[sizeof (fileack_pak)];
 		UINT8 filereceived;
-		clientconfig_pak clientcfg;         //         136 bytes
+		clientconfig_pak clientcfg;
 		char salt[9];
 		UINT8 sha256sum[32];
-		serverinfo_pak serverinfo;          //        1024 bytes
-		serverrefuse_pak serverrefuse;      //       65025 bytes (somehow I feel like those values are garbage...)
-		askinfo_pak askinfo;                //          61 bytes
-		msaskinfo_pak msaskinfo;            //          22 bytes
-		plrinfo playerinfo[MSCOMPAT_MAXPLAYERS];//         576 bytes(?)
-		plrconfig playerconfig[MAXPLAYERS]; // (up to) 528 bytes(?)
-		INT32 filesneedednum;               //           4 bytes
-		filesneededconfig_pak filesneededcfg; //       ??? bytes
-		netinfo_pak netinfo;					// Don't believe their lies
+		serverinfo_pak serverinfo;
+		serverrefuse_pak serverrefuse;
+		serverinfoupdate_pak serverinfoupdate;
+		askinfo_pak askinfo;
+		msaskinfo_pak msaskinfo;
+		plrinfo playerinfo[MSCOMPAT_MAXPLAYERS];
+		plrconfig playerconfig[MAXPLAYERS];
+		INT32 filesneedednum;
+		filesneededconfig_pak filesneededcfg;
+		netinfo_pak netinfo;
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
 
@@ -452,7 +474,9 @@ extern boolean dedicated; // For dedicated server
 extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
-extern char connectedservername[MAXSERVERNAME+1];
+extern char connectedservername[MAXSERVERNAME];
+extern char connectedservercontact[MAXSERVERCONTACT];
+extern char connectedserverdescription[MAXSERVERDESCRIPTION];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
@@ -547,6 +571,8 @@ void CL_QueryServerList(msg_server_t *list);
 void CL_UpdateServerList(void);
 // Is there a game running
 boolean Playing(void);
+
+void CopyCaretColors (char *p, const char *s, int n);
 
 // Broadcasts special packets to other players
 //  to notify of game exit

@@ -160,7 +160,10 @@ static tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
 SINT8 joinnode = 0; // used for CL_VIEWSERVER
 
-char connectedservername[MAXSERVERNAME+1];
+char connectedservername[MAXSERVERNAME];
+char connectedservercontact[MAXSERVERCONTACT];
+char connectedserverdescription[MAXSERVERDESCRIPTION];
+
 /// \brief do we accept new players?
 /// \todo WORK!
 boolean acceptnewnode = true;
@@ -867,7 +870,7 @@ static boolean CL_SendJoin(void)
 	return HSendPacket(servernode, false, 0, sizeof (clientconfig_pak));
 }
 
-static void
+void
 CopyCaretColors (char *p, const char *s, int n)
 {
 	char *t;
@@ -1139,6 +1142,10 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.discordinvites = (boolean)cv_discordinvites.value;
 
 	memcpy(netbuffer->u.servercfg.server_context, server_context, 8);
+
+	strncpy(netbuffer->u.servercfg.server_name, cv_servername.string, MAXSERVERNAME);
+	strncpy(netbuffer->u.servercfg.server_contact, cv_server_contact.string, MAXSERVERCONTACT);
+	strncpy(netbuffer->u.servercfg.server_description, connectedserverdescription, MAXSERVERDESCRIPTION);
 
 	{
 		const size_t len = sizeof (serverconfig_pak);
@@ -3545,14 +3552,19 @@ void SV_ResetServer(void)
 	// clear server_context
 	memset(server_context, '-', 8);
 
+	memset(connectedservername, 0, MAXSERVERNAME);
+	memset(connectedservercontact, 0, MAXSERVERCONTACT);
+	memset(connectedserverdescription, 0, MAXSERVERDESCRIPTION);
+
 	CV_RevertNetVars();
 
 	DEBFILE("\n-=-=-=-=-=-=-= Server Reset =-=-=-=-=-=-=-\n\n");
 }
 
-static inline void SV_GenContext(void)
+static void SV_GenContext(void)
 {
 	UINT8 i;
+
 	// generate server_context, as exactly 8 bytes of randomly mixed A-Z and a-z
 	// (hopefully M_Random is initialized!! if not this will be awfully silly!)
 	for (i = 0; i < 8; i++)
@@ -3563,6 +3575,10 @@ static inline void SV_GenContext(void)
 		else // lowercase
 			server_context[i] = 'a'+(a-26);
 	}
+
+	CopyCaretColors(connectedservername, cv_servername.string, MAXSERVERNAME);
+	CopyCaretColors(connectedservercontact, cv_server_contact.string, MAXSERVERCONTACT);
+	strncpy(connectedserverdescription, DEFAULTDESCSTRING, MAXSERVERDESCRIPTION);
 }
 
 //
@@ -4365,6 +4381,40 @@ static void PT_LoginAuth(SINT8 node, INT32 netconsole)
 	CONS_Printf(M_GetText("Password from %s failed.\n"), player_names[netconsole]);
 }
 
+void ServerInfoUpdateSend(void)
+{
+	UINT32 n;
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	for (n = 1; n < MAXNETNODES; n++)
+	{
+		// Do Shit
+		if (nodeingame[n])
+		{
+			CopyCaretColors(netbuffer->u.serverinfoupdate.servername, cv_servername.string, MAXSERVERNAME);
+			CopyCaretColors(netbuffer->u.serverinfoupdate.servercontact, cv_server_contact.string, MAXSERVERCONTACT);
+			strncpy(netbuffer->u.serverinfoupdate.serverdescription, connectedserverdescription, MAXSERVERDESCRIPTION);
+
+			netbuffer->packettype = PT_SERVERINFOUPDATE;
+			HSendPacket(n, true, 0, sizeof(netbuffer->u.serverinfoupdate));
+		}
+	}
+}
+
+static void PT_ServerInfoUpdate(SINT8 node)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+
+	if (node != servernode)
+		return;
+
+	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.serverinfoupdate))/* ignore partial sends */
+		return;
+
+	strncpy(connectedservername, netbuffer->u.serverinfoupdate.servername, MAXSERVERNAME);
+	strncpy(connectedservercontact, netbuffer->u.serverinfoupdate.servercontact, MAXSERVERCONTACT);
+	strncpy(connectedserverdescription, netbuffer->u.serverinfoupdate.serverdescription, MAXSERVERDESCRIPTION);
+}
 
 /** Called when a PT_NODETIMEOUT packet is received
   *
@@ -4593,7 +4643,12 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				G_SetGametype(netbuffer->u.servercfg.gametype);
 
 				modifiedgame = netbuffer->u.servercfg.modifiedgame;
+
 				memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
+
+				strncpy(connectedservername, netbuffer->u.servercfg.server_name, MAXSERVERNAME);
+				strncpy(connectedservercontact, netbuffer->u.servercfg.server_contact, MAXSERVERCONTACT);
+				strncpy(connectedserverdescription, netbuffer->u.servercfg.server_description, MAXSERVERDESCRIPTION);
 			}
 
 #ifdef HAVE_DISCORDRPC
@@ -5135,6 +5190,9 @@ static void HandlePacketFromPlayer(SINT8 node)
 			break;
 		case PT_LOGINCHALLENGE:
 			PT_LoginChallenge(node);
+			break;
+		case PT_SERVERINFOUPDATE:
+			PT_ServerInfoUpdate(node);
 			break;
 		case PT_WILLRESENDGAMESTATE:
 			PT_WillResendGamestate();

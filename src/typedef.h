@@ -62,6 +62,7 @@ TYPEDEF (fileack_pak);
 TYPEDEF (clientconfig_pak);
 TYPEDEF (serverinfo_pak);
 TYPEDEF (serverrefuse_pak);
+TYPEDEF (serverinfoupdate_pak);
 TYPEDEF (askinfo_pak);
 TYPEDEF (msaskinfo_pak);
 TYPEDEF (plrinfo);
@@ -176,6 +177,7 @@ TYPEDEF (followercategory_t);
 
 // k_hud.h
 TYPEDEF (trackingResult_t);
+TYPEDEF (servermods_t);
 
 // k_menu.h
 TYPEDEF (menucolor_t);

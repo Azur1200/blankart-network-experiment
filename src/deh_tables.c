@@ -30,6 +30,7 @@
 #include "k_bot.h" // bot constants (for lua)
 #include "g_input.h" // Game controls (for lua)
 #include "k_kart.h" // awardscaledrings_t
+#include "k_hud.h" // scoreboardmod_e
 #include "k_waypoint.h" // waypoint values (for lua)
 
 #include "deh_tables.h"
@@ -1635,6 +1636,11 @@ struct int_const_s const INT_CONST[] = {
 
 	// k_waypoint.h values
 	{"DEFAULT_WAYPOINT_RADIUS",DEFAULT_WAYPOINT_RADIUS},
+
+	// scoreboardmod
+	{"SCOREBOARDMOD_NOTUSED", SCOREBOARDMOD_NOTUSED},
+	{"SCOREBOARDMOD_INACTIVE", SCOREBOARDMOD_INACTIVE},
+	{"SCOREBOARDMOD_ACTIVE", SCOREBOARDMOD_ACTIVE},
 
 	{NULL,0}
 };
