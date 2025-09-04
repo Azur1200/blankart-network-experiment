@@ -2885,6 +2885,7 @@ static SINT8 K_GlanceAtPlayers(player_t *glancePlayer)
 		}
 
 		distance = R_PointToDist2(glancePlayer->mo->x, glancePlayer->mo->y, p->mo->x, p->mo->y);
+		distance = R_PointToDist2(0, glancePlayer->mo->z, distance, p->mo->z);
 
 		if (distance > maxdistance)
 		{
