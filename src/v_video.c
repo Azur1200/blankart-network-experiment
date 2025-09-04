@@ -3388,7 +3388,7 @@ INT32 V_LevelNameHeight(const char *string)
 //
 INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 {
-	INT32 c, w = 0;
+	INT32 c, w = 0, lw = 0;
 	INT32 spacewidth = 4, charwidth = 0;
 	ssize_t i;
 
@@ -3412,15 +3412,23 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
+
+		if (c == '\n') {
+			w = max(w, lw); // width is based on widest line of text
+			lw = 0;
+			continue;
+		}
+
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
-			w += spacewidth;
+			lw += spacewidth;
 		else
-			w += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
+			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
 	}
+	w = max(w, lw);
 
 	if (option & (V_NOSCALESTART|V_NOSCALEPATCH))
 		w *= vid.dupx;
@@ -3433,7 +3441,7 @@ INT32 V_SubStringWidth(const char *string, INT32 length, INT32 option)
 //
 INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 {
-	INT32 c, w = 0;
+	INT32 c, w = 0, lw = 0;
 	INT32 spacewidth = 2, charwidth = 0;
 	ssize_t i;
 
@@ -3457,15 +3465,23 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
+
+		if (c == '\n') {
+			w = max(w, lw); // width is based on widest line of text
+			lw = 0;
+			continue;
+		}
+
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
 		c = toupper(c) - HU_FONTSTART;
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
-			w += spacewidth;
+			lw += spacewidth;
 		else
-			w += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width / 2);
+			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width / 2);
 	}
+	w = max(w, lw);
 
 	return w;
 }
@@ -3475,7 +3491,7 @@ INT32 V_SmallSubStringWidth(const char *string, INT32 length, INT32 option)
 //
 INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 {
-	INT32 c, w = 0;
+	INT32 c, w = 0, lw = 0;
 	INT32 spacewidth = 2, charwidth = 0;
 	boolean lowercase = (option & V_ALLOWLOWERCASE);
 	ssize_t i;
@@ -3501,6 +3517,13 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 	for (i = 0; string[i] && i < length; i++)
 	{
 		c = string[i];
+
+		if (c == '\n') {
+			w = max(w, lw); // width is based on widest line of text
+			lw = 0;
+			continue;
+		}
+
 		if ((UINT8)c & 0x80) //color parsing! -Inuyasha 2.16.09
 			continue;
 
@@ -3509,15 +3532,15 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option)
 		c -= HU_FONTSTART;
 
 		if (c < 0 || c >= HU_FONTSIZE || !fontv[TINY_FONT].font[c])
-			w += spacewidth;
+			lw += spacewidth;
 		else
 		{
-			w += (charwidth ? charwidth
+			lw += (charwidth ? charwidth
 				: ((option & V_6WIDTHSPACE && i < (ssize_t)strlen(string)-1) ? max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
 				: fontv[TINY_FONT].font[c]->width));
 		}
 	}
-
+	w = max(w, lw);
 
 	return w;
 }

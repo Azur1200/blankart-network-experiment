@@ -3182,16 +3182,16 @@ static boolean K_ShowPlayerNametag(player_t *p)
 static void K_DrawLocalTagForPlayer(fixed_t x, fixed_t y, player_t *p, UINT8 id)
 {
 	UINT16 chatcolor = skincolors[p->skincolor].chatcolor;
-	char letters[4] = {'A', 'B', 'C', 'D'};
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, va("%c\nv", letters[id]));
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_SPLITSCREEN|chatcolor, va("P%d", id+1));
 }
 
 static void K_DrawRivalTagForPlayer(fixed_t x, fixed_t y)
 {
-	UINT16 chatcolor = skincolors[SKINCOLOR_ORANGE].chatcolor;
+	UINT8 blinkstates[4] = {SKINCOLOR_RED, SKINCOLOR_ORANGE, SKINCOLOR_YELLOW, SKINCOLOR_ORANGE};
+	UINT16 chatcolor = skincolors[blinkstates[(leveltime / 3) % 4]].chatcolor;
 
-	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_ALLOWLOWERCASE|V_SPLITSCREEN|chatcolor, "Rival\n     v");
+	V_DrawCenteredSmallStringAtFixed(x, y, V_HUDTRANS|V_SPLITSCREEN|chatcolor, "RIVAL");
 }
 
 static const char *K_StringTypingDot(player_t *p)
@@ -3521,7 +3521,7 @@ static void K_drawKartNameTags(void)
 					}
 				}
 
-				if (localindicator >= 0)
+				if (cv_seenames.value && localindicator >= 0)
 				{
 					K_DrawLocalTagForPlayer(result.x, result.y, ntplayer, localindicator);
 				}
