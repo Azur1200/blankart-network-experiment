@@ -251,7 +251,6 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEUINT8(save->p, players[i].dropdash);
 		WRITEUINT8(save->p, players[i].respawn);
-		WRITEUINT8(save->p, players[i].softlocktimer);
 
 		WRITEUINT16(save->p, players[i].flashing);
 		WRITEUINT16(save->p, players[i].spinouttimer);
@@ -600,7 +599,6 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].dropdash = READUINT8(save->p);
 		players[i].respawn = READUINT8(save->p);
-		players[i].softlocktimer = READUINT8(save->p);
 
 		players[i].flashing = READUINT16(save->p);
 		players[i].spinouttimer = READUINT16(save->p);

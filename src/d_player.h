@@ -583,7 +583,6 @@ struct player_t
 	// Respawn
 	UINT8 dropdash;			// Gain a burst of speed when you drop while respawning
 	UINT8 respawn;			// Timer given when you die.
-	UINT8 softlocktimer;	// Tracks how fast you died after respawning. Use for softlock prevention.
 	
 	UINT16 flashing;
 	UINT16 spinouttimer;	// Spin-out from a banana peel or oil slick (was "pw_bananacam")

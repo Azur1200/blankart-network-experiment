@@ -1994,10 +1994,13 @@ static void K_HandleLapIncrement(player_t *player)
 
 			player->starposttime = player->realtime;
 			player->starpostnum = 0;
-			player->lastsafestarpost = 0;
 			player->laps++;
 
-			if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
+			if (!K_UsingLegacyCheckpoints())
+			{
+				// do nothing, let waypoint code handle respawn positions
+			}
+			else if (mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE)
 			{
 				// SRB2Kart 281118
 				// Save the player's time and position.

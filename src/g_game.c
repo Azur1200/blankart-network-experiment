@@ -3150,7 +3150,17 @@ void G_ChangePlayerReferences(mobj_t *oldmo, mobj_t *newmo)
 void G_DoReborn(INT32 playernum)
 {
 	player_t *player = &players[playernum];
-	boolean starpost = false;
+
+	if (!K_UsingLegacyCheckpoints() && player->lastsafelap != player->laps)
+	{
+		// no lap cheating! but more importantly, make sure your lap count matches your respawn point
+		player->laps = player->lastsafelap;
+		player->starpostnum = player->lastsafestarpost;
+	}
+
+	// waypoint maps don't need to force respawning at player starts nearly as often
+	const boolean sprint = K_UsingLegacyCheckpoints() ? mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE && player->laps > 1 : player->laps > 0;
+	const boolean starpost = !player->spectator && (sprint || player->starpostnum || (!K_UsingLegacyCheckpoints() && player->starposttime));
 
 	// Make sure objectplace is OFF when you first start the level!
 	OP_ResetObjectplace();
@@ -3158,12 +3168,6 @@ void G_DoReborn(INT32 playernum)
 	{
 		// respawn at the start
 		mobj_t *oldmo = NULL;
-
-		if (player->spectator)
-			;
-		else if ((player->starpostnum || ((player->nextwaypoint != NULL) && player->starposttime))
-		|| ((mapheaderinfo[gamemap - 1]->levelflags & LF_SECTIONRACE) && player->laps)) // SRB2kart
-			starpost = true;
 
 		// first dissasociate the corpse
 		if (player->mo)

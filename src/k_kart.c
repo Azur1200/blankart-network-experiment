@@ -3032,7 +3032,6 @@ static void K_RespawnChecker(player_t *player)
 			player->mo->colorized = false;
 			player->dropdash = 0;
 			player->respawn = 0;
-			player->softlocktimer = 3*TICRATE;
 		}
 	}
 }
@@ -8213,9 +8212,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->checkskip)
 		player->checkskip--;
 
-	if (player->softlocktimer)
-		player->softlocktimer--;
-
 	if (player->bigwaypointgap && (player->bigwaypointgap > AUTORESPAWN_THRESHOLD || !P_PlayerInPain(player)))
 	{
 		player->bigwaypointgap--;
@@ -10768,12 +10764,6 @@ void K_UpdateAllPlayerPositions(void)
 			if (!playeringame[i] || player->spectator || !player->mo || P_MobjWasRemoved(player->mo))
 			{
 				continue;
-			}
-
-			if (player->respawn > 0 && player->lastsafelap != player->laps)
-			{
-				player->laps = player->lastsafelap;
-				player->starpostnum = player->lastsafestarpost;
 			}
 
 			K_UpdatePlayerWaypoints(player);

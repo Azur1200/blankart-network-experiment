@@ -2512,14 +2512,6 @@ static void P_DeathThink(player_t *player)
 	else
 		player->karthud[khud_timeovercam] = 0;
 
-	// If the player dies too fast or dies during respawn...
-	// Set players next respawn point to the next waypoint for extra safety.
-	if (player->softlocktimer > 0 || player->respawn > 0)
-	{
-		// Now a clean function! Neat, eh?
-		K_SetRespawnAtNextWaypoint(player);
-	}
-
 	K_KartPlayerHUDUpdate(player);
 
 	if (player->pflags & PF_NOCONTEST)
