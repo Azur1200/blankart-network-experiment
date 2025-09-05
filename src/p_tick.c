@@ -218,6 +218,7 @@ void P_InitThinkers(void)
 	boss3cap = NULL;
 	waypointcap = NULL;
 	kitemcap = NULL;
+	misccap = NULL;
 
 	iquehead = iquetail = 0;
 
@@ -756,6 +757,8 @@ void P_Ticker(boolean run)
 
 	// formality so kitemcap gets updated properly each frame.
 	P_RunKartItems();
+
+	P_RunMiscCap();
 
 	if (run)
 	{

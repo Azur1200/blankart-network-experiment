@@ -280,6 +280,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbot);
     CV_RegisterVar(&cv_kartdebugcluster);
+	CV_RegisterVar(&cv_kartdebugrings);
 
 	CV_RegisterVar(&cv_kartdebugcheckpoint);
 	CV_RegisterVar(&cv_kartdebugnodes);

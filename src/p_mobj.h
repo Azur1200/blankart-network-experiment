@@ -528,6 +528,7 @@ extern actioncache_t actioncachehead;
 extern mobj_t *kitemcap;
 extern mobj_t *waypointcap;
 extern mobj_t *boss3cap;
+extern mobj_t *misccap;
 
 void P_InitCachedActions(void);
 void P_RunCachedActions(void);
@@ -540,6 +541,9 @@ boolean K_IsMissileOrKartItem(mobj_t *mo);
 boolean P_CanDeleteKartItem(INT32 type);
 void P_AddKartItem(mobj_t *thing);	// needs to be called in k_kart.c
 void P_RunKartItems(void);
+
+void P_AddMiscCap(mobj_t *thing);
+void P_RunMiscCap(void);
 
 // check mobj against water content, before movement code
 void P_MobjCheckWater(mobj_t *mobj);

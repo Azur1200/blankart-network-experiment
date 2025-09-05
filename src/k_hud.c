@@ -3703,6 +3703,14 @@ static void K_drawKartMinimapWaypoint(waypoint_t *wp, INT32 hudx, INT32 hudy, IN
 	K_drawKartMinimapDot(wp->mobj->x, wp->mobj->y, hudx, hudy, flags, pal, size);
 }
 
+static void K_drawKartMinimapRings(mobj_t *mobj, INT32 hudx, INT32 hudy, INT32 flags)
+{
+	UINT8 pal = 0x40; // yellow
+	UINT8 size = 1;
+
+	K_drawKartMinimapDot(mobj->x, mobj->y, hudx, hudy, flags, pal, size);
+}
+
 static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 {
 	UINT8 pal = 180; // Strong pink color.
@@ -3957,10 +3965,9 @@ static void K_drawKartMinimap(void)
 	// draw minimap-pertinent objects
 	for (mobj = kitemcap; mobj; mobj = next)
 	{
-		next = mobj->itnext;
-
 		workingPic = NULL;
 		colormap = NULL;
+		next = mobj->itnext;
 
 		if (mobj->health <= 0)
 			continue;
@@ -3990,6 +3997,30 @@ static void K_drawKartMinimap(void)
 					workingPic = NULL;
 				}
 				break;
+			default:
+				break;
+		}
+
+		if (!workingPic)
+			continue;
+
+		interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
+		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
+
+		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+	}
+
+	for (mobj = misccap; mobj; mobj = next)
+	{
+		workingPic = NULL;
+		colormap = NULL;
+		next = mobj->itnext;
+
+		if (mobj->health <= 0)
+			continue;
+
+		switch (mobj->type)
+		{
 			case MT_RANDOMITEM:
 				if (itembreaker && (mobj->flags2 & MF2_BOSSNOTRAP) && !(mobj->flags2 & MF2_BOSSFLEE))
 				{
@@ -3997,7 +4028,9 @@ static void K_drawKartMinimap(void)
 					colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_YELLOW, GTC_CACHE);
 				}
 				else
+				{
 					workingPic = NULL;
+				}
 				break;
 			default:
 				break;
@@ -4174,12 +4207,24 @@ static void K_drawKartMinimap(void)
 		}
 	}
 
+	if (cv_kartdebugrings.value != 0)
+	{
+		for (mobj = misccap; mobj; mobj = next)
+		{
+			next = mobj->itnext;
+
+			if (mobj->type != MT_RING && mobj->type != MT_FLINGRING)
+				continue;
+
+			K_drawKartMinimapRings(mobj, x, y, splitflags);
+		}
+	}
+
 	if (cv_kartdebugcluster.value != 0)
 	{
 		K_drawKartMinimapCluster(x, y, splitflags);
 	}
 }
-
 
 static void K_drawKartStartCountdown(void)
 {

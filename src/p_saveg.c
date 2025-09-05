@@ -2064,8 +2064,15 @@ typedef enum
 	MD2_LASTMOMZ     = 1<<28,
 	MD2_TERRAIN      = 1<<29,
 	MD2_LIGHTLEVEL   = 1<<30,
-	MD2_GRAVITY      = (INT32)(1U<<31)
+	MD2_MORE         = (INT32)(1U<<31)
 } mobj_diff2_t;
+
+typedef enum
+{
+	MD3_GRAVITY      = 1,
+	MD3_MISCCAP      = 1<<1,
+
+} mobj_diff3_t;
 
 typedef enum
 {
@@ -2148,6 +2155,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	const mobj_t *mobj = (const mobj_t *)th;
 	UINT32 diff;
 	UINT32 diff2;
+	UINT32 diff3;
 	size_t j;
 
 	// Ignore stationary hoops - these will be respawned from mapthings.
@@ -2170,7 +2178,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->flags2 & MF2_DONTSYNC)
 		return;
 
-	diff2 = 0;
+	diff = diff2 = diff3 = 0;
 
 	if (mobj->spawnpoint)
 	{
@@ -2370,8 +2378,14 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff2 |= MD2_LASTMOMZ;
 	if (mobj->terrain != NULL || mobj->terrainOverlay != NULL)
 		diff2 |= MD2_TERRAIN;
+
 	if (mobj->gravity != FRACUNIT)
-		diff2 |= MD2_GRAVITY;
+		diff3 |= MD3_GRAVITY;
+	if (mobj == misccap)
+		diff3 |= MD3_MISCCAP;
+
+	if (diff3 != 0)
+		diff2 |= MD2_MORE;
 
 	if (diff2 != 0)
 		diff |= MD_MORE;
@@ -2384,6 +2398,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	WRITEUINT32(save->p, diff);
 	if (diff & MD_MORE)
 		WRITEUINT32(save->p, diff2);
+	if (diff2 & MD2_MORE)
+		WRITEUINT32(save->p, diff3);
 
 	WRITEFIXED(save->p, mobj->z); // Force this so 3dfloor problems don't arise.
 	WRITEFIXED(save->p, mobj->floorz);
@@ -2638,7 +2654,7 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain));
 		WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
 	}
-	if (diff2 & MD2_GRAVITY)
+	if (diff3 & MD3_GRAVITY)
 	{
 		WRITEFIXED(save->p, mobj->gravity);
 	}
@@ -3529,6 +3545,7 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	mobj_t *mobj;
 	UINT32 diff;
 	UINT32 diff2;
+	UINT32 diff3;
 	INT32 i;
 	fixed_t z, floorz, ceilingz;
 	ffloor_t *floorrover = NULL, *ceilingrover = NULL;
@@ -3539,6 +3556,11 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 		diff2 = READUINT32(save->p);
 	else
 		diff2 = 0;
+
+	if (diff2 & MD2_MORE)
+		diff3 = READUINT32(save->p);
+	else
+		diff3 = 0;
 
 	z = READFIXED(save->p); // Force this so 3dfloor problems don't arise.
 	floorz = READFIXED(save->p);
@@ -3882,7 +3904,7 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	{
 		mobj->terrain = NULL;
 	}
-	if (diff2 & MD2_GRAVITY)
+	if (diff3 & MD3_GRAVITY)
 	{
 		mobj->gravity = READFIXED(save->p);
 	}
@@ -3924,6 +3946,9 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	if (diff2 & MD2_KITEMCAP)
 		P_SetTarget(&kitemcap, mobj);
+
+	if (diff3 & MD3_MISCCAP)
+		P_SetTarget(&misccap, mobj);
 
 	R_AddMobjInterpolator(mobj);
 

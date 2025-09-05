@@ -61,6 +61,7 @@ actioncache_t actioncachehead;
 
 static mobj_t *overlaycap = NULL;
 mobj_t *kitemcap = NULL;	// Used for Kart offensive items (the ones that can get removed by sizedown)
+mobj_t *misccap = NULL;		// Used for misc object tracking
 mobj_t *waypointcap = NULL;
 mobj_t *boss3cap = NULL;
 
@@ -6526,10 +6527,6 @@ boolean P_IsKartItem(INT32 type)
 		// Primarily for minimap data, handle with care
 		case MT_SPB:
 			return true;
-
-		case MT_RANDOMITEM:
-			if (itembreaker)
-				return true;
 		// FALLTHRU
 
 		default:
@@ -6611,6 +6608,77 @@ void P_RunKartItems(void)
 		P_SetTarget(&mobj->itnext, NULL);
 	}
 	P_SetTarget(&kitemcap, NULL);
+}
+
+static boolean P_IsMiscCapObject(INT32 type)
+{
+	switch (type)
+	{
+		case MT_RING:
+		case MT_FLINGRING:
+			return true;
+			break;
+
+		case MT_RANDOMITEM:
+			return true;
+			break;
+
+		default:
+			return false;
+			break;
+	}
+
+	return false;
+}
+
+// Called when a misc mobj "thinks"
+void P_AddMiscCap(mobj_t *thing)
+{
+	I_Assert(thing != NULL);
+
+	if (misccap == NULL)
+		P_SetTarget(&misccap, thing);
+	else {
+		mobj_t *mo;
+		for (mo = misccap; mo && mo->itnext; mo = mo->itnext)
+			;
+
+		I_Assert(mo != NULL);
+		I_Assert(mo->itnext == NULL);
+
+		P_SetTarget(&mo->itnext, thing);
+	}
+	P_SetTarget(&thing->itnext, NULL);
+}
+
+// Called only when a kart item is removed
+// Keeps the hnext list from corrupting.
+static void P_RemoveMiscCap(mobj_t *thing)
+{
+	mobj_t *mo, **p;
+	for (mo = *(p = &misccap); mo; mo = *(p = &mo->itnext))
+	{
+		if (mo != thing)
+			continue;
+
+		P_SetTarget(p, thing->itnext);
+		P_SetTarget(&thing->itnext, NULL);
+		return;
+	}
+}
+
+// Doesn't actually do anything since objects can have their own thinkers,
+// but this is necessary for the sole purpose of updating misccap
+void P_RunMiscCap(void)
+{
+	mobj_t *mobj, *next;
+
+	for (mobj = misccap; mobj; mobj = next)
+	{
+		next = mobj->itnext;
+		P_SetTarget(&mobj->itnext, NULL);
+	}
+	P_SetTarget(&misccap, NULL);
 }
 
 void P_RunOverlays(void)
@@ -7073,6 +7141,9 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 		return;
 	if (P_MobjWasRemoved(mobj))
 		return;
+
+	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
+		P_AddMiscCap(mobj);			   // add to misccap list
 
 	switch (mobj->type)
 	{
@@ -8267,6 +8338,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
+
+		P_AddMiscCap(mobj);
 
 		A_AttractChase(mobj);
 		return false;
@@ -10473,6 +10546,9 @@ void P_MobjThinker(mobj_t *mobj)
 	if (P_IsKartItem(mobj->type))	// mobj is a kart item we want on the list:
 		P_AddKartItem(mobj);		// add to kitem list
 
+	if (P_IsMiscCapObject(mobj->type)) // mobj is object we want on the list:
+		P_AddMiscCap(mobj);			   // add to misccap list
+
 	// Can end up here if a player dies.
 	if (mobj->player)
 		P_CyclePlayerMobjState(mobj);
@@ -11523,6 +11599,9 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	if (P_IsKartItem(mobj->type))
 		P_RemoveKartItem(mobj);
+
+	if (P_IsMiscCapObject(mobj->type))
+		P_RemoveMiscCap(mobj);
 
 	if (mobj->player && mobj->player->followmobj)
 	{
