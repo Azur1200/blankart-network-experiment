@@ -78,8 +78,9 @@ void P_ClosestPointOnLine3D(const vector3_t *p, const vector3_t *Line, vector3_t
 	FV3_SubEx(p, v1, &c);
 
 	d = R_PointToDist2(0, v2->z, R_PointToDist2(v2->x, v2->y, v1->x, v1->y), v1->z);
+	vector3_t vd = { d, d, d };
 	FV3_Copy(&n, &V);
-	FV3_Divide(&n, d);
+	FV3_Divide(&n, &vd);
 
 	t = FV3_Dot(&n, &c);
 
@@ -95,7 +96,8 @@ void P_ClosestPointOnLine3D(const vector3_t *p, const vector3_t *Line, vector3_t
 		return;
 	}
 
-	FV3_Mul(&n, t);
+	vector3_t tv = { t, t, t };
+	FV3_Mul(&n, &tv);
 
 	FV3_AddEx(v1, &n, result);
 	return;

@@ -9,8 +9,7 @@
 /// \file  lua_matrixlib.c
 /// \brief matrix library for Lua scripting
 
-#include "matrix.h"
-#include "vector3d.h"
+#include "m_fixed.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 
@@ -62,7 +61,7 @@ static matrix_t *NewMatrix(lua_State *L)
 
 static int matrix_new(lua_State *L)
 {
-	Matrix_SetIdentity(NewMatrix(L));
+	FM_LoadIdentity(NewMatrix(L));
 	return 1;
 }
 
@@ -70,7 +69,7 @@ static int matrix_translation(lua_State *L)
 {
 	vector3_t translation;
 	GetVectorOrXYZ(L, 1, &translation);
-	Matrix_SetTranslation(NewMatrix(L), translation.x, translation.y, translation.z);
+	FM_Translate(NewMatrix(L), translation.x, translation.y, translation.z);
 	return 1;
 }
 
@@ -78,7 +77,7 @@ static int matrix_scaling(lua_State *L)
 {
 	vector3_t scaling;
 	GetVectorOrXYZ(L, 1, &scaling);
-	Matrix_SetScaling(NewMatrix(L), scaling.x, scaling.y, scaling.z);
+	FM_Scale(NewMatrix(L), scaling.x, scaling.y, scaling.z);
 	return 1;
 }
 
@@ -110,7 +109,7 @@ static const char *const matrixfield_opt[] = {
 static int matrix_clone(lua_State *L)
 {
 	matrix_t *mat = luaL_checkudata(L, 1, META_MATRIX);
-	Matrix_Copy(NewMatrix(L), mat);
+	memcpy(NewMatrix(L), mat, sizeof(matrix_t));
 	return 1;
 }
 
@@ -125,7 +124,7 @@ static int matrix_getvalue(lua_State *L)
 	if (col < 1 || col > 4)
 		return luaL_error(L, "matrix column %d out of range (1 - 4)", col);
 
-	lua_pushfixed(L, mat->matrix[row - 1][col - 1]);
+	lua_pushfixed(L, mat->m[(col - 1) * 4 + row - 1]);
 	return 1;
 }
 
@@ -141,7 +140,7 @@ static int matrix_setvalue(lua_State *L)
 	if (col < 1 || col > 4)
 		return luaL_error(L, "matrix column %d out of range (1 - 4)", col);
 
-	mat->matrix[row - 1][col - 1] = value;
+	mat->m[(col - 1) * 4 + row - 1] = value;
 	return 0;
 }
 
@@ -154,8 +153,8 @@ static int matrix_mulXYZ(lua_State *L)
 
 	vector3_t vec;
 	vector3_t result;
-	Vector3D_Set(&vec, x, y, z);
-	Matrix_MulVector(&result, mat, &vec);
+	FV3_Load(&vec, x, y, z);
+	FM_MultMatrixVec3(mat, &vec, &result);
 
 	lua_pushfixed(L, result.x);
 	lua_pushfixed(L, result.y);
@@ -195,12 +194,12 @@ static int matrix_mul(lua_State *L)
 		luaL_getmetatable(L, META_VECTOR3);
 		lua_setmetatable(L, -2);
 
-		Matrix_MulVector(result, mat1, vec2);
+		FM_MultMatrixVec3(mat1, vec2, result);
 	}
 	else
 	{
 		matrix_t *mat2 = luaL_checkudata(L, 2, META_MATRIX);
-		Matrix_Mul(NewMatrix(L), mat1, mat2);
+		FM_MultMatrixEx(mat1, mat2, NewMatrix(L));
 	}
 
 	return 1;

@@ -2362,17 +2362,32 @@ static int slope_get(lua_State *L)
 		lua_pushboolean(L, 1);
 		return 1;
 	case slope_o: // o
-		LUA_PushUserdata(L, &slope->o, META_VECTOR3);
+	{
+		vector3_t *vec = lua_newuserdata(L, sizeof(vector3_t));
+		luaL_getmetatable(L, META_VECTOR3);
+		lua_setmetatable(L, -2);
+		FV3_Load(vec, slope->o.x, slope->o.y, slope->o.z);
 		return 1;
+	}
 	case slope_d: // d
-		LUA_PushUserdata(L, &slope->d, META_VECTOR2);
+	{
+		vector2_t *vec = lua_newuserdata(L, sizeof(vector2_t));
+		luaL_getmetatable(L, META_VECTOR2);
+		lua_setmetatable(L, -2);
+		FV2_Load(vec, slope->d.x, slope->d.y);
 		return 1;
+	}
 	case slope_zdelta: // zdelta
 		lua_pushfixed(L, slope->zdelta);
 		return 1;
 	case slope_normal: // normal
-		LUA_PushUserdata(L, &slope->normal, META_VECTOR3);
+	{
+		vector3_t *vec = lua_newuserdata(L, sizeof(vector3_t));
+		luaL_getmetatable(L, META_VECTOR3);
+		lua_setmetatable(L, -2);
+		FV3_Load(vec, slope->normal.x, slope->normal.y, slope->normal.z);
 		return 1;
+	}
 	case slope_zangle: // zangle
 		lua_pushangle(L, slope->zangle);
 		return 1;

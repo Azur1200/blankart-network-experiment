@@ -167,9 +167,10 @@ void P_ReconfigureViaVertexes (pslope_t *slope, const vector3_t v1, const vector
 			max(max(abs(vec2.x), abs(vec2.y)), abs(vec2.z))
 		) >> 5; // shifting right by 5 is good enough.
 
+		vector3_t vm = { m, m, m };
 		FV3_Cross(
-				FV3_Divide(&vec1, m),
-				FV3_Divide(&vec2, m),
+				FV3_Divide(&vec1, &vm),
+				FV3_Divide(&vec2, &vm),
 				&slope->normal
 				);
 
@@ -180,7 +181,10 @@ void P_ReconfigureViaVertexes (pslope_t *slope, const vector3_t v1, const vector
 		if (slope->normal.z < 0)
 			m = -m;
 
-		FV3_Divide(&slope->normal, m);
+		vm.x = m;
+		vm.y = m;
+		vm.z = m;
+		FV3_Divide(&slope->normal, &vm);
 
 		// Get direction vector
 		m = FixedHypot(slope->normal.x, slope->normal.y);

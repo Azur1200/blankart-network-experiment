@@ -26,7 +26,6 @@ hu_stuff.c
 i_time.c
 y_inter.c
 st_stuff.c
-matrix.c
 m_aatree.c
 m_anigif.c
 m_argv.c
@@ -66,7 +65,6 @@ p_slopes.c
 p_sweep.cpp
 p_test.cpp
 p_deepcopy.cpp
-quaternion.c
 tables.c
 r_bsp.cpp
 r_data.c
@@ -90,7 +88,6 @@ r_debug.cpp
 r_debug_parser.cpp
 screen.c
 taglist.c
-vector3d.c
 v_video.c
 s_sound.c
 sounds.c

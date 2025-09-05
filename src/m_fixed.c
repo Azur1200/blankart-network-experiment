@@ -287,30 +287,63 @@ vector3_t *FV3_Sub(vector3_t *a_i, const vector3_t *a_c)
 	return FV3_SubEx(a_i, a_c, a_i);
 }
 
-vector3_t *FV3_MulEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o)
+vector4_t *FV4_Sub(vector4_t *a_i, const vector4_t *a_c)
 {
-	a_o->x = FixedMul(a_i->x, a_c);
-	a_o->y = FixedMul(a_i->y, a_c);
-	a_o->z = FixedMul(a_i->z, a_c);
+	return FV4_SubEx(a_i, a_c, a_i);
+}
+
+vector3_t *FV3_MulEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
+{
+	a_o->x = FixedMul(a_i->x, a_c->x);
+	a_o->y = FixedMul(a_i->y, a_c->y);
+	a_o->z = FixedMul(a_i->z, a_c->z);
 	return a_o;
 }
 
-vector3_t *FV3_Mul(vector3_t *a_i, fixed_t a_c)
+vector4_t *FV4_MulEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = FixedMul(a_i->x, a_c->x);
+	a_o->y = FixedMul(a_i->y, a_c->y);
+	a_o->z = FixedMul(a_i->z, a_c->z);
+	a_o->a = FixedMul(a_i->a, a_c->a);
+	return a_o;
+}
+
+vector3_t *FV3_Mul(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_MulEx(a_i, a_c, a_i);
 }
 
-vector3_t *FV3_DivideEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o)
+vector4_t *FV4_Mul(vector4_t *a_i, const vector4_t *a_c)
 {
-	a_o->x = FixedDiv(a_i->x, a_c);
-	a_o->y = FixedDiv(a_i->y, a_c);
-	a_o->z = FixedDiv(a_i->z, a_c);
+	return FV4_MulEx(a_i, a_c, a_i);
+}
+
+vector3_t *FV3_DivideEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
+{
+	a_o->x = FixedDiv(a_i->x, a_c->x);
+	a_o->y = FixedDiv(a_i->y, a_c->y);
+	a_o->z = FixedDiv(a_i->z, a_c->z);
 	return a_o;
 }
 
-vector3_t *FV3_Divide(vector3_t *a_i, fixed_t a_c)
+vector4_t *FV4_DivideEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = FixedDiv(a_i->x, a_c->x);
+	a_o->y = FixedDiv(a_i->y, a_c->y);
+	a_o->z = FixedDiv(a_i->z, a_c->z);
+	a_o->a = FixedDiv(a_i->a, a_c->a);
+	return a_o;
+}
+
+vector3_t *FV3_Divide(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_DivideEx(a_i, a_c, a_i);
+}
+
+vector4_t *FV4_Divide(vector4_t *a_i, const vector4_t *a_c)
+{
+	return FV4_DivideEx(a_i, a_c, a_i);
 }
 
 // Vector Complex Math
@@ -424,8 +457,9 @@ vector3_t *FV3_ClosestPointOnLine(const vector3_t *Line, const vector3_t *p, vec
 		return FV3_Copy(out, &Line[1]);
 	}
 
-	// Return the point between �Line[0]� and �Line[1]�
-	FV3_Mul(&V, t);
+	// Return the point between "Line[0]" and "Line[1]"
+	vector3_t T = { t, t, t };
+	FV3_Mul(&V, &T);
 
 	return FV3_AddEx(&Line[0], &V, out);
 }
@@ -440,7 +474,8 @@ void FV3_ClosestPointOnVector(const vector3_t *dir, const vector3_t *p, vector3_
 	fixed_t t = FV3_Dot(dir, p);
 
 	// Return the point on the line closest
-	FV3_MulEx(dir, t, out);
+	vector3_t T = { t, t, t };
+	FV3_MulEx(dir, &T, out);
 	return;
 }
 
@@ -725,10 +760,10 @@ boolean FV3_PointInsideBox(const vector3_t *point, const vector3_t *box)
 //
 // Loads the identity matrix into a matrix
 //
-void FM_LoadIdentity(oldmatrix_t* matrix)
+void FM_LoadIdentity(matrix_t* matrix)
 {
 #define M(row,col)  matrix->m[col * 4 + row]
-	memset(matrix, 0x00, sizeof(oldmatrix_t));
+	memset(matrix, 0x00, sizeof(matrix_t));
 
 	M(0, 0) = FRACUNIT;
 	M(1, 1) = FRACUNIT;
@@ -743,7 +778,7 @@ void FM_LoadIdentity(oldmatrix_t* matrix)
 // Creates a matrix that can be used for
 // adjusting the position of an object
 //
-void FM_CreateObjectMatrix(oldmatrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fixed_t anglex, fixed_t angley, fixed_t anglez, fixed_t upx, fixed_t upy, fixed_t upz, fixed_t radius)
+void FM_CreateObjectMatrix(matrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fixed_t anglex, fixed_t angley, fixed_t anglez, fixed_t upx, fixed_t upy, fixed_t upz, fixed_t radius)
 {
 	vector3_t upcross;
 	vector3_t upvec;
@@ -782,7 +817,7 @@ void FM_CreateObjectMatrix(oldmatrix_t *matrix, fixed_t x, fixed_t y, fixed_t z,
 //
 // Multiplies a vector by the specified matrix
 //
-const vector3_t *FM_MultMatrixVec3(const oldmatrix_t *matrix, const vector3_t *vec, vector3_t *out)
+const vector3_t *FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *out)
 {
 #define M(row,col)  matrix->m[col * 4 + row]
 	out->x = FixedMul(vec->x, M(0, 0))
@@ -803,7 +838,7 @@ const vector3_t *FM_MultMatrixVec3(const oldmatrix_t *matrix, const vector3_t *v
 	return out;
 }
 
-const vector4_t *FM_MultMatrixVec4(const oldmatrix_t *matrix, const vector4_t *vec, vector4_t *out)
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out)
 {
 #define M(row,col)  matrix->m[col * 4 + row]
 	out->x = FixedMul(vec->x, M(0, 0))
@@ -835,13 +870,12 @@ const vector4_t *FM_MultMatrixVec4(const oldmatrix_t *matrix, const vector4_t *v
 //
 // Multiples one matrix into another
 //
-void FM_MultMatrix(oldmatrix_t *dest, const oldmatrix_t *multme)
+void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest)
 {
-	oldmatrix_t result;
 	UINT8 i, j;
-#define M(row,col)  multme->m[col * 4 + row]
-#define D(row,col)  dest->m[col * 4 + row]
-#define R(row,col)  result.m[col * 4 + row]
+#define M(row,col)  m1->m[col * 4 + row]
+#define D(row,col)  m2->m[col * 4 + row]
+#define R(row,col)  dest->m[col * 4 + row]
 
 	for (i = 0; i < 4; i++)
 	{
@@ -849,11 +883,14 @@ void FM_MultMatrix(oldmatrix_t *dest, const oldmatrix_t *multme)
 			R(i, j) = FixedMul(D(i, 0), M(0, j)) + FixedMul(D(i, 1), M(1, j)) + FixedMul(D(i, 2), M(2, j)) + FixedMul(D(i, 3), M(3, j));
 	}
 
-	M_Memcpy(dest, &result, sizeof(oldmatrix_t));
-
 #undef R
 #undef D
 #undef M
+}
+
+void FM_MultMatrix(matrix_t *dest, const matrix_t *multme)
+{
+	FM_MultMatrixEx(dest, multme, dest);
 }
 
 //
@@ -861,12 +898,12 @@ void FM_MultMatrix(oldmatrix_t *dest, const oldmatrix_t *multme)
 //
 // Translates a matrix
 //
-void FM_Translate(oldmatrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
+void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	oldmatrix_t trans;
+	matrix_t trans;
 #define M(row,col)  trans.m[col * 4 + row]
 
-	memset(&trans, 0x00, sizeof(oldmatrix_t));
+	memset(&trans, 0x00, sizeof(matrix_t));
 
 	M(0, 0) = M(1, 1) = M(2, 2) = M(3, 3) = FRACUNIT;
 	M(0, 3) = x;
@@ -882,12 +919,12 @@ void FM_Translate(oldmatrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 //
 // Scales a matrix
 //
-void FM_Scale(oldmatrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
+void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z)
 {
-	oldmatrix_t scale;
+	matrix_t scale;
 #define M(row,col)  scale.m[col * 4 + row]
 
-	memset(&scale, 0x00, sizeof(oldmatrix_t));
+	memset(&scale, 0x00, sizeof(matrix_t));
 
 	M(3, 3) = FRACUNIT;
 	M(0, 0) = x;

@@ -299,10 +299,10 @@ vector3_t *FV3_AddEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
 vector3_t *FV3_Add(vector3_t *a_i, const vector3_t *a_c);
 vector3_t *FV3_SubEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o);
 vector3_t *FV3_Sub(vector3_t *a_i, const vector3_t *a_c);
-vector3_t *FV3_MulEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o);
-vector3_t *FV3_Mul(vector3_t *a_i, fixed_t a_c);
-vector3_t *FV3_DivideEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o);
-vector3_t *FV3_Divide(vector3_t *a_i, fixed_t a_c);
+vector3_t *FV3_MulEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o);
+vector3_t *FV3_Mul(vector3_t *a_i, const vector3_t *a_c);
+vector3_t *FV3_DivideEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o);
+vector3_t *FV3_Divide(vector3_t *a_i, const vector3_t *a_c);
 vector3_t *FV3_Midpoint(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o);
 fixed_t FV3_Distance(const vector3_t *p1, const vector3_t *p2);
 fixed_t FV3_Magnitude(const vector3_t *a_normal);
@@ -327,18 +327,45 @@ vector3_t *FV3_IntersectionPoint(const vector3_t *vNormal, const vector3_t *vLin
 UINT8 FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line);
 boolean FV3_PointInsideBox(const vector3_t *point, const vector3_t *box);
 
-struct oldmatrix_t
+typedef struct
+{
+	fixed_t x, y, z, a;
+} vector4_t;
+
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a);
+vector4_t *FV4_UnLoad(vector4_t *vec, fixed_t *x, fixed_t *y, fixed_t *z, fixed_t *a);
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i);
+vector4_t *FV4_AddEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o);
+vector4_t *FV4_Add(vector4_t *a_i, const vector4_t *a_c);
+vector4_t *FV4_SubEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o);
+vector4_t *FV4_Sub(vector4_t *a_i, const vector4_t *a_c);
+vector4_t *FV4_MulEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o);
+vector4_t *FV4_Mul(vector4_t *a_i, const vector4_t *a_c);
+vector4_t *FV4_DivideEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o);
+vector4_t *FV4_Divide(vector4_t *a_i, const vector4_t *a_c);
+vector4_t *FV4_Midpoint(const vector4_t *a_1, const vector4_t *a_2, vector4_t *a_o);
+fixed_t FV4_Distance(const vector4_t *p1, const vector4_t *p2);
+fixed_t FV4_Magnitude(const vector4_t *a_normal);
+fixed_t FV4_NormalizeEx(const vector4_t *a_normal, vector4_t *a_o);
+fixed_t FV4_Normalize(vector4_t *a_normal);
+vector4_t *FV4_NegateEx(const vector4_t *a_1, vector4_t *a_o);
+vector4_t *FV4_Negate(vector4_t *a_1);
+boolean FV4_Equal(const vector4_t *a_1, const vector4_t *a_2);
+fixed_t FV4_Dot(const vector4_t *a_1, const vector4_t *a_2);
+
+typedef struct
 {
 	fixed_t m[16];
-};
+} matrix_t;
 
-void FM_LoadIdentity(oldmatrix_t* matrix);
-void FM_CreateObjectMatrix(oldmatrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fixed_t anglex, fixed_t angley, fixed_t anglez, fixed_t upx, fixed_t upy, fixed_t upz, fixed_t radius);
-const vector3_t *FM_MultMatrixVec3(const oldmatrix_t *matrix, const vector3_t *vec, vector3_t *out);
-const vector4_t *FM_MultMatrixVec4(const oldmatrix_t *matrix, const vector4_t *vec, vector4_t *out);
-void FM_MultMatrix(oldmatrix_t *dest, const oldmatrix_t *multme);
-void FM_Translate(oldmatrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
-void FM_Scale(oldmatrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
+void FM_LoadIdentity(matrix_t* matrix);
+void FM_CreateObjectMatrix(matrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fixed_t anglex, fixed_t angley, fixed_t anglez, fixed_t upx, fixed_t upy, fixed_t upz, fixed_t radius);
+const vector3_t *FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *out);
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out);
+void FM_MultMatrix(matrix_t *dest, const matrix_t *multme);
+void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest);
+void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
+void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 
 #ifdef __cplusplus
 } // extern "C"

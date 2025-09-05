@@ -9,7 +9,7 @@
 /// \file  lua_vectorlib.c
 /// \brief vector library for Lua scripting
 
-#include "vector3d.h"
+#include "m_fixed.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 
@@ -44,7 +44,7 @@ static const char *const vectorfield_opt[] = {
 
 static int vector2d_get(lua_State *L)
 {
-	vector2_t *vec = *((vector2_t **)luaL_checkudata(L, 1, META_VECTOR2));
+	vector2_t *vec = luaL_checkudata(L, 1, META_VECTOR2);
 	enum vectorfield_e field = luaL_checkoption(L, 2, vectorfield_opt[0], vectorfield_opt);
 
 	switch(field)
@@ -79,7 +79,7 @@ static int vector3d_new(lua_State *L)
 	fixed_t y = luaL_checkfixed(L, 2);
 	fixed_t z = luaL_optfixed(L, 3, 0);
 
-	Vector3D_Set(NewVector3(L), x, y, z);
+	FV3_Load(NewVector3(L), x, y, z);
 	return 1;
 }
 
@@ -95,14 +95,14 @@ static luaL_Reg vector3d[] = {
 static int vector3d_clone(lua_State *L)
 {
 	vector3_t *vec = luaL_checkudata(L, 1, META_VECTOR3);
-	Vector3D_Copy(NewVector3(L), vec);
+	FV3_Copy(NewVector3(L), vec);
 	return 1;
 }
 
 static int vector3d_opposite(lua_State *L)
 {
 	vector3_t *vec = luaL_checkudata(L, 1, META_VECTOR3);
-	Vector3D_Opposite(NewVector3(L), vec);
+	FV3_NegateEx(vec, NewVector3(L));
 	return 1;
 }
 
@@ -114,6 +114,7 @@ static int vector3d_get(lua_State *L)
 	if (!vec)
 		return luaL_error(L, "accessed vector3_t doesn't exist anymore.");
 
+	vector3_t unit = { 0, 0, 0 };
 	switch(field)
 	{
 		case vectorfield_clone: lua_pushcfunction(L, vector3d_clone); return 1;
@@ -122,8 +123,8 @@ static int vector3d_get(lua_State *L)
 		case vectorfield_x: lua_pushfixed(L, vec->x); return 1;
 		case vectorfield_y: lua_pushfixed(L, vec->y); return 1;
 		case vectorfield_z: lua_pushfixed(L, vec->z); return 1;
-		case vectorfield_length: lua_pushfixed(L, Vector3D_Length(vec)); return 1;
-		case vectorfield_normalized: Vector3D_Normalize(NewVector3(L), vec); return 1;
+		case vectorfield_length: lua_pushfixed(L, FV3_Distance(&unit, vec)); return 1;
+		case vectorfield_normalized: FV3_NormalizeEx(vec, NewVector3(L)); return 1;
 
 		default: break;
 	}
@@ -139,27 +140,28 @@ static int vector3d_eq(lua_State *L)
 {
 	vector3_t *vec1 = luaL_checkudata(L, 1, META_VECTOR3);
 	vector3_t *vec2 = luaL_checkudata(L, 2, META_VECTOR3);
-	lua_pushboolean(L, Vector3D_Equal(vec1, vec2));
+	lua_pushboolean(L, FV3_Equal(vec1, vec2));
 	return 1;
 }
 
 static int vector3d_op(
 	lua_State *L,
-	vector3_t *(*opvector)(vector3_t*, vector3_t*, vector3_t*),
-	vector3_t *(*opfixed)(vector3_t*, vector3_t*, fixed_t)
+	vector3_t *(*opvector)(const vector3_t*, const vector3_t*, vector3_t*)
 )
 {
-	if (lua_isnumber(L, 1) && (opfixed == Vector3D_AddFixed || opfixed == Vector3D_MulFixed))
+	if (lua_isnumber(L, 1) && (opvector == FV3_AddEx || opvector == FV3_MulEx))
 	{
 		fixed_t n1 = lua_tofixed(L, 1);
+		vector3_t vec1 = { n1, n1, n1 };
 		vector3_t *vec2 = luaL_checkudata(L, 2, META_VECTOR3);
-		opfixed(NewVector3(L), vec2, n1);
+		opvector(NewVector3(L), vec2, &vec1);
 	}
 	else if (lua_isnumber(L, 2))
 	{
 		vector3_t *vec1 = luaL_checkudata(L, 1, META_VECTOR3);
 		fixed_t n2 = lua_tofixed(L, 2);
-		opfixed(NewVector3(L), vec1, n2);
+		vector3_t vec2 = { n2, n2, n2 };
+		opvector(NewVector3(L), vec1, &vec2);
 	}
 	else
 	{
@@ -173,28 +175,28 @@ static int vector3d_op(
 
 static int vector3d_add(lua_State *L)
 {
-	return vector3d_op(L, Vector3D_Add, Vector3D_AddFixed);
+	return vector3d_op(L, FV3_AddEx);
 }
 
 static int vector3d_sub(lua_State *L)
 {
-	return vector3d_op(L, Vector3D_Sub, Vector3D_SubFixed);
+	return vector3d_op(L, FV3_SubEx);
 }
 
 static int vector3d_mul(lua_State *L)
 {
-	return vector3d_op(L, Vector3D_Mul, Vector3D_MulFixed);
+	return vector3d_op(L, FV3_MulEx);
 }
 
 static int vector3d_div(lua_State *L)
 {
-	return vector3d_op(L, Vector3D_Div, Vector3D_DivFixed);
+	return vector3d_op(L, FV3_DivideEx);
 }
 
 static int vector3d_unm(lua_State *L)
 {
 	vector3_t *vec = luaL_checkudata(L, 1, META_VECTOR3);
-	Vector3D_Opposite(NewVector3(L), vec);
+	FV3_NegateEx(vec, NewVector3(L));
 	return 1;
 }
 

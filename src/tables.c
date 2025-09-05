@@ -435,7 +435,7 @@ void FV3_Rotate(vector3_t *rotVec, const vector3_t *axisVec, const angle_t angle
 }
 
 #define M(row,col) dest->m[row * 4 + col]
-oldmatrix_t *FM_Rotate(oldmatrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
+matrix_t *FM_Rotate(matrix_t *dest, angle_t angle, fixed_t x, fixed_t y, fixed_t z)
 {
 	const fixed_t sinA = FINESINE(angle>>ANGLETOFINESHIFT);
 	const fixed_t cosA = FINECOSINE(angle>>ANGLETOFINESHIFT);
@@ -491,7 +491,7 @@ oldmatrix_t *FM_Rotate(oldmatrix_t *dest, angle_t angle, fixed_t x, fixed_t y, f
 }
 
 
-oldmatrix_t *FM_RotateX(oldmatrix_t *dest, angle_t rad)
+matrix_t *FM_RotateX(matrix_t *dest, angle_t rad)
 {
 	const angle_t fa = rad>>ANGLETOFINESHIFT;
 	const fixed_t cosrad = FINECOSINE(fa), sinrad = FINESINE(fa);
@@ -516,7 +516,7 @@ oldmatrix_t *FM_RotateX(oldmatrix_t *dest, angle_t rad)
 	return dest;
 }
 
-oldmatrix_t *FM_RotateY(oldmatrix_t *dest, angle_t rad)
+matrix_t *FM_RotateY(matrix_t *dest, angle_t rad)
 {
 	const angle_t fa = rad>>ANGLETOFINESHIFT;
 	const fixed_t cosrad = FINECOSINE(fa), sinrad = FINESINE(fa);
@@ -541,7 +541,7 @@ oldmatrix_t *FM_RotateY(oldmatrix_t *dest, angle_t rad)
 	return dest;
 }
 
-oldmatrix_t *FM_RotateZ(oldmatrix_t *dest, angle_t rad)
+matrix_t *FM_RotateZ(matrix_t *dest, angle_t rad)
 {
 	const angle_t fa = rad>>ANGLETOFINESHIFT;
 	const fixed_t cosrad = FINECOSINE(fa), sinrad = FINESINE(fa);

@@ -130,7 +130,8 @@ static vector2_t *R_LerpVector2(const vector2_t *from, const vector2_t *to, fixe
 static vector3_t *R_LerpVector3(const vector3_t *from, const vector3_t *to, fixed_t frac, vector3_t *out)
 {
 	FV3_SubEx(to, from, out);
-	FV3_MulEx(out, frac, out);
+	vector3_t vfrac = { frac, frac, frac };
+	FV3_MulEx(out, &vfrac, out);
 	FV3_AddEx(from, out, out);
 	return out;
 }

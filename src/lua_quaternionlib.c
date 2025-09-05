@@ -9,13 +9,13 @@
 /// \file  lua_quaternionlib.c
 /// \brief quaternion library for Lua scripting
 
-#include "quaternion.h"
+#include "m_fixed.h"
 #include "lua_script.h"
 #include "lua_libs.h"
 
-static quaternion_t *NewQuaternion(lua_State *L)
+static vector4_t *NewQuaternion(lua_State *L)
 {
-	quaternion_t *quat = lua_newuserdata(L, sizeof(*quat));
+	vector4_t *quat = lua_newuserdata(L, sizeof(*quat));
 	luaL_getmetatable(L, META_QUATERNION);
 	lua_setmetatable(L, -2);
 	return quat;
@@ -27,7 +27,11 @@ static quaternion_t *NewQuaternion(lua_State *L)
 
 static int quaternion_new(lua_State *L)
 {
-	Quaternion_SetIdentity(NewQuaternion(L));
+	vector4_t *q = NewQuaternion(L);
+	q->x = 0;
+	q->y = 0;
+	q->z = 0;
+	q->a = FRACUNIT;
 	return 1;
 }
 
@@ -35,7 +39,19 @@ static int quaternion_fromAxisRotation(lua_State *L)
 {
 	vector3_t *axis = luaL_checkudata(L, 1, META_VECTOR3);
 	fixed_t angle = luaL_checkfixed(L, 2);
-	Quaternion_SetAxisRotation(NewQuaternion(L), axis, angle);
+
+	fixed_t cosangle = FINECOSINE(((angle / 2) >> ANGLETOFINESHIFT) & FINEMASK);
+	fixed_t sinangle = FINESINE(((angle / 2) >> ANGLETOFINESHIFT) & FINEMASK);
+	vector3_t normaxis;
+
+	FV3_NormalizeEx(axis, &normaxis);
+
+	FV4_Load(NewQuaternion(L),
+		FixedMul(normaxis.x, sinangle),
+		FixedMul(normaxis.y, sinangle),
+		FixedMul(normaxis.z, sinangle),
+		cosangle
+	);
 	return 1;
 }
 
@@ -51,20 +67,47 @@ static luaL_Reg quaternion[] = {
 
 static int quaternion_clone(lua_State *L)
 {
-	quaternion_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
-	Quaternion_Copy(NewQuaternion(L), quat);
+	vector4_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
+	FV4_Copy(NewQuaternion(L), quat);
 	return 1;
 }
 
-static int quaternion_toMatrix(lua_State *L)
+static int vector4_toMatrix(lua_State *L)
 {
-	quaternion_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
+	vector4_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
 
 	matrix_t *mat = lua_newuserdata(L, sizeof(*mat));
 	luaL_getmetatable(L, META_MATRIX);
 	lua_setmetatable(L, -2);
 
-	Quaternion_ToMatrix(mat, quat);
+	fixed_t x = quat->x, y = quat->y, z = quat->z, w = quat->a;
+
+	fixed_t xx2 = 2 * FixedMul(x, x);
+	fixed_t xy2 = 2 * FixedMul(x, y);
+	fixed_t xz2 = 2 * FixedMul(x, z);
+	fixed_t xw2 = 2 * FixedMul(x, w);
+	fixed_t yy2 = 2 * FixedMul(y, y);
+	fixed_t yz2 = 2 * FixedMul(y, z);
+	fixed_t yw2 = 2 * FixedMul(y, w);
+	fixed_t zz2 = 2 * FixedMul(z, z);
+	fixed_t zw2 = 2 * FixedMul(z, w);
+
+	FM_LoadIdentity(mat);
+
+	mat->m[0 + 0*4] = FRACUNIT - yy2 - zz2;
+	mat->m[0 + 1*4] = xy2 - zw2;
+	mat->m[0 + 2*4] = xz2 + yw2;
+
+	mat->m[1 + 0*4] = xy2 + zw2;
+	mat->m[1 + 1*4] = FRACUNIT - xx2 - zz2;
+	mat->m[1 + 2*4] = yz2 - xw2;
+
+	mat->m[2 + 0*4] = xz2 - yw2;
+	mat->m[2 + 1*4] = yz2 + xw2;
+	mat->m[2 + 2*4] = FRACUNIT - xx2 - yy2;
+
+	mat->m[3 + 3*4] = FRACUNIT;
+
 	return 1;
 }
 
@@ -88,18 +131,18 @@ static const char *const quaternionfield_opt[] = {
 
 static int quaternion_get(lua_State *L)
 {
-	quaternion_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
+	vector4_t *quat = luaL_checkudata(L, 1, META_QUATERNION);
 	enum quaternionfield_e field = luaL_checkoption(L, 2, quaternionfield_opt[0], quaternionfield_opt);
 
 	switch(field)
 	{
 		case quaternionfield_clone: lua_pushcfunction(L, quaternion_clone); return 1;
-		case quaternionfield_toMatrix: lua_pushcfunction(L, quaternion_toMatrix); return 1;
+		case quaternionfield_toMatrix: lua_pushcfunction(L, vector4_toMatrix); return 1;
 
 		case quaternionfield_x: lua_pushfixed(L, quat->x); return 1;
 		case quaternionfield_y: lua_pushfixed(L, quat->y); return 1;
 		case quaternionfield_z: lua_pushfixed(L, quat->z); return 1;
-		case quaternionfield_w: lua_pushfixed(L, quat->w); return 1;
+		case quaternionfield_w: lua_pushfixed(L, quat->a); return 1;
 
 		default: break;
 	}
@@ -113,9 +156,9 @@ static int quaternion_get(lua_State *L)
 
 static int quaternion_mul(lua_State *L)
 {
-	quaternion_t *quat1 = luaL_checkudata(L, 1, META_QUATERNION);
-	quaternion_t *quat2 = luaL_checkudata(L, 2, META_QUATERNION);
-	Quaternion_Mul(NewQuaternion(L), quat1, quat2);
+	vector4_t *quat1 = luaL_checkudata(L, 1, META_QUATERNION);
+	vector4_t *quat2 = luaL_checkudata(L, 2, META_QUATERNION);
+	FV4_MulEx(quat1, quat2, NewQuaternion(L));
 	return 1;
 }
 
