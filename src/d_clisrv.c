@@ -5741,6 +5741,17 @@ boolean TryRunTics(tic_t realtics)
 		COM_BufTicker();
 		if (mapchangepending)
 			D_MapChange(-1, 0, encoremode, false, 2, false, fromlevelselect); // finish the map change
+
+		// fun fact: this used to be located in NetUpdate!
+		// as it turns out, reloading the level in rendering code is a very bad idea!
+		if (client)
+		{
+			// If the client just finished redownloading the game state, load it
+			if (cl_redownloadinggamestate && fileneeded[0].status == FS_FOUND)
+				CL_ReloadReceivedSavegame();
+
+			hu_redownloadinggamestate = cl_redownloadinggamestate;
+		}
 	}
 
 	NetUpdate();
@@ -6184,12 +6195,7 @@ void NetUpdate(void)
 
 	if (client)
 	{
-		// If the client just finished redownloading the game state, load it
-		if (cl_redownloadinggamestate && fileneeded[0].status == FS_FOUND)
-			CL_ReloadReceivedSavegame();
-
 		CL_SendClientCmd(); // Send tic cmd
-		hu_redownloadinggamestate = cl_redownloadinggamestate;
 	}
 	else
 	{
