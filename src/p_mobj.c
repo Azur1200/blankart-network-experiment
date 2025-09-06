@@ -1805,6 +1805,8 @@ void P_XYMovement(mobj_t *mo)
 							break;
 					}
 				}
+				else
+					mo->momx = mo->momy = 0;
 			}
 		}
 		//
