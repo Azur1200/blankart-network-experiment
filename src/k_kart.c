@@ -363,7 +363,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartitembreaker);
 
-	CV_RegisterVar(&cv_kartwalltransfer);
+	//CV_RegisterVar(&cv_kartwalltransfer);
 
 	CV_RegisterVar(&cv_kartpurpledrift);
 

@@ -520,7 +520,7 @@ consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No",
 
 consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
 
-consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+//consvar_t cv_kartwalltransfer = CVAR_INIT ("BG_forcewalltransfer", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 

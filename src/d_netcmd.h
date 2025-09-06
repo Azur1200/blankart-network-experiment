@@ -184,7 +184,7 @@ extern consvar_t cv_kartchaining;
 extern consvar_t cv_kartchainingoffroad;
 
 extern consvar_t cv_kartitembreaker;
-extern consvar_t cv_kartwalltransfer;
+//extern consvar_t cv_kartwalltransfer;
 extern consvar_t cv_kartpurpledrift;
 extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;

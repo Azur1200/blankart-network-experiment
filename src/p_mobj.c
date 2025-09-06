@@ -1696,7 +1696,7 @@ void P_XYMovement(mobj_t *mo)
 		else
 		{
 			boolean walltransfered = false;
-			boolean walltransferok = B_UseWallTransfer();
+			boolean walltransferok = B_UseWallTransfer(mo);
 			//if (player || mo->flags & MF_SLIDEME|MF_PUSHABLE)
 			if (walltransferok)
 			{ // try to slide along it

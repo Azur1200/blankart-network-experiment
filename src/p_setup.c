@@ -1904,6 +1904,8 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		sectors[i].specialflags |= SSF_FINISHLINE;
 	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
+	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_WALLTRANSFER;
 	else if (fastcmp(param, "nophysics_floor") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSFLOOR;
 	else if (fastcmp(param, "nophysics_ceiling") && fastcmp("true", val))
