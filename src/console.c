@@ -1418,10 +1418,10 @@ static void CON_DrawInput(void)
 			V_DrawCharacter(x, y, p[c] | cv_constextsize.value | V_NOSCALESTART, true);
 
 		if (c == input.cursor && con_tick >= 4)
-			V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, !cv_menucaps.value);
+			V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, true);
 	}
 	if (cend == input.cursor && con_tick >= 4)
-		V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, !cv_menucaps.value);
+		V_DrawCharacter(x, y + (con_scalefactor*2), '_' | cv_constextsize.value | V_NOSCALESTART, true);
 	if (rellip)
 	{
 		if (input.select > cend)

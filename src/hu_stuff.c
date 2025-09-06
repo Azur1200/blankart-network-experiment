@@ -1721,7 +1721,7 @@ static void HU_DrawChat(void)
 	typelines = 1;
 
 	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx+2+c, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, !cv_menucaps.value, NULL);
+		V_DrawChatCharacter(chatx+2+c, y+1, '_'|V_SNAPTOBOTTOM|V_SNAPTOLEFT|t, true, NULL);
 
 	if (w_chat.select != w_chat.cursor)
 	{
@@ -1744,7 +1744,7 @@ static void HU_DrawChat(void)
 			drawwidth = EMOTEWIDTH;
 		}
 		else if (w_chat_buf[i] >= HU_FONTSTART) //Hurdler: isn't it better like that?
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, !cv_menucaps.value, NULL);
+			V_DrawChatCharacter(chatx + c + 2, y, w_chat_buf[i] | V_SNAPTOBOTTOM|V_SNAPTOLEFT | t, true, NULL);
 
 		// Draw selection
 		if (i >= select_start && i < select_end)
@@ -1919,13 +1919,13 @@ static void HU_DrawChat_Old(void)
 		else
 		{
 			//charwidth = (fontv[HU_FONT].font[talk[i]-HU_FONTSTART]->width) * con_scalefactor;
-			V_DrawCharacter(HU_INPUTX + c, y, talk[i++] | cv_constextsize.value | V_NOSCALESTART, !cv_menucaps.value);
+			V_DrawCharacter(HU_INPUTX + c, y, talk[i++] | cv_constextsize.value | V_NOSCALESTART, true);
 		}
 		c += charwidth;
 	}
 
 	if ((w_chat.cursor == 0 || w_chat.length == 0) && hu_tick < 4)
-		V_DrawCharacter(HU_INPUTX+c+charwidth*w_chat.cursor, y+2*con_scalefactor, '_'|cv_constextsize.value|V_NOSCALESTART|t, !cv_menucaps.value);
+		V_DrawCharacter(HU_INPUTX+c+charwidth*w_chat.cursor, y+2*con_scalefactor, '_'|cv_constextsize.value|V_NOSCALESTART|t, true);
 
 	if (w_chat.select != w_chat.cursor)
 	{
@@ -1947,7 +1947,7 @@ static void HU_DrawChat_Old(void)
 		if (w_chat_buf[i] >= HU_FONTSTART)
 		{
 			//charwidth = (fontv[HU_FONT].font[w_chat[i]-HU_FONTSTART]->width) * con_scalefactor;
-			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, !cv_menucaps.value);
+			V_DrawCharacter(HU_INPUTX + c, y, w_chat_buf[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
 		}
 
 		// Draw selection
