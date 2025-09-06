@@ -936,6 +936,8 @@ const char *blancredits[] = {
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKaynx\"",
 	"\"Achiiro\" aka \"achiiDev\"",
+	"\"Mayo\"",
+	"\"WumboSpasm\"",
 	"",
 	"\1Map Patches",
 	"\"Sonic1983\" (PB)",
