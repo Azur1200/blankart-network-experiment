@@ -3657,7 +3657,7 @@ static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, INT32 hudx, INT
 	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-faceprefix[skin][FACE_MINIMAP]->height)/2)<<FRACBITS);
 
 	const char *player_name = va("%s",player_names[player - players]);
-	V_DrawCenteredSmallStringAtFixed(amxpos + (4*FRACUNIT), amypos - (3*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
+	V_DrawCenteredSmallStringAtFixed(amxpos + (6*FRACUNIT), amypos - (5*FRACUNIT), V_ALLOWLOWERCASE|flags|chatcolor, player_name);
 }
 
 static inline void K_drawKartMinimapDot(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, UINT8 color, UINT8 intsize)
