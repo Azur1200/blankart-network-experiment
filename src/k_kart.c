@@ -3975,7 +3975,7 @@ static void K_UpdateSlopeBoost(player_t *player)
 
 static fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax)
 {
-	return newmin +  FixedMul(FixedDiv( value-oldmin , oldmax-oldmin), newmax-newmin);
+	return newmin + FixedMul(FixedDiv(value-oldmin , oldmax-oldmin), newmax-newmin);
 }
 
 // sets boostpower, speedboost and accelboost to whatever we need it to be
@@ -4062,7 +4062,7 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, player->slopeboost, player->slopeaccel, SLOPESTACKABLE, false); // + ???% top speed, + 300% acceleration
 	}
 
-	// This should always remain the last boost
+	// This should always remain the last boost before drafting
 	if (player->botvars.rubberband > FRACUNIT && K_PlayerUsesBotMovement(player) == true)
 	{
 		//K_DoBoost(player, player->botvars.rubberband - FRACUNIT, 0, false, false);
@@ -4073,9 +4073,25 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->draftpower > 0) // Drafting
 	{
 		fixed_t draftspeed = K_BoostRescale(player->kartspeed*FRACUNIT, 9*FRACUNIT, FRACUNIT, DRAFTMINSPEED, DRAFTMAXSPEED);
+		fixed_t bonusaccel = K_BoostRescale(player->kartspeed*FRACUNIT, 4*FRACUNIT, 9*FRACUNIT, 0, FRACUNIT/2);
 
 		player->boostinfo.stackspeedboost += FixedMul(draftspeed, player->draftpower);
 		player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, FixedMul(draftspeed, player->draftpower));
+
+		// Now for a small amount of bonus accel for higher speeds.
+		if (player->draftpower >= FRACUNIT && player->kartspeed > 4)
+		{
+			// CONS_Printf("bonusaccel: %d\n", bonusaccel);
+			if (cv_kartstacking_accelstack.value && K_StackingActive())
+			{
+				player->boostinfo.accelboost += bonusaccel;
+			}
+			else
+			{
+				player->boostinfo.accelboost = max(player->boostinfo.accelboost, bonusaccel);
+			}
+		}
+
 		player->boostinfo.grade++;
 	}
 
