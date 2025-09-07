@@ -755,6 +755,8 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "QUITVIEWSERVER", &MR_QuitViewServer },
 	{ "HANDLEVIEWSERVER", &MR_HandleViewServer },
 	{ "CAMERASETUP", &MR_CameraSetup },
+	// { "BARCSS", &MR_HandleBarCss },
+	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },
 #endif
@@ -769,6 +771,9 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ "DRAWTIMEATTACKMENU", &MD_DrawTimeAttackMenu },
 	{ "DRAWMPMAINMENU", &MD_DrawMPMainMenu },
 	{ "DRAWSETUPMULTIPLAYERMENU", &MD_DrawSetupMultiPlayerMenu },
+	// { "DRAWCSSCHARACTER", &MD_DrawCssCharacter },
+	// { "DRAWBARCSSSELECTOR", &MD_DrawBarCssSelector },
+	// { "DRAWGRIDCSSSELECTOR", &MD_DrawGridCssSelector },
 	{ "DRAWVIDEOMODE", &MD_DrawVideoMode },
 	{ "DRAWADDONS", &MD_DrawAddons },
 	{ "DRAWREPLAYSTARTMENU", &MD_DrawReplayStartMenu },

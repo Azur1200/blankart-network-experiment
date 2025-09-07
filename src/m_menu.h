@@ -302,6 +302,7 @@ INT32 MR_Retry(INT32 choice);
 INT32 MR_EndGame(INT32 choice);
 INT32 MR_MapChange(INT32 choice);
 INT32 MR_SetupMultiPlayer(INT32 choice);
+INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice);
 INT32 MR_ConfirmSpectate(INT32 choice);
 INT32 MR_ConfirmEnterGame(INT32 choice);
 INT32 MR_ConfirmTeamScramble(INT32 choice);
@@ -339,6 +340,11 @@ void MD_DrawReplayHut(void);
 void MD_DrawTimeAttackMenu(void);
 void MD_DrawMPMainMenu(void);
 void MD_DrawSetupMultiPlayerMenu(void);
+void MD_DrawCssStatBacker(void);
+void MD_DrawCssColourBar(void);
+void MD_DrawCssCharacter(void);
+void MD_DrawBarCssSelector(void);
+void MD_DrawGridCssSelector(void);
 void MD_DrawConnectMenu(void);
 void MD_DrawVideoMode(void);
 void MD_DrawAddons(void);
@@ -352,6 +358,8 @@ void MD_DrawViewServer(void);
 #ifdef HAVE_DISCORDRPC
 void MD_DrawDiscordRequests(void);
 #endif
+
+INT32 MapGridSelectToSkin(INT32 column, INT32 row);
 
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
@@ -416,6 +424,7 @@ extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift, cv_dum
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;
+extern consvar_t cv_dummyskin;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
