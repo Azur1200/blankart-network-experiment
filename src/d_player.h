@@ -40,8 +40,7 @@ extern "C" {
 typedef enum
 {
 	SF_MACHINE          = 1, // Beep boop. Are you a robot?
-	SF_NOGIBS			= 1<<1, // Does this kart smash into pieces?
-	SF_OLDDEATH			= 1<<2, // Kart V1 styled death animation
+	SF_OLDDEATH			= 1<<1, // Kart V1 styled death animation
 	// free up to and including 1<<31
 } skinflags_t;
 

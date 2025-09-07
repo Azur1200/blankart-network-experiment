@@ -1000,7 +1000,6 @@ struct int_const_s const INT_CONST[] = {
 	// Character flags (skinflags_t)
 	{"SF_HIRES",0},
 	{"SF_MACHINE",SF_MACHINE},
-	{"SF_NOGIBS",SF_NOGIBS},
 	{"SF_OLDDEATH",SF_OLDDEATH},
 
 	// Sound flags

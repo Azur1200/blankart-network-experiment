@@ -609,7 +609,7 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 
 		R_AddKartFaces(skin);
 
-		skin->flags |= SF_OLDDEATH|SF_NOGIBS;
+		skin->flags |= SF_OLDDEATH;
 	}
 
 	if (skin->sprites[0].numframes == 0)
@@ -693,7 +693,6 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	// these are uppercase so they can be concatenated with SF_
 	// 1, true, yes are all valid values
 	GETFLAG(MACHINE)
-	GETFLAG(NOGIBS)
 	GETFLAG(OLDDEATH)
 #undef GETFLAG
 
