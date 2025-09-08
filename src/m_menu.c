@@ -7023,8 +7023,8 @@ void MD_DrawBarCssSelector(void)
 #undef iconwidth
 }
 
-//callmore's skin select stuff taken with permission
-//fucked with by minenice
+// minenice's grid style CSS from an unfinished moe mansion pull request
+// originally based on callmore's skin select
 
 //width now 9 so we can make moe's "2D" grid just an option in the normal grid
 #define SKINGRIDWIDTH 9
