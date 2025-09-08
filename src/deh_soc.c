@@ -1844,7 +1844,6 @@ void readtextprompt(MYFILE *f, INT32 num)
 // super secret menu cvars... :shushing_face:
 static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "CHOOSESKIN", &cv_chooseskin },
-	{ "DUMMYSKIN", &cv_dummyskin },
 	{ "DUMMYGPDIFFICULTY", &cv_dummygpdifficulty },
 	{ "DUMMYGPENCORE", &cv_dummygpencore },
 	{ "DUMMYGPCUP", &cv_dummygpcup },

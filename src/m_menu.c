@@ -377,7 +377,6 @@ static INT16 lastnextmap = 1;
 
 static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, NULL}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
-consvar_t cv_dummyskin = CVAR_INIT ("dummyskin", "0", CV_HIDEN, skins_cons_t, NULL);
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
@@ -6721,6 +6720,11 @@ INT32 MR_ConnectIP(INT32 choice)
 static fixed_t    multi_tics;
 static state_t   *multi_state;
 
+static INT32 gridcss_skinydrag;
+static INT32 gridcss_skinmemory;
+static INT32 gridcss_row;
+static INT32 gridcss_column;
+
 // used for follower display on player setup menu
 static fixed_t follower_tics;
 static UINT32 follower_frame;	// used for FF_ANIMATE garbo
@@ -6760,7 +6764,7 @@ void MD_DrawCssStatBacker(void)
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT16 i;
 
-	INT32 skintodisplay = M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") ? cv_dummyskin.value : cv_chooseskin.value;
+	INT32 skintodisplay = cv_chooseskin.value;
 
 	mx = menudefs[MN_MP_PLAYERSETUP].x;
 	my = menudefs[MN_MP_PLAYERSETUP].y;
@@ -6851,7 +6855,7 @@ void MD_DrawCssCharacter(void)
 	spritedef_t *sprdef;
 	spriteframe_t *sprframe;
 
-	INT32 skintodisplay = M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") ? cv_dummyskin.value : cv_chooseskin.value;
+	INT32 skintodisplay = cv_chooseskin.value;
 
 	mx = menudefs[MN_MP_PLAYERSETUP].x;
 	my = menudefs[MN_MP_PLAYERSETUP].y;
@@ -7021,7 +7025,6 @@ void MD_DrawBarCssSelector(void)
 
 //callmore's skin select stuff taken with permission
 //fucked with by minenice
-static INT32 gridcss_skinydrag;
 
 //width now 9 so we can make moe's "2D" grid just an option in the normal grid
 #define SKINGRIDWIDTH 9
@@ -7036,13 +7039,16 @@ void MD_DrawGridCssSelector(void)
 	patch_t *face;
 	UINT8 *colmap;
 	
+	patch_t *cursor;
+	static fixed_t cursorframe = 0;
+	
 	INT32 gridx;
 	INT32 gridy;
 	INT32 cursorx;
 	INT32 cursory;
 	INT32 calcs;
 
-	INT32 skintodisplay = M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") ? cv_dummyskin.value : cv_chooseskin.value;
+	INT32 skintodisplay = cv_chooseskin.value;
 	
 	// gridcss_skinydrag = 0;
 	// draws background and scroll bar
@@ -7121,10 +7127,35 @@ void MD_DrawGridCssSelector(void)
 			V_DrawFixedPatch(gridx * FRACUNIT, gridy * FRACUNIT, FRACUNIT, 0, face, colmap);
 		}
 	}
-	// draw wanted portrait as a cursor
-	face = faceprefix[skintodisplay][FACE_WANTED];
-	colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
-	V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
+
+	// draw wanted portrait and cursor
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
+	{
+		face = faceprefix[skintodisplay][FACE_WANTED];
+		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
+		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
+
+		
+		cursorframe += renderdeltatics / 4;
+		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
+		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
+		// cursor patch offsets are wrong so draw at same coordinate as portrait
+		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
+		
+	}
+	else
+	{
+		face = faceprefix[skintodisplay][FACE_RANK];
+		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
+		V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT, 0, face, colmap);
+		cursor = W_CachePatchName("M_FSEL", PU_CACHE);
+
+		if (skullAnimCounter < 4)
+		{
+			colmap = V_GetStringColormap(skincolors[cv_dummycolor.value].chatcolor);
+			V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT/2, 0, cursor, colmap);
+		}
+	}
 }
 
 //
@@ -7137,74 +7168,139 @@ INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
-	INT32 gridrow_delta, gridcolumn_delta;
-	INT32 skintodisplay = M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") ? cv_dummyskin.value : cv_chooseskin.value;
-	INT32 gridrow = skintodisplay % SKINGRIDHEIGHT;
-	INT32 gridcolumn = skintodisplay / SKINGRIDHEIGHT;
-
 	if (!M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
 	{
-		CV_SetValue(&cv_dummyskin, cv_chooseskin.value);
 		return false;
 	}
 
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			gridcolumn_delta = 1;
+			// gridcolumn_delta = 1;
+			if (gridcss_column == (numskins - 1) / SKINGRIDWIDTH)
+			{
+				M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
+				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+				gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
+				gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+			}
+			else
+			{
+				gridcss_column++;
+
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+				{
+					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+				}
+				
+				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+					gridcss_skinydrag++;
+			}
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_UPARROW:
-			gridcolumn_delta = -1;
+			if (gridcss_column == 0)
+			{
+				M_SetItemOn(MN_MP_PLAYERSETUP, "NAME");
+				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+				gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
+				gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+			}
+			else
+			{
+				gridcss_column--;
+
+				if (gridcss_column < gridcss_skinydrag)
+					gridcss_skinydrag--;
+			}
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_LEFTARROW:
-			gridrow_delta = -1;
+			// gridrow_delta = -1;
+			if (gridcss_row == 0)
+			{
+				if (MapGridSelectToSkin(SKINGRIDWIDTH - 1, gridcss_column) > (numskins-1))
+					gridcss_row = numskins - (gridcss_column * SKINGRIDWIDTH) - 1;
+				else
+					gridcss_row = SKINGRIDWIDTH - 1;
+				if (gridcss_column > 0)
+				{
+					gridcss_row = SKINGRIDWIDTH - 1;
+					gridcss_column--;
+	
+					if (gridcss_column < gridcss_skinydrag)
+						gridcss_skinydrag--;
+				}
+				
+			}
+			else
+			{
+				gridcss_row--;
+			}
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_RIGHTARROW:
-			gridrow_delta = 1;
+			// gridrow_delta = 1;
+			if ((gridcss_row + 1 == SKINGRIDWIDTH) || (MapGridSelectToSkin(gridcss_row + 1, gridcss_column) > (numskins - 1)))
+			{
+				gridcss_row = 0;
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column + 1) <= (numskins - 1))
+				{
+					gridcss_column++;
+
+					if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+						gridcss_skinydrag++;
+				}
+			}
+			else
+			{
+				gridcss_row++;
+			}
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_PGDN:
+			if (gridcss_column <= (numskins - 1) / SKINGRIDWIDTH)
+			{
+				gridcss_column = min(gridcss_column + SKINGRIDHEIGHT - 1, (numskins - 1) / SKINGRIDWIDTH);
+
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+				{
+					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+				}
+
+				gridcss_skinydrag = min(gridcss_column - SKINGRIDHEIGHT + 1, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+
+				S_StartSound(NULL, sfx_menu1);
+			}
 			break;
 		case KEY_PGUP:
+			if (gridcss_column > 0)
+			{
+				gridcss_column = max(gridcss_column - SKINGRIDHEIGHT + 1, 0);
+				gridcss_skinydrag = max(gridcss_column, 0);
+				S_StartSound(NULL, sfx_menu1);
+			}
 			break;
 		case KEY_ENTER:
-			if (cv_dummyskin.value < numskins)
+			if (cv_chooseskin.value < numskins)
 			{
-				CV_SetValue(&cv_chooseskin, MapGridSelectToSkin(gridrow, gridcolumn));
+				gridcss_skinmemory = cv_chooseskin.value;
 				S_StartSound(NULL, sfx_s221);
 			}
 			break;
 		default:
 			return false;
 	}
-
-	// vertical cursor movement
-	if (gridcolumn + gridcolumn_delta < 0)
-	{
-		gridcolumn = 0;
-		M_SetItemOn(MN_MP_PLAYERSETUP, "NAME");
-	}
-	if (MapGridSelectToSkin(gridrow, gridcolumn + gridcolumn_delta) >= numskins)
-	{
-		gridcolumn = SKINGRIDHEIGHT;
-		M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
-	}
-	if (gridcolumn + gridcolumn_delta > SKINGRIDHEIGHT - 1)
-	{
-		gridcss_skinydrag++;
-	}
-	gridcolumn += gridcolumn_delta;
-
-	CV_SetValue(&cv_dummyskin, MapGridSelectToSkin(gridrow, gridcolumn));
+		
+	CV_SetValue(&cv_chooseskin, MapGridSelectToSkin(gridcss_row, gridcss_column));
 	return true;
 }
-#undef SKINGRIDWIDTH
-#undef SKINGRIDHEIGHT
-#undef SKINXSHIFT
-#undef SKINYSHIFT
 
 // follower state update. This is its own function so that it's at least somewhat clean
 static void M_GetFollowerState(void)
@@ -7238,14 +7334,15 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	multi_state = &states[mobjinfo[MT_PLAYER].seestate];
 	multi_tics = multi_state->tics * FRACUNIT;
 
-	gridcss_skinydrag = 0;
-
 	CV_Set(&cv_dummyname, cv_playername[arg].string);
 	CV_SetValue(&cv_chooseskin, R_SkinAvailable(cv_skin[arg].string));
-	CV_SetValue(&cv_dummyskin, cv_chooseskin.value);
+	gridcss_skinmemory = cv_chooseskin.value;
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
-
+	
+	gridcss_row = gridcss_skinmemory % SKINGRIDWIDTH;
+	gridcss_column = gridcss_skinmemory / SKINGRIDWIDTH;
+	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 
 	M_GetFollowerState();	// update follower state
 
@@ -7258,6 +7355,9 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 {
 	(void)choice;
+
+	CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+
 	const char *followername = cv_dummyfollower.value == -1 ?
 		"None" : followers[cv_dummyfollower.value].skinname;
 	COM_BufInsertText(va(
@@ -7269,6 +7369,10 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 	));
 	return true;
 }
+#undef SKINGRIDWIDTH
+#undef SKINGRIDHEIGHT
+#undef SKINXSHIFT
+#undef SKINYSHIFT
 
 void M_AddMenuColor(UINT16 color) {
 	menucolor_t *c;

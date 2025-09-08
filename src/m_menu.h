@@ -424,7 +424,6 @@ extern consvar_t cv_dummyattackingslipdash, cv_dummyattackingpurpledrift, cv_dum
 extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;
-extern consvar_t cv_dummyskin;
 
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
