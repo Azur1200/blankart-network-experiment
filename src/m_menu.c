@@ -7173,7 +7173,6 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 	switch (choice)
 	{
 		case KEY_DOWNARROW:
-			// gridcolumn_delta = 1;
 			if (gridcss_column == (numskins - 1) / SKINGRIDWIDTH)
 			{
 				M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
@@ -7218,7 +7217,6 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_LEFTARROW:
-			// gridrow_delta = -1;
 			if (gridcss_row == 0)
 			{
 				if (MapGridSelectToSkin(SKINGRIDWIDTH - 1, gridcss_column) > (numskins-1))
@@ -7233,7 +7231,6 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					if (gridcss_column < gridcss_skinydrag)
 						gridcss_skinydrag--;
 				}
-				
 			}
 			else
 			{
@@ -7242,7 +7239,6 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_RIGHTARROW:
-			// gridrow_delta = 1;
 			if ((gridcss_row + 1 == SKINGRIDWIDTH) || (MapGridSelectToSkin(gridcss_row + 1, gridcss_column) > (numskins - 1)))
 			{
 				gridcss_row = 0;
