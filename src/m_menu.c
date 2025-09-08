@@ -7060,11 +7060,11 @@ void MD_DrawGridCssSelector(void)
 		INT32 dy = (SKINGRIDHEIGHT * 18);
 		INT32 scrx = 4; //2 is added to make the final "thickness"
 
-		int listlen;
-		int barlen;
-		int barpos;
+		INT32 columncount;
+		INT32 barlen;
+		INT32 barpos;
 		
-		listlen = (numskins)/SKINGRIDWIDTH;
+		columncount = ((numskins - 1) / SKINGRIDWIDTH);
 
 		//draw BG
 		V_DrawFill(x, y, dx, dy, 244);
@@ -7080,16 +7080,24 @@ void MD_DrawGridCssSelector(void)
 		V_DrawFill(x, y, scrx, dy, 15);
 
 		//draw scroll bar bar
-		if ((numskins) % SKINGRIDWIDTH > 0)
-			listlen++;
-		if (listlen - SKINGRIDHEIGHT > 0)
-			barlen = dy/(listlen-SKINGRIDHEIGHT + 1);
-		else
-			barlen = dy;
-		barpos = barlen * gridcss_skinydrag;
+		// if ((numskins) % SKINGRIDWIDTH > 0)
+		// 	columncount++;
+		// if (columncount - SKINGRIDHEIGHT > 0)
+		// 	barlen = dy/(columncount-SKINGRIDHEIGHT + 1);
+		// else
+		// 	barlen = dy;
+		// barpos = barlen * gridcss_skinydrag;
 
-		if (gridcss_skinydrag >= listlen - SKINGRIDHEIGHT)
+		// if (gridcss_skinydrag >= columncount - SKINGRIDHEIGHT)
+		// 	barlen = dy - barpos;
+
+		barlen = dy * SKINGRIDHEIGHT / columncount;
+		barpos = dy * gridcss_skinydrag / columncount;
+
+		if (barpos + barlen > dy)
+		{
 			barlen = dy - barpos;
+		}
 
 		V_DrawFill(x, y + barpos, scrx, barlen, 5);
 		V_DrawFill(x, y + barpos, 1, barlen, 7);
