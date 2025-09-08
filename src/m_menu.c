@@ -378,6 +378,9 @@ static INT16 lastnextmap = 1;
 static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, NULL}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
 
+static CV_PossibleValue_t skinselectstyle_cons_t[] = {{0, "Bar"}, {1, "Grid"}, {0, NULL}};
+consvar_t cv_skinselectstyle = CVAR_INIT ("skinselectstyle", "Grid", CV_SAVE, skinselectstyle_cons_t, NULL);
+
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
 CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
@@ -6737,22 +6740,23 @@ static UINT8 setupplayer;
 #define charw 72
 
 void MD_DrawSetupMultiPlayerMenu(void)
-{
-	// INT32 mx, my;
-	
-	// mx = menudefs[MN_MP_PLAYERSETUP].x;
-	// my = menudefs[MN_MP_PLAYERSETUP].y;
-	
+{	
 	// use generic drawer for cursor, items and title
 	// bg, text, arrows handled by generic drawer
 	MD_DrawGenericMenu();
 
-	// MD_DrawCssStatBacker();
 	MD_DrawCssColourBar();
 	MD_DrawCssCharacter();
-
-	// MD_DrawBarCssSelector();
-	MD_DrawGridCssSelector();
+	
+	if (cv_skinselectstyle.value)
+	{
+		MD_DrawGridCssSelector();
+	}
+	else
+	{
+		MD_DrawCssStatBacker();
+		MD_DrawBarCssSelector();
+	}
 }
 
 void MD_DrawCssStatBacker(void)
@@ -7165,7 +7169,8 @@ INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
-	if (!M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
+	// don't consume input if we're not interacting with the grid CSS
+	if (!(M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && cv_skinselectstyle.value))
 	{
 		return false;
 	}

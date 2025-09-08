@@ -425,6 +425,8 @@ extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;
 
+extern consvar_t cv_skinselectstyle;
+
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
