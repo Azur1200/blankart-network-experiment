@@ -7096,9 +7096,9 @@ void MD_DrawGridCssSelector(void)
 		//draw BG
 		V_DrawFill(x, y, dx, dy, 159);
 		
-		columncount = ((numskins - 1) / SKINGRIDWIDTH);
+		columncount = ((numskins - 1) / SKINGRIDWIDTH) + 1;
 
-		if (columncount >= SKINGRIDHEIGHT)
+		if (columncount > SKINGRIDHEIGHT)
 		{
 			//draw scroll bar "back"
 			x += dx + 4;
@@ -7114,9 +7114,9 @@ void MD_DrawGridCssSelector(void)
 			barlen = dy * SKINGRIDHEIGHT / columncount;
 			barpos = dy * gridcss_skinydrag / columncount;
 
-			if (barpos + barlen > dy)
+			if (gridcss_skinydrag >= columncount - SKINGRIDHEIGHT)
 			{
-				barlen = dy - barpos;
+				barpos = dy - barlen;
 			}
 
 			V_DrawFill(x, y + barpos, scrx, barlen, 5);
