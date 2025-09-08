@@ -3439,25 +3439,28 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (bestslideline == NULL)
 	{
-		if (cv_showgremlins.value)
+		if (K_IsMissileOrKartItem(mo))
 		{
-			// debug
-			mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
-			x->frame = FF_FULLBRIGHT | FF_ADD;
-			x->renderflags = RF_ALWAYSONTOP;
-			x->color = SKINCOLOR_RED;
+			if (cv_showgremlins.value)
+			{
+				// debug
+				mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+				x->frame = FF_FULLBRIGHT | FF_ADD;
+				x->renderflags = RF_ALWAYSONTOP;
+				x->color = SKINCOLOR_RED;
 
-			CONS_Printf(
-				"SLIDE GREMLIN: leveltime=%u x=%f y=%f z=%f",
-			   leveltime,
-			   FixedToFloat(mo->x),
-						FixedToFloat(mo->y),
-						FixedToFloat(mo->z)
-			);
+				CONS_Printf(
+					"SLIDE GREMLIN: leveltime=%u x=%f y=%f z=%f",
+				leveltime,
+				FixedToFloat(mo->x),
+							FixedToFloat(mo->y),
+							FixedToFloat(mo->z)
+				);
+			}
+
+			// We were not succesful, try the old version.
+			P_SlideMoveOLD(mo);
 		}
-
-		// We were not succesful, try the old version.
-		P_SlideMoveOLD(mo);
 		return;
 	}
 
@@ -4201,24 +4204,27 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (bestslideline == NULL)
 	{
-		if (cv_showgremlins.value)
+		if (K_IsMissileOrKartItem(mo))
 		{
-			// debug
-			mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
-			x->frame = FF_FULLBRIGHT | FF_ADD;
-			x->renderflags = RF_ALWAYSONTOP;
-			x->color = SKINCOLOR_RED;
+			if (cv_showgremlins.value)
+			{
+				// debug
+				mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+				x->frame = FF_FULLBRIGHT | FF_ADD;
+				x->renderflags = RF_ALWAYSONTOP;
+				x->color = SKINCOLOR_RED;
 
-			CONS_Printf(
-				"BOUNCE GREMLIN: leveltime=%u x=%f y=%f z=%f\n",
-			   leveltime,
-			   FixedToFloat(mo->x),
-						FixedToFloat(mo->y),
-						FixedToFloat(mo->z));
+				CONS_Printf(
+					"BOUNCE GREMLIN: leveltime=%u x=%f y=%f z=%f\n",
+				leveltime,
+				FixedToFloat(mo->x),
+							FixedToFloat(mo->y),
+							FixedToFloat(mo->z));
+			}
+
+			// We were not succesful, try the old version.
+			P_BounceMoveOLD(mo);
 		}
-
-		// We were not succesful, try the old version.
-		P_BounceMoveOLD(mo);
 		return;
 	}
 
