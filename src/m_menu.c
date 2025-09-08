@@ -7031,7 +7031,7 @@ void MD_DrawBarCssSelector(void)
 #define SKINGRIDHEIGHT 6
 
 #define SKINXSHIFT 33
-#define SKINYSHIFT 23
+#define SKINYSHIFT 28
 
 void MD_DrawGridCssSelector(void)
 {
@@ -7067,7 +7067,7 @@ void MD_DrawGridCssSelector(void)
 		columncount = ((numskins - 1) / SKINGRIDWIDTH);
 
 		//draw BG
-		V_DrawFill(x, y, dx, dy, 244);
+		V_DrawFill(x, y, dx, dy, 159);
 
 		//draw scroll bar "back"
 		x += dx + 4;
@@ -7080,17 +7080,6 @@ void MD_DrawGridCssSelector(void)
 		V_DrawFill(x, y, scrx, dy, 15);
 
 		//draw scroll bar bar
-		// if ((numskins) % SKINGRIDWIDTH > 0)
-		// 	columncount++;
-		// if (columncount - SKINGRIDHEIGHT > 0)
-		// 	barlen = dy/(columncount-SKINGRIDHEIGHT + 1);
-		// else
-		// 	barlen = dy;
-		// barpos = barlen * gridcss_skinydrag;
-
-		// if (gridcss_skinydrag >= columncount - SKINGRIDHEIGHT)
-		// 	barlen = dy - barpos;
-
 		barlen = dy * SKINGRIDHEIGHT / columncount;
 		barpos = dy * gridcss_skinydrag / columncount;
 
@@ -7119,7 +7108,7 @@ void MD_DrawGridCssSelector(void)
 		else
 		{
 			// draw an empty slot
-			V_DrawFill(gridx, gridy, 16, 16, 239);
+			V_DrawFill(gridx, gridy, 16, 16, 158);
 			continue;
 		}
 		
@@ -7294,6 +7283,16 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				gridcss_skinydrag = max(gridcss_column, 0);
 				S_StartSound(NULL, sfx_menu1);
 			}
+			break;
+		case KEY_TAB:
+			M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
+			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+			gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
+			gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+
+			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+
+			S_StartSound(NULL, sfx_menu1);
 			break;
 		case KEY_ENTER:
 			if (cv_chooseskin.value < numskins)
