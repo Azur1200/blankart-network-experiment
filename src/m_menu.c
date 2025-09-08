@@ -388,6 +388,7 @@ static CV_PossibleValue_t skinselectsort_cons_t[] = {
 	{SKINMENUSORT_WEIGHT, 	"Weight"},
 	{SKINMENUSORT_ACCEL, 	"Accel"},
 	{SKINMENUSORT_HANDLING, "Handling"},
+	{SKINMENUSORT_PREFCOLOR, "Preferred Colour"},
 	{0, NULL}
 };
 consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Order Added", CV_SAVE|CV_CALL|CV_NOINIT, skinselectsort_cons_t, Skinsort_option_Onchange);

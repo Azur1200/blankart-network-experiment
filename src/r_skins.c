@@ -326,6 +326,24 @@ static int CompareSkinHandlings(const void *a, const void *b)
 	return CompareSkinWeights(b, a);
 }
 
+static int CompareSkinColours(const void *a, const void *b)
+{
+	const skin_t *in1 = &skins[*(const INT32 *)a];
+	const skin_t *in2 = &skins[*(const INT32 *)b];
+	INT32 temp = 0;
+
+	// check prefcolor
+	if (in1->prefcolor < in2->prefcolor)
+		return -1;
+	else if (in2->prefcolor < in1->prefcolor)
+		return 1;
+	// then check name
+	if ((temp = strcmp(in1->realname, in2->realname)))
+		return temp;
+	// sort by internal name
+	return strcmp(in1->name, in2->name);
+}
+
 void SortSkins(void)
 {
 	CONS_Printf("Sorting skin list (sort type %d)...\n", cv_skinselectsort.value); 
@@ -347,6 +365,9 @@ void SortSkins(void)
 			break;
 		case SKINMENUSORT_HANDLING:
 			_sortingFunc = CompareSkinHandlings;
+			break;
+		case SKINMENUSORT_PREFCOLOR:
+			_sortingFunc = CompareSkinColours;
 			break;
 		default:
 			_sortingFunc = CompareSkinIds;
