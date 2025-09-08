@@ -7093,33 +7093,36 @@ void MD_DrawGridCssSelector(void)
 		INT32 barlen;
 		INT32 barpos;
 		
-		columncount = ((numskins - 1) / SKINGRIDWIDTH);
-
 		//draw BG
 		V_DrawFill(x, y, dx, dy, 159);
+		
+		columncount = ((numskins - 1) / SKINGRIDWIDTH);
 
-		//draw scroll bar "back"
-		x += dx + 4;
-		V_DrawFill(x, y, scrx+2, dy, 9);
-		V_DrawFill(x, y, 1, dy, 10);
-		V_DrawFill(x, y + dy - 1, scrx+2, 1, 10);
-		x++;
-		y++;
-		dy -= 2;
-		V_DrawFill(x, y, scrx, dy, 15);
-
-		//draw scroll bar bar
-		barlen = dy * SKINGRIDHEIGHT / columncount;
-		barpos = dy * gridcss_skinydrag / columncount;
-
-		if (barpos + barlen > dy)
+		if (columncount >= SKINGRIDHEIGHT)
 		{
-			barlen = dy - barpos;
-		}
+			//draw scroll bar "back"
+			x += dx + 4;
+			V_DrawFill(x, y, scrx+2, dy, 9);
+			V_DrawFill(x, y, 1, dy, 10);
+			V_DrawFill(x, y + dy - 1, scrx+2, 1, 10);
+			x++;
+			y++;
+			dy -= 2;
+			V_DrawFill(x, y, scrx, dy, 15);
 
-		V_DrawFill(x, y + barpos, scrx, barlen, 5);
-		V_DrawFill(x, y + barpos, 1, barlen, 7);
-		V_DrawFill(x, y + barpos + barlen - 1, scrx, 1, 7);
+			//draw scroll bar bar
+			barlen = dy * SKINGRIDHEIGHT / columncount;
+			barpos = dy * gridcss_skinydrag / columncount;
+
+			if (barpos + barlen > dy)
+			{
+				barlen = dy - barpos;
+			}
+
+			V_DrawFill(x, y + barpos, scrx, barlen, 5);
+			V_DrawFill(x, y + barpos, 1, barlen, 7);
+			V_DrawFill(x, y + barpos + barlen - 1, scrx, 1, 7);
+		}
 	}
 	// end background and scroll bar
 	
