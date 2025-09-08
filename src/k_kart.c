@@ -7001,7 +7001,7 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->flags &= ~MF_NOCLIPTHING;
 
 					if (!P_TryMove(cur, player->mo->x + cur->momx, player->mo->y + cur->momy, true, &result))
-						P_SlideMove(cur,&result);
+						P_SlideMoveOLD(cur);
 
 					if (P_IsObjectOnGround(player->mo))
 					{
