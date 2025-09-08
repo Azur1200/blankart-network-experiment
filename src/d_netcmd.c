@@ -510,10 +510,10 @@ consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_acce
 consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
 // Max speed for high speeds
-consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.22", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.16", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 
 // Max speed for low speeds
-consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.26", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 
 consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
