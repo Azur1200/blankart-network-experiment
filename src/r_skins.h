@@ -34,6 +34,8 @@ extern "C" {
 #define DEFAULTSKIN3 "knuckles" // third player
 #define DEFAULTSKIN4 "eggman" // fourth player
 
+extern consvar_t cv_skinselectstyle, cv_skinselectsort;
+
 /// The skin_t struct
 struct skin_t
 {
@@ -76,9 +78,21 @@ enum facepatches {
 	NUMFACES
 };
 
+enum skinmenusortoption
+{
+	SKINMENUSORT_ID = 0,
+	SKINMENUSORT_NAME,
+	SKINMENUSORT_SPEED,
+	SKINMENUSORT_WEIGHT,
+	SKINMENUSORT_ACCEL,
+	SKINMENUSORT_HANDLING,
+	NUMSKINMENUSORT,
+};
+
 /// Externs
 extern INT32 numskins;
 extern skin_t skins[MAXSKINS];
+extern INT32 skinsorted[MAXSKINS];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
@@ -86,6 +100,8 @@ extern const UINT8 kart2spr2[26][2];
 
 /// Function prototypes
 void R_InitSkins(void);
+void SortSkins(void);
+INT32 FindSortedSkinIndex(INT32 skinnum);
 
 void SetPlayerSkin(INT32 playernum,const char *skinname);
 void SetPlayerSkinByNum(INT32 playernum,INT32 skinnum); // Tails 03-16-2002

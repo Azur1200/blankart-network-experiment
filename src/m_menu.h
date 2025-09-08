@@ -425,8 +425,6 @@ extern consvar_t cv_dummystaff;
 extern consvar_t cv_dummymultiplayer, cv_dummyip, cv_dummyname, cv_dummyfollower, cv_dummycolor;
 extern consvar_t cv_dummyserverpage;
 
-extern consvar_t cv_skinselectstyle;
-
 extern consvar_t cv_menucaps;
 // allow menu text to be displayed in lowercase
 #define MENUCAPS (!cv_menucaps.value ? V_ALLOWLOWERCASE : 0)
@@ -470,6 +468,8 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out);
 
 // Moviemode menu updating
 void Moviemode_option_Onchange(void);
+
+void Skinsort_option_Onchange(void);
 
 // Player Setup menu colors linked list
 struct menucolor_t {

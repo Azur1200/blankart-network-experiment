@@ -381,6 +381,17 @@ consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOIN
 static CV_PossibleValue_t skinselectstyle_cons_t[] = {{0, "Bar"}, {1, "Grid"}, {0, NULL}};
 consvar_t cv_skinselectstyle = CVAR_INIT ("skinselectstyle", "Grid", CV_SAVE, skinselectstyle_cons_t, NULL);
 
+static CV_PossibleValue_t skinselectsort_cons_t[] = {
+	{SKINMENUSORT_ID, 		"Order Added"},
+	{SKINMENUSORT_NAME, 	"Name"},
+	{SKINMENUSORT_SPEED, 	"Speed"},
+	{SKINMENUSORT_WEIGHT, 	"Weight"},
+	{SKINMENUSORT_ACCEL, 	"Accel"},
+	{SKINMENUSORT_HANDLING, "Handling"},
+	{0, NULL}
+};
+consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Order Added", CV_SAVE|CV_CALL|CV_NOINIT, skinselectsort_cons_t, Skinsort_option_Onchange);
+
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
 CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
@@ -819,6 +830,26 @@ void Addons_option_Onchange(void)
 void Moviemode_option_Onchange(void)
 {
 	;
+}
+
+
+//width now 9 so we can make moe's "2D" grid just an option in the normal grid
+#define SKINGRIDWIDTH 9
+#define SKINGRIDHEIGHT 6
+
+static INT32 gridcss_skinydrag;
+static INT32 gridcss_skinmemory;
+static INT32 gridcss_row;
+static INT32 gridcss_column;
+
+void Skinsort_option_Onchange(void)
+{
+	SortSkins();
+	INT32 sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+	gridcss_row = sortedIndex % SKINGRIDWIDTH;
+	gridcss_column = sortedIndex / SKINGRIDWIDTH;
+	
+	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 }
 
 // ==========================================================================
@@ -2082,6 +2113,8 @@ void M_Init(void)
 	CV_RegisterVar(&cv_nextmap);
 	CV_RegisterVar(&cv_newgametype);
 	CV_RegisterVar(&cv_chooseskin);
+	CV_RegisterVar(&cv_skinselectstyle);
+	CV_RegisterVar(&cv_skinselectsort);
 	CV_RegisterVar(&cv_autorecord);
 
 	if (dedicated)
@@ -6723,11 +6756,6 @@ INT32 MR_ConnectIP(INT32 choice)
 static fixed_t    multi_tics;
 static state_t   *multi_state;
 
-static INT32 gridcss_skinydrag;
-static INT32 gridcss_skinmemory;
-static INT32 gridcss_row;
-static INT32 gridcss_column;
-
 // used for follower display on player setup menu
 static fixed_t follower_tics;
 static UINT32 follower_frame;	// used for FF_ANIMATE garbo
@@ -7030,10 +7058,6 @@ void MD_DrawBarCssSelector(void)
 // minenice's grid style CSS from an unfinished moe mansion pull request
 // originally based on callmore's skin select
 
-//width now 9 so we can make moe's "2D" grid just an option in the normal grid
-#define SKINGRIDWIDTH 9
-#define SKINGRIDHEIGHT 6
-
 #define SKINXSHIFT 33
 #define SKINYSHIFT 28
 
@@ -7105,8 +7129,8 @@ void MD_DrawGridCssSelector(void)
 		calcs = gridslot + (gridcss_skinydrag * SKINGRIDWIDTH);
 
 		if (calcs < numskins)
-			// skinn = skinsorted[calcs];
-			skinn = calcs;
+			skinn = skinsorted[calcs];
+			// skinn = calcs;
 		else if (gridslot % SKINGRIDWIDTH == 0)
 			break; //really conveniant (sic) place to break out here
 		else
@@ -7169,6 +7193,7 @@ INT32 MapGridSelectToSkin(INT32 row, INT32 column)
 
 INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 {
+	INT32 sortedIndex;
 	// don't consume input if we're not interacting with the grid CSS
 	if (!(M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && cv_skinselectstyle.value))
 	{
@@ -7182,8 +7207,9 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 			{
 				M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
 				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
-				gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
-				gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+				gridcss_row = sortedIndex % SKINGRIDWIDTH;
+				gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
 				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 			}
@@ -7207,8 +7233,9 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 			{
 				M_SetItemOn(MN_MP_PLAYERSETUP, "NAME");
 				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
-				gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
-				gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+				gridcss_row = sortedIndex % SKINGRIDWIDTH;
+				gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
 				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 			}
@@ -7288,8 +7315,9 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 		case KEY_TAB:
 			M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
 			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
-			gridcss_row = cv_chooseskin.value % SKINGRIDWIDTH;
-			gridcss_column = cv_chooseskin.value / SKINGRIDWIDTH;
+			sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+			gridcss_row = sortedIndex % SKINGRIDWIDTH;
+			gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
 			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 
@@ -7306,7 +7334,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 			return false;
 	}
 		
-	CV_SetValue(&cv_chooseskin, MapGridSelectToSkin(gridcss_row, gridcss_column));
+	CV_SetValue(&cv_chooseskin, skinsorted[MapGridSelectToSkin(gridcss_row, gridcss_column)]);
 	return true;
 }
 
@@ -7333,6 +7361,7 @@ static void M_GetFollowerState(void)
 // start the multiplayer setup menu
 INT32 MR_SetupMultiPlayer(INT32 arg)
 {
+	INT32 sortedIndex;
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return false;
 
@@ -7348,8 +7377,9 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
 	
-	gridcss_row = gridcss_skinmemory % SKINGRIDWIDTH;
-	gridcss_column = gridcss_skinmemory / SKINGRIDWIDTH;
+	sortedIndex = FindSortedSkinIndex(gridcss_skinmemory);
+	gridcss_row = sortedIndex % SKINGRIDWIDTH;
+	gridcss_column = sortedIndex / SKINGRIDWIDTH;
 	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
 
 	M_GetFollowerState();	// update follower state
@@ -7364,7 +7394,8 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 {
 	(void)choice;
 
-	CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+	if (cv_skinselectstyle.value == 1)
+		CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
 
 	const char *followername = cv_dummyfollower.value == -1 ?
 		"None" : followers[cv_dummyfollower.value].skinname;
@@ -7377,10 +7408,11 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 	));
 	return true;
 }
-#undef SKINGRIDWIDTH
-#undef SKINGRIDHEIGHT
 #undef SKINXSHIFT
 #undef SKINYSHIFT
+
+#undef SKINGRIDWIDTH
+#undef SKINGRIDHEIGH
 
 void M_AddMenuColor(UINT16 color) {
 	menucolor_t *c;
