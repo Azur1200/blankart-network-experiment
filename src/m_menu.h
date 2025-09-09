@@ -470,6 +470,7 @@ fixed_t M_GetMapThumbnail(INT16 mapnum, patch_t **out);
 void Moviemode_option_Onchange(void);
 
 void Skinsort_option_Onchange(void);
+void Skinselectstyle_option_Onchange(void);
 
 // Player Setup menu colors linked list
 struct menucolor_t {

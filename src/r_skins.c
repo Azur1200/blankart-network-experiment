@@ -346,8 +346,6 @@ static int CompareSkinColours(const void *a, const void *b)
 
 void SortSkins(void)
 {
-	CONS_Printf("Sorting skin list (sort type %d)...\n", cv_skinselectsort.value); 
-	
 	int (*_sortingFunc)(const void *, const void *);
 	switch (cv_skinselectsort.value)
 	{

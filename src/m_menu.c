@@ -379,7 +379,7 @@ static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, N
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
 
 static CV_PossibleValue_t skinselectstyle_cons_t[] = {{0, "Bar"}, {1, "Grid"}, {0, NULL}};
-consvar_t cv_skinselectstyle = CVAR_INIT ("skinselectstyle", "Grid", CV_SAVE, skinselectstyle_cons_t, NULL);
+consvar_t cv_skinselectstyle = CVAR_INIT ("skinselectstyle", "Grid", CV_SAVE|CV_CALL|CV_NOINIT, skinselectstyle_cons_t, Skinselectstyle_option_Onchange);
 
 static CV_PossibleValue_t skinselectsort_cons_t[] = {
 	{SKINMENUSORT_ID, 		"Order Added"},
@@ -849,8 +849,20 @@ void Skinsort_option_Onchange(void)
 	INT32 sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
 	gridcss_row = sortedIndex % SKINGRIDWIDTH;
 	gridcss_column = sortedIndex / SKINGRIDWIDTH;
-	
+	// I really need to macro this lol
 	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+}
+
+void Skinselectstyle_option_Onchange(void)
+{
+	boolean visible = cv_skinselectstyle.value == 0;
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ACCELERATION", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "MAXSPEED", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "HANDLING", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "WEIGHT", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWLR", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWUD", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBG", visible);
 }
 
 // ==========================================================================
@@ -7303,7 +7315,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
 				}
 
-				gridcss_skinydrag = min(gridcss_column - SKINGRIDHEIGHT + 1, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 
 				S_StartSound(NULL, sfx_menu1);
 			}
@@ -7365,7 +7377,6 @@ static void M_GetFollowerState(void)
 // start the multiplayer setup menu
 INT32 MR_SetupMultiPlayer(INT32 arg)
 {
-	INT32 sortedIndex;
 	if (arg < 0 || arg >= MAXSPLITSCREENPLAYERS)
 		return false;
 
@@ -7381,15 +7392,13 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
 	
-	sortedIndex = FindSortedSkinIndex(gridcss_skinmemory);
-	gridcss_row = sortedIndex % SKINGRIDWIDTH;
-	gridcss_column = sortedIndex / SKINGRIDWIDTH;
-	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+	Skinsort_option_Onchange();
 
 	M_GetFollowerState();	// update follower state
 
 	// disable skin changes if we can't actually change skins
 	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= arg && !CanChangeSkin(arg == 0 ? consoleplayer : g_localplayers[arg]));
+	Skinselectstyle_option_Onchange();
 
 	return true;
 }
