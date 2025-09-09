@@ -25,6 +25,9 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
+// requires GL 4.3
+//#define GLDEBUGMESSAGE
+
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 struct GLRGBAFloat
@@ -265,6 +268,7 @@ static void GL_MSG_Error(const char *format, ...)
 /* Raster functions */
 #define pglPixelStorei glPixelStorei
 #define pglReadPixels glReadPixels
+#define pglGetTexImage glGetTexImage
 
 /* Texture mapping */
 #define pglTexEnvi glTexEnvi
@@ -280,6 +284,10 @@ static void GL_MSG_Error(const char *format, ...)
 /* texture mapping */ //GL_EXT_copy_texture
 #define pglCopyTexImage2D glCopyTexImage2D
 #define pglCopyTexSubImage2D glCopyTexSubImage2D
+
+#ifdef GLDEBUGMESSAGE
+#define pglDebugMessageCallback glDebugMessageCallback
+#endif
 
 #else //!STATIC_OPENGL
 
@@ -373,6 +381,8 @@ typedef void (APIENTRY * PFNglPixelStorei) (GLenum pname, GLint param);
 static PFNglPixelStorei pglPixelStorei;
 typedef void (APIENTRY  * PFNglReadPixels) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 static PFNglReadPixels pglReadPixels;
+typedef void (APIENTRY  * PFNglGetTexImage) (GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels);
+static PFNglGetTexImage pglGetTexImage;
 
 /* Texture mapping */
 typedef void (APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param);
@@ -422,6 +432,11 @@ static PFNglDeleteBuffers pglDeleteBuffers;
 /* 2.0 functions */
 typedef void (APIENTRY * PFNglBlendEquation) (GLenum mode);
 static PFNglBlendEquation pglBlendEquation;
+
+#ifdef GLDEBUGMESSAGE
+typedef void (APIENTRY * PFNglDebugMessageCallback) (void (APIENTRY *DEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam), const void *userParam);
+static PFNglDebugMessageCallback pglDebugMessageCallback;
+#endif
 
 
 /* 1.2 Parms */
@@ -511,6 +526,7 @@ boolean SetupGLfunc(void)
 
 	GETOPENGLFUNC(pglPixelStorei, glPixelStorei)
 	GETOPENGLFUNC(pglReadPixels, glReadPixels)
+	GETOPENGLFUNC(pglGetTexImage, glGetTexImage)
 
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
@@ -983,6 +999,10 @@ void SetupGLFunc4(void)
 	*(void**)&pglUniform3fv = GetGLFunc("glUniform3fv");
 	*(void**)&pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 #endif
+
+#ifdef GLDEBUGMESSAGE
+	*(void**)&pglDebugMessageCallback = GetGLFunc("glDebugMessageCallback");
+#endif
 }
 
 EXPORT boolean HWRAPI(CompileShaders) (void)
@@ -1247,6 +1267,7 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 	pglMultMatrixf(&m[0][0]);
 }
 
+#if 0
 static void GLProject(GLfloat objX, GLfloat objY, GLfloat objZ,
                       GLfloat* winX, GLfloat* winY, GLfloat* winZ)
 {
@@ -1286,6 +1307,7 @@ static void GLProject(GLfloat objX, GLfloat objY, GLfloat objZ,
 	*winY=in[1];
 	*winZ=in[2];
 }
+#endif
 
 // -----------------+
 // SetModelView     :
@@ -1335,6 +1357,50 @@ void SetModelView(GLint w, GLint h)
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
 }
 
+#ifdef GLDEBUGMESSAGE
+static void APIENTRY DebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+	const char *debugsource, *debugtype;
+
+	switch (source)
+	{
+#define S(s) case GL_DEBUG_SOURCE_##s: debugsource = #s; break
+		S(API);
+		S(WINDOW_SYSTEM);
+		S(SHADER_COMPILER);
+		S(THIRD_PARTY);
+		S(APPLICATION);
+		S(OTHER);
+#undef S
+	default:
+		debugsource = "unknown";
+		break;
+	}
+
+	switch (type)
+	{
+#define S(s) case GL_DEBUG_TYPE_##s: debugtype = #s; break
+		S(ERROR);
+		S(DEPRECATED_BEHAVIOR);
+		S(UNDEFINED_BEHAVIOR);
+		S(PORTABILITY);
+		S(PERFORMANCE);
+		S(MARKER);
+		S(PUSH_GROUP);
+		S(POP_GROUP);
+		S(OTHER);
+#undef S
+	default:
+		debugtype = "unknown";
+		break;
+	}
+
+	alerttype_t level = severity == GL_DEBUG_SEVERITY_HIGH ? CONS_ERROR
+	                  : severity == GL_DEBUG_SEVERITY_MEDIUM ? CONS_WARNING
+	                  : CONS_NOTICE;
+	CONS_Alert(level, "OpenGL (%s) (%s): %s\n", debugsource, debugtype, message);
+}
+#endif
 
 // -----------------+
 // SetStates        : Set permanent states
@@ -1395,6 +1461,12 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+
+#ifdef GLDEBUGMESSAGE
+	pglEnable(GL_DEBUG_OUTPUT);
+	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	pglDebugMessageCallback(&DebugMessage, NULL);
+#endif
 }
 
 
@@ -1514,58 +1586,53 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
+// nope, definitely not faster. software has the same flickering/z-fighting bugs with laggy GIF recording anyway
+//#define GETTEXIMAGE
 
-// -----------------+
-// ReadRect         : Read a rectangle region of the truecolor framebuffer
-//                  : store pixels as 16bit 565 RGB
-// Returns          : 16bit 565 RGB pixel array stored in dst_data
-// -----------------+
-EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height,
-                                INT32 dst_stride, UINT16 * dst_data)
+#ifdef GETTEXIMAGE
+#define TEXWIDTH texsize
+#else
+#define TEXWIDTH screen_width
+#endif
+
+// -----------------------+
+// ReadScreenFinalTexture : Reads out the final screen texture
+// Returns                : 24bit RGB pixel array stored in dest
+// -----------------------+
+EXPORT void HWRAPI(ReadScreenFinalTexture) (UINT8 * restrict dest, INT32 scale)
 {
-	INT32 i;
-	// GL_DBG_Printf ("ReadRect()\n");
-	if (dst_stride == width*3)
-	{
-		GLubyte*top = (GLvoid*)dst_data, *bottom = top + dst_stride * (height - 1);
-		GLubyte *row = malloc(dst_stride);
-		if (!row) return;
-		pglPixelStorei(GL_PACK_ALIGNMENT, 1);
-		pglReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
-		pglPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		for(i = 0; i < height/2; i++)
-		{
-			memcpy(row, top, dst_stride);
-			memcpy(top, bottom, dst_stride);
-			memcpy(bottom, row, dst_stride);
-			top += dst_stride;
-			bottom -= dst_stride;
-		}
-		free(row);
-	}
-	else
-	{
-		INT32 j;
-		GLubyte *image = malloc(width*height*3*sizeof (*image));
-		if (!image) return;
-		pglPixelStorei(GL_PACK_ALIGNMENT, 1);
-		pglReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, image);
-		pglPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		for (i = height-1; i >= 0; i--)
-		{
-			for (j = 0; j < width; j++)
-			{
-				dst_data[(height-1-i)*width+j] =
-				(UINT16)(
-				                 ((image[(i*width+j)*3]>>3)<<11) |
-				                 ((image[(i*width+j)*3+1]>>2)<<5) |
-				                 ((image[(i*width+j)*3+2]>>3)));
-			}
-		}
-		free(image);
-	}
-}
+	const INT32 stride = (screen_width/scale)*3;
+	INT32 scanlines = screen_height;
+	GLubyte * restrict image;
 
+#ifdef GETTEXIMAGE
+	image = malloc(texsize*texsize*3); // oof
+	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
+	pglGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	tex_downloaded = finalScreenTexture;
+#else
+	image = malloc(screen_width*screen_height*3);
+	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
+	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
+#endif
+
+	// TODO the downscaling happens in the screen capture code now,
+	// yet we're still doing this on the CPU? sheesh...
+	// this is where actual knowledge of OpenGL would've come in handy
+	image += scanlines*TEXWIDTH*3;
+	while ((scanlines -= scale) >= 0)
+	{
+		image -= TEXWIDTH*scale*3;
+		if (scale == 1)
+			memcpy(dest, image, stride);
+		else for (size_t i = 0; i < stride; i += 3)
+			memcpy(dest + i, image + i*scale, 3);
+		dest += stride;
+	}
+
+	// ...yet still, restrict doesn't make the inner loop any faster
+	free(image - ((screen_height % scale) * TEXWIDTH*3));
+}
 
 // -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
@@ -2347,6 +2414,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 
 	// this test is added for new coronas' code (without depth buffer)
 	// I think I should do a separate function for drawing coronas, so it will be a little faster
+#if 0
 	if (PolyFlags & PF_Corona) // check to see if we need to draw the corona
 	{
 		FUINT i;
@@ -2407,6 +2475,7 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 		c[3] = (unsigned char)(alpha * 255);
 		pglColor4ubv(c);
 	}
+#endif
 
 	Shader_SetUniforms(pSurf, &poly, &tint, &fade);
 }

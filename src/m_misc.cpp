@@ -1303,7 +1303,7 @@ void M_SaveFrame(void)
 				{
 					// munge planar buffer to linear
 					linear = screens[2];
-					I_ReadScreen(linear);
+					I_ReadScreen(linear, 1);
 				}
 #ifdef HWRENDER
 				else
@@ -1576,6 +1576,7 @@ void M_DoScreenShot(void)
 	char pathname[MAX_WADPATH];
 	boolean ret = false;
 	UINT8 *linear = NULL;
+	UINT8 *palette;
 
 	// Don't take multiple screenshots, obviously
 	takescreenshot = false;
@@ -1608,30 +1609,30 @@ void M_DoScreenShot(void)
 		freename = Newsnapshotfile(pathname,"tga");
 #endif
 
+	if (!freename)
+		goto failure;
+
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
 		linear = screens[2];
-		I_ReadScreen(linear);
-	}
-
-	if (!freename)
-		goto failure;
-
-	// save the pcx file
-#ifdef HWRENDER
-	if (rendermode == render_opengl)
-		ret = HWR_Screenshot(va(pandf,pathname,freename));
-	else
-#endif
-	{
+		I_ReadScreen(linear, 1);
 		M_CreateScreenShotPalette();
-#ifdef USE_PNG
-		ret = M_SavePNG(va(pandf,pathname,freename), linear, vid.width, vid.height, screenshot_palette);
-#else
-		ret = WritePCXfile(va(pandf,pathname,freename), linear, vid.width, vid.height, screenshot_palette);
-#endif
+		palette = screenshot_palette;
 	}
+#ifdef HWRENDER
+	else if (rendermode == render_opengl)
+	{
+		linear = HWR_GetScreenshot(1);
+		palette = nullptr;
+	}
+#endif
+
+#ifdef USE_PNG
+	ret = M_SavePNG(va(pandf,pathname,freename), linear, vid.width, vid.height, palette);
+#else
+	ret = WritePCXfile(va(pandf,pathname,freename), linear, vid.width, vid.height, palette);
+#endif
 
 failure:
 	if (ret)
