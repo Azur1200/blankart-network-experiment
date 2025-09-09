@@ -850,7 +850,7 @@ void Skinsort_option_Onchange(void)
 	gridcss_row = sortedIndex % SKINGRIDWIDTH;
 	gridcss_column = sortedIndex / SKINGRIDWIDTH;
 	// I really need to macro this lol
-	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 }
 
 void Skinselectstyle_option_Onchange(void)
@@ -863,6 +863,8 @@ void Skinselectstyle_option_Onchange(void)
 	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWLR", visible);
 	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWUD", visible);
 	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBG", visible);
+
+	Skinsort_option_Onchange();
 }
 
 // ==========================================================================
