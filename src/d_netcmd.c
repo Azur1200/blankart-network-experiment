@@ -444,7 +444,9 @@ static CV_PossibleValue_t kartbot_cons_t[] = {
 	{13,"Lv.MAX"},
 	{0, NULL}
 };
+static CV_PossibleValue_t kartbot_cap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
 consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NULL);
+consvar_t cv_kartbot_cap = CVAR_INIT ("kartbot_cap", "0", CV_NETVAR, kartbot_cap_cons_t, NULL);
 consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexity", "-7000", CV_NETVAR, CV_Signed, NULL);
 

@@ -263,6 +263,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartvoices);
 	CV_RegisterVar(&cv_karthitemdialog);
 	CV_RegisterVar(&cv_kartbot);
+	CV_RegisterVar(&cv_kartbot_cap);
 	CV_RegisterVar(&cv_kartbot_modifiermax);
 	CV_RegisterVar(&cv_kartbot_basetrackcomplexity);
 	CV_RegisterVar(&cv_forcebots);

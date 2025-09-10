@@ -117,6 +117,7 @@ extern consvar_t cv_kartgametypepreference;
 extern consvar_t cv_kartspeedometer;
 extern consvar_t cv_kartvoices;
 extern consvar_t cv_kartbot;
+extern consvar_t cv_kartbot_cap;
 extern consvar_t cv_kartbot_modifiermax;
 extern consvar_t cv_kartbot_basetrackcomplexity;
 extern consvar_t cv_karteliminatelast;
