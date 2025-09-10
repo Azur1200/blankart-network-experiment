@@ -29,6 +29,7 @@
 #include "m_random.h"
 #include "r_things.h" // numskins
 #include "m_easing.h"
+#include "k_odds.hpp"
 
 // Looks for players around the bot, and presses the item button
 // if there is one in range.

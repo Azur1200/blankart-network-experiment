@@ -61,6 +61,7 @@
 #include "k_terrain.h" // K_SpawnSplashForMobj
 #include "k_color.h"
 #include "k_follower.h"
+#include "k_odds.hpp"
 #include "g_party.h"
 
 #include "acs/interface.h"
