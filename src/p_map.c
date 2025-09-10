@@ -1290,21 +1290,6 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 			return BMIT_CONTINUE;
 		}
-		else if (thing->type == MT_KART_LEFTOVER)
-		{
-			// see if it went over / under
-			if (g_tm.thing->z > thing->z + thing->height)
-				return BMIT_CONTINUE; // overhead
-			if (g_tm.thing->z + g_tm.thing->height < thing->z)
-				return BMIT_CONTINUE; // underneath
-
-			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
-				K_KartBouncing(g_tm.thing, thing, true, false);
-			else
-				K_KartBouncing(g_tm.thing, thing, false, false);
-
-			return BMIT_CONTINUE;
-		}
 		else if (thing->flags & MF_SOLID)
 		{
 			// see if it went over / under
@@ -3115,7 +3100,9 @@ static boolean P_ThingHeightClip(mobj_t *thing)
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
+static fixed_t bestslidefrac, secondslidefrac;
 static line_t *bestslideline;
+static line_t *secondslideline;
 static mobj_t *slidemo;
 static fixed_t tmxmove, tmymove;
 
@@ -3185,6 +3172,41 @@ static void P_PlayerHitBounceLine(line_t *ld, vector2_t* normal)
 	}
 }
 
+static void P_PlayerHitBounceLineOLD(line_t *ld)
+{
+	INT32 side;
+	angle_t lineangle;
+	fixed_t movelen;
+	fixed_t x, y;
+
+	side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
+	lineangle = R_PointToAngle2(0, 0, ld->dx, ld->dy)-ANGLE_90;
+
+	if (side == 1)
+		lineangle += ANGLE_180;
+
+	lineangle >>= ANGLETOFINESHIFT;
+
+	movelen = P_AproxDistance(tmxmove, tmymove);
+
+	if (slidemo->player && movelen < (15*mapobjectscale))
+		movelen = (15*mapobjectscale);
+
+	x = FixedMul(movelen, FINECOSINE(lineangle));
+	y = FixedMul(movelen, FINESINE(lineangle));
+
+	if (ld && P_IsLineTripWire(ld))
+	{
+		tmxmove = FixedMul(x, FRACUNIT+(FRACUNIT/2));
+		tmymove = FixedMul(y, FRACUNIT+(FRACUNIT/2));
+	}
+	else
+	{
+		tmxmove += x;
+		tmymove += y;
+	}
+}
+
 //
 // P_HitBounceLine
 //
@@ -3226,7 +3248,6 @@ static void P_HitBounceLine(line_t *ld)
 	deltaangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
 }
 
-/*
 static boolean PTR_LineIsBlocking(line_t *li)
 {
 	opening_t open = {0};
@@ -3252,9 +3273,7 @@ static boolean PTR_LineIsBlocking(line_t *li)
 
 	return false;
 }
-*/
 
-/*
 static boolean PTR_SlideTraverse(intercept_t *in)
 {
 	line_t *li;
@@ -3284,7 +3303,6 @@ static boolean PTR_SlideTraverse(intercept_t *in)
 
 	return false; // stop
 }
-*/
 
 static void P_CheckLavaWall(mobj_t *mo, sector_t *sec)
 {
@@ -3420,7 +3438,31 @@ void P_SlideMove(mobj_t *mo, TryMoveResult_t *result)
 	bestslideline = result->line;
 
 	if (bestslideline == NULL)
+	{
+		if (K_IsMissileOrKartItem(mo))
+		{
+			if (cv_showgremlins.value)
+			{
+				// debug
+				mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+				x->frame = FF_FULLBRIGHT | FF_ADD;
+				x->renderflags = RF_ALWAYSONTOP;
+				x->color = SKINCOLOR_RED;
+
+				CONS_Printf(
+					"SLIDE GREMLIN: leveltime=%u x=%f y=%f z=%f",
+				leveltime,
+				FixedToFloat(mo->x),
+							FixedToFloat(mo->y),
+							FixedToFloat(mo->z)
+				);
+			}
+
+			// We were not succesful, try the old version.
+			P_SlideMoveOLD(mo);
+		}
 		return;
+	}
 
 	if (bestslideline && mo->player && bestslideline->sidenum[1] != 0xffff)
 	{
@@ -3484,11 +3526,389 @@ papercollision:
 	} while(tmxmove || tmymove);
 }
 
+void P_SlideMoveOLD(mobj_t *mo)
+{
+	fixed_t leadx, leady, trailx, traily, newx, newy;
+	INT16 hitcount = 0;
+	boolean success = false;
+
+	boolean papercol = false;
+	vertex_t v1, v2; // fake vertexes
+	static line_t junk; // fake linedef
+
+	memset(&junk, 0x00, sizeof(junk));
+
+	I_Assert(!P_MobjWasRemoved(mo));
+
+	if (g_tm.hitthing && mo->z + mo->height > g_tm.hitthing->z && mo->z < g_tm.hitthing->z + g_tm.hitthing->height)
+	{
+		// Don't mess with your momentum if it's a pushable object. Pushables do their own crazy things already.
+		if (g_tm.hitthing->flags & MF_PUSHABLE)
+			return;
+
+		if (g_tm.hitthing->flags & MF_PAPERCOLLISION)
+		{
+			fixed_t cosradius, sinradius, num, den;
+
+			// trace along the three leading corners
+			if (mo->momx > 0)
+			{
+				leadx = mo->x + mo->radius;
+				trailx = mo->x - mo->radius;
+			}
+			else
+			{
+				leadx = mo->x - mo->radius;
+				trailx = mo->x + mo->radius;
+			}
+
+			if (mo->momy > 0)
+			{
+				leady = mo->y + mo->radius;
+				traily = mo->y - mo->radius;
+			}
+			else
+			{
+				leady = mo->y - mo->radius;
+				traily = mo->y + mo->radius;
+			}
+
+			papercol = true;
+			slidemo = mo;
+			bestslideline = &junk;
+
+			cosradius = FixedMul(g_tm.hitthing->radius, FINECOSINE(g_tm.hitthing->angle>>ANGLETOFINESHIFT));
+			sinradius = FixedMul(g_tm.hitthing->radius, FINESINE(g_tm.hitthing->angle>>ANGLETOFINESHIFT));
+
+			v1.x = g_tm.hitthing->x - cosradius;
+			v1.y = g_tm.hitthing->y - sinradius;
+			v2.x = g_tm.hitthing->x + cosradius;
+			v2.y = g_tm.hitthing->y + sinradius;
+
+			// Can we box collision our way into smooth movement..?
+			if (sinradius && mo->y + mo->radius <= min(v1.y, v2.y))
+			{
+				mo->momy = 0;
+				P_TryMove(mo, mo->x + mo->momx, min(v1.y, v2.y) - mo->radius, true, NULL);
+				return;
+			}
+			else if (sinradius && mo->y - mo->radius >= max(v1.y, v2.y))
+			{
+				mo->momy = 0;
+				P_TryMove(mo, mo->x + mo->momx, max(v1.y, v2.y) + mo->radius, true, NULL);
+				return;
+			}
+			else if (cosradius && mo->x + mo->radius <= min(v1.x, v2.x))
+			{
+				mo->momx = 0;
+				P_TryMove(mo, min(v1.x, v2.x) - mo->radius, mo->y + mo->momy, true, NULL);
+				return;
+			}
+			else if (cosradius && mo->x - mo->radius >= max(v1.x, v2.x))
+			{
+				mo->momx = 0;
+				P_TryMove(mo, max(v1.x, v2.x) + mo->radius, mo->y + mo->momy, true, NULL);
+				return;
+			}
+
+			// nope, gotta fuck around with a fake linedef!
+			junk.v1 = &v1;
+			junk.v2 = &v2;
+			junk.dx = 2*cosradius; // v2.x - v1.x;
+			junk.dy = 2*sinradius; // v2.y - v1.y;
+
+			junk.slopetype = !cosradius ? ST_VERTICAL : !sinradius ? ST_HORIZONTAL :
+			((sinradius > 0) == (cosradius > 0)) ? ST_POSITIVE : ST_NEGATIVE;
+
+			bestslidefrac = FRACUNIT+1;
+
+			den = FixedMul(junk.dy>>8, mo->momx) - FixedMul(junk.dx>>8, mo->momy);
+
+			if (!den)
+				bestslidefrac = 0;
+			else
+			{
+				fixed_t frac;
+				#define P_PaperTraverse(startx, starty) \
+				num = FixedMul((v1.x - leadx)>>8, junk.dy) + FixedMul((leady - v1.y)>>8, junk.dx); \
+				frac = FixedDiv(num, den); \
+				if (frac < bestslidefrac) \
+					bestslidefrac = frac
+					P_PaperTraverse(leadx, leady);
+				P_PaperTraverse(trailx, leady);
+				P_PaperTraverse(leadx, traily);
+				#undef dowork
+			}
+
+			goto papercollision;
+		}
+
+		// Thankfully box collisions are a lot simpler than arbitrary lines. There's only four possible cases.
+		if (mo->y + mo->radius <= g_tm.hitthing->y - g_tm.hitthing->radius)
+		{
+			mo->momy = 0;
+			P_TryMove(mo, mo->x + mo->momx, g_tm.hitthing->y - g_tm.hitthing->radius - mo->radius, true, NULL);
+		}
+		else if (mo->y - mo->radius >= g_tm.hitthing->y + g_tm.hitthing->radius)
+		{
+			mo->momy = 0;
+			P_TryMove(mo, mo->x + mo->momx, g_tm.hitthing->y + g_tm.hitthing->radius + mo->radius, true, NULL);
+		}
+		else if (mo->x + mo->radius <= g_tm.hitthing->x - g_tm.hitthing->radius)
+		{
+			mo->momx = 0;
+			P_TryMove(mo, g_tm.hitthing->x - g_tm.hitthing->radius - mo->radius, mo->y + mo->momy, true, NULL);
+		}
+		else if (mo->x - mo->radius >= g_tm.hitthing->x + g_tm.hitthing->radius)
+		{
+			mo->momx = 0;
+			P_TryMove(mo, g_tm.hitthing->x + g_tm.hitthing->radius + mo->radius, mo->y + mo->momy, true, NULL);
+		}
+		else
+			mo->momx = mo->momy = 0;
+		return;
+	}
+
+	slidemo = mo;
+	bestslideline = NULL;
+
+	retry:
+	if ((++hitcount == 3) || papercol)
+	{
+		if (!P_MobjWasRemoved(mo))
+		{
+			// the move must have hit the middle, so stairstep
+			if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, NULL)) //Allow things to drop off.
+				P_TryMove(mo, mo->x + mo->momx, mo->y, true, NULL);
+		}
+		return;
+	}
+
+	// trace along the three leading corners
+	if (mo->momx > 0)
+	{
+		leadx = mo->x + mo->radius;
+		trailx = mo->x - mo->radius;
+	}
+	else
+	{
+		leadx = mo->x - mo->radius;
+		trailx = mo->x + mo->radius;
+	}
+
+	if (mo->momy > 0)
+	{
+		leady = mo->y + mo->radius;
+		traily = mo->y - mo->radius;
+	}
+	else
+	{
+		leady = mo->y - mo->radius;
+		traily = mo->y + mo->radius;
+	}
+
+	bestslidefrac = FRACUNIT+1;
+
+	P_PathTraverse(leadx, leady, leadx + mo->momx, leady + mo->momy,
+				   PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(trailx, leady, trailx + mo->momx, leady + mo->momy,
+				   PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(leadx, traily, leadx + mo->momx, traily + mo->momy,
+				   PT_ADDLINES, PTR_SlideTraverse);
+
+	if (bestslideline && mo->player && bestslideline->sidenum[1] != 0xffff)
+	{
+		sector_t *sec = P_PointOnLineSide(mo->x, mo->y, bestslideline) ? bestslideline->frontsector : bestslideline->backsector;
+		P_CheckLavaWall(mo, sec);
+	}
+
+papercollision:
+	// move up to the wall
+	if (bestslidefrac == FRACUNIT+1)
+	{
+		if (!P_MobjWasRemoved(mo))
+		{
+			// the move must have hit the middle, so stairstep
+			if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, NULL)) //Allow things to drop off.
+				P_TryMove(mo, mo->x + mo->momx, mo->y, true, NULL);
+		}
+		return;
+	}
+
+	// fudge a bit to make sure it doesn't hit
+	bestslidefrac -= 0x800;
+	if (bestslidefrac > 0)
+	{
+		newx = FixedMul(mo->momx, bestslidefrac);
+		newy = FixedMul(mo->momy, bestslidefrac);
+
+		if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true, NULL))
+		{
+			if (!P_MobjWasRemoved(mo))
+			{
+				if (!P_TryMove(mo, mo->x, mo->y + mo->momy, true, NULL)) //Allow things to drop off.
+					P_TryMove(mo, mo->x + mo->momx, mo->y, true, NULL);
+			}
+			return;
+		}
+		if (P_MobjWasRemoved(mo))
+			return;
+	}
+
+	// Now continue along the wall.
+	// First calculate remainder.
+	bestslidefrac = FRACUNIT - (bestslidefrac+0x800);
+
+	if (bestslidefrac > FRACUNIT)
+		bestslidefrac = FRACUNIT;
+
+	if (bestslidefrac <= 0)
+		return;
+
+	tmxmove = FixedMul(mo->momx, bestslidefrac);
+	tmymove = FixedMul(mo->momy, bestslidefrac);
+
+	P_HitSlideLine(bestslideline); // clip the moves
+
+	mo->momx = tmxmove;
+	mo->momy = tmymove;
+
+	const fixed_t tmradius = mo->radius > 8 ? mo->radius : 8;
+
+	do {
+		if (tmxmove > tmradius) {
+			newx = mo->x + tmradius;
+			tmxmove -= tmradius;
+		} else if (tmxmove < -tmradius) {
+			newx = mo->x - tmradius;
+			tmxmove += tmradius;
+		} else {
+			newx = mo->x + tmxmove;
+			tmxmove = 0;
+		}
+		if (tmymove > tmradius) {
+			newy = mo->y + tmradius;
+			tmymove -= tmradius;
+		} else if (tmymove < -tmradius) {
+			newy = mo->y - tmradius;
+			tmymove += tmradius;
+		} else {
+			newy = mo->y + tmymove;
+			tmymove = 0;
+		}
+		if (!P_TryMove(mo, newx, newy, true, NULL)) {
+			if (success || P_MobjWasRemoved(mo))
+				return; // Good enough!!
+			else
+				goto retry;
+		}
+		if (P_MobjWasRemoved(mo))
+			return;
+		success = true;
+	} while(tmxmove || tmymove);
+}
+
 //
 // P_BouncePlayerMove
 //
 // Bounce move, for players.
 //
+
+static void P_BouncePlayerMoveOLD(mobj_t *mo)
+{
+	fixed_t leadx, leady;
+	fixed_t trailx, traily;
+	fixed_t mmomx = 0, mmomy = 0;
+	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+
+	if (!mo->player)
+		return;
+
+	slidemo = mo;
+
+	mmomx = mo->player->rmomx;
+	mmomy = mo->player->rmomy;
+
+	// trace along the three leading corners
+	if (mo->momx > 0)
+	{
+		leadx = mo->x + mo->radius;
+		trailx = mo->x - mo->radius;
+	}
+	else
+	{
+		leadx = mo->x - mo->radius;
+		trailx = mo->x + mo->radius;
+	}
+
+	if (mo->momy > 0)
+	{
+		leady = mo->y + mo->radius;
+		traily = mo->y - mo->radius;
+	}
+	else
+	{
+		leady = mo->y - mo->radius;
+		traily = mo->y + mo->radius;
+	}
+
+	bestslidefrac = FRACUNIT + 1;
+
+	P_PathTraverse(leadx, leady, leadx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(trailx, leady, trailx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+	P_PathTraverse(leadx, traily, leadx + mmomx, traily + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+
+	// Now continue along the wall.
+	// First calculate remainder.
+	bestslidefrac = FRACUNIT - bestslidefrac;
+
+	if (bestslidefrac > FRACUNIT)
+		bestslidefrac = FRACUNIT;
+
+	if (bestslidefrac <= 0)
+		return;
+
+	if (mo->eflags & MFE_JUSTBOUNCEDWALL) // Stronger push-out
+	{
+		tmxmove = mmomx;
+		tmymove = mmomy;
+	}
+	else
+	{
+		tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+		tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+	}
+
+	if (bestslideline && P_IsLineTripWire(bestslideline))
+	{
+		// TRIPWIRE CANNOT BE MADE NONBOUNCY
+		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+	}
+	else
+	{
+		// Some walls aren't bouncy even if you are
+		if (bestslideline && (bestslideline->flags & ML_NOTBOUNCY))
+		{
+			// SRB2Kart: Non-bouncy line!
+			P_SlideMoveOLD(mo);
+			return;
+		}
+
+		K_SpawnBumpEffect(mo);
+	}
+
+	P_PlayerHitBounceLineOLD(bestslideline);
+	mo->eflags |= MFE_JUSTBOUNCEDWALL;
+
+	mo->momx = tmxmove;
+	mo->momy = tmymove;
+	mo->player->cmomx = tmxmove;
+	mo->player->cmomy = tmymove;
+
+	if (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL)) {
+		P_TryMove(mo, mo->x - oldmomx, mo->y - oldmomy, true, NULL);
+	}
+}
 
 static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
@@ -3502,7 +3922,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 
 	if (result == NULL)
+	{
 		return;
+	}
 
 	if (mo->player->spectator)
 	{
@@ -3527,25 +3949,38 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		mo->player->pogospring = 0;
 	}
 
+	if (G_CompatLevel(0x0002))
+	{
+		P_BouncePlayerMoveOLD(mo);
+		return;
+	}
+
 	slidemo = mo;
 	bestslideline = result->line;
 
-	if (bestslideline == NULL && cv_showgremlins.value)
+	if (bestslideline == NULL)
 	{
-		// debug
-		mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
-		x->frame = FF_FULLBRIGHT | FF_ADD;
-		x->renderflags = RF_ALWAYSONTOP;
-		x->color = SKINCOLOR_RED;
+		if (cv_showgremlins.value)
+		{
+			// debug
+			mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+			x->frame = FF_FULLBRIGHT | FF_ADD;
+			x->renderflags = RF_ALWAYSONTOP;
+			x->color = SKINCOLOR_RED;
 
-		CONS_Printf(
-			"GREMLIN: leveltime=%u x=%f y=%f z=%f angle=%f\n",
-			leveltime,
-			FixedToFloat(mo->x),
-			FixedToFloat(mo->y),
-			FixedToFloat(mo->z),
-			AngleToFloat(R_PointToAngle2(0, 0, oldmomx, oldmomy))
-		);
+			CONS_Printf(
+				"BOUNCEPLAYER GREMLIN: leveltime=%u x=%f y=%f z=%f angle=%f\n",
+				leveltime,
+				FixedToFloat(mo->x),
+				FixedToFloat(mo->y),
+				FixedToFloat(mo->z),
+				AngleToFloat(R_PointToAngle2(0, 0, oldmomx, oldmomy))
+			);
+		}
+
+		// We were not succesful, try the old version.
+		P_BouncePlayerMoveOLD(mo);
+		return;
 	}
 
 	if (mo->eflags & MFE_JUSTBOUNCEDWALL) // Stronger push-out
@@ -3599,6 +4034,149 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 //
 // The momx / momy move is bad, so try to bounce off a wall.
 //
+
+static void P_BounceMoveOLD(mobj_t *mo)
+{
+	fixed_t leadx, leady;
+	fixed_t trailx, traily;
+	fixed_t newx, newy;
+	INT32 hitcount;
+	fixed_t mmomx = 0, mmomy = 0;
+
+	slidemo = mo;
+	hitcount = 0;
+
+	do
+	{
+		if (++hitcount == 3)
+			goto bounceback; // don't loop forever
+
+		if (mo->player)
+		{
+			mmomx = mo->player->rmomx;
+			mmomy = mo->player->rmomy;
+		}
+		else
+		{
+			mmomx = mo->momx;
+			mmomy = mo->momy;
+		}
+
+		// trace along the three leading corners
+		if (mo->momx > 0)
+		{
+			leadx = mo->x + mo->radius;
+			trailx = mo->x - mo->radius;
+		}
+		else
+		{
+			leadx = mo->x - mo->radius;
+			trailx = mo->x + mo->radius;
+		}
+
+		if (mo->momy > 0)
+		{
+			leady = mo->y + mo->radius;
+			traily = mo->y - mo->radius;
+		}
+		else
+		{
+			leady = mo->y - mo->radius;
+			traily = mo->y + mo->radius;
+		}
+
+		bestslidefrac = FRACUNIT + 1;
+
+		P_PathTraverse(leadx, leady, leadx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+		P_PathTraverse(trailx, leady, trailx + mmomx, leady + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+		P_PathTraverse(leadx, traily, leadx + mmomx, traily + mmomy, PT_ADDLINES, PTR_SlideTraverse);
+
+		// move up to the wall
+		if (bestslidefrac == FRACUNIT + 1)
+		{
+			// the move must have hit the middle, so bounce straight back
+bounceback:
+			if (P_TryMove(mo, mo->x - mmomx, mo->y - mmomy, true, NULL))
+			{
+				mo->momx *= -1;
+				mo->momy *= -1;
+				mo->momx = FixedMul(mo->momx, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+				mo->momy = FixedMul(mo->momy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+
+				if (mo->player)
+				{
+					mo->player->cmomx *= -1;
+					mo->player->cmomy *= -1;
+					mo->player->cmomx = FixedMul(mo->player->cmomx,
+						(FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+					mo->player->cmomy = FixedMul(mo->player->cmomy,
+						(FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+				}
+			}
+			return;
+		}
+
+		// fudge a bit to make sure it doesn't hit
+		bestslidefrac -= 0x800;
+		if (bestslidefrac > 0)
+		{
+			newx = FixedMul(mmomx, bestslidefrac);
+			newy = FixedMul(mmomy, bestslidefrac);
+
+			if (!P_TryMove(mo, mo->x + newx, mo->y + newy, true, NULL))
+			{
+				if (P_MobjWasRemoved(mo))
+					return;
+				goto bounceback;
+			}
+		}
+
+		// Now continue along the wall.
+		// First calculate remainder.
+		bestslidefrac = FRACUNIT - bestslidefrac;
+
+		if (bestslidefrac > FRACUNIT)
+			bestslidefrac = FRACUNIT;
+
+		if (bestslidefrac <= 0)
+			return;
+
+		if (mo->type == MT_SHELL)
+		{
+			tmxmove = mmomx;
+			tmymove = mmomy;
+		}
+		else if (mo->type == MT_THROWNBOUNCE)
+		{
+			tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
+			tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>6) - (FRACUNIT>>5)));
+		}
+		else if (mo->type == MT_THROWNGRENADE || mo->type == MT_CYBRAKDEMON_NAPALM_BOMB_LARGE)
+		{
+			// Quickly decay speed as it bounces
+			tmxmove = FixedDiv(mmomx, 2*FRACUNIT);
+			tmymove = FixedDiv(mmomy, 2*FRACUNIT);
+		}
+		else
+		{
+			tmxmove = FixedMul(mmomx, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+			tmymove = FixedMul(mmomy, (FRACUNIT - (FRACUNIT>>2) - (FRACUNIT>>3)));
+		}
+
+		P_HitBounceLine(bestslideline); // clip the moves
+
+		mo->momx = tmxmove;
+		mo->momy = tmymove;
+
+		if (mo->player)
+		{
+			mo->player->cmomx = tmxmove;
+			mo->player->cmomy = tmymove;
+		}
+	}
+	while (!P_TryMove(mo, mo->x + tmxmove, mo->y + tmymove, true, NULL) && !P_MobjWasRemoved(mo));
+}
+
 void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
@@ -3625,7 +4203,30 @@ void P_BounceMove(mobj_t *mo, TryMoveResult_t *result)
 	bestslideline = result->line;
 
 	if (bestslideline == NULL)
+	{
+		if (K_IsMissileOrKartItem(mo))
+		{
+			if (cv_showgremlins.value)
+			{
+				// debug
+				mobj_t*x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+				x->frame = FF_FULLBRIGHT | FF_ADD;
+				x->renderflags = RF_ALWAYSONTOP;
+				x->color = SKINCOLOR_RED;
+
+				CONS_Printf(
+					"BOUNCE GREMLIN: leveltime=%u x=%f y=%f z=%f\n",
+				leveltime,
+				FixedToFloat(mo->x),
+							FixedToFloat(mo->y),
+							FixedToFloat(mo->z));
+			}
+
+			// We were not succesful, try the old version.
+			P_BounceMoveOLD(mo);
+		}
 		return;
+	}
 
 	if (mo->type == MT_SHELL)
 	{

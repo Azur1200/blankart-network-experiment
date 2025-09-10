@@ -48,9 +48,6 @@ _(KART_SIGN)
 // technically the player goes here but it's an infinite tic state
 _(OBJPLACE_DUMMY)
 
-_(KART_LEFTOVER)
-_(KART_TIRE)
-
 // Blue Crawla
 _(POSS_STND)
 _(POSS_RUN1)

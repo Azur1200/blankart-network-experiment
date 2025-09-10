@@ -7940,7 +7940,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 		}
 		else // Apply gravity to fall downwards.
 		{
-			P_SetObjectMomZ(mobj, -2*FRACUNIT/3, true);
+			P_SetObjectMomZ(mobj, -3*FRACUNIT/2, true);
 
 			if (mobj->player && (skins[mobj->player->skin].flags & SF_OLDDEATH))
 			{
@@ -11170,9 +11170,6 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				mobj->color = BALLOONCOLORS[P_RandomKey(sizeof(BALLOONCOLORS))];
 			}
-			break;
-		case MT_KART_LEFTOVER:
-			mobj->color = SKINCOLOR_RED;
 			break;
 		case MT_REDRING: // Make MT_REDRING red by default
 			mobj->color = skincolor_redring;

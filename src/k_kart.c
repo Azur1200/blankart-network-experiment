@@ -1960,14 +1960,6 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 				break;
 			weight = K_PlayerWeight(mobj, against);
 			break;
-		case MT_KART_LEFTOVER:
-			weight = 5*FRACUNIT/2;
-
-			if (mobj->extravalue1 > 0)
-			{
-				weight = mobj->extravalue1 * (FRACUNIT >> 1);
-			}
-			break;
 		case MT_BUBBLESHIELD:
 			weight = K_PlayerWeight(mobj->target, against);
 			break;
@@ -7009,7 +7001,7 @@ static void K_MoveHeldObjects(player_t *player)
 					cur->flags &= ~MF_NOCLIPTHING;
 
 					if (!P_TryMove(cur, player->mo->x + cur->momx, player->mo->y + cur->momy, true, &result))
-						P_SlideMove(cur,&result);
+						P_SlideMoveOLD(cur);
 
 					if (P_IsObjectOnGround(player->mo))
 					{

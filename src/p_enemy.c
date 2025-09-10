@@ -11659,9 +11659,3 @@ void A_ReaperThinker(mobj_t *actor)
 		}
 	}
 }
-
-void A_DeathSpin(mobj_t *actor)
-{
-	INT32 locvar1 = var1;
-	actor->angle += locvar1;
-}
