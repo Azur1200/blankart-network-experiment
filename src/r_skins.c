@@ -371,7 +371,7 @@ void SortSkins(void)
 			_sortingFunc = CompareSkinIds;
 			break;
 	}
-	qsort(skinsorted, numskins, sizeof(INT32), _sortingFunc);
+	qs22j(skinsorted, numskins, sizeof(INT32), _sortingFunc);
 }
 
 INT32 FindSortedSkinIndex(INT32 skinnum)
