@@ -257,14 +257,7 @@ void K_UpdateMatchRaceBots(void)
 	else
 	{
 		difficulty = cv_kartbot.value;
-		if (netgame)
-		{
-			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_maxplayers.value));
-		}
-		if (cv_kartbot_cap.value > 0)
-		{
-			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_kartbot_cap.value));
-		}
+		pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_kartbot_cap.value));
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
