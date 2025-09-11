@@ -379,6 +379,21 @@ static INT16 lastnextmap = 1;
 static CV_PossibleValue_t skins_cons_t[] = {{0, "MIN"}, {MAXSKINS, "MAX"}, {0, NULL}};
 consvar_t cv_chooseskin = CVAR_INIT ("chooseskin", "0", CV_HIDEN|CV_CALL|CV_NOINIT, skins_cons_t, Nextmap_OnChange);
 
+static CV_PossibleValue_t skinselectstyle_cons_t[] = {{0, "Bar"}, {1, "Grid"}, {0, NULL}};
+consvar_t cv_skinselectstyle = CVAR_INIT ("skinselectstyle", "Grid", CV_SAVE|CV_CALL|CV_NOINIT, skinselectstyle_cons_t, Skinselectstyle_option_Onchange);
+
+static CV_PossibleValue_t skinselectsort_cons_t[] = {
+	{SKINMENUSORT_ID, 		"Order Added"},
+	{SKINMENUSORT_NAME, 	"Name"},
+	{SKINMENUSORT_SPEED, 	"Speed"},
+	{SKINMENUSORT_WEIGHT, 	"Weight"},
+	{SKINMENUSORT_ACCEL, 	"Accel"},
+	{SKINMENUSORT_HANDLING, "Handling"},
+	{SKINMENUSORT_PREFCOLOR, "Preferred Colour"},
+	{0, NULL}
+};
+consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Order Added", CV_SAVE|CV_CALL|CV_NOINIT, skinselectsort_cons_t, Skinsort_option_Onchange);
+
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
 CV_PossibleValue_t gametype_cons_t[NUMGAMETYPES+1];
@@ -817,6 +832,42 @@ void Addons_option_Onchange(void)
 void Moviemode_option_Onchange(void)
 {
 	;
+}
+
+
+//width now 9 so we can make moe's "2D" grid just an option in the normal grid
+#define SKINGRIDWIDTH 9
+#define SKINGRIDHEIGHT 6
+
+static INT32 gridcss_skinydrag;
+static INT32 gridcss_skinmemory;
+static INT32 gridcss_row;
+static INT32 gridcss_column;
+
+void Skinsort_option_Onchange(void)
+{
+	SortSkins();
+	INT32 sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+	gridcss_row = sortedIndex % SKINGRIDWIDTH;
+	gridcss_column = sortedIndex / SKINGRIDWIDTH;
+	// I really need to macro this lol
+	gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+}
+
+void Skinselectstyle_option_Onchange(void)
+{
+	boolean visible = cv_skinselectstyle.value == 0;
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ACCELERATION", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "MAXSPEED", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "HANDLING", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "WEIGHT", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWLR", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWUD", visible);
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBG", visible);
+
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBAR", !visible);
+
+	Skinsort_option_Onchange();
 }
 
 // ==========================================================================
@@ -2080,6 +2131,8 @@ void M_Init(void)
 	CV_RegisterVar(&cv_nextmap);
 	CV_RegisterVar(&cv_newgametype);
 	CV_RegisterVar(&cv_chooseskin);
+	CV_RegisterVar(&cv_skinselectstyle);
+	CV_RegisterVar(&cv_skinselectsort);
 	CV_RegisterVar(&cv_autorecord);
 
 	if (dedicated)
@@ -6730,31 +6783,47 @@ static state_t *follower_state;
 // for either player 1 or 2
 static UINT8 setupplayer;
 
+#define charw 72
+
 void MD_DrawSetupMultiPlayerMenu(void)
+{	
+	// use generic drawer for cursor, items and title
+	// bg, text, arrows handled by generic drawer
+	MD_DrawGenericMenu();
+
+	MD_DrawCssColourBar();
+	MD_DrawCssCharacter();
+	
+	if (cv_skinselectstyle.value)
+	{
+		MD_DrawCssStatBars();
+		MD_DrawGridCssSelector();
+	}
+	else
+	{
+		MD_DrawCssStatBacker();
+		MD_DrawBarCssSelector();
+	}
+}
+
+void MD_DrawCssStatBacker(void)
 {
-	INT32 mx, my, st, flags = 0;
-	spritedef_t *sprdef;
-	spriteframe_t *sprframe;
+	INT32 mx, my;
 	patch_t *statdot = W_CachePatchName("K_SDOT0", PU_CACHE);
-	patch_t *patch;
-	UINT8 frame;
 	UINT8 speed;
 	UINT8 weight;
 	const UINT8 *flashcol = V_GetStringColormap(highlightflags);
 	INT16 i;
 
+	INT32 skintodisplay = cv_chooseskin.value;
+
 	mx = menudefs[MN_MP_PLAYERSETUP].x;
 	my = menudefs[MN_MP_PLAYERSETUP].y;
 
-	// use generic drawer for cursor, items and title
-	MD_DrawGenericMenu();
-
 	// SRB2Kart: draw the stat backer
-	// bg, text, arrows handled by generic drawer
-
 	for (i = 0; i < numskins; i++) // draw the stat dots
 	{
-		if (i != cv_chooseskin.value && R_SkinAvailable(skins[i].name) != -1)
+		if (i != skintodisplay && R_SkinAvailable(skins[i].name) != -1)
 		{
 			speed = skins[i].kartspeed;
 			weight = skins[i].kartweight;
@@ -6762,8 +6831,8 @@ void MD_DrawSetupMultiPlayerMenu(void)
 		}
 	}
 
-	speed = skins[cv_chooseskin.value].kartspeed;
-	weight = skins[cv_chooseskin.value].kartweight;
+	speed = skins[skintodisplay].kartspeed;
+	weight = skins[skintodisplay].kartweight;
 
 	statdot = W_CachePatchName("K_SDOT1", PU_CACHE);
 	if (skullAnimCounter < 4) // SRB2Kart: we draw this dot later so that it's not covered if there's multiple skins with the same stats
@@ -6773,9 +6842,52 @@ void MD_DrawSetupMultiPlayerMenu(void)
 
 	statdot = W_CachePatchName("K_SDOT2", PU_CACHE); // coloured center
 	V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, R_GetTranslationColormap(0, cv_dummycolor.value, GTC_MENUCACHE));
+}
+
+void MD_DrawCssStatBars(void)
+{
+	INT32 mx, my;
+
+	const INT32 BITSPACING = 4 + 1;
+
+	const INT32 BITSTARTX = 19;
+
+	const INT32 BITSPEEDSTARTY = 3;
+	const INT32 BITWEIGHTSTARTY = 19;
+
+	patch_t *speedbit = W_CachePatchName("STATBSPD", PU_CACHE);
+	patch_t *weightbit = W_CachePatchName("STATBWGT", PU_CACHE);
+
+	INT32 skintodisplay = cv_chooseskin.value;
+	UINT8 speed = skins[skintodisplay].kartspeed;
+	UINT8 weight = skins[skintodisplay].kartweight;
+
+	INT16 i;
+
+	mx = M_GetItemX(MN_MP_PLAYERSETUP, "STATBAR");
+	my = M_GetItemY(MN_MP_PLAYERSETUP, "STATBAR");
+
+	// draw speed
+	for (i = 0; i < speed; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, speedbit, NULL);
+	}
+	// draw weight
+	for (i = 0; i < weight; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, weightbit, NULL);
+	}
+}
+
+void MD_DrawCssColourBar(void)
+{
+	INT32 mx, my;
+	INT16 i;
+
+	mx = menudefs[MN_MP_PLAYERSETUP].x;
+	my = menudefs[MN_MP_PLAYERSETUP].y;
 
 	// 2.2 color bar backported with permission
-#define charw 72
 #define indexwidth 8
 	{
 		const INT32 numcolors = (250-charw)/(2*indexwidth); // Number of colors per side
@@ -6818,55 +6930,21 @@ void MD_DrawSetupMultiPlayerMenu(void)
 		}
 	}
 #undef indexwidth
+}
 
-	// character bar, ripped off the color bar :V
-#define iconwidth 32
-	{
-		const INT32 icons = 4;
-		INT32 k = -icons;
-		INT16 col = (cv_chooseskin.value - icons) % numskins;
-		INT32 x = BASEVIDWIDTH/2 - ((icons+1)*24) - 4;
-		fixed_t scale = FRACUNIT/2;
-		INT32 offx = 8, offy = 8;
-		patch_t *cursor;
-		static fixed_t cursorframe = 0;
-		patch_t *face;
-		UINT8 *colmap;
+void MD_DrawCssCharacter(void)
+{
+	INT32 mx, my, flags = 0;
+	INT32 st;
+	patch_t *patch;
+	UINT8 frame;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
 
-		cursorframe += renderdeltatics / 4;
-		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
+	INT32 skintodisplay = cv_chooseskin.value;
 
-		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
-
-		if (col < 0)
-			col += numskins;
-		while (k <= icons)
-		{
-			if (!(k++))
-			{
-				scale = FRACUNIT;
-				face = faceprefix[col][FACE_WANTED];
-				offx = 12;
-				offy = 0;
-			}
-			else
-			{
-				scale = FRACUNIT/2;
-				face = faceprefix[col][FACE_RANK];
-				offx = 8;
-				offy = 8;
-			}
-			colmap = R_GetTranslationColormap(col, cv_dummycolor.value, GTC_MENUCACHE);
-			if (face)
-				V_DrawFixedPatch((x+offx)<<FRACBITS, (my+28+offy)<<FRACBITS, FRACUNIT, 0, face, colmap);
-			if (scale == FRACUNIT) // bit of a hack
-				V_DrawFixedPatch((x+offx)<<FRACBITS, (my+28+offy)<<FRACBITS, FRACUNIT, 0, cursor, colmap);
-			if (++col >= numskins)
-				col -= numskins;
-			x += FixedMul(iconwidth<<FRACBITS, 3*scale/2)/FRACUNIT;
-		}
-	}
-#undef iconwidth
+	mx = menudefs[MN_MP_PLAYERSETUP].x;
+	my = menudefs[MN_MP_PLAYERSETUP].y;
 
 	// anim the player in the box
 	multi_tics -= renderdeltatics;
@@ -6883,7 +6961,7 @@ void MD_DrawSetupMultiPlayerMenu(void)
 	}
 
 	// skin 0 is default player sprite
-	sprdef = &skins[cv_chooseskin.value].sprites[multi_spr2];
+	sprdef = &skins[skintodisplay].sprites[multi_spr2];
 
 	if (!sprdef->numframes) // No frames ??
 		return; // Can't render!
@@ -6901,10 +6979,10 @@ void MD_DrawSetupMultiPlayerMenu(void)
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 159);
 
 	// draw player sprite
-	UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value, cv_dummycolor.value, GTC_MENUCACHE);
+	UINT8 *colormap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 	V_DrawFixedPatch((mx+43)<<FRACBITS,
 				(my+131)<<FRACBITS,
-				skins[cv_chooseskin.value].highresscale,
+				skins[skintodisplay].highresscale,
 				flags, patch, colormap);
 
 	// draw their follower if there is one
@@ -6957,7 +7035,7 @@ void MD_DrawSetupMultiPlayerMenu(void)
 			// smooth floating, totally not stolen from rocket sneakers.
 			fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * followertimer)>>ANGLETOFINESHIFT) & FINEMASK));
 
-			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, &skins[cv_chooseskin.value]);
+			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, &skins[skintodisplay]);
 			colormap = R_GetTranslationColormap(TC_DEFAULT, color, 0); // why does GTC_MENUCACHE not work here...?
 
 			INT32 x = (mx+65)*FRACUNIT;
@@ -6971,8 +7049,350 @@ void MD_DrawSetupMultiPlayerMenu(void)
 			Z_Free(colormap);
 		}
 	}
-
+}
 #undef charw
+
+void MD_DrawBarCssSelector(void)
+{
+	INT32 my;
+
+	// mx = menudefs[MN_MP_PLAYERSETUP].x;
+	my = menudefs[MN_MP_PLAYERSETUP].y;
+
+	// character bar, ripped off the color bar :V
+#define iconwidth 32
+	{
+		const INT32 icons = 4;
+		INT32 k = -icons;
+		INT16 col = (cv_chooseskin.value - icons) % numskins;
+		INT32 x = BASEVIDWIDTH/2 - ((icons+1)*24) - 4;
+		fixed_t scale = FRACUNIT/2;
+		INT32 offx = 8, offy = 8;
+		patch_t *cursor;
+		static fixed_t cursorframe = 0;
+		patch_t *face;
+		UINT8 *colmap;
+
+		cursorframe += renderdeltatics / 4;
+		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
+
+		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
+
+		if (col < 0)
+			col += numskins;
+		while (k <= icons)
+		{
+			if (!(k++))
+			{
+				scale = FRACUNIT;
+				face = faceprefix[col][FACE_WANTED];
+				offx = 12;
+				offy = 0;
+			}
+			else
+			{
+				scale = FRACUNIT/2;
+				face = faceprefix[col][FACE_RANK];
+				offx = 8;
+				offy = 8;
+			}
+			colmap = R_GetTranslationColormap(col, cv_dummycolor.value, GTC_MENUCACHE);
+			if (face)
+				V_DrawFixedPatch((x+offx)<<FRACBITS, (my+28+offy)<<FRACBITS, FRACUNIT, 0, face, colmap);
+			if (scale == FRACUNIT) // bit of a hack
+				V_DrawFixedPatch((x+offx)<<FRACBITS, (my+28+offy)<<FRACBITS, FRACUNIT, 0, cursor, colmap);
+			if (++col >= numskins)
+				col -= numskins;
+			x += FixedMul(iconwidth<<FRACBITS, 3*scale/2)/FRACUNIT;
+		}
+	}
+#undef iconwidth
+}
+
+// minenice's grid style CSS from an unfinished moe mansion pull request
+// originally based on callmore's skin select
+
+#define SKINXSHIFT 33
+#define SKINYSHIFT 28
+
+void MD_DrawGridCssSelector(void)
+{
+	INT32 skinn;
+	patch_t *face;
+	UINT8 *colmap;
+	
+	patch_t *cursor;
+	static fixed_t cursorframe = 0;
+	
+	INT32 gridx;
+	INT32 gridy;
+	INT32 cursorx;
+	INT32 cursory;
+	INT32 calcs;
+
+	INT32 skintodisplay = cv_chooseskin.value;
+	
+	// gridcss_skinydrag = 0;
+	// draws background and scroll bar
+	{
+		INT32 x = ((BASEVIDWIDTH / 2) - (18 * SKINGRIDWIDTH) - 8) + 100 + SKINXSHIFT - 1;
+		INT32 y = ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDWIDTH/2))) + SKINYSHIFT - 1;
+
+		INT32 dx = (SKINGRIDWIDTH * 18);
+		INT32 dy = (SKINGRIDHEIGHT * 18);
+		INT32 scrx = 4; //2 is added to make the final "thickness"
+
+		INT32 columncount;
+		INT32 barlen;
+		INT32 barpos;
+		
+		//draw BG
+		V_DrawFill(x, y, dx, dy, 159);
+		
+		columncount = ((numskins - 1) / SKINGRIDWIDTH) + 1;
+
+		if (columncount > SKINGRIDHEIGHT)
+		{
+			//draw scroll bar "back"
+			x += dx + 4;
+			V_DrawFill(x, y, scrx+2, dy, 9);
+			V_DrawFill(x, y, 1, dy, 10);
+			V_DrawFill(x, y + dy - 1, scrx+2, 1, 10);
+			x++;
+			y++;
+			dy -= 2;
+			V_DrawFill(x, y, scrx, dy, 15);
+
+			//draw scroll bar bar
+			barlen = dy * SKINGRIDHEIGHT / columncount;
+			barpos = dy * gridcss_skinydrag / columncount;
+
+			if (gridcss_skinydrag >= columncount - SKINGRIDHEIGHT)
+			{
+				barpos = dy - barlen;
+			}
+
+			V_DrawFill(x, y + barpos, scrx, barlen, 5);
+			V_DrawFill(x, y + barpos, 1, barlen, 7);
+			V_DrawFill(x, y + barpos + barlen - 1, scrx, 1, 7);
+		}
+	}
+	// end background and scroll bar
+	
+	for (INT32 gridslot = 0; gridslot < SKINGRIDWIDTH*SKINGRIDHEIGHT; gridslot++)
+	{	
+		gridx = ((gridslot % SKINGRIDWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDWIDTH) - 8) + 100 + SKINXSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
+		gridy = ((gridslot / SKINGRIDWIDTH) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDWIDTH/2))) + SKINYSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
+		calcs = gridslot + (gridcss_skinydrag * SKINGRIDWIDTH);
+
+		if (calcs < numskins)
+			skinn = skinsorted[calcs];
+			// skinn = calcs;
+		else if (gridslot % SKINGRIDWIDTH == 0)
+			break; //really conveniant (sic) place to break out here
+		else
+		{
+			// draw an empty slot
+			V_DrawFill(gridx, gridy, 16, 16, 158);
+			continue;
+		}
+		
+		if (skinn == skintodisplay)
+		{
+			cursorx = gridx;
+			cursory = gridy;
+		}
+		else
+		{
+			face = faceprefix[skinn][FACE_RANK];
+			colmap = R_GetTranslationColormap(skinn, skins[skinn].prefcolor, GTC_MENUCACHE);
+			V_DrawFixedPatch(gridx * FRACUNIT, gridy * FRACUNIT, FRACUNIT, 0, face, colmap);
+		}
+	}
+
+	// draw wanted portrait and cursor
+	if (M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN"))
+	{
+		face = faceprefix[skintodisplay][FACE_WANTED];
+		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
+		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
+
+		
+		cursorframe += renderdeltatics / 4;
+		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
+		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
+		// cursor patch offsets are wrong so draw at same coordinate as portrait
+		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
+		
+	}
+	else
+	{
+		face = faceprefix[skintodisplay][FACE_RANK];
+		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
+		V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT, 0, face, colmap);
+		cursor = W_CachePatchName("M_FSEL", PU_CACHE);
+
+		if (skullAnimCounter < 4)
+		{
+			colmap = V_GetStringColormap(skincolors[cv_dummycolor.value].chatcolor);
+			V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT/2, 0, cursor, colmap);
+		}
+	}
+}
+
+//
+// Maps a CSS grid selection cursor column (x) and row (y) to a skin selection index
+//
+INT32 MapGridSelectToSkin(INT32 row, INT32 column)
+{
+	return (row % SKINGRIDWIDTH) + (column * SKINGRIDWIDTH);
+}
+
+INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
+{
+	INT32 sortedIndex;
+	// don't consume input if we're not interacting with the grid CSS
+	if (!(M_IsItemOn(MN_MP_PLAYERSETUP, "SKIN") && cv_skinselectstyle.value))
+	{
+		return false;
+	}
+
+	switch (choice)
+	{
+		case KEY_DOWNARROW:
+			if (gridcss_column == (numskins - 1) / SKINGRIDWIDTH)
+			{
+				M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
+				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+				gridcss_row = sortedIndex % SKINGRIDWIDTH;
+				gridcss_column = sortedIndex / SKINGRIDWIDTH;
+
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+			}
+			else
+			{
+				gridcss_column++;
+
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+				{
+					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+				}
+				
+				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+					gridcss_skinydrag++;
+			}
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_UPARROW:
+			if (gridcss_column == 0)
+			{
+				M_SetItemOn(MN_MP_PLAYERSETUP, "NAME");
+				CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+				sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+				gridcss_row = sortedIndex % SKINGRIDWIDTH;
+				gridcss_column = sortedIndex / SKINGRIDWIDTH;
+
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+			}
+			else
+			{
+				gridcss_column--;
+
+				if (gridcss_column < gridcss_skinydrag)
+					gridcss_skinydrag--;
+			}
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_LEFTARROW:
+			if (gridcss_row == 0)
+			{
+				if (MapGridSelectToSkin(SKINGRIDWIDTH - 1, gridcss_column) > (numskins-1))
+					gridcss_row = numskins - (gridcss_column * SKINGRIDWIDTH) - 1;
+				else
+					gridcss_row = SKINGRIDWIDTH - 1;
+				if (gridcss_column > 0)
+				{
+					gridcss_row = SKINGRIDWIDTH - 1;
+					gridcss_column--;
+	
+					if (gridcss_column < gridcss_skinydrag)
+						gridcss_skinydrag--;
+				}
+			}
+			else
+			{
+				gridcss_row--;
+			}
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_RIGHTARROW:
+			if ((gridcss_row + 1 == SKINGRIDWIDTH) || (MapGridSelectToSkin(gridcss_row + 1, gridcss_column) > (numskins - 1)))
+			{
+				gridcss_row = 0;
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column + 1) <= (numskins - 1))
+				{
+					gridcss_column++;
+
+					if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
+						gridcss_skinydrag++;
+				}
+			}
+			else
+			{
+				gridcss_row++;
+			}
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_PGDN:
+			if (gridcss_column <= (numskins - 1) / SKINGRIDWIDTH)
+			{
+				gridcss_column = min(gridcss_column + SKINGRIDHEIGHT - 1, (numskins - 1) / SKINGRIDWIDTH);
+
+				if (MapGridSelectToSkin(gridcss_row, gridcss_column) > (numskins - 1))
+				{
+					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
+					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
+				}
+
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
+
+				S_StartSound(NULL, sfx_menu1);
+			}
+			break;
+		case KEY_PGUP:
+			if (gridcss_column > 0)
+			{
+				gridcss_column = max(gridcss_column - SKINGRIDHEIGHT + 1, 0);
+				gridcss_skinydrag = max(gridcss_column, 0);
+				S_StartSound(NULL, sfx_menu1);
+			}
+			break;
+		case KEY_TAB:
+			M_SetItemOn(MN_MP_PLAYERSETUP, "FOLLOWER");
+			CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+			sortedIndex = FindSortedSkinIndex(cv_chooseskin.value);
+			gridcss_row = sortedIndex % SKINGRIDWIDTH;
+			gridcss_column = sortedIndex / SKINGRIDWIDTH;
+
+			gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+
+			S_StartSound(NULL, sfx_menu1);
+			break;
+		case KEY_ENTER:
+			if (cv_chooseskin.value < numskins)
+			{
+				gridcss_skinmemory = cv_chooseskin.value;
+				S_StartSound(NULL, sfx_s221);
+			}
+			break;
+		default:
+			return false;
+	}
+		
+	CV_SetValue(&cv_chooseskin, skinsorted[MapGridSelectToSkin(gridcss_row, gridcss_column)]);
+	return true;
 }
 
 // follower state update. This is its own function so that it's at least somewhat clean
@@ -7008,14 +7428,18 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	multi_tics = multi_state->tics * FRACUNIT;
 
 	CV_Set(&cv_dummyname, cv_playername[arg].string);
-	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_chooseskin, R_SkinAvailable(cv_skin[arg].string));
+	gridcss_skinmemory = cv_chooseskin.value;
+	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
+	
+	Skinsort_option_Onchange();
 
 	M_GetFollowerState();	// update follower state
 
 	// disable skin changes if we can't actually change skins
 	M_SetItemDisabled(MN_MP_PLAYERSETUP, "SKIN", splitscreen >= arg && !CanChangeSkin(arg == 0 ? consoleplayer : g_localplayers[arg]));
+	Skinselectstyle_option_Onchange();
 
 	return true;
 }
@@ -7023,6 +7447,10 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 {
 	(void)choice;
+
+	if (cv_skinselectstyle.value == 1)
+		CV_SetValue(&cv_chooseskin, gridcss_skinmemory);
+
 	const char *followername = cv_dummyfollower.value == -1 ?
 		"None" : followers[cv_dummyfollower.value].skinname;
 	COM_BufInsertText(va(
@@ -7034,6 +7462,11 @@ INT32 MR_QuitMultiPlayerMenu(INT32 choice)
 	));
 	return true;
 }
+#undef SKINXSHIFT
+#undef SKINYSHIFT
+
+#undef SKINGRIDWIDTH
+#undef SKINGRIDHEIGH
 
 void M_AddMenuColor(UINT16 color) {
 	menucolor_t *c;

@@ -37,6 +37,7 @@
 
 INT32 numskins = 0;
 skin_t skins[MAXSKINS];
+INT32 skinsorted[MAXSKINS];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
@@ -214,6 +215,8 @@ void R_InitSkins(void)
 	}
 #endif
 
+	// doesn't seem right but it's what the original did
+	memset(skinsorted, 0, sizeof(skinsorted));
 	// yes default skin!
 	numskins = 1;
 
@@ -244,6 +247,140 @@ UINT32 R_GetSkinAvailabilities(void)
 	}
 
 	return response;
+}
+
+//
+// From callmore's skin select
+// Sort function(s) for sorting skin names
+//
+static int CompareSkinIds(const void *a, const void *b)
+{
+	const INT32 val_a = *((const INT32 *)a);
+	const INT32 val_b = *((const INT32 *)b);
+	if (val_a > val_b)
+			return 1;
+	else if (val_a < val_b)
+		return -1;
+	else
+		return 0;
+}
+
+static int CompareSkinNames(const void *a, const void *b)
+{
+	const skin_t *in1 = &skins[*(const INT32 *)a];
+	const skin_t *in2 = &skins[*(const INT32 *)b];
+	return strcmp(in1->realname, in2->realname);
+}
+
+static int CompareSkinSpeeds(const void *a, const void *b)
+{
+	const skin_t *in1 = &skins[*(const INT32 *)a];
+	const skin_t *in2 = &skins[*(const INT32 *)b];
+	INT32 temp = 0;
+	// check speed
+	if (in1->kartspeed < in2->kartspeed)
+		return -1;
+	else if (in2->kartspeed < in1->kartspeed)
+		return 1;
+	// then check weight
+	if (in1->kartweight < in2->kartweight)
+		return -1;
+	else if (in2->kartweight < in1->kartweight)
+		return 1;
+	// then check name
+	if ((temp = strcmp(in1->realname, in2->realname)))
+		return temp;
+	// sort by internal name
+	return strcmp(in1->name, in2->name);
+}
+
+static int CompareSkinWeights(const void *a, const void *b)
+{
+	const skin_t *in1 = &skins[*(const INT32 *)a];
+	const skin_t *in2 = &skins[*(const INT32 *)b];
+	INT32 temp = 0;
+	// check weight
+	if (in1->kartweight < in2->kartweight)
+	return -1;
+	else if (in2->kartweight < in1->kartweight)
+	return 1;
+	// then check speed
+	if (in1->kartspeed < in2->kartspeed)
+	return -1;
+	else if (in2->kartspeed < in1->kartspeed)
+	return 1;
+	// then check name
+	if ((temp = strcmp(in1->realname, in2->realname)))
+	return temp;
+	// sort by internal name
+	return strcmp(in1->name, in2->name);
+}
+
+static int CompareSkinAccels(const void *a, const void *b)
+{
+	return CompareSkinSpeeds(b, a);
+}
+
+static int CompareSkinHandlings(const void *a, const void *b)
+{
+	return CompareSkinWeights(b, a);
+}
+
+static int CompareSkinColours(const void *a, const void *b)
+{
+	const skin_t *in1 = &skins[*(const INT32 *)a];
+	const skin_t *in2 = &skins[*(const INT32 *)b];
+	INT32 temp = 0;
+
+	// check prefcolor
+	if (in1->prefcolor < in2->prefcolor)
+		return -1;
+	else if (in2->prefcolor < in1->prefcolor)
+		return 1;
+	// then check name
+	if ((temp = strcmp(in1->realname, in2->realname)))
+		return temp;
+	// sort by internal name
+	return strcmp(in1->name, in2->name);
+}
+
+void SortSkins(void)
+{
+	int (*_sortingFunc)(const void *, const void *);
+	switch (cv_skinselectsort.value)
+	{
+		case SKINMENUSORT_NAME:
+			_sortingFunc = CompareSkinNames;
+			break;
+		case SKINMENUSORT_SPEED:
+			_sortingFunc = CompareSkinSpeeds;
+			break;
+		case SKINMENUSORT_WEIGHT:
+			_sortingFunc = CompareSkinWeights;
+			break;
+		case SKINMENUSORT_ACCEL:
+			_sortingFunc = CompareSkinAccels;
+			break;
+		case SKINMENUSORT_HANDLING:
+			_sortingFunc = CompareSkinHandlings;
+			break;
+		case SKINMENUSORT_PREFCOLOR:
+			_sortingFunc = CompareSkinColours;
+			break;
+		default:
+			_sortingFunc = CompareSkinIds;
+			break;
+	}
+	qs22j(skinsorted, numskins, sizeof(INT32), _sortingFunc);
+}
+
+INT32 FindSortedSkinIndex(INT32 skinnum)
+{
+	for (INT32 i = 0; i < numskins; i++)
+	{
+		if (skinsorted[i] == skinnum) return i;
+	}
+	return 0;
 }
 
 // returns true if available in circumstances, otherwise nope
@@ -910,8 +1047,10 @@ next_token:
 			HWR_AddPlayerModel(numskins);
 #endif
 
+		skinsorted[numskins] = numskins;
 		numskins++;
 	}
+	SortSkins();
 	return;
 }
 
