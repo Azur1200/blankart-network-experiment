@@ -268,7 +268,6 @@ static void GL_MSG_Error(const char *format, ...)
 /* Raster functions */
 #define pglPixelStorei glPixelStorei
 #define pglReadPixels glReadPixels
-#define pglGetTexImage glGetTexImage
 
 /* Texture mapping */
 #define pglTexEnvi glTexEnvi
@@ -381,8 +380,6 @@ typedef void (APIENTRY * PFNglPixelStorei) (GLenum pname, GLint param);
 static PFNglPixelStorei pglPixelStorei;
 typedef void (APIENTRY  * PFNglReadPixels) (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
 static PFNglReadPixels pglReadPixels;
-typedef void (APIENTRY  * PFNglGetTexImage) (GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels);
-static PFNglGetTexImage pglGetTexImage;
 
 /* Texture mapping */
 typedef void (APIENTRY * PFNglTexEnvi) (GLenum target, GLenum pname, GLint param);
@@ -526,7 +523,6 @@ boolean SetupGLfunc(void)
 
 	GETOPENGLFUNC(pglPixelStorei, glPixelStorei)
 	GETOPENGLFUNC(pglReadPixels, glReadPixels)
-	GETOPENGLFUNC(pglGetTexImage, glGetTexImage)
 
 	GETOPENGLFUNC(pglTexEnvi, glTexEnvi)
 	GETOPENGLFUNC(pglTexParameteri, glTexParameteri)
@@ -1267,7 +1263,6 @@ static void GLPerspective(GLfloat fovy, GLfloat aspect)
 	pglMultMatrixf(&m[0][0]);
 }
 
-#if 0
 static void GLProject(GLfloat objX, GLfloat objY, GLfloat objZ,
                       GLfloat* winX, GLfloat* winY, GLfloat* winZ)
 {
@@ -1307,7 +1302,6 @@ static void GLProject(GLfloat objX, GLfloat objY, GLfloat objZ,
 	*winY=in[1];
 	*winZ=in[2];
 }
-#endif
 
 // -----------------+
 // SetModelView     :
@@ -1586,15 +1580,6 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
-// nope, definitely not faster. software has the same flickering/z-fighting bugs with laggy GIF recording anyway
-//#define GETTEXIMAGE
-
-#ifdef GETTEXIMAGE
-#define TEXWIDTH texsize
-#else
-#define TEXWIDTH screen_width
-#endif
-
 // -----------------------+
 // ReadScreenFinalTexture : Reads out the final screen texture
 // Returns                : 24bit RGB pixel array stored in dest
@@ -1605,24 +1590,17 @@ EXPORT void HWRAPI(ReadScreenFinalTexture) (UINT8 * restrict dest, INT32 scale)
 	INT32 scanlines = screen_height;
 	GLubyte * restrict image;
 
-#ifdef GETTEXIMAGE
-	image = malloc(texsize*texsize*3); // oof
-	pglBindTexture(GL_TEXTURE_2D, finalScreenTexture);
-	pglGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	tex_downloaded = finalScreenTexture;
-#else
 	image = malloc(screen_width*screen_height*3);
 	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
 	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
-#endif
 
 	// TODO the downscaling happens in the screen capture code now,
 	// yet we're still doing this on the CPU? sheesh...
 	// this is where actual knowledge of OpenGL would've come in handy
-	image += scanlines*TEXWIDTH*3;
+	image += scanlines*screen_width*3;
 	while ((scanlines -= scale) >= 0)
 	{
-		image -= TEXWIDTH*scale*3;
+		image -= screen_width*scale*3;
 		if (scale == 1)
 			memcpy(dest, image, stride);
 		else for (size_t i = 0; i < stride; i += 3)
@@ -1631,7 +1609,7 @@ EXPORT void HWRAPI(ReadScreenFinalTexture) (UINT8 * restrict dest, INT32 scale)
 	}
 
 	// ...yet still, restrict doesn't make the inner loop any faster
-	free(image - ((screen_height % scale) * TEXWIDTH*3));
+	free(image - ((screen_height % scale) * screen_width*3));
 }
 
 // -----------------+
@@ -2414,7 +2392,6 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 
 	// this test is added for new coronas' code (without depth buffer)
 	// I think I should do a separate function for drawing coronas, so it will be a little faster
-#if 0
 	if (PolyFlags & PF_Corona) // check to see if we need to draw the corona
 	{
 		FUINT i;
@@ -2475,7 +2452,6 @@ static void PreparePolygon(FSurfaceInfo *pSurf, FOutVector *pOutVerts, FBITFIELD
 		c[3] = (unsigned char)(alpha * 255);
 		pglColor4ubv(c);
 	}
-#endif
 
 	Shader_SetUniforms(pSurf, &poly, &tint, &fade);
 }
