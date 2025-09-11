@@ -2,6 +2,8 @@
 
 BlanKart is a modification of SRB2Kart v2 Indev to make it closer to SRB2Kart gameplay while adding new features, and techincal improvements.
 
+If you're interested in helping out, theres a matrix room located here: https://matrix.to/#/#blankart:matrix.org
+
 # Notice
 
 This is still in active development and things are going to change. If you find any bugs besure to report to  the [issue tracker](https://codeberg.org/NepDisk/blankart/issues)!
