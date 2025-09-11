@@ -54,7 +54,7 @@ git clone https://codeberg.org/NepDisk/blankart.git
 cd blankart
 mkdir build
 cd build
-cmake -G "MSYS Makefiles" ..
+cmake -G "MSYS Makefiles" .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 make -j$(nproc)
 ```
 

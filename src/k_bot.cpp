@@ -261,9 +261,9 @@ void K_UpdateMatchRaceBots(void)
 		{
 			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_maxplayers.value));
 		}
-		if (cv_ingamecap.value > 0)
+		if (cv_kartbot_cap.value > 0)
 		{
-			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_ingamecap.value));
+			pmax = std::min<UINT8>(pmax, static_cast<UINT8>(cv_kartbot_cap.value));
 		}
 	}
 
@@ -362,7 +362,7 @@ void K_UpdateMatchRaceBots(void)
 			{
 				UINT16 index = P_RandomKey(usableskins);
 				skinnum = grabskins[index];
-				if (((cv_ingamecap.value > 0) && (usableskins+1 >= cv_ingamecap.value)) || (usableskins+1 >= cv_maxplayers.value))
+				if (((cv_kartbot_cap.value > 0) && (usableskins+1 >= cv_kartbot_cap.value)) || (usableskins+1 >= cv_maxplayers.value))
 				{
 					grabskins[index] = grabskins[--usableskins];
 				}
