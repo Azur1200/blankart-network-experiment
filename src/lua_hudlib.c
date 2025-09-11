@@ -1128,10 +1128,8 @@ static int libd_getColormap(lua_State *L)
 		{
 			if (skinnum >= MAXSKINS)
 				return luaL_error(L, "skin number %d is out of range (>%d)", skinnum, MAXSKINS-1);
-			else if (skinnum < TC_BOSS && skinnum > MAXSKINS)
-			{
-				return luaL_error(L, "skin number %d is out of range (%d - %d)", skinnum, TC_BOSS, MAXSKINS-1);
-			}
+			else if (skinnum < -6 && !(skinnum >= TC_BOSS && skinnum <= TC_DEFAULT))
+				return luaL_error(L, "translation colormap index is out of range");
 
 			switch(skinnum)
 			{
