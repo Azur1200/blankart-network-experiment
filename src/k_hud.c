@@ -2275,7 +2275,7 @@ void K_DrawServerMods(INT32 x, INT32 y)
 		{"Chaining", 0, NULL, K_ChainingActive() > 0, true},
 		{"Chain Offroad", 0, &cv_kartchainingoffroad, -1, true},
 		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
-		{"Drafting", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"Drafting", 0, NULL, K_DraftingActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
 		{"Alt. Invin.", 0, NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
