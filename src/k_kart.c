@@ -64,7 +64,7 @@
 #include "k_follower.h"
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
-#include "k_odds.hpp"
+#include "k_odds.h"
 
 #include "h_timers.h"
 #include "blan/b_soc.h"
@@ -9545,6 +9545,34 @@ boolean K_SlopeResistance(const player_t *player)
 	if (player->tiregrease)
 		return true;
 	return false;
+}
+
+INT32 K_GetShieldFromPlayer(player_t *player)
+{
+
+	if (player->flametimer > 0)
+	{
+		return KSHIELD_FLAME;
+	}
+
+	switch (player->itemtype)
+	{
+		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
+		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
+		//case KITEM_FLAMESHIELD: return KSHIELD_FLAME; not active until flametimer is active.
+		default: return KSHIELD_NONE;
+	}
+}
+
+INT32 K_GetShieldFromItem(INT32 item)
+{
+	switch (item)
+	{
+		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
+		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
+		case KITEM_FLAMESHIELD: return KSHIELD_FLAME;
+		default: return KSHIELD_NONE;
+	}
 }
 
 void K_SetItemOut(player_t *player)

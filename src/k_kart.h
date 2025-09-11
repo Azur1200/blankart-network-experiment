@@ -308,6 +308,9 @@ void K_PlayHitEmSound(mobj_t *source, mobj_t *other);
 void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker);
 void K_PlayPowerGloatSound(mobj_t *source);
 
+INT32 K_GetShieldFromPlayer(player_t *player);
+INT32 K_GetShieldFromItem(INT32 item);
+
 void K_SetItemOut(player_t *player);
 void K_UnsetItemOut(player_t *player);
 

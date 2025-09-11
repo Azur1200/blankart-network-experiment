@@ -17,7 +17,7 @@
 #include "k_boss.h"
 #include "k_color.h"
 #include "k_director.h"
-#include "k_odds.hpp"
+#include "k_odds.h"
 #include "p_mobj.h"
 #include "screen.h"
 #include "doomtype.h"

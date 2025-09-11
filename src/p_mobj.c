@@ -50,7 +50,7 @@
 #include "k_terrain.h"
 #include "k_collide.h"
 #include "k_objects.h"
-#include "k_odds.hpp"
+#include "k_odds.h"
 
 // BlanKart
 #include "blan/b_soc.h"

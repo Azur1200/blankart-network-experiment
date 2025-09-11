@@ -37,8 +37,6 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival);
 INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_t mashed, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
-INT32 K_GetShieldFromPlayer(player_t *player);
-INT32 K_GetShieldFromItem(INT32 item);
 SINT8 K_ItemResultToType(SINT8 getitem);
 UINT8 K_ItemResultToAmount(SINT8 getitem);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);

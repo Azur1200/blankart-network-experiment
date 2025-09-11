@@ -35,9 +35,7 @@
 #include "k_waypoint.h"
 
 #include "k_cluster.hpp"
-#include "k_odds.hpp"
-
-extern "C" {
+#include "k_odds.h"
 
 consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 {
@@ -158,34 +156,6 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 #define SPBSTARTDIST (5*DISTVAR) // Distance when SPB can start appearing
 #define SPBFORCEDIST (15*DISTVAR) // Distance when SPB is forced onto 2nd place
 #define ENDDIST (12*DISTVAR) // Distance when the game stops giving you bananas
-
-INT32 K_GetShieldFromPlayer(player_t *player)
-{
-
-	if (player->flametimer > 0)
-	{
-		return KSHIELD_FLAME;
-	}
-
-	switch (player->itemtype)
-	{
-		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
-		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
-		//case KITEM_FLAMESHIELD: return KSHIELD_FLAME; not active until flametimer is active.
-		default: return KSHIELD_NONE;
-	}
-}
-
-INT32 K_GetShieldFromItem(INT32 item)
-{
-	switch (item)
-	{
-		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
-		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
-		case KITEM_FLAMESHIELD: return KSHIELD_FLAME;
-		default: return KSHIELD_NONE;
-	}
-}
 
 SINT8 K_ItemResultToType(SINT8 getitem)
 {
@@ -313,7 +283,7 @@ fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
 			// More than vanillaMax: Increase odds to fit with the increased playercount
 			// 24P: x0.6
 			// 30P: x0.45
-			playerScaling = (basePlayer - std::min(extPlayer, static_cast<UINT8>(playerCount))) * (FRACUNIT / 40); // adding a cap here to be sure
+			playerScaling = (basePlayer - min(extPlayer, playerCount)) * (FRACUNIT / 40); // adding a cap here to be sure
 		}
 	}
 
@@ -360,12 +330,12 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 		return 0;
 
 	INT32 finodds = 0;
-	fixed_t fac = (std::min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
+	fixed_t fac = (min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST);
 
 	if (fac > FRACUNIT)
 	{
 		// Desperation! Climb exponentially until Invincibility is practically guaranteed.
-		fac = (((std::min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
+		fac = (((min(32000, (fixed_t)dist) * FRACUNIT) / (INVINDIST)) - FRACUNIT) >> 1;
 		finodds = Easing_InCubic(fac, INVODDS, MAXINVODDS);
 	}
 	else
@@ -380,7 +350,7 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 		finodds = FixedMul(INVODDS, fac);
 	}
 
-	return std::min(MAXINVODDS, finodds);
+	return min(MAXINVODDS, finodds);
 }
 
 /**	\brief	Item Roulette for Kart
@@ -565,7 +535,7 @@ INT32 K_KartGetItemOdds(
 			}
 			else
 			{
-				const INT32 distFromStart = std::max(0, static_cast<INT32>(secondToFirst) - SPBSTARTDIST);
+				const INT32 distFromStart = max(0, secondToFirst - SPBSTARTDIST);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
 				const INT32 mulMax = 3;
 
@@ -774,7 +744,7 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 			}
 			else if (pos != 9) // Force SPB
 			{
-				const INT32 distFromStart = std::max(0, static_cast<INT32>(secondToFirst) - SPBSTARTDIST);
+				const INT32 distFromStart = max(0, secondToFirst - SPBSTARTDIST);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
 				const fixed_t mulMax = 3*FRACUNIT;
 
@@ -857,7 +827,7 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush)
 {
-	fixed_t oddsfac = std::max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
+	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
 	INT32 oddsdiv = ((MAXODDS - 1) * 2);
 
 	UINT8 i;
@@ -904,7 +874,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		for (i = num; i; --i) \
         { \
 			disttable[distlen++] = odds; \
-			distlen = std::min(static_cast<UINT8>(oddsdiv - 1), distlen); \
+			distlen = min(oddsdiv - 1, distlen); \
         }
 
 	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
@@ -942,7 +912,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			}
 			else
 			{
-				jj = std::max(1, ((j - 3) / tablediv) + 1);
+				jj = max(1, ((j - 3) / tablediv) + 1);
 
 				if (jj < 1)
 				{
@@ -974,7 +944,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		{
 			for (i = 1; i < (oddsdiv - 1); i++)
 			{
-				INT32 distcalc = std::min(static_cast<INT32>(distlen-1), (i * distlen) / oddsdiv);
+				INT32 distcalc = min(distlen-1, (i * distlen) / oddsdiv);
 
 				if (pdis <= usedistvar * distcalc)
 				{
@@ -992,7 +962,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb)
 {
-	fixed_t oddsfac = std::max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
+	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
 	INT32 oddsdiv = (MAXODDS - 1) * 2;
 	
 	SINT8 sortedPlayers[MAXPLAYERS];
@@ -1151,7 +1121,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		for (i = num; i; --i) \
         { \
 			disttable[distlen++] = odds; \
-			distlen = std::min(static_cast<UINT8>(oddsdiv - 1), distlen); \
+			distlen = min(oddsdiv - 1, distlen); \
         }
 
 	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
@@ -1188,7 +1158,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 			}
 			else
 			{
-				jj = std::max(1, ((j - 3) / tablediv) + 1);
+				jj = max(1, ((j - 3) / tablediv) + 1);
 
 				if (jj < 1)
 				{
@@ -1246,7 +1216,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 		{
 			for (i = 1; i < (oddsdiv - 1); i++)
 			{
-				INT32 distcalc = std::min(static_cast<INT32>(distlen-1), (i * distlen) / oddsdiv);
+				INT32 distcalc = min(distlen-1, (i * distlen) / oddsdiv);
 				if (pdis <= (unsigned)(usedistvar * distcalc))
 				{
 					useodds = disttable[distcalc];
@@ -1349,7 +1319,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// This makes the roulette produce the random noises.
 	if ((player->itemroulette % 3) == 1 && P_IsDisplayPlayer(player))
 	{
-#define PLAYROULETTESND S_StartSound(NULL, static_cast<sfxenum_t>(sfx_itrol1 + ((player->itemroulette / 3) % 8)))
+#define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->itemroulette / 3) % 8))
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			if (player == &players[displayplayers[i]] && players[displayplayers[i]].itemroulette)
@@ -1520,7 +1490,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Being in ring debt occasionally forces Super Ring on you if you mashed
 	if ((K_RingsActive() == true) && mashed && player->rings < 0 && cv_superring.value)
 	{
-		INT32 debtamount = std::min(abs(player->ringmin), abs(player->rings));
+		INT32 debtamount = min(abs(player->ringmin), abs(player->rings));
 		if (P_RandomChance((debtamount*FRACUNIT)/abs(player->ringmin)))
 		{
 			K_KartGetItemResult(player, KITEM_SUPERRING);
@@ -1618,6 +1588,4 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	player->itemroulette = KROULETTE_DISABLED; // Since we're done, clear the roulette number
 	player->roulettetype = KROULETTETYPE_NORMAL; // This too
-}
-
 }
