@@ -57,14 +57,6 @@ static precise_t gif_prevframetime = 0;
 static UINT32 gif_delayus = 0; // "us" is microseconds
 static UINT8 gif_writeover = 0;
 
-typedef struct
-{
-	UINT8 *pixels;
-	size_t size;
-	boolean owns_pixels;
-} gif_screen_t;
-static gif_screen_t gif_screens[2];
-
 // SCReen BUFfer (obviously)
 // ---
 static UINT8 *scrbuf_pos;
@@ -73,6 +65,7 @@ static UINT8 *scrbuf_lineend;
 static UINT8 *scrbuf_writeend;
 static INT16 scrbuf_downscaleamt = 1;
 static UINT16 scrbuf_width, scrbuf_height;
+static UINT8 *scrbuf_screens;
 
 // OPTIMIZE gif output
 // ---
@@ -531,8 +524,8 @@ static void GIF_rgbconvert(UINT8 * restrict linear, UINT8 * restrict scr)
 static void GIF_framewrite(void)
 {
 	UINT8 *p;
-	UINT8 *base_screen = gif_screens[0].pixels;
-	UINT8 *movie_screen = gif_screens[1].pixels;
+	UINT8 *base_screen = scrbuf_screens;
+	UINT8 *movie_screen = scrbuf_screens;
 	INT32 blitx, blity, blitw, blith;
 	boolean palchanged;
 
@@ -552,15 +545,18 @@ static void GIF_framewrite(void)
 	else
 		palchanged = false;
 
+	// select your framebuffer
+	if (gif_frames & 1)
+		base_screen += scrbuf_width*scrbuf_height;
+	else
+		movie_screen += scrbuf_width*scrbuf_height;
+
 	// blit to temp screen
 	if (rendermode == render_soft)
 		I_ReadScreen(movie_screen, scrbuf_downscaleamt);
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
-		// save previous frame (software already does this elsewhere...?)
-		memcpy(base_screen, movie_screen, scrbuf_width * scrbuf_height);
-
 		UINT8 *linear = HWR_GetScreenshot(scrbuf_downscaleamt);
 		GIF_rgbconvert(linear, movie_screen);
 		//free(linear); // Allocated 'statically', no need to free now
@@ -718,55 +714,11 @@ INT32 GIF_open(const char *filename)
 
 static void GIF_checkscreens(void)
 {
-	for (size_t i = 0; i < sizeof(gif_screens) / sizeof(gif_screens[0]); i++)
-	{
-		if (rendermode == render_soft)
-		{
-			if (gif_screens[i].owns_pixels)
-			{
-				Z_Free(gif_screens[i].pixels);
-				gif_screens[i].owns_pixels = false;
-			}
+	if (scrbuf_screens == NULL)
+		Z_Malloc(scrbuf_width * scrbuf_height * 2, PU_STATIC, &scrbuf_screens);
 
-			gif_screens[i].size = 0;
-
-			if (i == 1)
-				gif_screens[i].pixels = screens[2];
-			else
-				gif_screens[i].pixels = screens[0];
-		}
-		else
-		{
-			size_t sz = scrbuf_width * scrbuf_height;
-
-			if (!gif_screens[i].owns_pixels)
-			{
-				gif_screens[i].size = sz;
-				gif_screens[i].pixels = Z_Malloc(gif_screens[i].size, PU_STATIC, NULL);
-				gif_screens[i].owns_pixels = true;
-			}
-			else if (gif_screens[i].size != sz)
-			{
-				gif_screens[i].size = sz;
-				gif_screens[i].pixels = Z_Realloc(gif_screens[i].pixels, gif_screens[i].size, PU_STATIC, NULL);
-			}
-		}
-	}
-}
-
-static void GIF_freescreens(void)
-{
-	for (size_t i = 0; i < sizeof(gif_screens) / sizeof(gif_screens[0]); i++)
-	{
-		if (gif_screens[i].owns_pixels)
-		{
-			Z_Free(gif_screens[i].pixels);
-			gif_screens[i].owns_pixels = false;
-		}
-
-		gif_screens[i].size = 0;
-		gif_screens[i].pixels = NULL;
-	}
+	I_Assert(scrbuf_width == vid.width / scrbuf_downscaleamt);
+	I_Assert(scrbuf_height == vid.height / scrbuf_downscaleamt);
 }
 
 //
@@ -805,7 +757,7 @@ INT32 GIF_close(void)
 		Z_Free(giflzw_hashTable);
 	giflzw_hashTable = NULL;
 
-	GIF_freescreens();
+	Z_Free(scrbuf_screens);
 
 	CONS_Printf(M_GetText("Animated gif closed; wrote %d frames\n"), gif_frames);
 	return 1;
