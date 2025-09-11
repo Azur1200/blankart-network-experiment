@@ -31,6 +31,7 @@
 #if 0
 #include "k_kart.h" // K_KartResetPlayerColor
 #endif
+#include "qs22j.h"
 #ifdef HWRENDER
 #include "hardware/hw_md2.h"
 #endif
