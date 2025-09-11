@@ -341,6 +341,7 @@ void MD_DrawTimeAttackMenu(void);
 void MD_DrawMPMainMenu(void);
 void MD_DrawSetupMultiPlayerMenu(void);
 void MD_DrawCssStatBacker(void);
+void MD_DrawCssStatBars(void);
 void MD_DrawCssColourBar(void);
 void MD_DrawCssCharacter(void);
 void MD_DrawBarCssSelector(void);

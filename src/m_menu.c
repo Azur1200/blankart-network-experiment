@@ -864,6 +864,8 @@ void Skinselectstyle_option_Onchange(void)
 	M_SetItemVisible(MN_MP_PLAYERSETUP, "ARROWUD", visible);
 	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBG", visible);
 
+	M_SetItemVisible(MN_MP_PLAYERSETUP, "STATBAR", !visible);
+
 	Skinsort_option_Onchange();
 }
 
@@ -6793,6 +6795,7 @@ void MD_DrawSetupMultiPlayerMenu(void)
 	
 	if (cv_skinselectstyle.value)
 	{
+		MD_DrawCssStatBars();
 		MD_DrawGridCssSelector();
 	}
 	else
@@ -6838,6 +6841,41 @@ void MD_DrawCssStatBacker(void)
 
 	statdot = W_CachePatchName("K_SDOT2", PU_CACHE); // coloured center
 	V_DrawFixedPatch(((BASEVIDWIDTH - mx - 80) + ((speed-1)*8))<<FRACBITS, ((my+76) + ((weight-1)*8))<<FRACBITS, FRACUNIT, 0, statdot, R_GetTranslationColormap(0, cv_dummycolor.value, GTC_MENUCACHE));
+}
+
+void MD_DrawCssStatBars(void)
+{
+	INT32 mx, my;
+
+	const INT32 BITSPACING = 4 + 1;
+
+	const INT32 BITSTARTX = 19;
+
+	const INT32 BITSPEEDSTARTY = 3;
+	const INT32 BITWEIGHTSTARTY = 19;
+
+	patch_t *speedbit = W_CachePatchName("STATBSPD", PU_CACHE);
+	patch_t *weightbit = W_CachePatchName("STATBWGT", PU_CACHE);
+
+	INT32 skintodisplay = cv_chooseskin.value;
+	UINT8 speed = skins[skintodisplay].kartspeed;
+	UINT8 weight = skins[skintodisplay].kartweight;
+
+	INT16 i;
+
+	mx = M_GetItemX(MN_MP_PLAYERSETUP, "STATBAR");
+	my = M_GetItemY(MN_MP_PLAYERSETUP, "STATBAR");
+
+	// draw speed
+	for (i = 0; i < speed; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, speedbit, NULL);
+	}
+	// draw weight
+	for (i = 0; i < weight; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, weightbit, NULL);
+	}
 }
 
 void MD_DrawCssColourBar(void)
