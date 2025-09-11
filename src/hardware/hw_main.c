@@ -4888,7 +4888,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	if (R_ThingIsUsingBakedOffsets(thing))
 	{
 		R_RotateSpriteOffsetsByPitchRoll(thing,
-		vflip, hflip, &visoffs);
+										 vflip,
+										 hflip,
+										 &interp,
+										 &visoffs);
 	}
 #endif
 

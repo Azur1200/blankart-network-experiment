@@ -1942,6 +1942,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		R_RotateSpriteOffsetsByPitchRoll(thing,
 										 vflip,
 										 hflip,
+										 &interp,
 										 &visoffs);
 	}
 #endif

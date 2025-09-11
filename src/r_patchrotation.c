@@ -137,6 +137,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	mobj_t* mobj,
 	boolean vflip,
 	boolean hflip,
+	interpmobjstate_t *interp,
 	vector2_t* out)
 {
 	fixed_t rotcos, rotsin, finx, finy;
@@ -156,7 +157,7 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	angle_t viewingAngle = R_PointToAngle(mobj->x, mobj->y);
 
 	// rotate ourselves entirely by the sprite's own rotation angle
-	angle_t visrot = R_SpriteRotationAngle(mobj, NULL, NULL);
+	angle_t visrot = R_SpriteRotationAngle(mobj, NULL, interp);
 
 	// xoffs = (-cos(xoff) + sin(yoff))
 	xoffs =
@@ -191,8 +192,8 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	vypiv = (INT16)(FixedMul((xpiv / FRACUNIT), pitchMul));
 
 	// rotate by rollangle
-	finx = (visx + visy);
-	finy = -visz;
+	finx = (visx + visy) + mobj->rollingxoffset;
+	finy = -visz + mobj->rollingyoffset;
 
 	rotcos = FINECOSINE(visrollang >> ANGLETOFINESHIFT);
 	rotsin = FINESINE(visrollang >> ANGLETOFINESHIFT);
