@@ -66,7 +66,8 @@
 #include "st_stuff.h"
 #include "i_sound.h"
 #include "k_hud.h" // SRB2kart
-#include "k_kart.h" // KartItemCVars
+#include "k_kart.h"
+#include "k_odds.hpp" // KartItemCVars
 #include "k_pwrlv.h"
 #include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants

@@ -39,6 +39,7 @@
 #include "k_boss.h"
 #include "p_spec.h"
 #include "k_objects.h"
+#include "k_odds.hpp"
 #include "acs/interface.h"
 
 // CTF player names
