@@ -20,12 +20,12 @@
 UINT16 altinvinccolors[16] = {
     SKINCOLOR_BLOODCELL,   // 0
     SKINCOLOR_FUCHSIA,     // 1
-    SKINCOLOR_LANTERN,     // 2
+    SKINCOLOR_MOON,        // 2
     SKINCOLOR_FIERY,       // 3
     SKINCOLOR_FLAME,       // 4
     SKINCOLOR_APRICOT,     // 5
     SKINCOLOR_GARDEN,      // 6
-    SKINCOLOR_OLIVINE,     // 7
+    SKINCOLOR_OLIVE,       // 7
     SKINCOLOR_LIME,        // 8
     SKINCOLOR_EMERALD,     // 9
     SKINCOLOR_NAVY,        // 10
