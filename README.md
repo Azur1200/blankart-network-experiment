@@ -11,6 +11,7 @@ This is still in active development and things are going to change. If you find 
 ## Techincal Features
 - Full Support for UDMF, Terrain, Bots, ACS, New Waypoints and many other technical features backported from Ring Racers. Also includes some extensions to these features such as bot drifting, new terrain effects and map header toggles.
 - Ring Racers' software renderer and its multithreading.
+- Native support for both SRB2Kart and Ring Racers custom skins.
 - Backwards compatiblity with most SRB2Kart maps, assets* and scripts\*.
 - A map patching system to allow custom map things to be patched onto maps. Useful for adding rings, waypoints and other objects to existing maps.
 - Support for many SRB2Kart v1 custom client extensions from Saturn and other clients such as vote themes.
