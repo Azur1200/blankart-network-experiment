@@ -131,6 +131,11 @@ static void Skin2_OnChange(void);
 static void Skin3_OnChange(void);
 static void Skin4_OnChange(void);
 
+static void Jitter_OnChange(void);
+static void Jitter2_OnChange(void);
+static void Jitter3_OnChange(void);
+static void Jitter4_OnChange(void);
+
 static void Follower_OnChange(void);
 static void Follower2_OnChange(void);
 static void Follower3_OnChange(void);
@@ -1115,6 +1120,7 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_skin[i]);
 		CV_RegisterVar(&cv_follower[i]);
 		CV_RegisterVar(&cv_followercolor[i]);
+		CV_RegisterVar(&cv_jitterlegacy[i]);
 	}
 
 	// preferred number of players
@@ -1932,6 +1938,7 @@ enum {
 	WP_KICKSTARTACCEL = 1<<0,
 	WP_SHRINKME = 1<<1,
 	WP_FLIPCAM = 1<<2,
+	WP_LEGACYJITTER = 1<<3
 };
 
 void WeaponPref_Send(UINT8 ssplayer)
@@ -1946,6 +1953,9 @@ void WeaponPref_Send(UINT8 ssplayer)
 	
 	if (cv_flipcam[ssplayer].value)
 		prefs |= WP_FLIPCAM;
+
+	if (!(cv_jitterlegacy[ssplayer].value))
+		prefs |= WP_LEGACYJITTER;
 
 	UINT8 buf[2];
 	buf[0] = prefs;
@@ -1969,6 +1979,9 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 	if (player->pflags & PF_FLIPCAM)
 		prefs |= WP_FLIPCAM;
 
+	if (player->jitterlegacy)
+		prefs |= WP_LEGACYJITTER;
+
 	WRITEUINT8(*cp, prefs);
 }
 
@@ -1979,6 +1992,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	UINT8 prefs = READUINT8(*cp);
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
+	player->jitterlegacy = false;
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;
@@ -1988,6 +2002,9 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	
 	if (prefs & WP_FLIPCAM)
 		player->pflags |= PF_FLIPCAM;
+
+	if (prefs & WP_LEGACYJITTER)
+		player->jitterlegacy = true;
 
 	if (leveltime < 2)
 	{
@@ -6827,6 +6844,39 @@ static void Followercolor4_OnChange(void)
 		// Color change menu scrolling fix is no longer necessary
 		SendNameAndColor(3);
 	}
+}
+
+// Changes a player's jitter settings.
+static void Jitter_OnChange(void)
+{
+	if (!Playing())
+		return; // don't send anything there.
+
+	SendNameAndColor(0);
+}
+
+static void Jitter2_OnChange(void)
+{
+	if (!Playing())
+		return; // don't send anything there.
+
+	SendNameAndColor(1);
+}
+
+static void Jitter3_OnChange(void)
+{
+	if (!Playing())
+		return; // don't send anything there.
+
+	SendNameAndColor(2);
+}
+
+static void Jitter4_OnChange(void)
+{
+	if (!Playing())
+		return; // don't send anything there.
+
+	SendNameAndColor(3);
 }
 
 /** Sends a skin change for the console player, unless that player is moving.

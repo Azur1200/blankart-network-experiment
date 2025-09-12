@@ -6752,7 +6752,6 @@ void P_RunOverlays(void)
 			mo->bakezpiv = mo->target->bakezpiv;
 		}
 
-
 		if ((mo->flags & MF_DONTENCOREMAP) != (mo->target->flags & MF_DONTENCOREMAP))
 			mo->flags ^= MF_DONTENCOREMAP;
 

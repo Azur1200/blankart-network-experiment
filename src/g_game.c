@@ -442,6 +442,17 @@ consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("shrinkme4", "Off", CV_CALL, CV_OnOff, weaponPrefChange4)
 };
 
+// Jon's lament
+static CV_PossibleValue_t driftjitter_cons_t[] = {{0, "SRB2Kart"}, {1, "Ring Racers"}, {0, NULL}};
+
+// Drift jitter settings.
+consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("driftjitter", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter2", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter3", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
+};
+
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
@@ -2467,6 +2478,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 lastsafelap;
 	UINT8 lastsafestarpost;
 	UINT16 bigwaypointgap;
+	boolean jitterlegacy = false;
 
 	score = players[player].score;
 	lives = players[player].lives;
@@ -2489,6 +2501,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	followerready = players[player].followerready;
 	followercolor = players[player].followercolor;
 	followerskin = players[player].followerskin;
+
+	jitterlegacy = players[player].jitterlegacy;
 
 	availabilities = players[player].availabilities;
 
@@ -2689,6 +2703,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->eggmanblame = -1;
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
+	p->jitterlegacy = jitterlegacy;
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;
