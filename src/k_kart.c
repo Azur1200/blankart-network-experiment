@@ -1565,17 +1565,21 @@ void K_KartMoveAnimation(player_t *player)
 	UINT16 buttons = K_GetKartButtons(player);
 	const boolean spinningwheels = (player->speed > 0);
 	const boolean lookback = ((buttons & BT_LOOKBACK) == BT_LOOKBACK);
+	const boolean skincompat = wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode;
 
 	SINT8 turndir = intsign(player->cmd.turning);
 	SINT8 destGlanceDir = 0;
 	SINT8 drift = player->drift;
 	UINT8 spr2, glanceofs;
 
+	player->mo->rollingxoffset = 0;
+	player->mo->rollingyoffset = 0;
+
 	if (!lookback)
 		player->pflags &= ~PF_GAINAX;
 
 	// Sliptides: drift -> lookback frames
-	if (abs(player->aizdriftturn) >= ANGLE_90 && !wadfiles[((skin_t *)player->mo->skin)->wadnum]->compatmode)
+	if (abs(player->aizdriftturn) >= ANGLE_90 && !skincompat)
 	{
 		destGlanceDir = -(2*intsign(player->aizdriftturn));
 		player->glanceDir = destGlanceDir;
@@ -1690,13 +1694,21 @@ void K_KartMoveAnimation(player_t *player)
 
 	if (onground && drift)
 	{
-		if (drift > 0)
-			turndir *= -1;
+		if ((player->jitterlegacy) && (!skincompat))
+		{
+			// Make RR characters imitate legacy jitters.
+			player->mo->rollingxoffset = ((player->driftelapsed & 1) * 2) * -intsign(drift);
+		}
+		else
+		{
+			if (drift > 0)
+				turndir *= -1;
 
-		if (turndir == -1)
-			spr2 += 2; // Inwards drift
-		else if (turndir == 1)
-			spr2 += 1; // Outwards drift
+			if (turndir == -1)
+				spr2 += 2; // Inwards drift
+			else if (turndir == 1)
+				spr2 += 1; // Outwards drift
+		}
 	}
 	else if (glanceofs)
 		spr2 += glanceofs+1;

@@ -2467,6 +2467,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 lastsafelap;
 	UINT8 lastsafestarpost;
 	UINT16 bigwaypointgap;
+	boolean jitterlegacy = false;
 
 	score = players[player].score;
 	lives = players[player].lives;
@@ -2489,6 +2490,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	followerready = players[player].followerready;
 	followercolor = players[player].followercolor;
 	followerskin = players[player].followerskin;
+
+	jitterlegacy = players[player].jitterlegacy;
 
 	availabilities = players[player].availabilities;
 
@@ -2689,6 +2692,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->eggmanblame = -1;
 	p->nocontrol = nocontrol;
 	p->kickstartaccel = kickstartaccel;
+	p->jitterlegacy = jitterlegacy;
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;

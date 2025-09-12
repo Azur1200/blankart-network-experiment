@@ -565,6 +565,8 @@ struct player_t
 	// SRB2kart stuff
 	INT32 kartstuff[NUMKARTSTUFF];
 	INT32 karthud[NUMKARTHUD];
+	boolean jitterlegacy; // If true, makes Ring Racers characters jitter during drifts like
+						  // SRB2Kart.
 
 	// Basic gameplay things
 	UINT8 position;			// Used for Kart positions, mostly for deterministic stuff
@@ -600,6 +602,7 @@ struct player_t
 	fixed_t driftcharge;	// Charge your drift so you can release a burst of speed
 	UINT8 driftboost;		// (0 to 125) - Boost you get from drifting
 	tic_t driftsparkGrowTimer;
+	tic_t driftelapsed;     // Elapsed time spent during a drift.
 
 	SINT8 aizdriftstrat;	// (-1 to 1) - Let go of your drift while boosting? Helper for the SICK STRATZ (sliptiding!) you have just unlocked
 	INT32 aizdrifttilt;

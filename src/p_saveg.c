@@ -2363,7 +2363,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff2 |= MD2_TID;
 	if (mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT)
 		diff2 |= MD2_SPRITESCALE;
-	if (mobj->spritexoffset || mobj->spriteyoffset)
+	if (mobj->spritexoffset || mobj->spriteyoffset ||
+		mobj->rollingxoffset || mobj->rollingyoffset)
 		diff2 |= MD2_SPRITEOFFSET;
 	if (mobj->sprxoff || mobj->spryoff || mobj->sprzoff)
 		diff2 |= MD2_WORLDOFFSET;
@@ -2605,6 +2606,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	{
 		WRITEFIXED(save->p, mobj->spritexoffset);
 		WRITEFIXED(save->p, mobj->spriteyoffset);
+		WRITEINT16(save->p, mobj->rollingxoffset);
+		WRITEINT16(save->p, mobj->rollingyoffset);
 	}
 	if (diff2 & MD2_WORLDOFFSET)
 	{
@@ -3872,10 +3875,13 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	{
 		mobj->spritexoffset = READFIXED(save->p);
 		mobj->spriteyoffset = READFIXED(save->p);
+		mobj->rollingxoffset = READINT16(save->p);
+		mobj->rollingyoffset = READINT16(save->p);
 	}
 	else
 	{
 		mobj->spritexoffset = mobj->spriteyoffset = 0;
+		mobj->rollingxoffset = mobj->rollingyoffset = 0;
 	}
 	if (diff2 & MD2_WORLDOFFSET)
 	{

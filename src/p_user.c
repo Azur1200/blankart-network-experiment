@@ -3839,6 +3839,16 @@ void P_PlayerThink(player_t *player)
 		player->airtime++;
 	}
 
+	// BlanKart: Track drifting time.
+	if (player->drift != 0)
+	{
+		player->driftelapsed++;
+	}
+	else
+	{
+		player->driftelapsed = 0;
+	}
+
 	cmd = &player->cmd;
 
 	// SRB2kart

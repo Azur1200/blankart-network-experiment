@@ -857,7 +857,8 @@ boolean R_ThingIsFlashing(mobj_t *thing)
 boolean R_ThingIsUsingBakedOffsets(mobj_t* thing)
 {
 	return ((thing->bakexoff) || (thing->bakeyoff) || (thing->bakezoff) ||
-			(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv));
+			(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv) ||
+		    (thing->rollingxoffset) || (thing->rollingyoffset));
 }
 
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis)

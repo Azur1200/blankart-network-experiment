@@ -29,6 +29,7 @@ extern consvar_t cv_playercolor[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skin[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_follower[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS];
 
 // preferred number of players
 extern consvar_t cv_splitplayers;
