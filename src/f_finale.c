@@ -911,6 +911,7 @@ const char *blancredits[] = {
 	"Kart Krew Dev",
 	"\"JugadorXEI\"",
 	"\"Kimberly\"",
+	"\"Chearii\"",
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
