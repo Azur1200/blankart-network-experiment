@@ -2071,7 +2071,7 @@ typedef enum
 {
 	MD3_GRAVITY      = 1,
 	MD3_MISCCAP      = 1<<1,
-
+	MD3_BAKEDOFFSET	 = 1<<2,
 } mobj_diff3_t;
 
 typedef enum
@@ -2383,6 +2383,9 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff3 |= MD3_GRAVITY;
 	if (mobj == misccap)
 		diff3 |= MD3_MISCCAP;
+	if (mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv ||
+		mobj->bakeypiv || mobj->bakezpiv)
+		diff3 |= MD3_BAKEDOFFSET;
 
 	if (diff3 != 0)
 		diff2 |= MD2_MORE;
@@ -2657,6 +2660,15 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff3 & MD3_GRAVITY)
 	{
 		WRITEFIXED(save->p, mobj->gravity);
+	}
+	if (diff3 & MD3_BAKEDOFFSET)
+	{
+		WRITEFIXED(save->p, mobj->bakexoff);
+		WRITEFIXED(save->p, mobj->bakeyoff);
+		WRITEFIXED(save->p, mobj->bakezoff);
+		WRITEFIXED(save->p, mobj->bakexpiv);
+		WRITEFIXED(save->p, mobj->bakeypiv);
+		WRITEFIXED(save->p, mobj->bakezpiv);
 	}
 
 	WRITEUINT32(save->p, mobj->mobjnum);
@@ -3913,6 +3925,20 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 	else
 	{
 		mobj->gravity = FRACUNIT;
+	}
+	if (diff3 & MD3_BAKEDOFFSET)
+	{
+		mobj->bakexoff = READFIXED(save->p);
+		mobj->bakeyoff = READFIXED(save->p);
+		mobj->bakezoff = READFIXED(save->p);
+		mobj->bakexpiv = READFIXED(save->p);
+		mobj->bakeypiv = READFIXED(save->p);
+		mobj->bakezpiv = READFIXED(save->p);
+	}
+	else
+	{
+		mobj->bakexoff = mobj->bakeyoff = mobj->bakezoff = 0;
+		mobj->bakexpiv = mobj->bakeypiv = mobj->bakezpiv = 0;
 	}
 
 	// Reset some non-synch values

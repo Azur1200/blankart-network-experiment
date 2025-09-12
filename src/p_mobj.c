@@ -6740,6 +6740,19 @@ void P_RunOverlays(void)
 			mo->roll = mo->target->roll;
 		}
 
+		if (!(mo->threshold & OV_DONTBAKEOFFSET))
+		{
+			// offsets
+			mo->bakexoff = mo->target->bakexoff;
+			mo->bakeyoff = mo->target->bakeyoff;
+			mo->bakezoff = mo->target->bakezoff;
+			// pivots
+			mo->bakexpiv = mo->target->bakexpiv;
+			mo->bakeypiv = mo->target->bakeypiv;
+			mo->bakezpiv = mo->target->bakezpiv;
+		}
+
+
 		if ((mo->flags & MF_DONTENCOREMAP) != (mo->target->flags & MF_DONTENCOREMAP))
 			mo->flags ^= MF_DONTENCOREMAP;
 

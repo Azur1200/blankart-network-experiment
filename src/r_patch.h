@@ -50,6 +50,11 @@ boolean R_IsOverlayingInvinciblePlayer(mobj_t* mobj);
 angle_t R_GetPitchRollAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp);
 angle_t R_ModelRotationAngle(mobj_t *mobj, player_t *viewPlayer);
 angle_t R_SpriteRotationAngle(mobj_t *mobj, player_t *viewPlayer, interpmobjstate_t *interp);
+vector2_t* R_RotateSpriteOffsetsByPitchRoll(
+	mobj_t* mobj,
+	boolean vflip,
+	boolean hflip,
+	vector2_t* out);
 #endif
 
 #ifdef __cplusplus

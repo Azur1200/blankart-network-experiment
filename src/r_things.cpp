@@ -854,6 +854,12 @@ boolean R_ThingIsFlashing(mobj_t *thing)
 		baddie_is_flashing(thing);
 }
 
+boolean R_ThingIsUsingBakedOffsets(mobj_t* thing)
+{
+	return ((thing->bakexoff) || (thing->bakeyoff) || (thing->bakezoff) ||
+	(thing->bakexpiv) || (thing->bakeypiv) || (thing->bakezpiv));
+}
+
 UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 {
 	if (!(vis->cut & SC_PRECIP) &&
@@ -1734,6 +1740,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t spriterotangle = 0;
+	vector2_t visoffs;
 #endif
 
 	// uncapped/interpolation
@@ -1923,10 +1930,28 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
+#ifdef ROTSPRITE
+	// initialize and rotate pitch/roll vector
+	visoffs.x = 0;
+	visoffs.y = 0;
+
+	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
+
+	if (R_ThingIsUsingBakedOffsets(thing))
+	{
+		R_RotateSpriteOffsetsByPitchRoll(thing,
+			vflip, hflip, &visoffs);
+	}
+#endif
+
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
 		spr_offset = interp.spritexoffset;
+#ifdef ROTSPRITE
+		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),	mapobjectscale));
+#else
 		spr_topoffset = interp.spriteyoffset;
+#endif
 	}
 	else
 	{
@@ -1935,14 +1960,26 @@ static void R_ProjectSprite(mobj_t *thing)
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
 
-		spr_offset += interp.spritexoffset * flipoffset;
+		spr_offset += (interp.spritexoffset) * flipoffset;
+#ifdef ROTSPRITE
+		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
+		mapobjectscale)) * flipoffset;
+#else
 		spr_topoffset += interp.spriteyoffset * flipoffset;
+#endif
 	}
 
 	if (flip)
 		offset = spr_offset - spr_width;
 	else
 		offset = -spr_offset;
+
+#ifdef ROTSPRITE
+	if (visoffs.x)
+	{
+		offset -= FixedDiv((visoffs.x * FRACUNIT), mapobjectscale);
+	}
+#endif
 
 	offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
 	offset2 = FixedMul(spr_width, FixedMul(spritexscale, this_scale));
