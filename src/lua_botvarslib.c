@@ -169,68 +169,70 @@ static int botdata_get(lua_State *L)
 	{
 	case botdata_valid:
 		lua_pushboolean(L, botdata != NULL);
-		return 1;
+		break;
 	case botdata_itemdelay:
 		lua_pushinteger(L, botdata->itemdelay);
-		return 1;
+		break;
 	case botdata_itemconfirm:
 		lua_pushinteger(L, botdata->itemconfirm);
-		return 1;
+		break;
 	case botdata_turnconfirm:
 		lua_pushinteger(L, botdata->turnconfirm);
-		return 1;
+		break;
 	case botdata_respawnconfirm:
 		lua_pushinteger(L, botdata->respawnconfirm);
-		return 1;
+		break;
 	case botdata_driftstate:
 		lua_pushinteger(L, botdata->driftstate);
-		return 1;
+		break;
 	case botdata_driftturn:
 		lua_pushinteger(L, botdata->driftturn);
-		return 1;
+		break;
 	case botdata_drifttime:
 		lua_pushinteger(L, botdata->drifttime);
-		return 1;
+		break;
 	case botdata_driftlockout:
 		lua_pushinteger(L, botdata->driftlockout);
-		return 1;
+		break;
 	case botdata_driftmaxdist:
 		lua_pushinteger(L, botdata->driftmaxdist);
-		return 1;
+		break;
 	case botdata_driftpowerdiv:
 		lua_pushinteger(L, botdata->driftpowerdiv);
-		return 1;
+		break;
 	case botdata_driftstatedelay:
 		lua_pushinteger(L, botdata->driftstatedelay);
-		return 1;
+		break;
 	case botdata_driftskill:
 		lua_pushfixed(L, botdata->driftskill);
-		return 1;
+		break;
 	case botdata_acceldown:
 		lua_pushboolean(L, botdata->acceldown);
-		return 1;
+		break;
 	case botdata_brakedown:
 		lua_pushboolean(L, botdata->brakedown);
-		return 1;
+		break;
 	case botdata_driftdown:
 		lua_pushboolean(L, botdata->driftdown);
-		return 1;
+		break;
 	case botdata_itemdown:
 		lua_pushboolean(L, botdata->itemdown);
-		return 1;
+		break;
 	case botdata_dolookback:
 		lua_pushboolean(L, botdata->dolookback);
-		return 1;
+		break;
 	case botdata_itemwasdown:
 		lua_pushboolean(L, botdata->itemwasdown);
-		return 1;
+		break;
 	case botdata_itemthrow:
 		lua_pushinteger(L, botdata->itemthrow);
-		return 1;
+		break;
 	case botdata_turnamt:
 		lua_pushinteger(L, botdata->turnamt);
-		return 1;
+		break;
 	}
+
+	return 1;
 }
 
 #define NOSET luaL_error(L, LUA_QL("botdata_t") " field " LUA_QS " should not be set directly.", botdata_opt[field])
@@ -248,65 +250,67 @@ static int botdata_set(lua_State *L)
 		return NOSET;
 	case botdata_itemdelay:
 		botdata->itemdelay = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_itemconfirm:
 		botdata->itemconfirm = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_turnconfirm:
 		botdata->turnconfirm = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_respawnconfirm:
 		botdata->respawnconfirm = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftstate:
 		botdata->driftstate = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftturn:
 		botdata->driftturn = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_drifttime:
 		botdata->drifttime = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftlockout:
 		botdata->driftlockout = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftmaxdist:
 		botdata->driftmaxdist = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftpowerdiv:
 		botdata->driftpowerdiv = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftstatedelay:
 		botdata->driftstatedelay = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_driftskill:
 		botdata->driftskill = luaL_checkfixed(L, 3);
-		return 0;
+		break;
 	case botdata_acceldown:
 		botdata->acceldown = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_brakedown:
 		botdata->brakedown = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_driftdown:
 		botdata->driftdown = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_itemdown:
 		botdata->itemdown = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_dolookback:
 		botdata->dolookback = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_itemwasdown:
 		botdata->itemwasdown = luaL_checkboolean(L, 3);
-		return 0;
+		break;
 	case botdata_itemthrow:
 		botdata->itemthrow = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	case botdata_turnamt:
 		botdata->turnamt = luaL_checkinteger(L, 3);
-		return 0;
+		break;
 	}
+
+	return 0;
 }
 
 #undef NOSET

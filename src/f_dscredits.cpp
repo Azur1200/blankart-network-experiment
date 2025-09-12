@@ -972,7 +972,7 @@ void F_SecretCreditsTicker(void)
                 finalescene = elapsed;
             }
 
-            if ((((elapsed - finalescene) / FINALESECDELAY) != finalesecs))
+            if ((((elapsed - finalescene) / FINALESECDELAY) != (longtic_t)finalesecs))
             {
                 finalesecs = ((elapsed - finalescene) / FINALESECDELAY);
 

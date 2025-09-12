@@ -224,6 +224,8 @@ void *W_CachePatchNameRotated(const char *name, INT32 rotationangle, INT32 tag);
 #endif
 void *W_CachePatchNum(lumpnum_t lumpnum, INT32 tag);
 
+void *W_GetCachedRotPatchPwad(UINT16 wadnum, UINT16 lumpnum);
+
 // Returns a Software patch.
 // Performs any necessary conversions from PNG images.
 void *W_CacheSoftwarePatchNumPwad(UINT16 wad, UINT16 lump, INT32 tag);

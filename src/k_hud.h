@@ -103,7 +103,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, INT32 whiteplayer, INT32 hilicol);
 
 #define MAXSERVERMODS 255
-#define MAXSERVERMODNAME 13
+#define MAXSERVERMODNAME 14
 
 struct servermods_t
 {

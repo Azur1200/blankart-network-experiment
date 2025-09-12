@@ -1781,13 +1781,11 @@ static void ArchiveLines(savebuffer_t *save)
 				WRITEINT32(save->p, si->midtexture);
 			if (diff2 & LD_ARGS)
 			{
-				UINT8 j;
 				for (j = 0; j < NUM_SCRIPT_ARGS; j++)
 					WRITEINT32(save->p, li->args[j]);
 			}
 			if (diff2 & LD_STRINGARGS)
 			{
-				UINT8 j;
 				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 				{
 					size_t len, k;

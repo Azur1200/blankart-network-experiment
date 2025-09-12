@@ -252,7 +252,13 @@ void K_DisplayItemTimers(void)
 			std::max<UINT16>(stplyr->spinouttimer, stplyr->wipeoutslow),
 			{qche("K_DIZZ1"), qche("K_DIZZ2"), qche("K_DIZZ3"), qche("K_DIZZ4")},
 			{qche("MSO_HRT1"), qche("MSO_HRT2"), qche("MSO_HRT3"), qche("MSO_HRT4")},
-			3, .badtimer = true,
+			3,
+			0,
+			0,
+			0,
+			0,
+			false,
+			true,
 		}
 	);
 	timers.push_back(
@@ -261,7 +267,13 @@ void K_DisplayItemTimers(void)
 			std::max<INT16>(0, -stplyr->growshrinktimer),
 			{qche("K_ISSHRK")},
 			{qche("HL_SHRNK")},
-			3, -15, -15, -4, -3, .badtimer = true,
+			3,
+			-15,
+			-15,
+			-4,
+			-3,
+			false,
+			true,
 		}
 	);
 	timers.push_back(
@@ -270,7 +282,13 @@ void K_DisplayItemTimers(void)
 			(INT32)spbTimers[stplyr-players],
 			{qche("IT_SPB1"), qche("IT_SPB2")},
 			{qche("IT_SPBS1"), qche("IT_SPBS2")},
-			1, .badtimer = (stplyr->position == K_GetBestRank()),
+			1,
+			0,
+			0,
+			0,
+			0,
+			false,
+			(stplyr->position == K_GetBestRank())
 		}
 	);
 	// Same with boost stacks
@@ -280,7 +298,12 @@ void K_DisplayItemTimers(void)
 			K_StackingActive() ? stplyr->numboosts : 0,
 			{qche("IT_BOOST0"), qche("IT_BOOST1"), qche("IT_BOOST2"), qche("IT_BOOST3"), qche("IT_BOOST4"), qche("IT_BOOST3"), qche("IT_BOOST2"), qche("IT_BOOST1")},
 			{qche("MSO_SPD1"), qche("MSO_SPD2"), qche("MSO_SPD3"), qche("MSO_SPD4"), qche("MSO_SPD3"), qche("MSO_SPD2")},
-			3, .counter = true,
+			3,
+			0,
+			0,
+			0,
+			0,
+			true,
 		}
 	);
 
@@ -290,7 +313,13 @@ void K_DisplayItemTimers(void)
 			stplyr->deadtimer ? std::max<INT32>(0, TICRATE - stplyr->deadtimer) : 0,
 			{qche("IT_DED1"), qche("IT_DED2"), qche("IT_DED3"), qche("IT_DED4"), qche("IT_DED5"), qche("IT_DED6"), qche("IT_DED7"), qche("IT_DED8")},
 			{qche("IT_DEAD1"), qche("IT_DEAD2"), qche("IT_DEAD3"), qche("IT_DEAD4"), qche("IT_DEAD5"), qche("IT_DEAD6"), qche("IT_DEAD7"), qche("IT_DEAD8")},
-			1, .yoffs = -4, .badtimer = true,
+			1,
+			0,
+			-4,
+			0,
+			0,
+			false,
+			true,
 		}
 	);
 

@@ -399,9 +399,9 @@ static UINT8 *G_ReadZipTic(ticcmd_t *cmd, UINT8 *dp, UINT16 version)
 	if (version < 0x000a && ziptic & 0x8000) // ZT_BOT
 	{
 		UINT16 botziptic = READUINT16(dp);
-		if (botziptic & 1) READSINT8(dp);
-		if (botziptic & 2) READSINT8(dp);
-		if (botziptic & 4) READSINT8(dp);
+		if (botziptic & 1) (void)READSINT8(dp);
+		if (botziptic & 2) (void)READSINT8(dp);
+		if (botziptic & 4) (void)READSINT8(dp);
 	}
 	return dp;
 }
@@ -1818,7 +1818,7 @@ void G_ConsGhostTic(INT32 playernum)
 		gy = oldghost[playernum].y;
 		gz = oldghost[playernum].z;
 
-		if (abs(px-gx) > syncleeway || abs(py-gy) > syncleeway || abs(pz-gz) > syncleeway)
+		if ((UINT32)abs(px-gx) > syncleeway || (UINT32)abs(py-gy) > syncleeway || (UINT32)abs(pz-gz) > syncleeway)
 		{
 			ghostext[playernum].desyncframes++;
 

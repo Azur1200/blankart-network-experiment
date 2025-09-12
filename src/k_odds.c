@@ -535,7 +535,7 @@ INT32 K_KartGetItemOdds(
 			}
 			else
 			{
-				const INT32 distFromStart = max(0, secondToFirst - SPBSTARTDIST);
+				const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
 				const INT32 mulMax = 3;
 
@@ -744,7 +744,7 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 			}
 			else if (pos != 9) // Force SPB
 			{
-				const INT32 distFromStart = max(0, secondToFirst - SPBSTARTDIST);
+				const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST , 0);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
 				const fixed_t mulMax = 3*FRACUNIT;
 
@@ -830,8 +830,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
 	INT32 oddsdiv = ((MAXODDS - 1) * 2);
 
-	UINT8 i;
-	INT32 j;
+	UINT8 i, j;
 	UINT8 useodds = 0;
 	UINT8 disttable[oddsdiv];
 	UINT8 distlen = 0;
@@ -842,7 +841,6 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 	for (i = 0; i < MAXODDS; i++)
 	{
-		UINT8 j;
 		boolean available = false;
 
 		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
@@ -938,7 +936,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 		if (pdis == 0)
 			useodds = disttable[0];
-		else if (pdis > DISTVAR * ((12 * distlen) / oddsdiv))
+		else if (pdis > (UINT32)DISTVAR * ((12 * distlen) / oddsdiv))
 			useodds = disttable[distlen-1];
 		else
 		{
@@ -946,7 +944,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			{
 				INT32 distcalc = min(distlen-1, (i * distlen) / oddsdiv);
 
-				if (pdis <= usedistvar * distcalc)
+				if (pdis <= (UINT32)usedistvar * distcalc)
 				{
 					useodds = disttable[distcalc];
 					break;
@@ -983,7 +981,6 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 
 	for (i = 0; i < MAXODDS; i++)
 	{
-		INT32 j;
 		boolean available = false;
 
 		if ((gametyperules & GTR_BATTLEODDS) && i > 1)
@@ -1207,7 +1204,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 			useodds = 69;
 		}
 
-		else if (pdis > DISTVAR * ((12 * distlen) / oddsdiv))
+		else if (pdis > (UINT32)DISTVAR * ((12 * distlen) / oddsdiv))
 		{
 			// Back of the pack
 			useodds = disttable[distlen-1];

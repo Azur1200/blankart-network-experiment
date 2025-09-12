@@ -80,7 +80,7 @@ IMPL_HUD_OFFSET(want); // Wanted
 static CV_PossibleValue_t speedo_cons_t[]= {
 	{0, "Default"},
 	{1, "Small"},
-	//{2, "P-Meter"},  Readded later need to draw smaller sprites.
+	{2, "P-Meter"},
 	{0, NULL}};
 consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Small", CV_SAVE, speedo_cons_t, NULL);
 
@@ -143,6 +143,7 @@ static patch_t *kp_ringdebtminussmall;
 static patch_t *kp_speedometersticker[2];
 static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
+static patch_t *kp_kartzspeedo_smol[25];
 
 static patch_t *kp_driftgauge[12];
 static patch_t *kp_driftgaugeparts[5];
@@ -430,6 +431,21 @@ void K_LoadKartHUDGraphics(void)
 		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
 		{
 			kp_kartzspeedo[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
+	}
+
+	{
+		const char* patchNames[] = {
+			"K_KZSS1", "K_KZSS2", "K_KZSS3", "K_KZSS4", "K_KZSS5",
+			"K_KZSS6", "K_KZSS7", "K_KZSS8", "K_KZSS9", "K_KZSS10",
+			"K_KZSS11", "K_KZSS12", "K_KZSS13", "K_KZSS14", "K_KZSS15",
+			"K_KZSS16", "K_KZSS17", "K_KZSS18", "K_KZSS19", "K_KZSS20",
+			"K_KZSS21", "K_KZSS22", "K_KZSS23", "K_KZSS24", "K_KZSS25"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_kartzspeedo_smol[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
 		}
 	}
 
@@ -2122,7 +2138,10 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 	const UINT8 *colormap = NULL;
 	UINT16 hightlightcolor = 0;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
-	INT32 basey = y, basex = x, y2, x2;
+	INT32 y2, x2;
+	// INT32 basey = y, basex = x;
+
+	(void)hilicol;
 
 	scorelines--;
 
@@ -2260,7 +2279,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 }
 
 #define BASEMODS 11
-void K_DrawServerMods(INT32 x, INT32 y)
+static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
 	INT32 xoff = 0, yoff = 10;
@@ -2354,6 +2373,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 	UINT16 hightlightcolor = 0;
 	INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 	int basey = y, basex = x, y2;
+	(void)hilicol;
 
 	V_DrawFill(1-duptweak, 26, dupadjust-2, 1, 0); // Draw a horizontal line because it looks nice!
 
@@ -2533,7 +2553,7 @@ static void K_drawKartLaps(void)
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
 
-			if (cv_newspeedometer.value == 0 && !K_RingsActive())
+			if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
 			{
 				offsetx = 25;
 				offsety = 15;
@@ -2564,13 +2584,13 @@ static void K_drawKartAccessibilityIcons(INT32 fx)
 		if (cv_acce_xoffset.value == 0 && cv_acce_yoffset.value == 0)
 		{
 
-			if (cv_newspeedometer.value == 0)
+			if (cv_newspeedometer.value == 0 || (cv_newspeedometer.value == 2 && !K_RingsActive()))
 			{
 				fy += 44;
 			}
 			else
 			{
-				if (cv_kartspeedometer.value == 0 && !K_RingsActive())
+				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
 					fy += 18;
 
 				if (gametype == GT_BATTLE)
@@ -2715,11 +2735,11 @@ static void K_drawKartSpeedometer(void)
 		V_DrawScaledPatch(SPDM_X+19, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[2]]);
 		V_DrawScaledPatch(SPDM_X+29, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_speedometerlabel[labeln]);
 	}
-	// Readded later need to draw smaller graphics.
-	/*else if (cv_newspeedometer.value == 2)
+	else if (cv_newspeedometer.value == 2)
 	{
 		fixed_t fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
 		INT32 spdpatch = 0;
+		SINT8 yoffset = K_RingsActive() ? 12 : 18;
 
 #define NUM_INTERVALS 22
 		const int speedIntervals[NUM_INTERVALS] = {2, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30, 32, 35, 37, 40, 42, 45, 47, 50, 52, 55};
@@ -2739,10 +2759,10 @@ static void K_drawKartSpeedometer(void)
 		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
-		V_DrawScaledPatch(SPDM_X, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_kartzspeedo[spdpatch]);
-	}*/
+		V_DrawScaledPatch(SPDM_X, SPDM_Y-yoffset + battleoffset + ringoffset, V_HUDTRANS|splitflags, (!K_RingsActive() ? kp_kartzspeedo : kp_kartzspeedo_smol)[spdpatch]);
+	}
 
-	K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0) ? 50 : 56);
+	K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) ? 50 : 56);
 }
 
 static void K_drawRingMeter(void)
@@ -2751,7 +2771,7 @@ static void K_drawRingMeter(void)
 	UINT8 *ringmap = NULL;
 	boolean colorring = false;
 	SINT8 ringcount = stplyr->rings;
-	SINT8 overring = stplyr->rings % 20;
+	// SINT8 overring = stplyr->rings % 20;
 	SINT8 ringmax = stplyr->ringmax;
 	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
 
@@ -5398,7 +5418,7 @@ void K_drawKartHUD(void)
 			}
 			else
 			{
-				K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0) ? 50 : 0);
+				K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) ? 50 : 0);
 			}
 
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)

@@ -10,7 +10,9 @@
 //
 //-----------------------------------------------------------------------------
 #ifdef __GNUC__
+#ifndef __clang__
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #endif
 #include "Thread.hpp"
 

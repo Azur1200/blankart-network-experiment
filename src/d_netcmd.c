@@ -131,11 +131,6 @@ static void Skin2_OnChange(void);
 static void Skin3_OnChange(void);
 static void Skin4_OnChange(void);
 
-static void Jitter_OnChange(void);
-static void Jitter2_OnChange(void);
-static void Jitter3_OnChange(void);
-static void Jitter4_OnChange(void);
-
 static void Follower_OnChange(void);
 static void Follower2_OnChange(void);
 static void Follower3_OnChange(void);
@@ -6844,39 +6839,6 @@ static void Followercolor4_OnChange(void)
 		// Color change menu scrolling fix is no longer necessary
 		SendNameAndColor(3);
 	}
-}
-
-// Changes a player's jitter settings.
-static void Jitter_OnChange(void)
-{
-	if (!Playing())
-		return; // don't send anything there.
-
-	SendNameAndColor(0);
-}
-
-static void Jitter2_OnChange(void)
-{
-	if (!Playing())
-		return; // don't send anything there.
-
-	SendNameAndColor(1);
-}
-
-static void Jitter3_OnChange(void)
-{
-	if (!Playing())
-		return; // don't send anything there.
-
-	SendNameAndColor(2);
-}
-
-static void Jitter4_OnChange(void)
-{
-	if (!Playing())
-		return; // don't send anything there.
-
-	SendNameAndColor(3);
 }
 
 /** Sends a skin change for the console player, unless that player is moving.

@@ -2665,8 +2665,6 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 	angle_t thrustangle;
 	player_t *lastp;
 
-	boolean moving = false;
-
 	// first off we need to get button input
 	cmd = D_LocalTiccmd(num);
 
@@ -2685,12 +2683,10 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		if (cmd->buttons & BT_ACCELERATE)
 		{
 			cam->z += 32*mapobjectscale;
-			moving = true;
 		}
 		else if (cmd->buttons & BT_BRAKE)
 		{
 			cam->z -= 32*mapobjectscale;
-			moving = true;
 		}
 	}
 
@@ -2707,11 +2703,6 @@ void P_DemoCameraMovement(camera_t *cam, UINT8 num)
 		cam->aiming = R_PointToAngle2(0, cam->z, R_PointToDist2(cam->x, cam->y, lastp->mo->x, lastp->mo->y), lastp->mo->z + lastp->mo->scale*128*P_MobjFlip(lastp->mo));	// This is still unholy. Aim a bit above their heads.
 
 		cam->reset_aiming = false;
-	}
-
-	if (cmd->forwardmove != 0)
-	{
-		moving = true;
 	}
 
 	// After switching to democam, the vertical angle of
