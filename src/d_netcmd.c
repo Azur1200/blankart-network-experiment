@@ -277,9 +277,6 @@ static CV_PossibleValue_t sleeping_cons_t[] = {{0, "MIN"}, {1000/TICRATE, "MAX"}
 
 static CV_PossibleValue_t pause_cons_t[] = {{0, "Server"}, {1, "All"}, {0, NULL}};
 
-// Jon's lament
-static CV_PossibleValue_t driftjitter_cons_t[] = {{0, "SRB2Kart"}, {1, "Ring Racers"}, {0, NULL}};
-
 static consvar_t cv_dummyconsvar = CVAR_INIT ("dummyconsvar", "Off", CV_CALL|CV_NOSHOWHELP, CV_OnOff, DummyConsvar_OnChange);
 
 consvar_t cv_restrictskinchange = CVAR_INIT ("restrictskinchange", "No", CV_NETVAR|CV_CHEAT, CV_YesNo, NULL);
@@ -382,14 +379,6 @@ consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 	CVAR_INIT ("padscale4", "1", CV_SAVE|CV_HIDEN, NULL, NULL)
 };
 #endif
-
-// Drift jitter settings.
-consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("driftjitter", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, Jitter_OnChange),
-	CVAR_INIT ("driftjitter2", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, Jitter2_OnChange),
-	CVAR_INIT ("driftjitter3", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, Jitter3_OnChange),
-	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, Jitter4_OnChange)
-};
 
 // SRB2kart
 consvar_t cv_sneaker = 				CVAR_INIT ("sneaker", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -1728,8 +1717,7 @@ static void SendNameAndColor(UINT8 n)
 		&& cv_playercolor[n].value == player->skincolor
 		&& !strcmp(cv_skin[n].string, skins[player->skin].name)
 		&& cv_follower[n].value == player->followerskin
-		&& cv_followercolor[n].value == player->followercolor
-		&& ((boolean)((!cv_jitterlegacy[n].value) & 1)) == player->jitterlegacy)
+		&& cv_followercolor[n].value == player->followercolor)
 		return;
 
 	player->availabilities = R_GetSkinAvailabilities();
@@ -1755,10 +1743,6 @@ static void SendNameAndColor(UINT8 n)
 			K_SetFollowerByNum(playernum, cv_follower[n].value);
 
 		player->followercolor = cv_followercolor[n].value;
-
-		// Player jittering. Can't netsynch for hopefully obvious reasons.
-		// Inverted to prevent tedium.
-		player->jitterlegacy = (boolean)((!cv_jitterlegacy[n].value) & 1);
 
 		if (metalrecording && n == 0)
 		{ // Starring Metal Sonic as themselves, obviously.
@@ -1815,7 +1799,6 @@ static void SendNameAndColor(UINT8 n)
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITESINT8(p, (SINT8)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
-	WRITEUINT8(p, (UINT8)((!cv_jitterlegacy[n].value) & 1));
 
 	SendNetXCmdForPlayer(n, XD_NAMEANDCOLOR, buf, p - buf);
 }
@@ -1827,7 +1810,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	UINT16 color, followercolor;
 	UINT16 skin;
 	SINT8 follower;
-	boolean jitterlegacy;
 	SINT8 localplayer = -1;
 	UINT16 i;
 
@@ -1858,7 +1840,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	skin = READUINT16(*cp);
 	follower = READSINT8(*cp);
 	followercolor = READUINT16(*cp);
-	jitterlegacy = READUINT8(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
@@ -1866,9 +1847,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		if (strcasecmp(player_names[playernum], name) != 0)
 			SetPlayerName(playernum, name);
 	}
-
-	// Set jitter
-	p->jitterlegacy = jitterlegacy;
 
 	// set color
 	p->skincolor = color % numskincolors;
@@ -1960,6 +1938,7 @@ enum {
 	WP_KICKSTARTACCEL = 1<<0,
 	WP_SHRINKME = 1<<1,
 	WP_FLIPCAM = 1<<2,
+	WP_LEGACYJITTER = 1<<3
 };
 
 void WeaponPref_Send(UINT8 ssplayer)
@@ -1974,6 +1953,9 @@ void WeaponPref_Send(UINT8 ssplayer)
 	
 	if (cv_flipcam[ssplayer].value)
 		prefs |= WP_FLIPCAM;
+
+	if (!(cv_jitterlegacy[ssplayer].value))
+		prefs |= WP_LEGACYJITTER;
 
 	UINT8 buf[2];
 	buf[0] = prefs;
@@ -1997,6 +1979,9 @@ void WeaponPref_Save(UINT8 **cp, INT32 playernum)
 	if (player->pflags & PF_FLIPCAM)
 		prefs |= WP_FLIPCAM;
 
+	if (player->jitterlegacy)
+		prefs |= WP_LEGACYJITTER;
+
 	WRITEUINT8(*cp, prefs);
 }
 
@@ -2007,6 +1992,7 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	UINT8 prefs = READUINT8(*cp);
 
 	player->pflags &= ~(PF_KICKSTARTACCEL|PF_SHRINKME|PF_FLIPCAM);
+	player->jitterlegacy = false;
 
 	if (prefs & WP_KICKSTARTACCEL)
 		player->pflags |= PF_KICKSTARTACCEL;
@@ -2016,6 +2002,9 @@ void WeaponPref_Parse(UINT8 **cp, INT32 playernum)
 	
 	if (prefs & WP_FLIPCAM)
 		player->pflags |= PF_FLIPCAM;
+
+	if (prefs & WP_LEGACYJITTER)
+		player->jitterlegacy = true;
 
 	if (leveltime < 2)
 	{

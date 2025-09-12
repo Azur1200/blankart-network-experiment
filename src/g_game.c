@@ -442,6 +442,17 @@ consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("shrinkme4", "Off", CV_CALL, CV_OnOff, weaponPrefChange4)
 };
 
+// Jon's lament
+static CV_PossibleValue_t driftjitter_cons_t[] = {{0, "SRB2Kart"}, {1, "Ring Racers"}, {0, NULL}};
+
+// Drift jitter settings.
+consvar_t cv_jitterlegacy[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("driftjitter", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter2", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter3", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange),
+	CVAR_INIT ("driftjitter4", "Ring Racers", CV_SAVE|CV_CALL|CV_NOINIT, driftjitter_cons_t, weaponPrefChange)
+};
+
 static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_deadzone[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("deadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
