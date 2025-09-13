@@ -2629,7 +2629,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		follower = NULL;
 	}
 
-	spectatorreentry = players[player].spectatorreentry;
+	spectatorreentry = (betweenmaps ? 0 : players[player].spectatorreentry);
 
 	grieftime = players[player].grieftime;
 	griefstrikes = players[player].griefstrikes;
