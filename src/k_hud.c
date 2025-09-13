@@ -3558,8 +3558,9 @@ static void K_drawKartNameTags(void)
 					if (K_ShowPlayerNametag(ntplayer) == true)
 					{
 						K_DrawNameTagForPlayer(result.x, result.y, ntplayer);
-						K_DrawTypingNotifier(result.x, result.y, ntplayer);
 					}
+
+					K_DrawTypingNotifier(result.x, result.y, ntplayer);
 				}
 			}
 		}
