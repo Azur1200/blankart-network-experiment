@@ -481,6 +481,8 @@ fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against)
 			weight = K_PlayerWeight(mobj, against);
 			break;
 		case MT_BUBBLESHIELD:
+			if (!mobj->target)
+				break;
 			weight = K_PlayerWeight(mobj->target, against);
 			break;
 		case MT_FALLINGROCK:
