@@ -54,8 +54,7 @@ void HWR_DrawConsoleFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 color, UINT32
 void HWR_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 color);
 void HWR_DrawPic(INT32 x,INT32 y,lumpnum_t lumpnum);
 
-UINT8 *HWR_GetScreenshot(void);
-boolean HWR_Screenshot(const char *pathname);
+UINT8 *HWR_GetScreenshot(INT32 scale);
 
 void HWR_AddCommands(void);
 void HWR_AddSessionCommands(void);

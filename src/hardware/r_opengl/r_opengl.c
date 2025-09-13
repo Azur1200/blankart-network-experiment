@@ -25,6 +25,9 @@
 #include "r_opengl.h"
 #include "r_vbo.h"
 
+// requires GL 4.3
+//#define GLDEBUGMESSAGE
+
 #if defined (HWRENDER) && !defined (NOROPENGL)
 
 struct GLRGBAFloat
@@ -281,6 +284,10 @@ static void GL_MSG_Error(const char *format, ...)
 #define pglCopyTexImage2D glCopyTexImage2D
 #define pglCopyTexSubImage2D glCopyTexSubImage2D
 
+#ifdef GLDEBUGMESSAGE
+#define pglDebugMessageCallback glDebugMessageCallback
+#endif
+
 #else //!STATIC_OPENGL
 
 /* 1.0 functions */
@@ -422,6 +429,11 @@ static PFNglDeleteBuffers pglDeleteBuffers;
 /* 2.0 functions */
 typedef void (APIENTRY * PFNglBlendEquation) (GLenum mode);
 static PFNglBlendEquation pglBlendEquation;
+
+#ifdef GLDEBUGMESSAGE
+typedef void (APIENTRY * PFNglDebugMessageCallback) (void (APIENTRY *DEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam), const void *userParam);
+static PFNglDebugMessageCallback pglDebugMessageCallback;
+#endif
 
 
 /* 1.2 Parms */
@@ -983,6 +995,10 @@ void SetupGLFunc4(void)
 	*(void**)&pglUniform3fv = GetGLFunc("glUniform3fv");
 	*(void**)&pglGetUniformLocation = GetGLFunc("glGetUniformLocation");
 #endif
+
+#ifdef GLDEBUGMESSAGE
+	*(void**)&pglDebugMessageCallback = GetGLFunc("glDebugMessageCallback");
+#endif
 }
 
 EXPORT boolean HWRAPI(CompileShaders) (void)
@@ -1335,6 +1351,50 @@ void SetModelView(GLint w, GLint h)
 	pglGetFloatv(GL_PROJECTION_MATRIX, projMatrix);
 }
 
+#ifdef GLDEBUGMESSAGE
+static void APIENTRY DebugMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+{
+	const char *debugsource, *debugtype;
+
+	switch (source)
+	{
+#define S(s) case GL_DEBUG_SOURCE_##s: debugsource = #s; break
+		S(API);
+		S(WINDOW_SYSTEM);
+		S(SHADER_COMPILER);
+		S(THIRD_PARTY);
+		S(APPLICATION);
+		S(OTHER);
+#undef S
+	default:
+		debugsource = "unknown";
+		break;
+	}
+
+	switch (type)
+	{
+#define S(s) case GL_DEBUG_TYPE_##s: debugtype = #s; break
+		S(ERROR);
+		S(DEPRECATED_BEHAVIOR);
+		S(UNDEFINED_BEHAVIOR);
+		S(PORTABILITY);
+		S(PERFORMANCE);
+		S(MARKER);
+		S(PUSH_GROUP);
+		S(POP_GROUP);
+		S(OTHER);
+#undef S
+	default:
+		debugtype = "unknown";
+		break;
+	}
+
+	alerttype_t level = severity == GL_DEBUG_SEVERITY_HIGH ? CONS_ERROR
+	                  : severity == GL_DEBUG_SEVERITY_MEDIUM ? CONS_WARNING
+	                  : CONS_NOTICE;
+	CONS_Alert(level, "OpenGL (%s) (%s): %s\n", debugsource, debugtype, message);
+}
+#endif
 
 // -----------------+
 // SetStates        : Set permanent states
@@ -1395,6 +1455,12 @@ void SetStates(void)
 	pglLoadIdentity();
 	pglScalef(1.0f, 1.0f, -1.0f);
 	pglGetFloatv(GL_MODELVIEW_MATRIX, modelMatrix); // added for new coronas' code (without depth buffer)
+
+#ifdef GLDEBUGMESSAGE
+	pglEnable(GL_DEBUG_OUTPUT);
+	pglEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	pglDebugMessageCallback(&DebugMessage, NULL);
+#endif
 }
 
 
@@ -1514,58 +1580,37 @@ EXPORT void HWRAPI(ClearMipMapCache) (void)
 	Flush();
 }
 
-
-// -----------------+
-// ReadRect         : Read a rectangle region of the truecolor framebuffer
-//                  : store pixels as 16bit 565 RGB
-// Returns          : 16bit 565 RGB pixel array stored in dst_data
-// -----------------+
-EXPORT void HWRAPI(ReadRect) (INT32 x, INT32 y, INT32 width, INT32 height,
-                                INT32 dst_stride, UINT16 * dst_data)
+// -----------------------+
+// ReadScreenFinalTexture : Reads out the final screen texture
+// Returns                : 24bit RGB pixel array stored in dest
+// -----------------------+
+EXPORT void HWRAPI(ReadScreenFinalTexture) (UINT8 * restrict dest, INT32 scale)
 {
-	INT32 i;
-	// GL_DBG_Printf ("ReadRect()\n");
-	if (dst_stride == width*3)
-	{
-		GLubyte*top = (GLvoid*)dst_data, *bottom = top + dst_stride * (height - 1);
-		GLubyte *row = malloc(dst_stride);
-		if (!row) return;
-		pglPixelStorei(GL_PACK_ALIGNMENT, 1);
-		pglReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, dst_data);
-		pglPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		for(i = 0; i < height/2; i++)
-		{
-			memcpy(row, top, dst_stride);
-			memcpy(top, bottom, dst_stride);
-			memcpy(bottom, row, dst_stride);
-			top += dst_stride;
-			bottom -= dst_stride;
-		}
-		free(row);
-	}
-	else
-	{
-		INT32 j;
-		GLubyte *image = malloc(width*height*3*sizeof (*image));
-		if (!image) return;
-		pglPixelStorei(GL_PACK_ALIGNMENT, 1);
-		pglReadPixels(x, y, width, height, GL_RGB, GL_UNSIGNED_BYTE, image);
-		pglPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		for (i = height-1; i >= 0; i--)
-		{
-			for (j = 0; j < width; j++)
-			{
-				dst_data[(height-1-i)*width+j] =
-				(UINT16)(
-				                 ((image[(i*width+j)*3]>>3)<<11) |
-				                 ((image[(i*width+j)*3+1]>>2)<<5) |
-				                 ((image[(i*width+j)*3+2]>>3)));
-			}
-		}
-		free(image);
-	}
-}
+	const INT32 stride = (screen_width/scale)*3;
+	INT32 scanlines = screen_height;
+	GLubyte * restrict image;
 
+	image = malloc(screen_width*screen_height*3);
+	pglPixelStorei(GL_PACK_ALIGNMENT, 1);
+	pglReadPixels(0, 0, screen_width, screen_height, GL_RGB, GL_UNSIGNED_BYTE, image);
+
+	// TODO the downscaling happens in the screen capture code now,
+	// yet we're still doing this on the CPU? sheesh...
+	// this is where actual knowledge of OpenGL would've come in handy
+	image += scanlines*screen_width*3;
+	while ((scanlines -= scale) >= 0)
+	{
+		image -= screen_width*scale*3;
+		if (scale == 1)
+			memcpy(dest, image, stride);
+		else for (size_t i = 0; i < stride; i += 3)
+			memcpy(dest + i, image + i*scale, 3);
+		dest += stride;
+	}
+
+	// ...yet still, restrict doesn't make the inner loop any faster
+	free(image - ((screen_height % scale) * screen_width*3));
+}
 
 // -----------------+
 // GClipRect        : Defines the 2D hardware clipping window
