@@ -9658,6 +9658,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->itemflags &= ~IF_USERINGS;
 	}
 
+	if (player->exiting && player->bubbleblowup > 0)
+		player->bubbleblowup--;
+
 	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
 	{
 		// First, the really specific, finicky items that function without the item being directly in your item slot.
