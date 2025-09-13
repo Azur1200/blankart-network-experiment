@@ -55,7 +55,8 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	boolean vflip,
 	boolean hflip,
 	interpmobjstate_t *interp, 
-	vector2_t* out);
+	vector2_t* out,
+	vector2_t* rolloffs);
 #endif
 
 #ifdef __cplusplus

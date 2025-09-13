@@ -138,7 +138,8 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	boolean vflip,
 	boolean hflip,
 	interpmobjstate_t *interp,
-	vector2_t* out)
+	vector2_t* out,
+	vector2_t* rolloffs)
 {
 	fixed_t rotcos, rotsin, finx, finy;
 	vector2_t xvec, yvec;
@@ -192,8 +193,8 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	vypiv = (INT16)(FixedMul((xpiv / FRACUNIT), pitchMul));
 
 	// rotate by rollangle
-	finx = (visx + visy) + mobj->rollingxoffset;
-	finy = -visz + mobj->rollingyoffset;
+	finx = (visx + visy);
+	finy = -visz;
 
 	rotcos = FINECOSINE(visrollang >> ANGLETOFINESHIFT);
 	rotsin = FINESINE(visrollang >> ANGLETOFINESHIFT);
@@ -204,6 +205,9 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	yvec.x = FixedMul(finy, rotsin);
 	yvec.y = FixedMul(finy, -rotcos);
 
+	rolloffs->x = (fixed_t)(FixedMul(mobj->rollingxoffset, rotcos) + FixedMul(mobj->rollingyoffset, rotsin));
+	rolloffs->y = (fixed_t)(FixedMul(mobj->rollingxoffset, -rotsin) - FixedMul(mobj->rollingyoffset, -rotcos));
+
 	// set finalized offsets
 	out->x = (fixed_t)(xvec.x + yvec.x + vxpiv + vypiv);
 	out->y = (fixed_t)(xvec.y - yvec.y) + (mobj->bakezpiv / FRACUNIT);
@@ -213,11 +217,13 @@ vector2_t* R_RotateSpriteOffsetsByPitchRoll(
 	if (hflip)
 	{
 		out->x *= -1;
+		rolloffs->x *= 1;
 	}
 
 	if (vflip)
 	{
 		out->y *= -1;
+		rolloffs->y *= 1;
 	}
 	return out;
 }

@@ -1741,7 +1741,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t spriterotangle = 0;
-	vector2_t visoffs;
+	vector2_t visoffs, rotoffset;
 #endif
 
 	// uncapped/interpolation
@@ -1932,9 +1932,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		return;
 
 #ifdef ROTSPRITE
-	// initialize and rotate pitch/roll vector
+	// initialize and rotate pitch/roll vectors
 	visoffs.x = 0;
 	visoffs.y = 0;
+	rotoffset.x = 0;
+	rotoffset.y = 0;
 
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
@@ -1944,7 +1946,10 @@ static void R_ProjectSprite(mobj_t *thing)
 										 vflip,
 										 hflip,
 										 &interp,
-										 &visoffs);
+										 &visoffs,
+										 &rotoffset);
+
+		rotoffset.x *= FRACUNIT;
 	}
 #endif
 
@@ -1952,8 +1957,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	{
 		spr_offset = interp.spritexoffset;
 #ifdef ROTSPRITE
-		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
-																mapobjectscale));
+		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
 #else
 		spr_topoffset = interp.spriteyoffset;
 #endif
@@ -1967,9 +1971,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		spr_offset += (interp.spritexoffset) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
-															mapobjectscale))
-																* flipoffset;
+		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
 #else
 		spr_topoffset += interp.spriteyoffset * flipoffset;
 #endif
@@ -1984,6 +1986,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	if (visoffs.x)
 	{
 		offset -= FixedDiv((visoffs.x * FRACUNIT), mapobjectscale);
+	}
+
+	if (rotoffset.x)
+	{
+		offset -= rotoffset.x;
 	}
 #endif
 

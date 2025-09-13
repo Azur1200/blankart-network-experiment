@@ -4712,7 +4712,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	patch_t *rotsprite = NULL;
 	INT32 rollangle = 0;
 	angle_t spriterotangle = 0;
-	vector2_t visoffs;
+	vector2_t visoffs, rotoffset;
 #endif
 
 	// uncapped/interpolation
@@ -4879,9 +4879,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		}
 	}
 
-	// initialize and rotate pitch/roll vector
+	// initialize and rotate pitch/roll vectors
 	visoffs.x = 0;
 	visoffs.y = 0;
+	rotoffset.x = 0;
+	rotoffset.y = 0;
 
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
@@ -4891,7 +4893,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 										 vflip,
 										 hflip,
 										 &interp,
-										 &visoffs);
+										 &visoffs,
+										 &rotoffset);
+
+		rotoffset.x *= FRACUNIT;
 	}
 #endif
 
@@ -4899,7 +4904,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		spr_offset = interp.spritexoffset;
 #ifdef ROTSPRITE
-		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale));
+		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
 #else
 		spr_topoffset = interp.spriteyoffset;
 #endif
@@ -4914,7 +4919,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		spr_offset += interp.spritexoffset * flipoffset;
 #ifdef ROTSPRITE
 		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
-		mapobjectscale)) * flipoffset;
+		mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
 #else
 		spr_topoffset += interp.spriteyoffset * flipoffset;
 #endif
@@ -4978,6 +4983,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		{
 #ifdef ROTSPRITE
 			spr_offset -= visoffs.x;
+			spr_offset -= rotoffset.x;
 #endif
 			x1 = (FIXED_TO_FLOAT((spr_width - spr_offset)) * this_xscale);
 			x2 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
@@ -4986,6 +4992,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		{
 #ifdef ROTSPRITE
 			spr_offset += visoffs.x;
+			spr_offset += rotoffset.x;
 #endif
 			x1 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
 			x2 = (FIXED_TO_FLOAT(spr_width - spr_offset) * this_xscale);
