@@ -2592,7 +2592,7 @@ increment_move
 		if (P_UsingStepUp(thing))
 		{
 			//All things are affected by their scale.
-			fixed_t maxstep = P_GetThingStepUp(thing, tryx, tryy);
+			fixed_t maxstep = g_tm.maxstep;
 			fixed_t stepheight = 0;
 
 			if (thing->type == MT_SKIM)
@@ -2615,7 +2615,7 @@ increment_move
 			// Step up
 			if (thing->z < g_tm.floorz)
 			{
-				if (maxstep > 0 && g_tm.floorz - thing->z <= maxstep)
+				if (g_tm.floorz - thing->z <= maxstep)
 				{
 					thing->z = thing->floorz = g_tm.floorz;
 					thing->floorrover = g_tm.floorrover;
@@ -2628,7 +2628,7 @@ increment_move
 			}
 			else if (g_tm.ceilingz < thingtop)
 			{
-				if (maxstep > 0 && thingtop - g_tm.ceilingz <= maxstep)
+				if (thingtop - g_tm.ceilingz <= maxstep)
 				{
 					thing->z = ( thing->ceilingz = g_tm.ceilingz ) - thing->height;
 					thing->ceilingrover = g_tm.ceilingrover;
@@ -3904,9 +3904,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		return;
 
 	if (result == NULL)
-	{
 		return;
-	}
 
 	if (mo->player->spectator)
 	{
