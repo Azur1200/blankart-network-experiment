@@ -6579,7 +6579,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (player->itemtype == KITEM_NONE)
+	if (player->itemtype == KITEM_NONE && player->flametimer == 0)
 		player->itemflags &= ~IF_HOLDREADY;
 
 	if (player->driftlock)
@@ -9766,12 +9766,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				{
 					if (!HOLDING_ITEM && NO_HYUDORO)
 					{
-						if (!ATTACK_IS_DOWN && player->flametimer > 0)
-						{
-							player->itemflags |= IF_HOLDREADY;
-						}
-
-						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY) && onground)
+						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 						{
 							// TODO: gametyperules
 							const SINT8 incr = gametype == GT_BATTLE ? 3 : 2;
@@ -9788,9 +9783,23 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (!S_SoundPlaying(player->mo, sfx_s3kc2l) && player->flametimer != 0 && player->flamestore != 0)
 								S_StartSound(player->mo, sfx_s3kc2l);
 
-							player->flamedash += incr;
-							player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
-							player->flametimer -= comincr;
+							if (onground)
+							{
+								player->flamedash += incr;
+								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
+								player->flametimer -= comincr;
+							}
+							/*else
+							{
+								player->flamedash += incr;
+								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
+								player->flametimer -= comincr;
+
+								P_Thrust(
+									player->mo, player->mo->angle,
+									FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
+									);
+							}*/
 
 							if (player->flametimer <= 0)
 							{
@@ -9798,14 +9807,17 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								S_StartSound(player->mo, sfx_s3k47);
 								K_PopPlayerShield(player);
 							}
-
-							/*if (!onground)
+						}
+						else
+						{
+							if (buttons & BT_ATTACK)
 							{
-								P_Thrust(
-									player->mo, player->mo->angle,
-									FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
-								);
-							}*/
+								player->itemflags &= ~IF_HOLDREADY;
+							}
+							else
+							{
+								player->itemflags |= IF_HOLDREADY;
+							}
 						}
 					}
 				}
@@ -10208,6 +10220,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&shield->target, player->mo);
 								S_StartSound(player->mo, sfx_s3k3f);
 								player->curshield = KSHIELD_BUBBLE;
+
 								player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
@@ -10257,10 +10270,14 @@ bubbledeflate:
 
 										if (!popped)
 										{
-											if (player->bubblecool)
+											if (buttons & BT_ATTACK || player->bubblecool)
+											{
 												player->itemflags &= ~IF_HOLDREADY;
+											}
 											else
+											{
 												player->itemflags |= IF_HOLDREADY;
+											}
 										}
 									}
 								}

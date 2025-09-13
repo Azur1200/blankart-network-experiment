@@ -961,6 +961,11 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
+	if (player->flametimer >= (itemtime*3)-5)
+	{
+		bd->itemdelay = 5;
+	}
+
 	if (P_IsObjectOnGround(player->mo) == false)
 	{
 		// Drain itemdelay as needed so theres no delay when landing.
