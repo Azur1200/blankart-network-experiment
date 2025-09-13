@@ -2593,7 +2593,6 @@ increment_move
 		{
 			//All things are affected by their scale.
 			fixed_t maxstep = g_tm.maxstep;
-			fixed_t stepheight = 0;
 
 			if (thing->type == MT_SKIM)
 				maxstep = 0;
