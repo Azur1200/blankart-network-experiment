@@ -3583,7 +3583,7 @@ static void CalculateDoomednumToMobjtype(void)
 	}
 }
 
-static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
+static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 tclass)
 {
 	mobj_t *mobj;
 	UINT32 diff;
@@ -3643,6 +3643,9 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	// declare this as a valid mobj as soon as possible.
 	mobj->thinker.function.acp1 = thinker;
+
+	// manually link to thinkerlist, since the thinker isn't returned anymore
+	P_AddThinker(tclass, &mobj->thinker);
 
 	mobj->z = z;
 	mobj->floorz = floorz;
@@ -4022,7 +4025,9 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker)
 
 	R_AddMobjInterpolator(mobj);
 
-	return &mobj->thinker;
+	// don't allow the mobj's refcount to be reset by P_AddThinker
+	// we might've already called P_SetTarget!
+	return NULL;//&mobj->thinker;
 }
 
 static thinker_t* LoadNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker)
@@ -4689,7 +4694,7 @@ static void P_NetUnArchiveThinkers(savebuffer_t *save)
 			switch (tclass)
 			{
 				case tc_mobj:
-					th = LoadMobjThinker(save, (actionf_p1)P_MobjThinker);
+					th = LoadMobjThinker(save, (actionf_p1)P_MobjThinker, i);
 					break;
 
 				case tc_ceiling:
