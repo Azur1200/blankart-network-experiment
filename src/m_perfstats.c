@@ -431,68 +431,75 @@ static void M_DrawTickStats(void)
 	perfstatcol_t detailed_thinkercount_col2 =  {94, 119, V_BLUEMAP,   detailed_thinkercount_row2};
 	perfstatcol_t            misc_calls_col  = {170, 216, V_PURPLEMAP,            misc_calls_row};
 
-	for (i = 0; i < NUM_THINKERLISTS; i++)
+	if (G_GamestateUsesLevel())
 	{
-		for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
+		for (i = 0; i < NUM_THINKERLISTS; i++)
 		{
-			thinkercount++;
-			if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				removecount++;
-			else if (i == THINK_POLYOBJ)
-				polythcount++;
-			else if (i == THINK_MAIN)
-				mainthcount++;
-			else if (i == THINK_MOBJ)
+			for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 			{
-				if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+				thinkercount++;
+				if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					removecount++;
+				else if (i == THINK_POLYOBJ)
+					polythcount++;
+				else if (i == THINK_MAIN)
+					mainthcount++;
+				else if (i == THINK_MOBJ)
 				{
-					mobj_t *mobj = (mobj_t*)thinker;
-					mobjcount++;
-					if (mobj->flags & MF_NOTHINK)
-						nothinkcount++;
-					else if (mobj->flags & MF_SCENERY)
-						scenerycount++;
-					else
-						regularcount++;
+					if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+					{
+						mobj_t *mobj = (mobj_t*)thinker;
+						mobjcount++;
+						if (mobj->flags & MF_NOTHINK)
+							nothinkcount++;
+						else if (mobj->flags & MF_SCENERY)
+							scenerycount++;
+						else
+							regularcount++;
+					}
 				}
+				else if (i == THINK_DYNSLOPE)
+					dynslopethcount++;
+				else if (i == THINK_PRECIP)
+					precipcount++;
 			}
-			else if (i == THINK_DYNSLOPE)
-				dynslopethcount++;
-			else if (i == THINK_PRECIP)
-				precipcount++;
 		}
 	}
 
 	draw_row = 10;
 	M_DrawPerfTiming(&tictime_col);
-	M_DrawPerfTiming(&thinker_time_col);
-	M_DrawPerfTiming(&detailed_thinker_time_col);
-	if (server)
-		M_DrawPerfTiming(&bot_time_col);
-	M_DrawPerfTiming(&extra_thinker_time_col);
-
-	draw_row = 10;
-	M_DrawPerfCount(&thinkercount_col);
-	M_DrawPerfCount(&detailed_thinkercount_col);
-	M_DrawPerfCount(&mobjthinkercount_col);
-
-	if (nothinkcount)
-		M_DrawPerfCount(&nothinkcount_col);
-
-	M_DrawPerfCount(&detailed_thinkercount_col2);
-
-	if (M_HighResolution())
+	if (G_GamestateUsesLevel())
 	{
-		V_DrawSmallString(212, 10, V_MONOSPACE | V_ALLOWLOWERCASE | V_PURPLEMAP, "Calls:");
+		M_DrawPerfTiming(&thinker_time_col);
+		M_DrawPerfTiming(&detailed_thinker_time_col);
+		if (server)
+			M_DrawPerfTiming(&bot_time_col);
+		M_DrawPerfTiming(&extra_thinker_time_col);
 
-		draw_row = 15;
-	}
-	else
-	{
 		draw_row = 10;
-	}
+		M_DrawPerfCount(&thinkercount_col);
+		M_DrawPerfCount(&detailed_thinkercount_col);
+		M_DrawPerfCount(&mobjthinkercount_col);
 
-	M_DrawPerfCount(&misc_calls_col);
+		if (nothinkcount)
+			M_DrawPerfCount(&nothinkcount_col);
+
+		M_DrawPerfCount(&detailed_thinkercount_col2);
+
+
+		if (M_HighResolution())
+		{
+			V_DrawSmallString(212, 10, V_MONOSPACE | V_ALLOWLOWERCASE | V_PURPLEMAP, "Calls:");
+
+			draw_row = 15;
+		}
+		else
+		{
+			draw_row = 10;
+		}
+
+		M_DrawPerfCount(&misc_calls_col);
+	}
 }
 
 void M_DrawPerfStats(void)
