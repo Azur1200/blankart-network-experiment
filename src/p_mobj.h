@@ -490,6 +490,10 @@ struct precipmobj_t
 	fixed_t old_spritexscale2, old_spriteyscale2;
 	fixed_t old_spritexoffset, old_spriteyoffset;
 	fixed_t old_spritexoffset2, old_spriteyoffset2;
+
+	// X and Y offsets that rotate alongside the sprite.
+	INT16 rollingxoffset, rollingyoffset;
+
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	INT16 lightlevel; // Add to sector lightlevel, -255 - 255
 
