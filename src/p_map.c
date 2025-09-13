@@ -2507,20 +2507,6 @@ fixed_t P_GetThingStepUp(mobj_t *thing, fixed_t destX, fixed_t destY)
 	return maxstep;
 }
 
-// Used for averging height values for step up.
-static fixed_t avgheight(fixed_t a, fixed_t b)
-{
-	if (((b > 0) && (a > (INT32_MAX - b))) ||
-	((b < 0) && (a < (INT32_MIN - b))))
-	{
-		return b + (a - b) / 2;
-	}
-	else
-	{
-		return (a + b) / 2;
-	}
-}
-
 static boolean
 increment_move
 (		mobj_t * thing,
@@ -2629,9 +2615,7 @@ increment_move
 			// Step up
 			if (thing->z < g_tm.floorz)
 			{
-				stepheight = avgheight(g_tm.floorz - thing->z, g_tm.floorstep);
-
-				if (stepheight <= maxstep)
+				if (maxstep > 0 && g_tm.floorz - thing->z <= maxstep)
 				{
 					thing->z = thing->floorz = g_tm.floorz;
 					thing->floorrover = g_tm.floorrover;
@@ -2644,9 +2628,7 @@ increment_move
 			}
 			else if (g_tm.ceilingz < thingtop)
 			{
-				stepheight = avgheight(thingtop - g_tm.ceilingz, g_tm.ceilingstep);
-
-				if (stepheight <= maxstep)
+				if (maxstep > 0 && thingtop - g_tm.ceilingz <= maxstep)
 				{
 					thing->z = ( thing->ceilingz = g_tm.ceilingz ) - thing->height;
 					thing->ceilingrover = g_tm.ceilingrover;
