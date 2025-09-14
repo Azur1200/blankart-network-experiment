@@ -226,6 +226,7 @@ extern consvar_t cv_pingmeasurement;
 extern consvar_t cv_showminimapnames;
 extern consvar_t cv_showminimapangle;
 extern consvar_t cv_minihead;
+extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_showlapemblem;
 extern consvar_t cv_racesplits;

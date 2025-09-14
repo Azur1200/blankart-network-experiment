@@ -2725,6 +2725,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	p->ringvolume = 255;
 	p->ringtransparency = 255;
+	p->spinoutrot = 0;
 
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;

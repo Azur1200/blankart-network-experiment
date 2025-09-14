@@ -190,6 +190,11 @@ void ST_LoadGraphics(void)
 #endif
 }
 
+static boolean ST_IconCanSpinout(UINT8 icon)
+{
+	return ((icon == FACE_MINIMAP)||(icon == FACE_RANK));
+}
+
 // made separate so that skins code can reload custom face graphics
 void ST_LoadFaceGraphics(INT32 skinnum)
 {
@@ -201,6 +206,21 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 	{
 		sprframe = &sprdef->spriteframes[i];
 		faceprefix[skinnum][i] = W_CachePatchNum(sprframe->lumppat[0], PU_HUDGFX);
+
+		if (ST_IconCanSpinout(i))
+		{
+			// Auto-center all minimap and rank patches with no offsets defined.
+			// This is a shitty, hacky solution... but it's less work for spinout rotations!
+			if (faceprefix[skinnum][i]->leftoffset == 0)
+			{
+				faceprefix[skinnum][i]->leftoffset = faceprefix[skinnum][i]->width / 2;
+			}
+
+			if (faceprefix[skinnum][i]->topoffset == 0)
+			{
+				faceprefix[skinnum][i]->topoffset = faceprefix[skinnum][i]->height / 2;
+			}
+		}
 		i++;
 	}
 	if (i < FACE_MAX)

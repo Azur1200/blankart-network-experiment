@@ -525,13 +525,16 @@ void Y_IntermissionDrawer(void)
 				if (data.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
-					V_DrawMappedPatch(x+16, y-4, 0, faceprefix[*data.character[i]][FACE_RANK], colormap);
+					patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
+
+					V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
 				}
 
 				if (data.num[i] == whiteplayer)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
-					V_DrawScaledPatch(x+16, y-4, 0, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+					patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
+					V_DrawScaledPatch(x+16+highlight->leftoffset, y-4+highlight->topoffset, 0, highlight);
 				}
 
 				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
@@ -1467,13 +1470,16 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				V_DrawMappedPatch(x+24, y+9, V_SNAPTOLEFT, faceprefix[players[i].skin][FACE_RANK], colormap);
+				patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
+
+				V_DrawMappedPatch(x+24+facerank->leftoffset, y+9+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
-				V_DrawScaledPatch(x+24, y+9, V_SNAPTOLEFT, W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE));
+				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
+				V_DrawScaledPatch(x+24+highlight->leftoffset, y+9+highlight->topoffset, V_SNAPTOLEFT, highlight);
 			}
 		}
 
