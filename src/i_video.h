@@ -155,6 +155,8 @@ UINT32 I_GetRefreshRate(void);
 
 boolean I_UseNativeKeyboard(void);
 
+extern consvar_t cv_keyboardlayout;
+
 void I_SetBorderlessWindow(void);
 
 #ifdef __cplusplus

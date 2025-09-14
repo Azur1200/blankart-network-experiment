@@ -96,6 +96,14 @@
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
 
+boolean I_UseNativeKeyboard(void)
+{
+	return cv_keyboardlayout.value == 2 && (chat_on || CON_Ready() || (menu_text_input && menustack[0]));
+}
+
+static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {0, NULL}};
+consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Native", CV_SAVE, keyboardlayout_cons_t, NULL);
+
 boolean highcolor = false;
 
 
@@ -501,18 +509,13 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
-boolean I_UseNativeKeyboard(void)
-{
-	return (chat_on || CON_Ready() || (menu_text_input && menustack[0]));
-}
-
 // Get the equivalent ASCII (Unicode?) character for a keypress.
 static INT32 GetTypedChar(SDL_Keysym keysym)
 {
 	SDL_Event next_event;
 	SDL_Keycode keycode = keysym.sym;
 	SDL_Scancode scancode = keysym.scancode;
-	const boolean Text_Input_Only = I_UseNativeKeyboard(); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+	const boolean Text_Input_Only = (chat_on || CON_Ready() || (menu_text_input && menustack[0])); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
 
 	// Special cases, where we always return a fixed value.
 	switch (keycode)
@@ -734,7 +737,15 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 		return;
 	}
 
-	event.data1 = GetTypedChar(evt.keysym);
+	switch (cv_keyboardlayout.value)
+	{
+		case 2: // "native"
+			event.data1 = GetTypedChar(evt.keysym);
+			break;
+		default:
+			event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+			break;
+	}
 
 	if (event.data1) D_PostEvent(&event);
 }
@@ -1635,12 +1646,13 @@ void I_RegisterSysCommands(void)
 	if (dedicated || graphics_started)
 		return;
 
-	COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-	COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-	COM_AddCommand ("vid_mode", VID_Command_Mode_f);
-	CV_RegisterVar (&cv_vidwait);
-	CV_RegisterVar (&cv_stretch);
-	CV_RegisterVar (&cv_alwaysgrabmouse);
+	COM_AddCommand("vid_nummodes", VID_Command_NumModes_f);
+	COM_AddCommand("vid_modelist", VID_Command_ModeList_f);
+	COM_AddCommand("vid_mode", VID_Command_Mode_f);
+	CV_RegisterVar(&cv_vidwait);
+	CV_RegisterVar(&cv_stretch);
+	CV_RegisterVar(&cv_alwaysgrabmouse);
+	CV_RegisterVar(&cv_keyboardlayout);
 }
 
 void I_StartupGraphics(void)
