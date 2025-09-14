@@ -1635,7 +1635,7 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		{
 			P_TestLine(ld);
 		}
-		else if (g_tm.maxstep > 0)
+		else
 		{
 			if (g_tm.thing->z < open.floor)
 			{
