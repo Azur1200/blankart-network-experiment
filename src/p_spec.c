@@ -1996,6 +1996,9 @@ static void K_HandleLapIncrement(player_t *player)
 			player->starpostnum = 0;
 			player->laps++;
 
+			// Calculate splits.
+			// Nice-to-have: Halfway-through-lap splits?
+
 			if (!K_UsingLegacyCheckpoints())
 			{
 				// do nothing, let waypoint code handle respawn positions
@@ -2042,6 +2045,10 @@ static void K_HandleLapIncrement(player_t *player)
 					player->karthud[khud_laphand] = 0; // No hands in FREE PLAY
 
 				player->karthud[khud_lapanimation] = 80;
+
+				const UINT8 fakegradingpoint = ((UINT8)(player->laps - 1) & 7);
+
+				K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
 			}
 
 			if (P_IsDisplayPlayer(player))
@@ -2080,14 +2087,19 @@ static void K_HandleLapIncrement(player_t *player)
 				if (player->laps > 1)
 				{
 					// save best lap for record attack
+					if (player->laptime[LAP_CUR] < player->laptime[LAP_BEST] || player->laptime[LAP_BEST] == 0)
+					{
+						player->laptime[LAP_BEST] = player->laptime[LAP_CUR];
+					}
+
+					player->laptime[LAP_LAST] = player->laptime[LAP_CUR];
+					player->laptime[LAP_CUR] = 0;
+
 					if (modeattacking && player == &players[consoleplayer])
 					{
-						if (curlap < bestlap || bestlap == 0)
-						{
-							bestlap = curlap;
-						}
-
-						curlap = 0;
+						// No need for redundant bullshit, just feed the calculated values.
+						bestlap = player->laptime[LAP_BEST];
+						curlap = player->laptime[LAP_CUR];
 					}
 
 					// Update power levels for this lap.
@@ -2136,7 +2148,11 @@ static void K_HandleLapDecrement(player_t *player)
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_UpdateAllPlayerPositions();
+
 			curlap = UINT32_MAX;
+
+			// Redundant, but we're only using laptimes for the timestamps as-is.
+			player->laptime[LAP_CUR] = UINT32_MAX;
 		}
 	}
 }

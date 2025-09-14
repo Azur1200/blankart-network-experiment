@@ -205,6 +205,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
 void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
+void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint);
 void K_DoInstashield(player_t *player);
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UINT8 bumpersRemoved);
 void K_SpinPlayer(player_t *player, mobj_t *inflictor, mobj_t *source, INT32 type);

@@ -2557,11 +2557,14 @@ static void P_DeathThink(player_t *player)
 					curlap = 0;
 				else if (curlap != UINT32_MAX)
 					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
+
+				player->laptime[LAP_CUR] = curlap;
 			}
 		}
 		else
 		{
 			player->realtime = 0;
+			player->laptime[LAP_CUR] = 0;
 			if (player == &players[consoleplayer])
 				curlap = 0;
 		}
