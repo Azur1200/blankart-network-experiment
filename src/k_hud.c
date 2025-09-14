@@ -366,6 +366,9 @@ void K_LoadKartHUDGraphics(void)
 	{
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
+
+		kp_facehighlight[i]->leftoffset = kp_facehighlight[i]->width / 2;
+		kp_facehighlight[i]->topoffset = kp_facehighlight[i]->height / 2;
 	}
 
 	// Special minimap icons
@@ -1856,6 +1859,16 @@ static UINT32 K_InvincibilityHUDVisibility(UINT16 t)
 	return min(9, 10 - alphalevel)<<V_ALPHASHIFT;
 }
 
+static boolean K_RankIconCanSpinout(void)
+{
+	return ((cv_spinoutroll.value) & 2);
+}
+
+static boolean K_MinimapIconCanSpinout(void)
+{
+	 return ((cv_spinoutroll.value) & 1);
+}
+
 static boolean K_drawKartPositionFaces(void)
 {
 	// FACE_X = 15;				//  15
@@ -1868,6 +1881,14 @@ static boolean K_drawKartPositionFaces(void)
 	INT32 bumperx, numplayersingame = 0;
 	UINT8 *colormap;
 	UINT32 invinchudtrans;
+	vector2_t offsets;
+
+#ifdef ROTSPRITE
+	angle_t rollangle = 0;
+	INT32 rot = 0;
+#endif
+
+	offsets.x = offsets.y = 0;
 
 	ranklines = 0;
 	memset(completed, 0, sizeof (completed));
@@ -1960,14 +1981,33 @@ static boolean K_drawKartPositionFaces(void)
 			else
 				colormap = R_GetTranslationColormap(players[rankplayer[i]].skin, players[rankplayer[i]].mo->color, GTC_CACHE);
 
-			V_DrawMappedPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
+			patch_t *facerank = faceprefix[players[rankplayer[i]].skin][FACE_RANK];
+
+			offsets.x = facerank->leftoffset;
+			offsets.y = facerank->topoffset;
+
+#ifdef ROTSPRITE
+			if ((K_RankIconCanSpinout()) && (players[rankplayer[i]].spinoutrot))
+			{
+				// Rotate counterclockwise.
+				rollangle = FixedAngle(players[rankplayer[i]].spinoutrot * -1);
+				rot = R_GetRollAngle(rollangle);
+
+				if (rot)
+				{
+					facerank = Patch_GetRotated(facerank, rot, false);
+				}
+			}
+#endif
+
+			V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
 			if ((players[rankplayer[i]].invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 			{
 				colormap = R_GetTranslationColormap(TC_BLINK, K_AltInvincibilityColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
 
-				V_DrawMappedPatch(FACE_X, Y, invinchudtrans|V_SNAPTOLEFT|V_ADD, faceprefix[players[rankplayer[i]].skin][FACE_RANK], colormap);
+				V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, invinchudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
 			if (LUA_HudEnabled(hud_battlebumpers))
@@ -1985,7 +2025,30 @@ static boolean K_drawKartPositionFaces(void)
 		}
 
 		if (i == strank)
-			V_DrawScaledPatch(FACE_X, Y, V_HUDTRANS|V_SNAPTOLEFT, kp_facehighlight[(leveltime / 4) % 8]);
+		{
+			patch_t *highlight = kp_facehighlight[(leveltime / 4) % 8];
+
+			INT32 left, top;
+
+			left = highlight->leftoffset;
+			top = highlight->topoffset;
+
+#ifdef ROTSPRITE
+			if ((K_RankIconCanSpinout()) && (players[rankplayer[i]].spinoutrot))
+			{
+				// Rotate counterclockwise.
+				rollangle = FixedAngle(players[rankplayer[i]].spinoutrot * -1);
+				rot = R_GetRollAngle(rollangle);
+
+				if (rot)
+				{
+					highlight = Patch_GetRotated(highlight, rot, false);
+				}
+			}
+#endif
+
+			V_DrawScaledPatch(FACE_X+left, Y+top, V_HUDTRANS|V_SNAPTOLEFT, highlight);
+		}
 
 		if (gametype == GT_BATTLE && players[rankplayer[i]].bumper <= 0)
 			V_DrawScaledPatch(FACE_X-4, Y-3, V_HUDTRANS|V_SNAPTOLEFT, kp_ranknobumpers);
@@ -2201,7 +2264,17 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 
 		V_DrawThinString(x2 + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, playername);
 
-		V_DrawFixedPatch((x2+11)*FRACUNIT, (y+1)*FRACUNIT, FRACUNIT/2, 0, faceprefix[players[tab[i].num].skin][FACE_RANK], colormap);
+		patch_t *facerank = faceprefix[players[tab[i].num].skin][FACE_RANK];
+		fixed_t scale = FRACUNIT/2;
+
+		V_DrawFixedPatch(
+			((x2+11)*FRACUNIT) + ((facerank->leftoffset) * scale),
+			((y+1)*FRACUNIT) + ((facerank->topoffset) * scale),
+			scale,
+			0,
+			facerank,
+			colormap
+		);
 
 		/*if (gametype == GT_BATTLE && players[tab[i].num].bumper > 0) -- not enough space for this
 		{
@@ -2214,8 +2287,17 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 			}
 		}*/
 
+		patch_t *highlight = kp_facehighlight[(leveltime / 4) % 8];
+
 		if (tab[i].num == whiteplayer)
-			V_DrawFixedPatch((x2+11)*FRACUNIT, (y+1)*FRACUNIT, FRACUNIT/2, 0, kp_facehighlight[(leveltime / 4) % 8], NULL);
+			V_DrawFixedPatch(
+				((x2+11)*FRACUNIT)+(highlight->leftoffset * scale),
+				((y+1)*FRACUNIT)+(highlight->topoffset * scale),
+				scale,
+				0,
+				highlight,
+				NULL
+			);
 
 		if ((gametyperules & GTR_BUMPERS) && players[tab[i].num].bumper <= 0)
 			V_DrawScaledPatch(x2-4, y-7, 0, kp_ranknobumpers);
@@ -2434,7 +2516,9 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 		else
 			V_DrawString(x + 20, y2, ((tab[i].num == whiteplayer) ? hightlightcolor : 0)|V_ALLOWLOWERCASE, playername);
 
-		V_DrawMappedPatch(x, y-4, 0, faceprefix[players[tab[i].num].skin][FACE_RANK], colormap);
+		patch_t *facerank = faceprefix[players[tab[i].num].skin][FACE_RANK];
+
+		V_DrawMappedPatch(x+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
 
 		/*if (gametype == GT_BATTLE && players[tab[i].num].bumper > 0) -- not enough space for this
 		{
@@ -2448,7 +2532,10 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 		}*/
 
 		if (tab[i].num == whiteplayer)
-			V_DrawScaledPatch(x, y-4, 0, kp_facehighlight[(leveltime / 4) % 8]);
+		{
+			patch_t *highlight = kp_facehighlight[(leveltime / 4) % 8];
+			V_DrawScaledPatch(x+highlight->leftoffset, y-4+highlight->topoffset, 0, highlight);
+		}
 
 		if (gametype == GT_BATTLE && players[tab[i].num].bumper <= 0)
 			V_DrawScaledPatch(x-4, y-7, 0, kp_ranknobumpers);
@@ -2519,7 +2606,9 @@ static void K_drawKartLaps(void)
 		if (LUA_HudEnabled(hud_lives) && uselives)
 		{
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(fr+21, fy-13, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_MINIMAP], colormap);
+			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
+
+			V_DrawMappedPatch(fr+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
 			if (stplyr->lives >= 0)
 				V_DrawScaledPatch(fr+34, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 		}
@@ -2564,7 +2653,8 @@ static void K_drawKartLaps(void)
 			}
 
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(fx+59+offsetx, fy-16+offsety, V_HUDTRANS|splitflags, faceprefix[stplyr->skin][FACE_RANK], colormap);
+			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
+			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
 			if (stplyr->lives >= 0)
 				V_DrawScaledPatch(fx+77+offsetx, fy-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 		}
@@ -3072,7 +3162,8 @@ static void K_drawKartWanted(void)
 		if (players[battlewanted[i]].skincolor)
 		{
 			colormap = R_GetTranslationColormap(TC_RAINBOW, p->skincolor, GTC_CACHE);
-			V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, V_HUDTRANS|(r_splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, (scale == FRACUNIT ? faceprefix[p->skin][FACE_WANTED] : faceprefix[p->skin][FACE_RANK]), colormap);
+			patch_t *wantedicon = (scale == FRACUNIT ? faceprefix[p->skin][FACE_WANTED] : faceprefix[p->skin][FACE_RANK]);
+			V_DrawFixedPatch((x+wantedicon->leftoffset)<<FRACBITS, (y+wantedicon->topoffset)<<FRACBITS, FRACUNIT, V_HUDTRANS|(r_splitscreen < 3 ? V_SNAPTORIGHT : 0)|V_SNAPTOBOTTOM, wantedicon, colormap);
 			/*if (basey2)	// again with 4p stuff
 				V_DrawFixedPatch(x<<FRACBITS, (y - (basey-basey2))<<FRACBITS, FRACUNIT, V_HUDTRANS|V_SNAPTOTOP, (scale == FRACUNIT ? faceprefix[p->skin][FACE_WANTED] : faceprefix[p->skin][FACE_RANK]), colormap);*/
 		}
@@ -3569,7 +3660,7 @@ static void K_drawKartNameTags(void)
 	V_ClearClipRect();
 }
 
-static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap)
+static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap, vector2_t *origin)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -3581,6 +3672,20 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx,
 	fixed_t amnumxpos, amnumypos;
 	INT32 amxpos, amypos;
 	fixed_t scale = FRACUNIT;
+
+	INT16 w, h;
+
+	if (origin)
+	{
+		w = origin->x * 2;
+		h = origin->y * 2;
+	}
+	else
+	{
+		w = icon->width;
+		h = icon->height;
+	}
+
 
 	if (!cv_showminimapangle.value && (icon == kp_minimapdot))
 		return;
@@ -3594,8 +3699,8 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx,
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
-	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-icon->width)/2)<<FRACBITS);
-	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-icon->height)/2)<<FRACBITS);
+	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-w)/2)<<FRACBITS);
+	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-h)/2)<<FRACBITS);
 
 	if (cv_minihead.value && !(icon == kp_minimapdot))
 	{
@@ -3793,6 +3898,13 @@ static void K_drawKartMinimap(void)
 	UINT16 usecolor;
 	boolean colorizeplayer;
 
+#ifdef ROTSPRITE
+	angle_t rollangle = 0;
+	INT32 rot = 0;
+#endif
+
+	vector2_t iconoffsets;
+
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
 	if (gamestate != GS_LEVEL)
@@ -3807,6 +3919,9 @@ static void K_drawKartMinimap(void)
 	{
 		return; // no pic, just get outta here
 	}
+
+	iconoffsets.x = 0;
+	iconoffsets.y = 0;
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
@@ -3881,7 +3996,11 @@ static void K_drawKartMinimap(void)
 			interpx = R_InterpolateFixed(g->mo->old_x, g->mo->x);
 			interpy = R_InterpolateFixed(g->mo->old_y, g->mo->y);
 
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, faceprefix[skin][FACE_MINIMAP], colormap);
+			patch_t *ghostPic = faceprefix[skin][FACE_MINIMAP];
+			iconoffsets.x = ((ghostPic->width) / 2) - ghostPic->leftoffset;
+			iconoffsets.y = ((ghostPic->height) / 2) - ghostPic->topoffset;
+
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, ghostPic, colormap, &iconoffsets);
 			g = g->next;
 		}
 
@@ -3924,6 +4043,10 @@ static void K_drawKartMinimap(void)
 			if (players[i].mo->health <= 0 && players[i].pflags & PF_NOCONTEST)
 			{
 				workingPic = kp_nocontestminimap;
+
+				iconoffsets.x = ((workingPic->width) / 2);
+				iconoffsets.y = ((workingPic->height) / 2);
+
 				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 			}
 			else
@@ -3931,6 +4054,23 @@ static void K_drawKartMinimap(void)
 				skin = ((skin_t*)players[i].mo->skin)-skins;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
+
+				iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset;
+				iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset;
+
+#ifdef ROTSPRITE
+				if ((K_MinimapIconCanSpinout()) && (players[i].spinoutrot))
+				{
+					// Rotate counterclockwise.
+					rollangle = FixedAngle(players[i].spinoutrot * -1);
+					rot = R_GetRollAngle(rollangle);
+
+					if (rot)
+					{
+						workingPic = Patch_GetRotated(workingPic, rot, false);
+					}
+				}
+#endif
 
 				colorizeplayer = players[i].mo->colorized;
 
@@ -3966,7 +4106,7 @@ static void K_drawKartMinimap(void)
 				interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 				if (mobj->player)
 				{
@@ -3978,7 +4118,7 @@ static void K_drawKartMinimap(void)
 				if ((gametype == GT_RACE && players[i].position == spbplace)
 					|| (gametype == GT_BATTLE && K_IsPlayerWanted(&players[i])))
 				{
-					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL);
+					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL, NULL);
 				}
 			}
 		}
@@ -4029,7 +4169,7 @@ static void K_drawKartMinimap(void)
 		interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, NULL);
 	}
 
 	for (mobj = misccap; mobj; mobj = next)
@@ -4064,7 +4204,7 @@ static void K_drawKartMinimap(void)
 		interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, NULL);
 	}
 
 	// draw our local players here, opaque.
@@ -4097,7 +4237,7 @@ static void K_drawKartMinimap(void)
 			interpy = R_InterpolateFixed(bossinfo.weakspots[i].spot->old_y, bossinfo.weakspots[i].spot->y);
 
 			// temporary graphic?
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, colormap);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, colormap, NULL);
 		}
 	}
 
@@ -4116,6 +4256,10 @@ static void K_drawKartMinimap(void)
 		if (players[localplayers[i]].mo->health <= 0 && players[localplayers[i]].pflags & PF_NOCONTEST)
 		{
 			workingPic = kp_nocontestminimap;
+
+			iconoffsets.x = ((workingPic->width) / 2);
+			iconoffsets.y = ((workingPic->height) / 2);
+
 			colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 
 			nocontest = true;
@@ -4125,6 +4269,23 @@ static void K_drawKartMinimap(void)
 			skin = ((skin_t*)players[localplayers[i]].mo->skin)-skins;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
+
+			iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset;
+			iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset;
+
+#ifdef ROTSPRITE
+			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
+			{
+				// Rotate counterclockwise.
+				rollangle = FixedAngle(players[localplayers[i]].spinoutrot * -1);
+				rot = R_GetRollAngle(rollangle);
+
+				if (rot)
+				{
+					workingPic = Patch_GetRotated(workingPic, rot, false);
+				}
+			}
+#endif
 
 			colorizeplayer = players[localplayers[i]].mo->colorized;
 
@@ -4178,7 +4339,8 @@ static void K_drawKartMinimap(void)
 							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 							splitflags,
 							kp_minimapdot,
-							colormap
+							colormap,
+							NULL
 					);
 				}
 				else if (cv_showminimapangle.value == 2)
@@ -4196,13 +4358,13 @@ static void K_drawKartMinimap(void)
 				}
 			}
 
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 			// Target reticule
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
 				|| (gametype == GT_BATTLE && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL);
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL, NULL);
 			}
 
 			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);
@@ -4977,7 +5139,9 @@ static void K_drawLapSplitComparison(void)
 				INT32 stwidth = V_StringWidth(buffer, splitflags) / 2;
 
 				// vibes offset
-				V_DrawMappedPatch(row_position[0] - stwidth - 35, row_position[1], splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+				patch_t *face = faceprefix[skin][FACE_MINIMAP];
+
+				V_DrawMappedPatch(row_position[0] - stwidth - 35 + face->leftoffset, row_position[1] + face->topoffset, splitflags, face, skincolor);
 
 				if (pos > 1)
 				{

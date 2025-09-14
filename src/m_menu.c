@@ -4182,6 +4182,7 @@ void MD_DrawReplayStartMenu(void)
 {
 	const char *warning;
 	UINT8 i;
+	INT32 xoffs, yoffs;
 
 	MD_DrawGenericMenu();
 
@@ -4189,6 +4190,7 @@ void MD_DrawReplayStartMenu(void)
 	// Draw rankings beyond first
 	for (i = 1; i < MAXPLAYERS && demolist[dir_on[menudepthleft]].standings[i].ranking; i++)
 	{
+		xoffs = yoffs = 0;
 		patch_t *patch;
 		UINT8 *colormap;
 
@@ -4210,6 +4212,10 @@ void MD_DrawReplayStartMenu(void)
 		if (demolist[dir_on[menudepthleft]].standings[i].skin < numskins && W_CheckNumForName(skins[demolist[dir_on[menudepthleft]].standings[i].skin].facewant) != LUMPERROR)
 		{
 			patch = faceprefix[demolist[dir_on[menudepthleft]].standings[i].skin][FACE_RANK];
+
+			xoffs = SHORT(patch->leftoffset);
+			yoffs = SHORT(patch->topoffset);
+
 			colormap = R_GetTranslationColormap(
 				demolist[dir_on[menudepthleft]].standings[i].skin,
 				demolist[dir_on[menudepthleft]].standings[i].color,
@@ -4224,7 +4230,7 @@ void MD_DrawReplayStartMenu(void)
 				GTC_MENUCACHE);
 		}
 
-		V_DrawMappedPatch(BASEVIDWIDTH-5 - SHORT(patch->width), STARTY + i*20, V_SNAPTOTOP, patch, colormap);
+		V_DrawMappedPatch(BASEVIDWIDTH-5 - SHORT(patch->width) + xoffs, STARTY + i*20 + yoffs, V_SNAPTOTOP, patch, colormap);
 	}
 #undef STARTY
 
@@ -4378,8 +4384,11 @@ void MD_DrawPlaybackMenu(void)
 	//M_DrawTextBox(currentMenu->x-68, currentMenu->y-7, 15, 15);
 	//M_DrawCenteredMenu();
 
+	INT32 xoffs, yoffs;
+
 	for (i = 0; i < currentMenu->numitems; i++)
 	{
+		xoffs = yoffs = 0;
 		UINT8 *inactivemap = NULL;
 
 		INT16 splitnum = i == M_GetMenuIndex(MN_PLAYBACK, "VIEW1") ? 0 :
@@ -4396,6 +4405,10 @@ void MD_DrawPlaybackMenu(void)
 				INT32 ply = displayplayers[splitnum];
 
 				icon = faceprefix[players[ply].skin][FACE_RANK];
+
+				xoffs = icon->leftoffset;
+				yoffs = icon->topoffset;
+
 				if (i != itemOn)
 					inactivemap = R_GetTranslationColormap(players[ply].skin, players[ply].skincolor, GTC_MENUCACHE);
 			}
@@ -4412,9 +4425,9 @@ void MD_DrawPlaybackMenu(void)
 			icon = W_CachePatchName("PLAYRANK", PU_CACHE); // temp
 
 		if ((i == M_GetMenuIndex(MN_PLAYBACK, "FASTFORWARD") && cv_playbackspeed.value > 1) || (i == M_GetMenuIndex(MN_PLAYBACK, "REWIND") && demo.rewinding))
-			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x, currentMenu->y, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
+			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x + xoffs, currentMenu->y + yoffs, transmap|V_SNAPTOTOP, icon, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_JAWZ, GTC_MENUCACHE));
 		else
-			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x, currentMenu->y, transmap|V_SNAPTOTOP, icon, (i == itemOn) ? activemap : inactivemap);
+			V_DrawMappedPatch(currentMenu->x + currentMenu->menuitems[i].x + xoffs, currentMenu->y + yoffs, transmap|V_SNAPTOTOP, icon, (i == itemOn) ? activemap : inactivemap);
 
 		if (i == itemOn)
 		{
@@ -7096,8 +7109,8 @@ void MD_DrawBarCssSelector(void)
 			{
 				scale = FRACUNIT/2;
 				face = faceprefix[col][FACE_RANK];
-				offx = 8;
-				offy = 8;
+				offx = 8 + face->leftoffset;
+				offy = 8 + face->topoffset;
 			}
 			colmap = R_GetTranslationColormap(col, cv_dummycolor.value, GTC_MENUCACHE);
 			if (face)
@@ -7209,7 +7222,7 @@ void MD_DrawGridCssSelector(void)
 		{
 			face = faceprefix[skinn][FACE_RANK];
 			colmap = R_GetTranslationColormap(skinn, skins[skinn].prefcolor, GTC_MENUCACHE);
-			V_DrawFixedPatch(gridx * FRACUNIT, gridy * FRACUNIT, FRACUNIT, 0, face, colmap);
+			V_DrawFixedPatch((gridx + face->leftoffset) * FRACUNIT, (gridy + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
 		}
 	}
 
@@ -7232,7 +7245,7 @@ void MD_DrawGridCssSelector(void)
 	{
 		face = faceprefix[skintodisplay][FACE_RANK];
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
-		V_DrawFixedPatch(cursorx * FRACUNIT, cursory * FRACUNIT, FRACUNIT, 0, face, colmap);
+		V_DrawFixedPatch((cursorx + face->leftoffset) * FRACUNIT, (cursory + face->topoffset) * FRACUNIT, FRACUNIT, 0, face, colmap);
 		cursor = W_CachePatchName("M_FSEL", PU_CACHE);
 
 		if (skullAnimCounter < 4)
@@ -8644,7 +8657,7 @@ void MD_DrawViewServer(void)
 							}
 
 
-							V_DrawFixedPatch(x<<FRACBITS, (y+5)<<FRACBITS, FRACUNIT, flags, facerank, colormap);
+							V_DrawFixedPatch((x + facerank->leftoffset)<<FRACBITS, (y + 5 + facerank->topoffset)<<FRACBITS, FRACUNIT, flags, facerank, colormap);
 						}
 
 						strlcpy(player_name, playerinfo[i].name, 12);
