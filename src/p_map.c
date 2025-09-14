@@ -3519,7 +3519,8 @@ void P_SlideMoveOLD(mobj_t *mo)
 
 	memset(&junk, 0x00, sizeof(junk));
 
-	I_Assert(!P_MobjWasRemoved(mo));
+	if (P_MobjWasRemoved(mo))
+		return;
 
 	if (g_tm.hitthing && mo->z + mo->height > g_tm.hitthing->z && mo->z < g_tm.hitthing->z + g_tm.hitthing->height)
 	{
