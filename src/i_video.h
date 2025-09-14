@@ -153,6 +153,8 @@ void I_EndRead(void);
 
 UINT32 I_GetRefreshRate(void);
 
+boolean I_UseNativeKeyboard(void);
+
 void I_SetBorderlessWindow(void);
 
 #ifdef __cplusplus

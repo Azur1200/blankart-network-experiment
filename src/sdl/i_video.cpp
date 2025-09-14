@@ -501,6 +501,40 @@ static INT32 Impl_SDL_Scancode_To_Keycode(SDL_Scancode code)
 	return 0;
 }
 
+boolean I_UseNativeKeyboard(void)
+{
+	return (chat_on || CON_Ready() || (menu_text_input && menustack[0]));
+}
+
+// Get the equivalent ASCII (Unicode?) character for a keypress.
+static INT32 GetTypedChar(SDL_Keysym keysym)
+{
+	SDL_Event next_event;
+	SDL_Keycode keycode = keysym.sym;
+	SDL_Scancode scancode = keysym.scancode;
+	const boolean Text_Input_Only = I_UseNativeKeyboard(); // only use this this if on chat or console or the current menu wants inputs from us (except if its the control setup menu ig)
+
+	// Special cases, where we always return a fixed value.
+	switch (keycode)
+	{
+		case SDLK_BACKSPACE: return KEY_BACKSPACE;
+		case SDLK_RETURN:    return KEY_ENTER;
+		default:
+			break;
+	}
+
+	if (Text_Input_Only)
+	{
+		if (SDL_PeepEvents(&next_event, 1, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) == 1 && next_event.type == SDL_TEXTINPUT)
+		{
+			if (next_event.text.text[1] == '\0') // limit to ASCII
+				return next_event.text.text[0];
+		}
+	}
+
+	return Impl_SDL_Scancode_To_Keycode(scancode); // fallback
+}
+
 static boolean IgnoreMouse(void)
 {
 	if (cv_alwaysgrabmouse.value)
@@ -699,7 +733,8 @@ static void Impl_HandleKeyboardEvent(SDL_KeyboardEvent evt, Uint32 type)
 	{
 		return;
 	}
-	event.data1 = Impl_SDL_Scancode_To_Keycode(evt.keysym.scancode);
+
+	event.data1 = GetTypedChar(evt.keysym);
 
 	if (event.data1) D_PostEvent(&event);
 }

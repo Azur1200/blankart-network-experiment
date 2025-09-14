@@ -146,6 +146,7 @@ const char *quitmsg[NUM_QUITMESSAGES];
 
 boolean fromlevelselect = false;
 
+boolean menu_text_input = false;
 static char menu_text_input_buf[MAXSTRINGLENGTH];
 static textinput_t menuinput;
 
@@ -1634,6 +1635,7 @@ boolean M_Responder(event_t *ev)
 
 		if (M_TextInputHandle(&menuinput, ch))
 		{
+			menu_text_input = true;
 			S_StartSound(NULL, sfx_menu1); // Tails
 			CV_Set(item->cvar, menuinput.buffer);
 			return true;

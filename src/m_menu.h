@@ -490,6 +490,8 @@ UINT16 M_GetColorAfter(UINT16 color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
 
+extern boolean menu_text_input;
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

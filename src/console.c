@@ -677,6 +677,9 @@ static void CON_MoveConsole(void)
 
 INT32 CON_ShiftChar(INT32 ch)
 {
+	if (I_UseNativeKeyboard())
+		return ch;
+
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
 	{
 		if (shiftdown ^ capslock)
