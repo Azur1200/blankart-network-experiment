@@ -4776,9 +4776,14 @@ static void K_drawChallengerScreen(void)
 	V_DrawScaledPatch(0, 0, 0, kp_challenger[anim[offset]]);
 }
 
+static boolean K_DisplayingLapEmblem(void)
+{
+	return ((cv_showlapemblem.value & 1) && (stplyr->karthud[khud_lapanimation]));
+}
+
 static void K_drawLapStartAnim(void)
 {
-	if (!cv_showlapemblem.value)
+	if (!K_DisplayingLapEmblem())
 		return;
 
 	// This is an EVEN MORE insanely complicated animation.
@@ -4879,6 +4884,109 @@ static void K_drawLapStartAnim(void)
 					30*FRACUNIT, // 24
 					FRACUNIT, V_SNAPTOTOP|V_HUDTRANS,
 					kp_lapanim_number[(((UINT32)stplyr->laps) % 10)][min(progress/2-10, 2)], NULL);
+			}
+		}
+	}
+}
+
+// Redundant copy from k_kart.
+static INT32 K_GetRaceSplitsToggle(void)
+{
+	if (cv_showlapemblem.value < 2)
+	{
+		// Splits aren't on.
+		return 0;
+	}
+
+	// Not taking any chances with this stupid goddamn engine.
+	return max((INT32)(cv_racesplits.value), 1);
+}
+
+static void K_drawLapSplitComparison(void)
+{
+	if (!K_GetRaceSplitsToggle())
+	{
+		return;
+	}
+
+	if (!r_splitscreen)
+	{
+		// Draw the timestamp
+		if (LUA_HudEnabled(hud_time))
+		{
+			boolean debug_alwaysdrawsplits = false;
+
+			if (
+				(
+					(!K_DisplayingLapEmblem()) &&
+					stplyr->karthud[khud_splittimer] &&
+					(stplyr->karthud[khud_splittimer] > TICRATE/3 || stplyr->karthud[khud_splittimer]%2)
+				)
+				|| debug_alwaysdrawsplits
+			)
+			{
+				INT32 split = stplyr->karthud[khud_splittime];
+				INT32 skin = stplyr->karthud[khud_splitskin];
+				INT32 color = stplyr->karthud[khud_splitcolor];
+				INT32 ahead = stplyr->karthud[khud_splitwin];
+				INT32 pos = stplyr->karthud[khud_splitposition];
+
+				// debug
+				if (!stplyr->karthud[khud_splittimer])
+				{
+					ahead = ((leveltime/17)%5) - 2;
+					split = leveltime;
+					skin = stplyr->skin;
+					color = stplyr->skincolor;
+				}
+
+				split = abs(split);
+
+				UINT8 *skincolor = R_GetTranslationColormap(skin, color, GTC_CACHE);
+
+				UINT32 textcolor = 0;
+				switch (ahead)
+				{
+					case 2:
+						textcolor = V_BLUEMAP; // leading and gaining
+						break;
+					case 1:
+						textcolor = V_SKYMAP; // leading and losing
+						break;
+					case -1:
+						textcolor = V_ORANGEMAP; // trailing and gaining
+						break;
+					case -2:
+						textcolor = V_REDMAP; // trailing and losing
+						break;
+				}
+
+				fixed_t row_position[2] = {BASEVIDWIDTH/2, BASEVIDHEIGHT/4};
+				UINT32 splitflags = V_30TRANS;
+
+				const char *arrow = (ahead == 1 || ahead == -2) ? "\x1B" : "\x1A";
+				char buffer[256];
+				snprintf(buffer, 256, "%s%02i'%02i\"%02i%s",
+					ahead >= 0 ? "-" : "+",
+					G_TicsToMinutes(split, true),
+					G_TicsToSeconds(split),
+					G_TicsToCentiseconds(split),
+					arrow
+				);
+
+				INT32 stwidth = V_StringWidth(buffer, splitflags) / 2;
+
+				// vibes offset
+				V_DrawMappedPatch(row_position[0] - stwidth - 35, row_position[1], splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+
+				if (pos > 1)
+				{
+					V_DrawPingNum(row_position[0] - stwidth - 35, row_position[1], splitflags, pos, NULL);
+				}
+
+				// vibes offset TWO
+				row_position[0] += 15;
+				V_DrawCenteredString(row_position[0], row_position[1], splitflags|textcolor, buffer);
 			}
 		}
 	}
@@ -5362,6 +5470,9 @@ void K_drawKartHUD(void)
 		// Draw the timestamp
 		if (LUA_HudEnabled(hud_time))
 			K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap, 0);
+
+		// Draw splits
+		K_drawLapSplitComparison();
 
 		islonesome = K_drawKartPositionFaces();
 	}

@@ -2968,6 +2968,103 @@ void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload)
 		player->superring = superring;
 }
 
+static INT32 K_GetRaceSplitsToggle(void)
+{
+	if (cv_showlapemblem.value < 2)
+	{
+		// Splits aren't on.
+		return 0;
+	}
+
+	// Not taking any chances with this stupid goddamn engine.
+	return max((INT32)(cv_racesplits.value), 1);
+}
+
+static void K_SetupSplitForPlayer(player_t *us, player_t *them, tic_t ourtime, tic_t theirtime)
+{
+	us->karthud[khud_splittimer] = 3*TICRATE;
+
+	INT32 delta = (INT32)theirtime - (INT32)ourtime; 	// how ahead are we? bigger number = more ahead, negative = behind
+	us->karthud[khud_splittime] = -1 * delta; 			// (HUD expects this to be backwards, but this is how i felt today!)
+
+	INT32 winning = 0;
+
+	if (delta > 0)
+		winning = 2; // winning aid gaining
+	else if (delta < 0)
+		winning = -2; // behind and falling
+
+	if (winning > 0 && delta < us->pace)
+		winning = 1; // winning but falling
+	else if (winning < 0 && delta > us->pace)
+		winning = -1; // behind but gaiming
+
+	us->pace = delta;
+
+	us->karthud[khud_splitwin] = winning;
+	us->karthud[khud_splitskin] = them->skin;
+	us->karthud[khud_splitcolor] = them->skincolor;
+	if (us->position != 1)
+		us->karthud[khud_splitposition] = them->position;
+	else
+		us->karthud[khud_splitposition] = 0;
+}
+
+void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint)
+{
+	if (checkpoint >= MAXRACESPLITS)
+		return;
+
+	const INT32 splitstoggle = K_GetRaceSplitsToggle();
+
+	player->splits[checkpoint] = time;
+
+	player_t *lowest = player;
+	player_t *next = player;
+	UINT8 numrealsplits = 0;
+
+	// find fastest player for this checkpoint and # players who have already crossed
+	for (UINT8 i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		player_t *check = &players[i];
+
+		if (check == player)
+			continue;
+		if (check->spectator)
+			continue;
+		if (check->splits[checkpoint] == 0)
+			continue;
+
+		numrealsplits++;
+
+		if (check->splits[checkpoint] < lowest->splits[checkpoint])
+			lowest = check;
+
+		if (check->splits[checkpoint] > next->splits[checkpoint] || next == player)
+			next = check;
+	}
+
+	// no one to compare against yet
+	if (lowest == player || numrealsplits == 0)
+		return;
+
+	// if there's exactly one player ahead of us, they need a blue split generated
+	// so they can see how far behind we are
+	if (lowest != player && numrealsplits == 1)
+	{
+		K_SetupSplitForPlayer(lowest, player, lowest->splits[checkpoint], player->splits[checkpoint]);
+	}
+
+	if (numrealsplits && splitstoggle)
+	{
+		player_t *target = (splitstoggle == 2) ? lowest : next;
+		K_SetupSplitForPlayer(player, target, player->splits[checkpoint], target->splits[checkpoint]);
+	}
+}
+
 void K_DoInstashield(player_t *player)
 {
 	mobj_t *layera;
@@ -6025,10 +6122,22 @@ static void K_UpdateInvincibilitySounds(player_t *player)
 #undef STOPTHIS
 }
 
+static boolean K_DisplayingLapEmblem(player_t *player)
+{
+	return ((cv_showlapemblem.value & 1) && (player->karthud[khud_lapanimation])) & 1;
+}
+
 void K_KartPlayerHUDUpdate(player_t *player)
 {
 	if (player->karthud[khud_lapanimation])
+	{
 		player->karthud[khud_lapanimation]--;
+	}
+
+	if (player->karthud[khud_splittimer] && (!K_DisplayingLapEmblem(player)))
+	{
+		player->karthud[khud_splittimer]--;
+	}
 
 	if (player->karthud[khud_yougotem])
 		player->karthud[khud_yougotem]--;

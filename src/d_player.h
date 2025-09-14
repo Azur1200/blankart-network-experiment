@@ -44,6 +44,9 @@ typedef enum
 	// free up to and including 1<<31
 } skinflags_t;
 
+// Splits are per-lap in Blankart, but let's keep this as-is.
+#define MAXRACESPLITS 32
+
 //
 // Player states.
 //
@@ -268,6 +271,14 @@ typedef enum
 	khud_cardanimation,	// Used to determine the position of some full-screen Battle Mode graphics
 	khud_yougotem, 		// "You Got Em" gfx when hitting someone as a karma player via a method that gets you back in the game instantly
 
+	// Splits
+	khud_splittime, // Delta between you and highest split
+	khud_splitwin, // How to color/flag the split based on gaining/losing | ahead/behind
+	khud_splittimer, // How long to show splits HUD
+	khud_splitskin, // Skin index of the leading player
+	khud_splitcolor, // Skincolor of the leading player
+	khud_splitposition, // Who are we comparing to?
+
 	NUMKARTHUD
 } karthudtype_t;
 
@@ -480,6 +491,15 @@ struct saltyhop_t
 	fixed_t momz, zoffset; // erm... the mechanism....
 };
 
+// enum for saved lap times
+typedef enum
+{
+	LAP_CUR,
+	LAP_BEST,
+	LAP_LAST,
+	LAP__MAX
+} laptime_e;
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -567,6 +587,7 @@ struct player_t
 	INT32 karthud[NUMKARTHUD];
 	boolean jitterlegacy; // If true, makes Ring Racers characters jitter during drifts like
 						  // SRB2Kart.
+
 
 	// Basic gameplay things
 	UINT8 position;			// Used for Kart positions, mostly for deterministic stuff
@@ -723,6 +744,9 @@ struct player_t
 	UINT8 lastsafelap;
 	UINT8 lastsafestarpost;
 
+	tic_t splits[MAXRACESPLITS]; // Times we crossed checkpoint
+	INT32 pace; // Last split delta, used for checking whether gaining or losing time
+
 	//
 
 	SINT8 lives;
@@ -745,6 +769,7 @@ struct player_t
 
 	INT16 totalring; // Total number of rings obtained for GP
 	tic_t realtime; // integer replacement for leveltime
+	tic_t laptime[LAP__MAX];
 	UINT8 laps; // Number of laps (optional)
 	UINT8 latestlap;
 	

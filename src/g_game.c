@@ -2402,6 +2402,8 @@ static inline void G_PlayerFinishLevel(INT32 player)
 void G_PlayerReborn(INT32 player, boolean betweenmaps)
 {
 	player_t *p;
+
+	UINT8 i;
 	INT32 score, roundscore;
 	INT32 lives;
 
@@ -2479,6 +2481,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 lastsafestarpost;
 	UINT16 bigwaypointgap;
 	boolean jitterlegacy = false;
+
+	tic_t laptime[LAP__MAX];
 
 	score = players[player].score;
 	lives = players[player].lives;
@@ -2558,6 +2562,10 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		nextcheck = 0;
 		xtralife = 0;
 
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = 0;
+		}
 	}
 	else
 	{
@@ -2614,6 +2622,11 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		lastsafelap = players[player].lastsafelap;
 		lastsafestarpost = players[player].lastsafestarpost;
 		bigwaypointgap = players[player].bigwaypointgap;
+
+		for (i = 0; i < LAP__MAX; i++)
+		{
+			laptime[i] = players[player].laptime[i];
+		}
 	}
 
 	if (!betweenmaps)
@@ -2679,6 +2692,11 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->latestlap = latestlap;
 	p->totalring = totalring;
 
+	for (i = 0; i < LAP__MAX; i++)
+	{
+		p->laptime[i] = laptime[i];
+	}
+
 	p->bot = bot;
 	p->botvars.style = style;
 	p->botvars.difficulty = botdifficulty;
@@ -2733,8 +2751,6 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// Check to make sure their color didn't change somehow...
 	if (G_GametypeHasTeams())
 	{
-		UINT8 i;
-
 		if (p->ctfteam == 1 && p->skincolor != skincolor_redteam)
 		{
 			for (i = 0; i <= splitscreen; i++)
