@@ -652,6 +652,9 @@ consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, 
 static CV_PossibleValue_t showlapemblem_cons_t[] = {{0, "Off"}, {1, "Emblem Only"}, {2, "Splits Only"}, {3, "All"}, {0, NULL}};
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "All", CV_SAVE, showlapemblem_cons_t, NULL);
 
+static CV_PossibleValue_t lapemblemmode_cons_t[] = {{0, "Centre"}, {1, "Race Timer"}, {0, NULL}};
+consvar_t cv_lapemblemmode = CVAR_INIT ("lapemblemmode", "Centre", CV_SAVE, lapemblemmode_cons_t, NULL);
+
 // Race splits rely on showlapemblem, so toggling them off isn't really necessary.
 static CV_PossibleValue_t racesplits_cons_t[] = {{1, "Next"}, {2, "Leader"}, {0, NULL}};
 consvar_t cv_racesplits = CVAR_INIT ("racesplits", "Leader", CV_SAVE, racesplits_cons_t, NULL);
@@ -974,6 +977,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showminimapangle);
 	CV_RegisterVar(&cv_minihead);
 	CV_RegisterVar(&cv_showlapemblem);
+	CV_RegisterVar(&cv_lapemblemmode);
 	CV_RegisterVar(&cv_racesplits);
 	CV_RegisterVar(&cv_showviewpointtext);
 

@@ -45,6 +45,7 @@ typedef enum
 } skinflags_t;
 
 // Splits are per-lap in Blankart, but let's keep this as-is.
+// mine: pedantic; isn't MAX_LAPS = 99 here?
 #define MAXRACESPLITS 32
 
 //
