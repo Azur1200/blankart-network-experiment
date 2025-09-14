@@ -3082,7 +3082,7 @@ static void G_LoadDemoExtraFiles(demoheader_t *header)
 			}
 			else
 			{
-				P_PartialAddWadFile(file->filename, file->compatmode ? WC_ON : WC_OFF);
+				P_PartialAddWadFile(file->filename, file->compatmode ? WC_ON : WC_OFF, false);
 			}
 		}
 	}

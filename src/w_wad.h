@@ -131,6 +131,7 @@ struct wadfile_t
 
 	boolean important; // also network - !W_VerifyNMUSlumps
 	boolean compatmode;
+	boolean localfile;
 };
 
 typedef enum wadcompat

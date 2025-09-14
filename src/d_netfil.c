@@ -563,7 +563,7 @@ INT32 CL_CheckFiles(void)
 			// CONS_Printf("checking %d of %d / %d of %d?\n", i, fileneedednum, j, numwadfiles);
 			// CONS_Printf("i: %s / j: %s \n", fileneeded[i].filename, wadfiles[j]->filename);
 			
-			if (j < numwadfiles && !wadfiles[j]->important)
+			if (j < numwadfiles && !wadfiles[j]->important && !wadfiles[j]->localfile)
 			{
 				// Unimportant on our side.
 				++j;
@@ -656,7 +656,7 @@ boolean CL_LoadServerFiles(void)
 			continue; // Already loaded
 		else if (fileneeded[i].status == FS_FOUND)
 		{
-			P_PartialAddWadFile(fileneeded[i].filename, fileneeded[i].compatmode ? WC_ON : WC_OFF);
+			P_PartialAddWadFile(fileneeded[i].filename, fileneeded[i].compatmode ? WC_ON : WC_OFF, false);
 			G_SetGameModified(true, false);
 			fileneeded[i].status = FS_OPEN;
 			return false;

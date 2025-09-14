@@ -184,6 +184,7 @@ static void Command_AcceptInvite_f(void);
 static void Command_RejectInvite_f(void);
 static void Command_LeaveParty_f(void);
 
+static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
 static void Command_ListWADS_f(void);
 static void Command_ListDoomednums_f(void);
@@ -858,6 +859,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("showmap", Command_Showmap_f);
 	COM_AddCommand("maphash", Command_Maphash_f);
 
+	COM_AddCommand("addfilelocal", Command_Addfilelocal);
 	COM_AddCommand("addfile", Command_Addfile);
 	COM_AddCommand("listwad", Command_ListWADS_f);
 	COM_AddCommand("listmapthings", Command_ListDoomednums_f);
@@ -4763,6 +4765,44 @@ static void Got_RunSOCcmd(UINT8 **cp, INT32 playernum)
 	G_SetGameModified(true, false);
 }
 
+static void Command_Addfilelocal(void)
+{
+	const char *fn;
+	INT32 i;
+	size_t docompat = COM_CheckPartialParm("-c");
+	size_t nocompat = COM_CheckPartialParm("-n");
+	wadcompat_t compat = WC_AUTO;
+
+	if (docompat && nocompat)
+	{
+		CONS_Printf(M_GetText("Please specify only one of -c or -n\n"));
+		return;
+	}
+	else if (docompat)
+		compat = WC_ON;
+	else if (nocompat)
+		compat = WC_OFF;
+
+	if (COM_Argc() != 2 + (docompat || nocompat))
+	{
+		CONS_Printf(M_GetText("addfilelocal [-c|-n] <filename.pk3/wad/lua/soc>: Load local add-on\n"
+									"-c forces compatmode, -n disables it.\n"));
+		return;
+	}
+	else
+		fn = COM_Argv(1);
+
+	// Disallow non-printing characters and semicolons.
+	for (i = 0; fn[i] != '\0'; i++)
+		if (!isprint(fn[i]) || fn[i] == ';')
+			return;
+
+	// Add any wad file, ignoring checks for if it contains complex things like
+	// lua. Great for complex but client-side customizations, like different
+	// level cards or anything like that.
+	P_AddWadFile(fn, compat, true);
+}
+
 /** Adds a pwad at runtime.
   * Searches for sounds, maps, music, new images.
   */
@@ -4856,7 +4896,7 @@ static void Command_Addfile(void)
 		// Add file on your client directly if it is trivial, or you aren't in a netgame.
 		if (!(netgame || multiplayer) || musiconly)
 		{
-			P_AddWadFile(fn, compat);
+			P_AddWadFile(fn, compat, false);
 			addedfiles[numfilesadded++] = fn;
 			continue;
 		}
@@ -4996,7 +5036,7 @@ static void Got_Addfilecmd(UINT8 **cp, INT32 playernum)
 
 	ncs = findfile(filename, filehash, true);
 
-	if (ncs != FS_FOUND || !P_AddWadFile(filename, compat))
+	if (ncs != FS_FOUND || !P_AddWadFile(filename, compat, false))
 	{
 		Command_ExitGame_f();
 		if (ncs == FS_FOUND)

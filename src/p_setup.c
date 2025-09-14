@@ -9128,7 +9128,7 @@ boolean P_RunSOC(const char *socfilename)
 	lumpnum_t lump;
 
 	if (strstr(socfilename, ".soc") != NULL)
-		return P_AddWadFile(socfilename, WC_AUTO);
+		return P_AddWadFile(socfilename, WC_AUTO, false);
 
 	lump = W_CheckNumForName(socfilename);
 	if (lump == LUMPERROR)
@@ -9348,11 +9348,11 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
-boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat)
+boolean P_AddWadFile(const char *wadfilename, wadcompat_t compat, boolean local)
 {
 	UINT16 wadnum;
 
-	if ((wadnum = P_PartialAddWadFile(wadfilename, compat)) == UINT16_MAX)
+	if ((wadnum = P_PartialAddWadFile(wadfilename, compat, local)) == UINT16_MAX)
 		return false;
 
 	P_MultiSetupWadFiles(true);
@@ -9450,7 +9450,7 @@ static boolean P_CheckVoteReplacements(char *name)
 // Add a WAD file and do the per-WAD setup stages.
 // Call P_MultiSetupWadFiles as soon as possible after any number of these.
 //
-UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
+UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean local)
 {
 	size_t i;
 	UINT16 numlumps, wadnum;
@@ -9486,6 +9486,9 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	{
 		partadd_important = true;
 	}
+
+	wadfiles[wadnum]->localfile = local;
+
 	if (partadd_stage != 0)
 	{
 		partadd_earliestfile = wadnum;
@@ -9573,14 +9576,20 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat)
 	K_InitBrightmapsPwad(wadnum);
 
 	// Reload TERRAIN
-	if (K_InitTerrainPwad(wadnum))
-		partadd_terrainloaded = true;
+	if (!local)
+	{
+		if (K_InitTerrainPwad(wadnum))
+			partadd_terrainloaded = true;
+	}
 
 	//
 	// look for skins
 	//
-	R_AddSkins(wadnum); // faB: wadfile index in wadfiles[]
-	R_PatchSkins(wadnum); // toast: PATCH PATCH
+	if (!local)
+	{
+		R_AddSkins(wadnum); // faB: wadfile index in wadfiles[]
+		R_PatchSkins(wadnum); // toast: PATCH PATCH
+	}
 
 	//
 	// edit music defs
