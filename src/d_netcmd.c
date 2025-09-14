@@ -664,6 +664,9 @@ static CV_PossibleValue_t minimapdot_cons_t[] = {{0, "Off"}, {1, "Dot"}, {2, "He
 consvar_t cv_showminimapangle = CVAR_INIT ("showminimapangle", "Dot", CV_SAVE, minimapdot_cons_t, NULL);
 consvar_t cv_minihead = CVAR_INIT ("smallminimapplayers", "Off", CV_SAVE, CV_OnOff, NULL);
 
+static CV_PossibleValue_t spinoutroll_cons_t[] = {{0, "Off"}, {1, "Minimap Only"}, {2, "Rankings Only"}, {3, "Minimap+Rankings"}, {0, NULL}};
+consvar_t cv_spinoutroll = CVAR_INIT ("spinoutroll", "Minimap+Rankings", CV_SAVE, spinoutroll_cons_t, NULL);
+
 consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, CV_OnOff, NULL);
 
 // Intermission time Tails 04-19-2002
@@ -976,6 +979,7 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showminimapangle);
 	CV_RegisterVar(&cv_minihead);
+	CV_RegisterVar(&cv_spinoutroll);
 	CV_RegisterVar(&cv_showlapemblem);
 	CV_RegisterVar(&cv_lapemblemmode);
 	CV_RegisterVar(&cv_racesplits);

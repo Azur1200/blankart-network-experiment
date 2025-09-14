@@ -12325,6 +12325,7 @@ void P_SpawnPlayer(INT32 playernum)
 	P_FlashPal(p, 0, 0); // Resets
 
 	p->grieftime = 0;
+	p->spinoutrot = 0;
 
 	if (gametyperules & GTR_BUMPERS)
 	{

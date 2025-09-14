@@ -258,6 +258,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 
 		WRITEUINT16(save->p, players[i].flashing);
 		WRITEUINT16(save->p, players[i].spinouttimer);
+		WRITEINT32(save->p, players[i].spinoutrot);
 		WRITEUINT8(save->p, players[i].spinouttype);
 		WRITEUINT16(save->p, players[i].flipovertimer);
 		WRITEANGLE(save->p, players[i].flipoverangle);
@@ -610,6 +611,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 
 		players[i].flashing = READUINT16(save->p);
 		players[i].spinouttimer = READUINT16(save->p);
+		players[i].spinoutrot = READINT32(save->p);
 		players[i].spinouttype = READUINT8(save->p);
 		players[i].flipoverangle = READUINT16(save->p);
 		players[i].flipovertimer = READANGLE(save->p);
