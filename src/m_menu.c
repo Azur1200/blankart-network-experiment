@@ -1635,7 +1635,6 @@ boolean M_Responder(event_t *ev)
 
 		if (M_TextInputHandle(&menuinput, ch))
 		{
-			menu_text_input = true;
 			S_StartSound(NULL, sfx_menu1); // Tails
 			CV_Set(item->cvar, menuinput.buffer);
 			return true;
@@ -1991,6 +1990,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 	currentMenu = NULL;
 	messagebox.active = false;
 	hidetitlemap = false;
+	menu_text_input = false;
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
 	if (gamestate == GS_TIMEATTACK)
@@ -2054,6 +2054,7 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 	if (menustack[0] == MN_NONE)
 		menustack[0] = menunum; // M_ClearMenus got called, put it back on the stack
 
+	menu_text_input = true;
 	M_SetupNextMenu(menunum, callexit);
 }
 
