@@ -102,7 +102,7 @@ boolean I_UseNativeKeyboard(void)
 }
 
 static CV_PossibleValue_t keyboardlayout_cons_t[] = {{1,"Default US"}, {2, "Native"}, {0, NULL}};
-consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Native", CV_SAVE, keyboardlayout_cons_t, NULL);
+consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE, keyboardlayout_cons_t, NULL);
 
 boolean highcolor = false;
 
