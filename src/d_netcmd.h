@@ -229,6 +229,7 @@ extern consvar_t cv_minihead;
 extern consvar_t cv_spinoutroll;
 
 extern consvar_t cv_showlapemblem;
+extern consvar_t cv_lapemblemmode;
 extern consvar_t cv_racesplits;
 extern consvar_t cv_showviewpointtext;
 
