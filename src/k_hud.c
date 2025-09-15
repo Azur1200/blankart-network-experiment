@@ -3660,6 +3660,8 @@ static void K_drawKartNameTags(void)
 	V_ClearClipRect();
 }
 
+#define MINIHEADSCALE (FRACUNIT / 2)
+
 static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx, INT32 hudy, INT32 flags, patch_t *icon, UINT8 *colormap, vector2_t *origin)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
@@ -3691,7 +3693,7 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx,
 		return;
 
 	if (cv_minihead.value)
-		scale = FRACUNIT / 2;
+		scale = MINIHEADSCALE;
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
@@ -3957,6 +3959,8 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
+	fixed_t minimapscale = (cv_minihead.value) ? MINIHEADSCALE : FRACUNIT;
+
 	if (encoremode)
 		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else
@@ -3997,8 +4001,8 @@ static void K_drawKartMinimap(void)
 			interpy = R_InterpolateFixed(g->mo->old_y, g->mo->y);
 
 			patch_t *ghostPic = faceprefix[skin][FACE_MINIMAP];
-			iconoffsets.x = ((ghostPic->width) / 2) - ghostPic->leftoffset;
-			iconoffsets.y = ((ghostPic->height) / 2) - ghostPic->topoffset;
+			iconoffsets.x = ((ghostPic->width) / 2) - FixedMul(ghostPic->leftoffset, minimapscale);
+			iconoffsets.y = ((ghostPic->height) / 2) - FixedMul(ghostPic->topoffset, minimapscale);
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, ghostPic, colormap, &iconoffsets);
 			g = g->next;
@@ -4055,8 +4059,10 @@ static void K_drawKartMinimap(void)
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
-				iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset;
-				iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset;
+				iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset +
+								FixedMul(workingPic->leftoffset, FRACUNIT - minimapscale);
+				iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset +
+								FixedMul(workingPic->topoffset, FRACUNIT - minimapscale);
 
 #ifdef ROTSPRITE
 				if ((K_MinimapIconCanSpinout()) && (players[i].spinoutrot))
@@ -4270,8 +4276,10 @@ static void K_drawKartMinimap(void)
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
-			iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset;
-			iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset;
+			iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset +
+								FixedMul(workingPic->leftoffset, FRACUNIT - minimapscale);
+			iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset +
+								FixedMul(workingPic->topoffset, FRACUNIT - minimapscale);
 
 #ifdef ROTSPRITE
 			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
