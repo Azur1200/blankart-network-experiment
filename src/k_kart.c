@@ -6348,7 +6348,7 @@ static void K_RaceStart(player_t *player)
 				player->boostcharge = player->cmd.latency;
 
 			// RA ez charge for less annoying starts.
-			if (modeattacking != ATTACKING_NONE)
+			if (modeattacking != ATTACKING_NONE && !G_CompatLevel(0x0009))
 			{
 				// Let players choose between startboost and sneaker boost by holding item.
 				if (player->cmd.buttons & BT_ATTACK)
