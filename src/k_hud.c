@@ -146,7 +146,7 @@ static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
 static patch_t *kp_kartzspeedo_smol[25];
 
-static patch_t *kp_driftgauge[12];
+static patch_t *kp_driftgauge[13];
 static patch_t *kp_driftgaugeparts[5];
 
 static patch_t *kp_rankbumper;
@@ -394,20 +394,21 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_speedometersticker[1], "SC_SMSTC");
 
 	// Driftgauge Stickers
-	//{0, "Spee"}, {1, "Achii"}, {2, "Wifi"}, {3, "Chaotix"}
 	HU_UpdatePatch(&kp_driftgauge[0], "K_DGAU0"); // Spee
 	HU_UpdatePatch(&kp_driftgauge[1], "K_DGAU1"); // Achii
-	HU_UpdatePatch(&kp_driftgauge[2], "K_WDGBG"); // Wifi
-	HU_UpdatePatch(&kp_driftgauge[3], "K_DGAU3"); // Chaotix
-	HU_UpdatePatch(&kp_driftgauge[4], "K_DGAU"); // Legacy
-	HU_UpdatePatch(&kp_driftgauge[5], "K_DGSU"); // Legacy Small
+	HU_UpdatePatch(&kp_driftgauge[2], "K_WDGSG"); // Wifi
+	HU_UpdatePatch(&kp_driftgauge[3], "K_WDGBG"); // Anywhere you go
+	HU_UpdatePatch(&kp_driftgauge[4], "K_DGAU3"); // Chaotix
+	HU_UpdatePatch(&kp_driftgauge[5], "K_DGAU"); // Legacy
+	HU_UpdatePatch(&kp_driftgauge[6], "K_DGSU"); // Legacy Small
 
-	HU_UpdatePatch(&kp_driftgauge[6], "K_DGAUC0");
-	HU_UpdatePatch(&kp_driftgauge[7], "K_DGAUC1");
-	HU_UpdatePatch(&kp_driftgauge[8], "K_WDGBGC");
-	HU_UpdatePatch(&kp_driftgauge[9], "K_DGAUC3");
-	HU_UpdatePatch(&kp_driftgauge[10], "K_DCAU");
-	HU_UpdatePatch(&kp_driftgauge[11], "K_DCSU");
+	HU_UpdatePatch(&kp_driftgauge[7], "K_DGAUC0");
+	HU_UpdatePatch(&kp_driftgauge[8], "K_DGAUC1");
+	HU_UpdatePatch(&kp_driftgauge[9], "K_WDGSGC");
+	HU_UpdatePatch(&kp_driftgauge[10], "K_WDGBGC");
+	HU_UpdatePatch(&kp_driftgauge[11], "K_DGAUC3");
+	HU_UpdatePatch(&kp_driftgauge[12], "K_DCAU");
+	HU_UpdatePatch(&kp_driftgauge[13], "K_DCSU");
 
 
 	// Driftgauge Parts
@@ -6000,7 +6001,7 @@ static driftgauge_t driftgauges[] =
 		.meterfont = PINGNUM_FONT,
 	},
 	[DGAUGE_CHAOTIX] = {
-		.patchnum = 3,
+		.patchnum = 4,
 		.barx = -23, .bary = -7,
 		.textx = -18, .texty = -8,
 		.barwidth = 34,
@@ -6011,7 +6012,7 @@ static driftgauge_t driftgauges[] =
 		.meterfont = OPPRNK_FONT,
 	},
 	[DGAUGE_LEGACY] = {
-		.patchnum = 4,
+		.patchnum = 5,
 		.barx = -23, .bary = -1,
 		.textx = 30, .texty = 0,
 		.barwidth = 46,
@@ -6019,7 +6020,7 @@ static driftgauge_t driftgauges[] =
 		.legacy = true,
 	},
 	[DGAUGE_LEGACYSMALL] = {
-		.patchnum = 5,
+		.patchnum = 6,
 		.barx = -23, .bary = -1,
 		.textx = 20, .texty = 0,
 		.barwidth = 23,
@@ -6027,7 +6028,7 @@ static driftgauge_t driftgauges[] =
 		.legacy = true,
 	},
 	[DGAUGE_LEGACYLARGE] = {
-		.patchnum = 4,
+		.patchnum = 5,
 		.barx = -23, .bary = -1,
 		.textx = 30, .texty = 0,
 		.barwidth = 46,
@@ -6082,13 +6083,19 @@ void K_DrawDriftGauge(void)
 	basey = res.y;
 
 	driftgauge_t *gauge = &driftgauges[cv_driftgauge.value];
-	patch_t *basepatch = gauge->barwidth ? kp_driftgauge[gauge->patchnum + (!!K_UseColorHud() * 6)] : NULL;
+	// Deal with Wifi-Style when no purps
+	SINT8 holdupoffset = ((cv_driftgauge.value == DGAUGE_WIFI) && K_PurpleDriftActive()) + (K_UseColorHud() ? 1 : 0);
+	patch_t *basepatch = gauge->barwidth ? kp_driftgauge[gauge->patchnum + (!!K_UseColorHud() * 6) + holdupoffset] : NULL;
 	fixed_t textx = basex + gauge->textx*FRACUNIT;
 	fixed_t texty = basey + gauge->texty*FRACUNIT;
 
-	// TODO fix the patch offsets
+	// TODO: fix the patch offsets
 	if (cv_driftgauge.value == DGAUGE_LEGACYSMALL)
 		basex += 10*FRACUNIT;
+
+	// TODO: fix wifi offsets
+	if (cv_driftgauge.value == DGAUGE_WIFI)
+		basex -= 10*FRACUNIT;
 
 	INT32 driftval = K_GetKartDriftSparkValue(stplyr);
 	INT32 driftcharge = min(driftval*4, stplyr->driftcharge);
@@ -6154,7 +6161,8 @@ void K_DrawDriftGauge(void)
 
 		if (cv_driftgauge.value == DGAUGE_WIFI)
 		{
-			for (i = 0; i < 4; i++)
+			SINT8 levels = K_PurpleDriftActive() ? 4 : 3;
+			for (i = 0; i < levels; i++)
 			{
 				fixed_t h = backlevel < i ? 0 : backlevel > i ? wifibars[i]*FRACUNIT : chargewidth;
 				V_SetClipRect(barx + (i*5)*FRACUNIT, bary-h, 4*FRACUNIT, wifibars[i]*FRACUNIT, flags);
