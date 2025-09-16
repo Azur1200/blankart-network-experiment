@@ -947,6 +947,16 @@ const char *blancredits[] = {
 	"\"Mayo\"",
 	"\"ArcadeStriker\"",
 	"",
+	// Anyone who's been directly involved with getting rid of SIGSEGV
+	// culprits gets credited here.
+	"\1Super Special SIGSEGV Search and Smash Squad",
+	"\"NepDisk\"",
+	"\"GenericHeroGuy\"",
+	"\"Anonimus\"",
+	"\"MotoBugger\"",
+	"\"Rim Jobless\"",
+	"\"Toad The Fungus\"",
+	"",
 	"\1Testing",
 	"\"NepDisk\"",
 	"\"Alug\"",
