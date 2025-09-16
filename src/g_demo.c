@@ -2004,8 +2004,8 @@ void G_GhostTicker(void)
 				for (UINT16 i = 0; i < zt.damagecount; i++)
 				{
 					zipticdamage_t *damage = &zt.damage[i];
-					if (!(mobjinfo[damage->type].flags & MF_SHOOTABLE)
-					|| !(mobjinfo[damage->type].flags & (MF_ENEMY|MF_MONITOR))
+					// MAP15S03 has a broken EZT_HIT at leveltime 3455 which is all 0xff... so bounds check damage->type
+					if ((damage->type < nummobjtypes && !(mobjinfo[damage->type].flags & (MF_SHOOTABLE|MF_ENEMY|MF_MONITOR)))
 					|| damage->health != 0 || i >= 4) // only spawn for the first 4 hits per frame, to prevent ghosts from splode-spamming too bad.
 						continue;
 					mobj_t *poof = P_SpawnMobj(damage->x, damage->y, damage->z, MT_GHOST);
