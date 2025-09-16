@@ -695,6 +695,10 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, INT32 flags)
 
 		dupx = dupy = (dupx < dupy ? dupx : dupy);
 
+		// fudge w/h to avoid precision loss (for carefully clipped drawfills)
+		w += x % (FRACUNIT/dupx);
+		h += y % (FRACUNIT/dupy);
+
 		x = FixedMul(x, dupx);
 		y = FixedMul(y, dupy);
 		w = FixedMul(w, dupx);

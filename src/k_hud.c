@@ -5939,18 +5939,115 @@ static INT32 driftskins[] =
 static INT32 afterval[MAXPLAYERS];
 static tic_t aftertime[MAXPLAYERS];
 
-#define V_100TRANS V_TRANSLUCENT*2
+enum driftgauge_e
+{
+	DGAUGE_NONE = 0,
+	DGAUGE_SPEE,
+	DGAUGE_ACHII,
+	DGAUGE_WIFI,
+	DGAUGE_CHAOTIX,
+	DGAUGE_NUMBERS,
+	DGAUGE_LEGACY,
+	DGAUGE_LEGACYSMALL,
+	DGAUGE_LEGACYLARGE,
+	DGAUGE_LEGACYNUMBERS,
+};
 
-static UINT8 lineofs[] = {0, 0, 2, 2, 0, 0};
-static UINT8 colors[] = {103, 103, 99, 99, 103, 103};
-static UINT8 oldcolors[] = {99, 99, 99, 99, 99, 103};
+typedef struct
+{
+	UINT8 patchnum;
+	INT16 barx, bary;
+	INT16 textx, texty;
+	INT16 barwidth;
+	INT32 meterfont;
+	boolean legacy;
+} driftgauge_t;
 
-// The modified colors above look awful on SKINCOLOR BLACK so new tables.....
-static UINT8 backcolors[] = {100, 100, 97, 97, 100, 100};
-static UINT8 oldbackcolors[] = {97, 97, 97, 97, 97, 100};
+static UINT8 legacydriftcolors[5][4] = {
+	{  23,  23,  23,  23}, // back
+	{   1,   1,  10,  16}, // white
+	{ 133, 133, 172, 197}, // blue
+	{  33,  33, 215,  71}, // red
+	{ 161, 161, 196, 198}, // purple
+};
 
-#define BARWIDTH 46
-#define BARWIDTH_HALF BARWIDTH/2
+static UINT8 driftcolors[5][4] = {
+	{  24,  20,  24}, // back (extracted directly from generated TC_RAINBOW + SKINCOLOR_BLACK colormap)
+	{   9,   2,   9}, // white
+	{ 135, 130, 135}, // blue
+	{  34,  32,  34}, // red
+	{ 163, 161, 163}, // purple
+};
+
+static driftgauge_t driftgauges[] =
+{
+	[DGAUGE_SPEE] = {
+		.patchnum = 0,
+		.barx = -22, .bary = 2,
+		.textx = 3, .texty = 6,
+		.barwidth = 46,
+		.meterfont = OPPRNK_FONT,
+	},
+	[DGAUGE_ACHII] = {
+		.patchnum = 1,
+		.barx = -22, .bary = 2,
+		.textx = 3, .texty = 6,
+		.barwidth = 46,
+		.meterfont = OPPRNK_FONT,
+	},
+	[DGAUGE_WIFI] = {
+		.patchnum = 2,
+		.barx = 6 + 2, .bary = -8 + 22,
+		.textx = 30, .texty = 10,
+		.barwidth = 1, // special-cased
+		.meterfont = PINGNUM_FONT,
+	},
+	[DGAUGE_CHAOTIX] = {
+		.patchnum = 3,
+		.barx = -23, .bary = -7,
+		.textx = -18, .texty = -8,
+		.barwidth = 34,
+		.meterfont = OPPRNK_FONT,
+	},
+	[DGAUGE_NUMBERS] = {
+		.textx = 0, .texty = 0,
+		.meterfont = OPPRNK_FONT,
+	},
+	[DGAUGE_LEGACY] = {
+		.patchnum = 4,
+		.barx = -23, .bary = -1,
+		.textx = 30, .texty = 0,
+		.barwidth = 46,
+		.meterfont = PINGNUM_FONT,
+		.legacy = true,
+	},
+	[DGAUGE_LEGACYSMALL] = {
+		.patchnum = 5,
+		.barx = -23, .bary = -1,
+		.textx = 20, .texty = 0,
+		.barwidth = 23,
+		.meterfont = PINGNUM_FONT,
+		.legacy = true,
+	},
+	[DGAUGE_LEGACYLARGE] = {
+		.patchnum = 4,
+		.barx = -23, .bary = -1,
+		.textx = 30, .texty = 0,
+		.barwidth = 46,
+		.meterfont = TALLNUM_FONT,
+		.legacy = true,
+	},
+	[DGAUGE_LEGACYNUMBERS] = {
+		.textx = 10, .texty = 0,
+		.meterfont = TALLNUM_FONT,
+	},
+};
+
+static UINT8 driftrainbow[] = {
+	0, 32, 48, 64, 72, 80, 88, 96, 112, 120, 128, 144, 160, 176, 192, 200, 208, 216, 224, 240
+};
+
+static UINT8 wifibars[] = { 6, 11, 16, 21 };
 
 void K_ResetAfterImageValues(void)
 {
@@ -5965,8 +6062,6 @@ void K_ResetAfterImageValues(void)
 // Original script by GenericHeroGuy, graphics by Spee
 void K_DrawDriftGauge(void)
 {
-	// NEW SIN....
-#define NEWSIN(x) FINESINE((x >> ANGLETOFINESHIFT) & FINEMASK)
 	// Reset stuff on level load
 	if (leveltime <= 1)
 		K_ResetAfterImageValues();
@@ -6001,247 +6096,124 @@ void K_DrawDriftGauge(void)
 	basex = res.x;
 	basey = res.y;
 
-	INT32 textx = basex + 4*FRACUNIT;
-	INT32 texty = basey + 6*FRACUNIT;
-	INT32 meterfont = OPPRNK_FONT;
+	driftgauge_t *gauge = &driftgauges[cv_driftgauge.value];
+	patch_t *basepatch = gauge->barwidth ? kp_driftgauge[gauge->patchnum + (!!K_UseColorHud() * 6)] : NULL;
+	fixed_t textx = basex + gauge->textx*FRACUNIT;
+	fixed_t texty = basey + gauge->texty*FRACUNIT;
 
-	switch (cv_driftgauge.value)
-	{
-		case 1: // Spee
-			// PASS THRU
-		case 2: // Achii
-			break;
-		case 3: // Wifi
-			textx = basex + 30*FRACUNIT;
-			texty = basey + 10*FRACUNIT;
-			meterfont = PINGNUM_FONT;
-			break;
-		case 4: // Chaotix
-			textx = basex - 18*FRACUNIT;
-			texty = basey - 8*FRACUNIT;
-			break;
-		case 5: // Numbers
-			textx = basex;
-			texty = basey;
-			break;
-		case 6: // Legacy
-			textx = basex + 30*FRACUNIT;
-			texty = basey;
-			meterfont = PINGNUM_FONT;
-			break;
-		case 7: // Legacy Small
-			textx = basex + 20*FRACUNIT;
-			texty = basey;
-			meterfont = PINGNUM_FONT;
-			break;
-		case 8: // Legacy Large Numbers
-			textx = basex + 30*FRACUNIT;
-			texty = basey;
-			meterfont = TALLNUM_FONT;
-			break;
-		case 9: // Large Numbers
-			textx = basex + 10*FRACUNIT;
-			texty = basey;
-			meterfont = TALLNUM_FONT;
-			break;
-	}
+	// TODO fix the patch offsets
+	if (cv_driftgauge.value == DGAUGE_LEGACYSMALL)
+		basex += 10*FRACUNIT;
 
-	// afterimage
-	if (aftertime[stplyrnum])
-	{
-		if (aftertime[stplyrnum] <= leveltime)
-		{
-			aftertime[stplyrnum] = 0;
-			return;
-		}
-		INT32 trans = V_100TRANS - (V_10TRANS * (aftertime[stplyrnum] - leveltime));
-
-		UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SILVER, GTC_CACHE);
-
-		if (meterfont == OPPRNK_FONT)
-		{
-			UINT8 numbers[3];
-			numbers[0] = ((afterval[stplyrnum] / 100) % 10);
-			numbers[1] = ((afterval[stplyrnum] / 10) % 10);
-			numbers[2] = (afterval[stplyrnum] % 10);
-			V_DrawFixedPatch(textx, texty, FRACUNIT, flags|trans, kp_facenum[numbers[0]], cmap);
-			V_DrawFixedPatch(textx+(6*FRACUNIT), texty, FRACUNIT, flags|trans, kp_facenum[numbers[1]], cmap);
-			V_DrawFixedPatch(textx+(12*FRACUNIT), texty, FRACUNIT, flags|trans, kp_facenum[numbers[2]], cmap);
-		}
-		else if (meterfont == PINGNUM_FONT)
-		{
-			V_DrawPingNumAtFixed(textx, texty, flags|trans, afterval[stplyrnum], cmap);
-		}
-		else if (meterfont == TALLNUM_FONT)
-		{
-			V_DrawPaddedTallColorNumAtFixed(textx, texty, flags|trans, afterval[stplyrnum], 3, cmap);
-		}
-
-		/*V_DrawStringScaledEx(
-			textx, texty,
-			FRACUNIT, FRACUNIT, FRACUNIT, FRACUNIT,
-			flags|trans|V_MONOSPACE, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_WSUPER1, GTC_CACHE),
-							  meterfont,
-						va("%03d", afterval[stplyrnum])
-		);*/
-		return;
-	}
+	INT32 afterimage = max(0, (INT32)(aftertime[stplyrnum] - leveltime));
+	if (afterimage)
+		goto doafterimage;
 	else if (!stplyr->drift)
 		return;
 
 	INT32 driftval = K_GetKartDriftSparkValue(stplyr);
 	INT32 driftcharge = min(driftval*4, stplyr->driftcharge);
 	boolean rainbow = driftcharge >= driftval*4;
-	UINT8 level = min(4, (driftcharge / driftval) + 1);
-	UINT8 level2 = level == 0 ? 0 : level-1;
-	boolean colorhud = K_UseColorHud();
-	SINT8 clroffset = colorhud ? 6 : 0;
-	boolean legacy = (cv_driftgauge.value >= 6 && cv_driftgauge.value < 9);
+	const UINT8 level = K_GetKartDriftSparkStageForValue(stplyr, driftcharge) + 1;
+	const UINT8 backlevel = rainbow ? 4 : max(0, level - 1);
+	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? 1 + (leveltime % FIRSTSUPERCOLOR) : driftskins[level], GTC_CACHE);
 
-	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[level], GTC_CACHE);
-	UINT8 *cmap2 = R_GetTranslationColormap(TC_RAINBOW, driftskins[level2], GTC_CACHE);
-	UINT8 *cmap3 = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-
-	if (rainbow)
+	if (basepatch)
 	{
-		cmap = R_GetTranslationColormap(TC_RAINBOW, (1 + (leveltime % FIRSTSUPERCOLOR - 1)), GTC_CACHE);
-		cmap2 = cmap;
-	}
+		UINT8 *backcmap, *basecmap = K_UseColorHud() ? R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE) : NULL;
+		UINT8 frontcolors[4], backcolors[4];
 
-	// Meter style
-	if (cv_driftgauge.value <= 2 || legacy)
-	{
-		UINT8 *barcolors = legacy ? oldcolors : colors;
-		SINT8 offset = (cv_driftgauge.value == 8) ? 4 : (cv_driftgauge.value < 6) ? 1 : 2;
-		if (cv_driftgauge.value == 7)
-			basex += 10*FRACUNIT;
 		// the base graphic
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+cv_driftgauge.value-offset], colorhud ? cmap3 : NULL);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_HUDTRANS, basepatch, basecmap);
+
 		if (rainbow)
 		{
+			backcmap = cmap;
+			for (i = 0; i < sizeof(backcolors); i++)
+				backcolors[i] = driftrainbow[leveltime % sizeof(driftrainbow)] + i;
+
 			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
-			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
-			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[cv_driftgauge.value-offset], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
+			UINT8 trans = abs(FINESINE((leveltime*ANGLE_22h)>>ANGLETOFINESHIFT)/(4*FRACUNIT/10));
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), basepatch, R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
+		}
+		else
+		{
+			UINT8 (*barcolors)[4] = gauge->legacy ? legacydriftcolors : driftcolors;
+			memcpy(frontcolors, barcolors[level], sizeof(frontcolors));
+
+			if (backlevel == 0 && K_UseColorHud())
+			{
+				backcmap = R_GetTranslationColormap(TC_RAINBOW, stplyr->skincolor, GTC_CACHE);
+				if (gauge->legacy)
+					memset(backcolors, skincolors[K_GetHudColor()].ramp[7], sizeof(backcolors));
+				else for (i = 0; i < 3; i++)
+					backcolors[i] = skincolors[K_GetHudColor()].ramp[i == 1 ? 9 : 12];
+			}
+			else
+			{
+				memcpy(backcolors, barcolors[backlevel], sizeof(backcolors));
+				backcmap = R_GetTranslationColormap(TC_RAINBOW, driftskins[backlevel], GTC_CACHE);
+			}
 		}
 
-		INT32 barx = basex - 22*FRACUNIT;
-		INT32 bary = basey + FRACUNIT*2;
-		INT32 barwidth = (cv_driftgauge.value == 7) ? BARWIDTH_HALF : BARWIDTH;
+		const fixed_t barx = basex + gauge->barx*FRACUNIT;
+		const fixed_t bary = basey + gauge->bary*FRACUNIT;
+		const fixed_t barwidth = (cv_driftgauge.value == DGAUGE_WIFI ? wifibars[backlevel] : gauge->barwidth)*FRACUNIT;
+		const INT32 chargewidth = FixedMul(barwidth, FixedDiv(
+			driftcharge - K_GetKartDriftSparkValueForStage(stplyr, backlevel), // charge remaining
+			K_GetKartDriftSparkValueForStage(stplyr, level) - K_GetKartDriftSparkValueForStage(stplyr, backlevel) // stage total
+		));
 
-		if (legacy)
+		if (cv_driftgauge.value == DGAUGE_WIFI)
 		{
-			barx -= FRACUNIT;
-			bary -= 3*FRACUNIT;
+			for (i = 0; i < 4; i++)
+			{
+				fixed_t h = backlevel < i ? 0 : backlevel > i ? wifibars[i]*FRACUNIT : chargewidth;
+				V_SetClipRect(barx + (i*5)*FRACUNIT, bary-h, 4*FRACUNIT, wifibars[i]*FRACUNIT, flags);
+				V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[i], cmap);
+			}
 		}
-
-		INT32 width = ((driftcharge % driftval) * barwidth) / driftval;
-
-		const char *patch = "~%03u";
-
-		for (i = 0; i < 6; i++)
+		else if (cv_driftgauge.value == DGAUGE_CHAOTIX)
 		{
-			INT32 ofs = lineofs[i]*FRACUNIT/2;
-			INT32 x = barx+ofs;
-			INT32 y = bary+i*FRACUNIT/2;
-			INT32 w = (max(0, min(width*FRACUNIT - ofs, barwidth*FRACUNIT - ofs*2))) / 64;
-			INT32 h = FRACUNIT/128;
-
-			if (legacy)
-			{
-				h += (FRACUNIT/128)*2; // 1024
-			}
-
-			if (driftskins[level2] == SKINCOLOR_BLACK)
-			{
-				barcolors = legacy ? oldbackcolors : backcolors;
-			}
-
 			// back
-			char fmt[4];
-			sprintf(fmt, patch, R_GetPaletteRemap(barcolors[i] + (level == 1 ? 8 : 0)));
-			V_DrawStretchyFixedPatch(x, y, (barwidth*FRACUNIT - ofs*2)/64, h, flags, W_CachePatchName(fmt, PU_CACHE), cmap2);
+			if (backlevel)
+				V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], backcmap);
+
 			// front
-			if (!rainbow)
+			V_SetClipRect(barx, bary, chargewidth, 18*FRACUNIT, flags);
+			V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], cmap);
+		}
+		else // Meter style
+		{
+			for (i = 0; i < (gauge->legacy ? 4 : 3); i++)
 			{
-				barcolors = legacy ? oldcolors: colors;
-				sprintf(fmt, patch, R_GetPaletteRemap(barcolors[i]));
-				V_DrawStretchyFixedPatch(x, y, w, h, flags, W_CachePatchName(fmt, PU_CACHE), cmap);
+				fixed_t ofs = gauge->legacy ? 0 : (i & 1)*FRACUNIT;
+				fixed_t x = barx;
+				fixed_t y = bary + i*FRACUNIT;
+				fixed_t w = chargewidth;
+				fixed_t h = FRACUNIT;
+
+				// seamlessly clipped bars!
+				V_SetClipRect(x + max(ofs, w), y, (barwidth - max(ofs, w)) - ofs, h, flags);
+				V_DrawFixedFill(x, y, barwidth, h, flags|V_HUDTRANS|backcolors[i]);
+				V_SetClipRect(x + ofs, y, min(w - ofs, barwidth - ofs*2), h, flags);
+				V_DrawFixedFill(x, y, barwidth, h, flags|V_HUDTRANS|frontcolors[i]);
 			}
 		}
-	}
-	else if (cv_driftgauge.value == 3) // Wifi style
-	{
-		// the base graphic
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+2], colorhud ? cmap3 : NULL);
-		if (rainbow)
-		{
-			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
-			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
-			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[2], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
-		}
-
-		const INT32 dsone = K_GetKartDriftSparkValueForStage(stplyr, 1);
-		const INT32 dstwo = K_GetKartDriftSparkValueForStage(stplyr, 2);
-		const INT32 dsthree = K_GetKartDriftSparkValueForStage(stplyr, 3);
-
-		const INT32 barx = basex + 6*FRACUNIT + 2*FRACUNIT;
-		const INT32 bary = basey - 8*FRACUNIT + 22*FRACUNIT;
-
-		// tier 1
-		fixed_t h = FixedDiv((max(0, min(driftcharge, dsone)) * 6*FRACUNIT), driftval*FRACUNIT);
-		V_SetClipRect(barx, bary-h, 4*FRACUNIT, 6*FRACUNIT, flags);
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[0], cmap);
-
-		// tier 2
-		h = FixedDiv((max(0, min(driftcharge-dsone, dsone)) * 11*FRACUNIT), driftval*FRACUNIT);
-		V_SetClipRect(barx + 5*FRACUNIT, bary-h, 4*FRACUNIT, 11*FRACUNIT, flags);
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[1], cmap);
-
-		// tier 3
-		h = FixedDiv((max(0, min(driftcharge-dstwo, dsone)) * 16*FRACUNIT), driftval*FRACUNIT);
-		V_SetClipRect(barx + 10*FRACUNIT, bary-h, 4*FRACUNIT, 16*FRACUNIT, flags);
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[2], cmap);
-
-		// tier 4
-		h = FixedDiv((max(0, min(driftcharge-dsthree, dsone)) * 21*FRACUNIT), driftval*FRACUNIT);
-		V_SetClipRect(barx + 15*FRACUNIT, bary-h, 4*FRACUNIT, 21*FRACUNIT, flags);
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[3], cmap);
 
 		V_ClearClipRect();
 	}
-	else if (cv_driftgauge.value == 4) // Chaotix style
+
+doafterimage:;
+	// right, also draw a cool number
+	INT32 charge = afterimage ? afterval[stplyrnum] : driftcharge*100 / driftval;
+	if (afterimage)
 	{
-		// the base graphic
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgauge[clroffset+3], colorhud ? cmap3 : NULL);
-		if (rainbow)
-		{
-			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
-			INT32 trans = abs(NEWSIN(leveltime*ANGLE_22h)/(4*FRACUNIT/10));
-			V_DrawFixedPatch(basex, basey, FRACUNIT, flags|(V_90TRANS - V_10TRANS*trans), kp_driftgauge[3], R_GetTranslationColormap(TC_BLINK, SKINCOLOR_RED, GTC_CACHE));
-		}
-
-		const INT32 barx = basex - 23*FRACUNIT;
-		const INT32 bary = basey - 7*FRACUNIT;
-
-		INT32 width = FixedDiv(((driftcharge % driftval) * 34*FRACUNIT), driftval*FRACUNIT);
-
-		// back
-		if (driftcharge >= (driftval-2))
-			V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], cmap2);
-
-		// front
-		if (!rainbow)
-		{
-			V_SetClipRect(barx, bary, width, 18*FRACUNIT, flags);
-			V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_driftgaugeparts[4], cmap);
-			V_ClearClipRect();
-		}
+		flags |= V_TRANSLUCENT*2 - (V_10TRANS * (aftertime[stplyrnum] - leveltime));
+		cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SILVER, GTC_CACHE);
 	}
 
-	// right, also draw a cool number
-	INT32 charge = driftcharge*100 / driftval;
-
-	if (meterfont == OPPRNK_FONT)
+	if (gauge->meterfont == OPPRNK_FONT)
 	{
 		UINT8 numbers[3];
 		numbers[0] = ((charge / 100) % 10);
@@ -6251,11 +6223,12 @@ void K_DrawDriftGauge(void)
 		V_DrawFixedPatch(textx+(6*FRACUNIT), texty, FRACUNIT, flags, kp_facenum[numbers[1]], cmap);
 		V_DrawFixedPatch(textx+(12*FRACUNIT), texty, FRACUNIT, flags, kp_facenum[numbers[2]], cmap);
 	}
-	else if (meterfont == PINGNUM_FONT)
+	else if (gauge->meterfont == PINGNUM_FONT)
 	{
+		// TODO pad with zeroes(?)
 		V_DrawPingNumAtFixed(textx, texty, flags, charge, cmap);
 	}
-	else if (meterfont == TALLNUM_FONT)
+	else if (gauge->meterfont == TALLNUM_FONT)
 	{
 		V_DrawPaddedTallColorNumAtFixed(textx, texty, flags, charge, 3, cmap);
 	}
@@ -6269,12 +6242,13 @@ void K_DrawDriftGauge(void)
 	);*/
 
 	// and trigger the afterimage
-	if (stplyr->pflags & PF_DRIFTEND)
+	if (afterimage)
+		;
+	else if (stplyr->pflags & PF_DRIFTEND)
 	{
 		afterval[stplyrnum] = charge;
 		aftertime[stplyrnum] = leveltime + 10;
 	}
 	else
 		aftertime[stplyrnum] = 0;
-#undef NEWSIN
 }

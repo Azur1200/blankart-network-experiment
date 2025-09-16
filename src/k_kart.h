@@ -254,6 +254,7 @@ void K_SetRespawnAtNextWaypoint(player_t * player);
 INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue);
 INT32 K_GetKartDriftSparkValue(const player_t *player);
 INT32 K_GetKartDriftSparkValueForStage(const player_t *player, UINT8 stage);
+UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value);
 INT32 K_GetDriftAngleOffset(player_t *player);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);

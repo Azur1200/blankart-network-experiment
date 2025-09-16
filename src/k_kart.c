@@ -8591,23 +8591,32 @@ INT32 K_GetKartDriftSparkValue(const player_t *player)
 
 INT32 K_GetKartDriftSparkValueForStage(const player_t *player, UINT8 stage)
 {
-	fixed_t mul = FRACUNIT;
+	const INT32 dsv = K_GetKartDriftSparkValue(player);
 
 	// This code is function is pretty much useless now that the timing changes are linear but bleh.
+	// G: but it is somewhat useful for purple drift
 	switch (stage)
 	{
-		case 2:
-			mul = 2*FRACUNIT; // x2
-			break;
-		case 3:
-			mul = 3*FRACUNIT; // x3
-			break;
-		case 4:
-			mul = 4*FRACUNIT; // x4
-			break;
+		case 0: return 0;
+		default: return dsv;
+		case 2: return dsv * 2;
+		case 3: return dsv * (K_PurpleDriftActive() ? 3 : 4);
+		case 4: return dsv * 4;
 	}
+}
 
-	return (FixedMul(K_GetKartDriftSparkValue(player) * FRACUNIT, mul) / FRACUNIT);
+UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
+{
+	const INT32 dsv = K_GetKartDriftSparkValue(player);
+
+	switch (value / dsv)
+	{
+		case 0: return 0;
+		default: return 1;
+		case 2: return 2;
+		case 3: return K_PurpleDriftActive() ? 3 : 2;
+		case 4: return 4;
+	}
 }
 
 static void K_SpawnDriftEFX(player_t *player,SINT8 level)
