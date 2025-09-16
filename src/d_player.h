@@ -280,6 +280,10 @@ typedef enum
 	khud_splitcolor, // Skincolor of the leading player
 	khud_splitposition, // Who are we comparing to?
 
+	// Drifting
+	khud_afterimagetime, // tics left for displaying afterimage
+	khud_afterimagevalue, // what value the drift ended at
+
 	NUMKARTHUD
 } karthudtype_t;
 

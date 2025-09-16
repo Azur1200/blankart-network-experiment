@@ -5936,9 +5936,6 @@ static INT32 driftskins[] =
 	SKINCOLOR_VIOLET,
 };
 
-static INT32 afterval[MAXPLAYERS];
-static tic_t aftertime[MAXPLAYERS];
-
 enum driftgauge_e
 {
 	DGAUGE_NONE = 0,
@@ -6049,22 +6046,10 @@ static UINT8 driftrainbow[] = {
 
 static UINT8 wifibars[] = { 6, 11, 16, 21 };
 
-void K_ResetAfterImageValues(void)
-{
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
-	{
-		afterval[i] = 0;
-		aftertime[i] = 0;
-	}
-}
-
 // Based off https://github.com/GenericHeroGuy/ringracers-scripts/blob/master/src/sglua/Lua/HUD/driftgauge.lua
 // Original script by GenericHeroGuy, graphics by Spee
 void K_DrawDriftGauge(void)
 {
-	// Reset stuff on level load
-	if (leveltime <= 1)
-		K_ResetAfterImageValues();
 	// Actually have it enabled?
 	if (!cv_driftgauge.value)
 		return;
@@ -6105,18 +6090,21 @@ void K_DrawDriftGauge(void)
 	if (cv_driftgauge.value == DGAUGE_LEGACYSMALL)
 		basex += 10*FRACUNIT;
 
-	INT32 afterimage = max(0, (INT32)(aftertime[stplyrnum] - leveltime));
-	if (afterimage)
-		goto doafterimage;
-	else if (!stplyr->drift)
-		return;
-
 	INT32 driftval = K_GetKartDriftSparkValue(stplyr);
 	INT32 driftcharge = min(driftval*4, stplyr->driftcharge);
 	boolean rainbow = driftcharge >= driftval*4;
 	const UINT8 level = K_GetKartDriftSparkStageForValue(stplyr, driftcharge) + 1;
 	const UINT8 backlevel = rainbow ? 4 : max(0, level - 1);
 	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? 1 + (leveltime % FIRSTSUPERCOLOR) : driftskins[level], GTC_CACHE);
+
+	INT32 afterimage = stplyr->karthud[khud_afterimagetime];
+	if (!stplyr->drift)
+	{
+		if (afterimage)
+			goto doafterimage;
+		else
+			return;
+	}
 
 	if (basepatch)
 	{
@@ -6206,11 +6194,11 @@ void K_DrawDriftGauge(void)
 
 doafterimage:;
 	// right, also draw a cool number
-	INT32 charge = afterimage ? afterval[stplyrnum] : driftcharge*100 / driftval;
+	INT32 charge = (afterimage ? stplyr->karthud[khud_afterimagevalue] : driftcharge)*100 / driftval;
 	if (afterimage)
 	{
-		flags |= V_TRANSLUCENT*2 - (V_10TRANS * (aftertime[stplyrnum] - leveltime));
-		cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_SILVER, GTC_CACHE);
+		flags |= V_TRANSLUCENT*2 - (V_10TRANS * afterimage);
+		cmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_GREY, GTC_CACHE);
 	}
 
 	if (gauge->meterfont == OPPRNK_FONT)
@@ -6240,15 +6228,4 @@ doafterimage:;
 		meterfont,
 		va("%03d", charge)
 	);*/
-
-	// and trigger the afterimage
-	if (afterimage)
-		;
-	else if (stplyr->pflags & PF_DRIFTEND)
-	{
-		afterval[stplyrnum] = charge;
-		aftertime[stplyrnum] = leveltime + 10;
-	}
-	else
-		aftertime[stplyrnum] = 0;
 }

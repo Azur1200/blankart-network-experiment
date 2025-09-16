@@ -6191,6 +6191,9 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	}
 	else
 		player->karthud[khud_cardanimation] = 0;
+
+	if (player->karthud[khud_afterimagetime])
+		player->karthud[khud_afterimagetime]--;
 }
 
 #undef RINGANIM_DELAYMAX
@@ -8609,13 +8612,16 @@ UINT8 K_GetKartDriftSparkStageForValue(const player_t *player, INT32 value)
 {
 	const INT32 dsv = K_GetKartDriftSparkValue(player);
 
+	if (value < 0)
+		return 0;
+
 	switch (value / dsv)
 	{
 		case 0: return 0;
-		default: return 1;
+		case 1: return 1;
 		case 2: return 2;
 		case 3: return K_PurpleDriftActive() ? 3 : 2;
-		case 4: return 4;
+		default: return 4;
 	}
 }
 
@@ -8660,10 +8666,8 @@ static void K_KartDrift(player_t *player, boolean onground)
 {
 	fixed_t minspeed = (10 * player->mo->scale);
 	fixed_t driftadditive = 24;
-	INT32 dsone = K_GetKartDriftSparkValue(player);
-	INT32 dstwo = dsone*2;
-	INT32 dsthree = K_PurpleDriftActive() ? dsone*3 : dsone*4;
-	INT32 dsfour = dsone*4;
+	const INT32 dsv = K_GetKartDriftSparkValue(player);
+	const UINT8 driftstage = K_GetKartDriftSparkStageForValue(player, player->driftcharge);
 	UINT16 buttons = K_GetKartButtons(player);
 
 	// Grown players taking yellow spring panels will go below minspeed for one tic,
@@ -8676,73 +8680,60 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Holding the Jump button will enable drifting.
 
 	// Drift Release (Moved here so you can't "chain" drifts)
-	if ((player->drift != -5 && player->drift != 5)
-		&& player->driftcharge < dsone
-		&& onground)
+	if (player->drift != -5 && player->drift != 5)
 	{
-		player->driftcharge = 0;
-	}
-	else if ((player->drift != -5 && player->drift != 5)
-		&& (player->driftcharge >= dsone && player->driftcharge < dstwo)
-		&& onground)
-	{
-		if (player->driftboost < 20)
-			player->driftboost = 20;
-		S_StartSound(player->mo, sfx_s23c);
-		K_SpawnDriftEFX(player, 1);
-		player->driftcharge = 0;
-	}
-	else if ((player->drift != -5 && player->drift != 5)
-		&& (player->driftcharge >= dstwo && player->driftcharge < dsthree)
-		&& onground)
-	{
-		if (player->driftboost < 50)
-			player->driftboost = 50;
+		if (driftstage && onground)
+		{
+			UINT8 boost = 0;
 
-		if (cv_kartdriftsounds.value)
-			S_StartSound(player->mo, sfx_kc5b);
-		S_StartSound(player->mo, sfx_s23c);
+			if (!cv_kartdriftsounds.value || driftstage < 3)
+				S_StartSound(player->mo, sfx_s23c);
 
-		K_SpawnDriftEFX(player, 2);
-		player->driftcharge = 0;
-	}
-	else if ((player->drift != -5 && player->drift != 5)
-		&& player->driftcharge < dsfour
-		&& onground)
-	{
-		if (player->driftboost < 80)
-			player->driftboost = 80;
-		if (cv_kartdriftsounds.value)
-		{
-			S_StartSound(player->mo, sfx_kc5b);
-			S_StartSound(player->mo, sfx_kc3c);
-			S_StartSound(player->mo, sfx_s3k47);
-		}
-		else
-		{
-			S_StartSound(player->mo, sfx_s23c);
-		}
-		K_SpawnDriftEFX(player, 3);
-		player->driftcharge = 0;
-	}
-	else if ((player->drift != -5 && player->drift != 5)
-		&& player->driftcharge >= dsfour
-		&& onground)
-	{
-		if (player->driftboost < 125)
-			player->driftboost = 125;
-		if (cv_kartdriftsounds.value)
-		{
-			S_StartSound(player->mo, sfx_kc5b);
-			S_StartSound(player->mo, sfx_kc4d);
-		}
-		else
-		{
-			S_StartSound(player->mo, sfx_s23c);
+			switch (driftstage)
+			{
+			case 1:
+				boost = 20;
+				break;
+			case 2:
+				boost = 50;
+				if (cv_kartdriftsounds.value)
+					S_StartSound(player->mo, sfx_kc5b);
+				break;
+			case 3:
+				boost = 80;
+				if (cv_kartdriftsounds.value)
+				{
+					S_StartSound(player->mo, sfx_kc5b);
+					S_StartSound(player->mo, sfx_kc3c);
+					S_StartSound(player->mo, sfx_s3k47);
+				}
+				break;
+			case 4:
+				boost = 125;
+				if (cv_kartdriftsounds.value)
+				{
+					S_StartSound(player->mo, sfx_kc5b);
+					S_StartSound(player->mo, sfx_kc4d);
+				}
+				break;
+			}
+
+			if (player->driftboost < boost)
+				player->driftboost = boost;
+
+			K_SpawnDriftEFX(player, driftstage);
 		}
 
-		K_SpawnDriftEFX(player, 4);
-		player->driftcharge = 0;
+		// afterimage, when you release the drift
+		if (player->pflags & PF_DRIFTEND || (!onground && player->driftcharge))
+		{
+			if (!player->karthud[khud_afterimagetime])
+				player->karthud[khud_afterimagevalue] = min(player->driftcharge, dsv*4);
+			player->karthud[khud_afterimagetime] = 10;
+		}
+
+		if (onground)
+			player->driftcharge = 0;
 	}
 
 	// Drifting: left or right?
@@ -8811,10 +8802,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 			player->pflags |= PF_GETSPARKS;
 
 		// Sound whenever you get a different tier of sparks
-		if ((player->driftcharge < dsone && player->driftcharge+driftadditive >= dsone)
-			|| (player->driftcharge < dstwo && player->driftcharge+driftadditive >= dstwo)
-			|| (player->driftcharge < dsthree && player->driftcharge+driftadditive >= dsthree)
-			|| (player->driftcharge < dsfour && player->driftcharge+driftadditive >= dsfour))
+		if (driftstage < K_GetKartDriftSparkStageForValue(player, player->driftcharge+driftadditive))
 		{
 			if (P_IsDisplayPlayer(player)) // UGHGHGH...
 				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
@@ -8829,7 +8817,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Spawn Sparks regardless of size
 	if (!P_PlayerInPain(player) && player->drift != 0)
 	{
-		if (player->driftcharge >= dsone)
+		if (driftstage)
 			K_SpawnDriftSparks(player);
 	}
 
