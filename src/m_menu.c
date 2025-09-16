@@ -6994,10 +6994,11 @@ void MD_DrawCssCharacter(void)
 	// draw box around guy
 	V_DrawFill(mx + 43 - (charw/2), my+65, charw, 84, 159);
 
+	V_SetClipRect((mx + 43 - (charw/2)) * FRACUNIT, (my+65) * FRACUNIT, charw * FRACUNIT, 84 * FRACUNIT, 0);
 	// draw player sprite
 	UINT8 *colormap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 	V_DrawFixedPatch((mx+43)<<FRACBITS,
-				(my+131)<<FRACBITS,
+				(my+136)<<FRACBITS,
 				skins[skintodisplay].highresscale,
 				flags, patch, colormap);
 
@@ -7065,6 +7066,7 @@ void MD_DrawCssCharacter(void)
 			Z_Free(colormap);
 		}
 	}
+	V_ClearClipRect();
 }
 #undef charw
 
