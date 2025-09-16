@@ -3389,8 +3389,8 @@ consvar_t cv_resynchattempts = CVAR_INIT ("resynchattempts", "2", CV_SAVE, resyn
 consvar_t cv_blamecfail = CVAR_INIT ("blamecfail", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // max file size to send to a player (in kilobytes)
-static CV_PossibleValue_t maxsend_cons_t[] = {{0, "MIN"}, {51200, "MAX"}, {0, NULL}};
-consvar_t cv_maxsend = CVAR_INIT ("maxsend", "51200", CV_SAVE, maxsend_cons_t, NULL);
+static CV_PossibleValue_t maxsend_cons_t[] = {{-1, "MIN"}, {999999999, "MAX"}, {0, NULL}};
+consvar_t cv_maxsend = CVAR_INIT ("maxsend", "204800", CV_SAVE, maxsend_cons_t, NULL);
 consvar_t cv_noticedownload = CVAR_INIT ("noticedownload", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // Speed of file downloading (in packets per tic)
