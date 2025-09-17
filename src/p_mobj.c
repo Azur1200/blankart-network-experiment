@@ -2845,7 +2845,6 @@ void P_PlayerZMovement(mobj_t *mo)
 				P_CheckMarioBlocks(mo);
 
 			mo->momz = 0;
-			P_CheckGravity(mo, true);
 		}
 	}
 
