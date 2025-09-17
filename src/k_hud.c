@@ -3707,7 +3707,7 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, INT32 hudx,
 	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-w)/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-h)/2)<<FRACBITS);
 
-	if (cv_minihead.value && !(icon == kp_minimapdot))
+	if (cv_minihead.value && (!(icon == kp_minimapdot)) && (!origin))
 	{
 		amxpos += 2 * FRACUNIT;
 		amypos += 2 * FRACUNIT;
@@ -3909,6 +3909,8 @@ static void K_drawKartMinimap(void)
 #endif
 
 	vector2_t iconoffsets;
+	INT32 widthhalf, heighthalf;
+	INT32 adjustx, adjusty;
 
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
@@ -3927,6 +3929,9 @@ static void K_drawKartMinimap(void)
 
 	iconoffsets.x = 0;
 	iconoffsets.y = 0;
+
+	adjustx = adjusty = 0;
+	widthhalf = heighthalf = 0;
 
 	drawinfo_t info;
 	K_getMinimapDrawinfo(&info);
@@ -4062,10 +4067,19 @@ static void K_drawKartMinimap(void)
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
-				iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset +
-								FixedMul(workingPic->leftoffset, FRACUNIT - minimapscale);
-				iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset +
-								FixedMul(workingPic->topoffset, FRACUNIT - minimapscale);
+				widthhalf = ((workingPic->width) / 2);
+				heighthalf = ((workingPic->height) / 2);
+
+				if (cv_minihead.value)
+				{
+					adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) *
+							  FRACUNIT / widthhalf);
+					adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+							  FRACUNIT / heighthalf);
+				}
+
+				iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 #ifdef ROTSPRITE
 				if ((K_MinimapIconCanSpinout()) && (players[i].spinoutrot))
@@ -4279,10 +4293,18 @@ static void K_drawKartMinimap(void)
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
-			iconoffsets.x = ((workingPic->width) / 2) - workingPic->leftoffset +
-								FixedMul(workingPic->leftoffset, FRACUNIT - minimapscale);
-			iconoffsets.y = ((workingPic->height) / 2) - workingPic->topoffset +
-								FixedMul(workingPic->topoffset, FRACUNIT - minimapscale);
+			widthhalf = ((workingPic->width) / 2);
+			heighthalf = ((workingPic->height) / 2);
+
+			if (cv_minihead.value)
+			{
+				adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
+				adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+						  FRACUNIT / heighthalf);
+			}
+
+			iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+			iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 #ifdef ROTSPRITE
 			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
