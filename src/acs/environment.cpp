@@ -260,9 +260,8 @@ ACSVM::Thread *Environment::allocThread()
 ACSVM::ModuleName Environment::getModuleName(char const *str, size_t len)
 {
 	ACSVM::String *name = getString(str, len);
-	lumpnum_t lump = W_CheckNumForNameInFolder(str, "ACS/");
 
-	return { name, nullptr, static_cast<size_t>(lump) };
+	return { name, nullptr, static_cast<size_t>(false) };
 }
 
 void Environment::loadModule(ACSVM::Module *module)
@@ -272,21 +271,34 @@ void Environment::loadModule(ACSVM::Module *module)
 	size_t lumpLen = 0;
 	std::vector<ACSVM::Byte> data;
 
-	if (name->i == (size_t)LUMPERROR)
+	lumpnum_t lumpnum = LUMPERROR;
+
+	if (name->i) // this module is from a map!
+	{
+		INT32 mapnum = G_MapNumber(name->s->str);
+		if (mapnum < NEXTMAP_INVALID)
+			lumpnum = mapheaderinfo[mapnum]->lumpnum;
+	}
+	else // just a lump
+	{
+		lumpnum = W_CheckNumForNameInFolder(name->s->str, "ACS/");
+	}
+
+	if (lumpnum == LUMPERROR)
 	{
 		// No lump given for module.
 		throw ACSVM::ReadError("invalid lump");
 	}
 
-	lumpLen = W_LumpLength(name->i);
+	lumpLen = W_LumpLength(lumpnum);
 
-	if (W_IsLumpWad(name->i) == true || lumpLen == 0)
+	if (W_IsLumpWad(lumpnum) == true || lumpLen == 0)
 	{
 		CONS_Debug(DBG_SETUP, "Attempting to load ACS module from the BEHAVIOR lump of map '%s'...\n", name->s->str);
 
 		// The lump given is a virtual resource.
 		// Try to grab a BEHAVIOR lump from inside of it.
-		virtres_t *vRes = vres_GetMap(name->i);
+		virtres_t *vRes = vres_GetMap(lumpnum);
 		auto _ = srb2::finally([vRes]() { vres_Free(vRes); });
 
 		virtlump_t *vLump = vres_Find(vRes, "BEHAVIOR");
@@ -308,7 +320,7 @@ void Environment::loadModule(ACSVM::Module *module)
 		ACSVM::Byte *lump = static_cast<ACSVM::Byte *>(Z_Calloc(lumpLen, PU_STATIC, nullptr));
 		auto _ = srb2::finally([lump]() { Z_Free(lump); });
 
-		W_ReadLump(name->i, lump);
+		W_ReadLump(lumpnum, lump);
 		data.insert(data.begin(), lump, lump + lumpLen);
 	}
 
