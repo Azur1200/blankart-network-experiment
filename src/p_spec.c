@@ -5187,7 +5187,9 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 		linespeed = FixedMul(linespeed, mapobjectscale + (player->mo->scale - mapobjectscale));
 
 	if (!demo.playback)
-		P_SetPlayerAngle(player, player->mo->angle);
+		P_ForceLocalAngle(player, player->mo->angle, true);
+
+	player->angleturn = player->mo->angle;
 
 	if (!(lines[lineindex].args[1] & TMSP_NOTELEPORT))
 	{
@@ -9555,9 +9557,9 @@ void T_Pusher(pusher_t *p)
 						P_ForceLocalAngle(thing->player, angle - (angle - thing->angle) / 8, true);
 					else
 						P_ForceLocalAngle(thing->player, angle + (thing->angle - angle) / 8, true);
-
-					thing->player->angleturn = thing->angle;
 				}
+
+				thing->player->angleturn = thing->angle;
 			}
 
 			if (p->exclusive)
