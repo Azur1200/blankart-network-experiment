@@ -1236,10 +1236,15 @@ static void K_SpawnBrakeDriftSparks(player_t *player) // Be sure to update the m
 
 void K_SpawnNormalSpeedLines(player_t *player)
 {
-	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
-		player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
-		player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
-		MT_FASTLINE);
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
+
+	rand_z = player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale);
+	rand_y = player->mo->y + (P_RandomRange(-36,36) * player->mo->scale);
+	rand_x = player->mo->x + (P_RandomRange(-36,36) * player->mo->scale);
+
+	mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
 
 	P_SetTarget(&fast->target, player->mo);
 	fast->angle = K_MomentumAngle(player->mo);
@@ -1284,10 +1289,15 @@ void K_SpawnNormalSpeedLines(player_t *player)
 
 void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t color, boolean translucent)
 {
-	mobj_t *fast = P_SpawnMobj(player->mo->x + (P_RandomRange(-36,36) * player->mo->scale),
-		player->mo->y + (P_RandomRange(-36,36) * player->mo->scale),
-		player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale),
-		MT_FASTLINE);
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
+
+	rand_z = player->mo->z + (player->mo->height/2) + (P_RandomRange(-20,20) * player->mo->scale);
+	rand_y = player->mo->y + (P_RandomRange(-36,36) * player->mo->scale);
+	rand_x = player->mo->x + (P_RandomRange(-36,36) * player->mo->scale);
+
+	mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
 
 	P_SetTarget(&fast->target, player->mo);
 	fast->angle = K_MomentumAngle(player->mo);
@@ -1308,11 +1318,15 @@ void K_SpawnDraftSpeedLines(player_t *player, fixed_t scale, skincolornum_t colo
 
 void K_SpawnInvincibilitySpeedLines(mobj_t *mo)
 {
-	mobj_t *fast = P_SpawnMobjFromMobj(mo,
-		P_RandomRange(-48, 48) * FRACUNIT,
-		P_RandomRange(-48, 48) * FRACUNIT,
-		P_RandomRange(0, 64) * FRACUNIT,
-		MT_FASTLINE);
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
+
+	rand_z = P_RandomRange(0, 64) * FRACUNIT;
+	rand_y = P_RandomRange(-48, 48) * FRACUNIT;
+	rand_x = P_RandomRange(-48, 48) * FRACUNIT;
+
+	mobj_t *fast = P_SpawnMobjFromMobj(mo, rand_x, rand_y, rand_z, MT_FASTLINE);
 	P_SetMobjState(fast, S_KARTINVLINES1);
 
 	P_SetTarget(&fast->target, mo);
@@ -2344,7 +2358,7 @@ static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
     if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return INVINSPEEDBOOSTLGC;
-    
+
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
     return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
 }
@@ -2353,7 +2367,7 @@ static fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
     if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return INVINACCELBOOSTLGC;
-    
+
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
     return Easing_OutCubic(t, 0, INVINACCELBOOSTALT);
 }
@@ -3539,6 +3553,9 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 	mobj_t *dust;
 	mobj_t *truc;
 	INT32 speed, speed2;
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
 
 	K_MatchGenericExtraFlags(smoldering, source);
 	smoldering->tics = TICRATE*3;
@@ -3558,9 +3575,11 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 		dust->scalespeed = source->scale/12;
 		P_InstaThrust(dust, dust->angle, FixedMul(20*FRACUNIT, source->scale));
 
-		truc = P_SpawnMobj(source->x + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->y + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->z + P_RandomRange(0, height)*FRACUNIT, MT_BOOMEXPLODE);
+		rand_z = source->z + P_RandomRange(0, height)*FRACUNIT;
+		rand_y = source->y + P_RandomRange(-radius, radius)*FRACUNIT;
+		rand_x = source->x + P_RandomRange(-radius, radius)*FRACUNIT;
+
+		truc = P_SpawnMobj(rand_x, rand_y, rand_z, MT_BOOMEXPLODE);
 		K_MatchGenericExtraFlags(truc, source);
 		P_SetScale(truc, source->scale);
 		truc->destscale = source->scale*6;
@@ -3577,9 +3596,11 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 
 	for (i = 0; i < 16; i++)
 	{
-		dust = P_SpawnMobj(source->x + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->y + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->z + P_RandomRange(0, height)*FRACUNIT, MT_SMOKE);
+		rand_z = source->z + P_RandomRange(0, height)*FRACUNIT;
+		rand_y = source->y + P_RandomRange(-radius, radius)*FRACUNIT;
+		rand_x = source->x + P_RandomRange(-radius, radius)*FRACUNIT;
+
+		dust = P_SpawnMobj(rand_x, rand_y, rand_z, MT_SMOKE);
 		P_SetMobjState(dust, S_OPAQUESMOKE1);
 		P_SetScale(dust, source->scale);
 		dust->destscale = source->scale*10;
@@ -3587,9 +3608,11 @@ void K_SpawnMineExplosion(mobj_t *source, UINT8 color)
 		dust->tics = 30;
 		dust->momz = P_RandomRange(FixedMul(3*FRACUNIT, source->scale)>>FRACBITS, FixedMul(7*FRACUNIT, source->scale)>>FRACBITS)*FRACUNIT;
 
-		truc = P_SpawnMobj(source->x + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->y + P_RandomRange(-radius, radius)*FRACUNIT,
-			source->z + P_RandomRange(0, height)*FRACUNIT, MT_BOOMPARTICLE);
+		rand_z = source->z + P_RandomRange(0, height)*FRACUNIT;
+		rand_y = source->y + P_RandomRange(-radius, radius)*FRACUNIT;
+		rand_x = source->x + P_RandomRange(-radius, radius)*FRACUNIT;
+
+		truc = P_SpawnMobj(rand_x, rand_y, rand_z, MT_BOOMPARTICLE);
 		K_MatchGenericExtraFlags(truc, source);
 		P_SetScale(truc, source->scale);
 		truc->destscale = source->scale*5;
@@ -4061,9 +4084,13 @@ void K_SpawnWipeoutTrail(mobj_t *mo, boolean translucent)
 	else
 		aoff += ANGLE_45;
 
-	dust = P_SpawnMobj(mo->x + FixedMul(24*mo->scale, FINECOSINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(-8,8) << FRACBITS),
-		mo->y + FixedMul(24*mo->scale, FINESINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(-8,8) << FRACBITS),
-		mo->z, MT_WIPEOUTTRAIL);
+	fixed_t rand_x;
+	fixed_t rand_y;
+
+	rand_y = mo->y + FixedMul(24*mo->scale, FINESINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(-8,8) << FRACBITS);
+	rand_x = mo->x + FixedMul(24*mo->scale, FINECOSINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(-8,8) << FRACBITS);
+
+	dust = P_SpawnMobj(rand_x, rand_y, mo->z, MT_WIPEOUTTRAIL);
 
 	P_SetTarget(&dust->target, mo);
 	dust->angle = K_MomentumAngle(mo);
@@ -4538,7 +4565,13 @@ static void K_FlameDashLeftoverSmoke(mobj_t *src)
 		smoke->momy = 3*src->momy/4;
 		smoke->momz = 3*P_GetMobjZMovement(src)/4;
 
-		P_Thrust(smoke, src->angle + FixedAngle(P_RandomRange(135, 225)<<FRACBITS), P_RandomRange(0, 8) * src->scale);
+		fixed_t rand_angle;
+		fixed_t rand_move;
+
+		rand_move = P_RandomRange(0, 8) * src->scale;
+		rand_angle = src->angle + FixedAngle(P_RandomRange(135, 225)<<FRACBITS);
+
+		P_Thrust(smoke, rand_angle, rand_move);
 		smoke->momz += P_RandomRange(0, 4) * src->scale;
 	}
 }
@@ -5219,9 +5252,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 	drop->destscale = (3*drop->destscale)/2;
 
 	drop->angle = angle;
-	P_Thrust(drop,
-		FixedAngle(P_RandomFixed() * 180) + angle,
-		16*mapobjectscale);
+	P_Thrust(drop, FixedAngle(P_RandomFixed() * 180) + angle, 16*mapobjectscale);
 
 	drop->momz = flip * 3 * mapobjectscale;
 	if (drop->eflags & MFE_UNDERWATER)
@@ -9362,8 +9393,8 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
         clusterplayer[i] = false;
 
         // Density check
-        if (N > bestdensity)                                
-        {                                   
+        if (N > bestdensity)
+        {
             bestdensity = N;
 
             findme = closesttocluster;
