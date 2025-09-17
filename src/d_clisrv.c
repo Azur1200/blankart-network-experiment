@@ -4136,9 +4136,12 @@ boolean SV_SpawnServer(void)
 
 	// strictly speaking, i'm not convinced the following is necessary
 	// but I'm not confident enough to remove it entirely in case it breaks something
-	{
-		UINT8 *availabilitiesbuffer = R_GetSkinAvailabilities();
 
+	// in a listen server, this sends the local player information to the server so
+	// that the client has players replicated on the server. in dedicated, there is
+	// no local player!
+	if (!dedicated) {
+		UINT8 *availabilitiesbuffer = R_GetSkinAvailabilities();
 		SINT8 node = 0;
 		for (; node < MAXNETNODES; node++)
 			result |= SV_AddWaitingPlayers(node, availabilitiesbuffer, cv_playername[0].zstring, cv_playername[1].zstring, cv_playername[2].zstring, cv_playername[3].zstring);
