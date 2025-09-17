@@ -9552,10 +9552,11 @@ void T_Pusher(pusher_t *p)
 				{
 					angle_t angle = thing->player->angleturn;
 					if (thing->angle - angle > ANGLE_180)
-						P_SetPlayerAngle(thing->player, angle - (angle - thing->angle) / 8);
+						P_ForceLocalAngle(thing->player, angle - (angle - thing->angle) / 8, true);
 					else
-						P_SetPlayerAngle(thing->player, angle + (thing->angle - angle) / 8);
-					//P_SetPlayerAngle(thing->player, thing->angle);
+						P_ForceLocalAngle(thing->player, angle + (thing->angle - angle) / 8, true);
+
+					thing->player->angleturn = thing->angle;
 				}
 			}
 
