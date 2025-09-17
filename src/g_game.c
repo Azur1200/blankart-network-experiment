@@ -2538,7 +2538,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
-		rings = 5;
+		rings = cv_kartringsstart.value;
 		minrings = cv_kartringsmin.value;
 		maxrings = cv_kartringsmax.value;
 		kickstartaccel = 0;

@@ -125,6 +125,7 @@ extern consvar_t cv_kartusepwrlv;
 extern consvar_t cv_kartrings;
 extern consvar_t cv_kartringsmin;
 extern consvar_t cv_kartringsmax;
+extern consvar_t cv_kartringsstart;
 
 extern consvar_t cv_kartstacking;
 extern consvar_t cv_kartstacking_diminishparam;

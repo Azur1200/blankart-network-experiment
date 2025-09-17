@@ -299,6 +299,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrings);
 	CV_RegisterVar(&cv_kartringsmin);
 	CV_RegisterVar(&cv_kartringsmax);
+	CV_RegisterVar(&cv_kartringsstart);
 
 	// Stacking
 	CV_RegisterVar(&cv_kartstacking);
