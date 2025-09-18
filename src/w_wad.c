@@ -1394,7 +1394,7 @@ lumpnum_t W_CheckNumForName(const char *name)
 		lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
 		memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
 		strncpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 8);
-		lumpnumcache[lumpnumcacheindex].lumpnum = (i<<16)+check;
+		lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) | check;
 
 		return lumpnumcache[lumpnumcacheindex].lumpnum;
 	}
@@ -1446,11 +1446,11 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 			lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
 			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', 32);
 			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, 32);
-			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
+			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) | check;
 			lumpnumcache[lumpnumcacheindex].lumphash = hash;
 		}
 
-		return (i << 16) + check;
+		return (i << 16) | check;
 	}
 }
 
@@ -1496,11 +1496,11 @@ lumpnum_t W_CheckNumForMap(const char *name)
 			lumpnumcacheindex = (lumpnumcacheindex + 1) & (LUMPNUMCACHESIZE - 1);
 			memset(lumpnumcache[lumpnumcacheindex].lumpname, '\0', LUMPNUMCACHENAME);
 			strlcpy(lumpnumcache[lumpnumcacheindex].lumpname, name, LUMPNUMCACHENAME);
-			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) + check;
+			lumpnumcache[lumpnumcacheindex].lumpnum = (i << 16) | check;
 			lumpnumcache[lumpnumcacheindex].lumphash = hash;
 		}
 
-		return (i << 16) + check;
+		return (i << 16) | check;
 	}
 }
 
@@ -1599,7 +1599,7 @@ lumpnum_t W_CheckNumForNameInFolder(const char *lump, const char *folder)
 			check = W_CheckNumForLongNamePwad(lump, (UINT16)i, fsid);
 			if (check < feid)
 			{
-				return (i<<16) + check; // found it, in our constraints
+				return (i<<16) | check; // found it, in our constraints
 			}
 		}
 	}
