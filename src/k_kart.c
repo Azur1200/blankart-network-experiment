@@ -9364,6 +9364,30 @@ void K_KartLegacyUpdatePosition(player_t *player)
 	player->position = position;
 }
 
+/*--------------------------------------------------
+	UINT32 K_UndoMapScaling(UINT32 distance)
+
+		Takes a raw map distance and adjusts it to
+		be in x1 scale.
+
+	Input Arguments:-
+		distance - Original distance.
+
+	Return:-
+		Distance unscaled by mapobjectscale.
+--------------------------------------------------*/
+static UINT32 K_UndoMapScaling(UINT32 distance)
+{
+	if (mapobjectscale != FRACUNIT)
+	{
+		// Bring back to normal scale.
+		return FixedDiv(distance, mapobjectscale);
+	}
+
+	return distance;
+}
+
+
 // Brute-force finds the area on the course with the highest player density in a given radius.
 // Based on DBSCAN, so it "chain-scans" neighboring players as well for a more accurate result.
 UINT32 clusterid = 0;
@@ -9462,8 +9486,9 @@ void K_UpdateAllPlayerPositions(void)
 		// First loop: Ensure all players' distance to the finish line are all accurate
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			player_t *player = &players[i];
-			if (!playeringame[i] || player->spectator || !player->mo || P_MobjWasRemoved(player->mo))
+			player_t* player = &players[i];
+			if (!playeringame[i] || player->spectator || !player->mo ||
+			    P_MobjWasRemoved(player->mo))
 			{
 				continue;
 			}
@@ -9482,8 +9507,9 @@ void K_UpdateAllPlayerPositions(void)
 			else
 				K_KartUpdatePosition(&players[i]);
 
-            // Get the cluster distance.
-            players[i].distancefromcluster = K_UpdateDistanceFromCluster(&players[i]);
+			// Get the cluster distance.
+			players[i].distancefromcluster =
+			    K_UndoMapScaling(K_UpdateDistanceFromCluster(&players[i]));
 		}
 	}
 }

@@ -3746,21 +3746,17 @@ static boolean P_LoadMapData(const virtres_t *virt)
 	return true;
 }
 
-static boolean P_LoadMapPatchData(const lumpnum_t lumpnum)
+static boolean P_LoadMapPatchData(const char *patchdata, size_t patchlen)
 {
 	TracyCZone(__zone, true);
 
 	size_t realnummapthings = nummapthings;
 
 	// Count map data.
-	size_t patchlen = W_LumpLength(lumpnum);
-	char *patchdata = malloc(patchlen);
-	W_ReadLump(lumpnum, patchdata);
 	M_TokenizerOpen(patchdata, patchlen);
 	if (!TextmapCount(patchlen, true))
 	{
 		M_TokenizerClose();
-		free(patchdata);
 		TracyCZoneEnd(__zone);
 		return false;
 	}
@@ -3771,7 +3767,6 @@ static boolean P_LoadMapPatchData(const lumpnum_t lumpnum)
 	// Load map data.
 	P_LoadTextmap(true);
 	M_TokenizerClose();
-	free(patchdata);
 
 	// concatenate the two mapthing arrays
 	realmapthings = Z_Realloc(realmapthings, (nummapthings + realnummapthings) * sizeof (*mapthings), PU_LEVEL, NULL);
@@ -7945,10 +7940,27 @@ static boolean P_LoadMapFromFile(void)
 	P_MakeMapHash(curmapvirt, &maphash);
 
 	// load map patch?
-	lumpnum_t patchlump = W_CheckNumForNameInFolder(G_BuildMapName(gamemap), "MapPatch/");
-	if (patchlump != LUMPERROR)
-		if (!P_LoadMapPatchData(patchlump))
-			CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
+	char *patchdata = NULL;
+	size_t patchlen;
+	if (cv_debugmappatch.string[0])
+	{
+		patchlen = FIL_ReadFile(cv_debugmappatch.string, (UINT8 **)(&patchdata));
+	}
+	else
+	{
+		lumpnum_t patchlump = W_CheckNumForNameInFolder(G_BuildMapName(gamemap), "MapPatch/");
+		if (patchlump != LUMPERROR)
+		{
+			patchlen = W_LumpLength(patchlump);
+			patchdata = Z_Malloc(patchlen, PU_STATIC, NULL);
+			W_ReadLump(patchlump, patchdata);
+		}
+	}
+
+	if (patchdata != NULL && !P_LoadMapPatchData(patchdata, patchlen))
+		CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
+
+	Z_Free(patchdata);
 
 	// Copy relevant map data for NetArchive purposes.
 	P_DeepCopySectors(&spawnsectors, &sectors, numsectors);

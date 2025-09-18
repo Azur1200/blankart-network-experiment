@@ -1466,7 +1466,7 @@ void G_GhostAddHit(INT32 playernum, mobj_t *victim)
 		return;
 	ghostext[playernum].flags |= EZT_HIT;
 	ghostext[playernum].hits++;
-	ghostext[playernum].hitlist = Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_LEVEL, &ghostext[playernum].hitlist);
+	Z_Realloc(ghostext[playernum].hitlist, ghostext[playernum].hits * sizeof(mobj_t *), PU_STATIC, &ghostext[playernum].hitlist);
 	P_SetTarget(ghostext[playernum].hitlist + (ghostext[playernum].hits-1), victim);
 }
 
@@ -1648,6 +1648,7 @@ void G_WriteGhostTic(mobj_t *ghost, INT32 playernum)
 				WRITEANGLE(demobuf.p,mo->angle);
 				P_SetTarget(ghostext[playernum].hitlist+i, NULL);
 			}
+			Z_Free(ghostext[playernum].hitlist);
 			ghostext[playernum].hits = 0;
 		}
 		if (ghostext[playernum].flags & EZT_SPRITE)
