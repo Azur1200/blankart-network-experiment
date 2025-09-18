@@ -6385,11 +6385,15 @@ static void K_RaceStart(player_t *player)
 			// RA ez charge for less annoying starts.
 			if (modeattacking != ATTACKING_NONE && !G_CompatLevel(0x0009))
 			{
+				SINT8 clampsize = 0;
 				// Let players choose between startboost and sneaker boost by holding item.
 				if (player->cmd.buttons & BT_ATTACK)
-					player->boostcharge = min(player->boostcharge++, 37);
+					clampsize = 37;
 				else
-					player->boostcharge = min(player->boostcharge++, 36);
+					clampsize = 36;
+
+				player->boostcharge++;
+				player->boostcharge = min(player->boostcharge, clampsize);
 			}
 			else
 				player->boostcharge++;

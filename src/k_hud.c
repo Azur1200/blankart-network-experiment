@@ -5097,7 +5097,7 @@ static INT32 K_GetRaceSplitsToggle(void)
 	return max((INT32)(cv_racesplits.value), 1);
 }
 
-static boolean K_doDrawSplits()
+static boolean K_doDrawSplits(void)
 {
 	return (!K_DisplayingLapEmblem()) &&
 			stplyr->karthud[khud_splittimer] &&
@@ -5119,7 +5119,7 @@ static void K_drawLapSplitTimestamp(void)
 		INT32 skin = stplyr->karthud[khud_splitskin];
 		INT32 color = stplyr->karthud[khud_splitcolor];
 		INT32 ahead = stplyr->karthud[khud_splitwin];
-		INT32 pos = stplyr->karthud[khud_splitposition];
+		// INT32 pos = stplyr->karthud[khud_splitposition];
 		
 		INT32 splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
@@ -6124,7 +6124,7 @@ void K_DrawDriftGauge(void)
 	boolean rainbow = driftcharge >= driftval*4;
 	const UINT8 level = K_GetKartDriftSparkStageForValue(stplyr, driftcharge) + 1;
 	const UINT8 backlevel = rainbow ? 4 : max(0, level - 1);
-	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? 1 + (leveltime % FIRSTSUPERCOLOR) : driftskins[level], GTC_CACHE);
+	UINT8 *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? (INT32)(1 + (leveltime % FIRSTSUPERCOLOR)) : driftskins[level], GTC_CACHE);
 
 	INT32 afterimage = stplyr->karthud[khud_afterimagetime];
 	if (!stplyr->drift)
