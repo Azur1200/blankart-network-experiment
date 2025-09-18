@@ -81,7 +81,7 @@ void K_DrawBotDebugger(const player_t *player)
 	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
 	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
 	V_DrawThinString(x1, y+48, vflags, va("preditionerror: %d", bd->predictionerror));
-	V_DrawThinString(x2, y+48, vflags, va("forwardmove: %d", player->cmd.forwardmove));
+	V_DrawThinString(x2, y+48, vflags, va("griplockout: %d", bd->griplockout));
 }
 
 /*--------------------------------------------------
@@ -1065,7 +1065,7 @@ static void K_DrawPredictionDebug(botdata_t *bd, const player_t *player)
 // Calculates drift skill for a player based on ~~stats~~ difficulty.
 static fixed_t K_BotDetermineDriftSkill(const player_t *player)
 {
-	return FixedMul(FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT, K_GetKartGameSpeedScalar(gamespeed));
+	return FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT;
 	//return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
 }
 
@@ -1298,7 +1298,7 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		bd->brakedown = false;
 
 		// Additional grip for turns.
-		if (player->speed > K_GetKartSpeed(player, false, false)/2)//35*FRACUNIT
+		if ((player->speed > K_GetKartSpeed(player, false, false)/2) && !bd->griplockout)//35*FRACUNIT
 		{
 			const angle_t MAXERROR = ANGLE_45;
 			const angle_t MIDERROR = ANGLE_22h;
@@ -1313,6 +1313,9 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 				bd->brakedown = true;
 			}
 		}
+
+		if (bd->griplockout > 0)
+			bd->griplockout--;
 
 		if (dirdist <= rad
 		 && bd->driftstate != DRIFTSTATE_STARTING) // steer towards waypoints when starting drift
@@ -1348,6 +1351,8 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 			turnvalue = 541 - (turnvalue - 541); // weight 5 = 541
 
 			turnamt = std::clamp(FixedMul(driftpower, turnvalue), -KART_FULLTURN, KART_FULLTURN);
+
+			bd->griplockout = 6;
 		}
 		/*
 		else if ((turnamt) && (bd->driftstate == DRIFTSTATE_AUTO) &&
@@ -1701,11 +1706,11 @@ void K_BotTicker(const player_t *player)
 		// Back to neutral
 		if (bd->turnconfirm < 0)
 		{
-			bd->turnconfirm++;
+			bd->turnconfirm += turndelta;
 		}
 		else if (bd->turnconfirm > 0)
 		{
-			bd->turnconfirm--;
+			bd->turnconfirm -= turndelta;
 		}
 	}
 
