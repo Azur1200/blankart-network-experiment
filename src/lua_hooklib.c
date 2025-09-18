@@ -1013,8 +1013,9 @@ void LUA_HookNetArchive(lua_CFunction archFunc, savebuffer_t *save)
 
 		begin_hook_values(&hook);
 
-		// tables becomes an upvalue of archFunc
-		lua_pushvalue(gL, -1);
+		// tables and userdata becomes an upvalue of archFunc
+		lua_pushvalue(gL, -2);
+		lua_pushvalue(gL, -2);
 		lua_pushlightuserdata(gL, save);
 		lua_pushcclosure(gL, archFunc, 2);
 		// stack: tables, savebuffer_t, archFunc
