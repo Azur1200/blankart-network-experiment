@@ -80,6 +80,8 @@ void K_DrawBotDebugger(const player_t *player)
 	V_DrawThinString(x2, y+32, vflags|(bd->driftlockout ? V_ORANGEMAP : 0), va("driftlockout: %d", bd->driftlockout));
 	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
 	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
+	V_DrawThinString(x1, y+48, vflags, va("preditionerror: %d", bd->predictionerror));
+	V_DrawThinString(x2, y+48, vflags, va("forwardmove: %d", player->cmd.forwardmove));
 }
 
 /*--------------------------------------------------
@@ -1063,7 +1065,7 @@ static void K_DrawPredictionDebug(botdata_t *bd, const player_t *player)
 // Calculates drift skill for a player based on ~~stats~~ difficulty.
 static fixed_t K_BotDetermineDriftSkill(const player_t *player)
 {
-	return FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT;
+	return FixedMul(FRACUNIT/8 + (FRACUNIT * player->botvars.difficulty) / DIFFICULTBOT, K_GetKartGameSpeedScalar(gamespeed));
 	//return ((FRACUNIT * (player->kartspeed + player->kartweight)) / 18);
 }
 
@@ -1224,6 +1226,8 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 	moveangle = player->mo->angle;
 	anglediff = AngleDeltaSigned(moveangle, destangle);
 
+	bd->predictionerror = std::min(destangle - moveangle, moveangle - destangle);
+
 	// line up for an incoming drift
 	if (bd->driftstate == DRIFTSTATE_STARTING)
 	{
@@ -1292,6 +1296,23 @@ static INT32 K_HandleBotTrack(botdata_t *bd, const player_t *player, angle_t des
 		// Full speed ahead!
 		bd->acceldown = true;
 		bd->brakedown = false;
+
+		// Additional grip for turns.
+		if (player->speed > K_GetKartSpeed(player, false, false)/2)//35*FRACUNIT
+		{
+			const angle_t MAXERROR = ANGLE_45;
+			const angle_t MIDERROR = ANGLE_22h;
+
+			if (bd->predictionerror > MAXERROR && bd->driftstate == DRIFTSTATE_AUTO)
+			{
+				bd->acceldown = false;
+				bd->brakedown = true;
+			}
+			else if (bd->predictionerror > MIDERROR && bd->driftstate == DRIFTSTATE_AUTO)
+			{
+				bd->brakedown = true;
+			}
+		}
 
 		if (dirdist <= rad
 		 && bd->driftstate != DRIFTSTATE_STARTING) // steer towards waypoints when starting drift
@@ -1656,12 +1677,15 @@ void K_BotTicker(const player_t *player)
 		ps_bots[player - players].item = I_GetPreciseTime() - t;
 	}
 
+	// Update turning quicker if we're moving at high speeds.
+	UINT8 turndelta = (player->speed > (7 * K_GetKartSpeed(player, false, false) / 4)) ? 2 : 1;
+
 	if (turnamt > 0)
 	{
 		// Count up
 		if (bd->turnconfirm < BOTTURNCONFIRM)
 		{
-			bd->turnconfirm++;
+			bd->turnconfirm += turndelta;
 		}
 	}
 	else if (turnamt < 0)
@@ -1669,7 +1693,7 @@ void K_BotTicker(const player_t *player)
 		// Count down
 		if (bd->turnconfirm > -BOTTURNCONFIRM)
 		{
-			bd->turnconfirm--;
+			bd->turnconfirm -= turndelta;
 		}
 	}
 	else
@@ -1770,7 +1794,10 @@ void K_BuildBotTiccmd(player_t *player, ticcmd_t *cmd)
 	}
 
 	// BOT_STYLE_NORMAL is the only other style, so...
-	cmd->forwardmove = !!bd->acceldown * MAXPLMOVE - !!bd->brakedown * MAXPLMOVE/2;
+	SINT8 maxacceldown = (!!bd->acceldown * MAXPLMOVE);
+	SINT8 maxbrakedown = !!bd->brakedown * MAXPLMOVE/2;
+
+	cmd->forwardmove = maxacceldown - maxbrakedown;
 	if (bd->itemthrow != 0)
 	{
 		cmd->throwdir = bd->itemthrow * KART_FULLTURN;

@@ -98,6 +98,8 @@ struct botdata_t
 	boolean itemwasdown; // last tic's item button
 	SINT8 itemthrow; // throwdir
 	INT16 turnamt; // turning
+
+	angle_t predictionerror; // How bad is our momentum angle relative to where we're trying to go?
 };
 
 // AVAILABLE FOR LUA

@@ -331,6 +331,7 @@ INT32 K_CheckpointThreshold(boolean roundup);
 
 void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
 
+fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);
 void K_ClearBoost(player_t *player);
 
