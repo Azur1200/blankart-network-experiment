@@ -64,6 +64,16 @@ void LUA_Step(void);
 void LUA_Archive(savebuffer_t *save, boolean network);
 void LUA_UnArchive(savebuffer_t *save, boolean network, boolean compat);
 
+void LUA_SetCFunctionField(lua_State *L, const char *name, lua_CFunction value);
+
+void LUA_RegisterUserdataMetatable(
+	lua_State *L,
+	const char *name,
+	lua_CFunction get,
+	lua_CFunction set,
+	lua_CFunction len
+);
+
 int LUA_PushGlobals(lua_State *L, const char *word);
 int LUA_WriteGlobals(lua_State *L, const char *word);
 

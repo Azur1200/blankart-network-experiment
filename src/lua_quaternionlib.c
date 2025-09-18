@@ -154,11 +154,29 @@ static int quaternion_get(lua_State *L)
 // OPERATORS //
 ///////////////
 
+
+// FV4_Mul isn't an accurate multiplication, so let's silently use LJ Sonic's multiplication
+// function.
+static vector4_t *QuaternionMul(vector4_t *out, vector4_t *a, vector4_t *b)
+{
+	fixed_t ax = a->x, ay = a->y, az = a->z, aw = a->a;
+	fixed_t bx = b->x, by = b->y, bz = b->z, bw = b->a;
+
+	FV4_NormalizeEx(out, FV4_Load(out,
+		FixedMul(aw, bx) + FixedMul(ax, bw) + FixedMul(ay, bz) - FixedMul(az, by),
+		FixedMul(aw, by) - FixedMul(ax, bz) + FixedMul(ay, bw) + FixedMul(az, bx),
+		FixedMul(aw, bz) + FixedMul(ax, by) - FixedMul(ay, bx) + FixedMul(az, bw),
+		FixedMul(aw, bw) - FixedMul(ax, bx) - FixedMul(ay, by) - FixedMul(az, bz)
+	));
+
+	return out;
+}
+
 static int quaternion_mul(lua_State *L)
 {
 	vector4_t *quat1 = luaL_checkudata(L, 1, META_QUATERNION);
 	vector4_t *quat2 = luaL_checkudata(L, 2, META_QUATERNION);
-	FV4_MulEx(quat1, quat2, NewQuaternion(L));
+	QuaternionMul(NewQuaternion(L), quat1, quat2);
 	return 1;
 }
 

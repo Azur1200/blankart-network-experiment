@@ -327,10 +327,10 @@ vector3_t *FV3_IntersectionPoint(const vector3_t *vNormal, const vector3_t *vLin
 UINT8 FV3_PointOnLineSide(const vector3_t *point, const vector3_t *line);
 boolean FV3_PointInsideBox(const vector3_t *point, const vector3_t *box);
 
-typedef struct
+struct vector4_t
 {
 	fixed_t x, y, z, a;
-} vector4_t;
+};
 
 vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a);
 vector4_t *FV4_UnLoad(vector4_t *vec, fixed_t *x, fixed_t *y, fixed_t *z, fixed_t *a);
@@ -353,10 +353,10 @@ vector4_t *FV4_Negate(vector4_t *a_1);
 boolean FV4_Equal(const vector4_t *a_1, const vector4_t *a_2);
 fixed_t FV4_Dot(const vector4_t *a_1, const vector4_t *a_2);
 
-typedef struct
+struct matrix_t
 {
 	fixed_t m[16];
-} matrix_t;
+};
 
 void FM_LoadIdentity(matrix_t* matrix);
 void FM_CreateObjectMatrix(matrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fixed_t anglex, fixed_t angley, fixed_t anglez, fixed_t upx, fixed_t upy, fixed_t upz, fixed_t radius);

@@ -69,7 +69,10 @@ static int matrix_translation(lua_State *L)
 {
 	vector3_t translation;
 	GetVectorOrXYZ(L, 1, &translation);
-	FM_Translate(NewMatrix(L), translation.x, translation.y, translation.z);
+
+	matrix_t *mat = NewMatrix(L);
+	FM_LoadIdentity(mat);
+	FM_Translate(mat, translation.x, translation.y, translation.z);
 	return 1;
 }
 
