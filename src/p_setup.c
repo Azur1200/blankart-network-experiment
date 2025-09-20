@@ -8059,7 +8059,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		draftingactive = true;
 
 	if (cv_kartairdrop.value)
-		airdropactive = false;
+		airdropactive = true;
 
 	invintype = (UINT8)cv_kartinvintype.value;
 
