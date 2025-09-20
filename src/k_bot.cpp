@@ -1615,6 +1615,7 @@ void K_BotTicker(const player_t *player)
 	{
 		if (player->airdroptime == 0
 			&& K_AirDropActive()
+			&& !P_PlayerInPain(player)
 			&& !player->loop.radius
 			&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 			&& !player->respawn)

@@ -6672,6 +6672,7 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	if ((player->cmd.buttons & BT_BRAKE)
 		&& K_AirDropActive()
 		&& !P_IsObjectOnGround(player->mo)
+		&& !P_PlayerInPain(player)
 		&& !player->loop.radius
 		&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
 		&& !player->respawn)
@@ -6683,6 +6684,8 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			{
 				player->ringlock = 6;
 			}
+
+			player->ringdrop = false;
 		}
 		else
 		{
@@ -6706,7 +6709,12 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 				player->ringlock = 6;
 			}
 
-			K_SpawnFallLines(player, player->rings > 0);
+			if (player->rings <= 0)
+			{
+				player->ringdrop = false;
+			}
+
+			K_SpawnFallLines(player, player->ringdrop);
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
 
@@ -6716,6 +6724,7 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	else
 	{
 		player->airdroptime = 0;
+		player->ringdrop = false;
 	}
 }
 

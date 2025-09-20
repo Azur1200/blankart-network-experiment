@@ -336,6 +336,7 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITEUINT8(save->p, players[i].ringtransparency);
 
 		WRITEUINT8(save->p, players[i].airdroptime);
+		WRITEUINT8(save->p, players[i].ringdrop);
 
 		WRITEUINT8(save->p, players[i].curshield);
 		WRITEUINT8(save->p, players[i].bubblecool);
@@ -692,6 +693,7 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].ringtransparency = READUINT8(save->p);
 
 		players[i].airdroptime = READUINT8(save->p);
+		players[i].ringdrop = READUINT8(save->p);
 
 		players[i].curshield = READUINT8(save->p);
 		players[i].bubblecool = READUINT8(save->p);

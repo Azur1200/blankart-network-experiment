@@ -264,6 +264,7 @@ enum player_e
 	player_ringvolume,
 	player_ringtransparency,
 	player_airdroptime,
+	player_ringdrop,
 	player_curshield,
 	player_bubblecool,
 	player_bubbleblowup,
@@ -463,6 +464,7 @@ static const char *const player_opt[] = {
 	"ringvolume",
 	"ringtransparency",
 	"airdroptime",
+	"ringdrop",
 	"curshield",
 	"bubblecool",
 	"bubbleblowup",
@@ -881,6 +883,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_airdroptime:
 		lua_pushinteger(L, plr->airdroptime);
+		break;
+	case player_ringdrop:
+		lua_pushinteger(L, plr->ringdrop);
 		break;
 	case player_curshield:
 		lua_pushinteger(L, plr->curshield);
@@ -1567,6 +1572,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_airdroptime:
 		plr->airdroptime = luaL_checkinteger(L, 3);
+		break;
+	case player_ringdrop:
+		plr->ringdrop = luaL_checkinteger(L, 3);
 		break;
 	case player_curshield:
 		plr->curshield = luaL_checkinteger(L, 3);

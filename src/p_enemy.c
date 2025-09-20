@@ -3175,6 +3175,7 @@ void A_AttractChase(mobj_t *actor)
 					actor->target->momz -= (FixedMul(gravity, mapobjectscale))*P_MobjFlip(actor->target);
 					actor->target->player->ringboost += 5;
 					actor->target->player->ringtime += 5;
+					actor->target->player->ringdrop = true;
 				}
 				else
 				{

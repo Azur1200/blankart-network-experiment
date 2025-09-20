@@ -691,7 +691,8 @@ struct player_t
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
 	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
 
-	UINT8 airdroptime;		// Delay before airdrop kicks in.
+	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
+	boolean ringdrop;		// Set when having ringdrop applied.
 
 	UINT8 curshield;	// see kartshields_t
 	UINT8 bubblecool;	// Bubble Shield use cooldown
