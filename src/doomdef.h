@@ -475,6 +475,12 @@ UINT32 quickncasehash (const char *p, size_t n)
 #endif
 #endif
 
+// the GNU cleanup attribute: plugging memory leaks since 2003!
+// on scope exit, the cleanup function is called with a pointer to the declared variable,
+// essentially behaving like a C++ destructor
+// NOTE: you WILL have nasal troubles if the variable is not initialized
+#define CLEANUP(f) __attribute__((__cleanup__(f)))
+
 // An assert-type mechanism.
 // NOTE: USE SRB2_ASSERT FOR C++ CODE INSTEAD
 #ifdef PARANOIA
