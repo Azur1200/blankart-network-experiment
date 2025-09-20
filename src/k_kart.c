@@ -4326,6 +4326,7 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 				mo->momz = HEIGHT*P_MobjFlip(mo);
 				mo->momx = player->mo->momx + FixedMul(FINECOSINE(fa), PROJSPEED*dir);
 				mo->momy = player->mo->momy + FixedMul(FINESINE(fa), PROJSPEED*dir);
+				mo->angle = player->mo->angle;
 
 				mo->extravalue2 = dir;
 
@@ -4355,6 +4356,9 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 				newx = lasttrail->x;
 				newy = lasttrail->y;
 				newz = lasttrail->z;
+
+				// Bananablind
+				newangle = lasttrail->angle;
 			}
 			else
 			{
@@ -4372,6 +4376,7 @@ mobj_t *K_ThrowKartItem(player_t *player, boolean missile, mobjtype_t mapthing, 
 			K_FlipFromObject(mo, player->mo);
 
 			mo->threshold = 10;
+			mo->angle = newangle;
 			P_SetTarget(&mo->target, player->mo);
 
 			if (P_IsObjectOnGround(player->mo))
@@ -5699,6 +5704,7 @@ static void K_MoveHeldObjects(player_t *player)
 				mobj_t *cur = player->mo->hnext;
 				mobj_t *curnext;
 				mobj_t *targ = player->mo;
+				UINT16 pcolor = player->skincolor;
 
 				if (P_IsObjectOnGround(player->mo) && player->speed > 0)
 					player->bananadrag++;
@@ -5716,6 +5722,10 @@ static void K_MoveHeldObjects(player_t *player)
 					{
 						// Decided that this should use their "canon" color.
 						cur->color = SKINCOLOR_BLACK;
+					}
+					else if (cur->type == MT_BANANA_SHIELD)
+					{
+						cur->color = pcolor;
 					}
 
 					cur->flags &= ~MF_NOCLIPTHING;
@@ -10143,7 +10153,10 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							else if (ATTACK_IS_DOWN && (player->itemflags & IF_ITEMOUT)) // Banana x3 thrown
 							{
 								player->itemamount--;
-								K_ThrowKartItem(player, false, MT_BANANA, -1, 0);
+
+								mobj_t *mo = K_ThrowKartItem(player, false, MT_BANANA, -1, 0);
+								mo->color = player->skincolor;
+
 								K_PlayAttackTaunt(player->mo);
 								K_UpdateHnextList(player, false);
 								K_BotResetItemConfirm(player, false);
