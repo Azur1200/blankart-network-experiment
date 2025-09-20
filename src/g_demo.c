@@ -649,7 +649,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 }
 
 // parses a demo header from the given byte pointer
-// remember to call G_FreeDemoHeader! (unless an error occurs)
+// remember to call G_FreeDemoHeader!
 static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 {
 	UINT8 *startdp = dp;
@@ -3184,13 +3184,11 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	I_Assert(bufsize != 0);
 
 	// read demo header
-	demoheader_t header;
+	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	headerstatus_e status = G_ReadDemoHeader(buffer, &header);
 	(void)status;
-	I_Assert(status == HEADER_OK);
-	I_Assert(header.version == VERSION);
-	I_Assert(header.subversion == SUBVERSION);
-	I_Assert(header.demoversion == DEMOVERSION);
+	I_Assert(status == HEADER_OK && header.version == VERSION
+	      && header.subversion == SUBVERSION && header.demoversion == DEMOVERSION);
 
 	Z_Free(buffer);
 
@@ -3206,8 +3204,6 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	else
 		newlap = UINT32_MAX;
 
-	G_FreeDemoHeader(&header);
-
 	// load old file
 	FIL_DefaultExtension(oldname, ".lmp");
 	if (!FIL_ReadFile(oldname, &buffer))
@@ -3217,7 +3213,7 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	}
 
 	// read demo header
-	demoheader_t oldheader;
+	CLEANUP(G_FreeDemoHeader) demoheader_t oldheader;
 	if (G_ReadDemoHeader(buffer, &oldheader) != HEADER_OK)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
@@ -3230,7 +3226,6 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 	if (!(oldheader.demoflags & aflags))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' not from same game mode. It will be overwritten.\n"), oldname);
-		G_FreeDemoHeader(&oldheader);
 		return UINT8_MAX;
 	}
 
@@ -3239,8 +3234,6 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 		oldlap = oldheader.attacking.lap;
 	else
 		oldlap = 0;
-
-	G_FreeDemoHeader(&oldheader);
 
 	c = 0;
 
@@ -3264,20 +3257,20 @@ UINT8 G_CmpDemoTime(char *oldname, char *newname)
 
 void G_LoadDemoInfo(menudemo_t *pdemo)
 {
-	UINT8 *infobuffer, *extrainfo_p;
+	CLEANUP(Z_Pfree) UINT8 *infobuffer = NULL;
+	const UINT8 *extrainfo_p;
 
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
-
 		return;
 	}
 
 	pdemo->type = MD_LOADED;
 
-	demoheader_t header;
+	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(infobuffer, &header))
 	{
 	case HEADER_OK:
@@ -3287,21 +3280,18 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
-		Z_Free(infobuffer);
 		return;
 
 	case HEADER_BADVERSION:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
-		Z_Free(infobuffer);
 		return;
 
 	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
 		pdemo->type = MD_INVALID;
 		sprintf(pdemo->title, "INVALID REPLAY");
-		Z_Free(infobuffer);
 		return;
 	}
 
@@ -3316,7 +3306,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	if (!(header.demoflags & DF_MULTIPLAYER))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a multiplayer replay and can't be listed on this menu fully yet.\n"), pdemo->filepath);
-		Z_Free(infobuffer);
 		return;
 	}
 
@@ -3389,10 +3378,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		if (count >= MAXPLAYERS)
 			break; //@TODO still cycle through the rest of these if extra demo data is ever used
 	}
-
-	// I think that's everything we need?
-	Z_Free(infobuffer);
-	G_FreeDemoHeader(&header);
 }
 
 //
@@ -3415,7 +3400,8 @@ void G_DoPlayDemo(char *defdemoname)
 {
 	UINT16 i, j;
 	lumpnum_t l;
-	char *n,*pdemoname;
+	CLEANUP(Z_Pfree) char *pdemoname = NULL;
+	const char *n;
 	char msg[1024];
 	UINT8 pnum;
 
@@ -3513,12 +3499,21 @@ void G_DoPlayDemo(char *defdemoname)
 		}
 	}
 
+	goto wemadeit; // :face_holding_back_tears:
+
+lumperror:
+	CONS_Alert(CONS_ERROR, "%s", msg);
+	demo.playback = false;
+	demo.title = false;
+	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
+		M_StartMessage(msg, NULL, MM_NOTHING);
+
+wemadeit:
 	// read demo header
 	demo.playback = true;
 	demo.buffer = &demobuf;
 
-	demoheader_t header;
-
+	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(demobuf.p, &header))
 	{
 	case HEADER_OK:
@@ -3527,15 +3522,15 @@ void G_DoPlayDemo(char *defdemoname)
 
 	case HEADER_BADMAGIC:
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
-		goto headererror;
+		goto error;
 
 	case HEADER_BADVERSION:
 		snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
-		goto headererror;
+		goto error;
 
 	case HEADER_BADFORMAT:
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
-		goto headererror;
+		goto error;
 	}
 
 	demo.version = header.demoversion;
@@ -3661,8 +3656,6 @@ void G_DoPlayDemo(char *defdemoname)
 
 	// Load "mapmusrng" used for altmusic selection
 	mapmusrng = header.mapmusrng;
-
-	Z_Free(pdemoname);
 
 	memset(&oldcmd,0,sizeof(oldcmd));
 	memset(&oldghost,0,sizeof(oldghost));
@@ -3811,16 +3804,11 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 
 	demo.deferstart = true;
-	G_FreeDemoHeader(&header);
 	return;
 
 error:
-	G_FreeDemoHeader(&header);
-headererror:
 	P_SaveBufferFree(&demobuf);
-lumperror:
 	CONS_Alert(CONS_ERROR, "%s", msg);
-	Z_Free(pdemoname);
 	demo.playback = false;
 	demo.title = false;
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
@@ -3839,11 +3827,12 @@ void G_AddGhost(char *defdemoname)
 {
 	INT32 i;
 	lumpnum_t l;
-	char *n,*pdemoname;
+	CLEANUP(Z_Pfree) char *pdemoname = NULL;
+	const char *n;
 	UINT64 demohash;
 	demoghost *gh;
 	UINT8 flags;
-	UINT8 *buffer;
+	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
 	mapthing_t *mthing;
 	skin_t *ghskin = &skins[0];
 
@@ -3862,7 +3851,6 @@ void G_AddGhost(char *defdemoname)
 		if (!FIL_ReadFileTag(defdemoname, &buffer, PU_LEVEL))
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), defdemoname);
-			Z_Free(pdemoname);
 			return;
 		}
 	}
@@ -3870,13 +3858,12 @@ void G_AddGhost(char *defdemoname)
 	else if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
-		Z_Free(pdemoname);
 		return;
 	}
 	else // it's an internal demo
 		buffer = W_CacheLumpNum(l, PU_LEVEL);
 
-	demoheader_t header;
+	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(buffer, &header))
 	{
 	case HEADER_OK:
@@ -3884,20 +3871,14 @@ void G_AddGhost(char *defdemoname)
 
 	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Not a SRB2 replay.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
 		return;
 
 	case HEADER_BADVERSION:
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Demo version incompatible.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
 		return;
 
 	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Demo format unacceptable.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
 		return;
 	}
 
@@ -3907,9 +3888,6 @@ void G_AddGhost(char *defdemoname)
 		if (demohash == gh->checksum) // another ghost in the game already has this checksum?
 		{ // Don't add another one, then!
 			CONS_Debug(DBG_SETUP, "Rejecting duplicate ghost %s (hash was matched)\n", pdemoname);
-			Z_Free(pdemoname);
-			Z_Free(buffer);
-			G_FreeDemoHeader(&header);
 			return;
 		}
 
@@ -3918,27 +3896,18 @@ void G_AddGhost(char *defdemoname)
 	if (!(flags & DF_GHOST))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: No ghost data in this demo.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
-		G_FreeDemoHeader(&header);
 		return;
 	}
 
 	if (flags & DF_LUAVARS) // can't be arsed to add support for grinding away ported lua material
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: Replay data contains luavars, cannot continue.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
-		G_FreeDemoHeader(&header);
 		return;
 	}
 
 	if (header.empty)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
-		G_FreeDemoHeader(&header);
 		return;
 	}
 
@@ -3948,9 +3917,6 @@ void G_AddGhost(char *defdemoname)
 	if ((plr->flags & (DEMO_SPECTATOR|DEMO_BOT)) != 0)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Invalid player slot (spectator/bot)\n"), defdemoname);
-		Z_Free(pdemoname);
-		Z_Free(buffer);
-		G_FreeDemoHeader(&header);
 		return;
 	}
 
@@ -3974,6 +3940,7 @@ void G_AddGhost(char *defdemoname)
 	gh->buffer = buffer;
 	gh->checksum = demohash;
 	gh->p = buffer + header.endofs;
+	buffer = NULL; // buffer can't be freed now!
 
 	ghosts = gh;
 
@@ -4028,8 +3995,6 @@ void G_AddGhost(char *defdemoname)
 	gh->oldmo.color = gh->mo->color;
 
 	CONS_Printf(M_GetText("Added ghost %s from %s\n"), plr->name, pdemoname);
-	G_FreeDemoHeader(&header);
-	Z_Free(pdemoname);
 }
 
 // Clean up all ghosts
@@ -4047,26 +4012,21 @@ void G_FreeGhosts(void)
 // A simplified version of G_AddGhost...
 void G_UpdateStaffGhostName(lumpnum_t l)
 {
-	UINT8 *buffer = W_CacheLumpNum(l, PU_CACHE);
+	CLEANUP(Z_Pfree) UINT8 *buffer = W_CacheLumpNum(l, PU_CACHE);
 
-	demoheader_t header;
+	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	if (G_ReadDemoHeader(buffer, &header) != HEADER_OK)
-		goto fail;
+		return;
 
 	if (!(header.demoflags & DF_GHOST))
-		goto fail; // we don't NEED to do it here, but whatever
+		return; // we don't NEED to do it here, but whatever
 
 	if (header.numplayers == 0 || header.playerdata[0].playernum != 0)
-		goto fail;
+		return;
 	if (header.playerdata[0].flags & (DEMO_SPECTATOR|DEMO_BOT))
-		goto fail;
-	strcpy(dummystaffname, header.playerdata[0].name);
+		return;
 
-	// Ok, no longer any reason to care, bye
-fail:
-	G_FreeDemoHeader(&header);
-	Z_Free(buffer);
-	return;
+	strcpy(dummystaffname, header.playerdata[0].name);
 }
 
 //

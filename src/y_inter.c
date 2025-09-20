@@ -992,7 +992,6 @@ static void Y_FollowIntermission(void)
 }
 
 #define UNLOAD(x) {if ((x) != NULL) {Patch_Free(x);} x = NULL;}
-#define CLEANUP(x) x = NULL;
 
 //
 // Y_UnloadData

@@ -622,14 +622,13 @@ static void Impl_SetFocused(boolean focused)
 		if (! cv_playmusicifunfocused.value)
 			I_SetMusicVolume(0);
 		if (! cv_playsoundifunfocused.value)
-			S_DisableSound();
+			S_StopSounds();
 
 		memset(gamekeydown, 0, NUMKEYS); // TODO this is a scary memset
 	}
-	else if (!paused)
+	else
 	{
 		S_InitMusicVolume();
-		S_EnableSound();
 	}
 }
 
