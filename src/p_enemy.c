@@ -3170,10 +3170,25 @@ void A_AttractChase(mobj_t *actor)
 			if (actor->extravalue1 >= 21)
 			{
 
-				// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
-				actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
-				actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
+				{
+					actor->target->momz -= (FixedMul(gravity, mapobjectscale))*P_MobjFlip(actor->target);
+					actor->target->player->ringboost += 5;
+					actor->target->player->ringtime += 5;
+				}
+				else
+				{
+					// Base add is 4 tics for 9,9, adds 1 tic for each point closer to the 1,1 end
+					actor->target->player->ringboost += K_GetKartRingPower(actor->target->player, true);
+					actor->target->player->ringtime += K_GetKartRingPower(actor->target->player, true);
+				}
+
 				S_StartSoundAtVolume(actor->target, sfx_s1b5, actor->target->player->ringvolume);
+
+				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
+				{
+					actor->target->momz -= (FixedMul(gravity, mapobjectscale)/2)*P_MobjFlip(actor->target);
+				}
 
 				if (actor->target->player->rings <= 10)
 				{
@@ -3199,6 +3214,7 @@ void A_AttractChase(mobj_t *actor)
 						( actor->target->height + offz )* P_MobjFlip(actor));
 				actor->extravalue1++;
 			}
+
 		}
 		else // Collecting
 		{

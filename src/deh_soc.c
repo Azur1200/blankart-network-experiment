@@ -1859,6 +1859,7 @@ static struct { const char *name; consvar_t *var; } HIDDENVARS[] = {
 	{ "DUMMYATTACKINGSLIPDASH", &cv_dummyattackingslipdash },
 	{ "DUMMYATTACKINGPURPLEDRIFT", &cv_dummyattackingpurpledrift },
 	{ "DUMMYATTACKINGSLOPEBOOST", &cv_dummyattackingslopeboost },
+	{ "DUMMYATTACKINGAIRDROP", &cv_dummyattackingairdrop },
 	{ "DUMMYSTAFF", &cv_dummystaff },
 	{ "DUMMYMULTIPLAYER", &cv_dummymultiplayer },
 	{ "DUMMYIP", &cv_dummyip },

@@ -397,6 +397,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"draftingactive")) {
 		lua_pushinteger(L, draftingactive);
 		return 1;
+	} else if (fastcmp(word,"airdropactive")) {
+		lua_pushinteger(L, airdropactive);
+		return 1;
 	} else if (fastcmp(word,"purpledriftactive")) {
 		lua_pushinteger(L, purpledriftactive);
 		return 1;

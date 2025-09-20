@@ -64,6 +64,10 @@ if(SRB2_CONFIG_ASAN)
 	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
 endif()
 
+if(SRB2_CONFIG_TIDY)
+	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
+endif()
+
 add_subdirectory(blua)
 add_subdirectory(blan)
 add_subdirectory(sdl)

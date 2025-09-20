@@ -154,6 +154,7 @@ boolean slipdashactive;
 boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
+boolean airdropactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8034,6 +8035,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	purpledriftactive = false;
 	slopeboostactive = false;
 	draftingactive = false;
+	airdropactive = false;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8055,6 +8057,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartdrafting.value)
 		draftingactive = true;
+
+	if (cv_kartairdrop.value)
+		airdropactive = false;
 
 	invintype = (UINT8)cv_kartinvintype.value;
 
@@ -8146,6 +8151,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 				purpledriftactive = true;
 			if (raflags & RAF_SLOPEBOOST)
 				slopeboostactive = true;
+			if (raflags & RAF_AIRDROP)
+				airdropactive = true;
 		}
 		else
 		{
@@ -8155,6 +8162,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			chainingactive = cv_dummyattackingchaining.value;
 			slipdashactive = cv_dummyattackingslipdash.value;
 			slopeboostactive = cv_dummyattackingslopeboost.value;
+			airdropactive = cv_dummyattackingairdrop.value;
 		}
 	}
 	else

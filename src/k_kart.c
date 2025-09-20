@@ -6592,11 +6592,7 @@ static void K_HandleRingDeincrement(player_t *player, boolean chainnerf)
 			finalringtimer += subring;
 		}
 
-		if (player->ringboost - finalringtimer > player->chaintimer)
-		{
-			// Cap this to prevent displacement between chaintimer and ringtimer.
-			player->chaintimer = min(player->ringboost, (TICRATE - TICRATE/4));
-		}
+		player->chaintimer = max(player->ringboost, player->chaintimer);
 	}
 
 	player->ringboost = max(0, player->ringboost - finalringtimer);
@@ -6631,6 +6627,93 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
 	}
 
 	K_AwardPlayerRings(player, awardamount, (mode == ASR_SUPERRING) ? true : false);
+}
+
+void K_SpawnFallLines(player_t *player, boolean ringdrop)
+{
+	fixed_t rand_x;
+	fixed_t rand_y;
+	fixed_t rand_z;
+
+	rand_z = player->mo->z + player->mo->height + (16 * player->mo->scale) + (P_RandomRange(-15,15) * player->mo->scale);
+	rand_y = player->mo->y + (P_RandomRange(-25,25) * player->mo->scale);
+	rand_x = player->mo->x + (P_RandomRange(-25,25) * player->mo->scale);
+
+	mobj_t *fast = P_SpawnMobj(rand_x, rand_y, rand_z, MT_FASTLINE);
+
+	P_SetTarget(&fast->target, player->mo);
+	fast->momx = 3*player->mo->momx/4;
+	fast->momy = 3*player->mo->momy/4;
+	fast->momz = 3*P_GetMobjZMovement(player->mo)/4;
+
+	P_SetScale(fast, fast->scale/4);
+	fast->angle = player->mo->angle+ANGLE_90;
+	fast->rollangle = ANGLE_90;
+
+	fast->colorized = true;
+
+	if (ringdrop)
+	{
+		fast->color = SKINCOLOR_CROCODILE;
+		fast->renderflags |= RF_TRANS10;
+	}
+	else
+		fast->color = SKINCOLOR_IVORY;
+
+	fast->renderflags |= RF_ADD;
+
+	K_MatchGenericExtraFlags(fast, player->mo);
+}
+
+void K_AirDrop(player_t *player, ticcmd_t *cmd)
+{
+	if (player->cmd.buttons & BT_BRAKE
+		&& !P_IsObjectOnGround(player->mo)
+		&& !player->loop.radius
+		&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+		&& !player->respawn)
+	{
+		SINT8 airbrakedelay = (player->rings > 0) ? TICRATE/4 : TICRATE/3;
+		if (player->airdroptime < airbrakedelay)
+		{
+			if (player->rings > 0)
+			{
+				player->ringlock = 6;
+			}
+		}
+		else
+		{
+			if (!player->ringdelay && player->rings > 0)
+			{
+				mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
+				P_SetMobjState(ring, S_FASTRING1);
+
+				ring->renderflags |= RF_ADD;
+				ring->renderflags |= RF_TRANS60;
+				ring->colorized = true;
+				ring->color = SKINCOLOR_SILVER;
+
+				ring->extravalue1 = 18; // Ring use animation timer
+				ring->extravalue2 = 1; // Ring use animation flag
+				ring->extravalue3 = 1; // Ring airdrop use flag
+				ring->shadowscale = 0;
+				P_SetTarget(&ring->target, player->mo); // user
+				player->rings--;
+				player->ringdelay = 5;
+				player->ringlock = 6;
+			}
+
+			K_SpawnFallLines(player, player->rings > 0);
+			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
+		}
+
+		if (player->airdroptime < UINT8_MAX)
+			player->airdroptime++;
+	}
+	else
+	{
+		player->airdroptime = 0;
+	}
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
@@ -6857,6 +6940,19 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else if (player->ringboost)
 	{
 		K_HandleRingDeincrement(player, chainingactive);
+	}
+
+	K_AirDrop(player, cmd);
+
+	if (player->ringlock)
+	{
+		player->chaintimer = max(player->chaintimer, player->ringboost);
+		player->ringlock--;
+
+		if (!player->ringlock)
+			player->pflags &= ~PF_RINGLOCK;
+		else
+			player->pflags |= PF_RINGLOCK;
 	}
 
 	if (!player->ringboost && !player->chaintimer)
@@ -9832,7 +9928,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| ((K_GetKartInvinType() == KARTINVIN_ALTERN) && player->invincibilitytimer)
 			|| (player->growshrinktimer > 0)
 			|| player->flametimer
-			|| (leveltime < starttime)))
+			|| (leveltime < starttime)
+			|| (player->pflags & PF_RINGLOCK)))
 			player->itemflags |= IF_USERINGS;
 		else
 			player->itemflags &= ~IF_USERINGS;
@@ -10950,6 +11047,17 @@ boolean K_DraftingActive(void)
 	if (draftingactive)
 	{
 		// Drafting is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_AirDropActive(void)
+{
+	if (airdropactive)
+	{
+		// Air Drop is enabled!
 		return true;
 	}
 

@@ -2740,6 +2740,8 @@ void G_BeginRecording(void)
 			raflags |= RAF_PURPLEDRIFT;
 		if (cv_dummyattackingslopeboost.value)
 			raflags |= RAF_SLOPEBOOST;
+		if (cv_dummyattackingairdrop.value)
+			raflags |= RAF_AIRDROP;
 	}
 	else
 	{

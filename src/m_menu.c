@@ -455,6 +455,8 @@ consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off"
 consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingairdrop = CVAR_INIT ("dummyattackingairdrop", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
@@ -649,6 +651,7 @@ char *M_AppendGametypeAndModName(void)
 	ADD(cv_dummyattackingslipdash, "SD-")
 	ADD(cv_dummyattackingpurpledrift, "PD-")
 	ADD(cv_dummyattackingslopeboost, "SB-")
+	ADD(cv_dummyattackingairdrop, "AD-")
 
 	new_str[len-1] = '\0';
 
@@ -2159,6 +2162,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyattackingslipdash);
 	CV_RegisterVar(&cv_dummyattackingpurpledrift);
 	CV_RegisterVar(&cv_dummyattackingslopeboost);
+	CV_RegisterVar(&cv_dummyattackingairdrop);
 
 	CV_RegisterVar(&cv_dummygpdifficulty);
 	CV_RegisterVar(&cv_dummygpencore);
@@ -5851,11 +5855,11 @@ INT32 MR_ReplayStaff(INT32 choice)
 }
 
 #define NUMPRESETS 3
-static boolean presets[NUMPRESETS][6] = {
-	//rings  stacking  chaining  slipdash  purpledrift  slopeboost
-	{ false, false,    false,    false,    false,       false}, // SRB2Kart
-	{ false, true,     true,     false,    false,       true}, // Tech
-	{ true,  true,     true,     true,     true,        true}, // BlanKart
+static boolean presets[NUMPRESETS][7] = {
+	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  airdrop
+	{ false, false,    false,    false,    false,       false,      false }, // SRB2Kart
+	{ false, true,     true,     false,    false,       true,       true }, // Tech
+	{ true,  true,     true,     true,     true,        true,       true }, // BlanKart
 };
 
 INT32 MR_TimeAttackPreset(INT32 arg)

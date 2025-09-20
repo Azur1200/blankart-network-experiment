@@ -256,12 +256,14 @@ enum player_e
 	player_ringmax,
 	player_pickuprings,
 	player_ringdelay,
+	player_ringlock,
 	player_ringboost,
 	player_ringtime,
 	player_superring,
 	player_nextringaward,
 	player_ringvolume,
 	player_ringtransparency,
+	player_airdroptime,
 	player_curshield,
 	player_bubblecool,
 	player_bubbleblowup,
@@ -453,12 +455,14 @@ static const char *const player_opt[] = {
 	"ringmax",
 	"pickuprings",
 	"ringdelay",
+	"ringlock",
 	"ringboost",
 	"ringtime",
 	"superring",
 	"nextringaward",
 	"ringvolume",
 	"ringtransparency",
+	"airdroptime",
 	"curshield",
 	"bubblecool",
 	"bubbleblowup",
@@ -854,6 +858,9 @@ static int player_get(lua_State *L)
 	case player_ringdelay:
 		lua_pushinteger(L, plr->ringdelay);
 		break;
+	case player_ringlock:
+		lua_pushinteger(L, plr->ringlock);
+		break;
 	case player_ringboost:
 		lua_pushinteger(L, plr->ringboost);
 		break;
@@ -871,6 +878,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_ringtransparency:
 		lua_pushinteger(L, plr->ringtransparency);
+		break;
+	case player_airdroptime:
+		lua_pushinteger(L, plr->airdroptime);
 		break;
 	case player_curshield:
 		lua_pushinteger(L, plr->curshield);
@@ -1534,6 +1544,9 @@ static int player_set(lua_State *L)
 	case player_ringdelay:
 		plr->ringdelay = luaL_checkinteger(L, 3);
 		break;
+	case player_ringlock:
+		plr->ringlock = luaL_checkinteger(L, 3);
+		break;
 	case player_ringboost:
 		plr->ringboost = luaL_checkinteger(L, 3);
 		break;
@@ -1551,6 +1564,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_ringtransparency:
 		plr->ringtransparency = luaL_checkinteger(L, 3);
+		break;
+	case player_airdroptime:
+		plr->airdroptime = luaL_checkinteger(L, 3);
 		break;
 	case player_curshield:
 		plr->curshield = luaL_checkinteger(L, 3);

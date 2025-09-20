@@ -41,6 +41,7 @@ typedef enum
 	RAF_SLIPDASH		= 1<<3,
 	RAF_PURPLEDRIFT		= 1<<4,
 	RAF_SLOPEBOOST		= 1<<5,
+	RAF_AIRDROP			= 1<<6,
 	// up to 1<<31 is free
 } raflags_t;
 

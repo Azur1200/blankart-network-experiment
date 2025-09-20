@@ -327,12 +327,15 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		WRITESINT8(save->p, players[i].ringmax);
 		WRITEUINT8(save->p, players[i].pickuprings);
 		WRITEUINT8(save->p, players[i].ringdelay);
+		WRITEUINT8(save->p, players[i].ringlock);
 		WRITEUINT16(save->p, players[i].ringboost);
 		WRITEUINT16(save->p, players[i].ringtime);
 		WRITEUINT16(save->p, players[i].superring);
 		WRITEUINT8(save->p, players[i].nextringaward);
 		WRITEUINT8(save->p, players[i].ringvolume);
 		WRITEUINT8(save->p, players[i].ringtransparency);
+
+		WRITEUINT8(save->p, players[i].airdroptime);
 
 		WRITEUINT8(save->p, players[i].curshield);
 		WRITEUINT8(save->p, players[i].bubblecool);
@@ -680,12 +683,15 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].ringmax = READSINT8(save->p);
 		players[i].pickuprings = READUINT8(save->p);
 		players[i].ringdelay = READUINT8(save->p);
+		players[i].ringlock = READUINT8(save->p);
 		players[i].ringboost = READUINT16(save->p);
 		players[i].ringtime = READUINT16(save->p);;
 		players[i].superring = READUINT16(save->p);
 		players[i].nextringaward = READUINT8(save->p);
 		players[i].ringvolume = READUINT8(save->p);
 		players[i].ringtransparency = READUINT8(save->p);
+
+		players[i].airdroptime = READUINT8(save->p);
 
 		players[i].curshield = READUINT8(save->p);
 		players[i].bubblecool = READUINT8(save->p);
@@ -2095,6 +2101,7 @@ typedef enum
 	MD3_GRAVITY      = 1,
 	MD3_MISCCAP      = 1<<1,
 	MD3_BAKEDOFFSET	 = 1<<2,
+	MD3_EXTVAL3		 = 1<<3,
 } mobj_diff3_t;
 
 typedef enum
@@ -2410,6 +2417,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv ||
 		mobj->bakeypiv || mobj->bakezpiv)
 		diff3 |= MD3_BAKEDOFFSET;
+	if (mobj->extravalue3)
+		diff3 |= MD3_EXTVAL3;
 
 	if (diff3 != 0)
 		diff2 |= MD2_MORE;
@@ -2695,6 +2704,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		WRITEFIXED(save->p, mobj->bakexpiv);
 		WRITEFIXED(save->p, mobj->bakeypiv);
 		WRITEFIXED(save->p, mobj->bakezpiv);
+	}
+	if (diff3 & MD3_EXTVAL3)
+	{
+		WRITEINT32(save->p, mobj->extravalue3);
 	}
 
 	WRITEUINT32(save->p, mobj->mobjnum);
@@ -3994,6 +4007,10 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 
 	{
 		mobj->bakexoff = mobj->bakeyoff = mobj->bakezoff = 0;
 		mobj->bakexpiv = mobj->bakeypiv = mobj->bakezpiv = 0;
+	}
+	if (diff3 & MD3_EXTVAL3)
+	{
+		mobj->extravalue3 = READINT32(save->p);
 	}
 
 	// Reset some non-synch values
@@ -5298,6 +5315,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, purpledriftactive);
 	WRITEUINT8(save->p, slopeboostactive);
 	WRITEUINT8(save->p, draftingactive);
+	WRITEUINT8(save->p, airdropactive);
 
 	for (i = 0; i < 12; i++)
 	{
@@ -5685,6 +5703,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	purpledriftactive = READUINT8(save->p);
 	slopeboostactive = READUINT8(save->p);
 	draftingactive = READUINT8(save->p);
+	airdropactive = READUINT8(save->p);
 
 	for (i = 0; i < 12; i++)
 	{

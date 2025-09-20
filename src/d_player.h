@@ -683,12 +683,15 @@ struct player_t
 	SINT8 ringmax;		// maximum rings
 	UINT8 pickuprings;	// Number of rings being picked up before added to the counter (prevents rings from being deleted forever over 20)
 	UINT8 ringdelay;	// (0 to 3) - 3 tic delay between every ring usage
+	UINT8 ringlock;		// Timer for automatic handeling of ringlock
 	UINT16 ringboost;	// Ring boost timer
 	UINT16 ringtime;	// The current Ring boost timer if it wasn't capped. Used for spam prevention measures.
 	UINT16 superring;	// Spawn rings on top of you every tic!
 	UINT8 nextringaward;	// When should we spawn our next superring ring?
 	UINT8 ringvolume;		// When consuming lots of rings, lower the sound a little.
-	UINT8 ringtransparency; 	// When consuming lots of rings, fade out the rings again.
+	UINT8 ringtransparency; // When consuming lots of rings, fade out the rings again.
+
+	UINT8 airdroptime;		// Delay before airdrop kicks in.
 
 	UINT8 curshield;	// see kartshields_t
 	UINT8 bubblecool;	// Bubble Shield use cooldown
