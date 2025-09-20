@@ -2055,7 +2055,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		{
 			//srb2::r_debug::add_texture_to_frame_list(texnum);
 			// R_DrawWallColumn cannot render holey textures
-			return R_GetTextureNum(R_CheckTextureNumForName("TRANSER1"));
+			return R_GetTextureNum(R_CheckTextureNumForName("TRANSER1", TEXTURETYPE_TEXTURE));
 		}
 		return texnum;
 	};

@@ -1279,7 +1279,7 @@ Rloadtextures (INT32 i, INT32 w)
 				texture->height = SHORT(patchlump.height);
 			}
 
-			texture->type = TEXTURETYPE_SINGLEPATCH;
+			texture->type = TEXTURETYPE_TEXTURE;
 			texture->patchcount = 1;
 			texture->holes = false;
 			texture->flip = 0;
@@ -1453,7 +1453,7 @@ static void R_FinishLoadingTextures(INT32 add)
 		HWR_LoadMapTextures(numtextures);
 #endif
 
-	g_texturenum_dbgline = R_CheckTextureNumForName("DBGLINE");
+	g_texturenum_dbgline = R_CheckTextureNumForName("DBGLINE", TEXTURETYPE_TEXTURE);
 }
 
 //
@@ -1802,7 +1802,7 @@ static texture_t *R_ParseTexture(boolean actuallyLoadTexture)
 			resultTexture->hash = quickncasehash(newTextureName, 8);
 			resultTexture->width = newTextureWidth;
 			resultTexture->height = newTextureHeight;
-			resultTexture->type = TEXTURETYPE_COMPOSITE;
+			resultTexture->type = TEXTURETYPE_TEXTURE;
 			resultTexture->terrainID = K_GetTerrainIDForTextureName(newTextureName);
 		}
 		Z_Free(texturesToken);
@@ -2003,7 +2003,7 @@ static void AddTextureToCache(const char *name, UINT32 hash, INT32 id, UINT8 typ
 //
 // Check whether texture is available. Filter out NoTexture indicator.
 //
-INT32 R_CheckTextureNumForName(const char *name)
+INT32 R_CheckTextureNumForName(const char *name, UINT8 type)
 {
 	INT32 i;
 	UINT32 hash;
@@ -2017,13 +2017,13 @@ INT32 R_CheckTextureNumForName(const char *name)
 	hash = quickncasehash(name, 8);
 
 	for (i = 0; i < tidcachelen; i++)
-		if (tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))
+		if (tidcache[i].type == type && tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))
 			return tidcache[i].id;
 
 	for (i = numtextures - 1; i >= 0; i--)
-		if (textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8))
+		if (textures[i]->type == type && textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8))
 		{
-			AddTextureToCache(name, hash, i, textures[i]->type);
+			AddTextureToCache(name, hash, i, type);
 			return i;
 		}
 
@@ -2033,19 +2033,26 @@ INT32 R_CheckTextureNumForName(const char *name)
 //
 // R_TextureNumForName
 //
-// Calls R_CheckTextureNumForName, aborts with error message.
+// Calls R_CheckTextureNumForName. Returns REDWALL if not found.
 //
 INT32 R_TextureNumForName(const char *name)
 {
-	const INT32 i = R_CheckTextureNumForName(name);
+	INT32 i = R_CheckTextureNumForName(name, TEXTURETYPE_TEXTURE);
 
+	// Didn't find it, so look for a flat
+	if (i == -1)
+	{
+		i = R_CheckTextureNumForName(name, TEXTURETYPE_FLAT);
+	}
+
+	// Still didn't find it, so return REDWALL
 	if (i == -1)
 	{
 		static INT32 redwall = -2;
 		CONS_Debug(DBG_SETUP, "WARNING: R_TextureNumForName: %.8s not found\n", name);
 		if (redwall == -2)
 		{
-			redwall = R_CheckTextureNumForName(MISSING_TEXTURE);
+			redwall = R_CheckTextureNumForName(MISSING_TEXTURE, TEXTURETYPE_TEXTURE);
 			if (redwall <= 256)
 				// see P_SetBinaryFOFAlpha
 				I_Error(MISSING_TEXTURE " resolved to ID <= 256. Shit's fucked man");
@@ -2054,33 +2061,6 @@ INT32 R_TextureNumForName(const char *name)
 			return redwall;
 		return 1;
 	}
+
 	return i;
-}
-
-// Like R_CheckTextureNumForName, but only looks in the flat namespace specifically.
-INT32 R_CheckFlatNumForName(const char *name)
-{
-	INT32 i;
-	UINT32 hash;
-
-	// "NoTexture" marker.
-	if (name[0] == '-')
-		return 0;
-
-	PaletteTextureHack(&name);
-
-	hash = quickncasehash(name, 8);
-
-	for (i = 0; i < tidcachelen; i++)
-		if (tidcache[i].type == TEXTURETYPE_FLAT && tidcache[i].hash == hash && !strncasecmp(tidcache[i].name, name, 8))
-			return tidcache[i].id;
-
-	for (i = numtextures - 1; i >= 0; i--)
-		if (textures[i]->hash == hash && !strncasecmp(textures[i]->name, name, 8) && textures[i]->type == TEXTURETYPE_FLAT)
-		{
-			AddTextureToCache(name, hash, i, TEXTURETYPE_FLAT);
-			return i;
-		}
-
-	return -1;
 }

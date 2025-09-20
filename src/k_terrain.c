@@ -2136,7 +2136,13 @@ static boolean K_TERRAINLumpParser(char *data, size_t size)
 							f->terrainID = K_GetTerrainHeapIndex(t);
 							CONS_Printf("Texture '%s' set to Terrain '%s'\n", f->textureName, tkn);
 
-							INT32 tex = R_CheckTextureNumForName(f->textureName);
+							INT32 tex = R_CheckTextureNumForName(f->textureName, TEXTURETYPE_TEXTURE);
+
+							if (tex == -1)
+							{
+								R_CheckTextureNumForName(f->textureName, TEXTURETYPE_FLAT);
+							}
+
 							if (tex != -1)
 							{
 								textures[tex]->terrainID = f->terrainID;
