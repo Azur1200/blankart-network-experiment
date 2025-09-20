@@ -6667,7 +6667,8 @@ void K_SpawnFallLines(player_t *player, boolean ringdrop)
 
 void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
-	if (player->cmd.buttons & BT_BRAKE
+	if ((player->cmd.buttons & BT_BRAKE)
+		&& K_AirDropActive()
 		&& !P_IsObjectOnGround(player->mo)
 		&& !player->loop.radius
 		&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
