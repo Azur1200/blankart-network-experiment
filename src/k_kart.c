@@ -2516,7 +2516,7 @@ static void K_UpdateSlopeBoost(player_t *player)
 	player->prevslopeboost = addedboost;
 }
 
-static fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax)
+fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax)
 {
 	return newmin + FixedMul(FixedDiv(value-oldmin , oldmax-oldmin), newmax-newmin);
 }
