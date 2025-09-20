@@ -81,7 +81,7 @@ void K_DrawBotDebugger(const player_t *player)
 	V_DrawThinString(x1, y+40, vflags, va("driftturn: %d", bd->driftturn));
 	V_DrawThinString(x2, y+40, vflags, va("drifttime: %d", bd->drifttime));
 	V_DrawThinString(x1, y+48, vflags, va("preditionerror: %d", bd->predictionerror));
-	V_DrawThinString(x2, y+48, vflags, va("griplockout: %d", bd->griplockout));
+	V_DrawThinString(x2, y+48, vflags|(bd->griplockout ? V_ORANGEMAP : 0), va("griplockout: %d", bd->griplockout));
 }
 
 /*--------------------------------------------------
@@ -550,6 +550,9 @@ botcontroller_t *K_GetBotController(const mobj_t *mobj)
 --------------------------------------------------*/
 fixed_t K_BotMapModifier(void)
 {
+	// fuck it we ball
+	return 5*FRACUNIT/10;
+
 	constexpr INT32 complexity_scale = 10000;
 	fixed_t modifier_max = K_TrackModifierMax();
 
