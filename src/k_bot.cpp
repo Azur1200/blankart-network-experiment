@@ -1613,7 +1613,11 @@ void K_BotTicker(const player_t *player)
 
 	if (P_IsObjectOnGround(player->mo) == false)
 	{
-		if (player->airdroptime == 0 && !player->respawn)
+		if (player->airdroptime == 0
+			&& K_AirDropActive()
+			&& !player->loop.radius
+			&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+			&& !player->respawn)
 		{
 			if (botController != nullptr && (botController->flags & TMBOT_AIRDROP) == TMBOT_AIRDROP)
 			{
