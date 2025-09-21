@@ -1469,7 +1469,7 @@ void Y_VoteDrawer(void)
 			if (players[i].skincolor)
 			{
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
-				patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
+				patch_t *facerank = faceprefix[players[i].skin][FACE_RANK];
 
 				V_DrawMappedPatch(x+24+facerank->leftoffset, y+9+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
 			}
