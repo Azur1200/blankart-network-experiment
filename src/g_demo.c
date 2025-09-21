@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000B
+#define DEMOVERSION 0x000C
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -3830,6 +3830,7 @@ void G_AddGhost(char *defdemoname)
 	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	const char *n;
 	UINT64 demohash;
+	UINT32 raflags;
 	demoghost *gh;
 	UINT8 flags;
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
@@ -3893,6 +3894,7 @@ void G_AddGhost(char *defdemoname)
 
 
 	flags = header.demoflags;
+	raflags = header.raflags;
 	if (!(flags & DF_GHOST))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: No ghost data in this demo.\n"), pdemoname);
@@ -3909,6 +3911,38 @@ void G_AddGhost(char *defdemoname)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay is empty.\n"), pdemoname);
 		return;
+	}
+
+	// Check RA flags.
+	{
+		UINT32 ourraflags = 0;
+		UINT16 demoversion = header.demoversion;
+
+		if (cv_dummyattackingrings.value)
+			ourraflags |= RAF_RINGS;
+		if (cv_dummyattackingstacking.value)
+			ourraflags |= RAF_STACKING;
+		if (cv_dummyattackingchaining.value)
+			ourraflags |= RAF_CHAINING;
+		if (cv_dummyattackingslipdash.value)
+			ourraflags |= RAF_SLIPDASH;
+		if (cv_dummyattackingpurpledrift.value)
+			ourraflags |= RAF_PURPLEDRIFT;
+		if (cv_dummyattackingslopeboost.value)
+			ourraflags |= RAF_SLOPEBOOST;
+		if (cv_dummyattackingairdrop.value)
+			ourraflags |= RAF_AIRDROP;
+
+		if (demoversion <= 0x000B)
+		{
+			ourraflags &= ~RAF_AIRDROP;
+		}
+
+		if (ourraflags != raflags)
+		{
+			CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay doesn't match current RA mode.\n"), pdemoname);
+			return;
+		}
 	}
 
 	demoplayer_t *plr = &header.playerdata[0];
