@@ -3501,7 +3501,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		tmxmove = mo->momx;
 		tmymove = mo->momy;
 	}
-	else */if (mo->eflags & MFE_JUSTBOUNCEDWALL) // Stronger push-out
+	else if*/
+	if (mo->eflags & MFE_JUSTBOUNCEDWALL) // Stronger push-out
 	{
 		tmxmove = mmomx;
 		tmymove = mmomy;

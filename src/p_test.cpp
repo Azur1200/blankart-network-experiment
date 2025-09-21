@@ -34,8 +34,6 @@ void P_TestLine(line_t* ld)
 
 line_t* P_SweepTestLines(fixed_t ax, fixed_t ay, fixed_t bx, fixed_t by, fixed_t r, vector2_t* return_normal)
 {
-	extern consvar_t cv_showgremlins;
-
 	using namespace srb2::math;
 	using namespace srb2::sweep;
 
@@ -70,7 +68,7 @@ line_t* P_SweepTestLines(fixed_t ax, fixed_t ay, fixed_t bx, fixed_t by, fixed_t
 	{
 		line_t *line = nullptr;
 
-		if (!g_lines.empty() && !G_CompatLevel(0x000E))
+		if (!g_lines.empty())
 		{
 			// FIXME: This condition is a failsafe!
 			// SlopeAABBvsLine::vs_slope can sometimes report
