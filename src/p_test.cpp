@@ -34,6 +34,8 @@ void P_TestLine(line_t* ld)
 
 line_t* P_SweepTestLines(fixed_t ax, fixed_t ay, fixed_t bx, fixed_t by, fixed_t r, vector2_t* return_normal)
 {
+	extern consvar_t cv_showgremlins;
+
 	using namespace srb2::math;
 	using namespace srb2::sweep;
 
@@ -90,6 +92,32 @@ line_t* P_SweepTestLines(fixed_t ax, fixed_t ay, fixed_t bx, fixed_t by, fixed_t
 
 			return_normal->x = FINECOSINE((lineangle >> ANGLETOFINESHIFT) & FINEMASK);
 			return_normal->y = FINESINE((lineangle >> ANGLETOFINESHIFT) & FINEMASK);
+
+			// Moving the gremlin debug here so that it
+			// still fires even when the workaround is used.
+			if (cv_showgremlins.value)
+			{
+				mobj_t *mo = g_tm.thing;
+				
+				if (mo)
+				{
+					mobj_t *x = P_SpawnMobj(mo->x, mo->y, mo->z, MT_THOK);
+					x->frame = FF_FULLBRIGHT | FF_ADD;
+					x->renderflags = RF_ALWAYSONTOP;
+					x->color = SKINCOLOR_RED;
+
+					CONS_Printf(
+						"GREMLIN: leveltime=%u x=%f y=%f z=%f momx=%f momy=%f momz=%f\n",
+						leveltime,
+						FixedToFloat(mo->x),
+						FixedToFloat(mo->y),
+						FixedToFloat(mo->z),
+						FixedToFloat(mo->momx),
+						FixedToFloat(mo->momy),
+						FixedToFloat(mo->momz)
+					);
+				}
+			}
 		}
 
 		g_lines.clear();
