@@ -913,6 +913,7 @@ struct patch_t
 {
 	INT16 width, height;
 	INT16 leftoffset, topoffset;
+	UINT8 autocentered; // Automatically centered for certain VFX
 
 	INT32 *columnofs; // Column offsets. This is relative to patch->columns
 	UINT8 *columns; // Software column data
