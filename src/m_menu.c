@@ -5735,7 +5735,7 @@ void MD_DrawTimeAttackMenu(void)
 
 	// Draw current RA preset mode.
 	{
-		const char *mode = "Unkown mode";
+		const char *mode = "Unknown mode";
 		if (preset == 0)
 		{
 			mode = "SRB2Kart Mode";
@@ -5874,6 +5874,7 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 	CV_Set(&cv_dummyattackingslipdash, preset[3] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingpurpledrift, preset[4] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingslopeboost, preset[5] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingairdrop, preset[6] ? "On" : "Off");
 	return true;
 }
 #undef NUMPRESETS
