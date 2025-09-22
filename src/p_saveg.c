@@ -5318,6 +5318,7 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITEUINT8(save->p, slopeboostactive);
 	WRITEUINT8(save->p, draftingactive);
 	WRITEUINT8(save->p, airdropactive);
+	WRITEUINT8(save->p, bumpsparkactive);
 
 	for (i = 0; i < 12; i++)
 	{
@@ -5706,6 +5707,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	slopeboostactive = READUINT8(save->p);
 	draftingactive = READUINT8(save->p);
 	airdropactive = READUINT8(save->p);
+	bumpsparkactive = READUINT8(save->p);
 
 	for (i = 0; i < 12; i++)
 	{

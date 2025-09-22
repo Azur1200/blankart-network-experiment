@@ -1,7 +1,7 @@
 // BLANKART
 //-----------------------------------------------------------------------------
-// Copyright (C) 2023 by James R.
-// Copyright (C) 2023 by Kart Krew
+// Copyright (C) 2025 by James Robert Roman
+// Copyright (C) 2025 by Kart Krew
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -180,10 +180,8 @@ Obj_InitLoopEndpoint
 void
 Obj_InitLoopCenter (mobj_t *center)
 {
-	const mapthing_t *mt = center->spawnpoint;
-
-	center_max_revolution(center) = mt->args[1] * FRACUNIT / 360;
-	center_set_flip(center, mt->args[0]);
+	center_max_revolution(center) = center->args[1] * FRACUNIT / 360;
+	center_set_flip(center, center->args[0]);
 }
 
 void
@@ -260,7 +258,7 @@ Obj_LoopEndpointCollide
 		const fixed_t magnitude = R_PointToDist2(0, 0, px, py);
 		const fixed_t newX = FixedDiv(px, magnitude);
 		const fixed_t newY = FixedDiv(py, magnitude);
-		
+
 		s->origin_shift = {FixedMul(newX, FCOS(anchor->angle)),
 			FixedMul(newY, FSIN(anchor->angle))};
 	}
@@ -285,15 +283,15 @@ Obj_LoopEndpointCollide
 	cam->enter_tic = leveltime;
 	cam->exit_tic = INFTICS;
 
-	if (center->spawnpoint->args[4]) // is camera distance set?
+	if (center->args[4]) // is camera distance set?
 	{
-		cam->zoom_out_speed = center->spawnpoint->args[2];
-		cam->zoom_in_speed = center->spawnpoint->args[3];
-		cam->dist = center->spawnpoint->args[4] * FRACUNIT;
-		cam->pan = FixedAngle(center->spawnpoint->args[5] * FRACUNIT);
-		cam->pan_speed = center->spawnpoint->args[6] * FRACUNIT;
-		cam->pan_accel = center->spawnpoint->args[7];
-		cam->pan_back = center->spawnpoint->args[8];
+		cam->zoom_out_speed = center->args[2];
+		cam->zoom_in_speed = center->args[3];
+		cam->dist = center->args[4] * FRACUNIT;
+		cam->pan = FixedAngle(center->args[5] * FRACUNIT);
+		cam->pan_speed = center->args[6] * FRACUNIT;
+		cam->pan_accel = center->args[7];
+		cam->pan_back = center->args[8];
 	}
 	else
 	{

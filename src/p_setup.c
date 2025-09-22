@@ -155,6 +155,7 @@ boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
+UINT8   bumpsparkactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
 boolean levelloading;
@@ -8036,6 +8037,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slopeboostactive = false;
 	draftingactive = false;
 	airdropactive = false;
+	bumpsparkactive = 0;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8061,6 +8063,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartairdrop.value)
 		airdropactive = true;
 
+	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	invintype = (UINT8)cv_kartinvintype.value;
 
 	// emerald hunt
@@ -8153,6 +8156,10 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 				slopeboostactive = true;
 			if (raflags & RAF_AIRDROP)
 				airdropactive = true;
+			if (raflags & RAF_BUMPSPARK)
+				bumpsparkactive = BUMPSPARK_ALL;
+			if (raflags & RAF_BUMPDRIFT)
+				bumpsparkactive = BUMPSPARK_NOCHARGE;
 		}
 		else
 		{
@@ -8163,6 +8170,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			slipdashactive = cv_dummyattackingslipdash.value;
 			slopeboostactive = cv_dummyattackingslopeboost.value;
 			airdropactive = cv_dummyattackingairdrop.value;
+			bumpsparkactive = (UINT8)(cv_dummyattackingbumpspark.value);
 		}
 	}
 	else

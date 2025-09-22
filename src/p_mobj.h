@@ -608,6 +608,7 @@ extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
 extern boolean airdropactive;
+extern UINT8   bumpsparkactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;
 

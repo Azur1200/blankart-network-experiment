@@ -3479,9 +3479,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
-	UINT32 bumpspark =
-	    max((modeattacking != ATTACKING_NONE) ? BUMPSPARK_NOCHARGE : BUMPSPARK_NONE,
-		K_GetBumpSpark());
+	UINT32 bumpspark = K_GetBumpSpark();
 
 	if ((bumpspark < BUMPSPARK_ALL) ||
 	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))

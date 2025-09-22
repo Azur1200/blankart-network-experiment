@@ -484,14 +484,15 @@ SINT8 G_RecordPresetIndex(void)
 	boolean purpledrift = cv_dummyattackingpurpledrift.value;
 	boolean slopeboost = cv_dummyattackingslopeboost.value;
 	boolean airdrop = cv_dummyattackingairdrop.value;
+	UINT8 bumpspark = cv_dummyattackingbumpspark.value;
 
 	if (!rings && !stacking && !chaining && !slipdash && !purpledrift && !slopeboost && !airdrop)
 		return RP_KART;
 
-	if (stacking && chaining && slopeboost && airdrop && !rings && !slipdash && !purpledrift)
+	if (stacking && chaining && slopeboost && airdrop && !rings && !slipdash && !purpledrift && (bumpspark == BUMPSPARK_ALL))
 		return RP_TECH;
 
-	if (rings && stacking && chaining && slipdash && purpledrift && slopeboost && airdrop)
+	if (rings && stacking && chaining && slipdash && purpledrift && slopeboost && (bumpspark == BUMPSPARK_NOCHARGE))
 		return RP_BLAN;
 
 	return RP_CUST;

@@ -2742,6 +2742,10 @@ void G_BeginRecording(void)
 			raflags |= RAF_SLOPEBOOST;
 		if (cv_dummyattackingairdrop.value)
 			raflags |= RAF_AIRDROP;
+		if (cv_dummyattackingbumpspark.value == BUMPSPARK_ALL)
+			raflags |= RAF_BUMPSPARK;
+		if (cv_dummyattackingbumpspark.value == BUMPSPARK_NOCHARGE)
+			raflags |= RAF_BUMPDRIFT;
 	}
 	else
 	{
@@ -3936,6 +3940,8 @@ void G_AddGhost(char *defdemoname)
 		if (demoversion <= 0x000B)
 		{
 			ourraflags &= ~RAF_AIRDROP;
+			ourraflags &= ~RAF_BUMPDRIFT;
+			ourraflags &= ~RAF_BUMPSPARK;
 		}
 
 		if (ourraflags != raflags)
