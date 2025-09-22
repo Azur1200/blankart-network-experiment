@@ -949,7 +949,7 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	    ? post->health - player->starpostnum > 1
 	    : post->health >= player->starpostnum + K_CheckpointThreshold(false))
 	{
-		if (!player->checkskip)
+		if (!player->checkskip && !player->bot)
 		{
 			S_StartSound(toucher, sfx_s26d);
 			if (netgame && cv_antigrief.value)
