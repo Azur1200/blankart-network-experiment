@@ -4177,6 +4177,13 @@ static int lib_kGetKartInvinType(lua_State *L)
 	return 1;
 }
 
+// Gets the currently active bumpspark type.
+static int lib_kGetBumpSpark(lua_State *L)
+{
+	lua_pushinteger(L, K_GetBumpSpark());
+	return 1;
+}
+
 // Checks if current map is using legacy boss3 bassed checkpoints. Useful for map compat.
 static int lib_kUsingLegacyCheckpoints(lua_State *L)
 {
@@ -5266,6 +5273,7 @@ static luaL_Reg lib[] = {
 	{"K_SlipdashActive",lib_kSlipdashActive},
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_DraftingActive",lib_kDraftingActive},
+	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},

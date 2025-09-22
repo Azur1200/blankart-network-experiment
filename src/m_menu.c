@@ -456,6 +456,9 @@ consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off"
 consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
+static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}};
+consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
+
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
@@ -627,6 +630,14 @@ if (cv.value) \
   strcat(new_str, str); \
 }
 
+#define ADDEQUALS(cv, str, num) \
+if (cv.value == num) \
+{ \
+  len += 3; \
+  new_str = Z_Realloc(new_str, len, PU_STATIC, NULL); \
+  strcat(new_str, str); \
+}
+
 char *M_AppendGametypeAndModName(void)
 {
 	UINT8 len = 4;
@@ -649,6 +660,8 @@ char *M_AppendGametypeAndModName(void)
 	ADD(cv_dummyattackingslipdash, "SD-")
 	ADD(cv_dummyattackingpurpledrift, "PD-")
 	ADD(cv_dummyattackingslopeboost, "SB-")
+	ADDEQUALS(cv_dummyattackingbumpspark, "BD-", BUMPSPARK_NOCHARGE)
+	ADDEQUALS(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_ALL)
 
 	new_str[len-1] = '\0';
 
@@ -2161,6 +2174,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyattackingslipdash);
 	CV_RegisterVar(&cv_dummyattackingpurpledrift);
 	CV_RegisterVar(&cv_dummyattackingslopeboost);
+	CV_RegisterVar(&cv_dummyattackingbumpspark);
 
 	CV_RegisterVar(&cv_dummygpdifficulty);
 	CV_RegisterVar(&cv_dummygpencore);
@@ -5853,11 +5867,11 @@ INT32 MR_ReplayStaff(INT32 choice)
 }
 
 #define NUMPRESETS 3
-static boolean presets[NUMPRESETS][6] = {
-	//rings  stacking  chaining  slipdash  purpledrift  slopeboost
-	{ false, false,    false,    false,    false,       false}, // SRB2Kart
-	{ false, true,     true,     false,    false,       true}, // Tech
-	{ true,  true,     true,     true,     true,        true}, // BlanKart
+static INT32 presets[NUMPRESETS][7] = {
+	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  bumpspark
+	{ 0,     0,        0,        0,        0,           0,          BUMPSPARK_NONE},     // SRB2Kart
+	{ 0,     1,        1,        0,        0,           1,          BUMPSPARK_ALL},      // Tech
+	{ 1,     1,        1,        1,        1,           1,          BUMPSPARK_NOCHARGE}, // BlanKart
 };
 
 INT32 MR_TimeAttackPreset(INT32 arg)
@@ -5866,12 +5880,27 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 		return false;
 
 	boolean *preset = presets[arg];
-	CV_Set(&cv_dummyattackingrings, preset[0] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingstacking, preset[1] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingchaining, preset[2] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslipdash, preset[3] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingpurpledrift, preset[4] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslopeboost, preset[5] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingrings, (boolean)preset[0] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingstacking, (boolean)preset[1] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingchaining, (boolean)preset[2] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingslipdash, (boolean)preset[3] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingpurpledrift, (boolean)preset[4] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingslopeboost, (boolean)preset[5] ? "On" : "Off");
+
+	switch(preset[6])
+	{
+	case BUMPSPARK_ALL:
+		CV_Set(&cv_dummyattackingbumpspark, "On");
+		break;
+	case BUMPSPARK_NOCHARGE:
+		CV_Set(&cv_dummyattackingbumpspark, "NoCharge");
+		break;
+	case BUMPSPARK_NONE:
+		/* FALLTHRU */
+	default:
+		CV_Set(&cv_dummyattackingbumpspark, "Off");
+	}
+
 	return true;
 }
 #undef NUMPRESETS

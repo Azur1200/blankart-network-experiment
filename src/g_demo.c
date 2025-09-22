@@ -2740,6 +2740,10 @@ void G_BeginRecording(void)
 			raflags |= RAF_PURPLEDRIFT;
 		if (cv_dummyattackingslopeboost.value)
 			raflags |= RAF_SLOPEBOOST;
+		if (cv_dummyattackingbumpspark.value == BUMPSPARK_ALL)
+			raflags |= RAF_BUMPSPARK;
+		if (cv_dummyattackingbumpspark.value == BUMPSPARK_NOCHARGE)
+			raflags |= RAF_BUMPDRIFT;
 	}
 	else
 	{

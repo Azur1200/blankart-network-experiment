@@ -162,6 +162,7 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
+static void KartBumpSpark_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -534,7 +535,7 @@ consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesN
 consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, KartPurpleDrift_OnChange);
 
 static CV_PossibleValue_t bumpspark_cons_t[] = {{0, "Off"}, {1, "Remove Charge Only"}, {2, "On"}, {0, NULL}};
-consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "Remove Charge Only", CV_NETVAR, bumpspark_cons_t, NULL);
+consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "Remove Charge Only", CV_NETVAR|CV_CALL, bumpspark_cons_t, KartBumpSpark_OnChange);
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
@@ -7631,6 +7632,24 @@ static void KartInvinType_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Invincibility type will be changed to \"%s\" next round.\n"), cv_kartinvintype.string);
+	}
+}
+
+static void KartBumpSpark_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Bump spark type has been changed to \"%s\".\n"), cv_kartbumpspark.string);
+		bumpsparkactive = (UINT8)cv_kartbumpspark.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Bump spark type will be changed to \"%s\" next round.\n"), cv_kartbumpspark.string);
 	}
 }
 
