@@ -5706,18 +5706,12 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(void)
 {
-	INT32 i, x, y;
 	SINT8 preset = G_RecordPresetIndex();
-
-	// draw menu (everything else goes on top of it)
-	// Sadly we can't just use generic mode menus because we need some extra hacks
-	x = currentMenu->x;
-	y = currentMenu->y;
 
 	// Character face!
 	{
 		UINT8 *colormap = R_GetTranslationColormap(cv_chooseskin.value, cv_playercolor[0].value, GTC_MENUCACHE);
-		V_DrawMappedPatch(BASEVIDWIDTH-x - SHORT(faceprefix[cv_chooseskin.value][FACE_WANTED]->width), y, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
+		V_DrawMappedPatch(BASEVIDWIDTH - menudefs[MN_SP_TIMEATTACK].x - SHORT(faceprefix[cv_chooseskin.value][FACE_WANTED]->width), menudefs[MN_SP_TIMEATTACK].y, 0, faceprefix[cv_chooseskin.value][FACE_WANTED], colormap);
 	}
 
 	MD_DrawGenericMenu();
@@ -5773,10 +5767,10 @@ void MD_DrawTimeAttackMenu(void)
 		return;
 
 	menu_t *menu = &menudefs[MN_SP_TIMEATTACK];
-	for (i = 0; i < menu->numitems; i++)
+	for (INT32 i = 0; i < menu->numitems; i++)
 	{
-		x = menu->x + menu->menuitems[i].x;
-		y = menu->y + M_GetItemAbsY(menu, i);
+		INT32 x = menu->x + menu->menuitems[i].x;
+		INT32 y = menu->y + M_GetItemAbsY(menu, i);
 		if (y < 128)
 			M_DrawMenuItem(&menu->menuitems[i], x, y, V_TRANSLUCENT|MENUCAPS, false);
 	}
