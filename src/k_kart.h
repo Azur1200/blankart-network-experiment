@@ -347,6 +347,15 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode);
 
 void K_QuiteSaltyHop(player_t *player);
 
+typedef enum
+{
+	BUMPSPARK_NONE = 0,
+	BUMPSPARK_NOCHARGE,
+	BUMPSPARK_ALL
+} bumpsparktype_t;
+
+INT32 K_GetBumpSpark(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

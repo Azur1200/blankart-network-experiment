@@ -198,34 +198,50 @@ static boolean ST_IconCanSpinout(UINT8 icon)
 // made separate so that skins code can reload custom face graphics
 void ST_LoadFaceGraphics(INT32 skinnum)
 {
-#define FACE_MAX (FACE_MINIMAP+1)
-	spritedef_t *sprdef = &skins[skinnum].sprites[SPR2_XTRA];
-	spriteframe_t *sprframe;
+#define FACE_MAX (FACE_MINIMAP + 1)
+	spritedef_t* sprdef = &skins[skinnum].sprites[SPR2_XTRA];
+	spriteframe_t* sprframe;
 	UINT8 i = 0, maxer = min(sprdef->numframes, FACE_MAX);
+	INT16 baseleftoffs, basetopoffs;
+	boolean alreadycentered = false;
 	while (i < maxer)
 	{
+		// Reset "base" offsets.
+		baseleftoffs = basetopoffs = 0;
+
 		sprframe = &sprdef->spriteframes[i];
 		faceprefix[skinnum][i] = W_CachePatchNum(sprframe->lumppat[0], PU_HUDGFX);
 
-		if (ST_IconCanSpinout(i))
+		alreadycentered = (boolean)faceprefix[skinnum][i]->autocentered;
+
+		if ((ST_IconCanSpinout(i)) && (!alreadycentered))
 		{
-			// Auto-center all minimap and rank patches with no offsets defined.
-			// This is a shitty, hacky solution... but it's less work for spinout rotations!
-			if (faceprefix[skinnum][i]->leftoffset == 0)
+			// Auto-center all minimap and rank patches with the ability to spinout.
+			// This is a shitty, hacky solution... but it's less work for spinout
+			// rotations!
+			if ((!baseleftoffs) && (faceprefix[skinnum][i]->leftoffset))
 			{
-				faceprefix[skinnum][i]->leftoffset = faceprefix[skinnum][i]->width / 2;
+				baseleftoffs = faceprefix[skinnum][i]->leftoffset;
 			}
 
-			if (faceprefix[skinnum][i]->topoffset == 0)
+			if ((!basetopoffs) && (faceprefix[skinnum][i]->topoffset))
 			{
-				faceprefix[skinnum][i]->topoffset = faceprefix[skinnum][i]->height / 2;
+				basetopoffs = faceprefix[skinnum][i]->topoffset;
 			}
+
+			faceprefix[skinnum][i]->leftoffset =
+			    (faceprefix[skinnum][i]->width / 2) + baseleftoffs;
+			faceprefix[skinnum][i]->topoffset =
+			    (faceprefix[skinnum][i]->height / 2) + basetopoffs;
+
+			// We're centered; don't do this operation again.
+			faceprefix[skinnum][i]->autocentered = 1;
 		}
 		i++;
 	}
 	if (i < FACE_MAX)
 	{
-		patch_t *missing = W_CachePatchName("MISSING", PU_HUDGFX);
+		patch_t* missing = W_CachePatchName("MISSING", PU_HUDGFX);
 		while (i < FACE_MAX)
 		{
 			faceprefix[skinnum][i] = missing;
