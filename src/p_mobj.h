@@ -407,6 +407,7 @@ struct mobj_t
 	// Extra values are for internal use for whatever you want
 	INT32 extravalue1;
 	INT32 extravalue2;
+	INT32 extravalue3;
 
 	// Custom values are not to be altered by us!
 	// They are for SOCs to store things in.
@@ -606,6 +607,7 @@ extern boolean slipdashactive;
 extern boolean purpledriftactive;
 extern boolean slopeboostactive;
 extern boolean draftingactive;
+extern boolean airdropactive;
 extern UINT8   bumpsparkactive;
 extern UINT16 bossdisabled;
 extern boolean stoppedclock;

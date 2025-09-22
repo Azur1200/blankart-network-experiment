@@ -86,6 +86,7 @@ option(SRB2_CONFIG_TRACY "Compile with Tracy profiling enabled" OFF)
 option(SRB2_CONFIG_ASAN "Compile with AddressSanitizer (libasan)." OFF)
 set(SRB2_CONFIG_ASSET_DIRECTORY "" CACHE PATH "Path to directory that contains all asset files for the installer. If set, assets will be part of installation and cpack.")
 option(SRB2_CONFIG_LTO "Enable link time optimizations, improves performance at the cost of longer link times." ON)
+option(SRB2_CONFIG_TIDY "Enable clang tiny, checks compiled code for issues at the cost of longer compile times." OFF)
 
 if(SRB2_CONFIG_ENABLE_TESTS)
 	# https://github.com/catchorg/Catch2

@@ -1640,6 +1640,26 @@ void K_BotTicker(const player_t *player)
 		forcedDir = true;
 	}
 
+	if (P_IsObjectOnGround(player->mo) == false)
+	{
+		if (player->airdroptime == 0
+			&& K_AirDropActive()
+			&& !P_PlayerInPain(player)
+			&& !player->loop.radius
+			&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+			&& !player->respawn)
+		{
+			if (botController != nullptr && (botController->flags & TMBOT_AIRDROP) == TMBOT_AIRDROP)
+			{
+				// Air Drop!
+				bd->brakedown = true;
+				return;
+			}
+		}
+
+		//return; // Don't allow bots to turn in the air.
+	}
+
 	if (forcedDir == true)
 	{
 		destangle = R_PointToAngle2(player->mo->x, player->mo->y, bd->predict.x, bd->predict.y);

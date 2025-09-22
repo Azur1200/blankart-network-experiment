@@ -198,6 +198,8 @@ extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;
 extern consvar_t cv_kartinvin_midtime;
 
+extern consvar_t cv_kartairdrop;
+
 extern consvar_t cv_encorevotes;
 
 extern consvar_t cv_votetime;

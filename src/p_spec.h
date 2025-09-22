@@ -541,6 +541,7 @@ typedef enum
 	TMBOT_NORUBBERBAND = 1,
 	TMBOT_NOCONTROL    = 1<<1,
 	TMBOT_FORCEDIR     = 1<<2,
+	TMBOT_AIRDROP      = 1<<3,
 } textmapbotcontroller_t;
 
 typedef enum

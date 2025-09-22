@@ -2363,7 +2363,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 12
+#define BASEMODS 14
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
@@ -2380,6 +2380,8 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Chain Offroad", 0, &cv_kartchainingoffroad, -1, true},
 		{"Slope Boost", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Drafting", 0, NULL, K_DraftingActive() > 0, true},
+		{"Air Drop", 0, NULL, K_AirDropActive() > 0, true},
+		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() == BUMPSPARK_ALL, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},

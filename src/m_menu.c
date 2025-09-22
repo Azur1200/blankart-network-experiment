@@ -455,8 +455,10 @@ consvar_t cv_dummyattackingchaining = CVAR_INIT ("dummyattackingchaining", "Off"
 consvar_t cv_dummyattackingslipdash = CVAR_INIT ("dummyattackingslipdash", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
+consvar_t cv_dummyattackingairdrop = CVAR_INIT ("dummyattackingairdrop", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}};
+
+static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}, {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
@@ -660,6 +662,7 @@ char *M_AppendGametypeAndModName(void)
 	ADD(cv_dummyattackingslipdash, "SD-")
 	ADD(cv_dummyattackingpurpledrift, "PD-")
 	ADD(cv_dummyattackingslopeboost, "SB-")
+	ADD(cv_dummyattackingairdrop, "AD-")
 	ADDEQUALS(cv_dummyattackingbumpspark, "BD-", BUMPSPARK_NOCHARGE)
 	ADDEQUALS(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_ALL)
 
@@ -2174,6 +2177,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummyattackingslipdash);
 	CV_RegisterVar(&cv_dummyattackingpurpledrift);
 	CV_RegisterVar(&cv_dummyattackingslopeboost);
+	CV_RegisterVar(&cv_dummyattackingairdrop);
 	CV_RegisterVar(&cv_dummyattackingbumpspark);
 
 	CV_RegisterVar(&cv_dummygpdifficulty);
@@ -5741,7 +5745,7 @@ void MD_DrawTimeAttackMenu(void)
 
 	// Draw current RA preset mode.
 	{
-		const char *mode = "Unkown mode";
+		const char *mode = "Unknown mode";
 		if (preset == 0)
 		{
 			mode = "SRB2Kart Mode";
@@ -5861,11 +5865,11 @@ INT32 MR_ReplayStaff(INT32 choice)
 }
 
 #define NUMPRESETS 3
-static INT32 presets[NUMPRESETS][7] = {
-	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  bumpspark
-	{ 0,     0,        0,        0,        0,           0,          BUMPSPARK_NONE},     // SRB2Kart
-	{ 0,     1,        1,        0,        0,           1,          BUMPSPARK_ALL},      // Tech
-	{ 1,     1,        1,        1,        1,           1,          BUMPSPARK_NOCHARGE}, // BlanKart
+static INT32 presets[NUMPRESETS][8] = {
+	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  airdrop  bumpspark
+	{ 0,     0,        0,        0,        0,           0,          0,       BUMPSPARK_NONE }, // SRB2Kart
+	{ 0,     1,        1,        0,        0,           1,          1,       BUMPSPARK_ALL }, // Tech
+	{ 1,     1,        1,        1,        1,           1,          1,       BUMPSPARK_NOCHARGE }, // BlanKart
 };
 
 INT32 MR_TimeAttackPreset(INT32 arg)
@@ -5880,8 +5884,9 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 	CV_Set(&cv_dummyattackingslipdash, (boolean)preset[3] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingpurpledrift, (boolean)preset[4] ? "On" : "Off");
 	CV_Set(&cv_dummyattackingslopeboost, (boolean)preset[5] ? "On" : "Off");
+	CV_Set(&cv_dummyattackingairdrop, preset[6] ? "On" : "Off");
 
-	switch(preset[6])
+	switch(preset[7])
 	{
 	case BUMPSPARK_ALL:
 		CV_Set(&cv_dummyattackingbumpspark, "On");
