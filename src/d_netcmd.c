@@ -533,7 +533,8 @@ consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesN
 
 consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, KartPurpleDrift_OnChange);
 
-consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "Yes", CV_NETVAR, CV_YesNo, NULL);
+static CV_PossibleValue_t bumpspark_cons_t[] = {{0, "Off"}, {1, "Remove Charge Only"}, {2, "On"}, {0, NULL}};
+consvar_t cv_kartbumpspark = CVAR_INIT ("kartbumpspark", "Remove Charge Only", CV_NETVAR, bumpspark_cons_t, NULL);
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "Yes", CV_NETVAR, CV_YesNo, NULL);
 

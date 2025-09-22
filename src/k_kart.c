@@ -6643,6 +6643,12 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
 	K_AwardPlayerRings(player, awardamount, (mode == ASR_SUPERRING) ? true : false);
 }
 
+// Returns the bumpspark value as an enum.
+INT32 K_GetBumpSpark(void)
+{
+	return max(BUMPSPARK_NONE, min(BUMPSPARK_ALL, (bumpsparktype_t)cv_kartbumpspark.value));
+}
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink

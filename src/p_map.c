@@ -3479,9 +3479,22 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
-	if ((!cv_kartbumpspark.value && modeattacking == ATTACKING_NONE) || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
+	UINT32 bumpspark =
+	    max((modeattacking != ATTACKING_NONE) ? BUMPSPARK_NOCHARGE : BUMPSPARK_NONE,
+		K_GetBumpSpark());
+
+	if ((bumpspark < BUMPSPARK_ALL) ||
+	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
 	{
-		mo->player->drift = 0;
+		if (!bumpspark)
+		{
+			// Bumps removing spark would be less frustrating if you didn't get your drift
+			// removed too. Losing sparks is a fair punishment, drifting RIGHT for
+			// daring to scrape a wall for a wide LEFT turn is horrendous and leads to
+			// awful gluewalling.
+			// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
+			mo->player->drift = 0;
+		}
 		mo->player->driftcharge = 0;
 	}
 
