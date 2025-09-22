@@ -457,7 +457,11 @@ consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift",
 consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingairdrop = CVAR_INIT ("dummyattackingairdrop", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_RESET100, "ResetTo100"}, {BUMPSPARK_ALL, "On"}};
+static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
+						     {BUMPSPARK_NOCHARGE, "Remove Charge Only"},
+						     {BUMPSPARK_RESET100, "Reset to Blue"},
+						     {BUMPSPARK_ALL, "On"},
+						     {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
@@ -5900,10 +5904,10 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 		CV_Set(&cv_dummyattackingbumpspark, "On");
 		break;
 	case BUMPSPARK_RESET100:
-		CV_Set(&cv_dummyattackingbumpspark, "ResetTo100");
+		CV_Set(&cv_dummyattackingbumpspark, "Reset to Blue");
 		break;
 	case BUMPSPARK_NOCHARGE:
-		CV_Set(&cv_dummyattackingbumpspark, "NoCharge");
+		CV_Set(&cv_dummyattackingbumpspark, "Remove Charge Only");
 		break;
 	case BUMPSPARK_NONE:
 		/* FALLTHRU */
