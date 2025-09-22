@@ -458,7 +458,7 @@ consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "
 consvar_t cv_dummyattackingairdrop = CVAR_INIT ("dummyattackingairdrop", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
 
-static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}};
+static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}, {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
