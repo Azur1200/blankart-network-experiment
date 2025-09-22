@@ -2383,7 +2383,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Air Drop", 0, NULL, K_AirDropActive() > 0, true},
 		{"Bump Spark", 0, &cv_kartbumpspark, -1, true},
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
-		{"Bump Spark", 0, NULL, K_GetBumpSpark() == BUMPSPARK_ALL, true},
+		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
 		{"Alt. Invin.", 0, NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
 	};

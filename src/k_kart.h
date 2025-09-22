@@ -352,6 +352,7 @@ typedef enum
 {
 	BUMPSPARK_NONE = 0,
 	BUMPSPARK_NOCHARGE,
+	BUMPSPARK_RESET100, // Reset to 100 (blue); the Sunflower's Garden system
 	BUMPSPARK_ALL
 } bumpsparktype_t;
 

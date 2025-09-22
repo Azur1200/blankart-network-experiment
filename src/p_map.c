@@ -3481,6 +3481,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	UINT32 bumpspark = K_GetBumpSpark();
 
+	// The easy solution is to do this :^)
+	UINT32 basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
+
 	if ((bumpspark < BUMPSPARK_ALL) ||
 	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
 	{
@@ -3493,7 +3496,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 			// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
 			mo->player->drift = 0;
 		}
-		mo->player->driftcharge = 0;
+
+		mo->player->driftcharge = (bumpspark == BUMPSPARK_RESET100) ? basecharge : 0;
 	}
 
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.

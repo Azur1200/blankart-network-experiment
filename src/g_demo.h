@@ -43,7 +43,10 @@ typedef enum
 	RAF_SLOPEBOOST		= 1<<5,
 	RAF_AIRDROP			= 1<<6,
 	RAF_BUMPDRIFT       = 1<<7,
-	RAF_BUMPSPARK       = 1<<8,
+	RAF_BUMPSPARK       = 2<<7,
+	RAF_BS_RESET100     = 3<<7,
+	RAF_BUMPSPARKMASK   = 0x3<<7,
+
 	// up to 1<<31 is free
 } raflags_t;
 

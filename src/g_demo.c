@@ -2744,6 +2744,10 @@ void G_BeginRecording(void)
 			raflags |= RAF_AIRDROP;
 		if (cv_dummyattackingbumpspark.value == BUMPSPARK_ALL)
 			raflags |= RAF_BUMPSPARK;
+		if (cv_dummyattackingbumpspark.value == BUMPSPARK_RESET100)
+		{
+			raflags |= (RAF_BUMPSPARK|RAF_BS_RESET100);
+		}
 		if (cv_dummyattackingbumpspark.value == BUMPSPARK_NOCHARGE)
 			raflags |= RAF_BUMPDRIFT;
 	}

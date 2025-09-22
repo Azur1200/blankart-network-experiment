@@ -8156,9 +8156,16 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 				slopeboostactive = true;
 			if (raflags & RAF_AIRDROP)
 				airdropactive = true;
+
+			// Bump Spark
 			if (raflags & RAF_BUMPSPARK)
-				bumpsparkactive = BUMPSPARK_ALL;
-			if (raflags & RAF_BUMPDRIFT)
+			{
+				if (raflags & RAF_BS_RESET100)
+					bumpsparkactive = BUMPSPARK_RESET100;
+				else
+					bumpsparkactive = BUMPSPARK_ALL;
+			}
+			else if (raflags & RAF_BUMPDRIFT)
 				bumpsparkactive = BUMPSPARK_NOCHARGE;
 		}
 		else

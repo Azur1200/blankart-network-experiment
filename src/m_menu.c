@@ -457,8 +457,7 @@ consvar_t cv_dummyattackingpurpledrift = CVAR_INIT ("dummyattackingpurpledrift",
 consvar_t cv_dummyattackingslopeboost = CVAR_INIT ("dummyattackingslopeboost", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 consvar_t cv_dummyattackingairdrop = CVAR_INIT ("dummyattackingairdrop", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, CV_OnOff, Nextmap_OnChange);
 
-
-static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_ALL, "On"}, {0, NULL}};
+static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"}, {BUMPSPARK_NOCHARGE, "NoCharge"}, {BUMPSPARK_RESET100, "ResetTo100"}, {BUMPSPARK_ALL, "On"}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
 static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
@@ -640,6 +639,15 @@ if (cv.value == num) \
   strcat(new_str, str); \
 }
 
+// ADD if Greater or Equal
+#define ADDGE(cv, str, num) \
+if (cv.value >= num) \
+{ \
+  len += 3; \
+  new_str = Z_Realloc(new_str, len, PU_STATIC, NULL); \
+  strcat(new_str, str); \
+}
+
 char *M_AppendGametypeAndModName(void)
 {
 	UINT8 len = 4;
@@ -664,7 +672,7 @@ char *M_AppendGametypeAndModName(void)
 	ADD(cv_dummyattackingslopeboost, "SB-")
 	ADD(cv_dummyattackingairdrop, "AD-")
 	ADDEQUALS(cv_dummyattackingbumpspark, "BD-", BUMPSPARK_NOCHARGE)
-	ADDEQUALS(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_ALL)
+	ADDGE(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_RESET100)
 
 	new_str[len-1] = '\0';
 
@@ -5890,6 +5898,9 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 	{
 	case BUMPSPARK_ALL:
 		CV_Set(&cv_dummyattackingbumpspark, "On");
+		break;
+	case BUMPSPARK_RESET100:
+		CV_Set(&cv_dummyattackingbumpspark, "ResetTo100");
 		break;
 	case BUMPSPARK_NOCHARGE:
 		CV_Set(&cv_dummyattackingbumpspark, "NoCharge");
