@@ -3410,19 +3410,38 @@ void G_DeferedPlayDemo(const char *name)
 
 #define SKIPERRORS
 
+static void PrintDemoError(const char (*msg)[1024])
+{
+	if (*msg[0] == '\0')
+		return;
+
+	CONS_Alert(CONS_ERROR, "%s", *msg);
+	demo.playback = false;
+	demo.title = false;
+	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
+		M_StartMessage(*msg, NULL, MM_NOTHING);
+}
+
+static void FreeDemoBuffer(savebuffer_t **freebuffer)
+{
+	if (*freebuffer != NULL)
+		P_SaveBufferFree(*freebuffer);
+}
+
 void G_DoPlayDemo(char *defdemoname)
 {
 	UINT16 i, j;
 	lumpnum_t l;
 	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	const char *n;
-	char msg[1024];
-	UINT8 pnum;
+	CLEANUP(PrintDemoError) char msg[1024];
+	CLEANUP(FreeDemoBuffer) savebuffer_t *freebuffer = NULL;
 
 #if defined(SKIPERRORS) && !defined(DEVELOP)
 	boolean skiperrors = false;
 #endif
 
+	msg[0] = '\0';
 	M_ClearMenus(true);
 	G_InitDemoRewind();
 	gameaction = ga_nothing;
@@ -3452,7 +3471,7 @@ void G_DoPlayDemo(char *defdemoname)
 			if (P_SaveBufferFromFile(&demobuf, defdemoname) == false)
 			{
 				snprintf(msg, 1024, M_GetText("Failed to read file '%s'.\n"), defdemoname);
-				goto lumperror;
+				return;
 			}
 		}
 		// load demo resource from WAD
@@ -3464,7 +3483,7 @@ void G_DoPlayDemo(char *defdemoname)
 				if ((l = W_CheckNumForName(defdemoname)) == LUMPERROR)
 				{
 					snprintf(msg, 1024, M_GetText("Failed to read lump '%s'.\n"), defdemoname);
-					goto lumperror;
+					return;
 				}
 
 				P_SaveBufferFromLump(&demobuf, l);
@@ -3490,7 +3509,7 @@ void G_DoPlayDemo(char *defdemoname)
 				if (mapnum >= nummapheaders || mapheaderinfo[mapnum]->lumpnum == LUMPERROR)
 				{
 					snprintf(msg, 1024, M_GetText("Failed to read lump '%s (couldn't find map %s)'.\n"), defdemoname, mapname);
-					goto lumperror;
+					return;
 				}
 
 				vRes = vres_GetMap(mapheaderinfo[mapnum]->lumpnum);
@@ -3499,7 +3518,7 @@ void G_DoPlayDemo(char *defdemoname)
 				if (vLump == NULL)
 				{
 					snprintf(msg, 1024, M_GetText("Failed to read lump '%s (couldn't find lump %s in %s)'.\n"), defdemoname, pdemoname, mapname);
-					goto lumperror;
+					return;
 				}
 
 				P_SaveBufferAlloc(&demobuf, vLump->size);
@@ -3513,19 +3532,9 @@ void G_DoPlayDemo(char *defdemoname)
 		}
 	}
 
-	goto wemadeit; // :face_holding_back_tears:
-
-lumperror:
-	CONS_Alert(CONS_ERROR, "%s", msg);
-	demo.playback = false;
-	demo.title = false;
-	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-		M_StartMessage(msg, NULL, MM_NOTHING);
-
-wemadeit:
 	// read demo header
 	demo.playback = true;
-	demo.buffer = &demobuf;
+	demo.buffer = freebuffer = &demobuf;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(demobuf.p, &header))
@@ -3536,15 +3545,15 @@ wemadeit:
 
 	case HEADER_BADMAGIC:
 		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
-		goto error;
+		return;
 
 	case HEADER_BADVERSION:
 		snprintf(msg, 1024, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemoname);
-		goto error;
+		return;
 
 	case HEADER_BADFORMAT:
 		snprintf(msg, 1024, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemoname);
-		goto error;
+		return;
 	}
 
 	demo.version = header.demoversion;
@@ -3576,31 +3585,31 @@ wemadeit:
 		snprintf(msg, 1024,
 			M_GetText("Required files for this demo are not loaded.\n\nUse\n\"playdemo %s -addfiles\"\nto load them and play the demo.\n"),
 		pdemoname);
-		goto error;
+		return;
 
 	case DFILE_ERROR_OUTOFORDER:
 		snprintf(msg, 1024,
 			M_GetText("Required files for this demo are loaded out of order.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n"),
 		pdemoname);
-		goto error;
+		return;
 
 	case DFILE_ERROR_INCOMPLETEOUTOFORDER:
 		snprintf(msg, 1024,
 			M_GetText("Required files for this demo are not loaded, and some are out of order.\n\nUse\n\"playdemo %s -addfiles\"\nto load needed files and play the demo.\n"),
 		pdemoname);
-		goto error;
+		return;
 
 	case DFILE_ERROR_CANNOTLOAD:
 		snprintf(msg, 1024,
 			M_GetText("Required files for this demo cannot be loaded.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n"),
 		pdemoname);
-		goto error;
+		return;
 
 	case DFILE_ERROR_EXTRAFILES:
 		snprintf(msg, 1024,
 			M_GetText("You have additional files loaded beyond the demo's file list.\n\nUse\n\"playdemo %s -force\"\nto play the demo anyway.\n"),
 		pdemoname);
-		goto error;
+		return;
 	}
 
 	// Moved here so these init properly.
@@ -3616,14 +3625,14 @@ wemadeit:
 	if (!gamemap || (gamemap > nummapheaders) || !mapheaderinfo[gamemap-1] || mapheaderinfo[gamemap-1]->lumpnum == LUMPERROR)
 	{
 		snprintf(msg, 1024, M_GetText("%s features a course that is not currently loaded.\n"), pdemoname);
-		goto error;
+		return;
 	}
 
 	// Sigh ... it's an empty demo.
 	if (header.empty)
 	{
 		snprintf(msg, 1024, M_GetText("%s contains no data to be played.\n"), pdemoname);
-		goto error;
+		return;
 	}
 
 	// extra checks for RA replays
@@ -3640,9 +3649,12 @@ wemadeit:
 		if (reason)
 		{
 			snprintf(msg, 1024, M_GetText("%s is a Record Attack replay with %s, and is thus invalid.\n"), pdemoname, reason);
-			goto error;
+			return;
 		}
 	}
+
+	// no more error checks at this point, don't free demobuf
+	freebuffer = NULL;
 
 	modeattacking = (demoflags & DF_ATTACKMASK)>>DF_ATTACKSHIFT;
 	multiplayer = !!(demoflags & DF_MULTIPLAYER);
@@ -3698,7 +3710,7 @@ wemadeit:
 	memset(camera,0,sizeof(camera)); // reset freecam
 
 	// Load players that were in-game when the map started
-	for (pnum = 0; pnum < header.numplayers; pnum++)
+	for (UINT8 pnum = 0; pnum < header.numplayers; pnum++)
 	{
 		demoplayer_t *plr = &header.playerdata[pnum];
 		UINT8 p = plr->playernum;
@@ -3805,28 +3817,19 @@ wemadeit:
 	CopyCaretColors(connectedservercontact, header.servercontact, MAXSERVERCONTACT);
 	strncpy(connectedserverdescription, header.serverdescription, MAXSERVERDESCRIPTION);
 
-	for (pnum = 0; pnum < header.numplayers; pnum++)
+	for (i = 0; i < header.numplayers; i++)
 	{
 		// oldghost init doesn't work here, players aren't immediately spawned anymore
 
 		// Set saved attribute values
 		// No cheat checking here, because even if they ARE wrong...
 		// it would only break the replay if we clipped them.
-		demoplayer_t *plr = &header.playerdata[pnum];
+		demoplayer_t *plr = &header.playerdata[i];
 		players[plr->playernum].kartspeed = plr->kartspeed;
 		players[plr->playernum].kartweight = plr->kartweight;
 	}
 
 	demo.deferstart = true;
-	return;
-
-error:
-	P_SaveBufferFree(&demobuf);
-	CONS_Alert(CONS_ERROR, "%s", msg);
-	demo.playback = false;
-	demo.title = false;
-	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
-		M_StartMessage(msg, NULL, MM_NOTHING);
 }
 
 void G_SetupDemoPlayer(INT32 i)
