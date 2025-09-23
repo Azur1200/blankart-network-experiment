@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000C
+#define DEMOVERSION 0x000B
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -683,8 +683,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
-		case 0x000B:
-			break;
+		case 0x000C:
 		case 0x000A:
 			break;
 
@@ -3958,12 +3957,6 @@ void G_AddGhost(char *defdemoname)
 		case BUMPSPARK_NOCHARGE:
 			raflags |= RAF_BUMPDRIFT;
 			break;
-		}
-
-		if (demoversion <= 0x000B)
-		{
-			ourraflags &= ~RAF_AIRDROP;
-			ourraflags &= ~RAF_BUMPSPARKMASK;
 		}
 
 		if (ourraflags != raflags)
