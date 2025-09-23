@@ -8865,6 +8865,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 				{
 					S_StartSound(player->mo, sfx_kc5b);
 					S_StartSound(player->mo, sfx_kc3c);
+					S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
 					S_StartSound(player->mo, sfx_s3k47);
 				}
 				break;
@@ -8874,6 +8875,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 				{
 					S_StartSound(player->mo, sfx_kc5b);
 					S_StartSound(player->mo, sfx_kc4d);
+					S_StartSoundAtVolume(player->mo, sfx_s3k81, 128);
 				}
 				break;
 			}
@@ -10081,6 +10083,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (player->flamestore == 0)
 							{
 								S_StartSound(player->mo, sfx_s3k48);
+								//S_StartSound(player->mo, sfx_s267);
 								K_PlayBoostTaunt(player->mo);
 							}
 
