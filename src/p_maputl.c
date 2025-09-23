@@ -1802,9 +1802,29 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 			pos_x += hity_x;
 			pos_y += hity_y;
 		}
-		else
+		else if (FixedMul(hitx_x, hitx_x) + FixedMul(hitx_y, hitx_y) < FixedMul(hity_x, hity_x) + FixedMul(hity_y, hity_y))
 		{
 			gridpos_x += dir_x;
+			pos_x += hitx_x;
+			pos_y += hitx_y;
+		}
+		else
+		{
+			// we hit a corner, round down towards south-east
+			if (dir_x < 0 && dir_y > 0)
+			{
+				gridpos_y += dir_y;
+			}
+			else if (dir_x > 0 && dir_y < 0)
+			{
+				gridpos_x += dir_x;
+			}
+			else
+			{
+				gridpos_x += dir_x;
+				gridpos_y += dir_y;
+			}
+
 			pos_x += hitx_x;
 			pos_y += hitx_y;
 		}
