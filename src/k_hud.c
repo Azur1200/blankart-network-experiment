@@ -928,6 +928,11 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 		result->x = -result->x;
 	}
 
+	if (camera[cameraNum].postimgflags && POSTIMG_FLIP)
+	{
+		result->y = -result->y;
+	}
+
 	// Center results.
 	result->x += screenHalfW;
 	result->y += screenHalfH;
@@ -6106,6 +6111,12 @@ void K_DrawDriftGauge(void)
 	K_ObjectTracking(&res, &pos, false);
 	basex = res.x;
 	basey = res.y;
+
+	// good ol' flipcam sigh...
+	if ((stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP))
+		basey += 25*FRACUNIT;
+	else if (stplyr->mo->eflags & MFE_VERTICALFLIP)
+		basey += 5*FRACUNIT;
 
 	driftgauge_t *gauge = &driftgauges[cv_driftgauge.value];
 	// Deal with Wifi-Style when no purps
