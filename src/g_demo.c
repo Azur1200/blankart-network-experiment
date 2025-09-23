@@ -683,6 +683,8 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
+		case 0x000B:
+			break;
 		case 0x000A:
 			break;
 
