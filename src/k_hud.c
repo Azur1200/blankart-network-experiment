@@ -3349,23 +3349,44 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p)
 		fixed_t stemx;
 		fixed_t stemy;
 		int j;
-		/*boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
+		boolean flipcam = (p->pflags & PF_FLIPCAM) && (p->mo->eflags & MFE_VERTICALFLIP);
 		boolean flipped;
 
 		if (flipcam)
 			flipped = (p->mo->eflags & MFE_VERTICALFLIP) != (stplyr->mo->eflags & MFE_VERTICALFLIP);
 		else
-			flipped = p->mo->eflags & MFE_VERTICALFLIP;*/
+			flipped = p->mo->eflags & MFE_VERTICALFLIP;
+
 		stemx = x;
 		stemy = y;
 
-		for	(j = 0; j < 4; j++)
+
+		if (flipped)
 		{
-			fixed_t last = j == 3 ? FRACUNIT : 0;
-			stemy -= FRACUNIT*4;
-			V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
-			V_DrawFixedFill(stemx + FRACUNIT, stemy + last, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
-			stemx += FRACUNIT;
+			for	(j = 0; j < 4; j++)
+			{
+				fixed_t last = j == 3 ? FRACUNIT : 0;
+				stemy += FRACUNIT*4;
+				V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
+				V_DrawFixedFill(stemx + FRACUNIT, stemy, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
+				stemx += FRACUNIT;
+			}
+
+			bary += FRACUNIT*33;
+
+			x += FRACUNIT;
+			y += FRACUNIT*33;
+		}
+		else
+		{
+			for	(j = 0; j < 4; j++)
+			{
+				fixed_t last = j == 3 ? FRACUNIT : 0;
+				stemy -= FRACUNIT*4;
+				V_DrawFixedFill(stemx, stemy, 3*FRACUNIT, 4*FRACUNIT, vflags|backcolor);
+				V_DrawFixedFill(stemx + FRACUNIT, stemy + last, FRACUNIT, 4*FRACUNIT - last, vflags|frontcolor);
+				stemx += FRACUNIT;
+			}
 		}
 
 		V_DrawFixedFill(barx, bary, barw, 3*FRACUNIT, vflags|backcolor);
