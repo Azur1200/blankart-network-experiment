@@ -2744,14 +2744,18 @@ void G_BeginRecording(void)
 			raflags |= RAF_SLOPEBOOST;
 		if (cv_dummyattackingairdrop.value)
 			raflags |= RAF_AIRDROP;
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_ALL)
-			raflags |= RAF_BUMPSPARK;
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_RESET100)
+		switch (cv_dummyattackingbumpspark.value)
 		{
-			raflags |= (RAF_BUMPSPARK|RAF_BS_RESET100);
-		}
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_NOCHARGE)
+		case BUMPSPARK_ALL:
+			raflags |= RAF_BUMPSPARK;
+			break;
+		case BUMPSPARK_RESET100:
+			raflags |= RAF_BS_RESET100;
+			break;
+		case BUMPSPARK_NOCHARGE:
 			raflags |= RAF_BUMPDRIFT;
+			break;
+		}
 	}
 	else
 	{
@@ -3942,20 +3946,24 @@ void G_AddGhost(char *defdemoname)
 			ourraflags |= RAF_SLOPEBOOST;
 		if (cv_dummyattackingairdrop.value)
 			ourraflags |= RAF_AIRDROP;
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_ALL)
-			raflags |= RAF_BUMPSPARK;
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_RESET100)
+
+		switch (cv_dummyattackingbumpspark.value)
 		{
-			raflags |= (RAF_BUMPSPARK|RAF_BS_RESET100);
-		}
-		if (cv_dummyattackingbumpspark.value == BUMPSPARK_NOCHARGE)
+		case BUMPSPARK_ALL:
+			raflags |= RAF_BUMPSPARK;
+			break;
+		case BUMPSPARK_RESET100:
+			raflags |= RAF_BS_RESET100;
+			break;
+		case BUMPSPARK_NOCHARGE:
 			raflags |= RAF_BUMPDRIFT;
+			break;
+		}
 
 		if (demoversion <= 0x000B)
 		{
 			ourraflags &= ~RAF_AIRDROP;
-			ourraflags &= ~RAF_BUMPDRIFT;
-			ourraflags &= ~RAF_BUMPSPARK;
+			ourraflags &= ~RAF_BUMPSPARKMASK;
 		}
 
 		if (ourraflags != raflags)
