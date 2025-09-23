@@ -6051,6 +6051,7 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	modeattacking = ATTACKING_NONE;
 
 	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
+	Nextmap_OnChange();
 	return true;
 }
 
