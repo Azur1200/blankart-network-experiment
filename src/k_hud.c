@@ -928,7 +928,7 @@ void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, boolean 
 		result->x = -result->x;
 	}
 
-	if (camera[cameraNum].postimgflags && POSTIMG_FLIP)
+	if (camera[cameraNum].postimgflags & POSTIMG_FLIP)
 	{
 		result->y = -result->y;
 	}
