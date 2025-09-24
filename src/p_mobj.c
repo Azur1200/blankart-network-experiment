@@ -6623,17 +6623,19 @@ static boolean P_IsMiscCapObject(INT32 type)
 {
 	switch (type)
 	{
+
 		case MT_RING:
 		case MT_FLINGRING:
-			return true;
+			if (cv_kartdebugrings.value)
+				return true;
 			break;
 
 		case MT_RANDOMITEM:
-			return true;
+			if (itembreaker)
+				return true;
 			break;
 
 		default:
-			return false;
 			break;
 	}
 
@@ -8365,7 +8367,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		// No need to check water. Who cares?
 		P_RingThinker(mobj);
 
-		P_AddMiscCap(mobj);
+		if (cv_kartdebugrings.value)
+			P_AddMiscCap(mobj);
 
 		A_AttractChase(mobj);
 		return false;
