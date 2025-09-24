@@ -133,7 +133,6 @@ static patch_t *kp_facenum[MAXPLAYERS+1];
 static patch_t *kp_facehighlight[8];
 
 static patch_t *kp_nocontestminimap;
-static patch_t *kp_spbminimap;
 static patch_t *kp_itemboxminimap;
 
 static patch_t *kp_ringsticker[5];
