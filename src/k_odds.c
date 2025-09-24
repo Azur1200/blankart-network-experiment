@@ -719,8 +719,9 @@ INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_
 				// Nonetheless, apply the start cooldown.
 				cooldownOnStart = true;
 
-				// Unique odds for Invincibility.
-				newodds = K_KartGetInvincibilityOdds(clusterDist);
+				// Unique odds for Invincibility. In legacy waypointing,
+				// its odds are doubled.
+				newodds = K_KartGetInvincibilityOdds(clusterDist) * 2;
                 
 				newodds *= BASEODDSMUL;
 				break;

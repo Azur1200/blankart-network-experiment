@@ -2329,10 +2329,13 @@ static fixed_t K_InvincibilityEasing(fixed_t x)
         min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
 }
 
+// 2.5 * FRACUNIT
+#define LEGACYALTINVINMUL 163840
 
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
     UINT32 i, pingame;
+	fixed_t distmul = FRACUNIT;
 
     if (K_GetKartInvinType() == KARTINVIN_LEGACY)
         return BASEINVINTIME;
@@ -2351,11 +2354,23 @@ UINT16 K_GetInvincibilityTime(player_t *player)
     }
 
     if (pingame <= 1)
-        return BASEINVINTIME;
+    {
+		return BASEINVINTIME;
+	}
 
-    fixed_t clustermul = K_InvincibilityEasing(player->distancefromcluster);
+	if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+	{
+		// Legacy waypointing is janky and finicky, so tack on a safety-net multiplier.
+		// If an invincible player gets ahead of the cluster player, bottlenecking activates
+		// regardless.
+		distmul = LEGACYALTINVINMUL;
+	}
+
+    fixed_t clustermul = K_InvincibilityEasing(FixedMul(player->distancefromcluster,distmul));
     return FixedMul(BASEINVINTIME, clustermul);
 }
+
+#undef LEGACYALTINVINMUL
 
 static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
