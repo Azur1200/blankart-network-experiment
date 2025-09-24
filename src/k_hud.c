@@ -375,7 +375,6 @@ void K_LoadKartHUDGraphics(void)
 
 	// Special minimap icons
 	HU_UpdatePatch(&kp_nocontestminimap, "MINIDEAD");
-	HU_UpdatePatch(&kp_spbminimap, "K_SPTKRM");
 	HU_UpdatePatch(&kp_itemboxminimap, "K_ITMMM");
 
 	// Rings & Lives
@@ -4203,7 +4202,7 @@ static void K_drawKartMinimap(void)
 						color = mobj->color;
 					}
 
-					workingPic = kp_spbminimap;
+					workingPic = kp_splitkarmabomb;
 					colormap = R_GetTranslationColormap(tc, color, GTC_CACHE);
 				}
 				else
