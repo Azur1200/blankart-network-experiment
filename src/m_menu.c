@@ -6978,7 +6978,8 @@ void MD_DrawCssStatBars(void)
 	const INT32 BITSPEEDSTARTY = 2;
 	const INT32 BITWEIGHTSTARTY = 18;
 
-	const INT32 ICNX = 1;
+	const INT32 ICNXFIRST = 1;
+	const INT32 ICNXSECOND = 57;
 	const INT32 ICNYFIRST = 1;
 	const INT32 ICNYSECOND = 17;
 
@@ -6987,11 +6988,13 @@ void MD_DrawCssStatBars(void)
 
 	patch_t *speedicn = 	W_CachePatchName("K_STSPD", PU_CACHE);
 	patch_t *weighticn = 	W_CachePatchName("K_STWHT", PU_CACHE);
-	patch_t *accelicn = 	W_CachePatchName("K_STACL", PU_CACHE);
-	patch_t *handlingicn = 	W_CachePatchName("K_STHDL", PU_CACHE);
+	//patch_t *accelicn = 	W_CachePatchName("K_STACL", PU_CACHE);
+	//patch_t *handlingicn = 	W_CachePatchName("K_STHDL", PU_CACHE);
 
 	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_SAPPHIRE, 0);
-	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_ORANGE, 0);
+	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_KETCHUP, 0);
+	UINT8 *speednumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NIGHTFALL, 0);
+	UINT8 *weightnumcolour = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_AMBER, 0);
 	// UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, 0);
 	// UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, 0);
 	UINT8 *subcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLACK, 0);
@@ -7005,31 +7008,37 @@ void MD_DrawCssStatBars(void)
 	mx = M_GetItemX(MN_MP_PLAYERSETUP, "STATBAR");
 	my = M_GetItemY(MN_MP_PLAYERSETUP, "STATBAR");
 
-	// draw speed
+	// Draw speed
 	for (i = 0; i < speed; i++)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
 	}
-	// draw accel
+	// Draw accel
 	for (i = 0; i < 9-speed; i++)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 
-	// draw weight
+	// Draw weight
 	for (i = 0; i < weight; i++)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
 	}
-	// draw handling
+	// Draw handling
 	for (i = 0; i < 9-weight; i++)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
 	
-	//draw our icons
-	V_DrawFixedPatch((mx + ICNX)<<FRACBITS, (my + ICNYFIRST)<<FRACBITS, FRACUNIT, 0, speedicn, NULL);
-	V_DrawFixedPatch((mx + ICNX)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
+	// Draw our icons
+	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYFIRST)<<FRACBITS, FRACUNIT, 0, speedicn, NULL);
+	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
+
+	// Draw stat numbers
+	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYFIRST+3), V_BLUEMAP, va("%d",speed));
+	//V_DrawThinString((mx + ICNXSECOND+3), (my + ICNYSECOND+3), V_ORANGEMAP, va("%d",weight));
+	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (speed == 7 ? 1 : 0))<<FRACBITS, (my + ICNYFIRST+2)<<FRACBITS, 0, speed, 1, speednumcolour);
+	V_DrawPaddedTallColorNumAtFixed((mx + ICNXSECOND+11 + (weight == 7 ? 1 : 0))<<FRACBITS, (my + ICNYSECOND+2)<<FRACBITS, 0, weight, 1, weightnumcolour);
 }
 
 void MD_DrawCssColourBar(void)
