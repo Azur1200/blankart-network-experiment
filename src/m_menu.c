@@ -6969,15 +6969,22 @@ void MD_DrawCssStatBars(void)
 {
 	INT32 mx, my;
 
-	const INT32 BITSPACING = 4 + 1;
+	const INT32 BITSPACING = 4;
+	const INT32 BITSHIFTSUB = 1;
 
-	const INT32 BITSTARTX = 19;
+	const INT32 BITSTARTXMAIN = 17;
+	const INT32 BITSTARTXSUB = 50;
 
-	const INT32 BITSPEEDSTARTY = 3;
-	const INT32 BITWEIGHTSTARTY = 19;
+	const INT32 BITSPEEDSTARTY = 2;
+	const INT32 BITWEIGHTSTARTY = 18;
 
-	patch_t *speedbit = W_CachePatchName("STATBSPD", PU_CACHE);
-	patch_t *weightbit = W_CachePatchName("STATBWGT", PU_CACHE);
+	patch_t *statbitsub = W_CachePatchName("STATBSPD", PU_CACHE);
+	patch_t *statbitmain = W_CachePatchName("STATBWGT", PU_CACHE);
+
+	UINT8 *speedcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_BLUE, 0);
+	UINT8 *weightcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_RED, 0);
+	UINT8 *accelcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, 0);
+	UINT8 *handlingcolour = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_MINT, 0);
 
 	INT32 skintodisplay = cv_chooseskin.value;
 	UINT8 speed = skins[skintodisplay].kartspeed;
@@ -6991,12 +6998,23 @@ void MD_DrawCssStatBars(void)
 	// draw speed
 	for (i = 0; i < speed; i++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, speedbit, NULL);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, speedcolour);
 	}
+	// draw accel
+	for (i = 0; i < 9-speed; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITSPEEDSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, accelcolour);
+	}
+
 	// draw weight
 	for (i = 0; i < weight; i++)
 	{
-		V_DrawFixedPatch((mx + BITSTARTX + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, weightbit, NULL);
+		V_DrawFixedPatch((mx + BITSTARTXMAIN + (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY)<<FRACBITS, FRACUNIT, 0, statbitmain, weightcolour);
+	}
+	// draw handling
+	for (i = 0; i < 9-weight; i++)
+	{
+		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, handlingcolour);
 	}
 }
 
