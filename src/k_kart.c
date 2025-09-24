@@ -2631,13 +2631,13 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->draftpower > 0) // Drafting
 	{
 		fixed_t draftspeed = K_BoostRescale(player->kartspeed*FRACUNIT, 9*FRACUNIT, FRACUNIT, DRAFTMINSPEED, DRAFTMAXSPEED);
-		fixed_t bonusaccel = K_BoostRescale(player->kartspeed*FRACUNIT, 4*FRACUNIT, 9*FRACUNIT, 0, FRACUNIT/2);
+		fixed_t bonusaccel = FRACUNIT/2;
 
 		player->boostinfo.stackspeedboost += FixedMul(draftspeed, player->draftpower);
 		player->boostinfo.nonstackspeedboost = max(player->boostinfo.nonstackspeedboost, FixedMul(draftspeed, player->draftpower));
 
-		// Now for a small amount of bonus accel for higher speeds.
-		if (player->draftpower >= FRACUNIT && player->kartspeed > 4)
+		// Now for a small amount of bonus accel
+		if (player->draftpower >= FRACUNIT)
 		{
 			// CONS_Printf("bonusaccel: %d\n", bonusaccel);
 			if (cv_kartstacking_accelstack.value && K_StackingActive())
