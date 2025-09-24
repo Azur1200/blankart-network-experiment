@@ -53,6 +53,8 @@ struct follower_t
 {
 	char skinname[SKINNAMESIZE+1];	// Skin Name. This is what to refer to when asking the commands anything.
 	char name[SKINNAMESIZE+1];		// Name. This is used for the menus. We'll just follow the same rules as skins for this.
+	char icon[8+1];			// Lump names are only 8 characters. (+1 for \0)
+
 
 	skincolornum_t defaultcolor;	// default color for menus.
 	followermode_t mode;			// Follower behavior modifier.

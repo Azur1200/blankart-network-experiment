@@ -3713,10 +3713,11 @@ void readfollower(MYFILE *f)
 	followers[numfollowers].horzlag = 3*FRACUNIT;
 	followers[numfollowers].vertlag = 6*FRACUNIT;
 	followers[numfollowers].anglelag = 8*FRACUNIT;
-	followers[numfollowers].bobspeed = (TICRATE*2)*FRACUNIT;
+	followers[numfollowers].bobspeed = TICRATE*2;
 	followers[numfollowers].bobamp = 4*FRACUNIT;
 	followers[numfollowers].hitconfirmtime = TICRATE;
-	followers[numfollowers].defaultcolor = SKINCOLOR_GREEN;
+	followers[numfollowers].defaultcolor = FOLLOWERCOLOR_MATCH;
+	strcpy(followers[numfollowers].icon, "MISSING");
 
 	do
 	{
@@ -3748,6 +3749,11 @@ void readfollower(MYFILE *f)
 			if (fastcmp(word, "NAME"))
 			{
 				strcpy(followers[numfollowers].name, word2);
+				nameset = true;
+			}
+			else if (fastcmp(word, "ICON"))
+			{
+				strlcpy(followers[numfollowers].icon, word2, 8+1);
 				nameset = true;
 			}
 			else if (fastcmp(word, "MODE"))
