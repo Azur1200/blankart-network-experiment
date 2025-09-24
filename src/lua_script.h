@@ -34,7 +34,9 @@ extern "C" {
 // fixed_t casting
 // TODO add some distinction between fixed numbers and integer numbers
 // for at least the purpose of printing and maybe math.
+#define lua_tofixed(L, i) lua_tointeger(L, i)
 #define luaL_checkfixed(L, i) luaL_checkinteger(L, i)
+#define luaL_optfixed(L, i, d) luaL_optinteger(L, i, d)
 #define lua_pushfixed(L, f) lua_pushinteger(L, f)
 
 // angle_t casting
@@ -61,6 +63,16 @@ fixed_t LUA_EvalMath(const char *word);
 void LUA_Step(void);
 void LUA_Archive(savebuffer_t *save, boolean network);
 void LUA_UnArchive(savebuffer_t *save, boolean network, boolean compat);
+
+void LUA_SetCFunctionField(lua_State *L, const char *name, lua_CFunction value);
+
+void LUA_RegisterUserdataMetatable(
+	lua_State *L,
+	const char *name,
+	lua_CFunction get,
+	lua_CFunction set,
+	lua_CFunction len
+);
 
 int LUA_PushGlobals(lua_State *L, const char *word);
 int LUA_WriteGlobals(lua_State *L, const char *word);

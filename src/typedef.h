@@ -228,6 +228,7 @@ TYPEDEF (mdllistitem_t);
 // m_fixed.h
 TYPEDEF (vector2_t);
 TYPEDEF (vector3_t);
+TYPEDEF (vector4_t);
 TYPEDEF (matrix_t);
 
 // m_perfstats.h

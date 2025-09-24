@@ -381,19 +381,6 @@ static const char *const slope_opt[] = {
 	"flags",
 	NULL};
 
-// shared by both vector2_t and vector3_t
-enum vector_e {
-	vector_x = 0,
-	vector_y,
-	vector_z
-};
-
-static const char *const vector_opt[] = {
-	"x",
-	"y",
-	"z",
-	NULL};
-
 enum activator_e {
 	activator_valid = 0,
 	activator_mo,
@@ -2375,17 +2362,32 @@ static int slope_get(lua_State *L)
 		lua_pushboolean(L, 1);
 		return 1;
 	case slope_o: // o
-		LUA_PushUserdata(L, &slope->o, META_VECTOR3);
+	{
+		vector3_t *vec = lua_newuserdata(L, sizeof(vector3_t));
+		luaL_getmetatable(L, META_VECTOR3);
+		lua_setmetatable(L, -2);
+		FV3_Load(vec, slope->o.x, slope->o.y, slope->o.z);
 		return 1;
+	}
 	case slope_d: // d
-		LUA_PushUserdata(L, &slope->d, META_VECTOR2);
+	{
+		vector2_t *vec = lua_newuserdata(L, sizeof(vector2_t));
+		luaL_getmetatable(L, META_VECTOR2);
+		lua_setmetatable(L, -2);
+		FV2_Load(vec, slope->d.x, slope->d.y);
 		return 1;
+	}
 	case slope_zdelta: // zdelta
 		lua_pushfixed(L, slope->zdelta);
 		return 1;
 	case slope_normal: // normal
-		LUA_PushUserdata(L, &slope->normal, META_VECTOR3);
+	{
+		vector3_t *vec = lua_newuserdata(L, sizeof(vector3_t));
+		luaL_getmetatable(L, META_VECTOR3);
+		lua_setmetatable(L, -2);
+		FV3_Load(vec, slope->normal.x, slope->normal.y, slope->normal.z);
 		return 1;
+	}
 	case slope_zangle: // zangle
 		lua_pushangle(L, slope->zangle);
 		return 1;
@@ -2483,47 +2485,6 @@ static int slope_set(lua_State *L)
 		P_CalculateSlopeNormal(slope);
 		break;
 	}
-	return 0;
-}
-
-///////////////
-// vector*_t //
-///////////////
-
-static int vector2_get(lua_State *L)
-{
-	vector2_t *vec = *((vector2_t **)luaL_checkudata(L, 1, META_VECTOR2));
-	enum vector_e field = luaL_checkoption(L, 2, vector_opt[0], vector_opt);
-
-	if (!vec)
-		return luaL_error(L, "accessed vector2_t doesn't exist anymore.");
-
-	switch(field)
-	{
-		case vector_x: lua_pushfixed(L, vec->x); return 1;
-		case vector_y: lua_pushfixed(L, vec->y); return 1;
-		default: break;
-	}
-
-	return 0;
-}
-
-static int vector3_get(lua_State *L)
-{
-	vector3_t *vec = *((vector3_t **)luaL_checkudata(L, 1, META_VECTOR3));
-	enum vector_e field = luaL_checkoption(L, 2, vector_opt[0], vector_opt);
-
-	if (!vec)
-		return luaL_error(L, "accessed vector3_t doesn't exist anymore.");
-
-	switch(field)
-	{
-		case vector_x: lua_pushfixed(L, vec->x); return 1;
-		case vector_y: lua_pushfixed(L, vec->y); return 1;
-		case vector_z: lua_pushfixed(L, vec->z); return 1;
-		default: break;
-	}
-
 	return 0;
 }
 
@@ -2894,16 +2855,6 @@ int LUA_MapLib(lua_State *L)
 
 		lua_pushcfunction(L, slope_set);
 		lua_setfield(L, -2, "__newindex");
-	lua_pop(L, 1);
-
-	luaL_newmetatable(L, META_VECTOR2);
-		lua_pushcfunction(L, vector2_get);
-		lua_setfield(L, -2, "__index");
-	lua_pop(L, 1);
-
-	luaL_newmetatable(L, META_VECTOR3);
-		lua_pushcfunction(L, vector3_get);
-		lua_setfield(L, -2, "__index");
 	lua_pop(L, 1);
 
 	luaL_newmetatable(L, META_MAPHEADER);

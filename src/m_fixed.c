@@ -248,6 +248,15 @@ vector3_t *FV3_Load(vector3_t *vec, fixed_t x, fixed_t y, fixed_t z)
 	return vec;
 }
 
+vector4_t *FV4_Load(vector4_t *vec, fixed_t x, fixed_t y, fixed_t z, fixed_t a)
+{
+	vec->x = x;
+	vec->y = y;
+	vec->z = z;
+	vec->a = a;
+	return vec;
+}
+
 vector3_t *FV3_UnLoad(vector3_t *vec, fixed_t *x, fixed_t *y, fixed_t *z)
 {
 	*x = vec->x;
@@ -256,9 +265,23 @@ vector3_t *FV3_UnLoad(vector3_t *vec, fixed_t *x, fixed_t *y, fixed_t *z)
 	return vec;
 }
 
+vector4_t *FV4_UnLoad(vector4_t *vec, fixed_t *x, fixed_t *y, fixed_t *z, fixed_t *a)
+{
+	*x = vec->x;
+	*y = vec->y;
+	*z = vec->z;
+	*a = vec->a;
+	return vec;
+}
+
 vector3_t *FV3_Copy(vector3_t *a_o, const vector3_t *a_i)
 {
 	return M_Memcpy(a_o, a_i, sizeof(vector3_t));
+}
+
+vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i)
+{
+	return M_Memcpy(a_o, a_i, sizeof(vector4_t));
 }
 
 vector3_t *FV3_AddEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
@@ -269,9 +292,23 @@ vector3_t *FV3_AddEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
 	return a_o;
 }
 
+vector4_t *FV4_AddEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = a_i->x + a_c->x;
+	a_o->y = a_i->y + a_c->y;
+	a_o->z = a_i->z + a_c->z;
+	a_o->a = a_i->a + a_c->a;
+	return a_o;
+}
+
 vector3_t *FV3_Add(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_AddEx(a_i, a_c, a_i);
+}
+
+vector4_t *FV4_Add(vector4_t *a_i, const vector4_t *a_c)
+{
+	return FV4_AddEx(a_i, a_c, a_i);
 }
 
 vector3_t *FV3_SubEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
@@ -282,35 +319,77 @@ vector3_t *FV3_SubEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
 	return a_o;
 }
 
+vector4_t *FV4_SubEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = a_i->x - a_c->x;
+	a_o->y = a_i->y - a_c->y;
+	a_o->z = a_i->z - a_c->z;
+	a_o->a = a_i->a - a_c->a;
+	return a_o;
+}
+
 vector3_t *FV3_Sub(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_SubEx(a_i, a_c, a_i);
 }
 
-vector3_t *FV3_MulEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o)
+vector4_t *FV4_Sub(vector4_t *a_i, const vector4_t *a_c)
 {
-	a_o->x = FixedMul(a_i->x, a_c);
-	a_o->y = FixedMul(a_i->y, a_c);
-	a_o->z = FixedMul(a_i->z, a_c);
+	return FV4_SubEx(a_i, a_c, a_i);
+}
+
+vector3_t *FV3_MulEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
+{
+	a_o->x = FixedMul(a_i->x, a_c->x);
+	a_o->y = FixedMul(a_i->y, a_c->y);
+	a_o->z = FixedMul(a_i->z, a_c->z);
 	return a_o;
 }
 
-vector3_t *FV3_Mul(vector3_t *a_i, fixed_t a_c)
+vector4_t *FV4_MulEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = FixedMul(a_i->x, a_c->x);
+	a_o->y = FixedMul(a_i->y, a_c->y);
+	a_o->z = FixedMul(a_i->z, a_c->z);
+	a_o->a = FixedMul(a_i->a, a_c->a);
+	return a_o;
+}
+
+vector3_t *FV3_Mul(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_MulEx(a_i, a_c, a_i);
 }
 
-vector3_t *FV3_DivideEx(const vector3_t *a_i, fixed_t a_c, vector3_t *a_o)
+vector4_t *FV4_Mul(vector4_t *a_i, const vector4_t *a_c)
 {
-	a_o->x = FixedDiv(a_i->x, a_c);
-	a_o->y = FixedDiv(a_i->y, a_c);
-	a_o->z = FixedDiv(a_i->z, a_c);
+	return FV4_MulEx(a_i, a_c, a_i);
+}
+
+vector3_t *FV3_DivideEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
+{
+	a_o->x = FixedDiv(a_i->x, a_c->x);
+	a_o->y = FixedDiv(a_i->y, a_c->y);
+	a_o->z = FixedDiv(a_i->z, a_c->z);
 	return a_o;
 }
 
-vector3_t *FV3_Divide(vector3_t *a_i, fixed_t a_c)
+vector4_t *FV4_DivideEx(const vector4_t *a_i, const vector4_t *a_c, vector4_t *a_o)
+{
+	a_o->x = FixedDiv(a_i->x, a_c->x);
+	a_o->y = FixedDiv(a_i->y, a_c->y);
+	a_o->z = FixedDiv(a_i->z, a_c->z);
+	a_o->a = FixedDiv(a_i->a, a_c->a);
+	return a_o;
+}
+
+vector3_t *FV3_Divide(vector3_t *a_i, const vector3_t *a_c)
 {
 	return FV3_DivideEx(a_i, a_c, a_i);
+}
+
+vector4_t *FV4_Divide(vector4_t *a_i, const vector4_t *a_c)
+{
+	return FV4_DivideEx(a_i, a_c, a_i);
 }
 
 // Vector Complex Math
@@ -325,6 +404,19 @@ vector3_t *FV3_Midpoint(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a
 	return a_o;
 }
 
+vector4_t *FV4_Midpoint(const vector4_t *a_1, const vector4_t *a_2, vector4_t *a_o)
+{
+	a_o->x = FixedDiv(a_2->x - a_1->x, 2 * FRACUNIT);
+	a_o->y = FixedDiv(a_2->y - a_1->y, 2 * FRACUNIT);
+	a_o->z = FixedDiv(a_2->z - a_1->z, 2 * FRACUNIT);
+	a_o->a = FixedDiv(a_2->a - a_1->a, 2 * FRACUNIT);
+	a_o->x = a_1->x + a_o->x;
+	a_o->y = a_1->y + a_o->y;
+	a_o->z = a_1->z + a_o->z;
+	a_o->a = a_1->z + a_o->a;
+	return a_o;
+}
+
 fixed_t FV3_Distance(const vector3_t *p1, const vector3_t *p2)
 {
 	fixed_t xs = FixedMul(p2->x - p1->x, p2->x - p1->x);
@@ -333,12 +425,30 @@ fixed_t FV3_Distance(const vector3_t *p1, const vector3_t *p2)
 	return FixedSqrt(xs + ys + zs);
 }
 
+fixed_t FV4_Distance(const vector4_t *p1, const vector4_t *p2)
+{
+	fixed_t xs = FixedMul(p2->x - p1->x, p2->x - p1->x);
+	fixed_t ys = FixedMul(p2->y - p1->y, p2->y - p1->y);
+	fixed_t zs = FixedMul(p2->z - p1->z, p2->z - p1->z);
+	fixed_t za = FixedMul(p2->a - p1->a, p2->a - p1->a);
+	return FixedSqrt(xs + ys + zs + za);
+}
+
 fixed_t FV3_Magnitude(const vector3_t *a_normal)
 {
 	fixed_t xs = FixedMul(a_normal->x, a_normal->x);
 	fixed_t ys = FixedMul(a_normal->y, a_normal->y);
 	fixed_t zs = FixedMul(a_normal->z, a_normal->z);
 	return FixedSqrt(xs + ys + zs);
+}
+
+fixed_t FV4_Magnitude(const vector4_t *a_normal)
+{
+	fixed_t xs = FixedMul(a_normal->x, a_normal->x);
+	fixed_t ys = FixedMul(a_normal->y, a_normal->y);
+	fixed_t zs = FixedMul(a_normal->z, a_normal->z);
+	fixed_t as = FixedMul(a_normal->a, a_normal->a);
+	return FixedSqrt(xs + ys + zs + as);
 }
 
 // Also returns the magnitude
@@ -351,9 +461,24 @@ fixed_t FV3_NormalizeEx(const vector3_t *a_normal, vector3_t *a_o)
 	return magnitude;
 }
 
+fixed_t FV4_NormalizeEx(const vector4_t *a_normal, vector4_t *a_o)
+{
+	fixed_t magnitude = FV4_Magnitude(a_normal);
+	a_o->x = FixedDiv(a_normal->x, magnitude);
+	a_o->y = FixedDiv(a_normal->y, magnitude);
+	a_o->z = FixedDiv(a_normal->z, magnitude);
+	a_o->a = FixedDiv(a_normal->a, magnitude);
+	return magnitude;
+}
+
 fixed_t FV3_Normalize(vector3_t *a_normal)
 {
 	return FV3_NormalizeEx(a_normal, a_normal);
+}
+
+fixed_t FV4_Normalize(vector4_t *a_normal)
+{
+	return FV4_NormalizeEx(a_normal, a_normal);
 }
 
 vector3_t *FV3_NegateEx(const vector3_t *a_1, vector3_t *a_o)
@@ -364,9 +489,23 @@ vector3_t *FV3_NegateEx(const vector3_t *a_1, vector3_t *a_o)
 	return a_o;
 }
 
+vector4_t *FV4_NegateEx(const vector4_t *a_1, vector4_t *a_o)
+{
+	a_o->x = -a_1->x;
+	a_o->y = -a_1->y;
+	a_o->z = -a_1->z;
+	a_o->a = -a_1->a;
+	return a_o;
+}
+
 vector3_t *FV3_Negate(vector3_t *a_1)
 {
 	return FV3_NegateEx(a_1, a_1);
+}
+
+vector4_t *FV4_Negate(vector4_t *a_1)
+{
+	return FV4_NegateEx(a_1, a_1);
 }
 
 boolean FV3_Equal(const vector3_t *a_1, const vector3_t *a_2)
@@ -383,9 +522,29 @@ boolean FV3_Equal(const vector3_t *a_1, const vector3_t *a_2)
 	return false;
 }
 
+boolean FV4_Equal(const vector4_t *a_1, const vector4_t *a_2)
+{
+	fixed_t Epsilon = FRACUNIT / FRACUNIT;
+
+	if ((abs(a_2->x - a_1->x) > Epsilon) ||
+		(abs(a_2->y - a_1->y) > Epsilon) ||
+		(abs(a_2->z - a_1->z) > Epsilon) ||
+		(abs(a_2->a - a_1->a) > Epsilon))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 fixed_t FV3_Dot(const vector3_t *a_1, const vector3_t *a_2)
 {
 	return (FixedMul(a_1->x, a_2->x) + FixedMul(a_1->y, a_2->y) + FixedMul(a_1->z, a_2->z));
+}
+
+fixed_t FV4_Dot(const vector4_t *a_1, const vector4_t *a_2)
+{
+	return (FixedMul(a_1->x, a_2->x) + FixedMul(a_1->y, a_2->y) + FixedMul(a_1->z, a_2->z) + FixedMul(a_1->a, a_2->a));
 }
 
 vector3_t *FV3_Cross(const vector3_t *a_1, const vector3_t *a_2, vector3_t *a_o)
@@ -424,8 +583,9 @@ vector3_t *FV3_ClosestPointOnLine(const vector3_t *Line, const vector3_t *p, vec
 		return FV3_Copy(out, &Line[1]);
 	}
 
-	// Return the point between �Line[0]� and �Line[1]�
-	FV3_Mul(&V, t);
+	// Return the point between "Line[0]" and "Line[1]"
+	vector3_t T = { t, t, t };
+	FV3_Mul(&V, &T);
 
 	return FV3_AddEx(&Line[0], &V, out);
 }
@@ -440,7 +600,8 @@ void FV3_ClosestPointOnVector(const vector3_t *dir, const vector3_t *p, vector3_
 	fixed_t t = FV3_Dot(dir, p);
 
 	// Return the point on the line closest
-	FV3_MulEx(dir, t, out);
+	vector3_t T = { t, t, t };
+	FV3_MulEx(dir, &T, out);
 	return;
 }
 
@@ -782,7 +943,7 @@ void FM_CreateObjectMatrix(matrix_t *matrix, fixed_t x, fixed_t y, fixed_t z, fi
 //
 // Multiplies a vector by the specified matrix
 //
-void FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *out)
+const vector3_t *FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *out)
 {
 #define M(row,col)  matrix->m[col * 4 + row]
 	out->x = FixedMul(vec->x, M(0, 0))
@@ -800,6 +961,34 @@ void FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *
 		+ FixedMul(vec->z, M(2, 2))
 		+ M(2, 3);
 #undef M
+	return out;
+}
+
+const vector4_t *FM_MultMatrixVec4(const matrix_t *matrix, const vector4_t *vec, vector4_t *out)
+{
+#define M(row,col)  matrix->m[col * 4 + row]
+	out->x = FixedMul(vec->x, M(0, 0))
+		+ FixedMul(vec->y, M(0, 1))
+		+ FixedMul(vec->z, M(0, 2))
+		+ FixedMul(vec->a, M(0, 3));
+
+	out->y = FixedMul(vec->x, M(1, 0))
+		+ FixedMul(vec->y, M(1, 1))
+		+ FixedMul(vec->z, M(1, 2))
+		+ FixedMul(vec->a, M(1, 3));
+
+	out->z = FixedMul(vec->x, M(2, 0))
+		+ FixedMul(vec->y, M(2, 1))
+		+ FixedMul(vec->z, M(2, 2))
+		+ FixedMul(vec->a, M(2, 3));
+
+
+	out->a = FixedMul(vec->x, M(3, 0))
+		+ FixedMul(vec->y, M(3, 1))
+		+ FixedMul(vec->z, M(3, 2))
+		+ FixedMul(vec->a, M(3, 3));
+#undef M
+	return out;
 }
 
 //
@@ -807,13 +996,12 @@ void FM_MultMatrixVec3(const matrix_t *matrix, const vector3_t *vec, vector3_t *
 //
 // Multiples one matrix into another
 //
-void FM_MultMatrix(matrix_t *dest, const matrix_t *multme)
+void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest)
 {
-	matrix_t result;
 	UINT8 i, j;
-#define M(row,col)  multme->m[col * 4 + row]
-#define D(row,col)  dest->m[col * 4 + row]
-#define R(row,col)  result.m[col * 4 + row]
+#define M(row,col)  m1->m[col * 4 + row]
+#define D(row,col)  m2->m[col * 4 + row]
+#define R(row,col)  dest->m[col * 4 + row]
 
 	for (i = 0; i < 4; i++)
 	{
@@ -821,11 +1009,14 @@ void FM_MultMatrix(matrix_t *dest, const matrix_t *multme)
 			R(i, j) = FixedMul(D(i, 0), M(0, j)) + FixedMul(D(i, 1), M(1, j)) + FixedMul(D(i, 2), M(2, j)) + FixedMul(D(i, 3), M(3, j));
 	}
 
-	M_Memcpy(dest, &result, sizeof(matrix_t));
-
 #undef R
 #undef D
 #undef M
+}
+
+void FM_MultMatrix(matrix_t *dest, const matrix_t *multme)
+{
+	FM_MultMatrixEx(dest, multme, dest);
 }
 
 //

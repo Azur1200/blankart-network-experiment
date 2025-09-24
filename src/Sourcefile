@@ -117,6 +117,9 @@ lua_hudlib_drawlist.c
 lua_followerlib.c
 lua_terrainlib.c
 lua_waypointslib.c
+lua_vectorlib.c
+lua_matrixlib.c
+lua_quaternionlib.c
 k_kart.c
 k_collide.c
 k_color.c
