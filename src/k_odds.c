@@ -153,8 +153,8 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 };
 
 #define DISTVAR (2048) // Magic number distance for use with item roulette tiers
-#define SPBSTARTDIST (5*DISTVAR) // Distance when SPB can start appearing
-#define SPBFORCEDIST (15*DISTVAR) // Distance when SPB is forced onto 2nd place
+#define SPBSTARTDIST (4*DISTVAR) // Distance when SPB can start appearing
+#define SPBFORCEDIST (14*DISTVAR) // Distance when SPB is forced onto 2nd place
 #define ENDDIST (12*DISTVAR) // Distance when the game stops giving you bananas
 
 SINT8 K_ItemResultToType(SINT8 getitem)
@@ -459,17 +459,36 @@ INT32 K_KartGetItemOdds(
 
 	if (first != -1 && second != -1) // calculate 2nd's distance from 1st, for SPB
 	{
-		firstDist = players[first].distancetofinish;
 
-		if (mapobjectscale != FRACUNIT)
+		if (!K_UsingLegacyCheckpoints())
 		{
-			firstDist = FixedDiv(firstDist * FRACUNIT, mapobjectscale) / FRACUNIT;
-		}
+			firstDist = players[first].distancetofinish;
 
-		secondToFirst = K_ScaleItemDistance(
-			players[second].distancetofinish - players[first].distancetofinish,
-			pingame, spbrush
-		);
+			if (mapobjectscale != FRACUNIT)
+			{
+				firstDist = FixedDiv(firstDist * FRACUNIT, mapobjectscale) / FRACUNIT;
+			}
+
+			secondToFirst = K_ScaleItemDistance(
+				players[second].distancetofinish - players[first].distancetofinish,
+				pingame, spbrush
+			);
+		}
+		else
+		{
+			secondToFirst = P_AproxDistance(P_AproxDistance(
+				players[first].mo->x/4 - players[second].mo->x/4,
+				players[first].mo->y/4 - players[second].mo->y/4),
+				players[first].mo->z/4 - players[second].mo->z/4);
+
+			// Scale it to prevent overflow issues.
+			secondToFirst = (secondToFirst / FRACUNIT)*2;
+
+			secondToFirst = K_ScaleItemDistance(
+				secondToFirst,
+				pingame, spbrush
+			);
+		}
 	}
 
 	switch (item)
@@ -532,7 +551,11 @@ INT32 K_KartGetItemOdds(
 			indirectItem = true;
 			notNearEnd = true;
 
-			if (firstDist < ENDDIST) // No SPB near the end of the race
+			if (!K_UsingLegacyCheckpoints() && firstDist < ENDDIST) // No SPB near the end of the race
+			{
+				newodds = 0;
+			}
+			else if (K_UsingLegacyCheckpoints() && pexiting > 0)
 			{
 				newodds = 0;
 			}
