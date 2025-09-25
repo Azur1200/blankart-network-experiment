@@ -510,6 +510,9 @@ INT32 K_KartGetItemOdds(
 				// Nonetheless, apply the start cooldown.
 				cooldownOnStart = true;
 
+				// Also, PLEASE prevent shitty last lap bagging endings.
+				notNearEnd = true;
+
 				// Unique odds for Invincibility.
 				newodds = K_KartGetInvincibilityOdds(clusterDist);
                 

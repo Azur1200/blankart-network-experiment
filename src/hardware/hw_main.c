@@ -4717,11 +4717,20 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
+	mobj_t *interptarg;
 
 	if (!thing)
 		return;
 
-	R_InterpolateMobjState(thing, R_GetTimeFrac(RTF_LEVEL), &interp);
+	interptarg = thing;
+
+	if (R_IsOverlayingInvinciblePlayer(thing))
+	{
+		// Kill overlay misalignment
+		interptarg = thing->target;
+	}
+
+	R_InterpolateMobjState(interptarg, R_GetTimeFrac(RTF_LEVEL), &interp);
 
 	dispoffset = thing->dispoffset;
 
@@ -5138,7 +5147,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		// New colormap stuff for skins Tails 06-07-2002
 		if (thing->colorized)
 		{
-			vis->colormap = R_GetTranslationColormap(TC_RAINBOW, thing->color, GTC_CACHE);
+			vis->colormap = R_GetTranslationColormap(
+			    R_IsOverlayingInvinciblePlayer(thing) ? TC_BLINK : TC_RAINBOW,
+			    thing->color,
+			    GTC_CACHE);
 		}
 		else if (thing->skin && thing->sprite == SPR_PLAY) // This thing is a player!
 		{
