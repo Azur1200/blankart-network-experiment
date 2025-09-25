@@ -100,7 +100,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0, 11, 22, 18, 15, 11,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Jawz
     { 0,  7, 15, 15, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  7, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
-    { 0,  0,  3,  5,  7,  9, 12, 15,  12,  9,  7,  5, 2,  2,  2,  0}, // Self-Propelled Bomb
+    { 0,  0,  3,  5,  7,  9, 12, 13,  10,  9,  7,  5, 2,  2,  2,  0}, // Self-Propelled Bomb
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  7, 15, 26, 37, 45, 52, 52}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
     {15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
@@ -152,7 +152,7 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 5, 1 }  // Jawz x2
 };
 
-#define DISTVAR (2048) // Magic number distance for use with item roulette tiers
+#define DISTVAR (K_UsingLegacyCheckpoints() ? 1480 : 2048) // Magic number distance for use with item roulette tiers
 #define SPBSTARTDIST (4*DISTVAR) // Distance when SPB can start appearing
 #define SPBFORCEDIST (14*DISTVAR) // Distance when SPB is forced onto 2nd place
 #define ENDDIST (12*DISTVAR) // Distance when the game stops giving you bananas
@@ -563,7 +563,7 @@ INT32 K_KartGetItemOdds(
 			{
 				const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
-				const INT32 mulMax = K_UsingLegacyCheckpoints() ? 28 : 24;
+				const INT32 mulMax = 24;
 
 				INT32 multiplier = (distFromStart * mulMax) / distRange;
 
