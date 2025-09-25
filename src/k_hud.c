@@ -5422,23 +5422,7 @@ static void K_drawDistributionDebugger(void)
 			bestbumper = players[i].bumper;
 	}
 
-	pdis = K_CalculateInitalPDIS(stplyr);
-
-	if (spbplace != -1 && stplyr->position == spbplace+1)
-	{
-		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
-		if (!(K_UsingLegacyCheckpoints()))
-			pdis = (3 * pdis) / 2;
-		spbrush = true;
-	}
-
-	pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
-
-	if (stplyr->bot && stplyr->botvars.rival)
-	{
-		// Rival has better odds :)
-		pdis = (15 * pdis) / 14;
-	}
+	pdis = K_CalculatePDIS(stplyr, pingame, &spbrush);
 
 	useodds = K_FindUseodds(stplyr, 0, pdis, bestbumper, spbrush);
 

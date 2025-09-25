@@ -810,7 +810,7 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 	return translation[(player->itemroulette % roulette_size) / 3];
 }
 
-UINT32 K_CalculateInitalPDIS(const player_t *player)
+UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
 	UINT32 pdis = 0;
@@ -941,9 +941,12 @@ UINT32 K_CalculateInitalPDIS(const player_t *player)
 
 							// Add the distance to the player behind you.
 							pdis += P_AproxDistance(P_AproxDistance(
-									firstPlayer->mo->x - secondPlayer->mo->x,
-									firstPlayer->mo->y - secondPlayer->mo->y),
-									firstPlayer->mo->z - secondPlayer->mo->z) / FRACUNIT;
+									firstPlayer->mo->x/4 - secondPlayer->mo->x/4,
+									firstPlayer->mo->y/4 - secondPlayer->mo->y/4),
+									firstPlayer->mo->z/4 - secondPlayer->mo->z/4);
+
+							// Scale it to prevent overflow issues.
+							pdis = (pdis / FRACUNIT)*2;
 
 							// Advance to next index.
 							firstIndex = secondIndex;
@@ -953,6 +956,34 @@ UINT32 K_CalculateInitalPDIS(const player_t *player)
 			}
 		}
 	}
+
+	return pdis;
+}
+
+UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush)
+{
+	UINT32 pdis = 0;
+
+	pdis = K_CalculateInitalPDIS(player, numPlayers);
+
+	if (spbplace != -1 && player->position == spbplace+1)
+	{
+		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
+		pdis = (3 * pdis) / 2;
+		*spbrush = true;
+	}
+
+	pdis = K_ScaleItemDistance(pdis, numPlayers, *spbrush);
+
+	if (player->bot && player->botvars.rival)
+	{
+		// Rival has better odds :)
+		pdis = (15 * pdis) / 14;
+	}
+
+	// Can almost barely overflow this calc, fudge to prevent this.
+	if (pdis > 30000)
+		pdis = 30000;
 
 	return pdis;
 }
@@ -1019,22 +1050,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	else if (!(player->itemroulette >= (TICRATE*3)))
 		return;
 
-	pdis = K_CalculateInitalPDIS(player);
 
-	if (spbplace != -1 && player->position == spbplace+1)
-	{
-		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
-		pdis = (3 * pdis) / 2;
-		spbrush = true;
-	}
-
-	pdis = K_ScaleItemDistance(pdis, pingame, spbrush);
-
-	if (player->bot && player->botvars.rival)
-	{
-		// Rival has better odds :)
-		pdis = (15 * pdis) / 14;
-	}
+	pdis = K_CalculatePDIS(player, pingame, &spbrush);
 
 	// SPECIAL CASE No. 1:
 	// Fake Eggman items
