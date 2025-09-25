@@ -785,7 +785,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 #undef SETUPDISTTABLE
 
-	return useodds;
+	return min(MAXODDS - 1, useodds);
 }
 
 INT32 K_GetRollingRouletteItem(player_t *player)
