@@ -100,7 +100,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0, 11, 22, 18, 15, 11,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Jawz
     { 0,  7, 15, 15, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  7, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
-    { 0,  0,  0,  1,  5,  8, 12, 13,  9,  6,  2,  0,  0,  0,  0,  0}, // Self-Propelled Bomb
+    { 0,  0,  3,  5,  7,  9, 12, 15,  12,  9,  7,  5, 2,  2,  2,  0}, // Self-Propelled Bomb
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  7, 15, 26, 37, 45, 52, 52}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
     {15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
@@ -563,7 +563,7 @@ INT32 K_KartGetItemOdds(
 			{
 				const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
 				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
-				const INT32 mulMax = 3;
+				const INT32 mulMax = K_UsingLegacyCheckpoints() ? 28 : 24;
 
 				INT32 multiplier = (distFromStart * mulMax) / distRange;
 
