@@ -2592,7 +2592,7 @@ static void HU_DrawRankings(void)
 
 		tab[scorelines].name = player_names[i];
 
-		if ((gametyperules & GTR_CIRCUIT))
+		if (gametyperules & GTR_CIRCUIT)
 		{
 			if (!players[i].exiting)
 				sprintf(tab[scorelines].string, "Lap %d", players[i].laps);
@@ -2605,7 +2605,7 @@ static void HU_DrawRankings(void)
 				sprintf(tab[scorelines].string, "%i'%02i\"%02i", min, sec, cen);
 			}
 		}
-		else
+		else if (gametyperules & GTR_POINTS)
 			sprintf(tab[scorelines].string, "%d", players[i].roundscore);
 
 		scorelines++;

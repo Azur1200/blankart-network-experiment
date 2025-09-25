@@ -3161,7 +3161,7 @@ void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, UIN
 		}
 	}
 
-	if (gametyperules & GTR_POINTLIMIT)
+	if (gametyperules & GTR_POINTS)
 	{
 		P_AddPlayerScore(player, points);
 		K_SpawnBattlePoints(player, victim, points);

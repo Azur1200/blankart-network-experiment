@@ -628,9 +628,9 @@ consvar_t cv_overtime = CVAR_INIT ("overtime", "Yes", CV_NETVAR|CV_CHEAT, CV_Yes
 
 consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, NULL);
 
-static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
+static CV_PossibleValue_t pointlimit_cons_t[] = {{0, "None"}, {1, "MIN"}, {MAXSCORE, "MAX"}, {0, NULL}};
 consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
-static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {30, "MAX"}, {0, "None"}, {0, NULL}};
+static CV_PossibleValue_t timelimit_cons_t[] = {{0, "None"}, {1, "MIN"}, {30, "MAX"}, {0, NULL}};
 consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};

@@ -379,6 +379,7 @@ const char *const GAMETYPERULE_LIST[] = {
 	"BOTS",
 	"RINGS",
 	"BUMPERS",
+	"POINTS",
 	"BATTLEODDS",
 	"PAPERITEMS",
 	"WANTED",
