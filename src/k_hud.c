@@ -5638,7 +5638,7 @@ static void K_drawDistributionDebugger(void)
 	else
 		V_DrawString(0, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("USEODDS %d", useodds));
 
-	V_DrawString(150, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("PDIS %d", pdis));
+	V_DrawString(150, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("PDIS %u", pdis));
 
 	if (K_UsingLegacyCheckpoints())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");

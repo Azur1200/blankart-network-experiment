@@ -1226,7 +1226,7 @@ INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32
 
 #undef SETUPDISTTABLE
 
-	//CONS_Printf("Got useodds %d. (position: %d, distance: %d)\n", useodds, player->position, pdis);
+	//CONS_Printf("Got useodds %d. (position: %d, distance: %u)\n", useodds, player->position, pdis);
 
 	return useodds;
 }
