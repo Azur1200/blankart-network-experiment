@@ -30,12 +30,10 @@ extern "C" {
 
 extern consvar_t *KartItemCVars[NUMKARTRESULTS-1];
 
+UINT32 K_CalculateInitalPDIS(const player_t *player);
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);
-INT32 K_FindLegacyUseodds(player_t *player, fixed_t mashed, INT32 pingame, INT32 bestbumper, boolean spbrush, boolean dontforcespb);
-fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush);
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_KartGetItemOdds(UINT8 pos, SINT8 item, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival);
-INT32 K_KartGetLegacyItemOdds(UINT8 pos, SINT8 item, fixed_t clusterDist, fixed_t mashed, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 SINT8 K_ItemResultToType(SINT8 getitem);
 UINT8 K_ItemResultToAmount(SINT8 getitem);
