@@ -185,57 +185,64 @@ void K_DisplayItemTimers(void)
 			"shoe",
 			stplyr->sneakertimer,
 			{qche("K_ISSHOE")},
-			{qche("HL_SNKR")},
+			{qche("K_TISHOE")},
 			1, -15, -15, -4, -2,
 		},
 		{ // invinc
 			"invincible",
 			stplyr->invincibilitytimer,
 			{qche("K_ISINV1"), qche("K_ISINV2"), qche("K_ISINV3"), qche("K_ISINV4"), qche("K_ISINV5"), qche("K_ISINV6")},
-			{qche("HL_INVNC")},
+			{qche("K_TIINV1"), qche("K_TIINV2"), qche("K_TIINV3"), qche("K_TIINV4"), qche("K_TIINV5"), qche("K_TIINV6")},
 			3, -15, -15, -4, -2,
 		},
 		{ // grow
 			"grow",
 			std::max<INT16>(0, stplyr->growshrinktimer),
 			{qche("K_ISGROW")},
-			{qche("HL_GROW")},
+			{qche("K_TIGROW")},
 			1, -15, -15, -4, -2,
 		},
 		{ // rocket sneakers
 			"rocketsneakers",
 			stplyr->rocketsneakertimer,
 			{qche("K_ISRSHE")},
-			{qche("ISPYRSHE")},
+			{qche("K_TIRSHE")},
 			1, -15, -15, -4, -2,
 		},
 		{ // hyudoro
 			"hyudoro",
 			stplyr->hyudorotimer,
 			{qche("K_ISHYUD")},
-			{qche("HL_HYU")},
+			{qche("K_TIHYUD")},
 			1, -15, -15, -4, -2,
 		},
 		{ // drift boost
 			"driftsparkboost",
 			stplyr->driftboost,
-			{qche("IT_ORB0"), qche("IT_ORB1"), qche("IT_ORB2"), qche("IT_ORB3"), qche("IT_ORB4"), qche("IT_ORB3"), qche("IT_ORB2"), qche("IT_ORB1")},
-			{qche("MSO_SPH1"), qche("MSO_SPH2"), qche("MSO_SPH3"), qche("MSO_SPH4")},
-			3,
+			{qche("K_DRSP1"), qche("K_DRSP2")},
+			{qche("K_TISRK1"), qche("K_TISRK2")},
+			2, -15, -15, -4, -2,
 		},
 		{ // start boost
 			"startboost",
 			stplyr->startboost,
 			{qche("K_ISSTB")},
-			{qche("K_SSSTB")},
-			1,
+			{qche("K_TISTB")},
+			1, -15, -15, -4, -2,
 		},
 		{ // ring boost
 			"ringboost",
 			stplyr->ringboost,
-			{qche("IT_RING")},
-			{qche("MSO_RNG")},
-			1, 
+			{qche("K_ISRING")},
+			{qche("K_TIRING")},
+			1, -15, -15, -4, -2,
+		},
+		{ // flameshield
+			"flameshield",
+			stplyr->flametimer,
+			{qche("K_ISFLMS")},
+			{qche("K_TIFLMS")},
+			1, -15, -15, -4, -2,
 		},
 	}; 
 
@@ -251,12 +258,8 @@ void K_DisplayItemTimers(void)
 			"spinout",
 			std::max<UINT16>(stplyr->spinouttimer, stplyr->wipeoutslow),
 			{qche("K_DIZZ1"), qche("K_DIZZ2"), qche("K_DIZZ3"), qche("K_DIZZ4")},
-			{qche("MSO_HRT1"), qche("MSO_HRT2"), qche("MSO_HRT3"), qche("MSO_HRT4")},
-			3,
-			0,
-			0,
-			0,
-			0,
+			{qche("K_TISPN1"), qche("K_TISPN2"), qche("K_TISPN3"), qche("K_TISPN4")},
+			3, -15, -15, -4, -2,
 			false,
 			true,
 		}
@@ -266,27 +269,27 @@ void K_DisplayItemTimers(void)
 			"shrink",
 			std::max<INT16>(0, -stplyr->growshrinktimer),
 			{qche("K_ISSHRK")},
-			{qche("HL_SHRNK")},
-			3,
+			{qche("K_TISHRK")},
+			1,
 			-15,
 			-15,
 			-4,
-			-3,
+			-2,
 			false,
 			true,
 		}
 	);
 	timers.push_back(
 		{ // spb
-			"blueshell",
+			"spb",
 			(INT32)spbTimers[stplyr-players],
-			{qche("IT_SPB1"), qche("IT_SPB2")},
-			{qche("IT_SPBS1"), qche("IT_SPBS2")},
+			{qche("K_ISSPB")},
+			{qche("K_TISPB")},
 			1,
-			0,
-			0,
-			0,
-			0,
+			-15,
+			-15,
+			-4,
+			-2,
 			false,
 			(stplyr->position == K_GetBestRank())
 		}
@@ -296,18 +299,14 @@ void K_DisplayItemTimers(void)
 		{ // boosts
 			"boosts",
 			K_StackingActive() ? stplyr->numboosts : 0,
-			{qche("IT_BOOST0"), qche("IT_BOOST1"), qche("IT_BOOST2"), qche("IT_BOOST3"), qche("IT_BOOST4"), qche("IT_BOOST3"), qche("IT_BOOST2"), qche("IT_BOOST1")},
-			{qche("MSO_SPD1"), qche("MSO_SPD2"), qche("MSO_SPD3"), qche("MSO_SPD4"), qche("MSO_SPD3"), qche("MSO_SPD2")},
-			3,
-			0,
-			0,
-			0,
-			0,
+			{qche("K_DRSP1"), qche("K_DRSP2")},
+			{qche("K_TISRK1"), qche("K_TISRK2")},
+			2, -15, -15, -3, -2,
 			true,
 		}
 	);
 
-	timers.push_back(
+	/*timers.push_back(
 		{ // dead
 			"spr_realisticexplosion",
 			stplyr->deadtimer ? std::max<INT32>(0, TICRATE - stplyr->deadtimer) : 0,
@@ -321,15 +320,15 @@ void K_DisplayItemTimers(void)
 			false,
 			true,
 		}
-	);
+	);*/
 
 	// insert unsortable timers
 	timers.insert(timers.end(), addTimers_unsorted.begin(), addTimers_unsorted.end());
 
-	if ((K_NotFreePlay() && !modeattacking) || r_splitscreen > 0) // "HOME" style, with icons at the bottom
+	if (!modeattacking) // "HOME" style, with icons at the bottom
 	{
-		INT32 itemx = 160, itemy = 160;
-		INT32 flags = V_SNAPTOBOTTOM|V_SLIDEIN|V_SPLITSCREEN;
+		INT32 itemx = 160, itemy = 170;
+		INT32 flags = V_SNAPTOBOTTOM|V_SPLITSCREEN;
 		INT32 stepx = 25;
 		INT32 viewnum = R_GetViewNumber();
 
@@ -397,9 +396,9 @@ void K_DisplayItemTimers(void)
 				textcmap = cmap;
 			}
 
-			if (fastcmp(t.name, "invincibilitytimer"))
+			if (fastcmp(t.name, "boosts"))
 			{
-				cmap = R_GetTranslationColormap(TC_RAINBOW, (skincolornum_t)K_RainbowColor(leveltime), GTC_CACHE);
+				flags |= V_GREENMAP;
 			}
 
 			if (t.counter) // don't show up as time
@@ -411,7 +410,10 @@ void K_DisplayItemTimers(void)
 
 			// very bad!
 			if (t.badtimer)
-				textcmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
+			{
+				flags |= V_REDMAP;
+				//textcmap = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_CRIMSON, GTC_CACHE);
+			}
 
 			patch_t *item = t.patches_small[patchnum];
 			V_DrawFixedPatch((itemx - (item->width/2))<<FRACBITS, (itemy + t.yoffs_small)<<FRACBITS, FRACUNIT, flags, t.patches_small[patchnum], cmap);
@@ -431,7 +433,7 @@ void K_DisplayItemTimers(void)
 			itemx += stepx;
 		}
 	}
-	else // FREEPLAY - Move these to the left side, where the rankings usually are
+	/*else // FREEPLAY - Move these to the left side, where the rankings usually are
 	{
 		if (r_splitscreen) // How?
 			return;
@@ -512,4 +514,5 @@ void K_DisplayItemTimers(void)
 			fy += step;
 		}
 	}
+	*/
 }

@@ -2780,7 +2780,7 @@ static void K_drawKartSpeedometer(void)
 	// (negative speed IS really high speed :V)
 	if (convSpeed > 999 || convSpeed < 0)
 		convSpeed = 999;
-	
+
 	if (cv_speed_xoffset.value == 0 && cv_speed_yoffset.value == 0)
 	{
 		if ((gametyperules & GTR_BUMPERS) && !(gametyperules & GTR_CIRCUIT))
@@ -2792,8 +2792,8 @@ static void K_drawKartSpeedometer(void)
 			oldringoffset = 6;
 		}
 	}
-	
-	if (cv_newspeedometer.value == 0) 
+
+	if (cv_newspeedometer.value == 0)
 	{
 		switch (cv_kartspeedometer.value) {
 			case 1:
@@ -3978,7 +3978,7 @@ static void K_drawKartMinimap(void)
 			return;
 		if (lt_exitticker < length)
 			minimaptrans = (((INT32)lt_exitticker)*minimaptrans)/((INT32)length);
-		
+
 	}
 	else if (r_splitscreen == 3) // 4P centered
 	{
@@ -5151,7 +5151,7 @@ static void K_drawLapSplitTimestamp(void)
 		INT32 color = stplyr->karthud[khud_splitcolor];
 		INT32 ahead = stplyr->karthud[khud_splitwin];
 		// INT32 pos = stplyr->karthud[khud_splitposition];
-		
+
 		INT32 splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
 		// debug
@@ -5191,7 +5191,7 @@ static void K_drawLapSplitTimestamp(void)
 			UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			V_DrawMappedPatch(TIME_X, TIME_Y, splitflags, ((gamemap == 2) ? kp_lapstickerwide[1] : kp_timestickerwide[1]), colormap);
 		}
-		
+
 		char buffer[32];
 		snprintf(buffer, 32, "%02i'%02i\"%02i",
 			G_TicsToMinutes(split, true),
@@ -5529,7 +5529,7 @@ static void K_DrawClusterDebugger(void)
 
 	if (stplyr != &players[displayplayers[0]]) // only for p1
 		return;
-	
+
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
 	if (K_UsingLegacyCheckpoints())
@@ -5751,7 +5751,7 @@ void K_drawKartHUD(void)
 			K_drawLapStartAnim();
 	}
 
-	//K_DisplayItemTimers();
+	K_DisplayItemTimers();
 
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;
@@ -5765,7 +5765,7 @@ void K_drawKartHUD(void)
 
 	if (r_splitscreen == 0 && (stplyr->pflags & PF_WRONGWAY) && ((leveltime / 8) & 1) && !stplyr->exiting)
 	{
-		V_DrawCenteredString(BASEVIDWIDTH>>1, 176, V_REDMAP|V_SNAPTOBOTTOM, "WRONG WAY");
+		V_DrawCenteredString(BASEVIDWIDTH>>1, cv_itemtimers.value && !modeattacking ? 191 : 179, V_REDMAP|V_SNAPTOBOTTOM, "WRONG WAY");
 	}
 
 	if ((netgame || cv_mindelay.value) && r_splitscreen && Playing())

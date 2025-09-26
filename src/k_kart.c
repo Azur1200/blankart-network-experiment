@@ -7334,6 +7334,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_QuiteSaltyHop(player);
 
 	player->prevonground = P_IsObjectOnGround(player->mo);
+
+	// Update SPB timer...
+	K_UpdateSPBTimer();
 }
 
 void K_KartResetPlayerColor(player_t *player)
