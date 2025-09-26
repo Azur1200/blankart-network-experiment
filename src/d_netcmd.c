@@ -655,7 +655,8 @@ consvar_t cv_nettimeout = CVAR_INIT ("nettimeout", "210", CV_CALL|CV_SAVE, netti
 consvar_t cv_jointimeout = CVAR_INIT ("jointimeout", "210", CV_CALL|CV_SAVE, nettimeout_cons_t, JoinTimeout_OnChange);
 consvar_t cv_maxping = CVAR_INIT ("maxdelay", "20", CV_SAVE, CV_Unsigned, NULL);
 
-consvar_t cv_lagless = CVAR_INIT ("lagless", "On", CV_SAVE|CV_NETVAR|CV_CALL, CV_OnOff, Lagless_OnChange);
+static CV_PossibleValue_t lagless_cons_t[] = {{-1, "Worst"}, {0, "Best"}, {1, "Lagless"}, {0, NULL}};
+consvar_t cv_lagless = CVAR_INIT ("lagless", "Lagless", CV_SAVE|CV_NETVAR|CV_CALL, lagless_cons_t, Lagless_OnChange);
 
 static CV_PossibleValue_t pingtimeout_cons_t[] = {{8, "MIN"}, {120, "MAX"}, {0, NULL}};
 consvar_t cv_pingtimeout = CVAR_INIT ("maxdelaytimeout", "10", CV_SAVE, pingtimeout_cons_t, NULL);
@@ -5408,9 +5409,8 @@ static void JoinTimeout_OnChange(void)
 static void
 Lagless_OnChange (void)
 {
-	/* don't back out of dishonesty, or go lagless after playing honestly */
-	if (cv_lagless.value && gamestate == GS_LEVEL)
-		server_lagless = true;
+	if (gamestate == GS_LEVEL)
+		server_lagless = cv_lagless.value;
 }
 
 UINT32 timelimitintics = 0;

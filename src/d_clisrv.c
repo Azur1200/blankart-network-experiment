@@ -117,7 +117,7 @@ UINT32 playerpacketlosstable[MAXPLAYERS];
 UINT32 playerdelaytable[MAXPLAYERS]; // mindelay values.
 
 static tic_t lowest_lag;
-boolean server_lagless;
+SINT8 server_lagless;
 
 SINT8 nodetoplayer[MAXNETNODES];
 SINT8 nodetoplayer2[MAXNETNODES]; // say the numplayer for this node if any (splitscreen)
@@ -5989,6 +5989,7 @@ static tic_t gametime = 0;
 static void UpdatePingTable(void)
 {
 	tic_t fastest;
+	tic_t slowest;
 	tic_t lag;
 
 	INT32 i;
@@ -5999,6 +6000,7 @@ static void UpdatePingTable(void)
 			PingUpdate();
 
 		fastest = 0;
+		slowest = 0;
 
 		// update node latency values so we can take an average later.
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -6013,14 +6015,19 @@ static void UpdatePingTable(void)
 					lag = playerpingtable[i];
 					if (! fastest || lag < fastest)
 						fastest = lag;
+
+					if (! slowest || lag > slowest)
+						slowest = lag;
 				}
 			}
 		}
 
-		if (server_lagless)
+		if (server_lagless == 1)
 			lowest_lag = 0;
-		else
+		else if (server_lagless == 0)
 			lowest_lag = fastest;
+		else if (server_lagless == -1)
+			lowest_lag = slowest;
 
 		// Don't gentleman below your mindelay
 		if (lowest_lag < (tic_t)cv_mindelay.value)

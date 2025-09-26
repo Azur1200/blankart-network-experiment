@@ -1288,9 +1288,9 @@ void I_FinishUpdate(void)
 			SCR_DisplayTicRate();
 
 		if (cv_showping.value && netgame &&
-				( consoleplayer != serverplayer || ! server_lagless ))
+				( consoleplayer != serverplayer || (server_lagless == 0 || server_lagless == -1) ))
 		{
-			if (server_lagless)
+			if (server_lagless == 1)
 			{
 				if (consoleplayer != serverplayer)
 					SCR_DisplayLocalPing();

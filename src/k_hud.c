@@ -2238,7 +2238,7 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 			{
 				V_DrawThinString(x - 18 + 25, y, 0, "CPU");
 			}
-			else if (tab[i].num != serverplayer || !server_lagless)
+			else if (tab[i].num != serverplayer || (server_lagless == 0 || server_lagless == -1))
 			{
 				INT32 xoff = cv_pingmeasurement.value == 1 ? 33 : 26;
 
@@ -2495,7 +2495,7 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 			{
 				V_DrawString(x + ((i < 8) ? -25 : rightoffset + 3), y-2, V_SNAPTOLEFT, "CPU");
 			}
-			else if (tab[i].num != serverplayer || !server_lagless)
+			else if (tab[i].num != serverplayer || (server_lagless == 0 || server_lagless == -1))
 			{
 				HU_drawPing(x + ((i < 8) ? -17 : rightoffset + 11), y-4, playerpingtable[tab[i].num], playerdelaytable[tab[i].num], playerpacketlosstable[tab[i].num], 0, true);
 			}

@@ -489,7 +489,7 @@ extern UINT32 playerpacketlosstable[MAXPLAYERS];
 extern UINT32 playerdelaytable[MAXPLAYERS];
 extern tic_t servermaxping;
 
-extern boolean server_lagless;
+extern SINT8 server_lagless;
 extern consvar_t cv_mindelay;
 
 extern consvar_t cv_netticbuffer, cv_allownewplayer, cv_maxplayers, cv_joindelay;
