@@ -5545,6 +5545,34 @@ static void K_DrawClusterDebugger(void)
 	}
 }
 
+static void K_SlipstreamIndicator(boolean tiny)
+{
+	 if (!draftingactive)
+		return;
+
+    char *fullstr = "DRAFTING";
+	char str[256] = {0};
+	SINT8 stringlen = strlen(fullstr);
+    SINT8 len = min(stplyr->draftpower / (FRACUNIT / stringlen), stringlen);
+	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
+
+    if (!len)
+		return;
+
+    strncpy(str, fullstr, len);
+
+    if (stplyr->draftpower >= FRACUNIT)
+	{
+		const INT32 clr = skincolors[stplyr->skincolor].chatcolor;
+		flags |= clr;
+	}
+
+	if (tiny)
+		V_DrawSmallString(174 - V_StringWidth(str, flags)/2, 159, flags, str);
+	else
+		V_DrawThinString(174 - V_StringWidth(str, flags)/2, 159, flags, str);
+}
+
 void K_drawKartHUD(void)
 {
 	boolean islonesome = false;
@@ -5752,6 +5780,7 @@ void K_drawKartHUD(void)
 	}
 
 	K_DisplayItemTimers();
+	K_SlipstreamIndicator(r_splitscreen > 0);
 
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;
