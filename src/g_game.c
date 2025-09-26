@@ -296,6 +296,7 @@ SINT8 pickedvote; // What vote the host rolls
 
 // Server-sided, synched variables
 SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
+SINT8 mostwanted; // The "most wanted" (first in line) player.
 tic_t wantedcalcdelay; // Time before it recalculates WANTED
 tic_t indirectitemcooldown; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
 tic_t hyubgone; // Cooldown before hyudoro is allowed to be rerolled
@@ -3373,7 +3374,7 @@ UINT32 gametypedefaultrules[NUMGAMETYPES] =
 	// Race
 	GTR_CIRCUIT|GTR_BOTS|GTR_RINGS|GTR_ENCORE|GTR_RACEODDS,
 	// Battle
-	GTR_BUMPERS|GTR_POINTS|GTR_RINGS|GTR_KARMA|GTR_WANTED|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT|GTR_POINTLIMIT|GTR_BATTLEODDS|GTR_CLOSERPLAYERS|GTR_BATTLEBOXES
+	GTR_BUMPERS|GTR_POINTS|GTR_RINGS|GTR_KARMA|GTR_WANTED|GTR_WANTEDSPB|GTR_ITEMARROWS|GTR_ITEMBREAKER|GTR_BATTLESTARTS|GTR_TIMELIMIT|GTR_POINTLIMIT|GTR_BATTLEODDS|GTR_CLOSERPLAYERS|GTR_BATTLEBOXES
 };
 
 //

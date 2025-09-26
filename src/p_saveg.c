@@ -5388,6 +5388,9 @@ static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
 	WRITESINT8(save->p, speedscramble);
 	WRITESINT8(save->p, encorescramble);
 
+
+	// WANTED system
+	WRITESINT8(save->p, mostwanted);
 	for (i = 0; i < 4; i++)
 		WRITESINT8(save->p, battlewanted[i]);
 
@@ -5774,6 +5777,7 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 	speedscramble = READSINT8(save->p);
 	encorescramble = READSINT8(save->p);
 
+	mostwanted = READSINT8(save->p);
 	for (i = 0; i < 4; i++)
 		battlewanted[i] = READSINT8(save->p);
 

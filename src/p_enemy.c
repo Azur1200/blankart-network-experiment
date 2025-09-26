@@ -10775,7 +10775,8 @@ void A_SPBChase(mobj_t *actor)
 		return;
 	}
 
-	// Find the player with the best rank
+	// Find the player with the best rank. In gametypes with SPB forcing on WANTED
+	// players, find our most-wanted player.
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator || players[i].exiting)
@@ -10790,7 +10791,15 @@ void A_SPBChase(mobj_t *actor)
 		if (players[i].kartstuff[k_respawn])
 			continue;*/ // respawning
 
-		if (players[i].position < bestrank)
+		if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+		{
+			if (K_IsPlayerMostWanted(&players[i]))
+			{
+				player = &players[i];
+				break;
+			}
+		}
+		else if (players[i].position < bestrank)
 		{
 			bestrank = players[i].position;
 			player = &players[i];
@@ -10843,7 +10852,14 @@ void A_SPBChase(mobj_t *actor)
 				else if (actor->extravalue2-- <= 0)
 					actor->extravalue1 = 0; // back to SEEKING
 
-				spbplace = actor->tracer->player->position;
+				if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+				{
+					spbplace = (actor->tracer->player - players);
+				}
+				else
+				{
+					spbplace = actor->tracer->player->position;
+				}
 			}
 
 			if ((K_RingsActive() == true) ) // Spawn rings to make up for the fact first has ring grabbing
@@ -10962,7 +10978,15 @@ void A_SPBChase(mobj_t *actor)
 			&& !players[actor->lastlook].spectator
 			&& !players[actor->lastlook].exiting)
 		{
-			spbplace = players[actor->lastlook].position;
+			if ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB))
+			{
+				spbplace = actor->lastlook;
+			}
+			else
+			{
+				spbplace = players[actor->lastlook].position;
+			}
+
 			if (actor->extravalue2-- <= 0 && players[actor->lastlook].mo)
 			{
 				P_SetTarget(&actor->tracer, players[actor->lastlook].mo);

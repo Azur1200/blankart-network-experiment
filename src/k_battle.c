@@ -55,12 +55,28 @@ boolean K_IsPlayerWanted(player_t *player)
 	return false;
 }
 
+boolean K_IsPlayerMostWanted(player_t *player)
+{
+	if (mostwanted == -1)
+		return false;
+
+	if (!(gametyperules & GTR_WANTEDSPB))
+		return false;
+
+	if (player == &players[mostwanted])
+		return true;
+
+	return false;
+}
+
 void K_CalculateBattleWanted(void)
 {
 	UINT8 numingame = 0, numwanted = 0;
 	SINT8 camppos[MAXPLAYERS]; // who is the biggest camper
 	UINT8 ties = 0, nextcamppos = 0;
 	UINT8 i, j;
+
+	mostwanted = -1;
 
 	if (!(gametyperules & GTR_WANTED))
 	{
@@ -162,6 +178,10 @@ void K_CalculateBattleWanted(void)
 			if (ties < (numwanted-i)) // Is it still low enough after counting?
 			{
 				battlewanted[i] = camppos[nextcamppos];
+
+				if (!nextcamppos)
+					mostwanted = battlewanted[i];
+
 				nextcamppos++;
 			}
 			else

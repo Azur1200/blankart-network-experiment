@@ -1014,6 +1014,16 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 	return pdis;
 }
 
+static boolean K_CanForceSPB(player_t *player, UINT32 pdis)
+{
+	boolean battlecond, racecond;
+
+	battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
+	racecond = ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > SPBFORCEDIST);
+
+	return ((battlecond) || (racecond));
+}
+
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 {
 	INT32 i;
@@ -1198,7 +1208,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 6:
 	// Force SPB onto 2nd if they get too far behind
-	if ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > SPBFORCEDIST
+	// In battle, an SPB is forced onto players to target the "most wanted" player
+	if (K_CanForceSPB(player, pdis)
 		&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
 		&& cv_selfpropelledbomb.value)
 	{

@@ -8206,6 +8206,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	for (i = 0; i < 4; i++)
 		battlewanted[i] = -1;
 
+	mostwanted = -1;
+
 	speedscramble = encorescramble = -1;
 }
 
