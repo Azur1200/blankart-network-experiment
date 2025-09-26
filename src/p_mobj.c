@@ -9324,7 +9324,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			statenum_t state = (mobj->state-states);
 
 			if (!mobj->target || !mobj->target->health || !mobj->target->player || mobj->target->player->spectator
-				|| (gametyperules & GTR_CIRCUIT || mobj->target->player->bumper))
+				|| mobj->target->player->bumper || !(gametyperules & GTR_KARMA))
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -12115,7 +12115,7 @@ void P_RespawnSpecials(void)
 	INT32 time = 30*TICRATE; // Respawn things in empty dedicated servers
 	mapthing_t *mthing = NULL;
 
-	if (gametype == GT_BATTLE && numgotboxes >= (4*nummapboxes/5) && !itembreaker) // Battle Mode respawns all boxes in a different way
+	if ((gametyperules & GTR_BATTLEBOXES) && numgotboxes >= (4*nummapboxes/5) && !itembreaker) // Battle Mode respawns all boxes in a different way
 	{
 		thinker_t *th;
 

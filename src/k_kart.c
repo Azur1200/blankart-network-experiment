@@ -940,9 +940,8 @@ static void K_UpdateDraft(player_t *player)
 
 	minDist = cv_kartdrafting_closedeadzone.value * player->mo->scale;
 
-	if (gametype == GT_BATTLE)
+	if (gametyperules & GTR_CLOSERPLAYERS)
 	{
-		// TODO: gametyperules
 		minDist /= 4;
 		draftdistance *= 2;
 		leniency *= 4;
@@ -1036,9 +1035,8 @@ static void K_UpdateDraft(player_t *player)
 				fixed_t add = (FRACUNIT/200) + ((9 - player->kartspeed+(player->kartspeed/3)) * ((3*FRACUNIT)/1600));
 				player->draftpower += add;
 
-				if (gametype == GT_BATTLE)
+				if (gametyperules & GTR_CLOSERPLAYERS)
 				{
-					// TODO: gametyperules
 					// Double gain in Battle
 					player->draftpower += add;
 				}
@@ -2358,7 +2356,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 		return BASEINVINTIME;
 	}
 
-	if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+	if (K_UsingLegacyCheckpoints())
 	{
 		// Legacy waypointing is janky and finicky, so tack on a safety-net multiplier.
 		// If an invincible player gets ahead of the cluster player, bottlenecking activates
@@ -7193,7 +7191,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->eggmanexplode)
 	{
-		if (player->spectator || (gametype == GT_BATTLE && !player->bumper))
+		if (player->spectator || ((gametyperules & GTR_BUMPERS) && !player->bumper))
 			player->eggmanexplode = 0;
 		else
 		{
@@ -9232,7 +9230,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 
 	tinypoptarget = (pingame < 3) ? first : second;
 
-	if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+	if (K_UsingLegacyCheckpoints())
 	{
 		// Compare yourself against the cluster player to determine the distance.
 
@@ -9604,7 +9602,7 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 void K_UpdateClusterPoints(void)
 {
     // Get the player cluster.
-    if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+    if (K_UsingLegacyCheckpoints())
     {
         K_FindPlayerClusterLegacy();
     }
@@ -9643,7 +9641,7 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
-			if (K_UsingLegacyCheckpoints() && !(gametype == GT_BATTLE))
+			if (K_UsingLegacyCheckpoints())
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
@@ -10090,10 +10088,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 					{
 						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 						{
-							// TODO: gametyperules
-							const SINT8 incr = gametype == GT_BATTLE ? 3 : 2;
-							const SINT8 metincr = gametype == GT_BATTLE ? 4 : 3;
-							const SINT8 comincr = gametype == GT_BATTLE ? 10 : 4;
+							const SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
+							const SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
+							const SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
 
 							if (player->flamestore == 0)
 							{
@@ -10480,8 +10477,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										player->mo->destscale = FixedMul(player->mo->destscale, SHRINK_SCALE);
 									}
 
-									// TODO: gametyperules
-									player->growshrinktimer = (gametype == GT_BATTLE ? 8 : 12) * TICRATE;
+									player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * TICRATE;
 
 									if (player->invincibilitytimer > 0)
 									{
@@ -10742,14 +10738,14 @@ bubbledeflate:
 			player->mo->renderflags &= ~RF_DONTDRAW;
 		}
 
-		if (gametype == GT_BATTLE && player->bumper <= 0) // dead in match? you da bomb
+		if ((gametyperules & GTR_KARMA) && player->bumper <= 0) // dead in match? you da bomb
 		{
 			K_DropItems(player); //K_StripItems(player);
 			K_StripOther(player);
 			player->mo->renderflags |= RF_GHOSTLY;
 			player->flashing = player->karmadelay;
 		}
-		else if (gametype == GT_RACE || player->bumper > 0)
+		else if ((player->bumper > 0) || ((gametyperules & GTR_CIRCUIT) && !(gametyperules & GTR_KARMA)))
 		{
 			player->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK);
 		}

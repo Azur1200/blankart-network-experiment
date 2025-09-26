@@ -493,24 +493,26 @@ enum GameTypeRules
 	GTR_ITEMARROWS			= 1<<10, // Show item box arrows above players.
 	GTR_ITEMBREAKER			= 1<<11, // Enables the use of Item Breaker in this Gamemode.
 	GTR_BATTLESTARTS		= 1<<12, // Use Battle Mode start positions.
+	GTR_CLOSERPLAYERS		= 1<<13, // Enables specfic gameplay tweaks with closer players.
+	GTR_BATTLEBOXES			= 1<<14, // Itemboxes respawn differently.
 
-	GTR_POINTLIMIT			= 1<<13, // Reaching point limit ends the round.
-	GTR_TIMELIMIT			= 1<<14, // Reaching time limit ends the round.
-	GTR_OVERTIME			= 1<<15, // Allow overtime behavior.
+	GTR_POINTLIMIT			= 1<<15, // Reaching point limit ends the round.
+	GTR_TIMELIMIT			= 1<<16, // Reaching time limit ends the round.
+	GTR_OVERTIME			= 1<<17, // Allow overtime behavior.
 
 	// Custom gametype rules
-	GTR_TEAMS				= 1<<16, // Teams are forced on.
-	GTR_NOTEAMS				= 1<<17, // Teams are forced off.
-	GTR_TEAMSTARTS			= 1<<18, // Use team-based start positions.
+	GTR_TEAMS				= 1<<18, // Teams are forced on.
+	GTR_NOTEAMS				= 1<<19, // Teams are forced off.
+	GTR_TEAMSTARTS			= 1<<20, // Use team-based start positions.
 
 	// Grand Prix rules
-	//Free					= 1<<19,
-	GTR_LIVES				= 1<<20, // Lives system, players are forced to spectate during Game Over.
-	GTR_SPECIALBOTS			= 1<<21, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
+	//Free					= 1<<21,
+	GTR_LIVES				= 1<<22, // Lives system, players are forced to spectate during Game Over.
+	GTR_SPECIALBOTS			= 1<<23, // Bot difficulty gets stronger between rounds, and the rival system is enabled.
 	
 	// Misc
-	GTR_NOCOUNTDOWN			= 1<<22, // Disables Countdown timer and control lock at the start of levels.
-	GTR_ENCORE				= 1<<23, // Enable Encore mode.
+	GTR_NOCOUNTDOWN			= 1<<24, // Disables Countdown timer and control lock at the start of levels.
+	GTR_ENCORE				= 1<<25, // Enable Encore mode.
 
 	// free: to and including 1<<31
 };
