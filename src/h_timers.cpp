@@ -42,10 +42,10 @@ typedef struct itimer_s
 {
 	const char* name;						// name of timer
 	INT32 timer;							// current time
-	std::vector<patch_t*> patches;			// timer graphics (big/freeplay)
+	//std::vector<patch_t*> patches;			// timer graphics (big/freeplay)
 	std::vector<patch_t*> patches_small;	// timer graphics (small)
 	INT32 anim_frames;						// tic duration for each graphic
-	INT32 xoffs = 0, yoffs = 0;				// offsets for freeplay mode
+	//INT32 xoffs = 0, yoffs = 0;				// offsets for freeplay mode
 	INT32 xoffs_small = 0, yoffs_small = 0;	// offsets for normal mode
 	boolean counter;						// not a timer, show a counter instead
 	boolean badtimer;						// timer is colored red
@@ -143,8 +143,8 @@ static std::vector<itimer_t> addTimers_unsorted;
 void K_AddItemTimerEx(
 	const char *name, 
 	INT32 *timer, 
-	char **patches, char **patches_small, 
-	INT32 patches_size, INT32 patches_small_size, 
+	/*char **patches,*/ char **patches_small,
+	/*INT32 patches_size,*/ INT32 patches_small_size,
 	INT32 anim_duration,
 	INT32 xoffs, INT32 yoffs, 
 	INT32 xoffs_small, INT32 yoffs_small, 
@@ -156,13 +156,13 @@ void K_AddItemTimerEx(
 	t.timer_p = timer;
 	INT32 i;
 
-	for (i = 0; i < patches_size; i++)
-		t.patches.push_back(qche(patches[i]));
+	//for (i = 0; i < patches_size; i++)
+		//t.patches.push_back(qche(patches[i]));
 	for (i = 0; i < patches_small_size; i++)
-		t.patches_small.push_back(qche(patches[i]));
+		t.patches_small.push_back(qche(patches_small[i]));
 
 	t.anim_frames = anim_duration;
-	t.xoffs = xoffs; t.yoffs = yoffs;
+	//t.xoffs = xoffs; t.yoffs = yoffs;
 	t.xoffs_small = xoffs_small; t.yoffs_small = yoffs_small;
 	t.counter = counter;
 
@@ -184,65 +184,65 @@ void K_DisplayItemTimers(void)
 		{ // sneaker
 			"shoe",
 			stplyr->sneakertimer,
-			{qche("K_ISSHOE")},
+			//{qche("K_ISSHOE")},
 			{qche("K_TISHOE")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // invinc
 			"invincible",
 			stplyr->invincibilitytimer,
-			{qche("K_ISINV1"), qche("K_ISINV2"), qche("K_ISINV3"), qche("K_ISINV4"), qche("K_ISINV5"), qche("K_ISINV6")},
+			//{qche("K_ISINV1"), qche("K_ISINV2"), qche("K_ISINV3"), qche("K_ISINV4"), qche("K_ISINV5"), qche("K_ISINV6")},
 			{qche("K_TIINV1"), qche("K_TIINV2"), qche("K_TIINV3"), qche("K_TIINV4"), qche("K_TIINV5"), qche("K_TIINV6")},
-			3, -15, -15, -4, -2,
+			3, /*-15, -15,*/ -4, -2,
 		},
 		{ // grow
 			"grow",
 			std::max<INT16>(0, stplyr->growshrinktimer),
-			{qche("K_ISGROW")},
+			//{qche("K_ISGROW")},
 			{qche("K_TIGROW")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // rocket sneakers
 			"rocketsneakers",
 			stplyr->rocketsneakertimer,
-			{qche("K_ISRSHE")},
+			//{qche("K_ISRSHE")},
 			{qche("K_TIRSHE")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // hyudoro
 			"hyudoro",
 			stplyr->hyudorotimer,
-			{qche("K_ISHYUD")},
+			//{qche("K_ISHYUD")},
 			{qche("K_TIHYUD")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // drift boost
 			"driftsparkboost",
 			stplyr->driftboost,
-			{qche("K_DRSP1"), qche("K_DRSP2")},
+			//{qche("K_DRSP1"), qche("K_DRSP2")},
 			{qche("K_TISRK1"), qche("K_TISRK2")},
-			2, -15, -15, -4, -2,
+			2, /*-15, -15,*/ -4, -2,
 		},
 		{ // start boost
 			"startboost",
 			stplyr->startboost,
-			{qche("K_ISSTB")},
+			//{qche("K_ISSTB")},
 			{qche("K_TISTB")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // ring boost
 			"ringboost",
 			stplyr->ringboost,
-			{qche("K_ISRING")},
+			//{qche("K_ISRING")},
 			{qche("K_TIRING")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 		{ // flameshield
 			"flameshield",
 			stplyr->flametimer,
-			{qche("K_ISFLMS")},
+			//{qche("K_ISFLMS")},
 			{qche("K_TIFLMS")},
-			1, -15, -15, -4, -2,
+			1, /*-15, -15,*/ -4, -2,
 		},
 	}; 
 
@@ -257,9 +257,9 @@ void K_DisplayItemTimers(void)
 		{ // spinout
 			"spinout",
 			std::max<UINT16>(stplyr->spinouttimer, stplyr->wipeoutslow),
-			{qche("K_DIZZ1"), qche("K_DIZZ2"), qche("K_DIZZ3"), qche("K_DIZZ4")},
+			//{qche("K_DIZZ1"), qche("K_DIZZ2"), qche("K_DIZZ3"), qche("K_DIZZ4")},
 			{qche("K_TISPN1"), qche("K_TISPN2"), qche("K_TISPN3"), qche("K_TISPN4")},
-			3, -15, -15, -4, -2,
+			3, /*-15, -15,*/ -4, -2,
 			false,
 			true,
 		}
@@ -268,11 +268,11 @@ void K_DisplayItemTimers(void)
 		{ // shrink
 			"shrink",
 			std::max<INT16>(0, -stplyr->growshrinktimer),
-			{qche("K_ISSHRK")},
+			//{qche("K_ISSHRK")},
 			{qche("K_TISHRK")},
 			1,
-			-15,
-			-15,
+			//-15,
+			//-15,
 			-4,
 			-2,
 			false,
@@ -283,11 +283,11 @@ void K_DisplayItemTimers(void)
 		{ // spb
 			"spb",
 			(INT32)spbTimers[stplyr-players],
-			{qche("K_ISSPB")},
+			//{qche("K_ISSPB")},
 			{qche("K_TISPB")},
 			1,
-			-15,
-			-15,
+			//-15,
+			//-15,
 			-4,
 			-2,
 			false,
@@ -299,9 +299,9 @@ void K_DisplayItemTimers(void)
 		{ // boosts
 			"boosts",
 			K_StackingActive() ? stplyr->numboosts : 0,
-			{qche("K_DRSP1"), qche("K_DRSP2")},
+			//{qche("K_DRSP1"), qche("K_DRSP2")},
 			{qche("K_TISRK1"), qche("K_TISRK2")},
-			2, -15, -15, -3, -2,
+			2, /*-15, -15,*/ -3, -2,
 			true,
 		}
 	);
@@ -310,11 +310,11 @@ void K_DisplayItemTimers(void)
 		{ // dead
 			"spr_realisticexplosion",
 			stplyr->deadtimer ? std::max<INT32>(0, TICRATE - stplyr->deadtimer) : 0,
-			{qche("IT_DED1"), qche("IT_DED2"), qche("IT_DED3"), qche("IT_DED4"), qche("IT_DED5"), qche("IT_DED6"), qche("IT_DED7"), qche("IT_DED8")},
+			//{qche("IT_DED1"), qche("IT_DED2"), qche("IT_DED3"), qche("IT_DED4"), qche("IT_DED5"), qche("IT_DED6"), qche("IT_DED7"), qche("IT_DED8")},
 			{qche("IT_DEAD1"), qche("IT_DEAD2"), qche("IT_DEAD3"), qche("IT_DEAD4"), qche("IT_DEAD5"), qche("IT_DEAD6"), qche("IT_DEAD7"), qche("IT_DEAD8")},
 			1,
-			0,
-			-4,
+			//0,
+			//-4,
 			0,
 			0,
 			false,
