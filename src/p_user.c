@@ -536,7 +536,7 @@ void P_GivePlayerLives(player_t *player, INT32 numlives)
 // Adds to the player's score
 void P_AddPlayerScore(player_t *player, UINT32 amount)
 {
-	if (!(gametyperules & GTR_BUMPERS))
+	if (!(gametyperules & GTR_POINTS))
 		return;
 
 	if (player->exiting) // srb2kart

@@ -7548,14 +7548,13 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	case MT_PLAYERARROW:
 		if (mobj->target && mobj->target->health
 			&& mobj->target->player && !mobj->target->player->spectator
-			&& mobj->target->health && mobj->target->player->playerstate != PST_DEAD
-			/*&& players[displayplayers[0]].mo && !players[displayplayers[0]].spectator*/)
+			&& mobj->target->health && mobj->target->player->playerstate != PST_DEAD)
 		{
 			fixed_t scale = 3*mobj->target->scale;
 			mobj->color = mobj->target->color;
 			K_MatchGenericExtraFlags(mobj, mobj->target);
 
-			if ((gametype == GT_RACE || mobj->target->player->bumper <= 0)
+			if ((!(gametyperules & GTR_ITEMARROWS) || (gametyperules & GTR_BUMPERS && mobj->target->player->bumper <= 0))
 #if 1 // Set to 0 to test without needing to host
 				|| (P_IsDisplayPlayer(mobj->target->player))
 #endif
@@ -7655,6 +7654,17 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
 					mobj->tracer->sprite = SPR_ITEM;
 					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_ROCKETSNEAKER;
+					if (leveltime & 1)
+						mobj->tracer->renderflags &= ~RF_DONTDRAW;
+					else
+						mobj->tracer->renderflags |= RF_DONTDRAW;
+				}
+				else if (mobj->target->player->flametimer > 1)
+				{
+					//itembar = mobj->target->player->flametimer; -- not today satan
+					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
+					mobj->tracer->sprite = SPR_ITEM;
+					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_FLAMESHIELD;
 					if (leveltime & 1)
 						mobj->tracer->renderflags &= ~RF_DONTDRAW;
 					else
@@ -12376,13 +12386,16 @@ void P_SpawnPlayer(INT32 playernum)
 	p->grieftime = 0;
 	p->spinoutrot = 0;
 
-	if (gametyperules & GTR_BUMPERS)
+	if (gametyperules & GTR_ITEMARROWS)
 	{
 		mobj_t *overheadarrow = P_SpawnMobj(mobj->x, mobj->y, mobj->z + mobj->height + 16*FRACUNIT, MT_PLAYERARROW);
 		P_SetTarget(&overheadarrow->target, mobj);
 		overheadarrow->renderflags |= RF_DONTDRAW;
 		P_SetScale(overheadarrow, mobj->destscale);
+	}
 
+	if (gametyperules & GTR_BUMPERS)
+	{
 		if (p->spectator)
 		{
 			// HEY! No being cheap...
@@ -12397,7 +12410,7 @@ void P_SpawnPlayer(INT32 playernum)
 
 			K_SpawnPlayerBattleBumpers(p);
 		}
-		else if (p->bumper <= 0)
+		else if (p->bumper <= 0 && (gametyperules & GTR_KARMA))
 		{
 			mobj_t *karmahitbox = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_KARMAHITBOX); // Player hitbox is too small!!
 			P_SetTarget(&karmahitbox->target, mobj);

@@ -2745,7 +2745,7 @@ fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb)
 
 fixed_t K_GetKartSpeed(const player_t *player, boolean doboostpower, boolean dorubberband)
 {
-	boolean karmabomb = ((gametyperules & GTR_KARMA) && player->bumper <= 0);
+	boolean karmabomb = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0);
 	fixed_t finalspeed;
 
 	if (doboostpower && !player->pogospring && !P_IsObjectOnGround(player->mo))
@@ -2788,7 +2788,7 @@ fixed_t K_GetKartAccel(const player_t *player)
 	fixed_t k_accel = 32; // 36;
 	UINT8 kartspeed = player->kartspeed;
 
-	if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
+	if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
 		kartspeed = 1;
 
 	k_accel += 4 * (9 - kartspeed); // 32 - 64
@@ -8775,7 +8775,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 
 INT32 K_GetKartDriftSparkValue(const player_t *player)
 {
-	UINT8 kartspeed = ((gametyperules & GTR_KARMA) && player->bumper <= 0)
+	UINT8 kartspeed = ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
 		? 1
 		: player->kartspeed;
 	return (26*4 + kartspeed*2 + (9 - player->kartweight))*8;
@@ -9862,7 +9862,7 @@ static void K_AdjustPlayerFriction(player_t *player)
 		player->mo->friction -= 2048;
 
 	// Karma ice physics
-	if ((gametyperules & GTR_KARMA) && player->bumper <= 0)
+	if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
 	{
 		player->mo->friction += 1228;
 
@@ -10754,14 +10754,14 @@ bubbledeflate:
 			player->mo->renderflags &= ~RF_DONTDRAW;
 		}
 
-		if ((gametyperules & GTR_KARMA) && player->bumper <= 0) // dead in match? you da bomb
+		if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
 		{
 			K_DropItems(player); //K_StripItems(player);
 			K_StripOther(player);
 			player->mo->renderflags |= RF_GHOSTLY;
 			player->flashing = player->karmadelay;
 		}
-		else if ((player->bumper > 0) || ((gametyperules & GTR_CIRCUIT) && !(gametyperules & GTR_KARMA)))
+		else if ((player->bumper > 0) || ((gametyperules & GTR_CIRCUIT) && !(gametyperules & GTR_BUMPERS)))
 		{
 			player->mo->renderflags &= ~(RF_TRANSMASK|RF_BRIGHTMASK);
 		}

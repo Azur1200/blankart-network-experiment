@@ -8112,7 +8112,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	// SRB2Kart: map load variables
 	if (grandprixinfo.gp == true)
 	{
-		if ((gametyperules & GTR_BUMPERS))
+		if ((gametyperules & GTR_BATTLESPEED))
 		{
 			gamespeed = KARTSPEED_NORMAL;
 		}
@@ -8133,7 +8133,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	else if (modeattacking)
 	{
 		// Just play it safe and set everything
-		if ((gametyperules & GTR_BUMPERS))
+		if ((gametyperules & GTR_BATTLESPEED))
 			gamespeed = KARTSPEED_NORMAL;
 		else
 			gamespeed = KARTSPEED_HARD;
