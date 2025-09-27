@@ -564,6 +564,17 @@ consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance",
 
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartAirDrop_OnChange);
 
+// Odds distancing
+#define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
+static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+
+// SPB distance; no legacy modifiers currently (lazy)
+static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "8192", CV_NETVAR|CV_CHEAT, spbdist_cons_t, NULL);
+#undef MAXODDSDIST
+
 // Invincibility modifiers
 static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
 consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, invintype_cons_t, KartInvinType_OnChange);
