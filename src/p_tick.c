@@ -887,7 +887,7 @@ void P_Ticker(boolean run)
 
 		K_BossInfoTicker();
 
-		if ((gametyperules & GTR_BUMPERS))
+		if (gametyperules & GTR_WANTED)
 		{
 			if (wantedcalcdelay && --wantedcalcdelay <= 0)
 				K_CalculateBattleWanted();

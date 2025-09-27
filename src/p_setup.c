@@ -8203,8 +8203,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		comeback = (boolean)cv_kartcomeback.value;
 	}
 
-	for (i = 0; i < 4; i++)
-		battlewanted[i] = -1;
+	memset(battlewanted, -1, sizeof (battlewanted));
 
 	mostwanted = -1;
 
