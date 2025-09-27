@@ -173,6 +173,37 @@ void K_AddItemTimerEx(
 		addTimers.push_back(t);
 }
 
+void K_getTimersDrawinfo(drawinfo_t *out)
+{
+	INT32 fx, fy, flags = V_HUDTRANS|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+
+	fx = 160 + cv_timers_xoffset.value;
+	fy = 170 + cv_timers_yoffset.value;
+
+	if (r_splitscreen == 1)
+	{
+		flags &= ~V_SNAPTOBOTTOM;
+		fx = 160;
+		fy = 75;
+	}
+	else if (r_splitscreen > 1)
+	{
+		flags &= ~V_SNAPTOBOTTOM;
+		fy = 75;
+		fx = 80;
+	}
+
+	if (r_splitscreen > 0)
+	{
+		flags &= ~V_HUDTRANS;
+		flags |= V_30TRANS;
+	}
+
+	out->x = fx;
+	out->y = fy;
+	out->flags = flags;
+}
+
 void K_DisplayItemTimers(void)
 {
 	if (!cv_itemtimers.value) return;
@@ -327,25 +358,16 @@ void K_DisplayItemTimers(void)
 
 	if (!modeattacking) // "HOME" style, with icons at the bottom
 	{
-		INT32 itemx = 160, itemy = 170;
-		INT32 flags = V_SNAPTOBOTTOM|V_SPLITSCREEN;
+		INT32 itemx = 0, itemy = 0;
+		INT32 flags = 0;
 		INT32 stepx = 25;
 		INT32 viewnum = R_GetViewNumber();
 
-		if (r_splitscreen == 1)
-		{
-			flags &= ~V_SNAPTOBOTTOM;
-			itemy = 75;
-		}
-		else if (r_splitscreen > 1)
-		{
-			flags &= ~V_SNAPTOBOTTOM;
-			itemy = 75;
-			itemx = 80;
-		}
-
-		if (r_splitscreen > 0)
-			flags |= V_30TRANS;
+		drawinfo_t info;
+		K_getTimersDrawinfo(&info);
+		itemx = info.x;
+		itemy = info.y;
+		flags = info.flags;
 
 		// Move it up to account for viewpoint text
 		if (cv_showviewpointtext.value && !demo.title && !P_IsLocalPlayer(stplyr) && !camera[viewnum].freecam && !r_splitscreen)

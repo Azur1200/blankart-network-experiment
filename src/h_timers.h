@@ -18,6 +18,7 @@ extern "C" {
 
 #include "command.h"
 #include "d_player.h"
+#include "k_hud.h"
 
 extern consvar_t cv_itemtimers;
 extern tic_t spbTimers[MAXPLAYERS];
@@ -34,6 +35,7 @@ void K_AddItemTimerEx(
 	INT32 xoffs_small, INT32 yoffs_small,
 	boolean counter, boolean unsorted);
 void K_DisplayItemTimers(void);
+void K_getTimersDrawinfo(drawinfo_t *out);
 
 #ifdef __cplusplus
 } // extern "C"

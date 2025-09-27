@@ -65,6 +65,8 @@ IMPL_HUD_OFFSET(rings); // Number of rings
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 IMPL_HUD_OFFSET(speed); // Speedometer
 IMPL_HUD_OFFSET(acce); // Accessibility
+IMPL_HUD_OFFSET(timers); // Drafting
+IMPL_HUD_OFFSET(draft); // Drafting
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -103,6 +105,8 @@ static CV_PossibleValue_t HudColor_cons_t[MAXSKINCOLORS+1];
 consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", CV_SAVE, HudColor_cons_t, NULL);
 
 consvar_t cv_newtabranking = CVAR_INIT ("newtabranking", "On", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_draftindicator = CVAR_INIT ("draftindicator", "On", CV_SAVE, CV_OnOff, NULL);
 
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
@@ -235,6 +239,8 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 	REG_HUD_OFFSET(speed); // Speedometer
 	REG_HUD_OFFSET(acce); // Accessibility
+	REG_HUD_OFFSET(timers); // Item Timers
+	REG_HUD_OFFSET(draft); // Drafting
 	REG_HUD_OFFSET(posi); // Position in race
 	REG_HUD_OFFSET(face); // Mini rankings
 	REG_HUD_OFFSET(stcd); // Starting countdown
@@ -260,6 +266,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_driftgauge);
 	CV_RegisterVar(&cv_driftgaugeoffset);
 	CV_RegisterVar(&cv_newtabranking);
+	CV_RegisterVar(&cv_draftindicator);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -762,6 +769,7 @@ INT32 LAPS_X, LAPS_Y;	// Lap Sticker
 INT32 RING_X, RING_Y;	// Player Rings
 INT32 SPDM_X, SPDM_Y;	// Speedometer
 INT32 ACCE_X, ACCE_Y;	// Accessibility
+INT32 DRAT_X, DRAT_Y;	// Drafting
 INT32 POSI_X, POSI_Y;	// Position Number
 INT32 FACE_X, FACE_Y;	// Top-four Faces
 INT32 STCD_X, STCD_Y;	// Starting countdown
@@ -774,6 +782,7 @@ INT32 ITEM2_X, ITEM2_Y;
 INT32 LAPS2_X, LAPS2_Y;
 INT32 RING2_X, RING2_Y;
 INT32 POSI2_X, POSI2_Y;
+INT32 DRAT2_X, DRAT2_Y;
 
 void K_ReloadHUDColorCvar(void)
 {
@@ -1015,6 +1024,9 @@ static void K_initKartHUD(void)
 	// Accessibility
 	ACCE_X = 9 + cv_speed_xoffset.value;						//   9
 	ACCE_Y = BASEVIDHEIGHT - 29 + cv_speed_yoffset.value;		// 171
+	// Drafting
+	DRAT_X = 172 + cv_draft_xoffset.value;						// 172
+	DRAT_Y = BASEVIDHEIGHT - 41 + cv_draft_yoffset.value;		// 159
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;			// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;			// 138
@@ -1035,19 +1047,29 @@ static void K_initKartHUD(void)
 
 	if (r_splitscreen)	// Splitscreen
 	{
+		// Lock the positions in.
 		ITEM_X = 5;
 		ITEM_Y = 3;
 
+		LAPS_X = 9;
 		LAPS_Y = (BASEVIDHEIGHT/2)-24;
 
+		RING_X = 9;
 		RING_Y = (BASEVIDHEIGHT/2)-24;
 
+		SPDM_X = 9;
 		SPDM_Y = (BASEVIDHEIGHT/2)-24;
 
-		POSI_Y = (BASEVIDHEIGHT/2)- 2;
+		POSI_X = BASEVIDWIDTH;
+		POSI_Y = (BASEVIDHEIGHT/2)-2;
 
+		DRAT_X = 172;
+		DRAT_Y = (BASEVIDHEIGHT/2)-34;
+
+		STCD_X = BASEVIDWIDTH/2;
 		STCD_Y = BASEVIDHEIGHT/4;
 
+		MINI_X = BASEVIDWIDTH - 50;
 		MINI_Y = (BASEVIDHEIGHT/2);
 
 		if (r_splitscreen > 1)	// 3P/4P Small Splitscreen
@@ -1065,6 +1087,9 @@ static void K_initKartHUD(void)
 			POSI_X = 24;
 			POSI_Y = (BASEVIDHEIGHT/2)-26;
 
+			DRAT_X = 95;
+			DRAT_Y = (BASEVIDHEIGHT/2)-32;
+
 			// 2P (top right)
 			ITEM2_X = (BASEVIDWIDTH/2)-39;
 			ITEM2_Y = -8;
@@ -1077,6 +1102,9 @@ static void K_initKartHUD(void)
 
 			POSI2_X = (BASEVIDWIDTH/2)-4;
 			POSI2_Y = (BASEVIDHEIGHT/2)-26;
+
+			DRAT2_X = 95;
+			DRAT2_Y = (BASEVIDHEIGHT/2)-32;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
@@ -1108,7 +1136,7 @@ void K_getItemBoxDrawinfo(drawinfo_t *out)
 	}
 	else // now we're having a fun game.
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]]) // If we are P1 or P3...
+		if (stplyrnum == 0 || stplyrnum == 2) // If we are P1 or P3...
 		{
 			fx = ITEM_X;
 			fy = ITEM_Y;
@@ -1142,7 +1170,7 @@ void K_getLapsDrawinfo(drawinfo_t *out)
 	}
 	else
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
+		if (stplyrnum == 0 || stplyrnum == 2)	// If we are P1 or P3...
 		{
 			fx = LAPS_X;
 			fy = LAPS_Y;
@@ -1174,7 +1202,7 @@ void K_getRingsDrawinfo(drawinfo_t *out)
 	}
 	else
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
+		if (stplyrnum == 0 || stplyrnum == 2)	// If we are P1 or P3...
 		{
 			fx = RING_X;
 			fy = RING_Y;
@@ -1756,7 +1784,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	else if (r_splitscreen == 1)	// for this splitscreen, we'll use case by case because it's a bit different.
 	{
 		fx = POSI_X;
-		if (stplyr == &players[displayplayers[0]])	// for player 1: display this at the top right, above the minimap.
+		if (stplyrnum == 0)	// for player 1: display this at the top right, above the minimap.
 		{
 			fy = 30;
 			fflags = V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
@@ -1771,7 +1799,7 @@ static void K_DrawKartPositionNum(INT32 num)
 	}
 	else
 	{
-		if (stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]])	// If we are P1 or P3...
+		if (stplyrnum == 0 || stplyrnum == 2)	// If we are P1 or P3...
 		{
 			fx = POSI_X;
 			fy = POSI_Y;
@@ -2701,7 +2729,7 @@ static void K_drawKartAccessibilityIcons(INT32 fx)
 	{
 		fx = ACCE_X+43;
 		fy = ACCE_Y;
-		if (!(stplyr == &players[displayplayers[0]] || stplyr == &players[displayplayers[2]]))	// If we are not P1 or P3...
+		if (!(stplyrnum == 0 || stplyrnum == 2))	// If we are not P1 or P3...
 		{
 			splitflags ^= (V_SNAPTOLEFT|V_SNAPTORIGHT);
 			fx = (BASEVIDWIDTH/2) - (fx + 10);
@@ -3950,7 +3978,7 @@ static void K_drawKartMinimap(void)
 
 	// Only draw for the first player
 	// Maybe move this somewhere else where this won't be a concern?
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return;
 
 	if (minimapinfo.minimap_pic == NULL)
@@ -4553,7 +4581,7 @@ static void K_drawKartFinish(void)
 
 		interpx = R_InterpolateFixed(ox, x);
 
-		if (r_splitscreen && stplyr == &players[displayplayers[1]])
+		if (r_splitscreen && stplyrnum == 1)
 			interpx = -interpx;
 
 		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
@@ -4712,11 +4740,11 @@ static void K_drawKartFirstPerson(void)
 	if (stplyr->spectator || !stplyr->mo || (stplyr->mo->renderflags & RF_DONTDRAW))
 		return;
 
-	if (stplyr == &players[displayplayers[1]] && r_splitscreen)
+	if (stplyrnum == 1 && r_splitscreen)
 		{ pn = pnum[1]; tn = turn[1]; dr = drift[1]; }
-	else if (stplyr == &players[displayplayers[2]] && r_splitscreen > 1)
+	else if (stplyrnum == 2 && r_splitscreen > 1)
 		{ pn = pnum[2]; tn = turn[2]; dr = drift[2]; }
-	else if (stplyr == &players[displayplayers[3]] && r_splitscreen > 2)
+	else if (stplyrnum == 3 && r_splitscreen > 2)
 		{ pn = pnum[3]; tn = turn[3]; dr = drift[3]; }
 	else
 		{ pn = pnum[0]; tn = turn[0]; dr = drift[0]; }
@@ -4831,11 +4859,11 @@ static void K_drawKartFirstPerson(void)
 
 	V_DrawFixedPatch(x, y, scale, splitflags, kp_fpview[target], colmap);
 
-	if (stplyr == &players[displayplayers[1]] && r_splitscreen)
+	if (stplyrnum == 1 && r_splitscreen)
 		{ pnum[1] = pn; turn[1] = tn; drift[1] = dr; }
-	else if (stplyr == &players[displayplayers[2]] && r_splitscreen > 1)
+	else if (stplyrnum == 2 && r_splitscreen > 1)
 		{ pnum[2] = pn; turn[2] = tn; drift[2] = dr; }
-	else if (stplyr == &players[displayplayers[3]] && r_splitscreen > 2)
+	else if (stplyrnum == 3 && r_splitscreen > 2)
 		{ pnum[3] = pn; turn[3] = tn; drift[3] = dr; }
 	else
 		{ pnum[0] = pn; turn[0] = tn; drift[0] = dr; }
@@ -5411,7 +5439,7 @@ static void K_drawDistributionDebugger(void)
 	boolean dontforcespb = false;
 	boolean spbrush = false;
 
-	//if (stplyr != &players[displayplayers[0]]) // only for p1
+	//if (stplyrnum != 0) // only for p1
 		//return;
 
 	// The only code duplication from the Kart, just to avoid the actual item function from calculating pingame twice
@@ -5490,7 +5518,7 @@ static void K_drawDistributionDebugger(void)
 
 static void K_drawCheckpointDebugger(void)
 {
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	if (stplyr->starpostnum >= K_CheckpointThreshold(true))
@@ -5509,7 +5537,7 @@ static void K_DrawWaypointDebugger(void)
 	if (cv_kartdebugwaypoints.value == 0)
 		return;
 
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	if (stplyr->bigwaypointgap)
@@ -5527,7 +5555,7 @@ static void K_DrawClusterDebugger(void)
 	if (cv_kartdebugcluster.value == 0)
 		return;
 
-	if (stplyr != &players[displayplayers[0]]) // only for p1
+	if (stplyrnum != 0) // only for p1
 		return;
 
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
@@ -5545,16 +5573,61 @@ static void K_DrawClusterDebugger(void)
 	}
 }
 
+void K_getSlipstreamDrawinfo(drawinfo_t *out)
+{
+	INT32 fx, fy, splitflags = 0;
+
+	if (r_splitscreen < 2) // don't change shit for THIS splitscreen.
+	{
+		fx = DRAT_X;
+		fy = DRAT_Y;
+		splitflags = V_SPLITSCREEN;
+
+		if (r_splitscreen > 0)
+			splitflags |= V_30TRANS;
+	}
+	else // now we're having a fun game.
+	{
+		if (stplyrnum == 0 || stplyrnum == 2) // If we are P1 or P3...
+		{
+			fx = DRAT_X;
+			fy = DRAT_Y;
+			splitflags = V_30TRANS|V_SPLITSCREEN;
+		}
+		else // else, that means we're P2 or P4.
+		{
+			fx = DRAT2_X;
+			fy = DRAT2_Y;
+			splitflags = V_30TRANS|V_SPLITSCREEN;
+		}
+	}
+
+	out->x = fx;
+	out->y = fy;
+	out->flags = splitflags;
+}
+
 static void K_SlipstreamIndicator(boolean tiny)
 {
-	 if (!draftingactive)
+	 if (!K_DraftingActive())
+		return;
+
+	if (!cv_draftindicator.value)
 		return;
 
     char *fullstr = "DRAFTING";
 	char str[256] = {0};
 	SINT8 stringlen = strlen(fullstr);
     SINT8 len = min(stplyr->draftpower / (FRACUNIT / stringlen), stringlen);
-	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
+	INT32 flags;
+	INT32 fx, fy;
+
+	drawinfo_t info;
+	K_getSlipstreamDrawinfo(&info);
+
+	fx = info.x;
+	fy = info.y;
+	flags = info.flags;
 
     if (!len)
 		return;
@@ -5568,9 +5641,9 @@ static void K_SlipstreamIndicator(boolean tiny)
 	}
 
 	if (tiny)
-		V_DrawSmallString(174 - V_StringWidth(str, flags)/2, 159, flags, str);
+		V_DrawSmallString(fx - V_StringWidth(str, flags)/2, fy, flags, str);
 	else
-		V_DrawThinString(174 - V_StringWidth(str, flags)/2, 159, flags, str);
+		V_DrawThinString(fx - V_StringWidth(str, flags)/2, fy, flags, str);
 }
 
 void K_drawKartHUD(void)
@@ -5593,7 +5666,7 @@ void K_drawKartHUD(void)
 	}
 
 	// Draw full screen stuff that turns off the rest of the HUD
-	if (mapreset && stplyr == &players[displayplayers[0]])
+	if (mapreset && stplyrnum == 0)
 	{
 		K_drawChallengerScreen();
 		return;
@@ -5780,7 +5853,7 @@ void K_drawKartHUD(void)
 	}
 
 	K_DisplayItemTimers();
-	K_SlipstreamIndicator(r_splitscreen > 0);
+	K_SlipstreamIndicator(r_splitscreen > 1);
 
 	if (modeattacking || freecam) // everything after here is MP and debug only
 		return;

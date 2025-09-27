@@ -34,6 +34,7 @@
 #include "lua_hook.h"
 
 #include "k_hud.h"
+#include "h_timers.h"
 
 #define HUDONLY if (!hud_running) return luaL_error(L, "HUD rendering code should not be called outside of rendering hooks!");
 
@@ -749,7 +750,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (gamestate != GS_LEVEL)
 		return 0;
 
-	if (stplyr != &players[displayplayers[0]])
+	if (stplyrnum != 0)
 		return 0;
 
 	if (minimapinfo.minimap_pic == NULL)
@@ -1387,7 +1388,9 @@ enum huddrawinfo {
 	huddrawinfo_item = 0,
 	huddrawinfo_gametypeinfo,
 	huddrawinfo_rings,
-	huddrawinfo_minimap
+	huddrawinfo_minimap,
+	huddrawinfo_timers,
+	huddrawinfo_drafting,
 };
 
 static const char *const hud_drawinfo_options[] = {
@@ -1395,6 +1398,8 @@ static const char *const hud_drawinfo_options[] = {
 	"gametypeinfo",
 	"rings",
 	"minimap",
+	"timers",
+	"drafting",
 	NULL};
 
 static int libd_getDrawInfo(lua_State *L)
@@ -1404,10 +1409,12 @@ static int libd_getDrawInfo(lua_State *L)
 	drawinfo_t info;
 
 	switch(option) {
-		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);  break;
-		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);     break;
-		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);     break;
-		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);  break;
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);     break;
+		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);        break;
+		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);       break;
+		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);     break;
+		case huddrawinfo_timers:        K_getSlipstreamDrawinfo(&info);  break;
+		case huddrawinfo_drafting:      K_getTimersDrawinfo(&info);      break;
 		default:
 			return 0; // unreachable
 	}
@@ -1415,7 +1422,8 @@ static int libd_getDrawInfo(lua_State *L)
 	lua_pushinteger(L, info.x);
 	lua_pushinteger(L, info.y);
 	lua_pushinteger(L, info.flags);
-	return 3;
+	lua_pushinteger(L, info.flipamount);
+	return 4;
 }
 
 // Get cv_translucenthud's value for HUD rendering as a normal V_xxTRANS int

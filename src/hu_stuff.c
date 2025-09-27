@@ -2058,7 +2058,7 @@ static void HU_DrawDemoInfo(void)
 void HU_DrawSongCredits(void)
 {
 	fixed_t x;
-	fixed_t y = (r_splitscreen ? (BASEVIDHEIGHT/2)-4 : 32) * FRACUNIT;
+	fixed_t y = ((r_splitscreen && G_GamestateUsesLevel()) ? (BASEVIDHEIGHT/2)-4 : 32) * FRACUNIT;
 	INT32 snapflags = cursongcredit.snapflags;
 	INT32 bgt;
 

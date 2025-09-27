@@ -41,6 +41,8 @@ IMPL_HUD_OFFSET(rings); // Number of rings
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 IMPL_HUD_OFFSET(speed); // Speedometer
 IMPL_HUD_OFFSET(acce); // Accessibility
+IMPL_HUD_OFFSET(timers); // Drafting
+IMPL_HUD_OFFSET(draft); // Drafting
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -91,6 +93,7 @@ void K_getItemBoxDrawinfo(drawinfo_t *out);
 void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getRingsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
+void K_getSlipstreamDrawinfo(drawinfo_t *out);
 const char *K_GetItemPatch(UINT8 item, boolean tiny);
 void K_ReloadHUDColorCvar(void);
 boolean K_UseColorHud(void);

@@ -343,7 +343,7 @@ static INT32 SCY(INT32 y)
 	if (splitscreen)
 	{
 		y >>= 1;
-		if (stplyr != &players[displayplayers[0]])
+		if (stplyrnum != 0)
 			y += vid.height / 2;
 	}
 	return y;
@@ -359,7 +359,7 @@ static INT32 STRINGY(INT32 y)
 	if (splitscreen)
 	{
 		y >>= 1;
-		if (stplyr != &players[displayplayers[0]])
+		if (stplyrnum != 0)
 			y += BASEVIDHEIGHT / 2;
 	}
 	return y;
@@ -372,7 +372,7 @@ static INT32 SPLITFLAGS(INT32 f)
 	// Pass this V_SNAPTO(TOP|BOTTOM) and it'll trim them to account for splitscreen! -Red
 	if (splitscreen)
 	{
-		if (stplyr != &players[displayplayers[0]])
+		if (stplyrnum != 0)
 			f &= ~V_SNAPTOTOP;
 		else
 			f &= ~V_SNAPTOBOTTOM;
@@ -399,7 +399,7 @@ static INT32 SCR(INT32 r)
 	if (splitscreen)
 	{
 		y >>= 1;
-		if (stplyr != &players[displayplayers[0]])
+		if (stplyrnum != 0)
 			y += vid.height / 2;
 	}
 	return FixedInt(FixedDiv(y, vid.fdupy));
@@ -842,7 +842,7 @@ static void ST_overlayDrawer(void)
 				{
 					char name[MAXPLAYERNAME+12];
 
-					INT32 y = (stplyr == &players[displayplayers[0]]) ? 4 : BASEVIDHEIGHT/2-12;
+					INT32 y = (stplyrnum == 0) ? 4 : BASEVIDHEIGHT/2-12;
 					sprintf(name, "VIEWPOINT: %s", player_names[stplyr-players]);
 					V_DrawRightAlignedThinString(BASEVIDWIDTH-40, y, V_HUDTRANSHALF|V_ALLOWLOWERCASE|V_SNAPTOTOP|V_SNAPTOBOTTOM|V_SNAPTORIGHT|V_SPLITSCREEN, name);
 				}

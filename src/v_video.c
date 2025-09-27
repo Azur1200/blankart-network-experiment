@@ -616,7 +616,7 @@ void V_AdjustXYWithSnap(INT32 *x, INT32 *y, UINT32 options, INT32 dupx, INT32 du
 
 			if (r_splitscreen > 1)
 			{
-				if (stplyr == &players[displayplayers[1]] || stplyr == &players[displayplayers[3]])
+				if (stplyrnum == 1 || stplyrnum == 3)
 					slidefromright = true;
 			}
 
