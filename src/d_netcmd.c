@@ -1040,6 +1040,8 @@ void D_RegisterServerCommands(void)
 #ifdef LUA_ALLOW_BYTECODE
 	COM_AddCommand("dumplua", Command_Dumplua_f);
 #endif
+
+	CV_RegisterVar(&cv_debugmappatch);
 }
 
 // =========================================================================
@@ -1332,8 +1334,6 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_connectawaittime);
 	CV_RegisterVar(&cv_serverinfoscreen);
-
-	CV_RegisterVar(&cv_debugmappatch);
 }
 
 /**
