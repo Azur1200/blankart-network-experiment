@@ -966,13 +966,23 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 							secondPlayer = &players[secondIndex];
 
 							// Add the distance to the player behind you.
-							pdis += P_AproxDistance(P_AproxDistance(
+							// Distances are divided by 4, then further divided by a fracunit
+							// to prevent overflow issues.
+							pdis += (P_AproxDistance(P_AproxDistance(
 									firstPlayer->mo->x/4 - secondPlayer->mo->x/4,
 									firstPlayer->mo->y/4 - secondPlayer->mo->y/4),
-									firstPlayer->mo->z/4 - secondPlayer->mo->z/4);
+									firstPlayer->mo->z/4 - secondPlayer->mo->z/4)
+									/ FRACUNIT);
 
-							// Scale it to prevent overflow issues.
-							pdis = (pdis / FRACUNIT)*2;
+							// Scale it to mostly return to normalcy.
+							pdis = (pdis * 2);
+
+							// Again, but this time base it on playercount, same form as
+							// the following vanilla adjustment, but much weaker since it
+							// stacks with it
+							// MAXODDS should always match the number of players the game is designed
+							// around, so there shouldn't be any issues with basing this calc around that.
+							pdis = ((100 + MAXODDS - min(pingame, 16)) * pdis) / 100;
 
 							// Advance to next index.
 							firstIndex = secondIndex;
