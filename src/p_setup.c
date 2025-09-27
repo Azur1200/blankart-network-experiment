@@ -8185,7 +8185,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 	else
 	{
-		if ((gametyperules & GTR_BUMPERS))
+		if (gametyperules & GTR_BATTLESPEED)
 		{
 			if (cv_kartbattlespeed.value == KARTSPEED_AUTO)
 				gamespeed = ((speedscramble == -1) ? KARTSPEED_EASY : (UINT8)speedscramble);
