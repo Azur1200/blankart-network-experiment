@@ -1706,8 +1706,6 @@ void D_SRB2Main(void)
 	memset(timelimits, 0, sizeof(timelimits));
 	memset(pointlimits, 0, sizeof(pointlimits));
 
-	timelimits[GT_BATTLE] = 2;
-
 	CON_SetLoadingProgress(LOADED_HUINIT);
 
 	if (modifiedgame)
