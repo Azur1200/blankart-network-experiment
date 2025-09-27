@@ -4485,7 +4485,8 @@ void G_SyncDemoParty(INT32 rem, INT32 newsplitscreen)
 	// viewports.
 
 	// Remove this player
-	G_LeaveParty(rem);
+	if (playeringame[rem])
+		G_LeaveParty(rem);
 
 	// And reset the rest of the party
 	for (int i = 0; i <= r_splitscreen_copy; ++i)
