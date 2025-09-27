@@ -360,6 +360,9 @@ enum player_e
 	player_ping,
 	player_packetloss,
 	player_loop,
+	player_prevonground,
+	player_walltransfered,
+	player_walltransferboost,
 #ifdef HWRENDER
 	player_fovadd,
 #endif
@@ -560,6 +563,9 @@ static const char *const player_opt[] = {
 	"ping",
 	"packetloss",
 	"loop",
+	"prevonground",
+	"walltransfered",
+	"walltransfeboost",
 #ifdef HWRENDER
 	"fovadd",
 #endif
@@ -1191,6 +1197,15 @@ static int player_get(lua_State *L)
 		break;
 	case player_loop:
 		LUA_PushUserdata(L, &plr->loop, META_SONICLOOPVARS);
+		break;
+	case player_prevonground:
+		lua_pushboolean(L, plr->prevonground);
+		break;
+	case player_walltransfered:
+		lua_pushboolean(L, plr->walltransfered);
+		break;
+	case player_walltransferboost:
+		lua_pushinteger(L, plr->walltransferboost);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1863,6 +1878,12 @@ static int player_set(lua_State *L)
 		return NOSET;
 	case player_loop:
 		return NOSET;
+	case player_prevonground:
+		return NOSET;
+	case player_walltransfered:
+		plr->walltransfered = lua_toboolean(L, 3);
+	case player_walltransferboost:
+		plr->walltransferboost= lua_tointeger(L, 3);
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);

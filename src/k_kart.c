@@ -338,6 +338,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_start_accelboost);
 	CV_RegisterVar(&cv_kartstacking_start_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_walltransfer_speedboost);
+	CV_RegisterVar(&cv_kartstacking_walltransfer_accelboost);
+	CV_RegisterVar(&cv_kartstacking_walltransfer_stackable);
+
 	CV_RegisterVar(&cv_kartstacking_drift_speedboost);
 	CV_RegisterVar(&cv_kartstacking_drift_accelboost);
 	CV_RegisterVar(&cv_kartstacking_drift_stackable);
@@ -1180,7 +1184,7 @@ void K_SpawnDashDustRelease(player_t *player)
 	if (!P_IsObjectOnGround(player->mo))
 		return;
 
-	if (!player->speed && !player->startboost)
+	if (!player->speed && !(player->startboost || player->walltransferboost))
 		return;
 
 	travelangle = player->mo->angle;
@@ -2601,6 +2605,11 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->startboost) // Startup Boost
 	{
 		K_DoBoost(player, STARTSPEEDBOOST, STARTACCELBOOST, STARTSTACKABLE, STARTSTACKABLE); // + 25% top speed, + 600% acceleration
+	}
+
+	if (player->walltransferboost) // Wall Transfer Boost
+	{
+		K_DoBoost(player, WALLTRANSFERSPEEDBOOST, WALLTRANSFERACCELBOOST, WALLTRANSFERSTACKABLE, WALLTRANSFERSTACKABLE); // + 10% top speed, + 500% acceleration
 	}
 
 	if (player->driftboost) // Drift Boost
@@ -6828,7 +6837,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		{
 			// Speed lines
 			if (player->sneakertimer || player->ringboost
-				|| player->driftboost || player->startboost)
+				|| player->driftboost || player->startboost
+				|| player->walltransferboost)
 			{
 #if 0
 				if (player->invincibilitytimer)
@@ -7022,6 +7032,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->startboost > 0)
 		player->startboost = K_ChainOrDeincrementTime(player, player->startboost, 1, false);
+
+	if (player->walltransferboost > 0)
+		player->walltransferboost--;
 
 	if (player->invincibilitytimer)
 	{
@@ -10779,6 +10792,15 @@ bubbledeflate:
 	{
 		player->pflags &= ~PF_AIRFAILSAFE;
 	}
+
+	if (player->walltransfered && onground)
+	{
+		K_SpawnDashDustRelease(player);
+		S_StartSound(player->mo, sfx_s23c);
+		player->walltransferboost += 15;
+		player->walltransfered = false;
+	}
+
 }
 
 void K_CheckSpectateStatus(boolean considermapreset)

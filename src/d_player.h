@@ -846,6 +846,9 @@ struct player_t
 
 	boolean prevonground;
 
+	boolean walltransfered;
+	UINT8 walltransferboost;
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

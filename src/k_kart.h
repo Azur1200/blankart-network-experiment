@@ -122,6 +122,10 @@ extern vector3_t clusterpoint, clusterdtf;
 #define STARTACCELBOOST K_RAGuard(cv_kartstacking_start_accelboost)
 #define STARTSTACKABLE K_RAGuard(cv_kartstacking_start_stackable)
 
+#define WALLTRANSFERSPEEDBOOST K_RAGuard(cv_kartstacking_walltransfer_speedboost)
+#define WALLTRANSFERACCELBOOST K_RAGuard(cv_kartstacking_walltransfer_accelboost)
+#define WALLTRANSFERSTACKABLE K_RAGuard(cv_kartstacking_walltransfer_stackable)
+
 #define DRIFTSPEEDBOOST K_RAGuard(cv_kartstacking_drift_speedboost)
 #define DRIFTACCELBOOST K_RAGuard(cv_kartstacking_drift_accelboost)
 #define DRIFTSTACKABLE K_RAGuard(cv_kartstacking_drift_stackable)

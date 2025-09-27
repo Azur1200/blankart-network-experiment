@@ -503,6 +503,10 @@ consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_spee
 consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+
 consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR, CV_OnOff, NULL);

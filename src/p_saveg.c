@@ -451,6 +451,10 @@ static void P_NetArchivePlayers(savebuffer_t *save)
 		// Fix janky landing particle
 		WRITEUINT8(save->p, players[i].prevonground);
 
+		// Wall Transfer bonus
+		WRITEUINT8(save->p, players[i].walltransfered);
+		WRITEUINT8(save->p, players[i].walltransferboost);
+
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -807,7 +811,11 @@ static void P_NetUnArchivePlayers(savebuffer_t *save)
 		players[i].maxlink = READINT32(save->p);
 
 		// Fix janky landing particle
-		players[i].prevonground = READUINT8(save->p);
+		players[i].prevonground = (boolean)READUINT8(save->p);
+
+		// Wall Transfer bonus
+		players[i].walltransfered = (boolean)READUINT8(save->p);
+		players[i].walltransferboost = READUINT8(save->p);
 
 		//players[i].viewheight = P_GetPlayerViewHeight(players[i]); // scale cannot be factored in at this point
 	}

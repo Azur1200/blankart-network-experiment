@@ -1740,6 +1740,12 @@ void P_XYMovement(mobj_t *mo)
 						mo->momz = transfermomz;
 						mo->standingslope = NULL;
 						mo->terrain = NULL;
+
+						if (mo->player)
+						{
+							S_StartSound(mo, sfx_kc5e);
+							mo->player->walltransfered = true;
+						}
 					}
 				}
 			}

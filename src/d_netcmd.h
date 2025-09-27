@@ -160,6 +160,10 @@ extern consvar_t cv_kartstacking_start_speedboost;
 extern consvar_t cv_kartstacking_start_accelboost;
 extern consvar_t cv_kartstacking_start_stackable;
 
+extern consvar_t cv_kartstacking_walltransfer_speedboost;
+extern consvar_t cv_kartstacking_walltransfer_accelboost;
+extern consvar_t cv_kartstacking_walltransfer_stackable;
+
 extern consvar_t cv_kartstacking_drift_speedboost;
 extern consvar_t cv_kartstacking_drift_accelboost;
 extern consvar_t cv_kartstacking_drift_stackable;
