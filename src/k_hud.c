@@ -3058,10 +3058,11 @@ static void K_drawKartBumpersOrKarma(void)
 		}
 		else
 		{
-			if (stplyr->bumper <= 0)
+			if (stplyr->bumper <= 0 && (gametyperules & GTR_KARMA))
 			{
 				V_DrawMappedPatch(fx, fy-1, V_HUDTRANS|splitflags, kp_splitkarmabomb, colormap);
-				V_DrawString(fx+13, fy+1, V_HUDTRANS|splitflags, va("%d/2", stplyr->karmapoints));
+				V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[stplyr->karmapoints % 10]);
+				V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[2 % 10]);
 			}
 			else
 			{
