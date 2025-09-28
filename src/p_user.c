@@ -2876,14 +2876,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	if (player->playerstate == PST_DEAD)
+	/*if (player->playerstate == PST_DEAD)
 	{
 		// Do not move the camera while dead!
 		if (thiscam->chase)
 			P_CalcChasePostImg(player, thiscam);
 
 		return true;
-	}
+	}*/
 
 	if ((player->pflags & PF_NOCONTEST)) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->karthud[khud_timeovercam] > 2*TICRATE ? 2 : 1);
