@@ -2198,6 +2198,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			{
 				player->sneakertimer = player->numsneakers = 0;
 				player->flamestore = player->flamedash = 0;
+				player->bubbleboost = 0;
 				player->mo->flags2 &= ~MF2_WATERRUN;
 			}
 
