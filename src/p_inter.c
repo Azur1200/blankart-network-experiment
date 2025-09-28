@@ -944,6 +944,10 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 
 	(void)snaptopost;
 
+	// SRB2kart - 150117
+	if (K_UsingLegacyCheckpoints() && player->exiting) //STOP MESSING UP MY STATS FASDFASDF
+		return;
+
 	// Going backwards triggers sound
 	if (K_CheckpointThreshold(false) == numstarposts
 	    ? post->health - player->starpostnum > 1
