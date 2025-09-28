@@ -2142,15 +2142,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					return false;
 				}
 
+				// Check if we should allow explosion combos.
+				if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 				{
-
-					// Check if we should allow explosion combos.
-					if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
-					{
-						// Post-hit invincibility
-						K_DoInstashield(player);
-						return false;
-					}
+					// Post-hit invincibility
+					K_DoInstashield(player);
+					return false;
 				}
 			}
 
@@ -2165,7 +2162,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					{
 						K_TakeBumpersFromPlayer(source->player, player, 1);
 					}
-					else if (damage & DMG_KARMA)
+					else if (damage & DMG_KARMA && source->player->bumper <= 0)
 					{
 						source->player->karmapoints++;
 						if (source->player->karmapoints >= 2)
