@@ -983,9 +983,11 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 							// Again, but this time base it on playercount, same form as
 							// the following vanilla adjustment, but much weaker since it
 							// stacks with it
+
 							// MAXODDS should always match the number of players the game is designed
 							// around, so there shouldn't be any issues with basing this calc around that.
-							pdis = ((100 + MAXODDS - min(pingame, 16)) * pdis) / 100;
+							// Hacky solution to the overflow problem: use 64-bit integers!
+							pdis = (UINT32)(((UINT64)(100 + MAXODDS - min(pingame, 16)) * pdis) / 100);
 
 							// Advance to next index.
 							firstIndex = secondIndex;
