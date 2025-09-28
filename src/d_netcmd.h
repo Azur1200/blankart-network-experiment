@@ -156,6 +156,10 @@ extern consvar_t cv_kartstacking_grow_speedboost;
 extern consvar_t cv_kartstacking_grow_accelboost;
 extern consvar_t cv_kartstacking_grow_stackable;
 
+extern consvar_t cv_kartstacking_bubble_speedboost;
+extern consvar_t cv_kartstacking_bubble_accelboost;
+extern consvar_t cv_kartstacking_bubble_stackable;
+
 extern consvar_t cv_kartstacking_start_speedboost;
 extern consvar_t cv_kartstacking_start_accelboost;
 extern consvar_t cv_kartstacking_start_stackable;

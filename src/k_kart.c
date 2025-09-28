@@ -330,6 +330,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
 	CV_RegisterVar(&cv_kartstacking_grow_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_bubble_speedboost);
+	CV_RegisterVar(&cv_kartstacking_bubble_accelboost);
+	CV_RegisterVar(&cv_kartstacking_bubble_stackable);
+
 	CV_RegisterVar(&cv_kartstacking_flame_speedval);
 	CV_RegisterVar(&cv_kartstacking_flame_accelboost);
 	CV_RegisterVar(&cv_kartstacking_flame_stackable);
@@ -2027,6 +2031,7 @@ tripwirepass_t K_TripwirePassConditions(const player_t *player)
 {
 	if (
 			player->invincibilitytimer ||
+			player->bubbleboost ||
 			(player->sneakertimer && player->realsneakertimer)
 		)
 		return TRIPWIRE_BLASTER;
@@ -2585,12 +2590,20 @@ static void K_GetKartBoostPower(player_t *player)
 	{
         fixed_t invspeedboost = K_GetInvincibilitySpeed(player->invincibilitytimer);
         fixed_t invaccelboost = K_GetInvincibilityAccel(player->invincibilitytimer);
-		K_DoBoost(player, invspeedboost, invaccelboost, INVINSTACKABLE, INVINSTACKABLE); // + 37.5% top speed, + 300% acceleration
+
+		// Legacy: + 37.5% top speed, + 300% acceleration
+		// Alternative: + ???% top speed, + ???% acceleration
+		K_DoBoost(player, invspeedboost, invaccelboost, INVINSTACKABLE, INVINSTACKABLE);
 	}
 
 	if (player->growshrinktimer > 0) // Grow
 	{
 		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, GROWSTACKABLE, GROWSTACKABLE); // + 20% top speed, + 0% acceleration
+	}
+
+	if (player->bubbleboost) // Bubble Shield popping boost
+	{
+		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 30% top speed, + 400% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
@@ -6843,7 +6856,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// Speed lines
 			if (player->sneakertimer || player->ringboost
 				|| player->driftboost || player->startboost
-				|| player->walltransferboost)
+				|| player->walltransferboost
+				|| player->bubbleboost)
 			{
 #if 0
 				if (player->invincibilitytimer)
@@ -7092,6 +7106,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 				CONS_Printf("You are going the wrong way! You will automatically respawn in 7 seconds.\n");
 			}
 		}
+	}
+
+	if (player->bubbleboost)
+	{
+		player->bubbleboost--;
 	}
 
 	if (player->growshrinktimer != 0)
@@ -8765,7 +8784,7 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if (player->invincibilitytimer || player->sneakertimer || player->growshrinktimer > 0)
+	if (player->invincibilitytimer || player->sneakertimer || player->bubbleboost || player->growshrinktimer > 0)
 		turnvalue = FixedMul(turnvalue, FixedDiv(5*FRACUNIT, 4*FRACUNIT));
 
 	if (player->flamedash && player->flamestore) // Reduce turning
@@ -9030,7 +9049,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->pflags &= ~(PF_BRAKEDRIFT|PF_GETSPARKS);
 	}
 
-	if ( (!(player->sneakertimer || player->flamestore || K_AltInvinSliptideCondition(player)))
+	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_AltInvinSliptideCondition(player)))
 	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
 	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
@@ -10583,15 +10602,29 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									// (was blowup x4 before)
 									player->bubblecool = player->bubbleblowup*2;
 
-									if (player->bubbleblowup > bubbletime*2)
+									if (player->bubbleblowup > bubbletime*4)
 									{
-										// Jump straight to deflating the bubble.
-										goto bubbledeflate;
+										// If you overcharge the Bubble Shield at
+										// any point, it pops and rockets you ahead.
+										K_BreakBubbleShield(player);
+										K_PopPlayerShield(player);
+
+										S_StartSoundAtVolume(player->mo, sfx_cdfm57, 170);
+										K_PlayBoostTaunt(player->mo);
+#define BUBBLETHRUST (7 * FRACUNIT / 5)
+										fixed_t spd =
+										    max(K_GetKartSpeed(player, true, true),
+											FixedMul(player->speed, player->mo->scale));
+
+										P_InstaThrust(player->mo,
+                                        	      player->mo->angle,
+                                        	      FixedMul(spd, BUBBLETHRUST));
+#undef BUBBLETHRUST
+										player->bubbleboost = 2 * sneakertime / 3;
 									}
 								}
 								else
 								{
-bubbledeflate:
 									{
 										boolean popped = false;
 										if (player->bubbleblowup > bubbletime)

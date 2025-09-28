@@ -114,6 +114,10 @@ extern vector3_t clusterpoint, clusterdtf;
 #define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)
 #define GROWSTACKABLE K_RAGuard(cv_kartstacking_grow_stackable)
 
+#define BUBBLESPEEDBOOST K_RAGuard(cv_kartstacking_bubble_speedboost)
+#define BUBBLEACCELBOOST K_RAGuard(cv_kartstacking_bubble_accelboost)
+#define BUBBLESTACKABLE K_RAGuard(cv_kartstacking_bubble_stackable)
+
 #define FLAMESPEEDVAL K_RAGuard(cv_kartstacking_flame_speedval)
 #define FLAMEACCELBOOST K_RAGuard(cv_kartstacking_flame_accelboost)
 #define FLAMESTACKABLE K_RAGuard(cv_kartstacking_flame_stackable)
