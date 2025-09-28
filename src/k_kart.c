@@ -391,6 +391,10 @@ void K_RegisterKartStuff(void)
     CV_RegisterVar(&cv_kartinvin_maxtime);
     CV_RegisterVar(&cv_kartinvin_midtime);
 
+	CV_RegisterVar(&cv_kartoddsdist);
+	CV_RegisterVar(&cv_kartlegacyoddsdist);
+	CV_RegisterVar(&cv_kartspbdist);
+
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
 	CV_RegisterVar(&cv_driftsparkpulse);
