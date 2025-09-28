@@ -7432,7 +7432,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				gridcss_row = sortedIndex % SKINGRIDWIDTH;
 				gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
-				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 			}
 			else
 			{
@@ -7458,7 +7458,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				gridcss_row = sortedIndex % SKINGRIDWIDTH;
 				gridcss_column = sortedIndex / SKINGRIDWIDTH;
 
-				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT - 1);
+				gridcss_skinydrag = CLAMP(gridcss_column - SKINGRIDHEIGHT + 1, 0, ((numskins - 1) / SKINGRIDWIDTH) - SKINGRIDHEIGHT + 1);
 			}
 			else
 			{
