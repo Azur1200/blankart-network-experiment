@@ -389,7 +389,7 @@ boolean K_LandMineCollide(mobj_t *t1, mobj_t *t2)
 		else
 		{
 			// Player Damage
-			P_DamageMobj(t2, t1, t1->target, 1, DMG_EXPLODE);
+			P_DamageMobj(t2, t1, t1->target, 1, DMG_FLIPOVER);
 		}
 
 		P_SpawnMobj(t1->x, t1->y, t1->z, MT_MINEEXPLOSIONSOUND);
