@@ -2187,11 +2187,12 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				K_DestroyBumpers(player, 1);
 			}
 
-			if (!(type == DMG_NORMAL || type == DMG_WIPEOUT || type == DMG_VOLTAGE || type == DMG_FLIPOVER))
+			if (inflictor && (inflictor->type == MT_ORBINAUT || inflictor->type == MT_ORBINAUT_SHIELD
+				|| inflictor->type == MT_JAWZ || inflictor->type == MT_JAWZ_SHIELD || inflictor->type == MT_JAWZ_DUD
+				|| inflictor->type == MT_SMK_THWOMP || inflictor->player))
 			{
-				player->sneakertimer = 0;
+				player->sneakertimer = player->numsneakers = 0;
 				player->mo->flags2 &= ~MF2_WATERRUN;
-
 			}
 
 			player->driftboost = 0;
