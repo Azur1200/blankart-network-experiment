@@ -2191,9 +2191,10 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				K_DestroyBumpers(player, 1);
 			}
 
-			if (inflictor && (inflictor->type == MT_ORBINAUT || inflictor->type == MT_ORBINAUT_SHIELD
+			if (type == DMG_EXPLODE || type == DMG_KARMA || type == DMG_SQUISH ||
+				(inflictor && (inflictor->type == MT_ORBINAUT || inflictor->type == MT_ORBINAUT_SHIELD
 				|| inflictor->type == MT_JAWZ || inflictor->type == MT_JAWZ_SHIELD || inflictor->type == MT_JAWZ_DUD
-				|| inflictor->type == MT_SMK_THWOMP || inflictor->player))
+				|| inflictor->type == MT_SMK_THWOMP || inflictor->player)))
 			{
 				player->sneakertimer = player->numsneakers = 0;
 				player->flamestore = player->flamedash = 0;

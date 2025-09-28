@@ -1307,7 +1307,7 @@ void M_SaveFrame(void)
 				}
 #ifdef HWRENDER
 				else
-					linear = HWR_GetScreenshot();
+					linear = HWR_GetScreenshot(1);
 #endif
 				M_PNGFrame(apng_ptr, apng_info_ptr, (png_bytep)linear);
 #ifdef HWRENDER
