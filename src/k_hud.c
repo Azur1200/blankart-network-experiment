@@ -6064,10 +6064,11 @@ void K_DrawDriftGauge(void)
 		return;
 
 	mobj_t *mo = stplyr->mo;
+	fixed_t gaugeofs = FixedMul(cv_driftgaugeoffset.value, ((cv_driftgaugeoffset.value > 0) ? mo->scale : mapobjectscale));
 	vector3_t pos = {
 		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
 		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
-		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + FixedMul(cv_driftgaugeoffset.value, ((cv_driftgaugeoffset.value > 0) ? mo->scale : mapobjectscale)),
+		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height - gaugeofs : gaugeofs),
 	};
 	trackingResult_t res;
 	INT32 basex, basey, i = 0;
@@ -6076,12 +6077,6 @@ void K_DrawDriftGauge(void)
 	K_ObjectTracking(&res, &pos, false);
 	basex = res.x;
 	basey = res.y;
-
-	// good ol' flipcam sigh...
-	if ((stplyr->pflags & PF_FLIPCAM) && (stplyr->mo->eflags & MFE_VERTICALFLIP))
-		basey += 25*FRACUNIT;
-	else if (stplyr->mo->eflags & MFE_VERTICALFLIP)
-		basey += 5*FRACUNIT;
 
 	driftgauge_t *gauge = &driftgauges[cv_driftgauge.value];
 	// Deal with Wifi-Style when no purps
