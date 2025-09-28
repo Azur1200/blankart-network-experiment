@@ -57,6 +57,8 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 
 	if (t2->player)
 	{
+		if (t2->player->flashing && !(t1->type == MT_ORBINAUT || t1->type == MT_JAWZ))
+			return true;
 
 		if (t2->player->hyudorotimer)
 			return true; // no interaction
