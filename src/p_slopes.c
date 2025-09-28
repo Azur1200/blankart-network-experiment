@@ -727,6 +727,7 @@ static void SpawnVertexSlopes(void)
 		else
 			v3 = l2->v2;
 
+		// Set Floor Slope
 		if (v1->floorzset || v2->floorzset || v3->floorzset)
 		{
 			vector3_t vtx[3] = {
@@ -736,9 +737,14 @@ static void SpawnVertexSlopes(void)
 			pslope_t *slop = Slope_Add(0);
 			sc->f_slope = slop;
 			sc->hasslope = true;
+
+			if (sc->specialflags & SSF_NOPHYSICSFLOOR)
+				sc->f_slope->flags |= SL_NOPHYSICS;
+
 			P_ReconfigureViaVertexes(slop, vtx[0], vtx[1], vtx[2]);
 		}
 
+		// Set Ceiling Slope
 		if (v1->ceilingzset || v2->ceilingzset || v3->ceilingzset)
 		{
 			vector3_t vtx[3] = {
@@ -748,6 +754,10 @@ static void SpawnVertexSlopes(void)
 			pslope_t *slop = Slope_Add(0);
 			sc->c_slope = slop;
 			sc->hasslope = true;
+
+			if (sc->specialflags & SSF_NOPHYSICSCEILING)
+				sc->c_slope->flags |= SL_NOPHYSICS;
+
 			P_ReconfigureViaVertexes(slop, vtx[0], vtx[1], vtx[2]);
 		}
 	}
