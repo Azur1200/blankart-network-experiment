@@ -10268,7 +10268,7 @@ static void P_MonitorFuseThink(mobj_t *mobj)
 
 static boolean P_FuseThink(mobj_t *mobj)
 {
-	if (mobj->fuse <= TICRATE && (mobj->type == MT_RANDOMITEM || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK))
+	if (mobj->fuse <= TICRATE && ((mobj->type == MT_RANDOMITEM && mobj->threshold == 69) || mobj->type == MT_EGGMANITEM || mobj->type == MT_FALLINGROCK))
 		mobj->renderflags ^= RF_DONTDRAW;
 
 	mobj->fuse--;
@@ -10296,7 +10296,7 @@ static boolean P_FuseThink(mobj_t *mobj)
 		{
 			;
 		}
-		else if (gametype == GT_BATTLE)
+		else if (gametyperules & GTR_BATTLEBOXES)
 		{
 			if (mobj->threshold != 69)
 				break;
@@ -10315,7 +10315,7 @@ static boolean P_FuseThink(mobj_t *mobj)
 				newmobj = P_SpawnMobj(mobj->x, mobj->y, mobj->z, mobj->type);
 
 			// Transfer flags2 (strongbox, objectflip, bossnotrap)
-			newmobj->flags2 = mobj->flags2 & ~MF2_DONTDRAW;
+			newmobj->flags2 = mobj->flags2;
 		}
 
 		P_RemoveMobj(mobj); // make sure they disappear
@@ -12131,7 +12131,7 @@ void P_RespawnSpecials(void)
 	INT32 time = 30*TICRATE; // Respawn things in empty dedicated servers
 	mapthing_t *mthing = NULL;
 
-	if ((gametyperules & GTR_BATTLEBOXES) && numgotboxes >= (4*nummapboxes/5) && !itembreaker) // Battle Mode respawns all boxes in a different way
+	if ((gametyperules & GTR_BATTLEBOXES) && !itembreaker && numgotboxes >= (4*nummapboxes/5)) // Battle Mode respawns all boxes in a different way
 	{
 		thinker_t *th;
 
@@ -13590,10 +13590,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	}
 	case MT_RANDOMITEM:
 	{
-		if (leveltime < 3)
-		{
-			mobj->flags2 |= MF2_BOSSNOTRAP; // mark as here on map start
-		}
+		mobj->flags2 |= MF2_BOSSNOTRAP; // mark as here on map start
 		nummapboxes++;
 		break;
 	}

@@ -411,7 +411,7 @@ boolean K_IsPlayerLosing(player_t *player)
 	INT32 winningpos = 1;
 	UINT8 i, pcount = 0;
 
-	if (itembreaker && numgotboxes == 0)
+	if (itembreaker && numtargets == 0)
 		return true; // Didn't even TRY?
 
 	if (itembreaker || bossinfo.boss)
