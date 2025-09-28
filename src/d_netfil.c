@@ -167,7 +167,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 	for (; i < numwadfiles; i++) //mainwads+1, otherwise we start on the first mainwad
 	{
 		// If it has only music/sound lumps, don't put it in the list
-		if (!wadfiles[i]->important)
+		if (!wadfiles[i]->important || wadfiles[i]->localfile)
 			continue;
 
 		if (firstfile)
@@ -563,7 +563,7 @@ INT32 CL_CheckFiles(void)
 			// CONS_Printf("checking %d of %d / %d of %d?\n", i, fileneedednum, j, numwadfiles);
 			// CONS_Printf("i: %s / j: %s \n", fileneeded[i].filename, wadfiles[j]->filename);
 			
-			if (j < numwadfiles && !wadfiles[j]->important && !wadfiles[j]->localfile)
+			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
 			{
 				// Unimportant on our side.
 				++j;
