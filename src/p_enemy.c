@@ -3173,8 +3173,8 @@ void A_AttractChase(mobj_t *actor)
 				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
 				{
 					actor->target->momz -= (FixedMul(gravity, mapobjectscale))*P_MobjFlip(actor->target);
-					actor->target->player->ringboost += 5;
-					actor->target->player->ringtime += 5;
+					actor->target->player->ringboost += 7;
+					actor->target->player->ringtime += 7;
 					actor->target->player->ringdrop = true;
 				}
 				else
@@ -3188,7 +3188,7 @@ void A_AttractChase(mobj_t *actor)
 
 				if (actor->extravalue3 && !P_IsObjectOnGround(actor->target))
 				{
-					actor->target->momz -= (FixedMul(gravity, mapobjectscale)/2)*P_MobjFlip(actor->target);
+					actor->target->momz -= (FixedMul(gravity, mapobjectscale)/2 + FixedMul(gravity, mapobjectscale)/4)*P_MobjFlip(actor->target);
 				}
 
 				if (actor->target->player->rings <= 10)

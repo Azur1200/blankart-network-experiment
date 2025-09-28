@@ -6667,7 +6667,7 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
 	K_AwardPlayerRings(player, awardamount, (mode == ASR_SUPERRING) ? true : false);
 }
 
-void K_SpawnFallLines(player_t *player, boolean ringdrop)
+static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 {
 	fixed_t rand_x;
 	fixed_t rand_y;
@@ -6703,17 +6703,23 @@ void K_SpawnFallLines(player_t *player, boolean ringdrop)
 	K_MatchGenericExtraFlags(fast, player->mo);
 }
 
-void K_AirDrop(player_t *player, ticcmd_t *cmd)
+static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 {
-	if ((player->cmd.buttons & BT_BRAKE)
-		&& K_AirDropActive()
-		&& !P_IsObjectOnGround(player->mo)
-		&& !P_PlayerInPain(player)
-		&& !player->loop.radius
-		&& !(player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
-		&& !player->respawn)
+	if (!K_AirDropActive() || P_IsObjectOnGround(player->mo)
+		|| P_PlayerInPain(player) || player->loop.radius
+		|| (player->mo->tracer && player->mo->tracer->type == MT_TUBEWAYPOINT)
+		|| player->respawn
+	)
 	{
-		SINT8 airbrakedelay = (player->rings > 0) ? TICRATE/4 : TICRATE/3;
+		// Conditions!
+		player->airdroptime = 0;
+		player->ringdrop = false;
+		return;
+	}
+
+	if (cmd->buttons & BT_BRAKE)
+	{
+		SINT8 airbrakedelay = TICRATE/3;
 		if (player->airdroptime < airbrakedelay)
 		{
 			if (player->rings > 0)
@@ -6735,13 +6741,13 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 				ring->colorized = true;
 				ring->color = SKINCOLOR_SILVER;
 
-				ring->extravalue1 = 18; // Ring use animation timer
+				ring->extravalue1 = 17; // Ring use animation timer
 				ring->extravalue2 = 1; // Ring use animation flag
 				ring->extravalue3 = 1; // Ring airdrop use flag
 				ring->shadowscale = 0;
 				P_SetTarget(&ring->target, player->mo); // user
 				player->rings--;
-				player->ringdelay = 5;
+				player->ringdelay = 7;
 				player->ringlock = 6;
 			}
 
@@ -6753,21 +6759,16 @@ void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			K_SpawnFallLines(player, player->ringdrop);
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
+	}
 
-		if (player->airdroptime < UINT8_MAX)
-			player->airdroptime++;
-	}
-	else
-	{
-		player->airdroptime = 0;
-		player->ringdrop = false;
-	}
+	if (player->airdroptime < UINT8_MAX)
+		player->airdroptime++;
 }
 
 // Returns the bumpspark value as an enum.
 INT32 K_GetBumpSpark(void)
 {
-	return max(BUMPSPARK_NONE, min(BUMPSPARK_ALL, (bumpsparktype_t)bumpsparkactive));
+	return max(min(BUMPSPARK_ALL, (bumpsparktype_t)bumpsparkactive), BUMPSPARK_NONE);
 }
 
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
@@ -7007,7 +7008,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (!player->ringlock)
 			player->pflags &= ~PF_RINGLOCK;
 		else
+		{
+			player->itemflags &= ~IF_USERINGS;
 			player->pflags |= PF_RINGLOCK;
+		}
 	}
 
 	if (!player->ringboost && !player->chaintimer)
