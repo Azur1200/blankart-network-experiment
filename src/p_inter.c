@@ -2202,6 +2202,20 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			player->glanceDir = 0;
 			player->pflags &= ~PF_GAINAX;
 
+			if (gametyperules & GTR_BUMPERS)
+			{
+				if (player->bumper <= 0)
+				{
+					player->karmadelay = comebacktime;
+					if ((gametyperules & GTR_KARMA) && player->karmamode == 2 )
+					{
+						mobj_t *poof = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_EXPLODE);
+						S_StartSound(poof, mobjinfo[MT_KARMAHITBOX].seesound);
+						player->karmamode = 0;
+					}
+				}
+			}
+
 			INT16 ringburst = 3;
 
 			// Handle ringloss based on hittype.
