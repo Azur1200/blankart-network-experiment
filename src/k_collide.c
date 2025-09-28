@@ -545,11 +545,17 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 	}
 }
 
-boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
+boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2, boolean isplayer)
 {
 	mobj_t *owner = t1->player ? t1 : t1->target;
+	INT32 div = 2;
 
-	if (!t2->threshold)
+	if (isplayer)
+	{
+		div = 1;
+	}
+
+	if ((!t2->threshold)||(isplayer))
 	{
 		if (!t2->momx && !t2->momy)
 		{
@@ -557,15 +563,23 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			t2->momx = (-1*t2->momx)/2;
-			t2->momy = (-1*t2->momy)/2;
-			t2->momz = (-1*t2->momz)/2;
-			t2->angle += ANGLE_180;
+			t2->momx = (-1*t2->momx)/div;
+			t2->momy = (-1*t2->momy)/div;
+			t2->momz = (-1*t2->momz)/div;
+
+			if (!isplayer)
+			{
+				t2->angle += ANGLE_180;
+			}
 		}
-		if (t2->type == MT_JAWZ)
-			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
-		t2->threshold = 10;
+
+		if (!isplayer)
+		{
+			if (t2->type == MT_JAWZ)
+				P_SetTarget(&t2->tracer, t2->target); // Back to the source!
+			P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
+			t2->threshold = 10;
+		}
 		S_StartSound(t1, sfx_s3k44);
 	}
 
@@ -580,22 +594,34 @@ boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 		|| (t2->type == MT_PLAYER && t1->target != t2));
 }
 
+static boolean K_PlayerCanBeBubbleBumped(player_t *player)
+{
+	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
+	    || (player->growshrinktimer > 0));
+}
+
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->type == MT_PLAYER)
 	{
-		// Ignore players.
-		return true;
+
+		boolean bumpme = ((t2->player) && (K_PlayerCanBeBubbleBumped(t2->player)));
+
+		if (!bumpme)
+		{
+			// Ignore non-bumpable players.
+			return true;
+		}
 	}
 
 	if (K_BubbleShieldCanReflect(t1, t2))
 	{
-		if (!t2->threshold)
+		if ((!t2->threshold)||(t2->player))
 		{
 			// Drain my stuff please.
 			K_BubbleShieldCollideDrain(t1->target->player, t1);
 		}
-		return K_BubbleShieldReflect(t1, t2);
+		return K_BubbleShieldReflect(t1, t2, (t2->player) ? true : false);
 	}
 
 	if (t2->flags & MF_SHOOTABLE)
