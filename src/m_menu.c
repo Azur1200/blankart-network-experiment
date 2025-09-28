@@ -393,7 +393,7 @@ static CV_PossibleValue_t skinselectsort_cons_t[] = {
 	{SKINMENUSORT_PREFCOLOR, "Preferred Colour"},
 	{0, NULL}
 };
-consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Order Added", CV_SAVE|CV_CALL|CV_NOINIT, skinselectsort_cons_t, Skinsort_option_Onchange);
+consvar_t cv_skinselectsort = CVAR_INIT ("skinselectsort", "Name", CV_SAVE|CV_CALL|CV_NOINIT, skinselectsort_cons_t, Skinsort_option_Onchange);
 
 // This gametype list is integral for many different reasons.
 // When you add gametypes here, don't forget to update them in dehacked.c and doomstat.h!
