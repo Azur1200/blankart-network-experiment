@@ -11187,7 +11187,7 @@ void A_SSMineExplode(mobj_t *actor)
 	INT32 locvar1 = var1;
 	mobjtype_t type;
 	skincolornum_t color = SKINCOLOR_KETCHUP;
-	explodedist = FixedMul((3*actor->info->painchance)/2, actor->scale);
+	explodedist = FixedMul((3*actor->info->painchance)/2, mapobjectscale);
 
 	if (LUA_CallAction(A_SSMINEEXPLODE, actor))
 		return;
