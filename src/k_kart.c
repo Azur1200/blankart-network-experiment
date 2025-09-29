@@ -10605,22 +10605,20 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									if (player->bubbleblowup > bubbletime*4)
 									{
 										// If you overcharge the Bubble Shield at
-										// any point, it pops and rockets you ahead.
+										// any point, it pops and gives you a boost.
 										K_BreakBubbleShield(player);
 										K_PopPlayerShield(player);
 
-										S_StartSoundAtVolume(player->mo, sfx_cdfm57, 170);
-										K_PlayBoostTaunt(player->mo);
-#define BUBBLETHRUST (7 * FRACUNIT / 5)
-										fixed_t spd =
-										    max(K_GetKartSpeed(player, true, true),
-											FixedMul(player->speed, player->mo->scale));
+										if (onground)
+										{
+											// If you're on the ground, you're going to
+											// immediately feel the effects of this boost.
+											// Play a sound to let everyone know!
+											S_StartSoundAtVolume(player->mo, sfx_cdfm57, 170);
+											K_PlayBoostTaunt(player->mo);
+										}
 
-										P_InstaThrust(player->mo,
-											K_MomentumAngle(player->mo),
-											FixedMul(spd, BUBBLETHRUST));
-#undef BUBBLETHRUST
-										player->bubbleboost = 2 * sneakertime / 3;
+										player->bubbleboost = 7 * sneakertime / 10;
 									}
 								}
 								else
