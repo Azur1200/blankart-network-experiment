@@ -10617,8 +10617,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 											FixedMul(player->speed, player->mo->scale));
 
 										P_InstaThrust(player->mo,
-                                        	      player->mo->angle,
-                                        	      FixedMul(spd, BUBBLETHRUST));
+											K_MomentumAngle(player->mo),
+											FixedMul(spd, BUBBLETHRUST));
 #undef BUBBLETHRUST
 										player->bubbleboost = 2 * sneakertime / 3;
 									}
