@@ -210,6 +210,35 @@ vector2_t *FV2_Negate(vector2_t *a_1)
 	return FV2_NegateEx(a_1, a_1);
 }
 
+vector2_t *FV2_RotateEx(const vector2_t *a_1, vector2_t *a_o, fixed_t ang_fixed)
+{
+	fixed_t sine, cosine;
+	fixed_t x1, y1, x2, y2;
+
+	angle_t ang = FixedAngle(ang_fixed);
+
+	// Precalculate sine and cosine
+	sine = FSIN(ang);
+	cosine = FCOS(ang);
+
+	// X vector: x1 (cos), y1 (sin)
+	x1 = FixedMul(a_1->x, cosine);
+	y1 = FixedMul(a_1->x, sine);
+
+	// Y vector: x2 (-sin), y2 (cos)
+	x2 = FixedMul(a_1->y, -sine);
+	y2 = FixedMul(a_1->y, cosine);
+
+	a_o->x = x1 + x2;
+	a_o->y = y1 + y2;
+	return a_o;
+}
+
+vector2_t *FV2_Rotate(vector2_t *a_1, fixed_t ang_fixed)
+{
+	return FV2_RotateEx(a_1, a_1, ang_fixed);
+}
+
 boolean FV2_Equal(const vector2_t *a_1, const vector2_t *a_2)
 {
 	fixed_t Epsilon = FRACUNIT / FRACUNIT;

@@ -283,6 +283,8 @@ fixed_t FV2_NormalizeEx(const vector2_t *a_normal, vector2_t *a_o);
 fixed_t FV2_Normalize(vector2_t *a_normal);
 vector2_t *FV2_NegateEx(const vector2_t *a_1, vector2_t *a_o);
 vector2_t *FV2_Negate(vector2_t *a_1);
+vector2_t *FV2_RotateEx(const vector2_t *a_1, vector2_t *a_o, fixed_t ang_fixed);
+vector2_t *FV2_Rotate(vector2_t *a_1, fixed_t ang_fixed);
 boolean FV2_Equal(const vector2_t *a_1, const vector2_t *a_2);
 fixed_t FV2_Dot(const vector2_t *a_1, const vector2_t *a_2);
 vector2_t *FV2_Point2Vec (const vector2_t *point1, const vector2_t *point2, vector2_t *a_o);
