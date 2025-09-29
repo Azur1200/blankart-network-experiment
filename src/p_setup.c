@@ -9513,7 +9513,7 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean 
 //	UINT16 mapPos, mapNum = 0;
 
 	// Init file.
-	if ((numlumps = W_InitFile(wadfilename, false, false, compat)) == INT16_MAX)
+	if ((numlumps = W_InitFile(wadfilename, false, false, local, compat)) == INT16_MAX)
 	{
 		refreshdirmenu |= REFRESHDIR_NOTLOADED;
 		return UINT16_MAX;
@@ -9525,8 +9525,6 @@ UINT16 P_PartialAddWadFile(const char *wadfilename, wadcompat_t compat, boolean 
 	{
 		partadd_important = true;
 	}
-
-	wadfiles[wadnum]->localfile = local;
 
 	if (partadd_stage != 0)
 	{
