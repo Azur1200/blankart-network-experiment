@@ -1728,7 +1728,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	INT32 heightsec, phs;
 	INT32 light = 0;
 	lighttable_t **lights_array = spritelights;
-	fixed_t this_scale;
+	fixed_t this_scale, highresscale;
 	fixed_t spritexscale, spriteyscale;
 
 	fixed_t floorClip = 0;
@@ -1928,6 +1928,19 @@ static void R_ProjectSprite(mobj_t *thing)
 	// calculate edges of the shape
 	spritexscale = interp.spritexscale;
 	spriteyscale = interp.spriteyscale;
+
+	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
+	{
+		fixed_t high_res = ((skin_t *)thing->skin)->highresscale;
+		spritexscale = FixedMul(spritexscale, high_res);
+		spriteyscale = FixedMul(spriteyscale, high_res);
+		highresscale = high_res;
+	}
+	else
+	{
+		highresscale = FRACUNIT;
+	}
+
 	if (spritexscale < 1 || spriteyscale < 1)
 		return;
 
@@ -1969,11 +1982,11 @@ static void R_ProjectSprite(mobj_t *thing)
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
 
-		spr_offset += (interp.spritexoffset) * flipoffset;
+		spr_offset += FixedDiv(interp.spritexoffset, highresscale) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
+		spr_topoffset += (FixedDiv(interp.spritexoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
 #else
-		spr_topoffset += interp.spriteyoffset * flipoffset;
+		spr_topoffset += FixedDiv(interp.spriteyoffset, highresscale) * flipoffset;
 #endif
 	}
 

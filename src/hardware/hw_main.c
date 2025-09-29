@@ -4683,6 +4683,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	float x1, x2;
 	float rightsin, rightcos;
 	float this_scale, this_xscale, this_yscale;
+	fixed_t highresscale;
 	float spritexscale, spriteyscale;
 	float shadowheight = 1.0f, shadowscale = 1.0f;
 	float gz, gzt;
@@ -4858,7 +4859,15 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	}
 
 	if (thing->skin && ((skin_t *)thing->skin)->highresscale != FRACUNIT)
-		this_scale *= FIXED_TO_FLOAT(((skin_t *)thing->skin)->highresscale);
+	{
+		float hi_res = ((skin_t *)thing->skin)->highresscale;
+		this_scale *= FIXED_TO_FLOAT(hi_res);
+		highresscale = hi_res;
+	}
+	else
+	{
+		highresscale = FRACUNIT;
+	}
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
@@ -4925,12 +4934,12 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
 			flipoffset = -1;
 
-		spr_offset += interp.spritexoffset * flipoffset;
+		spr_offset += FixedDiv(interp.spritexoffset,highresscale) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul),
+		spr_topoffset += (FixedDiv(interp.spriteyoffset,highresscale) + FixedDiv((visoffs.y * visoffymul),
 		mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
 #else
-		spr_topoffset += interp.spriteyoffset * flipoffset;
+		spr_topoffset += FixedDiv(interp.spriteyoffset,highresscale) * flipoffset;
 #endif
 	}
 
