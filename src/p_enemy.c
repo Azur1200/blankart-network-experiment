@@ -10632,7 +10632,8 @@ void A_ItemPop(mobj_t *actor)
 	remains->skin = NULL;
 	remains->spawnpoint = actor->spawnpoint;
 
-	P_SetTarget(&g_tm.thing, remains);
+	// a pointless modification of global state causing bizarre collision problems... who could've thought?
+	//P_SetTarget(&g_tm.thing, remains);
 
 	//if (actor->info->deathsound)
 		//S_StartSound(remains, actor->info->deathsound);
