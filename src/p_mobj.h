@@ -387,6 +387,8 @@ struct mobj_t
 
 	mobj_t *tracer; // Thing being chased/attacked for tracers.
 
+	mobj_t *shieldtracer; // Blankart: Shield mobj, currently only for certain VFX
+
 	fixed_t friction;
 	fixed_t movefactor;
 	fixed_t gravity;

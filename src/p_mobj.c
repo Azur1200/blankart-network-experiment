@@ -68,6 +68,18 @@ mobj_t *boss3cap = NULL;
 
 mobj_t *mobjcache = NULL;
 
+// Bubble Shield overlay spritescales.
+static fixed_t bubbleoverlayscales[4][2] = {
+	// All scales are raw 16.16 fixed-point numbers based on FRACUNIT.
+	{65536, 65536},  // 1.0, 1.0
+	{65536, 59667},  // 1.0, 0.9104477
+	{90593, 61623},  // 1.382352, 0.940298
+	{100231, 53798}  // 1.529411, 0.820895
+};
+static statenum_t bubbledamagestates[5] = { S_INVISIBLE, S_BUBLSHLD_DMG_1, S_BUBLSHLD_DMG_2, S_BUBLSHLD_DMG_3, S_BUBLSHLD_DMG_4 };
+
+
+
 void P_InitCachedActions(void)
 {
 	actioncachehead.prev = actioncachehead.next = &actioncachehead;
@@ -9159,17 +9171,38 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_BUBBLESHIELD:
 	{
 		fixed_t scale;
-		statenum_t curstate;
+		statenum_t curstate, overlaystate;
 
 		if (!mobj->target || !mobj->target->health || !mobj->target->player
 			|| mobj->target->player->curshield != KSHIELD_BUBBLE)
 		{
+			if ((mobj->target->shieldtracer) && (mobj->target->shieldtracer->mobjnum == mobj->mobjnum))
+			{
+				// We're being traced by this object; unset its shieldtracer.
+				P_SetTarget(&mobj->target->shieldtracer, NULL);
+			}
+			if (mobj->tracer && (!mobj->tracer->player))
+			{
+				// Remove the tracer (overlay)
+				if (!P_MobjWasRemoved(mobj->tracer))
+				{
+					P_RemoveMobj(mobj->tracer);
+				}
+
+				P_SetTarget(&mobj->tracer, NULL);
+			}
+
 			P_RemoveMobj(mobj);
 			return false;
 		}
 
 		scale = (5*mobj->target->scale)>>2;
 		curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
+
+		// Lookup for rescaling the "bubble damage" overlay
+		UINT8 frame, scale_idx;
+
+		frame = scale_idx = 0;
 
 		if (mobj->target->player->bubbleblowup)
 		{
@@ -9185,6 +9218,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			scale += (blow * ((3*scale)>>1)) / bubbletime;
 
 			mobj->frame = CLAMP(states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1, states[S_BUBBLESHIELDBLOWUP].frame, states[S_BUBBLESHIELDBLOWUP].frame + 3);
+
+			frame = mobj->frame & FF_FRAMEMASK;
+			scale_idx = CLAMP(frame - 9, 0, 3);
+
 			if ((mobj->target->player->bubbleblowup > bubbletime) && (leveltime & 1))
 			{
 				mobj->color = SKINCOLOR_WHITE;
@@ -9247,6 +9284,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				{
 					mobj->frame = (states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1);
 
+					frame = mobj->frame & FF_FRAMEMASK;
+					scale_idx = CLAMP(frame - 9, 0, 3);
+
 					if (mobj->extravalue1 < 0 && (leveltime & 1))
 						mobj->extravalue1++;
 					else if (mobj->extravalue1 > 0)
@@ -9270,13 +9310,90 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->extravalue2 = mobj->target->player->bubbleblowup;
 		P_SetScale(mobj, (mobj->destscale = scale));
 
-		mobj->pitch = mobj->target->pitch;
-		mobj->roll = mobj->target->roll;
+		if (mobj->tracer && (!P_MobjWasRemoved(mobj->tracer)))
+		{
+			if (mobj->tracer->type == MT_OVERLAY)
+			{
+				fixed_t health_scalar;
+				
+				P_SetScale(mobj->tracer, mobj->destscale);
 
-		mobj->slopepitch = mobj->target->slopepitch;
-		mobj->sloperoll = mobj->target->sloperoll;
+				mobj->tracer->threshold |= OV_DONTXYSCALE;
+
+				mobj->tracer->spritexscale = FixedMul(mobj->spritexscale, bubbleoverlayscales[scale_idx][0]);
+				mobj->tracer->spriteyscale = FixedMul(mobj->spriteyscale, bubbleoverlayscales[scale_idx][1]);
+
+				health_scalar = mobj->target->player->bubblehealth * FRACUNIT / MAXBUBBLEHEALTH;
+				health_scalar = 5 - CLAMP(health_scalar / (FRACUNIT / 5), 1, 5);
+
+				overlaystate = ((mobj->tracer->tics == 1) ? (mobj->tracer->state->nextstate) : ((statenum_t)(mobj->tracer->state-states)));
+
+				// Depending on the level of damage done to the shield, show some cracks.
+				if (overlaystate != bubbledamagestates[health_scalar])
+				{
+					P_SetMobjState(mobj->tracer, bubbledamagestates[health_scalar]);
+				}
+			}
+			else
+			{
+				// Very silently detach ourselves from our tracer and try a
+				// damage-control fix.
+				P_SetTarget(&mobj->tracer, NULL);
+
+				mobj_t *spawn = P_SpawnMobj(mobj->x, mobj->z, mobj->z, MT_OVERLAY);
+				spawn->destscale = mobj->scale;
+				P_SetScale(spawn, mobj->scale);
+				P_SetTarget(&mobj->tracer, spawn);
+				P_SetTarget(&spawn->target, mobj);
+			}
+		}
+
+		// Don't sloperoll Bubble Shields since it messes with the shatter VFX
+		mobj->pitch = 0;
+		mobj->roll = 0;
+
+		mobj->slopepitch = 0;
+		mobj->sloperoll = 0;
 
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+		break;
+	}
+	case MT_BUBBLESHLD_DEBRIS:
+	{
+		statenum_t curstate;
+		curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
+
+		if (curstate != S_INVISIBLE)
+		{
+			mobj->rollangle += ANG1 * 4;
+		}
+		else
+		{
+			mobj->rollangle = 0;
+		}
+
+		if ((P_IsObjectOnGround(mobj)) && (!mobj->threshold))
+		{
+			mobj->threshold = (TICRATE / 2);
+
+			if (curstate != S_INVISIBLE)
+			{
+				// "Despawn" and play the glass landing sound.
+				S_StartSound(mobj, mobj->info->activesound);
+				P_SetMobjState(mobj, S_INVISIBLE);
+			}
+		}
+
+		if (mobj->threshold)
+		{
+			mobj->threshold--;
+
+			if (!mobj->threshold)
+			{
+				P_RemoveMobj(mobj);
+			}
+		}
+
 		break;
 	}
 	case MT_FLAMESHIELD:
@@ -10389,6 +10506,8 @@ void P_MobjThinker(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev, NULL);
 	if (mobj->itnext && P_MobjWasRemoved(mobj->itnext))
 		P_SetTarget(&mobj->itnext, NULL);
+	if (mobj->shieldtracer && P_MobjWasRemoved(mobj->shieldtracer))
+		P_SetTarget(&mobj->shieldtracer, NULL);
 
 	if (mobj->flags & MF_NOTHINK)
 		return;
@@ -11282,6 +11401,23 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 				nummaprings++;
 			break;
 		// SRB2Kart
+		case MT_BUBBLESHIELD:
+		{
+			// Spawn in the damage overlay
+			mobj_t *spawn = P_SpawnMobj(mobj->x, mobj->z, mobj->z, MT_OVERLAY);
+			spawn->destscale = mobj->scale;
+			P_SetScale(spawn, mobj->scale);
+			P_SetTarget(&mobj->tracer, spawn);
+			P_SetTarget(&spawn->target, mobj);
+			break;
+		}
+		case MT_BUBBLESHLD_DEBRIS:
+		{
+			statenum_t shardset[] = {S_BUBBLEDEBRIS_1, S_BUBBLEDEBRIS_2, S_BUBBLEDEBRIS_3, S_BUBBLEDEBRIS_4, S_BUBBLEDEBRIS_5};
+			P_SetMobjState(mobj, shardset[P_RandomRange(0, 4)]);
+
+			break;
+		}
 		case MT_ITEMCAPSULE:
 		{
 			// set default item & count

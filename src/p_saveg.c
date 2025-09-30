@@ -2118,6 +2118,7 @@ typedef enum
 	MD3_MISCCAP      = 1<<1,
 	MD3_BAKEDOFFSET	 = 1<<2,
 	MD3_EXTVAL3		 = 1<<3,
+	MD3_SHIELDTRACER = 1<<4,
 } mobj_diff3_t;
 
 typedef enum
@@ -2435,6 +2436,8 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		diff3 |= MD3_BAKEDOFFSET;
 	if (mobj->extravalue3)
 		diff3 |= MD3_EXTVAL3;
+	if (mobj->shieldtracer)
+		diff3 |= MD3_SHIELDTRACER;
 
 	if (diff3 != 0)
 		diff2 |= MD2_MORE;
@@ -2724,6 +2727,10 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 	if (diff3 & MD3_EXTVAL3)
 	{
 		WRITEINT32(save->p, mobj->extravalue3);
+	}
+	if (diff3 & MD3_SHIELDTRACER)
+	{
+		WRITEUINT32(save->p, mobj->shieldtracer->mobjnum);
 	}
 
 	WRITEUINT32(save->p, mobj->mobjnum);
@@ -4028,6 +4035,10 @@ static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 
 	{
 		mobj->extravalue3 = READINT32(save->p);
 	}
+	if (diff3 & MD3_SHIELDTRACER)
+	{
+		mobj->shieldtracer = (mobj_t *)(size_t)READUINT32(save->p);
+	}
 
 	// Reset some non-synch values
 	mobj->sloperoll = 0;
@@ -5096,6 +5107,11 @@ static void P_RelinkPointers(void)
 		{
 			if (!RelinkMobj(&mobj->terrainOverlay))
 				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
+		}
+		if (mobj->shieldtracer)
+		{
+			if (!RelinkMobj(&mobj->shieldtracer))
+				CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on %d\n", mobj->type);
 		}
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
