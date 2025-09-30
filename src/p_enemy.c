@@ -2743,7 +2743,6 @@ static void P_DoBossVictory(mobj_t *mo)
 {
 	thinker_t *th;
 	mobj_t *mo2;
-	INT32 i;
 
 	// scan the remaining thinkers to see if all bosses are dead
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
@@ -2768,12 +2767,7 @@ static void P_DoBossVictory(mobj_t *mo)
 
 	if (mo->flags2 & MF2_BOSSNOTRAP)
 	{
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i])
-				continue;
-			P_DoPlayerExit(&players[i]);
-		}
+		P_DoAllPlayersExit(0, false);
 	}
 	else
 	{
@@ -8586,12 +8580,7 @@ void A_ForceWin(mobj_t *actor)
 	if (i == MAXPLAYERS)
 		return;
 
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i])
-			continue;
-		P_DoPlayerExit(&players[i]);
-	}
+	P_DoAllPlayersExit(0, false);
 }
 
 // Function: A_SpikeRetract

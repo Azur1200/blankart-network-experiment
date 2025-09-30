@@ -1098,14 +1098,7 @@ void P_CheckTimeLimit(void)
 		}
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-		if (players[i].exiting)
-			return;
-		P_DoPlayerExit(&players[i]);
-	}
+	P_DoAllPlayersExit(0, false);
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.
@@ -1152,14 +1145,7 @@ void P_CheckPointLimit(void)
 
 			if ((UINT32)cv_pointlimit.value <= players[i].roundscore)
 			{
-				for (i = 0; i < MAXPLAYERS; i++) // AAAAA nested loop using the same iteration variable ;;
-				{
-					if (!playeringame[i] || players[i].spectator)
-						continue;
-					if (players[i].exiting)
-						return;
-					P_DoPlayerExit(&players[i]);
-				}
+				P_DoAllPlayersExit(0, false);
 
 				/*if (server)
 					SendNetXCmd(XD_EXITLEVEL, NULL, 0);*/
@@ -1430,20 +1416,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				// All targets busted!
 				if (++numtargets >= nummapboxes)
 				{
-					boolean givelife = false;
-					for (int i = 0; i < MAXPLAYERS; i++)
-					{
-						if (!playeringame[i] || players[i].spectator)
-							continue;
-						P_DoPlayerExit(&players[i]);
-						if (!grandprixinfo.gp)
-							continue;
-						P_GivePlayerLives(&players[i], 1);
-						givelife = true;
-					}
-
-					if (givelife)
-						S_StartSound(NULL, sfx_cdfm73);
+					P_DoAllPlayersExit(0, true);
 				}
 
 			}

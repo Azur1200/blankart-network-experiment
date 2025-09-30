@@ -265,11 +265,7 @@ void K_CheckBumpers(void)
 	{
 		if (nobumpers)
 		{
-			for (i = 0; i < MAXPLAYERS; i++)
-			{
-				players[i].pflags |= PF_NOCONTEST;
-				P_DoPlayerExit(&players[i]);
-			}
+			P_DoAllPlayersExit(PF_NOCONTEST, false);
 		}
 		return;
 	}
@@ -284,11 +280,7 @@ void K_CheckBumpers(void)
 		{
 			if (nobumpers)
 			{
-				for (i = 0; i < MAXPLAYERS; i++)
-				{
-					players[i].pflags |= PF_NOCONTEST;
-					P_DoPlayerExit(&players[i]);
-				}
+				P_DoAllPlayersExit(PF_NOCONTEST, false);
 			}
 		}
 
@@ -306,14 +298,7 @@ void K_CheckBumpers(void)
 	for (i = 0; i < MAXPLAYERS; i++) // This can't go in the earlier loop because winning adds points
 		K_KartUpdatePosition(&players[i]);
 
-	for (i = 0; i < MAXPLAYERS; i++) // and it can't be merged with this loop because it needs to be all updated before exiting... multi-loops suck...
-	{
-		if (!playeringame[i])
-			continue;
-		if (players[i].spectator)
-			continue;
-		P_DoPlayerExit(&players[i]);
-	}
+	P_DoAllPlayersExit(0, false);
 }
 
 UINT8 K_NumEmeralds(player_t *player)

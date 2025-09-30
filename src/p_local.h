@@ -218,7 +218,8 @@ boolean P_PlayerOrbit(player_t *player);
 void P_MovePlayer(player_t *player);
 void P_PlayerThink(player_t *player);
 void P_PlayerAfterThink(player_t *player);
-void P_DoPlayerExit(player_t *player);
+void P_DoPlayerExit(player_t *player, pflags_t flags);
+void P_DoAllPlayersExit(pflags_t flags, boolean trygivelife);
 void P_DoTimeOver(player_t *player);
 
 void P_InstaThrust(mobj_t *mo, angle_t angle, fixed_t move);
