@@ -4206,7 +4206,7 @@ static void Got_Teamchange(UINT8 **cp, INT32 playernum)
 	demo_extradata[playernum] |= DXD_PLAYSTATE;
 
 	// Clear player score and rings if a spectator.
-	if (players[playernum].spectator)
+	if (players[playernum].spectator && !wasspectator)
 	{
 		players[playernum].spectatorreentry = (cv_spectatorreentry.value * TICRATE);
 
