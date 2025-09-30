@@ -1968,11 +1968,11 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
-		spr_offset = interp.spritexoffset;
+		spr_offset = FixedDiv(interp.spritexoffset, highresscale);
 #ifdef ROTSPRITE
-		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
+		spr_topoffset = (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
 #else
-		spr_topoffset = interp.spriteyoffset;
+		spr_topoffset = FixedDiv(interp.spriteyoffset, highresscale);
 #endif
 	}
 	else
@@ -1984,7 +1984,7 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		spr_offset += FixedDiv(interp.spritexoffset, highresscale) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (FixedDiv(interp.spritexoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
+		spr_topoffset += (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
 #else
 		spr_topoffset += FixedDiv(interp.spriteyoffset, highresscale) * flipoffset;
 #endif
