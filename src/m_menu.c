@@ -8368,6 +8368,7 @@ INT32 MR_CameraSetup(INT32 arg)
 		return false;
 
 	M_SetItemCvar(MN_OP_CAMERASETUP, "FLIPCAM", &cv_flipcam[arg]);
+	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMFOV", &cv_fov[arg]);
 	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMDISTANCE", &cv_cam_dist[arg]);
 	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMHEIGHT", &cv_cam_height[arg]);
 	M_SetItemCvar(MN_OP_CAMERASETUP, "CAMSPEED", &cv_cam_speed[arg]);
