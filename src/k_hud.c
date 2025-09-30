@@ -1524,14 +1524,14 @@ static void K_drawKartItem(void)
 
 		V_DrawScaledPatch(fx+x, fy+y, V_HUDTRANS|fflags, kp_itemtimer[offset]);
 		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1, (length == 2 ? 2 : 1), height, 12|fflags);
+		V_DrawFill(fx+x+1, fy+y+1, (length == 2 ? 2 : 1), height, 12|fflags|V_HUDTRANS);
 		// The bar itself
 		if (length > 2)
 		{
-			V_DrawFill(fx+x+length, fy+y+1, 1, height, 12|fflags); // the right one
+			V_DrawFill(fx+x+length, fy+y+1, 1, height, 12|fflags|V_HUDTRANS); // the right one
 			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2, length-2, 1, 8|fflags); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1, length-2, 1, 0|fflags); // the shine
+				V_DrawFill(fx+x+2, fy+y+2, length-2, 1, 8|fflags|V_HUDTRANS); // the dulled underside
+			V_DrawFill(fx+x+2, fy+y+1, length-2, 1, 0|fflags|V_HUDTRANS); // the shine
 		}
 	}
 
@@ -1544,14 +1544,14 @@ static void K_drawKartItem(void)
 
 		V_DrawScaledPatch(fx+x, fy+y-8, V_HUDTRANS|fflags, kp_itemtimer[offset]);
 		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1-8, (length == 2 ? 2 : 1), height, 55|fflags);
+		V_DrawFill(fx+x+1, fy+y+1-8, (length == 2 ? 2 : 1), height, 55|fflags|V_HUDTRANS);
 		// The bar itself
 		if (length > 2)
 		{
-			V_DrawFill(fx+x+length, fy+y+1-8, 1, height, 55|fflags); // the right one
+			V_DrawFill(fx+x+length, fy+y+1-8, 1, height, 55|fflags|V_HUDTRANS); // the right one
 			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2-8, length-2, 1, 36|fflags); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1-8, length-2, 1, 51|fflags); // the shine
+				V_DrawFill(fx+x+2, fy+y+2-8, length-2, 1, 36|fflags|V_HUDTRANS); // the dulled underside
+			V_DrawFill(fx+x+2, fy+y+1-8, length-2, 1, 51|fflags|V_HUDTRANS); // the shine
 		}
 	}
 
