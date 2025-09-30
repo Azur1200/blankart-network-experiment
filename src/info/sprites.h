@@ -445,6 +445,8 @@ _(BHBM) // Ballhog BOOM
 _(SPBM) // Self-Propelled Bomb
 _(THNS) // Thunder Shield
 _(BUBS) // Bubble Shield (not Bubs)
+_(BUBC) // Bubble Shield damage
+_(BSDB) // Bubble Shield shatter debris
 _(BWVE) // Bubble Shield waves
 _(FLMS) // Flame Shield
 _(FLMD) // Flame Shield dash

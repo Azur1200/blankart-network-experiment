@@ -545,6 +545,12 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 	}
 }
 
+static boolean K_BubbleReflectingTrapItem(mobjtype_t t)
+{
+	return ((t == MT_BANANA) || (t == MT_JAWZ_DUD) || (t == MT_SSMINE) || (t == MT_LANDMINE) ||
+		(t == MT_EGGMANITEM) || (t == MT_SSMINE_SHIELD));
+}
+
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2, boolean isplayer)
 {
 	mobj_t *owner = t1->player ? t1 : t1->target;
@@ -570,6 +576,12 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2, boolean isplayer)
 			if (!isplayer)
 			{
 				t2->angle += ANGLE_180;
+			}
+
+			if (K_BubbleReflectingTrapItem(t2->type))
+			{
+				// Stupid hack: Toss trap/dud items into the air
+				t2->momz += (24*t2->scale) * P_MobjFlip(t2);
 			}
 		}
 

@@ -5227,12 +5227,76 @@ void K_DropHnextList(player_t *player)
 	}
 }
 
-// Bubble shield break SFX and VFX (maybe, hopefully)
-static void K_BreakBubbleShield(player_t *player)
+#define MAXSHARDCOUNT 40
+#define SHARDROT (360 * FRACUNIT / 40)
+static void K_BreakBubbleShield(player_t* player)
 {
+	if (!player->mo->shieldtracer)
+	{
+		// No shield tracer, assume there's no bubble shield.
+		return;
+	}
+
 	// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
-	S_StartSound(player->mo, sfx_s3k4b);
+	mobj_t* shard;
+
+	fixed_t move_magnitude, shieldrad, shieldscale, scalediff;
+	vector2_t mul_vec;
+	vector3_t mom;
+	fixed_t randang, randzang;
+	INT32 flip = P_MobjFlip(player->mo);
+
+	shieldscale = player->mo->shieldtracer->scale;
+
+	scalediff = shieldscale - mapobjectscale;
+	shieldrad = FixedMul(player->mo->shieldtracer->radius, shieldscale);
+
+	mul_vec.x = FRACUNIT;
+	mul_vec.y = 0;
+
+	INT32 i;
+	for (i = 0; i < MAXSHARDCOUNT; i++)
+	{
+		mul_vec.x = FRACUNIT;
+		mul_vec.y = 0;
+
+		randang = (SHARDROT * (i + 1));
+		randzang = (P_RandomRange(23, 157) * FRACUNIT);
+		move_magnitude =
+		    FixedMul((P_RandomRange(4, 16) * FRACUNIT), mapobjectscale + (scalediff / 4));
+		
+		FV2_Rotate(&mul_vec, randzang);
+
+		// Do shitty initial 3D rotations around the shield's radius.
+		shard = P_SpawnMobj(
+		    player->mo->shieldtracer->x +
+			FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
+		    player->mo->shieldtracer->y +
+			FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
+		    player->mo->shieldtracer->z + FixedMul(mul_vec.y * flip, shieldrad),
+		    MT_BUBBLESHLD_DEBRIS);
+
+		if (shard)
+		{
+			//CONS_Printf(M_GetText("randzang: %d, randang: %d\n"), randzang / FRACUNIT, randang / FRACUNIT);
+
+			mul_vec.x = FixedMul(move_magnitude, mul_vec.x);
+			mul_vec.y = FixedMul(move_magnitude, mul_vec.y * flip);
+
+			mom.x = FixedMul(mul_vec.x, FCOS(FixedAngle(randang)));
+			mom.y = FixedMul(mul_vec.x, FSIN(FixedAngle(randang)));
+			mom.z = mul_vec.y;
+
+			shard->momx = mom.x + player->mo->momx;
+			shard->momy = mom.y + player->mo->momy;
+			shard->momz = mom.z + player->mo->momz;
+		}
+	}
+
+	S_StartSound(player->mo, sfx_kc41);
 }
+#undef MAXSHARDCOUNT
+#undef SHARDROT
 
 // For getting hit!
 void K_PopPlayerShield(player_t *player)
@@ -10583,6 +10647,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BUBBLESHIELD);
 								P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 								P_SetTarget(&shield->target, player->mo);
+								P_SetTarget(&player->mo->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3f);
 								player->curshield = KSHIELD_BUBBLE;
 
