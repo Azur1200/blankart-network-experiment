@@ -1567,6 +1567,8 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	tic_t worktime;
 	boolean dontdraw = false;
+	boolean overtime = false;
+	UINT8 *textcolor = 0;
 	boolean emblemenabled = K_EmblemsEnabled();
 
 	INT32 splitflags = 0;
@@ -1582,14 +1584,16 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		if (bossinfo.boss == true)
 			;
 		else if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT)) // TODO
-		{
+		{			
+			if (drawtime >= (timelimitintics - 5*TICRATE) && ((drawtime*4)/TICRATE) % 2 == 0)
+			{
+				dontdraw = true;
+			}
+
 			if (drawtime >= timelimitintics)
 			{
-				if (((drawtime-timelimitintics)/TICRATE) & 1)
-				{
-					dontdraw = true;
-				}
-				drawtime = 0;
+				overtime = true;
+				// drawtime = 0;
 			}
 			else
 			{
@@ -1614,6 +1618,30 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
 	else if (dontdraw) // overtime flash
 		;
+	else if (overtime)
+	{
+		if (((drawtime*2)/TICRATE) % 2 == 0)
+		{
+			textcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE);
+		}
+		else
+		{
+			textcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
+		}
+
+		V_DrawStringScaledEx(
+			(TIME_X + 33) << FRACBITS,
+			(TIME_Y + 3) << FRACBITS,
+			FRACUNIT,
+			FRACUNIT,
+			FRACUNIT,
+			FRACUNIT,
+			splitflags,
+			textcolor,
+			KART_FONT,
+			va("OVERTIME!")
+		);
+	}
 	else if (worktime < 100) // 99:99:99 only
 	{
 		// zero minute

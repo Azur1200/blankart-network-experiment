@@ -843,6 +843,7 @@ _(requst)
 _(syfail)
 _(itfree)
 _(dbgsal)
+_(bhurry)   // mine: wasn't here already?
 
 // Chaining Sound
 _(bstchn)
