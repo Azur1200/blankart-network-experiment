@@ -6282,7 +6282,7 @@ static void MD_DrawServerCountAndHorizontalBar(void)
 static void M_DrawServerLines(INT32 x, INT32 page)
 {
 	UINT16 i;
-	char gametype[30];
+	char servergametype[30];
 	char pwr[13];
 	INT16 firstserverline = M_GetMenuIndex(MN_MP_CONNECT, "LINE1");
 	UINT32 serversperpage = M_ServersPerPage(); // server sperpage?
@@ -6309,8 +6309,8 @@ static void M_DrawServerLines(INT32 x, INT32 page)
 		V_DrawSmallString(x+44,S_LINEY(i)+8, globalflags,
 						  va("Players: %02d/%02d", serverlist[slindex].info.numberofplayer, serverlist[slindex].info.maxplayer));
 
-		sprintf(gametype, "%s (%s)", serverlist[slindex].info.gametypename, kartspeed_cons_t[(serverlist[slindex].info.kartvars & SV_SPEEDMASK)+1].strvalue);
-		V_DrawSmallString(x+108, S_LINEY(i)+8, globalflags, gametype);
+		sprintf(servergametype, "%s (%s)", serverlist[slindex].info.gametypename, kartspeed_cons_t[(serverlist[slindex].info.kartvars & SV_SPEEDMASK)+1].strvalue);
+		V_DrawSmallString(x+108, S_LINEY(i)+8, globalflags, servergametype);
 
 		if (serverlist[slindex].info.avgpwrlv == -1)
 			sprintf(pwr, "PWR.LV: Off");

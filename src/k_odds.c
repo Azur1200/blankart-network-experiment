@@ -248,7 +248,7 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 	player->itemamount = itemamount;
 }
 
-fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
+static fixed_t K_ItemOddsScale(UINT8 numPlayers, boolean spbrush)
 {
 	// CEP: due to how baseplayer works, 17P+ lobbies will STILL have the disastrous odds of 0.22 prior, if not WORSE
 	// let's try adding another condition
@@ -554,7 +554,7 @@ INT32 K_KartGetItemOdds(
 			indirectItem = true;
 			notNearEnd = true;
 
-			if (!K_UsingLegacyCheckpoints() && firstDist < ENDDIST) // No SPB near the end of the race
+			if (!K_UsingLegacyCheckpoints() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
 			{
 				newodds = 0;
 			}
@@ -620,7 +620,7 @@ INT32 K_KartGetItemOdds(
 		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 		newodds = 0;
 	}
-	else if (!K_UsingLegacyCheckpoints() && (notNearEnd == true) && (ourDist < ENDDIST))
+	else if (!K_UsingLegacyCheckpoints() && (notNearEnd == true) && (ourDist < (UINT32)ENDDIST))
 	{
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 		newodds = 0;
@@ -1034,7 +1034,7 @@ static boolean K_CanForceSPB(player_t *player, UINT32 pdis)
 	boolean battlecond, racecond;
 
 	battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
-	racecond = ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > SPBFORCEDIST);
+	racecond = ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > (UINT32)SPBFORCEDIST);
 
 	return ((battlecond) || (racecond));
 }

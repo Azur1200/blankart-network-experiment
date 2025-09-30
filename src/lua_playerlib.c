@@ -1890,8 +1890,10 @@ static int player_set(lua_State *L)
 		return NOSET;
 	case player_walltransfered:
 		plr->walltransfered = lua_toboolean(L, 3);
+		break;
 	case player_walltransferboost:
 		plr->walltransferboost= lua_tointeger(L, 3);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);

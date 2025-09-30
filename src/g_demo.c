@@ -3847,7 +3847,7 @@ void G_AddGhost(char *defdemoname)
 	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	const char *n;
 	UINT64 demohash;
-	UINT32 raflags;
+	UINT32 ghostraflags;
 	demoghost *gh;
 	UINT8 flags;
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
@@ -3911,7 +3911,7 @@ void G_AddGhost(char *defdemoname)
 
 
 	flags = header.demoflags;
-	raflags = header.raflags;
+	ghostraflags = header.raflags;
 	if (!(flags & DF_GHOST))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: No ghost data in this demo.\n"), pdemoname);
@@ -3969,7 +3969,7 @@ void G_AddGhost(char *defdemoname)
 			ourraflags &= ~RAF_BUMPSPARKMASK;
 		}
 
-		if (ourraflags != raflags)
+		if (ourraflags != ghostraflags)
 		{
 			CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay doesn't match current RA mode.\n"), pdemoname);
 			return;

@@ -5465,7 +5465,7 @@ static void K_drawDistributionDebugger(void)
 	INT32 i;
 	INT32 item;
 	INT32 x = -9, y = -9;
-	boolean dontforcespb = false;
+	//boolean dontforcespb = false;
 	boolean spbrush = false;
 
 	//if (stplyrnum != 0) // only for p1
@@ -5477,8 +5477,8 @@ static void K_drawDistributionDebugger(void)
 		if (!playeringame[i] || players[i].spectator)
 			continue;
 		pingame++;
-		if (players[i].exiting)
-			dontforcespb = true;
+		//if (players[i].exiting)
+			//dontforcespb = true;
 		if (players[i].bumper > bestbumper)
 			bestbumper = players[i].bumper;
 	}
@@ -5644,7 +5644,7 @@ static void K_SlipstreamIndicator(boolean tiny)
 	if (!cv_draftindicator.value)
 		return;
 
-    char *fullstr = "DRAFTING";
+    const char *fullstr = "DRAFTING";
 	char str[256] = {0};
 	SINT8 stringlen = strlen(fullstr);
     SINT8 len = min(stplyr->draftpower / (FRACUNIT / stringlen), stringlen);
