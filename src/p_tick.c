@@ -834,10 +834,19 @@ void P_Ticker(boolean run)
 					}
 
 					// overtime
-					// if (timelimitintics > 60*TICRATE && leveltime == timelimitintics + 1 + starttime)
-					// {						
-					// 	S_StartSound(NULL, sfx_s3k9d); // overtime warning
-					// }
+					if (gameaction != ga_completed && leveltime == timelimitintics + 1 + starttime)
+					{						
+						S_StartSound(NULL, sfx_s3k50); // overtime warning
+						S_StartSound(NULL, sfx_s3k9d);
+					}
+					if (gameaction != ga_completed && leveltime == timelimitintics + 2*TICRATE + starttime)
+					{						
+						S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
+					}
+					if (gameaction != ga_completed && leveltime == timelimitintics + 4*TICRATE + starttime)
+					{						
+						S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
+					}
 
 					// last five second countdown
 					if (leveltime == timelimitintics - 5 * TICRATE + starttime ||

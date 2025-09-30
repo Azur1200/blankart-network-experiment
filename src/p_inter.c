@@ -1042,6 +1042,13 @@ void P_CheckTimeLimit(void)
 				spectators++;
 		}
 
+#ifdef TESTOVERTIMEINFREEPLAY
+		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
+		{
+			return;
+		}
+#endif
+		
 		if ((D_NumPlayers() - spectators) > 1)
 		{
 			// Play the starpost sfx after the first second of overtime.
