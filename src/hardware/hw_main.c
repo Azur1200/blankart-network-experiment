@@ -4920,11 +4920,11 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
-		spr_offset = interp.spritexoffset;
+		spr_offset = FixedDiv(interp.spritexoffset,highresscale);
 #ifdef ROTSPRITE
-		spr_topoffset = (interp.spriteyoffset + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
+		spr_topoffset = (FixedDiv(interp.spriteyoffset,highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
 #else
-		spr_topoffset = interp.spriteyoffset;
+		spr_topoffset = FixedDiv(interp.spriteyoffset,highresscale);
 #endif
 	}
 	else
