@@ -1,9 +1,13 @@
 #Source code
-/src/*.c text=auto
-/src/*.h text=auto
-/src/*.s text=auto
-/src/*.m text=auto
-/src/*.xpm text=auto
+/src/**/*.c text=auto
+/src/**/*.cpp text=auto
+/src/**/*.h text=auto
+/src/**/*.hpp text=auto
+/src/**/*.s text=auto
+/src/**/*.m text=auto
+/src/**/*.xpm text=auto
+/src/**/Sourcefile text=auto
+/src/**/*.mk text=auto
 /src/Makefile text=auto
 /src/Make*.cfg text=auto
 /src/CMakeLists.txt text=auto
@@ -20,8 +24,6 @@
 *.csproj* -crlf -whitespace
 *.vcxproj* -crlf -whitespace
 *.manifest -crlf -whitespace
-# Patches
-/tools/SDL-1.2.14-gc/SDL-1.2.14-gc.patch -whitespace
 #Appveyor
 /appveyor.yml -crlf -whitespace
 # Other
