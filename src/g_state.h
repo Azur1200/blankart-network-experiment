@@ -34,6 +34,8 @@ typedef enum
 	GS_TIMEATTACK,      // time attack menu
 
 	GS_CREDITS,         // credit sequence
+	GS_BLANCREDITS,		// BlanKart: Credits for BlanKart
+	GS_SECRETCREDITS,   // BlanKart: Secret/full credits
 	GS_EVALUATION,      // Evaluation at the end of a game.
 
 	// Hardcoded fades or other fading methods
@@ -43,10 +45,6 @@ typedef enum
 	// Not fadable
 	GS_DEDICATEDSERVER, // new state for dedicated server
 	GS_WAITINGPLAYERS,   // waiting for players in a net game
-
-	// New
-	GS_BLANCREDITS,		// BlanKart: Credits for BlanKart
-	GS_SECRETCREDITS,   // BlanKart: Secret/full credits
 } gamestate_t;
 
 typedef enum

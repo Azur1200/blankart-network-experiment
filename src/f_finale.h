@@ -168,9 +168,10 @@ enum
 	wipe_titlescreen_toblack,
 	wipe_timeattack_toblack,
 	wipe_credits_toblack,
+	wipe_blancredits_toblack,
+	wipe_fullcredits_toblack,
 	wipe_evaluation_toblack,
 	wipe_intro_toblack,
-	wipe_ending_toblack,
 	wipe_cutscene_toblack,
 
 	// Specialized wipes
@@ -184,9 +185,10 @@ enum
 	wipe_titlescreen_final,
 	wipe_timeattack_final,
 	wipe_credits_final,
+	wipe_blancredits_final,
+	wipe_fullcredits_final,
 	wipe_evaluation_final,
 	wipe_intro_final,
-	wipe_ending_final,
 	wipe_cutscene_final,
 
 	// custom intermissions
