@@ -899,8 +899,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
 
-	// Hacky solution to the overflow problem: use 64-bit integers!
-	UINT64 pdis = 0;
+	UINT32 pdis = 0;
 
 	if (!K_UsingLegacyCheckpoints())
 	{
@@ -1029,6 +1028,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 							// Add the distance to the player behind you.
 							// At a (relative to map) integer scale using basic distancing
 							// arithmetic; more accurate and less concern for overflows.
+							// TODO: Overflow-safe addition (caps at UINT32_MAX).
 							pdis += K_IntDistanceForMap(
 									secondPlayer->mo->x,
 									secondPlayer->mo->y,
@@ -1047,17 +1047,9 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 	}
 
 	// Exaggerate odds; don't you love the legacy system? :Trollic:
-	pdis = FixedMul64(pdis, LEGACYODDSEXAGGERATE);
+	pdis = FixedMul(pdis, LEGACYODDSEXAGGERATE);
 
-	// Clamp pdis to the highest 32-bit integer.
-	// This is a shitty solution for overflow prevention, but it's an overflow prevention
-	// nonethless.
-	if (pdis > UINT32_MAX)
-	{
-		pdis = UINT32_MAX;
-	}
-
-	return (UINT32)(pdis);
+	return pdis;
 }
 
 #undef LEGACYODDSEXAGGERATE
