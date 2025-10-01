@@ -1625,7 +1625,7 @@ static boolean CL_FinishedFileList(void)
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 		M_StartMessage(M_GetText(
 			"You have too many WAD files loaded\n"
 			"to add ones the server is using.\n"
@@ -1638,7 +1638,7 @@ static boolean CL_FinishedFileList(void)
 	{
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 		M_StartMessage(M_GetText(
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
@@ -1678,7 +1678,7 @@ static boolean CL_FinishedFileList(void)
 			{
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(M_GetText(
 					"An error occured when trying to\n"
 					"download missing addons.\n"
@@ -1804,7 +1804,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(
 							va(
 							"Connection failed.\n\nYour binary differs from the server.\n"
@@ -1959,7 +1959,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(M_GetText(
 					"The direct download encountered an error.\n"
 					"See the logfile for more info.\n"
@@ -1988,7 +1988,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				CONS_Printf(M_GetText("Network game synchronization aborted.\n"));
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 				M_StartMessage(va(
 					"%d minute wait time exceeded.\n"
 					"You may retry connection.\n"
@@ -2088,7 +2088,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 
 			D_QuitNetGame();
 			CL_Reset();
-			D_StartTitle();
+			M_ReturnToConnectMenu();
 			return false;
 		}
 
@@ -2105,10 +2105,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_DOWNLOADSAVEGAME)
 			{
-				F_CacheTitleScreen();
 				F_MenuPresTicker(true); // title sky
-				F_TitleScreenTicker(true);
-				F_TitleScreenDrawer();
 			}
 			CL_DrawConnectionStatus();
 			HU_TickSongCredits();
@@ -2535,7 +2532,7 @@ static void Command_connect(void)
 			CL_Reset();
 		}
 
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 	}
 
 	// modified game check: no longer handled
@@ -2564,7 +2561,7 @@ static void Command_connect(void)
 			D_QuitNetGame();
 			CL_Reset();
 			
-			D_StartTitle();
+			M_ReturnToConnectMenu();
 			
 		}
 		else if (I_NetOpenSocket)
@@ -2775,7 +2772,7 @@ void CL_Reset(void)
 	http_source[0] = '\0';
 #endif
 
-	// D_StartTitle should get done now, but the calling function will handle it
+	// M_ReturnToConnectMenu should get done now, but the calling function will handle it
 }
 
 static void Command_GetPlayerNum(void)
@@ -3249,7 +3246,7 @@ static void Got_KickCmd(UINT8 **p, INT32 playernum)
 
 		D_QuitNetGame();
 		CL_Reset();
-		D_StartTitle();
+		M_ReturnToConnectMenu();
 
 		if (msg == KICK_MSG_CON_FAIL)
 			M_StartMessage(M_GetText("Server closed connection\n(Synch failure)\nPress ESC\n"), NULL, MM_NOTHING);
@@ -4330,7 +4327,7 @@ static void HandleShutdown(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
+	M_ReturnToConnectMenu();
 	M_StartMessage(M_GetText("Server has shutdown\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 
@@ -4461,7 +4458,7 @@ static void HandleTimeout(SINT8 node)
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
-	D_StartTitle();
+	M_ReturnToConnectMenu();
 	M_StartMessage(M_GetText("Server Timeout\n\nPress Esc\n"), NULL, MM_NOTHING);
 }
 
@@ -4637,7 +4634,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 
 				D_QuitNetGame();
 				CL_Reset();
-				D_StartTitle();
+				M_ReturnToConnectMenu();
 
 				if (reason[1] == '|')
 				{

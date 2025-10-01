@@ -1178,7 +1178,7 @@ void D_ResetGameState(void)
 			i = G_GetFirstMapOfGametype(gametype)+1;
 
 			if (i > nummapheaders)
-				I_Error("D_StartTitle: No valid map ID found!?");
+				I_Error("D_ResetGameState: No valid map ID found!?");
 
 			COM_BufAddText(va("map %s\n", G_BuildMapName(i)));
 		}

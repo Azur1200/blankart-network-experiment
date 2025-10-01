@@ -8701,6 +8701,15 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 	return true;
 }
 
+void M_ReturnToConnectMenu(void)
+{
+	D_ResetGameState();
+
+	M_ClearMenus(false);
+	M_EnterMenu(MN_MAIN, true, 0);
+	M_EnterMenu(MN_MP_MAIN, true, 0);
+}
+
 INT32 MR_EnterViewServer(INT32 choice)
 {
 	(void)choice;
