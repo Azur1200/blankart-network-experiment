@@ -4334,7 +4334,6 @@ INT32 MR_QuitReplayHut(INT32 choice)
 
 	demo.inreplayhut = false;
 	G_SetGamestate(GS_MENU);
-	S_ClearMusicCredit();
 	return true;
 }
 
@@ -5734,7 +5733,6 @@ INT32 MR_MainMenuExit(INT32 choice)
 {
 	(void)choice;
 
-	S_ClearMusicCredit();
 	return true;
 }
 
@@ -5855,7 +5853,6 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
 	G_SetGamestate(GS_MENU);
 	modeattacking = ATTACKING_NONE;
-	S_ClearMusicCredit();
 	return true;
 }
 

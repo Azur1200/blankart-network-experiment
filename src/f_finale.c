@@ -1560,6 +1560,9 @@ void F_TitleScreenTicker(boolean run)
 {
 	if (run)
 	{
+		if (finalecount == 0)
+			S_ClearMusicCredit();
+
 		finalecount++;
 
 		if (finalecount == 10)
