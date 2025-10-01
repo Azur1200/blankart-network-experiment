@@ -2707,7 +2707,7 @@ static INT32 M_DrawMenuItem(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, bo
 		width = widthfunc(string, -1, vflags);
 
 	if (item->status & IT_STICKER)
-		M_DrawSticker(x, y + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
+		M_DrawSticker(x -width, y + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
 
 	V_DrawStringScaled((x - width)<<FRACBITS, y<<FRACBITS, scale, FRACUNIT, FRACUNIT, (selected ? highlightflags : colorflag)|vflags, font, string);
 
@@ -9046,6 +9046,28 @@ INT32 MR_QuitSRB2(INT32 choice)
 	return true;
 }
 
+// (this goes in k_hud.c when merged into v2)
+static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall)
+{
+	patch_t *stickerEnd;
+	INT32 height;
+
+	if (isSmall == true)
+	{
+		stickerEnd = W_CachePatchName("K_STIKE2", PU_CACHE);
+		height = 6;
+	}
+	else
+	{
+		stickerEnd = W_CachePatchName("K_STIKEN", PU_CACHE);
+		height = 11;
+	}
+
+	V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, flags, stickerEnd, NULL);
+	V_DrawFill(x, y, width, height, 24|flags);
+	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
+}
+
 #ifdef HAVE_DISCORDRPC
 static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
@@ -9093,28 +9115,6 @@ static const char *M_GetDiscordName(discordRequest_t *r)
 		return r->username;
 
 	return va("%s#%s", r->username, r->discriminator);
-}
-
-// (this goes in k_hud.c when merged into v2)
-static void M_DrawSticker(INT32 x, INT32 y, INT32 width, INT32 flags, boolean isSmall)
-{
-	patch_t *stickerEnd;
-	INT32 height;
-
-	if (isSmall == true)
-	{
-		stickerEnd = W_CachePatchName("K_STIKE2", PU_CACHE);
-		height = 6;
-	}
-	else
-	{
-		stickerEnd = W_CachePatchName("K_STIKEN", PU_CACHE);
-		height = 11;
-	}
-
-	V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, flags, stickerEnd, NULL);
-	V_DrawFill(x, y, width, height, 24|flags);
-	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
 }
 
 void MD_DrawDiscordRequests(void)
