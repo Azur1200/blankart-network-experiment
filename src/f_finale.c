@@ -1569,7 +1569,8 @@ void F_TitleScreenTicker(boolean run)
 		else if (finalecount == 50)
 		{
 			// Now start the music
-			M_ChangeMenuMusic();
+			S_ChangeMusicInternal("titles", true);
+			S_ShowMusicCredit(0, 5*TICRATE, 0);
 			S_StartSound(NULL, sfx_s23c);
 		}
 	}

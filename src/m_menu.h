@@ -263,6 +263,8 @@ INT32 MR_HandleLevelStats(INT32 choice);
 INT32 MR_QuitReplayHut(INT32 choice);
 INT32 MR_HandleReplayHutList(INT32 choice);
 INT32 MR_GrandPrixTemp(INT32 choice);
+INT32 MR_MainMenu(INT32 choice);
+INT32 MR_MainMenuExit(INT32 choice);
 INT32 MR_TimeAttack(INT32 arg);
 INT32 MR_StartGrandPrix(INT32 choice);
 INT32 MR_QuitTimeAttackMenu(INT32 choice);

@@ -2307,6 +2307,10 @@ void G_Ticker(boolean run)
 			F_TitleScreenTicker(run);
 			break;
 
+		case GS_MENU:
+			F_MenuPresTicker(run);
+			break;
+
 		case GS_WAITINGPLAYERS:
 			if (netgame)
 				F_WaitingPlayersTicker();

@@ -1113,7 +1113,7 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 	F_InitMenuPresValues(false);
 
 	// don't do the below during the in-game menus
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_MENU)
 		return;
 
 	// 0. Get the type and level of each menu, and level of common ancestor
@@ -1859,7 +1859,7 @@ void M_Drawer(void)
 	if (menustack[0] || messagebox.active)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (gamestate == GS_TIMEATTACK)
+		if (gamestate == GS_TIMEATTACK || gamestate == GS_MENU)
 		{
 			if (curbgcolor >= 0)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
@@ -2021,7 +2021,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 	menu_text_input = false;
 
 	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
-	if (gamestate == GS_TIMEATTACK)
+	if (gamestate == GS_MENU)
 		D_StartTitle();
 }
 
@@ -3856,7 +3856,7 @@ INT32 MR_ReplayHut(INT32 choice)
 
 	PrepReplayList();
 
-	M_ClearMenus(true);
+	//M_ClearMenus(true);
 	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
@@ -4334,6 +4334,7 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
+	G_SetGamestate(GS_MENU);
 	S_ClearMusicCredit();
 	return true;
 }
@@ -5716,6 +5717,29 @@ INT32 MR_StartGrandPrix(INT32 choice)
 }
 
 // ===========
+//  MAIN MENU
+// ===========
+
+// Going to main menu...
+INT32 MR_MainMenu(INT32 choice)
+{
+	M_ClearMenus(true);
+
+	G_SetGamestate(GS_MENU); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
+	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+
+	return true;
+}
+
+INT32 MR_MainMenuExit(INT32 choice)
+{
+	(void)choice;
+
+	S_ClearMusicCredit();
+	return true;
+}
+
+// ===========
 // MODE ATTACK
 // ===========
 
@@ -5809,7 +5833,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	}
 
 	M_PatchSkinNameTable();
-	M_ClearMenus(true);
+	//M_ClearMenus(true);
 
 	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
@@ -5830,6 +5854,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
+	G_SetGamestate(GS_MENU);
 	S_ClearMusicCredit();
 	return true;
 }
