@@ -8106,8 +8106,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	racecountdown = exitcountdown = exitfadestarted = 0;
 	curlap = bestlap = 0; // SRB2Kart
 
-	g_exit.losing = false;
-	g_exit.retry = false;
+	g_exit.losing = g_exit.retry = g_exit.hasfinished = false;
 
 	// SRB2Kart: map load variables
 	if (grandprixinfo.gp == true)

@@ -636,6 +636,7 @@ struct exitcondition_t
 {
 	boolean losing;
 	boolean retry;
+	boolean hasfinished;
 };
 
 // For racing
