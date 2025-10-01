@@ -718,7 +718,7 @@ void Nextmap_OnChange(void)
 	leveltitle = cv_nextmap.value ? G_BuildMapTitle(cv_nextmap.value) : Z_StrDup("Random");
 	cv_nextmap.string = cv_nextmap.zstring = leveltitle;
 
-	if (menustack[0] == MN_SP_TIMEATTACK || menustack[0] == MN_SP_MODS || menustack[0] == MN_SP_PRES)
+	if (M_AttackOnStack())
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
 		char *gamemode = M_AppendGametypeAndModName();
@@ -4629,7 +4629,13 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	G_StopDemo();
 
 	if (demo.inreplayhut)
+	{
+		// Setup menu stack so we can back out of the menu as per usual.
+		M_ClearMenus(false);
+		M_EnterMenu(MN_MAIN, true, 0);
+		M_EnterMenu(MN_SR_MAIN, true, 0);
 		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
+	}
 	else if (modeattacking)
 		MR_ModeAttackEndGame(0);
 	else
@@ -6094,7 +6100,13 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	modeattacking = ATTACKING_MENU;
 
 	G_SetGamestate(GS_MENU);
+
+	// Setup menu stack so we can back out of the menu as per usual.
+	M_ClearMenus(false);
+	M_EnterMenu(MN_MAIN, true, -1);
+	M_EnterMenu(MN_SP_MAIN, true, -1);
 	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
+
 	Nextmap_OnChange();
 	return true;
 }

@@ -4379,7 +4379,13 @@ void G_AfterIntermission(void)
 		G_StopDemo();
 
 		if (demo.inreplayhut)
+		{
+			// Setup menu stack so we can back out of the menu as per usual.
+			M_ClearMenus(false);
+			M_EnterMenu(MN_MAIN, true, 0);
+			M_EnterMenu(MN_SR_MAIN, true, 0);
 			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
+		}
 		else
 			D_StartTitle();
 
