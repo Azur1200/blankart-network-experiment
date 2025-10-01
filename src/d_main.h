@@ -94,6 +94,7 @@ const char *D_Home(void);
 // BASE LEVEL
 //
 void D_StartTitle(void);
+void D_ResetGameState(void);
 
 #ifdef __cplusplus
 } // extern "C"

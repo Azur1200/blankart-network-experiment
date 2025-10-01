@@ -1161,9 +1161,9 @@ void D_SRB2Loop(void)
 // =========================================================================
 
 //
-// D_StartTitle
+// D_ResetGameState
 //
-void D_StartTitle(void)
+void D_ResetGameState(void)
 {
 	INT32 i;
 
@@ -1188,7 +1188,9 @@ void D_StartTitle(void)
 
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
+#ifdef HAVE_CURL
 	CURLAbortFile();
+#endif
 	SV_StopServer();
 	SV_ResetServer();
 
@@ -1239,14 +1241,22 @@ void D_StartTitle(void)
 	memset(gamekeydown, 0, sizeof(gamekeydown));
 	memset(deviceResponding, false, sizeof (deviceResponding));
 
-	F_StartTitleScreen();
-
 	// Reset the palette
 	if (rendermode != render_none)
 		V_SetPaletteLump("PLAYPAL");
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
+}
+
+//
+// D_StartTitle
+//
+
+void D_StartTitle(void)
+{
+	D_ResetGameState();
+	F_StartTitleScreen();
 }
 
 //
