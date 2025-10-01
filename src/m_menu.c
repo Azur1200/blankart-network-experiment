@@ -528,8 +528,7 @@ inline static void M_GetGametypeColor(void)
 	warningflags = V_REDMAP;
 	recommendedflags = V_GREENMAP;
 
-	if (modeattacking // == ATTACKING_TIME
-		|| gamestate == GS_TIMEATTACK)
+	if (modeattacking)
 	{
 		highlightflags = V_ORANGEMAP;
 		return;
@@ -1113,7 +1112,7 @@ static void M_HandleMenuPresState(menutype_t newMenuType)
 	F_InitMenuPresValues(false);
 
 	// don't do the below during the in-game menus
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_MENU)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_MENU)
 		return;
 
 	// 0. Get the type and level of each menu, and level of common ancestor
@@ -1859,7 +1858,7 @@ void M_Drawer(void)
 	if (menustack[0] || messagebox.active)
 	{
 		// now that's more readable with a faded background (yeah like Quake...)
-		if (gamestate == GS_TIMEATTACK || gamestate == GS_MENU)
+		if (gamestate == GS_MENU)
 		{
 			if (curbgcolor >= 0)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
@@ -2020,7 +2019,7 @@ void M_ClearMenus(boolean callexitmenufunc)
 	hidetitlemap = false;
 	menu_text_input = false;
 
-	// D_StartTitle does its own wipe, since GS_TIMEATTACK is now a complete gamestate.
+	// D_StartTitle does its own wipe, since GS_MENU is now a complete gamestate.
 	if (gamestate == GS_MENU)
 		D_StartTitle();
 }
@@ -3857,7 +3856,7 @@ INT32 MR_ReplayHut(INT32 choice)
 	PrepReplayList();
 
 	//M_ClearMenus(true);
-	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
+	modeattacking = ATTACKING_MENU;
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	demo.rewinding = false;
@@ -5835,7 +5834,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	M_PatchSkinNameTable();
 	//M_ClearMenus(true);
 
-	G_SetGamestate(GS_TIMEATTACK); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
+	modeattacking = ATTACKING_MENU;
 	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
 
 	if (cv_nextmap.value)
@@ -5855,6 +5854,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
 	G_SetGamestate(GS_MENU);
+	modeattacking = ATTACKING_NONE;
 	S_ClearMusicCredit();
 	return true;
 }
@@ -6715,7 +6715,7 @@ static void M_DrawLevelSelectOnly(INT16 y, boolean selected, boolean leftfade, b
 			V_DrawThinString(x+w+5, y+i-8, V_TRANSLUCENT|MENUCAPS, addonname); // variable reuse...
 	}
 
-	if ((cv_kartencore.value != 1) || gamestate == GS_TIMEATTACK || cv_newgametype.value != GT_RACE)
+	if ((cv_kartencore.value != 1) || cv_newgametype.value != GT_RACE)
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, 0, PictureOfLevel, NULL);
 	else
 	{

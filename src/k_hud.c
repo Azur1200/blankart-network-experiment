@@ -1690,7 +1690,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	else if ((drawtime/TICRATE) & 1)
 		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
-	if ((modeattacking || (mode == 1)) && emblemenabled && !demo.playback) // emblem time!
+	if (((modeattacking && G_GamestateUsesLevel()) || (mode == 1)) && emblemenabled && !demo.playback) // emblem time!
 	{
 		INT32 workx = TX + 96, worky = TY+18;
 		SINT8 curemb = 0;

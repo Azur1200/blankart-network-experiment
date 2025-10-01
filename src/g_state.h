@@ -31,8 +31,7 @@ typedef enum
 	GS_VOTING,          // SRB2Kart: MP voting screen
 
 	GS_TITLESCREEN,     // title screen
-	GS_MENU,     // menu screen
-	GS_TIMEATTACK,      // time attack menu
+	GS_MENU,     		// menu screen
 
 	GS_CREDITS,         // credit sequence
 	GS_BLANCREDITS,		// BlanKart: Credits for BlanKart

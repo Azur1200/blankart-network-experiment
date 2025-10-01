@@ -474,7 +474,7 @@ static void D_Display(void)
 		// set for all later
 		wipedefindex = gamestate; // wipe_xxx_toblack
 		if (gamestate == GS_MENU && wipegamestate != GS_INTRO)
-			wipedefindex = wipe_timeattack_toblack;
+			wipedefindex = wipe_menu_toblack;
 
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
@@ -489,7 +489,7 @@ static void D_Display(void)
 				F_WipeColorFill(31);
 				F_WipeEndScreen();
 			}
-			F_RunWipe(wipetypepre, gamestate != GS_TIMEATTACK && gamestate != GS_TITLESCREEN && gamestate != GS_MENU);
+			F_RunWipe(wipetypepre, gamestate != GS_TITLESCREEN && gamestate != GS_MENU);
 		}
 
 		if (rendermode != render_none)
@@ -550,9 +550,6 @@ static void D_Display(void)
 			Y_VoteDrawer();
 			HU_Erase();
 			HU_Drawer();
-			break;
-
-		case GS_TIMEATTACK:
 			break;
 
 		case GS_INTRO:
@@ -691,7 +688,7 @@ dedipostwipe:
 		if (rendermode != render_none)
 			F_WipeEndScreen();
 
-		F_RunWipe(wipetypepost, gamestate != GS_TIMEATTACK && gamestate != GS_INTRO);
+		F_RunWipe(wipetypepost, gamestate != GS_MENU && gamestate != GS_INTRO);
 
 		// reset counters so timedemo doesn't count the wipe duration
 		if (demo.timing)
@@ -866,7 +863,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_TIMEATTACK && gamestate != GS_INTRO && gamestate != GS_MENU)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;

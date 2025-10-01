@@ -1548,7 +1548,7 @@ luahook:
 }
 
 // separate animation timer for backgrounds, since we also count
-// during GS_TIMEATTACK
+// during GS_MENU
 void F_MenuPresTicker(boolean run)
 {
 	if (run)

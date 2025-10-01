@@ -2260,10 +2260,6 @@ void G_Ticker(boolean run)
 			HU_Ticker();
 			break;
 
-		case GS_TIMEATTACK:
-			F_MenuPresTicker(run);
-			break;
-
 		case GS_INTRO:
 			if (run)
 				F_IntroTicker();
@@ -3755,8 +3751,7 @@ INT16 G_SometimesGetDifferentGametype(UINT8 prefgametype)
 //
 UINT8 G_GetGametypeColor(INT16 gt)
 {
-	if (modeattacking // == ATTACKING_TIME
-	|| gamestate == GS_TIMEATTACK)
+	if (modeattacking)
 		return orangemap[0];
 
 	if (gametypecolor[gt])
