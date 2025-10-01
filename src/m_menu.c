@@ -4333,7 +4333,10 @@ INT32 MR_QuitReplayHut(INT32 choice)
 	demolist = NULL;
 
 	demo.inreplayhut = false;
-	G_SetGamestate(GS_MENU);
+	if (!M_AttackOnStack())
+	{
+		modeattacking = ATTACKING_NONE;
+	}
 	return true;
 }
 
@@ -5740,6 +5743,22 @@ INT32 MR_MainMenuExit(INT32 choice)
 // MODE ATTACK
 // ===========
 
+boolean M_AttackOnStack(void)
+{
+	INT32 i;
+
+	for (i = 0; i < sizeof(menustack)/sizeof(menustack[0]); i++)
+	{
+		if (menustack[i] == MN_SP_TIMEATTACK)
+			return true;
+		// shhh this isnt time attack but it also uses modeattacking menu...
+		if (menustack[i] == MN_MISC_REPLAYHUT)
+			return true;
+	}
+
+	return false;
+}
+
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(void)
 {
@@ -5851,8 +5870,10 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 
 	// you know what? always putting these in the buffer won't hurt anything.
 	COM_BufAddText(va("skin \"%s\"\n", skins[cv_chooseskin.value].name));
-	G_SetGamestate(GS_MENU);
-	modeattacking = ATTACKING_NONE;
+	if (!M_AttackOnStack())
+	{
+		modeattacking = ATTACKING_NONE;
+	}
 	return true;
 }
 
@@ -6070,8 +6091,9 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING)
 		Command_ExitGame_f();
 
-	modeattacking = ATTACKING_NONE;
+	modeattacking = ATTACKING_MENU;
 
+	G_SetGamestate(GS_MENU);
 	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
 	Nextmap_OnChange();
 	return true;

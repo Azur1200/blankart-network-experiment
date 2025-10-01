@@ -367,6 +367,8 @@ INT32 MapGridSelectToSkin(INT32 column, INT32 row);
 // Maybe this goes here????? Who knows.
 boolean M_MouseNeeded(void);
 
+boolean M_AttackOnStack(void);
+
 #ifdef HAVE_THREADS
 extern I_mutex m_menu_mutex;
 #endif
