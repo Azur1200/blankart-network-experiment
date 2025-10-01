@@ -4630,6 +4630,8 @@ INT32 MR_PlaybackQuit(INT32 choice)
 
 	if (demo.inreplayhut)
 	{
+		G_SetGamestate(GS_MENU);
+
 		// Setup menu stack so we can back out of the menu as per usual.
 		M_ClearMenus(false);
 		M_EnterMenu(MN_MAIN, true, 0);

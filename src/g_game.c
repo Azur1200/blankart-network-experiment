@@ -4380,7 +4380,10 @@ void G_AfterIntermission(void)
 
 		if (demo.inreplayhut)
 		{
+			G_SetGamestate(GS_MENU);
+
 			// Setup menu stack so we can back out of the menu as per usual.
+			G_SetGamestate(GS_MENU);
 			M_ClearMenus(false);
 			M_EnterMenu(MN_MAIN, true, 0);
 			M_EnterMenu(MN_SR_MAIN, true, 0);
