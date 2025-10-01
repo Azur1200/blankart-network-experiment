@@ -7403,11 +7403,6 @@ static void KartComeback_OnChange(void)
 
 static void KartEliminateLast_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
-	{
-		CV_StealthSet(&cv_karteliminatelast, cv_karteliminatelast.defaultvalue);
-	}
-
 	P_CheckRacers();
 }
 

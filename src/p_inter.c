@@ -1160,7 +1160,7 @@ boolean P_CheckRacers(void)
 {
 	const boolean griefed = (spectateGriefed > 0);
 
-	boolean eliminateLast = cv_karteliminatelast.value;
+	boolean eliminateLast = (!K_CanChangeRules() || (cv_karteliminatelast.value != 0));
 	boolean allHumansDone = true;
 	//boolean allBotsDone = true;
 
