@@ -572,7 +572,6 @@ void K_RespawnBattleBoxes(void)
 		newmobj->flags2 = box->flags2;
 		P_RemoveMobj(box); // make sure they disappear
 		numgotboxes--; // you've restored a box, remove it from the count
-		//continue; -- irrelevant?
 	}
 
 	if (numgotboxes < 0)

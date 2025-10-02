@@ -13686,7 +13686,6 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_RANDOMITEM:
 	{
 		mobj->flags2 |= MF2_BOSSNOTRAP; // mark as here on map start
-		nummapboxes++;
 		break;
 	}
 	case MT_ITEMCAPSULE:
