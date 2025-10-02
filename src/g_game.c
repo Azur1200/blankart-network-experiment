@@ -4282,8 +4282,6 @@ static void G_DoCompleted(void)
 	if (metalrecording)
 		G_StopMetalRecording(false);
 
-	K_StatRound();
-
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
 
