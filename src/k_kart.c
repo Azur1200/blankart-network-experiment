@@ -8211,6 +8211,14 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 			pathfindsuccess =
 				K_PathfindToWaypoint(player->nextwaypoint, finishline, &pathtofinish, useshortcuts, huntbackwards);
 
+			if (!pathfindsuccess)
+			{
+				// We failed...
+				// Lets try shortcut waypoints if that happens to be the only path.
+				pathfindsuccess =
+				K_PathfindToWaypoint(player->nextwaypoint, finishline, &pathtofinish, true, huntbackwards);
+			}
+
 			// Update the player's distance to the finish line if a path was found.
 			// Using shortcuts won't find a path, so distance won't be updated until the player gets back on track
 			if (pathfindsuccess == true)
