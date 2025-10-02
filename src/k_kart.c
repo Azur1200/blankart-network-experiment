@@ -9470,20 +9470,11 @@ void K_KartUpdatePosition(player_t *player)
 				}
 				else
 				{
-					if (player->exiting) // End of match standings
-					{
-						// Only score matters
-						if (players[i].roundscore > player->roundscore)
-							position++;
-					}
-					else
-					{
-						// I have less points than but the same bumpers as this player OR
-						// I have less bumpers than this player
-						if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
-							|| (players[i].bumper > player->bumper))
-							position++;
-					}
+					// I have less points than but the same bumpers as this player OR
+					// I have less bumpers than this player
+					if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
+						|| (players[i].bumper > player->bumper))
+						position++;
 				}
 			}
 		}
