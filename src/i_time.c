@@ -69,7 +69,7 @@ void I_UpdateTime(fixed_t timescale)
 	tic_t realtics;
 
 	// get real tics
-	ticratescaled = (double)TICRATE * FIXED_TO_FLOAT(timescale);
+	ticratescaled = (double)((float)TICRATE * FixedToFloat(timescale));
 
 	enterprecise = I_GetPreciseTime();
 	elapsedseconds = (double)(enterprecise - oldenterprecise) / I_GetPrecisePrecision();
