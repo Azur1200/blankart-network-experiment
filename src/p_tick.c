@@ -889,6 +889,7 @@ void P_Ticker(boolean run)
 
 	P_UpdateSpecials();
 	P_RespawnSpecials();
+	K_RespawnBattleBoxes();
 
 	// Lightning, rain sounds, etc.
 	P_PrecipitationEffects();

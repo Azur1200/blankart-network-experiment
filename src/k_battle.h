@@ -22,6 +22,7 @@ UINT8 K_NumEmeralds(player_t *player);
 void K_RunPaperItemSpawners(void);
 void K_SpawnPlayerBattleBumpers(player_t *p);
 void K_BattleInit(void);
+void K_RespawnBattleBoxes(void);
 
 #ifdef __cplusplus
 } // extern "C"
