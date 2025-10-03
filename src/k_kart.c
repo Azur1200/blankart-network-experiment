@@ -4028,7 +4028,7 @@ void K_SpawnBoostTrail(player_t *player)
 			newz -= FixedMul(mobjinfo[MT_SNEAKERTRAIL].height, player->mo->scale);
 		}
 
-		flame = P_SpawnMobj(newx, newy, ground, MT_SNEAKERTRAIL);
+		flame = P_SpawnMobj(newx, newy, newz, MT_SNEAKERTRAIL);
 
 		P_SetTarget(&flame->target, player->mo);
 		flame->angle = travelangle;
