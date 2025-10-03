@@ -462,13 +462,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	P_DeleteFlickies(num);
 #endif
 
-	mapheaderinfo[num]->mapvisited = 0;
-	for (int j = 0; j < MAXMAPRECORDS; j++)
-	{
-		Z_Free(mapheaderinfo[num]->mainrecord[j]);
-		mapheaderinfo[num]->mainrecord[j] = NULL;
-	}
-
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
 }
@@ -521,10 +514,6 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
-		for (int j = 0; j < MAXMAPRECORDS; j++)
-		{
-			mapheaderinfo[i]->mainrecord[j] = NULL;
-		}
 		mapheaderinfo[i]->flickies = NULL;
 		nummapheaders++;
 	}
@@ -8147,49 +8136,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
-		if (demo.playback)
-		{
-			// raflags
-			if (raflags & RAF_RINGS)
-				ringsactive = true;
-			if (raflags & RAF_STACKING)
-				stackingactive = true;
-			if (raflags & RAF_CHAINING)
-				chainingactive = true;
-			if (raflags & RAF_SLIPDASH)
-				slipdashactive = true;
-			if (raflags & RAF_PURPLEDRIFT)
-				purpledriftactive = true;
-			if (raflags & RAF_SLOPEBOOST)
-				slopeboostactive = true;
-			if (raflags & RAF_AIRDROP)
-				airdropactive = true;
-
-			// Bump Spark
-			switch (raflags & RAF_BUMPSPARKMASK)
-			{
-			case RAF_BUMPDRIFT:
-				bumpsparkactive = BUMPSPARK_NOCHARGE;
-				break;
-			case RAF_BUMPSPARK:
-				bumpsparkactive = BUMPSPARK_ALL;
-				break;
-			case RAF_BS_RESET100:
-				bumpsparkactive = BUMPSPARK_RESET100;
-				break;
-			}
-		}
-		else
-		{
-			ringsactive = cv_dummyattackingrings.value;
-			purpledriftactive = cv_dummyattackingpurpledrift.value;
-			stackingactive = cv_dummyattackingstacking.value;
-			chainingactive = cv_dummyattackingchaining.value;
-			slipdashactive = cv_dummyattackingslipdash.value;
-			slopeboostactive = cv_dummyattackingslopeboost.value;
-			airdropactive = cv_dummyattackingairdrop.value;
-			bumpsparkactive = (UINT8)(cv_dummyattackingbumpspark.value);
-		}
 	}
 	else
 	{
@@ -8999,10 +8945,11 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
+	maprecord_t *record = G_AllocateMapRecord(G_BuildMapName(gamemap));
 	if (!(netgame || multiplayer || demo.playback) && !majormods)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_VISITED;
+		record->visited |= MV_VISITED;
 	else if (!demo.playback)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_MP; // you want to record that you've been there this session, but not permanently
+		record->visited |= MV_MP; // you want to record that you've been there this session, but not permanently
 
 	G_AddMapToBuffer(gamemap-1);
 

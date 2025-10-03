@@ -30,12 +30,18 @@ strbuf_t *strbuf_alloc(void)
 // returns an offset to the newly appended string
 UINT32 strbuf_append(strbuf_t **strbuf, const char *str)
 {
+	return strbuf_write(strbuf, (UINT8 *)str, strlen(str)+1);
+}
+
+// writes a raw block of bytes to the buffer
+// returns an offset to the newly appended bytes
+UINT32 strbuf_write(strbuf_t **strbuf, const UINT8 *src, size_t len)
+{
 	strbuf_t *buf = *strbuf;
-	size_t addbytes = strlen(str) + 1;
 	UINT32 oldsize = buf->size;
 
-	buf->size += addbytes;
-	if ((oldsize % STRBUF_BLOCKSIZE) + addbytes >= STRBUF_BLOCKSIZE) {
+	buf->size += len;
+	if ((oldsize % STRBUF_BLOCKSIZE) + len >= STRBUF_BLOCKSIZE) {
 		UINT32 newsize = buf->size + STRBUF_BLOCKSIZE - (buf->size % STRBUF_BLOCKSIZE);
 		if (newsize <= oldsize)
 			I_Error("String buffer size wrapped around!?");
@@ -44,6 +50,6 @@ UINT32 strbuf_append(strbuf_t **strbuf, const char *str)
 			I_Error("Failed to allocate string buffer");
 	}
 
-	strcpy(buf->buf - sizeof(UINT32) + oldsize, str);
+	memcpy(buf->buf - sizeof(UINT32) + oldsize, src, len);
 	return oldsize;
 }

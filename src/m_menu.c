@@ -3050,8 +3050,12 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				return false; // map hell
 
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapheaderinfo[mapnum]->mapvisited)
-				return false;
+			if (mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED)
+			{
+				maprecord_t *record = G_GetMapRecord(G_BuildMapName(mapnum+1));
+				if (record == NULL || !record->visited)
+					return false;
+			}
 
 			return true;
 
@@ -5378,36 +5382,42 @@ static void M_DrawStatsMaps(void)
 {
 	char beststr[40];
 	tic_t besttime = 0;
-	INT32 mapsunfinished = 0;
+	size_t mapsfinished = 0;
 
 	int location = statsLocation;
-	INT32 y = 62, i = -1, j;
+	INT32 y = 62, i = -1;
 	INT16 mnum;
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
-	SINT8 preset = G_RecordPresetIndex();
 
-	for (j = 0; j < nummapheaders; j++)
+	// TODO: a way to switch presets on this screen
+	const char *realname = G_GetRecordPresetName(currentrecordpreset);
+	V_DrawThinString(0, 0, V_ALLOWLOWERCASE, realname ? realname : currentrecordpreset); // temporary
+
+	for (size_t j = 0; j < nummapheaders; j++)
 	{
 		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mapheaderinfo[j]->mainrecord[preset] || mapheaderinfo[j]->mainrecord[preset]->time <= 0)
-		{
-			mapsunfinished++;
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(j+1));
+		if (record == NULL)
 			continue;
-		}
 
-		besttime += mapheaderinfo[j]->mainrecord[preset]->time;
+		maprecordpreset_t *preset = G_GetMapRecordPreset(record, currentrecordpreset);
+		if (preset == NULL)
+			continue;
+
+		besttime += preset->besttime;
+		mapsfinished++;
 	}
 
 	V_DrawString(20, 42, MENUCAPS|highlightflags, "Combined time records:");
 
 	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsunfinished ? warningflags : 0), beststr);
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsfinished != nummapheaders ? warningflags : 0), beststr);
 
-	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%d unfinished)", mapsunfinished));
+	if (mapsfinished != nummapheaders)
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%zu unfinished)", nummapheaders - mapsfinished));
 	else
 		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|recommendedflags, "(complete)");
 
@@ -5724,7 +5734,10 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(void)
 {
-	SINT8 preset = G_RecordPresetIndex();
+	maprecordpreset_t *preset = NULL;
+	maprecord_t *record = G_GetMapRecord(G_BuildMapName(cv_nextmap.value));
+	if (record != NULL)
+		preset = G_GetMapRecordPreset(record, currentrecordpreset);
 
 	// Character face!
 	{
@@ -5738,47 +5751,20 @@ void MD_DrawTimeAttackMenu(void)
 	if (cv_nextmap.value)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
-		tic_t lap = 0, time = 0;
-		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset])
-		{
-			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->lap;
-			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->time;
-		}
-
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
 
 		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, MENUCAPS|highlightflags, "Best Lap:");
-			K_drawKartTimestamp(lap, 19, 86, -1, 2);
+			K_drawKartTimestamp(preset ? preset->bestlap : 0, 19, 86, -1, 2);
 		}
-
 		V_DrawRightAlignedString(292, 80, MENUCAPS|highlightflags, "Best Time:");
-		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value-1, 1);
+		K_drawKartTimestamp(preset ? preset->besttime : 0, 162, 86, cv_nextmap.value-1, 1);
 	}
 
 	// Draw current RA preset mode.
-	{
-		const char *mode = "Unknown mode";
-		if (preset == 0)
-		{
-			mode = "SRB2Kart Mode";
-		}
-		else if (preset == 1)
-		{
-			mode = "Tech Mode";
-		}
-		else if (preset == 2)
-		{
-			mode = "BlanKart Mode";
-		}
-		else if (preset == 3)
-		{
-			mode = "Custom Mode";
-		}
-
-		V_DrawString(50, 104, MENUCAPS|V_6WIDTHSPACE, mode);
-	}
+	const char *realname = G_GetRecordPresetName(currentrecordpreset);
+	V_DrawString(50, 104, MENUCAPS|V_6WIDTHSPACE, realname ? realname : "Unknown mode");
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
 	if (menustack[0] == MN_SP_TIMEATTACK)
@@ -5863,6 +5849,7 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(nameofdemo);
 
+	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value), 0, false);
 	return true;
 }
@@ -5878,48 +5865,23 @@ INT32 MR_ReplayStaff(INT32 choice)
 	return true;
 }
 
-#define NUMPRESETS 3
-static INT32 presets[NUMPRESETS][8] = {
-	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  airdrop  bumpspark
-	{ 0,     0,        0,        0,        0,           0,          0,       BUMPSPARK_NONE }, // SRB2Kart
-	{ 0,     1,        1,        0,        0,           1,          1,       BUMPSPARK_ALL }, // Tech
-	{ 1,     1,        1,        1,        1,           1,          1,       BUMPSPARK_NOCHARGE }, // BlanKart
-};
-
 INT32 MR_TimeAttackPreset(INT32 arg)
 {
-	if (arg < 0 || arg >= NUMPRESETS)
+	if (arg < 0 || arg >= numrecordpresets)
 		return false;
 
-	boolean *preset = presets[arg];
-	CV_Set(&cv_dummyattackingrings, (boolean)preset[0] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingstacking, (boolean)preset[1] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingchaining, (boolean)preset[2] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslipdash, (boolean)preset[3] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingpurpledrift, (boolean)preset[4] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslopeboost, (boolean)preset[5] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingairdrop, preset[6] ? "On" : "Off");
+	recordpreset_t *new = recordpresets[arg];
+	if (new->numversions == 0)
+		return false;
 
-	switch(preset[7])
-	{
-	case BUMPSPARK_ALL:
-		CV_Set(&cv_dummyattackingbumpspark, "On");
-		break;
-	case BUMPSPARK_RESET100:
-		CV_Set(&cv_dummyattackingbumpspark, "Reset to Blue");
-		break;
-	case BUMPSPARK_NOCHARGE:
-		CV_Set(&cv_dummyattackingbumpspark, "Remove Charge Only");
-		break;
-	case BUMPSPARK_NONE:
-		/* FALLTHRU */
-	default:
-		CV_Set(&cv_dummyattackingbumpspark, "Off");
-	}
+	UINT8 highest = 0;
+	for (UINT8 i = 0; i < new->numversions; i++)
+		highest = max(highest, strbuf_byte(new->versions[i], 0));
 
+	strcpy(currentrecordpreset, new->name);
+	currentrecordpresetversion = highest;
 	return true;
 }
-#undef NUMPRESETS
 
 // Player has selected the "REPLAY" from the time attack screen
 INT32 MR_ReplayTimeAttack(INT32 arg)

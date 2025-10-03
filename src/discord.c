@@ -591,17 +591,8 @@ void DRPC_UpdatePresence(void)
 	{
 		if (modeattacking)
 		{
-			SINT8 recordpreset = G_RecordPresetIndex();
-			const char *currenttamode = "SRB2Kart";
-
-			if (recordpreset == RP_TECH)
-				currenttamode = "Tech";
-			else if (recordpreset == RP_BLAN)
-				currenttamode = "BlanKart";
-			else if (recordpreset == RP_CUST)
-				currenttamode = "Custom";
-
-			discordPresence.details = va("Time Attack: %s Mode", currenttamode);
+			const char *realname = G_GetRecordPresetName(currentrecordpreset);
+			discordPresence.details = va("Time Attack: %s", realname ? realname : "Unknown Mode");
 		}
 		else
 		{
