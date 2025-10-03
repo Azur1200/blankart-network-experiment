@@ -82,6 +82,9 @@
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
 
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include <tracy/tracy/Tracy.hpp>
 
 // Put hashes here to get them out of header hell.
@@ -1814,7 +1817,7 @@ void D_SRB2Main(void)
 	ST_Init();
 	CON_SetLoadingProgress(LOADED_STINIT);
 
-	CONS_Printf("FixedSqrt of 32767 fracunits: %d; FixedSqrt64: %d\n",
+	CONS_Printf("FixedSqrt of 32767 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
 				FixedSqrt(0x7FFF0000),
 				FixedSqrt64(0x7FFF0000));
 
@@ -1827,7 +1830,7 @@ void D_SRB2Main(void)
 		CONS_Printf("\x85" "32767: Test NG!" "\x80" "\n");
 	}
 
-	CONS_Printf("FixedSqrt of 4 fracunits: %d; FixedSqrt64: %d\n",
+	CONS_Printf("FixedSqrt of 4 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
 				FixedSqrt(0x40000),
 				FixedSqrt64(0x40000));
 
@@ -1842,7 +1845,7 @@ void D_SRB2Main(void)
 
 	// You should probably generate the weird number with RANDOM.org
 #define WEIRDNUMBER 3886284 /* 59.3 fracunits; this should approximate to around 7 */
-	CONS_Printf("FixedSqrt of 59.3 fracunits: %d; FixedSqrt64: %d\n",
+	CONS_Printf("FixedSqrt of 59.3 fracunits: %d; FixedSqrt64: %" PRId64 "\n",
 				FixedSqrt(WEIRDNUMBER),
 				FixedSqrt64(WEIRDNUMBER));
 
@@ -1856,14 +1859,14 @@ void D_SRB2Main(void)
 	}
 #undef WEIRDNUMBER
 
-	CONS_Printf("FixedSqrt64 of 65535 fracunits: %d (not possible at 32-bit scale)\n",
+	CONS_Printf("FixedSqrt64 of 65535 fracunits: %" PRId64 "(not possible at 32-bit scale)\n",
 				FixedSqrt64(0xFFFFFFFF));
 
-	CONS_Printf("IntSqrt of 32767: %d; IntSqrt64: %d\n",
+	CONS_Printf("IntSqrt of 32767: %d; IntSqrt64: %" PRId64 "\n",
 				IntSqrt(0x7FFF),
 				IntSqrt64(0x7FFF));
 
-	CONS_Printf("IntSqrt of 4: %d; IntSqrt64: %d\n",
+	CONS_Printf("IntSqrt of 4: %d; IntSqrt64: %" PRId64 "\n",
 				IntSqrt(4),
 				IntSqrt64(4));
 
