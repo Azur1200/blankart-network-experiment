@@ -182,7 +182,7 @@ static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
 // deal with overflows on a system that's already being pushed to the limit by needing 65536 units
 // for precision. No seriously, I don't think anyone's losing sleep over "hmmmmm, 0.0000152 or
 // 0.0039?????" when most 2D game engines only give a fuck about MAYBE 0.001"
-static UINT32 K_IntDistance(fixed_t curx,
+/*static UINT32 K_IntDistance(fixed_t curx,
 			 fixed_t cury,
 			 fixed_t curz,
 			 fixed_t destx,
@@ -193,7 +193,7 @@ static UINT32 K_IntDistance(fixed_t curx,
 		      curz / FRACUNIT,
 		      K_Dist2D(curx / FRACUNIT, cury / FRACUNIT, destx / FRACUNIT, desty / FRACUNIT),
 		      destz / FRACUNIT);
-}
+}*/
 
 // This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
 static UINT32 K_IntDistanceForMap(fixed_t curx,
@@ -898,8 +898,9 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
-
 	UINT32 pdis = 0;
+
+	(void)pingame;
 
 	if (!K_UsingLegacyCheckpoints())
 	{

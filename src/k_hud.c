@@ -6147,8 +6147,9 @@ void K_DrawDriftGauge(void)
 
 		if (rainbow)
 		{
+			INT32 backsize = sizeof(backcolors);
 			backcmap = cmap;
-			for (i = 0; i < sizeof(backcolors); i++)
+			for (i = 0; i < backsize; i++)
 				backcolors[i] = driftrainbow[leveltime % sizeof(driftrainbow)] + i;
 
 			// HOT HOT HOT HOT HOOOOOOOT AAAAIIIIIIIIEEEEEEEEEEEEEEEEE
