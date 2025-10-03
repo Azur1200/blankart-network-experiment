@@ -51,6 +51,7 @@ struct savebuffer_t
 	UINT8 *p;
 	UINT8 *end;
 	size_t size;
+	boolean write;
 };
 
 boolean P_SaveBufferZAlloc(savebuffer_t *save, size_t alloc_size, INT32 tag, void *user);
