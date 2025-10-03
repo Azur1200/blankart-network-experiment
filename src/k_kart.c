@@ -130,7 +130,7 @@ void K_TimerInit(void)
 	}
 
 	// NOW you can try to setup Item Breaker, if there's not enough players for a match
-	K_BattleInit();
+	K_BattleInit(numPlayers);
 
 	timelimitintics = extratimeintics = secretextratime = 0;
 	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss)

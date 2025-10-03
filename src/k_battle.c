@@ -486,27 +486,16 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 	}
 }
 
-void K_BattleInit(void)
+void K_BattleInit(UINT8 numPlayers)
 {
-	size_t i;
-
 	if ((gametyperules & GTR_ITEMBREAKER) && !itembreaker && !bossinfo.boss)
 	{
 		if (modeattacking != ATTACKING_ITEMBREAK)
 		{
-			UINT8 n = 0;
-
 			if (!cv_kartitembreaker.value)
 				goto afteritembreaker;
 
-			for (i = 0; i < MAXPLAYERS; i++)
-			{
-				if (!playeringame[i] || players[i].spectator)
-					continue;
-				n++;
-			}
-
-			if (n > 1)
+			if (numPlayers > 1)
 				goto afteritembreaker;
 		}
 
@@ -517,6 +506,7 @@ afteritembreaker:
 	if (gametyperules & GTR_BUMPERS)
 	{
 		INT32 maxbumpers = K_StartingBumperCount();
+		UINT8 i;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
