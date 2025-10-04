@@ -788,7 +788,7 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 			WRITEINT32(save->p, exc->fadergba);
 
 #ifdef EXTRACOLORMAPLUMPS
-			P_WriteStringN(save->p, exc->lumpname, 9);
+			WRITESTRINGN(save->p, exc->lumpname, 9);
 #endif
 
 			exc_next = exc->next;
@@ -810,7 +810,7 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 			fadergba = READINT32(save->p);
 
 #ifdef EXTRACOLORMAPLUMPS
-			P_ReadStringN(save->p, lumpname, 9);
+			READSTRINGN(save->p, lumpname, 9);
 
 			if (lumpname[0])
 			{
