@@ -3241,44 +3241,42 @@ static void P_NetArchiveThinkers(savebuffer_t *save)
 	TracyCZoneEnd(__zone);
 }
 
-static void P_NetArchiveWaypoints(savebuffer_t *save)
+static void P_NetSyncWaypoints(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
 	waypoint_t *waypoint;
-	size_t i;
-	size_t numWaypoints = K_GetNumWaypoints();
+	UINT32 i;
+	UINT32 numWaypoints = K_GetNumWaypoints();
 
-	WRITEUINT32(save->p, ARCHIVEBLOCK_WAYPOINTS);
-	WRITEUINT32(save->p, numWaypoints);
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_WAYPOINTS) != ARCHIVEBLOCK_WAYPOINTS)
+		I_Error("Bad $$$.sav at archive block Waypoints");
 
-	for (i = 0U; i < numWaypoints; i++) {
-		waypoint = K_GetWaypointFromIndex(i);
+	SYNC(numWaypoints);
 
-		// The only thing we save for each waypoint is the mobj.
-		// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
-		WRITEUINT32(save->p, waypoint->mobj->mobjnum);
+	if (save->write)
+	{
+		for (i = 0U; i < numWaypoints; i++) {
+			waypoint = K_GetWaypointFromIndex(i);
+
+			// The only thing we save for each waypoint is the mobj.
+			// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
+			WRITEUINT32(save->p, waypoint->mobj->mobjnum);
+		}
 	}
-	TracyCZoneEnd(__zone);
-}
-
-static void P_NetUnArchiveWaypoints(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_WAYPOINTS)
-		I_Error("Bad $$$.sav at archive block Waypoints!");
-	else {
-		UINT32 numArchiveWaypoints = READUINT32(save->p);
+	else
+	{
 		size_t numSpawnedWaypoints = K_GetNumWaypoints();
 
-		if (numArchiveWaypoints != numSpawnedWaypoints) {
+		if (numWaypoints != numSpawnedWaypoints) {
 			I_Error("Bad $$$.sav: More saved waypoints than created!");
-		} else {
+		}
+		else
+		{
 			waypoint_t *waypoint;
 			UINT32 i;
 			UINT32 temp;
-			for (i = 0U; i < numArchiveWaypoints; i++) {
+			for (i = 0U; i < numWaypoints; i++) {
 				waypoint = K_GetWaypointFromIndex(i);
 				temp = READUINT32(save->p);
 				waypoint->mobj = NULL;
@@ -3288,7 +3286,6 @@ static void P_NetUnArchiveWaypoints(savebuffer_t *save)
 			}
 		}
 	}
-
 	TracyCZoneEnd(__zone);
 }
 
@@ -5600,7 +5597,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 		P_NetSyncSpecials(save);
 		P_NetArchiveColormaps(save);
 		P_NetSyncTubeWaypoints(save);
-		P_NetArchiveWaypoints(save);
+		P_NetSyncWaypoints(save);
 	}
 
 	ACS_Archive(save);
@@ -5652,7 +5649,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_NetSyncSpecials(save);
 		P_NetUnArchiveColormaps(save);
 		P_NetSyncTubeWaypoints(save);
-		P_NetUnArchiveWaypoints(save);
+		P_NetSyncWaypoints(save);
 		P_RelinkPointers();
 	}
 
