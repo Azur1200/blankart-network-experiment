@@ -911,48 +911,51 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 /// World Archiving
 ///
 
-#define SD_FLOORHT  0x01
-#define SD_CEILHT   0x02
-#define SD_FLOORPIC 0x04
-#define SD_CEILPIC  0x08
-#define SD_LIGHT    0x10
-#define SD_SPECIAL  0x20
-#define SD_DIFF2    0x40
-#define SD_FFLOORS  0x80
+// each byte contains 7 flags
+// the most signifcant bit indicates a following extra byte
+enum
+{
+	SD_FLOORHT = 0<<3,
+	SD_CEILHT,
+	SD_FLOORPIC,
+	SD_CEILPIC,
+	SD_LIGHT,
+	SD_SPECIAL,
+	SD_FFLOORS,
 
-// diff2 flags
-#define SD_FXOFFS    0x01
-#define SD_FYOFFS    0x02
-#define SD_CXOFFS    0x04
-#define SD_CYOFFS    0x08
-#define SD_FLOORANG  0x10
-#define SD_CEILANG   0x20
-#define SD_TAG       0x40
-#define SD_DIFF3     0x80
+	// diff2 flags
+	SD_FXOFFS = 1<<3,
+	SD_FYOFFS,
+	SD_CXOFFS,
+	SD_CYOFFS,
+	SD_FLOORANG,
+	SD_CEILANG,
+	SD_TAG,
 
-// diff3 flags
-#define SD__UNUSED   0x01
-#define SD_COLORMAP  0x02
-#define SD_CRUMBLESTATE 0x04
-#define SD_FLOORLIGHT 0x08
-#define SD_CEILLIGHT 0x10
-#define SD_FLAG      0x20
-#define SD_SPECIALFLAG 0x40
-#define SD_DIFF4     0x80
+	// diff3 flags
+	SD__UNUSED = 2<<3,
+	SD_COLORMAP,
+	SD_CRUMBLESTATE,
+	SD_FLOORLIGHT,
+	SD_CEILLIGHT,
+	SD_FLAG,
+	SD_SPECIALFLAG,
 
-//diff4 flags
-#define SD_DAMAGETYPE 0x01
-#define SD_TRIGGERTAG 0x02
-#define SD_TRIGGERER  0x04
-#define SD_GRAVITY    0x08
-#define SD_ACTION     0x10
-#define SD_ARGS       0x20
-#define SD_STRINGARGS 0x40
-#define SD_DIFF5      0x80
+	//diff4 flags
+	SD_DAMAGETYPE = 3<<3,
+	SD_TRIGGERTAG,
+	SD_TRIGGERER,
+	SD_GRAVITY,
+	SD_ACTION,
+	SD_ARGS,
+	SD_STRINGARGS,
 
-//diff5 flags
-#define SD_ACTIVATION 0x01
-#define SD_BOTCONTROLLER 0x02
+	//diff5 flags
+	SD_ACTIVATION = 4<<3,
+	SD_BOTCONTROLLER,
+
+	SD__MAX
+};
 
 static boolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
@@ -979,27 +982,40 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 	return true;
 }
 
-#define LD_FLAG     0x01
-#define LD_SPECIAL  0x02
-#define LD_TAG      0x04
-#define LD_S1TEXOFF 0x08
-#define LD_S1TOPTEX 0x10
-#define LD_S1BOTTEX 0x20
-#define LD_S1MIDTEX 0x40
-#define LD_DIFF2    0x80
+enum
+{
+	LD_FLAG = 0<<3,
+	LD_SPECIAL,
+	LD_TAG,
+	LD_S1TEXOFF,
+	LD_S1TOPTEX,
+	LD_S1BOTTEX,
+	LD_S1MIDTEX,
 
-// diff2 flags
-#define LD_S2TEXOFF      0x01
-#define LD_S2TOPTEX      0x02
-#define LD_S2BOTTEX      0x04
-#define LD_S2MIDTEX      0x08
-#define LD_ARGS          0x10
-#define LD_STRINGARGS    0x20
-#define LD__UNUSED       0x40
-#define LD_DIFF3         0x80
+	// diff2 flags
+	LD_S2TEXOFF = 1<<3,
+	LD_S2TOPTEX,
+	LD_S2BOTTEX,
+	LD_S2MIDTEX,
+	LD_ARGS,
+	LD_STRINGARGS,
+	LD__UNUSED,
 
-// diff3 flags
-#define LD_ACTIVATION    0x01
+	// diff3 flags
+	LD_ACTIVATION = 2<<3,
+
+	LD__MAX
+};
+
+// diff macros
+#define SETB(b) (diff[b >> 3] |= (1 << (b & 7)))
+#define DIFFNE(x, field, b) if (x->field != spawn##x->field) SETB(b)
+#define DIFFIF(x, field, b) if (x->field) SETB(b)
+
+// sync macros
+#define GETB(b) (diff[b >> 3] & (1 << (b & 7)))
+#define SYNCF(b, v) if (GETB(b)) SYNC(v)
+#define SYNCFB(b, v) if (GETB(b)) SYNCBOOLEAN(v)
 
 static boolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 {
@@ -1115,484 +1131,387 @@ static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
 	}
 }
 
-static void ArchiveSectors(savebuffer_t *save)
+static void DiffSectors(savebuffer_t *save, const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
 {
-	size_t i, j;
-	const sector_t *ss = sectors;
-	const sector_t *spawnss = spawnsectors;
-	UINT8 diff, diff2, diff3, diff4, diff5;
+	DIFFNE(ss, floorheight, SD_FLOORHT);
+	DIFFNE(ss, ceilingheight, SD_CEILHT);
+	DIFFNE(ss, floorpic, SD_FLOORPIC);
+	DIFFNE(ss, ceilingpic, SD_CEILPIC);
+	DIFFNE(ss, lightlevel, SD_LIGHT);
+	DIFFNE(ss, special, SD_SPECIAL);
+	if (ss->ffloors && CheckFFloorDiff(ss))
+		SETB(SD_FFLOORS);
 
-	for (i = 0; i < numsectors; i++, ss++, spawnss++)
+	DIFFNE(ss, floor_xoffs, SD_FXOFFS);
+	DIFFNE(ss, floor_yoffs, SD_FYOFFS);
+	DIFFNE(ss, ceiling_xoffs, SD_CXOFFS);
+	DIFFNE(ss, ceiling_yoffs, SD_CYOFFS);
+	DIFFNE(ss, floorpic_angle, SD_FLOORANG);
+	DIFFNE(ss, ceilingpic_angle, SD_CEILANG);
+	if (!Tag_Compare(&ss->tags, &spawnss->tags))
+		SETB(SD_TAG);
+
+	//DIFFNE(ss, ..., SD__UNUSED);
+	DIFFNE(ss, extra_colormap, SD_COLORMAP);
+	DIFFIF(ss, crumblestate, SD_CRUMBLESTATE);
+	if (ss->floorlightlevel != spawnss->floorlightlevel || ss->floorlightabsolute != spawnss->floorlightabsolute)
+		SETB(SD_FLOORLIGHT);
+	if (ss->ceilinglightlevel != spawnss->ceilinglightlevel || ss->ceilinglightabsolute != spawnss->ceilinglightabsolute)
+		SETB(SD_CEILLIGHT);
+	DIFFNE(ss, flags, SD_FLAG);
+	DIFFNE(ss, specialflags, SD_SPECIALFLAG);
+
+	DIFFNE(ss, damagetype, SD_DAMAGETYPE);
+	DIFFNE(ss, triggertag, SD_TRIGGERTAG);
+	DIFFNE(ss, triggerer, SD_TRIGGERER);
+	DIFFNE(ss, gravity, SD_GRAVITY);
+	DIFFNE(ss, action, SD_ACTION);
+	if (!P_SectorArgsEqual(ss, spawnss))
+		SETB(SD_ARGS);
+	if (!P_SectorStringArgsEqual(ss, spawnss))
+		SETB(SD_STRINGARGS);
+
+	DIFFNE(ss, activation, SD_ACTIVATION);
+	if (/*ss->botController.trick != spawnss->botController.trick
+		||*/ss->botController.flags != spawnss->botController.flags
+		|| ss->botController.forceAngle != spawnss->botController.forceAngle)
 	{
-		diff = diff2 = diff3 = diff4 = diff5 = 0;
-		if (ss->floorheight != spawnss->floorheight)
-			diff |= SD_FLOORHT;
-		if (ss->ceilingheight != spawnss->ceilingheight)
-			diff |= SD_CEILHT;
-		//
-		// flats
-		//
-		if (ss->floorpic != spawnss->floorpic)
-			diff |= SD_FLOORPIC;
-		if (ss->ceilingpic != spawnss->ceilingpic)
-			diff |= SD_CEILPIC;
+		SETB(SD_BOTCONTROLLER);
+	}
+}
 
-		if (ss->lightlevel != spawnss->lightlevel)
-			diff |= SD_LIGHT;
-		if (ss->special != spawnss->special)
-			diff |= SD_SPECIAL;
+static void SyncSectors(savebuffer_t *save)
+{
+	size_t i = 0, j;
+	sector_t *sec;
+	UINT8 diff[(SD__MAX>>3) + 1];
 
-		if (ss->floor_xoffs != spawnss->floor_xoffs)
-			diff2 |= SD_FXOFFS;
-		if (ss->floor_yoffs != spawnss->floor_yoffs)
-			diff2 |= SD_FYOFFS;
-		if (ss->ceiling_xoffs != spawnss->ceiling_xoffs)
-			diff2 |= SD_CXOFFS;
-		if (ss->ceiling_yoffs != spawnss->ceiling_yoffs)
-			diff2 |= SD_CYOFFS;
-		if (ss->floorpic_angle != spawnss->floorpic_angle)
-			diff2 |= SD_FLOORANG;
-		if (ss->ceilingpic_angle != spawnss->ceilingpic_angle)
-			diff2 |= SD_CEILANG;
-
-		if (!Tag_Compare(&ss->tags, &spawnss->tags))
-			diff2 |= SD_TAG;
-
-		if (ss->extra_colormap != spawnss->extra_colormap)
-			diff3 |= SD_COLORMAP;
-		if (ss->crumblestate)
-			diff3 |= SD_CRUMBLESTATE;
-
-		if (ss->floorlightlevel != spawnss->floorlightlevel || ss->floorlightabsolute != spawnss->floorlightabsolute)
-			diff3 |= SD_FLOORLIGHT;
-		if (ss->ceilinglightlevel != spawnss->ceilinglightlevel || ss->ceilinglightabsolute != spawnss->ceilinglightabsolute)
-			diff3 |= SD_CEILLIGHT;
-		if (ss->flags != spawnss->flags)
-			diff3 |= SD_FLAG;
-		if (ss->specialflags != spawnss->specialflags)
-			diff3 |= SD_SPECIALFLAG;
-		if (ss->damagetype != spawnss->damagetype)
-			diff4 |= SD_DAMAGETYPE;
-		if (ss->triggertag != spawnss->triggertag)
-			diff4 |= SD_TRIGGERTAG;
-		if (ss->triggerer != spawnss->triggerer)
-			diff4 |= SD_TRIGGERER;
-		if (ss->gravity != spawnss->gravity)
-			diff4 |= SD_GRAVITY;
-
-		if (ss->action != spawnss->action)
-			diff4 |= SD_ACTION;
-		if (!P_SectorArgsEqual(ss, spawnss))
-			diff4 |= SD_ARGS;
-		if (!P_SectorStringArgsEqual(ss, spawnss))
-			diff4 |= SD_STRINGARGS;
-		if (ss->activation != spawnss->activation)
-			diff5 |= SD_ACTIVATION;
-		if (/*ss->botController.trick != spawnss->botController.trick
-			||*/ss->botController.flags != spawnss->botController.flags
-			|| ss->botController.forceAngle != spawnss->botController.forceAngle)
+	for (;;)
+	{
+		memset(diff, 0, sizeof(diff));
+		if (save->write)
 		{
-			diff5 |= SD_BOTCONTROLLER;
+			if (++i == numsectors)
+				break;
+
+			DiffSectors(save, &sectors[i], &spawnsectors[i], diff);
+			for (j = sizeof(diff)-1; j > 0; j--)
+				if (diff[j])
+					diff[j-1] |= 0x80;
+			if (diff[0] == 0)
+				continue;
+
+			WRITEUINT16(save->p, i);
+		}
+		else
+		{
+			i = READUINT16(save->p);
+
+			if (i == 0xffff)
+				break;
+
+			if (i >= numsectors)
+				I_Error("Invalid sector number %zu from server (expected end at %zu)", i, numsectors);
 		}
 
-		if (ss->ffloors && CheckFFloorDiff(ss))
-			diff |= SD_FFLOORS;
+		sec = &sectors[i];
+		j = 0;
+		do
+			SYNC(diff[j])
+		while (diff[j++] & 0x80);
 
-		if (diff5)
-			diff4 |= SD_DIFF5;
-
-		if (diff4)
-			diff3 |= SD_DIFF4;
-
-		if (diff3)
-			diff2 |= SD_DIFF3;
-
-		if (diff2)
-			diff |= SD_DIFF2;
-
-		if (diff)
+		SYNCF(SD_FLOORHT, sec->floorheight);
+		SYNCF(SD_CEILHT, sec->ceilingheight);
+		if (GETB(SD_FLOORPIC))
 		{
-			WRITEUINT16(save->p, i);
-			WRITEUINT8(save->p, diff);
-			if (diff & SD_DIFF2)
-				WRITEUINT8(save->p, diff2);
-			if (diff2 & SD_DIFF3)
-				WRITEUINT8(save->p, diff3);
-			if (diff3 & SD_DIFF4)
-				WRITEUINT8(save->p, diff4);
-			if (diff4 & SD_DIFF5)
-				WRITEUINT8(save->p, diff5);
-			if (diff & SD_FLOORHT)
-				WRITEFIXED(save->p, ss->floorheight);
-			if (diff & SD_CEILHT)
-				WRITEFIXED(save->p, ss->ceilingheight);
-			if (diff & SD_FLOORPIC)
-				WRITEMEM(save->p, levelflats[ss->floorpic].name, 8);
-			if (diff & SD_CEILPIC)
-				WRITEMEM(save->p, levelflats[ss->ceilingpic].name, 8);
-			if (diff & SD_LIGHT)
-				WRITEINT16(save->p, ss->lightlevel);
-			if (diff & SD_SPECIAL)
-				WRITEINT16(save->p, ss->special);
-			if (diff2 & SD_FXOFFS)
-				WRITEFIXED(save->p, ss->floor_xoffs);
-			if (diff2 & SD_FYOFFS)
-				WRITEFIXED(save->p, ss->floor_yoffs);
-			if (diff2 & SD_CXOFFS)
-				WRITEFIXED(save->p, ss->ceiling_xoffs);
-			if (diff2 & SD_CYOFFS)
-				WRITEFIXED(save->p, ss->ceiling_yoffs);
-			if (diff2 & SD_FLOORANG)
-				WRITEANGLE(save->p, ss->floorpic_angle);
-			if (diff2 & SD_CEILANG)
-				WRITEANGLE(save->p, ss->ceilingpic_angle);
-			if (diff2 & SD_TAG)
+			if (save->write)
+				WRITEMEM(save->p, levelflats[sec->floorpic].name, 8);
+			else
 			{
-				WRITEUINT32(save->p, ss->tags.count);
-				for (j = 0; j < ss->tags.count; j++)
-					WRITEINT16(save->p, ss->tags.tags[j]);
+				sectors[i].floorpic = P_AddLevelFlatRuntime((char *)save->p);
+				save->p += 8;
 			}
+		}
+		if (GETB(SD_CEILPIC))
+		{
+			if (save->write)
+				WRITEMEM(save->p, levelflats[sec->ceilingpic].name, 8);
+			else
+			{
+				sectors[i].ceilingpic = P_AddLevelFlatRuntime((char *)save->p);
+				save->p += 8;
+			}
+		}
+		SYNCF(SD_LIGHT, sec->lightlevel);
+		SYNCF(SD_SPECIAL, sec->special);
+		if (GETB(SD_FFLOORS))
+		{
+			if (save->write)
+				ArchiveFFloors(save, sec);
+			else
+				UnArchiveFFloors(save, sec);
+		}
 
-			if (diff3 & SD_COLORMAP)
-				WRITEUINT32(save->p, CheckAddNetColormapToList(ss->extra_colormap));
+		SYNCF(SD_FXOFFS, sec->floor_xoffs);
+		SYNCF(SD_FYOFFS, sec->floor_yoffs);
+		SYNCF(SD_CXOFFS, sec->ceiling_xoffs);
+		SYNCF(SD_CYOFFS, sec->ceiling_yoffs);
+		SYNCF(SD_FLOORANG, sec->floorpic_angle);
+		SYNCF(SD_CEILANG, sec->ceilingpic_angle);
+		if (GETB(SD_TAG))
+		{
+			if (save->write)
+			{
+				WRITEUINT32(save->p, sec->tags.count);
+				for (j = 0; j < sec->tags.count; j++)
+					WRITEINT16(save->p, sec->tags.tags[j]);
+			}
+			else
+			{
+				size_t ncount = READUINT32(save->p);
+
+				// Remove entries from global lists.
+				for (j = 0; j < sectors[i].tags.count; j++)
+					Taggroup_Remove(tags_sectors, sectors[i].tags.tags[j], i);
+
+				// Reallocate if size differs.
+				if (ncount != sectors[i].tags.count)
+				{
+					sectors[i].tags.count = ncount;
+					sectors[i].tags.tags = Z_Realloc(sectors[i].tags.tags, ncount*sizeof(mtag_t), PU_LEVEL, NULL);
+				}
+
+				for (j = 0; j < ncount; j++)
+					sectors[i].tags.tags[j] = READINT16(save->p);
+
+				// Add new entries.
+				for (j = 0; j < sectors[i].tags.count; j++)
+					Taggroup_Add(tags_sectors, sectors[i].tags.tags[j], i);
+			}
+		}
+
+		if (GETB(SD_COLORMAP))
+		{
+			if (save->write)
+				WRITEUINT32(save->p, CheckAddNetColormapToList(sec->extra_colormap));
 					// returns existing index if already added, or appends to net_colormaps and returns new index
-			if (diff3 & SD_CRUMBLESTATE)
-				WRITEINT32(save->p, ss->crumblestate);
-			if (diff3 & SD_FLOORLIGHT)
-			{
-				WRITEINT16(save->p, ss->floorlightlevel);
-				WRITEUINT8(save->p, ss->floorlightabsolute);
-			}
-			if (diff3 & SD_CEILLIGHT)
-			{
-				WRITEINT16(save->p, ss->ceilinglightlevel);
-				WRITEUINT8(save->p, ss->ceilinglightabsolute);
-			}
-			if (diff3 & SD_FLAG)
-				WRITEUINT32(save->p, ss->flags);
-			if (diff3 & SD_SPECIALFLAG)
-				WRITEUINT32(save->p, ss->specialflags);
-			if (diff4 & SD_DAMAGETYPE)
-				WRITEUINT8(save->p, ss->damagetype);
-			if (diff4 & SD_TRIGGERTAG)
-				WRITEINT16(save->p, ss->triggertag);
-			if (diff4 & SD_TRIGGERER)
-				WRITEUINT8(save->p, ss->triggerer);
-			if (diff4 & SD_GRAVITY)
-				WRITEFIXED(save->p, ss->gravity);
+			else
+				sec->extra_colormap = GetNetColormapFromList(READUINT32(save->p));
+		}
+		SYNCF(SD_CRUMBLESTATE, sec->crumblestate);
+		SYNCF(SD_FLOORLIGHT, sec->floorlightlevel);
+		SYNCFB(SD_FLOORLIGHT, sec->floorlightabsolute);
+		SYNCF(SD_CEILLIGHT, sec->ceilinglightlevel);
+		SYNCFB(SD_CEILLIGHT, sec->ceilinglightabsolute);
+		SYNCF(SD_FLAG, sec->flags);
+		SYNCF(SD_SPECIALFLAG, sec->specialflags);
 
-			if (diff4 & SD_ACTION)
-				WRITEINT16(save->p, ss->action);
-			if (diff4 & SD_ARGS)
+		if (!save->write && GETB(SD_FLAG))
+			CheckForReverseGravity |= sec->flags & MSF_GRAVITYFLIP;
+
+		SYNCF(SD_DAMAGETYPE, sec->damagetype);
+		SYNCF(SD_TRIGGERTAG, sec->triggertag);
+		SYNCF(SD_TRIGGERER, sec->triggerer);
+		SYNCF(SD_GRAVITY, sec->gravity);
+		SYNCF(SD_ACTION, sec->action);
+		if (GETB(SD_ARGS))
+		{
+			for (j = 0; j < NUM_SCRIPT_ARGS; j++)
+				SYNC(sec->args[j]);
+		}
+		if (GETB(SD_STRINGARGS))
+		{
+			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 			{
-				for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-					WRITEINT32(save->p, ss->args[j]);
-			}
-			if (diff4 & SD_STRINGARGS)
-			{
-				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+				if (save->write)
 				{
 					size_t len, k;
 
-					if (!ss->stringargs[j])
+					if (!sec->stringargs[j])
 					{
 						WRITEINT32(save->p, 0);
 						continue;
 					}
 
-					len = strlen(ss->stringargs[j]);
+					len = strlen(sec->stringargs[j]);
 					WRITEINT32(save->p, len);
 					for (k = 0; k < len; k++)
-						WRITECHAR(save->p, ss->stringargs[j][k]);
+						WRITECHAR(save->p, sec->stringargs[j][k]);
+				}
+				else
+				{
+					size_t len = READINT32(save->p);
+					size_t k;
+
+					if (!len)
+					{
+						Z_Free(sectors[i].stringargs[j]);
+						sectors[i].stringargs[j] = NULL;
+						continue;
+					}
+
+					sectors[i].stringargs[j] = Z_Realloc(sectors[i].stringargs[j], len + 1, PU_LEVEL, NULL);
+					for (k = 0; k < len; k++)
+						sectors[i].stringargs[j][k] = READCHAR(save->p);
+					sectors[i].stringargs[j][len] = '\0';
 				}
 			}
-			if (diff5 & SD_ACTIVATION)
-				WRITEUINT32(save->p, ss->activation);
+		}
 
-			if (diff5 & SD_BOTCONTROLLER)
+		SYNCF(SD_ACTIVATION, sec->activation);
+		if (GETB(SD_BOTCONTROLLER))
+		{
+			if (save->write)
 			{
-				//WRITEUINT8(save->p, ss->botController.trick);
-				WRITEUINT32(save->p, ss->botController.flags);
-				WRITEANGLE(save->p, ss->botController.forceAngle);
+				//WRITEUINT8(save->p, sec->botController.trick);
+				WRITEUINT32(save->p, sec->botController.flags);
+				WRITEANGLE(save->p, sec->botController.forceAngle);
 			}
-
-			if (diff & SD_FFLOORS)
-				ArchiveFFloors(save, ss);
+			else
+			{
+				//sectors[i].botController.trick = READUINT8(save->p);
+				sectors[i].botController.flags = READUINT32(save->p);
+				sectors[i].botController.forceAngle = READANGLE(save->p);
+			}
 		}
 	}
 
-	WRITEUINT16(save->p, 0xffff);
+	if (save->write)
+		WRITEUINT16(save->p, 0xffff);
 }
 
-static void UnArchiveSectors(savebuffer_t *save)
+static void DiffLines(savebuffer_t *save, const line_t *li, const line_t *spawnli, UINT8 diff[])
 {
-	UINT16 i, j;
-	UINT8 diff, diff2, diff3, diff4, diff5;
+	const side_t *si, *spawnsi;
+
+	DIFFNE(li, flags, LD_FLAG);
+	DIFFNE(li, special, LD_SPECIAL);
+	if (!Tag_Compare(&li->tags, &spawnli->tags))
+		SETB(LD_TAG);
+
+	if (!P_LineArgsEqual(li, spawnli))
+		SETB(LD_ARGS);
+
+	if (!P_LineStringArgsEqual(li, spawnli))
+		SETB(LD_STRINGARGS);
+
+	DIFFNE(li, activation, LD_ACTIVATION);
+
+	if (li->sidenum[0] != 0xffff)
+	{
+		si = &sides[li->sidenum[0]];
+		spawnsi = &spawnsides[li->sidenum[0]];
+		DIFFNE(si, textureoffset, LD_S1TEXOFF);
+		//SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
+		DIFFNE(si, toptexture, LD_S1TOPTEX);
+		DIFFNE(si, bottomtexture, LD_S1BOTTEX);
+		DIFFNE(si, midtexture, LD_S1MIDTEX);
+	}
+	if (li->sidenum[1] != 0xffff)
+	{
+		si = &sides[li->sidenum[1]];
+		spawnsi = &spawnsides[li->sidenum[1]];
+		DIFFNE(si, textureoffset, LD_S2TEXOFF);
+		DIFFNE(si, toptexture, LD_S2TOPTEX);
+		DIFFNE(si, bottomtexture, LD_S2BOTTEX);
+		DIFFNE(si, midtexture, LD_S2MIDTEX);
+	}
+}
+
+static void SyncLines(savebuffer_t *save)
+{
+	size_t i = 0, j;
+	line_t *li;
+	side_t *si;
+	UINT8 diff[(LD__MAX>>3)+1];
+
 	for (;;)
 	{
-		i = READUINT16(save->p);
+		memset(diff, 0, sizeof(diff));
+		if (save->write)
+		{
+			if (++i == numlines)
+				break;
 
-		if (i == 0xffff)
-			break;
+			DiffLines(save, &lines[i], &spawnlines[i], diff);
+			for (j = sizeof(diff)-1; j > 0; j--)
+				if (diff[j])
+					diff[j-1] |= 0x80;
+			if (diff[0] == 0)
+				continue;
 
-		if (i > numsectors)
-			I_Error("Invalid sector number %u from server (expected end at %s)", i, sizeu1(numsectors));
-
-		diff = READUINT8(save->p);
-		if (diff & SD_DIFF2)
-			diff2 = READUINT8(save->p);
+			WRITEUINT16(save->p, i);
+		}
 		else
-			diff2 = 0;
-		if (diff2 & SD_DIFF3)
-			diff3 = READUINT8(save->p);
-		else
-			diff3 = 0;
-		if (diff3 & SD_DIFF4)
-			diff4 = READUINT8(save->p);
-		else
-			diff4 = 0;
-
-		if (diff4 & SD_DIFF5)
-			diff5 = READUINT8(save->p);
-		else
-			diff5 = 0;
-
-		if (diff & SD_FLOORHT)
-			sectors[i].floorheight = READFIXED(save->p);
-		if (diff & SD_CEILHT)
-			sectors[i].ceilingheight = READFIXED(save->p);
-		if (diff & SD_FLOORPIC)
 		{
-			sectors[i].floorpic = P_AddLevelFlatRuntime((char *)save->p);
-			save->p += 8;
-		}
-		if (diff & SD_CEILPIC)
-		{
-			sectors[i].ceilingpic = P_AddLevelFlatRuntime((char *)save->p);
-			save->p += 8;
-		}
-		if (diff & SD_LIGHT)
-			sectors[i].lightlevel = READINT16(save->p);
-		if (diff & SD_SPECIAL)
-			sectors[i].special = READINT16(save->p);
+			i = READUINT16(save->p);
 
-		if (diff2 & SD_FXOFFS)
-			sectors[i].floor_xoffs = READFIXED(save->p);
-		if (diff2 & SD_FYOFFS)
-			sectors[i].floor_yoffs = READFIXED(save->p);
-		if (diff2 & SD_CXOFFS)
-			sectors[i].ceiling_xoffs = READFIXED(save->p);
-		if (diff2 & SD_CYOFFS)
-			sectors[i].ceiling_yoffs = READFIXED(save->p);
-		if (diff2 & SD_FLOORANG)
-			sectors[i].floorpic_angle  = READANGLE(save->p);
-		if (diff2 & SD_CEILANG)
-			sectors[i].ceilingpic_angle = READANGLE(save->p);
-		if (diff2 & SD_TAG)
-		{
-			size_t ncount = READUINT32(save->p);
+			if (i == 0xffff)
+				break;
 
-			// Remove entries from global lists.
-			for (j = 0; j < sectors[i].tags.count; j++)
-				Taggroup_Remove(tags_sectors, sectors[i].tags.tags[j], i);
-
-			// Reallocate if size differs.
-			if (ncount != sectors[i].tags.count)
-			{
-				sectors[i].tags.count = ncount;
-				sectors[i].tags.tags = Z_Realloc(sectors[i].tags.tags, ncount*sizeof(mtag_t), PU_LEVEL, NULL);
-			}
-
-			for (j = 0; j < ncount; j++)
-				sectors[i].tags.tags[j] = READINT16(save->p);
-
-			// Add new entries.
-			for (j = 0; j < sectors[i].tags.count; j++)
-				Taggroup_Add(tags_sectors, sectors[i].tags.tags[j], i);
+			if (i >= numlines)
+				I_Error("Invalid line number %zu from server", i);
 		}
 
+		li = &lines[i];
+		j = 0;
+		do
+			SYNC(diff[j])
+		while (diff[j++] & 0x80);
 
-		if (diff3 & SD_COLORMAP)
-			sectors[i].extra_colormap = GetNetColormapFromList(READUINT32(save->p));
-		if (diff3 & SD_CRUMBLESTATE)
-			sectors[i].crumblestate = READINT32(save->p);
-		if (diff3 & SD_FLOORLIGHT)
+		SYNCF(LD_FLAG, li->flags);
+		SYNCF(LD_SPECIAL, li->special);
+		if (GETB(LD_TAG))
 		{
-			sectors[i].floorlightlevel = READINT16(save->p);
-			sectors[i].floorlightabsolute = READUINT8(save->p);
-		}
-		if (diff3 & SD_CEILLIGHT)
-		{
-			sectors[i].ceilinglightlevel = READINT16(save->p);
-			sectors[i].ceilinglightabsolute = READUINT8(save->p);
-		}
-		if (diff3 & SD_FLAG)
-		{
-			sectors[i].flags = READUINT32(save->p);
-			CheckForReverseGravity |= (sectors[i].flags & MSF_GRAVITYFLIP);
-		}
-		if (diff3 & SD_SPECIALFLAG)
-			sectors[i].specialflags = READUINT32(save->p);
-		if (diff4 & SD_DAMAGETYPE)
-			sectors[i].damagetype = READUINT8(save->p);
-		if (diff4 & SD_TRIGGERTAG)
-			sectors[i].triggertag = READINT16(save->p);
-		if (diff4 & SD_TRIGGERER)
-			sectors[i].triggerer = READUINT8(save->p);
-		if (diff4 & SD_GRAVITY)
-			sectors[i].gravity = READFIXED(save->p);
-
-		if (diff4 & SD_ACTION)
-			sectors[i].action = READINT16(save->p);
-		if (diff4 & SD_ARGS)
-		{
-			for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-				sectors[i].args[j] = READINT32(save->p);
-		}
-		if (diff4 & SD_STRINGARGS)
-		{
-			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-			{
-				size_t len = READINT32(save->p);
-				size_t k;
-
-				if (!len)
-				{
-					Z_Free(sectors[i].stringargs[j]);
-					sectors[i].stringargs[j] = NULL;
-					continue;
-				}
-
-				sectors[i].stringargs[j] = Z_Realloc(sectors[i].stringargs[j], len + 1, PU_LEVEL, NULL);
-				for (k = 0; k < len; k++)
-					sectors[i].stringargs[j][k] = READCHAR(save->p);
-				sectors[i].stringargs[j][len] = '\0';
-			}
-		}
-		if (diff5 & SD_ACTIVATION)
-			sectors[i].activation = READUINT32(save->p);
-
-		if (diff5 & SD_BOTCONTROLLER)
-		{
-			//sectors[i].botController.trick = READUINT8(save->p);
-			sectors[i].botController.flags = READUINT32(save->p);
-			sectors[i].botController.forceAngle = READANGLE(save->p);
-		}
-
-		if (diff & SD_FFLOORS)
-			UnArchiveFFloors(save, &sectors[i]);
-	}
-}
-
-static void ArchiveLines(savebuffer_t *save)
-{
-	size_t i, j;
-	const line_t *li = lines;
-	const line_t *spawnli = spawnlines;
-	const side_t *si;
-	const side_t *spawnsi;
-	UINT8 diff, diff2, diff3;
-
-	for (i = 0; i < numlines; i++, spawnli++, li++)
-	{
-		diff = diff2 = diff3 = 0;
-
-		if (li->flags != spawnli->flags)
-			diff |= LD_FLAG;
-
-		if (li->special != spawnli->special)
-			diff |= LD_SPECIAL;
-
-		if (!Tag_Compare(&li->tags, &spawnli->tags))
-			diff |= LD_TAG;
-
-		if (!P_LineArgsEqual(li, spawnli))
-			diff2 |= LD_ARGS;
-
-		if (!P_LineStringArgsEqual(li, spawnli))
-			diff2 |= LD_STRINGARGS;
-
-		if (li->activation != spawnli->activation)
-			diff3 |= LD_ACTIVATION;
-
-		if (li->sidenum[0] != 0xffff)
-		{
-			si = &sides[li->sidenum[0]];
-			spawnsi = &spawnsides[li->sidenum[0]];
-			if (si->textureoffset != spawnsi->textureoffset)
-				diff |= LD_S1TEXOFF;
-			//SoM: 4/1/2000: Some textures are colormaps. Don't worry about invalid textures.
-			if (si->toptexture != spawnsi->toptexture)
-				diff |= LD_S1TOPTEX;
-			if (si->bottomtexture != spawnsi->bottomtexture)
-				diff |= LD_S1BOTTEX;
-			if (si->midtexture != spawnsi->midtexture)
-				diff |= LD_S1MIDTEX;
-		}
-		if (li->sidenum[1] != 0xffff)
-		{
-			si = &sides[li->sidenum[1]];
-			spawnsi = &spawnsides[li->sidenum[1]];
-			if (si->textureoffset != spawnsi->textureoffset)
-				diff2 |= LD_S2TEXOFF;
-			if (si->toptexture != spawnsi->toptexture)
-				diff2 |= LD_S2TOPTEX;
-			if (si->bottomtexture != spawnsi->bottomtexture)
-				diff2 |= LD_S2BOTTEX;
-			if (si->midtexture != spawnsi->midtexture)
-				diff2 |= LD_S2MIDTEX;
-		}
-
-		if (diff3)
-			diff2 |= LD_DIFF3;
-
-		if (diff2)
-			diff |= LD_DIFF2;
-
-		if (diff)
-		{
-			WRITEINT16(save->p, i);
-			WRITEUINT8(save->p, diff);
-			if (diff & LD_DIFF2)
-				WRITEUINT8(save->p, diff2);
-			if (diff2 & LD_DIFF3)
-				WRITEUINT8(save->p, diff3);
-			if (diff & LD_FLAG)
-				WRITEUINT32(save->p, li->flags);
-			if (diff & LD_SPECIAL)
-				WRITEINT16(save->p, li->special);
-			if (diff & LD_TAG)
+			if (save->write)
 			{
 				WRITEUINT32(save->p, li->tags.count);
 				for (j = 0; j < li->tags.count; j++)
 					WRITEINT16(save->p, li->tags.tags[j]);
 			}
-
-			si = &sides[li->sidenum[0]];
-			if (diff & LD_S1TEXOFF)
-				WRITEFIXED(save->p, si->textureoffset);
-			if (diff & LD_S1TOPTEX)
-				WRITEINT32(save->p, si->toptexture);
-			if (diff & LD_S1BOTTEX)
-				WRITEINT32(save->p, si->bottomtexture);
-			if (diff & LD_S1MIDTEX)
-				WRITEINT32(save->p, si->midtexture);
-
-			si = &sides[li->sidenum[1]];
-			if (diff2 & LD_S2TEXOFF)
-				WRITEFIXED(save->p, si->textureoffset);
-			if (diff2 & LD_S2TOPTEX)
-				WRITEINT32(save->p, si->toptexture);
-			if (diff2 & LD_S2BOTTEX)
-				WRITEINT32(save->p, si->bottomtexture);
-			if (diff2 & LD_S2MIDTEX)
-				WRITEINT32(save->p, si->midtexture);
-			if (diff2 & LD_ARGS)
+			else
 			{
-				for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-					WRITEINT32(save->p, li->args[j]);
+				size_t ncount = READUINT32(save->p);
+
+				// Remove entries from global lists.
+				for (j = 0; j < lines[i].tags.count; j++)
+					Taggroup_Remove(tags_lines, lines[i].tags.tags[j], i);
+
+				// Reallocate if size differs.
+				if (ncount != lines[i].tags.count)
+				{
+					lines[i].tags.count = ncount;
+					lines[i].tags.tags = (mtag_t*)Z_Realloc(lines[i].tags.tags, ncount*sizeof(mtag_t), PU_LEVEL, NULL);
+				}
+
+				for (j = 0; j < ncount; j++)
+					lines[i].tags.tags[j] = READINT16(save->p);
+
+				// Add new entries.
+				for (j = 0; j < lines[i].tags.count; j++)
+					Taggroup_Add(tags_lines, lines[i].tags.tags[j], i);
 			}
-			if (diff2 & LD_STRINGARGS)
+		}
+
+		si = &sides[li->sidenum[0]];
+		SYNCF(LD_S1TEXOFF, si->textureoffset);
+		SYNCF(LD_S1TOPTEX, si->toptexture);
+		SYNCF(LD_S1BOTTEX, si->bottomtexture);
+		SYNCF(LD_S1MIDTEX, si->midtexture);
+
+		si = &sides[li->sidenum[1]];
+		SYNCF(LD_S2TEXOFF, si->textureoffset);
+		SYNCF(LD_S2TOPTEX, si->toptexture);
+		SYNCF(LD_S2BOTTEX, si->bottomtexture);
+		SYNCF(LD_S2MIDTEX, si->midtexture);
+		if (GETB(LD_ARGS))
+		{
+			for (j = 0; j < NUM_SCRIPT_ARGS; j++)
+				SYNC(li->args[j]);
+		}
+		if (GETB(LD_STRINGARGS))
+		{
+			if (save->write)
 			{
 				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 				{
@@ -1610,157 +1529,58 @@ static void ArchiveLines(savebuffer_t *save)
 						WRITECHAR(save->p, li->stringargs[j][k]);
 				}
 			}
-			if (diff3 & LD_ACTIVATION)
-				WRITEUINT32(save->p, li->activation);
-		}
-	}
-	WRITEUINT16(save->p, 0xffff);
-}
-
-static void UnArchiveLines(savebuffer_t *save)
-{
-	UINT16 i, j;
-	line_t *li;
-	side_t *si;
-	UINT8 diff, diff2, diff3;
-
-	for (;;)
-	{
-		i = READUINT16(save->p);
-
-		if (i == 0xffff)
-			break;
-		if (i > numlines)
-			I_Error("Invalid line number %u from server", i);
-
-		diff = READUINT8(save->p);
-		li = &lines[i];
-
-		if (diff & LD_DIFF2)
-			diff2 = READUINT8(save->p);
-		else
-			diff2 = 0;
-
-		if (diff2 & LD_DIFF3)
-			diff3 = READUINT8(save->p);
-		else
-			diff3 = 0;
-
-		if (diff & LD_FLAG)
-			li->flags = READUINT32(save->p);
-		if (diff & LD_SPECIAL)
-			li->special = READINT16(save->p);
-		if (diff & LD_TAG)
-		{
-			size_t ncount = READUINT32(save->p);
-
-			// Remove entries from global lists.
-			for (j = 0; j < lines[i].tags.count; j++)
-				Taggroup_Remove(tags_lines, lines[i].tags.tags[j], i);
-
-			// Reallocate if size differs.
-			if (ncount != lines[i].tags.count)
+			else
 			{
-				lines[i].tags.count = ncount;
-				lines[i].tags.tags = (mtag_t*)Z_Realloc(lines[i].tags.tags, ncount*sizeof(mtag_t), PU_LEVEL, NULL);
-			}
-
-			for (j = 0; j < ncount; j++)
-				lines[i].tags.tags[j] = READINT16(save->p);
-
-			// Add new entries.
-			for (j = 0; j < lines[i].tags.count; j++)
-				Taggroup_Add(tags_lines, lines[i].tags.tags[j], i);
-		}
-
-		si = &sides[li->sidenum[0]];
-		if (diff & LD_S1TEXOFF)
-			si->textureoffset = READFIXED(save->p);
-		if (diff & LD_S1TOPTEX)
-			si->toptexture = READINT32(save->p);
-		if (diff & LD_S1BOTTEX)
-			si->bottomtexture = READINT32(save->p);
-		if (diff & LD_S1MIDTEX)
-			si->midtexture = READINT32(save->p);
-
-		si = &sides[li->sidenum[1]];
-		if (diff2 & LD_S2TEXOFF)
-			si->textureoffset = READFIXED(save->p);
-		if (diff2 & LD_S2TOPTEX)
-			si->toptexture = READINT32(save->p);
-		if (diff2 & LD_S2BOTTEX)
-			si->bottomtexture = READINT32(save->p);
-		if (diff2 & LD_S2MIDTEX)
-			si->midtexture = READINT32(save->p);
-		if (diff2 & LD_ARGS)
-		{
-			for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-				li->args[j] = READINT32(save->p);
-		}
-		if (diff2 & LD_STRINGARGS)
-		{
-			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-			{
-				size_t len = READINT32(save->p);
-				size_t k;
-
-				if (!len)
+				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 				{
-					Z_Free(li->stringargs[j]);
-					li->stringargs[j] = NULL;
-					continue;
-				}
+					size_t len = READINT32(save->p);
+					size_t k;
 
-				li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
-				for (k = 0; k < len; k++)
-					li->stringargs[j][k] = READCHAR(save->p);
-				li->stringargs[j][len] = '\0';
+					if (!len)
+					{
+						Z_Free(li->stringargs[j]);
+						li->stringargs[j] = NULL;
+						continue;
+					}
+
+					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
+					for (k = 0; k < len; k++)
+						li->stringargs[j][k] = READCHAR(save->p);
+					li->stringargs[j][len] = '\0';
+				}
 			}
 		}
-		if (diff3 & LD_ACTIVATION)
-			li->activation = READUINT32(save->p);
 
+		SYNCF(LD_ACTIVATION, li->activation);
 	}
+
+	if (save->write)
+		WRITEUINT16(save->p, 0xffff);
 }
 
-static void P_NetArchiveWorld(savebuffer_t *save)
+static void P_NetSyncWorld(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	// initialize colormap vars because paranoia
-	ClearNetColormaps();
-
-	WRITEUINT32(save->p, ARCHIVEBLOCK_WORLD);
-
-	ArchiveSectors(save);
-	ArchiveLines(save);
-	R_ClearTextureNumCache(false);
-
-	TracyCZoneEnd(__zone);
-}
-
-static void P_NetUnArchiveWorld(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
-	UINT16 i;
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_WORLD)
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_WORLD) != ARCHIVEBLOCK_WORLD)
 		I_Error("Bad $$$.sav at archive block World");
 
 	// initialize colormap vars because paranoia
 	ClearNetColormaps();
 
 	// count the level's ffloors so that colormap loading can have an upper limit
-	for (i = 0; i < numsectors; i++)
-	{
-		ffloor_t *rover;
-		for (rover = sectors[i].ffloors; rover; rover = rover->next)
-			num_ffloors++;
-	}
+	if (!save->write)
+		for (size_t i = 0; i < numsectors; i++)
+		{
+			ffloor_t *rover;
+			for (rover = sectors[i].ffloors; rover; rover = rover->next)
+				num_ffloors++;
+		}
 
-	UnArchiveSectors(save);
-	UnArchiveLines(save);
+	SyncSectors(save);
+	SyncLines(save);
+	if (save->write)
+		R_ClearTextureNumCache(false);
 
 	TracyCZoneEnd(__zone);
 }
@@ -5590,7 +5410,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 
 	if (gamestate == GS_LEVEL)
 	{
-		P_NetArchiveWorld(save);
+		P_NetSyncWorld(save);
 		P_ArchivePolyObjects(save);
 		P_NetArchiveThinkers(save);
 		P_NetSyncSpecials(save);
@@ -5642,7 +5462,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 
 	if (gamestate == GS_LEVEL)
 	{
-		P_NetUnArchiveWorld(save);
+		P_NetSyncWorld(save);
 		P_UnArchivePolyObjects(save);
 		P_NetUnArchiveThinkers(save);
 		P_NetSyncSpecials(save);
