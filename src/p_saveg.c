@@ -3300,11 +3300,11 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 
 	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
 	{
-		numtubewaypoints[i] = P_SyncUINT16(save, numtubewaypoints[i]);
+		SYNC(numtubewaypoints[i]);
 		for (j = 0; j < numtubewaypoints[i]; j++)
 		{
 			mobjnum = tubewaypoints[i][j] ? tubewaypoints[i][j]->mobjnum : 0;
-			mobjnum = P_SyncUINT32(save, mobjnum);
+			SYNC(mobjnum);
 			if (!save->write)
 				tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
@@ -4961,7 +4961,7 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 		P_SetupLevelSky(skytex, true);
 
 	// Current global weather type
-	globalweather = P_SyncUINT8(save, globalweather);
+	SYNC(globalweather);
 
 	if (!save->write)
 	{
@@ -5074,9 +5074,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		I_Error("Bad $$$.sav at archive block Misc");
 
 	if (resending)
-		gametic = P_SyncUINT32(save, gametic);
+		SYNC(gametic);
 
-	gamemap = P_SyncINT16(save, gamemap);
+	SYNC(gamemap);
 
 	if (save->write)
 	{
@@ -5097,7 +5097,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		G_SetGamestate(READINT16(save->p));
 	}
 
-	gametype = P_SyncINT16(save, gametype);
+	SYNC(gametype);
 
 	if (save->write)
 	{
@@ -5118,10 +5118,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
 
-	tokenlist = P_SyncUINT32(save, tokenlist);
+	SYNC(tokenlist);
 
-	encoremode = P_SyncUINT8(save, encoremode);
-	mapmusrng = P_SyncUINT8(save, mapmusrng);
+	SYNCBOOLEAN(encoremode);
+	SYNC(mapmusrng);
 
 	if (!save->write)
 	{
@@ -5328,18 +5328,18 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		}
 	}
 
-	leveltime = P_SyncUINT32(save, leveltime);
-	lastmap = P_SyncINT16(save, lastmap);
-	bossdisabled = P_SyncUINT16(save, bossdisabled);
-	ringsactive = P_SyncUINT8(save, ringsactive);
-	stackingactive = P_SyncUINT8(save, stackingactive);
-	chainingactive = P_SyncUINT8(save, chainingactive);
-	slipdashactive = P_SyncUINT8(save, slipdashactive);
-	purpledriftactive = P_SyncUINT8(save, purpledriftactive);
-	slopeboostactive = P_SyncUINT8(save, slopeboostactive);
-	draftingactive = P_SyncUINT8(save, draftingactive);
-	airdropactive = P_SyncUINT8(save, airdropactive);
-	bumpsparkactive = P_SyncUINT8(save, bumpsparkactive);
+	SYNC(leveltime);
+	SYNC(lastmap);
+	SYNC(bossdisabled);
+	SYNCBOOLEAN(ringsactive);
+	SYNCBOOLEAN(stackingactive);
+	SYNCBOOLEAN(chainingactive);
+	SYNCBOOLEAN(slipdashactive);
+	SYNCBOOLEAN(purpledriftactive);
+	SYNCBOOLEAN(slopeboostactive);
+	SYNCBOOLEAN(draftingactive);
+	SYNCBOOLEAN(airdropactive);
+	SYNC(bumpsparkactive);
 
 	for (i = 0; i < 12; i++)
 	{
@@ -5348,11 +5348,11 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		votes[i] = P_SyncSINT8(save, votes[i]);
+		SYNC(votes[i]);
 
-	pickedvote = P_SyncSINT8(save, pickedvote);
+	SYNC(pickedvote);
 
-	emeralds = P_SyncUINT16(save, emeralds);
+	SYNC(emeralds);
 	if (save->write)
 	{
 		UINT8 globools = 0;
@@ -5369,92 +5369,92 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		stoppedclock = !!(globools & (1<<1));
 	}
 
-	token = P_SyncUINT32(save, token);
-	bluescore = P_SyncUINT32(save, bluescore);
-	redscore = P_SyncUINT32(save, redscore);
+	SYNC(token);
+	SYNC(bluescore);
+	SYNC(redscore);
 
-	skincolor_redteam = P_SyncUINT16(save, skincolor_redteam);
-	skincolor_blueteam = P_SyncUINT16(save, skincolor_blueteam);
-	skincolor_redring = P_SyncUINT16(save, skincolor_redring);
-	skincolor_bluering = P_SyncUINT16(save, skincolor_bluering);
+	SYNC(skincolor_redteam);
+	SYNC(skincolor_blueteam);
+	SYNC(skincolor_redring);
+	SYNC(skincolor_bluering);
 
-	modulothing = P_SyncINT32(save, modulothing);
+	SYNC(modulothing);
 
-	autobalance = P_SyncINT16(save, autobalance);
-	teamscramble = P_SyncINT16(save, teamscramble);
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		scrambleplayers[i] = P_SyncINT16(save, scrambleplayers[i]);
+	SYNC(autobalance);
+	SYNC(teamscramble);
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		scrambleteams[i] = P_SyncINT16(save, scrambleteams[i]);
+		SYNC(scrambleplayers[i]);
 
-	scrambletotal = P_SyncINT16(save, scrambletotal);
-	scramblecount = P_SyncINT16(save, scramblecount);
+	for (i = 0; i < MAXPLAYERS; i++)
+		SYNC(scrambleteams[i]);
 
-	racecountdown = P_SyncUINT32(save, racecountdown);
-	exitcountdown = P_SyncUINT32(save, exitcountdown);
+	SYNC(scrambletotal);
+	SYNC(scramblecount);
+
+	SYNC(racecountdown);
+	SYNC(exitcountdown);
 
 	// exitcondition_t
-	g_exit.losing = P_SyncUINT8(save, g_exit.losing);
-	g_exit.retry = P_SyncUINT8(save, g_exit.retry);
-	g_exit.hasfinished = P_SyncUINT8(save, g_exit.hasfinished);
+	SYNC(g_exit.losing);
+	SYNC(g_exit.retry);
+	SYNC(g_exit.hasfinished);
 
-	gravity = P_SyncFixed(save, gravity);
-	mapobjectscale = P_SyncFixed(save, mapobjectscale);
+	SYNC(gravity);
+	SYNC(mapobjectscale);
 
 	// SRB2kart
-	nummapboxes = P_SyncINT32(save, nummapboxes);
-	numgotboxes = P_SyncINT32(save, numgotboxes);
-	numtargets = P_SyncUINT8(save, numtargets);
-	itembreaker = P_SyncUINT8(save, itembreaker);
+	SYNC(nummapboxes);
+	SYNC(numgotboxes);
+	SYNC(numtargets);
+	SYNC(itembreaker);
 
-	gamespeed = P_SyncUINT8(save, gamespeed);
-	numlaps = P_SyncUINT8(save, numlaps);
-	franticitems = P_SyncUINT8(save, franticitems);
-	comeback = P_SyncUINT8(save, comeback);
+	SYNC(gamespeed);
+	SYNC(numlaps);
+	SYNC(franticitems);
+	SYNC(comeback);
 
-	speedscramble = P_SyncSINT8(save, speedscramble);
-	encorescramble = P_SyncSINT8(save, encorescramble);
+	SYNC(speedscramble);
+	SYNC(encorescramble);
 
 	// WANTED system
-	mostwanted = P_SyncSINT8(save, mostwanted);
+	SYNC(mostwanted);
 	for (i = 0; i < 4; i++)
-		battlewanted[i] = P_SyncSINT8(save, battlewanted[i]);
+		SYNC(battlewanted[i]);
 
-	wantedcalcdelay = P_SyncUINT32(save, wantedcalcdelay);
-	indirectitemcooldown = P_SyncUINT32(save, indirectitemcooldown);
-	hyubgone = P_SyncUINT32(save, hyubgone);
-	mapreset = P_SyncUINT32(save, mapreset);
+	SYNC(wantedcalcdelay);
+	SYNC(indirectitemcooldown);
+	SYNC(hyubgone);
+	SYNC(mapreset);
 
-	spectateGriefed = P_SyncUINT8(save, spectateGriefed);
+	SYNC(spectateGriefed);
 
-	thwompsactive = P_SyncUINT8(save, thwompsactive);
-	lastLowestLap = P_SyncUINT8(save, lastLowestLap);
-	spbplace = P_SyncSINT8(save, spbplace);
-	startedInFreePlay = P_SyncUINT8(save, startedInFreePlay);
+	SYNCBOOLEAN(thwompsactive);
+	SYNC(lastLowestLap);
+	SYNC(spbplace);
+	SYNCBOOLEAN(startedInFreePlay);
 
-	introtime = P_SyncUINT32(save, introtime);
-	starttime = P_SyncUINT32(save, starttime);
+	SYNC(introtime);
+	SYNC(starttime);
 
-	hyudorotime = P_SyncINT32(save, hyudorotime);
-	stealtime = P_SyncINT32(save, stealtime);
-	sneakertime = P_SyncINT32(save, sneakertime);
-	waterpaneltime = P_SyncINT32(save, waterpaneltime);
-	itemtime = P_SyncINT32(save, itemtime);
-	bubbletime = P_SyncINT32(save, bubbletime);
-	comebacktime = P_SyncINT32(save, comebacktime);
-	bumptime = P_SyncINT32(save, bumptime);
-	greasetics = P_SyncINT32(save, greasetics);
-	wipeoutslowtime = P_SyncINT32(save, wipeoutslowtime);
-	wantedreduce = P_SyncINT32(save, wantedreduce);
-	wantedfrequency = P_SyncINT32(save, wantedfrequency);
+	SYNC(hyudorotime);
+	SYNC(stealtime);
+	SYNC(sneakertime);
+	SYNC(waterpaneltime);
+	SYNC(itemtime);
+	SYNC(bubbletime);
+	SYNC(comebacktime);
+	SYNC(bumptime);
+	SYNC(greasetics);
+	SYNC(wipeoutslowtime);
+	SYNC(wantedreduce);
+	SYNC(wantedfrequency);
 
-	timelimitintics = P_SyncUINT32(save, timelimitintics);
-	extratimeintics = P_SyncUINT32(save, extratimeintics);
-	secretextratime = P_SyncUINT32(save, secretextratime);
+	SYNC(timelimitintics);
+	SYNC(extratimeintics);
+	SYNC(secretextratime);
 
-	paused = P_SyncUINT8(save, paused);
+	SYNC(paused);
 
 	if (save->write)
 	{
@@ -5490,7 +5490,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		}
 	}
 
-	cht_debug = P_SyncUINT32(save, cht_debug);
+	SYNC(cht_debug);
 
 	return true;
 	TracyCZoneEnd(__zone);
