@@ -5100,211 +5100,51 @@ static inline void P_UnArchiveSPGame(savebuffer_t *save, INT16 mapoverride)
 	TracyCZoneEnd(__zone);
 }
 
-static void P_NetArchiveMisc(savebuffer_t *save, boolean resending)
+static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 {
 	TracyCZone(__zone, true);
 
-	size_t i;
+	size_t i, j;
+	size_t numTasks;
+	const INT16 prevgamemap = gamemap;
 
-	WRITEUINT32(save->p, ARCHIVEBLOCK_MISC);
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_MISC) != ARCHIVEBLOCK_MISC)
+		I_Error("Bad $$$.sav at archive block Misc");
 
 	if (resending)
-		WRITEUINT32(save->p, gametic);
-	WRITEINT16(save->p, gamemap);
+		gametic = P_SyncUINT32(save, gametic);
 
-	if (gamestate != GS_LEVEL)
-		WRITEINT16(save->p, GS_WAITINGPLAYERS); // nice hack to put people back into waitingplayers
+	gamemap = P_SyncINT16(save, gamemap);
+
+	if (save->write)
+	{
+		if (gamestate != GS_LEVEL)
+			WRITEINT16(save->p, GS_WAITINGPLAYERS); // nice hack to put people back into waitingplayers
+		else
+			WRITEINT16(save->p, gamestate);
+	}
 	else
-		WRITEINT16(save->p, gamestate);
-	WRITEINT16(save->p, gametype);
+	{
+		if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
+			I_Error("P_NetUnArchiveMisc: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
 
+		// tell the sound code to reset the music since we're skipping what
+		// normally sets this flag
+		if (!resending)
+			mapmusflags |= MUSIC_RELOADRESET;
+		G_SetGamestate(READINT16(save->p));
+	}
+
+	gametype = P_SyncINT16(save, gametype);
+
+	if (save->write)
 	{
 		UINT32 pig = 0;
 		for (i = 0; i < MAXPLAYERS; i++)
 			pig |= (playeringame[i] != 0)<<i;
 		WRITEUINT32(save->p, pig);
 	}
-
-	WRITEUINT32(save->p, P_GetRandSeed());
-
-	WRITEUINT32(save->p, tokenlist);
-
-	WRITEUINT8(save->p, encoremode);
-	WRITEUINT8(save->p, mapmusrng);
-
-	WRITEUINT32(save->p, leveltime);
-	WRITEINT16(save->p, lastmap);
-	WRITEUINT16(save->p, bossdisabled);
-	WRITEUINT8(save->p, ringsactive);
-	WRITEUINT8(save->p, stackingactive);
-	WRITEUINT8(save->p, chainingactive);
-	WRITEUINT8(save->p, slipdashactive);
-	WRITEUINT8(save->p, purpledriftactive);
-	WRITEUINT8(save->p, slopeboostactive);
-	WRITEUINT8(save->p, draftingactive);
-	WRITEUINT8(save->p, airdropactive);
-	WRITEUINT8(save->p, bumpsparkactive);
-
-	for (i = 0; i < 12; i++)
-	{
-		WRITEINT16(save->p, votelevels[i][0]);
-		WRITEINT16(save->p, votelevels[i][1]);
-	}
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		WRITESINT8(save->p, votes[i]);
-
-	WRITESINT8(save->p, pickedvote);
-
-	WRITEUINT16(save->p, emeralds);
-	{
-		UINT8 globools = 0;
-		if (stagefailed)
-			globools |= 1;
-		if (stoppedclock)
-			globools |= (1<<1);
-		WRITEUINT8(save->p, globools);
-	}
-
-	WRITEUINT32(save->p, token);
-	WRITEUINT32(save->p, bluescore);
-	WRITEUINT32(save->p, redscore);
-
-	WRITEUINT16(save->p, skincolor_redteam);
-	WRITEUINT16(save->p, skincolor_blueteam);
-	WRITEUINT16(save->p, skincolor_redring);
-	WRITEUINT16(save->p, skincolor_bluering);
-
-	WRITEINT32(save->p, modulothing);
-
-	WRITEINT16(save->p, autobalance);
-	WRITEINT16(save->p, teamscramble);
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		WRITEINT16(save->p, scrambleplayers[i]);
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		WRITEINT16(save->p, scrambleteams[i]);
-
-	WRITEINT16(save->p, scrambletotal);
-	WRITEINT16(save->p, scramblecount);
-
-	WRITEUINT32(save->p, racecountdown);
-	WRITEUINT32(save->p, exitcountdown);
-
-	// exitcondition_t
-	WRITEUINT8(save->p, g_exit.losing);
-	WRITEUINT8(save->p, g_exit.retry);
-	WRITEUINT8(save->p, g_exit.hasfinished);
-
-	WRITEFIXED(save->p, gravity);
-	WRITEFIXED(save->p, mapobjectscale);
-
-	// SRB2kart
-	WRITEINT32(save->p, nummapboxes);
-	WRITEINT32(save->p, numgotboxes);
-	WRITEUINT8(save->p, numtargets);
-	WRITEUINT8(save->p, itembreaker);
-
-	WRITEUINT8(save->p, gamespeed);
-	WRITEUINT8(save->p, numlaps);
-	WRITEUINT8(save->p, franticitems);
-	WRITEUINT8(save->p, comeback);
-
-	WRITESINT8(save->p, speedscramble);
-	WRITESINT8(save->p, encorescramble);
-
-
-	// WANTED system
-	WRITESINT8(save->p, mostwanted);
-	for (i = 0; i < 4; i++)
-		WRITESINT8(save->p, battlewanted[i]);
-
-	WRITEUINT32(save->p, wantedcalcdelay);
-	WRITEUINT32(save->p, indirectitemcooldown);
-	WRITEUINT32(save->p, hyubgone);
-	WRITEUINT32(save->p, mapreset);
-
-	WRITEUINT8(save->p, spectateGriefed);
-
-	WRITEUINT8(save->p, thwompsactive);
-	WRITEUINT8(save->p, lastLowestLap);
-	WRITESINT8(save->p, spbplace);
-	WRITEUINT8(save->p, startedInFreePlay);
-
-	WRITEUINT32(save->p, introtime);
-	WRITEUINT32(save->p, starttime);
-
-	WRITEINT32(save->p, hyudorotime);
-	WRITEINT32(save->p, stealtime);
-	WRITEINT32(save->p, sneakertime);
-	WRITEINT32(save->p, waterpaneltime);
-	WRITEINT32(save->p, itemtime);
-	WRITEINT32(save->p, bubbletime);
-	WRITEINT32(save->p, comebacktime);
-	WRITEINT32(save->p, bumptime);
-	WRITEINT32(save->p, greasetics);
-	WRITEINT32(save->p, wipeoutslowtime);
-	WRITEINT32(save->p, wantedreduce);
-	WRITEINT32(save->p, wantedfrequency);
-
-	WRITEUINT32(save->p, timelimitintics);
-	WRITEUINT32(save->p, extratimeintics);
-	WRITEUINT32(save->p, secretextratime);
-
-	// Is it paused?
-	if (paused)
-		WRITEUINT8(save->p, 0x2f);
 	else
-		WRITEUINT8(save->p, 0x2e);
-
-	// Only the server uses this, but it
-	// needs synched for remote admins anyway.
-	WRITEUINT32(save->p, schedule_len);
-	for (i = 0; i < schedule_len; i++)
-	{
-		scheduleTask_t *task = schedule[i];
-		WRITEINT16(save->p, task->basetime);
-		WRITEINT16(save->p, task->timer);
-		WRITESTRING(save->p, task->command);
-	}
-
-	WRITEUINT32(save->p, cht_debug);
-
-	TracyCZoneEnd(__zone);
-}
-
-FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, boolean reloading)
-{
-	TracyCZone(__zone, true);
-
-	size_t i, j;
-	size_t numTasks;
-
-	const INT16 prevgamemap = gamemap;
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_MISC)
-		I_Error("Bad $$$.sav at archive block Misc");
-
-	if (reloading)
-		gametic = READUINT32(save->p);
-
-	gamemap = READINT16(save->p);
-
-	// gamemap changed; we assume that its map header is always valid,
-	// so make it so
-	if (!gamemap || gamemap > nummapheaders || !mapheaderinfo[gamemap-1])
-		I_Error("P_NetUnArchiveMisc: Internal map ID %d not found (nummapheaders = %d)", gamemap-1, nummapheaders);
-
-	// tell the sound code to reset the music since we're skipping what
-	// normally sets this flag
-	if (!reloading)
-		mapmusflags |= MUSIC_RELOADRESET;
-
-	G_SetGamestate(READINT16(save->p));
-
-	gametype = READINT16(save->p);
-
 	{
 		UINT32 pig = READUINT32(save->p);
 		for (i = 0; i < MAXPLAYERS; i++)
@@ -5314,359 +5154,384 @@ FUNCINLINE static ATTRINLINE boolean P_NetUnArchiveMisc(savebuffer_t *save, bool
 		}
 	}
 
-	P_SetRandSeed(READUINT32(save->p));
+	P_SetRandSeed(P_SyncUINT32(save, P_GetRandSeed()));
 
-	tokenlist = READUINT32(save->p);
+	tokenlist = P_SyncUINT32(save, tokenlist);
 
-	encoremode = (boolean)READUINT8(save->p);
-	
-	mapmusrng = READUINT8(save->p);
+	encoremode = P_SyncUINT8(save, encoremode);
+	mapmusrng = P_SyncUINT8(save, mapmusrng);
 
-	// Only reload the level during a gamestate reload
-	// if the map is horribly mismatched somehow. Minor
-	// differences in level state are already handled
-	// by other parts of the reload, so doing this
-	// on *every* reload wastes lots of time that we
-	// will need for rollback down the road.
-	if (!reloading || prevgamemap != gamemap)
+	if (!save->write)
 	{
-		if (!P_LoadLevel(true, reloading))
+		// Only reload the level during a gamestate reload
+		// if the map is horribly mismatched somehow. Minor
+		// differences in level state are already handled
+		// by other parts of the reload, so doing this
+		// on *every* reload wastes lots of time that we
+		// will need for rollback down the road.
+		if (!resending || prevgamemap != gamemap)
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
-			return false;
+			if (!P_LoadLevel(true, resending))
+			{
+				CONS_Alert(CONS_ERROR, M_GetText("Can't load the level!\n"));
+				return false;
+			}
+		}
+		else
+		{
+			// Only reload stuff that can we modify in the save states themselves.
+			// This is still orders of magnitude faster than a full level reload.
+			// Considered memcpy, but it's complicated -- save that for local saves.
+
+			sector_t *ss = sectors;
+			sector_t *spawnss = spawnsectors;
+			for (i = 0; i < numsectors; i++, ss++, spawnss++)
+			{
+				ss->floorheight = spawnss->floorheight;
+				ss->ceilingheight = spawnss->ceilingheight;
+				ss->floorpic = spawnss->floorpic;
+				ss->ceilingpic = spawnss->ceilingpic;
+				ss->lightlevel = spawnss->lightlevel;
+				ss->special = spawnss->special;
+				ss->floor_xoffs = spawnss->floor_xoffs;
+				ss->floor_yoffs = spawnss->floor_yoffs;
+				ss->ceiling_xoffs = spawnss->ceiling_xoffs;
+				ss->ceiling_yoffs = spawnss->ceiling_yoffs;
+				ss->floorpic_angle = spawnss->floorpic_angle;
+				ss->ceilingpic_angle = spawnss->ceilingpic_angle;
+
+				if (Tag_Compare(&ss->tags, &spawnss->tags) == false)
+				{
+					if (spawnss->tags.count)
+					{
+						ss->tags.count = spawnss->tags.count;
+						ss->tags.tags =
+							memcpy(
+								Z_Realloc(
+									ss->tags.tags,
+									spawnss->tags.count * sizeof(mtag_t),
+									PU_LEVEL,
+									NULL
+								),
+								spawnss->tags.tags,
+								spawnss->tags.count * sizeof(mtag_t)
+							);
+					}
+					else
+					{
+						ss->tags.count = 0;
+						Z_Free(ss->tags.tags);
+					}
+				}
+
+				ss->extra_colormap = ss->spawn_extra_colormap;
+				ss->crumblestate = CRUMBLE_NONE;
+				ss->floorlightlevel = spawnss->floorlightlevel;
+				ss->floorlightabsolute = spawnss->floorlightabsolute;
+				ss->ceilinglightlevel = spawnss->ceilinglightlevel;
+				ss->ceilinglightabsolute = spawnss->ceilinglightabsolute;
+				ss->flags = spawnss->flags;
+				ss->specialflags = spawnss->specialflags;
+				ss->damagetype = spawnss->damagetype;
+				ss->triggertag = spawnss->triggertag;
+				ss->triggerer = spawnss->triggerer;
+				ss->gravity = spawnss->gravity;
+				ss->action = spawnss->action;
+
+				memcpy(ss->args, spawnss->args, NUM_SCRIPT_ARGS * sizeof(*ss->args));
+
+				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+				{
+					size_t len = 0;
+
+					if (spawnss->stringargs[j])
+					{
+						len = strlen(spawnss->stringargs[j]);
+					}
+
+					if (!len)
+					{
+						Z_Free(ss->stringargs[j]);
+						ss->stringargs[j] = NULL;
+					}
+					else
+					{
+						ss->stringargs[j] = Z_Realloc(ss->stringargs[j], len + 1, PU_LEVEL, NULL);
+						M_Memcpy(ss->stringargs[j], spawnss->stringargs[j], len);
+						ss->stringargs[j][len] = '\0';
+					}
+				}
+
+				ss->activation = spawnss->activation;
+				ss->botController.flags = spawnss->botController.flags;
+				ss->botController.forceAngle = spawnss->botController.forceAngle;
+
+				if (ss->ffloors)
+				{
+					ffloor_t *rover;
+					for (rover = ss->ffloors; rover; rover = rover->next)
+					{
+						rover->fofflags = rover->spawnflags;
+						rover->alpha = rover->spawnalpha;
+					}
+				}
+			}
+
+			line_t *li = lines;
+			line_t *spawnli = spawnlines;
+			side_t *si = NULL;
+			side_t *spawnsi = NULL;
+			for (i = 0; i < numlines; i++, spawnli++, li++)
+			{
+				li->flags = spawnli->flags;
+				li->special = spawnli->special;
+				li->callcount = 0;
+
+				if (Tag_Compare(&li->tags, &spawnli->tags) == false)
+				{
+					if (spawnli->tags.count)
+					{
+						li->tags.count = spawnli->tags.count;
+						li->tags.tags =
+							memcpy(
+								Z_Realloc(
+									li->tags.tags,
+									spawnli->tags.count * sizeof(mtag_t),
+									PU_LEVEL,
+									NULL
+								),
+								spawnli->tags.tags,
+								spawnli->tags.count * sizeof(mtag_t)
+							);
+
+					}
+					else
+					{
+						li->tags.count = 0;
+						Z_Free(li->tags.tags);
+					}
+				}
+
+				memcpy(li->args, spawnli->args, NUM_SCRIPT_ARGS * sizeof(*li->args));
+
+				for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
+				{
+					size_t len = 0;
+
+					if (spawnli->stringargs[j])
+					{
+						len = strlen(spawnli->stringargs[j]);
+					}
+
+					if (!len)
+					{
+						Z_Free(li->stringargs[j]);
+						li->stringargs[j] = NULL;
+					}
+					else
+					{
+						li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
+						M_Memcpy(li->stringargs[j], spawnli->stringargs[j], len);
+						li->stringargs[j][len] = '\0';
+					}
+				}
+
+				li->executordelay = spawnli->executordelay;
+				li->activation = spawnli->activation;
+
+				if (li->sidenum[0] != 0xffff)
+				{
+					si = &sides[li->sidenum[0]];
+					spawnsi = &spawnsides[li->sidenum[0]];
+
+					si->textureoffset = spawnsi->textureoffset;
+					si->toptexture = spawnsi->toptexture;
+					si->bottomtexture = spawnsi->bottomtexture;
+					si->midtexture = spawnsi->midtexture;
+				}
+
+				if (li->sidenum[1] != 0xffff)
+				{
+					si = &sides[li->sidenum[1]];
+					spawnsi = &spawnsides[li->sidenum[1]];
+
+					si->textureoffset = spawnsi->textureoffset;
+					si->toptexture = spawnsi->toptexture;
+					si->bottomtexture = spawnsi->bottomtexture;
+					si->midtexture = spawnsi->midtexture;
+				}
+			}
+
+			Taglist_InitGlobalTables();
 		}
 	}
-	else
-	{
-		// Only reload stuff that can we modify in the save states themselves.
-		// This is still orders of magnitude faster than a full level reload.
-		// Considered memcpy, but it's complicated -- save that for local saves.
 
-		sector_t *ss = sectors;
-		sector_t *spawnss = spawnsectors;
-		for (i = 0; i < numsectors; i++, ss++, spawnss++)
-		{
-			ss->floorheight = spawnss->floorheight;
-			ss->ceilingheight = spawnss->ceilingheight;
-			ss->floorpic = spawnss->floorpic;
-			ss->ceilingpic = spawnss->ceilingpic;
-			ss->lightlevel = spawnss->lightlevel;
-			ss->special = spawnss->special;
-			ss->floor_xoffs = spawnss->floor_xoffs;
-			ss->floor_yoffs = spawnss->floor_yoffs;
-			ss->ceiling_xoffs = spawnss->ceiling_xoffs;
-			ss->ceiling_yoffs = spawnss->ceiling_yoffs;
-			ss->floorpic_angle = spawnss->floorpic_angle;
-			ss->ceilingpic_angle = spawnss->ceilingpic_angle;
-
-			if (Tag_Compare(&ss->tags, &spawnss->tags) == false)
-			{
-				if (spawnss->tags.count)
-				{
-					ss->tags.count = spawnss->tags.count;
-					ss->tags.tags =
-						memcpy(
-							Z_Realloc(
-								ss->tags.tags,
-								spawnss->tags.count * sizeof(mtag_t),
-								PU_LEVEL,
-								NULL
-							),
-							spawnss->tags.tags,
-							spawnss->tags.count * sizeof(mtag_t)
-						);
-				}
-				else
-				{
-					ss->tags.count = 0;
-					Z_Free(ss->tags.tags);
-				}
-			}
-
-			ss->extra_colormap = ss->spawn_extra_colormap;
-			ss->crumblestate = CRUMBLE_NONE;
-			ss->floorlightlevel = spawnss->floorlightlevel;
-			ss->floorlightabsolute = spawnss->floorlightabsolute;
-			ss->ceilinglightlevel = spawnss->ceilinglightlevel;
-			ss->ceilinglightabsolute = spawnss->ceilinglightabsolute;
-			ss->flags = spawnss->flags;
-			ss->specialflags = spawnss->specialflags;
-			ss->damagetype = spawnss->damagetype;
-			ss->triggertag = spawnss->triggertag;
-			ss->triggerer = spawnss->triggerer;
-			ss->gravity = spawnss->gravity;
-			ss->action = spawnss->action;
-
-			memcpy(ss->args, spawnss->args, NUM_SCRIPT_ARGS * sizeof(*ss->args));
-
-			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-			{
-				size_t len = 0;
-
-				if (spawnss->stringargs[j])
-				{
-					len = strlen(spawnss->stringargs[j]);
-				}
-
-				if (!len)
-				{
-					Z_Free(ss->stringargs[j]);
-					ss->stringargs[j] = NULL;
-				}
-				else
-				{
-					ss->stringargs[j] = Z_Realloc(ss->stringargs[j], len + 1, PU_LEVEL, NULL);
-					M_Memcpy(ss->stringargs[j], spawnss->stringargs[j], len);
-					ss->stringargs[j][len] = '\0';
-				}
-			}
-
-			ss->activation = spawnss->activation;
-			ss->botController.flags = spawnss->botController.flags;
-			ss->botController.forceAngle = spawnss->botController.forceAngle;
-
-			if (ss->ffloors)
-			{
-				ffloor_t *rover;
-				for (rover = ss->ffloors; rover; rover = rover->next)
-				{
-					rover->fofflags = rover->spawnflags;
-					rover->alpha = rover->spawnalpha;
-				}
-			}
-		}
-
-		line_t *li = lines;
-		line_t *spawnli = spawnlines;
-		side_t *si = NULL;
-		side_t *spawnsi = NULL;
-		for (i = 0; i < numlines; i++, spawnli++, li++)
-		{
-			li->flags = spawnli->flags;
-			li->special = spawnli->special;
-			li->callcount = 0;
-
-			if (Tag_Compare(&li->tags, &spawnli->tags) == false)
-			{
-				if (spawnli->tags.count)
-				{
-					li->tags.count = spawnli->tags.count;
-					li->tags.tags =
-						memcpy(
-							Z_Realloc(
-								li->tags.tags,
-								spawnli->tags.count * sizeof(mtag_t),
-								PU_LEVEL,
-								NULL
-							),
-							spawnli->tags.tags,
-							spawnli->tags.count * sizeof(mtag_t)
-						);
-					
-				}
-				else
-				{
-					li->tags.count = 0;
-					Z_Free(li->tags.tags);
-				}
-			}
-
-			memcpy(li->args, spawnli->args, NUM_SCRIPT_ARGS * sizeof(*li->args));
-
-			for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-			{
-				size_t len = 0;
-
-				if (spawnli->stringargs[j])
-				{
-					len = strlen(spawnli->stringargs[j]);
-				}
-
-				if (!len)
-				{
-					Z_Free(li->stringargs[j]);
-					li->stringargs[j] = NULL;
-				}
-				else
-				{
-					li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
-					M_Memcpy(li->stringargs[j], spawnli->stringargs[j], len);
-					li->stringargs[j][len] = '\0';
-				}
-			}
-
-			li->executordelay = spawnli->executordelay;
-			li->activation = spawnli->activation;
-
-			if (li->sidenum[0] != 0xffff)
-			{
-				si = &sides[li->sidenum[0]];
-				spawnsi = &spawnsides[li->sidenum[0]];
-
-				si->textureoffset = spawnsi->textureoffset;
-				si->toptexture = spawnsi->toptexture;
-				si->bottomtexture = spawnsi->bottomtexture;
-				si->midtexture = spawnsi->midtexture;
-			}
-
-			if (li->sidenum[1] != 0xffff)
-			{
-				si = &sides[li->sidenum[1]];
-				spawnsi = &spawnsides[li->sidenum[1]];
-
-				si->textureoffset = spawnsi->textureoffset;
-				si->toptexture = spawnsi->toptexture;
-				si->bottomtexture = spawnsi->bottomtexture;
-				si->midtexture = spawnsi->midtexture;
-			}
-		}
-
-		Taglist_InitGlobalTables();
-	}
-
-	// get the time
-	leveltime = READUINT32(save->p);
-	lastmap = READINT16(save->p);
-	bossdisabled = READUINT16(save->p);
-	ringsactive = READUINT8(save->p);
-	stackingactive = READUINT8(save->p);
-	chainingactive = READUINT8(save->p);
-	slipdashactive = READUINT8(save->p);
-	purpledriftactive = READUINT8(save->p);
-	slopeboostactive = READUINT8(save->p);
-	draftingactive = READUINT8(save->p);
-	airdropactive = READUINT8(save->p);
-	bumpsparkactive = READUINT8(save->p);
+	leveltime = P_SyncUINT32(save, leveltime);
+	lastmap = P_SyncINT16(save, lastmap);
+	bossdisabled = P_SyncUINT16(save, bossdisabled);
+	ringsactive = P_SyncUINT8(save, ringsactive);
+	stackingactive = P_SyncUINT8(save, stackingactive);
+	chainingactive = P_SyncUINT8(save, chainingactive);
+	slipdashactive = P_SyncUINT8(save, slipdashactive);
+	purpledriftactive = P_SyncUINT8(save, purpledriftactive);
+	slopeboostactive = P_SyncUINT8(save, slopeboostactive);
+	draftingactive = P_SyncUINT8(save, draftingactive);
+	airdropactive = P_SyncUINT8(save, airdropactive);
+	bumpsparkactive = P_SyncUINT8(save, bumpsparkactive);
 
 	for (i = 0; i < 12; i++)
 	{
-		votelevels[i][0] = READINT16(save->p);
-		votelevels[i][1] = READINT16(save->p);
+		votelevels[i][0] = P_SyncINT16(save, votelevels[i][0]);
+		votelevels[i][1] = P_SyncINT16(save, votelevels[i][1]);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		votes[i] = READSINT8(save->p);
+		votes[i] = P_SyncSINT8(save, votes[i]);
 
-	pickedvote = READSINT8(save->p);
+	pickedvote = P_SyncSINT8(save, pickedvote);
 
-	emeralds = READUINT16(save->p);
+	emeralds = P_SyncUINT16(save, emeralds);
+	if (save->write)
+	{
+		UINT8 globools = 0;
+		if (stagefailed)
+			globools |= 1;
+		if (stoppedclock)
+			globools |= (1<<1);
+		WRITEUINT8(save->p, globools);
+	}
+	else
 	{
 		UINT8 globools = READUINT8(save->p);
 		stagefailed = !!(globools & 1);
 		stoppedclock = !!(globools & (1<<1));
 	}
 
-	token = READUINT32(save->p);
-	bluescore = READUINT32(save->p);
-	redscore = READUINT32(save->p);
+	token = P_SyncUINT32(save, token);
+	bluescore = P_SyncUINT32(save, bluescore);
+	redscore = P_SyncUINT32(save, redscore);
 
-	skincolor_redteam = READUINT16(save->p);
-	skincolor_blueteam = READUINT16(save->p);
-	skincolor_redring = READUINT16(save->p);
-	skincolor_bluering = READUINT16(save->p);
+	skincolor_redteam = P_SyncUINT16(save, skincolor_redteam);
+	skincolor_blueteam = P_SyncUINT16(save, skincolor_blueteam);
+	skincolor_redring = P_SyncUINT16(save, skincolor_redring);
+	skincolor_bluering = P_SyncUINT16(save, skincolor_bluering);
 
-	modulothing = READINT32(save->p);
+	modulothing = P_SyncINT32(save, modulothing);
 
-	autobalance = READINT16(save->p);
-	teamscramble = READINT16(save->p);
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		scrambleplayers[i] = READINT16(save->p);
+	autobalance = P_SyncINT16(save, autobalance);
+	teamscramble = P_SyncINT16(save, teamscramble);
 
 	for (i = 0; i < MAXPLAYERS; i++)
-		scrambleteams[i] = READINT16(save->p);
+		scrambleplayers[i] = P_SyncINT16(save, scrambleplayers[i]);
 
-	scrambletotal = READINT16(save->p);
-	scramblecount = READINT16(save->p);
+	for (i = 0; i < MAXPLAYERS; i++)
+		scrambleteams[i] = P_SyncINT16(save, scrambleteams[i]);
 
-	racecountdown = READUINT32(save->p);
-	exitcountdown = READUINT32(save->p);
+	scrambletotal = P_SyncINT16(save, scrambletotal);
+	scramblecount = P_SyncINT16(save, scramblecount);
+
+	racecountdown = P_SyncUINT32(save, racecountdown);
+	exitcountdown = P_SyncUINT32(save, exitcountdown);
 
 	// exitcondition_t
-	g_exit.losing = READUINT8(save->p);
-	g_exit.retry = READUINT8(save->p);
-	g_exit.hasfinished = READUINT8(save->p);
+	g_exit.losing = P_SyncUINT8(save, g_exit.losing);
+	g_exit.retry = P_SyncUINT8(save, g_exit.retry);
+	g_exit.hasfinished = P_SyncUINT8(save, g_exit.hasfinished);
 
-	gravity = READFIXED(save->p);
-	mapobjectscale = READFIXED(save->p);
+	gravity = P_SyncFixed(save, gravity);
+	mapobjectscale = P_SyncFixed(save, mapobjectscale);
 
 	// SRB2kart
-	nummapboxes = READINT32(save->p);
-	numgotboxes = READINT32(save->p);
-	numtargets = READUINT8(save->p);
-	itembreaker = (boolean)READUINT8(save->p);
+	nummapboxes = P_SyncINT32(save, nummapboxes);
+	numgotboxes = P_SyncINT32(save, numgotboxes);
+	numtargets = P_SyncUINT8(save, numtargets);
+	itembreaker = P_SyncUINT8(save, itembreaker);
 
-	gamespeed = READUINT8(save->p);
-	numlaps = READUINT8(save->p);
-	franticitems = (boolean)READUINT8(save->p);
-	comeback = (boolean)READUINT8(save->p);
+	gamespeed = P_SyncUINT8(save, gamespeed);
+	numlaps = P_SyncUINT8(save, numlaps);
+	franticitems = P_SyncUINT8(save, franticitems);
+	comeback = P_SyncUINT8(save, comeback);
 
-	speedscramble = READSINT8(save->p);
-	encorescramble = READSINT8(save->p);
+	speedscramble = P_SyncSINT8(save, speedscramble);
+	encorescramble = P_SyncSINT8(save, encorescramble);
 
-	mostwanted = READSINT8(save->p);
+	// WANTED system
+	mostwanted = P_SyncSINT8(save, mostwanted);
 	for (i = 0; i < 4; i++)
-		battlewanted[i] = READSINT8(save->p);
+		battlewanted[i] = P_SyncSINT8(save, battlewanted[i]);
 
-	wantedcalcdelay = READUINT32(save->p);
-	hyubgone = READUINT32(save->p);
-	indirectitemcooldown = READUINT32(save->p);
-	mapreset = READUINT32(save->p);
+	wantedcalcdelay = P_SyncUINT32(save, wantedcalcdelay);
+	indirectitemcooldown = P_SyncUINT32(save, indirectitemcooldown);
+	hyubgone = P_SyncUINT32(save, hyubgone);
+	mapreset = P_SyncUINT32(save, mapreset);
 
-	spectateGriefed = READUINT8(save->p);
+	spectateGriefed = P_SyncUINT8(save, spectateGriefed);
 
-	thwompsactive = (boolean)READUINT8(save->p);
-	lastLowestLap = READUINT8(save->p);
-	spbplace = READSINT8(save->p);
-	startedInFreePlay = READUINT8(save->p);
+	thwompsactive = P_SyncUINT8(save, thwompsactive);
+	lastLowestLap = P_SyncUINT8(save, lastLowestLap);
+	spbplace = P_SyncSINT8(save, spbplace);
+	startedInFreePlay = P_SyncUINT8(save, startedInFreePlay);
 
-	introtime = READUINT32(save->p);
-	starttime = READUINT32(save->p);
+	introtime = P_SyncUINT32(save, introtime);
+	starttime = P_SyncUINT32(save, starttime);
 
-	hyudorotime = READINT32(save->p);
-	stealtime = READINT32(save->p);
-	sneakertime = READINT32(save->p);
-	waterpaneltime = READINT32(save->p);
-	itemtime = READINT32(save->p);
-	bubbletime = READINT32(save->p);
-	comebacktime = READINT32(save->p);
-	bumptime = READINT32(save->p);
-	greasetics = READINT32(save->p);
-	wipeoutslowtime = READINT32(save->p);
-	wantedreduce = READINT32(save->p);
-	wantedfrequency = READINT32(save->p);
-	
-	timelimitintics = READUINT32(save->p);
-	extratimeintics = READUINT32(save->p);
-	secretextratime = READUINT32(save->p);
+	hyudorotime = P_SyncINT32(save, hyudorotime);
+	stealtime = P_SyncINT32(save, stealtime);
+	sneakertime = P_SyncINT32(save, sneakertime);
+	waterpaneltime = P_SyncINT32(save, waterpaneltime);
+	itemtime = P_SyncINT32(save, itemtime);
+	bubbletime = P_SyncINT32(save, bubbletime);
+	comebacktime = P_SyncINT32(save, comebacktime);
+	bumptime = P_SyncINT32(save, bumptime);
+	greasetics = P_SyncINT32(save, greasetics);
+	wipeoutslowtime = P_SyncINT32(save, wipeoutslowtime);
+	wantedreduce = P_SyncINT32(save, wantedreduce);
+	wantedfrequency = P_SyncINT32(save, wantedfrequency);
 
-	// Is it paused?
-	if (READUINT8(save->p) == 0x2f)
-		paused = true;
+	timelimitintics = P_SyncUINT32(save, timelimitintics);
+	extratimeintics = P_SyncUINT32(save, extratimeintics);
+	secretextratime = P_SyncUINT32(save, secretextratime);
 
-	// Only the server uses this, but it
-	// needs synched for remote admins anyway.
-	Schedule_Clear();
+	paused = P_SyncUINT8(save, paused);
 
-	numTasks = READUINT32(save->p);
-	for (i = 0; i < numTasks; i++)
+	if (save->write)
 	{
-		INT16 basetime;
-		INT16 timer;
-		char command[MAXTEXTCMD];
+		// Only the server uses this, but it
+		// needs synched for remote admins anyway.
+		WRITEUINT32(save->p, schedule_len);
+		for (i = 0; i < schedule_len; i++)
+		{
+			scheduleTask_t *task = schedule[i];
+			WRITEINT16(save->p, task->basetime);
+			WRITEINT16(save->p, task->timer);
+			WRITESTRING(save->p, task->command);
+		}
+	}
+	else
+	{
+		// Only the server uses this, but it
+		// needs synched for remote admins anyway.
+		Schedule_Clear();
 
-		basetime = READINT16(save->p);
-		timer = READINT16(save->p);
-		READSTRING(save->p, command);
+		numTasks = READUINT32(save->p);
+		for (i = 0; i < numTasks; i++)
+		{
+			INT16 basetime;
+			INT16 timer;
+			char command[MAXTEXTCMD];
 
-		Schedule_Add(basetime, timer, command);
+			basetime = READINT16(save->p);
+			timer = READINT16(save->p);
+			READSTRING(save->p, command);
+
+			Schedule_Add(basetime, timer, command);
+		}
 	}
 
-	cht_debug = READUINT32(save->p);
-
-	TracyCZoneEnd(__zone);
+	cht_debug = P_SyncUINT32(save, cht_debug);
 
 	return true;
+	TracyCZoneEnd(__zone);
 }
 
 static inline void P_ArchiveLuabanksAndConsistency(savebuffer_t *save)
@@ -5742,7 +5607,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	save->write = true;
 
 	CV_SaveNetVars(&save->p);
-	P_NetArchiveMisc(save, resending);
+	P_NetSyncMisc(save, resending);
 
 	// Assign the mobjnumber for pointer tracking
 	if (gamestate == GS_LEVEL)
@@ -5811,7 +5676,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	save->write = false;
 
 	CV_LoadNetVars(&save->p);
-	if (!P_NetUnArchiveMisc(save,reloading))
+	if (!P_NetSyncMisc(save,reloading))
 		return false;
 	P_NetSyncPlayers(save);
 	P_NetUnArchiveParties(save);
