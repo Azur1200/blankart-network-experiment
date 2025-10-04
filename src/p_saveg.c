@@ -912,8 +912,8 @@ static void P_NetSyncColormaps(savebuffer_t *save)
 ///
 
 // each byte contains 7 flags
-// the most signifcant bit indicates a following extra byte
-enum
+// the most significant bit indicates a following extra byte
+enum sectordiff_e
 {
 	SD_FLOORHT = 0<<3,
 	SD_CEILHT,
@@ -957,6 +957,12 @@ enum
 	SD__MAX
 };
 
+enum ffloordiff_e
+{
+	FD_FLAGS,
+	FD_ALPHA,
+};
+
 static boolean P_SectorArgsEqual(const sector_t *sc, const sector_t *spawnsc)
 {
 	UINT8 i;
@@ -982,7 +988,7 @@ static boolean P_SectorStringArgsEqual(const sector_t *sc, const sector_t *spawn
 	return true;
 }
 
-enum
+enum linediff_e
 {
 	LD_FLAG = 0<<3,
 	LD_SPECIAL,
@@ -1042,9 +1048,6 @@ static boolean P_LineStringArgsEqual(const line_t *li, const line_t *spawnli)
 	return true;
 }
 
-#define FD_FLAGS 0x01
-#define FD_ALPHA 0x02
-
 // Check if any of the sector's FOFs differ from how they spawned
 static boolean CheckFFloorDiff(const sector_t *ss)
 {
@@ -1064,71 +1067,48 @@ static boolean CheckFFloorDiff(const sector_t *ss)
 
 // Special case: save the stats of all modified ffloors along with their ffloor "number"s
 // we don't bother with ffloors that haven't changed, that would just add to savegame even more than is really needed
-static void ArchiveFFloors(savebuffer_t *save, const sector_t *ss)
+static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 {
 	size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
 	ffloor_t *rover;
-	UINT8 fflr_diff;
-	for (rover = ss->ffloors; rover; rover = rover->next)
-	{
-		fflr_diff = 0; // reset diff flags
-		if (rover->fofflags != rover->spawnflags)
-			fflr_diff |= FD_FLAGS;
-		if (rover->alpha != rover->spawnalpha)
-			fflr_diff |= FD_ALPHA;
-
-		if (fflr_diff)
-		{
-			WRITEUINT16(save->p, j); // save ffloor "number"
-			WRITEUINT8(save->p, fflr_diff);
-			if (fflr_diff & FD_FLAGS)
-				WRITEUINT32(save->p, rover->fofflags);
-			if (fflr_diff & FD_ALPHA)
-				WRITEINT16(save->p, rover->alpha);
-		}
-		j++;
-	}
-	WRITEUINT16(save->p, 0xffff);
-}
-
-static void UnArchiveFFloors(savebuffer_t *save, const sector_t *ss)
-{
-	UINT16 j = 0; // number of current ffloor in loop
 	UINT16 fflr_i; // saved ffloor "number" of next modified ffloor
-	UINT16 fflr_diff; // saved ffloor diff
-	ffloor_t *rover;
+	UINT8 diff[1];
 
-	rover = ss->ffloors;
-	if (!rover) // it is assumed sectors[i].ffloors actually exists, but just in case...
-		I_Error("Sector does not have any ffloors!");
+	if (!save->write)
+		fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
 
-	fflr_i = READUINT16(save->p); // get first modified ffloor's number ready
-	for (;;) // for some reason the usual for (rover = x; ...) thing doesn't work here?
+	for (rover = ss->ffloors; rover; rover = rover->next, j++)
 	{
-		if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
-			break;
-		// should NEVER need to be checked
-		//if (rover == NULL)
-			//break;
-		if (j != fflr_i) // this ffloor was not modified
+		memset(diff, 0, sizeof(diff));
+		if (save->write)
 		{
-			j++;
-			rover = rover->next;
-			continue;
+			if (rover->fofflags != rover->spawnflags)
+				SETB(FD_FLAGS);
+			if (rover->alpha != rover->spawnalpha)
+				SETB(FD_ALPHA);
+
+			if (diff[0] == 0)
+				continue;
+
+			WRITEUINT16(save->p, j);
+		}
+		else
+		{
+			if (fflr_i == 0xffff) // end of modified ffloors list, let's stop already
+				break;
+			if (j != fflr_i) // this ffloor was not modified
+				continue;
+
+			fflr_i = READUINT16(save->p); // get next ffloor "number" ready
 		}
 
-		fflr_diff = READUINT8(save->p);
-
-		if (fflr_diff & FD_FLAGS)
-			rover->fofflags = READUINT32(save->p);
-		if (fflr_diff & FD_ALPHA)
-			rover->alpha = READINT16(save->p);
-
-		fflr_i = READUINT16(save->p); // get next ffloor "number" ready
-
-		j++;
-		rover = rover->next;
+		SYNC(diff[0]);
+		SYNCF(FD_FLAGS, rover->fofflags);
+		SYNCF(FD_ALPHA, rover->alpha);
 	}
+
+	if (save->write)
+		WRITEUINT16(save->p, 0xffff);
 }
 
 static void DiffSectors(savebuffer_t *save, const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
@@ -1245,12 +1225,7 @@ static void SyncSectors(savebuffer_t *save)
 		SYNCF(SD_LIGHT, sec->lightlevel);
 		SYNCF(SD_SPECIAL, sec->special);
 		if (GETB(SD_FFLOORS))
-		{
-			if (save->write)
-				ArchiveFFloors(save, sec);
-			else
-				UnArchiveFFloors(save, sec);
-		}
+			SyncFFloors(save, sec);
 
 		SYNCF(SD_FXOFFS, sec->floor_xoffs);
 		SYNCF(SD_FYOFFS, sec->floor_yoffs);
