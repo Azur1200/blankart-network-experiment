@@ -623,62 +623,58 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 	TracyCZoneEnd(__zone);
 }
 
-static void P_NetArchiveParties(savebuffer_t *save)
+static void P_NetSyncParties(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
 	INT32 i, k;
 	UINT8 partySize;
 
-	WRITEUINT32(save->p, ARCHIVEBLOCK_PARTIES);
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_PARTIES) != ARCHIVEBLOCK_PARTIES)
+		I_Error("Bad $$$.sav at archive block Parties");
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	if (!save->write)
 	{
-		if (!playeringame[i])
-			continue;
-
-		partySize = G_PartySize(i);
-
-		WRITEUINT8(save->p, partySize);
-
-		for (k = 0; k < partySize; ++k)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			WRITEUINT8(save->p, G_PartyMember(i, k));
+			if (!playeringame[i])
+				continue;
+
+			G_DestroyParty(i);
+			G_BuildLocalSplitscreenParty(i);
 		}
 	}
 
-	TracyCZoneEnd(__zone);
-}
-
-static void P_NetUnArchiveParties(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
-	INT32 i, k;
-	UINT8 partySize;
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_PARTIES)
-		I_Error("Bad $$$.sav at archive block Parties");
-
-	for (i = 0; i < MAXPLAYERS; i++)
+	if (save->write)
 	{
-		if (!playeringame[i])
-			continue;
-
-		G_DestroyParty(i);
-		G_BuildLocalSplitscreenParty(i);
-	}
-
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i])
-			continue;
-
-		partySize = READUINT8(save->p);
-
-		for (k = 0; k < partySize; ++k)
+		for (i = 0; i < MAXPLAYERS; i++)
 		{
-			G_JoinParty(i, READUINT8(save->p));
+			if (!playeringame[i])
+				continue;
+
+			partySize = G_PartySize(i);
+
+			WRITEUINT8(save->p, partySize);
+
+			for (k = 0; k < partySize; ++k)
+			{
+				WRITEUINT8(save->p, G_PartyMember(i, k));
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+
+			partySize = READUINT8(save->p);
+
+			for (k = 0; k < partySize; ++k)
+			{
+				G_JoinParty(i, READUINT8(save->p));
+			}
 		}
 	}
 
@@ -5627,7 +5623,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	}
 
 	P_NetSyncPlayers(save);
-	P_NetArchiveParties(save);
+	P_NetSyncParties(save);
 
 	if (gamestate == GS_LEVEL)
 	{
@@ -5679,7 +5675,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	if (!P_NetSyncMisc(save,reloading))
 		return false;
 	P_NetSyncPlayers(save);
-	P_NetUnArchiveParties(save);
+	P_NetSyncParties(save);
 
 	if (gamestate == GS_LEVEL)
 	{
