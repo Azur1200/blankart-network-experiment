@@ -179,6 +179,43 @@ void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 		READMEM(save->p, s, n);
 }
 
+mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
+{
+	if (save->write)
+	{
+		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
+		return mo;
+	}
+	else
+		return (mobj_t *)(uintptr_t)READUINT32(save->p);
+}
+
+waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
+{
+	if (save->write)
+	{
+		WRITEUINT32(save->p, K_GetWaypointHeapIndex(wp));
+		return wp;
+	}
+	else
+		return (waypoint_t *)(uintptr_t)READUINT32(save->p);
+}
+
+#define SYNC(v) v = _Generic(v, \
+	SINT8: P_SyncSINT8, \
+	INT16: P_SyncINT16, \
+	INT32: P_SyncINT32, \
+	UINT8: P_SyncUINT8, \
+	UINT16: P_SyncUINT16, \
+	UINT32: P_SyncUINT32, \
+	mobj_t *: P_SyncMobj, \
+	waypoint_t *: P_SyncWaypoint \
+)(save, v);
+
+#define SYNCBOOLEAN(v) v = _Generic(v, \
+	boolean: P_SyncUINT8 \
+)(save, v);
+
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
 #define ARCHIVEBLOCK_MISC     0x7FEEDEED
@@ -189,15 +226,6 @@ void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 #define ARCHIVEBLOCK_THINKERS 0x7F37037C
 #define ARCHIVEBLOCK_SPECIALS 0x7F228378
 #define ARCHIVEBLOCK_WAYPOINTS 0x7F46498F
-
-// Note: This cannot be bigger
-// than an UINT16
-typedef enum
-{
-	AWAYVIEW   = 0x01,
-	FOLLOWITEM = 0x02,
-	FOLLOWER   = 0x04,
-} player_saveflags;
 
 static inline void P_ArchivePlayer(savebuffer_t *save)
 {
@@ -228,7 +256,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 	TracyCZone(__zone, true);
 
 	INT32 i, j;
-	UINT16 flags;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_PLAYERS) != ARCHIVEBLOCK_PLAYERS)
 		I_Error("Bad $$$.sav at archive block Players");
@@ -239,385 +266,338 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		for (j = 0; j < PWRLV_NUMTYPES; j++)
 		{
-			clientpowerlevels[i][j] = P_SyncINT16(save, clientpowerlevels[i][j]);
+			SYNC(clientpowerlevels[i][j]);
 		}
-		clientPowerAdd[i] = P_SyncINT16(save, clientPowerAdd[i]);
+		SYNC(clientPowerAdd[i]);
 
 		if (!playeringame[i])
 			continue;
-
-		flags = 0;
 
 		// no longer send ticcmds
 
 		P_SyncStringN(save, player_names[i], MAXPLAYERNAME);
 
-		playerconsole[i] = P_SyncUINT8(save, playerconsole[i]);
-		splitscreen_invitations[i] = P_SyncINT32(save, splitscreen_invitations[i]);
+		SYNC(playerconsole[i]);
+		SYNC(splitscreen_invitations[i]);
 
-		players[i].angleturn = P_SyncAngle(save, players[i].angleturn);
-		players[i].aiming = P_SyncAngle(save, players[i].aiming);
-		players[i].drawangle = P_SyncAngle(save, players[i].drawangle);
-		players[i].viewrollangle = P_SyncAngle(save, players[i].viewrollangle);
-		players[i].tilt = P_SyncAngle(save, players[i].tilt);
-		players[i].awayviewaiming = P_SyncAngle(save, players[i].awayviewaiming);
-		players[i].awayviewtics = P_SyncINT32(save, players[i].awayviewtics);
+		SYNC(players[i].angleturn);
+		SYNC(players[i].aiming);
+		SYNC(players[i].drawangle);
+		SYNC(players[i].viewrollangle);
+		SYNC(players[i].tilt);
+		SYNC(players[i].awayviewaiming);
+		SYNC(players[i].awayviewtics);
 
-		players[i].playerstate = P_SyncUINT8(save, players[i].playerstate);
-		players[i].pflags = P_SyncUINT32(save, players[i].pflags);
-		players[i].panim = P_SyncUINT8(save, players[i].panim);
-		players[i].spectator = P_SyncUINT8(save, players[i].spectator);
-		players[i].spectatewait = P_SyncUINT32(save, players[i].spectatewait);
+		SYNC(players[i].playerstate);
+		SYNC(players[i].pflags);
+		SYNC(players[i].panim);
+		SYNCBOOLEAN(players[i].spectator);
+		SYNC(players[i].spectatewait);
 
-		players[i].flashpal = P_SyncUINT16(save, players[i].flashpal);
-		players[i].flashcount = P_SyncUINT16(save, players[i].flashcount);
+		SYNC(players[i].flashpal);
+		SYNC(players[i].flashcount);
 
-		players[i].skincolor = P_SyncUINT8(save, players[i].skincolor);
-		players[i].skin = P_SyncINT32(save, players[i].skin);
-		players[i].availabilities = P_SyncUINT32(save, players[i].availabilities);
-		players[i].score = P_SyncUINT32(save, players[i].score);
-		players[i].lives = P_SyncSINT8(save, players[i].lives);
-		players[i].xtralife = P_SyncSINT8(save, players[i].xtralife);
-		players[i].speed = P_SyncFixed(save, players[i].speed);
-		players[i].lastspeed = P_SyncFixed(save, players[i].lastspeed);
-		players[i].deadtimer = P_SyncINT32(save, players[i].deadtimer);
-		players[i].exiting = P_SyncUINT32(save, players[i].exiting);
+		SYNC(players[i].skincolor);
+		SYNC(players[i].skin);
+		SYNC(players[i].availabilities);
+		SYNC(players[i].score);
+		SYNC(players[i].lives);
+		SYNC(players[i].xtralife);
+		SYNC(players[i].speed);
+		SYNC(players[i].lastspeed);
+		SYNC(players[i].deadtimer);
+		SYNC(players[i].exiting);
 
 		////////////////////////////
 		// Conveyor Belt Movement //
 		////////////////////////////
-		players[i].cmomx = P_SyncFixed(save, players[i].cmomx); // Conveyor momx
-		players[i].cmomy = P_SyncFixed(save, players[i].cmomy); // Conveyor momy
-		players[i].rmomx = P_SyncFixed(save, players[i].rmomx); // "Real" momx (momx - cmomx)
-		players[i].rmomy = P_SyncFixed(save, players[i].rmomy); // "Real" momy (momy - cmomy)
+		SYNC(players[i].cmomx); // Conveyor momx
+		SYNC(players[i].cmomy); // Conveyor momy
+		SYNC(players[i].rmomx); // "Real" momx (momx - cmomx)
+		SYNC(players[i].rmomy); // "Real" momy (momy - cmomy)
 
-		players[i].totalring = P_SyncINT16(save, players[i].totalring);
-		players[i].realtime = P_SyncUINT32(save, players[i].realtime);
+		SYNC(players[i].totalring);
+		SYNC(players[i].realtime);
 		for (j = 0; j < LAP__MAX; j++)
 		{
-			players[i].laptime[j] = P_SyncUINT32(save, players[i].laptime[j]);
+			SYNC(players[i].laptime[j]);
 		}
-		players[i].laps = P_SyncUINT8(save, players[i].laps);
-		players[i].latestlap = P_SyncUINT8(save, players[i].latestlap);
+		SYNC(players[i].laps);
+		SYNC(players[i].latestlap);
 
-		players[i].starposttime = P_SyncUINT32(save, players[i].starposttime);
-		players[i].starpostx = P_SyncINT16(save, players[i].starpostx);
-		players[i].starposty = P_SyncINT16(save, players[i].starposty);
-		players[i].starpostz = P_SyncINT16(save, players[i].starpostz);
-		players[i].starpostnum = P_SyncINT32(save, players[i].starpostnum);
-		players[i].starpostangle = P_SyncAngle(save, players[i].starpostangle);
-		players[i].starpostflip = P_SyncUINT8(save, (UINT8)players[i].starpostflip);
-		players[i].prevcheck = P_SyncINT32(save, players[i].prevcheck);
-		players[i].nextcheck = P_SyncINT32(save, players[i].nextcheck);
+		SYNC(players[i].starposttime);
+		SYNC(players[i].starpostx);
+		SYNC(players[i].starposty);
+		SYNC(players[i].starpostz);
+		SYNC(players[i].starpostnum);
+		SYNC(players[i].starpostangle);
+		SYNCBOOLEAN(players[i].starpostflip);
+		SYNC(players[i].prevcheck);
+		SYNC(players[i].nextcheck);
 
-		players[i].ctfteam = P_SyncUINT8(save, players[i].ctfteam);
+		SYNC(players[i].ctfteam);
 
-		players[i].checkskip = P_SyncUINT8(save, players[i].checkskip);
+		SYNC(players[i].checkskip);
 
-		players[i].lastsidehit = P_SyncINT16(save, players[i].lastsidehit);
-		players[i].lastlinehit = P_SyncINT16(save, players[i].lastlinehit);
+		SYNC(players[i].lastsidehit);
+		SYNC(players[i].lastlinehit);
 
-		players[i].onconveyor = P_SyncINT32(save, players[i].onconveyor);
+		SYNC(players[i].onconveyor);
 
-		players[i].jointime = P_SyncUINT32(save, players[i].jointime);
-		players[i].spectatorreentry = P_SyncUINT32(save, players[i].spectatorreentry);
+		SYNC(players[i].jointime);
+		SYNC(players[i].spectatorreentry);
 
-		players[i].grieftime = P_SyncUINT32(save, players[i].grieftime);
-		players[i].griefstrikes = P_SyncUINT8(save, players[i].griefstrikes);
+		SYNC(players[i].grieftime);
+		SYNC(players[i].griefstrikes);
 
-		players[i].splitscreenindex = P_SyncUINT8(save, players[i].splitscreenindex);
+		SYNC(players[i].splitscreenindex);
 
-		if (save->write)
-		{
-			if (players[i].awayviewmobj)
-				flags |= AWAYVIEW;
+		SYNC(players[i].awayviewmobj);
+		SYNC(players[i].followmobj);
+		SYNC(players[i].followitem);
 
-			if (players[i].followmobj)
-				flags |= FOLLOWITEM;
-
-			if (players[i].follower)
-				flags |= FOLLOWER;
-
-			WRITEUINT16(save->p, flags);
-
-			if (flags & AWAYVIEW)
-				WRITEUINT32(save->p, players[i].awayviewmobj->mobjnum);
-
-			if (flags & FOLLOWITEM)
-				WRITEUINT32(save->p, players[i].followmobj->mobjnum);
-		}
-		else
-		{
-			flags = READUINT16(save->p);
-
-			if (flags & AWAYVIEW)
-				players[i].awayviewmobj = (mobj_t *)(size_t)READUINT32(save->p);
-
-			if (flags & FOLLOWITEM)
-				players[i].followmobj = (mobj_t *)(size_t)READUINT32(save->p);
-		}
-
-		players[i].followitem = P_SyncUINT32(save, (UINT32)players[i].followitem);
-
-		players[i].charflags = P_SyncUINT32(save, players[i].charflags);
+		SYNC(players[i].charflags);
 
 		// SRB2kart
-		players[i].kartspeed = P_SyncUINT8(save, players[i].kartspeed);
-		players[i].kartweight = P_SyncUINT8(save, players[i].kartweight);
+		SYNC(players[i].kartspeed);
+		SYNC(players[i].kartweight);
 
 		for (j = 0; j < MAXPREDICTTICS; j++)
 		{
-			players[i].lturn_max[j] = P_SyncINT16(save, players[i].lturn_max[j]);
-			players[i].rturn_max[j] = P_SyncINT16(save, players[i].rturn_max[j]);
+			SYNC(players[i].lturn_max[j]);
+			SYNC(players[i].rturn_max[j]);
 		}
 
-		players[i].followerskin = P_SyncUINT8(save, players[i].followerskin);
-		players[i].followerready = P_SyncUINT8(save, players[i].followerready);	// booleans are really just numbers eh??
-		players[i].followercolor = P_SyncUINT16(save, players[i].followercolor);
+		SYNC(players[i].followerskin);
+		SYNCBOOLEAN(players[i].followerready);
+		SYNC(players[i].followercolor);
 
-		if (save->write)
-		{
-			if (flags & FOLLOWER)
-				WRITEUINT32(save->p, players[i].follower->mobjnum);
-		}
-		else
-		{
-			if (flags & FOLLOWER)
-				players[i].follower = (mobj_t *)(size_t)READUINT32(save->p);
-		}
+		SYNC(players[i].follower);
 
 		for (j = 0; j < NUMPOWERS; j++)
-			players[i].powers[j] = P_SyncUINT16(save, players[i].powers[j]);
+			SYNC(players[i].powers[j]);
 		for (j = 0; j < NUMKARTSTUFF; j++)
-			players[i].kartstuff[j] = P_SyncINT32(save, players[i].kartstuff[j]);
+			SYNC(players[i].kartstuff[j]);
 
-		players[i].nocontrol = P_SyncUINT16(save, players[i].nocontrol);
-		players[i].carry = P_SyncUINT8(save, players[i].carry);
-		players[i].dye = P_SyncUINT16(save, players[i].dye);
+		SYNC(players[i].nocontrol);
+		SYNC(players[i].carry);
+		SYNC(players[i].dye);
 
-		players[i].position = P_SyncUINT8(save, players[i].position);
-		players[i].oldposition = P_SyncUINT8(save, players[i].oldposition);
-		players[i].positiondelay = P_SyncUINT8(save, players[i].positiondelay);
-		players[i].distancetofinish = P_SyncUINT32(save, players[i].distancetofinish);
-		players[i].distancetofinishprev = P_SyncUINT32(save, players[i].distancetofinishprev);
-		if (save->write)
-		{
-			WRITEUINT32(save->p, K_GetWaypointHeapIndex(players[i].currentwaypoint));
-			WRITEUINT32(save->p, K_GetWaypointHeapIndex(players[i].nextwaypoint));
-		}
-		else
-		{
-			players[i].currentwaypoint = (waypoint_t *)(size_t)READUINT32(save->p);
-			players[i].nextwaypoint = (waypoint_t *)(size_t)READUINT32(save->p);
-		}
-		players[i].bigwaypointgap = P_SyncUINT16(save, players[i].bigwaypointgap);
-		players[i].airtime = P_SyncUINT32(save, players[i].airtime);
-		players[i].startboost = P_SyncUINT8(save, players[i].startboost);
+		SYNC(players[i].position);
+		SYNC(players[i].oldposition);
+		SYNC(players[i].positiondelay);
+		SYNC(players[i].distancetofinish);
+		SYNC(players[i].distancetofinishprev);
+		SYNC(players[i].currentwaypoint);
+		SYNC(players[i].nextwaypoint);
+		SYNC(players[i].bigwaypointgap);
+		SYNC(players[i].airtime);
+		SYNC(players[i].startboost);
 
-		players[i].dropdash = P_SyncUINT8(save, players[i].dropdash);
-		players[i].respawn = P_SyncUINT8(save, players[i].respawn);
+		SYNC(players[i].dropdash);
+		SYNC(players[i].respawn);
 
-		players[i].flashing = P_SyncUINT16(save, players[i].flashing);
-		players[i].spinouttimer = P_SyncUINT16(save, players[i].spinouttimer);
-		players[i].spinoutrot = P_SyncINT32(save, players[i].spinoutrot);
-		players[i].spinouttype = P_SyncUINT8(save, players[i].spinouttype);
-		players[i].flipovertimer = P_SyncUINT16(save, players[i].flipovertimer);
-		players[i].flipoverangle = P_SyncAngle(save, players[i].flipoverangle);
-		players[i].squishedtimer = P_SyncINT16(save, players[i].squishedtimer);
-		players[i].instashield = P_SyncUINT8(save, players[i].instashield);
-		players[i].wipeoutslow = P_SyncUINT8(save, players[i].wipeoutslow);
-		players[i].justbumped = P_SyncUINT8(save, players[i].justbumped);
-		players[i].noclip = P_SyncUINT8(save, players[i].noclip);
+		SYNC(players[i].flashing);
+		SYNC(players[i].spinouttimer);
+		SYNC(players[i].spinoutrot);
+		SYNC(players[i].spinouttype);
+		SYNC(players[i].flipovertimer);
+		SYNC(players[i].flipoverangle);
+		SYNC(players[i].squishedtimer);
+		SYNC(players[i].instashield);
+		SYNC(players[i].wipeoutslow);
+		SYNC(players[i].justbumped);
+		SYNCBOOLEAN(players[i].noclip);
 
-		players[i].drift = P_SyncSINT8(save, players[i].drift);
-		players[i].driftlock = P_SyncSINT8(save, players[i].driftlock);
-		players[i].driftcharge = P_SyncFixed(save, players[i].driftcharge);
-		players[i].driftboost = P_SyncUINT8(save, players[i].driftboost);
+		SYNC(players[i].drift);
+		SYNC(players[i].driftlock);
+		SYNC(players[i].driftcharge);
+		SYNC(players[i].driftboost);
 
-		players[i].aizdriftstrat = P_SyncSINT8(save, players[i].aizdriftstrat);
-		players[i].aizdrifttilt = P_SyncINT32(save, players[i].aizdrifttilt);
-		players[i].aizdriftturn = P_SyncINT32(save, players[i].aizdriftturn);
-		players[i].slipdashcharge = P_SyncFixed(save, players[i].slipdashcharge);
-		players[i].slipdashdir = P_SyncSINT8(save, players[i].slipdashdir);
+		SYNC(players[i].aizdriftstrat);
+		SYNC(players[i].aizdrifttilt);
+		SYNC(players[i].aizdriftturn);
+		SYNC(players[i].slipdashcharge);
+		SYNC(players[i].slipdashdir);
 
-		players[i].offroad = P_SyncFixed(save, players[i].offroad);
-		players[i].tiregrease = P_SyncFixed(save, players[i].tiregrease);
-		players[i].pogospring = P_SyncUINT8(save, players[i].pogospring);
-		players[i].brakestop = P_SyncUINT8(save, players[i].brakestop);
-		players[i].waterskip = P_SyncUINT8(save, players[i].waterskip);
+		SYNC(players[i].offroad);
+		SYNC(players[i].tiregrease);
+		SYNC(players[i].pogospring);
+		SYNC(players[i].brakestop);
+		SYNC(players[i].waterskip);
 
-		players[i].dashpadcooldown = P_SyncUINT8(save, players[i].dashpadcooldown);
+		SYNC(players[i].dashpadcooldown);
 
-		players[i].boostpower = P_SyncFixed(save, players[i].boostpower);
-		players[i].speedboost = P_SyncFixed(save, players[i].speedboost);
-		players[i].prevspeedboost = P_SyncFixed(save, players[i].prevspeedboost);
-		players[i].accelboost = P_SyncFixed(save, players[i].accelboost);
-		players[i].boostangle = P_SyncAngle(save, players[i].boostangle);
-		players[i].numsneakers = P_SyncUINT8(save, players[i].numsneakers);
-		players[i].numboosts = P_SyncUINT8(save, players[i].numboosts);
+		SYNC(players[i].boostpower);
+		SYNC(players[i].speedboost);
+		SYNC(players[i].prevspeedboost);
+		SYNC(players[i].accelboost);
+		SYNC(players[i].boostangle);
+		SYNC(players[i].numsneakers);
+		SYNC(players[i].numboosts);
 
-		players[i].draftpower = P_SyncFixed(save, players[i].draftpower);
-		players[i].draftleeway = P_SyncUINT16(save, players[i].draftleeway);
-		players[i].lastdraft = P_SyncSINT8(save, players[i].lastdraft);
+		SYNC(players[i].draftpower);
+		SYNC(players[i].draftleeway);
+		SYNC(players[i].lastdraft);
 
 		// boostinfo_t
-		players[i].boostinfo.stackspeedboost = P_SyncFixed(save, players[i].boostinfo.stackspeedboost);
-		players[i].boostinfo.nonstackspeedboost = P_SyncFixed(save, players[i].boostinfo.nonstackspeedboost);
-		players[i].boostinfo.accelboost = P_SyncFixed(save, players[i].boostinfo.accelboost);
-		players[i].boostinfo.grade = P_SyncUINT8(save, players[i].boostinfo.grade);
+		SYNC(players[i].boostinfo.stackspeedboost);
+		SYNC(players[i].boostinfo.nonstackspeedboost);
+		SYNC(players[i].boostinfo.accelboost);
+		SYNC(players[i].boostinfo.grade);
 
-		players[i].tripwireState = P_SyncUINT8(save, players[i].tripwireState);
-		players[i].tripwirePass = P_SyncUINT8(save, players[i].tripwirePass);
-		players[i].tripwireLeniency = P_SyncUINT16(save, players[i].tripwireLeniency);
-		players[i].tripwireReboundDelay = P_SyncUINT8(save, players[i].tripwireReboundDelay);
+		SYNC(players[i].tripwireState);
+		SYNC(players[i].tripwirePass);
+		SYNC(players[i].tripwireLeniency);
+		SYNC(players[i].tripwireReboundDelay);
 
-		players[i].itemroulette = P_SyncUINT16(save, players[i].itemroulette);
-		players[i].previtemroulette = P_SyncUINT16(save, players[i].previtemroulette);
-		players[i].itemblink = P_SyncUINT16(save, players[i].itemblink);
-		players[i].itemblinkmode = P_SyncUINT16(save, players[i].itemblinkmode);
-		players[i].roulettetype = P_SyncUINT8(save, players[i].roulettetype);
+		SYNC(players[i].itemroulette);
+		SYNC(players[i].previtemroulette);
+		SYNC(players[i].itemblink);
+		SYNC(players[i].itemblinkmode);
+		SYNC(players[i].roulettetype);
 
-		players[i].itemtype = P_SyncSINT8(save, players[i].itemtype);
-		players[i].itemamount = P_SyncUINT8(save, players[i].itemamount);
-		players[i].throwdir = P_SyncSINT8(save, players[i].throwdir);
+		SYNC(players[i].itemtype);
+		SYNC(players[i].itemamount);
+		SYNC(players[i].throwdir);
 
-		players[i].sadtimer = P_SyncUINT8(save, players[i].sadtimer);
+		SYNC(players[i].sadtimer);
 
-		players[i].rings = P_SyncSINT8(save, players[i].rings);
-		players[i].ringmin = P_SyncSINT8(save, players[i].ringmin);
-		players[i].ringmax = P_SyncSINT8(save, players[i].ringmax);
-		players[i].pickuprings = P_SyncUINT8(save, players[i].pickuprings);
-		players[i].ringdelay = P_SyncUINT8(save, players[i].ringdelay);
-		players[i].ringlock = P_SyncUINT8(save, players[i].ringlock);
-		players[i].ringboost = P_SyncUINT16(save, players[i].ringboost);
-		players[i].ringtime = P_SyncUINT16(save, players[i].ringtime);
-		players[i].superring = P_SyncUINT16(save, players[i].superring);
-		players[i].nextringaward = P_SyncUINT8(save, players[i].nextringaward);
-		players[i].ringvolume = P_SyncUINT8(save, players[i].ringvolume);
-		players[i].ringtransparency = P_SyncUINT8(save, players[i].ringtransparency);
+		SYNC(players[i].rings);
+		SYNC(players[i].ringmin);
+		SYNC(players[i].ringmax);
+		SYNC(players[i].pickuprings);
+		SYNC(players[i].ringdelay);
+		SYNC(players[i].ringlock);
+		SYNC(players[i].ringboost);
+		SYNC(players[i].ringtime);
+		SYNC(players[i].superring);
+		SYNC(players[i].nextringaward);
+		SYNC(players[i].ringvolume);
+		SYNC(players[i].ringtransparency);
 
-		players[i].airdroptime = P_SyncUINT8(save, players[i].airdroptime);
-		players[i].ringdrop = P_SyncUINT8(save, players[i].ringdrop);
+		SYNC(players[i].airdroptime);
+		SYNCBOOLEAN(players[i].ringdrop);
 
-		players[i].curshield = P_SyncUINT8(save, players[i].curshield);
+		SYNC(players[i].curshield);
 
-		players[i].bubblecool = P_SyncUINT8(save, players[i].bubblecool);
-		players[i].bubbleblowup = P_SyncUINT8(save, players[i].bubbleblowup);
-		players[i].bubblehealth = P_SyncUINT8(save, players[i].bubblehealth);
-		players[i].bubbleboost = P_SyncUINT16(save, players[i].bubbleboost);
+		SYNC(players[i].bubblecool);
+		SYNC(players[i].bubbleblowup);
+		SYNC(players[i].bubblehealth);
+		SYNC(players[i].bubbleboost);
 
-		players[i].flamedash = P_SyncUINT16(save, players[i].flamedash);
-		players[i].flametimer = P_SyncINT32(save, players[i].flametimer);
-		players[i].flamestore = P_SyncUINT8(save, players[i].flamestore);
+		SYNC(players[i].flamedash);
+		SYNC(players[i].flametimer);
+		SYNC(players[i].flamestore);
 
-		players[i].hyudorotimer = P_SyncUINT16(save, players[i].hyudorotimer);
-		players[i].stealingtimer = P_SyncSINT8(save, players[i].stealingtimer);
+		SYNC(players[i].hyudorotimer);
+		SYNC(players[i].stealingtimer);
 
-		players[i].sneakertimer = P_SyncUINT16(save, players[i].sneakertimer);
-		players[i].realsneakertimer = P_SyncUINT16(save, players[i].realsneakertimer);
-		players[i].floorboost = P_SyncUINT8(save, players[i].floorboost);
-		players[i].chaintimer = P_SyncUINT16(save, players[i].chaintimer);
+		SYNC(players[i].sneakertimer);
+		SYNC(players[i].realsneakertimer);
+		SYNC(players[i].floorboost);
+		SYNC(players[i].chaintimer);
 
-		players[i].boostcharge = P_SyncUINT8(save, players[i].boostcharge);
+		SYNC(players[i].boostcharge);
 
-		players[i].slopeboost = P_SyncFixed(save, players[i].slopeboost);
-		players[i].prevslopeboost = P_SyncFixed(save, players[i].prevslopeboost);
-		players[i].slopeaccel = P_SyncFixed(save, players[i].slopeaccel);
+		SYNC(players[i].slopeboost);
+		SYNC(players[i].prevslopeboost);
+		SYNC(players[i].slopeaccel);
 
-		players[i].growshrinktimer = P_SyncINT16(save, players[i].growshrinktimer);
-		players[i].growcancel = P_SyncINT16(save, players[i].growcancel);
+		SYNC(players[i].growshrinktimer);
+		SYNC(players[i].growcancel);
 
-		players[i].rocketsneakertimer = P_SyncUINT16(save, players[i].rocketsneakertimer);
+		SYNC(players[i].rocketsneakertimer);
 
-		players[i].invincibilitytimer = P_SyncUINT16(save, players[i].invincibilitytimer);
-		players[i].maxinvincibilitytime = P_SyncUINT16(save, players[i].maxinvincibilitytime);
-		players[i].invincibilitybottleneck = P_SyncUINT16(save, players[i].invincibilitybottleneck);
-		players[i].invincibilitycancel = P_SyncINT16(save, players[i].invincibilitycancel);
+		SYNC(players[i].invincibilitytimer);
+		SYNC(players[i].maxinvincibilitytime);
+		SYNC(players[i].invincibilitybottleneck);
+		SYNC(players[i].invincibilitycancel);
 
-		players[i].eggmanexplode = P_SyncUINT8(save, players[i].eggmanexplode);
-		players[i].eggmanblame = P_SyncSINT8(save, players[i].eggmanblame);
+		SYNC(players[i].eggmanexplode);
+		SYNC(players[i].eggmanblame);
 
-		players[i].bananadrag = P_SyncUINT16(save, players[i].bananadrag);
+		SYNC(players[i].bananadrag);
 
-		players[i].lastjawztarget = P_SyncSINT8(save, players[i].lastjawztarget);
-		players[i].jawztargetdelay = P_SyncUINT8(save, players[i].jawztargetdelay);
+		SYNC(players[i].lastjawztarget);
+		SYNC(players[i].jawztargetdelay);
 
-		players[i].confirmVictim = P_SyncUINT8(save, players[i].confirmVictim);
-		players[i].confirmVictimDelay = P_SyncUINT8(save, players[i].confirmVictimDelay);
+		SYNC(players[i].confirmVictim);
+		SYNC(players[i].confirmVictimDelay);
 
-		players[i].interpoints = P_SyncINT32(save, players[i].interpoints);
-		players[i].roundscore = P_SyncUINT32(save, players[i].roundscore);
-		players[i].emeralds = P_SyncUINT8(save, players[i].emeralds);
-		players[i].bumper = P_SyncUINT8(save, players[i].bumper);
-		players[i].karmadelay = P_SyncINT16(save, players[i].karmadelay);
-		players[i].karmamode = P_SyncINT16(save, players[i].karmamode);
-		players[i].karmapoints = P_SyncINT16(save, players[i].karmapoints);
-		players[i].wanted = P_SyncINT16(save, players[i].wanted);
+		SYNC(players[i].interpoints);
+		SYNC(players[i].roundscore);
+		SYNC(players[i].emeralds);
+		SYNC(players[i].bumper);
+		SYNC(players[i].karmadelay);
+		SYNC(players[i].karmamode);
+		SYNC(players[i].karmapoints);
+		SYNC(players[i].wanted);
 
-		players[i].glanceDir = P_SyncSINT8(save, players[i].glanceDir);
+		SYNC(players[i].glanceDir);
 
-		players[i].breathTimer = P_SyncUINT16(save, players[i].breathTimer);
+		SYNC(players[i].breathTimer);
 
-		players[i].lastsafelap = P_SyncUINT8(save, players[i].lastsafelap);
-		players[i].lastsafestarpost = P_SyncUINT8(save, players[i].lastsafestarpost);
+		SYNC(players[i].lastsafelap);
+		SYNC(players[i].lastsafestarpost);
 
-		players[i].typing_timer = P_SyncUINT8(save, players[i].typing_timer);
-		players[i].typing_duration = P_SyncUINT8(save, players[i].typing_duration);
+		SYNC(players[i].typing_timer);
+		SYNC(players[i].typing_duration);
 
-		players[i].kickstartaccel = P_SyncUINT8(save, players[i].kickstartaccel);
+		SYNC(players[i].kickstartaccel);
 
-		players[i].itemflags = P_SyncUINT8(save, players[i].itemflags);
+		SYNC(players[i].itemflags);
 
 		// botvars_t
-		players[i].bot = P_SyncUINT8(save, players[i].bot);
-		players[i].botvars.style = P_SyncUINT8(save, players[i].botvars.style);
-		players[i].botvars.difficulty = P_SyncUINT8(save, players[i].botvars.difficulty);
-		players[i].botvars.diffincrease = P_SyncUINT8(save, players[i].botvars.diffincrease);
-		players[i].botvars.rival = P_SyncUINT8(save, players[i].botvars.rival);
-		players[i].botvars.rubberband = P_SyncFixed(save, players[i].botvars.rubberband);
-		players[i].botvars.controller = P_SyncUINT16(save, players[i].botvars.controller);
+		SYNCBOOLEAN(players[i].bot);
+		SYNC(players[i].botvars.style);
+		SYNC(players[i].botvars.difficulty);
+		SYNC(players[i].botvars.diffincrease);
+		SYNCBOOLEAN(players[i].botvars.rival);
+		SYNC(players[i].botvars.rubberband);
+		SYNC(players[i].botvars.controller);
 
-		players[i].outrun = P_SyncFixed(save, players[i].outrun);
-		players[i].outruntime = P_SyncUINT8(save, players[i].outruntime);
+		SYNC(players[i].outrun);
+		SYNC(players[i].outruntime);
 
 		// sonicloopsvars_t
-		players[i].loop.radius = P_SyncFixed(save, players[i].loop.radius);
-		players[i].loop.revolution = P_SyncFixed(save, players[i].loop.revolution);
-		players[i].loop.min_revolution = P_SyncFixed(save, players[i].loop.min_revolution);
-		players[i].loop.max_revolution = P_SyncFixed(save, players[i].loop.max_revolution);
-		players[i].loop.yaw = P_SyncAngle(save, players[i].loop.yaw);
-		players[i].loop.origin.x = P_SyncFixed(save, players[i].loop.origin.x);
-		players[i].loop.origin.y = P_SyncFixed(save, players[i].loop.origin.y);
-		players[i].loop.origin.z = P_SyncFixed(save, players[i].loop.origin.z);
-		players[i].loop.origin_shift.x = P_SyncFixed(save, players[i].loop.origin_shift.x);
-		players[i].loop.origin_shift.y = P_SyncFixed(save, players[i].loop.origin_shift.y);
-		players[i].loop.shift.x = P_SyncFixed(save, players[i].loop.shift.x);
-		players[i].loop.shift.y = P_SyncFixed(save, players[i].loop.shift.y);
-		players[i].loop.flip = P_SyncUINT8(save, players[i].loop.flip);
+		SYNC(players[i].loop.radius);
+		SYNC(players[i].loop.revolution);
+		SYNC(players[i].loop.min_revolution);
+		SYNC(players[i].loop.max_revolution);
+		SYNC(players[i].loop.yaw);
+		SYNC(players[i].loop.origin.x);
+		SYNC(players[i].loop.origin.y);
+		SYNC(players[i].loop.origin.z);
+		SYNC(players[i].loop.origin_shift.x);
+		SYNC(players[i].loop.origin_shift.y);
+		SYNC(players[i].loop.shift.x);
+		SYNC(players[i].loop.shift.y);
+		SYNCBOOLEAN(players[i].loop.flip);
 
 		// sonicloopcamvars_t
-		players[i].loop.camera.enter_tic = P_SyncUINT32(save, players[i].loop.camera.enter_tic);
-		players[i].loop.camera.exit_tic = P_SyncUINT32(save, players[i].loop.camera.exit_tic);
-		players[i].loop.camera.zoom_in_speed = P_SyncUINT32(save, players[i].loop.camera.zoom_in_speed);
-		players[i].loop.camera.zoom_out_speed = P_SyncUINT32(save, players[i].loop.camera.zoom_out_speed);
-		players[i].loop.camera.dist = P_SyncFixed(save, players[i].loop.camera.dist);
-		players[i].loop.camera.pan = P_SyncAngle(save, players[i].loop.camera.pan);
-		players[i].loop.camera.pan_speed = P_SyncFixed(save, players[i].loop.camera.pan_speed);
-		players[i].loop.camera.pan_accel = P_SyncUINT32(save, players[i].loop.camera.pan_accel);
-		players[i].loop.camera.pan_back = P_SyncUINT32(save, players[i].loop.camera.pan_back);
+		SYNC(players[i].loop.camera.enter_tic);
+		SYNC(players[i].loop.camera.exit_tic);
+		SYNC(players[i].loop.camera.zoom_in_speed);
+		SYNC(players[i].loop.camera.zoom_out_speed);
+		SYNC(players[i].loop.camera.dist);
+		SYNC(players[i].loop.camera.pan);
+		SYNC(players[i].loop.camera.pan_speed);
+		SYNC(players[i].loop.camera.pan_accel);
+		SYNC(players[i].loop.camera.pan_back);
 
 		// Restored NiGHTS stuff
-		players[i].bumpertime = P_SyncUINT32(save, players[i].bumpertime);
-		players[i].linkcount = P_SyncINT32(save, players[i].linkcount);
-		players[i].linktimer = P_SyncUINT32(save, players[i].linktimer);
-		players[i].maxlink = P_SyncINT32(save, players[i].maxlink);
+		SYNC(players[i].bumpertime);
+		SYNC(players[i].linkcount);
+		SYNC(players[i].linktimer);
+		SYNC(players[i].maxlink);
 
 		// Fix janky landing particle
-		players[i].prevonground = P_SyncUINT8(save, players[i].prevonground);
+		SYNCBOOLEAN(players[i].prevonground);
 
 		// Wall Transfer bonus
-		players[i].walltransfered = P_SyncUINT8(save, players[i].walltransfered);
-		players[i].walltransferboost = P_SyncUINT8(save, players[i].walltransferboost);
+		SYNCBOOLEAN(players[i].walltransfered);
+		SYNC(players[i].walltransferboost);
 
 	}
 	TracyCZoneEnd(__zone);
