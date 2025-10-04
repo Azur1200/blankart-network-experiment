@@ -190,6 +190,20 @@ mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
 		return (mobj_t *)(uintptr_t)READUINT32(save->p);
 }
 
+mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
+{
+	if (save->write)
+	{
+		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
+		return mo;
+	}
+	else
+	{
+		UINT32 mobjnum = READUINT32(save->p);
+		return mobjnum == 0 ? NULL : P_FindNewPosition(mobjnum);
+	}
+}
+
 waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 {
 	if (save->write)
@@ -214,6 +228,10 @@ waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 
 #define SYNCBOOLEAN(v) v = _Generic(v, \
 	boolean: P_SyncUINT8 \
+)(save, v);
+
+#define SYNCRELINK(v) v = _Generic(v, \
+	mobj_t *: P_SyncMobjAndRelink \
 )(save, v);
 
 // Block UINT32s to attempt to ensure that the correct data is
@@ -3280,18 +3298,12 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 	INT32 i, j;
-	UINT32 mobjnum;
 
 	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
 	{
 		SYNC(numtubewaypoints[i]);
 		for (j = 0; j < numtubewaypoints[i]; j++)
-		{
-			mobjnum = tubewaypoints[i][j] ? tubewaypoints[i][j]->mobjnum : 0;
-			SYNC(mobjnum);
-			if (!save->write)
-				tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
-		}
+			SYNCRELINK(tubewaypoints[i][j]);
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -5326,10 +5338,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(bumpsparkactive);
 	SYNC(invintype);
 
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
 	{
-		votelevels[i][0] = P_SyncINT16(save, votelevels[i][0]);
-		votelevels[i][1] = P_SyncINT16(save, votelevels[i][1]);
+		SYNC(votelevels[i][0]);
+		SYNC(votelevels[i][1]);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -5381,9 +5393,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(exitcountdown);
 
 	// exitcondition_t
-	SYNC(g_exit.losing);
-	SYNC(g_exit.retry);
-	SYNC(g_exit.hasfinished);
+	SYNCBOOLEAN(g_exit.losing);
+	SYNCBOOLEAN(g_exit.retry);
+	SYNCBOOLEAN(g_exit.hasfinished);
 
 	SYNC(gravity);
 	SYNC(mapobjectscale);
@@ -5392,19 +5404,19 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(nummapboxes);
 	SYNC(numgotboxes);
 	SYNC(numtargets);
-	SYNC(itembreaker);
+	SYNCBOOLEAN(itembreaker);
 
 	SYNC(gamespeed);
 	SYNC(numlaps);
-	SYNC(franticitems);
-	SYNC(comeback);
+	SYNCBOOLEAN(franticitems);
+	SYNCBOOLEAN(comeback);
 
 	SYNC(speedscramble);
 	SYNC(encorescramble);
 
 	// WANTED system
 	SYNC(mostwanted);
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < sizeof(battlewanted)/sizeof(*battlewanted); i++)
 		SYNC(battlewanted[i]);
 
 	SYNC(wantedcalcdelay);
@@ -5439,7 +5451,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(extratimeintics);
 	SYNC(secretextratime);
 
-	SYNC(paused);
+	SYNC(paused); // surprisingly not a boolean
 
 	if (save->write)
 	{
