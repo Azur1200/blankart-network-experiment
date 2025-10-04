@@ -5340,6 +5340,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(draftingactive);
 	SYNCBOOLEAN(airdropactive);
 	SYNC(bumpsparkactive);
+	SYNC(invintype);
 
 	for (i = 0; i < 12; i++)
 	{
