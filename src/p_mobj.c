@@ -12600,11 +12600,13 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	if (mthing)
 	{
+		fixed_t offset = udmf ? mthing->z << FRACBITS : 0;
+
 		// Setting the spawnpoint's args[0] will make the player start on the ceiling
 		// Objectflip inverts
 		if (!!(mthing->args[0]) ^ !!(mthing->options & MTF_OBJECTFLIP))
 		{
-			z = ceiling - mobjinfo[MT_PLAYER].height;
+			z = ceiling - mobjinfo[MT_PLAYER].height - offset;
 			if (mthing->options >> ZSHIFT)
 				z -= ((mthing->options >> ZSHIFT) << FRACBITS);
 			if (p->respawn)
@@ -12612,7 +12614,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 		}
 		else
 		{
-			z = floor;
+			z = floor + offset;
 			if (mthing->options >> ZSHIFT)
 				z += ((mthing->options >> ZSHIFT) << FRACBITS);
 			if (p->respawn)
