@@ -3314,6 +3314,7 @@ static void P_NetUnArchiveWaypoints(savebuffer_t *save)
 
 static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 {
+	TracyCZone(__zone, true);
 	INT32 i, j;
 	UINT32 mobjnum;
 
@@ -3328,6 +3329,7 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 				tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
 	}
+	TracyCZoneEnd(__zone);
 }
 
 // Now save the pointers, tracer and target, but at load time we must
