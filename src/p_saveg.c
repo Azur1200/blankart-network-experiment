@@ -3312,37 +3312,22 @@ static void P_NetUnArchiveWaypoints(savebuffer_t *save)
 	TracyCZoneEnd(__zone);
 }
 
-static void P_NetArchiveTubeWaypoints(savebuffer_t *save)
+static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 {
-	TracyCZone(__zone, true);
-	INT32 i, j;
-
-	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
-	{
-		WRITEUINT16(save->p, numtubewaypoints[i]);
-		for (j = 0; j < numtubewaypoints[i]; j++)
-			WRITEUINT32(save->p, tubewaypoints[i][j] ? tubewaypoints[i][j]->mobjnum : 0);
-	}
-	TracyCZoneEnd(__zone);
-}
-
-static void P_NetUnArchiveTubeWaypoints(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
 	INT32 i, j;
 	UINT32 mobjnum;
 
 	for (i = 0; i < NUMTUBEWAYPOINTSEQUENCES; i++)
 	{
-		numtubewaypoints[i] = READUINT16(save->p);
+		numtubewaypoints[i] = P_SyncUINT16(save, numtubewaypoints[i]);
 		for (j = 0; j < numtubewaypoints[i]; j++)
 		{
-			mobjnum = READUINT32(save->p);
-			tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
+			mobjnum = tubewaypoints[i][j] ? tubewaypoints[i][j]->mobjnum : 0;
+			mobjnum = P_SyncUINT32(save, mobjnum);
+			if (!save->write)
+				tubewaypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
 	}
-	TracyCZoneEnd(__zone);
 }
 
 // Now save the pointers, tracer and target, but at load time we must
@@ -4945,89 +4930,88 @@ static void P_RelinkPointers(void)
 	}
 }
 
-static inline void P_NetArchiveSpecials(savebuffer_t *save)
+static inline void P_NetSyncSpecials(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
 	size_t i, z;
-
-	WRITEUINT32(save->p, ARCHIVEBLOCK_SPECIALS);
-
-	// itemrespawn queue for deathmatch
-	i = iquetail;
-	while (iquehead != i)
-	{
-		for (z = 0; z < nummapthings; z++)
-		{
-			if (&mapthings[z] == itemrespawnque[i])
-			{
-				WRITEUINT32(save->p, z);
-				break;
-			}
-		}
-		WRITEUINT32(save->p, itemrespawntime[i]);
-		i = (i + 1) & (ITEMQUESIZE-1);
-	}
-
-	// end delimiter
-	WRITEUINT32(save->p, 0xffffffff);
-
-	// Sky number
-	WRITESTRINGN(save->p, globallevelskytexture, 9);
-
-	// Current global weather type
-	WRITEUINT8(save->p, globalweather);
-
-	if (metalplayback) // Is metal sonic running?
-	{
-		WRITEUINT8(save->p, 0x01);
-		G_SaveMetal(&save->p);
-	}
-	else
-		WRITEUINT8(save->p, 0x00);
-	TracyCZoneEnd(__zone);
-}
-
-static void P_NetUnArchiveSpecials(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
 	char skytex[9];
-	size_t i;
 
-	if (READUINT32(save->p) != ARCHIVEBLOCK_SPECIALS)
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_SPECIALS) != ARCHIVEBLOCK_SPECIALS)
 		I_Error("Bad $$$.sav at archive block Specials");
 
-	// BP: added save itemrespawn queue for deathmatch
-	iquetail = iquehead = 0;
-	while ((i = READUINT32(save->p)) != 0xffffffff)
+	if (save->write)
 	{
-		itemrespawnque[iquehead] = &mapthings[i];
-		itemrespawntime[iquehead++] = READINT32(save->p);
+		// itemrespawn queue for deathmatch
+		i = iquetail;
+		while (iquehead != i)
+		{
+			for (z = 0; z < nummapthings; z++)
+			{
+				if (&mapthings[z] == itemrespawnque[i])
+				{
+					WRITEUINT32(save->p, z);
+					break;
+				}
+			}
+			WRITEUINT32(save->p, itemrespawntime[i]);
+			i = (i + 1) & (ITEMQUESIZE-1);
+		}
+
+		// end delimiter
+		WRITEUINT32(save->p, 0xffffffff);
+	}
+	else
+	{
+		// BP: added save itemrespawn queue for deathmatch
+		iquetail = iquehead = 0;
+		while ((i = READUINT32(save->p)) != 0xffffffff)
+		{
+			itemrespawnque[iquehead] = &mapthings[i];
+			itemrespawntime[iquehead++] = READINT32(save->p);
+		}
 	}
 
-	READSTRINGN(save->p, skytex, sizeof(skytex));
-	if (strcmp(skytex, globallevelskytexture))
+	// Sky number
+	P_SyncStringN(save, globallevelskytexture, 9);
+
+	if (!save->write && strcmp(skytex, globallevelskytexture))
 		P_SetupLevelSky(skytex, true);
 
-	globalweather = READUINT8(save->p);
+	// Current global weather type
+	globalweather = P_SyncUINT8(save, globalweather);
 
-	if (globalweather)
+	if (!save->write)
 	{
-		if (curWeather == globalweather)
-			curWeather = PRECIP_NONE;
+		if (globalweather)
+		{
+			if (curWeather == globalweather)
+				curWeather = PRECIP_NONE;
 
-		P_SwitchWeather(globalweather);
-	}
-	else // PRECIP_NONE
-	{
-		if (curWeather != PRECIP_NONE)
 			P_SwitchWeather(globalweather);
+		}
+		else // PRECIP_NONE
+		{
+			if (curWeather != PRECIP_NONE)
+				P_SwitchWeather(globalweather);
+		}
 	}
 
-	if (READUINT8(save->p) == 0x01) // metal sonic
-		G_LoadMetal(&save->p);
-
+	if (save->write)
+	{
+		if (metalplayback) // Is metal sonic running?
+		{
+			WRITEUINT8(save->p, 0x01);
+			G_SaveMetal(&save->p);
+		}
+		else
+			WRITEUINT8(save->p, 0x00);
+	}
+	else
+	{
+		if (READUINT8(save->p) == 0x01) // metal sonic
+			G_LoadMetal(&save->p);
+	}
 	TracyCZoneEnd(__zone);
 }
 
@@ -5630,9 +5614,9 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 		P_NetArchiveWorld(save);
 		P_ArchivePolyObjects(save);
 		P_NetArchiveThinkers(save);
-		P_NetArchiveSpecials(save);
+		P_NetSyncSpecials(save);
 		P_NetArchiveColormaps(save);
-		P_NetArchiveTubeWaypoints(save);
+		P_NetSyncTubeWaypoints(save);
 		P_NetArchiveWaypoints(save);
 	}
 
@@ -5682,9 +5666,9 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_NetUnArchiveWorld(save);
 		P_UnArchivePolyObjects(save);
 		P_NetUnArchiveThinkers(save);
-		P_NetUnArchiveSpecials(save);
+		P_NetSyncSpecials(save);
 		P_NetUnArchiveColormaps(save);
-		P_NetUnArchiveTubeWaypoints(save);
+		P_NetSyncTubeWaypoints(save);
 		P_NetUnArchiveWaypoints(save);
 		P_RelinkPointers();
 	}
