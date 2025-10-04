@@ -383,7 +383,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		else
 		{
 			if (flags & FOLLOWER)
-				players[i].follower->mobjnum = READUINT32(save->p);
+				players[i].follower = (mobj_t *)(size_t)READUINT32(save->p);
 		}
 
 		for (j = 0; j < NUMPOWERS; j++)
