@@ -12,7 +12,8 @@ git_current_branch(SRB2_COMP_BRANCH)
 git_working_tree_dirty(SRB2_COMP_UNCOMMITTED)
 
 git_latest_commit(SRB2_COMP_REVISION)
-git_subject(SRB2_COMP_LASTCOMMIT)
+git_subject(subject)
+string(REGEX REPLACE "([\"\\])" "\\\\\\1" SRB2_COMP_LASTCOMMIT "${subject}")
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/build/src/config.h")
