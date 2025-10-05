@@ -2337,7 +2337,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			mobj->terrainOverlay = (mobj_t *)(size_t)READUINT32(save->p);
 		}
 	}
-	SYNCF(MD3_GRAVITY, mobj->gravity);
+	SYNCDEF(MD3_GRAVITY, mobj->gravity, FRACUNIT);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakexoff);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakeyoff);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakezoff);
