@@ -1688,99 +1688,6 @@ enum mobj_diff_t
 	MD__MAX
 };
 
-typedef enum
-{
-	tc_mobj,
-	tc_ceiling,
-	tc_floor,
-	tc_flash,
-	tc_strobe,
-	tc_glow,
-	tc_fireflicker,
-	tc_thwomp,
-	tc_camerascanner,
-	tc_elevator,
-	tc_continuousfalling,
-	tc_bouncecheese,
-	tc_startcrumble,
-	tc_marioblock,
-	tc_marioblockchecker,
-	tc_floatsector,
-	tc_crushceiling,
-	tc_scroll,
-	tc_friction,
-	tc_pusher,
-	tc_laserflash,
-	tc_lightfade,
-	tc_executor,
-	tc_raisesector,
-	tc_noenemies,
-	tc_eachtime,
-	tc_disappear,
-	tc_fade,
-	tc_fadecolormap,
-	tc_planedisplace,
-	tc_dynslopeline,
-	tc_dynslopevert,
-	tc_polyrotate, // haleyjd 03/26/06: polyobjects
-	tc_polymove,
-	tc_polywaypoint,
-	tc_polyslidedoor,
-	tc_polyswingdoor,
-	tc_polyflag,
-	tc_polydisplace,
-	tc_polyrotdisplace,
-	tc_polyfade,
-	tc_end
-} specials_e;
-
-const actionf_p1 actionspecials[tc_end] =
-{
-	(actionf_p1)P_MobjThinker,
-	(actionf_p1)T_MoveCeiling,
-	(actionf_p1)T_CrushCeiling,
-	(actionf_p1)T_MoveFloor,
-	(actionf_p1)T_LightningFlash,
-	(actionf_p1)T_StrobeFlash,
-	(actionf_p1)T_Glow,
-	(actionf_p1)T_FireFlicker,
-	(actionf_p1)T_MoveElevator,
-	(actionf_p1)T_ContinuousFalling,
-	(actionf_p1)T_ThwompSector,
-	(actionf_p1)T_NoEnemiesSector,
-	(actionf_p1)T_EachTimeThinker,
-	(actionf_p1)T_RaiseSector,
-	(actionf_p1)T_CameraScanner,
-	(actionf_p1)T_Scroll,
-	(actionf_p1)T_Friction,
-	(actionf_p1)T_Pusher,
-	(actionf_p1)T_BounceCheese,
-	(actionf_p1)T_StartCrumble,
-	(actionf_p1)T_MarioBlock,
-	(actionf_p1)T_MarioBlockChecker,
-	(actionf_p1)T_FloatSector,
-	(actionf_p1)T_LaserFlash,
-	(actionf_p1)T_LightFade,
-	(actionf_p1)T_ExecutorDelay,
-	(actionf_p1)T_Disappear,
-	(actionf_p1)T_Fade,
-	(actionf_p1)T_FadeColormap,
-	(actionf_p1)T_PlaneDisplace,
-	(actionf_p1)T_PolyObjRotate,
-	(actionf_p1)T_PolyObjMove,
-	(actionf_p1)T_PolyObjWaypoint,
-	(actionf_p1)T_PolyDoorSlide,
-	(actionf_p1)T_PolyDoorSwing,
-	(actionf_p1)T_PolyObjFlag,
-	(actionf_p1)T_PolyObjDisplace,
-	(actionf_p1)T_PolyObjRotDisplace,
-	(actionf_p1)T_PolyObjFade,
-	(actionf_p1)T_DynamicSlopeLine,
-	(actionf_p1)T_DynamicSlopeVert,
-};
-
-I_StaticAssert(sizeof(actionspecials) / sizeof(actionspecials[0]) == tc_end);
-
 static inline UINT32 SaveMobjnum(const mobj_t *mobj)
 {
 	if (mobj) return mobj->mobjnum;
@@ -2093,6 +2000,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		else
 			DiffMobj(mobj, diff);
 
+		for (j = sizeof(diff)/sizeof(*diff)-1; j > 0; j--)
+			if (diff[j])
+				diff[j-1] |= 0x80000000;
+
 		// already read by the client
 		WRITEUINT8(save->p, type);
 	}
@@ -2144,7 +2055,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 
 	// manually link to thinkerlist, since the thinker isn't returned anymore
 	if (!save->write)
-		P_AddThinker(type, &mobj->thinker);
+		P_AddThinker(THINK_MOBJ, &mobj->thinker);
 
 	SYNC(mobj->z); // Force this so 3dfloor problems don't arise.
 	SYNC(mobj->floorz);
@@ -2854,8 +2765,9 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 	return &ht->thinker;
 }
 
-static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, boolean setplanedata, thinker_t *th, UINT8 type)
+static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
+	boolean setplanedata = thinker == (actionf_p1)T_MoveElevator;
 	elevator_t *ht = (void *)th;
 	if (save->write)
 	{
@@ -3407,6 +3319,66 @@ static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	return &ht->thinker;
 }
 
+typedef thinker_t *thinkersync_f(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type);
+
+#define ITER_THINKERS \
+	_(P_MobjThinker,        SyncMobjThinker,               tc_mobj) \
+	_(T_MoveCeiling,        SyncCeilingThinker,            tc_ceiling) \
+	_(T_MoveFloor,          SyncCeilingThinker,            tc_floor) \
+	_(T_LightningFlash,     SyncLightflashThinker,         tc_flash) \
+	_(T_StrobeFlash,        SyncStrobeThinker,             tc_strobe) \
+	_(T_Glow,               SyncGlowThinker,               tc_glow) \
+	_(T_FireFlicker,        SyncFireflickerThinker,        tc_fireflicker) \
+	_(T_ThwompSector,       SyncThwompThinker,             tc_thwomp) \
+	_(T_CameraScanner,      SyncElevatorThinker,           tc_camerascanner) \
+	_(T_MoveElevator,       SyncElevatorThinker,           tc_elevator) \
+	_(T_ContinuousFalling,  SyncContinuousFallThinker,     tc_continuousfalling) \
+	_(T_BounceCheese,       SyncBounceCheeseThinker,       tc_bouncecheese) \
+	_(T_StartCrumble,       SyncCrumbleThinker,            tc_startcrumble) \
+	_(T_MarioBlock,         SyncMarioBlockThinker,         tc_marioblock) \
+	_(T_MarioBlockChecker,  SyncMarioCheckThinker,         tc_marioblockchecker) \
+	_(T_FloatSector,        SyncFloatThinker,              tc_floatsector) \
+	_(T_CrushCeiling,       SyncCeilingThinker,            tc_crushceiling) \
+	_(T_Scroll,             SyncScrollThinker,             tc_scroll) \
+	_(T_Friction,           SyncFrictionThinker,           tc_friction) \
+	_(T_Pusher,             SyncPusherThinker,             tc_pusher) \
+	_(T_LaserFlash,         SyncLaserThinker,              tc_laserflash) \
+	_(T_LightFade,          SyncLightlevelThinker,         tc_lightfade) \
+	_(T_ExecutorDelay,      SyncExecutorThinker,           tc_executor) \
+	_(T_RaiseSector,        SyncRaiseThinker,              tc_raisesector) \
+	_(T_NoEnemiesSector,    SyncNoEnemiesThinker,          tc_noenemies) \
+	_(T_EachTimeThinker,    SyncEachTimeThinker,           tc_eachtime) \
+	_(T_Disappear,          SyncDisappearThinker,          tc_disappear) \
+	_(T_Fade,               SyncFadeThinker,               tc_fade) \
+	_(T_FadeColormap,       SyncFadeColormapThinker,       tc_fadecolormap) \
+	_(T_PlaneDisplace,      SyncPlaneDisplaceThinker,      tc_planedisplace) \
+	_(T_DynamicSlopeLine,   SyncDynamicLineSlopeThinker,   tc_dynslopeline) \
+	_(T_DynamicSlopeVert,   SyncDynamicVertexSlopeThinker, tc_dynslopevert) \
+	_(T_PolyObjRotate,      SyncPolyrotatetThinker,        tc_polyrotate) \
+	_(T_PolyObjMove,        SyncPolymoveThinker,           tc_polymove) \
+	_(T_PolyObjWaypoint,    SyncPolywaypointThinker,       tc_polywaypoint) \
+	_(T_PolyDoorSlide,      SyncPolyslidedoorThinker,      tc_polyslidedoor) \
+	_(T_PolyDoorSwing,      SyncPolyswingdoorThinker,      tc_polyswingdoor) \
+	_(T_PolyObjFlag,        SyncPolymoveThinker,           tc_polyflag) \
+	_(T_PolyObjDisplace,    SyncPolydisplaceThinker,       tc_polydisplace) \
+	_(T_PolyObjRotDisplace, SyncPolyrotdisplaceThinker,    tc_polyrotdisplace) \
+	_(T_PolyObjFade,        SyncPolyfadeThinker,           tc_polyfade ) \
+
+typedef enum
+{
+#define _(think, sync, tc) tc,
+	ITER_THINKERS
+#undef _
+	tc_end
+} specials_e;
+
+static const actionf_p1 actionspecials[tc_end] =
+{
+#define _(think, sync, tc) (actionf_p1)think,
+	ITER_THINKERS
+#undef _
+};
+
 static void P_NetSyncThinkers(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
@@ -3414,7 +3386,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 	thinker_t *currentthinker;
 	thinker_t *next;
 	UINT8 tclass;
-	UINT8 restoreNum = false;
+	boolean restoreNum = false;
 	UINT32 i;
 	UINT32 numloaded = 0;
 
@@ -3483,178 +3455,20 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 			}
 
 			numloaded++;
-			if (acp == (actionf_p1)P_MobjThinker)
-			{
-				th = SyncMobjThinker(save, (actionf_p1)P_MobjThinker, th, tc_mobj);
-			}
-#ifdef PARANOIA
-			else if (acp == (actionf_p1)P_NullPrecipThinker);
-#endif
-			else if (acp == (actionf_p1)T_MoveCeiling)
-			{
-				th = SyncCeilingThinker(save, (actionf_p1)T_MoveCeiling, th, tc_ceiling);
-			}
-			else if (acp == (actionf_p1)T_CrushCeiling)
-			{
-				th = SyncCeilingThinker(save, (actionf_p1)T_CrushCeiling, th, tc_crushceiling);
-			}
-			else if (acp == (actionf_p1)T_MoveFloor)
-			{
-				th = SyncFloormoveThinker(save, (actionf_p1)T_MoveFloor, th, tc_floor);
-			}
-			else if (acp == (actionf_p1)T_LightningFlash)
-			{
-				th = SyncLightflashThinker(save, (actionf_p1)T_LightningFlash, th, tc_flash);
-			}
-			else if (acp == (actionf_p1)T_StrobeFlash)
-			{
-				th = SyncStrobeThinker(save, (actionf_p1)T_StrobeFlash, th, tc_strobe);
-			}
-			else if (acp == (actionf_p1)T_Glow)
-			{
-				th = SyncGlowThinker(save, (actionf_p1)T_Glow, th, tc_glow);
-			}
-			else if (acp == (actionf_p1)T_FireFlicker)
-			{
-				th = SyncFireflickerThinker(save, (actionf_p1)T_FireFlicker, th, tc_fireflicker);
-			}
-			else if (acp == (actionf_p1)T_MoveElevator)
-			{
-				th = SyncElevatorThinker(save, (actionf_p1)T_MoveElevator, true, th, tc_elevator);
-			}
-			else if (acp == (actionf_p1)T_ContinuousFalling)
-			{
-				th = SyncContinuousFallThinker(save, (actionf_p1)T_ContinuousFalling, th, tc_continuousfalling);
-			}
-			else if (acp == (actionf_p1)T_ThwompSector)
-			{
-				th = SyncThwompThinker(save, (actionf_p1)T_ThwompSector, th, tc_thwomp);
-			}
-			else if (acp == (actionf_p1)T_NoEnemiesSector)
-			{
-				th = SyncNoEnemiesThinker(save, (actionf_p1)T_NoEnemiesSector, th, tc_noenemies);
-			}
-			else if (acp == (actionf_p1)T_EachTimeThinker)
-			{
-				th = SyncEachTimeThinker(save, (actionf_p1)T_EachTimeThinker, th, tc_eachtime);
-			}
-			else if (acp == (actionf_p1)T_RaiseSector)
-			{
-				th = SyncRaiseThinker(save, (actionf_p1)T_RaiseSector, th, tc_raisesector);
-			}
-			else if (acp == (actionf_p1)T_CameraScanner)
-			{
-				th = SyncElevatorThinker(save, (actionf_p1)T_CameraScanner, false, th, tc_camerascanner);
-			}
-			else if (acp == (actionf_p1)T_Scroll)
-			{
-				th = SyncScrollThinker(save, (actionf_p1)T_Scroll, th, tc_scroll);
-			}
-			else if (acp == (actionf_p1)T_Friction)
-			{
-				th = SyncFrictionThinker(save, (actionf_p1)T_Friction, th, tc_friction);
-			}
-			else if (acp == (actionf_p1)T_Pusher)
-			{
-				th = SyncPusherThinker(save, (actionf_p1)T_Pusher, th, tc_pusher);
-			}
-			else if (acp == (actionf_p1)T_BounceCheese)
-			{
-				th = SyncBounceCheeseThinker(save, (actionf_p1)T_BounceCheese, th, tc_bouncecheese);
-			}
-			else if (acp == (actionf_p1)T_StartCrumble)
-			{
-				th = SyncCrumbleThinker(save, (actionf_p1)T_StartCrumble, th, tc_startcrumble);
-			}
-			else if (acp == (actionf_p1)T_MarioBlock)
-			{
-				th = SyncMarioBlockThinker(save, (actionf_p1)T_MarioBlock, th, tc_marioblock);
-			}
-			else if (acp == (actionf_p1)T_MarioBlockChecker)
-			{
-				th = SyncMarioCheckThinker(save, (actionf_p1)T_MarioBlockChecker, th, tc_marioblockchecker);
-			}
-			else if (acp == (actionf_p1)T_FloatSector)
-			{
-				th = SyncFloatThinker(save, (actionf_p1)T_FloatSector, th, tc_floatsector);
-			}
-			else if (acp == (actionf_p1)T_LaserFlash)
-			{
-				th = SyncLaserThinker(save, (actionf_p1)T_LaserFlash, th, tc_laserflash);
-			}
-			else if (acp == (actionf_p1)T_LightFade)
-			{
-				th = SyncLightlevelThinker(save, (actionf_p1)T_LightFade, th, tc_lightfade);
-			}
-			else if (acp == (actionf_p1)T_ExecutorDelay)
-			{
-				th = SyncExecutorThinker(save, (actionf_p1)T_ExecutorDelay, th, tc_executor);
+
+			if (acp == (actionf_p1)P_MobjThinker && i != THINK_MOBJ)
+				I_Error("mobj in non-THINK_MOBJ list");
+
+			if (acp == (actionf_p1)T_ExecutorDelay)
 				restoreNum = true;
-			}
-			else if (acp == (actionf_p1)T_Disappear)
-			{
-				th = SyncDisappearThinker(save, (actionf_p1)T_Disappear, th, tc_disappear);
-			}
-			else if (acp == (actionf_p1)T_Fade)
-			{
-				th = SyncFadeThinker(save, (actionf_p1)T_Fade, th, tc_fade);
-			}
-			else if (acp == (actionf_p1)T_FadeColormap)
-			{
-				th = SyncFadeColormapThinker(save, (actionf_p1)T_FadeColormap, th, tc_fadecolormap);
-			}
-			else if (acp == (actionf_p1)T_PlaneDisplace)
-			{
-				th = SyncPlaneDisplaceThinker(save, (actionf_p1)T_PlaneDisplace, th, tc_planedisplace);
-			}
-			else if (acp == (actionf_p1)T_PolyObjRotate)
-			{
-				th = SyncPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate, th, tc_polyrotate);
-			}
-			else if (acp == (actionf_p1)T_PolyObjMove)
-			{
-				th = SyncPolymoveThinker(save, (actionf_p1)T_PolyObjFlag, th, tc_polyflag);
-			}
-			else if (acp == (actionf_p1)T_PolyObjWaypoint)
-			{
-				th = SyncPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint, th, tc_polywaypoint);
-			}
-			else if (acp == (actionf_p1)T_PolyDoorSlide)
-			{
-				th = SyncPolyslidedoorThinker(save, (actionf_p1)T_PolyDoorSlide, th, tc_polyslidedoor);
-			}
-			else if (acp == (actionf_p1)T_PolyDoorSwing)
-			{
-				th = SyncPolyswingdoorThinker(save, (actionf_p1)T_PolyDoorSwing, th, tc_polyswingdoor);
-			}
-			else if (acp == (actionf_p1)T_PolyObjFlag)
-			{
-				th = SyncPolymoveThinker(save, (actionf_p1)T_PolyObjFlag, th, tc_polyflag);
-			}
-			else if (acp == (actionf_p1)T_PolyObjDisplace)
-			{
-				th = SyncPolydisplaceThinker(save, (actionf_p1)T_PolyObjDisplace, th, tc_polydisplace);
-			}
-			else if (acp == (actionf_p1)T_PolyObjRotDisplace)
-			{
-				th = SyncPolyrotdisplaceThinker(save, (actionf_p1)T_PolyObjRotDisplace, th, tc_polyrotdisplace);
-			}
-			else if (acp == (actionf_p1)T_PolyObjFade)
-			{
-				th = SyncPolyfadeThinker(save, (actionf_p1)T_PolyObjFade, th, tc_polyfade);
-			}
-			else if (acp == (actionf_p1)T_DynamicSlopeLine)
-			{
-				th = SyncDynamicLineSlopeThinker(save, (actionf_p1)T_DynamicSlopeLine, th, tc_dynslopeline);
-			}
-			else if (acp == (actionf_p1)T_DynamicSlopeVert)
-			{
-				th = SyncDynamicVertexSlopeThinker(save, (actionf_p1)T_DynamicSlopeVert, th, tc_dynslopevert);
-			}
-#ifdef PARANOIA
-			else
-				I_Assert(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed); // wait garbage collection
-#endif
+
+
+			if (false);
+#define _(think, sync, tc) else if (acp == (actionf_p1)think) th = sync(save, acp, th, tc);
+			ITER_THINKERS
+#undef _
+
+
 			if (!save->write && th && tclass != tc_mobj)
 				P_AddThinker(i, th);
 		}
