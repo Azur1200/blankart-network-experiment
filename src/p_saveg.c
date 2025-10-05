@@ -3324,7 +3324,7 @@ typedef thinker_t *thinkersync_f(savebuffer_t *save, actionf_p1 thinker, thinker
 #define ITER_THINKERS \
 	_(P_MobjThinker,        SyncMobjThinker,               tc_mobj) \
 	_(T_MoveCeiling,        SyncCeilingThinker,            tc_ceiling) \
-	_(T_MoveFloor,          SyncCeilingThinker,            tc_floor) \
+	_(T_MoveFloor,          SyncFloormoveThinker,          tc_floor) \
 	_(T_LightningFlash,     SyncLightflashThinker,         tc_flash) \
 	_(T_StrobeFlash,        SyncStrobeThinker,             tc_strobe) \
 	_(T_Glow,               SyncGlowThinker,               tc_glow) \
@@ -3385,10 +3385,8 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 
 	thinker_t *currentthinker;
 	thinker_t *next;
-	UINT8 tclass;
 	boolean restoreNum = false;
 	UINT32 i;
-	UINT32 numloaded = 0;
 
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_THINKERS) != ARCHIVEBLOCK_THINKERS)
 		I_Error("Bad $$$.sav at archive block Thinkers");
@@ -3432,6 +3430,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
 		thinker_t* th = &thlist[i];
+		UINT32 numloaded = 0;
 		for (;;)
 		{
 			actionf_p1 acp;
@@ -3443,33 +3442,37 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 					WRITEUINT8(save->p, tc_end);
 					break;
 				}
+
 				acp = th->function.acp1;
+				if (acp == (actionf_p1)P_NullPrecipThinker || acp == (actionf_p1)P_RemoveThinkerDelayed)
+					continue;
 			}
 			else
 			{
-				th = NULL;
-				tclass = READUINT8(save->p); // NOTE: this is normally written within the sync functions
+				UINT8 tclass = READUINT8(save->p); // NOTE: this is normally written within the sync functions
 				if (tclass == tc_end)
 					break;
+				else if (tclass > tc_end)
+					I_Error("Invalid thinker class %d", tclass);
+
+				th = NULL;
 				acp = actionspecials[tclass];
+				if (acp == (actionf_p1)T_ExecutorDelay)
+					restoreNum = true;
+				else if (acp == (actionf_p1)P_MobjThinker && i != THINK_MOBJ)
+					I_Error("P_MobjThinker in non-THINK_MOBJ list");
 			}
-
-			numloaded++;
-
-			if (acp == (actionf_p1)P_MobjThinker && i != THINK_MOBJ)
-				I_Error("mobj in non-THINK_MOBJ list");
-
-			if (acp == (actionf_p1)T_ExecutorDelay)
-				restoreNum = true;
-
 
 			if (false);
 #define _(think, sync, tc) else if (acp == (actionf_p1)think) th = sync(save, acp, th, tc);
 			ITER_THINKERS
 #undef _
+			else
+				I_Error("Unknown thinker type");
 
+			numloaded++;
 
-			if (!save->write && th && tclass != tc_mobj)
+			if (!save->write && th && acp != (actionf_p1)P_MobjThinker)
 				P_AddThinker(i, th);
 		}
 
