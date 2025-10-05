@@ -224,15 +224,15 @@ waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 	UINT32: P_SyncUINT32, \
 	mobj_t *: P_SyncMobj, \
 	waypoint_t *: P_SyncWaypoint \
-)(save, v);
+)(save, v)
 
 #define SYNCBOOLEAN(v) v = _Generic(v, \
 	boolean: P_SyncUINT8 \
-)(save, v);
+)(save, v)
 
 #define SYNCRELINK(v) v = _Generic(v, \
 	mobj_t *: P_SyncMobjAndRelink \
-)(save, v);
+)(save, v)
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
@@ -1014,14 +1014,16 @@ enum linediff_e
 };
 
 // diff macros
-#define SETB(b) (diff[b >> 3] |= (1 << (b & 7)))
+#define SETB(b) (diff[b / (8*sizeof(*diff))] |= (1 << (b & (8*sizeof(*diff) - 1))))
 #define DIFFNE(x, field, b) if (x->field != spawn##x->field) SETB(b)
 #define DIFFIF(x, field, b) if (x->field) SETB(b)
+#define DIFF(x, b) if (x) SETB(b)
 
 // sync macros
-#define GETB(b) (diff[b >> 3] & (1 << (b & 7)))
+#define GETB(b) (diff[b / (8*sizeof(*diff))] & (1 << (b & (8*sizeof(*diff) - 1))))
 #define SYNCF(b, v) if (GETB(b)) SYNC(v)
 #define SYNCFB(b, v) if (GETB(b)) SYNCBOOLEAN(v)
+#define SYNCDEF(b, v, d) (GETB(b) ? SYNC(v) : (v = d))
 
 static boolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 {
@@ -1197,7 +1199,7 @@ static void SyncSectors(savebuffer_t *save)
 		sec = &sectors[i];
 		j = 0;
 		do
-			SYNC(diff[j])
+			SYNC(diff[j]);
 		while (diff[j++] & 0x80);
 
 		SYNCF(SD_FLOORHT, sec->floorheight);
@@ -1431,7 +1433,7 @@ static void SyncLines(savebuffer_t *save)
 		li = &lines[i];
 		j = 0;
 		do
-			SYNC(diff[j])
+			SYNC(diff[j]);
 		while (diff[j++] & 0x80);
 
 		SYNCF(LD_FLAG, li->flags);
@@ -1611,86 +1613,80 @@ static boolean P_ThingScriptEqual(const mobj_t *mobj, const mapthing_t *mapthing
 	return true;
 }
 
-typedef enum
+enum mobj_diff_t
 {
-	MD_SPAWNPOINT  = 1,
-	MD_POS         = 1<<1,
-	MD_TYPE        = 1<<2,
-	MD_MOM         = 1<<3,
-	MD_RADIUS      = 1<<4,
-	MD_HEIGHT      = 1<<5,
-	MD_FLAGS       = 1<<6,
-	MD_HEALTH      = 1<<7,
-	MD_RTIME       = 1<<8,
-	MD_STATE       = 1<<9,
-	MD_TICS        = 1<<10,
-	MD_SPRITE      = 1<<11,
-	MD_FRAME       = 1<<12,
-	MD_EFLAGS      = 1<<13,
-	MD_PLAYER      = 1<<14,
-	MD_MOVEDIR     = 1<<15,
-	MD_MOVECOUNT   = 1<<16,
-	MD_THRESHOLD   = 1<<17,
-	MD_LASTLOOK    = 1<<18,
-	MD_TARGET      = 1<<19,
-	MD_TRACER      = 1<<20,
-	MD_FRICTION    = 1<<21,
-	MD_MOVEFACTOR  = 1<<22,
-	MD_FLAGS2      = 1<<23,
-	MD_FUSE        = 1<<24,
-	MD_WATERTOP    = 1<<25,
-	MD_WATERBOTTOM = 1<<26,
-	MD_SCALE       = 1<<27,
-	MD_DSCALE      = 1<<28,
-	MD_ARGS        = 1<<29,
-	MD_STRINGARGS  = 1<<30,
-	MD_MORE        = (INT32)(1U<<31)
-} mobj_diff_t;
+	MD_SPAWNPOINT = 0<<5,
+	MD_POS,
+	MD_TYPE,
+	MD_MOM,
+	MD_RADIUS,
+	MD_HEIGHT,
+	MD_FLAGS,
+	MD_HEALTH,
+	MD_RTIME,
+	MD_STATE,
+	MD_TICS,
+	MD_SPRITE,
+	MD_FRAME,
+	MD_EFLAGS,
+	MD_PLAYER,
+	MD_MOVEDIR,
+	MD_MOVECOUNT,
+	MD_THRESHOLD,
+	MD_LASTLOOK,
+	MD_TARGET,
+	MD_TRACER,
+	MD_FRICTION,
+	MD_MOVEFACTOR,
+	MD_FLAGS2,
+	MD_FUSE,
+	MD_WATERTOP,
+	MD_WATERBOTTOM,
+	MD_SCALE,
+	MD_DSCALE,
+	MD_ARGS,
+	MD_STRINGARGS,
 
-typedef enum
-{
-	MD2_CUSVAL       = 1,
-	MD2_CVMEM        = 1<<1,
-	MD2_SKIN         = 1<<2,
-	MD2_COLOR        = 1<<3,
-	MD2_SCALESPEED   = 1<<4,
-	MD2_EXTVAL1      = 1<<5,
-	MD2_EXTVAL2      = 1<<6,
-	MD2_HNEXT        = 1<<7,
-	MD2_HPREV        = 1<<8,
-	MD2_FLOORROVER   = 1<<9,
-	MD2_CEILINGROVER = 1<<10,
-	MD2_SLOPE        = 1<<11,
-	MD2_COLORIZED    = 1<<12,
-	MD2_MIRRORED     = 1<<13,
-	MD2_ROLLANGLE    = 1<<14,
-	MD2_SHADOWSCALE  = 1<<15,
-	MD2_RENDERFLAGS  = 1<<16,
-	MD2_TID          = 1<<17,
-	MD2_SPRITESCALE  = 1<<18,
-	MD2_SPRITEOFFSET = 1<<19,
-	MD2_WORLDOFFSET  = 1<<20,
-	MD2_SPECIAL      = 1<<21,
-	MD2_FLOORSPRITESLOPE = 1<<22,
-	MD2_DISPOFFSET   = 1<<23,
-	MD2_BOSS3CAP  = 1<<24,
-	MD2_WAYPOINTCAP  = 1<<25,
-	MD2_KITEMCAP     = 1<<26,
-	MD2_ITNEXT       = 1<<27,
-	MD2_LASTMOMZ     = 1<<28,
-	MD2_TERRAIN      = 1<<29,
-	MD2_LIGHTLEVEL   = 1<<30,
-	MD2_MORE         = (INT32)(1U<<31)
-} mobj_diff2_t;
+	MD2_CUSVAL = 1<<5,
+	MD2_CVMEM,
+	MD2_SKIN,
+	MD2_COLOR,
+	MD2_SCALESPEED,
+	MD2_EXTVAL1,
+	MD2_EXTVAL2,
+	MD2_HNEXT,
+	MD2_HPREV,
+	MD2_FLOORROVER,
+	MD2_CEILINGROVER,
+	MD2_SLOPE,
+	MD2_COLORIZED,
+	MD2_MIRRORED,
+	MD2_ROLLANGLE,
+	MD2_SHADOWSCALE,
+	MD2_RENDERFLAGS,
+	MD2_TID,
+	MD2_SPRITESCALE,
+	MD2_SPRITEOFFSET,
+	MD2_WORLDOFFSET,
+	MD2_SPECIAL,
+	MD2_FLOORSPRITESLOPE,
+	MD2_DISPOFFSET,
+	MD2_BOSS3CAP,
+	MD2_WAYPOINTCAP,
+	MD2_KITEMCAP,
+	MD2_ITNEXT,
+	MD2_LASTMOMZ,
+	MD2_TERRAIN,
+	MD2_LIGHTLEVEL,
 
-typedef enum
-{
-	MD3_GRAVITY      = 1,
-	MD3_MISCCAP      = 1<<1,
-	MD3_BAKEDOFFSET	 = 1<<2,
-	MD3_EXTVAL3		 = 1<<3,
-	MD3_SHIELDTRACER = 1<<4,
-} mobj_diff3_t;
+	MD3_GRAVITY = 2<<5,
+	MD3_MISCCAP,
+	MD3_BAKEDOFFSET,
+	MD3_EXTVAL3,
+	MD3_SHIELDTRACER,
+
+	MD__MAX
+};
 
 typedef enum
 {
@@ -1738,22 +1734,135 @@ typedef enum
 	tc_end
 } specials_e;
 
+const actionf_p1 actionspecials[tc_end] =
+{
+	(actionf_p1)P_MobjThinker,
+	(actionf_p1)T_MoveCeiling,
+	(actionf_p1)T_CrushCeiling,
+	(actionf_p1)T_MoveFloor,
+	(actionf_p1)T_LightningFlash,
+	(actionf_p1)T_StrobeFlash,
+	(actionf_p1)T_Glow,
+	(actionf_p1)T_FireFlicker,
+	(actionf_p1)T_MoveElevator,
+	(actionf_p1)T_ContinuousFalling,
+	(actionf_p1)T_ThwompSector,
+	(actionf_p1)T_NoEnemiesSector,
+	(actionf_p1)T_EachTimeThinker,
+	(actionf_p1)T_RaiseSector,
+	(actionf_p1)T_CameraScanner,
+	(actionf_p1)T_Scroll,
+	(actionf_p1)T_Friction,
+	(actionf_p1)T_Pusher,
+	(actionf_p1)T_BounceCheese,
+	(actionf_p1)T_StartCrumble,
+	(actionf_p1)T_MarioBlock,
+	(actionf_p1)T_MarioBlockChecker,
+	(actionf_p1)T_FloatSector,
+	(actionf_p1)T_LaserFlash,
+	(actionf_p1)T_LightFade,
+	(actionf_p1)T_ExecutorDelay,
+	(actionf_p1)T_Disappear,
+	(actionf_p1)T_Fade,
+	(actionf_p1)T_FadeColormap,
+	(actionf_p1)T_PlaneDisplace,
+	(actionf_p1)T_PolyObjRotate,
+	(actionf_p1)T_PolyObjMove,
+	(actionf_p1)T_PolyObjWaypoint,
+	(actionf_p1)T_PolyDoorSlide,
+	(actionf_p1)T_PolyDoorSwing,
+	(actionf_p1)T_PolyObjFlag,
+	(actionf_p1)T_PolyObjDisplace,
+	(actionf_p1)T_PolyObjRotDisplace,
+	(actionf_p1)T_PolyObjFade,
+	(actionf_p1)T_DynamicSlopeLine,
+	(actionf_p1)T_DynamicSlopeVert,
+};
+
+I_StaticAssert(sizeof(actionspecials) / sizeof(actionspecials[0]) == tc_end);
+
 static inline UINT32 SaveMobjnum(const mobj_t *mobj)
 {
 	if (mobj) return mobj->mobjnum;
 	return 0;
 }
 
-static UINT32 SaveSector(const sector_t *sector)
+static mobj_t *SyncMobj(savebuffer_t *save, mobj_t *mobj)
+{
+	if (save->write)
+	{
+		if (mobj) WRITEUINT32(save->p, mobj->mobjnum);
+		else WRITEUINT32(save->p, 0);
+		return mobj;
+	}
+	else
+	{
+		UINT32 mobjnum = READUINT32(save->p);
+		if (mobjnum == 0) return NULL;
+		return (mobj_t *)(size_t)mobjnum;
+	}
+}
+
+static sector_t *LoadSector(UINT32 sector)
+{
+	if (sector >= numsectors) return NULL;
+	return &sectors[sector];
+}
+
+static UINT32 SaveSector(sector_t *sector)
 {
 	if (sector) return (UINT32)(sector - sectors);
-	return 0xFFFFFFFF;
+	else return 0xFFFFFFFF;
+}
+
+static sector_t *SyncSector(savebuffer_t *save, sector_t *sector)
+{
+	if (save->write)
+	{
+		if (sector) WRITEUINT32(save->p, (UINT32)(sector - sectors));
+		else WRITEUINT32(save->p, 0xFFFFFFFF);
+		return sector;
+	}
+	else
+	{
+		UINT32 sectornum = READUINT32(save->p);
+		if (sectornum >= numsectors) return NULL;
+		return &sectors[sectornum];
+	}
+}
+
+static line_t *LoadLine(UINT32 line)
+{
+	if (line >= numlines) return NULL;
+	return &lines[line];
 }
 
 static UINT32 SaveLine(const line_t *line)
 {
 	if (line) return (UINT32)(line - lines);
 	return 0xFFFFFFFF;
+}
+
+static line_t *SyncLine(savebuffer_t *save, line_t *line)
+{
+	if (save->write)
+	{
+		if (line) WRITEUINT32(save->p, (UINT32)(line - lines));
+		else WRITEUINT32(save->p, 0xFFFFFFFF);
+		return line;
+	}
+	else
+	{
+		UINT32 linenum = READUINT32(save->p);
+		if (linenum >= numlines) return NULL;
+		return &lines[linenum];
+	}
+}
+
+static inline player_t *LoadPlayer(UINT32 player)
+{
+	if (player >= MAXPLAYERS) return NULL;
+	return &players[player];
 }
 
 static inline UINT32 SavePlayer(const player_t *player)
@@ -1768,70 +1877,75 @@ static UINT32 SaveSlope(const pslope_t *slope)
 	return 0xFFFFFFFF;
 }
 
-static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static pslope_t *SyncSlope(savebuffer_t *save, pslope_t *slope)
 {
-	const mobj_t *mobj = (const mobj_t *)th;
-	UINT32 diff;
-	UINT32 diff2;
-	UINT32 diff3;
-	size_t j;
+	if (save->write)
+	{
+		if (slope) WRITEUINT32(save->p, (UINT32)(slope->id));
+		else WRITEUINT32(save->p, 0xFFFFFFFF);
+		return slope;
+	}
+	else
+	{
+		UINT32 slopeid = READUINT32(save->p);
+		pslope_t *p = slopelist;
+		if (slopeid > slopecount) return NULL;
+		do
+		{
+			if (p->id == slopeid)
+				return p;
+		} while ((p = p->next));
+		return NULL;
+	}
+}
 
-	// Ignore stationary hoops - these will be respawned from mapthings.
-	if (mobj->type == MT_HOOP)
-		return;
+static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
 
-	// These are NEVER saved.
-	if (mobj->type == MT_HOOPCOLLIDE)
-		return;
+static void CalculateDoomednumToMobjtype(void)
+{
+	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
 
-	// This hoop has already been collected.
-	if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
-		return;
+	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
+	{
+		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
+		{
+			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
+		}
+	}
+}
 
-	// MT_SPARK: used for debug stuff
-	if (mobj->type == MT_SPARK)
-		return;
-
-	// This is a non-synched visual effect mobj
-	if (mobj->flags2 & MF2_DONTSYNC)
-		return;
-
-	diff = diff2 = diff3 = 0;
-
-	if (mobj->spawnpoint)
+static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
+{
+	if (mobj->spawnpoint && mobj->info->doomednum != -1)
 	{
 		// spawnpoint is not modified but we must save it since it is an identifier
-		diff = MD_SPAWNPOINT;
+		SETB(MD_SPAWNPOINT);
 
 		if ((mobj->x != mobj->spawnpoint->x << FRACBITS) ||
 			(mobj->y != mobj->spawnpoint->y << FRACBITS) ||
 			(mobj->angle != FixedAngle(mobj->spawnpoint->angle*FRACUNIT)) ||
 			(mobj->pitch != FixedAngle(mobj->spawnpoint->pitch*FRACUNIT)) ||
 			(mobj->roll != FixedAngle(mobj->spawnpoint->roll*FRACUNIT)) )
-			diff |= MD_POS;
+			SETB(MD_POS);
 
-		if (mobj->info->doomednum != mobj->spawnpoint->type)
-			diff |= MD_TYPE;
-		
-		if (!P_ThingArgsEqual(mobj, mobj->spawnpoint))
-			diff |= MD_ARGS;
-
-		if (!P_ThingStringArgsEqual(mobj, mobj->spawnpoint))
-			diff |= MD_STRINGARGS;
-
-		if (!P_ThingScriptEqual(mobj, mobj->spawnpoint))
-			diff2 |= MD2_SPECIAL;
+		DIFF(mobj->info->doomednum != mobj->spawnpoint->type, MD_TYPE);
+		DIFF(!P_ThingArgsEqual(mobj, mobj->spawnpoint), MD_ARGS);
+		DIFF(!P_ThingStringArgsEqual(mobj, mobj->spawnpoint), MD_STRINGARGS);
+		DIFF(!P_ThingScriptEqual(mobj, mobj->spawnpoint), MD2_SPECIAL);
 	}
 	else
 	{
+		size_t j;
+
 		// not a map spawned thing, so make it from scratch
-		diff = MD_POS | MD_TYPE;
+		SETB(MD_POS);
+		SETB(MD_TYPE);
 
 		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
 		{
 			if (mobj->args[j] != 0)
 			{
-				diff |= MD_ARGS;
+				SETB(MD_ARGS);
 				break;
 			}
 		}
@@ -1840,21 +1954,19 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		{
 			if (mobj->stringargs[j] != NULL)
 			{
-				diff |= MD_STRINGARGS;
+				SETB(MD_STRINGARGS);
 				break;
 			}
 		}
 
 		if (mobj->special != 0)
-		{
-			diff2 |= MD2_SPECIAL;
-		}
+			SETB(MD2_SPECIAL);
 
 		for (j = 0; j < NUM_SCRIPT_ARGS; j++)
 		{
 			if (mobj->script_args[j] != 0)
 			{
-				diff2 |= MD2_SPECIAL;
+				SETB(MD2_SPECIAL);
 				break;
 			}
 		}
@@ -1863,1181 +1975,1715 @@ static void SaveMobjThinker(savebuffer_t *save, const thinker_t *th, const UINT8
 		{
 			if (mobj->stringargs[j] != NULL)
 			{
-				diff2 |= MD2_SPECIAL;
+				SETB(MD2_SPECIAL);
 				break;
 			}
 		}
 	}
 
 	// not the default but the most probable
-	if (mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz != 0)
-		diff |= MD_MOM;
-	if (mobj->radius != FixedMul(mapobjectscale, mobj->info->radius))
-		diff |= MD_RADIUS;
-	if (mobj->height != FixedMul(mapobjectscale, mobj->info->height))
-		diff |= MD_HEIGHT;
-	if (mobj->flags != mobj->info->flags)
-		diff |= MD_FLAGS;
-	if (mobj->flags2)
-		diff |= MD_FLAGS2;
-	if (mobj->health != mobj->info->spawnhealth)
-		diff |= MD_HEALTH;
-	if (mobj->reactiontime != mobj->info->reactiontime)
-		diff |= MD_RTIME;
-	if ((statenum_t)(mobj->state-states) != mobj->info->spawnstate)
-		diff |= MD_STATE;
-	if (mobj->tics != mobj->state->tics)
-		diff |= MD_TICS;
-	if (mobj->sprite != mobj->state->sprite)
-		diff |= MD_SPRITE;
-	if (mobj->sprite == SPR_PLAY && mobj->sprite2 != (mobj->state->frame&FF_FRAMEMASK))
-		diff |= MD_SPRITE;
-	if (mobj->frame != mobj->state->frame)
-		diff |= MD_FRAME;
-	if (mobj->anim_duration != (UINT16)mobj->state->var2)
-		diff |= MD_FRAME;
-	if (mobj->eflags)
-		diff |= MD_EFLAGS;
-	if (mobj->player)
-		diff |= MD_PLAYER;
+	DIFF(mobj->momx != 0 || mobj->momy != 0 || mobj->momz != 0 || mobj->pmomz != 0, MD_MOM);
+	DIFF(mobj->radius != FixedMul(mapobjectscale, mobj->info->radius), MD_RADIUS);
+	DIFF(mobj->height != FixedMul(mapobjectscale, mobj->info->height), MD_HEIGHT);
+	DIFF(mobj->flags != mobj->info->flags, MD_FLAGS);
+	DIFF(mobj->flags2, MD_FLAGS2);
+	DIFF(mobj->health != mobj->info->spawnhealth, MD_HEALTH);
+	DIFF(mobj->reactiontime != mobj->info->reactiontime, MD_RTIME);
+	DIFF((statenum_t)(mobj->state-states) != mobj->info->spawnstate, MD_STATE);
+	DIFF(mobj->tics != mobj->state->tics, MD_TICS);
+	DIFF(mobj->sprite != mobj->state->sprite, MD_SPRITE);
+	DIFF(mobj->sprite == SPR_PLAY && mobj->sprite2 != (mobj->state->frame&FF_FRAMEMASK), MD_SPRITE);
+	DIFF(mobj->frame != mobj->state->frame, MD_FRAME);
+	DIFF(mobj->anim_duration != (UINT16)mobj->state->var2, MD_FRAME);
+	DIFF(mobj->eflags, MD_EFLAGS);
+	DIFF(mobj->player, MD_PLAYER);
 
-	if (mobj->movedir)
-		diff |= MD_MOVEDIR;
-	if (mobj->movecount)
-		diff |= MD_MOVECOUNT;
-	if (mobj->threshold)
-		diff |= MD_THRESHOLD;
-	if (mobj->lastlook != -1)
-		diff |= MD_LASTLOOK;
-	if (mobj->target)
-		diff |= MD_TARGET;
-	if (mobj->tracer)
-		diff |= MD_TRACER;
-	if (mobj->friction != ORIG_FRICTION)
-		diff |= MD_FRICTION;
-	if (mobj->movefactor != FRACUNIT)
-		diff |= MD_MOVEFACTOR;
-	if (mobj->fuse)
-		diff |= MD_FUSE;
-	if (mobj->watertop != INT32_MAX)
-		diff |= MD_WATERTOP;
-	if (mobj->waterbottom)
-		diff |= MD_WATERBOTTOM;
-	if (mobj->scale != mapobjectscale)
-		diff |= MD_SCALE;
-	if (mobj->destscale != mobj->scale)
-		diff |= MD_DSCALE;
-	if (mobj->scalespeed != mapobjectscale/12)
-		diff2 |= MD2_SCALESPEED;
+	DIFF(mobj->movedir, MD_MOVEDIR);
+	DIFF(mobj->movecount, MD_MOVECOUNT);
+	DIFF(mobj->threshold, MD_THRESHOLD);
+	DIFF(mobj->lastlook != -1, MD_LASTLOOK);
+	DIFF(mobj->target, MD_TARGET);
+	DIFF(mobj->tracer, MD_TRACER);
+	DIFF(mobj->friction != ORIG_FRICTION, MD_FRICTION);
+	DIFF(mobj->movefactor != FRACUNIT, MD_MOVEFACTOR);
+	DIFF(mobj->fuse, MD_FUSE);
+	DIFF(mobj->watertop != INT32_MAX, MD_WATERTOP);
+	DIFF(mobj->waterbottom, MD_WATERBOTTOM);
+	DIFF(mobj->scale != mapobjectscale, MD_SCALE);
+	DIFF(mobj->destscale != mobj->scale, MD_DSCALE);
+	DIFF(mobj->scalespeed != mapobjectscale/12, MD2_SCALESPEED);
 
-	if (mobj->cusval)
-		diff2 |= MD2_CUSVAL;
-	if (mobj->cvmem)
-		diff2 |= MD2_CVMEM;
-	if (mobj->color)
-		diff2 |= MD2_COLOR;
-	if (mobj->skin)
-		diff2 |= MD2_SKIN;
-	if (mobj->extravalue1)
-		diff2 |= MD2_EXTVAL1;
-	if (mobj->extravalue2)
-		diff2 |= MD2_EXTVAL2;
-	if (mobj->hnext)
-		diff2 |= MD2_HNEXT;
-	if (mobj->hprev)
-		diff2 |= MD2_HPREV;
-	if (mobj->standingslope)
-		diff2 |= MD2_SLOPE;
-	if (mobj->colorized)
-		diff2 |= MD2_COLORIZED;
-	if (mobj->floorrover)
-		diff2 |= MD2_FLOORROVER;
-	if (mobj->ceilingrover)
-		diff2 |= MD2_CEILINGROVER;
-	if (mobj->mirrored)
-		diff2 |= MD2_MIRRORED;
-	if (mobj->rollangle)
-		diff2 |= MD2_ROLLANGLE;
-	if (mobj->shadowscale)
-		diff2 |= MD2_SHADOWSCALE;
-	if (mobj->renderflags)
-		diff2 |= MD2_RENDERFLAGS;
-	if (mobj->tid != 0)
-		diff2 |= MD2_TID;
-	if (mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT)
-		diff2 |= MD2_SPRITESCALE;
-	if (mobj->spritexoffset || mobj->spriteyoffset ||
-		mobj->rollingxoffset || mobj->rollingyoffset)
-		diff2 |= MD2_SPRITEOFFSET;
-	if (mobj->sprxoff || mobj->spryoff || mobj->sprzoff)
-		diff2 |= MD2_WORLDOFFSET;
+	DIFF(mobj->cusval, MD2_CUSVAL);
+	DIFF(mobj->cvmem, MD2_CVMEM);
+	DIFF(mobj->color, MD2_COLOR);
+	DIFF(mobj->skin, MD2_SKIN);
+	DIFF(mobj->extravalue1, MD2_EXTVAL1);
+	DIFF(mobj->extravalue2, MD2_EXTVAL2);
+	DIFF(mobj->hnext, MD2_HNEXT);
+	DIFF(mobj->hprev, MD2_HPREV);
+	DIFF(mobj->standingslope, MD2_SLOPE);
+	DIFF(mobj->colorized, MD2_COLORIZED);
+	DIFF(mobj->floorrover, MD2_FLOORROVER);
+	DIFF(mobj->ceilingrover, MD2_CEILINGROVER);
+	DIFF(mobj->mirrored, MD2_MIRRORED);
+	DIFF(mobj->rollangle, MD2_ROLLANGLE);
+	DIFF(mobj->shadowscale, MD2_SHADOWSCALE);
+	DIFF(mobj->renderflags, MD2_RENDERFLAGS);
+	DIFF(mobj->tid != 0, MD2_TID);
+	DIFF(mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT, MD2_SPRITESCALE);
+	DIFF(mobj->spritexoffset || mobj->spriteyoffset || mobj->rollingxoffset || mobj->rollingyoffset, MD2_SPRITEOFFSET);
+	DIFF(mobj->sprxoff || mobj->spryoff || mobj->sprzoff, MD2_WORLDOFFSET);
 	if (mobj->floorspriteslope)
 	{
 		pslope_t *slope = mobj->floorspriteslope;
-		if (slope->zangle || slope->zdelta || slope->xydirection
+		DIFF(slope->zangle || slope->zdelta || slope->xydirection
 		|| slope->o.x || slope->o.y || slope->o.z
 		|| slope->d.x || slope->d.y
 		|| slope->normal.x || slope->normal.y
-		|| (slope->normal.z != FRACUNIT))
-			diff2 |= MD2_FLOORSPRITESLOPE;
+		|| (slope->normal.z != FRACUNIT),
+			MD2_FLOORSPRITESLOPE);
 	}
-	if (mobj->lightlevel)
-		diff2 |= MD2_LIGHTLEVEL;
-	if (mobj->dispoffset)
-		diff2 |= MD2_DISPOFFSET;
-	if (mobj == boss3cap)
-		diff2 |= MD2_BOSS3CAP;
-	if (mobj == waypointcap)
-		diff2 |= MD2_WAYPOINTCAP;
-	if (mobj == kitemcap)
-		diff2 |= MD2_KITEMCAP;
-	if (mobj->itnext)
-		diff2 |= MD2_ITNEXT;
-	if (mobj->lastmomz)
-		diff2 |= MD2_LASTMOMZ;
-	if (mobj->terrain != NULL || mobj->terrainOverlay != NULL)
-		diff2 |= MD2_TERRAIN;
+	DIFF(mobj->lightlevel, MD2_LIGHTLEVEL);
+	DIFF(mobj->dispoffset, MD2_DISPOFFSET);
+	DIFF(mobj == boss3cap, MD2_BOSS3CAP);
+	DIFF(mobj == waypointcap, MD2_WAYPOINTCAP);
+	DIFF(mobj == kitemcap, MD2_KITEMCAP);
+	DIFF(mobj->itnext, MD2_ITNEXT);
+	DIFF(mobj->lastmomz, MD2_LASTMOMZ);
+	DIFF(mobj->terrain != NULL || mobj->terrainOverlay != NULL, MD2_TERRAIN);
 
-	if (mobj->gravity != FRACUNIT)
-		diff3 |= MD3_GRAVITY;
-	if (mobj == misccap)
-		diff3 |= MD3_MISCCAP;
-	if (mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv ||
-		mobj->bakeypiv || mobj->bakezpiv)
-		diff3 |= MD3_BAKEDOFFSET;
-	if (mobj->extravalue3)
-		diff3 |= MD3_EXTVAL3;
-	if (mobj->shieldtracer)
-		diff3 |= MD3_SHIELDTRACER;
+	DIFF(mobj->gravity != FRACUNIT, MD3_GRAVITY);
+	DIFF(mobj == misccap, MD3_MISCCAP);
+	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
+	DIFF(mobj->extravalue3, MD3_EXTVAL3);
+	DIFF(mobj->shieldtracer, MD3_SHIELDTRACER);
+}
 
-	if (diff3 != 0)
-		diff2 |= MD2_MORE;
+static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
+{
+	mobj_t *mobj = (mobj_t *)th;
+	UINT32 diff[(MD__MAX>>5)+1] = {0};
+	size_t j;
 
-	if (diff2 != 0)
-		diff |= MD_MORE;
-
-	// Scrap all of that. If we're a hoop center, this is ALL we're saving.
-	if (mobj->type == MT_HOOPCENTER)
-		diff = MD_SPAWNPOINT;
-
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, diff);
-	if (diff & MD_MORE)
-		WRITEUINT32(save->p, diff2);
-	if (diff2 & MD2_MORE)
-		WRITEUINT32(save->p, diff3);
-
-	WRITEFIXED(save->p, mobj->z); // Force this so 3dfloor problems don't arise.
-	WRITEFIXED(save->p, mobj->floorz);
-	WRITEFIXED(save->p, mobj->ceilingz);
-
-	if (diff2 & MD2_FLOORROVER)
+	if (save->write)
 	{
-		WRITEUINT32(save->p, SaveSector(mobj->floorrover->target));
-		WRITEUINT16(save->p, P_GetFFloorID(mobj->floorrover));
-	}
+		// Ignore stationary hoops - these will be respawned from mapthings.
+		if (mobj->type == MT_HOOP)
+			return th;
 
-	if (diff2 & MD2_CEILINGROVER)
-	{
-		WRITEUINT32(save->p, SaveSector(mobj->ceilingrover->target));
-		WRITEUINT16(save->p, P_GetFFloorID(mobj->ceilingrover));
-	}
+		// These are NEVER saved.
+		if (mobj->type == MT_HOOPCOLLIDE)
+			return th;
 
-	if (diff & MD_SPAWNPOINT)
-	{
-		size_t z;
+		// This hoop has already been collected.
+		if (mobj->type == MT_HOOPCENTER && mobj->threshold == 4242)
+			return th;
 
-		for (z = 0; z < nummapthings; z++)
-		{
-			if (&mapthings[z] != mobj->spawnpoint)
-				continue;
-			WRITEUINT16(save->p, z);
-			break;
-		}
+		// MT_SPARK: used for debug stuff
+		if (mobj->type == MT_SPARK)
+			return th;
+
+		// This is a non-synched visual effect mobj
+		if (mobj->flags2 & MF2_DONTSYNC)
+			return th;
+
+		// Scrap all of that. If we're a hoop center, this is ALL we're saving.
 		if (mobj->type == MT_HOOPCENTER)
-			return;
+			SETB(MD_SPAWNPOINT);
+		else
+			DiffMobj(mobj, diff);
+
+		// already read by the client
+		WRITEUINT8(save->p, type);
 	}
 
-	if (diff & MD_TYPE)
-		WRITEUINT32(save->p, mobj->type);
-	if (diff & MD_POS)
+	// diff is somehow not being sent correctly over the wire.
+	// client has a diff of 16 instead its intended value
+	j = 0;
+	do
+		SYNC(diff[j]);
+	while (diff[j++] & 0x80000000);
+
+	if (GETB(MD_SPAWNPOINT))
 	{
-		WRITEFIXED(save->p, mobj->x);
-		WRITEFIXED(save->p, mobj->y);
-		WRITEANGLE(save->p, mobj->angle);
-		WRITEANGLE(save->p, mobj->pitch);
-		WRITEANGLE(save->p, mobj->roll);
+		if (save->write)
+		{
+			size_t z;
+
+			for (z = 0; z < nummapthings; z++)
+			{
+				if (&mapthings[z] != mobj->spawnpoint)
+					continue;
+				WRITEUINT16(save->p, z);
+				break;
+			}
+			if (mobj->type == MT_HOOPCENTER)
+				return th;
+		}
+		else
+		{
+			UINT16 spawnpointnum = READUINT16(save->p);
+
+			if (mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
+			{
+				P_SpawnHoop(&mapthings[spawnpointnum]);
+				return NULL;
+			}
+
+			mobj = P_AllocateMobj();
+
+			mobj->spawnpoint = &mapthings[spawnpointnum];
+			mapthings[spawnpointnum].mobj = mobj;
+		}
 	}
-	if (diff & MD_MOM)
+	else if (!save->write)
+		mobj = P_AllocateMobj();
+
+	// declare this as a valid mobj as soon as possible.
+	mobj->thinker.function.acp1 = thinker;
+
+	// manually link to thinkerlist, since the thinker isn't returned anymore
+	if (!save->write)
+		P_AddThinker(type, &mobj->thinker);
+
+	SYNC(mobj->z); // Force this so 3dfloor problems don't arise.
+	SYNC(mobj->floorz);
+	SYNC(mobj->ceilingz);
+
+	if (GETB(MD2_FLOORROVER))
 	{
-		WRITEFIXED(save->p, mobj->momx);
-		WRITEFIXED(save->p, mobj->momy);
-		WRITEFIXED(save->p, mobj->momz);
-		WRITEFIXED(save->p, mobj->pmomz);
+		if (save->write)
+		{
+			WRITEUINT32(save->p, SaveSector(mobj->floorrover->target));
+			WRITEUINT16(save->p, P_GetFFloorID(mobj->floorrover));
+		}
+		else
+		{
+			sector_t *sec = LoadSector(READUINT32(save->p));
+			UINT16 id = READUINT16(save->p);
+			mobj->floorrover = P_GetFFloorByID(sec, id);
+		}
 	}
-	if (diff & MD_RADIUS)
-		WRITEFIXED(save->p, mobj->radius);
-	if (diff & MD_HEIGHT)
-		WRITEFIXED(save->p, mobj->height);
-	if (diff & MD_FLAGS)
-		WRITEUINT32(save->p, mobj->flags);
-	if (diff & MD_FLAGS2)
-		WRITEUINT32(save->p, mobj->flags2);
-	if (diff & MD_HEALTH)
-		WRITEINT32(save->p, mobj->health);
-	if (diff & MD_RTIME)
-		WRITEINT32(save->p, mobj->reactiontime);
-	if (diff & MD_STATE)
-		WRITEUINT16(save->p, mobj->state-states);
-	if (diff & MD_TICS)
-		WRITEINT32(save->p, mobj->tics);
-	if (diff & MD_SPRITE) {
-		WRITEUINT16(save->p, mobj->sprite);
-		if (mobj->sprite == SPR_PLAY)
-			WRITEUINT8(save->p, mobj->sprite2);
-	}
-	if (diff & MD_FRAME)
+
+	if (GETB(MD2_CEILINGROVER))
 	{
-		WRITEUINT32(save->p, mobj->frame);
-		WRITEUINT16(save->p, mobj->anim_duration);
+		if (save->write)
+		{
+			WRITEUINT32(save->p, SaveSector(mobj->ceilingrover->target));
+			WRITEUINT16(save->p, P_GetFFloorID(mobj->ceilingrover));
+		}
+		else
+		{
+			sector_t *sec = LoadSector(READUINT32(save->p));
+			UINT16 id = READUINT16(save->p);
+			mobj->ceilingrover = P_GetFFloorByID(sec, id);
+		}
 	}
-	if (diff & MD_EFLAGS)
-		WRITEUINT16(save->p, mobj->eflags);
-	if (diff & MD_PLAYER)
-		WRITEUINT8(save->p, mobj->player-players);
-	if (diff & MD_MOVEDIR)
-		WRITEANGLE(save->p, mobj->movedir);
-	if (diff & MD_MOVECOUNT)
-		WRITEINT32(save->p, mobj->movecount);
-	if (diff & MD_THRESHOLD)
-		WRITEINT32(save->p, mobj->threshold);
-	if (diff & MD_LASTLOOK)
-		WRITEINT32(save->p, mobj->lastlook);
-	if (diff & MD_TARGET)
-		WRITEUINT32(save->p, mobj->target->mobjnum);
-	if (diff & MD_TRACER)
-		WRITEUINT32(save->p, mobj->tracer->mobjnum);
-	if (diff & MD_FRICTION)
-		WRITEFIXED(save->p, mobj->friction);
-	if (diff & MD_MOVEFACTOR)
-		WRITEFIXED(save->p, mobj->movefactor);
-	if (diff & MD_FUSE)
-		WRITEINT32(save->p, mobj->fuse);
-	if (diff & MD_WATERTOP)
-		WRITEFIXED(save->p, mobj->watertop);
-	if (diff & MD_WATERBOTTOM)
-		WRITEFIXED(save->p, mobj->waterbottom);
-	if (diff & MD_SCALE)
-		WRITEFIXED(save->p, mobj->scale);
-	if (diff & MD_DSCALE)
-		WRITEFIXED(save->p, mobj->destscale);
-	if (diff2 & MD2_SCALESPEED)
-		WRITEFIXED(save->p, mobj->scalespeed);
-	if (diff & MD_ARGS)
+
+	if (GETB(MD_TYPE))
+	{
+		SYNC(mobj->type);
+	}
+	else if (!save->write)
+	{
+		mobjtype_t new_type = MT_NULL;
+		if (mobj->spawnpoint)
+		{
+			new_type = g_doomednum_to_mobjtype[mobj->spawnpoint->type];
+		}
+
+		if (new_type <= MT_NULL || new_type >= NUMMOBJTYPES)
+		{
+			if (mobj->spawnpoint)
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum %d\n", mobj->spawnpoint->type);
+			else
+				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum NULL\n");
+
+			I_Error("Netsave corrupted");
+		}
+
+		mobj->type = new_type;
+	}
+	mobj->info = &mobjinfo[mobj->type];
+	if (GETB(MD_POS))
+	{
+		SYNC(mobj->x);
+		SYNC(mobj->y);
+		SYNC(mobj->angle);
+		SYNC(mobj->pitch);
+		SYNC(mobj->roll);
+	}
+	else
+	{
+		mobj->x = mobj->old_x = mobj->spawnpoint->x << FRACBITS;
+		mobj->y = mobj->old_y = mobj->spawnpoint->y << FRACBITS;
+		mobj->angle = mobj->old_angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
+		mobj->pitch = mobj->old_pitch = FixedAngle(mobj->spawnpoint->pitch*FRACUNIT);
+		mobj->roll = mobj->old_roll = FixedAngle(mobj->spawnpoint->roll*FRACUNIT);
+	}
+
+	SYNCF(MD_MOM, mobj->momx);
+	SYNCF(MD_MOM, mobj->momy);
+	SYNCF(MD_MOM, mobj->momz);
+	SYNCF(MD_MOM, mobj->pmomz);
+
+	SYNCDEF(MD_RADIUS, mobj->radius, mobj->info->radius);
+	SYNCDEF(MD_HEIGHT, mobj->height, mobj->info->height);
+	SYNCDEF(MD_FLAGS, mobj->flags, mobj->info->flags);
+	SYNCF(MD_FLAGS2, mobj->flags2);
+	SYNCDEF(MD_HEALTH, mobj->health, mobj->info->spawnhealth);
+	SYNCDEF(MD_RTIME, mobj->reactiontime, mobj->info->reactiontime);
+	if (GETB(MD_STATE))
+	{
+		if (save->write)
+			WRITEUINT16(save->p, mobj->state-states);
+		else
+			mobj->state = &states[READUINT16(save->p)];
+	}
+	else
+		mobj->state = &states[mobj->info->spawnstate];
+	SYNCF(MD_TICS, mobj->tics);
+	SYNCDEF(MD_SPRITE, mobj->sprite, mobj->state->sprite);
+	if (mobj->sprite == SPR_PLAY)
+		SYNCDEF(MD_SPRITE, mobj->sprite2, mobj->state->frame & FF_FRAMEMASK);
+	SYNCDEF(MD_FRAME, mobj->frame, mobj->state->frame);
+	SYNCDEF(MD_FRAME, mobj->anim_duration, (UINT16)mobj->state->var2);
+	SYNCF(MD_EFLAGS, mobj->eflags);
+	if (GETB(MD_PLAYER))
+	{
+		UINT8 i;
+		i = P_SyncUINT8(save, mobj->player-players);
+		mobj->player = &players[i];
+		mobj->player->mo = mobj;
+	}
+	SYNCF(MD_MOVEDIR, mobj->movedir);
+	SYNCF(MD_MOVECOUNT, mobj->movecount);
+	SYNCF(MD_THRESHOLD, mobj->threshold);
+	SYNCDEF(MD_LASTLOOK, mobj->lastlook, -1);
+	SYNCF(MD_TARGET, mobj->target);
+	SYNCF(MD_TRACER, mobj->tracer);
+	SYNCDEF(MD_FRICTION, mobj->friction, ORIG_FRICTION);
+	SYNCDEF(MD_MOVEFACTOR, mobj->movefactor, FRACUNIT);
+	SYNCF(MD_FUSE, mobj->fuse);
+	SYNCF(MD_WATERTOP, mobj->watertop);
+	SYNCF(MD_WATERBOTTOM, mobj->waterbottom);
+	SYNCDEF(MD_SCALE, mobj->scale, FRACUNIT);
+	SYNCDEF(MD_DSCALE, mobj->destscale, mobj->scale);
+	SYNCDEF(MD2_SCALESPEED, mobj->scalespeed, FRACUNIT/12);
+	if (GETB(MD_ARGS))
 	{
 		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
-			WRITEINT32(save->p, mobj->args[j]);
+			SYNC(mobj->args[j]);
 	}
-	if (diff & MD_STRINGARGS)
+	if (GETB(MD_STRINGARGS))
 	{
 		for (j = 0; j < NUM_MAPTHING_STRINGARGS; j++)
 		{
-			size_t len, k;
-
-			if (!mobj->stringargs[j])
+			size_t len = P_SyncINT32(save, mobj->stringargs[j] ? strlen(mobj->stringargs[j]) : 0);
+			if (!len)
 			{
-				WRITEINT32(save->p, 0);
+				if (!save->write)
+				{
+					Z_Free(mobj->stringargs[j]);
+					mobj->stringargs[j] = NULL;
+				}
 				continue;
 			}
 
-			len = strlen(mobj->stringargs[j]);
-			WRITEINT32(save->p, len);
-			for (k = 0; k < len; k++)
-				WRITECHAR(save->p, mobj->stringargs[j][k]);
+			if (!save->write)
+				mobj->stringargs[j] = Z_Realloc(mobj->stringargs[j], len + 1, PU_LEVEL, NULL);
+			P_SyncMem(save, mobj->stringargs[j], len);
+			mobj->stringargs[j][len] = '\0';
 		}
 	}
-	if (diff2 & MD2_CUSVAL)
-		WRITEINT32(save->p, mobj->cusval);
-	if (diff2 & MD2_CVMEM)
-		WRITEINT32(save->p, mobj->cvmem);
-	if (diff2 & MD2_SKIN)
-		WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
-	if (diff2 & MD2_COLOR)
-		WRITEUINT16(save->p, mobj->color);
-	if (diff2 & MD2_EXTVAL1)
-		WRITEINT32(save->p, mobj->extravalue1);
-	if (diff2 & MD2_EXTVAL2)
-		WRITEINT32(save->p, mobj->extravalue2);
-	if (diff2 & MD2_HNEXT)
-		WRITEUINT32(save->p, mobj->hnext->mobjnum);
-	if (diff2 & MD2_HPREV)
-		WRITEUINT32(save->p, mobj->hprev->mobjnum);
-	if (diff2 & MD2_ITNEXT)
-		WRITEUINT32(save->p, mobj->itnext->mobjnum);
-	if (diff2 & MD2_SLOPE)
-		WRITEUINT16(save->p, mobj->standingslope->id);
-	if (diff2 & MD2_COLORIZED)
-		WRITEUINT8(save->p, mobj->colorized);
-	if (diff2 & MD2_MIRRORED)
-		WRITEUINT8(save->p, mobj->mirrored);
-	if (diff2 & MD2_ROLLANGLE)
-		WRITEANGLE(save->p, mobj->rollangle);
-	if (diff2 & MD2_SHADOWSCALE)
-	{
-		WRITEFIXED(save->p, mobj->shadowscale);
-		WRITEUINT8(save->p, mobj->whiteshadow);
-		WRITEUINT8(save->p, mobj->shadowcolor);
-	}
-	if (diff2 & MD2_RENDERFLAGS)
-	{
-		UINT32 rf = mobj->renderflags;
-		UINT32 q = rf & RF_DONTDRAW;
 
-		if (q != RF_DONTDRAW // visible for more than one local player
-		&& q != (RF_DONTDRAWP1|RF_DONTDRAWP2|RF_DONTDRAWP3)
-		&& q != (RF_DONTDRAWP4|RF_DONTDRAWP1|RF_DONTDRAWP2)
-		&& q != (RF_DONTDRAWP4|RF_DONTDRAWP1|RF_DONTDRAWP3)
-		&& q != (RF_DONTDRAWP4|RF_DONTDRAWP2|RF_DONTDRAWP3))
-			rf &= ~q;
+	SYNCF(MD2_CUSVAL, mobj->cusval);
+	SYNCF(MD2_CVMEM, mobj->cvmem);
+	if (GETB(MD2_SKIN))
+	{
+		if (save->write)
+			WRITEUINT16(save->p, (UINT16)((skin_t *)mobj->skin - skins));
+		else
+			mobj->skin = &skins[READUINT16(save->p)];
+	}
+	SYNCF(MD2_COLOR, mobj->color);
+	SYNCF(MD2_EXTVAL1, mobj->extravalue1);
+	SYNCF(MD2_EXTVAL2, mobj->extravalue2);
+	SYNCF(MD2_HNEXT, mobj->hnext);
+	SYNCF(MD2_HPREV, mobj->hprev);
+	SYNCF(MD2_ITNEXT, mobj->itnext);
+	if (GETB(MD2_SLOPE))
+	{
+		if (save->write)
+			WRITEUINT16(save->p, mobj->standingslope->id);
+		else
+			mobj->standingslope = P_SlopeById(READUINT16(save->p));
+	}
+	SYNCFB(MD2_COLORIZED, mobj->colorized);
+	SYNCFB(MD2_MIRRORED, mobj->mirrored);
+	SYNCF(MD2_ROLLANGLE, mobj->rollangle);
+	SYNCF(MD2_SHADOWSCALE, mobj->shadowscale);
+	SYNCFB(MD2_SHADOWSCALE, mobj->whiteshadow);
+	SYNCF(MD2_SHADOWSCALE, mobj->shadowcolor);
+	if (GETB(MD2_RENDERFLAGS))
+	{
+		if (save->write)
+		{
+			UINT32 rf = mobj->renderflags;
+			UINT32 q = rf & RF_DONTDRAW;
 
-		WRITEUINT32(save->p, rf);
+			if (q != RF_DONTDRAW // visible for more than one local player
+			&& q != (RF_DONTDRAWP1|RF_DONTDRAWP2|RF_DONTDRAWP3)
+			&& q != (RF_DONTDRAWP4|RF_DONTDRAWP1|RF_DONTDRAWP2)
+			&& q != (RF_DONTDRAWP4|RF_DONTDRAWP1|RF_DONTDRAWP3)
+			&& q != (RF_DONTDRAWP4|RF_DONTDRAWP2|RF_DONTDRAWP3))
+				rf &= ~q;
+
+			WRITEUINT32(save->p, rf);
+		}
+		else
+		{
+			mobj->renderflags = READUINT32(save->p);
+		}
 	}
-	if (diff2 & MD2_TID)
-		WRITEINT16(save->p, mobj->tid);
-	if (diff2 & MD2_SPRITESCALE)
+	SYNCF(MD2_TID, mobj->tid);
+	SYNCDEF(MD2_SPRITESCALE, mobj->spritexscale, FRACUNIT);
+	SYNCDEF(MD2_SPRITESCALE, mobj->spriteyscale, FRACUNIT);
+	SYNCDEF(MD2_SPRITEOFFSET, mobj->spritexoffset, FRACUNIT);
+	SYNCDEF(MD2_SPRITEOFFSET, mobj->spriteyoffset, FRACUNIT);
+	SYNCDEF(MD2_SPRITEOFFSET, mobj->rollingxoffset, 0);
+	SYNCDEF(MD2_SPRITEOFFSET, mobj->rollingyoffset, 0);
+	SYNCF(MD2_WORLDOFFSET, mobj->sprxoff);
+	SYNCF(MD2_WORLDOFFSET, mobj->spryoff);
+	SYNCF(MD2_WORLDOFFSET, mobj->sprzoff);
+
+	if (GETB(MD2_SPECIAL))
 	{
-		WRITEFIXED(save->p, mobj->spritexscale);
-		WRITEFIXED(save->p, mobj->spriteyscale);
-	}
-	if (diff2 & MD2_SPRITEOFFSET)
-	{
-		WRITEFIXED(save->p, mobj->spritexoffset);
-		WRITEFIXED(save->p, mobj->spriteyoffset);
-		WRITEINT16(save->p, mobj->rollingxoffset);
-		WRITEINT16(save->p, mobj->rollingyoffset);
-	}
-	if (diff2 & MD2_WORLDOFFSET)
-	{
-		WRITEFIXED(save->p, mobj->sprxoff);
-		WRITEFIXED(save->p, mobj->spryoff);
-		WRITEFIXED(save->p, mobj->sprzoff);
-	}
-	if (diff2 & MD2_SPECIAL)
-	{
-		WRITEINT16(save->p, mobj->special);
+		SYNC(mobj->special);
 
 		for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-			WRITEINT32(save->p, mobj->script_args[j]);
+			SYNC(mobj->script_args[j]);
 
 		for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
 		{
-			size_t len, k;
-
-			if (!mobj->script_stringargs[j])
+			size_t len = P_SyncINT32(save, mobj->script_stringargs[j] ? strlen(mobj->script_stringargs[j]) : 0);
+			if (!len)
 			{
-				WRITEINT32(save->p, 0);
+				if (!save->write)
+				{
+					Z_Free(mobj->script_stringargs[j]);
+					mobj->script_stringargs[j] = NULL;
+				}
 				continue;
 			}
 
-			len = strlen(mobj->script_stringargs[j]);
-			WRITEINT32(save->p, len);
-			for (k = 0; k < len; k++)
-				WRITECHAR(save->p, mobj->script_stringargs[j][k]);
+			if (!save->write)
+				mobj->script_stringargs[j] = Z_Realloc(mobj->script_stringargs[j], len + 1, PU_LEVEL, NULL);
+			P_SyncMem(save, mobj->script_stringargs[j], len);
+			mobj->script_stringargs[j][len] = '\0';
 		}
 	}
-	if (diff2 & MD2_FLOORSPRITESLOPE)
+	if (GETB(MD2_FLOORSPRITESLOPE))
 	{
 		pslope_t *slope = mobj->floorspriteslope;
+		if (!save->write)
+			slope = (pslope_t *)P_CreateFloorSpriteSlope(mobj);
 
-		WRITEFIXED(save->p, slope->zdelta);
-		WRITEANGLE(save->p, slope->zangle);
-		WRITEANGLE(save->p, slope->xydirection);
+		SYNC(slope->zdelta);
+		SYNC(slope->zangle);
+		SYNC(slope->xydirection);
 
-		WRITEFIXED(save->p, slope->o.x);
-		WRITEFIXED(save->p, slope->o.y);
-		WRITEFIXED(save->p, slope->o.z);
+		SYNC(slope->o.x);
+		SYNC(slope->o.y);
+		SYNC(slope->o.z);
 
-		WRITEFIXED(save->p, slope->d.x);
-		WRITEFIXED(save->p, slope->d.y);
+		SYNC(slope->d.x);
+		SYNC(slope->d.y);
 
-		WRITEFIXED(save->p, slope->normal.x);
-		WRITEFIXED(save->p, slope->normal.y);
-		WRITEFIXED(save->p, slope->normal.z);
-		
+		SYNC(slope->normal.x);
+		SYNC(slope->normal.y);
+		SYNC(slope->normal.z);
+
+		if (!save->write)
+			P_UpdateSlopeLightOffset(slope);
 	}
-	if (diff2 & MD2_LIGHTLEVEL)
+	SYNCF(MD2_LIGHTLEVEL, mobj->lightlevel);
+	SYNCDEF(MD2_DISPOFFSET, mobj->dispoffset, mobj->info->dispoffset);
+	SYNCF(MD2_LASTMOMZ, mobj->lastmomz);
+
+	if (GETB(MD2_TERRAIN))
 	{
-		WRITEINT16(save->p, mobj->lightlevel);
+		if (save->write)
+		{
+			WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain) + 1);
+			WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
+		}
+		else
+		{
+			UINT32 terrain_index = READUINT32(save->p);
+			if (terrain_index > 0)
+				mobj->terrain = K_GetTerrainByIndex(terrain_index - 1);
+			mobj->terrainOverlay = (mobj_t *)(size_t)READUINT32(save->p);
+		}
 	}
-	if (diff2 & MD2_DISPOFFSET)
+	SYNCF(MD3_GRAVITY, mobj->gravity);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakexoff);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakeyoff);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakezoff);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakexpiv);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakeypiv);
+	SYNCF(MD3_BAKEDOFFSET, mobj->bakezpiv);
+	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
+	SYNCF(MD3_SHIELDTRACER, mobj->shieldtracer);
+
+	if (!save->write)
 	{
-		WRITEINT32(save->p, mobj->dispoffset);
-	}
-	if (diff2 & MD2_LASTMOMZ)
-	{
-		WRITEINT32(save->p, mobj->lastmomz);
-	}
-	if (diff2 & MD2_TERRAIN)
-	{
-		WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain) + 1);
-		WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
-	}
-	if (diff3 & MD3_GRAVITY)
-	{
-		WRITEFIXED(save->p, mobj->gravity);
-	}
-	if (diff3 & MD3_BAKEDOFFSET)
-	{
-		WRITEFIXED(save->p, mobj->bakexoff);
-		WRITEFIXED(save->p, mobj->bakeyoff);
-		WRITEFIXED(save->p, mobj->bakezoff);
-		WRITEFIXED(save->p, mobj->bakexpiv);
-		WRITEFIXED(save->p, mobj->bakeypiv);
-		WRITEFIXED(save->p, mobj->bakezpiv);
-	}
-	if (diff3 & MD3_EXTVAL3)
-	{
-		WRITEINT32(save->p, mobj->extravalue3);
-	}
-	if (diff3 & MD3_SHIELDTRACER)
-	{
-		WRITEUINT32(save->p, mobj->shieldtracer->mobjnum);
+		// Reset some non-synch values
+		mobj->sloperoll = 0;
+		mobj->slopepitch = 0;
+
+		// link tid set earlier
+		P_AddThingTID(mobj);
+
+		// set sprev, snext, bprev, bnext, subsector
+		P_SetThingPosition(mobj);
 	}
 
-	WRITEUINT32(save->p, mobj->mobjnum);
+	SYNC(mobj->mobjnum);
+
+	if (!save->write)
+	{
+		if (mobj->player)
+		{
+			if (mobj->eflags & MFE_VERTICALFLIP)
+				mobj->player->viewz = mobj->z + mobj->height - mobj->player->viewheight;
+			else
+				mobj->player->viewz = mobj->player->mo->z + mobj->player->viewheight;
+		}
+
+		if (mobj->type == MT_SKYBOX && mobj->spawnpoint)
+		{
+			P_InitSkyboxPoint(mobj, mobj->spawnpoint);
+		}
+
+		if (GETB(MD2_BOSS3CAP))
+			P_SetTarget(&boss3cap, mobj);
+
+		if (GETB(MD2_WAYPOINTCAP))
+			P_SetTarget(&waypointcap, mobj);
+
+		if (GETB(MD2_KITEMCAP))
+			P_SetTarget(&kitemcap, mobj);
+
+		if (GETB(MD3_MISCCAP))
+			P_SetTarget(&misccap, mobj);
+
+		R_AddMobjInterpolator(mobj);
+	}
+
+	// don't allow the mobj's refcount to be reset by P_AddThinker
+	// we might've already called P_SetTarget!
+	return &mobj->thinker;
 }
 
-static void SaveNoEnemiesThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const noenemies_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
+	noenemies_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	return &ht->thinker;
 }
 
-static void SaveBounceCheeseThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const bouncecheese_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->distance);
-	WRITEFIXED(save->p, ht->floorwasheight);
-	WRITEFIXED(save->p, ht->ceilingwasheight);
-	WRITECHAR(save->p, ht->low);
+	bouncecheese_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->speed);
+	SYNC(ht->distance);
+	SYNC(ht->floorwasheight);
+	SYNC(ht->ceilingwasheight);
+	SYNCBOOLEAN(ht->low);
+	if (!save->write && ht->sector)
+		ht->sector->ceilingdata = ht;
+	return &ht->thinker;
 }
 
-static void SaveContinuousFallThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const continuousfall_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->speed);
-	WRITEINT32(save->p, ht->direction);
-	WRITEFIXED(save->p, ht->floorstartheight);
-	WRITEFIXED(save->p, ht->ceilingstartheight);
-	WRITEFIXED(save->p, ht->destheight);
+	continuousfall_t *ht  = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->speed);
+	SYNC(ht->direction);
+	SYNC(ht->floorstartheight);
+	SYNC(ht->ceilingstartheight);
+	SYNC(ht->destheight);
+	if (!save->write && ht->sector)
+	{
+		ht->sector->ceilingdata = ht;
+		ht->sector->floordata = ht;
+	}
+	return &ht->thinker;
 }
 
-static void SaveMarioBlockThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const mariothink_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->speed);
-	WRITEINT32(save->p, ht->direction);
-	WRITEFIXED(save->p, ht->floorstartheight);
-	WRITEFIXED(save->p, ht->ceilingstartheight);
-	WRITEINT16(save->p, ht->tag);
+	mariothink_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->speed);
+	SYNC(ht->direction);
+	SYNC(ht->floorstartheight);
+	SYNC(ht->ceilingstartheight);
+	SYNC(ht->tag);
+	if (!save->write && ht->sector)
+	{
+		ht->sector->ceilingdata = ht;
+		ht->sector->floordata = ht;
+	}
+	return &ht->thinker;
 }
 
-static void SaveMarioCheckThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const mariocheck_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
+	mariocheck_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	ht->sector = SyncSector(save, ht->sector);
+	return &ht->thinker;
 }
 
-static void SaveThwompThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const thwomp_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->crushspeed);
-	WRITEFIXED(save->p, ht->retractspeed);
-	WRITEINT32(save->p, ht->direction);
-	WRITEFIXED(save->p, ht->floorstartheight);
-	WRITEFIXED(save->p, ht->ceilingstartheight);
-	WRITEINT32(save->p, ht->delay);
-	WRITEINT16(save->p, ht->tag);
-	WRITEUINT16(save->p, ht->sound);
-	WRITEINT32(save->p, ht->initDelay);
+	thwomp_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->crushspeed);
+	SYNC(ht->retractspeed);
+	SYNC(ht->direction);
+	SYNC(ht->floorstartheight);
+	SYNC(ht->ceilingstartheight);
+	SYNC(ht->delay);
+	SYNC(ht->tag);
+	SYNC(ht->sound);
+	SYNC(ht->initDelay);
+	if (ht->sector)
+	{
+		ht->sector->ceilingdata = ht;
+		ht->sector->floordata = ht;
+	}
+	return &ht->thinker;
 }
 
-static void SaveFloatThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const floatthink_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT16(save->p, ht->tag);
+	floatthink_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->tag);
+	return &ht->thinker;
 }
 
-static void SaveEachTimeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const eachtime_t *ht  = (const void *)th;
+	eachtime_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
 	size_t i;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
+	ht->sourceline = SyncLine(save, ht->sourceline);
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		WRITECHAR(save->p, ht->playersInArea[i]);
+		SYNCBOOLEAN(ht->playersInArea[i]);
 	}
-	WRITECHAR(save->p, ht->triggerOnExit);
+	SYNCBOOLEAN(ht->triggerOnExit);
+	return &ht->thinker;
 }
 
-static void SaveRaiseThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const raise_t *ht  = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT16(save->p, ht->tag);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->ceilingbottom);
-	WRITEFIXED(save->p, ht->ceilingtop);
-	WRITEFIXED(save->p, ht->basespeed);
-	WRITEFIXED(save->p, ht->extraspeed);
-	WRITEUINT8(save->p, ht->shaketimer);
-	WRITEUINT8(save->p, ht->flags);
+	raise_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->tag);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->ceilingbottom);
+	SYNC(ht->ceilingtop);
+	SYNC(ht->basespeed);
+	SYNC(ht->extraspeed);
+	SYNC(ht->shaketimer);
+	SYNC(ht->flags);
+	return &ht->thinker;
 }
 
-static void SaveCeilingThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const ceiling_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEFIXED(save->p, ht->bottomheight);
-	WRITEFIXED(save->p, ht->topheight);
-	WRITEFIXED(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->delay);
-	WRITEFIXED(save->p, ht->delaytimer);
-	WRITEUINT8(save->p, ht->crush);
-	WRITEINT32(save->p, ht->texture);
-	WRITEINT32(save->p, ht->direction);
-	WRITEINT16(save->p, ht->tag);
-	WRITEFIXED(save->p, ht->sourceline);
-	WRITEFIXED(save->p, ht->origspeed);
-	WRITEFIXED(save->p, ht->crushHeight);
-	WRITEFIXED(save->p, ht->crushSpeed);
-	WRITEFIXED(save->p, ht->returnHeight);
-	WRITEFIXED(save->p, ht->returnSpeed);
+	ceiling_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->type);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->bottomheight);
+	SYNC(ht->topheight);
+	SYNC(ht->speed);
+	SYNC(ht->delay);
+	SYNC(ht->delaytimer);
+	SYNC(ht->crush);
+	SYNC(ht->texture);
+	SYNC(ht->direction);
+	SYNC(ht->tag);
+	SYNC(ht->sourceline);
+	SYNC(ht->origspeed);
+	SYNC(ht->crushHeight);
+	SYNC(ht->crushSpeed);
+	SYNC(ht->returnHeight);
+	SYNC(ht->returnSpeed);
+	if (!save->write && ht->sector)
+		ht->sector->ceilingdata = ht;
+
+	return &ht->thinker;
 }
 
-static void SaveFloormoveThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const floormove_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEUINT8(save->p, ht->crush);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT32(save->p, ht->direction);
-	WRITEINT32(save->p, ht->texture);
-	WRITEFIXED(save->p, ht->floordestheight);
-	WRITEFIXED(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->origspeed);
-	WRITEFIXED(save->p, ht->delay);
-	WRITEFIXED(save->p, ht->delaytimer);
-	WRITEINT16(save->p, ht->tag);
-	WRITEFIXED(save->p, ht->sourceline);
-	WRITEFIXED(save->p, ht->crushHeight);
-	WRITEFIXED(save->p, ht->crushSpeed);
-	WRITEFIXED(save->p, ht->returnHeight);
-	WRITEFIXED(save->p, ht->returnSpeed);
+	floormove_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->crush);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->direction);
+	SYNC(ht->texture);
+	SYNC(ht->floordestheight);
+	SYNC(ht->speed);
+	SYNC(ht->origspeed);
+	SYNC(ht->delay);
+	SYNC(ht->delaytimer);
+	SYNC(ht->tag);
+	SYNC(ht->sourceline);
+	SYNC(ht->crushHeight);
+	SYNC(ht->crushSpeed);
+	SYNC(ht->returnHeight);
+	SYNC(ht->returnSpeed);
+	return &ht->thinker;
 }
 
-static void SaveLightflashThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const lightflash_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT32(save->p, ht->maxlight);
-	WRITEINT32(save->p, ht->minlight);
+	lightflash_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->maxlight);
+	SYNC(ht->minlight);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static void SaveStrobeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const strobe_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT32(save->p, ht->count);
-	WRITEINT16(save->p, ht->minlight);
-	WRITEINT16(save->p, ht->maxlight);
-	WRITEINT32(save->p, ht->darktime);
-	WRITEINT32(save->p, ht->brighttime);
+	strobe_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->count);
+	SYNC(ht->minlight);
+	SYNC(ht->maxlight);
+	SYNC(ht->darktime);
+	SYNC(ht->brighttime);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static void SaveGlowThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const glow_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT16(save->p, ht->minlight);
-	WRITEINT16(save->p, ht->maxlight);
-	WRITEINT16(save->p, ht->direction);
-	WRITEINT16(save->p, ht->speed);
+	glow_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->minlight);
+	SYNC(ht->maxlight);
+	SYNC(ht->direction);
+	SYNC(ht->speed);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static inline void SaveFireflickerThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const fireflicker_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT32(save->p, ht->count);
-	WRITEINT32(save->p, ht->resetcount);
-	WRITEINT16(save->p, ht->maxlight);
-	WRITEINT16(save->p, ht->minlight);
+	fireflicker_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->count);
+	SYNC(ht->resetcount);
+	SYNC(ht->maxlight);
+	SYNC(ht->minlight);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static void SaveElevatorThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, boolean setplanedata, thinker_t *th, UINT8 type)
 {
-	const elevator_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEUINT32(save->p, SaveSector(ht->actionsector));
-	WRITEINT32(save->p, ht->direction);
-	WRITEFIXED(save->p, ht->floordestheight);
-	WRITEFIXED(save->p, ht->ceilingdestheight);
-	WRITEFIXED(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->origspeed);
-	WRITEFIXED(save->p, ht->low);
-	WRITEFIXED(save->p, ht->high);
-	WRITEFIXED(save->p, ht->distance);
-	WRITEFIXED(save->p, ht->delay);
-	WRITEFIXED(save->p, ht->delaytimer);
-	WRITEFIXED(save->p, ht->floorwasheight);
-	WRITEFIXED(save->p, ht->ceilingwasheight);
+	elevator_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->type);
+	ht->sector = SyncSector(save, ht->sector);
+	ht->actionsector = SyncSector(save, ht->actionsector);
+	SYNC(ht->direction);
+	SYNC(ht->floordestheight);
+	SYNC(ht->ceilingdestheight);
+	SYNC(ht->speed);
+	SYNC(ht->origspeed);
+	SYNC(ht->low);
+	SYNC(ht->high);
+	SYNC(ht->distance);
+	SYNC(ht->delay);
+	SYNC(ht->delaytimer);
+	SYNC(ht->floorwasheight);
+	SYNC(ht->ceilingwasheight);
+
+	if (!save->write && ht->sector && setplanedata)
+	{
+		ht->sector->ceilingdata = ht;
+		ht->sector->floordata = ht;
+	}
+	return &ht->thinker;
 }
 
-static void SaveCrumbleThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const crumble_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEUINT32(save->p, SaveSector(ht->actionsector));
-	WRITEUINT32(save->p, SavePlayer(ht->player)); // was dummy
-	WRITEINT32(save->p, ht->direction);
-	WRITEINT32(save->p, ht->origalpha);
-	WRITEINT32(save->p, ht->timer);
-	WRITEFIXED(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->floorwasheight);
-	WRITEFIXED(save->p, ht->ceilingwasheight);
-	WRITEUINT8(save->p, ht->flags);
+	crumble_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	ht->sector = SyncSector(save, ht->sector);
+	ht->actionsector = SyncSector(save, ht->actionsector);
+	ht->player = LoadPlayer(P_SyncUINT32(save, SavePlayer(ht->player))); // was dummy
+	SYNC(ht->direction);
+	SYNC(ht->origalpha);
+	SYNC(ht->timer);
+	SYNC(ht->speed);
+	SYNC(ht->floorwasheight);
+	SYNC(ht->ceilingwasheight);
+	SYNC(ht->flags);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	if (!save->write && ht->actionsector)
+		ht->actionsector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static inline void SaveScrollThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const scroll_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEFIXED(save->p, ht->dx);
-	WRITEFIXED(save->p, ht->dy);
-	WRITEINT32(save->p, ht->affectee);
-	WRITEINT32(save->p, ht->control);
-	WRITEFIXED(save->p, ht->last_height);
-	WRITEFIXED(save->p, ht->vdx);
-	WRITEFIXED(save->p, ht->vdy);
-	WRITEINT32(save->p, ht->accel);
-	WRITEINT32(save->p, ht->exclusive);
-	WRITEUINT8(save->p, ht->type);
+	scroll_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->dx);
+	SYNC(ht->dy);
+	SYNC(ht->affectee);
+	SYNC(ht->control);
+	SYNC(ht->last_height);
+	SYNC(ht->vdx);
+	SYNC(ht->vdy);
+	SYNC(ht->accel);
+	SYNC(ht->exclusive);
+	SYNC(ht->type);
+	return &ht->thinker;
 }
 
-static inline void SaveFrictionThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const friction_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->friction);
-	WRITEINT32(save->p, ht->movefactor);
-	WRITEINT32(save->p, ht->affectee);
-	WRITEINT32(save->p, ht->referrer);
-	WRITEUINT8(save->p, ht->roverfriction);
+	friction_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->friction);
+	SYNC(ht->movefactor);
+	SYNC(ht->affectee);
+	SYNC(ht->referrer);
+	SYNC(ht->roverfriction);
+	return &ht->thinker;
 }
 
-static inline void SavePusherThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const pusher_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEFIXED(save->p, ht->x_mag);
-	WRITEFIXED(save->p, ht->y_mag);
-	WRITEFIXED(save->p, ht->z_mag);
-	WRITEINT32(save->p, ht->affectee);
-	WRITEUINT8(save->p, ht->roverpusher);
-	WRITEINT32(save->p, ht->referrer);
-	WRITEINT32(save->p, ht->exclusive);
-	WRITEINT32(save->p, ht->slider);
+	pusher_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->type);
+	SYNC(ht->x_mag);
+	SYNC(ht->y_mag);
+	SYNC(ht->z_mag);
+	SYNC(ht->affectee);
+	SYNC(ht->roverpusher);
+	SYNC(ht->referrer);
+	SYNC(ht->exclusive);
+	SYNC(ht->slider);
+	return &ht->thinker;
 }
 
-static void SaveLaserThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const laserthink_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT16(save->p, ht->tag);
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEUINT8(save->p, ht->nobosses);
+	laserthink_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->tag);
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->nobosses);
+	return &ht->thinker;
 }
 
-static void SaveLightlevelThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const lightlevel_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT16(save->p, ht->sourcelevel);
-	WRITEINT16(save->p, ht->destlevel);
-	WRITEFIXED(save->p, ht->fixedcurlevel);
-	WRITEFIXED(save->p, ht->fixedpertic);
-	WRITEINT32(save->p, ht->timer);
+	lightlevel_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sourcelevel);
+	SYNC(ht->destlevel);
+	SYNC(ht->fixedcurlevel);
+	SYNC(ht->fixedpertic);
+	SYNC(ht->timer);
+	if (!save->write && ht->sector)
+		ht->sector->lightingdata = ht;
+	return &ht->thinker;
 }
 
-static void SaveExecutorThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const executor_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveLine(ht->line));
-	WRITEUINT32(save->p, SaveMobjnum(ht->caller));
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEINT32(save->p, ht->timer);
+	executor_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->line = SyncLine(save, ht->line);
+	ht->caller = SyncMobj(save, ht->caller);
+	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->timer);
+	return &ht->thinker;
 }
 
-static void SaveDisappearThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const disappear_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, ht->appeartime);
-	WRITEUINT32(save->p, ht->disappeartime);
-	WRITEUINT32(save->p, ht->offset);
-	WRITEUINT32(save->p, ht->timer);
-	WRITEINT32(save->p, ht->affectee);
-	WRITEINT32(save->p, ht->sourceline);
-	WRITEINT32(save->p, ht->exists);
+	disappear_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->appeartime);
+	SYNC(ht->disappeartime);
+	SYNC(ht->offset);
+	SYNC(ht->timer);
+	SYNC(ht->affectee);
+	SYNC(ht->sourceline);
+	SYNC(ht->exists);
+	return &ht->thinker;
 }
 
-static void SaveFadeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const fade_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, CheckAddNetColormapToList(ht->dest_exc));
-	WRITEUINT32(save->p, ht->sectornum);
-	WRITEUINT32(save->p, ht->ffloornum);
-	WRITEINT32(save->p, ht->alpha);
-	WRITEINT16(save->p, ht->sourcevalue);
-	WRITEINT16(save->p, ht->destvalue);
-	WRITEINT16(save->p, ht->destlightlevel);
-	WRITEINT16(save->p, ht->speed);
-	WRITEUINT8(save->p, (UINT8)ht->ticbased);
-	WRITEINT32(save->p, ht->timer);
-	WRITEUINT8(save->p, ht->doexists);
-	WRITEUINT8(save->p, ht->dotranslucent);
-	WRITEUINT8(save->p, ht->dolighting);
-	WRITEUINT8(save->p, ht->docolormap);
-	WRITEUINT8(save->p, ht->docollision);
-	WRITEUINT8(save->p, ht->doghostfade);
-	WRITEUINT8(save->p, ht->exactalpha);
+	fade_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->dest_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->dest_exc)));
+	SYNC(ht->sectornum);
+	SYNC(ht->ffloornum);
+	SYNC(ht->alpha);
+	SYNC(ht->sourcevalue);
+	SYNC(ht->destvalue);
+	SYNC(ht->destlightlevel);
+	SYNC(ht->speed);
+	SYNCBOOLEAN(ht->ticbased);
+	SYNC(ht->timer);
+	SYNC(ht->doexists);
+	SYNC(ht->dotranslucent);
+	SYNC(ht->dolighting);
+	SYNC(ht->docolormap);
+	SYNCBOOLEAN(ht->docollision);
+	SYNCBOOLEAN(ht->doghostfade);
+	SYNC(ht->exactalpha);
+
+	if (!save->write)
+	{
+		sector_t *ss = LoadSector(ht->sectornum);
+		if (ss)
+		{
+			size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
+			ffloor_t *rover;
+			for (rover = ss->ffloors; rover; rover = rover->next)
+			{
+				if (j == ht->ffloornum)
+				{
+					ht->rover = rover;
+					rover->fadingdata = ht;
+					break;
+				}
+				j++;
+			}
+		}
+	}
+	return &ht->thinker;
 }
 
-static void SaveFadeColormapThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const fadecolormap_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSector(ht->sector));
-	WRITEUINT32(save->p, CheckAddNetColormapToList(ht->source_exc));
-	WRITEUINT32(save->p, CheckAddNetColormapToList(ht->dest_exc));
-	WRITEUINT8(save->p, (UINT8)ht->ticbased);
-	WRITEINT32(save->p, ht->duration);
-	WRITEINT32(save->p, ht->timer);
+	fadecolormap_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	ht->sector = SyncSector(save, ht->sector);
+	ht->source_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->source_exc)));
+	ht->dest_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->dest_exc)));
+	SYNCBOOLEAN(ht->ticbased);
+	SYNC(ht->duration);
+	SYNC(ht->timer);
+	if (ht->sector)
+		ht->sector->fadecolormapdata = ht;
+	return &ht->thinker;
 }
 
-static void SavePlaneDisplaceThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const planedisplace_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->affectee);
-	WRITEINT32(save->p, ht->control);
-	WRITEFIXED(save->p, ht->last_height);
-	WRITEFIXED(save->p, ht->speed);
-	WRITEUINT8(save->p, ht->type);
+	planedisplace_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->affectee);
+	SYNC(ht->control);
+	SYNC(ht->last_height);
+	SYNC(ht->speed);
+	SYNC(ht->type);
+	return &ht->thinker;
 }
 
-static inline void SaveDynamicLineSlopeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const dynlineplanethink_t* ht = (const void*)th;
+	dynlineplanethink_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
 
-	WRITEUINT8(save->p, type);
-	WRITEUINT8(save->p, ht->type);
-	WRITEUINT32(save->p, SaveSlope(ht->slope));
-	WRITEUINT32(save->p, SaveLine(ht->sourceline));
-	WRITEFIXED(save->p, ht->extent);
+	SYNC(ht->type);
+	ht->slope = SyncSlope(save, ht->slope);
+	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->extent);
+	return &ht->thinker;
 }
 
-static inline void SaveDynamicVertexSlopeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
 	size_t i;
-	const dynvertexplanethink_t* ht = (const void*)th;
+	dynvertexplanethink_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
 
-	WRITEUINT8(save->p, type);
-	WRITEUINT32(save->p, SaveSlope(ht->slope));
+	ht->slope = SyncSlope(save, ht->slope);
 	for (i = 0; i < 3; i++)
-		WRITEUINT32(save->p, SaveSector(ht->secs[i]));
-	WRITEMEM(save->p, ht->vex, sizeof(ht->vex));
-	WRITEMEM(save->p, ht->origsecheights, sizeof(ht->origsecheights));
-	WRITEMEM(save->p, ht->origvecheights, sizeof(ht->origvecheights));
-	WRITEUINT8(save->p, ht->relative);
+		ht->secs[i] = SyncSector(save, ht->secs[i]);
+	P_SyncMem(save, ht->vex, sizeof(ht->vex));
+	P_SyncMem(save, ht->origsecheights, sizeof(ht->origsecheights));
+	P_SyncMem(save, ht->origvecheights, sizeof(ht->origvecheights));
+	SYNC(ht->relative);
+	return &ht->thinker;
 }
 
-static inline void SavePolyrotatetThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polyrotate_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->speed);
-	WRITEINT32(save->p, ht->distance);
-	WRITEUINT8(save->p, ht->turnobjs);
+	polyrotate_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->speed);
+	SYNC(ht->distance);
+	SYNC(ht->turnobjs);
+	return &ht->thinker;
 }
 
-static void SavePolymoveThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polymove_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->speed);
-	WRITEFIXED(save->p, ht->momx);
-	WRITEFIXED(save->p, ht->momy);
-	WRITEINT32(save->p, ht->distance);
-	WRITEANGLE(save->p, ht->angle);
+	polymove_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->speed);
+	SYNC(ht->momx);
+	SYNC(ht->momy);
+	SYNC(ht->distance);
+	SYNC(ht->angle);
+	return &ht->thinker;
 }
 
-static void SavePolywaypointThinker(savebuffer_t *save, const thinker_t *th, UINT8 type)
+static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polywaypoint_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->speed);
-	WRITEINT32(save->p, ht->sequence);
-	WRITEINT32(save->p, ht->pointnum);
-	WRITEINT32(save->p, ht->direction);
-	WRITEUINT8(save->p, ht->returnbehavior);
-	WRITEUINT8(save->p, ht->continuous);
-	WRITEUINT8(save->p, ht->stophere);
+	polywaypoint_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->speed);
+	SYNC(ht->sequence);
+	SYNC(ht->pointnum);
+	SYNC(ht->direction);
+	SYNC(ht->returnbehavior);
+	SYNC(ht->continuous);
+	SYNC(ht->stophere);
+	return &ht->thinker;
 }
 
-static void SavePolyslidedoorThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polyslidedoor_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->delay);
-	WRITEINT32(save->p, ht->delayCount);
-	WRITEINT32(save->p, ht->initSpeed);
-	WRITEINT32(save->p, ht->speed);
-	WRITEINT32(save->p, ht->initDistance);
-	WRITEINT32(save->p, ht->distance);
-	WRITEUINT32(save->p, ht->initAngle);
-	WRITEUINT32(save->p, ht->angle);
-	WRITEUINT32(save->p, ht->revAngle);
-	WRITEFIXED(save->p, ht->momx);
-	WRITEFIXED(save->p, ht->momy);
-	WRITEUINT8(save->p, ht->closing);
+	polyslidedoor_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->delay);
+	SYNC(ht->delayCount);
+	SYNC(ht->initSpeed);
+	SYNC(ht->speed);
+	SYNC(ht->initDistance);
+	SYNC(ht->distance);
+	SYNC(ht->initAngle);
+	SYNC(ht->angle);
+	SYNC(ht->revAngle);
+	SYNC(ht->momx);
+	SYNC(ht->momy);
+	SYNC(ht->closing);
+	return &ht->thinker;
 }
 
-static void SavePolyswingdoorThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polyswingdoor_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->delay);
-	WRITEINT32(save->p, ht->delayCount);
-	WRITEINT32(save->p, ht->initSpeed);
-	WRITEINT32(save->p, ht->speed);
-	WRITEINT32(save->p, ht->initDistance);
-	WRITEINT32(save->p, ht->distance);
-	WRITEUINT8(save->p, ht->closing);
+	polyswingdoor_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->delay);
+	SYNC(ht->delayCount);
+	SYNC(ht->initSpeed);
+	SYNC(ht->speed);
+	SYNC(ht->initDistance);
+	SYNC(ht->distance);
+	SYNC(ht->closing);
+	return &ht->thinker;
 }
 
-static void SavePolydisplaceThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polydisplace_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEUINT32(save->p, SaveSector(ht->controlSector));
-	WRITEFIXED(save->p, ht->dx);
-	WRITEFIXED(save->p, ht->dy);
-	WRITEFIXED(save->p, ht->oldHeights);
+	polydisplace_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	ht->controlSector = SyncSector(save, ht->controlSector);
+	SYNC(ht->dx);
+	SYNC(ht->dy);
+	SYNC(ht->oldHeights);
+	return &ht->thinker;
 }
 
-static void SavePolyrotdisplaceThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polyrotdisplace_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEUINT32(save->p, SaveSector(ht->controlSector));
-	WRITEFIXED(save->p, ht->rotscale);
-	WRITEUINT8(save->p, ht->turnobjs);
-	WRITEFIXED(save->p, ht->oldHeights);
+	polyrotdisplace_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	ht->controlSector = SyncSector(save, ht->controlSector);
+	SYNC(ht->rotscale);
+	SYNC( ht->turnobjs);
+	SYNC(ht->oldHeights);
+	return &ht->thinker;
 }
 
-static void SavePolyfadeThinker(savebuffer_t *save, const thinker_t *th, const UINT8 type)
+static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
 {
-	const polyfade_t *ht = (const void *)th;
-	WRITEUINT8(save->p, type);
-	WRITEINT32(save->p, ht->polyObjNum);
-	WRITEINT32(save->p, ht->sourcevalue);
-	WRITEINT32(save->p, ht->destvalue);
-	WRITEUINT8(save->p, (UINT8)ht->docollision);
-	WRITEUINT8(save->p, (UINT8)ht->doghostfade);
-	WRITEUINT8(save->p, (UINT8)ht->ticbased);
-	WRITEINT32(save->p, ht->duration);
-	WRITEINT32(save->p, ht->timer);
+	polyfade_t *ht = (void *)th;
+	if (save->write)
+	{
+		WRITEUINT8(save->p, type);
+	}
+	else
+	{
+		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht->thinker.function.acp1 = thinker;
+	}
+
+	SYNC(ht->polyObjNum);
+	SYNC(ht->sourcevalue);
+	SYNC(ht->destvalue);
+	SYNCBOOLEAN(ht->docollision);
+	SYNCBOOLEAN(ht->doghostfade);
+	SYNCBOOLEAN(ht->ticbased);
+	SYNC(ht->duration);
+	SYNC(ht->timer);
+	return &ht->thinker;
 }
 
-static void P_NetArchiveThinkers(savebuffer_t *save)
+static void P_NetSyncThinkers(savebuffer_t *save)
 {
 	TracyCZone(__zone, true);
 
-	const thinker_t *th;
+	thinker_t *currentthinker;
+	thinker_t *next;
+	UINT8 tclass;
+	UINT8 restoreNum = false;
 	UINT32 i;
+	UINT32 numloaded = 0;
 
-	WRITEUINT32(save->p, ARCHIVEBLOCK_THINKERS);
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_THINKERS) != ARCHIVEBLOCK_THINKERS)
+		I_Error("Bad $$$.sav at archive block Thinkers");
+
+	if (!save->write)
+	{
+		// Pre-calculate this lookup, because it was wasting
+		// a shit ton of time loading mobj thinkers.
+		CalculateDoomednumToMobjtype();
+
+		// remove all the current thinkers
+		for (i = 0; i < NUM_THINKERLISTS; i++)
+		{
+			for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = next)
+			{
+				next = currentthinker->next;
+
+				currentthinker->references = 0; // Heinous but this is the only place the assertion in P_UnlinkThinkers is wrong
+
+				if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker || currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+					P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
+				else
+				{
+					(next->prev = currentthinker->prev)->next = next;
+					R_DestroyLevelInterpolators(currentthinker);
+					Z_Free(currentthinker);
+				}
+			}
+		}
+
+		// we don't want the removed mobjs to come back
+		P_InitThinkers();
+
+		// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
+		for (i = 0; i < numsectors; i++)
+		{
+			sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = sectors[i].fadecolormapdata = NULL;
+		}
+	}
 
 	for (i = 0; i < NUM_THINKERLISTS; i++)
 	{
-		UINT32 numsaved = 0;
-		// save off the current thinkers
-		for (th = thlist[i].next; th != &thlist[i]; th = th->next)
+		thinker_t* th = &thlist[i];
+		for (;;)
 		{
-			if (!(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed
-			 || th->function.acp1 == (actionf_p1)P_NullPrecipThinker))
-				numsaved++;
+			actionf_p1 acp;
+			if (save->write)
+			{
+				th = th->next;
+				if (th == &thlist[i])
+				{
+					WRITEUINT8(save->p, tc_end);
+					break;
+				}
+				acp = th->function.acp1;
+			}
+			else
+			{
+				th = NULL;
+				tclass = READUINT8(save->p); // NOTE: this is normally written within the sync functions
+				if (tclass == tc_end)
+					break;
+				acp = actionspecials[tclass];
+			}
 
-			if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+			numloaded++;
+			if (acp == (actionf_p1)P_MobjThinker)
 			{
-				SaveMobjThinker(save, th, tc_mobj);
-				continue;
+				th = SyncMobjThinker(save, (actionf_p1)P_MobjThinker, th, tc_mobj);
 			}
-	#ifdef PARANOIA
-			else if (th->function.acp1 == (actionf_p1)P_NullPrecipThinker);
-	#endif
-			else if (th->function.acp1 == (actionf_p1)T_MoveCeiling)
+#ifdef PARANOIA
+			else if (acp == (actionf_p1)P_NullPrecipThinker);
+#endif
+			else if (acp == (actionf_p1)T_MoveCeiling)
 			{
-				SaveCeilingThinker(save, th, tc_ceiling);
-				continue;
+				th = SyncCeilingThinker(save, (actionf_p1)T_MoveCeiling, th, tc_ceiling);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_CrushCeiling)
+			else if (acp == (actionf_p1)T_CrushCeiling)
 			{
-				SaveCeilingThinker(save, th, tc_crushceiling);
-				continue;
+				th = SyncCeilingThinker(save, (actionf_p1)T_CrushCeiling, th, tc_crushceiling);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_MoveFloor)
+			else if (acp == (actionf_p1)T_MoveFloor)
 			{
-				SaveFloormoveThinker(save, th, tc_floor);
-				continue;
+				th = SyncFloormoveThinker(save, (actionf_p1)T_MoveFloor, th, tc_floor);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_LightningFlash)
+			else if (acp == (actionf_p1)T_LightningFlash)
 			{
-				SaveLightflashThinker(save, th, tc_flash);
-				continue;
+				th = SyncLightflashThinker(save, (actionf_p1)T_LightningFlash, th, tc_flash);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_StrobeFlash)
+			else if (acp == (actionf_p1)T_StrobeFlash)
 			{
-				SaveStrobeThinker(save, th, tc_strobe);
-				continue;
+				th = SyncStrobeThinker(save, (actionf_p1)T_StrobeFlash, th, tc_strobe);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Glow)
+			else if (acp == (actionf_p1)T_Glow)
 			{
-				SaveGlowThinker(save, th, tc_glow);
-				continue;
+				th = SyncGlowThinker(save, (actionf_p1)T_Glow, th, tc_glow);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_FireFlicker)
+			else if (acp == (actionf_p1)T_FireFlicker)
 			{
-				SaveFireflickerThinker(save, th, tc_fireflicker);
-				continue;
+				th = SyncFireflickerThinker(save, (actionf_p1)T_FireFlicker, th, tc_fireflicker);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_MoveElevator)
+			else if (acp == (actionf_p1)T_MoveElevator)
 			{
-				SaveElevatorThinker(save, th, tc_elevator);
-				continue;
+				th = SyncElevatorThinker(save, (actionf_p1)T_MoveElevator, true, th, tc_elevator);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_ContinuousFalling)
+			else if (acp == (actionf_p1)T_ContinuousFalling)
 			{
-				SaveContinuousFallThinker(save, th, tc_continuousfalling);
-				continue;
+				th = SyncContinuousFallThinker(save, (actionf_p1)T_ContinuousFalling, th, tc_continuousfalling);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_ThwompSector)
+			else if (acp == (actionf_p1)T_ThwompSector)
 			{
-				SaveThwompThinker(save, th, tc_thwomp);
-				continue;
+				th = SyncThwompThinker(save, (actionf_p1)T_ThwompSector, th, tc_thwomp);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_NoEnemiesSector)
+			else if (acp == (actionf_p1)T_NoEnemiesSector)
 			{
-				SaveNoEnemiesThinker(save, th, tc_noenemies);
-				continue;
+				th = SyncNoEnemiesThinker(save, (actionf_p1)T_NoEnemiesSector, th, tc_noenemies);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_EachTimeThinker)
+			else if (acp == (actionf_p1)T_EachTimeThinker)
 			{
-				SaveEachTimeThinker(save, th, tc_eachtime);
-				continue;
+				th = SyncEachTimeThinker(save, (actionf_p1)T_EachTimeThinker, th, tc_eachtime);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_RaiseSector)
+			else if (acp == (actionf_p1)T_RaiseSector)
 			{
-				SaveRaiseThinker(save, th, tc_raisesector);
-				continue;
+				th = SyncRaiseThinker(save, (actionf_p1)T_RaiseSector, th, tc_raisesector);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_CameraScanner)
+			else if (acp == (actionf_p1)T_CameraScanner)
 			{
-				SaveElevatorThinker(save, th, tc_camerascanner);
-				continue;
+				th = SyncElevatorThinker(save, (actionf_p1)T_CameraScanner, false, th, tc_camerascanner);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Scroll)
+			else if (acp == (actionf_p1)T_Scroll)
 			{
-				SaveScrollThinker(save, th, tc_scroll);
-				continue;
+				th = SyncScrollThinker(save, (actionf_p1)T_Scroll, th, tc_scroll);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Friction)
+			else if (acp == (actionf_p1)T_Friction)
 			{
-				SaveFrictionThinker(save, th, tc_friction);
-				continue;
+				th = SyncFrictionThinker(save, (actionf_p1)T_Friction, th, tc_friction);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Pusher)
+			else if (acp == (actionf_p1)T_Pusher)
 			{
-				SavePusherThinker(save, th, tc_pusher);
-				continue;
+				th = SyncPusherThinker(save, (actionf_p1)T_Pusher, th, tc_pusher);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_BounceCheese)
+			else if (acp == (actionf_p1)T_BounceCheese)
 			{
-				SaveBounceCheeseThinker(save, th, tc_bouncecheese);
-				continue;
+				th = SyncBounceCheeseThinker(save, (actionf_p1)T_BounceCheese, th, tc_bouncecheese);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_StartCrumble)
+			else if (acp == (actionf_p1)T_StartCrumble)
 			{
-				SaveCrumbleThinker(save, th, tc_startcrumble);
-				continue;
+				th = SyncCrumbleThinker(save, (actionf_p1)T_StartCrumble, th, tc_startcrumble);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_MarioBlock)
+			else if (acp == (actionf_p1)T_MarioBlock)
 			{
-				SaveMarioBlockThinker(save, th, tc_marioblock);
-				continue;
+				th = SyncMarioBlockThinker(save, (actionf_p1)T_MarioBlock, th, tc_marioblock);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_MarioBlockChecker)
+			else if (acp == (actionf_p1)T_MarioBlockChecker)
 			{
-				SaveMarioCheckThinker(save, th, tc_marioblockchecker);
-				continue;
+				th = SyncMarioCheckThinker(save, (actionf_p1)T_MarioBlockChecker, th, tc_marioblockchecker);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_FloatSector)
+			else if (acp == (actionf_p1)T_FloatSector)
 			{
-				SaveFloatThinker(save, th, tc_floatsector);
-				continue;
+				th = SyncFloatThinker(save, (actionf_p1)T_FloatSector, th, tc_floatsector);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_LaserFlash)
+			else if (acp == (actionf_p1)T_LaserFlash)
 			{
-				SaveLaserThinker(save, th, tc_laserflash);
-				continue;
+				th = SyncLaserThinker(save, (actionf_p1)T_LaserFlash, th, tc_laserflash);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_LightFade)
+			else if (acp == (actionf_p1)T_LightFade)
 			{
-				SaveLightlevelThinker(save, th, tc_lightfade);
-				continue;
+				th = SyncLightlevelThinker(save, (actionf_p1)T_LightFade, th, tc_lightfade);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_ExecutorDelay)
+			else if (acp == (actionf_p1)T_ExecutorDelay)
 			{
-				SaveExecutorThinker(save, th, tc_executor);
-				continue;
+				th = SyncExecutorThinker(save, (actionf_p1)T_ExecutorDelay, th, tc_executor);
+				restoreNum = true;
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Disappear)
+			else if (acp == (actionf_p1)T_Disappear)
 			{
-				SaveDisappearThinker(save, th, tc_disappear);
-				continue;
+				th = SyncDisappearThinker(save, (actionf_p1)T_Disappear, th, tc_disappear);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_Fade)
+			else if (acp == (actionf_p1)T_Fade)
 			{
-				SaveFadeThinker(save, th, tc_fade);
-				continue;
+				th = SyncFadeThinker(save, (actionf_p1)T_Fade, th, tc_fade);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_FadeColormap)
+			else if (acp == (actionf_p1)T_FadeColormap)
 			{
-				SaveFadeColormapThinker(save, th, tc_fadecolormap);
-				continue;
+				th = SyncFadeColormapThinker(save, (actionf_p1)T_FadeColormap, th, tc_fadecolormap);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PlaneDisplace)
+			else if (acp == (actionf_p1)T_PlaneDisplace)
 			{
-				SavePlaneDisplaceThinker(save, th, tc_planedisplace);
-				continue;
+				th = SyncPlaneDisplaceThinker(save, (actionf_p1)T_PlaneDisplace, th, tc_planedisplace);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjRotate)
+			else if (acp == (actionf_p1)T_PolyObjRotate)
 			{
-				SavePolyrotatetThinker(save, th, tc_polyrotate);
-				continue;
+				th = SyncPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate, th, tc_polyrotate);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjMove)
+			else if (acp == (actionf_p1)T_PolyObjMove)
 			{
-				SavePolymoveThinker(save, th, tc_polymove);
-				continue;
+				th = SyncPolymoveThinker(save, (actionf_p1)T_PolyObjFlag, th, tc_polyflag);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjWaypoint)
+			else if (acp == (actionf_p1)T_PolyObjWaypoint)
 			{
-				SavePolywaypointThinker(save, th, tc_polywaypoint);
-				continue;
+				th = SyncPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint, th, tc_polywaypoint);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyDoorSlide)
+			else if (acp == (actionf_p1)T_PolyDoorSlide)
 			{
-				SavePolyslidedoorThinker(save, th, tc_polyslidedoor);
-				continue;
+				th = SyncPolyslidedoorThinker(save, (actionf_p1)T_PolyDoorSlide, th, tc_polyslidedoor);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyDoorSwing)
+			else if (acp == (actionf_p1)T_PolyDoorSwing)
 			{
-				SavePolyswingdoorThinker(save, th, tc_polyswingdoor);
-				continue;
+				th = SyncPolyswingdoorThinker(save, (actionf_p1)T_PolyDoorSwing, th, tc_polyswingdoor);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjFlag)
+			else if (acp == (actionf_p1)T_PolyObjFlag)
 			{
-				SavePolymoveThinker(save, th, tc_polyflag);
-				continue;
+				th = SyncPolymoveThinker(save, (actionf_p1)T_PolyObjFlag, th, tc_polyflag);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjDisplace)
+			else if (acp == (actionf_p1)T_PolyObjDisplace)
 			{
-				SavePolydisplaceThinker(save, th, tc_polydisplace);
-				continue;
+				th = SyncPolydisplaceThinker(save, (actionf_p1)T_PolyObjDisplace, th, tc_polydisplace);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjRotDisplace)
+			else if (acp == (actionf_p1)T_PolyObjRotDisplace)
 			{
-				SavePolyrotdisplaceThinker(save, th, tc_polyrotdisplace);
-				continue;
+				th = SyncPolyrotdisplaceThinker(save, (actionf_p1)T_PolyObjRotDisplace, th, tc_polyrotdisplace);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_PolyObjFade)
+			else if (acp == (actionf_p1)T_PolyObjFade)
 			{
-				SavePolyfadeThinker(save, th, tc_polyfade);
-				continue;
+				th = SyncPolyfadeThinker(save, (actionf_p1)T_PolyObjFade, th, tc_polyfade);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeLine)
+			else if (acp == (actionf_p1)T_DynamicSlopeLine)
 			{
-				SaveDynamicLineSlopeThinker(save, th, tc_dynslopeline);
-				continue;
+				th = SyncDynamicLineSlopeThinker(save, (actionf_p1)T_DynamicSlopeLine, th, tc_dynslopeline);
 			}
-			else if (th->function.acp1 == (actionf_p1)T_DynamicSlopeVert)
+			else if (acp == (actionf_p1)T_DynamicSlopeVert)
 			{
-				SaveDynamicVertexSlopeThinker(save, th, tc_dynslopevert);
-				continue;
+				th = SyncDynamicVertexSlopeThinker(save, (actionf_p1)T_DynamicSlopeVert, th, tc_dynslopevert);
 			}
 #ifdef PARANOIA
 			else
 				I_Assert(th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed); // wait garbage collection
 #endif
+			if (!save->write && th && tclass != tc_mobj)
+				P_AddThinker(i, th);
 		}
 
-		CONS_Debug(DBG_NETPLAY, "%u thinkers saved in list %d\n", numsaved, i);
-
-		WRITEUINT8(save->p, tc_end);
+		CONS_Debug(DBG_NETPLAY, "%u thinkers synchronized in list %d\n", numloaded, i);
 	}
+
+	if (!save->write)
+	{
+		// Set each skyboxmo to the first skybox (or NULL)
+		skyboxmo[0] = skyboxviewpnts[0];
+		skyboxmo[1] = skyboxcenterpnts[0];
+
+		if (restoreNum)
+		{
+			executor_t *delay = NULL;
+			UINT32 mobjnum;
+			for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
+			{
+				if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+					continue;
+				delay = (void *)currentthinker;
+				if (!(mobjnum = (UINT32)(size_t)delay->caller))
+					continue;
+				delay->caller = P_FindNewPosition(mobjnum);
+			}
+		}
+	}
+
 	TracyCZoneEnd(__zone);
 }
 
@@ -3133,24 +3779,6 @@ static inline mobj_t *LoadMobj(UINT32 mobjnum)
 	return (mobj_t *)(size_t)mobjnum;
 }
 
-static sector_t *LoadSector(UINT32 sector)
-{
-	if (sector >= numsectors) return NULL;
-	return &sectors[sector];
-}
-
-static line_t *LoadLine(UINT32 line)
-{
-	if (line >= numlines) return NULL;
-	return &lines[line];
-}
-
-static inline player_t *LoadPlayer(UINT32 player)
-{
-	if (player >= MAXPLAYERS) return NULL;
-	return &players[player];
-}
-
 static inline pslope_t *LoadSlope(UINT32 slopeid)
 {
 	pslope_t *p = slopelist;
@@ -3161,1334 +3789,6 @@ static inline pslope_t *LoadSlope(UINT32 slopeid)
 			return p;
 	} while ((p = p->next));
 	return NULL;
-}
-
-static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
-
-static void CalculateDoomednumToMobjtype(void)
-{
-	memset(g_doomednum_to_mobjtype, MT_NULL, sizeof(g_doomednum_to_mobjtype));
-
-	for (size_t i = MT_NULL+1; i < NUMMOBJTYPES; i++)
-	{
-		if (mobjinfo[i].doomednum > 0 && mobjinfo[i].doomednum <= UINT16_MAX)
-		{
-			g_doomednum_to_mobjtype[ mobjinfo[i].doomednum ] = i;
-		}
-	}
-}
-
-static thinker_t* LoadMobjThinker(savebuffer_t *save, actionf_p1 thinker, UINT8 tclass)
-{
-	mobj_t *mobj;
-	UINT32 diff;
-	UINT32 diff2;
-	UINT32 diff3;
-	INT32 i;
-	fixed_t z, floorz, ceilingz;
-	ffloor_t *floorrover = NULL, *ceilingrover = NULL;
-	size_t j;
-
-	diff = READUINT32(save->p);
-	if (diff & MD_MORE)
-		diff2 = READUINT32(save->p);
-	else
-		diff2 = 0;
-
-	if (diff2 & MD2_MORE)
-		diff3 = READUINT32(save->p);
-	else
-		diff3 = 0;
-
-	z = READFIXED(save->p); // Force this so 3dfloor problems don't arise.
-	floorz = READFIXED(save->p);
-	ceilingz = READFIXED(save->p);
-
-	if (diff2 & MD2_FLOORROVER)
-	{
-		sector_t *sec = LoadSector(READUINT32(save->p));
-		UINT16 id = READUINT16(save->p);
-		floorrover = P_GetFFloorByID(sec, id);
-	}
-
-	if (diff2 & MD2_CEILINGROVER)
-	{
-		sector_t *sec = LoadSector(READUINT32(save->p));
-		UINT16 id = READUINT16(save->p);
-		ceilingrover = P_GetFFloorByID(sec, id);
-	}
-
-	if (diff & MD_SPAWNPOINT)
-	{
-		UINT16 spawnpointnum = READUINT16(save->p);
-
-		if (mapthings[spawnpointnum].type == 1713) // NiGHTS Hoop special case
-		{
-			P_SpawnHoop(&mapthings[spawnpointnum]);
-			return NULL;
-		}
-
-		mobj = P_AllocateMobj();
-
-		mobj->spawnpoint = &mapthings[spawnpointnum];
-		mapthings[spawnpointnum].mobj = mobj;
-	}
-	else
-		mobj = P_AllocateMobj();
-
-	// declare this as a valid mobj as soon as possible.
-	mobj->thinker.function.acp1 = thinker;
-
-	// manually link to thinkerlist, since the thinker isn't returned anymore
-	P_AddThinker(tclass, &mobj->thinker);
-
-	mobj->z = z;
-	mobj->floorz = floorz;
-	mobj->ceilingz = ceilingz;
-	mobj->floorrover = floorrover;
-	mobj->ceilingrover = ceilingrover;
-
-	if (diff & MD_TYPE)
-		mobj->type = READUINT32(save->p);
-	else
-	{
-		mobjtype_t new_type = MT_NULL;
-		if (mobj->spawnpoint)
-		{
-			new_type = g_doomednum_to_mobjtype[mobj->spawnpoint->type];
-		}
-
-		if (new_type <= MT_NULL || new_type >= NUMMOBJTYPES)
-		{
-			if (mobj->spawnpoint)
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum %d\n", mobj->spawnpoint->type);
-			else
-				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing doomednum NULL\n");
-
-			I_Error("Netsave corrupted");
-		}
-
-		mobj->type = new_type;
-	}
-	mobj->info = &mobjinfo[mobj->type];
-
-	if (diff & MD_POS)
-	{
-		mobj->x = mobj->old_x = READFIXED(save->p);
-		mobj->y = mobj->old_y = READFIXED(save->p);
-		mobj->angle = mobj->old_angle = READANGLE(save->p);
-		mobj->pitch = mobj->old_pitch = READANGLE(save->p);
-		mobj->roll = mobj->old_roll = READANGLE(save->p);
-	}
-	else
-	{
-		mobj->x = mobj->old_x = mobj->spawnpoint->x << FRACBITS;
-		mobj->y = mobj->old_y = mobj->spawnpoint->y << FRACBITS;
-		mobj->angle = mobj->old_angle = FixedAngle(mobj->spawnpoint->angle*FRACUNIT);
-		mobj->pitch = mobj->old_pitch = FixedAngle(mobj->spawnpoint->pitch*FRACUNIT);
-		mobj->roll = mobj->old_roll = FixedAngle(mobj->spawnpoint->roll*FRACUNIT);
-	}
-	if (diff & MD_MOM)
-	{
-		mobj->momx = READFIXED(save->p);
-		mobj->momy = READFIXED(save->p);
-		mobj->momz = READFIXED(save->p);
-		mobj->pmomz = READFIXED(save->p);
-	} // otherwise they're zero, and the memset took care of it
-
-	if (diff & MD_RADIUS)
-		mobj->radius = READFIXED(save->p);
-	else
-		mobj->radius = FixedMul(mobj->info->radius, mapobjectscale);
-	if (diff & MD_HEIGHT)
-		mobj->height = READFIXED(save->p);
-	else
-		mobj->height = FixedMul(mobj->info->height, mapobjectscale);
-	if (diff & MD_FLAGS)
-		mobj->flags = READUINT32(save->p);
-	else
-		mobj->flags = mobj->info->flags;
-	if (diff & MD_FLAGS2)
-		mobj->flags2 = READUINT32(save->p);
-	if (diff & MD_HEALTH)
-		mobj->health = READINT32(save->p);
-	else
-		mobj->health = mobj->info->spawnhealth;
-	if (diff & MD_RTIME)
-		mobj->reactiontime = READINT32(save->p);
-	else
-		mobj->reactiontime = mobj->info->reactiontime;
-
-	if (diff & MD_STATE)
-		mobj->state = &states[READUINT16(save->p)];
-	else
-		mobj->state = &states[mobj->info->spawnstate];
-	if (diff & MD_TICS)
-		mobj->tics = READINT32(save->p);
-	else
-		mobj->tics = mobj->state->tics;
-	if (diff & MD_SPRITE) {
-		mobj->sprite = READUINT16(save->p);
-		if (mobj->sprite == SPR_PLAY)
-			mobj->sprite2 = READUINT8(save->p);
-	}
-	else {
-		mobj->sprite = mobj->state->sprite;
-		if (mobj->sprite == SPR_PLAY)
-			mobj->sprite2 = mobj->state->frame&FF_FRAMEMASK;
-	}
-	if (diff & MD_FRAME)
-	{
-		mobj->frame = READUINT32(save->p);
-		mobj->anim_duration = READUINT16(save->p);
-	}
-	else
-	{
-		mobj->frame = mobj->state->frame;
-		mobj->anim_duration = (UINT16)mobj->state->var2;
-	}
-	if (diff & MD_EFLAGS)
-		mobj->eflags = READUINT16(save->p);
-	if (diff & MD_PLAYER)
-	{
-		i = READUINT8(save->p);
-		mobj->player = &players[i];
-		mobj->player->mo = mobj;
-	}
-	if (diff & MD_MOVEDIR)
-		mobj->movedir = READANGLE(save->p);
-	if (diff & MD_MOVECOUNT)
-		mobj->movecount = READINT32(save->p);
-	if (diff & MD_THRESHOLD)
-		mobj->threshold = READINT32(save->p);
-	if (diff & MD_LASTLOOK)
-		mobj->lastlook = READINT32(save->p);
-	else
-		mobj->lastlook = -1;
-	if (diff & MD_TARGET)
-		mobj->target = (mobj_t *)(size_t)READUINT32(save->p);
-	if (diff & MD_TRACER)
-		mobj->tracer = (mobj_t *)(size_t)READUINT32(save->p);
-	if (diff & MD_FRICTION)
-		mobj->friction = READFIXED(save->p);
-	else
-		mobj->friction = ORIG_FRICTION;
-	if (diff & MD_MOVEFACTOR)
-		mobj->movefactor = READFIXED(save->p);
-	else
-		mobj->movefactor = FRACUNIT;
-	if (diff & MD_FUSE)
-		mobj->fuse = READINT32(save->p);
-	if (diff & MD_WATERTOP)
-		mobj->watertop = READFIXED(save->p);
-	else
-		mobj->watertop = INT32_MAX;
-	if (diff & MD_WATERBOTTOM)
-		mobj->waterbottom = READFIXED(save->p);
-	if (diff & MD_SCALE)
-		mobj->scale = READFIXED(save->p);
-	else
-		mobj->scale = mapobjectscale;
-	if (diff & MD_DSCALE)
-		mobj->destscale = READFIXED(save->p);
-	else
-		mobj->destscale = mobj->scale;
-	if (diff2 & MD2_SCALESPEED)
-		mobj->scalespeed = READFIXED(save->p);
-	else
-		mobj->scalespeed = mapobjectscale/12;
-	if (diff & MD_ARGS)
-	{
-		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
-			mobj->args[j] = READINT32(save->p);
-	}
-	if (diff & MD_STRINGARGS)
-	{
-		for (j = 0; j < NUM_MAPTHING_STRINGARGS; j++)
-		{
-			size_t len = READINT32(save->p);
-			size_t k;
-
-			if (!len)
-			{
-				Z_Free(mobj->stringargs[j]);
-				mobj->stringargs[j] = NULL;
-				continue;
-			}
-
-			mobj->stringargs[j] = Z_Realloc(mobj->stringargs[j], len + 1, PU_LEVEL, NULL);
-			for (k = 0; k < len; k++)
-				mobj->stringargs[j][k] = READCHAR(save->p);
-			mobj->stringargs[j][len] = '\0';
-		}
-	}
-	if (diff2 & MD2_CUSVAL)
-		mobj->cusval = READINT32(save->p);
-	if (diff2 & MD2_CVMEM)
-		mobj->cvmem = READINT32(save->p);
-	if (diff2 & MD2_SKIN)
-		mobj->skin = &skins[READUINT16(save->p)];
-	if (diff2 & MD2_COLOR)
-		mobj->color = READUINT16(save->p);
-	if (diff2 & MD2_EXTVAL1)
-		mobj->extravalue1 = READINT32(save->p);
-	if (diff2 & MD2_EXTVAL2)
-		mobj->extravalue2 = READINT32(save->p);
-	if (diff2 & MD2_HNEXT)
-		mobj->hnext = (mobj_t *)(size_t)READUINT32(save->p);
-	if (diff2 & MD2_HPREV)
-		mobj->hprev = (mobj_t *)(size_t)READUINT32(save->p);
-	if (diff2 & MD2_ITNEXT)
-		mobj->itnext = (mobj_t *)(size_t)READUINT32(save->p);
-	if (diff2 & MD2_SLOPE)
-		mobj->standingslope = P_SlopeById(READUINT16(save->p));
-	if (diff2 & MD2_COLORIZED)
-		mobj->colorized = READUINT8(save->p);
-	if (diff2 & MD2_MIRRORED)
-		mobj->mirrored = READUINT8(save->p);
-	if (diff2 & MD2_ROLLANGLE)
-		mobj->rollangle = READANGLE(save->p);
-	if (diff2 & MD2_SHADOWSCALE)
-	{
-		mobj->shadowscale = READFIXED(save->p);
-		mobj->whiteshadow = READUINT8(save->p);
-		mobj->shadowcolor = READUINT8(save->p);
-	}
-	if (diff2 & MD2_RENDERFLAGS)
-		mobj->renderflags = READUINT32(save->p);
-	if (diff2 & MD2_TID)
-		mobj->tid = READINT16(save->p);
-	if (diff2 & MD2_SPRITESCALE)
-	{
-		mobj->spritexscale = READFIXED(save->p);
-		mobj->spriteyscale = READFIXED(save->p);
-	}
-	else
-	{
-		mobj->spritexscale = mobj->spriteyscale = FRACUNIT;
-	}
-	if (diff2 & MD2_SPRITEOFFSET)
-	{
-		mobj->spritexoffset = READFIXED(save->p);
-		mobj->spriteyoffset = READFIXED(save->p);
-		mobj->rollingxoffset = READINT16(save->p);
-		mobj->rollingyoffset = READINT16(save->p);
-	}
-	else
-	{
-		mobj->spritexoffset = mobj->spriteyoffset = 0;
-		mobj->rollingxoffset = mobj->rollingyoffset = 0;
-	}
-	if (diff2 & MD2_WORLDOFFSET)
-	{
-		mobj->sprxoff = READFIXED(save->p);
-		mobj->spryoff = READFIXED(save->p);
-		mobj->sprzoff = READFIXED(save->p);
-	}
-	else
-	{
-		mobj->sprxoff = mobj->spryoff = mobj->sprzoff = 0;
-	}
-	if (diff2 & MD2_SPECIAL)
-	{
-		mobj->special = READINT16(save->p);
-
-		for (j = 0; j < NUM_SCRIPT_ARGS; j++)
-			mobj->script_args[j] = READINT32(save->p);
-
-		for (j = 0; j < NUM_SCRIPT_STRINGARGS; j++)
-		{
-			size_t len = READINT32(save->p);
-			size_t k;
-
-			if (!len)
-			{
-				Z_Free(mobj->script_stringargs[j]);
-				mobj->script_stringargs[j] = NULL;
-				continue;
-			}
-
-			mobj->script_stringargs[j] = Z_Realloc(mobj->script_stringargs[j], len + 1, PU_LEVEL, NULL);
-			for (k = 0; k < len; k++)
-				mobj->script_stringargs[j][k] = READCHAR(save->p);
-			mobj->script_stringargs[j][len] = '\0';
-		}
-	}
-	if (diff2 & MD2_FLOORSPRITESLOPE)
-	{
-		pslope_t *slope = (pslope_t *)P_CreateFloorSpriteSlope(mobj);
-
-		slope->zdelta = READFIXED(save->p);
-		slope->zangle = READANGLE(save->p);
-		slope->xydirection = READANGLE(save->p);
-
-		slope->o.x = READFIXED(save->p);
-		slope->o.y = READFIXED(save->p);
-		slope->o.z = READFIXED(save->p);
-
-		slope->d.x = READFIXED(save->p);
-		slope->d.y = READFIXED(save->p);
-
-		slope->normal.x = READFIXED(save->p);
-		slope->normal.y = READFIXED(save->p);
-		slope->normal.z = READFIXED(save->p);
-
-		P_UpdateSlopeLightOffset(slope);
-	}
-	if (diff2 & MD2_LIGHTLEVEL)
-	{
-		mobj->lightlevel = READINT16(save->p);
-	}
-	if (diff2 & MD2_DISPOFFSET)
-	{
-		mobj->dispoffset = READINT32(save->p);
-	}
-	if (diff2 & MD2_LASTMOMZ)
-	{
-		mobj->lastmomz = READINT32(save->p);
-	}
-	if (diff2 & MD2_TERRAIN)
-	{
-		UINT32 terrain_index = READUINT32(save->p);
-		if (terrain_index > 0)
-			mobj->terrain = K_GetTerrainByIndex(terrain_index - 1);
-		mobj->terrainOverlay = (mobj_t *)(size_t)READUINT32(save->p);
-	}
-	else
-	{
-		mobj->terrain = NULL;
-	}
-	if (diff3 & MD3_GRAVITY)
-	{
-		mobj->gravity = READFIXED(save->p);
-	}
-	else
-	{
-		mobj->gravity = FRACUNIT;
-	}
-	if (diff3 & MD3_BAKEDOFFSET)
-	{
-		mobj->bakexoff = READFIXED(save->p);
-		mobj->bakeyoff = READFIXED(save->p);
-		mobj->bakezoff = READFIXED(save->p);
-		mobj->bakexpiv = READFIXED(save->p);
-		mobj->bakeypiv = READFIXED(save->p);
-		mobj->bakezpiv = READFIXED(save->p);
-	}
-	else
-	{
-		mobj->bakexoff = mobj->bakeyoff = mobj->bakezoff = 0;
-		mobj->bakexpiv = mobj->bakeypiv = mobj->bakezpiv = 0;
-	}
-	if (diff3 & MD3_EXTVAL3)
-	{
-		mobj->extravalue3 = READINT32(save->p);
-	}
-	if (diff3 & MD3_SHIELDTRACER)
-	{
-		mobj->shieldtracer = (mobj_t *)(size_t)READUINT32(save->p);
-	}
-
-	// Reset some non-synch values
-	mobj->sloperoll = 0;
-	mobj->slopepitch = 0;
-
-	// link tid set earlier
-	P_AddThingTID(mobj);
-
-	// set sprev, snext, bprev, bnext, subsector
-	P_SetThingPosition(mobj);
-
-	mobj->mobjnum = READUINT32(save->p);
-
-	if (mobj->player)
-	{
-		if (mobj->eflags & MFE_VERTICALFLIP)
-			mobj->player->viewz = mobj->z + mobj->height - mobj->player->viewheight;
-		else
-			mobj->player->viewz = mobj->player->mo->z + mobj->player->viewheight;
-	}
-
-	if (mobj->type == MT_SKYBOX && mobj->spawnpoint)
-	{
-		P_InitSkyboxPoint(mobj, mobj->spawnpoint);
-	}
-
-	if (diff2 & MD2_BOSS3CAP)
-		P_SetTarget(&boss3cap, mobj);
-	
-	if (diff2 & MD2_WAYPOINTCAP)
-		P_SetTarget(&waypointcap, mobj);
-
-	if (diff2 & MD2_KITEMCAP)
-		P_SetTarget(&kitemcap, mobj);
-
-	if (diff3 & MD3_MISCCAP)
-		P_SetTarget(&misccap, mobj);
-
-	R_AddMobjInterpolator(mobj);
-
-	// don't allow the mobj's refcount to be reset by P_AddThinker
-	// we might've already called P_SetTarget!
-	return NULL;//&mobj->thinker;
-}
-
-static thinker_t* LoadNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	noenemies_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	return &ht->thinker;
-}
-
-static thinker_t* LoadBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	bouncecheese_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->speed = READFIXED(save->p);
-	ht->distance = READFIXED(save->p);
-	ht->floorwasheight = READFIXED(save->p);
-	ht->ceilingwasheight = READFIXED(save->p);
-	ht->low = READCHAR(save->p);
-
-	if (ht->sector)
-		ht->sector->ceilingdata = ht;
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadContinuousFallThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	continuousfall_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->speed = READFIXED(save->p);
-	ht->direction = READINT32(save->p);
-	ht->floorstartheight = READFIXED(save->p);
-	ht->ceilingstartheight = READFIXED(save->p);
-	ht->destheight = READFIXED(save->p);
-
-	if (ht->sector)
-	{
-		ht->sector->ceilingdata = ht;
-		ht->sector->floordata = ht;
-	}
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	mariothink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->speed = READFIXED(save->p);
-	ht->direction = READINT32(save->p);
-	ht->floorstartheight = READFIXED(save->p);
-	ht->ceilingstartheight = READFIXED(save->p);
-	ht->tag = READINT16(save->p);
-
-	if (ht->sector)
-	{
-		ht->sector->ceilingdata = ht;
-		ht->sector->floordata = ht;
-	}
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	mariocheck_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	return &ht->thinker;
-}
-
-static thinker_t* LoadThwompThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	thwomp_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->crushspeed = READFIXED(save->p);
-	ht->retractspeed = READFIXED(save->p);
-	ht->direction = READINT32(save->p);
-	ht->floorstartheight = READFIXED(save->p);
-	ht->ceilingstartheight = READFIXED(save->p);
-	ht->delay = READINT32(save->p);
-	ht->tag = READINT16(save->p);
-	ht->sound = READUINT16(save->p);
-	ht->initDelay = READINT32(save->p);
-
-	if (ht->sector)
-	{
-		ht->sector->ceilingdata = ht;
-		ht->sector->floordata = ht;
-	}
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadFloatThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	floatthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->tag = READINT16(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadEachTimeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	size_t i;
-	eachtime_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		ht->playersInArea[i] = READCHAR(save->p);
-	}
-	ht->triggerOnExit = READCHAR(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadRaiseThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	raise_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->tag = READINT16(save->p);
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->ceilingbottom = READFIXED(save->p);
-	ht->ceilingtop = READFIXED(save->p);
-	ht->basespeed = READFIXED(save->p);
-	ht->extraspeed = READFIXED(save->p);
-	ht->shaketimer = READUINT8(save->p);
-	ht->flags = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadCeilingThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	ceiling_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->type = READUINT8(save->p);
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->bottomheight = READFIXED(save->p);
-	ht->topheight = READFIXED(save->p);
-	ht->speed = READFIXED(save->p);
-	ht->delay = READFIXED(save->p);
-	ht->delaytimer = READFIXED(save->p);
-	ht->crush = READUINT8(save->p);
-	ht->texture = READINT32(save->p);
-	ht->direction = READINT32(save->p);
-	ht->tag = READINT16(save->p);
-	ht->sourceline = READFIXED(save->p);
-	ht->origspeed = READFIXED(save->p);
-	ht->crushHeight = READFIXED(save->p);
-	ht->crushSpeed = READFIXED(save->p);
-	ht->returnHeight = READFIXED(save->p);
-	ht->returnSpeed = READFIXED(save->p);
-	if (ht->sector)
-		ht->sector->ceilingdata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadFloormoveThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	floormove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->type = READUINT8(save->p);
-	ht->crush = READUINT8(save->p);
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->direction = READINT32(save->p);
-	ht->texture = READINT32(save->p);
-	ht->floordestheight = READFIXED(save->p);
-	ht->speed = READFIXED(save->p);
-	ht->origspeed = READFIXED(save->p);
-	ht->delay = READFIXED(save->p);
-	ht->delaytimer = READFIXED(save->p);
-	ht->tag = READINT16(save->p);
-	ht->sourceline = READFIXED(save->p);
-	ht->crushHeight = READFIXED(save->p);
-	ht->crushSpeed = READFIXED(save->p);
-	ht->returnHeight = READFIXED(save->p);
-	ht->returnSpeed = READFIXED(save->p);
-	if (ht->sector)
-		ht->sector->floordata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadLightflashThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	lightflash_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->maxlight = READINT32(save->p);
-	ht->minlight = READINT32(save->p);
-	if (ht->sector)
-		ht->sector->lightingdata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadStrobeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	strobe_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->count = READINT32(save->p);
-	ht->minlight = READINT16(save->p);
-	ht->maxlight = READINT16(save->p);
-	ht->darktime = READINT32(save->p);
-	ht->brighttime = READINT32(save->p);
-	if (ht->sector)
-		ht->sector->lightingdata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadGlowThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	glow_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->minlight = READINT16(save->p);
-	ht->maxlight = READINT16(save->p);
-	ht->direction = READINT16(save->p);
-	ht->speed = READINT16(save->p);
-	if (ht->sector)
-		ht->sector->lightingdata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadFireflickerThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	fireflicker_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->count = READINT32(save->p);
-	ht->resetcount = READINT32(save->p);
-	ht->maxlight = READINT16(save->p);
-	ht->minlight = READINT16(save->p);
-	if (ht->sector)
-		ht->sector->lightingdata = ht;
-	return &ht->thinker;
-}
-
-static thinker_t* LoadElevatorThinker(savebuffer_t *save, actionf_p1 thinker, boolean setplanedata)
-{
-	elevator_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->type = READUINT8(save->p);
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->actionsector = LoadSector(READUINT32(save->p));
-	ht->direction = READINT32(save->p);
-	ht->floordestheight = READFIXED(save->p);
-	ht->ceilingdestheight = READFIXED(save->p);
-	ht->speed = READFIXED(save->p);
-	ht->origspeed = READFIXED(save->p);
-	ht->low = READFIXED(save->p);
-	ht->high = READFIXED(save->p);
-	ht->distance = READFIXED(save->p);
-	ht->delay = READFIXED(save->p);
-	ht->delaytimer = READFIXED(save->p);
-	ht->floorwasheight = READFIXED(save->p);
-	ht->ceilingwasheight = READFIXED(save->p);
-
-	if (ht->sector && setplanedata)
-	{
-		ht->sector->ceilingdata = ht;
-		ht->sector->floordata = ht;
-	}
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadCrumbleThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	crumble_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->actionsector = LoadSector(READUINT32(save->p));
-	ht->player = LoadPlayer(READUINT32(save->p));
-	ht->direction = READINT32(save->p);
-	ht->origalpha = READINT32(save->p);
-	ht->timer = READINT32(save->p);
-	ht->speed = READFIXED(save->p);
-	ht->floorwasheight = READFIXED(save->p);
-	ht->ceilingwasheight = READFIXED(save->p);
-	ht->flags = READUINT8(save->p);
-
-	if (ht->sector)
-		ht->sector->floordata = ht;
-
-	return &ht->thinker;
-}
-
-static thinker_t* LoadScrollThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	scroll_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->dx = READFIXED(save->p);
-	ht->dy = READFIXED(save->p);
-	ht->affectee = READINT32(save->p);
-	ht->control = READINT32(save->p);
-	ht->last_height = READFIXED(save->p);
-	ht->vdx = READFIXED(save->p);
-	ht->vdy = READFIXED(save->p);
-	ht->accel = READINT32(save->p);
-	ht->exclusive = READINT32(save->p);
-	ht->type = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadFrictionThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	friction_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->friction = READINT32(save->p);
-	ht->movefactor = READINT32(save->p);
-	ht->affectee = READINT32(save->p);
-	ht->referrer = READINT32(save->p);
-	ht->roverfriction = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadPusherThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	pusher_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->type = READUINT8(save->p);
-	ht->x_mag = READFIXED(save->p);
-	ht->y_mag = READFIXED(save->p);
-	ht->z_mag = READFIXED(save->p);
-	ht->affectee = READINT32(save->p);
-	ht->roverpusher = READUINT8(save->p);
-	ht->referrer = READINT32(save->p);
-	ht->exclusive = READINT32(save->p);
-	ht->slider = READINT32(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadLaserThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	laserthink_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->tag = READINT16(save->p);
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->nobosses = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadLightlevelThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	lightlevel_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->sourcelevel = READINT16(save->p);
-	ht->destlevel = READINT16(save->p);
-	ht->fixedcurlevel = READFIXED(save->p);
-	ht->fixedpertic = READFIXED(save->p);
-	ht->timer = READINT32(save->p);
-	if (ht->sector)
-		ht->sector->lightingdata = ht;
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadExecutorThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	executor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->line = LoadLine(READUINT32(save->p));
-	ht->caller = LoadMobj(READUINT32(save->p));
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->timer = READINT32(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadDisappearThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	disappear_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->appeartime = READUINT32(save->p);
-	ht->disappeartime = READUINT32(save->p);
-	ht->offset = READUINT32(save->p);
-	ht->timer = READUINT32(save->p);
-	ht->affectee = READINT32(save->p);
-	ht->sourceline = READINT32(save->p);
-	ht->exists = READINT32(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadFadeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	sector_t *ss;
-	fade_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->dest_exc = GetNetColormapFromList(READUINT32(save->p));
-	ht->sectornum = READUINT32(save->p);
-	ht->ffloornum = READUINT32(save->p);
-	ht->alpha = READINT32(save->p);
-	ht->sourcevalue = READINT16(save->p);
-	ht->destvalue = READINT16(save->p);
-	ht->destlightlevel = READINT16(save->p);
-	ht->speed = READINT16(save->p);
-	ht->ticbased = (boolean)READUINT8(save->p);
-	ht->timer = READINT32(save->p);
-	ht->doexists = READUINT8(save->p);
-	ht->dotranslucent = READUINT8(save->p);
-	ht->dolighting = READUINT8(save->p);
-	ht->docolormap = READUINT8(save->p);
-	ht->docollision = READUINT8(save->p);
-	ht->doghostfade = READUINT8(save->p);
-	ht->exactalpha = READUINT8(save->p);
-
-	ss = LoadSector(ht->sectornum);
-	if (ss)
-	{
-		size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
-		ffloor_t *rover;
-		for (rover = ss->ffloors; rover; rover = rover->next)
-		{
-			if (j == ht->ffloornum)
-			{
-				ht->rover = rover;
-				rover->fadingdata = ht;
-				break;
-			}
-			j++;
-		}
-	}
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	fadecolormap_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->sector = LoadSector(READUINT32(save->p));
-	ht->source_exc = GetNetColormapFromList(READUINT32(save->p));
-	ht->dest_exc = GetNetColormapFromList(READUINT32(save->p));
-	ht->ticbased = (boolean)READUINT8(save->p);
-	ht->duration = READINT32(save->p);
-	ht->timer = READINT32(save->p);
-	if (ht->sector)
-		ht->sector->fadecolormapdata = ht;
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	planedisplace_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-
-	ht->affectee = READINT32(save->p);
-	ht->control = READINT32(save->p);
-	ht->last_height = READFIXED(save->p);
-	ht->speed = READFIXED(save->p);
-	ht->type = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	dynlineplanethink_t* ht = Z_Malloc(sizeof(*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-
-	ht->type = READUINT8(save->p);
-	ht->slope = LoadSlope(READUINT32(save->p));
-	ht->sourceline = LoadLine(READUINT32(save->p));
-	ht->extent = READFIXED(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	size_t i;
-	dynvertexplanethink_t* ht = Z_Malloc(sizeof(*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-
-	ht->slope = LoadSlope(READUINT32(save->p));
-	for (i = 0; i < 3; i++)
-		ht->secs[i] = LoadSector(READUINT32(save->p));
-	READMEM(save->p, ht->vex, sizeof(ht->vex));
-	READMEM(save->p, ht->origsecheights, sizeof(ht->origsecheights));
-	READMEM(save->p, ht->origvecheights, sizeof(ht->origvecheights));
-	ht->relative = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polyrotate_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->speed = READINT32(save->p);
-	ht->distance = READINT32(save->p);
-	ht->turnobjs = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadPolymoveThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polymove_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->speed = READINT32(save->p);
-	ht->momx = READFIXED(save->p);
-	ht->momy = READFIXED(save->p);
-	ht->distance = READINT32(save->p);
-	ht->angle = READANGLE(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polywaypoint_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->speed = READINT32(save->p);
-	ht->sequence = READINT32(save->p);
-	ht->pointnum = READINT32(save->p);
-	ht->direction = READINT32(save->p);
-	ht->returnbehavior = READUINT8(save->p);
-	ht->continuous = READUINT8(save->p);
-	ht->stophere = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polyslidedoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->delay = READINT32(save->p);
-	ht->delayCount = READINT32(save->p);
-	ht->initSpeed = READINT32(save->p);
-	ht->speed = READINT32(save->p);
-	ht->initDistance = READINT32(save->p);
-	ht->distance = READINT32(save->p);
-	ht->initAngle = READUINT32(save->p);
-	ht->angle = READUINT32(save->p);
-	ht->revAngle = READUINT32(save->p);
-	ht->momx = READFIXED(save->p);
-	ht->momy = READFIXED(save->p);
-	ht->closing = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polyswingdoor_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->delay = READINT32(save->p);
-	ht->delayCount = READINT32(save->p);
-	ht->initSpeed = READINT32(save->p);
-	ht->speed = READINT32(save->p);
-	ht->initDistance = READINT32(save->p);
-	ht->distance = READINT32(save->p);
-	ht->closing = READUINT8(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polydisplace_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->controlSector = LoadSector(READUINT32(save->p));
-	ht->dx = READFIXED(save->p);
-	ht->dy = READFIXED(save->p);
-	ht->oldHeights = READFIXED(save->p);
-	return &ht->thinker;
-}
-
-static inline thinker_t* LoadPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polyrotdisplace_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->controlSector = LoadSector(READUINT32(save->p));
-	ht->rotscale = READFIXED(save->p);
-	ht->turnobjs = READUINT8(save->p);
-	ht->oldHeights = READFIXED(save->p);
-	return &ht->thinker;
-}
-
-static thinker_t* LoadPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker)
-{
-	polyfade_t *ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
-	ht->thinker.function.acp1 = thinker;
-	ht->polyObjNum = READINT32(save->p);
-	ht->sourcevalue = READINT32(save->p);
-	ht->destvalue = READINT32(save->p);
-	ht->docollision = (boolean)READUINT8(save->p);
-	ht->doghostfade = (boolean)READUINT8(save->p);
-	ht->ticbased = (boolean)READUINT8(save->p);
-	ht->duration = READINT32(save->p);
-	ht->timer = READINT32(save->p);
-	return &ht->thinker;
-}
-
-static void P_NetUnArchiveThinkers(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
-	thinker_t *currentthinker;
-	thinker_t *next;
-	UINT8 tclass;
-	UINT8 restoreNum = false;
-	UINT32 i;
-	UINT32 numloaded = 0;
-
-	if (READUINT32(save->p) != ARCHIVEBLOCK_THINKERS)
-		I_Error("Bad $$$.sav at archive block Thinkers");
-
-	// Pre-calculate this lookup, because it was wasting
-	// a shit ton of time loading mobj thinkers.
-	CalculateDoomednumToMobjtype();
-
-	// remove all the current thinkers
-	for (i = 0; i < NUM_THINKERLISTS; i++)
-	{
-		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = next)
-		{
-			next = currentthinker->next;
-
-			currentthinker->references = 0; // Heinous but this is the only place the assertion in P_UnlinkThinkers is wrong
-
-			if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker || currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
-				P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
-			else
-			{
-				(next->prev = currentthinker->prev)->next = next;
-				R_DestroyLevelInterpolators(currentthinker);
-				Z_Free(currentthinker);
-			}
-		}
-	}
-
-	// we don't want the removed mobjs to come back
-	P_InitThinkers();
-
-	// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
-	for (i = 0; i < numsectors; i++)
-	{
-		sectors[i].floordata = sectors[i].ceilingdata = sectors[i].lightingdata = sectors[i].fadecolormapdata = NULL;
-	}
-
-	// read in saved thinkers
-	for (i = 0; i < NUM_THINKERLISTS; i++)
-	{
-		for (;;)
-		{
-			thinker_t* th = NULL;
-			tclass = READUINT8(save->p);
-
-			if (tclass == tc_end)
-				break; // leave the saved thinker reading loop
-			numloaded++;
-
-			switch (tclass)
-			{
-				case tc_mobj:
-					th = LoadMobjThinker(save, (actionf_p1)P_MobjThinker, i);
-					break;
-
-				case tc_ceiling:
-					th = LoadCeilingThinker(save, (actionf_p1)T_MoveCeiling);
-					break;
-
-				case tc_crushceiling:
-					th = LoadCeilingThinker(save, (actionf_p1)T_CrushCeiling);
-					break;
-
-				case tc_floor:
-					th = LoadFloormoveThinker(save, (actionf_p1)T_MoveFloor);
-					break;
-
-				case tc_flash:
-					th = LoadLightflashThinker(save, (actionf_p1)T_LightningFlash);
-					break;
-
-				case tc_strobe:
-					th = LoadStrobeThinker(save, (actionf_p1)T_StrobeFlash);
-					break;
-
-				case tc_glow:
-					th = LoadGlowThinker(save, (actionf_p1)T_Glow);
-					break;
-
-				case tc_fireflicker:
-					th = LoadFireflickerThinker(save, (actionf_p1)T_FireFlicker);
-					break;
-
-				case tc_elevator:
-					th = LoadElevatorThinker(save, (actionf_p1)T_MoveElevator, true);
-					break;
-
-				case tc_continuousfalling:
-					th = LoadContinuousFallThinker(save, (actionf_p1)T_ContinuousFalling);
-					break;
-
-				case tc_thwomp:
-					th = LoadThwompThinker(save, (actionf_p1)T_ThwompSector);
-					break;
-
-				case tc_noenemies:
-					th = LoadNoEnemiesThinker(save, (actionf_p1)T_NoEnemiesSector);
-					break;
-
-				case tc_eachtime:
-					th = LoadEachTimeThinker(save, (actionf_p1)T_EachTimeThinker);
-					break;
-
-				case tc_raisesector:
-					th = LoadRaiseThinker(save, (actionf_p1)T_RaiseSector);
-					break;
-
-				case tc_camerascanner:
-					th = LoadElevatorThinker(save, (actionf_p1)T_CameraScanner, false);
-					break;
-
-				case tc_bouncecheese:
-					th = LoadBounceCheeseThinker(save, (actionf_p1)T_BounceCheese);
-					break;
-
-				case tc_startcrumble:
-					th = LoadCrumbleThinker(save, (actionf_p1)T_StartCrumble);
-					break;
-
-				case tc_marioblock:
-					th = LoadMarioBlockThinker(save, (actionf_p1)T_MarioBlock);
-					break;
-
-				case tc_marioblockchecker:
-					th = LoadMarioCheckThinker(save, (actionf_p1)T_MarioBlockChecker);
-					break;
-
-				case tc_floatsector:
-					th = LoadFloatThinker(save, (actionf_p1)T_FloatSector);
-					break;
-
-				case tc_laserflash:
-					th = LoadLaserThinker(save, (actionf_p1)T_LaserFlash);
-					break;
-
-				case tc_lightfade:
-					th = LoadLightlevelThinker(save, (actionf_p1)T_LightFade);
-					break;
-
-				case tc_executor:
-					th = LoadExecutorThinker(save, (actionf_p1)T_ExecutorDelay);
-					restoreNum = true;
-					break;
-
-				case tc_disappear:
-					th = LoadDisappearThinker(save, (actionf_p1)T_Disappear);
-					break;
-
-				case tc_fade:
-					th = LoadFadeThinker(save, (actionf_p1)T_Fade);
-					break;
-
-				case tc_fadecolormap:
-					th = LoadFadeColormapThinker(save, (actionf_p1)T_FadeColormap);
-					break;
-
-				case tc_planedisplace:
-					th = LoadPlaneDisplaceThinker(save, (actionf_p1)T_PlaneDisplace);
-					break;
-				case tc_polyrotate:
-					th = LoadPolyrotatetThinker(save, (actionf_p1)T_PolyObjRotate);
-					break;
-
-				case tc_polymove:
-					th = LoadPolymoveThinker(save, (actionf_p1)T_PolyObjMove);
-					break;
-
-				case tc_polywaypoint:
-					th = LoadPolywaypointThinker(save, (actionf_p1)T_PolyObjWaypoint);
-					break;
-
-				case tc_polyslidedoor:
-					th = LoadPolyslidedoorThinker(save, (actionf_p1)T_PolyDoorSlide);
-					break;
-
-				case tc_polyswingdoor:
-					th = LoadPolyswingdoorThinker(save, (actionf_p1)T_PolyDoorSwing);
-					break;
-
-				case tc_polyflag:
-					th = LoadPolymoveThinker(save, (actionf_p1)T_PolyObjFlag);
-					break;
-
-				case tc_polydisplace:
-					th = LoadPolydisplaceThinker(save, (actionf_p1)T_PolyObjDisplace);
-					break;
-
-				case tc_polyrotdisplace:
-					th = LoadPolyrotdisplaceThinker(save, (actionf_p1)T_PolyObjRotDisplace);
-					break;
-
-				case tc_polyfade:
-					th = LoadPolyfadeThinker(save, (actionf_p1)T_PolyObjFade);
-					break;
-
-				case tc_dynslopeline:
-					th = LoadDynamicLineSlopeThinker(save, (actionf_p1)T_DynamicSlopeLine);
-					break;
-
-				case tc_dynslopevert:
-					th = LoadDynamicVertexSlopeThinker(save, (actionf_p1)T_DynamicSlopeVert);
-					break;
-
-				case tc_scroll:
-					th = LoadScrollThinker(save, (actionf_p1)T_Scroll);
-					break;
-
-				case tc_friction:
-					th = LoadFrictionThinker(save, (actionf_p1)T_Friction);
-					break;
-
-				case tc_pusher:
-					th = LoadPusherThinker(save, (actionf_p1)T_Pusher);
-					break;
-
-				default:
-					I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
-			}
-			if (th)
-				P_AddThinker(i, th);
-		}
-
-		CONS_Debug(DBG_NETPLAY, "%u thinkers loaded in list %d\n", numloaded, i);
-	}
-	
-	// Set each skyboxmo to the first skybox (or NULL)
-	skyboxmo[0] = skyboxviewpnts[0];
-	skyboxmo[1] = skyboxcenterpnts[0];
-
-	if (restoreNum)
-	{
-		executor_t *delay = NULL;
-		UINT32 mobjnum;
-		for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
-		{
-			if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
-				continue;
-			delay = (void *)currentthinker;
-			if (!(mobjnum = (UINT32)(size_t)delay->caller))
-				continue;
-			delay->caller = P_FindNewPosition(mobjnum);
-		}
-	}
-	TracyCZoneEnd(__zone);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5387,7 +4687,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	{
 		P_NetSyncWorld(save);
 		P_ArchivePolyObjects(save);
-		P_NetArchiveThinkers(save);
+		P_NetSyncThinkers(save);
 		P_NetSyncSpecials(save);
 		P_NetSyncColormaps(save);
 		P_NetSyncTubeWaypoints(save);
@@ -5439,7 +4739,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	{
 		P_NetSyncWorld(save);
 		P_UnArchivePolyObjects(save);
-		P_NetUnArchiveThinkers(save);
+		P_NetSyncThinkers(save);
 		P_NetSyncSpecials(save);
 		P_NetSyncColormaps(save);
 		P_NetSyncTubeWaypoints(save);
