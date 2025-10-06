@@ -55,9 +55,19 @@ FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat(fixed_t x)
 	return x / (float)FRACUNIT;
 }
 
+FUNCMATH FUNCINLINE static ATTRINLINE float FixedToFloat64(INT64 x)
+{
+	return (float)x / (float)FRACUNIT;
+}
+
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 {
 	return (fixed_t)(f * FRACUNIT);
+}
+
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 FloatToFixed64(float f)
+{
+	return (INT64)(f * FRACUNIT);
 }
 
 // for backwards compat
@@ -77,6 +87,13 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 	// Need to cast to unsigned before shifting to avoid undefined behaviour
 	// for negative integers
 	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
+}
+
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 FixedMul64(INT64 a, INT64 b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (INT64)(((UINT64)(a * b)) >> FRACBITS);
 }
 
 /**	\brief	The FixedDiv2 function
@@ -145,6 +162,12 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedPercentageFloat(float fpercen
 
 */
 FUNCMATH fixed_t FixedSqrt(fixed_t x);
+FUNCMATH INT64 FixedSqrt64(INT64 x);
+
+// Theoretically, we can feed this any integer value and it'll output an
+// accurate square root * 256.
+#define IntSqrt(x) (INT32)(FixedSqrt(x) / 256)
+#define IntSqrt64(x) (INT64)(FixedSqrt64(x) / 256)
 
 /**	\brief	The FixedHypot function
 

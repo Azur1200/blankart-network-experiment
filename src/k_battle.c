@@ -486,27 +486,16 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 	}
 }
 
-void K_BattleInit(void)
+void K_BattleInit(UINT8 numPlayers)
 {
-	size_t i;
-
 	if ((gametyperules & GTR_ITEMBREAKER) && !itembreaker && !bossinfo.boss)
 	{
 		if (modeattacking != ATTACKING_ITEMBREAK)
 		{
-			UINT8 n = 0;
-
 			if (!cv_kartitembreaker.value)
 				goto afteritembreaker;
 
-			for (i = 0; i < MAXPLAYERS; i++)
-			{
-				if (!playeringame[i] || players[i].spectator)
-					continue;
-				n++;
-			}
-
-			if (n > 1)
+			if (numPlayers > 1)
 				goto afteritembreaker;
 		}
 
@@ -517,6 +506,7 @@ afteritembreaker:
 	if (gametyperules & GTR_BUMPERS)
 	{
 		INT32 maxbumpers = K_StartingBumperCount();
+		UINT8 i;
 
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -526,4 +516,54 @@ afteritembreaker:
 			K_SpawnPlayerBattleBumpers(players+i);
 		}
 	}
+}
+
+// Handle respawning the battle boxes.
+void K_RespawnBattleBoxes(void)
+{
+	if (!(gametyperules & GTR_BATTLEBOXES))
+		return;
+
+	if (itembreaker)
+		return;
+
+	if (numgotboxes < (4*nummapboxes/5))
+		return;
+
+	thinker_t *th;
+
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		mobj_t *box;
+		mobj_t *newmobj;
+
+		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		box = (mobj_t *)th;
+
+		if (box->type != MT_RANDOMITEM || box->threshold != 68 || box->fuse) // only popped items
+			continue;
+
+		// Respawn from mapthing if you have one!
+		if (box->spawnpoint)
+		{
+			P_SpawnMapThing(box->spawnpoint);
+			newmobj = box->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
+			P_SpawnMobj(box->spawnpoint->mobj->x, box->spawnpoint->mobj->y, box->spawnpoint->mobj->z, MT_EXPLODE); // poof into existance
+		}
+		else
+		{
+			newmobj = P_SpawnMobj(box->x, box->y, box->z, box->type);
+			P_SpawnMobj(newmobj->x, newmobj->y, newmobj->z, MT_EXPLODE); // poof into existance
+		}
+
+		// Transfer flags2 (strongbox, objectflip)
+		newmobj->flags2 = box->flags2;
+		P_RemoveMobj(box); // make sure they disappear
+		numgotboxes--; // you've restored a box, remove it from the count
+	}
+
+	if (numgotboxes < 0)
+		numgotboxes = 0;
 }

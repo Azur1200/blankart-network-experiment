@@ -12267,47 +12267,6 @@ void P_RespawnSpecials(void)
 	INT32 time = 30*TICRATE; // Respawn things in empty dedicated servers
 	mapthing_t *mthing = NULL;
 
-	if ((gametyperules & GTR_BATTLEBOXES) && !itembreaker && numgotboxes >= (4*nummapboxes/5)) // Battle Mode respawns all boxes in a different way
-	{
-		thinker_t *th;
-
-		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		{
-			mobj_t *box;
-			mobj_t *newmobj;
-
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-				continue;
-
-			box = (mobj_t *)th;
-
-			if (box->type != MT_RANDOMITEM || box->threshold != 68 || box->fuse) // only popped items
-				continue;
-
-			// Respawn from mapthing if you have one!
-			if (box->spawnpoint)
-			{
-				P_SpawnMapThing(box->spawnpoint);
-				newmobj = box->spawnpoint->mobj; // this is set to the new mobj in P_SpawnMapThing
-				P_SpawnMobj(box->spawnpoint->mobj->x, box->spawnpoint->mobj->y, box->spawnpoint->mobj->z, MT_EXPLODE); // poof into existance
-			}
-			else
-			{
-				newmobj = P_SpawnMobj(box->x, box->y, box->z, box->type);
-				P_SpawnMobj(newmobj->x, newmobj->y, newmobj->z, MT_EXPLODE); // poof into existance
-			}
-
-			// Transfer flags2 (strongbox, objectflip)
-			newmobj->flags2 = box->flags2;
-			P_RemoveMobj(box); // make sure they disappear
-			numgotboxes--; // you've restored a box, remove it from the count
-			//continue; -- irrelevant?
-		}
-
-		if (numgotboxes < 0)
-			numgotboxes = 0;
-	}
-
 	// wait time depends on player count
 	for (p = 0; p < MAXPLAYERS; p++)
 	{
@@ -12641,11 +12600,13 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	if (mthing)
 	{
+		fixed_t offset = udmf ? mthing->z << FRACBITS : 0;
+
 		// Setting the spawnpoint's args[0] will make the player start on the ceiling
 		// Objectflip inverts
 		if (!!(mthing->args[0]) ^ !!(mthing->options & MTF_OBJECTFLIP))
 		{
-			z = ceiling - mobjinfo[MT_PLAYER].height;
+			z = ceiling - mobjinfo[MT_PLAYER].height - offset;
 			if (mthing->options >> ZSHIFT)
 				z -= ((mthing->options >> ZSHIFT) << FRACBITS);
 			if (p->respawn)
@@ -12653,7 +12614,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 		}
 		else
 		{
-			z = floor;
+			z = floor + offset;
 			if (mthing->options >> ZSHIFT)
 				z += ((mthing->options >> ZSHIFT) << FRACBITS);
 			if (p->respawn)
@@ -13727,7 +13688,6 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 	case MT_RANDOMITEM:
 	{
 		mobj->flags2 |= MF2_BOSSNOTRAP; // mark as here on map start
-		nummapboxes++;
 		break;
 	}
 	case MT_ITEMCAPSULE:

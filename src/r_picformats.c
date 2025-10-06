@@ -1594,7 +1594,12 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 		{
 			for (i = 0; i < numskins; i++)
 			{
-				copy_to_skin(parser, i);
+				// ignore v1 skins or else they will break
+				boolean compat = wadfiles[skins[i].wadnum]->compatmode;
+				if (!compat)
+				{
+					copy_to_skin(parser, i);
+				}
 			}
 		}
 		else

@@ -3244,6 +3244,10 @@ void G_AddPlayer(INT32 playernum, INT32 console)
 
 void G_BeginLevelExit(void)
 {
+	if (g_exit.hasfinished)
+		return; // the round has already finished!
+
+	g_exit.hasfinished = true;
 	g_exit.losing = true;
 	g_exit.retry = false;
 
@@ -3285,13 +3289,7 @@ void G_BeginLevelExit(void)
 				}
 			}
 		}
-	}
 
-
-	exitcountdown = raceexittime+1;
-
-	if (g_exit.losing)
-	{
 		if (!g_exit.retry)
 		{
 			ACS_RunGameOverScript();
@@ -4282,8 +4280,6 @@ static void G_DoCompleted(void)
 		G_StopMetalDemo();
 	if (metalrecording)
 		G_StopMetalRecording(false);
-
-	K_StatRound();
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;

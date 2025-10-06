@@ -7209,12 +7209,35 @@ void MD_DrawCssCharacter(void)
 	// draw their follower if there is one
 	if (cv_dummyfollower.value > -1)
 	{
-		// animate the follower
+		follower_t fl = followers[cv_dummyfollower.value]; // shortcut for our sanity
+
+		tic_t bobspeed = fl.bobspeed;
+		if (fl.mode == FOLLOWERMODE_GROUND)
+			bobspeed = FixedDiv(bobspeed*FRACUNIT, fl.bobamp / 6); // rough approximation of bounce speed
+
+		// smooth floating, totally not stolen from rocket sneakers.
+		fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * followertimer)>>ANGLETOFINESHIFT) & FINEMASK));
 
 		follower_tics -= renderdeltatics;
+
+		// restart the ground follower's animation when it lands on the "ground"
+		if (fl.mode == FOLLOWERMODE_GROUND)
+		{
+			// this sucks
+			fixed_t sine_next = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * (followertimer + 1))>>ANGLETOFINESHIFT) & FINEMASK));
+			if ((sine > 0) != (sine_next > 0))
+			{
+				st = fl.followstate;
+				if (st != S_NULL)
+					follower_state = &states[st];
+				follower_tics = follower_state->tics*FRACUNIT;
+				follower_frame = follower_state->frame & FF_FRAMEMASK; // get spritedef
+			}
+		}
+
+		// animate the follower
 		if (follower_tics <= 0)
 		{
-
 			// FF_ANIMATE; cycle through FRAMES and get back afterwards. This will be prominent amongst followers hence why it's being supported here.
 			if (follower_state->frame & FF_ANIMATE)
 			{
@@ -7229,14 +7252,12 @@ void MD_DrawCssCharacter(void)
 				if (st != S_NULL)
 					follower_state = &states[st];
 				follower_tics = follower_state->tics*FRACUNIT;
-						// get spritedef:
-				follower_frame = follower_state->frame & FF_FRAMEMASK;
+				follower_frame = follower_state->frame & FF_FRAMEMASK; // get spritedef
 			}
 		}
 		sprdef = &sprites[follower_state->sprite];
 
 		// draw the follower
-
 		if (follower_frame >= sprdef->numframes)
 			follower_frame = 0;	// frame doesn't exist, we went beyond it... what?
 		sprframe = &sprdef->spriteframes[follower_frame];
@@ -7247,22 +7268,13 @@ void MD_DrawCssCharacter(void)
 		// draw follower sprite
 		{
 			// Fake the follower's in game appearance by now also applying some of its variables! coolio, eh?
-			follower_t fl = followers[cv_dummyfollower.value]; // shortcut for our sanity
-
-			tic_t bobspeed = fl.bobspeed;
-			if (fl.mode == FOLLOWERMODE_GROUND)
-				bobspeed = FixedDiv(bobspeed, fl.bobamp / 6); // Rough approximation of bounce speed
-
-			// smooth floating, totally not stolen from rocket sneakers.
-			fixed_t sine = FixedMul(fl.bobamp, FINESINE(((FixedMul(4 * M_TAU_FIXED, bobspeed) * followertimer)>>ANGLETOFINESHIFT) & FINEMASK));
-
 			UINT16 color = K_GetEffectiveFollowerColor(cv_followercolor[setupplayer].value, &fl, cv_dummycolor.value, &skins[skintodisplay]);
 			colormap = R_GetTranslationColormap(TC_DEFAULT, color, 0); // why does GTC_MENUCACHE not work here...?
 
 			INT32 x = (mx+65)*FRACUNIT;
-			INT32 y = ((my+100)*FRACUNIT);
+			INT32 y = ((my+105)*FRACUNIT);
 			if (fl.mode == FOLLOWERMODE_GROUND)
-				y += 40*FRACUNIT - abs(sine) * 2; // Bounce animation
+				y += 40*FRACUNIT - FixedMul(abs(sine), max(2*FRACUNIT, (fl.bobamp*2)/3)); // bounce animation
 			else
 				y += sine;
 

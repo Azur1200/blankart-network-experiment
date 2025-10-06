@@ -782,6 +782,9 @@ static void P_SpawnMapThings(boolean spawnemblems)
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
 			continue;
 
+		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
+			nummapboxes++;
+
 		// Don't spawn non-patch objects of this type if they are uneeded
 		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
 			continue;
@@ -8106,8 +8109,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	racecountdown = exitcountdown = exitfadestarted = 0;
 	curlap = bestlap = 0; // SRB2Kart
 
-	g_exit.losing = false;
-	g_exit.retry = false;
+	g_exit.losing = g_exit.retry = g_exit.hasfinished = false;
 
 	// SRB2Kart: map load variables
 	if (grandprixinfo.gp == true)

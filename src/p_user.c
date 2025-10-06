@@ -1282,23 +1282,22 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 	if (P_IsLocalPlayer(player) && (!player->spectator && !demo.playback))
 		legitimateexit = true;
-	
+
 	if (player->griefstrikes > 0)
 		player->griefstrikes--; // Remove a strike for finishing a race normally
 
-	player->exiting = 1;
-	
 	if (!player->spectator && (gametyperules & GTR_CIRCUIT)) // Special Race-like handling
 	{
 		K_UpdateAllPlayerPositions();
 	}
-	
+
 	losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
 
 	if (!player->spectator)
 	{
 		if ((gametyperules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
+			player->exiting = raceexittime+2;
 			if (cv_kartvoices.value)
 			{
 				const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
@@ -1309,21 +1308,22 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (!K_CanChangeRules() || cv_inttime.value > 0)
 				P_EndingMusic(player);
 
-			if (P_CheckRacers() && !exitcountdown)
+			if (P_CheckRacers())
 			{
+				player->exiting = raceexittime+1;
 				G_BeginLevelExit();
 			}
 		}
 		else if ((gametyperules & GTR_BUMPERS)) // Battle Mode exiting
 		{
-			if (!exitcountdown)
-				exitcountdown = battleexittime+1;
+			player->exiting = battleexittime+1;
+			G_BeginLevelExit();
 			P_EndingMusic(player);
 		}
 		else // Accidental death safeguard???
 		{
-			if (!exitcountdown)
-				G_BeginLevelExit();
+			player->exiting = raceexittime+2;
+			G_BeginLevelExit();
 		}
 
 		if (grandprixinfo.gp == true)
@@ -3603,7 +3603,10 @@ void P_DoTimeOver(player_t *player)
 	P_EndingMusic(player);
 
 	if (!exitcountdown)
+	{
 		G_BeginLevelExit();
+		exitcountdown = 5*TICRATE;
+	}
 }
 
 // SRB2Kart: These are useful functions, but we aren't using them yet.
@@ -3940,6 +3943,36 @@ void P_PlayerThink(player_t *player)
 		player->kickstartaccel = ACCEL_KICKSTART+1;
 	}
 
+	// MKWii-styled icon spinouts: do a full 360 rotation before stopping.
+	if (P_PlayerInPain(player))
+	{
+		if (player->spinoutrot < MAXSPINROT)
+		{
+			if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+			{
+				player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
+			}
+			else
+			{
+				player->spinoutrot += SPINOUTROTSPEED;
+			}
+		}
+	}
+	else
+	{
+		if ((player->spinoutrot) && (player->spinoutrot < MAXSPINROT))
+		{
+			if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+			{
+				player->spinoutrot = 0;
+			}
+			else
+			{
+				player->spinoutrot += SPINOUTROTSPEED;
+			}
+		}
+	}
+
 #ifdef PARANOIA
 	if (player->playerstate == PST_REBORN)
 		I_Error("player %s is in PST_REBORN\n", sizeu1(playeri));
@@ -3985,36 +4018,6 @@ void P_PlayerThink(player_t *player)
 				{
 					LUA_HookPlayer(player, HOOK(PlayerThink));
 					return;
-				}
-			}
-		}
-
-		// MKWii-styled icon spinouts: do a full 360 rotation before stopping.
-		if (P_PlayerInPain(player))
-		{
-			if (player->spinoutrot < MAXSPINROT)
-			{
-				if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
-				{
-					player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
-				}
-				else
-				{
-					player->spinoutrot += SPINOUTROTSPEED;
-				}
-			}
-		}
-		else
-		{
-			if ((player->spinoutrot) && (player->spinoutrot < MAXSPINROT))
-			{
-				if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
-				{
-					player->spinoutrot = 0;
-				}
-				else
-				{
-					player->spinoutrot += SPINOUTROTSPEED;
 				}
 			}
 		}

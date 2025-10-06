@@ -130,7 +130,7 @@ void K_TimerInit(void)
 	}
 
 	// NOW you can try to setup Item Breaker, if there's not enough players for a match
-	K_BattleInit();
+	K_BattleInit(numPlayers);
 
 	timelimitintics = extratimeintics = secretextratime = 0;
 	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss)
@@ -4028,7 +4028,7 @@ void K_SpawnBoostTrail(player_t *player)
 			newz -= FixedMul(mobjinfo[MT_SNEAKERTRAIL].height, player->mo->scale);
 		}
 
-		flame = P_SpawnMobj(newx, newy, ground, MT_SNEAKERTRAIL);
+		flame = P_SpawnMobj(newx, newy, newz, MT_SNEAKERTRAIL);
 
 		P_SetTarget(&flame->target, player->mo);
 		flame->angle = travelangle;
@@ -8211,6 +8211,14 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 			pathfindsuccess =
 				K_PathfindToWaypoint(player->nextwaypoint, finishline, &pathtofinish, useshortcuts, huntbackwards);
 
+			if (!pathfindsuccess)
+			{
+				// We failed...
+				// Lets try shortcut waypoints if that happens to be the only path.
+				pathfindsuccess =
+				K_PathfindToWaypoint(player->nextwaypoint, finishline, &pathtofinish, true, huntbackwards);
+			}
+
 			// Update the player's distance to the finish line if a path was found.
 			// Using shortcuts won't find a path, so distance won't be updated until the player gets back on track
 			if (pathfindsuccess == true)
@@ -9470,20 +9478,11 @@ void K_KartUpdatePosition(player_t *player)
 				}
 				else
 				{
-					if (player->exiting) // End of match standings
-					{
-						// Only score matters
-						if (players[i].roundscore > player->roundscore)
-							position++;
-					}
-					else
-					{
-						// I have less points than but the same bumpers as this player OR
-						// I have less bumpers than this player
-						if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
-							|| (players[i].bumper > player->bumper))
-							position++;
-					}
+					// I have less points than but the same bumpers as this player OR
+					// I have less bumpers than this player
+					if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
+						|| (players[i].bumper > player->bumper))
+						position++;
 				}
 			}
 		}

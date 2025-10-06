@@ -61,6 +61,45 @@ fixed_t FixedSqrt(fixed_t x)
 #endif
 }
 
+// Shitty 64-bit duplicate so certain distancing edgecases in k_odds die
+INT64 FixedSqrt64(INT64 x)
+{
+#ifdef HAVE_SQRT
+	const float fx = FixedToFloat64(x);
+	float fr;
+#ifdef HAVE_SQRTF
+	fr = sqrtf(fx);
+#else
+	fr = (float)sqrt(fx);
+#endif
+	return FloatToFixed64(fr);
+#else
+	// The neglected art of Fixed Point arithmetic
+	// Jetro Lauha
+	// Seminar Presentation
+	// Assembly 2006, 3rd- 6th August 2006
+	// (Revised: September 13, 2006)
+	// URL: http://jet.ro/files/The_neglected_art_of_Fixed_Point_arithmetic_20060913.pdf
+	register UINT64 root, remHi, remLo, testDiv, count;
+	root = 0;         /* Clear root */
+	remHi = 0;        /* Clear high part of partial remainder */
+	remLo = x;        /* Get argument into low part of partial remainder */
+	count = (31 + (FRACBITS >> 1));    /* Load loop counter */
+	do
+	{
+		remHi = (remHi << 2) | (remLo >> 62); remLo <<= 2;  /* get 2 bits of arg */
+		root <<= 1;   /* Get ready for the next bit in the root */
+		testDiv = (root << 1) + 1;    /* Test radical */
+		if (remHi >= testDiv)
+		{
+			remHi -= testDiv;
+			root += 1;
+		}
+	} while (count-- != 0);
+	return root;
+#endif
+}
+
 fixed_t FixedHypot(fixed_t x, fixed_t y)
 {
 	// Moved the code from R_PointToDist2 to here,
@@ -1120,6 +1159,11 @@ static inline void M_print(INT64 a)
 FUNCMATH FUNCINLINE static inline fixed_t FixedMulC(fixed_t a, fixed_t b)
 {
 	return (fixed_t)((((INT64)a * b)) / FRACUNIT);
+}
+
+FUNCMATH FUNCINLINE static inline INT64 FixedMul64C(fixed_t a, fixed_t b)
+{
+	return (INt64)((((INT64)a * b)) / FRACUNIT);
 }
 
 FUNCMATH FUNCINLINE static inline fixed_t FixedDivC2(fixed_t a, fixed_t b)

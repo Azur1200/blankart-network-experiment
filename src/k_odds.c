@@ -160,6 +160,58 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
+// 1/21/2025: I hate tiptoeing around the integer limit.
+// This is at a smaller scale.
+static UINT32 K_Dist2D(INT32 x1, INT32 y1, INT32 x2, INT32 y2)
+{
+	// d = √((x2 - x1)² + (y2 - y1)²)
+	INT32 xdiff, ydiff;
+	INT64 xprod, yprod;
+
+	xdiff = (x2 - x1);
+	ydiff = (y2 - y1);
+
+	xprod = ((INT64)xdiff * (INT64)xdiff);
+	yprod = ((INT64)ydiff * (INT64)ydiff);
+
+	return (UINT32)(IntSqrt64(xprod + yprod));
+}
+
+// Basic integer distancing, to quote myself:
+// "Even if you did 256 units for 1 fracunit in distancing, it'd be a better result than trying to
+// deal with overflows on a system that's already being pushed to the limit by needing 65536 units
+// for precision. No seriously, I don't think anyone's losing sleep over "hmmmmm, 0.0000152 or
+// 0.0039?????" when most 2D game engines only give a fuck about MAYBE 0.001"
+/*static UINT32 K_IntDistance(fixed_t curx,
+			 fixed_t cury,
+			 fixed_t curz,
+			 fixed_t destx,
+			 fixed_t desty,
+			 fixed_t destz)
+{
+	return K_Dist2D(0,
+		      curz / FRACUNIT,
+		      K_Dist2D(curx / FRACUNIT, cury / FRACUNIT, destx / FRACUNIT, desty / FRACUNIT),
+		      destz / FRACUNIT);
+}*/
+
+// This one uses map scaling instead, use in case of loss of depth on mobjscaled maps.
+static UINT32 K_IntDistanceForMap(fixed_t curx,
+			       fixed_t cury,
+			       fixed_t curz,
+			       fixed_t destx,
+			       fixed_t desty,
+			       fixed_t destz)
+{
+	return K_Dist2D(0,
+		      curz / mapobjectscale,
+		      K_Dist2D(curx / mapobjectscale,
+			     cury / mapobjectscale,
+			     destx / mapobjectscale,
+			     desty / mapobjectscale),
+		      destz / mapobjectscale);
+}
+
 SINT8 K_ItemResultToType(SINT8 getitem)
 {
 	if (getitem <= 0 || getitem >= NUMKARTRESULTS) // Sad (Fallback)
@@ -839,10 +891,16 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 	return translation[(player->itemroulette % roulette_size) / 3];
 }
 
+// Legacy odds are fickle and finicky, so we exaggerate distances
+// to simulate parity with pathfind odds.
+#define LEGACYODDSEXAGGERATE (2*FRACUNIT/3)
+
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
 	UINT32 pdis = 0;
+
+	(void)pingame;
 
 	if (!K_UsingLegacyCheckpoints())
 	{
@@ -969,25 +1027,16 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 							secondPlayer = &players[secondIndex];
 
 							// Add the distance to the player behind you.
-							// Distances are divided by 4, then further divided by a fracunit
-							// to prevent overflow issues.
-							pdis += (P_AproxDistance(P_AproxDistance(
-									firstPlayer->mo->x/4 - secondPlayer->mo->x/4,
-									firstPlayer->mo->y/4 - secondPlayer->mo->y/4),
-									firstPlayer->mo->z/4 - secondPlayer->mo->z/4)
-									/ FRACUNIT);
-
-							// Scale it to mostly return to normalcy.
-							pdis = (pdis * 2);
-
-							// Again, but this time base it on playercount, same form as
-							// the following vanilla adjustment, but much weaker since it
-							// stacks with it
-
-							// MAXODDS should always match the number of players the game is designed
-							// around, so there shouldn't be any issues with basing this calc around that.
-							// Hacky solution to the overflow problem: use 64-bit integers!
-							pdis = (UINT32)(((UINT64)(100 + MAXODDS - min(pingame, 16)) * pdis) / 100);
+							// At a (relative to map) integer scale using basic distancing
+							// arithmetic; more accurate and less concern for overflows.
+							// TODO: Overflow-safe addition (caps at UINT32_MAX).
+							pdis += K_IntDistanceForMap(
+									secondPlayer->mo->x,
+									secondPlayer->mo->y,
+									secondPlayer->mo->z,
+									firstPlayer->mo->x,
+									firstPlayer->mo->y,
+									firstPlayer->mo->z);
 
 							// Advance to next index.
 							firstIndex = secondIndex;
@@ -998,8 +1047,13 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 		}
 	}
 
+	// Exaggerate odds; don't you love the legacy system? :Trollic:
+	pdis = FixedMul(pdis, LEGACYODDSEXAGGERATE);
+
 	return pdis;
 }
+
+#undef LEGACYODDSEXAGGERATE
 
 UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush)
 {
