@@ -212,11 +212,13 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 		sprframe = &sprdef->spriteframes[i];
 		faceprefix[skinnum][i] = W_CachePatchNum(sprframe->lumppat[0], PU_HUDGFX);
 
-		alreadycentered = (boolean)faceprefix[skinnum][i]->autocentered;
+		alreadycentered = ((faceprefix[skinnum][i]->alignflags & PATCHALIGN_AUTOCENTER) ==
+				   PATCHALIGN_AUTOCENTER);
 
 		if ((ST_IconCanSpinout(i)) && (!alreadycentered))
 		{
-			// Auto-center all minimap and rank patches with the ability to spinout.
+			// Auto-center the pivots of all minimap and rank patches with
+			// the ability to spinout.
 			// This is a shitty, hacky solution... but it's less work for spinout
 			// rotations!
 			if ((!baseleftoffs) && (faceprefix[skinnum][i]->leftoffset))
@@ -229,13 +231,14 @@ void ST_LoadFaceGraphics(INT32 skinnum)
 				basetopoffs = faceprefix[skinnum][i]->topoffset;
 			}
 
-			faceprefix[skinnum][i]->leftoffset =
+			faceprefix[skinnum][i]->pivot.x =
 			    (faceprefix[skinnum][i]->width / 2) + baseleftoffs;
-			faceprefix[skinnum][i]->topoffset =
+			faceprefix[skinnum][i]->pivot.y =
 			    (faceprefix[skinnum][i]->height / 2) + basetopoffs;
 
 			// We're centered; don't do this operation again.
-			faceprefix[skinnum][i]->autocentered = 1;
+			faceprefix[skinnum][i]->alignflags |=
+			    (PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 		}
 		i++;
 	}

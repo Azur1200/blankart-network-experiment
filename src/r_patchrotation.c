@@ -248,8 +248,18 @@ patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip)
 	if (rotsprite->patches[angle] == NULL)
 	{
 		INT32 xpivot = 0, ypivot = 0;
-		xpivot = patch->leftoffset;
-		ypivot = patch->topoffset;
+
+		if (patch->alignflags & PATCHALIGN_USEPIVOTS)
+		{
+			xpivot = patch->pivot.x;
+			ypivot = patch->pivot.y;
+		}
+		else
+		{
+			xpivot = patch->leftoffset;
+			ypivot = patch->topoffset;
+		}
+		
 		RotatedPatch_DoRotation(rotsprite, patch, angle, xpivot, ypivot, flip);
 	}
 

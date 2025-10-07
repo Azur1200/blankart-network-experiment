@@ -333,6 +333,7 @@ TYPEDEF (light_t);
 TYPEDEF (node_t);
 TYPEDEF (post_t);
 TYPEDEF (drawseg_t);
+TYPEDEF (pivotvector_t);
 TYPEDEF (rotsprite_t);
 TYPEDEF (patch_t);
 TYPEDEF (softwarepatch_t);

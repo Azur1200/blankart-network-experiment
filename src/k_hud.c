@@ -375,8 +375,9 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
 
-		kp_facehighlight[i]->leftoffset = kp_facehighlight[i]->width / 2;
-		kp_facehighlight[i]->topoffset = kp_facehighlight[i]->height / 2;
+		kp_facehighlight[i]->pivot.x = kp_facehighlight[i]->width / 2;
+		kp_facehighlight[i]->pivot.y = kp_facehighlight[i]->height / 2;
+		kp_facehighlight[i]->alignflags |= PATCHALIGN_USEPIVOTS;
 	}
 
 	// Special minimap icons
@@ -4097,8 +4098,19 @@ static void K_drawKartMinimap(void)
 			interpy = R_InterpolateFixed(g->mo->old_y, g->mo->y);
 
 			patch_t *ghostPic = faceprefix[skin][FACE_MINIMAP];
-			iconoffsets.x = ((ghostPic->width) / 2) - FixedMul(ghostPic->leftoffset, minimapscale);
-			iconoffsets.y = ((ghostPic->height) / 2) - FixedMul(ghostPic->topoffset, minimapscale);
+
+			widthhalf = ((ghostPic->width) / 2);
+			heighthalf = ((ghostPic->height) / 2);
+
+			if (cv_minihead.value)
+			{
+				adjustx = FixedMul(4, (widthhalf - ghostPic->leftoffset) * FRACUNIT / widthhalf);
+				adjusty = FixedMul(4, (heighthalf - ghostPic->topoffset) *
+						  FRACUNIT / heighthalf);
+			}
+
+			iconoffsets.x = widthhalf - ghostPic->leftoffset - adjustx;
+			iconoffsets.y = heighthalf - ghostPic->topoffset - adjusty;
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, ghostPic, colormap, &iconoffsets);
 			g = g->next;
@@ -4144,8 +4156,18 @@ static void K_drawKartMinimap(void)
 			{
 				workingPic = kp_nocontestminimap;
 
-				iconoffsets.x = ((workingPic->width) / 2);
-				iconoffsets.y = ((workingPic->height) / 2);
+				widthhalf = ((workingPic->width) / 2);
+				heighthalf = ((workingPic->height) / 2);
+
+				if (cv_minihead.value)
+				{
+					adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
+					adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+							FRACUNIT / heighthalf);
+				}
+
+				iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 			}
@@ -4368,8 +4390,18 @@ static void K_drawKartMinimap(void)
 		{
 			workingPic = kp_nocontestminimap;
 
-			iconoffsets.x = ((workingPic->width) / 2);
-			iconoffsets.y = ((workingPic->height) / 2);
+			widthhalf = ((workingPic->width) / 2);
+			heighthalf = ((workingPic->height) / 2);
+
+			if (cv_minihead.value)
+			{
+				adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
+				adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+						  FRACUNIT / heighthalf);
+			}
+
+			iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+			iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 			colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 

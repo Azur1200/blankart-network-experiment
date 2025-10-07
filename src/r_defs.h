@@ -897,6 +897,11 @@ typedef enum
 } pic_mode_t;
 
 #ifdef ROTSPRITE
+struct pivotvector_t
+{
+	INT16 x, y;
+};
+
 struct rotsprite_t
 {
 	INT32 angles;
@@ -909,11 +914,22 @@ struct rotsprite_t
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURES list of patches.
 //
+typedef enum 
+{
+	PATCHALIGN_AUTOCENTER = 1<<0,
+	PATCHALIGN_USEPIVOTS  = 1<<1,
+	// free: up to 1<<7
+} patchalignflags_t;
+
 struct patch_t
 {
 	INT16 width, height;
+
+	// Offsets and rotation pivots.
 	INT16 leftoffset, topoffset;
-	UINT8 autocentered; // Automatically centered for certain VFX
+	pivotvector_t pivot;
+
+	UINT8 alignflags; // Alignment-related flags.
 
 	INT32 *columnofs; // Column offsets. This is relative to patch->columns
 	UINT8 *columns; // Software column data
