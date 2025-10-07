@@ -4476,7 +4476,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	}
 
 	ACS_Archive(save);
-	LUA_Archive(save, true);
+	LUA_Sync(save, true, false);
 
 	P_ArchiveLuabanksAndConsistency(save);
 
@@ -4529,7 +4529,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	}
 
 	ACS_UnArchive(save);
-	LUA_UnArchive(save, true, false);
+	LUA_Sync(save, true, false);
 
 	// This is stupid and hacky, but maybe it'll work!
 	P_SetRandSeed(P_GetInitSeed());

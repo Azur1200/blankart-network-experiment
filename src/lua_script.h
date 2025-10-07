@@ -61,8 +61,7 @@ void LUA_DumpFile(const char *filename);
 #endif
 fixed_t LUA_EvalMath(const char *word);
 void LUA_Step(void);
-void LUA_Archive(savebuffer_t *save, boolean network);
-void LUA_UnArchive(savebuffer_t *save, boolean network, boolean compat);
+void LUA_Sync(savebuffer_t *save, boolean network, boolean compat);
 
 void LUA_SetCFunctionField(lua_State *L, const char *name, lua_CFunction value);
 

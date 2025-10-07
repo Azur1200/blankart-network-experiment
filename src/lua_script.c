@@ -1846,8 +1846,9 @@ void LUA_Step(void)
 	}
 }
 
-void LUA_Archive(savebuffer_t *save, boolean network)
+void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
 {
+	UINT32 mobjnum;
 	INT32 i;
 	thinker_t *th;
 
@@ -1858,70 +1859,59 @@ void LUA_Archive(savebuffer_t *save, boolean network)
 	{
 		if (!playeringame[i] && i > 0)	// NEVER skip player 0, this is for dedi servs.
 			continue;
+
 		// all players in game will be archived, even if they just add a 0.
-		ArchiveExtVars(&save->p, &players[i], "player");
+		if (save->write)
+			ArchiveExtVars(&save->p, &players[i], "player");
+		else
+			UnArchiveExtVars(&save->p, &players[i], compat);
 	}
 
-	if (network == true)
+	if (save->write)
 	{
-		if (gamestate == GS_LEVEL)
+		if (network == true)
 		{
-			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+			if (gamestate == GS_LEVEL)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+				{
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
 
-				// archive function will determine when to skip mobjs,
-				// and write mobjnum in otherwise.
-				ArchiveExtVars(&save->p, th, "mobj");
+					// archive function will determine when to skip mobjs,
+					// and write mobjnum in otherwise.
+					ArchiveExtVars(&save->p, th, "mobj");
+				}
 			}
+
+			WRITEUINT32(save->p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
+
+			LUA_HookNetArchive(NetArchive, save); // call the NetArchive hook in archive mode
 		}
-		
-		WRITEUINT32(save->p, UINT32_MAX); // end of mobjs marker, replaces mobjnum.
 
-		LUA_HookNetArchive(NetArchive, save); // call the NetArchive hook in archive mode
+		ArchiveTables(&save->p);
 	}
-
-	ArchiveTables(&save->p);
-
-	if (gL)
-		lua_pop(gL, 1); // pop tables
-}
-
-void LUA_UnArchive(savebuffer_t *save, boolean network, boolean compat)
-{
-	UINT32 mobjnum;
-	INT32 i;
-	thinker_t *th;
-
-	if (gL)
-		lua_newtable(gL); // tables to be read
-
-	for (i = 0; i < MAXPLAYERS; i++)
+	else
 	{
-		if (!playeringame[i] && i > 0)	// same here, this is to synch dediservs properly.
-			continue;
-		UnArchiveExtVars(&save->p, &players[i], compat);
+		if (network == true)
+		{
+			do {
+				mobjnum = READUINT32(save->p); // read a mobjnum
+				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+				{
+					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
+					if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
+						continue;
+					UnArchiveExtVars(&save->p, th, false); // apply variables
+				}
+			} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
+
+			LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
+		}
+
+		UnArchiveTables(&save->p, compat);
 	}
-
-	if (network == true)
-	{
-		do {
-			mobjnum = READUINT32(save->p); // read a mobjnum
-			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
-					continue;
-				if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
-					continue;
-				UnArchiveExtVars(&save->p, th, false); // apply variables
-			}
-		} while(mobjnum != UINT32_MAX); // repeat until end of mobjs marker.
-
-		LUA_HookNetArchive(NetUnArchive, save); // call the NetArchive hook in unarchive mode
-	}
-
-	UnArchiveTables(&save->p, compat);
 
 	if (gL)
 		lua_pop(gL, 1); // pop tables
