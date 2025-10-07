@@ -45,7 +45,7 @@
 // SRB2Kart
 #include "d_netfil.h" // nameonly
 
-#include "lua_script.h" // LUA_ArchiveDemo and LUA_UnArchiveDemo
+#include "lua_script.h" // LUA_Sync
 #include "lua_libs.h" // gL (Lua state)
 
 #include "k_kart.h"
@@ -2940,7 +2940,7 @@ void G_BeginRecording(void)
 
 	// player lua vars, always saved even if empty
 	if (demoflags & DF_LUAVARS)
-		LUA_Archive(&demobuf, false);
+		LUA_Sync(&demobuf, false, false);
 
 	memset(&oldcmd,0,sizeof(oldcmd));
 	memset(&oldghost,0,sizeof(oldghost));
@@ -3793,7 +3793,7 @@ void G_DoPlayDemo(char *defdemoname)
 			LUA_ClearState();
 
 		// No modeattacking check, DF_LUAVARS won't be present here.
-		LUA_UnArchive(&demobuf, false, G_CompatLevel(0x0002));
+		LUA_Sync(&demobuf, false, G_CompatLevel(0x0002));
 	}
 
 	splitscreen = 0;
