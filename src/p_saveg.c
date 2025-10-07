@@ -3621,6 +3621,8 @@ enum pobj_diff_t
 static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 {
 	INT32 id;
+	UINT32 angle;
+	fixed_t x, y;
 	UINT8 diff[(PD__MAX>>3) + 1] = {0};
 	INT32 j = 0;
 
@@ -3639,10 +3641,10 @@ static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 
 	id = P_SyncINT32(save, po->id);
 
-	SYNC(po->angle);
+	angle = P_SyncAngle(save, po->angle);
 
-	SYNC(po->spawnSpot.x);
-	SYNC(po->spawnSpot.y);
+	x = P_SyncFixed(save, po->spawnSpot.x);
+	y = P_SyncFixed(save, po->spawnSpot.y);
 
 	do
 		SYNC(diff[j]);
@@ -3659,7 +3661,7 @@ static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 			return;
 
 		// rotate and translate polyobject
-		Polyobj_MoveOnLoad(po, po->angle, po->spawnSpot.x, po->spawnSpot.y);
+		Polyobj_MoveOnLoad(po, angle, x, y);
 	}
 }
 
