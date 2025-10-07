@@ -2008,8 +2008,6 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		WRITEUINT8(save->p, type);
 	}
 
-	// diff is somehow not being sent correctly over the wire.
-	// client has a diff of 16 instead its intended value
 	j = 0;
 	do
 		SYNC(diff[j]);
@@ -3612,109 +3610,73 @@ static inline pslope_t *LoadSlope(UINT32 slopeid)
 //
 // haleyjd 03/26/06: PolyObject saving code
 //
-#define PD_FLAGS  0x01
-#define PD_TRANS   0x02
 
-static inline void P_ArchivePolyObj(savebuffer_t *save, polyobj_t *po)
+enum pobj_diff_t
 {
-	TracyCZone(__zone, true);
+	PD_FLAGS,
+	PD_TRANS,
+	PD__MAX
+};
 
-	UINT8 diff = 0;
-	WRITEINT32(save->p, po->id);
-	WRITEANGLE(save->p, po->angle);
-
-	WRITEFIXED(save->p, po->spawnSpot.x);
-	WRITEFIXED(save->p, po->spawnSpot.y);
-
-	if (po->flags != po->spawnflags)
-		diff |= PD_FLAGS;
-	if (po->translucency != po->spawntrans)
-		diff |= PD_TRANS;
-
-	WRITEUINT8(save->p, diff);
-
-	if (diff & PD_FLAGS)
-		WRITEINT32(save->p, po->flags);
-	if (diff & PD_TRANS)
-		WRITEINT32(save->p, po->translucency);
-
-	TracyCZoneEnd(__zone);
-}
-
-static inline void P_UnArchivePolyObj(savebuffer_t *save, polyobj_t *po)
+static inline void P_SynchPolyObj(savebuffer_t *save, polyobj_t *po)
 {
-	TracyCZone(__zone, true);
-
 	INT32 id;
-	UINT32 angle;
-	fixed_t x, y;
-	UINT8 diff;
+	UINT8 diff[(PD__MAX>>3) + 1] = {0};
+	INT32 j = 0;
 
-	// nullify all polyobject thinker pointers;
-	// the thinkers themselves will fight over who gets the field
-	// when they first start to run.
-	po->thinker = NULL;
+	if (save->write)
+	{
+		DIFF(po->flags != po->spawnflags, PD_FLAGS);
+		DIFF(po->translucency != po->spawntrans, PD_FLAGS);
+	}
+	else
+	{
+		// nullify all polyobject thinker pointers;
+		// the thinkers themselves will fight over who gets the field
+		// when they first start to run.
+		po->thinker = NULL;
+	}
 
-	id = READINT32(save->p);
+	id = P_SyncINT32(save, po->id);
 
-	angle = READANGLE(save->p);
+	SYNC(po->angle);
 
-	x = READFIXED(save->p);
-	y = READFIXED(save->p);
+	SYNC(po->spawnSpot.x);
+	SYNC(po->spawnSpot.y);
 
-	diff = READUINT8(save->p);
+	do
+		SYNC(diff[j]);
+	while (diff[j++] & 0x80);
 
-	if (diff & PD_FLAGS)
-		po->flags = READINT32(save->p);
-	if (diff & PD_TRANS)
-		po->translucency = READINT32(save->p);
+	SYNCF(PD_FLAGS, po->flags);
+	SYNCF(PD_TRANS, po->translucency);
 
-	// if the object is bad or isn't in the id hash, we can do nothing more
-	// with it, so return now
-	if (po->isBad || po != Polyobj_GetForNum(id))
-		return;
+	if (!save->write)
+	{
+		// if the object is bad or isn't in the id hash, we can do nothing more
+		// with it, so return now
+		if (po->isBad || po != Polyobj_GetForNum(id))
+			return;
 
-	// rotate and translate polyobject
-	Polyobj_MoveOnLoad(po, angle, x, y);
-
-	TracyCZoneEnd(__zone);
+		// rotate and translate polyobject
+		Polyobj_MoveOnLoad(po, po->angle, po->spawnSpot.x, po->spawnSpot.y);
+	}
 }
 
-static inline void P_ArchivePolyObjects(savebuffer_t *save)
+static inline void P_SyncPolyObjects(savebuffer_t *save)
 {
-	TracyCZone(__zone, true);
-
-	INT32 i;
-
-	WRITEUINT32(save->p, ARCHIVEBLOCK_POBJS);
-
-	// save number of polyobjects
-	WRITEINT32(save->p, numPolyObjects);
-
-	for (i = 0; i < numPolyObjects; ++i)
-		P_ArchivePolyObj(save, &PolyObjects[i]);
-
-	TracyCZoneEnd(__zone);
-}
-
-static inline void P_UnArchivePolyObjects(savebuffer_t *save)
-{
-	TracyCZone(__zone, true);
-
 	INT32 i, numSavedPolys;
 
-	if (READUINT32(save->p) != ARCHIVEBLOCK_POBJS)
+	if (P_SyncUINT32(save, ARCHIVEBLOCK_POBJS) != ARCHIVEBLOCK_POBJS)
 		I_Error("Bad $$$.sav at archive block Pobjs");
 
-	numSavedPolys = READINT32(save->p);
+	numSavedPolys = P_SyncINT32(save, numPolyObjects);
 
 	if (numSavedPolys != numPolyObjects)
-		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency\n");
+		I_Error("P_SynchronizePolyObjects: polyobj count inconsistency\n");
 
 	for (i = 0; i < numSavedPolys; ++i)
-		P_UnArchivePolyObj(save, &PolyObjects[i]);
-
-	TracyCZoneEnd(__zone);
+		P_SynchPolyObj(save, &PolyObjects[i]);
 }
 
 static mobj_t *RelinkMobj(mobj_t **ptr)
@@ -4503,7 +4465,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetSyncWorld(save);
-		P_ArchivePolyObjects(save);
+		P_SyncPolyObjects(save);
 		P_NetSyncThinkers(save);
 		P_NetSyncSpecials(save);
 		P_NetSyncColormaps(save);
@@ -4555,7 +4517,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetSyncWorld(save);
-		P_UnArchivePolyObjects(save);
+		P_SyncPolyObjects(save);
 		P_NetSyncThinkers(save);
 		P_NetSyncSpecials(save);
 		P_NetSyncColormaps(save);
