@@ -402,9 +402,16 @@ static int mobj_get(lua_State *L)
 	}
 	case mobj_eflags:
 	{
-		UINT32 eflags = mo->eflags; // yes, not UINT16
+		UINT32 eflags = mo->eflags;  // yes, not UINT16
 		if (lua_compatmode)
-			eflags |= (~mo->renderflags & RF_DONTDRAW);
+		{
+			// The old eflags compat system causes rendering issues for characters like
+			// the MK64 cast. This system causes rendering issues in certain gameplay
+			// mods. At least in this case, character mods take priority, so we set
+			// up compatibility like so:
+			eflags |=
+				mo->renderflags & RF_DONTDRAW ? ~mo->renderflags & RF_DONTDRAW : 0;
+		}
 		lua_pushinteger(L, eflags);
 		break;
 	}
