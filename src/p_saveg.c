@@ -1738,18 +1738,6 @@ static sector_t *SyncSector(savebuffer_t *save, sector_t *sector)
 	}
 }
 
-static line_t *LoadLine(UINT32 line)
-{
-	if (line >= numlines) return NULL;
-	return &lines[line];
-}
-
-static UINT32 SaveLine(const line_t *line)
-{
-	if (line) return (UINT32)(line - lines);
-	return 0xFFFFFFFF;
-}
-
 static line_t *SyncLine(savebuffer_t *save, line_t *line)
 {
 	if (save->write)
@@ -1775,12 +1763,6 @@ static inline player_t *LoadPlayer(UINT32 player)
 static inline UINT32 SavePlayer(const player_t *player)
 {
 	if (player) return (UINT32)(player - players);
-	return 0xFFFFFFFF;
-}
-
-static UINT32 SaveSlope(const pslope_t *slope)
-{
-	if (slope) return (UINT32)(slope->id);
 	return 0xFFFFFFFF;
 }
 
@@ -3585,24 +3567,6 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 		return mobj;
 	}
 	CONS_Debug(DBG_GAMELOGIC, "mobj %d not found\n", oldposition);
-	return NULL;
-}
-
-static inline mobj_t *LoadMobj(UINT32 mobjnum)
-{
-	if (mobjnum == 0) return NULL;
-	return (mobj_t *)(size_t)mobjnum;
-}
-
-static inline pslope_t *LoadSlope(UINT32 slopeid)
-{
-	pslope_t *p = slopelist;
-	if (slopeid > slopecount) return NULL;
-	do
-	{
-		if (p->id == slopeid)
-			return p;
-	} while ((p = p->next));
 	return NULL;
 }
 
