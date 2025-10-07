@@ -5314,7 +5314,7 @@ static void K_drawLapSplitTimestamp(void)
 			ahead >= 0 ? "-" : "+"
 		);
 
-		V_DrawMappedPatch(TIME_X, TIME_Y + 10, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+		V_DrawMappedPatch(TIME_X - 8, TIME_Y + 3, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
 	}
 }
 
@@ -5384,11 +5384,11 @@ static void K_drawLapSplitComparison(void)
 		INT32 stwidth = V_StringWidth(buffer, splitflags) / 2;
 
 		// vibes offset
-		V_DrawMappedPatch(row_position[0] - stwidth, row_position[1] + 4, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+		V_DrawMappedPatch(row_position[0] - stwidth - 35, row_position[1], splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
 
 		if (pos > 1)
 		{
-			V_DrawPingNum(row_position[0] - stwidth, row_position[1], splitflags, pos, NULL);
+			V_DrawPingNum(row_position[0] - stwidth - 35, row_position[1], splitflags, pos, NULL);
 		}
 
 		// vibes offset TWO
