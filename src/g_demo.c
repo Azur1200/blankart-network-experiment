@@ -2940,7 +2940,10 @@ void G_BeginRecording(void)
 
 	// player lua vars, always saved even if empty
 	if (demoflags & DF_LUAVARS)
+	{
+		demobuf.write = true;
 		LUA_Sync(&demobuf, false, false);
+	}
 
 	memset(&oldcmd,0,sizeof(oldcmd));
 	memset(&oldghost,0,sizeof(oldghost));
@@ -3793,6 +3796,7 @@ void G_DoPlayDemo(char *defdemoname)
 			LUA_ClearState();
 
 		// No modeattacking check, DF_LUAVARS won't be present here.
+		demobuf.write = false;
 		LUA_Sync(&demobuf, false, G_CompatLevel(0x0002));
 	}
 
