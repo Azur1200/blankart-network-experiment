@@ -4302,7 +4302,7 @@ void G_StopDemo(void)
 	P_SaveBufferFree(&demobuf);
 	demo.playback = false;
 	if (demo.title)
-		modeattacking = ATTACKING_NONE;
+		modeattacking = false;
 	demo.title = false;
 	demo.timing = false;
 	singletics = false;
