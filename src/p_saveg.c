@@ -2158,9 +2158,9 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD_FUSE, mobj->fuse);
 	SYNCF(MD_WATERTOP, mobj->watertop);
 	SYNCF(MD_WATERBOTTOM, mobj->waterbottom);
-	SYNCDEF(MD_SCALE, mobj->scale, FRACUNIT);
+	SYNCDEF(MD_SCALE, mobj->scale, mapobjectscale);
 	SYNCDEF(MD_DSCALE, mobj->destscale, mobj->scale);
-	SYNCDEF(MD2_SCALESPEED, mobj->scalespeed, FRACUNIT/12);
+	SYNCDEF(MD2_SCALESPEED, mobj->scalespeed, mapobjectscale/12);
 	if (GETB(MD_ARGS))
 	{
 		for (j = 0; j < NUM_MAPTHING_ARGS; j++)
