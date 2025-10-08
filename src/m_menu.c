@@ -2585,6 +2585,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
 		}
+#ifdef HAVE_DISCORDRPC
 		else if (item->submenu == MN_MISC_DISCORDREQUESTS)
 		{
 			vflags &= ~(V_FLIP|V_PARAMMASK);
@@ -2592,6 +2593,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			if ((leveltime % freq) >= freq/2)
 				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
 		}
+#endif
 		else if (item->patch)
 			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
 	}
