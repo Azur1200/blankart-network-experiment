@@ -2105,7 +2105,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		SYNC(mobj->pitch);
 		SYNC(mobj->roll);
 	}
-	else
+	else if (!save->write)
 	{
 		mobj->x = mobj->old_x = mobj->spawnpoint->x << FRACBITS;
 		mobj->y = mobj->old_y = mobj->spawnpoint->y << FRACBITS;
@@ -2119,8 +2119,8 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD_MOM, mobj->momz);
 	SYNCF(MD_MOM, mobj->pmomz);
 
-	SYNCDEF(MD_RADIUS, mobj->radius, mobj->info->radius);
-	SYNCDEF(MD_HEIGHT, mobj->height, mobj->info->height);
+	SYNCDEF(MD_RADIUS, mobj->radius, FixedMul(mobj->info->radius, mapobjectscale));
+	SYNCDEF(MD_HEIGHT, mobj->height, FixedMul(mobj->info->height, mapobjectscale));
 	SYNCDEF(MD_FLAGS, mobj->flags, mobj->info->flags);
 	SYNCF(MD_FLAGS2, mobj->flags2);
 	SYNCDEF(MD_HEALTH, mobj->health, mobj->info->spawnhealth);
@@ -2132,9 +2132,9 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		else
 			mobj->state = &states[READUINT16(save->p)];
 	}
-	else
+	else if (!save->write)
 		mobj->state = &states[mobj->info->spawnstate];
-	SYNCF(MD_TICS, mobj->tics);
+	SYNCDEF(MD_TICS, mobj->tics, mobj->state->tics);
 	SYNCDEF(MD_SPRITE, mobj->sprite, mobj->state->sprite);
 	if (mobj->sprite == SPR_PLAY)
 		SYNCDEF(MD_SPRITE, mobj->sprite2, mobj->state->frame & FF_FRAMEMASK);
@@ -2157,7 +2157,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCDEF(MD_FRICTION, mobj->friction, ORIG_FRICTION);
 	SYNCDEF(MD_MOVEFACTOR, mobj->movefactor, FRACUNIT);
 	SYNCF(MD_FUSE, mobj->fuse);
-	SYNCF(MD_WATERTOP, mobj->watertop);
+	SYNCDEF(MD_WATERTOP, mobj->watertop, INT32_MAX);
 	SYNCF(MD_WATERBOTTOM, mobj->waterbottom);
 	SYNCDEF(MD_SCALE, mobj->scale, mapobjectscale);
 	SYNCDEF(MD_DSCALE, mobj->destscale, mobj->scale);
@@ -2241,10 +2241,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD2_TID, mobj->tid);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spritexscale, FRACUNIT);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spriteyscale, FRACUNIT);
-	SYNCDEF(MD2_SPRITEOFFSET, mobj->spritexoffset, FRACUNIT);
-	SYNCDEF(MD2_SPRITEOFFSET, mobj->spriteyoffset, FRACUNIT);
-	SYNCDEF(MD2_SPRITEOFFSET, mobj->rollingxoffset, 0);
-	SYNCDEF(MD2_SPRITEOFFSET, mobj->rollingyoffset, 0);
+	SYNCF(MD2_SPRITEOFFSET, mobj->spritexoffset);
+	SYNCF(MD2_SPRITEOFFSET, mobj->spriteyoffset);
+	SYNCF(MD2_SPRITEOFFSET, mobj->rollingxoffset);
+	SYNCF(MD2_SPRITEOFFSET, mobj->rollingyoffset);
 	SYNCF(MD2_WORLDOFFSET, mobj->sprxoff);
 	SYNCF(MD2_WORLDOFFSET, mobj->spryoff);
 	SYNCF(MD2_WORLDOFFSET, mobj->sprzoff);
