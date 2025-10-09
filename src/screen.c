@@ -87,6 +87,9 @@ static void SCR_ChangeFullscreen(void);
 static CV_PossibleValue_t fullscreen_cons_t[] = {{0, "No"}, {1, "Yes"}, {2, "Borderless Window"}, {0, NULL}};
 consvar_t cv_fullscreen = CVAR_INIT ("fullscreen", "Yes", CV_SAVE|CV_CALL, fullscreen_cons_t, SCR_ChangeFullscreen);
 
+static CV_PossibleValue_t accuratefps_cons_t[] = {{0, "Inaccurate"}, {1, "Accurate"}, {0, NULL}};
+consvar_t cv_accuratefps = CVAR_INIT ("fpssampling", "Accurate", CV_SAVE, accuratefps_cons_t, NULL);
+
 // =========================================================================
 //                           SCREEN VARIABLES
 // =========================================================================
@@ -526,6 +529,8 @@ double averageFPS = 0.0f;
 
 static double total_frame_time = 0.0;
 static int frame_index;
+
+static double fps_samples[NUM_FPS_SAMPLES];
 #endif
 
 static boolean fps_init = false;
@@ -549,11 +554,44 @@ void SCR_CalculateFPS(void)
 
 #ifdef USE_FPS_SAMPLES
 	total_frame_time += frameElapsed;
-	if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
+
+	if (cv_accuratefps.value)
 	{
-		averageFPS = 1.0 / (total_frame_time / frame_index);
-		total_frame_time = 0.0;
-		frame_index = 0;
+		if (frame_index++ >= NUM_FPS_SAMPLES || total_frame_time >= MAX_FRAME_TIME)
+		{
+			averageFPS = 1.0 / (total_frame_time / frame_index);
+			total_frame_time = 0.0;
+			frame_index = 0;
+		}
+	}
+	else
+	{
+		if (total_frame_time >= MAX_FRAME_TIME)
+		{
+			static int sampleIndex = 0;
+
+			fps_samples[sampleIndex] = frameElapsed;
+
+			sampleIndex++;
+			if (sampleIndex >= NUM_FPS_SAMPLES)
+				sampleIndex = 0;
+
+			averageFPS = 0.0;
+			for (int i = 0; i < NUM_FPS_SAMPLES; i++)
+			{
+				averageFPS += fps_samples[i];
+			}
+
+			if (averageFPS > 0.0)
+			{
+				averageFPS = 1.0 / (averageFPS / NUM_FPS_SAMPLES);
+			}
+		}
+
+		while (total_frame_time >= MAX_FRAME_TIME)
+		{
+			total_frame_time -= MAX_FRAME_TIME;
+		}
 	}
 #else
 	// Direct, unsampled counter.

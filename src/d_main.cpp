@@ -1627,6 +1627,7 @@ void D_SRB2Main(void)
 	if (!dedicated)
 	{
 		CV_RegisterVar(&cv_ticrate);
+		CV_RegisterVar(&cv_accuratefps);
 		CV_RegisterVar(&cv_constextsize);
 	}
 
