@@ -637,9 +637,17 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->aiming);
 		break;
 	case player_drawangle:
+		if (lua_compatmode)
+			goto noexist;
+		/* FALLTHRU */
 	case player_frameangle:
-		lua_pushangle(L, plr->drawangle);
+	{
+		angle_t angle = plr->drawangle;
+		if (lua_compatmode)
+			angle -= K_GetDriftAngleOffset(plr);
+		lua_pushangle(L, angle);
 		break;
+	}
 	case player_powers:
 		LUA_PushUserdata(L, plr->powers, META_POWERS);
 		break;
@@ -1218,6 +1226,7 @@ static int player_get(lua_State *L)
 		break;
 #endif
 	default:
+	noexist:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
 		lua_pushlightuserdata(L, plr);
@@ -1294,6 +1303,9 @@ static int player_set(lua_State *L)
 		break;
 	}
 	case player_drawangle:
+		if (lua_compatmode)
+			goto noexist;
+		/* FALLTHRU */
 	case player_frameangle:
 	{
 		angle_t angle = luaL_checkangle(L, 3);
@@ -1900,6 +1912,7 @@ static int player_set(lua_State *L)
 		break;
 #endif
 	default:
+	noexist:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
 		lua_pushlightuserdata(L, plr);
