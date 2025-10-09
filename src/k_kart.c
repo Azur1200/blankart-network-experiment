@@ -74,6 +74,8 @@ consvar_t cv_kartstacking_sneakerstacksound = CVAR_INIT ("kartstacking_sneakerst
 consvar_t cv_kartchainingsound = CVAR_INIT ("kartchaining_chainsound", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartdriftsounds = CVAR_INIT ("kartdriftsounds", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_kartdriftefx = CVAR_INIT ("kartdriftefx", "On", CV_SAVE, CV_OnOff, NULL);
+static CV_PossibleValue_t splash_cons_t[] = {{0, "Old"}, {1, "New"}, {0, NULL}};
+consvar_t cv_kartsplashefx = CVAR_INIT ("kartsplashefx", "New", CV_SAVE, splash_cons_t, NULL);
 static CV_PossibleValue_t driftsparkpulse_cons_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_FLOAT, driftsparkpulse_cons_t, NULL);
 consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
@@ -401,6 +403,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
+	CV_RegisterVar(&cv_kartsplashefx);
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_itemtimers);
 	CV_RegisterVar(&cv_saltyhop);
@@ -2133,6 +2136,7 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 	fixed_t speed = INT32_MAX;
 	fixed_t runspd = 14 * mobj->scale;
 	fixed_t trailScale = FRACUNIT;
+	mobj_t *water = NULL;
 
 	if (mobj->momz != 0)
 	{
@@ -2183,87 +2187,110 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 		return;
 	}
 
-	if (topspeed > runspd)
+	if (cv_kartsplashefx.value)
 	{
-		trailScale = FixedMul(FixedDiv(speed - runspd, topspeed - runspd), mapobjectscale);
-	}
-	else
-		trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
-
-	if (trailScale > 0)
-	{
-		const angle_t forwardangle = K_MomentumAngle(mobj);
-		const fixed_t visualradius = mobj->radius + (8 * mobj->scale);
-		const SINT8 numFrames = 5;
-		const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
-		fixed_t x1, x2, y1, y2;
-		mobj_t *water;
-
-		x1 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, visualradius);
-		y1 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, visualradius);
-		x1 = x1 + P_ReturnThrustX(mobj, forwardangle, visualradius);
-		y1 = y1 + P_ReturnThrustY(mobj, forwardangle, visualradius);
-
-		x2 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, visualradius);
-		y2 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, visualradius);
-		x2 = x2 + P_ReturnThrustX(mobj, forwardangle, visualradius);
-		y2 = y2 + P_ReturnThrustY(mobj, forwardangle, visualradius);
-
-		// Left
-		// underlay
-		water = P_SpawnMobj(x1, y1,
-			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
-		water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
-		water->destscale = trailScale;
-		water->momx = mobj->momx;
-		water->momy = mobj->momy;
-		water->momz = mobj->momz;
-		P_SetScale(water, trailScale);
-		P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
-		water->frame = curFrame|FF_ADD|FF_TRANS40;
-
-		// overlay
-		water = P_SpawnMobj(x1, y1,
-			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
-		water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
-		water->destscale = trailScale;
-		water->momx = mobj->momx;
-		water->momy = mobj->momy;
-		water->momz = mobj->momz;
-		P_SetScale(water, trailScale);
-		P_SetMobjState(water, S_WATERTRAILS);
-		water->frame = curFrame;
-
-		// Right
-		// Underlay
-		water = P_SpawnMobj(x2, y2,
-			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
-		water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
-		water->destscale = trailScale;
-		water->momx = mobj->momx;
-		water->momy = mobj->momy;
-		water->momz = mobj->momz;
-		P_SetScale(water, trailScale);
-		P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
-		water->frame = curFrame|FF_ADD|FF_TRANS40;
-
-		// Overlay
-		water = P_SpawnMobj(x2, y2,
-			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
-		water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
-		water->destscale = trailScale;
-		water->momx = mobj->momx;
-		water->momy = mobj->momy;
-		water->momz = mobj->momz;
-		P_SetScale(water, trailScale);
-		P_SetMobjState(water, S_WATERTRAILS);
-		water->frame = curFrame;
-
-		if (!S_SoundPlaying(mobj, sfx_s3kdbs))
+		if (topspeed > runspd)
 		{
-			const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
-			S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
+			trailScale = FixedMul(FixedDiv(speed - runspd, topspeed - runspd), mapobjectscale);
 		}
+		else
+			trailScale = mapobjectscale; // Scaling is based off difference between runspeed and top speed
+
+		if (trailScale > 0)
+		{
+			const angle_t forwardangle = K_MomentumAngle(mobj);
+			const fixed_t visualradius = mobj->radius + (8 * mobj->scale);
+			const SINT8 numFrames = 5;
+			const INT32 curFrame = (leveltime % numFrames)|FF_PAPERSPRITE;
+			fixed_t x1, x2, y1, y2;
+
+			x1 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle + ANGLE_90, visualradius);
+			y1 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle + ANGLE_90, visualradius);
+			x1 = x1 + P_ReturnThrustX(mobj, forwardangle, visualradius);
+			y1 = y1 + P_ReturnThrustY(mobj, forwardangle, visualradius);
+
+			x2 = mobj->x + mobj->momx + P_ReturnThrustX(mobj, forwardangle - ANGLE_90, visualradius);
+			y2 = mobj->y + mobj->momy + P_ReturnThrustY(mobj, forwardangle - ANGLE_90, visualradius);
+			x2 = x2 + P_ReturnThrustX(mobj, forwardangle, visualradius);
+			y2 = y2 + P_ReturnThrustY(mobj, forwardangle, visualradius);
+
+			// Left
+			// underlay
+			water = P_SpawnMobj(x1, y1,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
+			water->destscale = trailScale;
+			water->momx = mobj->momx;
+			water->momy = mobj->momy;
+			water->momz = mobj->momz;
+			P_SetScale(water, trailScale);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
+			water->flags2 |= MF2_DONTSYNC;
+
+			// overlay
+			water = P_SpawnMobj(x1, y1,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+			water->angle = forwardangle - ANGLE_180 - ANGLE_22h;
+			water->destscale = trailScale;
+			water->momx = mobj->momx;
+			water->momy = mobj->momy;
+			water->momz = mobj->momz;
+			P_SetScale(water, trailScale);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
+			water->flags2 |= MF2_DONTSYNC;
+
+			// Right
+			// Underlay
+			water = P_SpawnMobj(x2, y2,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAILUNDERLAY].height, mobj->scale) : mobj->watertop), MT_WATERTRAILUNDERLAY);
+			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
+			water->destscale = trailScale;
+			water->momx = mobj->momx;
+			water->momy = mobj->momy;
+			water->momz = mobj->momz;
+			P_SetScale(water, trailScale);
+			P_SetMobjState(water, S_WATERTRAILSUNDERLAY);
+			water->frame = curFrame|FF_ADD|FF_TRANS40;
+			water->flags2 |= MF2_DONTSYNC;
+
+			// Overlay
+			water = P_SpawnMobj(x2, y2,
+				((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_WATERTRAIL].height, mobj->scale) : mobj->watertop), MT_WATERTRAIL);
+			water->angle = forwardangle - ANGLE_180 + ANGLE_22h;
+			water->destscale = trailScale;
+			water->momx = mobj->momx;
+			water->momy = mobj->momy;
+			water->momz = mobj->momz;
+			P_SetScale(water, trailScale);
+			P_SetMobjState(water, S_WATERTRAILS);
+			water->frame = curFrame;
+			water->flags2 |= MF2_DONTSYNC;
+
+			if (!S_SoundPlaying(mobj, sfx_s3kdbs))
+			{
+				const INT32 volume = (min(trailScale, FRACUNIT) * 255) / FRACUNIT;
+				S_StartSoundAtVolume(mobj, sfx_s3kdbs, volume);
+			}
+		}
+	}
+	else if (leveltime % (TICRATE/7) == 0)
+	{
+		water = P_SpawnMobj(mobj->x, mobj->y,
+			((mobj->eflags & MFE_VERTICALFLIP) ? mobj->waterbottom - FixedMul(mobjinfo[MT_SPLISH].height, mobj->scale) :mobj->watertop), MT_SPLISH);
+		if (mobj->eflags & MFE_GOOWATER)
+			S_StartSound(water, sfx_ghit);
+		else
+			S_StartSound(water, sfx_wslap);
+		if (mobj->eflags & MFE_VERTICALFLIP)
+		{
+			water->flags2 |= MF2_OBJECTFLIP;
+			water->eflags |= MFE_VERTICALFLIP;
+		}
+		water->destscale = mobj->scale;
+		P_SetScale(water, mobj->scale);
+		water->flags2 |= MF2_DONTSYNC;
 	}
 
 	// Little water sound while touching water - just a nicety.
