@@ -676,11 +676,12 @@ void SCR_DisplayLocalPing(void)
 	if (( cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping) ))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
+		INT32 pingflags = V_LocalTransFlag()|V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
 		if (cv_pingstyle.value)
-			HU_drawOldPing(308, dispy,  ping, mindelay, pl, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+			HU_drawOldPing(308, dispy,  ping, mindelay, pl, pingflags);
 		else
-			HU_drawPing(307, dispy, ping, mindelay, pl, V_SNAPTORIGHT | V_SNAPTOBOTTOM, cv_pingicon.value);
+			HU_drawPing(307, dispy, ping, mindelay, pl, pingflags, cv_pingicon.value);
 	}
 }
 
