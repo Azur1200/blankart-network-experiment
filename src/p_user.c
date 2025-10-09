@@ -1182,11 +1182,11 @@ boolean P_IsDisplayPlayer(player_t *player)
 }
 
 //
-// P_SpawnGhostMobj
+// P_SpawnGhostMobjEX
 //
-// Spawns a ghost object on the player
+// Spawns a ghost object on the player. Has an option for "legacy mode".
 //
-mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 {
 	mobj_t *ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
@@ -1263,6 +1263,12 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_spriteyscale = mobj->old_spriteyscale2;
 	ghost->old_spritexoffset = mobj->old_spritexoffset2;
 	ghost->old_spriteyoffset = mobj->old_spriteyoffset2;
+
+	// Legacy mode
+	if (legacy)
+	{
+		ghost->extravalue3 = 1;
+	}
 
 	return ghost;
 }

@@ -200,7 +200,8 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir);
 void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
 void P_RestoreMusic(player_t *player);
 boolean P_EndingMusic(player_t *player);
-mobj_t *P_SpawnGhostMobj(mobj_t *mobj);
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy);
+#define P_SpawnGhostMobj(mobj) P_SpawnGhostMobjEX(mobj, false)
 INT32 P_GivePlayerRings(player_t *player, INT32 num_rings);
 void P_GivePlayerLives(player_t *player, INT32 numlives);
 UINT8 P_GetNextEmerald(void);
