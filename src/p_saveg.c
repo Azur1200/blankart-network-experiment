@@ -1023,7 +1023,8 @@ enum linediff_e
 #define GETB(b) (diff[b / (8*sizeof(*diff))] & (1 << (b & (8*sizeof(*diff) - 1))))
 #define SYNCF(b, v) if (GETB(b)) SYNC(v)
 #define SYNCFB(b, v) if (GETB(b)) SYNCBOOLEAN(v)
-#define SYNCDEF(b, v, d) (GETB(b) ? SYNC(v) : (v = d))
+// if diff includes b, sync v, else if in read mode, set v to d(efault)
+#define SYNCDEF(b, v, d) (GETB(b) ? SYNC(v) : !save->write ? (v = d) : (void)0)
 
 static boolean P_LineArgsEqual(const line_t *li, const line_t *spawnli)
 {
