@@ -676,11 +676,18 @@ static int mobj_set(lua_State *L)
 	case mobj_sprite:
 	{
 		spritenum_t newsprite = luaL_checkinteger(L, 3);
-		if (lua_compatmode && mo->sprite != SPR_PLAY && newsprite == SPR_PLAY)
+		if (lua_compatmode)
 		{
-			UINT8 outframe;
-			mo->sprite2 = P_KartFrameToSprite2(mo->skin, mo->frame, &outframe);
-			mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			if (mo->sprite != SPR_PLAY && newsprite == SPR_PLAY) // switch to spr2
+			{
+				UINT8 outframe;
+				mo->sprite2 = P_KartFrameToSprite2(mo->skin, mo->frame, &outframe);
+				mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			}
+			else if (mo->sprite == SPR_PLAY && newsprite != SPR_PLAY) // switch from spr2
+			{
+				mo->frame = spr2frame(mo->sprite2, mo->frame);
+			}
 		}
 		mo->sprite = newsprite;
 		break;

@@ -118,21 +118,27 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
 		break;
 	F('G')
 		spr2 = SPR2_SLWN;
+		frame = 1;
 		break;
 	F('H')
 		spr2 = SPR2_SLWL;
+		frame = 1;
 		break;
 	F('I')
 		spr2 = SPR2_SLWR;
+		frame = 1;
 		break;
 	F('J')
 		spr2 = SPR2_FSTN;
+		frame = 1;
 		break;
 	F('K')
 		spr2 = SPR2_FSTL;
+		frame = 1;
 		break;
 	F('L')
 		spr2 = SPR2_FSTR;
+		frame = 1;
 		break;
 	F('M') F('N')
 		spr2 = SPR2_DRLN;
