@@ -675,8 +675,12 @@ void SCR_DisplayLocalPing(void)
 	UINT32 pl = playerpacketlosstable[consoleplayer];
 	if (( cv_showping.value == 1 || (cv_showping.value == 2 && ping > servermaxping) ))	// only show 2 (warning) if our ping is at a bad level
 	{
-		INT32 dispy = cv_ticrate.value ? 160 : 181;
-		HU_drawPing(307, dispy, ping, mindelay, pl, V_SNAPTORIGHT | V_SNAPTOBOTTOM, true);
+		INT32 dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
+
+		if (cv_pingstyle.value)
+			HU_drawOldPing(308, dispy,  ping, mindelay, pl, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+		else
+			HU_drawPing(307, dispy, ping, mindelay, pl, V_SNAPTORIGHT | V_SNAPTOBOTTOM, cv_pingicon.value);
 	}
 }
 

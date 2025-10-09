@@ -686,6 +686,10 @@ consvar_t cv_showping = CVAR_INIT ("showping", "Always", CV_SAVE, showping_cons_
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL);
+consvar_t cv_pingicon = CVAR_INIT ("pingicon", "On", CV_SAVE, CV_OnOff, NULL);
+
+static CV_PossibleValue_t cv_pingstyle_cons_t[] = {{0, "New"}, {1, "Old"}, {0, NULL}};
+consvar_t cv_pingstyle = CVAR_INIT ("pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, NULL);
 
 static CV_PossibleValue_t showlapemblem_cons_t[] = {{0, "Off"}, {1, "Emblem Only"}, {2, "Splits Only"}, {3, "All"}, {0, NULL}};
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "All", CV_SAVE, showlapemblem_cons_t, NULL);
@@ -1016,6 +1020,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	CV_RegisterVar(&cv_pingicon);
+	CV_RegisterVar(&cv_pingstyle);
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showminimapangle);
 	CV_RegisterVar(&cv_minihead);
