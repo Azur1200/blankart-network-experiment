@@ -601,41 +601,68 @@ void SCR_CalculateFPS(void)
 
 void SCR_DisplayTicRate(void)
 {
-	const UINT8 *ticcntcolor = NULL;
 	UINT32 cap = R_GetFramerateCap();
 	UINT32 benchmark = (cap == 0) ? I_GetRefreshRate() : cap;
-	INT32 x = 318;
 	double fps = round(averageFPS);
+	INT32 fpsflags = V_LocalTransFlag()|V_SNAPTOBOTTOM|V_SNAPTORIGHT;
 
-	// draw "FPS"
-	V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
-
-	if (fps > (benchmark * 0.9))
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
-	else if (fps < (benchmark * 0.5))
-		ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
-
-	if (cap != 0)
+	if (cv_ticrate.value == 1 || cv_ticrate.value == 2)
 	{
-		UINT32 digits = 1;
-		UINT32 c2 = cap;
+		const UINT8 *ticcntcolor = NULL;
+		INT32 x = 318;
 
-		while (c2 > 0)
+		// draw "FPS"
+		if (cv_ticrate.value == 1)
+			V_DrawFixedPatch(306<<FRACBITS, 183<<FRACBITS, FRACUNIT, fpsflags, framecounter, R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_YELLOW, GTC_CACHE));
+
+		if (fps > (benchmark * 0.9))
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_MINT, GTC_CACHE);
+		else if (fps < (benchmark * 0.5))
+			ticcntcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_RASPBERRY, GTC_CACHE);
+
+		if (cap != 0)
 		{
-			c2 = c2 / 10;
-			digits++;
+			UINT32 digits = 1;
+			UINT32 c2 = cap;
+
+			while (c2 > 0)
+			{
+				c2 = c2 / 10;
+				digits++;
+			}
+
+			// draw total frame:
+			V_DrawPingNum(x, 190, fpsflags, cap, ticcntcolor);
+			x -= digits * 4;
+
+			// draw "/"
+			V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, fpsflags, frameslash, ticcntcolor);
 		}
 
-		// draw total frame:
-		V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, cap, ticcntcolor);
-		x -= digits * 4;
-
-		// draw "/"
-		V_DrawFixedPatch(x<<FRACBITS, 190<<FRACBITS, FRACUNIT, V_SNAPTOBOTTOM|V_SNAPTORIGHT, frameslash, ticcntcolor);
+		// draw our actual framerate
+		V_DrawPingNum(x, 190, fpsflags, fps, ticcntcolor);
 	}
+	else if (cv_ticrate.value == 3 || cv_ticrate.value == 4) // kart v1.0/srb2 counter
+	{
+		const char *fps_string;
+		INT32 ticcntcolor2 = 0;
 
-	// draw our actual framerate
-	V_DrawPingNum(x, 190, V_SNAPTOBOTTOM|V_SNAPTORIGHT, fps, ticcntcolor);
+		if (fps > (benchmark - 5))
+			ticcntcolor2 = V_GREENMAP;
+		else if (fps < 20)
+			ticcntcolor2 = V_REDMAP;
+
+		if (cap != 0)
+			fps_string = va("%d/%d\x82", (INT32)fps, cap);
+		else
+			fps_string = va("%d\x82", (INT32)fps);
+
+		// draw "FPS"
+		if (cv_ticrate.value == 3)
+			V_DrawRightAlignedString(319, 181, V_YELLOWMAP|fpsflags, "FPS");
+
+		V_DrawRightAlignedString(319, 190, ticcntcolor2|fpsflags, fps_string);
+	}
 }
 
 // SCR_DisplayLocalPing

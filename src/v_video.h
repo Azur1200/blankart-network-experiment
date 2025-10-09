@@ -17,6 +17,7 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "r_main.h"
 
 // SRB2Kart
 #include "hu_stuff.h" // fonts
@@ -367,6 +368,12 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
 #define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
 
 INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
+
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+FUNCINLINE static ATTRINLINE INT32 V_LocalTransFlag(void)
+{
+	return ((10-cv_translucenthud.value)*V_10TRANS);
+}
 
 void V_DoPostProcessor(INT32 view, INT32 param);
 
