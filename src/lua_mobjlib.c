@@ -862,7 +862,7 @@ static int mobj_set(lua_State *L)
 			// Mhm. Yeah.
 			visflags = eflags_vischeck(eflags);
 
-			if (visflags)
+			if ((visflags) && ((mo->renderflags & RF_DONTDRAW) != RF_DONTDRAW))
 			{
 				mo->renderflags &= ~RF_DONTDRAW;
 				mo->renderflags |= visflags;
