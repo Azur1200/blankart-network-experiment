@@ -567,7 +567,7 @@ static const char *const player_opt[] = {
 	"loop",
 	"prevonground",
 	"walltransfered",
-	"walltransfeboost",
+	"walltransferboost",
 #ifdef HWRENDER
 	"fovadd",
 #endif
