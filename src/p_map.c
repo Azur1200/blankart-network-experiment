@@ -105,8 +105,6 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	boolean startingonground = P_IsObjectOnGround(thing);
 	sector_t *oldsector = thing->subsector->sector;
 
-	numspechit = 0U;
-
 	// the move is ok,
 	// so link the thing into its new position
 	P_UnsetThingPosition(thing);
@@ -2521,9 +2519,6 @@ increment_move
 	fixed_t thingtop;
 	g_tm.floatok = false;
 
-	// reset this to 0 at the start of each trymove call as it's only used here
-	numspechitint = 0U;
-
 	// This makes sure that there are no freezes from computing extremely small movements.
 	// Originally was MAXRADIUS/2, but that causes some inconsistencies for small players.
 	radius = max(radius, mapobjectscale);
@@ -2830,6 +2825,8 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 		}
 	}
 
+	numspechitint = 0U;
+
 	if (result != NULL)
 	{
 		result->success = true;
@@ -2938,10 +2935,6 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 		I_Error("Previously-removed Thing of type %u crashes P_CheckPosition!", thing->type);
 #endif
 
-	// reset special lines
-	numspechitint = 0U;
-	numspechit = 0U;
-
 	// trace along the three leading corners
 	if (momx > 0)
 	{
@@ -2985,6 +2978,9 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 			P_CrossSpecialLine(ld, oldside, thing);
 		}
 	}
+
+	// reset special lines
+	numspechitint = numspechit = 0U;
 }
 
 //
