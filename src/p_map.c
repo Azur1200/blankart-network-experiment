@@ -490,7 +490,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	|| (thing->player && thing->player->spectator))
 		return BMIT_CONTINUE;
 
-	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE|MF_SPRING)))
+	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE/*|MF_SPRING*/))) // we still use MF_SOLID for springs
 		return BMIT_CONTINUE;
 
 	// Get rid of the "just flipped" flag.
