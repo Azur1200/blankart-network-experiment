@@ -9159,11 +9159,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 		P_SetScale(mobj, (mobj->destscale = (5*mobj->target->scale)>>2));
 
-		mobj->pitch = mobj->target->pitch;
-		mobj->roll = mobj->target->roll;
+		// Don't sloperoll Shields
+		mobj->pitch = 0;
+		mobj->roll = 0;
 
-		mobj->slopepitch = mobj->target->slopepitch;
-		mobj->sloperoll = mobj->target->sloperoll;
+		mobj->slopepitch = 0;
+		mobj->sloperoll = 0;
 
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 		break;
@@ -9420,11 +9421,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->renderflags &= ~RF_DONTDRAW;
 			}
 
-			mobj->pitch = mobj->target->pitch;
-			mobj->roll = mobj->target->roll;
+			// Don't sloperoll Shields
+			mobj->pitch = 0;
+			mobj->roll = 0;
 
-			mobj->slopepitch = mobj->target->slopepitch;
-			mobj->sloperoll = mobj->target->sloperoll;
+			mobj->slopepitch = 0;
+			mobj->sloperoll = 0;
 
 			P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
 			mobj->angle = K_MomentumAngle(mobj->target);
