@@ -388,7 +388,7 @@ consvar_t cv_eggmanmonitor = 		CVAR_INIT ("eggmanmonitor", 	"On", CV_NETVAR|CV_C
 consvar_t cv_orbinaut = 			CVAR_INIT ("orbinaut", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_jawz = 				CVAR_INIT ("jawz", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_mine = 				CVAR_INIT ("mine", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 		   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 		    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_selfpropelledbomb =	CVAR_INIT ("selfpropelledbomb", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_grow = 				CVAR_INIT ("grow", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_shrink = 				CVAR_INIT ("shrink", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -406,7 +406,7 @@ consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_C
 consvar_t cv_triplebanana = 		CVAR_INIT ("triplebanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_decabanana = 			CVAR_INIT ("decabanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_tripleorbinaut = 		CVAR_INIT ("tripleorbinaut", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 	    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_dualjawz = 			CVAR_INIT ("dualjawz", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
