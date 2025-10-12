@@ -92,32 +92,32 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 	//0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
     //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
     { 0,  0,  7, 11, 22, 18,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
-    { 0,  0,  0,  0,  0,  0,  3,  7, 11, 17, 37, 48, 60, 48, 37, 37}, // Rocket Sneaker
-    { 0,  0,  0,  0,  0,  0,  1,  3,  7, 18, 30, 37, 45, 60, 75, 75}, // Invincibility
+    { 0,  0,  0,  0,  0,  0,  0,  0,  1,  3,  7, 13, 42, 48, 37, 37}, // Rocket Sneaker
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 33, 60, 75, 75}, // Invincibility
     {67, 52, 36, 22, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
     {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
     {37, 45, 50, 22,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
-    { 0, 11, 22, 13,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
+    { 0, 11, 22, 13,  9,  7,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
     { 0,  0,  7,  9,  4,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  0,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
     { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  2,  0}, // Self-Propelled Bomb
-    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  7, 15, 26, 37, 45, 52, 52}, // Grow
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  3, 24, 45, 52, 52}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
     {18, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
-    { 0,  0,  0,  0,  0,  3,  7, 11, 15, 11,  7,  3,  0,  0,  0,  0}, // Hyudoro
+    { 0,  0,  0,  0,  0,  3,  5,  7, 11,  9,  7,  3,  0,  0,  0,  0}, // Hyudoro
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
     { 7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Super Ring
     {22,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
     { 0,  3, 12, 22, 15,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
-    { 0,  0,  0,  0,  0,  0,  3,  7, 14, 26, 37, 48, 37, 18,  7,  0}, // Flame Shield
-    { 0,  0,  0, 11, 22, 40, 35, 11,  7,  0,  0,  0,  0,  0,  0,  0}, // Sneaker x2
-    { 0,  0,  0,  0,  0,  3, 11, 25, 35, 22,  7,  0,  0,  0,  0,  0}, // Sneaker x3
+    { 0,  0,  0,  0,  0,  0,  3,  9, 22, 26, 37, 48, 37, 18,  7,  0}, // Flame Shield
+    { 0,  0,  0, 11, 22, 40, 35, 22, 11,  7,  0,  0,  0,  0,  0,  0}, // Sneaker x2
+    { 0,  0,  0,  0,  0,  0,  1,  3,  7, 21, 45, 32,  7,  0,  0,  0}, // Sneaker x3
     { 0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
     { 0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
-    { 0,  0,  0,  3,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
+    { 0,  0,  0,  3,  5,  7,  9,  4,  1,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
     { 0,  0,  0,  1,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
-    { 0,  0,  0,  3,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
+    { 0,  0,  0,  1,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
 };
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
@@ -377,6 +377,9 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 #define INVINDESPERATION 4
 #define MAXINVODDS ((MAXPROBABILITY * 2) * INVINDESPERATION)
 
+// Odds value for Alt. Invin. to force itself on trailing players.
+#define INVFORCEODDS (3 * MAXINVODDS / 4)
+
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
 	UINT32 invindist = INVINDIST/2;
@@ -571,23 +574,22 @@ INT32 K_KartGetItemOdds(
 			}
 
 			break;
-		case KITEM_BUBBLESHIELD:
-			// Experiment: Given the refactoring of the item, remove it from the cooldown pool.
-			// Also: a given.
-			notForBottom = true;
-		/*FALLTHRU*/
 		case KITEM_ROCKETSNEAKER:
 		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
 		case KRITEM_TRIPLESNEAKER:
 			powerItem = true;
 			break;
+		case KITEM_BUBBLESHIELD:
+			// Experiment: Given the refactoring of the item, remove it from the cooldown pool.
+			// Also: a given.
 		case KITEM_BALLHOG:
-		case KRITEM_TRIPLEORBINAUT:
-		case KRITEM_QUADORBINAUT:
 		case KRITEM_DUALJAWZ:
-			powerItem = true;
+		case KRITEM_QUADORBINAUT:
 			notForBottom = true;
+		/*FALLTHRU*/
+		case KRITEM_TRIPLEORBINAUT:
+			powerItem = true;
 			break;
 		case KRITEM_TRIPLEBANANA:
 		case KRITEM_TENFOLDBANANA:
@@ -608,6 +610,13 @@ INT32 K_KartGetItemOdds(
 
 				// Unique odds for Invincibility.
 				newodds = K_KartGetInvincibilityOdds(clusterDist);
+
+				// Special case: if you're SERIOUSLY far behind before the cooldown
+				// finishes, remove the cooldown flag.
+				if (newodds >= INVFORCEODDS)
+				{
+					cooldownOnStart = false;
+				}
                 
 				newodds *= BASEODDSMUL;
 				break;
