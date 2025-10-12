@@ -91,19 +91,19 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 {
 	//0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
     //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
-    { 0,  0,  0, 11, 22, 18,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
-    { 0,  0,  0,  0,  0,  0,  0,  0,  3, 17, 37, 48, 60, 48, 37, 37}, // Rocket Sneaker
-    { 0,  0,  0,  0,  0,  0,  0,  3,  7, 18, 30, 37, 45, 60, 75, 75}, // Invincibility
-    {67, 48, 30, 22, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
-    {22, 18, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
-    {37, 41, 45, 37, 30, 22, 15,  7,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
-    { 0, 11, 22, 18, 15, 11,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Jawz
-    { 0,  7, 15, 15, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
-    { 0,  0,  0,  7, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
-    { 0,  0,  3,  5,  7,  9, 12, 13,  10,  9,  7,  5, 2,  2,  2,  0}, // Self-Propelled Bomb
+    { 0,  0,  7, 11, 22, 18,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
+    { 0,  0,  0,  0,  0,  0,  3,  7, 11, 17, 37, 48, 60, 48, 37, 37}, // Rocket Sneaker
+    { 0,  0,  0,  0,  0,  0,  1,  3,  7, 18, 30, 37, 45, 60, 75, 75}, // Invincibility
+    {67, 48, 30, 22, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
+    {18, 15, 12, 7,   3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
+    {37, 41, 45, 22,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
+    { 0, 11, 22, 13,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
+    { 0,  7, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
+    { 0,  0,  0,  0,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
+    { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  2,  0}, // Self-Propelled Bomb
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  7, 15, 26, 37, 45, 52, 52}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
-    {15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
+    {18, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
     { 0,  0,  0,  0,  0,  3,  7, 11, 15, 11,  7,  3,  0,  0,  0,  0}, // Hyudoro
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
@@ -111,13 +111,13 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     {22,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
     { 0,  3, 12, 22, 15,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
     { 0,  0,  0,  0,  0,  0,  3,  7, 14, 26, 37, 48, 37, 18,  7,  0}, // Flame Shield
-    { 0,  0,  0, 11, 22, 40, 38, 35,  7,  0,  0,  0,  0,  0,  0,  0}, // Sneaker x2
-    { 0,  0,  0,  0,  0,  3, 19, 35, 45, 22,  7,  0,  0,  0,  0,  0}, // Sneaker x3
+    { 0,  0,  0, 11, 22, 40, 35, 11,  7,  0,  0,  0,  0,  0,  0,  0}, // Sneaker x2
+    { 0,  0,  0,  0,  0,  3, 11, 25, 35, 22,  7,  0,  0,  0,  0,  0}, // Sneaker x3
     { 0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
-    { 0,  0,  0,  0,  0,  3,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
+    { 0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
     { 0,  0,  0,  3,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
-    { 0,  0,  0,  0,  0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
-    { 0,  0,  0,  3,  7, 11, 15,  7,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
+    { 0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
+    { 0,  0,  0,  3,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
 };
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
@@ -420,7 +420,7 @@ INT32 K_KartGetItemOdds(
 	UINT32 ourDist,
     UINT32 clusterDist,
 	fixed_t mashed,
-	boolean spbrush, boolean bot, boolean rival)
+	boolean spbrush, boolean bot, boolean rival, boolean inBottom)
 {
 	INT32 newodds;
 	INT32 i;
@@ -435,6 +435,7 @@ INT32 K_KartGetItemOdds(
 	boolean cooldownOnStart = false;
 	boolean indirectItem = false;
 	boolean notNearEnd = false;
+	boolean notForBottom = false;
 
 	INT32 shieldtype = KSHIELD_NONE;
 
@@ -549,11 +550,20 @@ INT32 K_KartGetItemOdds(
 	switch (item)
 	{
 		case KITEM_BANANA:
-		case KITEM_EGGMAN:
 			notNearEnd = true;
+			notForBottom = true;
+			break;
+		case KITEM_EGGMAN:
+			// It blows you up and is overall ridiculous. This was *overdue*.
+			cooldownOnStart = true;
+			powerItem = true;
+
+			notNearEnd = true;
+			notForBottom = true;
 			break;
 		case KITEM_SUPERRING:
 			notNearEnd = true;
+			notForBottom = true;
 
 			if ((K_RingsActive() == false)) // No rings rolled if rings are turned off.
 			{
@@ -564,16 +574,20 @@ INT32 K_KartGetItemOdds(
 		case KITEM_ROCKETSNEAKER:
 		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
-		case KITEM_BALLHOG:
 		case KRITEM_TRIPLESNEAKER:
+			powerItem = true;
+			break;
+		case KITEM_BALLHOG:
 		case KRITEM_TRIPLEORBINAUT:
 		case KRITEM_QUADORBINAUT:
 		case KRITEM_DUALJAWZ:
 			powerItem = true;
+			notForBottom = true;
 			break;
 		case KRITEM_TRIPLEBANANA:
 		case KRITEM_TENFOLDBANANA:
 			powerItem = true;
+			notForBottom = true;
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
@@ -677,6 +691,11 @@ INT32 K_KartGetItemOdds(
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 		newodds = 0;
 	}
+	else if ((notForBottom == true) && (inBottom == true))
+	{
+		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
+		newodds = 0;
+	}
 	else if (powerItem == true)
 	{
 		// This item is a "power item". This activates "frantic item" toggle related functionality.
@@ -741,7 +760,10 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 					player->distancetofinish,
                     player->distancefromcluster,
 					mashed,
-					spbrush, player->bot, (player->bot && player->botvars.rival)
+					spbrush,
+					player->bot,
+					(player->bot && player->botvars.rival),
+					K_IsPlayerLosing(player)
 				) > 0)
 			{
 				available = true;
@@ -1308,7 +1330,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			player->distancetofinish,
             player->distancefromcluster,
 			mashed,
-			spbrush, player->bot, (player->bot && player->botvars.rival))
+			spbrush,
+			player->bot,
+			(player->bot && player->botvars.rival),
+			K_IsPlayerLosing(player))
 		);
 	}
 
