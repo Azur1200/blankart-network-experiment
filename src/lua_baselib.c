@@ -1372,7 +1372,7 @@ static int lib_pSpawnGhostMobj(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
-	LUA_PushUserdata(L, P_SpawnGhostMobj(mobj), META_MOBJ);
+	LUA_PushUserdata(L, P_SpawnGhostMobjEX(mobj, lua_compatmode), META_MOBJ);
 	return 1;
 }
 

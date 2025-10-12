@@ -10561,7 +10561,7 @@ void P_MobjThinker(mobj_t *mobj)
 				}
 			}
 		}
-		else
+		else if (mobj->extravalue3 <= 0) // Legacy mode bypasses this visibility system.
 		{
 			UINT32 dur = (mobj->flags2 & MF2_BOSSNOTRAP)
 				? (2*mobj->fuse)/3

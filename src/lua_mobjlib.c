@@ -615,6 +615,23 @@ static int mobj_get(lua_State *L)
 	return 1;
 }
 
+static inline UINT32 eflags_vischeck(UINT32 eflags)
+{
+	UINT8 playerhide;
+
+	playerhide = 0;
+	if (eflags & RF_DONTDRAW)
+	{
+		// Visibility checks are necessary
+		playerhide = (UINT8)((eflags & RF_DONTDRAW) >> RF_HIDESHIFT);
+
+		// Hiding is the opposite of visibility.
+		playerhide = (~playerhide) & 0x0F;
+	}
+
+	return ((UINT32)(playerhide) << RF_HIDESHIFT);
+}
+
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
 #define NOSETPOS luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL("P_Move") ", " LUA_QL("P_TryMove") ", or " LUA_QL("P_SetOrigin") ", or " LUA_QL("P_MoveOrigin") " instead.", mobj_opt[field])
 static int mobj_set(lua_State *L)
@@ -838,8 +855,19 @@ static int mobj_set(lua_State *L)
 	case mobj_eflags:
 	{
 		UINT32 eflags = luaL_checkinteger(L, 3);
+		UINT32 visflags = 0;
 		if (lua_compatmode)
-			mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (~eflags & RF_DONTDRAW); // eeeyup.
+		{
+			// eeeyup.
+			// Mhm. Yeah.
+			visflags = eflags_vischeck(eflags);
+
+			if ((visflags) && ((mo->renderflags & RF_DONTDRAW) != RF_DONTDRAW))
+			{
+				mo->renderflags &= ~RF_DONTDRAW;
+				mo->renderflags |= visflags;
+			}
+		}
 		mo->eflags = (UINT16)eflags;
 		break;
 	}
