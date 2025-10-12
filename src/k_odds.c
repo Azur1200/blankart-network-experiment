@@ -571,6 +571,11 @@ INT32 K_KartGetItemOdds(
 			}
 
 			break;
+		case KITEM_BUBBLESHIELD:
+			// Experiment: Given the refactoring of the item, remove it from the cooldown pool.
+			// Also: a given.
+			notForBottom = true;
+		/*FALLTHRU*/
 		case KITEM_ROCKETSNEAKER:
 		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
@@ -610,7 +615,6 @@ INT32 K_KartGetItemOdds(
 		/*FALLTHRU*/
 		case KITEM_MINE:
 		case KITEM_GROW:
-		case KITEM_BUBBLESHIELD:
 		case KITEM_FLAMESHIELD:
 			cooldownOnStart = true;
 			powerItem = true;
