@@ -9356,7 +9356,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->slopepitch = 0;
 		mobj->sloperoll = 0;
 
+		mobj->flags &= ~(MF_NOCLIP|MF_NOCLIPTHING);
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+		mobj->flags |= MF_NOCLIP|MF_NOCLIPTHING;
 		break;
 	}
 	case MT_BUBBLESHLD_DEBRIS:
@@ -9380,7 +9382,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (curstate != S_INVISIBLE)
 			{
 				// "Despawn" and play the glass landing sound.
-				S_StartSound(mobj, mobj->info->activesound);
+				S_StartSoundAtVolume(mobj, mobj->info->activesound, 40);
 				P_SetMobjState(mobj, S_INVISIBLE);
 			}
 		}
