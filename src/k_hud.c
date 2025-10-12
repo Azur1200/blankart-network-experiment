@@ -2423,7 +2423,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 14
+#define BASEMODS 15
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
@@ -2432,6 +2432,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	servermods_t basemods[BASEMODS] =
 	{
+		{"Item Littering", 0, NULL, K_ItemLitterActive() > 0, true},
 		{"Rings", 0, NULL, K_RingsActive() > 0, true},
 		{"4-Tier Drifts", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Slipdash", 0, NULL, K_SlipdashActive() > 0, true},
@@ -5539,7 +5540,8 @@ static void K_drawDistributionDebugger(void)
 				stplyr->distancetofinish,
 				stplyr->distancefromcluster,
 				0,
-				spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
+				spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival),
+				K_IsPlayerLosing(stplyr)
 			);
 
 			if (itemodds <= 0)

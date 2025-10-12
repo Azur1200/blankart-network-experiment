@@ -208,6 +208,8 @@ extern consvar_t cv_kartinvin_midtime;
 
 extern consvar_t cv_kartairdrop;
 
+extern consvar_t cv_kartitemlitter;
+
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
 extern consvar_t cv_kartspbdist;

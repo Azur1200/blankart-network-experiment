@@ -4181,6 +4181,13 @@ static int lib_kAirDropActive(lua_State *L)
 	return 1;
 }
 
+// Checks if item littering is active.
+static int lib_kItemLitterActive(lua_State *L)
+{
+	lua_pushboolean(L, K_ItemLitterActive());
+	return 1;
+}
+
 // Grabs the currently active invintype.
 static int lib_kGetKartInvinType(lua_State *L)
 {
@@ -5285,6 +5292,7 @@ static luaL_Reg lib[] = {
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
+	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},

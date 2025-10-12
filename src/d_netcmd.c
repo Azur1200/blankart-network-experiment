@@ -161,6 +161,7 @@ static void KartSlipdash_OnChange(void);
 static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
+static void KartItemLitter_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
@@ -387,7 +388,7 @@ consvar_t cv_eggmanmonitor = 		CVAR_INIT ("eggmanmonitor", 	"On", CV_NETVAR|CV_C
 consvar_t cv_orbinaut = 			CVAR_INIT ("orbinaut", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_jawz = 				CVAR_INIT ("jawz", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_mine = 				CVAR_INIT ("mine", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 		   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_selfpropelledbomb =	CVAR_INIT ("selfpropelledbomb", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_grow = 				CVAR_INIT ("grow", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_shrink = 				CVAR_INIT ("shrink", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -405,7 +406,7 @@ consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_C
 consvar_t cv_triplebanana = 		CVAR_INIT ("triplebanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_decabanana = 			CVAR_INIT ("decabanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_tripleorbinaut = 		CVAR_INIT ("tripleorbinaut", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_dualjawz = 			CVAR_INIT ("dualjawz", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
@@ -567,16 +568,17 @@ consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartAirDrop_OnChange);
+consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
 
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1640", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1640", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
 
 // SPB distance; no legacy modifiers currently (lazy)
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "8192", CV_NETVAR|CV_CHEAT, spbdist_cons_t, NULL);
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "6144", CV_NETVAR|CV_CHEAT, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // Invincibility modifiers
@@ -7631,7 +7633,6 @@ static void KartDrafting_OnChange(void)
 	}
 }
 
-
 static void KartAirDrop_OnChange(void)
 {
 	if (K_CanChangeRules() == false)
@@ -7661,6 +7662,39 @@ static void KartAirDrop_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Drafting will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartItemLitter_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (!K_ItemLitterActive() && cv_kartitemlitter.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlittering = true;
+			CONS_Printf(M_GetText("Item littering has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item littering will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_ItemLitterActive() && !cv_kartitemlitter.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlittering = false;
+			CONS_Printf(M_GetText("Item littering has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item littering will be turned \"Off\" next round.\n"));
 		}
 	}
 }

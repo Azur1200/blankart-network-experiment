@@ -155,6 +155,7 @@ boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
+boolean itemlittering;
 UINT8   bumpsparkactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
@@ -8040,6 +8041,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slopeboostactive = false;
 	draftingactive = false;
 	airdropactive = false;
+	itemlittering = false;
 	bumpsparkactive = 0;
 
 	if (cv_kartrings.value)
@@ -8065,6 +8067,9 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	if (cv_kartairdrop.value)
 		airdropactive = true;
+
+	if (cv_kartitemlitter.value)
+		itemlittering = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	invintype = (UINT8)cv_kartinvintype.value;

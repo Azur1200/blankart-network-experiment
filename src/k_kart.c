@@ -375,6 +375,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartchainingsound);
 
 	CV_RegisterVar(&cv_kartairdrop);
+	CV_RegisterVar(&cv_kartitemlitter);
 
 	CV_RegisterVar(&cv_kartitembreaker);
 
@@ -5233,6 +5234,12 @@ void K_DropHnextList(player_t *player)
 			dropwork->flags &= ~MF_NOCLIPTHING;
 		}
 
+		if (!itemlittering)
+		{
+			// Bring it to life... just to kill it.
+			P_KillMobj(dropwork, NULL, NULL, DMG_NORMAL);
+		}
+
 		P_RemoveMobj(work);
 	}
 
@@ -5414,7 +5421,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 				UINT32_MAX,
                 0,
 				0,
-				false, false, false
+				false, false, false, false
 				)
 			);
 		}
@@ -11263,6 +11270,17 @@ boolean K_AirDropActive(void)
 	if (airdropactive)
 	{
 		// Air Drop is enabled!
+		return true;
+	}
+
+	return false;
+}
+
+boolean K_ItemLitterActive(void)
+{
+	if (itemlittering)
+	{
+		// Item littering is enabled!
 		return true;
 	}
 
