@@ -5336,7 +5336,6 @@ static void K_BreakBubbleShield(player_t* player)
 void K_PopPlayerShield(player_t *player)
 {
 	INT32 shield = K_GetShieldFromPlayer(player);
-	boolean isbubble = false;
 
 	// Doesn't apply if player is invalid.
 	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
@@ -5348,33 +5347,29 @@ void K_PopPlayerShield(player_t *player)
 	{
 		case KSHIELD_THUNDER:
 			K_DoThunderShield(player);
+			player->itemtype = KITEM_NONE;
+			player->itemamount = 0;
 			break;
 		case KSHIELD_BUBBLE:
-			isbubble = true;
+			if (player->bubblehealth > 0)
+				K_BreakBubbleShield(player); // Nice whiff; see ya!
+
+			player->bubbleblowup = 0;
+			player->bubblecool = 0;
+			player->bubblehealth = 0;
+
+			if (player->itemamount > 0)
+				if (--player->itemamount == 0)
+					player->itemtype = KITEM_NONE;
 			break;
 		case KSHIELD_FLAME:
 			S_StartSound(player->mo, sfx_s3k47);
+			S_StopSoundByID(player->mo, sfx_s3kc2l);
+			player->flametimer = 0;
 			break;
 	}
 
-	if ((isbubble) && (player->bubblehealth > 0))
-	{
-		// Nice whiff; see ya!
-		K_BreakBubbleShield(player);
-	}
-
 	player->curshield = KSHIELD_NONE;
-	player->itemtype = KITEM_NONE;
-	player->itemamount = 0;
-
-	player->flametimer = 0;
-	//player->flamestore = 0
-	//player->flamedash = 0;
-
-	player->bubbleblowup = 0;
-	player->bubblecool = 0;
-	player->bubblehealth = 0;
-
 	K_UnsetItemOut(player);
 }
 
@@ -7369,26 +7364,17 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->flamestore)
 	{
-		player->flamestore--;
-
-		if (player->flametimer == 0 || player->flamestore == 0)
-		{
+		if (--player->flamestore == 0)
 			S_StopSoundByID(player->mo, sfx_s3kc2l);
-		}
 	}
 
 	if (player->flametimer > 0)
 	{
 		if (player->stealingtimer == 0 && player->stolentimer == 0)
 		{
+			if (player->flametimer == 1)
+				K_PopPlayerShield(player);
 			player->flametimer--;
-		}
-
-		if (player->flametimer == 0)
-		{
-			S_StopSoundByID(player->mo, sfx_s3kc2l);
-			S_StartSound(player->mo, sfx_s3k47);
-			K_PopPlayerShield(player);
 		}
 	}
 	else
@@ -10268,8 +10254,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (player->flametimer <= 0)
 							{
-								player->flametimer = 0;
-								S_StartSound(player->mo, sfx_s3k47);
+								player->flametimer = 1;
 								K_PopPlayerShield(player);
 							}
 						}
@@ -10688,7 +10673,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&player->mo->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3f);
 								player->curshield = KSHIELD_BUBBLE;
-
 								player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
@@ -10764,7 +10748,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_FLAMESHIELD:
-
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && player->flametimer == 0)
 							{
 								player->itemamount--;
@@ -10774,7 +10757,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&shield->target, player->mo);
 								S_StartSound(player->mo, sfx_s3k3e);
 								player->curshield = KSHIELD_FLAME;
-
 							}
 							break;
 						case KITEM_HYUDORO:
