@@ -396,10 +396,10 @@ consvar_t cv_thundershield = 		CVAR_INIT ("thundershield", 	"On", CV_NETVAR|CV_C
 consvar_t cv_hyudoro = 				CVAR_INIT ("hyudoro", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_pogospring = 			CVAR_INIT ("pogospring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kitchensink = 			CVAR_INIT ("kitchensink", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_superring = 			CVAR_INIT ("superring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_landmine = 			CVAR_INIT ("landmine", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_superring = 			CVAR_INIT ("superring", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_landmine = 			CVAR_INIT ("landmine", 		   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_dualsneaker = 			CVAR_INIT ("dualsneaker", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
