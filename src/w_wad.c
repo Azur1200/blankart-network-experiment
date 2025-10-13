@@ -907,15 +907,20 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
 		return W_InitFileError(filename, startup);
 
-	important = W_VerifyNMUSlumps(filename, startup);
-
-	if (important == -1)
+	if (local)
+		important = false;
+	else
 	{
-		fclose(handle);
-		return INT16_MAX;
-	}
+		important = W_VerifyNMUSlumps(filename, startup);
 
-	important = !important;
+		if (important == -1)
+		{
+			fclose(handle);
+			return INT16_MAX;
+		}
+
+		important = !important;
+	}
 
 #ifndef NOFILEHASH
 	//
@@ -981,7 +986,6 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->localfile = local;
 
 	// already generated, just copy it over
 	wadfile->hash = filehash;
