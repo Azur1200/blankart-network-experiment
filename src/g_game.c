@@ -4787,6 +4787,71 @@ tryAgain:
 
 void G_AddMapToBuffer(mapnum_t map)
 {
+#if 0
+	// DEBUG: make nearly everything but four race levels full justPlayed
+	// to look into what happens when a dedicated runs for seven million years.
+	INT32 justplayedvalue = TOLMaps(gametype) - VOTE_NUM_LEVELS;
+	UINT32 tolflag = G_TOLFlag(gametype);
+
+	// Find all the maps that are ok
+	INT32 i;
+	for (i = 0; i < nummapheaders; i++)
+	{
+		if (mapheaderinfo[i] == NULL)
+		{
+			continue;
+		}
+
+		if (mapheaderinfo[i]->lumpnum == LUMPERROR)
+		{
+			continue;
+		}
+
+		if ((mapheaderinfo[i]->typeoflevel & tolflag) == 0)
+		{
+			continue;
+		}
+
+		if (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU)
+		{
+			// Don't include hidden
+			continue;
+		}
+
+		// Only care about restrictions if the host is a listen server.
+		if (!dedicated)
+		{
+			if (!(mapheaderinfo[i]->menuflags & LF2_NOVISITNEEDED)
+			&& !(mapheaderinfo[i]->records.mapvisited & MV_VISITED)
+			&& !(
+				mapheaderinfo[i]->cup
+				&& mapheaderinfo[i]->cup->cachedlevels[0] == i
+			))
+			{
+				// Not visited OR head of cup
+				continue;
+			}
+
+			if ((mapheaderinfo[i]->menuflags & LF2_FINISHNEEDED)
+			&& !(mapheaderinfo[i]->records.mapvisited & MV_BEATEN))
+			{
+				// Not completed
+				continue;
+			}
+		}
+
+		if (M_MapLocked(i + 1) == true)
+		{
+			// We haven't earned this one.
+			continue;
+		}
+
+		mapheaderinfo[i]->justPlayed = justplayedvalue;
+		justplayedvalue -= 1;
+		if (justplayedvalue <= 0)
+			break;
+	}
+#else
 	if (mapheaderinfo[map]->justPlayed == 0) // Started playing a new map.
 	{
 		// Decrement every maps' justPlayed value.
@@ -4801,7 +4866,8 @@ void G_AddMapToBuffer(mapnum_t map)
 	}
 
 	// Set our map's justPlayed value.
-	mapheaderinfo[map]->justPlayed = TOLMaps(gametype) - VOTEROWSADDSONE;
+	mapheaderinfo[map]->justPlayed = TOLMaps(gametype) - VOTEROWSADDSONE - 1;
+#endif
 }
 #undef VOTEROWSADDSONE
 
