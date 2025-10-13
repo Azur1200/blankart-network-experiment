@@ -2013,8 +2013,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	numbackffloors = 0;
 
-	for (i = 0; i < MAXFFLOORS; i++)
-		ds_p->thicksides[i] = NULL;
+	memset(ds_p->thicksides, 0, MAXFFLOORS * sizeof(*ds_p->thicksides));
 
 	if (numffloors)
 	{
