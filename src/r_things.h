@@ -97,7 +97,10 @@ boolean R_ThingIsFlashing(mobj_t *thing);
 
 boolean R_ThingIsUsingBakedOffsets(mobj_t *thing);
 
-INT32 R_ThingLightLevel(mobj_t *thing);
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+{
+	return (INT32)thing->lightlevel;
+}
 
 // --------------
 // MASKED DRAWING
@@ -110,7 +113,7 @@ struct maskcount_t
 {
 	size_t drawsegs[2];
 	size_t vissprites[2];
-	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
+	fixed_t viewx, viewy, viewz; /**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
 	sector_t* viewsector;
 };
 

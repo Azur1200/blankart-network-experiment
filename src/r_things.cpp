@@ -1659,13 +1659,6 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 	return extralight;
 }
 
-INT32 R_ThingLightLevel(mobj_t* thing)
-{
-	INT32 lightlevel = thing->lightlevel;
-
-	return lightlevel;
-}
-
 //
 // R_ProjectSprite
 // Generates a vissprite for a thing
