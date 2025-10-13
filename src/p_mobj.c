@@ -3279,7 +3279,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 
 	if (wasinwater && p != NULL)
 	{
-		if (p->curshield != KSHIELD_BUBBLE
+		if (K_GetShieldFromPlayer(p) != KSHIELD_BUBBLE
 			&& mobj->player->waterskip == 0
 			&& p->breathTimer > 15*TICRATE)
 		{
@@ -9152,7 +9152,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_THUNDERSHIELD:
 	{
 		if (!mobj->target || !mobj->target->health || !mobj->target->player
-			|| mobj->target->player->curshield != KSHIELD_THUNDER)
+			|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_THUNDER)
 		{
 			P_RemoveMobj(mobj);
 			return false;
@@ -9175,24 +9175,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		statenum_t curstate, overlaystate;
 
 		if (!mobj->target || !mobj->target->health || !mobj->target->player
-			|| mobj->target->player->curshield != KSHIELD_BUBBLE)
+			|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_BUBBLE)
 		{
-			if ((mobj->target->shieldtracer) && (mobj->target->shieldtracer->mobjnum == mobj->mobjnum))
-			{
-				// We're being traced by this object; unset its shieldtracer.
-				P_SetTarget(&mobj->target->shieldtracer, NULL);
-			}
-			if (mobj->tracer && (!mobj->tracer->player))
-			{
-				// Remove the tracer (overlay)
-				if (!P_MobjWasRemoved(mobj->tracer))
-				{
-					P_RemoveMobj(mobj->tracer);
-				}
-
-				P_SetTarget(&mobj->tracer, NULL);
-			}
-
 			P_RemoveMobj(mobj);
 			return false;
 		}
@@ -9403,7 +9387,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		{
 			statenum_t curstate;
 			if (!mobj->target || !mobj->target->health || !mobj->target->player
-				|| mobj->target->player->curshield != KSHIELD_FLAME)
+				|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_FLAME)
 			{
 				P_RemoveMobj(mobj);
 				return false;
@@ -10510,8 +10494,6 @@ void P_MobjThinker(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev, NULL);
 	if (mobj->itnext && P_MobjWasRemoved(mobj->itnext))
 		P_SetTarget(&mobj->itnext, NULL);
-	if (mobj->shieldtracer && P_MobjWasRemoved(mobj->shieldtracer))
-		P_SetTarget(&mobj->shieldtracer, NULL);
 
 	if (mobj->flags & MF_NOTHINK)
 		return;
@@ -11816,6 +11798,15 @@ void P_RemoveMobj(mobj_t *mobj)
 
 	if (mobj->type == MT_SPB)
 		spbplace = -1;
+
+	if (mobj->type == MT_BUBBLESHIELD && mobj->tracer && !mobj->tracer->player)
+	{
+		// Remove the tracer (overlay)
+		if (!P_MobjWasRemoved(mobj->tracer))
+			P_RemoveMobj(mobj->tracer);
+
+		P_SetTarget(&mobj->tracer, NULL);
+	}
 
 	if (P_IsKartItem(mobj->type))
 		P_RemoveKartItem(mobj);

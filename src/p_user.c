@@ -4398,6 +4398,9 @@ void P_PlayerAfterThink(player_t *player)
 		}
 	}
 
+	if (player->shieldtracer && P_MobjWasRemoved(player->shieldtracer))
+		P_SetTarget(&player->shieldtracer, NULL);
+
 	if (player->playerstate == PST_DEAD)
 	{
 		// Followers need handled while dead.

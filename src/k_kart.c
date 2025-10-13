@@ -5265,11 +5265,8 @@ void K_DropHnextList(player_t *player)
 #define SHARDROT (360 * FRACUNIT / 40)
 static void K_BreakBubbleShield(player_t* player)
 {
-	if (!player->mo->shieldtracer)
-	{
-		// No shield tracer, assume there's no bubble shield.
+	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		return;
-	}
 
 	// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
 	mobj_t* shard;
@@ -5280,10 +5277,10 @@ static void K_BreakBubbleShield(player_t* player)
 	fixed_t randang, randzang;
 	INT32 flip = P_MobjFlip(player->mo);
 
-	shieldscale = player->mo->shieldtracer->scale;
+	shieldscale = player->shieldtracer->scale;
 
 	scalediff = shieldscale - mapobjectscale;
-	shieldrad = FixedMul(player->mo->shieldtracer->radius, shieldscale);
+	shieldrad = FixedMul(player->shieldtracer->radius, shieldscale);
 
 	mul_vec.x = FRACUNIT;
 	mul_vec.y = 0;
@@ -5303,11 +5300,11 @@ static void K_BreakBubbleShield(player_t* player)
 
 		// Do shitty initial 3D rotations around the shield's radius.
 		shard = P_SpawnMobj(
-		    player->mo->shieldtracer->x +
+		    player->shieldtracer->x +
 			FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
-		    player->mo->shieldtracer->y +
+		    player->shieldtracer->y +
 			FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
-		    player->mo->shieldtracer->z + FixedMul(mul_vec.y * flip, shieldrad),
+		    player->shieldtracer->z + FixedMul(mul_vec.y * flip, shieldrad),
 		    MT_BUBBLESHLD_DEBRIS);
 
 		if (shard)
@@ -5369,7 +5366,8 @@ void K_PopPlayerShield(player_t *player)
 			break;
 	}
 
-	player->curshield = KSHIELD_NONE;
+	if (!P_MobjWasRemoved(player->shieldtracer))
+		P_RemoveMobj(player->shieldtracer);
 	K_UnsetItemOut(player);
 }
 
@@ -7371,11 +7369,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->flametimer > 0)
 	{
 		if (player->stealingtimer == 0 && player->stolentimer == 0)
-		{
-			if (player->flametimer == 1)
-				K_PopPlayerShield(player);
 			player->flametimer--;
-		}
+
+		if (player->flametimer == 0)
+			K_PopPlayerShield(player);
 	}
 	else
 	{
@@ -7448,7 +7445,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->mo->flags |= MF_NOCLIP;
 	}
 
-	if ((player->mo->eflags & MFE_UNDERWATER) && player->curshield != KSHIELD_BUBBLE)
+	if ((player->mo->eflags & MFE_UNDERWATER) && K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 	{
 		if (player->breathTimer < UINT16_MAX)
 			player->breathTimer++;
@@ -7549,7 +7546,7 @@ void K_KartResetPlayerColor(player_t *player)
 
 finalise:
 
-	if (player->curshield)
+	if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
 	{
 		fullbright = true;
 	}
@@ -9805,7 +9802,8 @@ void K_StripItems(player_t *player)
 	player->stealingtimer = 0;
 	player->stolentimer = 0;
 
-	player->curshield = KSHIELD_NONE;
+	if (!P_MobjWasRemoved(player->shieldtracer))
+		P_RemoveMobj(player->shieldtracer);
 	player->flametimer = 0;
 	player->bananadrag = 0;
 
@@ -10016,19 +10014,16 @@ boolean K_SlopeResistance(const player_t *player)
 	return false;
 }
 
-INT32 K_GetShieldFromPlayer(player_t *player)
+INT32 K_GetShieldFromPlayer(const player_t *player)
 {
+	if (P_MobjWasRemoved(player->shieldtracer))
+		return KSHIELD_NONE;
 
-	if (player->flametimer > 0)
+	switch (player->shieldtracer->type)
 	{
-		return KSHIELD_FLAME;
-	}
-
-	switch (player->itemtype)
-	{
-		case KITEM_THUNDERSHIELD: return KSHIELD_THUNDER;
-		case KITEM_BUBBLESHIELD: return KSHIELD_BUBBLE;
-		//case KITEM_FLAMESHIELD: return KSHIELD_FLAME; not active until flametimer is active.
+		case MT_THUNDERSHIELD: return KSHIELD_THUNDER;
+		case MT_BUBBLESHIELD: return KSHIELD_BUBBLE;
+		case MT_FLAMESHIELD: return KSHIELD_FLAME;
 		default: return KSHIELD_NONE;
 	}
 }
@@ -10253,10 +10248,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}*/
 
 							if (player->flametimer <= 0)
-							{
-								player->flametimer = 1;
 								K_PopPlayerShield(player);
-							}
 						}
 						else
 						{
@@ -10639,13 +10631,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_THUNDERSHIELD:
-							if (player->curshield != KSHIELD_THUNDER)
+							if (K_GetShieldFromPlayer(player) != KSHIELD_THUNDER)
 							{
 								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THUNDERSHIELD);
 								P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 								P_SetTarget(&shield->target, player->mo);
+								P_SetTarget(&player->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k41);
-								player->curshield = KSHIELD_THUNDER;
 							}
 
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
@@ -10665,14 +10657,13 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_BUBBLESHIELD:
-							if (player->curshield != KSHIELD_BUBBLE)
+							if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 							{
 								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BUBBLESHIELD);
 								P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 								P_SetTarget(&shield->target, player->mo);
-								P_SetTarget(&player->mo->shieldtracer, shield);
+								P_SetTarget(&player->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3f);
-								player->curshield = KSHIELD_BUBBLE;
 								player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
@@ -10748,15 +10739,15 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							}
 							break;
 						case KITEM_FLAMESHIELD:
-							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && player->flametimer == 0)
+							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
 							{
 								player->itemamount--;
 								player->flametimer = (itemtime*3);
 								mobj_t *shield = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FLAMESHIELD);
 								P_SetScale(shield, (shield->destscale = (5*shield->destscale)>>2));
 								P_SetTarget(&shield->target, player->mo);
+								P_SetTarget(&player->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3e);
-								player->curshield = KSHIELD_FLAME;
 							}
 							break;
 						case KITEM_HYUDORO:
@@ -10836,15 +10827,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 		{
 			player->itemflags &= ~IF_ITEMOUT;
 			player->itemtype = KITEM_NONE;
-		}
-
-		if (K_GetShieldFromPlayer(player) == KSHIELD_NONE)
-		{
-			player->curshield = KSHIELD_NONE; // RESET shield type
-			player->bubbleblowup = 0;
-			player->bubblecool = 0;
-			//player->flamedash = 0;
-			player->flametimer = 0;
+			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE && K_GetShieldFromPlayer(player) != KSHIELD_FLAME)
+				P_RemoveMobj(player->shieldtracer);
 		}
 
 		if (player->growshrinktimer <= 0)

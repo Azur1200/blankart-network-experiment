@@ -497,7 +497,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].airdroptime);
 		SYNCBOOLEAN(players[i].ringdrop);
 
-		SYNC(players[i].curshield);
+		SYNC(players[i].shieldtracer);
 
 		SYNC(players[i].bubblecool);
 		SYNC(players[i].bubbleblowup);
@@ -616,7 +616,6 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		// Wall Transfer bonus
 		SYNCBOOLEAN(players[i].walltransfered);
 		SYNC(players[i].walltransferboost);
-
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -1684,7 +1683,6 @@ enum mobj_diff_t
 	MD3_MISCCAP,
 	MD3_BAKEDOFFSET,
 	MD3_EXTVAL3,
-	MD3_SHIELDTRACER,
 
 	MD__MAX
 };
@@ -1946,7 +1944,6 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj == misccap, MD3_MISCCAP);
 	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
 	DIFF(mobj->extravalue3, MD3_EXTVAL3);
-	DIFF(mobj->shieldtracer, MD3_SHIELDTRACER);
 }
 
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
@@ -2326,7 +2323,6 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakeypiv);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakezpiv);
 	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
-	SYNCF(MD3_SHIELDTRACER, mobj->shieldtracer);
 
 	if (!save->write)
 	{
@@ -3703,11 +3699,6 @@ static void P_RelinkPointers(void)
 			if (!RelinkMobj(&mobj->terrainOverlay))
 				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
 		}
-		if (mobj->shieldtracer)
-		{
-			if (!RelinkMobj(&mobj->shieldtracer))
-				CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on %d\n", mobj->type);
-		}
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i])
@@ -3744,6 +3735,11 @@ static void P_RelinkPointers(void)
 				{
 					CONS_Debug(DBG_GAMELOGIC, "nextwaypoint not found on player %d\n", i);
 				}
+			}
+			if (players[i].shieldtracer)
+			{
+				if (!RelinkMobj(&players[i].shieldtracer))
+					CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on player %d\n", i);
 			}
 		}
 	}

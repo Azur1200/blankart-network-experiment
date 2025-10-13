@@ -265,7 +265,7 @@ enum player_e
 	player_ringtransparency,
 	player_airdroptime,
 	player_ringdrop,
-	player_curshield,
+	player_shieldtracer,
 	player_bubblecool,
 	player_bubbleblowup,
 	player_bubblehealth,
@@ -469,7 +469,7 @@ static const char *const player_opt[] = {
 	"ringtransparency",
 	"airdroptime",
 	"ringdrop",
-	"curshield",
+	"shieldtracer",
 	"bubblecool",
 	"bubbleblowup",
 	"bubblehealth",
@@ -903,8 +903,8 @@ static int player_get(lua_State *L)
 	case player_ringdrop:
 		lua_pushinteger(L, plr->ringdrop);
 		break;
-	case player_curshield:
-		lua_pushinteger(L, plr->curshield);
+	case player_shieldtracer:
+		LUA_PushUserdata(L, plr->shieldtracer, META_MOBJ);
 		break;
 	case player_bubblecool:
 		lua_pushinteger(L, plr->bubblecool);
@@ -1608,9 +1608,8 @@ static int player_set(lua_State *L)
 	case player_ringdrop:
 		plr->ringdrop = luaL_checkinteger(L, 3);
 		break;
-	case player_curshield:
-		plr->curshield = luaL_checkinteger(L, 3);
-		break;
+	case player_shieldtracer:
+		return NOSET;
 	case player_bubblecool:
 		plr->bubblecool = luaL_checkinteger(L, 3);
 		break;
@@ -2166,7 +2165,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, (plr->itemflags & IF_ITEMOUT));
 			return 1;
 		case k_curshield:
-			lua_pushinteger(L, plr->curshield);
+			lua_pushinteger(L, K_GetShieldFromPlayer(plr));
 			return 1;
 		case k_hyudorotimer:
 			lua_pushinteger(L, plr->hyudorotimer);
@@ -2428,7 +2427,9 @@ static int kartstuff_set(lua_State *L)
 					plr->itemflags |= IF_ITEMOUT;
 				break;
 			case k_curshield:
-				plr->curshield = i;
+				// i have no clue where you'd find a script that sets k_curshield, but... this will do?
+				if (!P_MobjWasRemoved(plr->shieldtracer) && K_GetShieldFromPlayer(plr) != i)
+					P_RemoveMobj(plr->shieldtracer);
 				break;
 			case k_hyudorotimer:
 				plr->hyudorotimer = i;

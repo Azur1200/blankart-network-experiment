@@ -694,7 +694,7 @@ struct player_t
 	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
 	boolean ringdrop;		// Set when having ringdrop applied.
 
-	UINT8 curshield;	// see kartshields_t
+	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
