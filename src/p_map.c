@@ -1208,8 +1208,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (!thing->health)
 				return BMIT_CONTINUE; // dead
 
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				if (thing->type == MT_BLUEROBRA_JOINT)
 					P_KillMobj(thing->target, g_tm.thing, g_tm.thing, DMG_NORMAL);
@@ -1234,8 +1233,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (!thing->health)
 				return BMIT_CONTINUE; // dead
 
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				P_KillMobj(thing, g_tm.thing, g_tm.thing, DMG_NORMAL);
 				return BMIT_CONTINUE; // kill
@@ -1265,8 +1263,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // underneath
 
 			// kill
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				P_KillMobj(thing, g_tm.thing, g_tm.thing, DMG_NORMAL);
 				return BMIT_CONTINUE;

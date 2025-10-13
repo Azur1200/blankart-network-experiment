@@ -279,6 +279,7 @@ boolean K_ApplyOffroad(const player_t *player);
 fixed_t K_PlayerTripwireSpeedThreshold(const player_t *player);
 tripwirepass_t K_TripwirePassConditions(const player_t *player);
 boolean K_TripwirePass(const player_t *player);
+boolean K_PlayerCanPunt(const player_t *player);
 boolean K_WaterRun(mobj_t *mobj);
 void K_SpawnWaterTrail(mobj_t *mobj);
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);

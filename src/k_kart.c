@@ -2060,6 +2060,12 @@ boolean K_TripwirePass(const player_t *player)
 	return (player->tripwirePass != TRIPWIRE_NONE);
 }
 
+boolean K_PlayerCanPunt(const player_t *player)
+{
+	return player->invincibilitytimer > 0 || player->growshrinktimer > 0 ||
+	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME);
+}
+
 // Safe guard cvars to prevent cheating in RA.
 INT32 K_RAGuard(consvar_t cvar)
 {
