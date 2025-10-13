@@ -2794,6 +2794,18 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 			startedInFreePlay = true;
 		}
 	}
+	
+	// Reset map headers' justPlayed and anger records
+	// when there are no players in a dedicated server.
+	// Otherwise maps get angry at newly-joined players
+	// that don't deserve it.
+	if (dedicated && D_NumPlayers() == 0)
+	{
+		for (INT32 i = 0; i < nummapheaders; i++)
+		{
+			mapheaderinfo[i]->justPlayed = 0;
+		}
+	}
 }
 
 void CL_Reset(void)
