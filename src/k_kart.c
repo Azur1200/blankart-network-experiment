@@ -6983,9 +6983,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (player->itemtype == KITEM_NONE && player->flametimer == 0)
-		player->itemflags &= ~IF_HOLDREADY;
-
 	if (player->driftlock)
 		player->driftlock--;
 
@@ -9790,7 +9787,8 @@ void K_StripItems(player_t *player)
 	K_DropKitchenSink(player);
 	player->itemtype = KITEM_NONE;
 	player->itemamount = 0;
-	player->itemflags &= ~(IF_ITEMOUT|IF_EGGMANOUT);
+	player->itemflags &= ~IF_EGGMANOUT;
+	K_UnsetItemOut(player);
 
 	if (!player->itemroulette || player->roulettetype != 2)
 	{
@@ -9805,7 +9803,6 @@ void K_StripItems(player_t *player)
 	if (!P_MobjWasRemoved(player->shieldtracer))
 		P_RemoveMobj(player->shieldtracer);
 	player->flametimer = 0;
-	player->bananadrag = 0;
 
 	player->sadtimer = 0;
 
@@ -10046,7 +10043,7 @@ void K_SetItemOut(player_t *player)
 
 void K_UnsetItemOut(player_t *player)
 {
-	player->itemflags &= ~IF_ITEMOUT;
+	player->itemflags &= ~(IF_ITEMOUT|IF_HOLDREADY);
 	player->bananadrag = 0;
 }
 
