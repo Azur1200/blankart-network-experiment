@@ -997,7 +997,7 @@ void D_SRB2Loop(void)
 	{
 		precise_t enterprecise = I_GetPreciseTime();
 
-		g_dc = {};
+		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		I_UpdateTime(cv_timescale.value);
