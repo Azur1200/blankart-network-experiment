@@ -290,7 +290,7 @@ static CV_PossibleValue_t ingamecap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS-1, "MAX"
 consvar_t cv_ingamecap = CVAR_INIT ("ingamecap", "0", CV_NETVAR, ingamecap_cons_t, NULL);
 
 static CV_PossibleValue_t spectatorreentry_cons_t[] = {{0, "MIN"}, {10*60, "MAX"}, {0, NULL}};
-consvar_t cv_spectatorreentry = CVAR_INIT ("spectatorreentry", "30", CV_NETVAR, spectatorreentry_cons_t, NULL);
+consvar_t cv_spectatorreentry = CVAR_INIT ("spectatorreentry", "0", CV_NETVAR, spectatorreentry_cons_t, NULL); // bugged in kart, default to 0 to match expected behavior
 
 static CV_PossibleValue_t antigrief_cons_t[] = {{20, "MIN"}, {60, "MAX"}, {0, "Off"}, {0, NULL}};
 consvar_t cv_antigrief = CVAR_INIT ("antigrief", "30", CV_NETVAR, antigrief_cons_t, NULL);
@@ -451,7 +451,7 @@ static CV_PossibleValue_t kartbot_cons_t[] = {
 static CV_PossibleValue_t kartbot_cap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS, "MAX"}, {0, NULL}};
 consvar_t cv_kartbot = CVAR_INIT ("kartbot", "0", CV_NETVAR, kartbot_cons_t, NULL);
 consvar_t cv_kartbot_cap = CVAR_INIT ("kartbot_cap", "0", CV_NETVAR, kartbot_cap_cons_t, NULL);
-consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "1.0", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartbot_modifiermax = CVAR_INIT ("kartbot_modifiermax", "0.8", CV_NETVAR|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexity", "-7000", CV_NETVAR, CV_Signed, NULL);
 
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
