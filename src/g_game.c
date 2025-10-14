@@ -4852,6 +4852,9 @@ void G_AddMapToBuffer(mapnum_t map)
 			break;
 	}
 #else
+	if (dedicated && D_NumPlayers() == 0)
+		return;
+
 	if (mapheaderinfo[map]->justPlayed == 0) // Started playing a new map.
 	{
 		// Decrement every maps' justPlayed value.
