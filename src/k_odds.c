@@ -91,33 +91,33 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 {
 	//0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
     //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
-    { 0,  0,  7, 11, 22, 18,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
+    { 0,  0,  0,  0,  9, 18, 28,  8,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
     { 0,  0,  0,  0,  0,  0,  0,  0,  1,  3,  7, 15, 42, 48, 37, 37}, // Rocket Sneaker
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 33, 60, 75, 75}, // Invincibility
-    {67, 52, 36, 22, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
+    {67, 52, 24, 22, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
     {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
-    {37, 45, 50, 25, 12,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
-    { 0, 11, 22, 13,  9,  7,  3,  1,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
+    {15, 30, 25, 12,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
+    { 0, 11, 22,  9,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
     { 0,  0, 10,  9,  4,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  0,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
     { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  2,  0}, // Self-Propelled Bomb
-    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 18, 12,  9,  0,  0}, // Grow
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 18,  9,  0,  0,  0}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
-    {18,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
-    { 0,  0,  0,  0,  0,  3,  5,  7, 11,  9,  7,  3,  0,  0,  0,  0}, // Hyudoro
+    {18,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
+    { 0,  0,  0,  0,  3,  4,  5,  7,  9,  5,  5,  0,  0,  0,  0,  0}, // Hyudoro
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
     { 7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Super Ring
     {22,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
     { 0,  3, 18, 32, 20,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
-    { 0,  0,  0,  0,  0,  0,  3,  9, 22, 26, 37, 48, 37, 18,  7,  0}, // Flame Shield
-    { 0,  0,  0, 11, 22, 40, 35, 22, 11,  7,  0,  0,  0,  0,  0,  0}, // Sneaker x2
-    { 0,  0,  0,  0,  0,  0,  1,  3,  7, 21, 45, 32,  7,  0,  0,  0}, // Sneaker x3
-    { 0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  9, 18, 36, 37, 18,  7,  0}, // Flame Shield
+    { 0,  0,  0,  0,  0,  3,  5, 25, 20, 15,  9,  0,  0,  0,  0,  0}, // Sneaker x2
+    { 0,  0,  0,  0,  0,  0,  0,  0,  4,  7, 21, 45, 32,  7,  0,  0}, // Sneaker x3
+    { 0,  7,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
     { 0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
-    { 0,  0,  0,  3,  5,  7,  9,  4,  1,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
-    { 0,  0,  0,  1,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
-    { 0,  0,  0,  1,  5,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
+    { 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
+    { 0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
+    { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
 };
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
@@ -575,7 +575,6 @@ INT32 K_KartGetItemOdds(
 
 			break;
 		case KITEM_ROCKETSNEAKER:
-		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
 		case KRITEM_TRIPLESNEAKER:
 			powerItem = true;
@@ -584,11 +583,11 @@ INT32 K_KartGetItemOdds(
 			// Experiment: Given the refactoring of the item, remove it from the cooldown pool.
 			// Also: a given.
 		case KITEM_BALLHOG:
+		case KITEM_JAWZ:
 		case KRITEM_DUALJAWZ:
+		case KRITEM_TRIPLEORBINAUT:
 		case KRITEM_QUADORBINAUT:
 			notForBottom = true;
-		/*FALLTHRU*/
-		case KRITEM_TRIPLEORBINAUT:
 			powerItem = true;
 			break;
 		case KRITEM_TRIPLEBANANA:
