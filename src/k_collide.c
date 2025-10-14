@@ -553,38 +553,38 @@ static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
+	if (t2->threshold && !t2->player)
+		return false;
+
 	mobj_t *owner = t1->player ? t1 : t1->target;
 
-	if (!t2->threshold || t2->player)
+	angle_t angle = R_PointToAngle2(t1->x, t1->y, t2->x, t2->y);
+	fixed_t momentum = max(FixedHypot(owner->momx, owner->momy), FixedHypot(t2->momx, t2->momy));
+	momentum = max(3*momentum/4, 16*mapobjectscale); // do SOMETHING!
+
+	P_InstaThrust(t2, angle, momentum);
+	if (!t2->player)
+		t2->angle = angle;
+
+	if (K_BubbleReflectingTrapItem(t2))
 	{
-		angle_t angle = R_PointToAngle2(t1->x, t1->y, t2->x, t2->y);
-		fixed_t momentum = max(FixedHypot(owner->momx, owner->momy), FixedHypot(t2->momx, t2->momy));
-		momentum = max(3*momentum/4, 16*mapobjectscale); // do SOMETHING!
-
-		P_InstaThrust(t2, angle, momentum);
-		if (!t2->player)
-			t2->angle = angle;
-
-		if (K_BubbleReflectingTrapItem(t2))
-		{
-			// Stupid hack: Toss trap/dud items into the air
-			t2->momz += (24*t2->scale) * P_MobjFlip(t2);
-			t2->z += t2->momz;
-		}
-
-		if (!t2->player)
-		{
-			if (t2->type == MT_JAWZ)
-				P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-			P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
-			if ((t2->type == MT_ORBINAUT && t2->flags2 & MF2_AMBUSH) || t2->type == MT_JAWZ_DUD)
-				t2->flags |= MF_NOCLIPTHING;
-			else
-				t2->threshold = 10;
-		}
-		S_StartSound(t1, sfx_s3k44);
+		// Stupid hack: Toss trap/dud items into the air
+		t2->momz += (24*t2->scale) * P_MobjFlip(t2);
+		t2->z += t2->momz;
 	}
 
+	if (!t2->player)
+	{
+		if (t2->type == MT_JAWZ)
+			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
+		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
+		if ((t2->type == MT_ORBINAUT && t2->flags2 & MF2_AMBUSH) || t2->type == MT_JAWZ_DUD)
+			t2->flags |= MF_NOCLIPTHING;
+		else
+			t2->threshold = 10;
+	}
+
+	S_StartSound(t1, sfx_s3k44);
 	return true;
 }
 
@@ -618,12 +618,15 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (K_BubbleShieldCanReflect(t1, t2))
 	{
-		if ((!t2->threshold)||(t2->player))
+		boolean reflected = K_BubbleShieldReflect(t1, t2);
+
+		if (reflected)
 		{
 			// Drain my stuff please.
 			K_BubbleShieldCollideDrain(t1->target->player, t1);
 		}
-		return K_BubbleShieldReflect(t1, t2);
+
+		return reflected;
 	}
 
 	if (t2->flags & MF_SHOOTABLE)
