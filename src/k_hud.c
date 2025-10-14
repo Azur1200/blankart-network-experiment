@@ -153,7 +153,7 @@ static patch_t *kp_driftgauge[13];
 static patch_t *kp_driftgaugeparts[5];
 
 static patch_t *kp_flamometer[4];
-static patch_t *kp_flamometerfire[4];
+static patch_t *kp_flamefire[4];
 
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
@@ -432,12 +432,21 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_flamometer[1], "THERMOFUEL");
 	HU_UpdatePatch(&kp_flamometer[2], "THERMOTEMP");
 	HU_UpdatePatch(&kp_flamometer[3], "THERMOMETRE");
-	//Flamometer Fire
-	HU_UpdatePatch(&kp_flamometerfire[0], "THERMOFIRE1");
-	HU_UpdatePatch(&kp_flamometerfire[1], "THERMOFIRE2");
-	HU_UpdatePatch(&kp_flamometerfire[2], "THERMOFIRE3");
-	HU_UpdatePatch(&kp_flamometerfire[3], "THERMOFIRE4");
 
+	//Flamometer Fire
+	{
+		const char* patchNames[] = {
+			"THFIRE1",
+			"THFIRE2",
+			"THFIRE3",
+			"THFIRE4"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_flamefire[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
+	}
 
 	// Speedometer labels
 	HU_UpdatePatch(&kp_speedometerlabel[0], "SP_MKMH");
@@ -6336,7 +6345,7 @@ void K_DrawFlamometer(void)
 		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0),
 	};
 	trackingResult_t res;
-	INT32 basex, basey = 0;
+	INT32 basex, basey, barextraflags = 0;
 	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
 	INT32 fuelbarheight = 41;
 	INT32 tempbarheight = 48;
@@ -6348,7 +6357,12 @@ void K_DrawFlamometer(void)
 	// fire animation
 	if (stplyr->flamestore >= FLAMESTOREMAX-1)
 	{
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometerfire[leveltime % 4], NULL);
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[CLAMP((leveltime / 3) % 4, 0, 4)], NULL);
+
+		if (leveltime % 3 != 0)
+		{
+			barextraflags = V_ADD;
+		}
 	}
 
 	// back
@@ -6365,7 +6379,7 @@ void K_DrawFlamometer(void)
 	// temperature
 	tempbarheight *= FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
 	V_SetClipRect(basex + 5*FRACUNIT, basey + 53*FRACUNIT - tempbarheight, 5*FRACUNIT, tempbarheight, flags);
-	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[2], NULL);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags|barextraflags, kp_flamometer[2], NULL);
 
 	V_ClearClipRect();
 
