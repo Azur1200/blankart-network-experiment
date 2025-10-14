@@ -3699,48 +3699,49 @@ static void P_RelinkPointers(void)
 			if (!RelinkMobj(&mobj->terrainOverlay))
 				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
 		}
-		for (i = 0; i < MAXPLAYERS; i++)
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+		if (players[i].awayviewmobj)
 		{
-			if (!playeringame[i])
-				continue;
-			if ( players[i].awayviewmobj)
+			if (!RelinkMobj(&players[i].awayviewmobj))
+				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on player %d\n", i);
+		}
+		if (players[i].followmobj)
+		{
+			if (!RelinkMobj(&players[i].followmobj))
+				CONS_Debug(DBG_GAMELOGIC, "followmobj not found on player %d\n", i);
+		}
+		if (players[i].follower)
+		{
+			if (!RelinkMobj(&players[i].follower))
+				CONS_Debug(DBG_GAMELOGIC, "follower not found on player %d\n", i);
+		}
+		if (players[i].currentwaypoint)
+		{
+			temp = (UINT32)(size_t)players[i].currentwaypoint;
+			players[i].currentwaypoint = K_GetWaypointFromIndex(temp);
+			if (players[i].currentwaypoint == NULL)
 			{
-				if (!RelinkMobj(&players[i].awayviewmobj))
-					CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on player %d\n", i);
+				CONS_Debug(DBG_GAMELOGIC, "currentwaypoint not found on player %d\n", i);
 			}
-			if (players[i].followmobj)
+		}
+		if (players[i].nextwaypoint)
+		{
+			temp = (UINT32)(size_t)players[i].nextwaypoint;
+			players[i].nextwaypoint = K_GetWaypointFromIndex(temp);
+			if (players[i].nextwaypoint == NULL)
 			{
-				if (!RelinkMobj(&players[i].followmobj))
-					CONS_Debug(DBG_GAMELOGIC, "followmobj not found on player %d\n", i);
+				CONS_Debug(DBG_GAMELOGIC, "nextwaypoint not found on player %d\n", i);
 			}
-			if (players[i].follower)
-			{
-				if (!RelinkMobj(&players[i].follower))
-					CONS_Debug(DBG_GAMELOGIC, "follower not found on player %d\n", i);
-			}
-			if (players[i].currentwaypoint)
-			{
-				temp = (UINT32)(size_t)players[i].currentwaypoint;
-				players[i].currentwaypoint = K_GetWaypointFromIndex(temp);
-				if (players[i].currentwaypoint == NULL)
-				{
-					CONS_Debug(DBG_GAMELOGIC, "currentwaypoint not found on player %d\n", i);
-				}
-			}
-			if (players[i].nextwaypoint)
-			{
-				temp = (UINT32)(size_t)players[i].nextwaypoint;
-				players[i].nextwaypoint = K_GetWaypointFromIndex(temp);
-				if (players[i].nextwaypoint == NULL)
-				{
-					CONS_Debug(DBG_GAMELOGIC, "nextwaypoint not found on player %d\n", i);
-				}
-			}
-			if (players[i].shieldtracer)
-			{
-				if (!RelinkMobj(&players[i].shieldtracer))
-					CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on player %d\n", i);
-			}
+		}
+		if (players[i].shieldtracer)
+		{
+			if (!RelinkMobj(&players[i].shieldtracer))
+				CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on player %d\n", i);
 		}
 	}
 }
