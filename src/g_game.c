@@ -4855,12 +4855,23 @@ void G_AddMapToBuffer(mapnum_t map)
 	if (dedicated && D_NumPlayers() == 0)
 		return;
 
+	const size_t upperJustPlayedLimit = TOLMaps(gametype) - VOTEROWSADDSONE - 1;
+
 	if (mapheaderinfo[map]->justPlayed == 0) // Started playing a new map.
 	{
 		// Decrement every maps' justPlayed value.
 		INT32 i;
 		for (i = 0; i < nummapheaders; i++)
 		{
+			// If the map's justPlayed value is higher
+			// than what it should be, clamp it.
+			// (Usually a result of SOC files
+			// manipulating which levels are hidden.)
+			if (mapheaderinfo[i]->justPlayed > upperJustPlayedLimit)
+			{
+				mapheaderinfo[i]->justPlayed = upperJustPlayedLimit;
+			}
+			
 			if (mapheaderinfo[i]->justPlayed > 0)
 			{
 				mapheaderinfo[i]->justPlayed--;
@@ -4869,7 +4880,7 @@ void G_AddMapToBuffer(mapnum_t map)
 	}
 
 	// Set our map's justPlayed value.
-	mapheaderinfo[map]->justPlayed = TOLMaps(gametype) - VOTEROWSADDSONE - 1;
+	mapheaderinfo[map]->justPlayed = upperJustPlayedLimit;
 #endif
 }
 #undef VOTEROWSADDSONE
