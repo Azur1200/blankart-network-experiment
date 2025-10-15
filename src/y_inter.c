@@ -459,6 +459,10 @@ void Y_IntermissionDrawer(void)
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
 		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		const char *timeheader;
+		
+		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
+		boolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
+
 		int y2;
 
 		if (data.rankingsmode)
@@ -492,7 +496,17 @@ void Y_IntermissionDrawer(void)
 		if (data.encore)
 			V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
 
-		if (data.numplayers > NUMFORNEWCOLUMN)
+		if (manyplayers16)
+		{
+			V_DrawFill(x+101, 24, 1, 158, 0);
+			V_DrawFill(x+207, 24, 1, 158, 0);
+			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
+
+			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
+
+			y = 37;
+		}
+		else if (manyplayers8)
 		{
 			V_DrawFill(x+156, 24, 1, 158, 0);
 			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
@@ -502,11 +516,13 @@ void Y_IntermissionDrawer(void)
 
 			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 		}
-
-		V_DrawCenteredString(x+6, 24, hilicol, "#");
-		V_DrawString(x+36, 24, hilicol, "NAME");
-
-		V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
+		else
+		{
+			V_DrawCenteredString(x+6, 24, hilicol, "#");
+			V_DrawString(x+36, 24, hilicol, "NAME");
+	
+			V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
+		}
 
 		for (i = 0; i < data.numplayers; i++)
 		{
@@ -520,14 +536,26 @@ void Y_IntermissionDrawer(void)
 				if (dojitter)
 					y--;
 
-				V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
+				if (manyplayers16)
+					V_DrawPingNum(x+6, y+2, 0, data.pos[i], NULL);
+				else
+					V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
 
 				if (data.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 					patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
 
-					V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+					if (manyplayers16)
+					{
+						// fixed_t scale = K_UseHighResPortraits() ? FRACUNIT/4 : FRACUNIT/2;
+						fixed_t scale = FRACUNIT/2;
+						V_DrawFixedPatch((x+8)<<FRACBITS, (y+1)<<FRACBITS, scale, 0, facerank, colormap);
+					}
+					else
+					{
+						V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+					}
 				}
 
 				if (data.num[i] == whiteplayer)
@@ -547,7 +575,9 @@ void Y_IntermissionDrawer(void)
 
 				y2 = y;
 
-				if (data.numplayers > NUMFORNEWCOLUMN)
+				if (manyplayers16)
+					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				else if (manyplayers8)
 					V_DrawThinString(x+36, y2-1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else
 					V_DrawString(x+36, y2, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
@@ -571,7 +601,9 @@ void Y_IntermissionDrawer(void)
 							else
 								snprintf(strtime, sizeof strtime, "(%d)", data.increase[data.num[i]]);
 
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+83+gutter, y, V_6WIDTHSPACE, strtime);
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+133+gutter, y-1, V_6WIDTHSPACE, strtime);
 							else
 								V_DrawRightAlignedString(x+118+gutter, y, 0, strtime);
@@ -580,7 +612,9 @@ void Y_IntermissionDrawer(void)
 						snprintf(strtime, sizeof strtime, "%d", data.val[i]);
 					}
 
-					if (data.numplayers > NUMFORNEWCOLUMN)
+					if (manyplayers16)
+						V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, strtime);
+					else if (manyplayers8)
 						V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
 					else
 						V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
@@ -597,14 +631,18 @@ void Y_IntermissionDrawer(void)
 							G_TicsToSeconds(data.val[i]), G_TicsToCentiseconds(data.val[i]));
 							strtime[sizeof strtime - 1] = '\0';
 
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, strtime);
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
 							else
 								V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
 						}
 						else
 						{
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, va("%i", data.val[i]));
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, va("%i", data.val[i]));
 							else
 								V_DrawRightAlignedString(x+152+gutter, y, 0, va("%i", data.val[i]));
@@ -618,13 +656,27 @@ void Y_IntermissionDrawer(void)
 			else
 				data.num[i] = MAXPLAYERS; // this should be the only field setting in this function
 
-			y += 18;
-
-			if (i == NUMFORNEWCOLUMN-1)
+			if (manyplayers16)
 			{
-				y = 41;
-				x += BASEVIDWIDTH/2;
+				y += 10;
+
+				if (i % 14 == 13)
+				{
+					y = 37;
+					x += BASEVIDWIDTH/3;
+				}
 			}
+			else
+			{
+				y += 18;
+
+				if (i == NUMFORNEWCOLUMN-1)
+				{
+					y = 41;
+					x += BASEVIDWIDTH/2;
+				}
+			}
+
 #undef NUMFORNEWCOLUMN
 		}
 	}
