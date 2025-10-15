@@ -93,8 +93,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x1f23235e31fd1f84
-#define ASSET_HASH_MAPPATCH_PK3        0xe6733c2c09ad2c02
+#define ASSET_HASH_MAIN_PK3            0xd9b9a0299e5427ba
+#define ASSET_HASH_MAPPATCH_PK3        0x916194118f4dc882
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -799,7 +799,6 @@ static void D_WipeDraw(boolean menu)
 
 static double D_EndFrame(precise_t enterprecise, int *frameskip)
 {
-	I_UpdateTime(cv_timescale.value);
 	// Fully completed frame made.
 	precise_t finishprecise = I_GetPreciseTime();
 
@@ -821,7 +820,6 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 			*frameskip = 0;
 	}
 
-	I_UpdateTime(cv_timescale.value);
 	if (!singletics)
 	{
 		precise_t elapsed = finishprecise - enterprecise;
@@ -838,7 +836,6 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 		}
 	}
 
-	I_UpdateTime(cv_timescale.value);
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
@@ -1033,7 +1030,6 @@ void D_SRB2Loop(void)
 #ifdef HW3SOUND
 		HW3S_BeginFrameUpdate();
 #endif
-		I_UpdateTime(cv_timescale.value);
 
 		if (realtics > 0 || singletics)
 		{
@@ -1041,8 +1037,6 @@ void D_SRB2Loop(void)
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
 				realtics = 1;
-
-			I_UpdateTime(cv_timescale.value);
 
 			// process tics (but maybe not if realtic == 0)
 			{
@@ -1081,25 +1075,19 @@ void D_SRB2Loop(void)
 			renderisnewtic = false;
 		}
 
-		I_UpdateTime(cv_timescale.value);
-
 		if (interp)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
-			I_UpdateTime(cv_timescale.value);
-
-			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
+			R_SetTimeFrac(lagging ? FRACUNIT : I_GetTimeFrac());
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
 			R_SetTimeFrac(FRACUNIT);
 		}
-
-		I_UpdateTime(cv_timescale.value);
 
 		if (interp || doDisplay)
 		{
