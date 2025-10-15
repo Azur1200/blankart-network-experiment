@@ -12741,9 +12741,9 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 
 static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 {
-#if MAXPLAYERS > 32
-	You should think about modifying the deathmatch starts to take full advantage of this!
-#endif
+// #if MAXPLAYERS > 32
+// 	You should think about modifying the deathmatch starts to take full advantage of this!
+// #endif
 	if (mthing->type <= MAXPLAYERS) // Player starts
 	{
 		// save spots for respawning in network games
