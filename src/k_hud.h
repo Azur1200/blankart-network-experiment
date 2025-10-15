@@ -132,6 +132,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active);
 void K_DrawServerDescrption(INT32 x, INT32 y);
 
 void K_DrawDriftGauge(void);
+void K_DrawFlamometer(void);
 void K_ResetAfterImageValues(void);
 #ifdef __cplusplus
 } // extern "C"

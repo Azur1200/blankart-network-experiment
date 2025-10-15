@@ -152,6 +152,9 @@ static patch_t *kp_kartzspeedo_smol[25];
 static patch_t *kp_driftgauge[13];
 static patch_t *kp_driftgaugeparts[5];
 
+static patch_t *kp_flamometer[4];
+static patch_t *kp_flamefire[4];
+
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
 static patch_t *kp_ranknobumpers;
@@ -423,7 +426,27 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[2], "K_WDGM3");
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
+	
+	// Flamometer UI Elements
+	HU_UpdatePatch(&kp_flamometer[0], "THERMOBACK");
+	HU_UpdatePatch(&kp_flamometer[1], "THERMOFUEL");
+	HU_UpdatePatch(&kp_flamometer[2], "THERMOTEMP");
+	HU_UpdatePatch(&kp_flamometer[3], "THERMOMETRE");
 
+	//Flamometer Fire
+	{
+		const char* patchNames[] = {
+			"THFIRE1",
+			"THFIRE2",
+			"THFIRE3",
+			"THFIRE4"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_flamefire[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
+	}
 
 	// Speedometer labels
 	HU_UpdatePatch(&kp_speedometerlabel[0], "SP_MKMH");
@@ -5771,6 +5794,8 @@ void K_drawKartHUD(void)
 	// Drift gauge should ideally be drawn behind other hud stuff, right?
 	// right?
 	K_DrawDriftGauge();
+	// new flame shield bars (player-space)
+	K_DrawFlamometer();
 
 	if (battlefullscreen && !freecam)
 	{
@@ -6295,4 +6320,69 @@ doafterimage:;
 		meterfont,
 		va("%03d", charge)
 	);*/
+}
+
+void K_DrawFlamometer(void)
+{
+	// Make sure we actually have one, lmao
+	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo))
+		return;
+	// Check for chasecam
+	// TODO: Check for this better ffs
+	if (!cv_chasecam[R_GetViewNumber()].value)
+		return;
+	// I WANT TO LIVE
+	if (stplyr->playerstate != PST_LIVE)
+		return;
+
+	if (stplyr->flametimer <= 0)
+		return;
+
+	mobj_t *mo = stplyr->mo;
+	vector3_t pos = {
+		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
+		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
+		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0),
+	};
+	trackingResult_t res;
+	INT32 basex, basey, barextraflags = 0;
+	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
+	INT32 fuelbarheight = 41;
+	INT32 tempbarheight = 48;
+
+	K_ObjectTracking(&res, &pos, false);
+	basex = res.x + (16<<FRACBITS);
+	basey = res.y - (48<<FRACBITS);
+	
+	// fire animation
+	if (stplyr->flamestore >= FLAMESTOREMAX-1)
+	{
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[CLAMP((leveltime / 3) % 4, 0, 4)], NULL);
+
+		if (leveltime % 3 != 0)
+		{
+			barextraflags = V_ADD;
+		}
+	}
+
+	// back
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[0], NULL);
+	
+	// bars
+	// fuel
+	fuelbarheight *= FixedDiv(stplyr->flametimer, itemtime*3);
+	V_SetClipRect(basex + 2*FRACUNIT, basey + 49*FRACUNIT - fuelbarheight, 2*FRACUNIT, fuelbarheight, flags);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[1], NULL);
+	
+	V_ClearClipRect();
+	
+	// temperature
+	tempbarheight *= FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
+	V_SetClipRect(basex + 5*FRACUNIT, basey + 53*FRACUNIT - tempbarheight, 5*FRACUNIT, tempbarheight, flags);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags|barextraflags, kp_flamometer[2], NULL);
+
+	V_ClearClipRect();
+
+	// front
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[3], NULL);
 }
