@@ -487,28 +487,6 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 	return min(MAXINVODDS, finodds);
 }
 
-#ifdef PARANOIA
-static const char* K_GetShieldName(kartshields_t s) 
-{
-	switch (s) 
-	{
-	case KSHIELD_THUNDER:	
-		return "KSHIELD_THUNDER";
-		break;
-	case KSHIELD_BUBBLE:
-		return "KSHIELD_BUBBLE";
-		break;
-	case KSHIELD_FLAME:
-		return "KSHIELD_FLAME";
-		break;
-	case KSHIELD_NONE:
-	default:
-		return "KSHIELD_NONE";
-		break;
-	}
-}
-#endif
-
 // Assigns general cooldowns to shield items.
 void K_KartHandleShieldCooldown(SINT8 item)
 {
