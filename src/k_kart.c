@@ -271,6 +271,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbot_basetrackcomplexity);
 	CV_RegisterVar(&cv_forcebots);
 	CV_RegisterVar(&cv_botcontrol);
+	CV_RegisterVar(&cv_forcerival);
 	CV_RegisterVar(&cv_karteliminatelast);
 	CV_RegisterVar(&cv_kartusepwrlv);
 	CV_RegisterVar(&cv_votetime);
