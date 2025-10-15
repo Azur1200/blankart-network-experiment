@@ -2141,10 +2141,12 @@ static boolean K_drawKartPositionFaces(void)
 		else
 		{
 			INT32 pos = players[rankplayer[i]].position;
-			if (pos < 0 || pos > MAXPLAYERS)
-				pos = 0;
+
 			// Draws the little number over the face
-			V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
+			if (pos < 0 || pos > 16)
+				V_DrawPingNum(FACE_X+2, Y+10, V_HUDTRANS|V_SNAPTOLEFT, pos, NULL);
+			else
+				V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
 		}
 
 		Y -= 18;
