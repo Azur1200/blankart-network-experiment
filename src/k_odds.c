@@ -152,6 +152,80 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 5, 1 }  // Jawz x2
 };
 
+// Cooldown time table; contains both base (index 0) and current (index 1)
+// times. Base times are in seconds, current times are in tics.
+tic_t ItemBGone[NUMKARTRESULTS][2] =
+{
+	//BASE  CURR
+	{ 0,    0 }, // Null/Sad Face
+	{ 0,    0 }, // Sneaker
+	{ 0,    0 }, // Rocket Sneaker
+	{ 0,    0 }, // Invincibility
+	{ 0,    0 }, // Banana
+	{ 10,   0 }, // Eggman Monitor
+	{ 0,    0 }, // Orbinaut
+	{ 5,    0 }, // Jawz
+	{ 0,    0 }, // Mine
+	{ 10,   0 }, // Ballhog
+	{ 20,   0 }, // Self-Propelled Bomb
+	{ 10,   0 }, // Grow
+	{ 20,   0 }, // Shrink
+	{ 0,    0 }, // Thunder Shield
+	{ 0,    0 }, // Hyudoro
+	{ 0,    0 }, // Pogo Spring
+	{ 0,    0 }, // Kitchen Sink
+	{ 0,    0 }, // Super Ring
+	{ 0,    0 }, // Land Mine
+	{ 5,    0 }, // Bubble Shield
+	{ 10,   0 }, // Flame Shield
+	{ 0,    0 }, // Sneaker x2
+	{ 0,    0 }, // Sneaker x3
+	{ 0,    0 }, // Banana x3
+	{ 30,   0 }, // Banana x10
+	{ 10,   0 }, // Orbinaut x3
+	{ 20,   0 }, // Orbinaut x4
+	{ 10,   0 }  // Jawz x2
+};
+
+// TODO: Vectorize all item tables and shove them into gamemode-uniqe pools (k_oddstable.cpp?).
+// Basically necessary for any hopes of easy SOC support in the near future.
+
+/**	\brief	Sets the cooldown timer for an item. When active, the item is removed
+ * from all players' item pools for some time.
+
+	\param	item		(SINT8) item to assign cooldown for
+	\param	time		(tic_t) cooldown time
+
+	\return	void
+*/
+void K_SetBGone(SINT8 item, tic_t time)
+{
+	ItemBGone[item][GONER_CURRCOOLDOWN] = time;
+}
+
+/**	\brief	Sets the cooldown timer for an item to its "base" (intended) time.
+
+	\param	item		(SINT8) item to assign base cooldown for
+
+	\return	void
+*/
+void K_SetBGoneToBase(SINT8 item)
+{
+	ItemBGone[item][GONER_CURRCOOLDOWN] = (ItemBGone[item][GONER_BASECOOLDOWN] * TICRATE);
+}
+
+/**	\brief	Gets the cooldown timer for an item.
+
+	\param	item		(SINT8) item to retrieve cooldown for
+	\param	base		(bool) if true, returns the "base" (intended) cooldown instead
+
+	\return	(tic_t) cooldown time
+*/
+tic_t K_GetBGone(SINT8 item, boolean base)
+{
+	return ItemBGone[item][base ? GONER_BASECOOLDOWN : GONER_CURRCOOLDOWN] * (base ? TICRATE : 1);
+}
+
 // Magic number distance for use with item roulette tiers
 #define ACTIVEDISTVAR (K_UsingLegacyCheckpoints() ? DISTVAR_LEGACY : DISTVAR)
 
@@ -288,8 +362,10 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 	if (getitem == KITEM_SPB || getitem == KITEM_SHRINK) // Indirect items
 		indirectitemcooldown = 20*TICRATE;
 
-	if (getitem == KITEM_HYUDORO) // Hyudoro cooldown
-		hyubgone = 20*TICRATE;
+	if (K_GetBGone(getitem, true) > 0) // Item cooldowns
+	{
+		K_SetBGoneToBase(getitem);
+	}
 
 	K_BotResetItemConfirm(player, true);
 
@@ -674,9 +750,6 @@ INT32 K_KartGetItemOdds(
 			break;
 		case KITEM_HYUDORO:
 			cooldownOnStart = true;
-
-			if (hyubgone > 0)
-				newodds = 0;
 			break;
 		default:
 			break;
@@ -688,7 +761,12 @@ INT32 K_KartGetItemOdds(
 		return newodds;
 	}
 
-	if ((indirectItem == true) && (indirectitemcooldown > 0))
+	if (K_GetBGone(item, false) > 0)
+	{
+		// (Replaces hyubgone) This item is on cooldown; don't let it get rolled.
+		newodds = 0;
+	}
+	else if ((indirectItem == true) && (indirectitemcooldown > 0))
 	{
 		// Too many items that act indirectly in a match can feel kind of bad.
 		newodds = 0;

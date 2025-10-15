@@ -41,6 +41,7 @@
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
+#include "k_odds.h"
 #include "acs/interface.h"
 #include "g_party.h"
 
@@ -4260,7 +4261,14 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(wantedcalcdelay);
 	SYNC(indirectitemcooldown);
-	SYNC(hyubgone);
+
+	for (i = 0; i < NUMKARTRESULTS; i++)
+	{
+		// hyubgone
+		//SYNC(ItemBGone[i][GONER_BASECOOLDOWN]);
+		SYNC(ItemBGone[i][GONER_CURRCOOLDOWN]);
+	}
+
 	SYNC(mapreset);
 
 	SYNC(spectateGriefed);
