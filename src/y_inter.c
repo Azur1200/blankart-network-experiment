@@ -1224,7 +1224,7 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 //
 void Y_VoteDrawer(void)
 {
-	INT32 rowval, i, lvls, x, picdiff, y = 0, height = 0;
+	INT32 rowval, i, px, lvls, x, picdiff, y = 0, height = 0;
 	UINT8 selected[12];
 	fixed_t rubyheight = 0;
 	fixed_t scale;
@@ -1237,6 +1237,9 @@ void Y_VoteDrawer(void)
 	INT32 vidy = ((vid.height) / vid.dupy);
 	fixed_t hypotf = 0;
 	INT32 hypoti = 0;
+
+	INT32 numplayers = 0;
+	boolean highplayers = false;
 
 	// get the hypotenuse
 	hypoti = (vidx*vidx) + (vidy*vidy);
@@ -1481,8 +1484,25 @@ void Y_VoteDrawer(void)
 	x = 20;
 	y = 10;
 
+	for (px = 0; px < MAXPLAYERS; px++)
+	{
+		if (playeringame[px])
+		{
+			numplayers++;
+		}
+	}
+
+	highplayers = numplayers > 16;
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+		INT32 bigaddx = 60; INT32 bigaddy = 30;
+		INT32 smalladdx = 42; INT32 smalladdy = 18;
+		INT32 smallfaceheight = 0; INT32 bigfaceheight = 9;
+		INT32 smallrectheight = 18; INT32 bigrectheight = 27;
+		INT32 smallrubyoffset = 4<<FRACBITS;
+		INT32 smallpicoffset = 4<<FRACBITS;
+
 		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
 			continue;
 
@@ -1497,19 +1517,27 @@ void Y_VoteDrawer(void)
 
 			if (!timer && i == voteclient.ranim)
 			{
-				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, VoteScreen.cursor[0]);
+				V_DrawScaledPatch(x-18, y+(highplayers ? 2 : bigfaceheight), V_SNAPTOLEFT, VoteScreen.cursor[0]);
 				if (voteendtic != -1 && !(votetic % 4))
-					V_DrawFill(x-1, y-1, 42, 27, 0|V_SNAPTOLEFT);
+					V_DrawFill(x-1, y-1, 42, (highplayers ? smallrectheight : bigrectheight), 0|V_SNAPTOLEFT);
 				else
-					V_DrawFill(x-1, y-1, 42, 27, levelinfo[votes[i]].gtc|V_SNAPTOLEFT);
+					V_DrawFill(x-1, y-1, 42, (highplayers ? smallrectheight : bigrectheight), levelinfo[votes[i]].gtc|V_SNAPTOLEFT);
 			}
 
+			if (highplayers)
+			{
+				V_SetClipRect(x<<FRACBITS, y<<FRACBITS, 48<<FRACBITS, 16<<FRACBITS, V_SNAPTOLEFT);
+			}
 			if (!levelinfo[votes[i]].encore)
-				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT, pic, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, (y<<FRACBITS) - (highplayers ? smallpicoffset : 0), scale, V_SNAPTOLEFT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
-				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
+				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, (y<<FRACBITS) - (highplayers ? smallpicoffset : 0), scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
+				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight - (highplayers ? smallrubyoffset : 0), FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
+			}
+			if (highplayers)
+			{
+				V_ClearClipRect();
 			}
 
 			if (levelinfo[votes[i]].gts)
@@ -1523,22 +1551,22 @@ void Y_VoteDrawer(void)
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
 				patch_t *facerank = faceprefix[players[i].skin][FACE_RANK];
 
-				V_DrawMappedPatch(x+24+facerank->leftoffset, y+9+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
+				V_DrawMappedPatch(x+24+facerank->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
 				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
-				V_DrawScaledPatch(x+24+highlight->leftoffset, y+9+highlight->topoffset, V_SNAPTOLEFT, highlight);
+				V_DrawScaledPatch(x+24+highlight->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+highlight->topoffset, V_SNAPTOLEFT, highlight);
 			}
 		}
 
-		y += 30;
+		y += highplayers ? smalladdy : bigaddy;
 
 		if (y > BASEVIDHEIGHT-40)
 		{
-			x += 60;
+			x += highplayers ? smalladdx : bigaddx;
 			y = 10;
 		}
 	}
