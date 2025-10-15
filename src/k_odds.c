@@ -454,7 +454,7 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 #define MAXINVODDS ((MAXPROBABILITY * 2) * INVINDESPERATION)
 
 // Odds value for Alt. Invin. to force itself on trailing players.
-#define INVFORCEODDS (3 * MAXINVODDS / 4)
+#define INVFORCEODDS (MAXINVODDS / 2)
 
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
