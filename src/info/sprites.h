@@ -7,6 +7,8 @@ _(UNKN)
 
 _(THOK) // Thok! mobj
 _(PLAY)
+_(KART)
+_(TIRE)
 
 // Enemies
 _(POSS) // Crawla (Blue)
