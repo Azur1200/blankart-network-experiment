@@ -70,6 +70,20 @@ FUNCMATH FUNCINLINE static ATTRINLINE INT64 FloatToFixed64(float f)
 	return (INT64)(f * FRACUNIT);
 }
 
+/*!
+ * \brief convert fixed_t into double-precision floating number
+ */
+
+FUNCMATH FUNCINLINE static ATTRINLINE double FixedToDouble(fixed_t x)
+{
+	return x / (double)FRACUNIT;
+}
+
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
+{
+	return (fixed_t)(f * FRACUNIT);
+}
+
 // for backwards compat
 #define FIXED_TO_FLOAT(x) FixedToFloat(x) // (((float)(x)) / ((float)FRACUNIT))
 #define FLOAT_TO_FIXED(f) FloatToFixed(f) // (fixed_t)((f) * ((float)FRACUNIT))

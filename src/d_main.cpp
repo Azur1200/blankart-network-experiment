@@ -1081,9 +1081,7 @@ void D_SRB2Loop(void)
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
-			I_UpdateTime(cv_timescale.value);
-
-			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
+			R_SetTimeFrac(lagging ? FRACUNIT : I_GetTimeFrac());
 		}
 		else
 		{
