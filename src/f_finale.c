@@ -439,8 +439,14 @@ void F_IntroTicker(void)
 		}
 		if (finalecount == 80)
 		{
-			char chars[5][10] = {"tails", "chao", "aiai", "sakura"};
-			SINT8 random = M_RandomRange(0, 3);
+			// I'm assuming these are all representative of a "dev character".
+			// Tails: NepDisk
+			// Chao: Alug
+			// Aiai: GHG
+			// Sakura: Anon
+			// Doomguy: Minenice
+			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doomguy"};
+			SINT8 random = M_RandomRange(0, 4);
 			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
