@@ -593,6 +593,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
 	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
 		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
 		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
+		|| t2->type == MT_KART_LEFTOVER
 		|| (t2->type == MT_PLAYER && t1->target != t2));
 }
 

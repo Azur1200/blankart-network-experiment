@@ -7987,15 +7987,21 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 				return false;
 			}
 		}
-		else // Apply gravity to fall downwards.
+		// Apply gravity to fall downwards.
+		else if (skins[mobj->player->skin].flags & SF_OLDDEATH)
 		{
 			P_SetObjectMomZ(mobj, -3*FRACUNIT/2, true);
-
-			if (mobj->player && (skins[mobj->player->skin].flags & SF_OLDDEATH))
-			{
+			if (mobj->player != NULL)
 				mobj->player->drawangle -= ANGLE_22h;
-			}
 		}
+		else
+		{
+			P_SetObjectMomZ(mobj, -7*FRACUNIT/8, true);
+		}
+		break;
+	case MT_KART_LEFTOVER:
+		mobj->angle += ANG15;
+		P_SetObjectMomZ(mobj, -2*FRACUNIT/3, true);
 		break;
 	case MT_METALSONIC_RACE:
 	{
@@ -10947,6 +10953,7 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 	switch (thing->type)
 	{
 		case MT_PLAYER:
+		case MT_KART_LEFTOVER:
 		case MT_SMALLMACE:
 		case MT_BIGMACE:
 		case MT_PUMA:
@@ -11356,6 +11363,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 				mobj->color = BALLOONCOLORS[P_RandomKey(sizeof(BALLOONCOLORS))];
 			}
+			break;
+		case MT_KART_LEFTOVER:
+			mobj->color = SKINCOLOR_RED;
 			break;
 		case MT_REDRING: // Make MT_REDRING red by default
 			mobj->color = skincolor_redring;

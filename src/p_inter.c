@@ -1550,13 +1550,82 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			break;
 
 		case MT_PLAYER:
-			if (damagetype != DMG_SPECTATOR)
+			if (damagetype == DMG_SPECTATOR)
+				break;
+
+			target->fuse = 3*TICRATE; // timer before mobj disappears from view (even if not an actual player)
+			target->momx = target->momy = target->momz = 0;
+			P_SetObjectMomZ(target, 14*FRACUNIT, false);
+			P_PlayDeathSound(target);
+
+			if (target->player == NULL || skins[target->player->skin].flags & SF_OLDDEATH)
+				break;
+
+			angle_t flingangle;
+			if (!P_MobjWasRemoved(source))
+				flingangle = R_PointToAngle2(
+					source->x - source->momx, source->y - source->momy,
+					target->x, target->y
+				);
+			else
 			{
-				target->fuse = TICRATE;
-				target->momx = target->momy = target->momz = 0;
-				P_SetObjectMomZ(target, 14*FRACUNIT, false);
-				P_PlayDeathSound(target);
+				// -45..-30 or 30..45
+				fixed_t offset = P_RandomRange(15, 45)*FRACUNIT;
+				if (offset < 30*FRACUNIT)
+					offset -= 60*FRACUNIT;
+				flingangle = target->angle + ANGLE_180 + FixedAngle(offset);
 			}
+
+			// Spawn kart frame
+			mobj_t *kart = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_LEFTOVER);
+
+			if (kart && !P_MobjWasRemoved(kart))
+			{
+				kart->angle = target->angle;
+				kart->color = target->color;
+				kart->extravalue1 = target->player->kartweight;
+
+				// Copy interp data
+				kart->old_angle = target->old_angle;
+				kart->old_x = target->old_x;
+				kart->old_y = target->old_y;
+				kart->old_z = target->old_z;
+
+				if (damagetype != DMG_TIMEOVER)
+				{
+					kart->angle = flingangle + ANGLE_180;
+					P_KillMobj(kart, inflictor, source, damagetype);
+				}
+				else
+					P_SetMobjState(kart, S_KART_LEFTOVER_NOTIRES);
+
+				// Spawn tires (this makes no sense being here...)
+				angle_t tireangle = flingangle - ANGLE_90 - ANGLE_22h;
+				for (INT32 i = 0; i < 4; i++, tireangle += ANGLE_45)
+				{
+					if (i == 2) tireangle += ANGLE_90;
+
+					mobj_t *tire = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_TIRE);
+					tire->fuse = 2*TICRATE;
+					tire->angle = tireangle;
+					if (i == 0 || i == 3)
+						P_SetScale(tire, (tire->destscale = 3*tire->scale/4));
+					P_InstaThrust(tire, tireangle, 3 * tire->scale);
+					P_SetObjectMomZ(tire, 10*FRACUNIT, false);
+				}
+			}
+
+			P_InstaThrust(target, flingangle, 4 * target->scale);
+			break;
+
+		case MT_KART_LEFTOVER:
+			target->fuse = 2*TICRATE;
+			target->flags &= ~(MF_SOLID|MF_SHOOTABLE);
+			P_UnsetThingPosition(target);
+			target->flags |= MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY;
+			P_SetThingPosition(target);
+			P_InstaThrust(target, target->angle, target->scale);
+			P_SetObjectMomZ(target, 10*FRACUNIT, false);
 			break;
 
 		case MT_METALSONIC_RACE:
@@ -1935,15 +2004,16 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	{
 		if (gametyperules & GTR_CIRCUIT)
 		{
-			mobj_t *boom;
-
-			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
-			player->mo->renderflags |= RF_DONTDRAW;
-
-			boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
+			mobj_t *boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
 			boom->scale = player->mo->scale;
 			boom->angle = player->mo->angle;
 			P_SetTarget(&boom->target, player->mo);
+
+			if (skins[player->skin].flags & SF_OLDDEATH)
+			{
+				player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
+				player->mo->renderflags |= RF_DONTDRAW;
+			}
 		}
 
 		K_DestroyBumpers(player, player->bumper);

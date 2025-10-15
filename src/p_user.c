@@ -2562,7 +2562,8 @@ static void P_DeathThink(player_t *player)
 		if (player->mo)
 		{
 			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
-			player->mo->renderflags |= RF_DONTDRAW;
+			if (skins[player->skin].flags & SF_OLDDEATH)
+				player->mo->renderflags |= RF_DONTDRAW;
 		}
 	}
 	else
@@ -2922,14 +2923,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	/*if (player->playerstate == PST_DEAD)
+	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
 		if (thiscam->chase)
 			P_CalcChasePostImg(player, thiscam);
 
 		return true;
-	}*/
+	}
 
 	if ((player->pflags & PF_NOCONTEST)) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->karthud[khud_timeovercam] > 2*TICRATE ? 2 : 1);
