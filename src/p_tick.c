@@ -41,6 +41,7 @@
 #include "k_director.h"
 #include "acs/interface.h"
 #include "k_bot.h" // K_BotTicker
+#include "k_odds.h" // ItemBGone
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -925,8 +926,22 @@ void P_Ticker(boolean run)
 		if (indirectitemcooldown > 0)
 			indirectitemcooldown--;
 
-		if (hyubgone > 0)
-			hyubgone--;
+		for (i = 0; i < NUMKARTRESULTS; i++)
+		{
+			// hyubgone
+			if (K_GetBGone(i, false) > 0)
+			{
+				ItemBGone[i][GONER_CURRCOOLDOWN]--;
+			}
+		}
+
+		if (gametyperules & GTR_RACEODDS)
+		{
+			// Shield cooldowns
+			K_KartHandleShieldCooldown(KITEM_THUNDERSHIELD);
+			K_KartHandleShieldCooldown(KITEM_BUBBLESHIELD);
+			K_KartHandleShieldCooldown(KITEM_FLAMESHIELD);
+		}
 
 		K_BossInfoTicker();
 

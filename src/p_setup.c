@@ -103,6 +103,7 @@
 #include "k_terrain.h" // TRF_TRIPWIRE
 #include "k_brightmap.h"
 #include "k_director.h" // K_InitDirector
+#include "k_odds.h" // ItemBGone
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
@@ -8467,7 +8468,13 @@ static void P_InitGametype(void)
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
-	hyubgone = 0;
+
+	for (i = 0; i < NUMKARTRESULTS; i++)
+	{
+		// hyubgone
+		ItemBGone[i][GONER_CURRCOOLDOWN] = 0;
+	}
+
 	mapreset = 0;
 
 	thwompsactive = false;

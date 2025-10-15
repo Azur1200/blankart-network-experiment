@@ -36,6 +36,22 @@ extern "C" {
 
 extern consvar_t *KartItemCVars[NUMKARTRESULTS-1];
 
+// Goner; tracks how long an item should be "gone" for.
+// AKA a time-based cooldown so Hyudoro and whatever else piss off to prevent
+// spamming.
+
+typedef enum goner_sect_e {
+	GONER_BASECOOLDOWN = 0,
+	GONER_CURRCOOLDOWN = 1,
+} goner_sect_t;
+
+extern tic_t ItemBGone[NUMKARTRESULTS][2];
+
+void K_SetBGone(SINT8 item, tic_t time);
+void K_SetBGoneToBase(SINT8 item);
+tic_t K_GetBGone(SINT8 item, boolean base);
+void K_KartHandleShieldCooldown(SINT8 item);
+
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
 UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush);
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);

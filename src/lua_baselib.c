@@ -33,6 +33,7 @@
 #include "k_color.h"
 #include "k_hud.h"
 #include "k_waypoint.h"
+#include "k_odds.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -4110,8 +4111,46 @@ static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	hyubgone = c;
+	K_SetBGone(KITEM_HYUDORO, c);
 	return 0;
+}
+
+static int lib_kSetBGone(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	tic_t c = (tic_t)luaL_checkinteger(L, 2);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	K_SetBGone(item, c);
+	return 0;
+}
+
+static int lib_kSetBGoneToBase(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	K_SetBGoneToBase(item);
+	return 0;
+}
+
+static int lib_kGetBGone(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	boolean base = lua_isnoneornil(L, 2) ? false : luaL_checkboolean(L, 2);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	lua_pushinteger(L, K_GetBGone(item, base));
+	return 1;
 }
 
 // Checks if the floor closet floor under an object would be safe to respawn/land on.
@@ -5302,6 +5341,9 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+	{"K_SetBGone", lib_kSetBGone},
+	{"K_SetBGoneToBase", lib_kSetBGoneToBase},
+	{"K_GetBGone", lib_kGetBGone},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},

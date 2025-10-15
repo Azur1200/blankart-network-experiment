@@ -46,6 +46,7 @@
 
 consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_forcerival = CVAR_INIT ("kartbot_forcerival", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 botdata_t botdata[MAXPLAYERS];
 
@@ -158,6 +159,12 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 	players[newplayernum].botvars.difficulty = difficulty;
 	players[newplayernum].botvars.style = style;
 	players[newplayernum].lives = 9;
+
+	// Does the server want to force rivals? enforce this here.
+	if (cv_forcerival.value)
+	{
+		players[newplayernum].botvars.rival = true;
+	}
 
 	// The bot may immediately become a spectator AT THE START of a GP.
 	// For each subsequent round of GP, K_UpdateGrandPrixBots will handle this.
@@ -279,6 +286,16 @@ void K_UpdateMatchRaceBots(void)
 
 					// Enforce normal style for Match Race
 					players[i].botvars.style = BOT_STYLE_NORMAL;
+
+					// Does the server want to force rivals? enforce this here.
+					if (cv_forcerival.value)
+					{
+						players[i].botvars.rival = true;
+					}
+					else
+					{
+						players[i].botvars.rival = false;
+					}
 				}
 				else
 				{
