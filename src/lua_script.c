@@ -27,6 +27,7 @@
 #include "p_slopes.h" // for P_SlopeById and slopelist
 #include "p_polyobj.h" // polyobj_t, PolyObjects
 #include "k_battle.h"
+#include "k_odds.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif
@@ -416,7 +417,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, invintype);
 		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
-		lua_pushinteger(L, hyubgone);
+		lua_pushinteger(L, K_GetBGone(KITEM_HYUDORO, false));
 		return 1;
 	} else if (fastcmp(word,"encoremode")) {
 		lua_pushboolean(L, encoremode);
@@ -559,7 +560,9 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 	else if (fastcmp(word,"indirectitemcooldown"))
 		indirectitemcooldown = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"hyubgone"))
-		hyubgone = (tic_t)luaL_checkinteger(L, 2);
+	{	
+		K_SetBGone(KITEM_HYUDORO, (tic_t)luaL_checkinteger(L, 2));
+	}
 	else if (fastcmp(word,"starttime"))
 		starttime = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"introtime"))
