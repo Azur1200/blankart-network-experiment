@@ -12794,11 +12794,11 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	{
 		return true; // These are handled elsewhere.
 	}
-	else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
-	{
-		CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
-		return true;
-	}
+	// else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
+	// {
+	// 	CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
+	// 	return true;
+	// }
 
 	return false;
 }
