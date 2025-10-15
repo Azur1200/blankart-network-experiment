@@ -935,6 +935,14 @@ void P_Ticker(boolean run)
 			}
 		}
 
+		if (gametyperules & GTR_RACEODDS)
+		{
+			// Shield cooldowns
+			K_KartHandleShieldCooldown(KITEM_THUNDERSHIELD);
+			K_KartHandleShieldCooldown(KITEM_BUBBLESHIELD);
+			K_KartHandleShieldCooldown(KITEM_FLAMESHIELD);
+		}
+
 		K_BossInfoTicker();
 
 		if (gametyperules & GTR_WANTED)

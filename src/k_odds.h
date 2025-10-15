@@ -50,6 +50,7 @@ extern tic_t ItemBGone[NUMKARTRESULTS][2];
 void K_SetBGone(SINT8 item, tic_t time);
 void K_SetBGoneToBase(SINT8 item);
 tic_t K_GetBGone(SINT8 item, boolean base);
+void K_KartHandleShieldCooldown(SINT8 item);
 
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
 UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush);

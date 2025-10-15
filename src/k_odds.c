@@ -168,16 +168,16 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 0,    0 }, // Mine
 	{ 10,   0 }, // Ballhog
 	{ 20,   0 }, // Self-Propelled Bomb
-	{ 10,   0 }, // Grow
+	{ 3,    0 }, // Grow
 	{ 20,   0 }, // Shrink
 	{ 0,    0 }, // Thunder Shield
-	{ 0,    0 }, // Hyudoro
+	{ 20,   0 }, // Hyudoro
 	{ 0,    0 }, // Pogo Spring
 	{ 0,    0 }, // Kitchen Sink
 	{ 0,    0 }, // Super Ring
 	{ 0,    0 }, // Land Mine
 	{ 5,    0 }, // Bubble Shield
-	{ 10,   0 }, // Flame Shield
+	{ 8,    0 }, // Flame Shield
 	{ 0,    0 }, // Sneaker x2
 	{ 0,    0 }, // Sneaker x3
 	{ 0,    0 }, // Banana x3
@@ -485,6 +485,69 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 	}
 
 	return min(MAXINVODDS, finodds);
+}
+
+#ifdef PARANOIA
+static const char* K_GetShieldName(kartshields_t s) 
+{
+	switch (s) 
+	{
+	case KSHIELD_THUNDER:	
+		return "KSHIELD_THUNDER";
+		break;
+	case KSHIELD_BUBBLE:
+		return "KSHIELD_BUBBLE";
+		break;
+	case KSHIELD_FLAME:
+		return "KSHIELD_FLAME";
+		break;
+	case KSHIELD_NONE:
+	default:
+		return "KSHIELD_NONE";
+		break;
+	}
+}
+#endif
+
+// Assigns general cooldowns to shield items.
+void K_KartHandleShieldCooldown(SINT8 item)
+{
+	INT32 i;
+
+	UINT8 pingame = 0, pexiting = 0;
+
+	INT32 shieldtype = KSHIELD_NONE;
+	shieldtype = K_GetShieldFromItem(item);
+
+	if (shieldtype == KSHIELD_NONE)
+	{
+		// Not a shield!
+		return;
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+		if (players[i].exiting)
+			pexiting++;
+
+		if (((shieldtype == K_GetShieldFromItem(players[i].itemtype))
+		    || (shieldtype == K_GetShieldFromPlayer(&players[i]))))
+		{
+			// If this shield has a cooldown, force-apply the cooldown preeemptively for
+			// the entire time the shield is being held by a player.
+			if (K_GetBGone(item, true) > 0)
+			{
+				K_SetBGoneToBase(item);
+				break;
+			}
+		}
+	}
 }
 
 /**	\brief	Item Roulette for Kart
