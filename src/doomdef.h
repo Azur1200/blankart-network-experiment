@@ -103,7 +103,7 @@ extern "C" {
 
 // Special Hashing.
 //#define NOFILEHASH
-//#define NOVERIFYIWADS
+#define NOVERIFYIWADS
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -201,7 +201,7 @@ extern char logfilename[1024];
 // The maximum number of players, multiplayer/networking.
 // NOTE: it needs more than this to increase the number of players...
 
-#define MAXPLAYERS 42
+#define MAXPLAYERS 43	// 42 + host slot
 #define PLAYERSMASK (MAXPLAYERS-1)
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
@@ -219,7 +219,7 @@ extern char logfilename[1024];
 #define ENCOREFADECOLOR 209 // 122
 
 // Master Server compatibility ONLY
-#define MSCOMPAT_MAXPLAYERS (32)
+#define MSCOMPAT_MAXPLAYERS (42)
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
