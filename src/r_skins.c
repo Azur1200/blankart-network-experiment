@@ -829,6 +829,12 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 				continue;
 			}
 
+			if (pos > SKINNAMESIZE)
+			{
+				CONS_Alert(CONS_ERROR, "Rival names for skin %s are too long.\n", skin->name);
+				break;
+			}
+
 			rivalname[pos] = value[i];
 			pos++;
 		}
