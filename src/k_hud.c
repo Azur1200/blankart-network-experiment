@@ -149,7 +149,7 @@ static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
 static patch_t *kp_kartzspeedo_smol[25];
 
-static patch_t *kp_driftgauge[13];
+static patch_t *kp_driftgauge[14];
 static patch_t *kp_driftgaugeparts[5];
 
 static patch_t *kp_flamometer[4];
