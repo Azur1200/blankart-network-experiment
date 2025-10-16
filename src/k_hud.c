@@ -272,6 +272,9 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_draftindicator);
 }
 
+// YOUR       TOO TOO (try limit for NULL HUD patches)
+#define YOURTAKINGTOOLONG 64
+
 void K_LoadKartHUDGraphics(void)
 {
 	INT32 i, j;
@@ -389,11 +392,29 @@ void K_LoadKartHUDGraphics(void)
 		}
 		else
 		{
-#ifdef PARANOIA
-			I_Error("Game recieved NULL highlight! (i = %d)\n", i);
-#else
-			CONS_Alert(CONS_ERROR, M_GetText("Game recieved NULL highlight! (i = %d)\n"), i);
-#endif
+			CONS_Printf("Patch %s is NULL! Attempting to resolve this issue...", buffer);
+			UINT8 tries = 0;
+			while ((!highlight) || (highlight == NULL))
+			{
+				tries++;
+
+				HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
+
+				highlight = kp_facehighlight[i];
+
+				if ((highlight) && (highlight != NULL))
+				{
+					highlight->pivot.x = highlight->width / 2;
+					highlight->pivot.y = highlight->height / 2;
+					highlight->alignflags |= PATCHALIGN_USEPIVOTS;
+				}
+				else if (tries >= YOURTAKINGTOOLONG)
+				{
+					I_Error("Game failed to resolve NULL \"%s\" patch after %d tries (i = %d)\n", buffer, tries, i);
+					break;
+				}
+			}
+			CONS_Printf("Success: resolved patch issue in %d tries!", i);
 		}
 	}
 
