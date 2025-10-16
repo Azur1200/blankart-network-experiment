@@ -378,9 +378,23 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
 
-		kp_facehighlight[i]->pivot.x = kp_facehighlight[i]->width / 2;
-		kp_facehighlight[i]->pivot.y = kp_facehighlight[i]->height / 2;
-		kp_facehighlight[i]->alignflags |= PATCHALIGN_USEPIVOTS;
+		// Blind-reading the patch causes a SIGSEGV on some machines, so let's try a guard.
+		patch_t *highlight = kp_facehighlight[i];
+
+		if ((highlight) && (highlight != NULL))
+		{
+			highlight->pivot.x = highlight->width / 2;
+			highlight->pivot.y = highlight->height / 2;
+			highlight->alignflags |= PATCHALIGN_USEPIVOTS;
+		}
+		else
+		{
+#ifdef PARANOIA
+			I_Error("Game recieved NULL highlight! (i = %d)\n", i);
+#else
+			CONS_Alert(CONS_ERROR, M_GetText("Game recieved NULL highlight! (i = %d)\n"), i);
+#endif
+		}
 	}
 
 	// Special minimap icons
