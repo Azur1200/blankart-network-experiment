@@ -191,7 +191,7 @@ void K_RegisterKartStuff(void);
 
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
-boolean K_IsPlayerLosing(player_t *player);
+boolean K_IsPlayerLosing(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
