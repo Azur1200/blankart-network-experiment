@@ -267,7 +267,7 @@ INT32 R_PointOnSideUDMF(fixed_t x, fixed_t y, const node_t *node)
 	fixed_t dy = (y >> 1) - (node->y >> 1);
 
 	// Try to quickly decide by looking at sign bits.
-	INT32 mask = (node->dy ^ node->dx ^ dx ^ dy) >> 31;
+	INT32 mask = (((node->dy ^ node->dx ^ dx ^ dy) < 0) ? -1 : 0);
 	return (mask & ((node->dy ^ dx) < 0)) |  // (left is negative)
 		   (~mask & (FixedMul(dy, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, dx)));
 }
@@ -285,7 +285,7 @@ INT32 R_PointOnSideKart(fixed_t x, fixed_t y, const node_t *node)
 
 	// Try to quickly decide by looking at sign bits.
 	// also use a mask to avoid branch prediction
-	INT32 mask = (node->dy ^ node->dx ^ x ^ y) >> 31;
+	INT32 mask = (((node->dy ^ node->dx ^ x ^ y) < 0) ? -1 : 0);
 	return (mask & ((node->dy ^ x) < 0)) |  // (left is negative)
 		   (~mask & (FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x)));
 }

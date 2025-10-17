@@ -91,6 +91,8 @@ static patch_t *dsbuildings[NUMDSBUILDINGS];
 std::chrono::high_resolution_clock timer;
 std::chrono::high_resolution_clock::time_point start, curr;
 
+#define FULLCREDITSBGCOLOR (254)
+
 #define CREDSKINCOUNT (MAXPLAYERS + DSUNIQUEPLAYERS)
 
 #define MAXMISCOBJS (MAXDSOBJECTS - CREDSKINCOUNT)
@@ -1382,7 +1384,7 @@ void F_SecretCreditsDrawer(void)
 
     if ((dscredits.creditsscene > 2) && (dscredits.creditsscene < 19))
     {
-        bgcolor = 198;
+        bgcolor = FULLCREDITSBGCOLOR;
     }
 
     V_DrawFill(-vidxdiff - 2, -vidydiff - 2, w + 2, h + 2, bgcolor);

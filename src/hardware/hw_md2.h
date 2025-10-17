@@ -21,10 +21,6 @@
 extern "C" {
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 typedef struct
 {
 	char        filename[32];

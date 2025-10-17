@@ -149,7 +149,7 @@ static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
 static patch_t *kp_kartzspeedo_smol[25];
 
-static patch_t *kp_driftgauge[13];
+static patch_t *kp_driftgauge[14];
 static patch_t *kp_driftgaugeparts[5];
 
 static patch_t *kp_flamometer[4];
@@ -272,6 +272,9 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_draftindicator);
 }
 
+// YOUR       TOO TOO (try limit for NULL HUD patches)
+#define YOURTAKINGTOOLONG 64
+
 void K_LoadKartHUDGraphics(void)
 {
 	INT32 i, j;
@@ -378,9 +381,41 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
 
-		kp_facehighlight[i]->pivot.x = kp_facehighlight[i]->width / 2;
-		kp_facehighlight[i]->pivot.y = kp_facehighlight[i]->height / 2;
-		kp_facehighlight[i]->alignflags |= PATCHALIGN_USEPIVOTS;
+		// Blind-reading the patch causes a SIGSEGV on some machines, so let's try a guard.
+		patch_t *highlight = kp_facehighlight[i];
+
+		if ((highlight) && (highlight != NULL))
+		{
+			highlight->pivot.x = highlight->width / 2;
+			highlight->pivot.y = highlight->height / 2;
+			highlight->alignflags |= PATCHALIGN_USEPIVOTS;
+		}
+		else
+		{
+			CONS_Printf("Patch %s is NULL! Attempting to resolve this issue...", buffer);
+			UINT8 tries = 0;
+			while ((!highlight) || (highlight == NULL))
+			{
+				tries++;
+
+				HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
+
+				highlight = kp_facehighlight[i];
+
+				if ((highlight) && (highlight != NULL))
+				{
+					highlight->pivot.x = highlight->width / 2;
+					highlight->pivot.y = highlight->height / 2;
+					highlight->alignflags |= PATCHALIGN_USEPIVOTS;
+				}
+				else if (tries >= YOURTAKINGTOOLONG)
+				{
+					I_Error("Game failed to resolve NULL \"%s\" patch after %d tries (i = %d)\n", buffer, tries, i);
+					break;
+				}
+			}
+			CONS_Printf("Success: resolved patch issue in %d tries!", i);
+		}
 	}
 
 	// Special minimap icons
@@ -5066,7 +5101,7 @@ static void K_drawInput(void)
 			target = 0;
 		else // turning of multiple strengths!
 		{
-			target = ((abs(stplyr->cmd.turning) - 1)/125)+1;
+			target = ((abs(stplyr->cmd.turning) - 1)/200)+1; // was 125, do we need another toggle for this? Zzz...
 			if (target > 4)
 				target = 4;
 			if (stplyr->cmd.turning < 0)

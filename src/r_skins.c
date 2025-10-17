@@ -786,8 +786,62 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 {
 	boolean compat = wadfiles[skin->wadnum]->compatmode;
 
+	if (!stricmp(stoken, "rivals"))
+	{
+		size_t len = strlen(value);
+		size_t i;
+		char rivalname[SKINNAMESIZE+1] = {0};
+		UINT8 pos = 0;
+		UINT8 numrivals = 0;
+
+		// Can't use strtok, because the above function's already using it.
+		// Using it causes it to upset the saved pointer,
+		// corrupting the reading for the rest of the file.
+
+		// So instead we get to crawl through the value, character by character,
+		// and write it down as we go, until we hit a comma or the end of the string.
+		// Yaaay.
+
+		for (i = 0; i <= len; i++)
+		{
+			if (numrivals >= SKINRIVALS)
+			{
+				break;
+			}
+
+			if (value[i] == ',' || i == len)
+			{
+				if (pos == 0)
+					continue;
+
+				STRBUFCPY(skin->rivals[numrivals], rivalname);
+				strlwr(skin->rivals[numrivals]);
+				numrivals++;
+
+				if (i == len)
+					break;
+
+				for (; pos > 0; pos--)
+				{
+					rivalname[pos] = '\0';
+				}
+
+				continue;
+			}
+
+			if (pos > SKINNAMESIZE)
+			{
+				CONS_Alert(CONS_ERROR, "Rival names for skin %s are too long.\n", skin->name);
+				break;
+			}
+
+			rivalname[pos] = value[i];
+			pos++;
+		}
+	}
+
 	// custom translation table
-	if (!stricmp(stoken, "startcolor"))
+	else if (!stricmp(stoken, "startcolor"))
 		skin->starttranscolor = compat ? R_GetPaletteRemap(atoi(value)) : atoi(value);
 
 #define FULLPROCESS(field) else if (!stricmp(stoken, #field)) skin->field = get_number(value);
@@ -982,45 +1036,6 @@ void R_AddSkins(UINT16 wadnum)
 				realname = true;
 				STRBUFCPY(skin->realname, value);
 				SYMBOLCONVERT(skin->realname)
-			}
-			else if (!stricmp(stoken, "rivals"))
-			{
-				size_t len = strlen(value);
-				size_t i;
-				char rivalname[SKINNAMESIZE] = "";
-				UINT8 pos = 0;
-				UINT8 numrivals = 0;
-
-				// Can't use strtok, because this function's already using it.
-				// Using it causes it to upset the saved pointer,
-				// corrupting the reading for the rest of the file.
-
-				// So instead we get to crawl through the value, character by character,
-				// and write it down as we go, until we hit a comma or the end of the string.
-				// Yaaay.
-
-				for (i = 0; i <= len; i++)
-				{
-					if (numrivals >= SKINRIVALS)
-					{
-						break;
-					}
-
-					if (value[i] == ',' || i == len)
-					{
-						STRBUFCPY(skin->rivals[numrivals], rivalname);
-						strlwr(skin->rivals[numrivals]);
-						numrivals++;
-
-						memset(rivalname, 0, sizeof (rivalname));
-						pos = 0;
-
-						continue;
-					}
-
-					rivalname[pos] = value[i];
-					pos++;
-				}
 			}
 			else if (!R_ProcessPatchableFields(skin, stoken, value))
 				CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);

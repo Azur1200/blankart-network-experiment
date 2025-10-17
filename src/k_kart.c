@@ -415,7 +415,7 @@ void K_RegisterKartStuff(void)
 
 //}
 
-boolean K_IsPlayerLosing(player_t *player)
+boolean K_IsPlayerLosing(const player_t *player)
 {
 	INT32 winningpos = 1;
 	UINT8 i, pcount = 0;

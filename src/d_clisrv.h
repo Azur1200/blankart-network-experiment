@@ -143,10 +143,6 @@ void Command_Droprate(void);
 void Command_Numnodes(void);
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // Client to server packet
 struct clientcmd_pak
 {
@@ -185,10 +181,6 @@ struct client4cmd_pak
 	INT16 consistancy;
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // Server to client packet
 // this packet is too large
@@ -251,10 +243,6 @@ struct fileack_pak
 	UINT8 numsegments;
 	fileacksegment_t segments[];
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
 
 #define MAXAPPLICATION 16
 
@@ -411,10 +399,6 @@ struct doomdata_t
 		netinfo_pak netinfo;
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #define MAXSERVERLIST (MAXNETNODES-1)
 struct serverelem_t
