@@ -919,6 +919,14 @@ static void K_UpdateOffroad(player_t *player)
 
 			offroad = offroadstrength / (TICRATE/2);
 
+			if (player->flamestore)
+			{
+				// flame shield doesn't resist offroad, but slows its effect
+				// it doesn't suffer the offroad speedboost cut; increase offroadstrength to compensate
+				offroad = 2*offroad/3;
+				offroadstrength *= 2;
+			}
+
 			player->offroad += offroad;
 		}
 
@@ -2319,8 +2327,8 @@ void K_SpawnWaterTrail(mobj_t *mobj)
 
 static fixed_t K_FlameShieldDashVar(INT32 val)
 {
-	// 1 second = 15% + ????% top speed
-	return (FRACUNIT/6) + (((val * (FRACUNIT)) / TICRATE) / 2);
+	// 1 second = base% + ~16.8% top speed
+	return FixedMul(val * 500, FixedDiv(FRACUNIT, FRACUNIT + val*FRACUNIT/60));
 }
 
 static inline fixed_t K_GetProjectileSpeed(void)
@@ -2652,14 +2660,7 @@ static void K_GetKartBoostPower(player_t *player)
 	if (player->flamestore) // Flame Shield dash
 	{
 		fixed_t dash = K_FlameShieldDashVar(player->flamedash);
-		fixed_t intermediate = 0;
-		fixed_t boost = 0;
-		fixed_t val = FLAMESPEEDVAL; // Rim idea: diminish starts around 1.2x sneaker speed and plateaus around 1.4-1.5x
-
-		intermediate = FixedDiv(FixedMul(val, FRACUNIT*-1/2) - FRACUNIT/4,-val+FRACUNIT/2);
-		boost = FixedMul(val,(FRACUNIT-FixedDiv(FRACUNIT,(dash+intermediate))));
-
-		K_DoBoost(player, boost, FLAMEACCELBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
+		K_DoBoost(player, FLAMESPEEDVAL + dash, FLAMEACCELBOOST, FLAMESTACKABLE, FLAMESTACKABLE);
 	}
 
 	if (player->startboost) // Startup Boost
@@ -2730,7 +2731,7 @@ static void K_GetKartBoostPower(player_t *player)
 	// value smoothing
 	if (K_StackingActive())
 	{
-		if (player->offroad && K_ApplyOffroad(player))
+		if (player->offroad && K_ApplyOffroad(player) && !player->flamestore)
 		{
 			player->speedboost = max(finalspeedboost, player->speedboost)/2;
 			player->accelboost = max(finalaccelboost, player->accelboost)/2;
