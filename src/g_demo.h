@@ -91,7 +91,7 @@ typedef enum {
 } menudemotype_e;
 
 struct menudemo_t {
-	char filepath[256];
+	char filepath[1024];
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
