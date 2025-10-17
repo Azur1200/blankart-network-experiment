@@ -49,7 +49,7 @@
 
 savedata_t savedata;
 
-UINT8 P_SyncUINT8(savebuffer_t *save, UINT8 v)
+static UINT8 P_SyncUINT8(savebuffer_t *save, UINT8 v)
 {
 	if (save->write)
 	{
@@ -60,7 +60,7 @@ UINT8 P_SyncUINT8(savebuffer_t *save, UINT8 v)
 		return READUINT8(save->p);
 }
 
-SINT8 P_SyncSINT8(savebuffer_t *save, SINT8 v)
+static SINT8 P_SyncSINT8(savebuffer_t *save, SINT8 v)
 {
 	if (save->write)
 	{
@@ -71,7 +71,7 @@ SINT8 P_SyncSINT8(savebuffer_t *save, SINT8 v)
 		return READSINT8(save->p);
 }
 
-UINT16 P_SyncUINT16(savebuffer_t *save, UINT16 v)
+static UINT16 P_SyncUINT16(savebuffer_t *save, UINT16 v)
 {
 	if (save->write)
 	{
@@ -82,7 +82,7 @@ UINT16 P_SyncUINT16(savebuffer_t *save, UINT16 v)
 		return READUINT16(save->p);
 }
 
-INT16 P_SyncINT16(savebuffer_t *save, INT16 v)
+static INT16 P_SyncINT16(savebuffer_t *save, INT16 v)
 {
 	if (save->write)
 	{
@@ -93,7 +93,7 @@ INT16 P_SyncINT16(savebuffer_t *save, INT16 v)
 		return READINT16(save->p);
 }
 
-UINT32 P_SyncUINT32(savebuffer_t *save, UINT32 v)
+static UINT32 P_SyncUINT32(savebuffer_t *save, UINT32 v)
 {
 	if (save->write)
 	{
@@ -104,7 +104,7 @@ UINT32 P_SyncUINT32(savebuffer_t *save, UINT32 v)
 		return READUINT32(save->p);
 }
 
-INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
+static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 {
 	if (save->write)
 	{
@@ -115,7 +115,7 @@ INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
-char P_SyncChar(savebuffer_t *save, char v)
+static char P_SyncChar(savebuffer_t *save, char v)
 {
 	if (save->write)
 	{
@@ -126,7 +126,7 @@ char P_SyncChar(savebuffer_t *save, char v)
 		return READCHAR(save->p);
 }
 
-fixed_t P_SyncFixed(savebuffer_t *save, fixed_t v)
+static fixed_t P_SyncFixed(savebuffer_t *save, fixed_t v)
 {
 	if (save->write)
 	{
@@ -137,7 +137,7 @@ fixed_t P_SyncFixed(savebuffer_t *save, fixed_t v)
 		return READFIXED(save->p);
 }
 
-angle_t P_SyncAngle(savebuffer_t *save, angle_t v)
+static angle_t P_SyncAngle(savebuffer_t *save, angle_t v)
 {
 	if (save->write)
 	{
@@ -148,7 +148,7 @@ angle_t P_SyncAngle(savebuffer_t *save, angle_t v)
 		return READANGLE(save->p);
 }
 
-void P_SyncStringN(savebuffer_t *save, char *s, size_t n)
+static void P_SyncStringN(savebuffer_t *save, char *s, size_t n)
 {
 	if (save->write)
 		WRITESTRINGN(save->p, s, n);
@@ -156,7 +156,7 @@ void P_SyncStringN(savebuffer_t *save, char *s, size_t n)
 		READSTRINGN(save->p, s, n);
 }
 
-void P_SyncStringL(savebuffer_t *save, char *s, size_t n)
+static void P_SyncStringL(savebuffer_t *save, char *s, size_t n)
 {
 	if (save->write)
 		WRITESTRINGL(save->p, s, n);
@@ -164,7 +164,7 @@ void P_SyncStringL(savebuffer_t *save, char *s, size_t n)
 		READSTRINGL(save->p, s, n);
 }
 
-void P_SyncString(savebuffer_t *save, char *s)
+static void P_SyncString(savebuffer_t *save, char *s)
 {
 	if (save->write)
 		WRITESTRING(save->p, s);
@@ -172,7 +172,7 @@ void P_SyncString(savebuffer_t *save, char *s)
 		READSTRING(save->p, s);
 }
 
-void P_SyncMem(savebuffer_t *save, void *s, size_t n)
+static void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 {
 	if (save->write)
 		WRITEMEM(save->p, s, n);
@@ -180,7 +180,7 @@ void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 		READMEM(save->p, s, n);
 }
 
-mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
+static mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
 {
 	if (save->write)
 	{
@@ -191,7 +191,7 @@ mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
 		return (mobj_t *)(uintptr_t)READUINT32(save->p);
 }
 
-mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
+static mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
 {
 	if (save->write)
 	{
@@ -205,7 +205,7 @@ mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
 	}
 }
 
-waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
+static waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 {
 	if (save->write)
 	{
