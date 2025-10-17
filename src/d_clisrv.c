@@ -4495,7 +4495,7 @@ static void HandlePlayerInfo(SINT8 node)
 {
 	(void)node;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	for (INT32 i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
 	{
 		playerinfo[i] = netbuffer->u.playerinfo[i];
 	}

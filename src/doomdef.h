@@ -207,7 +207,7 @@ extern char logfilename[1024];
 #define ENCOREFADECOLOR 209 // 122
 
 // Master Server compatibility ONLY
-#define MSCOMPAT_MAXPLAYERS (42)
+#define MSCOMPAT_MAXPLAYERS (32)
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
