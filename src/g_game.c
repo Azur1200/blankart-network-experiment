@@ -342,6 +342,21 @@ typedef struct joystickvector2_s
 	INT32 yaxis;
 } joystickvector2_t;
 
+consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("litesteer",  "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer2", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer3", "Off", CV_SAVE, CV_OnOff, NULL),
+	CVAR_INIT ("litesteer4", "Off", CV_SAVE, CV_OnOff, NULL)
+};
+
+static CV_PossibleValue_t turnsmooth_cons_t[] = {{2, "Slow"}, {1, "Fast"}, {0, "Off"}, {0, NULL}};
+consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("turnsmoothing",  "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing2", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing3", "Off", CV_SAVE, turnsmooth_cons_t, NULL),
+	CVAR_INIT ("turnsmoothing4", "Off", CV_SAVE, turnsmooth_cons_t, NULL)
+};
+
 INT16 prevmap, nextmap;
 
 INT16 kartmap2native[NEXTMAP_SPECIAL] = {0}, nativemap2kart[NEXTMAP_SPECIAL] = {0};
@@ -1152,14 +1167,14 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	{
 		turnheld[forplayer] += realtics;
 
-		if (turnheld[forplayer] < cv_turnsmooth.value * 3)
+		if (turnheld[forplayer] < cv_turnsmooth[forplayer].value * 3)
 		{
 			// check turn input again, but this time digital only
 			// if it's false, an analog stick is inputting the turn; no smoothing!
 			if (G_PlayerInputDown(forplayer, gc_turnleft, true) || G_PlayerInputDown(forplayer, gc_turnright, true))
 			{
-				I_Assert(cv_turnsmooth.value);
-				tspeed /= cv_turnsmooth.value * 2;
+				I_Assert(cv_turnsmooth[forplayer].value);
+				tspeed /= cv_turnsmooth[forplayer].value * 2;
 			}
 		}
 	}
@@ -1181,6 +1196,19 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		INT32 mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
 		cmd->turning -= (mousex * 8) * (encoremode ? -1 : 1);
 		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
+	}
+
+	// Digital users can input diagonal-back for shallow turns.
+	//
+	// There's probably some principled way of doing this in the gamepad handler itself,
+	// by only applying this filtering to inputs sourced from an axis. This is a little
+	// ugly with the current abstractions, though, and there's a fortunate trick here:
+	// if you can input full strength turns on both axes, either you're using a fucking
+	// square gate, or you're not on an analog device.
+	if (cv_litesteer[forplayer].value && joystickvector.yaxis >= JOYAXISRANGE && abs(cmd->angle) == KART_FULLTURN)
+	{
+		// >= beacuse some analog devices can go past JOYAXISRANGE (?!)
+		cmd->angle /= 2;
 	}
 
 	if (spectating || objectplacing) // SRB2Kart: spectators need special controls

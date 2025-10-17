@@ -1259,6 +1259,8 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_shrinkme[i]);
 		CV_RegisterVar(&cv_deadzone[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
+		CV_RegisterVar(&cv_litesteer[i]);
+		CV_RegisterVar(&cv_turnsmooth[i]);
 	}
 
 	// filesrch.c
@@ -1270,7 +1272,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_addons_search_case);
 
 	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
