@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include "doomtype.h"
+#include "doomdef.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,6 +152,11 @@ char *zva(INT32 tag, void *user, const char *format,  ...);
 FUNCINLINE static ATTRINLINE void Z_Pfree(void *p)
 {
 	Z_Free(*(void **)p);
+}
+
+FUNCINLINE static ATTRINLINE void pfree(void *p)
+{
+	free(*(void **)p);
 }
 
 #ifdef __cplusplus

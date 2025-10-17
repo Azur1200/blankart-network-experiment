@@ -2719,7 +2719,6 @@ void G_RecordDemo(const char *name)
 	INT32 maxsize;
 
 	strcpy(demoname, name);
-	strcat(demoname, ".lmp");
 	maxsize = 1024 * 1024 * cv_netdemosize.value;
 
 	P_SaveBufferAlloc(&demobuf, maxsize);

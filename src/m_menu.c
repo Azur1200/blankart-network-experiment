@@ -652,37 +652,6 @@ if (cv.value >= num) \
   strcat(new_str, str); \
 }
 
-char *M_AppendGametypeAndModName(void)
-{
-	UINT8 len = 4;
-	char *new_str;
-
-	new_str = Z_Malloc(4, PU_STATIC, NULL);
-
-	if ((!Playing() && (levellistmode == LLM_ITEMBREAKER)) || (modeattacking & ATTACKING_ITEMBREAK))
-	{
-		strcpy(new_str, "IB-");
-	}
-	else
-	{
-		strcpy(new_str, "RA-");
-	}
-
-	ADD(cv_dummyattackingrings, "RN-")
-	ADD(cv_dummyattackingstacking, "ST-")
-	ADD(cv_dummyattackingchaining, "CH-")
-	ADD(cv_dummyattackingslipdash, "SD-")
-	ADD(cv_dummyattackingpurpledrift, "PD-")
-	ADD(cv_dummyattackingslopeboost, "SB-")
-	ADD(cv_dummyattackingairdrop, "AD-")
-	ADDEQUALS(cv_dummyattackingbumpspark, "BD-", BUMPSPARK_NOCHARGE)
-	ADDGE(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_RESET100)
-
-	new_str[len-1] = '\0';
-
-	return new_str;
-}
-
 // Nextmap.  Used for Time Attack.
 void Nextmap_OnChange(void)
 {
@@ -722,35 +691,34 @@ void Nextmap_OnChange(void)
 	if (menustack[0] == MN_SP_TIMEATTACK || menustack[0] == MN_SP_MODS || menustack[0] == MN_SP_PRES)
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
-		char *gamemode = M_AppendGametypeAndModName();
-		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+		CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 
 		boolean visible;
 		boolean showreplay = false, showguest = false;
 
 		// best time
-		visible = FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_TIMEBEST);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// best lap
-		visible = levellistmode != LLM_ITEMBREAKER && FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAPBEST);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// last
-		visible = FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAST);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// guest
-		visible = FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);;
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYGUEST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "DELETE", visible);
 		M_SetItemVisible(MN_SP_GHOST, "GUEST", visible);
@@ -771,9 +739,6 @@ void Nextmap_OnChange(void)
 
 		M_SetItemVisible(MN_SP_TIMEATTACK, "REPLAY", showreplay);
 		M_SetItemVisible(MN_SP_TIMEATTACK, "GUEST", showguest);
-
-		free(gpath);
-		Z_Free(gamemode);
 	}
 }
 
@@ -5825,32 +5790,22 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 // Player has selected the "START" from the time attack screen
 INT32 MR_ChooseTimeAttack(INT32 choice)
 {
-	char *gpath;
-	char *gamemode = M_AppendGametypeAndModName();
-	char nameofdemo[256];
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAST);
+
 	(void)choice;
 	emeralds = 0;
 	M_ClearMenus(true);
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
-
-	gpath = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s",
-			   srb2home, timeattackfolder);
-	M_MkdirEach(gpath, M_PathParts(gpath) - 3, 0755);
-
-	strcat(gpath, PATHSEP);
-	strcat(gpath, G_BuildMapName(cv_nextmap.value));
-
-	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-%s-last", gpath, cv_skin[0].string, gamemode);
-
-	Z_Free(gamemode);
+	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
 
 	if (!cv_autorecord.value)
-		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
+		remove(demopath);
 	else
-		G_RecordDemo(nameofdemo);
+		G_RecordDemo(demopath);
 
 	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
-	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value), 0, false);
+	G_DeferedInitNew(false, cv_nextmap.value, cv_chooseskin.value, 0, false);
 	return true;
 }
 
@@ -5886,36 +5841,19 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 // Player has selected the "REPLAY" from the time attack screen
 INT32 MR_ReplayTimeAttack(INT32 arg)
 {
-	const char *which;
-	char *gamemode = M_AppendGametypeAndModName();
+	if (arg < 0 || arg >= TA__MAX)
+		return false;
 
-	switch(arg) {
-	default:
-	case 0: // best time
-		which = "time-best";
-		break;
-	case 1: // best lap
-		which = "lap-best";
-		break;
-	case 2: // last
-		which = "last";
-		break;
-	case 3: // guest
-		// srb2/replay/main/map01-guest.lmp
-		COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
-		Z_Free(gamemode);
-		return true;
-	}
-	// srb2/replay/main/map01-sonic-time-best.lmp
-	COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
-	Z_Free(gamemode);
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
+	COM_BufAddText(va("playdemo %s -force", demopath));
 	return true;
 }
 
 static void M_EraseGuest(INT32 choice)
 {
-	char *gamemode = M_AppendGametypeAndModName();
-	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode);
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);
 	(void)choice;
 	if (FIL_FileExists(rguest))
 		remove(rguest);
@@ -5923,16 +5861,15 @@ static void M_EraseGuest(INT32 choice)
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
-	Z_Free(gamemode);
 }
 
-static void M_OverwriteGuest(const char *which)
+static void M_OverwriteGuest(timeattackreplay_e which)
 {
-	char *gamemode = M_AppendGametypeAndModName();
-	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);
+	CLEANUP(pfree) char *overwrite = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, which);
 	UINT8 *buf;
-	size_t len;
-	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode,which), &buf);
+	size_t len = FIL_ReadFile(overwrite, &buf);
 	if (!len) {
 		return;
 	}
@@ -5941,30 +5878,28 @@ static void M_OverwriteGuest(const char *which)
 		remove(rguest);
 	}
 	FIL_WriteFile(rguest, buf, len);
-	Z_Free(rguest);
 	M_ExitMenu();
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
-	Z_Free(gamemode);
 }
 
 static void M_OverwriteGuest_Time(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("time-best");
+	M_OverwriteGuest(TA_TIMEBEST);
 }
 
 static void M_OverwriteGuest_Lap(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("lap-best");
+	M_OverwriteGuest(TA_LAPBEST);
 }
 
 static void M_OverwriteGuest_Last(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("last");
+	M_OverwriteGuest(TA_LAST);
 }
 
 INT32 MR_SetGuestReplay(INT32 arg)
@@ -5986,7 +5921,8 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), M_EraseGuest, MM_YESNO);
 		return true;
 	}
-	if (FIL_FileExists(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value))))
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST))
 		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
 	else
 		which(0);

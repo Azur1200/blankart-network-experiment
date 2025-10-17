@@ -8247,61 +8247,39 @@ static void P_ResetSpawnpoints(void)
 		skyboxviewpnts[i] = skyboxcenterpnts[i] = NULL;
 }
 
+static void P_TryAddGhosts(const char *gpath, boolean all, timeattackreplay_e which)
+{
+	for (INT32 i = 0; i < numskins; i++)
+	{
+		if (!all && players[consoleplayer].skin != i)
+			continue;
+
+		CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, gamemap, i, which);
+		if (FIL_FileExists(demopath))
+			G_AddGhost(demopath);
+	}
+}
+
 static void P_LoadRecordGhosts(void)
 {
-
 	// see also m_menu.c's Nextmap_OnChange
-	char *gpath;
-	INT32 i;
-	char *gamemode = M_AppendGametypeAndModName();
-
-	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_besttime.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_besttime.value != 1, TA_TIMEBEST);
 
 	// Best Lap ghost
-	if (modeattacking != ATTACKING_ITEMBREAK)
-	{
-		if (cv_ghost_bestlap.value)
-		{
-			for (i = 0; i < numskins; ++i)
-			{
-				if (cv_ghost_bestlap.value == 1 && players[consoleplayer].skin != i)
-					continue;
-
-				if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode)))
-					G_AddGhost(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode));
-			}
-		}
-	}
+	if (modeattacking != ATTACKING_ITEMBREAK && cv_ghost_bestlap.value)
+		P_TryAddGhosts(gpath, cv_ghost_bestlap.value != 1, TA_LAPBEST);
 
 	// Last ghost
 	if (cv_ghost_last.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_last.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_last.value != 1, TA_LAST);
 
 	// Guest ghost
-	if (cv_ghost_guest.value && FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
-		G_AddGhost(va("%s-guest.lmp", gpath));
+	if (cv_ghost_guest.value)
+		P_TryAddGhosts(gpath, false, TA_GUEST);
 
 	// Staff Attack ghosts
 	if (cv_ghost_staff.value)
@@ -8315,9 +8293,6 @@ static void P_LoadRecordGhosts(void)
 			j++;
 		}
 	}
-
-	free(gpath);
-	Z_Free(gamemode);
 }
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)
@@ -8466,7 +8441,7 @@ static void P_InitGametype(void)
 #else
 		strcpy(ver, VERSIONSTRING);
 #endif
-		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s",
+		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s.lmp",
 				srb2home, ver, (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		parts = M_PathParts(buf);

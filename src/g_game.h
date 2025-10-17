@@ -312,6 +312,15 @@ typedef struct
 	maprecordpreset_t *presets;
 } maprecord_t;
 
+typedef enum
+{
+	TA_TIMEBEST,
+	TA_LAPBEST,
+	TA_LAST,
+	TA_GUEST,
+	TA__MAX,
+} timeattackreplay_e;
+
 extern maprecord_t **maprecords;
 extern size_t nummaprecords;
 
@@ -320,8 +329,11 @@ maprecord_t *G_GetMapRecord(const char *mapname);
 maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *presetname, UINT8 version);
 maprecordpreset_t *G_GetMapRecordPreset(maprecord_t *record, const char *presetname);
 void G_ClearRecords(void);
-boolean G_EmblemsEnabled(void);
 tic_t G_GetBestTime(INT16 map);
+boolean G_EmblemsEnabled(void);
+char *G_GetRecordReplayFolder(boolean home, boolean breaker);
+char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which);
+boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which);
 
 FUNCMATH INT32 G_TicsToHours(tic_t tics);
 FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);
