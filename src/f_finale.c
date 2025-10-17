@@ -445,7 +445,7 @@ void F_IntroTicker(void)
 			// Aiai: GHG
 			// Sakura: Anon
 			// Doomguy: Minenice
-			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doomguy"};
+			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doom"};
 			SINT8 random = M_RandomRange(0, 4);
 			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
