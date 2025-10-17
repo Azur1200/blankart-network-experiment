@@ -99,6 +99,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidheight = vid.height;
 	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
@@ -108,7 +109,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		return;
 	}
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
 	{
 		return;
 	}
@@ -349,6 +350,7 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidheight = vid.height;
 	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
@@ -357,7 +359,7 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 	if (count < 0)
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
 		return;
 
 	// Framebuffer destination address.
@@ -417,6 +419,7 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	INT32 count;
 	UINT8 color = dc->lightmap[dc->r8_flatcolor];
 	UINT8 *dest;
+	const INT32 vidheight = vid.height;
 	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
@@ -424,7 +427,7 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	if (count < 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
 		return;
 
 	// Framebuffer destination address.

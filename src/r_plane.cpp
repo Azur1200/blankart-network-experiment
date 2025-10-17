@@ -568,12 +568,14 @@ void R_ExpandPlane(visplane_t *pl, INT32 start, INT32 stop)
 static void R_MakeSpans(void (*mapfunc)(drawspandata_t* ds, void(*spanfunc)(drawspandata_t*), INT32, INT32, INT32, boolean), spandrawfunc_t* spanfunc, drawspandata_t* ds, INT32 x, INT32 t1, INT32 b1, INT32 t2, INT32 b2, boolean allow_parallel)
 {
 	ZoneScoped;
+	const INT32 vidheight = vid.height;
+	const INT32 vidwidth = vid.width;
 	//    Alam: from r_splats's R_RasterizeFloorSplat
-	if (t1 >= vid.height) t1 = vid.height-1;
-	if (b1 >= vid.height) b1 = vid.height-1;
-	if (t2 >= vid.height) t2 = vid.height-1;
-	if (b2 >= vid.height) b2 = vid.height-1;
-	if (x-1 >= vid.width) x  = vid.width;
+	if (t1 >= vidheight) t1 = vidheight-1;
+	if (b1 >= vidheight) b1 = vidheight-1;
+	if (t2 >= vidheight) t2 = vidheight-1;
+	if (b2 >= vidheight) b2 = vidheight-1;
+	if (x-1 >= vidwidth) x  = vidwidth;
 
 	// We want to draw N spans per subtask to ensure the work is
 	// coarse enough to not be too slow due to task scheduling overhead.
@@ -942,12 +944,13 @@ d.z = (v1.x * v2.y) - (v1.y * v2.x)
 
 void R_SetTiltedSpan(drawspandata_t* ds, INT32 span)
 {
+	const INT32 vidheight = vid.height;
 	if (ds_su == NULL)
-		ds_su = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_su) * vid.height, PU_STATIC, NULL));
+		ds_su = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_su) * vidheight, PU_STATIC, NULL));
 	if (ds_sv == NULL)
-		ds_sv = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sv) * vid.height, PU_STATIC, NULL));
+		ds_sv = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sv) * vidheight, PU_STATIC, NULL));
 	if (ds_sz == NULL)
-		ds_sz = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sz) * vid.height, PU_STATIC, NULL));
+		ds_sz = static_cast<floatv3_t*>(Z_Calloc(sizeof(*ds_sz) * vidheight, PU_STATIC, NULL));
 
 	ds->sup = ds_su[span];
 	ds->svp = ds_sv[span];
@@ -1000,6 +1003,7 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 	debugrender_highlight_t debug = debugrender_highlight_t::SW_HI_PLANES;
 	void (*mapfunc)(drawspandata_t*, void(*)(drawspandata_t*), INT32, INT32, INT32, boolean) = R_MapPlane;
 	INT16 highlight;
+	const INT32 vidwidth = vid.width;
 
 	if (!(pl->minx <= pl->maxx))
 		return;
@@ -1134,13 +1138,13 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 					}
 				}
 
-				offset = (scry*vid.width) + scrx;
+				offset = (scry*vidwidth) + scrx;
 
 				// No idea if this works
 				VID_BlitLinearScreen(screens[0] + offset,
-					screens[1] + (top*vid.width), // intentionally not +offset
+					screens[1] + (top*vidwidth), // intentionally not +offset
 					viewwidth, bottom-top,
-					vid.width, vid.width);
+					vidwidth, vidwidth);
 			}
 		}
 	}

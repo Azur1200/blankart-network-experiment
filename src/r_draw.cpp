@@ -533,6 +533,8 @@ void R_FillBackScreen(void)
 	UINT8 *src, *dest;
 	patch_t *patch;
 	INT32 x, y, step, boff;
+	const INT32 vidheight = vid.height;
+	const INT32 vidwidth = vid.width;
 
 	// quickfix, don't cache lumps in both modes
 	if (rendermode != render_soft)
@@ -540,29 +542,29 @@ void R_FillBackScreen(void)
 
 	// draw pattern around the status bar too (when hires),
 	// so return only when in full-screen without status bar.
-	if (scaledviewwidth == vid.width && viewheight == vid.height)
+	if (scaledviewwidth == vidwidth && viewheight == vidheight)
 		return;
 
 	src = scr_borderpatch;
 	dest = screens[1];
 
-	for (y = 0; y < vid.height; y++)
+	for (y = 0; y < vidheight; y++)
 	{
-		for (x = 0; x < vid.width/128; x++)
+		for (x = 0; x < vidwidth/128; x++)
 		{
 			M_Memcpy (dest, src+((y&127)<<7), 128);
 			dest += 128;
 		}
 
-		if (vid.width&127)
+		if (vidwidth&127)
 		{
-			M_Memcpy(dest, src+((y&127)<<7), vid.width&127);
-			dest += (vid.width&127);
+			M_Memcpy(dest, src+((y&127)<<7), vidwidth&127);
+			dest += (vidwidth&127);
 		}
 	}
 
-	// don't draw the borders when viewwidth is full vid.width.
-	if (scaledviewwidth == vid.width)
+	// don't draw the borders when viewwidth is full vidwidth.
+	if (scaledviewwidth == vidwidth)
 		return;
 
 	step = 8;
@@ -641,13 +643,13 @@ void R_DrawViewBorder(void)
 
 #ifdef DEBUG
 	fprintf(stderr,"RDVB: vidwidth %d vidheight %d scaledviewwidth %d viewheight %d\n",
-		vid.width, vid.height, scaledviewwidth, viewheight);
+		vid.width, vidheight, scaledviewwidth, viewheight);
 #endif
 
 	if (scaledviewwidth == vid.width)
 		return;
 
-	top = (vid.height - viewheight)>>1;
+	top = (vidheight - viewheight)>>1;
 	side = (vid.width - scaledviewwidth)>>1;
 
 	// copy top and one line of left side
