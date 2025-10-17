@@ -558,7 +558,7 @@ void Y_IntermissionDrawer(void)
 					}
 				}
 
-				if (data.num[i] == whiteplayer)
+				if (data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
 					patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
@@ -568,7 +568,16 @@ void Y_IntermissionDrawer(void)
 				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
 				{
 					// RETIRED!!
-					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchName("K_NOBLNS", PU_CACHE));
+					patch_t *retire = W_CachePatchName("K_NOBLNS", PU_CACHE);
+					if (manyplayers16)
+					{
+						fixed_t scale = FRACUNIT/2;
+						V_DrawFixedPatch(x+6, y-3, scale, 0, retire, NULL);
+					}
+					else
+					{
+						V_DrawScaledPatch(x+12, y-7, 0, retire);
+					}
 				}
 
 				STRBUFCPY(strtime, data.name[i]);
@@ -622,7 +631,7 @@ void Y_IntermissionDrawer(void)
 				else
 				{
 					if (data.val[i] == (UINT32_MAX-1))
-						V_DrawRightAlignedThinString(x+152+gutter, y-1, (data.numplayers > NUMFORNEWCOLUMN ? V_6WIDTHSPACE : 0), "NO CONTEST.");
+						V_DrawRightAlignedThinString(x+(manyplayers16 ? 100 : 152)+gutter, y-1, (manyplayers8 ? V_6WIDTHSPACE : 0), "NO CONTEST.");
 					else
 					{
 						if (intertype == int_race || intertype == int_battletime)
