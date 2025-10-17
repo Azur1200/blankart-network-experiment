@@ -85,6 +85,8 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
+I_StaticAssert(sizeof(doomdata_t) < MAXPACKETLENGTH); // can't send a packet larger than the max packet length!
+
 boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
@@ -93,7 +95,7 @@ INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
 UINT8 playerconsole[MAXPLAYERS];
-plrinfo playerinfo[MAXPLAYERS];
+plrinfo playerinfo[MAXPLAYERINFO];
 
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
@@ -1067,7 +1069,7 @@ static void SV_SendPlayerInfo(INT32 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_PLAYERINFO;
 
-	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
 		if (i >= MAXPLAYERS || playernode[i] == UINT8_MAX || !playeringame[i])
 		{
@@ -1080,10 +1082,6 @@ static void SV_SendPlayerInfo(INT32 node)
 		memcpy(netbuffer->u.playerinfo[i].name, player_names[i], sizeof(player_names[i]));
 
 		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
-
-		//fetch IP address
-		//No, don't do that, you fuckface.
-		memset(netbuffer->u.playerinfo[i].address, 0, 4);
 
 		if (G_GametypeHasTeams())
 		{
@@ -1108,7 +1106,7 @@ static void SV_SendPlayerInfo(INT32 node)
 		netbuffer->u.playerinfo[i].data = 0; //players[i].skincolor;
 	}
 
-	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
+	HSendPacket(node, false, 0, sizeof(plrinfo) * MAXPLAYERINFO);
 }
 
 /** Sends a PT_SERVERCFG packet
@@ -4495,7 +4493,7 @@ static void HandlePlayerInfo(SINT8 node)
 {
 	(void)node;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	for (INT32 i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
+	for (INT32 i = 0; i < MAXPLAYERINFO; i++)
 	{
 		playerinfo[i] = netbuffer->u.playerinfo[i];
 	}

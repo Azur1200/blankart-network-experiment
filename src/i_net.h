@@ -22,10 +22,10 @@
 
 /// \def MAXPACKETLENGTH
 /// For use in a LAN
-#define MAXPACKETLENGTH 2048
+#define MAXPACKETLENGTH 1450
 /// \def INETPACKETLENGTH
 ///  For use on the internet
-#define INETPACKETLENGTH 1450
+#define INETPACKETLENGTH 1024
 
 #define NO_BAN_TIME (time_t)(-1)
 

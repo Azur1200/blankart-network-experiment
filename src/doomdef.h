@@ -190,7 +190,6 @@ extern char logfilename[1024];
 // NOTE: it needs more than this to increase the number of players...
 
 #define MAXPLAYERS 43	// 42 + host slot
-#define PLAYERSMASK (MAXPLAYERS-1)
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
@@ -206,8 +205,8 @@ extern char logfilename[1024];
 #define FADECOLOR 0 // 120
 #define ENCOREFADECOLOR 209 // 122
 
-// Master Server compatibility ONLY
-#define MSCOMPAT_MAXPLAYERS (32)
+// the highest number of playerinfo entries we can fit into a single packet
+#define MAXPLAYERINFO 42
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
