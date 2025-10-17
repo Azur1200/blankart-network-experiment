@@ -24,6 +24,13 @@
 #include <stdlib.h>
 #endif
 
+#if defined(_MSC_VER) && (defined(__cplusplus) && (__cplusplus >= 202002L)) || \
+    (defined(_MSVC_LANG) && (_MSVC_LANG >= 202002L))
+#include <limits.h>
+#include <type_traits>
+#define LIBDIVIDE_VC_CXX20
+#endif
+
 #if defined(LIBDIVIDE_SSE2)
 #include <emmintrin.h>
 #endif
@@ -34,6 +41,27 @@
 
 #if defined(LIBDIVIDE_NEON)
 #include <arm_neon.h>
+#endif
+
+// Clang-cl prior to Visual Studio 2022 doesn't include __umulh/__mulh intrinsics
+#if defined(_MSC_VER) && (!defined(__clang__) || _MSC_VER > 1930) && \
+    (defined(_M_X64) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC))
+#define LIBDIVIDE_MULH_INTRINSICS
+#endif
+
+#if defined(_MSC_VER)
+#if defined(LIBDIVIDE_MULH_INTRINSICS) || !defined(__clang__)
+#include <intrin.h>
+#endif
+#ifndef __clang__
+#pragma warning(push)
+// 4146: unary minus operator applied to unsigned type, result still unsigned
+#pragma warning(disable : 4146)
+
+// 4204: nonstandard extension used : non-constant aggregate initializer
+#pragma warning(disable : 4204)
+#endif
+#define LIBDIVIDE_VC
 #endif
 
 #if !defined(__has_builtin)
@@ -74,7 +102,11 @@
 #endif
 #endif
 #ifndef LIBDIVIDE_INLINE
+#ifdef _MSC_VER
+#define LIBDIVIDE_INLINE __forceinline
+#else
 #define LIBDIVIDE_INLINE inline
+#endif
 #endif
 
 #if defined(__AVR__)
@@ -108,12 +140,73 @@
 // Use https://en.cppreference.com/w/cpp/feature_test#cpp_constexpr
 #if defined(__cpp_constexpr) && (__cpp_constexpr >= 201304L)
 #define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
+
+// Supposedly, MSVC might not implement feature test macros right:
+// https://stackoverflow.com/questions/49316752/feature-test-macros-not-working-properly-in-visual-c
+// so check that _MSVC_LANG corresponds to at least c++14, and _MSC_VER corresponds to at least VS
+// 2017 15.0 (for extended constexpr support:
+// https://learn.microsoft.com/en-us/cpp/overview/visual-cpp-language-conformance?view=msvc-170)
+#elif (defined(_MSC_VER) && _MSC_VER >= 1910) && (defined(_MSVC_LANG) && _MSVC_LANG >= 201402L)
+#define LIBDIVIDE_CONSTEXPR constexpr LIBDIVIDE_INLINE
+
 #else
 #define LIBDIVIDE_CONSTEXPR LIBDIVIDE_INLINE
 #endif
 
 namespace libdivide {
 #endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#if defined(LIBDIVIDE_VC_CXX20)
+static LIBDIVIDE_CONSTEXPR int __builtin_clz(unsigned x) {
+    if (std::is_constant_evaluated()) {
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
+        }
+        return sizeof(x) * CHAR_BIT;
+    }
+#else
+static LIBDIVIDE_INLINE int __builtin_clz(unsigned x) {
+#endif
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
+    return (int)_CountLeadingZeros(x);
+#elif defined(__AVX2__) || defined(__LZCNT__)
+    return (int)_lzcnt_u32(x);
+#else
+    unsigned long r;
+    _BitScanReverse(&r, x);
+    return (int)(r ^ 31);
+#endif
+}
+
+#if defined(LIBDIVIDE_VC_CXX20)
+static LIBDIVIDE_CONSTEXPR int __builtin_clzll(unsigned long long x) {
+    if (std::is_constant_evaluated()) {
+        for (int i = 0; i < sizeof(x) * CHAR_BIT; ++i) {
+            if (x >> (sizeof(x) * CHAR_BIT - 1 - i)) return i;
+        }
+        return sizeof(x) * CHAR_BIT;
+    }
+#else
+static LIBDIVIDE_INLINE int __builtin_clzll(unsigned long long x) {
+#endif
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC)
+    return (int)_CountLeadingZeros64(x);
+#elif defined(_WIN64)
+#if defined(__AVX2__) || defined(__LZCNT__)
+    return (int)_lzcnt_u64(x);
+#else
+    unsigned long r;
+    _BitScanReverse64(&r, x);
+    return (int)(r ^ 63);
+#endif
+#else
+    int l = __builtin_clz((unsigned)x) + 32;
+    int h = __builtin_clz((unsigned)(x >> 32));
+    return !!((unsigned)(x >> 32)) ? h : l;
+#endif
+}
+#endif // defined(_MSC_VER) && !defined(__clang__)
 
 // pack divider structs to prevent compilers from padding.
 // This reduces memory usage by up to 43% when using a large
@@ -376,7 +469,7 @@ static LIBDIVIDE_INLINE int16_t libdivide_count_leading_zeros16(uint16_t val) {
     // Fast way to count leading zeros
     // On the AVR 8-bit architecture __builtin_clz() works on a int16_t.
     return __builtin_clz(val);
-#elif defined(__GNUC__) || __has_builtin(__builtin_clz)
+#elif defined(__GNUC__) || __has_builtin(__builtin_clz) || defined(_MSC_VER)
     // Fast way to count leading zeros
     return (int16_t)(__builtin_clz(val) - 16);
 #else
@@ -399,7 +492,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
 #if defined(__AVR__)
     // Fast way to count leading zeros
     return __builtin_clzl(val);
-#elif defined(__GNUC__) || __has_builtin(__builtin_clz)
+#elif defined(__GNUC__) || __has_builtin(__builtin_clz) || defined(_MSC_VER)
     // Fast way to count leading zeros
     return __builtin_clz(val);
 #else
@@ -419,7 +512,7 @@ static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros32(uint32_t val) {
 }
 
 static LIBDIVIDE_INLINE int32_t libdivide_count_leading_zeros64(uint64_t val) {
-#if defined(__GNUC__) || __has_builtin(__builtin_clzll)
+#if defined(__GNUC__) || __has_builtin(__builtin_clzll) || defined(_MSC_VER)
     // Fast way to count leading zeros
     return __builtin_clzll(val);
 #else
@@ -3265,7 +3358,7 @@ LIBDIVIDE_INLINE typename NeonVecFor<T>::type operator/=(
 }
 #endif
 
-#if __cplusplus >= 201103L
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900)
 // libdivide::branchfree_divider<T>
 template <typename T>
 using branchfree_divider = divider<T, BRANCHFREE>;
@@ -3274,5 +3367,9 @@ using branchfree_divider = divider<T, BRANCHFREE>;
 }  // namespace libdivide
 
 #endif  // __cplusplus
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma warning(pop)
+#endif
 
 #endif  // LIBDIVIDE_H
