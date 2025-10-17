@@ -3327,7 +3327,7 @@ INT32 MR_Addons(INT32 choice)
 	if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
 		pathname = cv_addons_folder.string;
 
-	strlcpy(menupath, pathname, 1024);
+	strlcpy(menupath, pathname, MAXFILEPATH);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
 
 	if (menupath[menupathindex[menudepthleft]-2] != PATHSEP[0])
@@ -3425,9 +3425,9 @@ static void M_DrawTemperature(INT32 x, fixed_t t)
 static char *M_AddonsHeaderPath(void)
 {
 	UINT32 len;
-	static char header[1024];
+	static char header[MAXFILEPATH];
 
-	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), 1024);
+	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), MAXFILEPATH);
 	len = strlen(header);
 	if (len > 34)
 	{
@@ -3830,7 +3830,7 @@ static void PrepReplayList(void)
 		else
 		{
 			demolist[i].type = MD_NOTLOADED;
-			snprintf(demolist[i].filepath, 1024, "%s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist[i].title, ".....");
 		}
 	}

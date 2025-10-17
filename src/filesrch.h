@@ -35,7 +35,8 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 
 #define menudepth 20
 
-extern char menupath[1024];
+#define MAXFILEPATH 1024
+extern char menupath[MAXFILEPATH];
 extern size_t menupathindex[menudepth];
 extern size_t menudepthleft;
 
