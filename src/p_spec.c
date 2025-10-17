@@ -8183,7 +8183,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry:
 			sec = sectors + s->affectee;
-			height = sec->floorheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)
@@ -8260,7 +8259,6 @@ void T_Scroll(scroll_t *s)
 
 		case sc_carry_ceiling: // carry on ceiling (FOF scrolling)
 			sec = sectors + s->affectee;
-			height = sec->ceilingheight;
 
 			// sec is the control sector, find the real sector(s) to use
 			for (i = 0; i < sec->linecount; i++)

@@ -1990,11 +1990,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 	// set follower
 	K_SetFollowerByNum(playernum, follower);
-
-#ifdef HAVE_DISCORDRPC
-	if (playernum == consoleplayer)
-		DRPC_UpdatePresence();
-#endif
 }
 
 enum {
@@ -5632,7 +5627,7 @@ retryscramble:
 	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
 	memset(&scrambleteams, 0, sizeof(scrambleplayers));
 	scrambletotal = scramblecount = 0;
-	blue = red = maxcomposition = newteam = playercount = 0;
+	blue = red = newteam = playercount = 0;
 	repick = true;
 
 	// Put each player's node in the array.

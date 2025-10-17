@@ -1572,7 +1572,9 @@ static void HWR_CacheFadeMask(GLMipmap_t *grMipmap, lumpnum_t fademasklumpnum)
 			break;
 		default: // Bad lump
 			CONS_Alert(CONS_WARNING, "Fade mask lump of incorrect size, ignored\n"); // I should avoid this by checking the lumpnum in HWR_RunWipe
-			break;
+			fmwidth = 0;
+			fmheight = 0;
+			return;
 	}
 
 	// Thankfully, this will still work for this scenario

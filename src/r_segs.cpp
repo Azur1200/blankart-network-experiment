@@ -118,6 +118,7 @@ void R_ClearSegTables(void)
 static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip)
 {
 	INT32 topscreen, bottomscreen;
+	const INT32 vidheight = vid.height;
 
 	topscreen = sprtopscreen; // + spryscale*column->topdelta;  topdelta is 0 for the wall
 	bottomscreen = topscreen + spryscale * lengthcol;
@@ -141,10 +142,10 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 	if (dc->yh >= baseclip && baseclip != -1)
 		dc->yh = baseclip;
 
-	if (dc->yl >= vid.height || dc->yh < 0)
+	if (dc->yl >= vidheight || dc->yh < 0)
 		return;
 
-	if (dc->yl <= dc->yh && dc->yh < vid.height && dc->yh > 0)
+	if (dc->yl <= dc->yh && dc->yh < vidheight && dc->yh > 0)
 	{
 		dc->source = (UINT8 *)column + 3;
 		dc->sourcelength = lengthcol;

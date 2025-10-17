@@ -672,6 +672,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 	INT32 bottomscreen;
 	fixed_t basetexturemid;
 	INT32 topdelta, prevdelta = 0;
+	const INT32 vidheight = vid.height;
 
 	basetexturemid = dc->texturemid;
 
@@ -707,8 +708,8 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 
 		if (dc->yl < 0)
 			dc->yl = 0;
-		if (dc->yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-			dc->yh = vid.height - 1;
+		if (dc->yh >= vidheight) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+			dc->yh = vidheight - 1;
 
 		if (dc->yh >= baseclip && baseclip != -1)
 			dc->yh = baseclip;
@@ -759,6 +760,7 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 	fixed_t basetexturemid = dc->texturemid;
 	INT32 topdelta, prevdelta = -1;
 	UINT8 *d,*s;
+	const INT32 vidheight = vid.height;
 
 	R_SetColumnFunc(colfunctype, brightmap != NULL);
 	dc->brightmap = NULL;
@@ -797,8 +799,8 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 
 		if (dc->yl < 0)
 			dc->yl = 0;
-		if (dc->yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-			dc->yh = vid.height - 1;
+		if (dc->yh >= vidheight) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+			dc->yh = vidheight - 1;
 
 		if (dc->yl <= dc->yh && dc->yh > 0 && column->length != 0)
 		{
@@ -921,6 +923,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	INT64 overflow_test;
 	INT32 baseclip = -1;
 	drawcolumndata_t dc {0};
+	const INT32 vidwidth = vid.width;
 
 	if (!patch)
 		return;
@@ -976,22 +979,22 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.shadowcolor = vis->color;
 	}
 	else if (!(vis->cut & SC_PRECIP) &&
-		R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
-		{
-			R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
-		}
-		else if (vis->transmap && dc.translation) // Color mapping
-		{
-			R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
-			dc.transmap = vis->transmap;
-		}
-		else if (vis->transmap)
-		{
-			R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
-			dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
-		}
-		else if (dc.translation) // translate green skin to another color
-			R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
+	R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
+	{
+		R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
+	}
+	else if (vis->transmap && dc.translation) // Color mapping
+	{
+		R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
+		dc.transmap = vis->transmap;
+	}
+	else if (vis->transmap)
+	{
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
+		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
+	}
+	else if (dc.translation) // translate green skin to another color
+		R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
 
 	if (vis->extra_colormap && !(vis->cut & SC_FULLBRIGHT) && !(vis->renderflags & RF_NOCOLORMAPS))
 	{
@@ -1062,8 +1065,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		vis->x1 = 0;
 	}
 
-	if (vis->x2 >= vid.width)
-		vis->x2 = vid.width-1;
+	if (vis->x2 >= vidwidth)
+		vis->x2 = vidwidth-1;
 
 	localcolfunc = (vis->cut & SC_VFLIP) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
 	lengthcol = patch->height;
@@ -1128,8 +1131,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (x1test < 0)
 			x1test = 0;
 
-		if (x2test >= vid.width)
-			x2test = vid.width-1;
+		if (x2test >= vidwidth)
+			x2test = vidwidth-1;
 
 		const INT32 t = (vis->startfrac + (vis->xiscale * (x2test - x1test))) >> FRACBITS;
 
@@ -1171,6 +1174,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
 	drawcolumndata_t dc {0};
+	const INT32 vidwidth = vid.width;
 
 	//Fab : R_InitSprites now sets a wad lump number
 	patch = vis->patch;
@@ -1210,8 +1214,8 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->x1 < 0)
 		vis->x1 = 0;
 
-	if (vis->x2 >= vid.width)
-		vis->x2 = vid.width-1;
+	if (vis->x2 >= vidwidth)
+		vis->x2 = vidwidth-1;
 
 	for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale)
 	{
@@ -2993,6 +2997,10 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 	visplane_t *plane;
 	INT32 sintersect;
 	fixed_t scale = 0;
+	const INT32 vidheight = vid.height;
+
+	if (mask->drawsegs[0] == mask->drawsegs[1])
+		return;
 
 	// Add the 3D floors, thicksides, and masked textures...
 	for (ds = drawsegs + mask->drawsegs[1]; ds-- > drawsegs + mask->drawsegs[0];)
@@ -3011,7 +3019,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 			plane = ds->curline->polyseg->visplane;
 			R_PlaneBounds(plane);
 
-			if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+			if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 				;
 			else {
 				// Put it in!
@@ -3039,7 +3047,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 					plane = ds->ffloorplanes[p];
 					R_PlaneBounds(plane);
 
-					if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low || plane->polyobj)
+					if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low || plane->polyobj)
 					{
 						ds->ffloorplanes[p] = NULL;
 						continue;
@@ -3078,7 +3086,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		plane = PolyObjects[i].visplane;
 		R_PlaneBounds(plane);
 
-		if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+		if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 		{
 			PolyObjects[i].visplane = NULL;
 			continue;
@@ -3100,7 +3108,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		const boolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
 		const INT32 ontopflag = cv_debugrender_spriteclip.value ? 0 : (rover->renderflags & RF_ALWAYSONTOP);
 
-		if (rover->szt > vid.height || rover->sz < 0)
+		if (rover->szt > vidheight || rover->sz < 0)
 			continue;
 
 		sintersect = (rover->x1 + rover->x2) / 2;
@@ -3171,9 +3179,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 						continue;
 				}
 
-				entry = R_CreateDrawNode(NULL);
-				(entry->prev = r2->prev)->next = entry;
-				(entry->next = r2)->prev = entry;
+				entry = R_CreateDrawNode(r2);
 				entry->sprite = rover;
 				break;
 			}
@@ -3205,9 +3211,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 				    (botplanecameraz > viewz && rover->gz > botplaneobjectz))
 #endif
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3224,9 +3228,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (rover->sortscale < scale)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3273,9 +3275,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (infront)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}

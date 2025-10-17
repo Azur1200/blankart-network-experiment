@@ -36,6 +36,8 @@
 #include "hardware/hw_md2.h"
 #endif
 
+#include "discord.h"
+
 INT32 numskins = 0;
 skin_t skins[MAXSKINS];
 INT32 skinsorted[MAXSKINS];
@@ -235,6 +237,11 @@ void R_InitSkins(void)
 		if (!wadfiles[i]->compatmode)
 			R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
+
+		if (i < NUMMAINWADS)
+		{
+			g_discord_skins = numskins;
+		}
 	}
 	ST_ReloadSkinFaceGraphics();
 }
@@ -540,6 +547,11 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 		// for replays: We have changed our skin mid-game; let the game know so it can do the same in the replay!
 		demo_extradata[playernum] |= DXD_SKIN;
+
+#ifdef HAVE_DISCORDRPC
+		if (player - players == consoleplayer)
+			DRPC_UpdatePresence();
+#endif
 
 		return;
 	}
@@ -989,8 +1001,9 @@ void R_AddSkins(UINT16 wadnum)
 			if ((stoken[0] == '/' && stoken[1] == '/')
 				|| (stoken[0] == '#'))// skip comments
 			{
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto next_token;              // find the real next token
+				strtok(NULL, "\r\n"); // skip end of line
+				stoken = strtok(NULL, "\r\n= ");
+				continue; // find the real next token
 			}
 
 			value = strtok(NULL, "\r\n= ");
@@ -1040,7 +1053,6 @@ void R_AddSkins(UINT16 wadnum)
 			else if (!R_ProcessPatchableFields(skin, stoken, value))
 				CONS_Debug(DBG_SETUP, "R_AddSkins: Unknown keyword '%s' in S_SKIN lump #%d (WAD %s)\n", stoken, lump, wadfiles[wadnum]->filename);
 
-next_token:
 			stoken = strtok(NULL, "\r\n= ");
 		}
 		free(buf2);
@@ -1124,8 +1136,9 @@ void R_PatchSkins(UINT16 wadnum)
 			if ((stoken[0] == '/' && stoken[1] == '/')
 				|| (stoken[0] == '#'))// skip comments
 			{
-				stoken = strtok(NULL, "\r\n"); // skip end of line
-				goto next_token;              // find the real next token
+				strtok(NULL, "\r\n"); // skip end of line
+				stoken = strtok(NULL, "\r\n= ");
+				continue; // find the real next token
 			}
 
 			value = strtok(NULL, "\r\n= ");
@@ -1203,7 +1216,6 @@ void R_PatchSkins(UINT16 wadnum)
 			if (!skin)
 				break;
 
-next_token:
 			stoken = strtok(NULL, "\r\n= ");
 		}
 		free(buf2);

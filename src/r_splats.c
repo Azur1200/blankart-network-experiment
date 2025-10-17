@@ -313,6 +313,7 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 	fixed_t planeheight = 0;
 	fixed_t step;
 	drawspandata_t ds = {0};
+	const INT32 vidheight = vid.height;
 
 	int spanfunctype = SPANDRAWFUNC_SPRITE;
 
@@ -337,13 +338,13 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
         } \
         ry1 = 0; \
     } \
-    if (ry1 >= vid.height) { \
+    if (ry1 >= vidheight) { \
         if (step) { \
             x1 <<= FRACBITS; \
-            x1 -= (vid.height-1-ry1)*step; \
+            x1 -= (vidheight-1-ry1)*step; \
             x1 >>= FRACBITS; \
         } \
-        ry1 = vid.height - 1; \
+        ry1 = vidheight - 1; \
     } \
     if (y2 < 0) { \
         if (step) { \
@@ -353,13 +354,13 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
         } \
         y2 = 0; \
     } \
-    if (y2 >= vid.height) { \
+    if (y2 >= vidheight) { \
         if (step) { \
             x2 <<= FRACBITS; \
-            x2 += (vid.height-1-y2)*step; \
+            x2 += (vidheight-1-y2)*step; \
             x2 >>= FRACBITS; \
         } \
-        y2 = vid.height - 1; \
+        y2 = vidheight - 1; \
     } \
     rasterize_segment_tex(x1, ry1, x2, y2, tv1, tv2, tc, dir); \
     if (ry1 < miny) \
@@ -446,8 +447,8 @@ static void R_RasterizeFloorSplat(floorsplat_t *pSplat, vector2_t *verts, visspr
 
 	R_SetSpanFunc(spanfunctype, !ds.powersoftwo, false);
 
-	if (maxy >= vid.height)
-		maxy = vid.height-1;
+	if (maxy >= vidheight)
+		maxy = vidheight-1;
 
 	for (y = miny; y <= maxy; y++)
 	{
