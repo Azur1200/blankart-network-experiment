@@ -7996,6 +7996,8 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
 	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "TEAM", player1); // Team-chat
