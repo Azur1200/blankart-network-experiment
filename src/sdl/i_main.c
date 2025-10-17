@@ -223,9 +223,6 @@ int main(int argc, char **argv)
 #if 0 // just load the DLL
 		p_IsDebuggerPresent pfnIsDebuggerPresent = (p_IsDebuggerPresent)GetProcAddress(GetModuleHandleA("kernel32.dll"), "IsDebuggerPresent");
 		if ((!pfnIsDebuggerPresent || !pfnIsDebuggerPresent())
-#ifdef BUGTRAP
-			&& !InitBugTrap()
-#endif
 			)
 #endif
 		{
@@ -249,11 +246,6 @@ int main(int argc, char **argv)
 	CONS_Printf("Entering main game loop...\n");
 	// never return
 	D_SRB2Loop();
-
-#ifdef BUGTRAP
-	// This is safe even if BT didn't start.
-	ShutdownBugTrap();
-#endif
 
 	// return to OS
 	return 0;
