@@ -48,7 +48,30 @@ struct discordInfo_s discordInfo;
 
 discordRequest_t *discordRequestList = NULL;
 
+size_t g_discord_skins = 0;
+
 static char self_ip[IP_SIZE];
+
+/*--------------------------------------------------
+ *	const char *DRPC_HideUsername(const char *input)
+ *
+ *		See header file for description.
+ * --------------------------------------------------*/
+const char *DRPC_HideUsername(const char *input)
+{
+	static char buffer[5];
+	int i;
+
+	buffer[0] = input[0];
+
+	for (i = 1; i < 4; ++i)
+	{
+		buffer[i] = '.';
+	}
+
+	buffer[4] = '\0';
+	return buffer;
+}
 
 boolean drpc_init = false;
 
@@ -102,11 +125,11 @@ static void DRPC_HandleReady(const DiscordUser *user)
 {
 	if (cv_discordstreamer.value)
 	{
-		CONS_Printf("Discord: connected to %s\n", user->username);
+		CONS_Printf("Discord: connected to %s\n", DRPC_HideUsername(user->username));
 	}
 	else
 	{
-		CONS_Printf("Discord: connected to %s#%s (%s)\n", user->username, user->discriminator, user->userId);
+		CONS_Printf("Discord: connected to %s (%s)\n", user->username, user->userId);
 	}
 }
 
@@ -242,8 +265,10 @@ static void DRPC_HandleJoinRequest(const DiscordUser *requestUser)
 	newRequest->username = Z_Calloc(344, PU_STATIC, NULL);
 	snprintf(newRequest->username, 344, "%s", requestUser->username);
 
+#if 0
 	newRequest->discriminator = Z_Calloc(8, PU_STATIC, NULL);
 	snprintf(newRequest->discriminator, 8, "%s", requestUser->discriminator);
+#endif
 
 	newRequest->userID = Z_Calloc(32, PU_STATIC, NULL);
 	snprintf(newRequest->userID, 32, "%s", requestUser->userId);
@@ -309,6 +334,9 @@ void DRPC_RemoveRequest(discordRequest_t *removeRequest)
 	}
 
 	Z_Free(removeRequest->username);
+#if 0
+	Z_Free(removeRequest->discriminator);
+#endif
 	Z_Free(removeRequest->userID);
 	Z_Free(removeRequest);
 }
@@ -770,66 +798,13 @@ void DRPC_UpdatePresence(void)
 	// Character info
 	if (Playing() && playeringame[consoleplayer] && !players[consoleplayer].spectator)
 	{
-		// Supported skin names
-		static const char *supportedSkins[] = {
-			// base game
-			"sonic",
-			"tails",
-			"knuckles",
-			"eggman",
-			"metalsonic",
-			// bonus chars
-			"flicky",
-			"motobug",
-			"amy",
-			"mighty",
-			"ray",
-			"espio",
-			"vector",
-			"chao",
-			"gamma",
-			"chaos",
-			"shadow",
-			"rouge",
-			"herochao",
-			"darkchao",
-			"cream",
-			"omega",
-			"blaze",
-			"silver",
-			"wonderboy",
-			"arle",
-			"nights",
-			"sakura",
-			"ulala",
-			"beat",
-			"vyse",
-			"aiai",
-			"kiryu",
-			"aigis",
-			"miku",
-			"doom",
-			NULL
-		};
-
-		boolean customChar = true;
-		UINT8 checkSkin = 0;
-
 		// Character image
-		while (supportedSkins[checkSkin] != NULL)
+		if ((unsigned)players[consoleplayer].skin < g_discord_skins) // Supported skins
 		{
-			if (!strcmp(skins[players[consoleplayer].skin].name, supportedSkins[checkSkin]))
-			{
-				snprintf(charimg, 22, "char_%s", supportedSkins[checkSkin]);
-				discordPresence.smallImageKey = charimg;
-				customChar = false;
-				break;
-			}
-
-			checkSkin++;
+			snprintf(charimg, 21, "char_%s", skins[ players[consoleplayer].skin ].name);
+			discordPresence.smallImageKey = charimg;
 		}
-
-		if (customChar == true)
+		else
 		{
 			// Use the custom character icon!
 			discordPresence.smallImageKey = "charcustom";

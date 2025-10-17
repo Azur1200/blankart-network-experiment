@@ -36,6 +36,8 @@
 #include "hardware/hw_md2.h"
 #endif
 
+#include "discord.h"
+
 INT32 numskins = 0;
 skin_t skins[MAXSKINS];
 INT32 skinsorted[MAXSKINS];
@@ -235,6 +237,11 @@ void R_InitSkins(void)
 		if (!wadfiles[i]->compatmode)
 			R_PatchSkins((UINT16)i);
 		R_LoadSpriteInfoLumps(i, wadfiles[i]->numlumps);
+
+		if (i < NUMMAINWADS)
+		{
+			g_discord_skins = numskins;
+		}
 	}
 	ST_ReloadSkinFaceGraphics();
 }
@@ -540,6 +547,11 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 
 		// for replays: We have changed our skin mid-game; let the game know so it can do the same in the replay!
 		demo_extradata[playernum] |= DXD_SKIN;
+
+#ifdef HAVE_DISCORDRPC
+		if (player - players == consoleplayer)
+			DRPC_UpdatePresence();
+#endif
 
 		return;
 	}
