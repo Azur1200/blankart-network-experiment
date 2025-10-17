@@ -5565,7 +5565,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		{
 			mobj_t *spawner;
 			fixed_t dist = 0;
-			angle = 0x06000000*leveltime;
+			angle = ANGLE_135*leveltime;
 
 			// Alter your energy bubble's size/position
 			if (mobj->health > 3)
@@ -5744,7 +5744,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 			return;
 		}
 
-		angle = 0x06000000*leveltime;
+		angle = ANGLE_135*leveltime;
 		mobj->momz += FixedMul(FINECOSINE(angle>>ANGLETOFINESHIFT),2*FRACUNIT); // Use that "angle" to bob gently in the air
 		// This is below threshold because we don't want to bob while zipping around
 
@@ -14731,7 +14731,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	// angle at which you fire, is player angle
 	an = angle;
 
-	if (allowaim) // aiming allowed?
+	if (source->player && allowaim) // aiming allowed?
 		slope = AIMINGTOSLOPE(source->player->aiming);
 
 	x = source->x;
@@ -14764,7 +14764,7 @@ mobj_t *P_SPMAngle(mobj_t *source, mobjtype_t type, angle_t angle, UINT8 allowai
 	th->momx = FixedMul(speed, FINECOSINE(an>>ANGLETOFINESHIFT));
 	th->momy = FixedMul(speed, FINESINE(an>>ANGLETOFINESHIFT));
 
-	if (allowaim)
+	if (source->player && allowaim)
 	{
 		th->momx = FixedMul(th->momx,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));
 		th->momy = FixedMul(th->momy,FINECOSINE(source->player->aiming>>ANGLETOFINESHIFT));

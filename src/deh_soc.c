@@ -405,7 +405,7 @@ void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			if (fastcmp(word, "NAME"))
 			{
@@ -867,7 +867,7 @@ void readlevelheader(MYFILE *f, char * name)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 
 
@@ -1947,7 +1947,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		strupr(word);
 
 		// Now get the part after
-		word2 = tmp += 2;
+		word2 = tmp + 2;
 		//strupr(word2);
 
 		if (fastcmp(word, "X"))
@@ -2525,7 +2525,7 @@ void readsound(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "SINGULAR"))
@@ -2631,7 +2631,7 @@ void reademblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			// Up here to allow lowercase in hints
@@ -2738,7 +2738,7 @@ void readextraemblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			value = atoi(word2); // used for numerical settings
 
@@ -2821,7 +2821,7 @@ void readunlockable(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			i = atoi(word2); // used for numerical settings
 
@@ -3082,7 +3082,7 @@ void readconditionset(MYFILE *f, UINT8 setnum)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			if (fastncmp(word, "CONDITION", 9))
@@ -3146,7 +3146,7 @@ void readmaincfg(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			value = atoi(word2); // used for numerical settings
@@ -3437,7 +3437,7 @@ void readwipes(MYFILE *f)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
-	char *pword = word;
+	char *pword;
 	char *word2;
 	char *tmp;
 	INT32 value;
@@ -3470,7 +3470,7 @@ void readwipes(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			if (value < -1 || value > 99)
@@ -3615,7 +3615,7 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 			strupr(word2);
 
@@ -4009,7 +4009,7 @@ void readweather(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			if (fastcmp(word, "TYPE"))
 			{

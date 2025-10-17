@@ -522,17 +522,16 @@ static void CV_constextsize_OnChange(void)
 // --------------------------------------------------------------------------
 // Copy a rectangular area from one bitmap to another (8bpp)
 // --------------------------------------------------------------------------
-void VID_BlitLinearScreen(const UINT8 *srcptr, UINT8 *destptr, INT32 width, INT32 height, size_t srcrowbytes,
-						  size_t destrowbytes)
+void VID_BlitLinearScreen(const UINT8 *restrict srcptr, UINT8 *restrict destptr, INT32 width, INT32 height, size_t srcrowbytes, size_t destrowbytes)
 {
-	if (srcrowbytes == destrowbytes && srcrowbytes == width)
+	if (srcrowbytes == destrowbytes && srcrowbytes == (size_t)width)
 	{
 		size_t i = srcrowbytes * height;
 #if defined(__SSE__)
 		while (i >= 16)
 		{
 			// TODO: find where the buffer is misaligned at times and align it
-			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
+			_mm_storeu_ps((void *)destptr, _mm_loadu_ps((const void *)srcptr));
 			srcptr += 16;
 			destptr += 16;
 			i -= 16;

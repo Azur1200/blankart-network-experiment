@@ -3386,7 +3386,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 	tmult = (tbot - ttop) / (top - bot);
 
 	endrealtop = endtop = baseWallVerts[2].y;
-	endrealbot = endbot = baseWallVerts[1].y;
+	endrealbot = baseWallVerts[1].y;
 
 	// copy the contents of baseWallVerts into the drawn wallVerts array
 	// baseWallVerts is used to know the final shape to easily get the vertex
@@ -5483,8 +5483,6 @@ void HWR_BuildSkyDome(void)
 		sky->loops[sky->loopcount].vertexcount = col_count;
 		sky->loops[sky->loopcount].use_texture = false;
 		sky->loopcount++;
-
-		delta = 0.0f;
 
 		for (c = 0; c < col_count; c++)
 		{

@@ -1625,6 +1625,10 @@ void M_DoScreenShot(void)
 		palette = nullptr;
 	}
 #endif
+	else
+	{
+		I_Error("rendermode %d is not valid", rendermode);
+	}
 
 #ifdef USE_PNG
 	ret = M_SavePNG(va(pandf,pathname,freename), linear, vid.width, vid.height, palette);

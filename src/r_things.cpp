@@ -2993,6 +2993,10 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 	visplane_t *plane;
 	INT32 sintersect;
 	fixed_t scale = 0;
+	const INT32 vidheight = vid.height;
+
+	if (mask->drawsegs[0] == mask->drawsegs[1])
+		return;
 
 	// Add the 3D floors, thicksides, and masked textures...
 	for (ds = drawsegs + mask->drawsegs[1]; ds-- > drawsegs + mask->drawsegs[0];)
@@ -3011,7 +3015,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 			plane = ds->curline->polyseg->visplane;
 			R_PlaneBounds(plane);
 
-			if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+			if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 				;
 			else {
 				// Put it in!
@@ -3039,7 +3043,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 					plane = ds->ffloorplanes[p];
 					R_PlaneBounds(plane);
 
-					if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low || plane->polyobj)
+					if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low || plane->polyobj)
 					{
 						ds->ffloorplanes[p] = NULL;
 						continue;
@@ -3078,7 +3082,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		plane = PolyObjects[i].visplane;
 		R_PlaneBounds(plane);
 
-		if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+		if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 		{
 			PolyObjects[i].visplane = NULL;
 			continue;
@@ -3100,7 +3104,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		const boolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
 		const INT32 ontopflag = cv_debugrender_spriteclip.value ? 0 : (rover->renderflags & RF_ALWAYSONTOP);
 
-		if (rover->szt > vid.height || rover->sz < 0)
+		if (rover->szt > vidheight || rover->sz < 0)
 			continue;
 
 		sintersect = (rover->x1 + rover->x2) / 2;
@@ -3171,9 +3175,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 						continue;
 				}
 
-				entry = R_CreateDrawNode(NULL);
-				(entry->prev = r2->prev)->next = entry;
-				(entry->next = r2)->prev = entry;
+				entry = R_CreateDrawNode(r2);
 				entry->sprite = rover;
 				break;
 			}
@@ -3205,9 +3207,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 				    (botplanecameraz > viewz && rover->gz > botplaneobjectz))
 #endif
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3224,9 +3224,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (rover->sortscale < scale)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3273,9 +3271,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (infront)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
