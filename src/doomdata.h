@@ -72,10 +72,6 @@ enum
 
 // Do not use bit five or after, as they are used for object z-offsets.
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // A single Vertex.
 struct  mapvertex_t
 {
@@ -234,10 +230,6 @@ struct mapnode_t
 	// If NF_SUBSECTOR it's a subsector, else it's a node of another subtree.
 	UINT16 children[2];
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 typedef enum
 {

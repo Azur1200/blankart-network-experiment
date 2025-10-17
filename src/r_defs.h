@@ -824,20 +824,12 @@ struct node_t
 	UINT16 children[2];
 };
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // posts are runs of non masked source pixels
 struct post_t
 {
 	UINT8 topdelta; // -1 is the last post in a column
 	UINT8 length;   // length data bytes follows
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // column_t is a list of 0 or more post_t, (UINT8)-1 terminated
 typedef post_t column_t;
@@ -947,10 +939,6 @@ extern patch_t *blanklvl;
 extern patch_t *randomlvl;
 extern patch_t *nolvl;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 struct softwarepatch_t
 {
 	INT16 width;          // bounding box size
@@ -960,10 +948,6 @@ struct softwarepatch_t
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // a pic is an unmasked block of pixels, stored in horizontal way
 struct pic_t
@@ -976,14 +960,6 @@ struct pic_t
 	INT16 reserved1; // set to 0
 	UINT8 data[];
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // Possible alpha types for a patch.
 typedef enum {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY, AST_FOG} patchalphastyle_t;

@@ -29,10 +29,6 @@
 extern "C" {
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4706)
-#endif
-
 struct mdllistitem_t
 {
 	mdllistitem_t *next;

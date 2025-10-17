@@ -43,20 +43,12 @@ typedef struct
 	float z;
 } polyvertex_t;
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
 // a convex 'plane' polygon, clockwise order
 typedef struct
 {
 	INT32 numpts;
 	polyvertex_t pts[];
 } poly_t;
-
-#ifdef _MSC_VER
-#pragma warning(default :  4200)
-#endif
 
 // holds extra info for 3D render, for each subsector in subsectors[]
 typedef struct

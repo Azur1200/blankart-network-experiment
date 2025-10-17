@@ -20,10 +20,6 @@
 extern "C" {
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 typedef union
 {
 	char buffer[16]; // information such as password
@@ -53,10 +49,6 @@ struct msg_ban_t
 	char reason[255];
 	INT32 hostonly;
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // ================================ GLOBALS ===============================
 
