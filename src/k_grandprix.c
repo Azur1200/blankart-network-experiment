@@ -104,7 +104,7 @@ UINT8 K_GetGPPlayerCount(UINT8 humans)
 	// 3P -> 12 total
 	// 4P -> 16 total
 
-	return max(min(humans * 4, MAXPLAYERS), 8);
+	return max(min(humans * 4, MAXGPPLAYERS), 8);
 }
 
 /*--------------------------------------------------
@@ -117,7 +117,7 @@ void K_InitGrandPrixBots(void)
 	const UINT16 defaultbotskin = K_BotDefaultSkin();
 
 	const UINT8 startingdifficulty = K_BotStartingDifficulty(grandprixinfo.gamespeed);
-	UINT8 difficultylevels[MAXPLAYERS];
+	UINT8 difficultylevels[MAXGPPLAYERS];
 
 	UINT8 playercount = 8;
 	UINT8 wantedbots = 0;
@@ -128,13 +128,13 @@ void K_InitGrandPrixBots(void)
 	UINT16 usableskins, skincount = numskins;
 	UINT16 grabskins[MAXSKINS+1];
 
-	UINT16 botskinlist[MAXPLAYERS];
+	UINT16 botskinlist[MAXGPPLAYERS];
 	UINT16 botskinlistpos = 0;
 
 	UINT8 newplayernum = 0;
 	UINT16 i, j;
 
-	memset(competitors, MAXPLAYERS, sizeof (competitors));
+	memset(competitors, MAXGPPLAYERS, sizeof (competitors));
 	memset(botskinlist, defaultbotskin, sizeof (botskinlist));
 
 	// Init usable bot skins list
@@ -144,7 +144,7 @@ void K_InitGrandPrixBots(void)
 	}
 	grabskins[usableskins] = MAXSKINS;
 
-#if MAXPLAYERS != 16
+#if MAXGPPLAYERS != 16
 	I_Error("GP bot difficulty levels need rebalanced for the new player count!\n");
 #endif
 
@@ -178,7 +178,7 @@ void K_InitGrandPrixBots(void)
 	{
 		if (playeringame[i])
 		{
-			if (players[i].bot == true)
+			if (players[i].bot == true || i > MAXGPPLAYERS)
 			{
 				// Remove existing bots.
 				CL_RemovePlayer(i, KR_LEAVE);
@@ -298,7 +298,7 @@ static INT16 K_RivalScore(player_t *bot)
 		roundsleft = grandprixinfo.cup->numlevels - grandprixinfo.roundnum;
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 		{
@@ -335,7 +335,7 @@ void K_UpdateGrandPrixBots(void)
 	UINT16 newrivalscore = 0;
 	UINT8 i;
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || !players[i].bot)
 		{
@@ -346,7 +346,7 @@ void K_UpdateGrandPrixBots(void)
 	}
 
 	// Find the rival.
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator || !players[i].bot)
 		{
@@ -382,7 +382,7 @@ void K_UpdateGrandPrixBots(void)
 	}
 
 	// Find the bot with the best average of score & difficulty.
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		UINT16 ns = 0;
 
@@ -440,7 +440,7 @@ static UINT8 K_BotExpectedStanding(player_t *bot)
 	UINT8 pos = 1;
 	UINT8 i;
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (i == (bot - players))
 		{
@@ -589,7 +589,7 @@ void K_RetireBots(void)
 		newDifficulty = 1;
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		player_t *bot = NULL;
 
@@ -608,7 +608,7 @@ void K_RetireBots(void)
 		}
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		player_t *bot = NULL;
 
@@ -660,7 +660,7 @@ void K_FakeBotResults(player_t *bot)
 	UINT8 numplayers = 0;
 	UINT8 i;
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (playeringame[i] && !players[i].spectator)
 		{

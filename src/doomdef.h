@@ -201,6 +201,8 @@ extern char logfilename[1024];
 #define MAXCOLORNAME 32
 #define NUMCOLORFREESLOTS 32768
 
+#define MAXGPPLAYERS 16	// max players in Grand Prix only
+
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
 #define ENCOREFADECOLOR 209 // 122
