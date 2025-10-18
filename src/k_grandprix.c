@@ -589,7 +589,7 @@ void K_RetireBots(void)
 		newDifficulty = 1;
 	}
 
-	for (i = 0; i < MAXGPPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		player_t *bot = NULL;
 
@@ -608,7 +608,7 @@ void K_RetireBots(void)
 		}
 	}
 
-	for (i = 0; i < MAXGPPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		player_t *bot = NULL;
 
@@ -660,7 +660,7 @@ void K_FakeBotResults(player_t *bot)
 	UINT8 numplayers = 0;
 	UINT8 i;
 
-	for (i = 0; i < MAXGPPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playeringame[i] && !players[i].spectator)
 		{
