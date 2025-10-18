@@ -20,7 +20,6 @@
 #include "d_player.h" // Need for player_t
 #include "d_ticcmd.h"
 #include "m_fixed.h"
-#include "k_kart.h" // K_RAGuard
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,9 +29,9 @@ extern "C" {
 #define MAXODDS 16
 
 // Distance variables
-#define DISTVAR K_RAGuard(cv_kartoddsdist)
-#define DISTVAR_LEGACY K_RAGuard(cv_kartlegacyoddsdist)
-#define SPBDISTVAR K_RAGuard(cv_kartspbdist)
+#define DISTVAR CV_Get(&cv_kartoddsdist)
+#define DISTVAR_LEGACY CV_Get(&cv_kartlegacyoddsdist)
+#define SPBDISTVAR CV_Get(&cv_kartspbdist)
 
 extern consvar_t *KartItemCVars[NUMKARTRESULTS-1];
 

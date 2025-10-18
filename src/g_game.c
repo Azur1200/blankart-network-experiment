@@ -550,17 +550,43 @@ strbuf_t *G_GetRecordPresetVersion(const char *name, UINT8 version)
 	return NULL;
 }
 
+const char *G_CheckPresetCvars(strbuf_t *pv)
+{
+	for (consvar_t *cvar = consvar_vars; cvar; cvar = cvar->next)
+	{
+		if (!(cvar->flags & CV_GUARD))
+			continue;
+
+		// if the cvar is listed in the preset, its value must match
+		const char *s = pv->buf + 1;
+		while (s - pv->buf < strbuf_len(pv))
+		{
+			const char *name = s;
+			s += strlen(s)+1;
+			const char *value = s;
+			s += strlen(s)+1;
+
+			if (!strcmp(name, cvar->name))
+			{
+				if (!strcmp(value, cvar->string))
+					goto next;
+				else
+					return cvar->name;
+			}
+		}
+
+		// otherwise, the cvar must be set to its default value
+		if (strcmp(cvar->string, cvar->defaultvalue))
+			return cvar->name;
+	next:;
+	}
+
+	return NULL;
+}
+
 void G_SetPresetCvars(strbuf_t *pv)
 {
-	// TODO: CV_RAGUARD flag
-	CV_SetValue(&cv_kartrings, 0);
-	CV_SetValue(&cv_kartstacking, 0);
-	CV_SetValue(&cv_kartchaining, 0);
-	CV_SetValue(&cv_kartslipdash, 0);
-	CV_SetValue(&cv_kartpurpledrift, 0);
-	CV_SetValue(&cv_kartslopeboost, 0);
-	CV_SetValue(&cv_kartairdrop, 0);
-	CV_SetValue(&cv_kartbumpspark, 0);
+	CV_ResetGuardVars();
 
 	// maximum memory efficiency, am i right?
 	const char *s = pv->buf + 1;

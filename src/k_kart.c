@@ -2083,37 +2083,6 @@ boolean K_PlayerCanPunt(const player_t *player)
 	       (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME);
 }
 
-// Safe guard cvars to prevent cheating in RA.
-INT32 K_RAGuard(consvar_t cvar)
-{
-	if (modeattacking != ATTACKING_NONE)
-	{
-		if (cvar.flags & CV_FLOAT)
-		{
-			// This is a float, atof the value and run it through FloatToFixed
-			return FloatToFixed(atof(cvar.defaultvalue));
-		}
-		else
-		{
-			// Handle string bools first.
-			if (!strcmp(cvar.defaultvalue, "On") || !strcmp(cvar.defaultvalue, "Yes"))
-			{
-				return true;
-			}
-
-			if (!strcmp(cvar.defaultvalue, "Off") || !strcmp(cvar.defaultvalue, "No"))
-			{
-				return false;
-			}
-
-			// This is a int, just use atoi the value normally.
-			return atoi(cvar.defaultvalue);
-		}
-	}
-
-	return cvar.value;
-}
-
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
 {
 	switch (item->type)

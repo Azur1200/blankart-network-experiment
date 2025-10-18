@@ -1534,6 +1534,9 @@ void CV_RegisterVar(consvar_t *variable)
 		}
 	}
 
+	if ((variable->flags & (CV_NETVAR|CV_GUARD)) == CV_GUARD)
+		I_Error("%s has CV_GUARD but not CV_NETVAR", variable->name);
+
 	// link the variable in
 	if (!(variable->flags & CV_HIDEN))
 	{
@@ -2320,6 +2323,34 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 		CV_SetValue(var, newvalue);
 
 	var->changed = 1; // user has changed it now
+}
+
+// a GETTER for cvars!?
+// used along with CV_GUARD to protect cvar values
+INT32 CV_Get(consvar_t *cvar)
+{
+	if (!(cvar->flags & CV_GUARD))
+		I_Error("CV_Get used with non-CV_GUARD variable %s", cvar->name);
+
+	if (modeattacking != ATTACKING_NONE /*|| !K_CanChangeRules()*/)
+	{
+		const char *string = cvar->defaultvalue;
+		INT32 value;
+		if (CV_CompleteValue(cvar, &string, &value))
+			return value;
+		else
+			I_Error("CV_Get oops");
+	}
+
+	return cvar->value;
+}
+
+// reset all CV_GUARD cvars to defaults
+void CV_ResetGuardVars(void)
+{
+	for (consvar_t *cvar = consvar_vars; cvar; cvar = cvar->next)
+		if (cvar->flags & CV_GUARD)
+			Setvalue(cvar, cvar->defaultvalue, true);
 }
 
 void CV_InitFilterVar(void)

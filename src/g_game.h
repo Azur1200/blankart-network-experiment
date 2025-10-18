@@ -288,6 +288,7 @@ recordpreset_t *G_AddRecordPreset(const char *name, const char *realname);
 const char *G_GetRecordPresetName(const char *name);
 strbuf_t *G_AddRecordPresetVersion(recordpreset_t *preset, UINT8 version);
 strbuf_t *G_GetRecordPresetVersion(const char *name, UINT8 version);
+const char *G_CheckPresetCvars(strbuf_t *pv);
 void G_SetPresetCvars(strbuf_t *pv);
 boolean G_CompareRecordPresetVersions(strbuf_t *pre1, strbuf_t *pre2);
 

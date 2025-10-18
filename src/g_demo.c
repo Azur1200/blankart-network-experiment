@@ -54,7 +54,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-#include "g_party.h"
+#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -3697,7 +3697,11 @@ void G_DoPlayDemo(char *defdemoname)
 	{
 		strbuf_t *pv = G_GetRecordPresetVersionForDemo(&header);
 		if (pv)
-			G_SetPresetCvars(pv);
+		{
+			const char *faulted = G_CheckPresetCvars(pv);
+			if (faulted)
+				M_StartMessage(va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), NULL, MM_NOTHING);
+		}
 		else
 			CONS_Alert(CONS_WARNING, "Couldn't find record preset '%s' version %d\n", header.rapreset, header.rapresetversion);
 	}
