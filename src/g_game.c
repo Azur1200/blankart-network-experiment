@@ -616,8 +616,8 @@ maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *pr
 	*preset = (maprecordpreset_t){
 		.prename = {0},
 		.version = version,
-		.bestlap = UINT32_MAX,
-		.besttime = UINT32_MAX,
+		.bestlap = 0,
+		.besttime = 0,
 		.playtime = 0,
 	};
 	strlcpy(preset->prename, presetname, sizeof(preset->prename));
@@ -2604,7 +2604,7 @@ static inline void G_PlayerFinishLevel(INT32 player)
 	{
 		if (legitimateexit && !demo.playback && !mapreset) // (yes you're allowed to unlock stuff this way when the game is modified)
 		{
-			kartstats.matchesplayed++;
+			K_StatRound();
 			if (M_UpdateUnlockablesAndExtraEmblems())
 				S_StartSound(NULL, sfx_ncitem);
 			G_SaveGameData();
@@ -4498,8 +4498,6 @@ static void G_DoCompleted(void)
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
-
-	K_StatRound();
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
