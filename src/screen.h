@@ -61,7 +61,6 @@ struct viddef_t
 	// screens[3] = fade screen start
 	// screens[4] = fade screen end, postimage tempoarary buffer
 
-	UINT8 *buffer; // invisible screens buffer
 	size_t rowbytes; // bytes per scanline of the VIDEO mode
 	INT32 width; // PIXELS per scanline
 	INT32 height;

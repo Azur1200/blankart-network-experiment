@@ -3882,17 +3882,23 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	UINT8 *base = vid.buffer;
 	const INT32 screensize = vid.rowbytes * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
+	{
+		if (vid.screens[i])
+			free(vid.screens[i]);
 		vid.screens[i] = NULL;
+	}
 
 	// start address of NUMSCREENS * width*height vidbuffers
-	if (base)
+	if (screensize > 0)
 	{
 		for (i = 0; i < NUMSCREENS; i++)
-			vid.screens[i] = base + i*screensize;
+		{
+			vid.screens[i] = malloc(screensize);
+			memset(vid.screens[i], 0, screensize);
+		}
 	}
 
 #ifdef DEBUG

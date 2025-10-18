@@ -142,8 +142,6 @@ static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 
 static void Impl_VideoSetupSurfaces(int width, int height);
 
-static void Impl_SetupSoftwareBuffer(void);
-
 static void Impl_InitOpenGL(void);
 
 #if defined(HAVE_IMAGE)
@@ -305,28 +303,6 @@ static void Impl_VideoSetupSurfaces(int width, int height)
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
 }
 
-static void Impl_SetupSoftwareBuffer(void)
-{
-	// Set up game's software render buffer
-	size_t size;
-
-	vid.rowbytes = vid.width;
-
-	free(vid.buffer);
-
-	size = vid.rowbytes*vid.height * NUMSCREENS;
-	vid.buffer = static_cast<UINT8*>(malloc(size));
-
-	if (vid.buffer)
-	{
-		// Clear the buffer
-		// HACK: Wasn't sure where else to put this.
-		memset(vid.buffer, 31, size);
-	}
-	else
-		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
-}
-
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
 
 static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
@@ -379,12 +355,6 @@ static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_b
 
 	if (Impl_RenderContextReset() == SDL_FALSE)
 		I_Error("Couldn't create or reset rendering context");
-
-	if (vid.buffer)
-	{
-		free(vid.buffer);
-		vid.buffer = NULL;
-	}
 
 	return SDL_TRUE;
 }
@@ -1514,7 +1484,7 @@ boolean VID_CheckRenderer(void)
 
 	if (rendermode == render_soft)
 	{
-		Impl_SetupSoftwareBuffer();
+		vid.rowbytes = vid.width;
 		SCR_SetDrawFuncs();
 	}
 #ifdef HWRENDER
@@ -1821,9 +1791,6 @@ void I_ShutdownGraphics(void)
 		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
 #endif
-
-	free(vid.buffer);
-	vid.buffer = NULL;
 
 	rendermode = render_none;
 
