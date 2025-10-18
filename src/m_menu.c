@@ -697,28 +697,28 @@ void Nextmap_OnChange(void)
 		boolean showreplay = false, showguest = false;
 
 		// best time
-		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_TIMEBEST);
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTTIME);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// best lap
-		visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAPBEST);
+		visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTLAP);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// last
-		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAST);
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// guest
-		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);;
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);;
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYGUEST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "DELETE", visible);
 		M_SetItemVisible(MN_SP_GHOST, "GUEST", visible);
@@ -5315,7 +5315,7 @@ INT32 MR_Statistics(INT32 choice)
 
 	if (!statsMapList || nummapheaders != statsMapListLen)
 	{
-		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_LEVEL, NULL);
+		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_STATIC, NULL);
 		statsMapListLen = nummapheaders;
 	}
 
@@ -5791,7 +5791,7 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 INT32 MR_ChooseTimeAttack(INT32 choice)
 {
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
-	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, TA_LAST);
+	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
 
 	(void)choice;
 	emeralds = 0;
@@ -5841,7 +5841,7 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 // Player has selected the "REPLAY" from the time attack screen
 INT32 MR_ReplayTimeAttack(INT32 arg)
 {
-	if (arg < 0 || arg >= TA__MAX)
+	if (arg < 0 || arg >= REPLAY__MAX)
 		return false;
 
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
@@ -5853,7 +5853,7 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 static void M_EraseGuest(INT32 choice)
 {
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
-	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
 	(void)choice;
 	if (FIL_FileExists(rguest))
 		remove(rguest);
@@ -5863,10 +5863,10 @@ static void M_EraseGuest(INT32 choice)
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
 }
 
-static void M_OverwriteGuest(timeattackreplay_e which)
+static void M_OverwriteGuest(recordreplay_e which)
 {
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
-	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
 	CLEANUP(pfree) char *overwrite = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, which);
 	UINT8 *buf;
 	size_t len = FIL_ReadFile(overwrite, &buf);
@@ -5887,19 +5887,19 @@ static void M_OverwriteGuest(timeattackreplay_e which)
 static void M_OverwriteGuest_Time(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest(TA_TIMEBEST);
+	M_OverwriteGuest(REPLAY_BESTTIME);
 }
 
 static void M_OverwriteGuest_Lap(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest(TA_LAPBEST);
+	M_OverwriteGuest(REPLAY_BESTLAP);
 }
 
 static void M_OverwriteGuest_Last(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest(TA_LAST);
+	M_OverwriteGuest(REPLAY_LAST);
 }
 
 INT32 MR_SetGuestReplay(INT32 arg)
@@ -5922,7 +5922,7 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		return true;
 	}
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
-	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, TA_GUEST))
+	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
 		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
 	else
 		which(0);

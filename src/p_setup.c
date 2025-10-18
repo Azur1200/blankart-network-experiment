@@ -8247,7 +8247,7 @@ static void P_ResetSpawnpoints(void)
 		skyboxviewpnts[i] = skyboxcenterpnts[i] = NULL;
 }
 
-static void P_TryAddGhosts(const char *gpath, boolean all, timeattackreplay_e which)
+static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
 {
 	for (INT32 i = 0; i < numskins; i++)
 	{
@@ -8267,19 +8267,19 @@ static void P_LoadRecordGhosts(void)
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
-		P_TryAddGhosts(gpath, cv_ghost_besttime.value != 1, TA_TIMEBEST);
+		P_TryAddGhosts(gpath, cv_ghost_besttime.value != 1, REPLAY_BESTTIME);
 
 	// Best Lap ghost
 	if (modeattacking != ATTACKING_ITEMBREAK && cv_ghost_bestlap.value)
-		P_TryAddGhosts(gpath, cv_ghost_bestlap.value != 1, TA_LAPBEST);
+		P_TryAddGhosts(gpath, cv_ghost_bestlap.value != 1, REPLAY_BESTLAP);
 
 	// Last ghost
 	if (cv_ghost_last.value)
-		P_TryAddGhosts(gpath, cv_ghost_last.value != 1, TA_LAST);
+		P_TryAddGhosts(gpath, cv_ghost_last.value != 1, REPLAY_LAST);
 
 	// Guest ghost
 	if (cv_ghost_guest.value)
-		P_TryAddGhosts(gpath, false, TA_GUEST);
+		P_TryAddGhosts(gpath, false, REPLAY_GUEST);
 
 	// Staff Attack ghosts
 	if (cv_ghost_staff.value)

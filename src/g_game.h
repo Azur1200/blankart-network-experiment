@@ -314,12 +314,12 @@ typedef struct
 
 typedef enum
 {
-	TA_TIMEBEST,
-	TA_LAPBEST,
-	TA_LAST,
-	TA_GUEST,
-	TA__MAX,
-} timeattackreplay_e;
+	REPLAY_BESTTIME,
+	REPLAY_BESTLAP,
+	REPLAY_LAST,
+	REPLAY_GUEST,
+	REPLAY__MAX,
+} recordreplay_e;
 
 extern maprecord_t **maprecords;
 extern size_t nummaprecords;
@@ -332,8 +332,8 @@ void G_ClearRecords(void);
 tic_t G_GetBestTime(INT16 map);
 boolean G_EmblemsEnabled(void);
 char *G_GetRecordReplayFolder(boolean home, boolean breaker);
-char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which);
-boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which);
+char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
+boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
 
 FUNCMATH INT32 G_TicsToHours(tic_t tics);
 FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);

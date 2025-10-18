@@ -724,7 +724,7 @@ tic_t G_GetBestTime(INT16 map)
 		return besttime;
 
 	for (UINT16 k = 0; k < record->numpresets; k++)
-		if (record->presets[k].besttime < besttime)
+		if (record->presets[k].besttime && record->presets[k].besttime < besttime)
 			besttime = record->presets[k].besttime;
 
 	return besttime;
@@ -742,34 +742,34 @@ boolean G_EmblemsEnabled(void)
 
 char *G_GetRecordReplayFolder(boolean home, boolean breaker)
 {
-	return xva("%s%smedia"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s",
+	return strdup(va("%s%smedia"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s",
 		home ? srb2home : "",
 		home ? PATHSEP : "",
 		breaker ? "itembreaker" : "timeattack",
 		currentrecordpreset
-	);
+	));
 }
 
-const char *tasuffixes[] = {
-	[TA_TIMEBEST] = "time-best",
-	[TA_LAPBEST] = "lap-best",
-	[TA_LAST] = "last",
-	[TA_GUEST] = "guest",
+const char *replaysuffixes[] = {
+	[REPLAY_BESTTIME] = "time-best",
+	[REPLAY_BESTLAP] = "lap-best",
+	[REPLAY_LAST] = "last",
+	[REPLAY_GUEST] = "guest",
 };
 
-char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which)
+char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which)
 {
-	const char *map = G_BuildMapName(mapnum), *suf = tasuffixes[which];
-	if (which != TA_GUEST)
-		return xva("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf);
+	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
+	if (which != REPLAY_GUEST)
+		return strdup(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
 	else
-		return xva("%s"PATHSEP"%s-%s.lmp", folder, map, suf);
+		return strdup(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
 }
 
-boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, timeattackreplay_e which)
+boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which)
 {
-	const char *map = G_BuildMapName(mapnum), *suf = tasuffixes[which];
-	if (which != TA_GUEST)
+	const char *map = G_BuildMapName(mapnum), *suf = replaysuffixes[which];
+	if (which != REPLAY_GUEST)
 		return FIL_FileExists(va("%s"PATHSEP"%s-%s-%s.lmp", folder, map, skins[skinnum].name, suf));
 	else
 		return FIL_FileExists(va("%s"PATHSEP"%s-%s.lmp", folder, map, suf));
@@ -817,14 +817,14 @@ static void G_UpdateRecordReplays(void)
 	gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
 
-	lastdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, TA_LAST);
+	lastdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, REPLAY_LAST);
 
 	if (FIL_FileExists(lastdemo))
 	{
 		UINT8 *buf;
 		size_t len = FIL_ReadFile(lastdemo, &buf);
 
-		CLEANUP(pfree) char *bestdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, TA_TIMEBEST);
+		CLEANUP(pfree) char *bestdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, REPLAY_BESTTIME);
 		if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & 1)
 		{ // Better time, save this demo.
 			if (FIL_FileExists(bestdemo))
@@ -836,7 +836,7 @@ static void G_UpdateRecordReplays(void)
 		if (modeattacking == ATTACKING_TIME)
 		{
 			free(bestdemo);
-			bestdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, TA_LAPBEST);
+			bestdemo = G_GetRecordReplay(gpath, gamemap, cv_chooseskin.value, REPLAY_BESTLAP);
 			if (!FIL_FileExists(bestdemo) || G_CmpDemoTime(bestdemo, lastdemo) & (1<<1))
 			{ // Better lap time, save this demo.
 				if (FIL_FileExists(bestdemo))

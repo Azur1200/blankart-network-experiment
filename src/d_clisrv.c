@@ -3623,7 +3623,7 @@ static void SV_GenContext(void)
 void D_QuitNetGame(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	if (!netgame || !netbuffer)
+	if (!netgame || !doomcom)
 		return;
 
 	DEBFILE("===========================================================================\n"

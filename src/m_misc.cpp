@@ -1827,32 +1827,6 @@ char *va(const char *format, ...)
 	return string;
 }
 
-/** Allocates and returns a string made out of varargs.
-  *
-  * \param format Format string.
-  * \return Pointer to the resulting string.
-  */
-char *xva(const char *format, ...)
-{
-	va_list argptr;
-	char *string;
-
-	va_start(argptr, format);
-	int size = vsnprintf(NULL, 0, format, argptr);
-	if (size < 0)
-		I_Error("xva: can't format string");
-	string = static_cast<char *>(malloc((unsigned)size+1));
-	if (!string)
-		I_Error("xva: out of memory");
-	va_end(argptr);
-
-	va_start(argptr, format);
-	vsprintf(string, format, argptr);
-	va_end(argptr);
-
-	return string;
-}
-
 /** Creates a string in the first argument that is the second argument followed
   * by the third argument followed by the first argument.
   * Useful for making filenames with full path. s1 = s2+s3+s1
