@@ -208,11 +208,8 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		INT32 npow2max;
 
 		// Framebuffer destination address.
-		// Use ylookup LUT to avoid multiply with ScreenWidth.
-		// Use columnofs LUT for subwindows?
 
-		//dest = ylookup[dc_yl] + columnofs[dc_x];
-		dest = &topleft[dc->yl * vidwidth + dc->x];
+		dest = R_Address(dc->x, dc->yl);
 
 		count++;
 
@@ -363,10 +360,7 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 		return;
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	// Determine scaling, which is the only mapping to be done.
 	do
@@ -397,7 +391,7 @@ void R_DrawDropShadowColumn(drawcolumndata_t *dc)
 	if (count <= 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	const UINT8 *transmap_offset = dc->transmap + (dc->shadowcolor << 8);
 	while ((count -= 2) >= 0)
@@ -431,11 +425,7 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 		return;
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	count++;
 

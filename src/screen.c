@@ -94,7 +94,6 @@ consvar_t cv_accuratefps = CVAR_INIT ("fpssampling", "Accurate", CV_SAVE, accura
 //                           SCREEN VARIABLES
 // =========================================================================
 
-INT32 scr_bpp; // current video mode bytes per pixel
 UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
 
 // =========================================================================
@@ -324,7 +323,7 @@ void SCR_SetMode(void)
 		if (!setmodeneeded)
 			VID_CheckRenderer();
 
-		vid.recalc = 1;
+		vid.recalc = true;
 	}
 
 	// Set the video mode in the video interface.
@@ -372,9 +371,6 @@ void SCR_Recalc(void)
 {
 	if (dedicated)
 		return;
-
-	// bytes per pixel quick access
-	scr_bpp = vid.bpp;
 
 	V_Recalc();
 
@@ -451,7 +447,7 @@ void SCR_SetDefaultMode(void)
 	// remember the default screen size
 	CV_SetValue(&cv_scr_width, vid.width);
 	CV_SetValue(&cv_scr_height, vid.height);
-	CV_SetValue(&cv_scr_depth, vid.bpp*8);
+	//CV_SetValue(&cv_scr_depth, vid.bpp*8);
 }
 
 // Change fullscreen on/off according to cv_fullscreen

@@ -165,7 +165,7 @@ static void R_MapPlane(drawspandata_t *ds, spandrawfunc_t *spanfunc, INT32 y, IN
 		ds->xstep = ds->ystep = FRACUNIT;
 
 	// [RH] Instead of using the xtoviewangle array, I calculated the fractional values
-	// at the middle of the screen, then used the calculated ds_xstep and ds_ystep
+	// at the middle of the screen, then used the calculated ds->xstep and ds->ystep
 	// to step from those to the proper texture coordinate to start drawing at.
 	// That way, the texture coordinate is always calculated by its position
 	// on the screen and not by its position relative to the edge of the visplane.
@@ -1141,8 +1141,8 @@ void R_DrawSinglePlane(drawspandata_t *ds, visplane_t *pl, boolean allow_paralle
 				offset = (scry*vidwidth) + scrx;
 
 				// No idea if this works
-				VID_BlitLinearScreen(screens[0] + offset,
-					screens[1] + (top*vidwidth), // intentionally not +offset
+				VID_BlitLinearScreen(vid.screens[0] + offset,
+					vid.screens[1] + (top*vidwidth), // intentionally not +offset
 					viewwidth, bottom-top,
 					vidwidth, vidwidth);
 			}

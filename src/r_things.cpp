@@ -727,19 +727,9 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
-			// This stuff is a likely cause of the splitscreen water crash bug.
-			// FIXTHIS: Figure out what "something more proper" is and do it.
-			// quick fix... something more proper should be done!!!
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 		if (brightmap != NULL)
@@ -820,16 +810,9 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Still drawn by R_DrawColumn.
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 			Z_Free(dc->source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);

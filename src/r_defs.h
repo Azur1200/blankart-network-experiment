@@ -1177,7 +1177,7 @@ typedef struct
 	//
 	// Water ripple effect
 	// Needs the height of the plane, and the vertical position of the span.
-	// Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
+	// Sets planeripple.xfrac and planeripple.yfrac, added to ds->xfrac and ds->yfrac, if the span is not tilted.
 	//
 	struct
 	{

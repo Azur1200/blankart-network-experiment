@@ -310,8 +310,7 @@ static void Impl_SetupSoftwareBuffer(void)
 	// Set up game's software render buffer
 	size_t size;
 
-	vid.rowbytes = vid.width * vid.bpp;
-	vid.direct = NULL;
+	vid.rowbytes = vid.width;
 
 	free(vid.buffer);
 
@@ -1317,14 +1316,14 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
-	if (rendermode == render_soft && screens[0])
+	if (rendermode == render_soft && vid.screens[0])
 	{
 		void *pixels;
 		int pitch;
 		SDL_LockTexture(texture, NULL, &pixels, &pitch);
 		int step = pitch / 4 - vid.width;
 		UINT32 *restrict dst = (UINT32*)pixels;
-		UINT8 *restrict src = screens[0];
+		UINT8 *restrict src = vid.screens[0];
 		UINT32 *restrict palette = localPalette;
 		for (int32_t y = 0; y < vid.height; y++)
 		{
@@ -1365,12 +1364,12 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
 	else if (scale == 1)
-		VID_BlitLinearScreen(screens[0], scr,
-			vid.width*vid.bpp, vid.height,
+		VID_BlitLinearScreen(vid.screens[0], scr,
+			vid.width, vid.height,
 			vid.rowbytes, vid.rowbytes);
 	else
 	{
-		UINT8 * restrict source = screens[0];
+		UINT8 * restrict source = vid.screens[0];
 		INT32 w = vid.width/scale*scale, h = vid.height/scale*scale;
 
 		// size_t saves a lea + movsxd over INT32. mind your types!
@@ -1534,7 +1533,6 @@ INT32 VID_SetMode(INT32 modeNum)
 	SDLdoUngrabMouse();
 
 	vid.recalc = true;
-	vid.bpp = 1;
 
 	if (modeNum >= 0 && modeNum < MAXWINMODES)
 	{
@@ -1735,9 +1733,6 @@ void I_StartupGraphics(void)
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
 	vid.recalc = true;
-	vid.direct = NULL;
-	vid.bpp = 1;
-	vid.WndParent = NULL;
 
 	// Create window
 	// Default size for startup

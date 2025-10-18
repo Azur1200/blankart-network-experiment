@@ -345,8 +345,8 @@ void Y_ConsiderScreenBuffer(void)
 
 	if (rendermode == render_soft)
 	{
-		y_screenbuffer = Z_Malloc(vid.width*vid.bpp * vid.height, PU_STATIC, NULL);
-		VID_BlitLinearScreen(screens[0], y_screenbuffer, vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+		y_screenbuffer = Z_Malloc(vid.width * vid.height, PU_STATIC, NULL);
+		VID_BlitLinearScreen(vid.screens[0], y_screenbuffer, vid.width, vid.height, vid.width, vid.rowbytes);
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
@@ -398,7 +398,7 @@ void Y_IntermissionDrawer(void)
 	else if (y_screenbuffer != NULL)
 	{
 		if (rendermode == render_soft)
-			VID_BlitLinearScreen(y_screenbuffer, screens[0], vid.width*vid.bpp, vid.height, vid.width*vid.bpp, vid.rowbytes);
+			VID_BlitLinearScreen(y_screenbuffer, vid.screens[0], vid.width, vid.height, vid.width, vid.rowbytes);
 #ifdef HWRENDER
 		else if (rendermode == render_opengl)
 			HWR_DrawIntermissionBG();

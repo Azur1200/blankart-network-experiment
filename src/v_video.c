@@ -50,14 +50,6 @@
 #include "k_boss.h"
 #include "i_time.h"
 
-// Each screen is [vid.width*vid.height];
-UINT8 *screens[5];
-// screens[0] = main display window
-// screens[1] = back screen, alternative blitting
-// screens[2] = screenshot buffer, gif movie buffer
-// screens[3] = fade screen start
-// screens[4] = fade screen end, postimage tempoarary buffer
-
 static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {3, "Old"}, {4, "Old Compact"}, {0, NULL}};
 consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, fps_cons_t, NULL);
 
@@ -901,7 +893,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 		y -= offsety;
 	}
 
-	desttop = screens[scrn&V_SCREENMASK];
+	desttop = vid.screens[scrn&V_SCREENMASK];
 
 	if (!desttop)
 		return;
@@ -1004,7 +996,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = source[ofs>>FRACBITS];
 
 							dest += vidwidth;
@@ -1031,7 +1023,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = source[ofs>>FRACBITS];
 
 							dest += vidwidth;
@@ -1080,7 +1072,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_colormap + source[ofs>>FRACBITS]);
 
 							dest += vidwidth;
@@ -1107,7 +1099,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_colormap + source[ofs>>FRACBITS]);
 
 							dest += vidwidth;
@@ -1156,7 +1148,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
 
 							dest += vidwidth;
@@ -1183,7 +1175,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_translevel + (((*(v_colormap + source[ofs>>FRACBITS]))<<8)&0xff00) + (*dest&0xff));
 
 							dest += vidwidth;
@@ -1232,7 +1224,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
 
 							dest += vidwidth;
@@ -1259,7 +1251,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 								}
 							}
 
-							if (dest >= screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
+							if (dest >= vid.screens[scrn&V_SCREENMASK]) // don't draw off the top of the screen (CRASH PREVENTION)
 								*dest = *(v_translevel + ((source[ofs>>FRACBITS]<<8)&0xff00) + (*dest&0xff));
 
 							dest += vidwidth;
@@ -1313,8 +1305,8 @@ void V_DrawBlock(INT32 x, INT32 y, INT32 scrn, INT32 width, INT32 height, const 
 		I_Error("Bad V_DrawBlock");
 #endif
 
-	dest = screens[scrn] + y*vid.width + x;
-	deststop = screens[scrn] + vid.rowbytes * vid.height;
+	dest = vid.screens[scrn] + y*vid.width + x;
+	deststop = vid.screens[scrn] + vid.rowbytes * vid.height;
 
 	while (height--)
 	{
@@ -1368,7 +1360,7 @@ void V_DrawFixedFill(fixed_t x, fixed_t y, INT32 w, INT32 h, INT32 c)
 			if (rendermode == render_opengl)
 				goto fillscreen;
 #endif
-			memset(screens[0], (c&255), vid.width * vid.height * vid.bpp);
+			memset(vid.screens[0], (c&255), vid.width * vid.height);
 			return;
 		}
 
@@ -1422,8 +1414,8 @@ fillscreen:
 	}
 #endif
 
-	dest = screens[0] + y*vid.width + x;
-	deststop = screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*vid.width + x;
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	c &= 255;
 
@@ -1440,7 +1432,7 @@ fillscreen:
 	else
 	{
 		for (;(--h >= 0) && dest < deststop; dest += vid.width)
-			memset(dest, c, w * vid.bpp);
+			memset(dest, c, w);
 	}
 }
 
@@ -1546,8 +1538,8 @@ void V_DrawFillConsoleMap(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)
 	if (y + h > vid.height)
 		h = vid.height-y;
 
-	dest = screens[0] + y*vid.width + x;
-	deststop = screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*vid.width + x;
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	c &= 255;
 
@@ -1645,14 +1637,14 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c)
 	if (h > w)
 		h = w;
 
-	dest = screens[0] + y*vid.width + x;
-	deststop = screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*vid.width + x;
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	c &= 255;
 
 	for (;(--h >= 0) && dest < deststop; dest += vid.width)
 	{
-		memset(dest, c, w * vid.bpp);
+		memset(dest, c, w);
 		if (wait)
 			wait--;
 		else
@@ -1718,8 +1710,8 @@ void V_DrawFadeFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c, UINT16 color, U
 	if (y + h > vid.height)
 		h = vid.height-y;
 
-	dest = screens[0] + y*vid.width + x;
-	deststop = screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*vid.width + x;
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	c &= 255;
 
@@ -1802,8 +1794,8 @@ void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum)
 
 	dupx = dupy = (vid.dupx < vid.dupy ? vid.dupx : vid.dupy);
 
-	dest = screens[0] + y*dupy*vid.width + x*dupx;
-	deststop = screens[0] + vid.rowbytes * vid.height;
+	dest = vid.screens[0] + y*dupy*vid.width + x*dupx;
+	deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	// from V_DrawScaledPatch
 	if (vid.width != BASEVIDWIDTH * dupx)
@@ -1904,7 +1896,7 @@ void V_DrawVhsEffect(boolean rewind)
 {
 	static fixed_t upbary = 100*FRACUNIT, downbary = 150*FRACUNIT;
 
-	UINT8 *buf = screens[0], *tmp = screens[4];
+	UINT8 *buf = vid.screens[0], *tmp = vid.screens[4];
 	UINT16 y;
 	UINT32 x, pos = 0;
 
@@ -1997,8 +1989,8 @@ void V_DrawFadeScreen(UINT16 color, UINT8 strength)
 			: ((color & 0xFF00) // Color is not palette index?
 			? ((UINT8 *)colormaps + strength*256) // Do COLORMAP fade.
 			: ((UINT8 *)R_GetTranslucencyTable((9-strength)+1) + color*256)); // Else, do TRANSMAP** fade.
-		const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
-		UINT8 *buf = screens[0];
+		const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+		UINT8 *buf = vid.screens[0];
 
 		// heavily simplified -- we don't need to know x or y
 		// position when we're doing a full screen fade
@@ -2039,8 +2031,8 @@ void V_DrawCustomFadeScreen(const char *lump, UINT8 strength)
 			if (clm != NULL)
 			{
 				const UINT8 *fadetable = ((UINT8 *)clm + strength*256);
-				const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
-				UINT8 *buf = screens[0];
+				const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+				UINT8 *buf = vid.screens[0];
 
 				// heavily simplified -- we don't need to know x or y
 				// position when we're doing a full screen fade
@@ -2070,8 +2062,8 @@ void V_DrawFadeConsBack(INT32 plines)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the stop position
-	deststop = screens[0] + vid.rowbytes * min(plines, vid.height);
-	for (buf = screens[0]; buf < deststop; ++buf)
+	deststop = vid.screens[0] + vid.rowbytes * min(plines, vid.height);
+	for (buf = vid.screens[0]; buf < deststop; ++buf)
 		*buf = consolebgmap[*buf];
 }
 
@@ -2090,8 +2082,8 @@ void V_EncoreInvertScreen(void)
 #endif
 
 	{
-		const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
-		UINT8 *buf = screens[0];
+		const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
+		UINT8 *buf = vid.screens[0];
 
 		for (; buf < deststop; ++buf)
 		{
@@ -2165,7 +2157,7 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the start and stop positions
-	buf = deststop = screens[0] + vid.rowbytes * vid.height;
+	buf = deststop = vid.screens[0] + vid.rowbytes * vid.height;
 	if (boxheight < 0)
 		buf += vid.rowbytes * boxheight;
 	else // 4 lines of space plus gaps between and some leeway
@@ -3675,8 +3667,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 	else
 		xoffset = 0;
 
-	UINT8 *tmpscr = screens[4];
-	UINT8 *srcscr = screens[0];
+	UINT8 *tmpscr = vid.screens[4];
+	UINT8 *srcscr = vid.screens[0];
 
 	if (thiscam->postimgflags & POSTIMG_WATER)
 	{
@@ -3717,7 +3709,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 
 			/*
 			 *			Unoptimized version
-			 *			for (x = 0; x < vid.width*vid.bpp; x++)
+			 *			for (x = 0; x < vid.width; x++)
 			 *			{
 			 *				newpix = (x + sine);
 			 *
@@ -3813,7 +3805,7 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		INT32 y, x, x2;
 
 		for (y = yoffset; y < yoffset+viewheight; y++)
-			for (x = xoffset, x2 = xoffset+((viewwidth*vid.bpp)-1); x < xoffset+(viewwidth*vid.bpp); x++, x2--)
+			for (x = xoffset, x2 = xoffset+((viewwidth)-1); x < xoffset+(viewwidth); x++, x2--)
 				tmpscr[y*vid.width + x2] = srcscr[y*vid.width + x];
 
 		UINT8 *tmp = tmpscr;
@@ -3833,8 +3825,8 @@ void V_DoPostProcessor(INT32 view, INT32 param)
 		srcscr = tmp;
 	}
 
-	VID_BlitLinearScreen(srcscr+vid.width*vid.bpp*yoffset+xoffset, tmpscr+vid.width*vid.bpp*yoffset+xoffset,
-						 viewwidth*vid.bpp, viewheight, vid.width*vid.bpp, vid.width);
+	VID_BlitLinearScreen(srcscr+vid.width*yoffset+xoffset, tmpscr+vid.width*yoffset+xoffset,
+						 viewwidth, viewheight, vid.width, vid.width);
 #endif
 }
 
@@ -3894,22 +3886,19 @@ void V_Init(void)
 	const INT32 screensize = vid.rowbytes * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
-		screens[i] = NULL;
+		vid.screens[i] = NULL;
 
 	// start address of NUMSCREENS * width*height vidbuffers
 	if (base)
 	{
 		for (i = 0; i < NUMSCREENS; i++)
-			screens[i] = base + i*screensize;
+			vid.screens[i] = base + i*screensize;
 	}
-
-	if (vid.direct)
-		screens[0] = vid.direct;
 
 #ifdef DEBUG
 	CONS_Debug(DBG_RENDER, "V_Init done:\n");
 	for (i = 0; i < NUMSCREENS; i++)
-		CONS_Debug(DBG_RENDER, " screens[%d] = %x\n", i, screens[i]);
+		CONS_Debug(DBG_RENDER, " vid.screens[%d] = %x\n", i, screens[i]);
 #endif
 }
 
@@ -3933,15 +3922,7 @@ void V_Recalc(void)
 
 	vid.meddupx = (UINT8)(vid.dupx >> 1) + 1;
 	vid.meddupy = (UINT8)(vid.dupy >> 1) + 1;
-#ifdef HWRENDER
-	vid.fmeddupx = vid.meddupx*FRACUNIT;
-	vid.fmeddupy = vid.meddupy*FRACUNIT;
-#endif
 
 	vid.smalldupx = (UINT8)(vid.dupx / 3) + 1;
 	vid.smalldupy = (UINT8)(vid.dupy / 3) + 1;
-#ifdef HWRENDER
-	vid.fsmalldupx = vid.smalldupx*FRACUNIT;
-	vid.fsmalldupy = vid.smalldupy*FRACUNIT;
-#endif
 }

@@ -149,7 +149,7 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	UINT8 *dsrc;
 	const INT32 vidwidth = vid.width;
 
-	const UINT8 * restrict deststop = screens[0] + vid.rowbytes * vid.height;
+	const UINT8 * restrict deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds->x2 - ds->x1 + 1);
 	size_t i;
@@ -172,10 +172,10 @@ static void R_DrawSpanTemplate(drawspandata_t* ds)
 	xposition <<= ds->nflatshiftup; yposition <<= ds->nflatshiftup;
 	xstep <<= ds->nflatshiftup; ystep <<= ds->nflatshiftup;
 
-	dest = ylookup[ds->y] + columnofs[ds->x1];
+	dest = R_Address(ds->x1, ds->y);
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -254,14 +254,14 @@ static void R_CalcTiltedLighting(INT32 *lightbuffer, INT32 x1, INT32 x2, fixed_t
 template<DrawSpanType Type>
 static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 {
-	// x1, x2 = ds_x1, ds_x2
+	// x1, x2 = ds->x1, ds_x2
 	int width = ds->x2 - ds->x1;
 	float iz, uz, vz;
 	UINT32 u, v;
 	int i;
 
 	UINT8 *colormap;
-	UINT8 *dest;
+	UINT8 *dest = R_Address(ds->x1, ds->y);
 	UINT8 *dsrc;
 	const INT32 vidwidth = vid.width;
 
@@ -297,10 +297,9 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 
 	colormap = ds->colormap;
 
-	dest = ylookup[ds->y] + columnofs[ds->x1];
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -437,10 +436,10 @@ static void R_DrawNPO2SpanTemplate(drawspandata_t* ds)
 	fixed_t x, y;
 	fixed_t fixedwidth, fixedheight;
 
-	UINT8 *dest;
+	UINT8 *dest = R_Address(ds->x1, ds->y);
 	UINT8 *dsrc;
 	const INT32 vidwidth = vid.width;
-	const UINT8 *deststop = screens[0] + vid.rowbytes * vid.height;
+	const UINT8 *deststop = vid.screens[0] + vid.rowbytes * vid.height;
 
 	size_t count = (ds->x2 - ds->x1 + 1);
 
@@ -452,11 +451,9 @@ static void R_DrawNPO2SpanTemplate(drawspandata_t* ds)
 		yposition += ds->waterofs;
 	}
 
-	dest = ylookup[ds->y] + columnofs[ds->x1];
-
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -515,7 +512,7 @@ static void R_DrawNPO2SpanTemplate(drawspandata_t* ds)
 template<DrawSpanType Type>
 static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 {
-	// x1, x2 = ds_x1, ds_x2
+	// x1, x2 = ds->x1, ds_x2
 	int width = ds->x2 - ds->x1;
 	float iz, uz, vz;
 	UINT32 u, v;
@@ -555,11 +552,11 @@ static void R_DrawTiltedNPO2SpanTemplate(drawspandata_t* ds)
 
 	colormap = ds->colormap;
 
-	dest = ylookup[ds->y] + columnofs[ds->x1];
+	dest = R_Address(ds->x1, ds->y);
 
 	if constexpr (Type & DS_RIPPLE)
 	{
-		dsrc = screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
+		dsrc = vid.screens[1] + (ds->y + ds->bgofs) * vidwidth + ds->x1;
 	}
 	else
 	{
@@ -779,8 +776,7 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 	colormap = ds->colormap;
 
-	//dest = ylookup[ds_y] + columnofs[ds_x1];
-	dest = &topleft[ds->y *vidwidth + ds->x1];
+	dest = R_Address(ds->x1, ds->y);
 
 	count = ds->x2 - ds->x1 + 1;
 
@@ -806,12 +802,12 @@ void R_DrawFogSpan_Tilted(drawspandata_t* ds)
 {
 	ZoneScoped;
 
-	// x1, x2 = ds_x1, ds_x2
+	// x1, x2 = ds->x1, ds_x2
 	int width = ds->x2 - ds->x1;
 	double iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	INT32 tiltlighting[MAXVIDWIDTH];
 
-	UINT8 *dest = ylookup[ds->y] + columnofs[ds->x1];
+	UINT8 *dest = R_Address(ds->x1, ds->y);
 	const INT32 vidwidth = vid.width;
 
 	// Lighting is simple. It's just linear interpolation from start to end
@@ -839,7 +835,7 @@ void R_DrawSpan_Flat(drawspandata_t* ds)
 {
 	ZoneScoped;
 
-	UINT8 *dest = ylookup[ds->y] + columnofs[ds->x1];
+	UINT8 *dest = R_Address(ds->x1, ds->y);
 	memset(dest, ds->colormap[ds->r8_flatcolor], (ds->x2 - ds->x1) + 1);
 }
 
@@ -847,13 +843,13 @@ void R_DrawTiltedSpan_Flat(drawspandata_t* ds)
 {
 	ZoneScoped;
 
-	// x1, x2 = ds_x1, ds_x2
+	// x1, x2 = ds->x1, ds_x2
 	int width = ds->x2 - ds->x1;
 	double iz = ds->szp.z + ds->szp.y*(centery-ds->y) + ds->szp.x*(ds->x1-centerx);
 	INT32 tiltlighting[MAXVIDWIDTH];
 	const INT32 vidwidth = vid.width;
 
-	UINT8 *dest = ylookup[ds->y];
+	UINT8 *dest = R_Address(ds->x1, ds->y);
 
 	// Lighting is simple. It's just linear interpolation from start to end
 	{
