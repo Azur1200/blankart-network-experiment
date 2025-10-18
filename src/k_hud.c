@@ -4120,8 +4120,6 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
-	fixed_t minimapscale = (cv_minihead.value) ? MINIHEADSCALE : FRACUNIT;
-
 	if (encoremode)
 		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else

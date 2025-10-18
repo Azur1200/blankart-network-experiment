@@ -115,6 +115,7 @@ static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
+/*
 static char P_SyncChar(savebuffer_t *save, char v)
 {
 	if (save->write)
@@ -125,6 +126,7 @@ static char P_SyncChar(savebuffer_t *save, char v)
 	else
 		return READCHAR(save->p);
 }
+*/
 
 static fixed_t P_SyncFixed(savebuffer_t *save, fixed_t v)
 {
@@ -156,6 +158,7 @@ static void P_SyncStringN(savebuffer_t *save, char *s, size_t n)
 		READSTRINGN(save->p, s, n);
 }
 
+/*
 static void P_SyncStringL(savebuffer_t *save, char *s, size_t n)
 {
 	if (save->write)
@@ -171,6 +174,7 @@ static void P_SyncString(savebuffer_t *save, char *s)
 	else
 		READSTRING(save->p, s);
 }
+*/
 
 static void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 {
@@ -1114,7 +1118,7 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 		WRITEUINT16(save->p, 0xffff);
 }
 
-static void DiffSectors(savebuffer_t *save, const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
+static void DiffSectors(const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
 {
 	DIFFNE(ss, floorheight, SD_FLOORHT);
 	DIFFNE(ss, ceilingheight, SD_CEILHT);
@@ -1177,7 +1181,7 @@ static void SyncSectors(savebuffer_t *save)
 			if (++i == numsectors)
 				break;
 
-			DiffSectors(save, &sectors[i], &spawnsectors[i], diff);
+			DiffSectors(&sectors[i], &spawnsectors[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
 				if (diff[j])
 					diff[j-1] |= 0x80;
@@ -1358,7 +1362,7 @@ static void SyncSectors(savebuffer_t *save)
 		WRITEUINT16(save->p, 0xffff);
 }
 
-static void DiffLines(savebuffer_t *save, const line_t *li, const line_t *spawnli, UINT8 diff[])
+static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 {
 	const side_t *si, *spawnsi;
 
@@ -1411,7 +1415,7 @@ static void SyncLines(savebuffer_t *save)
 			if (++i == numlines)
 				break;
 
-			DiffLines(save, &lines[i], &spawnlines[i], diff);
+			DiffLines(&lines[i], &spawnlines[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
 				if (diff[j])
 					diff[j-1] |= 0x80;

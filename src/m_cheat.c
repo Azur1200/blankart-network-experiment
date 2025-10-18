@@ -650,7 +650,7 @@ void Command_CauseCfail_f(void)
 	players[consoleplayer].mo->y = 123311; //cfail cansuled kthxbye
 	players[consoleplayer].mo->z = 123311;
 	players[consoleplayer].score = 1337;
-	players[consoleplayer].rings = 1337;
+	players[consoleplayer].rings = (SINT8)1337;
 	players[consoleplayer].mo->destscale = 25;
 	P_SetThingPosition(players[consoleplayer].mo);
 }
