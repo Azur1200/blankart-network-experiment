@@ -8044,6 +8044,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	airdropactive = false;
 	itemlittering = false;
 	bumpsparkactive = 0;
+	antibumptime = 0;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8074,6 +8075,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	invintype = (UINT8)cv_kartinvintype.value;
+
+	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;

@@ -746,9 +746,25 @@ void P_Ticker(boolean run)
 		K_UpdateAllPlayerPositions();
 
 		// OK! Now that we got all of that sorted, players can think!
+		UINT8 p = 0;
 		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			{
 				P_PlayerThink(&players[i]);
+
+				if (!players[i].spectator)
+					p++;
+			}
+		}
+
+		if (p > (MAXPLAYERS / 2))
+		{
+			// At the point where players spawn on top of one another, start silently
+			// adding a minimum to the antibump timer.
+			// This prevents annoying race-start bonks.
+			antibumptime = max(p, antibumptime);
+		}
 
 		ps_playerthink_time = I_GetPreciseTime() - ps_playerthink_time;
 	}

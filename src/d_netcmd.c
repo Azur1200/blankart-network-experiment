@@ -162,6 +162,7 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartItemLitter_OnChange(void);
+static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
@@ -568,7 +569,13 @@ consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartAirDrop_OnChange);
+
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
+
+#define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
+static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
+consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
+#undef ANTIBUMP_MAX
 
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
@@ -7692,6 +7699,30 @@ static void KartItemLitter_OnChange(void)
 		{
 			CONS_Printf(M_GetText("Item littering will be turned \"Off\" next round.\n"));
 		}
+	}
+}
+
+static void KartAntiBump_OnChange(void)
+{
+	if (K_CanChangeRules() == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(
+			M_GetText("Player collision delay has been changed to \"%s\".\n"),
+			cv_kartantibump.string
+		);
+		antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+	}
+	else
+	{
+		CONS_Printf(
+			M_GetText("Player collision delay will be changed to \"%s\" next round.\n"),
+			cv_kartantibump.string
+		);
 	}
 }
 

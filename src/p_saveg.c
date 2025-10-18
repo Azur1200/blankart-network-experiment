@@ -4177,6 +4177,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlittering);
 	SYNC(bumpsparkactive);
 	SYNC(invintype);
+	SYNC(antibumptime);
 
 	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
 	{

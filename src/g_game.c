@@ -313,6 +313,7 @@ boolean legitimateexit; // Did this client actually finish the match?
 boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
 tic_t curlap; // Current lap time
 tic_t bestlap; // Best lap time
+tic_t antibumptime; // Delay before players start bumping into one another.
 
 typedef struct
 {

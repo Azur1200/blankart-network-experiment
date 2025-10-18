@@ -1154,6 +1154,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
+			// If antibump is active, ignore player collisions.
+			if (leveltime < starttime + antibumptime)
+			{
+				return BMIT_CONTINUE;
+			}
+
 			if (thing->player->squishedtimer || thing->player->hyudorotimer
 				|| thing->player->justbumped || thing->scale > g_tm.thing->scale + (mapobjectscale/8)
 				|| g_tm.thing->player->squishedtimer || g_tm.thing->player->hyudorotimer
