@@ -490,7 +490,7 @@ consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillabo
 consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
@@ -502,7 +502,7 @@ consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_sta
 
 consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
