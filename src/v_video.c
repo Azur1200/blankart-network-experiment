@@ -2806,6 +2806,7 @@ void V_DrawStringScaledEx(
 					if (nodanceoverride)
 					{
 						dance = false;
+						cyoff = 0;
 					}
 				}
 				else if (c == V_STRINGDANCE)
