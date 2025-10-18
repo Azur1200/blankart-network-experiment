@@ -3079,9 +3079,13 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
-		if (doprints)
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
-		return NULL;
+		//this section courtesy of fickle - v1.1 battle royale
+		// screw collision chex
+		return playerstarts[pos % numcoopstarts];
+
+		// if (doprints)
+		// 	CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
+		// return NULL;
 	}
 
 	if (modeattacking != ATTACKING_ITEMBREAK)

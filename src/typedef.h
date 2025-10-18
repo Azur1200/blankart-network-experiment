@@ -66,7 +66,6 @@ TYPEDEF (serverinfoupdate_pak);
 TYPEDEF (askinfo_pak);
 TYPEDEF (msaskinfo_pak);
 TYPEDEF (plrinfo);
-TYPEDEF (plrconfig);
 TYPEDEF (filesneededconfig_pak);
 TYPEDEF (doomdata_t);
 TYPEDEF (serverelem_t);

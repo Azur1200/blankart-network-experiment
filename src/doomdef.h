@@ -91,7 +91,7 @@ extern "C" {
 
 // Special Hashing.
 //#define NOFILEHASH
-//#define NOVERIFYIWADS
+#define NOVERIFYIWADS
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK
@@ -189,8 +189,7 @@ extern char logfilename[1024];
 // The maximum number of players, multiplayer/networking.
 // NOTE: it needs more than this to increase the number of players...
 
-#define MAXPLAYERS 16
-#define PLAYERSMASK (MAXPLAYERS-1)
+#define MAXPLAYERS 32	// 32 + host slot
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
@@ -202,12 +201,14 @@ extern char logfilename[1024];
 #define MAXCOLORNAME 32
 #define NUMCOLORFREESLOTS 32768
 
+#define MAXGPPLAYERS 16	// max players in Grand Prix only
+
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
 #define ENCOREFADECOLOR 209 // 122
 
-// Master Server compatibility ONLY
-#define MSCOMPAT_MAXPLAYERS (32)
+// the highest number of playerinfo entries we can fit into a single packet
+#define MAXPLAYERINFO 32
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().

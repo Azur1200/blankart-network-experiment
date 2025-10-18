@@ -327,23 +327,11 @@ struct plrinfo
 {
 	UINT8 num;
 	char name[MAXPLAYERNAME+1];
-	UINT8 address[4]; // sending another string would run us up against MAXPACKETLENGTH
 	UINT8 team;
 	UINT16 skin;
 	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
 	UINT32 score;
 	UINT16 timeinserver; // In seconds.
-} ATTRPACK;
-
-// Shortest player information for join during intermission.
-struct plrconfig
-{
-	char name[MAXPLAYERNAME+1];
-	UINT16 skin;
-	UINT16 color;
-	UINT32 pflags;
-	UINT32 score;
-	UINT8 ctfteam;
 } ATTRPACK;
 
 struct filesneededconfig_pak
@@ -392,8 +380,7 @@ struct doomdata_t
 		serverinfoupdate_pak serverinfoupdate;
 		askinfo_pak askinfo;
 		msaskinfo_pak msaskinfo;
-		plrinfo playerinfo[MSCOMPAT_MAXPLAYERS];
-		plrconfig playerconfig[MAXPLAYERS];
+		plrinfo playerinfo[MAXPLAYERINFO];
 		INT32 filesneedednum;
 		filesneededconfig_pak filesneededcfg;
 		netinfo_pak netinfo;
@@ -580,7 +567,7 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
 extern UINT8 playerconsole[MAXPLAYERS];
-extern plrinfo playerinfo[MAXPLAYERS];
+extern plrinfo playerinfo[MAXPLAYERINFO];
 extern SINT8 joinnode;
 
 #define SERVMUS_1 "SRVMS1"

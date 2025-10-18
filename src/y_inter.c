@@ -459,6 +459,10 @@ void Y_IntermissionDrawer(void)
 		INT32 y = 41, gutter = ((data.numplayers > NUMFORNEWCOLUMN) ? 0 : (BASEVIDWIDTH/2));
 		INT32 dupadjust = (vid.width/vid.dupx), duptweak = (dupadjust - BASEVIDWIDTH)/2;
 		const char *timeheader;
+		
+		boolean manyplayers16 = (data.numplayers > NUMFORNEWCOLUMN*2);
+		boolean manyplayers8 = (data.numplayers > NUMFORNEWCOLUMN);
+
 		int y2;
 
 		if (data.rankingsmode)
@@ -492,7 +496,17 @@ void Y_IntermissionDrawer(void)
 		if (data.encore)
 			V_DrawCenteredString(-4 + x + BASEVIDWIDTH/2, 12-8, hilicol, "ENCORE MODE");
 
-		if (data.numplayers > NUMFORNEWCOLUMN)
+		if (manyplayers16)
+		{
+			V_DrawFill(x+101, 24, 1, 158, 0);
+			V_DrawFill(x+207, 24, 1, 158, 0);
+			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
+
+			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
+
+			y = 37;
+		}
+		else if (manyplayers8)
 		{
 			V_DrawFill(x+156, 24, 1, 158, 0);
 			V_DrawFill((x-3) - duptweak, 182, dupadjust-2, 1, 0);
@@ -502,11 +516,13 @@ void Y_IntermissionDrawer(void)
 
 			V_DrawRightAlignedString(x+152, 24, hilicol, timeheader);
 		}
-
-		V_DrawCenteredString(x+6, 24, hilicol, "#");
-		V_DrawString(x+36, 24, hilicol, "NAME");
-
-		V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
+		else
+		{
+			V_DrawCenteredString(x+6, 24, hilicol, "#");
+			V_DrawString(x+36, 24, hilicol, "NAME");
+	
+			V_DrawRightAlignedString(x+(BASEVIDWIDTH/2)+152, 24, hilicol, timeheader);
+		}
 
 		for (i = 0; i < data.numplayers; i++)
 		{
@@ -520,17 +536,29 @@ void Y_IntermissionDrawer(void)
 				if (dojitter)
 					y--;
 
-				V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
+				if (manyplayers16)
+					V_DrawPingNum(x+6, y+2, 0, data.pos[i], NULL);
+				else
+					V_DrawCenteredString(x+6, y, 0, va("%d", data.pos[i]));
 
 				if (data.color[i])
 				{
 					UINT8 *colormap = R_GetTranslationColormap(*data.character[i], *data.color[i], GTC_CACHE);
 					patch_t *facerank = faceprefix[*data.character[i]][FACE_RANK];
 
-					V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+					if (manyplayers16)
+					{
+						// fixed_t scale = K_UseHighResPortraits() ? FRACUNIT/4 : FRACUNIT/2;
+						fixed_t scale = FRACUNIT/2;
+						V_DrawFixedPatch((x+8)<<FRACBITS, (y+1)<<FRACBITS, scale, 0, facerank, colormap);
+					}
+					else
+					{
+						V_DrawMappedPatch(x+16+facerank->leftoffset, y-4+facerank->topoffset, 0, facerank, colormap);
+					}
 				}
 
-				if (data.num[i] == whiteplayer)
+				if (data.num[i] == whiteplayer && data.numplayers <= NUMFORNEWCOLUMN*2)
 				{
 					UINT8 cursorframe = (intertic / 4) % 8;
 					patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
@@ -540,14 +568,25 @@ void Y_IntermissionDrawer(void)
 				if ((players[data.num[i]].pflags & PF_NOCONTEST) && players[data.num[i]].bot)
 				{
 					// RETIRED!!
-					V_DrawScaledPatch(x+12, y-7, 0, W_CachePatchName("K_NOBLNS", PU_CACHE));
+					patch_t *retire = W_CachePatchName("K_NOBLNS", PU_CACHE);
+					if (manyplayers16)
+					{
+						fixed_t scale = FRACUNIT/2;
+						V_DrawFixedPatch(x+6, y-3, scale, 0, retire, NULL);
+					}
+					else
+					{
+						V_DrawScaledPatch(x+12, y-7, 0, retire);
+					}
 				}
 
 				STRBUFCPY(strtime, data.name[i]);
 
 				y2 = y;
 
-				if (data.numplayers > NUMFORNEWCOLUMN)
+				if (manyplayers16)
+					V_DrawThinString(x+18, y, hilicol|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
+				else if (manyplayers8)
 					V_DrawThinString(x+36, y2-1, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE|V_6WIDTHSPACE, strtime);
 				else
 					V_DrawString(x+36, y2, ((data.num[i] == whiteplayer) ? hilicol : 0)|V_ALLOWLOWERCASE, strtime);
@@ -571,7 +610,9 @@ void Y_IntermissionDrawer(void)
 							else
 								snprintf(strtime, sizeof strtime, "(%d)", data.increase[data.num[i]]);
 
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+83+gutter, y, V_6WIDTHSPACE, strtime);
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+133+gutter, y-1, V_6WIDTHSPACE, strtime);
 							else
 								V_DrawRightAlignedString(x+118+gutter, y, 0, strtime);
@@ -580,7 +621,9 @@ void Y_IntermissionDrawer(void)
 						snprintf(strtime, sizeof strtime, "%d", data.val[i]);
 					}
 
-					if (data.numplayers > NUMFORNEWCOLUMN)
+					if (manyplayers16)
+						V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, strtime);
+					else if (manyplayers8)
 						V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
 					else
 						V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
@@ -588,7 +631,7 @@ void Y_IntermissionDrawer(void)
 				else
 				{
 					if (data.val[i] == (UINT32_MAX-1))
-						V_DrawRightAlignedThinString(x+152+gutter, y-1, (data.numplayers > NUMFORNEWCOLUMN ? V_6WIDTHSPACE : 0), "NO CONTEST.");
+						V_DrawRightAlignedThinString(x+(manyplayers16 ? 100 : 152)+gutter, y-1, (manyplayers8 ? V_6WIDTHSPACE : 0), "NO CONTEST.");
 					else
 					{
 						if (intertype == int_race || intertype == int_battletime)
@@ -597,14 +640,18 @@ void Y_IntermissionDrawer(void)
 							G_TicsToSeconds(data.val[i]), G_TicsToCentiseconds(data.val[i]));
 							strtime[sizeof strtime - 1] = '\0';
 
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, strtime);
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, strtime);
 							else
 								V_DrawRightAlignedString(x+152+gutter, y, 0, strtime);
 						}
 						else
 						{
-							if (data.numplayers > NUMFORNEWCOLUMN)
+							if (manyplayers16)
+								V_DrawRightAlignedThinString(x+100+gutter, y, V_6WIDTHSPACE, va("%i", data.val[i]));
+							else if (manyplayers8)
 								V_DrawRightAlignedThinString(x+152+gutter, y-1, V_6WIDTHSPACE, va("%i", data.val[i]));
 							else
 								V_DrawRightAlignedString(x+152+gutter, y, 0, va("%i", data.val[i]));
@@ -618,13 +665,27 @@ void Y_IntermissionDrawer(void)
 			else
 				data.num[i] = MAXPLAYERS; // this should be the only field setting in this function
 
-			y += 18;
-
-			if (i == NUMFORNEWCOLUMN-1)
+			if (manyplayers16)
 			{
-				y = 41;
-				x += BASEVIDWIDTH/2;
+				y += 10;
+
+				if (i % 14 == 13)
+				{
+					y = 37;
+					x += BASEVIDWIDTH/3;
+				}
 			}
+			else
+			{
+				y += 18;
+
+				if (i == NUMFORNEWCOLUMN-1)
+				{
+					y = 41;
+					x += BASEVIDWIDTH/2;
+				}
+			}
+
 #undef NUMFORNEWCOLUMN
 		}
 	}
@@ -1172,7 +1233,7 @@ static fixed_t Y_CalculatePicScale(fixed_t picscale, INT32 hypoti)
 //
 void Y_VoteDrawer(void)
 {
-	INT32 rowval, i, lvls, x, picdiff, y = 0, height = 0;
+	INT32 rowval, i, px, lvls, x, picdiff, y = 0, height = 0;
 	UINT8 selected[12];
 	fixed_t rubyheight = 0;
 	fixed_t scale;
@@ -1185,6 +1246,9 @@ void Y_VoteDrawer(void)
 	INT32 vidy = ((vid.height) / vid.dupy);
 	fixed_t hypotf = 0;
 	INT32 hypoti = 0;
+
+	INT32 numplayers = 0;
+	boolean highplayers = false;
 
 	// get the hypotenuse
 	hypoti = (vidx*vidx) + (vidy*vidy);
@@ -1429,8 +1493,25 @@ void Y_VoteDrawer(void)
 	x = 20;
 	y = 10;
 
+	for (px = 0; px < MAXPLAYERS; px++)
+	{
+		if (playeringame[px])
+		{
+			numplayers++;
+		}
+	}
+
+	highplayers = numplayers > 16;
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
+		INT32 bigaddx = 60; INT32 bigaddy = 30;
+		INT32 smalladdx = 42; INT32 smalladdy = 18;
+		INT32 smallfaceheight = 0; INT32 bigfaceheight = 9;
+		INT32 smallrectheight = 18; INT32 bigrectheight = 27;
+		INT32 smallrubyoffset = 4<<FRACBITS;
+		INT32 smallpicoffset = 4<<FRACBITS;
+
 		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
 			continue;
 
@@ -1445,19 +1526,27 @@ void Y_VoteDrawer(void)
 
 			if (!timer && i == voteclient.ranim)
 			{
-				V_DrawScaledPatch(x-18, y+9, V_SNAPTOLEFT, VoteScreen.cursor[0]);
+				V_DrawScaledPatch(x-18, y+(highplayers ? 2 : bigfaceheight), V_SNAPTOLEFT, VoteScreen.cursor[0]);
 				if (voteendtic != -1 && !(votetic % 4))
-					V_DrawFill(x-1, y-1, 42, 27, 0|V_SNAPTOLEFT);
+					V_DrawFill(x-1, y-1, 42, (highplayers ? smallrectheight : bigrectheight), 0|V_SNAPTOLEFT);
 				else
-					V_DrawFill(x-1, y-1, 42, 27, levelinfo[votes[i]].gtc|V_SNAPTOLEFT);
+					V_DrawFill(x-1, y-1, 42, (highplayers ? smallrectheight : bigrectheight), levelinfo[votes[i]].gtc|V_SNAPTOLEFT);
 			}
 
+			if (highplayers)
+			{
+				V_SetClipRect(x<<FRACBITS, y<<FRACBITS, 48<<FRACBITS, 16<<FRACBITS, V_SNAPTOLEFT);
+			}
 			if (!levelinfo[votes[i]].encore)
-				V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT, pic, NULL);
+				V_DrawFixedPatch(x<<FRACBITS, (y<<FRACBITS) - (highplayers ? smallpicoffset : 0), scale, V_SNAPTOLEFT, pic, NULL);
 			else
 			{
-				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, y<<FRACBITS, scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
-				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight, FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
+				V_DrawFixedPatch((x+FixedMul(pic->width, scale))<<FRACBITS, (y<<FRACBITS) - (highplayers ? smallpicoffset : 0), scale, V_SNAPTOLEFT|V_FLIP, pic, NULL);
+				V_DrawFixedPatch((x+20)<<FRACBITS, (y<<FRACBITS) + (25<<(FRACBITS-1)) - rubyheight - (highplayers ? smallrubyoffset : 0), FRACUNIT/2, V_SNAPTOLEFT, VoteScreen.rubyicon, NULL);
+			}
+			if (highplayers)
+			{
+				V_ClearClipRect();
 			}
 
 			if (levelinfo[votes[i]].gts)
@@ -1471,22 +1560,22 @@ void Y_VoteDrawer(void)
 				UINT8 *colormap = R_GetTranslationColormap(players[i].skin, players[i].skincolor, GTC_CACHE);
 				patch_t *facerank = faceprefix[players[i].skin][FACE_RANK];
 
-				V_DrawMappedPatch(x+24+facerank->leftoffset, y+9+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
+				V_DrawMappedPatch(x+24+facerank->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+facerank->topoffset, V_SNAPTOLEFT, facerank, colormap);
 			}
 
 			if (!splitscreen && i == consoleplayer)
 			{
 				UINT8 cursorframe = (votetic / 4) % 8;
 				patch_t *highlight = W_CachePatchName(va("K_CHILI%d", cursorframe+1), PU_CACHE);
-				V_DrawScaledPatch(x+24+highlight->leftoffset, y+9+highlight->topoffset, V_SNAPTOLEFT, highlight);
+				V_DrawScaledPatch(x+24+highlight->leftoffset, y+(highplayers ? smallfaceheight : bigfaceheight)+highlight->topoffset, V_SNAPTOLEFT, highlight);
 			}
 		}
 
-		y += 30;
+		y += highplayers ? smalladdy : bigaddy;
 
 		if (y > BASEVIDHEIGHT-40)
 		{
-			x += 60;
+			x += highplayers ? smalladdx : bigaddx;
 			y = 10;
 		}
 	}
