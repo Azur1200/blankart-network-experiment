@@ -18,6 +18,7 @@
 #include "doomstat.h"
 #include "d_event.h"
 #include "m_textinput.h"
+#include "filesrch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,7 +92,7 @@ typedef enum {
 } menudemotype_e;
 
 struct menudemo_t {
-	char filepath[256];
+	char filepath[MAXFILEPATH];
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints

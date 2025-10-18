@@ -44,7 +44,7 @@ consvar_t cv_addons_search_case = CVAR_INIT ("addons_search_case", "No", CV_SAVE
 static CV_PossibleValue_t addons_search_type_cons_t[] = {{0, "Start"}, {1, "Anywhere"}, {0, NULL}};
 consvar_t cv_addons_search_type = CVAR_INIT ("addons_search_type", "Anywhere", CV_SAVE, addons_search_type_cons_t, NULL);
 
-char menupath[1024];
+char menupath[MAXFILEPATH];
 size_t menupathindex[menudepth];
 size_t menudepthleft = menudepth;
 
@@ -68,7 +68,7 @@ filestatus_t filesearch(char *filename, const char *startpath, UINT64 wantedhash
 	int found = 0;
 	char *searchname = strdup(filename);
 	int depthleft = maxsearchdepth;
-	char searchpath[1024];
+	char searchpath[MAXFILEPATH];
 	size_t *searchpathindex;
 
 	dirhandle = (DIR**) malloc(maxsearchdepth * sizeof (DIR*));
