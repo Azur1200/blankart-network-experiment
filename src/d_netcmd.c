@@ -7712,7 +7712,7 @@ static void KartAntiBump_OnChange(void)
 	if (leveltime < starttime)
 	{
 		CONS_Printf(
-			M_GetText("Player collision delay has been changed to \"%s\".\n"),
+			M_GetText("Player collision delay has been changed to %s seconds.\n"),
 			cv_kartantibump.string
 		);
 		antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
@@ -7720,7 +7720,7 @@ static void KartAntiBump_OnChange(void)
 	else
 	{
 		CONS_Printf(
-			M_GetText("Player collision delay will be changed to \"%s\" next round.\n"),
+			M_GetText("Player collision delay will be changed to %s seconds next round.\n"),
 			cv_kartantibump.string
 		);
 	}
