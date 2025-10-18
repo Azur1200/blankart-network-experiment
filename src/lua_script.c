@@ -1010,6 +1010,7 @@ void LUA_InvalidateLevel(void)
 		LUA_InvalidateUserdata(&sectors[i]);
 		LUA_InvalidateUserdata(&sectors[i].lines);
 		LUA_InvalidateUserdata(&sectors[i].tags);
+		LUA_InvalidateUserdata(&sectors[i].args);
 		if (sectors[i].ffloors)
 		{
 			for (rover = sectors[i].ffloors; rover; rover = rover->next)
@@ -1068,6 +1069,8 @@ void LUA_InvalidateMapthings(void)
 		LUA_InvalidateUserdata(&mapthings[i]);
 		LUA_InvalidateUserdata(mapthings[i].args);
 		LUA_InvalidateUserdata(mapthings[i].stringargs);
+		LUA_InvalidateUserdata(mapthings[i].script_args);
+		LUA_InvalidateUserdata(mapthings[i].script_stringargs);
 	}
 }
 
@@ -1079,6 +1082,7 @@ void LUA_InvalidatePlayer(player_t *player)
 	LUA_InvalidateUserdata(player->karthud);
 	LUA_InvalidateUserdata(player->kartstuff);
 	LUA_InvalidateUserdata(player->powers);
+	LUA_InvalidateUserdata(&player->loop);
 	LUA_InvalidateUserdata(&player->cmd);
 }
 
@@ -1138,8 +1142,8 @@ static const struct {
 	{META_FFLOOR,	ARCH_FFLOOR},
 	{META_POLYOBJ,  ARCH_POLYOBJ},
 	{META_SLOPE,    ARCH_SLOPE},
-	{META_MAPHEADER,   ARCH_MAPHEADER},
-	{META_SKINCOLOR,   ARCH_SKINCOLOR},
+	{META_MAPHEADER,ARCH_MAPHEADER},
+	{META_SKINCOLOR,ARCH_SKINCOLOR},
 	{NULL,          ARCH_NULL}
 };
 
