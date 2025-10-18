@@ -189,7 +189,7 @@ extern char logfilename[1024];
 // The maximum number of players, multiplayer/networking.
 // NOTE: it needs more than this to increase the number of players...
 
-#define MAXPLAYERS 43	// 42 + host slot
+#define MAXPLAYERS 32	// 32 + host slot
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
@@ -206,7 +206,7 @@ extern char logfilename[1024];
 #define ENCOREFADECOLOR 209 // 122
 
 // the highest number of playerinfo entries we can fit into a single packet
-#define MAXPLAYERINFO 42
+#define MAXPLAYERINFO 32
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
