@@ -64,6 +64,11 @@ if(SRB2_CONFIG_ASAN)
 	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
 endif()
 
+if(SRB2_CONFIG_UBSAN)
+	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+endif()
+
 if(SRB2_CONFIG_TIDY)
 	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
 endif()
@@ -220,7 +225,7 @@ endif()
 target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
 
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-
+	target_compile_options(SRB2SDL2 PRIVATE -O0)
 else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
 endif()
@@ -233,6 +238,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	# This is a direct translation from versions.mk
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:GNU>>:
 		-Wall
+		-Wextra
 		-Wno-trigraphs
 		-W # Was controlled by RELAXWARNINGS
 		-Wfloat-equal
@@ -314,6 +320,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	# C, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
+		-Wextra
 		-Wno-absolute-value
 		-Wno-trigraphs
 		-Wno-error=non-literal-null-conversion
@@ -322,24 +329,12 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wno-error=unused-but-set-variable
 	>
 
-	# C, MSVC
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:MSVC>>:
-		# All warnings at and before Visual Studio 2019 RTM
-		# https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warnings-by-compiler-version?view=msvc-170
-		/Wv:19.20.27004.0
-	>
-
 	# C++, GNU, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
 		-Wno-unused-function
 		-Wno-unused-but-set-variable
 		-Wno-unused-private-field
-	>
-
-	# C++, MSVC
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:MSVC>>:
-		/Wv:19.20.27004.0
 	>
 
 	# GNU
@@ -351,10 +346,6 @@ if(SRB2_CONFIG_ERRORMODE)
 	target_compile_options(SRB2SDL2 PRIVATE
 		$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>:
 			-Werror
-		>
-
-		$<$<C_COMPILER_ID:MSVC>:
-			/WX
 		>
 	)
 endif()
@@ -373,7 +364,7 @@ target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 
 # Misc. build options from Makefiles
 if(SRB2_CONFIG_DEBUGMODE)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
+	target_compile_definitions(SRB2SDL2 PRIVATE -D_DEBUG -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
 endif()
 if(SRB2_CONFIG_MOBJCONSISTANCY)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)
