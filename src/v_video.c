@@ -32,15 +32,6 @@
 #include "doomstat.h"
 #include "r_fps.h"
 
-#if defined(__SSE__) || defined(__AVX__)
-#ifdef _WIN32
-#include <malloc.h>
-#define aligned_alloc(align, size) _aligned_malloc(size, align)
-#endif
-
-#include <immintrin.h>
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
 #endif

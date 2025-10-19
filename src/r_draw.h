@@ -44,6 +44,18 @@ extern floatv3_t *ds_su, *ds_sv, *ds_sz;
 extern float focallengthf[MAXSPLITSCREENPLAYERS];
 extern float zeroheight;
 
+enum columncontext_e
+{
+	COLUMNCONTEXT_DIRECT = 0,
+	COLUMNCONTEXT_FLUSH,
+};
+
+extern enum columncontext_e columncontext;
+void R_SetColumnContext(enum columncontext_e _columncontext);
+void SCR_SetDrawFuncs(enum columncontext_e _columncontext);
+
+void R_ResetColumnBuffer(void);
+
 /// \brief Top border
 #define BRDR_T 0
 /// \brief Bottom border
@@ -207,6 +219,16 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc);
 void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
+
+// column drawers which use buffered drawing with flush
+void R_DrawColumnFlush(drawcolumndata_t* dc);
+void R_DrawTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_DrawTranslatedColumnFlush(drawcolumndata_t* dc);
+void R_DrawColumnShadowedFlush(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumnFlush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumnFlush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumnFlush(drawcolumndata_t* dc);
+
 void R_DrawFogColumn(drawcolumndata_t* dc);
 void R_DrawColumnShadowed(drawcolumndata_t* dc);
 

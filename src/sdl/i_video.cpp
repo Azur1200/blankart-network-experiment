@@ -67,6 +67,7 @@
 #include "../console.h"
 #include "../command.h"
 #include "../r_main.h"
+#include "../r_draw.h"
 #include "../lua_hook.h"
 #include "sdlmain.h"
 #include "../i_system.h"
@@ -1485,7 +1486,7 @@ boolean VID_CheckRenderer(void)
 	if (rendermode == render_soft)
 	{
 		vid.rowbytes = vid.width;
-		SCR_SetDrawFuncs();
+		SCR_SetDrawFuncs(COLUMNCONTEXT_DIRECT);
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl && rendererchanged)
