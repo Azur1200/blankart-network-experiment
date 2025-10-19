@@ -188,25 +188,34 @@ static mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
 {
 	if (save->write)
 	{
-		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
-		return mo;
-	}
-	else
-		return (mobj_t *)(uintptr_t)READUINT32(save->p);
-}
-
-static mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
-{
-	if (save->write)
-	{
-		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
+		WRITEUINT32(save->p, mo != NULL ? mo->mobjnum : 0);
 		return mo;
 	}
 	else
 	{
 		UINT32 mobjnum = READUINT32(save->p);
-		return mobjnum == 0 ? NULL : P_FindNewPosition(mobjnum);
+		return mobjnum != 0 ? (mobj_t *)(uintptr_t)mobjnum : NULL;
 	}
+}
+
+static void P_RelinkMobj(savebuffer_t *save, mobj_t **ptr)
+{
+	if (save->write)
+		return;
+
+	UINT32 mobjnum = (UINT32)(uintptr_t)*ptr;
+	*ptr = NULL;
+
+	if (mobjnum == 0)
+		return;
+
+	mobj_t *new = P_FindNewPosition(mobjnum);
+	if (new == NULL)
+		// yeah, let's just silently remove an mobj pointer on the client's end
+		// what could possibly go wrong?
+		I_Error("mobjnum %u not found!", mobjnum);
+
+	P_SetTarget(ptr, new);
 }
 
 static waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
@@ -235,8 +244,8 @@ static waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 	boolean: P_SyncUINT8 \
 )(save, v)
 
-#define SYNCRELINK(v) v = _Generic(v, \
-	mobj_t *: P_SyncMobjAndRelink \
+#define RELINK(v) _Generic(v, \
+	mobj_t **: P_RelinkMobj \
 )(save, v)
 
 // Block UINT32s to attempt to ensure that the correct data is
@@ -1689,28 +1698,6 @@ enum mobj_diff_t
 	MD__MAX
 };
 
-static inline UINT32 SaveMobjnum(const mobj_t *mobj)
-{
-	if (mobj) return mobj->mobjnum;
-	return 0;
-}
-
-static mobj_t *SyncMobj(savebuffer_t *save, mobj_t *mobj)
-{
-	if (save->write)
-	{
-		if (mobj) WRITEUINT32(save->p, mobj->mobjnum);
-		else WRITEUINT32(save->p, 0);
-		return mobj;
-	}
-	else
-	{
-		UINT32 mobjnum = READUINT32(save->p);
-		if (mobjnum == 0) return NULL;
-		return (mobj_t *)(size_t)mobjnum;
-	}
-}
-
 static sector_t *LoadSector(UINT32 sector)
 {
 	if (sector >= numsectors) return NULL;
@@ -2307,15 +2294,14 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		if (save->write)
 		{
 			WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain) + 1);
-			WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
 		}
 		else
 		{
 			UINT32 terrain_index = READUINT32(save->p);
 			if (terrain_index > 0)
 				mobj->terrain = K_GetTerrainByIndex(terrain_index - 1);
-			mobj->terrainOverlay = (mobj_t *)(size_t)READUINT32(save->p);
 		}
+		SYNC(mobj->terrainOverlay);
 	}
 	SYNCDEF(MD3_GRAVITY, mobj->gravity, FRACUNIT);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakexoff);
@@ -2942,7 +2928,7 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 
 	ht->line = SyncLine(save, ht->line);
-	ht->caller = SyncMobj(save, ht->caller);
+	SYNC(ht->caller);
 	ht->sector = SyncSector(save, ht->sector);
 	SYNC(ht->timer);
 	return &ht->thinker;
@@ -3399,6 +3385,13 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 		// we don't want the removed mobjs to come back
 		P_InitThinkers();
 
+		// Oh my god don't blast random memory with our reference counts.
+		waypointcap = kitemcap = NULL;
+		for (i = 0; i <= 15; i++)
+		{
+			skyboxcenterpnts[i] = skyboxviewpnts[i] = NULL;
+		}
+
 		// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 		for (i = 0; i < numsectors; i++)
 		{
@@ -3466,16 +3459,13 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 
 		if (restoreNum)
 		{
-			executor_t *delay = NULL;
-			UINT32 mobjnum;
+			executor_t *delay;
 			for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
 			{
 				if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 					continue;
-				delay = (void *)currentthinker;
-				if (!(mobjnum = (UINT32)(size_t)delay->caller))
-					continue;
-				delay->caller = P_FindNewPosition(mobjnum);
+				delay = (executor_t *)currentthinker;
+				RELINK(&delay->caller);
 			}
 		}
 	}
@@ -3540,7 +3530,10 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 	{
 		SYNC(numtubewaypoints[i]);
 		for (j = 0; j < numtubewaypoints[i]; j++)
-			SYNCRELINK(tubewaypoints[i][j]);
+		{
+			SYNC(tubewaypoints[i][j]);
+			RELINK(&tubewaypoints[i][j]);
+		}
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -3644,14 +3637,7 @@ static inline void P_SyncPolyObjects(savebuffer_t *save)
 		P_SynchPolyObj(save, &PolyObjects[i]);
 }
 
-static mobj_t *RelinkMobj(mobj_t **ptr)
-{
-	UINT32 temp = (UINT32)(size_t)*ptr;
-	*ptr = NULL;
-	return P_SetTarget(ptr, P_FindNewPosition(temp));
-}
-
-static void P_RelinkPointers(void)
+static void P_RelinkPointers(savebuffer_t *save)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
@@ -3671,57 +3657,23 @@ static void P_RelinkPointers(void)
 			|| mobj->type == MT_SPARK))
 			continue;
 
-		if (mobj->tracer)
-		{
-			if (!RelinkMobj(&mobj->tracer))
-				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-		}
-		if (mobj->target)
-		{
-			if (!RelinkMobj(&mobj->target))
-				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-		}
-		if (mobj->hnext)
-		{
-			if (!RelinkMobj(&mobj->hnext))
-				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-		}
-		if (mobj->hprev)
-		{
-			if (!RelinkMobj(&mobj->hprev))
-				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-		}
-		if (mobj->itnext)
-		{
-			if (!RelinkMobj(&mobj->itnext))
-				CONS_Debug(DBG_GAMELOGIC, "itnext not found on %d\n", mobj->type);
-		}
-		if (mobj->terrainOverlay)
-		{
-			if (!RelinkMobj(&mobj->terrainOverlay))
-				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
-		}
+		RELINK(&mobj->tracer);
+		RELINK(&mobj->target);
+		RELINK(&mobj->hnext);
+		RELINK(&mobj->hprev);
+		RELINK(&mobj->itnext);
+		RELINK(&mobj->terrainOverlay);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
-		if (players[i].awayviewmobj)
-		{
-			if (!RelinkMobj(&players[i].awayviewmobj))
-				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on player %d\n", i);
-		}
-		if (players[i].followmobj)
-		{
-			if (!RelinkMobj(&players[i].followmobj))
-				CONS_Debug(DBG_GAMELOGIC, "followmobj not found on player %d\n", i);
-		}
-		if (players[i].follower)
-		{
-			if (!RelinkMobj(&players[i].follower))
-				CONS_Debug(DBG_GAMELOGIC, "follower not found on player %d\n", i);
-		}
+
+		RELINK(&players[i].awayviewmobj);
+		RELINK(&players[i].followmobj);
+		RELINK(&players[i].follower);
+
 		if (players[i].currentwaypoint)
 		{
 			temp = (UINT32)(size_t)players[i].currentwaypoint;
@@ -3731,6 +3683,7 @@ static void P_RelinkPointers(void)
 				CONS_Debug(DBG_GAMELOGIC, "currentwaypoint not found on player %d\n", i);
 			}
 		}
+
 		if (players[i].nextwaypoint)
 		{
 			temp = (UINT32)(size_t)players[i].nextwaypoint;
@@ -3740,11 +3693,8 @@ static void P_RelinkPointers(void)
 				CONS_Debug(DBG_GAMELOGIC, "nextwaypoint not found on player %d\n", i);
 			}
 		}
-		if (players[i].shieldtracer)
-		{
-			if (!RelinkMobj(&players[i].shieldtracer))
-				CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on player %d\n", i);
-		}
+
+		RELINK(&players[i].shieldtracer);
 	}
 }
 
@@ -4498,7 +4448,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_NetSyncColormaps(save);
 		P_NetSyncTubeWaypoints(save);
 		P_NetSyncWaypoints(save);
-		P_RelinkPointers();
+		P_RelinkPointers(save);
 	}
 
 	ACS_UnArchive(save);
