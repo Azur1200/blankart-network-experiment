@@ -240,10 +240,10 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		else
 			dest = R_GetBufferOpaque(dc);
 
-		INT32 vidwidth = 8; //SoM: Oh, Oh it's MAGIC! You know...
+		INT32 stride = 8; // SoM: Oh, Oh it's MAGIC! You know...
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
-			vidwidth = vid.width;
+			stride = vid.width;
 
 		count++;
 
@@ -268,7 +268,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			while (--count > 0)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 			}
 		}
@@ -313,7 +313,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					*dest = R_DrawColumnPixel<Type>(dc, dest, n);
 				}
 
-				dest += vidwidth;
+				dest += stride;
 
 				// Avoid overflow.
 				if (fracstep > 0x7FFFFFFF - frac)
@@ -338,12 +338,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 			}
 
