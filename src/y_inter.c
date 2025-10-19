@@ -208,7 +208,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		;
 	else if ((data.rankingsmode = (boolean)rankingsmode))
 	{
-		sprintf(data.levelstring, "* Total Rankings *");
+		sprintf(data.levelstring, "\x82*\x80 Total Rankings \x82*\x80");
 		data.encore = false;
 	}
 	else
@@ -218,7 +218,7 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 		{
 			snprintf(data.levelstring,
 				sizeof data.levelstring,
-				"* %s *",
+				"\x82*\x80 %s \x82*\x80",
 				bossinfo.enemyname);
 		}
 		else if (mapheaderinfo[prevmap]->levelflags & LF_NOZONE)
@@ -226,12 +226,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.levelstring,
 					sizeof data.levelstring,
-					"* %s %s *",
+					"\x82*\x80 %s %s \x82*\x80",
 					mapheaderinfo[prevmap]->lvlttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.levelstring,
 					sizeof data.levelstring,
-					"* %s *",
+					"\x82*\x80 %s \x82*\x80",
 					mapheaderinfo[prevmap]->lvlttl);
 		}
 		else
@@ -240,12 +240,12 @@ static void Y_CalculateMatchData(UINT8 rankingsmode, void (*comparison)(INT32))
 			if (mapheaderinfo[prevmap]->actnum[0])
 				snprintf(data.levelstring,
 					sizeof data.levelstring,
-					"* %s %s %s *",
+					"\x82*\x80 %s %s %s \x82*\x80",
 					mapheaderinfo[prevmap]->lvlttl, zonttl, mapheaderinfo[prevmap]->actnum);
 			else
 				snprintf(data.levelstring,
 					sizeof data.levelstring,
-					"* %s %s *",
+					"\x82*\x80 %s %s \x82*\x80",
 					mapheaderinfo[prevmap]->lvlttl, zonttl);
 		}
 
