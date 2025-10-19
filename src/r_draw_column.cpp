@@ -21,6 +21,12 @@
 // a has a constant z depth from top to bottom.
 //
 
+#include "r_draw.h"
+#include <tracy/tracy/Tracy.hpp>
+
+
+#include "r_draw_flush.cpp"
+
 enum DrawColumnType
 {
 	DC_BASIC			= 0x0000,
@@ -29,10 +35,11 @@ enum DrawColumnType
 	DC_BRIGHTMAP		= 0x0004,
 	DC_HOLES			= 0x0008,
 	DC_LIGHTLIST		= 0x0010,
+	DC_DIRECT			= 0x0020, // draw our columns directly to screen!
 };
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -45,7 +52,7 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit, UINT8 col)
 {
 	col = R_GetColumnTranslated<Type>(dc, col);
 
@@ -60,8 +67,9 @@ static constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit,
 	return dc->colormap[col];
 }
 
+// translucency is handled on flush side now!
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, UINT8 col)
 {
 	col = R_GetColumnBrightmapped<Type>(dc, bit, col);
 
@@ -76,7 +84,7 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest,
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit)
 {
 	UINT8 col = dc->source[bit];
 
@@ -88,6 +96,7 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT
 		}
 	}
 
+	// if we dont buffer our columns, we need to handle translucency again
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
@@ -100,16 +109,25 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	INT32 count;
 	UINT8 *dest;
 	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
 
+	// leban 1/17/99:
+	// removed the + 1 here, adjusted the if test, and added an increment
+	// later.  this helps a compiler pipeline a bit better.  the x86
+	// assembler also does this.
 	count = dc->yh - dc->yl;
 
+	// leban 1/17/99:
+	// this case isn't executed too often.  depending on how many instructions
+	// there are between here and the second if test below, this case could
+	// be moved down and might save instructions overall.  since there are
+	// probably different wads that favor one way or the other, i'll leave
+	// this alone for now.
 	if (count < 0) // Zero length, column does not exceed a pixel.
 	{
 		return;
 	}
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
+	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vidheight)
 	{
 		return;
 	}
@@ -174,6 +192,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			}
 
 			R_DrawColumnTemplate<NewType>(&dc_copy);
+
 			if (solid)
 			{
 				dc_copy.yl = bheight;
@@ -209,14 +228,29 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 		// Framebuffer destination address.
 
-		dest = R_Address(dc->x, dc->yl);
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			dest = R_Address(dc->x, dc->yl);
+		else if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			== (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			dest = R_GetBufferColormapTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+			dest = R_GetBufferTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_COLORMAP)
+			dest = R_GetBufferColormap(dc);
+		else
+			dest = R_GetBufferOpaque(dc);
+
+		INT32 stride = 8; // SoM: Oh, Oh it's MAGIC! You know...
+
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			stride = vid.width;
 
 		count++;
 
 		// Determine scaling, which is the only mapping to be done.
 		fracstep = dc->iscale;
 		//frac = dc_texturemid + (dc_yl - centery)*fracstep;
-		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep)) * (!dc->hires);
+		frac = dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep);
 
 		// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 		// This is as fast as it gets.
@@ -234,7 +268,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			while (--count > 0)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 			}
 		}
@@ -279,7 +313,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 					*dest = R_DrawColumnPixel<Type>(dc, dest, n);
 				}
 
-				dest += vidwidth;
+				dest += stride;
 
 				// Avoid overflow.
 				if (fracstep > 0x7FFFFFFF - frac)
@@ -304,12 +338,12 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			{
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 
 				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vidwidth;
+				dest += stride;
 				frac += fracstep;
 			}
 
@@ -330,8 +364,9 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	}
 
 #define DEFINE_COLUMN_COMBO(name, flags) \
-	DEFINE_COLUMN_FUNC(name, flags) \
-	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_BRIGHTMAP)
+	DEFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP) \
+	DEFINE_COLUMN_FUNC(name ## _Flush, flags)
 
 DEFINE_COLUMN_COMBO(R_DrawColumn, DC_BASIC)
 DEFINE_COLUMN_COMBO(R_DrawTranslucentColumn, DC_TRANSMAP)
@@ -340,6 +375,7 @@ DEFINE_COLUMN_COMBO(R_DrawColumnShadowed, DC_LIGHTLIST)
 DEFINE_COLUMN_COMBO(R_DrawTranslatedTranslucentColumn, DC_COLORMAP|DC_TRANSMAP)
 DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchColumn, DC_HOLES)
 DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchTranslucentColumn, DC_HOLES|DC_TRANSMAP)
+
 
 void R_DrawFogColumn(drawcolumndata_t *dc)
 {

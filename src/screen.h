@@ -112,10 +112,8 @@ void SCR_Startup(void);
 // Change video mode, only at the start of a refresh.
 void SCR_SetMode(void);
 
-// Set drawer functions for Software
-void SCR_SetDrawFuncs(void);
-
 // Set current column / span drawers
+//void R_SetColumnContext(enum columncontext_e _columncontext); // declared in r_draw!
 void R_SetColumnFunc(size_t id, boolean brightmapped);
 void R_SetSpanFunc(size_t id, boolean npo2, boolean brightmapped);
 boolean R_SetSpanFuncFlat(size_t id); // flat color

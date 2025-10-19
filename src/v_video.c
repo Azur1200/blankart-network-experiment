@@ -32,15 +32,6 @@
 #include "doomstat.h"
 #include "r_fps.h"
 
-#if defined(__SSE__) || defined(__AVX__)
-#ifdef _WIN32
-#include <malloc.h>
-#define aligned_alloc(align, size) _aligned_malloc(size, align)
-#endif
-
-#include <immintrin.h>
-#endif
-
 #ifdef HWRENDER
 #include "hardware/hw_glob.h"
 #endif
@@ -3882,12 +3873,19 @@ UINT8 GetColorLUTDirect(colorlookup_t *lut, UINT8 r, UINT8 g, UINT8 b)
 void V_Init(void)
 {
 	INT32 i;
-	const INT32 screensize = vid.rowbytes * vid.height;
+	INT32 screensize = vid.rowbytes * vid.height;
 
 	for (i = 0; i < NUMSCREENS; i++)
 	{
 		if (vid.screens[i])
+		{
+#if defined(__SSE__)
+			aligned_free(vid.screens[i]);
+#else
 			free(vid.screens[i]);
+#endif
+		}
+
 		vid.screens[i] = NULL;
 	}
 
@@ -3896,7 +3894,15 @@ void V_Init(void)
 	{
 		for (i = 0; i < NUMSCREENS; i++)
 		{
+			// we need to allocate these relative to their cpu restrictions to not trigger segfaults
+			// TODO: add support for sve and neon
+#if defined(__SSE__)
+			while (screensize & 15)
+				screensize++;
+			vid.screens[i] = aligned_alloc(16, screensize);
+#else
 			vid.screens[i] = malloc(screensize);
+#endif
 			memset(vid.screens[i], 0, screensize);
 		}
 	}

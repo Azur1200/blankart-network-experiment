@@ -867,9 +867,9 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	if (vis->mobj->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
-		
+
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
-		{	
+		{
 			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
@@ -1141,7 +1141,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
-	dc.hires = 0;
 
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -3602,6 +3601,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
+	}
+
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -3609,11 +3613,6 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	for (i = 0; i < DS_RANGES_COUNT; i++)
 	{
 		drawsegs_xranges[i].count = 0;
-	}
-
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
 	}
 
 	if (drawsegs_xrange_size < maxdrawsegs)
