@@ -128,13 +128,28 @@ void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 	colfuncs[COLDRAWFUNC_DROPSHADOW] = R_DrawDropShadowColumn;
 
-	colfuncs_bm[BASEDRAWFUNC] = R_DrawColumn_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Brightmap;
-	colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Brightmap;
+
+	if (_columncontext == COLUMNCONTEXT_FLUSH)
+	{
+		colfuncs_bm[BASEDRAWFUNC] = R_DrawColumnFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumnFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumnFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowedFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumnFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumnFlush_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumnFlush_Brightmap;
+	}
+	else
+	{
+		colfuncs_bm[BASEDRAWFUNC] = R_DrawColumn_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Brightmap;
+		colfuncs_bm[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Brightmap;
+	}
+
 	colfuncs_bm[COLDRAWFUNC_FOG] = NULL; // Not needed
 	colfuncs_bm[COLDRAWFUNC_DROPSHADOW] = NULL; // Not needed
 
