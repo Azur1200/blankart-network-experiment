@@ -904,7 +904,7 @@ void R_ApplyViewMorph(int s)
 		tmpscr[p] = srcscr[viewmorph[s].scrmap[p]];
 	}
 
-	VID_BlitLinearScreen(tmpscr, srcscr, vid.width, vid.height, vid.width, vid.width);
+	VID_BlitLinearScreen(tmpscr, srcscr, width, height, width, vid.width);
 }
 
 angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
