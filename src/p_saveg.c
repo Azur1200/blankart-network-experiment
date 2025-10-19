@@ -1401,18 +1401,21 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 
 static void SyncLines(savebuffer_t *save)
 {
-	size_t i = 0, j;
+	size_t i = 0, j = 0;
 	line_t *li;
 	side_t *si;
 	UINT8 diff[(LD__MAX>>3)+1];
 
-	for (;;)
+	for (i = 0;; i++)
 	{
 		memset(diff, 0, sizeof(diff));
 		if (save->write)
 		{
-			if (++i == numlines)
+			if (i >= numlines)
+			{
+				WRITEUINT16(save->p, 0xffff);
 				break;
+			}
 
 			DiffLines(&lines[i], &spawnlines[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
@@ -1421,18 +1424,16 @@ static void SyncLines(savebuffer_t *save)
 			if (diff[0] == 0)
 				continue;
 
-			WRITEUINT16(save->p, i);
+			// WRITEUINT16(save->p, i);
 		}
-		else
-		{
-			i = READUINT16(save->p);
 
-			if (i == 0xffff)
-				break;
+		i = P_SyncUINT16(save, i);
 
-			if (i >= numlines)
-				I_Error("Invalid line number %zu from server", i);
-		}
+		if (i == 0xffff)
+			break;
+
+		if (i >= numlines)
+			I_Error("Invalid line number %zu from server (expected end at %zu)", i, numlines);
 
 		li = &lines[i];
 		j = 0;
@@ -1534,9 +1535,6 @@ static void SyncLines(savebuffer_t *save)
 
 		SYNCF(LD_ACTIVATION, li->activation);
 	}
-
-	if (save->write)
-		WRITEUINT16(save->p, 0xffff);
 }
 
 static void P_NetSyncWorld(savebuffer_t *save)
