@@ -3740,10 +3740,10 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 		}
 	}
 
-	// Sky number
-	P_SyncStringN(save, globallevelskytexture, 9);
-
-	if (!save->write && strcmp(skytex, globallevelskytexture))
+	// Sky texture
+	strcpy(skytex, globallevelskytexture);
+	P_SyncStringN(save, skytex, 9);
+	if (strcmp(skytex, globallevelskytexture))
 		P_SetupLevelSky(skytex, true);
 
 	// Current global weather type
