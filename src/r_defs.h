@@ -1093,7 +1093,6 @@ typedef struct
 	INT32 yh;
 	fixed_t iscale;
 	fixed_t texturemid;
-	UINT8 hires;
 	UINT8 shadowcolor;
 
 	UINT8* source; // first pixel in a column

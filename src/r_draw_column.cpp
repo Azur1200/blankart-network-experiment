@@ -250,7 +250,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		// Determine scaling, which is the only mapping to be done.
 		fracstep = dc->iscale;
 		//frac = dc_texturemid + (dc_yl - centery)*fracstep;
-		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep)) * (!dc->hires);
+		frac = dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep);
 
 		// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
 		// This is as fast as it gets.

@@ -1141,7 +1141,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
-	dc.hires = 0;
 
 	vis->x1 = x1;
 	vis->x2 = x2;
