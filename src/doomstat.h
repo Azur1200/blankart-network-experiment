@@ -684,6 +684,7 @@ extern tic_t bombflashtimer;	// Used to avoid causing seizures if multiple mines
 extern boolean legitimateexit;
 extern boolean comebackshowninfo;
 extern tic_t curlap, bestlap;
+extern tic_t antibumptime;
 
 extern INT16 votelevels[12][2];
 extern SINT8 votes[MAXPLAYERS];

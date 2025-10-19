@@ -4296,9 +4296,9 @@ boolean P_BossTargetPlayer(mobj_t *actor, boolean closest)
 	// first time init, this allow minimum lastlook changes
 	if (actor->lastlook < 0)
 		actor->lastlook = P_RandomByte();
-	actor->lastlook &= PLAYERSMASK;
+	actor->lastlook %= MAXPLAYERS;
 
-	for( ; ; actor->lastlook = (actor->lastlook+1) & PLAYERSMASK)
+	for( ; ; actor->lastlook = (actor->lastlook+1) % MAXPLAYERS)
 	{
 		// save the first look so we stop next time.
 		if (stop < 0)
@@ -12751,9 +12751,9 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 
 static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 {
-#if MAXPLAYERS > 32
-	You should think about modifying the deathmatch starts to take full advantage of this!
-#endif
+// #if MAXPLAYERS > 32
+// 	You should think about modifying the deathmatch starts to take full advantage of this!
+// #endif
 	if (mthing->type <= MAXPLAYERS) // Player starts
 	{
 		// save spots for respawning in network games
@@ -12804,11 +12804,11 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	{
 		return true; // These are handled elsewhere.
 	}
-	else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
-	{
-		CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
-		return true;
-	}
+	// else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
+	// {
+	// 	CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
+	// 	return true;
+	// }
 
 	return false;
 }

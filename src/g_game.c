@@ -323,6 +323,7 @@ boolean legitimateexit; // Did this client actually finish the match?
 boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
 tic_t curlap; // Current lap time
 tic_t bestlap; // Best lap time
+tic_t antibumptime; // Delay before players start bumping into one another.
 
 typedef struct
 {
@@ -3292,9 +3293,13 @@ mapthing_t *G_FindRaceStart(INT32 playernum)
 		// Just spawn there.
 		//return playerstarts[0];
 
-		if (doprints)
-			CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
-		return NULL;
+		//this section courtesy of fickle - v1.1 battle royale
+		// screw collision chex
+		return playerstarts[pos % numcoopstarts];
+
+		// if (doprints)
+		// 	CONS_Alert(CONS_WARNING, M_GetText("Could not spawn at any Race starts!\n"));
+		// return NULL;
 	}
 
 	if (modeattacking != ATTACKING_ITEMBREAK)

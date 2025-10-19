@@ -602,7 +602,7 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, plr->mo, META_MOBJ);
 		break;
 	case player_mo:
-		if (plr->spectator)
+		if (!plr || plr->spectator)
 			lua_pushnil(L); // sigh
 		else
 			LUA_PushUserdata(L, plr->mo, META_MOBJ);

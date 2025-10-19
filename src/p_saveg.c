@@ -115,6 +115,7 @@ static INT32 P_SyncINT32(savebuffer_t *save, INT32 v)
 		return READINT32(save->p);
 }
 
+/*
 static char P_SyncChar(savebuffer_t *save, char v)
 {
 	if (save->write)
@@ -125,6 +126,7 @@ static char P_SyncChar(savebuffer_t *save, char v)
 	else
 		return READCHAR(save->p);
 }
+*/
 
 static fixed_t P_SyncFixed(savebuffer_t *save, fixed_t v)
 {
@@ -156,6 +158,7 @@ static void P_SyncStringN(savebuffer_t *save, char *s, size_t n)
 		READSTRINGN(save->p, s, n);
 }
 
+/*
 static void P_SyncStringL(savebuffer_t *save, char *s, size_t n)
 {
 	if (save->write)
@@ -171,6 +174,7 @@ static void P_SyncString(savebuffer_t *save, char *s)
 	else
 		READSTRING(save->p, s);
 }
+*/
 
 static void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 {
@@ -1114,7 +1118,7 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 		WRITEUINT16(save->p, 0xffff);
 }
 
-static void DiffSectors(savebuffer_t *save, const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
+static void DiffSectors(const sector_t *ss, const sector_t *spawnss, UINT8 diff[])
 {
 	DIFFNE(ss, floorheight, SD_FLOORHT);
 	DIFFNE(ss, ceilingheight, SD_CEILHT);
@@ -1165,37 +1169,38 @@ static void DiffSectors(savebuffer_t *save, const sector_t *ss, const sector_t *
 
 static void SyncSectors(savebuffer_t *save)
 {
-	size_t i = 0, j;
+	size_t i = 0, j = 0;
 	sector_t *sec;
 	UINT8 diff[(SD__MAX>>3) + 1];
 
-	for (;;)
+	for (i = 0;; i++)
 	{
 		memset(diff, 0, sizeof(diff));
 		if (save->write)
 		{
-			if (++i == numsectors)
+			if (i >= numsectors)
+			{
+				WRITEUINT16(save->p, 0xffff);
 				break;
+			}
 
-			DiffSectors(save, &sectors[i], &spawnsectors[i], diff);
+			DiffSectors(&sectors[i], &spawnsectors[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
 				if (diff[j])
 					diff[j-1] |= 0x80;
 			if (diff[0] == 0)
 				continue;
 
-			WRITEUINT16(save->p, i);
+			// WRITEUINT16(save->p, i);
 		}
-		else
-		{
-			i = READUINT16(save->p);
 
-			if (i == 0xffff)
-				break;
+		i = P_SyncUINT16(save, i);
 
-			if (i >= numsectors)
-				I_Error("Invalid sector number %zu from server (expected end at %zu)", i, numsectors);
-		}
+		if (i == 0xffff)
+			break;
+
+		if (i >= numsectors)
+			I_Error("Invalid sector number %zu from server (expected end at %zu)", i, numsectors);
 
 		sec = &sectors[i];
 		j = 0;
@@ -1353,12 +1358,9 @@ static void SyncSectors(savebuffer_t *save)
 			}
 		}
 	}
-
-	if (save->write)
-		WRITEUINT16(save->p, 0xffff);
 }
 
-static void DiffLines(savebuffer_t *save, const line_t *li, const line_t *spawnli, UINT8 diff[])
+static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 {
 	const side_t *si, *spawnsi;
 
@@ -1411,7 +1413,7 @@ static void SyncLines(savebuffer_t *save)
 			if (++i == numlines)
 				break;
 
-			DiffLines(save, &lines[i], &spawnlines[i], diff);
+			DiffLines(&lines[i], &spawnlines[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
 				if (diff[j])
 					diff[j-1] |= 0x80;
@@ -4177,6 +4179,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlittering);
 	SYNC(bumpsparkactive);
 	SYNC(invintype);
+	SYNC(antibumptime);
 
 	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
 	{

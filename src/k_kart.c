@@ -376,7 +376,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartchainingsound);
 
 	CV_RegisterVar(&cv_kartairdrop);
+
 	CV_RegisterVar(&cv_kartitemlitter);
+
+	CV_RegisterVar(&cv_kartantibump);
 
 	CV_RegisterVar(&cv_kartitembreaker);
 

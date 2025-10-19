@@ -8688,7 +8688,7 @@ void MD_DrawViewServer(void)
 
 		if (playeramount > 0)
 		{
-			for (i = 0; i < MAXPLAYERS; i++)
+			for (i = 0; i < MAXPLAYERINFO; i++)
 			{
 				if (playerinfo[i].num < 255)
 				{
