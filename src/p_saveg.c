@@ -1105,13 +1105,14 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 				break;
 			if (j != fflr_i) // this ffloor was not modified
 				continue;
-
-			fflr_i = READUINT16(save->p); // get next ffloor "number" ready
 		}
 
 		SYNC(diff[0]);
 		SYNCF(FD_FLAGS, rover->fofflags);
 		SYNCF(FD_ALPHA, rover->alpha);
+
+		if (!save->write)
+			fflr_i = READUINT16(save->p); // get next ffloor "number" ready
 	}
 
 	if (save->write)
