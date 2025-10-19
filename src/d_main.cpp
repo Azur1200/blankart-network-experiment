@@ -293,7 +293,6 @@ boolean D_RenderLevel(void)
 	viewwindowy = 0;
 	viewwindowx = 0;
 
-	topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 	objectsdrawn = 0;
 
 	ps_rendercalltime = I_GetPreciseTime();
@@ -305,12 +304,12 @@ boolean D_RenderLevel(void)
 			if (cv_homremoval.value == 1)
 			{
 				// Clear the software screen buffer to remove HOM
-				memset(screens[0], 31, vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 31, vid.width * vid.height);
 			}
 			else
 			{
 				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
 			}
 		}
 
@@ -357,29 +356,20 @@ boolean D_RenderLevel(void)
 								viewwindowx = 0;
 								viewwindowy = viewheight;
 							}
-							M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
 							break;
 						case 2:
 							viewwindowx = 0;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
 							break;
 						case 3:
 							viewwindowx = viewwidth;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
 						default:
 							break;
 					}
-
-
-					topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 				}
 
 				R_RenderPlayerView();
-
-				if (i > 0)
-					M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 			}
 		}
 	}
@@ -658,7 +648,7 @@ static void D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);

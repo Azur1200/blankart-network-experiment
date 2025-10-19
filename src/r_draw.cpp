@@ -66,34 +66,9 @@ drawspandata_t g_ds;
 
 /**	\brief view info
 */
-INT32 viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
 
-/**	\brief pointer to the start of each line of the screen,
-*/
-UINT8 *ylookup[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view1 (splitscreen)
-*/
-UINT8 *ylookup1[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view2 (splitscreen)
-*/
-UINT8 *ylookup2[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view3 (splitscreen)
-*/
-UINT8 *ylookup3[MAXVIDHEIGHT*4];
-
-/**	\brief pointer to the start of each line of the screen, for view4 (splitscreen)
-*/
-UINT8 *ylookup4[MAXVIDHEIGHT*4];
-
-/**	\brief  x byte offset for columns inside the viewwindow,
-	so the first column starts at (SCRWIDTH - VIEWWIDTH)/2
-*/
-INT32 columnofs[MAXVIDWIDTH*4];
-
-UINT8 *topleft;
+INT32 linesize, viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
+UINT8 *renderscreen;            // haleyjd
 
 UINT8 r8_flatcolor;
 
@@ -474,33 +449,16 @@ UINT16 R_GetSuperColorByName(const char *name)
 
 void R_InitViewBuffer(INT32 width, INT32 height)
 {
-	INT32 i, bytesperpixel = vid.bpp;
-
 	if (width > MAXVIDWIDTH)
 		width = MAXVIDWIDTH;
 	if (height > MAXVIDHEIGHT)
 		height = MAXVIDHEIGHT;
-	if (bytesperpixel < 1 || bytesperpixel > 4)
-		I_Error("R_InitViewBuffer: wrong bytesperpixel value %d\n", bytesperpixel);
 
 	viewwindowx = 0;
 	viewwindowy = 0;
 
-	// Column offset for those columns of the view window, but relative to the entire screen
-	for (i = 0; i < width; i++)
-		columnofs[i] = (viewwindowx + i) * bytesperpixel;
-
-	// Precalculate all row offsets.
-	for (i = 0; i < height; i++)
-	{
-		ylookup[i] = ylookup1[i] = screens[0] + i*vid.width*bytesperpixel;
-		if (r_splitscreen == 1)
-			ylookup2[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		else
-			ylookup2[i] = screens[0] + i*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-		ylookup3[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel;
-		ylookup4[i] = screens[0] + (i+viewheight)*vid.width*bytesperpixel + (viewwidth*bytesperpixel);
-	}
+	linesize     = vid.width;      // killough 11/98
+	renderscreen = vid.screens[0]; // haleyjd 07/02/14
 }
 
 /**	\brief viewborder patches lump numbers
@@ -520,6 +478,50 @@ void R_InitViewBorder(void)
 	viewborderlump[BRDR_BL] = W_GetNumForName("brdr_bl");
 	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
 	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
+}
+
+/**	\brief	The R_VideoErase function
+ *
+ *
+ *
+ *
+ *
+ *
+ * Copy a screen buffer.
+ *
+ *
+ *
+ *
+ *
+ * \param	ofs	offest from buffer
+ *
+ *
+ * \param	count	bytes to erase
+ *
+ *
+ *
+ *
+ *
+ * \return	void
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+
+
+void R_VideoErase(size_t ofs, INT32 count)
+{
+	// LFB copy.
+	// This might not be a good idea if memcpy
+	//  is not optimal, e.g. byte by byte on
+	//  a 32bit CPU, as GNU GCC/Linux libc did
+	//  at one point.
+	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
 }
 
 #if 0
@@ -546,7 +548,7 @@ void R_FillBackScreen(void)
 		return;
 
 	src = scr_borderpatch;
-	dest = screens[1];
+	dest = vid.screens[1];
 
 	for (y = 0; y < vidheight; y++)
 	{
@@ -597,30 +599,7 @@ void R_FillBackScreen(void)
 	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
 		W_CacheLumpNum(viewborderlump[BRDR_BR], PU_CACHE));
 }
-#endif
 
-/**	\brief	The R_VideoErase function
-
-	Copy a screen buffer.
-
-	\param	ofs	offest from buffer
-	\param	count	bytes to erase
-
-	\return	void
-
-
-*/
-void R_VideoErase(size_t ofs, INT32 count)
-{
-	// LFB copy.
-	// This might not be a good idea if memcpy
-	//  is not optimal, e.g. byte by byte on
-	//  a 32bit CPU, as GNU GCC/Linux libc did
-	//  at one point.
-	M_Memcpy(screens[0] + ofs, screens[1] + ofs, count);
-}
-
-#if 0
 /**	\brief The R_DrawViewBorder
 
   Draws the border around the view
@@ -664,7 +643,7 @@ void R_DrawViewBorder(void)
 	side <<= 1;
 
     // simpler using our VID_Blit routine
-	VID_BlitLinearScreen(screens[1] + ofs, screens[0] + ofs, side, viewheight - 1,
+	VID_BlitLinearScreen(vid.screens[1] + ofs, vid.screens[0] + ofs, side, viewheight - 1,
 		vid.width, vid.width);
 }
 #endif

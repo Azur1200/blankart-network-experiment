@@ -862,8 +862,8 @@ void R_CheckViewMorph(int s)
 
 void R_ApplyViewMorph(int s)
 {
-	UINT8 *tmpscr = screens[4];
-	UINT8 *srcscr = screens[0];
+	UINT8 *tmpscr = vid.screens[4];
+	UINT8 *srcscr = vid.screens[0];
 	INT32 width = vid.width;
 	INT32 height = vid.height;
 	INT32 p;
@@ -904,8 +904,7 @@ void R_ApplyViewMorph(int s)
 		tmpscr[p] = srcscr[viewmorph[s].scrmap[p]];
 	}
 
-	VID_BlitLinearScreen(tmpscr, srcscr,
-			width*vid.bpp, height, width*vid.bpp, vid.width);
+	VID_BlitLinearScreen(tmpscr, srcscr, width, height, width, vid.width);
 }
 
 angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
@@ -1669,7 +1668,7 @@ void R_RenderPlayerView(void)
 					if (bot > viewheight-1)
 						bot = viewheight-1;
 
-					UINT8* p = &topleft[x + top * vid.width];
+					UINT8* p =  R_Address(top, x);
 
 					while (top <= bot)
 					{
@@ -1735,7 +1734,7 @@ void R_RenderPlayerView(void)
 
 				for (; yl < yh; ++yl)
 				{
-					topleft[portal->start + i + (yl * vid.width)] = pal;
+					*R_Address(0, portal->start + i + yl) = pal;
 				}
 			}
 
