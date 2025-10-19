@@ -70,10 +70,11 @@
 
 #ifdef USE_LZ4
 #include "lz4.h"
+#elif defined HAVE_ZLIB
+#include <zlib.h>
 #else
 #include "lzf.h"
 #endif
-
 
 //
 // NETWORKING
@@ -1228,8 +1229,11 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	}
 
 	// Attempt to compress it.
-#ifdef USE_LZ4
+#if defined USE_LZ4
 	if ((compressedlen = LZ4_compress_fast((char*)(save.buffer + sizeof(UINT32)), (char*)(compressedsave + sizeof(UINT32)), length - sizeof(UINT32), length - sizeof(UINT32) - 1, LZ4_ACCEL)))
+#elif defined HAVE_ZLIB
+	int compresstatus = compress2(compressedsave + sizeof(UINT32), &compressedlen, save.buffer + sizeof(UINT32), length - sizeof(UINT32), ZLIB_LEVEL);
+	if (compresstatus == Z_OK)
 #else
 	if ((compressedlen = lzf_compress(save.buffer + sizeof(UINT32), length - sizeof(UINT32), compressedsave + sizeof(UINT32), length - sizeof(UINT32) - 1)))
 #endif
@@ -1333,8 +1337,10 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 
 		CONS_Printf("Decompressing compressed savegame of size %zu\n", length - sizeof(UINT32));
 
-#ifdef USE_LZ4
+#if defined USE_LZ4
 		LZ4_decompress_safe((char*)save.p, (char*)decompressedbuffer, length - sizeof(UINT32), decompressedlen);
+#elif defined HAVE_ZLIB
+		uncompress(decompressedbuffer, &decompressedlen, save.p, length - sizeof(UINT32));
 #else
 		lzf_decompress(save.p, length - sizeof(UINT32), decompressedbuffer, decompressedlen);
 #endif
