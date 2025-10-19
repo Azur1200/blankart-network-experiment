@@ -1169,17 +1169,20 @@ static void DiffSectors(const sector_t *ss, const sector_t *spawnss, UINT8 diff[
 
 static void SyncSectors(savebuffer_t *save)
 {
-	size_t i = 0, j;
+	size_t i = 0, j = 0;
 	sector_t *sec;
 	UINT8 diff[(SD__MAX>>3) + 1];
 
-	for (;;)
+	for (i = 0;; i++)
 	{
 		memset(diff, 0, sizeof(diff));
 		if (save->write)
 		{
-			if (++i == numsectors)
+			if (i >= numsectors)
+			{
+				WRITEUINT16(save->p, 0xffff);
 				break;
+			}
 
 			DiffSectors(&sectors[i], &spawnsectors[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
@@ -1188,18 +1191,16 @@ static void SyncSectors(savebuffer_t *save)
 			if (diff[0] == 0)
 				continue;
 
-			WRITEUINT16(save->p, i);
+			// WRITEUINT16(save->p, i);
 		}
-		else
-		{
-			i = READUINT16(save->p);
 
-			if (i == 0xffff)
-				break;
+		i = P_SyncUINT16(save, i);
 
-			if (i >= numsectors)
-				I_Error("Invalid sector number %zu from server (expected end at %zu)", i, numsectors);
-		}
+		if (i == 0xffff)
+			break;
+
+		if (i >= numsectors)
+			I_Error("Invalid sector number %zu from server (expected end at %zu)", i, numsectors);
 
 		sec = &sectors[i];
 		j = 0;
@@ -1357,9 +1358,6 @@ static void SyncSectors(savebuffer_t *save)
 			}
 		}
 	}
-
-	if (save->write)
-		WRITEUINT16(save->p, 0xffff);
 }
 
 static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
