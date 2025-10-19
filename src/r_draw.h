@@ -240,16 +240,6 @@ void R_Draw2sMultiPatchColumn_Brightmap(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn_Brightmap(drawcolumndata_t* dc);
 void R_DrawColumnShadowed_Brightmap(drawcolumndata_t* dc);
 
-// column drawers which use buffered drawing with flush
-void R_DrawColumnFlush_Brightmap(drawcolumndata_t* dc);
-void R_DrawTranslucentColumnFlush_Brightmap(drawcolumndata_t* dc);
-void R_DrawTranslatedColumnFlush_Brightmap(drawcolumndata_t* dc);
-void R_DrawColumnShadowedFlush_Brightmap(drawcolumndata_t* dc);
-void R_DrawTranslatedTranslucentColumnFlush_Brightmap(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchColumnFlush_Brightmap(drawcolumndata_t* dc);
-void R_Draw2sMultiPatchTranslucentColumnFlush_Brightmap(drawcolumndata_t* dc);
-
-
 void R_DrawSpan(drawspandata_t* ds);
 void R_DrawTranslucentSpan(drawspandata_t* ds);
 void R_DrawSplat(drawspandata_t* ds);
