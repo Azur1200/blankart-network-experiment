@@ -224,6 +224,7 @@ HMS_connect (const char *format, ...)
 		curl_easy_setopt(curl, CURLOPT_IPRESOLVE, (long)CURL_IPRESOLVE_V4);
 
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)cv_masterserver_timeout.value);
+	curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 30L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, HMS_on_read);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, buffer);
 
