@@ -759,6 +759,13 @@ void R_DrawSkyPlanes(void)
 
 	ZoneScoped;
 
+	// If we're not supposed to draw the sky (e.g. for skyboxes), don't do anything!
+	// This probably utterly ruins sky rendering for FOFs and polyobjects, unfortunately
+	if (!newview->sky)
+	{
+		return;
+	}
+
 	srb2::ThreadPool::Sema tp_sema;
 	srb2::g_main_threadpool->begin_sema();
 	for (i = 0; i < MAXVISPLANES; i++, pl++)
