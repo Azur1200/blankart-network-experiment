@@ -107,7 +107,6 @@ template<DrawColumnType Type>
 static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
-	UINT8 *dest;
 	const INT32 vidheight = vid.height;
 
 	// leban 1/17/99:
@@ -220,13 +219,22 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	}
 	else
 	{
-		fixed_t fracstep;
-		fixed_t frac;
-		INT32 heightmask;
-		INT32 npow2min;
-		INT32 npow2max;
+		// Inner loop that does the actual texture mapping,
+		//  e.g. a DDA-lile scaling.
+		// This is as fast as it gets.       (Yeah, right!!! -- killough)
+		//
+		// killough 2/1/98: more performance tuning
+
+		intptr_t frac;
+		// Looks familiar.
+		const intptr_t fracstep = dc->iscale;
+		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		constexpr INT32 npow2min = -1;
+		const INT32 npow2max = dc->sourcelength;
 
 		// Framebuffer destination address.
+		// SoM: MAGIC
+		UINT8 * restrict dest;
 
 		if constexpr (Type & DrawColumnType::DC_DIRECT)
 			dest = R_Address(dc->x, dc->yl);
@@ -248,109 +256,112 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		count++;
 
 		// Determine scaling, which is the only mapping to be done.
-		fracstep = dc->iscale;
-		//frac = dc_texturemid + (dc_yl - centery)*fracstep;
-		frac = dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep);
+		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
-		// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
-		// This is as fast as it gets.
-		heightmask = dc->sourcelength-1;
-		npow2min = -1;
-		npow2max = dc->sourcelength;
-
-		if (heightmask == -1)
+		switch (heightmask)
 		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += fracstep;
-
-			// texture has no height, so just go
-			while (--count > 0)
+			case 255:
+			case 127:
 			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
-				dest += stride;
-				frac += fracstep;
-			}
-		}
-		else if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
-		{
-			heightmask = dc->texheight << FRACBITS;
-
-			if (frac < 0)
-			{
-				while ((frac += heightmask) < 0)
+				while (count--)
 				{
-					;
+					*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+
+					dest += stride;
+					frac += fracstep;
 				}
 			}
-			else
+			break;
+			case npow2min:
 			{
-				while (frac >= heightmask)
+				if (frac < 0)
+					// adjust in case we underread
+					frac += fracstep;
+
+				// texture has no height, so just go
+				while (--count >= 0)
 				{
-					frac -= heightmask;
+					*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
+
+					dest += stride;
+					frac += fracstep;
 				}
 			}
-
-			do
+			break;
+			default:
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				//*dest = R_DrawColumnPixel<Type>(dc, dest, std::clamp(frac >> FRACBITS, npow2min, npow2max));
+				if (!(dc->sourcelength & heightmask))   // power of 2 -- killough
 				{
-					// jartha: faster on my AMD FX-6300 CPU.
-					// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-					// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-					// The framerate difference was about 50 frames at 640x400.
-					INT32 n = frac >> FRACBITS;
-					if (n < npow2min)
-						n = npow2min;
-					if (n > npow2max)
-						n = npow2max;
-					*dest = R_DrawColumnPixel<Type>(dc, dest, n);
-				}
+					while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
+					{
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += stride;
+						dest += stride;
+						frac += fracstep;
 
-				// Avoid overflow.
-				if (fracstep > 0x7FFFFFFF - frac)
-				{
-					frac += fracstep - heightmask;
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+
+						dest += stride;
+						frac += fracstep;
+					}
+
+					if (count & 1)
+					{
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+					}
 				}
 				else
 				{
-					frac += fracstep;
+					const intptr_t fixed_heightmask = dc->texheight << FRACBITS;
+
+					if (frac < 0)
+					{
+						while ((frac += fixed_heightmask) < 0)
+						{
+							;
+						}
+					}
+					else
+					{
+						while (frac >= fixed_heightmask)
+						{
+							frac -= fixed_heightmask;
+						}
+					}
+
+					do
+					{
+						// Re-map color indices from wall texture column
+						//  using a lighting/special effects LUT.
+						// heightmask is the Tutti-Frutti fix -- killough
+
+						// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+						// and a few bytes after as well
+						*dest = R_DrawColumnPixel<Type>(dc, dest, CLAMP((frac >> FRACBITS), npow2min, npow2max));
+
+						dest += stride;
+
+						#if __SIZEOF_POINTER__ < 8  // 64-bit systems have large enough numbers for this to be a non-issue
+						// Avoid overflow.
+						if (fracstep > 0x7FFFFFFF - frac)
+						{
+							frac += fracstep - fixed_heightmask;
+						}
+						else
+							#endif
+						{
+							frac += fracstep;
+						}
+
+						while (frac >= fixed_heightmask)
+						{
+							frac -= fixed_heightmask;
+						}
+					}
+					while (--count);
 				}
-
-				while (frac >= heightmask)
-				{
-					frac -= heightmask;
-				}
 			}
-			while (--count);
-		}
-		else
-		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-
-				dest += stride;
-				frac += fracstep;
-
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-
-				dest += stride;
-				frac += fracstep;
-			}
-
-			if (count & 1)
-			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-			}
+			break;
 		}
 	}
 }
