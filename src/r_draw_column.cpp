@@ -96,14 +96,8 @@ FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t*
 		}
 	}
 
-	if constexpr (Type & DrawColumnType::DC_DIRECT)
-	{	// if we dont buffer our columns, we need to handle translucency again
-		return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
-	}
-	else
-	{
-		return R_GetColumnTranslated<Type>(dc, col);
-	}
+	// if we dont buffer our columns, we need to handle translucency again
+	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
 /**	\brief The R_DrawColumn function
@@ -115,7 +109,6 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	INT32 count;
 	UINT8 *dest;
 	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
 
 	// leban 1/17/99:
 	// removed the + 1 here, adjusted the if test, and added an increment
@@ -134,7 +127,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 		return;
 	}
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
+	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vidheight)
 	{
 		return;
 	}
@@ -246,6 +239,11 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			dest = R_GetBufferColormap(dc);
 		else
 			dest = R_GetBufferOpaque(dc);
+
+		INT32 vidwidth = 8; //SoM: Oh, Oh it's MAGIC! You know...
+
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			vidwidth = vid.width;
 
 		count++;
 
@@ -367,7 +365,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 
 #define DEFINE_COLUMN_COMBO(name, flags) \
 	DEFINE_COLUMN_FUNC(name, flags) \
-	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_BRIGHTMAP)
+	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP)
 
 DEFINE_COLUMN_COMBO(R_DrawColumn, DC_DIRECT|DC_BASIC)
 DEFINE_COLUMN_COMBO(R_DrawTranslucentColumn, DC_DIRECT|DC_TRANSMAP)

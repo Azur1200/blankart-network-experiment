@@ -867,9 +867,9 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	if (vis->mobj->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
-		
+
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
-		{	
+		{
 			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
