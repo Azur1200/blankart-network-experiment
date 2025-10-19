@@ -3333,8 +3333,6 @@ void R_InitDrawNodes(void)
 // R_DrawSprite
 //
 //Fab : 26-04-98:
-// NOTE : uses con_clipviewtop, so that when console is on,
-//        don't draw the part of sprites hidden under the console
 static void R_DrawSprite(vissprite_t *spr)
 {
 	mfloorclip = spr->clipbot;
@@ -3376,7 +3374,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 		for (x = x1; x <= x2; x++)
 		{
 			spr->clipbot[x] = (INT16)viewheight;
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 		}
 		return;
 	}
@@ -3559,7 +3557,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 
 		if (spr->cliptop[x] == CLIP_UNDEF)
 			//Fab : 26-04-98: was -1, now clips against console bottom
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 
 		// Sprite is completely above or below clip plane
 		if (spr->szt >= spr->clipbot[x] || spr->sz <= spr->cliptop[x])

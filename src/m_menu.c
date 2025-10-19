@@ -8177,9 +8177,8 @@ INT32 MR_VideoModeMenu(INT32 choice)
 
 	memset(modedescs, 0, sizeof(modedescs));
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // FIXME: hack
-#endif
+
 	vidm_nummodes = 0;
 	vidm_selected = 0;
 	nummodes = VID_NumModes();

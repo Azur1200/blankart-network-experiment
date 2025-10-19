@@ -965,18 +965,15 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
-	scaledviewwidth = vid.width;
+	viewwidth = vid.width;
 	viewheight = vid.height;
 
 	if (r_splitscreen)
 		viewheight >>= 1;
 
-	viewwidth = scaledviewwidth;
-
 	if (r_splitscreen > 1)
 	{
 		viewwidth >>= 1;
-		scaledviewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -1009,7 +1006,7 @@ void R_ExecuteSetViewSize(void)
 		}
 	}
 
-	R_InitViewBuffer(scaledviewwidth, viewheight);
+	R_InitViewBuffer();
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
@@ -1072,8 +1069,6 @@ void R_Init(void)
 	CONS_Printf("R_InitColormaps()...\n");
 	R_InitColormaps();
 
-	//I_OutputMsg("\nR_InitViewBorder");
-	R_InitViewBorder();
 	R_SetViewSize(); // setsizeneeded is set true
 
 	//I_OutputMsg("\nR_InitPlanes");

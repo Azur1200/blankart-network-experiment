@@ -526,19 +526,16 @@ static void D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -556,31 +553,26 @@ static void D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_BLANCREDITS:
 			F_BlanCreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_SECRETCREDITS:
 			F_SecretCreditsDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -590,7 +582,6 @@ static void D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_DEDICATEDSERVER:
@@ -770,7 +761,6 @@ static void D_WipeDraw(boolean menu)
 
 	I_UpdateNoBlit();
 
-	HU_Erase();
 	HU_Drawer();
 	if (menu)
 	{
@@ -1711,9 +1701,7 @@ void D_SRB2Main(void)
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();

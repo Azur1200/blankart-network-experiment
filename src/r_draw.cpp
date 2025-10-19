@@ -67,8 +67,7 @@ drawspandata_t g_ds;
 /**	\brief view info
 */
 
-INT32 linesize, viewwidth, scaledviewwidth, viewheight, viewwindowx, viewwindowy;
-UINT8 *renderscreen;            // haleyjd
+INT32 viewwidth, viewheight, viewwindowx, viewwindowy;
 
 UINT8 r8_flatcolor;
 
@@ -525,21 +524,13 @@ void R_ResetColumnBuffer(void)
 	Creates lookup tables for getting the framebuffer address
 	of a pixel to draw.
 
-	\param	width	witdh of buffer
-	\param	height	hieght of buffer
-
 	\return	void
 
 
 */
 
-void R_InitViewBuffer(INT32 width, INT32 height)
+void R_InitViewBuffer(void)
 {
-	if (width > MAXVIDWIDTH)
-		width = MAXVIDWIDTH;
-	if (height > MAXVIDHEIGHT)
-		height = MAXVIDHEIGHT;
-
 	viewwindowx = 0;
 	viewwindowy = 0;
 	INT32 bufsize = (vid.width * 8) * sizeof(*temp_dc.buf);
@@ -564,28 +555,6 @@ void R_InitViewBuffer(INT32 width, INT32 height)
 #endif
 
 	memset(temp_dc.buf, 0, bufsize);
-
-	linesize     = vid.width;      // killough 11/98
-	renderscreen = vid.screens[0]; // haleyjd 07/02/14
-}
-
-/**	\brief viewborder patches lump numbers
-*/
-lumpnum_t viewborderlump[8];
-
-/**	\brief Store the lumpnumber of the viewborder patches
-*/
-
-void R_InitViewBorder(void)
-{
-	viewborderlump[BRDR_T] = W_GetNumForName("brdr_t");
-	viewborderlump[BRDR_B] = W_GetNumForName("brdr_b");
-	viewborderlump[BRDR_L] = W_GetNumForName("brdr_l");
-	viewborderlump[BRDR_R] = W_GetNumForName("brdr_r");
-	viewborderlump[BRDR_TL] = W_GetNumForName("brdr_tl");
-	viewborderlump[BRDR_BL] = W_GetNumForName("brdr_bl");
-	viewborderlump[BRDR_TR] = W_GetNumForName("brdr_tr");
-	viewborderlump[BRDR_BR] = W_GetNumForName("brdr_br");
 }
 
 /**	\brief	The R_VideoErase function
@@ -631,130 +600,6 @@ void R_VideoErase(size_t ofs, INT32 count)
 	//  at one point.
 	M_Memcpy(vid.screens[0] + ofs, vid.screens[1] + ofs, count);
 }
-
-#if 0
-/**	\brief R_FillBackScreen
-
-	Fills the back screen with a pattern for variable screen sizes
-	Also draws a beveled edge.
-*/
-void R_FillBackScreen(void)
-{
-	UINT8 *src, *dest;
-	patch_t *patch;
-	INT32 x, y, step, boff;
-	const INT32 vidheight = vid.height;
-	const INT32 vidwidth = vid.width;
-
-	// quickfix, don't cache lumps in both modes
-	if (rendermode != render_soft)
-		return;
-
-	// draw pattern around the status bar too (when hires),
-	// so return only when in full-screen without status bar.
-	if (scaledviewwidth == vidwidth && viewheight == vidheight)
-		return;
-
-	src = scr_borderpatch;
-	dest = vid.screens[1];
-
-	for (y = 0; y < vidheight; y++)
-	{
-		for (x = 0; x < vidwidth/128; x++)
-		{
-			M_Memcpy (dest, src+((y&127)<<7), 128);
-			dest += 128;
-		}
-
-		if (vidwidth&127)
-		{
-			M_Memcpy(dest, src+((y&127)<<7), vidwidth&127);
-			dest += (vidwidth&127);
-		}
-	}
-
-	// don't draw the borders when viewwidth is full vidwidth.
-	if (scaledviewwidth == vidwidth)
-		return;
-
-	step = 8;
-	boff = 8;
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_T], PU_CACHE);
-	for (x = 0; x < scaledviewwidth; x += step)
-		V_DrawPatch(viewwindowx + x, viewwindowy - boff, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_B], PU_CACHE);
-	for (x = 0; x < scaledviewwidth; x += step)
-		V_DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_L], PU_CACHE);
-	for (y = 0; y < viewheight; y += step)
-		V_DrawPatch(viewwindowx - boff, viewwindowy + y, 1, patch);
-
-	patch = W_CacheLumpNum(viewborderlump[BRDR_R],PU_CACHE);
-	for (y = 0; y < viewheight; y += step)
-		V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
-			patch);
-
-	// Draw beveled corners.
-	V_DrawPatch(viewwindowx - boff, viewwindowy - boff, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_TL], PU_CACHE));
-	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - boff, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_TR], PU_CACHE));
-	V_DrawPatch(viewwindowx - boff, viewwindowy + viewheight, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_BL], PU_CACHE));
-	V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
-		W_CacheLumpNum(viewborderlump[BRDR_BR], PU_CACHE));
-}
-
-/**	\brief The R_DrawViewBorder
-
-  Draws the border around the view
-	for different size windows?
-*/
-void R_DrawViewBorder(void)
-{
-	INT32 top, side, ofs;
-
-	if (rendermode == render_none)
-		return;
-#ifdef HWRENDER
-	if (rendermode != render_soft)
-	{
-		HWR_DrawViewBorder(0);
-		return;
-	}
-	else
-#endif
-
-#ifdef DEBUG
-	fprintf(stderr,"RDVB: vidwidth %d vidheight %d scaledviewwidth %d viewheight %d\n",
-		vid.width, vidheight, scaledviewwidth, viewheight);
-#endif
-
-	if (scaledviewwidth == vid.width)
-		return;
-
-	top = (vidheight - viewheight)>>1;
-	side = (vid.width - scaledviewwidth)>>1;
-
-	// copy top and one line of left side
-	R_VideoErase(0, top*vid.width+side);
-
-	// copy one line of right side and bottom
-	ofs = (viewheight+top)*vid.width - side;
-	R_VideoErase(ofs, top*vid.width + side);
-
-	// copy sides using wraparound
-	ofs = top*vid.width + vid.width-side;
-	side <<= 1;
-
-    // simpler using our VID_Blit routine
-	VID_BlitLinearScreen(vid.screens[1] + ofs, vid.screens[0] + ofs, side, viewheight - 1,
-		vid.width, vid.width);
-}
-#endif
 
 // ==========================================================================
 //                   INCLUDE MAIN DRAWERS CODE HERE

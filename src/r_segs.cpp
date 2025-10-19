@@ -30,7 +30,6 @@
 #include "m_misc.h"
 #include "p_local.h" // Camera...
 #include "p_slopes.h"
-#include "console.h" // con_clipviewtop
 #include "taglist.h"
 #include "r_draw.h"
 #include "core/memory.h"
@@ -759,8 +758,6 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	sector_t        tempsec;
 	INT32             templight;
 	INT32             i, p;
-	fixed_t         bottombounds = viewheight << FRACBITS;
-	fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
 	fixed_t         offsetvalue = 0;
 	lightlist_t     *light;
 	r_lightlist_t   *rlight;
@@ -1086,7 +1083,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		bottom_frac += bottom_step;
 
 		// SoM: If column is out of range, why bother with it??
-		if (windowbottom < topbounds || windowtop > bottombounds)
+		if (windowbottom < 0 || windowtop > (viewheight << FRACBITS))
 		{
 			if (dc->numlights)
 			{

@@ -796,7 +796,6 @@ void R_DrawFogSpan(drawspandata_t* ds)
 
 	UINT8 *colormap;
 	UINT8 *dest;
-	const INT32 vidwidth = vid.width;
 
 	colormap = ds->colormap;
 

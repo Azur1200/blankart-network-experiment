@@ -94,10 +94,6 @@ consvar_t cv_accuratefps = CVAR_INIT ("fpssampling", "Accurate", CV_SAVE, accura
 //                           SCREEN VARIABLES
 // =========================================================================
 
-UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
-
-// =========================================================================
-
 void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 {
 	//
@@ -478,7 +474,6 @@ void SCR_SetDefaultMode(void)
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen(void)
 {
-#ifdef DIRECTFULLSCREEN
 	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
 
 	// allow_fullscreen is set by VID_PrepareModeList
@@ -491,8 +486,8 @@ void SCR_ChangeFullscreen(void)
 		VID_PrepareModeList();
 		setmodeneeded = VID_GetModeForSize(vid.width, vid.height) + 1;
 	}
+
 	return;
-#endif
 }
 
 void SCR_ChangeRenderer(void)
