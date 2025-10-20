@@ -9269,7 +9269,7 @@ INT16 wadnamemap = 0; // gamemap based
 UINT8 P_InitMapData(boolean existingmapheaders)
 {
 	UINT8 ret = 0;
-	INT32 i;
+	INT32 i, j;
 	lumpnum_t maplump;
 	virtres_t *virtmap;
 	virtlump_t *minimap, *thumbnailPic;
@@ -9279,27 +9279,13 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 	for (i = 0; i < nummapheaders; ++i)
 	{
 		name = mapheaderinfo[i]->lumpname;
-		maplump = W_CheckNumForMap(name);
-
-		// Doesn't exist?
-		if (maplump == INT16_MAX)
-		{
-#ifndef DEVELOP
-			if (!existingmapheaders)
-			{
-				I_Error("P_InitMapData: Base map %s has a header but no level\n", name);
-			}
-#endif
-			continue;
-		}
+		maplump = W_CheckNumForMap(name, (mapheaderinfo[i]->lumpnum == LUMPERROR));
 
 		// Always check for cup cache reassociations.
 		// (The core assumption is that cups < headers.)
+		if (maplump != LUMPERROR || mapheaderinfo[i]->lumpnum != LUMPERROR)
 		{
 			cupheader_t *cup = kartcupheaders;
-			INT32 j;
-
-			mapheaderinfo[i]->cup = NULL;
 
 			while (cup)
 			{
@@ -9327,6 +9313,18 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 		}
 
+		// Doesn't exist in this set of files?
+		if (maplump == LUMPERROR)
+		{
+#ifndef DEVELOP
+			if (!existingmapheaders)
+			{
+				I_Error("P_InitMapData: Base map %s has a header but no level\n", name);
+			}
+#endif
+			continue;
+		}
+
 		// No change?
 		if (mapheaderinfo[i]->lumpnum == maplump)
 			continue;
@@ -9350,6 +9348,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 
 			mapheaderinfo[i]->lumpnum = maplump;
+
 			if (maplump == wadnamelump)
 				wadnamemap = i+1;
 
