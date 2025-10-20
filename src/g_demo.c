@@ -112,7 +112,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000C
+#define DEMOVERSION 0x000D
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -657,6 +657,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean kart = false, oldkart = false;
 	boolean raflag = true;
 	boolean serverinfo = true;
+	boolean oldserverinfolength = false;
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -683,9 +684,10 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
+		case 0x000C:
 		case 0x000B:
-			break;
 		case 0x000A:
+			oldserverinfolength = true;
 			break;
 
 		case 0x0009:
@@ -755,9 +757,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 
 	if (serverinfo)
 	{
+		size_t maxservercontact  = oldserverinfolength ? 320 : MAXSERVERCONTACT;
+		size_t maxdescription = oldserverinfolength ? 320 : MAXSERVERDESCRIPTION;
+
 		READSTRINGN(dp, header->servername, MAXSERVERNAME);
-		READSTRINGN(dp, header->servercontact, MAXSERVERCONTACT);
-		READSTRINGN(dp, header->serverdescription, MAXSERVERDESCRIPTION);
+		READSTRINGN(dp, header->servercontact, maxservercontact);
+		READSTRINGN(dp, header->serverdescription, maxdescription);
 	}
 
 	if (oldkart)

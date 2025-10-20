@@ -2528,7 +2528,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
-	UINT8 i, newlinecount = 0;
+	INT32 i, newlinecount = 0;
 	if (connectedservername[0] != '\0')
 		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
 
