@@ -2463,9 +2463,9 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	servermods_t basemods[BASEMODS] =
 	{
-		{"Item Littering", 0, NULL, K_ItemLitterActive() > 0, true},
+		{"Item Litter", 0, NULL, K_ItemLitterActive() > 0, true},
 		{"Rings", 0, NULL, K_RingsActive() > 0, true},
-		{"4-Tier Drifts", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"4-Tier Drift", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Slipdash", 0, NULL, K_SlipdashActive() > 0, true},
 		{"Stacking", 0, NULL, K_StackingActive() > 0, true},
 		{"Chaining", 0, NULL, K_ChainingActive() > 0, true},
