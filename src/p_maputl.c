@@ -1741,12 +1741,6 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	validcount++;
 	intercept_p = intercepts;
 
-	if (((px1 - bmaporgx) & (MAPBLOCKSIZE-1)) == 0)
-		px1 += FRACUNIT; // Don't side exactly on a line.
-
-	if (((py1 - bmaporgy) & (MAPBLOCKSIZE-1)) == 0)
-		py1 += FRACUNIT; // Don't side exactly on a line.
-
 	g_trace.x = px1;
 	g_trace.y = py1;
 	g_trace.dx = px2 - px1;
@@ -1760,17 +1754,8 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	// blockmap traversal algorithm ported from antimony
 	int gridpos_x = (unsigned)px1 >> MAPBLOCKSHIFT;
 	int gridpos_y = (unsigned)py1 >> MAPBLOCKSHIFT;
-	if (flags & PT_ADDLINES)
-		if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
-			return false; // early out
-	if (flags & PT_ADDTHINGS)
-		if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
-			return false; // early out
-
 	int endpos_x = (unsigned)px2 >> MAPBLOCKSHIFT;
 	int endpos_y = (unsigned)py2 >> MAPBLOCKSHIFT;
-	if (gridpos_x == endpos_x && gridpos_y == endpos_y)
-		return P_TraverseIntercepts(trav, FRACUNIT);
 
 	fixed_t pos_x = px1;
 	fixed_t pos_y = py1;
@@ -1778,54 +1763,61 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 	fixed_t dist_y = py2 - py1;
 	int dir_x = dist_x < 0 ? -1 : 1;
 	int dir_y = dist_y < 0 ? -1 : 1;
+	fixed_t step = 1 << MAPBLOCKSHIFT;
 	fixed_t delta_x;
 	fixed_t delta_y;
+
 	// special cases for 0 to avoid crashes
 	if (dist_y == 0)
 	{
-		delta_x = INT32_MAX;
+		delta_x = FRACUNIT;
 		delta_y = 0;
 	}
 	else if (dist_x == 0)
 	{
 		delta_x = 0;
-		delta_y = INT32_MAX;
+		delta_y = FRACUNIT;
 	}
 	else
 	{
-		delta_x = FixedDiv2(dist_x, abs(dist_y));
-		delta_y = FixedDiv2(dist_y, abs(dist_x));
+		delta_x = abs(FixedDiv2(FRACUNIT, dist_x));
+		delta_y = abs(FixedDiv2(FRACUNIT, dist_y));
 	}
+
+	fixed_t hitx_x;
+	if (dir_x > 0)
+		hitx_x = ((gridpos_x+1) << MAPBLOCKSHIFT) - pos_x;
+	else
+		hitx_x = pos_x - (gridpos_x << MAPBLOCKSHIFT);
+
+	fixed_t hity_y;
+	if (dir_y > 0)
+		hity_y = ((gridpos_y+1) << MAPBLOCKSHIFT) - pos_y;
+	else
+		hity_y = pos_y - (gridpos_y << MAPBLOCKSHIFT);
 
 	while (gridpos_x >= 0 && gridpos_y >= 0 && gridpos_x < bmapwidth && gridpos_y < bmapheight)
 	{
-		fixed_t hitx_x;
-		if (dir_x > 0)
-			hitx_x = (gridpos_x+1) << MAPBLOCKSHIFT;
-		else
-			hitx_x = gridpos_x << MAPBLOCKSHIFT;
+		if (flags & PT_ADDLINES)
+			if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
+				return false; // early out
+		if (flags & PT_ADDTHINGS)
+			if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
+				return false; // early out
+		if (gridpos_x == endpos_x && gridpos_y == endpos_y)
+			break;
 
-		fixed_t hity_y;
-		if (dir_y > 0)
-			hity_y = (gridpos_y+1) << MAPBLOCKSHIFT;
-		else
-			hity_y = gridpos_y << MAPBLOCKSHIFT;
-
-		hitx_x -= pos_x;
-		hity_y -= pos_y;
-		fixed_t hitx_y = FixedMul(delta_y, abs(hitx_x));
-		fixed_t hity_x = FixedMul(delta_x, abs(hity_y));
-		if (FixedMul(hitx_x, hitx_x) + FixedMul(hitx_y, hitx_y) > FixedMul(hity_x, hity_x) + FixedMul(hity_y, hity_y))
+		fixed_t hitx_y = FixedMul(delta_x, hitx_x);
+		fixed_t hity_x = FixedMul(delta_y, hity_y);
+		if (hitx_y > hity_x)
 		{
 			gridpos_y += dir_y;
-			pos_x += hity_x;
-			pos_y += hity_y;
+			hity_y += step;
 		}
-		else if (FixedMul(hitx_x, hitx_x) + FixedMul(hitx_y, hitx_y) < FixedMul(hity_x, hity_x) + FixedMul(hity_y, hity_y))
+		else if (hitx_y < hity_x)
 		{
 			gridpos_x += dir_x;
-			pos_x += hitx_x;
-			pos_y += hitx_y;
+			hitx_x += step;
 		}
 		else
 		{
@@ -1844,18 +1836,9 @@ boolean P_PathTraverse(fixed_t px1, fixed_t py1, fixed_t px2, fixed_t py2,
 				gridpos_y += dir_y;
 			}
 
-			pos_x += hitx_x;
-			pos_y += hitx_y;
+			hitx_x += step;
+			hity_y += step;
 		}
-
-		if (flags & PT_ADDLINES)
-			if (!P_BlockLinesIterator(gridpos_x, gridpos_y, PIT_AddLineIntercepts))
-				return false; // early out
-		if (flags & PT_ADDTHINGS)
-			if (!P_BlockThingsIterator(gridpos_x, gridpos_y, PIT_AddThingIntercepts))
-				return false; // early out
-		if (gridpos_x == endpos_x && gridpos_y == endpos_y)
-			break;
 	}
 
 	// Go through the sorted list
