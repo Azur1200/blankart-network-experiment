@@ -169,6 +169,9 @@ void ST_UnloadGraphics(void)
 
 void ST_LoadGraphics(void)
 {
+	if (dedicated)
+		return;
+
 	// the original Doom uses 'STF' as base name for all face graphics
 	// Graue 04-08-2004: face/name graphics are now indexed by skins
 	//                   but load them in R_AddSkins, that gets called
