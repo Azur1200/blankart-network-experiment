@@ -2407,7 +2407,7 @@ static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 	SYNC(ht->sourceline);
@@ -2423,7 +2423,7 @@ static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2448,7 +2448,7 @@ static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 think
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2475,7 +2475,7 @@ static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2502,7 +2502,7 @@ static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2520,7 +2520,7 @@ static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2552,7 +2552,7 @@ static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2571,7 +2571,7 @@ static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2594,7 +2594,7 @@ static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2618,7 +2618,7 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2654,7 +2654,7 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2685,7 +2685,7 @@ static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 	SYNC(ht->sector);
@@ -2705,7 +2705,7 @@ static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2729,7 +2729,7 @@ static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2752,7 +2752,7 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2776,7 +2776,7 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2813,7 +2813,7 @@ static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2844,7 +2844,7 @@ static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2870,7 +2870,7 @@ static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2891,7 +2891,7 @@ static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2916,7 +2916,7 @@ static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2935,7 +2935,7 @@ static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2959,7 +2959,7 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -2979,7 +2979,7 @@ static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3002,7 +3002,7 @@ static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3055,7 +3055,7 @@ static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3079,7 +3079,7 @@ static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3100,7 +3100,7 @@ static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thi
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3121,7 +3121,7 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3144,7 +3144,7 @@ static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker,
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3164,7 +3164,7 @@ static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3186,7 +3186,7 @@ static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3210,7 +3210,7 @@ static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3239,7 +3239,7 @@ static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3263,7 +3263,7 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3284,7 +3284,7 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
@@ -3305,7 +3305,7 @@ static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
 
