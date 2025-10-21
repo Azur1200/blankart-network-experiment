@@ -6513,7 +6513,7 @@ static void K_RaceStart(player_t *player)
 				player->boostcharge = player->cmd.latency;
 
 			// RA ez charge for less annoying starts.
-			if (modeattacking != ATTACKING_NONE && !G_CompatLevel(0x0009))
+			if (modeattacking != ATTACKING_NONE && !G_CompatLevel(0x000A))
 			{
 				SINT8 clampsize = 0;
 				// Let players choose between startboost and sneaker boost by holding item.

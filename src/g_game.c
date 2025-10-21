@@ -687,6 +687,11 @@ void G_ClearRecords(void)
 
 	pv = G_AddRecordPresetVersion(preset, 1);
 
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Off");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "No");
+
 	preset = G_AddRecordPreset("tech", "Tech Mode");
 
 	pv = G_AddRecordPresetVersion(preset, 1);
@@ -696,6 +701,10 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Yes");
 	strbuf_append(&pv, "kartslopeboost");
 	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Off");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "No");
 
 	pv = G_AddRecordPresetVersion(preset, 2);
 	strbuf_append(&pv, "kartstacking");
@@ -708,6 +717,8 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Yes");
 	strbuf_append(&pv, "kartbumpspark");
 	strbuf_append(&pv, "On");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
 
 	preset = G_AddRecordPreset("blankart", "BlanKart Mode");
 
@@ -724,6 +735,10 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Yes");
 	strbuf_append(&pv, "kartslopeboost");
 	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Off");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "No");
 
 	pv = G_AddRecordPresetVersion(preset, 2);
 	strbuf_append(&pv, "kartrings");
@@ -742,6 +757,8 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Yes");
 	strbuf_append(&pv, "kartbumpspark");
 	strbuf_append(&pv, "Remove Charge Only");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
 }
 
 // For easy retrieval of records

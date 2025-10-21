@@ -3702,7 +3702,7 @@ void G_DoPlayDemo(char *defdemoname)
 		if (pv)
 		{
 			const char *faulted = G_CheckPresetCvars(pv);
-			if (faulted)
+			if (faulted && !G_CompatLevel(0x000C))
 				M_StartMessage(va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), NULL, MM_NOTHING);
 		}
 		else
