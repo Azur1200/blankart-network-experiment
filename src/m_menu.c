@@ -5418,7 +5418,7 @@ static void M_DrawStatsMaps(void)
 			M_DrawMapEmblems(mnum, 295, y);
 
 		maprecord_t *record = G_GetMapRecord(G_BuildMapName(mnum+1));
-		maprecordpreset_t *preset = G_GetMapRecordPreset(record, currentrecordpreset);
+		maprecordpreset_t *preset = record ? G_GetMapRecordPreset(record, currentrecordpreset) : NULL;
 		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
 
 		V_DrawThinString(20, y, MENUCAPS, maptitle);
@@ -5616,6 +5616,7 @@ INT32 MR_HandleLevelStats(INT32 choice)
 		case KEY_BACKSPACE:
 			if (statsCurrentPage != 1)
 				break;
+			S_StartSound(NULL, sfx_menu1);
 			recordpresetnum_e i, j;
 			for (i = 0; i < numrecordpresets; i++)
 				if (!strcmp(currentrecordpreset, recordpresets[i]->name))
@@ -5857,6 +5858,7 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 		return false;
 
 	G_SetCurrentRecordPreset(new);
+	Nextmap_OnChange();
 	return true;
 }
 
