@@ -33,11 +33,6 @@
 #include "../r_plane.h" // R_FlatDimensionsFromLumpSize
 
 #include <fcntl.h>
-#include "../i_video.h"  // for rendermode != render_glide
-
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 typedef struct
 {
@@ -56,72 +51,6 @@ typedef struct
 static UINT8 softwaretranstogl[11]    = {  0, 25, 51, 76,102,127,153,178,204,229,255};
 static UINT8 softwaretranstogl_hi[11] = {  0, 51,102,153,204,255,255,255,255,255,255};
 static UINT8 softwaretranstogl_lo[11] = {  0, 12, 24, 36, 48, 60, 71, 83, 95,111,127};
-
-//
-// -----------------+
-// HWR_DrawPatch    : Draw a 'tile' graphic
-// Notes            : x,y : positions relative to the original Doom resolution
-//                  : textes(console+score) + menus + status bar
-// -----------------+
-void HWR_DrawPatch(patch_t *gpatch, INT32 x, INT32 y, INT32 option)
-{
-	FOutVector v[4];
-	FBITFIELD flags;
-	GLPatch_t *hwrPatch;
-
-//  3--2
-//  | /|
-//  |/ |
-//  0--1
-	float sdupx = FIXED_TO_FLOAT(vid.fdupx)*2.0f;
-	float sdupy = FIXED_TO_FLOAT(vid.fdupy)*2.0f;
-	float pdupx = FIXED_TO_FLOAT(vid.fdupx)*2.0f;
-	float pdupy = FIXED_TO_FLOAT(vid.fdupy)*2.0f;
-
-	// make patch ready in hardware cache
-	HWR_GetPatch(gpatch);
-	hwrPatch = ((GLPatch_t *)gpatch->hardware);
-
-	switch (option & V_SCALEPATCHMASK)
-	{
-	case V_NOSCALEPATCH:
-		pdupx = pdupy = 2.0f;
-		break;
-	case V_SMALLSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fsmalldupy);
-		break;
-	case V_MEDSCALEPATCH:
-		pdupx = 2.0f * FIXED_TO_FLOAT(vid.fmeddupx);
-		pdupy = 2.0f * FIXED_TO_FLOAT(vid.fmeddupy);
-		break;
-	}
-
-	if (option & V_NOSCALESTART)
-		sdupx = sdupy = 2.0f;
-
-	v[0].x = v[3].x = (x*sdupx-(gpatch->leftoffset)*pdupx)/vid.width - 1;
-	v[2].x = v[1].x = (x*sdupx+(gpatch->width-gpatch->leftoffset)*pdupx)/vid.width - 1;
-	v[0].y = v[1].y = 1-(y*sdupy-(gpatch->topoffset)*pdupy)/vid.height;
-	v[2].y = v[3].y = 1-(y*sdupy+(gpatch->height-gpatch->topoffset)*pdupy)/vid.height;
-
-	v[0].z = v[1].z = v[2].z = v[3].z = 1.0f;
-
-	v[0].s = v[3].s = 0.0f;
-	v[2].s = v[1].s = hwrPatch->max_s;
-	v[0].t = v[1].t = 0.0f;
-	v[2].t = v[3].t = hwrPatch->max_t;
-
-	flags = PF_Translucent|PF_NoDepthTest;
-
-	/*if (option & V_WRAPX)
-		flags |= PF_ForceWrapX;
-	if (option & V_WRAPY)
-		flags |= PF_ForceWrapY;*/
-
-	// clip it since it is used for bunny scroll in doom I
-	HWD.pfnDrawPolygon(NULL, v, 4, flags);
-}
 
 void HWR_DrawStretchyFixedPatch(patch_t *gpatch, fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 option, const UINT8 *colormap)
 {
@@ -775,137 +704,6 @@ void HWR_DrawTutorialBack(UINT32 color, INT32 boxheight)
 	HWD.pfnDrawPolygon(&Surf, v, 4, PF_NoTexture|PF_Modulated|PF_Translucent|PF_NoDepthTest);
 }
 
-
-// ==========================================================================
-//                                                             R_DRAW.C STUFF
-// ==========================================================================
-
-// ------------------
-// HWR_DrawViewBorder
-// Fill the space around the view window with a Doom flat texture, draw the
-// beveled edges.
-// 'clearlines' is useful to clear the heads up messages, when the view
-// window is reduced, it doesn't refresh all the view borders.
-// ------------------
-void HWR_DrawViewBorder(INT32 clearlines)
-{
-	INT32 x, y;
-	INT32 top, side;
-	INT32 baseviewwidth, baseviewheight;
-	INT32 basewindowx, basewindowy;
-	patch_t *patch;
-
-//    if (gl_viewwidth == vid.width)
-//        return;
-
-	if (!clearlines)
-		clearlines = BASEVIDHEIGHT; // refresh all
-
-	// calc view size based on original game resolution
-	baseviewwidth =  FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewwidth), vid.fdupx)); //(cv_viewsize.value * BASEVIDWIDTH/10)&~7;
-	baseviewheight = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewheight), vid.fdupy));
-	top = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_baseviewwindowy), vid.fdupy));
-	side = FixedInt(FixedDiv(FLOAT_TO_FIXED(gl_viewwindowx), vid.fdupx));
-
-	// top
-	HWR_DrawFlatFill(0, 0,
-		BASEVIDWIDTH, (top < clearlines ? top : clearlines),
-		st_borderpatchnum);
-
-	// left
-	if (top < clearlines)
-		HWR_DrawFlatFill(0, top, side,
-			(clearlines-top < baseviewheight ? clearlines-top : baseviewheight),
-			st_borderpatchnum);
-
-	// right
-	if (top < clearlines)
-		HWR_DrawFlatFill(side + baseviewwidth, top, side,
-			(clearlines-top < baseviewheight ? clearlines-top : baseviewheight),
-			st_borderpatchnum);
-
-	// bottom
-	if (top + baseviewheight < clearlines)
-		HWR_DrawFlatFill(0, top + baseviewheight,
-			BASEVIDWIDTH, BASEVIDHEIGHT, st_borderpatchnum);
-
-	//
-	// draw the view borders
-	//
-
-	basewindowx = (BASEVIDWIDTH - baseviewwidth)>>1;
-	if (baseviewwidth == BASEVIDWIDTH)
-		basewindowy = 0;
-	else
-		basewindowy = top;
-
-	// top edge
-	if (clearlines > basewindowy - 8)
-	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_T], PU_PATCH);
-		for (x = 0; x < baseviewwidth; x += 8)
-			HWR_DrawPatch(patch, basewindowx + x, basewindowy - 8,
-				0);
-	}
-
-	// bottom edge
-	if (clearlines > basewindowy + baseviewheight)
-	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_B], PU_PATCH);
-		for (x = 0; x < baseviewwidth; x += 8)
-			HWR_DrawPatch(patch, basewindowx + x,
-				basewindowy + baseviewheight, 0);
-	}
-
-	// left edge
-	if (clearlines > basewindowy)
-	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_L], PU_PATCH);
-		for (y = 0; y < baseviewheight && basewindowy + y < clearlines;
-			y += 8)
-		{
-			HWR_DrawPatch(patch, basewindowx - 8, basewindowy + y,
-				0);
-		}
-	}
-
-	// right edge
-	if (clearlines > basewindowy)
-	{
-		patch = W_CachePatchNum(viewborderlump[BRDR_R], PU_PATCH);
-		for (y = 0; y < baseviewheight && basewindowy+y < clearlines;
-			y += 8)
-		{
-			HWR_DrawPatch(patch, basewindowx + baseviewwidth,
-				basewindowy + y, 0);
-		}
-	}
-
-	// Draw beveled corners.
-	if (clearlines > basewindowy - 8)
-		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_TL],
-				PU_PATCH),
-			basewindowx - 8, basewindowy - 8, 0);
-
-	if (clearlines > basewindowy - 8)
-		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_TR],
-				PU_PATCH),
-			basewindowx + baseviewwidth, basewindowy - 8, 0);
-
-	if (clearlines > basewindowy+baseviewheight)
-		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_BL],
-				PU_PATCH),
-			basewindowx - 8, basewindowy + baseviewheight, 0);
-
-	if (clearlines > basewindowy + baseviewheight)
-		HWR_DrawPatch(W_CachePatchNum(viewborderlump[BRDR_BR],
-				PU_PATCH),
-			basewindowx + baseviewwidth,
-			basewindowy + baseviewheight, 0);
-}
-
-
-
 // ==========================================================================
 //                                                     AM_MAP.C DRAWING STUFF
 // ==========================================================================
@@ -1206,7 +1004,7 @@ static inline boolean saveTGA(const char *file_name, void *buffer,
 	INT32 i;
 	UINT8 *buf8 = buffer;
 
-	fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+	fd = open(file_name, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (fd < 0)
 		return false;
 

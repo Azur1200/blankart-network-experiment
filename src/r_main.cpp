@@ -862,8 +862,8 @@ void R_CheckViewMorph(int s)
 
 void R_ApplyViewMorph(int s)
 {
-	UINT8 *tmpscr = screens[4];
-	UINT8 *srcscr = screens[0];
+	UINT8 *tmpscr = vid.screens[4];
+	UINT8 *srcscr = vid.screens[0];
 	INT32 width = vid.width;
 	INT32 height = vid.height;
 	INT32 p;
@@ -904,8 +904,7 @@ void R_ApplyViewMorph(int s)
 		tmpscr[p] = srcscr[viewmorph[s].scrmap[p]];
 	}
 
-	VID_BlitLinearScreen(tmpscr, srcscr,
-			width*vid.bpp, height, width*vid.bpp, vid.width);
+	VID_BlitLinearScreen(tmpscr, srcscr, width, height, width, vid.width);
 }
 
 angle_t R_ViewRollAngle(const player_t *player, UINT8 viewnum)
@@ -966,18 +965,15 @@ void R_ExecuteSetViewSize(void)
 	// status bar overlay
 	st_overlay = cv_showhud.value;
 
-	scaledviewwidth = vid.width;
+	viewwidth = vid.width;
 	viewheight = vid.height;
 
 	if (r_splitscreen)
 		viewheight >>= 1;
 
-	viewwidth = scaledviewwidth;
-
 	if (r_splitscreen > 1)
 	{
 		viewwidth >>= 1;
-		scaledviewwidth >>= 1;
 	}
 
 	centerx = viewwidth/2;
@@ -1010,7 +1006,7 @@ void R_ExecuteSetViewSize(void)
 		}
 	}
 
-	R_InitViewBuffer(scaledviewwidth, viewheight);
+	R_InitViewBuffer();
 
 	// thing clipping
 	for (i = 0; i < viewwidth; i++)
@@ -1073,8 +1069,6 @@ void R_Init(void)
 	CONS_Printf("R_InitColormaps()...\n");
 	R_InitColormaps();
 
-	//I_OutputMsg("\nR_InitViewBorder");
-	R_InitViewBorder();
 	R_SetViewSize(); // setsizeneeded is set true
 
 	//I_OutputMsg("\nR_InitPlanes");
@@ -1539,8 +1533,11 @@ void R_RenderPlayerView(void)
 		R_ClearSegTables();
 		R_ClearPlanes();
 		R_ClearSprites();
+		R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 		R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, false);
 		R_ClipSprites(drawsegs, NULL);
+		R_ResetColumnBuffer();
+		R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 		R_DrawSkyPlanes();
 		R_DrawPlanes();
 		R_DrawMasked(masks, nummasks);
@@ -1578,6 +1575,7 @@ void R_RenderPlayerView(void)
 	NetUpdate();
 
 	// The head node is the last node output.
+	R_SetColumnContext(COLUMNCONTEXT_FLUSH);
 	ps_numbspcalls = ps_numpolyobjects = ps_numdrawnodes = 0;
 	ps_bsptime = I_GetPreciseTime();
 	R_RenderViewpoint(&masks[nummasks - 1], nummasks - 1, true);
@@ -1586,6 +1584,7 @@ void R_RenderPlayerView(void)
 	ps_sw_spritecliptime = I_GetPreciseTime();
 	R_ClipSprites(drawsegs, NULL);
 	ps_sw_spritecliptime = I_GetPreciseTime() - ps_sw_spritecliptime;
+	R_ResetColumnBuffer();
 
 	// Add skybox portals caused by sky visplanes.
 	if (skybox && !oldsky)
@@ -1630,6 +1629,8 @@ void R_RenderPlayerView(void)
 
 			R_ClipSprites(ds_p - (masks[nummasks - 1].drawsegs[1] - masks[nummasks - 1].drawsegs[0]), portal);
 
+			R_ResetColumnBuffer();
+
 			Portal_Remove(portal);
 		}
 
@@ -1640,6 +1641,7 @@ void R_RenderPlayerView(void)
 	}
 	ps_sw_portaltime = I_GetPreciseTime() - ps_sw_portaltime;
 
+	R_SetColumnContext(COLUMNCONTEXT_DIRECT);
 	ps_sw_planetime = I_GetPreciseTime();
 	R_DrawSkyPlanes();
 	R_DrawPlanes();
@@ -1669,7 +1671,7 @@ void R_RenderPlayerView(void)
 					if (bot > viewheight-1)
 						bot = viewheight-1;
 
-					UINT8* p = &topleft[x + top * vid.width];
+					UINT8* p =  R_Address(top, x);
 
 					while (top <= bot)
 					{
@@ -1735,7 +1737,7 @@ void R_RenderPlayerView(void)
 
 				for (; yl < yh; ++yl)
 				{
-					topleft[portal->start + i + (yl * vid.width)] = pal;
+					*R_Address(0, portal->start + i + yl) = pal;
 				}
 			}
 

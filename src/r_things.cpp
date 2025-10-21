@@ -727,19 +727,9 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
-			// This stuff is a likely cause of the splitscreen water crash bug.
-			// FIXTHIS: Figure out what "something more proper" is and do it.
-			// quick fix... something more proper should be done!!!
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 		if (brightmap != NULL)
@@ -820,16 +810,9 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Still drawn by R_DrawColumn.
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 			Z_Free(dc->source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
@@ -884,9 +867,9 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	if (vis->mobj->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
-		
+
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
-		{	
+		{
 			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
@@ -1158,7 +1141,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
-	dc.hires = 0;
 
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -3351,8 +3333,6 @@ void R_InitDrawNodes(void)
 // R_DrawSprite
 //
 //Fab : 26-04-98:
-// NOTE : uses con_clipviewtop, so that when console is on,
-//        don't draw the part of sprites hidden under the console
 static void R_DrawSprite(vissprite_t *spr)
 {
 	mfloorclip = spr->clipbot;
@@ -3394,7 +3374,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 		for (x = x1; x <= x2; x++)
 		{
 			spr->clipbot[x] = (INT16)viewheight;
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 		}
 		return;
 	}
@@ -3577,7 +3557,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 
 		if (spr->cliptop[x] == CLIP_UNDEF)
 			//Fab : 26-04-98: was -1, now clips against console bottom
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 
 		// Sprite is completely above or below clip plane
 		if (spr->szt >= spr->clipbot[x] || spr->sz <= spr->cliptop[x])
@@ -3619,6 +3599,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
+	}
+
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -3626,11 +3611,6 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	for (i = 0; i < DS_RANGES_COUNT; i++)
 	{
 		drawsegs_xranges[i].count = 0;
-	}
-
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
 	}
 
 	if (drawsegs_xrange_size < maxdrawsegs)
@@ -3874,6 +3854,9 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 	INT32 i;
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
+
+	if (!heads)
+		I_Error("R_DrawMasked: No more free memory\n");
 
 	for (i = 0; i < nummasks; i++)
 	{

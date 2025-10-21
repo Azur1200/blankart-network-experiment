@@ -42,7 +42,6 @@
 #include "r_local.h"
 #include "m_argv.h"
 #include "p_setup.h"
-#include "lzf.h"
 #include "lua_script.h"
 #include "lua_hook.h"
 #include "lonesha256.h"
@@ -67,6 +66,14 @@
 
 #ifdef HAVE_DISCORDRPC
 #include "discord.h"
+#endif
+
+#ifdef USE_LZ4
+#include "lz4.h"
+#elif defined HAVE_ZLIB
+#include <zlib.h>
+#else
+#include "lzf.h"
 #endif
 
 //
@@ -1222,8 +1229,18 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	}
 
 	// Attempt to compress it.
+#if defined USE_LZ4
+	if ((compressedlen = LZ4_compress_fast((char*)(save.buffer + sizeof(UINT32)), (char*)(compressedsave + sizeof(UINT32)), length - sizeof(UINT32), length - sizeof(UINT32) - 1, LZ4_ACCEL)))
+#elif defined HAVE_ZLIB
+	int compresstatus = compress2(compressedsave + sizeof(UINT32), &compressedlen, save.buffer + sizeof(UINT32), length - sizeof(UINT32), ZLIB_LEVEL);
+	if (compresstatus == Z_OK)
+#else
 	if ((compressedlen = lzf_compress(save.buffer + sizeof(UINT32), length - sizeof(UINT32), compressedsave + sizeof(UINT32), length - sizeof(UINT32) - 1)))
+#endif
 	{
+		CONS_Printf("Compressed savegame of size %zu\n", length - sizeof(UINT32));
+		CONS_Printf("Compressed savegame is %zu\n", compressedlen);
+
 		// Compressing succeeded; send compressed data
 		P_SaveBufferFree(&save);
 
@@ -1234,6 +1251,8 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	}
 	else
 	{
+		CONS_Alert(CONS_WARNING, "Compressing failed, sending original save game\n");
+
 		// Compression failed to make it smaller; send original
 		Z_Free(compressedsave);
 
@@ -1316,7 +1335,17 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	{
 		UINT8 *decompressedbuffer = Z_Malloc(decompressedlen, PU_STATIC, NULL);
 
+		CONS_Printf("Decompressing compressed savegame of size %zu\n", length - sizeof(UINT32));
+
+#if defined USE_LZ4
+		LZ4_decompress_safe((char*)save.p, (char*)decompressedbuffer, length - sizeof(UINT32), decompressedlen);
+#elif defined HAVE_ZLIB
+		uncompress(decompressedbuffer, &decompressedlen, save.p, length - sizeof(UINT32));
+#else
 		lzf_decompress(save.p, length - sizeof(UINT32), decompressedbuffer, decompressedlen);
+#endif
+
+		CONS_Printf("Decompressed save is %zu\n", decompressedlen);
 
 		P_SaveBufferFree(&save);
 		P_SaveBufferFromExisting(&save, decompressedbuffer, decompressedlen);

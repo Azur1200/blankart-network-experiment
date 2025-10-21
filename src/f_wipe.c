@@ -317,7 +317,7 @@ void F_WipeStartScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_start = screens[3];
+	wipe_scr_start = vid.screens[3];
 	I_ReadScreen(wipe_scr_start, 1);
 #endif
 }
@@ -334,7 +334,7 @@ void F_WipeEndScreen(void)
 		return;
 	}
 #endif
-	wipe_scr_end = screens[4];
+	wipe_scr_end = vid.screens[4];
 	I_ReadScreen(wipe_scr_end, 1);
 	V_DrawBlock(0, 0, 0, vid.width, vid.height, wipe_scr_start);
 #endif
@@ -364,7 +364,7 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	paldiv = FixedDiv(257<<FRACBITS, 11<<FRACBITS);
 
 	// Init the wipe
-	wipe_scr = screens[0];
+	wipe_scr = vid.screens[0];
 
 	D_WipeLoop(WIPELOOP_RUNWIPE, wipetype, drawMenu);
 #endif

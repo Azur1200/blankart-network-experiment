@@ -293,7 +293,6 @@ boolean D_RenderLevel(void)
 	viewwindowy = 0;
 	viewwindowx = 0;
 
-	topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 	objectsdrawn = 0;
 
 	ps_rendercalltime = I_GetPreciseTime();
@@ -305,12 +304,12 @@ boolean D_RenderLevel(void)
 			if (cv_homremoval.value == 1)
 			{
 				// Clear the software screen buffer to remove HOM
-				memset(screens[0], 31, vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 31, vid.width * vid.height);
 			}
 			else
 			{
 				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
 			}
 		}
 
@@ -357,29 +356,20 @@ boolean D_RenderLevel(void)
 								viewwindowx = 0;
 								viewwindowy = viewheight;
 							}
-							M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
 							break;
 						case 2:
 							viewwindowx = 0;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
 							break;
 						case 3:
 							viewwindowx = viewwidth;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
 						default:
 							break;
 					}
-
-
-					topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 				}
 
 				R_RenderPlayerView();
-
-				if (i > 0)
-					M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 			}
 		}
 	}
@@ -536,19 +526,16 @@ static void D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -566,31 +553,26 @@ static void D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_BLANCREDITS:
 			F_BlanCreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_SECRETCREDITS:
 			F_SecretCreditsDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -600,7 +582,6 @@ static void D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_DEDICATEDSERVER:
@@ -658,7 +639,7 @@ static void D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
@@ -780,7 +761,6 @@ static void D_WipeDraw(boolean menu)
 
 	I_UpdateNoBlit();
 
-	HU_Erase();
 	HU_Drawer();
 	if (menu)
 	{
@@ -1721,9 +1701,7 @@ void D_SRB2Main(void)
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();
@@ -1874,6 +1852,10 @@ void D_SRB2Main(void)
 				I_Error("Bad '%s' level warp.\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
+				"\n"
+				"To check: edit the BlanKart game configuration in Ultimate Lowee Builder.\n"
+				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
+				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
 #endif
 				, word);
 		}

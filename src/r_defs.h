@@ -906,7 +906,7 @@ struct rotsprite_t
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURES list of patches.
 //
-typedef enum 
+typedef enum
 {
 	PATCHALIGN_AUTOCENTER = 1<<0,
 	PATCHALIGN_USEPIVOTS  = 1<<1,
@@ -1093,7 +1093,6 @@ typedef struct
 	INT32 yh;
 	fixed_t iscale;
 	fixed_t texturemid;
-	UINT8 hires;
 	UINT8 shadowcolor;
 
 	UINT8* source; // first pixel in a column
@@ -1177,7 +1176,7 @@ typedef struct
 	//
 	// Water ripple effect
 	// Needs the height of the plane, and the vertical position of the span.
-	// Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
+	// Sets planeripple.xfrac and planeripple.yfrac, added to ds->xfrac and ds->yfrac, if the span is not tilted.
 	//
 	struct
 	{

@@ -658,7 +658,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean kart = false, oldkart = false;
 	boolean raflag = false;
 	boolean serverinfo = true;
-	boolean rapreset = true;
+	boolean rapreset = true; // + extended serverinfo length
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -764,9 +764,12 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 
 	if (serverinfo)
 	{
+		size_t maxservercontact  = rapreset ? MAXSERVERCONTACT : 320;
+		size_t maxdescription = rapreset ? MAXSERVERDESCRIPTION : 320;
+
 		READSTRINGN(dp, header->servername, MAXSERVERNAME);
-		READSTRINGN(dp, header->servercontact, MAXSERVERCONTACT);
-		READSTRINGN(dp, header->serverdescription, MAXSERVERDESCRIPTION);
+		READSTRINGN(dp, header->servercontact, maxservercontact);
+		READSTRINGN(dp, header->serverdescription, maxdescription);
 	}
 
 	if (oldkart)

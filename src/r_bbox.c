@@ -68,7 +68,7 @@ raster_bbox_seg
 
 	while (y < h)
 	{
-		topleft[x + y * vid.width] = pixel;
+		*R_Address(x, y) = pixel;
 		y++;
 	}
 }

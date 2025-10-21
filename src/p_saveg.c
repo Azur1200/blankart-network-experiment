@@ -184,59 +184,184 @@ static void P_SyncMem(savebuffer_t *save, void *s, size_t n)
 		READMEM(save->p, s, n);
 }
 
+static player_t *P_SyncPlayer(savebuffer_t *save, player_t *player)
+{
+	UINT8 playernum = P_SyncUINT8(save, player != NULL ? player - players : UINT8_MAX);
+	if (playernum == UINT8_MAX)
+		return NULL;
+
+	if (playernum >= MAXPLAYERS)
+		I_Error("P_SyncPlayer: playernum %u >= MAXPLAYERS %u", playernum, MAXPLAYERS);
+	return &players[playernum];
+}
+
+static state_t *P_SyncState(savebuffer_t *save, state_t *state)
+{
+	UINT16 statenum = P_SyncUINT16(save, state != NULL ? state - states : UINT16_MAX);
+	if (statenum == UINT16_MAX)
+		return NULL;
+
+	if (statenum >= numstates)
+		I_Error("P_SyncState: statenum %u >= numstates %u", statenum, numstates);
+	return &states[statenum];
+}
+
+static line_t *P_SyncLine(savebuffer_t *save, line_t *line)
+{
+	UINT32 linenum = P_SyncUINT32(save, line != NULL ? line - lines : UINT32_MAX);
+	if (linenum == UINT32_MAX)
+		return NULL;
+
+	if (linenum >= numlines)
+		I_Error("P_SyncLine: linenum %u >= numlines %zu", linenum, numlines);
+	return &lines[linenum];
+}
+
+static sector_t *P_SyncSector(savebuffer_t *save, sector_t *sector)
+{
+	UINT32 sectornum = P_SyncUINT32(save, sector != NULL ? sector - sectors : UINT32_MAX);
+	if (sectornum == UINT32_MAX)
+		return NULL;
+
+	if (sectornum >= numsectors)
+		I_Error("P_SyncSector: sectornum %u >= numsectors %zu", sectornum, numsectors);
+	return &sectors[sectornum];
+}
+
+static pslope_t *P_SyncSlope(savebuffer_t *save, pslope_t *slope)
+{
+	UINT16 slopeid = P_SyncUINT16(save, slope != NULL ? slope->id : UINT16_MAX);
+	if (slopeid == UINT16_MAX)
+		return NULL;
+
+	pslope_t *ret = P_SlopeById(slopeid);
+	if (ret == NULL)
+		I_Error("P_SyncSlope: Slope with ID %u not found", slopeid);
+	return ret;
+}
+
+static ffloor_t *P_SyncFFloor(savebuffer_t *save, ffloor_t *ffloor)
+{
+	sector_t *sec = P_SyncSector(save, ffloor ? ffloor->target : NULL);
+	if (sec == NULL)
+		return NULL;
+
+	UINT16 id = P_SyncUINT16(save, P_GetFFloorID(ffloor));
+	ffloor_t *ret = P_GetFFloorByID(sec, id);
+	if (ret == NULL)
+		I_Error("P_SyncFFloor: FOF with ID %u not found (sector %td)", id, sec - sectors);
+	return ret;
+}
+
+static terrain_t *P_SyncTerrain(savebuffer_t *save, terrain_t *terrain)
+{
+	UINT32 terrain_index = P_SyncUINT32(save, terrain != NULL ? K_GetTerrainHeapIndex(terrain) : UINT32_MAX);
+	if (terrain_index == UINT32_MAX)
+		return NULL;
+
+	terrain_t *ret = K_GetTerrainByIndex(terrain_index);
+	if (ret == NULL)
+		I_Error("P_SyncTerrain: Terrain with ID %u not found", terrain_index);
+	return ret;
+}
+
 static mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
 {
 	if (save->write)
 	{
-		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
+		WRITEUINT32(save->p, mo != NULL ? mo->mobjnum : 0);
 		return mo;
 	}
 	else
 		return (mobj_t *)(uintptr_t)READUINT32(save->p);
 }
 
-static mobj_t *P_SyncMobjAndRelink(savebuffer_t *save, mobj_t *mo)
+static void P_RelinkMobj(savebuffer_t *save, mobj_t **ptr)
 {
 	if (save->write)
-	{
-		WRITEUINT32(save->p, mo ? mo->mobjnum : 0);
-		return mo;
-	}
-	else
-	{
-		UINT32 mobjnum = READUINT32(save->p);
-		return mobjnum == 0 ? NULL : P_FindNewPosition(mobjnum);
-	}
+		return;
+
+	UINT32 mobjnum = (UINT32)(uintptr_t)*ptr;
+	*ptr = NULL;
+
+	if (mobjnum == 0)
+		return;
+
+	mobj_t *new = P_FindNewPosition(mobjnum);
+	if (new == NULL)
+		// yeah, let's just silently remove an mobj pointer on the client's end
+		// what could possibly go wrong?
+		I_Error("mobjnum %u not found!", mobjnum);
+
+	P_SetTarget(ptr, new);
 }
 
 static waypoint_t *P_SyncWaypoint(savebuffer_t *save, waypoint_t *wp)
 {
 	if (save->write)
 	{
-		WRITEUINT32(save->p, K_GetWaypointHeapIndex(wp));
+		WRITEUINT32(save->p, wp != NULL ? K_GetWaypointHeapIndex(wp) : UINT32_MAX);
 		return wp;
 	}
 	else
 		return (waypoint_t *)(uintptr_t)READUINT32(save->p);
 }
 
-#define SYNC(v) v = _Generic(v, \
+static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
+{
+	if (save->write)
+		return;
+
+	UINT32 index = (UINT32)(uintptr_t)*ptr;
+	*ptr = NULL;
+
+	if (index == UINT32_MAX)
+		return;
+
+	waypoint_t *new = K_GetWaypointFromIndex(index);
+	if (new == NULL)
+		I_Error("Waypoint index %u not found!", index);
+
+	*ptr = new;
+}
+
+// STANDARD SYNC MACROS
+// can be used without caveats (assuming world is synced before thinkers)
+
+#define SYNC2(out, in) out = _Generic(in, \
 	SINT8: P_SyncSINT8, \
 	INT16: P_SyncINT16, \
 	INT32: P_SyncINT32, \
 	UINT8: P_SyncUINT8, \
 	UINT16: P_SyncUINT16, \
 	UINT32: P_SyncUINT32, \
-	mobj_t *: P_SyncMobj, \
-	waypoint_t *: P_SyncWaypoint \
-)(save, v)
+	player_t *: P_SyncPlayer, \
+	state_t *: P_SyncState, \
+	ffloor_t *: P_SyncFFloor, \
+	line_t *: P_SyncLine, \
+	sector_t *: P_SyncSector, \
+	pslope_t *: P_SyncSlope, \
+	terrain_t *: P_SyncTerrain \
+)(save, in)
+
+#define SYNC(v) SYNC2(v, v)
+#define SYNCAS(t, v) SYNC2(v, (t)v)
 
 #define SYNCBOOLEAN(v) v = _Generic(v, \
 	boolean: P_SyncUINT8 \
 )(save, v)
 
-#define SYNCRELINK(v) v = _Generic(v, \
-	mobj_t *: P_SyncMobjAndRelink \
+// SYNC AND RELINK MACROS
+// each use of RSYNC must be paired with a RELINK to restore the pointer
+
+#define RSYNC(v) v = _Generic(v, \
+	mobj_t *: P_SyncMobj, \
+	waypoint_t *: P_SyncWaypoint \
+)(save, v)
+
+#define RELINK(v) _Generic(v, \
+	mobj_t **: P_RelinkMobj, \
+	waypoint_t **: P_RelinkWaypoint \
 )(save, v)
 
 // Block UINT32s to attempt to ensure that the correct data is
@@ -285,7 +410,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		adminplayers[i] = (INT32)P_SyncSINT8(save, adminplayers[i]);
+		SYNCAS(SINT8, adminplayers[i]);
 
 		for (j = 0; j < PWRLV_NUMTYPES; j++)
 		{
@@ -375,8 +500,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].splitscreenindex);
 
-		SYNC(players[i].awayviewmobj);
-		SYNC(players[i].followmobj);
+		RSYNC(players[i].awayviewmobj);
+		RSYNC(players[i].followmobj);
 		SYNC(players[i].followitem);
 
 		SYNC(players[i].charflags);
@@ -395,7 +520,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNCBOOLEAN(players[i].followerready);
 		SYNC(players[i].followercolor);
 
-		SYNC(players[i].follower);
+		RSYNC(players[i].follower);
 
 		for (j = 0; j < NUMPOWERS; j++)
 			SYNC(players[i].powers[j]);
@@ -411,8 +536,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].positiondelay);
 		SYNC(players[i].distancetofinish);
 		SYNC(players[i].distancetofinishprev);
-		SYNC(players[i].currentwaypoint);
-		SYNC(players[i].nextwaypoint);
+		RSYNC(players[i].currentwaypoint);
+		RSYNC(players[i].nextwaypoint);
 		SYNC(players[i].bigwaypointgap);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
@@ -502,7 +627,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].airdroptime);
 		SYNCBOOLEAN(players[i].ringdrop);
 
-		SYNC(players[i].shieldtracer);
+		RSYNC(players[i].shieldtracer);
 
 		SYNC(players[i].bubblecool);
 		SYNC(players[i].bubbleblowup);
@@ -1026,6 +1151,7 @@ enum linediff_e
 // sync macros
 #define GETB(b) (diff[b / (8*sizeof(*diff))] & (1 << (b & (8*sizeof(*diff) - 1))))
 #define SYNCF(b, v) if (GETB(b)) SYNC(v)
+#define RSYNCF(b, v) if (GETB(b)) RSYNC(v)
 #define SYNCFB(b, v) if (GETB(b)) SYNCBOOLEAN(v)
 // if diff includes b, sync v, else if in read mode, set v to d(efault)
 #define SYNCDEF(b, v, d) (GETB(b) ? SYNC(v) : !save->write ? (v = d) : (void)0)
@@ -1105,13 +1231,14 @@ static void SyncFFloors(savebuffer_t *save, const sector_t *ss)
 				break;
 			if (j != fflr_i) // this ffloor was not modified
 				continue;
-
-			fflr_i = READUINT16(save->p); // get next ffloor "number" ready
 		}
 
 		SYNC(diff[0]);
 		SYNCF(FD_FLAGS, rover->fofflags);
 		SYNCF(FD_ALPHA, rover->alpha);
+
+		if (!save->write)
+			fflr_i = READUINT16(save->p); // get next ffloor "number" ready
 	}
 
 	if (save->write)
@@ -1190,11 +1317,9 @@ static void SyncSectors(savebuffer_t *save)
 					diff[j-1] |= 0x80;
 			if (diff[0] == 0)
 				continue;
-
-			// WRITEUINT16(save->p, i);
 		}
 
-		i = P_SyncUINT16(save, i);
+		SYNCAS(UINT16, i);
 
 		if (i == 0xffff)
 			break;
@@ -1400,18 +1525,21 @@ static void DiffLines(const line_t *li, const line_t *spawnli, UINT8 diff[])
 
 static void SyncLines(savebuffer_t *save)
 {
-	size_t i = 0, j;
+	size_t i = 0, j = 0;
 	line_t *li;
 	side_t *si;
 	UINT8 diff[(LD__MAX>>3)+1];
 
-	for (;;)
+	for (i = 0;; i++)
 	{
 		memset(diff, 0, sizeof(diff));
 		if (save->write)
 		{
-			if (++i == numlines)
+			if (i >= numlines)
+			{
+				WRITEUINT16(save->p, 0xffff);
 				break;
+			}
 
 			DiffLines(&lines[i], &spawnlines[i], diff);
 			for (j = sizeof(diff)-1; j > 0; j--)
@@ -1419,19 +1547,15 @@ static void SyncLines(savebuffer_t *save)
 					diff[j-1] |= 0x80;
 			if (diff[0] == 0)
 				continue;
-
-			WRITEUINT16(save->p, i);
 		}
-		else
-		{
-			i = READUINT16(save->p);
 
-			if (i == 0xffff)
-				break;
+		SYNCAS(UINT16, i);
 
-			if (i >= numlines)
-				I_Error("Invalid line number %zu from server", i);
-		}
+		if (i == 0xffff)
+			break;
+
+		if (i >= numlines)
+			I_Error("Invalid line number %zu from server (expected end at %zu)", i, numlines);
 
 		li = &lines[i];
 		j = 0;
@@ -1533,9 +1657,6 @@ static void SyncLines(savebuffer_t *save)
 
 		SYNCF(LD_ACTIVATION, li->activation);
 	}
-
-	if (save->write)
-		WRITEUINT16(save->p, 0xffff);
 }
 
 static void P_NetSyncWorld(savebuffer_t *save)
@@ -1689,106 +1810,6 @@ enum mobj_diff_t
 
 	MD__MAX
 };
-
-static inline UINT32 SaveMobjnum(const mobj_t *mobj)
-{
-	if (mobj) return mobj->mobjnum;
-	return 0;
-}
-
-static mobj_t *SyncMobj(savebuffer_t *save, mobj_t *mobj)
-{
-	if (save->write)
-	{
-		if (mobj) WRITEUINT32(save->p, mobj->mobjnum);
-		else WRITEUINT32(save->p, 0);
-		return mobj;
-	}
-	else
-	{
-		UINT32 mobjnum = READUINT32(save->p);
-		if (mobjnum == 0) return NULL;
-		return (mobj_t *)(size_t)mobjnum;
-	}
-}
-
-static sector_t *LoadSector(UINT32 sector)
-{
-	if (sector >= numsectors) return NULL;
-	return &sectors[sector];
-}
-
-static UINT32 SaveSector(sector_t *sector)
-{
-	if (sector) return (UINT32)(sector - sectors);
-	else return 0xFFFFFFFF;
-}
-
-static sector_t *SyncSector(savebuffer_t *save, sector_t *sector)
-{
-	if (save->write)
-	{
-		if (sector) WRITEUINT32(save->p, (UINT32)(sector - sectors));
-		else WRITEUINT32(save->p, 0xFFFFFFFF);
-		return sector;
-	}
-	else
-	{
-		UINT32 sectornum = READUINT32(save->p);
-		if (sectornum >= numsectors) return NULL;
-		return &sectors[sectornum];
-	}
-}
-
-static line_t *SyncLine(savebuffer_t *save, line_t *line)
-{
-	if (save->write)
-	{
-		if (line) WRITEUINT32(save->p, (UINT32)(line - lines));
-		else WRITEUINT32(save->p, 0xFFFFFFFF);
-		return line;
-	}
-	else
-	{
-		UINT32 linenum = READUINT32(save->p);
-		if (linenum >= numlines) return NULL;
-		return &lines[linenum];
-	}
-}
-
-static inline player_t *LoadPlayer(UINT32 player)
-{
-	if (player >= MAXPLAYERS) return NULL;
-	return &players[player];
-}
-
-static inline UINT32 SavePlayer(const player_t *player)
-{
-	if (player) return (UINT32)(player - players);
-	return 0xFFFFFFFF;
-}
-
-static pslope_t *SyncSlope(savebuffer_t *save, pslope_t *slope)
-{
-	if (save->write)
-	{
-		if (slope) WRITEUINT32(save->p, (UINT32)(slope->id));
-		else WRITEUINT32(save->p, 0xFFFFFFFF);
-		return slope;
-	}
-	else
-	{
-		UINT32 slopeid = READUINT32(save->p);
-		pslope_t *p = slopelist;
-		if (slopeid > slopecount) return NULL;
-		do
-		{
-			if (p->id == slopeid)
-				return p;
-		} while ((p = p->next));
-		return NULL;
-	}
-}
 
 static mobjtype_t g_doomednum_to_mobjtype[UINT16_MAX];
 
@@ -2042,35 +2063,8 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNC(mobj->floorz);
 	SYNC(mobj->ceilingz);
 
-	if (GETB(MD2_FLOORROVER))
-	{
-		if (save->write)
-		{
-			WRITEUINT32(save->p, SaveSector(mobj->floorrover->target));
-			WRITEUINT16(save->p, P_GetFFloorID(mobj->floorrover));
-		}
-		else
-		{
-			sector_t *sec = LoadSector(READUINT32(save->p));
-			UINT16 id = READUINT16(save->p);
-			mobj->floorrover = P_GetFFloorByID(sec, id);
-		}
-	}
-
-	if (GETB(MD2_CEILINGROVER))
-	{
-		if (save->write)
-		{
-			WRITEUINT32(save->p, SaveSector(mobj->ceilingrover->target));
-			WRITEUINT16(save->p, P_GetFFloorID(mobj->ceilingrover));
-		}
-		else
-		{
-			sector_t *sec = LoadSector(READUINT32(save->p));
-			UINT16 id = READUINT16(save->p);
-			mobj->ceilingrover = P_GetFFloorByID(sec, id);
-		}
-	}
+	SYNCF(MD2_FLOORROVER, mobj->floorrover);
+	SYNCF(MD2_CEILINGROVER, mobj->ceilingrover);
 
 	if (GETB(MD_TYPE))
 	{
@@ -2125,15 +2119,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD_FLAGS2, mobj->flags2);
 	SYNCDEF(MD_HEALTH, mobj->health, mobj->info->spawnhealth);
 	SYNCDEF(MD_RTIME, mobj->reactiontime, mobj->info->reactiontime);
-	if (GETB(MD_STATE))
-	{
-		if (save->write)
-			WRITEUINT16(save->p, mobj->state-states);
-		else
-			mobj->state = &states[READUINT16(save->p)];
-	}
-	else if (!save->write)
-		mobj->state = &states[mobj->info->spawnstate];
+	SYNCDEF(MD_STATE, mobj->state, &states[mobj->info->spawnstate]);
 	SYNCDEF(MD_TICS, mobj->tics, mobj->state->tics);
 	SYNCDEF(MD_SPRITE, mobj->sprite, mobj->state->sprite);
 	if (mobj->sprite == SPR_PLAY)
@@ -2143,17 +2129,15 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD_EFLAGS, mobj->eflags);
 	if (GETB(MD_PLAYER))
 	{
-		UINT8 i;
-		i = P_SyncUINT8(save, mobj->player-players);
-		mobj->player = &players[i];
+		SYNC(mobj->player);
 		mobj->player->mo = mobj;
 	}
 	SYNCF(MD_MOVEDIR, mobj->movedir);
 	SYNCF(MD_MOVECOUNT, mobj->movecount);
 	SYNCF(MD_THRESHOLD, mobj->threshold);
 	SYNCDEF(MD_LASTLOOK, mobj->lastlook, -1);
-	SYNCF(MD_TARGET, mobj->target);
-	SYNCF(MD_TRACER, mobj->tracer);
+	RSYNCF(MD_TARGET, mobj->target);
+	RSYNCF(MD_TRACER, mobj->tracer);
 	SYNCDEF(MD_FRICTION, mobj->friction, ORIG_FRICTION);
 	SYNCDEF(MD_MOVEFACTOR, mobj->movefactor, FRACUNIT);
 	SYNCF(MD_FUSE, mobj->fuse);
@@ -2201,16 +2185,10 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD2_COLOR, mobj->color);
 	SYNCF(MD2_EXTVAL1, mobj->extravalue1);
 	SYNCF(MD2_EXTVAL2, mobj->extravalue2);
-	SYNCF(MD2_HNEXT, mobj->hnext);
-	SYNCF(MD2_HPREV, mobj->hprev);
-	SYNCF(MD2_ITNEXT, mobj->itnext);
-	if (GETB(MD2_SLOPE))
-	{
-		if (save->write)
-			WRITEUINT16(save->p, mobj->standingslope->id);
-		else
-			mobj->standingslope = P_SlopeById(READUINT16(save->p));
-	}
+	RSYNCF(MD2_HNEXT, mobj->hnext);
+	RSYNCF(MD2_HPREV, mobj->hprev);
+	RSYNCF(MD2_ITNEXT, mobj->itnext);
+	SYNCF(MD2_SLOPE, mobj->standingslope);
 	SYNCFB(MD2_COLORIZED, mobj->colorized);
 	SYNCFB(MD2_MIRRORED, mobj->mirrored);
 	SYNCF(MD2_ROLLANGLE, mobj->rollangle);
@@ -2303,21 +2281,8 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCDEF(MD2_DISPOFFSET, mobj->dispoffset, mobj->info->dispoffset);
 	SYNCF(MD2_LASTMOMZ, mobj->lastmomz);
 
-	if (GETB(MD2_TERRAIN))
-	{
-		if (save->write)
-		{
-			WRITEUINT32(save->p, K_GetTerrainHeapIndex(mobj->terrain) + 1);
-			WRITEUINT32(save->p, SaveMobjnum(mobj->terrainOverlay));
-		}
-		else
-		{
-			UINT32 terrain_index = READUINT32(save->p);
-			if (terrain_index > 0)
-				mobj->terrain = K_GetTerrainByIndex(terrain_index - 1);
-			mobj->terrainOverlay = (mobj_t *)(size_t)READUINT32(save->p);
-		}
-	}
+	SYNCF(MD2_TERRAIN, mobj->terrain);
+	RSYNCF(MD2_TERRAIN, mobj->terrainOverlay);
 	SYNCDEF(MD3_GRAVITY, mobj->gravity, FRACUNIT);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakexoff);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakeyoff);
@@ -2389,7 +2354,7 @@ static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, t
 		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
-	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->sourceline);
 	return &ht->thinker;
 }
 
@@ -2406,8 +2371,8 @@ static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sourceline = SyncLine(save, ht->sourceline);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sourceline);
+	SYNC(ht->sector);
 	SYNC(ht->speed);
 	SYNC(ht->distance);
 	SYNC(ht->floorwasheight);
@@ -2431,7 +2396,7 @@ static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 think
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->speed);
 	SYNC(ht->direction);
 	SYNC(ht->floorstartheight);
@@ -2458,7 +2423,7 @@ static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, 
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->speed);
 	SYNC(ht->direction);
 	SYNC(ht->floorstartheight);
@@ -2485,8 +2450,8 @@ static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, 
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sourceline = SyncLine(save, ht->sourceline);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sourceline);
+	SYNC(ht->sector);
 	return &ht->thinker;
 }
 
@@ -2503,8 +2468,8 @@ static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thin
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sourceline = SyncLine(save, ht->sourceline);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sourceline);
+	SYNC(ht->sector);
 	SYNC(ht->crushspeed);
 	SYNC(ht->retractspeed);
 	SYNC(ht->direction);
@@ -2535,8 +2500,8 @@ static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, think
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sourceline = SyncLine(save, ht->sourceline);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sourceline);
+	SYNC(ht->sector);
 	SYNC(ht->tag);
 	return &ht->thinker;
 }
@@ -2555,7 +2520,7 @@ static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 
 	size_t i;
-	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->sourceline);
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		SYNCBOOLEAN(ht->playersInArea[i]);
@@ -2578,7 +2543,7 @@ static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 
 	SYNC(ht->tag);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->ceilingbottom);
 	SYNC(ht->ceilingtop);
 	SYNC(ht->basespeed);
@@ -2602,7 +2567,7 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	}
 
 	SYNC(ht->type);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->bottomheight);
 	SYNC(ht->topheight);
 	SYNC(ht->speed);
@@ -2638,7 +2603,7 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 
 	SYNC(ht->crush);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->direction);
 	SYNC(ht->texture);
 	SYNC(ht->floordestheight);
@@ -2667,7 +2632,7 @@ static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, 
 		ht = Z_Malloc(sizeof (*ht), PU_LEVSPEC, NULL);
 		ht->thinker.function.acp1 = thinker;
 	}
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->maxlight);
 	SYNC(ht->minlight);
 	if (!save->write && ht->sector)
@@ -2688,7 +2653,7 @@ static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thin
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->count);
 	SYNC(ht->minlight);
 	SYNC(ht->maxlight);
@@ -2712,7 +2677,7 @@ static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->minlight);
 	SYNC(ht->maxlight);
 	SYNC(ht->direction);
@@ -2735,7 +2700,7 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->count);
 	SYNC(ht->resetcount);
 	SYNC(ht->maxlight);
@@ -2760,8 +2725,8 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 
 	SYNC(ht->type);
-	ht->sector = SyncSector(save, ht->sector);
-	ht->actionsector = SyncSector(save, ht->actionsector);
+	SYNC(ht->sector);
+	SYNC(ht->actionsector);
 	SYNC(ht->direction);
 	SYNC(ht->floordestheight);
 	SYNC(ht->ceilingdestheight);
@@ -2796,10 +2761,10 @@ static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thi
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sourceline = SyncLine(save, ht->sourceline);
-	ht->sector = SyncSector(save, ht->sector);
-	ht->actionsector = SyncSector(save, ht->actionsector);
-	ht->player = LoadPlayer(P_SyncUINT32(save, SavePlayer(ht->player))); // was dummy
+	SYNC(ht->sourceline);
+	SYNC(ht->sector);
+	SYNC(ht->actionsector);
+	SYNC(ht->player);
 	SYNC(ht->direction);
 	SYNC(ht->origalpha);
 	SYNC(ht->timer);
@@ -2900,7 +2865,7 @@ static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 
 	SYNC(ht->tag);
-	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->sourceline);
 	SYNC(ht->nobosses);
 	return &ht->thinker;
 }
@@ -2918,7 +2883,7 @@ static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, 
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	SYNC(ht->sourcelevel);
 	SYNC(ht->destlevel);
 	SYNC(ht->fixedcurlevel);
@@ -2942,9 +2907,9 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->line = SyncLine(save, ht->line);
-	ht->caller = SyncMobj(save, ht->caller);
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->line);
+	RSYNC(ht->caller);
+	SYNC(ht->sector);
 	SYNC(ht->timer);
 	return &ht->thinker;
 }
@@ -3005,7 +2970,7 @@ static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 
 	if (!save->write)
 	{
-		sector_t *ss = LoadSector(ht->sectornum);
+		sector_t *ss = &sectors[ht->sectornum];
 		if (ss)
 		{
 			size_t j = 0; // ss->ffloors is saved as ffloor #0, ss->ffloors->next is #1, etc
@@ -3038,7 +3003,7 @@ static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->sector = SyncSector(save, ht->sector);
+	SYNC(ht->sector);
 	ht->source_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->source_exc)));
 	ht->dest_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->dest_exc)));
 	SYNCBOOLEAN(ht->ticbased);
@@ -3084,8 +3049,8 @@ static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thi
 	}
 
 	SYNC(ht->type);
-	ht->slope = SyncSlope(save, ht->slope);
-	ht->sourceline = SyncLine(save, ht->sourceline);
+	SYNC(ht->slope);
+	SYNC(ht->sourceline);
 	SYNC(ht->extent);
 	return &ht->thinker;
 }
@@ -3104,9 +3069,9 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 		ht->thinker.function.acp1 = thinker;
 	}
 
-	ht->slope = SyncSlope(save, ht->slope);
+	SYNC(ht->slope);
 	for (i = 0; i < 3; i++)
-		ht->secs[i] = SyncSector(save, ht->secs[i]);
+		SYNC(ht->secs[i]);
 	P_SyncMem(save, ht->vex, sizeof(ht->vex));
 	P_SyncMem(save, ht->origsecheights, sizeof(ht->origsecheights));
 	P_SyncMem(save, ht->origvecheights, sizeof(ht->origvecheights));
@@ -3247,7 +3212,7 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 
 	SYNC(ht->polyObjNum);
-	ht->controlSector = SyncSector(save, ht->controlSector);
+	SYNC(ht->controlSector);
 	SYNC(ht->dx);
 	SYNC(ht->dy);
 	SYNC(ht->oldHeights);
@@ -3268,7 +3233,7 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	}
 
 	SYNC(ht->polyObjNum);
-	ht->controlSector = SyncSector(save, ht->controlSector);
+	SYNC(ht->controlSector);
 	SYNC(ht->rotscale);
 	SYNC( ht->turnobjs);
 	SYNC(ht->oldHeights);
@@ -3400,6 +3365,13 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 		// we don't want the removed mobjs to come back
 		P_InitThinkers();
 
+		// Oh my god don't blast random memory with our reference counts.
+		waypointcap = kitemcap = NULL;
+		for (i = 0; i <= 15; i++)
+		{
+			skyboxcenterpnts[i] = skyboxviewpnts[i] = NULL;
+		}
+
 		// clear sector thinker pointers so they don't point to non-existant thinkers for all of eternity
 		for (i = 0; i < numsectors; i++)
 		{
@@ -3467,16 +3439,13 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 
 		if (restoreNum)
 		{
-			executor_t *delay = NULL;
-			UINT32 mobjnum;
+			executor_t *delay;
 			for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
 			{
 				if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
 					continue;
-				delay = (void *)currentthinker;
-				if (!(mobjnum = (UINT32)(size_t)delay->caller))
-					continue;
-				delay->caller = P_FindNewPosition(mobjnum);
+				delay = (executor_t *)currentthinker;
+				RELINK(&delay->caller);
 			}
 		}
 	}
@@ -3495,40 +3464,18 @@ static void P_NetSyncWaypoints(savebuffer_t *save)
 	if (P_SyncUINT32(save, ARCHIVEBLOCK_WAYPOINTS) != ARCHIVEBLOCK_WAYPOINTS)
 		I_Error("Bad $$$.sav at archive block Waypoints");
 
-	SYNC(numWaypoints);
+	if (P_SyncUINT32(save, numWaypoints) != numWaypoints)
+		I_Error("Bad $$$.sav: More saved waypoints than created!");
 
-	if (save->write)
+	// The only thing we save for each waypoint is the mobj.
+	// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
+	for (i = 0U; i < numWaypoints; i++)
 	{
-		for (i = 0U; i < numWaypoints; i++) {
-			waypoint = K_GetWaypointFromIndex(i);
-
-			// The only thing we save for each waypoint is the mobj.
-			// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
-			WRITEUINT32(save->p, waypoint->mobj->mobjnum);
-		}
+		waypoint = K_GetWaypointFromIndex(i);
+		RSYNC(waypoint->mobj);
+		RELINK(&waypoint->mobj);
 	}
-	else
-	{
-		size_t numSpawnedWaypoints = K_GetNumWaypoints();
 
-		if (numWaypoints != numSpawnedWaypoints) {
-			I_Error("Bad $$$.sav: More saved waypoints than created!");
-		}
-		else
-		{
-			waypoint_t *waypoint;
-			UINT32 i;
-			UINT32 temp;
-			for (i = 0U; i < numWaypoints; i++) {
-				waypoint = K_GetWaypointFromIndex(i);
-				temp = READUINT32(save->p);
-				waypoint->mobj = NULL;
-				if (!P_SetTarget(&waypoint->mobj, P_FindNewPosition(temp))) {
-					CONS_Debug(DBG_GAMELOGIC, "waypoint mobj not found for %d\n", i);
-				}
-			}
-		}
-	}
 	TracyCZoneEnd(__zone);
 }
 
@@ -3541,7 +3488,10 @@ static void P_NetSyncTubeWaypoints(savebuffer_t *save)
 	{
 		SYNC(numtubewaypoints[i]);
 		for (j = 0; j < numtubewaypoints[i]; j++)
-			SYNCRELINK(tubewaypoints[i][j]);
+		{
+			RSYNC(tubewaypoints[i][j]);
+			RELINK(&tubewaypoints[i][j]);
+		}
 	}
 	TracyCZoneEnd(__zone);
 }
@@ -3645,18 +3595,11 @@ static inline void P_SyncPolyObjects(savebuffer_t *save)
 		P_SynchPolyObj(save, &PolyObjects[i]);
 }
 
-static mobj_t *RelinkMobj(mobj_t **ptr)
-{
-	UINT32 temp = (UINT32)(size_t)*ptr;
-	*ptr = NULL;
-	return P_SetTarget(ptr, P_FindNewPosition(temp));
-}
-
-static void P_RelinkPointers(void)
+static void P_RelinkPointers(savebuffer_t *save)
 {
 	thinker_t *currentthinker;
 	mobj_t *mobj;
-	UINT32 temp, i;
+	UINT32 i;
 
 	// use info field (value = oldposition) to relink mobjs
 	for (currentthinker = thlist[THINK_MOBJ].next; currentthinker != &thlist[THINK_MOBJ];
@@ -3672,80 +3615,25 @@ static void P_RelinkPointers(void)
 			|| mobj->type == MT_SPARK))
 			continue;
 
-		if (mobj->tracer)
-		{
-			if (!RelinkMobj(&mobj->tracer))
-				CONS_Debug(DBG_GAMELOGIC, "tracer not found on %d\n", mobj->type);
-		}
-		if (mobj->target)
-		{
-			if (!RelinkMobj(&mobj->target))
-				CONS_Debug(DBG_GAMELOGIC, "target not found on %d\n", mobj->type);
-		}
-		if (mobj->hnext)
-		{
-			if (!RelinkMobj(&mobj->hnext))
-				CONS_Debug(DBG_GAMELOGIC, "hnext not found on %d\n", mobj->type);
-		}
-		if (mobj->hprev)
-		{
-			if (!RelinkMobj(&mobj->hprev))
-				CONS_Debug(DBG_GAMELOGIC, "hprev not found on %d\n", mobj->type);
-		}
-		if (mobj->itnext)
-		{
-			if (!RelinkMobj(&mobj->itnext))
-				CONS_Debug(DBG_GAMELOGIC, "itnext not found on %d\n", mobj->type);
-		}
-		if (mobj->terrainOverlay)
-		{
-			if (!RelinkMobj(&mobj->terrainOverlay))
-				CONS_Debug(DBG_GAMELOGIC, "terrainOverlay not found on %d\n", mobj->type);
-		}
+		RELINK(&mobj->tracer);
+		RELINK(&mobj->target);
+		RELINK(&mobj->hnext);
+		RELINK(&mobj->hprev);
+		RELINK(&mobj->itnext);
+		RELINK(&mobj->terrainOverlay);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i])
 			continue;
-		if (players[i].awayviewmobj)
-		{
-			if (!RelinkMobj(&players[i].awayviewmobj))
-				CONS_Debug(DBG_GAMELOGIC, "awayviewmobj not found on player %d\n", i);
-		}
-		if (players[i].followmobj)
-		{
-			if (!RelinkMobj(&players[i].followmobj))
-				CONS_Debug(DBG_GAMELOGIC, "followmobj not found on player %d\n", i);
-		}
-		if (players[i].follower)
-		{
-			if (!RelinkMobj(&players[i].follower))
-				CONS_Debug(DBG_GAMELOGIC, "follower not found on player %d\n", i);
-		}
-		if (players[i].currentwaypoint)
-		{
-			temp = (UINT32)(size_t)players[i].currentwaypoint;
-			players[i].currentwaypoint = K_GetWaypointFromIndex(temp);
-			if (players[i].currentwaypoint == NULL)
-			{
-				CONS_Debug(DBG_GAMELOGIC, "currentwaypoint not found on player %d\n", i);
-			}
-		}
-		if (players[i].nextwaypoint)
-		{
-			temp = (UINT32)(size_t)players[i].nextwaypoint;
-			players[i].nextwaypoint = K_GetWaypointFromIndex(temp);
-			if (players[i].nextwaypoint == NULL)
-			{
-				CONS_Debug(DBG_GAMELOGIC, "nextwaypoint not found on player %d\n", i);
-			}
-		}
-		if (players[i].shieldtracer)
-		{
-			if (!RelinkMobj(&players[i].shieldtracer))
-				CONS_Debug(DBG_GAMELOGIC, "shieldtracer not found on player %d\n", i);
-		}
+
+		RELINK(&players[i].awayviewmobj);
+		RELINK(&players[i].followmobj);
+		RELINK(&players[i].follower);
+		RELINK(&players[i].currentwaypoint);
+		RELINK(&players[i].nextwaypoint);
+		RELINK(&players[i].shieldtracer);
 	}
 }
 
@@ -3791,10 +3679,10 @@ static inline void P_NetSyncSpecials(savebuffer_t *save)
 		}
 	}
 
-	// Sky number
-	P_SyncStringN(save, globallevelskytexture, 9);
-
-	if (!save->write && strcmp(skytex, globallevelskytexture))
+	// Sky texture
+	strcpy(skytex, globallevelskytexture);
+	P_SyncStringN(save, skytex, 9);
+	if (strcmp(skytex, globallevelskytexture))
 		P_SetupLevelSky(skytex, true);
 
 	// Current global weather type
@@ -4499,7 +4387,7 @@ boolean P_LoadNetGame(savebuffer_t *save, boolean reloading)
 		P_NetSyncColormaps(save);
 		P_NetSyncTubeWaypoints(save);
 		P_NetSyncWaypoints(save);
-		P_RelinkPointers();
+		P_RelinkPointers(save);
 	}
 
 	ACS_UnArchive(save);

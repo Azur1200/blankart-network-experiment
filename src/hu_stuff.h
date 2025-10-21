@@ -131,7 +131,6 @@ void HU_TickSongCredits(void);
 void HU_DrawSongCredits(void);
 void HU_Drawer(void);
 char HU_dequeueChatChar(void);
-void HU_Erase(void);
 void HU_clearChatChars(void);
 void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags, boolean icon);
 void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags);

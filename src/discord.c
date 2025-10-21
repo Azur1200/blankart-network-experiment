@@ -440,7 +440,7 @@ static void DRPC_GotServerIP(UINT32 address)
 --------------------------------------------------*/
 static const char *DRPC_GetServerIP(void)
 {
-	const char *address; 
+	const char *address;
 
 	// If you're connected
 	if (I_GetNodeAddress && (address = I_GetNodeAddress(servernode)) != NULL)
@@ -792,7 +792,7 @@ void DRPC_UpdatePresence(void)
 		// Character image
 		if ((unsigned)players[consoleplayer].skin < g_discord_skins) // Supported skins
 		{
-			snprintf(charimg, 21, "char_%s", skins[ players[consoleplayer].skin ].name);
+			snprintf(charimg, 22, "char_%s", skins[ players[consoleplayer].skin ].name);
 			discordPresence.smallImageKey = charimg;
 		}
 		else

@@ -71,7 +71,7 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Windows)
 endif()
 
 target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MIXER -DSOUND=SOUND_MIXER)
-target_compile_definitions(SRB2SDL2 PRIVATE -DDIRECTFULLSCREEN -DHAVE_SDL)
+target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_SDL)
 
 #### Installation ####
 if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)

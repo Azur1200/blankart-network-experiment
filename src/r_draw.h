@@ -23,13 +23,11 @@ extern "C" {
 // -------------------------------
 // COMMON STUFF FOR 8bpp AND 16bpp
 // -------------------------------
-extern UINT8 *ylookup[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup1[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup2[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup3[MAXVIDHEIGHT*4];
-extern UINT8 *ylookup4[MAXVIDHEIGHT*4];
-extern INT32 columnofs[MAXVIDWIDTH*4];
-extern UINT8 *topleft;
+
+FUNCINLINE static ATTRINLINE UINT8 *R_Address(INT32 px, INT32 py)
+{
+	return vid.screens[0] + (py + viewwindowy) * vid.width + (viewwindowx + px);
+}
 extern UINT8 r8_flatcolor;
 
 // -------------------------
@@ -44,24 +42,17 @@ extern floatv3_t *ds_su, *ds_sv, *ds_sz;
 extern float focallengthf[MAXSPLITSCREENPLAYERS];
 extern float zeroheight;
 
-/// \brief Top border
-#define BRDR_T 0
-/// \brief Bottom border
-#define BRDR_B 1
-/// \brief Left border
-#define BRDR_L 2
-/// \brief Right border
-#define BRDR_R 3
-/// \brief Topleft border
-#define BRDR_TL 4
-/// \brief Topright border
-#define BRDR_TR 5
-/// \brief Bottomleft border
-#define BRDR_BL 6
-/// \brief Bottomright border
-#define BRDR_BR 7
+enum columncontext_e
+{
+	COLUMNCONTEXT_DIRECT = 0,
+	COLUMNCONTEXT_FLUSH,
+};
 
-extern lumpnum_t viewborderlump[8];
+extern enum columncontext_e columncontext;
+void R_SetColumnContext(enum columncontext_e _columncontext);
+void SCR_SetDrawFuncs(enum columncontext_e _columncontext);
+
+void R_ResetColumnBuffer(void);
 
 // ---------------------------------------------
 // color mode dependent drawer function pointers
@@ -128,7 +119,7 @@ extern spandrawfunc_t *spanfuncs_bm_npo2[SPANDRAWFUNC_MAX];
 extern spandrawfunc_t *spanfuncs_flat[SPANDRAWFUNC_MAX];
 
 // ------------------------------------------------
-// r_draw.c COMMON ROUTINES FOR BOTH 8bpp and 16bpp
+// r_draw.c
 // ------------------------------------------------
 
 #define GTC_CACHE 1
@@ -181,17 +172,8 @@ UINT8 R_InvPaletteRemap(UINT8 color);
 // Color ramp modification should force a recache
 extern UINT8 skincolor_modified[];
 
-void R_InitViewBuffer(INT32 width, INT32 height);
-void R_InitViewBorder(void);
+void R_InitViewBuffer(void);
 void R_VideoErase(size_t ofs, INT32 count);
-
-// Rendering function.
-#if 0
-void R_FillBackScreen(void);
-
-// If the view size is not full screen, draws a border around it.
-void R_DrawViewBorder(void);
-#endif
 
 #define TRANSPARENTPIXEL 255
 #define BRIGHTPIXEL 0
@@ -207,6 +189,16 @@ void R_DrawTranslatedColumn(drawcolumndata_t* dc);
 void R_DrawTranslatedTranslucentColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchColumn(drawcolumndata_t* dc);
 void R_Draw2sMultiPatchTranslucentColumn(drawcolumndata_t* dc);
+
+// column drawers which use buffered drawing with flush
+void R_DrawColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedColumn_Flush(drawcolumndata_t* dc);
+void R_DrawColumnShadowed_Flush(drawcolumndata_t* dc);
+void R_DrawTranslatedTranslucentColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchColumn_Flush(drawcolumndata_t* dc);
+void R_Draw2sMultiPatchTranslucentColumn_Flush(drawcolumndata_t* dc);
+
 void R_DrawFogColumn(drawcolumndata_t* dc);
 void R_DrawColumnShadowed(drawcolumndata_t* dc);
 

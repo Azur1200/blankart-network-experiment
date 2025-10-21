@@ -19,6 +19,18 @@
 #include "r_defs.h"
 #include "r_main.h"
 
+#if defined(__SSE__)
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(align, size) _aligned_malloc(size, align)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free(ptr) free(ptr)
+#endif
+
+#include <immintrin.h>
+#endif
+
 // SRB2Kart
 #include "hu_stuff.h" // fonts
 
@@ -29,11 +41,6 @@ extern "C" {
 //
 // VIDEO
 //
-
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-extern UINT8 *screens[5];
 
 extern consvar_t cv_ticrate, cv_constextsize,
 cv_globalgamma, cv_globalsaturation,

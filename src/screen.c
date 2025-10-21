@@ -94,24 +94,33 @@ consvar_t cv_accuratefps = CVAR_INIT ("fpssampling", "Accurate", CV_SAVE, accura
 //                           SCREEN VARIABLES
 // =========================================================================
 
-INT32 scr_bpp; // current video mode bytes per pixel
-UINT8 *scr_borderpatch; // flat used to fill the reduced view borders set at ST_Init()
-
-// =========================================================================
-
-void SCR_SetDrawFuncs(void)
+void SCR_SetDrawFuncs(enum columncontext_e _columncontext)
 {
 	//
 	//  setup the right draw routines
 	//
 
-	colfuncs[BASEDRAWFUNC] = R_DrawColumn;
-	colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
-	colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
-	colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
-	colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	if (_columncontext == COLUMNCONTEXT_FLUSH)
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn_Flush;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn_Flush;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed_Flush;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn_Flush;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_Flush;
+	}
+	else
+	{
+		colfuncs[BASEDRAWFUNC] = R_DrawColumn;
+		colfuncs[COLDRAWFUNC_FUZZY] = R_DrawTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TRANS] = R_DrawTranslatedColumn;
+		colfuncs[COLDRAWFUNC_SHADOWED] = R_DrawColumnShadowed;
+		colfuncs[COLDRAWFUNC_TRANSTRANS] = R_DrawTranslatedTranslucentColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCH] = R_Draw2sMultiPatchColumn;
+		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn;
+	}
+
 	colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn;
 	colfuncs[COLDRAWFUNC_DROPSHADOW] = R_DrawDropShadowColumn;
 
@@ -214,6 +223,17 @@ void SCR_SetDrawFuncs(void)
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
 	R_SetSpanFunc(BASEDRAWFUNC, false, false);
+}
+
+// used to switch between column buffering and drawing them directly to screen
+// our sky "plane" drawer cannot handle the buffer system due to multithreading
+// (that would require alot of extra complexity for smth with massive diminishing results)
+// Our masked drawing step draws things in a very particular order, which results in alot of flushing to screen
+// effectively adding massive overhead due to excessive flushing, so we draw our masked thing directly to screen instead
+void R_SetColumnContext(enum columncontext_e _columncontext)
+{
+	columncontext = _columncontext;
+	SCR_SetDrawFuncs(_columncontext); // set our column drawers
 }
 
 void R_SetColumnFunc(size_t id, boolean brightmapped)
@@ -324,7 +344,7 @@ void SCR_SetMode(void)
 		if (!setmodeneeded)
 			VID_CheckRenderer();
 
-		vid.recalc = 1;
+		vid.recalc = true;
 	}
 
 	// Set the video mode in the video interface.
@@ -337,7 +357,7 @@ void SCR_SetMode(void)
 
 	V_SetPalette(0);
 
-	SCR_SetDrawFuncs();
+	SCR_SetDrawFuncs(COLUMNCONTEXT_DIRECT);
 
 	// Shoot! The screen texture was flushed!
 	Y_CleanupScreenBuffer();
@@ -372,9 +392,6 @@ void SCR_Recalc(void)
 {
 	if (dedicated)
 		return;
-
-	// bytes per pixel quick access
-	scr_bpp = vid.bpp;
 
 	V_Recalc();
 
@@ -451,13 +468,12 @@ void SCR_SetDefaultMode(void)
 	// remember the default screen size
 	CV_SetValue(&cv_scr_width, vid.width);
 	CV_SetValue(&cv_scr_height, vid.height);
-	CV_SetValue(&cv_scr_depth, vid.bpp*8);
+	//CV_SetValue(&cv_scr_depth, vid.bpp*8);
 }
 
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen(void)
 {
-#ifdef DIRECTFULLSCREEN
 	I_SetBorderlessWindow(); // Running this here so we can have borderless window at startup
 
 	// allow_fullscreen is set by VID_PrepareModeList
@@ -470,8 +486,8 @@ void SCR_ChangeFullscreen(void)
 		VID_PrepareModeList();
 		setmodeneeded = VID_GetModeForSize(vid.width, vid.height) + 1;
 	}
+
 	return;
-#endif
 }
 
 void SCR_ChangeRenderer(void)
