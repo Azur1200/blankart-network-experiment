@@ -3499,7 +3499,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	UINT32 basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
 
 	if ((bumpspark < BUMPSPARK_ALL) ||
-	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
+	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
 		if (!bumpspark)
 		{
@@ -3517,7 +3517,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
 	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
 
-	if ((!cv_kartbumpspring.value && modeattacking == ATTACKING_NONE) || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
+	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
 		mo->player->pogospring = 0;
 	}

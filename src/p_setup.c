@@ -462,13 +462,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	P_DeleteFlickies(num);
 #endif
 
-	mapheaderinfo[num]->mapvisited = 0;
-	for (int j = 0; j < MAXMAPRECORDS; j++)
-	{
-		Z_Free(mapheaderinfo[num]->mainrecord[j]);
-		mapheaderinfo[num]->mainrecord[j] = NULL;
-	}
-
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
 }
@@ -521,10 +514,6 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
-		for (int j = 0; j < MAXMAPRECORDS; j++)
-		{
-			mapheaderinfo[i]->mainrecord[j] = NULL;
-		}
 		mapheaderinfo[i]->flickies = NULL;
 		nummapheaders++;
 	}
@@ -8116,7 +8105,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 
 	racecountdown = exitcountdown = exitfadestarted = 0;
-	curlap = bestlap = 0; // SRB2Kart
 
 	g_exit.losing = g_exit.retry = g_exit.hasfinished = false;
 
@@ -8150,49 +8138,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
-		if (demo.playback)
-		{
-			// raflags
-			if (raflags & RAF_RINGS)
-				ringsactive = true;
-			if (raflags & RAF_STACKING)
-				stackingactive = true;
-			if (raflags & RAF_CHAINING)
-				chainingactive = true;
-			if (raflags & RAF_SLIPDASH)
-				slipdashactive = true;
-			if (raflags & RAF_PURPLEDRIFT)
-				purpledriftactive = true;
-			if (raflags & RAF_SLOPEBOOST)
-				slopeboostactive = true;
-			if (raflags & RAF_AIRDROP)
-				airdropactive = true;
-
-			// Bump Spark
-			switch (raflags & RAF_BUMPSPARKMASK)
-			{
-			case RAF_BUMPDRIFT:
-				bumpsparkactive = BUMPSPARK_NOCHARGE;
-				break;
-			case RAF_BUMPSPARK:
-				bumpsparkactive = BUMPSPARK_ALL;
-				break;
-			case RAF_BS_RESET100:
-				bumpsparkactive = BUMPSPARK_RESET100;
-				break;
-			}
-		}
-		else
-		{
-			ringsactive = cv_dummyattackingrings.value;
-			purpledriftactive = cv_dummyattackingpurpledrift.value;
-			stackingactive = cv_dummyattackingstacking.value;
-			chainingactive = cv_dummyattackingchaining.value;
-			slipdashactive = cv_dummyattackingslipdash.value;
-			slopeboostactive = cv_dummyattackingslopeboost.value;
-			airdropactive = cv_dummyattackingairdrop.value;
-			bumpsparkactive = (UINT8)(cv_dummyattackingbumpspark.value);
-		}
 	}
 	else
 	{
@@ -8304,61 +8249,39 @@ static void P_ResetSpawnpoints(void)
 		skyboxviewpnts[i] = skyboxcenterpnts[i] = NULL;
 }
 
+static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
+{
+	for (INT32 i = 0; i < numskins; i++)
+	{
+		if (!all && players[consoleplayer].skin != i)
+			continue;
+
+		CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, gamemap, i, which);
+		if (FIL_FileExists(demopath))
+			G_AddGhost(demopath);
+	}
+}
+
 static void P_LoadRecordGhosts(void)
 {
-
 	// see also m_menu.c's Nextmap_OnChange
-	char *gpath;
-	INT32 i;
-	char *gamemode = M_AppendGametypeAndModName();
-
-	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_besttime.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_besttime.value != 1, REPLAY_BESTTIME);
 
 	// Best Lap ghost
-	if (modeattacking != ATTACKING_ITEMBREAK)
-	{
-		if (cv_ghost_bestlap.value)
-		{
-			for (i = 0; i < numskins; ++i)
-			{
-				if (cv_ghost_bestlap.value == 1 && players[consoleplayer].skin != i)
-					continue;
-
-				if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode)))
-					G_AddGhost(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode));
-			}
-		}
-	}
+	if (modeattacking != ATTACKING_ITEMBREAK && cv_ghost_bestlap.value)
+		P_TryAddGhosts(gpath, cv_ghost_bestlap.value != 1, REPLAY_BESTLAP);
 
 	// Last ghost
 	if (cv_ghost_last.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_last.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_last.value != 1, REPLAY_LAST);
 
 	// Guest ghost
-	if (cv_ghost_guest.value && FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
-		G_AddGhost(va("%s-guest.lmp", gpath));
+	if (cv_ghost_guest.value)
+		P_TryAddGhosts(gpath, false, REPLAY_GUEST);
 
 	// Staff Attack ghosts
 	if (cv_ghost_staff.value)
@@ -8372,9 +8295,6 @@ static void P_LoadRecordGhosts(void)
 			j++;
 		}
 	}
-
-	free(gpath);
-	Z_Free(gamemode);
 }
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)
@@ -8523,7 +8443,7 @@ static void P_InitGametype(void)
 #else
 		strcpy(ver, VERSIONSTRING);
 #endif
-		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s",
+		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s.lmp",
 				srb2home, ver, (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		parts = M_PathParts(buf);
@@ -9002,10 +8922,11 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
+	maprecord_t *record = G_AllocateMapRecord(G_BuildMapName(gamemap));
 	if (!(netgame || multiplayer || demo.playback) && !majormods)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_VISITED;
+		record->visited |= MV_VISITED;
 	else if (!demo.playback)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_MP; // you want to record that you've been there this session, but not permanently
+		record->visited |= MV_MP; // you want to record that you've been there this session, but not permanently
 
 	G_AddMapToBuffer(gamemap-1);
 

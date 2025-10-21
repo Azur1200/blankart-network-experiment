@@ -158,9 +158,6 @@ void clear_levels(void)
 
 		P_DeleteFlickies(nummapheaders);
 
-		for (SINT8 k = 0; k < MAXMAPRECORDS; k++)
-			Z_Free(mapheaderinfo[nummapheaders]->mainrecord[k]);
-
 		Patch_Free(mapheaderinfo[nummapheaders]->thumbnailPic);
 		Patch_Free(mapheaderinfo[nummapheaders]->minimapPic);
 

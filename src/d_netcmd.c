@@ -458,7 +458,7 @@ consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexi
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
 // Toggles for new features
-consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRings_OnChange);
 
 static CV_PossibleValue_t ringsmin_cons_t[] = {{INT8_MIN, "MIN"}, {0, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t ringsmax_cons_t[] = {{0, "MIN"}, {INT8_MAX, "MAX"}, {0, NULL}};
@@ -470,71 +470,71 @@ static CV_PossibleValue_t ringsstart_cons_t[] = {{INT8_MIN, "MIN"}, {INT8_MAX, "
 consvar_t cv_kartringsstart = CVAR_INIT ("kartringsstart", "5", CV_NETVAR, ringsstart_cons_t, NULL);
 
 // Stacking related
-consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
-consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartStacking_OnChange);
+consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 // V recreates neptunes old ass misread of stacking code lmao
-consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 // Vanilla Stacking boosts.
-consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT, CV_Natural, NULL);
-consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
+consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_speedboost_cap", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_speedboost_cap", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 // Max speed for high speeds
-consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.16", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.16", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 // Max speed for low speeds
-consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.26", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.26", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
+consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
 
 consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
@@ -543,7 +543,7 @@ consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, KartPurpleDrift_OnChange);
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartPurpleDrift_OnChange);
 
 static CV_PossibleValue_t bumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 						{BUMPSPARK_NOCHARGE, "Remove Charge Only"},
@@ -553,22 +553,22 @@ static CV_PossibleValue_t bumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 
 consvar_t cv_kartbumpspark = CVAR_INIT("kartbumpspark",
 				       "Remove Charge Only",
-				       CV_NETVAR | CV_CALL,
+				       CV_NETVAR | CV_CALL | CV_NOINIT | CV_GUARD,
 				       bumpspark_cons_t,
 				       KartBumpSpark_OnChange);
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
+consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartSlipdash_OnChange);
 
 consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlopeBoost_OnChange);
 
-consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartDrafting_OnChange);
+consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartDrafting_OnChange);
 consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Off", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone", "640", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
-consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartAirDrop_OnChange);
+consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
 
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
 
@@ -580,12 +580,12 @@ consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1024", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1472", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1024", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1472", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
 
 // SPB distance; no legacy modifiers currently (lazy)
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "6144", CV_NETVAR|CV_CHEAT, spbdist_cons_t, NULL);
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "6144", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // Invincibility modifiers
@@ -594,12 +594,12 @@ consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
-consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {

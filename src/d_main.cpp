@@ -1917,7 +1917,7 @@ void D_SRB2Main(void)
 	}
 	else if (M_CheckParm("-record") && M_IsNextParm())
 	{
-		G_RecordDemo(M_GetNextParm());
+		G_RecordDemo(va("%s.lmp", M_GetNextParm()));
 		autostart = true;
 	}
 

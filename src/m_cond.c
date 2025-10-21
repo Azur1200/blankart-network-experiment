@@ -148,10 +148,8 @@ void M_ClearSecrets(void)
 {
 	INT32 i;
 
-	for (i = 0; i < nummapheaders; ++i)
-	{
-		mapheaderinfo[i]->mapvisited = 0;
-	}
+	for (size_t j = 0; j < nummaprecords; j++)
+		maprecords[j]->visited = 0;
 
 	for (i = 0; i < MAXEMBLEMS; ++i)
 		emblemlocations[i].collected = false;
@@ -195,9 +193,11 @@ UINT8 M_CheckCondition(condition_t *cn)
 			else if (cn->type == UC_MAPENCORE)
 				mvtype = MV_ENCORE;
 
-			return ((cn->requirement < nummapheaders)
-				&& (mapheaderinfo[cn->requirement])
-				&& ((mapheaderinfo[cn->requirement]->mapvisited & mvtype) == mvtype));
+			const char *mapname = G_BuildMapName(cn->requirement+1);
+			if (mapname == NULL)
+				return false;
+			maprecord_t *record = G_GetMapRecord(mapname);
+			return record ? (record->visited & mvtype) == mvtype : false;
 		}
 		case UC_MAPTIME: // Requires time on map <= x
 			return (G_GetBestTime(cn->extrainfo1) <= (unsigned)cn->requirement);
@@ -360,7 +360,7 @@ UINT8 M_CheckLevelEmblems(void)
 	UINT8 res;
 	UINT8 somethingUnlocked = 0;
 
-	if (!K_EmblemsEnabled())
+	if (!G_EmblemsEnabled())
 		return false;
 
 	// Update Score, Time, Rings emblems
@@ -534,12 +534,14 @@ UINT8 M_GotEnoughEmblems(INT32 number)
 
 UINT8 M_GotLowEnoughTime(INT32 tictime)
 {
+	I_Error("fixme M_GotLowEnoughTime");
+	/*
 	INT32 curtics = 0;
 	INT32 i;
 
 	for (i = 0; i < nummapheaders; ++i)
 	{
-		SINT8 preset = G_RecordPresetIndex();
+		recordpresetnum_e preset = G_RecordPresetIndex();
 		if (!mapheaderinfo[i] || (mapheaderinfo[i]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
@@ -549,6 +551,7 @@ UINT8 M_GotLowEnoughTime(INT32 tictime)
 			return false;
 	}
 	return true;
+	*/
 }
 
 // ----------------

@@ -2097,13 +2097,6 @@ static void K_HandleLapIncrement(player_t *player)
 					player->laptime[LAP_LAST] = player->laptime[LAP_CUR];
 					player->laptime[LAP_CUR] = 0;
 
-					if (modeattacking && player == &players[consoleplayer])
-					{
-						// No need for redundant bullshit, just feed the calculated values.
-						bestlap = player->laptime[LAP_BEST];
-						curlap = player->laptime[LAP_CUR];
-					}
-
 					// Update power levels for this lap.
 					K_UpdatePowerLevels(player, player->laps, false);
 				}
@@ -2150,10 +2143,6 @@ static void K_HandleLapDecrement(player_t *player)
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_UpdateAllPlayerPositions();
-
-			curlap = UINT32_MAX;
-
-			// Redundant, but we're only using laptimes for the timestamps as-is.
 			player->laptime[LAP_CUR] = UINT32_MAX;
 		}
 	}

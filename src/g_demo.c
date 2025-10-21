@@ -54,7 +54,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-#include "g_party.h"
+#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -73,7 +73,6 @@ static char demoname[MAX_WADPATH];
 static savebuffer_t demobuf = {0};
 static UINT8 *demotime_p, *demoinfo_p;
 static UINT8 demoflags;
-UINT32 raflags = 0; // Time to do some hacky shit....
 boolean demosynced = true; // console warning message
 
 struct demovars_s demo;
@@ -242,6 +241,8 @@ typedef struct
 	UINT64 mapchecksum;
 	UINT8 demoflags;
 	UINT32 raflags;
+	char rapreset[MAXPRESETNAME+1];
+	UINT8 rapresetversion;
 	UINT8 gametype;
 	UINT8 numlaps;
 	char servername[MAXSERVERNAME];
@@ -655,9 +656,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	UINT8 *startdp = dp;
 	UINT8 attack;
 	boolean kart = false, oldkart = false;
-	boolean raflag = true;
+	boolean raflag = false;
 	boolean serverinfo = true;
-	boolean oldserverinfolength = false;
+	boolean rapreset = true; // + extended serverinfo length
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -684,14 +685,14 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case DEMOVERSION: // latest always supported
 			break;
 
-		case 0x000C:
-		case 0x000B:
-		case 0x000A:
-			oldserverinfolength = true;
-			break;
-
 		case 0x0009:
 			serverinfo = false;
+			/* FALLTHRU */
+		case 0x000A:
+		case 0x000B:
+		case 0x000C:
+			rapreset = false;
+			raflag = true;
 			break;
 
 		default: // too old, cannot support.
@@ -700,7 +701,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	}
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
-		raflag = false;
+		rapreset = raflag = false;
 		serverinfo = false;
 		switch (header->demoversion)
 		{
@@ -755,10 +756,16 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		header->raflags = READUINT32(dp);
 	}
 
+	if (rapreset)
+	{
+		READSTRINGL(dp, header->rapreset, sizeof(header->rapreset));
+		header->rapresetversion = READUINT8(dp);
+	}
+
 	if (serverinfo)
 	{
-		size_t maxservercontact  = oldserverinfolength ? 320 : MAXSERVERCONTACT;
-		size_t maxdescription = oldserverinfolength ? 320 : MAXSERVERDESCRIPTION;
+		size_t maxservercontact  = rapreset ? MAXSERVERCONTACT : 320;
+		size_t maxdescription = rapreset ? MAXSERVERDESCRIPTION : 320;
 
 		READSTRINGN(dp, header->servername, MAXSERVERNAME);
 		READSTRINGN(dp, header->servercontact, maxservercontact);
@@ -972,6 +979,52 @@ static void G_FreeDemoHeader(demoheader_t *header)
 #ifdef PARANOIA
 	memset(header, 0xff, sizeof(*header));
 #endif
+}
+
+enum // legacy RA flags
+{
+	// 0x0009
+	RAF_RINGS         = 1<<0,
+	RAF_STACKING      = 1<<1,
+	RAF_CHAINING      = 1<<2,
+	RAF_SLIPDASH      = 1<<3,
+	RAF_PURPLEDRIFT   = 1<<4,
+	RAF_SLOPEBOOST    = 1<<5,
+	// 0x000C
+	RAF_AIRDROP       = 1<<6,
+	RAF_BUMPDRIFT     = 1<<7,
+	RAF_BUMPSPARK     = 2<<7,
+	RAF_BS_RESET100   = 3<<7,
+	RAF_BUMPSPARKMASK = 0x3<<7,
+};
+
+static strbuf_t *G_GetRecordPresetVersionForDemo(demoheader_t *header)
+{
+	if (header->demoversion >= 0x000D)
+		return G_GetRecordPresetVersion(header->rapreset, header->rapresetversion);
+
+	// oh dear... this demo predates softcoded presets.
+	// we'll have to try and figure out the corresponding preset
+	UINT32 test, raflags = header->raflags;
+
+	if (raflags == 0)
+		return G_GetRecordPresetVersion("kart", 1);
+
+	test = RAF_STACKING|RAF_CHAINING|RAF_SLOPEBOOST;
+	if (header->demoversion == 0x000C)
+		test |= RAF_AIRDROP|RAF_BUMPSPARK;
+	if (raflags == test)
+		return G_GetRecordPresetVersion("tech", header->demoversion == 0x000C ? 2 : 1);
+
+	test = RAF_RINGS|RAF_STACKING|RAF_CHAINING|RAF_SLIPDASH|RAF_PURPLEDRIFT|RAF_SLOPEBOOST;
+	if (header->demoversion == 0x000C)
+		test |= RAF_AIRDROP|RAF_BUMPDRIFT;
+	if (raflags == test)
+		return G_GetRecordPresetVersion("blankart", header->demoversion == 0x000C ? 2 : 1);
+
+	// supporting custom raflags is a pain in the ass, so no thanks
+	// if it really is necessary, just add another preset to the defaults...
+	return NULL;
 }
 
 // and now, the rest of g_demo.c
@@ -2669,7 +2722,6 @@ void G_RecordDemo(const char *name)
 	INT32 maxsize;
 
 	strcpy(demoname, name);
-	strcat(demoname, ".lmp");
 	maxsize = 1024 * 1024 * cv_netdemosize.value;
 
 	P_SaveBufferAlloc(&demobuf, maxsize);
@@ -2732,41 +2784,6 @@ void G_BeginRecording(void)
 	if (multiplayer)
 		demoflags |= DF_LUAVARS;
 
-	// RAFlag stuff
-	if (!dedicated && modeattacking != ATTACKING_NONE)
-	{
-		if (cv_dummyattackingrings.value)
-			raflags |= RAF_RINGS;
-		if (cv_dummyattackingstacking.value)
-			raflags |= RAF_STACKING;
-		if (cv_dummyattackingchaining.value)
-			raflags |= RAF_CHAINING;
-		if (cv_dummyattackingslipdash.value)
-			raflags |= RAF_SLIPDASH;
-		if (cv_dummyattackingpurpledrift.value)
-			raflags |= RAF_PURPLEDRIFT;
-		if (cv_dummyattackingslopeboost.value)
-			raflags |= RAF_SLOPEBOOST;
-		if (cv_dummyattackingairdrop.value)
-			raflags |= RAF_AIRDROP;
-		switch (cv_dummyattackingbumpspark.value)
-		{
-		case BUMPSPARK_ALL:
-			raflags |= RAF_BUMPSPARK;
-			break;
-		case BUMPSPARK_RESET100:
-			raflags |= RAF_BS_RESET100;
-			break;
-		case BUMPSPARK_NOCHARGE:
-			raflags |= RAF_BUMPDRIFT;
-			break;
-		}
-	}
-	else
-	{
-		raflags = 0;
-	}
-
 	// Setup header.
 	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
 	WRITEUINT8(demobuf.p,VERSION);
@@ -2798,7 +2815,8 @@ void G_BeginRecording(void)
 	WRITEUINT64(demobuf.p, maphash);
 
 	WRITEUINT8(demobuf.p, demoflags);
-	WRITEUINT32(demobuf.p, raflags);
+	WRITESTRINGL(demobuf.p, currentrecordpreset, MAXPRESETNAME+1);
+	WRITEUINT8(demobuf.p, currentrecordpresetversion);
 	WRITESTRINGN(demobuf.p, connectedservername, MAXSERVERNAME);
 	WRITESTRINGN(demobuf.p, connectedservercontact, MAXSERVERCONTACT);
 	WRITESTRINGN(demobuf.p, connectedserverdescription, MAXSERVERDESCRIPTION);
@@ -3624,7 +3642,6 @@ void G_DoPlayDemo(char *defdemoname)
 	gamemap = G_MapNumber(header.maptitle)+1;
 
 	demoflags = header.demoflags;
-	raflags = header.raflags;
 	gametype = header.gametype;
 	G_SetGametype(gametype);
 	numlaps = header.numlaps;
@@ -3678,6 +3695,19 @@ void G_DoPlayDemo(char *defdemoname)
 
 	// net var data
 	CV_LoadDemoVars(&header);
+
+	if (modeattacking != ATTACKING_NONE)
+	{
+		strbuf_t *pv = G_GetRecordPresetVersionForDemo(&header);
+		if (pv)
+		{
+			const char *faulted = G_CheckPresetCvars(pv);
+			if (faulted && !G_CompatLevel(0x000C))
+				M_StartMessage(va("Demo cvar %s doesn't match the preset! This may be a mistake, or the demo is cheated!\n", faulted), NULL, MM_NOTHING);
+		}
+		else
+			CONS_Alert(CONS_WARNING, "Couldn't find record preset '%s' version %d\n", header.rapreset, header.rapresetversion);
+	}
 
 	memset(&grandprixinfo, 0, sizeof grandprixinfo);
 	if ((demoflags & DF_GRANDPRIX))
@@ -3856,7 +3886,6 @@ void G_AddGhost(char *defdemoname)
 	CLEANUP(Z_Pfree) char *pdemoname = NULL;
 	const char *n;
 	UINT64 demohash;
-	UINT32 ghostraflags;
 	demoghost *gh;
 	UINT8 flags;
 	CLEANUP(Z_Pfree) UINT8 *buffer = NULL;
@@ -3920,7 +3949,7 @@ void G_AddGhost(char *defdemoname)
 
 
 	flags = header.demoflags;
-	ghostraflags = header.raflags;
+
 	if (!(flags & DF_GHOST))
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("Ghost %s: No ghost data in this demo.\n"), pdemoname);
@@ -3939,50 +3968,13 @@ void G_AddGhost(char *defdemoname)
 		return;
 	}
 
-	// Check RA flags.
+	// Check record preset.
 	{
-		UINT32 ourraflags = 0;
-		UINT16 demoversion = header.demoversion;
+		strbuf_t *ghostpre = G_GetRecordPresetVersionForDemo(&header);
+		strbuf_t *ourpre = G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion);
 
-		if (cv_dummyattackingrings.value)
-			ourraflags |= RAF_RINGS;
-		if (cv_dummyattackingstacking.value)
-			ourraflags |= RAF_STACKING;
-		if (cv_dummyattackingchaining.value)
-			ourraflags |= RAF_CHAINING;
-		if (cv_dummyattackingslipdash.value)
-			ourraflags |= RAF_SLIPDASH;
-		if (cv_dummyattackingpurpledrift.value)
-			ourraflags |= RAF_PURPLEDRIFT;
-		if (cv_dummyattackingslopeboost.value)
-			ourraflags |= RAF_SLOPEBOOST;
-		if (cv_dummyattackingairdrop.value)
-			ourraflags |= RAF_AIRDROP;
-
-		switch (cv_dummyattackingbumpspark.value)
-		{
-		case BUMPSPARK_ALL:
-			raflags |= RAF_BUMPSPARK;
-			break;
-		case BUMPSPARK_RESET100:
-			raflags |= RAF_BS_RESET100;
-			break;
-		case BUMPSPARK_NOCHARGE:
-			raflags |= RAF_BUMPDRIFT;
-			break;
-		}
-
-		if (demoversion <= 0x000B)
-		{
-			ourraflags &= ~RAF_AIRDROP;
-			ourraflags &= ~RAF_BUMPSPARKMASK;
-		}
-
-		if (ourraflags != ghostraflags)
-		{
-			CONS_Alert(CONS_NOTICE, M_GetText("Failed to add ghost %s: Replay doesn't match current RA mode.\n"), pdemoname);
+		if (ghostpre == NULL || !G_CompareRecordPresetVersions(ghostpre, ourpre))
 			return;
-		}
 	}
 
 	demoplayer_t *plr = &header.playerdata[0];

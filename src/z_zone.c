@@ -654,31 +654,3 @@ char *Z_StrDup(const char *s)
 {
 	return strcpy(ZZ_Alloc(strlen(s) + 1), s);
 }
-
-/** Allocates and returns a string made out of varargs.
-  * Allocated for Zone Memory.
-  *
-  * \param format Format string.
-  * \return Pointer to the resulting string.
-  */
-char *zva(INT32 tag, void *user, const char *format,  ...)
-{
-	va_list argptr;
-	char *string;
-
-	va_start(argptr, format);
-	int size = vsnprintf(NULL, 0, format, argptr);
-	if (size < 0)
-		I_Error("Z_xva: can't format string");
-	string = Z_Malloc((unsigned)size+1, tag, user);
-	if (!string)
-		I_Error("Z_xva: out of memory");
-	va_end(argptr);
-
-	va_start(argptr, format);
-	vsprintf(string, format, argptr);
-	va_end(argptr);
-
-	return string;
-}
-

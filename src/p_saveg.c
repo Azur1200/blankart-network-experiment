@@ -4491,7 +4491,7 @@ static void P_SaveBufferInvalidate(savebuffer_t *save)
 
 void P_SaveBufferFree(savebuffer_t *save)
 {
-	I_Assert(save->buffer != NULL);
+	//I_Assert(save->buffer != NULL); // makes it a hassle to use with CLEANUP
 	Z_Free(save->buffer);
 	P_SaveBufferInvalidate(save);
 }

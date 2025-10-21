@@ -115,7 +115,6 @@ struct recorddata_t
 	//UINT32 score; ///< Score when the level was finished.
 	//UINT16 rings; ///< Rings when the level was finished.
 };
-#define MAXMAPRECORDS 4
 
 // mapvisited is now a set of flags that says what we've done in the map.
 #define MV_VISITED (1)
@@ -372,9 +371,6 @@ struct mapheader_t
 
 	void *thumbnailPic;							///< Lump data for the level select thumbnail.
 	void *minimapPic;							///< Lump data for the minimap graphic.
-
-	UINT8 mapvisited;							///< A set of flags that says what we've done in the map.
-	recorddata_t *mainrecord[MAXMAPRECORDS];	///< Stores best time attack data
 
 	cupheader_t *cup;							///< Cached cup
 
@@ -687,7 +683,6 @@ extern boolean startedInFreePlay;
 extern tic_t bombflashtimer;	// Used to avoid causing seizures if multiple mines explode close to you :)
 extern boolean legitimateexit;
 extern boolean comebackshowninfo;
-extern tic_t curlap, bestlap;
 extern tic_t antibumptime;
 
 extern INT16 votelevels[12][2];

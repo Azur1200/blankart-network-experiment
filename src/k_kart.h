@@ -82,71 +82,71 @@ extern vector3_t clusterpoint, clusterdtf;
 #define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH)
 
 // Invincibility-related constants
-#define INVINDIST K_RAGuard(cv_kartinvindist)
-#define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
-#define INVINMIDTIME K_RAGuard(cv_kartinvin_midtime)
-#define INVINMAXTIME K_RAGuard(cv_kartinvin_maxtime)
+#define INVINDIST CV_Get(&cv_kartinvindist)
+#define INVINDISTMUL CV_Get(&cv_kartinvindistmul)
+#define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
+#define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
-#define DIMINISHPARAM K_RAGuard(cv_kartstacking_diminishparam)
-#define MAXVANILLABOOST K_RAGuard(cv_kartstacking_maxvanillaboost)
-#define SPEEDBOOSTDROPOFF K_RAGuard(cv_kartstacking_speedboostdropoff)
-#define SPEEDBOOSTDROPOFF_BRAKE K_RAGuard(cv_kartstacking_speedboostdropoff_brake)
-#define ACCELSTACK K_RAGuard(cv_kartstacking_accelstack)
+#define DIMINISHPARAM CV_Get(&cv_kartstacking_diminishparam)
+#define MAXVANILLABOOST CV_Get(&cv_kartstacking_maxvanillaboost)
+#define SPEEDBOOSTDROPOFF CV_Get(&cv_kartstacking_speedboostdropoff)
+#define SPEEDBOOSTDROPOFF_BRAKE CV_Get(&cv_kartstacking_speedboostdropoff_brake)
+#define ACCELSTACK CV_Get(&cv_kartstacking_accelstack)
 
 // Vanilla Boosts
-#define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost)
-#define NORMALSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_normalspeedboost)
-#define HARDSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_hardspeedboost)
-#define EXPERTSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_expertspeedboost)
-#define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
-#define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
-#define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
+#define EASYSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_easyspeedboost)
+#define NORMALSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_normalspeedboost)
+#define HARDSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_hardspeedboost)
+#define EXPERTSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_expertspeedboost)
+#define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
+#define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
+#define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
 
-#define INVINSPEEDBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyspeedboost)
-#define INVINACCELBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyaccelboost)
-#define INVINSPEEDBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternatespeedboost)
-#define INVINACCELBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternateaccelboost)
-#define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable)
+#define INVINSPEEDBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyspeedboost)
+#define INVINACCELBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyaccelboost)
+#define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
+#define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
+#define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
-#define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost)
-#define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)
-#define GROWSTACKABLE K_RAGuard(cv_kartstacking_grow_stackable)
+#define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
+#define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
+#define GROWSTACKABLE CV_Get(&cv_kartstacking_grow_stackable)
 
-#define BUBBLESPEEDBOOST K_RAGuard(cv_kartstacking_bubble_speedboost)
-#define BUBBLEACCELBOOST K_RAGuard(cv_kartstacking_bubble_accelboost)
-#define BUBBLESTACKABLE K_RAGuard(cv_kartstacking_bubble_stackable)
+#define BUBBLESPEEDBOOST CV_Get(&cv_kartstacking_bubble_speedboost)
+#define BUBBLEACCELBOOST CV_Get(&cv_kartstacking_bubble_accelboost)
+#define BUBBLESTACKABLE CV_Get(&cv_kartstacking_bubble_stackable)
 
-#define FLAMESPEEDVAL K_RAGuard(cv_kartstacking_flame_speedval)
-#define FLAMEACCELBOOST K_RAGuard(cv_kartstacking_flame_accelboost)
-#define FLAMESTACKABLE K_RAGuard(cv_kartstacking_flame_stackable)
+#define FLAMESPEEDVAL CV_Get(&cv_kartstacking_flame_speedval)
+#define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
+#define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
-#define STARTSPEEDBOOST K_RAGuard(cv_kartstacking_start_speedboost)
-#define STARTACCELBOOST K_RAGuard(cv_kartstacking_start_accelboost)
-#define STARTSTACKABLE K_RAGuard(cv_kartstacking_start_stackable)
+#define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
+#define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
+#define STARTSTACKABLE CV_Get(&cv_kartstacking_start_stackable)
 
-#define WALLTRANSFERSPEEDBOOST K_RAGuard(cv_kartstacking_walltransfer_speedboost)
-#define WALLTRANSFERACCELBOOST K_RAGuard(cv_kartstacking_walltransfer_accelboost)
-#define WALLTRANSFERSTACKABLE K_RAGuard(cv_kartstacking_walltransfer_stackable)
+#define WALLTRANSFERSPEEDBOOST CV_Get(&cv_kartstacking_walltransfer_speedboost)
+#define WALLTRANSFERACCELBOOST CV_Get(&cv_kartstacking_walltransfer_accelboost)
+#define WALLTRANSFERSTACKABLE CV_Get(&cv_kartstacking_walltransfer_stackable)
 
-#define DRIFTSPEEDBOOST K_RAGuard(cv_kartstacking_drift_speedboost)
-#define DRIFTACCELBOOST K_RAGuard(cv_kartstacking_drift_accelboost)
-#define DRIFTSTACKABLE K_RAGuard(cv_kartstacking_drift_stackable)
+#define DRIFTSPEEDBOOST CV_Get(&cv_kartstacking_drift_speedboost)
+#define DRIFTACCELBOOST CV_Get(&cv_kartstacking_drift_accelboost)
+#define DRIFTSTACKABLE CV_Get(&cv_kartstacking_drift_stackable)
 
-#define RINGSPEEDBOOST K_RAGuard(cv_kartstacking_ring_speedboost)
-#define RINGACCELBOOST K_RAGuard(cv_kartstacking_ring_accelboost)
-#define RINGSTACKABLE K_RAGuard(cv_kartstacking_ring_stackable)
+#define RINGSPEEDBOOST CV_Get(&cv_kartstacking_ring_speedboost)
+#define RINGACCELBOOST CV_Get(&cv_kartstacking_ring_accelboost)
+#define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
-#define SLOPEDECAY K_RAGuard(cv_kartstacking_slope_decay)
-#define SLOPEBRAKEMOD K_RAGuard(cv_kartstacking_slope_brakemod)
-#define SLOPESPEEDBOOSTMAX K_RAGuard(cv_kartstacking_slope_speedboost_max)
-#define SLOPESPEEDBOOSTCAP K_RAGuard(cv_kartstacking_slope_speedboost_cap)
-#define SLOPEACCELBOOST K_RAGuard(cv_kartstacking_slope_accelboost)
-#define SLOPESTACKABLE K_RAGuard(cv_kartstacking_slope_stackable)
+#define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
+#define SLOPEBRAKEMOD CV_Get(&cv_kartstacking_slope_brakemod)
+#define SLOPESPEEDBOOSTMAX CV_Get(&cv_kartstacking_slope_speedboost_max)
+#define SLOPESPEEDBOOSTCAP CV_Get(&cv_kartstacking_slope_speedboost_cap)
+#define SLOPEACCELBOOST CV_Get(&cv_kartstacking_slope_accelboost)
+#define SLOPESTACKABLE CV_Get(&cv_kartstacking_slope_stackable)
 
-#define DRAFTMINSPEED K_RAGuard(cv_kartstacking_drafting_minspeed)
-#define DRAFTMAXSPEED K_RAGuard(cv_kartstacking_drafting_maxspeed)
+#define DRAFTMINSPEED CV_Get(&cv_kartstacking_drafting_minspeed)
+#define DRAFTMAXSPEED CV_Get(&cv_kartstacking_drafting_maxspeed)
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
@@ -182,8 +182,6 @@ typedef enum
 #define RINGTRANSPARENCYUSEPENALTY 15
 #define RINGVOLUMEREGEN 1
 #define RINGTRANSPARENCYREGEN 3
-
-INT32 K_RAGuard(consvar_t cvar);
 
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 

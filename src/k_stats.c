@@ -11,12 +11,20 @@ void K_StatTicker(void)
 	if (demo.playback)
 		return;
 
+	maprecord_t *record = G_AllocateMapRecord(G_BuildMapName(gamemap));
+	record->playtime++;
 	kartstats.totalplaytime++;
 
 	if (netgame)
+	{
 		kartstats.onlineplaytime++;
+	}
 	else if (modeattacking)
+	{
+		maprecordpreset_t *preset = G_AllocateMapRecordPreset(record, currentrecordpreset, currentrecordpresetversion);
+		preset->playtime++;
 		kartstats.raplaytime++;
+	}
 
 	if (gametype == GT_RACE)
 		kartstats.raceplaytime++;
@@ -68,6 +76,10 @@ void K_StatRound(void)
 	if (demo.playback)
 		return;
 
+	maprecord_t *record = G_AllocateMapRecord(G_BuildMapName(gamemap));
+	record->roundsplayed++;
+	kartstats.matchesplayed++;
+
 	int numplayers = 0;
 
 	for (int i = 0; i < MAXPLAYERS; ++i)
@@ -79,9 +91,14 @@ void K_StatRound(void)
 	if (numplayers > 1 && !players[consoleplayer].spectator)
 	{
 		if (players[consoleplayer].position == 1)
+		{
+			record->roundswon++;
 			kartstats.totalwins++;
+		}
 		else if (players[consoleplayer].position <= 3) // Should this check if there are more than 3 players in game?
+		{
 			kartstats.totalpodium++;
+		}
 	}
 }
 
