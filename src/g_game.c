@@ -653,8 +653,8 @@ maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *pr
 	*preset = (maprecordpreset_t){
 		.prename = {0},
 		.version = version,
-		.bestlap = 0,
-		.besttime = 0,
+		.bestlap = UINT32_MAX,
+		.besttime = UINT32_MAX,
 		.playtime = 0,
 	};
 	strlcpy(preset->prename, presetname, sizeof(preset->prename));
@@ -764,7 +764,7 @@ tic_t G_GetBestTime(INT16 map)
 	{
 		if (strcmp(record->presets[k].prename, "kart"))
 			continue; // doesn't count
-		if (record->presets[k].besttime && record->presets[k].besttime < besttime)
+		if (record->presets[k].besttime < besttime)
 			besttime = record->presets[k].besttime;
 	}
 
@@ -848,7 +848,7 @@ static void G_UpdateRecordReplays(void)
 	}
 	else
 	{
-		preset->bestlap = 0;
+		preset->bestlap = UINT32_MAX;
 	}
 
 	// Save demo!

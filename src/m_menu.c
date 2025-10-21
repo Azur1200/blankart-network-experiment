@@ -5422,7 +5422,7 @@ static void M_DrawStatsMaps(void)
 		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
 
 		V_DrawThinString(20, y, MENUCAPS, maptitle);
-		V_DrawThinString(160, y, MENUCAPS, preset == NULL || preset->besttime == 0 ? "--'--\"--" :
+		V_DrawThinString(160, y, MENUCAPS, preset == NULL || preset->besttime == UINT32_MAX ? "--'--\"--" :
 			va("%02d'%02d\"%02d",
 			G_TicsToMinutes(preset->besttime, true),
 			G_TicsToSeconds(preset->besttime),
@@ -5748,10 +5748,10 @@ void MD_DrawTimeAttackMenu(void)
 		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, MENUCAPS|highlightflags, "Best Lap:");
-			K_drawKartTimestamp(preset ? preset->bestlap : 0, 19, 86, -1, 2);
+			K_drawKartTimestamp(preset ? preset->bestlap : UINT32_MAX, 19, 86, -1, 2);
 		}
 		V_DrawRightAlignedString(292, 80, MENUCAPS|highlightflags, "Best Time:");
-		K_drawKartTimestamp(preset ? preset->besttime : 0, 162, 86, cv_nextmap.value-1, 1);
+		K_drawKartTimestamp(preset ? preset->besttime : UINT32_MAX, 162, 86, cv_nextmap.value-1, 1);
 	}
 
 	// Draw current RA preset mode.

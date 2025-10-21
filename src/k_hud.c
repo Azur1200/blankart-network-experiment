@@ -1640,7 +1640,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	worktime = drawtime/(60*TICRATE);
 
-	if (mode && !drawtime)
+	if (mode && drawtime == UINT32_MAX)
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
 	else if (dontdraw) // overtime flash
 		;
