@@ -56,6 +56,17 @@
 #include "k_grandprix.h"
 #include "strbuf.h"
 
+// TODO wtf... READSTRINGL max length string doesn't skip over NUL????
+#define READSTRINGX(p, s, n) do {                             \
+	size_t tmp_i = 0;                                         \
+                                                              \
+	while (tmp_i < n - 1 && (s[tmp_i] = READCHAR(p)) != '\0') \
+		tmp_i++;                                              \
+                                                              \
+	s[tmp_i] = '\0';                                          \
+	if (tmp_i == n - 1 && *p == '\0') p++;                    \
+} while (0)
+
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
 
@@ -217,7 +228,7 @@ typedef struct
 		boolean rival;
 	} bot;
 
-	char name[16+1];
+	char name[21+1];
 	char skin[16+1];
 	char color[16+1];
 	char follower[16+1];
@@ -338,7 +349,7 @@ typedef struct
 	UINT8 playstate;
 
 	// DXD_NAME
-	char playername[17];
+	char playername[21+1];
 
 	// DXD_SKIN
 	char skinname[17];
@@ -606,21 +617,36 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		}
 		if (extradata & DXD_NAME)
 		{
-			READMEM(dp, extra->playername, 16);
-			extra->playername[16] = '\0';
+			if (version <= 0x000C)
+			{
+				READMEM(dp, extra->playername, 16);
+				extra->playername[16] = '\0';
+			}
+			else
+				READSTRINGX(dp, extra->playername, 21+1);
 		}
 	}
 	if (extradata & DXD_SKIN)
 	{
-		READMEM(dp, extra->skinname, 16);
-		extra->skinname[16] = '\0';
+		if (version <= 0x000C)
+		{
+			READMEM(dp, extra->skinname, 16);
+			extra->skinname[16] = '\0';
+		}
+		else
+			READSTRINGX(dp, extra->skinname, 16+1);
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
 	}
 	if (extradata & DXD_COLOR)
 	{
-		READMEM(dp, extra->colorname, 16);
-		extra->colorname[16] = '\0';
+		if (version <= 0x000C)
+		{
+			READMEM(dp, extra->colorname, 16);
+			extra->colorname[16] = '\0';
+		}
+		else
+			READSTRINGX(dp, extra->colorname, 16+1);
 	}
 	if (kart)
 	{
@@ -636,10 +662,18 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 	}
 	if (extradata & DXD_FOLLOWER)
 	{
-		READMEM(dp, extra->followername, 16);
-		extra->followername[16] = '\0';
-		READMEM(dp, extra->followercolor, 16);
-		extra->followercolor[16] = '\0';
+		if (version <= 0x000C)
+		{
+			READMEM(dp, extra->followername, 16);
+			extra->followername[16] = '\0';
+			READMEM(dp, extra->followercolor, 16);
+			extra->followercolor[16] = '\0';
+		}
+		else
+		{
+			READSTRINGX(dp, extra->followername, 16+1);
+			READSTRINGX(dp, extra->followercolor, 16+1);
+		}
 	}
 	if (extradata & DXD_WEAPONPREF)
 	{
@@ -758,7 +792,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 
 	if (rapreset)
 	{
-		READSTRINGL(dp, header->rapreset, sizeof(header->rapreset));
+		READSTRINGX(dp, header->rapreset, sizeof(header->rapreset));
 		header->rapresetversion = READUINT8(dp);
 	}
 
@@ -918,23 +952,34 @@ skipfiles:
 			plr->bot.rival = (boolean)READUINT8(dp);
 		}
 
-		READMEM(dp, plr->name, 16);
-		plr->name[16] = '\0';
-		READMEM(dp, plr->skin, 16);
-		plr->skin[16] = '\0';
-		READMEM(dp, plr->color, 16);
-		plr->color[16] = '\0';
-		if (!kart)
+		if (rapreset)
 		{
-			READMEM(dp, plr->follower, 16);
-			plr->follower[16] = '\0';
-			READMEM(dp, plr->followercolor, 16);
-			plr->followercolor[16] = '\0';
+			READSTRINGX(dp, plr->name, 21+1);
+			READSTRINGX(dp, plr->skin, 16+1);
+			READSTRINGX(dp, plr->color, 16+1);
+			READSTRINGX(dp, plr->follower, 16+1);
+			READSTRINGX(dp, plr->followercolor, 16+1);
 		}
 		else
 		{
-			strcpy(plr->follower, "None");
-			strcpy(plr->followercolor, "Default");
+			READMEM(dp, plr->name, 16);
+			plr->name[16] = '\0';
+			READMEM(dp, plr->skin, 16);
+			plr->skin[16] = '\0';
+			READMEM(dp, plr->color, 16);
+			plr->color[16] = '\0';
+			if (!kart)
+			{
+				READMEM(dp, plr->follower, 16);
+				plr->follower[16] = '\0';
+				READMEM(dp, plr->followercolor, 16);
+				plr->followercolor[16] = '\0';
+			}
+			else
+			{
+				strcpy(plr->follower, "None");
+				strcpy(plr->followercolor, "Default");
+			}
 		}
 
 		plr->score = READUINT32(dp);
@@ -1269,8 +1314,6 @@ void G_ReadDemoExtraData(void)
 void G_WriteDemoExtraData(void)
 {
 	INT32 i;
-	char name[16];
-
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (demo_extradata[i])
@@ -1311,18 +1354,12 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_NAME)
 			{
 				// Name
-				memset(name, 0, 16);
-				strncpy(name, player_names[i], 16);
-				M_Memcpy(demobuf.p,name,16);
-				demobuf.p += 16;
+				WRITESTRINGL(demobuf.p, player_names[i], 21+1);
 			}
 			if (demo_extradata[i] & DXD_SKIN)
 			{
 				// Skin
-				memset(name, 0, 16);
-				strncpy(name, skins[players[i].skin].name, 16);
-				M_Memcpy(demobuf.p,name,16);
-				demobuf.p += 16;
+				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
@@ -1331,27 +1368,18 @@ void G_WriteDemoExtraData(void)
 			if (demo_extradata[i] & DXD_COLOR)
 			{
 				// Color
-				memset(name, 0, 16);
-				strncpy(name, skincolors[players[i].skincolor].name, 16);
-				M_Memcpy(demobuf.p,name,16);
-				demobuf.p += 16;
+				WRITESTRINGL(demobuf.p, skincolors[players[i].skincolor].name, 16+1);
 			}
 			if (demo_extradata[i] & DXD_FOLLOWER)
 			{
 				// write follower
-				memset(name, 0, 16);
 				if (players[i].followerskin == -1)
-					strncpy(name, "None", 16);
+					WRITESTRINGL(demobuf.p, "None", 16+1);
 				else
-					strncpy(name, followers[players[i].followerskin].skinname, 16);
-				M_Memcpy(demobuf.p, name, 16);
-				demobuf.p += 16;
+					WRITESTRINGL(demobuf.p, followers[players[i].followerskin].skinname, 16+1);
 
 				// write follower color
-				memset(name, 0, 16);
-				strncpy(name, Followercolor_cons_t[(UINT16)(players[i].followercolor+2)].strvalue, 16);	// Not KartColor_Names because followercolor has extra values such as "Match"
-				M_Memcpy(demobuf.p,name,16);
-				demobuf.p += 16;
+				WRITESTRINGL(demobuf.p, Followercolor_cons_t[(UINT16)(players[i].followercolor+2)].strvalue, 16+1);
 
 			}
 			//if (demo_extradata[i] & DXD_RESPAWN) has no extra data
@@ -2908,41 +2936,26 @@ void G_BeginRecording(void)
 			}
 
 			// Name
-			memset(name, 0, 16);
-			strncpy(name, player_names[p], 16);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+			WRITESTRINGL(demobuf.p, player_names[p], 21+1);
 
 			// Skin
-			memset(name, 0, 16);
-			strncpy(name, skins[player->skin].name, 16);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+			WRITESTRINGL(demobuf.p, skins[player->skin].name, 16+1);
 
 			// Color
-			memset(name, 0, 16);
-			strncpy(name, skincolors[player->skincolor].name, 16);
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
 			// Doesn't really matter if the follower mobj is valid so long as it exists in a way or another.
 
-			memset(name, 0, 16);
 			if (player->follower)
-				strncpy(name, followers[player->followerskin].skinname, 16);
+				WRITESTRINGL(demobuf.p, followers[player->followerskin].skinname, 16+1);
 			else
-				strncpy(name, "None", 16);	// Say we don't have one, then.
-
-			M_Memcpy(demobuf.p,name,16);
-			demobuf.p += 16;
+				WRITESTRINGL(demobuf.p, "None", 16+1); // Say we don't have one, then.
 
 			// Save follower's colour
-			memset(name, 0, 16);
-			strncpy(name, Followercolor_cons_t[(UINT16)(player->followercolor+2)].strvalue, 16);	// Not KartColor_Names because followercolor has extra values such as "Match"
-			M_Memcpy(demobuf.p, name, 16);
-			demobuf.p += 16;
+			// Not KartColor_Names because followercolor has extra values such as "Match"
+			WRITESTRINGL(demobuf.p, Followercolor_cons_t[(UINT16)(player->followercolor+2)].strvalue, 16+1);
 
 			// Score, since Kart uses this to determine where you start on the map
 			WRITEUINT32(demobuf.p, player->score);
