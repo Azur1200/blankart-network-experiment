@@ -5347,7 +5347,7 @@ static void M_DrawStatsMaps(void)
 {
 	char beststr[40];
 	tic_t besttime = 0;
-	size_t mapsfinished = 0;
+	INT32 mapsfinished = 0;
 
 	int location = statsLocation;
 	INT32 y = 62, i = -1;
@@ -5355,11 +5355,11 @@ static void M_DrawStatsMaps(void)
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
 
-	// TODO: a way to switch presets on this screen
 	const char *realname = G_GetRecordPresetName(currentrecordpreset);
 	V_DrawThinString(0, 0, V_ALLOWLOWERCASE, realname ? realname : currentrecordpreset); // temporary
+	V_DrawThinString(0, 8, MENUCAPS|V_GRAYMAP|V_6WIDTHSPACE, "(BKSP to change)");
 
-	for (size_t j = 0; j < nummapheaders; j++)
+	for (INT32 j = 0; j < nummapheaders; j++)
 	{
 		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
 			continue;
@@ -5378,16 +5378,19 @@ static void M_DrawStatsMaps(void)
 
 	V_DrawString(20, 42, MENUCAPS|highlightflags, "Combined time records:");
 
-	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsfinished != nummapheaders ? warningflags : 0), beststr);
+	sprintf(beststr, "%dh %dm %ds", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS|(mapsfinished != nummapheaders ? warningflags : 0), beststr);
 
 	if (mapsfinished != nummapheaders)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%zu unfinished)", nummapheaders - mapsfinished));
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%d unfinished)", nummapheaders - mapsfinished));
 	else
 		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|recommendedflags, "(complete)");
 
-	V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	if (G_EmblemsEnabled())
+	{
+		V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+		V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	}
 
 	if (location)
 		V_DrawCharacter(10, y-(skullAnimCounter/5),
@@ -5403,23 +5406,32 @@ static void M_DrawStatsMaps(void)
 		else if (dotopname)
 		{
 			V_DrawString(20,  y, MENUCAPS|highlightflags, "Level Name");
-			V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
+			V_DrawString(160, y, MENUCAPS|highlightflags, "Best");
+			V_DrawString(224, y, MENUCAPS|highlightflags, "Play");
+			//V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
 			y += 8;
 			dotopname = false;
 		}
 
 		mnum = statsMapList[i];
-		M_DrawMapEmblems(mnum+1, 295, y);
+		if (G_EmblemsEnabled())
+			M_DrawMapEmblems(mnum, 295, y);
 
-		if (mapheaderinfo[mnum]->levelflags & LF_NOZONE)
-			V_DrawString(20, y, MENUCAPS, va("%s %s",
-				mapheaderinfo[mnum]->lvlttl,
-				mapheaderinfo[mnum]->actnum));
-		else
-			V_DrawString(20, y, MENUCAPS, va("%s %s %s",
-				mapheaderinfo[mnum]->lvlttl,
-				(mapheaderinfo[mnum]->zonttl[0] ? mapheaderinfo[mnum]->zonttl : "Zone"),
-				mapheaderinfo[mnum]->actnum));
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(mnum+1));
+		maprecordpreset_t *preset = G_GetMapRecordPreset(record, currentrecordpreset);
+		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
+
+		V_DrawThinString(20, y, MENUCAPS, maptitle);
+		V_DrawThinString(160, y, MENUCAPS, preset == NULL || preset->besttime == 0 ? "--'--\"--" :
+			va("%02d'%02d\"%02d",
+			G_TicsToMinutes(preset->besttime, true),
+			G_TicsToSeconds(preset->besttime),
+			G_TicsToCentiseconds(preset->besttime)));
+		V_DrawThinString(224, y, MENUCAPS, preset == NULL || preset->playtime == 0 ? "" :
+			va("%d:%02d:%02d",
+			G_TicsToHours(preset->playtime),
+			G_TicsToMinutes(preset->playtime, false),
+			G_TicsToSeconds(preset->playtime)));
 
 		y += 8;
 
@@ -5440,7 +5452,7 @@ static void M_DrawStatsMaps(void)
 	{
 		if (i == -1)
 		{
-			V_DrawString(20, y, highlightflags, "EXTRA MEDALS");
+			V_DrawString(20, y, MENUCAPS|highlightflags, "Extra Medals");
 			if (location)
 			{
 				y += 8;
@@ -5463,7 +5475,7 @@ static void M_DrawStatsMaps(void)
 			else
 				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
 
-			V_DrawString(20, y, 0, va("%s", exemblem->description));
+			V_DrawString(20, y, MENUCAPS, va("%s", exemblem->description));
 		}
 
 		y += 8;
@@ -5599,6 +5611,21 @@ INT32 MR_HandleLevelStats(INT32 choice)
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
+			break;
+
+		case KEY_BACKSPACE:
+			if (statsCurrentPage != 1)
+				break;
+			recordpresetnum_e i, j;
+			for (i = 0; i < numrecordpresets; i++)
+				if (!strcmp(currentrecordpreset, recordpresets[i]->name))
+					break;
+			for (j = i; (i = (i + 1) % numrecordpresets) != j;)
+				if (recordpresets[i]->numversions)
+				{
+					G_SetCurrentRecordPreset(recordpresets[i]);
+					break;
+				}
 			break;
 
 		default:
@@ -5796,6 +5823,7 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	(void)choice;
 	emeralds = 0;
 	M_ClearMenus(true);
+	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
 
@@ -5804,7 +5832,6 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	else
 		G_RecordDemo(demopath);
 
-	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	G_DeferedInitNew(false, cv_nextmap.value, cv_chooseskin.value, 0, false);
 	return true;
 }
@@ -5829,12 +5856,7 @@ INT32 MR_TimeAttackPreset(INT32 arg)
 	if (new->numversions == 0)
 		return false;
 
-	UINT8 highest = 0;
-	for (UINT8 i = 0; i < new->numversions; i++)
-		highest = max(highest, strbuf_byte(new->versions[i], 0));
-
-	strcpy(currentrecordpreset, new->name);
-	currentrecordpresetversion = highest;
+	G_SetCurrentRecordPreset(new);
 	return true;
 }
 

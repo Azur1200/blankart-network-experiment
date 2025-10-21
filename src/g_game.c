@@ -551,6 +551,16 @@ strbuf_t *G_GetRecordPresetVersion(const char *name, UINT8 version)
 	return NULL;
 }
 
+void G_SetCurrentRecordPreset(recordpreset_t *preset)
+{
+	UINT8 highest = 0;
+	for (UINT8 i = 0; i < preset->numversions; i++)
+		highest = max(highest, strbuf_byte(preset->versions[i], 0));
+
+	strcpy(currentrecordpreset, preset->name);
+	currentrecordpresetversion = highest;
+}
+
 const char *G_CheckPresetCvars(strbuf_t *pv)
 {
 	for (consvar_t *cvar = consvar_vars; cvar; cvar = cvar->next)
@@ -751,8 +761,12 @@ tic_t G_GetBestTime(INT16 map)
 		return besttime;
 
 	for (UINT16 k = 0; k < record->numpresets; k++)
+	{
+		if (strcmp(record->presets[k].prename, "kart"))
+			continue; // doesn't count
 		if (record->presets[k].besttime && record->presets[k].besttime < besttime)
 			besttime = record->presets[k].besttime;
+	}
 
 	return besttime;
 }
