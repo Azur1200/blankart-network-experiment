@@ -4813,10 +4813,9 @@ void G_LoadGameSettings(void)
 	S_InitRuntimeSounds();
 }
 
-// TODO: upgrade from 0xBA5ED444
 #define GD_VERSIONCHECK 0xAAAAA001
 
-void DataCorrupt(UINT8 *corrupted)
+static void DataCorrupt(UINT8 *corrupted)
 {
 	if (*corrupted)
 	{
@@ -4831,6 +4830,73 @@ void DataCorrupt(UINT8 *corrupted)
 	}
 }
 
+static boolean LoadLegacyRecords(savebuffer_t *save)
+{
+	UINT32 numgamedatamapheaders = READUINT32(save->p);
+	if (numgamedatamapheaders >= NEXTMAP_SPECIAL)
+		return false;
+
+	for (UINT32 i = 0; i < numgamedatamapheaders; i++)
+	{
+		char mapname[MAXMAPLUMPNAME];
+		//INT16 mapnum;
+		tic_t rectime;
+		tic_t reclap;
+
+		READSTRINGN(save->p, mapname, sizeof(mapname));
+		//mapnum = G_MapNumber(mapname);
+
+		UINT8 rtemp = READUINT8(save->p);
+
+		maprecord_t *record = G_GetMapRecord(mapname);
+		if (record != NULL)
+			return false; // duped
+		record = G_AllocateMapRecord(mapname);
+		record->visited = rtemp;
+		record->playtime = record->roundsplayed = record->roundswon = 0;
+		if (record->visited & ~MV_MAX)
+			return false; // invalid flags
+
+		for (SINT8 k = 0; k < 4; k++) // MAXMAPRECORDS
+		{
+			rectime = (tic_t)READUINT32(save->p);
+			reclap  = (tic_t)READUINT32(save->p);
+			if (k == 3)
+				continue;
+
+			//if (mapnum < nummapheaders && mapheaderinfo[mapnum])
+			{
+				// Valid mapheader, time to populate with record data.
+
+				//if ((mapheaderinfo[mapnum]->mapvisited = rtemp) & ~MV_MAX)
+					//return false;
+
+				if (rectime || reclap)
+				{
+					char *prename = k == 0 ? "kart" : k == 1 ? "tech" : "blankart";
+					UINT8 version = k == 0 ? 1 : 2;
+
+					maprecordpreset_t *preset = G_GetMapRecordPreset(record, prename);
+					if (preset != NULL)
+						return false; // duped
+					preset = G_AllocateMapRecordPreset(record, prename, version);
+					preset->besttime = rectime;
+					preset->bestlap = reclap;
+					preset->playtime = 0;
+					CONS_Printf("Map Record %d, ID %d, Time = %d, Lap = %d\n", k, i, rectime/35, reclap/35);
+				}
+			}
+			//else
+			{
+				// Since it's not worth declaring the entire gamedata
+				// corrupt over extra maps, we report and move on.
+				//CONS_Alert(CONS_WARNING, "Map with lumpname %s does not exist, time record data will be discarded\n", mapname);
+			}
+		}
+	}
+	return true;
+}
+
 // G_LoadGameData
 // Loads the main data file, which stores information such as emblems found, etc.
 void G_LoadGameData(void)
@@ -4840,6 +4906,7 @@ void G_LoadGameData(void)
 	UINT8 modded = false;
 	UINT8 rtemp;
 	CLEANUP(P_SaveBufferFree) savebuffer_t save = {0};
+	boolean beforepresets = false;
 
 	// Clear things so previously read gamedata doesn't transfer
 	// to new gamedata
@@ -4870,7 +4937,10 @@ void G_LoadGameData(void)
 	corrupted = 1; // not for this game
 
 	// Version check
-	if (READUINT32(save.p) != GD_VERSIONCHECK)
+	UINT32 version = READUINT32(save.p);
+	if (version == 0xBA5ED444)
+		beforepresets = true;
+	else if (version != GD_VERSIONCHECK)
 		return;
 
 	corrupted = 2; // data is corrupted!?
@@ -4924,6 +4994,17 @@ void G_LoadGameData(void)
 	}
 
 	timesBeaten = READUINT32(save.p);
+
+	if (beforepresets)
+	{
+		if (LoadLegacyRecords(&save))
+		{
+			// whatever, this will be deleted for beta 1... right?
+			corrupted = 0;
+			M_SilentUpdateUnlockablesAndEmblems();
+		}
+		return;
+	}
 
 	// Main records
 	UINT16 gdnumpresets = READUINT16(save.p);
