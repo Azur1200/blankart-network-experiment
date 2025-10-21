@@ -321,8 +321,6 @@ boolean startedInFreePlay; // Map was started in free play
 tic_t bombflashtimer = 0;	// Cooldown before another FlashPal can be intialized by a bomb exploding near a displayplayer. Avoids seizures.
 boolean legitimateexit; // Did this client actually finish the match?
 boolean comebackshowninfo; // Have you already seen the "ATTACK OR PROTECT" message?
-tic_t curlap; // Current lap time
-tic_t bestlap; // Best lap time
 tic_t antibumptime; // Delay before players start bumping into one another.
 
 typedef struct
@@ -843,8 +841,8 @@ static void G_UpdateRecordReplays(void)
 
 	if (modeattacking == ATTACKING_TIME)
 	{
-		if (preset->bestlap == UINT32_MAX || bestlap < preset->bestlap)
-			preset->bestlap = bestlap;
+		if (preset->bestlap == UINT32_MAX || players[consoleplayer].laptime[LAP_BEST] < preset->bestlap)
+			preset->bestlap = players[consoleplayer].laptime[LAP_BEST];
 	}
 	else
 	{
@@ -852,7 +850,7 @@ static void G_UpdateRecordReplays(void)
 	}
 
 	// Save demo!
-	G_SetDemoTime(players[consoleplayer].realtime, bestlap);
+	G_SetDemoTime(players[consoleplayer].realtime, players[consoleplayer].laptime[LAP_BEST]);
 	G_CheckDemoStatus();
 
 	gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
