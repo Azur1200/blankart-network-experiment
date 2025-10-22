@@ -3188,9 +3188,17 @@ bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 	{
 		return false;
 	}
-	
-	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, mapmusposition, 0, 0);
 
+	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+
+	if (!musicsame)
+	{
+		S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, mapmusposition, 0, 0);
+
+		strncpy(mapmusname, S_MusicName(), 7);
+		mapmusname[6] = 0;
+	}
+	
 	return false;
 }
 
@@ -3231,8 +3239,16 @@ bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 	{
 		return false;
 	}
-	
-	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, lastmapmusposition, 0, 0);
+
+	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+
+	if (!musicsame)
+	{
+		S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, lastmapmusposition, 0, 0);
+
+		strncpy(mapmusname, S_MusicName(), 7);
+		mapmusname[6] = 0;
+	}
 
 	return false;
 }
