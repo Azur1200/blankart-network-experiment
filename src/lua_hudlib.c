@@ -1391,6 +1391,7 @@ enum huddrawinfo {
 	huddrawinfo_minimap,
 	huddrawinfo_timers,
 	huddrawinfo_drafting,
+	huddrawinfo_lives,
 };
 
 static const char *const hud_drawinfo_options[] = {
@@ -1400,6 +1401,7 @@ static const char *const hud_drawinfo_options[] = {
 	"minimap",
 	"timers",
 	"drafting",
+	"lives",
 	NULL};
 
 static int libd_getDrawInfo(lua_State *L)
@@ -1409,12 +1411,13 @@ static int libd_getDrawInfo(lua_State *L)
 	drawinfo_t info;
 
 	switch(option) {
-		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);     break;
-		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);        break;
-		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);       break;
-		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);     break;
-		case huddrawinfo_timers:        K_getSlipstreamDrawinfo(&info);  break;
-		case huddrawinfo_drafting:      K_getTimersDrawinfo(&info);      break;
+		case huddrawinfo_item:          K_getItemBoxDrawinfo(&info);		break;
+		case huddrawinfo_gametypeinfo:  K_getLapsDrawinfo(&info);			break;
+		case huddrawinfo_rings:         K_getRingsDrawinfo(&info);			break;
+		case huddrawinfo_minimap:       K_getMinimapDrawinfo(&info);		break;
+		case huddrawinfo_timers:        K_getSlipstreamDrawinfo(&info);		break;
+		case huddrawinfo_drafting:      K_getTimersDrawinfo(&info);			break;
+		case huddrawinfo_lives:      	K_getLivesnStatsDrawinfo(&info);	break;
 		default:
 			return 0; // unreachable
 	}

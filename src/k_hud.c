@@ -65,8 +65,9 @@ IMPL_HUD_OFFSET(rings); // Number of rings
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 IMPL_HUD_OFFSET(speed); // Speedometer
 IMPL_HUD_OFFSET(acce); // Accessibility
-IMPL_HUD_OFFSET(timers); // Drafting
+IMPL_HUD_OFFSET(timers); // Timers
 IMPL_HUD_OFFSET(draft); // Drafting
+IMPL_HUD_OFFSET(lives); // Lives and Stats
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -107,6 +108,8 @@ consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", C
 consvar_t cv_newtabranking = CVAR_INIT ("newtabranking", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_draftindicator = CVAR_INIT ("draftindicator", "On", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
 
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
@@ -244,6 +247,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(acce); // Accessibility
 	REG_HUD_OFFSET(timers); // Item Timers
 	REG_HUD_OFFSET(draft); // Drafting
+	REG_HUD_OFFSET(lives); // Lives and Stats
 	REG_HUD_OFFSET(posi); // Position in race
 	REG_HUD_OFFSET(face); // Mini rankings
 	REG_HUD_OFFSET(stcd); // Starting countdown
@@ -270,6 +274,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_driftgaugeoffset);
 	CV_RegisterVar(&cv_newtabranking);
 	CV_RegisterVar(&cv_draftindicator);
+	CV_RegisterVar(&cv_showstats);
 }
 
 // YOUR       TOO TOO (try limit for NULL HUD patches)
@@ -797,6 +802,7 @@ INT32 RING_X, RING_Y;	// Player Rings
 INT32 SPDM_X, SPDM_Y;	// Speedometer
 INT32 ACCE_X, ACCE_Y;	// Accessibility
 INT32 DRAT_X, DRAT_Y;	// Drafting
+INT32 LIVE_X, LIVE_Y;	// Stats and Lives
 INT32 POSI_X, POSI_Y;	// Position Number
 INT32 FACE_X, FACE_Y;	// Top-four Faces
 INT32 STCD_X, STCD_Y;	// Starting countdown
@@ -810,6 +816,7 @@ INT32 LAPS2_X, LAPS2_Y;
 INT32 RING2_X, RING2_Y;
 INT32 POSI2_X, POSI2_Y;
 INT32 DRAT2_X, DRAT2_Y;
+INT32 LIVE2_X, LIVE2_Y;
 
 void K_ReloadHUDColorCvar(void)
 {
@@ -1054,6 +1061,9 @@ static void K_initKartHUD(void)
 	// Drafting
 	DRAT_X = 172 + cv_draft_xoffset.value;						// 172
 	DRAT_Y = BASEVIDHEIGHT - 41 + cv_draft_yoffset.value;		// 159
+	// Lives and Stats
+	LIVE_X = 9 + cv_lives_xoffset.value;							//   9
+	LIVE_Y = BASEVIDHEIGHT - 29 + cv_lives_yoffset.value;		// 171
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;			// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;			// 138
@@ -1093,6 +1103,9 @@ static void K_initKartHUD(void)
 		DRAT_X = 172;
 		DRAT_Y = (BASEVIDHEIGHT/2)-34;
 
+		LIVE_X = 9;
+		LIVE_Y = (BASEVIDHEIGHT/2)-24;
+
 		STCD_X = BASEVIDWIDTH/2;
 		STCD_Y = BASEVIDHEIGHT/4;
 
@@ -1117,6 +1130,9 @@ static void K_initKartHUD(void)
 			DRAT_X = 95;
 			DRAT_Y = (BASEVIDHEIGHT/2)-32;
 
+			LIVE_X = 3;
+			LIVE_Y = (BASEVIDHEIGHT/2)-12;
+
 			// 2P (top right)
 			ITEM2_X = (BASEVIDWIDTH/2)-39;
 			ITEM2_Y = -8;
@@ -1132,6 +1148,9 @@ static void K_initKartHUD(void)
 
 			DRAT2_X = 95;
 			DRAT2_Y = (BASEVIDHEIGHT/2)-32;
+
+			LIVE2_X = (BASEVIDWIDTH/2)-43;
+			LIVE2_Y = (BASEVIDHEIGHT/2)-12;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
@@ -2659,7 +2678,6 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 
 static void K_drawKartLaps(void)
 {
-	const boolean uselives = G_GametypeUsesLives();
 	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
 
 	drawinfo_t info;
@@ -2670,10 +2688,6 @@ static void K_drawKartLaps(void)
 
 	if (r_splitscreen > 1)
 	{
-		INT32 fr = 0;
-
-		fr = fx;
-
 		// Laps
 		V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_splitlapflag);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
@@ -2698,17 +2712,6 @@ static void K_drawKartLaps(void)
 			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps) % 10]);
 			V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(numlaps) % 10]);
 		}
-
-		// Lives
-		if (LUA_HudEnabled(hud_lives) && uselives)
-		{
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
-			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
-
-			V_DrawMappedPatch(fr+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
-			if (stplyr->lives >= 0)
-				V_DrawScaledPatch(fr+34, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
-		}
 	}
 	else
 	{
@@ -2732,28 +2735,100 @@ static void K_drawKartLaps(void)
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|V_SLIDEIN|splitflags, "FIN");
 		else
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|splitflags, va("%d/%d", min(stplyr->laps, numlaps), numlaps));
+	}
+}
 
+void K_getLivesnStatsDrawinfo(drawinfo_t *out)
+{
+	INT32 fx, fy, splitflags = 0;
+
+	// pain and suffering defined below
+	if (r_splitscreen < 2)	// don't change shit for THIS splitscreen.
+	{
+		fx = LIVE_X;
+		fy = LIVE_Y;
+		splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
+	}
+	else
+	{
+		if (stplyrnum == 0 || stplyrnum == 2)	// If we are P1 or P3...
+		{
+			fx = LIVE_X;
+			fy = LIVE_Y;
+			splitflags = V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+		}
+		else // else, that means we're P2 or P4.
+		{
+			fx = LIVE2_X;
+			fy = LIVE2_Y;
+			splitflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+		}
+	}
+
+	out->x = fx;
+	out->y = fy;
+	out->flags = splitflags;
+}
+
+static void K_drawKartStatsnLives(void)
+{
+	const boolean uselives = G_GametypeUsesLives();
+	const boolean stats = cv_showstats.value;
+
+	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
+
+	drawinfo_t info;
+	K_getLivesnStatsDrawinfo(&info);
+	fx = info.x;
+	fy = info.y;
+	splitflags = info.flags;
+
+	if (r_splitscreen > 1)
+	{
 		// Lives
 		if (LUA_HudEnabled(hud_lives) && uselives)
+		{
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
+
+			V_DrawMappedPatch(fx+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
+			if (stplyr->lives >= 0 && uselives)
+				V_DrawScaledPatch(fx+34, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+		}
+	}
+	else
+	{
+		// Stats and Lives
+		if (LUA_HudEnabled(hud_lives) && (uselives || stats))
 		{
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
 
-			if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+			if (cv_lives_xoffset.value != 0 || cv_lives_yoffset.value != 0)
 			{
-				offsetx = 25;
-				offsety = 15;
-			}
-			else if (K_RingsActive())
-			{
-				offsetx = 4;
+				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+				{
+					offsetx = 25;
+					offsety = 15;
+				}
+				else if (K_RingsActive())
+				{
+					offsetx = 4;
+				}
 			}
 
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
 			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
 			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
-			if (stplyr->lives >= 0)
+			if (stplyr->lives >= 0 && uselives)
 				V_DrawScaledPatch(fx+77+offsetx, fy-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+
+			// Draw stats
+			UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
+			UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
+
+			V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
+			V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
 		}
 	}
 }
@@ -5885,6 +5960,7 @@ void K_drawKartHUD(void)
 				if (gametyperules & GTR_CIRCUIT)
 				{
 					K_drawKartLaps();
+					K_drawKartStatsnLives();
 				}
 				else if (gametyperules & GTR_BUMPERS)
 				{

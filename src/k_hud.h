@@ -94,6 +94,7 @@ void K_getLapsDrawinfo(drawinfo_t *out);
 void K_getRingsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
 void K_getSlipstreamDrawinfo(drawinfo_t *out);
+void K_getLivesnStatsDrawinfo(drawinfo_t *out);
 const char *K_GetItemPatch(UINT8 item, boolean tiny);
 void K_ReloadHUDColorCvar(void);
 boolean K_UseColorHud(void);
