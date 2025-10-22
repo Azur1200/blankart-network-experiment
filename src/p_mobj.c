@@ -4258,8 +4258,6 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	}
 }
 
-#define CAPSULESIDES 5
-#define ANG_CAPSULE (UINT32_MAX / CAPSULESIDES)
 #define ROTATIONSPEED (2*ANG2)
 static void P_SpawnItemCapsuleParts(mobj_t *mobj)
 {
@@ -4278,8 +4276,6 @@ static void P_SpawnItemCapsuleParts(mobj_t *mobj)
 
 	P_RefreshItemCapsuleParts(mobj);
 }
-#undef CAPSULESIDES
-#undef ANG_CAPSULE
 #undef ROTATIONSPEED
 
 //
