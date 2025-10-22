@@ -44,7 +44,7 @@ extern consvar_t cv_naturalcamera;
 // against lines and things
 #define MAPBLOCKUNITS 128
 #define MAPBLOCKSIZE  (MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT (FRACBITS+8)
+#define MAPBLOCKSHIFT (FRACBITS+7)
 #define MAPBMASK      (MAPBLOCKSIZE-1)
 #define MAPBTOFRAC    (MAPBLOCKSHIFT-FRACBITS)
 
