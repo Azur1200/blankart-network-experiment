@@ -2823,12 +2823,15 @@ static void K_drawKartStatsnLives(void)
 			if (stplyr->lives >= 0 && uselives)
 				V_DrawScaledPatch(fx+77+offsetx, fy-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
 
-			// Draw stats
-			UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
-			UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
+			if (stats)
+			{
+				// Draw stats
+				UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
+				UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 
-			V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
-			V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
+				V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
+				V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
+			}
 		}
 	}
 }
