@@ -56,17 +56,6 @@
 #include "k_grandprix.h"
 #include "strbuf.h"
 
-// TODO wtf... READSTRINGL max length string doesn't skip over NUL????
-#define READSTRINGX(p, s, n) do {                             \
-	size_t tmp_i = 0;                                         \
-                                                              \
-	while (tmp_i < n - 1 && (s[tmp_i] = READCHAR(p)) != '\0') \
-		tmp_i++;                                              \
-                                                              \
-	s[tmp_i] = '\0';                                          \
-	if (tmp_i == n - 1 && *p == '\0') p++;                    \
-} while (0)
-
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
 
@@ -623,7 +612,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 				extra->playername[16] = '\0';
 			}
 			else
-				READSTRINGX(dp, extra->playername, 21+1);
+				READSTRINGL(dp, extra->playername, 21+1);
 		}
 	}
 	if (extradata & DXD_SKIN)
@@ -634,7 +623,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 			extra->skinname[16] = '\0';
 		}
 		else
-			READSTRINGX(dp, extra->skinname, 16+1);
+			READSTRINGL(dp, extra->skinname, 16+1);
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
 	}
@@ -646,7 +635,7 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 			extra->colorname[16] = '\0';
 		}
 		else
-			READSTRINGX(dp, extra->colorname, 16+1);
+			READSTRINGL(dp, extra->colorname, 16+1);
 	}
 	if (kart)
 	{
@@ -671,8 +660,8 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		}
 		else
 		{
-			READSTRINGX(dp, extra->followername, 16+1);
-			READSTRINGX(dp, extra->followercolor, 16+1);
+			READSTRINGL(dp, extra->followername, 16+1);
+			READSTRINGL(dp, extra->followercolor, 16+1);
 		}
 	}
 	if (extradata & DXD_WEAPONPREF)
@@ -792,7 +781,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 
 	if (rapreset)
 	{
-		READSTRINGX(dp, header->rapreset, sizeof(header->rapreset));
+		READSTRINGL(dp, header->rapreset, sizeof(header->rapreset));
 		header->rapresetversion = READUINT8(dp);
 	}
 
@@ -954,11 +943,11 @@ skipfiles:
 
 		if (rapreset)
 		{
-			READSTRINGX(dp, plr->name, 21+1);
-			READSTRINGX(dp, plr->skin, 16+1);
-			READSTRINGX(dp, plr->color, 16+1);
-			READSTRINGX(dp, plr->follower, 16+1);
-			READSTRINGX(dp, plr->followercolor, 16+1);
+			READSTRINGL(dp, plr->name, 21+1);
+			READSTRINGL(dp, plr->skin, 16+1);
+			READSTRINGL(dp, plr->color, 16+1);
+			READSTRINGL(dp, plr->follower, 16+1);
+			READSTRINGL(dp, plr->followercolor, 16+1);
 		}
 		else
 		{
@@ -3039,8 +3028,6 @@ void G_BeginMetal(void)
 
 void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT16 color, UINT32 val)
 {
-	char temp[16];
-
 	if (demoinfo_p && *(UINT32 *)demoinfo_p == 0)
 	{
 		WRITEUINT8(demobuf.p, DEMOMARKER); // add the demo end marker
@@ -3051,22 +3038,13 @@ void G_WriteStanding(UINT8 ranking, char *name, INT32 skinnum, UINT16 color, UIN
 	WRITEUINT8(demobuf.p, ranking);
 
 	// Name
-	memset(temp, 0, 16);
-	strncpy(temp, name, 16);
-	M_Memcpy(demobuf.p,temp,16);
-	demobuf.p += 16;
+	WRITESTRINGL(demobuf.p, name, 21+1);
 
 	// Skin
-	memset(temp, 0, 16);
-	strncpy(temp, skins[skinnum].name, 16);
-	M_Memcpy(demobuf.p,temp,16);
-	demobuf.p += 16;
+	WRITESTRINGL(demobuf.p, skins[skinnum].name, 16+1);
 
 	// Color
-	memset(temp, 0, 16);
-	strncpy(temp, skincolors[color].name, 16);
-	M_Memcpy(demobuf.p,temp,16);
-	demobuf.p += 16;
+	WRITESTRINGL(demobuf.p, skincolors[color].name, 16+1);
 
 	// Score/time/whatever
 	WRITEUINT32(demobuf.p, val);
@@ -3393,17 +3371,27 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	while (READUINT8(extrainfo_p) == DW_STANDING) // Assume standings are always first in the extrainfo
 	{
 		INT32 i;
-		char temp[16];
+		char temp[17];
 
 		pdemo->standings[count].ranking = READUINT8(extrainfo_p);
 
 		// Name
-		M_Memcpy(pdemo->standings[count].name, extrainfo_p, 16);
-		extrainfo_p += 16;
+		if (header.demoversion <= 0x000C)
+		{
+			READMEM(extrainfo_p, pdemo->standings[count].name, 16);
+			pdemo->standings[count].name[16] = '\0';
+		}
+		else
+			READSTRINGL(extrainfo_p, pdemo->standings[count].name, 21+1);
 
 		// Skin
-		M_Memcpy(temp,extrainfo_p,16);
-		extrainfo_p += 16;
+		if (header.demoversion <= 0x000C)
+		{
+			READMEM(extrainfo_p, temp, 16);
+			temp[16] = '\0';
+		}
+		else
+			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].skin = UINT16_MAX;
 		for (i = 0; i < numskins; i++)
 			if (stricmp(skins[i].name, temp) == 0)
@@ -3413,8 +3401,13 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 			}
 
 		// Color
-		M_Memcpy(temp,extrainfo_p,16);
-		extrainfo_p += 16;
+		if (header.demoversion <= 0x000C)
+		{
+			READMEM(extrainfo_p, temp, 16);
+			temp[16] = '\0';
+		}
+		else
+			READSTRINGL(extrainfo_p, temp, 16+1);
 		pdemo->standings[count].color = SKINCOLOR_NONE;
 		for (i = 0; i < numskincolors; i++)
 			if (!stricmp(skincolors[i].name,temp))				// SRB2kart
@@ -3792,7 +3785,7 @@ void G_DoPlayDemo(char *defdemoname)
 		}
 
 		// Name
-		M_Memcpy(player_names[p], plr->name, 16);
+		strcpy(player_names[p], plr->name);
 
 		/*if (players[p].spectator)
 		{

@@ -2722,7 +2722,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 	playeringame[playernum] = false;
 	demo_extradata[playernum] |= DXD_PLAYSTATE;
 	playernode[playernum] = UINT8_MAX;
-	while (!playeringame[doomcom->numslots-1] && doomcom->numslots > 1)
+	while (doomcom->numslots > 1 && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
 
 	// Reset the name
