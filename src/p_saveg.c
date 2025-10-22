@@ -2658,6 +2658,7 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 		ht->thinker.function.acp1 = thinker;
 	}
 
+	SYNC(ht->type);
 	SYNC(ht->crush);
 	SYNC(ht->sector);
 	SYNC(ht->direction);
