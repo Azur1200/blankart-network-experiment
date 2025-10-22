@@ -333,6 +333,7 @@ void K_UpdateGrandPrixBots(void)
 	player_t *oldrival = NULL;
 	player_t *newrival = NULL;
 	UINT16 newrivalscore = 0;
+	boolean validbots = (K_UsingLegacyCheckpoints() == false);
 	UINT8 i;
 
 	for (i = 0; i < MAXGPPLAYERS; i++)
@@ -343,6 +344,11 @@ void K_UpdateGrandPrixBots(void)
 		}
 
 		players[i].spectator = (grandprixinfo.eventmode != GPEVENT_NONE);
+
+		if (!validbots)
+		{
+			players[i].spectator = true;
+		}
 	}
 
 	// Find the rival.
@@ -421,6 +427,12 @@ void K_UpdateGrandPrixBots(void)
 		// Set our new rival!
 		newrival->botvars.rival = true;
 	}
+
+	if (!validbots)
+	{
+		CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
+	}
+
 }
 
 /*--------------------------------------------------
