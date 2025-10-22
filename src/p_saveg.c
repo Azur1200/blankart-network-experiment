@@ -189,18 +189,14 @@ static player_t *P_SyncPlayer(savebuffer_t *save, player_t *player)
 	UINT8 playernum = P_SyncUINT8(save, player != NULL ? player - players : UINT8_MAX);
 
 	if (save->write)
-	{
 		return player;
-	}
-	else
-	{
-		if (playernum == UINT8_MAX)
-			return NULL;
 
-		if (playernum >= MAXPLAYERS)
-			I_Error("P_SyncPlayer: playernum %u >= MAXPLAYERS %u", playernum, MAXPLAYERS);
-		return &players[playernum];
-	}
+	if (playernum == UINT8_MAX)
+		return NULL;
+
+	if (playernum >= MAXPLAYERS)
+		I_Error("P_SyncPlayer: playernum %u >= MAXPLAYERS %u", playernum, MAXPLAYERS);
+	return &players[playernum];
 }
 
 static state_t *P_SyncState(savebuffer_t *save, state_t *state)
@@ -208,18 +204,14 @@ static state_t *P_SyncState(savebuffer_t *save, state_t *state)
 	UINT16 statenum = P_SyncUINT16(save, state != NULL ? state - states : UINT16_MAX);
 
 	if (save->write)
-	{
 		return state;
-	}
-	else
-	{
-		if (statenum == UINT16_MAX)
-			return NULL;
 
-		if (statenum >= numstates)
-			I_Error("P_SyncState: statenum %u >= numstates %u", statenum, numstates);
-		return &states[statenum];
-	}
+	if (statenum == UINT16_MAX)
+		return NULL;
+
+	if (statenum >= numstates)
+		I_Error("P_SyncState: statenum %u >= numstates %u", statenum, numstates);
+	return &states[statenum];
 }
 
 static line_t *P_SyncLine(savebuffer_t *save, line_t *line)
@@ -227,18 +219,14 @@ static line_t *P_SyncLine(savebuffer_t *save, line_t *line)
 	UINT32 linenum = P_SyncUINT32(save, line != NULL ? line - lines : UINT32_MAX);
 
 	if (save->write)
-	{
 		return line;
-	}
-	else
-	{
-		if (linenum == UINT32_MAX)
-			return NULL;
 
-		if (linenum >= numlines)
-			I_Error("P_SyncLine: linenum %u >= numlines %zu", linenum, numlines);
-		return &lines[linenum];
-	}
+	if (linenum == UINT32_MAX)
+		return NULL;
+
+	if (linenum >= numlines)
+		I_Error("P_SyncLine: linenum %u >= numlines %zu", linenum, numlines);
+	return &lines[linenum];
 }
 
 static sector_t *P_SyncSector(savebuffer_t *save, sector_t *sector)
@@ -246,18 +234,14 @@ static sector_t *P_SyncSector(savebuffer_t *save, sector_t *sector)
 	UINT32 sectornum = P_SyncUINT32(save, sector != NULL ? sector - sectors : UINT32_MAX);
 
 	if (save->write)
-	{
 		return sector;
-	}
-	else
-	{
-		if (sectornum == UINT32_MAX)
-			return NULL;
 
-		if (sectornum >= numsectors)
-			I_Error("P_SyncSector: sectornum %u >= numsectors %zu", sectornum, numsectors);
-		return &sectors[sectornum];
-	}
+	if (sectornum == UINT32_MAX)
+		return NULL;
+
+	if (sectornum >= numsectors)
+		I_Error("P_SyncSector: sectornum %u >= numsectors %zu", sectornum, numsectors);
+	return &sectors[sectornum];
 }
 
 static pslope_t *P_SyncSlope(savebuffer_t *save, pslope_t *slope)
@@ -265,19 +249,15 @@ static pslope_t *P_SyncSlope(savebuffer_t *save, pslope_t *slope)
 	UINT16 slopeid = P_SyncUINT16(save, slope != NULL ? slope->id : UINT16_MAX);
 
 	if (save->write)
-	{
 		return slope;
-	}
-	else
-	{
-		if (slopeid == UINT16_MAX)
-			return NULL;
 
-		pslope_t *ret = P_SlopeById(slopeid);
-		if (ret == NULL)
-			I_Error("P_SyncSlope: Slope with ID %u not found", slopeid);
-		return ret;
-	}
+	if (slopeid == UINT16_MAX)
+		return NULL;
+
+	pslope_t *ret = P_SlopeById(slopeid);
+	if (ret == NULL)
+		I_Error("P_SyncSlope: Slope with ID %u not found", slopeid);
+	return ret;
 }
 
 static ffloor_t *P_SyncFFloor(savebuffer_t *save, ffloor_t *fof)
@@ -286,19 +266,15 @@ static ffloor_t *P_SyncFFloor(savebuffer_t *save, ffloor_t *fof)
 	UINT16 id = P_SyncUINT16(save, P_GetFFloorID(fof));
 
 	if (save->write)
-	{
 		return fof;
-	}
-	else
-	{
-		if (sec == NULL)
-			return NULL;
 
-		ffloor_t *ret = P_GetFFloorByID(sec, id);
-		if (ret == NULL)
-			I_Error("P_SyncFFloor: FOF with ID %u not found (sector %td)", id, sec - sectors);
-		return ret;
-	}
+	if (sec == NULL)
+		return NULL;
+
+	ffloor_t *ret = P_GetFFloorByID(sec, id);
+	if (ret == NULL)
+		I_Error("P_SyncFFloor: FOF with ID %u not found (sector %td)", id, sec - sectors);
+	return ret;
 }
 
 static terrain_t *P_SyncTerrain(savebuffer_t *save, terrain_t *terrain)
@@ -306,19 +282,15 @@ static terrain_t *P_SyncTerrain(savebuffer_t *save, terrain_t *terrain)
 	UINT32 terrain_index = P_SyncUINT32(save, terrain != NULL ? K_GetTerrainHeapIndex(terrain) : UINT32_MAX);
 
 	if (save->write)
-	{
 		return terrain;
-	}
-	else
-	{
-		if (terrain_index == UINT32_MAX)
-			return NULL;
 
-		terrain_t *ret = K_GetTerrainByIndex(terrain_index);
-		if (ret == NULL)
-			I_Error("P_SyncTerrain: Terrain with ID %u not found", terrain_index);
-		return ret;
-	}
+	if (terrain_index == UINT32_MAX)
+		return NULL;
+
+	terrain_t *ret = K_GetTerrainByIndex(terrain_index);
+	if (ret == NULL)
+		I_Error("P_SyncTerrain: Terrain with ID %u not found", terrain_index);
+	return ret;
 }
 
 static mobj_t *P_SyncMobj(savebuffer_t *save, mobj_t *mo)
