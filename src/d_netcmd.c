@@ -3639,6 +3639,12 @@ static void HandleRespawnCommand(UINT8 localplayer)
 		return;
 	}
 
+	if (players[g_localplayers[localplayer]].mo && players[g_localplayers[localplayer]].exiting)
+	{
+		CONS_Printf(M_GetText("You have no reason to respawn.\n"));
+		return;
+	}
+
 	WRITEUINT8(cp, g_localplayers[localplayer]);
 	SendNetXCmdForPlayer(localplayer, XD_RESPAWN, &buf, sizeof(buf));
 }
