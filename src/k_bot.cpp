@@ -265,7 +265,8 @@ void K_UpdateMatchRaceBots(void)
 	}
 	else if (K_UsingLegacyCheckpoints() == true && !cv_forcebots.value)
 	{
-		CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
+		if (cv_kartbot.value > 0 && cv_kartbot_cap.value > 0)
+			CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
 		difficulty = 0;
 	}
 	else
