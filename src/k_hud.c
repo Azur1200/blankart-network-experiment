@@ -155,8 +155,11 @@ static patch_t *kp_kartzspeedo_smol[25];
 static patch_t *kp_driftgauge[14];
 static patch_t *kp_driftgaugeparts[5];
 
-static patch_t *kp_flamometer[4];
-static patch_t *kp_flamefire[4];
+static patch_t *kp_flamometer[6];
+static patch_t *kp_flamefire[18];
+
+// Frames of animation for the fire
+#define MAXFLAMOFIRETICS 8
 
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
@@ -440,14 +443,30 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_flamometer[1], "THERMOFUEL");
 	HU_UpdatePatch(&kp_flamometer[2], "THERMOTEMP");
 	HU_UpdatePatch(&kp_flamometer[3], "THERMOMETRE");
+	HU_UpdatePatch(&kp_flamometer[4], "THERMCBACK");
+	HU_UpdatePatch(&kp_flamometer[5], "THERMCMETRE");
 
 	//Flamometer Fire
 	{
 		const char* patchNames[] = {
+			"THFIREX",
 			"THFIRE1",
 			"THFIRE2",
 			"THFIRE3",
-			"THFIRE4"
+			"THFIRE4",
+			"THFIRE5",
+			"THFIRE6",
+			"THFIRE7",
+			"THFIRE8",
+			"THFIRCX",
+			"THFIRC1",
+			"THFIRC2",
+			"THFIRC3",
+			"THFIRC4",
+			"THFIRC5",
+			"THFIRC6",
+			"THFIRC7",
+			"THFIRC8"
 		};
 
 		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
@@ -6447,7 +6466,8 @@ void K_DrawFlamometer(void)
 	INT32 basex, basey, barextraflags = 0;
 	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
 	INT32 fuelbarheight = 41;
-	INT32 tempbarheight = 48;
+	INT32 tempbarheight = 49;
+	UINT8 *colormap = NULL;
 
 	K_ObjectTracking(&res, &pos, false);
 	basex = res.x + (16<<FRACBITS);
@@ -6456,7 +6476,21 @@ void K_DrawFlamometer(void)
 	// fire animation
 	if (stplyr->flamestore >= FLAMESTOREMAX-1)
 	{
-		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[CLAMP((leveltime / 3) % 4, 0, 4)], NULL);
+		UINT8 flamofiretic = CLAMP((leveltime / 3) % MAXFLAMOFIRETICS, 0, MAXFLAMOFIRETICS) + 1;
+
+		if (stplyr->flameoverheat < 3)
+		{
+			// Fancy "explode" VFX
+			flamofiretic = 0;
+		}
+
+		if (K_UseColorHud())
+		{
+			flamofiretic += 9;
+			colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+		}
+
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[flamofiretic], colormap);
 
 		if (leveltime % 3 != 0)
 		{
@@ -6465,23 +6499,23 @@ void K_DrawFlamometer(void)
 	}
 
 	// back
-	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[0], NULL);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[K_UseColorHud() ? 4 : 0], colormap);
 	
 	// bars
 	// fuel
 	fuelbarheight *= FixedDiv(stplyr->flametimer, itemtime*3);
-	V_SetClipRect(basex + 2*FRACUNIT, basey + 49*FRACUNIT - fuelbarheight, 2*FRACUNIT, fuelbarheight, flags);
+	V_SetClipRect(basex + 7*FRACUNIT, basey + 58*FRACUNIT - fuelbarheight, 4*FRACUNIT, fuelbarheight, flags);
 	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[1], NULL);
 	
 	V_ClearClipRect();
 	
 	// temperature
 	tempbarheight *= FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
-	V_SetClipRect(basex + 5*FRACUNIT, basey + 53*FRACUNIT - tempbarheight, 5*FRACUNIT, tempbarheight, flags);
+	V_SetClipRect(basex + 10*FRACUNIT, basey + 62*FRACUNIT - tempbarheight, 32*FRACUNIT, tempbarheight, flags);
 	V_DrawFixedPatch(basex, basey, FRACUNIT, flags|barextraflags, kp_flamometer[2], NULL);
 
 	V_ClearClipRect();
 
 	// front
-	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[3], NULL);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[K_UseColorHud() ? 5 : 3], colormap);
 }

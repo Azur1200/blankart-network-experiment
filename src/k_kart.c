@@ -7386,6 +7386,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->flametimer > 0)
 	{
+		if (player->flamestore >= FLAMESTOREMAX-1)
+		{
+			// Overheating; mainly used for the Flamometer
+			player->flameoverheat++;
+		}
+		else
+		{
+			player->flameoverheat = 0;
+		}
+
 		if (player->stealingtimer == 0 && player->stolentimer == 0)
 			player->flametimer--;
 
@@ -7394,6 +7404,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 	else
 	{
+		player->flameoverheat = 0;
+
 		if (player->flamestore)
 			K_FlameDashLeftoverSmoke(player->mo);
 	}

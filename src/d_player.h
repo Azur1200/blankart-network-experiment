@@ -701,9 +701,10 @@ struct player_t
 	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 bubbleboost; // Bubble shield boost timer
 
-	UINT16 flamedash;	// Flame Shield dash power
-	INT32 flametimer;	// Flame Shield dash meter left
-	UINT8 flamestore;	// Flame Shield reserve boost
+	UINT16 flamedash;	 // Flame Shield dash power
+	INT32 flametimer;	 // Flame Shield dash meter left
+	UINT8 flamestore;	 // Flame Shield reserve boost
+	tic_t flameoverheat; // Time the Flame Shield spends overheating
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
 	SINT8 stealingtimer;	// you are stealing
