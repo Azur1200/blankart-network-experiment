@@ -9329,13 +9329,18 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 {
 	player_t *cluster_p;
 	UINT32 i, pingame;
-	SINT8 first, second, tinypoptarget;
+	SINT8 first, second, bestloser, tinypoptarget;
+
+	INT16 bestloserpos;
+
 	INT32 divmul;
 
 	pingame = 0;
 
+	bestloserpos = INT16_MAX;
+
 	first = -1;
-	second = -1;
+	bestloser = second = -1;
 	tinypoptarget = -1;
 
 	divmul = 1;
@@ -9347,7 +9352,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
 			pingame++;
 
-		if (players[i].mo && gametype == GT_RACE)
+		if ((players[i].mo) && (gametyperules & GTR_CIRCUIT))
 		{
 			if (players[i].position == 1 && first == -1)
 				first = i;
@@ -9372,18 +9377,37 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			if (!playeringame[i] || players[i].spectator)
 				continue;
 
-			if (players[i].mo && gametype == GT_RACE)
+			if ((players[i].mo) && (gametyperules & GTR_CIRCUIT))
 			{
+				if ((players[i].position < bestloserpos) &&
+					(K_IsPlayerLosing(&players[i])))
+				{
+					// This player is the highest-ranking "loser".
+					bestloserpos = players[i].position;
+					bestloser = (SINT8)i;
+				}
+				
 				if (players[i].position == (pingame - 1) && second == -1)
 				{
 					second = i;
-					break;
 				}
 			}
 		}
 	}
 
 	tinypoptarget = (pingame < 3) ? first : second;
+
+	if (clusterid != UINT32_MAX)
+	{
+		if (!K_IsPlayerLosing(&players[clusterid]))
+		{
+			// Our cluster player isn't losing anymore, "relay" the ID to the "best loser"
+			if (bestloser != -1)
+			{
+				clusterid = bestloser;
+			}
+		}
+	}
 
 	if (K_UsingLegacyCheckpoints())
 	{
@@ -9705,6 +9729,12 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 
         // Double-remove the clusterplayer flag. Bad hack, I know...
         clusterplayer[i] = false;
+		
+		// 10/22/2025: Pairs don't count anymore
+		if (N <= 2)
+		{
+			continue;
+		}
 
         // Density check
         if (N > bestdensity)
@@ -9741,9 +9771,11 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
     return out;
 }
 
-#define CLUSTER_EPSILON (160*FRACUNIT)
-#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(CLUSTER_EPSILON, K_CountNeighboringPlayers, &clusterpoint))
-#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((CLUSTER_EPSILON / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
+#define CLUSTER_EPSILON (320*FRACUNIT)
+#define RESCALED_CLUSTER_EPS (FixedMul(FixedMul(CLUSTER_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+
+#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(RESCALED_CLUSTER_EPS, K_CountNeighboringPlayers, &clusterpoint))
+#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((RESCALED_CLUSTER_EPS / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
 
 void K_UpdateClusterPoints(void)
 {
@@ -9754,10 +9786,10 @@ void K_UpdateClusterPoints(void)
     }
     else
     {
-        if (cv_kartdebugcluster.value)
+        /*if (cv_kartdebugcluster.value)
         {
             K_FindPlayerClusterLegacy();
-        }
+        }*/
 
         K_FindPlayerClusterDTF();
     }

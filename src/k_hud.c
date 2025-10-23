@@ -4046,7 +4046,22 @@ static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 	UINT8 pal = 180; // Strong pink color.
 	UINT8 size = 6;
 
-	K_drawKartMinimapDot(clusterpoint.x, clusterpoint.y, hudx, hudy, flags, pal, size);
+	fixed_t clusterx, clustery;
+
+	clusterx = clustery = 0;
+
+	if ((clusterid != UINT32_MAX) && (players[clusterid].mo) && (!P_MobjWasRemoved(players[clusterid].mo)))
+	{
+		clusterx = players[clusterid].mo->x;
+		clustery = players[clusterid].mo->y;
+	}
+	else
+	{
+		clusterx = clusterpoint.x;
+		clustery = clusterpoint.y;
+	}
+
+	K_drawKartMinimapDot(clusterx, clustery, hudx, hudy, flags, pal, size);
 }
 
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
