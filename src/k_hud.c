@@ -1612,9 +1612,9 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 
 	tic_t worktime;
-	INT32 jitter = 0;
-	boolean overtime = false;
-	UINT8 *textcolor = 0;
+	fixed_t jitter = 0;
+	boolean overtime = false, fastjitter = false, countdown = false;
+	UINT8 *textcolor = NULL;
 
 	INT32 splitflags = 0;
 	if (!mode)
@@ -1623,37 +1623,26 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 		if (timelimitintics > 0)
 		{
-			/*
-			if (drawtime >= (timelimitintics - 5*TICRATE) && ((drawtime*4)/TICRATE) % 2 == 0)
-			{
-				dontdraw = true;
-			}
-			*/
 			if (drawtime >= timelimitintics)
 			{
 				overtime = true;
-				jitter = 2;
-				if (drawtime & 2)
-					jitter = -jitter;
-				drawtime = 0;
+				jitter = 1;
 			}
 			else
 			{
 				drawtime = timelimitintics - drawtime;
+				countdown = true;
 				if (secretextratime)
 					;
 				else if (extratimeintics)
 				{
 					jitter = 2;
-					if (leveltime & 1)
-						jitter = -jitter;
+					fastjitter = true;
 				}
 				else if (drawtime <= 5*TICRATE)
 				{
 					jitter = ((drawtime <= 3*TICRATE) && (((drawtime-1) % TICRATE) >= TICRATE-2))
 						? 3 : 1;
-					if (drawtime & 2)
-						jitter = -jitter;
 				}
 			}
 		}
@@ -1673,9 +1662,20 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	if (drawtime != UINT32_MAX && worktime >= 100)
 	{
-		jitter = (drawtime & 1 ? 1 : -1);
+		jitter = 1;
+		fastjitter = true;
 		worktime = 99;
 		drawtime = (100*(60*TICRATE))-1;
+	}
+
+	if (fastjitter)
+	{
+		jitter *= R_GetTimeFrac(RTF_LEVEL) * (leveltime & 1 ? 1 : -1);
+	}
+	else
+	{
+		if (drawtime & 2) jitter = -jitter;
+		jitter *= !!(drawtime & 1) != countdown ? FRACUNIT - R_GetTimeFrac(RTF_LEVEL) : R_GetTimeFrac(RTF_LEVEL);
 	}
 
 	if (mode && drawtime == UINT32_MAX)
@@ -1691,24 +1691,28 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			textcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 		}
 
-		V_DrawStringScaledEx(
-			(TIME_X + 33) << FRACBITS,
-			(TIME_Y + 3) << FRACBITS,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			splitflags,
-			textcolor,
-			KART_FONT,
-			va("OVERTIME!")
-		);
+		const char *overtimestr = "OVERTIME";
+		for (UINT8 i = 0; i < strlen(overtimestr); i++)
+		{
+			V_DrawStringScaledEx(
+				(TIME_X + 33 + 12*i + (i == 6 ? -4 : i == 7 ? -1 : 0)) << FRACBITS,
+				((TIME_Y + 3) << FRACBITS) + (i & 1 ? jitter : -jitter),
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				splitflags,
+				textcolor,
+				KART_FONT,
+				va("%c", overtimestr[i])
+			);
+		}
 	}
 	else
 	{
 		// minutes time      00 __ __
-		V_DrawKartString(TX,    TY+3+jitter, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+12, TY+3-jitter, splitflags, va("%d", worktime%10));
+		V_DrawKartStringAtFixed(TX<<FRACBITS,      ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+12)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
@@ -1716,8 +1720,8 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		worktime = (drawtime/TICRATE % 60);
 
 		// seconds time       _ 00 __
-		V_DrawKartString(TX+36, TY+3+jitter, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+48, TY+3-jitter, splitflags, va("%d", worktime%10));
+		V_DrawKartStringAtFixed((TX+36)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+48)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
@@ -1725,8 +1729,8 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		worktime = G_TicsToCentiseconds(drawtime);
 
 		// tics               _ __ 00
-		V_DrawKartString(TX+72, TY+3+jitter, splitflags, va("%d", worktime/10));
-		V_DrawKartString(TX+84, TY+3-jitter, splitflags, va("%d", worktime%10));
+		V_DrawKartStringAtFixed((TX+72)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+84)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 	}
 
 	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!

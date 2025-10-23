@@ -1014,7 +1014,8 @@ void P_CheckTimeLimit(void)
 		return;
 	}
 
-	if (leveltime < (timelimitintics + starttime))
+	INT32 timeleft = timelimitintics + starttime - leveltime;
+	if (timeleft > 0)
 	{
 		if (secretextratime)
 		{
@@ -1043,11 +1044,22 @@ void P_CheckTimeLimit(void)
 		}
 		else
 		{
-			if (timelimitintics + starttime - leveltime <= 3*TICRATE)
+			if (timelimitintics > 60*TICRATE && !itembreaker)
 			{
-				if (((timelimitintics + starttime - leveltime) % TICRATE) == 0)
-					S_StartSound(NULL, sfx_s3ka7);
-			}			
+				if (timeleft == 60*TICRATE)
+					S_StartSound(NULL, sfx_cdfm67); // guys it's a bell it's just like splatoon guys
+				if (timeleft == 59*TICRATE)
+					S_StartSound(NULL, sfx_bhurry); // hurry up :))))
+			}
+
+			// last five second countdown
+			if (timeleft % TICRATE == 0)
+			{
+				if (timeleft <= 5*TICRATE)
+					S_StartSound(NULL, sfx_kc35); // 5, 4
+				if (timeleft <= 3*TICRATE)
+					S_StartSound(NULL, sfx_kc3d); // 3, 2, 1
+			}
 		}
 		return;
 	}
@@ -1055,7 +1067,7 @@ void P_CheckTimeLimit(void)
 	if (gameaction == ga_completed)
 		return;
 
-	if ((grandprixinfo.gp == false) && (cv_overtime.value))
+	if (!itembreaker && !grandprixinfo.gp && cv_overtime.value)
 	{
 		INT32 playerarray[MAXPLAYERS];
 		INT32 tempplayer = 0;
@@ -1074,7 +1086,7 @@ void P_CheckTimeLimit(void)
 #ifdef TESTOVERTIMEINFREEPLAY
 		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
 		{
-			return;
+			goto overtimesound;
 		}
 #endif
 		
@@ -1116,18 +1128,30 @@ void P_CheckTimeLimit(void)
 
 				//End the round if the top players aren't tied.
 				if (players[playerarray[0]].roundscore == players[playerarray[1]].roundscore)
-					return;
+					goto overtimesound;
 			}
 			else
 			{
 				//In team match and CTF, determining a tie is much simpler. =P
 				if (redscore == bluescore)
-					return;
+					goto overtimesound;
 			}
 		}
 	}
 
 	P_DoAllPlayersExit(0, false);
+	return;
+
+overtimesound:
+	if (timeleft == 0)
+	{
+		S_StartSound(NULL, sfx_s3k50); // overtime warning
+		S_StartSound(NULL, sfx_s3k9d);
+	}
+	if (timeleft == -2*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
+	if (timeleft == -4*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.

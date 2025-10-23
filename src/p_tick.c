@@ -840,48 +840,6 @@ void P_Ticker(boolean run)
 					}
 				}
 
-				if (timelimitintics > 0)
-				{
-					// last minute
-					if (timelimitintics > 60*TICRATE && leveltime == timelimitintics - 60*TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_cdfm67); // guys it's a bell it's just like splatoon guys
-					}
-					if (timelimitintics > 60*TICRATE && leveltime == timelimitintics - 59*TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_bhurry); // hurry up :))))
-					}
-
-					// overtime
-					if (gameaction != ga_completed && leveltime == timelimitintics + 1 + starttime)
-					{						
-						S_StartSound(NULL, sfx_s3k50); // overtime warning
-						S_StartSound(NULL, sfx_s3k9d);
-					}
-					if (gameaction != ga_completed && leveltime == timelimitintics + 2*TICRATE + starttime)
-					{						
-						S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
-					}
-					if (gameaction != ga_completed && leveltime == timelimitintics + 4*TICRATE + starttime)
-					{						
-						S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
-					}
-
-					// last five second countdown
-					if (leveltime == timelimitintics - 5 * TICRATE + starttime ||
-						leveltime == timelimitintics - 4 * TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_kc35); // 5, 4
-					}
-					if (leveltime == timelimitintics - TICRATE + starttime ||
-						leveltime == timelimitintics - 2 * TICRATE + starttime ||
-						leveltime == timelimitintics - 3 * TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_kc35);
-						S_StartSound(NULL, sfx_kc3d); // 3, 2, 1
-					}
-				}
-
 				// Change timing of start music based on gametyperules
 				{
 					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
