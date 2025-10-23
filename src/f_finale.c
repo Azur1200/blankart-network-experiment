@@ -923,6 +923,7 @@ const char *blancredits[] = {
 	"\1Item Design",
 	"\"NepDisk\"",
 	"\"Anonimus\" aka \"yama\"",
+	"\"GenericHeroGuy\"",
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
@@ -946,6 +947,7 @@ const char *blancredits[] = {
 	"\"Achiiro\" aka \"achiiDev\"",
 	"\"Mayo\"",
 	"\"WumboSpasm\"",
+	"\"Miguelius256\"", // FIXME: Update name if necessary
 	"",
 	"\1Map Patches",
 	"\"Sonic1983\" (PB)",
@@ -966,6 +968,7 @@ const char *blancredits[] = {
 	"\"Rim Jobless\"",
 	"\"Toad The Fungus\"",
 	"\"SkylarDream\"", // Discovered the Cookie Country linedef from hell
+	"\"Tsuko\"",
 	"",
 	"\1Testing",
 	"\"NepDisk\"",
@@ -989,6 +992,8 @@ const char *blancredits[] = {
 	"\"Frank_th\"",
 	"\"Tsuko\"",
 	"\"SkylarDream\"",
+	"\"Montblanc\" aka \"Onyo\"",
+	"\"Lepus\"",
 	"\"MC\"",
 	"\"dairychoco\"",
 	"\"Lurker\"",
