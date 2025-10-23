@@ -730,6 +730,7 @@ struct player_t
 	UINT16 maxinvincibilitytime;	// (Alternate) Initial time for Invincibility, used for the item bar.
 	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
 	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
+	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake

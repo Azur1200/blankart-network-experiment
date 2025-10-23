@@ -32,7 +32,7 @@ extern "C" {
   \brief units of the fraction
 */
 #define FRACUNIT (1<<FRACBITS)
-#define FRACHALF (1<<(FRACBITS>>1))
+#define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
 /**	\brief	Redefinition of INT32 as fixed_t
 	unit used as fixed_t

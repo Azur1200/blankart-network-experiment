@@ -7137,31 +7137,64 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->invincibilitytimer)
 	{
 		INT16 invinfac = 1;
-		if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && ((INT16)(player->invincibilitybottleneck) != -1) && (player->invincibilitytimer > 2))
+		if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (player->invincibilitytimer > 2))
 		{
 			UINT32 invindist = INVINDIST >> 2;
-			if (player->distancefromcluster < invindist)
+
+			// Value to subtract from the Invincibility timer during bottlenecking.
+			INT16 invin_subtrahend = 1;
+
+			if ((INT16)(player->invincibilitybottleneck) != -1)
 			{
-				player->invincibilitybottleneck = min(256, player->invincibilitybottleneck + 4);
-				invinfac = FixedMul(8, max(min(FRACUNIT, FRACUNIT - (player->distancefromcluster / (INVINDIST >> 2))), 0));
-			}
-			else
-			{
-				player->invincibilitybottleneck = max(0, (INT32)(player->invincibilitybottleneck) - 2);
+				if (player->distancefromcluster < invindist)
+				{
+					player->invincibilitybottleneck =
+					    min(256, player->invincibilitybottleneck + 4);
+					invinfac = FixedMul(
+					    8,
+					    max(min(FRACUNIT,
+						    FRACUNIT - (player->distancefromcluster /
+								(INVINDIST >> 2))),
+						0));
+				}
+				else
+				{
+					player->invincibilitybottleneck =
+					    max(0, (INT32)(player->invincibilitybottleneck) - 2);
+				}
+
+				invin_subtrahend =
+				    max(1,
+					FixedMul((UINT16)invinfac,
+						 max(0, player->invincibilitybottleneck) << 8));
 			}
 
-			player->invincibilitytimer = (UINT16)(max(2, (INT32)(player->invincibilitytimer) - max(1, FixedMul((UINT16)invinfac, player->invincibilitybottleneck << 8))));
+			player->invincibilitytimer = (UINT16)(max(
+			    2, (INT32)(player->invincibilitytimer) - invin_subtrahend));
+
+			if ((K_InvincibilityGradient(player->invincibilitytimer) <
+			     (FRACHALF * invin_subtrahend)) &&
+			    (player->maxinvincibilitytime >= (BASEINVINTIME - TICRATE)))
+			{
+				if (!player->invincibilitywarning)
+				{
+					S_StartSound(player->mo, sfx_cdfm79);
+					player->invincibilitywarning = 1;
+				}
+			}
 		}
 		else
 		{
 			player->invincibilitytimer--;
 			player->invincibilitybottleneck = 0;
+			player->invincibilitywarning = 0;
 		}
-    }
+	}
 	else
 	{
-		player->invincibilitybottleneck = 0; // No need for bottlenecking.
+		player->invincibilitybottleneck = 0;  // No need for bottlenecking.
 		player->maxinvincibilitytime = 0;
+		player->invincibilitywarning = 0;
 		player->invincibilitycancel = -1;
 	}
 
@@ -9803,6 +9836,7 @@ void K_StripOther(player_t *player)
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;
+	player->invincibilitywarning = 0;
 	player->invincibilitycancel = -1;
 
 	if (player->growshrinktimer)
