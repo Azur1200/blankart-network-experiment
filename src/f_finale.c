@@ -947,7 +947,7 @@ const char *blancredits[] = {
 	"\"Achiiro\" aka \"achiiDev\"",
 	"\"Mayo\"",
 	"\"WumboSpasm\"",
-	"\"Miguelius256\"", // FIXME: Update name if necessary
+	"\"Miguelius256\"",
 	"",
 	"\1Map Patches",
 	"\"Sonic1983\" (PB)",
