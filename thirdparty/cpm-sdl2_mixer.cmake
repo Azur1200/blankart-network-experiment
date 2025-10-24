@@ -1,7 +1,7 @@
 CPMAddPackage(
 		NAME SDL2_mixer
-		VERSION 2.6.2
-		URL "https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-2.6.2.zip"
+		VERSION 2.8.1
+		URL "https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-2.8.1.zip"
 		EXCLUDE_FROM_ALL ON
 		OPTIONS
 			"BUILD_SHARED_LIBS ${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}"
@@ -19,4 +19,5 @@ CPMAddPackage(
 			"SDL2MIXER_OPUS OFF"
 			"SDL2MIXER_VORBIS STB"
 			"SDL2MIXER_WAVE ON"
+			"SDL2MIXER_WAVPACK OFF"
 )
