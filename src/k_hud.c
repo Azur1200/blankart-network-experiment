@@ -6472,6 +6472,11 @@ void K_DrawFlamometer(void)
 	K_ObjectTracking(&res, &pos, false);
 	basex = res.x + (16<<FRACBITS);
 	basey = res.y - (48<<FRACBITS);
+
+	if (K_UseColorHud())
+	{
+		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	}
 	
 	// fire animation
 	if (stplyr->flamestore >= FLAMESTOREMAX-1)
@@ -6487,7 +6492,6 @@ void K_DrawFlamometer(void)
 		if (K_UseColorHud())
 		{
 			flamofiretic += 9;
-			colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 		}
 
 		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[flamofiretic], colormap);
