@@ -1866,7 +1866,7 @@ void G_ConsGhostTic(INT32 playernum)
 				thinker_t *th = NULL;
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 					mobj = (mobj_t *)th;
 					if (mobj->type == damage->type && mobj->x == damage->x && mobj->y == damage->y && mobj->z == damage->z)
@@ -4140,7 +4140,7 @@ void G_DoPlayMetal(void)
 	// find metal sonic
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)th;

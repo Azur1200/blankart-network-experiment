@@ -665,7 +665,7 @@ void P_ReloadRings(void)
 	// scan the thinkers to find rings/spheres/hoops to unset
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)th;
@@ -8185,7 +8185,7 @@ void P_RespawnThings(void)
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (think->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 		P_RemoveMobj((mobj_t *)think);
 	}

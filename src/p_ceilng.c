@@ -323,7 +323,7 @@ INT32 EV_DoCeilingOLD(mtag_t tag, line_t *line, ceiling_e type)
 		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
 		P_AddThinker(THINK_MAIN, &ceiling->thinker);
 		sec->ceilingdata = ceiling;
-		ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+		ceiling->thinker.function = (actionf_p1)T_MoveCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = false;
 		ceiling->sourceline = (INT32)(line-lines);
@@ -465,7 +465,7 @@ static ceiling_t *CreateCeilingThinker(sector_t *sec)
 
 	sec->ceilingdata = ceiling;
 
-	ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+	ceiling->thinker.function = (actionf_p1)T_MoveCeiling;
 	ceiling->sector = sec;
 	ceiling->crush = false;
 
@@ -799,7 +799,7 @@ INT32 EV_DoCrushOLD(mtag_t tag, line_t *line, ceiling_e type)
 		ceiling = Z_Calloc(sizeof (*ceiling), PU_LEVSPEC, NULL);
 		P_AddThinker(THINK_MAIN, &ceiling->thinker);
 		sec->ceilingdata = ceiling;
-		ceiling->thinker.function.acp1 = (actionf_p1)T_CrushCeiling;
+		ceiling->thinker.function = (actionf_p1)T_CrushCeiling;
 		ceiling->sector = sec;
 		ceiling->crush = true;
 		ceiling->sourceline = (INT32)(line-lines);
@@ -853,7 +853,7 @@ static ceiling_t *CreateCrushThinker(sector_t *sec)
 
 	sec->ceilingdata = ceiling;
 
-	ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+	ceiling->thinker.function = (actionf_p1)T_MoveCeiling;
 	ceiling->sector = sec;
 	ceiling->crush = true;
 

@@ -1688,7 +1688,7 @@ void EV_DoFloorOLD(mtag_t tag, line_t *line, floor_e floortype)
 		sec->floordata = dofloor;
 
 		// set up some generic aspects of the floormove_t
-		dofloor->thinker.function.acp1 = (actionf_p1)T_MoveFloor;
+		dofloor->thinker.function = (actionf_p1)T_MoveFloor;
 		dofloor->type = floortype;
 		dofloor->crush = false; // default: types that crush will change this
 		dofloor->sector = sec;
@@ -1809,7 +1809,7 @@ static floormove_t *CreateFloorThinker(sector_t *sec)
 	sec->floordata = dofloor;
 
 	// set up some generic aspects of the floormove_t
-	dofloor->thinker.function.acp1 = (actionf_p1)T_MoveFloor;
+	dofloor->thinker.function = (actionf_p1)T_MoveFloor;
 	dofloor->sector = sec;
 	dofloor->crush = false; // default: types that crush will change this
 
@@ -2103,7 +2103,7 @@ static elevator_t *CreateElevatorThinker(sector_t *sec)
 	sec->ceilingdata = elevator;
 
 	// set up some generic aspects of the floormove_t
-	elevator->thinker.function.acp1 = (actionf_p1)T_MoveElevator;
+	elevator->thinker.function = (actionf_p1)T_MoveElevator;
 	elevator->distance = 1; // Always crush unless otherwise
 	elevator->sector = sec;
 
@@ -2397,7 +2397,7 @@ void EV_BounceSector(sector_t *sec, fixed_t momz, line_t *sourceline)
 	bouncer = Z_Calloc(sizeof (*bouncer), PU_LEVSPEC, NULL);
 	P_AddThinker(THINK_MAIN, &bouncer->thinker);
 	sec->ceilingdata = bouncer;
-	bouncer->thinker.function.acp1 = (actionf_p1)T_BounceCheese;
+	bouncer->thinker.function = (actionf_p1)T_BounceCheese;
 
 	// set up the fields according to the type of elevator action
 	bouncer->sourceline = sourceline;
@@ -2423,7 +2423,7 @@ void EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, boole
 	// create and initialize new thinker
 	faller = Z_Calloc(sizeof (*faller), PU_LEVSPEC, NULL);
 	P_AddThinker(THINK_MAIN, &faller->thinker);
-	faller->thinker.function.acp1 = (actionf_p1)T_ContinuousFalling;
+	faller->thinker.function = (actionf_p1)T_ContinuousFalling;
 
 	// set up the fields
 	faller->sector = sec;
@@ -2459,7 +2459,7 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 	// create and initialize new crumble thinker
 	crumble = Z_Calloc(sizeof (*crumble), PU_LEVSPEC, NULL);
 	P_AddThinker(THINK_MAIN, &crumble->thinker);
-	crumble->thinker.function.acp1 = (actionf_p1)T_StartCrumble;
+	crumble->thinker.function = (actionf_p1)T_StartCrumble;
 
 	// set up the fields
 	crumble->sector = sec;
@@ -2535,7 +2535,7 @@ void EV_MarioBlock(ffloor_t *rover, sector_t *sector, mobj_t *puncher)
 		P_AddThinker(THINK_MAIN, &block->thinker);
 		roversec->floordata = block;
 		roversec->ceilingdata = block;
-		block->thinker.function.acp1 = (actionf_p1)T_MarioBlock;
+		block->thinker.function = (actionf_p1)T_MarioBlock;
 
 		// Set up the fields
 		block->sector = roversec;

@@ -2082,7 +2082,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 		mobj = P_AllocateMobj();
 
 	// declare this as a valid mobj as soon as possible.
-	mobj->thinker.function.acp1 = thinker;
+	mobj->thinker.function = thinker;
 
 	// manually link to thinkerlist, since the thinker isn't returned anymore
 	if (!save->write)
@@ -2381,7 +2381,7 @@ static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, t
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 	SYNC(ht->sourceline);
 	return &ht->thinker;
@@ -2397,7 +2397,7 @@ static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sourceline);
@@ -2422,7 +2422,7 @@ static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 think
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2449,7 +2449,7 @@ static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, 
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2476,7 +2476,7 @@ static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, 
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sourceline);
@@ -2494,7 +2494,7 @@ static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sourceline);
@@ -2526,7 +2526,7 @@ static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, think
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sourceline);
@@ -2545,7 +2545,7 @@ static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	size_t i;
@@ -2568,7 +2568,7 @@ static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, think
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->tag);
@@ -2592,7 +2592,7 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->type);
@@ -2628,7 +2628,7 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->type);
@@ -2660,7 +2660,7 @@ static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, 
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 	SYNC(ht->sector);
 	SYNC(ht->maxlight);
@@ -2680,7 +2680,7 @@ static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2704,7 +2704,7 @@ static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2727,7 +2727,7 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2751,7 +2751,7 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->type);
@@ -2788,7 +2788,7 @@ static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sourceline);
@@ -2819,7 +2819,7 @@ static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->dx);
@@ -2845,7 +2845,7 @@ static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->friction);
@@ -2866,7 +2866,7 @@ static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->type);
@@ -2891,7 +2891,7 @@ static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, think
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->tag);
@@ -2910,7 +2910,7 @@ static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, 
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -2934,7 +2934,7 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->line);
@@ -2954,7 +2954,7 @@ static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, t
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->appeartime);
@@ -2977,7 +2977,7 @@ static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	ht->dest_exc = GetNetColormapFromList(P_SyncUINT32(save, CheckAddNetColormapToList(ht->dest_exc)));
@@ -3030,7 +3030,7 @@ static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->sector);
@@ -3054,7 +3054,7 @@ static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->affectee);
@@ -3075,7 +3075,7 @@ static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thi
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->type);
@@ -3096,7 +3096,7 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->slope);
@@ -3119,7 +3119,7 @@ static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker,
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3139,7 +3139,7 @@ static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3161,7 +3161,7 @@ static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3185,7 +3185,7 @@ static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinke
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3214,7 +3214,7 @@ static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinke
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3238,7 +3238,7 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3259,7 +3259,7 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3280,7 +3280,7 @@ static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	else
 	{
 		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
-		ht->thinker.function.acp1 = thinker;
+		ht->thinker.function = thinker;
 	}
 
 	SYNC(ht->polyObjNum);
@@ -3381,7 +3381,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 
 				currentthinker->references = 0; // Heinous but this is the only place the assertion in P_UnlinkThinkers is wrong
 
-				if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker || currentthinker->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+				if (currentthinker->function == (actionf_p1)P_MobjThinker || currentthinker->function == (actionf_p1)P_NullPrecipThinker)
 					P_RemoveSavegameMobj((mobj_t *)currentthinker); // item isn't saved, don't remove it
 				else
 				{
@@ -3425,7 +3425,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 					break;
 				}
 
-				acp = th->function.acp1;
+				acp = th->function;
 				if (acp == (actionf_p1)P_NullPrecipThinker || acp == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 			}
@@ -3472,7 +3472,7 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 			executor_t *delay;
 			for (currentthinker = thlist[THINK_MAIN].next; currentthinker != &thlist[THINK_MAIN]; currentthinker = currentthinker->next)
 			{
-				if (currentthinker->function.acp1 != (actionf_p1)T_ExecutorDelay)
+				if (currentthinker->function != (actionf_p1)T_ExecutorDelay)
 					continue;
 				delay = (executor_t *)currentthinker;
 				RELINK(&delay->caller);
@@ -3537,7 +3537,7 @@ mobj_t *P_FindNewPosition(UINT32 oldposition)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mobj = (mobj_t *)th;
@@ -3635,7 +3635,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 	for (currentthinker = thlist[THINK_MOBJ].next; currentthinker != &thlist[THINK_MOBJ];
 		currentthinker = currentthinker->next)
 	{
-		if (currentthinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (currentthinker->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mobj = (mobj_t *)currentthinker;
@@ -4341,7 +4341,7 @@ void P_SaveNetGame(savebuffer_t *save, boolean resending)
 	{
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mobj = (mobj_t *)th;

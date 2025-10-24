@@ -14,7 +14,7 @@
 #define __DEH_TABLES_H__
 
 #include "doomdef.h" // Constants
-#include "d_think.h" // actionf_t
+#include "d_think.h" // actionf_p1
 #include "info.h" // Mobj, state, sprite, etc constants
 #include "lua_script.h"
 #include "strbuf.h"
@@ -53,7 +53,7 @@ struct flickytypes_s {
   */
 struct actionpointer_t
 {
-	actionf_t action; ///< Function pointer corresponding to the actual action.
+	actionf_p1 action; ///< Function pointer corresponding to the actual action.
 	const char *name; ///< Name of the action in ALL CAPS.
 };
 

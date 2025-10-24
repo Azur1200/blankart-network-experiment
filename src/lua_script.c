@@ -1944,7 +1944,7 @@ void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
 			{
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					// archive function will determine when to skip mobjs,
@@ -1968,7 +1968,7 @@ void LUA_Sync(savebuffer_t *save, boolean network, boolean compat)
 				mobjnum = READUINT32(save->p); // read a mobjnum
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 					if (((mobj_t *)th)->mobjnum != mobjnum) // find matching mobj
 						continue;

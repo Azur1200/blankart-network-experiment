@@ -374,7 +374,7 @@ void K_RunPaperItemSpawners(void)
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				mo = (mobj_t *)th;
@@ -537,7 +537,7 @@ void K_RespawnBattleBoxes(void)
 		mobj_t *box;
 		mobj_t *newmobj;
 
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		box = (mobj_t *)th;

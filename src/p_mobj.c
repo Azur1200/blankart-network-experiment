@@ -96,7 +96,7 @@ void P_RunCachedActions(void)
 		var2 = states[ac->statenum].var2;
 		astate = &states[ac->statenum];
 		if (ac->mobj && !P_MobjWasRemoved(ac->mobj)) // just in case...
-			states[ac->statenum].action.acp1(ac->mobj);
+			states[ac->statenum].action(ac->mobj);
 		next = ac->next;
 		Z_Free(ac);
 	}
@@ -116,7 +116,7 @@ void P_AddCachedAction(mobj_t *mobj, INT32 statenum)
 static inline INT32 randomframe (mobj_t *mobj, INT32 n)
 {
 	// Only mobj thinkers should use synced RNG
-	if (mobj->thinker.function.acp1 == (actionf_p1)P_MobjThinker)
+	if (mobj->thinker.function == (actionf_p1)P_MobjThinker)
 		return P_RandomKey(n);
 	else
 		return M_RandomKey(n);
@@ -387,12 +387,12 @@ boolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action.acp1)
+		if (st->action)
 		{
 			var1 = st->var1;
 			var2 = st->var2;
 			astate = st;
-			st->action.acp1(mobj);
+			st->action(mobj);
 
 			// woah. a player was removed by an action.
 			// this sounds like a VERY BAD THING, but there's nothing we can do now...
@@ -511,12 +511,12 @@ boolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action.acp1)
+		if (st->action)
 		{
 			var1 = st->var1;
 			var2 = st->var2;
 			astate = st;
-			st->action.acp1(mobj);
+			st->action(mobj);
 			if (P_MobjWasRemoved(mobj))
 				return false;
 		}
@@ -3658,7 +3658,7 @@ boolean P_CameraThinker(player_t *player, camera_t *thiscam, boolean resetcalled
 		{
 			mobj_t dummy;
 
-			dummy.thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+			dummy.thinker.function = (actionf_p1)P_MobjThinker;
 			dummy.subsector = thiscam->subsector;
 			dummy.x = thiscam->x;
 			dummy.y = thiscam->y;
@@ -4612,7 +4612,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 			// this can happen if the boss was hurt earlier than expected
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -4703,7 +4703,7 @@ static void P_Boss3Thinker(mobj_t *mobj)
 		// the number
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5330,7 +5330,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 				// Find waypoint he is closest to
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo2 = (mobj_t *)th;
@@ -5385,7 +5385,7 @@ static void P_Boss7Thinker(mobj_t *mobj)
 		// the waypoint to use
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5510,7 +5510,7 @@ static void P_Boss9Thinker(mobj_t *mobj)
 		// Build a hoop linked list of 'em!
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo2 = (mobj_t *)th;
@@ -5965,7 +5965,7 @@ mobj_t *P_GetClosestAxis(mobj_t *source)
 	// scan the thinkers to find the closest axis point
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;
@@ -10302,13 +10302,13 @@ static void P_FiringThink(mobj_t *mobj)
 	if (mobj->health <= 0)
 		return;
 
-	if (mobj->state->action.acp1 == (actionf_p1)A_Boss1Laser)
+	if (mobj->state->action == (actionf_p1)A_Boss1Laser)
 	{
 		if (mobj->state->tics > 1)
 		{
 			var1 = mobj->state->var1;
 			var2 = mobj->state->var2 & 65535;
-			mobj->state->action.acp1(mobj);
+			mobj->state->action(mobj);
 		}
 	}
 	else if (leveltime & 1) // Fire mode
@@ -11151,7 +11151,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj = P_AllocateMobj();
 
 	// this is officially a mobj, declared as soon as possible.
-	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+	mobj->thinker.function = (actionf_p1)P_MobjThinker;
 	mobj->type = type;
 	mobj->info = info;
 
@@ -11310,7 +11310,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 					ball->threshold = ball->radius + mobj->radius + FixedMul(ball->info->painchance, ball->scale);
 
 					var1 = ball->state->var1, var2 = ball->state->var2;
-					ball->state->action.acp1(ball);
+					ball->state->action(ball);
 				}
 			}
 			break;
@@ -11635,7 +11635,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	// Call action functions when the state is set
-	if (st->action.acp1 && (mobj->flags & MF_RUNSPAWNFUNC))
+	if (st->action && (mobj->flags & MF_RUNSPAWNFUNC))
 	{
 		if (levelloading == true)
 		{
@@ -11650,7 +11650,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			var1 = st->var1;
 			var2 = st->var2;
 			astate = st;
-			st->action.acp1(mobj);
+			st->action(mobj);
 			// DANGER! This can cause P_SpawnMobj to return NULL!
 			// Avoid using MF_RUNSPAWNFUNC on mobjs whose spawn state expects target or tracer to already be set!
 			if (P_MobjWasRemoved(mobj))
@@ -11709,7 +11709,7 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	start_z = mobj->floorz;
 
-	mobj->thinker.function.acp1 = (actionf_p1)P_NullPrecipThinker;
+	mobj->thinker.function = (actionf_p1)P_NullPrecipThinker;
 	P_AddThinker(THINK_PRECIP, &mobj->thinker);
 
 	P_CalculatePrecipFloor(mobj);
@@ -11768,9 +11768,9 @@ void P_RemoveMobj(mobj_t *mobj)
 	if (P_MobjWasRemoved(mobj))
 		return; // something already removing this mobj.
 
-	mobj->thinker.function.acp1 = (actionf_p1)P_RemoveThinkerDelayed; // shh. no recursing.
+	mobj->thinker.function = (actionf_p1)P_RemoveThinkerDelayed; // shh. no recursing.
 	LUA_HookMobj(mobj, MOBJ_HOOK(MobjRemoved));
-	mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker; // needed for P_UnsetThingPosition, etc. to work.
+	mobj->thinker.function = (actionf_p1)P_MobjThinker; // needed for P_UnsetThingPosition, etc. to work.
 
 	// Rings only, please!
 	if (mobj->spawnpoint &&
@@ -11928,7 +11928,7 @@ void P_FreePrecipMobj(precipmobj_t *mobj)
 // Clearing out stuff for savegames
 void P_RemoveSavegameMobj(mobj_t *mobj)
 {
-	if (((thinker_t *)mobj)->function.acp1 == (actionf_p1)P_NullPrecipThinker)
+	if (((thinker_t *)mobj)->function == (actionf_p1)P_NullPrecipThinker)
 	{
 		// unlink from sector and block lists
 		P_UnsetPrecipThingPosition((precipmobj_t *)mobj);
@@ -13340,7 +13340,7 @@ static boolean P_MapAlreadyHasStarPost(mobj_t *mobj)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo2 = (mobj_t *)th;

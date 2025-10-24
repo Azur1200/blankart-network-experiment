@@ -2453,25 +2453,25 @@ void readframe(MYFILE *f, INT32 num)
 
 				for (z = 0; actionpointers[z].name; z++)
 				{
-					if (actionpointers[z].action.acv == states[num].action.acv)
+					if (actionpointers[z].action == states[num].action)
 						break;
 				}
 
 				z = 0;
 				found = LUA_SetLuaAction(&states[num], actiontocompare);
 				if (!found)
+				{
 					while (actionpointers[z].name)
 					{
 						if (fastcmp(actiontocompare, actionpointers[z].name))
 						{
 							states[num].action = actionpointers[z].action;
-							states[num].action.acv = actionpointers[z].action.acv; // assign
-							states[num].action.acp1 = actionpointers[z].action.acp1;
 							found = true;
 							break;
 						}
 						z++;
 					}
+				}
 
 				if (!found)
 					deh_warning("Unknown action %s", actiontocompare);

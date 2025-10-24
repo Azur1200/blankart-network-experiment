@@ -1509,7 +1509,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				// scan the thinkers to make sure all the old pinch dummies are gone on death
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo = (mobj_t *)th;

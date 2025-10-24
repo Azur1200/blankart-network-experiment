@@ -3819,7 +3819,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 
 						for (think = thlist[THINK_MAIN].next; think != &thlist[THINK_MAIN]; think = think->next)
 						{
-							if (think->function.acp1 != (actionf_p1)T_StartCrumble)
+							if (think->function != (actionf_p1)T_StartCrumble)
 								continue;
 
 							crumbler = (crumble_t *)think;

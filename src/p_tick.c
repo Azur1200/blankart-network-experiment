@@ -132,7 +132,7 @@ void Command_Numthinkers_f(void)
 	{
 		for (think = thlist[i].next; think != &thlist[i]; think = think->next)
 		{
-			if (think->function.acp1 != action)
+			if (think->function != action)
 				continue;
 
 			count++;
@@ -170,7 +170,7 @@ void Command_CountMobjs_f(void)
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				if (((mobj_t *)th)->type == i)
@@ -190,7 +190,7 @@ void Command_CountMobjs_f(void)
 
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -262,7 +262,7 @@ void P_AddThinker(const thinklistnum_t n, thinker_t *thinker)
 #ifdef PARANOIA
 static const char *MobjTypeName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -281,7 +281,7 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 static const char *MobjThinkerName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -397,7 +397,7 @@ void P_UnlinkThinker(thinker_t *thinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
+	thinker->function = (actionf_p1)P_RemoveThinkerDelayed;
 }
 
 /*
@@ -486,9 +486,9 @@ static void P_RunThinkers(void)
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
 		{
 #ifdef PARANOIA
-			I_Assert(currentthinker->function.acp1 != NULL);
+			I_Assert(currentthinker->function != NULL);
 #endif
-			currentthinker->function.acp1(currentthinker);
+			currentthinker->function(currentthinker);
 		}
 		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
 	}

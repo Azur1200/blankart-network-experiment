@@ -36,7 +36,7 @@ enum actionnum {
 };
 
 // function prototypes for actions
-#define _(name, upper, ...) void name(mobj_t *actor);
+#define _(name, upper, ...) void name(void *thing);
 #include "info/actions.h"
 #undef _
 
@@ -84,7 +84,7 @@ struct state_t
 	spritenum_t sprite;
 	UINT32 frame; // we use the upper 16 bits for translucency and other shade effects
 	INT32 tics;
-	actionf_t action;
+	actionf_p1 action;
 	INT32 var1;
 	INT32 var2;
 	statenum_t nextstate;

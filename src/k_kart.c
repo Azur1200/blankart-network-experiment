@@ -11201,7 +11201,7 @@ boolean K_IsSPBInGame(void)
 	// spbplace is still -1 until a fired SPB finds a target, so look for an in-map SPB just in case
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (think->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		if (((mobj_t *)think)->type == MT_SPB)

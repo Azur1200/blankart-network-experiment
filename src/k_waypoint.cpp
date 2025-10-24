@@ -3056,7 +3056,7 @@ void K_AdjustWaypointsParameters (void)
 		th != &thlist[THINK_MOBJ];
 		th = th->next
 	){
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		anchor = (const mobj_t *)th;
