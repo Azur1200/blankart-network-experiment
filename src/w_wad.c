@@ -259,6 +259,10 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 			lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[posStart];
 			size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 			char *name = malloc(length + 1);
+
+			if (!name)
+				I_Error("W_LoadDehackedLumpsPK3: Out of memory!\n");
+
 			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 			name[length] = '\0';
 			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
@@ -288,6 +292,10 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 			{	// shameless copy+paste of code from LUA_LoadLump
 				size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 				char *name = malloc(length + 1);
+
+				if (!name)
+					I_Error("W_LoadDehackedLumps: Out of memory!\n");
+
 				sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 				name[length] = '\0';
 

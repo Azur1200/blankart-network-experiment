@@ -931,13 +931,16 @@ static void I_RegisterChildSignals(void)
 #endif
 
 //
-//I_OutputMsg
+// I_OutputMsg
 //
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char txt[8192];
 	va_list  argptr;
+
+	if (!fmt)
+		return;
 
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
@@ -1985,7 +1988,7 @@ static INT32 errorcount = 0;
 */
 static boolean shutdowning = false;
 
-void I_Error(const char *error, ...)
+FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
