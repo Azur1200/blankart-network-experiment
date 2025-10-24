@@ -280,9 +280,6 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_showstats);
 }
 
-// YOUR       TOO TOO (try limit for NULL HUD patches)
-#define YOURTAKINGTOOLONG 64
-
 void K_LoadKartHUDGraphics(void)
 {
 	INT32 i, j;
