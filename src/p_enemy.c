@@ -3335,9 +3335,12 @@ void A_AttractChase(void *thing)
 			// Set attraction flag
 			actor->cusval = 1;
 
-			if ((actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
+			if (
+				actor->tracer->player && actor->tracer->health
+				&& ((gametyperules & GTR_BUMPERS)
+					|| (actor->tracer->player->itemtype == KITEM_THUNDERSHIELD
 					&& RINGTOTAL(actor->tracer->player) < actor->tracer->player->ringmax
-					&& !(actor->tracer->player->pflags & PF_RINGLOCK))
+					&& !(actor->tracer->player->pflags & PF_RINGLOCK)))
 				//&& P_CheckSight(actor, actor->tracer)
 				)
 			{

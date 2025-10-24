@@ -187,7 +187,7 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTSPEED_EXPERT 3
 #define KARTGP_MASTER 4  // Not a speed setting, gives hard speed with maxed out bots
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
-extern CV_PossibleValue_t kartspeed_cons_t[];
+extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 // Invincibility types.
 #define KARTINVIN_LEGACY 0
 #define KARTINVIN_ALTERN 1

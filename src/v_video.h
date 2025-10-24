@@ -305,6 +305,8 @@ char * V_ScaledWordWrap(
 	V__DrawDupxString (x,y,FRACUNIT,option,HU_FONT,string)
 #define V_DrawKartString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT,option,KART_FONT,string)
+#define V_DrawKartStringAtFixed( x,y,option,string ) \
+	V__DrawOneScaleString (x,y,FRACUNIT,option,KART_FONT,string)
 void V_DrawCenteredString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string);
 

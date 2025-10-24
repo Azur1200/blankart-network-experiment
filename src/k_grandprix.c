@@ -12,6 +12,7 @@
 
 #include "k_grandprix.h"
 #include "k_boss.h"
+#include "k_specialstage.h"
 #include "doomdef.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -737,18 +738,12 @@ void K_PlayerLoseLife(player_t *player)
 }
 
 /*--------------------------------------------------
-	boolean K_CanChangeRules(void)
+	boolean K_CanChangeRules(boolean allowdemos)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_CanChangeRules(void)
+boolean K_CanChangeRules(boolean allowdemos)
 {
-	if (demo.playback)
-	{
-		// We've already got our important settings!
-		return false;
-	}
-
 	if (grandprixinfo.gp == true && grandprixinfo.roundnum > 0)
 	{
 		// Don't cheat the rules of the GP!
@@ -761,9 +756,27 @@ boolean K_CanChangeRules(void)
 		return false;
 	}
 
-	if (modeattacking == true)
+	if (specialStage.active == true)
+	{
+		// Don't cheat special stages!
+		return false;
+	}
+
+	if (marathonmode)
+	{
+		// Don't cheat the endurance challenge!
+		return false;
+	}
+
+	if (modeattacking != ATTACKING_NONE)
 	{
 		// Don't cheat the rules of Time Trials!
+		return false;
+	}
+
+	if (!allowdemos && demo.playback)
+	{
+		// We've already got our important settings!
 		return false;
 	}
 

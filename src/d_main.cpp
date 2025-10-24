@@ -81,6 +81,7 @@
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
+#include "k_specialstage.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -1188,6 +1189,9 @@ void D_StartTitle(void)
 	// Reset boss info
 	K_ResetBossInfo();
 
+	// Reset Special Stage
+	K_ResetSpecialStage();
+
 	// empty maptol so mario/etc sounds don't play in sound test when they shouldn't
 	maptol = 0;
 
@@ -2027,34 +2031,20 @@ void D_SRB2Main(void)
 			INT16 newskill = -1;
 			const char *sskill = M_GetNextParm();
 
-			const char *masterstr = "Master";
-			const char *nightmarestr = "NIGHTMARE";
-
-			if (!strcasecmp(masterstr, sskill))
+			for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 			{
-				newskill = KARTGP_MASTER;
-			}
-			else if (!strcasecmp(nightmarestr, sskill))
-			{
-				newskill = KARTGP_NIGHTMARE;
-			}
-			else
-			{
-				for (j = 0; kartspeed_cons_t[j].strvalue; j++)
+				if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, sskill))
 				{
-					if (!strcasecmp(kartspeed_cons_t[j].strvalue, sskill))
-					{
-						newskill = (INT16)kartspeed_cons_t[j].value;
-						break;
-					}
+					newskill = (INT16)gpdifficulty_cons_t[j].value;
+					break;
 				}
+			}
 
-				if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
-				{
-					j = atoi(sskill); // assume they gave us a skill number, which is okay too
-					if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
-						newskill = (INT16)j;
-				}
+			if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
+			{
+				j = atoi(sskill); // assume they gave us a skill number, which is okay too
+				if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
+					newskill = (INT16)j;
 			}
 
 			if (grandprixinfo.gp == true)

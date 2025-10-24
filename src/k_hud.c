@@ -1628,37 +1628,38 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 
 	tic_t worktime;
-	boolean dontdraw = false;
-	boolean overtime = false;
-	UINT8 *textcolor = 0;
+	fixed_t jitter = 0;
+	boolean overtime = false, fastjitter = false, countdown = false;
+	UINT8 *textcolor = NULL;
 
 	INT32 splitflags = 0;
 	if (!mode)
 	{
 		splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
-#ifndef TESTOVERTIMEINFREEPLAY
-		if (itembreaker) // capsules override any time limit settings
-			;
-		else
-#endif
-		if (bossinfo.boss == true)
-			;
-		else if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT)) // TODO
-		{			
-			if (drawtime >= (timelimitintics - 5*TICRATE) && ((drawtime*4)/TICRATE) % 2 == 0)
-			{
-				dontdraw = true;
-			}
-
+		if (timelimitintics > 0)
+		{
 			if (drawtime >= timelimitintics)
 			{
 				overtime = true;
-				// drawtime = 0;
+				jitter = 1;
 			}
 			else
 			{
 				drawtime = timelimitintics - drawtime;
+				countdown = true;
+				if (secretextratime)
+					;
+				else if (extratimeintics)
+				{
+					jitter = 2;
+					fastjitter = true;
+				}
+				else if (drawtime <= 5*TICRATE)
+				{
+					jitter = ((drawtime <= 3*TICRATE) && (((drawtime-1) % TICRATE) >= TICRATE-2))
+						? 3 : 1;
+				}
 			}
 		}
 	}
@@ -1675,10 +1676,26 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	worktime = drawtime/(60*TICRATE);
 
+	if (drawtime != UINT32_MAX && worktime >= 100)
+	{
+		jitter = 1;
+		fastjitter = true;
+		worktime = 99;
+		drawtime = (100*(60*TICRATE))-1;
+	}
+
+	if (fastjitter)
+	{
+		jitter *= R_GetTimeFrac(RTF_LEVEL) * (leveltime & 1 ? 1 : -1);
+	}
+	else
+	{
+		if (drawtime & 2) jitter = -jitter;
+		jitter *= !!(drawtime & 1) != countdown ? FRACUNIT - R_GetTimeFrac(RTF_LEVEL) : R_GetTimeFrac(RTF_LEVEL);
+	}
+
 	if (mode && drawtime == UINT32_MAX)
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
-	else if (dontdraw) // overtime flash
-		;
 	else if (overtime)
 	{
 		if (((drawtime*2)/TICRATE) % 2 == 0)
@@ -1690,66 +1707,47 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			textcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 		}
 
-		V_DrawStringScaledEx(
-			(TIME_X + 33) << FRACBITS,
-			(TIME_Y + 3) << FRACBITS,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			splitflags,
-			textcolor,
-			KART_FONT,
-			va("OVERTIME!")
-		);
-	}
-	else if (worktime < 100) // 99:99:99 only
-	{
-		// zero minute
-		if (worktime < 10)
+		const char *overtimestr = "OVERTIME";
+		for (UINT8 i = 0; i < strlen(overtimestr); i++)
 		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
-			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
+			V_DrawStringScaledEx(
+				(TIME_X + 33 + 12*i + (i == 6 ? -4 : i == 7 ? -1 : 0)) << FRACBITS,
+				((TIME_Y + 3) << FRACBITS) + (i & 1 ? jitter : -jitter),
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				splitflags,
+				textcolor,
+				KART_FONT,
+				va("%c", overtimestr[i])
+			);
 		}
-		// minutes time       0 __ __
-		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+	}
+	else
+	{
+		// minutes time      00 __ __
+		V_DrawKartStringAtFixed(TX<<FRACBITS,      ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+12)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
-		// zero second        _ 0_ __
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
-		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero second        _ 00 __
-		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+		// seconds time       _ 00 __
+		V_DrawKartStringAtFixed((TX+36)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+48)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
-		// zero tick          _ __ 0_
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
-		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero tick          _ __ 00
-		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+		// tics               _ __ 00
+		V_DrawKartStringAtFixed((TX+72)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+84)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 	}
-	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
 	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
 	{
@@ -4290,7 +4288,7 @@ static void K_drawKartMinimap(void)
 
 			mobj = players[i].mo;
 
-			if (players[i].mo->health <= 0 && players[i].pflags & PF_NOCONTEST)
+			if (mobj->health <= 0 && (players[i].pflags & PF_NOCONTEST))
 			{
 				workingPic = kp_nocontestminimap;
 
@@ -4308,10 +4306,13 @@ static void K_drawKartMinimap(void)
 				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+
+				if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+					mobj = mobj->tracer;
 			}
 			else
 			{
-				skin = ((skin_t*)players[i].mo->skin)-skins;
+				skin = ((skin_t*)mobj->skin)-skins;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4343,7 +4344,7 @@ static void K_drawKartMinimap(void)
 				}
 #endif
 
-				colorizeplayer = players[i].mo->colorized;
+				colorizeplayer = mobj->colorized;
 
 				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
@@ -4352,10 +4353,10 @@ static void K_drawKartMinimap(void)
 				}
 				else
 				{
-					usecolor = players[i].mo->color;
+					usecolor = mobj->color;
 				}
 
-				if (players[i].mo->color)
+				if (usecolor)
 				{
 					if (colorizeplayer)
 						colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
@@ -4524,7 +4525,7 @@ static void K_drawKartMinimap(void)
 
 		mobj = players[localplayers[i]].mo;
 
-		if (players[localplayers[i]].mo->health <= 0 && players[localplayers[i]].pflags & PF_NOCONTEST)
+		if (mobj->health <= 0 && (players[localplayers[i]].pflags & PF_NOCONTEST))
 		{
 			workingPic = kp_nocontestminimap;
 
@@ -4544,10 +4545,13 @@ static void K_drawKartMinimap(void)
 			colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 
 			nocontest = true;
+
+			if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+				mobj = mobj->tracer;
 		}
 		else
 		{
-			skin = ((skin_t*)players[localplayers[i]].mo->skin)-skins;
+			skin = ((skin_t*)mobj->skin)-skins;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4578,7 +4582,7 @@ static void K_drawKartMinimap(void)
 			}
 #endif
 
-			colorizeplayer = players[localplayers[i]].mo->colorized;
+			colorizeplayer = mobj->colorized;
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
 				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
@@ -4589,10 +4593,10 @@ static void K_drawKartMinimap(void)
 			}
 			else
 			{
-				usecolor = players[localplayers[i]].mo->color;
+				usecolor = mobj->color;
 			}
 
-			if (players[localplayers[i]].mo->color)
+			if (usecolor)
 			{
 				if (colorizeplayer)
 					colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
@@ -4701,6 +4705,56 @@ static void K_drawKartMinimap(void)
 	}
 }
 
+static void K_drawKartFinish(void)
+{
+	INT32 timer, minsplitstationary, pnum = 0, splitflags = V_SPLITSCREEN;
+	patch_t **kptodraw;
+
+	{
+		timer = stplyr->karthud[khud_finish];
+		kptodraw = kp_racefinish;
+		minsplitstationary = 2;
+	}
+
+	if (!timer || timer > 2*TICRATE)
+		return;
+
+	if ((timer % (2*5)) / 5) // blink
+		pnum = 1;
+
+	if (r_splitscreen > 0)
+		pnum += (r_splitscreen > 1) ? 2 : 4;
+
+	if (r_splitscreen >= minsplitstationary) // 3/4p, stationary FIN
+	{
+		V_DrawScaledPatch(STCD_X - (SHORT(kptodraw[pnum]->width)/2), STCD_Y - (SHORT(kptodraw[pnum]->height)/2), splitflags, kptodraw[pnum]);
+		return;
+	}
+
+	//else -- 1/2p, scrolling FINISH
+	{
+		INT32 x, xval, ox, interpx, pwidth;
+
+		x = ((vid.width<<FRACBITS)/vid.dupx);
+		xval = (SHORT(kptodraw[pnum]->width)<<FRACBITS);
+
+		pwidth = max(xval, x);
+
+		x = ((TICRATE - timer) * pwidth) / TICRATE;
+		ox = ((TICRATE - (timer - 1)) * pwidth) / TICRATE;
+
+		interpx = R_InterpolateFixed(ox, x);
+
+		if (r_splitscreen && stplyrnum == 1)
+			interpx = -interpx;
+
+		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
+			(STCD_Y<<FRACBITS) - (SHORT(kptodraw[pnum]->height)<<(FRACBITS-1)),
+			FRACUNIT,
+			splitflags, kptodraw[pnum], NULL);
+	}
+}
+
 static void K_drawKartStartCountdown(void)
 {
 	INT32 pnum = 0;
@@ -4742,51 +4796,6 @@ static void K_drawKartStartCountdown(void)
 			pnum += 10;
 
 		V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), V_SPLITSCREEN, kp_startcountdown[pnum]);
-	}
-}
-
-static void K_drawKartFinish(void)
-{
-	INT32 pnum = 0, splitflags = V_SPLITSCREEN;
-
-	if (!stplyr->karthud[khud_cardanimation] || stplyr->karthud[khud_cardanimation] >= 2*TICRATE)
-		return;
-
-	if ((stplyr->karthud[khud_cardanimation] % (2*5)) / 5) // blink
-		pnum = 1;
-
-	if (r_splitscreen > 1) // 3/4p, stationary FIN
-	{
-		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
-		return;
-	}
-
-	//else -- 1/2p, scrolling FINISH
-	{
-		INT32 x, xval, ox, interpx, pwidth;
-
-		if (r_splitscreen) // wide splitscreen
-			pnum += 4;
-
-		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (kp_racefinish[pnum]->width)<<FRACBITS;
-
-		pwidth = max(xval, x);
-
-		x = ((TICRATE - stplyr->karthud[khud_cardanimation]) * pwidth) / TICRATE;
-		ox = ((TICRATE - (stplyr->karthud[khud_cardanimation] - 1)) * pwidth) / TICRATE;
-
-
-		interpx = R_InterpolateFixed(ox, x);
-
-		if (r_splitscreen && stplyrnum == 1)
-			interpx = -interpx;
-
-		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
-			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
-			FRACUNIT,
-			splitflags, kp_racefinish[pnum], NULL);
 	}
 }
 
@@ -4850,7 +4859,7 @@ static void K_drawBattleFullscreen(void)
 	{
 		if (stplyrnum == 0)
 			V_DrawFadeScreen(0xFF00, 16);
-		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
+		if (stplyr->exiting <= 6*TICRATE && !stplyr->spectator)
 		{
 			patch_t *p = kp_battlecool;
 
@@ -4861,8 +4870,8 @@ static void K_drawBattleFullscreen(void)
 
 			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, p, NULL);
 		}
-		else
-			K_drawKartFinish();
+
+		K_drawKartFinish();
 	}
 	else if (stplyr->bumper <= 0 && stplyr->karmadelay && comeback && !stplyr->spectator && drawcomebacktimer)
 	{

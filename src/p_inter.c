@@ -991,14 +991,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	player->starpostnum = post->health;
 }
 
-// Easily make it so that overtime works offline
-#define TESTOVERTIMEINFREEPLAY
-
 /** Checks if the level timer is over the timelimit and the round should end,
   * unless you are in overtime. In which case leveltime may stretch out beyond
   * timelimitintics and overtime's status will be checked here each tick.
-  * Verify that the value of ::cv_timelimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_timelimit, P_CheckPointLimit, P_UpdateSpecials
   */
@@ -1006,25 +1001,73 @@ void P_CheckTimeLimit(void)
 {
 	INT32 i, k;
 
-	if (!cv_timelimit.value)
+	if (exitcountdown)
 		return;
 
-	if (!(multiplayer || netgame))
+	if (!timelimitintics)
 		return;
 
-	if (!(gametyperules & GTR_TIMELIMIT))
+	if (leveltime < starttime)
+	{
+		if (secretextratime)
+			secretextratime--;
 		return;
+	}
 
-	if (itembreaker)
-		return;
+	INT32 timeleft = timelimitintics + starttime - leveltime;
+	if (timeleft > 0)
+	{
+		if (secretextratime)
+		{
+			secretextratime--;
+			timelimitintics++;
+		}
+		else if (extratimeintics)
+		{
+			timelimitintics++;
+			if (leveltime & 1)
+				;
+			else
+			{
+				if (extratimeintics > 20)
+				{
+					extratimeintics -= 20;
+					timelimitintics += 20;
+				}
+				else
+				{
+					timelimitintics += extratimeintics;
+					extratimeintics = 0;
+				}
+				S_StartSound(NULL, sfx_ptally);
+			}
+		}
+		else
+		{
+			if (timelimitintics > 60*TICRATE && !itembreaker)
+			{
+				if (timeleft == 60*TICRATE)
+					S_StartSound(NULL, sfx_cdfm67); // guys it's a bell it's just like splatoon guys
+				if (timeleft == 59*TICRATE)
+					S_StartSound(NULL, sfx_bhurry); // hurry up :))))
+			}
 
-	if (leveltime < (timelimitintics + starttime))
+			// last five second countdown
+			if (timeleft % TICRATE == 0)
+			{
+				if (timeleft <= 5*TICRATE)
+					S_StartSound(NULL, sfx_kc35); // 5, 4
+				if (timeleft <= 3*TICRATE)
+					S_StartSound(NULL, sfx_kc3d); // 3, 2, 1
+			}
+		}
 		return;
+	}
 
 	if (gameaction == ga_completed)
 		return;
 
-	if (cv_overtime.value)
+	if (!itembreaker && !grandprixinfo.gp && cv_overtime.value)
 	{
 		INT32 playerarray[MAXPLAYERS];
 		INT32 tempplayer = 0;
@@ -1043,7 +1086,7 @@ void P_CheckTimeLimit(void)
 #ifdef TESTOVERTIMEINFREEPLAY
 		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
 		{
-			return;
+			goto overtimesound;
 		}
 #endif
 		
@@ -1085,23 +1128,33 @@ void P_CheckTimeLimit(void)
 
 				//End the round if the top players aren't tied.
 				if (players[playerarray[0]].roundscore == players[playerarray[1]].roundscore)
-					return;
+					goto overtimesound;
 			}
 			else
 			{
 				//In team match and CTF, determining a tie is much simpler. =P
 				if (redscore == bluescore)
-					return;
+					goto overtimesound;
 			}
 		}
 	}
 
 	P_DoAllPlayersExit(0, false);
+	return;
+
+overtimesound:
+	if (timeleft == 0)
+	{
+		S_StartSound(NULL, sfx_s3k50); // overtime warning
+		S_StartSound(NULL, sfx_s3k9d);
+	}
+	if (timeleft == -2*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
+	if (timeleft == -4*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.
-  * Verify that the value of ::cv_pointlimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_pointlimit, P_CheckTimeLimit, P_UpdateSpecials
   */
@@ -1112,7 +1165,7 @@ void P_CheckPointLimit(void)
 	if (exitcountdown)
 		return;
 
-	if (!K_CanChangeRules())
+	if (!K_CanChangeRules(true))
 		return;
 
 	if (!cv_pointlimit.value)
@@ -1158,7 +1211,7 @@ boolean P_CheckRacers(void)
 {
 	const boolean griefed = (spectateGriefed > 0);
 
-	boolean eliminateLast = (!K_CanChangeRules() && !demo.playback) || (cv_karteliminatelast.value != 0); // temp hack until this is ported properly
+	boolean eliminateLast = (!K_CanChangeRules(true) || (cv_karteliminatelast.value != 0));
 	boolean allHumansDone = true;
 	//boolean allBotsDone = true;
 
@@ -1277,7 +1330,7 @@ boolean P_CheckRacers(void)
 		{
 			tic_t countdown = 30*TICRATE; // 30 seconds left to finish, get going!
 
-			if (K_CanChangeRules() == true)
+			if (K_CanChangeRules(true) == true)
 			{
 				// Custom timer
 				countdown = cv_countdowntime.value * TICRATE;
@@ -1412,15 +1465,39 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 			if (itembreaker)
 			{
+				// G: uncommented this for funsies
+				mobj_t * ring;
+				angle_t dir = 0;
+				if (inflictor)
+					dir = R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
+				else
+					dir = R_PointToAngle2(source->x, source->y, target->x, target->y);
+				for (UINT8 i = 0; i < 2; i++)
+				{
+					dir += (ANGLE_MAX/3);
+					ring = P_SpawnMobj(target->x, target->y, target->z, MT_RING);
+					ring->angle = dir;
+					P_InstaThrust(ring, dir, 16*ring->scale);
+					ring->momz = 8 * target->scale * P_MobjFlip(target);
+					P_SetTarget(&ring->tracer, source);
+					source->player->pickuprings++;
+				}
+
 				target->flags2 |= MF2_BOSSFLEE;
 				target->flags2 |= MF2_DONTRESPAWN;
 				K_SpawnBattlePoints(source->player, NULL, 1);
+
 				// All targets busted!
 				if (++numtargets >= nummapboxes)
 				{
-					P_DoAllPlayersExit(0, true);
+					P_DoAllPlayersExit(0, (grandprixinfo.gp == true));
 				}
-
+				else if (timelimitintics)
+				{
+					S_StartSound(NULL, sfx_s221);
+					extratimeintics += 10*TICRATE;
+					secretextratime = TICRATE/2;
+				}
 			}
 
 			if (cv_itemrespawn.value && modeattacking == ATTACKING_NONE && !itembreaker)
@@ -1590,6 +1667,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				kart->old_x = target->old_x;
 				kart->old_y = target->old_y;
 				kart->old_z = target->old_z;
+
+				if (target->player->pflags & PF_NOCONTEST)
+					P_SetTarget(&target->tracer, kart);
 
 				if (damagetype != DMG_TIMEOVER)
 				{

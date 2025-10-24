@@ -259,7 +259,7 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if (K_CanChangeRules() == false)
+	else if (K_CanChangeRules(true) == false)
 	{
 		difficulty = 0;
 	}

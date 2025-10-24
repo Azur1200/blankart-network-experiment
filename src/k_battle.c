@@ -261,7 +261,7 @@ void K_CheckBumpers(void)
 		winnerscoreadd -= players[i].roundscore;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(true) == false)
 	{
 		if (nobumpers)
 		{
@@ -274,7 +274,8 @@ void K_CheckBumpers(void)
 		if (!itembreaker && cv_kartitembreaker.value)
 		{
 			// Reset map to turn on battle capsules
-			D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
+			if (server)
+				D_MapChange(gamemap, gametype, encoremode, true, 0, false, false);
 		}
 		else
 		{
@@ -486,22 +487,13 @@ void K_SpawnPlayerBattleBumpers(player_t *p)
 	}
 }
 
-void K_BattleInit(UINT8 numPlayers)
+void K_BattleInit(boolean singleplayercontext)
 {
-	if ((gametyperules & GTR_ITEMBREAKER) && !itembreaker && !bossinfo.boss)
+	if ((gametyperules & GTR_ITEMBREAKER) && singleplayercontext && !itembreaker && !bossinfo.boss)
 	{
-		if (modeattacking != ATTACKING_ITEMBREAK)
-		{
-			if (!cv_kartitembreaker.value)
-				goto afteritembreaker;
-
-			if (numPlayers > 1)
-				goto afteritembreaker;
-		}
-
-		itembreaker = true;
+		if (!(K_CanChangeRules(true) && !cv_kartitembreaker.value))
+			itembreaker = true;
 	}
-afteritembreaker:
 
 	if (gametyperules & GTR_BUMPERS)
 	{

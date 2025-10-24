@@ -769,18 +769,8 @@ void Y_Ticker(void)
 			P_DoTeamscrambling();
 	}*/
 
-	// multiplayer uses timer (based on cv_inttime)
-	if (timer)
-	{
-		if (!--timer)
-		{
-			Y_EndIntermission();
-			G_AfterIntermission();
-			return;
-		}
-	}
-	// single player is hardcoded to go away after awhile
-	else if (intertic == endtic)
+	if ((timer && !--timer)
+		|| (intertic == endtic))
 	{
 		Y_EndIntermission();
 		G_AfterIntermission();
@@ -869,8 +859,8 @@ void Y_Ticker(void)
 					S_StartSound(NULL, (kaching ? sfx_chchng : sfx_ptally));
 					Y_CalculateMatchData(2, Y_CompareRank);
 				}
-				else
-					endtic = intertic + 3*TICRATE; // 3 second pause after end of tally
+				/*else -- This is how to define an endtic, but we currently use timer for both SP and MP.
+					endtic = intertic + 3*TICRATE;*/
 			}
 		}
 	}
@@ -934,23 +924,32 @@ void Y_StartIntermission(void)
 	powertype = K_UsingPowerLevels();
 
 	// determine the tic the intermission ends
-	if (!multiplayer || demo.playback)
+	// Technically cv_inttime is saved to demos... but this permits having extremely long timers for post-netgame chatting without stranding you on the intermission in netreplays.
+	if (!K_CanChangeRules(false))
 	{
-		timer = ((nump >= 2) ? 10 : 5)*TICRATE;
+		timer = 10*TICRATE;
 	}
 	else
 	{
 		timer = cv_inttime.value*TICRATE;
-
-		if (!timer)
-			timer = 1; // prevent a weird bug
 	}
 
 	// determine the tic everybody's scores/PWR starts getting sorted
 	sorttic = -1;
-	if (multiplayer || nump >= 2)
+	if (!timer)
 	{
-		sorttic = max((timer/2) - 2*TICRATE, 2*TICRATE); // 8 second pause after match results
+		// Prevent a weird bug
+		timer = 1; 
+	}
+	else if (nump < 2 && !netgame)
+	{
+		// No PWR/global score, skip it
+		timer /= 2;
+	}
+	else
+	{
+		// Minimum two seconds for match results, then two second slideover approx halfway through
+		sorttic = max((timer/2) - 2*TICRATE, 2*TICRATE);
 	}
 
 	if (intermissiontypes[gametype] != int_none)
@@ -971,7 +970,7 @@ void Y_StartIntermission(void)
 		case int_battle:
 		case int_battletime:
 		{
-			if (cv_inttime.value > 0)
+			if (timer > 1)
 			{
 				S_ChangeMusicInternal("racent", true); // loop it
 				S_ShowMusicCredit(-30*FRACUNIT, 5*TICRATE, 0);

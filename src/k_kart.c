@@ -65,6 +65,7 @@
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
 #include "k_odds.h"
+#include "k_specialstage.h"
 
 #include "h_timers.h"
 #include "blan/b_soc.h"
@@ -100,26 +101,34 @@ vector3_t clusterpoint, clusterdtf;
 void K_TimerInit(void)
 {
 	UINT8 i;
-	UINT8 numPlayers = 0;//, numspec = 0;
+	UINT8 numPlayers = 0;
+	boolean domodeattack = ((modeattacking != ATTACKING_NONE)
+		|| (grandprixinfo.gp == true && grandprixinfo.eventmode != GPEVENT_NONE));
 
 	starttime = introtime = 0;
 
-	if (!bossinfo.boss)
+	if (specialStage.active == true)
 	{
-		for (i = 0; i < MAXPLAYERS; i++)
+		K_InitSpecialStage();
+	}
+	else if (bossinfo.boss == false)
+	{
+		if (!domodeattack)
 		{
-			if (!playeringame[i])
+			for (i = 0; i < MAXPLAYERS; i++)
 			{
-				continue;
+				if (!playeringame[i] || players[i].spectator)
+				{
+					continue;
+				}
+
+				numPlayers++;
 			}
 
-			if (players[i].spectator == true)
+			if (numPlayers < 2)
 			{
-				//numspec++;
-				continue;
+				domodeattack = true;
 			}
-
-			numPlayers++;
 		}
 
 		introtime = (108) + 5; // 108 for rotation, + 5 for white fade
@@ -131,15 +140,14 @@ void K_TimerInit(void)
 		}
 	}
 
-	// NOW you can try to setup Item Breaker, if there's not enough players for a match
-	K_BattleInit(numPlayers);
+	timelimitintics = extratimeintics = secretextratime = 0; // G: restore K_TimerReset?
+	K_BattleInit(domodeattack);
 
-	timelimitintics = extratimeintics = secretextratime = 0;
-	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss)
+	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss && !modeattacking)
 	{
-		if (!K_CanChangeRules())
+		if (!K_CanChangeRules(true))
 		{
-			if (grandprixinfo.gp)
+			if (itembreaker)
 			{
 				timelimitintics = (20*TICRATE);
 			}
@@ -414,6 +422,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_saltyhop);
 
 	CV_RegisterVar(&cv_naturalcamera);
+	CV_RegisterVar(&cv_gptest);
 }
 
 //}
@@ -6310,9 +6319,8 @@ void K_KartPlayerHUDUpdate(player_t *player)
 	if (player->karthud[khud_tauntvoices])
 		player->karthud[khud_tauntvoices]--;
 
-	if (gametype == GT_RACE)
+	if (gametyperules & GTR_RINGS)
 	{
-
 		if ((K_RingsActive() == true))
 		{
 			if (player->pflags & PF_RINGLOCK)
@@ -6322,16 +6330,20 @@ void K_KartPlayerHUDUpdate(player_t *player)
 		}
 	}
 
+	if (player->exiting)
+	{
+		if (player->karthud[khud_finish] <= 2*TICRATE)
+			player->karthud[khud_finish]++;
+	}
+	else
+		player->karthud[khud_finish] = 0;
+
 	if ((gametyperules & GTR_BUMPERS) && (player->exiting || player->karmadelay))
 	{
 		if (player->exiting)
 		{
 			if (player->exiting < 6*TICRATE)
 				player->karthud[khud_cardanimation] += ((164-player->karthud[khud_cardanimation])/8)+1;
-			else if (player->exiting == 6*TICRATE)
-				player->karthud[khud_cardanimation] = 0;
-			else if (player->karthud[khud_cardanimation] < 2*TICRATE)
-				player->karthud[khud_cardanimation]++;
 		}
 		else
 		{
@@ -6345,11 +6357,6 @@ void K_KartPlayerHUDUpdate(player_t *player)
 			player->karthud[khud_cardanimation] = 164;
 		if (player->karthud[khud_cardanimation] < 0)
 			player->karthud[khud_cardanimation] = 0;
-	}
-	else if ((gametyperules & GTR_CIRCUIT) && player->exiting)
-	{
-		if (player->karthud[khud_cardanimation] < 2*TICRATE)
-			player->karthud[khud_cardanimation]++;
 	}
 	else
 		player->karthud[khud_cardanimation] = 0;
@@ -6599,7 +6606,15 @@ UINT8 K_RaceLapCount(INT16 mapNum)
 		return 0;
 	}
 
-	if (cv_numlaps.value == -1 || modeattacking != ATTACKING_NONE)
+	if ((grandprixinfo.gp == true)
+		&& (grandprixinfo.eventmode == GPEVENT_NONE)
+		&& cv_gptest.value)
+	{
+		// For testing
+		return 1;
+	}
+
+	if (cv_numlaps.value == -1 || K_CanChangeRules(true) == false)
 	{
 		// Use map default
 		return mapheaderinfo[mapNum]->numlaps;
@@ -7329,8 +7344,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	}
 
 	K_UpdateTripwire(player);
-
-	K_KartPlayerHUDUpdate(player);
 
 	if (P_IsObjectOnGround(player->mo))
 		player->waterskip = 0;
@@ -11396,7 +11409,7 @@ boolean K_NotFreePlay(void)
 	UINT8 i;
 	UINT8 nump = 0;
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(true) == false)
 	{
 		// Rounds with direction are never FREE PLAY.
 		return true;

@@ -67,6 +67,7 @@
 #include "deh_tables.h"
 #include "m_perfstats.h"
 #include "g_party.h"
+#include "k_specialstage.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -632,6 +633,7 @@ consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, C
 consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugcolorize = CVAR_INIT ("kartdebugcolorize", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugdirector = CVAR_INIT ("kartdebugdirector", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_gptest = CVAR_INIT ("gptest", "Off", CV_CHEAT|CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t votetime_cons_t[] = {{10, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_votetime = CVAR_INIT ("votetime", "20", CV_NETVAR, votetime_cons_t, NULL);
@@ -657,9 +659,9 @@ consvar_t cv_overtime = CVAR_INIT ("overtime", "Yes", CV_NETVAR|CV_CHEAT, CV_Yes
 consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
+consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
 static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {99999, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
+consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
 consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
@@ -2889,6 +2891,10 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 	{
 		pencoremode = bossinfo.encore;
 	}
+	else if (specialStage.active == true)
+	{
+		pencoremode = specialStage.encore;
+	}
 	else if (grandprixinfo.gp == true)
 	{
 		pencoremode = grandprixinfo.encore;
@@ -3280,6 +3286,7 @@ static void Command_Map_f(void)
 		if (newgametype == GT_BATTLE)
 		{
 			grandprixinfo.gp = false;
+			specialStage.active = false;
 			K_ResetBossInfo();
 
 			if (mapheaderinfo[newmapnum-1] &&
@@ -3289,76 +3296,76 @@ static void Command_Map_f(void)
 				bossinfo.encore = newencoremode;
 			}
 		}
-		else // default GP
+		else
 		{
-			grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
-			grandprixinfo.masterbots = false;
-
-			if (option_skill)
+			if (mapheaderinfo[newmapnum-1] &&
+				mapheaderinfo[newmapnum-1]->typeoflevel & TOL_SPECIAL) // Special Stage
 			{
-				const char *masterstr = "Master";
-				const char *nightmarestr = "NIGHTMARE";
-				const char *skillname = COM_Argv(option_skill + 1);
-				INT32 newskill = -1;
-				INT32 j;
+				grandprixinfo.gp = false;
+				bossinfo.boss = false;
 
-				if (!strcasecmp(masterstr, skillname))
+				specialStage.active = true;
+				specialStage.encore = newencoremode;
+			}
+			else // default GP
+			{
+				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
+				grandprixinfo.masterbots = false;
+
+				if (option_skill)
 				{
-					newskill = KARTGP_MASTER;
-				}
-				else if (!strcasecmp(nightmarestr, skillname))
-				{
-					newskill = KARTGP_NIGHTMARE;
-				}
-				else
-				{
-					for (j = 0; kartspeed_cons_t[j].strvalue; j++)
+					const char *skillname = COM_Argv(option_skill + 1);
+					INT32 newskill = -1;
+					INT32 j;
+
+					for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 					{
-						if (!strcasecmp(kartspeed_cons_t[j].strvalue, skillname))
+						if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, skillname))
 						{
-							newskill = (INT16)kartspeed_cons_t[j].value;
+							newskill = (INT16)gpdifficulty_cons_t[j].value;
 							break;
 						}
 					}
 
-					if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
+					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 					{
 						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
 						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
 							newskill = (INT16)num;
 					}
+
+					if (newskill != -1)
+					{
+						if (newskill == KARTGP_MASTER)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_HARD;
+							grandprixinfo.masterbots = true;
+						}
+						else if (newskill == KARTGP_NIGHTMARE)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+							grandprixinfo.masterbots = true;
+						}
+						else
+						{
+							grandprixinfo.gamespeed = newskill;
+							grandprixinfo.masterbots = false;
+						}
+					}
 				}
 
-				if (newskill != -1)
-				{
-					if (newskill == KARTGP_MASTER)
-					{
-						grandprixinfo.gamespeed = KARTSPEED_HARD;
-						grandprixinfo.masterbots = true;
-					}
-					else if (newskill == KARTGP_NIGHTMARE)
-					{
-						grandprixinfo.gamespeed = KARTSPEED_EXPERT;
-						grandprixinfo.masterbots = true;
-					}
-					else
-					{
-						grandprixinfo.gamespeed = newskill;
-						grandprixinfo.masterbots = false;
-					}
-				}
+				grandprixinfo.encore = newencoremode;
+
+				grandprixinfo.gp = true;
+				grandprixinfo.roundnum = 0;
+				grandprixinfo.cup = NULL;
+				grandprixinfo.wonround = false;
+
+				bossinfo.boss = false;
+				specialStage.active = false;
+
+				grandprixinfo.initalize = true;
 			}
-
-			grandprixinfo.encore = newencoremode;
-
-			grandprixinfo.gp = true;
-			grandprixinfo.roundnum = 0;
-			grandprixinfo.cup = NULL;
-			grandprixinfo.wonround = false;
-
-			bossinfo.boss = false;
-
-			grandprixinfo.initalize = true;
 		}
 	}
 
@@ -4504,7 +4511,7 @@ void Schedule_Run(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -4640,7 +4647,7 @@ void Automate_Run(automateEvents_t type)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -5428,7 +5435,12 @@ void ItemFinder_OnChange(void)
   */
 static void PointLimit_OnChange(void)
 {
-	// Don't allow pointlimit in Single Player/Co-Op/Race!
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	// Don't allow pointlimit in non-pointlimited gametypes!
 	if (server && Playing() && !(gametyperules & GTR_POINTLIMIT))
 	{
 		if (cv_pointlimit.value)
@@ -5443,7 +5455,7 @@ static void PointLimit_OnChange(void)
 			cv_pointlimit.value,
 			cv_pointlimit.value > 1 ? "s" : "");
 	}
-	else if (netgame || multiplayer)
+	else
 		CONS_Printf(M_GetText("Point limit disabled\n"));
 }
 
@@ -5478,26 +5490,40 @@ UINT32 secretextratime = 0;
   */
 static void TimeLimit_OnChange(void)
 {
-	// Don't allow timelimit in Single Player/Co-Op/Race!
-	if (server && Playing() && cv_timelimit.value != 0 && (bossinfo.boss || !(gametyperules & GTR_TIMELIMIT)))
+	if (K_CanChangeRules(false) == false)
 	{
-		CV_SetValue(&cv_timelimit, 0);
 		return;
 	}
 
-	if (cv_timelimit.value != 0)
+	if (gamestate == GS_LEVEL && leveltime < starttime)
 	{
-		CONS_Printf(M_GetText("Rounds will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * (60*TICRATE);
+		if (cv_timelimit.value)
+		{
+			CONS_Printf(M_GetText("Time limit has been set to %d minute%s.\n"), cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s");
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Time limit has been disabled.\n"));
+		}
 
-		// Note the deliberate absence of any code preventing
-		//   pointlimit and timelimit from being set simultaneously.
-		// Some people might like to use them together. It works.
-	}
+		timelimitintics = cv_timelimit.value * (60*TICRATE);
+		extratimeintics = secretextratime = 0;
 
 #ifdef HAVE_DISCORDRPC
-	DRPC_UpdatePresence();
+		DRPC_UpdatePresence();
 #endif
+	}
+	else
+	{
+		if (cv_timelimit.value)
+		{
+			CONS_Printf(M_GetText("Time limit will be %d minute%s next round.\n"), cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s");
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Time limit will be disabled next round.\n"));
+		}
+	}
 }
 
 /** Adjusts certain settings to match a changed gametype.
@@ -5523,7 +5549,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 	}
 	// Only do the following as the server, not as remote admin.
 	// There will always be a server, and this only needs to be done once.
-	if (server && (multiplayer || netgame))
+	if (server && multiplayer)
 	{
 		if (!cv_timelimit.changed) // user hasn't changed limits
 		{
@@ -5532,27 +5558,6 @@ void D_GameTypeChanged(INT32 lastgametype)
 		if (!cv_pointlimit.changed)
 		{
 			CV_SetValue(&cv_pointlimit, pointlimits[gametype]);
-		}
-	}
-	/* -- no longer useful
-	else if (!multiplayer && !netgame)
-	{
-		G_SetGametype(GT_RACE);
-	}
-	*/
-
-	// reset timelimit and pointlimit in race/coop, prevent stupid cheats
-	if (server)
-	{
-		if (!(gametyperules & GTR_TIMELIMIT))
-		{
-			if (cv_timelimit.value)
-				CV_SetValue(&cv_timelimit, 0);
-		}
-		if (!(gametyperules & GTR_POINTLIMIT))
-		{
-			if (cv_pointlimit.value)
-				CV_SetValue(&cv_pointlimit, 0);
 		}
 	}
 
@@ -7313,6 +7318,11 @@ static void Command_ShowTime_f(void)
 // SRB2Kart: On change messages
 static void NumLaps_OnChange(void)
 {
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
 	if (gamestate == GS_LEVEL)
 	{
 		numlaps = K_RaceLapCount(gamemap - 1);
@@ -7341,12 +7351,12 @@ static void NumLaps_OnChange(void)
 
 static void KartFrantic_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
 
-	if (leveltime < starttime)
+	if (gamestate == GS_LEVEL && leveltime < starttime)
 	{
 		CONS_Printf(M_GetText("Frantic items has been set to %s.\n"), cv_kartfrantic.value ? M_GetText("on") : M_GetText("off"));
 		franticitems = (boolean)cv_kartfrantic.value;
@@ -7359,19 +7369,12 @@ static void KartFrantic_OnChange(void)
 
 static void KartSpeed_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_HARDSPEED) && (cv_kartspeed.value == KARTSPEED_HARD || cv_kartspeed.value == KARTSPEED_EXPERT))
-	{
-		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
-		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);
-		return;
-	}
-
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
 
-	if (leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
+	if (gamestate == GS_LEVEL && leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
 	{
 		CONS_Printf(M_GetText("Race speed has been changed to \"%s\".\n"), cv_kartspeed.string);
 		gamespeed = (UINT8)cv_kartspeed.value;
@@ -7391,7 +7394,7 @@ static void KartBattleSpeed_OnChange(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7409,7 +7412,7 @@ static void KartBattleSpeed_OnChange(void)
 
 static void KartEncore_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7419,7 +7422,7 @@ static void KartEncore_OnChange(void)
 
 static void KartComeback_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7442,7 +7445,7 @@ static void KartEliminateLast_OnChange(void)
 
 static void KartRings_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7459,7 +7462,7 @@ static void KartRings_OnChange(void)
 
 static void KartPurpleDrift_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7492,7 +7495,7 @@ static void KartPurpleDrift_OnChange(void)
 
 static void KartStacking_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7525,7 +7528,7 @@ static void KartStacking_OnChange(void)
 
 static void KartChaining_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7558,7 +7561,7 @@ static void KartChaining_OnChange(void)
 
 static void KartSlipdash_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7591,7 +7594,7 @@ static void KartSlipdash_OnChange(void)
 
 static void KartSlopeBoost_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7624,7 +7627,7 @@ static void KartSlopeBoost_OnChange(void)
 
 static void KartDrafting_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7657,7 +7660,7 @@ static void KartDrafting_OnChange(void)
 
 static void KartAirDrop_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7690,7 +7693,7 @@ static void KartAirDrop_OnChange(void)
 
 static void KartItemLitter_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7723,7 +7726,7 @@ static void KartItemLitter_OnChange(void)
 
 static void KartAntiBump_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7747,7 +7750,7 @@ static void KartAntiBump_OnChange(void)
 
 static void KartItemBreaker_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7769,7 +7772,7 @@ static void KartItemBreaker_OnChange(void)
 
 static void KartInvinType_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7787,7 +7790,7 @@ static void KartInvinType_OnChange(void)
 
 static void KartBumpSpark_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
