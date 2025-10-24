@@ -35,7 +35,7 @@
 #include "hardware/hw3sound.h"
 #endif
 
-boolean LUA_CallAction(enum actionnum actionnum, void *actor);
+boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 
 INT32 var1;
 INT32 var2;
@@ -777,7 +777,7 @@ nomissile:
 		P_NewChaseDir(actor);
 }
 
-static void P_SharpDust(void *actor, mobjtype_t type, angle_t ang)
+static void P_SharpDust(mobj_t *actor, mobjtype_t type, angle_t ang)
 {
 	mobj_t *dust;
 
