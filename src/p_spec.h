@@ -1058,20 +1058,20 @@ void EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, boole
 
 void EV_MarioBlock(ffloor_t *rover, sector_t *sector, mobj_t *puncher);
 
-void T_MoveFloor(floormove_t *movefloor);
+void T_MoveFloor(void *thinker);
 
-void T_MoveElevator(elevator_t *elevator);
-void T_ContinuousFalling(continuousfall_t *faller);
-void T_BounceCheese(bouncecheese_t *bouncer);
-void T_StartCrumble(crumble_t *crumble);
-void T_MarioBlock(mariothink_t *block);
-void T_FloatSector(floatthink_t *floater);
-void T_MarioBlockChecker(mariocheck_t *block);
-void T_ThwompSector(thwomp_t *thwomp);
-void T_NoEnemiesSector(noenemies_t *nobaddies);
-void T_EachTimeThinker(eachtime_t *eachtime);
-void T_CameraScanner(elevator_t *elevator);
-void T_RaiseSector(raise_t *raise);
+void T_MoveElevator(void *thinker);
+void T_ContinuousFalling(void *thinker);
+void T_BounceCheese(void *thinker);
+void T_StartCrumble(void *thinker);
+void T_MarioBlock(void *thinker);
+void T_FloatSector(void *thinker);
+void T_MarioBlockChecker(void *thinker);
+void T_ThwompSector(void *thinker);
+void T_NoEnemiesSector(void *thinker);
+void T_EachTimeThinker(void *thinker);
+void T_CameraScanner(void *thinker);
+void T_RaiseSector(void *thinker);
 
 struct executor_t
 {
@@ -1082,7 +1082,7 @@ struct executor_t
 	INT32 timer;       // Delay timer
 };
 
-void T_ExecutorDelay(executor_t *e);
+void T_ExecutorDelay(void *thinker);
 
 /** Generalized scroller.
   */
@@ -1108,8 +1108,8 @@ struct scroll_t
 	} type;
 };
 
-void T_Scroll(scroll_t *s);
-void T_LaserFlash(laserthink_t *flash);
+void T_Scroll(void *thinker);
+void T_LaserFlash(void *thinker);
 
 /** Friction for ice/sludge effects.
   */
@@ -1126,7 +1126,7 @@ struct friction_t
 // Friction defines.
 #define ORIG_FRICTION          (62914) ///< Original value.
 
-void T_Friction(friction_t *f);
+void T_Friction(void *thinker);
 
 typedef enum
 {
@@ -1162,7 +1162,7 @@ struct disappear_t
 	INT32 exists;       ///< Exists toggle
 };
 
-void T_Disappear(disappear_t *d);
+void T_Disappear(void *thinker);
 
 // Model for fading FOFs
 struct fade_t
@@ -1188,7 +1188,7 @@ struct fade_t
 	boolean exactalpha; ///< Use exact alpha values (opengl)
 };
 
-void T_Fade(fade_t *d);
+void T_Fade(void *thinker);
 
 // Model for fading colormaps
 
@@ -1203,10 +1203,10 @@ struct fadecolormap_t
 	INT32 timer;                ///< Timer for tic-based logic (OR: internal speed counter)
 };
 
-void T_FadeColormap(fadecolormap_t *d);
+void T_FadeColormap(void *thinker);
 
 // Prototype function for pushers
-void T_Pusher(pusher_t *p);
+void T_Pusher(void *thinker);
 
 // Plane displacement
 struct planedisplace_t
@@ -1227,7 +1227,7 @@ struct planedisplace_t
 	} type;
 };
 
-void T_PlaneDisplace(planedisplace_t *pd);
+void T_PlaneDisplace(void *thinker);
 
 void P_CalcHeight(player_t *player);
 

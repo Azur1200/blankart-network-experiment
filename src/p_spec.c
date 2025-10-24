@@ -1211,8 +1211,9 @@ INT32 P_FindMinSurroundingLight(sector_t *sector, INT32 max)
 	return min;
 }
 
-void T_ExecutorDelay(executor_t *e)
+void T_ExecutorDelay(void *thinker)
 {
+	executor_t *e = thinker;
 	if (--e->timer <= 0)
 	{
 		if (e->caller && P_MobjWasRemoved(e->caller)) // If the mobj died while we were delaying
@@ -6721,8 +6722,9 @@ static inline void P_AddCameraScanner(sector_t *sourcesec, sector_t *actionsecto
   * \sa P_AddLaserThinker
   * \author SSNTails <http://www.ssntails.org>
   */
-void T_LaserFlash(laserthink_t *flash)
+void T_LaserFlash(void *thinker)
 {
+	laserthink_t *flash = thinker;
 	msecnode_t *node;
 	mobj_t *thing;
 	INT32 s;
@@ -8116,8 +8118,9 @@ static void P_DoScrollMove(mobj_t *thing, fixed_t dx, fixed_t dy, INT32 exclusiv
   * \author Steven McGranahan
   * \author Graue <graue@oceanbase.org>
   */
-void T_Scroll(scroll_t *s)
+void T_Scroll(void *thinker)
 {
+	scroll_t *s = thinker;
 	fixed_t dx = s->dx, dy = s->dy;
 	boolean is3dblock = false;
 
@@ -8520,8 +8523,9 @@ static void Add_MasterDisappearer(tic_t appeartime, tic_t disappeartime, tic_t o
   * \param d Disappear thinker.
   * \sa Add_MasterDisappearer
   */
-void T_Disappear(disappear_t *d)
+void T_Disappear(void *thinker)
 {
+	disappear_t *d = thinker;
 	if (d->offset && !d->exists)
 	{
 		d->offset--;
@@ -9006,8 +9010,9 @@ static void P_AddFakeFloorFader(ffloor_t *rover, size_t sectornum, size_t ffloor
   * \param d Fade thinker.
   * \sa P_AddFakeFloorFader
   */
-void T_Fade(fade_t *d)
+void T_Fade(void *thinker)
 {
+	fade_t *d = thinker;
 	if (d->rover && !P_FadeFakeFloor(d->rover, d->sourcevalue, d->destvalue, d->speed, d->ticbased, &d->timer,
 		d->doexists, d->dotranslucent, d->dolighting, d->docolormap, d->docollision, d->doghostfade, d->exactalpha))
 	{
@@ -9071,8 +9076,9 @@ static void Add_ColormapFader(sector_t *sector, extracolormap_t *source_exc, ext
 	P_AddThinker(THINK_MAIN, &d->thinker);
 }
 
-void T_FadeColormap(fadecolormap_t *d)
+void T_FadeColormap(void *thinker)
 {
+	fadecolormap_t *d = thinker;
 	if ((d->ticbased && --d->timer <= 0)
 		|| (!d->ticbased && (d->timer -= d->duration) <= 0)) // d->duration used as speed decrement
 	{
@@ -9210,8 +9216,9 @@ boolean P_AllowFriction(mobj_t *mobj)
   * \param f Friction thinker.
   * \sa Add_Friction
   */
-void T_Friction(friction_t *f)
+void T_Friction(void *thinker)
 {
+	friction_t *f = thinker;
 	sector_t *sec, *referrer = NULL;
 	mobj_t *thing;
 	msecnode_t *node;
@@ -9363,8 +9370,9 @@ static void Add_Pusher(pushertype_e type, fixed_t x_mag, fixed_t y_mag, fixed_t 
   * \todo Split up into multiple functions.
   * \sa Add_Pusher, PIT_PushThing
   */
-void T_Pusher(pusher_t *p)
+void T_Pusher(void *thinker)
 {
+	pusher_t *p = thinker;
 	sector_t *sec, *referrer = NULL;
 	mobj_t *thing;
 	msecnode_t *node;

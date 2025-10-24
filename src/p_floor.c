@@ -161,8 +161,9 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest, boolean crus
 //
 // MOVE A FLOOR TO ITS DESTINATION (UP OR DOWN)
 //
-void T_MoveFloor(floormove_t *movefloor)
+void T_MoveFloor(void *thinker)
 {
+	floormove_t *movefloor = thinker;
 	result_e res = 0;
 	boolean remove = false;
 
@@ -301,8 +302,9 @@ void T_MoveFloor(floormove_t *movefloor)
 // The function moves the planes differently based on direction, so if it's
 // traveling really fast, the floor and ceiling won't hit each other and
 // stop the lift.
-void T_MoveElevator(elevator_t *elevator)
+void T_MoveElevator(void *thinker)
 {
+	elevator_t *elevator = thinker;
 	result_e res1 = 0, res2 = 0, res = 0;
 	boolean dontupdate = false;
 	fixed_t oldfloor, oldceiling;
@@ -548,8 +550,9 @@ void T_MoveElevator(elevator_t *elevator)
 //
 // Useful for things like intermittent falling lava.
 //
-void T_ContinuousFalling(continuousfall_t *faller)
+void T_ContinuousFalling(void *thinker)
 {
+	continuousfall_t *faller = thinker;
 	faller->sector->ceilingheight += faller->speed*faller->direction;
 	faller->sector->floorheight += faller->speed*faller->direction;
 
@@ -614,8 +617,9 @@ static fixed_t P_SectorCheckWater(sector_t *analyzesector,
 //////////////////////////////////////////////////
 // Bounces a floating cheese
 
-void T_BounceCheese(bouncecheese_t *bouncer)
+void T_BounceCheese(void *thinker)
 {
+	bouncecheese_t *bouncer = thinker;
 	fixed_t sectorheight;
 	fixed_t halfheight;
 	fixed_t waterheight;
@@ -755,8 +759,9 @@ void T_BounceCheese(bouncecheese_t *bouncer)
 // T_StartCrumble ////////////////////////////////
 //////////////////////////////////////////////////
 // Crumbling platform Tails 03-11-2002
-void T_StartCrumble(crumble_t *crumble)
+void T_StartCrumble(void *thinker)
 {
+	crumble_t *crumble = thinker;
 	ffloor_t *rover;
 	sector_t *sector;
 	INT32 i;
@@ -930,8 +935,9 @@ void T_StartCrumble(crumble_t *crumble)
 //////////////////////////////////////////////////
 // Mario hits a block!
 //
-void T_MarioBlock(mariothink_t *block)
+void T_MarioBlock(void *thinker)
 {
+	mariothink_t *block = thinker;
 	INT32 i;
 
 	T_MovePlane
@@ -971,8 +977,9 @@ void T_MarioBlock(mariothink_t *block)
 		P_RecalcPrecipInSector(&sectors[i]);
 }
 
-void T_FloatSector(floatthink_t *floater)
+void T_FloatSector(void *thinker)
 {
+	floatthink_t *floater = thinker;
 	fixed_t cheeseheight;
 	fixed_t waterheight;
 	sector_t *actionsector;
@@ -1065,8 +1072,9 @@ static mobj_t *SearchMarioNode(msecnode_t *node)
 	return thing;
 }
 
-void T_MarioBlockChecker(mariocheck_t *block)
+void T_MarioBlockChecker(void *thinker)
 {
+	mariocheck_t *block = thinker;
 	line_t *masterline = block->sourceline;
 	if (SearchMarioNode(block->sector->touching_thinglist))
 	{
@@ -1084,8 +1092,9 @@ void T_MarioBlockChecker(mariocheck_t *block)
 
 // This is the Thwomp's 'brain'. It looks around for players nearby, and if
 // it finds any, **SMASH**!!! Muahahhaa....
-void T_ThwompSector(thwomp_t *thwomp)
+void T_ThwompSector(void *thinker)
 {
+	thwomp_t *thwomp = thinker;
 	fixed_t thwompx, thwompy;
 	sector_t *actionsector;
 	ffloor_t *rover = NULL;
@@ -1246,8 +1255,9 @@ static boolean T_SectorHasEnemies(sector_t *sec)
 // Runs a linedef exec when no more MF_ENEMY/MF_BOSS objects with health are in the area
 // \sa P_AddNoEnemiesThinker
 //
-void T_NoEnemiesSector(noenemies_t *nobaddies)
+void T_NoEnemiesSector(void *thinker)
 {
+	noenemies_t *nobaddies = thinker;
 	size_t i;
 	sector_t *sec = NULL;
 	INT32 secnum = -1;
@@ -1301,8 +1311,9 @@ static boolean P_CheckAllTrigger(eachtime_t *eachtime)
 	return true;
 }
 
-void T_EachTimeThinker(eachtime_t *eachtime)
+void T_EachTimeThinker(void *thinker)
 {
+	eachtime_t *eachtime = thinker;
 	size_t i;
 	boolean oldPlayersInArea[MAXPLAYERS];
 	sector_t *caller[MAXPLAYERS];
@@ -1362,8 +1373,9 @@ void T_EachTimeThinker(eachtime_t *eachtime)
 // Rises up to its topmost position when a
 // player steps on it. Lowers otherwise.
 //
-void T_RaiseSector(raise_t *raise)
+void T_RaiseSector(void *thinker)
 {
+	raise_t *raise = thinker;
 	msecnode_t *node;
 	mobj_t *thing;
 	sector_t *sector;
@@ -1507,8 +1519,9 @@ void T_RaiseSector(raise_t *raise)
 		P_RecalcPrecipInSector(&sectors[i]);
 }
 
-void T_CameraScanner(elevator_t *elevator)
+void T_CameraScanner(void *thinker)
 {
+	elevator_t *elevator = thinker;
 	// leveltime is compared to make multiple scanners in one map function correctly.
 	static tic_t lastleveltime = 32000; // any number other than 0 should do here
 	static boolean camerascanned[MAXSPLITSCREENPLAYERS];
@@ -1552,8 +1565,9 @@ void T_CameraScanner(elevator_t *elevator)
 	}
 }
 
-void T_PlaneDisplace(planedisplace_t *pd)
+void T_PlaneDisplace(void *thinker)
 {
+	planedisplace_t *pd = thinker;
 	sector_t *control, *target;
 	INT32 direction;
 	fixed_t diff;
