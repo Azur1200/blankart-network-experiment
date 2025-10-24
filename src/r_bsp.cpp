@@ -1192,7 +1192,7 @@ static void R_Subsector(size_t num)
 		polyobj_t *po = sub->polyList;
 		sector_t *polysec;
 
-		auto poly_damage = [&](auto& f) { return polysec->flags & POF_SOLID ? f(polysec) : sector_damage(polysec); };
+		auto poly_damage = [&](auto& f) { return polysec->flags & (sectorflags_t)POF_SOLID ? f(polysec) : sector_damage(polysec); };
 		auto poly_top_damage = [&] { return poly_damage(floor_damage); };
 		auto poly_bottom_damage = [&] { return poly_damage(ceiling_damage); };
 

@@ -115,7 +115,8 @@ typedef int32_t boolean;
 
 #ifndef __cplusplus
 #ifndef _WIN32
-enum {false = 0, true = 1};
+#define false 0
+#define true 1
 #else
 #define false FALSE
 #define true TRUE

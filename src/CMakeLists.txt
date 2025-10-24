@@ -18,9 +18,20 @@ if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND 
 	endif()
 endif()
 
-target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
-set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
-set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
+set(SRB2_CONFIG_STD23 OFF CACHE BOOL
+	"Compiles the game under c23 and cxx23 instead c11 and cxx17.")
+
+if(SRB2_CONFIG_STD23)
+	message("-- Compiling game with C23 and CXX23.")
+	target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_23)
+	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 23)
+	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 23)
+else()
+	message("-- Compiling game with C11 and CXX17.")
+	target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
+	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
+	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
+endif()
 
 # Core sources
 target_sourcefile(c)
