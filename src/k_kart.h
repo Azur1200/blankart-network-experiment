@@ -187,6 +187,7 @@ angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t
 
 void K_RegisterKartStuff(void);
 
+void K_TimerReset(void);
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
 boolean K_IsPlayerLosing(const player_t *player);

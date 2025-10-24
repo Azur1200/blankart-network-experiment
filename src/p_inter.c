@@ -1465,23 +1465,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 			if (itembreaker)
 			{
-				// G: uncommented this for funsies
-				mobj_t * ring;
-				angle_t dir = 0;
-				if (inflictor)
-					dir = R_PointToAngle2(inflictor->x, inflictor->y, target->x, target->y);
-				else
-					dir = R_PointToAngle2(source->x, source->y, target->x, target->y);
-				for (UINT8 i = 0; i < 2; i++)
-				{
-					dir += (ANGLE_MAX/3);
-					ring = P_SpawnMobj(target->x, target->y, target->z, MT_RING);
-					ring->angle = dir;
-					P_InstaThrust(ring, dir, 16*ring->scale);
-					ring->momz = 8 * target->scale * P_MobjFlip(target);
-					P_SetTarget(&ring->tracer, source);
-					source->player->pickuprings++;
-				}
+				K_AwardScaledPlayerRings(source->player, ASR_ITEMBOX);
 
 				target->flags2 |= MF2_BOSSFLEE;
 				target->flags2 |= MF2_DONTRESPAWN;
@@ -1495,7 +1479,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				else if (timelimitintics)
 				{
 					S_StartSound(NULL, sfx_s221);
-					extratimeintics += 10*TICRATE;
+					extratimeintics += 3*TICRATE;
 					secretextratime = TICRATE/2;
 				}
 			}

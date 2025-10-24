@@ -98,14 +98,18 @@ consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_O
 boolean clusterplayer[MAXPLAYERS];
 vector3_t clusterpoint, clusterdtf;
 
+void K_TimerReset(void)
+{
+	starttime = introtime = 0;
+	timelimitintics = extratimeintics = secretextratime = 0;
+}
+
 void K_TimerInit(void)
 {
 	UINT8 i;
 	UINT8 numPlayers = 0;
 	boolean domodeattack = ((modeattacking != ATTACKING_NONE)
 		|| (grandprixinfo.gp == true && grandprixinfo.eventmode != GPEVENT_NONE));
-
-	starttime = introtime = 0;
 
 	if (specialStage.active == true)
 	{
@@ -140,7 +144,6 @@ void K_TimerInit(void)
 		}
 	}
 
-	timelimitintics = extratimeintics = secretextratime = 0; // G: restore K_TimerReset?
 	K_BattleInit(domodeattack);
 
 	if ((gametyperules & GTR_TIMELIMIT) && !bossinfo.boss && !modeattacking)

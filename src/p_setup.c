@@ -8015,6 +8015,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	leveltime = 0;
 	modulothing = 0;
 
+	K_TimerReset();
+
 	// special stage tokens, emeralds, and ring total
 	tokenbits = 0;
 	runemeraldmanager = false;
