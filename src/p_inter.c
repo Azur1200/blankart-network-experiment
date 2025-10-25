@@ -2133,6 +2133,8 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 	boolean force = false;
 	boolean spbpop = false;
 	boolean painsound = false;
+	boolean bubbleinvuln = false;
+	INT32 myShield = KSHIELD_NONE;
 
 	if (objectplacing)
 		return false;
@@ -2231,6 +2233,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		{
 			const UINT8 type = (damagetype & DMG_TYPEMASK);
 			const boolean explosioncombo = (type == DMG_EXPLODE); // This damage type can do evil stuff like ALWAYS combo
+			myShield = K_GetShieldFromPlayer(player);
 
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
@@ -2260,6 +2263,32 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 					// Full invulnerability
 					K_DoInstashield(player);
 					return false;
+				}
+
+				if ((myShield == KSHIELD_BUBBLE) && (player->bubbleblowup))
+				{
+					// This player is on the defensive; protect them from certain attacks.
+					switch (type)
+					{
+						case DMG_WIPEOUT:
+							bubbleinvuln = true;
+							break;
+						case DMG_VOLTAGE:
+						case DMG_NORMAL:
+							bubbleinvuln = true;
+							break;
+						default:
+							break;
+					}
+
+					if (bubbleinvuln)
+					{
+						// This attack likely penetrated. Defense!
+						player->flashing = K_GetKartFlashing(player);
+						player->bubblecool = player->bubbleblowup*2;
+						K_DoInstashield(player);
+						return false;
+					}
 				}
 
 				// Check if we should allow explosion combos.
@@ -2425,7 +2454,7 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 			}
 
 			// Have a shield? You get hit, but don't lose your rings!
-			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+			if (myShield != KSHIELD_NONE)
 			{
 				ringburst = 0;
 				K_PopPlayerShield(player);

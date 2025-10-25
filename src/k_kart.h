@@ -71,15 +71,11 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bubble Shield's maximum health
 #define MAXBUBBLEHEALTH 6
 
-// Chip damage done to a Bubble Shield upon bumping a player
-#define BUBBLEBUMPCHIP 1
-
 // HP cost for a Bubble Shield to inflate
 #define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
 
-// Damage done to an inflated Bubble Shield by items. By default, this is the maximum health,
-// so that the shield immediately breaks
-#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH)
+// Damage done to an inflated Bubble Shield by items.
+#define BUBBLEITMDAMAGE (1)
 
 // Invincibility-related constants
 #define INVINDIST CV_Get(&cv_kartinvindist)
@@ -211,6 +207,11 @@ UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
+
+fixed_t K_GetMomentum(mobj_t *mo, boolean twodee);
+#define K_Momentum2D(mo) (K_GetMomentum(mo, true))
+#define K_Momentum3D(mo) (K_GetMomentum(mo, false))
+
 void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
 void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint);
 void K_DoInstashield(player_t *player);

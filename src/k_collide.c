@@ -519,7 +519,7 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
-static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
+static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 dmg)
 {
 	if (!player)
 	{
@@ -533,10 +533,20 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 		return;
 	}
 
-	// Pop the bubble immediately after an item hit.
-	K_RemoveBubbleHealth(player, BUBBLEITMDAMAGE);
+	// Damage the shield after an item hit.
+	K_RemoveBubbleHealth(player, dmg);
 
-	if (player->bubblehealth > 0)
+	if (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
+	{
+		if ((dmg > 0) && (bubble) && (!P_MobjWasRemoved(bubble)))
+		{
+			// Play a distinct "crack!" noise to clue the player in.
+			S_StartSound(bubble, sfx_s3k6e);
+		}
+	}
+
+	// Apply a cooldown if the Bubble Shield took damage without shattering.
+	if ((player->bubblehealth > 0) && (dmg > 0))
 	{
 		player->bubblecool = 15*4;
 		player->itemflags &= ~IF_HOLDREADY;
@@ -603,6 +613,47 @@ static boolean K_PlayerCanBeBubbleBumped(player_t *player)
 	    || (player->growshrinktimer > 0));
 }
 
+static INT16 K_GetBubbleDamage(mobj_t* itm)
+{
+	if ((!itm) || (P_MobjWasRemoved(itm)))
+	{
+		return 0;
+	}
+
+	INT16 dmg = BUBBLEITMDAMAGE;
+
+	switch (itm->type)
+	{
+	case MT_EGGMANITEM:
+	case MT_BALLHOG:
+		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
+		dmg = 0;
+		break;
+	case MT_SINK:
+	case MT_JAWZ:
+	case MT_PLAYER:
+		// Sinks, Jawz, and powered-up players smash Bubble Shields to bits.
+		dmg = MAXBUBBLEHEALTH;
+		break;
+	case MT_ORBINAUT:
+		fixed_t momentum = K_Momentum3D(itm);
+		fixed_t orbi_momentum_epsilon = FixedMul(FixedMul(itm->radius, itm->scale),
+							 K_GetKartGameSpeedScalar(gamespeed));
+
+		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
+		if (momentum >= orbi_momentum_epsilon)
+		{
+			dmg = MAXBUBBLEHEALTH;
+		}
+
+		break;
+	default:
+		break;
+	}
+
+	return dmg;
+}
+
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->type == MT_PLAYER)
@@ -624,7 +675,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (reflected)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
+			K_BubbleShieldCollideDrain(t1->target->player, t1, K_GetBubbleDamage(t2));
 		}
 
 		return reflected;
@@ -637,7 +688,7 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (shootable)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
+			K_BubbleShieldCollideDrain(t1->target->player, t1, K_GetBubbleDamage(t2));
 		}
 
 		return shootable;
