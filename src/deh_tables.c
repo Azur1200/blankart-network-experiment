@@ -364,6 +364,14 @@ const char *const PLAYERFLAG_LIST[] = {
 	NULL // stop loop here.
 };
 
+struct int_const_s const PLAYERFLAG_ALIASES[] = {
+	{"TIMEOVER",    	PF_NOCONTEST},
+	{"FULLSTASIS",    	PF_STASIS},
+	{"FORCESTRAFE",    	0},
+
+	{ NULL, 0 }
+};
+
 const char *const ITEMFLAG_LIST[] = {
 	"USERINGS",
 	"ITEMOUT",

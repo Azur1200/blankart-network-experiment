@@ -164,21 +164,17 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 	}
 	else if (fastncmp("PF_", word, 3)) {
 		p = word+3;
-		if (lua_compatmode && fastcmp(p, "TIMEOVER"))
-		{
-			CacheAndPushConstant(L, word, ((lua_Integer)PF_NOCONTEST));
-			return 1;
-		}
-		if (lua_compatmode && fastcmp(p, "FORCESTRAFE"))
-		{
-			CacheAndPushConstant(L, word, ((lua_Integer)0));
-			return 1;
-		}
 		for (i = 0; PLAYERFLAG_LIST[i]; i++)
 			if (fastcmp(p, PLAYERFLAG_LIST[i])) {
 				CacheAndPushConstant(L, word, ((lua_Integer)1<<i));
 				return 1;
 			}
+		if (lua_compatmode)
+			for (i = 0; PLAYERFLAG_ALIASES[i].n; i++)
+				if (fastcmp(p, PLAYERFLAG_ALIASES[i].n)) {
+					CacheAndPushConstant(L, word, PLAYERFLAG_ALIASES[i].v);
+					return 1;
+				}
 		if (mathlib) return luaL_error(L, "playerflag '%s' could not be found.\n", word);
 		return 0;
 	}
