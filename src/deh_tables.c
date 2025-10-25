@@ -329,7 +329,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	"WANTSTOJOIN",		 // Spectator that wants to join
 
 	"STASIS",			 // Player is not allowed to move
-	"SKIDDOWN",		 // SKIDDOWN
+	"FAILEDSTART",		 // Player failed the startboost
 	"ELIMINATED",		 // Battle-style elimination, no extra penalty
 	"NOCONTEST",		 // Did not finish (last place explosion)
 	"LOSTLIFE",		 // Do not lose life more than once
@@ -352,12 +352,11 @@ const char *const PLAYERFLAG_LIST[] = {
 	"WRONGWAY",      	 // Moving the wrong way with respect to waypoints?
 
 	"SHRINKME",		     // "Shrink me" cheat preference
-	"SHRINKACTIVE",	      // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
+	"SHRINKACTIVE",	     // "Shrink me" cheat is in effect. (Can't be disabled mid-race)
 
+	"JUSTFLIPPED",        // Just got flipped over, handle the bump interaction.
 	"\x01",
-	"\x01",
-	"\x01",
-	"\x01",
+	"USEDOWN",
 	"ATTACKDOWN",
 	"SLIDING",
 
@@ -367,7 +366,42 @@ const char *const PLAYERFLAG_LIST[] = {
 struct int_const_s const PLAYERFLAG_ALIASES[] = {
 	{"TIMEOVER",    	PF_NOCONTEST},
 	{"FULLSTASIS",    	PF_STASIS},
-	{"FORCESTRAFE",    	0},
+	{"SKIDDOWN",    	PF_FAILEDSTART},
+
+	// These do nothing in kart but still exist so we need to "support" them :/
+	// Mostly for code that are hardcode copies
+
+	// Input stuff
+	{"JUMPSTASIS", 0},
+	{"FORCESTRAFE",	0},
+	{"ANALOGMODE", 0},
+
+	// NiGHTS...
+	{"NIGHTSMODE", 0},
+	{"TRANSFERTOCLOSEST", 0},
+	{"NIGHTSFALL", 0},
+	{"DRILLING", 0},
+
+	// Hanging..?
+	{"ITEMHANG", 0},
+	{"ROPEHANG", 0},
+	{"MACESPIN", 0},
+
+	// Base ability shit from SRB2
+	{"GLIDING", 0},
+	{"CARRIED", 0},
+	{"JUMPED", 0},
+	{"SPINNING", 0},
+	{"STARTDASH", 0},
+	{"THOKKED", 0},
+
+	// Unused DOWNS
+	{"WPNDOWN", 0},
+	{"JUMPDOWN", 0},
+
+	// Tag, your it!
+	{"TAGGED", 0},
+	{"TAGIT", 0},
 
 	{ NULL, 0 }
 };

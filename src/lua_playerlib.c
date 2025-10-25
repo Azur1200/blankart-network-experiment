@@ -1022,6 +1022,9 @@ static int player_get(lua_State *L)
 		if (lua_compatmode && (plr->oldcmd.buttons & BT_ATTACK))
 			pflags |= PF_ATTACKDOWN;
 
+		if (lua_compatmode && (plr->oldcmd.buttons & BT_BRAKE))
+			pflags |= PF_USEDOWN;
+
 		lua_pushinteger(L, pflags);
 		break;
 	}
@@ -1330,6 +1333,11 @@ static int player_set(lua_State *L)
 				plr->oldcmd.buttons |= BT_ATTACK;
 			else
 				plr->oldcmd.buttons &= ~BT_ATTACK;
+
+			if (pflags & PF_USEDOWN)
+				plr->oldcmd.buttons |= BT_BRAKE;
+			else
+				plr->oldcmd.buttons &= ~BT_BRAKE;
 		}
 
 		plr->pflags = pflags;

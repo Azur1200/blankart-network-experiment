@@ -4186,7 +4186,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 	if (spawner->player)
 	{
-		if (spawner->player->pflags & PF_SKIDDOWN)
+		if (spawner->player->pflags & PF_FAILEDSTART)
 		{
 			anglediff = abs((signed)(spawner->angle - spawner->player->drawangle));
 			if (leveltime % 6 == 0)
@@ -6600,7 +6600,7 @@ static void K_RaceStart(player_t *player)
 			player->nocontrol = 40;
 			//S_StartSound(player->mo, sfx_kc34);
 			S_StartSound(player->mo, sfx_s3k83);
-			player->pflags |= PF_SKIDDOWN; // cheeky pflag reuse
+			player->pflags |= PF_FAILEDSTART;
 		}
 
 		player->boostcharge = 0;

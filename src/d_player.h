@@ -88,7 +88,7 @@ typedef enum
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
 	PF_STASIS			= 1<<8, // Player is not allowed to move
-	PF_SKIDDOWN			= 1<<9, // SKIDDOWN
+	PF_FAILEDSTART		= 1<<9, // Player failed the startboost
 	PF_ELIMINATED		= 1<<10, // Battle-style elimination, no extra penalty
 	PF_NOCONTEST 		= 1<<11, // Did not finish (last place explosion)
 	PF_LOSTLIFE			= 1<<12, // Do not lose life more than once
@@ -115,7 +115,8 @@ typedef enum
 
 	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
 
-	// up to 1<<29 is free
+	// up to 1<<28 is free
+	PF_USEDOWN			= 1<<29, // For lua compat, don't use!
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
 } pflags_t;

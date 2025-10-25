@@ -2235,7 +2235,7 @@ void P_MovePlayer(player_t *player)
 
 		player->mo->rollangle = 0;
 	}
-	else if (player->nocontrol && player->pflags & PF_SKIDDOWN)
+	else if (player->nocontrol && player->pflags & PF_FAILEDSTART)
 	{
 		P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 
@@ -4320,7 +4320,7 @@ void P_PlayerThink(player_t *player)
 	if (player->nocontrol && player->nocontrol < UINT16_MAX)
 	{
 		if (!(--player->nocontrol))
-			player->pflags &= ~PF_SKIDDOWN;
+			player->pflags &= ~PF_FAILEDSTART;
 	}
 	else
 		player->nocontrol = 0;
