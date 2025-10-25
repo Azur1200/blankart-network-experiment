@@ -98,7 +98,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
     {15, 30, 25, 12,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
     { 0, 11, 22,  9,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
-    { 0,  0, 10,  9,  4,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
+    { 0,  0,  5,  3,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  0,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
     { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  2,  0}, // Self-Propelled Bomb
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 18,  9,  0,  0,  0}, // Grow
@@ -826,6 +826,12 @@ INT32 K_KartGetItemOdds(
 			break;
 		default:
 			break;
+	}
+
+	// In very small matches, remove the stupid bottom half item limiter
+	if (pingame < 6)
+	{
+		notForBottom = false;
 	}
 
 	if (newodds == 0)
