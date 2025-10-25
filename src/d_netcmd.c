@@ -498,8 +498,8 @@ consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedb
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);

@@ -2616,7 +2616,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->bubbleboost) // Bubble Shield popping boost
 	{
-		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 30% top speed, + 400% acceleration
+		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 20% top speed, + 800% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
