@@ -5118,10 +5118,21 @@ void K_DropHnextList(player_t *player)
 				type = MT_BANANA;
 				break;
 			case MT_SSMINE_SHIELD:
-				orbit = false;
-				dropall = false;
-				type = MT_SSMINE;
-				break;
+				if (!itemlittering)
+				{
+					// Don't spawn a mine to kill, or it'll be more than just
+					// the mine exploding!
+					// (this caused a SIGSEGV)
+					P_RemoveMobj(work);
+					continue;
+				}
+				else
+				{
+					orbit = false;
+					dropall = false;
+					type = MT_SSMINE;
+					break;
+				}
 			case MT_EGGMANITEM_SHIELD:
 				orbit = false;
 				type = MT_EGGMANITEM;
@@ -5132,6 +5143,12 @@ void K_DropHnextList(player_t *player)
 				return;
 			default:
 				continue;
+		}
+
+		if ((!itemlittering) && (type == MT_SSMINE))
+		{
+			P_RemoveMobj(work);
+			continue;
 		}
 
 		dropwork = P_SpawnMobj(work->x, work->y, work->z, type);
