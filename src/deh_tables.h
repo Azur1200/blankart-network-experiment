@@ -82,7 +82,7 @@ extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", /
 extern const char *const MOBJEFLAG_LIST[];
 extern const char *const MAPTHINGFLAG_LIST[4];
 extern const char *const PLAYERFLAG_LIST[];
-extern struct int_const_s const PLAYERFLAG_ALIASES[]
+extern struct int_const_s const PLAYERFLAG_ALIASES[];
 extern const char *const ITEMFLAG_LIST[];
 extern const char *const GAMETYPERULE_LIST[];
 extern const char *const ML_LIST[]; // Linedef flags
