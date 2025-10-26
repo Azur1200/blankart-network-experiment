@@ -621,6 +621,8 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	}
 
 	INT16 dmg = BUBBLEITMDAMAGE;
+	fixed_t momentum_epsilon =
+	    FixedMul(FixedMul(itm->radius, itm->scale), K_GetKartGameSpeedScalar(gamespeed));
 
 	switch (itm->type)
 	{
@@ -631,17 +633,22 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 		break;
 	case MT_SINK:
 	case MT_JAWZ:
-	case MT_PLAYER:
-		// Sinks, Jawz, and powered-up players smash Bubble Shields to bits.
+		// Sinks and Jawz smash Bubble Shields to bits.
 		dmg = MAXBUBBLEHEALTH;
 		break;
+	case MT_BANANA:
+		if (itm->health <= 1)
+		{
+			// Not sniping; don't run the penetration check.
+			break;
+		}
+		/*FALLTHRU*/
 	case MT_ORBINAUT:
 		fixed_t momentum = K_Momentum3D(itm);
-		fixed_t orbi_momentum_epsilon = FixedMul(FixedMul(itm->radius, itm->scale),
-							 K_GetKartGameSpeedScalar(gamespeed));
 
 		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
-		if (momentum >= orbi_momentum_epsilon)
+		// Same thing for Banana snipes.
+		if (momentum >= momentum_epsilon)
 		{
 			dmg = MAXBUBBLEHEALTH;
 		}

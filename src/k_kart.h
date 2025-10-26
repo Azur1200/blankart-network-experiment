@@ -69,13 +69,16 @@ extern UINT32 clusterid; // ID of the "cluster player", the one closest to the c
 extern vector3_t clusterpoint, clusterdtf;
 
 // Bubble Shield's maximum health
-#define MAXBUBBLEHEALTH 6
+#define MAXBUBBLEHEALTH 12
+
+// Chip damage done to a Bubble Shield upon bumping a player
+#define BUBBLEBUMPCHIP (MAXBUBBLEHEALTH / 4)
 
 // HP cost for a Bubble Shield to inflate
 #define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
 
 // Damage done to an inflated Bubble Shield by items.
-#define BUBBLEITMDAMAGE (1)
+#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH / 6)
 
 // Invincibility-related constants
 #define INVINDIST CV_Get(&cv_kartinvindist)

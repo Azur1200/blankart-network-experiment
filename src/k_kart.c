@@ -761,7 +761,18 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p1shield = K_GetShieldFromPlayer(mobj1->player);
 
 		// Moved here so it only fires once on bump.
-		if (p1shield == KSHIELD_NONE)
+		if (p1shield == KSHIELD_BUBBLE)
+		{
+			// Each bump does chip damage to the shield.
+			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
+
+			if (mobj1->player->bubblehealth > 0)
+			{
+				// Play a distinct "crack!" noise to clue the player in.
+				S_StartSound(mobj1, sfx_s3k6e);
+			}
+		}
+		else if (p1shield == KSHIELD_NONE)
 		{
 			if (mobj2->player && (mobj1->player->rings > 0))
 			{
@@ -786,7 +797,18 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p2shield = K_GetShieldFromPlayer(mobj2->player);
 
 		// Moved here so it only fires once on bump.
-		if (p2shield == KSHIELD_NONE)
+		if (p2shield == KSHIELD_BUBBLE)
+		{
+			// Each bump does chip damage to the shield.
+			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
+
+			if (mobj2->player->bubblehealth > 0)
+			{
+				// Play a distinct "crack!" noise to clue the player in.
+				S_StartSound(mobj2, sfx_s3k6e);
+			}
+		}
+		else if (p2shield == KSHIELD_NONE)
 		{
 			if (mobj1->player && (mobj2->player->rings > 0))
 			{
