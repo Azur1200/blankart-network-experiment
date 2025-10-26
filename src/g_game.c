@@ -384,7 +384,7 @@ consvar_t cv_chatwidth = CVAR_INIT ("chatwidth", "150", CV_SAVE, chatwidth_cons_
 
 // chatheight
 static CV_PossibleValue_t chatheight_cons_t[] = {{6, "MIN"}, {22, "MAX"}, {0, NULL}};
-consvar_t cv_chatheight = CVAR_INIT ("chatheight", "8", CV_SAVE, chatheight_cons_t, NULL);
+consvar_t cv_chatheight = CVAR_INIT ("chatheight", "16", CV_SAVE, chatheight_cons_t, NULL);
 
 // chat notifications (do you want to hear beeps? I'd understand if you didn't.)
 consvar_t cv_chatnotifications = CVAR_INIT ("chatnotifications", "On", CV_SAVE, CV_OnOff, NULL);
