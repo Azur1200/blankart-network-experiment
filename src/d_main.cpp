@@ -928,6 +928,7 @@ void D_SRB2Loop(void)
 
 	if (dedicated)
 		server = true;
+	connectedtodedicated = dedicated;
 
 	// Pushing of + parameters is now done back in D_SRB2Main, not here.
 
@@ -1438,6 +1439,7 @@ void D_SRB2Main(void)
 
 	// for dedicated server
 	dedicated = M_CheckParm("-dedicated") != 0;
+	connectedtodedicated = dedicated;
 
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));

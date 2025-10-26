@@ -98,6 +98,7 @@ boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
 boolean serverrunning = false;
+boolean connectedtodedicated = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
@@ -1141,6 +1142,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.gamestate = (UINT8)gamestate;
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
+	netbuffer->u.servercfg.dedicated = (boolean)dedicated;
 
 	netbuffer->u.servercfg.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 	netbuffer->u.servercfg.allownewplayer = cv_allownewplayer.value;
@@ -2569,6 +2571,8 @@ static void Command_connect(void)
 	// we don't request a restart unless the filelist differs
 
 	server = false;
+	connectedtodedicated = false;
+
 /*
 	if (!stricmp(COM_Argv(1), "self"))
 	{
@@ -2780,6 +2784,7 @@ void CL_Reset(void)
 	multiplayer = false;
 	servernode = 0;
 	server = true;
+	connectedtodedicated = false;
 	doomcom->numnodes = 1;
 	doomcom->numslots = 1;
 	SV_StopServer();
@@ -4058,6 +4063,11 @@ boolean Playing(void)
 	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
 }
 
+boolean InADedicatedServer(void)
+{
+	return Playing() && (dedicated || connectedtodedicated);
+}
+
 boolean SV_SpawnServer(void)
 {
 	// Screw Testers mode, worst idea ever.
@@ -4124,6 +4134,7 @@ void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame)
 	INT32 lastgametype = gametype;
 	server = true;
 	multiplayer = (modeattacking == ATTACKING_NONE) && !grandprixinfo.gp; // G: no multiplayer in GP!
+	connectedtodedicated = false;
 
 	netgame = false; // so setting timelimit works... (XD_NETVAR doesn't play nice with SV_StopServer)
 
@@ -4696,6 +4707,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				G_SetGametype(netbuffer->u.servercfg.gametype);
 
 				modifiedgame = netbuffer->u.servercfg.modifiedgame;
+				connectedtodedicated = netbuffer->u.servercfg.dedicated;
 
 				memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
 
