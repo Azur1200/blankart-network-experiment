@@ -496,7 +496,10 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 		weight = (mobj->player->kartweight) * FRACUNIT;
 
 		if (mobj->player->itemtype == KITEM_BUBBLESHIELD)
+		{
 			weight = max(BUBBLEMINWEIGHT, weight);
+			weight = FixedMul(weight, FRACUNIT/16);
+		}
 
 		if (mobj->player->speed > spd)
 			weight += (mobj->player->speed - spd)/8;
@@ -2639,7 +2642,7 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (player->bubbleboost) // Bubble Shield popping boost
 	{
-		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 20% top speed, + 800% acceleration
+		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 35% top speed, + 800% acceleration
 	}
 
 	if (player->flamestore) // Flame Shield dash
