@@ -557,6 +557,9 @@ int COM_AddLuaCommand(const char *name)
 	if (CV_StringValue(name)[0] != '\0')
 		return -1;
 
+	if (!stricmp(name, "respawn"))
+		return -1; // fuck you.
+
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
