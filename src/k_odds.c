@@ -96,14 +96,14 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 33, 60, 75, 75}, // Invincibility
     {67, 52, 24, 22, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
     {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
-    {15, 30, 25, 12,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
+    {20, 30, 25, 12,  6,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
     { 0, 11, 22,  9,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
     { 0,  0,  5,  3,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
     { 0,  0,  0,  0,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
     { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  2,  0}, // Self-Propelled Bomb
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 18,  9,  0,  0,  0}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
-    {18,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
+    {15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
     { 0,  0,  0,  0,  0,  2,  5,  4,  2,  0,  0,  0,  0,  0,  0,  0}, // Hyudoro
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
@@ -260,9 +260,10 @@ tic_t K_GetBGone(SINT8 item, boolean base)
 
 // Magic number distance for use with item roulette tiers
 #define ACTIVEDISTVAR (K_UsingLegacyCheckpoints() ? DISTVAR_LEGACY : DISTVAR)
+#define ACTIVESPBDIST (K_UsingLegacyCheckpoints() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
 
-#define SPBSTARTDIST (SPBDISTVAR) // Distance when SPB can start appearing
-#define SPBFORCEDIST (7 * SPBDISTVAR / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
+#define SPBSTARTDIST (ACTIVESPBDIST) // Distance when SPB can start appearing
+#define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 

@@ -587,6 +587,7 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1472", CV_NE
 // SPB distance; no legacy modifiers currently (lazy)
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "6144", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "1504", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // Invincibility modifiers
