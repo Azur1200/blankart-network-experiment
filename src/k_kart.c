@@ -11372,12 +11372,12 @@ boolean K_GetKartInvinType(void)
 
 boolean K_UsingLegacyCheckpoints(void)
 {
-	if (K_UsingPatchedMap() && waypointcap)
+	if (K_UsingPatchedMap() && waypointcap != NULL)
 	{
 		// we're presumably adding waypoints to an existing map
 		return false;
 	}
-	if (numbosswaypoints > 0)
+	if (numbosswaypoints > 0 || waypointcap == NULL)
 	{
 		// We are using Kart V1 waypoints!
 		return true;

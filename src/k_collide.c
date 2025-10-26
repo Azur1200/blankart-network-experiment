@@ -644,6 +644,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 		}
 		/*FALLTHRU*/
 	case MT_ORBINAUT:
+	{
 		fixed_t momentum = K_Momentum3D(itm);
 
 		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
@@ -654,6 +655,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 		}
 
 		break;
+	}
 	default:
 		break;
 	}
