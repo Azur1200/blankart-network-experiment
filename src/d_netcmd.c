@@ -581,10 +581,10 @@ consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1024", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1472", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "1152", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1600", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
 
-// SPB distance; no legacy modifiers currently (lazy)
+// SPB distance
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "6144", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "1504", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
