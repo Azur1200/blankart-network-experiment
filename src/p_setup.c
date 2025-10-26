@@ -774,12 +774,12 @@ static void P_SpawnMapThings(boolean spawnemblems)
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
 			continue;
 
-		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
-			nummapboxes++;
-
 		// Don't spawn non-patch objects of this type if they are uneeded
 		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
 			continue;
+
+		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
+			nummapboxes++;
 
 		mt->mobj = NULL;
 
