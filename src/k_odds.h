@@ -32,6 +32,7 @@ extern "C" {
 #define DISTVAR CV_Get(&cv_kartoddsdist)
 #define DISTVAR_LEGACY CV_Get(&cv_kartlegacyoddsdist)
 #define SPBDISTVAR CV_Get(&cv_kartspbdist)
+#define SPBDISTVAR_LEGACY CV_Get(&cv_kartlegacyspbdist)
 
 extern consvar_t *KartItemCVars[NUMKARTRESULTS-1];
 
