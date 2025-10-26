@@ -640,6 +640,8 @@ _(CHEZ) // follower: cheese
 
 _(BSSS) // Stacking effect
 
+_(BKAD) // Airdrop Dust
+
 _(TRCK)
 
 // First person view sprites; this is a sprite so that it can be replaced by a specialized MD2 draw later

@@ -1404,7 +1404,7 @@ static void K_SpawnStackingEffect(player_t *player)
 	mobj_t  *booststack = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_BOOSTSTACK);
 	booststack->flags2 |= MF2_DONTSYNC; // No desyncs pls!
 	P_SetTarget(&booststack->target, player->mo);
-	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,4)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
+	P_SetScale(booststack, FixedMul(FRACUNIT + FixedMul(2*FRACUNIT - FRACUNIT, FixedDiv(min(player->numboosts,6)*FRACUNIT, 4*FRACUNIT)), mapobjectscale));
 
 	booststack->angle = player->mo->angle + ANGLE_90;
 	booststack->color = player->mo->color;
@@ -6810,6 +6810,48 @@ void K_AwardScaledPlayerRings(player_t *player, SINT8 mode)
 	K_AwardPlayerRings(player, awardamount, (mode == ASR_SUPERRING) ? true : false);
 }
 
+static void K_SpawnAirdropTrail(player_t *player)
+{
+	fixed_t newx, newy;
+	fixed_t tx, ty, tz;
+	mobj_t *dust;
+	angle_t travelangle;
+	INT32 i, j;
+
+	I_Assert(player != NULL);
+	I_Assert(player->mo != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
+
+	if (player->drift != 0)
+		travelangle = player->mo->angle;
+	else
+		travelangle = K_MomentumAngle(player->mo);
+
+	for (j = 0; j < CLAMP(player->airdroptime, 0, 3); j++)
+	{
+		for (i = 0; i < 2; i++)
+		{
+			tx = P_ReturnThrustX(player->mo, travelangle, FixedMul((-12*FRACUNIT)*(j), player->mo->scale));
+			ty = P_ReturnThrustY(player->mo, travelangle, FixedMul((-12*FRACUNIT)*(j), player->mo->scale));
+			tz = player->mo->momz * j;
+
+			newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale)) + tx;
+			newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(24*FRACUNIT, player->mo->scale)) + ty;
+
+			dust = P_SpawnMobj(newx, newy, player->mo->z-(tz/4), MT_AIRDROPDUST);
+
+			P_SetTarget(&dust->target, player->mo);
+			dust->angle = travelangle;
+			dust->fuse = 2*TICRATE;
+			dust->destscale = player->mo->scale;
+			P_SetScale(dust, player->mo->scale);
+			K_FlipFromObject(dust, player->mo);
+
+			dust->momx = 8;
+		}
+	}
+}
+
 static void K_SpawnFallLines(player_t *player, boolean ringdrop)
 {
 	fixed_t rand_x;
@@ -6900,6 +6942,7 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 			}
 
 			K_SpawnFallLines(player, player->ringdrop);
+			K_SpawnAirdropTrail(player);
 			player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
 		}
 	}
