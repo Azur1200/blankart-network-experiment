@@ -80,6 +80,9 @@ extern vector3_t clusterpoint, clusterdtf;
 // Damage done to an inflated Bubble Shield by items.
 #define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH / 6)
 
+// Bump weight for a Bubble Shield
+#define BUBBLEMINWEIGHT (5 * FRACUNIT)
+
 // Invincibility-related constants
 #define INVINDIST CV_Get(&cv_kartinvindist)
 #define INVINDISTMUL CV_Get(&cv_kartinvindistmul)

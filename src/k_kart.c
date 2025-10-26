@@ -496,7 +496,7 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 		weight = (mobj->player->kartweight) * FRACUNIT;
 
 		if (mobj->player->itemtype == KITEM_BUBBLESHIELD)
-			weight += 9*FRACUNIT;
+			weight = max(BUBBLEMINWEIGHT, weight);
 
 		if (mobj->player->speed > spd)
 			weight += (mobj->player->speed - spd)/8;
