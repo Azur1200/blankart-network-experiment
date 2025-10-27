@@ -5720,7 +5720,7 @@ static void K_drawDistributionDebugger(void)
 
 	V_DrawString(150, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("PDIS %u", pdis));
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
 
 }
@@ -5769,7 +5769,7 @@ static void K_DrawClusterDebugger(void)
 
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 	{
 		V_DrawThinString(8, 136, vflags, va("Cluster player: %s", player_names[clusterid]));
 		V_DrawThinString(8, 146, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));

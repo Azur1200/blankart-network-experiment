@@ -52,6 +52,8 @@ void K_SetBGoneToBase(SINT8 item);
 tic_t K_GetBGone(SINT8 item, boolean base);
 void K_KartHandleShieldCooldown(SINT8 item);
 
+boolean K_LegacyOddsMode(void);
+
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
 UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush);
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);

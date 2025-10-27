@@ -212,6 +212,8 @@ extern consvar_t cv_kartitemlitter;
 
 extern consvar_t cv_kartantibump;
 
+extern consvar_t cv_kartforcelegacyodds;
+
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
 extern consvar_t cv_kartspbdist;

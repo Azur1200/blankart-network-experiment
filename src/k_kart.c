@@ -390,6 +390,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartitemlitter);
 
+	CV_RegisterVar(&cv_kartforcelegacyodds);
+
 	CV_RegisterVar(&cv_kartantibump);
 
 	CV_RegisterVar(&cv_kartitembreaker);
@@ -2408,7 +2410,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 		return BASEINVINTIME;
 	}
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 	{
 		// Legacy waypointing is janky and finicky, so tack on a safety-net multiplier.
 		// If an invincible player gets ahead of the cluster player, bottlenecking activates
@@ -9514,7 +9516,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 		}
 	}
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 	{
 		// Compare yourself against the cluster player to determine the distance.
 
@@ -9547,6 +9549,7 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 
 		// Return the 3D distance from the cluster player.
 		// Multiply by 2 to make up for shoddy euclidean distance checks.
+		// FIXME: Congaline distancing?
 		return (K_PlayerDistance3D(player, cluster_p) << 1) / (FRACUNIT*divmul);
 	}
 	else
@@ -9877,15 +9880,15 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
 }
 
 #define CLUSTER_EPSILON (320*FRACUNIT)
-#define RESCALED_CLUSTER_EPS (FixedMul(FixedMul(CLUSTER_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+#define USECLUSEPS (FixedMul(FixedMul(CLUSTER_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
 
-#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(RESCALED_CLUSTER_EPS, K_CountNeighboringPlayers, &clusterpoint))
-#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((RESCALED_CLUSTER_EPS / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
+#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster((USECLUSEPS / 2), K_CountNeighboringPlayers, &clusterpoint))
+#define K_FindPlayerClusterDTF() (K_FindPlayerCluster((USECLUSEPS / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
 
 void K_UpdateClusterPoints(void)
 {
     // Get the player cluster.
-    if (K_UsingLegacyCheckpoints())
+    if (K_LegacyOddsMode())
     {
         K_FindPlayerClusterLegacy();
     }

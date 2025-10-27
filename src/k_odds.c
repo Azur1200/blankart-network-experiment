@@ -260,9 +260,18 @@ tic_t K_GetBGone(SINT8 item, boolean base)
 	return ItemBGone[item][base ? GONER_BASECOOLDOWN : GONER_CURRCOOLDOWN] * (base ? TICRATE : 1);
 }
 
+/**	\brief	Are the odds in legacy distancing mode?
+
+	\return	true if kartforcelegacyodds is enabled, or the map uses legacy WPs
+*/
+boolean K_LegacyOddsMode(void)
+{
+	return (K_UsingLegacyCheckpoints() || (cv_kartforcelegacyodds.value));
+}
+
 // Magic number distance for use with item roulette tiers
-#define ACTIVEDISTVAR (K_UsingLegacyCheckpoints() ? DISTVAR_LEGACY : DISTVAR)
-#define ACTIVESPBDIST (K_UsingLegacyCheckpoints() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
+#define ACTIVEDISTVAR (K_LegacyOddsMode() ? DISTVAR_LEGACY : DISTVAR)
+#define ACTIVESPBDIST (K_LegacyOddsMode() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
 
 #define SPBSTARTDIST (ACTIVESPBDIST) // Distance when SPB can start appearing
 #define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
@@ -671,7 +680,7 @@ INT32 K_KartGetItemOdds(
 	if (first != -1 && second != -1) // calculate 2nd's distance from 1st, for SPB
 	{
 
-		if (!K_UsingLegacyCheckpoints())
+		if (!K_LegacyOddsMode())
 		{
 			firstDist = players[first].distancetofinish;
 
@@ -784,11 +793,11 @@ INT32 K_KartGetItemOdds(
 			indirectItem = true;
 			notNearEnd = true;
 
-			if (!K_UsingLegacyCheckpoints() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
+			if (!K_LegacyOddsMode() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
 			{
 				newodds = 0;
 			}
-			else if (K_UsingLegacyCheckpoints() && pexiting > 0)
+			else if (K_LegacyOddsMode() && pexiting > 0)
 			{
 				newodds = 0;
 			}
@@ -858,7 +867,7 @@ INT32 K_KartGetItemOdds(
 		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 		newodds = 0;
 	}
-	else if (!K_UsingLegacyCheckpoints() && (notNearEnd == true) && (ourDist < (UINT32)ENDDIST))
+	else if (!K_LegacyOddsMode() && (notNearEnd == true) && (ourDist < (UINT32)ENDDIST))
 	{
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 		newodds = 0;
@@ -1096,7 +1105,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 
 	(void)pingame;
 
-	if (!K_UsingLegacyCheckpoints())
+	if (!K_LegacyOddsMode())
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
