@@ -5175,12 +5175,12 @@ void G_LoadGameData(void)
 				return; // out of bounds
 
 			char *prename = gdpresets[whichpreset];
-			UINT8 gameversion = READUINT8(save.p);
+			UINT8 presetversion = READUINT8(save.p);
 
 			maprecordpreset_t *preset = G_GetMapRecordPreset(record, prename);
 			if (preset != NULL)
 				return; // duped
-			preset = G_AllocateMapRecordPreset(record, prename, gameversion);
+			preset = G_AllocateMapRecordPreset(record, prename, presetversion);
 			preset->besttime = READUINT32(save.p);
 			preset->bestlap = READUINT32(save.p);
 			preset->playtime = READUINT32(save.p);
