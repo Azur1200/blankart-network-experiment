@@ -46,10 +46,6 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
     N = 0;
     vector3_t neighborvector;
     std::vector<player_t *>clusternodes;
-    std::vector<player_t *> *realvec;
-    
-    if (nodevec != nullptr)
-        realvec = static_cast<std::vector<player_t *> *>(nodevec);
 
     if (!sourcePlayer->mo)
         return 0;
@@ -57,6 +53,28 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
     meanx = meany = meanz = 0;
 
     INT32 i;
+    UINT8 pingame = 0;
+
+    // To hell with this; scan for ourselves and pre-emptively flag ourselves.
+    for (i = 0; i < MAXPLAYERS; i++)
+	{
+        if (!playeringame[i])
+			continue;
+
+        if (&players[i] == sourcePlayer)
+        {
+            clusterplayer[i] = true;
+        }
+
+        if (players[i].spectator)
+			continue; // spectator
+
+		if (!players[i].mo)
+			continue;
+
+        pingame++;
+    }
+
     for (i = 0; i < MAXPLAYERS; i++)
 	{
 		player_t *player;
@@ -67,7 +85,10 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
 		player = &players[i];
 
         if (player == sourcePlayer)
-            continue; // Ignore ourselves.
+        {
+            // Ignore ourselves.
+            continue;
+        }
 
         if (clusterplayer[i])
             continue; // Ignore players we've scanned already.
@@ -80,20 +101,31 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
 
         if (!K_IsPlayerLosing(player))
             continue; // Ignore winning players to prevent sandbagging.
+
+        if (player->position >= pingame)
+            continue; // Ignore last place. *They* need help the most!
         
         // Scan all points in the database
-        if (K_PlayerDistance3D(sourcePlayer, player) <= eps)
+        fixed_t dist = K_PlayerDistance3D(sourcePlayer, player);
+
+        /*CONS_Printf("%s: checking %f against epsilon value %f\n",
+            player_names[i],
+            FIXED_TO_FLOAT(dist), FIXED_TO_FLOAT(eps)
+        );*/
+        if (dist <= eps)
         {   
             clusterplayer[i] = true;
-            clusternodes.push_back(player);
+            //CONS_Printf("%s is in this cluster\n", player_names[i]);
 
-            if (realvec)
-                realvec->push_back(player);
+            if (nodevec)
+                static_cast<std::vector<player_t *> *>(nodevec)->push_back(player);
 
             // Scan our neighbor for any players close to them.
-            K_CountNeighboringPlayersByDistance(player, eps, &neighborvector, &clusternodes);
+            K_CountNeighboringPlayersByDistance(player, eps, &neighborvector, nodevec);
         }
     }
+
+    clusternodes = *static_cast<std::vector<player_t *> *>(nodevec);
 
     N = clusternodes.size();
 
@@ -128,6 +160,12 @@ INT32 K_CountNeighboringPlayersByDistance(player_t *sourcePlayer, fixed_t eps, v
         bestdist = INT32_MAX;
         for (i = 0; i < N; i++)
         {
+            if (!clusternodes[i])
+                continue;
+
+            if (!clusternodes[i]->mo)
+                continue;
+
             disttocluster = K_Distance3D(clusternodes[i]->mo->x,clusternodes[i]->mo->y,clusternodes[i]->mo->z,out->x,out->y,out->z);
 
             if (disttocluster < bestdist)
@@ -254,10 +292,13 @@ INT32 K_CountNeighboringPlayersByDTF(player_t *sourcePlayer, fixed_t eps, vector
 INT32 K_CountNeighboringPlayers(player_t *sourcePlayer, fixed_t eps, vector3_t *out)
 {
     // Dummy vector so the game doesn't SIGSEGV.
-    // There's probably a better solution to this.
+    // Turns out, it's also necessary for this system not to be placebo!
     std::vector<player_t *> dummy = {0};
 
-    return K_CountNeighboringPlayersByDistance(sourcePlayer, eps, out, &dummy);
+    dummy.clear();
+    INT32 result = K_CountNeighboringPlayersByDistance(sourcePlayer, eps, out, &dummy);
+
+    return result;
 }
 
 }
