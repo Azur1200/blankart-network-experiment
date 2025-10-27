@@ -534,6 +534,7 @@ UINT8 M_GotEnoughEmblems(INT32 number)
 
 UINT8 M_GotLowEnoughTime(INT32 tictime)
 {
+	(void)tictime;
 	I_Error("fixme M_GotLowEnoughTime");
 	/*
 	INT32 curtics = 0;

@@ -152,6 +152,7 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 5, 1 }  // Jawz x2
 };
 
+/*
 static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
 {
 	//M  N  O  P
@@ -183,6 +184,7 @@ static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
 	{ 0, 0, 1, 1 }, // Orbinaut x4
 	{ 0, 0, 1, 1 }  // Jawz x2
 };
+*/
 
 // Cooldown time table; contains both base (index 0) and current (index 1)
 // times. Base times are in seconds, current times are in tics.

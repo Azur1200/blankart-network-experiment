@@ -261,6 +261,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wwrite-strings
 		-Wsign-compare
 		-Wno-comment
+		-Wno-alloc-size-larger-than # holy shit, be quiet up GCC
 		-Wmissing-prototypes
 		-Wmissing-declarations
 		-Wmissing-noreturn

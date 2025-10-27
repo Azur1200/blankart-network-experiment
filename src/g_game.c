@@ -5008,7 +5008,7 @@ static boolean LoadLegacyRecords(savebuffer_t *save)
 
 				if (rectime || reclap)
 				{
-					char *prename = k == 0 ? "kart" : k == 1 ? "tech" : "blankart";
+					const char *prename = k == 0 ? "kart" : k == 1 ? "tech" : "blankart";
 					UINT8 version = k == 0 ? 1 : 2;
 
 					maprecordpreset_t *preset = G_GetMapRecordPreset(record, prename);
@@ -5175,12 +5175,12 @@ void G_LoadGameData(void)
 				return; // out of bounds
 
 			char *prename = gdpresets[whichpreset];
-			UINT8 version = READUINT8(save.p);
+			UINT8 gameversion = READUINT8(save.p);
 
 			maprecordpreset_t *preset = G_GetMapRecordPreset(record, prename);
 			if (preset != NULL)
 				return; // duped
-			preset = G_AllocateMapRecordPreset(record, prename, version);
+			preset = G_AllocateMapRecordPreset(record, prename, gameversion);
 			preset->besttime = READUINT32(save.p);
 			preset->bestlap = READUINT32(save.p);
 			preset->playtime = READUINT32(save.p);
