@@ -1098,6 +1098,141 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 // to simulate parity with pathfind odds.
 #define LEGACYODDSEXAGGERATE (2*FRACUNIT/3)
 
+/**	\brief	Gets the distance between a player and a position by chaining all other players
+ * 			between them and the target position.
+
+	\param	player	player object
+	\param  startPos first position to trace to the player from
+
+	\return	(UINT32) pdis
+*/
+UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
+{
+	SINT8 sortedPlayers[MAXPLAYERS];
+	UINT8 sortLength = 0;
+
+	UINT32 pdis = 0;
+	INT32 i;
+
+	memset(sortedPlayers, -1, sizeof(sortedPlayers));
+
+	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
+	{
+		// Sort all of the players ahead of you.
+		// Then tally up their distances in a conga line.
+
+		// This will create a much more consistent item
+		// distance algorithm than the "spider web" thing
+		// that it was doing before.
+
+		// Add yourself to the list.
+		// You'll always be the end of the list,
+		// so we can also calculate the length here.
+		sortedPlayers[ player->position - 1 ] = player - players;
+		sortLength = player->position;
+
+		// Will only need to do this if there's goint to be
+		// more than yourself in the list.
+		if (sortLength > 1)
+		{
+			SINT8 firstIndex = -1;
+			SINT8 secondIndex = -1;
+			INT32 startFrom = INT32_MAX;
+
+			// Add all of the other players.
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				INT32 pos = INT32_MAX;
+
+				if (!playeringame[i] || players[i].spectator)
+				{
+					continue;
+				}
+
+				if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
+				{
+					continue;
+				}
+
+				pos = players[i].position;
+
+				if ((pos <= 0) || (pos > MAXPLAYERS) || (pos < startPos))
+				{
+					// Invalid position.
+					continue;
+				}
+
+				if (pos >= player->position)
+				{
+					// Tied / behind us.
+					// Also handles ourselves, obviously.
+					continue;
+				}
+
+				// Ties are done with port priority, if there are any.
+				if (sortedPlayers[ pos - 1 ] == -1)
+				{
+					sortedPlayers[ pos - 1 ] = i;
+				}
+			}
+
+			// The chance of this list having gaps is improbable,
+			// but not impossible. So we need to spend some extra time
+			// to prevent the gaps from mattering.
+			for (i = 0; i < sortLength-1; i++)
+			{
+				if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+				{
+					// First valid index in the list found.
+					firstIndex = sortedPlayers[i];
+
+					// Start the next loop after this player.
+					startFrom = i + 1;
+					break;
+				}
+			}
+
+			if (firstIndex >= 0 && firstIndex < MAXPLAYERS
+				&& startFrom < sortLength)
+			{
+				// First index is valid, so we can
+				// start comparing the players.
+
+				player_t *firstPlayer = NULL;
+				player_t *secondPlayer = NULL;
+
+				for (i = startFrom; i < sortLength; i++)
+				{
+					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+					{
+						secondIndex = sortedPlayers[i];
+
+						firstPlayer = &players[firstIndex];
+						secondPlayer = &players[secondIndex];
+
+						// Add the distance to the player behind you.
+						// At a (relative to map) integer scale using basic distancing
+						// arithmetic; more accurate and less concern for overflows.
+						// TODO: Overflow-safe addition (caps at UINT32_MAX).
+						pdis += K_IntDistanceForMap(
+								secondPlayer->mo->x,
+								secondPlayer->mo->y,
+								secondPlayer->mo->z,
+								firstPlayer->mo->x,
+								firstPlayer->mo->y,
+								firstPlayer->mo->z);
+
+						// Advance to next index.
+						firstIndex = secondIndex;
+					}
+				}
+			}
+		}
+	}
+
+	return pdis;
+}
+
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
@@ -1130,124 +1265,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 	}
 	else
 	{
-		SINT8 sortedPlayers[MAXPLAYERS];
-		UINT8 sortLength = 0;
-
-		memset(sortedPlayers, -1, sizeof(sortedPlayers));
-
-		if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
-		{
-			// Sort all of the players ahead of you.
-			// Then tally up their distances in a conga line.
-
-			// This will create a much more consistent item
-			// distance algorithm than the "spider web" thing
-			// that it was doing before.
-
-			// Add yourself to the list.
-			// You'll always be the end of the list,
-			// so we can also calculate the length here.
-			sortedPlayers[ player->position - 1 ] = player - players;
-			sortLength = player->position;
-
-			// Will only need to do this if there's goint to be
-			// more than yourself in the list.
-			if (sortLength > 1)
-			{
-				SINT8 firstIndex = -1;
-				SINT8 secondIndex = -1;
-				INT32 startFrom = INT32_MAX;
-
-				// Add all of the other players.
-				for (i = 0; i < MAXPLAYERS; i++)
-				{
-					INT32 pos = INT32_MAX;
-
-					if (!playeringame[i] || players[i].spectator)
-					{
-						continue;
-					}
-
-					if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
-					{
-						continue;
-					}
-
-					pos = players[i].position;
-
-					if (pos <= 0 || pos > MAXPLAYERS)
-					{
-						// Invalid position.
-						continue;
-					}
-
-					if (pos >= player->position)
-					{
-						// Tied / behind us.
-						// Also handles ourselves, obviously.
-						continue;
-					}
-
-					// Ties are done with port priority, if there are any.
-					if (sortedPlayers[ pos - 1 ] == -1)
-					{
-						sortedPlayers[ pos - 1 ] = i;
-					}
-				}
-
-				// The chance of this list having gaps is improbable,
-				// but not impossible. So we need to spend some extra time
-				// to prevent the gaps from mattering.
-				for (i = 0; i < sortLength-1; i++)
-				{
-					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
-					{
-						// First valid index in the list found.
-						firstIndex = sortedPlayers[i];
-
-						// Start the next loop after this player.
-						startFrom = i + 1;
-						break;
-					}
-				}
-
-				if (firstIndex >= 0 && firstIndex < MAXPLAYERS
-					&& startFrom < sortLength)
-				{
-					// First index is valid, so we can
-					// start comparing the players.
-
-					player_t *firstPlayer = NULL;
-					player_t *secondPlayer = NULL;
-
-					for (i = startFrom; i < sortLength; i++)
-					{
-						if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
-						{
-							secondIndex = sortedPlayers[i];
-
-							firstPlayer = &players[firstIndex];
-							secondPlayer = &players[secondIndex];
-
-							// Add the distance to the player behind you.
-							// At a (relative to map) integer scale using basic distancing
-							// arithmetic; more accurate and less concern for overflows.
-							// TODO: Overflow-safe addition (caps at UINT32_MAX).
-							pdis += K_IntDistanceForMap(
-									secondPlayer->mo->x,
-									secondPlayer->mo->y,
-									secondPlayer->mo->z,
-									firstPlayer->mo->x,
-									firstPlayer->mo->y,
-									firstPlayer->mo->z);
-
-							// Advance to next index.
-							firstIndex = secondIndex;
-						}
-					}
-				}
-			}
-		}
+		pdis = K_GetCongaLineDistance(player, 1);
 	}
 
 	// Exaggerate odds; don't you love the legacy system? :Trollic:
