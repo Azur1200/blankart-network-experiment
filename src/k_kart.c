@@ -2381,8 +2381,8 @@ static fixed_t K_InvincibilityEasing(fixed_t x)
         min(FRACUNIT, FixedMul(u - FRACUNIT, FRACUNIT/4)), (INVINMIDTIME/10), (INVINMAXTIME/10));
 }
 
-// 2.5 * FRACUNIT
-#define LEGACYALTINVINMUL 163840
+// 1.22 * FRACUNIT
+#define LEGACYALTINVINMUL 79953
 
 UINT16 K_GetInvincibilityTime(player_t *player)
 {
@@ -9432,22 +9432,26 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 
 #define MINCLUSTERPLAYERS 6
 
+// 1.44 * FRACUNIT
+#define LEGACYCLUSTERMUL 94371
+
 static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 {
 	player_t *cluster_p;
 	UINT32 i, pingame;
-	SINT8 first, second, bestloser, tinypoptarget;
+	SINT8 first, second, bestloser, worstloser, tinypoptarget;
 
-	INT16 bestloserpos;
+	INT16 bestloserpos, worstloserpos;
 
 	INT32 divmul;
 
 	pingame = 0;
 
 	bestloserpos = INT16_MAX;
+	worstloserpos = 0;
 
 	first = -1;
-	bestloser = second = -1;
+	bestloser = worstloser = second = -1;
 	tinypoptarget = -1;
 
 	divmul = 1;
@@ -9465,6 +9469,19 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 				first = i;
 			else if (players[i].position == 2 && second == -1)
 				second = i;
+
+			if ((players[i].position < bestloserpos) && (K_IsPlayerLosing(&players[i])))
+			{
+				// This player is the highest-ranking "loser".
+				bestloserpos = players[i].position;
+				bestloser = (SINT8)i;
+			}
+			else if ((players[i].position > worstloserpos) && (K_IsPlayerLosing(&players[i])))
+			{
+				// This player is the lowest-ranking "loser".
+				worstloserpos = players[i].position;
+				worstloser = (SINT8)i;
+			}
 		}
 	}
 
@@ -9486,14 +9503,6 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 
 			if ((players[i].mo) && (gametyperules & GTR_CIRCUIT))
 			{
-				if ((players[i].position < bestloserpos) &&
-					(K_IsPlayerLosing(&players[i])))
-				{
-					// This player is the highest-ranking "loser".
-					bestloserpos = players[i].position;
-					bestloser = (SINT8)i;
-				}
-				
 				if (players[i].position == (pingame - 1) && second == -1)
 				{
 					second = i;
@@ -9512,6 +9521,14 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			if (bestloser != -1)
 			{
 				clusterid = bestloser;
+			}
+		}
+		else if (players[clusterid].position >= pingame)
+		{
+			// Our cluster player is in dead last, relay the ID to second-to-last.
+			if (worstloser != -1)
+			{
+				clusterid = worstloser;
 			}
 		}
 	}
@@ -9548,9 +9565,9 @@ static UINT32 K_UpdateDistanceFromCluster(player_t *player)
 			return 0; // Ahead, or tying.
 
 		// Return the 3D distance from the cluster player.
-		// Multiply by 2 to make up for shoddy euclidean distance checks.
-		// FIXME: Congaline distancing?
-		return (K_PlayerDistance3D(player, cluster_p) << 1) / (FRACUNIT*divmul);
+		// Multiply by a multiplier to make up for shoddy euclidean distance checks.
+		UINT8 cluster_pos = cluster_p->position;
+		return FixedMul(K_GetCongaLineDistance(player, cluster_pos), LEGACYCLUSTERMUL) / (divmul);
 	}
 	else
 	{
@@ -9816,10 +9833,14 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
     player_t *findme;
     player_t *player;
 
-    INT32 i;
+    INT32 i, j;
     for (i = 0; i < MAXPLAYERS; i++)
 	{
-        clusterplayer[i] = false;
+		// NESTED LOOP to clear clusterplayer flags. GOD.
+		for (j = 0; j < MAXPLAYERS; j++)
+		{
+			clusterplayer[j] = false;
+		}
 
 		if (!playeringame[i])
 			continue;
@@ -9839,7 +9860,7 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
         clusterplayer[i] = false;
 		
 		// 10/22/2025: Pairs don't count anymore
-		if (N <= 2)
+		if (N < 2)
 		{
 			continue;
 		}
@@ -9879,10 +9900,13 @@ static vector3_t *K_FindPlayerCluster(fixed_t eps, INT32 (*func)(player_t *, fix
     return out;
 }
 
-#define CLUSTER_EPSILON (320*FRACUNIT)
-#define USECLUSEPS (FixedMul(FixedMul(CLUSTER_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+#define CLUSTER_EPSILON (960*FRACUNIT)
+#define CLUSTER_EPSILON_PATHFIND (320*FRACUNIT)
 
-#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster((USECLUSEPS / 2), K_CountNeighboringPlayers, &clusterpoint))
+#define CLUSTER_ACTIVE_EPSILON (K_LegacyOddsMode() ? CLUSTER_EPSILON : CLUSTER_EPSILON_PATHFIND)
+#define USECLUSEPS (FixedMul(FixedMul(CLUSTER_ACTIVE_EPSILON, K_GetKartGameSpeedScalar(gamespeed)), mapobjectscale))
+
+#define K_FindPlayerClusterLegacy() (K_FindPlayerCluster(USECLUSEPS, K_CountNeighboringPlayers, &clusterpoint))
 #define K_FindPlayerClusterDTF() (K_FindPlayerCluster((USECLUSEPS / FRACUNIT), K_CountNeighboringPlayersByDTF, &clusterdtf))
 
 void K_UpdateClusterPoints(void)
