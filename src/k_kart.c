@@ -6844,6 +6844,7 @@ static void K_SpawnAirdropTrail(player_t *player)
 			dust->angle = travelangle;
 			dust->fuse = 2*TICRATE;
 			dust->destscale = player->mo->scale;
+			dust->renderflags |= RF_GHOSTLY;
 			P_SetScale(dust, player->mo->scale);
 			K_FlipFromObject(dust, player->mo);
 
