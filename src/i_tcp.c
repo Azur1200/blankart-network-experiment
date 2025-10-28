@@ -787,7 +787,7 @@ static void SOCK_Send(void)
 	ssize_t c = ERRSOCKET;
 	size_t i, j;
 
-	if (!nodeconnected[doomcom->remotenode])
+	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
 
 	if (doomcom->remotenode == BROADCASTADDR)
