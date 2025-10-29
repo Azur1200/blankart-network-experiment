@@ -34,8 +34,8 @@ Make sure this matches the actual number of states
 
 #define BASEINVINTIME (10 * TICRATE)
 
-#define AUTORESPAWN_TIME (10 * TICRATE)
-#define AUTORESPAWN_THRESHOLD (7 * TICRATE)
+#define AUTORESPAWN_TIME (TICRATE/2)
+#define AUTORESPAWN_THRESHOLD (TICRATE/4)
 
 #define FLAMESTOREMAX TICRATE*2
 

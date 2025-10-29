@@ -6077,9 +6077,9 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			fixed_t y = READFIXED(*cp);
 			fixed_t z = READFIXED(*cp);
 
-			player->starpostx = x>>FRACBITS;
-			player->starposty = y>>FRACBITS;
-			player->starpostz = z>>FRACBITS;
+			player->starpostx = x;
+			player->starposty = y;
+			player->starpostz = z;
 
 			CV_CheaterWarning(targetPlayer, va("temporary checkpoint created at %d, %d, %d",
 						x / FRACUNIT, y / FRACUNIT, z / FRACUNIT));

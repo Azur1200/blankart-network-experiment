@@ -5751,12 +5751,13 @@ static void K_DrawWaypointDebugger(void)
 
 	if (stplyr->bigwaypointgap)
 	{
-		V_DrawString(8, 146, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
+		V_DrawString(8, 130, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 	}
 
-	V_DrawString(8, 156, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
-	V_DrawString(8, 166, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
-	V_DrawString(8, 176, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
+	V_DrawString(8, 140, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
+	V_DrawString(8, 150, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
+	V_DrawString(8, 160, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
+	V_DrawString(8, 170, 0, va("Waypoint DtF: %d", stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
 }
 
 static void K_DrawClusterDebugger(void)

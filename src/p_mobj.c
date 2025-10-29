@@ -12565,6 +12565,10 @@ void P_AfterPlayerSpawn(INT32 playernum)
 
 	if (CheckForReverseGravity)
 		P_CheckGravity(mobj, false);
+
+	// set the player's starting waypoint
+	if (!K_UsingLegacyCheckpoints())
+		p->currentwaypoint = K_GetSpawnWaypointForMobj(p->mo);
 }
 
 // spawn it at a playerspawn mapthing
@@ -12575,7 +12579,7 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	fixed_t z;
 	sector_t *sector;
-	fixed_t floor, ceiling;
+	fixed_t floor, ceiling, ceilingspawn;
 
 	player_t *p = &players[playernum];
 	mobj_t *mobj = p->mo;
@@ -12586,10 +12590,6 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 		x = mthing->x << FRACBITS;
 		y = mthing->y << FRACBITS;
 		angle = FixedAngle(mthing->angle*FRACUNIT);
-
-		p->starpostx = mthing->x >> FRACBITS;
-		p->starposty = mthing->y >> FRACBITS;
-		p->starpostangle = FixedAngle(mthing->angle*FRACUNIT);
 	}
 	//spawn at the origin as a desperation move if there is no mapthing
 
@@ -12602,29 +12602,21 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 	ceiling =
 	sector->c_slope ? P_GetSlopeZAt(sector->c_slope, x, y) :
 	sector->ceilingheight;
+	ceilingspawn = ceiling - mobjinfo[MT_PLAYER].height;
 
 	if (mthing)
 	{
-		fixed_t offset = udmf ? mthing->z << FRACBITS : 0;
+		fixed_t offset = udmf ? mthing->z << FRACBITS : (mthing->options >> ZSHIFT) << FRACBITS;
+
+		if (p->respawn)
+			offset += 128*mapobjectscale;
 
 		// Setting the spawnpoint's args[0] will make the player start on the ceiling
 		// Objectflip inverts
 		if (!!(mthing->args[0]) ^ !!(mthing->options & MTF_OBJECTFLIP))
-		{
-			z = ceiling - mobjinfo[MT_PLAYER].height - offset;
-			if (mthing->options >> ZSHIFT)
-				z -= ((mthing->options >> ZSHIFT) << FRACBITS);
-			if (p->respawn)
-				z -= 128*mapobjectscale;
-		}
+			z = ceilingspawn - offset;
 		else
-		{
 			z = floor + offset;
-			if (mthing->options >> ZSHIFT)
-				z += ((mthing->options >> ZSHIFT) << FRACBITS);
-			if (p->respawn)
-				z += 128*mapobjectscale;
-		}
 
 		if (mthing->options & MTF_OBJECTFLIP) // flip the player!
 		{
@@ -12640,8 +12632,8 @@ void P_MovePlayerToSpawn(INT32 playernum, mapthing_t *mthing)
 
 	if (z < floor)
 		z = floor;
-	else if (z > ceiling - mobjinfo[MT_PLAYER].height)
-		z = ceiling - mobjinfo[MT_PLAYER].height;
+	else if (z > ceilingspawn)
+		z = ceilingspawn;
 
 	mobj->floorz = floor;
 	mobj->ceilingz = ceiling;
@@ -12671,8 +12663,8 @@ void P_MovePlayerToStarpost(INT32 playernum)
 	I_Assert(mobj != NULL);
 
 	P_UnsetThingPosition(mobj);
-	mobj->x = p->starpostx << FRACBITS;
-	mobj->y = p->starposty << FRACBITS;
+	mobj->x = p->starpostx;
+	mobj->y = p->starposty;
 	P_SetThingPosition(mobj);
 	sector = R_PointInSubsector(mobj->x, mobj->y)->sector;
 
@@ -12684,9 +12676,9 @@ void P_MovePlayerToStarpost(INT32 playernum)
 	sector->ceilingheight;
 
 	if (mobj->player->starpostflip)
-		z = (p->starpostz<<FRACBITS) - FixedMul(128<<FRACBITS, mapobjectscale) - mobj->height;
+		z = p->starpostz - 128*mapobjectscale - mobj->height;
 	else
-		z = (p->starpostz<<FRACBITS) + FixedMul(128<<FRACBITS, mapobjectscale);
+		z = p->starpostz + 128*mapobjectscale;
 
 	//z = (p->starpostz + 128) << FRACBITS; // reverse gravity exists, pls
 	mobj->player->starpostflip = 0;

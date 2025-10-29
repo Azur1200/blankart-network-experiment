@@ -32,19 +32,20 @@ typedef enum {
     DRIFT_PWRSLIDE_R,
     DRIFT_RIGHT,
     DRIFT_END
-} driftSetting_e;
+} ATTRPACK driftSetting_e;
 
 struct waypoint_t
 {
 	mobj_t             *mobj;
-	boolean             onaline;
 	waypoint_t        **nextwaypoints;
 	waypoint_t        **prevwaypoints;
 	UINT32             *nextwaypointdistances;
 	UINT32             *prevwaypointdistances;
 	size_t              numnextwaypoints;
 	size_t              numprevwaypoints;
-	UINT32				driftsettings;
+	UINT32              distancetofinish;
+	driftSetting_e      driftsettings;
+	boolean             onaline;
 };
 
 
@@ -240,6 +241,9 @@ INT32 K_GetTrackComplexity(void);
 --------------------------------------------------*/
 waypoint_t *K_GetClosestWaypointToMobj(mobj_t *const mobj);
 
+waypoint_t *K_GetSpawnWaypointForMobj(const mobj_t *mobj);
+
+UINT32 K_GetWaypointSnapThreshold(void);
 
 /*--------------------------------------------------
 	waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint);

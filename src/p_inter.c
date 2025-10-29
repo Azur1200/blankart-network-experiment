@@ -980,9 +980,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 		// Save the player's time and position.
 		player->starposttime = player->realtime; //this makes race mode's timers work correctly whilst not affecting sp -x
 		//player->starposttime = leveltime;
-		player->starpostx = toucher->x>>FRACBITS;
-		player->starposty = toucher->y>>FRACBITS;
-		player->starpostz = post->z>>FRACBITS;
+		player->starpostx = toucher->x;
+		player->starposty = toucher->y;
+		player->starpostz = post->z;
 		player->starpostangle = post->angle;
 		player->starpostflip = post->spawnpoint->options & MTF_OBJECTFLIP;	// store flipping
 	}

@@ -794,9 +794,9 @@ struct player_t
 	UINT8 latestlap;
 	
 	// Starpost information
-	INT16 starpostx;
-	INT16 starposty;
-	INT16 starpostz;
+	fixed_t starpostx;
+	fixed_t starposty;
+	fixed_t starpostz;
 	angle_t starpostangle; // Angle that the starpost is facing - you respawn facing this way
 	INT32 starpostnum; // The number of the last starpost you hit
 	tic_t starposttime; // NOIRE: The time of the last cheatcheck you hit

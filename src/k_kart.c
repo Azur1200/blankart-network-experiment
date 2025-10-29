@@ -7775,6 +7775,38 @@ static int clostVal(fixed_t arr[], int N, fixed_t K)
 	return res;
 }
 
+static boolean safesector(sector_t *sector, boolean flip)
+{
+	// does the sector special even affect us?
+	if (sector->flags & MSF_FLIPSPECIAL_FLOOR && !(sector->flags & MSF_TRIGGERSPECIAL_HEADBUMP || !flip))
+		return true;
+	if (sector->flags & MSF_FLIPSPECIAL_CEILING && !(sector->flags & MSF_TRIGGERSPECIAL_HEADBUMP || flip))
+		return true;
+
+	switch (sector->damagetype)
+	{
+		case SD_GENERIC:
+		case SD_DEATHPIT:
+		case SD_INSTAKILL:
+		case SD_LAVA:
+		{
+			//CONS_Printf("Dangerous sector!!!!\n");
+			return false;
+		}
+		default:
+			break;
+	}
+
+	if (sector->offroad)
+	{
+		//CONS_Printf("Offroad Sector!!!!\n");
+		return false;
+	}
+
+	//CONS_Printf("Sector safe, allow respawn!!!!\n");
+	return true;
+}
+
 // Decides if respawning at this position is safe, used for nu waypoints.
 boolean K_SafeRespawnPosition(mobj_t * mo)
 {
@@ -7955,29 +7987,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 		// Check if rover is bad based on both its terrain, and sector specials.
 		if (result.bestrover)
 		{
-			switch (result.bestrover->master->frontsector->damagetype)
-			{
-				case SD_GENERIC:
-				case SD_DEATHPIT:
-				case SD_INSTAKILL:
-				case SD_LAVA:
-				{
-					//CONS_Printf("Dangerous rover!!!!\n");
-					return false;
-				}
-				default:
-					break;
-			}
-
-			if (result.bestrover->master->frontsector->offroad)
-			{
-				//CONS_Printf("Offroad rover!!!!\n");
-				return false;
-			}
-
-			//CONS_Printf("Rover safe, allow respawn!!!!\n");
-			return true;
-
+			return safesector(result.bestrover->master->frontsector, flip);
 		}
 		else
 		{
@@ -7992,29 +8002,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 		// Check if po is bad based on both its terrain, and sector specials.
 		if (result.bestpo)
 		{
-			switch (result.bestpo->lines[0]->backsector->damagetype)
-			{
-				case SD_GENERIC:
-				case SD_DEATHPIT:
-				case SD_INSTAKILL:
-				case SD_LAVA:
-				{
-					//CONS_Printf("Dangerous polyobj!!!!\n");
-					return false;
-				}
-				default:
-					break;
-			}
-
-			if (result.bestpo->lines[0]->backsector->offroad)
-			{
-				//CONS_Printf("Offroad polyobj!!!!\n");
-				return false;
-			}
-
-			//CONS_Printf("Polyobj safe, allow respawn!!!!\n");
-			return true;
-
+			return safesector(result.bestpo->lines[0]->backsector, flip);
 		}
 		else
 		{
@@ -8025,30 +8013,7 @@ boolean K_SafeRespawnPosition(mobj_t * mo)
 	// if everything else is not closest check sector
 	else if (result.result == RESPAWNRS_SECTOR)
 	{
-		// Check if sector is bad based on both its terrain, and sector specials.
-
-		switch (result.cursec->damagetype)
-		{
-			case SD_GENERIC:
-			case SD_DEATHPIT:
-			case SD_INSTAKILL:
-			case SD_LAVA:
-			{
-				//CONS_Printf("Dangerous sector!!!!\n");
-				return false;
-			}
-			default:
-				break;
-		}
-
-		if (result.cursec->offroad)
-		{
-			//CONS_Printf("Offroad Sector!!!!\n");
-			return false;
-		}
-
-		//CONS_Printf("Sector safe, allow respawn!!!!\n");
-		return true;
+		return safesector(result.cursec, flip);
 	}
 
 	CONS_Printf("Nep Fucked up, yell at him! BYPASSED ALL\n");
@@ -8519,11 +8484,6 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 	}
 }
 
-static UINT32 u32_delta(UINT32 x, UINT32 y)
-{
-	return x > y ? x - y : y - x;
-}
-
 /*--------------------------------------------------
  * static void K_FudgeRespawn(player_t *player, const waypoint_t *const waypoint)
  *
@@ -8703,61 +8663,31 @@ void K_SetRespawnAtNextWaypoint(player_t * player)
 			// Please don't spawn after the line.
 			player->pflags |= PF_TRUSTWAYPOINTS;
 			player->starposttime = player->realtime;
-			player->starpostz = currentwaypoint->mobj->z >> FRACBITS;
+			player->starpostz = currentwaypoint->mobj->z;
 			player->starpostflip = (currentwaypoint->mobj->flags2 & MF2_OBJECTFLIP);
 			player->starpostangle = player->mo->angle;
 
 			// Then do x and y
-			player->starpostx = currentwaypoint->mobj->x >> FRACBITS;
-			player->starposty = currentwaypoint->mobj->y >> FRACBITS;
+			player->starpostx = currentwaypoint->mobj->x;
+			player->starposty = currentwaypoint->mobj->y;
 			return;
 		}
 
 		player->pflags |= PF_TRUSTWAYPOINTS;
 		player->starposttime = player->realtime;
-		player->starpostz = safewaypoint->mobj->z >> FRACBITS;
+		player->starpostz = safewaypoint->mobj->z;
 		player->starpostflip = (safewaypoint->mobj->flags2 & MF2_OBJECTFLIP);
 		player->starpostangle = respawnangle;
 
 		// Then do x and y
-		player->starpostx = safewaypoint->mobj->x >> FRACBITS;
-		player->starposty = safewaypoint->mobj->y >> FRACBITS;
+		player->starpostx = safewaypoint->mobj->x;
+		player->starposty = safewaypoint->mobj->y;
 	}
 	else
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Tried to respawn invalid player or player mobj!\n"));
 		return;
 	}
-}
-
-static boolean K_MobjIsOnLine(mobj_t *const mobj)
-{
-	const fixed_t x = mobj->x;
-	const fixed_t y = mobj->y;
-
-	line_t *line = P_FindNearestLine(x, y,
-			mobj->subsector->sector, -1);
-
-	vertex_t point;
-
-	if (line != NULL)
-	{
-		P_ClosestPointOnLine(x, y, line, &point);
-
-		if (x == point.x && y == point.y)
-			return true;
-	}
-
-	return false;
-}
-
-static void K_MobjFudgeRespawn(player_t *player, const mobj_t *const mobj)
-{
-	const angle_t from = R_PointToAngle2(mobj->x, mobj->y,
-	player->mo->x, player->mo->y) >> ANGLETOFINESHIFT;
-
-	player->starpostx += FixedMul(25, FINECOSINE(from));
-	player->starposty += FixedMul(25, FINESINE(from));
 }
 
 /*--------------------------------------------------
@@ -8773,7 +8703,7 @@ static void K_MobjFudgeRespawn(player_t *player, const mobj_t *const mobj)
 --------------------------------------------------*/
 static void K_UpdatePlayerWaypoints(player_t *const player)
 {
-	if (player->pflags & PF_FREEZEWAYPOINTS)
+	if (player->pflags & PF_FREEZEWAYPOINTS || player->playerstate != PST_LIVE)
 	{
 		player->pflags &= ~PF_FREEZEWAYPOINTS;
 		return;
@@ -8784,6 +8714,8 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	waypoint_t *const old_currentwaypoint = player->currentwaypoint;
 	waypoint_t *const old_nextwaypoint = player->nextwaypoint;
 
+	const UINT32 prevwpdtf = player->currentwaypoint ? player->currentwaypoint->distancetofinish : UINT32_MAX;
+
 	boolean updaterespawn = K_SetPlayerNextWaypoint(player);
 
 	// Update prev value (used for grief prevention code)
@@ -8791,7 +8723,8 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 	K_UpdateDistanceFromFinishLine(player);
 
 	UINT32 delta = u32_delta(player->distancetofinish, player->distancetofinishprev);
-	if (delta > distance_threshold &&
+	UINT32 wpdelta = prevwpdtf != UINT32_MAX && player->currentwaypoint != NULL ? u32_delta(prevwpdtf, player->currentwaypoint->distancetofinish) : 0;
+	if ((/*delta > distance_threshold || */wpdelta > K_GetCircuitLength()/2) &&
 		!player->respawn && // Respawning should be a full reset.
 		old_currentwaypoint != NULL && // So should touching the first waypoint ever.
 		player->laps != 0 && // POSITION rooms may have unorthodox waypoints to guide bots.
@@ -8852,18 +8785,13 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 		{
 			// Set time, z, flip and angle first.
 			player->starposttime = player->realtime;
-			player->starpostz = player->mo->z >> FRACBITS;
+			player->starpostz = player->mo->z;
 			player->starpostflip = (player->mo->eflags & MFE_VERTICALFLIP) ? true : false;
 			player->starpostangle = player->mo->angle;
 
 			// Then do x and y
-			player->starpostx = player->mo->x >> FRACBITS;
-			player->starposty = player->mo->y >> FRACBITS;
-
-			if (K_MobjIsOnLine(player->mo))
-			{
-				K_MobjFudgeRespawn(player, player->mo);
-			}
+			player->starpostx = player->mo->x;
+			player->starposty = player->mo->y;
 		}
 		else
 		{

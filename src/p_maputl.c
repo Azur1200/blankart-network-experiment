@@ -263,7 +263,8 @@ line_t * P_FindNearestLine
 	}
 	else
 	{
-		while ((line = P_FindSpecialLineFromTag(special, -1, line)) != -1)
+		// if all linedefs are exhausted, this returns numlines...
+		while (line = P_FindSpecialLineFromTag(special, -1, line), line != -1 && line != (INT32)numlines)
 		{
 			checknearline(&lines[line], &nearest, &near_line, x, y);
 		}

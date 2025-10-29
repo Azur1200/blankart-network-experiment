@@ -1137,13 +1137,13 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->checkskip);
 		break;
 	case player_starpostx:
-		lua_pushfixed(L, plr->starpostx);
+		lua_pushfixed(L, plr->starpostx >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starposty:
-		lua_pushfixed(L, plr->starposty);
+		lua_pushfixed(L, plr->starposty >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starpostz:
-		lua_pushfixed(L, plr->starpostz);
+		lua_pushfixed(L, plr->starpostz >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starpostangle:
 		lua_pushangle(L, plr->starpostangle);
@@ -1825,13 +1825,13 @@ static int player_set(lua_State *L)
 		plr->checkskip = (INT32)luaL_checkinteger(L, 3);
 		break;
 	case player_starpostx:
-		plr->starpostx = luaL_checkfixed(L, 3);
+		plr->starpostx = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starposty:
-		plr->starposty = luaL_checkfixed(L, 3);
+		plr->starposty = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starpostz:
-		plr->starpostz = luaL_checkfixed(L, 3);
+		plr->starpostz = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starpostangle:
 		plr->starpostangle = luaL_checkangle(L, 3);

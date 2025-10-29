@@ -1896,30 +1896,6 @@ void P_SwitchWeather(preciptype_t newWeather)
 		P_SpawnPrecipitation();
 }
 
-static boolean isfinish(waypoint_t *check)
-{
-	size_t i;
-	waypoint_t *finish = K_GetFinishLineWaypoint();
-
-	if (check == NULL)
-		return false;
-	if (check == finish)
-		return true;
-
-	for (i = 0; i < check->numnextwaypoints; i++)
-	{
-		if (check->nextwaypoints[i] == finish)
-			return true;
-	}
-	for (i = 0; i < check->numprevwaypoints; i++)
-	{
-		if (check->prevwaypoints[i] == finish)
-			return true;
-	}
-
-	return false;
-}
-
 // fix the player's current waypoint after crossing the finish line
 // get them off the finish line waypoint ASAP!
 static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
@@ -1928,12 +1904,8 @@ static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
 	fixed_t closest = INT32_MAX;
 	waypoint_t *finish = K_GetFinishLineWaypoint(), *snapto = NULL;
 
-	// now did we actually cross the REAL finish line?
-	// this is important for sprint maps
-	if (!isfinish(player->currentwaypoint) && !isfinish(player->nextwaypoint))
-		return;
-
-	//CONS_Printf("fixed up %td\n", player - players);
+	if (player->currentwaypoint == NULL || mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE)
+		return; // why bother?
 
 	if (reverse)
 	{
@@ -1956,7 +1928,8 @@ static void K_FixupFinishWaypoint(player_t *player, boolean reverse)
 		}
 	}
 
-	if (snapto)
+	// this deals with lapspersection... somehow...
+	if (snapto != NULL && u32_delta(player->currentwaypoint->distancetofinish, snapto->distancetofinish) > K_GetWaypointSnapThreshold())
 	{
 		player->currentwaypoint = snapto;
 		player->nextwaypoint = NULL; // don't forget to update position after this :^)
@@ -2010,9 +1983,9 @@ static void K_HandleLapIncrement(player_t *player)
 			{
 				// SRB2Kart 281118
 				// Save the player's time and position.
-				player->starpostx = player->mo->x>>FRACBITS;
-				player->starposty = player->mo->y>>FRACBITS;
-				player->starpostz = player->mo->floorz>>FRACBITS;
+				player->starpostx = player->mo->x;
+				player->starposty = player->mo->y;
+				player->starpostz = player->mo->floorz;
 				player->starpostflip = player->mo->flags2 & MF2_OBJECTFLIP;	// store flipping
 				player->starpostangle = player->mo->angle; //R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy); torn; a momentum-based guess is less likely to be wrong in general, but when it IS wrong, it fucks you over entirely...
 			}

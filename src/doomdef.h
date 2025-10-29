@@ -438,6 +438,10 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
 #endif
 
+#ifndef u32_delta
+#define u32_delta(x, y) ((x) > (y) ? (x) - (y) : (y) - (x))
+#endif
+
 // Max gamepad/joysticks that can be detected/used.
 #define MAX_JOYSTICKS 4
 
