@@ -51,6 +51,7 @@
 #include "k_collide.h"
 #include "k_objects.h"
 #include "k_odds.h"
+#include "k_waypoint.h"
 
 // BlanKart
 #include "blan/b_soc.h"

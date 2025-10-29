@@ -29,9 +29,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-// the player struct stores a waypoint for racing
-#include "k_waypoint.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

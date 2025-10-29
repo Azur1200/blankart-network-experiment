@@ -28,6 +28,7 @@
 #include "p_polyobj.h" // polyobj_t, PolyObjects
 #include "k_battle.h"
 #include "k_odds.h"
+#include "k_waypoint.h"
 #ifdef LUA_ALLOW_BYTECODE
 #include "d_netfil.h" // for LUA_DumpFile
 #endif

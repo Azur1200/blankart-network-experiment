@@ -14,7 +14,6 @@
 #define __K_BOT__
 
 #include "typedef.h"
-#include "k_waypoint.h"
 #include "d_player.h"
 #include "r_defs.h"
 

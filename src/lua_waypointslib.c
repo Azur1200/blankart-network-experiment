@@ -17,6 +17,7 @@
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "p_local.h"
+#include "k_waypoint.h" // lol
 
 enum waypointvars {
 	waypointvars_valid = 0,

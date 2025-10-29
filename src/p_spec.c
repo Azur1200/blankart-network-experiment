@@ -48,6 +48,7 @@
 #include "k_terrain.h"
 #include "acs/interface.h"
 #include "blan/b_soc.h"
+#include "k_waypoint.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"

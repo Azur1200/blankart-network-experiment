@@ -44,6 +44,7 @@
 #include "k_odds.h"
 #include "acs/interface.h"
 #include "g_party.h"
+#include "k_waypoint.h"
 
 #include <tracy/tracy/TracyC.h>
 

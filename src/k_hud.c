@@ -42,6 +42,7 @@
 #include "g_party.h"
 #include "h_timers.h"
 #include "k_bot.h" // K_DrawBotDebugger
+#include "k_waypoint.h"
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds

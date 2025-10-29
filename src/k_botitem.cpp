@@ -30,6 +30,7 @@
 #include "r_things.h" // numskins
 #include "m_easing.h"
 #include "k_odds.h"
+#include "k_waypoint.h"
 
 // Looks for players around the bot, and presses the item button
 // if there is one in range.
