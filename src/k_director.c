@@ -23,13 +23,6 @@
 
 #include "r_fps.h"
 
-#define SWITCHTIME TICRATE * 5		// cooldown between unforced switches
-#define BOREDOMTIME 3 * TICRATE / 2 // how long until players considered far apart?
-#define TRANSFERTIME TICRATE		// how long to delay reaction shots?
-#define BREAKAWAYDIST 2000			// how *far* until players considered far apart?
-#define WALKBACKDIST 400			// how close should a trailing player be before we switch?
-#define PINCHDIST 20000				// how close should the leader be to be considered "end of race"?
-
 struct directorinfo
 {
 	player_t* viewplayer;
@@ -125,7 +118,7 @@ void K_InitDirector(void)
 {
 	INT32 playernum;
 
-	directorinfo.cooldown = SWITCHTIME;
+	directorinfo.cooldown = DIRECTORSWITCHTIME;
 	directorinfo.freeze = 0;
 	directorinfo.attacker = 0;
 	directorinfo.maxdist = 0;
@@ -197,9 +190,9 @@ static void K_UpdateDirectorPositions(void)
 
 		directorinfo.gap[position] = ScaleFromMap(K_GetFinishGap(directorinfo.sortedplayers[position], directorinfo.sortedplayers[position + 1]), FRACUNIT);
 
-		if (directorinfo.gap[position] >= BREAKAWAYDIST)
+		if (directorinfo.gap[position] >= DIRECTORBREAKAWAYDIST)
 		{
-			directorinfo.boredom[position] = (INT32)(min(BOREDOMTIME * 2, directorinfo.boredom[position] + 1));
+			directorinfo.boredom[position] = (INT32)(min(DIRECTORBOREDOMTIME * 2, directorinfo.boredom[position] + 1));
 		}
 		else if (directorinfo.boredom[position] > 0)
 		{
@@ -226,7 +219,7 @@ static boolean K_CanSwitchDirector(void)
 	return true;
 }
 
-static void K_DirectorSwitch(INT32 player, boolean force)
+void K_DirectorSwitch(INT32 player, boolean force)
 {
 	if (!K_DirectorIsEnabled())
 	{
@@ -244,12 +237,17 @@ static void K_DirectorSwitch(INT32 player, boolean force)
 	}
 
 	G_ResetView(1, player, true);
-	directorinfo.cooldown = SWITCHTIME;
+	directorinfo.cooldown = DIRECTORSWITCHTIME;
 	directorinfo.chaosleep = 0;
 }
 
-static void K_DirectorForceSwitch(INT32 player, INT32 time)
+void K_DirectorForceSwitch(INT32 player, INT32 time)
 {
+	if (!K_DirectorIsEnabled())
+	{
+		return;
+	}
+
 	if (players[player].exiting)
 	{
 		return;
@@ -293,11 +291,11 @@ void K_DirectorFollowAttack(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	if (inflictor && inflictor->player)
 	{
-		K_DirectorForceSwitch(inflictor->player - players, TRANSFERTIME);
+		K_DirectorForceSwitch(inflictor->player - players, DIRECTORTRANSFERTIME);
 	}
 	else if (source && source->player)
 	{
-		K_DirectorForceSwitch(source->player - players, TRANSFERTIME);
+		K_DirectorForceSwitch(source->player - players, DIRECTORTRANSFERTIME);
 	}
 }
 
@@ -340,7 +338,7 @@ void K_DrawDirectorDebugger(void)
 
 		V_DrawThinString(80, ytxt, V_70TRANS, va("%d", directorinfo.gap[position]));
 
-		if (directorinfo.boredom[position] >= BOREDOMTIME)
+		if (directorinfo.boredom[position] >= DIRECTORBOREDOMTIME)
 		{
 			V_DrawThinString(120, ytxt, V_70TRANS, va("BORED"));
 		}
@@ -424,7 +422,7 @@ void K_UpdateDirector(void)
 		}
 
 		// pair too far apart? try the next one
-		if (directorinfo.boredom[targetposition - 1] >= BOREDOMTIME)
+		if (directorinfo.boredom[targetposition - 1] >= DIRECTORBOREDOMTIME)
 		{
 			continue;
 		}
@@ -436,12 +434,12 @@ void K_UpdateDirector(void)
 		}
 
 		// don't risk switching away from forward pairs at race end, might miss something!
-		if (directorinfo.maxdist > PINCHDIST)
+		if (directorinfo.maxdist > DIRECTORPINCHDIST)
 		{
 			// if the "next" player is close enough, they should be able to see everyone fine!
 			// walk back through the standings to find a vantage that gets everyone in frame.
 			// (also creates a pretty cool effect w/ overtakes at speed)
-			while (targetposition < MAXPLAYERS && directorinfo.gap[targetposition] < WALKBACKDIST)
+			while (targetposition < MAXPLAYERS && directorinfo.gap[targetposition] < DIRECTORWALKBACKDIST)
 			{
 				targetposition++;
 			}

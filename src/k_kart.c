@@ -4709,6 +4709,9 @@ static void K_DoHyudoroSteal(player_t *player)
 		player->itemtype = KITEM_KITCHENSINK;
 		player->itemamount = 1;
 		K_UnsetItemOut(player);
+
+		// Woah this could be big, lets get the inside scoop...
+		K_DirectorForceSwitch(player - players, 1);
 		return;
 	}
 	else if ((gametype == GT_RACE && player->position == 1) || numplayers == 0) // No-one can be stolen from? Oh well...
@@ -10977,6 +10980,9 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									P_SetTarget(&player->mo->hnext, mo);
 								}
 								K_BotResetItemConfirm(player, false);
+
+								// Woah this could be big, lets get the inside scoop...
+								K_DirectorForceSwitch(player - players, 1);
 							}
 							else if (ATTACK_IS_DOWN && HOLDING_ITEM && (player->itemflags & IF_ITEMOUT)) // Sink thrown
 							{
