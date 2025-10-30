@@ -229,6 +229,11 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c);
 // fill a box with a flat as a pattern
 void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum);
 
+// HUD translusency functions
+UINT8 V_GetHudTransHalf(void);
+UINT8 V_GetHudTrans(void);
+UINT8 V_GetHudTransDouble(void);
+
 
 // draw wobbly VHS pause stuff
 void V_DrawVhsEffect(boolean rewind);
