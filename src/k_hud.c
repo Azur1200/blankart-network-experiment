@@ -162,6 +162,9 @@ static patch_t *kp_flamefire[18];
 // Frames of animation for the fire
 #define MAXFLAMOFIRETICS 8
 
+// Rotating Alt. Invin. sparkles
+static patch_t *kp_altinvinsparkle;
+
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
 static patch_t *kp_ranknobumpers;
@@ -435,6 +438,13 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[2], "K_WDGM3");
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
+
+	// Alt. Invin. Sparkles
+	HU_UpdatePatch(&kp_altinvinsparkle, "ALTISPRK");
+
+	kp_altinvinsparkle->pivot.x = kp_altinvinsparkle->width / 2;
+	kp_altinvinsparkle->pivot.y = kp_altinvinsparkle->height / 2;
+	kp_altinvinsparkle->alignflags |= PATCHALIGN_USEPIVOTS;
 	
 	// Flamometer UI Elements
 	HU_UpdatePatch(&kp_flamometer[0], "THERMOBACK");
@@ -4114,6 +4124,8 @@ static spbdraw_t K_ShouldDrawSPB(mobj_t *mobj)
 	return spbdraw;
 }
 
+#define TICTOANGLE(t) (FixedAngle(((360 * FRACUNIT / TICRATE) * t) % (360 * FRACUNIT)))
+
 static void K_drawKartMinimap(void)
 {
 	patch_t *workingPic;
@@ -4130,10 +4142,16 @@ static void K_drawKartMinimap(void)
 	spbdraw_t spb;
 	UINT16 usecolor;
 	boolean colorizeplayer;
+	fixed_t invingradient = 0;
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
 	INT32 rot = 0;
+	INT32 sparkleflags;
+	patch_t *rotsparkle;
+	boolean halftrans = false;
+	fixed_t transmul = 0;
+	UINT32 invintrans = 0;
 #endif
 
 	vector2_t iconoffsets;
@@ -4347,7 +4365,9 @@ static void K_drawKartMinimap(void)
 
 				colorizeplayer = mobj->colorized;
 
-				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+				invingradient = K_InvincibilityGradient(players[i].invincibilitytimer);
+
+				if ((players[i].invincibilitytimer) && ((invingradient > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
 					usecolor = ((K_GetKartInvinType() == KARTINVIN_ALTERN) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
@@ -4380,6 +4400,93 @@ static void K_drawKartMinimap(void)
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
+
+#ifdef ROTSPRITE
+				if ((K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+				    (players[i].invincibilitytimer) && (invingradient))
+				{
+					// Draw Alt. Invin. sparkles
+					halftrans =
+					    ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
+					transmul = 0;
+					invintrans = 0;
+
+					sparkleflags =
+					    splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
+
+					if (halftrans)
+					{
+						transmul = FRACUNIT -
+							   (V_GetHudTransHalf() * FRACUNIT / 10);
+					}
+					else
+					{
+						transmul =
+						    FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
+					}
+
+					transmul *= 2;
+
+					invintrans =
+					    max(0,
+						min(9,
+						    10 - FixedMul(FixedMul(10, invingradient),
+								  transmul)))
+					    << V_ALPHASHIFT;
+					sparkleflags |= invintrans;
+
+					if (kp_altinvinsparkle)
+					{
+						rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+
+						if (rot)
+						{
+							rotsparkle = Patch_GetRotated(
+							    kp_altinvinsparkle, rot, false);
+						}
+						else
+						{
+							rotsparkle = kp_altinvinsparkle;
+						}
+
+						if (rotsparkle)
+						{
+							widthhalf = ((kp_altinvinsparkle->width) / 2);
+							heighthalf = ((kp_altinvinsparkle->height) / 2);
+
+							if (cv_minihead.value)
+							{
+								adjustx = FixedMul(
+								    4,
+								    (widthhalf -
+								     kp_altinvinsparkle->leftoffset) *
+									FRACUNIT / widthhalf);
+								adjusty = FixedMul(
+								    4,
+								    (heighthalf -
+								     kp_altinvinsparkle->topoffset) *
+									FRACUNIT / heighthalf);
+							}
+
+							iconoffsets.x = widthhalf -
+									kp_altinvinsparkle->leftoffset -
+									adjustx;
+							iconoffsets.y = heighthalf -
+									kp_altinvinsparkle->topoffset -
+									adjusty;
+
+							K_drawKartMinimapIcon(interpx,
+									      interpy,
+									      x,
+									      y,
+									      sparkleflags | V_ADD,
+									      rotsparkle,
+									      colormap,
+									      &iconoffsets);
+						}
+					}
+				}
+#endif
 
 				if (mobj->player)
 				{
@@ -4584,10 +4691,13 @@ static void K_drawKartMinimap(void)
 #endif
 
 			colorizeplayer = mobj->colorized;
+			invingradient =
+				K_InvincibilityGradient(
+					players[localplayers[i]].invincibilitytimer);
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
-				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
-				  (FRACUNIT / 2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+				((invingradient > (FRACUNIT / 2)) ||
+					(K_GetKartInvinType() == KARTINVIN_LEGACY)))
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
 				colorizeplayer = true;
@@ -4655,6 +4765,84 @@ static void K_drawKartMinimap(void)
 			}
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
+
+#ifdef ROTSPRITE
+			if ((!nocontest) && (K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+			    (players[localplayers[i]].invincibilitytimer) && (invingradient))
+			{
+				// Draw Alt. Invin. sparkles
+				halftrans = ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
+				transmul = 0;
+				invintrans = 0;
+
+				sparkleflags = splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
+
+				if (halftrans)
+				{
+					transmul = FRACUNIT - (V_GetHudTransHalf() * FRACUNIT / 10);
+				}
+				else
+				{
+					transmul = FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
+				}
+
+				transmul *= 2;
+
+				invintrans =
+				    max(0,
+					min(9,
+					    10 - FixedMul(FixedMul(10, invingradient), transmul)))
+				    << V_ALPHASHIFT;
+				sparkleflags |= invintrans;
+
+				if (kp_altinvinsparkle)
+				{
+					rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+
+					if (rot)
+					{
+						rotsparkle = Patch_GetRotated(
+						    kp_altinvinsparkle, rot, false);
+					}
+					else
+					{
+						rotsparkle = kp_altinvinsparkle;
+					}
+
+					if (rotsparkle)
+					{
+						widthhalf = ((kp_altinvinsparkle->width) / 2);
+						heighthalf = ((kp_altinvinsparkle->height) / 2);
+
+						if (cv_minihead.value)
+						{
+							adjustx = FixedMul(
+							    4,
+							    (widthhalf - kp_altinvinsparkle->leftoffset) *
+								FRACUNIT / widthhalf);
+							adjusty = FixedMul(
+							    4,
+							    (heighthalf - kp_altinvinsparkle->topoffset) *
+								FRACUNIT / heighthalf);
+						}
+
+						iconoffsets.x =
+						    widthhalf - kp_altinvinsparkle->leftoffset - adjustx;
+						iconoffsets.y =
+						    heighthalf - kp_altinvinsparkle->topoffset - adjusty;
+
+						K_drawKartMinimapIcon(interpx,
+								      interpy,
+								      x,
+								      y,
+								      sparkleflags | V_ADD,
+								      rotsparkle,
+								      colormap,
+								      &iconoffsets);
+					}
+				}
+			}
+#endif
 
 			// Target reticule
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
