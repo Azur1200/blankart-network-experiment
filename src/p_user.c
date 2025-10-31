@@ -1279,8 +1279,6 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 // Player exits the map via sector trigger
 void P_DoPlayerExit(player_t *player, pflags_t flags)
 {
-	boolean losing;
-
 	if (player->exiting || mapreset)
 		return;
 
@@ -1292,18 +1290,15 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 	if (player->griefstrikes > 0)
 		player->griefstrikes--; // Remove a strike for finishing a race normally
 
-	if (!player->spectator && (gametyperules & GTR_CIRCUIT)) // Special Race-like handling
-	{
-		K_UpdateAllPlayerPositions();
-	}
-
-	losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
-
 	if (!player->spectator)
 	{
+		boolean losing;
 		if ((gametyperules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			player->exiting = raceexittime+2;
+			K_UpdateAllPlayerPositions();
+			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
+
 			if (cv_kartvoices.value)
 			{
 				const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
@@ -1332,6 +1327,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			player->exiting = raceexittime+2;
 			G_BeginLevelExit();
 		}
+
+		losing = K_IsPlayerLosing(player);
 
 		if (grandprixinfo.gp == true)
 		{
@@ -1364,14 +1361,14 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				}
 			}
 		}
+
+		if (G_GametypeUsesLives() && losing)
+		{
+			// Remove a life from the losing player
+			K_PlayerLoseLife(player);
+		}
 	}
 	
-	if (G_GametypeUsesLives() && losing)
-	{
-		// Remove a life from the losing player
-		K_PlayerLoseLife(player);
-	}
-
 	player->karthud[khud_cardanimation] = 0; // srb2kart: reset battle animation
 
 	if (player == &players[consoleplayer])

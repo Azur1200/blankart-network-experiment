@@ -1973,8 +1973,35 @@ static void K_HandleLapIncrement(player_t *player)
 			player->starpostnum = 0;
 			player->laps++;
 
-			// Calculate splits.
-			// Nice-to-have: Halfway-through-lap splits?
+			// P_DoPlayerExit can edit latestlap, so we do this first
+			boolean lapisfresh = (player->laps > player->latestlap);
+			if (lapisfresh) // mcgamer would be proud
+			{
+				player->latestlap = player->laps;
+			}
+
+			// finished race exit setup
+			if (player->laps > numlaps)
+			{
+				P_DoPlayerExit(player, 0);
+				P_SetupSignExit(player);
+
+				if (netgame && lapisfresh)
+					CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
+			}
+			else
+			{
+				// Always trust waypoints entering the first lap.
+				// This accounts for special POSITION room setups.
+				// debuglapcheat can be used to expose errors that would be hidden by this exception.
+				if (!cv_kartdebuglap.value && player->laps == 1)
+					player->pflags |= PF_TRUSTWAYPOINTS;
+
+				// immediately update our waypoint to one after the finish line
+				K_FixupFinishWaypoint(player, false);
+
+				K_UpdateAllPlayerPositions(); // P_DoPlayerExit calls this
+			}
 
 			if (!K_UsingLegacyCheckpoints())
 			{
@@ -1997,37 +2024,6 @@ static void K_HandleLapIncrement(player_t *player)
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
 
-			if (!cv_kartdebuglap.value && player->laps == 1)
-				player->pflags |= PF_TRUSTWAYPOINTS;
-			K_FixupFinishWaypoint(player, false);
-			K_UpdateAllPlayerPositions();
-
-
-			// Set up lap animation vars
-			if (player->laps > 1)
-			{
-				if (nump > 1)
-				{
-					if (K_IsPlayerLosing(player))
-						player->karthud[khud_laphand] = 3;
-					else
-					{
-						if (nump > 2 && player->position == 1) // 1st place in 1v1 uses thumbs up
-							player->karthud[khud_laphand] = 1;
-						else
-							player->karthud[khud_laphand] = 2;
-					}
-				}
-				else
-					player->karthud[khud_laphand] = 0; // No hands in FREE PLAY
-
-				player->karthud[khud_lapanimation] = 80;
-
-				const UINT8 fakegradingpoint = ((UINT8)(player->laps - 1) & 7);
-
-				K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
-			}
-
 			if (P_IsDisplayPlayer(player))
 			{
 				if (player->laps == numlaps) // final lap
@@ -2039,7 +2035,6 @@ static void K_HandleLapIncrement(player_t *player)
 					// finished
 					S_StartSound(NULL, sfx_s3k6a);
 				}
-
 			}
 			else
 			{
@@ -2050,16 +2045,7 @@ static void K_HandleLapIncrement(player_t *player)
 				}
 			}
 
-			// finished race exit setup
-			if (player->laps > numlaps)
-			{
-				P_DoPlayerExit(player, 0);
-				P_SetupSignExit(player);
-				if (netgame)
-					CON_LogMessage(va(M_GetText("%s has finished the race.\n"), player_names[player-players]));
-			}
-
-			if (player->laps > player->latestlap)
+			if (lapisfresh)
 			{
 				if (player->laps > 1)
 				{
@@ -2076,7 +2062,31 @@ static void K_HandleLapIncrement(player_t *player)
 					K_UpdatePowerLevels(player, player->laps, false);
 				}
 
-				player->latestlap = player->laps;
+				// Set up lap animation vars
+				if (player->latestlap > 1)
+				{
+					if (nump > 1)
+					{
+						if (K_IsPlayerLosing(player))
+							player->karthud[khud_laphand] = 3;
+						else
+						{
+							if (nump > 2 && player->position == 1) // 1st place in 1v1 uses thumbs up
+								player->karthud[khud_laphand] = 1;
+							else
+								player->karthud[khud_laphand] = 2;
+						}
+					}
+					else
+						player->karthud[khud_laphand] = 0; // No hands in FREE PLAY
+
+					player->karthud[khud_lapanimation] = 80;
+
+					// Calculate splits.
+					// Nice-to-have: Halfway-through-lap splits?
+					const UINT8 fakegradingpoint = ((UINT8)(player->laps - 1) & 7);
+					K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
+				}
 			}
 
 			if (player->laps > 1)
@@ -2114,9 +2124,9 @@ static void K_HandleLapDecrement(player_t *player)
 			return;
 		if (player->laps > 0)
 		{
-			K_FixupFinishWaypoint(player, true);
 			player->starpostnum = numstarposts;
 			player->laps--;
+			K_FixupFinishWaypoint(player, true);
 			K_UpdateAllPlayerPositions();
 			player->laptime[LAP_CUR] = UINT32_MAX;
 		}
