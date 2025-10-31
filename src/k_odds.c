@@ -92,7 +92,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     //0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
     //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
     { 0,  0,  0,  0, 15, 18, 18, 35, 60,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
-    { 0,  0,  0,  0,  0,  0,  0,  0,  2,  7, 25, 35, 42, 48, 37, 37}, // Rocket Sneaker
+    { 0,  0,  0,  0,  0,  0,  0,  4,  7, 12, 25, 35, 42, 48, 37, 37}, // Rocket Sneaker
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4, 24, 50, 75, 75}, // Invincibility
     {35, 28, 22, 10,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
     {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
