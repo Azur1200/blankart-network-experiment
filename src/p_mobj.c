@@ -9178,77 +9178,60 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	{
 		fixed_t scale;
 		statenum_t curstate, overlaystate;
+		const player_t *player = P_MobjWasRemoved(mobj->target) ? NULL : mobj->target->player;
 
-		if (!mobj->target || !mobj->target->health || !mobj->target->player
-			|| K_GetShieldFromPlayer(mobj->target->player) != KSHIELD_BUBBLE)
+		if (player == NULL || player->mo->health == 0 || K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		{
 			P_RemoveMobj(mobj);
 			return false;
 		}
 
-		scale = (5*mobj->target->scale)>>2;
-		curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
+		scale = 5*player->mo->scale/4;
+		curstate = mobj->tics == 1 ? mobj->state->nextstate : (statenum_t)(mobj->state - states);
+		mobj->color = SKINCOLOR_BLUE;
+		mobj->colorized = false;
 
 		// Lookup for rescaling the "bubble damage" overlay
-		UINT8 frame, scale_idx;
+		UINT8 scale_idx = player->bubblecool > bubbletime ? player->bubblecool % 4 : 0;
+		if (player->bubbleblowup > 0 && player->bubblecool < 8)
+			scale_idx = player->bubblecool/2;
 
-		frame = scale_idx = 0;
-
-		if (mobj->target->player->bubbleblowup)
+		if (player->bubblecool)
 		{
-			INT32 blow = mobj->target->player->bubbleblowup;
-			if (blow > bubbletime)
-				blow = bubbletime;
+			INT32 blow = player->bubbleblowup + min(player->bubblecool, bubbletime)*10;
+			scale += (blow * scale) / (bubbletime * 10);
 
 			if (curstate != S_BUBBLESHIELDBLOWUP)
 				P_SetMobjState(mobj, S_BUBBLESHIELDBLOWUP);
 
 			mobj->angle += ANGLE_22h;
-			mobj->renderflags &= ~RF_GHOSTLYMASK;
-			scale += (blow * ((3*scale)>>1)) / bubbletime;
+			if (player->bubbleblowup == 0 && player->bubblecool > 0)
+				mobj->renderflags |= RF_GHOSTLY;
+			else
+				mobj->renderflags &= ~RF_GHOSTLYMASK;
 
-			mobj->frame = CLAMP(states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1, states[S_BUBBLESHIELDBLOWUP].frame, states[S_BUBBLESHIELDBLOWUP].frame + 3);
+			mobj->frame = states[S_BUBBLESHIELDBLOWUP].frame + scale_idx;
 
-			frame = mobj->frame & FF_FRAMEMASK;
-			scale_idx = CLAMP(frame - 9, 0, 3);
-
-			if ((mobj->target->player->bubbleblowup > bubbletime) && (leveltime & 1))
+			if (player->bubbleblowup > 0 && leveltime & 1)
 			{
 				mobj->color = SKINCOLOR_WHITE;
 				mobj->colorized = true;
 			}
-			else
-			{
-				mobj->color = SKINCOLOR_BLUE;
-				mobj->colorized = false;
-			}
 
-			if (mobj->extravalue1 < 4 && mobj->extravalue2 < blow && !mobj->cvmem && (leveltime & 1)) // Growing
-			{
-				mobj->extravalue1++;
-				if (mobj->extravalue1 >= 4)
-					mobj->cvmem = 1; // shrink back down
-			}
-			else if ((mobj->extravalue1 > -4 && mobj->extravalue2 > blow)
-				|| (mobj->cvmem && mobj->extravalue1 > 0)) // Shrinking
-				mobj->extravalue1--;
-
-			if (P_IsObjectOnGround(mobj->target))
+			if (P_IsObjectOnGround(player->mo) && player->bubbleblowup > 0)
 			{
 				UINT8 i;
 
 				for (i = 0; i < 2; i++)
 				{
 					angle_t a = mobj->angle + ((i & 1) ? ANGLE_180 : 0);
-					fixed_t ws = (mobj->target->scale>>1);
+					fixed_t ws = player->mo->scale/2 + scale/5;
 					mobj_t *wave;
 
-					ws += (blow * ws) / bubbletime;
-
 					wave = P_SpawnMobj(
-						(mobj->target->x - mobj->target->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (21*ws)),
-						(mobj->target->y - mobj->target->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
-						(mobj->target->z - mobj->target->momz), MT_THOK);
+						(player->mo->x - player->mo->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (21*ws)),
+						(player->mo->y - player->mo->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
+						(player->mo->z - player->mo->momz), MT_THOK);
 
 					wave->colorized = true;
 					wave->color = SKINCOLOR_BLUE;
@@ -9257,47 +9240,21 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 
 					P_SetMobjState(wave, S_SPLISH1);
 
-					wave->momx = mobj->target->momx;
-					wave->momy = mobj->target->momy;
-					wave->momz = mobj->target->momz;
+					wave->momx = player->mo->momx;
+					wave->momy = player->mo->momy;
+					wave->momz = player->mo->momz;
 				}
 			}
 		}
 		else
 		{
-			mobj->cvmem = 0;
-			mobj->angle = mobj->target->angle;
+			mobj->angle = player->mo->angle;
+			mobj->renderflags &= ~RF_GHOSTLYMASK;
 
 			if (curstate == S_BUBBLESHIELDBLOWUP)
-			{
-				if (mobj->extravalue1 != 0)
-				{
-					mobj->frame = (states[S_BUBBLESHIELDBLOWUP].frame + mobj->extravalue1);
-
-					frame = mobj->frame & FF_FRAMEMASK;
-					scale_idx = CLAMP(frame - 9, 0, 3);
-
-					if (mobj->extravalue1 < 0 && (leveltime & 1))
-						mobj->extravalue1++;
-					else if (mobj->extravalue1 > 0)
-						mobj->extravalue1--;
-				}
-				else
-				{
-					P_SetMobjState(mobj, S_BUBBLESHIELD1);
-					mobj->extravalue1 = 0;
-				}
-			}
-			else
-			{
-				if (mobj->target->player->bubblecool && ((curstate-S_BUBBLESHIELD1) & 1))
-					mobj->renderflags |= RF_GHOSTLY;
-				else
-					mobj->renderflags &= ~RF_GHOSTLYMASK;
-			}
+				P_SetMobjState(mobj, S_BUBBLESHIELD1);
 		}
 
-		mobj->extravalue2 = mobj->target->player->bubbleblowup;
 		P_SetScale(mobj, (mobj->destscale = scale));
 
 		if (mobj->tracer && (!P_MobjWasRemoved(mobj->tracer)))
@@ -9313,7 +9270,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->tracer->spritexscale = FixedMul(mobj->spritexscale, bubbleoverlayscales[scale_idx][0]);
 				mobj->tracer->spriteyscale = FixedMul(mobj->spriteyscale, bubbleoverlayscales[scale_idx][1]);
 
-				health_scalar = mobj->target->player->bubblehealth * FRACUNIT / MAXBUBBLEHEALTH;
+				health_scalar = player->bubblehealth * FRACUNIT / MAXBUBBLEHEALTH;
 				health_scalar = 5 - CLAMP(health_scalar / (FRACUNIT / 5), 1, 5);
 
 				overlaystate = ((mobj->tracer->tics == 1) ? (mobj->tracer->state->nextstate) : ((statenum_t)(mobj->tracer->state-states)));
@@ -9346,7 +9303,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->sloperoll = 0;
 
 		mobj->flags &= ~(MF_NOCLIP|MF_NOCLIPTHING);
-		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+		P_MoveOrigin(mobj, player->mo->x, player->mo->y, player->mo->z);
 		mobj->flags |= MF_NOCLIP|MF_NOCLIPTHING;
 		break;
 	}

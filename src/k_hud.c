@@ -1448,7 +1448,7 @@ static void K_drawKartItem(void)
 			localpatch = kp_bubbleshield[offset];
 			dark = true;
 
-			if ((stplyr->bubbleblowup > bubbletime) && (leveltime & 1))
+			if (stplyr->bubbleblowup > 0 && leveltime & 1)
 			{
 				colormode = TC_BLINK;
 				localcolor = SKINCOLOR_WHITE;
@@ -1588,7 +1588,7 @@ static void K_drawKartItem(void)
 	//V_ClearClipRect();
 
 	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
-	if (itembar)
+	if (itembar || K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 	{
 		const INT32 fill = ((itembar*barlength)/maxl);
 		const INT32 length = min(barlength, fill);

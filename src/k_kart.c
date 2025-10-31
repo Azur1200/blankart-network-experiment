@@ -485,7 +485,7 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 	if (against && !P_MobjWasRemoved(against) && against->player
 		&& ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
-		|| (against->player->itemtype == KITEM_BUBBLESHIELD && mobj->player->itemtype != KITEM_BUBBLESHIELD))) // They have a Bubble Shield
+		|| (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))) // They have a Bubble Shield
 	{
 		weight = 0; // This player does not cause any bump action
 	}
@@ -497,7 +497,7 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 		weight = (mobj->player->kartweight) * FRACUNIT;
 
-		if (mobj->player->itemtype == KITEM_BUBBLESHIELD)
+		if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE)
 		{
 			weight = max(BUBBLEMINWEIGHT, weight);
 			weight = FixedMul(weight, FRACUNIT/16);
@@ -7461,12 +7461,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (player->itemtype == KITEM_BUBBLESHIELD)
-	{
-		if (player->bubblecool)
-			player->bubblecool--;
-	}
-	else
+	if (player->itemtype != KITEM_BUBBLESHIELD)
 	{
 		player->bubbleblowup = 0;
 		player->bubblecool = 0;
@@ -10218,8 +10213,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->itemflags &= ~IF_USERINGS;
 	}
 
-	if (player->exiting && player->bubbleblowup > 0)
-		player->bubbleblowup--;
+	if (player->exiting)
+	{
+		player->bubbleblowup = 0;
+		if (player->bubblecool > 0)
+			player->bubblecool--;
+	}
 
 	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
 	{
@@ -10785,16 +10784,16 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							{
 								if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 								{
-									if (player->bubbleblowup == 0)
+									if (player->bubblecool == 0)
 										S_StartSound(player->mo, sfx_s3k75);
 
-									player->bubbleblowup++;
+									if (player->bubblecool < bubbletime && player->bubblehealth > 0)
+									{
+										player->bubbleblowup += 3;
+										player->bubblehealth--;
+									}
 
-									// Reduce cooldown for easier itemset chaining.
-									// (was blowup x4 before)
-									player->bubblecool = player->bubbleblowup*2;
-
-									if (player->bubbleblowup > bubbletime*4)
+									if (++player->bubblecool >= bubbletime + TICRATE/2)
 									{
 										// If you overcharge the Bubble Shield at
 										// any point, it pops and gives you a boost.
@@ -10811,43 +10810,41 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										}
 
 										player->bubbleboost = 7 * sneakertime / 10;
+										player->flashing = 4*TICRATE/7;
 									}
 								}
 								else
 								{
+									if (player->bubblecool > bubbletime)
+										player->bubblecool = bubbletime;
+
+									if (player->bubbleblowup > 0)
 									{
-										boolean popped = false;
-										if (player->bubbleblowup > bubbletime)
-											player->bubbleblowup = bubbletime;
+										player->bubbleblowup--;
+										if (player->bubbleblowup == 0)
+											K_BotResetItemConfirm(player, false);
+										if (player->bubblecool < bubbletime)
+											player->bubblecool++;
+									}
 
-										if (player->bubbleblowup)
+									if (player->bubbleblowup == 0 && player->bubblecool > 0)
+									{
+										player->bubblecool--;
+
+										if (player->bubblecool == 0 && player->bubblehealth <= 0)
 										{
-											player->bubbleblowup--;
-
-											if (!player->bubbleblowup)
-											{
-												// Each use costs some points of health.
-												K_RemoveBubbleHealth(player, BUBBLEUSECOST);
-
-												if (player->bubblehealth <= 0)
-												{
-													// Bubble popped!
-													popped = true;
-												}
-											}
+											K_BreakBubbleShield(player);
+											K_PopPlayerShield(player);
 										}
+									}
 
-										if (!popped)
-										{
-											if (buttons & BT_ATTACK || player->bubblecool)
-											{
-												player->itemflags &= ~IF_HOLDREADY;
-											}
-											else
-											{
-												player->itemflags |= IF_HOLDREADY;
-											}
-										}
+									if (buttons & BT_ATTACK || player->bubblecool > 0)
+									{
+										player->itemflags &= ~IF_HOLDREADY;
+									}
+									else
+									{
+										player->itemflags |= IF_HOLDREADY;
 									}
 								}
 							}

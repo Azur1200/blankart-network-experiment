@@ -68,17 +68,14 @@ extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
 extern vector3_t clusterpoint, clusterdtf;
 
-// Bubble Shield's maximum health
-#define MAXBUBBLEHEALTH 12
+// Bubble Shield's maximum health (determines how many times it can be inflated)
+#define MAXBUBBLEHEALTH (bubbletime * 3)
 
-// Chip damage done to a Bubble Shield upon bumping a player
-#define BUBBLEBUMPCHIP (MAXBUBBLEHEALTH / 4)
+// Chip damage done to a Bubble Shield upon bumping a player when not inflated (rounded up)
+#define BUBBLEBUMPCHIP ((MAXBUBBLEHEALTH + 1) / 2)
 
-// HP cost for a Bubble Shield to inflate
-#define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
-
-// Damage done to an inflated Bubble Shield by items.
-#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH / 6)
+// Damage done to an inflated Bubble Shield (rounded up)
+#define BUBBLEITMDAMAGE ((MAXBUBBLEHEALTH + 5) / 6)
 
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)

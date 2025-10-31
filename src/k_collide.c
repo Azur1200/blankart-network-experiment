@@ -547,18 +547,19 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 
 	// Apply a cooldown if the Bubble Shield took damage without shattering.
 	if ((player->bubblehealth > 0) && (dmg > 0))
-	{
-		player->bubblecool = 15*4;
-		player->itemflags &= ~IF_HOLDREADY;
-		bubble->extravalue1 = 4;
-		bubble->cvmem = 1;
-	}
+		player->bubbleblowup = 0;
 }
 
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
 	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;
+}
+
+static boolean K_StrongPlayerBump(const player_t *player)
+{
+	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
+	    || (player->growshrinktimer > 0));
 }
 
 boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
@@ -572,9 +573,16 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 	fixed_t momentum = max(FixedHypot(owner->momx, owner->momy), FixedHypot(t2->momx, t2->momy));
 	momentum = max(3*momentum/4, 16*mapobjectscale); // do SOMETHING!
 
-	P_InstaThrust(t2, angle, momentum);
-	if (!t2->player)
-		t2->angle = angle;
+	if (t2->player && !K_StrongPlayerBump(t2->player))
+	{
+		P_Thrust(t2, angle, momentum/2);
+	}
+	else
+	{
+		P_InstaThrust(t2, angle, momentum);
+		if (!t2->player)
+			t2->angle = angle;
+	}
 
 	if (K_BubbleReflectingTrapItem(t2))
 	{
@@ -598,19 +606,13 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 	return true;
 }
 
-boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
+boolean K_BubbleShieldCanReflect(mobj_t *t)
 {
-	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
-		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
-		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
-		|| t2->type == MT_KART_LEFTOVER
-		|| (t2->type == MT_PLAYER && t1->target != t2));
-}
-
-static boolean K_PlayerCanBeBubbleBumped(player_t *player)
-{
-	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
-	    || (player->growshrinktimer > 0));
+	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
+		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK
+		|| t->type == MT_KART_LEFTOVER
+		|| t->type == MT_PLAYER);
 }
 
 static INT16 K_GetBubbleDamage(mobj_t* itm)
@@ -665,19 +667,11 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 
 boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
-	if (t2->type == MT_PLAYER)
-	{
+	// don't bump yourself
+	if (t1->target == t2)
+		return true;
 
-		boolean bumpme = ((t2->player) && (K_PlayerCanBeBubbleBumped(t2->player)));
-
-		if (!bumpme)
-		{
-			// Ignore non-bumpable players.
-			return true;
-		}
-	}
-
-	if (K_BubbleShieldCanReflect(t1, t2))
+	if (K_BubbleShieldCanReflect(t2))
 	{
 		boolean reflected = K_BubbleShieldReflect(t1, t2);
 
