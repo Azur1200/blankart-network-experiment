@@ -8476,8 +8476,18 @@ static void K_UpdateDistanceFromFinishLine(player_t *player)
 				const mapheader_t *mapheader = mapheaderinfo[gamemap - 1];
 				if ((mapheader->levelflags & LF_SECTIONRACE) == 0U)
 				{
-					const UINT8 numfulllapsleft = ((UINT8)numlaps - player->laps) / mapheader->lapspersection;
-					player->distancetofinish += numfulllapsleft * K_GetCircuitLength();
+					const INT16 numfulllapsleft = ((INT16)numlaps - (INT16)player->laps) / mapheader->lapspersection;
+
+					if (numfulllapsleft >= 0)
+					{
+						player->distancetofinish += numfulllapsleft * K_GetCircuitLength();
+					}
+					else
+					{
+						// Finished players don't really need to check for distance, do they?
+						// Lock in our position as a distance value.
+						player->distancetofinish = max(0, (INT16)player->position - 1);
+					}
 				}
 			}
 		}
