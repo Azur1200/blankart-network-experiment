@@ -4653,6 +4653,8 @@ static void K_FlameDashLeftoverSmoke(mobj_t *src)
 		P_SetScale(smoke, src->scale);
 		smoke->destscale = 3*src->scale/2;
 		smoke->scalespeed = src->scale/12;
+		smoke->colorized = true;
+		smoke->color = SKINCOLOR_ABYSS;
 
 		smoke->momx = 3*src->momx/4;
 		smoke->momy = 3*src->momy/4;
