@@ -9173,6 +9173,12 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		}
 
 		fixed_t scale = 5*player->mo->scale/4;
+		if (cv_kartbubble_defense_canidle.value && player->bubbleblowup == 0 && player->bubblecool > 0)
+			mobj->renderflags |= RF_GHOSTLY;
+		else if ((!cv_kartbubble_defense_canidle.value) && !K_IsBubbleDefending(player))
+			mobj->renderflags |= (RF_TRANS40 | RF_FULLBRIGHT);
+		else
+			mobj->renderflags &= ~RF_GHOSTLYMASK;
 
 		if (player->bubblecool)
 		{
@@ -9183,12 +9189,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				P_SetMobjState(mobj, S_BUBBLESHIELDBLOWUP);
 
 			mobj->angle += ANGLE_22h;
-			if (cv_kartbubble_defense_canidle.value && player->bubbleblowup == 0 && player->bubblecool > 0)
-				mobj->renderflags |= RF_GHOSTLY;
-			else if ((!cv_kartbubble_defense_canidle.value) && !K_IsBubbleDefending(player))
-				mobj->renderflags |= RF_GHOSTLY;
-			else
-				mobj->renderflags &= ~RF_GHOSTLYMASK;
 
 			fixed_t stretch = 0;
 			if (player->bubblecool >= bubbletime) // overcharge
@@ -9240,7 +9240,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		else
 		{
 			mobj->angle = player->mo->angle;
-			mobj->renderflags &= ~RF_GHOSTLYMASK;
+			// mobj->renderflags &= ~RF_GHOSTLYMASK;
 			mobj->colorized = false;
 			mobj->color = SKINCOLOR_BLUE;
 
