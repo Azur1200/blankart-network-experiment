@@ -4133,7 +4133,16 @@ void SV_StopServer(void)
 	P_UnloadLevel();
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
+	{
 		localtextcmd[i][0] = 0;
+
+		while (textcmdbuf[i] != NULL)
+		{
+			textcmdbuf_t *buf = textcmdbuf[i];
+			textcmdbuf[i] = textcmdbuf[i]->next;
+			Z_Free(buf);
+		}
+	}
 
 	for (i = firstticstosend; i < firstticstosend + BACKUPTICS; i++)
 		D_Clearticcmd(i);
