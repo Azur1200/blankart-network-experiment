@@ -255,7 +255,7 @@ INT32 stealtime = TICRATE/2;
 INT32 sneakertime = TICRATE + (TICRATE/3);
 INT32 waterpaneltime = TICRATE*2;
 INT32 itemtime = 8*TICRATE;
-INT32 bubbletime = TICRATE/4;
+INT32 bubbletime = TICRATE/2;
 INT32 comebacktime = 10*TICRATE;
 INT32 bumptime = 6;
 INT32 greasetics = 3*TICRATE;
@@ -2744,6 +2744,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	INT32 previtemroulette;
 	INT32 roulettetype;
 	INT32 growshrinktimer;
+	UINT8 bubblehealth;
 	INT32 bumper;
 	INT32 karmapoints;
 	INT32 wanted;
@@ -2812,6 +2813,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		itemtype = 0;
 		itemamount = 0;
 		growshrinktimer = 0;
+		bubblehealth = 0;
 		bumper = ((gametyperules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
 		karmapoints = 0;
 		wanted = 0;
@@ -2866,6 +2868,14 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 			growshrinktimer = players[player].growshrinktimer;
 		else
 			growshrinktimer = 0;
+
+		// deplete your item stack if you died with zero bubble health
+		bubblehealth = players[player].bubblehealth;
+		if (bubblehealth == 0 && itemtype == KITEM_BUBBLESHIELD && itemamount > 0)
+		{
+			if (--itemamount == 0)
+				itemtype = 0;
+		}
 
 		bumper = players[player].bumper;
 		karmapoints = players[player].karmapoints;
@@ -3001,6 +3011,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
 	p->growshrinktimer = growshrinktimer;
+	p->bubblehealth = bubblehealth;
 	p->bumper = bumper;
 	p->karmadelay = comebacktime;
 	p->karmapoints = karmapoints;

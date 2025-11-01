@@ -20,6 +20,11 @@ extern consvar_t cv_kartchainingsound;
 extern consvar_t cv_kartdriftsounds;
 extern consvar_t cv_kartdriftefx;
 
+// opinionated stuff for testing
+extern consvar_t cv_kartbubble_defense_canidle;
+extern consvar_t cv_kartbubble_defense_damagerate;
+extern consvar_t cv_kartbubble_boost_allow;
+
 #define KART_FULLTURN 800
 
 /*
@@ -68,17 +73,14 @@ extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
 extern vector3_t clusterpoint, clusterdtf;
 
-// Bubble Shield's maximum health
-#define MAXBUBBLEHEALTH 12
+// Bubble Shield's maximum health (determines how many times it can be fully inflated)
+#define MAXBUBBLEHEALTH (bubbletime * 3)
 
-// Chip damage done to a Bubble Shield upon bumping a player
-#define BUBBLEBUMPCHIP (MAXBUBBLEHEALTH / 4)
+// Chip damage done to a Bubble Shield upon bumping a player when not inflated (rounded up)
+#define BUBBLEBUMPCHIP ((MAXBUBBLEHEALTH + 1) / 2)
 
-// HP cost for a Bubble Shield to inflate
-#define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
-
-// Damage done to an inflated Bubble Shield by items.
-#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH / 6)
+// Damage done to an inflated Bubble Shield (rounded up)
+#define BUBBLEITMDAMAGE ((MAXBUBBLEHEALTH + 8) / 9)
 
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
@@ -257,6 +259,7 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
+boolean K_IsBubbleDefending(player_t *player);
 void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 void K_RepairOrbitChain(mobj_t *orbit);
 void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);

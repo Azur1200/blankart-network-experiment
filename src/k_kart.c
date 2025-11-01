@@ -82,6 +82,12 @@ consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_F
 consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_OnOff, NULL);
 
+// opinionated stuff for testing
+consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
+static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
+consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -303,6 +309,11 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugcolorize);
 	CV_RegisterVar(&cv_kartdebugdirector);
 
+	// experimental stuff
+	CV_RegisterVar(&cv_kartbubble_defense_canidle);
+	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
+	CV_RegisterVar(&cv_kartbubble_boost_allow);
+
 	// HUD cvars
 	K_RegisterKartHUDStuff();
 
@@ -485,7 +496,8 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 	if (against && !P_MobjWasRemoved(against) && against->player
 		&& ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
-		|| (against->player->itemtype == KITEM_BUBBLESHIELD && mobj->player->itemtype != KITEM_BUBBLESHIELD))) // They have a Bubble Shield
+		|| (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
+		&& K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))) // and you don't
 	{
 		weight = 0; // This player does not cause any bump action
 	}
@@ -497,7 +509,7 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 		weight = (mobj->player->kartweight) * FRACUNIT;
 
-		if (mobj->player->itemtype == KITEM_BUBBLESHIELD)
+		if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE && mobj->player->bubblecool == 0)
 		{
 			weight = max(BUBBLEMINWEIGHT, weight);
 			weight = FixedMul(weight, FRACUNIT/16);
@@ -766,7 +778,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p1shield = K_GetShieldFromPlayer(mobj1->player);
 
 		// Moved here so it only fires once on bump.
-		if (p1shield == KSHIELD_BUBBLE)
+		if (p1shield == KSHIELD_BUBBLE && mobj1->player->bubblecool == 0)
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
@@ -802,7 +814,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p2shield = K_GetShieldFromPlayer(mobj2->player);
 
 		// Moved here so it only fires once on bump.
-		if (p2shield == KSHIELD_BUBBLE)
+		if (p2shield == KSHIELD_BUBBLE && mobj2->player->bubblecool == 0)
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
@@ -5308,59 +5320,49 @@ static void K_BreakBubbleShield(player_t* player)
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		return;
 
-	// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
-	mobj_t* shard;
+	const INT32 flip = P_MobjFlip(player->mo);
+	const fixed_t scalediff = player->shieldtracer->scale - mapobjectscale;
+	const fixed_t shieldrad = player->shieldtracer->radius;
 
-	fixed_t move_magnitude, shieldrad, shieldscale, scalediff;
-	vector2_t mul_vec;
-	vector3_t mom;
-	fixed_t randang, randzang;
-	INT32 flip = P_MobjFlip(player->mo);
-
-	shieldscale = player->shieldtracer->scale;
-
-	scalediff = shieldscale - mapobjectscale;
-	shieldrad = FixedMul(player->shieldtracer->radius, shieldscale);
-
-	mul_vec.x = FRACUNIT;
-	mul_vec.y = 0;
-
-	INT32 i;
-	for (i = 0; i < MAXSHARDCOUNT; i++)
+	for (INT32 i = 0; i < MAXSHARDCOUNT; i++)
 	{
-		mul_vec.x = FRACUNIT;
-		mul_vec.y = 0;
+		vector2_t mul_vec = { FRACUNIT, 0 };
 
-		randang = (SHARDROT * (i + 1));
-		randzang = (P_RandomRange(23, 157) * FRACUNIT);
-		move_magnitude =
+		fixed_t randang = SHARDROT * (i + 1);
+		fixed_t randzang = P_RandomRange(10, 120) * FRACUNIT;
+		fixed_t move_magnitude =
 		    FixedMul((P_RandomRange(4, 16) * FRACUNIT), mapobjectscale + (scalediff / 4));
-		
+
 		FV2_Rotate(&mul_vec, randzang);
 
 		// Do shitty initial 3D rotations around the shield's radius.
-		shard = P_SpawnMobj(
+		mobj_t *shard = P_SpawnMobj(
 		    player->shieldtracer->x +
-			FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
+		    FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
 		    player->shieldtracer->y +
-			FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
-		    player->shieldtracer->z + FixedMul(mul_vec.y * flip, shieldrad),
+		    FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
+		    player->shieldtracer->z + ((player->shieldtracer->height + scalediff) / 4)
+		                            + FixedMul(mul_vec.y * flip, shieldrad),
 		    MT_BUBBLESHLD_DEBRIS);
 
-		if (shard)
+		if (!P_MobjWasRemoved(shard))
 		{
 			//CONS_Printf(M_GetText("randzang: %d, randang: %d\n"), randzang / FRACUNIT, randang / FRACUNIT);
 
 			mul_vec.x = FixedMul(move_magnitude, mul_vec.x);
 			mul_vec.y = FixedMul(move_magnitude, mul_vec.y * flip);
 
-			mom.x = FixedMul(mul_vec.x, FCOS(FixedAngle(randang)));
-			mom.y = FixedMul(mul_vec.x, FSIN(FixedAngle(randang)));
-			mom.z = mul_vec.y;
+			vector3_t mom = {
+				.x = FixedMul(mul_vec.x, FCOS(FixedAngle(randang))),
+				.y = FixedMul(mul_vec.x, FSIN(FixedAngle(randang))),
+				.z = mul_vec.y,
+			};
 
 			shard->momx = mom.x + player->mo->momx;
 			shard->momy = mom.y + player->mo->momy;
 			shard->momz = mom.z + player->mo->momz;
+
+			shard->extravalue1 = i % 5; // 20% chance to play the shard sound
 		}
 	}
 
@@ -5388,9 +5390,7 @@ void K_PopPlayerShield(player_t *player)
 			player->itemamount = 0;
 			break;
 		case KSHIELD_BUBBLE:
-			if (player->bubblehealth > 0)
-				K_BreakBubbleShield(player); // Nice whiff; see ya!
-
+			K_BreakBubbleShield(player);
 			player->bubbleblowup = 0;
 			player->bubblecool = 0;
 			player->bubblehealth = 0;
@@ -5411,16 +5411,25 @@ void K_PopPlayerShield(player_t *player)
 	K_UnsetItemOut(player);
 }
 
+// Returns true is the bubble is actively in defense mode (inflating or inflated)
+boolean K_IsBubbleDefending(player_t *player)
+{
+	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE) return false;
+	return (player->bubbleblowup);
+}
+
 // Depletes a bubble shield's health, and pops the shield at 0 health.
 void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 {
+	// experiment: inflated bubble shield applies a direct reduction to all incoming damage
+	if (K_IsBubbleDefending(player))
+	{
+		sub = FixedMul(sub<<FRACBITS, cv_kartbubble_defense_damagerate.value)>>FRACBITS;
+	}
 	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
 
 	if (player->bubblehealth <= 0)
-	{
-		K_BreakBubbleShield(player);
 		K_PopPlayerShield(player);
-	}
 }
 
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
@@ -7463,12 +7472,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	if (player->itemtype == KITEM_BUBBLESHIELD)
-	{
-		if (player->bubblecool)
-			player->bubblecool--;
-	}
-	else
+	if (player->itemtype != KITEM_BUBBLESHIELD)
 	{
 		player->bubbleblowup = 0;
 		player->bubblecool = 0;
@@ -10220,8 +10224,12 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			player->itemflags &= ~IF_USERINGS;
 	}
 
-	if (player->exiting && player->bubbleblowup > 0)
-		player->bubbleblowup--;
+	if (player->exiting)
+	{
+		player->bubbleblowup = 0;
+		if (player->bubblecool > 0)
+			player->bubblecool--;
+	}
 
 	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
 	{
@@ -10780,27 +10788,30 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&shield->target, player->mo);
 								P_SetTarget(&player->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3f);
-								player->bubblehealth = MAXBUBBLEHEALTH;
+								if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
+									player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
 							{
-								if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
+								if ((buttons & BT_ATTACK && player->itemflags & IF_HOLDREADY)
+								 || (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
 								{
-									if (player->bubbleblowup == 0)
+									if (player->bubblecool == 0)
 										S_StartSound(player->mo, sfx_s3k75);
 
-									player->bubbleblowup++;
+									if (player->bubblecool < bubbletime && player->bubblehealth > 0)
+									{
+										player->bubbleblowup += 3;
+										player->bubblehealth--;
+									}
+									else if (player->bubblecool >= bubbletime)
+										player->bubbleblowup++; // overcharge bonus
 
-									// Reduce cooldown for easier itemset chaining.
-									// (was blowup x4 before)
-									player->bubblecool = player->bubbleblowup*2;
-
-									if (player->bubbleblowup > bubbletime*4)
+									if (++player->bubblecool >= bubbletime + TICRATE/2)
 									{
 										// If you overcharge the Bubble Shield at
 										// any point, it pops and gives you a boost.
-										K_BreakBubbleShield(player);
 										K_PopPlayerShield(player);
 
 										if (onground)
@@ -10812,44 +10823,43 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 											K_PlayBoostTaunt(player->mo);
 										}
 
-										player->bubbleboost = 7 * sneakertime / 10;
+										// experiment: don't boost, just give invulnerability
+										if (cv_kartbubble_boost_allow.value)
+										{
+											player->bubbleboost = 7 * sneakertime / 10;
+										}
+										player->flashing = 4*TICRATE/7;
 									}
 								}
 								else
 								{
+									if (player->bubblecool > bubbletime)
+										player->bubblecool = bubbletime;
+
+									if (player->bubbleblowup > 0)
 									{
-										boolean popped = false;
-										if (player->bubbleblowup > bubbletime)
-											player->bubbleblowup = bubbletime;
+										player->bubbleblowup--;
+										if (player->bubbleblowup == 0)
+											K_BotResetItemConfirm(player, false);
+										if (player->bubblecool < bubbletime)
+											player->bubblecool++;
+									}
 
-										if (player->bubbleblowup)
-										{
-											player->bubbleblowup--;
+									if (player->bubbleblowup == 0 && player->bubblecool > 0)
+									{
+										player->bubblecool--;
 
-											if (!player->bubbleblowup)
-											{
-												// Each use costs some points of health.
-												K_RemoveBubbleHealth(player, BUBBLEUSECOST);
+										if (player->bubblecool == 0 && player->bubblehealth <= 0)
+											K_PopPlayerShield(player);
+									}
 
-												if (player->bubblehealth <= 0)
-												{
-													// Bubble popped!
-													popped = true;
-												}
-											}
-										}
-
-										if (!popped)
-										{
-											if (buttons & BT_ATTACK || player->bubblecool)
-											{
-												player->itemflags &= ~IF_HOLDREADY;
-											}
-											else
-											{
-												player->itemflags |= IF_HOLDREADY;
-											}
-										}
+									if (buttons & BT_ATTACK || player->bubblecool > 0)
+									{
+										player->itemflags &= ~IF_HOLDREADY;
+									}
+									else
+									{
+										player->itemflags |= IF_HOLDREADY;
 									}
 								}
 							}
