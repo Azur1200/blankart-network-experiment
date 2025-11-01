@@ -1306,6 +1306,22 @@ void K_getMinimapDrawinfo(drawinfo_t *out)
 	out->flags = fflags;
 }
 
+static void K_DrawItemBar(INT32 fx, INT32 fy, INT32 fflags, fixed_t itembar, UINT8 colors[static 3])
+{
+	const boolean fourp = r_splitscreen > 1;
+	const INT32 barlength = (fourp ? 12 : 26)*FRACUNIT;
+	const INT32 length = min(barlength, FixedMul(itembar, barlength));
+	const INT32 height = (fourp ? 1 : 2)*FRACUNIT;
+	const INT32 x = (fx + (fourp ? 17 : 11)) * FRACUNIT, y = (fy + (fourp ? 27 : 35)) * FRACUNIT;
+
+	V_DrawSciencePatch(x, y, V_HUDTRANS|fflags, kp_itemtimer[fourp ? 1 : 0], FRACUNIT);
+	V_DrawFixedFill(x+FRACUNIT, y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the left edge
+	V_DrawFixedFill(x+max(FRACUNIT, length), y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the right edge
+	if (!fourp)
+		V_DrawFixedFill(x+2*FRACUNIT, y+2*FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[1]|fflags); // the dulled underside
+	V_DrawFixedFill(x+2*FRACUNIT, y+FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[0]|fflags); // the shine
+}
+
 // see also MT_PLAYERARROW mobjthinker in p_mobj.c
 static void K_drawKartItem(void)
 {
@@ -1321,11 +1337,7 @@ static void K_drawKartItem(void)
 	boolean dark = false;
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	INT32 numberdisplaymin = 2;
-	INT32 itembar = 0;
-	INT32 maxl = 0; // itembar's normal highest value
-	INT32 flamebar = 0;
-	INT32 flamemaxl = 0; // flamebar's normal highest value
-	const INT32 barlength = (r_splitscreen > 1 ? 12 : 26);
+	fixed_t itembar = -1, flamebar = -1;
 	UINT16 localcolor = SKINCOLOR_NONE;
 	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
@@ -1386,8 +1398,7 @@ static void K_drawKartItem(void)
 		}
 		else if (stplyr->rocketsneakertimer > 1)
 		{
-			itembar = stplyr->rocketsneakertimer;
-			maxl = (itemtime*3) - barlength;
+			itembar = FixedDiv(stplyr->rocketsneakertimer, itemtime*3);
 
 			if (leveltime & 1)
 				localpatch = kp_rocketsneaker[offset];
@@ -1396,10 +1407,8 @@ static void K_drawKartItem(void)
 		}
 		else if (stplyr->flametimer > 1)
 		{
-			itembar = stplyr->flametimer;
-			maxl = (itemtime*3) - barlength;
-			flamebar = stplyr->flamestore;
-			flamemaxl = FLAMESTOREMAX;
+			itembar = FixedDiv(stplyr->flametimer, itemtime*3);
+			flamebar = FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
 			localbg = kp_itembg[offset+1];
 			dark = true;
 
@@ -1417,10 +1426,7 @@ static void K_drawKartItem(void)
 		else if (stplyr->growshrinktimer > 0)
 		{
 			if (stplyr->growcancel > 0)
-			{
-				itembar = stplyr->growcancel;
-				maxl = 26;
-			}
+				itembar = FixedDiv(stplyr->growcancel, 26);
 
 			if (leveltime & 1)
 				localpatch = kp_grow[offset];
@@ -1429,14 +1435,10 @@ static void K_drawKartItem(void)
 		}
 		else if ((stplyr->invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 		{
-			itembar = stplyr->invincibilitytimer;
-			maxl = max(1, stplyr->maxinvincibilitytime);
+			itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
 
 			if (stplyr->invincibilitycancel > 0)
-			{
-				flamebar = stplyr->invincibilitycancel;
-				flamemaxl = 26;
-			}
+				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
 
 			if (leveltime & 1)
 				localpatch = localinv;
@@ -1454,8 +1456,7 @@ static void K_drawKartItem(void)
 				localcolor = SKINCOLOR_WHITE;
 			}
 
-			itembar = stplyr->bubblehealth;
-			maxl = MAXBUBBLEHEALTH;
+			itembar = FixedDiv(stplyr->bubblehealth, MAXBUBBLEHEALTH);
 		}
 		else if (stplyr->sadtimer > 0)
 		{
@@ -1588,45 +1589,12 @@ static void K_drawKartItem(void)
 	//V_ClearClipRect();
 
 	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
-	if (itembar || K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
-	{
-		const INT32 fill = ((itembar*barlength)/maxl);
-		const INT32 length = min(barlength, fill);
-		const INT32 height = (offset ? 1 : 2);
-		const INT32 x = (offset ? 17 : 11), y = (offset ? 27 : 35);
+	// ...aren't you forgetting something?
+	if (itembar != -1)
+		K_DrawItemBar(fx, fy, fflags|V_HUDTRANS, itembar, (UINT8 []){0, 8, 12});
 
-		V_DrawScaledPatch(fx+x, fy+y, V_HUDTRANS|fflags, kp_itemtimer[offset]);
-		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1, (length == 2 ? 2 : 1), height, 12|fflags|V_HUDTRANS);
-		// The bar itself
-		if (length > 2)
-		{
-			V_DrawFill(fx+x+length, fy+y+1, 1, height, 12|fflags|V_HUDTRANS); // the right one
-			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2, length-2, 1, 8|fflags|V_HUDTRANS); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1, length-2, 1, 0|fflags|V_HUDTRANS); // the shine
-		}
-	}
-
-	if (flamebar)
-	{
-		const INT32 fill = ((flamebar*barlength)/flamemaxl);
-		const INT32 length = min(barlength, fill);
-		const INT32 height = (offset ? 1 : 2);
-		const INT32 x = (offset ? 17 : 11), y = (offset ? 27 : 35);
-
-		V_DrawScaledPatch(fx+x, fy+y-8, V_HUDTRANS|fflags, kp_itemtimer[offset]);
-		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1-8, (length == 2 ? 2 : 1), height, 55|fflags|V_HUDTRANS);
-		// The bar itself
-		if (length > 2)
-		{
-			V_DrawFill(fx+x+length, fy+y+1-8, 1, height, 55|fflags|V_HUDTRANS); // the right one
-			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2-8, length-2, 1, 36|fflags|V_HUDTRANS); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1-8, length-2, 1, 51|fflags|V_HUDTRANS); // the shine
-		}
-	}
+	if (flamebar != -1)
+		K_DrawItemBar(fx, fy - 8, fflags|V_HUDTRANS, flamebar, (UINT8 []){51, 36, 55});
 
 	// Quick Eggman numbers
 	if (stplyr->eggmanexplode > 1)

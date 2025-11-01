@@ -69,18 +69,6 @@ mobj_t *boss3cap = NULL;
 
 mobj_t *mobjcache = NULL;
 
-// Bubble Shield overlay spritescales.
-static fixed_t bubbleoverlayscales[4][2] = {
-	// All scales are raw 16.16 fixed-point numbers based on FRACUNIT.
-	{65536, 65536},  // 1.0, 1.0
-	{65536, 59667},  // 1.0, 0.9104477
-	{90593, 61623},  // 1.382352, 0.940298
-	{100231, 53798}  // 1.529411, 0.820895
-};
-static statenum_t bubbledamagestates[5] = { S_INVISIBLE, S_BUBLSHLD_DMG_1, S_BUBLSHLD_DMG_2, S_BUBLSHLD_DMG_3, S_BUBLSHLD_DMG_4 };
-
-
-
 void P_InitCachedActions(void)
 {
 	actioncachehead.prev = actioncachehead.next = &actioncachehead;
@@ -9176,8 +9164,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 	}
 	case MT_BUBBLESHIELD:
 	{
-		fixed_t scale;
-		statenum_t curstate, overlaystate;
 		const player_t *player = P_MobjWasRemoved(mobj->target) ? NULL : mobj->target->player;
 
 		if (player == NULL || player->mo->health == 0 || K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
@@ -9186,22 +9172,14 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			return false;
 		}
 
-		scale = 5*player->mo->scale/4;
-		curstate = mobj->tics == 1 ? mobj->state->nextstate : (statenum_t)(mobj->state - states);
-		mobj->color = SKINCOLOR_BLUE;
-		mobj->colorized = false;
-
-		// Lookup for rescaling the "bubble damage" overlay
-		UINT8 scale_idx = player->bubblecool > bubbletime ? player->bubblecool % 4 : 0;
-		if (player->bubbleblowup > 0 && player->bubblecool < 8)
-			scale_idx = player->bubblecool/2;
+		fixed_t scale = 5*player->mo->scale/4;
 
 		if (player->bubblecool)
 		{
 			INT32 blow = player->bubbleblowup + min(player->bubblecool, bubbletime)*10;
 			scale += (blow * scale) / (bubbletime * 10);
 
-			if (curstate != S_BUBBLESHIELDBLOWUP)
+			if (mobj->state - states != S_BUBBLESHIELDBLOWUP)
 				P_SetMobjState(mobj, S_BUBBLESHIELDBLOWUP);
 
 			mobj->angle += ANGLE_22h;
@@ -9210,13 +9188,24 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			else
 				mobj->renderflags &= ~RF_GHOSTLYMASK;
 
-			mobj->frame = states[S_BUBBLESHIELDBLOWUP].frame + scale_idx;
+			fixed_t stretch = 0;
+			if (player->bubblecool > bubbletime)
+				stretch = (player->bubblecool % 4) * FRACUNIT/5;
+			else if (player->bubbleblowup > 0 && player->bubblecool < 4)
+				stretch = player->bubblecool*FRACUNIT/6;
+			else if (player->bubbleblowup >= 4 && player->bubblecool < 8)
+				stretch = (8 - player->bubblecool)*FRACUNIT/6;
+			else if (player->bubblehealth == 0 && player->bubbleblowup == 0)
+				stretch = (player->bubblecool - bubbletime)*FRACUNIT/bubbletime;
 
+			mobj->spritexscale = FRACUNIT + FTAN(FixedAngle(stretch*40) + ANGLE_90);
+			mobj->spriteyscale = FRACUNIT - stretch/3 + abs(FSIN(FixedAngle(stretch*80)))/8;
+
+			mobj->colorized = true;
 			if (player->bubbleblowup > 0 && leveltime & 1)
-			{
 				mobj->color = SKINCOLOR_WHITE;
-				mobj->colorized = true;
-			}
+			else
+				mobj->color = SKINCOLOR_BLUE;
 
 			if (P_IsObjectOnGround(player->mo) && player->bubbleblowup > 0)
 			{
@@ -9250,8 +9239,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		{
 			mobj->angle = player->mo->angle;
 			mobj->renderflags &= ~RF_GHOSTLYMASK;
+			mobj->colorized = false;
+			mobj->color = SKINCOLOR_BLUE;
 
-			if (curstate == S_BUBBLESHIELDBLOWUP)
+			if (mobj->state - states == S_BUBBLESHIELDBLOWUP)
 				P_SetMobjState(mobj, S_BUBBLESHIELD1);
 		}
 
@@ -9262,24 +9253,22 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (mobj->tracer->type == MT_OVERLAY)
 			{
 				fixed_t health_scalar;
-				
+
 				P_SetScale(mobj->tracer, mobj->destscale);
 
 				mobj->tracer->threshold |= OV_DONTXYSCALE;
 
-				mobj->tracer->spritexscale = FixedMul(mobj->spritexscale, bubbleoverlayscales[scale_idx][0]);
-				mobj->tracer->spriteyscale = FixedMul(mobj->spriteyscale, bubbleoverlayscales[scale_idx][1]);
+				mobj->tracer->spritexscale = mobj->spritexscale;
+				mobj->tracer->spriteyscale = mobj->spriteyscale;
 
 				health_scalar = player->bubblehealth * FRACUNIT / MAXBUBBLEHEALTH;
 				health_scalar = 5 - CLAMP(health_scalar / (FRACUNIT / 5), 1, 5);
 
-				overlaystate = ((mobj->tracer->tics == 1) ? (mobj->tracer->state->nextstate) : ((statenum_t)(mobj->tracer->state-states)));
+				statenum_t damagestate = health_scalar == 0 ? S_INVISIBLE : S_BUBLSHLD_DMG_1 - 1 + health_scalar;
 
 				// Depending on the level of damage done to the shield, show some cracks.
-				if (overlaystate != bubbledamagestates[health_scalar])
-				{
-					P_SetMobjState(mobj->tracer, bubbledamagestates[health_scalar]);
-				}
+				if (mobj->tracer->state - states != damagestate)
+					P_SetMobjState(mobj->tracer, damagestate);
 			}
 			else
 			{
@@ -9328,7 +9317,8 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			if (curstate != S_INVISIBLE)
 			{
 				// "Despawn" and play the glass landing sound.
-				S_StartSoundAtVolume(mobj, mobj->info->activesound, 40);
+				if (mobj->extravalue1 == 0)
+					S_StartSoundAtVolume(mobj, mobj->info->activesound, 128);
 				P_SetMobjState(mobj, S_INVISIBLE);
 			}
 		}

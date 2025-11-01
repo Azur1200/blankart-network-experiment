@@ -5306,59 +5306,49 @@ static void K_BreakBubbleShield(player_t* player)
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE)
 		return;
 
-	// TODO: Some more dramatic SFX and VFX (DSS3K59, bubble shield shards fly all over)
-	mobj_t* shard;
+	const INT32 flip = P_MobjFlip(player->mo);
+	const fixed_t scalediff = player->shieldtracer->scale - mapobjectscale;
+	const fixed_t shieldrad = player->shieldtracer->radius;
 
-	fixed_t move_magnitude, shieldrad, shieldscale, scalediff;
-	vector2_t mul_vec;
-	vector3_t mom;
-	fixed_t randang, randzang;
-	INT32 flip = P_MobjFlip(player->mo);
-
-	shieldscale = player->shieldtracer->scale;
-
-	scalediff = shieldscale - mapobjectscale;
-	shieldrad = FixedMul(player->shieldtracer->radius, shieldscale);
-
-	mul_vec.x = FRACUNIT;
-	mul_vec.y = 0;
-
-	INT32 i;
-	for (i = 0; i < MAXSHARDCOUNT; i++)
+	for (INT32 i = 0; i < MAXSHARDCOUNT; i++)
 	{
-		mul_vec.x = FRACUNIT;
-		mul_vec.y = 0;
+		vector2_t mul_vec = { FRACUNIT, 0 };
 
-		randang = (SHARDROT * (i + 1));
-		randzang = (P_RandomRange(23, 157) * FRACUNIT);
-		move_magnitude =
+		fixed_t randang = SHARDROT * (i + 1);
+		fixed_t randzang = P_RandomRange(10, 120) * FRACUNIT;
+		fixed_t move_magnitude =
 		    FixedMul((P_RandomRange(4, 16) * FRACUNIT), mapobjectscale + (scalediff / 4));
-		
+
 		FV2_Rotate(&mul_vec, randzang);
 
 		// Do shitty initial 3D rotations around the shield's radius.
-		shard = P_SpawnMobj(
+		mobj_t *shard = P_SpawnMobj(
 		    player->shieldtracer->x +
-			FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
+		    FixedMul(FixedMul(mul_vec.x, shieldrad), FCOS(FixedAngle(randang))),
 		    player->shieldtracer->y +
-			FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
-		    player->shieldtracer->z + FixedMul(mul_vec.y * flip, shieldrad),
+		    FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
+		    player->shieldtracer->z + ((player->shieldtracer->height + scalediff) / 4)
+		                            + FixedMul(mul_vec.y * flip, shieldrad),
 		    MT_BUBBLESHLD_DEBRIS);
 
-		if (shard)
+		if (!P_MobjWasRemoved(shard))
 		{
 			//CONS_Printf(M_GetText("randzang: %d, randang: %d\n"), randzang / FRACUNIT, randang / FRACUNIT);
 
 			mul_vec.x = FixedMul(move_magnitude, mul_vec.x);
 			mul_vec.y = FixedMul(move_magnitude, mul_vec.y * flip);
 
-			mom.x = FixedMul(mul_vec.x, FCOS(FixedAngle(randang)));
-			mom.y = FixedMul(mul_vec.x, FSIN(FixedAngle(randang)));
-			mom.z = mul_vec.y;
+			vector3_t mom = {
+				.x = FixedMul(mul_vec.x, FCOS(FixedAngle(randang))),
+				.y = FixedMul(mul_vec.x, FSIN(FixedAngle(randang))),
+				.z = mul_vec.y,
+			};
 
 			shard->momx = mom.x + player->mo->momx;
 			shard->momy = mom.y + player->mo->momy;
 			shard->momz = mom.z + player->mo->momz;
+
+			shard->extravalue1 = i % 5; // 20% chance to play the shard sound
 		}
 	}
 
@@ -5386,9 +5376,7 @@ void K_PopPlayerShield(player_t *player)
 			player->itemamount = 0;
 			break;
 		case KSHIELD_BUBBLE:
-			if (player->bubblehealth > 0)
-				K_BreakBubbleShield(player); // Nice whiff; see ya!
-
+			K_BreakBubbleShield(player);
 			player->bubbleblowup = 0;
 			player->bubblecool = 0;
 			player->bubblehealth = 0;
@@ -5415,10 +5403,7 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
 
 	if (player->bubblehealth <= 0)
-	{
-		K_BreakBubbleShield(player);
 		K_PopPlayerShield(player);
-	}
 }
 
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
@@ -10797,7 +10782,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 									{
 										// If you overcharge the Bubble Shield at
 										// any point, it pops and gives you a boost.
-										K_BreakBubbleShield(player);
 										K_PopPlayerShield(player);
 
 										if (onground)
@@ -10832,10 +10816,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										player->bubblecool--;
 
 										if (player->bubblecool == 0 && player->bubblehealth <= 0)
-										{
-											K_BreakBubbleShield(player);
 											K_PopPlayerShield(player);
-										}
 									}
 
 									if (buttons & BT_ATTACK || player->bubblecool > 0)

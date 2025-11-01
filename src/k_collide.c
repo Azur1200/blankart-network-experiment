@@ -343,7 +343,8 @@ boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->player)
 	{
-		if (t2->player->flashing > 0)
+		// don't sideswipe anyone boosting with a bubble shield!
+		if (t2->player->flashing > 0 || t2->player->bubbleboost > 0)
 			return true;
 
 		if (t1->state == &states[S_MINEEXPLOSION1])
