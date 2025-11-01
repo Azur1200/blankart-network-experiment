@@ -1434,6 +1434,7 @@ void PT_FileFragment(void)
 		|| !strcmp(filename, PATCHNAME)
 		|| !strcmp(filename, SOUNDSNAME)
 		|| !strcmp(filename, MUSICNAME)
+		|| !strcmp(filename, BLANMUSICNAME)
 		)
 	{
 		I_Error("Tried to download base-game file: \"%s\"", filename);
