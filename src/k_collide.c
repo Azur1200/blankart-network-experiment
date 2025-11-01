@@ -548,7 +548,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 
 	// Apply a cooldown if the Bubble Shield took damage without shattering.
 	if ((player->bubblehealth > 0) && (dmg > 0))
-		player->bubbleblowup = 0;
+		player->bubbleblowup /= 2;
 }
 
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)

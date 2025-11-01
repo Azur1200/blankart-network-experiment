@@ -485,7 +485,8 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 	if (against && !P_MobjWasRemoved(against) && against->player
 		&& ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
-		|| (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE && K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))) // They have a Bubble Shield
+		|| (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
+		&& K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))) // and you don't
 	{
 		weight = 0; // This player does not cause any bump action
 	}
@@ -497,7 +498,7 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 		weight = (mobj->player->kartweight) * FRACUNIT;
 
-		if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE)
+		if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE && mobj->player->bubblecool == 0)
 		{
 			weight = max(BUBBLEMINWEIGHT, weight);
 			weight = FixedMul(weight, FRACUNIT/16);
@@ -766,7 +767,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p1shield = K_GetShieldFromPlayer(mobj1->player);
 
 		// Moved here so it only fires once on bump.
-		if (p1shield == KSHIELD_BUBBLE)
+		if (p1shield == KSHIELD_BUBBLE && mobj1->player->bubblecool == 0)
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
@@ -802,7 +803,7 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p2shield = K_GetShieldFromPlayer(mobj2->player);
 
 		// Moved here so it only fires once on bump.
-		if (p2shield == KSHIELD_BUBBLE)
+		if (p2shield == KSHIELD_BUBBLE && mobj2->player->bubblecool == 0)
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
@@ -10767,7 +10768,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
 							{
-								if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
+								if ((buttons & BT_ATTACK && player->itemflags & IF_HOLDREADY)
+								 || (player->bubbleblowup > 0 && player->bubblecool <= bubbletime/2)) // auto
 								{
 									if (player->bubblecool == 0)
 										S_StartSound(player->mo, sfx_s3k75);
@@ -10777,6 +10779,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 										player->bubbleblowup += 3;
 										player->bubblehealth--;
 									}
+									else if (player->bubblecool >= bubbletime)
+										player->bubbleblowup++; // overcharge bonus
 
 									if (++player->bubblecool >= bubbletime + TICRATE/2)
 									{

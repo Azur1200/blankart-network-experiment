@@ -9189,17 +9189,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				mobj->renderflags &= ~RF_GHOSTLYMASK;
 
 			fixed_t stretch = 0;
-			if (player->bubblecool > bubbletime)
-				stretch = (player->bubblecool % 4) * FRACUNIT/5;
-			else if (player->bubbleblowup > 0 && player->bubblecool < 4)
-				stretch = player->bubblecool*FRACUNIT/6;
-			else if (player->bubbleblowup >= 4 && player->bubblecool < 8)
-				stretch = (8 - player->bubblecool)*FRACUNIT/6;
-			else if (player->bubblehealth == 0 && player->bubbleblowup == 0)
+			if (player->bubblecool >= bubbletime) // overcharge
+				stretch = ((player->bubblecool - bubbletime) % 4) * FRACUNIT/4;
+			else if (player->bubbleblowup > 0 && player->bubblecool <= 4) // inflate 1
+				stretch = player->bubblecool*FRACUNIT/5;
+			else if (player->bubbleblowup >= 5 && player->bubblecool < 8) // inflate 2
+				stretch = (8 - player->bubblecool)*FRACUNIT/5;
+			else if (player->bubblehealth == 0 && player->bubbleblowup == 0) // decaying
 				stretch = (player->bubblecool - bubbletime)*FRACUNIT/bubbletime;
 
-			mobj->spritexscale = FRACUNIT + FTAN(FixedAngle(stretch*40) + ANGLE_90);
-			mobj->spriteyscale = FRACUNIT - stretch/3 + abs(FSIN(FixedAngle(stretch*80)))/8;
+			mobj->spritexscale = FRACUNIT + FTAN(FixedAngle(stretch*30) + ANGLE_90);
+			mobj->spriteyscale = FRACUNIT - stretch/5;
 
 			mobj->colorized = true;
 			if (player->bubbleblowup > 0 && leveltime & 1)
@@ -9214,7 +9214,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				for (i = 0; i < 2; i++)
 				{
 					angle_t a = mobj->angle + ((i & 1) ? ANGLE_180 : 0);
-					fixed_t ws = player->mo->scale/2 + scale/5;
+					fixed_t ws = player->mo->scale/4 + scale/4;
 					mobj_t *wave;
 
 					wave = P_SpawnMobj(

@@ -75,7 +75,7 @@ extern vector3_t clusterpoint, clusterdtf;
 #define BUBBLEBUMPCHIP ((MAXBUBBLEHEALTH + 1) / 2)
 
 // Damage done to an inflated Bubble Shield (rounded up)
-#define BUBBLEITMDAMAGE ((MAXBUBBLEHEALTH + 5) / 6)
+#define BUBBLEITMDAMAGE ((MAXBUBBLEHEALTH + 8) / 9)
 
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
