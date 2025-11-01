@@ -82,6 +82,12 @@ consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_F
 consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_OnOff, NULL);
 
+// opinionated stuff for testing
+consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
+static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
+consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -302,6 +308,11 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugnodes);
 	CV_RegisterVar(&cv_kartdebugcolorize);
 	CV_RegisterVar(&cv_kartdebugdirector);
+
+	// experimental stuff
+	CV_RegisterVar(&cv_kartbubble_defense_canidle);
+	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
+	CV_RegisterVar(&cv_kartbubble_boost_allow);
 
 	// HUD cvars
 	K_RegisterKartHUDStuff();
@@ -5398,9 +5409,21 @@ void K_PopPlayerShield(player_t *player)
 	K_UnsetItemOut(player);
 }
 
+// Returns true is the bubble is actively in defense mode (inflating or inflated)
+boolean K_IsBubbleDefending(player_t *player)
+{
+	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE) return false;
+	return (player->bubbleblowup > 0 && player->bubblecool > 0);
+}
+
 // Depletes a bubble shield's health, and pops the shield at 0 health.
 void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 {
+	// experiment: inflated bubble shield applies a direct reduction to all incoming damage
+	if (K_IsBubbleDefending(player))
+	{
+		sub = FixedMul(sub<<FRACBITS, cv_kartbubble_defense_damagerate.value)>>FRACBITS;
+	}
 	player->bubblehealth = (UINT8)(max(0, (INT16)(player->bubblehealth) - sub));
 
 	if (player->bubblehealth <= 0)
@@ -10798,7 +10821,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 											K_PlayBoostTaunt(player->mo);
 										}
 
-										player->bubbleboost = 7 * sneakertime / 10;
+										// experiment: don't boost, just give invulnerability
+										if (cv_kartbubble_boost_allow.value)
+										{
+											player->bubbleboost = 7 * sneakertime / 10;
+										}
 										player->flashing = 4*TICRATE/7;
 									}
 								}

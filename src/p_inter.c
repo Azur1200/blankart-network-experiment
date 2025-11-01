@@ -2274,7 +2274,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 
 				// Bubble Shield protects you from spinout, but not knockback
 				if (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE
-				 && explosioncombo == false && source != NULL && type != DMG_VOLTAGE)
+				 && explosioncombo == false && source != NULL && type != DMG_VOLTAGE
+				 // experiment: disable this since defense can be prepared in advance instead of requiring reaction
+				 && cv_kartbubble_defense_canidle.value)
 				{
 					K_PopPlayerShield(player);
 					K_DoInstashield(player);
