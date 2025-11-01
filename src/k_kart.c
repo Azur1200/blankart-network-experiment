@@ -10763,7 +10763,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								P_SetTarget(&shield->target, player->mo);
 								P_SetTarget(&player->shieldtracer, shield);
 								S_StartSound(player->mo, sfx_s3k3f);
-								player->bubblehealth = MAXBUBBLEHEALTH;
+								if (player->bubblehealth <= 0 || player->bubblehealth > MAXBUBBLEHEALTH)
+									player->bubblehealth = MAXBUBBLEHEALTH;
 							}
 
 							if (!HOLDING_ITEM && NO_HYUDORO)
