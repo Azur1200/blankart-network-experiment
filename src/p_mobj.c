@@ -9185,7 +9185,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->angle += ANGLE_22h;
 			if (cv_kartbubble_defense_canidle.value && player->bubbleblowup == 0 && player->bubblecool > 0)
 				mobj->renderflags |= RF_GHOSTLY;
-			else if ((!cv_kartbubble_defense_canidle.value) && K_IsBubbleDefending(player))
+			else if ((!cv_kartbubble_defense_canidle.value) && !K_IsBubbleDefending(player))
 				mobj->renderflags |= RF_GHOSTLY;
 			else
 				mobj->renderflags &= ~RF_GHOSTLYMASK;
