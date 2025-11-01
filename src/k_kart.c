@@ -5413,7 +5413,7 @@ void K_PopPlayerShield(player_t *player)
 boolean K_IsBubbleDefending(player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE) return false;
-	return (player->bubbleblowup > 0 && player->bubblecool > 0);
+	return (player->bubbleblowup);
 }
 
 // Depletes a bubble shield's health, and pops the shield at 0 health.
