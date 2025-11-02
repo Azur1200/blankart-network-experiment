@@ -574,6 +574,12 @@ boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 	fixed_t momentum = max(FixedHypot(owner->momx, owner->momy), FixedHypot(t2->momx, t2->momy));
 	momentum = max(3*momentum/4, 16*mapobjectscale); // do SOMETHING!
 
+	if (t2->player && ((t2->player->respawn)||(t2->player->flashing)))
+	{
+		// Don't reflect respawning/flashing players.
+		return false;
+	}
+
 	if (t2->player && !K_StrongPlayerBump(t2->player))
 	{
 		P_Thrust(t2, angle, momentum/2);
