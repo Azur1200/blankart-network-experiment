@@ -10365,7 +10365,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 							if (onground)
 							{
-								player->flamedash += incr;
+								// player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
 							}
