@@ -679,7 +679,12 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (reflected)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1, K_GetBubbleDamage(t2));
+			if ((!P_MobjWasRemoved(t1)) && (t1->target) && (t1->target->player))
+			{
+				K_BubbleShieldCollideDrain(t1->target->player,
+							   t1,
+							   K_GetBubbleDamage(t2));
+			}
 		}
 
 		return reflected;
@@ -692,7 +697,14 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (shootable)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1, K_GetBubbleDamage(t2));
+
+			// FfffffFFFFUCKING EXPLODING BARRELS AAAAAA
+			if ((!P_MobjWasRemoved(t1)) && (t1->target) && (t1->target->player))
+			{
+				K_BubbleShieldCollideDrain(t1->target->player,
+							   t1,
+							   K_GetBubbleDamage(t2));
+			}
 		}
 
 		return shootable;
