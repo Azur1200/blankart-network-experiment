@@ -87,6 +87,7 @@ consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -313,6 +314,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
+	CV_RegisterVar(&cv_kartflame_fastfuel);
 
 	// HUD cvars
 	K_RegisterKartHUDStuff();
@@ -10338,9 +10340,17 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 					{
 						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 						{
-							const SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
-							const SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
-							const SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
+							SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
+							SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
+							SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
+							
+							// experiment: uses fuel faster, but raises temperature faster
+							if (cv_kartflame_fastfuel.value)
+							{
+								incr = incr * 3 / 2;
+								metincr = metincr * 3 / 2;
+								comincr = comincr * 3 / 2;
+							}
 
 							if (player->flamestore == 0)
 							{

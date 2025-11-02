@@ -703,8 +703,8 @@ struct player_t
 	UINT16 bubbleboost; // Bubble shield boost timer
 
 	UINT16 flamedash;	 // Flame Shield dash power
-	INT32 flametimer;	 // Flame Shield dash meter left
-	UINT8 flamestore;	 // Flame Shield reserve boost
+	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
+	UINT8 flamestore;	 // Flame Shield reserve boost ("temperature")
 	tic_t flameoverheat; // Time the Flame Shield spends overheating
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
