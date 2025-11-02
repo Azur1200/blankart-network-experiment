@@ -5403,7 +5403,8 @@ void K_PopPlayerShield(player_t *player)
 			break;
 		case KSHIELD_FLAME:
 			S_StartSound(player->mo, sfx_s3k47);
-			S_StopSoundByID(player->mo, sfx_s3kc2l);
+			S_StartSound(player->mo, sfx_s3k77);
+			S_StopSoundByID(player->mo, sfx_s3kd3l);
 			player->flametimer = 0;
 			break;
 	}
@@ -7487,7 +7488,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->flamestore)
 	{
 		if (--player->flamestore == 0)
-			S_StopSoundByID(player->mo, sfx_s3kc2l);
+			S_StopSoundByID(player->mo, sfx_s3kd3l);
 	}
 
 	if (player->flametimer > 0)
@@ -7514,6 +7515,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 		if (player->flamestore)
 			K_FlameDashLeftoverSmoke(player->mo);
+	}
+
+	if (player->flamecamtime > 0)
+	{
+		player->karthud[khud_destboostcam] = FixedMul(FRACUNIT*3/4, FixedDiv(player->flamecamtime, TICRATE/2));
+		player->flamecamtime -= 1;
 	}
 
 	if (cmd->buttons & BT_DRIFT)
@@ -10336,6 +10343,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				// Flame Shield Usage
 				else if (player->flametimer > 0)
 				{
+					// Usage sound
+					// moved here so the sound doesn't cut off early when not holding the item button
+					if ((!S_SoundPlaying(player->mo, sfx_s3kd3l)) && player->flamestore > 0)
+						S_StartSound(player->mo, sfx_s3kd3l);
+
 					if (!HOLDING_ITEM && NO_HYUDORO)
 					{
 						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
@@ -10352,19 +10364,20 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								comincr = comincr * 3 / 2;
 							}
 
-							if (player->flamestore == 0)
-							{
-								S_StartSound(player->mo, sfx_s3k48);
-								//S_StartSound(player->mo, sfx_s267);
-								K_PlayBoostTaunt(player->mo);
-							}
-
-							// Usage sound
-							if (!S_SoundPlaying(player->mo, sfx_s3kc2l) && player->flametimer != 0 && player->flamestore != 0)
-								S_StartSound(player->mo, sfx_s3kc2l);
-
 							if (onground)
 							{
+								if (player->flamestore == 0)
+								{
+									S_StartSound(player->mo, sfx_s3k9b);
+									K_PlayBoostTaunt(player->mo);
+
+									if (player->flamecamtime == 0)
+										player->flamecamtime = TICRATE/2;
+
+									if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
+										S_StartSound(player->mo, sfx_s3kd3l);
+								}
+
 								player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
@@ -10374,11 +10387,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
-
+								
 								P_Thrust(
-									player->mo, player->mo->angle,
-									FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
-									);
+								player->mo, player->mo->angle,
+								FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
+								);
 							}*/
 
 							if (player->flametimer <= 0)

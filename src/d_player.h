@@ -706,6 +706,7 @@ struct player_t
 	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
 	UINT8 flamestore;	 // Flame Shield reserve boost ("temperature")
 	tic_t flameoverheat; // Time the Flame Shield spends overheating
+	tic_t flamecamtime;  // Timer for flame shield usage camera effect
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
 	SINT8 stealingtimer;	// you are stealing
