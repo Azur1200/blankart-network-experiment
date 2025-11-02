@@ -7127,8 +7127,10 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->spinouttimer = 0;
 		player->wipeoutslow = 0;
 
-		if (P_IsObjectOnGround(player->mo) &&
-			((INT32)(player->flipovertimer - 1) > 2))
+		if ((P_IsObjectOnGround(player->mo) &&
+		     ((INT32)(player->flipovertimer - 1) > 2)) ||  // Hit the ground...
+		    (player->flipovertimer >
+		     FLIPOVERLIMIT))  // ...or we've been tumbling around for too long.
 		{
 			player->flipovertimer = 0;
 			player->mo->rollangle = 0;

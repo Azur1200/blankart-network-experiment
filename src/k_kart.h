@@ -48,11 +48,16 @@ Make sure this matches the actual number of states
 #define FLIPOVERDIST (336<<FRACBITS)
 
 // Time (in tics) of a flipover.
-// (TICRATE * (0.56666 * FRACUNIT))
-#define FLIPOVERTICS 19
+// (TICRATE * 0.56666)
+#define FLIPOVERTICS (19)
 #define FLIPOVERHALFTICS (FLIPOVERTICS>>1)
 
-#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // 0.1666 * FRACUNIT
+#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // TICRATE * 0.1666
+#define FLIPOVER_360DEGTIME (FLIPOVER_90DEGTIME * 4)
+
+// Force-stops a flipover if the timer exceeds this limit.
+// Initially enough to last 2 rotations.
+#define FLIPOVERLIMIT (FLIPOVER_360DEGTIME * 2)
 
 // Angle movement for a flipover
 // ANGLE_90 / FLIPOVER_90DEGTIME
