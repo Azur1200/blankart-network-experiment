@@ -87,6 +87,7 @@ consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle
 static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
@@ -313,6 +314,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
+	CV_RegisterVar(&cv_kartflame_fastfuel);
 
 	// HUD cvars
 	K_RegisterKartHUDStuff();
@@ -5401,7 +5403,8 @@ void K_PopPlayerShield(player_t *player)
 			break;
 		case KSHIELD_FLAME:
 			S_StartSound(player->mo, sfx_s3k47);
-			S_StopSoundByID(player->mo, sfx_s3kc2l);
+			S_StartSound(player->mo, sfx_s3k77);
+			S_StopSoundByID(player->mo, sfx_s3kd3l);
 			player->flametimer = 0;
 			break;
 	}
@@ -7487,7 +7490,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->flamestore)
 	{
 		if (--player->flamestore == 0)
-			S_StopSoundByID(player->mo, sfx_s3kc2l);
+			S_StopSoundByID(player->mo, sfx_s3kd3l);
 	}
 
 	if (player->flametimer > 0)
@@ -7514,6 +7517,12 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 		if (player->flamestore)
 			K_FlameDashLeftoverSmoke(player->mo);
+	}
+
+	if (player->flamecamtime > 0)
+	{
+		player->karthud[khud_destboostcam] = FixedMul(FRACUNIT*3/4, FixedDiv(player->flamecamtime, TICRATE/2));
+		player->flamecamtime -= 1;
 	}
 
 	if (cmd->buttons & BT_DRIFT)
@@ -10336,27 +10345,41 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				// Flame Shield Usage
 				else if (player->flametimer > 0)
 				{
+					// Usage sound
+					// moved here so the sound doesn't cut off early when not holding the item button
+					if ((!S_SoundPlaying(player->mo, sfx_s3kd3l)) && player->flamestore > 0)
+						S_StartSound(player->mo, sfx_s3kd3l);
+
 					if (!HOLDING_ITEM && NO_HYUDORO)
 					{
 						if ((buttons & BT_ATTACK) && (player->itemflags & IF_HOLDREADY))
 						{
-							const SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
-							const SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
-							const SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
-
-							if (player->flamestore == 0)
+							SINT8 incr = (gametyperules & GTR_CLOSERPLAYERS) ? 3 : 2;
+							SINT8 metincr = (gametyperules & GTR_CLOSERPLAYERS) ? 4 : 3;
+							SINT8 comincr = (gametyperules & GTR_CLOSERPLAYERS) ? 10 : 4;
+							
+							// experiment: uses fuel faster, but raises temperature faster
+							if (cv_kartflame_fastfuel.value)
 							{
-								S_StartSound(player->mo, sfx_s3k48);
-								//S_StartSound(player->mo, sfx_s267);
-								K_PlayBoostTaunt(player->mo);
+								incr = incr * 3 / 2;
+								metincr = metincr * 3 / 2;
+								comincr = comincr * 3 / 2;
 							}
-
-							// Usage sound
-							if (!S_SoundPlaying(player->mo, sfx_s3kc2l) && player->flametimer != 0 && player->flamestore != 0)
-								S_StartSound(player->mo, sfx_s3kc2l);
 
 							if (onground)
 							{
+								if (player->flamestore == 0)
+								{
+									S_StartSound(player->mo, sfx_s3k9b);
+									K_PlayBoostTaunt(player->mo);
+
+									if (player->flamecamtime == 0)
+										player->flamecamtime = TICRATE/2;
+
+									if (!S_SoundPlaying(player->mo, sfx_s3kd3l))
+										S_StartSound(player->mo, sfx_s3kd3l);
+								}
+
 								player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
@@ -10366,11 +10389,11 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 								player->flamedash += incr;
 								player->flamestore = min(player->flamestore + metincr, FLAMESTOREMAX);
 								player->flametimer -= comincr;
-
+								
 								P_Thrust(
-									player->mo, player->mo->angle,
-									FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
-									);
+								player->mo, player->mo->angle,
+								FixedMul(player->mo->scale, K_GetKartGameSpeedScalar(gamespeed))/4
+								);
 							}*/
 
 							if (player->flametimer <= 0)
