@@ -953,10 +953,19 @@ static void K_UpdateOffroad(player_t *player)
 
 			if (player->flamestore)
 			{
-				// flame shield doesn't resist offroad, but slows its effect
-				// it doesn't suffer the offroad speedboost cut; increase offroadstrength to compensate
-				offroad = 2*offroad/3;
-				offroadstrength *= 2;
+				if (cv_kartflame_offroadburn.value && player->flameoverheat)
+				{
+					// experiment: allow overheating flame shield to cut thru offroad a bit better
+					offroad = offroad/2;
+					offroadstrength = offroadstrength/2;
+				}
+				else
+				{
+					// flame shield doesn't resist offroad, but slows its effect
+					offroad = 2*offroad/3;
+					// it doesn't suffer the offroad speedboost cut; increase offroadstrength to compensate
+					offroadstrength *= 2;
+				}
 			}
 
 			player->offroad += offroad;
@@ -7495,11 +7504,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (player->flamestore >= FLAMESTOREMAX-1)
 		{
 			// Overheating; mainly used for the Flamometer
+			if (cv_kartflame_offroadburn.value && player->flameoverheat == 0)
+			{
+				S_StartSound(player->mo, sfx_cdfm16);
+			}
 			player->flameoverheat++;
 		}
-		else
+		else if (player->flameoverheat > 0)
 		{
-			player->flameoverheat = 0;
+			if (player->flameoverheat >= 4) player->flameoverheat = 4;
+			player->flameoverheat -= 1;
 		}
 
 		if (player->stealingtimer == 0 && player->stolentimer == 0)
