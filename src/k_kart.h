@@ -20,6 +20,8 @@ extern consvar_t cv_kartchainingsound;
 extern consvar_t cv_kartdriftsounds;
 extern consvar_t cv_kartdriftefx;
 
+extern consvar_t cv_kartairsquish;
+
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
 extern consvar_t cv_kartbubble_defense_damagerate;

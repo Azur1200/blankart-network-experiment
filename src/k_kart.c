@@ -89,6 +89,9 @@ consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_dama
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
 
+static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
+consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
+
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
 // gamespeed is cc (0 for easy, 1 for normal, 2 for hard)
 // franticitems is Frantic Mode items, bool
@@ -315,6 +318,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
+
+	CV_RegisterVar(&cv_kartairsquish);
 
 	// HUD cvars
 	K_RegisterKartHUDStuff();

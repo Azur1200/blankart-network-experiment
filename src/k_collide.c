@@ -837,13 +837,43 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	else if (t1Condition == true && t2Condition == false)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT1)
-			P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-		return true;
+		{
+			switch (cv_kartairsquish.value)
+			{
+				case 1:
+					P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+					return true;
+					break;
+				case 2:
+					P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT2)
-			P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+		{
+			// shitty code duplication 🥲
+			switch (cv_kartairsquish.value)
+			{
+				case 1:
+					P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+					return true;
+					break;
+				case 2:
+					P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
 		return true;
 	}
 
