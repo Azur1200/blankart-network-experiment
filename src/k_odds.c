@@ -872,7 +872,7 @@ INT32 K_KartGetItemOdds(
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 		newodds = 0;
 	}
-	else if ((notForBottom == true) && (inBottom == true))
+	else if ((notForBottom == true) && (inBottom == true) && (leveltime >= (30*TICRATE)+starttime))
 	{
 		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
 		newodds = 0;
