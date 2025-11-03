@@ -206,6 +206,15 @@ extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;
 extern consvar_t cv_kartinvin_midtime;
 
+// opinionated stuff for testing
+extern consvar_t cv_kartbubble_defense_canidle;
+extern consvar_t cv_kartbubble_defense_damagerate;
+extern consvar_t cv_kartbubble_boost_allow;
+extern consvar_t cv_kartflame_fastfuel;
+extern consvar_t cv_kartflame_offroadburn;
+
+extern consvar_t cv_kartairsquish;
+
 extern consvar_t cv_kartairdrop;
 
 extern consvar_t cv_kartitemlitter;

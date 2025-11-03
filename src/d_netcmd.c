@@ -605,6 +605,17 @@ consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR
 consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
+// opinionated stuff for testing balance tweaks on the shields
+consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
+static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
+consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "Off", CV_NETVAR, CV_OnOff, NULL);
+
+static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
+consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
+
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
 #define FOREACH( name, n ) { n, #name }
