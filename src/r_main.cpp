@@ -1671,7 +1671,7 @@ void R_RenderPlayerView(void)
 					if (bot > viewheight-1)
 						bot = viewheight-1;
 
-					UINT8* p =  R_Address(top, x);
+					UINT8* p =  R_Address(x, top);
 
 					while (top <= bot)
 					{
