@@ -439,8 +439,14 @@ void F_IntroTicker(void)
 		}
 		if (finalecount == 80)
 		{
-			char chars[5][10] = {"tails", "chao", "aiai", "sakura"};
-			SINT8 random = M_RandomRange(0, 3);
+			// I'm assuming these are all representative of a "dev character".
+			// Tails: NepDisk
+			// Chao: Alug
+			// Aiai: GHG
+			// Sakura: Anon
+			// Doomguy: Minenice
+			char chars[6][10] = {"tails", "chao", "aiai", "sakura", "doom"};
+			SINT8 random = M_RandomRange(0, 4);
 			sfxenum_t rsound = skins[R_SkinAvailable(chars[random])].soundsid[SKSKWIN];
 			S_StartSound(NULL, sfx_flgcap);
 			S_StartSound(NULL, rsound);
@@ -884,15 +890,16 @@ const char *blancredits[] = {
 	"\"GenericHeroGuy\"",
 	"\"Alug\"",
 	"\"Indev\"",
+	"\"Anonimus\" aka \"yama\"",
+	"\"minenice\"",
 	"",
 	"\1Support Programming",
 	"\"hayaunderscore\" aka \"DeltaKaynx\"",
 	"\"WumboSpasm\"",
-	"\"Anonimus\"",
 	"",
 	"\1Item Programming",
 	"\"NepDisk\"",
-	"\"Anonimus\"",
+	"\"Anonimus\" aka \"yama\"",
 	"",
 	"\1External Programming",
 	"\"Hanicef\"",
@@ -915,19 +922,22 @@ const char *blancredits[] = {
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",
-	"\"Anonimus\"",
+	"\"Anonimus\" aka \"yama\"",
+	"\"GenericHeroGuy\"",
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
 	"\"JonUD\"",
 	"\"luna\"",
 	"\"White Mage (guy who picked up controller)\"",
+	"\"minenice\"",
 	"",
 	"\1New Item Art",
 	"\"Spee\"",
 	"\"Jin\"",
 	"\"NepDisk\"",
 	"\"Mayo\"",
+	"\"Anonimus\" aka \"yama\"",
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -937,6 +947,10 @@ const char *blancredits[] = {
 	"\"Achiiro\" aka \"achiiDev\"",
 	"\"Mayo\"",
 	"\"WumboSpasm\"",
+	"\"Miguelius256\"",
+	"",
+	"\1New Misc Art",
+	"\"scizor300\"",
 	"",
 	"\1Map Patches",
 	"\"Sonic1983\" (PB)",
@@ -952,10 +966,12 @@ const char *blancredits[] = {
 	"\1Super Special SIGSEGV Search and Smash Squad",
 	"\"NepDisk\"",
 	"\"GenericHeroGuy\"",
-	"\"Anonimus\"",
+	"\"Anonimus\" aka \"yama\"",
 	"\"MotoBugger\"",
 	"\"Rim Jobless\"",
 	"\"Toad The Fungus\"",
+	"\"SkylarDream\"", // Discovered the Cookie Country linedef from hell
+	"\"Tsuko\"",
 	"",
 	"\1Testing",
 	"\"NepDisk\"",
@@ -966,7 +982,7 @@ const char *blancredits[] = {
 	"\"JonUD\"",
 	"\"MotoBugger\"",
 	"\"Toad The Fungus\"",
-	"\"Anonimus\"",
+	"\"Anonimus\" aka \"yama\"",
 	"\"luna\"",
 	"\"swift\"",
 	"\"Rim Jobless\"",
@@ -974,11 +990,27 @@ const char *blancredits[] = {
 	"\"Mayo\"",
 	"\"minenice\"",
 	"\"LabrysXII\"",
-	"\"merrit\"",
+	"\"merritt\"",
 	"\"ArcadeStriker\"",
 	"\"Frank_th\"",
+	"\"Tsuko\"",
+	"\"SkylarDream\"",
+	"\"Montblanc\" aka \"Onyo\"",
+	"\"Lepus\"",
+	"\"MC\"",
+	"\"dairychoco\"",
+	"\"Lurker\"",
+	"\"Herculad\"",
+	"\"Yohomes\"",
+	"\"Yunxmi\"",
+	"\"Gemini0\"",
+	"\"PX8916\"",
+	"\"Tom\"",
+	"\"Phoenix\"",
 	"",
 	"\1Special Thanks",
+	"\"merritt\"",
+	"\"luna\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"Sunflower's Garden",
 	"The Moe Mansion and Birdhouse Team",
@@ -1594,7 +1626,7 @@ void F_TitleScreenTicker(boolean run)
 		{
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				mo2 = (mobj_t *)th;
@@ -1851,10 +1883,8 @@ void F_EndCutScene(void)
 			F_StartGameEvaluation();
 		else if (cutnum == introtoplay-1)
 			D_StartTitle();
-		else if (nextmap < NEXTMAP_SPECIAL)
-			G_NextLevel();
 		else
-			G_EndGame();
+			G_NextLevel();
 	}
 }
 

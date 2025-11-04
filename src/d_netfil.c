@@ -59,8 +59,8 @@
 static boolean AddFileToSendQueue(INT32 node, const char *filename, UINT8 fileid);
 
 #ifdef HAVE_CURL
-size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
-int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
+static size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream);
+static int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 #endif
 
 // Sender structure
@@ -167,7 +167,7 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 	for (; i < numwadfiles; i++) //mainwads+1, otherwise we start on the first mainwad
 	{
 		// If it has only music/sound lumps, don't put it in the list
-		if (!wadfiles[i]->important || wadfiles[i]->localfile)
+		if (!wadfiles[i]->important)
 			continue;
 
 		if (firstfile)
@@ -563,7 +563,7 @@ INT32 CL_CheckFiles(void)
 			// CONS_Printf("checking %d of %d / %d of %d?\n", i, fileneedednum, j, numwadfiles);
 			// CONS_Printf("i: %s / j: %s \n", fileneeded[i].filename, wadfiles[j]->filename);
 			
-			if (j < numwadfiles && (!wadfiles[j]->important || wadfiles[j]->localfile))
+			if (j < numwadfiles && !wadfiles[j]->important)
 			{
 				// Unimportant on our side.
 				++j;
@@ -1434,6 +1434,7 @@ void PT_FileFragment(void)
 		|| !strcmp(filename, PATCHNAME)
 		|| !strcmp(filename, SOUNDSNAME)
 		|| !strcmp(filename, MUSICNAME)
+		|| !strcmp(filename, BLANMUSICNAME)
 		)
 	{
 		I_Error("Tried to download base-game file: \"%s\"", filename);
@@ -1763,14 +1764,14 @@ filestatus_t findfile(char *filename, UINT64 wantedhash, boolean completepath)
 }
 
 #ifdef HAVE_CURL
-size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+static size_t curlwrite_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
     size_t written;
     written = fwrite(ptr, size, nmemb, stream);
     return written;
 }
 
-int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
+static int curlprogress_callback(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow)
 {
 	time_t curtime;
 

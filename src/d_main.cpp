@@ -81,6 +81,7 @@
 #include "doomstat.h"
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
+#include "k_specialstage.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -93,8 +94,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x49b468523c8d7784
-#define ASSET_HASH_MAPPATCH_PK3        0xe6733c2c09ad2c02
+#define ASSET_HASH_MAIN_PK3            0x06a13ab736e848f8
+#define ASSET_HASH_MAPPATCH_PK3        0x7d1f6b96dd119296
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -293,7 +294,6 @@ boolean D_RenderLevel(void)
 	viewwindowy = 0;
 	viewwindowx = 0;
 
-	topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 	objectsdrawn = 0;
 
 	ps_rendercalltime = I_GetPreciseTime();
@@ -305,12 +305,12 @@ boolean D_RenderLevel(void)
 			if (cv_homremoval.value == 1)
 			{
 				// Clear the software screen buffer to remove HOM
-				memset(screens[0], 31, vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 31, vid.width * vid.height);
 			}
 			else
 			{
 				//'development' HOM removal -- makes it blindingly obvious if HOM is spotted.
-				memset(screens[0], 32+(timeinmap&15), vid.width * vid.height * vid.bpp);
+				memset(vid.screens[0], 32+(timeinmap&15), vid.width * vid.height);
 			}
 		}
 
@@ -357,29 +357,20 @@ boolean D_RenderLevel(void)
 								viewwindowx = 0;
 								viewwindowy = viewheight;
 							}
-							M_Memcpy(ylookup, ylookup2, viewheight*sizeof (ylookup[0]));
 							break;
 						case 2:
 							viewwindowx = 0;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup3, viewheight*sizeof (ylookup[0]));
 							break;
 						case 3:
 							viewwindowx = viewwidth;
 							viewwindowy = viewheight;
-							M_Memcpy(ylookup, ylookup4, viewheight*sizeof (ylookup[0]));
 						default:
 							break;
 					}
-
-
-					topleft = screens[0] + viewwindowy*vid.width + viewwindowx;
 				}
 
 				R_RenderPlayerView();
-
-				if (i > 0)
-					M_Memcpy(ylookup, ylookup1, viewheight*sizeof (ylookup[0]));
 			}
 		}
 	}
@@ -536,7 +527,6 @@ static void D_Display(void)
 		case GS_LEVEL:
 			if (!gametic)
 				break;
-			HU_Erase();
 			AM_Drawer();
 			break;
 
@@ -545,13 +535,11 @@ static void D_Display(void)
 
 		case GS_INTERMISSION:
 			Y_IntermissionDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_VOTING:
 			Y_VoteDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -566,31 +554,26 @@ static void D_Display(void)
 
 		case GS_CUTSCENE:
 			F_CutsceneDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_EVALUATION:
 			F_GameEvaluationDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_CREDITS:
 			F_CreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_BLANCREDITS:
 			F_BlanCreditDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
 		case GS_SECRETCREDITS:
 			F_SecretCreditsDrawer();
-			HU_Erase();
 			HU_Drawer();
 			break;
 
@@ -600,7 +583,6 @@ static void D_Display(void)
 			{
 				// I don't think HOM from nothing drawing is independent...
 				F_WaitingPlayersDrawer();
-				HU_Erase();
 				HU_Drawer();
 			}
 		case GS_DEDICATEDSERVER:
@@ -658,7 +640,7 @@ static void D_Display(void)
 		V_DrawFadeScreen(TC_RAINBOW, (leveltime & 0x20) ? SKINCOLOR_PASTEL : SKINCOLOR_MOONSLAM);
 
 	// vid size change is now finished if it was on...
-	vid.recalc = 0;
+	vid.recalc = false;
 
 #ifdef HAVE_THREADS
 	I_lock_mutex(&m_menu_mutex);
@@ -780,7 +762,6 @@ static void D_WipeDraw(boolean menu)
 
 	I_UpdateNoBlit();
 
-	HU_Erase();
 	HU_Drawer();
 	if (menu)
 	{
@@ -799,7 +780,6 @@ static void D_WipeDraw(boolean menu)
 
 static double D_EndFrame(precise_t enterprecise, int *frameskip)
 {
-	I_UpdateTime(cv_timescale.value);
 	// Fully completed frame made.
 	precise_t finishprecise = I_GetPreciseTime();
 
@@ -821,7 +801,6 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 			*frameskip = 0;
 	}
 
-	I_UpdateTime(cv_timescale.value);
 	if (!singletics)
 	{
 		precise_t elapsed = finishprecise - enterprecise;
@@ -838,7 +817,6 @@ static double D_EndFrame(precise_t enterprecise, int *frameskip)
 		}
 	}
 
-	I_UpdateTime(cv_timescale.value);
 	// Capture the time once more to get the real delta time.
 	finishprecise = I_GetPreciseTime();
 	deltasecs = (double)((INT64)(finishprecise - enterprecise)) / I_GetPrecisePrecision();
@@ -950,6 +928,7 @@ void D_SRB2Loop(void)
 
 	if (dedicated)
 		server = true;
+	connectedtodedicated = dedicated;
 
 	// Pushing of + parameters is now done back in D_SRB2Main, not here.
 
@@ -997,7 +976,7 @@ void D_SRB2Loop(void)
 	{
 		precise_t enterprecise = I_GetPreciseTime();
 
-		g_dc = {};
+		memset(&g_dc, 0, sizeof(g_dc));
 		Z_Frame_Reset();
 
 		I_UpdateTime(cv_timescale.value);
@@ -1033,7 +1012,6 @@ void D_SRB2Loop(void)
 #ifdef HW3SOUND
 		HW3S_BeginFrameUpdate();
 #endif
-		I_UpdateTime(cv_timescale.value);
 
 		if (realtics > 0 || singletics)
 		{
@@ -1041,8 +1019,6 @@ void D_SRB2Loop(void)
 			// (fadein / fadeout cause massive frame skip!)
 			if (realtics > 8)
 				realtics = 1;
-
-			I_UpdateTime(cv_timescale.value);
 
 			// process tics (but maybe not if realtic == 0)
 			{
@@ -1081,25 +1057,19 @@ void D_SRB2Loop(void)
 			renderisnewtic = false;
 		}
 
-		I_UpdateTime(cv_timescale.value);
-
 		if (interp)
 		{
 			renderdeltatics = FLOAT_TO_FIXED(deltatics);
 
 			const boolean lagging = ((deltatics >= 1.0) || hu_stopped);
 
-			I_UpdateTime(cv_timescale.value);
-
-			R_SetTimeFrac(lagging ? FRACUNIT : g_time.timefrac);
+			R_SetTimeFrac(lagging ? FRACUNIT : I_GetTimeFrac());
 		}
 		else
 		{
 			renderdeltatics = realtics * FRACUNIT;
 			R_SetTimeFrac(FRACUNIT);
 		}
-
-		I_UpdateTime(cv_timescale.value);
 
 		if (interp || doDisplay)
 		{
@@ -1112,12 +1082,6 @@ void D_SRB2Loop(void)
 				// always update console and hud
 				// otherwise it may take minutes to open it
 				CON_Drawer();
-
-				if (gamestate == GS_LEVEL)
-				{
-					ST_Drawer();
-					HU_Drawer();
-				}
 			}
 		}
 
@@ -1227,6 +1191,9 @@ void D_ResetGameState(void)
 
 	// Reset boss info
 	K_ResetBossInfo();
+
+	// Reset Special Stage
+	K_ResetSpecialStage();
 
 	// empty maptol so mario/etc sounds don't play in sound test when they shouldn't
 	maptol = 0;
@@ -1407,6 +1374,7 @@ static void IdentifyVersion(void)
 
 	MUSICTEST(SOUNDSNAME)
 	MUSICTEST(MUSICNAME)
+	MUSICTEST(BLANMUSICNAME)
 
 #undef MUSICTEST
 
@@ -1482,6 +1450,7 @@ void D_SRB2Main(void)
 
 	// for dedicated server
 	dedicated = M_CheckParm("-dedicated") != 0;
+	connectedtodedicated = dedicated;
 
 	if (devparm)
 		CONS_Printf(M_GetText("Development mode ON.\n"));
@@ -1637,6 +1606,7 @@ void D_SRB2Main(void)
 	if (!dedicated)
 	{
 		CV_RegisterVar(&cv_ticrate);
+		CV_RegisterVar(&cv_accuratefps);
 		CV_RegisterVar(&cv_constextsize);
 	}
 
@@ -1748,9 +1718,7 @@ void D_SRB2Main(void)
 	//--------------------------------------------------------- CONFIG.CFG
 	M_FirstLoadConfig(); // WARNING : this do a "COM_BufExecute()"
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // Regenerate Modelist according to cv_fullscreen
-#endif
 
 	// set user default mode or mode set at cmdline
 	SCR_CheckDefaultMode();
@@ -1901,6 +1869,10 @@ void D_SRB2Main(void)
 				I_Error("Bad '%s' level warp.\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
+				"\n"
+				"To check: edit the BlanKart game configuration in Ultimate Lowee Builder.\n"
+				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
+				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
 #endif
 				, word);
 		}
@@ -1962,7 +1934,7 @@ void D_SRB2Main(void)
 	}
 	else if (M_CheckParm("-record") && M_IsNextParm())
 	{
-		G_RecordDemo(M_GetNextParm());
+		G_RecordDemo(va("%s.lmp", M_GetNextParm()));
 		autostart = true;
 	}
 
@@ -2072,34 +2044,20 @@ void D_SRB2Main(void)
 			INT16 newskill = -1;
 			const char *sskill = M_GetNextParm();
 
-			const char *masterstr = "Master";
-			const char *nightmarestr = "NIGHTMARE";
-
-			if (!strcasecmp(masterstr, sskill))
+			for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 			{
-				newskill = KARTGP_MASTER;
-			}
-			else if (!strcasecmp(nightmarestr, sskill))
-			{
-				newskill = KARTGP_NIGHTMARE;
-			}
-			else
-			{
-				for (j = 0; kartspeed_cons_t[j].strvalue; j++)
+				if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, sskill))
 				{
-					if (!strcasecmp(kartspeed_cons_t[j].strvalue, sskill))
-					{
-						newskill = (INT16)kartspeed_cons_t[j].value;
-						break;
-					}
+					newskill = (INT16)gpdifficulty_cons_t[j].value;
+					break;
 				}
+			}
 
-				if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
-				{
-					j = atoi(sskill); // assume they gave us a skill number, which is okay too
-					if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
-						newskill = (INT16)j;
-				}
+			if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
+			{
+				j = atoi(sskill); // assume they gave us a skill number, which is okay too
+				if (j >= KARTSPEED_EASY && j <= KARTGP_NIGHTMARE)
+					newskill = (INT16)j;
 			}
 
 			if (grandprixinfo.gp == true)

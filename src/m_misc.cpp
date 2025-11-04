@@ -79,10 +79,8 @@ typedef off_t off64_t;
 
 #ifdef HAVE_PNG
 
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -1302,7 +1300,7 @@ void M_SaveFrame(void)
 				if (rendermode == render_soft)
 				{
 					// munge planar buffer to linear
-					linear = screens[2];
+					linear = vid.screens[2];
 					I_ReadScreen(linear, 1);
 				}
 #ifdef HWRENDER
@@ -1615,7 +1613,7 @@ void M_DoScreenShot(void)
 	if (rendermode == render_soft)
 	{
 		// munge planar buffer to linear
-		linear = screens[2];
+		linear = vid.screens[2];
 		I_ReadScreen(linear, 1);
 		M_CreateScreenShotPalette();
 		palette = screenshot_palette;
@@ -1627,6 +1625,10 @@ void M_DoScreenShot(void)
 		palette = nullptr;
 	}
 #endif
+	else
+	{
+		I_Error("rendermode %d is not valid", rendermode);
+	}
 
 #ifdef USE_PNG
 	ret = M_SavePNG(va(pandf,pathname,freename), linear, vid.width, vid.height, palette);
@@ -1817,32 +1819,6 @@ char *va(const char *format, ...)
 {
 	va_list argptr;
 	static char string[1024];
-
-	va_start(argptr, format);
-	vsprintf(string, format, argptr);
-	va_end(argptr);
-
-	return string;
-}
-
-/** Allocates and returns a string made out of varargs.
-  *
-  * \param format Format string.
-  * \return Pointer to the resulting string.
-  */
-char *xva(const char *format, ...)
-{
-	va_list argptr;
-	char *string;
-
-	va_start(argptr, format);
-	int size = vsnprintf(NULL, 0, format, argptr);
-	if (size < 0)
-		I_Error("xva: can't format string");
-	string = static_cast<char *>(malloc((unsigned)size+1));
-	if (!string)
-		I_Error("xva: out of memory");
-	va_end(argptr);
 
 	va_start(argptr, format);
 	vsprintf(string, format, argptr);

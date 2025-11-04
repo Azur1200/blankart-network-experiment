@@ -171,19 +171,19 @@ void K_PlayerLoseLife(player_t *player);
 
 
 /*--------------------------------------------------
-	boolean K_CanChangeRules(void);
+	boolean K_CanChangeRules(boolean allowdemos);
 
 		Returns whenver or not the server is allowed
 		to change the game rules.
 
 	Input Arguments:-
-		None
+		allowdemos - permits this behavior during demo playback
 
 	Return:-
 		true if can change important gameplay rules, otherwise false.
 --------------------------------------------------*/
 
-boolean K_CanChangeRules(void);
+boolean K_CanChangeRules(boolean allowdemos);
 
 #ifdef __cplusplus
 } // extern "C"

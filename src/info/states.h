@@ -48,6 +48,10 @@ _(KART_SIGN)
 // technically the player goes here but it's an infinite tic state
 _(OBJPLACE_DUMMY)
 
+_(KART_LEFTOVER)
+_(KART_LEFTOVER_NOTIRES)
+_(KART_TIRE)
+
 // Blue Crawla
 _(POSS_STND)
 _(POSS_RUN1)
@@ -3577,6 +3581,9 @@ _(EGOORB)
 
 _(WATERTRAILS)
 _(WATERTRAILSUNDERLAY)
+
+_(AIRDROPDUST1)
+_(AIRDROPDUST2)
 
 _(SLIPSPARK1)
 _(SLIPSPARK2)

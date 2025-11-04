@@ -103,10 +103,12 @@
 #include "k_terrain.h" // TRF_TRIPWIRE
 #include "k_brightmap.h"
 #include "k_director.h" // K_InitDirector
+#include "k_odds.h" // ItemBGone
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
+#include "k_specialstage.h"
 
 #include "blan/b_soc.h"
 
@@ -155,6 +157,8 @@ boolean purpledriftactive;
 boolean slopeboostactive;
 boolean draftingactive;
 boolean airdropactive;
+boolean itemlittering;
+boolean itempushing;
 UINT8   bumpsparkactive;
 UINT16 bossdisabled;
 boolean stoppedclock;
@@ -460,13 +464,6 @@ static void P_ClearSingleMapHeaderInfo(INT16 num)
 	P_DeleteFlickies(num);
 #endif
 
-	mapheaderinfo[num]->mapvisited = 0;
-	for (int j = 0; j < MAXMAPRECORDS; j++)
-	{
-		Z_Free(mapheaderinfo[num]->mainrecord[j]);
-		mapheaderinfo[num]->mainrecord[j] = NULL;
-	}
-
 	mapheaderinfo[num]->customopts = NULL;
 	mapheaderinfo[num]->numCustomOptions = 0;
 }
@@ -519,10 +516,6 @@ void P_AllocMapHeader(INT16 i)
 		mapheaderinfo[i]->thumbnailPic = NULL;
 		mapheaderinfo[i]->minimapPic = NULL;
 		mapheaderinfo[i]->cup = NULL;
-		for (int j = 0; j < MAXMAPRECORDS; j++)
-		{
-			mapheaderinfo[i]->mainrecord[j] = NULL;
-		}
 		mapheaderinfo[i]->flickies = NULL;
 		nummapheaders++;
 	}
@@ -674,7 +667,7 @@ void P_ReloadRings(void)
 	// scan the thinkers to find rings/spheres/hoops to unset
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)th;
@@ -782,12 +775,12 @@ static void P_SpawnMapThings(boolean spawnemblems)
 		if (!spawnemblems && mt->type == mobjinfo[MT_EMBLEM].doomednum)
 			continue;
 
-		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
-			nummapboxes++;
-
 		// Don't spawn non-patch objects of this type if they are uneeded
 		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
 			continue;
+
+		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
+			nummapboxes++;
 
 		mt->mobj = NULL;
 
@@ -8023,6 +8016,8 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	leveltime = 0;
 	modulothing = 0;
 
+	K_TimerReset();
+
 	// special stage tokens, emeralds, and ring total
 	tokenbits = 0;
 	runemeraldmanager = false;
@@ -8040,7 +8035,10 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	slopeboostactive = false;
 	draftingactive = false;
 	airdropactive = false;
+	itemlittering = false;
+	itempushing = false;
 	bumpsparkactive = 0;
+	antibumptime = 0;
 
 	if (cv_kartrings.value)
 		ringsactive = true;
@@ -8066,8 +8064,16 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (cv_kartairdrop.value)
 		airdropactive = true;
 
+	if (cv_kartitemlitter.value)
+		itemlittering = true;
+
+	if (cv_kartitempush.value)
+		itempushing = true;
+
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	invintype = (UINT8)cv_kartinvintype.value;
+
+	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
@@ -8107,7 +8113,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	}
 
 	racecountdown = exitcountdown = exitfadestarted = 0;
-	curlap = bestlap = 0; // SRB2Kart
 
 	g_exit.losing = g_exit.retry = g_exit.hasfinished = false;
 
@@ -8141,49 +8146,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 			gamespeed = KARTSPEED_HARD;
 		franticitems = false;
 		comeback = false;
-		if (demo.playback)
-		{
-			// raflags
-			if (raflags & RAF_RINGS)
-				ringsactive = true;
-			if (raflags & RAF_STACKING)
-				stackingactive = true;
-			if (raflags & RAF_CHAINING)
-				chainingactive = true;
-			if (raflags & RAF_SLIPDASH)
-				slipdashactive = true;
-			if (raflags & RAF_PURPLEDRIFT)
-				purpledriftactive = true;
-			if (raflags & RAF_SLOPEBOOST)
-				slopeboostactive = true;
-			if (raflags & RAF_AIRDROP)
-				airdropactive = true;
-
-			// Bump Spark
-			switch (raflags & RAF_BUMPSPARKMASK)
-			{
-			case RAF_BUMPDRIFT:
-				bumpsparkactive = BUMPSPARK_NOCHARGE;
-				break;
-			case RAF_BUMPSPARK:
-				bumpsparkactive = BUMPSPARK_ALL;
-				break;
-			case RAF_BS_RESET100:
-				bumpsparkactive = BUMPSPARK_RESET100;
-				break;
-			}
-		}
-		else
-		{
-			ringsactive = cv_dummyattackingrings.value;
-			purpledriftactive = cv_dummyattackingpurpledrift.value;
-			stackingactive = cv_dummyattackingstacking.value;
-			chainingactive = cv_dummyattackingchaining.value;
-			slipdashactive = cv_dummyattackingslipdash.value;
-			slopeboostactive = cv_dummyattackingslopeboost.value;
-			airdropactive = cv_dummyattackingairdrop.value;
-			bumpsparkactive = (UINT8)(cv_dummyattackingbumpspark.value);
-		}
 	}
 	else
 	{
@@ -8231,7 +8193,7 @@ void P_RespawnThings(void)
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (think->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 		P_RemoveMobj((mobj_t *)think);
 	}
@@ -8295,61 +8257,39 @@ static void P_ResetSpawnpoints(void)
 		skyboxviewpnts[i] = skyboxcenterpnts[i] = NULL;
 }
 
+static void P_TryAddGhosts(const char *gpath, boolean all, recordreplay_e which)
+{
+	for (INT32 i = 0; i < numskins; i++)
+	{
+		if (!all && players[consoleplayer].skin != i)
+			continue;
+
+		CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, gamemap, i, which);
+		if (FIL_FileExists(demopath))
+			G_AddGhost(demopath);
+	}
+}
+
 static void P_LoadRecordGhosts(void)
 {
-
 	// see also m_menu.c's Nextmap_OnChange
-	char *gpath;
-	INT32 i;
-	char *gamemode = M_AppendGametypeAndModName();
-
-	gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(gamemap));
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, modeattacking == ATTACKING_ITEMBREAK);
 
 	// Best Time ghost
 	if (cv_ghost_besttime.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_besttime.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-time-best.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_besttime.value != 1, REPLAY_BESTTIME);
 
 	// Best Lap ghost
-	if (modeattacking != ATTACKING_ITEMBREAK)
-	{
-		if (cv_ghost_bestlap.value)
-		{
-			for (i = 0; i < numskins; ++i)
-			{
-				if (cv_ghost_bestlap.value == 1 && players[consoleplayer].skin != i)
-					continue;
-
-				if (FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode)))
-					G_AddGhost(va("%s-%s-%s-lap-best.lmp", gpath, skins[i].name, gamemode));
-			}
-		}
-	}
+	if (modeattacking != ATTACKING_ITEMBREAK && cv_ghost_bestlap.value)
+		P_TryAddGhosts(gpath, cv_ghost_bestlap.value != 1, REPLAY_BESTLAP);
 
 	// Last ghost
 	if (cv_ghost_last.value)
-	{
-		for (i = 0; i < numskins; ++i)
-		{
-			if (cv_ghost_last.value == 1 && players[consoleplayer].skin != i)
-				continue;
-
-			if (FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode)))
-				G_AddGhost(va("%s-%s-%s-last.lmp", gpath, skins[i].name, gamemode));
-		}
-	}
+		P_TryAddGhosts(gpath, cv_ghost_last.value != 1, REPLAY_LAST);
 
 	// Guest ghost
-	if (cv_ghost_guest.value && FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode)))
-		G_AddGhost(va("%s-guest.lmp", gpath));
+	if (cv_ghost_guest.value)
+		P_TryAddGhosts(gpath, false, REPLAY_GUEST);
 
 	// Staff Attack ghosts
 	if (cv_ghost_staff.value)
@@ -8363,9 +8303,6 @@ static void P_LoadRecordGhosts(void)
 			j++;
 		}
 	}
-
-	free(gpath);
-	Z_Free(gamemode);
 }
 
 static void P_SetupCamera(UINT8 pnum, camera_t *cam)
@@ -8462,7 +8399,13 @@ static void P_InitGametype(void)
 
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
-	hyubgone = 0;
+
+	for (i = 0; i < NUMKARTRESULTS; i++)
+	{
+		// hyubgone
+		ItemBGone[i][GONER_CURRCOOLDOWN] = 0;
+	}
+
 	mapreset = 0;
 
 	thwompsactive = false;
@@ -8508,7 +8451,7 @@ static void P_InitGametype(void)
 #else
 		strcpy(ver, VERSIONSTRING);
 #endif
-		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s",
+		snprintf(buf, sizeof buf, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP"%s"PATHSEP"%d-%s.lmp",
 				srb2home, ver, (int) (time(NULL)), G_BuildMapName(gamemap));
 
 		parts = M_PathParts(buf);
@@ -8739,7 +8682,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	{
 		// Reset the palette now all fades have been done
 		if (rendermode != render_none)
-			V_SetPaletteLump(GetPalette()); // Set the level palette
+			V_ReloadPalette(); // Set the level palette
 
 		if (!(reloadinggamestate || titlemapinaction))
 		{
@@ -8987,10 +8930,11 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (cv_precachetextures.value)
 		R_PrecacheLevel();
 
+	maprecord_t *record = G_AllocateMapRecord(G_BuildMapName(gamemap));
 	if (!(netgame || multiplayer || demo.playback) && !majormods)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_VISITED;
+		record->visited |= MV_VISITED;
 	else if (!demo.playback)
-		mapheaderinfo[gamemap-1]->mapvisited |= MV_MP; // you want to record that you've been there this session, but not permanently
+		record->visited |= MV_MP; // you want to record that you've been there this session, but not permanently
 
 	G_AddMapToBuffer(gamemap-1);
 
@@ -9254,7 +9198,7 @@ INT16 wadnamemap = 0; // gamemap based
 UINT8 P_InitMapData(boolean existingmapheaders)
 {
 	UINT8 ret = 0;
-	INT32 i;
+	INT32 i, j;
 	lumpnum_t maplump;
 	virtres_t *virtmap;
 	virtlump_t *minimap, *thumbnailPic;
@@ -9264,27 +9208,13 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 	for (i = 0; i < nummapheaders; ++i)
 	{
 		name = mapheaderinfo[i]->lumpname;
-		maplump = W_CheckNumForMap(name);
-
-		// Doesn't exist?
-		if (maplump == INT16_MAX)
-		{
-#ifndef DEVELOP
-			if (!existingmapheaders)
-			{
-				I_Error("P_InitMapData: Base map %s has a header but no level\n", name);
-			}
-#endif
-			continue;
-		}
+		maplump = W_CheckNumForMap(name, (mapheaderinfo[i]->lumpnum == LUMPERROR));
 
 		// Always check for cup cache reassociations.
 		// (The core assumption is that cups < headers.)
+		if (maplump != LUMPERROR || mapheaderinfo[i]->lumpnum != LUMPERROR)
 		{
 			cupheader_t *cup = kartcupheaders;
-			INT32 j;
-
-			mapheaderinfo[i]->cup = NULL;
 
 			while (cup)
 			{
@@ -9312,6 +9242,18 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 		}
 
+		// Doesn't exist in this set of files?
+		if (maplump == LUMPERROR)
+		{
+#ifndef DEVELOP
+			if (!existingmapheaders)
+			{
+				I_Error("P_InitMapData: Base map %s has a header but no level\n", name);
+			}
+#endif
+			continue;
+		}
+
 		// No change?
 		if (mapheaderinfo[i]->lumpnum == maplump)
 			continue;
@@ -9335,6 +9277,7 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			}
 
 			mapheaderinfo[i]->lumpnum = maplump;
+
 			if (maplump == wadnamelump)
 				wadnamemap = i+1;
 
@@ -9347,11 +9290,13 @@ UINT8 P_InitMapData(boolean existingmapheaders)
 			if (mapheaderinfo[i]->thumbnailPic)
 			{
 				Patch_Free(mapheaderinfo[i]->thumbnailPic);
+				mapheaderinfo[i]->thumbnailPic = NULL;
 			}
 
 			if (mapheaderinfo[i]->minimapPic)
 			{
 				Patch_Free(mapheaderinfo[i]->minimapPic);
+				mapheaderinfo[i]->minimapPic = NULL;
 			}
 
 			// Now apply the new ones!

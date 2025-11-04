@@ -7,6 +7,8 @@ _(UNKN)
 
 _(THOK) // Thok! mobj
 _(PLAY)
+_(KART)
+_(TIRE)
 
 // Enemies
 _(POSS) // Crawla (Blue)
@@ -637,6 +639,8 @@ _(GCHA) // follower: generic chao
 _(CHEZ) // follower: cheese
 
 _(BSSS) // Stacking effect
+
+_(BKAD) // Airdrop Dust
 
 _(TRCK)
 

@@ -97,6 +97,7 @@ mserv.c
 http-mserv.c
 i_tcp.c
 lzf.c
+lz4.c
 lua_script.c
 lua_baselib.c
 lua_mathlib.c
@@ -142,6 +143,7 @@ k_director.c
 k_follower.c
 k_mapuser.c
 k_stats.c
+k_specialstage.c
 h_timers.cpp
 stun.c
 lonesha256.c

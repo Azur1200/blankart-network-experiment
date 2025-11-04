@@ -784,7 +784,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 	|| target == 0 // To everyone
 	|| consoleplayer == target-1) // To you
 	{
-		const char *prefix = "", *cstart = "", *cend = "", *adminchar = "\x82~\x83", *remotechar = "\x82@\x83", *fmt2, *textcolor = "\x80";
+		const char *prefix, *cstart, *adminchar = "\x82~\x83", *remotechar = "\x82@\x83", *fmt2, *textcolor = "\x80";
 		char *tempchar = NULL;
 		char color_prefix[2];
 
@@ -877,13 +877,13 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 		// name, color end, and the message itself.
 		// '\4' makes the message yellow and beeps; '\3' just beeps.
 		if (action)
-			fmt2 = "* %s%s%s%s \x82%s%s";
+			fmt2 = "* %s%s%s %s%s";
 		else if (target-1 == consoleplayer) // To you
 		{
 			prefix = "\x82[PM]";
 			cstart = "\x82";
 			textcolor = "\x82";
-			fmt2 = "%s<%s%s>%s\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 		}
 		else if (target > 0) // By you, to another player
 		{
@@ -891,11 +891,11 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			dispname = player_names[target-1];
 			prefix = "\x82[TO]";
 			cstart = "\x82";
-			fmt2 = "%s<%s%s>%s\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 
 		}
 		else // To everyone or sayteam, it doesn't change anything.
-			fmt2 = "%s<%s%s%s>\x80 %s%s";
+			fmt2 = "%s<%s%s> %s%s";
 		/*else // To your team
 		{
 			if (players[playernum].ctfteam == 1) // red
@@ -908,7 +908,7 @@ static void Got_Saycmd(UINT8 **p, INT32 playernum)
 			fmt2 = "%s<%s%s>\x80%s %s%s";
 		}*/
 
-		HU_AddChatText(va(fmt2, prefix, cstart, dispname, cend, textcolor, msg), (cv_chatnotifications.value) && !(flags & HU_SHOUT)); // add to chat
+		HU_AddChatText(va(fmt2, prefix, cstart, dispname, textcolor, msg), (cv_chatnotifications.value) && !(flags & HU_SHOUT)); // add to chat
 
 		if ((cv_chatnotifications.value) && (flags & HU_SHOUT))
 			S_StartSound(NULL, sfx_sysmsg);
@@ -2177,76 +2177,6 @@ void HU_Drawer(void)
 }
 
 //======================================================================
-//                 HUD MESSAGES CLEARING FROM SCREEN
-//======================================================================
-
-// Clear old messages from the borders around the view window
-// (only for reduced view, refresh the borders when needed)
-//
-// startline: y coord to start clear,
-// clearlines: how many lines to clear.
-//
-static INT32 oldclearlines;
-
-void HU_Erase(void)
-{
-	INT32 topline, bottomline;
-	INT32 y, yoffset;
-
-#ifdef HWRENDER
-	// clear hud msgs on double buffer (OpenGL mode)
-	boolean secondframe;
-	static INT32 secondframelines;
-#endif
-
-	if (con_clearlines == oldclearlines && !con_hudupdate && !chat_on)
-		return;
-
-#ifdef HWRENDER
-	// clear the other frame in double-buffer modes
-	secondframe = (con_clearlines != oldclearlines);
-	if (secondframe)
-		secondframelines = oldclearlines;
-#endif
-
-	// clear the message lines that go away, so use _oldclearlines_
-	bottomline = oldclearlines;
-	oldclearlines = con_clearlines;
-	if (chat_on && OLDCHAT)
-		if (bottomline < 8)
-			bottomline = 8; // only do it for consolechat. consolechat is gay.
-
-	if (automapactive || viewwindowx == 0) // hud msgs don't need to be cleared
-		return;
-
-	// software mode copies view border pattern & beveled edges from the backbuffer
-	if (rendermode == render_soft)
-	{
-		topline = 0;
-		for (y = topline, yoffset = y*vid.width; y < bottomline; y++, yoffset += vid.width)
-		{
-			if (y < viewwindowy || y >= viewwindowy + viewheight)
-				R_VideoErase(yoffset, vid.width); // erase entire line
-			else
-			{
-				R_VideoErase(yoffset, viewwindowx); // erase left border
-				// erase right border
-				R_VideoErase(yoffset + viewwindowx + viewwidth, viewwindowx);
-			}
-		}
-		con_hudupdate = false; // if it was set..
-	}
-#ifdef HWRENDER
-	else if (rendermode != render_none)
-	{
-		// refresh just what is needed from the view borders
-		HWR_DrawViewBorder(secondframelines);
-		con_hudupdate = secondframe;
-	}
-#endif
-}
-
-//======================================================================
 //                   IN-LEVEL MULTIPLAYER RANKINGS
 //======================================================================
 
@@ -2371,6 +2301,75 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT3
 
 	if (measureid == 0)
 		V_DrawMappedPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
+}
+
+//
+// HU_drawOldPing
+//
+void HU_drawOldPing(INT32 x, INT32 y, UINT32 ping, UINT32 mindelay, UINT32 pl, INT32 flags)
+{
+	INT32 measureid = cv_pingmeasurement.value ? 1 : 0;
+	UINT32 lag = max(ping, mindelay);
+
+	//SRB2/Kart v1.0 style
+	UINT8 numbars = 0; // how many ping bars do we draw?
+	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
+	SINT8 i = 0;
+	SINT8 yoffset = 6;
+
+	if (vid.width >= 640)	// how sad, we're using a shit resolution.
+	{
+		if (measureid == 1)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
+		}
+		else if (measureid == 0)
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
+		}
+	}
+
+	if (cv_pingicon.value)
+	{
+		switch (lag)
+		{
+			case 0 ... 1:
+				numbars = 3;
+				barcolor = 215; // Blue
+				break;
+			case 2 ... 3:
+				numbars = 3;
+				barcolor = 184; // Green
+				break;
+			case 4 ... 6:
+				numbars = 2;    // Apparently ternaries w/ multiple statements don't look good in C so I decided against it.
+				barcolor = 103; // Yellow
+				break;
+			case 7 ... 9:
+				numbars = 1;
+				barcolor = 155; // Red
+				break;
+			default:            // Brazil
+				numbars = 0;
+				barcolor = 31;  // black
+				break;
+		}
+
+		if (pl)
+		{
+			barcolor = 194; // make it purplish
+			// bars get indirectly set earlier
+		}
+
+		for (i = 0; (i < 3); i++) // Draw the ping bar
+		{
+			V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-4, 2, 8-yoffset, 31|flags);
+			if (i < numbars)
+				V_DrawFill(x+2 *(i-1)+7, y+8+yoffset-3, 1, 8-yoffset-1, barcolor|flags);
+
+			yoffset -= 2;
+		}
+	}
 }
 
 void
@@ -2511,7 +2510,7 @@ static void HU_DrawRankings(void)
 
 	if ((gametyperules & (GTR_TIMELIMIT|GTR_POINTLIMIT)) && !bossinfo.boss)
 	{
-		if ((gametyperules & GTR_TIMELIMIT) && cv_timelimit.value && timelimitintics > 0)
+		if ((gametyperules & GTR_TIMELIMIT) && timelimitintics > 0)
 		{
 			UINT32 timeval = (timelimitintics + starttime + 1 - leveltime);
 			if (timeval > timelimitintics+1)

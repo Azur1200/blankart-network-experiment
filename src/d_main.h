@@ -29,6 +29,7 @@ extern "C" {
 #define MAPSNAME "maps.kart"
 #define MAINNAME "main.pk3"
 #define MAPPATCHNAME "mappatch.pk3"
+#define BLANMUSICNAME "blanmusic.pk3"
 #define BONUSCHARSNAME "bonuschars.kart"
 #define PATCHNAME "patch.pk3"
 #define MUSICNAME "music.kart"

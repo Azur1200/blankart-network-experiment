@@ -61,18 +61,6 @@
 #define ASMCALL
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4127 4152 4213 4514)
-#ifdef _WIN64
-#pragma warning(disable : 4306)
-#endif
-#endif
-// warning level 4
-// warning C4127: conditional expression is constant
-// warning C4152: nonstandard extension, function/data pointer conversion in expression
-// warning C4213: nonstandard extension used : cast on l-value
-
-
 #include "version.h"
 #include "doomtype.h"
 
@@ -201,8 +189,7 @@ extern char logfilename[1024];
 // The maximum number of players, multiplayer/networking.
 // NOTE: it needs more than this to increase the number of players...
 
-#define MAXPLAYERS 16
-#define PLAYERSMASK (MAXPLAYERS-1)
+#define MAXPLAYERS 32	// 32 + host slot
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
@@ -214,12 +201,26 @@ extern char logfilename[1024];
 #define MAXCOLORNAME 32
 #define NUMCOLORFREESLOTS 32768
 
+#define MAXGPPLAYERS 16	// max players in Grand Prix only
+
+// Net savegame compression stuff
+
+// Uses ZLib if LZ4 is not defined.
+// if theres no ZLib then use LZF
+
+// ZLib Options
+//#define ZLIB_LEVEL 5
+
+// LZ4 Options
+#define USE_LZ4 // Use LZ4 for network savegame compression
+#define LZ4_ACCEL 1
+
 // surely nobody's gonna change the palette a second time :Clueless:
 #define FADECOLOR 0 // 120
 #define ENCOREFADECOLOR 209 // 122
 
-// Master Server compatibility ONLY
-#define MSCOMPAT_MAXPLAYERS (32)
+// the highest number of playerinfo entries we can fit into a single packet
+#define MAXPLAYERINFO 32
 
 // State updates, number of tics / second.
 // NOTE: used to setup the timer rate, see I_StartupTimer().
@@ -316,7 +317,6 @@ extern char liveeventbackup[256];
 void M_StartupLocale(void);
 void *M_Memcpy(void* dest, const void* src, size_t n);
 char *va(const char *format, ...) FUNCPRINTF;
-char *xva(const char *format, ...) FUNCPRINTF;
 
 char *M_GetToken(const char *inputString);
 void M_UnGetToken(void);
@@ -438,6 +438,10 @@ UINT32 quickncasehash (const char *p, size_t n)
 #define CLAMP(x, min_val, max_val) ((x) < (min_val) ? (min_val) : ((x) > (max_val) ? (max_val) : (x)))
 #endif
 
+#ifndef u32_delta
+#define u32_delta(x, y) ((x) > (y) ? (x) - (y) : (y) - (x))
+#endif
+
 // Max gamepad/joysticks that can be detected/used.
 #define MAX_JOYSTICKS 4
 
@@ -468,7 +472,7 @@ UINT32 quickncasehash (const char *p, size_t n)
 #endif
 
 #ifdef __cplusplus
-#if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+#if defined(__GNUC__) || defined(__clang__)
 #define restrict __restrict
 #else
 #define restrict
@@ -532,6 +536,11 @@ extern int compuncommitted;
 
 /// Experimental attempts at preventing MF_PAPERCOLLISION objects from getting stuck in walls.
 //#define PAPER_COLLISIONCORRECTION
+
+#ifdef DEVELOP
+// Easily make it so that overtime works offline
+#define TESTOVERTIMEINFREEPLAY
+#endif
 
 /// FINALLY some real clipping that doesn't make walls dissappear AND speeds the game up
 /// (that was the original comment from SRB2CB, sadly it is a lie and actually slows game down)

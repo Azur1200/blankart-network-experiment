@@ -672,6 +672,7 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 	INT32 bottomscreen;
 	fixed_t basetexturemid;
 	INT32 topdelta, prevdelta = 0;
+	const INT32 vidheight = vid.height;
 
 	basetexturemid = dc->texturemid;
 
@@ -707,8 +708,8 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 
 		if (dc->yl < 0)
 			dc->yl = 0;
-		if (dc->yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-			dc->yh = vid.height - 1;
+		if (dc->yh >= vidheight) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+			dc->yh = vidheight - 1;
 
 		if (dc->yh >= baseclip && baseclip != -1)
 			dc->yh = baseclip;
@@ -726,19 +727,9 @@ void R_DrawMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t *bright
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Drawn by R_DrawColumn.
-			// This stuff is a likely cause of the splitscreen water crash bug.
-			// FIXTHIS: Figure out what "something more proper" is and do it.
-			// quick fix... something more proper should be done!!!
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
 		if (brightmap != NULL)
@@ -759,6 +750,7 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 	fixed_t basetexturemid = dc->texturemid;
 	INT32 topdelta, prevdelta = -1;
 	UINT8 *d,*s;
+	const INT32 vidheight = vid.height;
 
 	R_SetColumnFunc(colfunctype, brightmap != NULL);
 	dc->brightmap = NULL;
@@ -797,8 +789,8 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 
 		if (dc->yl < 0)
 			dc->yl = 0;
-		if (dc->yh >= vid.height) // dc_yl must be < vid.height, so reduces number of checks in tight loop
-			dc->yh = vid.height - 1;
+		if (dc->yh >= vidheight) // dc_yl must be < vid.height, so reduces number of checks in tight loop
+			dc->yh = vidheight - 1;
 
 		if (dc->yl <= dc->yh && dc->yh > 0 && column->length != 0)
 		{
@@ -818,16 +810,9 @@ void R_DrawFlippedMaskedColumn(drawcolumndata_t* dc, column_t *column, column_t 
 			dc->texturemid = basetexturemid - (topdelta<<FRACBITS);
 
 			// Still drawn by R_DrawColumn.
-			if (ylookup[dc->yl])
-			{
-				drawcolumndata_t dc_copy = *dc;
-				coldrawfunc_t* colfunccopy = colfunc;
-				colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
-			}
-#ifdef PARANOIA
-			else
-				I_Error("R_DrawMaskedColumn: Invalid ylookup for dc_yl %d", dc->yl);
-#endif
+			drawcolumndata_t dc_copy = *dc;
+			coldrawfunc_t* colfunccopy = colfunc;
+			colfunccopy(const_cast<drawcolumndata_t*>(&dc_copy));
 			Z_Free(dc->source);
 		}
 		column = (column_t *)((UINT8 *)column + column->length + 4);
@@ -882,9 +867,9 @@ UINT8 *R_GetSpriteTranslation(vissprite_t *vis)
 	if (vis->mobj->color)
 	{
 		// New colormap stuff for skins Tails 06-07-2002
-		
+
 		if (!(vis->cut & SC_PRECIP) && vis->mobj->colorized)
-		{	
+		{
 			return R_GetTranslationColormap(R_IsOverlayingInvinciblePlayer(vis->mobj) ? TC_BLINK : TC_RAINBOW,
 											static_cast<skincolornum_t>(vis->mobj->color),
 											GTC_CACHE);
@@ -921,6 +906,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	INT64 overflow_test;
 	INT32 baseclip = -1;
 	drawcolumndata_t dc {0};
+	const INT32 vidwidth = vid.width;
 
 	if (!patch)
 		return;
@@ -976,22 +962,22 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.shadowcolor = vis->color;
 	}
 	else if (!(vis->cut & SC_PRECIP) &&
-		R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
-		{
-			R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
-		}
-		else if (vis->transmap && dc.translation) // Color mapping
-		{
-			R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
-			dc.transmap = vis->transmap;
-		}
-		else if (vis->transmap)
-		{
-			R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
-			dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
-		}
-		else if (dc.translation) // translate green skin to another color
-			R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
+	R_ThingIsFlashing(vis->mobj)) // Bosses "flash"
+	{
+		R_SetColumnFunc(COLDRAWFUNC_TRANS, false); // translate certain pixels to white
+	}
+	else if (vis->transmap && dc.translation) // Color mapping
+	{
+		R_SetColumnFunc(COLDRAWFUNC_TRANSTRANS, false);
+		dc.transmap = vis->transmap;
+	}
+	else if (vis->transmap)
+	{
+		R_SetColumnFunc(COLDRAWFUNC_FUZZY, false);
+		dc.transmap = vis->transmap;    //Fab : 29-04-98: translucency table
+	}
+	else if (dc.translation) // translate green skin to another color
+		R_SetColumnFunc(COLDRAWFUNC_TRANS, false);
 
 	if (vis->extra_colormap && !(vis->cut & SC_FULLBRIGHT) && !(vis->renderflags & RF_NOCOLORMAPS))
 	{
@@ -1062,8 +1048,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		vis->x1 = 0;
 	}
 
-	if (vis->x2 >= vid.width)
-		vis->x2 = vid.width-1;
+	if (vis->x2 >= vidwidth)
+		vis->x2 = vidwidth-1;
 
 	localcolfunc = (vis->cut & SC_VFLIP) ? R_DrawFlippedMaskedColumn : R_DrawMaskedColumn;
 	lengthcol = patch->height;
@@ -1128,8 +1114,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		if (x1test < 0)
 			x1test = 0;
 
-		if (x2test >= vid.width)
-			x2test = vid.width-1;
+		if (x2test >= vidwidth)
+			x2test = vidwidth-1;
 
 		const INT32 t = (vis->startfrac + (vis->xiscale * (x2test - x1test))) >> FRACBITS;
 
@@ -1155,7 +1141,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	}
 
 	R_SetColumnFunc(BASEDRAWFUNC, false);
-	dc.hires = 0;
 
 	vis->x1 = x1;
 	vis->x2 = x2;
@@ -1171,6 +1156,7 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	fixed_t this_scale = vis->thingscale;
 	INT64 overflow_test;
 	drawcolumndata_t dc {0};
+	const INT32 vidwidth = vid.width;
 
 	//Fab : R_InitSprites now sets a wad lump number
 	patch = vis->patch;
@@ -1210,8 +1196,8 @@ static void R_DrawPrecipitationVisSprite(vissprite_t *vis)
 	if (vis->x1 < 0)
 		vis->x1 = 0;
 
-	if (vis->x2 >= vid.width)
-		vis->x2 = vid.width-1;
+	if (vis->x2 >= vidwidth)
+		vis->x2 = vidwidth-1;
 
 	for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, frac += vis->xiscale)
 	{
@@ -1657,13 +1643,6 @@ fixed_t R_GetSpriteDirectionalLighting(angle_t angle)
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
 	return extralight;
-}
-
-INT32 R_ThingLightLevel(mobj_t* thing)
-{
-	INT32 lightlevel = thing->lightlevel;
-
-	return lightlevel;
 }
 
 //
@@ -3000,6 +2979,10 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 	visplane_t *plane;
 	INT32 sintersect;
 	fixed_t scale = 0;
+	const INT32 vidheight = vid.height;
+
+	if (mask->drawsegs[0] == mask->drawsegs[1])
+		return;
 
 	// Add the 3D floors, thicksides, and masked textures...
 	for (ds = drawsegs + mask->drawsegs[1]; ds-- > drawsegs + mask->drawsegs[0];)
@@ -3018,7 +3001,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 			plane = ds->curline->polyseg->visplane;
 			R_PlaneBounds(plane);
 
-			if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+			if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 				;
 			else {
 				// Put it in!
@@ -3046,7 +3029,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 					plane = ds->ffloorplanes[p];
 					R_PlaneBounds(plane);
 
-					if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low || plane->polyobj)
+					if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low || plane->polyobj)
 					{
 						ds->ffloorplanes[p] = NULL;
 						continue;
@@ -3085,7 +3068,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		plane = PolyObjects[i].visplane;
 		R_PlaneBounds(plane);
 
-		if (plane->low < 0 || plane->high > vid.height || plane->high > plane->low)
+		if (plane->low < 0 || plane->high > vidheight || plane->high > plane->low)
 		{
 			PolyObjects[i].visplane = NULL;
 			continue;
@@ -3107,7 +3090,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 		const boolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
 		const INT32 ontopflag = cv_debugrender_spriteclip.value ? 0 : (rover->renderflags & RF_ALWAYSONTOP);
 
-		if (rover->szt > vid.height || rover->sz < 0)
+		if (rover->szt > vidheight || rover->sz < 0)
 			continue;
 
 		sintersect = (rover->x1 + rover->x2) / 2;
@@ -3178,9 +3161,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 						continue;
 				}
 
-				entry = R_CreateDrawNode(NULL);
-				(entry->prev = r2->prev)->next = entry;
-				(entry->next = r2)->prev = entry;
+				entry = R_CreateDrawNode(r2);
 				entry->sprite = rover;
 				break;
 			}
@@ -3212,9 +3193,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 				    (botplanecameraz > viewz && rover->gz > botplaneobjectz))
 #endif
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3231,9 +3210,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (rover->sortscale < scale)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3280,9 +3257,7 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, boolean temps
 
 				if (infront)
 				{
-					entry = R_CreateDrawNode(NULL);
-					(entry->prev = r2->prev)->next = entry;
-					(entry->next = r2)->prev = entry;
+					entry = R_CreateDrawNode(r2);
 					entry->sprite = rover;
 					break;
 				}
@@ -3358,8 +3333,6 @@ void R_InitDrawNodes(void)
 // R_DrawSprite
 //
 //Fab : 26-04-98:
-// NOTE : uses con_clipviewtop, so that when console is on,
-//        don't draw the part of sprites hidden under the console
 static void R_DrawSprite(vissprite_t *spr)
 {
 	mfloorclip = spr->clipbot;
@@ -3401,7 +3374,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 		for (x = x1; x <= x2; x++)
 		{
 			spr->clipbot[x] = (INT16)viewheight;
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 		}
 		return;
 	}
@@ -3584,7 +3557,7 @@ void R_ClipVisSprite(vissprite_t *spr, INT32 x1, INT32 x2, portal_t* portal)
 
 		if (spr->cliptop[x] == CLIP_UNDEF)
 			//Fab : 26-04-98: was -1, now clips against console bottom
-			spr->cliptop[x] = (INT16)con_clipviewtop;
+			spr->cliptop[x] = (INT16)-1;
 
 		// Sprite is completely above or below clip plane
 		if (spr->szt >= spr->clipbot[x] || spr->sz <= spr->cliptop[x])
@@ -3626,6 +3599,11 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 	drawseg_t* ds;
 	INT32 i;
 
+	if (visspritecount - clippedvissprites <= 0)
+	{
+		return;
+	}
+
 	// e6y
 	// Reducing of cache misses in the following R_DrawSprite()
 	// Makes sense for scenes with huge amount of drawsegs.
@@ -3635,13 +3613,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 		drawsegs_xranges[i].count = 0;
 	}
 
-	if (visspritecount - clippedvissprites <= 0)
-	{
-		return;
-	}
-
 	if (drawsegs_xrange_size < maxdrawsegs)
 	{
+		// haleyjd: fix reallocation to track 2x size
 		drawsegs_xrange_size = 2 * maxdrawsegs;
 
 		for (i = 0; i < DS_RANGES_COUNT; i++)
@@ -3680,6 +3654,9 @@ void R_ClipSprites(drawseg_t* dsstart, portal_t* portal)
 			drawsegs_xranges[0].count++;
 		}
 	}
+
+	// haleyjd: terminate with a nullptr user for faster loop - adds ~3 FPS
+	drawsegs_xranges[0].items[drawsegs_xranges[0].count].user = nullptr;
 
 	for (; clippedvissprites < visspritecount; clippedvissprites++)
 	{
@@ -3877,6 +3854,9 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks)
 	INT32 i;
 
 	heads = static_cast<drawnode_t*>(calloc(nummasks, sizeof(drawnode_t)));
+
+	if (!heads)
+		I_Error("R_DrawMasked: No more free memory\n");
 
 	for (i = 0; i < nummasks; i++)
 	{

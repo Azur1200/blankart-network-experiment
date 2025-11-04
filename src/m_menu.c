@@ -464,10 +464,9 @@ static CV_PossibleValue_t dummybumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 						     {0, NULL}};
 consvar_t cv_dummyattackingbumpspark = CVAR_INIT ("dummyattackingbumpspark", "Off", CV_HIDEN|CV_CALL|CV_NOINIT, dummybumpspark_cons_t, Nextmap_OnChange);
 
-static CV_PossibleValue_t dummygpdifficulty_cons_t[] = {{KARTSPEED_EASY, "Easy"}, {KARTSPEED_NORMAL, "Normal"}, {KARTSPEED_HARD, "Hard"}, {KARTSPEED_EXPERT, "Expert"}, {KARTGP_MASTER, "Master"}, {KARTGP_NIGHTMARE, "Nightmare"}, {0, NULL}};
 static CV_PossibleValue_t dummygpcup_cons_t[50] = {{1, "TEMP"}}; // A REALLY BIG NUMBER, SINCE THIS IS TEMP UNTIL NEW MENUS
 
-consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, dummygpdifficulty_cons_t, NULL);
+consvar_t cv_dummygpdifficulty = CVAR_INIT ("dummygpdifficulty", "Normal", CV_HIDEN, gpdifficulty_cons_t, NULL);
 consvar_t cv_dummygpencore = CVAR_INIT ("dummygpencore", "Off", CV_HIDEN, CV_OnOff, NULL);
 consvar_t cv_dummygpcup = CVAR_INIT ("dummygpcup", "TEMP", CV_HIDEN, dummygpcup_cons_t, NULL);
 
@@ -651,37 +650,6 @@ if (cv.value >= num) \
   strcat(new_str, str); \
 }
 
-char *M_AppendGametypeAndModName(void)
-{
-	UINT8 len = 4;
-	char *new_str;
-
-	new_str = Z_Malloc(4, PU_STATIC, NULL);
-
-	if ((!Playing() && (levellistmode == LLM_ITEMBREAKER)) || (modeattacking & ATTACKING_ITEMBREAK))
-	{
-		strcpy(new_str, "IB-");
-	}
-	else
-	{
-		strcpy(new_str, "RA-");
-	}
-
-	ADD(cv_dummyattackingrings, "RN-")
-	ADD(cv_dummyattackingstacking, "ST-")
-	ADD(cv_dummyattackingchaining, "CH-")
-	ADD(cv_dummyattackingslipdash, "SD-")
-	ADD(cv_dummyattackingpurpledrift, "PD-")
-	ADD(cv_dummyattackingslopeboost, "SB-")
-	ADD(cv_dummyattackingairdrop, "AD-")
-	ADDEQUALS(cv_dummyattackingbumpspark, "BD-", BUMPSPARK_NOCHARGE)
-	ADDGE(cv_dummyattackingbumpspark, "BS-", BUMPSPARK_RESET100)
-
-	new_str[len-1] = '\0';
-
-	return new_str;
-}
-
 // Nextmap.  Used for Time Attack.
 void Nextmap_OnChange(void)
 {
@@ -721,35 +689,34 @@ void Nextmap_OnChange(void)
 	if (M_AttackOnStack())
 	{
 		// see also p_setup.c's P_LoadRecordGhosts
-		char *gamemode = M_AppendGametypeAndModName();
-		char *gpath = xva("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value));
+		CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 
 		boolean visible;
 		boolean showreplay = false, showguest = false;
 
 		// best time
-		visible = FIL_FileExists(va("%s-%s-%s-time-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTTIME);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYTIME", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVETIME", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// best lap
-		visible = levellistmode != LLM_ITEMBREAKER && FIL_FileExists(va("%s-%s-%s-lap-best.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = levellistmode != LLM_ITEMBREAKER && G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_BESTLAP);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAP", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAP", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// last
-		visible = FIL_FileExists(va("%s-%s-%s-last.lmp", gpath, skins[cv_chooseskin.value].name, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYLAST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "SAVELAST", visible);
 		if (visible)
 			showreplay = showguest = true;
 
 		// guest
-		visible = FIL_FileExists(va("%s-%s-guest.lmp", gpath, gamemode));
+		visible = G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);;
 		M_SetItemVisible(MN_SP_REPLAY, "REPLAYGUEST", visible);
 		M_SetItemVisible(MN_SP_GUESTREPLAY, "DELETE", visible);
 		M_SetItemVisible(MN_SP_GHOST, "GUEST", visible);
@@ -770,9 +737,6 @@ void Nextmap_OnChange(void)
 
 		M_SetItemVisible(MN_SP_TIMEATTACK, "REPLAY", showreplay);
 		M_SetItemVisible(MN_SP_TIMEATTACK, "GUEST", showguest);
-
-		free(gpath);
-		Z_Free(gamemode);
 	}
 }
 
@@ -2584,6 +2548,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			(w > BASEVIDWIDTH/2 - 4 ? V_DrawRightAlignedThinString : V_DrawRightAlignedString)
 				(BASEVIDWIDTH - x, y, vflags|highlightflags, name);
 		}
+#ifdef HAVE_DISCORDRPC
 		else if (item->submenu == MN_MISC_DISCORDREQUESTS)
 		{
 			vflags &= ~(V_FLIP|V_PARAMMASK);
@@ -2591,6 +2556,7 @@ static void M_DrawRightString(menuitem_t *item, INT16 x, INT16 y, INT32 vflags, 
 			if ((leveltime % freq) >= freq/2)
 				V_DrawScaledPatch(204, y - 1, vflags, W_CachePatchName("K_REQUE2", PU_CACHE));
 		}
+#endif
 		else if (item->patch)
 			V_DrawRightAlignedString(BASEVIDWIDTH - x, y, (selected || (item->status & ITH_MASK) == ITH_HIGHLIGHT ? highlightflags : 0)|vflags, item->patch);
 	}
@@ -3047,8 +3013,12 @@ boolean M_CanShowLevelInList(INT32 mapnum, INT32 gt)
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				return false; // map hell
 
-			if ((mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED) && !mapheaderinfo[mapnum]->mapvisited)
-				return false;
+			if (mapheaderinfo[mapnum]->menuflags & LF2_VISITNEEDED)
+			{
+				maprecord_t *record = G_GetMapRecord(G_BuildMapName(mapnum+1));
+				if (record == NULL || !record->visited)
+					return false;
+			}
 
 			return true;
 
@@ -3324,7 +3294,7 @@ INT32 MR_Addons(INT32 choice)
 	if (cv_addons_option.value == 3 && *cv_addons_folder.string != '\0')
 		pathname = cv_addons_folder.string;
 
-	strlcpy(menupath, pathname, 1024);
+	strlcpy(menupath, pathname, MAXFILEPATH);
 	menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath) + 1;
 
 	if (menupath[menupathindex[menudepthleft]-2] != PATHSEP[0])
@@ -3422,9 +3392,9 @@ static void M_DrawTemperature(INT32 x, fixed_t t)
 static char *M_AddonsHeaderPath(void)
 {
 	UINT32 len;
-	static char header[1024];
+	static char header[MAXFILEPATH];
 
-	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), 1024);
+	strlcpy(header, va("%s folder%s", cv_addons_option.string, menupath+menupathindex[menudepth-1]-1), MAXFILEPATH);
 	len = strlen(header);
 	if (len > 34)
 	{
@@ -3827,7 +3797,7 @@ static void PrepReplayList(void)
 		else
 		{
 			demolist[i].type = MD_NOTLOADED;
-			snprintf(demolist[i].filepath, 1024, "%s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
 			sprintf(demolist[i].title, ".....");
 		}
 	}
@@ -4013,7 +3983,7 @@ static void DrawReplayHutReplayInfo(void)
 
 		//CONS_Printf("%d %s\n", demolist[dir_on[menudepthleft]].map, G_BuildMapName(demolist[dir_on[menudepthleft]].map));
 		fixed_t scale = M_GetMapThumbnail(demolist[dir_on[menudepthleft]].map, &patch)/4;
-		if (patch == blanklvl && !mapheaderinfo[demolist[dir_on[menudepthleft]].map])
+		if (patch == blanklvl && demolist[dir_on[menudepthleft]].map == NEXTMAP_INVALID)
 			patch = nolvl;
 
 		if (!(demolist[dir_on[menudepthleft]].kartspeed & DF_ENCORE))
@@ -5354,7 +5324,7 @@ INT32 MR_Statistics(INT32 choice)
 
 	if (!statsMapList || nummapheaders != statsMapListLen)
 	{
-		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_LEVEL, NULL);
+		statsMapList = Z_Realloc(statsMapList, nummapheaders * sizeof(*statsMapList), PU_STATIC, NULL);
 		statsMapListLen = nummapheaders;
 	}
 
@@ -5386,41 +5356,50 @@ static void M_DrawStatsMaps(void)
 {
 	char beststr[40];
 	tic_t besttime = 0;
-	INT32 mapsunfinished = 0;
+	INT32 mapsfinished = 0;
 
 	int location = statsLocation;
-	INT32 y = 62, i = -1, j;
+	INT32 y = 62, i = -1;
 	INT16 mnum;
 	extraemblem_t *exemblem;
 	boolean dotopname = true, dobottomarrow = (location < statsMax);
-	SINT8 preset = G_RecordPresetIndex();
 
-	for (j = 0; j < nummapheaders; j++)
+	const char *realname = G_GetRecordPresetName(currentrecordpreset);
+	V_DrawThinString(0, 0, V_ALLOWLOWERCASE, realname ? realname : currentrecordpreset); // temporary
+	V_DrawThinString(0, 8, MENUCAPS|V_GRAYMAP|V_6WIDTHSPACE, "(BKSP to change)");
+
+	for (INT32 j = 0; j < nummapheaders; j++)
 	{
 		if (!mapheaderinfo[j] || (mapheaderinfo[j]->menuflags & LF2_NOTIMEATTACK))
 			continue;
 
-		if (!mapheaderinfo[j]->mainrecord[preset] || mapheaderinfo[j]->mainrecord[preset]->time <= 0)
-		{
-			mapsunfinished++;
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(j+1));
+		if (record == NULL)
 			continue;
-		}
 
-		besttime += mapheaderinfo[j]->mainrecord[preset]->time;
+		maprecordpreset_t *preset = G_GetMapRecordPreset(record, currentrecordpreset);
+		if (preset == NULL)
+			continue;
+
+		besttime += preset->besttime;
+		mapsfinished++;
 	}
 
 	V_DrawString(20, 42, MENUCAPS|highlightflags, "Combined time records:");
 
-	sprintf(beststr, "%i:%02i:%02i.%02i", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime), G_TicsToCentiseconds(besttime));
-	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, (mapsunfinished ? warningflags : 0), beststr);
+	sprintf(beststr, "%dh %dm %ds", G_TicsToHours(besttime), G_TicsToMinutes(besttime, false), G_TicsToSeconds(besttime));
+	V_DrawRightAlignedString(BASEVIDWIDTH-16, 42, MENUCAPS|(mapsfinished != nummapheaders ? warningflags : 0), beststr);
 
-	if (mapsunfinished)
-		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%d unfinished)", mapsunfinished));
+	if (mapsfinished != nummapheaders)
+		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|warningflags, va("(%d unfinished)", nummapheaders - mapsfinished));
 	else
 		V_DrawRightAlignedString(BASEVIDWIDTH-16, 50, MENUCAPS|recommendedflags, "(complete)");
 
-	V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
-	V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	if (G_EmblemsEnabled())
+	{
+		V_DrawString(32, 50, 0, va("x %d/%d", M_CountEmblems(), numemblems+numextraemblems));
+		V_DrawSmallScaledPatch(20, 50, 0, W_CachePatchName("GOTITA", PU_STATIC));
+	}
 
 	if (location)
 		V_DrawCharacter(10, y-(skullAnimCounter/5),
@@ -5436,23 +5415,32 @@ static void M_DrawStatsMaps(void)
 		else if (dotopname)
 		{
 			V_DrawString(20,  y, MENUCAPS|highlightflags, "Level Name");
-			V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
+			V_DrawString(160, y, MENUCAPS|highlightflags, "Best");
+			V_DrawString(224, y, MENUCAPS|highlightflags, "Play");
+			//V_DrawString(256, y, MENUCAPS|highlightflags, "Medals");
 			y += 8;
 			dotopname = false;
 		}
 
 		mnum = statsMapList[i];
-		M_DrawMapEmblems(mnum+1, 295, y);
+		if (G_EmblemsEnabled())
+			M_DrawMapEmblems(mnum, 295, y);
 
-		if (mapheaderinfo[mnum]->levelflags & LF_NOZONE)
-			V_DrawString(20, y, MENUCAPS, va("%s %s",
-				mapheaderinfo[mnum]->lvlttl,
-				mapheaderinfo[mnum]->actnum));
-		else
-			V_DrawString(20, y, MENUCAPS, va("%s %s %s",
-				mapheaderinfo[mnum]->lvlttl,
-				(mapheaderinfo[mnum]->zonttl[0] ? mapheaderinfo[mnum]->zonttl : "Zone"),
-				mapheaderinfo[mnum]->actnum));
+		maprecord_t *record = G_GetMapRecord(G_BuildMapName(mnum+1));
+		maprecordpreset_t *preset = record ? G_GetMapRecordPreset(record, currentrecordpreset) : NULL;
+		CLEANUP(Z_Pfree) char *maptitle = G_BuildMapTitle(mnum+1);
+
+		V_DrawThinString(20, y, MENUCAPS, maptitle);
+		V_DrawThinString(160, y, MENUCAPS, preset == NULL || preset->besttime == UINT32_MAX ? "--'--\"--" :
+			va("%02d'%02d\"%02d",
+			G_TicsToMinutes(preset->besttime, true),
+			G_TicsToSeconds(preset->besttime),
+			G_TicsToCentiseconds(preset->besttime)));
+		V_DrawThinString(224, y, MENUCAPS, preset == NULL || preset->playtime == 0 ? "" :
+			va("%d:%02d:%02d",
+			G_TicsToHours(preset->playtime),
+			G_TicsToMinutes(preset->playtime, false),
+			G_TicsToSeconds(preset->playtime)));
 
 		y += 8;
 
@@ -5473,7 +5461,7 @@ static void M_DrawStatsMaps(void)
 	{
 		if (i == -1)
 		{
-			V_DrawString(20, y, highlightflags, "EXTRA MEDALS");
+			V_DrawString(20, y, MENUCAPS|highlightflags, "Extra Medals");
 			if (location)
 			{
 				y += 8;
@@ -5496,7 +5484,7 @@ static void M_DrawStatsMaps(void)
 			else
 				V_DrawSmallScaledPatch(295, y, 0, W_CachePatchName("NEEDIT", PU_CACHE));
 
-			V_DrawString(20, y, 0, va("%s", exemblem->description));
+			V_DrawString(20, y, MENUCAPS, va("%s", exemblem->description));
 		}
 
 		y += 8;
@@ -5632,6 +5620,22 @@ INT32 MR_HandleLevelStats(INT32 choice)
 				break;
 			S_StartSound(NULL, sfx_menu1);
 			statsLocation -= (statsLocation < 13) ? statsLocation : 13;
+			break;
+
+		case KEY_BACKSPACE:
+			if (statsCurrentPage != 1)
+				break;
+			S_StartSound(NULL, sfx_menu1);
+			recordpresetnum_e i, j;
+			for (i = 0; i < numrecordpresets; i++)
+				if (!strcmp(currentrecordpreset, recordpresets[i]->name))
+					break;
+			for (j = i; (i = (i + 1) % numrecordpresets) != j;)
+				if (recordpresets[i]->numversions)
+				{
+					G_SetCurrentRecordPreset(recordpresets[i]);
+					break;
+				}
 			break;
 
 		default:
@@ -5770,7 +5774,10 @@ boolean M_AttackOnStack(void)
 // Drawing function for Time Attack
 void MD_DrawTimeAttackMenu(void)
 {
-	SINT8 preset = G_RecordPresetIndex();
+	maprecordpreset_t *preset = NULL;
+	maprecord_t *record = G_GetMapRecord(G_BuildMapName(cv_nextmap.value));
+	if (record != NULL)
+		preset = G_GetMapRecordPreset(record, currentrecordpreset);
 
 	// Character face!
 	{
@@ -5784,47 +5791,20 @@ void MD_DrawTimeAttackMenu(void)
 	if (cv_nextmap.value)
 	{
 		INT32 dupadjust = (vid.width/vid.dupx);
-		tic_t lap = 0, time = 0;
-		if (mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset])
-		{
-			lap = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->lap;
-			time = mapheaderinfo[cv_nextmap.value-1]->mainrecord[preset]->time;
-		}
-
 		V_DrawFill((BASEVIDWIDTH - dupadjust)>>1, 78, dupadjust, 36, 159);
 
 		if (levellistmode != LLM_ITEMBREAKER)
 		{
 			V_DrawRightAlignedString(149, 80, MENUCAPS|highlightflags, "Best Lap:");
-			K_drawKartTimestamp(lap, 19, 86, -1, 2);
+			K_drawKartTimestamp(preset ? preset->bestlap : UINT32_MAX, 19, 86, -1, 2);
 		}
-
 		V_DrawRightAlignedString(292, 80, MENUCAPS|highlightflags, "Best Time:");
-		K_drawKartTimestamp(time, 162, 86, cv_nextmap.value-1, 1);
+		K_drawKartTimestamp(preset ? preset->besttime : UINT32_MAX, 162, 86, cv_nextmap.value-1, 1);
 	}
 
 	// Draw current RA preset mode.
-	{
-		const char *mode = "Unknown mode";
-		if (preset == 0)
-		{
-			mode = "SRB2Kart Mode";
-		}
-		else if (preset == 1)
-		{
-			mode = "Tech Mode";
-		}
-		else if (preset == 2)
-		{
-			mode = "BlanKart Mode";
-		}
-		else if (preset == 3)
-		{
-			mode = "Custom Mode";
-		}
-
-		V_DrawString(50, 104, MENUCAPS|V_6WIDTHSPACE, mode);
-	}
+	const char *realname = G_GetRecordPresetName(currentrecordpreset);
+	V_DrawString(50, 104, MENUCAPS|V_6WIDTHSPACE, realname ? realname : "Unknown mode");
 
 	// ALWAYS DRAW player name, level name, skin and color even when not on this menu!
 	if (menustack[0] == MN_SP_TIMEATTACK)
@@ -5888,31 +5868,22 @@ INT32 MR_QuitTimeAttackMenu(INT32 choice)
 // Player has selected the "START" from the time attack screen
 INT32 MR_ChooseTimeAttack(INT32 choice)
 {
-	char *gpath;
-	char *gamemode = M_AppendGametypeAndModName();
-	char nameofdemo[256];
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
+
 	(void)choice;
 	emeralds = 0;
 	M_ClearMenus(true);
+	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
-
-	gpath = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s",
-			   srb2home, timeattackfolder);
-	M_MkdirEach(gpath, M_PathParts(gpath) - 3, 0755);
-
-	strcat(gpath, PATHSEP);
-	strcat(gpath, G_BuildMapName(cv_nextmap.value));
-
-	snprintf(nameofdemo, sizeof nameofdemo, "%s-%s-%s-last", gpath, cv_skin[0].string, gamemode);
-
-	Z_Free(gamemode);
+	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
 
 	if (!cv_autorecord.value)
-		remove(va("%s"PATHSEP"%s.lmp", srb2home, nameofdemo));
+		remove(demopath);
 	else
-		G_RecordDemo(nameofdemo);
+		G_RecordDemo(demopath);
 
-	G_DeferedInitNew(false, cv_nextmap.value, (UINT8)(cv_chooseskin.value), 0, false);
+	G_DeferedInitNew(false, cv_nextmap.value, cv_chooseskin.value, 0, false);
 	return true;
 }
 
@@ -5927,82 +5898,36 @@ INT32 MR_ReplayStaff(INT32 choice)
 	return true;
 }
 
-#define NUMPRESETS 3
-static INT32 presets[NUMPRESETS][8] = {
-	//rings  stacking  chaining  slipdash  purpledrift  slopeboost  airdrop  bumpspark
-	{ 0,     0,        0,        0,        0,           0,          0,       BUMPSPARK_NONE }, // SRB2Kart
-	{ 0,     1,        1,        0,        0,           1,          1,       BUMPSPARK_ALL }, // Tech
-	{ 1,     1,        1,        1,        1,           1,          1,       BUMPSPARK_NOCHARGE }, // BlanKart
-};
-
 INT32 MR_TimeAttackPreset(INT32 arg)
 {
-	if (arg < 0 || arg >= NUMPRESETS)
+	if (arg < 0 || arg >= numrecordpresets)
 		return false;
 
-	boolean *preset = presets[arg];
-	CV_Set(&cv_dummyattackingrings, (boolean)preset[0] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingstacking, (boolean)preset[1] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingchaining, (boolean)preset[2] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslipdash, (boolean)preset[3] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingpurpledrift, (boolean)preset[4] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingslopeboost, (boolean)preset[5] ? "On" : "Off");
-	CV_Set(&cv_dummyattackingairdrop, preset[6] ? "On" : "Off");
+	recordpreset_t *new = recordpresets[arg];
+	if (new->numversions == 0)
+		return false;
 
-	switch(preset[7])
-	{
-	case BUMPSPARK_ALL:
-		CV_Set(&cv_dummyattackingbumpspark, "On");
-		break;
-	case BUMPSPARK_RESET100:
-		CV_Set(&cv_dummyattackingbumpspark, "Reset to Blue");
-		break;
-	case BUMPSPARK_NOCHARGE:
-		CV_Set(&cv_dummyattackingbumpspark, "Remove Charge Only");
-		break;
-	case BUMPSPARK_NONE:
-		/* FALLTHRU */
-	default:
-		CV_Set(&cv_dummyattackingbumpspark, "Off");
-	}
-
+	G_SetCurrentRecordPreset(new);
+	Nextmap_OnChange();
 	return true;
 }
-#undef NUMPRESETS
 
 // Player has selected the "REPLAY" from the time attack screen
 INT32 MR_ReplayTimeAttack(INT32 arg)
 {
-	const char *which;
-	char *gamemode = M_AppendGametypeAndModName();
+	if (arg < 0 || arg >= REPLAY__MAX)
+		return false;
 
-	switch(arg) {
-	default:
-	case 0: // best time
-		which = "time-best";
-		break;
-	case 1: // best lap
-		which = "lap-best";
-		break;
-	case 2: // last
-		which = "last";
-		break;
-	case 3: // guest
-		// srb2/replay/main/map01-guest.lmp
-		COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
-		Z_Free(gamemode);
-		return true;
-	}
-	// srb2/replay/main/map01-sonic-time-best.lmp
-	COM_BufAddText(va("playdemo media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp -force", timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode, which));
-	Z_Free(gamemode);
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
+	COM_BufAddText(va("playdemo %s -force", demopath));
 	return true;
 }
 
 static void M_EraseGuest(INT32 choice)
 {
-	char *gamemode = M_AppendGametypeAndModName();
-	const char *rguest = va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode);
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
 	(void)choice;
 	if (FIL_FileExists(rguest))
 		remove(rguest);
@@ -6010,16 +5935,15 @@ static void M_EraseGuest(INT32 choice)
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data erased.\n"),NULL,MM_NOTHING);
-	Z_Free(gamemode);
 }
 
-static void M_OverwriteGuest(const char *which)
+static void M_OverwriteGuest(recordreplay_e which)
 {
-	char *gamemode = M_AppendGametypeAndModName();
-	char *rguest = Z_StrDup(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), gamemode));
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	CLEANUP(pfree) char *rguest = G_GetRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST);
+	CLEANUP(pfree) char *overwrite = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, which);
 	UINT8 *buf;
-	size_t len;
-	len = FIL_ReadFile(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-%s-%s-%s.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value), skins[cv_chooseskin.value].name, gamemode,which), &buf);
+	size_t len = FIL_ReadFile(overwrite, &buf);
 	if (!len) {
 		return;
 	}
@@ -6028,30 +5952,28 @@ static void M_OverwriteGuest(const char *which)
 		remove(rguest);
 	}
 	FIL_WriteFile(rguest, buf, len);
-	Z_Free(rguest);
 	M_ExitMenu();
 	CV_AddValue(&cv_nextmap, -1);
 	CV_AddValue(&cv_nextmap, 1);
 	M_StartMessage(M_GetText("Guest replay data saved.\n"),NULL,MM_NOTHING);
-	Z_Free(gamemode);
 }
 
 static void M_OverwriteGuest_Time(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("time-best");
+	M_OverwriteGuest(REPLAY_BESTTIME);
 }
 
 static void M_OverwriteGuest_Lap(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("lap-best");
+	M_OverwriteGuest(REPLAY_BESTLAP);
 }
 
 static void M_OverwriteGuest_Last(INT32 choice)
 {
 	(void)choice;
-	M_OverwriteGuest("last");
+	M_OverwriteGuest(REPLAY_LAST);
 }
 
 INT32 MR_SetGuestReplay(INT32 arg)
@@ -6073,7 +5995,8 @@ INT32 MR_SetGuestReplay(INT32 arg)
 		M_StartMessage(M_GetText("Are you sure you want to\ndelete the guest replay data?\n\n(Press 'Y' to confirm)\n"), M_EraseGuest, MM_YESNO);
 		return true;
 	}
-	if (FIL_FileExists(va("%s"PATHSEP"media"PATHSEP"replay"PATHSEP"%s"PATHSEP"%s-guest.lmp", srb2home, timeattackfolder, G_BuildMapName(cv_nextmap.value))))
+	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
+	if (G_CheckRecordReplay(gpath, cv_nextmap.value, UINT16_MAX, REPLAY_GUEST))
 		M_StartMessage(M_GetText("Are you sure you want to\noverwrite the guest replay data?\n\n(Press 'Y' to confirm)\n"), which, MM_YESNO);
 	else
 		which(0);
@@ -6685,8 +6608,7 @@ INT32 MR_StartServer(INT32 choice)
 	if (menustack[0] == MN_MP_SPLITSCREEN) // offline server
 	{
 		paused = false;
-		SV_StartSinglePlayerServer();
-		multiplayer = true; // yeah, SV_StartSinglePlayerServer clobbers this...
+		SV_StartSinglePlayerServer(cv_newgametype.value, false);
 		D_MapChange(cv_nextmap.value, cv_newgametype.value, (cv_kartencore.value == 1), 1, 1, false, false);
 	}
 	else
@@ -8052,6 +7974,8 @@ INT32 MR_SetupControlsMenu(INT32 arg)
 	M_SetItemArgument(MN_OP_CHANGECONTROLS, "SETJOY", arg);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEADZ", &cv_deadzone[arg]);
 	M_SetItemCvar(MN_OP_CHANGECONTROLS, "DEAZS", &cv_deadzonestyle[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "TURNSMOOTHING", &cv_turnsmooth[arg]);
+	M_SetItemCvar(MN_OP_CHANGECONTROLS, "LITESTEER", &cv_litesteer[arg]);
 
 	M_SetItemVisible(MN_OP_CHANGECONTROLS, "TALK", player1); // Chat
 	//M_SetItemVisible(MN_OP_CHANGECONTROLS, "TEAM", player1); // Team-chat
@@ -8231,9 +8155,8 @@ INT32 MR_VideoModeMenu(INT32 choice)
 
 	memset(modedescs, 0, sizeof(modedescs));
 
-#if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	VID_PrepareModeList(); // FIXME: hack
-#endif
+
 	vidm_nummodes = 0;
 	vidm_selected = 0;
 	nummodes = VID_NumModes();
@@ -8853,7 +8776,7 @@ void MD_DrawViewServer(void)
 
 		if (playeramount > 0)
 		{
-			for (i = 0; i < MAXPLAYERS; i++)
+			for (i = 0; i < MAXPLAYERINFO; i++)
 			{
 				if (playerinfo[i].num < 255)
 				{
@@ -9191,9 +9114,9 @@ static const char *M_GetDiscordName(discordRequest_t *r)
 		return "";
 
 	if (cv_discordstreamer.value)
-		return r->username;
+		return DRPC_HideUsername(r->username);
 
-	return va("%s#%s", r->username, r->discriminator);
+	return r->username;
 }
 
 void MD_DrawDiscordRequests(void)

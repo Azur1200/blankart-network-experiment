@@ -48,8 +48,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #include <string.h>
 #ifdef __GNUC__
 #include <unistd.h>
-#elif defined (_MSC_VER)
-#include <direct.h>
 #endif
 #if defined (__unix__) || defined (UNIXCOMMON)
 #include <fcntl.h>
@@ -70,20 +68,12 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #undef SystemFunction036
 #endif
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 #include <SDL.h>
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214 4244)
 #endif
 
 #include "SDL_cpuinfo.h"
@@ -941,13 +931,16 @@ static void I_RegisterChildSignals(void)
 #endif
 
 //
-//I_OutputMsg
+// I_OutputMsg
 //
 void I_OutputMsg(const char *fmt, ...)
 {
 	size_t len;
 	char txt[8192];
 	va_list  argptr;
+
+	if (!fmt)
+		return;
 
 	va_start(argptr,fmt);
 	vsprintf(txt, fmt, argptr);
@@ -956,10 +949,6 @@ void I_OutputMsg(const char *fmt, ...)
 #ifdef HAVE_TTF
 	if (TTF_WasInit()) I_TTFDrawText(currentfont, solid, DEFAULTFONTFGR, DEFAULTFONTFGG, DEFAULTFONTFGB,  DEFAULTFONTFGA,
 	DEFAULTFONTBGR, DEFAULTFONTBGG, DEFAULTFONTBGB, DEFAULTFONTBGA, txt);
-#endif
-
-#if defined (_WIN32) && defined (_MSC_VER)
-	OutputDebugStringA(txt);
 #endif
 
 	len = strlen(txt);
@@ -1999,7 +1988,7 @@ static INT32 errorcount = 0;
 */
 static boolean shutdowning = false;
 
-void I_Error(const char *error, ...)
+FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 {
 	va_list argptr;
 	char buffer[8192];
@@ -2563,7 +2552,7 @@ const char *I_LocateWad(void)
 		SetCurrentDirectoryA(waddir);
 #else
 		waddir = realpath(waddir, NULL);
-		if (chdir(waddir) == -1)
+		if (waddir == NULL || chdir(waddir) == -1)
 			I_OutputMsg("Couldn't change working directory\n");
 #endif
 	}

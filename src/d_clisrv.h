@@ -42,9 +42,9 @@ applications may follow different packet versions.
 //  be transmitted.
 
 #define MAXSERVERNAME 32
-#define MAXSERVERCONTACT 320
-#define MAXSERVERDESCRIPTION 320
-#define MAXSERVERDESCRIPTIONLINE 40
+#define MAXSERVERCONTACT 350
+#define MAXSERVERDESCRIPTION 1024
+#define MAXSERVERDESCRIPTIONLINE 80
 #define DEFAULTDESCSTRING "Welcome to my SRB2Kart server!\n"
 
 // Sends over info via packets to client players.
@@ -143,10 +143,6 @@ void Command_Droprate(void);
 void Command_Numnodes(void);
 #endif
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // Client to server packet
 struct clientcmd_pak
 {
@@ -186,10 +182,6 @@ struct client4cmd_pak
 	ticcmd_t cmd, cmd2, cmd3, cmd4;
 } ATTRPACK;
 
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
-
 // Server to client packet
 // this packet is too large
 struct servertics_pak
@@ -215,6 +207,7 @@ struct serverconfig_pak
 
 	UINT8 gametype;
 	UINT8 modifiedgame;
+	boolean dedicated;
 
 	char server_context[8]; // Unique context id, generated at server startup.
 
@@ -251,10 +244,6 @@ struct fileack_pak
 	UINT8 numsegments;
 	fileacksegment_t segments[];
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
 
 #define MAXAPPLICATION 16
 
@@ -339,23 +328,11 @@ struct plrinfo
 {
 	UINT8 num;
 	char name[MAXPLAYERNAME+1];
-	UINT8 address[4]; // sending another string would run us up against MAXPACKETLENGTH
 	UINT8 team;
 	UINT16 skin;
 	UINT8 data; // Color is first four bits, hasflag, isit and issuper have one bit each, the last is unused.
 	UINT32 score;
 	UINT16 timeinserver; // In seconds.
-} ATTRPACK;
-
-// Shortest player information for join during intermission.
-struct plrconfig
-{
-	char name[MAXPLAYERNAME+1];
-	UINT16 skin;
-	UINT16 color;
-	UINT32 pflags;
-	UINT32 score;
-	UINT8 ctfteam;
 } ATTRPACK;
 
 struct filesneededconfig_pak
@@ -404,17 +381,12 @@ struct doomdata_t
 		serverinfoupdate_pak serverinfoupdate;
 		askinfo_pak askinfo;
 		msaskinfo_pak msaskinfo;
-		plrinfo playerinfo[MSCOMPAT_MAXPLAYERS];
-		plrconfig playerconfig[MAXPLAYERS];
+		plrinfo playerinfo[MAXPLAYERINFO];
 		INT32 filesneedednum;
 		filesneededconfig_pak filesneededcfg;
 		netinfo_pak netinfo;
 	} u; // This is needed to pack diff packet types data together
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #define MAXSERVERLIST (MAXNETNODES-1)
 struct serverelem_t
@@ -472,6 +444,7 @@ extern boolean server;
 extern boolean serverrunning;
 #define client (!server)
 extern boolean dedicated; // For dedicated server
+extern boolean connectedtodedicated; // Client that is connected to a dedicated server.
 extern UINT16 software_MAXPACKETLENGTH;
 extern boolean acceptnewnode;
 extern SINT8 servernode;
@@ -538,7 +511,7 @@ typedef enum
 void NetKeepAlive(void);
 void NetUpdate(void);
 
-void SV_StartSinglePlayerServer(void);
+void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame);
 boolean SV_SpawnServer(void);
 void SV_StopServer(void);
 void SV_ResetServer(void);
@@ -573,6 +546,7 @@ void CL_UpdateServerList(void);
 void CL_TimeoutServerList(void);
 // Is there a game running
 boolean Playing(void);
+boolean InADedicatedServer(void);
 
 void CopyCaretColors (char *p, const char *s, int n);
 
@@ -596,7 +570,7 @@ extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
 /* consoleplayer of this player (splitscreen) */
 extern UINT8 playerconsole[MAXPLAYERS];
-extern plrinfo playerinfo[MAXPLAYERS];
+extern plrinfo playerinfo[MAXPLAYERINFO];
 extern SINT8 joinnode;
 
 #define SERVMUS_1 "SRVMS1"

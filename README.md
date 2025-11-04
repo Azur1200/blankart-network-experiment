@@ -41,6 +41,8 @@ This is still in active development and things are going to change. If you find 
 
 ## Compiling
 
+Notice: MSVC is unsupported!
+
 Linux:
 ```
 git clone https://codeberg.org/NepDisk/blankart.git
@@ -52,6 +54,7 @@ make -j$(nproc)
 ```
 
 Windows MSYS2:
+
 ```
 git clone https://codeberg.org/NepDisk/blankart.git
 cd blankart

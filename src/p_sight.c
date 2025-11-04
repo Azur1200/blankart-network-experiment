@@ -397,13 +397,6 @@ static boolean P_CanWaypointTraverse(seg_t *seg, divline_t *divl, register los_t
 		return false;
 	}
 
-	if (line->special == 2001)
-	{
-		// Don't allow through the finish linedef.
-		// Causes some janky behavior.
-		return false;
-	}
-
 	// calculate fractional intercept (how far along we are divided by how far we are from t2)
 	frac = P_InterceptVector(&los->strace, divl);
 

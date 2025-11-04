@@ -58,10 +58,6 @@ typedef enum
 #define TICCMD_TYPING		(0x02) /* chat window or console open */
 #define TICCMD_KEYSTROKE	(0x04) /* chat character input */
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 struct ticcmd_t
 {
 	SINT8 forwardmove; // -MAXPLMOVE to MAXPLMOVE (50)
@@ -74,10 +70,6 @@ struct ticcmd_t
 	UINT8 latency; // Netgames: how many tics ago was this ticcmd generated from this player's end?
 	UINT8 flags;
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 #ifdef __cplusplus
 } // extern "C"

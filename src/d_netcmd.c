@@ -67,6 +67,7 @@
 #include "deh_tables.h"
 #include "m_perfstats.h"
 #include "g_party.h"
+#include "k_specialstage.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -161,6 +162,9 @@ static void KartSlipdash_OnChange(void);
 static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
+static void KartItemLitter_OnChange(void);
+static void KartItemPush_OnChange(void);
+static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
@@ -289,7 +293,7 @@ static CV_PossibleValue_t ingamecap_cons_t[] = {{0, "MIN"}, {MAXPLAYERS-1, "MAX"
 consvar_t cv_ingamecap = CVAR_INIT ("ingamecap", "0", CV_NETVAR, ingamecap_cons_t, NULL);
 
 static CV_PossibleValue_t spectatorreentry_cons_t[] = {{0, "MIN"}, {10*60, "MAX"}, {0, NULL}};
-consvar_t cv_spectatorreentry = CVAR_INIT ("spectatorreentry", "30", CV_NETVAR, spectatorreentry_cons_t, NULL);
+consvar_t cv_spectatorreentry = CVAR_INIT ("spectatorreentry", "0", CV_NETVAR, spectatorreentry_cons_t, NULL); // bugged in kart, default to 0 to match expected behavior
 
 static CV_PossibleValue_t antigrief_cons_t[] = {{20, "MIN"}, {60, "MAX"}, {0, "Off"}, {0, NULL}};
 consvar_t cv_antigrief = CVAR_INIT ("antigrief", "30", CV_NETVAR, antigrief_cons_t, NULL);
@@ -387,7 +391,7 @@ consvar_t cv_eggmanmonitor = 		CVAR_INIT ("eggmanmonitor", 	"On", CV_NETVAR|CV_C
 consvar_t cv_orbinaut = 			CVAR_INIT ("orbinaut", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_jawz = 				CVAR_INIT ("jawz", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_mine = 				CVAR_INIT ("mine", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 		    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_selfpropelledbomb =	CVAR_INIT ("selfpropelledbomb", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_grow = 				CVAR_INIT ("grow", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_shrink = 				CVAR_INIT ("shrink", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -395,17 +399,17 @@ consvar_t cv_thundershield = 		CVAR_INIT ("thundershield", 	"On", CV_NETVAR|CV_C
 consvar_t cv_hyudoro = 				CVAR_INIT ("hyudoro", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_pogospring = 			CVAR_INIT ("pogospring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kitchensink = 			CVAR_INIT ("kitchensink", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_superring = 			CVAR_INIT ("superring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_landmine = 			CVAR_INIT ("landmine", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_superring = 			CVAR_INIT ("superring", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_landmine = 			CVAR_INIT ("landmine", 		   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_dualsneaker = 			CVAR_INIT ("dualsneaker", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_triplebanana = 		CVAR_INIT ("triplebanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_decabanana = 			CVAR_INIT ("decabanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_tripleorbinaut = 		CVAR_INIT ("tripleorbinaut", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 	    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_dualjawz = 			CVAR_INIT ("dualjawz", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
@@ -456,7 +460,7 @@ consvar_t cv_kartbot_basetrackcomplexity = CVAR_INIT ("kartbot_basetrackcomplexi
 consvar_t cv_karteliminatelast = CVAR_INIT ("karteliminatelast", "Yes", CV_NETVAR|CV_CALL, CV_YesNo, KartEliminateLast_OnChange);
 
 // Toggles for new features
-consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartRings_OnChange);
+consvar_t cv_kartrings = CVAR_INIT ("kartrings", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartRings_OnChange);
 
 static CV_PossibleValue_t ringsmin_cons_t[] = {{INT8_MIN, "MIN"}, {0, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t ringsmax_cons_t[] = {{0, "MIN"}, {INT8_MAX, "MAX"}, {0, NULL}};
@@ -468,71 +472,71 @@ static CV_PossibleValue_t ringsstart_cons_t[] = {{INT8_MIN, "MIN"}, {INT8_MAX, "
 consvar_t cv_kartringsstart = CVAR_INIT ("kartringsstart", "5", CV_NETVAR, ringsstart_cons_t, NULL);
 
 // Stacking related
-consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartStacking_OnChange);
-consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking = CVAR_INIT ("kartstacking", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartStacking_OnChange);
+consvar_t cv_kartstacking_diminishparam = CVAR_INIT ("kartstacking_diminishparam", "0.32", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_maxvanillaboost = CVAR_INIT ("kartstacking_maxvanillaboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff = CVAR_INIT ("kartstacking_speedboostdropoff", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_speedboostdropoff_brake = CVAR_INIT ("kartstacking_speedboostdropoff_brake", "0.05", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 // V recreates neptunes old ass misread of stacking code lmao
-consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_accelstack = CVAR_INIT ("kartstacking_accelstack", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 // Vanilla Stacking boosts.
-consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT, CV_Natural, NULL);
-consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_sneaker_easyspeedboost = CVAR_INIT ("vanillaboost_sneaker_easyspeedboost", "0.8317", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_normalspeedboost = CVAR_INIT ("vanillaboost_sneaker_normalspeedboost", "0.5", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_hardspeedboost = CVAR_INIT ("vanillaboost_sneaker_hardspeedboost", "0.2756", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_expertspeedboost = CVAR_INIT ("vanillaboost_sneaker_expertspeedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_accelboost = CVAR_INIT ("vanillaboost_sneaker_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_sneaker_maxgrade = CVAR_INIT ("vanillaboost_sneaker_maxgrade", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Natural, NULL);
+consvar_t cv_kartstacking_sneaker_stackable = CVAR_INIT ("vanillaboost_sneaker_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_invincibility_legacyspeedboost = CVAR_INIT ("vanillaboost_invincibility_legacyspeedboost", "0.375", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_legacyaccelboost = CVAR_INIT ("vanillaboost_invincibility_legacyaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternatespeedboost = CVAR_INIT ("vanillaboost_invincibility_alternatespeedboost", "0.68", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_alternateaccelboost = CVAR_INIT ("vanillaboost_invincibility_alternateaccelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_invincibility_stackable = CVAR_INIT ("vanillaboost_invincibility_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.3", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.35", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.90", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_flame_speedval = CVAR_INIT ("vanillaboost_flame_speedval", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_accelboost = CVAR_INIT ("vanillaboost_flame_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_flame_stackable = CVAR_INIT ("vanillaboost_flame_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_start_speedboost = CVAR_INIT ("vanillaboost_start_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_accelboost = CVAR_INIT ("vanillaboost_start_accelboost", "6.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_start_stackable = CVAR_INIT ("vanillaboost_start_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_walltransfer_speedboost = CVAR_INIT ("vanillaboost_walltransfer_speedboost", "0.10", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_accelboost = CVAR_INIT ("vanillaboost_walltransfer_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_walltransfer_stackable = CVAR_INIT ("vanillaboost_walltransfer_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_drift_speedboost = CVAR_INIT ("vanillaboost_drift_speedboost", "0.25", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_accelboost = CVAR_INIT ("vanillaboost_drift_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drift_stackable = CVAR_INIT ("vanillaboost_drift_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartstacking_ring_speedboost = CVAR_INIT ("vanillaboost_ring_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_accelboost = CVAR_INIT ("vanillaboost_ring_accelboost", "4.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_ring_stackable = CVAR_INIT ("vanillaboost_ring_stackable", "On", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_speedboost_cap", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartstacking_slope_decay = CVAR_INIT ("vanillaboost_slope_decay", "0.004", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_brakemod = CVAR_INIT ("vanillaboost_slope_brakemod", "0.01", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_max = CVAR_INIT ("vanillaboost_slope_speedboost_max", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_speedboost_cap = CVAR_INIT ("vanillaboost_slope_speedboost_cap", "1.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_accelboost = CVAR_INIT ("vanillaboost_slope_accelboost", "3.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_slope_stackable = CVAR_INIT ("vanillaboost_slope_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 // Max speed for high speeds
-consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.16", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_minspeed = CVAR_INIT ("vanillaboost_draft_minspeed", "0.16", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
 // Max speed for low speeds
-consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.26", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_drafting_maxspeed = CVAR_INIT ("vanillaboost_draft_maxspeed", "0.26", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartChaining_OnChange);
+consvar_t cv_kartchaining = CVAR_INIT ("kartchaining", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartChaining_OnChange);
 consvar_t cv_kartchainingoffroad = CVAR_INIT ("kartchaining_chainoffroad", "No", CV_NETVAR, CV_YesNo, NULL);
 
 consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartItemBreaker_OnChange);
@@ -541,7 +545,7 @@ consvar_t cv_kartitembreaker = CVAR_INIT ("kartitembreaker", "No", CV_NETVAR|CV_
 
 consvar_t cv_kartusepwrlv = CVAR_INIT ("kartusepwrlv", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR, CV_YesNo, KartPurpleDrift_OnChange);
+consvar_t cv_kartpurpledrift = CVAR_INIT ("kartpurpledrift", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartPurpleDrift_OnChange);
 
 static CV_PossibleValue_t bumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 						{BUMPSPARK_NOCHARGE, "Remove Charge Only"},
@@ -551,32 +555,43 @@ static CV_PossibleValue_t bumpspark_cons_t[] = {{BUMPSPARK_NONE, "Off"},
 
 consvar_t cv_kartbumpspark = CVAR_INIT("kartbumpspark",
 				       "Remove Charge Only",
-				       CV_NETVAR | CV_CALL,
+				       CV_NETVAR | CV_CALL | CV_NOINIT | CV_GUARD,
 				       bumpspark_cons_t,
 				       KartBumpSpark_OnChange);
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
-consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlipdash_OnChange);
+consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartSlipdash_OnChange);
 
 consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlopeBoost_OnChange);
 
-consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartDrafting_OnChange);
+consvar_t cv_kartdrafting = CVAR_INIT ("kartdrafting", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartDrafting_OnChange);
 consvar_t cv_kartdrafting_closedraft = CVAR_INIT ("kartdrafting_closedraft", "Off", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartdrafting_closedeadzone = CVAR_INIT ("kartdrafting_closedeadzone", "640", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance", "2560", CV_NETVAR|CV_CHEAT, CV_Unsigned, NULL);
 
-consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartAirDrop_OnChange);
+consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
+
+consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
+consvar_t cv_kartitempush = CVAR_INIT ("kartitempush", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemPush_OnChange);
+
+consvar_t cv_kartforcelegacyodds = CVAR_INIT ("kartforcelegacyodds", "Off", CV_NETVAR, CV_OnOff, NULL);
+
+#define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
+static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
+consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);
+#undef ANTIBUMP_MAX
 
 // Odds distancing
 #define MAXODDSDIST ((INT32_MAX / FRACUNIT) / 2)
 static CV_PossibleValue_t distvar_cons_t[] = {{1, "MIN"}, {MAXODDSDIST, "MAX"}, {0, NULL}};
-consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
-consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "2048", CV_NETVAR|CV_CHEAT, distvar_cons_t, NULL);
+consvar_t cv_kartoddsdist = CVAR_INIT ("kartoddsdist", "987", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
+consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1050", CV_NETVAR|CV_CHEAT|CV_GUARD, distvar_cons_t, NULL);
 
-// SPB distance; no legacy modifiers currently (lazy)
+// SPB distance
 static CV_PossibleValue_t spbdist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "8192", CV_NETVAR|CV_CHEAT, spbdist_cons_t, NULL);
+consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
+consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
 // Invincibility modifiers
@@ -585,12 +600,23 @@ consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
-consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT, invindist_cons_t, NULL);
+consvar_t cv_kartinvindist = CVAR_INIT ("kartinvindist", "8400", CV_NETVAR|CV_CHEAT|CV_GUARD, invindist_cons_t, NULL);
 
-consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartinvindistmul = CVAR_INIT ("kartinvindistmul", "0.54", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 
-consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
-consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT, CV_Unsigned, NULL);
+consvar_t cv_kartinvin_maxtime = CVAR_INIT ("kartinvin_maxtime", "35.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartinvin_midtime = CVAR_INIT ("kartinvin_midtime", "23.333", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+
+// opinionated stuff for testing balance tweaks on the shields
+consvar_t cv_kartbubble_defense_canidle = CVAR_INIT ("kartbubble_defense_canidle", "On", CV_NETVAR, CV_OnOff, NULL);
+static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "1.0", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
+consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "Off", CV_NETVAR, CV_OnOff, NULL);
+
+static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
+consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
 
 static CV_PossibleValue_t kartdebugitem_cons_t[] =
 {
@@ -623,6 +649,7 @@ consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, C
 consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugcolorize = CVAR_INIT ("kartdebugcolorize", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugdirector = CVAR_INIT ("kartdebugdirector", "Off", 0, CV_OnOff, NULL);
+consvar_t cv_gptest = CVAR_INIT ("gptest", "Off", CV_CHEAT|CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t votetime_cons_t[] = {{10, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_votetime = CVAR_INIT ("votetime", "20", CV_NETVAR, votetime_cons_t, NULL);
@@ -648,9 +675,9 @@ consvar_t cv_overtime = CVAR_INIT ("overtime", "Yes", CV_NETVAR|CV_CHEAT, CV_Yes
 consvar_t cv_rollingdemos = CVAR_INIT ("rollingdemos", "On", CV_SAVE, CV_OnOff, NULL);
 
 static CV_PossibleValue_t pointlimit_cons_t[] = {{1, "MIN"}, {MAXSCORE, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
+consvar_t cv_pointlimit = CVAR_INIT ("pointlimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, pointlimit_cons_t, PointLimit_OnChange);
 static CV_PossibleValue_t timelimit_cons_t[] = {{1, "MIN"}, {99999, "MAX"}, {0, "None"}, {0, NULL}};
-consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_SAVE|CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
+consvar_t cv_timelimit = CVAR_INIT ("timelimit", "None", CV_NETVAR|CV_CALL|CV_NOINIT, timelimit_cons_t, TimeLimit_OnChange);
 
 static CV_PossibleValue_t numlaps_cons_t[] = {{0, "MIN"}, {MAX_LAPS, "MAX"}, {-1, "Map default"}, {0, NULL}};
 consvar_t cv_numlaps = CVAR_INIT ("numlaps", "Map default", CV_NETVAR|CV_CALL|CV_CHEAT, numlaps_cons_t, NumLaps_OnChange);
@@ -686,6 +713,10 @@ consvar_t cv_showping = CVAR_INIT ("showping", "Always", CV_SAVE, showping_cons_
 
 static CV_PossibleValue_t pingmeasurement_cons_t[] = {{0, "Frames"}, {1, "Milliseconds"}, {0, NULL}};
 consvar_t cv_pingmeasurement = CVAR_INIT ("pingmeasurement", "Frames", CV_SAVE, pingmeasurement_cons_t, NULL);
+consvar_t cv_pingicon = CVAR_INIT ("pingicon", "On", CV_SAVE, CV_OnOff, NULL);
+
+static CV_PossibleValue_t cv_pingstyle_cons_t[] = {{0, "New"}, {1, "Old"}, {0, NULL}};
+consvar_t cv_pingstyle = CVAR_INIT ("pingstyle", "New", CV_SAVE, cv_pingstyle_cons_t, NULL);
 
 static CV_PossibleValue_t showlapemblem_cons_t[] = {{0, "Off"}, {1, "Emblem Only"}, {2, "Splits Only"}, {3, "All"}, {0, NULL}};
 consvar_t cv_showlapemblem = CVAR_INIT ("showlapemblem", "All", CV_SAVE, showlapemblem_cons_t, NULL);
@@ -1016,6 +1047,8 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_pingtimeout);
 	CV_RegisterVar(&cv_showping);
 	CV_RegisterVar(&cv_pingmeasurement);
+	CV_RegisterVar(&cv_pingicon);
+	CV_RegisterVar(&cv_pingstyle);
 	CV_RegisterVar(&cv_showminimapnames);
 	CV_RegisterVar(&cv_showminimapangle);
 	CV_RegisterVar(&cv_minihead);
@@ -1223,6 +1256,8 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_csaturation);
 	CV_RegisterVar(&cv_bsaturation);
 	CV_RegisterVar(&cv_msaturation);
+	CV_RegisterVar(&cv_palette);
+	CV_RegisterVar(&cv_palettenum);
 
 	// m_menu.c
 	//CV_RegisterVar(&cv_compactscoreboard);
@@ -1249,6 +1284,8 @@ void D_RegisterClientCommands(void)
 		CV_RegisterVar(&cv_shrinkme[i]);
 		CV_RegisterVar(&cv_deadzone[i]);
 		CV_RegisterVar(&cv_deadzonestyle[i]);
+		CV_RegisterVar(&cv_litesteer[i]);
+		CV_RegisterVar(&cv_turnsmooth[i]);
 	}
 
 	// filesrch.c
@@ -1260,7 +1297,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_addons_search_case);
 
 	CV_RegisterVar(&cv_controlperkey);
-	CV_RegisterVar(&cv_turnsmooth);
 
 	CV_RegisterVar(&cv_usemouse);
 	CV_RegisterVar(&cv_invertmouse);
@@ -1979,11 +2015,6 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 	// set follower
 	K_SetFollowerByNum(playernum, follower);
-
-#ifdef HAVE_DISCORDRPC
-	if (playernum == consoleplayer)
-		DRPC_UpdatePresence();
-#endif
 }
 
 enum {
@@ -2876,6 +2907,10 @@ void D_MapChange(INT32 mapnum, INT32 newgametype, boolean pencoremode, boolean r
 	{
 		pencoremode = bossinfo.encore;
 	}
+	else if (specialStage.active == true)
+	{
+		pencoremode = specialStage.encore;
+	}
 	else if (grandprixinfo.gp == true)
 	{
 		pencoremode = grandprixinfo.encore;
@@ -3043,14 +3078,18 @@ ConcatCommandArgv (int start, int end)
 		size += strlen(COM_Argv(i)) + 1;
 	}
 
-	final = ZZ_Alloc(size);
-	p = final;
+	p = final = ZZ_Alloc(size);
+
+	if (!p)
+		I_Error("ConcatCommandArgv: Out of memory!\n");
 
 	--end;/* handle the final argument separately */
+
 	for (i = start; i < end; ++i)
 	{
 		p += sprintf(p, "%s ", COM_Argv(i));
 	}
+
 	/* at this point "end" is actually the last argument's position */
 	strcpy(p, COM_Argv(end));
 
@@ -3263,6 +3302,7 @@ static void Command_Map_f(void)
 		if (newgametype == GT_BATTLE)
 		{
 			grandprixinfo.gp = false;
+			specialStage.active = false;
 			K_ResetBossInfo();
 
 			if (mapheaderinfo[newmapnum-1] &&
@@ -3272,76 +3312,76 @@ static void Command_Map_f(void)
 				bossinfo.encore = newencoremode;
 			}
 		}
-		else // default GP
+		else
 		{
-			grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
-			grandprixinfo.masterbots = false;
-
-			if (option_skill)
+			if (mapheaderinfo[newmapnum-1] &&
+				mapheaderinfo[newmapnum-1]->typeoflevel & TOL_SPECIAL) // Special Stage
 			{
-				const char *masterstr = "Master";
-				const char *nightmarestr = "NIGHTMARE";
-				const char *skillname = COM_Argv(option_skill + 1);
-				INT32 newskill = -1;
-				INT32 j;
+				grandprixinfo.gp = false;
+				bossinfo.boss = false;
 
-				if (!strcasecmp(masterstr, skillname))
+				specialStage.active = true;
+				specialStage.encore = newencoremode;
+			}
+			else // default GP
+			{
+				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_NORMAL : cv_kartspeed.value);
+				grandprixinfo.masterbots = false;
+
+				if (option_skill)
 				{
-					newskill = KARTGP_MASTER;
-				}
-				else if (!strcasecmp(nightmarestr, skillname))
-				{
-					newskill = KARTGP_NIGHTMARE;
-				}
-				else
-				{
-					for (j = 0; kartspeed_cons_t[j].strvalue; j++)
+					const char *skillname = COM_Argv(option_skill + 1);
+					INT32 newskill = -1;
+					INT32 j;
+
+					for (j = 0; gpdifficulty_cons_t[j].strvalue; j++)
 					{
-						if (!strcasecmp(kartspeed_cons_t[j].strvalue, skillname))
+						if (!strcasecmp(gpdifficulty_cons_t[j].strvalue, skillname))
 						{
-							newskill = (INT16)kartspeed_cons_t[j].value;
+							newskill = (INT16)gpdifficulty_cons_t[j].value;
 							break;
 						}
 					}
 
-					if (!kartspeed_cons_t[j].strvalue) // reached end of the list with no match
+					if (!gpdifficulty_cons_t[j].strvalue) // reached end of the list with no match
 					{
 						INT32 num = atoi(COM_Argv(option_skill + 1)); // assume they gave us a skill number, which is okay too
 						if (num >= KARTSPEED_EASY && num <= KARTGP_NIGHTMARE)
 							newskill = (INT16)num;
 					}
+
+					if (newskill != -1)
+					{
+						if (newskill == KARTGP_MASTER)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_HARD;
+							grandprixinfo.masterbots = true;
+						}
+						else if (newskill == KARTGP_NIGHTMARE)
+						{
+							grandprixinfo.gamespeed = KARTSPEED_EXPERT;
+							grandprixinfo.masterbots = true;
+						}
+						else
+						{
+							grandprixinfo.gamespeed = newskill;
+							grandprixinfo.masterbots = false;
+						}
+					}
 				}
 
-				if (newskill != -1)
-				{
-					if (newskill == KARTGP_MASTER)
-					{
-						grandprixinfo.gamespeed = KARTSPEED_HARD;
-						grandprixinfo.masterbots = true;
-					}
-					else if (newskill == KARTGP_NIGHTMARE)
-					{
-						grandprixinfo.gamespeed = KARTSPEED_EXPERT;
-						grandprixinfo.masterbots = true;
-					}
-					else
-					{
-						grandprixinfo.gamespeed = newskill;
-						grandprixinfo.masterbots = false;
-					}
-				}
+				grandprixinfo.encore = newencoremode;
+
+				grandprixinfo.gp = true;
+				grandprixinfo.roundnum = 0;
+				grandprixinfo.cup = NULL;
+				grandprixinfo.wonround = false;
+
+				bossinfo.boss = false;
+				specialStage.active = false;
+
+				grandprixinfo.initalize = true;
 			}
-
-			grandprixinfo.encore = newencoremode;
-
-			grandprixinfo.gp = true;
-			grandprixinfo.roundnum = 0;
-			grandprixinfo.cup = NULL;
-			grandprixinfo.wonround = false;
-
-			bossinfo.boss = false;
-
-			grandprixinfo.initalize = true;
 		}
 	}
 
@@ -4481,7 +4521,7 @@ void Schedule_Run(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -4617,7 +4657,7 @@ void Automate_Run(automateEvents_t type)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		// Don't engage in automation while in a restricted context.
 		return;
@@ -4683,23 +4723,32 @@ static void Command_MotD_f(void)
 
 	mymotd = Z_Malloc(sizeof(motd), PU_STATIC, NULL);
 
-	strlcpy(mymotd, COM_Argv(1), sizeof motd);
+	if (!mymotd)
+		return;
+		//I_Error("Command_MotD_f: Out of memory!\n"); // idk if this aint a bit too much lel
+
+	strlcpy(mymotd, COM_Argv(1), sizeof(motd));
+
 	for (i = 2; i < j; i++)
 	{
-		strlcat(mymotd, " ", sizeof motd);
-		strlcat(mymotd, COM_Argv(i), sizeof motd);
+		strlcat(mymotd, " ", sizeof(motd));
+		strlcat(mymotd, COM_Argv(i), sizeof(motd));
 	}
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
+	{
 		if (!isprint(mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
 			return;
 		}
+	}
 
 	if ((netgame || multiplayer) && client)
+	{
 		SendNetXCmd(XD_SETMOTD, mymotd, i); // send the actual size of the motd string, not the full buffer's size
+	}
 	else
 	{
 		strcpy(motd, mymotd);
@@ -4943,7 +4992,7 @@ static void Command_Addfile(void)
 		}
 
 		// Add file on your client directly if it is trivial, or you aren't in a netgame.
-		if (!(netgame || multiplayer) || musiconly)
+		if (!netgame|| musiconly)
 		{
 			P_AddWadFile(fn, compat, false);
 			addedfiles[numfilesadded++] = fn;
@@ -5396,7 +5445,12 @@ void ItemFinder_OnChange(void)
   */
 static void PointLimit_OnChange(void)
 {
-	// Don't allow pointlimit in Single Player/Co-Op/Race!
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	// Don't allow pointlimit in non-pointlimited gametypes!
 	if (server && Playing() && !(gametyperules & GTR_POINTLIMIT))
 	{
 		if (cv_pointlimit.value)
@@ -5411,7 +5465,7 @@ static void PointLimit_OnChange(void)
 			cv_pointlimit.value,
 			cv_pointlimit.value > 1 ? "s" : "");
 	}
-	else if (netgame || multiplayer)
+	else
 		CONS_Printf(M_GetText("Point limit disabled\n"));
 }
 
@@ -5446,26 +5500,40 @@ UINT32 secretextratime = 0;
   */
 static void TimeLimit_OnChange(void)
 {
-	// Don't allow timelimit in Single Player/Co-Op/Race!
-	if (server && Playing() && cv_timelimit.value != 0 && (bossinfo.boss || !(gametyperules & GTR_TIMELIMIT)))
+	if (K_CanChangeRules(false) == false)
 	{
-		CV_SetValue(&cv_timelimit, 0);
 		return;
 	}
 
-	if (cv_timelimit.value != 0)
+	if (gamestate == GS_LEVEL && leveltime < starttime)
 	{
-		CONS_Printf(M_GetText("Rounds will end after %d minute%s.\n"),cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s"); // Graue 11-17-2003
-		timelimitintics = cv_timelimit.value * (60*TICRATE);
+		if (cv_timelimit.value)
+		{
+			CONS_Printf(M_GetText("Time limit has been set to %d minute%s.\n"), cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s");
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Time limit has been disabled.\n"));
+		}
 
-		// Note the deliberate absence of any code preventing
-		//   pointlimit and timelimit from being set simultaneously.
-		// Some people might like to use them together. It works.
-	}
+		timelimitintics = cv_timelimit.value * (60*TICRATE);
+		extratimeintics = secretextratime = 0;
 
 #ifdef HAVE_DISCORDRPC
-	DRPC_UpdatePresence();
+		DRPC_UpdatePresence();
 #endif
+	}
+	else
+	{
+		if (cv_timelimit.value)
+		{
+			CONS_Printf(M_GetText("Time limit will be %d minute%s next round.\n"), cv_timelimit.value,cv_timelimit.value == 1 ? "" : "s");
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Time limit will be disabled next round.\n"));
+		}
+	}
 }
 
 /** Adjusts certain settings to match a changed gametype.
@@ -5491,7 +5559,7 @@ void D_GameTypeChanged(INT32 lastgametype)
 	}
 	// Only do the following as the server, not as remote admin.
 	// There will always be a server, and this only needs to be done once.
-	if (server && (multiplayer || netgame))
+	if (server && multiplayer)
 	{
 		if (!cv_timelimit.changed) // user hasn't changed limits
 		{
@@ -5500,27 +5568,6 @@ void D_GameTypeChanged(INT32 lastgametype)
 		if (!cv_pointlimit.changed)
 		{
 			CV_SetValue(&cv_pointlimit, pointlimits[gametype]);
-		}
-	}
-	/* -- no longer useful
-	else if (!multiplayer && !netgame)
-	{
-		G_SetGametype(GT_RACE);
-	}
-	*/
-
-	// reset timelimit and pointlimit in race/coop, prevent stupid cheats
-	if (server)
-	{
-		if (!(gametyperules & GTR_TIMELIMIT))
-		{
-			if (cv_timelimit.value)
-				CV_SetValue(&cv_timelimit, 0);
-		}
-		if (!(gametyperules & GTR_POINTLIMIT))
-		{
-			if (cv_pointlimit.value)
-				CV_SetValue(&cv_pointlimit, 0);
 		}
 	}
 
@@ -5621,7 +5668,7 @@ retryscramble:
 	memset(&scrambleplayers, 0, sizeof(scrambleplayers));
 	memset(&scrambleteams, 0, sizeof(scrambleplayers));
 	scrambletotal = scramblecount = 0;
-	blue = red = maxcomposition = newteam = playercount = 0;
+	blue = red = newteam = playercount = 0;
 	repick = true;
 
 	// Put each player's node in the array.
@@ -6043,9 +6090,9 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			fixed_t y = READFIXED(*cp);
 			fixed_t z = READFIXED(*cp);
 
-			player->starpostx = x>>FRACBITS;
-			player->starposty = y>>FRACBITS;
-			player->starpostz = z>>FRACBITS;
+			player->starpostx = x;
+			player->starposty = y;
+			player->starpostz = z;
 
 			CV_CheaterWarning(targetPlayer, va("temporary checkpoint created at %d, %d, %d",
 						x / FRACUNIT, y / FRACUNIT, z / FRACUNIT));
@@ -6165,7 +6212,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		case CHEAT_DEVMODE: {
 			UINT32 flags = READUINT32(*cp);
 			cht_debug = flags;
-			CV_CheaterWarning(targetPlayer, va("devmode %08x", flags));
+			CV_CheaterWarning(targetPlayer, va("devmode %x", flags));
 			break;
 		}
 
@@ -6430,7 +6477,7 @@ static void Command_Archivetest_f(void)
 	// assign mobjnum
 	i = 1;
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
-		if (th->function.acp1 != (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function != (actionf_p1)P_RemoveThinkerDelayed)
 			((mobj_t *)th)->mobjnum = i++;
 
 	// allocate buffer
@@ -6441,8 +6488,9 @@ static void Command_Archivetest_f(void)
 	}
 
 	// test archive
-	CONS_Printf("LUA_Archive...\n");
-	LUA_Archive(&save, true);
+	CONS_Printf("LUA_Sync Archive...\n");
+	save.write = true;
+	LUA_Sync(&save, true, false);
 	WRITEUINT8(save.p, 0x7F);
 	wrote = (UINT32)(save.p - save.buffer);
 
@@ -6452,8 +6500,9 @@ static void Command_Archivetest_f(void)
 
 	// test unarchive
 	save.p = save.buffer;
-	CONS_Printf("LUA_UnArchive...\n");
-	LUA_UnArchive(&save, true, false);
+	save.write = false;
+	CONS_Printf("LUA_Sync Unarchive...\n");
+	LUA_Sync(&save, true, false);
 	i = READUINT8(save.p);
 	if (i != 0x7F || wrote != (UINT32)(save.p - save.buffer))
 	{
@@ -7279,6 +7328,11 @@ static void Command_ShowTime_f(void)
 // SRB2Kart: On change messages
 static void NumLaps_OnChange(void)
 {
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
 	if (gamestate == GS_LEVEL)
 	{
 		numlaps = K_RaceLapCount(gamemap - 1);
@@ -7307,12 +7361,12 @@ static void NumLaps_OnChange(void)
 
 static void KartFrantic_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
 
-	if (leveltime < starttime)
+	if (gamestate == GS_LEVEL && leveltime < starttime)
 	{
 		CONS_Printf(M_GetText("Frantic items has been set to %s.\n"), cv_kartfrantic.value ? M_GetText("on") : M_GetText("off"));
 		franticitems = (boolean)cv_kartfrantic.value;
@@ -7325,19 +7379,12 @@ static void KartFrantic_OnChange(void)
 
 static void KartSpeed_OnChange(void)
 {
-	if (!M_SecretUnlocked(SECRET_HARDSPEED) && (cv_kartspeed.value == KARTSPEED_HARD || cv_kartspeed.value == KARTSPEED_EXPERT))
-	{
-		CONS_Printf(M_GetText("You haven't earned this yet.\n"));
-		CV_StealthSet(&cv_kartspeed, cv_kartspeed.defaultvalue);
-		return;
-	}
-
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
 
-	if (leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
+	if (gamestate == GS_LEVEL && leveltime < starttime && cv_kartspeed.value != KARTSPEED_AUTO)
 	{
 		CONS_Printf(M_GetText("Race speed has been changed to \"%s\".\n"), cv_kartspeed.string);
 		gamespeed = (UINT8)cv_kartspeed.value;
@@ -7357,7 +7404,7 @@ static void KartBattleSpeed_OnChange(void)
 		return;
 	}
 
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7375,7 +7422,7 @@ static void KartBattleSpeed_OnChange(void)
 
 static void KartEncore_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7385,7 +7432,7 @@ static void KartEncore_OnChange(void)
 
 static void KartComeback_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7408,7 +7455,7 @@ static void KartEliminateLast_OnChange(void)
 
 static void KartRings_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7425,7 +7472,7 @@ static void KartRings_OnChange(void)
 
 static void KartPurpleDrift_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7458,7 +7505,7 @@ static void KartPurpleDrift_OnChange(void)
 
 static void KartStacking_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7491,7 +7538,7 @@ static void KartStacking_OnChange(void)
 
 static void KartChaining_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7524,7 +7571,7 @@ static void KartChaining_OnChange(void)
 
 static void KartSlipdash_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7557,7 +7604,7 @@ static void KartSlipdash_OnChange(void)
 
 static void KartSlopeBoost_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7590,7 +7637,7 @@ static void KartSlopeBoost_OnChange(void)
 
 static void KartDrafting_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7621,10 +7668,9 @@ static void KartDrafting_OnChange(void)
 	}
 }
 
-
 static void KartAirDrop_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7655,9 +7701,99 @@ static void KartAirDrop_OnChange(void)
 	}
 }
 
+static void KartItemLitter_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_ItemLitterActive() && cv_kartitemlitter.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlittering = true;
+			CONS_Printf(M_GetText("Item littering has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item littering will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_ItemLitterActive() && !cv_kartitemlitter.value)
+	{
+		if (leveltime < starttime)
+		{
+			itemlittering = false;
+			CONS_Printf(M_GetText("Item littering has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item littering will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartItemPush_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_ItemPushingActive() && cv_kartitempush.value)
+	{
+		if (leveltime < starttime)
+		{
+			itempushing = true;
+			CONS_Printf(M_GetText("Item pushing has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item pushing will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_ItemPushingActive() && !cv_kartitempush.value)
+	{
+		if (leveltime < starttime)
+		{
+			itempushing = false;
+			CONS_Printf(M_GetText("Item pushing has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item pushing will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartAntiBump_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(
+			M_GetText("Player collision delay has been changed to %s seconds.\n"),
+			cv_kartantibump.string
+		);
+		antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+	}
+	else
+	{
+		CONS_Printf(
+			M_GetText("Player collision delay will be changed to %s seconds next round.\n"),
+			cv_kartantibump.string
+		);
+	}
+}
+
 static void KartItemBreaker_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7679,7 +7815,7 @@ static void KartItemBreaker_OnChange(void)
 
 static void KartInvinType_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}
@@ -7697,7 +7833,7 @@ static void KartInvinType_OnChange(void)
 
 static void KartBumpSpark_OnChange(void)
 {
-	if (K_CanChangeRules() == false)
+	if (K_CanChangeRules(false) == false)
 	{
 		return;
 	}

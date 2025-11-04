@@ -12,10 +12,8 @@
 /// \brief Handles WAD file header, directory, lump I/O
 
 #ifdef HAVE_ZLIB
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -261,6 +259,10 @@ static inline void W_LoadDehackedLumpsPK3(UINT16 wadnum, boolean mainfile)
 			lumpinfo_t *lump_p = &wadfiles[wadnum]->lumpinfo[posStart];
 			size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 			char *name = malloc(length + 1);
+
+			if (!name)
+				I_Error("W_LoadDehackedLumpsPK3: Out of memory!\n");
+
 			sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 			name[length] = '\0';
 			CONS_Printf(M_GetText("Loading SOC from %s\n"), name);
@@ -290,6 +292,10 @@ static inline void W_LoadDehackedLumps(UINT16 wadnum, boolean mainfile)
 			{	// shameless copy+paste of code from LUA_LoadLump
 				size_t length = strlen(wadfiles[wadnum]->filename) + 1 + strlen(lump_p->fullname); // length of file name, '|', and lump name
 				char *name = malloc(length + 1);
+
+				if (!name)
+					I_Error("W_LoadDehackedLumps: Out of memory!\n");
+
 				sprintf(name, "%s|%s", wadfiles[wadnum]->filename, lump_p->fullname);
 				name[length] = '\0';
 
@@ -654,9 +660,6 @@ static boolean ResFindSignature (FILE* handle, char endPat[], UINT32 startpos)
 	return false;
 }
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 typedef struct zend_s
 {
 	char signature[4];
@@ -704,9 +707,6 @@ typedef struct zlentry_s
 	UINT16 namelen;
 	UINT16 xtralen;
 } ATTRPACK zlentry_t;
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 /** Create a lumpinfo_t array for a PKZip file.
  */
@@ -907,15 +907,20 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
 		return W_InitFileError(filename, startup);
 
-	important = W_VerifyNMUSlumps(filename, startup);
-
-	if (important == -1)
+	if (local)
+		important = false;
+	else
 	{
-		fclose(handle);
-		return INT16_MAX;
-	}
+		important = W_VerifyNMUSlumps(filename, startup);
 
-	important = !important;
+		if (important == -1)
+		{
+			fclose(handle);
+			return INT16_MAX;
+		}
+
+		important = !important;
+	}
 
 #ifndef NOFILEHASH
 	//
@@ -981,7 +986,6 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
-	wadfile->localfile = local;
 
 	// already generated, just copy it over
 	wadfile->hash = filehash;
@@ -1456,11 +1460,12 @@ lumpnum_t W_CheckNumForLongName(const char *name)
 
 // Look for valid map data through all added files in descendant order.
 // Get a map marker for WADs, and a standalone WAD file lump inside PK3s.
-lumpnum_t W_CheckNumForMap(const char *name)
+lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst)
 {
 	lumpnum_t check = INT16_MAX;
 	UINT32 uhash, hash = quickncasehash(name, LUMPNUMCACHENAME);
 	INT32 i;
+	UINT16 firstfile = (checktofirst || (partadd_earliestfile == UINT16_MAX)) ? 0 : partadd_earliestfile;
 
 	// Check the lumpnumcache first. Loop backwards so that we check
 	// most recent entries first
@@ -1476,7 +1481,7 @@ lumpnum_t W_CheckNumForMap(const char *name)
 
 	uhash = quickncasehash(name, 8); // Not a mistake, legacy system for short lumpnames
 
-	for (i = numwadfiles - 1; i >= 0; i--)
+	for (i = numwadfiles - 1; i >= firstfile; i--)
 	{
 		check = W_CheckNumForMapPwad(name, uhash, (UINT16)i, 0);
 

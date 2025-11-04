@@ -18,6 +18,7 @@
 #include "doomstat.h"
 #include "d_event.h"
 #include "m_textinput.h"
+#include "filesrch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,24 +32,6 @@ extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosiz
 extern consvar_t cv_resyncdemo;
 
 extern tic_t demostarttime;
-
-extern UINT32 raflags;
-typedef enum
-{
-	RAF_RINGS			= 1<<0,
-	RAF_STACKING		= 1<<1,
-	RAF_CHAINING		= 1<<2,
-	RAF_SLIPDASH		= 1<<3,
-	RAF_PURPLEDRIFT		= 1<<4,
-	RAF_SLOPEBOOST		= 1<<5,
-	RAF_AIRDROP			= 1<<6,
-	RAF_BUMPDRIFT       = 1<<7,
-	RAF_BUMPSPARK       = 2<<7,
-	RAF_BS_RESET100     = 3<<7,
-	RAF_BUMPSPARKMASK   = 0x3<<7,
-
-	// up to 1<<31 is free
-} raflags_t;
 
 // Publicly-accessible demo vars
 struct demovars_s {
@@ -91,7 +74,7 @@ typedef enum {
 } menudemotype_e;
 
 struct menudemo_t {
-	char filepath[256];
+	char filepath[MAXFILEPATH];
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
@@ -103,7 +86,7 @@ struct menudemo_t {
 
 	struct {
 		UINT8 ranking;
-		char name[17];
+		char name[21+1];
 		UINT16 skin, color;
 		UINT32 timeorscore;
 	} standings[MAXPLAYERS];

@@ -347,6 +347,9 @@ waypoint_t *K_GetClosestWaypointToMobj(mobj_t *const mobj)
 		{
 			checkwaypoint = &waypointheap[i];
 
+			if (!K_GetWaypointIsEnabled(checkwaypoint))
+				continue;
+
 			checkdist = P_AproxDistance(
 				(mobj->x / FRACUNIT) - (checkwaypoint->mobj->x / FRACUNIT),
 				(mobj->y / FRACUNIT) - (checkwaypoint->mobj->y / FRACUNIT));
@@ -361,6 +364,45 @@ waypoint_t *K_GetClosestWaypointToMobj(mobj_t *const mobj)
 	}
 
 	return closestwaypoint;
+}
+
+// finds the closest waypoint on the same side of the finish line as the mobj
+waypoint_t *K_GetSpawnWaypointForMobj(const mobj_t *mobj)
+{
+	waypoint_t *closestwaypoint = NULL;
+	fixed_t closestdist = INT32_MAX;
+	line_t *finish = P_FindNearestLine(finishline->mobj->x, finishline->mobj->y, nullptr, 2001); // erm... NULL? thanks hanagumi hall
+	INT32 myside = P_PointOnLineSide(mobj->x, mobj->y, finish);
+	I_Assert(mobj != NULL);
+
+	for (size_t i = 0; i < numwaypoints; i++)
+	{
+		waypoint_t *checkwaypoint = &waypointheap[i];
+
+		if (!K_GetWaypointIsEnabled(checkwaypoint)
+		 || checkwaypoint == finishline
+		 || myside != P_PointOnLineSide(checkwaypoint->mobj->x, checkwaypoint->mobj->y, finish))
+			continue;
+
+		fixed_t checkdist = P_AproxDistance(
+			(mobj->x / FRACUNIT) - (checkwaypoint->mobj->x / FRACUNIT),
+			(mobj->y / FRACUNIT) - (checkwaypoint->mobj->y / FRACUNIT));
+		checkdist = P_AproxDistance(checkdist, (mobj->z / FRACUNIT) - (checkwaypoint->mobj->z / FRACUNIT));
+
+		if (checkdist < closestdist)
+		{
+			closestwaypoint = checkwaypoint;
+			closestdist = checkdist;
+		}
+	}
+
+	return closestwaypoint;
+}
+
+UINT32 K_GetWaypointSnapThreshold(void)
+{
+	const UINT8 lapspersection = mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE ? 1 : mapheaderinfo[gamemap-1]->lapspersection;
+	return circuitlength - (circuitlength / (3 + lapspersection));
 }
 
 /*--------------------------------------------------
@@ -422,6 +464,7 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 		fixed_t    closestdist    = INT32_MAX;
 		fixed_t    checkdist      = INT32_MAX;
 		fixed_t    bestfindist    = INT32_MAX;
+		UINT32 threshold = K_GetWaypointSnapThreshold();
 
 		auto sort_waypoint = [&](waypoint_t *const checkwaypoint)
 		{
@@ -431,7 +474,8 @@ waypoint_t *K_GetBestWaypointForMobj(mobj_t *const mobj, waypoint_t *const hint)
 			}
 
 			// do not path over the finish line. just don't.
-			if (checkwaypoint == finishline)
+			if (checkwaypoint == finishline ||
+			   (hint != NULL && u32_delta(hint->distancetofinish, checkwaypoint->distancetofinish) > threshold))
 				return;
 
 			checkdist = P_AproxDistance(
@@ -2053,6 +2097,22 @@ static UINT32 K_SetupCircuitLength(void)
 		}
 	}
 
+	// TODO: just traverse the circuit in reverse to set dtf. much less costly.
+	// i've had enough of this spaghetti
+	if (circuitlength == 0)
+		return circuitlength;
+
+	for (size_t i = 0; i < numwaypoints; i++)
+	{
+		waypoint_t *wp = &waypointheap[i];
+		path_t bestcircuitpath = {0};
+		K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, false, false);
+		if (K_GetWaypointIsEnabled(wp) && wp != finishline && bestcircuitpath.totaldist == 0)
+			CONS_Alert(CONS_WARNING, "Waypoint %d is a dead end\n", K_GetWaypointID(wp));
+		wp->distancetofinish = bestcircuitpath.totaldist;
+		Z_Free(bestcircuitpath.array);
+	}
+
 	return circuitlength;
 }
 
@@ -2228,7 +2288,7 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 			// Set drift settings.
 			if (mobj->watertop)
 			{
-				thiswaypoint->driftsettings = mobj->watertop;
+				thiswaypoint->driftsettings = (driftSetting_e)mobj->watertop;
 			}
 
 			if (thiswaypoint->numnextwaypoints > 0)
@@ -3056,7 +3116,7 @@ void K_AdjustWaypointsParameters (void)
 		th != &thlist[THINK_MOBJ];
 		th = th->next
 	){
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		anchor = (const mobj_t *)th;

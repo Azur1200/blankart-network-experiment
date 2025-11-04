@@ -48,7 +48,8 @@ typedef enum
 	NEXTMAP_EVALUATION = INT16_MAX-2,
 	NEXTMAP_CREDITS = INT16_MAX-3,
 	NEXTMAP_CEREMONY = INT16_MAX-4,
-	NEXTMAP_INVALID = INT16_MAX-5, // Always last (swap with NEXTMAP_RESERVED when removing that)
+	NEXTMAP_VOTING = INT16_MAX-5,
+	NEXTMAP_INVALID = INT16_MAX-6, // Always last
 	NEXTMAP_SPECIAL = NEXTMAP_INVALID
 } nextmapspecial_t;
 
@@ -92,6 +93,8 @@ extern consvar_t cv_resetspecialmusic;
 
 extern consvar_t cv_resume;
 
+extern consvar_t cv_litesteer[MAXSPLITSCREENPLAYERS];
+extern consvar_t cv_turnsmooth[MAXSPLITSCREENPLAYERS];
 
 void weaponPrefChange(void);
 void weaponPrefChange2(void);
@@ -253,19 +256,87 @@ void G_SetGamestate(gamestate_t newstate);
 boolean G_GamestateUsesLevel(void);
 
 // Gamedata record shit
+
+#define MAXPRESETNAME 16
+
+typedef struct
+{
+	char name[MAXPRESETNAME+1];
+	char *realname;
+	UINT8 numversions;
+	strbuf_t **versions;
+	// yep, array of strbufs. byte 0 is version ID, then cvar NUL value NUL cvar ...
+	// i'm honestly tired of multi-layered structs, let's simplify things...
+	// we're also gonna need to compare these lists of cvars pretty often!
+} recordpreset_t;
+
 typedef enum
 {
-	RP_KART = 0,
+	RP_KART,
 	RP_TECH,
 	RP_BLAN,
-	RP_CUST,
-} recordpreset_e;
-SINT8 G_RecordPresetIndex(void);
-void G_AllocMainRecordData(INT16 i, SINT8 preset);
-void G_ClearRecords(void);
+	RP_FIRSTFREESLOT,
+	RP_LASTFREESLOT = RP_FIRSTFREESLOT + 100,
+	MAXRECORDPRESETS,
+} ATTRPACK recordpresetnum_e;
 
-boolean K_EmblemsEnabled(void);
+extern recordpreset_t **recordpresets;
+extern recordpresetnum_e numrecordpresets;
+extern char currentrecordpreset[MAXPRESETNAME+1];
+extern UINT8 currentrecordpresetversion;
+
+recordpreset_t *G_AddRecordPreset(const char *name, const char *realname);
+const char *G_GetRecordPresetName(const char *name);
+strbuf_t *G_AddRecordPresetVersion(recordpreset_t *preset, UINT8 version);
+strbuf_t *G_GetRecordPresetVersion(const char *name, UINT8 version);
+void G_SetCurrentRecordPreset(recordpreset_t *preset);
+const char *G_CheckPresetCvars(strbuf_t *pv);
+void G_SetPresetCvars(strbuf_t *pv);
+boolean G_CompareRecordPresetVersions(strbuf_t *pre1, strbuf_t *pre2);
+
+typedef struct
+{
+	char prename[MAXPRESETNAME+1];
+	UINT8 version;
+	tic_t besttime;
+	tic_t bestlap;
+	tic_t playtime;
+} maprecordpreset_t;
+
+typedef struct
+{
+	char name[MAXMAPLUMPNAME];
+	UINT8 visited;
+	tic_t playtime;
+	UINT32 roundsplayed;
+	UINT32 roundswon;
+
+	UINT16 numpresets;
+	maprecordpreset_t *presets;
+} maprecord_t;
+
+typedef enum
+{
+	REPLAY_BESTTIME,
+	REPLAY_BESTLAP,
+	REPLAY_LAST,
+	REPLAY_GUEST,
+	REPLAY__MAX,
+} recordreplay_e;
+
+extern maprecord_t **maprecords;
+extern size_t nummaprecords;
+
+maprecord_t *G_AllocateMapRecord(const char *mapname);
+maprecord_t *G_GetMapRecord(const char *mapname);
+maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *presetname, UINT8 version);
+maprecordpreset_t *G_GetMapRecordPreset(maprecord_t *record, const char *presetname);
+void G_ClearRecords(void);
 tic_t G_GetBestTime(INT16 map);
+boolean G_EmblemsEnabled(void);
+char *G_GetRecordReplayFolder(boolean home, boolean breaker);
+char *G_GetRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
+boolean G_CheckRecordReplay(const char *folder, UINT16 mapnum, UINT16 skinnum, recordreplay_e which);
 
 FUNCMATH INT32 G_TicsToHours(tic_t tics);
 FUNCMATH INT32 G_TicsToMinutes(tic_t tics, boolean full);

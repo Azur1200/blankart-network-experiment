@@ -21,6 +21,12 @@
 // a has a constant z depth from top to bottom.
 //
 
+#include "r_draw.h"
+#include <tracy/tracy/Tracy.hpp>
+
+
+#include "r_draw_flush.cpp"
+
 enum DrawColumnType
 {
 	DC_BASIC			= 0x0000,
@@ -29,10 +35,11 @@ enum DrawColumnType
 	DC_BRIGHTMAP		= 0x0004,
 	DC_HOLES			= 0x0008,
 	DC_LIGHTLIST		= 0x0010,
+	DC_DIRECT			= 0x0020, // draw our columns directly to screen!
 };
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
 {
 	if constexpr (Type & DrawColumnType::DC_COLORMAP)
 	{
@@ -45,7 +52,7 @@ static constexpr UINT8 R_GetColumnTranslated(drawcolumndata_t* dc, UINT8 col)
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit, UINT8 col)
 {
 	col = R_GetColumnTranslated<Type>(dc, col);
 
@@ -60,8 +67,9 @@ static constexpr UINT8 R_GetColumnBrightmapped(drawcolumndata_t* dc, UINT32 bit,
 	return dc->colormap[col];
 }
 
+// translucency is handled on flush side now!
 template<DrawColumnType Type>
-static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, UINT8 col)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit, UINT8 col)
 {
 	col = R_GetColumnBrightmapped<Type>(dc, bit, col);
 
@@ -76,7 +84,7 @@ static constexpr UINT8 R_GetColumnTranslucent(drawcolumndata_t* dc, UINT8 *dest,
 }
 
 template<DrawColumnType Type>
-static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit)
+FUNCINLINE static ATTRINLINE constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT32 bit)
 {
 	UINT8 col = dc->source[bit];
 
@@ -88,6 +96,7 @@ static constexpr UINT8 R_DrawColumnPixel(drawcolumndata_t* dc, UINT8 *dest, UINT
 		}
 	}
 
+	// if we dont buffer our columns, we need to handle translucency again
 	return R_GetColumnTranslucent<Type>(dc, dest, bit, col);
 }
 
@@ -98,17 +107,26 @@ template<DrawColumnType Type>
 static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 {
 	INT32 count;
-	UINT8 *dest;
-	const INT32 vidwidth = vid.width;
+	const INT32 vidheight = vid.height;
 
+	// leban 1/17/99:
+	// removed the + 1 here, adjusted the if test, and added an increment
+	// later.  this helps a compiler pipeline a bit better.  the x86
+	// assembler also does this.
 	count = dc->yh - dc->yl;
 
+	// leban 1/17/99:
+	// this case isn't executed too often.  depending on how many instructions
+	// there are between here and the second if test below, this case could
+	// be moved down and might save instructions overall.  since there are
+	// probably different wads that favor one way or the other, i'll leave
+	// this alone for now.
 	if (count < 0) // Zero length, column does not exceed a pixel.
 	{
 		return;
 	}
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vid.width || dc->yl < 0 || dc->yh >= vidheight)
 	{
 		return;
 	}
@@ -173,6 +191,7 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 			}
 
 			R_DrawColumnTemplate<NewType>(&dc_copy);
+
 			if (solid)
 			{
 				dc_copy.yl = bheight;
@@ -200,125 +219,149 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	}
 	else
 	{
-		fixed_t fracstep;
-		fixed_t frac;
-		INT32 heightmask;
-		INT32 npow2min;
-		INT32 npow2max;
+		// Inner loop that does the actual texture mapping,
+		//  e.g. a DDA-lile scaling.
+		// This is as fast as it gets.       (Yeah, right!!! -- killough)
+		//
+		// killough 2/1/98: more performance tuning
+
+		intptr_t frac;
+		// Looks familiar.
+		const intptr_t fracstep = dc->iscale;
+		const intptr_t heightmask = dc->sourcelength-1; // CPhipps - specify type
+		constexpr INT32 npow2min = -1;
+		const INT32 npow2max = dc->sourcelength;
 
 		// Framebuffer destination address.
-		// Use ylookup LUT to avoid multiply with ScreenWidth.
-		// Use columnofs LUT for subwindows?
+		// SoM: MAGIC
+		UINT8 * restrict dest;
 
-		//dest = ylookup[dc_yl] + columnofs[dc_x];
-		dest = &topleft[dc->yl * vidwidth + dc->x];
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			dest = R_Address(dc->x, dc->yl);
+		else if constexpr ((Type & (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			== (DrawColumnType::DC_COLORMAP | DrawColumnType::DC_TRANSMAP))
+			dest = R_GetBufferColormapTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_TRANSMAP)
+			dest = R_GetBufferTrans(dc);
+		else if constexpr (Type & DrawColumnType::DC_COLORMAP)
+			dest = R_GetBufferColormap(dc);
+		else
+			dest = R_GetBufferOpaque(dc);
+
+		INT32 stride = 8; // SoM: Oh, Oh it's MAGIC! You know...
+
+		if constexpr (Type & DrawColumnType::DC_DIRECT)
+			stride = vid.width;
 
 		count++;
 
 		// Determine scaling, which is the only mapping to be done.
-		fracstep = dc->iscale;
-		//frac = dc_texturemid + (dc_yl - centery)*fracstep;
-		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep)) * (!dc->hires);
+		frac = (dc->texturemid + FixedMul((dc->yl << FRACBITS) - centeryfrac, fracstep));
 
-		// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
-		// This is as fast as it gets.
-		heightmask = dc->sourcelength-1;
-		npow2min = -1;
-		npow2max = dc->sourcelength;
-
-		if (heightmask == -1)
+		switch (heightmask)
 		{
-			if (frac < 0)
-				// adjust in case we underread
-				frac += fracstep;
-
-			// texture has no height, so just go
-			while (--count > 0)
+			case 255:
+			case 127:
 			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
-				dest += vidwidth;
-				frac += fracstep;
-			}
-		}
-		else if (dc->sourcelength & heightmask)   // not a power of 2 -- killough
-		{
-			heightmask = dc->texheight << FRACBITS;
-
-			if (frac < 0)
-			{
-				while ((frac += heightmask) < 0)
+				while (count--)
 				{
-					;
+					*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+
+					dest += stride;
+					frac += fracstep;
 				}
 			}
-			else
+			break;
+			case npow2min:
 			{
-				while (frac >= heightmask)
+				if (frac < 0)
+					// adjust in case we underread
+					frac += fracstep;
+
+				// texture has no height, so just go
+				while (--count >= 0)
 				{
-					frac -= heightmask;
+					*dest = R_DrawColumnPixel<Type>(dc, dest, frac>>FRACBITS);
+
+					dest += stride;
+					frac += fracstep;
 				}
 			}
-
-			do
+			break;
+			default:
 			{
-				// Re-map color indices from wall texture column
-				//  using a lighting/special effects LUT.
-				// heightmask is the Tutti-Frutti fix
-
-				// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
-				// and a few bytes after as well
-				//*dest = R_DrawColumnPixel<Type>(dc, dest, std::clamp(frac >> FRACBITS, npow2min, npow2max));
+				if (!(dc->sourcelength & heightmask))   // power of 2 -- killough
 				{
-					// jartha: faster on my AMD FX-6300 CPU.
-					// Faster than ternaries, faster than std::min/std::max. Don't ask me why.
-					// I tested by viewing a non-PO2 texture from a consistent distance so it covered the entire screen.
-					// The framerate difference was about 50 frames at 640x400.
-					INT32 n = frac >> FRACBITS;
-					if (n < npow2min)
-						n = npow2min;
-					if (n > npow2max)
-						n = npow2max;
-					*dest = R_DrawColumnPixel<Type>(dc, dest, n);
-				}
+					while ((count -= 2) >= 0) // texture height is a power of 2 -- killough
+					{
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
 
-				dest += vidwidth;
+						dest += stride;
+						frac += fracstep;
 
-				// Avoid overflow.
-				if (fracstep > 0x7FFFFFFF - frac)
-				{
-					frac += fracstep - heightmask;
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+
+						dest += stride;
+						frac += fracstep;
+					}
+
+					if (count & 1)
+					{
+						*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
+					}
 				}
 				else
 				{
-					frac += fracstep;
+					const intptr_t fixed_heightmask = dc->texheight << FRACBITS;
+
+					if (frac < 0)
+					{
+						while ((frac += fixed_heightmask) < 0)
+						{
+							;
+						}
+					}
+					else
+					{
+						while (frac >= fixed_heightmask)
+						{
+							frac -= fixed_heightmask;
+						}
+					}
+
+					do
+					{
+						// Re-map color indices from wall texture column
+						//  using a lighting/special effects LUT.
+						// heightmask is the Tutti-Frutti fix -- killough
+
+						// -1 is the lower clamp bound because column posts have a "safe" byte before the real data
+						// and a few bytes after as well
+						*dest = R_DrawColumnPixel<Type>(dc, dest, CLAMP((frac >> FRACBITS), npow2min, npow2max));
+
+						dest += stride;
+
+						#if __SIZEOF_POINTER__ < 8  // 64-bit systems have large enough numbers for this to be a non-issue
+						// Avoid overflow.
+						if (fracstep > 0x7FFFFFFF - frac)
+						{
+							frac += fracstep - fixed_heightmask;
+						}
+						else
+							#endif
+						{
+							frac += fracstep;
+						}
+
+						while (frac >= fixed_heightmask)
+						{
+							frac -= fixed_heightmask;
+						}
+					}
+					while (--count);
 				}
-
-				while (frac >= heightmask)
-				{
-					frac -= heightmask;
-				}
 			}
-			while (--count);
-		}
-		else
-		{
-			while ((count -= 2) >= 0) // texture height is a power of 2
-			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-
-				dest += vidwidth;
-				frac += fracstep;
-
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-
-				dest += vidwidth;
-				frac += fracstep;
-			}
-
-			if (count & 1)
-			{
-				*dest = R_DrawColumnPixel<Type>(dc, dest, (frac>>FRACBITS) & heightmask);
-			}
+			break;
 		}
 	}
 }
@@ -332,8 +375,9 @@ static void R_DrawColumnTemplate(drawcolumndata_t *dc)
 	}
 
 #define DEFINE_COLUMN_COMBO(name, flags) \
-	DEFINE_COLUMN_FUNC(name, flags) \
-	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_BRIGHTMAP)
+	DEFINE_COLUMN_FUNC(name, flags|DC_DIRECT) \
+	DEFINE_COLUMN_FUNC(name ## _Brightmap, flags|DC_DIRECT|DC_BRIGHTMAP) \
+	DEFINE_COLUMN_FUNC(name ## _Flush, flags)
 
 DEFINE_COLUMN_COMBO(R_DrawColumn, DC_BASIC)
 DEFINE_COLUMN_COMBO(R_DrawTranslucentColumn, DC_TRANSMAP)
@@ -343,12 +387,14 @@ DEFINE_COLUMN_COMBO(R_DrawTranslatedTranslucentColumn, DC_COLORMAP|DC_TRANSMAP)
 DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchColumn, DC_HOLES)
 DEFINE_COLUMN_COMBO(R_Draw2sMultiPatchTranslucentColumn, DC_HOLES|DC_TRANSMAP)
 
+
 void R_DrawFogColumn(drawcolumndata_t *dc)
 {
 	ZoneScoped;
 
 	INT32 count;
 	UINT8 *dest;
+	const INT32 vidheight = vid.height;
 	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
@@ -357,14 +403,11 @@ void R_DrawFogColumn(drawcolumndata_t *dc)
 	if (count < 0)
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
 		return;
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	// Determine scaling, which is the only mapping to be done.
 	do
@@ -395,7 +438,7 @@ void R_DrawDropShadowColumn(drawcolumndata_t *dc)
 	if (count <= 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	const UINT8 *transmap_offset = dc->transmap + (dc->shadowcolor << 8);
 	while ((count -= 2) >= 0)
@@ -417,6 +460,7 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	INT32 count;
 	UINT8 color = dc->lightmap[dc->r8_flatcolor];
 	UINT8 *dest;
+	const INT32 vidheight = vid.height;
 	const INT32 vidwidth = vid.width;
 
 	count = dc->yh - dc->yl;
@@ -424,15 +468,11 @@ void R_DrawColumn_Flat(drawcolumndata_t *dc)
 	if (count < 0) // Zero length, column does not exceed a pixel.
 		return;
 
-	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vid.height)
+	if ((unsigned)dc->x >= (unsigned)vidwidth || dc->yl < 0 || dc->yh >= vidheight)
 		return;
 
 	// Framebuffer destination address.
-	// Use ylookup LUT to avoid multiply with ScreenWidth.
-	// Use columnofs LUT for subwindows?
-
-	//dest = ylookup[dc_yl] + columnofs[dc_x];
-	dest = &topleft[dc->yl*vidwidth + dc->x];
+	dest = R_Address(dc->x, dc->yl);
 
 	count++;
 

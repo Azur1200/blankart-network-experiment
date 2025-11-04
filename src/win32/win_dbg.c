@@ -29,85 +29,6 @@
 
 LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter = NULL;
 
-#ifdef BUGTRAP
-
-
-typedef void (APIENTRY *BT_SETSUPPORTURL)(LPCTSTR pszSupportURL);
-typedef void (APIENTRY *BT_SETFLAGS)(DWORD dwFlags);
-typedef void (APIENTRY *BT_SETAPPNAME)(LPCTSTR pszAppName);
-typedef void (APIENTRY *BT_SETAPPVERSION)(LPCTSTR pszAppVersion);
-typedef void (APIENTRY *BT_SETSUPPORTSERVER)(LPCTSTR pszSupportHost, SHORT nSupportPort);
-
-// BT constant definitions that we use, as given in the docs.
-#define BTF_DETAILEDMODE 0x01
-#define BTF_ATTACHREPORT 0x04
-
-
-static HMODULE g_hmodBugTrap;
-
-
-// --------------------------------------------------------------------------
-// Initialises the Bug Trap exception-handling library. Returns true iff
-// successful.
-// --------------------------------------------------------------------------
-BOOL InitBugTrap(void)
-{
-	BT_SETFLAGS lpfnBT_SetFlags;
-	BT_SETSUPPORTURL lpfnBT_SetSupportURL;
-	BT_SETAPPNAME lpfnBT_SetAppName;
-	BT_SETAPPVERSION lpfnBT_SetAppVersion;
-	BT_SETSUPPORTSERVER lpfnBT_SetSupportServer;
-
-	// Loading the library installs the exception handler.
-#ifdef UNICODE
-	g_hmodBugTrap = LoadLibrary(L"BugTrapU.dll");
-#else
-	g_hmodBugTrap = LoadLibrary("BugTrap.dll");
-#endif
-
-	// Get the functions.
-	lpfnBT_SetFlags = (BT_SETFLAGS)GetProcAddress(g_hmodBugTrap, "BT_SetFlags");
-	lpfnBT_SetSupportURL = (BT_SETSUPPORTURL)GetProcAddress(g_hmodBugTrap, "BT_SetSupportURL");
-	lpfnBT_SetAppName = (BT_SETAPPNAME)GetProcAddress(g_hmodBugTrap, "BT_SetAppName");
-	lpfnBT_SetAppVersion = (BT_SETAPPVERSION)GetProcAddress(g_hmodBugTrap, "BT_SetAppVersion");
-	lpfnBT_SetSupportServer = (BT_SETSUPPORTSERVER)GetProcAddress(g_hmodBugTrap, "BT_SetSupportServer");
-
-	if (g_hmodBugTrap)
-	{
-		lpfnBT_SetAppName(TEXT("SRB2Kart"));
-		lpfnBT_SetAppVersion(TEXT(VERSIONSTRING));
-		lpfnBT_SetFlags(BTF_DETAILEDMODE | BTF_ATTACHREPORT);
-		lpfnBT_SetSupportURL(TEXT("http://www.srb2.org/"));
-		lpfnBT_SetSupportServer(TEXT("srb2.org"), 9999);
-
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-
-// --------------------------------------------------------------------------
-//   Removes the BugTrap exception handler. Safe to call even if BT was never
-//   initialized.
-// --------------------------------------------------------------------------
-void ShutdownBugTrap(void)
-{
-	if (g_hmodBugTrap) FreeLibrary(g_hmodBugTrap);
-}
-
-// --------------------------------------------------------------------------
-//   Simple test to check whether BugTrap is loaded without exposing its
-//   handle.
-// --------------------------------------------------------------------------
-BOOL IsBugTrapLoaded(void)
-{
-	return !!g_hmodBugTrap;
-}
-
-#endif		// (defined BUGTRAP)
-
-
 #define NumCodeBytes    16          // Number of code bytes to record.
 #define MaxStackDump    2048    // Maximum number of DWORDS in stack dumps.
 #define StackColumns    8               // Number of columns in stack dump.
@@ -602,24 +523,10 @@ LONG WINAPI RecordExceptionInfo(PEXCEPTION_POINTERS data/*, LPCSTR Message, LPST
 #ifdef _X86_
 #ifdef __GNUC__
 		__asm__("movl %%fs : 4, %%eax": "=a"(pStackTop));
-#elif defined (_MSC_VER)
-		__asm
-		{
-			mov eax, fs:[4]
-			mov pStackTop, eax
-		}
 #endif
 #elif defined (_AMD64_)
 #ifdef __GNUC__
 		__asm__("mov %%gs : 4, %%rax": "=a"(pStackTop));
-#elif defined (_MSC_VER)
-/*
-		__asm
-		{
-			mov rax, fs:[4]
-			mov pStackTop, rax
-		}
-*/
 #endif
 #endif
 		if (pStackTop == NULL)

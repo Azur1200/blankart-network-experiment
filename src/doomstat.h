@@ -115,7 +115,6 @@ struct recorddata_t
 	//UINT32 score; ///< Score when the level was finished.
 	//UINT16 rings; ///< Rings when the level was finished.
 };
-#define MAXMAPRECORDS 4
 
 // mapvisited is now a set of flags that says what we've done in the map.
 #define MV_VISITED (1)
@@ -181,7 +180,7 @@ extern boolean lastdraw;
 extern INT32 postimgparam[MAXSPLITSCREENPLAYERS];
 
 extern INT32 viewwindowx, viewwindowy;
-extern INT32 viewwidth, scaledviewwidth;
+extern INT32 viewwidth;
 
 extern boolean gamedataloaded;
 
@@ -374,9 +373,6 @@ struct mapheader_t
 	void *thumbnailPic;							///< Lump data for the level select thumbnail.
 	void *minimapPic;							///< Lump data for the minimap graphic.
 
-	UINT8 mapvisited;							///< A set of flags that says what we've done in the map.
-	recorddata_t *mainrecord[MAXMAPRECORDS];	///< Stores best time attack data
-
 	cupheader_t *cup;							///< Cached cup
 
 	// Titlecard information
@@ -535,6 +531,7 @@ enum TypeOfLevel
 	TOL_RACE	= 0x0001, ///< Race
 	TOL_BATTLE	= 0x0002, ///< Battle
 	TOL_BOSS	= 0x0004, ///< Boss (variant of battle, but forbidden)
+	TOL_SPECIAL	= 0x0008, ///< Special Stage (variant of race, but forbidden)
 
 	// Compat
 	TOL_COMPAT1	= 0x0008, ///< For compat. Handles all the unused kart v1 types.
@@ -678,7 +675,7 @@ extern SINT8 mostwanted;
 extern SINT8 battlewanted[4];
 extern tic_t wantedcalcdelay;
 extern tic_t indirectitemcooldown;
-extern tic_t hyubgone;
+//extern tic_t hyubgone;
 extern tic_t mapreset;
 extern boolean thwompsactive;
 extern UINT8 lastLowestLap;
@@ -688,7 +685,7 @@ extern boolean startedInFreePlay;
 extern tic_t bombflashtimer;	// Used to avoid causing seizures if multiple mines explode close to you :)
 extern boolean legitimateexit;
 extern boolean comebackshowninfo;
-extern tic_t curlap, bestlap;
+extern tic_t antibumptime;
 
 extern INT16 votelevels[12][2];
 extern SINT8 votes[MAXPLAYERS];

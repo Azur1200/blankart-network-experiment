@@ -51,10 +51,8 @@
 
 #ifdef HAVE_PNG
 
-#ifndef _MSC_VER
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
-#endif
 #endif
 
 #ifndef _LFS64_LARGEFILE
@@ -1009,25 +1007,7 @@ static void HWR_CreateBlendedTexture(patch_t *gpatch, patch_t *blendgpatch, GLMi
 							continue;
 						}
 
-						firsti = 0;
-						mul = 0;
-						mulmax = 1;
-
-						/*for (i = 0; i < translen; i++)
-						{
-							if (brightness > colorbrightnesses[i]) // don't allow greater matches (because calculating a makeshift gradient for this is already a huge mess as is)
-								continue;
-
-							compare = abs((INT16)(colorbrightnesses[i]) - (INT16)(brightness));
-
-							if (compare < brightdif)
-							{
-								brightdif = (UINT16)compare;
-								firsti = i; // best matching color that's equal brightness or darker
-							}
-						}*/
 						firsti = color_match_lookup[brightness];
-
 						secondi = firsti+1; // next color in line
 
 						m = (INT16)brightness - (INT16)colorbrightnesses[secondi];
@@ -1362,10 +1342,7 @@ boolean HWR_DrawModel(gl_vissprite_t *spr)
 	FTransform p;
 	FSurfaceInfo Surf;
 
-	if (!cv_glmodels.value)
-		return false;
-
-	if (spr->precip)
+	if (!cv_glmodels.value || spr->precip)
 		return false;
 
 	// Lactozilla: Disallow certain models from rendering

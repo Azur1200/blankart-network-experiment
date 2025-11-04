@@ -200,7 +200,8 @@ boolean P_PlayerHitFloor(player_t *player, boolean fromAir);
 void P_SetObjectMomZ(mobj_t *mo, fixed_t value, boolean relative);
 void P_RestoreMusic(player_t *player);
 boolean P_EndingMusic(player_t *player);
-mobj_t *P_SpawnGhostMobj(mobj_t *mobj);
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy);
+#define P_SpawnGhostMobj(mobj) P_SpawnGhostMobjEX(mobj, false)
 INT32 P_GivePlayerRings(player_t *player, INT32 num_rings);
 void P_GivePlayerLives(player_t *player, INT32 numlives);
 UINT8 P_GetNextEmerald(void);
@@ -334,7 +335,7 @@ void P_SceneryThinker(mobj_t *mobj);
 // To test it in Lua, check mobj.valid
 FUNCINLINE static ATTRINLINE boolean P_MobjWasRemoved(const mobj_t *mobj)
 {
-	return mobj == NULL || mobj->thinker.function.acp1 != (actionf_p1)P_MobjThinker;
+	return mobj == NULL || mobj->thinker.function != (actionf_p1)P_MobjThinker;
 }
 
 fixed_t P_MobjFloorZ(const mobj_t *mobj, const sector_t *sector, const sector_t *boundsec, fixed_t x, fixed_t y, const line_t *line, boolean lowest, boolean perfect);
@@ -629,7 +630,7 @@ extern INT32 ceilmovesound;
 #define CARRYFACTOR (FRACUNIT-ORIG_FRICTION)
 
 void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
-			INT16 starpostx, INT16 starposty, INT16 starpostz,
+			fixed_t starpostx, fixed_t starposty, fixed_t starpostz,
 			INT32 starpostnum, tic_t starposttime, angle_t starpostangle,
 			fixed_t starpostscale, angle_t drawangle, INT32 flags2);
 boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle, boolean flash, boolean dontstopmove);

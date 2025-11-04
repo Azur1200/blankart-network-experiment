@@ -5,6 +5,8 @@ _(UNKNOWN)
 _(THOK) // Thok! mobj
 _(SHADOW) // Linkdraw Shadow (for invisible objects)
 _(PLAYER)
+_(KART_LEFTOVER)
+_(KART_TIRE)
 
 // Enemies
 _(BLUECRAWLA) // Crawla (Blue)
@@ -845,6 +847,8 @@ _(FOLLOWERBUBBLE_BACK)
 
 _(WATERTRAIL)
 _(WATERTRAILUNDERLAY)
+
+_(AIRDROPDUST)
 
 _(PAPERITEMSPOT)
 

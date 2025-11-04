@@ -44,6 +44,13 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	boolean damageitem = false;
 	boolean sprung = false;
 
+	if (itempushing && t2->type == MT_RANDOMITEM
+	 && (t1->type == MT_JAWZ_DUD || (t1->type == MT_ORBINAUT && t1->flags2 & MF2_AMBUSH)))
+	{
+		P_Thrust(t1, R_PointToAngle2(t2->x, t2->y, t1->x, t1->y), t2->radius/512);
+		return true;
+	}
+
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && ((t1->threshold > 0 && t2->type == MT_PLAYER) || (t2->type != MT_PLAYER && t2->threshold > 0)))
 		return true;
 
@@ -136,6 +143,12 @@ boolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 boolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 {
 	boolean damageitem = false;
+
+	if (itempushing && t2->type == MT_RANDOMITEM && t1->type == MT_BANANA)
+	{
+		P_InstaThrust(t1, R_PointToAngle2(t2->x, t2->y, t1->x, t1->y), t2->radius/4);
+		return true;
+	}
 
 	if (((t1->target == t2) || (!(t2->flags & (MF_ENEMY|MF_BOSS)) && (t1->target == t2->target))) && (t1->threshold > 0 || (t2->type != MT_PLAYER && t2->threshold > 0)))
 		return true;
@@ -297,6 +310,12 @@ boolean K_MineCollide(mobj_t *t1, mobj_t *t2)
 	if (t1->health <= 0 || t2->health <= 0)
 		return true;
 
+	if (itempushing && t2->type == MT_RANDOMITEM)
+	{
+		P_Thrust(t1, R_PointToAngle2(t2->x, t2->y, t1->x, t1->y), t2->radius/512);
+		return true;
+	}
+
 	if (t2->player)
 	{
 		if (t2->player->flashing > 0)
@@ -343,7 +362,8 @@ boolean K_MineExplosionCollide(mobj_t *t1, mobj_t *t2)
 {
 	if (t2->player)
 	{
-		if (t2->player->flashing > 0)
+		// don't sideswipe anyone boosting with a bubble shield!
+		if (t2->player->flashing > 0 || t2->player->bubbleboost > 0)
 			return true;
 
 		if (t1->state == &states[S_MINEEXPLOSION1])
@@ -519,7 +539,7 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
 }
 
-static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
+static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 dmg)
 {
 	if (!player)
 	{
@@ -533,107 +553,166 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble)
 		return;
 	}
 
-	// Pop the bubble immediately after an item hit.
-	K_RemoveBubbleHealth(player, BUBBLEITMDAMAGE);
+	// Damage the shield after an item hit.
+	K_RemoveBubbleHealth(player, dmg);
 
-	if (player->bubblehealth > 0)
+	if (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
 	{
-		player->bubblecool = 15*4;
-		player->itemflags &= ~IF_HOLDREADY;
-		bubble->extravalue1 = 4;
-		bubble->cvmem = 1;
-	}
-}
-
-static boolean K_BubbleReflectingTrapItem(mobjtype_t t)
-{
-	return ((t == MT_BANANA) || (t == MT_JAWZ_DUD) || (t == MT_SSMINE) || (t == MT_LANDMINE) ||
-		(t == MT_EGGMANITEM) || (t == MT_SSMINE_SHIELD));
-}
-
-boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2, boolean isplayer)
-{
-	mobj_t *owner = t1->player ? t1 : t1->target;
-	INT32 div = 2;
-
-	if (isplayer)
-	{
-		div = 1;
+		if ((dmg > 0) && (bubble) && (!P_MobjWasRemoved(bubble)))
+		{
+			// Play a distinct "crack!" noise to clue the player in.
+			S_StartSound(bubble, sfx_s3k6e);
+		}
 	}
 
-	if ((!t2->threshold)||(isplayer))
-	{
-		if (!t2->momx && !t2->momy)
-		{
-			t2->momz += (24*t2->scale) * P_MobjFlip(t2);
-		}
-		else
-		{
-			t2->momx = (-1*t2->momx)/div;
-			t2->momy = (-1*t2->momy)/div;
-			t2->momz = (-1*t2->momz)/div;
-
-			if (!isplayer)
-			{
-				t2->angle += ANGLE_180;
-			}
-
-			if (K_BubbleReflectingTrapItem(t2->type))
-			{
-				// Stupid hack: Toss trap/dud items into the air
-				t2->momz += (24*t2->scale) * P_MobjFlip(t2);
-			}
-		}
-
-		if (!isplayer)
-		{
-			if (t2->type == MT_JAWZ)
-				P_SetTarget(&t2->tracer, t2->target); // Back to the source!
-			P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
-			t2->threshold = 10;
-		}
-		S_StartSound(t1, sfx_s3k44);
-	}
-
-	return true;
+	// Apply a cooldown if the Bubble Shield took damage without shattering.
+	if ((player->bubblehealth > 0) && (dmg > 0))
+		player->bubbleblowup /= 2;
 }
 
-boolean K_BubbleShieldCanReflect(mobj_t *t1, mobj_t *t2)
+static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
-	return (t2->type == MT_ORBINAUT || t2->type == MT_JAWZ || t2->type == MT_JAWZ_DUD
-		|| t2->type == MT_BANANA || t2->type == MT_EGGMANITEM || t2->type == MT_BALLHOG
-		|| t2->type == MT_SSMINE || t2->type == MT_LANDMINE || t2->type == MT_SINK
-		|| (t2->type == MT_PLAYER && t1->target != t2));
+	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
+	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;
 }
 
-static boolean K_PlayerCanBeBubbleBumped(player_t *player)
+static boolean K_StrongPlayerBump(const player_t *player)
 {
 	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
 	    || (player->growshrinktimer > 0));
 }
 
-boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
+boolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 {
-	if (t2->type == MT_PLAYER)
+	if (t2->threshold && !t2->player)
+		return false;
+
+	mobj_t *owner = t1->player ? t1 : t1->target;
+
+	angle_t angle = R_PointToAngle2(t1->x, t1->y, t2->x, t2->y);
+	fixed_t momentum = max(FixedHypot(owner->momx, owner->momy), FixedHypot(t2->momx, t2->momy));
+	momentum = max(3*momentum/4, 16*mapobjectscale); // do SOMETHING!
+
+	if (t2->player && ((t2->player->respawn)||(t2->player->flashing)))
 	{
-
-		boolean bumpme = ((t2->player) && (K_PlayerCanBeBubbleBumped(t2->player)));
-
-		if (!bumpme)
-		{
-			// Ignore non-bumpable players.
-			return true;
-		}
+		// Don't reflect respawning/flashing players.
+		return false;
 	}
 
-	if (K_BubbleShieldCanReflect(t1, t2))
+	if (t2->player && !K_StrongPlayerBump(t2->player))
 	{
-		if ((!t2->threshold)||(t2->player))
+		P_Thrust(t2, angle, momentum/2);
+	}
+	else
+	{
+		P_InstaThrust(t2, angle, momentum);
+		if (!t2->player)
+			t2->angle = angle;
+	}
+
+	if (K_BubbleReflectingTrapItem(t2))
+	{
+		// Stupid hack: Toss trap/dud items into the air
+		t2->momz += (24*t2->scale) * P_MobjFlip(t2);
+		t2->z += t2->momz;
+	}
+
+	if (!t2->player)
+	{
+		if (t2->type == MT_JAWZ)
+			P_SetTarget(&t2->tracer, t2->target); // Back to the source!
+		P_SetTarget(&t2->target, owner); // Let the source reflect it back again!
+		if ((t2->type == MT_ORBINAUT && t2->flags2 & MF2_AMBUSH) || t2->type == MT_JAWZ_DUD)
+			t2->flags |= MF_NOCLIPTHING;
+		else
+			t2->threshold = 10;
+	}
+
+	S_StartSound(t1, sfx_s3k44);
+	return true;
+}
+
+boolean K_BubbleShieldCanReflect(mobj_t *t)
+{
+	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
+		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK
+		|| t->type == MT_KART_LEFTOVER
+		|| t->type == MT_PLAYER);
+}
+
+static INT16 K_GetBubbleDamage(mobj_t* itm)
+{
+	if ((!itm) || (P_MobjWasRemoved(itm)))
+	{
+		return 0;
+	}
+
+	INT16 dmg = BUBBLEITMDAMAGE;
+	fixed_t momentum_epsilon =
+	    FixedMul(FixedMul(itm->radius, itm->scale), K_GetKartGameSpeedScalar(gamespeed));
+
+	switch (itm->type)
+	{
+	case MT_EGGMANITEM:
+	case MT_BALLHOG:
+		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
+		dmg = 0;
+		break;
+	case MT_SINK:
+	case MT_JAWZ:
+		// Sinks and Jawz smash Bubble Shields to bits.
+		dmg = MAXBUBBLEHEALTH;
+		break;
+	case MT_BANANA:
+		if (itm->health <= 1)
+		{
+			// Not sniping; don't run the penetration check.
+			break;
+		}
+		/*FALLTHRU*/
+	case MT_ORBINAUT:
+	{
+		fixed_t momentum = K_Momentum3D(itm);
+
+		// Reward players on the offensive by letting fast Orbinauts shatter Bubble Shields.
+		// Same thing for Banana snipes.
+		if (momentum >= momentum_epsilon)
+		{
+			dmg = MAXBUBBLEHEALTH;
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
+	return dmg;
+}
+
+boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
+{
+	// don't bump yourself
+	if (t1->target == t2)
+		return true;
+
+	if (K_BubbleShieldCanReflect(t2))
+	{
+		boolean reflected = K_BubbleShieldReflect(t1, t2);
+
+		if (reflected)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
+			if ((!P_MobjWasRemoved(t1)) && (t1->target) && (t1->target->player))
+			{
+				K_BubbleShieldCollideDrain(t1->target->player,
+							   t1,
+							   K_GetBubbleDamage(t2));
+			}
 		}
-		return K_BubbleShieldReflect(t1, t2, (t2->player) ? true : false);
+
+		return reflected;
 	}
 
 	if (t2->flags & MF_SHOOTABLE)
@@ -643,7 +722,14 @@ boolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 		if (shootable)
 		{
 			// Drain my stuff please.
-			K_BubbleShieldCollideDrain(t1->target->player, t1);
+
+			// FfffffFFFFUCKING EXPLODING BARRELS AAAAAA
+			if ((!P_MobjWasRemoved(t1)) && (t1->target) && (t1->target->player))
+			{
+				K_BubbleShieldCollideDrain(t1->target->player,
+							   t1,
+							   K_GetBubbleDamage(t2));
+			}
 		}
 
 		return shootable;
@@ -770,13 +856,43 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	else if (t1Condition == true && t2Condition == false)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT1)
-			P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-		return true;
+		{
+			switch (cv_kartairsquish.value)
+			{
+				case 1:
+					P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+					return true;
+					break;
+				case 2:
+					P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
 	}
 	else if (t1Condition == false && t2Condition == true)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT2)
-			P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+		{
+			// shitty code duplication 🥲
+			switch (cv_kartairsquish.value)
+			{
+				case 1:
+					P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+					return true;
+					break;
+				case 2:
+					P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+					return true;
+					break;
+				default:
+					return false;
+					break;
+			}
+		}
 		return true;
 	}
 

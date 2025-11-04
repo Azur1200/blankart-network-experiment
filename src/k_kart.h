@@ -34,8 +34,8 @@ Make sure this matches the actual number of states
 
 #define BASEINVINTIME (10 * TICRATE)
 
-#define AUTORESPAWN_TIME (10 * TICRATE)
-#define AUTORESPAWN_THRESHOLD (7 * TICRATE)
+#define AUTORESPAWN_TIME (TICRATE/2)
+#define AUTORESPAWN_THRESHOLD (TICRATE/4)
 
 #define FLAMESTOREMAX TICRATE*2
 
@@ -43,11 +43,16 @@ Make sure this matches the actual number of states
 #define FLIPOVERDIST (336<<FRACBITS)
 
 // Time (in tics) of a flipover.
-// (TICRATE * (0.56666 * FRACUNIT))
-#define FLIPOVERTICS 19
+// (TICRATE * 0.56666)
+#define FLIPOVERTICS (19)
 #define FLIPOVERHALFTICS (FLIPOVERTICS>>1)
 
-#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // 0.1666 * FRACUNIT
+#define FLIPOVER_90DEGTIME ((FLIPOVERTICS>>2)+1) // TICRATE * 0.1666
+#define FLIPOVER_360DEGTIME (FLIPOVER_90DEGTIME * 4)
+
+// Force-stops a flipover if the timer exceeds this limit.
+// Initially enough to last 2 rotations.
+#define FLIPOVERLIMIT (FLIPOVER_360DEGTIME * 2)
 
 // Angle movement for a flipover
 // ANGLE_90 / FLIPOVER_90DEGTIME
@@ -68,85 +73,84 @@ extern boolean clusterplayer[MAXPLAYERS];
 extern UINT32 clusterid; // ID of the "cluster player", the one closest to the cluster point.
 extern vector3_t clusterpoint, clusterdtf;
 
-// Bubble Shield's maximum health
-#define MAXBUBBLEHEALTH 6
+// Bubble Shield's maximum health (determines how many times it can be fully inflated)
+#define MAXBUBBLEHEALTH (bubbletime * 3)
 
-// Chip damage done to a Bubble Shield upon bumping a player
-#define BUBBLEBUMPCHIP 1
+// Chip damage done to a Bubble Shield upon bumping a player when not inflated (rounded up)
+#define BUBBLEBUMPCHIP ((MAXBUBBLEHEALTH + 1) / 2)
 
-// HP cost for a Bubble Shield to inflate
-#define BUBBLEUSECOST (MAXBUBBLEHEALTH / 3)
+// Damage done to an inflated Bubble Shield (rounded up)
+#define BUBBLEITMDAMAGE ((MAXBUBBLEHEALTH + 8) / 9)
 
-// Damage done to an inflated Bubble Shield by items. By default, this is the maximum health,
-// so that the shield immediately breaks
-#define BUBBLEITMDAMAGE (MAXBUBBLEHEALTH)
+// Bump weight for a Bubble Shield
+#define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
 // Invincibility-related constants
-#define INVINDIST K_RAGuard(cv_kartinvindist)
-#define INVINDISTMUL K_RAGuard(cv_kartinvindistmul)
-#define INVINMIDTIME K_RAGuard(cv_kartinvin_midtime)
-#define INVINMAXTIME K_RAGuard(cv_kartinvin_maxtime)
+#define INVINDIST CV_Get(&cv_kartinvindist)
+#define INVINDISTMUL CV_Get(&cv_kartinvindistmul)
+#define INVINMIDTIME CV_Get(&cv_kartinvin_midtime)
+#define INVINMAXTIME CV_Get(&cv_kartinvin_maxtime)
 
 // Precalculated constants for stacked boost diminishing
 // *Somewhat* matches old calc but doesn't use arrays, which makes it faster and more memory efficent
-#define DIMINISHPARAM K_RAGuard(cv_kartstacking_diminishparam)
-#define MAXVANILLABOOST K_RAGuard(cv_kartstacking_maxvanillaboost)
-#define SPEEDBOOSTDROPOFF K_RAGuard(cv_kartstacking_speedboostdropoff)
-#define SPEEDBOOSTDROPOFF_BRAKE K_RAGuard(cv_kartstacking_speedboostdropoff_brake)
-#define ACCELSTACK K_RAGuard(cv_kartstacking_accelstack)
+#define DIMINISHPARAM CV_Get(&cv_kartstacking_diminishparam)
+#define MAXVANILLABOOST CV_Get(&cv_kartstacking_maxvanillaboost)
+#define SPEEDBOOSTDROPOFF CV_Get(&cv_kartstacking_speedboostdropoff)
+#define SPEEDBOOSTDROPOFF_BRAKE CV_Get(&cv_kartstacking_speedboostdropoff_brake)
+#define ACCELSTACK CV_Get(&cv_kartstacking_accelstack)
 
 // Vanilla Boosts
-#define EASYSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_easyspeedboost)
-#define NORMALSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_normalspeedboost)
-#define HARDSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_hardspeedboost)
-#define EXPERTSNEAKERSPEEDBOOST K_RAGuard(cv_kartstacking_sneaker_expertspeedboost)
-#define SNEAKERACCELBOOST K_RAGuard(cv_kartstacking_sneaker_accelboost)
-#define MAXSNEAKERSTACK K_RAGuard(cv_kartstacking_sneaker_maxgrade)
-#define SNEAKERSTACKABLE K_RAGuard(cv_kartstacking_sneaker_stackable)
+#define EASYSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_easyspeedboost)
+#define NORMALSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_normalspeedboost)
+#define HARDSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_hardspeedboost)
+#define EXPERTSNEAKERSPEEDBOOST CV_Get(&cv_kartstacking_sneaker_expertspeedboost)
+#define SNEAKERACCELBOOST CV_Get(&cv_kartstacking_sneaker_accelboost)
+#define MAXSNEAKERSTACK CV_Get(&cv_kartstacking_sneaker_maxgrade)
+#define SNEAKERSTACKABLE CV_Get(&cv_kartstacking_sneaker_stackable)
 
-#define INVINSPEEDBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyspeedboost)
-#define INVINACCELBOOSTLGC K_RAGuard(cv_kartstacking_invincibility_legacyaccelboost)
-#define INVINSPEEDBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternatespeedboost)
-#define INVINACCELBOOSTALT K_RAGuard(cv_kartstacking_invincibility_alternateaccelboost)
-#define INVINSTACKABLE K_RAGuard(cv_kartstacking_invincibility_stackable)
+#define INVINSPEEDBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyspeedboost)
+#define INVINACCELBOOSTLGC CV_Get(&cv_kartstacking_invincibility_legacyaccelboost)
+#define INVINSPEEDBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternatespeedboost)
+#define INVINACCELBOOSTALT CV_Get(&cv_kartstacking_invincibility_alternateaccelboost)
+#define INVINSTACKABLE CV_Get(&cv_kartstacking_invincibility_stackable)
 
-#define GROWSPEEDBOOST K_RAGuard(cv_kartstacking_grow_speedboost)
-#define GROWACCELBOOST K_RAGuard(cv_kartstacking_grow_accelboost)
-#define GROWSTACKABLE K_RAGuard(cv_kartstacking_grow_stackable)
+#define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)
+#define GROWACCELBOOST CV_Get(&cv_kartstacking_grow_accelboost)
+#define GROWSTACKABLE CV_Get(&cv_kartstacking_grow_stackable)
 
-#define BUBBLESPEEDBOOST K_RAGuard(cv_kartstacking_bubble_speedboost)
-#define BUBBLEACCELBOOST K_RAGuard(cv_kartstacking_bubble_accelboost)
-#define BUBBLESTACKABLE K_RAGuard(cv_kartstacking_bubble_stackable)
+#define BUBBLESPEEDBOOST CV_Get(&cv_kartstacking_bubble_speedboost)
+#define BUBBLEACCELBOOST CV_Get(&cv_kartstacking_bubble_accelboost)
+#define BUBBLESTACKABLE CV_Get(&cv_kartstacking_bubble_stackable)
 
-#define FLAMESPEEDVAL K_RAGuard(cv_kartstacking_flame_speedval)
-#define FLAMEACCELBOOST K_RAGuard(cv_kartstacking_flame_accelboost)
-#define FLAMESTACKABLE K_RAGuard(cv_kartstacking_flame_stackable)
+#define FLAMESPEEDVAL CV_Get(&cv_kartstacking_flame_speedval)
+#define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
+#define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
-#define STARTSPEEDBOOST K_RAGuard(cv_kartstacking_start_speedboost)
-#define STARTACCELBOOST K_RAGuard(cv_kartstacking_start_accelboost)
-#define STARTSTACKABLE K_RAGuard(cv_kartstacking_start_stackable)
+#define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
+#define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
+#define STARTSTACKABLE CV_Get(&cv_kartstacking_start_stackable)
 
-#define WALLTRANSFERSPEEDBOOST K_RAGuard(cv_kartstacking_walltransfer_speedboost)
-#define WALLTRANSFERACCELBOOST K_RAGuard(cv_kartstacking_walltransfer_accelboost)
-#define WALLTRANSFERSTACKABLE K_RAGuard(cv_kartstacking_walltransfer_stackable)
+#define WALLTRANSFERSPEEDBOOST CV_Get(&cv_kartstacking_walltransfer_speedboost)
+#define WALLTRANSFERACCELBOOST CV_Get(&cv_kartstacking_walltransfer_accelboost)
+#define WALLTRANSFERSTACKABLE CV_Get(&cv_kartstacking_walltransfer_stackable)
 
-#define DRIFTSPEEDBOOST K_RAGuard(cv_kartstacking_drift_speedboost)
-#define DRIFTACCELBOOST K_RAGuard(cv_kartstacking_drift_accelboost)
-#define DRIFTSTACKABLE K_RAGuard(cv_kartstacking_drift_stackable)
+#define DRIFTSPEEDBOOST CV_Get(&cv_kartstacking_drift_speedboost)
+#define DRIFTACCELBOOST CV_Get(&cv_kartstacking_drift_accelboost)
+#define DRIFTSTACKABLE CV_Get(&cv_kartstacking_drift_stackable)
 
-#define RINGSPEEDBOOST K_RAGuard(cv_kartstacking_ring_speedboost)
-#define RINGACCELBOOST K_RAGuard(cv_kartstacking_ring_accelboost)
-#define RINGSTACKABLE K_RAGuard(cv_kartstacking_ring_stackable)
+#define RINGSPEEDBOOST CV_Get(&cv_kartstacking_ring_speedboost)
+#define RINGACCELBOOST CV_Get(&cv_kartstacking_ring_accelboost)
+#define RINGSTACKABLE CV_Get(&cv_kartstacking_ring_stackable)
 
-#define SLOPEDECAY K_RAGuard(cv_kartstacking_slope_decay)
-#define SLOPEBRAKEMOD K_RAGuard(cv_kartstacking_slope_brakemod)
-#define SLOPESPEEDBOOSTMAX K_RAGuard(cv_kartstacking_slope_speedboost_max)
-#define SLOPESPEEDBOOSTCAP K_RAGuard(cv_kartstacking_slope_speedboost_cap)
-#define SLOPEACCELBOOST K_RAGuard(cv_kartstacking_slope_accelboost)
-#define SLOPESTACKABLE K_RAGuard(cv_kartstacking_slope_stackable)
+#define SLOPEDECAY CV_Get(&cv_kartstacking_slope_decay)
+#define SLOPEBRAKEMOD CV_Get(&cv_kartstacking_slope_brakemod)
+#define SLOPESPEEDBOOSTMAX CV_Get(&cv_kartstacking_slope_speedboost_max)
+#define SLOPESPEEDBOOSTCAP CV_Get(&cv_kartstacking_slope_speedboost_cap)
+#define SLOPEACCELBOOST CV_Get(&cv_kartstacking_slope_accelboost)
+#define SLOPESTACKABLE CV_Get(&cv_kartstacking_slope_stackable)
 
-#define DRAFTMINSPEED K_RAGuard(cv_kartstacking_drafting_minspeed)
-#define DRAFTMAXSPEED K_RAGuard(cv_kartstacking_drafting_maxspeed)
+#define DRAFTMINSPEED CV_Get(&cv_kartstacking_drafting_minspeed)
+#define DRAFTMAXSPEED CV_Get(&cv_kartstacking_drafting_maxspeed)
 
 #define CANTCHAINOFFROAD (cv_kartchaining.value && !cv_kartchainingoffroad.value)
 
@@ -183,15 +187,14 @@ typedef enum
 #define RINGVOLUMEREGEN 1
 #define RINGTRANSPARENCYREGEN 3
 
-INT32 K_RAGuard(consvar_t cvar);
-
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
 void K_RegisterKartStuff(void);
 
+void K_TimerReset(void);
 void K_TimerInit(void);
 UINT32 K_GetPlayerDontDrawFlag(player_t *player);
-boolean K_IsPlayerLosing(player_t *player);
+boolean K_IsPlayerLosing(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(SINT8 value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
@@ -212,6 +215,11 @@ UINT8 K_RaceLapCount(INT16 mapNum);
 void K_KartPlayerThink(player_t *player, ticcmd_t *cmd);
 void K_KartPlayerAfterThink(player_t *player);
 angle_t K_MomentumAngle(mobj_t *mo);
+
+fixed_t K_GetMomentum(mobj_t *mo, boolean twodee);
+#define K_Momentum2D(mo) (K_GetMomentum(mo, true))
+#define K_Momentum3D(mo) (K_GetMomentum(mo, false))
+
 void K_AwardPlayerRings(player_t *player, UINT16 rings, boolean overload);
 void K_HandleRaceSplits(player_t *player, tic_t time, UINT8 checkpoint);
 void K_DoInstashield(player_t *player);
@@ -251,7 +259,9 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
+boolean K_IsBubbleDefending(player_t *player);
 void K_RemoveBubbleHealth(player_t *player, INT16 sub);
+boolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);
 void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed_t radius, fixed_t height, boolean flip, boolean player);
 player_t *K_FindJawzTarget(mobj_t *actor, player_t *source);
@@ -279,6 +289,7 @@ boolean K_ApplyOffroad(const player_t *player);
 fixed_t K_PlayerTripwireSpeedThreshold(const player_t *player);
 tripwirepass_t K_TripwirePassConditions(const player_t *player);
 boolean K_TripwirePass(const player_t *player);
+boolean K_PlayerCanPunt(const player_t *player);
 boolean K_WaterRun(mobj_t *mobj);
 void K_SpawnWaterTrail(mobj_t *mobj);
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
@@ -315,7 +326,7 @@ void K_PlayHitEmSound(mobj_t *source, mobj_t *other);
 void K_TryHurtSoundExchange(mobj_t *victim, mobj_t *attacker);
 void K_PlayPowerGloatSound(mobj_t *source);
 
-INT32 K_GetShieldFromPlayer(player_t *player);
+INT32 K_GetShieldFromPlayer(const player_t *player);
 INT32 K_GetShieldFromItem(INT32 item);
 
 void K_SetItemOut(player_t *player);
@@ -331,6 +342,8 @@ boolean K_SlipdashActive(void);
 boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
+boolean K_ItemLitterActive(void);
+boolean K_ItemPushingActive(void);
 boolean K_GetKartInvinType(void);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);

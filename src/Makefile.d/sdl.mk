@@ -11,7 +11,7 @@
 makedir:=$(makedir)/SDL
 
 sources+=$(call List,sdl/Sourcefile)
-opts+=-DDIRECTFULLSCREEN -DHAVE_SDL
+opts+=-DHAVE_SDL
 
 ifndef NOHW
 sources+=sdl/ogl_sdl.c

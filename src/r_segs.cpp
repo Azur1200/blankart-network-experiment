@@ -30,7 +30,6 @@
 #include "m_misc.h"
 #include "p_local.h" // Camera...
 #include "p_slopes.h"
-#include "console.h" // con_clipviewtop
 #include "taglist.h"
 #include "r_draw.h"
 #include "core/memory.h"
@@ -118,6 +117,7 @@ void R_ClearSegTables(void)
 static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *column, column_t *brightmap, INT32 baseclip)
 {
 	INT32 topscreen, bottomscreen;
+	const INT32 vidheight = vid.height;
 
 	topscreen = sprtopscreen; // + spryscale*column->topdelta;  topdelta is 0 for the wall
 	bottomscreen = topscreen + spryscale * lengthcol;
@@ -141,10 +141,10 @@ static void R_Render2sidedMultiPatchColumn(drawcolumndata_t* dc, column_t *colum
 	if (dc->yh >= baseclip && baseclip != -1)
 		dc->yh = baseclip;
 
-	if (dc->yl >= vid.height || dc->yh < 0)
+	if (dc->yl >= vidheight || dc->yh < 0)
 		return;
 
-	if (dc->yl <= dc->yh && dc->yh < vid.height && dc->yh > 0)
+	if (dc->yl <= dc->yh && dc->yh < vidheight && dc->yh > 0)
 	{
 		dc->source = (UINT8 *)column + 3;
 		dc->sourcelength = lengthcol;
@@ -758,8 +758,6 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 	sector_t        tempsec;
 	INT32             templight;
 	INT32             i, p;
-	fixed_t         bottombounds = viewheight << FRACBITS;
-	fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
 	fixed_t         offsetvalue = 0;
 	lightlist_t     *light;
 	r_lightlist_t   *rlight;
@@ -1085,7 +1083,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		bottom_frac += bottom_step;
 
 		// SoM: If column is out of range, why bother with it??
-		if (windowbottom < topbounds || windowtop > bottombounds)
+		if (windowbottom < 0 || windowtop > (viewheight << FRACBITS))
 		{
 			if (dc->numlights)
 			{
@@ -1834,7 +1832,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 	angle_t       distangle, offsetangle;
 	boolean longboi;
 	INT32           lightnum;
-	INT32           i, p;
+	INT32           i = 0, p;
 	lightlist_t   *light;
 	r_lightlist_t *rlight;
 	INT32 range;
@@ -2013,8 +2011,7 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 	numbackffloors = 0;
 
-	for (i = 0; i < MAXFFLOORS; i++)
-		ds_p->thicksides[i] = NULL;
+	memset(ds_p->thicksides, 0, MAXFFLOORS * sizeof(*ds_p->thicksides));
 
 	if (numffloors)
 	{

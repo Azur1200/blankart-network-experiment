@@ -573,9 +573,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				return;
 
 			// kill
-			if (player->invincibilitytimer > 0
-				|| player->growshrinktimer > 0
-				|| player->flamestore > 0)
+			if (K_PlayerCanPunt(player))
 			{
 				P_KillMobj(special, toucher, toucher, DMG_NORMAL);
 				return;
@@ -982,9 +980,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 		// Save the player's time and position.
 		player->starposttime = player->realtime; //this makes race mode's timers work correctly whilst not affecting sp -x
 		//player->starposttime = leveltime;
-		player->starpostx = toucher->x>>FRACBITS;
-		player->starposty = toucher->y>>FRACBITS;
-		player->starpostz = post->z>>FRACBITS;
+		player->starpostx = toucher->x;
+		player->starposty = toucher->y;
+		player->starpostz = post->z;
 		player->starpostangle = post->angle;
 		player->starpostflip = post->spawnpoint->options & MTF_OBJECTFLIP;	// store flipping
 	}
@@ -993,14 +991,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, boolean snaptopost)
 	player->starpostnum = post->health;
 }
 
-// Easily make it so that overtime works offline
-#define TESTOVERTIMEINFREEPLAY
-
 /** Checks if the level timer is over the timelimit and the round should end,
   * unless you are in overtime. In which case leveltime may stretch out beyond
   * timelimitintics and overtime's status will be checked here each tick.
-  * Verify that the value of ::cv_timelimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_timelimit, P_CheckPointLimit, P_UpdateSpecials
   */
@@ -1008,25 +1001,73 @@ void P_CheckTimeLimit(void)
 {
 	INT32 i, k;
 
-	if (!cv_timelimit.value)
+	if (exitcountdown)
 		return;
 
-	if (!(multiplayer || netgame))
+	if (!timelimitintics)
 		return;
 
-	if (!(gametyperules & GTR_TIMELIMIT))
+	if (leveltime < starttime)
+	{
+		if (secretextratime)
+			secretextratime--;
 		return;
+	}
 
-	if (itembreaker)
-		return;
+	INT32 timeleft = timelimitintics + starttime - leveltime;
+	if (timeleft > 0)
+	{
+		if (secretextratime)
+		{
+			secretextratime--;
+			timelimitintics++;
+		}
+		else if (extratimeintics)
+		{
+			timelimitintics++;
+			if (leveltime & 1)
+				;
+			else
+			{
+				if (extratimeintics > 20)
+				{
+					extratimeintics -= 20;
+					timelimitintics += 20;
+				}
+				else
+				{
+					timelimitintics += extratimeintics;
+					extratimeintics = 0;
+				}
+				S_StartSound(NULL, sfx_ptally);
+			}
+		}
+		else
+		{
+			if (timelimitintics > 60*TICRATE && !itembreaker)
+			{
+				if (timeleft == 60*TICRATE)
+					S_StartSound(NULL, sfx_cdfm67); // guys it's a bell it's just like splatoon guys
+				if (timeleft == 59*TICRATE)
+					S_StartSound(NULL, sfx_bhurry); // hurry up :))))
+			}
 
-	if (leveltime < (timelimitintics + starttime))
+			// last five second countdown
+			if (timeleft % TICRATE == 0)
+			{
+				if (timeleft <= 5*TICRATE)
+					S_StartSound(NULL, sfx_kc35); // 5, 4
+				if (timeleft <= 3*TICRATE)
+					S_StartSound(NULL, sfx_kc3d); // 3, 2, 1
+			}
+		}
 		return;
+	}
 
 	if (gameaction == ga_completed)
 		return;
 
-	if (cv_overtime.value)
+	if (!itembreaker && !grandprixinfo.gp && cv_overtime.value)
 	{
 		INT32 playerarray[MAXPLAYERS];
 		INT32 tempplayer = 0;
@@ -1045,7 +1086,7 @@ void P_CheckTimeLimit(void)
 #ifdef TESTOVERTIMEINFREEPLAY
 		if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT) && startedInFreePlay)
 		{
-			return;
+			goto overtimesound;
 		}
 #endif
 		
@@ -1087,23 +1128,33 @@ void P_CheckTimeLimit(void)
 
 				//End the round if the top players aren't tied.
 				if (players[playerarray[0]].roundscore == players[playerarray[1]].roundscore)
-					return;
+					goto overtimesound;
 			}
 			else
 			{
 				//In team match and CTF, determining a tie is much simpler. =P
 				if (redscore == bluescore)
-					return;
+					goto overtimesound;
 			}
 		}
 	}
 
 	P_DoAllPlayersExit(0, false);
+	return;
+
+overtimesound:
+	if (timeleft == 0)
+	{
+		S_StartSound(NULL, sfx_s3k50); // overtime warning
+		S_StartSound(NULL, sfx_s3k9d);
+	}
+	if (timeleft == -2*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
+	if (timeleft == -4*TICRATE)
+		S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
 }
 
 /** Checks if a player's score is over the pointlimit and the round should end.
-  * Verify that the value of ::cv_pointlimit is greater than zero before
-  * calling this function.
   *
   * \sa cv_pointlimit, P_CheckTimeLimit, P_UpdateSpecials
   */
@@ -1114,7 +1165,7 @@ void P_CheckPointLimit(void)
 	if (exitcountdown)
 		return;
 
-	if (!K_CanChangeRules())
+	if (!K_CanChangeRules(true))
 		return;
 
 	if (!cv_pointlimit.value)
@@ -1160,7 +1211,7 @@ boolean P_CheckRacers(void)
 {
 	const boolean griefed = (spectateGriefed > 0);
 
-	boolean eliminateLast = (!K_CanChangeRules() && !demo.playback) || (cv_karteliminatelast.value != 0); // temp hack until this is ported properly
+	boolean eliminateLast = (!K_CanChangeRules(true) || (cv_karteliminatelast.value != 0));
 	boolean allHumansDone = true;
 	//boolean allBotsDone = true;
 
@@ -1279,7 +1330,7 @@ boolean P_CheckRacers(void)
 		{
 			tic_t countdown = 30*TICRATE; // 30 seconds left to finish, get going!
 
-			if (K_CanChangeRules() == true)
+			if (K_CanChangeRules(true) == true)
 			{
 				// Custom timer
 				countdown = cv_countdowntime.value * TICRATE;
@@ -1414,15 +1465,23 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 			if (itembreaker)
 			{
+				K_AwardScaledPlayerRings(source->player, ASR_ITEMBOX);
+
 				target->flags2 |= MF2_BOSSFLEE;
 				target->flags2 |= MF2_DONTRESPAWN;
 				K_SpawnBattlePoints(source->player, NULL, 1);
+
 				// All targets busted!
 				if (++numtargets >= nummapboxes)
 				{
-					P_DoAllPlayersExit(0, true);
+					P_DoAllPlayersExit(0, (grandprixinfo.gp == true));
 				}
-
+				else if (timelimitintics)
+				{
+					S_StartSound(NULL, sfx_s221);
+					extratimeintics += 3*TICRATE;
+					secretextratime = TICRATE/2;
+				}
 			}
 
 			if (cv_itemrespawn.value && modeattacking == ATTACKING_NONE && !itembreaker)
@@ -1511,7 +1570,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				// scan the thinkers to make sure all the old pinch dummies are gone on death
 				for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 				{
-					if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 						continue;
 
 					mo = (mobj_t *)th;
@@ -1552,13 +1611,85 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			break;
 
 		case MT_PLAYER:
-			if (damagetype != DMG_SPECTATOR)
+			if (damagetype == DMG_SPECTATOR)
+				break;
+
+			target->fuse = 3*TICRATE; // timer before mobj disappears from view (even if not an actual player)
+			target->momx = target->momy = target->momz = 0;
+			P_SetObjectMomZ(target, 14*FRACUNIT, false);
+			P_PlayDeathSound(target);
+
+			if (target->player == NULL || skins[target->player->skin].flags & SF_OLDDEATH)
+				break;
+
+			angle_t flingangle;
+			if (!P_MobjWasRemoved(source))
+				flingangle = R_PointToAngle2(
+					source->x - source->momx, source->y - source->momy,
+					target->x, target->y
+				);
+			else
 			{
-				target->fuse = TICRATE;
-				target->momx = target->momy = target->momz = 0;
-				P_SetObjectMomZ(target, 14*FRACUNIT, false);
-				P_PlayDeathSound(target);
+				// -45..-30 or 30..45
+				fixed_t offset = P_RandomRange(15, 45)*FRACUNIT;
+				if (offset < 30*FRACUNIT)
+					offset -= 60*FRACUNIT;
+				flingangle = target->angle + ANGLE_180 + FixedAngle(offset);
 			}
+
+			// Spawn kart frame
+			mobj_t *kart = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_LEFTOVER);
+
+			if (kart && !P_MobjWasRemoved(kart))
+			{
+				kart->angle = target->angle;
+				kart->color = target->color;
+				kart->extravalue1 = target->player->kartweight;
+
+				// Copy interp data
+				kart->old_angle = target->old_angle;
+				kart->old_x = target->old_x;
+				kart->old_y = target->old_y;
+				kart->old_z = target->old_z;
+
+				if (target->player->pflags & PF_NOCONTEST)
+					P_SetTarget(&target->tracer, kart);
+
+				if (damagetype != DMG_TIMEOVER)
+				{
+					kart->angle = flingangle + ANGLE_180;
+					P_KillMobj(kart, inflictor, source, damagetype);
+				}
+				else
+					P_SetMobjState(kart, S_KART_LEFTOVER_NOTIRES);
+
+				// Spawn tires (this makes no sense being here...)
+				angle_t tireangle = flingangle - ANGLE_90 - ANGLE_22h;
+				for (INT32 i = 0; i < 4; i++, tireangle += ANGLE_45)
+				{
+					if (i == 2) tireangle += ANGLE_90;
+
+					mobj_t *tire = P_SpawnMobjFromMobj(target, 0, 0, 0, MT_KART_TIRE);
+					tire->fuse = 2*TICRATE;
+					tire->angle = tireangle;
+					if (i == 0 || i == 3)
+						P_SetScale(tire, (tire->destscale = 3*tire->scale/4));
+					P_InstaThrust(tire, tireangle, 3 * tire->scale);
+					P_SetObjectMomZ(tire, 10*FRACUNIT, false);
+				}
+			}
+
+			P_InstaThrust(target, flingangle, 4 * target->scale);
+			break;
+
+		case MT_KART_LEFTOVER:
+			target->fuse = 2*TICRATE;
+			target->flags &= ~(MF_SOLID|MF_SHOOTABLE);
+			P_UnsetThingPosition(target);
+			target->flags |= MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOGRAVITY;
+			P_SetThingPosition(target);
+			P_InstaThrust(target, target->angle, target->scale);
+			P_SetObjectMomZ(target, 10*FRACUNIT, false);
 			break;
 
 		case MT_METALSONIC_RACE:
@@ -1937,15 +2068,16 @@ static boolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source,
 	{
 		if (gametyperules & GTR_CIRCUIT)
 		{
-			mobj_t *boom;
-
-			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
-			player->mo->renderflags |= RF_DONTDRAW;
-
-			boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
+			mobj_t *boom = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_FZEROBOOM);
 			boom->scale = player->mo->scale;
 			boom->angle = player->mo->angle;
 			P_SetTarget(&boom->target, player->mo);
+
+			if (skins[player->skin].flags & SF_OLDDEATH)
+			{
+				player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
+				player->mo->renderflags |= RF_DONTDRAW;
+			}
 		}
 
 		K_DestroyBumpers(player, player->bumper);
@@ -2098,7 +2230,9 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 		else
 		{
 			const UINT8 type = (damagetype & DMG_TYPEMASK);
-			const boolean explosioncombo = (type == DMG_EXPLODE); // This damage type can do evil stuff like ALWAYS combo
+
+			const boolean explosioncombo = type == DMG_EXPLODE // This damage type can do evil stuff like ALWAYS combo
+			                               && player->bubbleboost == 0; // ...but popping a Bubble Shield protects you!
 
 			// Check if the player is allowed to be damaged!
 			// If not, then spawn the instashield effect instead.
@@ -2134,6 +2268,17 @@ boolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 da
 				if ((explosioncombo == false) && (player->flashing > 0 || player->squishedtimer > 0))
 				{
 					// Post-hit invincibility
+					K_DoInstashield(player);
+					return false;
+				}
+
+				// Bubble Shield protects you from spinout, but not knockback
+				if (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE
+				 && explosioncombo == false && source != NULL && type != DMG_VOLTAGE
+				 // experiment: disable this since defense can be prepared in advance instead of requiring reaction
+				 && cv_kartbubble_defense_canidle.value)
+				{
+					K_PopPlayerShield(player);
 					K_DoInstashield(player);
 					return false;
 				}

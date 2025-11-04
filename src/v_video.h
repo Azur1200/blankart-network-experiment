@@ -17,6 +17,19 @@
 #include "doomdef.h"
 #include "doomtype.h"
 #include "r_defs.h"
+#include "r_main.h"
+
+#if defined(__SSE__)
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(align, size) _aligned_malloc(size, align)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free(ptr) free(ptr)
+#endif
+
+#include <immintrin.h>
+#endif
 
 // SRB2Kart
 #include "hu_stuff.h" // fonts
@@ -29,16 +42,12 @@ extern "C" {
 // VIDEO
 //
 
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-extern UINT8 *screens[5];
-
 extern consvar_t cv_ticrate, cv_constextsize,
 cv_globalgamma, cv_globalsaturation,
 cv_rhue, cv_yhue, cv_ghue, cv_chue, cv_bhue, cv_mhue,
 cv_rgamma, cv_ygamma, cv_ggamma, cv_cgamma, cv_bgamma, cv_mgamma,
-cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation;
+cv_rsaturation, cv_ysaturation, cv_gsaturation, cv_csaturation, cv_bsaturation, cv_msaturation,
+cv_palette, cv_palettenum;
 
 // Allocates buffer screens, call before R_Init.
 void V_Init(void);
@@ -220,6 +229,11 @@ void V_DrawDiag(INT32 x, INT32 y, INT32 wh, INT32 c);
 // fill a box with a flat as a pattern
 void V_DrawFlatFill(INT32 x, INT32 y, INT32 w, INT32 h, lumpnum_t flatnum);
 
+// HUD translusency functions
+UINT8 V_GetHudTransHalf(void);
+UINT8 V_GetHudTrans(void);
+UINT8 V_GetHudTransDouble(void);
+
 
 // draw wobbly VHS pause stuff
 void V_DrawVhsEffect(boolean rewind);
@@ -296,6 +310,8 @@ char * V_ScaledWordWrap(
 	V__DrawDupxString (x,y,FRACUNIT,option,HU_FONT,string)
 #define V_DrawKartString( x,y,option,string ) \
 	V__DrawDupxString (x,y,FRACUNIT,option,KART_FONT,string)
+#define V_DrawKartStringAtFixed( x,y,option,string ) \
+	V__DrawOneScaleString (x,y,FRACUNIT,option,KART_FONT,string)
 void V_DrawCenteredString(INT32 x, INT32 y, INT32 option, const char *string);
 void V_DrawRightAlignedString(INT32 x, INT32 y, INT32 option, const char *string);
 
@@ -366,6 +382,12 @@ INT32 V_ThinSubStringWidth(const char *string, INT32 length, INT32 option);
 #define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
 
 INT32 V_SubStringLengthToFit(const char *string, INT32 width, INT32 option);
+
+// this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
+FUNCINLINE static ATTRINLINE INT32 V_LocalTransFlag(void)
+{
+	return ((10-cv_translucenthud.value)*V_10TRANS);
+}
 
 void V_DoPostProcessor(INT32 view, INT32 param);
 

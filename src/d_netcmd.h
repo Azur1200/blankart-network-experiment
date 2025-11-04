@@ -206,11 +206,27 @@ extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;
 extern consvar_t cv_kartinvin_midtime;
 
+// opinionated stuff for testing
+extern consvar_t cv_kartbubble_defense_canidle;
+extern consvar_t cv_kartbubble_defense_damagerate;
+extern consvar_t cv_kartbubble_boost_allow;
+extern consvar_t cv_kartflame_fastfuel;
+extern consvar_t cv_kartflame_offroadburn;
+
+extern consvar_t cv_kartairsquish;
+
 extern consvar_t cv_kartairdrop;
+
+extern consvar_t cv_kartitemlitter, cv_kartitempush;
+
+extern consvar_t cv_kartantibump;
+
+extern consvar_t cv_kartforcelegacyodds;
 
 extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
 extern consvar_t cv_kartspbdist;
+extern consvar_t cv_kartlegacyspbdist;
 
 extern consvar_t cv_encorevotes;
 
@@ -220,6 +236,7 @@ extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution,
 extern consvar_t cv_kartdebugshrink;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
 extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot, cv_kartdebugcluster, cv_kartdebugrings;
+extern consvar_t cv_gptest;
 
 extern consvar_t cv_itemfinder;
 
@@ -237,6 +254,8 @@ extern consvar_t cv_lagless;
 extern consvar_t cv_pingtimeout;
 extern consvar_t cv_showping;
 extern consvar_t cv_pingmeasurement;
+extern consvar_t cv_pingicon;
+extern consvar_t cv_pingstyle;
 
 extern consvar_t cv_showminimapnames;
 extern consvar_t cv_showminimapangle;
@@ -313,14 +332,6 @@ typedef enum
 
 extern const char *netxcmdnames[MAXNETXCMD - 1];
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4214)
-#endif
-
 //Packet composition for Command_TeamChange_f() ServerTeamChange, etc.
 //bitwise structs make packing bits a little easier, but byte alignment harder?
 //todo: decide whether to make the other netcommands conform, or just get rid of this experiment.
@@ -331,10 +342,6 @@ struct changeteam_packet_t {
 	UINT32 autobalance  : 1;  // value 0 to 1
 	UINT32 scrambled    : 1;  // value 0 to 1
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4214)
-#endif
 
 struct changeteam_value_t {
 	UINT16 l; // liitle endian
@@ -348,10 +355,6 @@ typedef union {
 	changeteam_packet_t packet;
 	changeteam_value_t value;
 } ATTRPACK changeteam_union;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // add game commands, needs cleanup
 void D_RegisterServerCommands(void);

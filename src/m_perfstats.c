@@ -438,7 +438,7 @@ static void M_DrawTickStats(void)
 			for (thinker = thlist[i].next; thinker != &thlist[i]; thinker = thinker->next)
 			{
 				thinkercount++;
-				if (thinker->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (thinker->function == (actionf_p1)P_RemoveThinkerDelayed)
 					removecount++;
 				else if (i == THINK_POLYOBJ)
 					polythcount++;
@@ -446,7 +446,7 @@ static void M_DrawTickStats(void)
 					mainthcount++;
 				else if (i == THINK_MOBJ)
 				{
-					if (thinker->function.acp1 == (actionf_p1)P_MobjThinker)
+					if (thinker->function == (actionf_p1)P_MobjThinker)
 					{
 						mobj_t *mobj = (mobj_t*)thinker;
 						mobjcount++;

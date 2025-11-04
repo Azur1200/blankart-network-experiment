@@ -213,7 +213,7 @@ Environment::Environment()
 	
 	addFuncDataACS0( 319, addCallFunc(CallFunc_PlayerLosing));
 	addFuncDataACS0( 320, addCallFunc(CallFunc_PlayerExiting));
-	
+	addFuncDataACS0( 321, addCallFunc(CallFunc_PlayerSkinRealName));
 	addFuncDataACS0( 322, addCallFunc(CallFunc_Teleport));
 	addFuncDataACS0( 323, addCallFunc(CallFunc_SetViewpoint));
 

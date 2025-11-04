@@ -29,9 +29,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-// the player struct stores a waypoint for racing
-#include "k_waypoint.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -88,7 +85,7 @@ typedef enum
 	PF_WANTSTOJOIN		= 1<<7, // Spectator that wants to join
 
 	PF_STASIS			= 1<<8, // Player is not allowed to move
-	PF_SKIDDOWN			= 1<<9, // SKIDDOWN
+	PF_FAILEDSTART		= 1<<9, // Player failed the startboost
 	PF_ELIMINATED		= 1<<10, // Battle-style elimination, no extra penalty
 	PF_NOCONTEST 		= 1<<11, // Did not finish (last place explosion)
 	PF_LOSTLIFE			= 1<<12, // Do not lose life more than once
@@ -115,7 +112,8 @@ typedef enum
 
 	PF_JUSTFLIPPED      = 1<<27, // Just got flipped over, handle the bump interaction.
 
-	// up to 1<<29 is free
+	// up to 1<<28 is free
+	PF_USEDOWN			= 1<<29, // For lua compat, don't use!
 	PF_ATTACKDOWN		= 1<<30, // For lua compat, don't use!
 	PF_SLIDING			= 1<<31, // For lua compat, don't use!
 } pflags_t;
@@ -257,6 +255,9 @@ typedef enum
 	// Lap finish
 	khud_lapanimation,	// Used to show the lap start wing logo animation
 	khud_laphand,		// Lap hand gfx to use; 0 = none, 1 = :ok_hand:, 2 = :thumbs_up:, 3 = :thumps_down:
+
+	// Big text
+	khud_finish,		// Set when completing a round
 
 	// Camera
 	khud_boostcam,		// Camera push forward on boost
@@ -694,16 +695,18 @@ struct player_t
 	UINT8 airdroptime;		// Tracks how long airdrop has been active, used for delay before airdrop kicks in.
 	boolean ringdrop;		// Set when having ringdrop applied.
 
-	UINT8 curshield;	// see kartshields_t
+	mobj_t *shieldtracer;	// Blankart: Shield mobj
 
 	UINT8 bubblecool;	// Bubble Shield use cooldown
 	UINT8 bubbleblowup;	// Bubble Shield usage blowup
 	UINT8 bubblehealth;	// Bubble Shield health
 	UINT16 bubbleboost; // Bubble shield boost timer
 
-	UINT16 flamedash;	// Flame Shield dash power
-	INT32 flametimer;	// Flame Shield dash meter left
-	UINT8 flamestore;	// Flame Shield reserve boost
+	UINT16 flamedash;	 // Flame Shield dash power
+	INT32 flametimer;	 // Flame Shield dash meter left ("fuel")
+	UINT8 flamestore;	 // Flame Shield reserve boost ("temperature")
+	tic_t flameoverheat; // Time the Flame Shield spends overheating
+	tic_t flamecamtime;  // Timer for flame shield usage camera effect
 
 	UINT16 hyudorotimer;	// Duration of the Hyudoro offroad effect itself
 	SINT8 stealingtimer;	// you are stealing
@@ -730,6 +733,7 @@ struct player_t
 	UINT16 maxinvincibilitytime;	// (Alternate) Initial time for Invincibility, used for the item bar.
 	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
 	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
+	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
 
 	UINT8 eggmanexplode;	// Fake item recieved, explode in a few seconds
 	SINT8 eggmanblame;		// (-1 to 15) - Fake item recieved, who set this fake
@@ -788,9 +792,9 @@ struct player_t
 	UINT8 latestlap;
 	
 	// Starpost information
-	INT16 starpostx;
-	INT16 starposty;
-	INT16 starpostz;
+	fixed_t starpostx;
+	fixed_t starposty;
+	fixed_t starpostz;
 	angle_t starpostangle; // Angle that the starpost is facing - you respawn facing this way
 	INT32 starpostnum; // The number of the last starpost you hit
 	tic_t starposttime; // NOIRE: The time of the last cheatcheck you hit

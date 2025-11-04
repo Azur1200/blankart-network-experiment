@@ -89,35 +89,35 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 // Item odds are now based around the max number being 75 as well. 
 static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
 {
-	//0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+    //0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
     //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
-    { 0,  0,  0, 11, 22, 18,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
-    { 0,  0,  0,  0,  0,  0,  0,  0,  3, 17, 37, 48, 60, 48, 37, 37}, // Rocket Sneaker
-    { 0,  0,  0,  0,  0,  0,  0,  3,  7, 18, 30, 37, 45, 60, 75, 75}, // Invincibility
-    {67, 48, 30, 22, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
-    {22, 18, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
-    {37, 41, 45, 37, 30, 22, 15,  7,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
-    { 0, 11, 22, 18, 15, 11,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Jawz
-    { 0,  7, 15, 15, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
-    { 0,  0,  0,  7, 15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
-    { 0,  0,  3,  5,  7,  9, 12, 13,  10,  9,  7,  5, 2,  2,  2,  0}, // Self-Propelled Bomb
-    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  7, 15, 26, 37, 45, 52, 52}, // Grow
+    { 0,  0,  0,  0,  8, 24, 60,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Sneaker
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 28, 35, 42, 48, 37, 37}, // Rocket Sneaker
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4, 24, 50, 75, 75}, // Invincibility
+    {35, 28, 22, 10,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana
+    {18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Eggman Monitor
+    {45, 28, 24,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut
+    { 0, 11, 22,  9,  7,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz
+    { 0,  0,  5,  3,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Mine
+    { 0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Ballhog
+    { 0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  0,  0}, // Self-Propelled Bomb
+    { 0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  9, 12,  9,  0,  0,  0}, // Grow
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0}, // Shrink
-    {15, 11,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
-    { 0,  0,  0,  0,  0,  3,  7, 11, 15, 11,  7,  3,  0,  0,  0,  0}, // Hyudoro
+    {12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Thunder Shield
+    { 0,  0,  0,  0,  0,  2,  2,  4,  4,  2,  0,  0,  0,  0,  0,  0}, // Hyudoro
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
     { 7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Super Ring
-    {22,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
-    { 0,  3, 12, 22, 15,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
-    { 0,  0,  0,  0,  0,  0,  3,  7, 14, 26, 37, 48, 37, 18,  7,  0}, // Flame Shield
-    { 0,  0,  0, 11, 22, 40, 38, 35,  7,  0,  0,  0,  0,  0,  0,  0}, // Sneaker x2
-    { 0,  0,  0,  0,  0,  3, 19, 35, 45, 22,  7,  0,  0,  0,  0,  0}, // Sneaker x3
-    { 0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
-    { 0,  0,  0,  0,  0,  3,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
-    { 0,  0,  0,  3,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
-    { 0,  0,  0,  0,  0,  3,  7,  7,  7,  3,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
-    { 0,  0,  0,  3,  7, 11, 15,  7,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
+    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
+    { 0,  0,  0, 12, 15,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
+    { 0,  0,  0,  0,  0,  0,  2,  4, 12, 24, 27, 12,  7,  4,  0,  0}, // Flame Shield
+    { 0,  0,  0,  0,  0,  0,  8, 20, 40, 12,  0,  0,  0,  0,  0,  0}, // Sneaker x2
+    { 0,  0,  0,  0,  0,  0,  0,  7, 35, 45, 60, 56, 52,  4,  0,  0}, // Sneaker x3
+    { 0,  7,  7,  7,  9,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x3
+    { 0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
+    { 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
+    { 0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
+    { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
 };
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
@@ -152,11 +152,129 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 5, 1 }  // Jawz x2
 };
 
-// Magic number distance for use with item roulette tiers
-#define ACTIVEDISTVAR (K_UsingLegacyCheckpoints() ? DISTVAR_LEGACY : DISTVAR)
+/*
+static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
+{
+	//M  N  O  P
+	{ 1, 1, 0, 0 }, // Sneaker
+	{ 0, 0, 0, 0 }, // Rocket Sneaker
+	{ 0, 0, 0, 0 }, // Invincibility
+	{ 0, 0, 0, 0 }, // Banana
+	{ 0, 0, 0, 0 }, // Eggman Monitor
+	{ 1, 1, 0, 0 }, // Orbinaut
+	{ 1, 1, 0, 0 }, // Jawz
+	{ 0, 0, 0, 0 }, // Mine
+	{ 0, 0, 0, 0 }, // Ballhog
+	{ 0, 0, 0, 1 }, // Self-Propelled Bomb
+	{ 0, 0, 0, 0 }, // Grow
+	{ 0, 0, 0, 0 }, // Shrink
+	{ 0, 0, 0, 0 }, // Thunder Shield
+	{ 0, 0, 0, 0 }, // Hyudoro
+	{ 0, 0, 0, 0 }, // Pogo Spring
+	{ 0, 0, 0, 0 }, // Kitchen Sink
+	{ 0, 0, 0, 0 }, // Super Ring
+	{ 0, 0, 0, 0 }, // Land Mine
+	{ 0, 0, 0, 0 }, // Bubble Shield
+	{ 0, 0, 0, 0 }, // Flame Shield
+	{ 0, 1, 1, 0 }, // Sneaker x2
+	{ 0, 0, 1, 1 }, // Sneaker x3
+	{ 0, 0, 0, 0 }, // Banana x3
+	{ 0, 0, 0, 0 }, // Banana x10
+	{ 0, 1, 1, 0 }, // Orbinaut x3
+	{ 0, 0, 1, 1 }, // Orbinaut x4
+	{ 0, 0, 1, 1 }  // Jawz x2
+};
+*/
 
-#define SPBSTARTDIST (SPBDISTVAR) // Distance when SPB can start appearing
-#define SPBFORCEDIST (7 * SPBDISTVAR / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
+// Cooldown time table; contains both base (index 0) and current (index 1)
+// times. Base times are in seconds, current times are in tics.
+tic_t ItemBGone[NUMKARTRESULTS][2] =
+{
+	//BASE  CURR
+	{ 0,    0 }, // Null/Sad Face
+	{ 0,    0 }, // Sneaker
+	{ 0,    0 }, // Rocket Sneaker
+	{ 0,    0 }, // Invincibility
+	{ 0,    0 }, // Banana
+	{ 10,   0 }, // Eggman Monitor
+	{ 0,    0 }, // Orbinaut
+	{ 5,    0 }, // Jawz
+	{ 0,    0 }, // Mine
+	{ 10,   0 }, // Ballhog
+	{ 20,   0 }, // Self-Propelled Bomb
+	{ 3,    0 }, // Grow
+	{ 20,   0 }, // Shrink
+	{ 0,    0 }, // Thunder Shield
+	{ 20,   0 }, // Hyudoro
+	{ 0,    0 }, // Pogo Spring
+	{ 0,    0 }, // Kitchen Sink
+	{ 0,    0 }, // Super Ring
+	{ 0,    0 }, // Land Mine
+	{ 5,    0 }, // Bubble Shield
+	{ 8,    0 }, // Flame Shield
+	{ 0,    0 }, // Sneaker x2
+	{ 0,    0 }, // Sneaker x3
+	{ 0,    0 }, // Banana x3
+	{ 30,   0 }, // Banana x10
+	{ 10,   0 }, // Orbinaut x3
+	{ 20,   0 }, // Orbinaut x4
+	{ 10,   0 }  // Jawz x2
+};
+
+// TODO: Vectorize all item tables and shove them into gamemode-uniqe pools (k_oddstable.cpp?).
+// Basically necessary for any hopes of easy SOC support in the near future.
+
+/**	\brief	Sets the cooldown timer for an item. When active, the item is removed
+ * from all players' item pools for some time.
+
+	\param	item		(SINT8) item to assign cooldown for
+	\param	time		(tic_t) cooldown time
+
+	\return	void
+*/
+void K_SetBGone(SINT8 item, tic_t time)
+{
+	ItemBGone[item][GONER_CURRCOOLDOWN] = time;
+}
+
+/**	\brief	Sets the cooldown timer for an item to its "base" (intended) time.
+
+	\param	item		(SINT8) item to assign base cooldown for
+
+	\return	void
+*/
+void K_SetBGoneToBase(SINT8 item)
+{
+	ItemBGone[item][GONER_CURRCOOLDOWN] = (ItemBGone[item][GONER_BASECOOLDOWN] * TICRATE);
+}
+
+/**	\brief	Gets the cooldown timer for an item.
+
+	\param	item		(SINT8) item to retrieve cooldown for
+	\param	base		(bool) if true, returns the "base" (intended) cooldown instead
+
+	\return	(tic_t) cooldown time
+*/
+tic_t K_GetBGone(SINT8 item, boolean base)
+{
+	return ItemBGone[item][base ? GONER_BASECOOLDOWN : GONER_CURRCOOLDOWN] * (base ? TICRATE : 1);
+}
+
+/**	\brief	Are the odds in legacy distancing mode?
+
+	\return	true if kartforcelegacyodds is enabled, or the map uses legacy WPs
+*/
+boolean K_LegacyOddsMode(void)
+{
+	return (K_UsingLegacyCheckpoints() || (cv_kartforcelegacyodds.value));
+}
+
+// Magic number distance for use with item roulette tiers
+#define ACTIVEDISTVAR (K_LegacyOddsMode() ? DISTVAR_LEGACY : DISTVAR)
+#define ACTIVESPBDIST (K_LegacyOddsMode() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
+
+#define SPBSTARTDIST (ACTIVESPBDIST) // Distance when SPB can start appearing
+#define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
 
@@ -288,8 +406,10 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 	if (getitem == KITEM_SPB || getitem == KITEM_SHRINK) // Indirect items
 		indirectitemcooldown = 20*TICRATE;
 
-	if (getitem == KITEM_HYUDORO) // Hyudoro cooldown
-		hyubgone = 20*TICRATE;
+	if (K_GetBGone(getitem, true) > 0) // Item cooldowns
+	{
+		K_SetBGoneToBase(getitem);
+	}
 
 	K_BotResetItemConfirm(player, true);
 
@@ -377,6 +497,9 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 #define INVINDESPERATION 4
 #define MAXINVODDS ((MAXPROBABILITY * 2) * INVINDESPERATION)
 
+// Odds value for Alt. Invin. to force itself on trailing players.
+#define INVFORCEODDS (MAXINVODDS / 2)
+
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
 	UINT32 invindist = INVINDIST/2;
@@ -408,6 +531,47 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 	return min(MAXINVODDS, finodds);
 }
 
+// Assigns general cooldowns to shield items.
+void K_KartHandleShieldCooldown(SINT8 item)
+{
+	INT32 i;
+
+	UINT8 pingame = 0, pexiting = 0;
+
+	INT32 shieldtype = KSHIELD_NONE;
+	shieldtype = K_GetShieldFromItem(item);
+
+	if (shieldtype == KSHIELD_NONE)
+	{
+		// Not a shield!
+		return;
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+
+		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
+			pingame++;
+
+		if (players[i].exiting)
+			pexiting++;
+
+		if (((shieldtype == K_GetShieldFromItem(players[i].itemtype))
+		    || (shieldtype == K_GetShieldFromPlayer(&players[i]))))
+		{
+			// If this shield has a cooldown, force-apply the cooldown preeemptively for
+			// the entire time the shield is being held by a player.
+			if (K_GetBGone(item, true) > 0)
+			{
+				K_SetBGoneToBase(item);
+				break;
+			}
+		}
+	}
+}
+
 /**	\brief	Item Roulette for Kart
 
 	\param	player	player object passed from P_KartPlayerThink
@@ -420,7 +584,7 @@ INT32 K_KartGetItemOdds(
 	UINT32 ourDist,
     UINT32 clusterDist,
 	fixed_t mashed,
-	boolean spbrush, boolean bot, boolean rival)
+	boolean spbrush, boolean bot, boolean rival, boolean inBottom)
 {
 	INT32 newodds;
 	INT32 i;
@@ -435,6 +599,7 @@ INT32 K_KartGetItemOdds(
 	boolean cooldownOnStart = false;
 	boolean indirectItem = false;
 	boolean notNearEnd = false;
+	boolean notForBottom = false;
 
 	INT32 shieldtype = KSHIELD_NONE;
 
@@ -515,7 +680,7 @@ INT32 K_KartGetItemOdds(
 	if (first != -1 && second != -1) // calculate 2nd's distance from 1st, for SPB
 	{
 
-		if (!K_UsingLegacyCheckpoints())
+		if (!K_LegacyOddsMode())
 		{
 			firstDist = players[first].distancetofinish;
 
@@ -549,11 +714,20 @@ INT32 K_KartGetItemOdds(
 	switch (item)
 	{
 		case KITEM_BANANA:
-		case KITEM_EGGMAN:
 			notNearEnd = true;
+			notForBottom = true;
+			break;
+		case KITEM_EGGMAN:
+			// It blows you up and is overall ridiculous. This was *overdue*.
+			cooldownOnStart = true;
+			powerItem = true;
+
+			notNearEnd = true;
+			notForBottom = true;
 			break;
 		case KITEM_SUPERRING:
 			notNearEnd = true;
+			notForBottom = true;
 
 			if ((K_RingsActive() == false)) // No rings rolled if rings are turned off.
 			{
@@ -562,18 +736,25 @@ INT32 K_KartGetItemOdds(
 
 			break;
 		case KITEM_ROCKETSNEAKER:
-		case KITEM_JAWZ:
 		case KITEM_LANDMINE:
-		case KITEM_BALLHOG:
 		case KRITEM_TRIPLESNEAKER:
+			powerItem = true;
+			break;
+		case KITEM_BUBBLESHIELD:
+			// Experiment: Given the refactoring of the item, remove it from the cooldown pool.
+			// Also: a given.
+		case KITEM_BALLHOG:
+		case KITEM_JAWZ:
+		case KRITEM_DUALJAWZ:
 		case KRITEM_TRIPLEORBINAUT:
 		case KRITEM_QUADORBINAUT:
-		case KRITEM_DUALJAWZ:
+			notForBottom = true;
 			powerItem = true;
 			break;
 		case KRITEM_TRIPLEBANANA:
 		case KRITEM_TENFOLDBANANA:
 			powerItem = true;
+			notForBottom = true;
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
@@ -589,6 +770,13 @@ INT32 K_KartGetItemOdds(
 
 				// Unique odds for Invincibility.
 				newodds = K_KartGetInvincibilityOdds(clusterDist);
+
+				// Special case: if you're SERIOUSLY far behind before the cooldown
+				// finishes, remove the cooldown flag.
+				if (newodds >= INVFORCEODDS)
+				{
+					cooldownOnStart = false;
+				}
                 
 				newodds *= BASEODDSMUL;
 				break;
@@ -596,7 +784,6 @@ INT32 K_KartGetItemOdds(
 		/*FALLTHRU*/
 		case KITEM_MINE:
 		case KITEM_GROW:
-		case KITEM_BUBBLESHIELD:
 		case KITEM_FLAMESHIELD:
 			cooldownOnStart = true;
 			powerItem = true;
@@ -606,11 +793,11 @@ INT32 K_KartGetItemOdds(
 			indirectItem = true;
 			notNearEnd = true;
 
-			if (!K_UsingLegacyCheckpoints() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
+			if (!K_LegacyOddsMode() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
 			{
 				newodds = 0;
 			}
-			else if (K_UsingLegacyCheckpoints() && pexiting > 0)
+			else if (K_LegacyOddsMode() && pexiting > 0)
 			{
 				newodds = 0;
 			}
@@ -648,12 +835,15 @@ INT32 K_KartGetItemOdds(
 			break;
 		case KITEM_HYUDORO:
 			cooldownOnStart = true;
-
-			if (hyubgone > 0)
-				newodds = 0;
 			break;
 		default:
 			break;
+	}
+
+	// In very small matches, remove the stupid bottom half item limiter
+	if (pingame < 6)
+	{
+		notForBottom = false;
 	}
 
 	if (newodds == 0)
@@ -662,7 +852,12 @@ INT32 K_KartGetItemOdds(
 		return newodds;
 	}
 
-	if ((indirectItem == true) && (indirectitemcooldown > 0))
+	if (K_GetBGone(item, false) > 0)
+	{
+		// (Replaces hyubgone) This item is on cooldown; don't let it get rolled.
+		newodds = 0;
+	}
+	else if ((indirectItem == true) && (indirectitemcooldown > 0))
 	{
 		// Too many items that act indirectly in a match can feel kind of bad.
 		newodds = 0;
@@ -672,9 +867,14 @@ INT32 K_KartGetItemOdds(
 		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 		newodds = 0;
 	}
-	else if (!K_UsingLegacyCheckpoints() && (notNearEnd == true) && (ourDist < (UINT32)ENDDIST))
+	else if (!K_LegacyOddsMode() && (notNearEnd == true) && (ourDist < (UINT32)ENDDIST))
 	{
 		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
+		newodds = 0;
+	}
+	else if ((notForBottom == true) && (inBottom == true) && (leveltime >= (30*TICRATE)+starttime))
+	{
+		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
 		newodds = 0;
 	}
 	else if (powerItem == true)
@@ -741,7 +941,10 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 					player->distancetofinish,
                     player->distancefromcluster,
 					mashed,
-					spbrush, player->bot, (player->bot && player->botvars.rival)
+					spbrush,
+					player->bot,
+					(player->bot && player->botvars.rival),
+					K_IsPlayerLosing(player)
 				) > 0)
 			{
 				available = true;
@@ -895,6 +1098,141 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 // to simulate parity with pathfind odds.
 #define LEGACYODDSEXAGGERATE (2*FRACUNIT/3)
 
+/**	\brief	Gets the distance between a player and a position by chaining all other players
+ * 			between them and the target position.
+
+	\param	player	player object
+	\param  startPos first position to trace to the player from
+
+	\return	(UINT32) pdis
+*/
+UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos)
+{
+	SINT8 sortedPlayers[MAXPLAYERS];
+	UINT8 sortLength = 0;
+
+	UINT32 pdis = 0;
+	INT32 i;
+
+	memset(sortedPlayers, -1, sizeof(sortedPlayers));
+
+	if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
+	{
+		// Sort all of the players ahead of you.
+		// Then tally up their distances in a conga line.
+
+		// This will create a much more consistent item
+		// distance algorithm than the "spider web" thing
+		// that it was doing before.
+
+		// Add yourself to the list.
+		// You'll always be the end of the list,
+		// so we can also calculate the length here.
+		sortedPlayers[ player->position - 1 ] = player - players;
+		sortLength = player->position;
+
+		// Will only need to do this if there's goint to be
+		// more than yourself in the list.
+		if (sortLength > 1)
+		{
+			SINT8 firstIndex = -1;
+			SINT8 secondIndex = -1;
+			INT32 startFrom = INT32_MAX;
+
+			// Add all of the other players.
+			for (i = 0; i < MAXPLAYERS; i++)
+			{
+				INT32 pos = INT32_MAX;
+
+				if (!playeringame[i] || players[i].spectator)
+				{
+					continue;
+				}
+
+				if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
+				{
+					continue;
+				}
+
+				pos = players[i].position;
+
+				if ((pos <= 0) || (pos > MAXPLAYERS) || (pos < startPos))
+				{
+					// Invalid position.
+					continue;
+				}
+
+				if (pos >= player->position)
+				{
+					// Tied / behind us.
+					// Also handles ourselves, obviously.
+					continue;
+				}
+
+				// Ties are done with port priority, if there are any.
+				if (sortedPlayers[ pos - 1 ] == -1)
+				{
+					sortedPlayers[ pos - 1 ] = i;
+				}
+			}
+
+			// The chance of this list having gaps is improbable,
+			// but not impossible. So we need to spend some extra time
+			// to prevent the gaps from mattering.
+			for (i = 0; i < sortLength-1; i++)
+			{
+				if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+				{
+					// First valid index in the list found.
+					firstIndex = sortedPlayers[i];
+
+					// Start the next loop after this player.
+					startFrom = i + 1;
+					break;
+				}
+			}
+
+			if (firstIndex >= 0 && firstIndex < MAXPLAYERS
+				&& startFrom < sortLength)
+			{
+				// First index is valid, so we can
+				// start comparing the players.
+
+				player_t *firstPlayer = NULL;
+				player_t *secondPlayer = NULL;
+
+				for (i = startFrom; i < sortLength; i++)
+				{
+					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
+					{
+						secondIndex = sortedPlayers[i];
+
+						firstPlayer = &players[firstIndex];
+						secondPlayer = &players[secondIndex];
+
+						// Add the distance to the player behind you.
+						// At a (relative to map) integer scale using basic distancing
+						// arithmetic; more accurate and less concern for overflows.
+						// TODO: Overflow-safe addition (caps at UINT32_MAX).
+						pdis += K_IntDistanceForMap(
+								secondPlayer->mo->x,
+								secondPlayer->mo->y,
+								secondPlayer->mo->z,
+								firstPlayer->mo->x,
+								firstPlayer->mo->y,
+								firstPlayer->mo->z);
+
+						// Advance to next index.
+						firstIndex = secondIndex;
+					}
+				}
+			}
+		}
+	}
+
+	return pdis;
+}
+
 UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 {
 	UINT8 i;
@@ -902,7 +1240,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 
 	(void)pingame;
 
-	if (!K_UsingLegacyCheckpoints())
+	if (!K_LegacyOddsMode())
 	{
 		for (i = 0; i < MAXPLAYERS; i++)
 		{
@@ -927,124 +1265,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 	}
 	else
 	{
-		SINT8 sortedPlayers[MAXPLAYERS];
-		UINT8 sortLength = 0;
-
-		memset(sortedPlayers, -1, sizeof(sortedPlayers));
-
-		if (player->mo != NULL && P_MobjWasRemoved(player->mo) == false)
-		{
-			// Sort all of the players ahead of you.
-			// Then tally up their distances in a conga line.
-
-			// This will create a much more consistent item
-			// distance algorithm than the "spider web" thing
-			// that it was doing before.
-
-			// Add yourself to the list.
-			// You'll always be the end of the list,
-			// so we can also calculate the length here.
-			sortedPlayers[ player->position - 1 ] = player - players;
-			sortLength = player->position;
-
-			// Will only need to do this if there's goint to be
-			// more than yourself in the list.
-			if (sortLength > 1)
-			{
-				SINT8 firstIndex = -1;
-				SINT8 secondIndex = -1;
-				INT32 startFrom = INT32_MAX;
-
-				// Add all of the other players.
-				for (i = 0; i < MAXPLAYERS; i++)
-				{
-					INT32 pos = INT32_MAX;
-
-					if (!playeringame[i] || players[i].spectator)
-					{
-						continue;
-					}
-
-					if (players[i].mo == NULL || P_MobjWasRemoved(players[i].mo) == true)
-					{
-						continue;
-					}
-
-					pos = players[i].position;
-
-					if (pos <= 0 || pos > MAXPLAYERS)
-					{
-						// Invalid position.
-						continue;
-					}
-
-					if (pos >= player->position)
-					{
-						// Tied / behind us.
-						// Also handles ourselves, obviously.
-						continue;
-					}
-
-					// Ties are done with port priority, if there are any.
-					if (sortedPlayers[ pos - 1 ] == -1)
-					{
-						sortedPlayers[ pos - 1 ] = i;
-					}
-				}
-
-				// The chance of this list having gaps is improbable,
-				// but not impossible. So we need to spend some extra time
-				// to prevent the gaps from mattering.
-				for (i = 0; i < sortLength-1; i++)
-				{
-					if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
-					{
-						// First valid index in the list found.
-						firstIndex = sortedPlayers[i];
-
-						// Start the next loop after this player.
-						startFrom = i + 1;
-						break;
-					}
-				}
-
-				if (firstIndex >= 0 && firstIndex < MAXPLAYERS
-					&& startFrom < sortLength)
-				{
-					// First index is valid, so we can
-					// start comparing the players.
-
-					player_t *firstPlayer = NULL;
-					player_t *secondPlayer = NULL;
-
-					for (i = startFrom; i < sortLength; i++)
-					{
-						if (sortedPlayers[i] >= 0 && sortedPlayers[i] < MAXPLAYERS)
-						{
-							secondIndex = sortedPlayers[i];
-
-							firstPlayer = &players[firstIndex];
-							secondPlayer = &players[secondIndex];
-
-							// Add the distance to the player behind you.
-							// At a (relative to map) integer scale using basic distancing
-							// arithmetic; more accurate and less concern for overflows.
-							// TODO: Overflow-safe addition (caps at UINT32_MAX).
-							pdis += K_IntDistanceForMap(
-									secondPlayer->mo->x,
-									secondPlayer->mo->y,
-									secondPlayer->mo->z,
-									firstPlayer->mo->x,
-									firstPlayer->mo->y,
-									firstPlayer->mo->z);
-
-							// Advance to next index.
-							firstIndex = secondIndex;
-						}
-					}
-				}
-			}
-		}
+		pdis = K_GetCongaLineDistance(player, 1);
 	}
 
 	// Exaggerate odds; don't you love the legacy system? :Trollic:
@@ -1308,7 +1529,10 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			player->distancetofinish,
             player->distancefromcluster,
 			mashed,
-			spbrush, player->bot, (player->bot && player->botvars.rival))
+			spbrush,
+			player->bot,
+			(player->bot && player->botvars.rival),
+			K_IsPlayerLosing(player))
 		);
 	}
 

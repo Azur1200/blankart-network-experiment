@@ -824,20 +824,12 @@ struct node_t
 	UINT16 children[2];
 };
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 // posts are runs of non masked source pixels
 struct post_t
 {
 	UINT8 topdelta; // -1 is the last post in a column
 	UINT8 length;   // length data bytes follows
 } ATTRPACK;
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // column_t is a list of 0 or more post_t, (UINT8)-1 terminated
 typedef post_t column_t;
@@ -897,6 +889,11 @@ typedef enum
 } pic_mode_t;
 
 #ifdef ROTSPRITE
+struct pivotvector_t
+{
+	INT16 x, y;
+};
+
 struct rotsprite_t
 {
 	INT32 angles;
@@ -909,11 +906,22 @@ struct rotsprite_t
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURES list of patches.
 //
+typedef enum
+{
+	PATCHALIGN_AUTOCENTER = 1<<0,
+	PATCHALIGN_USEPIVOTS  = 1<<1,
+	// free: up to 1<<7
+} patchalignflags_t;
+
 struct patch_t
 {
 	INT16 width, height;
+
+	// Offsets and rotation pivots.
 	INT16 leftoffset, topoffset;
-	UINT8 autocentered; // Automatically centered for certain VFX
+	pivotvector_t pivot;
+
+	UINT8 alignflags; // Alignment-related flags.
 
 	INT32 *columnofs; // Column offsets. This is relative to patch->columns
 	UINT8 *columns; // Software column data
@@ -931,10 +939,6 @@ extern patch_t *blanklvl;
 extern patch_t *randomlvl;
 extern patch_t *nolvl;
 
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
-
 struct softwarepatch_t
 {
 	INT16 width;          // bounding box size
@@ -944,10 +948,6 @@ struct softwarepatch_t
 	INT32 columnofs[];     // only [width] used
 	// the [0] is &columnofs[width]
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(disable :  4200)
-#endif
 
 // a pic is an unmasked block of pixels, stored in horizontal way
 struct pic_t
@@ -960,14 +960,6 @@ struct pic_t
 	INT16 reserved1; // set to 0
 	UINT8 data[];
 } ATTRPACK;
-
-#ifdef _MSC_VER
-#pragma warning(default : 4200)
-#endif
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 // Possible alpha types for a patch.
 typedef enum {AST_COPY, AST_TRANSLUCENT, AST_ADD, AST_SUBTRACT, AST_REVERSESUBTRACT, AST_MODULATE, AST_OVERLAY, AST_FOG} patchalphastyle_t;
@@ -1005,11 +997,12 @@ typedef enum
 	RF_ABSOLUTELIGHTLEVEL = 0x00010000, //  mobj_t.lightlevel is absolute instead of relative
 	RF_HIDEINSKYBOX       = 0x00020000, //  do not render in skybox
 
-	RF_DONTDRAW         = 0x00F00000,   // --Don't generate a vissprite
-	RF_DONTDRAWP1       = 0x00100000,   // No P1
-	RF_DONTDRAWP2       = 0x00200000,   // No P2
-	RF_DONTDRAWP3       = 0x00400000,   // No P3
-	RF_DONTDRAWP4       = 0x00800000,   // No P4
+	RF_HIDESHIFT        = (20),
+	RF_DONTDRAW         = 0x0F << RF_HIDESHIFT,   // --Don't generate a vissprite
+	RF_DONTDRAWP1       = 0x01 << RF_HIDESHIFT,   // No P1
+	RF_DONTDRAWP2       = 0x02 << RF_HIDESHIFT,   // No P2
+	RF_DONTDRAWP3       = 0x04 << RF_HIDESHIFT,   // No P3
+	RF_DONTDRAWP4       = 0x08 << RF_HIDESHIFT,   // No P4
 
 	RF_BLENDMASK       	= 0x07000000,   // --Blending override - see patchalphastyle_t
 	RF_BLENDSHIFT		= (6*4),
@@ -1100,7 +1093,6 @@ typedef struct
 	INT32 yh;
 	fixed_t iscale;
 	fixed_t texturemid;
-	UINT8 hires;
 	UINT8 shadowcolor;
 
 	UINT8* source; // first pixel in a column
@@ -1184,7 +1176,7 @@ typedef struct
 	//
 	// Water ripple effect
 	// Needs the height of the plane, and the vertical position of the span.
-	// Sets planeripple.xfrac and planeripple.yfrac, added to ds_xfrac and ds_yfrac, if the span is not tilted.
+	// Sets planeripple.xfrac and planeripple.yfrac, added to ds->xfrac and ds->yfrac, if the span is not tilted.
 	//
 	struct
 	{

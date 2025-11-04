@@ -12,6 +12,7 @@
 
 #include "k_grandprix.h"
 #include "k_boss.h"
+#include "k_specialstage.h"
 #include "doomdef.h"
 #include "d_player.h"
 #include "g_game.h"
@@ -104,7 +105,7 @@ UINT8 K_GetGPPlayerCount(UINT8 humans)
 	// 3P -> 12 total
 	// 4P -> 16 total
 
-	return max(min(humans * 4, MAXPLAYERS), 8);
+	return max(min(humans * 4, MAXGPPLAYERS), 8);
 }
 
 /*--------------------------------------------------
@@ -117,7 +118,7 @@ void K_InitGrandPrixBots(void)
 	const UINT16 defaultbotskin = K_BotDefaultSkin();
 
 	const UINT8 startingdifficulty = K_BotStartingDifficulty(grandprixinfo.gamespeed);
-	UINT8 difficultylevels[MAXPLAYERS];
+	UINT8 difficultylevels[MAXGPPLAYERS];
 
 	UINT8 playercount = 8;
 	UINT8 wantedbots = 0;
@@ -128,13 +129,13 @@ void K_InitGrandPrixBots(void)
 	UINT16 usableskins, skincount = numskins;
 	UINT16 grabskins[MAXSKINS+1];
 
-	UINT16 botskinlist[MAXPLAYERS];
+	UINT16 botskinlist[MAXGPPLAYERS];
 	UINT16 botskinlistpos = 0;
 
 	UINT8 newplayernum = 0;
 	UINT16 i, j;
 
-	memset(competitors, MAXPLAYERS, sizeof (competitors));
+	memset(competitors, MAXGPPLAYERS, sizeof (competitors));
 	memset(botskinlist, defaultbotskin, sizeof (botskinlist));
 
 	// Init usable bot skins list
@@ -144,7 +145,7 @@ void K_InitGrandPrixBots(void)
 	}
 	grabskins[usableskins] = MAXSKINS;
 
-#if MAXPLAYERS != 16
+#if MAXGPPLAYERS != 16
 	I_Error("GP bot difficulty levels need rebalanced for the new player count!\n");
 #endif
 
@@ -178,7 +179,7 @@ void K_InitGrandPrixBots(void)
 	{
 		if (playeringame[i])
 		{
-			if (players[i].bot == true)
+			if (players[i].bot == true || i > MAXGPPLAYERS)
 			{
 				// Remove existing bots.
 				CL_RemovePlayer(i, KR_LEAVE);
@@ -298,7 +299,7 @@ static INT16 K_RivalScore(player_t *bot)
 		roundsleft = grandprixinfo.cup->numlevels - grandprixinfo.roundnum;
 	}
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator)
 		{
@@ -333,9 +334,10 @@ void K_UpdateGrandPrixBots(void)
 	player_t *oldrival = NULL;
 	player_t *newrival = NULL;
 	UINT16 newrivalscore = 0;
+	boolean validbots = (K_UsingLegacyCheckpoints() == false);
 	UINT8 i;
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || !players[i].bot)
 		{
@@ -343,10 +345,15 @@ void K_UpdateGrandPrixBots(void)
 		}
 
 		players[i].spectator = (grandprixinfo.eventmode != GPEVENT_NONE);
+
+		if (!validbots)
+		{
+			players[i].spectator = true;
+		}
 	}
 
 	// Find the rival.
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator || !players[i].bot)
 		{
@@ -382,7 +389,7 @@ void K_UpdateGrandPrixBots(void)
 	}
 
 	// Find the bot with the best average of score & difficulty.
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		UINT16 ns = 0;
 
@@ -421,6 +428,12 @@ void K_UpdateGrandPrixBots(void)
 		// Set our new rival!
 		newrival->botvars.rival = true;
 	}
+
+	if (!validbots)
+	{
+		CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
+	}
+
 }
 
 /*--------------------------------------------------
@@ -440,7 +453,7 @@ static UINT8 K_BotExpectedStanding(player_t *bot)
 	UINT8 pos = 1;
 	UINT8 i;
 
-	for (i = 0; i < MAXPLAYERS; i++)
+	for (i = 0; i < MAXGPPLAYERS; i++)
 	{
 		if (i == (bot - players))
 		{
@@ -725,18 +738,12 @@ void K_PlayerLoseLife(player_t *player)
 }
 
 /*--------------------------------------------------
-	boolean K_CanChangeRules(void)
+	boolean K_CanChangeRules(boolean allowdemos)
 
 		See header file for description.
 --------------------------------------------------*/
-boolean K_CanChangeRules(void)
+boolean K_CanChangeRules(boolean allowdemos)
 {
-	if (demo.playback)
-	{
-		// We've already got our important settings!
-		return false;
-	}
-
 	if (grandprixinfo.gp == true && grandprixinfo.roundnum > 0)
 	{
 		// Don't cheat the rules of the GP!
@@ -749,9 +756,27 @@ boolean K_CanChangeRules(void)
 		return false;
 	}
 
-	if (modeattacking == true)
+	if (specialStage.active == true)
+	{
+		// Don't cheat special stages!
+		return false;
+	}
+
+	if (marathonmode)
+	{
+		// Don't cheat the endurance challenge!
+		return false;
+	}
+
+	if (modeattacking != ATTACKING_NONE)
 	{
 		// Don't cheat the rules of Time Trials!
+		return false;
+	}
+
+	if (!allowdemos && demo.playback)
+	{
+		// We've already got our important settings!
 		return false;
 	}
 

@@ -22,10 +22,10 @@
 
 /// \def MAXPACKETLENGTH
 /// For use in a LAN
-#define MAXPACKETLENGTH 1450
+#define MAXPACKETLENGTH 2048
 /// \def INETPACKETLENGTH
 ///  For use on the internet
-#define INETPACKETLENGTH 1024
+#define INETPACKETLENGTH 1450
 
 #define NO_BAN_TIME (time_t)(-1)
 
@@ -35,10 +35,6 @@ extern "C" {
 
 extern INT16 hardware_MAXPACKETLENGTH;
 extern INT32 net_bandwidth; // in byte/s
-
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 
 struct doomcom_t
 {
@@ -89,10 +85,6 @@ struct holepunch_t
 } ATTRPACK;
 
 #define HOLEPUNCH_DATA(d) (holepunch_t *)&(d)->data
-
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
 
 extern doomcom_t *doomcom;
 

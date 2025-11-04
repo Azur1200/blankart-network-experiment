@@ -660,7 +660,7 @@ bool CallFunc_ThingCount(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			{
 				continue;
 			}
@@ -1626,6 +1626,32 @@ bool CallFunc_PlayerSkin(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 	{
 		UINT16 skin = info->mo->player->skin;
 		thread->dataStk.push(~env->getString( skins[skin].name )->idx);
+		return false;
+	}
+
+	thread->dataStk.push(0);
+	return false;
+}
+
+/*--------------------------------------------------
+	bool CallFunc_PlayerSkinRealName(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+
+		Returns the activating player's skin real name.
+--------------------------------------------------*/
+bool CallFunc_PlayerSkinRealName(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	Environment *env = &ACSEnv;
+	auto info = &static_cast<Thread *>(thread)->info;
+
+	(void)argV;
+	(void)argC;
+
+	if ((info != NULL)
+		&& (info->mo != NULL && P_MobjWasRemoved(info->mo) == false)
+		&& (info->mo->player != NULL))
+	{
+		UINT16 skin = info->mo->player->skin;
+		thread->dataStk.push(~env->getString( skins[skin].realname )->idx);
 		return false;
 	}
 
@@ -3162,9 +3188,17 @@ bool CallFunc_MusicPlay(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 	{
 		return false;
 	}
-	
-	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, mapmusposition, 0, 0);
 
+	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+
+	if (!musicsame)
+	{
+		S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, mapmusposition, 0, 0);
+
+		strncpy(mapmusname, S_MusicName(), 7);
+		mapmusname[6] = 0;
+	}
+	
 	return false;
 }
 
@@ -3205,8 +3239,16 @@ bool CallFunc_MusicRemap(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 	{
 		return false;
 	}
-	
-	S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, lastmapmusposition, 0, 0);
+
+	boolean musicsame = !strnicmp(map->getString(argV[0])->str, mapmusname, 7);
+
+	if (!musicsame)
+	{
+		S_ChangeMusicEx(map->getString(argV[0])->str, 0, true, lastmapmusposition, 0, 0);
+
+		strncpy(mapmusname, S_MusicName(), 7);
+		mapmusname[6] = 0;
+	}
 
 	return false;
 }

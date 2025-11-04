@@ -158,9 +158,6 @@ void clear_levels(void)
 
 		P_DeleteFlickies(nummapheaders);
 
-		for (SINT8 k = 0; k < MAXMAPRECORDS; k++)
-			Z_Free(mapheaderinfo[nummapheaders]->mainrecord[k]);
-
 		Patch_Free(mapheaderinfo[nummapheaders]->thumbnailPic);
 		Patch_Free(mapheaderinfo[nummapheaders]->minimapPic);
 
@@ -405,7 +402,7 @@ void readskincolor(MYFILE *f, INT32 num, boolean mainfile)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			if (fastcmp(word, "NAME"))
 			{
@@ -867,7 +864,7 @@ void readlevelheader(MYFILE *f, char * name)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 
 
@@ -1947,7 +1944,7 @@ static void readmenuitem(MYFILE *f, menuitem_t *menuitem)
 		strupr(word);
 
 		// Now get the part after
-		word2 = tmp += 2;
+		word2 = tmp + 2;
 		//strupr(word2);
 
 		if (fastcmp(word, "X"))
@@ -2456,25 +2453,25 @@ void readframe(MYFILE *f, INT32 num)
 
 				for (z = 0; actionpointers[z].name; z++)
 				{
-					if (actionpointers[z].action.acv == states[num].action.acv)
+					if (actionpointers[z].action == states[num].action)
 						break;
 				}
 
 				z = 0;
 				found = LUA_SetLuaAction(&states[num], actiontocompare);
 				if (!found)
+				{
 					while (actionpointers[z].name)
 					{
 						if (fastcmp(actiontocompare, actionpointers[z].name))
 						{
 							states[num].action = actionpointers[z].action;
-							states[num].action.acv = actionpointers[z].action.acv; // assign
-							states[num].action.acp1 = actionpointers[z].action.acp1;
 							found = true;
 							break;
 						}
 						z++;
 					}
+				}
 
 				if (!found)
 					deh_warning("Unknown action %s", actiontocompare);
@@ -2525,7 +2522,7 @@ void readsound(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			if (fastcmp(word, "SINGULAR"))
@@ -2631,7 +2628,7 @@ void reademblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			// Up here to allow lowercase in hints
@@ -2738,7 +2735,7 @@ void readextraemblemdata(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			value = atoi(word2); // used for numerical settings
 
@@ -2821,7 +2818,7 @@ void readunlockable(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			i = atoi(word2); // used for numerical settings
 
@@ -3082,7 +3079,7 @@ void readconditionset(MYFILE *f, UINT8 setnum)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			if (fastncmp(word, "CONDITION", 9))
@@ -3146,7 +3143,7 @@ void readmaincfg(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			strupr(word2);
 
 			value = atoi(word2); // used for numerical settings
@@ -3437,7 +3434,7 @@ void readwipes(MYFILE *f)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
 	char *word = s;
-	char *pword = word;
+	char *pword;
 	char *word2;
 	char *tmp;
 	INT32 value;
@@ -3470,7 +3467,7 @@ void readwipes(MYFILE *f)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			value = atoi(word2); // used for numerical settings
 
 			if (value < -1 || value > 99)
@@ -3607,7 +3604,7 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 			i = atoi(word2); // used for numerical settings
 			strupr(word2);
 
@@ -3627,7 +3624,15 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			}
 			else if (fastcmp(word, "LEVELLIST"))
 			{
-				cup->numlevels = 0;
+				while (cup->numlevels > 0)
+				{
+					cup->numlevels--;
+					Z_Free(cup->levellist[cup->numlevels]);
+					cup->levellist[cup->numlevels] = NULL;
+					if (cup->cachedlevels[cup->numlevels] == NEXTMAP_INVALID)
+						continue;
+					mapheaderinfo[cup->cachedlevels[cup->numlevels]]->cup = NULL;
+				}
 
 				tmp = strtok(word2,",");
 				do {
@@ -3644,11 +3649,13 @@ void readcupheader(MYFILE *f, cupheader_t *cup)
 			}
 			else if (fastcmp(word, "BONUSGAME"))
 			{
+				Z_Free(cup->levellist[CUPCACHE_BONUS]);
 				cup->levellist[CUPCACHE_BONUS] = Z_StrDup(word2);
 				cup->cachedlevels[CUPCACHE_BONUS] = NEXTMAP_INVALID;
 			}
 			else if (fastcmp(word, "SPECIALSTAGE"))
 			{
+				Z_Free(cup->levellist[CUPCACHE_SPECIAL]);
 				cup->levellist[CUPCACHE_SPECIAL] = Z_StrDup(word2);
 				cup->cachedlevels[CUPCACHE_SPECIAL] = NEXTMAP_INVALID;
 			}
@@ -4001,7 +4008,7 @@ void readweather(MYFILE *f, INT32 num)
 			strupr(word);
 
 			// Now get the part after
-			word2 = tmp += 2;
+			word2 = tmp + 2;
 
 			if (fastcmp(word, "TYPE"))
 			{

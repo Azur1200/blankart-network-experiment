@@ -129,6 +129,7 @@ typedef enum
                    // used on menus
 	CV_CHEAT = 2048, // Don't let this be used in multiplayer unless cheats are on.
 	CV_NOLUA = 4096,/* don't let this be called from Lua */
+	CV_GUARD = 8192, // protect this cvar's value in singleplayer modes
 } cvflags_t;
 
 struct CV_PossibleValue_t
@@ -186,7 +187,7 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTSPEED_EXPERT 3
 #define KARTGP_MASTER 4  // Not a speed setting, gives hard speed with maxed out bots
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
-extern CV_PossibleValue_t kartspeed_cons_t[];
+extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 // Invincibility types.
 #define KARTINVIN_LEGACY 0
 #define KARTINVIN_ALTERN 1
@@ -231,6 +232,12 @@ void CV_StealthSet(consvar_t *var, const char *value);
 
 // it a setvalue but with a modulo at the maximum
 void CV_AddValue(consvar_t *var, INT32 increment);
+
+// returns the filtered value of a variable
+INT32 CV_Get(consvar_t *cvar);
+
+// reset all guarded vars to default
+void CV_ResetGuardVars(void);
 
 // write all CV_SAVE variables to config file
 void CV_SaveVariables(FILE *f);

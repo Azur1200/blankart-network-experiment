@@ -33,6 +33,7 @@
 #include "k_color.h"
 #include "k_hud.h"
 #include "k_waypoint.h"
+#include "k_odds.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -1372,7 +1373,7 @@ static int lib_pSpawnGhostMobj(lua_State *L)
 	INLEVEL
 	if (!mobj)
 		return LUA_ErrInvalid(L, "mobj_t");
-	LUA_PushUserdata(L, P_SpawnGhostMobj(mobj), META_MOBJ);
+	LUA_PushUserdata(L, P_SpawnGhostMobjEX(mobj, lua_compatmode), META_MOBJ);
 	return 1;
 }
 
@@ -4110,8 +4111,46 @@ static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	hyubgone = c;
+	K_SetBGone(KITEM_HYUDORO, c);
 	return 0;
+}
+
+static int lib_kSetBGone(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	tic_t c = (tic_t)luaL_checkinteger(L, 2);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	K_SetBGone(item, c);
+	return 0;
+}
+
+static int lib_kSetBGoneToBase(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	K_SetBGoneToBase(item);
+	return 0;
+}
+
+static int lib_kGetBGone(lua_State *L)
+{
+	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
+	boolean base = lua_isnoneornil(L, 2) ? false : luaL_checkboolean(L, 2);
+	NOHUD
+	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
+	{
+		luaL_error(L, "given item ID is outside bgone range");
+	}
+	lua_pushinteger(L, K_GetBGone(item, base));
+	return 1;
 }
 
 // Checks if the floor closet floor under an object would be safe to respawn/land on.
@@ -4178,6 +4217,13 @@ static int lib_kDraftingActive(lua_State *L)
 static int lib_kAirDropActive(lua_State *L)
 {
 	lua_pushboolean(L, K_AirDropActive());
+	return 1;
+}
+
+// Checks if item littering is active.
+static int lib_kItemLitterActive(lua_State *L)
+{
+	lua_pushboolean(L, K_ItemLitterActive());
 	return 1;
 }
 
@@ -4368,6 +4414,28 @@ static int lib_kAwardScaledPlayerRings(lua_State *L)
 		return LUA_ErrInvalid(L, "player_t");
 	K_AwardScaledPlayerRings(player, mode);
 	return 0;
+}
+
+static int lib_kGetShieldFromPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushinteger(L, K_GetShieldFromPlayer(player));
+	return 1;
+}
+
+static int lib_kPlayerCanPunt(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	lua_pushboolean(L, K_PlayerCanPunt(player));
+	return 1;
 }
 
 static int lib_kAddNewScoreboardMod(lua_State *L)
@@ -5273,6 +5341,9 @@ static luaL_Reg lib[] = {
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
+	{"K_SetBGone", lib_kSetBGone},
+	{"K_SetBGoneToBase", lib_kSetBGoneToBase},
+	{"K_GetBGone", lib_kGetBGone},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
@@ -5285,6 +5356,7 @@ static luaL_Reg lib[] = {
 	{"K_SlopeBoostActive",lib_kSlopeBoostActive},
 	{"K_DraftingActive",lib_kDraftingActive},
 	{"K_AirDropActive",lib_kAirDropActive},
+	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
 	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
@@ -5302,6 +5374,8 @@ static luaL_Reg lib[] = {
 	{"K_GetForwardMove", lib_kGetForwardMove},
 	{"K_AwardPlayerRings", lib_kAwardPlayerRings},
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
+	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
+	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
 
 	// k_hud
 	{"K_AddNewScoreboardMod", lib_kAddNewScoreboardMod},

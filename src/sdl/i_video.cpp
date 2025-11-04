@@ -24,18 +24,9 @@
 
 #include <signal.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable : 4214 4244)
-#endif
-
 #ifdef HAVE_SDL
 #define _MATH_DEFINES_DEFINED
 #include <SDL.h>
-
-#ifdef _MSC_VER
-#include <windows.h>
-#pragma warning(default : 4214 4244)
-#endif
 
 #ifdef HAVE_TTF
 #include "i_ttf.h"
@@ -76,6 +67,7 @@
 #include "../console.h"
 #include "../command.h"
 #include "../r_main.h"
+#include "../r_draw.h"
 #include "../lua_hook.h"
 #include "sdlmain.h"
 #include "../i_system.h"
@@ -138,9 +130,9 @@ static       SDL_bool    borderlesswindow = SDL_FALSE;
 Uint16      realwidth = BASEVIDWIDTH;
 Uint16      realheight = BASEVIDHEIGHT;
 
-SDL_Window   *window;
-SDL_Renderer *renderer;
-static SDL_Texture  *texture;
+SDL_Window   *window = NULL;
+SDL_Renderer *renderer = NULL;
+static SDL_Texture  *texture = NULL;
 static SDL_bool      havefocus = SDL_TRUE;
 
 static UINT32 refresh_rate;
@@ -150,8 +142,6 @@ static boolean video_init = false;
 static SDL_bool Impl_CreateWindow(SDL_bool fullscreen);
 
 static void Impl_VideoSetupSurfaces(int width, int height);
-
-static void Impl_SetupSoftwareBuffer(void);
 
 static void Impl_InitOpenGL(void);
 
@@ -314,29 +304,6 @@ static void Impl_VideoSetupSurfaces(int width, int height)
 		texture = SDL_CreateTexture(renderer, sw_texture_format, SDL_TEXTUREACCESS_STREAMING, width, height);
 }
 
-static void Impl_SetupSoftwareBuffer(void)
-{
-	// Set up game's software render buffer
-	size_t size;
-
-	vid.rowbytes = vid.width * vid.bpp;
-	vid.direct = NULL;
-
-	free(vid.buffer);
-
-	size = vid.rowbytes*vid.height * NUMSCREENS;
-	vid.buffer = static_cast<UINT8*>(malloc(size));
-
-	if (vid.buffer)
-	{
-		// Clear the buffer
-		// HACK: Wasn't sure where else to put this.
-		memset(vid.buffer, 31, size);
-	}
-	else
-		I_Error("%s", M_GetText("Not enough memory for video buffer\n"));
-}
-
 static SDL_Rect src_rect = { 0, 0, 0, 0 };
 
 static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_bool reposition)
@@ -389,12 +356,6 @@ static SDL_bool SDLSetMode(INT32 width, INT32 height, SDL_bool fullscreen, SDL_b
 
 	if (Impl_RenderContextReset() == SDL_FALSE)
 		I_Error("Couldn't create or reset rendering context");
-
-	if (vid.buffer)
-	{
-		free(vid.buffer);
-		vid.buffer = NULL;
-	}
 
 	return SDL_TRUE;
 }
@@ -1326,14 +1287,14 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
-	if (rendermode == render_soft && screens[0])
+	if (rendermode == render_soft && vid.screens[0])
 	{
 		void *pixels;
 		int pitch;
 		SDL_LockTexture(texture, NULL, &pixels, &pitch);
 		int step = pitch / 4 - vid.width;
 		UINT32 *restrict dst = (UINT32*)pixels;
-		UINT8 *restrict src = screens[0];
+		UINT8 *restrict src = vid.screens[0];
 		UINT32 *restrict palette = localPalette;
 		for (int32_t y = 0; y < vid.height; y++)
 		{
@@ -1374,17 +1335,18 @@ void I_ReadScreen(UINT8 * restrict scr, INT32 scale)
 	if (rendermode != render_soft)
 		I_Error ("I_ReadScreen: called while in non-software mode");
 	else if (scale == 1)
-		VID_BlitLinearScreen(screens[0], scr,
-			vid.width*vid.bpp, vid.height,
+		VID_BlitLinearScreen(vid.screens[0], scr,
+			vid.width, vid.height,
 			vid.rowbytes, vid.rowbytes);
 	else
 	{
-		UINT8 * restrict source = screens[0];
-		INT32 w = vid.width/scale*scale, h = vid.height/scale*scale;
+		UINT8 * restrict source = vid.screens[0];
+		uintptr_t w = vid.width/scale*scale, h = vid.height/scale*scale;
 
 		// size_t saves a lea + movsxd over INT32. mind your types!
-		for (size_t y = 0; y < h; y += scale)
-			for (size_t x = 0; x < w; x += scale)
+		// uintptr_t is even better since it's guaranteed to be the size of a pointer
+		for (uintptr_t y = 0; y < h; y += scale)
+			for (uintptr_t x = 0; x < w; x += scale)
 				*scr++ = source[y*vid.width + x];
 	}
 }
@@ -1524,8 +1486,8 @@ boolean VID_CheckRenderer(void)
 
 	if (rendermode == render_soft)
 	{
-		Impl_SetupSoftwareBuffer();
-		SCR_SetDrawFuncs();
+		vid.rowbytes = vid.width;
+		SCR_SetDrawFuncs(COLUMNCONTEXT_DIRECT);
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl && rendererchanged)
@@ -1543,7 +1505,6 @@ INT32 VID_SetMode(INT32 modeNum)
 	SDLdoUngrabMouse();
 
 	vid.recalc = true;
-	vid.bpp = 1;
 
 	if (modeNum >= 0 && modeNum < MAXWINMODES)
 	{
@@ -1744,9 +1705,6 @@ void I_StartupGraphics(void)
 	// Fury: we do window initialization after GL setup to allow
 	// SDL_GL_LoadLibrary to work well on Windows
 	vid.recalc = true;
-	vid.direct = NULL;
-	vid.bpp = 1;
-	vid.WndParent = NULL;
 
 	// Create window
 	// Default size for startup
@@ -1835,9 +1793,6 @@ void I_ShutdownGraphics(void)
 		SDL_FreeSurface(icoSurface);
 	icoSurface = NULL;
 #endif
-
-	free(vid.buffer);
-	vid.buffer = NULL;
 
 	rendermode = render_none;
 

@@ -28,37 +28,7 @@ extern "C" {
 #endif
 
 /* 7.18.1.1  Exact-width integer types */
-#ifdef _MSC_VER
-// libopenmpt.h will include stdint.h later;
-// include it now so that INT8_MAX etc. don't get redefined
-#ifdef HAVE_OPENMPT
-#include <stdint.h>
-#endif
 
-#define UINT8 unsigned __int8
-#define SINT8 signed __int8
-
-#define UINT16 unsigned __int16
-#define INT16 __int16
-
-#define INT32 __int32
-#define UINT32 unsigned __int32
-
-#define INT64  __int64
-#define UINT64 unsigned __int64
-
-typedef long ssize_t;
-
-/* Older Visual C++ headers don't have the Win64-compatible typedefs... */
-#if (_MSC_VER <= 1200)
-	#ifndef DWORD_PTR
-		#define DWORD_PTR DWORD
-	#endif
-	#ifndef PDWORD_PTR
-		#define PDWORD_PTR PDWORD
-	#endif
-#endif
-#else
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
@@ -72,37 +42,14 @@ typedef long ssize_t;
 #define UINT32 uint32_t
 #define INT64  int64_t
 #define UINT64 uint64_t
-#endif
 
 #ifdef __APPLE_CC__
-#define DIRECTFULLSCREEN 1
 #define DEBUG_LOG
 #define NOIPX
 #endif
 
 /* Strings and some misc platform specific stuff */
 
-#ifdef _MSC_VER
-	// Microsoft VisualC++
-#if (_MSC_VER <= 1800) // MSVC 2013 and back
-	#define snprintf                _snprintf
-#if (_MSC_VER <= 1200) // MSVC 6.0 and back
-	#define vsnprintf               _vsnprintf
-#endif
-#endif
-	#define strncasecmp             strnicmp
-	#define strcasecmp              stricmp
-#ifndef __cplusplus
-	#define inline                  __inline
-#endif
-#elif defined (__WATCOMC__)
-	#include <dos.h>
-	#include <sys\types.h>
-	#include <direct.h>
-	#include <malloc.h>
-	#define strncasecmp             strnicmp
-	#define strcasecmp              strcmpi
-#endif
 #if (defined (__unix__) && !defined (MSDOS)) || defined(__APPLE__) || defined (UNIXCOMMON)
 	#undef stricmp
 	#define stricmp(x,y) strcasecmp(x,y)
@@ -168,7 +115,8 @@ typedef int32_t boolean;
 
 #ifndef __cplusplus
 #ifndef _WIN32
-enum {false = 0, true = 1};
+#define false 0
+#define true 1
 #else
 #define false FALSE
 #define true TRUE
@@ -269,12 +217,6 @@ enum {false = 0, true = 1};
 	#endif
 
 	#define ATTRUNUSED __attribute__((unused))
-#elif defined (_MSC_VER)
-	#define ATTRNORETURN __declspec(noreturn)
-	#define ATTRINLINE __forceinline
-	#if _MSC_VER > 1200 // >= MSVC 6.0
-		#define ATTRNOINLINE __declspec(noinline)
-	#endif
 #endif
 
 #ifndef FUNCPRINTF

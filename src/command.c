@@ -90,6 +90,15 @@ CV_PossibleValue_t kartspeed_cons_t[] = {
 	{KARTSPEED_EXPERT, "Expert"},
 	{0, NULL}
 };
+CV_PossibleValue_t gpdifficulty_cons_t[] = {
+	{KARTSPEED_EASY, "Easy"},
+	{KARTSPEED_NORMAL, "Normal"},
+	{KARTSPEED_HARD, "Hard"},
+	{KARTSPEED_EXPERT, "Expert"},
+	{KARTGP_MASTER, "Master"},
+	{KARTGP_NIGHTMARE, "Nightmare"},
+	{0, NULL}
+};
 
 consvar_t cv_resetnetvars = CVAR_INIT ("resetnetvars", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -548,6 +557,9 @@ int COM_AddLuaCommand(const char *name)
 	if (CV_StringValue(name)[0] != '\0')
 		return -1;
 
+	if (!stricmp(name, "respawn"))
+		return -1; // fuck you.
+
 	// command already exists
 	for (cmd = com_commands; cmd; cmd = cmd->next)
 	{
@@ -797,11 +809,9 @@ static void COM_CEcho_f(void)
 
 	for (i = 1; i < COM_Argc(); i++)
 	{
-		strncat(cechotext, COM_Argv(i), sizeof(cechotext)-1);
-		strncat(cechotext, " ", sizeof(cechotext)-1);
+		strlcpy(cechotext, COM_Argv(i), sizeof(cechotext)-1);
+		strlcpy(cechotext, " ", sizeof(cechotext)-1);
 	}
-
-	cechotext[sizeof(cechotext) - 1] = '\0';
 
 	HU_DoCEcho(cechotext);
 }
@@ -1058,6 +1068,8 @@ static void COM_Find_f(void)
 	}
 
 	help = COM_Argv(1);
+	if (!help)
+		return;
 	helplen = strlen(help);
 	CONS_Printf("\x82""Variables:\n");
 	matchesany = false;
@@ -1535,6 +1547,9 @@ void CV_RegisterVar(consvar_t *variable)
 			variable->compatnetid = legacynetid;
 		}
 	}
+
+	if ((variable->flags & (CV_NETVAR|CV_GUARD)) == CV_GUARD)
+		I_Error("%s has CV_GUARD but not CV_NETVAR", variable->name);
 
 	// link the variable in
 	if (!(variable->flags & CV_HIDEN))
@@ -2099,6 +2114,15 @@ static void CV_SetCVar(consvar_t *var, const char *value, boolean stealth)
 			return;
 		}
 
+		if (var == &cv_kartspeed && !M_SecretUnlocked(SECRET_HARDSPEED))
+		{
+			if (!stricmp(value, "Hard") || !stricmp(value, "Expert") || atoi(value) >= KARTSPEED_HARD)
+			{
+				CONS_Printf(M_GetText("You haven't unlocked this yet!\n"));
+				return;
+			}
+		}
+
 		if (var == &cv_forceskin)
 		{
 			INT32 skin = R_SkinAvailable(value);
@@ -2304,9 +2328,14 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 				if (var->PossibleValue[max].value == var->value)
 					currentindice = max;
 
-			if ((var == &cv_kartspeed || var == &cv_kartbattlespeed) && !M_SecretUnlocked(SECRET_HARDSPEED))
+			if (var->PossibleValue == kartspeed_cons_t || var->PossibleValue == gpdifficulty_cons_t)
 			{
-				max = (M_SecretUnlocked(SECRET_HARDSPEED) ? 5 : 3);
+				if (!M_SecretUnlocked(SECRET_HARDSPEED))
+				{
+					max = KARTSPEED_NORMAL+1;
+					if (var->PossibleValue == kartspeed_cons_t)
+						max++; // Accommodate KARTSPEED_AUTO
+				}
 			}
 #ifdef PARANOIA
 			if (currentindice == -1)
@@ -2322,6 +2351,34 @@ void CV_AddValue(consvar_t *var, INT32 increment)
 		CV_SetValue(var, newvalue);
 
 	var->changed = 1; // user has changed it now
+}
+
+// a GETTER for cvars!?
+// used along with CV_GUARD to protect cvar values
+INT32 CV_Get(consvar_t *cvar)
+{
+	if (!(cvar->flags & CV_GUARD))
+		I_Error("CV_Get used with non-CV_GUARD variable %s", cvar->name);
+
+	if (modeattacking != ATTACKING_NONE /*|| !K_CanChangeRules()*/)
+	{
+		const char *string = cvar->defaultvalue;
+		INT32 value;
+		if (CV_CompleteValue(cvar, &string, &value))
+			return value;
+		else
+			I_Error("CV_Get oops");
+	}
+
+	return cvar->value;
+}
+
+// reset all CV_GUARD cvars to defaults
+void CV_ResetGuardVars(void)
+{
+	for (consvar_t *cvar = consvar_vars; cvar; cvar = cvar->next)
+		if (cvar->flags & CV_GUARD)
+			Setvalue(cvar, cvar->defaultvalue, true);
 }
 
 void CV_InitFilterVar(void)

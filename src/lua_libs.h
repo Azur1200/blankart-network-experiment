@@ -96,7 +96,7 @@ extern lua_State *gL;
 #define META_COLORMAP "COLORMAP"
 #define META_CAMERA "CAMERA_T*"
 
-#define META_ACTION "ACTIONF_T*"
+#define META_ACTION "actionf_p1*"
 
 #define META_LUABANKS "LUABANKS[]*"
 

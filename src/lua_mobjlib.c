@@ -402,9 +402,16 @@ static int mobj_get(lua_State *L)
 	}
 	case mobj_eflags:
 	{
-		UINT32 eflags = mo->eflags; // yes, not UINT16
+		UINT32 eflags = mo->eflags;  // yes, not UINT16
 		if (lua_compatmode)
-			eflags |= (~mo->renderflags & RF_DONTDRAW);
+		{
+			// The old eflags compat system causes rendering issues for characters like
+			// the MK64 cast. This system causes rendering issues in certain gameplay
+			// mods. At least in this case, character mods take priority, so we set
+			// up compatibility like so:
+			eflags |=
+				mo->renderflags & RF_DONTDRAW ? ~mo->renderflags & RF_DONTDRAW : 0;
+		}
 		lua_pushinteger(L, eflags);
 		break;
 	}
@@ -608,6 +615,23 @@ static int mobj_get(lua_State *L)
 	return 1;
 }
 
+static inline UINT32 eflags_vischeck(UINT32 eflags)
+{
+	UINT8 playerhide;
+
+	playerhide = 0;
+	if (eflags & RF_DONTDRAW)
+	{
+		// Visibility checks are necessary
+		playerhide = (UINT8)((eflags & RF_DONTDRAW) >> RF_HIDESHIFT);
+
+		// Hiding is the opposite of visibility.
+		playerhide = (~playerhide) & 0x0F;
+	}
+
+	return ((UINT32)(playerhide) << RF_HIDESHIFT);
+}
+
 #define NOSET luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly.", mobj_opt[field])
 #define NOSETPOS luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " should not be set directly. Use " LUA_QL("P_Move") ", " LUA_QL("P_TryMove") ", or " LUA_QL("P_SetOrigin") ", or " LUA_QL("P_MoveOrigin") " instead.", mobj_opt[field])
 static int mobj_set(lua_State *L)
@@ -669,11 +693,18 @@ static int mobj_set(lua_State *L)
 	case mobj_sprite:
 	{
 		spritenum_t newsprite = luaL_checkinteger(L, 3);
-		if (lua_compatmode && mo->sprite != SPR_PLAY && newsprite == SPR_PLAY)
+		if (lua_compatmode)
 		{
-			UINT8 outframe;
-			mo->sprite2 = P_KartFrameToSprite2(mo->skin, mo->frame, &outframe);
-			mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			if (mo->sprite != SPR_PLAY && newsprite == SPR_PLAY) // switch to spr2
+			{
+				UINT8 outframe;
+				mo->sprite2 = P_KartFrameToSprite2(mo->skin, mo->frame, &outframe);
+				mo->frame = (mo->frame & ~FF_FRAMEMASK) | outframe;
+			}
+			else if (mo->sprite == SPR_PLAY && newsprite != SPR_PLAY) // switch from spr2
+			{
+				mo->frame = spr2frame(mo->sprite2, mo->frame);
+			}
 		}
 		mo->sprite = newsprite;
 		break;
@@ -824,8 +855,19 @@ static int mobj_set(lua_State *L)
 	case mobj_eflags:
 	{
 		UINT32 eflags = luaL_checkinteger(L, 3);
+		UINT32 visflags = 0;
 		if (lua_compatmode)
-			mo->renderflags = (mo->renderflags & ~RF_DONTDRAW) | (~eflags & RF_DONTDRAW); // eeeyup.
+		{
+			// eeeyup.
+			// Mhm. Yeah.
+			visflags = eflags_vischeck(eflags);
+
+			if ((visflags) && ((mo->renderflags & RF_DONTDRAW) != RF_DONTDRAW))
+			{
+				mo->renderflags &= ~RF_DONTDRAW;
+				mo->renderflags |= visflags;
+			}
+		}
 		mo->eflags = (UINT16)eflags;
 		break;
 	}

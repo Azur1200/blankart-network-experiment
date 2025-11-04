@@ -18,9 +18,20 @@ if(("${CMAKE_COMPILER_IS_GNUCC}" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND 
 	endif()
 endif()
 
-target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
-set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
-set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
+set(SRB2_CONFIG_STD23 OFF CACHE BOOL
+	"Compiles the game under c23 and cxx23 instead c11 and cxx17.")
+
+if(SRB2_CONFIG_STD23)
+	message("-- Compiling game with C23 and CXX23.")
+	target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_23)
+	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 23)
+	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 23)
+else()
+	message("-- Compiling game with C11 and CXX17.")
+	target_compile_features(SRB2SDL2 PRIVATE c_std_11 cxx_std_17)
+	set_property(TARGET SRB2SDL2 PROPERTY C_STANDARD 11)
+	set_property(TARGET SRB2SDL2 PROPERTY CXX_STANDARD 17)
+endif()
 
 # Core sources
 target_sourcefile(c)
@@ -62,6 +73,11 @@ add_dependencies(SRB2SDL2 _SRB2_reconf)
 if(SRB2_CONFIG_ASAN)
 	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=address)
 	target_link_options(SRB2SDL2 PRIVATE -fsanitize=address)
+endif()
+
+if(SRB2_CONFIG_UBSAN)
+	target_compile_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
+	target_link_options(SRB2SDL2 PRIVATE -fsanitize=undefined)
 endif()
 
 if(SRB2_CONFIG_TIDY)
@@ -220,7 +236,7 @@ endif()
 target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
 
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-
+	target_compile_options(SRB2SDL2 PRIVATE -O0)
 else()
 	target_compile_options(SRB2SDL2 PRIVATE -O3)
 endif()
@@ -233,6 +249,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	# This is a direct translation from versions.mk
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:GNU>>:
 		-Wall
+		-Wextra
 		-Wno-trigraphs
 		-W # Was controlled by RELAXWARNINGS
 		-Wfloat-equal
@@ -244,6 +261,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wwrite-strings
 		-Wsign-compare
 		-Wno-comment
+		-Wno-alloc-size-larger-than # holy shit, be quiet up GCC
 		-Wmissing-prototypes
 		-Wmissing-declarations
 		-Wmissing-noreturn
@@ -314,6 +332,7 @@ target_compile_options(SRB2SDL2 PRIVATE
 	# C, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:C>,$<OR:$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
+		-Wextra
 		-Wno-absolute-value
 		-Wno-trigraphs
 		-Wno-error=non-literal-null-conversion
@@ -322,24 +341,12 @@ target_compile_options(SRB2SDL2 PRIVATE
 		-Wno-error=unused-but-set-variable
 	>
 
-	# C, MSVC
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:MSVC>>:
-		# All warnings at and before Visual Studio 2019 RTM
-		# https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warnings-by-compiler-version?view=msvc-170
-		/Wv:19.20.27004.0
-	>
-
 	# C++, GNU, Clang and Apple Clang
 	$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>>:
 		-Wall
 		-Wno-unused-function
 		-Wno-unused-but-set-variable
 		-Wno-unused-private-field
-	>
-
-	# C++, MSVC
-	$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:MSVC>>:
-		/Wv:19.20.27004.0
 	>
 
 	# GNU
@@ -351,10 +358,6 @@ if(SRB2_CONFIG_ERRORMODE)
 	target_compile_options(SRB2SDL2 PRIVATE
 		$<$<OR:$<C_COMPILER_ID:GNU>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:Clang>>:
 			-Werror
-		>
-
-		$<$<C_COMPILER_ID:MSVC>:
-			/WX
 		>
 	)
 endif()
@@ -373,7 +376,7 @@ target_compile_definitions(SRB2SDL2 PRIVATE -DCMAKECONFIG)
 
 # Misc. build options from Makefiles
 if(SRB2_CONFIG_DEBUGMODE)
-	target_compile_definitions(SRB2SDL2 PRIVATE -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
+	target_compile_definitions(SRB2SDL2 PRIVATE -D_DEBUG -DZDEBUG -DPARANOIA -DRANGECHECK -DPACKETDROP)
 endif()
 if(SRB2_CONFIG_MOBJCONSISTANCY)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DMOBJCONSISTANCY)

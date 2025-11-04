@@ -24,19 +24,12 @@ extern "C" {
 
 // a raw entry of the wad directory
 // NOTE: This sits here and not in w_wad.c because p_setup.c makes use of it to load map WADs inside PK3s.
-#if defined(_MSC_VER)
-#pragma pack(1)
-#endif
 struct filelump_t
 {
 	UINT32 filepos; // file offset of the resource
 	UINT32 size; // size of the resource
 	char name[8]; // name of the resource
 } ATTRPACK;
-#if defined(_MSC_VER)
-#pragma pack()
-#endif
-
 
 // ==============================================================
 //               WAD FILE STRUCTURE DEFINITIONS
@@ -131,7 +124,6 @@ struct wadfile_t
 
 	boolean important; // also network - !W_VerifyNMUSlumps
 	boolean compatmode;
-	boolean localfile;
 };
 
 typedef enum wadcompat
@@ -179,7 +171,7 @@ UINT16 W_CheckNumForFullNamePK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump);
 UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump);
 
-lumpnum_t W_CheckNumForMap(const char *name);
+lumpnum_t W_CheckNumForMap(const char *name, boolean checktofirst);
 lumpnum_t W_CheckNumForName(const char *name);
 lumpnum_t W_CheckNumForLongName(const char *name);
 lumpnum_t W_GetNumForName(const char *name); // like W_CheckNumForName but I_Error on LUMPERROR

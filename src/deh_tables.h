@@ -14,7 +14,7 @@
 #define __DEH_TABLES_H__
 
 #include "doomdef.h" // Constants
-#include "d_think.h" // actionf_t
+#include "d_think.h" // actionf_p1
 #include "info.h" // Mobj, state, sprite, etc constants
 #include "lua_script.h"
 #include "strbuf.h"
@@ -53,7 +53,7 @@ struct flickytypes_s {
   */
 struct actionpointer_t
 {
-	actionf_t action; ///< Function pointer corresponding to the actual action.
+	actionf_p1 action; ///< Function pointer corresponding to the actual action.
 	const char *name; ///< Name of the action in ALL CAPS.
 };
 
@@ -82,6 +82,7 @@ extern const char *const MOBJFLAG2_LIST[]; // \tMF2_(\S+).*// (.+) --> \t"\1", /
 extern const char *const MOBJEFLAG_LIST[];
 extern const char *const MAPTHINGFLAG_LIST[4];
 extern const char *const PLAYERFLAG_LIST[];
+extern struct int_const_s const PLAYERFLAG_ALIASES[];
 extern const char *const ITEMFLAG_LIST[];
 extern const char *const GAMETYPERULE_LIST[];
 extern const char *const ML_LIST[]; // Linedef flags

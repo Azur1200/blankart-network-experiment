@@ -22,8 +22,10 @@ struct strbuf_t
 
 strbuf_t *strbuf_alloc(void);
 UINT32 strbuf_append(strbuf_t **strbuf, const char *str);
+UINT32 strbuf_write(strbuf_t **strbuf, const UINT8 *src, size_t len);
 
 // returns the string at the given offset
+// NOTE: use only with strbuf_append/strbuf_write, the offsets are relative to the address of the struct!
 FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
 {
 #ifdef __cplusplus
@@ -31,6 +33,24 @@ FUNCINLINE static ATTRINLINE char *strbuf_get(strbuf_t *strbuf, UINT32 ofs)
 #else
 	return (char *)strbuf + ofs;
 #endif
+}
+
+// returns the byte at the index within the buffer
+FUNCINLINE static ATTRINLINE char strbuf_byte(strbuf_t *strbuf, UINT32 ofs)
+{
+	return strbuf->buf[ofs];
+}
+
+// checks wheter two strbufs have the same contents (i.e. memcmp, but no length param)
+FUNCINLINE static ATTRINLINE boolean strbuf_cmp(strbuf_t *buf1, strbuf_t *buf2)
+{
+	return buf1->size == buf2->size && !memcmp(buf1->buf, buf2->buf, buf1->size);
+}
+
+// returns the length of the buffer
+FUNCINLINE static ATTRINLINE UINT32 strbuf_len(strbuf_t *strbuf)
+{
+	return strbuf->size - sizeof(UINT32);
 }
 
 #ifdef __cplusplus

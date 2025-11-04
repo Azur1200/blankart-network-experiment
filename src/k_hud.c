@@ -42,6 +42,7 @@
 #include "g_party.h"
 #include "h_timers.h"
 #include "k_bot.h" // K_DrawBotDebugger
+#include "k_waypoint.h"
 
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
@@ -65,8 +66,9 @@ IMPL_HUD_OFFSET(rings); // Number of rings
 IMPL_HUD_OFFSET(dnft); // Countdown (did not finish timer)
 IMPL_HUD_OFFSET(speed); // Speedometer
 IMPL_HUD_OFFSET(acce); // Accessibility
-IMPL_HUD_OFFSET(timers); // Drafting
+IMPL_HUD_OFFSET(timers); // Timers
 IMPL_HUD_OFFSET(draft); // Drafting
+IMPL_HUD_OFFSET(lives); // Lives and Stats
 IMPL_HUD_OFFSET(posi); // Position in race
 IMPL_HUD_OFFSET(face); // Mini rankings
 IMPL_HUD_OFFSET(stcd); // Starting countdown
@@ -107,6 +109,8 @@ consvar_t cv_colorizedhudcolor = CVAR_INIT ("colorizedhudcolor", "Skin Color", C
 consvar_t cv_newtabranking = CVAR_INIT ("newtabranking", "On", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_draftindicator = CVAR_INIT ("draftindicator", "On", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
 
 //{ 	Patch Definitions
 static patch_t *kp_nodraw;
@@ -149,8 +153,17 @@ static patch_t *kp_speedometerlabel[4];
 static patch_t *kp_kartzspeedo[25];
 static patch_t *kp_kartzspeedo_smol[25];
 
-static patch_t *kp_driftgauge[13];
+static patch_t *kp_driftgauge[14];
 static patch_t *kp_driftgaugeparts[5];
+
+static patch_t *kp_flamometer[6];
+static patch_t *kp_flamefire[18];
+
+// Frames of animation for the fire
+#define MAXFLAMOFIRETICS 8
+
+// Rotating Alt. Invin. sparkles
+static patch_t *kp_altinvinsparkle;
 
 static patch_t *kp_rankbumper;
 static patch_t *kp_tinybumper[2];
@@ -241,6 +254,7 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(acce); // Accessibility
 	REG_HUD_OFFSET(timers); // Item Timers
 	REG_HUD_OFFSET(draft); // Drafting
+	REG_HUD_OFFSET(lives); // Lives and Stats
 	REG_HUD_OFFSET(posi); // Position in race
 	REG_HUD_OFFSET(face); // Mini rankings
 	REG_HUD_OFFSET(stcd); // Starting countdown
@@ -267,6 +281,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_driftgaugeoffset);
 	CV_RegisterVar(&cv_newtabranking);
 	CV_RegisterVar(&cv_draftindicator);
+	CV_RegisterVar(&cv_showstats);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -375,8 +390,9 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+(i+1);
 		HU_UpdatePatch(&kp_facehighlight[i], "%s", buffer);
 
-		kp_facehighlight[i]->leftoffset = kp_facehighlight[i]->width / 2;
-		kp_facehighlight[i]->topoffset = kp_facehighlight[i]->height / 2;
+		kp_facehighlight[i]->pivot.x = kp_facehighlight[i]->width / 2;
+		kp_facehighlight[i]->pivot.y = kp_facehighlight[i]->height / 2;
+		kp_facehighlight[i]->alignflags |= PATCHALIGN_USEPIVOTS;
 	}
 
 	// Special minimap icons
@@ -423,6 +439,49 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
 
+	// Alt. Invin. Sparkles
+	HU_UpdatePatch(&kp_altinvinsparkle, "ALTISPRK");
+
+	kp_altinvinsparkle->pivot.x = kp_altinvinsparkle->width / 2;
+	kp_altinvinsparkle->pivot.y = kp_altinvinsparkle->height / 2;
+	kp_altinvinsparkle->alignflags |= PATCHALIGN_USEPIVOTS;
+	
+	// Flamometer UI Elements
+	HU_UpdatePatch(&kp_flamometer[0], "THERMOBACK");
+	HU_UpdatePatch(&kp_flamometer[1], "THERMOFUEL");
+	HU_UpdatePatch(&kp_flamometer[2], "THERMOTEMP");
+	HU_UpdatePatch(&kp_flamometer[3], "THERMOMETRE");
+	HU_UpdatePatch(&kp_flamometer[4], "THERMCBACK");
+	HU_UpdatePatch(&kp_flamometer[5], "THERMCMETRE");
+
+	//Flamometer Fire
+	{
+		const char* patchNames[] = {
+			"THFIREX",
+			"THFIRE1",
+			"THFIRE2",
+			"THFIRE3",
+			"THFIRE4",
+			"THFIRE5",
+			"THFIRE6",
+			"THFIRE7",
+			"THFIRE8",
+			"THFIRCX",
+			"THFIRC1",
+			"THFIRC2",
+			"THFIRC3",
+			"THFIRC4",
+			"THFIRC5",
+			"THFIRC6",
+			"THFIRC7",
+			"THFIRC8"
+		};
+
+		for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+		{
+			kp_flamefire[m] = W_CachePatchName(patchNames[m], PU_HUDGFX);
+		}
+	}
 
 	// Speedometer labels
 	HU_UpdatePatch(&kp_speedometerlabel[0], "SP_MKMH");
@@ -770,6 +829,7 @@ INT32 RING_X, RING_Y;	// Player Rings
 INT32 SPDM_X, SPDM_Y;	// Speedometer
 INT32 ACCE_X, ACCE_Y;	// Accessibility
 INT32 DRAT_X, DRAT_Y;	// Drafting
+INT32 LIVE_X, LIVE_Y;	// Stats and Lives
 INT32 POSI_X, POSI_Y;	// Position Number
 INT32 FACE_X, FACE_Y;	// Top-four Faces
 INT32 STCD_X, STCD_Y;	// Starting countdown
@@ -783,6 +843,7 @@ INT32 LAPS2_X, LAPS2_Y;
 INT32 RING2_X, RING2_Y;
 INT32 POSI2_X, POSI2_Y;
 INT32 DRAT2_X, DRAT2_Y;
+INT32 LIVE2_X, LIVE2_Y;
 
 void K_ReloadHUDColorCvar(void)
 {
@@ -1027,6 +1088,9 @@ static void K_initKartHUD(void)
 	// Drafting
 	DRAT_X = 172 + cv_draft_xoffset.value;						// 172
 	DRAT_Y = BASEVIDHEIGHT - 41 + cv_draft_yoffset.value;		// 159
+	// Lives and Stats
+	LIVE_X = 9 + cv_lives_xoffset.value;							//   9
+	LIVE_Y = BASEVIDHEIGHT - 29 + cv_lives_yoffset.value;		// 171
 	// Position Number
 	POSI_X = BASEVIDWIDTH  - 9 + cv_posi_xoffset.value;			// 268
 	POSI_Y = BASEVIDHEIGHT - 9 + cv_posi_yoffset.value;			// 138
@@ -1066,6 +1130,9 @@ static void K_initKartHUD(void)
 		DRAT_X = 172;
 		DRAT_Y = (BASEVIDHEIGHT/2)-34;
 
+		LIVE_X = 9;
+		LIVE_Y = (BASEVIDHEIGHT/2)-24;
+
 		STCD_X = BASEVIDWIDTH/2;
 		STCD_Y = BASEVIDHEIGHT/4;
 
@@ -1090,6 +1157,9 @@ static void K_initKartHUD(void)
 			DRAT_X = 95;
 			DRAT_Y = (BASEVIDHEIGHT/2)-32;
 
+			LIVE_X = 3;
+			LIVE_Y = (BASEVIDHEIGHT/2)-12;
+
 			// 2P (top right)
 			ITEM2_X = (BASEVIDWIDTH/2)-39;
 			ITEM2_Y = -8;
@@ -1105,6 +1175,9 @@ static void K_initKartHUD(void)
 
 			DRAT2_X = 95;
 			DRAT2_Y = (BASEVIDHEIGHT/2)-32;
+
+			LIVE2_X = (BASEVIDWIDTH/2)-43;
+			LIVE2_Y = (BASEVIDHEIGHT/2)-12;
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
@@ -1233,6 +1306,22 @@ void K_getMinimapDrawinfo(drawinfo_t *out)
 	out->flags = fflags;
 }
 
+static void K_DrawItemBar(INT32 fx, INT32 fy, INT32 fflags, fixed_t itembar, UINT8 colors[static 3])
+{
+	const boolean fourp = r_splitscreen > 1;
+	const INT32 barlength = (fourp ? 12 : 26)*FRACUNIT;
+	const INT32 length = min(barlength, FixedMul(itembar, barlength));
+	const INT32 height = (fourp ? 1 : 2)*FRACUNIT;
+	const INT32 x = (fx + (fourp ? 17 : 11)) * FRACUNIT, y = (fy + (fourp ? 27 : 35)) * FRACUNIT;
+
+	V_DrawSciencePatch(x, y, V_HUDTRANS|fflags, kp_itemtimer[fourp ? 1 : 0], FRACUNIT);
+	V_DrawFixedFill(x+FRACUNIT, y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the left edge
+	V_DrawFixedFill(x+max(FRACUNIT, length), y+FRACUNIT, min(FRACUNIT, length), height, colors[2]|fflags); // the right edge
+	if (!fourp)
+		V_DrawFixedFill(x+2*FRACUNIT, y+2*FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[1]|fflags); // the dulled underside
+	V_DrawFixedFill(x+2*FRACUNIT, y+FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[0]|fflags); // the shine
+}
+
 // see also MT_PLAYERARROW mobjthinker in p_mobj.c
 static void K_drawKartItem(void)
 {
@@ -1248,11 +1337,7 @@ static void K_drawKartItem(void)
 	boolean dark = false;
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	INT32 numberdisplaymin = 2;
-	INT32 itembar = 0;
-	INT32 maxl = 0; // itembar's normal highest value
-	INT32 flamebar = 0;
-	INT32 flamemaxl = 0; // flamebar's normal highest value
-	const INT32 barlength = (r_splitscreen > 1 ? 12 : 26);
+	fixed_t itembar = -1, flamebar = -1;
 	UINT16 localcolor = SKINCOLOR_NONE;
 	SINT8 colormode = TC_RAINBOW;
 	UINT8 *colmap = NULL;
@@ -1313,8 +1398,7 @@ static void K_drawKartItem(void)
 		}
 		else if (stplyr->rocketsneakertimer > 1)
 		{
-			itembar = stplyr->rocketsneakertimer;
-			maxl = (itemtime*3) - barlength;
+			itembar = FixedDiv(stplyr->rocketsneakertimer, itemtime*3);
 
 			if (leveltime & 1)
 				localpatch = kp_rocketsneaker[offset];
@@ -1323,10 +1407,8 @@ static void K_drawKartItem(void)
 		}
 		else if (stplyr->flametimer > 1)
 		{
-			itembar = stplyr->flametimer;
-			maxl = (itemtime*3) - barlength;
-			flamebar = stplyr->flamestore;
-			flamemaxl = FLAMESTOREMAX;
+			itembar = FixedDiv(stplyr->flametimer, itemtime*3);
+			flamebar = FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
 			localbg = kp_itembg[offset+1];
 			dark = true;
 
@@ -1344,10 +1426,7 @@ static void K_drawKartItem(void)
 		else if (stplyr->growshrinktimer > 0)
 		{
 			if (stplyr->growcancel > 0)
-			{
-				itembar = stplyr->growcancel;
-				maxl = 26;
-			}
+				itembar = FixedDiv(stplyr->growcancel, 26);
 
 			if (leveltime & 1)
 				localpatch = kp_grow[offset];
@@ -1356,14 +1435,10 @@ static void K_drawKartItem(void)
 		}
 		else if ((stplyr->invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
 		{
-			itembar = stplyr->invincibilitytimer;
-			maxl = max(1, stplyr->maxinvincibilitytime);
+			itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
 
 			if (stplyr->invincibilitycancel > 0)
-			{
-				flamebar = stplyr->invincibilitycancel;
-				flamemaxl = 26;
-			}
+				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
 
 			if (leveltime & 1)
 				localpatch = localinv;
@@ -1375,14 +1450,13 @@ static void K_drawKartItem(void)
 			localpatch = kp_bubbleshield[offset];
 			dark = true;
 
-			if ((stplyr->bubbleblowup > bubbletime) && (leveltime & 1))
+			if (stplyr->bubbleblowup > 0 && leveltime & 1)
 			{
 				colormode = TC_BLINK;
 				localcolor = SKINCOLOR_WHITE;
 			}
 
-			itembar = stplyr->bubblehealth;
-			maxl = MAXBUBBLEHEALTH;
+			itembar = FixedDiv(stplyr->bubblehealth, MAXBUBBLEHEALTH);
 		}
 		else if (stplyr->sadtimer > 0)
 		{
@@ -1515,45 +1589,12 @@ static void K_drawKartItem(void)
 	//V_ClearClipRect();
 
 	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
-	if (itembar)
-	{
-		const INT32 fill = ((itembar*barlength)/maxl);
-		const INT32 length = min(barlength, fill);
-		const INT32 height = (offset ? 1 : 2);
-		const INT32 x = (offset ? 17 : 11), y = (offset ? 27 : 35);
+	// ...aren't you forgetting something?
+	if (itembar != -1)
+		K_DrawItemBar(fx, fy, fflags|V_HUDTRANS, itembar, (UINT8 []){0, 8, 12});
 
-		V_DrawScaledPatch(fx+x, fy+y, V_HUDTRANS|fflags, kp_itemtimer[offset]);
-		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1, (length == 2 ? 2 : 1), height, 12|fflags|V_HUDTRANS);
-		// The bar itself
-		if (length > 2)
-		{
-			V_DrawFill(fx+x+length, fy+y+1, 1, height, 12|fflags|V_HUDTRANS); // the right one
-			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2, length-2, 1, 8|fflags|V_HUDTRANS); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1, length-2, 1, 0|fflags|V_HUDTRANS); // the shine
-		}
-	}
-
-	if (flamebar)
-	{
-		const INT32 fill = ((flamebar*barlength)/flamemaxl);
-		const INT32 length = min(barlength, fill);
-		const INT32 height = (offset ? 1 : 2);
-		const INT32 x = (offset ? 17 : 11), y = (offset ? 27 : 35);
-
-		V_DrawScaledPatch(fx+x, fy+y-8, V_HUDTRANS|fflags, kp_itemtimer[offset]);
-		// The left dark "AA" edge
-		V_DrawFill(fx+x+1, fy+y+1-8, (length == 2 ? 2 : 1), height, 55|fflags|V_HUDTRANS);
-		// The bar itself
-		if (length > 2)
-		{
-			V_DrawFill(fx+x+length, fy+y+1-8, 1, height, 55|fflags|V_HUDTRANS); // the right one
-			if (height == 2)
-				V_DrawFill(fx+x+2, fy+y+2-8, length-2, 1, 36|fflags|V_HUDTRANS); // the dulled underside
-			V_DrawFill(fx+x+2, fy+y+1-8, length-2, 1, 51|fflags|V_HUDTRANS); // the shine
-		}
-	}
+	if (flamebar != -1)
+		K_DrawItemBar(fx, fy - 8, fflags|V_HUDTRANS, flamebar, (UINT8 []){51, 36, 55});
 
 	// Quick Eggman numbers
 	if (stplyr->eggmanexplode > 1)
@@ -1566,38 +1607,38 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 	// TIME_Y = 6;					//   6
 
 	tic_t worktime;
-	boolean dontdraw = false;
-	boolean overtime = false;
-	UINT8 *textcolor = 0;
-	boolean emblemenabled = K_EmblemsEnabled();
+	fixed_t jitter = 0;
+	boolean overtime = false, fastjitter = false, countdown = false;
+	UINT8 *textcolor = NULL;
 
 	INT32 splitflags = 0;
 	if (!mode)
 	{
 		splitflags = V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_SPLITSCREEN;
 
-#ifndef TESTOVERTIMEINFREEPLAY
-		if (itembreaker) // capsules override any time limit settings
-			;
-		else
-#endif
-		if (bossinfo.boss == true)
-			;
-		else if (timelimitintics > 0 && (gametyperules & GTR_TIMELIMIT)) // TODO
-		{			
-			if (drawtime >= (timelimitintics - 5*TICRATE) && ((drawtime*4)/TICRATE) % 2 == 0)
-			{
-				dontdraw = true;
-			}
-
+		if (timelimitintics > 0)
+		{
 			if (drawtime >= timelimitintics)
 			{
 				overtime = true;
-				// drawtime = 0;
+				jitter = 1;
 			}
 			else
 			{
 				drawtime = timelimitintics - drawtime;
+				countdown = true;
+				if (secretextratime)
+					;
+				else if (extratimeintics)
+				{
+					jitter = 2;
+					fastjitter = true;
+				}
+				else if (drawtime <= 5*TICRATE)
+				{
+					jitter = ((drawtime <= 3*TICRATE) && (((drawtime-1) % TICRATE) >= TICRATE-2))
+						? 3 : 1;
+				}
 			}
 		}
 	}
@@ -1614,10 +1655,26 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 
 	worktime = drawtime/(60*TICRATE);
 
-	if (mode && !drawtime)
+	if (drawtime != UINT32_MAX && worktime >= 100)
+	{
+		jitter = 1;
+		fastjitter = true;
+		worktime = 99;
+		drawtime = (100*(60*TICRATE))-1;
+	}
+
+	if (fastjitter)
+	{
+		jitter *= R_GetTimeFrac(RTF_LEVEL) * (leveltime & 1 ? 1 : -1);
+	}
+	else
+	{
+		if (drawtime & 2) jitter = -jitter;
+		jitter *= !!(drawtime & 1) != countdown ? FRACUNIT - R_GetTimeFrac(RTF_LEVEL) : R_GetTimeFrac(RTF_LEVEL);
+	}
+
+	if (mode && drawtime == UINT32_MAX)
 		V_DrawKartString(TX, TY+3, splitflags, va("--'--\"--"));
-	else if (dontdraw) // overtime flash
-		;
 	else if (overtime)
 	{
 		if (((drawtime*2)/TICRATE) % 2 == 0)
@@ -1629,68 +1686,49 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 			textcolor = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
 		}
 
-		V_DrawStringScaledEx(
-			(TIME_X + 33) << FRACBITS,
-			(TIME_Y + 3) << FRACBITS,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			FRACUNIT,
-			splitflags,
-			textcolor,
-			KART_FONT,
-			va("OVERTIME!")
-		);
-	}
-	else if (worktime < 100) // 99:99:99 only
-	{
-		// zero minute
-		if (worktime < 10)
+		const char *overtimestr = "OVERTIME";
+		for (UINT8 i = 0; i < strlen(overtimestr); i++)
 		{
-			V_DrawKartString(TX, TY+3, splitflags, va("0"));
-			// minutes time       0 __ __
-			V_DrawKartString(TX+12, TY+3, splitflags, va("%d", worktime));
+			V_DrawStringScaledEx(
+				(TIME_X + 33 + 12*i + (i == 6 ? -4 : i == 7 ? -1 : 0)) << FRACBITS,
+				((TIME_Y + 3) << FRACBITS) + (i & 1 ? jitter : -jitter),
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				FRACUNIT,
+				splitflags,
+				textcolor,
+				KART_FONT,
+				va("%c", overtimestr[i])
+			);
 		}
-		// minutes time       0 __ __
-		else
-			V_DrawKartString(TX, TY+3, splitflags, va("%d", worktime));
+	}
+	else
+	{
+		// minutes time      00 __ __
+		V_DrawKartStringAtFixed(TX<<FRACBITS,      ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+12)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// apostrophe location     _'__ __
 		V_DrawKartString(TX+24, TY+3, splitflags, va("'"));
 
 		worktime = (drawtime/TICRATE % 60);
 
-		// zero second        _ 0_ __
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+36, TY+3, splitflags, va("0"));
-		// seconds time       _ _0 __
-			V_DrawKartString(TX+48, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero second        _ 00 __
-		else
-			V_DrawKartString(TX+36, TY+3, splitflags, va("%d", worktime));
+		// seconds time       _ 00 __
+		V_DrawKartStringAtFixed((TX+36)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+48)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 
 		// quotation mark location    _ __"__
 		V_DrawKartString(TX+60, TY+3, splitflags, va("\""));
 
 		worktime = G_TicsToCentiseconds(drawtime);
 
-		// zero tick          _ __ 0_
-		if (worktime < 10)
-		{
-			V_DrawKartString(TX+72, TY+3, splitflags, va("0"));
-		// tics               _ __ _0
-			V_DrawKartString(TX+84, TY+3, splitflags, va("%d", worktime));
-		}
-		// zero tick          _ __ 00
-		else
-			V_DrawKartString(TX+72, TY+3, splitflags, va("%d", worktime));
+		// tics               _ __ 00
+		V_DrawKartStringAtFixed((TX+72)<<FRACBITS, ((TY+3)<<FRACBITS)+jitter, splitflags, va("%d", worktime/10));
+		V_DrawKartStringAtFixed((TX+84)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 	}
-	else if ((drawtime/TICRATE) & 1)
-		V_DrawKartString(TX, TY+3, splitflags, va("99'59\"99"));
 
-	if (((modeattacking && G_GamestateUsesLevel()) || (mode == 1)) && emblemenabled && !demo.playback) // emblem time!
+	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
 	{
 		INT32 workx = TX + 96, worky = TY+18;
 		SINT8 curemb = 0;
@@ -2117,10 +2155,12 @@ static boolean K_drawKartPositionFaces(void)
 		else
 		{
 			INT32 pos = players[rankplayer[i]].position;
-			if (pos < 0 || pos > MAXPLAYERS)
-				pos = 0;
+
 			// Draws the little number over the face
-			V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
+			if (pos < 0 || pos > 16)
+				V_DrawPingNum(FACE_X+2, Y+10, V_HUDTRANS|V_SNAPTOLEFT, pos, NULL);
+			else
+				V_DrawScaledPatch(FACE_X-5, Y+10, V_HUDTRANS|V_SNAPTOLEFT, kp_facenum[pos]);
 		}
 
 		Y -= 18;
@@ -2319,7 +2359,10 @@ INT32 K_DrawNeoTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines
 			hightlightcolor = skincolors[players[tab[i].num].mo->color].chatcolor;
 		}
 
-		V_DrawScaledPatch(x-5, y+1, 0, kp_facenum[pos]);
+		if (pos < 0 || pos > 16)
+			V_DrawPingNum(x+2, y+1, 0, pos, NULL);
+		else
+			V_DrawScaledPatch(x-5, y+1, 0, kp_facenum[pos]);
 
 		x2 = netgame ? x + (BASEVIDWIDTH/20) : x;
 		y2 = y;
@@ -2422,7 +2465,7 @@ void K_SetScoreboardModStatus(const char *name, SINT8 active)
 	CONS_Alert(CONS_WARNING, "Server mod '%s' does not exist so status cannot be changed.\n", name);
 }
 
-#define BASEMODS 14
+#define BASEMODS 15
 static void K_DrawServerMods(INT32 x, INT32 y)
 {
 	UINT8 i, j;
@@ -2431,8 +2474,9 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 	servermods_t basemods[BASEMODS] =
 	{
+		{"Item Litter", 0, NULL, K_ItemLitterActive() > 0, true},
 		{"Rings", 0, NULL, K_RingsActive() > 0, true},
-		{"4-Tier Drifts", 0, NULL, K_PurpleDriftActive() > 0, true},
+		{"4-Tier Drift", 0, NULL, K_PurpleDriftActive() > 0, true},
 		{"Slipdash", 0, NULL, K_SlipdashActive() > 0, true},
 		{"Stacking", 0, NULL, K_StackingActive() > 0, true},
 		{"Chaining", 0, NULL, K_ChainingActive() > 0, true},
@@ -2495,7 +2539,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 
 void K_DrawServerDescrption(INT32 x, INT32 y)
 {
-	UINT8 i, newlinecount = 0;
+	INT32 i, newlinecount = 0;
 	if (connectedservername[0] != '\0')
 		V_DrawThinString(x, y, V_6WIDTHSPACE|V_ALLOWLOWERCASE, connectedservername);
 
@@ -2627,7 +2671,6 @@ void K_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, IN
 
 static void K_drawKartLaps(void)
 {
-	const boolean uselives = G_GametypeUsesLives();
 	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
 
 	drawinfo_t info;
@@ -2638,10 +2681,6 @@ static void K_drawKartLaps(void)
 
 	if (r_splitscreen > 1)
 	{
-		INT32 fr = 0;
-
-		fr = fx;
-
 		// Laps
 		V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_splitlapflag);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
@@ -2666,17 +2705,6 @@ static void K_drawKartLaps(void)
 			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps) % 10]);
 			V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(numlaps) % 10]);
 		}
-
-		// Lives
-		if (LUA_HudEnabled(hud_lives) && uselives)
-		{
-			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
-			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
-
-			V_DrawMappedPatch(fr+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
-			if (stplyr->lives >= 0)
-				V_DrawScaledPatch(fr+34, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
-		}
 	}
 	else
 	{
@@ -2700,28 +2728,103 @@ static void K_drawKartLaps(void)
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|V_SLIDEIN|splitflags, "FIN");
 		else
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|splitflags, va("%d/%d", min(stplyr->laps, numlaps), numlaps));
+	}
+}
 
+void K_getLivesnStatsDrawinfo(drawinfo_t *out)
+{
+	INT32 fx, fy, splitflags = 0;
+
+	// pain and suffering defined below
+	if (r_splitscreen < 2)	// don't change shit for THIS splitscreen.
+	{
+		fx = LIVE_X;
+		fy = LIVE_Y;
+		splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
+	}
+	else
+	{
+		if (stplyrnum == 0 || stplyrnum == 2)	// If we are P1 or P3...
+		{
+			fx = LIVE_X;
+			fy = LIVE_Y;
+			splitflags = V_SNAPTOLEFT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+		}
+		else // else, that means we're P2 or P4.
+		{
+			fx = LIVE2_X;
+			fy = LIVE2_Y;
+			splitflags = V_SNAPTORIGHT|V_SNAPTOBOTTOM|V_SPLITSCREEN;
+		}
+	}
+
+	out->x = fx;
+	out->y = fy;
+	out->flags = splitflags;
+}
+
+static void K_drawKartStatsnLives(void)
+{
+	const boolean uselives = G_GametypeUsesLives();
+	const boolean stats = cv_showstats.value;
+
+	INT32 fx = 0, fy = 0, splitflags = 0;	// stuff for 3p / 4p splitscreen.
+
+	drawinfo_t info;
+	K_getLivesnStatsDrawinfo(&info);
+	fx = info.x;
+	fy = info.y;
+	splitflags = info.flags;
+
+	if (r_splitscreen > 1)
+	{
 		// Lives
 		if (LUA_HudEnabled(hud_lives) && uselives)
+		{
+			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
+			patch_t *mmappatch = faceprefix[stplyr->skin][FACE_MINIMAP];
+
+			V_DrawMappedPatch(fx+21+mmappatch->leftoffset, fy-13+mmappatch->topoffset, V_HUDTRANS|splitflags, mmappatch, colormap);
+			if (stplyr->lives >= 0 && uselives)
+				V_DrawScaledPatch(fx+34, fy-10, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+		}
+	}
+	else
+	{
+		// Stats and Lives
+		if (LUA_HudEnabled(hud_lives) && (uselives || stats))
 		{
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
 
-			if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+			if (cv_lives_xoffset.value != 0 || cv_lives_yoffset.value != 0)
 			{
-				offsetx = 25;
-				offsety = 15;
-			}
-			else if (K_RingsActive())
-			{
-				offsetx = 4;
+				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
+				{
+					offsetx = 25;
+					offsety = 15;
+				}
+				else if (K_RingsActive())
+				{
+					offsetx = 4;
+				}
 			}
 
 			UINT8 *colormap = R_GetTranslationColormap(stplyr->skin, K_GetHudColor(), GTC_CACHE);
 			patch_t *facerank = faceprefix[stplyr->skin][FACE_RANK];
 			V_DrawMappedPatch(fx+59+offsetx+facerank->leftoffset, fy-16+offsety+facerank->topoffset, V_HUDTRANS|splitflags, facerank, colormap);
-			if (stplyr->lives >= 0)
+			if (stplyr->lives >= 0 && uselives)
 				V_DrawScaledPatch(fx+77+offsetx, fy-11+offsety, V_HUDTRANS|splitflags, kp_facenum[(stplyr->lives % 10)]); // make sure this doesn't overflow OR underflow
+
+			if (stats)
+			{
+				// Draw stats
+				UINT8 *colormapstat = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_BLUE, GTC_CACHE);
+				UINT8 *colormapstat2 = R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_ORANGE, GTC_CACHE);
+
+				V_DrawFixedPatch((fx+56+offsetx+facerank->leftoffset)<< FRACBITS, (fy-19+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartspeed % 10)], colormapstat);
+				V_DrawFixedPatch((fx+69+offsetx+facerank->leftoffset)<< FRACBITS, (fy-4+offsety+facerank->topoffset)<< FRACBITS, FRACUNIT, V_HUDTRANS|splitflags, kp_facenum[(stplyr->kartweight % 10)], colormapstat2);
+			}
 		}
 	}
 }
@@ -3936,7 +4039,22 @@ static void K_drawKartMinimapCluster(INT32 hudx, INT32 hudy, INT32 flags)
 	UINT8 pal = 180; // Strong pink color.
 	UINT8 size = 6;
 
-	K_drawKartMinimapDot(clusterpoint.x, clusterpoint.y, hudx, hudy, flags, pal, size);
+	fixed_t clusterx, clustery;
+
+	clusterx = clustery = 0;
+
+	if ((clusterid != UINT32_MAX) && (players[clusterid].mo) && (!P_MobjWasRemoved(players[clusterid].mo)))
+	{
+		clusterx = players[clusterid].mo->x;
+		clustery = players[clusterid].mo->y;
+	}
+	else
+	{
+		clusterx = clusterpoint.x;
+		clustery = clusterpoint.y;
+	}
+
+	K_drawKartMinimapDot(clusterx, clustery, hudx, hudy, flags, pal, size);
 }
 
 #define ICON_DOT_RADIUS (cv_minihead.value && !cv_showminimapnames.value) ? 8 : 10
@@ -3974,6 +4092,8 @@ static spbdraw_t K_ShouldDrawSPB(mobj_t *mobj)
 	return spbdraw;
 }
 
+#define TICTOANGLE(t) (FixedAngle(((360 * FRACUNIT / TICRATE) * t) % (360 * FRACUNIT)))
+
 static void K_drawKartMinimap(void)
 {
 	patch_t *workingPic;
@@ -3990,10 +4110,16 @@ static void K_drawKartMinimap(void)
 	spbdraw_t spb;
 	UINT16 usecolor;
 	boolean colorizeplayer;
+	fixed_t invingradient = 0;
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
 	INT32 rot = 0;
+	INT32 sparkleflags;
+	patch_t *rotsparkle;
+	boolean halftrans = false;
+	fixed_t transmul = 0;
+	UINT32 invintrans = 0;
 #endif
 
 	vector2_t iconoffsets;
@@ -4055,8 +4181,6 @@ static void K_drawKartMinimap(void)
 
 	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
-	fixed_t minimapscale = (cv_minihead.value) ? MINIHEADSCALE : FRACUNIT;
-
 	if (encoremode)
 		V_DrawScaledPatch(x+minimapinfo.minimap_pic->width, y, splitflags|minimaptrans|V_FLIP, minimapinfo.minimap_pic);
 	else
@@ -4097,8 +4221,19 @@ static void K_drawKartMinimap(void)
 			interpy = R_InterpolateFixed(g->mo->old_y, g->mo->y);
 
 			patch_t *ghostPic = faceprefix[skin][FACE_MINIMAP];
-			iconoffsets.x = ((ghostPic->width) / 2) - FixedMul(ghostPic->leftoffset, minimapscale);
-			iconoffsets.y = ((ghostPic->height) / 2) - FixedMul(ghostPic->topoffset, minimapscale);
+
+			widthhalf = ((ghostPic->width) / 2);
+			heighthalf = ((ghostPic->height) / 2);
+
+			if (cv_minihead.value)
+			{
+				adjustx = FixedMul(4, (widthhalf - ghostPic->leftoffset) * FRACUNIT / widthhalf);
+				adjusty = FixedMul(4, (heighthalf - ghostPic->topoffset) *
+						  FRACUNIT / heighthalf);
+			}
+
+			iconoffsets.x = widthhalf - ghostPic->leftoffset - adjustx;
+			iconoffsets.y = heighthalf - ghostPic->topoffset - adjusty;
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, ghostPic, colormap, &iconoffsets);
 			g = g->next;
@@ -4140,18 +4275,31 @@ static void K_drawKartMinimap(void)
 
 			mobj = players[i].mo;
 
-			if (players[i].mo->health <= 0 && players[i].pflags & PF_NOCONTEST)
+			if (mobj->health <= 0 && (players[i].pflags & PF_NOCONTEST))
 			{
 				workingPic = kp_nocontestminimap;
 
-				iconoffsets.x = ((workingPic->width) / 2);
-				iconoffsets.y = ((workingPic->height) / 2);
+				widthhalf = ((workingPic->width) / 2);
+				heighthalf = ((workingPic->height) / 2);
+
+				if (cv_minihead.value)
+				{
+					adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
+					adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+							FRACUNIT / heighthalf);
+				}
+
+				iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 				colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
+
+				if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+					mobj = mobj->tracer;
 			}
 			else
 			{
-				skin = ((skin_t*)players[i].mo->skin)-skins;
+				skin = ((skin_t*)mobj->skin)-skins;
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4183,19 +4331,21 @@ static void K_drawKartMinimap(void)
 				}
 #endif
 
-				colorizeplayer = players[i].mo->colorized;
+				colorizeplayer = mobj->colorized;
 
-				if ((players[i].invincibilitytimer) && ((K_InvincibilityGradient(players[i].invincibilitytimer) > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+				invingradient = K_InvincibilityGradient(players[i].invincibilitytimer);
+
+				if ((players[i].invincibilitytimer) && ((invingradient > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
 				{
 					usecolor = ((K_GetKartInvinType() == KARTINVIN_ALTERN) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
 				}
 				else
 				{
-					usecolor = players[i].mo->color;
+					usecolor = mobj->color;
 				}
 
-				if (players[i].mo->color)
+				if (usecolor)
 				{
 					if (colorizeplayer)
 						colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
@@ -4218,6 +4368,93 @@ static void K_drawKartMinimap(void)
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
+
+#ifdef ROTSPRITE
+				if ((K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+				    (players[i].invincibilitytimer) && (invingradient))
+				{
+					// Draw Alt. Invin. sparkles
+					halftrans =
+					    ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
+					transmul = 0;
+					invintrans = 0;
+
+					sparkleflags =
+					    splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
+
+					if (halftrans)
+					{
+						transmul = FRACUNIT -
+							   (V_GetHudTransHalf() * FRACUNIT / 10);
+					}
+					else
+					{
+						transmul =
+						    FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
+					}
+
+					transmul *= 2;
+
+					invintrans =
+					    max(0,
+						min(9,
+						    10 - FixedMul(FixedMul(10, invingradient),
+								  transmul)))
+					    << V_ALPHASHIFT;
+					sparkleflags |= invintrans;
+
+					if (kp_altinvinsparkle)
+					{
+						rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+
+						if (rot)
+						{
+							rotsparkle = Patch_GetRotated(
+							    kp_altinvinsparkle, rot, false);
+						}
+						else
+						{
+							rotsparkle = kp_altinvinsparkle;
+						}
+
+						if (rotsparkle)
+						{
+							widthhalf = ((kp_altinvinsparkle->width) / 2);
+							heighthalf = ((kp_altinvinsparkle->height) / 2);
+
+							if (cv_minihead.value)
+							{
+								adjustx = FixedMul(
+								    4,
+								    (widthhalf -
+								     kp_altinvinsparkle->leftoffset) *
+									FRACUNIT / widthhalf);
+								adjusty = FixedMul(
+								    4,
+								    (heighthalf -
+								     kp_altinvinsparkle->topoffset) *
+									FRACUNIT / heighthalf);
+							}
+
+							iconoffsets.x = widthhalf -
+									kp_altinvinsparkle->leftoffset -
+									adjustx;
+							iconoffsets.y = heighthalf -
+									kp_altinvinsparkle->topoffset -
+									adjusty;
+
+							K_drawKartMinimapIcon(interpx,
+									      interpy,
+									      x,
+									      y,
+									      sparkleflags | V_ADD,
+									      rotsparkle,
+									      colormap,
+									      &iconoffsets);
+						}
+					}
+				}
+#endif
 
 				if (mobj->player)
 				{
@@ -4364,20 +4601,33 @@ static void K_drawKartMinimap(void)
 
 		mobj = players[localplayers[i]].mo;
 
-		if (players[localplayers[i]].mo->health <= 0 && players[localplayers[i]].pflags & PF_NOCONTEST)
+		if (mobj->health <= 0 && (players[localplayers[i]].pflags & PF_NOCONTEST))
 		{
 			workingPic = kp_nocontestminimap;
 
-			iconoffsets.x = ((workingPic->width) / 2);
-			iconoffsets.y = ((workingPic->height) / 2);
+			widthhalf = ((workingPic->width) / 2);
+			heighthalf = ((workingPic->height) / 2);
+
+			if (cv_minihead.value)
+			{
+				adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
+				adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
+						  FRACUNIT / heighthalf);
+			}
+
+			iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
+			iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
 
 			colormap = R_GetTranslationColormap(TC_DEFAULT, mobj->color, GTC_CACHE);
 
 			nocontest = true;
+
+			if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
+				mobj = mobj->tracer;
 		}
 		else
 		{
-			skin = ((skin_t*)players[localplayers[i]].mo->skin)-skins;
+			skin = ((skin_t*)mobj->skin)-skins;
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
@@ -4408,21 +4658,24 @@ static void K_drawKartMinimap(void)
 			}
 #endif
 
-			colorizeplayer = players[localplayers[i]].mo->colorized;
+			colorizeplayer = mobj->colorized;
+			invingradient =
+				K_InvincibilityGradient(
+					players[localplayers[i]].invincibilitytimer);
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
-				((K_InvincibilityGradient(players[localplayers[i]].invincibilitytimer) >
-				  (FRACUNIT / 2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+				((invingradient > (FRACUNIT / 2)) ||
+					(K_GetKartInvinType() == KARTINVIN_LEGACY)))
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
 				colorizeplayer = true;
 			}
 			else
 			{
-				usecolor = players[localplayers[i]].mo->color;
+				usecolor = mobj->color;
 			}
 
-			if (players[localplayers[i]].mo->color)
+			if (usecolor)
 			{
 				if (colorizeplayer)
 					colormap = R_GetTranslationColormap(TC_RAINBOW, usecolor, GTC_CACHE);
@@ -4481,6 +4734,84 @@ static void K_drawKartMinimap(void)
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
+#ifdef ROTSPRITE
+			if ((!nocontest) && (K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+			    (players[localplayers[i]].invincibilitytimer) && (invingradient))
+			{
+				// Draw Alt. Invin. sparkles
+				halftrans = ((splitflags & V_HUDTRANSHALF) == V_HUDTRANSHALF);
+				transmul = 0;
+				invintrans = 0;
+
+				sparkleflags = splitflags & (~(V_HUDTRANS | V_HUDTRANSHALF));
+
+				if (halftrans)
+				{
+					transmul = FRACUNIT - (V_GetHudTransHalf() * FRACUNIT / 10);
+				}
+				else
+				{
+					transmul = FRACUNIT - (V_GetHudTrans() * FRACUNIT / 10);
+				}
+
+				transmul *= 2;
+
+				invintrans =
+				    max(0,
+					min(9,
+					    10 - FixedMul(FixedMul(10, invingradient), transmul)))
+				    << V_ALPHASHIFT;
+				sparkleflags |= invintrans;
+
+				if (kp_altinvinsparkle)
+				{
+					rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+
+					if (rot)
+					{
+						rotsparkle = Patch_GetRotated(
+						    kp_altinvinsparkle, rot, false);
+					}
+					else
+					{
+						rotsparkle = kp_altinvinsparkle;
+					}
+
+					if (rotsparkle)
+					{
+						widthhalf = ((kp_altinvinsparkle->width) / 2);
+						heighthalf = ((kp_altinvinsparkle->height) / 2);
+
+						if (cv_minihead.value)
+						{
+							adjustx = FixedMul(
+							    4,
+							    (widthhalf - kp_altinvinsparkle->leftoffset) *
+								FRACUNIT / widthhalf);
+							adjusty = FixedMul(
+							    4,
+							    (heighthalf - kp_altinvinsparkle->topoffset) *
+								FRACUNIT / heighthalf);
+						}
+
+						iconoffsets.x =
+						    widthhalf - kp_altinvinsparkle->leftoffset - adjustx;
+						iconoffsets.y =
+						    heighthalf - kp_altinvinsparkle->topoffset - adjusty;
+
+						K_drawKartMinimapIcon(interpx,
+								      interpy,
+								      x,
+								      y,
+								      sparkleflags | V_ADD,
+								      rotsparkle,
+								      colormap,
+								      &iconoffsets);
+					}
+				}
+			}
+#endif
+
 			// Target reticule
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
 				|| ((gametyperules & GTR_WANTED) && K_IsPlayerWanted(&players[localplayers[i]])))
@@ -4531,6 +4862,56 @@ static void K_drawKartMinimap(void)
 	}
 }
 
+static void K_drawKartFinish(void)
+{
+	INT32 timer, minsplitstationary, pnum = 0, splitflags = V_SPLITSCREEN;
+	patch_t **kptodraw;
+
+	{
+		timer = stplyr->karthud[khud_finish];
+		kptodraw = kp_racefinish;
+		minsplitstationary = 2;
+	}
+
+	if (!timer || timer > 2*TICRATE)
+		return;
+
+	if ((timer % (2*5)) / 5) // blink
+		pnum = 1;
+
+	if (r_splitscreen > 0)
+		pnum += (r_splitscreen > 1) ? 2 : 4;
+
+	if (r_splitscreen >= minsplitstationary) // 3/4p, stationary FIN
+	{
+		V_DrawScaledPatch(STCD_X - (SHORT(kptodraw[pnum]->width)/2), STCD_Y - (SHORT(kptodraw[pnum]->height)/2), splitflags, kptodraw[pnum]);
+		return;
+	}
+
+	//else -- 1/2p, scrolling FINISH
+	{
+		INT32 x, xval, ox, interpx, pwidth;
+
+		x = ((vid.width<<FRACBITS)/vid.dupx);
+		xval = (SHORT(kptodraw[pnum]->width)<<FRACBITS);
+
+		pwidth = max(xval, x);
+
+		x = ((TICRATE - timer) * pwidth) / TICRATE;
+		ox = ((TICRATE - (timer - 1)) * pwidth) / TICRATE;
+
+		interpx = R_InterpolateFixed(ox, x);
+
+		if (r_splitscreen && stplyrnum == 1)
+			interpx = -interpx;
+
+		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
+			(STCD_Y<<FRACBITS) - (SHORT(kptodraw[pnum]->height)<<(FRACBITS-1)),
+			FRACUNIT,
+			splitflags, kptodraw[pnum], NULL);
+	}
+}
+
 static void K_drawKartStartCountdown(void)
 {
 	INT32 pnum = 0;
@@ -4572,51 +4953,6 @@ static void K_drawKartStartCountdown(void)
 			pnum += 10;
 
 		V_DrawScaledPatch(STCD_X - (kp_startcountdown[pnum]->width/2), STCD_Y - (kp_startcountdown[pnum]->height/2), V_SPLITSCREEN, kp_startcountdown[pnum]);
-	}
-}
-
-static void K_drawKartFinish(void)
-{
-	INT32 pnum = 0, splitflags = V_SPLITSCREEN;
-
-	if (!stplyr->karthud[khud_cardanimation] || stplyr->karthud[khud_cardanimation] >= 2*TICRATE)
-		return;
-
-	if ((stplyr->karthud[khud_cardanimation] % (2*5)) / 5) // blink
-		pnum = 1;
-
-	if (r_splitscreen > 1) // 3/4p, stationary FIN
-	{
-		pnum += 2;
-		V_DrawScaledPatch(STCD_X - (kp_racefinish[pnum]->width/2), STCD_Y - (kp_racefinish[pnum]->height/2), splitflags, kp_racefinish[pnum]);
-		return;
-	}
-
-	//else -- 1/2p, scrolling FINISH
-	{
-		INT32 x, xval, ox, interpx, pwidth;
-
-		if (r_splitscreen) // wide splitscreen
-			pnum += 4;
-
-		x = ((vid.width<<FRACBITS)/vid.dupx);
-		xval = (kp_racefinish[pnum]->width)<<FRACBITS;
-
-		pwidth = max(xval, x);
-
-		x = ((TICRATE - stplyr->karthud[khud_cardanimation]) * pwidth) / TICRATE;
-		ox = ((TICRATE - (stplyr->karthud[khud_cardanimation] - 1)) * pwidth) / TICRATE;
-
-
-		interpx = R_InterpolateFixed(ox, x);
-
-		if (r_splitscreen && stplyrnum == 1)
-			interpx = -interpx;
-
-		V_DrawFixedPatch(interpx + (STCD_X<<FRACBITS) - (pwidth / 2),
-			(STCD_Y<<FRACBITS) - (kp_racefinish[pnum]->height<<(FRACBITS-1)),
-			FRACUNIT,
-			splitflags, kp_racefinish[pnum], NULL);
 	}
 }
 
@@ -4680,7 +5016,7 @@ static void K_drawBattleFullscreen(void)
 	{
 		if (stplyrnum == 0)
 			V_DrawFadeScreen(0xFF00, 16);
-		if (stplyr->exiting < 6*TICRATE && !stplyr->spectator)
+		if (stplyr->exiting <= 6*TICRATE && !stplyr->spectator)
 		{
 			patch_t *p = kp_battlecool;
 
@@ -4691,8 +5027,8 @@ static void K_drawBattleFullscreen(void)
 
 			V_DrawFixedPatch(x<<FRACBITS, y, scale, splitflags, p, NULL);
 		}
-		else
-			K_drawKartFinish();
+
+		K_drawKartFinish();
 	}
 	else if (stplyr->bumper <= 0 && stplyr->karmadelay && comeback && !stplyr->spectator && drawcomebacktimer)
 	{
@@ -5005,7 +5341,7 @@ static void K_drawInput(void)
 			target = 0;
 		else // turning of multiple strengths!
 		{
-			target = ((abs(stplyr->cmd.turning) - 1)/125)+1;
+			target = ((abs(stplyr->cmd.turning) - 1)/200)+1; // was 125, do we need another toggle for this? Zzz...
 			if (target > 4)
 				target = 4;
 			if (stplyr->cmd.turning < 0)
@@ -5282,7 +5618,7 @@ static void K_drawLapSplitTimestamp(void)
 			ahead >= 0 ? "-" : "+"
 		);
 
-		V_DrawMappedPatch(TIME_X, TIME_Y + 10, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+		V_DrawMappedPatch(TIME_X - 8, TIME_Y + 3, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
 	}
 }
 
@@ -5352,11 +5688,11 @@ static void K_drawLapSplitComparison(void)
 		INT32 stwidth = V_StringWidth(buffer, splitflags) / 2;
 
 		// vibes offset
-		V_DrawMappedPatch(row_position[0] - stwidth, row_position[1] + 4, splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
+		V_DrawMappedPatch(row_position[0] - stwidth - 35, row_position[1], splitflags, faceprefix[skin][FACE_MINIMAP], skincolor);
 
 		if (pos > 1)
 		{
-			V_DrawPingNum(row_position[0] - stwidth, row_position[1], splitflags, pos, NULL);
+			V_DrawPingNum(row_position[0] - stwidth - 35, row_position[1], splitflags, pos, NULL);
 		}
 
 		// vibes offset TWO
@@ -5507,7 +5843,8 @@ static void K_drawDistributionDebugger(void)
 				stplyr->distancetofinish,
 				stplyr->distancefromcluster,
 				0,
-				spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival)
+				spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival),
+				K_IsPlayerLosing(stplyr)
 			);
 
 			if (itemodds <= 0)
@@ -5540,7 +5877,7 @@ static void K_drawDistributionDebugger(void)
 
 	V_DrawString(150, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("PDIS %u", pdis));
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
 
 }
@@ -5571,12 +5908,13 @@ static void K_DrawWaypointDebugger(void)
 
 	if (stplyr->bigwaypointgap)
 	{
-		V_DrawString(8, 146, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
+		V_DrawString(8, 130, 0, va("Auto Respawn Timer: %d", stplyr->bigwaypointgap));
 	}
 
-	V_DrawString(8, 156, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
-	V_DrawString(8, 166, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
-	V_DrawString(8, 176, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
+	V_DrawString(8, 140, 0, va("Current Waypoint ID: %d", K_GetWaypointID(stplyr->currentwaypoint)));
+	V_DrawString(8, 150, 0, va("Next Waypoint ID: %d", K_GetWaypointID(stplyr->nextwaypoint)));
+	V_DrawString(8, 160, 0, va("Finishline Distance: %d", stplyr->distancetofinish));
+	V_DrawString(8, 170, 0, va("Waypoint DtF: %d", stplyr->currentwaypoint ? stplyr->currentwaypoint->distancetofinish : -1));
 }
 
 static void K_DrawClusterDebugger(void)
@@ -5589,7 +5927,7 @@ static void K_DrawClusterDebugger(void)
 
 	INT32 vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
 
-	if (K_UsingLegacyCheckpoints())
+	if (K_LegacyOddsMode())
 	{
 		V_DrawThinString(8, 136, vflags, va("Cluster player: %s", player_names[clusterid]));
 		V_DrawThinString(8, 146, vflags, va("X: %f, Y: %f, Z: %f, Dist. from cluster: %d", FIXED_TO_FLOAT(clusterpoint.x), FIXED_TO_FLOAT(clusterpoint.y), FIXED_TO_FLOAT(clusterpoint.z), stplyr->distancefromcluster));
@@ -5737,6 +6075,8 @@ void K_drawKartHUD(void)
 	// Drift gauge should ideally be drawn behind other hud stuff, right?
 	// right?
 	K_DrawDriftGauge();
+	// new flame shield bars (player-space)
+	K_DrawFlamometer();
 
 	if (battlefullscreen && !freecam)
 	{
@@ -5821,6 +6161,7 @@ void K_drawKartHUD(void)
 				if (gametyperules & GTR_CIRCUIT)
 				{
 					K_drawKartLaps();
+					K_drawKartStatsnLives();
 				}
 				else if (gametyperules & GTR_BUMPERS)
 				{
@@ -6261,4 +6602,88 @@ doafterimage:;
 		meterfont,
 		va("%03d", charge)
 	);*/
+}
+
+void K_DrawFlamometer(void)
+{
+	// Make sure we actually have one, lmao
+	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo))
+		return;
+	// Check for chasecam
+	// TODO: Check for this better ffs
+	if (!cv_chasecam[R_GetViewNumber()].value)
+		return;
+	// I WANT TO LIVE
+	if (stplyr->playerstate != PST_LIVE)
+		return;
+
+	if (stplyr->flametimer <= 0)
+		return;
+
+	mobj_t *mo = stplyr->mo;
+	vector3_t pos = {
+		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
+		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
+		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0),
+	};
+	trackingResult_t res;
+	INT32 basex, basey, barextraflags = 0;
+	INT32 flags = V_SPLITSCREEN|V_HUDTRANS;
+	INT32 fuelbarheight = 41;
+	INT32 tempbarheight = 49;
+	UINT8 *colormap = NULL;
+
+	K_ObjectTracking(&res, &pos, false);
+	basex = res.x + (16<<FRACBITS);
+	basey = res.y - (48<<FRACBITS);
+
+	if (K_UseColorHud())
+	{
+		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
+	}
+	
+	// fire animation
+	if (stplyr->flamestore >= FLAMESTOREMAX-1)
+	{
+		UINT8 flamofiretic = CLAMP((leveltime / 3) % MAXFLAMOFIRETICS, 0, MAXFLAMOFIRETICS) + 1;
+
+		if (stplyr->flameoverheat < 3)
+		{
+			// Fancy "explode" VFX
+			flamofiretic = 0;
+		}
+
+		if (K_UseColorHud())
+		{
+			flamofiretic += 9;
+		}
+
+		V_DrawFixedPatch(basex, basey, FRACUNIT, flags|V_ADD, kp_flamefire[flamofiretic], colormap);
+
+		if (leveltime % 3 != 0)
+		{
+			barextraflags = V_ADD;
+		}
+	}
+
+	// back
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[K_UseColorHud() ? 4 : 0], colormap);
+	
+	// bars
+	// fuel
+	fuelbarheight *= FixedDiv(stplyr->flametimer, itemtime*3);
+	V_SetClipRect(basex + 7*FRACUNIT, basey + 58*FRACUNIT - fuelbarheight, 4*FRACUNIT, fuelbarheight, flags);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[1], NULL);
+	
+	V_ClearClipRect();
+	
+	// temperature
+	tempbarheight *= FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
+	V_SetClipRect(basex + 10*FRACUNIT, basey + 62*FRACUNIT - tempbarheight, 32*FRACUNIT, tempbarheight, flags);
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags|barextraflags, kp_flamometer[2], NULL);
+
+	V_ClearClipRect();
+
+	// front
+	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[K_UseColorHud() ? 5 : 3], colormap);
 }

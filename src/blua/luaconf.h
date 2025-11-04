@@ -11,12 +11,8 @@
 #include <limits.h>
 #include <stddef.h>
 
-#ifdef _MSC_VER
-#define INT32 __int32
-#else
 #include <stdint.h>
 #define INT32 int32_t
-#endif
 
 
 /*
@@ -559,9 +555,6 @@
 #define luai_numshl(a,b)	((unsigned)(a)<<(unsigned)(b))
 #define luai_numshr(a,b)	((unsigned)(a)>>(unsigned)(b))
 #define	luai_numnot(a)		(~((unsigned)(a)))
-#ifdef _MSC_VER
-#pragma warning(disable : 4244)
-#endif
 #endif
 
 

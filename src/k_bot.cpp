@@ -43,9 +43,11 @@
 #include "i_net.h" // doomcom
 #include "blan/b_soc.h"
 #include "v_video.h" // for debugging
+#include "k_waypoint.h"
 
 consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_forcerival = CVAR_INIT ("kartbot_forcerival", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 botdata_t botdata[MAXPLAYERS];
 
@@ -159,6 +161,12 @@ void K_SetBot(UINT8 newplayernum, UINT16 skinnum, UINT8 difficulty, botStyle_e s
 	players[newplayernum].botvars.style = style;
 	players[newplayernum].lives = 9;
 
+	// Does the server want to force rivals? enforce this here.
+	if (cv_forcerival.value)
+	{
+		players[newplayernum].botvars.rival = true;
+	}
+
 	// The bot may immediately become a spectator AT THE START of a GP.
 	// For each subsequent round of GP, K_UpdateGrandPrixBots will handle this.
 	players[newplayernum].spectator = grandprixinfo.gp && grandprixinfo.initalize;
@@ -228,7 +236,7 @@ void K_UpdateMatchRaceBots(void)
 {
 	const UINT16 defaultbotskin = K_BotDefaultSkin();
 	UINT8 difficulty;
-	UINT8 pmax = (dedicated ? MAXPLAYERS-1 : MAXPLAYERS);
+	UINT8 pmax = (InADedicatedServer() ? MAXPLAYERS-1 : MAXPLAYERS);
 	UINT8 numplayers = 0;
 	UINT8 numbots = 0;
 	UINT8 numwaiting = 0;
@@ -252,8 +260,14 @@ void K_UpdateMatchRaceBots(void)
 	{
 		difficulty = 0;
 	}
-	else if (K_CanChangeRules() == false)
+	else if (K_CanChangeRules(true) == false)
 	{
+		difficulty = 0;
+	}
+	else if (K_UsingLegacyCheckpoints() == true && !cv_forcebots.value)
+	{
+		if (cv_kartbot.value > 0 && cv_kartbot_cap.value > 0)
+			CONS_Alert(CONS_ERROR, "This map does not use waypoints so bot functionality will not work.\nConsider adding new waypoints directly or via map patching for bot support.\n");
 		difficulty = 0;
 	}
 	else
@@ -279,6 +293,16 @@ void K_UpdateMatchRaceBots(void)
 
 					// Enforce normal style for Match Race
 					players[i].botvars.style = BOT_STYLE_NORMAL;
+
+					// Does the server want to force rivals? enforce this here.
+					if (cv_forcerival.value)
+					{
+						players[i].botvars.rival = true;
+					}
+					else
+					{
+						players[i].botvars.rival = false;
+					}
 				}
 				else
 				{
@@ -326,12 +350,7 @@ void K_UpdateMatchRaceBots(void)
 	if (numbots < wantedbots)
 	{
 		// We require MORE bots!
-		UINT8 newplayernum = 0;
-
-		if (dedicated)
-		{
-			newplayernum = 1;
-		}
+		UINT8 newplayernum = InADedicatedServer() ? 1 : 0;
 
 		for (i = 0; i < usableskins; i++)
 		{
@@ -551,8 +570,11 @@ botcontroller_t *K_GetBotController(const mobj_t *mobj)
 fixed_t K_BotMapModifier(void)
 {
 	// fuck it we ball
-	return 5*FRACUNIT/10;
+	//return 5*FRACUNIT/10;
+	// ...with a bit of customization
+	return K_TrackModifierMax();
 
+#if 0
 	constexpr INT32 complexity_scale = 10000;
 	fixed_t modifier_max = K_TrackModifierMax();
 
@@ -568,6 +590,7 @@ fixed_t K_BotMapModifier(void)
 	);
 
 	return FRACUNIT + complexity_value;
+#endif
 }
 
 /*--------------------------------------------------

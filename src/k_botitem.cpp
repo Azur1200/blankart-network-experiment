@@ -30,6 +30,7 @@
 #include "r_things.h" // numskins
 #include "m_easing.h"
 #include "k_odds.h"
+#include "k_waypoint.h"
 
 // Looks for players around the bot, and presses the item button
 // if there is one in range.
@@ -921,7 +922,7 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 	boolean hold = false;
 
 	// We are holding this thing too long, lets get rid of it.
-	if (bd->itemconfirm > 20*TICRATE)
+	if (bd->itemconfirm > 15*TICRATE)
 	{
 		bd->itemconfirm++;
 
@@ -933,17 +934,13 @@ static void K_BotItemBubble(botdata_t *bd, const player_t *player)
 		return;
 	}
 
-	if (player->bubbleblowup <= 0)
+	if (player->bubblecool <= 0)
 	{
-		if (player->bubblecool <= 0)
-		{
-			fixed_t radius = 192 * player->mo->scale;
-			radius = Easing_Linear(FRACUNIT * player->botvars.difficulty / MAXBOTDIFFICULTY, 2*radius, radius);
-
-			hold = K_GetBlockedBubbleItem(player, radius);
-		}
+		fixed_t radius = 192 * player->mo->scale;
+		radius = Easing_Linear(FRACUNIT * player->botvars.difficulty / MAXBOTDIFFICULTY, 2*radius, radius);
+		hold = K_GetBlockedBubbleItem(player, radius);
 	}
-	else if (player->bubbleblowup < bubbletime)
+	else if (player->bubblecool < bubbletime)
 	{
 		hold = true;
 	}

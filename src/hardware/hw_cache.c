@@ -918,7 +918,7 @@ static void HWR_PrecacheLevelSprites(void)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 != (actionf_p1)P_MobjThinker)
+		if (th->function != (actionf_p1)P_MobjThinker)
 			continue;
 
 		mo = (mobj_t *)th;
@@ -1037,17 +1037,19 @@ GLMapTexture_t *HWR_GetTexture(INT32 tex, boolean noencoremap)
 	// The system-memory data can be purged now.
 	Z_ChangeTag(grtex->mipmap.data, PU_HWRCACHE_UNLOCKED);
 
-	if (R_GetTextureBrightmap(tex))
+	INT32 brightmapnum = R_GetTextureBrightmap(tex);
+
+	if (brightmapnum)
 	{
 		GLMapTexture_t *grtexbright;
 
 		// Every texture in memory, stored in the
 		// hardware renderer's bit depth format. Wow!
-		grtexbright = &gl_textures[R_GetTextureBrightmap(tex)];
+		grtexbright = &gl_textures[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
 
 		// Generate texture if missing from the cache
 		if (!grtexbright->mipmap.data && !grtexbright->mipmap.downloaded)
-			HWR_GenerateTexture(grtexbright, R_GetTextureBrightmap(tex), true);
+			HWR_GenerateTexture(grtexbright, brightmapnum, true);
 
 		grtexbright->mipmap.flags |= TF_BRIGHTMAP;
 
@@ -1168,6 +1170,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 	INT32 texturenum = texturetranslation[levelflat->texture_id];
 	INT32 brightmapnum = R_GetTextureBrightmap(texturenum);
+
 	if (texturenum <= 0)
 	{
 		HWR_SetCurrentTexture(NULL);
@@ -1214,7 +1217,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 	if (brightmapnum)
 	{
-		grtex = &gl_flats[brightmapnum];
+		grtex = &gl_flats[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
 		grMipmap = &grtex->mipmap;
 
 		if (!grMipmap->data && !grMipmap->downloaded)
@@ -1572,7 +1575,9 @@ static void HWR_CacheFadeMask(GLMipmap_t *grMipmap, lumpnum_t fademasklumpnum)
 			break;
 		default: // Bad lump
 			CONS_Alert(CONS_WARNING, "Fade mask lump of incorrect size, ignored\n"); // I should avoid this by checking the lumpnum in HWR_RunWipe
-			break;
+			fmwidth = 0;
+			fmheight = 0;
+			return;
 	}
 
 	// Thankfully, this will still work for this scenario

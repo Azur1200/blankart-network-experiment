@@ -105,8 +105,6 @@ static boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z)
 	boolean startingonground = P_IsObjectOnGround(thing);
 	sector_t *oldsector = thing->subsector->sector;
 
-	numspechit = 0U;
-
 	// the move is ok,
 	// so link the thing into its new position
 	P_UnsetThingPosition(thing);
@@ -492,7 +490,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	|| (thing->player && thing->player->spectator))
 		return BMIT_CONTINUE;
 
-	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE|MF_SPRING)))
+	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE/*|MF_SPRING*/))) // we still use MF_SOLID for springs
 		return BMIT_CONTINUE;
 
 	// Get rid of the "just flipped" flag.
@@ -677,30 +675,6 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		return K_SMKIceBlockCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
 	}
 
-	if (g_tm.thing->type == MT_EGGMANITEM || g_tm.thing->type == MT_EGGMANITEM_SHIELD)
-	{
-		// see if it went over / under
-		if (g_tm.thing->z > thing->z + thing->height)
-			return BMIT_CONTINUE; // overhead
-		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return BMIT_CONTINUE; // underneath
-
-		return K_EggItemCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
-	}
-	else if (thing->type == MT_EGGMANITEM || thing->type == MT_EGGMANITEM_SHIELD)
-	{
-		// see if it went over / under
-		if (g_tm.thing->z > thing->z + thing->height)
-			return BMIT_CONTINUE; // overhead
-		if (g_tm.thing->z + g_tm.thing->height < thing->z)
-			return BMIT_CONTINUE; // underneath
-
-		return K_EggItemCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
-	}
-
-	if (g_tm.thing->type == MT_RANDOMITEM)
-		return BMIT_CONTINUE;
-
 	// Bubble Shield reflect
 	if (thing->type == MT_BUBBLESHIELD && !P_MobjWasRemoved(thing->target) && thing->target->player && thing->target->player->bubbleblowup)
 	{
@@ -725,6 +699,30 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 	// double make sure bubbles won't collide with anything else
 	if (thing->type == MT_BUBBLESHIELD || g_tm.thing->type == MT_BUBBLESHIELD)
+		return BMIT_CONTINUE;
+
+	if (g_tm.thing->type == MT_EGGMANITEM || g_tm.thing->type == MT_EGGMANITEM_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggItemCollide(g_tm.thing, thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+	else if (thing->type == MT_EGGMANITEM || thing->type == MT_EGGMANITEM_SHIELD)
+	{
+		// see if it went over / under
+		if (g_tm.thing->z > thing->z + thing->height)
+			return BMIT_CONTINUE; // overhead
+		if (g_tm.thing->z + g_tm.thing->height < thing->z)
+			return BMIT_CONTINUE; // underneath
+
+		return K_EggItemCollide(thing, g_tm.thing) ? BMIT_CONTINUE : BMIT_ABORT;
+	}
+
+	if (g_tm.thing->type == MT_RANDOMITEM)
 		return BMIT_CONTINUE;
 
 	if (g_tm.thing->type == MT_ORBINAUT || g_tm.thing->type == MT_JAWZ || g_tm.thing->type == MT_JAWZ_DUD
@@ -1156,6 +1154,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (g_tm.thing->z + g_tm.thing->height < thing->z)
 				return BMIT_CONTINUE; // underneath
 
+			// If antibump is active, ignore player collisions.
+			if (leveltime < starttime + antibumptime)
+			{
+				return BMIT_CONTINUE;
+			}
+
 			if (thing->player->squishedtimer || thing->player->hyudorotimer
 				|| thing->player->justbumped || thing->scale > g_tm.thing->scale + (mapobjectscale/8)
 				|| g_tm.thing->player->squishedtimer || g_tm.thing->player->hyudorotimer
@@ -1210,8 +1214,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (!thing->health)
 				return BMIT_CONTINUE; // dead
 
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				if (thing->type == MT_BLUEROBRA_JOINT)
 					P_KillMobj(thing->target, g_tm.thing, g_tm.thing, DMG_NORMAL);
@@ -1236,8 +1239,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (!thing->health)
 				return BMIT_CONTINUE; // dead
 
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				P_KillMobj(thing, g_tm.thing, g_tm.thing, DMG_NORMAL);
 				return BMIT_CONTINUE; // kill
@@ -1267,8 +1269,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 				return BMIT_CONTINUE; // underneath
 
 			// kill
-			if (g_tm.thing->player->invincibilitytimer > 0
-				|| g_tm.thing->player->growshrinktimer > 0)
+			if (K_PlayerCanPunt(g_tm.thing->player))
 			{
 				P_KillMobj(thing, g_tm.thing, g_tm.thing, DMG_NORMAL);
 				return BMIT_CONTINUE;
@@ -1287,6 +1288,21 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 					P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT);
 				K_KartBouncing(g_tm.thing, thing, false, true);
 			}
+
+			return BMIT_CONTINUE;
+		}
+		else if (thing->type == MT_KART_LEFTOVER)
+		{
+			// see if it went over / under
+			if (g_tm.thing->z > thing->z + thing->height)
+				return BMIT_CONTINUE; // overhead
+			if (g_tm.thing->z + g_tm.thing->height < thing->z)
+				return BMIT_CONTINUE; // underneath
+
+			if (P_IsObjectOnGround(thing) && g_tm.thing->momz < 0)
+				K_KartBouncing(g_tm.thing, thing, true, false);
+			else
+				K_KartBouncing(g_tm.thing, thing, false, false);
 
 			return BMIT_CONTINUE;
 		}
@@ -2521,9 +2537,6 @@ increment_move
 	fixed_t thingtop;
 	g_tm.floatok = false;
 
-	// reset this to 0 at the start of each trymove call as it's only used here
-	numspechitint = 0U;
-
 	// This makes sure that there are no freezes from computing extremely small movements.
 	// Originally was MAXRADIUS/2, but that causes some inconsistencies for small players.
 	radius = max(radius, mapobjectscale);
@@ -2830,6 +2843,8 @@ boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, boolean allowdropoff, Try
 		}
 	}
 
+	numspechitint = 0U;
+
 	if (result != NULL)
 	{
 		result->success = true;
@@ -2938,10 +2953,6 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 		I_Error("Previously-removed Thing of type %u crashes P_CheckPosition!", thing->type);
 #endif
 
-	// reset special lines
-	numspechitint = 0U;
-	numspechit = 0U;
-
 	// trace along the three leading corners
 	if (momx > 0)
 	{
@@ -2985,6 +2996,9 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 			P_CrossSpecialLine(ld, oldside, thing);
 		}
 	}
+
+	// reset special lines
+	numspechitint = numspechit = 0U;
 }
 
 //
@@ -3485,7 +3499,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	UINT32 basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
 
 	if ((bumpspark < BUMPSPARK_ALL) ||
-	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
+	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
 		if (!bumpspark)
 		{
@@ -3503,7 +3517,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
 	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
 
-	if ((!cv_kartbumpspring.value && modeattacking == ATTACKING_NONE) || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x0009)))
+	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
 		mo->player->pogospring = 0;
 	}
@@ -3805,7 +3819,7 @@ static boolean PIT_ChangeSector(mobj_t *thing, boolean realcrush)
 
 						for (think = thlist[THINK_MAIN].next; think != &thlist[THINK_MAIN]; think = think->next)
 						{
-							if (think->function.acp1 != (actionf_p1)T_StartCrumble)
+							if (think->function != (actionf_p1)T_StartCrumble)
 								continue;
 
 							crumbler = (crumble_t *)think;

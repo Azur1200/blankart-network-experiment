@@ -265,7 +265,7 @@ enum player_e
 	player_ringtransparency,
 	player_airdroptime,
 	player_ringdrop,
-	player_curshield,
+	player_shieldtracer,
 	player_bubblecool,
 	player_bubbleblowup,
 	player_bubblehealth,
@@ -469,7 +469,7 @@ static const char *const player_opt[] = {
 	"ringtransparency",
 	"airdroptime",
 	"ringdrop",
-	"curshield",
+	"shieldtracer",
 	"bubblecool",
 	"bubbleblowup",
 	"bubblehealth",
@@ -567,7 +567,7 @@ static const char *const player_opt[] = {
 	"loop",
 	"prevonground",
 	"walltransfered",
-	"walltransfeboost",
+	"walltransferboost",
 #ifdef HWRENDER
 	"fovadd",
 #endif
@@ -602,7 +602,7 @@ static int player_get(lua_State *L)
 		LUA_PushUserdata(L, plr->mo, META_MOBJ);
 		break;
 	case player_mo:
-		if (plr->spectator)
+		if (!plr || plr->spectator)
 			lua_pushnil(L); // sigh
 		else
 			LUA_PushUserdata(L, plr->mo, META_MOBJ);
@@ -637,9 +637,17 @@ static int player_get(lua_State *L)
 		lua_pushangle(L, plr->aiming);
 		break;
 	case player_drawangle:
+		if (lua_compatmode)
+			goto noexist;
+		/* FALLTHRU */
 	case player_frameangle:
-		lua_pushangle(L, plr->drawangle);
+	{
+		angle_t angle = plr->drawangle;
+		if (lua_compatmode)
+			angle -= K_GetDriftAngleOffset(plr);
+		lua_pushangle(L, angle);
 		break;
+	}
 	case player_powers:
 		LUA_PushUserdata(L, plr->powers, META_POWERS);
 		break;
@@ -895,8 +903,8 @@ static int player_get(lua_State *L)
 	case player_ringdrop:
 		lua_pushinteger(L, plr->ringdrop);
 		break;
-	case player_curshield:
-		lua_pushinteger(L, plr->curshield);
+	case player_shieldtracer:
+		LUA_PushUserdata(L, plr->shieldtracer, META_MOBJ);
 		break;
 	case player_bubblecool:
 		lua_pushinteger(L, plr->bubblecool);
@@ -1014,6 +1022,9 @@ static int player_get(lua_State *L)
 		if (lua_compatmode && (plr->oldcmd.buttons & BT_ATTACK))
 			pflags |= PF_ATTACKDOWN;
 
+		if (lua_compatmode && (plr->oldcmd.buttons & BT_BRAKE))
+			pflags |= PF_USEDOWN;
+
 		lua_pushinteger(L, pflags);
 		break;
 	}
@@ -1126,13 +1137,13 @@ static int player_get(lua_State *L)
 		lua_pushinteger(L, plr->checkskip);
 		break;
 	case player_starpostx:
-		lua_pushfixed(L, plr->starpostx);
+		lua_pushfixed(L, plr->starpostx >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starposty:
-		lua_pushfixed(L, plr->starposty);
+		lua_pushfixed(L, plr->starposty >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starpostz:
-		lua_pushfixed(L, plr->starpostz);
+		lua_pushfixed(L, plr->starpostz >> (lua_compatmode ? 16 : 0));
 		break;
 	case player_starpostangle:
 		lua_pushangle(L, plr->starpostangle);
@@ -1218,6 +1229,7 @@ static int player_get(lua_State *L)
 		break;
 #endif
 	default:
+	noexist:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
 		lua_pushlightuserdata(L, plr);
@@ -1294,6 +1306,9 @@ static int player_set(lua_State *L)
 		break;
 	}
 	case player_drawangle:
+		if (lua_compatmode)
+			goto noexist;
+		/* FALLTHRU */
 	case player_frameangle:
 	{
 		angle_t angle = luaL_checkangle(L, 3);
@@ -1318,6 +1333,11 @@ static int player_set(lua_State *L)
 				plr->oldcmd.buttons |= BT_ATTACK;
 			else
 				plr->oldcmd.buttons &= ~BT_ATTACK;
+
+			if (pflags & PF_USEDOWN)
+				plr->oldcmd.buttons |= BT_BRAKE;
+			else
+				plr->oldcmd.buttons &= ~BT_BRAKE;
 		}
 
 		plr->pflags = pflags;
@@ -1596,9 +1616,8 @@ static int player_set(lua_State *L)
 	case player_ringdrop:
 		plr->ringdrop = luaL_checkinteger(L, 3);
 		break;
-	case player_curshield:
-		plr->curshield = luaL_checkinteger(L, 3);
-		break;
+	case player_shieldtracer:
+		return NOSET;
 	case player_bubblecool:
 		plr->bubblecool = luaL_checkinteger(L, 3);
 		break;
@@ -1806,13 +1825,13 @@ static int player_set(lua_State *L)
 		plr->checkskip = (INT32)luaL_checkinteger(L, 3);
 		break;
 	case player_starpostx:
-		plr->starpostx = luaL_checkfixed(L, 3);
+		plr->starpostx = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starposty:
-		plr->starposty = luaL_checkfixed(L, 3);
+		plr->starposty = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starpostz:
-		plr->starpostz = luaL_checkfixed(L, 3);
+		plr->starpostz = luaL_checkfixed(L, 3) << (lua_compatmode ? 16 : 0);
 		break;
 	case player_starpostangle:
 		plr->starpostangle = luaL_checkangle(L, 3);
@@ -1900,6 +1919,7 @@ static int player_set(lua_State *L)
 		break;
 #endif
 	default:
+	noexist:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));
 		lua_pushlightuserdata(L, plr);
@@ -2153,7 +2173,7 @@ static int kartstuff_get(lua_State *L)
 			lua_pushinteger(L, (plr->itemflags & IF_ITEMOUT));
 			return 1;
 		case k_curshield:
-			lua_pushinteger(L, plr->curshield);
+			lua_pushinteger(L, K_GetShieldFromPlayer(plr));
 			return 1;
 		case k_hyudorotimer:
 			lua_pushinteger(L, plr->hyudorotimer);
@@ -2415,7 +2435,9 @@ static int kartstuff_set(lua_State *L)
 					plr->itemflags |= IF_ITEMOUT;
 				break;
 			case k_curshield:
-				plr->curshield = i;
+				// i have no clue where you'd find a script that sets k_curshield, but... this will do?
+				if (!P_MobjWasRemoved(plr->shieldtracer) && K_GetShieldFromPlayer(plr) != i)
+					P_RemoveMobj(plr->shieldtracer);
 				break;
 			case k_hyudorotimer:
 				plr->hyudorotimer = i;

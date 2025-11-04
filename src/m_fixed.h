@@ -32,7 +32,7 @@ extern "C" {
   \brief units of the fraction
 */
 #define FRACUNIT (1<<FRACBITS)
-#define FRACHALF (1<<(FRACBITS>>1))
+#define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
 /**	\brief	Redefinition of INT32 as fixed_t
 	unit used as fixed_t
@@ -68,6 +68,20 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FloatToFixed(float f)
 FUNCMATH FUNCINLINE static ATTRINLINE INT64 FloatToFixed64(float f)
 {
 	return (INT64)(f * FRACUNIT);
+}
+
+/*!
+ * \brief convert fixed_t into double-precision floating number
+ */
+
+FUNCMATH FUNCINLINE static ATTRINLINE double FixedToDouble(fixed_t x)
+{
+	return x / (double)FRACUNIT;
+}
+
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
+{
+	return (fixed_t)(f * FRACUNIT);
 }
 
 // for backwards compat

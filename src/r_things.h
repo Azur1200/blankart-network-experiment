@@ -97,7 +97,10 @@ boolean R_ThingIsFlashing(mobj_t *thing);
 
 boolean R_ThingIsUsingBakedOffsets(mobj_t *thing);
 
-INT32 R_ThingLightLevel(mobj_t *thing);
+FUNCINLINE static ATTRINLINE INT32 R_ThingLightLevel(mobj_t* thing)
+{
+	return (INT32)thing->lightlevel;
+}
 
 // --------------
 // MASKED DRAWING
@@ -110,7 +113,7 @@ struct maskcount_t
 {
 	size_t drawsegs[2];
 	size_t vissprites[2];
-	fixed_t viewx, viewy, viewz;			/**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
+	fixed_t viewx, viewy, viewz; /**< View z stored at the time of the BSP traversal for the view/portal. Masked sorting/drawing needs it. */
 	sector_t* viewsector;
 };
 
@@ -122,7 +125,11 @@ void R_DrawMasked(maskcount_t* masks, INT32 nummasks);
 
 // number of sprite lumps for spritewidth,offset,topoffset lookup tables
 // Fab: this is a hack : should allocate the lookup tables per sprite
+#if __SIZEOF_POINTER__ < 8
 #define MAXVISSPRITES 2048 // added 2-2-98 was 128
+#else
+#define MAXVISSPRITES 4096 // only for 64bit
+#endif
 
 #define VISSPRITECHUNKBITS 6	// 2^6 = 64 sprites per chunk
 #define VISSPRITESPERCHUNK (1 << VISSPRITECHUNKBITS)

@@ -93,7 +93,7 @@ typedef enum
 // mouse values are used once
 extern consvar_t cv_mousesens, cv_mouseysens;
 extern consvar_t cv_mousesens2, cv_mouseysens2;
-extern consvar_t cv_controlperkey, cv_turnsmooth;
+extern consvar_t cv_controlperkey;
 
 // current state of the keys: JOYAXISRANGE or 0 when boolean.
 // Or anything inbetween for analog values

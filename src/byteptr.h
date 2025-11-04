@@ -232,6 +232,7 @@ FUNCINLINE static ATTRINLINE UINT64 readulonglong(void *ptr)
 		tmp_i++;                                              \
                                                               \
 	s[tmp_i] = '\0';                                          \
+	if (tmp_i == n - 1 && *p == '\0') p++;                    \
 } while (0)
 
 #define READSTRING(p, s) do {                \

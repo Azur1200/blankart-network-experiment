@@ -42,7 +42,6 @@
 #include "r_local.h"
 #include "m_argv.h"
 #include "p_setup.h"
-#include "lzf.h"
 #include "lua_script.h"
 #include "lua_hook.h"
 #include "lonesha256.h"
@@ -69,6 +68,14 @@
 #include "discord.h"
 #endif
 
+#ifdef USE_LZ4
+#include "lz4.h"
+#elif defined HAVE_ZLIB
+#include <zlib.h>
+#else
+#include "lzf.h"
+#endif
+
 //
 // NETWORKING
 //
@@ -85,15 +92,18 @@
 #define MAX_REASONLENGTH 30
 #define FORCECLOSE 0x8000
 
+I_StaticAssert(sizeof(doomdata_t) < MAXPACKETLENGTH); // can't send a packet larger than the max packet length!
+
 boolean server = true; // true or false but !server == client
 #define client (!server)
 boolean nodownload = false;
 boolean serverrunning = false;
+boolean connectedtodedicated = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
 UINT8 playerconsole[MAXPLAYERS];
-plrinfo playerinfo[MAXPLAYERS];
+plrinfo playerinfo[MAXPLAYERINFO];
 
 // Server specific vars
 UINT8 playernode[MAXPLAYERS];
@@ -1067,7 +1077,7 @@ static void SV_SendPlayerInfo(INT32 node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	netbuffer->packettype = PT_PLAYERINFO;
 
-	for (i = 0; i < MSCOMPAT_MAXPLAYERS; i++)
+	for (i = 0; i < MAXPLAYERINFO; i++)
 	{
 		if (i >= MAXPLAYERS || playernode[i] == UINT8_MAX || !playeringame[i])
 		{
@@ -1080,10 +1090,6 @@ static void SV_SendPlayerInfo(INT32 node)
 		memcpy(netbuffer->u.playerinfo[i].name, player_names[i], sizeof(player_names[i]));
 
 		netbuffer->u.playerinfo[i].name[MAXPLAYERNAME] = '\0';
-
-		//fetch IP address
-		//No, don't do that, you fuckface.
-		memset(netbuffer->u.playerinfo[i].address, 0, 4);
 
 		if (G_GametypeHasTeams())
 		{
@@ -1108,7 +1114,7 @@ static void SV_SendPlayerInfo(INT32 node)
 		netbuffer->u.playerinfo[i].data = 0; //players[i].skincolor;
 	}
 
-	HSendPacket(node, false, 0, sizeof(plrinfo) * MSCOMPAT_MAXPLAYERS);
+	HSendPacket(node, false, 0, sizeof(plrinfo) * MAXPLAYERINFO);
 }
 
 /** Sends a PT_SERVERCFG packet
@@ -1136,6 +1142,7 @@ static boolean SV_SendServerConfig(INT32 node)
 	netbuffer->u.servercfg.gamestate = (UINT8)gamestate;
 	netbuffer->u.servercfg.gametype = (UINT8)gametype;
 	netbuffer->u.servercfg.modifiedgame = (UINT8)modifiedgame;
+	netbuffer->u.servercfg.dedicated = (boolean)dedicated;
 
 	netbuffer->u.servercfg.maxplayer = (UINT8)(min((dedicated ? MAXPLAYERS-1 : MAXPLAYERS), cv_maxplayers.value));
 	netbuffer->u.servercfg.allownewplayer = cv_allownewplayer.value;
@@ -1224,8 +1231,18 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	}
 
 	// Attempt to compress it.
+#if defined USE_LZ4
+	if ((compressedlen = LZ4_compress_fast((char*)(save.buffer + sizeof(UINT32)), (char*)(compressedsave + sizeof(UINT32)), length - sizeof(UINT32), length - sizeof(UINT32) - 1, LZ4_ACCEL)))
+#elif defined HAVE_ZLIB
+	int compresstatus = compress2(compressedsave + sizeof(UINT32), &compressedlen, save.buffer + sizeof(UINT32), length - sizeof(UINT32), ZLIB_LEVEL);
+	if (compresstatus == Z_OK)
+#else
 	if ((compressedlen = lzf_compress(save.buffer + sizeof(UINT32), length - sizeof(UINT32), compressedsave + sizeof(UINT32), length - sizeof(UINT32) - 1)))
+#endif
 	{
+		CONS_Printf("Compressed savegame of size %zu\n", length - sizeof(UINT32));
+		CONS_Printf("Compressed savegame is %zu\n", compressedlen);
+
 		// Compressing succeeded; send compressed data
 		P_SaveBufferFree(&save);
 
@@ -1236,6 +1253,8 @@ static void SV_SendSaveGame(INT32 node, boolean resending)
 	}
 	else
 	{
+		CONS_Alert(CONS_WARNING, "Compressing failed, sending original save game\n");
+
 		// Compression failed to make it smaller; send original
 		Z_Free(compressedsave);
 
@@ -1318,7 +1337,17 @@ static void CL_LoadReceivedSavegame(boolean reloading)
 	{
 		UINT8 *decompressedbuffer = Z_Malloc(decompressedlen, PU_STATIC, NULL);
 
+		CONS_Printf("Decompressing compressed savegame of size %zu\n", length - sizeof(UINT32));
+
+#if defined USE_LZ4
+		LZ4_decompress_safe((char*)save.p, (char*)decompressedbuffer, length - sizeof(UINT32), decompressedlen);
+#elif defined HAVE_ZLIB
+		uncompress(decompressedbuffer, &decompressedlen, save.p, length - sizeof(UINT32));
+#else
 		lzf_decompress(save.p, length - sizeof(UINT32), decompressedbuffer, decompressedlen);
+#endif
+
+		CONS_Printf("Decompressed save is %zu\n", decompressedlen);
 
 		P_SaveBufferFree(&save);
 		P_SaveBufferFromExisting(&save, decompressedbuffer, decompressedlen);
@@ -2539,6 +2568,8 @@ static void Command_connect(void)
 	// we don't request a restart unless the filelist differs
 
 	server = false;
+	connectedtodedicated = false;
+
 /*
 	if (!stricmp(COM_Argv(1), "self"))
 	{
@@ -2692,7 +2723,7 @@ void CL_RemovePlayer(INT32 playernum, kickreason_t reason)
 	playeringame[playernum] = false;
 	demo_extradata[playernum] |= DXD_PLAYSTATE;
 	playernode[playernum] = UINT8_MAX;
-	while (!playeringame[doomcom->numslots-1] && doomcom->numslots > 1)
+	while (doomcom->numslots > 1 && !playeringame[doomcom->numslots-1])
 		doomcom->numslots--;
 
 	// Reset the name
@@ -2750,6 +2781,7 @@ void CL_Reset(void)
 	multiplayer = false;
 	servernode = 0;
 	server = true;
+	connectedtodedicated = false;
 	doomcom->numnodes = 1;
 	doomcom->numslots = 1;
 	SV_StopServer();
@@ -3620,7 +3652,7 @@ static void SV_GenContext(void)
 void D_QuitNetGame(void)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	if (!netgame || !netbuffer)
+	if (!netgame || !doomcom)
 		return;
 
 	DEBFILE("===========================================================================\n"
@@ -4028,6 +4060,11 @@ boolean Playing(void)
 	return (server && serverrunning) || (client && cl_mode == CL_CONNECTED);
 }
 
+boolean InADedicatedServer(void)
+{
+	return Playing() && (dedicated || connectedtodedicated);
+}
+
 boolean SV_SpawnServer(void)
 {
 	// Screw Testers mode, worst idea ever.
@@ -4089,30 +4126,23 @@ void SV_StopServer(void)
 }
 
 // called at singleplayer start and stopdemo
-void SV_StartSinglePlayerServer(void)
+void SV_StartSinglePlayerServer(INT32 dogametype, boolean donetgame)
 {
 	INT32 lastgametype = gametype;
 	server = true;
-	netgame = false;
-	multiplayer = false;
+	multiplayer = (modeattacking == ATTACKING_NONE) && !grandprixinfo.gp; // G: no multiplayer in GP!
+	connectedtodedicated = false;
 
-	if ((modeattacking == ATTACKING_ITEMBREAK) || (bossinfo.boss == true))
-	{
-		G_SetGametype(GT_BATTLE);
-	}
-	else
-	{
-		G_SetGametype(GT_RACE);
-	}
+	netgame = false; // so setting timelimit works... (XD_NETVAR doesn't play nice with SV_StopServer)
 
+	G_SetGametype(dogametype);
 	if (gametype != lastgametype)
 		D_GameTypeChanged(lastgametype);
 
+	netgame = donetgame;
+
 	// no more tic the game with this settings!
 	SV_StopServer();
-
-	if (splitscreen)
-		multiplayer = true;
 }
 
 static void SV_SendRefuse(INT32 node, const char *reason)
@@ -4492,7 +4522,7 @@ static void HandlePlayerInfo(SINT8 node)
 {
 	(void)node;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	for (INT32 i = 0; i < MAXPLAYERS; i++)
+	for (INT32 i = 0; i < MAXPLAYERINFO; i++)
 	{
 		playerinfo[i] = netbuffer->u.playerinfo[i];
 	}
@@ -4674,6 +4704,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 				G_SetGametype(netbuffer->u.servercfg.gametype);
 
 				modifiedgame = netbuffer->u.servercfg.modifiedgame;
+				connectedtodedicated = netbuffer->u.servercfg.dedicated;
 
 				memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
 
@@ -5333,7 +5364,7 @@ static INT16 Consistancy(void)
 	{
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			mo = (mobj_t *)th;

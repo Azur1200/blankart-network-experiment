@@ -41,6 +41,8 @@
 #include "k_director.h"
 #include "acs/interface.h"
 #include "k_bot.h" // K_BotTicker
+#include "k_odds.h" // ItemBGone
+#include "k_specialstage.h"
 
 #ifdef PARANOIA
 #include "deh_tables.h" // MOBJTYPE_LIST
@@ -131,7 +133,7 @@ void Command_Numthinkers_f(void)
 	{
 		for (think = thlist[i].next; think != &thlist[i]; think = think->next)
 		{
-			if (think->function.acp1 != action)
+			if (think->function != action)
 				continue;
 
 			count++;
@@ -169,7 +171,7 @@ void Command_CountMobjs_f(void)
 
 			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 			{
-				if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+				if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 					continue;
 
 				if (((mobj_t *)th)->type == i)
@@ -189,7 +191,7 @@ void Command_CountMobjs_f(void)
 
 		for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 		{
-			if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+			if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 				continue;
 
 			if (((mobj_t *)th)->type == i)
@@ -261,7 +263,7 @@ void P_AddThinker(const thinklistnum_t n, thinker_t *thinker)
 #ifdef PARANOIA
 static const char *MobjTypeName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -280,7 +282,7 @@ static const char *MobjTypeName(const mobj_t *mobj)
 
 static const char *MobjThinkerName(const mobj_t *mobj)
 {
-	actionf_p1 p1 = mobj->thinker.function.acp1;
+	actionf_p1 p1 = mobj->thinker.function;
 
 	if (p1 == (actionf_p1)P_MobjThinker)
 	{
@@ -396,7 +398,7 @@ void P_UnlinkThinker(thinker_t *thinker)
 void P_RemoveThinker(thinker_t *thinker)
 {
 	LUA_InvalidateUserdata(thinker);
-	thinker->function.acp1 = (actionf_p1)P_RemoveThinkerDelayed;
+	thinker->function = (actionf_p1)P_RemoveThinkerDelayed;
 }
 
 /*
@@ -485,9 +487,9 @@ static void P_RunThinkers(void)
 		for (currentthinker = thlist[i].next; currentthinker != &thlist[i]; currentthinker = currentthinker->next)
 		{
 #ifdef PARANOIA
-			I_Assert(currentthinker->function.acp1 != NULL);
+			I_Assert(currentthinker->function != NULL);
 #endif
-			currentthinker->function.acp1(currentthinker);
+			currentthinker->function(currentthinker);
 		}
 		ps_thlist_times[i] = I_GetPreciseTime() - ps_thlist_times[i];
 	}
@@ -745,9 +747,26 @@ void P_Ticker(boolean run)
 		K_UpdateAllPlayerPositions();
 
 		// OK! Now that we got all of that sorted, players can think!
+		UINT8 p = 0;
 		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+			{
 				P_PlayerThink(&players[i]);
+				K_KartPlayerHUDUpdate(&players[i]);
+
+				if (!players[i].spectator)
+					p++;
+			}
+		}
+
+		if (p > (MAXPLAYERS / 2))
+		{
+			// At the point where players spawn on top of one another, start silently
+			// adding a minimum to the antibump timer.
+			// This prevents annoying race-start bonks.
+			antibumptime = max(p, antibumptime);
+		}
 
 		ps_playerthink_time = I_GetPreciseTime() - ps_playerthink_time;
 	}
@@ -821,48 +840,6 @@ void P_Ticker(boolean run)
 					}
 				}
 
-				if (timelimitintics > 0)
-				{
-					// last minute
-					if (timelimitintics > 60*TICRATE && leveltime == timelimitintics - 60*TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_cdfm67); // guys it's a bell it's just like splatoon guys
-					}
-					if (timelimitintics > 60*TICRATE && leveltime == timelimitintics - 59*TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_bhurry); // hurry up :))))
-					}
-
-					// overtime
-					if (gameaction != ga_completed && leveltime == timelimitintics + 1 + starttime)
-					{						
-						S_StartSound(NULL, sfx_s3k50); // overtime warning
-						S_StartSound(NULL, sfx_s3k9d);
-					}
-					if (gameaction != ga_completed && leveltime == timelimitintics + 2*TICRATE + starttime)
-					{						
-						S_StartSoundAtVolume(NULL, sfx_s3k50, 128);
-					}
-					if (gameaction != ga_completed && leveltime == timelimitintics + 4*TICRATE + starttime)
-					{						
-						S_StartSoundAtVolume(NULL, sfx_s3k50, 96);
-					}
-
-					// last five second countdown
-					if (leveltime == timelimitintics - 5 * TICRATE + starttime ||
-						leveltime == timelimitintics - 4 * TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_kc35); // 5, 4
-					}
-					if (leveltime == timelimitintics - TICRATE + starttime ||
-						leveltime == timelimitintics - 2 * TICRATE + starttime ||
-						leveltime == timelimitintics - 3 * TICRATE + starttime)
-					{						
-						S_StartSound(NULL, sfx_kc35);
-						S_StartSound(NULL, sfx_kc3d); // 3, 2, 1
-					}
-				}
-
 				// Change timing of start music based on gametyperules
 				{
 					tic_t startingtime = (gametyperules & GTR_NOCOUNTDOWN) ? introtime : starttime;
@@ -925,10 +902,26 @@ void P_Ticker(boolean run)
 		if (indirectitemcooldown > 0)
 			indirectitemcooldown--;
 
-		if (hyubgone > 0)
-			hyubgone--;
+		for (i = 0; i < NUMKARTRESULTS; i++)
+		{
+			// hyubgone
+			if (K_GetBGone(i, false) > 0)
+			{
+				ItemBGone[i][GONER_CURRCOOLDOWN]--;
+			}
+		}
+
+		if (gametyperules & GTR_RACEODDS)
+		{
+			// Shield cooldowns
+			K_KartHandleShieldCooldown(KITEM_THUNDERSHIELD);
+			K_KartHandleShieldCooldown(KITEM_BUBBLESHIELD);
+			K_KartHandleShieldCooldown(KITEM_FLAMESHIELD);
+		}
 
 		K_BossInfoTicker();
+
+		K_TickSpecialStage();
 
 		if (gametyperules & GTR_WANTED)
 		{

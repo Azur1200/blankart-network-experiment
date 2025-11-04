@@ -510,7 +510,7 @@ INT32 P_GivePlayerRings(player_t *player, INT32 num_rings)
 	if (test > player->ringmax) // Caps at 20 rings, sorry!
 		num_rings -= (test-player->ringmax);
 	else if (test < player->ringmin) // Chaotix ring debt!
-		num_rings -= (test+player->ringmin);
+		num_rings -= (test-player->ringmin);
 
 	player->rings += num_rings;
 
@@ -1182,11 +1182,11 @@ boolean P_IsDisplayPlayer(player_t *player)
 }
 
 //
-// P_SpawnGhostMobj
+// P_SpawnGhostMobjEX
 //
-// Spawns a ghost object on the player
+// Spawns a ghost object on the player. Has an option for "legacy mode".
 //
-mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
+mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, boolean legacy)
 {
 	mobj_t *ghost = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_GHOST);
 
@@ -1264,6 +1264,12 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 	ghost->old_spritexoffset = mobj->old_spritexoffset2;
 	ghost->old_spriteyoffset = mobj->old_spriteyoffset2;
 
+	// Legacy mode
+	if (legacy)
+	{
+		ghost->extravalue3 = 1;
+	}
+
 	return ghost;
 }
 
@@ -1273,8 +1279,6 @@ mobj_t *P_SpawnGhostMobj(mobj_t *mobj)
 // Player exits the map via sector trigger
 void P_DoPlayerExit(player_t *player, pflags_t flags)
 {
-	boolean losing;
-
 	if (player->exiting || mapreset)
 		return;
 
@@ -1286,18 +1290,15 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 	if (player->griefstrikes > 0)
 		player->griefstrikes--; // Remove a strike for finishing a race normally
 
-	if (!player->spectator && (gametyperules & GTR_CIRCUIT)) // Special Race-like handling
-	{
-		K_UpdateAllPlayerPositions();
-	}
-
-	losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
-
 	if (!player->spectator)
 	{
+		boolean losing;
 		if ((gametyperules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			player->exiting = raceexittime+2;
+			K_UpdateAllPlayerPositions();
+			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
+
 			if (cv_kartvoices.value)
 			{
 				const INT32 sfx_id = (losing ? sfx_klose : sfx_kwin);
@@ -1305,7 +1306,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				S_StartSound(player->mo, playerskin->soundsid[S_sfx[sfx_id].skinsound]);
 			}
 
-			if (!K_CanChangeRules() || cv_inttime.value > 0)
+			// See Y_StartIntermission timer handling
+			if (!K_CanChangeRules(false) || cv_inttime.value > 0)
 				P_EndingMusic(player);
 
 			if (P_CheckRacers())
@@ -1325,6 +1327,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			player->exiting = raceexittime+2;
 			G_BeginLevelExit();
 		}
+
+		losing = K_IsPlayerLosing(player);
 
 		if (grandprixinfo.gp == true)
 		{
@@ -1357,14 +1361,14 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 				}
 			}
 		}
+
+		if (G_GametypeUsesLives() && losing)
+		{
+			// Remove a life from the losing player
+			K_PlayerLoseLife(player);
+		}
 	}
 	
-	if (G_GametypeUsesLives() && losing)
-	{
-		// Remove a life from the losing player
-		K_PlayerLoseLife(player);
-	}
-
 	player->karthud[khud_cardanimation] = 0; // srb2kart: reset battle animation
 
 	if (player == &players[consoleplayer])
@@ -2228,7 +2232,7 @@ void P_MovePlayer(player_t *player)
 
 		player->mo->rollangle = 0;
 	}
-	else if (player->nocontrol && player->pflags & PF_SKIDDOWN)
+	else if (player->nocontrol && player->pflags & PF_FAILEDSTART)
 	{
 		P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 
@@ -2459,7 +2463,7 @@ void P_NukeEnemies(mobj_t *inflictor, mobj_t *source, fixed_t radius)
 
 	for (think = thlist[THINK_MOBJ].next; think != &thlist[THINK_MOBJ]; think = think->next)
 	{
-		if (think->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (think->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mo = (mobj_t *)think;
@@ -2556,7 +2560,8 @@ static void P_DeathThink(player_t *player)
 		if (player->mo)
 		{
 			player->mo->flags |= (MF_NOGRAVITY|MF_NOCLIP);
-			player->mo->renderflags |= RF_DONTDRAW;
+			if (skins[player->skin].flags & SF_OLDDEATH)
+				player->mo->renderflags |= RF_DONTDRAW;
 		}
 	}
 	else
@@ -2591,22 +2596,15 @@ static void P_DeathThink(player_t *player)
 		if (leveltime >= starttime)
 		{
 			player->realtime = leveltime - starttime;
-			if (player == &players[consoleplayer])
-			{
-				if (player->spectator || !circuitmap)
-					curlap = 0;
-				else if (curlap != UINT32_MAX)
-					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
-
-				player->laptime[LAP_CUR] = curlap;
-			}
+			if (player->spectator || !circuitmap)
+				player->laptime[LAP_CUR] = 0;
+			else if (player->laptime[LAP_CUR] != UINT32_MAX)
+				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
 			player->laptime[LAP_CUR] = 0;
-			if (player == &players[consoleplayer])
-				curlap = 0;
 		}
 	}
 
@@ -2916,14 +2914,14 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	/*if (player->playerstate == PST_DEAD)
+	if (player->playerstate != PST_LIVE && !(skins[player->skin].flags & SF_OLDDEATH))
 	{
 		// Do not move the camera while dead!
 		if (thiscam->chase)
 			P_CalcChasePostImg(player, thiscam);
 
 		return true;
-	}*/
+	}
 
 	if ((player->pflags & PF_NOCONTEST)) // 1 for momentum keep, 2 for turnaround
 		timeover = (player->karthud[khud_timeovercam] > 2*TICRATE ? 2 : 1);
@@ -3620,7 +3618,7 @@ static mobj_t *P_GetAxis(INT32 num)
 
 	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
 	{
-		if (th->function.acp1 == (actionf_p1)P_RemoveThinkerDelayed)
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
 			continue;
 
 		mobj = (mobj_t *)th;
@@ -3854,8 +3852,6 @@ void P_PlayerThink(player_t *player)
 
 	player->old_drawangle = player->drawangle;
 
-	player->pflags &= ~PF_HITFINISHLINE;
-
 	if (player->awayviewmobj && P_MobjWasRemoved(player->awayviewmobj))
 	{
 		P_SetTarget(&player->awayviewmobj, NULL); // remove awayviewmobj asap if invalid
@@ -4039,29 +4035,6 @@ void P_PlayerThink(player_t *player)
 		}
 	}
 
-	// check water content, set stuff in mobj
-	P_MobjCheckWater(player->mo);
-
-#ifndef SECTORSPECIALSAFTERTHINK
-	if (player->onconveyor != 1 || !P_IsObjectOnGround(player->mo))
-		player->onconveyor = 0;
-	// check special sectors : damage & secrets
-
-	if (!player->spectator)
-		P_PlayerInSpecialSector(player);
-#endif
-
-	if (player->playerstate == PST_DEAD)
-	{
-		if (player->spectator)
-			player->mo->renderflags |= RF_GHOSTLY;
-		else
-			player->mo->renderflags &= ~RF_GHOSTLYMASK;
-		P_DeathThink(player);
-		LUA_HookPlayer(player, HOOK(PlayerThink));
-		return;
-	}
-
 	// Make sure spectators always have a score and ring count of 0.
 	if (player->spectator)
 	{
@@ -4092,19 +4065,16 @@ void P_PlayerThink(player_t *player)
 		if (leveltime >= starttime)
 		{
 			player->realtime = leveltime - starttime;
-			if (player == &players[consoleplayer])
-			{
-				if (player->spectator || !circuitmap)
-					curlap = 0;
-				else if (curlap != UINT32_MAX)
-					curlap++; // This is too complicated to sync to realtime, just sorta hope for the best :V
-			}
+
+			if (player->spectator || !circuitmap)
+				player->laptime[LAP_CUR] = 0;
+			else if (player->laptime[LAP_CUR] != UINT32_MAX)
+				player->laptime[LAP_CUR]++; // This is too complicated to sync to realtime, just sorta hope for the best :V
 		}
 		else
 		{
 			player->realtime = 0;
-			if (player == &players[consoleplayer])
-				curlap = 0;
+			player->laptime[LAP_CUR] = 0;
 		}
 	}
 
@@ -4165,8 +4135,91 @@ void P_PlayerThink(player_t *player)
 			}
 		}
 	}
-	
-	if ((netgame || multiplayer) && player->spectator && cmd->buttons & BT_ATTACK && !player->flashing)
+
+	if (cmd->flags & TICCMD_TYPING)
+	{
+		/*
+		typing_duration is slow to start and slow to stop.
+
+		typing_timer counts down a grace period before the player is not
+		actually considered typing anymore.
+		*/
+		if (cmd->flags & TICCMD_KEYSTROKE)
+		{
+			/* speed up if we are typing quickly! */
+			if (player->typing_duration > 0 && player->typing_timer > 12)
+			{
+				if (player->typing_duration < 16)
+				{
+					player->typing_duration = 24;
+				}
+				else
+				{
+					/* slows down a tiny bit as it approaches the next dot */
+					const UINT8 step = (((player->typing_duration + 15) & ~15) -
+							player->typing_duration) / 2;
+					player->typing_duration += max(step, 4);
+				}
+			}
+
+			player->typing_timer = 15;
+		}
+		else if (player->typing_timer > 0)
+		{
+			player->typing_timer--;
+		}
+
+		/* if we are in the grace period (including currently typing) */
+		if (player->typing_timer + player->typing_duration > 0)
+		{
+			/* always end the cycle on two dots */
+			if (player->typing_timer == 0 &&
+					(player->typing_duration < 16 || player->typing_duration == 40))
+			{
+				player->typing_duration = 0;
+			}
+			else if (player->typing_duration < 63)
+			{
+				player->typing_duration++;
+			}
+			else
+			{
+				player->typing_duration = 16;
+			}
+		}
+	}
+	else
+	{
+		player->typing_timer = 0;
+		player->typing_duration = 0;
+	}
+
+	player->pflags &= ~PF_HITFINISHLINE;
+
+	// check water content, set stuff in mobj
+	P_MobjCheckWater(player->mo);
+
+#ifndef SECTORSPECIALSAFTERTHINK
+	if (player->onconveyor != 1 || !P_IsObjectOnGround(player->mo))
+		player->onconveyor = 0;
+	// check special sectors : damage & secrets
+
+	if (!player->spectator)
+		P_PlayerInSpecialSector(player);
+#endif
+
+	if (player->playerstate == PST_DEAD)
+	{
+		if (player->spectator)
+			player->mo->renderflags |= RF_GHOSTLY;
+		else
+			player->mo->renderflags &= ~RF_GHOSTLYMASK;
+		P_DeathThink(player);
+		LUA_HookPlayer(player, HOOK(PlayerThink));
+		return;
+	}
+
+	if ((netgame || multiplayer) && player->spectator && !player->bot && cmd->buttons & BT_ATTACK && !player->flashing)
 	{
 		player->pflags ^= PF_WANTSTOJOIN;
 		player->flashing = TICRATE/2 + 1;
@@ -4264,7 +4317,7 @@ void P_PlayerThink(player_t *player)
 	if (player->nocontrol && player->nocontrol < UINT16_MAX)
 	{
 		if (!(--player->nocontrol))
-			player->pflags &= ~PF_SKIDDOWN;
+			player->pflags &= ~PF_FAILEDSTART;
 	}
 	else
 		player->nocontrol = 0;
@@ -4283,64 +4336,6 @@ void P_PlayerThink(player_t *player)
 			player->mo->renderflags &= ~RF_DONTDRAW;
 	}
 
-	if (cmd->flags & TICCMD_TYPING)
-	{
-		/*
-		typing_duration is slow to start and slow to stop.
-
-		typing_timer counts down a grace period before the player is not
-		actually considered typing anymore.
-		*/
-		if (cmd->flags & TICCMD_KEYSTROKE)
-		{
-			/* speed up if we are typing quickly! */
-			if (player->typing_duration > 0 && player->typing_timer > 12)
-			{
-				if (player->typing_duration < 16)
-				{
-					player->typing_duration = 24;
-				}
-				else
-				{
-					/* slows down a tiny bit as it approaches the next dot */
-					const UINT8 step = (((player->typing_duration + 15) & ~15) -
-							player->typing_duration) / 2;
-					player->typing_duration += max(step, 4);
-				}
-			}
-
-			player->typing_timer = 15;
-		}
-		else if (player->typing_timer > 0)
-		{
-			player->typing_timer--;
-		}
-
-		/* if we are in the grace period (including currently typing) */
-		if (player->typing_timer + player->typing_duration > 0)
-		{
-			/* always end the cycle on two dots */
-			if (player->typing_timer == 0 &&
-					(player->typing_duration < 16 || player->typing_duration == 40))
-			{
-				player->typing_duration = 0;
-			}
-			else if (player->typing_duration < 63)
-			{
-				player->typing_duration++;
-			}
-			else
-			{
-				player->typing_duration = 16;
-			}
-		}
-	}
-	else
-	{
-		player->typing_timer = 0;
-		player->typing_duration = 0;
-	}
-	
 	K_KartPlayerThink(player, cmd); // SRB2kart
 
 	DoABarrelRoll(player);
@@ -4391,6 +4386,9 @@ void P_PlayerAfterThink(player_t *player)
 			break;
 		}
 	}
+
+	if (player->shieldtracer && P_MobjWasRemoved(player->shieldtracer))
+		P_SetTarget(&player->shieldtracer, NULL);
 
 	if (player->playerstate == PST_DEAD)
 	{
