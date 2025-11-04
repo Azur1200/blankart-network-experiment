@@ -343,6 +343,7 @@ boolean K_SlopeBoostActive(void);
 boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_ItemLitterActive(void);
+boolean K_ItemPushingActive(void);
 boolean K_GetKartInvinType(void);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);

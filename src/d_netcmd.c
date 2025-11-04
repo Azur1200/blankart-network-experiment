@@ -163,6 +163,7 @@ static void KartSlopeBoost_OnChange(void);
 static void KartDrafting_OnChange(void);
 static void KartAirDrop_OnChange(void);
 static void KartItemLitter_OnChange(void);
+static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
@@ -572,6 +573,7 @@ consvar_t cv_kartdrafting_basedistance = CVAR_INIT ("kartdrafting_basedistance",
 consvar_t cv_kartairdrop = CVAR_INIT ("kartairdrop", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartAirDrop_OnChange);
 
 consvar_t cv_kartitemlitter = CVAR_INIT ("kartitemlitter", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemLitter_OnChange);
+consvar_t cv_kartitempush = CVAR_INIT ("kartitempush", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemPush_OnChange);
 
 consvar_t cv_kartforcelegacyodds = CVAR_INIT ("kartforcelegacyodds", "Off", CV_NETVAR, CV_OnOff, NULL);
 
@@ -7728,6 +7730,39 @@ static void KartItemLitter_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Item littering will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartItemPush_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_ItemPushingActive() && cv_kartitempush.value)
+	{
+		if (leveltime < starttime)
+		{
+			itempushing = true;
+			CONS_Printf(M_GetText("Item pushing has been turned \"On\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item pushing will be turned \"On\" Next Round.\n"));
+		}
+	}
+	else if (K_ItemPushingActive() && !cv_kartitempush.value)
+	{
+		if (leveltime < starttime)
+		{
+			itempushing = false;
+			CONS_Printf(M_GetText("Item pushing has been turned \"Off\".\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Item pushing will be turned \"Off\" next round.\n"));
 		}
 	}
 }

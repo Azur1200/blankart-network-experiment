@@ -414,6 +414,9 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 	} else if (fastcmp(word,"itemlittering")) {
 		lua_pushinteger(L, itemlittering);
 		return 1;
+	} else if (fastcmp(word,"itempushing")) {
+		lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
+		return 1;
 	} else if (fastcmp(word,"invintype")) {
 		lua_pushinteger(L, invintype);
 		return 1;

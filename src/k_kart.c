@@ -390,6 +390,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartairdrop);
 
 	CV_RegisterVar(&cv_kartitemlitter);
+	CV_RegisterVar(&cv_kartitempush);
 
 	CV_RegisterVar(&cv_kartforcelegacyodds);
 
@@ -11442,6 +11443,11 @@ boolean K_ItemLitterActive(void)
 	}
 
 	return false;
+}
+
+boolean K_ItemPushingActive(void)
+{
+	return itempushing;
 }
 
 boolean K_GetKartInvinType(void)
