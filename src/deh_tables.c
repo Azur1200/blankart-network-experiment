@@ -804,8 +804,6 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "CAMERASETUP", &MR_CameraSetup },
 	// { "BARCSS", &MR_HandleBarCss },
 	{ "HANDLESETUPMULTIPLAYERMENU", &MR_HandleSetupMultiPlayerMenu },
-	{ "MAINMENU", &MR_MainMenu },
-	{ "MAINMENUEXIT", &MR_MainMenuExit },
 
 #ifdef HAVE_DISCORDRPC
 	{ "HANDLEDISCORDREQUESTS", &MR_HandleDiscordRequests },

@@ -1875,6 +1875,9 @@ void M_StartControlPanel(void)
 	}
 	else if (!Playing())
 	{
+		G_SetGamestate(GS_MENU);
+		titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+
 		M_EnterMenu(MN_MAIN, true, 0);
 		M_SetItemOn(MN_MAIN, "SINGLEPLAYER");
 	}
@@ -5732,24 +5735,6 @@ INT32 MR_StartGrandPrix(INT32 choice)
 // ===========
 //  MAIN MENU
 // ===========
-
-// Going to main menu...
-INT32 MR_MainMenu(INT32 choice)
-{
-	M_ClearMenus(true);
-
-	G_SetGamestate(GS_MENU); // do this before M_SetupNextMenu so that menu meta state knows that we're switching
-	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
-
-	return true;
-}
-
-INT32 MR_MainMenuExit(INT32 choice)
-{
-	(void)choice;
-
-	return true;
-}
 
 // ===========
 // MODE ATTACK
