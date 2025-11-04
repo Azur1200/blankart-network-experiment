@@ -777,7 +777,8 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p1shield = K_GetShieldFromPlayer(mobj1->player);
 
 		// Moved here so it only fires once on bump.
-		if (p1shield == KSHIELD_BUBBLE && mobj1->player->bubblecool == 0)
+		// Also validate that this is an appropriate object to chip against.
+		if (p1shield == KSHIELD_BUBBLE && mobj1->player->bubblecool == 0 && K_CheckBubbleChip(mobj2))
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
@@ -813,7 +814,8 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		p2shield = K_GetShieldFromPlayer(mobj2->player);
 
 		// Moved here so it only fires once on bump.
-		if (p2shield == KSHIELD_BUBBLE && mobj2->player->bubblecool == 0)
+		// Also validate that this is an appropriate object to chip against.
+		if (p2shield == KSHIELD_BUBBLE && mobj2->player->bubblecool == 0 && K_CheckBubbleChip(mobj1))
 		{
 			// Each bump does chip damage to the shield.
 			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
@@ -5439,6 +5441,30 @@ void K_RemoveBubbleHealth(player_t *player, INT16 sub)
 
 	if (player->bubblehealth <= 0)
 		K_PopPlayerShield(player);
+}
+
+// Detects type of Mobj for bubble shield chipping
+boolean K_CheckBubbleChip(const mobj_t *mobj)
+{
+	if (!mobj || P_MobjWasRemoved(mobj))
+		return false;
+
+	switch (mobj->type)
+	{
+		case MT_APPLE:
+		case MT_FALLINGROCK:
+		case MT_PLAYER:
+			return true;
+			break;
+
+
+		default:
+			return false;
+			break;
+	}
+
+
+	return false;
 }
 
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 flip, UINT8 type, UINT8 amount)
