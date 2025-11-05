@@ -868,6 +868,9 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 				{
 					K_AltShrinkPityIncrease(t2->player);
 					t2->player->altshrinktimeshit++;
+
+					P_InstaThrust(t2, K_MomentumAngle(t2), K_Momentum2D(t2) / 3);
+
 					K_PlayPainSound(t2, NULL);
 				}
 			}
@@ -908,6 +911,9 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 				{
 					K_AltShrinkPityIncrease(t1->player);
 					t1->player->altshrinktimeshit++;
+
+					P_InstaThrust(t1, K_MomentumAngle(t1), K_Momentum2D(t1) / 3);
+
 					K_PlayPainSound(t1, NULL);
 				}
 			}
