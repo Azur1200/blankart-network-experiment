@@ -8624,6 +8624,7 @@ void M_ReturnToConnectMenu(void)
 	D_ResetGameState();
 
 	M_ClearMenus(false);
+	G_SetGamestate(GS_MENU);
 	M_EnterMenu(MN_MAIN, true, 0);
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }

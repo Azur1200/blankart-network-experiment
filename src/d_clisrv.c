@@ -2570,16 +2570,6 @@ static void Command_connect(void)
 	server = false;
 	connectedtodedicated = false;
 
-/*
-	if (!stricmp(COM_Argv(1), "self"))
-	{
-		servernode = 0;
-		server = true;
-		/// \bug should be but...
-		//SV_SpawnServer();
-	}
-	else
-*/
 	{
 		// used in menu to connect to a server in the list
 		if (netgame && !stricmp(COM_Argv(1), "node"))
