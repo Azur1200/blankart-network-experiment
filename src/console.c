@@ -1624,6 +1624,7 @@ static const char *CON_LoadingStrings[LOADED_ALLDONE+1] =
 	"Init audio subsystem...", //LOADED_SINITSFXCHANNELS
 	"Cache HUD...", //LOADED_STINIT
 	"Test fixed-point arithmetic...", //LOADED_MATHINIT
+	"Init kart items...", //LOADED_KITEMSINIT
 	"Init ACSVM...", //LOADED_ACSINIT
 	"Check game status...", //LOADED_DCHECKNETGAME
 	"Now starting..."

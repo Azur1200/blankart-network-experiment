@@ -133,6 +133,7 @@ k_bot.cpp
 k_botitem.cpp
 k_botsearch.cpp
 k_cluster.cpp
+k_kartitem.cpp
 k_odds.c
 k_altshrink.c
 k_grandprix.c

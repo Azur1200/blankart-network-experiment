@@ -82,6 +82,7 @@
 #include "m_random.h" // P_ClearRandom
 #include "acs/interface.h"
 #include "k_specialstage.h"
+#include "k_kartitem.hpp"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -1839,6 +1840,10 @@ void D_SRB2Main(void)
 				IntSqrt64(4));
 
 	CON_SetLoadingProgress(LOADED_MATHINIT);
+
+	CONS_Printf("K_InitializeKartItems(): Init necessary kart items.\n");
+	K_InitializeKartItems();
+	CON_SetLoadingProgress(LOADED_KITEMSINIT);
 
 	CONS_Printf("ACS_Init(): Init Action Code Script VM.\n");
 	ACS_Init();
