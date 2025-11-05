@@ -251,7 +251,7 @@ void K_RegisterKartStuff(void)
 
 	// Nu-ITEMS
 	CV_RegisterVar(&cv_superring);
-	CV_RegisterVar(&cv_landmine);
+	// CV_RegisterVar(&cv_landmine);
 	CV_RegisterVar(&cv_bubbleshield);
 	CV_RegisterVar(&cv_flameshield);
 
