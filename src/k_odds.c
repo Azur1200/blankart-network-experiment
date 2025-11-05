@@ -57,7 +57,7 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_pogospring,
 	&cv_kitchensink,
 	&cv_superring,
-	// &cv_landmine,
+	&cv_landmine, // FIXME: Kill it.
 	&cv_bubbleshield,
 	&cv_flameshield,
 	&cv_dualsneaker,
@@ -119,13 +119,9 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
     { 0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
     { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz x2
-    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Egg Mine
+    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Egg Mine
+    { 0,  0,  0,  0,  0,  0,  5,  5,  0,  0,  0,  0,  0,  0,  0,  0}  // Alt. Shrink
 };
-
-static UINT8 altshrinkodds[MAXODDS] =
-    { 0,  0,  0,  0,  0,  0,  0,  4,  2,  0,  0,  0,  0,  0,  0,  0};
-    //0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-    //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 {
@@ -156,8 +152,9 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 1, 1 }, // Banana x10
 	{ 2, 0 }, // Orbinaut x3
 	{ 1, 1 }, // Orbinaut x4
-	{ 5, 1 },  // Jawz x2
-	{ 2, 0 } // Egg Mine
+	{ 5, 1 }, // Jawz x2
+	{ 2, 0 }, // Egg Mine
+	{ 1, 0 }  // Alt. Shrink
 };
 
 /*
@@ -190,8 +187,9 @@ static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
 	{ 0, 0, 0, 0 }, // Banana x10
 	{ 0, 1, 1, 0 }, // Orbinaut x3
 	{ 0, 0, 1, 1 }, // Orbinaut x4
-	{ 0, 0, 1, 1 },  // Jawz x2
-	{ 0, 0, 0, 0 } // Egg Mine
+	{ 0, 0, 1, 1 }, // Jawz x2
+	{ 0, 0, 0, 0 }, // Egg Mine
+	{ 0, 0, 0, 0 }  // Alt. Shrink
 };
 */
 
@@ -212,7 +210,7 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 10,   0 }, // Ballhog
 	{ 20,   0 }, // Self-Propelled Bomb
 	{ 3,    0 }, // Grow
-	{ 5,    0 }, // Shrink
+	{ 20,   0 }, // Shrink
 	{ 0,    0 }, // Thunder Shield
 	{ 20,   0 }, // Hyudoro
 	{ 0,    0 }, // Pogo Spring
@@ -228,11 +226,35 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 10,   0 }, // Orbinaut x3
 	{ 20,   0 }, // Orbinaut x4
 	{ 10,   0 }, // Jawz x2
-	{ 0,    0 }  // Egg Mine
+	{ 0,    0 }, // Egg Mine
+	{ 5,    0 }  // Alt. Shrink
 };
 
 // TODO: Vectorize all item tables and shove them into gamemode-uniqe pools (k_oddstable.cpp?).
 // Basically necessary for any hopes of easy SOC support in the near future.
+
+static SINT8 K_GetAlternateVersion(SINT8 item)
+{
+	if (K_IsKartItemAlternate(item))
+	{
+		switch(item)
+		{
+			/*case KITEM_INVINCIBILITY:
+				return KITEM_INVINCIBILITY;*/
+
+			case KITEM_EGGMAN:
+				return KAITEM_EGGMINE;
+
+			case KITEM_SHRINK:
+				return KAITEM_ALTERNSHRINK;
+
+			default:
+				break;
+		}
+	}
+
+	return item; // Return ourselves; we don't have an alternative.
+}
 
 /**	\brief	Sets the cooldown timer for an item. When active, the item is removed
  * from all players' item pools for some time.
@@ -431,13 +453,15 @@ static boolean K_DontDoubleMyItems(SINT8 item)
 */
 static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 {
-	if (getitem == KITEM_SPB || (getitem == KITEM_SHRINK && (!K_AltShrinkActive()))) // Indirect items
+	SINT8 trueitem = K_GetAlternateVersion(getitem);
+
+	if (trueitem == KITEM_SPB || (trueitem == KITEM_SHRINK)) // Indirect items
 	{
 		indirectitemcooldown = 20*TICRATE;
 	}
-	else if (K_GetBGone(getitem, true) > 0) // Item cooldowns
+	else if (K_GetBGone(trueitem, true) > 0) // Item cooldowns
 	{
-		K_SetBGoneToBase(getitem);
+		K_SetBGoneToBase(trueitem);
 	}
 
 	K_BotResetItemConfirm(player, true);
@@ -535,6 +559,8 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush)
 // Odds value for Alt. Invin. to force itself on trailing players.
 #define INVFORCEODDS (MAXINVODDS / 2)
 
+#define FRAC_3h (3 * FRACUNIT / 4)
+
 static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 {
 	UINT32 invindist = INVINDIST/2;
@@ -553,10 +579,10 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 	}
 	else
 	{
-		if (fac <= FRACHALF)
+		if (fac <= FRAC_3h)
 		{
 			// Invincibility is practically useless at lower distances.
-			// At below half, remove it from the item pool.
+			// At below 75%, remove it from the item pool.
 			return 0;
 		}
 		// Basic linear climb to "reasonable" odds.
@@ -565,6 +591,8 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 
 	return min(MAXINVODDS, finodds);
 }
+
+#undef FRAC_3h
 
 // Assigns general cooldowns to shield items.
 void K_KartHandleShieldCooldown(SINT8 item)
@@ -639,7 +667,11 @@ INT32 K_KartGetItemOdds(
 	INT32 shieldtype = KSHIELD_NONE;
 
 	I_Assert(item > KITEM_NONE); // too many off by one scenarioes.
-	I_Assert(KartItemCVars[NUMKARTRESULTS-2] != NULL); // Make sure this exists
+	I_Assert(KartItemCVars[NUMBASEKARTRESULTS-2] != NULL); // Make sure this exists
+
+	// Alt. item definitions are literally only for odds tables and cooldowns.
+	// Don't let the actual item listing step out of that boundary.
+	item = CLAMP(item, 0, NUMBASEKARTRESULTS);
 
 	if (!KartItemCVars[item-1]->value && !modeattacking)
 		return 0;
@@ -664,20 +696,19 @@ INT32 K_KartGetItemOdds(
 
 	INT32 oddsmul = BASEODDSMUL;
 
+	// Item type used for actual odds retrieval and cooldown assignments.
+	SINT8 useitem = K_GetAlternateVersion(item);
+
 	if (gametyperules & GTR_BATTLEODDS)
 	{
 		I_Assert(pos < 2); // DO NOT allow positions past the bounds of the table
-		newodds = K_KartItemOddsBattle[item-1][pos];
+		newodds = K_KartItemOddsBattle[useitem-1][pos];
 		oddsmul = BATTLEODDSMUL;
 	}
 	else if (gametyperules & GTR_RACEODDS)
 	{
 		I_Assert(pos < MAXODDS); // Ditto
-
-		if (item == KITEM_SHRINK && K_AltShrinkActive())
-			newodds = altshrinkodds[pos]; // Alt. Shrink has unique odds, since it's a power item.
-		else
-			newodds = K_KartItemOddsRace[item-1][pos];
+		newodds = K_KartItemOddsRace[useitem-1][pos];
 	}
 	else
 	{
@@ -760,14 +791,6 @@ INT32 K_KartGetItemOdds(
 			if (K_IsKartItemAlternate(KITEM_EGGMAN))
 			{
 				notForBottom = true;
-				if (gametyperules & GTR_BATTLEODDS)
-				{
-					newodds = K_KartItemOddsBattle[KAITEM_EGGMINE-1][pos];
-				}
-				else if (gametyperules & GTR_RACEODDS)
-				{
-					newodds = K_KartItemOddsRace[KAITEM_EGGMINE-1][pos];
-				}
 			}
 			else
 			{
@@ -789,7 +812,8 @@ INT32 K_KartGetItemOdds(
 			}
 
 			break;
-		case KITEM_LANDMINE:	// au revoir
+		case KITEM_LANDMINE:
+			// au revoir
 			newodds = 0;
 			break;
 		case KITEM_ROCKETSNEAKER:
@@ -877,14 +901,25 @@ INT32 K_KartGetItemOdds(
 			cooldownOnStart = true;
 			powerItem = true;
 
-			if (!K_AltShrinkActive())
-				indirectItem = true;
-
 			// "Why keep this for Alt. Shrink?" Bag. Ging.
+			// ESPECIALLY with double items.
 			notNearEnd = true;
 
-			if (pingame-1 <= pexiting)
-				newodds = 0;
+			if (!K_IsKartItemAlternate(KITEM_SHRINK))
+			{
+				indirectItem = true;
+
+				if (pingame-1 <= pexiting)
+					newodds = 0;
+			}
+			else
+			{
+				if (rival)
+				{
+					// Rival bot or already shrunk. DON'T roll another.
+					newodds = 0;
+				}
+			}
 			break;
 		case KITEM_THUNDERSHIELD:
 			cooldownOnStart = true;
@@ -912,7 +947,7 @@ INT32 K_KartGetItemOdds(
 		return newodds;
 	}
 
-	if (K_GetBGone(item, false) > 0)
+	if (K_GetBGone(useitem, false) > 0)
 	{
 		// (Replaces hyubgone) This item is on cooldown; don't let it get rolled.
 		newodds = 0;
@@ -1001,7 +1036,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 			break;
 		}
 
-		for (j = 1; j < NUMKARTRESULTS; j++)
+		for (j = 1; j < NUMBASEKARTRESULTS; j++)
 		{
 			if (K_KartGetItemOdds(
 					i, j,
@@ -1388,7 +1423,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	UINT8 roulettestop;
 	UINT32 pdis = 0;
 	UINT8 useodds = 0;
-	INT32 spawnchance[NUMKARTRESULTS];
+	INT32 spawnchance[NUMBASEKARTRESULTS];
 	INT64 totalspawnchance = 0; // 75-scale numbers are going to get BIG. This is for paranoia's sake.
 	UINT8 bestbumper = 0;
 	fixed_t mashed = 0;
@@ -1582,13 +1617,13 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// NOW that we're done with all of those specialized cases, we can move onto the REAL item roulette tables.
 	// Initializes existing spawnchance values
-	for (i = 0; i < NUMKARTRESULTS; i++)
+	for (i = 0; i < NUMBASEKARTRESULTS; i++)
 		spawnchance[i] = 0;
 
 	// Split into another function for a debug function below
 	useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
 
-	for (i = 1; i < NUMKARTRESULTS; i++)
+	for (i = 1; i < NUMBASEKARTRESULTS; i++)
 	{
 
 		spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
@@ -1607,7 +1642,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (totalspawnchance > 0)
 	{
 		totalspawnchance = P_RandomKey(totalspawnchance);
-		for (i = 0; i < NUMKARTRESULTS && spawnchance[i] <= totalspawnchance; i++);
+		for (i = 0; i < NUMBASEKARTRESULTS && spawnchance[i] <= totalspawnchance; i++);
 
 		K_KartGetItemResult(player, i);
 	}

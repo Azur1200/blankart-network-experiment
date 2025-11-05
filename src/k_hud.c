@@ -5833,7 +5833,7 @@ static void K_drawDistributionDebugger(void)
 	}
 	else
 	{
-		for (item = 1; item < NUMKARTRESULTS; item++)
+		for (item = 1; item < NUMBASEKARTRESULTS; item++)
 		{
 			INT32 itemodds;
 			INT32 amount;

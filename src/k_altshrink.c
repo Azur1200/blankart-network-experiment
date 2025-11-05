@@ -10,13 +10,14 @@
 #include "command.h"
 #include "console.h"
 #include "d_player.h"
+#include "k_kart.h"
 #include "k_altshrink.h"
 #include "k_cluster.hpp"
 #include "m_fixed.h"
 #include "p_local.h"
 
 
-UINT8 shrinktype;
+UINT8 shrinktype; // How Shrink functions. 0 for Legacy/Vanilla, 1 for Alternative.
 
 void K_UpdateShrinkType(void)
 {
@@ -35,10 +36,10 @@ void K_UpdateShrinkType(void)
 
 	\return	void
 */
-boolean K_IsShrunkMode(player_t *player, boolean legacy)
+boolean K_IsShrunkMode(const player_t *player, boolean legacy)
 {
     boolean shrunk = K_IsShrunk(player);
-    boolean legacytype = (shrinktype == KARTINVIN_LEGACY);
+    boolean legacytype = (!K_IsKartItemAlternate(KITEM_SHRINK));
 
     if (legacy)
     {

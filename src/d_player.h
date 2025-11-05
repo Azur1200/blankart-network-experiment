@@ -182,9 +182,12 @@ typedef enum
 	KRITEM_TRIPLEORBINAUT,
 	KRITEM_QUADORBINAUT,
 	KRITEM_DUALJAWZ,
+
+	NUMBASEKARTRESULTS,
 	
 	// alt items implemented as separate things
-	KAITEM_EGGMINE,	// also landmine
+	KAITEM_EGGMINE = NUMBASEKARTRESULTS,	// also landmine
+	KAITEM_ALTERNSHRINK,
 
 	NUMKARTRESULTS
 } kartitems_t;

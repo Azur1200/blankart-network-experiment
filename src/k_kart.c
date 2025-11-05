@@ -252,7 +252,7 @@ void K_RegisterKartStuff(void)
 
 	// Nu-ITEMS
 	CV_RegisterVar(&cv_superring);
-	// CV_RegisterVar(&cv_landmine);
+	CV_RegisterVar(&cv_landmine); // FIXME: Kill it.
 	CV_RegisterVar(&cv_bubbleshield);
 	CV_RegisterVar(&cv_flameshield);
 
@@ -5538,7 +5538,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 	if (type == 0)
 	{
 		UINT8 useodds = 0;
-		INT32 spawnchance[NUMKARTRESULTS];
+		INT32 spawnchance[NUMBASEKARTRESULTS];
 		INT32 totalspawnchance = 0;
 		INT32 i;
 
@@ -5546,7 +5546,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 
 		useodds = amount;
 
-		for (i = 1; i < NUMKARTRESULTS; i++)
+		for (i = 1; i < NUMBASEKARTRESULTS; i++)
 		{
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
 				useodds, i,
@@ -5561,7 +5561,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 		if (totalspawnchance > 0)
 		{
 			totalspawnchance = P_RandomKey(totalspawnchance);
-			for (i = 0; i < NUMKARTRESULTS && spawnchance[i] <= totalspawnchance; i++);
+			for (i = 0; i < NUMBASEKARTRESULTS && spawnchance[i] <= totalspawnchance; i++);
 
 			// TODO: this is bad!
 			// K_KartGetItemResult requires a player
@@ -9126,7 +9126,7 @@ static void K_SpawnDriftEFX(player_t *player,SINT8 level)
 // Sliptide conditions for Alternative Invincibility.
 static boolean K_AltInvinSliptideCondition(player_t *player)
 {
-	if (K_GetKartInvinType() != KARTINVIN_ALTERN)
+	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		// Not in Alternative, hit the bricks!
 		return false;
@@ -10854,7 +10854,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_SHRINK:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
-								if (K_AltShrinkActive())
+								if (K_IsKartItemAlternate(KITEM_SHRINK))
 								{
 									K_DoGrowShrink(player, true);
 									K_AltShrinkIFrames(player);
@@ -11521,6 +11521,9 @@ boolean K_IsKartItemAlternate(UINT8 itemtype)
 		break;
 	case KITEM_EGGMAN:
 		return eggmantype == KARTITEM_ALTERN;
+		break;
+	case KITEM_SHRINK:
+		return shrinktype == KARTITEM_ALTERN;
 		break;
 	
 	default:

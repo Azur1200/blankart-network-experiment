@@ -188,11 +188,8 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTGP_MASTER 4  // Not a speed setting, gives hard speed with maxed out bots
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
-// Invincibility types. FIXME: Make this a more generalized name eventually (please...)
-#define KARTINVIN_LEGACY 0
-#define KARTINVIN_ALTERN 1
 
-// Alt item type (alias of kartinvin_x for now until refactor complete)
+// Alternative item types.
 #define KARTITEM_NORMAL 0
 #define KARTITEM_ALTERN 1
 

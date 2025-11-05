@@ -27,23 +27,13 @@ extern UINT8 shrinktype;
 #define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
 #define SHRINKSTACKABLE CV_Get(&cv_kartstacking_altshrink_stackable)
 
-/**	\brief	Returns true or false if Alt. Shrink is active.
-
-	\return	Are we using the alternative Shrink type?
-*/
-FUNCINLINE static ATTRINLINE boolean K_AltShrinkActive(void)
-{
-    return (shrinktype == KARTINVIN_ALTERN);
-}
-
-
 /**	\brief	Returns true or false if the player is shrunk.
 
 	\param	player		(player_t) Player to test shrunken status for
 
 	\return	Is this player shrunk?
 */
-FUNCINLINE static ATTRINLINE boolean K_IsShrunk(player_t *player)
+FUNCINLINE static ATTRINLINE boolean K_IsShrunk(const player_t *player)
 {
     return (player->growshrinktimer < 0);
 }
@@ -58,7 +48,7 @@ FUNCINLINE static ATTRINLINE fixed_t K_AccomodateShrinkScaling(fixed_t x)
     return FixedDiv(x, SHRINK_SCALE);
 }
 
-boolean K_IsShrunkMode(player_t *player, boolean legacy);
+boolean K_IsShrunkMode(const player_t *player, boolean legacy);
 
 #define K_IsLegacyShrunk(player) (K_IsShrunkMode(player, true))
 #define K_IsAltShrunk(player) (K_IsShrunkMode(player, false))

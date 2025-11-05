@@ -168,6 +168,7 @@ static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
+static void KartEggmanType_OnChange(void);
 static void KartShrinkType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 

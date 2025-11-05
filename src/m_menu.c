@@ -8558,7 +8558,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			{
 				INT32 v = cv_sneaker.value;
 				S_StartSound(NULL, sfx_s1b4);
-				for (i = 0; i < NUMKARTRESULTS-1; i++)
+				for (i = 0; i < NUMBASEKARTRESULTS-1; i++)
 				{
 					if (KartItemCVars[i]->value == v)
 						CV_AddValue(KartItemCVars[i], 1);
