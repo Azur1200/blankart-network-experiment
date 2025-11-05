@@ -6388,7 +6388,10 @@ void Command_ExitGame_f(void)
 		closefilemenu(true);
 
 	if (!modeattacking)
-		D_StartTitle();
+	{
+		G_SetGamestate(GS_MENU);
+		M_EnterMenu(MN_MAIN, true, 0);
+	}
 }
 
 void Command_Retry_f(void)
