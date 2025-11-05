@@ -5106,7 +5106,7 @@ void G_LoadGameData(void)
 	corrupted = 2; // data is corrupted!?
 
 	// well no clue but dont think it would like reading garbage from vanilla files
-	K_ReadStats(&save, beforemorestats);
+	K_ReadStats(&save, beforemorestats ? !savemoddata : false);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 	{
