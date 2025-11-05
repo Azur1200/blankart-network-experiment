@@ -57,7 +57,7 @@ consvar_t *KartItemCVars[NUMKARTRESULTS-1] =
 	&cv_pogospring,
 	&cv_kitchensink,
 	&cv_superring,
-	&cv_landmine,
+	// &cv_landmine,
 	&cv_bubbleshield,
 	&cv_flameshield,
 	&cv_dualsneaker,
@@ -118,7 +118,8 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Banana x10
     { 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x3
     { 0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
-    { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
+    { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz x2
+    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Egg Mine
 };
 
 static UINT8 altshrinkodds[MAXODDS] =
@@ -155,7 +156,8 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 1, 1 }, // Banana x10
 	{ 2, 0 }, // Orbinaut x3
 	{ 1, 1 }, // Orbinaut x4
-	{ 5, 1 }  // Jawz x2
+	{ 5, 1 },  // Jawz x2
+	{ 2, 0 } // Egg Mine
 };
 
 /*
@@ -188,7 +190,8 @@ static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
 	{ 0, 0, 0, 0 }, // Banana x10
 	{ 0, 1, 1, 0 }, // Orbinaut x3
 	{ 0, 0, 1, 1 }, // Orbinaut x4
-	{ 0, 0, 1, 1 }  // Jawz x2
+	{ 0, 0, 1, 1 },  // Jawz x2
+	{ 0, 0, 0, 0 } // Egg Mine
 };
 */
 
@@ -224,7 +227,8 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 30,   0 }, // Banana x10
 	{ 10,   0 }, // Orbinaut x3
 	{ 20,   0 }, // Orbinaut x4
-	{ 10,   0 }  // Jawz x2
+	{ 10,   0 }, // Jawz x2
+	{ 0,    0 }  // Egg Mine
 };
 
 // TODO: Vectorize all item tables and shove them into gamemode-uniqe pools (k_oddstable.cpp?).
@@ -753,12 +757,27 @@ INT32 K_KartGetItemOdds(
 			notForBottom = true;
 			break;
 		case KITEM_EGGMAN:
-			// It blows you up and is overall ridiculous. This was *overdue*.
-			cooldownOnStart = true;
-			powerItem = true;
-
-			notNearEnd = true;
-			notForBottom = true;
+			if (K_IsKartItemAlternate(KITEM_EGGMAN))
+			{
+				notForBottom = true;
+				if (gametyperules & GTR_BATTLEODDS)
+				{
+					newodds = K_KartItemOddsBattle[KAITEM_EGGMINE-1][pos];
+				}
+				else if (gametyperules & GTR_RACEODDS)
+				{
+					newodds = K_KartItemOddsRace[KAITEM_EGGMINE-1][pos];
+				}
+			}
+			else
+			{
+				// It blows you up and is overall ridiculous. This was *overdue*.
+				cooldownOnStart = true;
+				powerItem = true;
+				
+				notNearEnd = true;
+				notForBottom = true;
+			}
 			break;
 		case KITEM_SUPERRING:
 			notNearEnd = true;
@@ -770,8 +789,10 @@ INT32 K_KartGetItemOdds(
 			}
 
 			break;
+		case KITEM_LANDMINE:	// au revoir
+			newodds = 0;
+			break;
 		case KITEM_ROCKETSNEAKER:
-		case KITEM_LANDMINE:
 		case KRITEM_TRIPLESNEAKER:
 			powerItem = true;
 			break;
@@ -793,7 +814,7 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
-			if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (gametyperules & GTR_RACEODDS))
+			if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (gametyperules & GTR_RACEODDS))
 			{
 				// It's a power item, yes, but we don't want mashing to lessen
 				// its chances, so we lie to the game's face.

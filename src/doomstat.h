@@ -665,10 +665,12 @@ extern INT32 cheats;
 // SRB2kart
 extern UINT8 numlaps;
 extern UINT8 gamespeed;
-extern UINT8 invintype;
 extern boolean franticitems;
 extern boolean encoremode, prevencoremode;
 extern boolean comeback;
+
+extern UINT8 invintype;
+extern UINT8 eggmantype;
 
 extern SINT8 mostwanted;
 extern SINT8 battlewanted[4];

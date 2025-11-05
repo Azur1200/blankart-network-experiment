@@ -601,9 +601,10 @@ consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETV
 #undef MAXODDSDIST
 
 // Items with alternative types
-static CV_PossibleValue_t kartitemtype_cons_t[] = {{KARTINVIN_LEGACY, "Legacy"}, {KARTINVIN_ALTERN, "Alternative"}, {0, NULL}};
+static CV_PossibleValue_t altitemtype_cons_t[] = {{KARTITEM_NORMAL, "Legacy"}, {KARTITEM_ALTERN, "Alternative"}, {0, NULL}};
 consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartInvinType_OnChange);
 consvar_t cv_kartshrinktype = CVAR_INIT ("kartshrinktype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartShrinkType_OnChange);
+consvar_t cv_karteggmantype = CVAR_INIT ("karteggmantype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartEggmanType_OnChange);
 
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
@@ -7859,6 +7860,24 @@ static void KartShrinkType_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Shrink type will be changed to \"%s\" next round.\n"), cv_kartshrinktype.string);
+	}
+}
+
+static void KartEggmanType_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Eggman Monitor type has been changed to \"%s\".\n"), cv_karteggmantype.string);
+		eggmantype = (UINT8)cv_karteggmantype.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Eggman Monitor type will be changed to \"%s\" next round.\n"), cv_karteggmantype.string);
 	}
 }
 

@@ -646,7 +646,7 @@ static void D_Display(void)
 	I_lock_mutex(&m_menu_mutex);
 #endif
 	M_Drawer(); // menu is drawn even on top of everything
-	if (cv_songcredits.value && !( hu_showscores && (netgame || multiplayer) ))
+	if (cv_songcredits.value && !( (G_GamestateUsesLevel() && hu_showscores) && (netgame || multiplayer) ))
 		HU_DrawSongCredits(); // As are music credits.
 #ifdef HAVE_THREADS
 	I_unlock_mutex(m_menu_mutex);

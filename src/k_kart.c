@@ -252,7 +252,7 @@ void K_RegisterKartStuff(void)
 
 	// Nu-ITEMS
 	CV_RegisterVar(&cv_superring);
-	CV_RegisterVar(&cv_landmine);
+	// CV_RegisterVar(&cv_landmine);
 	CV_RegisterVar(&cv_bubbleshield);
 	CV_RegisterVar(&cv_flameshield);
 
@@ -920,7 +920,7 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 static fixed_t K_OffroadGradient(player_t *player, fixed_t offroad)
 {
 	// At 50% or lower Invincibility, offroad creeps up on you.
-	fixed_t invinoffroad = (K_GetKartInvinType() == KARTINVIN_LEGACY) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
+	fixed_t invinoffroad = (!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? ((player->invincibilitytimer) ? FRACUNIT : 0) : min(FRACUNIT, K_InvincibilityGradient(player->invincibilitytimer) << 1);
 	fixed_t fac = CLAMP(FRACUNIT - invinoffroad, 0, FRACUNIT);
 
 	return FixedMul(offroad, fac);
@@ -2420,7 +2420,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
     UINT32 i, pingame;
 	fixed_t distmul = FRACUNIT;
 
-    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return BASEINVINTIME;
 
     pingame = 0;
@@ -2457,7 +2457,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
 static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
-    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return INVINSPEEDBOOSTLGC;
 
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
@@ -2466,7 +2466,7 @@ static fixed_t K_GetInvincibilitySpeed(UINT16 time)
 
 static fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
-    if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+    if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return INVINACCELBOOSTLGC;
 
     fixed_t t = min(FRACUNIT, K_InvincibilityGradient(time));
@@ -5051,7 +5051,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
 
-        if (K_GetKartInvinType() == KARTINVIN_ALTERN)
+        if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         {
             mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
             P_SetTarget(&aura->target, player->mo);
@@ -5061,7 +5061,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
         }
 	}
 
-    if (K_GetKartInvinType() == KARTINVIN_ALTERN)
+    if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
     {
         // Rim suggestion: Don't allow already invincible players to chain.
         if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
@@ -7341,7 +7341,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->invincibilitytimer)
 	{
 		INT16 invinfac = 1;
-		if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (player->invincibilitytimer > 2))
+		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer > 2))
 		{
 			UINT32 invindist = INVINDIST >> 2;
 
@@ -7739,7 +7739,7 @@ void K_KartResetPlayerColor(player_t *player)
 	{
 		boolean skip = false;
 
-		if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+		if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 		{
 			fullbright = true;
 
@@ -10279,7 +10279,7 @@ void K_UnsetItemOut(player_t *player)
 
 static boolean K_InvincibilitySlotHogging(player_t *player)
 {
-	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 		return false;
 
 	return ((player->invincibilitytimer) != 0);
@@ -10321,7 +10321,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 			|| player->itemroulette
 			|| player->rocketsneakertimer
 			|| player->eggmanexplode
-			|| ((K_GetKartInvinType() == KARTINVIN_ALTERN) && player->invincibilitytimer)
+			|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && player->invincibilitytimer)
 			|| (player->growshrinktimer > 0)
 			|| player->flametimer
 			|| (leveltime < starttime)
@@ -11510,6 +11510,24 @@ boolean K_ItemPushingActive(void)
 boolean K_GetKartInvinType(void)
 {
 	return invintype;
+}
+
+boolean K_IsKartItemAlternate(UINT8 itemtype)
+{
+	switch (itemtype)
+	{
+	case KITEM_INVINCIBILITY:
+		return invintype == KARTITEM_ALTERN;
+		break;
+	case KITEM_EGGMAN:
+		return eggmantype == KARTITEM_ALTERN;
+		break;
+	
+	default:
+		return false;
+		break;
+	}
+	return false;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

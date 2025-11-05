@@ -1686,6 +1686,9 @@ struct int_const_s const INT_CONST[] = {
 	// invintype
 	{"KARTINVIN_LEGACY", KARTINVIN_LEGACY},
 	{"KARTINVIN_ALTERN", KARTINVIN_ALTERN},
+	// alt item type (alias of invintype for now until refactor complete)
+	{"KARTITEM_NORMAL", KARTITEM_NORMAL},
+	{"KARTITEM_ALTERN", KARTITEM_ALTERN},
 
 	// k_waypoint.h values
 	{"DEFAULT_WAYPOINT_RADIUS",DEFAULT_WAYPOINT_RADIUS},

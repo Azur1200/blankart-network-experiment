@@ -602,7 +602,11 @@ _(SMOLDERING) // New explosion
 _(BOOMEXPLODE)
 _(BOOMPARTICLE)
 
-_(LANDMINE) // Land Mine
+// Land Mine
+_(LANDMINE)
+// Egg Mine
+_(EGGMINE_CAPSULE)
+_(EGGMINE_SHIELD)
 
 _(BALLHOG) // Ballhog
 _(BALLHOGBOOM)

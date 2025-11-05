@@ -574,12 +574,13 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
-	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;
+	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE ||
+		   t->type == MT_EGGMINE_CAPSULE || t->type == MT_EGGMINE_SHIELD;
 }
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
+	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
 	    || (player->growshrinktimer > 0));
 }
 
@@ -637,7 +638,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 {
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
-		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_EGGMINE_CAPSULE || t->type == MT_SINK
 		|| t->type == MT_KART_LEFTOVER
 		|| t->type == MT_PLAYER);
 }
@@ -657,6 +658,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	{
 	case MT_EGGMANITEM:
 	case MT_BALLHOG:
+	case MT_EGGMINE_CAPSULE:
 		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
 		dmg = 0;
 		break;
@@ -821,7 +823,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t2Condition = false;
 
 	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -833,7 +835,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		if (t1Condition == true && t2Condition == false)
 		{

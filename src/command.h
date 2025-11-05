@@ -192,6 +192,10 @@ extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 #define KARTINVIN_LEGACY 0
 #define KARTINVIN_ALTERN 1
 
+// Alt item type (alias of kartinvin_x for now until refactor complete)
+#define KARTITEM_NORMAL 0
+#define KARTITEM_ALTERN 1
+
 extern consvar_t cv_execversion;
 
 extern consvar_t cv_resetnetvars;
