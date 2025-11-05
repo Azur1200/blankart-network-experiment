@@ -8871,7 +8871,6 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	// Load the ccheckpoints and waypoints please!
 	if (gametyperules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
-
 			if ((K_SetupWaypointList() == false))
 			{
 				if (!K_UsingLegacyCheckpoints())

@@ -5742,7 +5742,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 
 boolean M_AttackOnStack(void)
 {
-	INT32 i;
+	UINT16 i;
 
 	for (i = 0; i < sizeof(menustack)/sizeof(menustack[0]); i++)
 	{

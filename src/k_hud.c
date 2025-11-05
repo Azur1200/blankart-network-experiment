@@ -1728,7 +1728,7 @@ void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UI
 		V_DrawKartStringAtFixed((TX+84)<<FRACBITS, ((TY+3)<<FRACBITS)-jitter, splitflags, va("%d", worktime%10));
 	}
 
-	if ((modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
+	if (mode != 2 && (modeattacking || (mode == 1)) && G_EmblemsEnabled()) // emblem time!
 	{
 		INT32 workx = TX + 96, worky = TY+18;
 		SINT8 curemb = 0;
