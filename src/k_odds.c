@@ -33,6 +33,7 @@
 #include "k_bot.h"
 #include "k_kart.h"
 #include "k_waypoint.h"
+#include "k_altshrink.h"
 
 #include "k_cluster.hpp"
 #include "k_odds.h"
@@ -120,6 +121,11 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Jawz x2
 };
 
+static UINT8 altshrinkodds[MAXODDS] =
+    { 0,  0,  0,  0,  0,  0,  0,  4,  2,  0,  0,  0,  0,  0,  0,  0};
+    //0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
+    //B   C   D   E   F   G   H   I   J   K   L   M   N   O   P   Q
+
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 {
 	//R  S
@@ -203,7 +209,7 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 10,   0 }, // Ballhog
 	{ 20,   0 }, // Self-Propelled Bomb
 	{ 3,    0 }, // Grow
-	{ 20,   0 }, // Shrink
+	{ 5,    0 }, // Shrink
 	{ 0,    0 }, // Thunder Shield
 	{ 20,   0 }, // Hyudoro
 	{ 0,    0 }, // Pogo Spring
@@ -394,6 +400,24 @@ UINT8 K_ItemResultToAmount(SINT8 getitem)
 	}
 }
 
+/**	\brief	Prevent overpowered rolls while under the effects of Alt. Shrink.
+
+	\param	item		the item to check
+
+	\return	Don't double for this item?
+*/
+static boolean K_DontDoubleMyItems(SINT8 item)
+{
+	return ((item == KITEM_BALLHOG) || (item == KRITEM_TENFOLDBANANA)
+		 || (item == KRITEM_TRIPLEORBINAUT)
+		 || (item == KRITEM_QUADORBINAUT) || (item == KRITEM_TRIPLESNEAKER)
+		 || (item == KRITEM_DUALJAWZ) || (item == KITEM_SPB)
+		 || (item == KITEM_INVINCIBILITY) || (item == KITEM_GROW)
+		 || (item == KITEM_BUBBLESHIELD) || (item == KITEM_FLAMESHIELD)
+		 || (item == KITEM_ROCKETSNEAKER) || (item == KITEM_SHRINK)
+		 || (item == KITEM_HYUDORO));
+}
+
 /**	\brief	Item Roulette for Kart
 
 	\param	player		player
@@ -403,10 +427,11 @@ UINT8 K_ItemResultToAmount(SINT8 getitem)
 */
 static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 {
-	if (getitem == KITEM_SPB || getitem == KITEM_SHRINK) // Indirect items
+	if (getitem == KITEM_SPB || (getitem == KITEM_SHRINK && (!K_AltShrinkActive()))) // Indirect items
+	{
 		indirectitemcooldown = 20*TICRATE;
-
-	if (K_GetBGone(getitem, true) > 0) // Item cooldowns
+	}
+	else if (K_GetBGone(getitem, true) > 0) // Item cooldowns
 	{
 		K_SetBGoneToBase(getitem);
 	}
@@ -415,6 +440,12 @@ static void K_KartGetItemResult(player_t *player, SINT8 getitem)
 
 	player->itemtype = K_ItemResultToType(getitem);
 	UINT8 itemamount = K_ItemResultToAmount(getitem);
+
+	if (K_IsAltShrunk(player) && (!K_DontDoubleMyItems(getitem)))
+	{
+		itemamount *= 2;
+	}
+
 	if (cv_kartdebugitem.value != KITEM_NONE && cv_kartdebugitem.value == player->itemtype && cv_kartdebugamount.value > 1)
 		itemamount = cv_kartdebugamount.value;
 	player->itemamount = itemamount;
@@ -638,7 +669,11 @@ INT32 K_KartGetItemOdds(
 	else if (gametyperules & GTR_RACEODDS)
 	{
 		I_Assert(pos < MAXODDS); // Ditto
-		newodds = K_KartItemOddsRace[item-1][pos];
+
+		if (item == KITEM_SHRINK && K_AltShrinkActive())
+			newodds = altshrinkodds[pos]; // Alt. Shrink has unique odds, since it's a power item.
+		else
+			newodds = K_KartItemOddsRace[item-1][pos];
 	}
 	else
 	{
@@ -820,7 +855,11 @@ INT32 K_KartGetItemOdds(
 		case KITEM_SHRINK:
 			cooldownOnStart = true;
 			powerItem = true;
-			indirectItem = true;
+
+			if (!K_AltShrinkActive())
+				indirectItem = true;
+
+			// "Why keep this for Alt. Shrink?" Bag. Ging.
 			notNearEnd = true;
 
 			if (pingame-1 <= pexiting)
@@ -920,9 +959,16 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	UINT8 disttable[oddsdiv];
 	UINT8 distlen = 0;
 	boolean oddsvalid[MAXODDS];
+	boolean rivalodds = false;
 
 	// Unused now, oops :V
 	(void)bestbumper;
+
+	if ((player->bot && player->botvars.rival) || K_IsAltShrunk(player))
+	{
+		// Rival bots and players using Alt. Shrink get crazier items.
+		rivalodds = true;
+	}
 
 	for (i = 0; i < MAXODDS; i++)
 	{
@@ -943,7 +989,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 					mashed,
 					spbrush,
 					player->bot,
-					(player->bot && player->botvars.rival),
+					rivalodds,
 					K_IsPlayerLosing(player)
 				) > 0)
 			{

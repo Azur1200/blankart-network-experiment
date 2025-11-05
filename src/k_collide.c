@@ -2,6 +2,7 @@
 /// \brief SRB2Kart item collision hooks
 
 #include "k_collide.h"
+#include "k_altshrink.h"
 #include "k_stats.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -857,19 +858,37 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT1)
 		{
-			switch (cv_kartairsquish.value)
+			if ((t2->player) && (K_IsAltShrunk(t2->player)) &&
+			    (!(t1->player && t1->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t2, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t2->player);
+					t2->player->altshrinktimeshit++;
+					K_PlayPainSound(t2, NULL);
+				}
+			}
+			if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
 			}
 		}
 	}
@@ -878,20 +897,39 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		if (G_CompatLevel(0x0008) || !hyudoroT2)
 		{
 			// shitty code duplication 🥲
-			switch (cv_kartairsquish.value)
+
+			if ((t1->player) && (K_IsAltShrunk(t1->player)) &&
+			    (!(t2->player && t2->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t1, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t1->player);
+					t1->player->altshrinktimeshit++;
+					K_PlayPainSound(t1, NULL);
+				}
 			}
+			else if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
+		}
 		}
 		return true;
 	}

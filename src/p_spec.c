@@ -44,6 +44,7 @@
 
 // SRB2kart
 #include "k_kart.h"
+#include "k_altshrink.h"
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"
@@ -9189,7 +9190,8 @@ boolean P_AllowFriction(mobj_t *mobj)
 	if (mobj->player->invincibilitytimer
 		|| mobj->player->hyudorotimer
 		|| mobj->player->sneakertimer
-		|| mobj->player->growshrinktimer > 0)
+		|| mobj->player->growshrinktimer > 0
+		|| K_IsAltShrunk(mobj->player))
 		return false;
 
 	return true;

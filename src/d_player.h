@@ -724,6 +724,7 @@ struct player_t
 	fixed_t slopeaccel; // Handle slopeboost accel
 	
 	INT16 growshrinktimer;			// > 0 = Big, < 0 = small
+	INT16 altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
 	INT16 growcancel;				// Duration of grow canceling
 	INT16 squishedtimer;			// Duration of being squished
 

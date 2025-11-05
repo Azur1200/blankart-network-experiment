@@ -68,6 +68,7 @@
 #include "m_perfstats.h"
 #include "g_party.h"
 #include "k_specialstage.h"
+#include "k_altshrink.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -167,6 +168,7 @@ static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
 static void KartInvinType_OnChange(void);
+static void KartShrinkType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 
 static void Schedule_OnChange(void);
@@ -499,6 +501,10 @@ consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedb
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
+consvar_t cv_kartstacking_altshrink_speedboost = CVAR_INIT ("vanillaboost_altshrink_speedboost", "0.56", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_altshrink_accelboost = CVAR_INIT ("vanillaboost_altshrink_accelboost", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_altshrink_stackable = CVAR_INIT ("vanillaboost_altshrink_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
+
 consvar_t cv_kartstacking_bubble_speedboost = CVAR_INIT ("vanillaboost_bubble_speedboost", "0.35", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_accelboost = CVAR_INIT ("vanillaboost_bubble_accelboost", "8.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_bubble_stackable = CVAR_INIT ("vanillaboost_bubble_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
@@ -594,9 +600,14 @@ consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|
 consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
-// Invincibility modifiers
-static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
-consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, invintype_cons_t, KartInvinType_OnChange);
+// Items with alternative types
+static CV_PossibleValue_t kartitemtype_cons_t[] = {{KARTINVIN_LEGACY, "Legacy"}, {KARTINVIN_ALTERN, "Alternative"}, {0, NULL}};
+consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartInvinType_OnChange);
+consvar_t cv_kartshrinktype = CVAR_INIT ("kartshrinktype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartShrinkType_OnChange);
+
+// Time limit for Alt. Shrink
+static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
+consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "13", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
@@ -1271,6 +1282,7 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_growmusic);
 	CV_RegisterVar(&cv_supermusic);
+	CV_RegisterVar(&cv_altshrinkmusic);
 
 	CV_RegisterVar(&cv_songcredits);
 	CV_RegisterVar(&cv_tutorialprompt);
@@ -1337,6 +1349,7 @@ void D_RegisterClientCommands(void)
 
 	CV_RegisterVar(&cv_invincmusicfade);
 	CV_RegisterVar(&cv_growmusicfade);
+	CV_RegisterVar(&cv_altshrinkmusicfade);
 
 	CV_RegisterVar(&cv_resetspecialmusic);
 
@@ -7828,6 +7841,24 @@ static void KartInvinType_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Invincibility type will be changed to \"%s\" next round.\n"), cv_kartinvintype.string);
+	}
+}
+
+static void KartShrinkType_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Shrink type has been changed to \"%s\".\n"), cv_kartshrinktype.string);
+		shrinktype = (UINT8)cv_kartshrinktype.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Shrink type will be changed to \"%s\" next round.\n"), cv_kartshrinktype.string);
 	}
 }
 

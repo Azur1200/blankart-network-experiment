@@ -66,6 +66,7 @@
 #include "k_cluster.hpp"
 #include "k_odds.h"
 #include "k_specialstage.h"
+#include "k_altshrink.h"
 
 #include "h_timers.h"
 #include "blan/b_soc.h"
@@ -345,6 +346,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_grow_accelboost);
 	CV_RegisterVar(&cv_kartstacking_grow_stackable);
 
+	CV_RegisterVar(&cv_kartstacking_altshrink_speedboost);
+	CV_RegisterVar(&cv_kartstacking_altshrink_accelboost);
+	CV_RegisterVar(&cv_kartstacking_altshrink_stackable);
+
 	CV_RegisterVar(&cv_kartstacking_bubble_speedboost);
 	CV_RegisterVar(&cv_kartstacking_bubble_accelboost);
 	CV_RegisterVar(&cv_kartstacking_bubble_stackable);
@@ -409,6 +414,9 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartslipdash);
 
 	CV_RegisterVar(&cv_kartslopeboost);
+
+	CV_RegisterVar(&cv_kartshrinktype);
+	CV_RegisterVar(&cv_kartaltshrinktime);
 
     CV_RegisterVar(&cv_kartinvintype);
     CV_RegisterVar(&cv_kartinvindist);
@@ -1597,7 +1605,7 @@ static void K_RespawnChecker(player_t *player)
 	}
 	else if (player->respawn == 1)
 	{
-		if (player->growshrinktimer < 0)
+		if (K_IsShrunk(player))
 		{
 			player->mo->scalespeed = mapobjectscale/TICRATE;
 			player->mo->destscale = (6*mapobjectscale)/8;
@@ -2665,6 +2673,14 @@ static void K_GetKartBoostPower(player_t *player)
 		K_DoBoost(player, GROWSPEEDBOOST, GROWACCELBOOST, GROWSTACKABLE, GROWSTACKABLE); // + 20% top speed, + 0% acceleration
 	}
 
+	if (K_IsAltShrunk(player)) // Alt. Shrink
+	{
+		fixed_t shrinkspeed = K_AccomodateShrinkScaling(SHRINKSPEEDBOOST);
+		fixed_t shrinkaccel = K_AccomodateShrinkScaling(SHRINKACCELBOOST);
+
+		K_DoBoost(player, FixedMul(shrinkspeed, GROW_SCALE), FixedMul(shrinkaccel, GROW_SCALE), SHRINKSTACKABLE, SHRINKSTACKABLE); // + 45% top speed, + 200% acceleration
+	}
+
 	if (player->bubbleboost) // Bubble Shield popping boost
 	{
 		K_DoBoost(player, BUBBLESPEEDBOOST, BUBBLEACCELBOOST, BUBBLESTACKABLE, BUBBLESTACKABLE); // + 35% top speed, + 800% acceleration
@@ -3324,7 +3340,7 @@ static void K_RemoveGrowShrink(player_t *player)
 	{
 		if (player->growshrinktimer > 0) // Play Shrink noise
 			S_StartSound(player->mo, sfx_kc59);
-		else if (player->growshrinktimer < 0) // Play Grow noise
+		else if (K_IsShrunk(player)) // Play Grow noise
 			S_StartSound(player->mo, sfx_kc5a);
 
 		K_KartResetPlayerColor(player);
@@ -3351,8 +3367,8 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 
 	player->squishedtimer = TICRATE;
 
-	// Reduce Shrink timer
-	if (player->growshrinktimer < 0)
+	// Reduce Shrink timer for Legacy Shrink
+	if (K_IsLegacyShrunk(player))
 	{
 		player->growshrinktimer += TICRATE;
 		if (player->growshrinktimer >= 0)
@@ -5073,6 +5089,44 @@ void K_DoInvincibility(player_t *player, tic_t time)
 	P_RestoreMusic(player);
 }
 
+static void K_DoGrowShrink(player_t *player, boolean shrinking)
+{
+	player->mo->scalespeed = mapobjectscale/TICRATE;
+	player->mo->destscale = FixedMul(mapobjectscale, (shrinking) ? SHRINK_SCALE : GROW_SCALE);
+
+	if (K_PlayerShrinkCheat(player) == true)
+	{
+		player->mo->destscale = FixedMul(player->mo->destscale, SHRINK_SCALE);
+	}
+
+	if ((shrinking) && (ALTSHRINKTIME > 0))
+	{
+		player->growshrinktimer = ALTSHRINKTIME * -TICRATE;
+	}
+	else
+	{
+		player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
+	}
+
+	if (player->invincibilitytimer > 0)
+	{
+		; // invincibility has priority in P_RestoreMusic, no point in starting here
+	}
+	else if (P_IsLocalPlayer(player) == true)
+	{
+		S_ChangeMusicSpecial((shrinking) ? "kshrnk" : "kgrow");
+	}
+	else //used to be "if (P_IsDisplayPlayer(player) == false)"
+	{
+		if (!shrinking)
+		{
+			S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
+		}
+	}
+
+	P_RestoreMusic(player);
+}
+
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source)
 {
 	mobj_t *cachenext;
@@ -6366,6 +6420,7 @@ static void K_UpdateInvincibilitySounds(player_t *player)
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;
 		else if (player->invincibilitytimer > 0 && (!localplayer || cv_supermusic.value == 2))
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmi : sfx_kinvnc;
+		// FIXME: Does Alt. Shrink need an alarm?
 	}
 
 	if (sfxnum != sfx_None && !S_SoundPlaying(player->mo, sfxnum))
@@ -7375,7 +7430,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		if (player->growshrinktimer > 0)
 			player->growshrinktimer--;
-		if (player->growshrinktimer < 0)
+		if (K_IsShrunk(player))
 			player->growshrinktimer++;
 
 		// Back to normal
@@ -7709,7 +7764,7 @@ void K_KartResetPlayerColor(player_t *player)
 		if (player->growshrinktimer % 5 == 0)
 		{
 			player->mo->colorized = true;
-			player->mo->color = (player->growshrinktimer < 0 ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE);
+			player->mo->color = (K_IsShrunk(player) ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE);
 			fullbright = true;
 			goto finalise;
 		}
@@ -8984,8 +9039,11 @@ INT16 K_GetKartTurnValue(const player_t *player, INT16 turnvalue)
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
 
-	if (player->invincibilitytimer || player->sneakertimer || player->bubbleboost || player->growshrinktimer > 0)
-		turnvalue = FixedMul(turnvalue, FixedDiv(5*FRACUNIT, 4*FRACUNIT));
+	if (player->invincibilitytimer || player->sneakertimer || player->bubbleboost ||
+	    player->growshrinktimer > 0 || K_IsAltShrunk(player))
+	{
+		turnvalue = FixedMul(turnvalue, FixedDiv(5 * FRACUNIT, 4 * FRACUNIT));
+	}
 
 	if (player->flamedash && player->flamestore) // Reduce turning
 	{
@@ -10769,39 +10827,24 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
 								player->itemamount--;
-								if (player->growshrinktimer < 0)
+								if (K_IsLegacyShrunk(player))
 								{
-									// If you're shrunk, then "grow" will just make you normal again.
+									// If you're shrunk, then "grow" will just make you normal again...
 									K_RemoveGrowShrink(player);
 								}
 								else
 								{
+									// ...in Legacy mode.
+									// Alt. Shrink's a powerup, so Grow overrides!
+									if (K_IsAltShrunk(player))
+									{
+										player->growshrinktimer = 0; // Paranoia
+									}
+
 									K_PlayPowerGloatSound(player->mo);
 
-									player->mo->scalespeed = mapobjectscale/TICRATE;
-									player->mo->destscale = FixedMul(mapobjectscale, GROW_SCALE);
+									K_DoGrowShrink(player, false);
 
-									if (K_PlayerShrinkCheat(player) == true)
-									{
-										player->mo->destscale = FixedMul(player->mo->destscale, SHRINK_SCALE);
-									}
-
-									player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * TICRATE;
-
-									if (player->invincibilitytimer > 0)
-									{
-										; // invincibility has priority in P_RestoreMusic, no point in starting here
-									}
-									else if (P_IsLocalPlayer(player) == true)
-									{
-										S_ChangeMusicSpecial("kgrow");
-									}
-									else //used to be "if (P_IsDisplayPlayer(player) == false)"
-									{
-										S_StartSound(player->mo, (cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow));
-									}
-
-									P_RestoreMusic(player);
 									S_StartSound(player->mo, sfx_kc5a);
 								}
 
@@ -10811,7 +10854,18 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 						case KITEM_SHRINK:
 							if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 							{
-								K_DoShrink(player);
+								if (K_AltShrinkActive())
+								{
+									K_DoGrowShrink(player, true);
+									K_AltShrinkIFrames(player);
+
+									S_StartSound(player->mo, sfx_kc46);
+								}
+								else
+								{
+									K_DoShrink(player);
+								}
+
 								player->itemamount--;
 								K_PlayPowerGloatSound(player->mo);
 								K_BotResetItemConfirm(player, false);
@@ -11023,12 +11077,15 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				P_RemoveMobj(player->shieldtracer);
 		}
 
+		if (player->growshrinktimer == 0)
+			player->altshrinktimeshit = 0;
+
 		if (player->growshrinktimer <= 0)
 			player->growcancel = -1;
 
 		if (player->itemtype == KITEM_SPB
 			|| player->itemtype == KITEM_SHRINK
-			|| player->growshrinktimer < 0)
+			|| K_IsLegacyShrunk(player))
 			indirectitemcooldown = 20*TICRATE;
 
 		if (player->hyudorotimer > 0)

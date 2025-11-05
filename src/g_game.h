@@ -71,7 +71,7 @@ extern consvar_t cv_chatwidth, cv_chatnotifications, cv_chatheight, cv_chattime,
 extern consvar_t cv_shoutname, cv_shoutcolor, cv_autoshout;
 extern consvar_t cv_songcredits;
 extern consvar_t cv_showfreeplay;
-extern consvar_t cv_growmusic, cv_supermusic;
+extern consvar_t cv_growmusic, cv_supermusic, cv_altshrinkmusic;
 
 extern consvar_t cv_pauseifunfocused;
 
@@ -88,6 +88,7 @@ extern consvar_t cv_ghost_besttime, cv_ghost_bestlap, cv_ghost_last, cv_ghost_gu
 
 extern consvar_t cv_invincmusicfade;
 extern consvar_t cv_growmusicfade;
+extern consvar_t cv_altshrinkmusicfade;
 
 extern consvar_t cv_resetspecialmusic;
 

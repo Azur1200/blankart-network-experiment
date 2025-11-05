@@ -62,6 +62,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_odds.h"
+#include "k_altshrink.h"
 #include "g_party.h"
 
 #include "acs/interface.h"
@@ -831,6 +832,8 @@ void P_RestoreMusic(player_t *player)
 		{ wantedmus = 1; bestlocaltimer = players[p].growshrinktimer; } \
 		else if (players[p].invincibilitytimer > bestlocaltimer) \
 		{ wantedmus = 2; bestlocaltimer = players[p].invincibilitytimer; } \
+		else if ((K_AltShrinkActive()) && (K_GetShrinkTime(&players[p]) > bestlocaltimer)) \
+		{ wantedmus = 3; bestlocaltimer = K_GetShrinkTime(&players[p]); } \
 	}
 			setbests(localplayertable[0]);
 			setbests(localplayertable[1]);
@@ -848,6 +851,8 @@ void P_RestoreMusic(player_t *player)
 					wantedmus = 1;
 				else if (player->invincibilitytimer > 1)
 					wantedmus = 2;
+				else if ((K_AltShrinkActive()) && (K_GetShrinkTime(player) > 1))
+					wantedmus = 3;
 				
 			}
 		}
@@ -863,6 +868,12 @@ void P_RestoreMusic(player_t *player)
 		{
 			S_ChangeMusicInternal("kinvnc", true);
 			S_SetRestoreMusicFadeInCvar(&cv_invincmusicfade);
+		}
+		// Item - Shrink (Alternative)
+		else if ((wantedmus == 3) && cv_altshrinkmusic.value == 1)
+		{
+			S_ChangeMusicInternal("kshrnk", true);
+			S_SetRestoreMusicFadeInCvar(&cv_altshrinkmusicfade);
 		}
 		else
 		{

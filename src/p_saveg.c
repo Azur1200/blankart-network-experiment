@@ -45,6 +45,7 @@
 #include "acs/interface.h"
 #include "g_party.h"
 #include "k_waypoint.h"
+#include "k_altshrink.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -4099,6 +4100,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itempushing);
 	SYNC(bumpsparkactive);
 	SYNC(invintype);
+	SYNC(shrinktype);
 	SYNC(antibumptime);
 
 	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)

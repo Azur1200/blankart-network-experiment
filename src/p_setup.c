@@ -109,6 +109,7 @@
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
+#include "k_altshrink.h"
 
 #include "blan/b_soc.h"
 
@@ -8072,6 +8073,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
 	invintype = (UINT8)cv_kartinvintype.value;
+	K_UpdateShrinkType();
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
