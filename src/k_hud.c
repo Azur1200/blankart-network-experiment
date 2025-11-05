@@ -1433,7 +1433,7 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if ((stplyr->invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
+		else if ((stplyr->invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
 		{
 			itembar = FixedDiv(stplyr->invincibilitytimer, max(1, stplyr->maxinvincibilitytime));
 
@@ -2102,7 +2102,7 @@ static boolean K_drawKartPositionFaces(void)
 
 			V_DrawMappedPatch(FACE_X + offsets.x, Y + offsets.y, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
-			if ((players[rankplayer[i]].invincibilitytimer) && (K_GetKartInvinType() == KARTINVIN_ALTERN))
+			if ((players[rankplayer[i]].invincibilitytimer) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)))
 			{
 				colormap = R_GetTranslationColormap(TC_BLINK, K_AltInvincibilityColor(leveltime / 2), GTC_CACHE);
 				invinchudtrans = K_InvincibilityHUDVisibility(players[rankplayer[i]].invincibilitytimer);
@@ -2488,7 +2488,7 @@ static void K_DrawServerMods(INT32 x, INT32 y)
 		{"Bump Drift", 0, NULL, K_GetBumpSpark() > 0, true},
 		{"Bump Spark", 0, NULL, K_GetBumpSpark() > BUMPSPARK_NOCHARGE, true},
 		{"Bump Spring", 0, &cv_kartbumpspring, -1, true},
-		{"Alt. Invin.", 0, NULL, K_GetKartInvinType() == KARTINVIN_ALTERN, true}
+		{"Alt. Invin.", 0, NULL, K_IsKartItemAlternate(KITEM_INVINCIBILITY), true}
 	};
 
 	for (j = 0; j < 2; j++)
@@ -4335,9 +4335,9 @@ static void K_drawKartMinimap(void)
 
 				invingradient = K_InvincibilityGradient(players[i].invincibilitytimer);
 
-				if ((players[i].invincibilitytimer) && ((invingradient > (FRACUNIT/2)) || (K_GetKartInvinType() == KARTINVIN_LEGACY)))
+				if ((players[i].invincibilitytimer) && ((invingradient > (FRACUNIT/2)) || (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
 				{
-					usecolor = ((K_GetKartInvinType() == KARTINVIN_ALTERN) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
+					usecolor = ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) ? K_AltInvincibilityColor(leveltime / 2) : K_RainbowColor(leveltime / 2));
 					colorizeplayer = true;
 				}
 				else
@@ -4370,7 +4370,7 @@ static void K_drawKartMinimap(void)
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
-				if ((K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+				if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
 				    (players[i].invincibilitytimer) && (invingradient))
 				{
 					// Draw Alt. Invin. sparkles
@@ -4665,7 +4665,7 @@ static void K_drawKartMinimap(void)
 
 			if ((players[localplayers[i]].invincibilitytimer) &&
 				((invingradient > (FRACUNIT / 2)) ||
-					(K_GetKartInvinType() == KARTINVIN_LEGACY)))
+					(!K_IsKartItemAlternate(KITEM_INVINCIBILITY))))
 			{
 				usecolor = (K_RainbowColor(leveltime / 2));
 				colorizeplayer = true;
@@ -4735,7 +4735,7 @@ static void K_drawKartMinimap(void)
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
-			if ((!nocontest) && (K_GetKartInvinType() == KARTINVIN_ALTERN) &&
+			if ((!nocontest) && (K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
 			    (players[localplayers[i]].invincibilitytimer) && (invingradient))
 			{
 				// Draw Alt. Invin. sparkles

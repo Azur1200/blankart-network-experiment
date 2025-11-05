@@ -108,7 +108,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Pogo Spring
     { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Kitchen Sink
     { 7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Super Ring
-    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine
+    { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Land Mine / Egg Mine
     { 0,  0,  0, 12, 15,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Bubble Shield
     { 0,  0,  0,  0,  0,  0,  2,  4, 12, 24, 27, 12,  7,  4,  0,  0}, // Flame Shield
     { 0,  0,  0,  0,  0,  0,  8, 20, 40, 12,  0,  0,  0,  0,  0,  0}, // Sneaker x2
@@ -140,7 +140,7 @@ static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =
 	{ 3, 0 }, // Pogo Spring
 	{ 0, 0 }, // Kitchen Sink
 	{ 0, 0 }, // Super Ring
-	{ 2, 0 }, // Land Mine
+	{ 2, 0 }, // Land Mine / Egg Mine
 	{ 1, 0 }, // Bubble Shield
 	{ 1, 0 }, // Flame Shield
 	{ 0, 0 }, // Sneaker x2
@@ -173,7 +173,7 @@ static UINT8 K_KartItemOddsSpecial[NUMKARTRESULTS-1][4] =
 	{ 0, 0, 0, 0 }, // Pogo Spring
 	{ 0, 0, 0, 0 }, // Kitchen Sink
 	{ 0, 0, 0, 0 }, // Super Ring
-	{ 0, 0, 0, 0 }, // Land Mine
+	{ 0, 0, 0, 0 }, // Land Mine / Egg Mine
 	{ 0, 0, 0, 0 }, // Bubble Shield
 	{ 0, 0, 0, 0 }, // Flame Shield
 	{ 0, 1, 1, 0 }, // Sneaker x2
@@ -209,7 +209,7 @@ tic_t ItemBGone[NUMKARTRESULTS][2] =
 	{ 0,    0 }, // Pogo Spring
 	{ 0,    0 }, // Kitchen Sink
 	{ 0,    0 }, // Super Ring
-	{ 0,    0 }, // Land Mine
+	{ 0,    0 }, // Land Mine / Egg Mine
 	{ 5,    0 }, // Bubble Shield
 	{ 8,    0 }, // Flame Shield
 	{ 0,    0 }, // Sneaker x2
@@ -758,7 +758,7 @@ INT32 K_KartGetItemOdds(
 			notNearEnd = true;
 			break;
 		case KITEM_INVINCIBILITY:
-			if ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (gametyperules & GTR_RACEODDS))
+			if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (gametyperules & GTR_RACEODDS))
 			{
 				// It's a power item, yes, but we don't want mashing to lessen
 				// its chances, so we lie to the game's face.

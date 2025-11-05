@@ -295,11 +295,13 @@ INT32 cheats; //for multiplayer cheat commands
 // Cvars that we don't want changed mid-game
 UINT8 numlaps; // Removed from Cvar hell
 UINT8 gamespeed; // Game's current speed (or difficulty, or cc, or etc); 0 for easy, 1 for normal, 2 for hard
-UINT8 invintype; // How Invincibility functions. 0 for Legacy/Vanilla, 1 for Alternative.
 boolean encoremode = false; // Encore Mode currently enabled?
 boolean prevencoremode;
 boolean franticitems; // Frantic items currently enabled?
 boolean comeback; // Battle Mode's karma comeback is on/off
+// alt item values
+UINT8 invintype; // How Invincibility functions. 0 for Legacy/Vanilla, 1 for Alternative.
+UINT8 eggmantype; // How Eggman Monitor functions. 0 for Legacy/Vanilla, 1 for Alternative (Egg Mine).
 
 // Voting system
 INT16 votelevels[12][2]; // Levels that were rolled by the host

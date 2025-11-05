@@ -594,9 +594,10 @@ consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|
 consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
-// Invincibility modifiers
-static CV_PossibleValue_t invintype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
-consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, invintype_cons_t, KartInvinType_OnChange);
+// Alt Item Modifiers
+static CV_PossibleValue_t altitemtype_cons_t[] = {{KARTITEM_NORMAL, "Legacy"}, {KARTITEM_ALTERN, "Alternative"}, {0, NULL}};
+consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, altitemtype_cons_t, KartInvinType_OnChange);
+consvar_t cv_karteggmantype = CVAR_INIT ("karteggmantype", "Legacy", CV_NETVAR|CV_CALL, altitemtype_cons_t, KartEggmanType_OnChange);
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
@@ -7828,6 +7829,24 @@ static void KartInvinType_OnChange(void)
 	else
 	{
 		CONS_Printf(M_GetText("Invincibility type will be changed to \"%s\" next round.\n"), cv_kartinvintype.string);
+	}
+}
+
+static void KartEggmanType_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (leveltime < starttime)
+	{
+		CONS_Printf(M_GetText("Eggman Monitor type has been changed to \"%s\".\n"), cv_karteggmantype.string);
+		eggmantype = (UINT8)cv_karteggmantype.value;
+	}
+	else
+	{
+		CONS_Printf(M_GetText("Eggman Monitor type will be changed to \"%s\" next round.\n"), cv_karteggmantype.string);
 	}
 }
 
