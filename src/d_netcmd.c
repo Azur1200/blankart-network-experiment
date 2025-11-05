@@ -601,7 +601,7 @@ consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETV
 #undef MAXODDSDIST
 
 // Items with alternative types
-static CV_PossibleValue_t altitemtype_cons_t[] = {{KARTITEM_NORMAL, "Legacy"}, {KARTITEM_ALTERN, "Alternative"}, {0, NULL}};
+static CV_PossibleValue_t kartitemtype_cons_t[] = {{KARTITEM_NORMAL, "Legacy"}, {KARTITEM_ALTERN, "Alternative"}, {0, NULL}};
 consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartInvinType_OnChange);
 consvar_t cv_kartshrinktype = CVAR_INIT ("kartshrinktype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartShrinkType_OnChange);
 consvar_t cv_karteggmantype = CVAR_INIT ("karteggmantype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartEggmanType_OnChange);
