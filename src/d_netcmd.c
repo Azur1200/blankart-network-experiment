@@ -68,7 +68,7 @@
 #include "m_perfstats.h"
 #include "g_party.h"
 #include "k_specialstage.h"
-#include "k_altshrink.h"
+#include "k_items.h"
 
 #define CV_RESTRICT CV_NETVAR
 
@@ -167,9 +167,6 @@ static void KartItemLitter_OnChange(void);
 static void KartItemPush_OnChange(void);
 static void KartAntiBump_OnChange(void);
 static void KartItemBreaker_OnChange(void);
-static void KartInvinType_OnChange(void);
-static void KartEggmanType_OnChange(void);
-static void KartShrinkType_OnChange(void);
 static void KartBumpSpark_OnChange(void);
 
 static void Schedule_OnChange(void);
@@ -386,35 +383,6 @@ consvar_t cv_joyscale[MAXSPLITSCREENPLAYERS] = { //Alam: Dummy for save
 #endif
 
 // SRB2kart
-consvar_t cv_sneaker = 				CVAR_INIT ("sneaker", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_rocketsneaker = 		CVAR_INIT ("rocketsneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_invincibility = 		CVAR_INIT ("invincibility", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_banana = 				CVAR_INIT ("banana", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_eggmanmonitor = 		CVAR_INIT ("eggmanmonitor", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_orbinaut = 			CVAR_INIT ("orbinaut", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_jawz = 				CVAR_INIT ("jawz", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_mine = 				CVAR_INIT ("mine", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_ballhog = 				CVAR_INIT ("ballhog", 		    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_selfpropelledbomb =	CVAR_INIT ("selfpropelledbomb", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_grow = 				CVAR_INIT ("grow", 				"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_shrink = 				CVAR_INIT ("shrink", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_thundershield = 		CVAR_INIT ("thundershield", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_hyudoro = 				CVAR_INIT ("hyudoro", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_pogospring = 			CVAR_INIT ("pogospring", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_kitchensink = 			CVAR_INIT ("kitchensink", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_superring = 			CVAR_INIT ("superring", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_landmine = 			CVAR_INIT ("landmine", 		   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_bubbleshield = 		CVAR_INIT ("bubbleshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_flameshield = 			CVAR_INIT ("flameshield", 	   "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-
-consvar_t cv_dualsneaker = 			CVAR_INIT ("dualsneaker", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_triplesneaker = 		CVAR_INIT ("triplesneaker", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_triplebanana = 		CVAR_INIT ("triplebanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_decabanana = 			CVAR_INIT ("decabanana", 		"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_tripleorbinaut = 		CVAR_INIT ("tripleorbinaut", 	"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_quadorbinaut = 		CVAR_INIT ("quadorbinaut", 	    "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-consvar_t cv_dualjawz = 			CVAR_INIT ("dualjawz", 			"On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-
 static CV_PossibleValue_t kartminimap_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
 consvar_t cv_kartminimap = CVAR_INIT ("kartminimap", "4", CV_SAVE, kartminimap_cons_t, NULL);
 consvar_t cv_kartcheck = CVAR_INIT ("kartcheck", "Yes", CV_SAVE, CV_YesNo, NULL);
@@ -601,12 +569,6 @@ consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|
 consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
-// Items with alternative types
-static CV_PossibleValue_t kartitemtype_cons_t[] = {{KARTITEM_NORMAL, "Legacy"}, {KARTITEM_ALTERN, "Alternative"}, {0, NULL}};
-consvar_t cv_kartinvintype = CVAR_INIT ("kartinvintype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartInvinType_OnChange);
-consvar_t cv_kartshrinktype = CVAR_INIT ("kartshrinktype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartShrinkType_OnChange);
-consvar_t cv_karteggmantype = CVAR_INIT ("karteggmantype", "Legacy", CV_NETVAR|CV_CALL, kartitemtype_cons_t, KartEggmanType_OnChange);
-
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
@@ -631,23 +593,7 @@ consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "Off", 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
 
-static CV_PossibleValue_t kartdebugitem_cons_t[] =
-{
-#define FOREACH( name, n ) { n, #name }
-	KART_ITEM_ITERATOR,
-#undef  FOREACH
-	{0}
-};
-consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "NONE", CV_NETVAR|CV_CHEAT, kartdebugitem_cons_t, NULL);
-static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
-consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL);
 consvar_t cv_kartdebugshrink = CVAR_INIT ("kartdebugshrink", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
-#ifdef DEVELOP
-#define VALUE "Yes"
-#else
-#define VALUE "No"
-#endif
-#undef VALUE
 
 consvar_t cv_kartdebugdistribution = CVAR_INIT ("kartdebugdistribution", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebughuddrop = CVAR_INIT ("kartdebughuddrop", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
@@ -6235,8 +6181,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			SINT8 item = READSINT8(*cp);
 			UINT8 amt = READUINT8(*cp);
 
-			item = max(item, KITEM_SAD);
-			item = min(item, NUMKARTITEMS - 1);
+			item = CLAMP(item, KITEM_SAD, numkartitems - 1);
 
 			K_StripItems(player);
 
@@ -6252,10 +6197,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
-				// FIXME: we should have actual KITEM_ name array
-				const char *itemname = cv_kartdebugitem.PossibleValue[1 + item].strvalue;
-
-				CV_CheaterWarning(playernum, va("give item %s x%d", itemname, amt));
+				CV_CheaterWarning(playernum, va("give item %s x%d", item < 0 ? "SAD" : kartitems[item].name, amt));
 			}
 			break;
 		}
@@ -6540,8 +6482,6 @@ static void Command_KartGiveItem_f(void)
 	const char *name;
 	INT32       item;
 
-	const char * str;
-
 	int i;
 
 	ac = COM_Argc();
@@ -6553,7 +6493,7 @@ static void Command_KartGiveItem_f(void)
 	}
 	else
 	{
-		item = NUMKARTITEMS;
+		item = numkartitems;
 
 		name = COM_Argv(1);
 
@@ -6569,18 +6509,18 @@ static void Command_KartGiveItem_f(void)
 				CONS_Printf("\x83" "Autocomplete:\n");
 
 				/* then do very loose partial matching */
-				for (i = 0; ( str = kartdebugitem_cons_t[i].strvalue ); ++i)
+				for (i = 0; i < numkartitems; i++)
 				{
-					if (strcasestr(str, name) != NULL)
+					if (strcasestr(kartitems[i].name, name) != NULL)
 					{
-						CONS_Printf("\x83\t%s\n", str);
-						item = kartdebugitem_cons_t[i].value;
+						CONS_Printf("\x83\t%s\n", kartitems[i].name);
+						item = i;
 					}
 				}
 			}
 		}
 
-		if (item < NUMKARTITEMS)
+		if (item < numkartitems)
 		{
 			INT32 amt;
 
@@ -7825,60 +7765,6 @@ static void KartItemBreaker_OnChange(void)
 	else if (itembreaker && !cv_kartitembreaker.value)
 	{
 		CONS_Printf(M_GetText("Singleplayer Item Breaker will be turned \"Off\" Next Round.\n"));
-	}
-}
-
-static void KartInvinType_OnChange(void)
-{
-	if (K_CanChangeRules(false) == false)
-	{
-		return;
-	}
-
-	if (leveltime < starttime)
-	{
-		CONS_Printf(M_GetText("Invincibility type has been changed to \"%s\".\n"), cv_kartinvintype.string);
-		invintype = (UINT8)cv_kartinvintype.value;
-	}
-	else
-	{
-		CONS_Printf(M_GetText("Invincibility type will be changed to \"%s\" next round.\n"), cv_kartinvintype.string);
-	}
-}
-
-static void KartShrinkType_OnChange(void)
-{
-	if (K_CanChangeRules(false) == false)
-	{
-		return;
-	}
-
-	if (leveltime < starttime)
-	{
-		CONS_Printf(M_GetText("Shrink type has been changed to \"%s\".\n"), cv_kartshrinktype.string);
-		shrinktype = (UINT8)cv_kartshrinktype.value;
-	}
-	else
-	{
-		CONS_Printf(M_GetText("Shrink type will be changed to \"%s\" next round.\n"), cv_kartshrinktype.string);
-	}
-}
-
-static void KartEggmanType_OnChange(void)
-{
-	if (K_CanChangeRules(false) == false)
-	{
-		return;
-	}
-
-	if (leveltime < starttime)
-	{
-		CONS_Printf(M_GetText("Eggman Monitor type has been changed to \"%s\".\n"), cv_karteggmantype.string);
-		eggmantype = (UINT8)cv_karteggmantype.value;
-	}
-	else
-	{
-		CONS_Printf(M_GetText("Eggman Monitor type will be changed to \"%s\" next round.\n"), cv_karteggmantype.string);
 	}
 }
 

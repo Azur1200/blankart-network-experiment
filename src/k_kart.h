@@ -126,6 +126,11 @@ extern vector3_t clusterpoint, clusterdtf;
 #define FLAMEACCELBOOST CV_Get(&cv_kartstacking_flame_accelboost)
 #define FLAMESTACKABLE CV_Get(&cv_kartstacking_flame_stackable)
 
+#define ALTSHRINKTIME CV_Get(&cv_kartaltshrinktime)
+#define SHRINKSPEEDBOOST CV_Get(&cv_kartstacking_altshrink_speedboost)
+#define SHRINKACCELBOOST CV_Get(&cv_kartstacking_altshrink_accelboost)
+#define SHRINKSTACKABLE CV_Get(&cv_kartstacking_altshrink_stackable)
+
 #define STARTSPEEDBOOST CV_Get(&cv_kartstacking_start_speedboost)
 #define STARTACCELBOOST CV_Get(&cv_kartstacking_start_accelboost)
 #define STARTSTACKABLE CV_Get(&cv_kartstacking_start_stackable)
@@ -344,7 +349,6 @@ boolean K_DraftingActive(void);
 boolean K_AirDropActive(void);
 boolean K_ItemLitterActive(void);
 boolean K_ItemPushingActive(void);
-boolean K_GetKartInvinType(void);
 boolean K_IsKartItemAlternate(UINT8 itemtype);
 INT32 K_GetBumpSpark(void);
 boolean K_BoostChain(player_t *player, INT32 timer, boolean chainsound);

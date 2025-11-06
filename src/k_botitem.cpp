@@ -29,7 +29,7 @@
 #include "m_random.h"
 #include "r_things.h" // numskins
 #include "m_easing.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "k_waypoint.h"
 
 // Looks for players around the bot, and presses the item button
@@ -1155,7 +1155,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 		}
 	}
 
-	if (player->rings < 0 && cv_superring.value && K_RingsActive())
+	if (player->rings < 0 && K_ItemResultEnabled("superring") && K_RingsActive())
 	{
 		// Uh oh, we need a loan!
 		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.

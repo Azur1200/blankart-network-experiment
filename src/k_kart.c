@@ -64,9 +64,8 @@
 #include "k_follower.h"
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
-#include "k_odds.h"
+#include "k_items.h"
 #include "k_specialstage.h"
-#include "k_altshrink.h"
 
 #include "h_timers.h"
 #include "blan/b_soc.h"
@@ -233,37 +232,6 @@ angle_t K_ReflectAngle(angle_t yourangle, angle_t theirangle, fixed_t yourspeed,
 
 void K_RegisterKartStuff(void)
 {
-	CV_RegisterVar(&cv_sneaker);
-	CV_RegisterVar(&cv_rocketsneaker);
-	CV_RegisterVar(&cv_invincibility);
-	CV_RegisterVar(&cv_banana);
-	CV_RegisterVar(&cv_eggmanmonitor);
-	CV_RegisterVar(&cv_orbinaut);
-	CV_RegisterVar(&cv_jawz);
-	CV_RegisterVar(&cv_mine);
-	CV_RegisterVar(&cv_ballhog);
-	CV_RegisterVar(&cv_selfpropelledbomb);
-	CV_RegisterVar(&cv_grow);
-	CV_RegisterVar(&cv_shrink);
-	CV_RegisterVar(&cv_thundershield);
-	CV_RegisterVar(&cv_hyudoro);
-	CV_RegisterVar(&cv_pogospring);
-	CV_RegisterVar(&cv_kitchensink);
-
-	// Nu-ITEMS
-	CV_RegisterVar(&cv_superring);
-	CV_RegisterVar(&cv_landmine); // FIXME: Kill it.
-	CV_RegisterVar(&cv_bubbleshield);
-	CV_RegisterVar(&cv_flameshield);
-
-	CV_RegisterVar(&cv_dualsneaker);
-	CV_RegisterVar(&cv_triplesneaker);
-	CV_RegisterVar(&cv_triplebanana);
-	CV_RegisterVar(&cv_decabanana);
-	CV_RegisterVar(&cv_tripleorbinaut);
-	CV_RegisterVar(&cv_quadorbinaut);
-	CV_RegisterVar(&cv_dualjawz);
-
 	CV_RegisterVar(&cv_kartminimap);
 	CV_RegisterVar(&cv_kartcheck);
 	CV_RegisterVar(&cv_kartinvinsfx);
@@ -289,8 +257,6 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartusepwrlv);
 	CV_RegisterVar(&cv_votetime);
 
-	CV_RegisterVar(&cv_kartdebugitem);
-	CV_RegisterVar(&cv_kartdebugamount);
 	CV_RegisterVar(&cv_kartdebugshrink);
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
@@ -415,10 +381,8 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartslopeboost);
 
-	CV_RegisterVar(&cv_kartshrinktype);
 	CV_RegisterVar(&cv_kartaltshrinktime);
 
-    CV_RegisterVar(&cv_kartinvintype);
     CV_RegisterVar(&cv_kartinvindist);
     CV_RegisterVar(&cv_kartinvindistmul);
 
@@ -4742,7 +4706,7 @@ static void K_DoHyudoroSteal(player_t *player)
 	prandom = P_RandomFixed();
 	S_StartSound(player->mo, sfx_s3k92);
 
-	if (sink && numplayers > 0 && cv_kitchensink.value) // BEHOLD THE KITCHEN SINK
+	if (sink && numplayers > 0 && K_ItemResultEnabled("kitchensink")) // BEHOLD THE KITCHEN SINK
 	{
 		player->hyudorotimer = hyu;
 		player->stealingtimer = stealtime;
@@ -5538,7 +5502,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 	if (type == 0)
 	{
 		UINT8 useodds = 0;
-		INT32 spawnchance[NUMBASEKARTRESULTS];
+		INT32 spawnchance[MAXKARTRESULTS];
 		INT32 totalspawnchance = 0;
 		INT32 i;
 
@@ -5546,10 +5510,10 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 
 		useodds = amount;
 
-		for (i = 1; i < NUMBASEKARTRESULTS; i++)
+		for (i = 0; i < numkartresults; i++)
 		{
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
-				useodds, i,
+				useodds, &kartresults[i],
 				UINT32_MAX,
                 0,
 				0,
@@ -5561,30 +5525,29 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 		if (totalspawnchance > 0)
 		{
 			totalspawnchance = P_RandomKey(totalspawnchance);
-			for (i = 0; i < NUMBASEKARTRESULTS && spawnchance[i] <= totalspawnchance; i++);
+			for (i = 0; i < numkartresults && spawnchance[i] <= totalspawnchance; i++);
 
 			// TODO: this is bad!
 			// K_KartGetItemResult requires a player
 			// but item roulette will need rewritten to change this
 
-			const UINT8 newType = K_ItemResultToType(i);
-			const UINT8 newAmount = K_ItemResultToAmount(i);
+			const kartresult_t *result = &kartresults[i];
 
-			if (newAmount > 1)
+			if (result->amount > 1)
 			{
 				UINT8 j;
 
-				for (j = 0; j < newAmount-1; j++)
+				for (j = 0; j < result->amount-1; j++)
 				{
 					K_CreatePaperItem(
 						x, y, z,
 						angle, flip,
-						newType, 1
+						result->type, 1
 					);
 				}
 			}
 
-			drop->threshold = newType;
+			drop->threshold = result->type;
 			drop->movecount = 1;
 		}
 		else
@@ -11507,30 +11470,10 @@ boolean K_ItemPushingActive(void)
 	return itempushing;
 }
 
-boolean K_GetKartInvinType(void)
-{
-	return invintype;
-}
-
 boolean K_IsKartItemAlternate(UINT8 itemtype)
 {
-	switch (itemtype)
-	{
-	case KITEM_INVINCIBILITY:
-		return invintype == KARTITEM_ALTERN;
-		break;
-	case KITEM_EGGMAN:
-		return eggmantype == KARTITEM_ALTERN;
-		break;
-	case KITEM_SHRINK:
-		return shrinktype == KARTITEM_ALTERN;
-		break;
-	
-	default:
-		return false;
-		break;
-	}
-	return false;
+	return itemtype >= 0 && itemtype < numkartitems
+	    && kartitems[itemtype].altcvar != NULL && kartitems[itemtype].altcvar->value == 1;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

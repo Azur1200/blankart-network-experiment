@@ -208,6 +208,11 @@ TYPEDEF (waypoint_t);
 TYPEDEF (mapUserProperty_t);
 TYPEDEF (mapUserProperties_t);
 
+// k_items.h
+TYPEDEF (kartitem_t);
+TYPEDEF (kartresult_t);
+TYPEDEF (kartitemgraphics_t);
+
 // lua_hudlib_drawlist.h
 typedef struct huddrawlist_s *huddrawlist_h;
 

@@ -18,6 +18,7 @@
 #include "p_tick.h"
 #include "typedef.h"
 #include "r_fps.h"
+#include "k_items.h"
 
 #ifdef ROTSPRITE
 fixed_t rollcosang[ROTANGLES];

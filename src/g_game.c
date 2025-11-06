@@ -61,8 +61,7 @@
 #include "k_boss.h"
 #include "k_specialstage.h"
 #include "k_bot.h"
-#include "k_odds.h"
-#include "k_altshrink.h"
+#include "k_items.h"
 #include "doomstat.h"
 #include "acs/interface.h"
 #include "k_director.h"
@@ -300,9 +299,6 @@ boolean encoremode = false; // Encore Mode currently enabled?
 boolean prevencoremode;
 boolean franticitems; // Frantic items currently enabled?
 boolean comeback; // Battle Mode's karma comeback is on/off
-// alt item values
-UINT8 invintype; // How Invincibility functions. 0 for Legacy/Vanilla, 1 for Alternative.
-UINT8 eggmantype; // How Eggman Monitor functions. 0 for Legacy/Vanilla, 1 for Alternative (Egg Mine).
 
 // Voting system
 INT16 votelevels[12][2]; // Levels that were rolled by the host
@@ -314,7 +310,7 @@ SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
 SINT8 mostwanted; // The "most wanted" (first in line) player.
 tic_t wantedcalcdelay; // Time before it recalculates WANTED
 tic_t indirectitemcooldown; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
-// hyubgone was taken out back. See k_odds.c
+// hyubgone was taken out back. See k_items.c
 tic_t mapreset; // Map reset delay when enough players have joined an empty game
 boolean thwompsactive; // Thwomps activate on lap 2
 UINT8 lastLowestLap; // Last lowest lap, for activating race lap executors

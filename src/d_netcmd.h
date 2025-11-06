@@ -72,38 +72,6 @@ extern consvar_t cv_spectatorreentry, cv_antigrief;
 	extern consvar_t cv_debugtraversemax;
 #endif
 
-// SRB2kart items
-extern consvar_t
-	cv_sneaker,
-	cv_rocketsneaker,
-	cv_invincibility,
-	cv_banana,
-	cv_eggmanmonitor,
-	cv_orbinaut,
-	cv_jawz,
-	cv_mine,
-	cv_ballhog,
-	cv_selfpropelledbomb,
-	cv_grow,
-	cv_shrink,
-	cv_thundershield,
-	cv_hyudoro,
-	cv_pogospring,
-	cv_kitchensink,
-	cv_superring,
-	cv_landmine,
-	cv_bubbleshield,
-	cv_flameshield;
-
-extern consvar_t
-	cv_dualsneaker,
-	cv_triplesneaker,
-	cv_triplebanana,
-	cv_decabanana,
-	cv_tripleorbinaut,
-	cv_quadorbinaut,
-	cv_dualjawz;
-
 extern consvar_t cv_kartminimap;
 extern consvar_t cv_kartcheck;
 extern consvar_t cv_kartinvinsfx;
@@ -160,6 +128,11 @@ extern consvar_t cv_kartstacking_bubble_speedboost;
 extern consvar_t cv_kartstacking_bubble_accelboost;
 extern consvar_t cv_kartstacking_bubble_stackable;
 
+extern consvar_t cv_kartaltshrinktime;
+extern consvar_t cv_kartstacking_altshrink_speedboost;
+extern consvar_t cv_kartstacking_altshrink_accelboost;
+extern consvar_t cv_kartstacking_altshrink_stackable;
+
 extern consvar_t cv_kartstacking_start_speedboost;
 extern consvar_t cv_kartstacking_start_accelboost;
 extern consvar_t cv_kartstacking_start_stackable;
@@ -200,7 +173,6 @@ extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
-extern consvar_t cv_kartinvintype;
 extern consvar_t cv_kartinvindist;
 extern consvar_t cv_kartinvindistmul;
 extern consvar_t cv_kartinvin_maxtime;

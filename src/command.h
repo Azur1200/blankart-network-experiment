@@ -189,10 +189,6 @@ extern CV_PossibleValue_t CV_Natural[];
 #define KARTGP_NIGHTMARE 5 // Not a speed setting, gives expert speed with maxed out bots
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 
-// Alternative item types.
-#define KARTITEM_NORMAL 0
-#define KARTITEM_ALTERN 1
-
 extern consvar_t cv_execversion;
 
 extern consvar_t cv_resetnetvars;

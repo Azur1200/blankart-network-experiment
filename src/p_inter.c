@@ -39,7 +39,7 @@
 #include "k_boss.h"
 #include "p_spec.h"
 #include "k_objects.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "acs/interface.h"
 
 // CTF player names
@@ -1742,7 +1742,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				if (target->threshold < 1 || target->threshold >= NUMKARTITEMS) // bruh moment prevention
+				if (target->threshold < 1 || target->threshold >= numkartitems) // bruh moment prevention
 				{
 					player->itemtype = KITEM_SAD;
 					player->itemamount = 1;

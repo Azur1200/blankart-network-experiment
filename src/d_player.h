@@ -137,61 +137,6 @@ typedef enum
 	CR_ZOOMTUBE,
 } carrytype_t; // carry
 
-/*
-To use: #define FOREACH( name, number )
-Do with it whatever you want.
-Run this macro, then #undef FOREACH afterward
-*/
-#define KART_ITEM_ITERATOR \
-	FOREACH (SAD,           -1),\
-	FOREACH (NONE,           0),\
-	FOREACH (SNEAKER,        1),\
-	FOREACH (ROCKETSNEAKER,  2),\
-	FOREACH (INVINCIBILITY,  3),\
-	FOREACH (BANANA,         4),\
-	FOREACH (EGGMAN,         5),\
-	FOREACH (ORBINAUT,       6),\
-	FOREACH (JAWZ,           7),\
-	FOREACH (MINE,           8),\
-	FOREACH (BALLHOG,       9),\
-	FOREACH (SPB,           10),\
-	FOREACH (GROW,          11),\
-	FOREACH (SHRINK,        12),\
-	FOREACH (THUNDERSHIELD, 13),\
-	FOREACH (HYUDORO,       14),\
-	FOREACH (POGOSPRING,    15),\
-	FOREACH (KITCHENSINK,   16),\
-	FOREACH (SUPERRING,     17),\
-	FOREACH (LANDMINE,      18),\
-	FOREACH (BUBBLESHIELD,  19),\
-	FOREACH (FLAMESHIELD,   20)
-
-typedef enum
-{
-#define FOREACH( name, n ) KITEM_ ## name = n
-	KART_ITEM_ITERATOR,
-#undef  FOREACH
-
-	NUMKARTITEMS,
-
-	// Additional roulette numbers, only used for K_KartGetItemResult
-	KRITEM_DUALSNEAKER = NUMKARTITEMS,
-	KRITEM_TRIPLESNEAKER,
-	KRITEM_TRIPLEBANANA,
-	KRITEM_TENFOLDBANANA,
-	KRITEM_TRIPLEORBINAUT,
-	KRITEM_QUADORBINAUT,
-	KRITEM_DUALJAWZ,
-
-	NUMBASEKARTRESULTS,
-	
-	// alt items implemented as separate things
-	KAITEM_EGGMINE = NUMBASEKARTRESULTS,	// also landmine
-	KAITEM_ALTERNSHRINK,
-
-	NUMKARTRESULTS
-} kartitems_t;
-
 typedef enum {
 	KROULETTE_DISABLED,
 	KROULETTE_ACTIVE,

@@ -50,7 +50,7 @@
 #include "k_terrain.h"
 #include "k_collide.h"
 #include "k_objects.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "k_waypoint.h"
 
 // BlanKart
@@ -4166,7 +4166,7 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	mobj_t *part;
 	UINT32 newRenderFlags = 0;
 
-	if (itemType < 1 || itemType >= NUMKARTITEMS)
+	if (itemType < 1 || itemType >= numkartitems)
 		itemType = KITEM_SAD;
 
 	part = mobj;
@@ -11385,7 +11385,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			else if (P_RandomChance(FRACUNIT/3))
 				mobj->threshold = KITEM_ORBINAUT;
 			else
-				mobj->threshold = P_RandomRange(1, NUMKARTITEMS - 1);
+				mobj->threshold = P_RandomRange(1, numkartitems - 1);
 			mobj->movecount = P_RandomChance(FRACUNIT/3) ? 1 : P_RandomKey(32) + 1;
 #else
 			mobj->threshold = KITEM_SUPERRING; // default item is super ring
@@ -12807,7 +12807,7 @@ static boolean P_AllowMobjSpawn(mapthing_t* mthing, mobjtype_t i)
 		}
 		case MT_ITEMCAPSULE:
 			{
-				boolean isRingCapsule = (mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= NUMKARTITEMS);
+				boolean isRingCapsule = mthing->args[0] < 1 || mthing->args[0] == KITEM_SUPERRING || mthing->args[0] >= numkartitems;
 
 				// don't spawn ring capsules in with rings off.
 				if (isRingCapsule && (K_RingsActive() ==  false))
@@ -13666,7 +13666,7 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 			mobj->flags |= MF_NOGRAVITY;
 
 		// Angle = item type
-		if (mthing->args[0] > 0 && mthing->args[0] < NUMKARTITEMS)
+		if (mthing->args[0] > 0 && mthing->args[0] < numkartitems)
 			mobj->threshold = mthing->args[0];
 
 		// Parameter = extra items (x5 for rings)

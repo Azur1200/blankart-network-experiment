@@ -44,7 +44,7 @@
 
 // SRB2kart
 #include "k_kart.h"
-#include "k_altshrink.h"
+#include "k_items.h"
 #include "console.h" // CON_LogMessage
 #include "k_terrain.h"
 #include "acs/interface.h"

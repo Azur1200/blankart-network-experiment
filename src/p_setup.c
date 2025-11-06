@@ -103,13 +103,12 @@
 #include "k_terrain.h" // TRF_TRIPWIRE
 #include "k_brightmap.h"
 #include "k_director.h" // K_InitDirector
-#include "k_odds.h" // ItemBGone
+#include "k_items.h"
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
 #include "p_deepcopy.h"
 #include "k_specialstage.h"
-#include "k_altshrink.h"
 
 #include "blan/b_soc.h"
 
@@ -8072,10 +8071,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		itempushing = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
-	invintype = (UINT8)cv_kartinvintype.value;
-	K_UpdateShrinkType();
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
+
+	if (!reloadinggamestate)
+		K_SetupItemOdds();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
@@ -8402,10 +8402,10 @@ static void P_InitGametype(void)
 	wantedcalcdelay = wantedfrequency*2;
 	indirectitemcooldown = 0;
 
-	for (i = 0; i < NUMKARTRESULTS; i++)
+	for (i = 0; i < numkartresults; i++)
 	{
 		// hyubgone
-		ItemBGone[i][GONER_CURRCOOLDOWN] = 0;
+		kartresults[i].bgone = 0;
 	}
 
 	mapreset = 0;

@@ -41,11 +41,10 @@
 #include "k_battle.h"
 #include "k_pwrlv.h"
 #include "k_terrain.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "acs/interface.h"
 #include "g_party.h"
 #include "k_waypoint.h"
-#include "k_altshrink.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -4099,8 +4098,6 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNCBOOLEAN(itemlittering);
 	SYNCBOOLEAN(itempushing);
 	SYNC(bumpsparkactive);
-	SYNC(invintype);
-	SYNC(shrinktype);
 	SYNC(antibumptime);
 
 	for (i = 0; i < sizeof(votelevels)/sizeof(*votelevels); i++)
@@ -4187,11 +4184,11 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 	SYNC(wantedcalcdelay);
 	SYNC(indirectitemcooldown);
 
-	for (i = 0; i < NUMKARTRESULTS; i++)
+	for (i = 0; i < numkartresults; i++)
 	{
 		// hyubgone
-		//SYNC(ItemBGone[i][GONER_BASECOOLDOWN]);
-		SYNC(ItemBGone[i][GONER_CURRCOOLDOWN]);
+		//SYNC(kartresults[i].basebgone);
+		SYNC(kartresults[i].bgone);
 	}
 
 	SYNC(mapreset);

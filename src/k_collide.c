@@ -2,13 +2,12 @@
 /// \brief SRB2Kart item collision hooks
 
 #include "k_collide.h"
-#include "k_altshrink.h"
 #include "k_stats.h"
 #include "doomstat.h"
 #include "doomtype.h"
 #include "p_mobj.h"
 #include "k_kart.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_main.h" // R_PointToAngle2, R_PointToDist2

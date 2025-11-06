@@ -17,7 +17,7 @@
 #include "k_boss.h"
 #include "k_color.h"
 #include "k_director.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "p_mobj.h"
 #include "screen.h"
 #include "doomtype.h"
@@ -186,26 +186,6 @@ static patch_t *kp_itemmulsticker[4];
 static patch_t *kp_itemx;
 
 static patch_t *kp_sadface[2];
-static patch_t *kp_sneaker[4];
-static patch_t *kp_rocketsneaker[2];
-static patch_t *kp_invincibility[13];
-static patch_t *kp_banana[5];
-static patch_t *kp_eggman[2];
-static patch_t *kp_orbinaut[5];
-static patch_t *kp_jawz[3];
-static patch_t *kp_mine[2];
-static patch_t *kp_ballhog[2];
-static patch_t *kp_selfpropelledbomb[2];
-static patch_t *kp_grow[2];
-static patch_t *kp_shrink[2];
-static patch_t *kp_thundershield[2];
-static patch_t *kp_hyudoro[2];
-static patch_t *kp_pogospring[2];
-static patch_t *kp_kitchensink[2];
-static patch_t *kp_superring[2];
-static patch_t *kp_landmine[2];
-static patch_t *kp_bubbleshield[2];
-static patch_t *kp_flameshield[2];
 
 static patch_t *kp_check[6];
 
@@ -540,87 +520,31 @@ void K_LoadKartHUDGraphics(void)
 	// Kart Item Windows
 	HU_UpdatePatch(&kp_itembg[0], "K_ITBG");
 	HU_UpdatePatch(&kp_itembg[1], "K_ITBGD");
+	HU_UpdatePatch(&kp_itembg[2], "K_ISBG");
+	HU_UpdatePatch(&kp_itembg[3], "K_ISBGD");
 	HU_UpdatePatch(&kp_itembg[4], "K_ITBC");
 	HU_UpdatePatch(&kp_itembg[5], "K_ITBCD");
+	HU_UpdatePatch(&kp_itembg[6], "K_ISBC");
+	HU_UpdatePatch(&kp_itembg[7], "K_ISBCD");
 	HU_UpdatePatch(&kp_itemtimer[0], "K_ITIMER");
+	HU_UpdatePatch(&kp_itemtimer[1], "K_ISIMER");
 	HU_UpdatePatch(&kp_itemmulsticker[0], "K_ITMUL");
+	HU_UpdatePatch(&kp_itemmulsticker[1], "K_ISMUL");
 	HU_UpdatePatch(&kp_itemmulsticker[2], "K_ITMULC");
+	HU_UpdatePatch(&kp_itemmulsticker[3], "K_ISMULC");
 	HU_UpdatePatch(&kp_itemx, "K_ITX");
 
 	HU_UpdatePatch(&kp_sadface[0], "K_ITSAD");
-	HU_UpdatePatch(&kp_sneaker[0], "K_ITSHOE");
-	HU_UpdatePatch(&kp_sneaker[1], "K_ITSHO2");
-	HU_UpdatePatch(&kp_sneaker[2], "K_ITSHO3");
-	HU_UpdatePatch(&kp_rocketsneaker[0], "K_ITRSHE");
-
-	sprintf(buffer, "K_ITINVx");
-	for (i = 0; i < 7; i++)
-	{
-		buffer[7] = '1'+i;
-		HU_UpdatePatch(&kp_invincibility[i], "%s", buffer);
-	}
-	HU_UpdatePatch(&kp_banana[0], "K_ITBANA");
-	HU_UpdatePatch(&kp_banana[1], "K_ITBAN2");
-	HU_UpdatePatch(&kp_banana[2], "K_ITBAN3");
-	HU_UpdatePatch(&kp_banana[3], "K_ITBAN4");
-	HU_UpdatePatch(&kp_eggman[0], "K_ITEGGM");
-	sprintf(buffer, "K_ITORBx");
-	for (i = 0; i < 4; i++)
-	{
-		buffer[7] = '1'+i;
-		HU_UpdatePatch(&kp_orbinaut[i], "%s", buffer);
-	}
-	HU_UpdatePatch(&kp_jawz[0], "K_ITJAWZ");
-	HU_UpdatePatch(&kp_jawz[1], "K_ITJAW2");
-	HU_UpdatePatch(&kp_mine[0], "K_ITMINE");
-	HU_UpdatePatch(&kp_ballhog[0], "K_ITBHOG");
-	HU_UpdatePatch(&kp_selfpropelledbomb[0], "K_ITSPB");
-	HU_UpdatePatch(&kp_grow[0], "K_ITGROW");
-	HU_UpdatePatch(&kp_shrink[0], "K_ITSHRK");
-	HU_UpdatePatch(&kp_thundershield[0], "K_ITTHNS");
-	HU_UpdatePatch(&kp_hyudoro[0], "K_ITHYUD");
-	HU_UpdatePatch(&kp_pogospring[0], "K_ITPOGO");
-	HU_UpdatePatch(&kp_kitchensink[0], "K_ITSINK");
-	HU_UpdatePatch(&kp_superring[0], "K_ITRING");
-	HU_UpdatePatch(&kp_landmine[0], "K_ITLNDM");
-	HU_UpdatePatch(&kp_bubbleshield[0], "K_ITBUBS");
-	HU_UpdatePatch(&kp_flameshield[0], "K_ITFLMS");
-
-	// Splitscreen
-	HU_UpdatePatch(&kp_itembg[2], "K_ISBG");
-	HU_UpdatePatch(&kp_itembg[3], "K_ISBGD");
-	HU_UpdatePatch(&kp_itembg[6], "K_ISBC");
-	HU_UpdatePatch(&kp_itembg[7], "K_ISBCD");
-	HU_UpdatePatch(&kp_itemtimer[1], "K_ISIMER");
-	HU_UpdatePatch(&kp_itemmulsticker[1], "K_ISMUL");
-	HU_UpdatePatch(&kp_itemmulsticker[3], "K_ISMULC");
-
 	HU_UpdatePatch(&kp_sadface[1], "K_ISSAD");
-	HU_UpdatePatch(&kp_sneaker[3], "K_ISSHOE");
-	HU_UpdatePatch(&kp_rocketsneaker[1], "K_ISRSHE");
-	sprintf(buffer, "K_ISINVx");
-	for (i = 0; i < 6; i++)
+
+	for (i = 0; i < numkartitems; i++)
 	{
-		buffer[7] = '1'+i;
-		HU_UpdatePatch(&kp_invincibility[i+7], "%s", buffer);
+		kartitem_t *item = &kartitems[i];
+		for (j = 0; j < item->graphics[0].numpatches; j++)
+			HU_UpdatePatch(&item->graphics[0].patches[j], item->graphics[0].patchnames[j]);
+		for (j = 0; j < item->graphics[1].numpatches; j++)
+			HU_UpdatePatch(&item->graphics[1].patches[j], item->graphics[1].patchnames[j]);
 	}
-	HU_UpdatePatch(&kp_banana[4], "K_ISBANA");
-	HU_UpdatePatch(&kp_eggman[1], "K_ISEGGM");
-	HU_UpdatePatch(&kp_orbinaut[4], "K_ISORBN");
-	HU_UpdatePatch(&kp_jawz[2], "K_ISJAWZ");
-	HU_UpdatePatch(&kp_mine[1], "K_ISMINE");
-	HU_UpdatePatch(&kp_ballhog[1], "K_ISBHOG");
-	HU_UpdatePatch(&kp_selfpropelledbomb[1], "K_ISSPB");
-	HU_UpdatePatch(&kp_grow[1], "K_ISGROW");
-	HU_UpdatePatch(&kp_shrink[1], "K_ISSHRK");
-	HU_UpdatePatch(&kp_thundershield[1], "K_ISTHNS");
-	HU_UpdatePatch(&kp_hyudoro[1], "K_ISHYUD");
-	HU_UpdatePatch(&kp_pogospring[1], "K_ISPOGO");
-	HU_UpdatePatch(&kp_kitchensink[1], "K_ISSINK");
-	HU_UpdatePatch(&kp_superring[1], "K_ISRING");
-	HU_UpdatePatch(&kp_landmine[1], "K_ISLNDM");
-	HU_UpdatePatch(&kp_bubbleshield[1], "K_ISBUBS");
-	HU_UpdatePatch(&kp_flameshield[1], "K_ISFLMS");
 
 	// CHECK indicators
 	sprintf(buffer, "K_CHECKx");
@@ -723,101 +647,20 @@ void K_LoadKartHUDGraphics(void)
 	}
 }
 
-// For the item toggle menu
-const char *K_GetItemPatch(UINT8 item, boolean tiny)
+patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount)
 {
-	switch (item)
-	{
-		case KITEM_SNEAKER:
-			return (tiny ? "K_ISSHOE" : "K_ITSHOE");
-		case KITEM_ROCKETSNEAKER:
-			return (tiny ? "K_ISRSHE" : "K_ITRSHE");
-		case KITEM_INVINCIBILITY:
-			return (tiny ? "K_ISINV1" : "K_ITINV1");
-		case KITEM_BANANA:
-			return (tiny ? "K_ISBANA" : "K_ITBANA");
-		case KITEM_EGGMAN:
-			return (tiny ? "K_ISEGGM" : "K_ITEGGM");
-		case KITEM_ORBINAUT:
-			return (tiny ? "K_ISORBN" : "K_ITORB1");
-		case KITEM_JAWZ:
-			return (tiny ? "K_ISJAWZ" : "K_ITJAWZ");
-		case KITEM_MINE:
-			return (tiny ? "K_ISMINE" : "K_ITMINE");
-		case KITEM_BALLHOG:
-			return (tiny ? "K_ISBHOG" : "K_ITBHOG");
-		case KITEM_SPB:
-			return (tiny ? "K_ISSPB" : "K_ITSPB");
-		case KITEM_GROW:
-			return (tiny ? "K_ISGROW" : "K_ITGROW");
-		case KITEM_SHRINK:
-			return (tiny ? "K_ISSHRK" : "K_ITSHRK");
-		case KITEM_THUNDERSHIELD:
-			return (tiny ? "K_ISTHNS" : "K_ITTHNS");
-		case KITEM_HYUDORO:
-			return (tiny ? "K_ISHYUD" : "K_ITHYUD");
-		case KITEM_POGOSPRING:
-			return (tiny ? "K_ISPOGO" : "K_ITPOGO");
-		case KITEM_KITCHENSINK:
-			return (tiny ? "K_ISSINK" : "K_ITSINK");
-		case KITEM_SUPERRING:
-			return (tiny ? "K_ISRING" : "K_ITRING");
-		case KITEM_LANDMINE:
-			return (tiny ? "K_ISLNDM" : "K_ITLNDM");
-		case KITEM_BUBBLESHIELD:
-			return (tiny ? "K_ISBUBS" : "K_ITBUBS");
-		case KITEM_FLAMESHIELD:
-			return (tiny ? "K_ISFLMS" : "K_ITFLMS");
-		case KRITEM_DUALSNEAKER:
-			return (tiny ? "K_ISSHOE" : "K_ITSHO2");
-		case KRITEM_TRIPLESNEAKER:
-			return (tiny ? "K_ISSHOE" : "K_ITSHO3");
-		case KRITEM_TRIPLEORBINAUT:
-			return (tiny ? "K_ISORBN" : "K_ITORB3");
-		case KRITEM_DUALJAWZ:
-			return (tiny ? "K_ISJAWZ" : "K_ITJAW2");
-		case KRITEM_TRIPLEBANANA:
-			return (tiny ? "K_ISBANA" : "K_ITBAN3");
-		case KRITEM_TENFOLDBANANA:
-			return (tiny ? "K_ISBANA" : "K_ITBAN4");
-		case KRITEM_QUADORBINAUT:
-			return (tiny ? "K_ISORBN" : "K_ITORB4");
-		default:
-			return (tiny ? "K_ISSAD" : "K_ITSAD");
-	}
-}
-
-static patch_t *K_GetCachedItemPatch(INT32 item, UINT8 offset)
-{
-	patch_t **kp[1 + NUMKARTITEMS] = {
-		kp_sadface,
-		NULL,
-		kp_sneaker,
-		kp_rocketsneaker,
-		kp_invincibility,
-		kp_banana,
-		kp_eggman,
-		kp_orbinaut,
-		kp_jawz,
-		kp_mine,
-		kp_ballhog,
-		kp_selfpropelledbomb,
-		kp_grow,
-		kp_shrink,
-		kp_thundershield,
-		kp_hyudoro,
-		kp_pogospring,
-		kp_kitchensink,
-		kp_superring,
-		kp_landmine,
-		kp_bubbleshield,
-		kp_flameshield,
-	};
-
-	if (item == KITEM_SAD || (item > KITEM_NONE && item < NUMKARTITEMS))
-		return kp[item - KITEM_SAD][offset];
-	else
+	if (type == KITEM_SAD)
+		return tiny ? kp_sadface[1] : kp_sadface[0];
+	else if (type <= KITEM_NONE || type >= numkartitems)
 		return NULL;
+
+	kartitem_t *item = &kartitems[type];
+	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
+
+	if (item->animated)
+		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
+	else
+		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
 }
 
 //}
@@ -1330,10 +1173,9 @@ static void K_drawKartItem(void)
 
 	// Why write V_DrawScaledPatch calls over and over when they're all the same?
 	// Set to 'no item' just in case.
-	const UINT8 offset = ((r_splitscreen > 1) ? 1 : 0);
+	const boolean tiny = r_splitscreen > 1;
 	patch_t *localpatch = kp_nodraw;
 	patch_t *localbg;
-	patch_t *localinv = ((offset) ? kp_invincibility[((leveltime % (6*3)) / 3) + 7] : kp_invincibility[(leveltime % (7*3)) / 3]);
 	boolean dark = false;
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
 	INT32 numberdisplaymin = 2;
@@ -1351,26 +1193,7 @@ static void K_drawKartItem(void)
 		if (K_GetHudColor())
 			localcolor = K_GetHudColor();
 
-		switch (item)
-		{
-			case KITEM_SNEAKER:
-				localpatch = kp_sneaker[offset ? 3: 0];
-				break;
-			case KITEM_BANANA:
-				localpatch = kp_banana[offset ? 4: 0];
-				break;
-			case KITEM_ORBINAUT:
-				localpatch = kp_orbinaut[3+offset];
-				break;
-			case KITEM_JAWZ:
-				localpatch = kp_jawz[offset ? 2: 0];
-				break;
-			case KITEM_INVINCIBILITY:
-				localpatch = localinv;
-				break;
-			default:
-				localpatch = K_GetCachedItemPatch(item, offset);
-		}
+		localpatch = K_GetCachedItemPatch(item, tiny, 0);
 	}
 	else
 	{
@@ -1381,18 +1204,18 @@ static void K_drawKartItem(void)
 		if (stplyr->stolentimer > 0)
 		{
 			if (leveltime & 2)
-				localpatch = kp_hyudoro[offset];
+				localpatch = K_GetCachedItemPatch(KITEM_HYUDORO, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
 		else if ((stplyr->stealingtimer > 0) && (leveltime & 2))
 		{
-			localpatch = kp_hyudoro[offset];
+			localpatch = K_GetCachedItemPatch(KITEM_HYUDORO, tiny, 0);
 		}
 		else if (stplyr->eggmanexplode > 1)
 		{
 			if (leveltime & 1)
-				localpatch = kp_eggman[offset];
+				localpatch = K_GetCachedItemPatch(KITEM_EGGMAN, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1401,7 +1224,7 @@ static void K_drawKartItem(void)
 			itembar = FixedDiv(stplyr->rocketsneakertimer, itemtime*3);
 
 			if (leveltime & 1)
-				localpatch = kp_rocketsneaker[offset];
+				localpatch = K_GetCachedItemPatch(KITEM_ROCKETSNEAKER, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1409,7 +1232,6 @@ static void K_drawKartItem(void)
 		{
 			itembar = FixedDiv(stplyr->flametimer, itemtime*3);
 			flamebar = FixedDiv(stplyr->flamestore, FLAMESTOREMAX);
-			localbg = kp_itembg[offset+1];
 			dark = true;
 
 			if ((stplyr->flamestore >= FLAMESTOREMAX-1) && (leveltime & 1))
@@ -1419,7 +1241,7 @@ static void K_drawKartItem(void)
 			}
 
 			if (leveltime & 1)
-				localpatch = kp_flameshield[offset];
+				localpatch = K_GetCachedItemPatch(KITEM_FLAMESHIELD, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1429,7 +1251,7 @@ static void K_drawKartItem(void)
 				itembar = FixedDiv(stplyr->growcancel, 26);
 
 			if (leveltime & 1)
-				localpatch = kp_grow[offset];
+				localpatch = K_GetCachedItemPatch(KITEM_GROW, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1441,13 +1263,13 @@ static void K_drawKartItem(void)
 				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
 
 			if (leveltime & 1)
-				localpatch = localinv;
+				localpatch = K_GetCachedItemPatch(KITEM_INVINCIBILITY, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
 		else if (K_GetShieldFromPlayer(stplyr) == KSHIELD_BUBBLE)
 		{
-			localpatch = kp_bubbleshield[offset];
+			localpatch = K_GetCachedItemPatch(KITEM_BUBBLESHIELD, tiny, 0);
 			dark = true;
 
 			if (stplyr->bubbleblowup > 0 && leveltime & 1)
@@ -1461,7 +1283,7 @@ static void K_drawKartItem(void)
 		else if (stplyr->sadtimer > 0)
 		{
 			if (leveltime & 2)
-				localpatch = kp_sadface[offset];
+				localpatch = kp_sadface[tiny ? 1 : 0];
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1470,43 +1292,15 @@ static void K_drawKartItem(void)
 			if (stplyr->itemamount <= 0)
 				return;
 
-			switch(stplyr->itemtype)
+			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
+			if (localpatch == NULL)
+				localpatch = kp_nodraw; // diagnose underflows
+
+			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
 			{
-				case KITEM_SNEAKER:
-					localpatch = kp_sneaker[(offset ? 3 : min(stplyr->itemamount-1, 2))];
-					numberdisplaymin = 4;
-					numberdisplaymin = offset ? 2 : 4;
-					break;
-				case KITEM_INVINCIBILITY:
-					localpatch = localinv;
-					localbg = kp_itembg[offset+1];
-					break;
-				case KITEM_BANANA:
-					localpatch = kp_banana[(offset ? 4 : min(stplyr->itemamount-1, 3))];
-					numberdisplaymin = offset ? 2 : 5;
-					break;
-				case KITEM_ORBINAUT:
-					localpatch = kp_orbinaut[(offset ? 4 : min(stplyr->itemamount-1, 3))];
-					numberdisplaymin = offset ? 2 : 5;
-					break;
-				case KITEM_JAWZ:
-					localpatch = kp_jawz[(offset ? 2 : min(stplyr->itemamount-1, 1))];
-					numberdisplaymin = 3;
-					numberdisplaymin = offset ? 2 : 3;
-					break;
-				case KITEM_SPB:
-				case KITEM_THUNDERSHIELD:
-				case KITEM_BUBBLESHIELD:
-				case KITEM_FLAMESHIELD:
-					dark = true;
-					/*FALLTHRU*/
-
-				default:
-					localpatch = K_GetCachedItemPatch(stplyr->itemtype, offset);
-
-					if (localpatch == NULL)
-						localpatch = kp_nodraw; // diagnose underflows
-					break;
+				kartitem_t *item = &kartitems[stplyr->itemtype];
+				numberdisplaymin = item->animated ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
+				dark = item->darkbg;
 			}
 
 			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
@@ -1532,7 +1326,7 @@ static void K_drawKartItem(void)
 		}
 	}
 
-	localbg = K_getItemBoxPatch((boolean)offset, dark);
+	localbg = K_getItemBoxPatch(tiny, dark);
 	drawinfo_t info;
 	K_getItemBoxDrawinfo(&info);
 	fx = info.x;
@@ -1554,7 +1348,7 @@ static void K_drawKartItem(void)
 	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
 	{
 		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);
-		UINT8   fancystep = (offset ? 6 : 10);
+		UINT8 fancystep = tiny ? 6 : 10;
 		fixed_t fancyoffset = (stplyr->itemroulette % 3)-1;
 
 		if (fancyoffset != 0)
@@ -1569,10 +1363,10 @@ static void K_drawKartItem(void)
 	// Then, the numbers:
 	if (stplyr->itemamount >= numberdisplaymin && !stplyr->itemroulette)
 	{
-		localbg = K_getItemMulPatch((boolean)offset);
+		localbg = K_getItemMulPatch(tiny);
 		V_DrawMappedPatch(fx + (flipamount ? 48 : 0), fy, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
 		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
-		if (offset)
+		if (tiny)
 			if (flipamount) // reminder that this is for 3/4p's right end of the screen.
 				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
 			else
@@ -1598,7 +1392,7 @@ static void K_drawKartItem(void)
 
 	// Quick Eggman numbers
 	if (stplyr->eggmanexplode > 1)
-		V_DrawScaledPatch(fx+17, fy+13-offset, V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))]);
+		V_DrawScaledPatch(fx+17, fy+13-(tiny ? 1 : 0), V_HUDTRANS|fflags, kp_eggnum[min(3, G_TicsToSeconds(stplyr->eggmanexplode))]);
 }
 
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode)
@@ -5758,48 +5552,12 @@ K_drawMiniPing (void)
 	}
 }
 
-static patch_t *K_GetSmallStaticCachedItemPatch(kartitems_t item)
-{
-	UINT8 offset;
-
-	item = K_ItemResultToType(item);
-
-	switch (item)
-	{
-		case KITEM_INVINCIBILITY:
-			offset = 7;
-			break;
-
-		case KITEM_BANANA:
-			offset = 4;
-			break;
-
-		case KITEM_ORBINAUT:
-			offset = 4;
-			break;
-
-		case KITEM_JAWZ:
-			offset = 2;
-			break;
-
-		case KITEM_SNEAKER:
-			offset = 3;
-			break;
-
-		default:
-			offset = 1;
-	}
-
-	return K_GetCachedItemPatch(item, offset);
-}
-
 static void K_drawDistributionDebugger(void)
 {
 	UINT8 useodds = 0;
 	UINT8 pingame = 0, bestbumper = 0;
 	UINT32 pdis = 0;
 	INT32 i;
-	INT32 item;
 	INT32 x = -9, y = -9;
 	//boolean dontforcespb = false;
 	boolean spbrush = false;
@@ -5825,21 +5583,19 @@ static void K_drawDistributionDebugger(void)
 
 	if (pingame == 1)
 	{
-		if (stplyr->itemroulette && (stplyr->cmd.buttons & BT_ATTACK) && cv_superring.value && (K_RingsActive() == true))
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(KITEM_SUPERRING));
+		if (stplyr->itemroulette && stplyr->cmd.buttons & BT_ATTACK && K_ItemResultEnabled("superring") && K_RingsActive())
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(KITEM_SUPERRING, true, 0));
 		else
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(KITEM_SNEAKER));
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(KITEM_SNEAKER, true, 0));
 		V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", 200));
 	}
 	else
 	{
-		for (item = 1; item < NUMBASEKARTRESULTS; item++)
+		for (i = 0; i < numkartresults; i++)
 		{
-			INT32 itemodds;
-			INT32 amount;
-
-			itemodds = K_KartGetItemOdds(
-				useodds, item,
+			kartresult_t *result = &kartresults[i];
+			INT32 itemodds = K_KartGetItemOdds(
+				useodds, result,
 				stplyr->distancetofinish,
 				stplyr->distancefromcluster,
 				0,
@@ -5850,14 +5606,13 @@ static void K_drawDistributionDebugger(void)
 			if (itemodds <= 0)
 				continue;
 
-			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetSmallStaticCachedItemPatch(item));
+			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
 			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
 
 			// Display amount for multi-items
-			amount = K_ItemResultToAmount(item);
-			if (amount > 1)
+			if (result->amount > 1)
 			{
-				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", amount));
+				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", result->amount));
 			}
 
 

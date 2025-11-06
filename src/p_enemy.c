@@ -30,6 +30,7 @@
 #include "k_waypoint.h"
 #include "k_battle.h"
 #include "k_collide.h"
+#include "k_items.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
