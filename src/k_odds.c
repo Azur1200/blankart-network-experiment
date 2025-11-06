@@ -120,7 +120,7 @@ static UINT8 K_KartItemOddsRace[NUMKARTRESULTS-1][MAXODDS] =
     { 0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Orbinaut x4
     { 0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Jawz x2
     { 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Egg Mine
-    { 0,  0,  0,  0,  0,  0,  5,  5,  0,  0,  0,  0,  0,  0,  0,  0}  // Alt. Shrink
+    { 0,  0,  0,  0,  2,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Alt. Shrink
 };
 
 static UINT8 K_KartItemOddsBattle[NUMKARTRESULTS][2] =

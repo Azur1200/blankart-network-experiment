@@ -502,7 +502,7 @@ consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedb
 consvar_t cv_kartstacking_grow_accelboost = CVAR_INIT ("vanillaboost_grow_accelboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_grow_stackable = CVAR_INIT ("vanillaboost_grow_stackable", "Off", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
-consvar_t cv_kartstacking_altshrink_speedboost = CVAR_INIT ("vanillaboost_altshrink_speedboost", "0.56", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_altshrink_speedboost = CVAR_INIT ("vanillaboost_altshrink_speedboost", "0.40", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_altshrink_accelboost = CVAR_INIT ("vanillaboost_altshrink_accelboost", "0.15", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_altshrink_stackable = CVAR_INIT ("vanillaboost_altshrink_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
@@ -609,7 +609,7 @@ consvar_t cv_karteggmantype = CVAR_INIT ("karteggmantype", "Legacy", CV_NETVAR|C
 
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
-consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "13", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
+consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);
 
 // How far the player must be from the cluster to begin frequently rolling Invincibility.
 static CV_PossibleValue_t invindist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
