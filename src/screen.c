@@ -51,6 +51,7 @@
 viddef_t vid;
 INT32 setmodeneeded; //video mode change needed if > 0 (the mode number to set + 1)
 UINT8 setrenderneeded = 0;
+boolean cansetrender = true;
 
 //added : 03-02-98: default screen mode, as loaded/saved in config
 consvar_t cv_scr_width = CVAR_INIT ("scr_width", "640", CV_SAVE, CV_Unsigned, NULL);
@@ -495,6 +496,13 @@ void SCR_ChangeRenderer(void)
 	if (chosenrendermode != render_none
 	|| (signed)rendermode == cv_renderer.value)
 		return;
+
+	if (!cansetrender)
+	{
+		CONS_Alert(CONS_NOTICE, "You cannot change renderers at the moment.\n");
+		CV_SetValue(&cv_renderer, (signed)rendermode);
+		return;
+	}
 
 #ifdef HWRENDER
 	// Check if OpenGL loaded successfully (or wasn't disabled) before switching to it.
