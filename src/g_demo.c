@@ -4319,16 +4319,7 @@ void G_StopDemo(void)
 		}
 	}
 
-	if (gamestate == GS_INTERMISSION)
-		Y_EndIntermission(); // cleanup
-
-	if (gamestate == GS_VOTING)
-		Y_EndVote();
-
-	G_SetGamestate(GS_NULL);
-	wipegamestate = GS_NULL;
-	SV_StopServer();
-	SV_ResetServer();
+	D_ResetGameState();
 }
 
 boolean G_CheckDemoStatus(void)
