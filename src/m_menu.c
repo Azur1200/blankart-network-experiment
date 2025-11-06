@@ -1975,10 +1975,12 @@ void M_StartControlPanel(void)
 }
 
 //
-// M_ClearMenus
+// M_ClearMenusEx
 //
-void M_ClearMenus(boolean callexitmenufunc)
+void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle)
 {
+	CON_ClearHUD();
+
 	if (currentMenu)
 	{
 		if (currentMenu->quitroutine && callexitmenufunc)
@@ -2002,9 +2004,12 @@ void M_ClearMenus(boolean callexitmenufunc)
 	hidetitlemap = false;
 	menu_text_input = false;
 
-	// D_StartTitle does its own wipe, since GS_MENU is now a complete gamestate.
-	if (gamestate == GS_MENU)
-		D_StartTitle();
+	if (!notitle)
+	{
+		// D_StartTitle does its own wipe, since GS_MENU is now a complete gamestate.
+		if (gamestate == GS_MENU)
+			D_StartTitle();
+	}
 }
 
 //
@@ -8726,7 +8731,7 @@ INT32 MR_HandleViewServer(INT32 choice)
 			S_StartSound(NULL, sfx_menu1);
 			ChangeClientMode(CL_CHECKFILES);
 			ChangeServMusic(SERVMUS_2, true,true);
-			M_ClearMenus(false);
+			M_ClearMenusEx(false, true);
 			return true;
 			break;
 

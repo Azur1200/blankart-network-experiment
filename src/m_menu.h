@@ -249,7 +249,8 @@ extern UINT16 nummenutypes;
 
 void M_EnterMenu(menutype_t menu, boolean callexit, INT32 arg);
 void M_ExitMenu(void);
-void M_ClearMenus(boolean callexitmenufunc);
+void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle);
+#define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
 menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
 

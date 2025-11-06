@@ -1629,13 +1629,10 @@ static void M_ConfirmConnect(event_t *ev)
 			}
 			else
 				cl_mode = CL_LOADFILES;
-
-			M_ClearMenus(true);
 		}
 		else if (ev->data1 == 'n' || ev->data1 == KEY_ESCAPE || (ev->device != 0 && G_ControlBoundToKey(0, gc_brake, ev->data1, true)))
 		{
 			cl_mode = CL_ABORTED;
-			M_ClearMenus(true);
 		}
 	}
 }
@@ -2200,8 +2197,9 @@ static void CL_ConnectToServer(void)
 		Y_EndVote();
 
 	DEBFILE(va("waiting %d nodes\n", doomcom->numnodes));
-	M_ClearMenus(true);
 	G_SetGamestate(GS_WAITINGPLAYERS);
+	if (wipegamestate == GS_MENU)
+		M_ClearMenus(true);
 	wipegamestate = GS_WAITINGPLAYERS;
 
 	ClearAdminPlayers();
@@ -2227,11 +2225,15 @@ static void CL_ConnectToServer(void)
 	}
 	SL_ClearServerList(servernode);
 
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		CL_ClearPlayer(i);
+	}
+
 	do
 	{
 		// If the connection was aborted for some reason, leave
 		if (!CL_ServerConnectionTicker(tmpsave, &oldtic, &asksent))
-
 		{
 			if (P_PartialAddGetStage() >= 0)
 				P_MultiSetupWadFiles(true); // in case any partial adds were done
@@ -2551,7 +2553,6 @@ static void Command_connect(void)
 
 	if (Playing() || demo.title)
 	{
-		M_ClearMenus(true);
 		if (demo.playback && demo.title)
 			G_CheckDemoStatus();
 
@@ -2578,12 +2579,10 @@ static void Command_connect(void)
 		}
 		else if (netgame)
 		{
-			M_ClearMenus(true);
 			D_QuitNetGame();
 			CL_Reset();
 			
 			M_ReturnToConnectMenu();
-			
 		}
 		else if (I_NetOpenSocket)
 		{
@@ -2755,9 +2754,6 @@ void CL_Reset(void)
 		G_StopMetalDemo();
 	if (demo.recording)
 		G_CheckDemoStatus();
-
-	// don't carry menus into the title screen (or wherever we're going)
-	M_ClearMenus(true);
 
 	// reset client/server code
 	DEBFILE(va("\n-=-=-=-=-=-=-= Client reset =-=-=-=-=-=-=-\n\n"));
