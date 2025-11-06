@@ -657,7 +657,7 @@ patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount)
 	kartitem_t *item = &kartitems[type];
 	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
 
-	if (item->animated)
+	if ((item->hudflags & KPF_ANIMATED))
 		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
 	else
 		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
@@ -1299,8 +1299,8 @@ static void K_drawKartItem(void)
 			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
 			{
 				kartitem_t *item = &kartitems[stplyr->itemtype];
-				numberdisplaymin = item->animated ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
-				dark = item->darkbg;
+				numberdisplaymin = (item->hudflags & KPF_ANIMATED) ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
+				dark = (item->hudflags & KPF_DARKBG);
 			}
 
 			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
@@ -1334,7 +1334,14 @@ static void K_drawKartItem(void)
 	fflags = info.flags;
 	flipamount = info.flipamount;
 	if (localcolor != SKINCOLOR_NONE)
+	{
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
+	}
+	else if ((kartitems[stplyr->itemtype]).hudflags & KPF_COLPATCH2PLAYER)
+	{
+		colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
+	}
+
 	if (K_UseColorHud())
 		colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
@@ -1345,6 +1352,7 @@ static void K_drawKartItem(void)
 	fixed_t rfy = fy<<FRACBITS;
 	INT32 fancyflags = V_HUDTRANS|fflags;
 
+	// mine: TODO - implement even nicer version from xItemLib-next
 	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
 	{
 		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);

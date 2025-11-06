@@ -82,10 +82,14 @@ struct kartitem_t
 	const char *name;
 	consvar_t *altcvar;
 	kartitemgraphics_t graphics[2];
-	boolean animated;
-	boolean darkbg;
+	UINT8 hudflags;
+	
+	// note: could be how we do this?
+	// int (*oddsOverrideFunc)(player_t *p, int pos, int mashed, boolean spbrush, fixed_t seconddist, int pingame, int pexiting);
+	// int (*resultOverrideFunc)(player_t *p);
 };
 
+// item flags relevant to item rolls and usage
 enum
 {
 	KRF_INDIRECTITEM = 1<<0,
@@ -93,6 +97,15 @@ enum
 	KRF_COOLDOWNONSTART = 1<<2,
 	KRF_NOTNEAREND = 1<<3,
 	KRF_NOTFORBOTTOM = 1<<4,
+	KRF_UNIQUE = 1<<5,
+};
+
+// item flags relevant to patch rendering in the HUD
+enum
+{
+	KPF_ANIMATED = 1<<0,		// animate patches instead of using diffrent patches for different amounts (inversion of xItemLib's XIF_ICONFORAMT)
+	KPF_DARKBG = 1<<1,			// use dark item roulette BG
+	KPF_COLPATCH2PLAYER = 1<<2,	// colourize patch to player
 };
 
 struct kartresult_t

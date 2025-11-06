@@ -228,13 +228,12 @@ void K_InitializeItems(void)
 	ONE(KITEM_FLAMESHIELD, "K_ITFLMS", "K_ISFLMS");
 #undef ONE
 
-	kartitems[KITEM_INVINCIBILITY].animated = true;
+	kartitems[KITEM_INVINCIBILITY].hudflags = KPF_ANIMATED|KPF_DARKBG;
 
-	kartitems[KITEM_INVINCIBILITY].darkbg = true;
-	kartitems[KITEM_SPB].darkbg = true;
-	kartitems[KITEM_THUNDERSHIELD].darkbg = true;
-	kartitems[KITEM_BUBBLESHIELD].darkbg = true;
-	kartitems[KITEM_FLAMESHIELD].darkbg = true;
+	kartitems[KITEM_SPB].hudflags = KPF_DARKBG;
+	kartitems[KITEM_THUNDERSHIELD].hudflags = KPF_DARKBG;
+	kartitems[KITEM_BUBBLESHIELD].hudflags = KPF_DARKBG;
+	kartitems[KITEM_FLAMESHIELD].hudflags = KPF_DARKBG;
 
 	numkartresults = 0;
 	K_RegisterResult("sneaker", KITEM_SNEAKER, 1, 0);
