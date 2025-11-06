@@ -2131,7 +2131,11 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 		{
 			if (cl_mode != CL_DOWNLOADFILES && cl_mode != CL_DOWNLOADSAVEGAME)
 			{
-				F_MenuPresTicker(true); // title sky
+				// Draw something please!
+				F_MenuPresTicker(true);
+
+				if (!menustack[0])
+					F_SkyScroll(curbgxspeed, curbgyspeed, curbgname); // title sky
 			}
 			CL_DrawConnectionStatus();
 			HU_TickSongCredits();
