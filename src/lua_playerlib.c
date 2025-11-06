@@ -177,7 +177,7 @@ static int lib_iterateLocalplayers(lua_State *L)
 		return 1;
 	}
 
-	if (i <= r_splitscreen)
+	if (i <= splitscreen)
 	{
 		if (!playeringame[g_localplayers[i]] || (i > 0 && g_localplayers[i] == g_localplayers[0]))
 			return 0;
@@ -206,7 +206,7 @@ static int lib_getLocalplayers(lua_State *L)
 		lua_Integer i = luaL_checkinteger(L, 2);
 		if (i < 0 || i >= MAXSPLITSCREENPLAYERS)
 			return luaL_error(L, "localplayers[] index %d out of range (0 - %d)", i, MAXSPLITSCREENPLAYERS-1);
-		if (i > r_splitscreen)
+		if (i > splitscreen)
 			return 0;
 		if (i > 0 && g_localplayers[i] == g_localplayers[0])
 			return 0;
