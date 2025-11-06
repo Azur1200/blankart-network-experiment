@@ -91,7 +91,7 @@ extern "C" {
 
 // Special Hashing.
 //#define NOFILEHASH
-//#define NOVERIFYIWADS
+#define NOVERIFYIWADS
 
 // Uncheck this to compile debugging code
 //#define RANGECHECK

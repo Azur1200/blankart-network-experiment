@@ -1862,10 +1862,18 @@ void M_Drawer(void)
 void M_StartControlPanel(void)
 {
 	// intro might call this repeatedly
-	if (menustack[0])
+	if (menustack[0] && gamestate != GS_NULL)
 	{
 		CON_ToggleOff(); // move away console
 		return;
+	}
+
+	if (gamestate == GS_TITLESCREEN) // Set up menu state
+	{
+		// No instantly skipping the titlescreen.
+		// (We can change this timer later when extra animation is added.)
+		if (finalecount < 1)
+			return;
 	}
 
 	if (demo.playback)
@@ -1875,8 +1883,16 @@ void M_StartControlPanel(void)
 	}
 	else if (!Playing())
 	{
-		G_SetGamestate(GS_MENU);
-		titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+		if (gamestate != GS_MENU)
+		{
+			G_SetGamestate(GS_MENU);
+			titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+			gameaction = ga_nothing;
+			paused = false;
+			CON_ToggleOff();
+
+			modeattacking = ATTACKING_NONE;
+		}
 
 		M_EnterMenu(MN_MAIN, true, 0);
 		M_SetItemOn(MN_MAIN, "SINGLEPLAYER");
@@ -4615,7 +4631,8 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	else
 	{
 		M_ClearMenus(true);
-		D_StartTitle();
+		D_ResetGameState();
+		M_StartControlPanel();
 	}
 	return true;
 }

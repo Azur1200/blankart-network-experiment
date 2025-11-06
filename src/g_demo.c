@@ -3449,7 +3449,6 @@ static void PrintDemoError(const char (*msg)[1024])
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
 	demo.playback = false;
-	demo.title = false;
 	if (!CON_Ready()) // In the console they'll just see the notice there! No point pulling them out.
 		M_StartMessage(*msg, NULL, MM_NOTHING);
 }
@@ -4295,7 +4294,10 @@ static void G_StopTimingDemo(void)
 	if (timedemo_quit)
 		COM_ImmedExecute("quit");
 	else
-		D_StartTitle();
+	{
+		D_ResetGameState();
+		M_StartControlPanel();
+	}
 }
 
 // reset engine variable set for the demos
@@ -4306,7 +4308,6 @@ void G_StopDemo(void)
 	demo.playback = false;
 	if (demo.title)
 		modeattacking = false;
-	demo.title = false;
 	demo.timing = false;
 	singletics = false;
 
@@ -4358,7 +4359,10 @@ boolean G_CheckDemoStatus(void)
 			else if (modeattacking)
 				MR_ModeAttackEndGame(0);
 			else
-				D_StartTitle();
+			{
+				D_ResetGameState();
+				M_StartControlPanel();
+			}
 		}
 
 		return true;

@@ -1134,25 +1134,6 @@ void D_ResetGameState(void)
 {
 	INT32 i;
 
-	S_StopMusic();
-
-	if (netgame)
-	{
-		G_SetGamestate(GS_WAITINGPLAYERS); // hack to prevent a command repeat
-
-		if (server)
-		{
-			i = G_GetFirstMapOfGametype(gametype)+1;
-
-			if (i > nummapheaders)
-				I_Error("D_ResetGameState: No valid map ID found!?");
-
-			COM_BufAddText(va("map %s\n", G_BuildMapName(i)));
-		}
-
-		return;
-	}
-
 	// okay, stop now
 	// (otherwise the game still thinks we're playing!)
 #ifdef HAVE_CURL
@@ -1202,7 +1183,7 @@ void D_ResetGameState(void)
 	memset(displayplayers, 0, sizeof(displayplayers));
 	memset(g_localplayers, 0, sizeof g_localplayers);
 	consoleplayer = 0;
-	//demosequence = -1;
+	demo.title = false;
 	G_SetGametype(GT_RACE); // SRB2kart
 	paused = false;
 	F_InitMenuPresValues(true);
@@ -1217,6 +1198,9 @@ void D_ResetGameState(void)
 
 	// The title screen is obviously not a tutorial! (Unless I'm mistaken)
 	tutorialmode = false;
+
+	G_SetGamestate(GS_NULL);
+	wipegamestate = GS_NULL;
 }
 
 //
@@ -1225,8 +1209,12 @@ void D_ResetGameState(void)
 
 void D_StartTitle(void)
 {
+	if (!demo.title)
+		S_StopMusic();
+
 	D_ResetGameState();
 	F_StartTitleScreen();
+	M_ClearMenus(false);
 }
 
 //
