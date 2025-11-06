@@ -6857,7 +6857,7 @@ INT32 MR_ConnectIP(INT32 choice)
 		return false;
 	}
 
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 
 	COM_BufAddText(va("connect \"%s\"\n", cv_dummyip.string));
 
