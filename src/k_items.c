@@ -414,6 +414,9 @@ void K_InitializeItems(void)
 #undef OSTD
 #undef OALT
 
+#undef OSTDFUNC
+#undef OALTFUNC
+
 // Cooldown time table; contains both base (index 0) and current (index 1)
 // times. Base times are in seconds, current times are in tics.
 #define O(item, v) K_GetKartResult(#item)->basebgone = v;
