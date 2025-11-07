@@ -120,7 +120,7 @@ enum
 // Unique useodds function:
 // uoddsfunc(result, playerpos, pdis, newodds, pos, pingame, pexiting, firstDist, ourDist, clusterDist, mashed, spbrush, bot, rival, inBottom)
 // FIXME: This is fucking gross; is there not a better way to do this?
-typedef INT32(*useoddsfunc_t)(void *, SINT8, UINT32, INT32, UINT8, UINT8, UINT8, UINT32, UINT32, UINT32, fixed_t, boolean, boolean, boolean, boolean);
+typedef INT32(*useoddsfunc_t)(kartresult_t *, SINT8, UINT32, INT32, UINT8, UINT8, UINT8, UINT32, UINT32, UINT32, fixed_t, boolean, boolean, boolean, boolean);
 
 struct kartresult_t
 {
@@ -138,7 +138,7 @@ struct kartresult_t
 
 	// Functions that tell the game to use unique means of rolling these items.
 	// If NULL, the functions never execute.
-	void *unique_odds[MAXODDSTABLES][NUMKARTITEMFORMATS];
+	useoddsfunc_t unique_odds[MAXODDSTABLES][NUMKARTITEMFORMATS];
 
 	UINT8 flags[NUMKARTITEMFORMATS];
 	tic_t basebgone, bgone;

@@ -960,7 +960,7 @@ INT32 K_KartGetItemOdds(
 		// This item has unique odds!
 
 		//CONS_Printf("Unique odds found. Assigning uoddsfunc...");
-		uoddsfunc = (useoddsfunc_t)result->unique_odds[oddstable][result->format];
+		uoddsfunc = result->unique_odds[oddstable][result->format];
 
 		//CONS_Printf("Running...");
 		newodds = uoddsfunc(result, playerpos, pdis, newodds, pos, pingame, pexiting, firstDist, ourDist, clusterDist, mashed, spbrush, bot, rival, inBottom);
