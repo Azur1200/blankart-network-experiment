@@ -167,7 +167,7 @@ boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 void K_SetupItemOdds(void);
 
-void K_KartHandleShieldCooldown(kartitemtype_e item);
+void K_KartHandleUniqueCooldown(void);
 boolean K_LegacyOddsMode(void);
 UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos);
 

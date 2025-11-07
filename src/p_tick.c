@@ -911,10 +911,8 @@ void P_Ticker(boolean run)
 
 		if (gametyperules & GTR_RACEODDS)
 		{
-			// Shield cooldowns
-			K_KartHandleShieldCooldown(KITEM_THUNDERSHIELD);
-			K_KartHandleShieldCooldown(KITEM_BUBBLESHIELD);
-			K_KartHandleShieldCooldown(KITEM_FLAMESHIELD);
+			// Unique item cooldowns
+			K_KartHandleUniqueCooldown();
 		}
 
 		K_BossInfoTicker();

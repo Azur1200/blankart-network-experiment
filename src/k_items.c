@@ -265,14 +265,14 @@ void K_InitializeItems(void)
 	kartresult_t *spb = K_RegisterResult("spb", KITEM_SPB, 1, KRF_COOLDOWNONSTART|KRF_INDIRECTITEM|KRF_NOTNEAREND|KRF_RUNNERAUGMENT);
 	K_RegisterResult("grow", KITEM_GROW, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
 	K_RegisterResult("shrink", KITEM_SHRINK, 1, KRF_COOLDOWNONSTART|KRF_INDIRECTITEM|KRF_POWERITEM|KRF_NOTNEAREND);
-	K_RegisterResult("thundershield", KITEM_THUNDERSHIELD, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
+	K_RegisterResult("thundershield", KITEM_THUNDERSHIELD, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM|KRF_UNIQUE);
 	K_RegisterResult("hyudoro", KITEM_HYUDORO, 1, KRF_COOLDOWNONSTART);
 	K_RegisterResult("pogospring", KITEM_POGOSPRING, 1, 0);
 	K_RegisterResult("kitchensink", KITEM_KITCHENSINK, 1, 0);
 	K_RegisterResult("superring", KITEM_SUPERRING, 1, KRF_NOTNEAREND|KRF_NOTFORBOTTOM);
 	K_RegisterResult("landmine", KITEM_LANDMINE, 1, 0);
-	K_RegisterResult("bubbleshield", KITEM_BUBBLESHIELD, 1, KRF_NOTFORBOTTOM|KRF_POWERITEM);
-	K_RegisterResult("flameshield", KITEM_FLAMESHIELD, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
+	K_RegisterResult("bubbleshield", KITEM_BUBBLESHIELD, 1, KRF_NOTFORBOTTOM|KRF_POWERITEM|KRF_UNIQUE);
+	K_RegisterResult("flameshield", KITEM_FLAMESHIELD, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM|KRF_UNIQUE);
 
 	K_RegisterResult("dualsneaker", KITEM_SNEAKER, 2, 0);
 	K_RegisterResult("triplesneaker", KITEM_SNEAKER, 3, KRF_POWERITEM);
@@ -590,7 +590,7 @@ static void K_AwardPlayerItem(player_t *player, kartresult_t *result)
 		return;
 	}
 
-	if (result->type == KITEM_SPB || result->type == KITEM_SHRINK) // Indirect items
+	if (result->flags & KRF_INDIRECTITEM) // Indirect items
 	{
 		indirectitemcooldown = 20*TICRATE;
 	}
@@ -725,46 +725,36 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 
 #undef FRAC_3h
 
-// Assigns general cooldowns to shield items.
-void K_KartHandleShieldCooldown(kartitemtype_e item)
+// Assigns general cooldowns to item results ith the KRF_UNIQUE flag.
+void K_KartHandleUniqueCooldown(void)
 {
-	INT32 i, j;
+	UINT8 i, j;
 
 	UINT8 pingame = 0, pexiting = 0;
 
-	INT32 shieldtype = KSHIELD_NONE;
-	shieldtype = K_GetShieldFromItem(item);
-
-	if (shieldtype == KSHIELD_NONE)
+	for (i = 0; i < numkartresults; i++)
 	{
-		// Not a shield!
-		return;
-	}
-
-	for (i = 0; i < MAXPLAYERS; i++)
-	{
-		if (!playeringame[i] || players[i].spectator)
-			continue;
-
-		if (!(gametyperules & GTR_BUMPERS) || players[i].bumper)
-			pingame++;
-
-		if (players[i].exiting)
-			pexiting++;
-
-		if (((shieldtype == K_GetShieldFromItem(players[i].itemtype))
-		    || (shieldtype == K_GetShieldFromPlayer(&players[i]))))
+		if (kartresults[i].flags & KRF_UNIQUE)
 		{
-			for (j = 0; j < numkartresults; j++)
+			// TODO: bring this out
+			for (j = 0; j < MAXPLAYERS; j++)
 			{
-				kartresult_t *result = &kartresults[j];
+				if (!playeringame[j] || players[j].spectator)
+					continue;
 
-				// If this shield has a cooldown, force-apply the cooldown preeemptively for
-				// the entire time the shield is being held by a player.
-				if (result->type == item && result->basebgone > 0)
+				if (!(gametyperules & GTR_BUMPERS) || players[j].bumper)
+					pingame++;
+
+				if (players[j].exiting)
+					pexiting++;
+
+				if (players[j].itemtype == kartresults[i].type &&
+				    players[j].itemamount > 0 && kartresults[i].basebgone > 0)
 				{
-					result->bgone = result->basebgone * TICRATE;
-					break;
+					// If this item has a cooldown, force-apply the cooldown
+					// preeemptively for the entire time the item is being held
+					// by a player.
+					kartresults[i].bgone = kartresults[i].basebgone * TICRATE;
 				}
 			}
 		}
