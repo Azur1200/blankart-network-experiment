@@ -1333,6 +1333,23 @@ static boolean M_WipeBuffer(INT32 ch, menufunc_f *routine)
 // use this when routine being NULL isn't a free pass
 static INT32 MR_Dummy(INT32 ch) { (void)ch; return true; }
 
+static boolean M_GamestateCanOpenMenu(void)
+{
+	switch (gamestate)
+	{
+		case GS_INTRO:
+		case GS_CUTSCENE:
+		case GS_CREDITS:
+		case GS_BLANCREDITS:
+		case GS_SECRETCREDITS:
+		case GS_EVALUATION:
+			return false;
+
+		default:
+			return true;
+	}
+}
+
 //
 // M_Responder
 //
@@ -1344,12 +1361,12 @@ boolean M_Responder(event_t *ev)
 	static INT32 lastx = 0, lasty = 0;
 	INT32 deviceplayer = G_GetDevicePlayer(ev->device);
 
-	if (dedicated || (demo.playback && demo.title)
-	|| gamestate == GS_INTRO || gamestate == GS_CUTSCENE
-	|| gamestate == GS_CREDITS || gamestate == GS_EVALUATION
-	|| gamestate == GS_BLANCREDITS || gamestate == GS_SECRETCREDITS
-	)
+	if (dedicated
+		|| (demo.playback && demo.title)
+		|| M_GamestateCanOpenMenu() == false)
+	{
 		return false;
+	}
 		
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
@@ -3858,7 +3875,7 @@ INT32 MR_ReplayHut(INT32 choice)
 
 	//M_ClearMenus(true);
 	modeattacking = ATTACKING_MENU;
-	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+	titlemapinaction = false; // Nope don't give us HOMs please
 
 	demo.rewinding = false;
 	CL_ClearRewinds();
@@ -5854,7 +5871,7 @@ INT32 MR_TimeAttack(INT32 arg)
 	//M_ClearMenus(true);
 
 	modeattacking = ATTACKING_MENU;
-	titlemapinaction = TITLEMAP_OFF; // Nope don't give us HOMs please
+	titlemapinaction = false; // Nope don't give us HOMs please
 
 	if (cv_nextmap.value)
 		Nextmap_OnChange();

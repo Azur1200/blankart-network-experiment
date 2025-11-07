@@ -598,7 +598,7 @@ static void D_Display(void)
 
 		// clean up border stuff
 		// see if the border needs to be initially drawn
-		if (gamestate == GS_LEVEL || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
+		if (G_GamestateUsesLevel() == true || (gamestate == GS_TITLESCREEN && titlemapinaction && curbghide && (!hidetitlemap)))
 		{
 			// Rendering a level; don't allow renderer changes!
 			cansetrender = false;
@@ -607,14 +607,21 @@ static void D_Display(void)
 
 			ps_uitime = I_GetPreciseTime();
 
-			if (gamestate == GS_LEVEL)
+			switch (gamestate)
 			{
-				ST_Drawer();
-				F_TextPromptDrawer();
-				HU_Drawer();
+				case GS_LEVEL:
+					ST_Drawer();
+					F_TextPromptDrawer();
+					HU_Drawer();
+					break;
+
+				case GS_TITLESCREEN:
+					F_TitleScreenDrawer();
+					break;
+
+				default:
+					break;
 			}
-			else
-				F_TitleScreenDrawer();
 		}
 		else
 		{

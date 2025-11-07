@@ -251,8 +251,6 @@ void G_LoadGameSettings(void);
 
 void G_SetGameModified(boolean silent, boolean major);
 
-void G_SetGamestate(gamestate_t newstate);
-
 boolean G_GamestateUsesLevel(void);
 
 // Gamedata record shit

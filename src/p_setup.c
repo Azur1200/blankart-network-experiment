@@ -8440,7 +8440,7 @@ static void P_InitGametype(void)
 
 	// Start recording replay in multiplayer with a temp filename
 	//@TODO I'd like to fix dedis crashing when recording replays for the future too...
-	if (!demo.playback && multiplayer && !dedicated)
+	if (gamestate == GS_LEVEL && !demo.playback && multiplayer && !dedicated)
 	{
 		char buf[MAX_WADPATH];
 		char ver[128];
@@ -8723,7 +8723,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		if (rendermode != render_none)
 			V_ReloadPalette(); // Set the level palette
 
-		if (!(reloadinggamestate || titlemapinaction))
+		if (!(reloadinggamestate || gamestate != GS_LEVEL))
 		{
 			if (ranspecialwipe == 2)
 			{
@@ -8951,7 +8951,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	P_MapEnd(); // g_tm.thing is no longer needed from this point onwards
 
 	// Took me 3 hours to figure out why my progression kept on getting overwritten with the titlemap...
-	if (!titlemapinaction)
+	if (gamestate == GS_LEVEL)
 	{
 		if (!lastmaploaded) // Start a new game?
 		{

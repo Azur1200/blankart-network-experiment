@@ -1676,9 +1676,9 @@ void weaponPrefChange4(void)
 }
 
 //
-// G_DoLoadLevel
+// G_DoLoadLevelEx
 //
-void G_DoLoadLevel(boolean resetplayer)
+void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate)
 {
 	boolean doAutomate = false;
 	INT32 i;
@@ -1696,27 +1696,27 @@ void G_DoLoadLevel(boolean resetplayer)
 	if (gamestate == GS_VOTING)
 		Y_EndVote();
 
-	// cleanup
-	if (titlemapinaction == TITLEMAP_LOADING)
+	// Is this actually necessary? Doesn't F_StartTitleScreen already do a significantly more comprehensive check?
+	if (newstate == GS_TITLESCREEN)
 	{
 		if (gamemap < 1 || gamemap > nummapheaders)
 		{
+			G_SetGamestate(GS_TITLESCREEN);
+			titlemapinaction = false;
+
 			Z_Free(titlemap);
 			titlemap = NULL; // let's not infinite recursion ok
+
 			Command_ExitGame_f();
 			return;
 		}
-
-		titlemapinaction = TITLEMAP_RUNNING;
 	}
-	else
-		titlemapinaction = TITLEMAP_OFF;
 
 	// Doing this matches HOSTMOD behavior.
 	// Is that desired? IDK
-	doAutomate = (gamestate != GS_LEVEL);
+	doAutomate = (gamestate != GS_LEVEL && newstate == GS_LEVEL);
 
-	G_SetGamestate(GS_LEVEL);
+	G_SetGamestate(newstate);
 	I_UpdateMouseGrab();
 
 	for (i = 0; i < MAXPLAYERS; i++)
@@ -1759,6 +1759,11 @@ void G_DoLoadLevel(boolean resetplayer)
 	}
 }
 
+void G_DoLoadLevel(boolean resetplayer)
+{
+	G_DoLoadLevelEx(resetplayer, GS_LEVEL);
+}
+
 //
 // Start the title card.
 //
@@ -1779,7 +1784,7 @@ void G_StartTitleCard(void)
 	ST_startTitleCard();
 
 	// start the title card
-	WipeStageTitle = (!titlemapinaction);
+	WipeStageTitle = (gamestate == GS_LEVEL);
 }
 
 //
