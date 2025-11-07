@@ -2118,6 +2118,13 @@ void M_RestoreMenuStack(boolean backup)
 
 	if (menustack[0])
 		M_SetupNextMenu(menustack[0], true);
+	else
+	{
+		CONS_Alert(CONS_WARNING, "Could not restore menu stack, returning to main menu.\n");
+
+		D_ResetGameState();
+		M_StartControlPanel();
+	}
 }
 
 // Guess I'll put this here, idk
@@ -5742,7 +5749,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 	}
 
 	M_RestoreMenuStack(true);
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
 
@@ -5924,9 +5931,10 @@ INT32 MR_ChooseTimeAttack(INT32 choice)
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(true, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, REPLAY_LAST);
 
-	(void)choice;
 	emeralds = 0;
-	M_ClearMenus(true);
+	if (choice != 1)
+		M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	G_SetPresetCvars(G_GetRecordPresetVersion(currentrecordpreset, currentrecordpresetversion));
 	modeattacking = (levellistmode == LLM_ITEMBREAKER ? ATTACKING_ITEMBREAK : ATTACKING_TIME);
 	M_MkdirEach(gpath, M_PathParts(gpath) - 4, 0755);
@@ -5947,6 +5955,7 @@ INT32 MR_ReplayStaff(INT32 choice)
 	if (l == LUMPERROR)
 		return false;
 
+	M_RestoreMenuStack(true);
 	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
@@ -5973,9 +5982,10 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
-	COM_BufAddText(va("playdemo %s -force", demopath));
 
 	M_RestoreMenuStack(true);
+	COM_BufAddText(va("playdemo %s -force", demopath));
+
 	return true;
 }
 
@@ -6065,7 +6075,7 @@ INT32 MR_ModeAttackRetry(INT32 choice)
 	if (!modeattacking)
 		return false;
 
-	MR_ChooseTimeAttack(0);
+	MR_ChooseTimeAttack(1);
 	return true;
 }
 

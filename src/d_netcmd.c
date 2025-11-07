@@ -6387,14 +6387,17 @@ void Command_ExitGame_f(void)
 	if (dirmenu)
 		closefilemenu(true);
 
-	if (restoremenustack[0])
+	if (!modeattacking)
 	{
-		M_RestoreMenuStack(false);
-	}
-	else if (!modeattacking)
-	{
-		D_ResetGameState();
-		M_StartControlPanel();
+		if (restoremenustack[0])
+		{
+			M_RestoreMenuStack(false);
+		}
+		else
+		{
+			D_ResetGameState();
+			M_StartControlPanel();
+		}
 	}
 }
 
