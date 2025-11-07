@@ -176,6 +176,7 @@ void G_SpawnPlayer(INT32 playernum, boolean starpost);
 void G_DeferedInitNew(boolean pencoremode, INT32 map, INT32 pickedchar,
 	UINT8 ssplayers, boolean FLS);
 void G_DoLoadLevel(boolean resetplayer);
+void G_DoLoadLevelEx(boolean resetplayer, gamestate_t newstate);
 
 void G_StartTitleCard(void);
 void G_PreLevelTitleCard(void);
