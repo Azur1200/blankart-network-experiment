@@ -5603,7 +5603,7 @@ static void K_drawDistributionDebugger(void)
 		{
 			kartresult_t *result = &kartresults[i];
 			INT32 itemodds = K_KartGetItemOdds(
-				useodds, result,
+				pdis, stplyr->position, useodds, result,
 				stplyr->distancetofinish,
 				stplyr->distancefromcluster,
 				0,
@@ -5615,7 +5615,7 @@ static void K_drawDistributionDebugger(void)
 				continue;
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
-			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, va("%d", itemodds));
+			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, result->forceme ? va("\x85" "FRC(%d)" "\x80 ", result->forceme) : va("%d", itemodds));
 
 			// Display amount for multi-items
 			if (result->amount > 1)

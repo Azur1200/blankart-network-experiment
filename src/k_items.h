@@ -60,6 +60,13 @@ typedef enum
 	MAXKARTITEMS
 } ATTRPACK kartitemtype_e;
 
+typedef enum
+{
+	KIFRMT_STANDARD = 0,
+	KIFRMT_ALTERN,
+	NUMKARTITEMFORMATS
+} ATTRPACK kartitemformat_e;
+
 #define MAXKARTRESULTS 255
 
 typedef enum
@@ -92,12 +99,14 @@ struct kartitem_t
 // item flags relevant to item rolls and usage
 enum
 {
-	KRF_INDIRECTITEM = 1<<0,
-	KRF_POWERITEM = 1<<1,
-	KRF_COOLDOWNONSTART = 1<<2,
-	KRF_NOTNEAREND = 1<<3,
-	KRF_NOTFORBOTTOM = 1<<4,
+	KRF_INDIRECTITEM = 1<<0,	// This item affects others indirectly. A 20 second cooldown is applied to all other items with this flag when an indirect item is rolled.
+	KRF_POWERITEM = 1<<1,		// This item is a "power item". This activates "frantic item" toggle related functionality.
+	KRF_COOLDOWNONSTART = 1<<2,	// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
+	KRF_NOTNEAREND = 1<<3,		// This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
+	KRF_NOTFORBOTTOM = 1<<4,	// After the first 30 seconds, this item stops appearing for losing players. (Usually items that feel less effective at these positions)
 	KRF_UNIQUE = 1<<5,
+	KRF_RUNNERAUGMENT = 1<<6,	// This item's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
+	// free: 1<<7
 };
 
 // item flags relevant to patch rendering in the HUD
@@ -108,14 +117,30 @@ enum
 	KPF_COLPATCH2PLAYER = 1<<2,	// colourize patch to player
 };
 
+// Unique useodds function:
+// uoddsfunc(result, playerpos, pdis, newodds, pos, pingame, pexiting, firstDist, ourDist, clusterDist, mashed, spbrush, bot, rival, inBottom)
+// FIXME: This is fucking gross; is there not a better way to do this?
+typedef INT32(*useoddsfunc_t)(void *, SINT8, UINT32, INT32, UINT8, UINT8, UINT8, UINT32, UINT32, UINT32, fixed_t, boolean, boolean, boolean, boolean);
+
 struct kartresult_t
 {
 	const char *name;
 	consvar_t *cvar;
+
 	kartitemtype_e type;
 	UINT8 amount;
-	UINT8 odds[MAXODDSTABLES][MAXODDS];
-	UINT8 flags;
+
+	kartitemformat_e format; // An item's format. Different formats have different odds
+	UINT8 forceme; // This item is being forced into a player's item slot for one reason or another. Higher value = higher priority.
+
+	// 3D array determining item odds, selected by table, then format.
+	UINT8 odds[MAXODDSTABLES][NUMKARTITEMFORMATS][MAXODDS];
+
+	// Functions that tell the game to use unique means of rolling these items.
+	// If NULL, the functions never execute.
+	void *unique_odds[MAXODDSTABLES][NUMKARTITEMFORMATS];
+
+	UINT8 flags[NUMKARTITEMFORMATS];
 	tic_t basebgone, bgone;
 };
 
@@ -123,6 +148,8 @@ extern kartitem_t kartitems[MAXKARTITEMS];
 extern UINT8 numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];
 extern UINT8 numkartresults;
+
+boolean K_IsKartResultAlternate(const char *name);
 
 kartresult_t *K_GetKartResult(const char *name);
 void K_InitializeItems(void);
@@ -137,7 +164,7 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame);
 UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrush);
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
-INT32 K_KartGetItemOdds(UINT8 pos, const kartresult_t *result, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom);
+INT32 K_KartGetItemOdds(UINT32 pdis, SINT8 playerpos, UINT8 pos, kartresult_t *result, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom);
 INT32 K_GetRollingRouletteItem(player_t *player);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 

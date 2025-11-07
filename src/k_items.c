@@ -48,7 +48,7 @@ consvar_t cv_kartdebugitem = CVAR_INIT ("kartdebugitem", "NONE", CV_NETVAR|CV_CH
 static CV_PossibleValue_t kartdebugamount_cons_t[] = {{1, "MIN"}, {255, "MAX"}, {0, NULL}};
 consvar_t cv_kartdebugamount = CVAR_INIT ("kartdebugamount", "1", CV_NETVAR|CV_CHEAT, kartdebugamount_cons_t, NULL);
 
-static CV_PossibleValue_t kartitemtype_cons_t[] = {{0, "Legacy"}, {1, "Alternative"}, {0, NULL}};
+static CV_PossibleValue_t kartitemtype_cons_t[] = {{KIFRMT_STANDARD, "Legacy"}, {KIFRMT_ALTERN, "Alternative"}, {0, NULL}};
 
 #define NUMKARTODDS 	(MAXODDS*10)
 
@@ -105,7 +105,11 @@ static void K_RegisterResult(const char *name, kartitemtype_e type, UINT8 amount
 	result->name = name;
 	result->type = type;
 	result->amount = amount;
-	result->flags = flags;
+
+	kartitemformat_e fmt;
+
+	for (fmt = KIFRMT_STANDARD; fmt < NUMKARTITEMFORMATS; fmt++)
+		result->flags[fmt] = flags;
 
 	consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &result->cvar);
 	var->name = name;
@@ -127,9 +131,24 @@ kartresult_t *K_GetKartResult(const char *name)
 	return NULL;
 }
 
+boolean K_IsKartResultAlternate(const char *name)
+{
+	return (K_GetKartResult(name)->format == KIFRMT_ALTERN);
+}
+
+// Unique odds, per-item basis
+
+// Alt. Invincibility's odds.
+static INT32 K_AltInvinOdds(kartresult_t *result, SINT8 playerpos, UINT32 pdis, INT32 curodds, UINT8 pos, UINT8 pingame, UINT8 pexiting, UINT32 firstDist, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom);
+
+// SPB odds (Race)
+static INT32 K_SPBRaceOdds(kartresult_t *result, SINT8 playerpos, UINT32 pdis, INT32 curodds, UINT8 pos, UINT8 pingame, UINT8 pexiting, UINT32 firstDist, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom);
+
 void K_InitializeItems(void)
 {
 	numkartitems = 0;
+
+	// Part 1: standard items
 	K_RegisterItem("NONE", false);
 	K_RegisterItem("SNEAKER", false);
 	K_RegisterItem("ROCKETSNEAKER", false);
@@ -235,17 +254,27 @@ void K_InitializeItems(void)
 	kartitems[KITEM_BUBBLESHIELD].hudflags = KPF_DARKBG;
 	kartitems[KITEM_FLAMESHIELD].hudflags = KPF_DARKBG;
 
+#define K_ResultSetAltFlags(name, _flags) (K_GetKartResult(name)->flags[KIFRMT_ALTERN] = _flags)
+
 	numkartresults = 0;
 	K_RegisterResult("sneaker", KITEM_SNEAKER, 1, 0);
 	K_RegisterResult("rocketsneaker", KITEM_ROCKETSNEAKER, 1, KRF_POWERITEM);
+
 	K_RegisterResult("invincibility", KITEM_INVINCIBILITY, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
+
+	// It's a power item, yes, but we don't want mashing to lessen
+	// its chances, so we lie to the game's face.
+	// Start cooldowns are handled in the odds function; don't set the flag here.
+	// (Also, PLEASE prevent shitty last lap bagging endings.)
+	K_ResultSetAltFlags("invincibility", KRF_NOTNEAREND);
+
 	K_RegisterResult("banana", KITEM_BANANA, 1, KRF_NOTNEAREND|KRF_NOTFORBOTTOM);
 	K_RegisterResult("eggman", KITEM_EGGMAN, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM|KRF_NOTNEAREND|KRF_NOTFORBOTTOM);
 	K_RegisterResult("orbinaut", KITEM_ORBINAUT, 1, 0);
 	K_RegisterResult("jawz", KITEM_JAWZ, 1, KRF_NOTFORBOTTOM|KRF_POWERITEM);
 	K_RegisterResult("mine", KITEM_MINE, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
 	K_RegisterResult("ballhog", KITEM_BALLHOG, 1, KRF_NOTFORBOTTOM|KRF_POWERITEM);
-	K_RegisterResult("spb", KITEM_SPB, 1, KRF_COOLDOWNONSTART|KRF_INDIRECTITEM|KRF_NOTNEAREND);
+	K_RegisterResult("spb", KITEM_SPB, 1, KRF_COOLDOWNONSTART|KRF_INDIRECTITEM|KRF_NOTNEAREND|KRF_RUNNERAUGMENT);
 	K_RegisterResult("grow", KITEM_GROW, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
 	K_RegisterResult("shrink", KITEM_SHRINK, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM|KRF_NOTNEAREND);
 	K_RegisterResult("thundershield", KITEM_THUNDERSHIELD, 1, KRF_COOLDOWNONSTART|KRF_POWERITEM);
@@ -265,106 +294,125 @@ void K_InitializeItems(void)
 	K_RegisterResult("quadorbinaut", KITEM_ORBINAUT, 4, KRF_NOTFORBOTTOM|KRF_POWERITEM);
 	K_RegisterResult("dualjawz", KITEM_JAWZ, 2, KRF_NOTFORBOTTOM|KRF_POWERITEM);
 
-#define O(item, ...) memcpy(K_GetKartResult(#item)->odds[WHICH], (UINT8[MAXODDS]){__VA_ARGS__}, MAXODDS);
+#define OSTD(item, ...) memcpy(K_GetKartResult(#item)->odds[WHICH][KIFRMT_STANDARD], (UINT8[MAXODDS]){__VA_ARGS__}, MAXODDS);
+#define OALT(item, ...) memcpy(K_GetKartResult(#item)->odds[WHICH][KIFRMT_ALTERN], (UINT8[MAXODDS]){__VA_ARGS__}, MAXODDS);
+
+#define OSTDFUNC(item, func) {K_GetKartResult(#item)->unique_odds[WHICH][KIFRMT_STANDARD] = &func;}
+#define OALTFUNC(item, func) {K_GetKartResult(#item)->unique_odds[WHICH][KIFRMT_ALTERN] = &func;}
+
 #define WHICH ODDS_RACE
 	//                0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
-	O(sneaker,        0,  0,  0,  0,  8, 24, 60,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Sneaker
-	O(rocketsneaker,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 28, 35, 42, 48, 37, 37) // Rocket Sneaker
-	O(invincibility,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4, 24, 50, 75, 75) // Invincibility
-	O(banana,        35, 28, 22, 10,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana
-	O(eggman,        18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Eggman Monitor
-	O(orbinaut,      45, 28, 24,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut
-	O(jawz,           0, 11, 22,  9,  7,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Jawz
-	O(mine,           0,  0,  5,  3,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Mine
-	O(ballhog,        0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Ballhog
-	O(spb,            0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  0,  0) // Self-Propelled Bomb
-	O(grow,           0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  9, 12,  9,  0,  0,  0) // Grow
-	O(shrink,         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0) // Shrink
-	O(thundershield, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Thunder Shield
-	O(hyudoro,        0,  0,  0,  0,  0,  2,  2,  4,  4,  2,  0,  0,  0,  0,  0,  0) // Hyudoro
-	O(pogospring,     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Pogo Spring
-	O(kitchensink,    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Kitchen Sink
-	O(superring,      7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Super Ring
-	O(landmine,       8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Land Mine
-	O(bubbleshield,   0,  0,  0, 12, 15,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Bubble Shield
-	O(flameshield,    0,  0,  0,  0,  0,  0,  2,  4, 12, 24, 27, 12,  7,  4,  0,  0) // Flame Shield
-	O(dualsneaker,    0,  0,  0,  0,  0,  0,  8, 20, 40, 12,  0,  0,  0,  0,  0,  0) // Sneaker x2
-	O(triplesneaker,  0,  0,  0,  0,  0,  0,  0,  7, 35, 45, 60, 56, 52,  4,  0,  0) // Sneaker x3
-	O(triplebanana,   0,  7,  7,  7,  9,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana x3
-	O(decabanana,     0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana x10
-	O(tripleorbinaut, 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut x3
-	O(quadorbinaut,   0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut x4
-	O(dualjawz,       0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Jawz x2
+	OSTD(sneaker,        0,  0,  0,  0,  8, 24, 60,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Sneaker
+	OSTD(rocketsneaker,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 28, 35, 42, 48, 37, 37) // Rocket Sneaker
+
+	// Invincibility
+	OSTD(invincibility,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4, 24, 50, 75, 75) // Standard
+	OALTFUNC(invincibility, K_AltInvinOdds) // Alternate: uses unique odds
+	OALT(invincibility,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0)
+
+	OSTD(banana,        35, 28, 22, 10,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana
+	OSTD(eggman,        18, 15, 12,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Eggman Monitor
+	OSTD(orbinaut,      45, 28, 24,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut
+	OSTD(jawz,           0, 11, 22,  9,  7,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Jawz
+	OSTD(mine,           0,  0,  5,  3,  2,  2,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Mine
+	OSTD(ballhog,        0,  0,  0,  0,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Ballhog
+
+	// Self-Propelled Bomb
+	OSTD(spb,            0,  0,  2,  3,  4,  5,  6,  9, 10, 12,  8,  5,  2,  2,  0,  0)
+	OSTDFUNC(spb, K_SPBRaceOdds)
+
+	OSTD(grow,           0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  9, 12,  9,  0,  0,  0) // Grow
+
+	// Shrink
+	OSTD(shrink,         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  7,  3,  0,  0) // Standard
+	OALT(shrink,         0,  0,  0,  0,  2,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Alternate
+
+	OSTD(thundershield, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Thunder Shield
+	OSTD(hyudoro,        0,  0,  0,  0,  0,  2,  2,  4,  4,  2,  0,  0,  0,  0,  0,  0) // Hyudoro
+	OSTD(pogospring,     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Pogo Spring
+	OSTD(kitchensink,    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Kitchen Sink
+	OSTD(superring,      7, 11, 15,  7,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Super Ring
+	OSTD(landmine,       8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Land Mine
+	OSTD(bubbleshield,   0,  0,  0, 12, 15,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Bubble Shield
+	OSTD(flameshield,    0,  0,  0,  0,  0,  0,  2,  4, 12, 24, 27, 12,  7,  4,  0,  0) // Flame Shield
+	OSTD(dualsneaker,    0,  0,  0,  0,  0,  0,  8, 20, 40, 12,  0,  0,  0,  0,  0,  0) // Sneaker x2
+	OSTD(triplesneaker,  0,  0,  0,  0,  0,  0,  0,  7, 35, 45, 60, 56, 52,  4,  0,  0) // Sneaker x3
+	OSTD(triplebanana,   0,  7,  7,  7,  9,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana x3
+	OSTD(decabanana,     0,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Banana x10
+	OSTD(tripleorbinaut, 0,  0,  0,  2,  5,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut x3
+	OSTD(quadorbinaut,   0,  0,  0,  0,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Orbinaut x4
+	OSTD(dualjawz,       0,  0,  0,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0) // Jawz x2
 	//{ 8,  2,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}, // Egg Mine
 	//{ 0,  0,  0,  0,  2,  7,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0}  // Alt. Shrink
 #undef WHICH
 
 #define WHICH ODDS_BATTLE
 	//                R  S
-	O(sneaker,        2, 1) // Sneaker
-	O(rocketsneaker,  0, 0) // Rocket Sneaker
-	O(invincibility,  4, 1) // Invincibility
-	O(banana,         0, 0) // Banana
-	O(eggman,         1, 0) // Eggman Monitor
-	O(orbinaut,       8, 0) // Orbinaut
-	O(jawz,           8, 1) // Jawz
-	O(mine,           6, 1) // Mine
-	O(ballhog,        2, 1) // Ballhog
-	O(spb,            0, 0) // Self-Propelled Bomb
-	O(grow,           2, 1) // Grow
-	O(shrink,         0, 0) // Shrink
-	O(thundershield,  4, 0) // Thunder Shield
-	O(hyudoro,        2, 0) // Hyudoro
-	O(pogospring,     3, 0) // Pogo Spring
-	O(kitchensink,    0, 0) // Kitchen Sink
-	O(superring,      0, 0) // Super Ring
-	O(landmine,       2, 0) // Land Mine
-	O(bubbleshield,   1, 0) // Bubble Shield
-	O(flameshield,    1, 0) // Flame Shield
-	O(dualsneaker,    0, 0) // Sneaker x2
-	O(triplesneaker,  0, 1) // Sneaker x3
-	O(triplebanana,   0, 0) // Banana x3
-	O(decabanana,     1, 1) // Banana x10
-	O(tripleorbinaut, 2, 0) // Orbinaut x3
-	O(quadorbinaut,   1, 1) // Orbinaut x4
-	O(dualjawz,       5, 1) // Jawz x2
+	OSTD(sneaker,        2, 1) // Sneaker
+	OSTD(rocketsneaker,  0, 0) // Rocket Sneaker
+	OSTD(invincibility,  4, 1) // Invincibility
+	OSTD(banana,         0, 0) // Banana
+	OSTD(eggman,         1, 0) // Eggman Monitor
+	OSTD(orbinaut,       8, 0) // Orbinaut
+	OSTD(jawz,           8, 1) // Jawz
+	OSTD(mine,           6, 1) // Mine
+	OSTD(ballhog,        2, 1) // Ballhog
+	OSTD(spb,            0, 0) // Self-Propelled Bomb
+	OSTD(grow,           2, 1) // Grow
+	OSTD(shrink,         0, 0) // Shrink
+	OSTD(thundershield,  4, 0) // Thunder Shield
+	OSTD(hyudoro,        2, 0) // Hyudoro
+	OSTD(pogospring,     3, 0) // Pogo Spring
+	OSTD(kitchensink,    0, 0) // Kitchen Sink
+	OSTD(superring,      0, 0) // Super Ring
+	OSTD(landmine,       2, 0) // Land Mine
+	OSTD(bubbleshield,   1, 0) // Bubble Shield
+	OSTD(flameshield,    1, 0) // Flame Shield
+	OSTD(dualsneaker,    0, 0) // Sneaker x2
+	OSTD(triplesneaker,  0, 1) // Sneaker x3
+	OSTD(triplebanana,   0, 0) // Banana x3
+	OSTD(decabanana,     1, 1) // Banana x10
+	OSTD(tripleorbinaut, 2, 0) // Orbinaut x3
+	OSTD(quadorbinaut,   1, 1) // Orbinaut x4
+	OSTD(dualjawz,       5, 1) // Jawz x2
 	//{ 2, 0 }, // Egg Mine
 	//{ 1, 0 }  // Alt. Shrink
 #undef WHICH
 
 #define WHICH ODDS_SPECIAL
 	//                M  N  O  P
-	O(sneaker,        1, 1, 0, 0) // Sneaker
-	O(rocketsneaker,  0, 0, 0, 0) // Rocket Sneaker
-	O(invincibility,  0, 0, 0, 0) // Invincibility
-	O(banana,         0, 0, 0, 0) // Banana
-	O(eggman,         0, 0, 0, 0) // Eggman Monitor
-	O(orbinaut,       1, 1, 0, 0) // Orbinaut
-	O(jawz,           1, 1, 0, 0) // Jawz
-	O(mine,           0, 0, 0, 0) // Mine
-	O(ballhog,        0, 0, 0, 0) // Ballhog
-	O(spb,            0, 0, 0, 1) // Self-Propelled Bomb
-	O(grow,           0, 0, 0, 0) // Grow
-	O(shrink,         0, 0, 0, 0) // Shrink
-	O(thundershield,  0, 0, 0, 0) // Thunder Shield
-	O(hyudoro,        0, 0, 0, 0) // Hyudoro
-	O(pogospring,     0, 0, 0, 0) // Pogo Spring
-	O(kitchensink,    0, 0, 0, 0) // Kitchen Sink
-	O(superring,      0, 0, 0, 0) // Super Ring
-	O(landmine,       0, 0, 0, 0) // Land Mine
-	O(bubbleshield,   0, 0, 0, 0) // Bubble Shield
-	O(flameshield,    0, 0, 0, 0) // Flame Shield
-	O(dualsneaker,    0, 1, 1, 0) // Sneaker x2
-	O(triplesneaker,  0, 0, 1, 1) // Sneaker x3
-	O(triplebanana,   0, 0, 0, 0) // Banana x3
-	O(decabanana,     0, 0, 0, 0) // Banana x10
-	O(tripleorbinaut, 0, 1, 1, 0) // Orbinaut x3
-	O(quadorbinaut,   0, 0, 1, 1) // Orbinaut x4
-	O(dualjawz,       0, 0, 1, 1) // Jawz x2
+	OSTD(sneaker,        1, 1, 0, 0) // Sneaker
+	OSTD(rocketsneaker,  0, 0, 0, 0) // Rocket Sneaker
+	OSTD(invincibility,  0, 0, 0, 0) // Invincibility
+	OSTD(banana,         0, 0, 0, 0) // Banana
+	OSTD(eggman,         0, 0, 0, 0) // Eggman Monitor
+	OSTD(orbinaut,       1, 1, 0, 0) // Orbinaut
+	OSTD(jawz,           1, 1, 0, 0) // Jawz
+	OSTD(mine,           0, 0, 0, 0) // Mine
+	OSTD(ballhog,        0, 0, 0, 0) // Ballhog
+	OSTD(spb,            0, 0, 0, 1) // Self-Propelled Bomb
+	OSTD(grow,           0, 0, 0, 0) // Grow
+	OSTD(shrink,         0, 0, 0, 0) // Shrink
+	OSTD(thundershield,  0, 0, 0, 0) // Thunder Shield
+	OSTD(hyudoro,        0, 0, 0, 0) // Hyudoro
+	OSTD(pogospring,     0, 0, 0, 0) // Pogo Spring
+	OSTD(kitchensink,    0, 0, 0, 0) // Kitchen Sink
+	OSTD(superring,      0, 0, 0, 0) // Super Ring
+	OSTD(landmine,       0, 0, 0, 0) // Land Mine
+	OSTD(bubbleshield,   0, 0, 0, 0) // Bubble Shield
+	OSTD(flameshield,    0, 0, 0, 0) // Flame Shield
+	OSTD(dualsneaker,    0, 1, 1, 0) // Sneaker x2
+	OSTD(triplesneaker,  0, 0, 1, 1) // Sneaker x3
+	OSTD(triplebanana,   0, 0, 0, 0) // Banana x3
+	OSTD(decabanana,     0, 0, 0, 0) // Banana x10
+	OSTD(tripleorbinaut, 0, 1, 1, 0) // Orbinaut x3
+	OSTD(quadorbinaut,   0, 0, 1, 1) // Orbinaut x4
+	OSTD(dualjawz,       0, 0, 1, 1) // Jawz x2
 	//{ 0, 0, 0, 0 }, // Egg Mine
 	//{ 0, 0, 0, 0 }  // Alt. Shrink
 #undef WHICH
-#undef O
+#undef OSTD
+#undef OALT
 
 // Cooldown time table; contains both base (index 0) and current (index 1)
 // times. Base times are in seconds, current times are in tics.
@@ -424,6 +472,11 @@ boolean K_LegacyOddsMode(void)
 	return (K_UsingLegacyCheckpoints() || (cv_kartforcelegacyodds.value));
 }
 
+static boolean K_InStartCooldown(void)
+{
+	return (leveltime < (30*TICRATE)+starttime);
+}
+
 // Magic number distance for use with item roulette tiers
 #define ACTIVEDISTVAR (K_LegacyOddsMode() ? DISTVAR_LEGACY : DISTVAR)
 #define ACTIVESPBDIST (K_LegacyOddsMode() ? SPBDISTVAR_LEGACY : SPBDISTVAR)
@@ -432,6 +485,11 @@ boolean K_LegacyOddsMode(void)
 #define SPBFORCEDIST (7 * ACTIVESPBDIST / 2) // Distance when SPB is forced onto 2nd place (3.5x SPBDISTVAR)
 
 #define ENDDIST (12*ACTIVEDISTVAR) // Distance when the game stops giving you bananas
+
+static boolean K_RaceForceSPB(SINT8 playerpos, UINT32 pdis)
+{
+	return ((gametyperules & GTR_CIRCUIT) && playerpos == 2 && pdis > (UINT32)SPBFORCEDIST);
+}
 
 // 1/21/2025: I hate tiptoeing around the integer limit.
 // This is at a smaller scale.
@@ -705,6 +763,57 @@ void K_KartHandleShieldCooldown(kartitemtype_e item)
 	}
 }
 
+// Unique odds functions, for REAL this time
+
+// Alt. Invin. odds
+static INT32 K_AltInvinOdds(kartresult_t *result, SINT8 playerpos, UINT32 pdis, INT32 curodds, UINT8 pos, UINT8 pingame, UINT8 pexiting, UINT32 firstDist, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom)
+{
+	INT32 odds = K_KartGetInvincibilityOdds(clusterDist);
+
+	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
+	if (odds >= INVFORCEODDS)
+	{
+		result->forceme = 3; // Take priority over SPBs
+	}
+	else if (K_InStartCooldown())
+	{
+		odds = 0;
+	}
+
+	odds *= BASEODDSMUL;
+
+	return odds;
+}
+
+// SPB odds
+static INT32 K_SPBRaceOdds(kartresult_t *result, SINT8 playerpos, UINT32 pdis, INT32 curodds, UINT8 pos, UINT8 pingame, UINT8 pexiting, UINT32 firstDist, UINT32 ourDist, UINT32 clusterDist, fixed_t mashed, boolean spbrush, boolean bot, boolean rival, boolean inBottom)
+{
+	INT32 odds = curodds;
+
+	if (!K_LegacyOddsMode() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
+	{
+		odds = 0;
+	}
+	else if (K_LegacyOddsMode() && pexiting > 0)
+	{
+		odds = 0;
+	}
+
+	// No forced SPB in 1v1s, it has to be randomly rolled
+	if (pingame <= 2)
+	{
+		result->forceme = 0;
+	}
+	else if (K_RaceForceSPB(playerpos, pdis)
+		&& spbplace == -1 && !indirectitemcooldown)
+	{
+		// Force SPB onto 2nd if they get too far behind.
+		result->forceme = 2;
+	}
+
+	return odds;
+}
+
 /**	\brief	Item Roulette for Kart
 
 	\param	player	player object passed from P_KartPlayerThink
@@ -713,7 +822,7 @@ void K_KartHandleShieldCooldown(kartitemtype_e item)
 */
 
 INT32 K_KartGetItemOdds(
-	UINT8 pos, const kartresult_t *result,
+	UINT32 pdis, SINT8 playerpos, UINT8 pos, kartresult_t *result,
 	UINT32 ourDist,
     UINT32 clusterDist,
 	fixed_t mashed,
@@ -721,6 +830,7 @@ INT32 K_KartGetItemOdds(
 {
 	INT32 newodds;
 	INT32 i;
+	useoddsfunc_t uoddsfunc;
 
 	UINT8 pingame = 0, pexiting = 0;
 
@@ -728,7 +838,7 @@ INT32 K_KartGetItemOdds(
 	UINT32 firstDist = UINT32_MAX;
 	UINT32 secondToFirst = UINT32_MAX;
 
-	UINT8 flags = result->flags;
+	UINT8 flags = result->flags[result->format];
 
 	INT32 shieldtype = KSHIELD_NONE;
 
@@ -770,8 +880,11 @@ INT32 K_KartGetItemOdds(
 	if (gametyperules & GTR_BATTLEODDS)
 		oddsmul = BATTLEODDSMUL;
 
+	// Reset forceme
+	result->forceme = 0;
+
 	// TODO: braaap (make a separate table for the current level!)
-	newodds = result->odds[oddstable][pos];
+	newodds = result->odds[oddstable][result->format][pos];
 
 	// Blow up the odds with a multiplier.
 	newodds *= oddsmul;
@@ -839,100 +952,64 @@ INT32 K_KartGetItemOdds(
 		}
 	}
 
-	switch (result->type)
+	if (result->unique_odds[oddstable][result->format])
 	{
-		case KITEM_EGGMAN:
-			if (K_IsKartItemAlternate(KITEM_EGGMAN))
-				flags = KRF_NOTFORBOTTOM;
-			break;
+		// This item has unique odds!
 
-		case KITEM_SUPERRING:
-			if ((K_RingsActive() == false)) // No rings rolled if rings are turned off.
-			{
-				newodds = 0;
-			}
+		//CONS_Printf("Unique odds found. Assigning uoddsfunc...");
+		uoddsfunc = (useoddsfunc_t)result->unique_odds[oddstable][result->format];
 
-			break;
-
-		case KITEM_LANDMINE:
-			// au revoir
-			newodds = 0;
-			break;
-
-		case KITEM_INVINCIBILITY:
-			if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (gametyperules & GTR_RACEODDS))
-			{
-				// It's a power item, yes, but we don't want mashing to lessen
-				// its chances, so we lie to the game's face.
-				// Nonetheless, apply the start cooldown.
-				flags = KRF_COOLDOWNONSTART;
-
-				// Also, PLEASE prevent shitty last lap bagging endings.
-				flags |= KRF_NOTNEAREND;
-
-				// Unique odds for Invincibility.
-				newodds = K_KartGetInvincibilityOdds(clusterDist);
-
-				// Special case: if you're SERIOUSLY far behind before the cooldown
-				// finishes, remove the cooldown flag.
-				if (newodds >= INVFORCEODDS)
-				{
-					flags &= ~KRF_COOLDOWNONSTART;
-				}
-
-				newodds *= BASEODDSMUL;
+		//CONS_Printf("Running...");
+		newodds = uoddsfunc(result, playerpos, pdis, newodds, pos, pingame, pexiting, firstDist, ourDist, clusterDist, mashed, spbrush, bot, rival, inBottom);
+		//CONS_Printf("OK!\n");
+	}
+	else
+	{
+		switch (result->type)
+		{
+			// Alt. Invin. odds are handled in its odds function
+			// So are SPB odds
+			case KITEM_EGGMAN:
+				if (K_IsKartItemAlternate(KITEM_EGGMAN))
+					flags = KRF_NOTFORBOTTOM;
 				break;
-			}
 
-		case KITEM_SPB:
-			if (!K_LegacyOddsMode() && firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
-			{
-				newodds = 0;
-			}
-			else if (K_LegacyOddsMode() && pexiting > 0)
-			{
-				newodds = 0;
-			}
-			else
-			{
-				const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
-				const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
-				const INT32 mulMax = 24;
-
-				INT32 multiplier = (distFromStart * mulMax) / distRange;
-
-				if (multiplier < 0)
-					multiplier = 0;
-				if (multiplier > mulMax)
-					multiplier = mulMax;
-
-				newodds *= multiplier;
-			}
-			break;
-
-		case KITEM_SHRINK:
-			if (!K_IsKartItemAlternate(KITEM_SHRINK))
-			{
-				flags |= KRF_INDIRECTITEM;
-
-				if (pingame-1 <= pexiting)
-					newodds = 0;
-			}
-			else
-			{
-				if (rival)
+			case KITEM_SUPERRING:
+				if ((K_RingsActive() == false)) // No rings rolled if rings are turned off.
 				{
-					// Rival bot or already shrunk. DON'T roll another.
 					newodds = 0;
 				}
-			}
-			break;
-		case KITEM_THUNDERSHIELD:
-			if (spbplace != -1)
+
+				break;
+
+			case KITEM_LANDMINE:
+				// au revoir
 				newodds = 0;
-			break;
-		default:
-			break;
+				break;
+			case KITEM_SHRINK:
+				if (!K_IsKartItemAlternate(KITEM_SHRINK))
+				{
+					flags |= KRF_INDIRECTITEM;
+
+					if (pingame-1 <= pexiting)
+						newodds = 0;
+				}
+				else
+				{
+					if (rival)
+					{
+						// Rival bot or already shrunk. DON'T roll another.
+						newodds = 0;
+					}
+				}
+				break;
+			case KITEM_THUNDERSHIELD:
+				if (spbplace != -1)
+					newodds = 0;
+				break;
+			default:
+				break;
+		}
 	}
 
 	// In very small matches, remove the stupid bottom half item limiter
@@ -947,6 +1024,23 @@ INT32 K_KartGetItemOdds(
 		return newodds;
 	}
 
+	if (flags & KRF_RUNNERAUGMENT)
+	{
+		// These odds get stronger as 1st's frontrun increases.
+		const INT32 distFromStart = max(secondToFirst - SPBSTARTDIST, 0);
+		const INT32 distRange = SPBFORCEDIST - SPBSTARTDIST;
+		const INT32 mulMax = 24;
+
+		INT32 multiplier = (distFromStart * mulMax) / distRange;
+
+		if (multiplier < 0)
+			multiplier = 0;
+		if (multiplier > mulMax)
+			multiplier = mulMax;
+
+		newodds *= multiplier;
+	}
+
 	if (result->bgone > 0)
 	{
 		// (Replaces hyubgone) This item is on cooldown; don't let it get rolled.
@@ -957,7 +1051,7 @@ INT32 K_KartGetItemOdds(
 		// Too many items that act indirectly in a match can feel kind of bad.
 		newodds = 0;
 	}
-	else if (flags & KRF_COOLDOWNONSTART && leveltime < (30*TICRATE)+starttime)
+	else if (flags & KRF_COOLDOWNONSTART && K_InStartCooldown())
 	{
 		// This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 		newodds = 0;
@@ -1039,7 +1133,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		for (j = 0; j < numkartresults; j++)
 		{
 			if (K_KartGetItemOdds(
-					i, &kartresults[j],
+					pdis, player->position, i, &kartresults[j],
 					player->distancetofinish,
                     player->distancefromcluster,
 					mashed,
@@ -1179,7 +1273,7 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 				if (seen[j] == result->type)
 					break;
 
-			if (j == numseen && memcmp(result->odds[oddstable], EMPTYODDS, sizeof(EMPTYODDS)))
+			if (j == numseen && memcmp(result->odds[oddstable][result->format], EMPTYODDS, sizeof(EMPTYODDS)))
 				translation[roulette_size++] = seen[numseen++] = result->type;
 		}
 
@@ -1400,14 +1494,11 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 	return pdis;
 }
 
-static boolean K_CanForceSPB(player_t *player, UINT32 pdis)
+static boolean K_BattleForceSPB(player_t *player, UINT32 pdis)
 {
-	boolean battlecond, racecond;
+	boolean battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
 
-	battlecond = ((gametyperules & GTR_WANTED) && (gametyperules & GTR_WANTEDSPB) && (mostwanted != -1) && (!K_IsPlayerMostWanted(player)));
-	racecond = ((gametyperules & GTR_CIRCUIT) && player->position == 2 && pdis > (UINT32)SPBFORCEDIST);
-
-	return ((battlecond) || (racecond));
+	return battlecond;
 }
 
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
@@ -1594,9 +1685,36 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	}
 
 	// SPECIAL CASE No. 6:
-	// Force SPB onto 2nd if they get too far behind
+	// Item forcing; the item with the highest "forceme" priority is the one given.
+	{
+		kartresult_t *forceresult;
+		UINT8 bestforce = 0;
+
+		for (i = 0; i < numkartresults; i++)
+		{
+			if ((kartresults[i].forceme) && (kartresults[i].forceme > bestforce))
+			{
+				bestforce = kartresults[i].forceme;
+				forceresult = &kartresults[i];
+			}
+		}
+
+		if ((bestforce) && (forceresult))
+		{
+			K_KartGetItemResult(player, forceresult->name);
+			player->itemblink = TICRATE;
+			player->itemblinkmode = KITEMBLINKMODE_KARMA;
+			player->itemroulette = KROULETTE_DISABLED;
+			player->roulettetype = KROULETTETYPE_NORMAL;
+			if (P_IsDisplayPlayer(player))
+				S_StartSound(NULL, sfx_itrolk);
+			return;
+		}
+	}
+
+	// SPECIAL CASE No. 7:
 	// In battle, an SPB is forced onto players to target the "most wanted" player
-	if (K_CanForceSPB(player, pdis)
+	if (K_BattleForceSPB(player, pdis)
 		&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
 		&& K_ItemResultEnabled("spb"))
 	{
@@ -1620,7 +1738,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	for (i = 0; i < numkartresults; i++)
 	{
 		spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
-			useodds, &kartresults[i],
+			pdis, player->position, useodds, &kartresults[i],
 			player->distancetofinish,
             player->distancefromcluster,
 			mashed,

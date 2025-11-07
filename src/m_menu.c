@@ -8387,7 +8387,7 @@ void MD_DrawMonitorToggles(void)
 			kartitem_t *item = &kartitems[result->type];
 			boolean enabled = K_ItemResultEnabled(result->name);
 			translucent = enabled ? 0 : V_TRANSLUCENT;
-			drawnum = item->animated ? 0 : CLAMP(result->amount, 0, item->graphics[1].numpatches - 1);
+			drawnum = (item->hudflags & KPF_ANIMATED) ? 0 : CLAMP(result->amount, 0, item->graphics[1].numpatches - 1);
 
 			if (enabled)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
@@ -8434,7 +8434,7 @@ void MD_DrawMonitorToggles(void)
 			kartitem_t *item = &kartitems[result->type];
 			boolean enabled = K_ItemResultEnabled(result->name);
 			translucent = enabled ? 0 : V_TRANSLUCENT;
-			drawnum = item->animated ? 0 : CLAMP(result->amount, 0, item->graphics[0].numpatches - 1);
+			drawnum = (item->hudflags & KPF_ANIMATED) ? 0 : CLAMP(result->amount, 0, item->graphics[0].numpatches - 1);
 
 			if (enabled)
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));

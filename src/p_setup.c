@@ -8077,6 +8077,26 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	if (!reloadinggamestate)
 		K_SetupItemOdds();
 
+	for (i = 0; i < numkartitems; i++)
+	{
+		const kartitem_t *kitm = &kartitems[i];
+		char *findname = malloc(strlen(kitm->name)+1);
+
+		sprintf(findname, "%s", kitm->name);
+		strlwr(findname);
+
+		kartresult_t *kres = K_GetKartResult(findname);
+
+		if ((kres) && (kitm->altcvar))
+		{
+			// Update the result's format based on the cvar's value.
+			CONS_Printf("%s: updating format to %s\n", kres->name, kitm->altcvar->string);
+			kres->format = kitm->altcvar->value;
+		}
+
+		free(findname); // Don't need this anymore
+	}
+
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
 

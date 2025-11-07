@@ -5513,7 +5513,7 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 		for (i = 0; i < numkartresults; i++)
 		{
 			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
-				useodds, &kartresults[i],
+				0, 0, useodds, &kartresults[i],
 				UINT32_MAX,
                 0,
 				0,
