@@ -8,8 +8,8 @@ Alternative items are secondary versions of existing SRB2Kart items that **reint
 
 To toggle on/off these alternate versions, you can do so with the following commands:
 
-- ``kartinvintype`` (for Invincibility)
-- ``kartshrinktype`` (for Shrink)
+- ``altitem_invincibility`` (for Invincibility)
+- ``altitem_shrink`` (for Shrink)
 
 ### Alt. Invincibility (Power: Occupies Slot)
 Invincibility, in its normal form, is a power item that appears in the lower ranks, letting players cut through offroad and spin out opponents with prejudice. **Alt. Invincibility** works significantly different, trading its aggression for speed and optimized recovery.
