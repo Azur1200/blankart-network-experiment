@@ -4770,11 +4770,8 @@ void G_AfterIntermission(void)
 		if (demo.inreplayhut)
 		{
 			// Setup menu stack so we can back out of the menu as per usual.
-			M_ClearMenus(false);
-			D_ResetGameState();
-			M_StartControlPanel();
-			M_EnterMenu(MN_SR_MAIN, true, 0);
-			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
+			M_RestoreMenuStack(false);
+			modeattacking = ATTACKING_MENU;
 		}
 		else
 		{
@@ -4944,7 +4941,8 @@ void G_EndGame(void)
 	{
 		if (nextmap == NEXTMAP_CEREMONY) // end game with ceremony
 		{
-			D_StartTitle(); //F_StartEnding(); -- temporary
+			//D_StartTitle(); //F_StartEnding(); -- temporary
+			M_RestoreMenuStack(false);
 			return;
 		}
 		if (nextmap == NEXTMAP_CREDITS) // end game with credits

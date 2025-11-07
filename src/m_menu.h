@@ -51,6 +51,7 @@ typedef enum
 } menutype_t;
 
 extern menutype_t menustack[NUMMENULEVELS];
+extern menutype_t restoremenustack[NUMMENULEVELS];
 
 void M_InitMenuPresTables(void);
 void M_ChangeMenuMusic(void);
@@ -253,6 +254,7 @@ void M_ClearMenusEx(boolean callexitmenufunc, boolean notitle);
 #define M_ClearMenus(callexitmenufunc) M_ClearMenusEx(callexitmenufunc, false)
 menuitem_t *M_CheckMenuItem(menutype_t type, const char *name);
 menuitem_t *M_GetMenuItem(menutype_t type, const char *name);
+void M_RestoreMenuStack(boolean backup);
 
 INT32 MR_SinglePlayerMenu(INT32 choice);
 INT32 MR_Options(INT32 choice);

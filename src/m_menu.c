@@ -169,6 +169,7 @@ INT16 startmap; // Mario, NiGHTS, or just a plain old normal game?
 menu_t menudefs[MAXMENUTYPES]; // array of all menudefs
 UINT16 nummenutypes;
 menutype_t menustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
+menutype_t restoremenustack[NUMMENULEVELS]; // stack of active menus, [0] == current menu
 static menu_t *currentMenu; // current menudef
 static INT16 itemOn = 1; // menu item skull is on, Hack by Tails 09-18-2002
 static INT16 skullAnimCounter = 10; // skull animation counter
@@ -1367,7 +1368,7 @@ boolean M_Responder(event_t *ev)
 	{
 		return false;
 	}
-		
+
 	if (CON_Ready() && gamestate != GS_WAITINGPLAYERS)
 		return false;
 
@@ -2095,6 +2096,28 @@ void M_EnterMenu(menutype_t menunum, boolean callexit, INT32 arg)
 
 	menu_text_input = true;
 	M_SetupNextMenu(menunum, callexit);
+}
+
+// Use for menus you return to.
+// Backs up the stack so you can place it back into place
+void M_RestoreMenuStack(boolean backup)
+{
+	if (backup)
+	{
+		memcpy(restoremenustack, menustack, sizeof(menustack));
+		return;
+	}
+
+	D_ResetGameState();
+	M_ClearMenusEx(true, false);
+	M_StartControlPanel();
+
+	// Put the stack back into place and wipe the restore stack
+	memcpy(menustack, restoremenustack, sizeof(restoremenustack));
+	memset(restoremenustack, MN_NONE, sizeof(restoremenustack));
+
+	if (menustack[0])
+		M_SetupNextMenu(menustack[0], true);
 }
 
 // Guess I'll put this here, idk
@@ -4362,6 +4385,7 @@ INT32 MR_HutStartReplay(INT32 choice)
 {
 	(void)choice;
 
+	M_RestoreMenuStack(true);
 	COM_BufAddText(va("playdemo %s %s",
 	               demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
 	               M_IsItemOn(MN_MISC_REPLAYSTART, "LOADWATCH") ? "-addfiles" : "-force"));
@@ -4650,11 +4674,8 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	if (demo.inreplayhut)
 	{
 		// Setup menu stack so we can back out of the menu as per usual.
-		M_ClearMenus(false);
-		D_ResetGameState();
-		M_StartControlPanel();
-		M_EnterMenu(MN_SR_MAIN, true, 0);
-		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
+		M_RestoreMenuStack(false);
+		modeattacking = ATTACKING_MENU;
 	}
 	else if (wasmodeattacking)
 		MR_ModeAttackEndGame(0);
@@ -5720,6 +5741,7 @@ INT32 MR_StartGrandPrix(INT32 choice)
 		return false;
 	}
 
+	M_RestoreMenuStack(true);
 	M_ClearMenus(true);
 
 	memset(&grandprixinfo, 0, sizeof(struct grandprixinfo));
@@ -5952,6 +5974,8 @@ INT32 MR_ReplayTimeAttack(INT32 arg)
 	CLEANUP(pfree) char *gpath = G_GetRecordReplayFolder(false, levellistmode == LLM_ITEMBREAKER);
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
 	COM_BufAddText(va("playdemo %s -force", demopath));
+
+	M_RestoreMenuStack(true);
 	return true;
 }
 
@@ -6054,12 +6078,8 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 		Command_ExitGame_f();
 
 	// Setup menu stack so we can back out of the menu as per usual.
-	M_ClearMenus(false);
+	M_RestoreMenuStack(false);
 	modeattacking = ATTACKING_MENU;
-	D_ResetGameState();
-	M_StartControlPanel();
-	M_EnterMenu(MN_SP_MAIN, true, -1);
-	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
 
 	Nextmap_OnChange();
 	return true;
@@ -6844,7 +6864,7 @@ void MD_DrawMPMainMenu(void)
 			if (M_IsItemOn(MN_MP_MAIN, "PLAYERSETUP") && i == cv_dummymultiplayer.value+1)
 			{
 				static fixed_t cursorframe = 0;
-				
+
 				cursorframe += renderdeltatics / 4;
 				for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 
@@ -6916,14 +6936,14 @@ static UINT8 setupplayer;
 #define charw 72
 
 void MD_DrawSetupMultiPlayerMenu(void)
-{	
+{
 	// use generic drawer for cursor, items and title
 	// bg, text, arrows handled by generic drawer
 	MD_DrawGenericMenu();
 
 	MD_DrawCssColourBar();
 	MD_DrawCssCharacter();
-	
+
 	if (cv_skinselectstyle.value)
 	{
 		MD_DrawCssStatBars();
@@ -6983,7 +7003,7 @@ void MD_DrawCssStatBars(void)
 
 	const INT32 BITSTARTXMAIN = 17;
 	const INT32 BITSTARTXSUB = 50;
-	
+
 	const INT32 BITSPEEDSTARTY = 2;
 	const INT32 BITWEIGHTSTARTY = 18;
 
@@ -7038,7 +7058,7 @@ void MD_DrawCssStatBars(void)
 	{
 		V_DrawFixedPatch((mx + BITSTARTXSUB - (BITSPACING * i))<<FRACBITS, (my + BITWEIGHTSTARTY + BITSHIFTSUB)<<FRACBITS, FRACUNIT, 0, statbitsub, subcolour);
 	}
-	
+
 	// Draw our icons
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYFIRST)<<FRACBITS, FRACUNIT, 0, speedicn, NULL);
 	V_DrawFixedPatch((mx + ICNXFIRST)<<FRACBITS, (my + ICNYSECOND)<<FRACBITS, FRACUNIT, 0, weighticn, NULL);
@@ -7305,10 +7325,10 @@ void MD_DrawGridCssSelector(void)
 	INT32 skinn;
 	patch_t *face;
 	UINT8 *colmap;
-	
+
 	patch_t *cursor;
 	static fixed_t cursorframe = 0;
-	
+
 	INT32 gridx;
 	INT32 gridy;
 	INT32 cursorx;
@@ -7316,7 +7336,7 @@ void MD_DrawGridCssSelector(void)
 	INT32 calcs;
 
 	INT32 skintodisplay = cv_chooseskin.value;
-	
+
 	// gridcss_skinydrag = 0;
 	// draws background and scroll bar
 	{
@@ -7330,10 +7350,10 @@ void MD_DrawGridCssSelector(void)
 		INT32 columncount;
 		INT32 barlen;
 		INT32 barpos;
-		
+
 		//draw BG
 		V_DrawFill(x, y, dx, dy, 159);
-		
+
 		columncount = ((numskins - 1) / SKINGRIDWIDTH) + 1;
 
 		if (columncount > SKINGRIDHEIGHT)
@@ -7363,9 +7383,9 @@ void MD_DrawGridCssSelector(void)
 		}
 	}
 	// end background and scroll bar
-	
+
 	for (INT32 gridslot = 0; gridslot < SKINGRIDWIDTH*SKINGRIDHEIGHT; gridslot++)
-	{	
+	{
 		gridx = ((gridslot % SKINGRIDWIDTH) * 18) + ((BASEVIDWIDTH / 2) - (18 * SKINGRIDWIDTH) - 8) + 100 + SKINXSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
 		gridy = ((gridslot / SKINGRIDWIDTH) * 18) + ((BASEVIDHEIGHT / 2) - (18 * (SKINGRIDWIDTH/2))) + SKINYSHIFT; //BASEVIDWIDTH / 2 - ((icons + 1) * 24) - 4;
 		calcs = gridslot + (gridcss_skinydrag * SKINGRIDWIDTH);
@@ -7381,7 +7401,7 @@ void MD_DrawGridCssSelector(void)
 			V_DrawFill(gridx, gridy, 16, 16, 158);
 			continue;
 		}
-		
+
 		if (skinn == skintodisplay)
 		{
 			cursorx = gridx;
@@ -7402,13 +7422,13 @@ void MD_DrawGridCssSelector(void)
 		colmap = R_GetTranslationColormap(skintodisplay, cv_dummycolor.value, GTC_MENUCACHE);
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, face, colmap);
 
-		
+
 		cursorframe += renderdeltatics / 4;
 		for (; cursorframe > 7 * FRACUNIT; cursorframe -= 7 * FRACUNIT) {}
 		cursor = W_CachePatchName(va("K_BHILI%d", (cursorframe >> FRACBITS) + 1), PU_CACHE);
 		// cursor patch offsets are wrong so draw at same coordinate as portrait
 		V_DrawFixedPatch((cursorx * FRACUNIT) - (face->width * FRACUNIT/4), (cursory * FRACUNIT) - (face->height * FRACUNIT/4), FRACUNIT, 0, cursor, colmap);
-		
+
 	}
 	else
 	{
@@ -7464,7 +7484,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 					gridcss_row = (numskins - 1) % SKINGRIDWIDTH;
 					gridcss_column = (numskins - 1) / SKINGRIDWIDTH;
 				}
-				
+
 				if ((gridcss_column - gridcss_skinydrag) > SKINGRIDHEIGHT - 1)
 					gridcss_skinydrag++;
 			}
@@ -7501,7 +7521,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 				{
 					gridcss_row = SKINGRIDWIDTH - 1;
 					gridcss_column--;
-	
+
 					if (gridcss_column < gridcss_skinydrag)
 						gridcss_skinydrag--;
 				}
@@ -7575,7 +7595,7 @@ INT32 MR_HandleSetupMultiPlayerMenu(INT32 choice)
 		default:
 			return false;
 	}
-		
+
 	CV_SetValue(&cv_chooseskin, skinsorted[MapGridSelectToSkin(gridcss_row, gridcss_column)]);
 	return true;
 }
@@ -7617,7 +7637,7 @@ INT32 MR_SetupMultiPlayer(INT32 arg)
 	gridcss_skinmemory = cv_chooseskin.value;
 	CV_SetValue(&cv_dummyfollower, cv_follower[arg].value);
 	CV_SetValue(&cv_dummycolor, cv_playercolor[arg].value);
-	
+
 	Skinsort_option_Onchange();
 
 	M_GetFollowerState();	// update follower state
