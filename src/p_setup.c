@@ -8090,8 +8090,11 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		if ((kres) && (kitm->altcvar))
 		{
 			// Update the result's format based on the cvar's value.
-			CONS_Printf("%s: updating format to %s\n", kres->name, kitm->altcvar->string);
-			kres->format = kitm->altcvar->value;
+			if (kres->format != kitm->altcvar->value)
+			{
+				CONS_Printf("%s: updating format to %s\n", kres->name, kitm->altcvar->string);
+				kres->format = kitm->altcvar->value;
+			}
 		}
 
 		free(findname); // Don't need this anymore

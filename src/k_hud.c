@@ -5611,7 +5611,7 @@ static void K_drawDistributionDebugger(void)
 				K_IsPlayerLosing(stplyr)
 			);
 
-			if (itemodds <= 0)
+			if ((itemodds <= 0) && (!result->forceme)) // At the very least display forced items; that info's also important.
 				continue;
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
