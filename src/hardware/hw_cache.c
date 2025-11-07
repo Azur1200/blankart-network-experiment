@@ -766,7 +766,7 @@ static void HWR_PrecacheLevelFlats(void)
 	size_t i, j;
 
 	// special case for encore
-	if (encoremode)
+	if (encoremap)
 	{
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
@@ -902,7 +902,7 @@ static void HWR_PrecacheLevelTextures(void)
 	free(texturepresent);
 }
 
-static void HWR_PrecacheLevelSprites(void)
+/*static void HWR_PrecacheLevelSprites(void)
 {
 	GLPatch_t *spritepatch;
 	char *spritepresent;
@@ -967,7 +967,7 @@ static void HWR_PrecacheLevelSprites(void)
 		}
 	}
 	free(spritepresent);
-}
+}*/
 
 void HWR_PrecacheLevel(void)
 {
@@ -981,7 +981,7 @@ void HWR_PrecacheLevel(void)
 	HWR_PrecacheLevelTextures();
 
 	// Precache sprites.
-	HWR_PrecacheLevelSprites();
+	//HWR_PrecacheLevelSprites();
 }
 
 void HWR_LoadMapTextures(size_t pnumtextures)
