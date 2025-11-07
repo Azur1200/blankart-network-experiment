@@ -4634,8 +4634,8 @@ INT32 MR_PlaybackQuit(INT32 choice)
 	{
 		// Setup menu stack so we can back out of the menu as per usual.
 		M_ClearMenus(false);
-		G_SetGamestate(GS_MENU);
-		M_EnterMenu(MN_MAIN, true, 0);
+		D_ResetGameState();
+		M_StartControlPanel();
 		M_EnterMenu(MN_SR_MAIN, true, 0);
 		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 	}
@@ -6039,8 +6039,8 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	// Setup menu stack so we can back out of the menu as per usual.
 	M_ClearMenus(false);
 	modeattacking = ATTACKING_MENU;
-	G_SetGamestate(GS_MENU);
-	M_EnterMenu(MN_MAIN, true, -1);
+	D_ResetGameState();
+	M_StartControlPanel();
 	M_EnterMenu(MN_SP_MAIN, true, -1);
 	M_EnterMenu(MN_SP_TIMEATTACK, true, -1);
 
@@ -8650,11 +8650,9 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 
 void M_ReturnToConnectMenu(void)
 {
-	D_ResetGameState();
-
 	M_ClearMenus(false);
-	G_SetGamestate(GS_MENU);
-	M_EnterMenu(MN_MAIN, true, 0);
+	D_ResetGameState();
+	M_StartControlPanel();
 	M_EnterMenu(MN_MP_MAIN, true, 0);
 }
 

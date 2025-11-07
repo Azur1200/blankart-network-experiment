@@ -4766,8 +4766,8 @@ void G_AfterIntermission(void)
 		{
 			// Setup menu stack so we can back out of the menu as per usual.
 			M_ClearMenus(false);
-			G_SetGamestate(GS_MENU);
-			M_EnterMenu(MN_MAIN, true, 0);
+			D_ResetGameState();
+			M_StartControlPanel();
 			M_EnterMenu(MN_SR_MAIN, true, 0);
 			M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 		}

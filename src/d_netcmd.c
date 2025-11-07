@@ -6389,8 +6389,8 @@ void Command_ExitGame_f(void)
 
 	if (!modeattacking)
 	{
-		G_SetGamestate(GS_MENU);
-		M_EnterMenu(MN_MAIN, true, 0);
+		D_ResetGameState();
+		M_StartControlPanel();
 	}
 }
 
