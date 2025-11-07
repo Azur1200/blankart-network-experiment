@@ -4620,6 +4620,7 @@ INT32 MR_PlaybackToggleFreecam(INT32 choice)
 INT32 MR_PlaybackQuit(INT32 choice)
 {
 	(void)choice;
+	UINT8 wasmodeattacking = modeattacking;
 	G_StopDemo();
 
 	if (demo.inreplayhut)
@@ -4631,7 +4632,7 @@ INT32 MR_PlaybackQuit(INT32 choice)
 		M_EnterMenu(MN_SR_MAIN, true, 0);
 		M_EnterMenu(MN_MISC_REPLAYHUT, true, 0);
 	}
-	else if (modeattacking)
+	else if (wasmodeattacking)
 		MR_ModeAttackEndGame(0);
 	else
 	{
@@ -6028,10 +6029,9 @@ INT32 MR_ModeAttackEndGame(INT32 choice)
 	if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION || gamestate == GS_VOTING)
 		Command_ExitGame_f();
 
-	modeattacking = ATTACKING_MENU;
-
 	// Setup menu stack so we can back out of the menu as per usual.
 	M_ClearMenus(false);
+	modeattacking = ATTACKING_MENU;
 	G_SetGamestate(GS_MENU);
 	M_EnterMenu(MN_MAIN, true, -1);
 	M_EnterMenu(MN_SP_MAIN, true, -1);

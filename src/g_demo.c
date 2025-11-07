@@ -3473,7 +3473,7 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	msg[0] = '\0';
-	M_ClearMenus(true);
+	M_ClearMenusEx(true, true);
 	G_InitDemoRewind();
 	gameaction = ga_nothing;
 
@@ -4343,11 +4343,12 @@ boolean G_CheckDemoStatus(void)
 			G_FinishExitLevel();
 		else
 		{
+			UINT8 wasmodeattacking = modeattacking;
 			G_StopDemo();
 
 			if (timedemo_quit)
 				COM_ImmedExecute("quit");
-			else if (modeattacking)
+			else if (wasmodeattacking)
 				MR_ModeAttackEndGame(0);
 			else
 			{
