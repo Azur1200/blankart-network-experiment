@@ -657,7 +657,7 @@ patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount)
 	kartitem_t *item = &kartitems[type];
 	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
 
-	if ((item->hudflags & KPF_ANIMATED))
+	if (item->flags & KIF_ANIMATED)
 		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
 	else
 		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
@@ -1299,8 +1299,8 @@ static void K_drawKartItem(void)
 			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
 			{
 				kartitem_t *item = &kartitems[stplyr->itemtype];
-				numberdisplaymin = (item->hudflags & KPF_ANIMATED) ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
-				dark = (item->hudflags & KPF_DARKBG);
+				numberdisplaymin = item->flags & KIF_ANIMATED ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
+				dark = item->flags & KIF_DARKBG;
 			}
 
 			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
@@ -1337,7 +1337,7 @@ static void K_drawKartItem(void)
 	{
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
 	}
-	else if ((kartitems[stplyr->itemtype]).hudflags & KPF_COLPATCH2PLAYER)
+	else if (kartitems[stplyr->itemtype].flags & KIF_COLPATCH2PLAYER)
 	{
 		colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
 	}
@@ -5591,7 +5591,7 @@ static void K_drawDistributionDebugger(void)
 
 	if (pingame == 1)
 	{
-		if (stplyr->itemroulette && stplyr->cmd.buttons & BT_ATTACK && K_ItemResultEnabled("superring") && K_RingsActive())
+		if (stplyr->itemroulette && stplyr->cmd.buttons & BT_ATTACK && K_ItemResultEnabled(K_GetKartResult("superring")))
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(KITEM_SUPERRING, true, 0));
 		else
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(KITEM_SNEAKER, true, 0));
@@ -5599,30 +5599,35 @@ static void K_drawDistributionDebugger(void)
 	}
 	else
 	{
+		INT32 itemodds[MAXKARTRESULTS];
+		kartroulette_t roulette = {
+			.pdis = pdis,
+			.playerpos = stplyr->position,
+			.pos = useodds,
+			.ourDist = stplyr->distancetofinish,
+			.clusterDist = stplyr->distancefromcluster,
+			.mashed = 0,
+			.spbrush = spbrush,
+			.bot = stplyr->bot,
+			.rival = stplyr->bot && stplyr->botvars.rival,
+			.inBottom = K_IsPlayerLosing(stplyr),
+		};
+
+		K_KartGetItemOdds(&roulette, itemodds);
+
 		for (i = 0; i < numkartresults; i++)
 		{
 			kartresult_t *result = &kartresults[i];
-			INT32 itemodds = K_KartGetItemOdds(
-				pdis, stplyr->position, useodds, result,
-				stplyr->distancetofinish,
-				stplyr->distancefromcluster,
-				0,
-				spbrush, stplyr->bot, (stplyr->bot && stplyr->botvars.rival),
-				K_IsPlayerLosing(stplyr)
-			);
 
-			if ((itemodds <= 0) && (!result->forceme)) // At the very least display forced items; that info's also important.
+			if (itemodds[i] <= 0 && !result->forceme) // At the very least display forced items; that info's also important.
 				continue;
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
-			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, result->forceme ? va("\x85" "FRC(%d)" "\x80 ", result->forceme) : va("%d", itemodds));
-
-			// Display amount for multi-items
+			if (result->isalt)
+				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, W_CachePatchName("K_ALTITS", PU_CACHE));
+			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, result->forceme ? va("\x85" "FRC(%d)" "\x80 ", result->forceme) : va("%d", itemodds[i]));
 			if (result->amount > 1)
-			{
 				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", result->amount));
-			}
-
 
 			x += 32;
 			if (x >= 297)

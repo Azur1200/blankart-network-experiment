@@ -1155,7 +1155,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 		}
 	}
 
-	if (player->rings < 0 && K_ItemResultEnabled("superring") && K_RingsActive())
+	if (player->rings < 0 && K_ItemResultEnabled(K_GetKartResult("superring")))
 	{
 		// Uh oh, we need a loan!
 		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.

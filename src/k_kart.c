@@ -4706,7 +4706,7 @@ static void K_DoHyudoroSteal(player_t *player)
 	prandom = P_RandomFixed();
 	S_StartSound(player->mo, sfx_s3k92);
 
-	if (sink && numplayers > 0 && K_ItemResultEnabled("kitchensink")) // BEHOLD THE KITCHEN SINK
+	if (sink && numplayers > 0 && K_ItemResultEnabled(K_GetKartResult("kitchensink"))) // BEHOLD THE KITCHEN SINK
 	{
 		player->hyudorotimer = hyu;
 		player->stealingtimer = stealtime;
@@ -5510,16 +5510,25 @@ mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, SINT8 
 
 		useodds = amount;
 
+		kartroulette_t roulette = {
+			.pdis = 0,
+			.playerpos = 0,
+			.pos = useodds,
+			.ourDist = UINT32_MAX,
+			.clusterDist = 0,
+			.mashed = 0,
+			.spbrush = false,
+			.bot = false,
+			.rival = false,
+			.inBottom = false
+		};
+
+		K_KartGetItemOdds(&roulette, spawnchance);
+
 		for (i = 0; i < numkartresults; i++)
 		{
-			spawnchance[i] = (totalspawnchance += K_KartGetItemOdds(
-				0, 0, useodds, &kartresults[i],
-				UINT32_MAX,
-                0,
-				0,
-				false, false, false, false
-				)
-			);
+			totalspawnchance += spawnchance[i];
+			spawnchance[i] = totalspawnchance;
 		}
 
 		if (totalspawnchance > 0)
@@ -11468,12 +11477,6 @@ boolean K_ItemLitterActive(void)
 boolean K_ItemPushingActive(void)
 {
 	return itempushing;
-}
-
-boolean K_IsKartItemAlternate(UINT8 itemtype)
-{
-	return itemtype >= 0 && itemtype < numkartitems
-	    && kartitems[itemtype].altcvar != NULL && kartitems[itemtype].altcvar->value == 1;
 }
 
 boolean K_UsingLegacyCheckpoints(void)

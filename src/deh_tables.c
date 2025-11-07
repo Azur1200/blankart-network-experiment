@@ -1519,7 +1519,7 @@ struct int_const_s const INT_CONST[] = {
 	{"KSHIELD_FLAME",KSHIELD_FLAME},
 	{"NUMKARTSHIELDS",NUMKARTSHIELDS},
 
-	// kartroulette_t
+	// kartroulettestate_t
 	{"KROULETTE_DISABLED",KROULETTE_DISABLED},
 	{"KROULETTE_ACTIVE",KROULETTE_ACTIVE},
 

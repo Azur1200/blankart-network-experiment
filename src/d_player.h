@@ -140,7 +140,7 @@ typedef enum
 typedef enum {
 	KROULETTE_DISABLED,
 	KROULETTE_ACTIVE,
-} kartroulette_t;
+} kartroulettestate_t;
 
 typedef enum {
 	KROULETTETYPE_NORMAL,

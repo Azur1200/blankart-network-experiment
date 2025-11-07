@@ -8385,9 +8385,9 @@ void MD_DrawMonitorToggles(void)
 
 			kartresult_t *result = &kartresults[arg - 1];
 			kartitem_t *item = &kartitems[result->type];
-			boolean enabled = K_ItemResultEnabled(result->name);
+			boolean enabled = K_ItemResultEnabled(result);
 			translucent = enabled ? 0 : V_TRANSLUCENT;
-			drawnum = (item->hudflags & KPF_ANIMATED) ? 0 : CLAMP(result->amount, 0, item->graphics[1].numpatches - 1);
+			drawnum = item->flags & KIF_ANIMATED ? 0 : CLAMP(result->amount, 0, item->graphics[1].numpatches - 1);
 
 			if (enabled)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
@@ -8432,9 +8432,9 @@ void MD_DrawMonitorToggles(void)
 		{
 			kartresult_t *result = &kartresults[arg - 1];
 			kartitem_t *item = &kartitems[result->type];
-			boolean enabled = K_ItemResultEnabled(result->name);
+			boolean enabled = K_ItemResultEnabled(result);
 			translucent = enabled ? 0 : V_TRANSLUCENT;
-			drawnum = (item->hudflags & KPF_ANIMATED) ? 0 : CLAMP(result->amount, 0, item->graphics[0].numpatches - 1);
+			drawnum = item->flags & KIF_ANIMATED ? 0 : CLAMP(result->amount, 0, item->graphics[0].numpatches - 1);
 
 			if (enabled)
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
@@ -8534,7 +8534,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			}
 			else if (choice == 0)
 			{
-				INT32 v = K_ItemResultEnabled("sneaker") ? 1 : 0;
+				INT32 v = K_ItemResultEnabled(K_GetKartResult("sneaker")) ? 1 : 0;
 				S_StartSound(NULL, sfx_s1b4);
 				for (UINT8 i = 0; i < numkartresults; i++)
 				{

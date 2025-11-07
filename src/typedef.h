@@ -212,6 +212,7 @@ TYPEDEF (mapUserProperties_t);
 TYPEDEF (kartitem_t);
 TYPEDEF (kartresult_t);
 TYPEDEF (kartitemgraphics_t);
+TYPEDEF (kartroulette_t);
 
 // lua_hudlib_drawlist.h
 typedef struct huddrawlist_s *huddrawlist_h;
