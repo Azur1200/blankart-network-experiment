@@ -657,6 +657,9 @@ patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount)
 	kartitem_t *item = &kartitems[type];
 	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
 
+	if (graphics->numpatches == 0)
+		return missingpat;
+
 	if (item->flags & KIF_ANIMATED)
 		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
 	else

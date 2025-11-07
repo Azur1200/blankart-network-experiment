@@ -33,28 +33,9 @@ extern "C" {
 typedef enum
 {
 	KITEM_SAD = -1,
-	KITEM_NONE = 0,
-	KITEM_SNEAKER,
-	KITEM_ROCKETSNEAKER,
-	KITEM_INVINCIBILITY,
-	KITEM_BANANA,
-	KITEM_EGGMAN,
-	KITEM_ORBINAUT,
-	KITEM_JAWZ,
-	KITEM_MINE,
-	KITEM_BALLHOG,
-	KITEM_SPB,
-	KITEM_GROW,
-	KITEM_SHRINK,
-	KITEM_THUNDERSHIELD,
-	KITEM_HYUDORO,
-	KITEM_POGOSPRING,
-	KITEM_KITCHENSINK,
-	KITEM_SUPERRING,
-	KITEM_LANDMINE,
-	KITEM_BUBBLESHIELD,
-	KITEM_FLAMESHIELD,
-
+#define _(name, ...) KITEM_##name,
+#include "info/kartitems.h"
+#undef _
 	KITEM_FIRSTFREESLOT,
 	KITEM_LASTFREESLOT = 126,
 	MAXKARTITEMS
@@ -91,16 +72,21 @@ typedef enum
 	// free: 1<<7
 } ATTRPACK kartresultflags_e;
 
+// Unique useodds function
+typedef INT32 (useoddsfunc_f)(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
+
+#define MAXITEMPATCHES 10
+
 struct kartitemgraphics_t
 {
 	UINT8 numpatches;
-	const char **patchnames;
-	patch_t **patches;
+	char *patchnames[MAXITEMPATCHES];
+	patch_t *patches[MAXITEMPATCHES];
 };
 
 struct kartitem_t
 {
-	const char *name;
+	dehinfo_t info;
 	kartitemgraphics_t graphics[2];
 	kartitemflags_e flags;
 
@@ -111,11 +97,6 @@ struct kartitem_t
 	// int (*oddsOverrideFunc)(player_t *p, int pos, int mashed, boolean spbrush, fixed_t seconddist, int pingame, int pexiting);
 	// int (*resultOverrideFunc)(player_t *p);
 };
-
-// Unique useodds function:
-// uoddsfunc(result, playerpos, pdis, newodds, pos, pingame, pexiting, firstDist, ourDist, clusterDist, mashed, spbrush, bot, rival, inBottom)
-// FIXME: This is fucking gross; is there not a better way to do this?
-typedef INT32 (useoddsfunc_f)(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
 
 struct kartresult_t
 {
@@ -160,9 +141,12 @@ extern kartitem_t kartitems[MAXKARTITEMS];
 extern UINT8 numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];
 extern UINT8 numkartresults;
+extern UINT8 oddstablemax[MAXODDSTABLES];
 
-kartresult_t *K_GetKartResult(const char *name);
-void K_InitializeItems(void);
+void K_RegisterItem(kartitemtype_e itemtype);
+kartresult_t *K_RegisterResult(const char *name, boolean alternate);
+kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
+#define K_GetKartResult(name) K_GetKartResultAlt(name, false)
 boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 void K_SetupItemOdds(void);
@@ -189,6 +173,9 @@ boolean K_IsShrunkMode(const player_t *player, boolean legacy);
 
 void K_AltShrinkIFrames(player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
+
+INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
+INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
 
 #ifdef __cplusplus
 } // extern "C"

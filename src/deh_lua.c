@@ -446,11 +446,12 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, KITEM_THUNDERSHIELD);
 			return 1;
 		}
-		for (i = 0; i < numkartitems; i++)
-			if (fastcmp(p, kartitems[i].name)) {
-				lua_pushinteger(L, i);
-				return 1;
-			}
+		i = DEH_FindKartItem(p);
+		if (i != MAXKARTITEMS)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
+		}
 		return luaL_error(L, "kartitem '%s' could not be found.\n", word);
 	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {

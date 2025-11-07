@@ -117,6 +117,12 @@ static const char *hardcodemenus =
 #undef _
 ;
 
+static const char *hardcodeitems =
+#define _(name, ...) #name "\0"
+#include "info/kartitems.h"
+#undef _
+;
+
 void P_ResetData(INT32 flags)
 {
 	INT32 i;
@@ -239,8 +245,17 @@ void P_ResetData(INT32 flags)
 	if (init)
 	{
 		memset(kartitems, 0, sizeof(kartitems));
-		K_InitializeItems();
 
 		numkartitems = KITEM_FIRSTFREESLOT;
+
+		if (kartitemnames)
+			Z_Free(kartitemnames);
+		kartitemnames = strbuf_alloc();
+		name = hardcodeitems;
+		for (i = 0; i < KITEM_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		{
+			DEH_Link(name, &kartitems[i].info, &kartitemnames);
+			K_RegisterItem(i);
+		}
 	}
 }

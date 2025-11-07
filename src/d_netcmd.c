@@ -6197,7 +6197,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
-				CV_CheaterWarning(playernum, va("give item %s x%d", item < 0 ? "SAD" : kartitems[item].name, amt));
+				CV_CheaterWarning(playernum, va("give item %s x%d", item < 0 ? "SAD" : DEH_KartItemName(item), amt));
 			}
 			break;
 		}
@@ -6511,9 +6511,9 @@ static void Command_KartGiveItem_f(void)
 				/* then do very loose partial matching */
 				for (i = 0; i < numkartitems; i++)
 				{
-					if (strcasestr(kartitems[i].name, name) != NULL)
+					if (strcasestr(DEH_KartItemName(i), name) != NULL)
 					{
-						CONS_Printf("\x83\t%s\n", kartitems[i].name);
+						CONS_Printf("\x83\t%s\n", DEH_KartItemName(i));
 						item = i;
 					}
 				}

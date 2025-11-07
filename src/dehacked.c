@@ -376,6 +376,22 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 		*out = nummenutypes++;
 		return 0;
 	}
+	else if (fastcmp(type, "KITEM"))
+	{
+		*out = DEH_FindKartItem(word);
+		if (*out != MAXKARTITEMS)
+			return 0; // already allocated
+
+		if (numkartitems == MAXKARTITEMS) {
+			CONS_Alert(CONS_WARNING, "Ran out of free kartitem slots!\n");
+			return -1;
+		}
+		CONS_Printf("Kartitem KITEM_%s allocated.\n",word);
+		DEH_Link(word, &kartitems[numkartitems].info, &kartitemnames);
+		K_RegisterItem(numkartitems);
+		*out = numkartitems++;
+		return 0;
+	}
 
 	return -2;
 }
@@ -749,6 +765,27 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 						deh_warning("Cup header's name %s is too long (%s characters VS %d max)", word2, sizeu1(len), (MAXCUPNAME-1));
 						ignorelines(f);
 					}
+				}
+				else if (fastcmp(word, "KARTITEM"))
+				{
+					if (i == 0 && word2[0] != '0') // If word2 isn't a number
+						i = get_kartitem(word2); // find a kartitem by name
+					if (i >= 1 && i < numkartitems)
+						readkartitem(f, &kartitems[i]);
+					else
+					{
+						// zero-based, but let's start at 1
+						deh_warning("KartItem number %d out of range (1 - %d)", i, numkartitems-1);
+						ignorelines(f);
+					}
+				}
+				else if (fastncmp(word, "KARTRESULT", 10))
+				{
+					boolean alternate = fastcmp(word, "KARTRESULTALT");
+					kartresult_t *result = K_GetKartResultAlt(word2, alternate);
+					if (result == NULL)
+						result = K_RegisterResult(word2, alternate);
+					readkartresult(f, result);
 				}
 				else if (fastcmp(word, "WEATHER") || fastcmp(word, "PRECIP") || fastcmp(word, "PRECIPITATION"))
 				{

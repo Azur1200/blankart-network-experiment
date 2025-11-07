@@ -40,6 +40,7 @@ strbuf_t *statenames;
 strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
+strbuf_t *kartitemnames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
@@ -60,6 +61,11 @@ const char *DEH_SkincolorName(skincolornum_t i)
 const char *DEH_MenutypeName(menutype_t i)
 {
 	return strbuf_get(menunames, menudefs[i].info.nameofs);
+}
+
+const char *DEH_KartItemName(kartitemtype_e i)
+{
+	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
 }
 
 mobjtype_t DEH_FindMobjtype(const char *word)
@@ -112,6 +118,19 @@ menutype_t DEH_FindMenutype(const char *word)
 			return i;
 	}
 	return MAXMENUTYPES;
+}
+
+kartitemtype_e DEH_FindKartItem(const char *word)
+{
+	kartitemtype_e i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < numkartitems; i++) {
+		if (hash != kartitems[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_KartItemName(i)))
+			return i;
+	}
+	return MAXKARTITEMS;
 }
 
 struct flickytypes_s FLICKYTYPES[] = {
@@ -837,6 +856,12 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 	{ NULL, NULL }
 };
 
+struct odds_func_s const USEODDS_FUNCS[] = {
+	{ "ALTINVINODDS", &KO_AltInvinOdds },
+	{ "SPBRACEODDS", &KO_SPBRaceOdds },
+	{ NULL, NULL }
+};
+
 struct int_const_s const INT_CONST[] = {
 	// If a mod removes some variables here,
 	// please leave the names in-tact and just set
@@ -1532,6 +1557,20 @@ struct int_const_s const INT_CONST[] = {
 	{"KITEMBLINKMODE_NORMAL",KITEMBLINKMODE_NORMAL},
 	{"KITEMBLINKMODE_MASHED",KITEMBLINKMODE_MASHED},
 	{"KITEMBLINKMODE_KARMA",KITEMBLINKMODE_KARMA},
+
+	// kartitemflags_e
+	{"KIF_ANIMATED",KIF_ANIMATED},
+	{"KIF_DARKBG",KIF_DARKBG},
+	{"KIF_COLPATCH2PLAYER",KIF_COLPATCH2PLAYER},
+
+	// kartresultflags_e
+	{"KRF_INDIRECTITEM",KRF_INDIRECTITEM},
+	{"KRF_POWERITEM",KRF_POWERITEM},
+	{"KRF_COOLDOWNONSTART",KRF_COOLDOWNONSTART},
+	{"KRF_NOTNEAREND",KRF_NOTNEAREND},
+	{"KRF_NOTFORBOTTOM",KRF_NOTFORBOTTOM},
+	{"KRF_UNIQUE",KRF_UNIQUE},
+	{"KRF_RUNNERAUGMENT",KRF_RUNNERAUGMENT},
 
 	// kartspinoutflags_t
 	{"KSPIN_THRUST",KSPIN_THRUST},
