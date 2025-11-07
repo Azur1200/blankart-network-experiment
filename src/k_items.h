@@ -86,7 +86,7 @@ typedef enum
 	KRF_COOLDOWNONSTART = 1<<2, // This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
 	KRF_NOTNEAREND = 1<<3,      // This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this item stops appearing for losing players. (Usually items that feel less effective at these positions)
-	KRF_UNIQUE = 1<<5,          // Only one player can use this item at a time
+	KRF_UNIQUE = 1<<5,          // If already in a player's item slot, prevents all other players from obtaining this item from item boxes
 	KRF_RUNNERAUGMENT = 1<<6,   // This item's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
 	// free: 1<<7
 } ATTRPACK kartresultflags_e;

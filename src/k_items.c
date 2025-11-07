@@ -1047,6 +1047,28 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result)
 		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
 		newodds = 0;
 	}
+	else if (flags & KRF_UNIQUE)
+	{
+		// TODO: bring this out
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || players[i].spectator)
+				continue;
+				
+			if (players[i].exiting)
+			continue;
+				
+			if ((gametyperules & GTR_BUMPERS) && !players[i].bumper)
+				continue;
+
+			if (players[i].itemtype == result->type && players[i].itemamount > 0)
+			{
+				// Can only appear in one player's item slot, and can't be rolled if already held by a player
+				newodds = 0;
+				break;
+			}
+		}
+	}
 	else if (flags & KRF_POWERITEM)
 	{
 		// This item is a "power item". This activates "frantic item" toggle related functionality.
