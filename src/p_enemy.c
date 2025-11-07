@@ -2948,7 +2948,7 @@ void A_RingBox(void *thing)
 
 	player = actor->target->player;
 
-	P_GivePlayerRings(player, actor->info->reactiontime);
+	K_AwardPlayerRings(player, actor->info->reactiontime, true);
 	if (actor->info->seesound)
 		S_StartSound(player->mo, actor->info->seesound);
 }
