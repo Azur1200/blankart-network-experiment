@@ -692,13 +692,10 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 
 	{ // Normalize distance to the sum of the two objects' radii, since in a perfect world that would be the distance at the point of collision...
 		fixed_t dist = P_AproxDistance(distx, disty);
-		fixed_t nx, ny;
+		fixed_t nx = FixedDiv(distx, dist);
+		fixed_t ny = FixedDiv(disty, dist);
 
-		dist = dist ? dist : 1;
-
-		nx = FixedDiv(distx, dist);
-		ny = FixedDiv(disty, dist);
-
+		//dist = dist ? dist : 1;
 		distx = FixedMul(mobj1->radius+mobj2->radius, nx);
 		disty = FixedMul(mobj1->radius+mobj2->radius, ny);
 
