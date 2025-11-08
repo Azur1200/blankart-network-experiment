@@ -5381,7 +5381,7 @@ static void K_BreakBubbleShield(player_t* player)
 		    FixedMul(FixedMul(mul_vec.x, shieldrad), FSIN(FixedAngle(randang))),
 		    player->shieldtracer->z + ((player->shieldtracer->height + scalediff) / 4)
 		                            + FixedMul(mul_vec.y * flip, shieldrad),
-		    MT_BUBBLESHLD_DEBRIS);
+		    MT_BUBBLESHIELD_DEBRIS);
 
 		if (!P_MobjWasRemoved(shard))
 		{
@@ -5400,7 +5400,8 @@ static void K_BreakBubbleShield(player_t* player)
 			shard->momy = mom.y + player->mo->momy;
 			shard->momz = mom.z + player->mo->momz;
 
-			shard->extravalue1 = i % 5; // 20% chance to play the shard sound
+			shard->fuse = 3*TICRATE;
+			shard->extravalue1 = i % 6; // 16% of shards play the death sound
 		}
 	}
 
@@ -5451,7 +5452,7 @@ void K_PopPlayerShield(player_t *player)
 }
 
 // Returns true is the bubble is actively in defense mode (inflating or inflated)
-boolean K_IsBubbleDefending(player_t *player)
+boolean K_IsBubbleDefending(const player_t *player)
 {
 	if (K_GetShieldFromPlayer(player) != KSHIELD_BUBBLE) return false;
 	return (player->bubbleblowup);

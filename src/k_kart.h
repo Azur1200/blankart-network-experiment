@@ -264,7 +264,7 @@ void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
 void K_DropHnextList(player_t *player);
 void K_PopPlayerShield(player_t *player);
-boolean K_IsBubbleDefending(player_t *player);
+boolean K_IsBubbleDefending(const player_t *player);
 void K_RemoveBubbleHealth(player_t *player, INT16 sub);
 boolean K_CheckBubbleChip(const mobj_t *mobj);
 void K_RepairOrbitChain(mobj_t *orbit);

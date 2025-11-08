@@ -7414,6 +7414,19 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 			return;
 		}
 		break;
+	case MT_BUBBLESHIELD_DEBRIS:
+		mobj->rollangle += ANG1 * 4;
+
+		if (P_IsObjectOnGround(mobj) && mobj->health > 0)
+		{
+			// "Despawn" and play the glass landing sound.
+			if (mobj->extravalue1 == 0)
+				S_StartSoundAtVolume(mobj, mobj->info->deathsound, 192);
+			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
+			mobj->fuse = TICRATE;
+		}
+
+		goto dofuse;
 	case MT_SMOLDERING:
 		if (leveltime % 2 == 0)
 		{
@@ -7853,6 +7866,7 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 	}
 	/* FALLTHRU */
 	default:
+	dofuse:
 		if (mobj->fuse)
 		{ // Scenery object fuse! Very basic!
 			mobj->fuse--;
@@ -9227,18 +9241,17 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 				for (i = 0; i < 2; i++)
 				{
 					angle_t a = mobj->angle + ((i & 1) ? ANGLE_180 : 0);
-					fixed_t ws = player->mo->scale/4 + scale/4;
 					mobj_t *wave;
 
 					wave = P_SpawnMobj(
-						(player->mo->x - player->mo->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (21*ws)),
-						(player->mo->y - player->mo->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (21*ws)),
+						(player->mo->x - player->mo->momx) + P_ReturnThrustX(NULL, a, mobj->radius - (5*scale)),
+						(player->mo->y - player->mo->momy) + P_ReturnThrustY(NULL, a, mobj->radius - (5*scale)),
 						(player->mo->z - player->mo->momz), MT_THOK);
 
 					wave->colorized = true;
 					wave->color = SKINCOLOR_BLUE;
 					wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
-					P_SetScale(wave, (wave->destscale = ws));
+					P_SetScale(wave, (wave->destscale = scale/3));
 
 					P_SetMobjState(wave, S_SPLISH1);
 
@@ -9307,45 +9320,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->flags &= ~(MF_NOCLIP|MF_NOCLIPTHING);
 		P_MoveOrigin(mobj, player->mo->x, player->mo->y, player->mo->z);
 		mobj->flags |= MF_NOCLIP|MF_NOCLIPTHING;
-		break;
-	}
-	case MT_BUBBLESHLD_DEBRIS:
-	{
-		statenum_t curstate;
-		curstate = ((mobj->tics == 1) ? (mobj->state->nextstate) : ((statenum_t)(mobj->state-states)));
-
-		if (curstate != S_INVISIBLE)
-		{
-			mobj->rollangle += ANG1 * 4;
-		}
-		else
-		{
-			mobj->rollangle = 0;
-		}
-
-		if ((P_IsObjectOnGround(mobj)) && (!mobj->threshold))
-		{
-			mobj->threshold = (TICRATE / 2);
-
-			if (curstate != S_INVISIBLE)
-			{
-				// "Despawn" and play the glass landing sound.
-				if (mobj->extravalue1 == 0)
-					S_StartSoundAtVolume(mobj, mobj->info->activesound, 128);
-				P_SetMobjState(mobj, S_INVISIBLE);
-			}
-		}
-
-		if (mobj->threshold)
-		{
-			mobj->threshold--;
-
-			if (!mobj->threshold)
-			{
-				P_RemoveMobj(mobj);
-			}
-		}
-
 		break;
 	}
 	case MT_FLAMESHIELD:
@@ -11370,7 +11344,7 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 			P_SetTarget(&spawn->target, mobj);
 			break;
 		}
-		case MT_BUBBLESHLD_DEBRIS:
+		case MT_BUBBLESHIELD_DEBRIS:
 		{
 			statenum_t shardset[] = {S_BUBBLEDEBRIS_1, S_BUBBLEDEBRIS_2, S_BUBBLEDEBRIS_3, S_BUBBLEDEBRIS_4, S_BUBBLEDEBRIS_5};
 			P_SetMobjState(mobj, shardset[P_RandomRange(0, 4)]);
