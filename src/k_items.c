@@ -920,6 +920,9 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 		{
 			kartresult_t *result = &kartresults[i];
 
+			if (kartitems[result->type].flags & KIF_HIDEFROMROULETTE)
+				continue;
+
 			for (j = 0; j < numseen; j++)
 				if (seen[j] == result->type)
 					break;
