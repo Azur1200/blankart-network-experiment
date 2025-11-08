@@ -1568,7 +1568,7 @@ static void K_RespawnChecker(player_t *player)
 	}
 	else if (player->respawn == 1)
 	{
-		if (K_IsShrunk(player))
+		if (player->growshrinktimer < 0)
 		{
 			player->mo->scalespeed = mapobjectscale/TICRATE;
 			player->mo->destscale = (6*mapobjectscale)/8;
@@ -2638,8 +2638,8 @@ static void K_GetKartBoostPower(player_t *player)
 
 	if (K_IsAltShrunk(player)) // Alt. Shrink
 	{
-		fixed_t shrinkspeed = K_AccomodateShrinkScaling(SHRINKSPEEDBOOST);
-		fixed_t shrinkaccel = K_AccomodateShrinkScaling(SHRINKACCELBOOST);
+		fixed_t shrinkspeed = FixedDiv(SHRINKSPEEDBOOST, SHRINK_SCALE);
+		fixed_t shrinkaccel = FixedDiv(SHRINKACCELBOOST, SHRINK_SCALE);
 
 		K_DoBoost(player, FixedMul(shrinkspeed, GROW_SCALE), FixedMul(shrinkaccel, GROW_SCALE), SHRINKSTACKABLE, SHRINKSTACKABLE); // + 45% top speed, + 200% acceleration
 	}
@@ -3303,7 +3303,7 @@ void K_RemoveGrowShrink(player_t *player)
 	{
 		if (player->growshrinktimer > 0) // Play Shrink noise
 			S_StartSound(player->mo, sfx_kc59);
-		else if (K_IsShrunk(player)) // Play Grow noise
+		else if (player->growshrinktimer < 0) // Play Grow noise
 			S_StartSound(player->mo, sfx_kc5a);
 
 		K_KartResetPlayerColor(player);
@@ -3331,7 +3331,7 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	player->squishedtimer = TICRATE;
 
 	// Reduce Shrink timer for Legacy Shrink
-	if (K_IsLegacyShrunk(player))
+	if (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
 	{
 		player->growshrinktimer += TICRATE;
 		if (player->growshrinktimer >= 0)
@@ -7066,7 +7066,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		if (player->growshrinktimer > 0)
 			player->growshrinktimer--;
-		if (K_IsShrunk(player))
+		if (player->growshrinktimer < 0)
 			player->growshrinktimer++;
 
 		// Back to normal
@@ -7400,7 +7400,7 @@ void K_KartResetPlayerColor(player_t *player)
 		if (player->growshrinktimer % 5 == 0)
 		{
 			player->mo->colorized = true;
-			player->mo->color = (K_IsShrunk(player) ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE);
+			player->mo->color = player->growshrinktimer < 0 ? SKINCOLOR_CREAMSICLE : SKINCOLOR_PERIWINKLE;
 			fullbright = true;
 			goto finalise;
 		}
@@ -10221,7 +10221,7 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 		if (player->itemtype == KITEM_SPB
 			|| player->itemtype == KITEM_SHRINK
-			|| K_IsLegacyShrunk(player))
+			|| (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK)))
 			indirectitemcooldown = 20*TICRATE;
 
 		if (player->hyudorotimer > 0)

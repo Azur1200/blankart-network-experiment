@@ -171,16 +171,11 @@ useoddsfunc_f KO_SPBRaceOdds;
 
 void K_DoThunderShield(player_t *player);
 void K_BreakBubbleShield(player_t* player);
-void K_PlayerItemThink(player_t *player, boolean onground);
-
-boolean K_IsShrunk(const player_t *player);
-INT16 K_GetShrinkTime(player_t *player);
-fixed_t K_AccomodateShrinkScaling(fixed_t x);
-boolean K_IsShrunkMode(const player_t *player, boolean legacy);
-#define K_IsLegacyShrunk(player) (K_IsShrunkMode(player, true))
-#define K_IsAltShrunk(player) (K_IsShrunkMode(player, false))
-void K_AltShrinkIFrames(player_t *player);
+INT16 K_GetShrinkTime(const player_t *player);
+boolean K_IsAltShrunk(const player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
+
+void K_PlayerItemThink(player_t *player, boolean onground);
 
 #ifdef __cplusplus
 } // extern "C"

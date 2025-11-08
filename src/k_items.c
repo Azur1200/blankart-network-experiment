@@ -1481,6 +1481,10 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 	return odds;
 }
 
+#define ALTSHRINK_EPSILON (320 * FRACUNIT)
+#define NEIGHBOR_IFRAMES (TICRATE / 2)
+#define BASE_IFRAMES (2 * TICRATE)
+
 static void K_DoGrowShrink(player_t *player, boolean shrinking)
 {
 	player->mo->scalespeed = mapobjectscale/TICRATE;
@@ -1498,6 +1502,16 @@ static void K_DoGrowShrink(player_t *player, boolean shrinking)
 	else
 	{
 		player->growshrinktimer = (gametyperules & GTR_CLOSERPLAYERS ? 8 : 12) * ((shrinking) ? -TICRATE : TICRATE);
+	}
+
+	if (shrinking)
+	{
+		// Find neighbors
+		INT32 n = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &(vector3_t){});
+
+		// For every neighbor, add some iframes for a clean breakaway.
+		UINT32 iframes = BASE_IFRAMES + n * NEIGHBOR_IFRAMES;
+		player->flashing = iframes > UINT16_MAX ? UINT16_MAX : iframes;
 	}
 
 	if (player->invincibilitytimer > 0)
@@ -2100,7 +2114,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO)
 		{
 			player->itemamount--;
-			if (K_IsLegacyShrunk(player))
+			if (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
 			{
 				// If you're shrunk, then "grow" will just make you normal again...
 				K_RemoveGrowShrink(player);
@@ -2130,7 +2144,6 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			if (K_IsKartItemAlternate(KITEM_SHRINK))
 			{
 				K_DoGrowShrink(player, true);
-				K_AltShrinkIFrames(player);
 
 				S_StartSound(player->mo, sfx_kc46);
 			}
@@ -2338,60 +2351,14 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 	}
 }
 
-/**	\brief	Returns true or false if the player is shrunk.
-
-	\param	player		(player_t) Player to test shrunken status for
-
-	\return	Is this player shrunk?
-*/
-boolean K_IsShrunk(const player_t *player)
+INT16 K_GetShrinkTime(const player_t *player)
 {
-    return (player->growshrinktimer < 0);
+	return player->growshrinktimer * -1;
 }
 
-INT16 K_GetShrinkTime(player_t *player)
+boolean K_IsAltShrunk(const player_t *player)
 {
-    return (player->growshrinktimer * -1);
-}
-
-fixed_t K_AccomodateShrinkScaling(fixed_t x)
-{
-    return FixedDiv(x, SHRINK_SCALE);
-}
-
-/**	\brief	Depending on the Shrink type set, this returns true or false if the player is shrunk.
-
-	\param	player		(player_t) Player to test shrunken status for
-	\param	legacy		(boolean) Legacy shrink?
-
-	\return	void
-*/
-boolean K_IsShrunkMode(const player_t *player, boolean legacy)
-{
-    boolean shrunk = K_IsShrunk(player);
-    boolean legacytype = (!K_IsKartItemAlternate(KITEM_SHRINK));
-
-    if (legacy)
-    {
-        return ((shrunk) && (legacytype));
-    }
-
-    return ((shrunk) && (!legacytype));
-}
-
-#define ALTSHRINK_EPSILON (320 * FRACUNIT)
-#define NEIGHBOR_IFRAMES (TICRATE / 2)
-#define BASE_IFRAMES (2 * TICRATE)
-
-void K_AltShrinkIFrames(player_t *player)
-{
-	vector3_t tempclusterpoint;
-
-	// Find neighbors
-    INT32 N = K_CountNeighboringPlayers(player, ALTSHRINK_EPSILON, &tempclusterpoint);
-
-	// For every neighbor, add some iframes for a clean breakaway.
-	player->flashing = (UINT16)min((INT32)(UINT16_MAX), BASE_IFRAMES + (NEIGHBOR_IFRAMES * N));
+	return player->growshrinktimer < 0 && K_IsKartItemAlternate(KITEM_SHRINK);
 }
 
 #define PITY_SHRINKINCREASE_BASE (3)
@@ -2400,7 +2367,7 @@ void K_AltShrinkIFrames(player_t *player)
 void K_AltShrinkPityIncrease(player_t *player)
 {
     // Increase your shrink timer by a little bit for every player you run into.
-    INT32 shrinktime = (UINT32)(K_GetShrinkTime(player));
+    INT32 shrinktime = K_GetShrinkTime(player);
 
     fixed_t dimin = FRACUNIT;
 

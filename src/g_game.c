@@ -2866,7 +2866,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 		// Keep Shrink status, remove Grow status
 		// Alt. Shrink is a powerup, so don't keep that.
-		if (K_IsLegacyShrunk(&players[player]))
+		if (players[player].growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
 			growshrinktimer = players[player].growshrinktimer;
 		else
 			growshrinktimer = 0;
