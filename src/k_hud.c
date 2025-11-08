@@ -187,7 +187,7 @@ static patch_t *kp_itemx;
 
 static patch_t *kp_sadface[2];
 
-static patch_t *kp_check[6];
+static patch_t *kp_check[11];
 
 static patch_t *kp_eggnum[4];
 
@@ -548,11 +548,12 @@ void K_LoadKartHUDGraphics(void)
 
 	// CHECK indicators
 	sprintf(buffer, "K_CHECKx");
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < 10; i++)
 	{
 		buffer[7] = '1'+i;
 		HU_UpdatePatch(&kp_check[i], "%s", buffer);
 	}
+	HU_UpdatePatch(&kp_check[10], "K_CHECKA");
 
 	// Eggman warning numbers
 	sprintf(buffer, "K_EGGNx");
@@ -3219,7 +3220,15 @@ static void K_drawKartPlayerCheck(void)
 			pnum++; // white frames
 		}
 
-		if (checkplayer->itemtype == KITEM_GROW || checkplayer->growshrinktimer > 0)
+		if (checkplayer->itemtype == KITEM_FLAMESHIELD || checkplayer->flametimer > 0)
+		{
+			pnum += 8;
+		}
+		else if (K_IsAltShrunk(checkplayer) && (checkplayer->itemtype == KITEM_SHRINK || checkplayer->growshrinktimer < 0))
+		{
+			pnum += 6;
+		}
+		else if (checkplayer->itemtype == KITEM_GROW || checkplayer->growshrinktimer > 0)
 		{
 			pnum += 4;
 		}
