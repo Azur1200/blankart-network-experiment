@@ -5622,13 +5622,13 @@ static void K_drawDistributionDebugger(void)
 		{
 			kartresult_t *result = &kartresults[i];
 
-			if (itemodds[i] <= 0 && !result->forceme) // At the very least display forced items; that info's also important.
+			if (itemodds[i] <= 0 && roulette.forceme[i] == 0) // At the very least display forced items; that info's also important.
 				continue;
 
 			V_DrawScaledPatch(x, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, K_GetCachedItemPatch(result->type, true, 0));
 			if (result->isalt)
 				V_DrawScaledPatch(x+2, y, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, W_CachePatchName("K_ALTITS", PU_CACHE));
-			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, result->forceme ? va("\x85" "FRC(%d)" "\x80 ", result->forceme) : va("%d", itemodds[i]));
+			V_DrawThinString(x+11, y+31, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, roulette.forceme[i] ? va("\x85" "FRC(%d)" "\x80 ", roulette.forceme[i]) : va("%d", itemodds[i]));
 			if (result->amount > 1)
 				V_DrawString(x+24, y+31, V_SPLITSCREEN|V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOTOP, va("x%d", result->amount));
 

@@ -4189,7 +4189,6 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		// hyubgone
 		//SYNC(kartresults[i].basebgone);
 		SYNC(kartresults[i].bgone);
-		SYNC(kartresults[i].forceme);
 	}
 
 	SYNC(mapreset);

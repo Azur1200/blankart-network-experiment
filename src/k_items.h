@@ -74,7 +74,7 @@ typedef enum
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function
-typedef INT32 (useoddsfunc_f)(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
+typedef INT32 (useoddsfunc_f)(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme);
 
 #define MAXITEMPATCHES 10
 
@@ -109,7 +109,6 @@ struct kartresult_t
 	char *displayname;
 	boolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
-	UINT8 forceme; // This item is being forced into a player's item slot for one reason or another. Higher value = higher priority.
 	UINT8 odds[MAXODDSTABLES][MAXODDS];
 
 	// Functions that tell the game to use unique means of rolling these items.
@@ -132,6 +131,9 @@ struct kartroulette_t
 	boolean bot;
 	boolean rival;
 	boolean inBottom;
+
+	// output: which results are being forced into a player's item slot for one reason or another. Higher value = higher priority.
+	UINT8 forceme[MAXKARTRESULTS];
 
 	// extras for useodds functions
 	UINT8 pingame;
@@ -176,8 +178,8 @@ boolean K_IsShrunkMode(const player_t *player, boolean legacy);
 void K_AltShrinkIFrames(player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
 
-INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
-INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result);
+useoddsfunc_f KO_AltInvinOdds;
+useoddsfunc_f KO_SPBRaceOdds;
 
 #ifdef __cplusplus
 } // extern "C"

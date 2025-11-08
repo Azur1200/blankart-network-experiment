@@ -450,7 +450,7 @@ void K_KartHandleUniqueCooldown(void)
 	}
 }
 
-static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result)
+static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *forceme)
 {
 	INT32 newodds;
 	INT32 i;
@@ -499,9 +499,6 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result)
 
 	if (gametyperules & GTR_BATTLEODDS)
 		oddsmul = BATTLEODDSMUL;
-
-	// Reset forceme
-	result->forceme = 0;
 
 	// TODO: braaap (make a separate table for the current level!)
 	newodds = result->odds[oddstable][roulette->pos];
@@ -584,7 +581,7 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result)
 		useoddsfunc_f *uoddsfunc = result->unique_odds[oddstable];
 
 		//CONS_Printf("Running...");
-		newodds = uoddsfunc(newodds, roulette, result);
+		newodds = uoddsfunc(newodds, roulette, result, forceme);
 		//CONS_Printf("OK!\n");
 	}
 	else
@@ -732,9 +729,12 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result)
 
 void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRESULTS])
 {
+	// Reset forceme
+	memset(roulette->forceme, 0, sizeof(roulette->forceme));
+
 	for (UINT8 i = 0; i < numkartresults; i++)
 	{
-		outodds[i] = GetItemOdds(roulette, &kartresults[i]);
+		outodds[i] = GetItemOdds(roulette, &kartresults[i], &roulette->forceme[i]);
 	}
 };
 
@@ -1373,17 +1373,15 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	// SPECIAL CASE No. 7:
 	// Item forcing; the item with the highest "forceme" priority is the one given.
-	// Have to do it AFTER the KartGetItemOdds call,
-	// or forceme persists into *other* players' rolls!
 	{
 		kartresult_t *forceresult;
 		UINT8 bestforce = 0;
 
 		for (i = 0; i < numkartresults; i++)
 		{
-			if ((kartresults[i].forceme) && (kartresults[i].forceme > bestforce))
+			if (roulette.forceme[i] && roulette.forceme[i] > bestforce)
 			{
-				bestforce = kartresults[i].forceme;
+				bestforce = roulette.forceme[i];
 				forceresult = &kartresults[i];
 			}
 		}
@@ -1433,14 +1431,15 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 // Unique odds functions, for REAL this time
 
 // Alt. Invin. odds
-INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result)
+INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
+	(void)result;
 	odds = K_KartGetInvincibilityOdds(roulette->clusterDist);
 
 	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
 	if (odds >= INVFORCEODDS)
 	{
-		result->forceme = 3; // Take priority over SPBs
+		*forceme = 3; // Take priority over SPBs
 	}
 	else if (K_InStartCooldown())
 	{
@@ -1453,8 +1452,9 @@ INT32 KO_AltInvinOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *
 }
 
 // SPB odds
-INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *result)
+INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresult_t *result, UINT8 *forceme)
 {
+	(void)result;
 	if (!K_LegacyOddsMode() && roulette->firstDist < (UINT32)ENDDIST) // No SPB near the end of the race
 	{
 		odds = 0;
@@ -1467,13 +1467,13 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, kartresult_t *r
 	// No forced SPB in 1v1s, it has to be randomly rolled
 	if (roulette->pingame <= 2)
 	{
-		result->forceme = 0;
+		*forceme = 0;
 	}
 	else if (K_RaceForceSPB(roulette->playerpos, roulette->pdis)
 		&& spbplace == -1 && !indirectitemcooldown)
 	{
 		// Force SPB onto 2nd if they get too far behind.
-		result->forceme = 2;
+		*forceme = 2;
 	}
 
 	return odds;
