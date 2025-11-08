@@ -285,7 +285,7 @@ static void K_AwardPlayerItem(player_t *player, kartresult_t *result)
 	}
 	else if (result->basebgone > 0) // Item cooldowns
 	{
-		result->bgone = result->basebgone * TICRATE;
+		result->bgone = result->basebgone;
 	}
 
 	player->itemtype = result->type;
@@ -443,7 +443,7 @@ void K_KartHandleUniqueCooldown(void)
 					// If this item has a cooldown, force-apply the cooldown
 					// preeemptively for the entire time the item is being held
 					// by a player.
-					kartresults[i].bgone = kartresults[i].basebgone * TICRATE;
+					kartresults[i].bgone = kartresults[i].basebgone;
 				}
 			}
 		}
