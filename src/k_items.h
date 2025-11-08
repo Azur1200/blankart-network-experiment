@@ -166,20 +166,21 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 
+useoddsfunc_f KO_AltInvinOdds;
+useoddsfunc_f KO_SPBRaceOdds;
+
+void K_DoThunderShield(player_t *player);
+void K_BreakBubbleShield(player_t* player);
+void K_PlayerItemThink(player_t *player, boolean onground);
+
 boolean K_IsShrunk(const player_t *player);
 INT16 K_GetShrinkTime(player_t *player);
 fixed_t K_AccomodateShrinkScaling(fixed_t x);
-
 boolean K_IsShrunkMode(const player_t *player, boolean legacy);
-
 #define K_IsLegacyShrunk(player) (K_IsShrunkMode(player, true))
 #define K_IsAltShrunk(player) (K_IsShrunkMode(player, false))
-
 void K_AltShrinkIFrames(player_t *player);
 void K_AltShrinkPityIncrease(player_t *player);
-
-useoddsfunc_f KO_AltInvinOdds;
-useoddsfunc_f KO_SPBRaceOdds;
 
 #ifdef __cplusplus
 } // extern "C"

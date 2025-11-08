@@ -300,6 +300,7 @@ void K_SpawnWaterTrail(mobj_t *mobj);
 boolean K_ItemMobjAllowedtoWaterRun(mobj_t *item);
 void K_SetTireGrease(player_t *player, tic_t tics);
 boolean K_SlopeResistance(const player_t *player);
+void K_RemoveGrowShrink(player_t *player);
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_ApplyTripWire(player_t *player, tripwirestate_t state);
 fixed_t K_GetKartSpeedFromStat(UINT8 kartspeed, boolean karmabomb);
