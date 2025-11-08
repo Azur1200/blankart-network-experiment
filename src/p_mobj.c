@@ -6194,6 +6194,9 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, boolean compat)
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
 
+	if (LUA_HookMobjScaleChange(mobj, newscale, oldscale) || P_MobjWasRemoved(mobj))
+		return;
+
 	mobj->scale = newscale;
 
 	if (compat)
