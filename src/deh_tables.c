@@ -815,6 +815,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "RESETCONTROLS", &MR_ResetControls },
 	{ "CHANGECONTROL", &MR_ChangeControl },
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
+	{ "SETUPMONITORTOGGLES", &MR_SetupMonitorToggles },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
 	{ "ENTERVIEWSERVER", &MR_EnterViewServer },

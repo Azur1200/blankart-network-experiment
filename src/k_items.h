@@ -105,6 +105,7 @@ struct kartresult_t
 	kartitemtype_e type;
 	UINT8 amount;
 
+	char *displayname;
 	boolean isalt; // is alt (i salt)
 	kartresultflags_e flags;
 	UINT8 forceme; // This item is being forced into a player's item slot for one reason or another. Higher value = higher priority.

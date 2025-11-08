@@ -4076,12 +4076,10 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES"))
 		{
 			kartitemgraphics_t *graphics = &item->graphics[word[0] == 'B' ? 0 : 1];
-			UINT8 i;
 			tmp = strtok(word2,",");
-			for (i = 0; i < MAXITEMPATCHES; i++)
+			for (graphics->numpatches = 0; graphics->numpatches < MAXITEMPATCHES;)
 			{
-				graphics->numpatches++;
-				graphics->patchnames[i] = Z_StrDup(tmp);
+				graphics->patchnames[graphics->numpatches++] = Z_StrDup(tmp);
 				if ((tmp = strtok(NULL,",")) == NULL)
 					break;
 			}
@@ -4179,6 +4177,7 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 			}
 
 			UINT8 *odds = result->odds[oddstable];
+			memset(odds, 0, sizeof(*odds)*MAXODDS);
 			tmp = strtok(word2,",");
 			for (UINT8 i = 0; i <= MAXODDS; i++)
 			{
@@ -4213,6 +4212,10 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 		else if (fastcmp(word, "BGONETIME") || fastcmp(word, "BASEBGONE"))
 		{
 			result->basebgone = atoi(word2) * TICRATE;
+		}
+		else if (fastcmp(word, "DISPLAYNAME"))
+		{
+			result->displayname = Z_StrDup(word2);
 		}
 		else
 			WARN("unknown word '%s'", word);
