@@ -1005,9 +1005,9 @@ void A_PointyThink(void *thing)
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(actor->lastlook+i)));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(actor->angle+ANGLE_180));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		P_UnsetThingPosition(ball);
 		ball->x = actor->x + v[0];

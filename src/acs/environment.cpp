@@ -425,7 +425,7 @@ ACSVM::Word Environment::callSpecImpl
 		ACSVM::String *strPtr = map->getString(argV[i]);
 
 		stringargs[i] = static_cast<char *>(Z_Malloc(strPtr->len + 1, PU_STATIC, nullptr));
-		M_Memcpy(stringargs[i], strPtr->str, strPtr->len + 1);
+		memcpy(stringargs[i], strPtr->str, strPtr->len + 1);
 	}
 
 	for (i = 0; i < std::min((signed)(argC), NUM_SCRIPT_ARGS); i++)

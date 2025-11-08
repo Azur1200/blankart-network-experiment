@@ -944,7 +944,7 @@ void readlevelheader(MYFILE *f, char * name)
 					{
 						size_t newsize = sizeof(mobjtype_t) * mapheaderinfo[num]->numFlickies;
 						mapheaderinfo[num]->flickies = Z_Realloc(mapheaderinfo[num]->flickies, newsize, PU_STATIC, NULL);
-						M_Memcpy(mapheaderinfo[num]->flickies, tmpflickies, newsize);
+						memcpy(mapheaderinfo[num]->flickies, tmpflickies, newsize);
 					}
 				}
 				else
@@ -991,7 +991,7 @@ void readlevelheader(MYFILE *f, char * name)
 						size_t newsize = sizeof(mobjtype_t) * mapheaderinfo[num]->numFlickies;
 						mapheaderinfo[num]->flickies = Z_Realloc(mapheaderinfo[num]->flickies, newsize, PU_STATIC, NULL);
 						// now we add them to the list!
-						M_Memcpy(mapheaderinfo[num]->flickies, tmpflickies, newsize);
+						memcpy(mapheaderinfo[num]->flickies, tmpflickies, newsize);
 					}
 					else
 						deh_warning("Level header %d: no valid flicky types found\n", num);
@@ -4231,7 +4231,7 @@ struct {
 	{
 		size_t len = (p-line);
 		char *word = malloc(len+1);
-		M_Memcpy(word,line,len);
+		memcpy(word,line,len);
 		word[len] = '\0';
 		return word;
 	}

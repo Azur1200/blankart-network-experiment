@@ -1431,7 +1431,7 @@ static void R_ParseSpriteInfoSkin(struct ParseSpriteInfoState *parser)
 		// copy skin name yada yada
 		sprinfoTokenLength = strlen(sprinfoToken);
 		skinName = (char *)Z_Malloc((sprinfoTokenLength+1)*sizeof(char),PU_STATIC,NULL);
-		M_Memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
+		memcpy(skinName,sprinfoToken,sprinfoTokenLength*sizeof(char));
 		skinName[sprinfoTokenLength] = '\0';
 		strlwr(skinName);
 
@@ -1457,12 +1457,12 @@ static void copy_to_skin (struct ParseSpriteInfoState *parser, INT32 skinnum)
 
 		for (spr2num = 0; spr2num < NUMPLAYERSPRITES; ++spr2num)
 		{
-			M_Memcpy(&sprinfo[spr2num], parser->info, sizeof(spriteinfo_t));
+			memcpy(&sprinfo[spr2num], parser->info, sizeof(spriteinfo_t));
 		}
 	}
 	else
 	{
-		M_Memcpy(&sprinfo[parser->spr2num], parser->info, sizeof(spriteinfo_t));
+		memcpy(&sprinfo[parser->spr2num], parser->info, sizeof(spriteinfo_t));
 	}
 }
 
@@ -1616,12 +1616,12 @@ static boolean R_ParseSpriteInfoFrame(struct ParseSpriteInfoState *parser, boole
 
 			for (sprnum = 0; sprnum < NUMSPRITES; ++sprnum)
 			{
-				M_Memcpy(&spriteinfo[sprnum], parser->info, sizeof(spriteinfo_t));
+				memcpy(&spriteinfo[sprnum], parser->info, sizeof(spriteinfo_t));
 			}
 		}
 		else
 		{
-			M_Memcpy(&spriteinfo[parser->sprnum], parser->info, sizeof(spriteinfo_t));
+			memcpy(&spriteinfo[parser->sprnum], parser->info, sizeof(spriteinfo_t));
 		}
 	}
 
@@ -1673,7 +1673,7 @@ static boolean R_ParseSpriteInfo(boolean spr2)
 		else
 		{
 			memset(&newSpriteName, 0, 5);
-			M_Memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
+			memcpy(newSpriteName, sprinfoToken, sprinfoTokenLength);
 			// ^^ we've confirmed that the token is == 4 characters so it will never overflow a 5 byte char buffer
 			strupr(newSpriteName); // Just do this now so we don't have to worry about it
 		}

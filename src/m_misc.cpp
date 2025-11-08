@@ -2017,7 +2017,7 @@ char *M_GetToken(const char *inputString)
 		// Assign the memory. Don't forget an extra byte for the end of the string!
 		texturesToken = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
 		// Copy the string.
-		M_Memcpy(texturesToken, stringToUse+startPos, (size_t)texturesTokenLength);
+		memcpy(texturesToken, stringToUse+startPos, (size_t)texturesTokenLength);
 		// Make the final character NUL.
 		texturesToken[texturesTokenLength] = '\0';
 
@@ -2061,7 +2061,7 @@ char *M_GetToken(const char *inputString)
 	// Assign the memory. Don't forget an extra byte for the end of the string!
 	texturesToken = (char *)Z_Malloc((texturesTokenLength+1)*sizeof(char),PU_STATIC,NULL);
 	// Copy the string.
-	M_Memcpy(texturesToken, stringToUse+startPos, (size_t)texturesTokenLength);
+	memcpy(texturesToken, stringToUse+startPos, (size_t)texturesTokenLength);
 	// Make the final character NUL.
 	texturesToken[texturesTokenLength] = '\0';
 	return texturesToken;
@@ -2150,7 +2150,7 @@ static void M_ReadTokenString(UINT32 i)
 	}
 
 	// Copy the string.
-	M_Memcpy(tokenizerToken[i], tokenizerInput + tokenizerStartPos, (size_t)tokenLength);
+	memcpy(tokenizerToken[i], tokenizerInput + tokenizerStartPos, (size_t)tokenLength);
 
 	// Make the final character NUL.
 	tokenizerToken[i][tokenLength] = '\0';

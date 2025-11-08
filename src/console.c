@@ -566,7 +566,7 @@ static void CON_RecalcSize(void)
 	oldcon_width = con_width;
 	oldnumlines = con_totallines;
 	oldcon_cy = con_cy;
-	M_Memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
+	memcpy(tmp_buffer, con_buffer, CON_BUFFERSIZE);
 
 	if (conw < 1)
 		con_width = (BASEVIDWIDTH>>3) - 2;
@@ -592,7 +592,7 @@ static void CON_RecalcSize(void)
 		{
 			if (tmp_buffer[(i%oldnumlines)*oldcon_width])
 			{
-				M_Memcpy(string, &tmp_buffer[(i%oldnumlines)*oldcon_width], oldcon_width);
+				memcpy(string, &tmp_buffer[(i%oldnumlines)*oldcon_width], oldcon_width);
 				conw = oldcon_width - 1;
 				while (string[conw] == ' ' && conw)
 					conw--;

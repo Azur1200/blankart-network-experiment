@@ -279,7 +279,7 @@ void R_AddKartFaces(skin_t *skin)
 	}
 	sd->numframes = NUMFACES;
 	sd->spriteframes = static_cast<spriteframe_t*>(Z_Realloc(sd->spriteframes, sizeof(spriteframe_t)*NUMFACES, PU_STATIC, NULL));
-	M_Memcpy(sd->spriteframes, sprtemp, sizeof(spriteframe_t)*NUMFACES);
+	memcpy(sd->spriteframes, sprtemp, sizeof(spriteframe_t)*NUMFACES);
 }
 #undef NUMFACES
 
@@ -316,7 +316,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 	if (spritedef->numframes) // (then spriteframes is not null)
 	{
 		// copy the already defined sprite frames
-		M_Memcpy(sprtemp, spritedef->spriteframes,
+		memcpy(sprtemp, spritedef->spriteframes,
 		 spritedef->numframes * sizeof (spriteframe_t));
 		maxframe = spritedef->numframes - 1;
 	}
@@ -488,7 +488,7 @@ boolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, UINT16
 		 static_cast<spriteframe_t*>(Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL));
 
 	spritedef->numframes = maxframe;
-	M_Memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
+	memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
 
 	return true;
 }
@@ -1251,7 +1251,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 
 		// Found a split! Make a new sprite, copy the old sprite to it, and
 		// adjust the heights.
-		newsprite = static_cast<vissprite_t*>(M_Memcpy(R_NewVisSprite(), sprite, sizeof (vissprite_t)));
+		newsprite = static_cast<vissprite_t*>(memcpy(R_NewVisSprite(), sprite, sizeof (vissprite_t)));
 
 		newsprite->cut = static_cast<spritecut_e>(newsprite->cut | (sprite->cut & SC_FLAGMASK));
 

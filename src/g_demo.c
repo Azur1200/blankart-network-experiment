@@ -2802,7 +2802,7 @@ void G_BeginRecording(void)
 		demoflags |= DF_LUAVARS;
 
 	// Setup header.
-	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
+	memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
 	WRITEUINT8(demobuf.p,VERSION);
 	WRITEUINT8(demobuf.p,SUBVERSION);
 	WRITEUINT16(demobuf.p,DEMOVERSION);
@@ -2827,7 +2827,7 @@ void G_BeginRecording(void)
 	demobuf.p += sizeof(UINT64);
 
 	// game data
-	M_Memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
+	memcpy(demobuf.p, "PLAY", 4); demobuf.p += 4;
 	WRITESTRINGN(demobuf.p, mapheaderinfo[gamemap-1]->lumpname, MAXMAPLUMPNAME);
 	WRITEUINT64(demobuf.p, maphash);
 
@@ -3005,7 +3005,7 @@ void G_BeginMetal(void)
 	demobuf.p =  demobuf.buffer;
 
 	// Write header.
-	M_Memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
+	memcpy(demobuf.p, DEMOHEADER, 12); demobuf.p += 12;
 	WRITEUINT8(demobuf.p,VERSION);
 	WRITEUINT8(demobuf.p,SUBVERSION);
 	WRITEUINT16(demobuf.p,DEMOVERSION);
@@ -3013,7 +3013,7 @@ void G_BeginMetal(void)
 	// demo checksum
 	demobuf.p += sizeof(UINT64);
 
-	M_Memcpy(demobuf.p, "METL", 4); demobuf.p += 4;
+	memcpy(demobuf.p, "METL", 4); demobuf.p += 4;
 
 	memset(&ghostext,0,sizeof(ghostext));
 	ghostext[0].lastscale = ghostext[0].scale = FRACUNIT;
@@ -3326,7 +3326,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 		return;
 	}
 
-	M_Memcpy(pdemo->title, header.demotitle, 64);
+	memcpy(pdemo->title, header.demotitle, 64);
 
 	if (header.version != VERSION || header.subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
@@ -4385,7 +4385,7 @@ void G_SaveDemo(void)
 	}
 	WRITEUINT8(demobuf.p, DW_END); // Mark end of demo extra data.
 
-	M_Memcpy(p, demo.titlename, 64); // Write demo title here
+	memcpy(p, demo.titlename, 64); // Write demo title here
 	p += 64;
 
 	if (multiplayer)

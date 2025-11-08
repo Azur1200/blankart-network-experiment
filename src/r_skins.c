@@ -986,7 +986,7 @@ void R_AddSkins(UINT16 wadnum)
 		buf2 = malloc(size+1);
 		if (!buf2)
 			I_Error("R_AddSkins: No more free memory\n");
-		M_Memcpy(buf2,buf,size);
+		memcpy(buf2,buf,size);
 		buf2[size] = '\0';
 
 		// set defaults
@@ -1120,7 +1120,7 @@ void R_PatchSkins(UINT16 wadnum)
 		buf2 = malloc(size+1);
 		if (!buf2)
 			I_Error("R_PatchSkins: No more free memory\n");
-		M_Memcpy(buf2,buf,size);
+		memcpy(buf2,buf,size);
 		buf2[size] = '\0';
 
 		skin = NULL;

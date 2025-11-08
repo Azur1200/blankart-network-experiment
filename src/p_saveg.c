@@ -3975,7 +3975,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 					else
 					{
 						ss->stringargs[j] = Z_Realloc(ss->stringargs[j], len + 1, PU_LEVEL, NULL);
-						M_Memcpy(ss->stringargs[j], spawnss->stringargs[j], len);
+						memcpy(ss->stringargs[j], spawnss->stringargs[j], len);
 						ss->stringargs[j][len] = '\0';
 					}
 				}
@@ -4049,7 +4049,7 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 					else
 					{
 						li->stringargs[j] = Z_Realloc(li->stringargs[j], len + 1, PU_LEVEL, NULL);
-						M_Memcpy(li->stringargs[j], spawnli->stringargs[j], len);
+						memcpy(li->stringargs[j], spawnli->stringargs[j], len);
 						li->stringargs[j][len] = '\0';
 					}
 				}

@@ -2739,7 +2739,7 @@ bool CallFunc_SetObjectSpecial(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 			}
 
 			mobj->script_stringargs[i] = static_cast<char *>(Z_Realloc(mobj->script_stringargs[i], len + 1, PU_STATIC, nullptr));
-			M_Memcpy(mobj->script_stringargs[i], strPtr->str, len + 1);
+			memcpy(mobj->script_stringargs[i], strPtr->str, len + 1);
 		}
 	}
 
@@ -3639,7 +3639,7 @@ bool CallFunc_SetLineProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 		else \
 		{ \
 			line->y = static_cast<char *>(Z_Realloc(line->y, str->len + 1, PU_LEVEL, NULL)); \
-			M_Memcpy(line->y, str->str, str->len + 1); \
+			memcpy(line->y, str->str, str->len + 1); \
 			line->y[str->len] = '\0'; \
 		} \
 		break; \
@@ -3907,7 +3907,7 @@ bool CallFunc_SetSideProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, AC
 		else \
 		{ \
 			side->y = static_cast<char *>(Z_Realloc(side->y, str->len + 1, PU_LEVEL, NULL)); \
-			M_Memcpy(side->y, str->str, str->len + 1); \
+			memcpy(side->y, str->str, str->len + 1); \
 			side->y[str->len] = '\0'; \
 		} \
 		break; \
@@ -4214,7 +4214,7 @@ bool CallFunc_SetSectorProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, 
 		else \
 		{ \
 			sector->y = static_cast<char *>(Z_Realloc(sector->y, str->len + 1, PU_LEVEL, NULL)); \
-			M_Memcpy(sector->y, str->str, str->len + 1); \
+			memcpy(sector->y, str->str, str->len + 1); \
 			sector->y[str->len] = '\0'; \
 		} \
 		break; \
@@ -4603,7 +4603,7 @@ bool CallFunc_SetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 		else \
 		{ \
 			mobj->y = static_cast<char *>(Z_Realloc(mobj->y, str->len + 1, PU_LEVEL, NULL)); \
-			M_Memcpy(mobj->y, str->str, str->len + 1); \
+			memcpy(mobj->y, str->str, str->len + 1); \
 			mobj->y[str->len] = '\0'; \
 		} \
 		break; \

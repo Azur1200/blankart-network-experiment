@@ -434,6 +434,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
 	CV_RegisterVar(&cv_kartsplashefx);
+	CV_RegisterVar(&cv_hidefollowers);
 	CV_RegisterVar(&cv_driftsparkpulse);
 	CV_RegisterVar(&cv_itemtimers);
 	CV_RegisterVar(&cv_saltyhop);
@@ -3603,9 +3604,9 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		finalx = x + v[0];
 		finaly = y + v[1];

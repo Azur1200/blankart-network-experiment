@@ -1227,7 +1227,7 @@ void FileSendTicker(void)
 		if (f->size-transfer[i].position < fragmentsize)
 			fragmentsize = f->size-transfer[i].position;
 		if (ram)
-			M_Memcpy(p->data, &f->id.ram[transfer[i].position], fragmentsize);
+			memcpy(p->data, &f->id.ram[transfer[i].position], fragmentsize);
 		else
 		{
 			fseek(transfer[i].currentfile, transfer[i].position, SEEK_SET);
@@ -1343,7 +1343,7 @@ static void SendAckPacket(fileack_pak *packet, UINT8 fileid)
 
 	// Send the packet
 	netbuffer->packettype = PT_FILEACK;
-	M_Memcpy(&netbuffer->u.fileack, packet, packetsize);
+	memcpy(&netbuffer->u.fileack, packet, packetsize);
 	HSendPacket(servernode, false, 0, packetsize);
 
 	// Clear the packet
@@ -1686,7 +1686,7 @@ void nameonly(char *s)
 			ns = &(s[j+1]);
 			len = strlen(ns);
 #if 0
-			M_Memcpy(s, ns, len+1);
+			memcpy(s, ns, len+1);
 #else
 			memmove(s, ns, len+1);
 #endif

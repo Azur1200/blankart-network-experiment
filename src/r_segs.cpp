@@ -39,6 +39,8 @@
 
 extern "C" consvar_t cv_debugfinishline;
 
+#include "cxxutil.hpp"
+
 #define HEIGHTBITS              12
 #define HEIGHTUNIT              (1<<HEIGHTBITS)
 
@@ -244,7 +246,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 			if (old_lightlist != nullptr)
 			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
+				memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
 			}
 		}
 
@@ -843,7 +845,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 			if (old_lightlist != nullptr)
 			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
+				memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
 			}
 		}
 
@@ -1781,10 +1783,12 @@ static void R_AllocClippingTables(size_t range)
 	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
 	{
 		// Check if it's in range of the openings
-		if (ds->sprtopclip + ds->x1 >= oldopenings && ds->sprtopclip + ds->x1 <= oldlast)
-			ds->sprtopclip = (ds->sprtopclip - oldopenings) + openings;
-		if (ds->sprbottomclip + ds->x1 >= oldopenings && ds->sprbottomclip + ds->x1 <= oldlast)
-			ds->sprbottomclip = (ds->sprbottomclip - oldopenings) + openings;
+#define CHECK(which) \
+		if (which != NULL && which + ds->x1 >= oldopenings && which + ds->x1 <= oldlast) \
+			which = (which - oldopenings) + openings
+		CHECK(ds->sprtopclip);
+		CHECK(ds->sprbottomclip);
+#undef CHECK
 	}
 }
 
@@ -1813,10 +1817,12 @@ static void R_AllocTextureColumnTables(size_t range)
 	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
 	{
 		// Check if it's in range of the tables
-		if (ds->maskedtexturecol + ds->x1 >= oldtable && ds->maskedtexturecol + ds->x1 <= oldlast)
-			ds->maskedtexturecol = (ds->maskedtexturecol - oldtable) + texturecolumntable;
-		if (ds->thicksidecol + ds->x1 >= oldtable && ds->thicksidecol + ds->x1 <= oldlast)
-			ds->thicksidecol = (ds->thicksidecol - oldtable) + texturecolumntable;
+#define CHECK(which) \
+		if (which != NULL && which + ds->x1 >= oldtable && which + ds->x1 <= oldlast) \
+			which = (which - oldtable) + texturecolumntable
+		CHECK(ds->maskedtexturecol);
+		CHECK(ds->thicksidecol);
+#undef CHECK
 	}
 }
 
@@ -1938,26 +1944,23 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 		// left
 		temp = xtoviewangle[viewssnum][start]+viewangle;
 
-#define FIXED_TO_DOUBLE(x) (((double)(x)) / ((double)FRACUNIT))
-#define DOUBLE_TO_FIXED(x) (fixed_t)((x) * ((double)FRACUNIT))
-
 		{
 			// Both lines can be written in slope-intercept form, so figure out line intersection
 			double a1, b1, c1, a2, b2, c2, det; // 1 is the seg, 2 is the view angle vector...
 			///TODO: convert to fixed point
 
-			a1 = FIXED_TO_DOUBLE(curline->v2->y-curline->v1->y);
-			b1 = FIXED_TO_DOUBLE(curline->v1->x-curline->v2->x);
-			c1 = a1*FIXED_TO_DOUBLE(curline->v1->x) + b1*FIXED_TO_DOUBLE(curline->v1->y);
+			a1 = FixedToDouble(curline->v2->y-curline->v1->y);
+			b1 = FixedToDouble(curline->v1->x-curline->v2->x);
+			c1 = a1*FixedToDouble(curline->v1->x) + b1*FixedToDouble(curline->v1->y);
 
-			a2 = -FIXED_TO_DOUBLE(FINESINE(temp>>ANGLETOFINESHIFT));
-			b2 = FIXED_TO_DOUBLE(FINECOSINE(temp>>ANGLETOFINESHIFT));
-			c2 = a2*FIXED_TO_DOUBLE(viewx) + b2*FIXED_TO_DOUBLE(viewy);
+			a2 = -FixedToDouble(FINESINE(temp>>ANGLETOFINESHIFT));
+			b2 = FixedToDouble(FINECOSINE(temp>>ANGLETOFINESHIFT));
+			c2 = a2*FixedToDouble(viewx) + b2*FixedToDouble(viewy);
 
 			det = a1*b2 - a2*b1;
 
-			ds_p->leftpos.x = segleft.x = DOUBLE_TO_FIXED((b2*c1 - b1*c2)/det);
-			ds_p->leftpos.y = segleft.y = DOUBLE_TO_FIXED((a1*c2 - a2*c1)/det);
+			ds_p->leftpos.x = segleft.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+			ds_p->leftpos.y = segleft.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 		}
 
 		// right
@@ -1968,23 +1971,19 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 			double a1, b1, c1, a2, b2, c2, det; // 1 is the seg, 2 is the view angle vector...
 			///TODO: convert to fixed point
 
-			a1 = FIXED_TO_DOUBLE(curline->v2->y-curline->v1->y);
-			b1 = FIXED_TO_DOUBLE(curline->v1->x-curline->v2->x);
-			c1 = a1*FIXED_TO_DOUBLE(curline->v1->x) + b1*FIXED_TO_DOUBLE(curline->v1->y);
+			a1 = FixedToDouble(curline->v2->y-curline->v1->y);
+			b1 = FixedToDouble(curline->v1->x-curline->v2->x);
+			c1 = a1*FixedToDouble(curline->v1->x) + b1*FixedToDouble(curline->v1->y);
 
-			a2 = -FIXED_TO_DOUBLE(FINESINE(temp>>ANGLETOFINESHIFT));
-			b2 = FIXED_TO_DOUBLE(FINECOSINE(temp>>ANGLETOFINESHIFT));
-			c2 = a2*FIXED_TO_DOUBLE(viewx) + b2*FIXED_TO_DOUBLE(viewy);
+			a2 = -FixedToDouble(FINESINE(temp>>ANGLETOFINESHIFT));
+			b2 = FixedToDouble(FINECOSINE(temp>>ANGLETOFINESHIFT));
+			c2 = a2*FixedToDouble(viewx) + b2*FixedToDouble(viewy);
 
 			det = a1*b2 - a2*b1;
 
-			ds_p->rightpos.x = segright.x = DOUBLE_TO_FIXED((b2*c1 - b1*c2)/det);
-			ds_p->rightpos.y = segright.y = DOUBLE_TO_FIXED((a1*c2 - a2*c1)/det);
+			ds_p->rightpos.x = segright.x = srb2::floattofixed<double>((b2*c1 - b1*c2)/det);
+			ds_p->rightpos.y = segright.y = srb2::floattofixed<double>((a1*c2 - a2*c1)/det);
 		}
-
-#undef FIXED_TO_DOUBLE
-#undef DOUBLE_TO_FIXED
-
 	}
 
 
@@ -3094,14 +3093,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
 		{
-			M_Memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
 			ds_p->sprtopclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}
 
 		if (((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
 		{
-			M_Memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
 			ds_p->sprbottomclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}

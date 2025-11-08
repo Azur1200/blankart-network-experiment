@@ -649,7 +649,7 @@ static boolean SOCK_Get(void)
 			{
 				const time_t curTime = time(NULL);
 
-				M_Memcpy(&clientaddress[j], &fromaddress, fromlen);
+				memcpy(&clientaddress[j], &fromaddress, fromlen);
 				nodesocket[j] = mysockets[n];
 				DEBFILE(va("New node detected: node:%d address:%s\n", j,
 						SOCK_GetNodeAddress(j)));
@@ -787,7 +787,7 @@ static void SOCK_Send(void)
 	ssize_t c = ERRSOCKET;
 	size_t i, j;
 
-	if (!nodeconnected[doomcom->remotenode])
+	if (doomcom->remotenode < 0 || !nodeconnected[doomcom->remotenode])
 		return;
 
 	if (doomcom->remotenode == BROADCASTADDR)
@@ -1525,7 +1525,7 @@ static boolean SOCK_Ban(INT32 node)
 	ban = numbans;
 	AddBannedIndex();
 
-	M_Memcpy(&banned[ban].address, &clientaddress[node], sizeof (mysockaddr_t));
+	memcpy(&banned[ban].address, &clientaddress[node], sizeof (mysockaddr_t));
 
 	if (banned[ban].address.any.sa_family == AF_INET)
 	{
