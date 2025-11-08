@@ -1006,9 +1006,9 @@ void A_PointyThink(void *thing)
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(actor->lastlook+i)));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(actor->angle+ANGLE_180));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		P_UnsetThingPosition(ball);
 		ball->x = actor->x + v[0];
@@ -2949,7 +2949,7 @@ void A_RingBox(void *thing)
 
 	player = actor->target->player;
 
-	P_GivePlayerRings(player, actor->info->reactiontime);
+	K_AwardPlayerRings(player, actor->info->reactiontime, true);
 	if (actor->info->seesound)
 		S_StartSound(player->mo, actor->info->seesound);
 }

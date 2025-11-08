@@ -55,7 +55,7 @@ void K_UserPropertyPush(mapUserProperties_t *user, const char *key, mapUserPrope
 	prop = &user->properties[ user->length ];
 
 	prop->key = Z_Malloc(keyLength + 1, PU_LEVEL, NULL);
-	M_Memcpy(prop->key, key, keyLength + 1);
+	memcpy(prop->key, key, keyLength + 1);
 	prop->key[keyLength] = '\0';
 
 	prop->hash = quickncasehash(prop->key, keyLength);
@@ -84,7 +84,7 @@ void K_UserPropertyPush(mapUserProperties_t *user, const char *key, mapUserPrope
 			const size_t stringLength = strlen(string);
 
 			prop->valueStr = Z_Malloc(stringLength + 1, PU_LEVEL, NULL);
-			M_Memcpy(prop->valueStr, string, stringLength + 1);
+			memcpy(prop->valueStr, string, stringLength + 1);
 			prop->valueStr[stringLength] = '\0';
 			break;
 		}

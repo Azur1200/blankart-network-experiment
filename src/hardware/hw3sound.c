@@ -332,7 +332,7 @@ static void make_outphase_sfx(void *dest, void *src, INT32 size)
 {
 	SINT8    *s = (SINT8 *)src + HEADER_SIZE, *d = (SINT8 *)dest + HEADER_SIZE;
 
-	M_Memcpy(dest, src, HEADER_SIZE);
+	memcpy(dest, src, HEADER_SIZE);
 	size -= HEADER_SIZE;
 
 	while (size--)
@@ -660,7 +660,7 @@ INT32 HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 
 		p_attack_source.sfxinfo = NULL;
 
-		M_Memcpy(&p_attack_source2, &p_attack_source, sizeof (source_t));
+		memcpy(&p_attack_source2, &p_attack_source, sizeof (source_t));
 
 		p_attack_source.handle = HW3DS.pfnAddSource(&source_data, sfx_None);
 		p_attack_source2.handle = HW3DS.pfnAddSource(&source_data, sfx_None);
@@ -671,7 +671,7 @@ INT32 HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 
 		p_scream_source.sfxinfo = NULL;
 
-		M_Memcpy(&p_scream_source2, &p_scream_source, sizeof (source_t));
+		memcpy(&p_scream_source2, &p_scream_source, sizeof (source_t));
 
 		p_scream_source.handle = HW3DS.pfnAddSource(&source_data, sfx_None);
 		p_scream_source2.handle = HW3DS.pfnAddSource(&source_data, sfx_None);
@@ -689,7 +689,7 @@ INT32 HW3S_Init(I_Error_t FatalErrorFunction, snddev_t *snd_dev)
 
 		ambient_sdata.left.permanent = 1;
 
-		M_Memcpy(&ambient_sdata.right, &ambient_sdata.left, sizeof (source3D_data_t));
+		memcpy(&ambient_sdata.right, &ambient_sdata.left, sizeof (source3D_data_t));
 
 		ambient_sdata.right.pos.x = -ambient_sdata.left.pos.x;
 		ambient_source.left.handle = HW3DS.pfnAddSource(&ambient_sdata.left, sfx_None);

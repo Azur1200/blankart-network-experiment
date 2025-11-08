@@ -18,6 +18,8 @@
 
 using namespace libdivide;
 
+#include "cxxutil.hpp"
+
 // ==========================================================================
 // SPANS
 // ==========================================================================
@@ -358,10 +360,10 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 		endz = 1.f/iz;
 		endu = uz*endz;
 		endv = vz*endz;
-		stepu = (INT64)((endu - startu) * INVSPAN);
-		stepv = (INT64)((endv - startv) * INVSPAN);
-		u = (INT64)(startu);
-		v = (INT64)(startv);
+		stepu = srb2::floattoint<float, INT64>((endu - startu) * INVSPAN);
+		stepv = srb2::floattoint<float, INT64>((endv - startv) * INVSPAN);
+		u = srb2::floattoint<float, INT64>(startu);
+		v = srb2::floattoint<float, INT64>(startv);
 
 		x1 = ds->x1;
 
@@ -393,8 +395,8 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 	{
 		if (width == 1)
 		{
-			u = (INT64)(startu);
-			v = (INT64)(startv);
+			u = srb2::floattoint<float, INT64>(startu);
+			v = srb2::floattoint<float, INT64>(startv);
 			bit = ((v >> nflatyshift) & nflatmask) | (u >> nflatxshift);
 			if constexpr (!(Type & DS_SPRITE))
 			{
@@ -418,10 +420,10 @@ static void R_DrawTiltedSpanTemplate(drawspandata_t* ds)
 			endu = uz*endz;
 			endv = vz*endz;
 			left = 1.f/left;
-			stepu = (INT64)((endu - startu) * left);
-			stepv = (INT64)((endv - startv) * left);
-			u = (INT64)(startu);
-			v = (INT64)(startv);
+			stepu = srb2::floattoint<float, INT64>((endu - startu) * left);
+			stepv = srb2::floattoint<float, INT64>((endv - startv) * left);
+			u = srb2::floattoint<float, INT64>(startu);
+			v = srb2::floattoint<float, INT64>(startv);
 
 			for (; width != 0; width--)
 			{

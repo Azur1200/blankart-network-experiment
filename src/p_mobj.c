@@ -6018,9 +6018,9 @@ static void P_MoveHoop(mobj_t *mobj)
 	v[3] = FRACUNIT;
 
 	res = VectorMatrixMultiply(v, *RotateXMatrix(FixedAngle(mobj->target->movedir*FRACUNIT)));
-	M_Memcpy(&v, res, sizeof (v));
+	memcpy(&v, res, sizeof (v));
 	res = VectorMatrixMultiply(v, *RotateZMatrix(FixedAngle(mobj->target->movecount*FRACUNIT)));
-	M_Memcpy(&v, res, sizeof (v));
+	memcpy(&v, res, sizeof (v));
 
 	finalx = x + v[0];
 	finaly = y + v[1];
@@ -6086,9 +6086,9 @@ void P_SpawnHoopOfSomething(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		finalx = x + v[0];
 		finaly = y + v[1];
@@ -6125,9 +6125,9 @@ void P_SpawnParaloop(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32 numb
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		finalx = x + v[0];
 		finaly = y + v[1];
@@ -6364,9 +6364,9 @@ void P_MaceRotate(mobj_t *center, INT32 baserot, INT32 baseprevrot)
 
 			// Calculate the angle matrixes for the link.
 			res = VectorMatrixMultiply(unit_lengthways, *RotateXMatrix(center->threshold << ANGLETOFINESHIFT));
-			M_Memcpy(&unit_lengthways, res, sizeof(unit_lengthways));
+			memcpy(&unit_lengthways, res, sizeof(unit_lengthways));
 			res = VectorMatrixMultiply(unit_lengthways, *RotateZMatrix(center->angle));
-			M_Memcpy(&unit_lengthways, res, sizeof(unit_lengthways));
+			memcpy(&unit_lengthways, res, sizeof(unit_lengthways));
 
 			lastthreshold = mobj->threshold;
 			lastfriction = mobj->friction;
@@ -6387,9 +6387,9 @@ void P_MaceRotate(mobj_t *center, INT32 baserot, INT32 baseprevrot)
 				unit_sideways[3] = FRACUNIT;
 
 				res = VectorMatrixMultiply(unit_sideways, *RotateXMatrix(center->threshold << ANGLETOFINESHIFT));
-				M_Memcpy(&unit_sideways, res, sizeof(unit_sideways));
+				memcpy(&unit_sideways, res, sizeof(unit_sideways));
 				res = VectorMatrixMultiply(unit_sideways, *RotateZMatrix(center->angle));
-				M_Memcpy(&unit_sideways, res, sizeof(unit_sideways));
+				memcpy(&unit_sideways, res, sizeof(unit_sideways));
 			}
 
 			if (pos_sideways[3] > mobj->movefactor)
@@ -13889,7 +13889,7 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 		}
 
 		mobj->stringargs[arg] = Z_Realloc(mobj->stringargs[arg], len + 1, PU_LEVEL, NULL);
-		M_Memcpy(mobj->stringargs[arg], mthing->stringargs[arg], len + 1);
+		memcpy(mobj->stringargs[arg], mthing->stringargs[arg], len + 1);
 	}
 
 	for (arg = 0; arg < NUM_SCRIPT_ARGS; arg++)
@@ -13914,7 +13914,7 @@ static mobj_t *P_SpawnMobjFromMapThing(mapthing_t *mthing, fixed_t x, fixed_t y,
 		}
 
 		mobj->script_stringargs[arg] = Z_Realloc(mobj->script_stringargs[arg], len + 1, PU_LEVEL, NULL);
-		M_Memcpy(mobj->script_stringargs[arg], mthing->script_stringargs[arg], len + 1);
+		memcpy(mobj->script_stringargs[arg], mthing->script_stringargs[arg], len + 1);
 	}
 
 	if (!P_SetupSpawnedMapThing(mthing, mobj, &doangle))
@@ -14028,9 +14028,9 @@ void P_SpawnHoop(mapthing_t *mthing)
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *pitchmatrix);
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 		res = VectorMatrixMultiply(v, *yawmatrix);
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 
 		mobj = P_SpawnMobj(x + v[0], y + v[1], z + v[2], MT_HOOP);
 		mobj->z -= mobj->height/2;
@@ -14071,9 +14071,9 @@ void P_SpawnHoop(mapthing_t *mthing)
 			v[3] = FRACUNIT;
 
 			res = VectorMatrixMultiply(v, *pitchmatrix);
-			M_Memcpy(&v, res, sizeof(v));
+			memcpy(&v, res, sizeof(v));
 			res = VectorMatrixMultiply(v, *yawmatrix);
-			M_Memcpy(&v, res, sizeof(v));
+			memcpy(&v, res, sizeof(v));
 
 			mobj = P_SpawnMobj(x + v[0], y + v[1], z + v[2], MT_HOOPCOLLIDE);
 			mobj->z -= mobj->height/2;
@@ -14226,7 +14226,7 @@ static void P_SpawnItemCircle(mapthing_t *mthing, mobjtype_t *itemtypes, UINT8 n
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateZMatrix(angle));
-		M_Memcpy(&v, res, sizeof(v));
+		memcpy(&v, res, sizeof(v));
 
 		mobj = P_SpawnMobjFromMapThing(&dummything, x + v[0], y + v[1], z + v[2], itemtype);
 
@@ -14247,7 +14247,7 @@ static void P_ParseItemTypes(char *itemstring, mobjtype_t *itemtypes, UINT8 *num
 	if (itemstring)
 	{
 		char *stringcopy = Z_Malloc(strlen(itemstring) + 1, PU_LEVEL, NULL);
-		M_Memcpy(stringcopy, itemstring, strlen(itemstring));
+		memcpy(stringcopy, itemstring, strlen(itemstring));
 		stringcopy[strlen(itemstring)] = '\0';
 
 		tok = strtok(stringcopy, " ");

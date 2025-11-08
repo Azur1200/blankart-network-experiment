@@ -36,7 +36,6 @@ m_easing.c
 m_fixed.c
 m_menu.c
 m_textinput.c
-m_memcpy.c
 m_misc.cpp
 m_emotes.cpp
 m_perfstats.c

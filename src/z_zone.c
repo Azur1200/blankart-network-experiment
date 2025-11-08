@@ -37,7 +37,6 @@
 #include "i_system.h" // I_GetFreeMem
 #include "i_video.h" // rendermode
 #include "z_zone.h"
-#include "m_misc.h" // M_Memcpy
 #include "lua_script.h"
 
 #include <tracy/tracy/TracyC.h>
@@ -325,7 +324,7 @@ void *Z_Realloc2(void *ptr, size_t size, INT32 tag, void *user, INT32 alignbits,
 	else
 		copysize = block->realsize;
 
-	M_Memcpy(rez, ptr, copysize);
+	memcpy(rez, ptr, copysize);
 
 	Z_Free2(ptr, file, line);
 

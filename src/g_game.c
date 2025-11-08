@@ -1635,7 +1635,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 
 ticcmd_t *G_CopyTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
 {
-	return M_Memcpy(dest, src, n*sizeof(*src));
+	return memcpy(dest, src, n*sizeof(*src));
 }
 
 ticcmd_t *G_MoveTiccmd(ticcmd_t* dest, const ticcmd_t* src, const size_t n)
@@ -4961,7 +4961,7 @@ void G_LoadGameSettings(void)
 	S_InitRuntimeSounds();
 }
 
-#define GD_VERSIONCHECK 0xAAAAA001
+#define GD_VERSIONCHECK 0xAAAAA002
 
 static void DataCorrupt(UINT8 *corrupted)
 {
@@ -5055,6 +5055,7 @@ void G_LoadGameData(void)
 	UINT8 rtemp;
 	CLEANUP(P_SaveBufferFree) savebuffer_t save = {0};
 	boolean beforepresets = false;
+	boolean beforemorestats = false;
 
 	// Clear things so previously read gamedata doesn't transfer
 	// to new gamedata
@@ -5087,14 +5088,21 @@ void G_LoadGameData(void)
 	// Version check
 	UINT32 version = READUINT32(save.p);
 	if (version == 0xBA5ED444)
+	{
 		beforepresets = true;
+		beforemorestats = true;
+	}
+	else if (version == 0xAAAAA001)
+	{
+		beforemorestats = true;
+	}
 	else if (version != GD_VERSIONCHECK)
 		return;
 
 	corrupted = 2; // data is corrupted!?
 
 	// well no clue but dont think it would like reading garbage from vanilla files
-	K_ReadStats(&save, !savemoddata);
+	K_ReadStats(&save, beforemorestats ? !savemoddata : false);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 	{
@@ -5250,7 +5258,7 @@ void G_SaveGameData(void)
 	// Version test
 	WRITEUINT32(save.p, GD_VERSIONCHECK); // 4
 
-	K_WriteStats(&save, !savemoddata);
+	K_WriteStats(&save, false);
 
 	for (i = 0; i < PWRLV_NUMTYPES; i++)
 		WRITEUINT16(save.p, vspowerlevel[i]);

@@ -572,14 +572,138 @@ static boolean K_JustBumpedException(mobj_t *mobj)
 	return false;
 }
 
+static fixed_t K_GetBounceForce(mobj_t *mobj1, mobj_t *mobj2, fixed_t *distx, fixed_t *disty, boolean speeddiff)
+{
+	const fixed_t minbump = 25*mapobjectscale;
+
+	fixed_t momdifx, momdify;
+	fixed_t dot;
+	fixed_t force = 0;
+
+	momdifx = mobj1->momx - mobj2->momx;
+	momdify = mobj1->momy - mobj2->momy;
+
+	if (distx == 0 && disty == 0)
+	{
+		// if there's no distance between the 2, they're directly on top of each other, don't run this
+		return 0;
+	}
+
+	{ // Normalize distance to the sum of the two objects' radii, since in a perfect world that would be the distance at the point of collision...
+		fixed_t dist = P_AproxDistance(*distx, *disty);
+		fixed_t nx = FixedDiv(*distx, dist);
+		fixed_t ny = FixedDiv(*disty, dist);
+
+		//dist = dist ? dist : 1;
+		*distx = FixedMul(mobj1->radius+mobj2->radius, nx);
+		*disty = FixedMul(mobj1->radius+mobj2->radius, ny);
+
+		if (momdifx == 0 && momdify == 0)
+		{
+			// If there's no momentum difference, they're moving at exactly the same rate. Pretend they moved into each other.
+			momdifx = -nx;
+			momdify = -ny;
+		}
+	}
+
+	if (speeddiff)
+	{
+		// if the speed difference is less than this let's assume they're going proportionately faster from each other
+		if (P_AproxDistance(momdifx, momdify) < minbump)
+		{
+			fixed_t momdiflength = P_AproxDistance(momdifx, momdify);
+			fixed_t normalisedx = FixedDiv(momdifx, momdiflength);
+			fixed_t normalisedy = FixedDiv(momdify, momdiflength);
+			momdifx = FixedMul(minbump, normalisedx);
+			momdify = FixedMul(minbump, normalisedy);
+		}
+	}
+
+	dot = FixedMul(momdifx, *distx) + FixedMul(momdify, *disty);
+
+	if (dot >= 0)
+	{
+		// They're moving away from each other
+		return 0;
+	}
+
+	force = FixedDiv(dot, FixedMul(*distx, *distx) + FixedMul(*disty, *disty));
+
+	return force;
+}
+
+static mobj_t *K_SpawnBumpsForMobj(mobj_t *mobj1, mobj_t *mobj2)
+{
+	mobj_t *fx = NULL;
+	// Do the bump fx when we've CONFIRMED we can bump.
+	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD) || (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
+		S_StartSound(mobj1, sfx_s3k44);
+	else if (!K_CheckMobjFlippedOver(mobj1, mobj2))
+		S_StartSound(mobj1, sfx_s3k49);
+
+	fx = P_SpawnMobj(mobj1->x/2 + mobj2->x/2, mobj1->y/2 + mobj2->y/2, mobj1->z/2 + mobj2->z/2, MT_BUMP);
+	if (mobj1->eflags & MFE_VERTICALFLIP)
+		fx->eflags |= MFE_VERTICALFLIP;
+	else
+		fx->eflags &= ~MFE_VERTICALFLIP;
+	P_SetScale(fx, mobj1->scale);
+
+	return fx;
+}
+
+static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
+{
+	INT32 pshield;
+
+	if (!player)
+		return;
+
+	if (!player->mo || P_MobjWasRemoved(player->mo))
+		return;
+
+	// Because this is done during collision now, rmomx and rmomy need to be recalculated
+	// so that friction doesn't immediately decide to stop the player if they're at a standstill
+	// Also set justbumped here
+	player->rmomx = player->mo->momx - player->cmomx;
+	player->rmomy = player->mo->momy - player->cmomy;
+	player->justbumped = bumptime;
+
+	pshield = K_GetShieldFromPlayer(player->mo->player);
+
+	// Moved here so it only fires once on bump.
+	// Also validate that this is an appropriate object to chip against.
+	if (pshield == KSHIELD_BUBBLE && player->bubblecool == 0 && K_CheckBubbleChip(comparemobj))
+	{
+		// Each bump does chip damage to the shield.
+		K_RemoveBubbleHealth(player, BUBBLEBUMPCHIP);
+
+		if (player->bubblehealth > 0)
+		{
+			// Play a distinct "crack!" noise to clue the player in.
+			S_StartSound(player->mo, sfx_s3k6e);
+		}
+	}
+	else if (pshield == KSHIELD_NONE)
+	{
+		if (comparemobj->player && (player->rings > 0))
+		{
+			P_PlayerRingBurst(player, 1);
+		}
+	}
+
+	if (player->spinouttimer)
+	{
+		player->wipeoutslow = wipeoutslowtime+1;
+		player->spinouttimer = max(wipeoutslowtime+1, player->spinouttimer);
+		//player->spinouttype = KSPIN_WIPEOUT; // Enforce type
+	}
+}
+
 boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean solid)
 {
-	mobj_t *fx;
-	fixed_t momdifx, momdify;
 	fixed_t distx, disty;
-	fixed_t dot, force;
 	fixed_t mass1, mass2;
-	INT32 p1shield, p2shield;
+	fixed_t force = 0;
 
 	if (!mobj1 || !mobj2)
 		return false;
@@ -651,58 +775,16 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 	else
 		mass2 = K_GetMobjWeight(mobj2, mobj1);
 
-	momdifx = mobj1->momx - mobj2->momx;
-	momdify = mobj1->momy - mobj2->momy;
-
 	// Adds the OTHER player's momentum times a bunch, for the best chance of getting the correct direction
 	distx = (mobj1->x + mobj2->momx*3) - (mobj2->x + mobj1->momx*3);
 	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
 
-	if (distx == 0 && disty == 0)
+	force = K_GetBounceForce(mobj1, mobj2, &distx, &disty, true);
+
+	if (force == 0)
 	{
-		// if there's no distance between the 2, they're directly on top of each other, don't run this
 		return false;
 	}
-
-	{ // Normalize distance to the sum of the two objects' radii, since in a perfect world that would be the distance at the point of collision...
-		fixed_t dist = P_AproxDistance(distx, disty);
-		fixed_t nx, ny;
-
-		dist = dist ? dist : 1;
-
-		nx = FixedDiv(distx, dist);
-		ny = FixedDiv(disty, dist);
-
-		distx = FixedMul(mobj1->radius+mobj2->radius, nx);
-		disty = FixedMul(mobj1->radius+mobj2->radius, ny);
-
-		if (momdifx == 0 && momdify == 0)
-		{
-			// If there's no momentum difference, they're moving at exactly the same rate. Pretend they moved into each other.
-			momdifx = -nx;
-			momdify = -ny;
-		}
-	}
-
-	// if the speed difference is less than this let's assume they're going proportionately faster from each other
-	if (P_AproxDistance(momdifx, momdify) < (25*mapobjectscale))
-	{
-		fixed_t momdiflength = P_AproxDistance(momdifx, momdify);
-		fixed_t normalisedx = FixedDiv(momdifx, momdiflength);
-		fixed_t normalisedy = FixedDiv(momdify, momdiflength);
-		momdifx = FixedMul((25*mapobjectscale), normalisedx);
-		momdify = FixedMul((25*mapobjectscale), normalisedy);
-	}
-
-	dot = FixedMul(momdifx, distx) + FixedMul(momdify, disty);
-
-	if (dot >= 0)
-	{
-		// They're moving away from each other
-		return false;
-	}
-
-	force = FixedDiv(dot, FixedMul(distx, distx)+FixedMul(disty, disty));
 
 	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
 		mobj1->momz = -mobj1->momz;
@@ -727,95 +809,10 @@ boolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, boolean bounce, boolean sol
 		mobj2->momy = mobj2->momy - FixedMul(FixedMul(FixedDiv(2*mass1, mass1 + mass2), force), -disty);
 	}
 
-	// Do the bump fx when we've CONFIRMED we can bump.
-	if ((mobj1->player && mobj1->player->itemtype == KITEM_BUBBLESHIELD) || (mobj2->player && mobj2->player->itemtype == KITEM_BUBBLESHIELD))
-		S_StartSound(mobj1, sfx_s3k44);
-	else if (!K_CheckMobjFlippedOver(mobj1, mobj2))
-		S_StartSound(mobj1, sfx_s3k49);
+	K_SpawnBumpsForMobj(mobj1, mobj2);
 
-	fx = P_SpawnMobj(mobj1->x/2 + mobj2->x/2, mobj1->y/2 + mobj2->y/2, mobj1->z/2 + mobj2->z/2, MT_BUMP);
-	if (mobj1->eflags & MFE_VERTICALFLIP)
-		fx->eflags |= MFE_VERTICALFLIP;
-	else
-		fx->eflags &= ~MFE_VERTICALFLIP;
-	P_SetScale(fx, mobj1->scale);
-
-	// Because this is done during collision now, rmomx and rmomy need to be recalculated
-	// so that friction doesn't immediately decide to stop the player if they're at a standstill
-	// Also set justbumped here
-	if (mobj1->player)
-	{
-		mobj1->player->rmomx = mobj1->momx - mobj1->player->cmomx;
-		mobj1->player->rmomy = mobj1->momy - mobj1->player->cmomy;
-		mobj1->player->justbumped = bumptime;
-
-		p1shield = K_GetShieldFromPlayer(mobj1->player);
-
-		// Moved here so it only fires once on bump.
-		// Also validate that this is an appropriate object to chip against.
-		if (p1shield == KSHIELD_BUBBLE && mobj1->player->bubblecool == 0 && K_CheckBubbleChip(mobj2))
-		{
-			// Each bump does chip damage to the shield.
-			K_RemoveBubbleHealth(mobj1->player, BUBBLEBUMPCHIP);
-
-			if (mobj1->player->bubblehealth > 0)
-			{
-				// Play a distinct "crack!" noise to clue the player in.
-				S_StartSound(mobj1, sfx_s3k6e);
-			}
-		}
-		else if (p1shield == KSHIELD_NONE)
-		{
-			if (mobj2->player && (mobj1->player->rings > 0))
-			{
-				P_PlayerRingBurst(mobj1->player, 1);
-			}
-		}
-
-		if (mobj1->player->spinouttimer)
-		{
-			mobj1->player->wipeoutslow = wipeoutslowtime+1;
-			mobj1->player->spinouttimer = max(wipeoutslowtime+1, mobj1->player->spinouttimer);
-			//mobj1->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
-		}
-	}
-
-	if (mobj2->player)
-	{
-		mobj2->player->rmomx = mobj2->momx - mobj2->player->cmomx;
-		mobj2->player->rmomy = mobj2->momy - mobj2->player->cmomy;
-		mobj2->player->justbumped = bumptime;
-
-		p2shield = K_GetShieldFromPlayer(mobj2->player);
-
-		// Moved here so it only fires once on bump.
-		// Also validate that this is an appropriate object to chip against.
-		if (p2shield == KSHIELD_BUBBLE && mobj2->player->bubblecool == 0 && K_CheckBubbleChip(mobj1))
-		{
-			// Each bump does chip damage to the shield.
-			K_RemoveBubbleHealth(mobj2->player, BUBBLEBUMPCHIP);
-
-			if (mobj2->player->bubblehealth > 0)
-			{
-				// Play a distinct "crack!" noise to clue the player in.
-				S_StartSound(mobj2, sfx_s3k6e);
-			}
-		}
-		else if (p2shield == KSHIELD_NONE)
-		{
-			if (mobj1->player && (mobj2->player->rings > 0))
-			{
-				P_PlayerRingBurst(mobj2->player, 1);
-			}
-		}
-
-		if (mobj2->player->spinouttimer)
-		{
-			mobj2->player->wipeoutslow = wipeoutslowtime+1;
-			mobj2->player->spinouttimer = max(wipeoutslowtime+1, mobj2->player->spinouttimer);
-			//mobj2->player->spinouttype = KSPIN_WIPEOUT; // Enforce type
-		}
-	}
+	K_SetPlayerBumped(mobj1->player, mobj2);
+	K_SetPlayerBumped(mobj2->player, mobj1);
 
 	return true;
 }
@@ -3588,9 +3585,9 @@ void K_SpawnKartExplosion(fixed_t x, fixed_t y, fixed_t z, fixed_t radius, INT32
 		v[3] = FRACUNIT;
 
 		res = VectorMatrixMultiply(v, *RotateXMatrix(rotangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 		res = VectorMatrixMultiply(v, *RotateZMatrix(closestangle));
-		M_Memcpy(&v, res, sizeof (v));
+		memcpy(&v, res, sizeof (v));
 
 		finalx = x + v[0];
 		finaly = y + v[1];
