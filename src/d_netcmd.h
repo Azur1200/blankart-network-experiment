@@ -171,6 +171,8 @@ extern consvar_t cv_kartitembreaker;
 extern consvar_t cv_kartpurpledrift;
 extern consvar_t cv_kartbumpspark;
 extern consvar_t cv_kartbumpspring;
+extern consvar_t cv_kartexplosion_limitlifetime;
+extern consvar_t cv_kartexplosion_limitlifetime_cap;
 extern consvar_t cv_kartslipdash;
 extern consvar_t cv_kartslopeboost;
 extern consvar_t cv_kartinvindist;

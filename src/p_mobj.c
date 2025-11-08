@@ -8783,7 +8783,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->health--;
 		break;
 	case MT_MINEEXPLOSION:
-		if ((mobj->z < mobj->floorz - mobj->height) || (mobj->z > mobj->ceilingz + mobj->height))
+		if ((mobj->z < mobj->floorz - mobj->height)
+			|| (mobj->z > mobj->ceilingz + mobj->height)
+			|| (cv_kartexplosion_limitlifetime.value && mobj->mobjlifetime > cv_kartexplosion_limitlifetime_cap.value))
 		{
 			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
 			break;
@@ -10383,6 +10385,9 @@ void P_MobjThinker(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev, NULL);
 	if (mobj->itnext && P_MobjWasRemoved(mobj->itnext))
 		P_SetTarget(&mobj->itnext, NULL);
+
+	// Tick lifetime of mobj
+	mobj->mobjlifetime++;
 
 	if (mobj->flags & MF_NOTHINK)
 		return;
