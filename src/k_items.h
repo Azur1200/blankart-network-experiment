@@ -57,6 +57,7 @@ typedef enum
 	KIF_ANIMATED = 1<<0,        // animate patches instead of using diffrent patches for different amounts (inversion of xItemLib's XIF_ICONFORAMT)
 	KIF_DARKBG = 1<<1,          // use dark item roulette BG
 	KIF_COLPATCH2PLAYER = 1<<2, // colourize patch to player
+	KIF_HIDEFROMROULETTE = 1<<3, // TODO: don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
 } ATTRPACK kartitemflags_e;
 
 // flags relevant to item rolls and usage
