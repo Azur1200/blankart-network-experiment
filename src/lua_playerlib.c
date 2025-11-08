@@ -1667,8 +1667,16 @@ static int player_set(lua_State *L)
 		plr->growcancel = luaL_checkinteger(L, 3);
 		break;
 	case player_squishedtimer:
-		plr->squishedtimer = luaL_checkinteger(L, 3);
+	{
+		// Unsquish for the ease of Lua programmers
+		INT16 squishtimer = (INT16)luaL_checkinteger(L, 3);
+
+		if (squishtimer == 0)
+			plr->mo->spriteyscale = FRACUNIT;
+
+		plr->squishedtimer = squishtimer;
 		break;
+	}
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
@@ -2455,8 +2463,14 @@ static int kartstuff_set(lua_State *L)
 				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_squishedtimer:
+			{
+				// Unsquish for the ease of Lua programmers
+				if (i == 0)
+					plr->mo->spriteyscale = FRACUNIT;
+
 				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
+			}
 			case k_rocketsneakertimer:
 				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;
