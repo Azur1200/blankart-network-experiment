@@ -1334,7 +1334,47 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	}
 
 	// SPECIAL CASE No. 6:
+	// In battle, an SPB is forced onto players to target the "most wanted" player
+	if (K_BattleForceSPB(player)
+		&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
+		&& K_ItemResultEnabled(K_GetKartResult("spb")))
+	{
+		K_AwardPlayerItem(player, K_GetKartResult("spb"));
+		player->itemblink = TICRATE;
+		player->itemblinkmode = KITEMBLINKMODE_KARMA;
+		player->itemroulette = KROULETTE_DISABLED;
+		player->roulettetype = KROULETTETYPE_NORMAL;
+		if (P_IsDisplayPlayer(player))
+			S_StartSound(NULL, sfx_itrolk);
+		return;
+	}
+
+	// NOW that we're done with most of those specialized cases, we can move onto the REAL item roulette tables.
+	// Initializes existing spawnchance values
+	memset(spawnchance, 0, sizeof(spawnchance));
+
+	// Split into another function for a debug function below
+	useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
+
+	kartroulette_t roulette = {
+		.pdis = pdis,
+		.playerpos = player->position,
+		.pos = useodds,
+		.ourDist = player->distancetofinish,
+		.clusterDist = player->distancefromcluster,
+		.mashed = mashed,
+		.spbrush = spbrush,
+		.bot = player->bot,
+		.rival = player->bot && player->botvars.rival,
+		.inBottom = K_IsPlayerLosing(player),
+	};
+
+	K_KartGetItemOdds(&roulette, spawnchance);
+
+	// SPECIAL CASE No. 7:
 	// Item forcing; the item with the highest "forceme" priority is the one given.
+	// Have to do it AFTER the KartGetItemOdds call,
+	// or forceme persists into *other* players' rolls!
 	{
 		kartresult_t *forceresult;
 		UINT8 bestforce = 0;
@@ -1360,44 +1400,6 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 			return;
 		}
 	}
-
-	// SPECIAL CASE No. 7:
-	// In battle, an SPB is forced onto players to target the "most wanted" player
-	if (K_BattleForceSPB(player)
-		&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
-		&& K_ItemResultEnabled(K_GetKartResult("spb")))
-	{
-		K_AwardPlayerItem(player, K_GetKartResult("spb"));
-		player->itemblink = TICRATE;
-		player->itemblinkmode = KITEMBLINKMODE_KARMA;
-		player->itemroulette = KROULETTE_DISABLED;
-		player->roulettetype = KROULETTETYPE_NORMAL;
-		if (P_IsDisplayPlayer(player))
-			S_StartSound(NULL, sfx_itrolk);
-		return;
-	}
-
-	// NOW that we're done with all of those specialized cases, we can move onto the REAL item roulette tables.
-	// Initializes existing spawnchance values
-	memset(spawnchance, 0, sizeof(spawnchance));
-
-	// Split into another function for a debug function below
-	useodds = K_FindUseodds(player, mashed, pdis, bestbumper, spbrush);
-
-	kartroulette_t roulette = {
-		.pdis = pdis,
-		.playerpos = player->position,
-		.pos = useodds,
-		.ourDist = player->distancetofinish,
-		.clusterDist = player->distancefromcluster,
-		.mashed = mashed,
-		.spbrush = spbrush,
-		.bot = player->bot,
-		.rival = player->bot && player->botvars.rival,
-		.inBottom = K_IsPlayerLosing(player),
-	};
-
-	K_KartGetItemOdds(&roulette, spawnchance);
 
 	for (i = 0; i < numkartresults; i++)
 	{
