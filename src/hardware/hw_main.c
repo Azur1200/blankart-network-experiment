@@ -50,6 +50,7 @@
 #include "../k_kart.h"
 #include "../r_fps.h"
 #include "../r_plane.h" // R_FlatDimensionsFromLumpSize
+#include "../k_items.h"
 
 #define R_FAKEFLOORS
 #define HWPRECIP
@@ -4789,6 +4790,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		sprdef = &((skin_t *)thing->skin)->sprites[thing->sprite2];
 #ifdef ROTSPRITE
 		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
+#endif
+	}
+	else if (thing->sprite == SPR_ITEM)
+	{
+		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
+#ifdef ROTSPRITE
+		sprinfo = &spriteinfo[SPR_UNKN];
 #endif
 	}
 	else

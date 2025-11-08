@@ -4187,40 +4187,8 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	K_UpdateMobjItemOverlay(part, itemType, mobj->movecount);
 
 	// update number frame
-	if (K_GetShieldFromItem(itemType) != KSHIELD_NONE) // shields don't stack, so don't show a number
-		;
-	else
-	{
-		switch (itemType)
-		{
-			case KITEM_SNEAKER:
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 2))
-					count = mobj->movecount;
-				break;
-			case KITEM_ORBINAUT: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
-					count = mobj->movecount;
-				break;
-			case KITEM_BANANA: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 3))
-					count = mobj->movecount;
-				break;
-			case KITEM_JAWZ: // only display the number when the sprite no longer changes
-				if (mobj->movecount - 1 > K_GetMultItemFrame(mobj->movecount, 1))
-					count = mobj->movecount;
-				break;
-			case KITEM_SUPERRING: // always display the number, and multiply it by 5
-				count = mobj->movecount * 5;
-				break;
-			case KITEM_SAD: // never display the number
-			case KITEM_SPB:
-				break;
-			default:
-				if (mobj->movecount > 1)
-					count = mobj->movecount;
-				break;
-		}
-	}
+	if (mobj->movecount >= K_GetItemNumberDisplayMin(itemType, false))
+		count = mobj->movecount;
 
 	while (count > 0)
 	{
@@ -7626,101 +7594,79 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 
 			if (!(mobj->renderflags & RF_DONTDRAW))
 			{
-				const INT32 numberdisplaymin = ((mobj->target->player->itemtype == KITEM_ORBINAUT) ? 5 : 2);
+				statenum_t statenum = S_PLAYERARROW_BOX;
+				kartitemtype_e itemtype = mobj->target->player->itemtype;
+				UINT8 itemamount = 0;
+				boolean hide = false;
 
 				// Set it to use the correct states for its condition
 				if (mobj->target->player->itemroulette)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = K_GetRollingRouletteItem(mobj->target->player) | FF_FULLBRIGHT;
-					mobj->tracer->renderflags &= ~RF_DONTDRAW;
+					itemtype = K_GetRollingRouletteItem(mobj->target->player);
 				}
 				else if (mobj->target->player->stealingtimer < 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_HYUDORO;
-					if (leveltime & 2)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_HYUDORO;
+					hide = leveltime & 2;
 				}
 				else if ((mobj->target->player->stealingtimer > 0) && (leveltime & 2))
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_HYUDORO;
-					mobj->tracer->renderflags &= ~RF_DONTDRAW;
+					itemtype = KITEM_HYUDORO;
 				}
 				else if (mobj->target->player->eggmanexplode > 1)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_EGGMAN;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_EGGMAN;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->rocketsneakertimer > 1)
 				{
 					//itembar = mobj->target->player->rocketsneakertimer; -- not today satan
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_ROCKETSNEAKER;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_ROCKETSNEAKER;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->flametimer > 1)
 				{
 					//itembar = mobj->target->player->flametimer; -- not today satan
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_FLAMESHIELD;
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_FLAMESHIELD;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->growshrinktimer > 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
-					mobj->tracer->sprite = SPR_ITEM;
-					mobj->tracer->frame = FF_FULLBRIGHT|KITEM_GROW;
-
-					if (leveltime & 1)
-						mobj->tracer->renderflags &= ~RF_DONTDRAW;
-					else
-						mobj->tracer->renderflags |= RF_DONTDRAW;
+					itemtype = KITEM_GROW;
+					hide = leveltime & 1;
 				}
 				else if (mobj->target->player->itemtype && mobj->target->player->itemamount > 0)
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW_BOX);
+					itemtype = mobj->target->player->itemtype;
+					itemamount = mobj->target->player->itemamount;
+					hide = mobj->target->player->itemflags & IF_ITEMOUT && leveltime & 1;
+				}
+				else
+				{
+					statenum = S_PLAYERARROW;
+				}
 
-					K_UpdateMobjItemOverlay(mobj->tracer, mobj->target->player->itemtype,mobj->target->player->itemamount);
-
-					if (mobj->target->player->itemflags & IF_ITEMOUT)
-					{
-						if (leveltime & 1)
-							mobj->tracer->renderflags &= ~RF_DONTDRAW;
-						else
-							mobj->tracer->renderflags |= RF_DONTDRAW;
-					}
+				P_SetMobjState(mobj, statenum);
+				if (statenum == S_PLAYERARROW_BOX)
+				{
+					mobj->tracer->sprite = SPR_ITEM;
+					K_UpdateMobjItemOverlay(mobj->tracer, itemtype, itemamount);
+					mobj->tracer->threshold = itemtype; // sorry, i have to
+					mobj->tracer->frame &= ~FF_PAPERSPRITE;
+					if (hide)
+						mobj->tracer->renderflags |= RF_DONTDRAW;
 					else
 						mobj->tracer->renderflags &= ~RF_DONTDRAW;
 				}
 				else
 				{
-					P_SetMobjState(mobj, S_PLAYERARROW);
 					P_SetMobjState(mobj->tracer, S_PLAYERARROW_ITEM);
+					mobj->tracer->renderflags &= ~RF_DONTDRAW;
 				}
 
 				mobj->tracer->destscale = scale;
 
-				if (mobj->target->player->itemamount >= numberdisplaymin
+				if (mobj->target->player->itemamount >= K_GetItemNumberDisplayMin(mobj->target->player->itemtype, false)
 					&& mobj->target->player->itemamount <= 10) // Meh, too difficult to support greater than this; convert this to a decent HUD object and then maybe :V
 				{
 					mobj_t *number = P_SpawnMobj(mobj->x, mobj->y, mobj->z, MT_OVERLAY);
@@ -7736,6 +7682,10 @@ static void P_MobjSceneryThink(mobj_t *mobj)
 					P_SetMobjState(numx, S_PLAYERARROW_X);
 					P_SetScale(numx, mobj->scale);
 					numx->destscale = scale;
+
+					// ugh... overlays....
+					number->old_z = number->z += FixedMul(number->state->var2 * FRACUNIT, mobj->scale);
+					numx->old_z = numx->z += FixedMul(number->state->var2 * FRACUNIT, mobj->scale);
 				}
 
 				if (K_IsPlayerWanted(mobj->target->player) && mobj->movecount != 1)
@@ -8501,12 +8451,10 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			 || mobj->movecount != part->movecount) // change the capsule properties if the item type or amount is updated
 				P_RefreshItemCapsuleParts(mobj);
 
-			// animate invincibility capsules
+			K_UpdateMobjItemOverlay(part, mobj->threshold, mobj->movecount);
+
 			if (mobj->threshold == KITEM_INVINCIBILITY)
-			{
 				mobj->color = K_RainbowColor(leveltime);
-				part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetInvincibilityItemFrame();
-			}
 		}
 		break;
 	case MT_ORBINAUT:

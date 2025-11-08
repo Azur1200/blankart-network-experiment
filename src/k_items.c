@@ -170,6 +170,31 @@ boolean K_IsKartItemAlternate(kartitemtype_e itemtype)
 	return itemtype >= 0 && itemtype < numkartitems && kartitems[itemtype].altenabled;
 }
 
+UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
+{
+	if (type <= 0 || type >= numkartitems)
+		return 1;
+
+	return kartitems[type].flags & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
+}
+
+// sprite3 baybeeeee!!!!
+// the renderer uses mobj->threshold to determine the item type
+void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount)
+{
+	part->sprite = SPR_ITEM;
+	part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE;
+
+	if (itemType <= 0 || itemType >= numkartitems)
+		return;
+
+	UINT8 numpatches = kartitems[itemType].graphics[0].numpatches;
+	if (kartitems[itemType].flags & KIF_ANIMATED)
+		part->frame |= (leveltime % (numpatches*3)) / 3;
+	else
+		part->frame |= CLAMP(itemCount - 1, 0, numpatches - 1);
+}
+
 /**	\brief	Are the odds in legacy distancing mode?
 
 	\return	true if kartforcelegacyodds is enabled, or the map uses legacy WPs

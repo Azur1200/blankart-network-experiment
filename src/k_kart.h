@@ -319,8 +319,6 @@ SINT8 K_Sliptiding(const player_t *player);
 fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original);
 void K_MoveKartPlayer(player_t *player, boolean onground);
 void K_CheckSpectateStatus(boolean considermapreset);
-UINT8 K_GetInvincibilityItemFrame(void);
-UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max);
 boolean K_IsSPBInGame(void);
 
 // sound stuff for lua
@@ -356,8 +354,6 @@ INT32 K_ChainOrDeincrementTime(player_t *player, INT32 timer, INT32 deincrement,
 boolean K_UsingLegacyCheckpoints(void);
 boolean K_UsingPatchedMap(void);
 INT32 K_CheckpointThreshold(boolean roundup);
-
-void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, boolean stack, boolean visible);

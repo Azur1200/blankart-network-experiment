@@ -16,6 +16,7 @@
 
 #include "doomdef.h"
 #include "doomtype.h"
+#include "r_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,8 +89,9 @@ struct kartitemgraphics_t
 struct kartitem_t
 {
 	dehinfo_t info;
-	kartitemgraphics_t graphics[2];
 	kartitemflags_e flags;
+	kartitemgraphics_t graphics[2];
+	spritedef_t spritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
 	boolean altenabled;
@@ -151,9 +153,11 @@ void K_RegisterItem(kartitemtype_e itemtype);
 kartresult_t *K_RegisterResult(const char *name, boolean alternate);
 kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
 #define K_GetKartResult(name) K_GetKartResultAlt(name, false)
+void K_SetupItemOdds(void);
 boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
-void K_SetupItemOdds(void);
+UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
+void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 
 void K_KartHandleUniqueCooldown(void);
 boolean K_LegacyOddsMode(void);

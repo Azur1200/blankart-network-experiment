@@ -411,6 +411,9 @@ static int libd_getSpritePatch(lua_State *L)
 	if (i == SPR_PLAY) // Use getSprite2Patch instead!
 		return 0;
 
+	if (i == SPR_ITEM) // Use... uhhhhh...
+		return 0;
+
 	sprdef = &sprites[i];
 
 	// set frame number

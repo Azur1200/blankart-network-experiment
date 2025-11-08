@@ -544,6 +544,8 @@ void K_LoadKartHUDGraphics(void)
 			HU_UpdatePatch(&item->graphics[0].patches[j], item->graphics[0].patchnames[j]);
 		for (j = 0; j < item->graphics[1].numpatches; j++)
 			HU_UpdatePatch(&item->graphics[1].patches[j], item->graphics[1].patchnames[j]);
+
+		R_AddKartItemSprites(item);
 	}
 
 	// CHECK indicators
@@ -1182,7 +1184,6 @@ static void K_drawKartItem(void)
 	patch_t *localbg;
 	boolean dark = false;
 	INT32 fx = 0, fy = 0, fflags = 0;	// final coords for hud and flags...
-	INT32 numberdisplaymin = 2;
 	fixed_t itembar = -1, flamebar = -1;
 	UINT16 localcolor = SKINCOLOR_NONE;
 	SINT8 colormode = TC_RAINBOW;
@@ -1301,11 +1302,7 @@ static void K_drawKartItem(void)
 				localpatch = kp_nodraw; // diagnose underflows
 
 			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
-			{
-				kartitem_t *item = &kartitems[stplyr->itemtype];
-				numberdisplaymin = item->flags & KIF_ANIMATED ? 2 : item->graphics[tiny ? 1 : 0].numpatches + 1;
-				dark = item->flags & KIF_DARKBG;
-			}
+				dark = kartitems[stplyr->itemtype].flags & KIF_DARKBG;
 
 			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
 				localpatch = kp_nodraw;
@@ -1373,7 +1370,7 @@ static void K_drawKartItem(void)
 	}
 
 	// Then, the numbers:
-	if (stplyr->itemamount >= numberdisplaymin && !stplyr->itemroulette)
+	if (stplyr->itemamount >= K_GetItemNumberDisplayMin(stplyr->itemtype, tiny) && !stplyr->itemroulette)
 	{
 		localbg = K_getItemMulPatch(tiny);
 		V_DrawMappedPatch(fx + (flipamount ? 48 : 0), fy, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.

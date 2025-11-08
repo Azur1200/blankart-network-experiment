@@ -493,9 +493,6 @@ _(ARRO) // player arrows
 _(ITEM) // base item
 _(ITMO) // Multi-Orbinaut
 _(ITMI) // Invincibility
-_(ITSN) // Multi-Sneaker
-_(ITBA) // Multi-Banana
-_(ITJA) // Multi-Jawz
 _(ITMN)
 _(WANT)
 

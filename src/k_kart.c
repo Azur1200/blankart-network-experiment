@@ -10492,16 +10492,6 @@ void K_CheckSpectateStatus(boolean considermapreset)
 	}
 }
 
-UINT8 K_GetInvincibilityItemFrame(void)
-{
-	return ((leveltime % (7*3)) / 3);
-}
-
-UINT8 K_GetMultItemFrame(UINT8 count, UINT8 max)
-{
-	return min(count - 1, max);
-}
-
 boolean K_IsSPBInGame(void)
 {
 	UINT8 i;
@@ -10677,41 +10667,6 @@ INT32 K_CheckpointThreshold(boolean roundup)
 		return roundup ? numstarposts - numstarposts/2 : numstarposts/2;
 	else
 		return numstarposts;
-}
-
-void K_UpdateMobjItemOverlay(mobj_t *part, SINT8 itemType, UINT8 itemCount)
-{
-	switch (itemType)
-	{
-		case KITEM_SNEAKER:
-			part->sprite = SPR_ITSN;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 2);
-			break;
-		case KITEM_ORBINAUT:
-			part->sprite = SPR_ITMO;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
-			break;
-		case KITEM_BANANA:
-			part->sprite = SPR_ITBA;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 3);
-			break;
-		case KITEM_JAWZ:
-			part->sprite = SPR_ITJA;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetMultItemFrame(itemCount, 1);
-			break;
-		case KITEM_INVINCIBILITY:
-			part->sprite = SPR_ITMI;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|K_GetInvincibilityItemFrame();
-			break;
-		case KITEM_SAD:
-			part->sprite = SPR_ITEM;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE;
-			break;
-		default:
-			part->sprite = SPR_ITEM;
-			part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE|(itemType);
-			break;
-	}
 }
 
 boolean K_NotFreePlay(void)
