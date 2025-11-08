@@ -2338,7 +2338,7 @@ static inline void HWR_AddPolyObjectSegs(void)
 		for (j = 0; j < po_ptrs[i]->segCount; ++j)
 		{
 			// Copy the info of a polyobject's seg, then convert it to OpenGL floating point
-			M_Memcpy(&gl_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
+			memcpy(&gl_fakeline, po_ptrs[i]->segs[j], sizeof(seg_t));
 
 			// Now convert the line to float and add it to be rendered
 			pv1.x = FIXED_TO_FLOAT(gl_fakeline.v1->x);
@@ -6356,8 +6356,8 @@ static void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, I
 		Z_Realloc(wallinfo, allocedwalls * sizeof (*wallinfo), PU_LEVEL, &wallinfo);
 	}
 
-	M_Memcpy(wallinfo[numwalls].wallVerts, wallVerts, sizeof (wallinfo[numwalls].wallVerts));
-	M_Memcpy(&wallinfo[numwalls].Surf, pSurf, sizeof (FSurfaceInfo));
+	memcpy(wallinfo[numwalls].wallVerts, wallVerts, sizeof (wallinfo[numwalls].wallVerts));
+	memcpy(&wallinfo[numwalls].Surf, pSurf, sizeof (FSurfaceInfo));
 	wallinfo[numwalls].texnum = texnum;
 	wallinfo[numwalls].blend = blend;
 	wallinfo[numwalls].noencore = noencore;
@@ -6633,7 +6633,7 @@ void HWR_LoadCustomShadersFromFile(UINT16 wadnum, boolean PK3)
 	size = W_LumpLengthPwad(wadnum, lump);
 
 	line = Z_Malloc(size+1, PU_STATIC, NULL);
-	M_Memcpy(line, shaderdef, size);
+	memcpy(line, shaderdef, size);
 	line[size] = '\0';
 
 	stoken = strtok(line, "\r\n ");

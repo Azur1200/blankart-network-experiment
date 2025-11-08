@@ -335,7 +335,7 @@ void R_ReInitColormaps(UINT16 num, void *newencoremap, size_t encoremapsize, boo
 		size_t p, i;
 
 		encoremap = Z_MallocAlign(256 + 10, PU_LEVEL, NULL, 8);
-		M_Memcpy(encoremap, newencoremap, encoremapsize);
+		memcpy(encoremap, newencoremap, encoremapsize);
 		colormap_p = colormap_p2 = colormaps;
 		colormap_p += COLORMAP_REMAPOFFSET;
 

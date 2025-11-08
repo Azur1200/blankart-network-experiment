@@ -221,7 +221,7 @@ static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n
 	UINT8 *ret = dest;
 
 	if (r)
-		M_Memcpy(dest, src, n);
+		memcpy(dest, src, n);
 	else if (d)
 		G_MoveTiccmd(dest, src, d);
 	return ret+n;
@@ -234,7 +234,7 @@ static inline void *G_ScpyTiccmd(ticcmd_t* dest, void* src, const size_t n)
 	UINT8 *ret = src;
 
 	if (r)
-		M_Memcpy(dest, src, n);
+		memcpy(dest, src, n);
 	else if (d)
 		G_MoveTiccmd(dest, src, d);
 	return ret+n;
@@ -299,7 +299,7 @@ void SendNetXCmdForPlayer(UINT8 playerid, netxcmd_t id, const void *param, size_
 
 	if (param && nparam)
 	{
-		M_Memcpy(&localtextcmd[playerid][((UINT16*)localtextcmd[playerid])[0] + 2], param, nparam);
+		memcpy(&localtextcmd[playerid][((UINT16*)localtextcmd[playerid])[0] + 2], param, nparam);
 		((UINT16*)localtextcmd[playerid])[0] = ((UINT16*)localtextcmd[playerid])[0] + (UINT8)nparam;
 	}
 }
@@ -535,7 +535,7 @@ void SendKick(UINT8 playernum, UINT8 msg)
 	if (!textcmd)
 		return false;
 
-	M_Memcpy(*demo_point, textcmd, textcmd[0]+1);
+	memcpy(*demo_point, textcmd, textcmd[0]+1);
 	*demo_point += textcmd[0]+1;
 	return true;
 }
@@ -550,7 +550,7 @@ void ReadLmpExtraData(UINT8 **demo_pointer, INT32 playernum)
 
 	textcmd = D_GetTextcmd(gametic, playernum);
 	nextra = **demo_pointer;
-	M_Memcpy(textcmd, *demo_pointer, nextra + 1);
+	memcpy(textcmd, *demo_pointer, nextra + 1);
 	// increment demo pointer
 	*demo_pointer += nextra + 1;
 }*/
@@ -5069,7 +5069,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 				DEBFILE(va("textcmd put in tic %u at position %d (player %d) ftts %u mk %u\n",
 					tic, ((UINT16*)textcmd)[0]+2, netconsole, firstticstosend, maketic));
 
-				M_Memcpy(&textcmd[((UINT16*)textcmd)[0]+2], netbuffer->u.textcmd+2, incoming_size);
+				memcpy(&textcmd[((UINT16*)textcmd)[0]+2], netbuffer->u.textcmd+2, incoming_size);
 				((UINT16*)textcmd)[0] += incoming_size;
 			}
 			break;
@@ -5186,7 +5186,7 @@ static void HandlePacketFromPlayer(SINT8 node)
 						const size_t txtsize = ((UINT16*)txtpak)[0]+2;
 
 						if (i >= gametic) // Don't copy old net commands
-							M_Memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
+							memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
 						txtpak += txtsize;
 					}
 				}
@@ -5592,7 +5592,7 @@ static void CL_SendClientCmd(void)
 						break;
 				}
 
-				M_Memcpy(netbuffer->u.textcmd, localtextcmd[i], ((UINT16*)localtextcmd[i])[0]+2);
+				memcpy(netbuffer->u.textcmd, localtextcmd[i], ((UINT16*)localtextcmd[i])[0]+2);
 				// All extra data have been sent
 				if (HSendPacket(servernode, true, 0, ((UINT16*)localtextcmd[i])[0]+2)) // Send can fail...
 					((UINT16*)localtextcmd[i])[0] = 0;

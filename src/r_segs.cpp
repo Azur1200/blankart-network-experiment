@@ -244,7 +244,7 @@ static void R_RenderMaskedSegLoop(drawcolumndata_t* dc, drawseg_t *drawseg, INT3
 			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 			if (old_lightlist != nullptr)
 			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
+				memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
 			}
 		}
 
@@ -843,7 +843,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 			dc->lightlist = static_cast<r_lightlist_t*>(Z_Frame_Alloc(sizeof (*dc->lightlist) * dc->maxlights));
 			if (old_lightlist != nullptr)
 			{
-				M_Memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
+				memcpy(dc->lightlist, old_lightlist, sizeof (*dc->lightlist) * old_maxlights);
 			}
 		}
 
@@ -3094,14 +3094,14 @@ void R_StoreWallRange(INT32 start, INT32 stop)
 
 		if (((ds_p->silhouette & SIL_TOP) || maskedtexture) && !ds_p->sprtopclip)
 		{
-			M_Memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, ceilingclip + start, 2*(rw_stopx - start));
 			ds_p->sprtopclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}
 
 		if (((ds_p->silhouette & SIL_BOTTOM) || maskedtexture) && !ds_p->sprbottomclip)
 		{
-			M_Memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
+			memcpy(lastopening, floorclip + start, 2*(rw_stopx - start));
 			ds_p->sprbottomclip = lastopening - start;
 			lastopening += rw_stopx - start;
 		}

@@ -486,7 +486,7 @@ static void HWR_GenerateTexture(GLMapTexture_t *grtex, INT32 texnum, boolean noe
 
 	grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	grtex->mipmap.colormap->source = colormap;
-	M_Memcpy(grtex->mipmap.colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(grtex->mipmap.colormap->data, colormap, 256 * sizeof(UINT8));
 
 	blockwidth = texture->width;
 	blockheight = texture->height;
@@ -1155,7 +1155,7 @@ void HWR_GetRawFlat(lumpnum_t flatlumpnum, boolean noencoremap)
 
 		grmip->colormap = Z_Calloc(sizeof(*grmip->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 		grmip->colormap->source = colormap;
-		M_Memcpy(grmip->colormap->data, colormap, 256 * sizeof(UINT8));
+		memcpy(grmip->colormap->data, colormap, 256 * sizeof(UINT8));
 	}
 
 	if (!grmip->downloaded && !grmip->data)
@@ -1213,7 +1213,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, boolean noencoremap)
 
 		grtex->mipmap.colormap = Z_Calloc(sizeof(*grtex->mipmap.colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 		grtex->mipmap.colormap->source = colormap;
-		M_Memcpy(grtex->mipmap.colormap->data, colormap, 256);
+		memcpy(grtex->mipmap.colormap->data, colormap, 256);
 
 		for (size_t steppy = 0; steppy < size; steppy++)
 			if (flat[steppy] != HWR_PATCHES_CHROMAKEY_COLORINDEX)
@@ -1332,7 +1332,7 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 		{
 			if (memcmp(grMipmap->colormap->data, colormap, 256 * sizeof(UINT8)))
 			{
-				M_Memcpy(grMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+				memcpy(grMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 				HWR_UpdatePatchMipmap(patch, grMipmap);
 			}
 			else
@@ -1354,7 +1354,7 @@ void HWR_GetMappedPatch(patch_t *patch, const UINT8 *colormap)
 
 	newMipmap->colormap = Z_Calloc(sizeof(*newMipmap->colormap), PU_HWRPATCHCOLMIPMAP, NULL);
 	newMipmap->colormap->source = colormap;
-	M_Memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
+	memcpy(newMipmap->colormap->data, colormap, 256 * sizeof(UINT8));
 
 	HWR_LoadPatchMipmap(patch, newMipmap);
 }
@@ -1479,7 +1479,7 @@ patch_t *HWR_GetPic(lumpnum_t lumpnum)
 			format2bpp(grPatch->mipmap->format) == format2bpp(picmode2GR[pic->mode]))
 		{
 			// no conversion needed
-			M_Memcpy(grPatch->mipmap->data, pic->data,len);
+			memcpy(grPatch->mipmap->data, pic->data,len);
 		}
 		else
 			HWR_DrawPicInCache(block, SHORT(pic->width), SHORT(pic->height),

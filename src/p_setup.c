@@ -1131,7 +1131,7 @@ static void P_WriteConstant(INT32 constant, char **target, const char *desc, UIN
 	sprintf(buffer, "%d", constant);
 	len = strlen(buffer) + 1;
 	*target = Z_Malloc(len, PU_LEVEL, NULL);
-	M_Memcpy(*target, buffer, len);
+	memcpy(*target, buffer, len);
 }
 
 static void P_WriteDuplicateText(const char *text, char **target)
@@ -1141,7 +1141,7 @@ static void P_WriteDuplicateText(const char *text, char **target)
 
 	size_t len = strlen(text) + 1;
 	*target = Z_Malloc(len, PU_LEVEL, NULL);
-	M_Memcpy(*target, text, len);
+	memcpy(*target, text, len);
 }
 
 static void P_WriteSkincolor(INT32 constant, char **target)
@@ -1228,14 +1228,14 @@ static void P_LoadSidedefs(UINT8 *data)
 				sd->toptexture = sd->midtexture = sd->bottomtexture = 0;
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
 				{
-					M_Memcpy(process,msd->bottomtexture,8);
+					memcpy(process,msd->bottomtexture,8);
 					process[8] = '\0';
 					sd->bottomtexture = get_number(process);
 				}
 
 				if (!(msd->midtexture[0] == '-' && msd->midtexture[1] == '\0') || msd->midtexture[1] != '\0')
 				{
-					M_Memcpy(process,msd->midtexture,8);
+					memcpy(process,msd->midtexture,8);
 					process[8] = '\0';
 					sd->midtexture = get_number(process);
 				}
@@ -1243,15 +1243,15 @@ static void P_LoadSidedefs(UINT8 *data)
  				sd->text = Z_Malloc(7, PU_LEVEL, NULL);
 				if (isfrontside && !(msd->toptexture[0] == '-' && msd->toptexture[1] == '\0'))
 				{
-					M_Memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture,8);
 					process[8] = '\0';
 
 					// If they type in O_ or D_ and their music name, just shrug,
 					// then copy the rest instead.
 					if ((process[0] == 'O' || process[0] == 'D') && process[7])
-						M_Memcpy(sd->text, process+2, 6);
+						memcpy(sd->text, process+2, 6);
 					else // Assume it's a proper music name.
-						M_Memcpy(sd->text, process, 6);
+						memcpy(sd->text, process, 6);
 					sd->text[6] = 0;
 				}
 				else
@@ -1266,7 +1266,7 @@ static void P_LoadSidedefs(UINT8 *data)
 				if (msd->toptexture[0] != '-' || msd->toptexture[1] != '\0')
 				{
 					char process[8 + 1];
-					M_Memcpy(process, msd->toptexture, 8);
+					memcpy(process, msd->toptexture, 8);
 					process[8] = '\0';
 
 					P_WriteDuplicateText(process, &sd->text);
@@ -1309,11 +1309,11 @@ static void P_LoadSidedefs(UINT8 *data)
 				if (msd->toptexture[0] == '-' && msd->toptexture[1] == '\0')
 					break;
 				else
-					M_Memcpy(process,msd->toptexture,8);
+					memcpy(process,msd->toptexture,8);
 				if (msd->midtexture[0] != '-' || msd->midtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->midtexture, 8);
+					memcpy(process+strlen(process), msd->midtexture, 8);
 				if (msd->bottomtexture[0] != '-' || msd->bottomtexture[1] != '\0')
-					M_Memcpy(process+strlen(process), msd->bottomtexture, 8);
+					memcpy(process+strlen(process), msd->bottomtexture, 8);
 
 				P_WriteDuplicateText(process, &sd->text);
 				break;
@@ -1949,7 +1949,7 @@ static void ParseTextmapSectorParameter(UINT32 i, const char *param, const char 
 		if (argnum >= NUM_SCRIPT_STRINGARGS)
 			return;
 		sectors[i].stringargs[argnum] = Z_Malloc(strlen(val) + 1, PU_LEVEL, NULL);
-		M_Memcpy(sectors[i].stringargs[argnum], val, strlen(val) + 1);
+		memcpy(sectors[i].stringargs[argnum], val, strlen(val) + 1);
 	}
 	else if (fastncmp(param, "arg", 3) && strlen(param) > 3)
 	{
@@ -2042,7 +2042,7 @@ static void ParseTextmapLinedefParameter(UINT32 i, const char *param, const char
 		if (argnum >= NUM_SCRIPT_STRINGARGS)
 			return;
 		lines[i].stringargs[argnum] = Z_Malloc(strlen(val) + 1, PU_LEVEL, NULL);
-		M_Memcpy(lines[i].stringargs[argnum], val, strlen(val) + 1);
+		memcpy(lines[i].stringargs[argnum], val, strlen(val) + 1);
 	}
 	else if (fastncmp(param, "arg", 3) && strlen(param) > 3)
 	{
@@ -2173,7 +2173,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 				return;
 			size_t len = strlen(val);
 			mapthings[i].script_stringargs[argnum] = Z_Malloc(len + 1, PU_LEVEL, NULL);
-			M_Memcpy(mapthings[i].script_stringargs[argnum], val, len);
+			memcpy(mapthings[i].script_stringargs[argnum], val, len);
 			mapthings[i].script_stringargs[argnum][len] = '\0';
 		}
 		else
@@ -2183,7 +2183,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 				return;
 			size_t len = strlen(val);
 			mapthings[i].stringargs[argnum] = Z_Malloc(len + 1, PU_LEVEL, NULL);
-			M_Memcpy(mapthings[i].stringargs[argnum], val, len);
+			memcpy(mapthings[i].stringargs[argnum], val, len);
 			mapthings[i].stringargs[argnum][len] = '\0';
 		}
 	}
@@ -2218,7 +2218,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 			return;
 		size_t len = strlen(val);
 		mapthings[i].stringargs[argnum] = Z_Malloc(len + 1, PU_LEVEL, NULL);
-		M_Memcpy(mapthings[i].stringargs[argnum], val, len);
+		memcpy(mapthings[i].stringargs[argnum], val, len);
 		mapthings[i].stringargs[argnum][len] = '\0';
 	}
 	else if (fastncmp(param, "scriptstringarg", 15) && strlen(param) > 15)
@@ -2228,7 +2228,7 @@ static void ParseTextmapThingParameter(UINT32 i, const char *param, const char *
 			return;
 		size_t len = strlen(val);
 		mapthings[i].script_stringargs[argnum] = Z_Malloc(len + 1, PU_LEVEL, NULL);
-		M_Memcpy(mapthings[i].script_stringargs[argnum], val, len);
+		memcpy(mapthings[i].script_stringargs[argnum], val, len);
 		mapthings[i].script_stringargs[argnum][len] = '\0';
 	}
 	else if (fastncmp(param, "scriptarg", 9) && strlen(param) > 9)
@@ -3608,9 +3608,9 @@ static void P_ProcessLinedefsAfterSidedefs(void)
 					len[1] = strlen(sides[ld->sidenum[1]].text);
 
 				ld->text = Z_Malloc(len[0] + len[1], PU_LEVEL, NULL);
-				M_Memcpy(ld->text, sides[ld->sidenum[0]].text, len[0]);
+				memcpy(ld->text, sides[ld->sidenum[0]].text, len[0]);
 				if (len[1])
-					M_Memcpy(ld->text + len[0], sides[ld->sidenum[1]].text, len[1] + 1);
+					memcpy(ld->text + len[0], sides[ld->sidenum[1]].text, len[1] + 1);
 			}
 			break;
 		case 447: // Change colormap
@@ -4086,7 +4086,7 @@ static nodetype_t P_GetNodetype(const virtres_t *virt, UINT8 **nodedata, char si
 		I_Error("Level has no nodes (does your map have at least 2 sectors?)");
 	}
 
-	M_Memcpy(signature, *nodedata, 4);
+	memcpy(signature, *nodedata, 4);
 	(*nodedata) += 4;
 
 	// Identify node format from its starting signature.
@@ -4693,7 +4693,7 @@ static void P_LoadReject(UINT8 *data, size_t count)
 	else
 	{
 		rejectmatrix = Z_Malloc(count, PU_LEVEL, NULL); // allocate memory for the reject matrix
-		M_Memcpy(rejectmatrix, data, count); // copy the data into it
+		memcpy(rejectmatrix, data, count); // copy the data into it
 	}
 }
 
@@ -6222,13 +6222,13 @@ static void P_ConvertBinaryLinedefTypes(void)
 			if (sides[lines[i].sidenum[0]].text)
 			{
 				lines[i].stringargs[0] = Z_Malloc(strlen(sides[lines[i].sidenum[0]].text) + 1, PU_LEVEL, NULL);
-				M_Memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
+				memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
 
 			if (lines[i].sidenum[1] != 0xffff && lines[i].flags & ML_BLOCKMONSTERS) // read power from back sidedef
 			{
 				lines[i].stringargs[1] = Z_Malloc(strlen(sides[lines[i].sidenum[1]].text) + 1, PU_LEVEL, NULL);
-				M_Memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
+				memcpy(lines[i].stringargs[1], sides[lines[i].sidenum[1]].text, strlen(sides[lines[i].sidenum[1]].text) + 1);
 			}
 			else
 				P_WriteConstant((lines[i].flags & ML_NOCLIMB) ? -1 : (sides[lines[i].sidenum[0]].textureoffset >> FRACBITS), &lines[i].stringargs[1], "Powers", i);
@@ -6475,7 +6475,7 @@ static void P_ConvertBinaryLinedefTypes(void)
 			if (sides[lines[i].sidenum[0]].text)
 			{
 				lines[i].stringargs[0] = Z_Malloc(strlen(sides[lines[i].sidenum[0]].text) + 1, PU_LEVEL, NULL);
-				M_Memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
+				memcpy(lines[i].stringargs[0], sides[lines[i].sidenum[0]].text, strlen(sides[lines[i].sidenum[0]].text) + 1);
 			}
 			break;
 		case 480: //Polyobject - door slide

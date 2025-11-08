@@ -55,7 +55,7 @@ patch_t *Patch_Create(softwarepatch_t *source, size_t srcsize, void *dest)
 			I_Error("Patch_Create: no column data!");
 
 		patch->columns = Z_Calloc(colsize, PU_PATCH_DATA, NULL);
-		M_Memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
+		memcpy(patch->columns, ((UINT8 *)source + LONG(source->columnofs[0])), colsize);
 	}
 
 	return patch;

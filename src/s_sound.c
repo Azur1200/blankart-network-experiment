@@ -1583,7 +1583,7 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 	musdeftext = malloc(size+1);
 	if (!musdeftext)
 		I_Error("S_LoadMusicDefs: No more free memory for the parser\n");
-	M_Memcpy(musdeftext, lump, size);
+	memcpy(musdeftext, lump, size);
 	musdeftext[size] = '\0';
 
 	// Find music def

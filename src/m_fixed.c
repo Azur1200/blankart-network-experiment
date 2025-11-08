@@ -148,7 +148,7 @@ vector2_t *FV2_UnLoad(vector2_t *vec, fixed_t *x, fixed_t *y)
 
 vector2_t *FV2_Copy(vector2_t *a_o, const vector2_t *a_i)
 {
-	return M_Memcpy(a_o, a_i, sizeof(vector2_t));
+	return memcpy(a_o, a_i, sizeof(vector2_t));
 }
 
 vector2_t *FV2_AddEx(const vector2_t *a_i, const vector2_t *a_c, vector2_t *a_o)
@@ -344,12 +344,12 @@ vector4_t *FV4_UnLoad(vector4_t *vec, fixed_t *x, fixed_t *y, fixed_t *z, fixed_
 
 vector3_t *FV3_Copy(vector3_t *a_o, const vector3_t *a_i)
 {
-	return M_Memcpy(a_o, a_i, sizeof(vector3_t));
+	return memcpy(a_o, a_i, sizeof(vector3_t));
 }
 
 vector4_t *FV4_Copy(vector4_t *a_o, const vector4_t *a_i)
 {
-	return M_Memcpy(a_o, a_i, sizeof(vector4_t));
+	return memcpy(a_o, a_i, sizeof(vector4_t));
 }
 
 vector3_t *FV3_AddEx(const vector3_t *a_i, const vector3_t *a_c, vector3_t *a_o)
@@ -1280,7 +1280,7 @@ static void *cpu_cpy(void *dest, const void *src, size_t n)
 	return memcpy(dest, src, n);
 }
 
-void *(*M_Memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
+void *(*memcpy)(void* dest, const void* src, size_t n) = cpu_cpy;
 
 void I_Error(const char *error, ...)
 {
