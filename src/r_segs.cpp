@@ -1783,10 +1783,12 @@ static void R_AllocClippingTables(size_t range)
 	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
 	{
 		// Check if it's in range of the openings
-		if (ds->sprtopclip + ds->x1 >= oldopenings && ds->sprtopclip + ds->x1 <= oldlast)
-			ds->sprtopclip = (ds->sprtopclip - oldopenings) + openings;
-		if (ds->sprbottomclip + ds->x1 >= oldopenings && ds->sprbottomclip + ds->x1 <= oldlast)
-			ds->sprbottomclip = (ds->sprbottomclip - oldopenings) + openings;
+#define CHECK(which) \
+		if (which != NULL && which + ds->x1 >= oldopenings && which + ds->x1 <= oldlast) \
+			which = (which - oldopenings) + openings
+		CHECK(ds->sprtopclip);
+		CHECK(ds->sprbottomclip);
+#undef CHECK
 	}
 }
 
@@ -1815,10 +1817,12 @@ static void R_AllocTextureColumnTables(size_t range)
 	for (drawseg_t *ds = drawsegs; ds < ds_p; ds++)
 	{
 		// Check if it's in range of the tables
-		if (ds->maskedtexturecol + ds->x1 >= oldtable && ds->maskedtexturecol + ds->x1 <= oldlast)
-			ds->maskedtexturecol = (ds->maskedtexturecol - oldtable) + texturecolumntable;
-		if (ds->thicksidecol + ds->x1 >= oldtable && ds->thicksidecol + ds->x1 <= oldlast)
-			ds->thicksidecol = (ds->thicksidecol - oldtable) + texturecolumntable;
+#define CHECK(which) \
+		if (which != NULL && which + ds->x1 >= oldtable && which + ds->x1 <= oldlast) \
+			which = (which - oldtable) + texturecolumntable
+		CHECK(ds->maskedtexturecol);
+		CHECK(ds->thicksidecol);
+#undef CHECK
 	}
 }
 
