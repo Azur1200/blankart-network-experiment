@@ -561,6 +561,9 @@ consvar_t cv_kartbumpspark = CVAR_INIT("kartbumpspark",
 
 consvar_t cv_kartbumpspring = CVAR_INIT ("kartbumpspring", "Yes", CV_NETVAR, CV_YesNo, NULL);
 
+consvar_t cv_kartexplosion_limitlifetime = CVAR_INIT ("kartexplosion_limitlifetime", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartexplosion_limitlifetime_cap = CVAR_INIT ("kartexplosion_limitlifetime_cap", "12", CV_NETVAR, CV_Natural, NULL);
+
 consvar_t cv_kartslipdash = CVAR_INIT ("kartslipdash", "No", CV_NETVAR|CV_CALL|CV_NOINIT|CV_GUARD, CV_YesNo, KartSlipdash_OnChange);
 
 consvar_t cv_kartslopeboost = CVAR_INIT ("kartslopeboost", "No", CV_NETVAR|CV_CALL|CV_NOINIT, CV_YesNo, KartSlopeBoost_OnChange);
