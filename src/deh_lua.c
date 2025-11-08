@@ -439,7 +439,7 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			}
 		return luaL_error(L, "karthud '%s' could not be found.\n", word);
 	}
-	else if (mathlib && fastncmp("KITEM_",word,6)) {
+	else if (fastncmp("KITEM_",word,6)) {
 		p = word+6;
 		if (fastcmp(p, "LIGHTNINGSHIELD"))
 		{
