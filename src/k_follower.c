@@ -17,6 +17,8 @@ follower_t followers[MAXSKINS];
 
 CV_PossibleValue_t Followercolor_cons_t[MAXSKINCOLORS+3];	// +3 to account for "Match", "Opposite" & NULL
 
+consvar_t cv_hidefollowers = CVAR_INIT ("hidefollowers", "Off", CV_SAVE, CV_OnOff, NULL);
+
 /*--------------------------------------------------
 	INT32 K_FollowerAvailable(const char *name)
 
@@ -453,7 +455,7 @@ void K_HandleFollower(player_t *player)
 		player->follower->renderflags = player->mo->renderflags;
 
 		// Make the follower invisible if we no contest'd rather than removing it. No one will notice the diff seriously.
-		if (player->pflags & PF_NOCONTEST)
+		if (player->pflags & PF_NOCONTEST || cv_hidefollowers.value)
 		{
 			player->follower->renderflags |= RF_DONTDRAW;
 		}
