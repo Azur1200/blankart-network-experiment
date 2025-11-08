@@ -27,6 +27,8 @@ extern "C" {
 
 extern CV_PossibleValue_t Followercolor_cons_t[]; // follower colours table, not a duplicate because of the "Match" option.
 
+extern consvar_t cv_hidefollowers;
+
 typedef enum
 {
 	FOLLOWERMODE_FLOAT,		// Default behavior, floats in the position you set it to.
