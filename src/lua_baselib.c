@@ -4043,6 +4043,30 @@ static int lib_kGetItemPatch(lua_State *L)
 	return 1;
 }
 
+static int lib_kIsKartItemAlternate(lua_State *L)
+{
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+	// HUDSAFE
+
+	if (item <= 0 || item >= numkartitems)
+		return luaL_error(L, "item number %d out of range (0 - %d)", item, numkartitems-1);
+
+	lua_pushboolean(L, K_IsKartItemAlternate(item));
+	return 1;
+}
+
+static int lib_kIsAltShrunk(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushboolean(L, K_IsAltShrunk(player));
+	return 1;
+}
+
 static int lib_kGetCollideAngle(lua_State *L)
 {
 	mobj_t *t1 = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -4274,6 +4298,33 @@ static int lib_kGetNewSpeed(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	lua_pushinteger(L, K_GetNewSpeed(player));
+	return 1;
+}
+
+static int lib_kInvincibilityGradient(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_InvincibilityGradient(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilitySpeed(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilitySpeed(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilityAccel(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilityAccel(time));
 	return 1;
 }
 
@@ -5302,6 +5353,8 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
+	{"K_IsAltShrunk", lib_kIsAltShrunk},
 	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
@@ -5326,6 +5379,9 @@ static luaL_Reg lib[] = {
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
+	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
+	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
+	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},

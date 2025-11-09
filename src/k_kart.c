@@ -2422,7 +2422,7 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 
 #undef LEGACYALTINVINMUL
 
-static fixed_t K_GetInvincibilitySpeed(UINT16 time)
+fixed_t K_GetInvincibilitySpeed(UINT16 time)
 {
     if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return INVINSPEEDBOOSTLGC;
@@ -2431,7 +2431,7 @@ static fixed_t K_GetInvincibilitySpeed(UINT16 time)
     return Easing_OutCubic(t, 0, INVINSPEEDBOOSTALT);
 }
 
-static fixed_t K_GetInvincibilityAccel(UINT16 time)
+fixed_t K_GetInvincibilityAccel(UINT16 time)
 {
     if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return INVINACCELBOOSTLGC;

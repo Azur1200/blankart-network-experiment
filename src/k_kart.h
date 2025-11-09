@@ -259,6 +259,8 @@ void K_DoSneaker(player_t *player, INT32 type);
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound);
 fixed_t K_InvincibilityGradient(UINT16 time);
 UINT16 K_GetInvincibilityTime(player_t *player);
+fixed_t K_GetInvincibilitySpeed(UINT16 time);
+fixed_t K_GetInvincibilityAccel(UINT16 time);
 void K_DoInvincibility(player_t *player, tic_t time);
 void K_KillBananaChain(mobj_t *banana, mobj_t *inflictor, mobj_t *source);
 void K_UpdateHnextList(player_t *player, boolean clean);
