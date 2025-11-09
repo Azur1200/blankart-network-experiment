@@ -74,7 +74,9 @@ fireflicker_t *P_SpawnAdjustableFireFlicker(sector_t *sector, INT16 lighta, INT1
 	fireflicker_t *flick;
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	flick = Z_Calloc(sizeof (*flick), PU_LEVSPEC, NULL);
+	flick = Z_LevelPoolCalloc(sizeof(*flick));
+	flick->thinker.alloctype = TAT_LEVELPOOL;
+	flick->thinker.size = sizeof(*flick);
 
 	P_AddThinker(THINK_MAIN, &flick->thinker);
 
@@ -149,7 +151,9 @@ void P_SpawnLightningFlash(sector_t *sector)
 
 	sector->lightingdata = NULL;
 
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	flash = Z_LevelPoolCalloc(sizeof(*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof(*flash);
 
 	P_AddThinker(THINK_MAIN, &flash->thinker);
 
@@ -208,7 +212,9 @@ strobe_t *P_SpawnAdjustableStrobeFlash(sector_t *sector, INT16 lighta, INT16 lig
 	strobe_t *flash;
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	flash = Z_Calloc(sizeof (*flash), PU_LEVSPEC, NULL);
+	flash = Z_LevelPoolCalloc(sizeof(*flash));
+	flash->thinker.alloctype = TAT_LEVELPOOL;
+	flash->thinker.size = sizeof(*flash);
 
 	P_AddThinker(THINK_MAIN, &flash->thinker);
 
@@ -278,7 +284,9 @@ glow_t *P_SpawnAdjustableGlowingLight(sector_t *sector, INT16 lighta, INT16 ligh
 	glow_t *g;
 
 	P_RemoveLighting(sector); // out with the old, in with the new
-	g = Z_Calloc(sizeof (*g), PU_LEVSPEC, NULL);
+	g = Z_LevelPoolCalloc(sizeof(*g));
+	g->thinker.alloctype = TAT_LEVELPOOL;
+	g->thinker.size = sizeof(*g);
 
 	P_AddThinker(THINK_MAIN, &g->thinker);
 
@@ -332,7 +340,9 @@ void P_FadeLightBySector(sector_t *sector, INT32 destvalue, INT32 speed, boolean
 		return;
 	}
 
-	ll = Z_Calloc(sizeof (*ll), PU_LEVSPEC, NULL);
+	ll = Z_LevelPoolCalloc(sizeof(*ll));
+	ll->thinker.alloctype = TAT_LEVELPOOL;
+	ll->thinker.size = sizeof(*ll);
 	ll->thinker.function = (actionf_p1)T_LightFade;
 	sector->lightingdata = ll; // set it to the lightlevel_t
 

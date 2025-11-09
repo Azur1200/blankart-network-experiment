@@ -1816,7 +1816,9 @@ static floormove_t *CreateFloorThinker(sector_t *sec)
 		return NULL;
 	}
 
-	dofloor = Z_Calloc(sizeof (*dofloor), PU_LEVSPEC, NULL);
+	dofloor = Z_LevelPoolCalloc(sizeof(*dofloor));
+	dofloor->thinker.alloctype = TAT_LEVELPOOL;
+	dofloor->thinker.size = sizeof(*dofloor);
 	P_AddThinker(mapnamespace == MNS_SRB2KART ? THINK_FLOORS : THINK_MAIN, &dofloor->thinker);
 
 	// make sure another floor thinker won't get started over this one
@@ -2109,7 +2111,9 @@ static elevator_t *CreateElevatorThinker(sector_t *sec)
 		return NULL;
 	}
 
-	elevator = Z_Calloc(sizeof (*elevator), PU_LEVSPEC, NULL);
+	elevator = Z_LevelPoolCalloc(sizeof(*elevator));
+	elevator->thinker.alloctype = TAT_LEVELPOOL;
+	elevator->thinker.size = sizeof(*elevator);
 	P_AddThinker(THINK_MAIN, &elevator->thinker);
 
 	// make sure other thinkers won't get started over this one
@@ -2408,7 +2412,9 @@ void EV_BounceSector(sector_t *sec, fixed_t momz, line_t *sourceline)
 	if (sec->ceilingdata) // One at a time, ma'am.
 		return;
 
-	bouncer = Z_Calloc(sizeof (*bouncer), PU_LEVSPEC, NULL);
+	bouncer = Z_LevelPoolCalloc(sizeof(*bouncer));
+	bouncer->thinker.alloctype = TAT_LEVELPOOL;
+	bouncer->thinker.size = sizeof(*bouncer);
 	P_AddThinker(THINK_MAIN, &bouncer->thinker);
 	sec->ceilingdata = bouncer;
 	bouncer->thinker.function = (actionf_p1)T_BounceCheese;
@@ -2435,7 +2441,9 @@ void EV_DoContinuousFall(sector_t *sec, sector_t *backsector, fixed_t spd, boole
 		backsector = sec;
 
 	// create and initialize new thinker
-	faller = Z_Calloc(sizeof (*faller), PU_LEVSPEC, NULL);
+	faller = Z_LevelPoolCalloc(sizeof(*faller));
+	faller->thinker.alloctype = TAT_LEVELPOOL;
+	faller->thinker.size = sizeof(*faller);
 	P_AddThinker(THINK_MAIN, &faller->thinker);
 	faller->thinker.function = (actionf_p1)T_ContinuousFalling;
 
@@ -2471,7 +2479,9 @@ INT32 EV_StartCrumble(sector_t *sec, ffloor_t *rover, boolean floating,
 		return 0;
 
 	// create and initialize new crumble thinker
-	crumble = Z_Calloc(sizeof (*crumble), PU_LEVSPEC, NULL);
+	crumble = Z_LevelPoolCalloc(sizeof(*crumble));
+	crumble->thinker.alloctype = TAT_LEVELPOOL;
+	crumble->thinker.size = sizeof(*crumble);
 	P_AddThinker(THINK_MAIN, &crumble->thinker);
 	crumble->thinker.function = (actionf_p1)T_StartCrumble;
 
@@ -2545,7 +2555,9 @@ void EV_MarioBlock(ffloor_t *rover, sector_t *sector, mobj_t *puncher)
 		const boolean itsamonitor = (thing->flags & MF_MONITOR) == MF_MONITOR;
 		// create and initialize new elevator thinker
 
-		block = Z_Calloc(sizeof (*block), PU_LEVSPEC, NULL);
+		block = Z_LevelPoolCalloc(sizeof(*block));
+		block->thinker.alloctype = TAT_LEVELPOOL;
+		block->thinker.size = sizeof(*block);
 		P_AddThinker(THINK_MAIN, &block->thinker);
 		roversec->floordata = block;
 		roversec->ceilingdata = block;
