@@ -4136,7 +4136,7 @@ static int lib_kSetIndirectItemCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	indirectitemcooldown = c;
+	K_SetIndirectItemCooldown(c);
 	return 0;
 }
 
@@ -4145,7 +4145,7 @@ static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	K_GetKartResult("hyudoro")->bgone = c;
+	K_GetKartResult("hyudoro")->cooldown = c;
 	return 0;
 }
 

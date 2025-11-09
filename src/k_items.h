@@ -52,26 +52,28 @@ typedef enum
 	MAXODDSTABLES
 } ATTRPACK kartoddstable_e;
 
-// item flags for HUD and usage
+// item flags for usage and HUD
 typedef enum
 {
-	KIF_ANIMATED = 1<<0,        // animate patches instead of using diffrent patches for different amounts (inversion of xItemLib's XIF_ICONFORAMT)
-	KIF_DARKBG = 1<<1,          // use dark item roulette BG
-	KIF_COLPATCH2PLAYER = 1<<2, // colourize patch to player
-	KIF_HIDEFROMROULETTE = 1<<3, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
+	KIF_UNIQUESLOT = 1<<0,       // Prevents the item from being rolled if in a player's item slot
+	KIF_UNIQUEDROP = 1<<1,       // Prevents the item from being rolled if it exists as a dropped item
+	KIF_UNIQUE = KIF_UNIQUESLOT|KIF_UNIQUEDROP,
+
+	KIF_ANIMATED = 1<<2,         // animate patches instead of using diffrent patches for different amounts (inversion of xItemLib's XIF_ICONFORAMT)
+	KIF_DARKBG = 1<<3,           // use dark item roulette BG
+	KIF_COLPATCH2PLAYER = 1<<4,  // colourize patch to player
+	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
 } ATTRPACK kartitemflags_e;
 
-// flags relevant to item rolls and usage
+// result flags relevant to the roulette
 typedef enum
 {
-	KRF_INDIRECTITEM = 1<<0,    // This item affects others indirectly. A 20 second cooldown is applied to all other items with this flag when an indirect item is rolled.
-	KRF_POWERITEM = 1<<1,       // This item is a "power item". This activates "frantic item" toggle related functionality.
-	KRF_COOLDOWNONSTART = 1<<2, // This item should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
-	KRF_NOTNEAREND = 1<<3,      // This item should not appear at the end of a race. (Usually trap items that lose their effectiveness)
-	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this item stops appearing for losing players. (Usually items that feel less effective at these positions)
-	KRF_UNIQUE = 1<<5,          // If already in a player's item slot, prevents all other players from obtaining this item from item boxes
-	KRF_RUNNERAUGMENT = 1<<6,   // This item's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
-	// free: 1<<7
+	KRF_INDIRECTITEM = 1<<0,    // This result's item affects others indirectly. All results with this flag share a single cooldown timer.
+	KRF_POWERITEM = 1<<1,       // This result is a "power item". This activates "frantic item" toggle related functionality.
+	KRF_COOLDOWNONSTART = 1<<2, // This result should not appear at the beginning of a race. (Usually really powerful crowd-breaking items)
+	KRF_NOTNEAREND = 1<<3,      // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
+	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
+	KRF_RUNNERAUGMENT = 1<<5,   // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function
@@ -117,7 +119,7 @@ struct kartresult_t
 	// If NULL, the functions never execute.
 	useoddsfunc_f *unique_odds[MAXODDSTABLES];
 
-	tic_t basebgone, bgone;
+	tic_t basecooldown, cooldown;
 };
 
 // contains all data for a call to K_KartGetItemOdds
@@ -159,7 +161,9 @@ boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 
-void K_KartHandleUniqueCooldown(void);
+void K_UpdateItemCooldown(void);
+tic_t K_GetIndirectItemCooldown(void);
+void K_SetIndirectItemCooldown(tic_t cooldown);
 boolean K_LegacyOddsMode(void);
 UINT32 K_GetCongaLineDistance(const player_t *player, UINT8 startPos);
 

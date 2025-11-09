@@ -309,8 +309,6 @@ SINT8 pickedvote; // What vote the host rolls
 SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
 SINT8 mostwanted; // The "most wanted" (first in line) player.
 tic_t wantedcalcdelay; // Time before it recalculates WANTED
-tic_t indirectitemcooldown; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
-// hyubgone was taken out back. See k_items.c
 tic_t mapreset; // Map reset delay when enough players have joined an empty game
 boolean thwompsactive; // Thwomps activate on lap 2
 UINT8 lastLowestLap; // Last lowest lap, for activating race lap executors

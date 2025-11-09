@@ -515,6 +515,12 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 	}
 #endif
 
+	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
+	{
+		spbplace = -1;
+		K_SetIndirectItemCooldown(0);
+	}
+
 	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
 	return BMIT_CONTINUE;
 }

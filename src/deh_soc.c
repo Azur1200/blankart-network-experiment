@@ -4209,9 +4209,9 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 
 			result->unique_odds[oddstable] = get_useoddsfunc(word2);
 		}
-		else if (fastcmp(word, "BGONETIME") || fastcmp(word, "BASEBGONE"))
+		else if (fastcmp(word, "COOLDOWNTIME"))
 		{
-			result->basebgone = atoi(word2) * TICRATE;
+			result->basecooldown = atoi(word2) * TICRATE;
 		}
 		else if (fastcmp(word, "DISPLAYNAME"))
 		{

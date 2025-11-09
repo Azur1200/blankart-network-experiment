@@ -8400,13 +8400,9 @@ static void P_InitGametype(void)
 	numlaps = K_RaceLapCount(gamemap - 1);
 
 	wantedcalcdelay = wantedfrequency*2;
-	indirectitemcooldown = 0;
 
 	for (i = 0; i < numkartresults; i++)
-	{
-		// hyubgone
-		kartresults[i].bgone = 0;
-	}
+		kartresults[i].cooldown = 0;
 
 	mapreset = 0;
 

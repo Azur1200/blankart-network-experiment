@@ -4266,14 +4266,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		SYNC(battlewanted[i]);
 
 	SYNC(wantedcalcdelay);
-	SYNC(indirectitemcooldown);
 
 	for (i = 0; i < numkartresults; i++)
-	{
-		// hyubgone
-		//SYNC(kartresults[i].basebgone);
-		SYNC(kartresults[i].bgone);
-	}
+		SYNC(kartresults[i].cooldown);
 
 	SYNC(mapreset);
 

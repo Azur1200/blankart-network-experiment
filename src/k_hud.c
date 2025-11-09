@@ -5686,6 +5686,22 @@ static void K_drawDistributionDebugger(void)
 	if (K_LegacyOddsMode())
 		V_DrawSmallString(70, 0, V_SPLITSCREEN|V_HUDTRANS|V_SNAPTOTOP, "Legacy Distance Mode");
 
+	// cooldown timer debugging
+	x = 240;
+	y = 160;
+	for (i = 0; i < numkartresults; i++)
+	{
+		kartresult_t *result = &kartresults[i];
+		if (result->cooldown > 0 && result->isalt == K_IsKartItemAlternate(result->type))
+		{
+			INT32 color = result->flags & KRF_INDIRECTITEM ? V_ORANGEMAP : kartitems[result->type].flags & KIF_UNIQUE ? V_YELLOWMAP : 0;
+			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOBOTTOM, K_GetCachedItemPatch(result->type, true, 0));
+			if (result->amount > 1)
+				V_DrawThinString(x+30, y+30, V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOBOTTOM|V_6WIDTHSPACE, va("x%d", result->amount));
+			V_DrawString(x+11, y+31, V_HUDTRANS|V_SNAPTOBOTTOM|color, va("%u", result->cooldown/TICRATE));
+			x -= 32;
+		}
+	}
 }
 
 static void K_drawCheckpointDebugger(void)

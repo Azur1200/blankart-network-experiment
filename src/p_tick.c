@@ -897,21 +897,7 @@ void P_Ticker(boolean run)
 		if (exitcountdown > 1)
 			exitcountdown--;
 
-		if (indirectitemcooldown > 0)
-			indirectitemcooldown--;
-
-		for (i = 0; i < numkartresults; i++)
-		{
-			// hyubgone
-			if (kartresults[i].bgone > 0)
-				kartresults[i].bgone--;
-		}
-
-		if (gametyperules & GTR_RACEODDS)
-		{
-			// Unique item cooldowns
-			K_KartHandleUniqueCooldown();
-		}
+		K_UpdateItemCooldown();
 
 		K_BossInfoTicker();
 

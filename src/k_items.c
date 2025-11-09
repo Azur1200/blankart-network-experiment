@@ -306,14 +306,8 @@ static void K_AwardPlayerItem(player_t *player, kartresult_t *result)
 		return;
 	}
 
-	if (result->flags & KRF_INDIRECTITEM) // Indirect items
-	{
-		indirectitemcooldown = 20*TICRATE;
-	}
-	else if (result->basebgone > 0) // Item cooldowns
-	{
-		result->bgone = result->basebgone;
-	}
+	if (result->basecooldown > 0)
+		result->cooldown = result->basecooldown;
 
 	player->itemtype = result->type;
 	UINT8 itemamount = result->amount;
@@ -441,39 +435,95 @@ static INT32 K_KartGetInvincibilityOdds(UINT32 dist)
 
 #undef FRAC_3h
 
-// Assigns general cooldowns to item results ith the KRF_UNIQUE flag.
-void K_KartHandleUniqueCooldown(void)
+// updates all result cooldown timers, and sets cooldowns for "unique" items
+void K_UpdateItemCooldown(void)
 {
-	UINT8 i, j;
+	INT32 i;
 
-	UINT8 pingame = 0, pexiting = 0;
+	// tick down the cooldown timers
+	for (i = 0; i < numkartresults; i++)
+		if (kartresults[i].cooldown > 0)
+			kartresults[i].cooldown--;
 
+	// figure out which unique items need their cooldown set
+	boolean setcooldown[MAXKARTITEMS] = {0};
+
+	// start by checking each player's item slot (KIF_UNIQUESLOT)
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		player_t *player = &players[i];
+
+		if (!playeringame[i] || player->spectator || player->exiting > 0)
+			continue;
+
+		if (gametyperules & GTR_BUMPERS && player->bumper == 0)
+			continue;
+
+		// special case for legacy shrink
+		if (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
+			setcooldown[KITEM_SHRINK] = true;
+
+		if (player->itemtype <= 0 || player->itemtype >= numkartitems || player->itemamount <= 0)
+			continue;
+
+		if (kartitems[player->itemtype].flags & KIF_UNIQUESLOT)
+			setcooldown[player->itemtype] = true;
+	}
+
+	// next, check for dropped items (KIF_UNIQUEDROP)
+	for (thinker_t *th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		mobj_t *mobj = (mobj_t *)th;
+
+		if (P_MobjWasRemoved(mobj))
+			continue;
+
+		switch (mobj->type)
+		{
+		case MT_FLOATINGITEM:
+			if (mobj->threshold > 0 && mobj->threshold < numkartitems && kartitems[mobj->threshold].flags & KIF_UNIQUEDROP)
+				setcooldown[mobj->threshold] = true;
+			break;
+
+		case MT_SPB: // SPBs in the field also count
+			setcooldown[KITEM_SPB] = true;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	// now it's FINALLY time to set cooldowns!
+	// unique item cooldowns only apply to race odds, unless it's an indirect item
 	for (i = 0; i < numkartresults; i++)
 	{
-		if (kartresults[i].flags & KRF_UNIQUE)
-		{
-			// TODO: bring this out
-			for (j = 0; j < MAXPLAYERS; j++)
-			{
-				if (!playeringame[j] || players[j].spectator)
-					continue;
+		kartresult_t *result = &kartresults[i];
+		if ((gametyperules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM) && setcooldown[result->type])
+			result->cooldown = result->basecooldown;
+	}
 
-				if (!(gametyperules & GTR_BUMPERS) || players[j].bumper)
-					pingame++;
+	// all indirect items share a single timer, whichever is higher
+	K_SetIndirectItemCooldown(K_GetIndirectItemCooldown());
+}
 
-				if (players[j].exiting)
-					pexiting++;
+tic_t K_GetIndirectItemCooldown(void)
+{
+	tic_t maxcooldown = 0;
+	for (UINT8 i = 0; i < numkartresults; i++)
+	{
+		if (kartresults[i].flags & KRF_INDIRECTITEM)
+			maxcooldown = max(maxcooldown, kartresults[i].cooldown);
+	}
+	return maxcooldown;
+}
 
-				if (players[j].itemtype == kartresults[i].type &&
-				    players[j].itemamount > 0 && kartresults[i].basebgone > 0)
-				{
-					// If this item has a cooldown, force-apply the cooldown
-					// preeemptively for the entire time the item is being held
-					// by a player.
-					kartresults[i].bgone = kartresults[i].basebgone;
-				}
-			}
-		}
+void K_SetIndirectItemCooldown(tic_t cooldown)
+{
+	for (UINT8 i = 0; i < numkartresults; i++)
+	{
+		if (kartresults[i].flags & KRF_INDIRECTITEM)
+			kartresults[i].cooldown = cooldown;
 	}
 }
 
@@ -624,8 +674,6 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 			case KITEM_SHRINK:
 				if (!K_IsKartItemAlternate(KITEM_SHRINK))
 				{
-					flags |= KRF_INDIRECTITEM;
-
 					if (roulette->pingame-1 <= roulette->pexiting)
 						newodds = 0;
 				}
@@ -676,14 +724,9 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		newodds *= multiplier;
 	}
 
-	if (result->bgone > 0)
+	if (result->cooldown > 0)
 	{
-		// (Replaces hyubgone) This item is on cooldown; don't let it get rolled.
-		newodds = 0;
-	}
-	else if (flags & KRF_INDIRECTITEM && indirectitemcooldown > 0)
-	{
-		// Too many items that act indirectly in a match can feel kind of bad.
+		// This item is on cooldown; don't let it get rolled.
 		newodds = 0;
 	}
 	else if (flags & KRF_COOLDOWNONSTART && K_InStartCooldown())
@@ -700,28 +743,6 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	{
 		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
 		newodds = 0;
-	}
-	else if (flags & KRF_UNIQUE)
-	{
-		// TODO: bring this out
-		for (i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || players[i].spectator)
-				continue;
-				
-			if (players[i].exiting)
-			continue;
-				
-			if ((gametyperules & GTR_BUMPERS) && !players[i].bumper)
-				continue;
-
-			if (players[i].itemtype == result->type && players[i].itemamount > 0)
-			{
-				// Can only appear in one player's item slot, and can't be rolled if already held by a player
-				newodds = 0;
-				break;
-			}
-		}
 	}
 	else if (flags & KRF_POWERITEM)
 	{
@@ -770,11 +791,9 @@ void K_KartGetItemOdds(kartroulette_t *roulette, INT32 outodds[static MAXKARTRES
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush)
 {
 	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
-	INT32 oddsdiv = ((MAXODDS - 1) * 2);
-
 	UINT8 i, j;
 	UINT8 useodds = 0;
-	UINT8 disttable[oddsdiv];
+	UINT8 disttable[(MAXODDS - 1) * 2];
 	UINT8 distlen = 0;
 	boolean oddsvalid[MAXODDS];
 	boolean rivalodds = false;
@@ -832,7 +851,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 		for (i = num; i; --i) \
         { \
 			disttable[distlen++] = odds; \
-			distlen = min(oddsdiv - 1, distlen); \
+			distlen = min(sizeof(disttable) - 1, distlen); \
         }
 
 	if (gametyperules & GTR_BATTLEODDS) // Battle Mode
@@ -896,13 +915,13 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 
 		if (pdis == 0)
 			useodds = disttable[0];
-		else if (pdis > (UINT32)ACTIVEDISTVAR * ((12 * distlen) / oddsdiv))
-			useodds = disttable[distlen-1];
+		else if (pdis > (UINT32)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
+			useodds = disttable[max(0, distlen-1)];
 		else
 		{
-			for (i = 1; i < (oddsdiv - 1); i++)
+			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
-				INT32 distcalc = min(distlen-1, (i * distlen) / oddsdiv);
+				INT32 distcalc = min(distlen-1, (i * distlen) / sizeof(disttable));
 
 				if (pdis <= (UINT32)usedistvar * distcalc)
 				{
@@ -1366,7 +1385,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// SPECIAL CASE No. 6:
 	// In battle, an SPB is forced onto players to target the "most wanted" player
 	if (K_BattleForceSPB(player)
-		&& spbplace == -1 && !indirectitemcooldown && !dontforcespb
+		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0 && !dontforcespb
 		&& K_ItemResultEnabled(K_GetKartResult("spb")))
 	{
 		K_AwardPlayerItem(player, K_GetKartResult("spb"));
@@ -1500,7 +1519,7 @@ INT32 KO_SPBRaceOdds(INT32 odds, const kartroulette_t *roulette, const kartresul
 		*forceme = 0;
 	}
 	else if (K_RaceForceSPB(roulette->playerpos, roulette->pdis)
-		&& spbplace == -1 && !indirectitemcooldown)
+		&& spbplace == -1 && K_GetKartResult("spb")->cooldown == 0)
 	{
 		// Force SPB onto 2nd if they get too far behind.
 		*forceme = 2;

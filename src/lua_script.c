@@ -418,7 +418,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushboolean(L, itempushing); // hmm... i think this should be a boolean
 		return 1;
 	} else if (fastcmp(word,"hyubgone")) {
-		lua_pushinteger(L, K_GetKartResult("hyudoro")->bgone);
+		lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
 		return 1;
 	} else if (fastcmp(word,"encoremode")) {
 		lua_pushboolean(L, encoremode);
@@ -433,7 +433,7 @@ int LUA_PushGlobals(lua_State *L, const char *word)
 		lua_pushinteger(L, wantedcalcdelay);
 		return 1;
 	} else if (fastcmp(word,"indirectitemcooldown")) {
-		lua_pushinteger(L, indirectitemcooldown);
+		lua_pushinteger(L, K_GetIndirectItemCooldown());
 		return 1;
 	} else if (fastcmp(word,"thwompsactive")) {
 		lua_pushboolean(L, thwompsactive);
@@ -559,9 +559,9 @@ int LUA_WriteGlobals(lua_State *L, const char *word)
 	else if (fastcmp(word,"exitcountdown"))
 		exitcountdown = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"indirectitemcooldown"))
-		indirectitemcooldown = (tic_t)luaL_checkinteger(L, 2);
+		K_SetIndirectItemCooldown(luaL_checkinteger(L, 2));
 	else if (fastcmp(word,"hyubgone"))
-		K_GetKartResult("hyudoro")->bgone = (tic_t)luaL_checkinteger(L, 2);
+		K_GetKartResult("hyudoro")->cooldown = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"starttime"))
 		starttime = (tic_t)luaL_checkinteger(L, 2);
 	else if (fastcmp(word,"introtime"))

@@ -8410,11 +8410,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			}
 		}
 
-		if (mobj->threshold == KITEM_SPB || mobj->threshold == KITEM_SHRINK)
-		{
-			indirectitemcooldown = 20*TICRATE;
-		}
-
 		K_UpdateMobjItemOverlay(mobj, mobj->threshold, mobj->movecount);
 		break;
 	}
@@ -8683,8 +8678,6 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 			mobj->threshold--;
 		break;
 	case MT_SPB:
-		indirectitemcooldown = 20*TICRATE;
-		/* FALLTHRU */
 	case MT_BALLHOG:
 		{
 			mobj_t *ghost = P_SpawnGhostMobj(mobj);

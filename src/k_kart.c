@@ -89,7 +89,6 @@ consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_O
 // encoremode is Encore Mode (duh), bool
 // comeback is Battle Mode's karma comeback, also bool
 // battlewanted is an array of the WANTED player nums, -1 for no player in that slot
-// indirectitemcooldown is timer before anyone's allowed another Shrink/SPB
 // mapreset is set when enough players fill an empty server
 
 // Cluster point.
@@ -10222,11 +10221,6 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 
 		if (player->growshrinktimer <= 0)
 			player->growcancel = -1;
-
-		if (player->itemtype == KITEM_SPB
-			|| player->itemtype == KITEM_SHRINK
-			|| (player->growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK)))
-			indirectitemcooldown = 20*TICRATE;
 
 		if (player->hyudorotimer > 0)
 		{
