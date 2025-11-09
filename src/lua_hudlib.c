@@ -1188,7 +1188,7 @@ static int libd_getColorHudPatch(lua_State *L)
 	enum hudpatch option = luaL_checkoption(L, 1, NULL, hud_patch_options);
 	patch_t *patch;
 	UINT8 *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-	boolean small, dark;
+	boolean small, dark, multi;
 
 	switch (option) {
 		case hudpatch_item:
@@ -1204,7 +1204,8 @@ static int libd_getColorHudPatch(lua_State *L)
 			break;
 		case hudpatch_itemalt:
 			small = lua_optboolean(L, 2);
-			patch = K_getItemAltPatch(small);
+			multi = lua_optboolean(L, 3);
+			patch = K_getItemAltPatch(small, multi);
 			break;
 		default:
 			return 0; // you shouldn't be here

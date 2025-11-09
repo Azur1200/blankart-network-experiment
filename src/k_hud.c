@@ -181,7 +181,7 @@ static patch_t *kp_wantedreticle;
 static patch_t *kp_minimapdot;
 
 static patch_t *kp_itembg[8];
-static patch_t *kp_itemalt[2];
+static patch_t *kp_itemalt[4];
 static patch_t *kp_itemtimer[2];
 static patch_t *kp_itemmulsticker[4];
 static patch_t *kp_itemx;
@@ -529,6 +529,8 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_itembg[7], "K_ISBCD");
 	HU_UpdatePatch(&kp_itemalt[0], "K_ALTITM");
 	HU_UpdatePatch(&kp_itemalt[1], "K_ALTITS");
+	HU_UpdatePatch(&kp_itemalt[2], "K_ALTIMM");
+	HU_UpdatePatch(&kp_itemalt[3], "K_ALTISM");
 	HU_UpdatePatch(&kp_itemtimer[0], "K_ITIMER");
 	HU_UpdatePatch(&kp_itemtimer[1], "K_ISIMER");
 	HU_UpdatePatch(&kp_itemmulsticker[0], "K_ITMUL");
@@ -742,9 +744,9 @@ patch_t *K_getItemMulPatch(boolean small)
 	return K_UseColorHud() ? kp_itemmulsticker[2+ofs] : kp_itemmulsticker[ofs];
 }
 
-patch_t *K_getItemAltPatch(boolean small)
+patch_t *K_getItemAltPatch(boolean small, boolean multimode)
 {
-	UINT8 ofs = small ? 1 : 0;
+	UINT8 ofs = (small ? 1 : 0) + (multimode ? 2 : 0);
 	return kp_itemalt[ofs];
 }
 
@@ -1393,8 +1395,7 @@ static void K_drawKartItem(void)
 
 		if (isalt)
 		{
-			const INT32 altofs = tiny ? -12 : -25;
-			V_DrawFixedPatch((fx+altofs)<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny), colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, true), colmap);
 		}
 
 		if (tiny)
@@ -1414,7 +1415,7 @@ static void K_drawKartItem(void)
 
 		// TODO: Some proper check for if an alt has unique graphics
 		if (isalt)
-			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, K_getItemAltPatch(tiny), colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, K_getItemAltPatch(tiny, false), colmap);
 	}
 
 	//V_ClearClipRect();
