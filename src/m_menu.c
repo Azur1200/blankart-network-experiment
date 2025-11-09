@@ -8376,6 +8376,7 @@ void MD_DrawMonitorToggles(void)
 	INT32 i, translucent;
 	const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
 	const char *displayname;
+	boolean hasalt; // ha, salt! (has alt)
 	if (result != NULL && kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value == 1)
 		result = K_GetKartResultAlt(result->cvar->name, true);
 
@@ -8445,11 +8446,18 @@ void MD_DrawMonitorToggles(void)
 			}
 			else
 				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
+
+			if (item->altcvar != NULL && item->altcvar->value == 1)
+			{
+				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ALTITS", PU_CACHE));
+			}
 		}
 
 		x += spacing;
 		y = currentMenu->y+(spacing/4);
 	}
+
+	hasalt = false;
 
 	switch (currentMenu->menuitems[itemOn].argument)
 	{
@@ -8499,6 +8507,7 @@ void MD_DrawMonitorToggles(void)
 
 			if (item->altcvar != NULL)
 			{
+				hasalt = true;
 				translucent = item->altcvar->value == 1 ? 0 : V_TRANSLUCENT;
 				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
 			}
@@ -8510,6 +8519,12 @@ void MD_DrawMonitorToggles(void)
 		shitsfree--;
 
 	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", displayname));
+
+	if (hasalt)
+		V_DrawThinString(8,
+				 BASEVIDHEIGHT - 12,
+				 highlightflags | V_ALLOWLOWERCASE | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
+				 "Press BACKSPACE to swap variants");
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)

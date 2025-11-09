@@ -181,6 +181,7 @@ static patch_t *kp_wantedreticle;
 static patch_t *kp_minimapdot;
 
 static patch_t *kp_itembg[8];
+static patch_t *kp_itemalt[2];
 static patch_t *kp_itemtimer[2];
 static patch_t *kp_itemmulsticker[4];
 static patch_t *kp_itemx;
@@ -526,6 +527,8 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_itembg[5], "K_ITBCD");
 	HU_UpdatePatch(&kp_itembg[6], "K_ISBC");
 	HU_UpdatePatch(&kp_itembg[7], "K_ISBCD");
+	HU_UpdatePatch(&kp_itemalt[0], "K_ALTITM");
+	HU_UpdatePatch(&kp_itemalt[1], "K_ALTITS");
 	HU_UpdatePatch(&kp_itemtimer[0], "K_ITIMER");
 	HU_UpdatePatch(&kp_itemtimer[1], "K_ISIMER");
 	HU_UpdatePatch(&kp_itemmulsticker[0], "K_ITMUL");
@@ -737,6 +740,12 @@ patch_t *K_getItemMulPatch(boolean small)
 {
 	UINT8 ofs = small ? 1 : 0;
 	return K_UseColorHud() ? kp_itemmulsticker[2+ofs] : kp_itemmulsticker[ofs];
+}
+
+patch_t *K_getItemAltPatch(boolean small)
+{
+	UINT8 ofs = small ? 1 : 0;
+	return kp_itemalt[ofs];
 }
 
 // This version of the function was prototyped in Lua by Nev3r ... a HUGE thank you goes out to them!
@@ -1190,6 +1199,7 @@ static void K_drawKartItem(void)
 	UINT8 *colmap = NULL;
 	UINT8 *colormap = NULL;
 	boolean flipamount = false;	// Used for 3P/4P splitscreen to flip item amount stuff
+	boolean isalt = false;
 
 	if (stplyr->itemroulette)
 	{
@@ -1268,7 +1278,10 @@ static void K_drawKartItem(void)
 				flamebar = FixedDiv(stplyr->invincibilitycancel, 26);
 
 			if (leveltime & 1)
+			{
 				localpatch = K_GetCachedItemPatch(KITEM_INVINCIBILITY, tiny, 0);
+				isalt = true;
+			}
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1300,6 +1313,8 @@ static void K_drawKartItem(void)
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
+			else if (kartitems[stplyr->itemtype].altenabled)
+				isalt = true;
 
 			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
 				dark = kartitems[stplyr->itemtype].flags & KIF_DARKBG;
@@ -1375,6 +1390,13 @@ static void K_drawKartItem(void)
 		localbg = K_getItemMulPatch(tiny);
 		V_DrawMappedPatch(fx + (flipamount ? 48 : 0), fy, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
 		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
+
+		if (isalt)
+		{
+			const INT32 altofs = tiny ? -12 : -25;
+			V_DrawFixedPatch((fx+altofs)<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny), colmap);
+		}
+
 		if (tiny)
 			if (flipamount) // reminder that this is for 3/4p's right end of the screen.
 				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
@@ -1387,7 +1409,13 @@ static void K_drawKartItem(void)
 		}
 	}
 	else
+	{
 		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
+
+		// TODO: Some proper check for if an alt has unique graphics
+		if (isalt)
+			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, K_getItemAltPatch(tiny), colmap);
+	}
 
 	//V_ClearClipRect();
 

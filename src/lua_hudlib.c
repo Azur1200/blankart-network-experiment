@@ -178,7 +178,8 @@ static const char *const camera_opt[] = {
 
 enum hudpatch {
 	hudpatch_item = 0,
-	hudpatch_itemmul
+	hudpatch_itemmul,
+	hudpatch_itemalt
 };
 
 static const char *const hud_patch_options[] = {
@@ -1200,6 +1201,10 @@ static int libd_getColorHudPatch(lua_State *L)
 		case hudpatch_itemmul:
 			small = lua_optboolean(L, 2);
 			patch = K_getItemMulPatch(small);
+			break;
+		case hudpatch_itemalt:
+			small = lua_optboolean(L, 2);
+			patch = K_getItemAltPatch(small);
 			break;
 		default:
 			return 0; // you shouldn't be here
