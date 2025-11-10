@@ -70,13 +70,13 @@ UINT8 sound_started = false;
 static float music_volume, sfx_volume, internal_volume = 1.0f;
 
 // fading
-static bool is_fading;
+static boolean is_fading;
 static float fading_source;
 static float fading_target;
 static UINT32 fading_timer;
 static UINT32 fading_duration;
 static void (*fading_callback)(void);
-static bool fading_nocleanup;
+static boolean fading_nocleanup;
 
 static viofile_t musicfile;
 static SNDFILE *musicstream;
@@ -233,7 +233,7 @@ static boolean I_UpdateMusicVolume(void)
 	return true;
 }
 
-static bool I_QueueNextSample(bool unqueue)
+static boolean I_QueueNextSample(boolean unqueue)
 {
 	static INT16 *stream = NULL;
 
@@ -241,7 +241,7 @@ static bool I_QueueNextSample(bool unqueue)
 	if (stream == NULL)
 		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
 
-	bool stereo = true;
+	boolean stereo = true;
 	size_t samplerate = SAMPLERATE;
 	size_t count;
 #ifdef HAVE_OPENMPT
@@ -324,7 +324,7 @@ void I_UpdateSound(void)
 		}
 
 		// semi-hack because this is sometimes not called for a longer period of time
-		bool need_restart = processed == BUFFERCOUNT;
+		boolean need_restart = processed == BUFFERCOUNT;
 		while (processed > 0)
 		{
 			if (!I_QueueNextSample(true))
@@ -537,7 +537,7 @@ static SF_VIRTUAL_IO virtual_io =
 
 static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
-	bool stereo = false;
+	boolean stereo = false;
 	char *data = ds2chunk(input, &size);
 	size_t samplerate = SAMPLERATE;
 	if (data == NULL)
@@ -973,7 +973,7 @@ UINT32 I_GetSongPosition(void)
 }
 
 
-static bool InitializeMusicStreaming(void *input, size_t size)
+static boolean InitializeMusicStreaming(void *input, size_t size)
 {
 	// Not a doom sound? Try something else.
 #ifdef HAVE_GME
@@ -1094,7 +1094,7 @@ static bool InitializeMusicStreaming(void *input, size_t size)
 #endif
 }
 
-bool I_LoadSong(char *data, size_t len)
+boolean I_LoadSong(char *data, size_t len)
 {
 	/*
 	const char *key1 = "LOOP";
