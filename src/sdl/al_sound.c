@@ -33,6 +33,7 @@
 
 #include <alc.h>
 #include <al.h>
+#include <alext.h>
 
 #include <sndfile.h>
 
@@ -45,6 +46,14 @@
 #define SAMPLERATE 44100*2
 #define BUFFERSIZE 4096
 #define BUFFERCOUNT 8
+
+typedef enum
+{
+	Int16,
+	Float,
+	// IMA4,
+	// MSADPCM
+} sample_format_t;
 
 #ifdef HAVE_OPENMPT
 #include "libopenmpt/libopenmpt.h"
@@ -163,7 +172,15 @@ void I_StartupSound(void)
 		return;
 	}
 
-	context = alcCreateContext(device, NULL);
+	// enable the limiter and disable hrtf
+	// idk if either is necessary tbh but fuckit
+	ALCint attrs[] = {
+		ALC_OUTPUT_LIMITER_SOFT, ALC_TRUE,
+		ALC_HRTF_SOFT, ALC_FALSE,
+		0
+	};
+
+	context = alcCreateContext(device, attrs);
 	if (context == NULL)
 	{
 		CONS_Alert(CONS_ERROR, "Error initializing OpenAL: %s\n", GetALError(alGetError()));
@@ -236,12 +253,13 @@ static boolean I_UpdateMusicVolume(void)
 static boolean I_QueueNextSample(boolean unqueue)
 {
 	static INT16 *stream = NULL;
+	sample_format_t sample_format = Int16;
+	ALenum format = AL_FORMAT_MONO16;
 
 	// keeping it at PU_CACHE_UNLOCKED is fine since we won't do any Z allocations while we use it
 	if (stream == NULL)
 		Z_Malloc(sizeof(INT16) * 2 * BUFFERSIZE, PU_CACHE_UNLOCKED, &stream);
 
-	boolean stereo = true;
 	size_t samplerate = SAMPLERATE;
 	size_t count;
 #ifdef HAVE_OPENMPT
@@ -251,10 +269,55 @@ static boolean I_QueueNextSample(boolean unqueue)
 #endif
 	if (musicstream != NULL)
 	{
-		if (musicinfo.channels == 1)
-			stereo = false;
+		// use float format for those, otherwise shit will kill your ears
+		// thx WOOF for making me aware of this
+		switch ((musicinfo.format & SF_FORMAT_SUBMASK))
+		{
+			case SF_FORMAT_PCM_24:
+			case SF_FORMAT_PCM_32:
+			case SF_FORMAT_FLOAT:
+			case SF_FORMAT_DOUBLE:
+			case SF_FORMAT_VORBIS:
+			case SF_FORMAT_OPUS:
+			case SF_FORMAT_ALAC_20:
+			case SF_FORMAT_ALAC_24:
+			case SF_FORMAT_ALAC_32:
+#ifdef HAVE_SNDFILE_MPEG
+			case SF_FORMAT_MPEG_LAYER_I:
+			case SF_FORMAT_MPEG_LAYER_II:
+			case SF_FORMAT_MPEG_LAYER_III:
+#endif
+				// check if we actually even support shit
+				// otherwise everything will explode kek
+				if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+				{
+					sample_format = Float;
+				}
+				break;
+			default:
+				sample_format = Int16;
+				break;
+		}
 
-		count = sf_read_short(musicstream, stream, BUFFERSIZE) * musicinfo.channels;
+		if (musicinfo.channels == 2) // stereo
+		{
+			format = sample_format == Float ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
+		}
+		else
+		{
+			format = sample_format == Float ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+		}
+
+		if (sample_format == Float)
+		{
+			count = sf_read_float(musicstream, (float *)stream, BUFFERSIZE) * musicinfo.channels;
+			count *= 2; // float is 4 bytes not 2, so just double this shit for now kek
+		}
+		else
+		{
+			count = sf_read_short(musicstream, stream, BUFFERSIZE) * musicinfo.channels;
+		}
+
 		if (count == 0)
 		{
 			// TODO: looppoints
@@ -281,7 +344,7 @@ static boolean I_QueueNextSample(boolean unqueue)
 		}
 	}
 
-	alBufferData(musicbuffers[bufferindex], stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, stream, count, samplerate);
+	alBufferData(musicbuffers[bufferindex], format, stream, count, samplerate);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
@@ -369,22 +432,30 @@ void I_UpdateSound(void)
 	}
 }
 
-static UINT8 *ds2chunk(void *stream, size_t *len)
+static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 {
-	UINT16 ver,freq;
+	UINT16 ver, freq;
 	UINT32 samples, i, newsamples;
 	UINT8 *sound;
 
 	SINT8 *s;
 	INT16 *d;
 	INT16 o;
-	fixed_t step, frac;
+	fixed_t frac;
 
 	// lump header
 	ver = READUINT16(stream); // sound version format?
 	if (ver != 3) // It should be 3 if it's a doomsound...
 		return NULL; // onos! it's not a doomsound!
+
 	freq = READUINT16(stream);
+
+	// dont divide by 0
+	if (freq == 0)
+		return NULL;
+
+	*samplerate = (size_t)freq << 1; // yeah dont ask me i have no fucking clue why we gotta double that :chaosleep:
+
 	samples = READUINT32(stream);
 
 	// convert from signed 8bit ???hz to signed 16bit 44100hz.
@@ -421,58 +492,13 @@ static UINT8 *ds2chunk(void *stream, size_t *len)
 	d = (INT16 *)sound;
 
 	i = 0;
-	switch(freq)
+
+	// dont resample shit, let openal handle everything
+	while (i++ < samples)
 	{
-	case 44100: // already at the same rate? well that makes it simple.
-		while(i++ < samples)
-		{
-			o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-		}
-		break;
-	case 22050: // unwrap 2x
-		while(i++ < samples)
-		{
-			o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-		}
-		break;
-	case 11025: // unwrap 4x
-		while(i++ < samples)
-		{
-			o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-			*d++ = o; // left channel
-			*d++ = o; // right channel
-		}
-		break;
-	default: // convert arbitrary hz to 44100.
-		step = 0;
-		frac = ((UINT32)freq << FRACBITS) / SAMPLERATE + 1; //Add 1 to counter truncation.
-		while (i < samples)
-		{
-			o = (INT16)(*s+0x80)<<8; // changed signedness and shift up to 16 bits
-			while (step < FRACUNIT) // this is as fast as I can make it.
-			{
-				*d++ = o; // left channel
-				*d++ = o; // right channel
-				step += frac;
-			}
-			do {
-				i++; s++;
-				step -= FRACUNIT;
-			} while (step >= FRACUNIT);
-		}
-		break;
+		o = ((INT16)(*s++)+0x80)<<8; // changed signedness and shift up to 16 bits
+		*d++ = o; // left channel
+		*d++ = o; // right channel
 	}
 
 	*len = (UINT8 *)d-sound;
@@ -537,9 +563,11 @@ static SF_VIRTUAL_IO virtual_io =
 
 static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
-	boolean stereo = false;
-	char *data = ds2chunk(input, &size);
 	size_t samplerate = SAMPLERATE;
+	char *data = ds2chunk(input, &size, &samplerate);
+	ALenum format = AL_FORMAT_MONO16;
+	sample_format_t sample_format = Int16;
+
 	if (data == NULL)
 	{
 #ifdef HAVE_GME
@@ -622,7 +650,6 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			data = (char *)mem;
 		}
 #endif
-
 		if (data == NULL)
 		{
 			viofile_t file =
@@ -634,7 +661,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			SF_INFO info =
 			{
 				.frames = 1,
-				.samplerate = SAMPLERATE,
+				.samplerate = samplerate,
 				.channels = 1,
 				.format = 0,
 				.sections = 1,
@@ -643,24 +670,81 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			SNDFILE *snd = sf_open_virtual(&virtual_io, SFM_READ, &info, &file);
 			if (snd == NULL)
 				return INVALID_HANDLE;
-			if (info.channels == 2)
-				stereo = true;
+
+			// use float format for those, otherwise shit will kill your ears
+			// thx WOOF for making me aware of this
+			switch ((info.format & SF_FORMAT_SUBMASK))
+			{
+				case SF_FORMAT_PCM_24:
+				case SF_FORMAT_PCM_32:
+				case SF_FORMAT_FLOAT:
+				case SF_FORMAT_DOUBLE:
+				case SF_FORMAT_VORBIS:
+				case SF_FORMAT_OPUS:
+				case SF_FORMAT_ALAC_20:
+				case SF_FORMAT_ALAC_24:
+				case SF_FORMAT_ALAC_32:
+#ifdef HAVE_SNDFILE_MPEG
+				case SF_FORMAT_MPEG_LAYER_I:
+				case SF_FORMAT_MPEG_LAYER_II:
+				case SF_FORMAT_MPEG_LAYER_III:
+#endif
+				// check if we actually even support shit
+				// otherwise everything will explode kek
+				if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+				{
+					sample_format = Float;
+				}
+				break;
+				default:
+					sample_format = Int16;
+					break;
+			}
+
+			if (info.channels == 2) // stereo
+			{
+				format = sample_format == Float ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
+			}
+			else
+			{
+				format = sample_format == Float ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+			}
 
 			size = 4096;
 			size_t pos = 0;
 			data = Z_Malloc(size, PU_SOUND, NULL);
-			for (;;)
+
+			if (sample_format == Float)
 			{
-				sf_count_t count = sf_read_short(snd, (short *)&data[pos], (size - pos) / 2);
-				if (count == 0)
-					break;
-				pos += count * 2;
-				if (pos >= size)
+				for (;;)
 				{
-					size <<= 1;
-					data = Z_Realloc(data, size, PU_SOUND, NULL);
+					sf_count_t count = sf_read_float(snd, (float *)&data[pos], (size - pos) / sizeof(float));
+					if (count == 0)
+						break;
+					pos += count * sizeof(float);
+					if (pos >= size)
+					{
+						size <<= 1;
+						data = Z_Realloc(data, size, PU_SOUND, NULL);
+					}
 				}
 			}
+			else
+			{
+				for (;;)
+				{
+					sf_count_t count = sf_read_short(snd, (short *)&data[pos], (size - pos) / sizeof(short));
+					if (count == 0)
+						break;
+					pos += count * sizeof(short);
+					if (pos >= size)
+					{
+						size <<= 1;
+						data = Z_Realloc(data, size, PU_SOUND, NULL);
+					}
+				}
+			}
+
 			size = pos;
 			samplerate = info.samplerate;
 			sf_close(snd);
@@ -676,7 +760,8 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 		Z_Free(data);
 		return INVALID_HANDLE;
 	}
-	alBufferData(buffer, stereo ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data, size, samplerate);
+
+	alBufferData(buffer, format, data, size, samplerate);
 	Z_Free(data);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
@@ -724,7 +809,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 		return;
 
 	ALuint source = handle;
-	alSourcef(source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4);
+	alSourcef(source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4.0f);
 	ALenum err = alGetError();
 	if (err != AL_NO_ERROR)
 		CONS_Alert(CONS_WARNING, "Error setting sound volume: %s\n", GetALError(err));
