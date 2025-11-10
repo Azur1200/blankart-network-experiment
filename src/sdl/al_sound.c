@@ -222,7 +222,7 @@ void I_ShutdownSound(void)
 
 static boolean I_UpdateMusicVolume(void)
 {
-	alSourcef(music, AL_GAIN, music_volume);
+	alSourcef(music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/100.f));
 	ALenum err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
@@ -724,7 +724,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 		return;
 
 	ALuint source = handle;
-	alSourcef(source, AL_GAIN, sfx_volume * (float)vol / 255.0f);
+	alSourcef(source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4);
 	ALenum err = alGetError();
 	if (err != AL_NO_ERROR)
 		CONS_Alert(CONS_WARNING, "Error setting sound volume: %s\n", GetALError(err));
@@ -818,7 +818,7 @@ boolean I_SoundIsPlaying(INT32 handle)
 
 void I_SetSfxVolume(int volume)
 {
-	sfx_volume = (float)volume / 31.0f;
+	sfx_volume = (float)volume / 100.f;
 }
 
 void I_InitMusic(void)
@@ -1277,7 +1277,7 @@ void I_ResumeSong(void)
 
 void I_SetMusicVolume(int volume)
 {
-	music_volume = (float)volume / 35.0f;
+	music_volume = (float)volume / 100.f;
 	if (music != INVALID_HANDLE)
 		I_UpdateMusicVolume();
 }
