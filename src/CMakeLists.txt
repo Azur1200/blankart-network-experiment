@@ -235,10 +235,11 @@ endif()
 # TODO: fix prng and P_CreateBlockmap overflow at some point
 target_compile_options(SRB2SDL2 PRIVATE -fwrapv)
 
-
-target_compile_options(SRB2SDL2 PRIVATE -O0)
-target_compile_options(SRB2SDL2 PRIVATE -g)
-
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+	target_compile_options(SRB2SDL2 PRIVATE -O0)
+else()
+	target_compile_options(SRB2SDL2 PRIVATE -O3)
+endif()
 
 # Compiler warnings configuration
 target_compile_options(SRB2SDL2 PRIVATE
