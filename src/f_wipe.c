@@ -366,7 +366,6 @@ void F_RunWipe(UINT8 wipetype, boolean drawMenu)
 	// Init the wipe
 	wipe_scr = vid.screens[0];
 
-	I_UpdateSound();
 	D_WipeLoop(WIPELOOP_RUNWIPE, wipetype, drawMenu);
 #endif
 }

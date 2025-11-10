@@ -1788,7 +1788,6 @@ void G_StartTitleCard(void)
 void G_PreLevelTitleCard(void)
 {
 #ifndef NOWIPE
-	I_UpdateSound();
 	D_WipeLoop(WIPELOOP_TITLECARD, 0, false);
 #endif
 }

@@ -900,6 +900,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 			ST_preLevelTitleCardDrawer();
 
 		D_WipeDraw(drawMenu);
+		I_UpdateSound();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
