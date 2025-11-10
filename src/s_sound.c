@@ -1001,8 +1001,7 @@ static void S_StopChannel(INT32 cnum)
 	if (c->sfxinfo)
 	{
 		// stop the sound playing
-		if (I_SoundIsPlaying(c->handle))
-			I_StopSound(c->handle);
+		I_StopSound(c->handle);
 
 		// degrade usefulness of sound data
 		c->sfxinfo->usefulness--;
