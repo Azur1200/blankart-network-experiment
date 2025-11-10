@@ -59,14 +59,14 @@ UINT8 sound_started = false;
 static float music_volume, sfx_volume, internal_volume;
 
 // fading
-static bool is_fading;
+static boolean is_fading;
 static UINT8 fading_source;
 static UINT8 fading_target;
 static UINT32 fading_timer;
 static UINT32 fading_duration;
 static void (*fading_callback)(void);
-static bool fading_do_callback;
-static bool fading_nocleanup;
+static boolean fading_do_callback;
+static boolean fading_nocleanup;
 
 static ALCdevice *device;
 static ALCcontext *context;
@@ -164,7 +164,7 @@ void I_ShutdownSound(void)
 #endif
 }
 
-static bool I_UpdateMusicVolume(void)
+static boolean I_UpdateMusicVolume(void)
 {
 	alSourcef(music, AL_GAIN, music_volume * internal_volume);
 	ALenum err = alGetError();
@@ -587,7 +587,7 @@ INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priori
 		return -1;
 	}
 
-	alSourcei(source, AL_BUFFER, (uintptr_t)S_sfx[id]->data);
+	alSourcei(source, AL_BUFFER, (uintptr_t)S_sfx[id].data);
 	err = alGetError();
 	if (err != AL_NO_ERROR)
 	{
@@ -632,7 +632,7 @@ void I_StopSound(INT32 handle)
 	alDeleteSources(1, &source);
 }
 
-bool I_SoundIsPlaying(INT32 handle)
+boolean I_SoundIsPlaying(INT32 handle)
 {
 	if (handle == -1 || !alIsSource((ALuint)handle))
 		return false;
@@ -642,7 +642,7 @@ bool I_SoundIsPlaying(INT32 handle)
 	return value == AL_PLAYING;
 }
 
-void I_SetSfxVolume(UINT8 volume)
+void I_SetSfxVolume(int volume)
 {
 	sfx_volume = (float)volume / 31.0f;
 }
@@ -672,7 +672,7 @@ musictype_t I_SongType(void)
 	return MU_NONE;
 }
 
-bool I_SongPlaying(void)
+boolean I_SongPlaying(void)
 {
 	if (music == INVALID_HANDLE)
 		return false;
@@ -682,7 +682,7 @@ bool I_SongPlaying(void)
 	return value == AL_PLAYING;
 }
 
-bool I_SongPaused(void)
+boolean I_SongPaused(void)
 {
 	if (music == INVALID_HANDLE)
 		return false;
@@ -692,7 +692,7 @@ bool I_SongPaused(void)
 	return value == AL_PAUSED;
 }
 
-bool I_SetSongSpeed(float speed)
+boolean I_SetSongSpeed(float speed)
 {
 	if (music == INVALID_HANDLE)
 		return false;
@@ -713,7 +713,7 @@ UINT32 I_GetSongLength(void)
 	return value / 2 / 44100; // 16-bit, 44.1 khz
 }
 
-bool I_SetSongLoopPoint(UINT32 looppoint)
+boolean I_SetSongLoopPoint(UINT32 looppoint)
 {
 	return false; // FIXME: implement
 }
@@ -723,7 +723,7 @@ UINT32 I_GetSongLoopPoint(void)
 	return 0; // FIXME: implement
 }
 
-bool I_SetSongPosition(UINT32 position)
+boolean I_SetSongPosition(UINT32 position)
 {
 	if (music == INVALID_HANDLE)
 		return false;
@@ -749,7 +749,7 @@ UINT32 I_GetSongPosition(void)
 	return position * 1000.0f;
 }
 
-bool I_LoadSong(char *data, size_t len)
+boolean I_LoadSong(char *data, size_t len)
 {
 	/*
 	const char *key1 = "LOOP";
@@ -887,7 +887,7 @@ void I_UnloadSong(void)
 	}
 }
 
-bool I_PlaySong(bool looping)
+boolean I_PlaySong(boolean looping)
 {
 	if (music == INVALID_HANDLE)
 		return false;
@@ -941,18 +941,21 @@ void I_ResumeSong(void)
 	alSourcePlay(music);
 }
 
-void I_SetMusicVolume(UINT8 volume)
+void I_SetMusicVolume(int volume)
 {
 	music_volume = (float)volume / 20.0f;
 	if (music != INVALID_HANDLE)
 		I_UpdateMusicVolume();
 }
 
-bool I_SetSongTrack(INT32 track)
+boolean I_SetSongTrack(INT32 track)
 {
 	// FIXME: implement
 	return false;
 }
+
+void I_UpdateSongLagThreshold(void){}
+void I_UpdateSongLagConditions(void){}
 
 void I_SetInternalMusicVolume(UINT8 volume)
 {
@@ -969,7 +972,7 @@ void I_StopFadingSong(void)
 	// in var_cleanup()
 }
 
-bool I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
+boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, void (*callback)(void))
 {
 	INT16 volume_delta;
 
@@ -1016,17 +1019,17 @@ bool I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms, v
 	return is_fading;
 }
 
-bool I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
+boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
 {
 	return I_FadeSongFromVolume(target_volume, internal_volume, ms, callback);
 }
 
-bool I_FadeOutStopSong(UINT32 ms)
+boolean I_FadeOutStopSong(UINT32 ms)
 {
 	return I_FadeSongFromVolume(0, internal_volume, ms, &I_StopSong);
 }
 
-bool I_FadeInPlaySong(UINT32 ms, bool looping)
+boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 {
 	if (I_PlaySong(looping))
 		return I_FadeSongFromVolume(100, 0, ms, NULL);
