@@ -43,7 +43,7 @@
 #define GME_BASS 1.0f
 #endif // HAVE_GME
 
-#define SAMPLERATE 44100*2
+#define SAMPLERATE 44100
 #define BUFFERSIZE 4096
 #define BUFFERCOUNT 8
 
