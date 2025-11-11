@@ -219,6 +219,7 @@ void I_StartupSound(void)
 
 	audio.music = INVALID_HANDLE;
 	audio.bufferindex = 0;
+
 	for (size_t i = 0; i < BUFFERCOUNT; i++)
 		audio.musicbuffers[i] = INVALID_HANDLE;
 	music_volume = sfx_volume = 0;
@@ -305,6 +306,16 @@ static boolean I_QueueNextSample(boolean unqueue)
 	if (openmpt_mhandle != NULL)
 	{
 		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE >> 1, BUFFERSIZE, stream) * 2 * sizeof(INT16); // HACK: SAMPLERATE >> 1 cause idk, this makes it play at the correct speed for some reason
+	}
+	else
+#endif
+#ifdef HAVE_GME
+	if (gme != NULL)
+	{
+		count = BUFFERSIZE * 2 * sizeof(INT16);
+		gme_play(gme, BUFFERSIZE * 2, stream);
+		format = AL_FORMAT_STEREO16;
+		samplerate = SAMPLERATE;
 	}
 	else
 #endif
@@ -626,7 +637,6 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			size_t inflatedLen;
 			z_stream stream;
 			int zErr; // Somewhere to handle any error messages zlib tosses out
-
 			memset(&stream, 0x00, sizeof (z_stream)); // Init zlib stream
 			// Begin the inflation process
 			inflatedLen = *(UINT32 *)input + (size-4); // Last 4 bytes are the decompressed size, typically
@@ -635,7 +645,6 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			stream.total_out = stream.avail_out = inflatedLen;
 			stream.next_in = (UINT8 *)input;
 			stream.next_out = inflatedData;
-
 			zErr = inflateInit2(&stream, 32 + MAX_WBITS);
 			if (zErr == Z_OK) // We're good to go
 			{
@@ -1068,10 +1077,9 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 	LOCKAUDIO;
 
 	// Not a doom sound? Try something else.
+
 #ifdef HAVE_GME
 	// VGZ format
-
-	gme_info_t *gme_info;
 	if (((UINT8 *)input)[0] == 0x1F
 		&& ((UINT8 *)input)[1] == 0x8B)
 	{
@@ -1094,36 +1102,32 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 		if (zErr == Z_OK) // We're good to go
 		{
 			zErr = inflate(&stream, Z_FINISH);
+
 			if (zErr == Z_STREAM_END)
 			{
 				// Run GME on new data
 				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
-					short *mem;
-					UINT32 len;
 					gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
-
-					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
-
-					gme_start_track(gme, 0);
 					gme_set_equalizer(gme, &eq);
-					gme_track_info(gme, &gme_info, 0);
-
-					len = (gme_info->play_length * 441 / 10) << 2;
-					mem = Z_Malloc(len, PU_SOUND, 0);
-					gme_play(gme, len >> 1, mem);
-					gme_free_info(gme_info);
+					gme_start_track(gme, 0);
+					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
+					inflateEnd(&stream);
+					return true;
 				}
 			}
 			else
 				CONS_Alert(CONS_ERROR,"Encountered %s when running inflate: %s\n", GetZLibError(zErr), stream.msg);
+
 			(void)inflateEnd(&stream);
 		}
 		else // Hold up, zlib's got a problem
 		{
 			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
-			Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
 		}
+
+		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+		return false;
 #else
 		return INVALID_HANDLE; // No zlib support
 #endif
@@ -1131,21 +1135,12 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 	// Try to read it as a GME sound
 	else if (!gme_open_data(input, size, &gme, SAMPLERATE))
 	{
-		short *mem;
-		UINT32 len;
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
-
-		gme_start_track(gme, 0);
 		gme_set_equalizer(gme, &eq);
-		gme_track_info(gme, &gme_info, 0);
-
-		len = (gme_info->play_length * 441 / 10) << 2;
-		mem = Z_Malloc(len, PU_SOUND, 0);
-		gme_play(gme, len >> 1, mem);
-		gme_free_info(gme_info);
+		gme_start_track(gme, 0);
+		return true;
 	}
 #endif
-
 	audio.musicfile.data = input;
 	audio.musicfile.cur = input;
 	audio.musicfile.end = (char *)input + size;
@@ -1277,7 +1272,7 @@ void I_UnloadSong(void)
 	{
 		gme_delete(gme);
 		gme = NULL;
-	}
+ 	}
 #endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
