@@ -109,31 +109,32 @@ static size_t probesize;
 static int result;
 #endif
 
-static const char *GetALError(ALenum error)
+#define TRY(func, ...) (func(__VA_ARGS__), ALError(__func__, #func))
+
+static boolean ALError(const char *srcfunc, const char *alfunc)
 {
-	switch (error)
+	const char *str;
+	switch (alGetError())
 	{
-		case AL_NO_ERROR:
-			I_Error("GetALError called when there were no error!");
-
-		case AL_INVALID_NAME:
-			return "Bad ID";
-
-		case AL_INVALID_ENUM:
-			return "Bad enum value";
-
-		case AL_INVALID_VALUE:
-			return "Bad value";
-
-		case AL_INVALID_OPERATION:
-			return "Operation not valid";
-
-		case AL_OUT_OF_MEMORY:
-			return "Out of memory";
-
-		default:
-			return "Unknown error";
+	case AL_NO_ERROR:
+		str = NULL; break;
+	case AL_INVALID_NAME:
+		str = "Bad ID"; break;
+	case AL_INVALID_ENUM:
+		str = "Bad enum value"; break;
+	case AL_INVALID_VALUE:
+		str = "Bad value"; break;
+	case AL_INVALID_OPERATION:
+		str = "Operation not valid"; break;
+	case AL_OUT_OF_MEMORY:
+		str = "Out of memory"; break;
+	default:
+		str = "Unknown error"; break;
 	}
+
+	if (str != NULL)
+		CONS_Alert(CONS_ERROR, "%s: %s: %s\n", srcfunc, alfunc, str);
+	return str == NULL;
 }
 
 #if defined (HAVE_GME) && defined (HAVE_ZLIB)
@@ -168,7 +169,7 @@ void I_StartupSound(void)
 	device = alcOpenDevice(NULL);
 	if (device == NULL)
 	{
-		CONS_Alert(CONS_ERROR, "Error initializing OpenAL: %s\n", GetALError(alGetError()));
+		CONS_Alert(CONS_ERROR, "OpenAL: Can't open audio device");
 		return;
 	}
 
@@ -183,7 +184,7 @@ void I_StartupSound(void)
 	context = alcCreateContext(device, attrs);
 	if (context == NULL)
 	{
-		CONS_Alert(CONS_ERROR, "Error initializing OpenAL: %s\n", GetALError(alGetError()));
+		CONS_Alert(CONS_ERROR, "OpenAL: Can't create context");
 		alcCloseDevice(device);
 		return;
 	}
@@ -239,15 +240,7 @@ void I_ShutdownSound(void)
 
 static boolean I_UpdateMusicVolume(void)
 {
-	alSourcef(music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/100.f));
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error setting music volume: %s\n", GetALError(err));
-		return false;
-	}
-
-	return true;
+	return TRY(alSourcef, music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/100.f));
 }
 
 static boolean I_QueueNextSample(boolean unqueue)
@@ -334,33 +327,14 @@ static boolean I_QueueNextSample(boolean unqueue)
 		return false;
 	}
 
-	ALenum err;
-	if (unqueue)
-	{
-		alSourceUnqueueBuffers(music, 1, &musicbuffers[bufferindex]);
-		err = alGetError();
-		if (err != AL_NO_ERROR) // not fatal, we can keep going in this case
-		{
-			CONS_Alert(CONS_ERROR, "Error unqueuing buffer: %s\n", GetALError(err));
-			return false;
-		}
-	}
-
-	alBufferData(musicbuffers[bufferindex], format, stream, count, samplerate);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error loading data into buffer: %s\n", GetALError(err));
+	if (unqueue && !TRY(alSourceUnqueueBuffers, music, 1, &musicbuffers[bufferindex]))
 		return false;
-	}
 
-	alSourceQueueBuffers(music, 1, &musicbuffers[bufferindex]);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error queuing up buffer: %s\n", GetALError(err));
+	if (!TRY(alBufferData, musicbuffers[bufferindex], format, stream, count, samplerate))
 		return false;
-	}
+
+	if (!TRY(alSourceQueueBuffers, music, 1, &musicbuffers[bufferindex]))
+		return false;
 
 	bufferindex = (bufferindex + 1) % BUFFERCOUNT;
 	return true;
@@ -372,21 +346,11 @@ void I_UpdateSound(void)
 	{
 		ALint processed;
 		ALint queued;
-		alGetSourcei(music, AL_BUFFERS_PROCESSED, &processed);
-		ALenum err = alGetError();
-		if (err != AL_NO_ERROR)
-		{
-			CONS_Alert(CONS_ERROR, "Cannot query number of processed buffers: %s\n", GetALError(err));
+		if (!TRY(alGetSourcei, music, AL_BUFFERS_PROCESSED, &processed))
 			return;
-		}
 
-		alGetSourcei(music, AL_BUFFERS_QUEUED, &queued);
-		err = alGetError();
-		if (err != AL_NO_ERROR)
-		{
-			CONS_Alert(CONS_ERROR, "Cannot query number of queued buffers: %s\n", GetALError(err));
+		if (!TRY(alGetSourcei, music, AL_BUFFERS_QUEUED, &queued))
 			return;
-		}
 
 		// semi-hack because this is sometimes not called for a longer period of time
 		boolean need_restart = processed == BUFFERCOUNT;
@@ -397,12 +361,7 @@ void I_UpdateSound(void)
 			processed--;
 		}
 		if (need_restart)
-		{
-			alSourcePlay(music);
-			err = alGetError();
-			if (err != AL_NO_ERROR)
-				CONS_Alert(CONS_WARNING, "Error restarting sound: %s\n", GetALError(err));
-		}
+			TRY(alSourcePlay, music);
 	}
 
 	if (is_fading)
@@ -504,7 +463,7 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 	}
 
 	*len = (UINT8 *)d-sound;
-	return sound;
+	return (char *)sound;
 }
 
 static sf_count_t GetVIOFileLen(void *userdata)
@@ -566,7 +525,7 @@ static SF_VIRTUAL_IO virtual_io =
 static ALuint LoadDataIntoBuffer(void *input, size_t size)
 {
 	size_t samplerate = SAMPLERATE;
-	char *data = ds2chunk(input, &size, &samplerate);
+	CLEANUP(Z_Pfree) char *data = ds2chunk(input, &size, &samplerate);
 	ALenum format = AL_FORMAT_MONO16;
 	sample_format_t sample_format = Int16;
 
@@ -755,24 +714,15 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 	}
 
 	ALuint buffer;
-	alGenBuffers(1, &buffer);
-	ALuint err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error generating audio buffer: %s\n", GetALError(err));
-		Z_Free(data);
+	if (!TRY(alGenBuffers, 1, &buffer))
 		return INVALID_HANDLE;
-	}
 
-	alBufferData(buffer, format, data, size, samplerate);
-	Z_Free(data);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alBufferData, buffer, format, data, size, samplerate))
 	{
-		CONS_Alert(CONS_ERROR, "Error loading data into buffer: %s\n", GetALError(err));
 		alDeleteBuffers(1, &buffer);
 		return INVALID_HANDLE;
 	}
+
 	return buffer;
 }
 
@@ -812,55 +762,33 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 		return;
 
 	ALuint source = handle;
-	alSourcef(source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4.0f);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-		CONS_Alert(CONS_WARNING, "Error setting sound volume: %s\n", GetALError(err));
-
-	alSourcef(source, AL_PITCH, (float)pitch / 128.0f);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
-		CONS_Alert(CONS_WARNING, "Error setting sound pitch: %s\n", GetALError(err));
-
+	TRY(alSourcef, source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4.0f);
+	TRY(alSourcef, source, AL_PITCH, (float)pitch / 128.0f);
 	(void)sep;
 }
 
 INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
 {
 	ALuint source;
-	alGenSources(1, &source);
-	ALuint err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error generating sound source: %s\n", GetALError(err));
+	if (!TRY(alGenSources, 1, &source))
 		return INVALID_HANDLE;
-	}
 
-	alSourcei(source, AL_BUFFER, (uintptr_t)S_sfx[id].data);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alSourcei, source, AL_BUFFER, (uintptr_t)S_sfx[id].data))
 	{
-		CONS_Alert(CONS_ERROR, "Error assigning buffer to source: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
 		return INVALID_HANDLE;
 	}
 
-	alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alSourcei, source, AL_SOURCE_RELATIVE, AL_TRUE))
 	{
-		CONS_Alert(CONS_ERROR, "Error setting relative audio sounce: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
 		return INVALID_HANDLE;
 	}
 
 	I_UpdateSoundParams(source, vol, sep, pitch);
 
-	alSourcePlay(source);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alSourcePlay, source))
 	{
-		CONS_Alert(CONS_ERROR, "Error playing sound: %s\n", GetALError(err));
 		alDeleteSources(1, &source);
 		return INVALID_HANDLE;
 	}
@@ -877,15 +805,8 @@ void I_StopSound(INT32 handle)
 		return;
 
 	ALuint source = handle;
-	alSourceStop(source);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-		CONS_Alert(CONS_ERROR, "Error stopping sound: %s\n", GetALError(err));
-
-	alDeleteSources(1, &source);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
-		CONS_Alert(CONS_ERROR, "Error deleting source: %s\n", GetALError(err));
+	TRY(alSourceStop, source);
+	TRY(alDeleteSources, 1, &source);
 }
 
 boolean I_SoundIsPlaying(INT32 handle)
@@ -894,13 +815,9 @@ boolean I_SoundIsPlaying(INT32 handle)
 		return false;
 
 	ALint value;
-	alGetSourcei((ALuint)handle, AL_SOURCE_STATE, &value);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error getting sound state: %s\n", GetALError(err));
+	if (!TRY(alGetSourcei, (ALuint)handle, AL_SOURCE_STATE, &value))
 		return false;
-	}
+
 	return value == AL_PLAYING;
 }
 
@@ -940,13 +857,9 @@ boolean I_SongPlaying(void)
 		return false;
 
 	ALint value;
-	alGetSourcei(music, AL_SOURCE_STATE, &value);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error getting play state: %s\n", GetALError(err));
+	if (!TRY(alGetSourcei, music, AL_SOURCE_STATE, &value))
 		return false;
-	}
+
 	return value == AL_PLAYING;
 }
 
@@ -956,13 +869,9 @@ boolean I_SongPaused(void)
 		return false;
 
 	ALint value;
-	alGetSourcei(music, AL_SOURCE_STATE, &value);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error getting pause state: %s\n", GetALError(err));
+	if (!TRY(alGetSourcei, music, AL_SOURCE_STATE, &value))
 		return false;
-	}
+
 	return value == AL_PAUSED;
 }
 
@@ -1039,13 +948,8 @@ boolean I_SetSongPosition(UINT32 position)
 	if (music == INVALID_HANDLE)
 		return false;
 
-	alSourcef(music, AL_SEC_OFFSET, (float)position / 1000.0f);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error setting song position: %s\n", GetALError(err));
+	if (!TRY(alSourcef, music, AL_SEC_OFFSET, (float)position / 1000.0f))
 		return false;
-	}
 
 	return true;
 }
@@ -1056,7 +960,9 @@ UINT32 I_GetSongPosition(void)
 		return 0;
 
 	float position;
-	alGetSourcef(music, AL_SEC_OFFSET, &position);
+	if (!TRY(alGetSourcef, music, AL_SEC_OFFSET, &position))
+		return 0;
+
 	return position * 1000.0f;
 }
 
@@ -1203,20 +1109,14 @@ boolean I_LoadSong(char *data, size_t len)
 	if (!InitializeMusicStreaming(data, len))
 		return false;
 
-	alGenSources(1, &music);
-	ALuint err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alGenSources, 1, &music))
 	{
-		CONS_Alert(CONS_ERROR, "Error generating music source: %s\n", GetALError(err));
 		I_UnloadSong();
 		return false;
 	}
 
-	alGenBuffers(BUFFERCOUNT, musicbuffers);
-	err = alGetError();
-	if (err != AL_NO_ERROR)
+	if (!TRY(alGenBuffers, BUFFERCOUNT, musicbuffers))
 	{
-		CONS_Alert(CONS_ERROR, "Error generating music buffers: %s\n", GetALError(err));
 		I_UnloadSong();
 		return false;
 	}
@@ -1228,14 +1128,6 @@ boolean I_LoadSong(char *data, size_t len)
 			I_UnloadSong();
 			return false;
 		}
-	}
-
-	err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error playing music: %s\n", GetALError(err));
-		I_UnloadSong();
-		return false;
 	}
 
 	// Find the OGG loop point.
@@ -1326,13 +1218,9 @@ boolean I_PlaySong(boolean looping)
 	}
 #endif
 
-	alSourcePlay(music);
-	ALenum err = alGetError();
-	if (err != AL_NO_ERROR)
-	{
-		CONS_Alert(CONS_ERROR, "Error playing music: %s\n", GetALError(err));
+	if (!TRY(alSourcePlay, music))
 		return false;
-	}
+
 	return true;
 }
 
