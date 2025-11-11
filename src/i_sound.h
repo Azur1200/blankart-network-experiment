@@ -121,7 +121,7 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch);
 
 	\return	void
 */
-void I_SetSfxVolume(int volume);
+void I_SetSfxVolume(UINT8 volume);
 
 /// ------------------------
 //  MUSIC SYSTEM
@@ -230,7 +230,7 @@ void I_ResumeSong(void);
 
 	\return	void
 */
-void I_SetMusicVolume(int volume);
+void I_SetMusicVolume(UINT8 volume);
 
 boolean I_SetSongTrack(INT32 track);
 

@@ -75,8 +75,8 @@ consvar_t stereoreverse = CVAR_INIT ("stereoreverse", "Off", CV_SAVE, CV_OnOff, 
 static consvar_t precachesound = CVAR_INIT ("precachesound", "Off", CV_SAVE, CV_OnOff, NULL);
 
 // actual general (maximum) sound & music volume, saved into the config
-consvar_t cv_soundvolume = CVAR_INIT ("soundvolume", "50", CV_SAVE, soundvolume_cons_t, NULL);
-consvar_t cv_digmusicvolume = CVAR_INIT ("musicvolume", "50", CV_SAVE, soundvolume_cons_t, NULL);
+consvar_t cv_soundvolume = CVAR_INIT ("soundvolume", "80", CV_SAVE, soundvolume_cons_t, NULL);
+consvar_t cv_digmusicvolume = CVAR_INIT ("musicvolume", "80", CV_SAVE, soundvolume_cons_t, NULL);
 
 // number of channels available
 consvar_t cv_numChannels = CVAR_INIT ("snd_channels", "64", CV_SAVE|CV_CALL, CV_Unsigned, SetChannelsNum);
@@ -116,8 +116,6 @@ openmpt_module *openmpt_mhandle = NULL;
 static CV_PossibleValue_t interpolationfilter_cons_t[] = {{0, "Default"}, {1, "None"}, {2, "Linear"}, {4, "Cubic"}, {8, "Windowed sinc"}, {0, NULL}};
 consvar_t cv_modfilter = CVAR_INIT ("modfilter", "0", CV_SAVE|CV_CALL, interpolationfilter_cons_t, ModFilter_OnChange);
 #endif
-
-#define S_MAX_VOLUME 127
 
 // when to clip out sounds
 // Does not fit the large outdoor areas.
@@ -778,9 +776,9 @@ void S_UpdateSounds(void)
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
 
 	// Update sound/music volumes, if changed manually at console
-	if (actualsfxvolume != cv_soundvolume.value * USER_VOLUME_SCALE)
+	if (actualsfxvolume != cv_soundvolume.value)
 		S_SetSfxVolume (cv_soundvolume.value);
-	if (actualdigmusicvolume != cv_digmusicvolume.value * USER_VOLUME_SCALE)
+	if (actualdigmusicvolume != cv_digmusicvolume.value)
 		S_SetDigMusicVolume (cv_digmusicvolume.value);
 
 	memset(listener, 0, sizeof(listener));
@@ -976,8 +974,7 @@ void S_UpdateClosedCaptions(void)
 
 void S_SetSfxVolume(INT32 volume)
 {
-	//CV_SetValue(&cv_soundvolume, volume);
-	actualsfxvolume = cv_soundvolume.value * USER_VOLUME_SCALE;
+	actualsfxvolume = volume;
 
 #ifdef HW3SOUND
 	hws_mode == HWS_DEFAULT_MODE ? I_SetSfxVolume(volume&0x1F) : HW3S_SetSfxVolume(volume&0x1F);
@@ -1454,7 +1451,7 @@ ReadMusicDefFields
 				}
 
 				def->numtracks = i;
-				def->volume = DEFAULT_MUSICDEF_VOLUME;
+				def->volume = MAX_VOLUME;
 				def->legacy = true;
 
 				def->next = musicdefstart;
@@ -1524,7 +1521,7 @@ ReadMusicDefFields
 			}
 			else if (!stricmp(stoken, "volume"))
 			{
-				def->volume = atoi(textline) / VOLUME_DIVIDER;
+				def->volume = atoi(textline);
 				def->legacy = false;
 			}
 			else if (!stricmp(stoken, "contentidunsafe"))
@@ -2413,7 +2410,7 @@ void S_ChangeMusicEx(const char *mmusic, UINT16 mflags, boolean looping, UINT32 
 		music_flags = mflags;
 		music_looping = looping;
 
-		musicdef_volume = DEFAULT_MUSICDEF_VOLUME;
+		musicdef_volume = MAX_VOLUME;
 
 		{
 			UINT8 i = 0;
@@ -2518,8 +2515,7 @@ void S_SetMusicVolume(INT32 digvolume)
 	if (digvolume < 0)
 		digvolume = cv_digmusicvolume.value;
 
-	//CV_SetValue(&cv_digmusicvolume, digvolume);
-	actualdigmusicvolume = cv_digmusicvolume.value * USER_VOLUME_SCALE;
+	actualdigmusicvolume = digvolume;
 	I_SetMusicVolume(digvolume);
 }
 

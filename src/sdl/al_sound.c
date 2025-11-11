@@ -48,6 +48,9 @@
 #define BUFFERSIZE 4096
 #define BUFFERCOUNT 8
 
+// don't set gain too high, avoids clipping with multiple sounds playing
+#define VOLUME_DIV 200.f
+
 typedef enum
 {
 	Int16,
@@ -202,7 +205,7 @@ void I_StartupSound(void)
 	// enable the limiter and disable hrtf
 	// idk if either is necessary tbh but fuckit
 	ALCint attrs[] = {
-		ALC_OUTPUT_LIMITER_SOFT, ALC_TRUE,
+		ALC_OUTPUT_LIMITER_SOFT, ALC_FALSE, // G: too noticeable
 		ALC_HRTF_SOFT, ALC_FALSE,
 		0
 	};
@@ -222,7 +225,7 @@ void I_StartupSound(void)
 
 	for (size_t i = 0; i < BUFFERCOUNT; i++)
 		audio.musicbuffers[i] = INVALID_HANDLE;
-	music_volume = sfx_volume = 0;
+	music_volume = sfx_volume = 0.f;
 
 #ifdef HAVE_OPENMPT
 	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
@@ -285,7 +288,7 @@ void I_ShutdownSound(void)
 static boolean I_UpdateMusicVolume(void)
 {
 	LOCKAUDIO;
-	return TRY(alSourcef, audio.music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/100.f));
+	return TRY(alSourcef, audio.music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/(float)MAX_VOLUME));
 }
 
 static boolean I_QueueNextSample(boolean unqueue)
@@ -853,8 +856,8 @@ void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 		return;
 
 	ALuint source = handle;
-	TRY(alSourcef, source, AL_GAIN, (sfx_volume * (float)vol / 255.0f)/4.0f);
-	TRY(alSourcef, source, AL_PITCH, (float)pitch / 128.0f);
+	TRY(alSourcef, source, AL_GAIN, sfx_volume * (vol / 255.0f));
+	TRY(alSourcef, source, AL_PITCH, pitch / 128.0f);
 	(void)sep;
 }
 
@@ -912,9 +915,9 @@ boolean I_SoundIsPlaying(INT32 handle)
 	return value == AL_PLAYING;
 }
 
-void I_SetSfxVolume(int volume)
+void I_SetSfxVolume(UINT8 volume)
 {
-	sfx_volume = (float)volume / 100.f;
+	sfx_volume = volume / VOLUME_DIV;
 }
 
 void I_InitMusic(void)
@@ -1051,7 +1054,7 @@ boolean I_SetSongPosition(UINT32 position)
 	if (audio.music == INVALID_HANDLE)
 		return false;
 
-	if (!TRY(alSourcef, audio.music, AL_SEC_OFFSET, (float)position / 1000.0f))
+	if (!TRY(alSourcef, audio.music, AL_SEC_OFFSET, position / 1000.0f))
 		return false;
 
 	return true;
@@ -1359,11 +1362,11 @@ void I_ResumeSong(void)
 	alSourcePlay(audio.music);
 }
 
-void I_SetMusicVolume(int volume)
+void I_SetMusicVolume(UINT8 volume)
 {
 	LOCKAUDIO;
 
-	music_volume = (float)volume / 100.f;
+	music_volume = volume / VOLUME_DIV;
 	if (audio.music != INVALID_HANDLE)
 		I_UpdateMusicVolume();
 }
@@ -1382,7 +1385,7 @@ void I_SetInternalMusicVolume(UINT8 volume)
 {
 	LOCKAUDIO;
 
-	internal_volume = volume / 100.0f;
+	internal_volume = volume / (float)MAX_VOLUME; // don't divide by VOLUME_DIV, this is a multiplier on music volume
 	if (audio.music != INVALID_HANDLE)
 		I_UpdateMusicVolume();
 }
