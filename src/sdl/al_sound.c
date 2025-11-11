@@ -613,6 +613,7 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 						gme_set_equalizer(emu, &eq);
 						gme_track_info(emu, &gme_info, 0);
 
+						len = (gme_info->play_length * 441 / 10) << 2;
 						mem = Z_Malloc(len, PU_SOUND, 0);
 						gme_play(emu, len >> 1, mem);
 						gme_free_info(gme_info);
@@ -1104,6 +1105,7 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 					gme_set_equalizer(gme, &eq);
 					gme_track_info(gme, &gme_info, 0);
 
+					len = (gme_info->play_length * 441 / 10) << 2;
 					mem = Z_Malloc(len, PU_SOUND, 0);
 					gme_play(gme, len >> 1, mem);
 					gme_free_info(gme_info);
@@ -1114,8 +1116,10 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 			(void)inflateEnd(&stream);
 		}
 		else // Hold up, zlib's got a problem
+		{
 			CONS_Alert(CONS_ERROR,"Encountered %s when running inflateInit: %s\n", GetZLibError(zErr), stream.msg);
-		Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+			Z_Free(inflatedData); // GME didn't open jack, but don't let that stop us from freeing this up
+		}
 #else
 		return INVALID_HANDLE; // No zlib support
 #endif

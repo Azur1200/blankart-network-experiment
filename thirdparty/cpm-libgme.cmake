@@ -11,4 +11,5 @@ CPMAddPackage(
 
 if(libgme_ADDED)
 	target_compile_features(gme PRIVATE cxx_std_11)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_GME)
 endif()
