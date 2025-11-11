@@ -132,8 +132,6 @@ else()
 
 	if(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixer_ext_Static OR TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
 		target_sources(SRB2SDL2 PRIVATE mixer_sound.c)
-	else()
-		target_sources(SRB2SDL2 PRIVATE sdl_sound.c)
 	endif()
 endif()
 
@@ -156,7 +154,7 @@ elseif(TARGET SDL2_mixer_ext::SDL2_mixer_ext OR TARGET SDL2_mixer_ext::SDL2_mixe
 elseif(TARGET SDL2_mixer::SDL2_mixer OR TARGET SDL2_mixer::SDL2_mixer-static)
 	message(STATUS "SDL2_mixer found")
 else()
-	message(STATUS "no SDL2_mixer_ext or SDL2_mixer Found")
+	message(FATAL_ERROR "no SDL2_mixer_ext or SDL2_mixer Found")
 endif()
 
 #### Installation ####
