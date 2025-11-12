@@ -1399,7 +1399,7 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	}
 }
 
-static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voice, boolean forceme)
+static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voice, boolean forceme, boolean silent)
 {
 	// Not the best way to implements this but it will do.
 
@@ -1411,7 +1411,7 @@ static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voic
 	{
 		// Don't bother.
 		CONS_Printf(M_GetText("You must be in a game to use this.\n"));
-		return;
+		return 0;
 	}
 
 	if (!myvoice)
@@ -1421,7 +1421,7 @@ static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voic
 		if (!myvoice)
 		{
 			// ...how?!
-			return;
+			return 0;
 		}
 	}
 
@@ -1437,19 +1437,22 @@ static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voic
 				{
 					// Change the cvar to be the value of the name.
 					CV_StealthSet(cvar, skinvoices[i + KSKVC_FIRSTFREESLOT].name);
+					cvar->value = skinvoices[i + KSKVC_FIRSTFREESLOT].id;
 				}
 				else
 				{
 					// This isn't a valid voice for this skin, so don't assign shit.
-					CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i + KSKVC_FIRSTFREESLOT].name, skins[skin_id].name);
+					if (!silent)
+						CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i + KSKVC_FIRSTFREESLOT].name, skins[skin_id].name);
 
 					// *Reassign* the voice to whatever the current voice is, at least.
 					CV_StealthSet(cvar, myvoice->name);
 					cvar->value = myvoice->id;
+					return 1;
 				}
 
 				// Return regardless, as we've found the voice we were looking for.
-				return;
+				return 0;
 			}
 		}
 	}
@@ -1465,28 +1468,33 @@ static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voic
 			{
 				// Change the cvar to be the value of the name.
 				CV_StealthSet(cvar, skinvoices[i].name);
+				cvar->value = skinvoices[i].id;
 			}
 			else
 			{
 				// This isn't a valid voice for this skin, so don't assign shit.
-				CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i].name, skins[skin_id].name);
+				if (!silent)
+					CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i].name, skins[skin_id].name);
 
 				// *Reassign* the voice cvar to whatever the current voice is, at least.
 				CV_StealthSet(cvar, myvoice->name);
 				cvar->value = myvoice->id;
+				return 1;
 			}
 
 			// Return regardless, as we've found the voice we were looking for.
-			return;
+			return 0;
 		}
 	}
 
 	// Found diddly-squat, say as much.
-	CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" does not exist.\n"), value);
+	if (!silent)
+		CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" does not exist.\n"), value);
 
 	// Reassign the voice cvar to our current voice.
 	CV_StealthSet(cvar, myvoice->name);
 	cvar->value = myvoice->id;
+	return 1;
 }
 
 /** Checks if a name (as received from another player) is okay.
@@ -1845,6 +1853,7 @@ static void SendNameAndColor(UINT8 n)
 	const INT32 playernum = g_localplayers[n];
 	player_t *player = &players[playernum];
 	kartvoice_t *voice;
+	kartvoice_t *valuevoice;
 	INT32 prevskin;
 
 	// We have no voice, but don't want to topple the house of cards.
@@ -1974,7 +1983,7 @@ static void SendNameAndColor(UINT8 n)
 
 		SetPlayerVoice(playernum, cv_voice[n].string);
 
-		const kartvoice_t *valuevoice = P_GetMobjVoice(player->mo);
+		valuevoice = P_GetMobjVoice(player->mo);
 
 		if (valuevoice)
 		{
@@ -2017,7 +2026,16 @@ static void SendNameAndColor(UINT8 n)
 
 	// Don't change skin if the server doesn't want you to.
 	if (!CanChangeSkin(playernum))
+	{
 		CV_StealthSet(&cv_skin[n], skins[player->skin].name);
+
+		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, false, true))
+		{
+			// Our voice is no longer valid, set it to that of our skin's.
+			CV_StealthSet(&cv_voice[n], skins[player->skin].voice->name);
+			cv_voice[n].value = skins[player->skin].voice->id;
+		}
+	}
 
 	// check if player has the skin loaded (cv_skin may have
 	// the name of a skin that was available in the previous game)
@@ -2029,6 +2047,43 @@ static void SendNameAndColor(UINT8 n)
 
 		CV_StealthSet(&cv_voice[n], "sonic_voice");
 		cv_voice[n].value = 0;
+	}
+
+	// Need to update voices after the fact.
+	if (!cv_voice[n].string)
+		CV_StealthSet(&cv_voice[n], skins[player->skin].voice->name);
+
+	if (!permamute)
+	{
+		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, false, true))
+		{
+			// In the chance our current voice isn't valid,
+			// rescan our current voice and send that over the network.
+			valuevoice = P_GetMobjVoice(player->mo);
+
+			if (valuevoice && valuevoice->parent == cv_skin[n].value)
+			{
+				CV_StealthSet(&cv_voice[n], valuevoice->name);
+				cv_voice[n].value = (UINT16)valuevoice->id;
+			}
+			else
+			{
+				// Try getting the skin's voice.
+				valuevoice = skins[cv_skin[n].value].voice;
+
+				if (valuevoice)
+				{
+					CV_StealthSet(&cv_voice[n], valuevoice->name);
+					cv_voice[n].value = (UINT16)valuevoice->id;
+				}
+				else
+				{
+					// ...still nothing?
+					CV_StealthSet(&cv_voice[n], "sonic_voice");
+					cv_voice[n].value = 0;
+				}
+			}
+		}
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -2155,13 +2210,29 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		SetPlayerSkinByNum(playernum, forcedskin);
 
 		if (localplayer != -1)
+		{
 			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin].name);
+
+			CV_StealthSet(&cv_voice[localplayer], skins[forcedskin].voice->name);
+			cv_voice[localplayer].value = skins[forcedskin].voice->id;
+		}
+
+		// set voice
+		SetPlayerVoiceByNum(playernum, skins[forcedskin].voice->id);
 	}
 	else
+	{
 		SetPlayerSkinByNum(playernum, skin);
 
-	// set voice
-	SetPlayerVoiceByNum(playernum, voice);
+		// set voice
+		SetPlayerVoiceByNum(playernum, voice);
+
+		if (localplayer != -1)
+		{
+			CV_StealthSet(&cv_voice[localplayer], skinvoices[voice].name);
+			cv_voice[localplayer].value = skinvoices[voice].id;
+		}
+	}
 
 	// set follower colour:
 	// Don't bother doing garbage and kicking if we receive None,
@@ -7415,7 +7486,7 @@ static void __voice_cvar_func(INT32 pid, UINT8 pnum)
 		}
 	}
 
-	Skin_FindValidDub(&cv_voice[pnum], players[pid].skin, myvoice, false);
+	Skin_FindValidDub(&cv_voice[pnum], players[pid].skin, myvoice, false, false);
 
 	if (!Playing())
 		return; // do whatever you want

@@ -403,6 +403,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 		}
 		CONS_Printf("Voice KVOICE_%s allocated.\n",word);
 		DEH_Link(word, &skinvoices[numfreeslotvoices + KSKVC_FIRSTFREESLOT].info, &voicenames);
+		skinvoices[numfreeslotvoices + KSKVC_FIRSTFREESLOT].id = numfreeslotvoices + KSKVC_FIRSTFREESLOT;
 		*out = numfreeslotvoices++;
 		return 0;
 	}
