@@ -2806,8 +2806,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
-		itemroulette = KROULETTE_DISABLED;
-		previtemroulette = KROULETTE_DISABLED;
+		itemroulette = 0;
+		previtemroulette = 0;
 		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
@@ -2847,8 +2847,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	}
 	else
 	{
-		itemroulette = (players[player].itemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
-		previtemroulette = (players[player].previtemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
+		itemroulette = players[player].itemroulette > 0 ? 1 : 0;
+		previtemroulette = players[player].previtemroulette > 0 ? 1 : 0;
 		roulettetype = players[player].roulettetype;
 
 		if (players[player].itemflags & IF_ITEMOUT)

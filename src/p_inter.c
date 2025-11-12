@@ -459,8 +459,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				player->itemroulette = KROULETTE_ACTIVE;
-				player->roulettetype = KROULETTETYPE_KARMA;
+				K_StartRoulette(player, KROULETTETYPE_KARMA);
 			}
 			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
 			{
@@ -495,11 +494,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				K_DropItems(player); //K_StripItems(player);
-				//K_StripOther(player);
-
-				player->itemroulette = KROULETTE_ACTIVE;
-				player->roulettetype = KROULETTETYPE_EGGMAN;
+				K_StartRoulette(player, KROULETTETYPE_EGGMAN);
 
 				if (special->target->player->eggmanblame >= 0
 					&& special->target->player->eggmanblame < MAXPLAYERS
@@ -591,8 +586,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->fuse || !P_CanPickupItem(player, 1) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
-			player->itemroulette = KROULETTE_ACTIVE;
-			player->roulettetype = KROULETTETYPE_KARMA;
+			K_StartRoulette(player, KROULETTETYPE_KARMA);
 
 			// Karma fireworks
 			for (i = 0; i < 5; i++)

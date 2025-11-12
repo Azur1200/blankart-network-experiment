@@ -7285,8 +7285,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_KartItemRoulette(player, cmd);
 
 	// Gain rings when roulette starts.
-	if (player->itemroulette > KROULETTE_DISABLED
-		&& player->previtemroulette == KROULETTE_DISABLED
+	if (player->itemroulette > 0
+		&& player->previtemroulette == 0
 		&& player->roulettetype != KROULETTETYPE_EGGMAN)
 	{
 		K_AwardScaledPlayerRings(player, ASR_ITEMBOX);
@@ -9669,9 +9669,9 @@ void K_StripItems(player_t *player)
 	player->itemflags &= ~IF_EGGMANOUT;
 	K_UnsetItemOut(player);
 
-	if (!player->itemroulette || player->roulettetype != 2)
+	if (!player->itemroulette || player->roulettetype != KROULETTETYPE_EGGMAN)
 	{
-		player->itemroulette = KROULETTE_DISABLED;
+		player->itemroulette = 0;
 		player->roulettetype = KROULETTETYPE_NORMAL;
 	}
 
@@ -9690,7 +9690,7 @@ void K_StripItems(player_t *player)
 
 void K_StripOther(player_t *player)
 {
-	player->itemroulette = KROULETTE_DISABLED;
+	player->itemroulette = 0;
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
 	player->invincibilitytimer = 0;

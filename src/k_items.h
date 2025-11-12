@@ -53,6 +53,13 @@ typedef enum
 
 typedef enum
 {
+	KROULETTETYPE_NORMAL,
+	KROULETTETYPE_KARMA,
+	KROULETTETYPE_EGGMAN,
+} kartroulettetype_e;
+
+typedef enum
+{
 	ODDS_RACE,
 	ODDS_BATTLE,
 	ODDS_SPECIAL,
@@ -184,6 +191,7 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
+void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
 

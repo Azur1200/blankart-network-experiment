@@ -256,10 +256,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			K_DropItems(t2->player); //K_StripItems(t2->player);
-			//K_StripOther(t2->player);
-			t2->player->itemroulette = KROULETTE_ACTIVE;
-			t2->player->roulettetype = KROULETTETYPE_EGGMAN;
+			K_StartRoulette(t2->player, KROULETTETYPE_EGGMAN);
 		}
 
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))

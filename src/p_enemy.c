@@ -10839,7 +10839,7 @@ void A_ItemPop(void *thing)
 
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
-		actor->target->player->itemroulette = KROULETTE_ACTIVE;
+		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
 	}
 	else if (itembreaker)
 	{

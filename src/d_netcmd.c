@@ -6192,7 +6192,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			K_StripItems(player);
 
 			// Cancel roulette if rolling
-			player->itemroulette = KROULETTE_DISABLED;
+			player->itemroulette = 0;
 
 			player->itemtype = item;
 			player->itemamount = amt;

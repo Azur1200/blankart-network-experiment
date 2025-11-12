@@ -137,17 +137,6 @@ typedef enum
 	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
 } itemflags_t;
 
-typedef enum {
-	KROULETTE_DISABLED,
-	KROULETTE_ACTIVE,
-} kartroulettestate_t;
-
-typedef enum {
-	KROULETTETYPE_NORMAL,
-	KROULETTETYPE_KARMA,
-	KROULETTETYPE_EGGMAN,
-} kartroulettetype_t;
-
 typedef enum
 {
 	KSHIELD_NONE = 0,

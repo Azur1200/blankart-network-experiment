@@ -337,7 +337,7 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kart
 
 	player->itemblink = TICRATE;
 	player->itemblinkmode = blink;
-	player->itemroulette = KROULETTE_DISABLED; // Since we're done, clear the roulette number
+	player->itemroulette = 0; // Since we're done, clear the roulette number
 	player->roulettetype = KROULETTETYPE_NORMAL; // This too
 
 	if (P_IsDisplayPlayer(player))
@@ -1316,7 +1316,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	if (player->roulettetype == KROULETTETYPE_EGGMAN)
 	{
 		player->eggmanexplode = 4*TICRATE;
-		player->itemroulette = KROULETTE_DISABLED;
+		player->itemroulette = 0;
 		player->roulettetype = KROULETTETYPE_NORMAL;
 		if (P_IsDisplayPlayer(player))
 			S_StartSound(NULL, sfx_itrole);
@@ -1453,6 +1453,15 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		result = &kartresults[i];
 	}
 	K_AwardPlayerResult(player, result, player->roulettetype == KROULETTETYPE_KARMA ? KITEMBLINK_KARMA : mashed ? KITEMBLINK_MASHED : KITEMBLINK_NORMAL);
+}
+
+void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype)
+{
+	if (roulettetype == KROULETTETYPE_EGGMAN)
+		K_DropItems(player);
+
+	player->itemroulette = 1;
+	player->roulettetype = roulettetype;
 }
 
 void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
