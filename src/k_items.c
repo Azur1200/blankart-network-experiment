@@ -1253,7 +1253,8 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	// Finally, if you get past this check, now you can actually start calculating what item you get.
 	if ((cmd->buttons & BT_ATTACK) && (player->itemroulette >= roulettestop)
 		&& (K_RingsActive() || (modeattacking == ATTACKING_NONE))
-		&& !(player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT|IF_USERINGS)))
+		&& !(player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT|IF_USERINGS))
+		&& !(player->itemusecooldown))
 	{
 		// Mashing reduces your chances for the good items
 		mashed = FixedDiv((player->itemroulette)*FRACUNIT, ((TICRATE*3)+roulettestop)*FRACUNIT) - FRACUNIT;
@@ -1475,6 +1476,15 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 
 	player->itemroulette = KROULETTE_DISABLED; // Since we're done, clear the roulette number
 	player->roulettetype = KROULETTETYPE_NORMAL; // This too
+}
+
+void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force)
+{
+	if ((timer >= player->itemusecooldown) || force)
+	{
+		player->itemusecooldown = timer;
+		player->itemusecooldownmax = max(timer, player->itemusecooldownmax);
+	}
 }
 
 // Unique odds functions, for REAL this time

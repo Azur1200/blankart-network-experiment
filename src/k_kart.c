@@ -6953,6 +6953,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->sneakertimer)
 		player->sneakertimer = K_ChainOrDeincrementTime(player, player->sneakertimer, 1, false);
 
+	if (player->itemusecooldown)
+	{
+		player->itemusecooldown--;
+		if (player->itemusecooldown <= 0)
+		{
+			player->itemusecooldownmax = 0;
+		}
+	}
+
 	if (player->sneakertimer <= 0)
 	{
 		player->mo->flags2 &= ~MF2_WATERRUN;
@@ -10040,7 +10049,8 @@ void K_MoveKartPlayer(player_t *player, boolean onground)
 				}
 			}
 			// Other items
-			else
+			// TODO: how should player->itemusecooldown interact with LUA_HookPlayerItem?
+			else if (player->itemusecooldown == 0) 
 			{
 				// Eggman Monitor exploding
 				if (player->eggmanexplode)

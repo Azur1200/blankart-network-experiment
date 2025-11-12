@@ -1182,6 +1182,32 @@ static void K_DrawItemBar(INT32 fx, INT32 fy, INT32 fflags, fixed_t itembar, UIN
 	V_DrawFixedFill(x+2*FRACUNIT, y+FRACUNIT, max(0, length - 2*FRACUNIT), FRACUNIT, colors[0]|fflags); // the shine
 }
 
+// TODO: use an actual patch overlay and clip it instead of using a rect, now that an actual patch can be added for this
+static void K_DrawItemCooldown(INT32 fx, INT32 fy, INT32 fflags, tic_t timer, tic_t maxtimer)
+{
+	const boolean fourp = r_splitscreen > 1;
+	const INT32 rectTopFour = 13*FRACUNIT;
+	INT32 rectTop = 10*FRACUNIT;
+	INT32 rectSize = 40*FRACUNIT;
+	fixed_t prog = FixedDiv(timer, maxtimer);
+	INT32 length = min(rectSize, FixedMul(rectSize, prog));
+	if (timer > 0 && maxtimer > 0)
+	{
+		if (fourp)
+		{
+			rectTop = 14*FRACUNIT;
+			rectSize = 20*FRACUNIT;
+			length = min(rectSize, FixedMul(rectSize, prog));
+
+			V_DrawFixedFill(fx + rectTop, fy + rectTopFour + (rectSize - length), rectSize, length, 2|fflags);
+		}
+		else
+		{
+			V_DrawFixedFill(fx + rectTop, fy + rectTop + (rectSize - length), rectSize, length, 2|fflags);
+		}
+	}
+}
+
 // see also MT_PLAYERARROW mobjthinker in p_mobj.c
 static void K_drawKartItem(void)
 {
@@ -1309,7 +1335,7 @@ static void K_drawKartItem(void)
 		}
 		else
 		{
-			if (stplyr->itemamount <= 0)
+			if (stplyr->itemamount <= 0 && stplyr->itemusecooldown <= 0)
 				return;
 
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
@@ -1393,6 +1419,9 @@ static void K_drawKartItem(void)
 		V_DrawMappedPatch(fx + (flipamount ? 48 : 0), fy, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
 		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
 
+		// draw minecraft-style cooldown
+		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
+
 		if (isalt)
 		{
 			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, true), colmap);
@@ -1412,6 +1441,9 @@ static void K_drawKartItem(void)
 	else
 	{
 		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
+		
+		// draw minecraft-style cooldown
+		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
 		// TODO: Some proper check for if an alt has unique graphics
 		if (isalt)

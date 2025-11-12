@@ -249,6 +249,8 @@ enum player_e
 	player_roulettetype,
 	player_itemtype,
 	player_itemamount,
+	player_itemusecooldown,
+	player_itemusecooldownmax,
 	player_throwdir,
 	player_sadtimer,
 	player_rings,
@@ -453,6 +455,8 @@ static const char *const player_opt[] = {
 	"roulettetype",
 	"itemtype",
 	"itemamount",
+	"itemusecooldown",
+	"itemusecooldownmax",
 	"throwdir",
 	"sadtimer",
 	"rings",
@@ -854,6 +858,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
+		break;
+	case player_itemusecooldown:
+		lua_pushinteger(L, plr->itemusecooldown);
+		break;
+	case player_itemusecooldownmax:
+		lua_pushinteger(L, plr->itemusecooldownmax);
 		break;
 	case player_throwdir:
 		lua_pushinteger(L, plr->throwdir);
@@ -1567,6 +1577,12 @@ static int player_set(lua_State *L)
 		break;
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
+		break;
+	case player_itemusecooldown:
+		plr->itemusecooldown = luaL_checkinteger(L, 3);
+		break;
+	case player_itemusecooldownmax:
+		plr->itemusecooldownmax = luaL_checkinteger(L, 3);
 		break;
 	case player_throwdir:
 		plr->throwdir = luaL_checkinteger(L, 3);

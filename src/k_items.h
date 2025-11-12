@@ -174,6 +174,8 @@ UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 
+void K_SetPlayerItemCooldown(player_t *player, tic_t timer, boolean force);
+
 useoddsfunc_f KO_AltInvinOdds;
 useoddsfunc_f KO_SPBRaceOdds;
 

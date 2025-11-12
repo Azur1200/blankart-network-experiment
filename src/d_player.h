@@ -58,14 +58,6 @@ typedef enum
 	PST_REBORN
 } playerstate_t;
 
-typedef enum
-{
-	IF_USERINGS		= 1,	// Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
-	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
-	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
-	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
-} itemflags_t;
-
 //
 // Player internal flags
 //
@@ -136,6 +128,14 @@ typedef enum
 	CR_SLIDING,
 	CR_ZOOMTUBE,
 } carrytype_t; // carry
+
+typedef enum
+{
+	IF_USERINGS		= 1,	// Have to be not holding the item button to change from using rings to using items (or vice versa) - prevents weirdness
+	IF_ITEMOUT		= 1<<1,	// Are you holding an item out?
+	IF_EGGMANOUT	= 1<<2,	// Eggman mark held, separate from IF_ITEMOUT so it doesn't stop you from getting items
+	IF_HOLDREADY	= 1<<3,	// Hold button-style item is ready to activate
+} itemflags_t;
 
 typedef enum {
 	KROULETTE_DISABLED,
@@ -611,20 +611,24 @@ struct player_t
 	UINT16 draftleeway;		// Leniency timer before removing draft power
 	SINT8 lastdraft;		// (-1 to 15) - Last player being drafted
 
-	UINT8 tripwireState; // see tripwirestate_t
-	UINT8 tripwirePass; // see tripwirepass_t
+	UINT8 tripwireState; 		// see tripwirestate_t
+	UINT8 tripwirePass; 		// see tripwirepass_t
 	UINT16 tripwireLeniency;	// When reaching a state that lets you go thru tripwire, you get an extra second leniency after it ends to still go through it.
 	UINT8 tripwireReboundDelay; // When failing Tripwire, brieftly lock out speed-based tripwire pass (anti-cheese)
 
-	UINT16 itemroulette;	// Used for the roulette when deciding what item to give you (was "pw_kartitem")
-	UINT16 previtemroulette;	// Used determining when to give rings after hitting item boxes
+	UINT16 itemroulette;			// Used for the roulette when deciding what item to give you (was "pw_kartitem")
+	UINT16 previtemroulette;		// Used determining when to give rings after hitting item boxes
 	UINT16 itemblink;				// Item flashing after roulette, serves as a mashing indicator. Also prevents item from being stolen.
 	UINT16 itemblinkmode;			// Type of flashing: 0 = white (normal), 1 = red (mashing), 2 = rainbow (enhanced items)
-	UINT8 roulettetype;		// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)
+	UINT8 roulettetype;				// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)
 
 	// Item held stuff
-	SINT8 itemtype;		// KITEM_ constant for item number
-	UINT8 itemamount;	// Amount of said item
+	SINT8 itemtype;				// KITEM_ constant for item number
+	UINT8 itemamount;			// Amount of said item
+	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
+	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)
+	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
+	
 	SINT8 throwdir; 	// Held dir of controls; 1 = forward, 0 = none, -1 = backward (was "player->heldDir")
 
 	UINT8 sadtimer;		// How long you've been sad
@@ -788,8 +792,6 @@ struct player_t
 	UINT8 typing_duration; // How long since resumed timer
 
 	UINT8 kickstartaccel;
-	
-	UINT8 itemflags; 	// holds IF_flags (see itemstate_t)
 
 	fixed_t outrun; // Milky Way road effect
 	UINT8 outruntime; // Used to bypass the speed cap for fall off
