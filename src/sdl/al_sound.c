@@ -1222,6 +1222,7 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 					gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 					gme_set_equalizer(gme, &eq);
 					gme_start_track(gme, 0);
+					current_track = 0;
 					Z_Free(inflatedData); // GME supposedly makes a copy for itself, so we don't need this lying around
 					inflateEnd(&stream);
 					return true;
@@ -1249,6 +1250,7 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 		gme_set_equalizer(gme, &eq);
 		gme_start_track(gme, 0);
+		current_track = 0;
 		return true;
 	}
 #endif
