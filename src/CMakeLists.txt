@@ -131,6 +131,13 @@ target_link_libraries(SRB2SDL2 PRIVATE tcbrindle::span)
 target_link_libraries(SRB2SDL2 PRIVATE fmt::fmt-header-only)
 target_link_libraries(SRB2SDL2 PRIVATE Tracy::TracyClient)
 
+if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}")
+target_link_libraries(SRB2SDL2 PRIVATE sndfile)
+target_link_libraries(SRB2SDL2 PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
+target_link_libraries(SRB2SDL2 PRIVATE Opus::opus)
+target_link_libraries(SRB2SDL2 PRIVATE Ogg::ogg)
+endif()
+
 target_link_libraries(SRB2SDL2 PRIVATE xxHash::xxhash)
 
 target_compile_definitions(SRB2SDL2 PRIVATE -DUSE_STUN)

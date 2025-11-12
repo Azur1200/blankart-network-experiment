@@ -1,7 +1,6 @@
 # Declare SDL2 interface sources
 
 target_sources(SRB2SDL2 PRIVATE
-	mixer_sound.c
 	ogl_sdl.c
 	i_threads.c
 	i_net.c
@@ -51,12 +50,6 @@ if("${CMAKE_SYSTEM_NAME}" MATCHES Darwin)
 	)
 endif()
 
-if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2-static SDL2_mixer::SDL2_mixer-static)
-else()
-	target_link_libraries(SRB2SDL2 PRIVATE SDL2::SDL2 SDL2_mixer::SDL2_mixer)
-endif()
-
 if("${CMAKE_SYSTEM_NAME}" MATCHES Linux)
 	target_link_libraries(SRB2SDL2 PRIVATE m rt)
 endif()
@@ -81,7 +74,7 @@ target_include_directories(SRB2SDL2 PRIVATE ${SDL2_INCLUDE_DIR})
 
 find_package(OpenAL CONFIG QUIET)
 find_package(OpenAL QUIET)
-if(TARGET OpenAL::OpenAL)
+if(${SRB2_CONFIG_USE_OPENAL})
 	target_link_libraries(SRB2SDL2 PRIVATE sndfile)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_OPENAL)
 	target_link_libraries(SRB2SDL2 PRIVATE OpenAL::OpenAL)
