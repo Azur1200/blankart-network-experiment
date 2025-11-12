@@ -104,6 +104,7 @@ typedef struct audiostate_s
 	int bufferindex;
 	ALuint musicbuffers[BUFFERCOUNT];
 	ALuint music;
+	float loop_point;
 
 	boolean shutdown;
 } audiostate_t;
@@ -339,6 +340,19 @@ static boolean I_UpdateMusicVolume(void)
 	return TRY(alSourcef, audio.music, AL_GAIN, music_volume*internal_volume*(musicdef_volume/(float)MAX_VOLUME));
 }
 
+// Thank you random stack overflow user (second post)!
+// https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
+
+float SamplesToSeconds(sf_count_t samples, int sampleRate) {
+	float seconds = samples / (float) sampleRate;
+	return seconds;
+}
+
+float SecondsToSamples(sf_count_t samples, int sampleRate) {
+	float seconds = samples * (float) sampleRate;
+	return seconds;
+}
+
 static boolean I_QueueNextSample(boolean unqueue)
 {
 	static INT16 *stream = NULL;
@@ -387,7 +401,15 @@ static boolean I_QueueNextSample(boolean unqueue)
 		if (count == 0)
 		{
 			// TODO: looppoints
-			sf_seek(audio.musicstream, 0, SF_SEEK_SET);
+
+			UINT32 position = audio.loop_point;
+
+			float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+			position = position + sampleoffset;
+
+			sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
+
+			sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 		}
 
 		samplerate = audio.musicinfo.samplerate;
@@ -944,19 +966,6 @@ boolean I_SetSongSpeed(float speed)
 	return false;
 }
 
-// Thank you random stack overflow user (second post)!
-// https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
-
-float SamplesToSeconds(sf_count_t samples, int sampleRate) {
-	float seconds = samples / (float) sampleRate;
-	return seconds;
-}
-
-float SecondsToSamples(sf_count_t samples, int sampleRate) {
-	float seconds = samples * (float) sampleRate;
-	return seconds;
-}
-
 static UINT32 get_adjusted_position(UINT32 position)
 {
 	// all in milliseconds
@@ -1032,7 +1041,14 @@ boolean I_SetSongLoopPoint(UINT32 looppoint)
 	if (mustype == MU_GME || mustype == MU_MOD)
 		return false;
 
-	return false; // FIXME: implement
+	UINT32 length = I_GetSongLength();
+
+	if (length > 0)
+		looppoint %= length;
+
+	audio.loop_point = max((float)(looppoint / 1000.0L), 0);
+
+	return true;
 }
 
 UINT32 I_GetSongLoopPoint(void)
@@ -1065,7 +1081,7 @@ UINT32 I_GetSongLoopPoint(void)
 	else
 #endif
 
-	return 0; // FIXME: implement
+	return (UINT32)(audio.loop_point * 1000);
 }
 
 boolean I_SetSongPosition(UINT32 position)
@@ -1299,7 +1315,6 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 
 boolean I_LoadSong(char *data, size_t len)
 {
-	/*
 	const char *key1 = "LOOP";
 	const char *key2 = "POINT=";
 	const char *key3 = "MS=";
@@ -1307,7 +1322,6 @@ boolean I_LoadSong(char *data, size_t len)
 	const size_t key2len = strlen(key2);
 	const size_t key3len = strlen(key3);
 	char *p = data;
-	*/
 
 	LOCKAUDIO;
 
@@ -1339,38 +1353,31 @@ boolean I_LoadSong(char *data, size_t len)
 	}
 
 	// Find the OGG loop point.
-	/*
-	loop_point = 0.0f;
-	song_length = 0.0f;
+	audio.loop_point = 0.0f;
 
 	while ((UINT32)(p - data) < len)
 	{
-		if (fpclassify(loop_point) == FP_ZERO && !strncmp(p, key1, key1len))
+		if (fpclassify(audio.loop_point) == FP_ZERO && !strncmp(p, key1, key1len))
 		{
 			p += key1len; // skip LOOP
 			if (!strncmp(p, key2, key2len)) // is it LOOPPOINT=?
 			{
 				p += key2len; // skip POINT=
-				loop_point = (float)((44.1L+atoi(p)) / 44100.0L); // LOOPPOINT works by sample count.
-				// because SDL_Mixer is USELESS and can't even tell us
-				// something simple like the frequency of the streaming music,
-				// we are unfortunately forced to assume that ALL MUSIC is 44100hz.
-				// This means a lot of tracks that are only 22050hz for a reasonable downloadable file size will loop VERY badly.
+				audio.loop_point = (float)(((audio.musicinfo.samplerate / 1000.0L)+atoi(p)) / audio.musicinfo.samplerate); // LOOPPOINT works by sample count.
 			}
 			else if (!strncmp(p, key3, key3len)) // is it LOOPMS=?
 			{
 				p += key3len; // skip MS=
-				loop_point = (float)(atoi(p) / 1000.0L); // LOOPMS works by real time, as miliseconds.
+				audio.loop_point = (float)(atoi(p) / 1000.0L); // LOOPMS works by real time, as miliseconds.
 				// Everything that uses LOOPMS will work perfectly with SDL_Mixer.
 			}
 		}
 
-		if (fpclassify(loop_point) != FP_ZERO) // Got what we needed
+		if (fpclassify(audio.loop_point) != FP_ZERO) // Got what we needed
 			break;
 		else // continue searching
 			p++;
 	}
-	*/
 	return true;
 }
 
@@ -1406,6 +1413,7 @@ void I_UnloadSong(void)
 		for (size_t i = 0; i < BUFFERCOUNT; i++)
 			audio.musicbuffers[i] = INVALID_HANDLE;
 		audio.music = INVALID_HANDLE;
+		audio.loop_point = 0.0f;
 	}
 }
 
