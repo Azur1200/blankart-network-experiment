@@ -14951,6 +14951,12 @@ fixed_t P_GetMobjZMovement(mobj_t *mo)
 
 kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
 {
+	if (P_MobjWasRemoved(mo))
+	{
+		// Nonexistent or NULL object.
+		return NULL;
+	}
+
 	if (mo->voice)
 	{
 		return mo->voice;

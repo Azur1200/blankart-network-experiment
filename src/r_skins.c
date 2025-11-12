@@ -640,6 +640,57 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 	SetPlayerSkinByNum(playernum, 0);
 }
 
+// network code calls this when a 'voice change' is received
+void SetPlayerVoice(INT32 playernum, const char *voicename)
+{
+	player_t *player = &players[playernum];
+	INT32 i;
+
+	if (P_MobjWasRemoved(player->mo))
+	{
+		// No object to give a voice to.
+		return;
+	}
+
+	const kartvoice_t *myvoice = P_GetMobjVoice(player->mo);
+
+	if (!strncmp(voicename, myvoice->name, sizeof myvoice->name))
+	{
+		// Hey... this voice is the same as before!
+		return;
+	}
+
+	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read for the needed name.
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (strncmp(voicename, skinvoices[i + KSKVC_FIRSTFREESLOT].name, sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
+			{
+				// Found a voice.
+				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
+				return;
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist or found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (strncmp(voicename, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
+		{
+			// Found a voice.
+			player->mo->voice = &skinvoices[i];
+			return;
+		}
+	}
+
+	// Couldn't find a voice. Default to the skin's.
+	player->mo->voice = NULL;
+}
+
 // Same as SetPlayerSkin, but uses the skin #.
 // network code calls this when a 'skin change' is received
 void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
@@ -685,6 +736,12 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		if (player->mo)
 		{
 			player->mo->skin = skin;
+
+			if (player->mo->voice)
+			{
+				// Clear out the voice pointer, so we can fall back to using skin voices.
+				player->mo->voice = NULL;
+			}
 			P_SetScale(player->mo, player->mo->scale);
 			P_SetPlayerMobjState(player->mo, player->mo->state-states); // Prevent visual errors when switching between skins with differing number of frames
 		}
@@ -706,6 +763,57 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 		CONS_Alert(CONS_WARNING, "Player %d (%s) skin %d not found\n", playernum, player_names[playernum], skinnum);
 
 	SetPlayerSkinByNum(playernum, 0); // not found, put in the default skin
+}
+
+// network code calls this when a 'voice change' is received
+void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
+{
+	player_t *player = &players[playernum];
+	INT32 i;
+
+	if (P_MobjWasRemoved(player->mo))
+	{
+		// No object to give a voice to.
+		return;
+	}
+
+	const kartvoice_t *myvoice = P_GetMobjVoice(player->mo);
+
+	if (myvoice->id == voicenum)
+	{
+		// Hey... this voice is the same as before!
+		return;
+	}
+
+	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read for the needed name.
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (skinvoices[i + KSKVC_FIRSTFREESLOT].id == voicenum)
+			{
+				// Found a voice.
+				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
+				return;
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist or found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (skinvoices[i].id == voicenum)
+		{
+			// Found a voice.
+			player->mo->voice = &skinvoices[i];
+			return;
+		}
+	}
+
+	// Couldn't find a voice. Default to the skin's.
+	player->mo->voice = NULL;
 }
 
 //

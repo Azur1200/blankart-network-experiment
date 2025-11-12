@@ -142,6 +142,11 @@ static void Followercolor2_OnChange(void);
 static void Followercolor3_OnChange(void);
 static void Followercolor4_OnChange(void);
 
+static void Voice_OnChange(void);
+static void Voice2_OnChange(void);
+static void Voice3_OnChange(void);
+static void Voice4_OnChange(void);
+
 static void Color_OnChange(void);
 static void Color2_OnChange(void);
 static void Color3_OnChange(void);
@@ -343,6 +348,15 @@ consvar_t cv_followercolor[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("followercolor3", "Default", CV_SAVE|CV_CALL|CV_NOINIT, Followercolor_cons_t, Followercolor3_OnChange),
 	CVAR_INIT ("followercolor4", "Default", CV_SAVE|CV_CALL|CV_NOINIT, Followercolor_cons_t, Followercolor4_OnChange)
 };
+
+// player's voices...also, uh, saved.
+consvar_t cv_voice[MAXSPLITSCREENPLAYERS] = {
+	CVAR_INIT ("voice", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice_OnChange),
+	CVAR_INIT ("voice2", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice2_OnChange),
+	CVAR_INIT ("voice3", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice3_OnChange),
+	CVAR_INIT ("voice4", "None", CV_SAVE|CV_CALL|CV_NOINIT, NULL, Voice4_OnChange)
+};
+
 
 consvar_t cv_skipmapcheck = CVAR_INIT ("skipmapcheck", "Off", CV_SAVE, CV_OnOff, NULL);
 
@@ -1384,6 +1398,80 @@ static void Skin_FindRealNameSkin(consvar_t *cvar)
 	}
 }
 
+static void Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voice, boolean forceme)
+{
+	// Not the best way to implements this but it will do.
+
+	int i;
+	const char *value = cvar->string;
+	kartvoice_t *myvoice = voice;
+
+	if (!myvoice)
+	{
+		myvoice = skins[skin_id].voice;
+
+		if (!myvoice)
+		{
+			// ...how?!
+			return;
+		}
+	}
+
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (strncmp(value, skinvoices[i + KSKVC_FIRSTFREESLOT].name, sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
+			{
+				// Make sure this voice belongs to the skin we're about to assign it to.
+				if (skinvoices[i + KSKVC_FIRSTFREESLOT].parent == skin_id || forceme)
+				{
+					// Change the cvar to be the value of the name.
+					CV_StealthSet(cvar, skinvoices[i + KSKVC_FIRSTFREESLOT].name);
+				}
+				else
+				{
+					// This isn't a valid voice for this skin, so don't assign shit.
+					CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i + KSKVC_FIRSTFREESLOT].name, skins[skin_id].name);
+
+					// *Reassign* the voice to whatever the current voice is, at least.
+					CV_StealthSet(cvar, myvoice->name);
+				}
+
+				// Return regardless, as we've found the voice we were looking for.
+				return;
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist or found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (strncmp(value, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
+		{
+			// Make sure this voice belongs to the skin we're about to assign it to.
+			if (skinvoices[i].parent == skin_id || forceme)
+			{
+				// Change the cvar to be the value of the name.
+				CV_StealthSet(cvar, skinvoices[i].name);
+			}
+			else
+			{
+				// This isn't a valid voice for this skin, so don't assign shit.
+				CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), skinvoices[i].name, skins[skin_id].name);
+
+				// *Reassign* the voice cvar to whatever the current voice is, at least.
+				CV_StealthSet(cvar, myvoice->name);
+			}
+
+			// Return regardless, as we've found the voice we were looking for.
+			return;
+		}
+	}
+}
+
 /** Checks if a name (as received from another player) is okay.
   * A name is okay if it is no fewer than 1 and no more than ::MAXPLAYERNAME
   * chars long (not including NUL), it does not begin or end with a space,
@@ -1733,12 +1821,16 @@ VaguePartyDescription (int playernum, int size, int default_color)
 static INT32 snacpending[MAXSPLITSCREENPLAYERS] = {0,0,0,0};
 static INT32 chmappending = 0;
 
-// name, color, or skin has changed
+// name, color, skin, or voice has changed
 //
 static void SendNameAndColor(UINT8 n)
 {
 	const INT32 playernum = g_localplayers[n];
 	player_t *player = &players[playernum];
+	kartvoice_t *voice;
+
+	// We have no voice, but don't want to topple the house of cards.
+	boolean permamute = false;
 
 	char buf[MAXPLAYERNAME+12];
 	char *p;
@@ -1775,11 +1867,26 @@ static void SendNameAndColor(UINT8 n)
 	if (cv_follower[n].value >= numfollowers || cv_follower[n].value < -1)
 		CV_StealthSet(&cv_follower[n], "-1");
 
+	// Check the player's acoustics.
+	voice = P_GetMobjVoice(player->mo);
+
+	if (!voice)
+	{
+		voice = skins[player->skin].voice;
+
+		if (!voice)
+		{
+			// ...how?!
+			permamute = true;
+		}
+	}
+
 	if (!strcmp(cv_playername[n].string, player_names[playernum])
 		&& cv_playercolor[n].value == player->skincolor
 		&& !strcmp(cv_skin[n].string, skins[player->skin].name)
 		&& cv_follower[n].value == player->followerskin
-		&& cv_followercolor[n].value == player->followercolor)
+		&& cv_followercolor[n].value == player->followercolor
+		&& (!permamute && !strcmp(cv_voice[n].string, voice->name)))
 		return;
 
 	player->availabilities = R_GetSkinAvailabilities();
@@ -1825,6 +1932,26 @@ static void SendNameAndColor(UINT8 n)
 			SetPlayerSkin(playernum, cv_skin[n].string);
 		}
 
+		// Need to update voices after the fact.
+		if (!cv_voice[n].string)
+			CV_StealthSet(&cv_voice[n], skins[player->skin].voice->name);
+
+		SetPlayerVoice(playernum, cv_voice[n].string);
+
+		const kartvoice_t *valuevoice = P_GetMobjVoice(player->mo);
+
+		if (valuevoice)
+		{
+			CV_StealthSet(&cv_voice[n], valuevoice->name);
+			cv_voice[n].value = (UINT16)valuevoice->id;
+		}
+		else
+		{
+			// ...this is my paranoia speaking.
+			CV_StealthSet(&cv_voice[n], "sonic_voice");
+			cv_voice[n].value = 0;
+		}
+
 		return;
 	}
 
@@ -1852,6 +1979,9 @@ static void SendNameAndColor(UINT8 n)
 	{
 		CV_StealthSet(&cv_skin[n], DEFAULTSKIN);
 		cv_skin[n].value = 0;
+
+		CV_StealthSet(&cv_voice[n], "sonic_voice");
+		cv_voice[n].value = 0;
 	}
 
 	// Finally write out the complete packet and send it off.
@@ -1861,6 +1991,7 @@ static void SendNameAndColor(UINT8 n)
 	WRITEUINT16(p, (UINT16)cv_skin[n].value);
 	WRITESINT8(p, (SINT8)cv_follower[n].value);
 	WRITEUINT16(p, (UINT16)cv_followercolor[n].value);
+	WRITEUINT16(p, (UINT16)cv_voice[n].value);
 
 	SendNetXCmdForPlayer(n, XD_NAMEANDCOLOR, buf, p - buf);
 }
@@ -1870,7 +2001,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	player_t *p = &players[playernum];
 	char name[MAXPLAYERNAME+1];
 	UINT16 color, followercolor;
-	UINT16 skin;
+	UINT16 skin, voice;
 	SINT8 follower;
 	SINT8 localplayer = -1;
 	UINT16 i;
@@ -1902,6 +2033,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	skin = READUINT16(*cp);
 	follower = READSINT8(*cp);
 	followercolor = READUINT16(*cp);
+	voice = READUINT16(*cp);
 
 	// set name
 	if (player_name_changes[playernum] < MAXNAMECHANGES)
@@ -1980,6 +2112,9 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 	}
 	else
 		SetPlayerSkinByNum(playernum, skin);
+
+	// set voice
+	SetPlayerVoiceByNum(playernum, voice);
 
 	// set follower colour:
 	// Don't bother doing garbage and kicking if we receive None,
@@ -7216,6 +7351,68 @@ static void Color4_OnChange(void)
 		}
 	}
 	lastgoodcolor[3] = cv_playercolor[3].value;
+}
+
+static void __voice_cvar_func(INT32 pid, UINT8 pnum)
+{
+	kartvoice_t *myvoice = P_GetMobjVoice(players[pid].mo);
+
+	if (!myvoice)
+	{
+		myvoice = skins[players[pid].skin].voice;
+
+		if (!myvoice)
+		{
+			// ...how?!
+			return;
+		}
+	}
+
+	Skin_FindValidDub(&cv_voice[pnum], players[pid].skin, myvoice, false);
+
+	if (!Playing())
+		return; // do whatever you want
+
+	if (pnum > 0 && !splitscreen)
+		return; // do whatever you want
+
+	if (pnum < 1)
+	{
+		if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
+			&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
+		{
+			CV_StealthSet(&cv_voice[pnum], myvoice->name);
+			return;
+		}
+	}
+
+	if (!P_PlayerMoving(pid))
+		SendNameAndColor(pnum);
+	else
+	{
+		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your voice at the moment.\n"));
+		CV_StealthSet(&cv_voice[pnum], myvoice->name);
+	}
+}
+
+static void Voice_OnChange(void)
+{
+	__voice_cvar_func(consoleplayer, 0);
+}
+
+static void Voice2_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[1], 1);
+}
+
+static void Voice3_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[2], 2);
+}
+
+static void Voice4_OnChange(void)
+{
+	__voice_cvar_func(g_localplayers[3], 3);
 }
 
 /** Displays the result of the chat being muted or unmuted.

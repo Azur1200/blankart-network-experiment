@@ -40,7 +40,7 @@ extern consvar_t cv_skinselectstyle, cv_skinselectsort;
 typedef enum
 {
 	KSKVC_MAXVANILLA = MAXSKINS,
-	KSKVC_FIRSTFREESLOT,
+	KSKVC_FIRSTFREESLOT = KSKVC_MAXVANILLA,
 	KSKVC_LASTFREESLOT = 65535,
 	MAXSKINVOICES
 } kartvoicetype_e;
@@ -153,6 +153,8 @@ void R_AddSkins(UINT16 wadnum);
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
+void SetPlayerVoice(INT32 playernum, const char *voicename);
+void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
 sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound);
 
 #ifdef __cplusplus
