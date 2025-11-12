@@ -184,6 +184,54 @@ static const char* GetZLibError(int zErr)
 }
 #endif
 
+static sample_format_t I_GetSampleFormat(SF_INFO info)
+{
+	// use float format for those, otherwise shit will kill your ears
+	// thx WOOF for making me aware of this
+	switch ((info.format & SF_FORMAT_SUBMASK))
+	{
+		case SF_FORMAT_PCM_24:
+		case SF_FORMAT_PCM_32:
+		case SF_FORMAT_FLOAT:
+		case SF_FORMAT_DOUBLE:
+		case SF_FORMAT_VORBIS:
+		case SF_FORMAT_OPUS:
+		case SF_FORMAT_ALAC_20:
+		case SF_FORMAT_ALAC_24:
+		case SF_FORMAT_ALAC_32:
+#ifdef HAVE_SNDFILE_MPEG
+		case SF_FORMAT_MPEG_LAYER_I:
+		case SF_FORMAT_MPEG_LAYER_II:
+		case SF_FORMAT_MPEG_LAYER_III:
+#endif
+			// check if we actually even support shit
+			// otherwise everything will explode kek
+			if (alIsExtensionPresent("AL_EXT_FLOAT32"))
+			{
+				return Float;
+			}
+			break;
+		default:
+			return Int16;
+			break;
+	}
+
+	return Int16;
+}
+
+// who tf is Al
+static ALenum I_GetALFormat(SF_INFO info)
+{
+	sample_format_t sample_format = I_GetSampleFormat(info);
+
+	if (info.channels == 2) // stereo
+	{
+		return (sample_format == Float) ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
+	}
+
+	return (sample_format == Float) ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
+}
+
 static void AudioThread(void *userdata);
 
 void I_StartupSound(void)
@@ -294,7 +342,6 @@ static boolean I_UpdateMusicVolume(void)
 static boolean I_QueueNextSample(boolean unqueue)
 {
 	static INT16 *stream = NULL;
-	sample_format_t sample_format = Int16;
 	ALenum format = AL_FORMAT_MONO16;
 
 	LOCKAUDIO;
@@ -324,44 +371,8 @@ static boolean I_QueueNextSample(boolean unqueue)
 #endif
 	if (audio.musicstream != NULL)
 	{
-		// use float format for those, otherwise shit will kill your ears
-		// thx WOOF for making me aware of this
-		switch ((audio.musicinfo.format & SF_FORMAT_SUBMASK))
-		{
-			case SF_FORMAT_PCM_24:
-			case SF_FORMAT_PCM_32:
-			case SF_FORMAT_FLOAT:
-			case SF_FORMAT_DOUBLE:
-			case SF_FORMAT_VORBIS:
-			case SF_FORMAT_OPUS:
-			case SF_FORMAT_ALAC_20:
-			case SF_FORMAT_ALAC_24:
-			case SF_FORMAT_ALAC_32:
-#ifdef HAVE_SNDFILE_MPEG
-			case SF_FORMAT_MPEG_LAYER_I:
-			case SF_FORMAT_MPEG_LAYER_II:
-			case SF_FORMAT_MPEG_LAYER_III:
-#endif
-				// check if we actually even support shit
-				// otherwise everything will explode kek
-				if (alIsExtensionPresent("AL_EXT_FLOAT32"))
-				{
-					sample_format = Float;
-				}
-				break;
-			default:
-				sample_format = Int16;
-				break;
-		}
-
-		if (audio.musicinfo.channels == 2) // stereo
-		{
-			format = sample_format == Float ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
-		}
-		else
-		{
-			format = sample_format == Float ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
-		}
+		format = I_GetALFormat(audio.musicinfo);
+		sample_format_t sample_format = I_GetSampleFormat(audio.musicinfo);
 
 		if (sample_format == Float)
 		{
@@ -616,7 +627,6 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 	size_t samplerate = SAMPLERATE;
 	CLEANUP(Z_Pfree) char *data = ds2chunk(input, &size, &samplerate);
 	ALenum format = AL_FORMAT_MONO16;
-	sample_format_t sample_format = Int16;
 
 	if (data == NULL)
 	{
@@ -720,77 +730,30 @@ static ALuint LoadDataIntoBuffer(void *input, size_t size)
 			if (snd == NULL)
 				return INVALID_HANDLE;
 
-			// use float format for those, otherwise shit will kill your ears
-			// thx WOOF for making me aware of this
-			switch ((info.format & SF_FORMAT_SUBMASK))
-			{
-				case SF_FORMAT_PCM_24:
-				case SF_FORMAT_PCM_32:
-				case SF_FORMAT_FLOAT:
-				case SF_FORMAT_DOUBLE:
-				case SF_FORMAT_VORBIS:
-				case SF_FORMAT_OPUS:
-				case SF_FORMAT_ALAC_20:
-				case SF_FORMAT_ALAC_24:
-				case SF_FORMAT_ALAC_32:
-#ifdef HAVE_SNDFILE_MPEG
-				case SF_FORMAT_MPEG_LAYER_I:
-				case SF_FORMAT_MPEG_LAYER_II:
-				case SF_FORMAT_MPEG_LAYER_III:
-#endif
-				// check if we actually even support shit
-				// otherwise everything will explode kek
-				if (alIsExtensionPresent("AL_EXT_FLOAT32"))
-				{
-					sample_format = Float;
-				}
-				break;
-				default:
-					sample_format = Int16;
-					break;
-			}
-
-			if (info.channels == 2) // stereo
-			{
-				format = sample_format == Float ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
-			}
-			else
-			{
-				format = sample_format == Float ? AL_FORMAT_MONO_FLOAT32 : AL_FORMAT_MONO16;
-			}
-
 			size = 4096;
 			size_t pos = 0;
 			data = Z_Malloc(size, PU_SOUND, NULL);
 
-			if (sample_format == Float)
+			format = I_GetALFormat(info);
+			sample_format_t sample_format = I_GetSampleFormat(info);
+
+			for (;;)
 			{
-				for (;;)
+				sf_count_t count;
+
+				if (sample_format == Float)
+					count = sf_read_float(snd, (float *)&data[pos], (size - pos) / sizeof(float));
+				else
+					count = sf_read_short(snd, (short *)&data[pos], (size - pos) / sizeof(short));
+
+				if (count == 0)
+					break;
+
+				pos += count * ((sample_format == Float) ? sizeof(float) : sizeof(short));
+				if (pos >= size)
 				{
-					sf_count_t count = sf_read_float(snd, (float *)&data[pos], (size - pos) / sizeof(float));
-					if (count == 0)
-						break;
-					pos += count * sizeof(float);
-					if (pos >= size)
-					{
-						size <<= 1;
-						data = Z_Realloc(data, size, PU_SOUND, NULL);
-					}
-				}
-			}
-			else
-			{
-				for (;;)
-				{
-					sf_count_t count = sf_read_short(snd, (short *)&data[pos], (size - pos) / sizeof(short));
-					if (count == 0)
-						break;
-					pos += count * sizeof(short);
-					if (pos >= size)
-					{
-						size <<= 1;
-						data = Z_Realloc(data, size, PU_SOUND, NULL);
-					}
+					size <<= 1;
+					data = Z_Realloc(data, size, PU_SOUND, NULL);
 				}
 			}
 
