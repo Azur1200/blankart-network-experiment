@@ -1,4 +1,3 @@
-if (NOT TARGET OpenAL)
 CPMAddPackage(
 		NAME SDL2_mixer
 		VERSION 2.6.2
@@ -21,4 +20,3 @@ CPMAddPackage(
 			"SDL2MIXER_VORBIS STB"
 			"SDL2MIXER_WAVE ON"
 )
-endif()
