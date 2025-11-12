@@ -305,6 +305,14 @@ static void K_ItemConfirmForTarget(botdata_t *bd, const player_t *bot, const pla
 	}
 }
 
+/// @brief checks if given bot isn't prevented from using items due to item cooldowns
+/// @param bot bot to check cooldowns for
+/// @return if bot is able to use item-related actions (using items or mashing the roulette)
+static boolean K_CheckBotItemCooldown(const player_t *bot)
+{
+	return bot->itemusecooldown <= 0;
+}
+
 
 // Presses the item button & aim buttons for the bot.
 // dir - Aiming direction: 1 for forwards, -1 for backwards, 0 for neutral.
@@ -958,7 +966,8 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
-	if (player->flametimer >= (itemtime*3)-5)
+	// if we're smart enough, allow overheating the flame shield if we want to go off-road
+	if (player->flametimer >= (itemtime*3)-5 && !(K_ApplyOffroad(player) && player->botvars.difficulty >= 6))
 	{
 		bd->itemdelay = 5;
 	}
@@ -1201,7 +1210,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		}
 		return;
 	}
-
+	
 	if (K_CanHandleItemDelay(bd, player))
 	{
 		bd->itemdelay--;
@@ -1209,6 +1218,8 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		return;
 	}
 
+	if (!K_CheckBotItemCooldown(player)) return;
+	
 	if (player->itemroulette)
 	{
 		// Mashing behaviors
