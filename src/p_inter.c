@@ -1742,25 +1742,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				if (target->threshold < 1 || target->threshold >= numkartitems) // bruh moment prevention
-				{
-					player->itemtype = MAXKARTITEMS;
-					player->itemamount = 1;
-				}
-				else
-				{
-					player->itemtype = target->threshold;
-					if (K_GetShieldFromPlayer(player) != KSHIELD_NONE) // never give more than 1 shield
-						player->itemamount = 1;
-					else
-						player->itemamount = max(1, target->movecount);
-				}
-				player->itemblink = TICRATE;
-				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
-				player->itemroulette = KROULETTE_DISABLED;
-				player->roulettetype = KROULETTETYPE_NORMAL;
-				if (P_IsDisplayPlayer(player))
-					S_StartSound(NULL, sfx_itrolf);
+				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), KITEMBLINK_NORMAL);
 			}
 			break;
 		}

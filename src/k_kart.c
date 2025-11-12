@@ -7178,7 +7178,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->itemblink && player->itemblink-- <= 0)
 	{
-		player->itemblinkmode = KITEMBLINKMODE_NORMAL;
+		player->itemblinkmode = KITEMBLINK_NORMAL;
 		player->itemblink = 0;
 	}
 

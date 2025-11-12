@@ -148,12 +148,6 @@ typedef enum {
 	KROULETTETYPE_EGGMAN,
 } kartroulettetype_t;
 
-typedef enum {
-	KITEMBLINKMODE_NORMAL,
-	KITEMBLINKMODE_MASHED,
-	KITEMBLINKMODE_KARMA,
-} kartitemblinkmode_t;
-
 typedef enum
 {
 	KSHIELD_NONE = 0,

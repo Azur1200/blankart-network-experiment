@@ -1332,10 +1332,11 @@ static void K_drawKartItem(void)
 
 			switch (stplyr->itemblinkmode)
 			{
-				case 2:
+				case KITEMBLINK_DEBUG:
+				case KITEMBLINK_KARMA:
 					localcolor = K_RainbowColor(leveltime);
 					break;
-				case 1:
+				case KITEMBLINK_MASHED:
 					localcolor = SKINCOLOR_RED;
 					break;
 				default:

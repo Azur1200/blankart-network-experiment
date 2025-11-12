@@ -45,6 +45,14 @@ typedef enum
 
 typedef enum
 {
+	KITEMBLINK_NORMAL,
+	KITEMBLINK_MASHED,
+	KITEMBLINK_KARMA,
+	KITEMBLINK_DEBUG,
+} kartitemblink_e;
+
+typedef enum
+{
 	ODDS_RACE,
 	ODDS_BATTLE,
 	ODDS_SPECIAL,
@@ -161,8 +169,9 @@ boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
 kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
 patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount);
-void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 
+void K_AwardPlayerItem(player_t *player, kartitemtype_e type, UINT8 amount, kartitemblink_e blink);
+void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);
 void K_SetIndirectItemCooldown(tic_t cooldown);
