@@ -74,6 +74,7 @@ typedef enum
 	KRF_NOTNEAREND = 1<<3,      // This result should not appear at the end of a race. (Usually trap items that lose their effectiveness)
 	KRF_NOTFORBOTTOM = 1<<4,    // After the first 30 seconds, this result stops appearing for losing players. (Usually items that feel less effective at these positions)
 	KRF_RUNNERAUGMENT = 1<<5,   // This result's odds are affected by the severity of 1st place's frontrun. (Very likely only for SPBs, but who knows?)
+	KRF_HIDEFROMSPB = 1<<6,     // This result refuses to appear when a Self-Propelled Bomb is active in a race or battle.
 } ATTRPACK kartresultflags_e;
 
 // Unique useodds function

@@ -686,10 +686,6 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 					}
 				}
 				break;
-			case KITEM_THUNDERSHIELD:
-				if (spbplace != -1)
-					newodds = 0;
-				break;
 			default:
 				break;
 		}
@@ -742,6 +738,11 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 	else if (flags & KRF_NOTFORBOTTOM && roulette->inBottom && leveltime >= (30*TICRATE)+starttime)
 	{
 		// This item should not appear for losing players. (Usually items that feel less effective at these positions)
+		newodds = 0;
+	}
+	else if (flags & KRF_HIDEFROMSPB && (spbplace != -1))
+	{
+		// This item doesn't appear if an SPB is chasing a player.
 		newodds = 0;
 	}
 	else if (flags & KRF_POWERITEM)
