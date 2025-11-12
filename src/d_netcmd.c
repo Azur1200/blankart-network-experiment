@@ -572,6 +572,9 @@ consvar_t cv_kartspbdist = CVAR_INIT ("kartspbdist", "4432", CV_NETVAR|CV_CHEAT|
 consvar_t cv_kartlegacyspbdist = CVAR_INIT ("kartlegacyspbdist", "2216", CV_NETVAR|CV_CHEAT|CV_GUARD, spbdist_cons_t, NULL);
 #undef MAXODDSDIST
 
+// SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
+consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
+
 // Time limit for Alt. Shrink
 static CV_PossibleValue_t altshrinktime_cons_t[] = {{0, "MIN"}, {(INT16_MAX / TICRATE), "MAX"}, {0, NULL}};
 consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR|CV_CHEAT|CV_GUARD, altshrinktime_cons_t, NULL);

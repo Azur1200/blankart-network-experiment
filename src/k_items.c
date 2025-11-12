@@ -1171,7 +1171,7 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 
 	pdis = K_CalculateInitalPDIS(player, numPlayers);
 
-	if (spbplace != -1 && player->position == spbplace+1)
+	if (cv_kartspbrush.value && spbplace != -1 && player->position == spbplace+1)
 	{
 		// SPB Rush Mode: It's 2nd place's job to catch-up items and make 1st place's job hell
 		pdis = (3 * pdis) / 2;
