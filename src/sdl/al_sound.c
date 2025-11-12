@@ -957,6 +957,20 @@ float SecondsToSamples(sf_count_t samples, int sampleRate) {
 	return seconds;
 }
 
+static UINT32 get_adjusted_position(UINT32 position)
+{
+	// all in milliseconds
+	UINT32 length = I_GetSongLength();
+
+	if (length)
+	{
+		UINT32 looppoint = I_GetSongLoopPoint();
+		return position >= length ? (position % (length-looppoint)) : position;
+	}
+	else
+		return position;
+}
+
 UINT32 I_GetSongLength(void)
 {
 	LOCKAUDIO;
@@ -974,7 +988,7 @@ UINT32 I_GetSongLength(void)
 
 		if (gme_e != NULL)
 		{
-			CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
+			CONS_Alert(CONS_ERROR, "I_GetSongLength: GME error: %s\n", gme_e);
 			length = 0;
 		}
 		else
@@ -1010,11 +1024,47 @@ UINT32 I_GetSongLength(void)
 boolean I_SetSongLoopPoint(UINT32 looppoint)
 {
 	(void)looppoint;
+
+	LOCKAUDIO;
+
+	const musictype_t mustype = I_SongType();
+
+	if (mustype == MU_GME || mustype == MU_MOD)
+		return false;
+
 	return false; // FIXME: implement
 }
 
 UINT32 I_GetSongLoopPoint(void)
 {
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return 0;
+
+#ifdef HAVE_GME
+	if (gme)
+	{
+		INT32 looppoint;
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
+
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "I_GetSongLoopPoint: GME error: %s\n", gme_e);
+			looppoint = 0;
+		}
+		else
+		{
+			looppoint = info->intro_length > 0 ? info->intro_length : 0;
+		}
+
+		gme_free_info(info);
+		return max(looppoint, 0);
+	}
+	else
+#endif
+
 	return 0; // FIXME: implement
 }
 
@@ -1025,16 +1075,55 @@ boolean I_SetSongPosition(UINT32 position)
 	if (audio.music == INVALID_HANDLE)
 		return false;
 
-	position = position / 1000.0f;
+#ifdef HAVE_GME
+	if (gme)
+	{
+		// this is unstable, so fail silently
+		return true;
+		// this isn't required technically, but GME thread-locks for a second
+		// if you seek too high from the counter
+		// length = I_GetSongLength();
+		// if (length)
+		// 	position = get_adjusted_position(position);
 
-	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-	position = position + sampleoffset;
+		// SDL_LockAudio();
+		// gme_err_t gme_e = gme_seek(gme, position);
+		// SDL_UnlockAudio();
 
-	sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
+		// if (gme_e != NULL)
+		// {
+		// 	CONS_Alert(CONS_ERROR, "I_SetSongPosition: GME error: %s\n", gme_e);
+		// 	return false;
+		// }
+		// else
+		// 	return true;
+	}
+	else
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+	{
+		// This isn't 100% correct because we don't account for loop points because we can't get them.
+		// But if you seek past end of song, OpenMPT seeks to 0. So adjust the position anyway.
+		openmpt_module_set_position_seconds(openmpt_mhandle, (double)(get_adjusted_position(position)/1000.0L)); // returns new position
+		return true;
+	}
+	else
+#endif
+	{
+		position = get_adjusted_position(position);
 
-	sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+		position = position / 1000.0f;
 
-	return true;
+		float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+		position = position + sampleoffset;
+
+		sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
+
+		sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+
+		return true;
+	}
 }
 
 UINT32 I_GetSongPosition(void)
@@ -1044,14 +1133,53 @@ UINT32 I_GetSongPosition(void)
 	if (audio.music == INVALID_HANDLE)
 		return 0;
 
-	sf_count_t samples = sf_seek(audio.musicstream, 0, SF_SEEK_CUR);
+#ifdef HAVE_GME
+	if (gme)
+	{
+		INT32 position = gme_tell(gme);
 
-	float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
+		gme_info_t *info;
+		gme_err_t gme_e = gme_track_info(gme, &info, current_track);
 
-	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-	position = position - sampleoffset;
+		if (gme_e != NULL)
+		{
+			CONS_Alert(CONS_ERROR, "I_GetSongPosition: GME error: %s\n", gme_e);
+			return position;
+		}
+		else
+		{
+			// adjust position, since GME's counter keeps going past loop
+			if (info->length > 0)
+				position %= info->length;
+			else if (info->intro_length + info->loop_length > 0)
+				position = position >= (info->intro_length + info->loop_length) ? (position % info->loop_length) : position;
+			else
+				position %= 150 * 1000; // 2.5 minutes
+		}
 
-	return position * 1000.0f;
+		gme_free_info(info);
+
+		return max(position, 0);
+	}
+	else
+#endif
+#ifdef HAVE_OPENMPT
+	if (openmpt_mhandle)
+		// This will be incorrect if we adjust for length because we can't get loop points.
+		// So return unadjusted. See note in SetMusicPosition: we adjust for that.
+		return (UINT32)(openmpt_module_get_position_seconds(openmpt_mhandle)*1000.);
+	else
+#endif
+	{
+		sf_count_t samples = sf_seek(audio.musicstream, 0, SF_SEEK_CUR);
+
+		float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
+
+		float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+		position = position - sampleoffset;
+
+		return position * 1000.0f;
+	}
 }
 
 
