@@ -387,7 +387,7 @@ static boolean I_QueueNextSample(boolean unqueue)
 		if (count == 0)
 		{
 			// TODO: looppoints
-			sf_seek(audio.musicstream, 0, SEEK_SET);
+			sf_seek(audio.musicstream, 0, SF_SEEK_SET);
 		}
 
 		samplerate = audio.musicinfo.samplerate;
@@ -944,6 +944,19 @@ boolean I_SetSongSpeed(float speed)
 	return false;
 }
 
+// Thank you random stack overflow user (second post)!
+// https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
+
+float SamplesToSeconds(sf_count_t samples, int sampleRate) {
+	float seconds = samples / (float) sampleRate;
+	return seconds;
+}
+
+float SecondsToSamples(sf_count_t samples, int sampleRate) {
+	float seconds = samples * (float) sampleRate;
+	return seconds;
+}
+
 UINT32 I_GetSongLength(void)
 {
 	LOCKAUDIO;
@@ -986,10 +999,12 @@ UINT32 I_GetSongLength(void)
 		return (UINT32)(openmpt_module_get_duration_seconds(openmpt_mhandle) * 1000.);
 #endif
 
-	sf_count_t cur = sf_seek(audio.musicstream, 0, SEEK_CUR);
-	sf_count_t length = sf_seek(audio.musicstream, 0, SEEK_END);
-	sf_seek(audio.musicstream, cur, SEEK_SET);
-	return length / 2 / audio.musicinfo.samplerate;
+	float position = SamplesToSeconds(audio.musicinfo.frames, audio.musicinfo.samplerate);
+
+	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+	position = position - sampleoffset;
+
+	return position * 1000.0f;
 }
 
 boolean I_SetSongLoopPoint(UINT32 looppoint)
@@ -1010,8 +1025,14 @@ boolean I_SetSongPosition(UINT32 position)
 	if (audio.music == INVALID_HANDLE)
 		return false;
 
-	if (!TRY(alSourcef, audio.music, AL_SEC_OFFSET, position / 1000.0f))
-		return false;
+	position = position / 1000.0f;
+
+	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+	position = position + sampleoffset;
+
+	sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
+
+	sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 
 	return true;
 }
@@ -1023,9 +1044,12 @@ UINT32 I_GetSongPosition(void)
 	if (audio.music == INVALID_HANDLE)
 		return 0;
 
-	float position;
-	if (!TRY(alGetSourcef, audio.music, AL_SEC_OFFSET, &position))
-		return 0;
+	sf_count_t samples = sf_seek(audio.musicstream, 0, SF_SEEK_CUR);
+
+	float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
+
+	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
+	position = position - sampleoffset;
 
 	return position * 1000.0f;
 }
