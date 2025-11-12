@@ -69,8 +69,7 @@ typedef enum
 #include "../z_zone.h"
 #include "../w_wad.h"
 #include "../i_threads.h"
-
-#include <time.h> // nanosleep
+#include "../i_system.h" // I_Sleep
 
 typedef struct
 {
@@ -207,6 +206,7 @@ void I_StartupSound(void)
 	ALCint attrs[] = {
 		ALC_OUTPUT_LIMITER_SOFT, ALC_FALSE, // G: too noticeable
 		ALC_HRTF_SOFT, ALC_FALSE,
+		ALC_FREQUENCY, SAMPLERATE, // G: resampling to 48 kHz muffles the audio on My Machine
 		0
 	};
 
@@ -464,18 +464,11 @@ static void AudioThread(void *userdata)
 {
 	(void)userdata;
 
-	// update every 50 milliseconds
-	const struct timespec sleeptime = { .tv_sec = 0, .tv_nsec = 50000000 };
-
 	while (true)
 	{
-		// I_GetTime is not thread-safe, so we'll have to use uhh... nanosleep.
-		// hope that works on windows!!!! (clueless)
-		if (nanosleep(&sleeptime, NULL) != 0)
-		{
-			CONS_Alert(CONS_ERROR, "OpenAL: audio thread killed");
-			return;
-		}
+		// doesn't need to be that frequent, this thread just feeds buffers
+		// (and ticks music fades... someone better look into that!)
+		I_Sleep(50);
 
 		{
 			LOCKAUDIO;
