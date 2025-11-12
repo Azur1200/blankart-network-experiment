@@ -776,6 +776,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		// Wall Transfer bonus
 		SYNCBOOLEAN(players[i].walltransfered);
 		SYNC(players[i].walltransferboost);
+
+		SYNC(players[i].itemusecooldown);
+		SYNC(players[i].itemusecooldownmax);
 	}
 	TracyCZoneEnd(__zone);
 }
