@@ -4241,6 +4241,166 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 #undef WARN
 #undef WARN0
 
+#define WARN(str, ...) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs), __VA_ARGS__)
+#define WARN0(str) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs))
+
+// Extremely shitty and lifted almost entirely from r_skins.c
+// Sets the sound effect value for a voice, given a valid skinsound value is passed.
+static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvoice_t *voice)
+{
+	sfxenum_t i;
+	char printval[6];
+
+	// Remove the prefix. (We can affect this directly since we're not going to use it again.)
+	if ((value[0] == 'D' || value[0] == 'd') && (value[1] == 'S' || value[1] == 's')) // DS*
+		value += 2;
+	else // sfx_*
+		value += 4;
+
+	strncpy(printval, value, 6);
+
+	// copy name of sounds that are remapped
+	// for this skin
+	for (i = 0; i < sfx_skinsoundslot0; i++)
+	{
+		if (!S_sfx[i].name)
+			continue;
+		if (!stricmp(S_sfx[i].name, value))
+		{
+			if (voice)
+			{
+				Sk_SetSkinVoiceValue(voice, skinsound, i);
+				return 0;
+			}
+		}
+	}
+
+	strlwr(printval);
+	WARN("'sfx_%s' does not exist", printval);
+	return 1;
+}
+
+void readkartvoice(MYFILE *f, kartvoice_t *voice)
+{
+	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
+	char *word = s;
+	char *word2;
+	char *tmp;
+	INT32 i;
+
+	do if (myfgets(s, MAXLINELEN, f))
+	{
+		if (s[0] == '\n')
+			break;
+
+		// First remove trailing newline, if there is one
+		tmp = strchr(s, '\n');
+		if (tmp)
+			*tmp = '\0';
+
+		tmp = strchr(s, '#');
+		if (tmp)
+			*tmp = '\0';
+		if (s == tmp)
+			continue; // Skip comment lines, but don't break.
+
+		// Get the part before the " = "
+		tmp = strchr(s, '=');
+		if (tmp)
+			*(tmp-1) = '\0';
+		else
+			break;
+		strupr(word);
+
+		// Now get the part after
+		word2 = (tmp += 2);
+		strupr(word2);
+
+		if (fastcmp(word, "NAME"))
+		{
+			strlwr(word2);
+			// Catch any voices with similar names.
+			for (i = KSKVC_FIRSTFREESLOT; i < MAXSKINVOICES; i++)
+			{
+				if (strnicmp(word2, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
+				{
+					// Name collision!
+					// Append the ID to differentiate... poorly.
+					snprintf(word2, sizeof voice->name, "%u_%s", voice->id, skinvoices[i].name);
+				}
+			}
+			strncpy(voice->name, word2, sizeof voice->name);
+			CONS_Printf("KartVoice %s: renamed to \"%s\"\n", strbuf_get(voicenames, voice->info.nameofs), voice->name);
+		}
+		else if (fastcmp(word, "SKIN"))
+		{
+			i = R_SkinAvailable(word2);
+
+			if (i == -1)
+			{
+				strlwr(word2);
+				WARN("skin '%s' does not exist or cannot be used", word2);
+			}
+			else
+			{
+				voice->parent = (UINT16)i;
+			}
+		}
+		else if (fastcmp(word, "GLOAT"))
+		{
+			reallygrossvoicesfxadder(SKSKPOWR, word2, voice);
+		}
+		else if (fastcmp(word, "WIN"))
+		{
+			reallygrossvoicesfxadder(SKSKWIN, word2, voice);
+		}
+		else if (fastcmp(word, "LOSE"))
+		{
+			reallygrossvoicesfxadder(SKSKLOSE, word2, voice);
+		}
+		else if (fastcmp(word, "SLOW") || fastcmp(word, "OVERTAKE") || fastcmp(word, "PASS"))
+		{
+			reallygrossvoicesfxadder(SKSKSLOW, word2, voice);
+		}
+		else if (fastcmp(word, "PAIN1") || fastcmp(word, "HURT1") || fastcmp(word, "DAMAGE1"))
+		{
+			reallygrossvoicesfxadder(SKSKPAN1, word2, voice);
+		}
+		else if (fastcmp(word, "PAIN2") || fastcmp(word, "HURT2") || fastcmp(word, "DAMAGE2"))
+		{
+			reallygrossvoicesfxadder(SKSKPAN2, word2, voice);
+		}
+		else if (fastcmp(word, "ATTACK1"))
+		{
+			reallygrossvoicesfxadder(SKSKATK1, word2, voice);
+		}
+		else if (fastcmp(word, "ATTACK2"))
+		{
+			reallygrossvoicesfxadder(SKSKATK2, word2, voice);
+		}
+		else if (fastcmp(word, "BOOST1"))
+		{
+			reallygrossvoicesfxadder(SKSKBST1, word2, voice);
+		}
+		else if (fastcmp(word, "BOOST2"))
+		{
+			reallygrossvoicesfxadder(SKSKBST2, word2, voice);
+		}
+		else if (fastcmp(word, "HITEM") || fastcmp(word, "HITCONFIRM"))
+		{
+			reallygrossvoicesfxadder(SKSKHITM, word2, voice);
+		}
+		else
+			WARN("unknown word '%s'", word);
+	}
+	while (!myfeof(f)); // finish when the line is empty
+
+	Z_Free(s);
+}
+
+#undef WARN
+#undef WARN0
+
 //
 //
 //
@@ -4419,6 +4579,17 @@ useoddsfunc_f *get_useoddsfunc(const char *word)
 			return USEODDS_FUNCS[i].func;
 	deh_warning("Couldn't find odds function named 'KO_%s'",word);
 	return NULL;
+}
+
+kartvoicetype_e get_kartvoice(const char *word)
+{ // Returns the value of KVOICE_ enumerations
+	kartvoicetype_e i;
+	if (fastncmp("KVOICE_",word,7))
+		word += 7; // take off the KVOICE_
+	i = DEH_FindVoice(word);
+	if (i == MAXVOICEFREESLOTS)
+		deh_warning("Couldn't find voice named 'KVOICE_%s'", word);
+	return i;
 }
 
 /// \todo Make ANY of this completely over-the-top math craziness obey the order of operations.

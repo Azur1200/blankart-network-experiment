@@ -240,7 +240,7 @@ void P_ResetData(INT32 flags)
 		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1)
 			DEH_Link(name, &menudefs[i].info, &menunames);
 	}
-
+	
 	// kartitems
 	if (init)
 	{
@@ -257,5 +257,20 @@ void P_ResetData(INT32 flags)
 			DEH_Link(name, &kartitems[i].info, &kartitemnames);
 			K_RegisterItem(i);
 		}
+	}
+
+	// voices
+	if (init)
+	{
+		for (i = KSKVC_FIRSTFREESLOT; i < MAXSKINVOICES; i++)
+		{
+			R_ClearVoice(i);
+		}
+
+		numfreeslotvoices = 0;
+
+		if (voicenames)
+			Z_Free(voicenames);
+		voicenames = strbuf_alloc();
 	}
 }

@@ -173,7 +173,7 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
 	return P_GetSkinSprite2(skin, spr2, NULL);
 }
 
-static void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound)
+void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound)
 {
 	INT32 usesound;
 	
@@ -296,6 +296,13 @@ sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 	}
 
 	return sfx_thok;
+}
+
+void R_ClearVoice(kartvoicetype_e voicetype)
+{
+	kartvoice_t *voice = &skinvoices[voicetype];
+
+	memset(voice, 0, sizeof(kartvoice_t));
 }
 
 static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
@@ -649,6 +656,8 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 	if (P_MobjWasRemoved(player->mo))
 	{
 		// No object to give a voice to.
+		// Fall back to our skin.
+		player->voice_id = skins[player->skin].voice->id;
 		return;
 	}
 
@@ -657,6 +666,8 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 	if (!strncmp(voicename, myvoice->name, sizeof myvoice->name))
 	{
 		// Hey... this voice is the same as before!
+		// WAIT! Before we go, reset the player's voice ID!
+		player->voice_id = myvoice->id;
 		return;
 	}
 
@@ -670,12 +681,13 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 			{
 				// Found a voice.
 				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
+				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
 				return;
 			}
 		}
 	}
 
-	// Freeslotted voices don't exist or found nothing; check skin voices.
+	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
 	for (i = 0; i < numskinvoices; i++)
 	{
 		// Whatever. Go, my code duplication!
@@ -683,12 +695,14 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 		{
 			// Found a voice.
 			player->mo->voice = &skinvoices[i];
+			player->voice_id = (kartvoicetype_e)i;
 			return;
 		}
 	}
 
 	// Couldn't find a voice. Default to the skin's.
 	player->mo->voice = NULL;
+	player->voice_id = skins[player->skin].voice->id;
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -774,6 +788,8 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 	if (P_MobjWasRemoved(player->mo))
 	{
 		// No object to give a voice to.
+		// Fall back to our skin.
+		player->voice_id = skins[player->skin].voice->id;
 		return;
 	}
 
@@ -782,6 +798,8 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 	if (myvoice->id == voicenum)
 	{
 		// Hey... this voice is the same as before!
+		// WAIT! Before we go, reset the player's voice ID!
+		player->voice_id = myvoice->id;
 		return;
 	}
 
@@ -795,6 +813,7 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 			{
 				// Found a voice.
 				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
+				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
 				return;
 			}
 		}
@@ -808,12 +827,14 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 		{
 			// Found a voice.
 			player->mo->voice = &skinvoices[i];
+			player->voice_id = (kartvoicetype_e)i;
 			return;
 		}
 	}
 
 	// Couldn't find a voice. Default to the skin's.
 	player->mo->voice = NULL;
+	player->voice_id = skins[player->skin].voice->id;
 }
 
 //
@@ -1355,6 +1376,7 @@ void R_AddSkins(UINT16 wadnum)
 
 		skinsorted[numskins] = numskins;
 		numskins++;
+		numskinvoices++;
 	}
 	SortSkins();
 	return;

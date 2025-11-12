@@ -41,6 +41,7 @@ strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
 strbuf_t *kartitemnames;
+strbuf_t *voicenames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
@@ -66,6 +67,11 @@ const char *DEH_MenutypeName(menutype_t i)
 const char *DEH_KartItemName(kartitemtype_e i)
 {
 	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
+}
+
+const char *DEH_VoiceName(kartvoicetype_e i)
+{
+	return strbuf_get(voicenames, skinvoices[i + KSKVC_FIRSTFREESLOT].info.nameofs);
 }
 
 mobjtype_t DEH_FindMobjtype(const char *word)
@@ -131,6 +137,19 @@ kartitemtype_e DEH_FindKartItem(const char *word)
 			return i;
 	}
 	return MAXKARTITEMS;
+}
+
+kartvoicetype_e DEH_FindVoice(const char *word)
+{
+	INT32 i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < numfreeslotvoices; i++) {
+		if (hash != skinvoices[i + KSKVC_FIRSTFREESLOT].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_VoiceName(i)))
+			return (kartvoicetype_e)i;
+	}
+	return MAXVOICEFREESLOTS;
 }
 
 struct flickytypes_s FLICKYTYPES[] = {

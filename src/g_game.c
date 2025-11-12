@@ -2703,6 +2703,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	UINT8 latestlap;
 	UINT16 skincolor;
 	INT32 skin;
+	kartvoicetype_e voice;
 	UINT32 availabilities;
 
 	tic_t jointime;
@@ -2761,6 +2762,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 
 	skincolor = players[player].skincolor;
 	skin = players[player].skin;
+	voice = players[player].voice_id;
 
 	// SRB2kart
 	kartspeed = players[player].kartspeed;
@@ -2951,6 +2953,7 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// save player config truth reborn
 	p->skincolor = skincolor;
 	p->skin = skin;
+	p->voice_id = voice;
 	p->kartspeed = kartspeed;
 	p->kartweight = kartweight;
 	//

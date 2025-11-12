@@ -476,6 +476,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 
 		SYNC(players[i].skincolor);
 		SYNC(players[i].skin);
+		SYNC(players[i].voice_id);
 		SYNC(players[i].availabilities);
 		SYNC(players[i].score);
 		SYNC(players[i].lives);

@@ -12371,6 +12371,11 @@ void P_SpawnPlayer(INT32 playernum)
 	mobj->skin = &skins[p->skin];
 	P_SetupStateAnimation(mobj, mobj->state);
 
+	if (p->voice_id != skins[p->skin].voice->id)
+	{
+		mobj->voice = &skinvoices[p->voice_id];
+	}
+
 	mobj->health = 1;
 	p->playerstate = PST_LIVE;
 

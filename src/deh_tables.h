@@ -32,6 +32,7 @@ extern strbuf_t *mobjnames;
 extern strbuf_t *skincolornames;
 extern strbuf_t *menunames;
 extern strbuf_t *kartitemnames;
+extern strbuf_t *voicenames;
 extern UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i);
@@ -39,12 +40,14 @@ const char *DEH_StateName(statenum_t i);
 const char *DEH_SkincolorName(skincolornum_t i);
 const char *DEH_MenutypeName(menutype_t i);
 const char *DEH_KartItemName(kartitemtype_e i);
+const char *DEH_VoiceName(kartvoicetype_e i);
 
 mobjtype_t DEH_FindMobjtype(const char *word);
 statenum_t DEH_FindState(const char *word);
 skincolornum_t DEH_FindSkincolor(const char *word);
 menutype_t DEH_FindMenutype(const char *word);
 kartitemtype_e DEH_FindKartItem(const char *word);
+kartvoicetype_e DEH_FindVoice(const char *word);
 
 struct flickytypes_s {
 	const char *name;

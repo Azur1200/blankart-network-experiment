@@ -65,6 +65,7 @@ menudrawer_f *get_menudrawer(const char *word);
 skincolornum_t get_skincolor(const char *word);
 kartitemtype_e get_kartitem(const char *word);
 useoddsfunc_f *get_useoddsfunc(const char *word);
+kartvoicetype_e get_kartvoice(const char *word);
 
 void readwipes(MYFILE *f);
 void readmaincfg(MYFILE *f);
@@ -96,6 +97,7 @@ preciptype_t get_precip(const char *word);
 void readweather(MYFILE *f, INT32 num);
 void readkartitem(MYFILE *f, kartitem_t *item);
 void readkartresult(MYFILE *f, kartresult_t *result);
+void readkartvoice(MYFILE *f, kartvoice_t *voice);
 
 #ifdef __cplusplus
 } // extern "C"

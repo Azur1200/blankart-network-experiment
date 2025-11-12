@@ -45,6 +45,8 @@ typedef enum
 	MAXSKINVOICES
 } kartvoicetype_e;
 
+#define MAXVOICEFREESLOTS (MAXSKINVOICES - KSKVC_FIRSTFREESLOT)
+
 // Player voice struct
 // ## TODO:
 // - Dub implementation (freeslotting, voice lookup, assigning voices on race start)
@@ -52,6 +54,8 @@ typedef enum
 struct kartvoice_t
 {
     UINT32 id;
+
+	dehinfo_t info;
 
 	char name[VOICENAMESIZE+1]; // INT16 descriptive name of the voice.
 
@@ -152,6 +156,9 @@ void R_AddSkins(UINT16 wadnum);
 
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
+
+void R_ClearVoice(kartvoicetype_e voicetype);
+void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 
 void SetPlayerVoice(INT32 playernum, const char *voicename);
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
