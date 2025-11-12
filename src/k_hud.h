@@ -100,7 +100,6 @@ void K_ReloadHUDColorCvar(void);
 boolean K_UseColorHud(void);
 UINT8 K_GetHudColor(void);
 void K_LoadKartHUDGraphics(void);
-patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount);
 void K_drawKartHUD(void);
 void K_drawKartFreePlay(void);
 void K_drawKartTimestamp(tic_t drawtime, INT32 TX, INT32 TY, INT16 emblemmap, UINT8 mode);

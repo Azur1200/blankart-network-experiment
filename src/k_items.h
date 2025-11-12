@@ -33,7 +33,6 @@ extern "C" {
 
 typedef enum
 {
-	KITEM_SAD = -1,
 #define _(name, ...) KITEM_##name,
 #include "info/kartitems.h"
 #undef _
@@ -159,7 +158,9 @@ kartresult_t *K_GetKartResultAlt(const char *name, boolean alternate);
 void K_SetupItemOdds(void);
 boolean K_ItemResultEnabled(const kartresult_t *result);
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype);
+kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype);
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny);
+patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCount);
 
 void K_UpdateItemCooldown(void);

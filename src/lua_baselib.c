@@ -5077,6 +5077,7 @@ static int lib_kSetPlayerItemCooldown(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	K_SetPlayerItemCooldown(player, c, force);
+	return 0;
 }
 
 static luaL_Reg lib[] = {

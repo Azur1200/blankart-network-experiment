@@ -4166,7 +4166,7 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 	UINT32 newRenderFlags = 0;
 
 	if (itemType < 1 || itemType >= numkartitems)
-		itemType = KITEM_SAD;
+		itemType = MAXKARTITEMS;
 
 	part = mobj;
 	while (!P_MobjWasRemoved(part->hnext))

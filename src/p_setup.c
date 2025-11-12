@@ -8074,9 +8074,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
-	if (!reloadinggamestate)
-		K_SetupItemOdds();
-
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
 
@@ -8401,8 +8398,7 @@ static void P_InitGametype(void)
 
 	wantedcalcdelay = wantedfrequency*2;
 
-	for (i = 0; i < numkartresults; i++)
-		kartresults[i].cooldown = 0;
+	K_SetupItemOdds();
 
 	mapreset = 0;
 

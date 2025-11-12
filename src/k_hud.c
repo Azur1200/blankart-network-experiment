@@ -186,8 +186,6 @@ static patch_t *kp_itemtimer[2];
 static patch_t *kp_itemmulsticker[4];
 static patch_t *kp_itemx;
 
-static patch_t *kp_sadface[2];
-
 static patch_t *kp_check[11];
 
 static patch_t *kp_eggnum[4];
@@ -539,9 +537,6 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_itemmulsticker[3], "K_ISMULC");
 	HU_UpdatePatch(&kp_itemx, "K_ITX");
 
-	HU_UpdatePatch(&kp_sadface[0], "K_ITSAD");
-	HU_UpdatePatch(&kp_sadface[1], "K_ISSAD");
-
 	for (i = 0; i < numkartitems; i++)
 	{
 		kartitem_t *item = &kartitems[i];
@@ -653,25 +648,6 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_bossret[i], "%s", buffer);
 	}
-}
-
-patch_t *K_GetCachedItemPatch(SINT8 type, boolean tiny, UINT8 amount)
-{
-	if (type == KITEM_SAD)
-		return tiny ? kp_sadface[1] : kp_sadface[0];
-	else if (type <= KITEM_NONE || type >= numkartitems)
-		return NULL;
-
-	kartitem_t *item = &kartitems[type];
-	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
-
-	if (graphics->numpatches == 0)
-		return missingpat;
-
-	if (item->flags & KIF_ANIMATED)
-		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
-	else
-		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
 }
 
 //}
@@ -1329,7 +1305,7 @@ static void K_drawKartItem(void)
 		else if (stplyr->sadtimer > 0)
 		{
 			if (leveltime & 2)
-				localpatch = kp_sadface[tiny ? 1 : 0];
+				localpatch = K_GetCachedItemPatch(MAXKARTITEMS, tiny, 0);
 			else
 				localpatch = kp_nodraw;
 		}
@@ -1341,11 +1317,10 @@ static void K_drawKartItem(void)
 			localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
-			else if (kartitems[stplyr->itemtype].altenabled)
+			else if (K_IsKartItemAlternate(stplyr->itemtype))
 				isalt = true;
 
-			if (stplyr->itemtype > 0 && stplyr->itemtype < numkartitems)
-				dark = kartitems[stplyr->itemtype].flags & KIF_DARKBG;
+			dark = K_GetItemFlags(stplyr->itemtype) & KIF_DARKBG;
 
 			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
 				localpatch = kp_nodraw;
@@ -1381,7 +1356,7 @@ static void K_drawKartItem(void)
 	{
 		colmap = R_GetTranslationColormap(colormode, localcolor, GTC_CACHE);
 	}
-	else if (kartitems[stplyr->itemtype].flags & KIF_COLPATCH2PLAYER)
+	else if (K_GetItemFlags(stplyr->itemtype) & KIF_COLPATCH2PLAYER)
 	{
 		colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
 	}
@@ -5726,7 +5701,7 @@ static void K_drawDistributionDebugger(void)
 		kartresult_t *result = &kartresults[i];
 		if (result->cooldown > 0 && result->isalt == K_IsKartItemAlternate(result->type))
 		{
-			INT32 color = result->flags & KRF_INDIRECTITEM ? V_ORANGEMAP : kartitems[result->type].flags & KIF_UNIQUE ? V_YELLOWMAP : 0;
+			INT32 color = result->flags & KRF_INDIRECTITEM ? V_ORANGEMAP : K_GetItemFlags(result->type) & KIF_UNIQUE ? V_YELLOWMAP : 0;
 			V_DrawScaledPatch(x, y, V_HUDTRANS|V_SNAPTOBOTTOM, K_GetCachedItemPatch(result->type, true, 0));
 			if (result->amount > 1)
 				V_DrawThinString(x+30, y+30, V_ALLOWLOWERCASE|V_HUDTRANS|V_SNAPTOBOTTOM|V_6WIDTHSPACE, va("x%d", result->amount));

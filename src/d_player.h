@@ -623,7 +623,7 @@ struct player_t
 	UINT8 roulettetype;				// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)
 
 	// Item held stuff
-	SINT8 itemtype;				// KITEM_ constant for item number
+	UINT8 itemtype;				// KITEM_ constant for item number
 	UINT8 itemamount;			// Amount of said item
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown)

@@ -446,6 +446,11 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			lua_pushinteger(L, KITEM_THUNDERSHIELD);
 			return 1;
 		}
+		if (fastcmp(p, "SAD"))
+		{
+			lua_pushinteger(L, MAXKARTITEMS);
+			return 1;
+		}
 		i = DEH_FindKartItem(p);
 		if (i != MAXKARTITEMS)
 		{

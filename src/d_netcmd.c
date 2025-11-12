@@ -6184,10 +6184,10 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 		}
 
 		case CHEAT_GIVEITEM: {
-			SINT8 item = READSINT8(*cp);
+			UINT8 item = READUINT8(*cp);
 			UINT8 amt = READUINT8(*cp);
 
-			item = CLAMP(item, KITEM_SAD, numkartitems - 1);
+			item = min(item, numkartitems - 1);
 
 			K_StripItems(player);
 

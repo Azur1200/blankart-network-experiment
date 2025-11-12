@@ -152,6 +152,9 @@ void K_SetupItemOdds(void)
 			item->altenabled = !!item->altcvar->value;
 		}
 	}
+
+	for (UINT8 i = 0; i < numkartresults; i++)
+		kartresults[i].cooldown = 0;
 }
 
 boolean K_ItemResultEnabled(const kartresult_t *result)
@@ -167,15 +170,38 @@ boolean K_ItemResultEnabled(const kartresult_t *result)
 
 boolean K_IsKartItemAlternate(kartitemtype_e itemtype)
 {
-	return itemtype >= 0 && itemtype < numkartitems && kartitems[itemtype].altenabled;
+	return itemtype < numkartitems && kartitems[itemtype].altenabled;
+}
+
+kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype)
+{
+	if (itemtype >= numkartitems)
+		return 0;
+
+	// TODO: alt item flags
+	return kartitems[itemtype].flags;
 }
 
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 {
-	if (type <= 0 || type >= numkartitems)
+	if (type >= numkartitems)
 		return 1;
 
 	return kartitems[type].flags & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
+}
+
+patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
+{
+	kartitem_t *item = &kartitems[type >= numkartresults ? 0 : type];
+	kartitemgraphics_t *graphics = &item->graphics[tiny ? 1 : 0];
+
+	if (graphics->numpatches == 0)
+		return missingpat;
+
+	if (item->flags & KIF_ANIMATED)
+		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
+	else
+		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
 }
 
 // sprite3 baybeeeee!!!!
@@ -185,8 +211,8 @@ void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCo
 	part->sprite = SPR_ITEM;
 	part->frame = FF_FULLBRIGHT|FF_PAPERSPRITE;
 
-	if (itemType <= 0 || itemType >= numkartitems)
-		return;
+	if (itemType >= numkartitems)
+		itemType = 0;
 
 	UINT8 numpatches = kartitems[itemType].graphics[0].numpatches;
 	if (kartitems[itemType].flags & KIF_ANIMATED)
@@ -301,7 +327,7 @@ static void K_AwardPlayerItem(player_t *player, kartresult_t *result)
 
 	if (result == NULL)
 	{
-		player->itemtype = KITEM_SAD;
+		player->itemtype = MAXKARTITEMS;
 		player->itemamount = 1;
 		return;
 	}
@@ -2395,7 +2421,7 @@ void K_PlayerItemThink(player_t *player, boolean onground)
 			K_BotResetItemConfirm(player, false);
 		}
 		break;
-	case KITEM_SAD:
+	case MAXKARTITEMS: // aka KITEM_SAD
 		if (ATTACK_IS_DOWN && !HOLDING_ITEM && NO_HYUDORO
 			&& !player->sadtimer)
 		{

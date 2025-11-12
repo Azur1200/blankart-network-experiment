@@ -770,7 +770,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_kartitem(word2); // find a kartitem by name
-					if (i >= 1 && i < numkartitems)
+					if (i >= (mainfile ? 0 : 1) && i < numkartitems)
 						readkartitem(f, &kartitems[i]);
 					else
 					{

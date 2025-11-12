@@ -1744,7 +1744,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 
 				if (target->threshold < 1 || target->threshold >= numkartitems) // bruh moment prevention
 				{
-					player->itemtype = KITEM_SAD;
+					player->itemtype = MAXKARTITEMS;
 					player->itemamount = 1;
 				}
 				else
