@@ -1860,7 +1860,7 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d)).\n"
+				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d).\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"
