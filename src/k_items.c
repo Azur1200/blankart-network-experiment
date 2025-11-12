@@ -1155,10 +1155,10 @@ UINT32 K_CalculateInitalPDIS(const player_t *player, UINT8 pingame)
 	else
 	{
 		pdis = K_GetCongaLineDistance(player, 1);
-	}
 
-	// Exaggerate odds; don't you love the legacy system? :Trollic:
-	pdis = FixedMul(pdis, LEGACYODDSEXAGGERATE);
+		// Exaggerate odds; don't you love the legacy system? :Trollic:
+		pdis = FixedMul(pdis, LEGACYODDSEXAGGERATE);
+	}
 
 	return pdis;
 }
