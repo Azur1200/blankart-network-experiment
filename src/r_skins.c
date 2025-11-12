@@ -39,8 +39,11 @@
 #include "discord.h"
 
 INT32 numskins = 0;
+INT32 numskinvoices = 0;
+INT32 numfreeslotvoices = 0;
 skin_t skins[MAXSKINS];
 INT32 skinsorted[MAXSKINS];
+kartvoice_t skinvoices[MAXSKINVOICES];
 
 // FIXTHIS: don't work because it must be inistilised before the config load
 //#define SKINVALUES
@@ -170,7 +173,132 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe)
 	return P_GetSkinSprite2(skin, spr2, NULL);
 }
 
-static void Sk_SetDefaultValue(skin_t *skin)
+static void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound)
+{
+	INT32 usesound;
+	
+	switch(skinsound)
+	{
+		case SKSKWIN: // Win quote
+			voice->win = writesound;
+			break;
+		case SKSKLOSE: // Lose quote
+			voice->lose = writesound;
+			break;
+		case SKSKPAN1: // Pain
+		case SKSKPAN2:
+			usesound = skinsound - SKSKPAN1;
+			if (usesound < 2)
+			{
+				voice->pain[usesound] = writesound;
+			}
+			else
+			{
+				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate a pain sound of ID %d.\n", usesound);
+			}
+			
+			break;
+		case SKSKATK1: // Offense item taunt
+		case SKSKATK2:
+			usesound = skinsound - SKSKATK1;
+			if (usesound < 2)
+			{
+				voice->attack[usesound] = writesound;
+			}
+			else
+			{
+				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate an attack sound of ID %d.\n", usesound);
+			}
+			break;
+		case SKSKBST1: // Boost item taunt
+		case SKSKBST2:
+			usesound = skinsound - SKSKBST1;
+			if (usesound < 2)
+			{
+				voice->boost[usesound] = writesound;
+			}
+			else
+			{
+				I_Error("Sk_SetSkinVoiceValue: Attempted to allocate a boost sound of ID %d.\n", usesound);
+			}
+			break;
+		case SKSKSLOW: // Overtake taunt
+			voice->overtake = writesound;
+			break;
+		case SKSKHITM: // Hit confirm taunt
+			voice->hitem = writesound;
+			break;
+		case SKSKPOWR: // Power item taunt
+			voice->power = writesound;
+			break;
+		default:
+			// Ignore any values outside of this range.
+			CONS_Alert(CONS_NOTICE, "Sk_SetSkinVoiceValue: ID %d isn't in the range of possible skin sounds (0 to %d)! Ignoring...\n", skinsound, NUMSKINSOUNDS - 1);
+			break;
+	}
+}
+
+sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
+{
+	INT32 usesound;
+	
+	switch(skinsound)
+	{
+		case SKSKWIN: // Win quote
+			return voice->win;
+		case SKSKLOSE: // Lose quote
+			return voice->lose;
+		case SKSKPAN1: // Pain
+		case SKSKPAN2:
+			usesound = skinsound - SKSKPAN1;
+			if (usesound < 2)
+			{
+				return voice->pain[usesound];
+			}
+			else
+			{
+				I_Error("P_GetVoiceSFX: Attempted to retrieve a pain sound of ID %d.\n", usesound);
+			}
+			
+			break;
+		case SKSKATK1: // Offense item taunt
+		case SKSKATK2:
+			usesound = skinsound - SKSKATK1;
+			if (usesound < 2)
+			{
+				return voice->attack[usesound];
+			}
+			else
+			{
+				I_Error("P_GetVoiceSFX: Attempted to retrieve an attack sound of ID %d.\n", usesound);
+			}
+			break;
+		case SKSKBST1: // Boost item taunt
+		case SKSKBST2:
+			usesound = skinsound - SKSKBST1;
+			if (usesound < 2)
+			{
+				return voice->boost[usesound];
+			}
+			else
+			{
+				I_Error("P_GetVoiceSFX: Attempted to retrieve a boost sound of ID %d.\n", usesound);
+			}
+			break;
+		case SKSKSLOW: // Overtake taunt
+			return voice->overtake;
+		case SKSKHITM: // Hit confirm taunt
+			return voice->hitem;
+		case SKSKPOWR: // Power item taunt
+			return voice->power;
+		default:
+			return sfx_thok;
+	}
+
+	return sfx_thok;
+}
+
+static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
 {
 	INT32 i;
 	//
@@ -201,8 +329,24 @@ static void Sk_SetDefaultValue(skin_t *skin)
 	skin->highresscale = FRACUNIT;
 
 	for (i = 0; i < sfx_skinsoundslot0; i++)
+	{	
 		if (S_sfx[i].skinsound != -1)
+		{
 			skin->soundsid[S_sfx[i].skinsound] = i;
+			Sk_SetSkinVoiceValue(skin_voice, S_sfx[i].skinsound, i);
+		}
+	}
+
+	// TODO: Make this hexadecimal
+	snprintf(skin_voice->name,
+		sizeof skin_voice->name, "voice %u", (UINT32)(skin_voice-skinvoices));
+	skin_voice->name[sizeof skin_voice->name - 1] = '\0';
+
+	skin_voice->parent = (UINT16)(skin - skins);
+	
+	skin_voice->id = skin_voice-skinvoices;
+
+	skin->voice = skin_voice;
 }
 
 static void R_IHateThatHedgehog(UINT16 wadnum);
@@ -776,9 +920,13 @@ static void R_LoadSkinSprites(UINT16 wadnum, UINT16 *lump, UINT16 *lastlump, ski
 static void R_IHateThatHedgehog(UINT16 wadnum)
 {
 	skin_t *skin = &skins[0];
-	Sk_SetDefaultValue(skin);
+	kartvoice_t *skin_voice = &skinvoices[0];
+	Sk_SetDefaultValue(skin, skin_voice);
 	skin->wadnum = wadnum;
 	strcpy(skin->name, "sonic");
+
+	strcpy(skin->voice->name, "sonic_voice");
+	skin->voice->parent = 0;
 
 #ifdef SKINVALUES
 	skin_cons_t[0].value = 0;
@@ -915,7 +1063,7 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 	else // let's check if it's a sound, otherwise error out
 	{
 		boolean found = false;
-		sfxenum_t i;
+		sfxenum_t i, newskinsound;
 		size_t stokenadjust;
 
 		// Remove the prefix. (We need to affect an adjusting variable so that we can print error messages if it's not actually a sound.)
@@ -940,8 +1088,14 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 				&& !stricmp(S_sfx[i].name,
 					stoken + stokenadjust))
 			{
-				skin->soundsid[S_sfx[i].skinsound] =
-					S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
+				newskinsound = S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
+				skin->soundsid[S_sfx[i].skinsound] = newskinsound;
+
+				if (skin->voice)
+				{
+					Sk_SetSkinVoiceValue(skin->voice, S_sfx[i].skinsound, newskinsound);
+				}
+
 				found = true;
 			}
 		}
@@ -962,6 +1116,7 @@ void R_AddSkins(UINT16 wadnum)
 	char *value;
 	size_t size;
 	skin_t *skin;
+	kartvoice_t *skin_voice;
 	boolean realname;
 	boolean iscompatskin = false;
 
@@ -991,7 +1146,8 @@ void R_AddSkins(UINT16 wadnum)
 
 		// set defaults
 		skin = &skins[numskins];
-		Sk_SetDefaultValue(skin);
+		skin_voice = &skinvoices[numskins];
+		Sk_SetDefaultValue(skin, skin_voice);
 		skin->wadnum = wadnum;
 		realname = false;
 		// parse
@@ -1018,7 +1174,11 @@ void R_AddSkins(UINT16 wadnum)
 				INT32 skinnum = R_SkinAvailable(value);
 				strlwr(value);
 				if (skinnum == -1)
+				{
 					STRBUFCPY(skin->name, value);
+					STRBUFCPY(skin->voice->name, va("%s_voice", value));
+					skin->voice->parent = (UINT16)(skin - skins);
+				}
 				// the skin name must uniquely identify a single skin
 				// if the name is already used I make the name 'namex'
 				// using the default skin name's number set above
@@ -1031,9 +1191,13 @@ void R_AddSkins(UINT16 wadnum)
 						"%s%d", value, numskins);
 					value2[stringspace - 1] = '\0';
 					if (R_SkinAvailable(value2) == -1)
+					{
 						// I'm lazy so if NEW name is already used I leave the 'skin x'
 						// default skin name set in Sk_SetDefaultValue
 						STRBUFCPY(skin->name, value2);
+						STRBUFCPY(skin->voice->name, va("%s_voice", value2));
+						skin->voice->parent = (UINT16)(skin - skins);
+					}
 					Z_Free(value2);
 				}
 

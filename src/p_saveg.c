@@ -1846,6 +1846,7 @@ enum mobj_diff_t
 	MD3_BAKEDOFFSET,
 	MD3_EXTVAL3,
 	MD3_LIFETIME,
+	MD3_VOICE,
 
 	MD__MAX
 };
@@ -2008,6 +2009,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
 	DIFF(mobj->extravalue3, MD3_EXTVAL3);
 	DIFF(mobj->mobjlifetime, MD3_LIFETIME);
+	DIFF(mobj->voice, MD3_VOICE);
 }
 
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
@@ -2332,6 +2334,14 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakezpiv);
 	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
 	SYNCF(MD3_LIFETIME, mobj->mobjlifetime);
+
+	if (GETB(MD3_VOICE))
+	{
+		if (save->write)
+			WRITEUINT16(save->p, (UINT16)((kartvoice_t *)mobj->voice - skinvoices));
+		else
+			mobj->voice = &skinvoices[READUINT16(save->p)];
+	}
 
 	if (!save->write)
 	{

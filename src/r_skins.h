@@ -27,6 +27,7 @@ extern "C" {
 
 /// Defaults
 #define SKINNAMESIZE 16
+#define VOICENAMESIZE 32
 #define SKINRIVALS 3
 // should be all lowercase!! S_SKIN processing does a strlwr
 #define DEFAULTSKIN "sonic"
@@ -35,6 +36,38 @@ extern "C" {
 #define DEFAULTSKIN4 "eggman" // fourth player
 
 extern consvar_t cv_skinselectstyle, cv_skinselectsort;
+
+typedef enum
+{
+	KSKVC_MAXVANILLA = MAXSKINS,
+	KSKVC_FIRSTFREESLOT,
+	KSKVC_LASTFREESLOT = 65535,
+	MAXSKINVOICES
+} kartvoicetype_e;
+
+// Player voice struct
+// ## TODO:
+// - Dub implementation (freeslotting, voice lookup, assigning voices on race start)
+// - Get rid of soundsid for good, replace it with some hacky compat system
+struct kartvoice_t
+{
+    UINT32 id;
+
+	char name[VOICENAMESIZE+1]; // INT16 descriptive name of the voice.
+
+	// UINT16 ID of the parent skin this voice belongs to.
+	// Checked when the voice is assigned to prevent erroneous dubs.
+	UINT16 parent;
+	
+	sfxenum_t win;
+    sfxenum_t lose;
+    sfxenum_t pain[2];
+    sfxenum_t attack[2];
+    sfxenum_t boost[2];
+    sfxenum_t overtake;
+    sfxenum_t hitem;
+    sfxenum_t power;
+};
 
 /// The skin_t struct
 struct skin_t
@@ -64,7 +97,11 @@ struct skin_t
 	char rivals[SKINRIVALS][SKINNAMESIZE+1]; // Your top 3 rivals for GP mode. Uses names so that you can reference skins that aren't added
 
 	// specific sounds per skin
-	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table
+	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table (Deprecated; remove eventually)
+
+	// Pointer to a skin's voice.
+	// If an mobj_t doesn't have a voice, it defaults to this value, given a skin is in use.
+	kartvoice_t *voice;
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];
@@ -91,9 +128,10 @@ enum skinmenusortoption
 };
 
 /// Externs
-extern INT32 numskins;
+extern INT32 numskins, numskinvoices, numfreeslotvoices;
 extern skin_t skins[MAXSKINS];
 extern INT32 skinsorted[MAXSKINS];
+extern kartvoice_t skinvoices[MAXSKINVOICES];
 
 extern CV_PossibleValue_t Forceskin_cons_t[];
 
@@ -114,6 +152,8 @@ void R_AddSkins(UINT16 wadnum);
 
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
+
+sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -520,6 +520,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 	const INT32 initial_volume = (origin ? S_ScaleVolumeWithSplitscreen(volume) : volume);
 
 	sfxinfo_t *sfx;
+	kartvoice_t *cur_voice;
 	INT32 sep, pitch, priority, cnum;
 	boolean anyListeners = false;
 	boolean itsUs = false;
@@ -611,9 +612,14 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 	if (sfx->skinsound != -1 && origin && origin->skin)
 	{
-		// redirect player sound to the sound in the skin table
-		sfx_id = ((skin_t *)origin->skin)->soundsid[sfx->skinsound];
-		sfx = &S_sfx[sfx_id];
+		// redirect player sound to any voice values, should they exist
+		cur_voice = P_GetMobjVoice(origin);
+
+		if (cur_voice)
+		{
+			sfx_id = P_GetVoiceSFX(cur_voice, sfx->skinsound); // ((skin_t *)origin->skin)->soundsid[sfx->skinsound]
+			sfx = &S_sfx[sfx_id];
+		}
 	}
 
 	// Initialize sound parameters

@@ -1923,7 +1923,15 @@ void K_PlayPainSound(mobj_t *source, mobj_t *other)
 {
 	sfxenum_t pick = P_RandomKey(2); // Gotta roll the RNG every time this is called for sync reasons
 
-	sfxenum_t sfx_id = ((skin_t *)source->skin)->soundsid[S_sfx[sfx_khurt1 + pick].skinsound];
+	kartvoice_t *src_voice = P_GetMobjVoice(source);
+
+	if (!src_voice)
+	{
+		// No voice!
+		return;
+	}
+
+	sfxenum_t sfx_id = src_voice->pain[pick];
 	boolean alwaysHear = false;
 
 	if (cv_kartvoices.value)
@@ -1952,7 +1960,15 @@ void K_PlayPainSound(mobj_t *source, mobj_t *other)
 
 void K_PlayHitEmSound(mobj_t *source, mobj_t *other)
 {
-	sfxenum_t sfx_id = ((skin_t *)source->skin)->soundsid[S_sfx[sfx_khitem].skinsound];
+	kartvoice_t *src_voice = P_GetMobjVoice(source);
+
+	if (!src_voice)
+	{
+		// No voice!
+		return;
+	}
+	
+	sfxenum_t sfx_id = src_voice->hitem;
 	boolean alwaysHear = false;
 
 	if (cv_kartvoices.value)

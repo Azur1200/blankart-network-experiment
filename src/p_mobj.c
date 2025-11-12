@@ -14949,6 +14949,20 @@ fixed_t P_GetMobjZMovement(mobj_t *mo)
 	return P_ReturnThrustY(mo, slope->zangle, P_ReturnThrustX(mo, angDiff, speed));
 }
 
+kartvoice_t *P_GetMobjVoice(const mobj_t *mo)
+{
+	if (mo->voice)
+	{
+		return mo->voice;
+	}
+	else if (mo->skin && ((skin_t *)mo->skin)->voice)
+	{
+		return ((skin_t *)mo->skin)->voice;
+	}
+
+	return NULL;
+}
+
 //
 // Thing IDs / tags
 //
