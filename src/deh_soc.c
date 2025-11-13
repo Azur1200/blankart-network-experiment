@@ -4044,6 +4044,7 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 	char *word = s;
 	char *word2;
 	char *tmp;
+	INT32 i;
 
 	do if (myfgets(s, MAXLINELEN, f))
 	{
@@ -4076,6 +4077,19 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 		if (fastcmp(word, "BIGPATCHES") || fastcmp(word, "SMALLPATCHES"))
 		{
 			kartitemgraphics_t *graphics = &item->graphics[word[0] == 'B' ? 0 : 1];
+
+			if (graphics == &item->graphics[0] && item->spritedef.numframes > 0)
+			{
+				Z_Free(item->spritedef.spriteframes);
+				memset(&item->spritedef, 0, sizeof(item->spritedef));
+			}
+			for (i = 0; i < graphics->numpatches; i++)
+			{
+				Z_Free(graphics->patchnames[i]);
+				Patch_Free(graphics->patches[i]);
+				graphics->patches[i] = NULL;
+			}
+
 			tmp = strtok(word2,",");
 			for (graphics->numpatches = 0; graphics->numpatches < MAXITEMPATCHES;)
 			{

@@ -3942,6 +3942,10 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 
 	SYNC(gametype);
 
+#if MAXPLAYERS > 32
+#error Update playeringame syncing please
+#endif
+
 	if (save->write)
 	{
 		UINT32 pig = 0;
@@ -4269,6 +4273,9 @@ static boolean P_NetSyncMisc(savebuffer_t *save, boolean resending)
 		SYNC(battlewanted[i]);
 
 	SYNC(wantedcalcdelay);
+
+	for (i = 0; i < numkartitems; i++)
+		SYNC(kartitems[i].altenabled);
 
 	for (i = 0; i < numkartresults; i++)
 		SYNC(kartresults[i].cooldown);
