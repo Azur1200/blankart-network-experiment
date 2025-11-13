@@ -367,7 +367,8 @@ static boolean I_QueueNextSample(boolean unqueue)
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle != NULL)
 	{
-		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE >> 1, BUFFERSIZE, stream) * 2 * sizeof(INT16); // HACK: SAMPLERATE >> 1 cause idk, this makes it play at the correct speed for some reason
+		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(INT16);
+		format = AL_FORMAT_STEREO16;
 	}
 	else
 #endif
