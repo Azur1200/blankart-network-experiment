@@ -647,6 +647,40 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 	SetPlayerSkinByNum(playernum, 0);
 }
 
+// Gets the corresponding voice ID for a given voice's name.
+// Returns MAXSKINVOICES if nothing is found.
+kartvoicetype_e R_FindIDForVoice(const char *voicename)
+{
+	INT32 i;
+
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (strncmp(voicename, skinvoices[i + KSKVC_FIRSTFREESLOT].name, sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
+			{
+				// Found a voice.
+				return (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (strncmp(voicename, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
+		{
+			// Found a voice.
+			return (kartvoicetype_e)i;
+		}
+	}
+
+	// Couldn't find a voice.
+	return MAXSKINVOICES;
+}
+
 // network code calls this when a 'voice change' is received
 void SetPlayerVoice(INT32 playernum, const char *voicename)
 {
@@ -658,6 +692,9 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 		// No object to give a voice to.
 		// Fall back to our skin.
 		player->voice_id = skins[player->skin].voice->id;
+
+		// Tell the demo that we've updated our voice_id as well.
+		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
@@ -668,6 +705,9 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 		// Hey... this voice is the same as before!
 		// WAIT! Before we go, reset the player's voice ID!
 		player->voice_id = myvoice->id;
+
+		// AND tell the game to rescan for skins/voices!
+		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
@@ -682,6 +722,7 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 				// Found a voice.
 				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
 				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
+				demo_extradata[playernum] |= DXD_SKIN;
 				return;
 			}
 		}
@@ -696,6 +737,7 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 			// Found a voice.
 			player->mo->voice = &skinvoices[i];
 			player->voice_id = (kartvoicetype_e)i;
+			demo_extradata[playernum] |= DXD_SKIN;
 			return;
 		}
 	}
@@ -703,6 +745,9 @@ void SetPlayerVoice(INT32 playernum, const char *voicename)
 	// Couldn't find a voice. Default to the skin's.
 	player->mo->voice = NULL;
 	player->voice_id = skins[player->skin].voice->id;
+
+	// Tell the demo that we've updated our voice_id as well.
+	demo_extradata[playernum] |= DXD_SKIN;
 }
 
 // Same as SetPlayerSkin, but uses the skin #.
@@ -790,6 +835,9 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 		// No object to give a voice to.
 		// Fall back to our skin.
 		player->voice_id = skins[player->skin].voice->id;
+
+		// Tell the demo that we've updated our voice_id as well.
+		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
@@ -800,6 +848,9 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 		// Hey... this voice is the same as before!
 		// WAIT! Before we go, reset the player's voice ID!
 		player->voice_id = myvoice->id;
+
+		// AND tell the game to rescan for skins/voices!
+		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
@@ -814,6 +865,7 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 				// Found a voice.
 				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
 				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
+				demo_extradata[playernum] |= DXD_SKIN;
 				return;
 			}
 		}
@@ -828,6 +880,7 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 			// Found a voice.
 			player->mo->voice = &skinvoices[i];
 			player->voice_id = (kartvoicetype_e)i;
+			demo_extradata[playernum] |= DXD_SKIN;
 			return;
 		}
 	}
@@ -835,6 +888,9 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 	// Couldn't find a voice. Default to the skin's.
 	player->mo->voice = NULL;
 	player->voice_id = skins[player->skin].voice->id;
+
+	// Signal a voice_id change to the demo.
+	demo_extradata[playernum] |= DXD_SKIN;
 }
 
 //

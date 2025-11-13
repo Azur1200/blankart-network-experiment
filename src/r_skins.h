@@ -160,6 +160,7 @@ UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 void R_ClearVoice(kartvoicetype_e voicetype);
 void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 
+kartvoicetype_e R_FindIDForVoice(const char *voicename);
 void SetPlayerVoice(INT32 playernum, const char *voicename);
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
 sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound);

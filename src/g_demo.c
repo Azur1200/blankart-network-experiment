@@ -111,7 +111,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x000D
+#define DEMOVERSION 0x000E
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -222,6 +222,7 @@ typedef struct
 	char color[16+1];
 	char follower[16+1];
 	char followercolor[16+1];
+	char voice[32+1];
 
 	UINT32 score;
 	UINT16 powerlevel;
@@ -342,6 +343,7 @@ typedef struct
 
 	// DXD_SKIN
 	char skinname[17];
+	char voicename[33];
 	UINT8 kartspeed;
 	UINT8 kartweight;
 
@@ -623,7 +625,12 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 			extra->skinname[16] = '\0';
 		}
 		else
+		{
 			READSTRINGL(dp, extra->skinname, 16+1);
+
+			if (version > 0x000D)
+				READSTRINGL(dp, extra->voicename, 32+1);
+		}
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
 	}
@@ -682,6 +689,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	boolean raflag = false;
 	boolean serverinfo = true;
 	boolean rapreset = true; // + extended serverinfo length
+	boolean dubs = true; // Multiple voices
 
 	// these may not be present in old demo formats, so initialize them
 	// also initialize them so the header can be free'd without issues
@@ -716,6 +724,9 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 		case 0x000C:
 			rapreset = false;
 			raflag = true;
+			/* FALLTHRU */
+		case 0x000D:
+			dubs = false;
 			break;
 
 		default: // too old, cannot support.
@@ -946,6 +957,10 @@ skipfiles:
 			READSTRINGL(dp, plr->name, 21+1);
 			READSTRINGL(dp, plr->skin, 16+1);
 			READSTRINGL(dp, plr->color, 16+1);
+
+			if (dubs)
+				READSTRINGL(dp, plr->voice, 32+1);
+
 			READSTRINGL(dp, plr->follower, 16+1);
 			READSTRINGL(dp, plr->followercolor, 16+1);
 		}
@@ -1247,6 +1262,31 @@ void G_ReadDemoExtraData(void)
 			if (stricmp(skins[players[p].skin].name, extra.skinname) != 0)
 				FindClosestSkinForStats(p, extra.kartspeed, extra.kartweight);
 
+			// Voice
+			const INT32 vce = R_FindIDForVoice(extra.voicename);
+
+			if (vce == MAXSKINVOICES)
+			{
+				// The above function didn't find a voice, so we'll just fall back
+				// to the skin's voice.
+				players[p].voice_id = skins[players[p].skin].voice->id;
+			}
+			else
+			{
+				players[p].voice_id = (UINT16)vce;
+			}
+
+			if (skinvoices[players[p].voice_id].parent ==
+				skins[players[p].skin].voice->parent &&
+			    skinvoices[players[p].voice_id].id !=
+				skins[players[p].skin].voice->id &&
+			    !P_MobjWasRemoved(players[p].mo))
+			{
+				// This player's mobj exists, and their voice is valid, and isn't
+				// the default. So, attach the voice to the mobj!
+				players[p].mo->voice = &skinvoices[players[p].voice_id];
+			}
+
 			players[p].kartspeed = extra.kartspeed;
 			players[p].kartweight = extra.kartweight;
 		}
@@ -1350,6 +1390,10 @@ void G_WriteDemoExtraData(void)
 				// Skin
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
+				// Voice
+				WRITESTRINGL(demobuf.p, skinvoices[players[i].voice_id].name, 32+1);
+
+				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartweight);
 
@@ -2933,6 +2977,9 @@ void G_BeginRecording(void)
 			// Color
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
+			// Voice
+			WRITESTRINGL(demobuf.p, skinvoices[player->voice_id].name, 32+1);
+
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!
 			// Doesn't really matter if the follower mobj is valid so long as it exists in a way or another.
@@ -3802,6 +3849,23 @@ void G_DoPlayDemo(char *defdemoname)
 				players[p].skincolor = i;
 				break;
 			}
+
+		// Voice
+		// We'll only assign IDs, since the actual voice assignment happens during
+		// player spawn.
+
+		const INT32 vce = R_FindIDForVoice(plr->voice);
+
+		if (vce == MAXSKINVOICES)
+		{
+			// The above function didn't find a voice, so we'll just fall back to
+			// the skin's voice.
+			players[p].voice_id = skins[players[p].skin].voice->id;
+		}
+		else
+		{
+			players[p].voice_id = (UINT16)vce;
+		}
 
 		// Follower
 		K_SetFollowerByName(p, plr->follower);
