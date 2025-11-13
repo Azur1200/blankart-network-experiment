@@ -623,6 +623,8 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 		{
 			READMEM(dp, extra->skinname, 16);
 			extra->skinname[16] = '\0';
+
+			extra->voicename[0] = '\0';
 		}
 		else
 		{
@@ -630,6 +632,8 @@ static UINT8 *G_ReadRawExtraData(extradata_t *extra, UINT8 *dp, UINT16 version)
 
 			if (version > 0x000D)
 				READSTRINGL(dp, extra->voicename, 32+1);
+			else
+				extra->voicename[0] = '\0';
 		}
 		extra->kartspeed = READUINT8(dp);
 		extra->kartweight = READUINT8(dp);
