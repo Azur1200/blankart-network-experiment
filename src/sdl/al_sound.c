@@ -369,6 +369,13 @@ static boolean I_QueueNextSample(boolean unqueue)
 	{
 		count = openmpt_module_read_interleaved_stereo(openmpt_mhandle, SAMPLERATE, BUFFERSIZE, stream) * 2 * sizeof(INT16);
 		format = AL_FORMAT_STEREO16;
+
+		// this is kinda dumb but works lol
+		// resets the songpos after it loops
+		if (I_GetSongPosition() >= I_GetSongLength())
+		{
+			openmpt_module_set_position_seconds(openmpt_mhandle, 0);
+		}
 	}
 	else
 #endif
