@@ -49,7 +49,6 @@ typedef enum
 
 // Player voice struct
 // ## TODO:
-// - Dub implementation (freeslotting, voice lookup, assigning voices on race start)
 // - Get rid of soundsid for good, replace it with some hacky compat system
 struct kartvoice_t
 {
