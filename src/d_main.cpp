@@ -1861,7 +1861,7 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp.\n"
+				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d)).\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"
@@ -1869,7 +1869,7 @@ void D_SRB2Main(void)
 				"Go to the Testing tab and make sure \"Use short paths and file names\" is turned off.\n"
 				"(The option is hidden by default. Check \"Customize parameters\" to show it.)\n"
 #endif
-				, word);
+				, word, pstartmap, wadnamemap);
 		}
 		else
 		{
