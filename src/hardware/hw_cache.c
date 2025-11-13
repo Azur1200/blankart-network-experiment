@@ -771,9 +771,6 @@ static void HWR_PrecacheLevelFlats(void)
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
 		{
-			// prevent timeouts
-			NetKeepAlive();
-
 			sector_t *sec = &sectors[i];
 
 			// sector checked already?
@@ -800,9 +797,6 @@ static void HWR_PrecacheLevelFlats(void)
 		// just load every flat in the level
 		for (i = 0; i < numlevelflats; i++)
 		{
-			// prevent timeouts
-			NetKeepAlive();
-
 			levelflat = levelflats[i];
 
 			HWR_GetLevelFlat(&levelflat, false);
@@ -822,9 +816,6 @@ static void HWR_PrecacheLevelTextures(void)
 
 	for (i = 0; i < numlines; i++)
 	{
-		// prevent timeouts
-		NetKeepAlive();
-
 		line_t *line = &lines[i];
 		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
 
@@ -943,9 +934,6 @@ static void HWR_PrecacheLevelTextures(void)
 
 	for (i = 0; i < numsprites; i++)
 	{
-		// prevent timeouts
-		NetKeepAlive();
-
 		if (!spritepresent[i])
 			continue;
 
