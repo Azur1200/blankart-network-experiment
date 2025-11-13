@@ -2646,7 +2646,7 @@ static void K_GetKartBoostPower(player_t *player)
 		fixed_t shrinkspeed = FixedDiv(SHRINKSPEEDBOOST, SHRINK_SCALE);
 		fixed_t shrinkaccel = FixedDiv(SHRINKACCELBOOST, SHRINK_SCALE);
 
-		K_DoBoost(player, FixedMul(shrinkspeed, GROW_SCALE), FixedMul(shrinkaccel, GROW_SCALE), SHRINKSTACKABLE, SHRINKSTACKABLE); // + 45% top speed, + 200% acceleration
+		K_DoBoost(player, FixedMul(shrinkspeed, GROW_SCALE), FixedMul(shrinkaccel, GROW_SCALE), SHRINKSTACKABLE, SHRINKSTACKABLE); // + 50% top speed, + 15% acceleration
 	}
 
 	if (player->bubbleboost) // Bubble Shield popping boost
