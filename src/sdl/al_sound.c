@@ -1127,7 +1127,10 @@ boolean I_SetSongPosition(UINT32 position)
 	else
 #endif
 	{
-		position = get_adjusted_position(position);
+		UINT32 length = I_GetSongLength(); // get it in MS
+
+		if (length)
+			position = get_adjusted_position(position);
 
 		position = position / 1000.0f;
 
