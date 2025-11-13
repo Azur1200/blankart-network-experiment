@@ -1410,7 +1410,6 @@ static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voi
 	if (!Playing())
 	{
 		// Don't bother.
-		CONS_Printf(M_GetText("You must be in a game to use this.\n"));
 		return 0;
 	}
 

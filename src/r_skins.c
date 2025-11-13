@@ -647,109 +647,6 @@ void SetPlayerSkin(INT32 playernum, const char *skinname)
 	SetPlayerSkinByNum(playernum, 0);
 }
 
-// Gets the corresponding voice ID for a given voice's name.
-// Returns MAXSKINVOICES if nothing is found.
-kartvoicetype_e R_FindIDForVoice(const char *voicename)
-{
-	INT32 i;
-
-	// First, check for freeslotted voices, should they exist at all.
-	if (numfreeslotvoices)
-	{
-		for (i = 0; i < numfreeslotvoices; i++)
-		{
-			if (strncmp(voicename, skinvoices[i + KSKVC_FIRSTFREESLOT].name, sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
-			{
-				// Found a voice.
-				return (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
-			}
-		}
-	}
-
-	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
-	for (i = 0; i < numskinvoices; i++)
-	{
-		// Whatever. Go, my code duplication!
-		if (strncmp(voicename, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
-		{
-			// Found a voice.
-			return (kartvoicetype_e)i;
-		}
-	}
-
-	// Couldn't find a voice.
-	return MAXSKINVOICES;
-}
-
-// network code calls this when a 'voice change' is received
-void SetPlayerVoice(INT32 playernum, const char *voicename)
-{
-	player_t *player = &players[playernum];
-	INT32 i;
-
-	if (P_MobjWasRemoved(player->mo))
-	{
-		// No object to give a voice to.
-		// Fall back to our skin.
-		player->voice_id = skins[player->skin].voice->id;
-
-		// Tell the demo that we've updated our voice_id as well.
-		demo_extradata[playernum] |= DXD_SKIN;
-		return;
-	}
-
-	const kartvoice_t *myvoice = P_GetMobjVoice(player->mo);
-
-	if (!strncmp(voicename, myvoice->name, sizeof myvoice->name))
-	{
-		// Hey... this voice is the same as before!
-		// WAIT! Before we go, reset the player's voice ID!
-		player->voice_id = myvoice->id;
-
-		// AND tell the game to rescan for skins/voices!
-		demo_extradata[playernum] |= DXD_SKIN;
-		return;
-	}
-
-	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read for the needed name.
-	// First, check for freeslotted voices, should they exist at all.
-	if (numfreeslotvoices)
-	{
-		for (i = 0; i < numfreeslotvoices; i++)
-		{
-			if (strncmp(voicename, skinvoices[i + KSKVC_FIRSTFREESLOT].name, sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
-			{
-				// Found a voice.
-				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
-				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
-				demo_extradata[playernum] |= DXD_SKIN;
-				return;
-			}
-		}
-	}
-
-	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
-	for (i = 0; i < numskinvoices; i++)
-	{
-		// Whatever. Go, my code duplication!
-		if (strncmp(voicename, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
-		{
-			// Found a voice.
-			player->mo->voice = &skinvoices[i];
-			player->voice_id = (kartvoicetype_e)i;
-			demo_extradata[playernum] |= DXD_SKIN;
-			return;
-		}
-	}
-
-	// Couldn't find a voice. Default to the skin's.
-	player->mo->voice = NULL;
-	player->voice_id = skins[player->skin].voice->id;
-
-	// Tell the demo that we've updated our voice_id as well.
-	demo_extradata[playernum] |= DXD_SKIN;
-}
-
 // Same as SetPlayerSkin, but uses the skin #.
 // network code calls this when a 'skin change' is received
 void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
@@ -824,24 +721,152 @@ void SetPlayerSkinByNum(INT32 playernum, INT32 skinnum)
 	SetPlayerSkinByNum(playernum, 0); // not found, put in the default skin
 }
 
-// network code calls this when a 'voice change' is received
-void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
+// Gets the corresponding voice ID for a given voice's name.
+// Returns MAXSKINVOICES if nothing is found.
+kartvoicetype_e R_FindIDForVoice(const char* voicename)
 {
-	player_t *player = &players[playernum];
 	INT32 i;
+
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (strncmp(voicename,
+				    skinvoices[i + KSKVC_FIRSTFREESLOT].name,
+				    sizeof skinvoices[i + KSKVC_FIRSTFREESLOT].name) == 0)
+			{
+				// Found a voice.
+				return (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (strncmp(voicename, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
+		{
+			// Found a voice.
+			return (kartvoicetype_e)i;
+		}
+	}
+
+	// Couldn't find a voice.
+	return MAXSKINVOICES;
+}
+
+static kartvoicetype_e R_FindIDForVoiceNum(UINT16 voicenum)
+{
+	INT32 i;
+
+	// First, check for freeslotted voices, should they exist at all.
+	if (numfreeslotvoices)
+	{
+		for (i = 0; i < numfreeslotvoices; i++)
+		{
+			if (skinvoices[i + KSKVC_FIRSTFREESLOT].id == voicenum)
+			{
+				// Found a voice.
+				return (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
+			}
+		}
+	}
+
+	// Freeslotted voices don't exist, or we've found nothing; check skin voices.
+	for (i = 0; i < numskinvoices; i++)
+	{
+		// Whatever. Go, my code duplication!
+		if (skinvoices[i].id == voicenum)
+		{
+			// Found a voice.
+			return (kartvoicetype_e)i;
+		}
+	}
+
+	// Couldn't find a voice.
+	return MAXSKINVOICES;
+}
+
+// network code calls this when a 'voice change' is received
+void SetPlayerVoice(INT32 playernum, const char* voicename)
+{
+	player_t* player = &players[playernum];
+
+	kartvoicetype_e voxid = R_FindIDForVoice(voicename);
+
+	if (voxid == MAXSKINVOICES)
+	{
+		// Couldn't find a voice. Default to the skin's.
+		voxid = skins[player->skin].voice->id;
+	}
 
 	if (P_MobjWasRemoved(player->mo))
 	{
 		// No object to give a voice to.
-		// Fall back to our skin.
-		player->voice_id = skins[player->skin].voice->id;
+		// Store the found ID in the player, at least. Object spawning will take care of
+		// assigning a voice.
+		player->voice_id = (UINT16)voxid;
 
 		// Tell the demo that we've updated our voice_id as well.
 		demo_extradata[playernum] |= DXD_SKIN;
 		return;
 	}
 
-	const kartvoice_t *myvoice = P_GetMobjVoice(player->mo);
+	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
+
+	if (!strncmp(voicename, myvoice->name, sizeof myvoice->name))
+	{
+		// Hey... this voice is the same as before!
+		// WAIT! Before we go, reset the player's voice ID!
+		player->voice_id = myvoice->id;
+
+		// AND tell the game to rescan for skins/voices!
+		demo_extradata[playernum] |= DXD_SKIN;
+		return;
+	}
+
+	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read
+	// for the needed name. If we're down here, we've passed the safeguards and can assign a
+	// voice.
+
+	if (voxid != skins[player->skin].voice->id)
+		player->mo->voice = &skinvoices[(UINT16)voxid];
+	else
+		player->mo->voice = NULL;
+
+	player->voice_id = (UINT16)(voxid);
+
+	// Tell the demo that we've updated our voice_id as well.
+	demo_extradata[playernum] |= DXD_SKIN;
+}
+
+// network code calls this when a 'voice change' is received
+void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
+{
+	player_t* player = &players[playernum];
+	kartvoicetype_e voxid = R_FindIDForVoiceNum(voicenum);
+
+	if (voxid == MAXSKINVOICES)
+	{
+		// Couldn't find a voice. Default to the skin's.
+		voxid = skins[player->skin].voice->id;
+	}
+
+	if (P_MobjWasRemoved(player->mo))
+	{
+		// No object to give a voice to.
+		// Store the found ID in the player, at least. Object spawning will take care of
+		// assigning a voice.
+		player->voice_id = (UINT16)voxid;
+
+		// Tell the demo that we've updated our voice_id as well.
+		demo_extradata[playernum] |= DXD_SKIN;
+		return;
+	}
+
+	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
 
 	if (myvoice->id == voicenum)
 	{
@@ -854,42 +879,18 @@ void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum)
 		return;
 	}
 
-	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read for the needed name.
-	// First, check for freeslotted voices, should they exist at all.
-	if (numfreeslotvoices)
-	{
-		for (i = 0; i < numfreeslotvoices; i++)
-		{
-			if (skinvoices[i + KSKVC_FIRSTFREESLOT].id == voicenum)
-			{
-				// Found a voice.
-				player->mo->voice = &skinvoices[i + KSKVC_FIRSTFREESLOT];
-				player->voice_id = (kartvoicetype_e)(i + KSKVC_FIRSTFREESLOT);
-				demo_extradata[playernum] |= DXD_SKIN;
-				return;
-			}
-		}
-	}
+	// We've done the precautions to check for disallowed dubs in the cvar, just do a blind-read
+	// for the needed name. If we're down here, we've passed the safeguards and can assign a
+	// voice.
 
-	// Freeslotted voices don't exist or found nothing; check skin voices.
-	for (i = 0; i < numskinvoices; i++)
-	{
-		// Whatever. Go, my code duplication!
-		if (skinvoices[i].id == voicenum)
-		{
-			// Found a voice.
-			player->mo->voice = &skinvoices[i];
-			player->voice_id = (kartvoicetype_e)i;
-			demo_extradata[playernum] |= DXD_SKIN;
-			return;
-		}
-	}
+	if (voxid != skins[player->skin].voice->id)
+		player->mo->voice = &skinvoices[(UINT16)voxid];
+	else
+		player->mo->voice = NULL;
 
-	// Couldn't find a voice. Default to the skin's.
-	player->mo->voice = NULL;
-	player->voice_id = skins[player->skin].voice->id;
+	player->voice_id = (UINT16)(voxid);
 
-	// Signal a voice_id change to the demo.
+	// Tell the demo that we've updated our voice_id as well.
 	demo_extradata[playernum] |= DXD_SKIN;
 }
 
