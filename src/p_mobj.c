@@ -12373,14 +12373,19 @@ void P_SpawnPlayer(INT32 playernum)
 
 	if (p->voice_id != skins[p->skin].voice->id)
 	{
+		// During respawns, do a quick check on our voice ID to make sure
+		// our skin can use it.
+		// This should prevent bots from always having Sonic's voice.
 		const kartvoice_t *tentative_voice = &skinvoices[p->voice_id];
 
 		if (tentative_voice->parent == skins[p->skin].voice->parent)
 		{
+			// Seems OK, set our voice!
 			mobj->voice = tentative_voice;
 		}
 		else
 		{
+			// Parent mismatch; use the skin default.
 			p->voice_id = skins[p->skin].voice->id;
 			mobj->voice = NULL;
 		}
