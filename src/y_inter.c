@@ -413,13 +413,6 @@ void Y_IntermissionDrawer(void)
 	else // in case nothing else works...
 		V_DrawPatchFill(bgtile);
 
-	if (renderisnewtic)
-	{
-		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
-		LUA_HookHUD(luahuddrawlist_intermission, HUD_HOOK(intermission));
-	}
-	LUA_HUD_DrawList(luahuddrawlist_intermission);
-
 	if (!LUA_HudEnabled(hud_intermissiontally))
 		goto skiptallydrawer;
 
@@ -730,6 +723,13 @@ skiptallydrawer:
 	if ((speedscramble != -1) && (speedscramble != gamespeed))
 		V_DrawCenteredString(BASEVIDWIDTH/2, BASEVIDHEIGHT-24, hilicol|V_ALLOWLOWERCASE|V_SNAPTOBOTTOM,
 			va(M_GetText("Next race will be %s Speed!"), kartspeed_cons_t[1+speedscramble].strvalue));
+
+	if (renderisnewtic)
+	{
+		LUA_HUD_ClearDrawList(luahuddrawlist_intermission);
+		LUA_HookHUD(luahuddrawlist_intermission, HUD_HOOK(intermission));
+	}
+	LUA_HUD_DrawList(luahuddrawlist_intermission);
 }
 
 //
