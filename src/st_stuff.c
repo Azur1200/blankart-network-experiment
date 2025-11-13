@@ -676,10 +676,10 @@ void ST_drawTitleCard(void)
 		? BASEVIDHEIGHT/2
 		: 163;
 	INT32 lvlw;
-	
+
 	if (!cv_stagetitle.value)
 		return;
-	
+
 	if (!LUA_HudEnabled(hud_stagetitle))
 		goto luahook;
 

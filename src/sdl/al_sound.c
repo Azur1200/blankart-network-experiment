@@ -344,13 +344,11 @@ static boolean I_UpdateMusicVolume(void)
 // https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
 
 float SamplesToSeconds(sf_count_t samples, int sampleRate) {
-	float seconds = samples / (float) sampleRate;
-	return seconds;
+	return (float)samples / sampleRate;
 }
 
-float SecondsToSamples(sf_count_t samples, int sampleRate) {
-	float seconds = samples * (float) sampleRate;
-	return seconds;
+sf_count_t SecondsToSamples(float seconds, int sampleRate) {
+	return (sf_count_t)lround(seconds * sampleRate);
 }
 
 static boolean I_QueueNextSample(boolean unqueue)
@@ -400,15 +398,7 @@ static boolean I_QueueNextSample(boolean unqueue)
 
 		if (count == 0)
 		{
-			// TODO: looppoints
-
-			UINT32 position = audio.loop_point;
-
-			float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-			position = position + sampleoffset;
-
-			sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
-
+			sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
 			sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 		}
 
@@ -1024,9 +1014,6 @@ UINT32 I_GetSongLength(void)
 
 	float position = SamplesToSeconds(audio.musicinfo.frames, audio.musicinfo.samplerate);
 
-	float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-	position = position - sampleoffset;
-
 	return position * 1000.0f;
 }
 
@@ -1134,11 +1121,7 @@ boolean I_SetSongPosition(UINT32 position)
 
 		position = position / 1000.0f;
 
-		float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-		position = position + sampleoffset;
-
 		sf_count_t finalposition = SecondsToSamples(position, audio.musicinfo.samplerate);
-
 		sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 
 		return true;
@@ -1178,7 +1161,7 @@ UINT32 I_GetSongPosition(void)
 
 		gme_free_info(info);
 
-		return max(position, 0);
+		return (UINT32)(max(position, 0));
 	}
 	else
 #endif
@@ -1194,10 +1177,7 @@ UINT32 I_GetSongPosition(void)
 
 		float position = SamplesToSeconds(samples, audio.musicinfo.samplerate);
 
-		float sampleoffset = ((float) BUFFERSIZE / audio.musicinfo.samplerate) * BUFFERCOUNT;
-		position = position - sampleoffset;
-
-		return position * 1000.0f;
+		return (UINT32)(position * 1000.0f);
 	}
 }
 
@@ -1371,7 +1351,7 @@ boolean I_LoadSong(char *data, size_t len)
 			else if (!strncmp(p, key3, key3len)) // is it LOOPMS=?
 			{
 				p += key3len; // skip MS=
-				audio.loop_point = (float)(atoi(p) / 1000.0L); // LOOPMS works by real time, as miliseconds.
+				audio.loop_point = (float)(atof(p) / 1000.0); // LOOPMS works by real time, as miliseconds.
 				// Everything that uses LOOPMS will work perfectly with SDL_Mixer.
 			}
 		}

@@ -649,7 +649,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 					{
 						continue;
 					}
-				
+
 					recdist = thisdist;
 					i = j;
 				}
@@ -1620,7 +1620,7 @@ static void S_LoadMusicDefLump(lumpnum_t lumpnum)
 		else
 			break;/* EOF */
 	}
-	
+
 	musicdef_t *df;
 	// Replace all _ with spaces on legacy musicdefs
 	for (df = musicdefstart; df; df = df->next)
@@ -2287,7 +2287,7 @@ static boolean S_CheckMusicIsSafe(void)
 			}
 		}
 	}
-	
+
 	return true;
 }
 
@@ -2295,7 +2295,7 @@ static boolean S_PlayMusic(boolean looping, UINT32 fadeinms)
 {
 	if (S_MusicDisabled())
 		return false;
-	
+
 	if (!S_CheckMusicIsSafe())
 		return false;
 
@@ -2451,7 +2451,7 @@ void S_ChangeMusicSpecial (const char *mmusic)
 }
 
 void S_StopMusic(void)
-{	
+{
 	boolean safe = S_CheckMusicIsSafe();
 	if (!I_SongPlaying()
 		|| demo.rewinding // Don't mess with music while rewinding!
@@ -2459,7 +2459,7 @@ void S_StopMusic(void)
 		return;
 
 	if (strcasecmp(music_name, mapmusname) == 0)
-		mapmusresume = I_GetSongPosition();
+		mapmusresume = S_GetMusicPosition();
 
 	if (I_SongPaused() && safe == true)
 		I_ResumeSong();
@@ -2497,10 +2497,10 @@ void S_PauseAudio(void)
 }
 
 void S_ResumeAudio(void)
-{	
+{
 	if (S_MusicNotInFocus())
 		return;
-	
+
 	if (!S_CheckMusicIsSafe())
 		return;
 
@@ -2585,12 +2585,10 @@ boolean S_FadeOutStopMusic(UINT32 ms)
 //
 void S_InitLevelMusic(boolean fromnetsave)
 {
-
 	if (mapmusflags & MUSIC_RELOADRESET)
 	{
 		if (!fromnetsave)
 		{
-			
 			if (demo.playback)
 			{
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
@@ -2605,19 +2603,19 @@ void S_InitLevelMusic(boolean fromnetsave)
 			}
 			else
 			{
-				
+
 				if (mapheaderinfo[gamemap-1]->musname_size > 1)
 					mapmusrng = P_RandomKey(mapheaderinfo[gamemap-1]->musname_size);
 				else
 					mapmusrng = 0;
 			}
 		}
-		
+
 		if (mapheaderinfo[gamemap-1]->musname[0][0] == 0)
 			strncpy(mapmusname, va("%sM", G_BuildMapName(gamemap)), 7);
 		else
 			strncpy(mapmusname, mapheaderinfo[gamemap-1]->musname[mapmusrng], 7);
-		
+
 		mapmusname[6] = 0;
 		mapmusflags = (mapheaderinfo[gamemap-1]->mustrack & MUSIC_TRACKMASK);
 		mapmusposition = mapheaderinfo[gamemap-1]->muspos;
