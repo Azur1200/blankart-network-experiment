@@ -2388,6 +2388,9 @@ UINT16 K_GetInvincibilityTime(player_t *player)
     UINT32 i, pingame;
 	fixed_t distmul = FRACUNIT;
 
+	// ALWAYS reset shortinvin!
+	player->shortinvin = false;
+
     if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
         return BASEINVINTIME;
 
@@ -2418,7 +2421,15 @@ UINT16 K_GetInvincibilityTime(player_t *player)
 	}
 
     fixed_t clustermul = K_InvincibilityEasing(FixedMul(player->distancefromcluster,distmul));
-    return FixedMul(BASEINVINTIME, clustermul);
+	UINT16 invintics = FixedMul(BASEINVINTIME, clustermul);
+
+	if (invintics <= MININVINTIME)
+	{
+		player->shortinvin = true;
+		invintics = MININVINTIME;
+	}
+
+    return invintics;
 }
 
 #undef LEGACYALTINVINMUL

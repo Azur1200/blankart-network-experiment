@@ -668,8 +668,9 @@ struct player_t
 
 	UINT16 rocketsneakertimer;		// Rocket Sneaker duration timer
 
-	UINT16 invincibilitytimer;		// Invincibility timer
-	UINT16 maxinvincibilitytime;	// (Alternate) Initial time for Invincibility, used for the item bar.
+	UINT16 invincibilitytimer;      // Invincibility timer
+	boolean shortinvin;             // (Alternate) This Invincibility is too short to punish with bottleneckers,
+	UINT16 maxinvincibilitytime;    // (Alternate) Initial time for Invincibility, used for the item bar.
 	UINT16 invincibilitybottleneck; // (Alternate) Prevents breakaways by gradienting towards a heavier decrement.
 	INT16 invincibilitycancel;      // (Alternate) Duration of Invincibility canceling.
 	UINT8 invincibilitywarning;     // (Alternate) "Timer warning" boolean to signal Alt. Invin. is running out.
