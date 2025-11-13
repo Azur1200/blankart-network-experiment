@@ -12373,7 +12373,17 @@ void P_SpawnPlayer(INT32 playernum)
 
 	if (p->voice_id != skins[p->skin].voice->id)
 	{
-		mobj->voice = &skinvoices[p->voice_id];
+		const kartvoice_t *tentative_voice = &skinvoices[p->voice_id];
+
+		if (tentative_voice->parent == skins[p->skin].voice->parent)
+		{
+			mobj->voice = tentative_voice;
+		}
+		else
+		{
+			p->voice_id = skins[p->skin].voice->id;
+			mobj->voice = NULL;
+		}
 	}
 
 	mobj->health = 1;
