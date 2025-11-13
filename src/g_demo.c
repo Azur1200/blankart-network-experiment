@@ -735,7 +735,7 @@ static headerstatus_e G_ReadDemoHeader(UINT8 *dp, demoheader_t *header)
 	}
 	else if (!memcmp(startdp, "\xF0" "KartReplay" "\x0F", 12))
 	{
-		rapreset = raflag = false;
+		dubs = rapreset = raflag = false;
 		serverinfo = false;
 		switch (header->demoversion)
 		{
