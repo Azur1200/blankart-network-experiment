@@ -1227,7 +1227,6 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 				// Run GME on new data
 				if (!gme_open_data(inflatedData, inflatedLen, &gme, SAMPLERATE))
 				{
-					gme_set_autoload_playback_limit(gme, 0); //FIXME: add something to set if gme playback should loop
 					gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 					gme_set_equalizer(gme, &eq);
 					gme_start_track(gme, 0);
@@ -1256,7 +1255,6 @@ static boolean InitializeMusicStreaming(void *input, size_t size)
 	// Try to read it as a GME sound
 	else if (!gme_open_data(input, size, &gme, SAMPLERATE))
 	{
-		gme_set_autoload_playback_limit(gme, 0); //FIXME: add something to set if gme playback should loop
 		gme_equalizer_t eq = {GME_TREBLE, GME_BASS, 0,0,0,0,0,0,0,0};
 		gme_set_equalizer(gme, &eq);
 		gme_start_track(gme, 0);
@@ -1421,6 +1419,16 @@ boolean I_PlaySong(boolean looping)
 	if (!I_UpdateMusicVolume())
 		return false;
 
+#ifdef HAVE_GME
+	if (gme)
+	{
+#if defined (GME_VERSION) && GME_VERSION >= 0x000603
+		if (looping)
+			gme_set_autoload_playback_limit(gme, 0);
+#endif
+	}
+	else
+#endif
 #ifdef HAVE_OPENMPT
 	if (openmpt_mhandle)
 	{
