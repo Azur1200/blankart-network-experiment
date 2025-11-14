@@ -977,11 +977,20 @@ void HWR_PrecacheLevel(void)
 	// Precache flats.
 	HWR_PrecacheLevelFlats();
 
+	// prevent timeouts
+	NetKeepAlive();
+
 	// Precache textures.
 	HWR_PrecacheLevelTextures();
 
+	// prevent timeouts
+	NetKeepAlive();
+
 	// Precache sprites.
 	//HWR_PrecacheLevelSprites();
+
+	// prevent timeouts
+	//NetKeepAlive();
 }
 
 void HWR_LoadMapTextures(size_t pnumtextures)
