@@ -398,12 +398,11 @@ static boolean I_QueueNextSample(boolean unqueue)
 
 		if (sample_format == Float)
 		{
-			count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * audio.musicinfo.channels;
-			count *= 2; // float is 4 bytes not 2, so just double this shit for now kek
+			count = sf_read_float(audio.musicstream, (float *)stream, BUFFERSIZE) * 4; // float is 4 bytes not 2, so just double this shit for now kek
 		}
 		else
 		{
-			count = sf_read_short(audio.musicstream, stream, BUFFERSIZE) * audio.musicinfo.channels;
+			count = sf_read_short(audio.musicstream, stream, BUFFERSIZE) * 2;
 		}
 
 		if (count == 0)
