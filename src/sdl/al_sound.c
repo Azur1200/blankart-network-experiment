@@ -1484,8 +1484,56 @@ void I_SetMusicVolume(UINT8 volume)
 
 boolean I_SetSongTrack(INT32 track)
 {
+	LOCKAUDIO;
+
+	if (audio.music == INVALID_HANDLE)
+		return false;
+
+#ifdef HAVE_GME
+	// If the specified track is within the number of tracks playing, then change it
+	if (gme)
+	{
+		if (current_track == track)
+			return false;
+
+		if (track >= 0 && track < gme_track_count(gme)-1)
+		{
+			gme_err_t gme_e = gme_start_track(gme, track);
+
+			if (gme_e != NULL)
+			{
+				CONS_Alert(CONS_ERROR, "GME error: %s\n", gme_e);
+				return false;
+			}
+
+			current_track = track;
+
+			return true;
+		}
+
+		return false;
+	}
+	else
+	{
+#endif
+#ifdef HAVE_OPENMPT
+		if (openmpt_mhandle)
+		{
+			if (current_subsong == track)
+				return false;
+			if (track >= 0 && track < openmpt_module_get_num_subsongs(openmpt_mhandle))
+			{
+				openmpt_module_select_subsong(openmpt_mhandle, track);
+				current_subsong = track;
+				return true;
+			}
+
+			return false;
+		}
+	}
+#endif
+
 	(void)track;
-	// FIXME: implement
 	return false;
 }
 
