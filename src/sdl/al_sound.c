@@ -951,9 +951,38 @@ musictype_t I_SongType(void)
 	if (openmpt_mhandle)
 		return MU_MOD_EX;
 #endif
+
+	// TODO if ever ported back to SRB2: add fluidsynth support
+
 	if (audio.music != INVALID_HANDLE)
-		return MU_MP3;
-	// TODO: add fluidsynth support
+	{
+		switch ((audio.musicinfo.format & SF_FORMAT_SUBMASK))
+		{
+			case SF_FORMAT_OPUS:
+				return MU_OPUS;
+				break;
+			case SF_FORMAT_VORBIS:
+				return MU_OGG;
+				break;
+			case SF_FORMAT_FLAC:
+			case SF_FORMAT_ALAC_20:
+			case SF_FORMAT_ALAC_24:
+			case SF_FORMAT_ALAC_32:
+				return MU_FLAC;
+				break;
+			case SF_FORMAT_WAV:
+				return MU_WAV;
+				break;
+#ifdef HAVE_SNDFILE_MPEG
+			case SF_FORMAT_MPEG_LAYER_I:
+			case SF_FORMAT_MPEG_LAYER_II:
+			case SF_FORMAT_MPEG_LAYER_III:
+				return MU_MP3;
+				break;
+#endif
+		}
+	}
+
 	return MU_NONE;
 }
 

@@ -29,11 +29,12 @@ typedef enum {
 	MU_MOD,
 	MU_MID,
 	MU_OGG,
+	MU_OPUS,
 	MU_MP3,
 	MU_FLAC,
 	MU_GME,
 	MU_MOD_EX, // libopenmpt
-	MU_MID_EX // Non-native MIDI
+	MU_MID_EX, // Non-native MIDI
 } musictype_t;
 
 /**	\brief Sound subsystem runing and waiting

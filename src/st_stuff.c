@@ -467,7 +467,8 @@ static void ST_drawMusicDebug(INT32 *height)
 
 	if (format)
 	{
-		ST_pushDebugString(height, va("  Format: %d", S_MusicType()));
+		musictype_t mustype = S_MusicType();
+		ST_pushDebugString(height, va("  Format: %s", S_MusicTypeName(mustype)));
 	}
 
 	ST_pushDebugString(height, va("    Song: %8s", mname));

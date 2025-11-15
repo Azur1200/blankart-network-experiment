@@ -1859,6 +1859,50 @@ musictype_t S_MusicType(void)
 	return I_SongType();
 }
 
+const char *S_MusicTypeName(musictype_t mustype)
+{
+	const char *TypeString = "Unknown";
+	musictype_t MusicType = mustype;
+
+	switch (MusicType)
+	{
+		case MU_GME:
+			TypeString = "Game Music Emu";
+			break;
+		case MU_MOD_EX:
+			TypeString = "OpenMPT";
+			break;
+		case MU_MOD:
+			TypeString = "MOD";
+			break;
+		case MU_MID:
+			TypeString = "Native MIDI";
+			break;
+		case MU_MID_EX:
+			TypeString = "Software MIDI";
+			break;
+		case MU_WAV:
+			TypeString = "Wave Audio";
+			break;
+		case MU_OPUS:
+			TypeString = "Opus";
+			break;
+		case MU_OGG:
+			TypeString = "Vorbis";
+			break;
+		case MU_MP3:
+			TypeString = "MPEG";
+			break;
+		case MU_FLAC:
+			TypeString = "FLAC";
+			break;
+		default:
+			break;
+	}
+
+	return TypeString;
+}
+
 const char *S_MusicName(void)
 {
 	return music_name;

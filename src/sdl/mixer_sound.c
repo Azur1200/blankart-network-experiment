@@ -817,6 +817,12 @@ musictype_t I_SongType(void)
 		case MUS_MP3:
 		case MUS_MP3_MAD:
 			return MU_MP3;
+		case MUS_OPUS:
+			return MU_OPUS;
+		case MUS_OGG:
+			return MU_OGG;
+		case MUS_WAV:
+			return MU_WAV;
 		default:
 			return (musictype_t)mustype;
 	}

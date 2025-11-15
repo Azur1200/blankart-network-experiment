@@ -153,6 +153,7 @@ boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
 musictype_t S_MusicType(void);
+const char *S_MusicTypeName(musictype_t mustype);
 const char *S_MusicName(void);
 
 boolean S_MusicExists(const char *mname);
