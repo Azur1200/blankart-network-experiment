@@ -1229,7 +1229,7 @@ fixed_t P_GetMobjGravity(mobj_t *mo)
 				case MT_EGGMANITEM:
 				case MT_SSMINE:
 				case MT_LANDMINE:
-				case MT_EGGMINE_CAPSULE:
+				// case MT_EGGMINE_CAPSULE:
 				case MT_SINK:
 					if (mo->extravalue2 > 0)
 					{
@@ -6486,7 +6486,7 @@ boolean P_IsKartFieldItem(INT32 type)
 		case MT_JAWZ_DUD:
 		case MT_SSMINE:
 		case MT_LANDMINE:
-		case MT_EGGMINE_CAPSULE:
+		// case MT_EGGMINE_CAPSULE:
 		case MT_BALLHOG:
 		case MT_BUBBLESHIELDTRAP:
 		case MT_SINK:
@@ -7983,7 +7983,7 @@ static boolean P_MobjDeadThink(mobj_t *mobj)
 	case MT_BANANA:
 	case MT_EGGMANITEM:
 	case MT_LANDMINE:
-	case MT_EGGMINE_CAPSULE:
+	// case MT_EGGMINE_CAPSULE:
 	case MT_SPB:
 		if (P_IsObjectOnGround(mobj))
 		{
@@ -8767,7 +8767,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		if (mobj->threshold > 0)
 			mobj->threshold--;
 		break;
-	case MT_EGGMINE_CAPSULE:
+	// case MT_EGGMINE_CAPSULE:
 		// todo
 		// decrement fuse while on ground
 		// when fuse runs out pop open and spawn a land mine
@@ -10853,8 +10853,8 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 		case MT_SSMINE:
 		case MT_SSMINE_SHIELD:
 		case MT_LANDMINE:
-		case MT_EGGMINE_CAPSULE:
-		case MT_EGGMINE_SHIELD:
+		// case MT_EGGMINE_CAPSULE:
+		// case MT_EGGMINE_SHIELD:
 		case MT_BALLHOG:
 		case MT_SINK:
 		case MT_ROCKETSNEAKER:
