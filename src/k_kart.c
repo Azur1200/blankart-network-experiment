@@ -441,6 +441,9 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_naturalcamera);
 	CV_RegisterVar(&cv_gptest);
+
+	CV_RegisterVar(&cv_kartexplosion_limitlifetime);
+	CV_RegisterVar(&cv_kartexplosion_limitlifetime_cap);
 }
 
 //}

@@ -414,6 +414,9 @@ struct mobj_t
 	INT32 cusval;
 	INT32 cvmem;
 
+	// Time Mobj has been alive for, useful for stats or gameplay tracking purposes.
+	UINT16 mobjlifetime;
+
 	pslope_t *standingslope; // The slope that the object is standing on (shouldn't need synced in savegames, right?)
 
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)

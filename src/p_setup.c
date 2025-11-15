@@ -8589,16 +8589,15 @@ void P_FreeLevelState(void)
 	// Clear pointers that would be left dangling by the purge
 	R_FlushTranslationColormapCache();
 
-	#ifdef HWRENDER
+#ifdef HWRENDER
 	// Free GPU textures before freeing patches.
 	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
 		HWR_ClearAllTextures();
-	#endif
+#endif
 
 	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
 	Patch_FreeTag(PU_PATCH_ROTATED);
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
-	mobjcache = NULL;
 
 }
 

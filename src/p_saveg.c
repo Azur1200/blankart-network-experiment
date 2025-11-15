@@ -1837,6 +1837,7 @@ enum mobj_diff_t
 	MD3_MISCCAP,
 	MD3_BAKEDOFFSET,
 	MD3_EXTVAL3,
+	MD3_LIFETIME,
 
 	MD__MAX
 };
@@ -1998,6 +1999,7 @@ static void DiffMobj(const mobj_t *mobj, UINT32 diff[])
 	DIFF(mobj == misccap, MD3_MISCCAP);
 	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
 	DIFF(mobj->extravalue3, MD3_EXTVAL3);
+	DIFF(mobj->mobjlifetime, MD3_LIFETIME);
 }
 
 static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, UINT8 type)
@@ -2321,6 +2323,7 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakeypiv);
 	SYNCF(MD3_BAKEDOFFSET, mobj->bakezpiv);
 	SYNCF(MD3_EXTVAL3, mobj->extravalue3);
+	SYNCF(MD3_LIFETIME, mobj->mobjlifetime);
 
 	if (!save->write)
 	{
@@ -2381,7 +2384,9 @@ static thinker_t *SyncNoEnemiesThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (noenemies_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 	SYNC(ht->sourceline);
@@ -2397,7 +2402,9 @@ static thinker_t *SyncBounceCheeseThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (bouncecheese_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2422,7 +2429,9 @@ static thinker_t *SyncContinuousFallThinker(savebuffer_t *save, actionf_p1 think
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (continuousfall_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2449,7 +2458,9 @@ static thinker_t *SyncMarioBlockThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (mariothink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2476,7 +2487,9 @@ static thinker_t *SyncMarioCheckThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (mariocheck_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2494,7 +2507,9 @@ static thinker_t *SyncThwompThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (thwomp_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2526,7 +2541,9 @@ static thinker_t *SyncFloatThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (floatthink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2545,7 +2562,9 @@ static thinker_t *SyncEachTimeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (eachtime_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2568,7 +2587,9 @@ static thinker_t *SyncRaiseThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (raise_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2592,7 +2613,9 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (ceiling_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2628,7 +2651,9 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (floormove_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2660,7 +2685,9 @@ static thinker_t *SyncLightflashThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (lightflash_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 	SYNC(ht->sector);
@@ -2680,7 +2707,9 @@ static thinker_t *SyncStrobeThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (strobe_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2704,7 +2733,9 @@ static thinker_t *SyncGlowThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (glow_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2727,7 +2758,9 @@ static thinker_t *SyncFireflickerThinker(savebuffer_t *save, actionf_p1 thinker,
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (fireflicker_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2751,7 +2784,9 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (elevator_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2788,7 +2823,9 @@ static thinker_t *SyncCrumbleThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (crumble_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2819,7 +2856,9 @@ static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (scroll_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2845,7 +2884,9 @@ static thinker_t *SyncFrictionThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (friction_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2866,7 +2907,9 @@ static thinker_t *SyncPusherThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (pusher_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2891,7 +2934,9 @@ static thinker_t *SyncLaserThinker(savebuffer_t *save, actionf_p1 thinker, think
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (laserthink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2910,7 +2955,9 @@ static thinker_t *SyncLightlevelThinker(savebuffer_t *save, actionf_p1 thinker, 
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (lightlevel_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2934,7 +2981,9 @@ static thinker_t *SyncExecutorThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (executor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2954,7 +3003,9 @@ static thinker_t *SyncDisappearThinker(savebuffer_t *save, actionf_p1 thinker, t
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (disappear_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -2977,7 +3028,9 @@ static thinker_t *SyncFadeThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (fade_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3030,7 +3083,9 @@ static thinker_t *SyncFadeColormapThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (fadecolormap_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3054,7 +3109,9 @@ static thinker_t *SyncPlaneDisplaceThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (planedisplace_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3075,7 +3132,9 @@ static thinker_t *SyncDynamicLineSlopeThinker(savebuffer_t *save, actionf_p1 thi
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (dynlineplanethink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3096,7 +3155,9 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (dynvertexplanethink_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3119,7 +3180,9 @@ static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker,
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polyrotate_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3139,7 +3202,9 @@ static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polymove_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3161,7 +3226,9 @@ static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polywaypoint_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3185,7 +3252,9 @@ static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polyslidedoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3214,7 +3283,9 @@ static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinke
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polyswingdoor_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3238,7 +3309,9 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polydisplace_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3259,7 +3332,9 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polyrotdisplace_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3280,7 +3355,9 @@ static thinker_t *SyncPolyfadeThinker(savebuffer_t *save, actionf_p1 thinker, th
 	}
 	else
 	{
-		ht = Z_Calloc(sizeof (*ht), PU_LEVSPEC, NULL);
+		ht = (polyfade_t*)Z_LevelPoolMalloc(sizeof (*ht));
+		ht->thinker.alloctype = TAT_LEVELPOOL;
+		ht->thinker.size = sizeof (*ht);
 		ht->thinker.function = thinker;
 	}
 
@@ -3388,7 +3465,14 @@ static void P_NetSyncThinkers(savebuffer_t *save)
 				{
 					(next->prev = currentthinker->prev)->next = next;
 					R_DestroyLevelInterpolators(currentthinker);
-					Z_Free(currentthinker);
+					if (currentthinker->alloctype == TAT_LEVELPOOL)
+					{
+						Z_LevelPoolFree(currentthinker, currentthinker->size);
+					}
+					else
+					{
+						Z_Free(currentthinker);
+					}
 				}
 			}
 		}

@@ -61,6 +61,8 @@ cd blankart
 mkdir build
 cd build
 cmake -G "MSYS Makefiles" .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+./_deps/sdl2_mixer-src/external/download.sh
+cmake -G "MSYS Makefiles" .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 make -j$(nproc)
 ```
 

@@ -93,8 +93,10 @@ enum mobj_e {
 	mobj_scalespeed,
 	mobj_extravalue1,
 	mobj_extravalue2,
+	mobj_extravalue3,
 	mobj_cusval,
 	mobj_cvmem,
+	mobj_mobjlifetime,
 	mobj_standingslope,
 	mobj_colorized,
 	mobj_mirrored,
@@ -188,8 +190,10 @@ static const char *const mobj_opt[] = {
 	"scalespeed",
 	"extravalue1",
 	"extravalue2",
+	"extravalue3",
 	"cusval",
 	"cvmem",
+	"mobjlifetime",
 	"standingslope",
 	"colorized",
 	"mirrored",
@@ -531,11 +535,17 @@ static int mobj_get(lua_State *L)
 	case mobj_extravalue2:
 		lua_pushinteger(L, mo->extravalue2);
 		break;
+	case mobj_extravalue3:
+		lua_pushinteger(L, mo->extravalue3);
+		break;
 	case mobj_cusval:
 		lua_pushinteger(L, mo->cusval);
 		break;
 	case mobj_cvmem:
 		lua_pushinteger(L, mo->cvmem);
+		break;
+	case mobj_mobjlifetime:
+		lua_pushinteger(L, mo->mobjlifetime);
 		break;
 	case mobj_standingslope:
 		LUA_PushUserdata(L, mo->standingslope, META_SLOPE);
@@ -1025,11 +1035,17 @@ static int mobj_set(lua_State *L)
 	case mobj_extravalue2:
 		mo->extravalue2 = luaL_checkinteger(L, 3);
 		break;
+	case mobj_extravalue3:
+		mo->extravalue3 = luaL_checkinteger(L, 3);
+		break;
 	case mobj_cusval:
 		mo->cusval = luaL_checkinteger(L, 3);
 		break;
 	case mobj_cvmem:
 		mo->cvmem = luaL_checkinteger(L, 3);
+		break;
+	case mobj_mobjlifetime:
+		mo->mobjlifetime = luaL_checkinteger(L, 3);
 		break;
 	case mobj_standingslope:
 		return NOSET;

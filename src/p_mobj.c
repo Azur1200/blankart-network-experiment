@@ -13,6 +13,7 @@
 
 #include "p_mobj.h"
 #include "d_netcmd.h"
+#include "d_think.h"
 #include "dehacked.h"
 #include "doomdef.h"
 #include "doomstat.h"
@@ -66,8 +67,6 @@ mobj_t *kitemcap = NULL;	// Used for Kart offensive items (the ones that can get
 mobj_t *misccap = NULL;		// Used for misc object tracking
 mobj_t *waypointcap = NULL;
 mobj_t *boss3cap = NULL;
-
-mobj_t *mobjcache = NULL;
 
 void P_InitCachedActions(void)
 {
@@ -8810,7 +8809,9 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->health--;
 		break;
 	case MT_MINEEXPLOSION:
-		if ((mobj->z < mobj->floorz - mobj->height) || (mobj->z > mobj->ceilingz + mobj->height))
+		if ((mobj->z < mobj->floorz - mobj->height)
+			|| (mobj->z > mobj->ceilingz + mobj->height)
+			|| (cv_kartexplosion_limitlifetime.value && mobj->mobjlifetime > cv_kartexplosion_limitlifetime_cap.value))
 		{
 			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
 			break;
@@ -9160,6 +9161,7 @@ static boolean P_MobjRegularThink(mobj_t *mobj)
 		mobj->sloperoll = 0;
 
 		P_MoveOrigin(mobj, mobj->target->x, mobj->target->y, mobj->target->z);
+
 		break;
 	}
 	case MT_BUBBLESHIELD:
@@ -10451,6 +10453,9 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->itnext && P_MobjWasRemoved(mobj->itnext))
 		P_SetTarget(&mobj->itnext, NULL);
 
+	// Tick lifetime of mobj
+	mobj->mobjlifetime++;
+
 	if (mobj->flags & MF_NOTHINK)
 		return;
 
@@ -11061,19 +11066,9 @@ static void P_DefaultMobjShadowScale(mobj_t *thing)
 
 mobj_t *P_AllocateMobj(void)
 {
-	mobj_t *mobj;
-
-	if (mobjcache != NULL)
-	{
-		mobj = mobjcache;
-		mobjcache = mobjcache->hnext;
-		memset(mobj, 0, sizeof(*mobj));
-	}
-	else
-	{
-		mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
-	}
-
+	mobj_t* mobj = (mobj_t*)Z_LevelPoolCalloc(sizeof(mobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(mobj_t);
 	return mobj;
 }
 
@@ -11625,7 +11620,9 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 	const mobjinfo_t *info = &mobjinfo[type];
 	state_t *st;
 	fixed_t start_z = INT32_MIN;
-	precipmobj_t *mobj = Z_Calloc(sizeof (*mobj), PU_LEVEL, NULL);
+	precipmobj_t *mobj = Z_LevelPoolCalloc(sizeof(precipmobj_t));
+	mobj->thinker.alloctype = TAT_LEVELPOOL;
+	mobj->thinker.size = sizeof(precipmobj_t);
 
 	mobj->type = type;
 	mobj->info = info;
@@ -11833,13 +11830,6 @@ void P_RemoveMobj(mobj_t *mobj)
 	if (!mobj->thinker.next)
 	{ // Uh-oh, the mobj doesn't think, P_RemoveThinker would never go through!
 		INT32 prevreferences;
-		if (!mobj->thinker.references)
-		{
-			// no references, dump it directly in the mobj cache
-			mobj->hnext = mobjcache;
-			mobjcache = mobj;
-			return;
-		}
 
 		prevreferences = mobj->thinker.references;
 		P_AddThinker(THINK_MOBJ, (thinker_t *)mobj);
