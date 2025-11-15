@@ -388,6 +388,7 @@ enum player_e
 	player_flashpal,
 	player_skincolor,
 	player_skin,
+	player_voice_id,
 	player_availabilities,
 	player_score,
 	player_kartspeed,
@@ -604,6 +605,7 @@ static const char *const player_opt[] = {
 	"flashpal",
 	"skincolor",
 	"skin",
+	"voice_id",
 	"availabilities",
 	"score",
 	"kartspeed",
@@ -1171,6 +1173,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_skin:
 		lua_pushinteger(L, plr->skin);
+		break;
+	case player_voice_id:
+		lua_pushinteger(L, plr->voice_id);
 		break;
 	case player_availabilities:
 		lua_pushinteger(L, plr->availabilities);

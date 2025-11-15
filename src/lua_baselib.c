@@ -249,6 +249,7 @@ static const struct {
 	{META_VECTOR3,      "vector3_t"},
 	{META_MATRIX,       "matrix_t"},
 	{META_QUATERNION,   "quaternion_t"},
+	{META_VOICE,        "kartvoice_t"},
 
 	{NULL,              NULL}
 };

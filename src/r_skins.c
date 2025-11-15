@@ -339,7 +339,6 @@ static void Sk_SetDefaultValue(skin_t *skin, kartvoice_t *skin_voice)
 	{	
 		if (S_sfx[i].skinsound != -1)
 		{
-			skin->soundsid[S_sfx[i].skinsound] = i;
 			Sk_SetSkinVoiceValue(skin_voice, S_sfx[i].skinsound, i);
 		}
 	}
@@ -1275,7 +1274,6 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 					stoken + stokenadjust))
 			{
 				newskinsound = S_AddSoundFx(value, S_sfx[i].singularity, S_sfx[i].flags, true);
-				skin->soundsid[S_sfx[i].skinsound] = newskinsound;
 
 				if (skin->voice)
 				{

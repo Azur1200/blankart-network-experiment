@@ -367,7 +367,7 @@ INT32 HW3S_I_StartSound(const void *origin_p, source3D_data_t *source_parm, chan
 
 		if (voice)
 		{
-			sfx_id = sfx_id = P_GetVoiceSFX(voice, sfx->skinsound); // ((skin_t *)origin->skin)->soundsid[sfx->skinsound]
+			sfx_id = sfx_id = P_GetVoiceSFX(voice, sfx->skinsound);
 			sfx    = &S_sfx[sfx_id];
 		}
 	}

@@ -68,6 +68,7 @@ static lua_CFunction liblist[] = {
 	LUA_VectorLib, // vectors
 	LUA_MatrixLib, // matrices
 	LUA_QuaternionLib, // quaternions
+	LUA_VoiceLib, // kartvoice_t, skinvoices[]
 	NULL
 };
 

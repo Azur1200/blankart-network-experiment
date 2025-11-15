@@ -617,7 +617,7 @@ void S_StartSoundAtVolume(const void *origin_p, sfxenum_t sfx_id, INT32 volume)
 
 		if (cur_voice)
 		{
-			sfx_id = P_GetVoiceSFX(cur_voice, sfx->skinsound); // ((skin_t *)origin->skin)->soundsid[sfx->skinsound]
+			sfx_id = P_GetVoiceSFX(cur_voice, sfx->skinsound);
 			sfx = &S_sfx[sfx_id];
 		}
 	}

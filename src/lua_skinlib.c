@@ -39,6 +39,7 @@ enum skin {
 	skin_highresscale,
 	skin_rivals,
 	skin_soundsid,
+	skin_voice,
 	skin_sprites
 };
 static const char *const skin_opt[] = {
@@ -60,6 +61,7 @@ static const char *const skin_opt[] = {
 	"highresscale",
 	"rivals",
 	"soundsid",
+	"voice",
 	"sprites",
 	NULL
 };
@@ -140,6 +142,9 @@ static int skin_get(lua_State *L)
 		return UNIMPLEMENTED;
 	case skin_soundsid:
 		LUA_PushUserdata(L, skin->soundsid, META_SOUNDSID);
+		break;
+	case skin_voice:
+		LUA_PushUserdata(L, skin->voice, META_VOICE);
 		break;
 	case skin_sprites:
 		LUA_PushUserdata(L, skin->sprites, META_SKINSPRITES);
@@ -241,11 +246,16 @@ static int lib_numSkins(lua_State *L)
 // soundsid, i -> soundsid[i]
 static int soundsid_get(lua_State *L)
 {
+	// soundsid is a route to the voice struct. That's how we're doing this.
 	sfxenum_t *soundsid = *((sfxenum_t **)luaL_checkudata(L, 1, META_SOUNDSID));
+	skin_t *s = (skin_t*)((char*)soundsid - offsetof(skin_t, soundsid));
+
 	skinsound_t i = luaL_checkinteger(L, 2);
+
 	if (i >= NUMSKINSOUNDS)
-		return luaL_error(L, LUA_QL("skinsound_t") " cannot be %u", i);
-	lua_pushinteger(L, soundsid[i]);
+		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", (UINT32)i));
+
+	lua_pushinteger(L, P_GetVoiceSFX(s->voice, i));
 	return 1;
 }
 
@@ -319,6 +329,7 @@ int LUA_SkinLib(lua_State *L)
 		lua_pushcfunction(L, soundsid_num);
 		lua_setfield(L, -2, "__len");
 	lua_pop(L,1);
+
 
 	luaL_newmetatable(L, META_SKINSPRITES);
 		lua_pushcfunction(L, lib_getSkinSprite);

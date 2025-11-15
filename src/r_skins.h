@@ -99,12 +99,14 @@ struct skin_t
 
 	char rivals[SKINRIVALS][SKINNAMESIZE+1]; // Your top 3 rivals for GP mode. Uses names so that you can reference skins that aren't added
 
-	// specific sounds per skin
-	sfxenum_t soundsid[NUMSKINSOUNDS]; // sound # in S_sfx table (Deprecated; remove eventually)
-
-	// Pointer to a skin's voice.
+	// Pointer to a skin's voice, providing specific sounds per-skin.
 	// If an mobj_t doesn't have a voice, it defaults to this value, given a skin is in use.
 	kartvoice_t *voice;
+
+	// Proxy value for the (now removed) soundsid array.
+	// This is ONLY used in a Lua context.
+	// It doesn't actually have anything and will never actually have anything.
+	skinsound_t soundsid[1];
 
 	// contains super versions too
 	spritedef_t sprites[NUMPLAYERSPRITES*2];
