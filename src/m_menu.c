@@ -8347,6 +8347,10 @@ INT32 MR_SetupMonitorToggles(INT32 choice)
 		{
 			item->argument = 0;
 			item->patch = result->cvar->name;
+			if (kartitems[result->type].altcvar != NULL)
+				item->tooltip = "Press BACKSPACE to swap variants.";
+			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				item->tooltip = "Rings must be enabled in Gameplay Mods!";
 		}
 	}
 
@@ -8376,7 +8380,7 @@ void MD_DrawMonitorToggles(void)
 	INT32 i, translucent;
 	const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
 	const char *displayname;
-	boolean hasalt; // ha, salt! (has alt)
+	//boolean hasalt; // ha, salt! (has alt)
 	if (result != NULL && kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value == 1)
 		result = K_GetKartResultAlt(result->cvar->name, true);
 
@@ -8430,7 +8434,11 @@ void MD_DrawMonitorToggles(void)
 
 			kartresult_t *result = K_GetKartResult(currentMenu->menuitems[thisitem].patch);
 			kartitem_t *item = &kartitems[result->type];
-			boolean enabled = K_ItemResultEnabled(result);
+			boolean enabled = result->cvar->value == 1;
+
+			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				enabled = false;
+
 			translucent = enabled ? 0 : V_TRANSLUCENT;
 
 			if (enabled)
@@ -8456,8 +8464,6 @@ void MD_DrawMonitorToggles(void)
 		x += spacing;
 		y = currentMenu->y+(spacing/4);
 	}
-
-	hasalt = false;
 
 	switch (currentMenu->menuitems[itemOn].argument)
 	{
@@ -8487,7 +8493,11 @@ void MD_DrawMonitorToggles(void)
 		{
 			displayname = result->displayname;
 			kartitem_t *item = &kartitems[result->type];
-			boolean enabled = K_ItemResultEnabled(result);
+			boolean enabled = result->cvar->value == 1;
+
+			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				enabled = false;
+
 			translucent = enabled ? 0 : V_TRANSLUCENT;
 
 			if (enabled)
@@ -8507,7 +8517,6 @@ void MD_DrawMonitorToggles(void)
 
 			if (item->altcvar != NULL)
 			{
-				hasalt = true;
 				translucent = item->altcvar->value == 1 ? 0 : V_TRANSLUCENT;
 				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
 			}
@@ -8520,11 +8529,7 @@ void MD_DrawMonitorToggles(void)
 
 	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", displayname));
 
-	if (hasalt)
-		V_DrawThinString(8,
-				 BASEVIDHEIGHT - 12,
-				 highlightflags | V_ALLOWLOWERCASE | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
-				 "Press BACKSPACE to swap variants");
+	M_DrawMenuTooltips();
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)
@@ -8603,8 +8608,15 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			}
 			else if (result != NULL)
 			{
-				S_StartSound(NULL, sfx_s1ba);
-				CV_AddValue(result->cvar, 1);
+				if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				{
+					S_StartSound(NULL, sfx_s231);
+				}
+				else
+				{
+					S_StartSound(NULL, sfx_s1ba);
+					CV_AddValue(result->cvar, 1);
+				}
 			}
 			break;
 

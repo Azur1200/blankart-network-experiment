@@ -200,8 +200,10 @@ patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
 	if (graphics->numpatches == 0)
 		return missingpat;
 
+	tic_t timer = G_GamestateUsesLevel() ? leveltime : finalecount;
+
 	if (item->flags & KIF_ANIMATED)
-		return graphics->patches[(leveltime % (graphics->numpatches*3)) / 3];
+		return graphics->patches[(timer % (graphics->numpatches*3)) / 3];
 	else
 		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
 }
@@ -695,6 +697,24 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		}
 	}
 
+	// TODO: convert into uniqueodds functions (what happened to "already shrunk"?)
+	if (result->type == KITEM_SHRINK)
+	{
+		if (!K_IsKartItemAlternate(KITEM_SHRINK))
+		{
+			if (roulette->pingame-1 <= roulette->pexiting)
+				newodds = 0;
+		}
+		else
+		{
+			if (roulette->rival)
+			{
+				// Rival bot or already shrunk. DON'T roll another.
+				newodds = 0;
+			}
+		}
+	}
+
 	if (result->unique_odds[oddstable])
 	{
 		// This item has unique odds!
@@ -705,35 +725,6 @@ static INT32 GetItemOdds(kartroulette_t *roulette, kartresult_t *result, UINT8 *
 		//CONS_Printf("Running...");
 		newodds = uoddsfunc(newodds, roulette, result, forceme);
 		//CONS_Printf("OK!\n");
-	}
-	else
-	{
-		switch (result->type)
-		{
-			// Alt. Invin. odds are handled in its odds function
-			// So are SPB odds
-			case KITEM_LANDMINE:
-				// au revoir
-				newodds = 0;
-				break;
-			case KITEM_SHRINK:
-				if (!K_IsKartItemAlternate(KITEM_SHRINK))
-				{
-					if (roulette->pingame-1 <= roulette->pexiting)
-						newodds = 0;
-				}
-				else
-				{
-					if (roulette->rival)
-					{
-						// Rival bot or already shrunk. DON'T roll another.
-						newodds = 0;
-					}
-				}
-				break;
-			default:
-				break;
-		}
 	}
 
 	// In very small matches, remove the stupid bottom half item limiter
