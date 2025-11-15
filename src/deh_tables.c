@@ -71,7 +71,7 @@ const char *DEH_KartItemName(kartitemtype_e i)
 
 const char *DEH_VoiceName(kartvoicetype_e i)
 {
-	return strbuf_get(voicenames, skinvoices[i + KSKVC_FIRSTFREESLOT].info.nameofs);
+	return strbuf_get(voicenames, skinvoices[i].info.nameofs);
 }
 
 mobjtype_t DEH_FindMobjtype(const char *word)
@@ -143,13 +143,13 @@ kartvoicetype_e DEH_FindVoice(const char *word)
 {
 	INT32 i;
 	UINT32 hash = HASH32(word, strlen(word));
-	for (i = 0; i < numfreeslotvoices; i++) {
-		if (hash != skinvoices[i + KSKVC_FIRSTFREESLOT].info.namehash)
+	for (i = 0; i < numskinvoices; i++) {
+		if (hash != skinvoices[i].info.namehash)
 			continue;
 		if (fastcmp(word, DEH_VoiceName(i)))
 			return (kartvoicetype_e)i;
 	}
-	return MAXVOICEFREESLOTS;
+	return MAXSKINVOICES;
 }
 
 struct flickytypes_s FLICKYTYPES[] = {

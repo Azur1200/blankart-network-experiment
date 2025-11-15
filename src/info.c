@@ -262,12 +262,12 @@ void P_ResetData(INT32 flags)
 	// voices
 	if (init)
 	{
-		for (i = KSKVC_FIRSTFREESLOT; i < MAXSKINVOICES; i++)
+		for (i = 0; i < MAXSKINVOICES; i++)
 		{
 			R_ClearVoice(i);
 		}
 
-		numfreeslotvoices = 0;
+		numskinvoices = 0;
 
 		if (voicenames)
 			Z_Free(voicenames);

@@ -16,6 +16,7 @@
 #include "fastcmp.h"
 #include "r_skins.h"
 #include "sounds.h"
+#include "deh_tables.h"
 
 #include "lua_script.h"
 #include "lua_libs.h"
@@ -23,7 +24,7 @@
 enum voicevars
 {
 	voicevars_id = 0,
-	voicevars_name,
+	voicevars_name, // Not actually in kartvoice_t; returns the name of the voice
 	voicevars_parent,
 	voicevars_parentname,  // Not actually in kartvoice_t; returns the name of the parent skin
 	voicevars_win,
@@ -70,7 +71,7 @@ static int voice_get(lua_State* L)
 		lua_pushinteger(L, voice->id);
 		break;
 	case voicevars_name:
-		lua_pushstring(L, voice->name);
+		lua_pushstring(L, DEH_VoiceName((kartvoicetype_e)(voice - skinvoices)));
 		break;
 	case voicevars_parent:
 		lua_pushinteger(L, voice->parent);
@@ -170,16 +171,7 @@ static int lib_iterateVoices(lua_State* L)
 		i = 0;
 
 	// voices are always valid, only added, never removed
-	if (i >= KSKVC_MAXVANILLA)
-	{
-		// Check freeslotted voices.
-		if ((i - KSKVC_MAXVANILLA) < numfreeslotvoices)
-		{
-			LUA_PushUserdata(L, &skinvoices[i], META_VOICE);
-			return 1;
-		}
-	}
-	else if (i < numskinvoices)
+	if (i < numskinvoices)
 	{
 		LUA_PushUserdata(L, &skinvoices[i], META_VOICE);
 		return 1;
@@ -202,14 +194,6 @@ static int lib_getVoice(lua_State* L)
 			return luaL_error(
 			    L, "skinvoices[] index %d out of range (0 - %d)", i, MAXSKINVOICES - 1);
 		}
-		if (i >= KSKVC_MAXVANILLA)
-		{
-			// Check freeslotted voices.
-			if ((i - KSKVC_MAXVANILLA) >= numfreeslotvoices)
-			{
-				return 0;
-			}
-		}
 		else if (i >= numskinvoices)
 		{
 			return 0;
@@ -225,19 +209,6 @@ static int lib_getVoice(lua_State* L)
 	if (fastcmp(field, "iterate"))
 	{
 		lua_pushcfunction(L, lib_iterateVoices);
-		return 1;
-	}
-
-	// Special functions for getting voice counts per individual table.
-	if (fastcmp(field, "basevoices"))
-	{
-		lua_pushinteger(L, numskinvoices);
-		return 1;
-	}
-
-	if (fastcmp(field, "freeslotvoices"))
-	{
-		lua_pushinteger(L, numfreeslotvoices);
 		return 1;
 	}
 
@@ -258,7 +229,7 @@ static int lib_getVoice(lua_State* L)
 // In this case: returns TOTAL voices, and not individual table counts.
 static int lib_numVoices(lua_State* L)
 {
-	lua_pushinteger(L, numskinvoices + numfreeslotvoices);
+	lua_pushinteger(L, numskinvoices);
 	return 1;
 }
 

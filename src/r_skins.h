@@ -52,9 +52,8 @@ struct kartvoice_t
 {
     UINT32 id;
 
+	// Dehacked info for the voice's name (hash and pointer within the voicenames array).
 	dehinfo_t info;
-
-	char name[VOICENAMESIZE+1]; // INT16 descriptive name of the voice.
 
 	// UINT16 ID of the parent skin this voice belongs to.
 	// Checked when the voice is assigned to prevent erroneous dubs.
@@ -131,7 +130,7 @@ enum skinmenusortoption
 };
 
 /// Externs
-extern INT32 numskins, numskinvoices, numfreeslotvoices;
+extern INT32 numskins, numskinvoices;
 extern skin_t skins[MAXSKINS];
 extern INT32 skinsorted[MAXSKINS];
 extern kartvoice_t skinvoices[MAXSKINVOICES];
@@ -156,6 +155,7 @@ void R_AddSkins(UINT16 wadnum);
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
+INT32 R_AllocVoice(boolean skinalloc, const char* name, INT32 *out);
 void R_ClearVoice(kartvoicetype_e voicetype);
 void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 

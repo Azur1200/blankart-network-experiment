@@ -4316,23 +4316,7 @@ void readkartvoice(MYFILE *f, kartvoice_t *voice)
 		word2 = (tmp += 2);
 		strupr(word2);
 
-		if (fastcmp(word, "NAME"))
-		{
-			strlwr(word2);
-			// Catch any voices with similar names.
-			for (i = KSKVC_FIRSTFREESLOT; i < MAXSKINVOICES; i++)
-			{
-				if (strnicmp(word2, skinvoices[i].name, sizeof skinvoices[i].name) == 0)
-				{
-					// Name collision!
-					// Append the ID to differentiate... poorly.
-					snprintf(word2, sizeof voice->name, "%u_%s", voice->id, skinvoices[i].name);
-				}
-			}
-			strncpy(voice->name, word2, sizeof voice->name);
-			CONS_Printf("KartVoice %s: renamed to \"%s\"\n", strbuf_get(voicenames, voice->info.nameofs), voice->name);
-		}
-		else if (fastcmp(word, "SKIN"))
+		if (fastcmp(word, "SKIN"))
 		{
 			i = R_SkinAvailable(word2);
 
@@ -4394,6 +4378,9 @@ void readkartvoice(MYFILE *f, kartvoice_t *voice)
 			WARN("unknown word '%s'", word);
 	}
 	while (!myfeof(f)); // finish when the line is empty
+
+	// Set our ID afterwards.
+	voice->id = (UINT32)(voice - skinvoices);
 
 	Z_Free(s);
 }
@@ -4587,7 +4574,7 @@ kartvoicetype_e get_kartvoice(const char *word)
 	if (fastncmp("KVOICE_",word,7))
 		word += 7; // take off the KVOICE_
 	i = DEH_FindVoice(word);
-	if (i == MAXVOICEFREESLOTS)
+	if (i == MAXSKINVOICES)
 		deh_warning("Couldn't find voice named 'KVOICE_%s'", word);
 	return i;
 }

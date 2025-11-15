@@ -41,6 +41,7 @@
 #include "lua_hook.h"
 #include "p_saveg.h" // savebuffer_t
 #include "g_party.h"
+#include "deh_tables.h"
 
 // SRB2Kart
 #include "d_netfil.h" // nameonly
@@ -54,7 +55,7 @@
 #include "k_color.h"
 #include "k_follower.h"
 #include "k_grandprix.h"
-#include "strbuf.h"
+//#include "strbuf.h"
 
 static CV_PossibleValue_t recordmultiplayerdemos_cons_t[] = {{0, "Disabled"}, {1, "Manual Save"}, {2, "Auto Save"}, {0, NULL}};
 consvar_t cv_recordmultiplayerdemos = CVAR_INIT ("netdemo_record", "Manual Save", CV_SAVE, recordmultiplayerdemos_cons_t, NULL);
@@ -1395,7 +1396,7 @@ void G_WriteDemoExtraData(void)
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
 				// Voice
-				WRITESTRINGL(demobuf.p, skinvoices[players[i].voice_id].name, 32+1);
+				WRITESTRINGL(demobuf.p, DEH_VoiceName(players[i].voice_id), 32+1);
 
 				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
@@ -2982,7 +2983,7 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Voice
-			WRITESTRINGL(demobuf.p, skinvoices[player->voice_id].name, 32+1);
+			WRITESTRINGL(demobuf.p, DEH_VoiceName(player->voice_id), 32+1);
 
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!

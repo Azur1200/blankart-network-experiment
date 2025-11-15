@@ -393,19 +393,7 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 	}
 	else if (fastcmp(type, "KVOICE"))
 	{
-		*out = DEH_FindVoice(word);
-		if (*out != MAXVOICEFREESLOTS)
-			return 0; // already allocated
-
-		if (numfreeslotvoices == MAXVOICEFREESLOTS) {
-			CONS_Alert(CONS_WARNING, "Ran out of free voice slots!\n");
-			return -1;
-		}
-		CONS_Printf("Voice KVOICE_%s allocated.\n",word);
-		DEH_Link(word, &skinvoices[numfreeslotvoices + KSKVC_FIRSTFREESLOT].info, &voicenames);
-		skinvoices[numfreeslotvoices + KSKVC_FIRSTFREESLOT].id = numfreeslotvoices + KSKVC_FIRSTFREESLOT;
-		*out = numfreeslotvoices++;
-		return 0;
+		return R_AllocVoice(false, word, out);
 	}
 
 	return -2;
@@ -806,12 +794,12 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
 						i = get_kartvoice(word2); // find a voice by name
-					if ((i + 1) >= 1 && i < numfreeslotvoices)
-						readkartvoice(f, &skinvoices[i + KSKVC_FIRSTFREESLOT]);
+					if ((i + 1) >= 1 && i < numskinvoices)
+						readkartvoice(f, &skinvoices[i]);
 					else
 					{
 						// zero-based, but let's start at 1
-						deh_warning("KartVoice number %d out of range (1 - %d)", i, numfreeslotvoices);
+						deh_warning("KartVoice number %d out of range (1 - %d)", i, numskinvoices);
 						ignorelines(f);
 					}
 				}
