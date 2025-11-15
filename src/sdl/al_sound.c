@@ -107,6 +107,7 @@ typedef struct audiostate_s
 	ALuint musicbuffers[BUFFERCOUNT];
 	ALuint music;
 	float loop_point;
+	boolean looping;
 
 	boolean shutdown;
 } audiostate_t;
@@ -277,6 +278,8 @@ void I_StartupSound(void)
 	for (size_t i = 0; i < BUFFERCOUNT; i++)
 		audio.musicbuffers[i] = INVALID_HANDLE;
 	music_volume = sfx_volume = 0.f;
+	audio.loop_point = 0.0f;
+	audio.looping = false;
 
 #ifdef HAVE_OPENMPT
 	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
@@ -407,8 +410,17 @@ static boolean I_QueueNextSample(boolean unqueue)
 
 		if (count == 0)
 		{
-			sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
-			sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+			// Loop music otherwise stop.
+			if (audio.looping)
+			{
+				sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
+				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
+			}
+			else
+			{
+				I_StopSong();
+				return false;
+			}
 		}
 
 		samplerate = audio.musicinfo.samplerate;
@@ -1418,6 +1430,8 @@ boolean I_PlaySong(boolean looping)
 
 	if (!I_UpdateMusicVolume())
 		return false;
+
+	audio.looping = looping;
 
 #ifdef HAVE_GME
 	if (gme)
