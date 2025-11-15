@@ -15,6 +15,7 @@
 #include "d_netcmd.h"
 #include "d_think.h"
 #include "dehacked.h"
+#include "deh_tables.h"
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomtype.h"
@@ -13573,9 +13574,39 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 		if (!P_IsObjectOnGround(mobj))
 			mobj->flags |= MF_NOGRAVITY;
 
-		// Angle = item type
-		if (mthing->args[0] > 0 && mthing->args[0] < numkartitems)
-			mobj->threshold = mthing->args[0];
+		// Item type
+		static kartitemtype_e rrtypes[] = {
+			KITEM_SNEAKER,
+			KITEM_ROCKETSNEAKER,
+			KITEM_INVINCIBILITY,
+			KITEM_BANANA,
+			KITEM_EGGMAN,
+			KITEM_ORBINAUT,
+			KITEM_JAWZ,
+			KITEM_MINE,
+			MAXKARTITEMS, // LANDMINE
+			KITEM_BALLHOG,
+			KITEM_SPB,
+			KITEM_GROW,
+			KITEM_SHRINK,
+			KITEM_THUNDERSHIELD,
+			KITEM_BUBBLESHIELD,
+			KITEM_FLAMESHIELD,
+			KITEM_HYUDORO,
+			KITEM_POGOSPRING,
+			KITEM_SUPERRING,
+			KITEM_KITCHENSINK,
+			MAXKARTITEMS, // DROPTARGET
+			MAXKARTITEMS, // GARDENTOP
+			MAXKARTITEMS, // GACHABOM
+			MAXKARTITEMS, // STONESHOE
+			MAXKARTITEMS, // TOXOMISTER
+		};
+
+		if (mthing->stringargs[0] != NULL)
+			mobj->threshold = DEH_FindKartItem(mthing->stringargs[0]);
+		else if (mapnamespace == MNS_RINGRACERS && mthing->args[0] > 0 && (size_t)mthing->args[0] < sizeof(rrtypes)/sizeof(*rrtypes))
+			mobj->threshold = rrtypes[mthing->args[0] - 1];
 
 		// Parameter = extra items (x5 for rings)
 		mobj->movecount += mthing->args[1];
