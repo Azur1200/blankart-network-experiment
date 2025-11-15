@@ -48,8 +48,6 @@ typedef enum
 #define MAXVOICEFREESLOTS (MAXSKINVOICES - KSKVC_FIRSTFREESLOT)
 
 // Player voice struct
-// ## TODO:
-// - Get rid of soundsid for good, replace it with some hacky compat system
 struct kartvoice_t
 {
     UINT32 id;
