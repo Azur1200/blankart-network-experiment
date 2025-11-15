@@ -878,7 +878,7 @@ void P_RestoreMusic(player_t *player)
 				position = mapmusposition;
 
 			S_ChangeMusicEx(mapmusname, mapmusflags, true, position, 0,
-					/*S_GetRestoreMusicFadeIn()*/ 0);
+					S_GetRestoreMusicFadeIn());
 			S_ClearRestoreMusicFadeInCvar();
 			mapmusresume = 0;
 		}
