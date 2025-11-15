@@ -109,6 +109,7 @@ typedef struct audiostate_s
 	float loop_point;
 	boolean looping;
 
+	boolean startplay;
 	boolean shutdown;
 } audiostate_t;
 static audiostate_t audio;
@@ -280,6 +281,7 @@ void I_StartupSound(void)
 	music_volume = sfx_volume = 0.f;
 	audio.loop_point = 0.0f;
 	audio.looping = false;
+	audio.startplay = false;
 
 #ifdef HAVE_OPENMPT
 	CONS_Printf("libopenmpt version: %s\n", openmpt_get_string("library_version"));
@@ -450,6 +452,25 @@ static void UpdateSound(audiostate_t *aud)
 	{
 		ALint processed;
 		ALint queued;
+
+		// handle this in here not in i_loadsong!
+		if (aud->startplay)
+		{
+			for (size_t i = 0; i < BUFFERCOUNT; i++)
+			{
+				if (!I_QueueNextSample(false))
+				{
+					I_UnloadSong();
+					return;
+				}
+			}
+
+			TRY(alSourcePlay, aud->music);
+
+			aud->startplay = false;
+			return;
+		}
+
 		if (!TRY(alGetSourcei, aud->music, AL_BUFFERS_PROCESSED, &processed))
 			return;
 
@@ -1347,15 +1368,6 @@ boolean I_LoadSong(char *data, size_t len)
 		return false;
 	}
 
-	for (size_t i = 0; i < BUFFERCOUNT; i++)
-	{
-		if (!I_QueueNextSample(false))
-		{
-			I_UnloadSong();
-			return false;
-		}
-	}
-
 	// Find the OGG loop point.
 	audio.loop_point = 0.0f;
 
@@ -1418,6 +1430,7 @@ void I_UnloadSong(void)
 			audio.musicbuffers[i] = INVALID_HANDLE;
 		audio.music = INVALID_HANDLE;
 		audio.loop_point = 0.0f;
+		audio.startplay = false;
 	}
 }
 
@@ -1454,8 +1467,10 @@ boolean I_PlaySong(boolean looping)
 	}
 #endif
 
-	if (!TRY(alSourcePlay, audio.music))
-		return false;
+	//if (!TRY(alSourcePlay, audio.music))
+		//return false;
+
+	audio.startplay = true;
 
 	return true;
 }
