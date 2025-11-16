@@ -20,6 +20,8 @@
 
 #include "lua_script.h"
 #include "lua_libs.h"
+#include "lua_hud.h" // hud_running errors
+#include "lua_hook.h" // hook_cmd_running errors
 
 enum voicevars
 {
@@ -54,6 +56,7 @@ static const char *const voicevars_opt[] = {
 #define RNOFIELD luaL_error(L, LUA_QL("kartvoice_t") " has no field named " LUA_QS, field)
 #define RNOSET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be set.", field)
 #define RNOGET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be get.", field)
+#define UNIMPLEMENTED luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", voicevars_opt[field])
 
 static int voice_get(lua_State* L)
 {
@@ -128,12 +131,161 @@ static int voice_get(lua_State* L)
 
 static int voice_set(lua_State* L)
 {
-	// ...let's just operate by skin rules. So much for random-line voice dubs...
-	return luaL_error(L, LUA_QL("kartvoice_t") " struct cannot be edited by Lua.");
+	kartvoice_t* voice = *((kartvoice_t**)luaL_checkudata(L, 1, META_VOICE));
+	enum voicevars field = luaL_checkoption(L, 2, voicevars_opt[0], voicevars_opt);
+
+	// voices are always valid, only added, never removed
+	I_Assert(voice != NULL);
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter kartvoice_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter kartvoice_t in CMD building code!");
+
+	lua_Integer i, k;
+
+	i = 0;
+	k = sfx_thok;
+
+	switch (field)
+	{
+	case voicevars_id:
+		return RNOSET;
+	case voicevars_name:
+		return RNOSET;
+	case voicevars_parent:
+		// It would make no sense not to accept a skin struct here.
+		skin_t* my_new_parent = *((skin_t**)luaL_checkudata(L, 3, META_SKIN));
+
+		if (!my_new_parent)
+		{
+			luaL_error(L, "skin does not exist.");
+		}
+		else
+		{
+			voice->parent = (UINT16)(my_new_parent - skins);
+		}
+		break;
+	case voicevars_win:
+		// For the actual sound values, you pass the actual sfxenum_t enums.
+		// Yes, I know what I said about skin structs literally just above.
+		voice->win = (sfxenum_t)luaL_checkinteger(L, 3);
+		break;
+	case voicevars_lose:
+		voice->lose = (sfxenum_t)luaL_checkinteger(L, 3);
+		break;
+	case voicevars_pain:
+		luaL_checktype(L, 3, LUA_TTABLE);
+
+		// Pop the other values; they're no longer relevant.
+		lua_remove(L, 1);
+		lua_remove(L, 1);
+
+		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
+
+		lua_pushnil(L);
+		while (lua_next(L, 1)) {
+			i = 0;
+
+			if (!lua_isnoneornil(L, 2))
+				i = luaL_checkinteger(L, 2);
+
+			if (i > 0 && i <= (sizeof(voice->pain) / sizeof(voice->pain[0])))
+			{
+				// Only ever accept the first two values.
+				if (!lua_isnoneornil(L, 3))
+				{
+					// Safely ignore nil values, so modders can do voice.pain = {nil, sfx_mysound}
+					k = luaL_checkinteger(L, 3);
+
+					voice->pain[i - 1] = (sfxenum_t)k;
+				}
+			}
+
+			lua_pop(L, 1);
+		};
+		break;
+	case voicevars_attack:
+		luaL_checktype(L, 3, LUA_TTABLE);
+
+		// Pop the other values; they're no longer relevant.
+		lua_remove(L, 1);
+		lua_remove(L, 1);
+
+		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
+
+		lua_pushnil(L);
+		while (lua_next(L, 1)) {
+			i = 0;
+
+			if (!lua_isnoneornil(L, 2))
+				i = luaL_checkinteger(L, 2);
+
+			if (i > 0 && i <= (sizeof(voice->attack) / sizeof(voice->attack[0])))
+			{
+				// Only ever accept the first two values.
+				if (!lua_isnoneornil(L, 3))
+				{
+					// Safely ignore nil values, so modders can do voice.pain = {nil, sfx_mysound}
+					k = luaL_checkinteger(L, 3);
+
+					voice->attack[i - 1] = (sfxenum_t)k;
+				}
+			}
+
+			lua_pop(L, 1);
+		};
+		break;
+	case voicevars_boost:
+		luaL_checktype(L, 3, LUA_TTABLE);
+
+		// Pop the other values; they're no longer relevant.
+		lua_remove(L, 1);
+		lua_remove(L, 1);
+
+		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
+
+		lua_pushnil(L);
+		while (lua_next(L, 1)) {
+			i = 0;
+
+			if (!lua_isnoneornil(L, 2))
+				i = luaL_checkinteger(L, 2);
+
+			if (i > 0 && i <= (sizeof(voice->boost) / sizeof(voice->boost[0])))
+			{
+				// Only ever accept the first two values.
+				if (!lua_isnoneornil(L, 3))
+				{
+					// Safely ignore nil values.
+					k = luaL_checkinteger(L, 3);
+
+					voice->boost[i - 1] = (sfxenum_t)k;
+				}
+			}
+
+			lua_pop(L, 1);
+		};
+		break;
+	case voicevars_overtake:
+		voice->overtake = (sfxenum_t)luaL_checkinteger(L, 3);
+		break;
+	case voicevars_hitem:
+		voice->hitem = (sfxenum_t)luaL_checkinteger(L, 3);
+		break;
+	case voicevars_power:
+		voice->power = (sfxenum_t)luaL_checkinteger(L, 3);
+		break;
+	default:
+		return RNOFIELD;
+	}
+
+	return 0;
 }
 
 #undef RNOSET
 #undef RNOFIELD
+#undef UNIMPLEMENTED
 
 static int voice_num(lua_State* L)
 {
