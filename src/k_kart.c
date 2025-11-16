@@ -4775,6 +4775,8 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 
 void K_DoInvincibility(player_t *player, tic_t time)
 {
+	const boolean isalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
+
 	if (!player->invincibilitytimer)
 	{
 		mobj_t *overlay = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INVULNFLASH);
@@ -4782,7 +4784,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
 		overlay->destscale = player->mo->scale;
 		P_SetScale(overlay, player->mo->scale);
 
-        if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+        if (isalt)
         {
             mobj_t *aura = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_OVERLAY);
             P_SetTarget(&aura->target, player->mo);
@@ -4792,7 +4794,7 @@ void K_DoInvincibility(player_t *player, tic_t time)
         }
 	}
 
-    if (K_IsKartItemAlternate(KITEM_INVINCIBILITY))
+    if (isalt)
     {
         // Rim suggestion: Don't allow already invincible players to chain.
         if (K_InvincibilityGradient(player->invincibilitytimer) < (FRACUNIT/2))
@@ -4806,7 +4808,14 @@ void K_DoInvincibility(player_t *player, tic_t time)
         player->invincibilitytimer = time;
     }
 
-	player->maxinvincibilitytime = time;
+	player->maxinvincibilitytime = player->invincibilitytimer;
+
+	if (player->maxinvincibilitytime <= MININVINTIME && isalt)
+	{
+		// Merritt suggestion: Kill bottlenecking if you get a short Invincibility.
+		// Anti-bottleneck code 2: Signify to play the warning signal later than usual!
+		player->invincibilitybottleneck = (UINT16)(-2);
+	}
 
 	if (P_IsLocalPlayer(player) == true)
 	{
@@ -6993,14 +7002,15 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->invincibilitytimer)
 	{
 		INT16 invinfac = 1;
-		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer > 2))
+		if ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) &&
+		    (player->invincibilitytimer > 2))
 		{
 			UINT32 invindist = INVINDIST >> 2;
 
 			// Value to subtract from the Invincibility timer during bottlenecking.
 			INT16 invin_subtrahend = 1;
 
-			if ((INT16)(player->invincibilitybottleneck) != -1)
+			if ((INT16)(player->invincibilitybottleneck) >= 0)
 			{
 				if (player->distancefromcluster < invindist)
 				{
@@ -7028,9 +7038,22 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			player->invincibilitytimer = (UINT16)(max(
 			    2, (INT32)(player->invincibilitytimer) - invin_subtrahend));
 
-			if ((K_InvincibilityGradient(player->invincibilitytimer) <
-			     (FRACHALF * invin_subtrahend)) &&
-			    (player->maxinvincibilitytime >= (BASEINVINTIME - TICRATE)))
+			const boolean warning_cond_standard =
+			    ((K_InvincibilityGradient(player->invincibilitytimer) <
+			      (FRACHALF * invin_subtrahend)) &&
+			     (player->maxinvincibilitytime >= (BASEINVINTIME - TICRATE)));
+
+			const boolean warning_cond_nobottleneck =
+			    ((K_InvincibilityGradient(player->invincibilitytimer) <
+			      SecsToFixedTens(MININVINTIME / 2)) &&
+			     (player->maxinvincibilitytime >= (MININVINTIME - TICRATE)));
+
+			const boolean warning_cond =
+			    ((INT16)(player->invincibilitybottleneck) == -2)
+				? warning_cond_nobottleneck
+				: warning_cond_standard;
+
+			if (warning_cond)
 			{
 				if (!player->invincibilitywarning)
 				{
