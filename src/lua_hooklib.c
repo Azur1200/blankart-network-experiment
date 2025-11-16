@@ -1279,7 +1279,7 @@ static void res_trueforce(Hook_State *hook)
 		state->force = lua_toboolean(gL, -1);
 };
 
-boolean LUA_HookPlayerItem(player_t *player, SINT8 itemType, boolean wasHoldingItem, boolean *force)
+boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force)
 {
 	Hook_State hook;
 	TrueForce_State state = {0};
