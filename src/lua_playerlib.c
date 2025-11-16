@@ -287,6 +287,10 @@ enum player_e
 	player_squishedtimer,
 	player_rocketsneakertimer,
 	player_invincibilitytimer,
+	player_maxinvincibilitytime,
+	player_invincibilitybottleneck,
+	player_invincibilitycancel,
+	player_invincibilitywarning,
 	player_eggmanexplode,
 	player_eggmanblame,
 	player_bananadrag,
@@ -493,6 +497,10 @@ static const char *const player_opt[] = {
 	"squishedtimer",
 	"rocketsneakertimer",
 	"invincibilitytimer",
+	"maxinvincibilitytime",
+	"invincibilitybottleneck",
+	"invincibilitycancel",
+	"invincibilitywarning", // This gets cast to a boolean in Lua.
 	"eggmanexplode",
 	"eggmanblame",
 	"bananadrag",
@@ -972,6 +980,19 @@ static int player_get(lua_State *L)
 		break;
 	case player_invincibilitytimer:
 		lua_pushinteger(L, plr->invincibilitytimer);
+		break;
+	case player_maxinvincibilitytime:
+		lua_pushinteger(L, plr->maxinvincibilitytime);
+		break;
+	case player_invincibilitybottleneck:
+		// Push as an INT16 due to the negative value signal systems.
+		lua_pushinteger(L, (INT16)plr->invincibilitybottleneck);
+		break;
+	case player_invincibilitycancel:
+		lua_pushinteger(L, plr->invincibilitycancel);
+		break;
+	case player_invincibilitywarning:
+		lua_pushboolean(L, (boolean)plr->invincibilitywarning);
 		break;
 	case player_eggmanexplode:
 		lua_pushinteger(L, plr->eggmanexplode);
@@ -1698,6 +1719,18 @@ static int player_set(lua_State *L)
 		break;
 	case player_invincibilitytimer:
 		plr->invincibilitytimer = luaL_checkinteger(L, 3);
+		break;
+	case player_maxinvincibilitytime:
+		// For most other cases, I'd just say: "it's your funeral". Not for this one.
+		return NOSET;
+	case player_invincibilitybottleneck:
+		plr->invincibilitybottleneck = (UINT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitycancel:
+		plr->invincibilitycancel = (INT16)luaL_checkinteger(L, 3);
+		break;
+	case player_invincibilitywarning:
+		plr->invincibilitywarning = (UINT8)luaL_checkboolean(L, 3);
 		break;
 	case player_eggmanexplode:
 		plr->eggmanexplode = luaL_checkinteger(L, 3);
