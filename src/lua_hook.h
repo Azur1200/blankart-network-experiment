@@ -1,4 +1,3 @@
-
 //-----------------------------------------------------------------------------
 // Copyright (C) 2012-2016 by John "JTE" Muniz.
 // Copyright (C) 2012-2022 by Sonic Team Junior.
@@ -176,7 +175,7 @@ int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 
 // Item shit
-boolean LUA_HookPlayerItem(player_t *player, SINT8 itemType, boolean wasHoldingItem, boolean *force);
+boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingItem, boolean *force);
 boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
 boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
 boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
