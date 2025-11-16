@@ -27,7 +27,7 @@
 #include "y_inter.h"
 #include "hu_stuff.h"	// HU_AddChatText
 #include "console.h"
-#include "deh_tables.h" // DEH_FindVoice
+#include "deh_tables.h" // DEH_FindKartVoice
 #include "k_kart.h" // SRB2Kart
 #include "k_battle.h"
 #include "k_boss.h"
@@ -251,6 +251,7 @@ static const struct {
 	{META_MATRIX,       "matrix_t"},
 	{META_QUATERNION,   "quaternion_t"},
 	{META_VOICE,        "kartvoice_t"},
+	{META_VOICE_ARRAY,  "kartvoice_t.array"},
 
 	{NULL,              NULL}
 };
@@ -2619,7 +2620,7 @@ static int lib_rGetNameByColor(lua_State *L)
 
 // Lua-exclusive; allocates a voice into memory, and returns a pointer to said voice.
 // Mangled clone of deh_soc's get_kartvoice, modified for Lua.
-static int lib_rAddVoice(lua_State *L)
+static int lib_rAddKartVoice(lua_State *L)
 {
 	const char* word = luaL_checkstring(L, 1);
 	NOHUD
@@ -2629,11 +2630,11 @@ static int lib_rAddVoice(lua_State *L)
 	strncpy(wordupper, word, VOICENAMESIZE);
 	strupr(wordupper);
 
-	INT32 i = DEH_FindVoice(wordupper);
+	INT32 i = DEH_FindKartVoice(wordupper);
 	if (i == MAXSKINVOICES)
 	{
 		// Freeslot voices that don't exist yet.
-		const INT32 allocresult = R_AllocVoice(false, word, &i);
+		const INT32 allocresult = R_AllocKartVoice(false, word, &i);
 
 		if (allocresult < 0)
 			return luaL_error(L, "kartvoice_t '%s' could not be allocated.", word);
@@ -5396,7 +5397,7 @@ static luaL_Reg lib[] = {
 	{"R_GetNameByColor", lib_rGetNameByColor},
 
 	// r_skins (voice)
-	{"R_AddVoice", lib_rAddVoice},
+	{"R_AddKartVoice", lib_rAddKartVoice},
 
 	// s_sound
 	{"S_StartSound",lib_sStartSound},

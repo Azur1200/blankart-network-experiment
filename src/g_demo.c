@@ -1396,7 +1396,7 @@ void G_WriteDemoExtraData(void)
 				WRITESTRINGL(demobuf.p, skins[players[i].skin].name, 16+1);
 
 				// Voice
-				WRITESTRINGL(demobuf.p, DEH_VoiceName(players[i].voice_id), 32+1);
+				WRITESTRINGL(demobuf.p, DEH_KartVoiceName(players[i].voice_id), 32+1);
 
 				// Stats
 				WRITEUINT8(demobuf.p, skins[players[i].skin].kartspeed);
@@ -2983,7 +2983,7 @@ void G_BeginRecording(void)
 			WRITESTRINGL(demobuf.p, skincolors[player->skincolor].name, 16+1);
 
 			// Voice
-			WRITESTRINGL(demobuf.p, DEH_VoiceName(player->voice_id), 32+1);
+			WRITESTRINGL(demobuf.p, DEH_KartVoiceName(player->voice_id), 32+1);
 
 			// Save follower's skin name
 			// PS: We must check for 'follower' to determine if the followerskin is valid. It's going to be 0 if we don't have a follower, but 0 is also absolutely a valid follower!

@@ -69,7 +69,7 @@ const char *DEH_KartItemName(kartitemtype_e i)
 	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
 }
 
-const char *DEH_VoiceName(kartvoicetype_e i)
+const char *DEH_KartVoiceName(kartvoicetype_e i)
 {
 	return strbuf_get(voicenames, skinvoices[i].info.nameofs);
 }
@@ -139,14 +139,14 @@ kartitemtype_e DEH_FindKartItem(const char *word)
 	return MAXKARTITEMS;
 }
 
-kartvoicetype_e DEH_FindVoice(const char *word)
+kartvoicetype_e DEH_FindKartVoice(const char *word)
 {
 	INT32 i;
 	UINT32 hash = HASH32(word, strlen(word));
 	for (i = 0; i < numskinvoices; i++) {
 		if (hash != skinvoices[i].info.namehash)
 			continue;
-		if (fastcmp(word, DEH_VoiceName(i)))
+		if (fastcmp(word, DEH_KartVoiceName(i)))
 			return (kartvoicetype_e)i;
 	}
 	return MAXSKINVOICES;

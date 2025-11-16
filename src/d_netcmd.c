@@ -1429,7 +1429,7 @@ static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voi
 	strncpy(cvarname, value, VOICENAMESIZE);
 	strupr(cvarname);
 
-	i = DEH_FindVoice(cvarname);
+	i = DEH_FindKartVoice(cvarname);
 
 	if (i != MAXSKINVOICES)
 	{
@@ -1437,7 +1437,7 @@ static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voi
 		if (skinvoices[i].parent == skin_id || forceme)
 		{
 			// Change the cvar to be the value of the name.
-			strncpy(cvarname, DEH_VoiceName(i), VOICENAMESIZE);
+			strncpy(cvarname, DEH_KartVoiceName(i), VOICENAMESIZE);
 			strlwr(cvarname);
 
 			CV_StealthSet(cvar, cvarname);
@@ -1447,10 +1447,10 @@ static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voi
 		{
 			// This isn't a valid voice for this skin, so don't assign shit.
 			if (!silent)
-				CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), DEH_VoiceName(i), skins[skin_id].name);
+				CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" doesn't belong to this skin (%s).\n"), DEH_KartVoiceName(i), skins[skin_id].name);
 
 			// *Reassign* the voice cvar to whatever the current voice is, at least.
-			strncpy(cvarname, DEH_VoiceName(myvoice->id), VOICENAMESIZE);
+			strncpy(cvarname, DEH_KartVoiceName(myvoice->id), VOICENAMESIZE);
 			strlwr(cvarname);
 
 			CV_StealthSet(cvar, cvarname);
@@ -1469,7 +1469,7 @@ static UINT8 Skin_FindValidDub(consvar_t *cvar, UINT16 skin_id, kartvoice_t *voi
 		CONS_Alert(CONS_NOTICE, M_GetText("Voice \"%s\" does not exist.\n"), value);
 
 	// Reassign the voice cvar to our current voice.
-	strncpy(cvarname, DEH_VoiceName(myvoice->id), VOICENAMESIZE);
+	strncpy(cvarname, DEH_KartVoiceName(myvoice->id), VOICENAMESIZE);
 	strlwr(cvarname);
 
 	CV_StealthSet(cvar, cvarname);
@@ -1896,7 +1896,7 @@ static void SendNameAndColor(UINT8 n)
 		&& !strcmp(cv_skin[n].string, skins[player->skin].name)
 		&& cv_follower[n].value == player->followerskin
 		&& cv_followercolor[n].value == player->followercolor
-		&& (!permamute && !stricmp(cv_voice[n].string, DEH_VoiceName(voice->id))))
+		&& (!permamute && !stricmp(cv_voice[n].string, DEH_KartVoiceName(voice->id))))
 		return;
 
 	player->availabilities = R_GetSkinAvailabilities();
@@ -1939,7 +1939,7 @@ static void SendNameAndColor(UINT8 n)
 			// Reset the voice to that of the skin's.
 			if (prevskin != player->skin && skins[player->skin].voice)
 			{
-				strncpy(voicebuf, DEH_VoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
+				strncpy(voicebuf, DEH_KartVoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
 				strlwr(voicebuf);
 
 				CV_StealthSet(&cv_voice[n], voicebuf);
@@ -1958,7 +1958,7 @@ static void SendNameAndColor(UINT8 n)
 			// Reset the voice to that of the skin's.
 			if (prevskin != player->skin && skins[player->skin].voice)
 			{
-				strncpy(voicebuf, DEH_VoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
+				strncpy(voicebuf, DEH_KartVoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
 				strlwr(voicebuf);
 
 				CV_StealthSet(&cv_voice[n], voicebuf);
@@ -1969,7 +1969,7 @@ static void SendNameAndColor(UINT8 n)
 		// Need to update voices after the fact.
 		if (!cv_voice[n].string)
 		{
-			strncpy(voicebuf, DEH_VoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
+			strncpy(voicebuf, DEH_KartVoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
 			strlwr(voicebuf);
 
 			CV_StealthSet(&cv_voice[n], voicebuf);
@@ -1981,7 +1981,7 @@ static void SendNameAndColor(UINT8 n)
 
 		if (valuevoice)
 		{
-			strncpy(voicebuf, DEH_VoiceName(valuevoice->id), VOICENAMESIZE);
+			strncpy(voicebuf, DEH_KartVoiceName(valuevoice->id), VOICENAMESIZE);
 			strlwr(voicebuf);
 
 			CV_StealthSet(&cv_voice[n], voicebuf);
@@ -1994,7 +1994,7 @@ static void SendNameAndColor(UINT8 n)
 
 			if (valuevoice)
 			{
-				strncpy(voicebuf, DEH_VoiceName(valuevoice->id), VOICENAMESIZE);
+				strncpy(voicebuf, DEH_KartVoiceName(valuevoice->id), VOICENAMESIZE);
 				strlwr(voicebuf);
 
 				CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2003,7 +2003,7 @@ static void SendNameAndColor(UINT8 n)
 			else
 			{
 				// ...still nothing?
-				strncpy(voicebuf, DEH_VoiceName(0), VOICENAMESIZE);
+				strncpy(voicebuf, DEH_KartVoiceName(0), VOICENAMESIZE);
 				strlwr(voicebuf);
 
 				CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2035,7 +2035,7 @@ static void SendNameAndColor(UINT8 n)
 		if (Skin_FindValidDub(&cv_voice[n], cv_skin[n].value, voice, false, true))
 		{
 			// Our voice is no longer valid, set it to that of our skin's.
-			strncpy(voicebuf, DEH_VoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
+			strncpy(voicebuf, DEH_KartVoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
 			strlwr(voicebuf);
 
 			CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2058,7 +2058,7 @@ static void SendNameAndColor(UINT8 n)
 	// Need to update voices after the fact.
 	if (!cv_voice[n].string)
 	{
-		strncpy(voicebuf, DEH_VoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
+		strncpy(voicebuf, DEH_KartVoiceName(skins[player->skin].voice->id), VOICENAMESIZE);
 		strlwr(voicebuf);
 
 		CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2074,7 +2074,7 @@ static void SendNameAndColor(UINT8 n)
 
 			if (valuevoice && valuevoice->parent == cv_skin[n].value)
 			{
-				strncpy(voicebuf, DEH_VoiceName(valuevoice->id), VOICENAMESIZE);
+				strncpy(voicebuf, DEH_KartVoiceName(valuevoice->id), VOICENAMESIZE);
 				strlwr(voicebuf);
 
 				CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2087,7 +2087,7 @@ static void SendNameAndColor(UINT8 n)
 
 				if (valuevoice)
 				{
-					strncpy(voicebuf, DEH_VoiceName(valuevoice->id), VOICENAMESIZE);
+					strncpy(voicebuf, DEH_KartVoiceName(valuevoice->id), VOICENAMESIZE);
 					strlwr(voicebuf);
 
 					CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2096,7 +2096,7 @@ static void SendNameAndColor(UINT8 n)
 				else
 				{
 					// ...still nothing?
-					strncpy(voicebuf, DEH_VoiceName(0), VOICENAMESIZE);
+					strncpy(voicebuf, DEH_KartVoiceName(0), VOICENAMESIZE);
 					strlwr(voicebuf);
 
 					CV_StealthSet(&cv_voice[n], voicebuf);
@@ -2234,7 +2234,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 		{
 			CV_StealthSet(&cv_skin[localplayer], skins[forcedskin].name);
 
-			strncpy(voicename, DEH_VoiceName(skins[forcedskin].voice->id), VOICENAMESIZE);
+			strncpy(voicename, DEH_KartVoiceName(skins[forcedskin].voice->id), VOICENAMESIZE);
 			strlwr(voicename);
 
 			CV_StealthSet(&cv_voice[localplayer], voicename);
@@ -2253,7 +2253,7 @@ static void Got_NameAndColor(UINT8 **cp, INT32 playernum)
 
 		if (localplayer != -1)
 		{
-			strncpy(voicename, DEH_VoiceName(voice), VOICENAMESIZE);
+			strncpy(voicename, DEH_KartVoiceName(voice), VOICENAMESIZE);
 			strlwr(voicename);
 
 			CV_StealthSet(&cv_voice[localplayer], voicename);
@@ -7528,7 +7528,7 @@ static void __voice_cvar_func(INT32 pid, UINT8 pnum)
 		if (!(cht_debug || devparm) && !(multiplayer || netgame) // In single player.
 			&& (gamestate != GS_WAITINGPLAYERS)) // allows command line -warp x +skin y
 		{
-			strncpy(cvarname, DEH_VoiceName(myvoice->id), VOICENAMESIZE);
+			strncpy(cvarname, DEH_KartVoiceName(myvoice->id), VOICENAMESIZE);
 			strlwr(cvarname);
 			CV_StealthSet(&cv_voice[pnum], cvarname);
 
@@ -7543,7 +7543,7 @@ static void __voice_cvar_func(INT32 pid, UINT8 pnum)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("You can't change your voice at the moment.\n"));
 
-		strncpy(cvarname, DEH_VoiceName(myvoice->id), VOICENAMESIZE);
+		strncpy(cvarname, DEH_KartVoiceName(myvoice->id), VOICENAMESIZE);
 		strlwr(cvarname);
 		CV_StealthSet(&cv_voice[pnum], cvarname);
 

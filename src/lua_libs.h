@@ -123,6 +123,7 @@ extern lua_State *gL;
 #define META_QUATERNION "QUATERNION_T"
 
 #define META_VOICE "KARTVOICE_T*"
+#define META_VOICE_ARRAY "KARTVOICE_T*ARRAY"
 
 boolean luaL_checkboolean(lua_State *L, int narg);
 

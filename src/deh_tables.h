@@ -40,14 +40,14 @@ const char *DEH_StateName(statenum_t i);
 const char *DEH_SkincolorName(skincolornum_t i);
 const char *DEH_MenutypeName(menutype_t i);
 const char *DEH_KartItemName(kartitemtype_e i);
-const char *DEH_VoiceName(kartvoicetype_e i);
+const char *DEH_KartVoiceName(kartvoicetype_e i);
 
 mobjtype_t DEH_FindMobjtype(const char *word);
 statenum_t DEH_FindState(const char *word);
 skincolornum_t DEH_FindSkincolor(const char *word);
 menutype_t DEH_FindMenutype(const char *word);
 kartitemtype_e DEH_FindKartItem(const char *word);
-kartvoicetype_e DEH_FindVoice(const char *word);
+kartvoicetype_e DEH_FindKartVoice(const char *word);
 
 struct flickytypes_s {
 	const char *name;

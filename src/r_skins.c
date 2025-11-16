@@ -238,7 +238,7 @@ void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound)
 	}
 }
 
-sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
+sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 {
 	INT32 usesound;
 	
@@ -257,7 +257,7 @@ sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 			}
 			else
 			{
-				I_Error("P_GetVoiceSFX: Attempted to retrieve a pain sound of ID %d.\n", usesound);
+				I_Error("P_GetKartVoiceSFX: Attempted to retrieve a pain sound of ID %d.\n", usesound);
 			}
 			
 			break;
@@ -270,7 +270,7 @@ sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 			}
 			else
 			{
-				I_Error("P_GetVoiceSFX: Attempted to retrieve an attack sound of ID %d.\n", usesound);
+				I_Error("P_GetKartVoiceSFX: Attempted to retrieve an attack sound of ID %d.\n", usesound);
 			}
 			break;
 		case SKSKBST1: // Boost item taunt
@@ -282,7 +282,7 @@ sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound)
 			}
 			else
 			{
-				I_Error("P_GetVoiceSFX: Attempted to retrieve a boost sound of ID %d.\n", usesound);
+				I_Error("P_GetKartVoiceSFX: Attempted to retrieve a boost sound of ID %d.\n", usesound);
 			}
 			break;
 		case SKSKSLOW: // Overtake taunt
@@ -727,7 +727,7 @@ kartvoicetype_e R_FindIDForVoice(const char* voicename)
 	for (i = 0; i < numskinvoices; i++)
 	{
 		// Whatever. Go, my code duplication!
-		checkvoicename = DEH_VoiceName(i);
+		checkvoicename = DEH_KartVoiceName(i);
 		if (strnicmp(voicename, checkvoicename, VOICENAMESIZE) == 0)
 		{
 			// Found a voice.
@@ -785,7 +785,7 @@ void SetPlayerVoice(INT32 playernum, const char* voicename)
 
 	const kartvoice_t* myvoice = P_GetMobjVoice(player->mo);
 
-	const char* myvoicename = DEH_VoiceName(myvoice->id);
+	const char* myvoicename = DEH_KartVoiceName(myvoice->id);
 	if (!strnicmp(voicename, myvoicename, VOICENAMESIZE))
 	{
 		// Hey... this voice is the same as before!
@@ -1084,7 +1084,7 @@ static void R_IHateThatHedgehog(UINT16 wadnum)
 
 	// Add voice
 	INT32 dummy;
-	if (R_AllocVoice(true, skin->name, &dummy) < 0)
+	if (R_AllocKartVoice(true, skin->name, &dummy) < 0)
 	{
 		// Hey guy, take care!
 		I_Error("Failed to allocate initial skin voice\n");
@@ -1269,14 +1269,14 @@ static boolean R_ProcessPatchableFields(skin_t *skin, char *stoken, char *value)
 // Allocates a voice onto the dehacked list, and iterates the provided output pointer
 // (should it exist).
 //
-INT32 R_AllocVoice(boolean skinalloc, const char* name, INT32 *out)
+INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out)
 {
 	char voxname_upper[VOICENAMESIZE];
 
 	strncpy(voxname_upper, name, VOICENAMESIZE);
 	strupr(voxname_upper);
 
-	*out = DEH_FindVoice(voxname_upper);
+	*out = DEH_FindKartVoice(voxname_upper);
     if (*out != MAXSKINVOICES)
         return skinalloc ? -1 : 0; // already allocated
 
@@ -1409,7 +1409,7 @@ void R_AddSkins(UINT16 wadnum)
 
 		// Add voice
 		INT32 dummy;
-		if (R_AllocVoice(true, skin->name, &dummy) < 0)
+		if (R_AllocKartVoice(true, skin->name, &dummy) < 0)
 		{
 			// We couldn't allocate our own skin's voice?!
 			I_Error("Failed to allocate voice for skin %s\n", skin->name);

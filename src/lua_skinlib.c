@@ -255,7 +255,7 @@ static int soundsid_get(lua_State *L)
 	if (i >= NUMSKINSOUNDS)
 		return luaL_error(L, "%s cannot be %s", LUA_QL("skinsound_t"), va("%u", (UINT32)i));
 
-	lua_pushinteger(L, P_GetVoiceSFX(s->voice, i));
+	lua_pushinteger(L, P_GetKartVoiceSFX(s->voice, i));
 	return 1;
 }
 

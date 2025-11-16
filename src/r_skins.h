@@ -28,6 +28,7 @@ extern "C" {
 /// Defaults
 #define SKINNAMESIZE 16
 #define VOICENAMESIZE 32
+#define VOICEARRAYSIZE 2
 #define SKINRIVALS 3
 // should be all lowercase!! S_SKIN processing does a strlwr
 #define DEFAULTSKIN "sonic"
@@ -60,9 +61,9 @@ struct kartvoice_t
 	
 	sfxenum_t win;
     sfxenum_t lose;
-    sfxenum_t pain[2];
-    sfxenum_t attack[2];
-    sfxenum_t boost[2];
+    sfxenum_t pain[VOICEARRAYSIZE];
+    sfxenum_t attack[VOICEARRAYSIZE];
+    sfxenum_t boost[VOICEARRAYSIZE];
     sfxenum_t overtake;
     sfxenum_t hitem;
     sfxenum_t power;
@@ -154,14 +155,14 @@ void R_AddSkins(UINT16 wadnum);
 UINT8 P_GetSkinSprite2(skin_t *skin, UINT8 spr2, player_t *player);
 UINT8 P_KartFrameToSprite2(skin_t *skin, UINT8 inframe, UINT8 *outframe);
 
-INT32 R_AllocVoice(boolean skinalloc, const char* name, INT32 *out);
+INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out);
 void R_ClearVoice(kartvoicetype_e voicetype);
 void Sk_SetSkinVoiceValue(kartvoice_t *voice, INT32 skinsound, INT32 writesound);
 
 kartvoicetype_e R_FindIDForVoice(const char *voicename);
 void SetPlayerVoice(INT32 playernum, const char *voicename);
 void SetPlayerVoiceByNum(INT32 playernum, UINT16 voicenum);
-sfxenum_t P_GetVoiceSFX(kartvoice_t *voice, INT32 skinsound);
+sfxenum_t P_GetKartVoiceSFX(kartvoice_t *voice, INT32 skinsound);
 
 #ifdef __cplusplus
 } // extern "C"
