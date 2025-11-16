@@ -16,6 +16,8 @@
 #define __M_FIXED__
 
 #include "doomtype.h"
+#include "doomdef.h"
+
 #ifdef __GNUC__
 #include <stdlib.h>
 #endif
@@ -82,6 +84,53 @@ FUNCMATH FUNCINLINE static ATTRINLINE double FixedToDouble(fixed_t x)
 FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
 {
 	return (fixed_t)(f * FRACUNIT);
+}
+
+/** \brief Converts seconds (in tics) to fixed-point number values; 1 second is 1 fracunit.
+
+	\param t	(tic_t) time
+
+	\return		(fixed_t) seconds as fracunits
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixed(tic_t t)
+{
+	return (fixed_t)(((UINT64)t * FRACUNIT) / (TICRATE));
+}
+
+/** \brief Converts tens of seconds (in tics) to fixed-point number values; 10 seconds is 1
+   fracunit.
+
+	\param t	(tic_t) time
+
+	\return		(fixed_t) tens of seconds as fracunits
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t SecsToFixedTens(tic_t t)
+{
+	return (fixed_t)(((UINT64)t * FRACUNIT) / (10 * TICRATE));
+}
+
+/** \brief 64-bit version of SecsToFixed. Converts seconds (in tics) to fixed-point number values; 1
+   second is 1 fracunit.
+
+	\param t	(tic_t) time
+
+	\return		(sint64_t) seconds as fracunits
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 SecsToFixed64(tic_t t)
+{
+	return (INT64)(((UINT64)t * FRACUNIT) / (TICRATE));
+}
+
+/** \brief 64-bit version of SecsToFixedTens. Converts tens of seconds (in tics) to fixed-point
+   number values; 10 seconds is 1 fracunit.
+
+	\param t	(tic_t) time
+
+	\return		(sint64_t) tens of seconds as fracunits
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 SecsToFixedTens64(tic_t t)
+{
+	return (INT64)(((UINT64)t * FRACUNIT) / (10 * TICRATE));
 }
 
 // for backwards compat
