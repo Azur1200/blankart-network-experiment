@@ -2796,6 +2796,7 @@ static void Command_RestartAudio_f(void)
 
 	S_StopMusic();
 	S_StopSounds();
+	S_ClearSfx();
 	I_ShutdownMusic();
 	I_ShutdownSound();
 	I_StartupSound();
