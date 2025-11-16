@@ -418,11 +418,6 @@ static boolean I_QueueNextSample(boolean unqueue)
 				sf_count_t finalposition = SecondsToSamples(audio.loop_point, audio.musicinfo.samplerate);
 				sf_seek(audio.musicstream, finalposition, SF_SEEK_SET);
 			}
-			else
-			{
-				I_StopSong();
-				return false;
-			}
 		}
 
 		samplerate = audio.musicinfo.samplerate;
@@ -443,6 +438,14 @@ static boolean I_QueueNextSample(boolean unqueue)
 		return false;
 
 	audio.bufferindex = (audio.bufferindex + 1) % BUFFERCOUNT;
+
+
+	if (count == 0 && !audio.looping)
+	{
+		I_StopSong();
+		return false;
+	}
+
 	return true;
 }
 
