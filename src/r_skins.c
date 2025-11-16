@@ -1285,7 +1285,7 @@ INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out)
         return -1;
     }
 
-	CONS_Printf("Voice KVOICE_%s allocated.\n",voxname_upper);
+	CONS_Printf("Voice %s allocated.\n",voxname_upper);
     DEH_Link(voxname_upper, &skinvoices[numskinvoices].info, &voicenames);
 
     *out = numskinvoices++;

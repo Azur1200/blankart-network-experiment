@@ -794,11 +794,11 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 					if (i == MAXSKINVOICES)
 					{
 						// Found nothing; auto-allocate our voice.
-						const INT32 allocresult = R_AllocKartVoice(false, word, &i);
+						const INT32 allocresult = R_AllocKartVoice(false, word2, &i);
 
 						if (allocresult < 0)
 						{
-							deh_warning("Voice '%s' could not be allocated.", word);
+							deh_warning("Voice '%s' could not be allocated.", word2);
 							ignorelines(f);
 						}
 					}
