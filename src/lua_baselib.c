@@ -33,7 +33,7 @@
 #include "k_color.h"
 #include "k_hud.h"
 #include "k_waypoint.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "d_netcmd.h" // IsPlayerAdmin
 #include "m_menu.h" // Player Setup menu color stuff
 #include "p_spec.h" // P_StartQuake
@@ -4026,10 +4026,44 @@ static int lib_kGetKartFlashing(lua_State *L)
 
 static int lib_kGetItemPatch(lua_State *L)
 {
-	UINT8 item = (UINT8)luaL_optinteger(L, 1, KITEM_NONE);
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
 	boolean tiny = lua_optboolean(L, 2);
 	//HUDSAFE
-	lua_pushstring(L, K_GetItemPatch(item, tiny));
+
+	// TODO: compatmode KRITEM
+	const char *sad = tiny ? "K_ISSAD" : "K_ITSAD";
+	if (item <= 0 || item >= numkartitems)
+	{
+		lua_pushstring(L, sad);
+		return 1;
+	}
+
+	kartitemgraphics_t *graphics = &kartitems[item].graphics[tiny ? 1 : 0];
+	lua_pushstring(L, graphics->numpatches == 0 ? sad : graphics->patchnames[0]);
+	return 1;
+}
+
+static int lib_kIsKartItemAlternate(lua_State *L)
+{
+	kartitemtype_e item = (kartitemtype_e)luaL_optinteger(L, 1, KITEM_NONE);
+	// HUDSAFE
+
+	if (item <= 0 || item >= numkartitems)
+		return luaL_error(L, "item number %d out of range (0 - %d)", item, numkartitems-1);
+
+	lua_pushboolean(L, K_IsKartItemAlternate(item));
+	return 1;
+}
+
+static int lib_kIsAltShrunk(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	lua_pushboolean(L, K_IsAltShrunk(player));
 	return 1;
 }
 
@@ -4102,7 +4136,7 @@ static int lib_kSetIndirectItemCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	indirectitemcooldown = c;
+	K_SetIndirectItemCooldown(c);
 	return 0;
 }
 
@@ -4111,46 +4145,8 @@ static int lib_kSetHyuCountdown(lua_State *L)
 {
 	tic_t c = (tic_t)luaL_checkinteger(L, 1);
 	NOHUD
-	K_SetBGone(KITEM_HYUDORO, c);
+	K_GetKartResult("hyudoro")->cooldown = c;
 	return 0;
-}
-
-static int lib_kSetBGone(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	tic_t c = (tic_t)luaL_checkinteger(L, 2);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	K_SetBGone(item, c);
-	return 0;
-}
-
-static int lib_kSetBGoneToBase(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	K_SetBGoneToBase(item);
-	return 0;
-}
-
-static int lib_kGetBGone(lua_State *L)
-{
-	SINT8 item = (SINT8)luaL_checkinteger(L, 1);
-	boolean base = lua_isnoneornil(L, 2) ? false : luaL_checkboolean(L, 2);
-	NOHUD
-	if (item < KITEM_SNEAKER || item > (NUMKARTRESULTS - 1))
-	{
-		luaL_error(L, "given item ID is outside bgone range");
-	}
-	lua_pushinteger(L, K_GetBGone(item, base));
-	return 1;
 }
 
 // Checks if the floor closet floor under an object would be safe to respawn/land on.
@@ -4224,13 +4220,6 @@ static int lib_kAirDropActive(lua_State *L)
 static int lib_kItemLitterActive(lua_State *L)
 {
 	lua_pushboolean(L, K_ItemLitterActive());
-	return 1;
-}
-
-// Grabs the currently active invintype.
-static int lib_kGetKartInvinType(lua_State *L)
-{
-	lua_pushinteger(L, K_GetKartInvinType());
 	return 1;
 }
 
@@ -4309,6 +4298,33 @@ static int lib_kGetNewSpeed(lua_State *L)
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	lua_pushinteger(L, K_GetNewSpeed(player));
+	return 1;
+}
+
+static int lib_kInvincibilityGradient(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_InvincibilityGradient(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilitySpeed(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilitySpeed(time));
+	return 1;
+}
+
+static int lib_kGetInvincibilityAccel(lua_State *L)
+{
+	UINT16 time = (UINT16)luaL_checkinteger(L, 1);
+	// HUDSAFE
+
+	lua_pushinteger(L, K_GetInvincibilityAccel(time));
 	return 1;
 }
 
@@ -5053,6 +5069,17 @@ static int lib_kTerrainHasAffect(lua_State *L)
 	return 1;
 }
 
+static int lib_kSetPlayerItemCooldown(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	tic_t c = (tic_t)luaL_checkinteger(L, 2);
+	boolean force = lua_optboolean(L, 3);
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_SetPlayerItemCooldown(player, c, force);
+	return 0;
+}
+
 static luaL_Reg lib[] = {
 	{"print", lib_print},
 	{"chatprint", lib_chatprint},
@@ -5337,13 +5364,12 @@ static luaL_Reg lib[] = {
 	{"K_GetKartAccel",lib_kGetKartAccel},
 	{"K_GetKartFlashing",lib_kGetKartFlashing},
 	{"K_GetItemPatch",lib_kGetItemPatch},
+	{"K_IsKartItemAlternate",lib_kIsKartItemAlternate},
+	{"K_IsAltShrunk", lib_kIsAltShrunk},
 	{"K_SetRaceCountdown",lib_kSetRaceCountdown},
 	{"K_SetExitCountdown",lib_kSetExitCountdown},
 	{"K_SetIndirectItemCooldown",lib_kSetIndirectItemCountdown},
 	{"K_SetHyudoroCooldown",lib_kSetHyuCountdown},
-	{"K_SetBGone", lib_kSetBGone},
-	{"K_SetBGoneToBase", lib_kSetBGoneToBase},
-	{"K_GetBGone", lib_kGetBGone},
 	{"K_SafeRespawnPosition",lib_kSafeRespawnPosition},
 
 	{"K_GetCollideAngle",lib_kGetCollideAngle},
@@ -5358,13 +5384,15 @@ static luaL_Reg lib[] = {
 	{"K_AirDropActive",lib_kAirDropActive},
 	{"K_ItemLitterActive",lib_kItemLitterActive},
 	{"K_GetBumpSpark",lib_kGetBumpSpark},
-	{"K_GetKartInvinType",lib_kGetKartInvinType},
 	{"K_UsingLegacyCheckpoints",lib_kUsingLegacyCheckpoints},
 	{"K_DoBoost",lib_kDoBoost},
 	{"K_ClearBoost",lib_kClearBoost},
 	{"K_BoostChain",lib_kBoostChain},
 	{"K_ChainOrDeincrementTime",lib_kChainOrDeincrementTime},
 	{"K_GetNewSpeed", lib_kGetNewSpeed},
+	{"K_InvincibilityGradient", lib_kInvincibilityGradient},
+	{"K_GetInvincibilitySpeed", lib_kGetInvincibilitySpeed},
+	{"K_GetInvincibilityAccel", lib_kGetInvincibilityAccel},
 	{"K_3dKartMovement", lib_k3dKartMovement},
 	{"K_MomentumAngle", lib_kMomentumAngle},
 	{"K_GetKartSpeedFromStat", lib_kGetKartSpeedFromStat},
@@ -5435,6 +5463,9 @@ static luaL_Reg lib[] = {
 	{"K_HandleFootstepParticles", lib_kHandleFootstepParticles},
 	{"K_UpdateTerrainOverlay", lib_kUpdateTerrainOverlay},
 	{"K_TerrainHasAffect", lib_kTerrainHasAffect},
+	
+	// k_items
+	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
 
 	{NULL, NULL}
 };

@@ -29,7 +29,7 @@
 #include "m_random.h"
 #include "r_things.h" // numskins
 #include "m_easing.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "k_waypoint.h"
 
 // Looks for players around the bot, and presses the item button
@@ -303,6 +303,14 @@ static void K_ItemConfirmForTarget(botdata_t *bd, const player_t *bot, const pla
 		// Do as normal.
 		bd->itemconfirm += amount;
 	}
+}
+
+/// @brief checks if given bot isn't prevented from using items due to item cooldowns
+/// @param bot bot to check cooldowns for
+/// @return if bot is able to use item-related actions (using items or mashing the roulette)
+static boolean K_CheckBotItemCooldown(const player_t *bot)
+{
+	return bot->itemusecooldown <= 0;
 }
 
 
@@ -958,7 +966,8 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 {
 	ZoneScoped;
 
-	if (player->flametimer >= (itemtime*3)-5)
+	// if we're smart enough, allow overheating the flame shield if we want to go off-road
+	if (player->flametimer >= (itemtime*3)-5 && !(K_ApplyOffroad(player) && player->botvars.difficulty >= 6))
 	{
 		bd->itemdelay = 5;
 	}
@@ -1155,7 +1164,7 @@ static void K_BotItemRouletteMash(botdata_t *bd, const player_t *player)
 		}
 	}
 
-	if (player->rings < 0 && cv_superring.value && K_RingsActive())
+	if (player->rings < 0 && K_ItemResultEnabled(K_GetKartResult("superring")))
 	{
 		// Uh oh, we need a loan!
 		// It'll be better in the long run for bots to lose an item set for 5-15 free rings.
@@ -1201,7 +1210,7 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		}
 		return;
 	}
-
+	
 	if (K_CanHandleItemDelay(bd, player))
 	{
 		bd->itemdelay--;
@@ -1209,6 +1218,8 @@ void K_BotItemUsage(botdata_t *bd, const player_t *player)
 		return;
 	}
 
+	if (!K_CheckBotItemCooldown(player)) return;
+	
 	if (player->itemroulette)
 	{
 		// Mashing behaviors

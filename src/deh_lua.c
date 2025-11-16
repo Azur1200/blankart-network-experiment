@@ -439,6 +439,26 @@ static int ScanConstants(lua_State *L, boolean mathlib, const char *word)
 			}
 		return luaL_error(L, "karthud '%s' could not be found.\n", word);
 	}
+	else if (fastncmp("KITEM_",word,6)) {
+		p = word+6;
+		if (fastcmp(p, "LIGHTNINGSHIELD"))
+		{
+			lua_pushinteger(L, KITEM_THUNDERSHIELD);
+			return 1;
+		}
+		if (fastcmp(p, "SAD"))
+		{
+			lua_pushinteger(L, MAXKARTITEMS);
+			return 1;
+		}
+		i = DEH_FindKartItem(p);
+		if (i != MAXKARTITEMS)
+		{
+			CacheAndPushConstant(L, word, i);
+			return 1;
+		}
+		return luaL_error(L, "kartitem '%s' could not be found.\n", word);
+	}
 	else if (fastncmp("SKINCOLOR_",word,10)) {
 		p = word+10;
 		i = DEH_FindSkincolor(p);

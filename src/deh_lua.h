@@ -27,6 +27,7 @@ extern "C" {
 #include "fastcmp.h"
 #include "lua_script.h"
 #include "lua_libs.h"
+#include "k_items.h"
 
 #include "dehacked.h"
 #include "deh_tables.h"

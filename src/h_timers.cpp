@@ -336,6 +336,16 @@ void K_DisplayItemTimers(void)
 			true,
 		}
 	);
+	timers.push_back(
+		{ // item cooldown
+			"itemusecooldown",
+			(INT32)stplyr->itemusecooldown,
+			//{qche("K_ISFLMS")},
+			{qche("SERVLOCK")},
+			1, /*-15, -15,*/ -4, -2,
+			false, false
+		}
+	);
 
 	/*timers.push_back(
 		{ // dead

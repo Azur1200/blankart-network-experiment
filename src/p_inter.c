@@ -39,7 +39,7 @@
 #include "k_boss.h"
 #include "p_spec.h"
 #include "k_objects.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "acs/interface.h"
 
 // CTF player names
@@ -147,7 +147,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 			if (player->stealingtimer || player->stolentimer
 				|| player->rocketsneakertimer
 				|| player->eggmanexplode
-				|| ((K_GetKartInvinType() == KARTINVIN_ALTERN) && (player->invincibilitytimer))
+				|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
 				|| (player->growshrinktimer > 0)
 				|| player->flametimer)
 				return false;
@@ -459,8 +459,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				player->itemroulette = KROULETTE_ACTIVE;
-				player->roulettetype = KROULETTETYPE_KARMA;
+				K_StartRoulette(player, KROULETTETYPE_KARMA);
 			}
 			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
 			{
@@ -495,11 +494,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				special->target->player->karmadelay = comebacktime;
 
-				K_DropItems(player); //K_StripItems(player);
-				//K_StripOther(player);
-
-				player->itemroulette = KROULETTE_ACTIVE;
-				player->roulettetype = KROULETTETYPE_EGGMAN;
+				K_StartRoulette(player, KROULETTETYPE_EGGMAN);
 
 				if (special->target->player->eggmanblame >= 0
 					&& special->target->player->eggmanblame < MAXPLAYERS
@@ -591,8 +586,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->fuse || !P_CanPickupItem(player, 1) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
-			player->itemroulette = KROULETTE_ACTIVE;
-			player->roulettetype = KROULETTETYPE_KARMA;
+			K_StartRoulette(player, KROULETTETYPE_KARMA);
 
 			// Karma fireworks
 			for (i = 0; i < 5; i++)
@@ -1742,25 +1736,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 					break;
 				}
 
-				if (target->threshold < 1 || target->threshold >= NUMKARTITEMS) // bruh moment prevention
-				{
-					player->itemtype = KITEM_SAD;
-					player->itemamount = 1;
-				}
-				else
-				{
-					player->itemtype = target->threshold;
-					if (K_GetShieldFromPlayer(player) != KSHIELD_NONE) // never give more than 1 shield
-						player->itemamount = 1;
-					else
-						player->itemamount = max(1, target->movecount);
-				}
-				player->itemblink = TICRATE;
-				player->itemblinkmode = KITEMBLINKMODE_NORMAL;
-				player->itemroulette = KROULETTE_DISABLED;
-				player->roulettetype = KROULETTETYPE_NORMAL;
-				if (P_IsDisplayPlayer(player))
-					S_StartSound(NULL, sfx_itrolf);
+				K_AwardPlayerItem(player, target->threshold, max(1, target->movecount), KITEMBLINK_NORMAL);
 			}
 			break;
 		}

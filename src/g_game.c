@@ -61,7 +61,7 @@
 #include "k_boss.h"
 #include "k_specialstage.h"
 #include "k_bot.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "doomstat.h"
 #include "acs/interface.h"
 #include "k_director.h"
@@ -295,7 +295,6 @@ INT32 cheats; //for multiplayer cheat commands
 // Cvars that we don't want changed mid-game
 UINT8 numlaps; // Removed from Cvar hell
 UINT8 gamespeed; // Game's current speed (or difficulty, or cc, or etc); 0 for easy, 1 for normal, 2 for hard
-UINT8 invintype; // How Invincibility functions. 0 for Legacy/Vanilla, 1 for Alternative.
 boolean encoremode = false; // Encore Mode currently enabled?
 boolean prevencoremode;
 boolean franticitems; // Frantic items currently enabled?
@@ -310,8 +309,6 @@ SINT8 pickedvote; // What vote the host rolls
 SINT8 battlewanted[4]; // WANTED players in battle, worth x2 points
 SINT8 mostwanted; // The "most wanted" (first in line) player.
 tic_t wantedcalcdelay; // Time before it recalculates WANTED
-tic_t indirectitemcooldown; // Cooldown before any more Shrink, SPB, or any other item that works indirectly is awarded
-// hyubgone was taken out back. See k_odds.c
 tic_t mapreset; // Map reset delay when enough players have joined an empty game
 boolean thwompsactive; // Thwomps activate on lap 2
 UINT8 lastLowestLap; // Last lowest lap, for activating race lap executors
@@ -442,11 +439,13 @@ consvar_t cv_showfreeplay = CVAR_INIT ("showfreeplay", "On", CV_SAVE, CV_OnOff, 
 static CV_PossibleValue_t powermusic_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "SFX"}, {0, NULL}};
 consvar_t cv_growmusic  = CVAR_INIT ("growmusic", "On", CV_SAVE, powermusic_cons_t, NULL);
 consvar_t cv_supermusic = CVAR_INIT ("supermusic", "On", CV_SAVE, powermusic_cons_t, NULL);
+consvar_t cv_altshrinkmusic = CVAR_INIT ("altshrinkmusic", "On", CV_SAVE, powermusic_cons_t, NULL);
 
 consvar_t cv_invertmouse = CVAR_INIT ("invertmouse", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_invincmusicfade = CVAR_INIT ("invincmusicfade", "300", CV_SAVE, CV_Unsigned, NULL);
 consvar_t cv_growmusicfade = CVAR_INIT ("growmusicfade", "500", CV_SAVE, CV_Unsigned, NULL);
+consvar_t cv_altshrinkmusicfade = CVAR_INIT ("altshrinkmusicfade", "500", CV_SAVE, CV_Unsigned, NULL);
 
 consvar_t cv_resetspecialmusic = CVAR_INIT ("resetspecialmusic", "Yes", CV_SAVE, CV_YesNo, NULL);
 
@@ -2807,8 +2806,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	// SRB2kart
 	if (betweenmaps || leveltime <= starttime || spectator == true)
 	{
-		itemroulette = KROULETTE_DISABLED;
-		previtemroulette = KROULETTE_DISABLED;
+		itemroulette = 0;
+		previtemroulette = 0;
 		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
@@ -2848,8 +2847,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 	}
 	else
 	{
-		itemroulette = (players[player].itemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
-		previtemroulette = (players[player].previtemroulette > KROULETTE_DISABLED ? KROULETTE_ACTIVE : KROULETTE_DISABLED);
+		itemroulette = players[player].itemroulette > 0 ? 1 : 0;
+		previtemroulette = players[player].previtemroulette > 0 ? 1 : 0;
 		roulettetype = players[player].roulettetype;
 
 		if (players[player].itemflags & IF_ITEMOUT)
@@ -2864,7 +2863,8 @@ void G_PlayerReborn(INT32 player, boolean betweenmaps)
 		}
 
 		// Keep Shrink status, remove Grow status
-		if (players[player].growshrinktimer < 0)
+		// Alt. Shrink is a powerup, so don't keep that.
+		if (players[player].growshrinktimer < 0 && !K_IsKartItemAlternate(KITEM_SHRINK))
 			growshrinktimer = players[player].growshrinktimer;
 		else
 			growshrinktimer = 0;

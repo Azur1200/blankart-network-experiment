@@ -1260,3 +1260,115 @@ int LUA_HookMusicChange(const char *oldname, struct MusicChange *param)
 
 	return hook.status;
 }
+
+// Allows to both override default behavior and force action. I don't like it but thats how it works
+// in CEP and neptune. Fuckal whyyyyyyyyy
+typedef struct {
+	boolean override;
+	boolean force;
+} TrueForce_State;
+
+static void res_trueforce(Hook_State *hook)
+{
+	TrueForce_State *state = (TrueForce_State*)hook->userdata;
+
+	if (lua_isboolean(gL, -2))
+		state->override = lua_toboolean(gL, -2);
+
+	if (lua_isboolean(gL, -1))
+		state->force = lua_toboolean(gL, -1);
+};
+
+boolean LUA_HookPlayerItem(player_t *player, SINT8 itemType, boolean wasHoldingItem, boolean *force)
+{
+	Hook_State hook;
+	TrueForce_State state = {0};
+
+	if (prepare_hook(&hook, 0, HOOK(PlayerItem)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, itemType);
+		lua_pushboolean(gL, wasHoldingItem);
+
+		hook.userdata = &state;
+
+		call_hooks(&hook, 2, res_trueforce);
+	}
+
+	*force = state.force;
+	return state.override;
+}
+
+typedef struct {
+	INT32 *target;
+	boolean force_sink;
+} KartHyudoro_State;
+
+static void res_karthyudoro(Hook_State *hook)
+{
+	KartHyudoro_State *state = (KartHyudoro_State*)hook->userdata;
+
+	if (lua_isnumber(gL, -2))
+		*state->target = lua_tonumber(gL, -2);
+	else if (lua_isuserdata(gL, -2))
+	{
+		player_t *player = *(player_t**)luaL_checkudata(gL, -2, META_PLAYER);
+		*state->target = player - players;
+	}
+
+	if (lua_isboolean(gL, -1))
+		state->force_sink = lua_toboolean(gL, -1);
+}
+
+boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink)
+{
+	Hook_State hook;
+	KartHyudoro_State state = {0};
+	state.target = target;
+
+	if (prepare_hook(&hook, 0, HOOK(KartHyudoro)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		if (*target >= 0)
+			LUA_PushUserdata(gL, &players[*target], META_PLAYER);
+		else
+			lua_pushnil(gL);
+		lua_pushboolean(gL, sink);
+
+		hook.userdata = &state;
+
+		call_hooks(&hook, 2, res_karthyudoro);
+	}
+
+	return state.force_sink;
+
+}
+
+boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale)
+{
+	Hook_State hook;
+	if (prepare_mobj_hook(&hook, false, MOBJ_HOOK(MobjScaleChange), target->type))
+	{
+		LUA_PushUserdata(gL, target, META_MOBJ);
+		lua_pushfixed(gL, newscale);
+		lua_pushfixed(gL, oldscale);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	return hook.status;
+}
+
+boolean LUA_HookKartSneaker(player_t *player, int type)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, false, HOOK(KartSneaker)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		// Type of sneaker: 0 - perfect/panel, 1 - regular sneaker, 2 - rocket sneaker.
+		lua_pushinteger(gL, type);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}

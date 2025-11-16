@@ -20,6 +20,7 @@
 #include "d_main.h"
 #include "m_menu.h"
 #include "deh_tables.h"
+#include "k_items.h"
 
 // Hey, moron! If you wanna change this table, you can just change the sprite enum in info/sprites.h,
 // so you don't have to copy and paste the list of sprite names back in here :^)
@@ -113,6 +114,12 @@ static const char *hardcodeskincolors =
 static const char *hardcodemenus =
 #define _(name, ...) #name "\0"
 #include "info/menus.h"
+#undef _
+;
+
+static const char *hardcodeitems =
+#define _(name, ...) #name "\0"
+#include "info/kartitems.h"
 #undef _
 ;
 
@@ -232,5 +239,23 @@ void P_ResetData(INT32 flags)
 		name = hardcodemenus;
 		for (i = 0; i < MN_FIRSTFREESLOT; i++, name += strlen(name)+1)
 			DEH_Link(name, &menudefs[i].info, &menunames);
+	}
+
+	// kartitems
+	if (init)
+	{
+		memset(kartitems, 0, sizeof(kartitems));
+
+		numkartitems = KITEM_FIRSTFREESLOT;
+
+		if (kartitemnames)
+			Z_Free(kartitemnames);
+		kartitemnames = strbuf_alloc();
+		name = hardcodeitems;
+		for (i = 0; i < KITEM_FIRSTFREESLOT; i++, name += strlen(name)+1)
+		{
+			DEH_Link(name, &kartitems[i].info, &kartitemnames);
+			K_RegisterItem(i);
+		}
 	}
 }

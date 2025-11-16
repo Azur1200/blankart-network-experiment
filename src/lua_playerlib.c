@@ -249,6 +249,8 @@ enum player_e
 	player_roulettetype,
 	player_itemtype,
 	player_itemamount,
+	player_itemusecooldown,
+	player_itemusecooldownmax,
 	player_throwdir,
 	player_sadtimer,
 	player_rings,
@@ -453,6 +455,8 @@ static const char *const player_opt[] = {
 	"roulettetype",
 	"itemtype",
 	"itemamount",
+	"itemusecooldown",
+	"itemusecooldownmax",
 	"throwdir",
 	"sadtimer",
 	"rings",
@@ -854,6 +858,12 @@ static int player_get(lua_State *L)
 		break;
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
+		break;
+	case player_itemusecooldown:
+		lua_pushinteger(L, plr->itemusecooldown);
+		break;
+	case player_itemusecooldownmax:
+		lua_pushinteger(L, plr->itemusecooldownmax);
 		break;
 	case player_throwdir:
 		lua_pushinteger(L, plr->throwdir);
@@ -1568,6 +1578,12 @@ static int player_set(lua_State *L)
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
 		break;
+	case player_itemusecooldown:
+		plr->itemusecooldown = luaL_checkinteger(L, 3);
+		break;
+	case player_itemusecooldownmax:
+		plr->itemusecooldownmax = luaL_checkinteger(L, 3);
+		break;
 	case player_throwdir:
 		plr->throwdir = luaL_checkinteger(L, 3);
 		break;
@@ -1667,8 +1683,16 @@ static int player_set(lua_State *L)
 		plr->growcancel = luaL_checkinteger(L, 3);
 		break;
 	case player_squishedtimer:
-		plr->squishedtimer = luaL_checkinteger(L, 3);
+	{
+		// Unsquish for the ease of Lua programmers
+		INT16 squishtimer = (INT16)luaL_checkinteger(L, 3);
+
+		if (squishtimer == 0)
+			plr->mo->spriteyscale = FRACUNIT;
+
+		plr->squishedtimer = squishtimer;
 		break;
+	}
 	case player_rocketsneakertimer:
 		plr->rocketsneakertimer = luaL_checkinteger(L, 3);
 		break;
@@ -2455,8 +2479,14 @@ static int kartstuff_set(lua_State *L)
 				plr->growshrinktimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
 			case k_squishedtimer:
+			{
+				// Unsquish for the ease of Lua programmers
+				if (i == 0)
+					plr->mo->spriteyscale = FRACUNIT;
+
 				plr->squishedtimer = CLAMP(i, INT16_MIN, INT16_MAX);
 				break;
+			}
 			case k_rocketsneakertimer:
 				plr->rocketsneakertimer = CLAMP(i, 0, UINT16_MAX);
 				break;

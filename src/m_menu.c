@@ -67,7 +67,7 @@
 #include "i_sound.h"
 #include "k_hud.h" // SRB2kart
 #include "k_kart.h"
-#include "k_odds.h" // KartItemCVars
+#include "k_items.h" // KartItemCVars
 #include "k_pwrlv.h"
 #include "k_stats.h" // SRB2kart
 #include "d_player.h" // KITEM_ constants
@@ -8317,6 +8317,56 @@ INT32 MR_CameraSetup(INT32 arg)
 
 static tic_t shitsfree = 0;
 
+INT32 MR_SetupMonitorToggles(INT32 choice)
+{
+	(void)choice;
+	const INT32 height = 4;
+	menu_t *menudef = &menudefs[MN_OP_MONITORTOGGLE];
+
+	// in the interest of not rushing the implementation of menu frames...
+	// leak the memory. every single time.
+	// (i dont think this actually leaks anything lol)
+	// (unless someone adds menuitems to this menu for some stupid reason)
+	menudef->numitems = 0;
+
+	for (UINT8 i = 0; i <= numkartresults; i++)
+	{
+		kartresult_t *result = i < 3 ? &kartresults[i] : i == 3 ? NULL : &kartresults[i - 1];
+		if (result != NULL && result->isalt)
+			continue;
+
+		menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
+		menuitem_t *item = menudef->menuitems + menudef->numitems++;
+
+		if (result == NULL)
+		{
+			item->argument = 1;
+			item->patch = "";
+		}
+		else
+		{
+			item->argument = 0;
+			item->patch = result->cvar->name;
+			if (kartitems[result->type].altcvar != NULL)
+				item->tooltip = "Press BACKSPACE to swap variants.";
+			else if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				item->tooltip = "Rings must be enabled in Gameplay Mods!";
+		}
+	}
+
+	while (menudef->numitems % height != 0)
+	{
+		menudef->menuitems = Z_Realloc(menudef->menuitems, sizeof(menuitem_t)*(menudef->numitems+1), PU_STATIC, NULL);
+		menuitem_t *item = menudef->menuitems + menudef->numitems++;
+
+		item->argument = 2;
+		item->patch = "";
+	}
+
+	menudef->x = 136 - FixedMul(max(0, min((menudef->numitems - 1) / height, 7)), TICRATE*FRACUNIT/2);
+	return true;
+}
+
 void MD_DrawMonitorToggles(void)
 {
 	const INT32 edges = 4;
@@ -8327,8 +8377,12 @@ void MD_DrawMonitorToggles(void)
 	INT32 leftdraw, rightdraw, totaldraw;
 	INT32 x = currentMenu->x, y = currentMenu->y+(spacing/4);
 	INT32 onx = 0, ony = 0;
-	consvar_t *cv;
-	INT32 i, translucent, drawnum;
+	INT32 i, translucent;
+	const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
+	const char *displayname;
+	//boolean hasalt; // ha, salt! (has alt)
+	if (result != NULL && kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value == 1)
+		result = K_GetKartResultAlt(result->cvar->name, true);
 
 	M_DrawMenuTitle();
 
@@ -8353,7 +8407,7 @@ void MD_DrawMonitorToggles(void)
 	{
 		INT32 j;
 
-		for (j = 0; j < height; j++)
+		for (j = 0; j < height; j++, y += spacing)
 		{
 			const INT32 thisitem = (i*height)+j;
 
@@ -8364,74 +8418,58 @@ void MD_DrawMonitorToggles(void)
 			{
 				onx = x;
 				ony = y;
-				y += spacing;
 				continue;
 			}
 
-#ifdef ITEMTOGGLEBOTTOMRIGHT
-			if (currentMenu->menuitems[thisitem].argument == 255)
+			switch (currentMenu->menuitems[thisitem].argument)
 			{
+			case 2:
 				V_DrawScaledPatch(x, y, V_TRANSLUCENT, W_CachePatchName("K_ISBG", PU_CACHE));
 				continue;
-			}
-#endif
-			if (currentMenu->menuitems[thisitem].argument == 0)
-			{
+			case 1:
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISTOGL", PU_CACHE));
 				continue;
 			}
 
-			cv = KartItemCVars[currentMenu->menuitems[thisitem].argument-1];
-			translucent = (cv->value ? 0 : V_TRANSLUCENT);
+			kartresult_t *result = K_GetKartResult(currentMenu->menuitems[thisitem].patch);
+			kartitem_t *item = &kartitems[result->type];
+			boolean enabled = result->cvar->value == 1;
 
-			switch (currentMenu->menuitems[thisitem].argument)
-			{
-				case KRITEM_DUALSNEAKER:
-				case KRITEM_DUALJAWZ:
-					drawnum = 2;
-					break;
-				case KRITEM_TRIPLESNEAKER:
-				case KRITEM_TRIPLEBANANA:
-				case KRITEM_TRIPLEORBINAUT:
-					drawnum = 3;
-					break;
-				case KRITEM_QUADORBINAUT:
-					drawnum = 4;
-					break;
-				case KRITEM_TENFOLDBANANA:
-					drawnum = 10;
-					break;
-				default:
-					drawnum = 0;
-					break;
-			}
+			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				enabled = false;
 
-			if (cv->value)
+			translucent = enabled ? 0 : V_TRANSLUCENT;
+
+			if (enabled)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBG", PU_CACHE));
 			else
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBGD", PU_CACHE));
 
-			if (drawnum != 0)
+			if (result->amount > item->graphics[1].numpatches && !(item->flags & KIF_ANIMATED))
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
-				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", drawnum));
+				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
+				V_DrawString(x+24, y+31, V_ALLOWLOWERCASE|translucent, va("x%d", result->amount));
 			}
 			else
-				V_DrawScaledPatch(x, y, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[thisitem].argument, true), PU_CACHE));
+				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
 
-			y += spacing;
+			if (item->altcvar != NULL && item->altcvar->value == 1)
+			{
+				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ALTITS", PU_CACHE));
+			}
 		}
 
 		x += spacing;
 		y = currentMenu->y+(spacing/4);
 	}
 
+	switch (currentMenu->menuitems[itemOn].argument)
 	{
-#ifdef ITEMTOGGLEBOTTOMRIGHT
-		if (currentMenu->menuitems[itemOn].argument == 255)
+		case 2:
 		{
+			displayname = "---";
 			V_DrawScaledPatch(onx-1, ony-2, V_TRANSLUCENT, W_CachePatchName("K_ITBG", PU_CACHE));
 			if (shitsfree)
 			{
@@ -8442,58 +8480,65 @@ void MD_DrawMonitorToggles(void)
 					trans = (10-shitsfree)<<V_ALPHASHIFT;
 				V_DrawScaledPatch(onx-1, ony-2, trans, W_CachePatchName("K_ITFREE", PU_CACHE));
 			}
+			break;
 		}
-		else
-#endif
-		if (currentMenu->menuitems[itemOn].argument == 0)
+		case 1:
 		{
+			displayname = "Toggle All";
 			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
 			V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITTOGL", PU_CACHE));
+			break;
 		}
-		else
+		default:
 		{
-			cv = KartItemCVars[currentMenu->menuitems[itemOn].argument-1];
-			translucent = (cv->value ? 0 : V_TRANSLUCENT);
+			displayname = result->displayname;
+			kartitem_t *item = &kartitems[result->type];
+			boolean enabled = result->cvar->value == 1;
 
-			switch (currentMenu->menuitems[itemOn].argument)
-			{
-				case KRITEM_TENFOLDBANANA:
-					drawnum = 10;
-					break;
-				default:
-					drawnum = 0;
-					break;
-			}
+			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				enabled = false;
 
-			if (cv->value)
+			translucent = enabled ? 0 : V_TRANSLUCENT;
+
+			if (enabled)
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBG", PU_CACHE));
 			else
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
 
-			if (drawnum != 0)
+			if (result->amount > item->graphics[0].numpatches && !(item->flags & KIF_ANIMATED))
 			{
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, K_GetCachedItemPatch(result->type, false, result->amount));
 				V_DrawScaledPatch(onx+27, ony+39, translucent, W_CachePatchName("K_ITX", PU_CACHE));
-				V_DrawKartString(onx+37, ony+34, translucent, va("%d", drawnum));
+				V_DrawKartString(onx+37, ony+34, translucent, va("%d", result->amount));
 			}
 			else
-				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName(K_GetItemPatch(currentMenu->menuitems[itemOn].argument, false), PU_CACHE));
+				V_DrawScaledPatch(onx-1, ony-2, translucent, K_GetCachedItemPatch(result->type, false, result->amount));
+
+			if (item->altcvar != NULL)
+			{
+				translucent = item->altcvar->value == 1 ? 0 : V_TRANSLUCENT;
+				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
+			}
+			break;
 		}
 	}
 
-	if (shitsfree)
+	if (renderisnewtic && shitsfree)
 		shitsfree--;
 
-	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", currentMenu->menuitems[itemOn].text));
+	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", displayname));
+
+	M_DrawMenuTooltips();
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)
 {
-	const INT32 width = 6, height = 4;
+	const INT32 height = 4;
+	const INT32 width = currentMenu->numitems/height;
 	INT32 column = itemOn/height, row = itemOn%height;
 	INT16 next;
-	UINT8 i;
+	kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
 
 	switch (choice)
 	{
@@ -8542,8 +8587,7 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 			break;
 
 		case KEY_ENTER:
-#ifdef ITEMTOGGLEBOTTOMRIGHT
-			if (currentMenu->menuitems[itemOn].argument == 255)
+			if (currentMenu->menuitems[itemOn].argument == 2)
 			{
 				//S_StartSound(NULL, sfx_s26d);
 				if (!shitsfree)
@@ -8552,29 +8596,41 @@ INT32 MR_HandleMonitorToggles(INT32 choice)
 					S_StartSound(NULL, sfx_itfree);
 				}
 			}
-			else
-#endif
-			if (currentMenu->menuitems[itemOn].argument == 0)
+			else if (currentMenu->menuitems[itemOn].argument == 1)
 			{
-				INT32 v = cv_sneaker.value;
+				INT32 v = K_ItemResultEnabled(K_GetKartResult("sneaker")) ? 1 : 0;
 				S_StartSound(NULL, sfx_s1b4);
-				for (i = 0; i < NUMKARTRESULTS-1; i++)
+				for (UINT8 i = 0; i < numkartresults; i++)
 				{
-					if (KartItemCVars[i]->value == v)
-						CV_AddValue(KartItemCVars[i], 1);
+					if (kartresults[i].cvar->value == v)
+						CV_AddValue(kartresults[i].cvar, 1);
 				}
 			}
-			else
+			else if (result != NULL)
 			{
-				S_StartSound(NULL, sfx_s1ba);
-				CV_AddValue(KartItemCVars[currentMenu->menuitems[itemOn].argument-1], 1);
+				if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
+				{
+					S_StartSound(NULL, sfx_s231);
+				}
+				else
+				{
+					S_StartSound(NULL, sfx_s1ba);
+					CV_AddValue(result->cvar, 1);
+				}
+			}
+			break;
+
+		case KEY_BACKSPACE:
+			if (result != NULL && kartitems[result->type].altcvar != NULL)
+			{
+				S_StartSound(NULL, sfx_s3kb7);
+				CV_AddValue(kartitems[result->type].altcvar, 1);
 			}
 			break;
 
 		default:
 			return false;
 	}
-
 	return true;
 }
 

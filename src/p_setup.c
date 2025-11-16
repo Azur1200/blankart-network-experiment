@@ -103,7 +103,7 @@
 #include "k_terrain.h" // TRF_TRIPWIRE
 #include "k_brightmap.h"
 #include "k_director.h" // K_InitDirector
-#include "k_odds.h" // ItemBGone
+#include "k_items.h"
 #include "acs/interface.h"
 #include "doomstat.h" // MAXMUSNAMES
 #include "k_mapuser.h"
@@ -8071,7 +8071,6 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 		itempushing = true;
 
 	bumpsparkactive = (UINT8)cv_kartbumpspark.value;
-	invintype = (UINT8)cv_kartinvintype.value;
 
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
@@ -8398,13 +8397,8 @@ static void P_InitGametype(void)
 	numlaps = K_RaceLapCount(gamemap - 1);
 
 	wantedcalcdelay = wantedfrequency*2;
-	indirectitemcooldown = 0;
 
-	for (i = 0; i < NUMKARTRESULTS; i++)
-	{
-		// hyubgone
-		ItemBGone[i][GONER_CURRCOOLDOWN] = 0;
-	}
+	K_SetupItemOdds();
 
 	mapreset = 0;
 
