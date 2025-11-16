@@ -1989,8 +1989,14 @@ static void SendNameAndColor(UINT8 n)
 		}
 		else
 		{
-			// Try getting the skin's voice.
-			valuevoice = skins[player->skin].voice;
+			// Try getting the voice from our ID.
+			valuevoice = &skinvoices[player->voice_id];
+
+			if (valuevoice->parent != skins[player->skin].voice->parent)
+			{
+				// Parent mismatch; use the skin's voice.
+				valuevoice = skins[player->skin].voice;
+			}
 
 			if (valuevoice)
 			{
@@ -2082,8 +2088,14 @@ static void SendNameAndColor(UINT8 n)
 			}
 			else
 			{
-				// Try getting the skin's voice.
-				valuevoice = skins[cv_skin[n].value].voice;
+				// Try getting the voice from our ID.
+				valuevoice = &skinvoices[player->voice_id];
+
+				if (valuevoice->parent != skins[cv_skin[n].value].voice->parent)
+				{
+					// Parent mismatch; use the skin's voice.
+					valuevoice = skins[cv_skin[n].value].voice;
+				}
 
 				if (valuevoice)
 				{
