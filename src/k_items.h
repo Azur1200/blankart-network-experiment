@@ -106,7 +106,7 @@ struct kartitemgraphics_t
 struct kartitem_t
 {
 	dehinfo_t info;
-	kartitemflags_e flags;
+	kartitemflags_e flags[2];
 	kartitemgraphics_t graphics[2];
 	spritedef_t spritedef;
 

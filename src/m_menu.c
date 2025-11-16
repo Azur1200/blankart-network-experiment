@@ -8378,11 +8378,17 @@ void MD_DrawMonitorToggles(void)
 	INT32 x = currentMenu->x, y = currentMenu->y+(spacing/4);
 	INT32 onx = 0, ony = 0;
 	INT32 i, translucent;
-	const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
 	const char *displayname;
-	//boolean hasalt; // ha, salt! (has alt)
-	if (result != NULL && kartitems[result->type].altcvar != NULL && kartitems[result->type].altcvar->value == 1)
-		result = K_GetKartResultAlt(result->cvar->name, true);
+
+	// INCREDIBLY goofy hack, but I don't wanna have to pass a "use cvar or altenabled"
+	// flag to literally ALL of the item functions just for the sake of the menu
+	boolean oldalt[MAXKARTITEMS];
+	for (i = 0; i < numkartitems; i++)
+	{
+		kartitem_t *item = &kartitems[i];
+		oldalt[i] = item->altenabled;
+		item->altenabled = item->altcvar != NULL && item->altcvar->value == 1;
+	}
 
 	M_DrawMenuTitle();
 
@@ -8432,8 +8438,8 @@ void MD_DrawMonitorToggles(void)
 				continue;
 			}
 
-			kartresult_t *result = K_GetKartResult(currentMenu->menuitems[thisitem].patch);
-			kartitem_t *item = &kartitems[result->type];
+			const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[thisitem].patch);
+			const kartitem_t *item = &kartitems[result->type];
 			boolean enabled = result->cvar->value == 1;
 
 			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
@@ -8446,7 +8452,7 @@ void MD_DrawMonitorToggles(void)
 			else
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISBGD", PU_CACHE));
 
-			if (result->amount > item->graphics[1].numpatches && !(item->flags & KIF_ANIMATED))
+			if (result->amount >= K_GetItemNumberDisplayMin(result->type, true))
 			{
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ISMUL", PU_CACHE));
 				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
@@ -8455,10 +8461,8 @@ void MD_DrawMonitorToggles(void)
 			else
 				V_DrawScaledPatch(x, y, translucent, K_GetCachedItemPatch(result->type, true, result->amount));
 
-			if (item->altcvar != NULL && item->altcvar->value == 1)
-			{
+			if (item->altenabled)
 				V_DrawScaledPatch(x, y, 0, W_CachePatchName("K_ALTITS", PU_CACHE));
-			}
 		}
 
 		x += spacing;
@@ -8491,13 +8495,14 @@ void MD_DrawMonitorToggles(void)
 		}
 		default:
 		{
-			displayname = result->displayname;
-			kartitem_t *item = &kartitems[result->type];
+			const kartresult_t *result = K_GetKartResult(currentMenu->menuitems[itemOn].patch);
+			const kartitem_t *item = &kartitems[result->type];
 			boolean enabled = result->cvar->value == 1;
 
 			if (result->type == KITEM_SUPERRING && cv_kartrings.value == 0)
 				enabled = false;
 
+			displayname = result->displayname;
 			translucent = enabled ? 0 : V_TRANSLUCENT;
 
 			if (enabled)
@@ -8505,7 +8510,7 @@ void MD_DrawMonitorToggles(void)
 			else
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITBGD", PU_CACHE));
 
-			if (result->amount > item->graphics[0].numpatches && !(item->flags & KIF_ANIMATED))
+			if (result->amount >= K_GetItemNumberDisplayMin(result->type, false))
 			{
 				V_DrawScaledPatch(onx-1, ony-2, 0, W_CachePatchName("K_ITMUL", PU_CACHE));
 				V_DrawScaledPatch(onx-1, ony-2, translucent, K_GetCachedItemPatch(result->type, false, result->amount));
@@ -8517,7 +8522,7 @@ void MD_DrawMonitorToggles(void)
 
 			if (item->altcvar != NULL)
 			{
-				translucent = item->altcvar->value == 1 ? 0 : V_TRANSLUCENT;
+				translucent = item->altenabled ? 0 : V_TRANSLUCENT;
 				V_DrawScaledPatch(onx-1, ony-2, translucent, W_CachePatchName("K_ALTITM", PU_CACHE));
 			}
 			break;
@@ -8530,6 +8535,9 @@ void MD_DrawMonitorToggles(void)
 	V_DrawCenteredString(BASEVIDWIDTH/2, currentMenu->y, MENUCAPS|highlightflags, va("* %s *", displayname));
 
 	M_DrawMenuTooltips();
+
+	for (i = 0; i < numkartitems; i++)
+		kartitems[i].altenabled = oldalt[i];
 }
 
 INT32 MR_HandleMonitorToggles(INT32 choice)

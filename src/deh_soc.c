@@ -3695,7 +3695,7 @@ void readfollower(MYFILE *f)
 	char *s;
 	char *word, *word2, dname[SKINNAMESIZE+1];
 	char *tmp;
-	char testname[SKINNAMESIZE];
+	char testname[SKINNAMESIZE+1];
 
 	boolean nameset;
 	INT32 fallbackstate = 0;
@@ -4098,9 +4098,9 @@ void readkartitem(MYFILE *f, kartitem_t *item)
 					break;
 			}
 		}
-		else if (fastcmp(word, "FLAGS"))
+		else if (fastcmp(word, "FLAGS") || fastcmp(word, "FLAGSALT"))
 		{
-			item->flags = get_number(word2);
+			item->flags[word[5] == 'A' ? 1 : 0] = get_number(word2);
 		}
 		else
 			WARN("unknown word '%s'", word);

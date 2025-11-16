@@ -178,8 +178,7 @@ kartitemflags_e K_GetItemFlags(kartitemtype_e itemtype)
 	if (itemtype >= numkartitems)
 		return 0;
 
-	// TODO: alt item flags
-	return kartitems[itemtype].flags;
+	return kartitems[itemtype].flags[K_IsKartItemAlternate(itemtype) ? 1 : 0];
 }
 
 UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
@@ -189,7 +188,7 @@ UINT8 K_GetItemNumberDisplayMin(kartitemtype_e type, boolean tiny)
 	if (type >= numkartitems)
 		return 1; // actually broken items show x1 to let you know
 
-	return kartitems[type].flags & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
+	return K_GetItemFlags(type) & KIF_ANIMATED ? 2 : kartitems[type].graphics[tiny ? 1 : 0].numpatches + 1;
 }
 
 patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
@@ -202,7 +201,7 @@ patch_t *K_GetCachedItemPatch(kartitemtype_e type, boolean tiny, UINT8 amount)
 
 	tic_t timer = G_GamestateUsesLevel() ? leveltime : finalecount;
 
-	if (item->flags & KIF_ANIMATED)
+	if (K_GetItemFlags(type) & KIF_ANIMATED)
 		return graphics->patches[(timer % (graphics->numpatches*3)) / 3];
 	else
 		return graphics->patches[CLAMP(amount - 1, 0, graphics->numpatches - 1)];
@@ -219,7 +218,7 @@ void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, UINT8 itemCo
 		itemType = 0;
 
 	UINT8 numpatches = kartitems[itemType].graphics[0].numpatches;
-	if (kartitems[itemType].flags & KIF_ANIMATED)
+	if (K_GetItemFlags(itemType) & KIF_ANIMATED)
 		part->frame |= (leveltime % (numpatches*3)) / 3;
 	else
 		part->frame |= CLAMP(itemCount - 1, 0, numpatches - 1);
@@ -513,7 +512,7 @@ void K_UpdateItemCooldown(void)
 		if (player->itemtype <= 0 || player->itemtype >= numkartitems || player->itemamount <= 0)
 			continue;
 
-		if (kartitems[player->itemtype].flags & KIF_UNIQUESLOT)
+		if (K_GetItemFlags(player->itemtype) & KIF_UNIQUESLOT)
 			setcooldown[player->itemtype] = true;
 	}
 
@@ -528,7 +527,7 @@ void K_UpdateItemCooldown(void)
 		switch (mobj->type)
 		{
 		case MT_FLOATINGITEM:
-			if (mobj->threshold > 0 && mobj->threshold < numkartitems && kartitems[mobj->threshold].flags & KIF_UNIQUEDROP)
+			if (mobj->threshold > 0 && mobj->threshold < numkartitems && K_GetItemFlags(mobj->threshold) & KIF_UNIQUEDROP)
 				setcooldown[mobj->threshold] = true;
 			break;
 
@@ -546,7 +545,9 @@ void K_UpdateItemCooldown(void)
 	for (i = 0; i < numkartresults; i++)
 	{
 		kartresult_t *result = &kartresults[i];
-		if ((gametyperules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM) && setcooldown[result->type])
+		if (result->isalt == K_IsKartItemAlternate(result->type)
+		 && (gametyperules & GTR_RACEODDS || result->flags & KRF_INDIRECTITEM)
+		 && setcooldown[result->type])
 			result->cooldown = result->basecooldown;
 	}
 
@@ -1001,7 +1002,7 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 		{
 			kartresult_t *result = &kartresults[i];
 
-			if (kartitems[result->type].flags & KIF_HIDEFROMROULETTE)
+			if (K_GetItemFlags(result->type) & KIF_HIDEFROMROULETTE)
 				continue;
 
 			for (j = 0; j < numseen; j++)
