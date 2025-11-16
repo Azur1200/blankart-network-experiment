@@ -54,8 +54,11 @@ static const char *const voicevars_opt[] = {
 };
 
 #define RNOFIELD luaL_error(L, LUA_QL("kartvoice_t") " has no field named " LUA_QS, field)
+
 #define RNOSET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be set.", field)
 #define RNOGET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be get.", field)
+#define NOSET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " should not be set directly.", field)
+
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", voicevars_opt[field])
 
 static int voice_get(lua_State* L)
@@ -71,7 +74,7 @@ static int voice_get(lua_State* L)
 	case voicevars_id:
 		return RNOGET;
 	case voicevars_name:
-		lua_pushstring(L, DEH_VoiceName((kartvoicetype_e)(voice - skinvoices)));
+		lua_pushstring(L, DEH_KartVoiceName((kartvoicetype_e)(voice - skinvoices)));
 		break;
 	case voicevars_parent:
 		LUA_PushUserdata(L, &skins[voice->parent], META_SKIN);
@@ -83,35 +86,13 @@ static int voice_get(lua_State* L)
 		LUA_PushUserdata(L, &S_sfx[voice->lose], META_SFXINFO);
 		break;
 	case voicevars_pain:
-		// Wasteful and shitty, I'll wager, but it's better than risking segfaults
-		const size_t painarraysize = (sizeof voice->pain) / (sizeof voice->pain[0]);
-
-		lua_createtable(L, painarraysize, 0);
-		for (size_t i = 0; i < painarraysize; i++)
-		{
-			LUA_PushUserdata(L, &S_sfx[voice->pain[i]], META_SFXINFO);
-			lua_rawseti(L, -2, 1 + i);
-		}
+		LUA_PushUserdata(L, voice->pain, META_VOICE_ARRAY);
 		break;
 	case voicevars_attack:
-		const size_t atkarraysize = (sizeof voice->attack) / (sizeof voice->attack[0]);
-
-		lua_createtable(L, atkarraysize, 0);
-		for (size_t i = 0; i < atkarraysize; i++)
-		{
-			LUA_PushUserdata(L, &S_sfx[voice->attack[i]], META_SFXINFO);
-			lua_rawseti(L, -2, 1 + i);
-		}
+		LUA_PushUserdata(L, voice->attack, META_VOICE_ARRAY);
 		break;
 	case voicevars_boost:
-		const size_t bstarraysize = (sizeof voice->boost) / (sizeof voice->boost[0]);
-
-		lua_createtable(L, bstarraysize, 0);
-		for (size_t i = 0; i < bstarraysize; i++)
-		{
-			LUA_PushUserdata(L, &S_sfx[voice->boost[i]], META_SFXINFO);
-			lua_rawseti(L, -2, 1 + i);
-		}
+		LUA_PushUserdata(L, voice->boost, META_VOICE_ARRAY);
 		break;
 	case voicevars_overtake:
 		LUA_PushUserdata(L, &S_sfx[voice->overtake], META_SFXINFO);
@@ -175,98 +156,11 @@ static int voice_set(lua_State* L)
 		voice->lose = (sfxenum_t)luaL_checkinteger(L, 3);
 		break;
 	case voicevars_pain:
-		luaL_checktype(L, 3, LUA_TTABLE);
-
-		// Pop the other values; they're no longer relevant.
-		lua_remove(L, 1);
-		lua_remove(L, 1);
-
-		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
-
-		lua_pushnil(L);
-		while (lua_next(L, 1)) {
-			i = 0;
-
-			if (!lua_isnoneornil(L, 2))
-				i = luaL_checkinteger(L, 2);
-
-			if (i > 0 && i <= (sizeof(voice->pain) / sizeof(voice->pain[0])))
-			{
-				// Only ever accept the first two values.
-				if (!lua_isnoneornil(L, 3))
-				{
-					// Safely ignore nil values, so modders can do voice.pain = {nil, sfx_mysound}
-					k = luaL_checkinteger(L, 3);
-
-					voice->pain[i - 1] = (sfxenum_t)k;
-				}
-			}
-
-			lua_pop(L, 1);
-		};
-		break;
+		return NOSET;
 	case voicevars_attack:
-		luaL_checktype(L, 3, LUA_TTABLE);
-
-		// Pop the other values; they're no longer relevant.
-		lua_remove(L, 1);
-		lua_remove(L, 1);
-
-		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
-
-		lua_pushnil(L);
-		while (lua_next(L, 1)) {
-			i = 0;
-
-			if (!lua_isnoneornil(L, 2))
-				i = luaL_checkinteger(L, 2);
-
-			if (i > 0 && i <= (sizeof(voice->attack) / sizeof(voice->attack[0])))
-			{
-				// Only ever accept the first two values.
-				if (!lua_isnoneornil(L, 3))
-				{
-					// Safely ignore nil values, so modders can do voice.pain = {nil, sfx_mysound}
-					k = luaL_checkinteger(L, 3);
-
-					voice->attack[i - 1] = (sfxenum_t)k;
-				}
-			}
-
-			lua_pop(L, 1);
-		};
-		break;
+		return NOSET;
 	case voicevars_boost:
-		luaL_checktype(L, 3, LUA_TTABLE);
-
-		// Pop the other values; they're no longer relevant.
-		lua_remove(L, 1);
-		lua_remove(L, 1);
-
-		lua_settop(L, 1); // Clear out all other possible arguments, leaving only the first one.
-
-		lua_pushnil(L);
-		while (lua_next(L, 1)) {
-			i = 0;
-
-			if (!lua_isnoneornil(L, 2))
-				i = luaL_checkinteger(L, 2);
-
-			if (i > 0 && i <= (sizeof(voice->boost) / sizeof(voice->boost[0])))
-			{
-				// Only ever accept the first two values.
-				if (!lua_isnoneornil(L, 3))
-				{
-					// Safely ignore nil values.
-					k = luaL_checkinteger(L, 3);
-
-					voice->boost[i - 1] = (sfxenum_t)k;
-				}
-			}
-
-			lua_pop(L, 1);
-		};
-		break;
+		return NOSET;
 	case voicevars_overtake:
 		voice->overtake = (sfxenum_t)luaL_checkinteger(L, 3);
 		break;
@@ -297,6 +191,39 @@ static int voice_num(lua_State* L)
 	lua_pushinteger(L, voice - skinvoices);
 	return 1;
 }
+
+// voice_array, i -> voice.array[i]
+static int voice_array_get(lua_State *L)
+{
+	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY));
+	INT32 i = luaL_checkinteger(L, 2);
+
+	if (i < 0 || i >= VOICEARRAYSIZE)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE);
+
+	LUA_PushUserdata(L, &S_sfx[voice_array[i]], META_SFXINFO);
+	return 1;
+}
+
+static int voice_array_set(lua_State *L)
+{
+	sfxenum_t *voice_array = *((sfxenum_t **)luaL_checkudata(L, 1, META_VOICE_ARRAY));
+	INT32 i = luaL_checkinteger(L, 2);
+
+	if (i < 0 || i >= VOICEARRAYSIZE)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, VOICEARRAYSIZE);
+
+	voice_array[i] = (sfxenum_t)luaL_checkinteger(L, 3);
+	return 0;
+}
+
+// #voice.array -> VOICEARRAYSIZE
+static int voice_array_num(lua_State *L)
+{
+	lua_pushinteger(L, VOICEARRAYSIZE);
+	return 1;
+}
+
 
 static int lib_iterateVoices(lua_State* L)
 {
@@ -391,6 +318,18 @@ int LUA_VoiceLib(lua_State* L)
 	lua_pushcfunction(L, voice_num);
 	lua_setfield(L, -2, "__len");
 	lua_pop(L, 1);
+
+	luaL_newmetatable(L, META_VOICE_ARRAY);
+	lua_pushcfunction(L, voice_array_get);
+	lua_setfield(L, -2, "__index");
+
+	lua_pushcfunction(L, voice_array_set);
+	lua_setfield(L, -2, "__newindex");
+
+	lua_pushcfunction(L, voice_array_num);
+	lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
 
 	lua_newuserdata(L, 0);
 	lua_createtable(L, 0, 2);
