@@ -4244,11 +4244,26 @@ void readkartresult(MYFILE *f, kartresult_t *result)
 #define WARN(str, ...) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs), __VA_ARGS__)
 #define WARN0(str) deh_warning("KartVoice %s: " str, strbuf_get(voicenames, voice->info.nameofs))
 
+// Necessary for sound adding, so we can gather flags and singularity data.
+static sfxenum_t skinsoundreroute[] = {
+	sfx_kwin,
+	sfx_klose,
+	sfx_khurt1,
+	sfx_khurt2,
+	sfx_kattk1, // Offense item taunt
+	sfx_kattk2,
+	sfx_kbost1, // Boost item taunt
+	sfx_kbost2,
+	sfx_kslow, // Overtake taunt
+	sfx_khitem, // Hit confirm taunt
+	sfx_kgloat, // Power item taunt
+};
+
 // Extremely shitty and lifted almost entirely from r_skins.c
 // Sets the sound effect value for a voice, given a valid skinsound value is passed.
 static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvoice_t *voice)
 {
-	sfxenum_t i;
+	sfxenum_t i, j, reroute;
 	char printval[6];
 
 	// Remove the prefix. (We can affect this directly since we're not going to use it again.)
@@ -4259,24 +4274,44 @@ static UINT8 reallygrossvoicesfxadder(INT32 skinsound, const char *value, kartvo
 
 	strncpy(printval, value, 6);
 
-	// copy name of sounds that are remapped
-	// for this skin
-	for (i = 0; i < sfx_skinsoundslot0; i++)
+	reroute = skinsoundreroute[skinsound];
+
+	// Automatically allocate any defined voice sounds.
+	// Freeslotted voice clips won't ever belong to a skin.
+
+	i = sfx_None;
+
+	// Find if this sound already exists first.
+	for (j = 0; j < NUMSFX; j++)
 	{
-		if (!S_sfx[i].name)
+		if (!S_sfx[j].name)
 			continue;
-		if (!stricmp(S_sfx[i].name, value))
+
+		if (!stricmp(S_sfx[j].name, value))
 		{
-			if (voice)
-			{
-				Sk_SetSkinVoiceValue(voice, skinsound, i);
-				return 0;
-			}
+			// Found an existing sound.
+			i = j;
+			break;
 		}
 	}
 
-	strlwr(printval);
-	WARN("'sfx_%s' does not exist", printval);
+	// This sound doesn't seem to exist, so let's add a new one.
+	if (i == sfx_None)
+	{
+		CONS_Printf("Sound sfx_%s allocated.\n", value);
+		i = S_AddSoundFx(value, S_sfx[reroute].singularity, S_sfx[reroute].flags, false);
+	}
+
+	if (i != sfx_None)
+	{
+		if (voice)
+		{
+			Sk_SetSkinVoiceValue(voice, skinsound, i);
+			return 0;
+		}
+	}
+
+	WARN0("Ran out of free SFX slots!");
 	return 1;
 }
 
