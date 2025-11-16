@@ -498,7 +498,7 @@ static void UpdateSound(audiostate_t *aud)
 		}
 		else if (I_SongPaused()) // don't decrement timer
 			return;
-		else if ((fading_timer -= 50) <= 0) // ((fading_timer -= 10) <= 0) gotta do 50ms steps since we slep that long
+		else if ((fading_timer -= 10) <= 0)  //((fading_timer -= 50) <= 0) //  Nah lets be funny :) -> //  gotta do 50ms steps since we slep that long.
 		{
 			internal_volume = fading_target;
 			I_UpdateMusicVolume();
@@ -534,7 +534,8 @@ static void AudioThread(void *userdata)
 	{
 		// doesn't need to be that frequent, this thread just feeds buffers
 		// (and ticks music fades... someone better look into that!)
-		I_Sleep(50);
+		// too lazy lol, lower sleep it is.
+		I_Sleep(10);
 
 		{
 			LOCKAUDIO;
