@@ -789,13 +789,26 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				else if (fastncmp(word, "KARTVOICE", 9))
 				{
 					if (i == 0 && word2[0] != '0') // If word2 isn't a number
-						i = get_kartvoice(word2); // find a voice by name
-					if ((i + 1) >= 1 && i < numskinvoices)
+						i = DEH_FindKartVoice(word2); // find a voice by name
+
+					if (i == MAXSKINVOICES)
+					{
+						// Found nothing; auto-allocate our voice.
+						const INT32 allocresult = R_AllocKartVoice(false, word, &i);
+
+						if (allocresult < 0)
+						{
+							deh_warning("Voice '%s' could not be allocated.", word);
+							ignorelines(f);
+						}
+					}
+
+					if (i >= 0 && i < numskinvoices)
 						readkartvoice(f, &skinvoices[i]);
 					else
 					{
 						// zero-based, but let's start at 1
-						deh_warning("KartVoice number %d out of range (1 - %d)", i, numskinvoices);
+						deh_warning("KartVoice number %d out of range (0 - %d)", i, numskinvoices);
 						ignorelines(f);
 					}
 				}
