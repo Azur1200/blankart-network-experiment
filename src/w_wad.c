@@ -2226,7 +2226,6 @@ void *W_CachePatchLongName(const char *name, INT32 tag)
   */
 void W_VerifyFileHash(UINT16 wadfilenum, UINT64 matchhash)
 {
-	return;
 #if defined(NOVERIFYIWADS) || defined(NOFILEHASH)
 	(void)wadfilenum;
 	(void)matchhash;
