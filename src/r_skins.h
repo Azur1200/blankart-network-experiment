@@ -39,9 +39,8 @@ extern consvar_t cv_skinselectstyle, cv_skinselectsort;
 
 typedef enum
 {
-	KSKVC_MAXVANILLA = MAXSKINS,
-	KSKVC_FIRSTFREESLOT = KSKVC_MAXVANILLA,
-	KSKVC_LASTFREESLOT = 65535,
+	KSKVC_FIRSTSLOT = 0,
+	KSKVC_LASTSLOT = 65535,
 	MAXSKINVOICES
 } kartvoicetype_e;
 
