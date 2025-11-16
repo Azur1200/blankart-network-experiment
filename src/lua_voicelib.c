@@ -26,7 +26,6 @@ enum voicevars
 	voicevars_id = 0,
 	voicevars_name, // Not actually in kartvoice_t; returns the name of the voice
 	voicevars_parent,
-	voicevars_parentname,  // Not actually in kartvoice_t; returns the name of the parent skin
 	voicevars_win,
 	voicevars_lose,
 	voicevars_pain,
@@ -41,7 +40,6 @@ static const char *const voicevars_opt[] = {
 	"id",
 	"name",
 	"parent",
-	"parentname",
 	"win",
 	"lose",
 	"pain",
@@ -68,22 +66,18 @@ static int voice_get(lua_State* L)
 	switch (field)
 	{
 	case voicevars_id:
-		lua_pushinteger(L, voice->id);
-		break;
+		return RNOGET;
 	case voicevars_name:
 		lua_pushstring(L, DEH_VoiceName((kartvoicetype_e)(voice - skinvoices)));
 		break;
 	case voicevars_parent:
-		lua_pushinteger(L, voice->parent);
-		break;
-	case voicevars_parentname:
-		lua_pushstring(L, skins[voice->parent].name);
+		LUA_PushUserdata(L, &skins[voice->parent], META_SKIN);
 		break;
 	case voicevars_win:
-		lua_pushinteger(L, voice->win);
+		LUA_PushUserdata(L, &S_sfx[voice->win], META_SFXINFO);
 		break;
 	case voicevars_lose:
-		lua_pushinteger(L, voice->lose);
+		LUA_PushUserdata(L, &S_sfx[voice->lose], META_SFXINFO);
 		break;
 	case voicevars_pain:
 		// Wasteful and shitty, I'll wager, but it's better than risking segfaults
@@ -92,7 +86,7 @@ static int voice_get(lua_State* L)
 		lua_createtable(L, painarraysize, 0);
 		for (size_t i = 0; i < painarraysize; i++)
 		{
-			lua_pushinteger(L, voice->pain[i]);
+			LUA_PushUserdata(L, &S_sfx[voice->pain[i]], META_SFXINFO);
 			lua_rawseti(L, -2, 1 + i);
 		}
 		break;
@@ -102,7 +96,7 @@ static int voice_get(lua_State* L)
 		lua_createtable(L, atkarraysize, 0);
 		for (size_t i = 0; i < atkarraysize; i++)
 		{
-			lua_pushinteger(L, voice->attack[i]);
+			LUA_PushUserdata(L, &S_sfx[voice->attack[i]], META_SFXINFO);
 			lua_rawseti(L, -2, 1 + i);
 		}
 		break;
@@ -112,18 +106,18 @@ static int voice_get(lua_State* L)
 		lua_createtable(L, bstarraysize, 0);
 		for (size_t i = 0; i < bstarraysize; i++)
 		{
-			lua_pushinteger(L, voice->boost[i]);
+			LUA_PushUserdata(L, &S_sfx[voice->boost[i]], META_SFXINFO);
 			lua_rawseti(L, -2, 1 + i);
 		}
 		break;
 	case voicevars_overtake:
-		lua_pushinteger(L, voice->overtake);
+		LUA_PushUserdata(L, &S_sfx[voice->overtake], META_SFXINFO);
 		break;
 	case voicevars_hitem:
-		lua_pushinteger(L, voice->hitem);
+		LUA_PushUserdata(L, &S_sfx[voice->hitem], META_SFXINFO);
 		break;
 	case voicevars_power:
-		lua_pushinteger(L, voice->power);
+		LUA_PushUserdata(L, &S_sfx[voice->power], META_SFXINFO);
 		break;
 	default:
 		return RNOFIELD;
