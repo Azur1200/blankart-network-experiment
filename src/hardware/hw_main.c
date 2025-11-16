@@ -4913,9 +4913,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
-	if (R_ThingIsUsingBakedOffsets(thing))
+	if (R_ThingIsUsingBakedOffsets(interptarg))
 	{
-		R_RotateSpriteOffsetsByPitchRoll(thing,
+		R_RotateSpriteOffsetsByPitchRoll(interptarg,
 										 vflip,
 										 hflip,
 										 &interp,
