@@ -391,10 +391,6 @@ INT32 DEH_ReadFreeslot(const char *type, const char *word, INT32 *out)
 		K_RegisterItem(numkartitems);
 		*out = numkartitems++;
 	}
-	else if (fastcmp(type, "KVOICE"))
-	{
-		return R_AllocVoice(false, word, out);
-	}
 
 	return -2;
 }

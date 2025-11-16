@@ -32,6 +32,7 @@
 #include "r_picformats.h"
 #include "r_things.h" // R_Char2Frame
 #include "r_sky.h"
+#include "r_skins.h" // R_AllocVoice
 #include "fastcmp.h"
 #include "lua_script.h" // Reluctantly included for LUA_EvalMath
 #include "d_clisrv.h"
@@ -4606,11 +4607,15 @@ useoddsfunc_f *get_useoddsfunc(const char *word)
 kartvoicetype_e get_kartvoice(const char *word)
 { // Returns the value of KVOICE_ enumerations
 	kartvoicetype_e i;
-	if (fastncmp("KVOICE_",word,7))
-		word += 7; // take off the KVOICE_
 	i = DEH_FindVoice(word);
 	if (i == MAXSKINVOICES)
-		deh_warning("Couldn't find voice named 'KVOICE_%s'", word);
+	{
+		// Freeslot voices that don't exist yet.
+		const INT32 allocresult = R_AllocVoice(false, word, &i);
+
+		if (allocresult < 0)
+			deh_warning("Voice '%s' could not be allocated.", word);
+	}
 	return i;
 }
 
