@@ -135,6 +135,7 @@ static int voice_set(lua_State* L)
 	case voicevars_name:
 		return RNOSET;
 	case voicevars_parent:
+	{
 		// It would make no sense not to accept a skin struct here.
 		skin_t* my_new_parent = *((skin_t**)luaL_checkudata(L, 3, META_SKIN));
 
@@ -147,6 +148,7 @@ static int voice_set(lua_State* L)
 			voice->parent = (UINT16)(my_new_parent - skins);
 		}
 		break;
+	}
 	case voicevars_win:
 		// For the actual sound values, you pass the actual sfxenum_t enums.
 		// Yes, I know what I said about skin structs literally just above.
