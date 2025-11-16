@@ -491,15 +491,14 @@ static void UpdateSound(audiostate_t *aud)
 
 	if (is_fading)
 	{
-		if (!is_fading ||
-			internal_volume == fading_target ||
+		if (internal_volume == fading_target ||
 			fading_duration == 0)
 		{
 			I_StopFadingSong();
 		}
 		else if (I_SongPaused()) // don't decrement timer
 			return;
-		else if ((fading_timer -= 10) <= 0)
+		else if ((fading_timer -= 50) <= 0) // ((fading_timer -= 10) <= 0) gotta do 50ms steps since we slep that long
 		{
 			internal_volume = fading_target;
 			I_UpdateMusicVolume();
@@ -507,12 +506,14 @@ static void UpdateSound(audiostate_t *aud)
 		}
 		else
 		{
-			UINT8 delta = fabsf(fading_target - fading_source);
-			fixed_t factor = FixedDiv(fading_duration - fading_timer, fading_duration);
+			float delta = fabsf(fading_target - fading_source);
+			float factor = (fading_duration - fading_timer) / (float)fading_duration;
+
 			if (fading_target < fading_source)
-				internal_volume = max(min(internal_volume, fading_source - FixedMul(delta, factor)), fading_target);
+				internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
 			else if (fading_target > fading_source)
-				internal_volume = min(max(internal_volume, fading_source + FixedMul(delta, factor)), fading_target);
+				internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
+
 			I_UpdateMusicVolume();
 		}
 	}
@@ -1628,7 +1629,7 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 {
 	INT16 volume_delta;
 
-	source_volume = min(source_volume, 100);
+	source_volume = min(source_volume, MAX_VOLUME);
 	volume_delta = (INT16)(target_volume - source_volume);
 
 	I_StopFadingSong();
@@ -1664,7 +1665,7 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 		fading_target = target_volume / 100.0f;
 		fading_callback = callback;
 
-		if (internal_volume != source_volume)
+		if (internal_volume != (source_volume / 100.0f))
 			I_SetInternalMusicVolume(source_volume);
 	}
 
@@ -1673,12 +1674,11 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 
 boolean I_FadeSong(UINT8 target_volume, UINT32 ms, void (*callback)(void))
 {
-	return I_FadeSongFromVolume(target_volume, internal_volume, ms, callback);
+    return I_FadeSongFromVolume(target_volume, (internal_volume * 100.f), ms, callback);
 }
-
 boolean I_FadeOutStopSong(UINT32 ms)
 {
-	return I_FadeSongFromVolume(0, internal_volume, ms, &I_StopSong);
+    return I_FadeSongFromVolume(0, (internal_volume * 100.f), ms, &I_StopSong);
 }
 
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
