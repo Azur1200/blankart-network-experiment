@@ -1273,7 +1273,7 @@ INT32 R_AllocKartVoice(boolean skinalloc, const char* name, INT32 *out)
 {
 	char voxname_upper[VOICENAMESIZE];
 
-	strncpy(voxname_upper, name, VOICENAMESIZE);
+	strlcpy(voxname_upper, name, sizeof(voxname_upper));
 	strupr(voxname_upper);
 
 	*out = DEH_FindKartVoice(voxname_upper);

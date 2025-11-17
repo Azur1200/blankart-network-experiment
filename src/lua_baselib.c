@@ -2627,7 +2627,7 @@ static int lib_rAddKartVoice(lua_State *L)
 
 	char wordupper[VOICENAMESIZE+1];
 
-	strncpy(wordupper, word, VOICENAMESIZE);
+	strlcpy(wordupper, word, sizeof(wordupper));
 	strupr(wordupper);
 
 	INT32 i = DEH_FindKartVoice(wordupper);
