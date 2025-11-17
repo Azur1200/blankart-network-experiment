@@ -5762,31 +5762,30 @@ static void Local_Maketic(INT32 realtics)
 static void SV_Maketic(void)
 {
 	INT32 i;
-
-	// Moved here so bots and packetloss indication doesn't break....
-	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
-
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		packetloss[i][maketic%PACKETMEASUREWINDOW] = false;
-
 		if (!playeringame[i])
 			continue;
-
 		if (K_PlayerUsesBotMovement(&players[i]))
 		{
-			K_BuildBotTiccmd(&players[i], &netcmds[maketic%BACKUPTICS][i]);
+			K_BuildBotTiccmd(&players[i], &playercmds[i]);
 			continue;
 		}
-
 		// We didn't receive this tic
 		if ((netcmds[maketic % BACKUPTICS][i].flags & TICCMD_RECEIVED) == 0)
 		{
+			ticcmd_t *    ticcmd = &netcmds[(maketic    ) % BACKUPTICS][i];
+			ticcmd_t *prevticcmd = &netcmds[(maketic - 1) % BACKUPTICS][i];
+			// Copy the input from the previous tic
+			*ticcmd = *prevticcmd;
+			ticcmd->flags &= ~TICCMD_RECEIVED;
 			// packetloss[i][leveltime%PACKETMEASUREWINDOW] = (cmd->flags & TICCMD_RECEIVED) ? false : true;
-			packetloss[i][maketic%PACKETMEASUREWINDOW] = true;
+			//packetloss[i][maketic%PACKETMEASUREWINDOW] = true;
 		}
 	}
-
+	// Moved here so bots and packetloss indication doesn't break....
+	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
 	maketic++;
 }
 
