@@ -30,6 +30,7 @@
 #include "k_waypoint.h"
 #include "k_battle.h"
 #include "k_collide.h"
+#include "k_items.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -10838,7 +10839,7 @@ void A_ItemPop(void *thing)
 
 	if (!((gametyperules & GTR_BUMPERS) && actor->target->player->bumper <= 0) && !itembreaker)
 	{
-		actor->target->player->itemroulette = KROULETTE_ACTIVE;
+		K_StartRoulette(actor->target->player, KROULETTETYPE_NORMAL);
 	}
 	else if (itembreaker)
 	{

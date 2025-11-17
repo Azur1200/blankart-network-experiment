@@ -40,6 +40,7 @@ strbuf_t *statenames;
 strbuf_t *mobjnames;
 strbuf_t *skincolornames;
 strbuf_t *menunames;
+strbuf_t *kartitemnames;
 UINT8 used_spr[(NUMSPRITEFREESLOTS / 8) + 1]; // Bitwise flag for sprite freeslot in use! I would use ceil() here if I could, but it only saves 1 byte of memory anyway.
 
 const char *DEH_MobjtypeName(mobjtype_t i)
@@ -60,6 +61,11 @@ const char *DEH_SkincolorName(skincolornum_t i)
 const char *DEH_MenutypeName(menutype_t i)
 {
 	return strbuf_get(menunames, menudefs[i].info.nameofs);
+}
+
+const char *DEH_KartItemName(kartitemtype_e i)
+{
+	return strbuf_get(kartitemnames, kartitems[i].info.nameofs);
 }
 
 mobjtype_t DEH_FindMobjtype(const char *word)
@@ -112,6 +118,19 @@ menutype_t DEH_FindMenutype(const char *word)
 			return i;
 	}
 	return MAXMENUTYPES;
+}
+
+kartitemtype_e DEH_FindKartItem(const char *word)
+{
+	kartitemtype_e i;
+	UINT32 hash = HASH32(word, strlen(word));
+	for (i = 0; i < numkartitems; i++) {
+		if (hash != kartitems[i].info.namehash)
+			continue;
+		if (fastcmp(word, DEH_KartItemName(i)))
+			return i;
+	}
+	return MAXKARTITEMS;
 }
 
 struct flickytypes_s FLICKYTYPES[] = {
@@ -796,6 +815,7 @@ struct menu_routine_s const MENU_ROUTINES[] = {
 	{ "RESETCONTROLS", &MR_ResetControls },
 	{ "CHANGECONTROL", &MR_ChangeControl },
 	{ "ASSIGNJOYSTICK", &MR_AssignJoystick },
+	{ "SETUPMONITORTOGGLES", &MR_SetupMonitorToggles },
 	{ "HANDLEMONITORTOGGLES", &MR_HandleMonitorToggles },
 	{ "RESTARTAUDIO", &MR_RestartAudio },
 	{ "ENTERVIEWSERVER", &MR_EnterViewServer },
@@ -834,6 +854,12 @@ struct menu_drawer_s const MENU_DRAWERS[] = {
 #ifdef HAVE_DISCORDRPC
 	{ "DRAWDISCORDREQUESTS", &MD_DrawDiscordRequests },
 #endif
+	{ NULL, NULL }
+};
+
+struct odds_func_s const USEODDS_FUNCS[] = {
+	{ "ALTINVINODDS", &KO_AltInvinOdds },
+	{ "SPBRACEODDS", &KO_SPBRaceOdds },
 	{ NULL, NULL }
 };
 
@@ -1512,21 +1538,6 @@ struct int_const_s const INT_CONST[] = {
 	{"BASEVIDWIDTH", BASEVIDWIDTH},
 	{"BASEVIDHEIGHT", BASEVIDHEIGHT},
 
-	// SRB2Kart
-	// kartitems_t
-#define FOREACH( name, n ) { TOSTR (KITEM_ ## name), KITEM_ ## name }
-	KART_ITEM_ITERATOR, // Actual items (can be set for k_itemtype)
-#undef  FOREACH
-	{"NUMKARTITEMS",NUMKARTITEMS},
-	{"KRITEM_DUALSNEAKER",KRITEM_DUALSNEAKER}, // Additional roulette IDs (not usable for much in Lua besides K_GetItemPatch)
-	{"KRITEM_TRIPLESNEAKER",KRITEM_TRIPLESNEAKER},
-	{"KRITEM_TRIPLEBANANA",KRITEM_TRIPLEBANANA},
-	{"KRITEM_TENFOLDBANANA",KRITEM_TENFOLDBANANA},
-	{"KRITEM_TRIPLEORBINAUT",KRITEM_TRIPLEORBINAUT},
-	{"KRITEM_QUADORBINAUT",KRITEM_QUADORBINAUT},
-	{"KRITEM_DUALJAWZ",KRITEM_DUALJAWZ},
-	{"NUMKARTRESULTS",NUMKARTRESULTS},
-
 	// kartshields_t
 	{"KSHIELD_NONE",KSHIELD_NONE},
 	{"KSHIELD_THUNDER",KSHIELD_THUNDER},
@@ -1535,22 +1546,34 @@ struct int_const_s const INT_CONST[] = {
 	{"KSHIELD_FLAME",KSHIELD_FLAME},
 	{"NUMKARTSHIELDS",NUMKARTSHIELDS},
 
-	// kartitems_t
-	{"KITEM_LIGHTNINGSHIELD",KITEM_THUNDERSHIELD},
-
-	// kartroulette_t
-	{"KROULETTE_DISABLED",KROULETTE_DISABLED},
-	{"KROULETTE_ACTIVE",KROULETTE_ACTIVE},
-
-	// kartroulettetype_t
+	// kartroulettetype_e
 	{"KROULETTETYPE_NORMAL",KROULETTETYPE_NORMAL},
 	{"KROULETTETYPE_KARMA",KROULETTETYPE_KARMA},
 	{"KROULETTETYPE_EGGMAN",KROULETTETYPE_EGGMAN},
 
-	// kartitemblinkmode_t
-	{"KITEMBLINKMODE_NORMAL",KITEMBLINKMODE_NORMAL},
-	{"KITEMBLINKMODE_MASHED",KITEMBLINKMODE_MASHED},
-	{"KITEMBLINKMODE_KARMA",KITEMBLINKMODE_KARMA},
+	// kartitemblink_e
+	{"KITEMBLINK_NORMAL",KITEMBLINK_NORMAL},
+	{"KITEMBLINK_MASHED",KITEMBLINK_MASHED},
+	{"KITEMBLINK_KARMA",KITEMBLINK_KARMA},
+	{"KITEMBLINK_DEBUG",KITEMBLINK_DEBUG},
+
+	// kartitemflags_e
+	{"KIF_UNIQUESLOT",KIF_UNIQUESLOT},
+	{"KIF_UNIQUEDROP",KIF_UNIQUEDROP},
+	{"KIF_UNIQUE",KIF_UNIQUE},
+	{"KIF_ANIMATED",KIF_ANIMATED},
+	{"KIF_DARKBG",KIF_DARKBG},
+	{"KIF_COLPATCH2PLAYER",KIF_COLPATCH2PLAYER},
+	{"KIF_HIDEFROMROULETTE",KIF_HIDEFROMROULETTE},
+
+	// kartresultflags_e
+	{"KRF_INDIRECTITEM",KRF_INDIRECTITEM},
+	{"KRF_POWERITEM",KRF_POWERITEM},
+	{"KRF_COOLDOWNONSTART",KRF_COOLDOWNONSTART},
+	{"KRF_NOTNEAREND",KRF_NOTNEAREND},
+	{"KRF_NOTFORBOTTOM",KRF_NOTFORBOTTOM},
+	{"KRF_RUNNERAUGMENT",KRF_RUNNERAUGMENT},
+	{"KRF_HIDEFROMSPB",KRF_HIDEFROMSPB},
 
 	// kartspinoutflags_t
 	{"KSPIN_THRUST",KSPIN_THRUST},
@@ -1683,10 +1706,6 @@ struct int_const_s const INT_CONST[] = {
 	{"FACE_WANTED", FACE_WANTED},
 	{"FACE_MINIMAP", FACE_MINIMAP},
 	{"NUMFACES", NUMFACES},
-
-	// invintype
-	{"KARTINVIN_LEGACY", KARTINVIN_LEGACY},
-	{"KARTINVIN_ALTERN", KARTINVIN_ALTERN},
 
 	// k_waypoint.h values
 	{"DEFAULT_WAYPOINT_RADIUS",DEFAULT_WAYPOINT_RADIUS},

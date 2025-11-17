@@ -51,6 +51,7 @@
 #include "k_color.h"
 #include "k_kart.h"
 #include "r_fps.h"
+#include "k_items.h"
 
 #define MINZ (FRACUNIT*16)
 #define BASEYCENTER (BASEVIDHEIGHT/2)
@@ -282,6 +283,57 @@ void R_AddKartFaces(skin_t *skin)
 	memcpy(sd->spriteframes, sprtemp, sizeof(spriteframe_t)*NUMFACES);
 }
 #undef NUMFACES
+
+// dear god... what a mess...
+void R_AddKartItemSprites(kartitem_t *item)
+{
+	spritedef_t *spritedef = &item->spritedef;
+	memset(sprtemp, 0xff, sizeof(sprtemp));
+	spritename = "ITEM";
+	maxframe = spritedef->numframes - 1;
+
+	const kartitemgraphics_t *graphics = &item->graphics[0];
+	for (UINT8 i = 0; i < graphics->numpatches; i++)
+	{
+		lumpnum_t lumpnum = W_CheckNumForName(graphics->patchnames[i]);
+		if (lumpnum == LUMPERROR)
+			I_Error("R_AddKartItemSprites: missing patch %s", graphics->patchnames[i]);
+
+		spritecachedinfo[numspritelumps].width = graphics->patches[i]->width<<FRACBITS;
+		spritecachedinfo[numspritelumps].offset = graphics->patches[i]->leftoffset<<FRACBITS;
+		spritecachedinfo[numspritelumps].topoffset = graphics->patches[i]->topoffset<<FRACBITS;
+		spritecachedinfo[numspritelumps].height = graphics->patches[i]->height<<FRACBITS;
+
+		// center it... i think
+		spritecachedinfo[numspritelumps].offset += 25*FRACUNIT;
+		spritecachedinfo[numspritelumps].topoffset += 50*FRACUNIT;
+
+		// BP: we cannot use special tric in hardware mode because feet in ground caused by z-buffer
+		spritecachedinfo[numspritelumps].topoffset += FEETADJUST;
+
+		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps, i, ROT_L, 0);
+		R_InstallSpriteLump(WADFILENUM(lumpnum), LUMPNUM(lumpnum), numspritelumps, i, ROT_R, 1);
+		R_IncrementSpriteLumps();
+	}
+
+	maxframe++;
+
+	// allocate space for the frames present and copy sprtemp to it
+	if (spritedef->numframes &&             // has been allocated
+		spritedef->numframes < maxframe)   // more frames are defined ?
+	{
+		Z_Free(spritedef->spriteframes);
+		spritedef->spriteframes = NULL;
+	}
+
+	// allocate this sprite's frames
+	if (!spritedef->spriteframes)
+		spritedef->spriteframes =
+		 static_cast<spriteframe_t*>(Z_Malloc(maxframe * sizeof (*spritedef->spriteframes), PU_STATIC, NULL));
+
+	spritedef->numframes = maxframe;
+	memcpy(spritedef->spriteframes, sprtemp, maxframe*sizeof (spriteframe_t));
+}
 
 // Install a single sprite, given its identifying name (4 chars)
 //
@@ -1268,7 +1320,7 @@ static void R_SplitSprite(vissprite_t *sprite)
 		newsprite->cut = static_cast<spritecut_e>(newsprite->cut | SC_TOP);
 		if (!(sector->lightlist[i].caster->fofflags & FOF_NOSHADE))
 		{
-			lightnum = (*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT);
+			lightnum = std::max((*sector->lightlist[i].lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
 
 			if (lightnum < 0)
 				spritelights = scalelight[0];
@@ -1791,6 +1843,22 @@ static void R_ProjectSprite(mobj_t *thing)
 			frame = thing->frame&FF_FRAMEMASK;
 		}
 	}
+	else if (thing->sprite == SPR_ITEM)
+	{
+		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
+		sprinfo = &spriteinfo[SPR_UNKN];
+
+		if (frame >= sprdef->numframes) {
+			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid kartitem sprite frame %zu\n"), frame);
+			thing->sprite = states[S_UNKNOWN].sprite;
+			thing->frame = states[S_UNKNOWN].frame;
+			sprdef = &sprites[thing->sprite];
+#ifdef ROTSPRITE
+			sprinfo = &spriteinfo[thing->sprite];
+#endif
+			frame = thing->frame&FF_FRAMEMASK;
+		}
+	}
 	else
 	{
 		sprdef = &sprites[thing->sprite];
@@ -1932,9 +2000,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
-	if (R_ThingIsUsingBakedOffsets(thing))
+	if (R_ThingIsUsingBakedOffsets(interptarg))
 	{
-		R_RotateSpriteOffsetsByPitchRoll(thing,
+		R_RotateSpriteOffsetsByPitchRoll(interptarg,
 										 vflip,
 										 hflip,
 										 &interp,
@@ -2286,7 +2354,7 @@ static void R_ProjectSprite(mobj_t *thing)
 			lightnum = thing->subsector->sector->lightlevel;
 		}
 
-		lightnum = (lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT;
+		lightnum = std::max((lightnum + R_ThingLightLevel(thing)) >> LIGHTSEGSHIFT, cv_secbright.value);
 
 		if (maplighting.directional == true && P_SectorUsesDirectionalLighting(thing->subsector->sector))
 		{
@@ -2712,7 +2780,7 @@ void R_AddSprites(sector_t *sec, INT32 lightlevel)
 	{
 		if (sec->heightsec == -1) lightlevel = sec->lightlevel;
 
-		lightnum = (lightlevel >> LIGHTSEGSHIFT);
+		lightnum = std::max((lightlevel >> LIGHTSEGSHIFT), cv_secbright.value);
 
 		if (lightnum < 0)
 			spritelights = scalelight[0];

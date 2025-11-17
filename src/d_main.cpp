@@ -94,7 +94,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x26b5dde340bc9059
+#define ASSET_HASH_MAIN_PK3            0x9dc33fb314952e03
 #define ASSET_HASH_MAPPATCH_PK3        0xd4d4ce4a090d5473
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -1861,7 +1861,7 @@ void D_SRB2Main(void)
 		if (WADNAMECHECK(word))
 		{
 			if (!(pstartmap = wadnamemap))
-				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d)).\n"
+				I_Error("Bad '%s' level warp; pstartmap (%d) != wadnamemap (%d).\n"
 #if defined (_WIN32)
 				"Are you using MSDOS 8.3 filenames in Zone Builder?\n"
 				"\n"

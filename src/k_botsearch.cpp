@@ -33,6 +33,7 @@
 #include "p_slopes.h" // P_GetZAt
 #include "m_perfstats.h"
 #include "k_objects.h"
+#include "k_items.h"
 
 #include "blan/b_soc.h"
 

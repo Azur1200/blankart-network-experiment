@@ -154,6 +154,7 @@ extern consvar_t cv_fov[MAXSPLITSCREENPLAYERS];
 extern consvar_t cv_skybox;
 extern consvar_t cv_tailspickup;
 extern consvar_t cv_debugfinishline;
+extern consvar_t cv_secbright;
 
 extern consvar_t cv_sloperoll;
 extern consvar_t cv_sliptidetilt;

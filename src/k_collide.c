@@ -7,7 +7,7 @@
 #include "doomtype.h"
 #include "p_mobj.h"
 #include "k_kart.h"
-#include "k_odds.h"
+#include "k_items.h"
 #include "p_local.h"
 #include "s_sound.h"
 #include "r_main.h" // R_PointToAngle2, R_PointToDist2
@@ -256,10 +256,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
-			K_DropItems(t2->player); //K_StripItems(t2->player);
-			//K_StripOther(t2->player);
-			t2->player->itemroulette = KROULETTE_ACTIVE;
-			t2->player->roulettetype = KROULETTETYPE_EGGMAN;
+			K_StartRoulette(t2->player, KROULETTETYPE_EGGMAN);
 		}
 
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
@@ -515,6 +512,12 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 	}
 #endif
 
+	if (thing->type == MT_SPB) // If you destroy a SPB, you don't get the luxury of a cooldown.
+	{
+		spbplace = -1;
+		K_SetIndirectItemCooldown(0);
+	}
+
 	P_DamageMobj(thing, lightningSource, lightningSource, 1, DMG_VOLTAGE|DMG_CANTHURTSELF);
 	return BMIT_CONTINUE;
 }
@@ -573,12 +576,13 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, INT16 d
 static boolean K_BubbleReflectingTrapItem(const mobj_t *t)
 {
 	return t->type == MT_BANANA || (t->type == MT_ORBINAUT && t->flags2 & MF2_AMBUSH) || t->type == MT_JAWZ_DUD ||
-	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;
+	       t->type == MT_EGGMANITEM || t->type == MT_SSMINE || t->type == MT_SSMINE_SHIELD || t->type == MT_LANDMINE;// ||
+		//    t->type == MT_EGGMINE_CAPSULE || t->type == MT_EGGMINE_SHIELD;
 }
 
 static boolean K_StrongPlayerBump(const player_t *player)
 {
-	return (((K_GetKartInvinType() == KARTINVIN_LEGACY) && (player->invincibilitytimer))
+	return (((!K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
 	    || (player->growshrinktimer > 0));
 }
 
@@ -636,7 +640,7 @@ boolean K_BubbleShieldCanReflect(mobj_t *t)
 {
 	return (t->type == MT_ORBINAUT || t->type == MT_JAWZ || t->type == MT_JAWZ_DUD
 		|| t->type == MT_BANANA || t->type == MT_EGGMANITEM || t->type == MT_BALLHOG
-		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK
+		|| t->type == MT_SSMINE || t->type == MT_LANDMINE || t->type == MT_SINK //|| t->type == MT_EGGMINE_CAPSULE
 		|| t->type == MT_KART_LEFTOVER
 		|| t->type == MT_PLAYER);
 }
@@ -656,6 +660,7 @@ static INT16 K_GetBubbleDamage(mobj_t* itm)
 	{
 	case MT_EGGMANITEM:
 	case MT_BALLHOG:
+	// case MT_EGGMINE_CAPSULE:
 		// Experiment: Let Bubble Shields hard-counter Ballhogs and Eggboxes.
 		dmg = 0;
 		break;
@@ -820,7 +825,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	boolean t2Condition = false;
 
 	// Rim suggestion: Flipover damage is negligible at best, just cull it from Invincibility as a whole.
-	if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		t1Condition = (t1->player->invincibilitytimer > 0);
 		t2Condition = (t2->player->invincibilitytimer > 0);
@@ -832,7 +837,7 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		K_DoInstashield(t2->player);
 		return false;
 	}
-	else if (K_GetKartInvinType() == KARTINVIN_LEGACY)
+	else if (!K_IsKartItemAlternate(KITEM_INVINCIBILITY))
 	{
 		if (t1Condition == true && t2Condition == false)
 		{
@@ -857,19 +862,40 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 	{
 		if (G_CompatLevel(0x0008) || !hyudoroT1)
 		{
-			switch (cv_kartairsquish.value)
+			if ((t2->player) && (K_IsAltShrunk(t2->player)) &&
+			    (!(t1->player && t1->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t2, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t2->player);
+					t2->player->altshrinktimeshit++;
+
+					P_InstaThrust(t2, K_MomentumAngle(t2), K_Momentum2D(t2) / 3);
+
+					K_PlayPainSound(t2, NULL);
+				}
+			}
+			if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t2, t1, t1, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t2, t1, t1, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
 			}
 		}
 	}
@@ -878,20 +904,42 @@ boolean K_PvPTouchDamage(mobj_t *t1, mobj_t *t2)
 		if (G_CompatLevel(0x0008) || !hyudoroT2)
 		{
 			// shitty code duplication 🥲
-			switch (cv_kartairsquish.value)
+
+			if ((t1->player) && (K_IsAltShrunk(t1->player)) &&
+			    (!(t2->player && t2->player->growshrinktimer > 0)))
 			{
-				case 1:
-					P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
-					return true;
-					break;
-				case 2:
-					P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
-					return true;
-					break;
-				default:
-					return false;
-					break;
+				// Alt. Shrink: Just make the player flip over.
+				if (P_DamageMobj(t1, NULL, NULL, 1, DMG_FLIPOVER))
+				{
+					K_AltShrinkPityIncrease(t1->player);
+					t1->player->altshrinktimeshit++;
+
+					P_InstaThrust(t1, K_MomentumAngle(t1), K_Momentum2D(t1) / 3);
+
+					K_PlayPainSound(t1, NULL);
+				}
 			}
+			else if (P_IsObjectOnGround(t1) && P_IsObjectOnGround(t2))
+			{
+				P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+			}
+			else
+			{
+				switch (cv_kartairsquish.value)
+				{
+					case 1:
+						P_DamageMobj(t1, t2, t2, 1, DMG_SQUISH);
+						return true;
+						break;
+					case 2:
+						P_DamageMobj(t1, t2, t2, 1, DMG_FLIPOVER);
+						return true;
+						break;
+					default:
+						return false;
+						break;
+				}
+		}
 		}
 		return true;
 	}

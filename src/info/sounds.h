@@ -41,8 +41,6 @@ _(pstop)
 _(steam1)
 _(steam2)
 _(wbreak)
-_(ambmac)
-_(spsmsh)
 
 _(rainin)
 _(litng1)
@@ -114,7 +112,6 @@ _(dmpain)
 _(drown)
 _(fizzle)
 _(gbeep)
-_(wepfir)
 _(ghit)
 _(gloop)
 _(gspray)
@@ -126,19 +123,12 @@ _(lose)
 _(lvpass)
 _(mindig)
 _(mixup)
-_(monton)
 _(pogo)
 _(pop)
 _(rail1)
 _(rail2)
 _(rlaunc)
 _(shield)
-_(wirlsg)
-_(forcsg)
-_(frcssg)
-_(elemsg)
-_(armasg)
-_(attrsg)
 _(shldls)
 _(spdpad)
 _(spkdth)
@@ -154,24 +144,8 @@ _(trfire)
 _(trpowr)
 _(turhit)
 _(wdjump)
-_(shrpsp)
-_(shrpgo)
 _(mswarp)
 _(mspogo)
-_(boingf)
-_(corkp)
-_(corkh)
-_(alart)
-_(vwre)
-_(bowl)
-_(chuchu)
-//sfx_bsnipe,
-_(sprong)
-_(lvfal1)
-_(pscree)
-_(iceb)
-_(shattr)
-_(antiri)
 
 // Menu, interface
 _(chchng)
@@ -185,16 +159,12 @@ _(radio)
 _(wepchg)
 _(wtrdng)
 _(zelda)
-_(adderr)
-_(notadd)
-_(addfil)
 
 // NiGHTS
 _(ideya)
 _(xideya) // Xmas
 _(nbmper)
 _(nxbump) // Xmas
-_(ncchip)
 _(ncitem)
 _(nxitem) // Xmas
 _(ngdone)
@@ -210,14 +180,6 @@ _(hoop3)
 _(hidden)
 _(prloop)
 _(timeup)
-_(ngjump)
-_(peww)
-
-// Halloween
-_(lntsit)
-_(lntdie)
-_(pumpkn)
-_(ghosty)
 
 // Mario
 _(koopfr)
@@ -400,7 +362,6 @@ _(s26f)
 _(s270)
 
 // S3&K sounds
-_(s3k2b)
 _(s3k33)
 _(s3k34)
 _(s3k35)
@@ -522,21 +483,6 @@ _(s3ka8)
 _(s3ka9)
 _(s3kaa)
 _(s3kab)
-_(s3kab1)
-_(s3kab2)
-_(s3kab3)
-_(s3kab4)
-_(s3kab5)
-_(s3kab6)
-_(s3kab7)
-_(s3kab8)
-_(s3kab9)
-_(s3kaba)
-_(s3kabb)
-_(s3kabc)
-_(s3kabd)
-_(s3kabe)
-_(s3kabf)
 _(s3kac)
 _(s3kad)
 _(s3kae)
@@ -845,18 +791,6 @@ _(itfree)
 _(dbgsal)
 _(bhurry)   // mine: wasn't here already?
 
-// Chaining Sound
-_(bstchn)
-
-// Low Ring Sound
-_(ringlw)
-
-// Flip Over Sound
-_(flipos)
-
-// Shout message sound effect
-_(sysmsg)
-
 // Next up: UNIQUE ENGINE SOUNDS! Hoooooo boy...
 // Engine class A - Low Speed, Low Weight
 _(krta00)
@@ -997,3 +931,82 @@ _(kbost2)
 _(kslow)
 _(khitem)
 _(kgloat)
+
+// Relocated 2.2 sounds to fix magic numbers in v1 maps
+_(ambmac)
+_(spsmsh)
+
+_(wepfir)
+
+_(monton)
+
+_(wirlsg)
+_(forcsg)
+_(frcssg)
+_(elemsg)
+_(armasg)
+_(attrsg)
+
+_(shrpsp)
+_(shrpgo)
+
+_(boingf)
+_(corkp)
+_(corkh)
+_(alart)
+_(vwre)
+_(bowl)
+_(chuchu)
+_(sprong)
+_(lvfal1)
+_(pscree)
+_(iceb)
+_(shattr)
+_(antiri)
+
+_(adderr)
+_(notadd)
+_(addfil)
+
+_(ncchip)
+
+_(ngjump)
+_(peww)
+
+// Halloween
+_(lntsit)
+_(lntdie)
+_(pumpkn)
+_(ghosty)
+
+_(s3k2b)
+
+_(s3kab1)
+_(s3kab2)
+_(s3kab3)
+_(s3kab4)
+_(s3kab5)
+_(s3kab6)
+_(s3kab7)
+_(s3kab8)
+_(s3kab9)
+_(s3kaba)
+_(s3kabb)
+_(s3kabc)
+_(s3kabd)
+_(s3kabe)
+_(s3kabf)
+
+// New Blan sounds
+
+// Chaining Sound
+_(bstchn)
+
+// Low Ring Sound
+_(ringlw)
+
+// Flip Over Sound
+_(flipos)
+
+// Shout message sound effect
+_(sysmsg)

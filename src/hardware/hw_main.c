@@ -50,6 +50,7 @@
 #include "../k_kart.h"
 #include "../r_fps.h"
 #include "../r_plane.h" // R_FlatDimensionsFromLumpSize
+#include "../k_items.h"
 
 #define R_FAKEFLOORS
 #define HWPRECIP
@@ -295,7 +296,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, INT32 light_level, extracolormap_t *col
 	}
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
-	light_level = min(max(light_level, cv_glsecbright.value), 255);
+	light_level = min(max(light_level, cv_secbright.value), 255);
 
 	V_CubeApply(&tint_color.s.red, &tint_color.s.green, &tint_color.s.blue);
 	V_CubeApply(&fade_color.s.red, &fade_color.s.green, &fade_color.s.blue);
@@ -4791,6 +4792,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
 #endif
 	}
+	else if (thing->sprite == SPR_ITEM)
+	{
+		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
+#ifdef ROTSPRITE
+		sprinfo = &spriteinfo[SPR_UNKN];
+#endif
+	}
 	else
 	{
 		sprdef = &sprites[thing->sprite];
@@ -4905,9 +4913,9 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	const fixed_t visoffymul = (vflip ? -FRACUNIT : FRACUNIT);
 
-	if (R_ThingIsUsingBakedOffsets(thing))
+	if (R_ThingIsUsingBakedOffsets(interptarg))
 	{
-		R_RotateSpriteOffsetsByPitchRoll(thing,
+		R_RotateSpriteOffsetsByPitchRoll(interptarg,
 										 vflip,
 										 hflip,
 										 &interp,

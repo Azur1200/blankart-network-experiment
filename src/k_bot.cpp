@@ -44,6 +44,7 @@
 #include "blan/b_soc.h"
 #include "v_video.h" // for debugging
 #include "k_waypoint.h"
+#include "k_items.h"
 
 consvar_t cv_forcebots = CVAR_INIT ("kartforcebots", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_botcontrol = CVAR_INIT ("kartbotcontrol", "On", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
