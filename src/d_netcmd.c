@@ -6203,7 +6203,7 @@ static void Got_Cheat(UINT8 **cp, INT32 playernum)
 			}
 			else
 			{
-				CV_CheaterWarning(playernum, va("give item %s x%d", item < 0 ? "SAD" : DEH_KartItemName(item), amt));
+				CV_CheaterWarning(playernum, va("give item %s x%d", DEH_KartItemName(item), amt));
 			}
 			break;
 		}
