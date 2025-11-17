@@ -97,11 +97,11 @@ bannednode_t *bannednode = NULL;
 static tic_t statstarttic;
 INT32 getbytes = 0;
 INT64 sendbytes = 0;
+UINT32 sentpackets[MAXNETNODES];
+UINT32 lostpackets[MAXNETNODES];
 static INT32 retransmit = 0, duppacket = 0;
 static INT32 sendackpacket = 0, getackpacket = 0;
 INT32 ticruned = 0, ticmiss = 0;
-
-boolean packetloss[MAXPLAYERS][PACKETMEASUREWINDOW];
 
 // globals
 INT32 getbps, sendbps;
@@ -194,6 +194,8 @@ typedef struct
 	UINT8 nextacknum;
 
 	UINT8 flags;
+	UINT8 sendnum;
+	UINT8 recvnum;
 } netnode_t;
 
 static netnode_t nodes[MAXNETNODES];
@@ -523,6 +525,7 @@ void Net_AckTicker(void)
 			ackpak[i].senttime = I_GetTime();
 			ackpak[i].resentnum++;
 			ackpak[i].nextacknum = node->nextacknum;
+			netbuffer->packetindex = node->sendnum++;
 			retransmit++; // For stat
 			HSendPacket((INT32)(node - nodes), false, ackpak[i].acknum,
 				(size_t)(ackpak[i].length - BASEPACKETSIZE));
@@ -633,6 +636,8 @@ static void InitNode(netnode_t *node)
 	node->nextacknum = 1;
 	node->remotefirstack = 0;
 	node->flags = 0;
+	node->sendnum = 0;
+	node->recvnum = 0;
 }
 
 static void InitAck(void)
@@ -1077,6 +1082,7 @@ boolean HSendPacket(INT32 node, boolean reliable, UINT8 acknum, size_t packetlen
 	else
 		netbuffer->ack = acknum;
 
+	netbuffer->packetindex = nodes[doomcom->remotenode].sendnum++;
 	netbuffer->checksum = NetbufferChecksum();
 	sendbytes += packetheaderlength + doomcom->datalength; // For stat
 
@@ -1195,6 +1201,11 @@ boolean HGetPacket(void)
 				Net_SendAcks(doomcom->remotenode);
 			continue; // discarded (duplicated)
 		}
+
+		// measure packet loss
+		sentpackets[doomcom->remotenode] += (UINT32)netbuffer->packetindex - nodes[doomcom->remotenode].recvnum;
+		lostpackets[doomcom->remotenode] += (UINT32)netbuffer->packetindex - nodes[doomcom->remotenode].recvnum - 1;
+		nodes[doomcom->remotenode].recvnum = netbuffer->packetindex;
 
 		// A packet with just ackreturn
 		if (netbuffer->packettype == PT_NOTHING)

@@ -360,7 +360,7 @@ struct doomdata_t
 	UINT8 ackreturn; // The return of the ack number
 
 	UINT8 packettype;
-	UINT8 reserved; // Padding
+	UINT8 packetindex;
 	union
 	{
 		clientcmd_pak clientpak;

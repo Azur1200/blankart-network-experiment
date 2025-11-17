@@ -5764,7 +5764,6 @@ static void SV_Maketic(void)
 	INT32 i;
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		packetloss[i][maketic%PACKETMEASUREWINDOW] = false;
 		if (!playeringame[i])
 			continue;
 		if (K_PlayerUsesBotMovement(&players[i]))
@@ -5780,8 +5779,6 @@ static void SV_Maketic(void)
 			// Copy the input from the previous tic
 			*ticcmd = *prevticcmd;
 			ticcmd->flags &= ~TICCMD_RECEIVED;
-			// packetloss[i][leveltime%PACKETMEASUREWINDOW] = (cmd->flags & TICCMD_RECEIVED) ? false : true;
-			//packetloss[i][maketic%PACKETMEASUREWINDOW] = true;
 		}
 	}
 	// Moved here so bots and packetloss indication doesn't break....
@@ -5933,7 +5930,7 @@ static INT32 pingtimeout[MAXPLAYERS];
 
 static inline void PingUpdate(void)
 {
-	INT32 i, j;
+	INT32 i;
 	boolean laggers[MAXPLAYERS];
 	UINT8 numlaggers = 0;
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5997,14 +5994,18 @@ static inline void PingUpdate(void)
 		playerpingtable[i] = realpingtable[i] / pingmeasurecount;
 		realpingtable[i] = 0; //Reset each as we go.
 
-		UINT32 lost = 0;
-		for (j = 0; j < PACKETMEASUREWINDOW; j++)
+		UINT32 node = playernode[i];
+		if (node < MAXNETNODES)
 		{
-			if (packetloss[i][j])
-				lost++;
+			if (sentpackets[node] == 0)
+				playerpacketlosstable[i] = 0;
+			else
+				playerpacketlosstable[i] = lostpackets[node];
+			lostpackets[node] = 0;
+			sentpackets[node] = 0;
 		}
 
-		netbuffer->u.netinfo.packetloss[i] = lost;
+		netbuffer->u.netinfo.packetloss[i] = playerpacketlosstable[i];
 		netbuffer->u.netinfo.delay[i] = playerdelaytable[i];
 	}
 
