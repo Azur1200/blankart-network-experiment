@@ -50,6 +50,8 @@
 #define BUFFERSIZE 4096
 #define BUFFERCOUNT 8
 
+#define FLOATEP 0.00001
+
 // don't set gain too high, avoids clipping with multiple sounds playing
 #define VOLUME_DIV 200.f
 
@@ -350,11 +352,11 @@ static boolean I_UpdateMusicVolume(void)
 // Thank you random stack overflow user (second post)!
 // https://stackoverflow.com/questions/10160401/openal-get-the-current-playing-position-of-a-source
 
-float SamplesToSeconds(sf_count_t samples, int sampleRate) {
+static float SamplesToSeconds(sf_count_t samples, int sampleRate) {
 	return (float)samples / sampleRate;
 }
 
-sf_count_t SecondsToSamples(float seconds, int sampleRate) {
+static sf_count_t SecondsToSamples(float seconds, int sampleRate) {
 	return (sf_count_t)lround(seconds * sampleRate);
 }
 
@@ -492,33 +494,31 @@ static void UpdateSound(audiostate_t *aud)
 			TRY(alSourcePlay, aud->music);
 	}
 
-	if (is_fading)
+	if (!is_fading
+		|| fabs(internal_volume - fading_target) < FLOATEP // EQUALS I love floats I love floats
+		|| fading_duration == 0)
 	{
-		if (internal_volume == fading_target ||
-			fading_duration == 0)
-		{
-			I_StopFadingSong();
-		}
-		else if (I_SongPaused()) // don't decrement timer
-			return;
-		else if ((fading_timer -= 10) <= 0)  //((fading_timer -= 50) <= 0) //  Nah lets be funny :) -> //  gotta do 50ms steps since we slep that long.
-		{
-			internal_volume = fading_target;
-			I_UpdateMusicVolume();
-			I_StopFadingSong();
-		}
-		else
-		{
-			float delta = fabsf(fading_target - fading_source);
-			float factor = (fading_duration - fading_timer) / (float)fading_duration;
+		I_StopFadingSong();
+	}
+	else if (I_SongPaused()) // don't decrement timer
+		return;
+	else if ((fading_timer -= 10) <= 0)  //((fading_timer -= 50) <= 0) //  Nah lets be funny :) -> //  gotta do 50ms steps since we slep that long.
+	{
+		internal_volume = fading_target;
+		I_UpdateMusicVolume();
+		I_StopFadingSong();
+	}
+	else
+	{
+		float delta = fabsf(fading_target - fading_source);
+		float factor = (fading_duration - fading_timer) / (float)fading_duration;
 
-			if (fading_target < fading_source)
-				internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
-			else if (fading_target > fading_source)
-				internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
+		if (fading_target < fading_source)
+			internal_volume = max(min(internal_volume, fading_source - (delta * factor)), fading_target);
+		else if (fading_target > fading_source)
+			internal_volume = min(max(internal_volume, fading_source + (delta * factor)), fading_target);
 
-			I_UpdateMusicVolume();
-		}
+		I_UpdateMusicVolume();
 	}
 }
 
@@ -1640,7 +1640,7 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 		fading_target = target_volume / 100.0f;
 		fading_callback = callback;
 
-		if (internal_volume != (source_volume / 100.0f))
+		if (fabs(internal_volume - (source_volume / 100.0f)) > FLOATEP) // NOT EQUAL I love floats I love floats
 			I_SetInternalMusicVolume(source_volume);
 	}
 
