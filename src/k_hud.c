@@ -2648,7 +2648,7 @@ static void K_drawKartStatsnLives(void)
 			INT32 offsetx = 0;
 			INT32 offsety = 0;
 
-			if (cv_lives_xoffset.value != 0 || cv_lives_yoffset.value != 0)
+			if (cv_lives_xoffset.value == 0 || cv_lives_yoffset.value == 0)
 			{
 				if ((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) && !K_RingsActive())
 				{
