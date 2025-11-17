@@ -5758,6 +5758,27 @@ static void SV_Maketic(void)
 {
 	INT32 i;
 
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i])
+			continue;
+
+		// We didn't receive this tic
+		if ((netcmds[maketic % BACKUPTICS][i].flags & TICCMD_RECEIVED) == 0)
+		{
+			ticcmd_t *    ticcmd = &netcmds[(maketic    ) % BACKUPTICS][i];
+			ticcmd_t *prevticcmd = &netcmds[(maketic - 1) % BACKUPTICS][i];
+
+			// We didn't receive this tic
+			{
+				DEBFILE(va("MISS tic%4d for player %d\n", maketic, i));
+				// Copy the input from the previous tic
+				*ticcmd = *prevticcmd;
+				ticcmd->flags &= ~TICCMD_RECEIVED;
+			}
+		}
+	}
+
 	// Moved here so bots and packetloss indication doesn't break....
 	G_MoveTiccmd(netcmds[maketic % BACKUPTICS], playercmds, MAXPLAYERS);
 
