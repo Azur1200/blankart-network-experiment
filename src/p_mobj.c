@@ -12610,11 +12610,29 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	return P_GetMobjSpawnHeight(mobjtype, x, y, dz, offset, mthing->layer, flip, mthing->scale);
 }
 
+static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
+{
+	size_t i;
+	for (i = 0; i < numlines; i++)
+	{
+		line_t *line2 = &lines[i];
+		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
+		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
+		{
+			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
+			line2->special = 2001; // Finish Line
+			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line2->args[0] = args ^ flipped;
+			SpreadFinishLine(line2, line, args ^ flipped);
+		}
+	}
+}
+
 static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 {
-// #if MAXPLAYERS > 32
-// 	You should think about modifying the deathmatch starts to take full advantage of this!
-// #endif
+#if MAXPLAYERS > 32
+	You should think about modifying the deathmatch starts to take full advantage of this!
+#endif
 	if (mthing->type <= MAXPLAYERS) // Player starts
 	{
 		// save spots for respawning in network games
@@ -12665,11 +12683,29 @@ static boolean P_SpawnNonMobjMapThing(mapthing_t *mthing)
 	{
 		return true; // These are handled elsewhere.
 	}
-	// else if (mthing->type > MAXPLAYERS && mthing->type <= 32) // be wary of playerstarts size!  playerstarts[MAXPLAYERS]
-	// {
-	// 	CONS_Alert(CONS_WARNING, "Excess player start detected %d\n", mthing->type);
-	// 	return true;
-	// }
+	else if (K_UsingPatchedMap() && mthing->type >= 6502 && mthing->type <= 6503) // mappatch things!
+	{
+		fixed_t x = mthing->x << FRACBITS, y = mthing->y << FRACBITS;
+		sector_t *sec = R_PointInSubsector(x, y)->sector;
+		line_t *line = P_FindNearestLine(x, y, sec, -1);
+
+		if (line != NULL) switch (mthing->type)
+		{
+		case 6502: // Spawn Finish Line
+			usedspawnfinishline = true;
+			line->special = 2001;
+			line->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
+			line->args[0] = mthing->args[0];
+			if (mthing->args[1] == 0) // don't spread?
+				SpreadFinishLine(line, NULL, mthing->args[0]);
+			break;
+
+		case 6503:
+			break;
+		}
+
+		return true;
+	}
 
 	return false;
 }
@@ -13156,24 +13192,6 @@ static boolean P_SetupParticleGen(mapthing_t *mthing, mobj_t *mobj)
 	return true;
 }
 
-static void SpreadFinishLine(line_t *line, line_t *prev, INT32 args)
-{
-	size_t i;
-	for (i = 0; i < numlines; i++)
-	{
-		line_t *line2 = &lines[i];
-		if (line2 != line && line2 != prev && (line2->slopetype == ST_HORIZONTAL || line2->slopetype == ST_VERTICAL) && line2->slopetype == line->slopetype &&
-		   (line->v1 == line2->v1 || line->v2 == line2->v2 || line->v1 == line2->v2 || line->v2 == line2->v1))
-		{
-			boolean flipped = line->v1 == line2->v1 || line->v2 == line2->v2 ? TMCFF_FLIP : 0;
-			line2->special = 2001; // Finish Line
-			line2->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
-			line2->args[0] = args ^ flipped;
-			SpreadFinishLine(line2, line, args ^ flipped);
-		}
-	}
-}
-
 static mobj_t *P_MakeSoftwareCorona(mobj_t *mo, INT32 height)
 {
 	mobj_t *corona = P_SpawnMobjFromMobj(mo, 0, 0, height<<FRACBITS, MT_PARTICLE);
@@ -13473,8 +13491,9 @@ static boolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, boolean 
 				P_ClosestPointOnLine(mobj->x, mobj->y, finishline, (vertex_t *)&mobj->x);
 				P_SetThingPosition(mobj);
 
-				if (K_UsingPatchedMap())
+				if (K_UsingPatchedMap() && !usedspawnfinishline)
 				{
+					CONS_Alert(CONS_WARNING, "Using waypoints to generate finish lines is deprecated, please add mapthing type 6502 to your patch. Read the wiki article for details\n");
 					finishline->special = 2001; // Finish Line
 					finishline->activation = SPAC_CROSS|SPAC_REPEATSPECIAL;
 					finishline->args[0] = mthing->args[4];

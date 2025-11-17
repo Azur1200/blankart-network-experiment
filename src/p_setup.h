@@ -40,6 +40,8 @@ extern UINT8 levelfadecol;
 extern lumpnum_t lastloadedmaplumpnum; // for comparative savegame
 extern virtres_t *curmapvirt;
 
+extern boolean usedspawnfinishline;
+
 typedef enum
 {
 	MNS_UNKNOWN,

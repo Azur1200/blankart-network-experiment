@@ -217,6 +217,9 @@ UINT16 partadd_earliestfile = UINT16_MAX;
 mobj_t *tubewaypoints[NUMTUBEWAYPOINTSEQUENCES][TUBEWAYPOINTSEQUENCESIZE];
 UINT16 numtubewaypoints[NUMTUBEWAYPOINTSEQUENCES];
 
+// for warnings
+boolean usedspawnfinishline = false;
+
 void P_AddTubeWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint)
 {
 	P_SetTarget(&tubewaypoints[sequence][id], waypoint);
@@ -760,6 +763,8 @@ static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 			case 2020: // MT_LOOPENDPOINT
 				num_loopends++;
 				break;
+			case 6502: // set flag here before spawning the waypoints
+				usedspawnfinishline = true;
 			default:
 				break;
 		}
@@ -7924,6 +7929,7 @@ static boolean P_LoadMapFromFile(void)
 	udmf = textmap != NULL;
 	udmf_version = patch_version = 0;
 	numpatchmapthings = 0;
+	usedspawnfinishline = false;
 
 	if (!P_LoadMapData(curmapvirt))
 	{
