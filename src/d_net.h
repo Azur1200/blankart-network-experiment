@@ -41,8 +41,9 @@ extern INT32 packetheaderlength;
 boolean Net_GetNetStat(void);
 extern INT32 getbytes;
 extern INT64 sendbytes; // Realtime updated
-extern UINT32 sentpackets[MAXNETNODES];
-extern UINT32 lostpackets[MAXNETNODES];
+extern UINT8 plcycle;
+extern UINT32 sentpackets[PACKETLOSSCYCLES][MAXNETNODES];
+extern UINT32 lostpackets[PACKETLOSSCYCLES][MAXNETNODES];
 
 extern SINT8 nodetoplayer[MAXNETNODES];
 extern SINT8 nodetoplayer2[MAXNETNODES]; // Say the numplayer for this node if any (splitscreen)

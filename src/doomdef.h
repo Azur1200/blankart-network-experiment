@@ -193,6 +193,7 @@ extern char logfilename[1024];
 #define MAXPLAYERNAME 21
 #define MAXSPLITSCREENPLAYERS 4 // Max number of players on a single computer
 #define MAXGAMEPADS (MAXSPLITSCREENPLAYERS * 2) // Number of gamepads we'll be allowing
+#define PACKETLOSSCYCLES 4 // amount of cycles to do when measuring packet loss
 
 #define MAXSKINS 4096
 #define MAXFOLLOWERS UINT16_MAX
