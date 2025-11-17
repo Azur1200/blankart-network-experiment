@@ -1478,6 +1478,7 @@ struct int_const_s const INT_CONST[] = {
 	{"MU_WAV", MU_WAV},
 	{"MU_MOD", MU_MOD},
 	{"MU_MID", MU_MID},
+	{"MU_OPUS", MU_OPUS},
 	{"MU_OGG", MU_OGG},
 	{"MU_MP3", MU_MP3},
 	{"MU_FLAC", MU_FLAC},

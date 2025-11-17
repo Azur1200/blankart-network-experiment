@@ -35,12 +35,6 @@ extern openmpt_module *openmpt_mhandle;
 // mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND 0x8000
 
-//
-#define SOUND_VOLUME_RANGE 256
-#define MAX_SOUND_VOLUME 255
-
-#define DEFAULT_MUSICDEF_VOLUME ( 100 / VOLUME_DIVIDER )
-
 extern consvar_t stereoreverse;
 extern consvar_t cv_soundvolume, cv_closedcaptioning, cv_digmusicvolume; 
 
@@ -159,6 +153,7 @@ boolean S_MusicPlaying(void);
 boolean S_MusicPaused(void);
 boolean S_MusicNotInFocus(void);
 musictype_t S_MusicType(void);
+const char *S_MusicTypeName(musictype_t mustype);
 const char *S_MusicName(void);
 
 boolean S_MusicExists(const char *mname);

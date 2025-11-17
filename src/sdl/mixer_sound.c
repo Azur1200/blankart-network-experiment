@@ -80,6 +80,9 @@ write netcode into the sound code, OKAY?
 static UINT16 BUFFERSIZE = 2048;
 static UINT16 SAMPLERATE = 44100;
 
+// don't set gain too high, avoids clipping with multiple sounds playing
+#define VOLUME_DIV (200*FRACUNIT)
+
 #ifdef HAVE_OPENMPT
 #include "libopenmpt/libopenmpt.h"
 #endif
@@ -145,7 +148,7 @@ static void var_cleanup(void)
 	else
 		fading_nocleanup = false; // use it once, set it back immediately
 
-	internal_volume = 100;
+	internal_volume = MAX_VOLUME;
 }
 
 #if defined (HAVE_GME) && defined (HAVE_ZLIB)
@@ -261,13 +264,9 @@ void I_UpdateSound(void)
 /// SFX
 /// ------------------------
 
-static int
-get_real_sfx_volume (int vol)
+static UINT8 get_real_sfx_volume(UINT8 vol)
 {
-	const int scale   = SOUND_VOLUME_RANGE / MIX_MAX_VOLUME;
-	const int divider = VOLUME_DIVIDER * scale;
-	const int volume  = ( vol + 1 ) / divider * sfx_volume / 100;
-	return volume;
+	return FixedMul(vol, FixedMul(FixedDiv2(MIX_MAX_VOLUME, 255), FixedDiv2(sfx_volume*FRACUNIT, VOLUME_DIV)));
 }
 
 // this is as fast as I can possibly make it.
@@ -551,7 +550,6 @@ void I_FreeSfx(sfxinfo_t *sfx)
 
 INT32 I_StartSound(sfxenum_t id, UINT8 vol, UINT8 sep, UINT8 pitch, UINT8 priority, INT32 channel)
 {
-	//UINT8 volume = (((UINT16)vol + 1) * (UINT16)sfx_volume) / 62; // (256 * 31) / 62 == 127
 	UINT8 volume = get_real_sfx_volume(vol);
 	INT32 handle = Mix_PlayChannel(channel, S_sfx[id].data, 0);
 	Mix_Volume(handle, volume);
@@ -573,14 +571,13 @@ boolean I_SoundIsPlaying(INT32 handle)
 
 void I_UpdateSoundParams(INT32 handle, UINT8 vol, UINT8 sep, UINT8 pitch)
 {
-	//UINT8 volume = (((UINT16)vol + 1) * (UINT16)sfx_volume) / 62; // (256 * 31) / 62 == 127
 	UINT8 volume = get_real_sfx_volume(vol);
 	Mix_Volume(handle, volume);
 	Mix_SetPanning(handle, min((UINT16)(0xff-sep)<<1, 0xff), min((UINT16)(sep)<<1, 0xff));
 	(void)pitch;
 }
 
-void I_SetSfxVolume(int volume)
+void I_SetSfxVolume(UINT8 volume)
 {
 	sfx_volume = volume;
 }
@@ -592,10 +589,10 @@ void I_SetSfxVolume(int volume)
 static int attenuate(int scale)
 {
 	// attenuate scale by all volumes as percentages
-	return scale
-		* musicdef_volume / 100
-		* internal_volume / 100
-		*    music_volume / 100;
+	fixed_t vol = FixedDiv2(music_volume*FRACUNIT, VOLUME_DIV);
+	vol = FixedMul(vol, FixedDiv2(internal_volume, MAX_VOLUME));
+	vol = FixedMul(vol, FixedDiv2(musicdef_volume, MAX_VOLUME));
+	return FixedMul(scale, vol);
 }
 
 static UINT32 get_adjusted_position(UINT32 position)
@@ -820,6 +817,12 @@ musictype_t I_SongType(void)
 		case MUS_MP3:
 		case MUS_MP3_MAD:
 			return MU_MP3;
+		case MUS_OPUS:
+			return MU_OPUS;
+		case MUS_OGG:
+			return MU_OGG;
+		case MUS_WAV:
+			return MU_WAV;
 		default:
 			return (musictype_t)mustype;
 	}
@@ -1464,7 +1467,7 @@ void I_ResumeSong(void)
 	songpaused = false;
 }
 
-void I_SetMusicVolume(int volume)
+void I_SetMusicVolume(UINT8 volume)
 {
 	if (!I_SongPlaying())
 		return;
@@ -1560,7 +1563,7 @@ boolean I_FadeSongFromVolume(UINT8 target_volume, UINT8 source_volume, UINT32 ms
 {
 	INT16 volume_delta;
 
-	source_volume = min(source_volume, 100);
+	source_volume = min(source_volume, MAX_VOLUME);
 	volume_delta = (INT16)(target_volume - source_volume);
 
 	I_StopFadingSong();
@@ -1630,7 +1633,7 @@ boolean I_FadeOutStopSong(UINT32 ms)
 boolean I_FadeInPlaySong(UINT32 ms, boolean looping)
 {
 	if (I_PlaySong(looping))
-		return I_FadeSongFromVolume(100, 0, ms, NULL);
+		return I_FadeSongFromVolume(MAX_VOLUME, 0, ms, NULL);
 
 	return false;
 }

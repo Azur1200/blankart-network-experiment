@@ -900,6 +900,7 @@ void D_WipeLoop(wipelooptype_t type, UINT8 wipetype, boolean drawMenu)
 			ST_preLevelTitleCardDrawer();
 
 		D_WipeDraw(drawMenu);
+		I_UpdateSound();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
@@ -1354,7 +1355,7 @@ static void IdentifyVersion(void)
 #endif
 ////
 
-#if !defined (HAVE_SDL) || defined (HAVE_MIXER)
+#if !defined (HAVE_SDL) || defined (HAVE_MIXER) || defined (HAVE_OPENAL)
 
 #define MUSICTEST(str) \
 	{\
