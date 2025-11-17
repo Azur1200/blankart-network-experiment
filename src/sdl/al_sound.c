@@ -555,13 +555,12 @@ static void AudioThread(void *userdata)
 static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 {
 	UINT16 ver, freq;
-	UINT32 samples, i, newsamples;
+	UINT32 samples, i;
 	UINT8 *sound;
 
 	SINT8 *s;
 	INT16 *d;
 	INT16 o;
-	fixed_t frac;
 
 	// lump header
 	ver = READUINT16(stream); // sound version format?
