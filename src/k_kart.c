@@ -466,13 +466,12 @@ fixed_t K_GetKartGameSpeedScalar(SINT8 value)
 
 //{ SRB2kart p_user.c Stuff
 
-#define WORSTINVBUMPPOWER (FRACUNIT/14)
-
+#define WORSTINVBUMPPOWER (FRACUNIT / 14)
 #define INVBUMPBOTTLENECK (FRACUNIT - (WORSTINVBUMPPOWER))
 
-static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
+static fixed_t K_PlayerWeight(mobj_t* mobj, mobj_t* against)
 {
-	fixed_t weight = 5*FRACUNIT;
+	fixed_t weight = 5 * FRACUNIT;
 	const boolean invinisalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
 
 	if (!mobj->player)
@@ -480,17 +479,22 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 
 	if (against && !P_MobjWasRemoved(against) && against->player)
 	{
-		if ((!P_PlayerInPain(against->player) && P_PlayerInPain(mobj->player)) // You're hurt
-		|| (K_GetShieldFromPlayer(against->player) == KSHIELD_BUBBLE // They have a Bubble Shield
-		&& K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE)) // and you don't
+		if ((!P_PlayerInPain(against->player) &&
+		     P_PlayerInPain(mobj->player))  // You're hurt
+		    || (K_GetShieldFromPlayer(against->player) ==
+			    KSHIELD_BUBBLE  // They have a Bubble Shield
+			&& K_GetShieldFromPlayer(mobj->player) != KSHIELD_BUBBLE))  // and you don't
 		{
-			weight = 0; // This player does not cause any bump action
+			weight = 0;  // This player does not cause any bump action
 		}
 		else if (invinisalt && against->player->invincibilitytimer)
 		{
-			// Scale Alt. Invin. weight to their power. At full power, you get shoved off!
-			// Might cause less shitty-feeling bumpcheck moments.
-			weight = max(0, FRACUNIT - FixedMul((against->player->kartweight) * FRACUNIT, K_InvincibilityGradient(against->player->invincibilitytimer)));
+			// Scale Alt. Invin. weight to their power. At full power, you get shoved
+			// off! Might cause less shitty-feeling bumpcheck moments.
+			weight = max(0,
+				     FRACUNIT - FixedMul((against->player->kartweight) * FRACUNIT,
+							 K_InvincibilityGradient(
+							     against->player->invincibilitytimer)));
 		}
 	}
 	else
@@ -504,24 +508,28 @@ static fixed_t K_PlayerWeight(mobj_t *mobj, mobj_t *against)
 		if (invinisalt && mobj->player->invincibilitytimer)
 		{
 			// Cap the gradient at 1.0 to prevent exaggerated nonsense.
-			fixed_t mygradient = min(FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
+			fixed_t mygradient = min(
+			    FRACUNIT, K_InvincibilityGradient(mobj->player->invincibilitytimer));
 
-			// Scale Alt. Invin. weight to your power. At full power, they get shoved off!
-			// Might cause less shitty-feeling bumpcheck moments.
+			// Scale Alt. Invin. weight to your power. At full power, they get shoved
+			// off! Might cause less shitty-feeling bumpcheck moments.
 			weight = FixedMul(weight, mygradient);
 
-			// Like the Bubble Shield, nerf bumps a good bit to make them feel less ridiculous.
-			// As your power depletes, this nerf gets less necessary, so scale it to match.
-			weight = FixedMul(weight, FRACUNIT - FixedMul(INVBUMPBOTTLENECK, mygradient));
+			// Like the Bubble Shield, nerf bumps a good bit to make them feel less
+			// ridiculous. As your power depletes, this nerf gets less necessary, so
+			// scale it to match.
+			weight =
+			    FixedMul(weight, FRACUNIT - FixedMul(INVBUMPBOTTLENECK, mygradient));
 		}
-		else if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE && mobj->player->bubblecool == 0)
+		else if (K_GetShieldFromPlayer(mobj->player) == KSHIELD_BUBBLE &&
+			 mobj->player->bubblecool == 0)
 		{
 			weight = max(BUBBLEMINWEIGHT, weight);
-			weight = FixedMul(weight, FRACUNIT/16);
+			weight = FixedMul(weight, FRACUNIT / 16);
 		}
 
 		if (mobj->player->speed > spd)
-			weight += (mobj->player->speed - spd)/8;
+			weight += (mobj->player->speed - spd) / 8;
 	}
 
 	return weight;
