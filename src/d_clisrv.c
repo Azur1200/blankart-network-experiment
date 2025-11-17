@@ -6006,8 +6006,6 @@ static inline void PingUpdate(void)
 			}
 			if (totalpackets == 0)
 				playerpacketlosstable[i] = 0;
-			else
-				playerpacketlosstable[i] = playerpacketlosstable[i];
 		}
 
 		netbuffer->u.netinfo.packetloss[i] = playerpacketlosstable[i];
