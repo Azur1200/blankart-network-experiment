@@ -578,35 +578,7 @@ static char *ds2chunk(void *stream, size_t *len, size_t *samplerate)
 
 	samples = READUINT32(stream);
 
-	// convert from signed 8bit ???hz to signed 16bit 44100hz.
-	switch(freq)
-	{
-	case 44100:
-		if (samples >= UINT32_MAX>>2)
-			return NULL; // would wrap, can't store.
-		newsamples = samples;
-		break;
-	case 22050:
-		if (samples >= UINT32_MAX>>3)
-			return NULL; // would wrap, can't store.
-		newsamples = samples<<1;
-		break;
-	case 11025:
-		if (samples >= UINT32_MAX>>4)
-			return NULL; // would wrap, can't store.
-		newsamples = samples<<2;
-		break;
-	default:
-		frac = (SAMPLERATE << FRACBITS) / (UINT32)freq;
-		if (!(frac & 0xFFFF)) // other solid multiples (change if FRACBITS != 16)
-			newsamples = samples * (frac >> FRACBITS);
-		else // strange and unusual fractional frequency steps, plus anything higher than 44100hz.
-			newsamples = FixedMul(FixedDiv(samples, freq), SAMPLERATE) + 1; // add 1 to counter truncation.
-		if (newsamples >= UINT32_MAX>>2)
-			return NULL; // would and/or did wrap, can't store.
-		break;
-	}
-	sound = Z_Malloc(newsamples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
+	sound = Z_Malloc(samples<<2, PU_SOUND, NULL); // samples * frequency shift * bytes per sample * channels
 
 	s = (SINT8 *)stream;
 	d = (INT16 *)sound;
