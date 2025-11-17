@@ -34,7 +34,8 @@ This is still in active development and things are going to change. If you find 
 
 ## Dependencies
 - SDL2 (Linux/OS X only)
-- SDL2-Mixer (Linux/OS X only)
+- libsndfile (Linux/OS X only)
+- openAL/openAL-Soft (Linux/OS X only)
 - libupnp (Linux/OS X only)
 - libgme (Linux/OS X only)
 - libopenmpt (Linux/OS X only)
