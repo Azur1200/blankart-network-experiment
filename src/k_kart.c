@@ -9013,6 +9013,12 @@ static void K_KartDrift(player_t *player, boolean onground)
 		player->driftsparkGrowTimer--;
 
 	// Stop drifting
+	// experiment: wall transfers should allow zero speed
+	// reasoning: when driving right into a half pipe face-on, there is no h-speed for the entire launch
+	if (player->walltransfered)
+	{
+		minspeed = 0;
+	}
 	if (P_PlayerInPain(player) || player->speed < minspeed)
 	{
 		player->drift = player->driftcharge = player->aizdriftstrat = 0;
