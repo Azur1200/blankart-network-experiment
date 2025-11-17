@@ -1384,7 +1384,11 @@ boolean I_LoadSong(char *data, size_t len)
 			if (!strncmp(p, key2, key2len)) // is it LOOPPOINT=?
 			{
 				p += key2len; // skip POINT=
-				audio.loop_point = (float)(((audio.musicinfo.samplerate / 1000.0L)+atoi(p)) / audio.musicinfo.samplerate); // LOOPPOINT works by sample count.
+				//audio.loop_point = (float)(((audio.musicinfo.samplerate / 1000.0L)+atoi(p)) / audio.musicinfo.samplerate); // LOOPPOINT works by sample count.
+				// Soooo.... another plan
+				// people were looping music around how shitty mixer_sound's loopcode is.
+				// so we need their shitty calc for it to sound right for some tracks. This SUCKS.
+				audio.loop_point = (float)((44.1L+atoi(p)) / 44100.0L);
 			}
 			else if (!strncmp(p, key3, key3len)) // is it LOOPMS=?
 			{
