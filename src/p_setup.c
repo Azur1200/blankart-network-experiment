@@ -134,6 +134,7 @@ boolean udmf;
 INT32 udmf_version, patch_version;
 mapnamespace_t mapnamespace = MNS_UNKNOWN;
 size_t numvertexes, numsegs, numsectors, numsubsectors, numnodes, numlines, numsides, nummapthings;
+static size_t numpatchmapthings;
 size_t num_orig_vertexes;
 vertex_t *vertexes;
 seg_t *segs;
@@ -143,7 +144,7 @@ node_t *nodes;
 line_t *lines;
 side_t *sides;
 mapthing_t *mapthings;
-static boolean basemaptyperemoval[65537];
+static boolean basemaptyperemoval[65536];
 sector_t *spawnsectors;
 line_t *spawnlines;
 side_t *spawnsides;
@@ -729,7 +730,7 @@ static int cmp_loopends(const void *a, const void *b)
 	return maincomp != 0 ? maincomp : intsign((mt1 - mapthings) - (mt2 - mapthings));
 }
 
-static void P_SpawnMapThings(boolean spawnemblems)
+static void P_SpawnMapThings(boolean spawnemblems, boolean patch)
 {
 	size_t i;
 	mapthing_t *mt;
@@ -737,8 +738,15 @@ static void P_SpawnMapThings(boolean spawnemblems)
 	mapthing_t **loopends;
 	size_t num_loopends = 0;
 
+	// dodging copyslope compat nonsense
+	size_t start = 0, end = nummapthings;
+	if (patch)
+		start = end - numpatchmapthings;
+	else
+		end -= numpatchmapthings;
+
 	// Spawn axis points first so they are at the front of the list for fast searching.
-	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
+	for (i = start, mt = mapthings + start; i < end; i++, mt++)
 	{
 		switch (mt->type)
 		{
@@ -761,7 +769,7 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			&loopends);
 	num_loopends = 0;
 
-	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
+	for (i = start, mt = mapthings + start; i < end; i++, mt++)
 	{
 		switch (mt->type)
 		{
@@ -776,7 +784,7 @@ static void P_SpawnMapThings(boolean spawnemblems)
 			continue;
 
 		// Don't spawn non-patch objects of this type if they are uneeded
-		if (mt->patch == false && basemaptyperemoval[mt->type] == true)
+		if (!patch && basemaptyperemoval[mt->type])
 			continue;
 
 		if (mt->type == mobjinfo[MT_RANDOMITEM].doomednum)
@@ -1379,7 +1387,6 @@ static void P_LoadThings(UINT8 *data)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->pitch = mt->roll = 0;
 		mt->layer = 0;
-		mt->patch = false;
 
 		mt->type &= 4095;
 
@@ -3307,12 +3314,14 @@ static void P_LoadTextmap(boolean patch)
 		CONS_Alert(CONS_NOTICE, "Patching current map.\n");
 	}
 
+	if (patch) // ONLY load mapthings
+		goto patched;
+
 	/// Given the UDMF specs, some fields are given a default value.
 	/// If an element's field has a default value set, it is omitted
 	/// from the textmap, and therefore we have to account for it by
 	/// preemptively setting that value beforehand.
 
-	if (!patch)
 	for (i = 0, vt = vertexes; i < numvertexes; i++, vt++)
 	{
 		// Defaults.
@@ -3328,7 +3337,6 @@ static void P_LoadTextmap(boolean patch)
 			I_Error("P_LoadTextmap: vertex %s has no y value set!\n", sizeu1(i));
 	}
 
-	if (!patch)
 	for (i = 0, sc = sectors; i < numsectors; i++, sc++)
 	{
 		// Defaults.
@@ -3414,7 +3422,6 @@ static void P_LoadTextmap(boolean patch)
 		TextmapFixFlatOffsets(sc);
 	}
 
-	if (!patch)
 	for (i = 0, ld = lines; i < numlines; i++, ld++)
 	{
 		// Defaults.
@@ -3445,7 +3452,6 @@ static void P_LoadTextmap(boolean patch)
 		P_InitializeLinedef(ld);
 	}
 
-	if (!patch)
 	for (i = 0, sd = sides; i < numsides; i++, sd++)
 	{
 		// Defaults.
@@ -3469,6 +3475,7 @@ static void P_LoadTextmap(boolean patch)
 		P_InitializeSidedef(sd);
 	}
 
+patched:
 	for (i = 0, mt = mapthings; i < nummapthings; i++, mt++)
 	{
 		// Defaults.
@@ -3488,7 +3495,6 @@ static void P_LoadTextmap(boolean patch)
 		memset(mt->script_stringargs, 0x00, NUM_SCRIPT_STRINGARGS*sizeof(*mt->script_stringargs));
 		mt->layer = 0;
 		mt->mobj = NULL;
-		mt->patch = patch;
 
 		K_UserPropertiesClear(&mt->user);
 
@@ -3771,6 +3777,7 @@ static boolean P_LoadMapPatchData(const char *patchdata, size_t patchlen)
 	memcpy(realmapthings + realnummapthings, mapthings, nummapthings * sizeof (*mapthings));
 	Z_Free(mapthings);
 	mapthings = realmapthings;
+	numpatchmapthings = nummapthings;
 	nummapthings += realnummapthings;
 
 	TracyCZoneEnd(__zone);
@@ -7916,6 +7923,7 @@ static boolean P_LoadMapFromFile(void)
 
 	udmf = textmap != NULL;
 	udmf_version = patch_version = 0;
+	numpatchmapthings = 0;
 
 	if (!P_LoadMapData(curmapvirt))
 	{
@@ -8173,6 +8181,7 @@ static void P_InitLevelSettings(boolean reloadinggamestate)
 	speedscramble = encorescramble = -1;
 }
 
+#if 0
 // Respawns all the mapthings and mobjs in the map from the already loaded map data.
 void P_RespawnThings(void)
 {
@@ -8207,6 +8216,7 @@ void P_RespawnThings(void)
 	skyboxmo[0] = skyboxviewpnts[(viewid >= 0) ? viewid : 0];
 	skyboxmo[1] = skyboxcenterpnts[(centerid >= 0) ? centerid : 0];
 }
+#endif
 
 static void P_RunLevelScript(const char *scriptname)
 {
@@ -8820,7 +8830,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_InitSlopes(); //Initialize slopes before the map loads.
 
-	memset(basemaptyperemoval, 0, 65537*sizeof(boolean));
+	memset(basemaptyperemoval, 0, sizeof(basemaptyperemoval));
 
 	if (!P_LoadMapFromFile())
 	{
@@ -8834,7 +8844,19 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	P_SpawnSlopes(fromnetsave);
 
-	P_SpawnMapThings(!fromnetsave);
+	if (mapnamespace != MNS_SRB2KART)
+		P_SpawnCopySlopes();
+
+	// spawn non-patched mapthings first...
+	P_SpawnMapThings(!fromnetsave, false);
+
+	// in kart maps, copy slopes are spawned AFTER mapthings
+	if (mapnamespace == MNS_SRB2KART)
+		P_SpawnCopySlopes();
+
+	// ...NOW we can spawn patched mapthings
+	P_SpawnMapThings(!fromnetsave, true);
+
 	skyboxmo[0] = skyboxviewpnts[0];
 	skyboxmo[1] = skyboxcenterpnts[0];
 

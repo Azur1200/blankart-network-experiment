@@ -72,6 +72,7 @@ void P_UpdateSlopeLightOffset(pslope_t *slope);
 void P_CalculateSlopeNormal(pslope_t *slope);
 void P_ReconfigureViaVertexes(pslope_t *slope, const vector3_t v1, const vector3_t v2, const vector3_t v3);
 void P_InitSlopes(void);
+void P_SpawnCopySlopes(void);
 void P_SpawnSlopes(const boolean fromsave);
 
 //
