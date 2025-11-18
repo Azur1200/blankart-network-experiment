@@ -65,6 +65,7 @@
 #include "k_grandprix.h"
 #include "k_cluster.hpp"
 #include "k_items.h"
+#include "k_objects.h"
 #include "k_specialstage.h"
 
 #include "h_timers.h"

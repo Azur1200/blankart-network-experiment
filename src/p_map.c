@@ -44,6 +44,8 @@
 
 #include "k_bot.h"
 
+#include "k_objects.h"
+
 tm_t g_tm = {0};
 
 void P_RestoreTMStruct(tm_t tmrestore)
@@ -876,12 +878,12 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 
 	if (thing->type == MT_SNEAKERPANEL)
 	{
-		Obj_SneakerPanelCollide(thing, tm.thing);
+		Obj_SneakerPanelCollide(thing, g_tm.thing);
 		return BMIT_CONTINUE;
 	}
-	else if (tm.thing->type == MT_SNEAKERPANEL)
+	else if (g_tm.thing->type == MT_SNEAKERPANEL)
 	{
-		Obj_SneakerPanelCollide(tm.thing, thing);
+		Obj_SneakerPanelCollide(g_tm.thing, thing);
 		return BMIT_CONTINUE;
 	}
 

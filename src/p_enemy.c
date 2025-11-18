@@ -31,6 +31,7 @@
 #include "k_battle.h"
 #include "k_collide.h"
 #include "k_items.h"
+#include "k_objects.h"
 
 #ifdef HW3SOUND
 #include "hardware/hw3sound.h"
@@ -11965,8 +11966,9 @@ void A_ReaperThinker(void *thing)
 //		var2 >> 16 = z
 //		var2 & 65535 = unused
 //
-void A_SpawnSneakerPanel(mobj_t *actor)
+void A_SpawnSneakerPanel(void *thing)
 {
+	mobj_t *actor = thing;
 	INT16 x, y, z;
 	mobj_t *mo;
 	INT32 locvar1 = var1;

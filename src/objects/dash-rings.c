@@ -161,8 +161,7 @@ static void DashRingLaunch(player_t *player, mobj_t *ring)
 	player->dashRingPushTics = DASHRING_PUSH_TICS;
 
 	player->mo->rollangle = 0;
-	player->flashing = 0;
-	player->fastfall = 0;
+	//player->flashing = 0;
 
 	switch (ring->extravalue1)
 	{
@@ -189,16 +188,13 @@ static void DashRingLaunch(player_t *player, mobj_t *ring)
 
 static void RegularDashRingLaunch(player_t *player, mobj_t *ring)
 {
-	player->springstars = TICRATE/2;
-	player->springcolor = ring->color;
 	DashRingLaunch(player, ring);
 }
 
 static void RainbowDashRingLaunch(player_t *player, mobj_t *ring)
 {
 	player->mo->eflags &= ~MFE_SPRUNG;
-	player->trickpanel = 1;
-	player->pflags |= PF_TRICKDELAY;
+	player->pogospring = 1;
 	K_DoPogoSpring(player->mo, 0, 0);
 	DashRingLaunch(player, ring);
 }
