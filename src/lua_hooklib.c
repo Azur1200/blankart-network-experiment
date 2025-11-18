@@ -1369,6 +1369,33 @@ boolean LUA_HookKartSneaker(player_t *player, int type)
 
 		call_hooks(&hook, 1, res_true);
 	}
+	
+	return hook.status;
+}
 
+boolean LUA_HookKartStripItems(player_t* player, UINT8 item)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, false, HOOK(KartStripItems)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, item);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
+	return hook.status;
+}
+
+boolean LUA_HookKartStripOther(player_t* player)
+{
+	Hook_State hook;
+	if (prepare_hook(&hook, false, HOOK(KartStripOther)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+
+		call_hooks(&hook, 1, res_true);
+	}
+	
 	return hook.status;
 }

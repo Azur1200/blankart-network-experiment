@@ -89,6 +89,8 @@ automatically.
 	X (PlayerItem),/*SRB2KART*/\
 	X (KartHyudoro),/*SRB2KART*/\
 	X (KartSneaker),/*SRB2KART*/\
+	X (KartStripItems),/*SRB2KART*/\
+	X (KartStripOther),/*SRB2KART*/\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -179,6 +181,8 @@ boolean LUA_HookPlayerItem(player_t *player, UINT8 itemType, boolean wasHoldingI
 boolean LUA_HookKartHyudoro(player_t *player, INT32 *target, boolean sink); // SRB2Kart: Hook for K_DoHyudoroSteal and overriding its results.
 boolean LUA_HookMobjScaleChange(mobj_t *target, fixed_t newscale, fixed_t oldscale); // SRB2Kart: Hook for P_SetScale.
 boolean LUA_HookKartSneaker(player_t *player, int type); // SRB2Kart: Hook for K_DoSneaker.
+boolean LUA_HookKartStripItems(player_t *player, UINT8 item); // SRB2Kart: Hook for K_StripItems.
+boolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
 
 #ifdef __cplusplus
 } // extern "C"

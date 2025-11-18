@@ -9732,6 +9732,9 @@ void K_UpdateAllPlayerPositions(void)
 //
 void K_StripItems(player_t *player)
 {
+	if (LUA_HookKartStripItems(player, player->itemtype))
+		return;
+
 	K_DropRocketSneaker(player);
 	K_DropKitchenSink(player);
 	player->itemtype = KITEM_NONE;
@@ -9760,6 +9763,9 @@ void K_StripItems(player_t *player)
 
 void K_StripOther(player_t *player)
 {
+	if (LUA_HookKartStripOther(player))
+		return;
+
 	player->itemroulette = 0;
 	player->roulettetype = KROULETTETYPE_NORMAL;
 
