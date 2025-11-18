@@ -955,13 +955,15 @@ const char *blancredits[] = {
 	"\"scizor300\"",
 	"",
 	"\1Map Patches",
-	"\"Sonic1983\" (PB)",
-	"\"SinosTH\" (PB)",
+	"\"Sonic1983\" (Playerbots)",
+	"\"SinosTH\" (Playerbots)",
 	"\"Frank_th\"",
 	"\"GenericHeroGuy\"",
 	"\"NepDisk\"",
 	"\"Mayo\"",
 	"\"ArcadeStriker\"",
+	"\"Lugent\"",
+	"\"WumboSpasm\"",
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
 	// culprits gets credited here.

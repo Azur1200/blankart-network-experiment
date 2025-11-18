@@ -2106,9 +2106,15 @@ static UINT32 K_SetupCircuitLength(void)
 	{
 		waypoint_t *wp = &waypointheap[i];
 		path_t bestcircuitpath = {0};
+
 		K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, false, false);
-		if (K_GetWaypointIsEnabled(wp) && wp != finishline && bestcircuitpath.totaldist == 0)
+		if (bestcircuitpath.totaldist == 0) // try again using shortcuts
+			K_PathfindToWaypoint(wp, finishline, &bestcircuitpath, true, false);
+
+		if (bestcircuitpath.totaldist == 0 && wp != finishline && K_GetWaypointIsEnabled(wp)
+		 && !(wp->numprevwaypoints > 0 && wp->prevwaypoints[0] == finishline)) // exception for sprint maps
 			CONS_Alert(CONS_WARNING, "Waypoint %d is a dead end\n", K_GetWaypointID(wp));
+
 		wp->distancetofinish = bestcircuitpath.totaldist;
 		Z_Free(bestcircuitpath.array);
 	}
