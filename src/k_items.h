@@ -160,6 +160,9 @@ struct kartroulette_t
 	UINT32 firstDist;
 };
 
+extern consvar_t cv_fancyroulette;
+extern consvar_t cv_fancyroulettespeed;
+
 extern kartitem_t kartitems[MAXKARTITEMS];
 extern UINT8 numkartitems;
 extern kartresult_t kartresults[MAXKARTRESULTS];
@@ -190,6 +193,8 @@ UINT32 K_CalculatePDIS(const player_t *player, UINT8 numPlayers, boolean *spbrus
 UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 bestbumper, boolean spbrush);
 UINT32 K_ScaleItemDistance(UINT32 distance, UINT8 numPlayers, boolean spbrush);
 INT32 K_GetRollingRouletteItem(player_t *player);
+INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 animspeed);
+UINT8* K_GetRollableItems(void);
 void K_KartItemRoulette(player_t *player, ticcmd_t *cmd);
 void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype);
 

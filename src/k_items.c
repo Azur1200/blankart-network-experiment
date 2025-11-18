@@ -70,6 +70,9 @@ static CV_PossibleValue_t kartitemvariant_cons_t[] = {{0, "Legacy"}, {1, "Altern
 #define REALMAXBATTLEPROB 10
 #define MAXBATTLEPROBABILITY (REALMAXBATTLEPROB * BATTLEODDSMUL)
 
+consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_fancyroulettespeed = CVAR_INIT ("fancyroulettespeed", "5", CV_SAVE, CV_Natural, NULL);
+
 void K_RegisterItem(kartitemtype_e itemtype)
 {
 	kartdebugitem_cons_t[itemtype].strvalue = DEH_KartItemName(itemtype);
@@ -975,10 +978,23 @@ UINT8 K_FindUseodds(const player_t *player, fixed_t mashed, UINT32 pdis, UINT8 b
 	return min(MAXODDS - 1, useodds);
 }
 
+UINT16 roulette_size;
 INT32 K_GetRollingRouletteItem(player_t *player)
 {
+	UINT8* translation = K_GetRollableItems();
+	return translation[(player->itemroulette / 3) % roulette_size];
+}
+
+INT32 K_GetRollingRouletteItemOffset(player_t *player, INT16 offset, INT32 animspeed)
+{
+	UINT8* translation = K_GetRollableItems();
+	INT32 icon = ((player->itemroulette + animspeed)/animspeed);
+	return translation[((icon + offset + roulette_size) % roulette_size)];
+}
+
+UINT8* K_GetRollableItems(void)
+{
 	static UINT8 translation[MAXKARTRESULTS];
-	static UINT16 roulette_size;
 
 	static INT16 odds_cached = -1;
 
@@ -1012,12 +1028,10 @@ INT32 K_GetRollingRouletteItem(player_t *player)
 			if (j == numseen && memcmp(result->odds[oddstable], EMPTYODDS, sizeof(EMPTYODDS)))
 				translation[roulette_size++] = seen[numseen++] = result->type;
 		}
-
-		roulette_size *= 3;
 		odds_cached = gametype;
 	}
 
-	return translation[(player->itemroulette % roulette_size) / 3];
+	return translation;
 }
 
 // Legacy odds are fickle and finicky, so we exaggerate distances
@@ -1250,6 +1264,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 	fixed_t mashed = 0;
 	boolean dontforcespb = false;
 	boolean spbrush = false;
+	INT32 roulettespeed = 3;
 
 	// This makes the roulette cycle through items - if this is 0, you shouldn't be here.
 	if (!player->itemroulette)
@@ -1273,9 +1288,13 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		dontforcespb = true;
 
 	// This makes the roulette produce the random noises.
-	if ((player->itemroulette % 3) == 1 && P_IsDisplayPlayer(player))
+	if (cv_fancyroulette.value)
 	{
-#define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->itemroulette / 3) % 8))
+		roulettespeed = cv_fancyroulettespeed.value;
+	}
+	if ((player->itemroulette % roulettespeed) == 1 && P_IsDisplayPlayer(player))
+	{
+#define PLAYROULETTESND S_StartSound(NULL, sfx_itrol1 + ((player->itemroulette / roulettespeed) % 8))
 		for (i = 0; i <= r_splitscreen; i++)
 		{
 			if (player == &players[displayplayers[i]] && players[displayplayers[i]].itemroulette)

@@ -97,7 +97,6 @@ consvar_t cv_colorizedhud = CVAR_INIT ("colorizedhud", "On", CV_SAVE, CV_OnOff, 
 consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_showfinishedplayers = CVAR_INIT ("showfinishedplayers", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_fancyroulette = CVAR_INIT ("fancyroulette", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_smoothposition = CVAR_INIT ("smoothposition", "On", CV_SAVE, CV_OnOff, NULL);
 static CV_PossibleValue_t driftgauge_cons_t[] = {{0, "Off"}, {1, "Spee"}, {2, "Achii"}, {3, "Wifi"}, {4, "Chaotix"}, {5, "Numbers"}, {6, "Legacy"}, {7, "Legacy Small"}, {8, "Legacy Large Numbers"}, {9, "Large Num"}, {0, NULL}};
 consvar_t cv_driftgauge = CVAR_INIT ("kartdriftgauge", "Off", CV_SAVE, driftgauge_cons_t, NULL);
@@ -254,13 +253,16 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_colorizeditembox);
 	CV_RegisterVar(&cv_darkitembox);
 	CV_RegisterVar(&cv_showfinishedplayers);
-	CV_RegisterVar(&cv_fancyroulette);
 	CV_RegisterVar(&cv_smoothposition);
 	CV_RegisterVar(&cv_driftgauge);
 	CV_RegisterVar(&cv_driftgaugeoffset);
 	CV_RegisterVar(&cv_newtabranking);
 	CV_RegisterVar(&cv_draftindicator);
 	CV_RegisterVar(&cv_showstats);
+
+	// k_items.c
+	CV_RegisterVar(&cv_fancyroulette);
+	CV_RegisterVar(&cv_fancyroulettespeed);
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -1378,27 +1380,6 @@ static void K_drawKartItem(void)
 
 	V_DrawMappedPatch(fx, fy, V_HUDTRANS|fflags, localbg, colormap);
 
-	//V_SetClipRect((fx + 10) << FRACBITS, (fy + 10) << FRACBITS, 30 << FRACBITS, 30 << FRACBITS, V_HUDTRANS|V_SLIDEIN|fflags);
-
-	fixed_t rfy = fy<<FRACBITS;
-	INT32 fancyflags = V_HUDTRANS|fflags;
-
-	// mine: TODO - implement even nicer version from xItemLib-next
-	if (cv_fancyroulette.value && stplyr->itemroulette && !stplyr->deadtimer)
-	{
-		fixed_t frac = R_GetTimeFrac(RTF_LEVEL);
-		UINT8 fancystep = tiny ? 6 : 10;
-		fixed_t fancyoffset = (stplyr->itemroulette % 3)-1;
-
-		if (fancyoffset != 0)
-		{
-			fancyflags &= ~V_HUDTRANS;
-			fancyflags |=V_HUDTRANSHALF;
-		}
-
-		rfy += (fancystep * fancyoffset * FRACUNIT) + FixedMul(fancystep*FRACUNIT, frac) - fancystep/2*FRACUNIT;
-	}
-
 	// Then, the numbers:
 	if (stplyr->itemamount >= K_GetItemNumberDisplayMin(stplyr->itemtype, tiny) && !stplyr->itemroulette)
 	{
@@ -1425,19 +1406,49 @@ static void K_drawKartItem(void)
 			V_DrawKartString(fx+38, fy+36, V_HUDTRANS|fflags, va("%d", stplyr->itemamount));
 		}
 	}
+	else if (cv_fancyroulette.value && stplyr->itemroulette)// xitem-next styled animated roulette
+	{
+		fixed_t rfy = fy<<FRACBITS;
+		INT32 fancyflags = V_HUDTRANS|fflags;
+		INT32 hudtrans = cv_translucenthud.value;
+		INT32 animlength = cv_fancyroulettespeed.value;
+		INT32 alpha = 0;
+		INT32 shift = tiny ? 16 : 32;
+		fixed_t shiftprog;
+
+		INT32 baseitem;
+
+		V_SetClipRect((fx + 8) << FRACBITS, (fy + 8) << FRACBITS, 34 << FRACBITS, 34 << FRACBITS, V_HUDTRANS|fflags);
+		for (int rouletteshift = -1; rouletteshift <= 2; rouletteshift++)
+		{
+			shiftprog = (FRACUNIT * -rouletteshift) + (FixedDiv(stplyr->itemroulette, animlength) % FRACUNIT);
+			alpha = (FixedMul((abs(shiftprog) * 10), FixedDiv(hudtrans << FRACBITS, 10 << FRACBITS)) >> FRACBITS)+(10-hudtrans);
+			rfy = (fy<<FRACBITS) + shift*shiftprog;
+			if (0 > alpha) alpha = 0;
+			if (alpha >= 10) alpha = 10;
+			fancyflags = (alpha<<V_ALPHASHIFT)|fflags;
+
+			baseitem = K_GetRollingRouletteItemOffset(stplyr, rouletteshift, animlength);
+			localpatch = K_GetCachedItemPatch(baseitem, tiny, 0);
+
+			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
+		}
+		V_ClearClipRect();
+
+		// draw minecraft-style cooldown
+		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
+	}
 	else
 	{
-		V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, localpatch, colmap);
+		V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, localpatch, colmap);
 		
 		// draw minecraft-style cooldown
 		K_DrawItemCooldown(fx, fy, V_HUDTRANSHALF|fflags, stplyr->itemusecooldown, stplyr->itemusecooldownmax);
 
 		// TODO: Some proper check for if an alt has unique graphics
 		if (isalt)
-			V_DrawFixedPatch(fx<<FRACBITS, rfy, FRACUNIT, fancyflags, K_getItemAltPatch(tiny, false), colmap);
+			V_DrawFixedPatch(fx<<FRACBITS, fy<<FRACBITS, FRACUNIT, V_HUDTRANS|fflags, K_getItemAltPatch(tiny, false), colmap);
 	}
-
-	//V_ClearClipRect();
 
 	// Extensible meter, currently used by Invincibilty, Grow, Rocket Sneakers and Flame Shield
 	// ...aren't you forgetting something?
