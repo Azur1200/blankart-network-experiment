@@ -232,6 +232,10 @@ if(SRB2_CONFIG_TIDY)
 	set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
 endif()
 
+if(SRB2_CONFIG_NOVERIFYIWADS)
+	target_compile_definitions(SRB2SDL2 PRIVATE -DNOVERIFYIWADS)
+endif()
+
 add_subdirectory(blua)
 add_subdirectory(blan)
 add_subdirectory(sdl)
