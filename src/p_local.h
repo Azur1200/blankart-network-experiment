@@ -615,6 +615,14 @@ void P_CheckTimeLimit(void);
 void P_CheckPointLimit(void);
 boolean P_CheckRacers(void);
 
+typedef enum
+{
+	PICKUPITEM_RING,
+	PICKUPITEM_ITEM,
+	PICKUPITEM_EGGMAN,
+	PICKUPITEM_FLOATING,
+} pickupitem_e;
+
 boolean P_CanPickupItem(player_t *player, UINT8 weapon);
 
 //

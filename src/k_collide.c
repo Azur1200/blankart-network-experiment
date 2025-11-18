@@ -245,7 +245,7 @@ boolean K_EggItemCollide(mobj_t *t1, mobj_t *t2)
 		if (t1->health <= 0 || t2->health <= 0)
 			return true;
 
-		if (!P_CanPickupItem(t2->player, 2))
+		if (!P_CanPickupItem(t2->player, PICKUPITEM_EGGMAN))
 			return true;
 
 		if ((gametyperules & GTR_BUMPERS) && t2->player->bumper <= 0)

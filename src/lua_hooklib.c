@@ -1399,3 +1399,22 @@ boolean LUA_HookKartStripOther(player_t* player)
 	
 	return hook.status;
 }
+
+boolean LUA_HookCanPickupItem(player_t *player, UINT8 weapon, boolean *force)
+{
+	Hook_State hook;
+	TrueForce_State state = {0};
+
+	if (prepare_hook(&hook, 0, HOOK(CanPickupItem)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, weapon);
+
+		hook.userdata = &state;
+
+		call_hooks(&hook, 2, res_trueforce);
+	}
+
+	*force = state.force;
+	return state.override;
+}

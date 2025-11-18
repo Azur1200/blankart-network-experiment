@@ -113,53 +113,61 @@ void P_RampConstant(const BasicFF_t *FFInfo, INT32 Start, INT32 End)
 //
 boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 {
-	if (player->exiting || mapreset || (player->pflags & PF_ELIMINATED))
-		return false;
+	boolean force = false;
 
-	if ((gametyperules & GTR_BUMPERS) // No bumpers in Match
-	&& !weapon
-	&& player->bumper <= 0)
-		return false;
+	if (LUA_HookCanPickupItem(player, weapon, &force))
+		return true;
 
-	if (weapon)
+	if (!force)
 	{
-		// Item slot already taken up
-		if (weapon == 2)
-		{
-			// Invulnerable
-			if (player->flashing > 0
-				|| K_IsPlayerDamaged(player)
-				|| player->squishedtimer > 0
-				|| player->invincibilitytimer > 0
-				|| player->growshrinktimer > 0
-				|| player->hyudorotimer > 0
-				|| player->flametimer > 0)
-				return false;
+		if (player->exiting || mapreset || (player->pflags & PF_ELIMINATED))
+			return false;
 
-			// Already have fake
-			if (player->roulettetype == KROULETTETYPE_EGGMAN
-				|| player->eggmanexplode)
-				return false;
-		}
-		else
-		{
-			// Item-specific timer going off
-			if (player->stealingtimer || player->stolentimer
-				|| player->rocketsneakertimer
-				|| player->eggmanexplode
-				|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
-				|| (player->growshrinktimer > 0)
-				|| player->flametimer)
-				return false;
+		if ((gametyperules & GTR_BUMPERS) // No bumpers in Match
+		&& !weapon
+		&& player->bumper <= 0)
+			return false;
 
+		if (weapon)
+		{
 			// Item slot already taken up
-			if (player->itemroulette
-				|| (weapon != 3 && player->itemamount)
-				|| (player->itemflags & IF_ITEMOUT))
-				return false;
+			if (weapon == 2)
+			{
+				// Invulnerable
+				if (player->flashing > 0
+					|| K_IsPlayerDamaged(player)
+					|| player->squishedtimer > 0
+					|| player->invincibilitytimer > 0
+					|| player->growshrinktimer > 0
+					|| player->hyudorotimer > 0
+					|| player->flametimer > 0)
+					return false;
 
-			if (weapon == 3 && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
-				return false; // No stacking shields!
+				// Already have fake
+				if (player->roulettetype == KROULETTETYPE_EGGMAN
+					|| player->eggmanexplode)
+					return false;
+			}
+			else
+			{
+				// Item-specific timer going off
+				if (player->stealingtimer || player->stolentimer
+					|| player->rocketsneakertimer
+					|| player->eggmanexplode
+					|| ((K_IsKartItemAlternate(KITEM_INVINCIBILITY)) && (player->invincibilitytimer))
+					|| (player->growshrinktimer > 0)
+					|| player->flametimer)
+					return false;
+
+				// Item slot already taken up
+				if (player->itemroulette
+					|| (weapon != 3 && player->itemamount)
+					|| (player->itemflags & IF_ITEMOUT))
+					return false;
+
+				if (weapon == 3 && K_GetShieldFromPlayer(player) != KSHIELD_NONE)
+					return false; // No stacking shields!
+			}
 		}
 	}
 
@@ -335,7 +343,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			P_InstaThrust(player->mo, player->mo->angle, 20<<FRACBITS);
 			return;
 		case MT_FLOATINGITEM: // SRB2Kart
-			if (!P_CanPickupItem(player, 3) || (player->itemamount && player->itemtype != special->threshold))
+			if (!P_CanPickupItem(player, PICKUPITEM_FLOATING) || (player->itemamount && player->itemtype != special->threshold))
 				return;
 
 			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
@@ -357,7 +365,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			special->flags &= ~MF_SPECIAL;
 			return;
 		case MT_RANDOMITEM:
-			if (!itembreaker && !P_CanPickupItem(player, 1))
+			if (!itembreaker && !P_CanPickupItem(player, PICKUPITEM_ITEM))
 				return;
 
 			if ((gametyperules & GTR_BUMPERS) && player->bumper <= 0)
@@ -385,7 +393,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 						return;
 					break;
 				default:
-					if (!P_CanPickupItem(player, 1))
+					if (!P_CanPickupItem(player, PICKUPITEM_ITEM))
 						return;
 					break;
 			}
@@ -434,7 +442,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 				special->target->player->karthud[khud_yougotem] = 2*TICRATE;
 				special->target->player->karmadelay = comebacktime;
 			}
-			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, 1))
+			else if (special->target->player->karmamode == 1 && P_CanPickupItem(player, PICKUPITEM_ITEM))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				S_StartSound(poof, special->info->seesound);
@@ -461,7 +469,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 
 				K_StartRoulette(player, KROULETTETYPE_KARMA);
 			}
-			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, 2))
+			else if (special->target->player->karmamode == 2 && P_CanPickupItem(player, PICKUPITEM_EGGMAN))
 			{
 				mobj_t *poof = P_SpawnMobj(special->x, special->y, special->z, MT_EXPLODE);
 				UINT8 ptadd = 1; // No WANTED bonus for tricking
@@ -583,7 +591,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			S_StartSound(special, sfx_s1a2);
 			return;
 		case MT_CDUFO: // SRB2kart
-			if (special->fuse || !P_CanPickupItem(player, 1) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
+			if (special->fuse || !P_CanPickupItem(player, PICKUPITEM_ITEM) || ((gametyperules & GTR_BUMPERS) && player->bumper <= 0))
 				return;
 
 			K_StartRoulette(player, KROULETTETYPE_KARMA);
@@ -668,7 +676,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			if (special->threshold > 0 || P_PlayerInPain(player))
 				return;
 
-			if (!(P_CanPickupItem(player, 0)))
+			if (!(P_CanPickupItem(player, PICKUPITEM_RING)))
 				return;
 
 			// Reached the cap, don't waste 'em!
@@ -690,14 +698,14 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, boolean heightcheck)
 			return;
 		case MT_COIN:
 		case MT_FLINGCOIN:
-			if (!(P_CanPickupItem(player, 0)))
+			if (!(P_CanPickupItem(player, PICKUPITEM_RING)))
 				return;
 
 			special->momx = special->momy = 0;
 			P_GivePlayerRings(player, 1);
 			break;
 		case MT_BLUEBALL:
-			if (!(P_CanPickupItem(player, 0)))
+			if (!(P_CanPickupItem(player, PICKUPITEM_RING)))
 				return;
 
 			P_GivePlayerRings(player, 1);
