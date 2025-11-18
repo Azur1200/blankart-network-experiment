@@ -285,6 +285,15 @@ static int lib_userdataType(lua_State *L)
 	return 1;
 }
 
+// Returns the output of a fixed-point value as a floating-point string.
+static int lib_toFloatStr(lua_State *L)
+{
+	lua_settop(L, 1);
+	fixed_t f = luaL_checkinteger(L, 1);
+	lua_pushstring(L, va("%f", FIXED_TO_FLOAT(f)));
+	return 1;
+}
+
 // Takes a metatable as first and only argument
 // Only callable during script loading
 static int lib_registerMetatable(lua_State *L)
@@ -4454,6 +4463,18 @@ static int lib_kPlayerCanPunt(lua_State *L)
 	return 1;
 }
 
+static int lib_kMomentum3D(lua_State *L)
+{
+	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
+
+	//HUDSAFE
+	if (!mo)
+		return LUA_ErrInvalid(L, "mobj_t");
+
+	lua_pushinteger(L, K_Momentum3D(mo));
+	return 1;
+}
+
 static int lib_kAddNewScoreboardMod(lua_State *L)
 {
 	const char *modname = luaL_checkstring(L, 1);
@@ -5090,6 +5111,7 @@ static luaL_Reg lib[] = {
 	{"IsPlayerAdmin", lib_isPlayerAdmin},
 	{"reserveLuabanks", lib_reserveLuabanks},
 	{"tofixed", lib_tofixed},
+	{"tofloatstr", lib_toFloatStr},
 
 	// m_menu
 	{"M_MoveColorAfter",lib_pMoveColorAfter},
@@ -5404,6 +5426,7 @@ static luaL_Reg lib[] = {
 	{"K_AwardScaledPlayerRings", lib_kAwardScaledPlayerRings},
 	{"K_GetShieldFromPlayer", lib_kGetShieldFromPlayer},
 	{"K_PlayerCanPunt", lib_kPlayerCanPunt},
+	{"K_Momentum3D", lib_kMomentum3D},
 
 	// k_hud
 	{"K_AddNewScoreboardMod", lib_kAddNewScoreboardMod},
