@@ -465,7 +465,6 @@ struct player_t
 
 	angle_t viewrollangle;
 	// camera tilt
-	// TODO: expose to lua
 	angle_t tilt;
 
 	angle_t angleturn;

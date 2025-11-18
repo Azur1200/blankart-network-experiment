@@ -244,7 +244,9 @@ enum player_e
 	player_health,
 	player_viewz,
 	player_viewheight,
+	player_cameraOffset,
 	player_viewrollangle,
+	player_tilt,
 	player_aiming,
 	player_drawangle,
 	player_frameangle,
@@ -454,7 +456,9 @@ static const char *const player_opt[] = {
 	"health",
 	"viewz",
 	"viewheight",
+	"cameraOffset",
 	"viewrollangle",
+	"tilt",
 	"aiming",
 	"drawangle",
 	"frameangle",
@@ -710,8 +714,14 @@ static int player_get(lua_State *L)
 	case player_viewheight:
 		lua_pushfixed(L, plr->viewheight);
 		break;
+	case player_cameraOffset:
+		lua_pushfixed(L, plr->cameraOffset);
+		break;
 	case player_viewrollangle:
 		lua_pushangle(L, plr->viewrollangle);
+		break;
+	case player_tilt:
+		lua_pushangle(L, plr->tilt);
 		break;
 	case player_aiming:
 		lua_pushangle(L, plr->aiming);
@@ -1387,8 +1397,14 @@ static int player_set(lua_State *L)
 	case player_viewheight:
 		plr->viewheight = luaL_checkfixed(L, 3);
 		break;
+	case player_cameraOffset:
+		plr->cameraOffset = luaL_checkfixed(L, 3);
+		break;
 	case player_viewrollangle:
 		plr->viewrollangle = luaL_checkangle(L, 3);
+		break;
+	case player_tilt:
+		plr->tilt = luaL_checkangle(L, 3);
 		break;
 	case player_aiming:
 	{
@@ -2618,7 +2634,7 @@ static int kartstuff_set(lua_State *L)
 				break;
 			case k_justbumped:
 				plr->justbumped = i;
-				break;;
+				break;
 			case k_comebacktimer:
 				plr->karmadelay = i;
 				break;
