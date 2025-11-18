@@ -919,6 +919,8 @@ const char *blancredits[] = {
 	"\"JugadorXEI\"",
 	"\"Kimberly\"",
 	"\"Chearii\"",
+	"\"hayaunderscore\" aka \"DeltaKaynx\"",
+	"\"Guilmon35249vr\"",
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",

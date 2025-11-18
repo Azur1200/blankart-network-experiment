@@ -164,6 +164,74 @@ static int lib_lenDisplayplayers(lua_State *L)
 	return 1;
 }
 
+// Same deal as the three functions above but for localplayers
+// don't gotta fix what ain't broken
+
+static int lib_iterateLocalplayers(lua_State *L)
+{
+	INT32 i = lua_tonumber(L, lua_upvalueindex(1));
+
+	if (lua_gettop(L) < 2)
+	{
+		lua_pushcclosure(L, lib_iterateLocalplayers, 1);
+		return 1;
+	}
+
+	if (i <= splitscreen)
+	{
+		if (!playeringame[g_localplayers[i]] || (i > 0 && g_localplayers[i] == g_localplayers[0]))
+			return 0;
+
+		// Return player and splitscreen index.
+		LUA_PushUserdata(L, &players[g_localplayers[i]], META_PLAYER);
+		lua_pushnumber(L, i);
+
+		// Update splitscreen index value for next iteration.
+		lua_pushnumber(L, i + 1);
+		lua_pushvalue(L, -1);
+		lua_replace(L, lua_upvalueindex(1));
+		lua_pop(L, 1);
+
+		return 2;
+	}
+	return 0;
+}
+
+static int lib_getLocalplayers(lua_State *L)
+{
+	const char *field;
+	// i -> players[i]
+	if (lua_type(L, 2) == LUA_TNUMBER)
+	{
+		lua_Integer i = luaL_checkinteger(L, 2);
+		if (i < 0 || i >= MAXSPLITSCREENPLAYERS)
+			return luaL_error(L, "localplayers[] index %d out of range (0 - %d)", i, MAXSPLITSCREENPLAYERS-1);
+		if (i > splitscreen)
+			return 0;
+		if (i > 0 && g_localplayers[i] == g_localplayers[0])
+			return 0;
+		if (!playeringame[g_localplayers[i]])
+			return 0;
+		LUA_PushUserdata(L, &players[g_localplayers[i]], META_PLAYER);
+		return 1;
+	}
+
+	field = luaL_checkstring(L, 2);
+	if (fastcmp(field,"iterate"))
+	{
+		lua_pushcclosure(L, lib_iterateLocalplayers, 1);
+		return 1;
+	}
+	return 0;
+}
+
+// #localplayers -> MAXSPLITSCREENPLAYERS
+static int lib_lenLocalplayers(lua_State *L)
+{
+	lua_pushinteger(L, MAXSPLITSCREENPLAYERS);
+	return 1;
+}
+
 enum player_e
 {
 	player_valid,
@@ -3015,6 +3083,17 @@ int LUA_PlayerLib(lua_State *L)
 			lua_setfield(L, -2, "__len");
 		lua_setmetatable(L, -2);
 	lua_setglobal(L, "displayplayers");
+	
+	// ditto with localplayers
+	lua_newuserdata(L, 0);
+		lua_createtable(L, 0, 2);
+			lua_pushcfunction(L, lib_getLocalplayers);
+			lua_setfield(L, -2, "__index");
+
+			lua_pushcfunction(L, lib_lenLocalplayers);
+			lua_setfield(L, -2, "__len");
+		lua_setmetatable(L, -2);
+	lua_setglobal(L, "localplayers");
 
 	return 0;
 }
