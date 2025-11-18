@@ -116,7 +116,7 @@ boolean P_CanPickupItem(player_t *player, UINT8 weapon)
 	boolean force = false;
 
 	if (LUA_HookCanPickupItem(player, weapon, &force))
-		return true;
+		return false;
 
 	if (!force)
 	{
