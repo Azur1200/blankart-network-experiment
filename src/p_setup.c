@@ -7774,6 +7774,10 @@ static void P_ConvertBinaryThingTypes(void)
 		case 2018: // MT_PETSMOKER
 			mapthings[i].args[0] = !!(mapthings[i].options & MTF_OBJECTSPECIAL);
 			break;
+		case 3441: // MT_DASHRING
+		case 3442: // MT_RAINBOWDASHRING
+			mapthings[i].args[0] = mapthings[i].options & 13;
+			mapthings[i].args[1] = mapthings[i].extrainfo;
 		case FLOOR_SLOPE_THING:
 		case CEILING_SLOPE_THING:
 			mapthings[i].args[0] = mapthings[i].extrainfo;
