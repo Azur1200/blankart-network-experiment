@@ -7958,6 +7958,7 @@ static void P_RemapDoomedNum(boolean mappatch)
 		if (mapnamespace == MNS_RINGRACERS)
 		{
 			// Ring Racers only.
+			TYPECONVERT(MT_BALLOON, 543)
 			TYPECONVERT(MT_REDSPRING, 552)
 			TYPECONVERT(MT_REDDIAG, 556)
 		}
