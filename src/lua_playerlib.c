@@ -368,6 +368,9 @@ enum player_e
 	player_jawztargetdelay,
 	player_confirmVictim,
 	player_confirmVictimDelay,
+	player_dashRingPullTics,
+	player_dashRingPushTics,
+	player_dashRainbowPogo,
 	player_glanceDir,
 	player_breathTimer,
 	player_lastsafelap,
@@ -1092,6 +1095,15 @@ static int player_get(lua_State *L)
 		break;
 	case player_confirmVictimDelay:
 		lua_pushinteger(L, plr->confirmVictimDelay);
+		break;
+	case player_dashRingPullTics:
+		lua_pushinteger(L, plr->dashRingPullTics);
+		break;
+	case player_dashRingPushTics:
+		lua_pushinteger(L, plr->dashRingPushTics);
+		break;
+	case player_dashRainbowPogo:
+		lua_pushinteger(L, plr->dashRainbowPogo);
 		break;
 	case player_glanceDir:
 		lua_pushinteger(L, plr->glanceDir);
@@ -1836,6 +1848,15 @@ static int player_set(lua_State *L)
 		break;
 	case player_confirmVictimDelay:
 		plr->confirmVictimDelay = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRingPullTics:
+		plr->dashRingPullTics = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRingPushTics:
+		plr->dashRingPushTics = luaL_checkinteger(L, 3);
+		break;
+	case player_dashRainbowPogo:
+		plr->dashRainbowPogo = luaL_checkinteger(L, 3);
 		break;
 	case player_glanceDir:
 		plr->glanceDir = luaL_checkinteger(L, 3);

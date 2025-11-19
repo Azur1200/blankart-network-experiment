@@ -1534,7 +1534,7 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 		if (gametyperules & GTR_BUMPERS)
 			K_CheckBumpers();
 
-		target->player->pogospring = 0;
+		K_ResetPogoSpring(target->player);
 
 		ACS_RunPlayerDeathScript(target->player);
 	}

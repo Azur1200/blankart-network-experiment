@@ -5171,7 +5171,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	player->dashpadcooldown = TICRATE/3;
 	// player->drift = 0;
 	// player->driftcharge = 0;
-	player->pogospring = 0;
+	K_ResetPogoSpring(player);
 
 	sfxnum = lines[lineindex].stringargs[0] ? get_number(lines[lineindex].stringargs[0]) : sfx_spdpad;
 

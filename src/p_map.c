@@ -3532,7 +3532,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 	{
-		mo->player->pogospring = 0;
+		K_ResetPogoSpring(mo->player);
 	}
 
 	slidemo = mo;

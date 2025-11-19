@@ -4813,6 +4813,12 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, UINT8 sound)
 		S_StartSound(mo, (sound == 1 ? sfx_kc2f : sfx_kpogos));
 }
 
+void K_ResetPogoSpring(player_t *player)
+{
+	player->pogospring = 0;
+	player->dashRainbowPogo = 0;
+}
+
 void K_DoInvincibility(player_t *player, tic_t time)
 {
 	const boolean isalt = K_IsKartItemAlternate(KITEM_INVINCIBILITY);
@@ -6967,7 +6973,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (P_IsObjectOnGround(player->mo) && player->pogospring)
 	{
 		if (P_MobjFlip(player->mo)*player->mo->momz <= 0)
-			player->pogospring = 0;
+			K_ResetPogoSpring(player);
 	}
 
 	if (player->tripwireReboundDelay)
@@ -7040,6 +7046,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	if (player->walltransferboost > 0)
 		player->walltransferboost--;
+
+	if (player->dashRainbowPogo > 0)
+		player->dashRainbowPogo--;
 
 	if (player->invincibilitytimer)
 	{
@@ -9020,7 +9029,7 @@ static void K_KartDrift(player_t *player, boolean onground)
 	// Stop drifting
 	// experiment: wall transfers should allow zero speed
 	// reasoning: when driving right into a half pipe face-on, there is no h-speed for the entire launch
-	if (player->walltransfered)
+	if (player->walltransfered || player->dashRingPullTics || player->dashRingPushTics)
 	{
 		minspeed = 0;
 	}

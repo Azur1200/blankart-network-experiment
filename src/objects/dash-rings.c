@@ -32,6 +32,7 @@
 // timer values
 #define DASHRING_PULL_TICS 5
 #define DASHRING_PUSH_TICS (TICRATE/2)
+#define DASHRING_RAINBOW_POGO_TICS (TICRATE/2)
 #define DASHRING_ANTIGRAVITY_TICS 5
 
 // base launch speed
@@ -219,6 +220,7 @@ static void RainbowDashRingLaunch(player_t *player, mobj_t *ring)
 {
 	player->mo->eflags &= ~MFE_SPRUNG;
 	player->pogospring = 1;
+	player->dashRainbowPogo = DASHRING_RAINBOW_POGO_TICS;
 	K_DoPogoSpring(player->mo, 0, 0);
 	DashRingLaunch(player, ring);
 }
