@@ -6993,7 +6993,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 			case 15: // Bouncy FOF
 				if (udmf)
 					break;
-				CONS_Alert(CONS_WARNING, M_GetText("Deprecated bouncy FOF sector type detected. Please use linedef type 76 instead.\n"));
+				if (mapnamespace != MNS_SRB2KART)
+					CONS_Alert(CONS_WARNING, M_GetText("Deprecated bouncy FOF sector type detected. Please use linedef type 76 instead.\n"));
 				CheckForBouncySector = true;
 				break;
 		}
@@ -7004,7 +7005,8 @@ void P_SpawnSpecials(boolean fromnetsave)
 			case 11: // Custom global gravity!
 				if (udmf)
 					break;
-				CONS_Alert(CONS_WARNING, M_GetText("Deprecated sector type for global gravity detected. Please use the Gravity level header option instead.\n"));
+				if (mapnamespace != MNS_SRB2KART)
+					CONS_Alert(CONS_WARNING, M_GetText("Deprecated sector type for global gravity detected. Please use the Gravity level header option instead.\n"));
 				gravity = sector->floorheight/1000;
 				break;
 		}
