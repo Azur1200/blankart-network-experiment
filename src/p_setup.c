@@ -7924,22 +7924,32 @@ const char *P_MapNamespaceString(mapnamespace_t mns)
 	return names[mns];
 }
 
-static void P_RemapDoomedNum(void)
+static void P_RemapDoomedNum(boolean mappatch)
 {
-	if (!udmf)
+	if (mapnamespace != MNS_RINGRACERS && mapnamespace != MNS_BLANKART && !mappatch)
 		return;
 
-	if (mapnamespace != MNS_RINGRACERS && mapnamespace != MNS_BLANKART)
+	if (mapnamespace == MNS_BLANKART && udmf_version && udmf_version >= 4)
 		return;
 
-	if (mapnamespace == MNS_BLANKART && !((patch_version == 1) || udmf_version < 4))
+	if (mappatch && !patch_version)
+		return;
+
+	if (mappatch && (patch_version > 1))
 		return;
 
 	size_t i;
 
 #define TYPECONVERT(mobjtype, doomed) { \
 	if (mapthings && mapthings[i].type == doomed) \
-	{ mapthings[i].type = mobjinfo[mobjtype].doomednum; continue;} \
+	{ \
+		if (mapnamespace == MNS_BLANKART || mappatch)\
+			CONS_Alert(CONS_WARNING, "Doomednum %d has move to %d, please update your map/map patch accordingly.\n", doomed, mobjinfo[mobjtype].doomednum);\
+		else\
+			CONS_Alert(CONS_NOTICE, "Converting RR doomednum %d to %d.\n", doomed, mobjinfo[mobjtype].doomednum);\
+		mapthings[i].type = mobjinfo[mobjtype].doomednum; \
+		continue; \
+	} \
 }
 	for (i = 0; i < nummapthings; i++)
 	{
@@ -7990,7 +8000,7 @@ static boolean P_LoadMapFromFile(void)
 
 	// Convert the mapthing types of some known Ring Racers/older BlanKart objects to new BlanKart objects.
 	// Should allow for textmap conversion of things making it easier for people to convert their RR maps.
-	P_RemapDoomedNum();
+	P_RemapDoomedNum(false);
 
 	if (!udmf)
 		P_AddBinaryMapTags();
@@ -8022,6 +8032,8 @@ static boolean P_LoadMapFromFile(void)
 
 	if (patchdata != NULL && !P_LoadMapPatchData(patchdata, patchlen))
 		CONS_Alert(CONS_ERROR, "Failed to load map patch for %s\n", G_BuildMapName(gamemap));
+	else
+		P_RemapDoomedNum(true);
 
 	Z_Free(patchdata);
 
